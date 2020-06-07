@@ -16,11 +16,12 @@ Declaration
 As global tensors of vectors
 ++++++++++++++++++++++++++++
 
-.. function:: ti.Vector(n, dt=type, shape=shape)
+.. function:: ti.Vector(n, dt, shape = None, offset = None)
 
     :parameter n: (scalar) the number of components in the vector
-    :parameter type: (DataType) data type of the components
-    :parameter shape: (scalar or tuple) shape the tensor of vectors, see :ref:`tensor`
+    :parameter dt: (DataType) data type of the components
+    :parameter shape: (optional, scalar or tuple) shape the tensor of vectors, see :ref:`tensor`
+    :parameter offset: (optional, scalar or tuple) see :ref:`offset`
 
     For example, this creates a 5x4 tensor of 3 component vectors:
     ::

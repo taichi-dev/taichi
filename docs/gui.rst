@@ -89,7 +89,7 @@ Paint on a window
     .. note ::
 
         When using ``float32`` or ``float64`` as the data type,
-        ``img`` entries will be clipped into range ``[0, 1]``.
+        ``img`` entries will be clipped into range ``[0, 1]`` for display.
 
 
 .. function:: gui.circle(pos, color = 0xFFFFFF, radius = 1)
@@ -169,14 +169,14 @@ Every event have a key and type.
 
 ::
 
-  ti.GUI.ESCAPE
-  ti.GUI.SHIFT
-  ti.GUI.LEFT
-  'a'
+  ti.GUI.ESCAPE  # Esc
+  ti.GUI.SHIFT   # Shift
+  ti.GUI.LEFT    # Left Arrow
+  'a'            # we use lowercase for alphabet
   'b'
   ...
-  ti.GUI.LMB
-  ti.GUI.RMB
+  ti.GUI.LMB     # Left Mouse Button
+  ti.GUI.RMB     # Right Mouse Button
 
 *Event type* is the type of event, for now, there are just three type of event:
 
@@ -201,6 +201,37 @@ A *event filter* is a list combined of *key*, *type* and *(type, key)* tuple, e.
     gui.get_event((ti.GUI.PRESS, ti.GUI.ESCAPE), (ti.GUI.RELEASE, ti.GUI.SPACE))
 
 
+.. attribute:: gui.running
+
+    :parameter gui: (GUI)
+    :return: (bool) ``True`` if ``ti.GUI.EXIT`` event occurred, vice versa
+
+    ``ti.GUI.EXIT`` occurs when you click on the close (X) button of a window.
+    So ``gui.running`` will obtain ``False`` when the GUI is being closed.
+
+    For example, loop until the close button is clicked:
+
+    ::
+
+        while gui.running:
+            render()
+            gui.set_image(pixels)
+            gui.show()
+
+
+    You can also close the window by manually setting ``gui.running`` to ``False``:
+
+    ::
+
+        while gui.running:
+            if gui.get_event(ti.GUI.ESCAPE):
+                gui.running = False
+
+            render()
+            gui.set_image(pixels)
+            gui.show()
+
+
 .. function:: gui.get_event(a, ...)
 
     :parameter gui: (GUI)
@@ -213,8 +244,8 @@ A *event filter* is a list combined of *key*, *type* and *(type, key)* tuple, e.
 
     ::
 
-        while gui.get_event():
-            print('Event key', gui.event.key)
+        if gui.get_event():
+            print('Got event, key =', gui.event.key)
 
 
     For example, loop until ESC is pressed:
@@ -225,6 +256,7 @@ A *event filter* is a list combined of *key*, *type* and *(type, key)* tuple, e.
         while not gui.get_event(ti.GUI.ESCAPE):
             gui.set_image(img)
             gui.show()
+
 
 .. function:: gui.get_events(a, ...)
 
@@ -243,6 +275,7 @@ A *event filter* is a list combined of *key*, *type* and *(type, key)* tuple, e.
                 do_something()
             elif e.type in ['a', ti.GUI.LEFT]:
                 ...
+
 
 .. function:: gui.is_pressed(key, ...)
 
@@ -264,6 +297,7 @@ A *event filter* is a list combined of *key*, *type* and *(type, key)* tuple, e.
                 elif gui.is_pressed('d', ti.GUI.RIGHT):
                     print('Go right!')
 
+
 .. function:: gui.get_cursor_pos()
 
     :parameter gui: (GUI)
@@ -274,6 +308,7 @@ A *event filter* is a list combined of *key*, *type* and *(type, key)* tuple, e.
     ::
 
         mouse_x, mouse_y = gui.get_cursor_pos()
+
 
 
 Image I/O

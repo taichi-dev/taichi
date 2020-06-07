@@ -30,12 +30,13 @@ Declaration
 As global tensors of matrices
 +++++++++++++++++++++++++++++
 
-.. function:: ti.Matrix(n, m, dt=type, shape=shape)
+.. function:: ti.Matrix(n, m, dt, shape = None, offset = None)
 
     :parameter n: (scalar) the number of rows in the matrix
     :parameter m: (scalar) the number of columns in the matrix
-    :parameter type: (DataType) data type of the components
-    :parameter shape: (scalar or tuple) shape the tensor of vectors, see :ref:`tensor`
+    :parameter dt: (DataType) data type of the components
+    :parameter shape: (optional, scalar or tuple) shape the tensor of vectors, see :ref:`tensor`
+    :parameter offset: (optional, scalar or tuple) see :ref:`offset`
 
     For example, this creates a 5x4 tensor of 3x3 matrices:
     ::
@@ -74,11 +75,11 @@ As a temporary local variable
     :parameter z: (scalar) the first component of the second row
     :parameter w: (scalar) the second component of the second row
 
-    For example, this creates a 2x2 matrix with components (2, 3) in the first row and (4, 5) in the second row:
+    For example, this creates a 2x3 matrix with components (2, 3, 4) in the first row and (5, 6, 7) in the second row:
     ::
 
         # Taichi-scope
-        a = ti.Matrix([[2, 3], [4, 5]])
+        a = ti.Matrix([[2, 3, 4], [5, 6, 7]])
 
 
 .. function:: ti.Matrix(rows=[v0, v1, v2, ...])

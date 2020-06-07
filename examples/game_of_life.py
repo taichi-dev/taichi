@@ -53,12 +53,12 @@ gui = ti.GUI('Game of Life', (res, res))
 print('Press the spacebar to run.')
 
 render()
-while True:
+while gui.running:
     while gui.get_event(ti.GUI.PRESS):
         if gui.event.key == ti.GUI.SPACE:
             run()
             render()
         elif gui.event.key == ti.GUI.ESCAPE:
-            exit()
+            gui.running = False
     gui.set_image(img.to_numpy().astype(np.uint8))
     gui.show()

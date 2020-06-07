@@ -3,7 +3,7 @@ from . import impl
 import copy
 import numbers
 import numpy as np
-from .util import taichi_scope, python_scope, deprecated, to_numpy_type
+from .util import taichi_scope, python_scope, deprecated, to_numpy_type, to_pytorch_type
 from .common_ops import TaichiOperations
 from collections.abc import Iterable
 
@@ -631,12 +631,12 @@ class Matrix(TaichiOperations):
                 DeprecationWarning,
                 stacklevel=3)
         as_vector = self.m == 1 and not keep_dims
-        dim_ext = (self.n, ) if as_vector else (self.n, self.m)
+        shape_ext = (self.n, ) if as_vector else (self.n, self.m)
 
         if self.is_pyconstant():
-            return np.array(self.entries).reshape(dim_ext)
+            return np.array(self.entries).reshape(shape_ext)
 
-        ret = np.empty(self.loop_range().shape() + dim_ext,
+        ret = np.empty(self.loop_range().shape() + shape_ext,
                        dtype=to_numpy_type(
                            self.loop_range().snode().data_type()))
         from .meta import matrix_to_ext_arr
@@ -649,8 +649,8 @@ class Matrix(TaichiOperations):
     def to_torch(self, device=None, keep_dims=False):
         import torch
         as_vector = self.m == 1 and not keep_dims
-        dim_ext = (self.n, ) if as_vector else (self.n, self.m)
-        ret = torch.empty(self.loop_range().shape() + dim_ext,
+        shape_ext = (self.n, ) if as_vector else (self.n, self.m)
+        ret = torch.empty(self.loop_range().shape() + shape_ext,
                           dtype=to_pytorch_type(
                               self.loop_range().snode().data_type()),
                           device=device)

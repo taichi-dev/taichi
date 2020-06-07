@@ -1,7 +1,7 @@
 .. _offset:
 
 Coordinate offsets
-========
+==================
 
 - A Taichi tensor can be defined with **coordinate offsets**. The offsets will move tensor bounds so that tensor origins are no longer zero vectors. A typical use case is to support voxels with negative coordinates in physical simulations.
 - For example, a matrix of ``32x64`` elements with coordinate offset ``(-16, 8)`` can be defined as the following:

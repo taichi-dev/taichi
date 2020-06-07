@@ -38,12 +38,20 @@
 #include "taichi/jit/jit_session.h"
 #include "taichi/common/task.h"
 #include "taichi/util/environ_config.h"
-#ifdef _WIN32
-// Travis CI seems doesn't support <filesystem>...
-#include <filesystem>
+
+#ifdef TI_PLATFORM_OSX
+#include "Availability.h"
+#ifndef __MAC_10_15
+// Travis CI is not yet on Mac 10.15...
+#define _TI_USE_EXPERIMENTAL_FILESYSTEM 1
+#endif  // __MAC_10_15
+#endif  // TI_PLATFORM_OSX
+
+#ifdef _TI_USE_EXPERIMENTAL_FILESYSTEM
+#include <experimental/filesystem>
 #else
-#include <unistd.h>
-#endif
+#include <filesystem>
+#endif  // _TI_USE_EXPERIMENTAL_FILESYSTEM
 
 TLANG_NAMESPACE_BEGIN
 
@@ -145,24 +153,17 @@ void compile_runtime_bitcode(Arch arch) {
     auto fn_bc = get_runtime_fn(arch);
     auto src_runtime_bc = fmt::format("{}{}", runtime_src_folder, fn_bc);
     auto dst_runtime_bc = fmt::format("{}{}", runtime_folder, fn_bc);
-#ifdef _WIN32
-    namespace fs = std::filesystem;
-    bool src_exists = fs::exists(src_runtime_bc);
+#ifdef _TI_USE_EXPERIMENTAL_FILESYSTEM
+    namespace fs = std::experimental::filesystem;
 #else
-    bool src_exists = !access(src_runtime_bc.c_str(), F_OK);
+    namespace fs = std::filesystem;
 #endif
+    bool src_exists = fs::exists(src_runtime_bc);
     if (do_cache && src_exists) {
       TI_TRACE("Restoring cached runtime module bitcode [{}]...",
                src_runtime_bc);
-#ifdef _WIN32
       auto ret = fs::copy_file(src_runtime_bc, dst_runtime_bc,
                                fs::copy_options::overwrite_existing);
-#else
-      auto ret =
-          (std::system(fmt::format("cp {} {}", src_runtime_bc, dst_runtime_bc)
-                           .c_str()) &
-           255) == 0;
-#endif
       if (!ret) {
         TI_WARN("Failed to copy from saved runtime bitcode cache.");
       } else {
@@ -191,14 +192,8 @@ void compile_runtime_bitcode(Arch arch) {
     runtime_compiled.insert((int)arch);
     if (do_cache) {
       TI_TRACE("Saving runtime module bitcode cache [{}]...", dst_runtime_bc);
-#ifdef _WIN32
       auto ret = fs::copy_file(dst_runtime_bc, src_runtime_bc,
                                fs::copy_options::overwrite_existing);
-#else
-      auto ret = (system(fmt::format("cp {} {}", dst_runtime_bc, src_runtime_bc)
-                             .c_str()) &
-                  255) == 0;
-#endif
       if (!ret) {
         TI_WARN("Failed to save runtime bitcode cache.");
       }
@@ -736,3 +731,5 @@ auto make_slim_libdevice = [](const std::vector<std::string> &args) {
 TI_REGISTER_TASK(make_slim_libdevice);
 
 TLANG_NAMESPACE_END
+
+#undef _TI_USE_EXPERIMENTAL_FILESYSTEM

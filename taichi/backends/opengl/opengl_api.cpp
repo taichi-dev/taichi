@@ -451,44 +451,48 @@ struct CompiledProgram::Impl {
     auto rt_buf = (GLSLRuntime *)launcher->impl->runtime_ssbo->map();
 
     auto msg_count = rt_buf->msg_count;
-    if (msg_count > MAX_PRINT_ENTRIES) {
+    if (msg_count > MAX_MESSAGES) {
       TI_WARN(
           "[glsl] Too much print within one kernel: {} > {}, clipping",
-          msg_count, MAX_PRINT_ENTRIES);
-      msg_count = MAX_PRINT_ENTRIES;
+          msg_count, MAX_MESSAGES);
+      msg_count = MAX_MESSAGES;
     }
 
-    for (int i = 0; i < msg_count * MAX_CONTENTS_PER_PRINT; i++) {
-      int type = rt_buf->msg_buf[i * 2];
-      int value = rt_buf->msg_buf[i * 2 + 1];
+    for (int i = 0; i < msg_count; i++) {
+      int base = i * MSG_SIZE;
+      int size = rt_buf->msg_buf[base + 29];
+      int type_bitmap_low = rt_buf->msg_buf[base + 30];
+      int type_bitmap_high = rt_buf->msg_buf[base + 31];
+      for (int j = 0; j < size; j++) {
+        int type = (type_bitmap_low >> j) & 1;
+        type |= ((type_bitmap_high >> j) & 1) << 1;
+        int value = rt_buf->msg_buf[base + j];
 
-      // error: reinterpret_cast from 'int' to 'float' is not allowed
-      union val {
-        int32 val_i32;
-        float32 val_f32;
-      } u;
-      u.val_i32 = value;
+        // error: reinterpret_cast from 'int' to 'float' is not allowed
+        union val {
+          int32 val_i32;
+          float32 val_f32;
+        } u;
+        u.val_i32 = value;
 
-      std::string str;
-      switch (type) {
-      case 0:
-        i += MAX_CONTENTS_PER_PRINT - i % MAX_CONTENTS_PER_PRINT - 1;
-        str = "\n";
-        break;
-      case -1:
-        str = fmt::format("{}", u.val_i32);
-        break;
-      case -2:
-        str = fmt::format("{}", u.val_f32);
-        break;
-      case -3:
-        str = str_table.at(value);
-        break;
-      default:
-        TI_WARN("[glsl] Unexpected serialization type: {}, ignoring", type);
-        break;
-      };
-      std::cout << str;
+        std::string str;
+        switch (type) {
+        case 1:
+          str = fmt::format("{}", u.val_i32);
+          break;
+        case 2:
+          str = fmt::format("{}", u.val_f32);
+          break;
+        case 3:
+          str = str_table.at(value);
+          break;
+        default:
+          TI_WARN("[glsl] Unexpected serialization type: {}, ignoring", type);
+          break;
+        };
+        std::cout << str;
+      }
+      std::cout << std::endl;
     }
     rt_buf->msg_count = 0;
     launcher->impl->runtime_ssbo->unmap();

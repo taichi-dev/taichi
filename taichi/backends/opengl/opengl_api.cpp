@@ -458,32 +458,21 @@ struct CompiledProgram::Impl {
     }
 
     for (int i = 0; i < msg_count; i++) {
-      int base = i * MSG_SIZE;
-      int size = rt_buf->msg_buf[base + 29];
-      int type_bitmap_low = rt_buf->msg_buf[base + 30];
-      int type_bitmap_high = rt_buf->msg_buf[base + 31];
-      for (int j = 0; j < size; j++) {
-        int type = (type_bitmap_low >> j) & 1;
-        type |= ((type_bitmap_high >> j) & 1) << 1;
-        int value = rt_buf->msg_buf[base + j];
-
-        // error: reinterpret_cast from 'int' to 'float' is not allowed
-        union val {
-          int32 val_i32;
-          float32 val_f32;
-        } u;
-        u.val_i32 = value;
+      auto const &msg = rt_buf->msg_buf[i];
+      for (int j = 0; j < msg.num_contents; j++) {
+        int type = msg.get_type_of(j);
+        auto value = msg.contents[j];
 
         std::string str;
         switch (type) {
           case 1:
-            str = fmt::format("{}", u.val_i32);
+            str = fmt::format("{}", value.val_i32);
             break;
           case 2:
-            str = fmt::format("{}", u.val_f32);
+            str = fmt::format("{}", value.val_f32);
             break;
           case 3:
-            str = str_table.at(value);
+            str = str_table.at(value.val_i32);
             break;
           default:
             TI_WARN("[glsl] Unexpected serialization type: {}, ignoring", type);

@@ -18,10 +18,27 @@ layout(shared, binding = 6) buffer runtime {
 // clang-format on
 #else
 
+struct GLSLMsgEntry {
+  union MsgValue {
+    int32 val_i32;
+    float32 val_f32;
+  } contents[MAX_CONTENTS_PER_MSG];
+
+  int num_contents;
+  int type_bitmap_low;
+  int type_bitmap_high;
+
+  int get_type_of(int i) const {
+    int type = (type_bitmap_low >> i) & 1;
+    type |= ((type_bitmap_high >> i) & 1) << 1;
+    return type;
+  }
+} __attribute__((packed));
+
 struct GLSLRuntime {
   int rand_state;
   int msg_count;
-  int msg_buf[MAX_MESSAGES * MSG_SIZE];
+  GLSLMsgEntry msg_buf[MAX_MESSAGES * MSG_SIZE];
 } __attribute__((packed));
 
 #endif

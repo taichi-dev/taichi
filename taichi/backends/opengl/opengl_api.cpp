@@ -592,6 +592,8 @@ struct GLProgram {};
 struct GLSLLauncherImpl {};
 
 struct CompiledProgram::Impl {
+  UsedFeature used;
+
   Impl(Kernel *kernel) {
     TI_NOT_IMPLEMENTED;
   }

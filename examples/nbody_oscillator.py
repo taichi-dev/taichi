@@ -42,7 +42,7 @@ def advance(dt: ti.f32):
 gui = ti.GUI("n-body", res=(400, 400))
 
 initialize()
-while not gui.get_event(ti.GUI.ESCAPE):
+while not gui.get_event(ti.GUI.ESCAPE, ti.GUI.EXIT):
     _pos = pos.to_numpy()
     gui.circles(_pos, radius=1, color=0x66ccff)
     gui.show()

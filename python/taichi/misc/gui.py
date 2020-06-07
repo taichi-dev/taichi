@@ -23,6 +23,7 @@ class GUI:
     LMB = 'LMB'
     MMB = 'MMB'
     RMB = 'RMB'
+    EXIT = 'WMClose'
     RELEASE = False
     PRESS = True
 
@@ -43,6 +44,12 @@ class GUI:
         if ti.core.get_current_program():
             self.core.set_profiler(
                 ti.core.get_current_program().get_profiler())
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, val, tb):
+        self.core = None  # dereference to call GUI::~GUI()
 
     def clear(self, color=None):
         if color is None:
@@ -209,7 +216,8 @@ class GUI:
         for e in self.get_events(*filter):
             self.event = e
             return True
-        return False
+        else:
+            return False
 
     def get_events(self, *filter):
         filter = filter and GUI.EventFilter(*filter) or None
@@ -254,9 +262,25 @@ class GUI:
         return pos[0], pos[1]
 
     def has_key_pressed(self):
+        import warnings
+        warnings.warn(
+            'gui.has_key_pressed() is deprecated, use gui.get_event() instead.',
+            DeprecationWarning,
+            stacklevel=3)
         if self.has_key_event():
             self.get_key_event()  # pop to update self.key_pressed
         return len(self.key_pressed) != 0
+
+    @property
+    def running(self):
+        return not self.core.should_close
+
+    @running.setter
+    def running(self, value):
+        if value:
+            self.core.should_close = 0
+        elif not self.core.should_close:
+            self.core.should_close = 1
 
 
 def rgb_to_hex(c):

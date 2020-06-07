@@ -14,4 +14,17 @@ T iroundup(T a, T b) {
   }
 }
 
+template <typename T>
+uint32_t log2int(T value) {
+  static_assert(std::is_integral_v<T>, "Must be integral type");
+
+  uint32_t ret = 0;
+  value >>= 1;
+  while (value) {
+    value >>= 1;
+    ret += 1;
+  }
+  return ret;
+}
+
 }  // namespace taichi

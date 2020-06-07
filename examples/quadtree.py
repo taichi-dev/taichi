@@ -56,7 +56,7 @@ def vec2_npf32(m):
 
 
 gui = ti.GUI('Quadtree', (RES, RES))
-while not gui.get_event(ti.GUI.PRESS):
+while not gui.get_event(ti.GUI.ESCAPE, ti.GUI.EXIT):
     Broot.deactivate_all()
     pos = gui.get_cursor_pos()
     action(vec2_npf32(pos))

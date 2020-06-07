@@ -399,13 +399,7 @@ struct CompiledKernel {
   }
 };
 
-#define MAX_PRINT_ENTRIES 128
-
-struct GLSLRuntime {
-  int rand_state;
-  int msg_count;
-  int msg_buf[MAX_PRINT_ENTRIES];
-} __attribute__((packed));
+#include "taichi/backends/opengl/runtime.h"
 
 struct GLSLLauncherImpl {
   std::unique_ptr<GLSSBO> root_ssbo;
@@ -439,6 +433,45 @@ struct CompiledProgram::Impl {
            KernelParallelAttrib &&kpa) {
     kernels.push_back(std::make_unique<CompiledKernel>(
         kernel_name, kernel_source_code, std::move(kpa)));
+  }
+
+  static void dump_message_buffer(GLSLLauncher *launcher) {
+    auto rt_buf = (GLSLRuntime *)launcher->impl->runtime_ssbo->map();
+
+    auto msg_count = rt_buf->msg_count;
+    if (msg_count > MAX_PRINT_ENTRIES) {
+      TI_WARN(
+          "[glsl] Too much print within one kernel: {} > {}, cutting tail",
+          msg_count, MAX_PRINT_ENTRIES);
+      msg_count = MAX_PRINT_ENTRIES;
+    }
+
+    for (int i = 0; i < msg_count; i++) {
+      int type = rt_buf->msg_buf[i * 2];
+      int value = rt_buf->msg_buf[i * 2 + 1];
+
+      // error: reinterpret_cast from 'int' to 'float' is not allowed
+      union val {
+        int32 val_i32;
+        float32 val_f32;
+      } u;
+      u.val_i32 = value;
+
+      std::string str;
+      switch (type) {
+      case 0:
+        str = fmt::format("{}", u.val_i32);
+        break;
+      case 1:
+        str = fmt::format("{}", u.val_f32);
+        break;
+      default:
+        TI_WARN("[glsl] Unexpected serialization type: {}, ignoring", type);
+      };
+      std::cout << str << std::endl;
+    }
+    rt_buf->msg_count = 0;
+    launcher->impl->runtime_ssbo->unmap();
   }
 
   void launch(Context &ctx, GLSLLauncher *launcher) const {
@@ -497,19 +530,7 @@ struct CompiledProgram::Impl {
       }  // extract back to all extptr from my baseptr
     }
     if (used.print) {
-      auto rt_buf = (GLSLRuntime *)launcher->impl->runtime_ssbo->map();
-      auto msg_count = rt_buf->msg_count;
-      if (msg_count > MAX_PRINT_ENTRIES) {
-        TI_WARN(
-            "[glsl] Too much print within one kernel: {} > {}, cutting tail",
-            msg_count, MAX_PRINT_ENTRIES);
-        msg_count = MAX_PRINT_ENTRIES;
-      }
-      for (int i = 0; i < msg_count; i++) {
-        std::cout << rt_buf->msg_buf[i] << std::endl;
-      }
-      rt_buf->msg_count = 0;
-      launcher->impl->runtime_ssbo->unmap();
+      dump_message_buffer(launcher);
     }
   }
 };

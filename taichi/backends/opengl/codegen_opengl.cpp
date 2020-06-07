@@ -109,13 +109,12 @@ class KernelGen : public IRVisitor {
     emit("}}");
 
     // clang-format off
-    std::string kernel_header = "";
-    kernel_header +=
-      "layout(shared, binding = 6) buffer runtime {\n"
-      "\tint _rand_state_;\n"
-      "\tint _msg_count_;\n"
-      "\tint _mesg_i32_[];\n"
-      "};\n";
+#define __GLSL__
+    std::string kernel_header =
+#include "taichi/backends/opengl/runtime.h"
+      ;
+#undef __GLSL__
+
     kernel_header +=
       "layout(packed, binding = 0) buffer data_i32 { int _data_i32_[]; };\n"
       "layout(packed, binding = 0) buffer data_f32 { float _data_f32_[]; };\n"

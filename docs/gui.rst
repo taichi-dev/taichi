@@ -298,11 +298,7 @@ Image I/O
     :parameter img: (Matrix or Expr) the images you want to export
     :parameter filename: (string) filename you want to save
 
-    Please make sure that the input image is a Taichi tensor of scalar or Vector, and **the tensor has correct shape (height, width, components)**. For example:
-
-
-Here is a simple example:
-
+    Please make sure that the input image is a Taichi tensor of scalar or Vector, and **the tensor has correct shape (height, width, components)**, see ``ti.GUI.set_image``. For example:
 .. code-block:: python
 
     img = ti.imread('hello.png')

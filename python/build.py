@@ -85,7 +85,10 @@ else:
     shutil.copy('../runtimes/RelWithDebInfo/taichi_core.dll',
                 'taichi/lib/taichi_core.pyd')
 
-shutil.copy('../CHANGELOG.md', './taichi/CHANGELOG.md')
+try:
+  shutil.copy('../CHANGELOG.md', './taichi/CHANGELOG.md')
+except FileNotFoundError:
+  pass
 shutil.copytree('../tests/python', './taichi/tests')
 shutil.copytree('../examples', './taichi/examples')
 shutil.copytree('../external/assets', './taichi/assets')

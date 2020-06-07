@@ -5,15 +5,15 @@ language: cpp
 matrix:
   include:
   - os: osx
-    osx_image: xcode10.3
+    osx_image: xcode11.5
     env:
       - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON_VERSION=3.6.1 && PYTHON=python"
   - os: osx
-    osx_image: xcode10.3
+    osx_image: xcode11.5
     env:
       - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON_VERSION=3.7.1 && PYTHON=python"
   - os: osx
-    osx_image: xcode10.3
+    osx_image: xcode11.5
     env:
       - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON_VERSION=3.8.1 && PYTHON=python"
 

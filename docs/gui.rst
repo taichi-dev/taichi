@@ -206,7 +206,7 @@ A *event filter* is a list combined of *key*, *type* and *(type, key)* tuple, e.
     :parameter gui: (GUI)
     :return: (bool) ``True`` if ``ti.GUI.EXIT`` event occurred, vice versa
 
-    ``ti.GUI.EXIT`` occurs when you click on the close button / X button of a widnow.
+    ``ti.GUI.EXIT`` occurs when you click on the close (X) button of a window.
     So ``gui.running`` will obtain ``False`` when the GUI is being closed.
 
     For example, loop until the close button is clicked:

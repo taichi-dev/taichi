@@ -660,8 +660,7 @@ class TaichiMain:
 
         try:
             from multiprocessing import cpu_count
-            threads = min(8,
-                          cpu_count())  # To prevent running out of memory
+            threads = min(8, cpu_count())  # To prevent running out of memory
         except NotImplementedError:
             threads = 2
 

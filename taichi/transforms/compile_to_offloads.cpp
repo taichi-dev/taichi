@@ -81,6 +81,10 @@ void compile_to_offloads(IRNode *ir,
   print("Store forwarded");
   irpass::analysis::verify(ir);
 
+  irpass::flag_access(ir);
+  print("Access flagged I");
+  irpass::analysis::verify(ir);
+
   if (lower_global_access) {
     irpass::lower_access(ir, true);
     print("Access lowered");
@@ -96,7 +100,7 @@ void compile_to_offloads(IRNode *ir,
   irpass::analysis::verify(ir);
 
   irpass::flag_access(ir);
-  print("Access flagged");
+  print("Access flagged II");
   irpass::analysis::verify(ir);
 
   irpass::constant_fold(ir);

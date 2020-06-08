@@ -95,3 +95,22 @@ def test_python_scope_matrix_tensor_matmul():
     # TODO: hook Matrix.Proxy to redirect to at + Matrix.__matmul__
     c = t1.at(None) @ t2.at(None)
     assert np.allclose(c.to_numpy(), a @ b)
+
+@ti.host_arch_only
+def test_constant_matrices():
+    print(ti.cos(ti.math.pi / 3))
+    print(-ti.Vector([2, 3]))
+    print(ti.cos(ti.Vector([2, 3])))
+    print(ti.Vector([2, 3]) + ti.Vector([3, 4]))
+    print(ti.atan2(ti.Vector([2, 3]), ti.Vector([3, 4])))
+    print(ti.Matrix([[2, 3], [4, 5]]) @ ti.Vector([2, 3]))
+    v = ti.Vector([2, 3])
+
+    @ti.kernel
+    def func(t: ti.i32):
+        m = ti.Matrix([[2, 3], [4, t]])
+        print(m @ ti.Vector([2, 3]))
+        m += ti.Matrix([[3, 4], [5, t]])
+        print(m)
+
+    func(5)

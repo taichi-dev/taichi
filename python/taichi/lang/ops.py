@@ -237,12 +237,15 @@ def random(dt=None):
 # TODO: move this to a C++ pass (#944)
 def pow(self, power):
     import taichi as ti
+    if not is_taichi_expr(self) and not is_taichi_expr(power):
+        # Python constant computations (#1188)
+        return raw_pow(self, power)
     if not isinstance(power, int):
         return raw_pow(self, power)
     if power == 0:
         # TODO: remove the hack, use {Expr,Matrix}.dup().fill(1)
         # also note that this can be solved by #940
-        return self * 0 + Expr(1)
+        return self * 0 + 1
 
     negative = power < 0
     # Why not simply use `power = abs(power)`?
@@ -294,7 +297,7 @@ def mul(a, b):
         a, b = wrap_if_not_expr(a), wrap_if_not_expr(b)
         return Expr(taichi_lang_core.expr_mul(a.ptr, b.ptr), tb=stack_info())
     else:
-        return a - b
+        return a * b
 
 
 @binary
@@ -315,7 +318,7 @@ def raw_pow(a, b):
         a, b = wrap_if_not_expr(a), wrap_if_not_expr(b)
         return Expr(taichi_lang_core.expr_pow(a.ptr, b.ptr), tb=stack_info())
     else:
-        return a**b
+        return a ** b
 
 
 @binary
@@ -390,7 +393,7 @@ def cmp_lt(a, b):
         return Expr(taichi_lang_core.expr_cmp_lt(a.ptr, b.ptr),
                     tb=stack_info())
     else:
-        return int(a < b)
+        return -int(a < b)
 
 
 @binary
@@ -400,7 +403,7 @@ def cmp_le(a, b):
         return Expr(taichi_lang_core.expr_cmp_le(a.ptr, b.ptr),
                     tb=stack_info())
     else:
-        return int(a <= b)
+        return -int(a <= b)
 
 
 @binary
@@ -410,7 +413,7 @@ def cmp_gt(a, b):
         return Expr(taichi_lang_core.expr_cmp_gt(a.ptr, b.ptr),
                     tb=stack_info())
     else:
-        return int(a >= b)
+        return -int(a >= b)
 
 
 @binary
@@ -420,7 +423,7 @@ def cmp_ge(a, b):
         return Expr(taichi_lang_core.expr_cmp_ge(a.ptr, b.ptr),
                     tb=stack_info())
     else:
-        return int(a > b)
+        return -int(a > b)
 
 
 @binary
@@ -430,7 +433,7 @@ def cmp_eq(a, b):
         return Expr(taichi_lang_core.expr_cmp_eq(a.ptr, b.ptr),
                     tb=stack_info())
     else:
-        return int(a == b)
+        return -int(a == b)
 
 
 @binary
@@ -440,7 +443,7 @@ def cmp_ne(a, b):
         return Expr(taichi_lang_core.expr_cmp_ne(a.ptr, b.ptr),
                     tb=stack_info())
     else:
-        return int(a != b)
+        return -int(a != b)
 
 
 @binary

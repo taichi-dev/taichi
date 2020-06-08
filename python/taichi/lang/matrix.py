@@ -388,10 +388,9 @@ class Matrix(TaichiOperations):
             ret.entries[i] = impl.cast(ret.entries[i], dt)
         return ret
 
-    @taichi_scope
     def trace(self):
         assert self.n == self.m
-        sum = expr.Expr(self(0, 0))
+        sum = self(0, 0)
         for i in range(1, self.n):
             sum = sum + self(i, i)
         return sum
@@ -450,10 +449,9 @@ class Matrix(TaichiOperations):
 
     inversed = deprecated('a.inversed()', 'a.inverse()')(inverse)
 
-    @taichi_scope
     def normalized(self, eps=0):
         assert self.m == 1
-        invlen = 1.0 / (Matrix.norm(self) + eps)
+        invlen = 1 / (self.norm() + eps)
         return invlen * self
 
     @staticmethod
@@ -465,7 +463,6 @@ class Matrix(TaichiOperations):
     def T(self):
         return self.transpose()
 
-    @taichi_scope
     def transpose(a):
         ret = Matrix.empty(a.m, a.n)
         for i in range(a.n):
@@ -533,60 +530,56 @@ class Matrix(TaichiOperations):
             ret.entries[i] = self.entries[i].grad
         return ret
 
-    @taichi_scope
     def sum(self):
         ret = self.entries[0]
         for i in range(1, len(self.entries)):
             ret = ret + self.entries[i]
         return ret
 
-    @taichi_scope
     def norm(self, l=2, eps=0):
+        import taichi as ti
         assert l == 2
-        return impl.sqrt(self.norm_sqr() + eps)
+        return ti.sqrt(self.norm_sqr() + eps)
 
-    @taichi_scope
     def norm_sqr(self):
         return (self**2).sum()
 
-    @taichi_scope
     def max(self):
+        import taichi as ti
         ret = self.entries[0]
         for i in range(1, len(self.entries)):
-            ret = impl.max(ret, self.entries[i])
+            ret = ti.max(ret, self.entries[i])
         return ret
 
-    @taichi_scope
     def min(self):
+        import taichi as ti
         ret = self.entries[0]
         for i in range(1, len(self.entries)):
-            ret = impl.min(ret, self.entries[i])
+            ret = ti.min(ret, self.entries[i])
         return ret
 
-    @taichi_scope
     def any(self):
         import taichi as ti
-        ret = (self.entries[0] != ti.expr_init(0))
+        ret = ti.cmp_ne(self.entries[0], 0)
         for i in range(1, len(self.entries)):
-            ret = ret + (self.entries[i] != ti.expr_init(0))
-        return -(ret < ti.expr_init(0))
+            ret = ret + ti.cmp_ne(self.entries[i], 0)
+        return ti.cmp_lt(ret, 0)
 
-    @taichi_scope
     def all(self):
         import taichi as ti
-        ret = self.entries[0] != ti.expr_init(0)
+        ret = ti.cmp_ne(self.entries[0], 0)
         for i in range(1, len(self.entries)):
-            ret = ret + (self.entries[i] != ti.expr_init(0))
-        return -(ret == ti.expr_init(-len(self.entries)))
+            ret = ret + ti.cmp_ne(self.entries[i], 0)
+        return ti.cmp_eq(ret, -len(self.entries))
 
     def fill(self, val):
         if impl.inside_kernel():
-
             def assign_renamed(x, y):
                 import taichi as ti
                 return ti.assign(x, y)
 
             return self.element_wise_binary(assign_renamed, val)
+
         if isinstance(val, numbers.Number):
             val = tuple(
                 [tuple([val for _ in range(self.m)]) for _ in range(self.n)])
@@ -772,13 +765,11 @@ class Matrix(TaichiOperations):
         # using matrices as template arguments.
         return id(self)
 
-    @taichi_scope
     def dot(self, other):
         assert self.m == 1
         assert other.m == 1
         return (self.transpose() @ other).subscript(0, 0)
 
-    @taichi_scope
     def cross(self, b):
         if self.n == 3 and self.m == 1 and b.n == 3 and b.m == 1:
             return Matrix([
@@ -795,14 +786,13 @@ class Matrix(TaichiOperations):
                 "Cross product is only supported between pairs of 2D/3D vectors"
             )
 
-    @taichi_scope
     def outer_product(self, b):
         assert self.m == 1
         assert b.m == 1
         c = Matrix(self.n, b.n)
         for i in range(self.n):
             for j in range(b.n):
-                c(i, j).assign(self(i) * b(j))
+                c.set_entry(i, j, self(i) * b(j))
         return c
 
 

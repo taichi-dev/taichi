@@ -105,13 +105,19 @@ def test_constant_matrices():
     print(ti.Vector([2, 3]) + ti.Vector([3, 4]))
     print(ti.atan2(ti.Vector([2, 3]), ti.Vector([3, 4])))
     print(ti.Matrix([[2, 3], [4, 5]]) @ ti.Vector([2, 3]))
-    v = ti.Vector([2, 3])
+    v = ti.Vector([3, 4])
+    w = ti.Vector([5, -12])
+    print(v.normalized())
+    print(v.cross(w))
 
     @ti.kernel
     def func(t: ti.i32):
         m = ti.Matrix([[2, 3], [4, t]])
         print(m @ ti.Vector([2, 3]))
         m += ti.Matrix([[3, 4], [5, t]])
+        print(m @ v)
+        s = w.transpose() @ m
+        print(s)
         print(m)
 
     func(5)

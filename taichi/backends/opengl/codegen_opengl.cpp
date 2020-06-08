@@ -109,8 +109,11 @@ class KernelGen : public IRVisitor {
     emit("}}");
 
     // clang-format off
+#define __GLSL__
     std::string kernel_header =
-      "layout(std430, binding = 6) buffer runtime { int _rand_state_; };\n";
+#include "taichi/backends/opengl/runtime.h"
+      ;
+#undef __GLSL__
     kernel_header +=
       "layout(std430, binding = 0) buffer data_i32 { int _data_i32_[]; };\n"
       "layout(std430, binding = 0) buffer data_f32 { float _data_f32_[]; };\n"
@@ -174,6 +177,11 @@ class KernelGen : public IRVisitor {
 #include "taichi/backends/opengl/shaders/fast_pow.glsl.h"
       );
     }
+    if (used.print) {
+      kernel_header += (
+#include "taichi/backends/opengl/shaders/print.glsl.h"
+      );
+    }
 
     line_appender_header_.append_raw(kernel_header);
 
@@ -191,7 +199,7 @@ class KernelGen : public IRVisitor {
         "#version 430 core\n" + extensions + "precision highp float;\n" +
         line_appender_header_.lines() + line_appender_.lines();
     compiled_program_->add(std::move(glsl_kernel_name_), kernel_src_code,
-                           std::move(kpa), used);
+                           std::move(kpa));
     line_appender_header_.clear_all();
     line_appender_.clear_all();
     kpa = KernelParallelAttrib();
@@ -212,7 +220,31 @@ class KernelGen : public IRVisitor {
   }
 
   void visit(PrintStmt *stmt) override {
-    TI_WARN("Cannot print inside OpenGL kernel, ignored");
+    used.print = true;
+
+    int size = stmt->contents.size();
+    if (size > MAX_CONTENTS_PER_MSG) {
+      TI_WARN("[glsl] printing too much contents: {} > {}, clipping", size,
+              MAX_CONTENTS_PER_MSG);
+    }
+    auto msgid_name = fmt::format("_mi_{}", stmt->short_name());
+    emit("int {} = atomicAdd(_msg_count_, 1);", msgid_name);
+    for (int i = 0; i < size; i++) {
+      auto const &content = stmt->contents[i];
+
+      if (std::holds_alternative<Stmt *>(content)) {
+        auto arg_stmt = std::get<Stmt *>(content);
+        emit("_msg_set_{}({}, {}, {});",
+             opengl_data_type_short_name(arg_stmt->ret_type.data_type),
+             msgid_name, i, arg_stmt->short_name());
+
+      } else {
+        auto str = std::get<std::string>(content);
+        int stridx = compiled_program_->lookup_or_add_string(str);
+        emit("_msg_set_str({}, {}, {});", msgid_name, i, stridx);
+      }
+    }
+    emit("_msg_set_end({}, {});", msgid_name, size);
   }
 
   void visit(RandStmt *stmt) override {
@@ -682,6 +714,8 @@ class KernelGen : public IRVisitor {
   }
 
   std::unique_ptr<CompiledProgram> get_compiled_program() {
+    // We have to set it at the last moment, to get all used feature.
+    compiled_program_->set_used(used);
     return std::move(compiled_program_);
   }
 

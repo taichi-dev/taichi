@@ -19,6 +19,23 @@ def test_python_scope_vector_operations():
 
 
 @ti.host_arch_only
+def test_taichi_scope_vector_operations_with_global_vectors():
+    for ops in vector_operation_types:
+        ti.reset()
+        a, b = test_vector_arrays
+        m1, m2 = ti.Vector(a), ti.Vector(b)
+        c = ti.Vector(2, dt=ti.i32, shape=())
+
+        @ti.kernel
+        def run():
+            c = ops(m1, m2)
+
+        run()
+
+        # assert np.allclose(c.at(None).to_numpy(), ops(a, b))
+
+
+@ti.host_arch_only
 def test_python_scope_matrix_operations():
     for ops in operation_types:
         a, b = test_matrix_arrays

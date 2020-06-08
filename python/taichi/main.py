@@ -656,35 +656,23 @@ class TaichiMain:
         if args.verbose:
             pytest_args += ['-s', '-v']
         if args.rerun:
-            if int(
-                    pytest.main([
-                        os.path.join(root_dir, 'misc/empty_pytest.py'),
-                        '--reruns', '2', '-q'
-                    ])) != 0:
-                sys.exit(
-                    "Plugin pytest-rerunfailures is not available for Pytest!")
             pytest_args += ['--reruns', args.rerun]
-        # TODO: configure the parallel test runner in setup.py
-        # follow https://docs.pytest.org/en/latest/example/simple.html#dynamically-adding-command-line-options
-        if int(
-                pytest.main([
-                    os.path.join(root_dir, 'misc/empty_pytest.py'), '-n1', '-q'
-                ])) == 0:  # test if pytest has xdist or not
-            try:
-                from multiprocessing import cpu_count
-                threads = min(8,
-                              cpu_count())  # To prevent running out of memory
-            except NotImplementedError:
-                threads = 2
+
+        try:
+            from multiprocessing import cpu_count
+            threads = min(8,
+                          cpu_count())  # To prevent running out of memory
+        except NotImplementedError:
+            threads = 2
+
+        if not os.environ.get('TI_DEVICE_MEMORY_GB'):
             os.environ['TI_DEVICE_MEMORY_GB'] = '0.5'  # Discussion: #769
 
-            env_threads = os.environ.get('TI_TEST_THREADS', '')
-            threads = args.threads or env_threads or threads
-            print(f'Starting {threads} testing thread(s)...')
-            if int(threads) > 1:
-                pytest_args += ['-n', str(threads)]
-        else:
-            print("[Warning] Plugin pytest-xdist is not available for Pytest!")
+        env_threads = os.environ.get('TI_TEST_THREADS', '')
+        threads = args.threads or env_threads or threads
+        print(f'Starting {threads} testing thread(s)...')
+        if int(threads) > 1:
+            pytest_args += ['-n', str(threads)]
         return int(pytest.main(pytest_args))
 
     @staticmethod

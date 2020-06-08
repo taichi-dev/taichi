@@ -23,6 +23,10 @@ def is_taichi_expr(a):
     return isinstance(a, Expr)
 
 
+def wrap_if_not_expr(*args):
+    return [Expr(a) if not is_taichi_expr(a) else a for a in args]
+
+
 def unary(foo):
     import taichi as ti
 
@@ -44,21 +48,17 @@ def binary(foo):
     import taichi as ti
 
     @functools.wraps(foo)
-    def imp_foo(x, y):
-        return foo(Expr(x), Expr(y))
-
-    @functools.wraps(foo)
     def rev_foo(x, y):
-        return foo(Expr(y), Expr(x))
+        return foo(y, x)
 
     @functools.wraps(foo)
     def wrapped(a, b):
         if ti.is_taichi_class(a):
-            return a.element_wise_binary(imp_foo, b)
+            return a.element_wise_binary(foo, b)
         elif ti.is_taichi_class(b):
             return b.element_wise_binary(rev_foo, a)
         else:
-            return imp_foo(a, b)
+            return foo(a, b)
 
     binary_ops.append(wrapped)
     return wrapped
@@ -234,33 +234,6 @@ def random(dt=None):
     return Expr(taichi_lang_core.make_rand_expr(dt))
 
 
-@binary
-def add(a, b):
-    return Expr(taichi_lang_core.expr_add(a.ptr, b.ptr), tb=stack_info())
-
-
-@binary
-def sub(a, b):
-    return Expr(taichi_lang_core.expr_sub(a.ptr, b.ptr), tb=stack_info())
-
-
-@binary
-def mul(a, b):
-    return Expr(taichi_lang_core.expr_mul(a.ptr, b.ptr), tb=stack_info())
-
-
-@binary
-def mod(a, b):
-    quotient = Expr(taichi_lang_core.expr_floordiv(a.ptr, b.ptr))
-    multiply = Expr(taichi_lang_core.expr_mul(b.ptr, quotient.ptr))
-    return Expr(taichi_lang_core.expr_sub(a.ptr, multiply.ptr))
-
-
-@binary
-def raw_pow(a, b):
-    return Expr(taichi_lang_core.expr_pow(a.ptr, b.ptr), tb=stack_info())
-
-
 # TODO: move this to a C++ pass (#944)
 def pow(self, power):
     import taichi as ti
@@ -293,88 +266,198 @@ def pow(self, power):
     else:
         return ret
 
-
 # NEXT: add matpow(self, power)
 
 
 @binary
+def add(a, b):
+    if is_taichi_expr(a) or is_taichi_expr(b):
+        a, b = wrap_if_not_expr(a, b)
+        return Expr(taichi_lang_core.expr_add(a.ptr, b.ptr), tb=stack_info())
+    else:
+        return a + b
+
+
+@binary
+def sub(a, b):
+    if is_taichi_expr(a) or is_taichi_expr(b):
+        a, b = wrap_if_not_expr(a, b)
+        return Expr(taichi_lang_core.expr_sub(a.ptr, b.ptr), tb=stack_info())
+    else:
+        return a - b
+
+
+@binary
+def mul(a, b):
+    if is_taichi_expr(a) or is_taichi_expr(b):
+        a, b = wrap_if_not_expr(a, b)
+        return Expr(taichi_lang_core.expr_mul(a.ptr, b.ptr), tb=stack_info())
+    else:
+        return a - b
+
+
+def mod(a, b):
+    if is_taichi_expr(a) or is_taichi_expr(b):
+        a, b = wrap_if_not_expr(a, b)
+        # TODO: add expr_python_mod instead
+        quotient = Expr(taichi_lang_core.expr_floordiv(a.ptr, b.ptr))
+        multiply = Expr(taichi_lang_core.expr_mul(b.ptr, quotient.ptr))
+        return Expr(taichi_lang_core.expr_sub(a.ptr, multiply.ptr))
+    else:
+        return a % b
+
+
+@binary
+def raw_pow(a, b):
+    if is_taichi_expr(a) or is_taichi_expr(b):
+        a, b = wrap_if_not_expr(a, b)
+        return Expr(taichi_lang_core.expr_pow(a.ptr, b.ptr), tb=stack_info())
+    else:
+        return a ** b
+
+
+@binary
 def floordiv(a, b):
-    return Expr(taichi_lang_core.expr_floordiv(a.ptr, b.ptr), tb=stack_info())
+    if is_taichi_expr(a) or is_taichi_expr(b):
+        a, b = wrap_if_not_expr(a, b)
+        return Expr(taichi_lang_core.expr_floordiv(a.ptr, b.ptr), tb=stack_info())
+    else:
+        return a // b
 
 
 @binary
 def truediv(a, b):
-    return Expr(taichi_lang_core.expr_truediv(a.ptr, b.ptr), tb=stack_info())
+    if is_taichi_expr(a) or is_taichi_expr(b):
+        a, b = wrap_if_not_expr(a, b)
+        return Expr(taichi_lang_core.expr_truediv(a.ptr, b.ptr), tb=stack_info())
+    else:
+        return a / b
 
 
 @binary
 def max(a, b):
-    return Expr(taichi_lang_core.expr_max(a.ptr, b.ptr), tb=stack_info())
+    if is_taichi_expr(a) or is_taichi_expr(b):
+        a, b = wrap_if_not_expr(a, b)
+        return Expr(taichi_lang_core.expr_max(a.ptr, b.ptr), tb=stack_info())
+    else:
+        return max(a, b)
 
 
 @binary
 def min(a, b):
-    return Expr(taichi_lang_core.expr_min(a.ptr, b.ptr), tb=stack_info())
+    if is_taichi_expr(a) or is_taichi_expr(b):
+        a, b = wrap_if_not_expr(a, b)
+        return Expr(taichi_lang_core.expr_min(a.ptr, b.ptr), tb=stack_info())
+    else:
+        return min(a, b)
 
 
 @binary
 def atan2(a, b):
-    return Expr(taichi_lang_core.expr_atan2(a.ptr, b.ptr), tb=stack_info())
+    if is_taichi_expr(a) or is_taichi_expr(b):
+        a, b = wrap_if_not_expr(a, b)
+        return Expr(taichi_lang_core.expr_atan2(a.ptr, b.ptr), tb=stack_info())
+    else:
+        return math.atan2(a, b)
 
 
 @binary
 def raw_div(a, b):
-    return Expr(taichi_lang_core.expr_div(a.ptr, b.ptr), tb=stack_info())
+    if is_taichi_expr(a) or is_taichi_expr(b):
+        a, b = wrap_if_not_expr(a, b)
+        return Expr(taichi_lang_core.expr_div(a.ptr, b.ptr), tb=stack_info())
+    else:
+        return a // b  # TODO: Is this correct???
 
 
 @binary
 def raw_mod(a, b):
-    return Expr(taichi_lang_core.expr_mod(a.ptr, b.ptr), tb=stack_info())
+    if is_taichi_expr(a) or is_taichi_expr(b):
+        a, b = wrap_if_not_expr(a, b)
+        return Expr(taichi_lang_core.expr_mod(a.ptr, b.ptr), tb=stack_info())
+    else:
+        return a - b * int(float(a) / b)
 
 
 @binary
 def cmp_lt(a, b):
-    return Expr(taichi_lang_core.expr_cmp_lt(a.ptr, b.ptr), tb=stack_info())
+    if is_taichi_expr(a) or is_taichi_expr(b):
+        a, b = wrap_if_not_expr(a, b)
+        return Expr(taichi_lang_core.expr_cmp_lt(a.ptr, b.ptr), tb=stack_info())
+    else:
+        return int(a < b)
 
 
 @binary
 def cmp_le(a, b):
-    return Expr(taichi_lang_core.expr_cmp_le(a.ptr, b.ptr), tb=stack_info())
+    if is_taichi_expr(a) or is_taichi_expr(b):
+        a, b = wrap_if_not_expr(a, b)
+        return Expr(taichi_lang_core.expr_cmp_le(a.ptr, b.ptr), tb=stack_info())
+    else:
+        return int(a <= b)
 
 
 @binary
 def cmp_gt(a, b):
-    return Expr(taichi_lang_core.expr_cmp_gt(a.ptr, b.ptr), tb=stack_info())
+    if is_taichi_expr(a) or is_taichi_expr(b):
+        a, b = wrap_if_not_expr(a, b)
+        return Expr(taichi_lang_core.expr_cmp_gt(a.ptr, b.ptr), tb=stack_info())
+    else:
+        return int(a >= b)
 
 
 @binary
 def cmp_ge(a, b):
-    return Expr(taichi_lang_core.expr_cmp_ge(a.ptr, b.ptr), tb=stack_info())
+    if is_taichi_expr(a) or is_taichi_expr(b):
+        a, b = wrap_if_not_expr(a, b)
+        return Expr(taichi_lang_core.expr_cmp_ge(a.ptr, b.ptr), tb=stack_info())
+    else:
+        return int(a > b)
 
 
 @binary
 def cmp_eq(a, b):
-    return Expr(taichi_lang_core.expr_cmp_eq(a.ptr, b.ptr), tb=stack_info())
+    if is_taichi_expr(a) or is_taichi_expr(b):
+        a, b = wrap_if_not_expr(a, b)
+        return Expr(taichi_lang_core.expr_cmp_eq(a.ptr, b.ptr), tb=stack_info())
+    else:
+        return int(a == b)
 
 
 @binary
 def cmp_ne(a, b):
-    return Expr(taichi_lang_core.expr_cmp_ne(a.ptr, b.ptr), tb=stack_info())
+    if is_taichi_expr(a) or is_taichi_expr(b):
+        a, b = wrap_if_not_expr(a, b)
+        return Expr(taichi_lang_core.expr_cmp_ne(a.ptr, b.ptr), tb=stack_info())
+    else:
+        return int(a != b)
 
 
 @binary
 def bit_or(a, b):
-    return Expr(taichi_lang_core.expr_bit_or(a.ptr, b.ptr), tb=stack_info())
+    if is_taichi_expr(a) or is_taichi_expr(b):
+        a, b = wrap_if_not_expr(a, b)
+        return Expr(taichi_lang_core.expr_bit_or(a.ptr, b.ptr), tb=stack_info())
+    else:
+        return a | b
 
 
 @binary
 def bit_and(a, b):
-    return Expr(taichi_lang_core.expr_bit_and(a.ptr, b.ptr), tb=stack_info())
+    if is_taichi_expr(a) or is_taichi_expr(b):
+        a, b = wrap_if_not_expr(a, b)
+        return Expr(taichi_lang_core.expr_bit_and(a.ptr, b.ptr), tb=stack_info())
+    else:
+        return a & b
 
 
 @binary
 def bit_xor(a, b):
-    return Expr(taichi_lang_core.expr_bit_xor(a.ptr, b.ptr), tb=stack_info())
+    if is_taichi_expr(a) or is_taichi_expr(b):
+        a, b = wrap_if_not_expr(a, b)
+        return Expr(taichi_lang_core.expr_bit_xor(a.ptr, b.ptr), tb=stack_info())
+    else:
+        return a ^ b
 
 
 # We don't have logic_and/or instructions yet:

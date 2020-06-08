@@ -55,7 +55,7 @@ def test_taichi_scope_matrix_operations_with_global_matrices():
         @ti.kernel
         def run():
             c[None] = ops(m1, m2)
-        
+
         run()
 
         assert np.allclose(c.at(None).to_numpy(), ops(a, b))

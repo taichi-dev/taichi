@@ -165,7 +165,6 @@ class Matrix(TaichiOperations):
                 ret.entries[i] = foo(self.entries[i], other)
         return ret
 
-    @taichi_scope
     def element_wise_unary(self, foo):
         ret = self.empty_copy()
         for i in range(self.n * self.m):

@@ -3,6 +3,7 @@ from .util import *
 from .impl import expr_init
 import numbers
 import functools
+import math
 
 unary_ops = []
 
@@ -18,19 +19,19 @@ def stack_info():
     return '\n'.join(raw.split('\n')[:-5]) + '\n'
 
 
+def is_taichi_expr(a):
+    return isinstance(a, Expr)
+
+
 def unary(foo):
     import taichi as ti
 
     @functools.wraps(foo)
-    def imp_foo(x):
-        return foo(Expr(x))
-
-    @functools.wraps(foo)
     def wrapped(a):
         if ti.is_taichi_class(a):
-            return a.element_wise_unary(imp_foo)
+            return a.element_wise_unary(foo)
         else:
-            return foo(Expr(a))
+            return foo(a)
 
     unary_ops.append(wrapped)
     return wrapped
@@ -107,83 +108,123 @@ def sqr(obj):
 
 
 @unary
-def neg(expr):
-    return Expr(taichi_lang_core.expr_neg(expr.ptr), tb=stack_info())
+def neg(a):
+    if is_taichi_expr(a):
+        return Expr(taichi_lang_core.expr_neg(a.ptr), tb=stack_info())
+    else:
+        return -a
 
 
 @unary
-def sin(expr):
-    return Expr(taichi_lang_core.expr_sin(expr.ptr), tb=stack_info())
+def sin(a):
+    if is_taichi_expr(a):
+        return Expr(taichi_lang_core.expr_sin(a.ptr), tb=stack_info())
+    else:
+        return math.sin(a)
 
 
 @unary
-def cos(expr):
-    return Expr(taichi_lang_core.expr_cos(expr.ptr), tb=stack_info())
+def cos(a):
+    if is_taichi_expr(a):
+        return Expr(taichi_lang_core.expr_cos(a.ptr), tb=stack_info())
+    else:
+        return math.cos(a)
 
 
 @unary
-def asin(expr):
-    return Expr(taichi_lang_core.expr_asin(expr.ptr), tb=stack_info())
+def asin(a):
+    if is_taichi_expr(a):
+        return Expr(taichi_lang_core.expr_asin(a.ptr), tb=stack_info())
+    else:
+        return math.asin(a)
 
 
 @unary
-def acos(expr):
-    return Expr(taichi_lang_core.expr_acos(expr.ptr), tb=stack_info())
+def acos(a):
+    if is_taichi_expr(a):
+        return Expr(taichi_lang_core.expr_acos(a.ptr), tb=stack_info())
+    else:
+        return math.acos(a)
 
 
 @unary
-def sqrt(expr):
-    return Expr(taichi_lang_core.expr_sqrt(expr.ptr), tb=stack_info())
+def sqrt(a):
+    if is_taichi_expr(a):
+        return Expr(taichi_lang_core.expr_sqrt(a.ptr), tb=stack_info())
+    else:
+        return math.sqrt(a)
 
 
 @unary
-def floor(expr):
-    return Expr(taichi_lang_core.expr_floor(expr.ptr), tb=stack_info())
+def floor(a):
+    if is_taichi_expr(a):
+        return Expr(taichi_lang_core.expr_floor(a.ptr), tb=stack_info())
+    else:
+        return math.floor(a)
 
 
 @unary
-def ceil(expr):
-    return Expr(taichi_lang_core.expr_ceil(expr.ptr), tb=stack_info())
+def ceil(a):
+    if is_taichi_expr(a):
+        return Expr(taichi_lang_core.expr_ceil(a.ptr), tb=stack_info())
+    else:
+        return math.ceil(a)
 
 
 @unary
-def inv(expr):
-    return Expr(taichi_lang_core.expr_inv(expr.ptr), tb=stack_info())
+def tan(a):
+    if is_taichi_expr(a):
+        return Expr(taichi_lang_core.expr_tan(a.ptr), tb=stack_info())
+    else:
+        return math.tan(a)
 
 
 @unary
-def tan(expr):
-    return Expr(taichi_lang_core.expr_tan(expr.ptr), tb=stack_info())
+def tanh(a):
+    if is_taichi_expr(a):
+        return Expr(taichi_lang_core.expr_tanh(a.ptr), tb=stack_info())
+    else:
+        return math.tanh(a)
 
 
 @unary
-def tanh(expr):
-    return Expr(taichi_lang_core.expr_tanh(expr.ptr), tb=stack_info())
+def exp(a):
+    if is_taichi_expr(a):
+        return Expr(taichi_lang_core.expr_exp(a.ptr), tb=stack_info())
+    else:
+        return math.exp(a)
 
 
 @unary
-def exp(expr):
-    return Expr(taichi_lang_core.expr_exp(expr.ptr), tb=stack_info())
+def log(a):
+    if is_taichi_expr(a):
+        return Expr(taichi_lang_core.expr_log(a.ptr), tb=stack_info())
+    else:
+        return math.log(a)
 
 
 @unary
-def log(expr):
-    return Expr(taichi_lang_core.expr_log(expr.ptr), tb=stack_info())
+def abs(a):
+    if is_taichi_expr(a):
+        return Expr(taichi_lang_core.expr_abs(a.ptr), tb=stack_info())
+    else:
+        return abs(a)
 
 
 @unary
-def abs(expr):
-    return Expr(taichi_lang_core.expr_abs(expr.ptr), tb=stack_info())
+def bit_not(a):
+    if is_taichi_expr(a):
+        return Expr(taichi_lang_core.expr_bit_not(a.ptr), tb=stack_info())
+    else:
+        return ~a
 
 
 @unary
-def bit_not(expr):
-    return Expr(taichi_lang_core.expr_bit_not(expr.ptr), tb=stack_info())
-
-
-@unary
-def logical_not(expr):
-    return Expr(taichi_lang_core.expr_logic_not(expr.ptr), tb=stack_info())
+def logical_not(a):
+    if is_taichi_expr(a):
+        return Expr(taichi_lang_core.expr_logic_not(a.ptr), tb=stack_info())
+    else:
+        return int(not a)
 
 
 def random(dt=None):

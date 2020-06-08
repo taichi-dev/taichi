@@ -146,9 +146,6 @@ class Matrix(TaichiOperations):
                 "Matrices with mixed global/local entries are not allowed"
         return results[0]
 
-    def is_pyconstant(self):
-        return all([not isinstance(e, expr.Expr) for e in self.entries])
-
     @staticmethod
     def make_from_numpy(nparray):
         return Matrix(nparray)
@@ -182,7 +179,7 @@ class Matrix(TaichiOperations):
 
     def __matmul__(self, other):
         # TODO: move to common_ops.py, redirect to `ti.matmul` too?
-        if self.is_pyconstant():
+        if not impl.inside_kernel():
             return self.make_from_numpy(self.to_numpy() @ other.to_numpy())
 
         assert self.m == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
@@ -633,7 +630,7 @@ class Matrix(TaichiOperations):
         as_vector = self.m == 1 and not keep_dims
         shape_ext = (self.n, ) if as_vector else (self.n, self.m)
 
-        if self.is_pyconstant():
+        if not impl.inside_kernel():
             return np.array(self.entries).reshape(shape_ext)
 
         ret = np.empty(self.loop_range().shape() + shape_ext,

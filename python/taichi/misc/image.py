@@ -15,16 +15,15 @@ def imwrite(img, filename):
 
     assert len(img.shape) in [2,
                               3], "Image must be either RGB/RGBA or greyscale"
-    assert img.shape[2] in [1, 3,
-                            4], "Image must be either RGB/RGBA or greyscale"
 
     resx, resy = img.shape[:2]
     if len(img.shape) == 2:
         comp = 1
     else:
         comp = img.shape[2]
+    assert comp in [1, 3, 4], "Image must be either RGB/RGBA or greyscale"
 
-    img = np.ascontiguousarray(img.swapaxes(0, 1)[::-1, :, :])
+    img = np.ascontiguousarray(img.swapaxes(0, 1)[::-1, :])
     ptr = img.ctypes.data
     ti.core.imwrite(filename, ptr, resx, resy, comp)
 

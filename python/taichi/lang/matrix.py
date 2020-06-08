@@ -32,7 +32,7 @@ class Matrix(TaichiOperations):
             warnings.warn(
                 f"ti.Matrix(rows=[...]) or ti.Matrix(cols=[...]) is deprecated, use ti.Matrix.rows([...]) or ti.Matrix.cols([...]) instead.",
                 DeprecationWarning,
-                stacklevel=3)
+                stacklevel=2)
             if rows is not None and cols is not None:
                 raise Exception("cannot specify both rows and columns")
             self.dt = dt
@@ -48,7 +48,7 @@ class Matrix(TaichiOperations):
             warnings.warn(
                 f"ti.Matrix(n, m, empty=True) is deprecated, use ti.Matrix.empty(n, m) instead",
                 DeprecationWarning,
-                stacklevel=3)
+                stacklevel=2)
             self.dt = dt
             self.entries = [[None] * m for _ in range(n)]
             return
@@ -159,7 +159,6 @@ class Matrix(TaichiOperations):
             for i in range(self.n * self.m):
                 ret.entries[i] = foo(self.entries[i], other.entries[i])
         else:  # assumed to be scalar
-            other = expr.Expr(other)
             for i in range(self.n * self.m):
                 ret.entries[i] = foo(self.entries[i], other)
         return ret
@@ -171,17 +170,14 @@ class Matrix(TaichiOperations):
         return ret
 
     def __matmul__(self, other):
-        # TODO: move to common_ops.py, redirect to `ti.matmul` too?
-        if self.is_pyconstant():
-            return self.make_from_numpy(self.to_numpy() @ other.to_numpy())
-
         assert self.m == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
-        ret = Matrix(self.n, other.m)
+        ret = Matrix.empty(self.n, other.m)
         for i in range(self.n):
             for j in range(other.m):
-                ret(i, j).assign(self(i, 0) * other(0, j))
+                ret_ij = ret.linearize_entry_id(i, j)
+                ret.entries[ret_ij] = self(i, 0) * other(0, j)
                 for k in range(1, other.n):
-                    ret(i, j).assign(ret(i, j) + self(i, k) * other(k, j))
+                    ret.entries[ret_ij] = ret(i, j) + self(i, k) * other(k, j)
         return ret
 
     def linearize_entry_id(self, *args):

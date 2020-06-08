@@ -16,34 +16,18 @@ class TaichiOperations:
         return ti.abs(self)
 
     def __add__(self, other):
-        if self.is_pyconstant():
-            return self.make_from_numpy(self.to_numpy() +
-                                        numpy_or_constant(other))
-
         import taichi as ti
         return ti.add(self, other)
 
     def __radd__(self, other):
-        if self.is_pyconstant():
-            return self.make_from_numpy(
-                numpy_or_constant(other) + self.to_numpy())
-
         import taichi as ti
         return ti.add(other, self)
 
     def __sub__(self, other):
-        if self.is_pyconstant():
-            return self.make_from_numpy(self.to_numpy() -
-                                        numpy_or_constant(other))
-
         import taichi as ti
         return ti.sub(self, other)
 
     def __rsub__(self, other):
-        if self.is_pyconstant():
-            return self.make_from_numpy(
-                numpy_or_constant(other) - self.to_numpy())
-
         import taichi as ti
         return ti.sub(other, self)
 

@@ -43,6 +43,7 @@ def main(ver='master', repo_dir='.'):
         'linux': 'Linux',
         'mac': 'Mac OS X',
         'windows': 'Windows',
+        'perf': 'Performance improvements',
         'release': '',
     }
 

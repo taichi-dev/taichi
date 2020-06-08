@@ -116,12 +116,13 @@ class AlgSimp : public BasicStmtVisitor {
           modifier.erase(stmt);
         }
       }
-    } else if (stmt->op_type == BinaryOpType::pow) {
-      if (alg_is_one(rhs)) {
+    } else if (rhs && stmt->op_type == BinaryOpType::pow) {
+      float64 exponent = rhs->val[0].val_cast_to_float64();
+      if (exponent == 1) {
         // a ** 1 -> a
         stmt->replace_with(stmt->lhs);
         modifier.erase(stmt);
-      } else if (alg_is_zero(rhs)) {
+      } else if (exponent == 0) {
         // a ** 0 -> 1
         auto one = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(1));
         auto one_raw = one.get();
@@ -129,32 +130,26 @@ class AlgSimp : public BasicStmtVisitor {
         cast_to_result_type(one_raw, stmt);
         stmt->replace_with(one_raw);
         modifier.erase(stmt);
-      } else if (alg_is_two(rhs)) {
-        // a ** 2.0 -> a * a
+      } else if (exponent == 0.5) {
+        // a ** 0.5 -> sqrt(a)
         auto a = stmt->lhs;
         cast_to_result_type(a, stmt);
-        auto product = Stmt::make<BinaryOpStmt>(BinaryOpType::mul, a, a);
-        product->ret_type.data_type = a->ret_type.data_type;
-        stmt->replace_with(product.get());
-        modifier.insert_before(stmt, std::move(product));
+        auto result = Stmt::make<UnaryOpStmt>(UnaryOpType::sqrt, a);
+        result->ret_type.data_type = a->ret_type.data_type;
+        stmt->replace_with(result.get());
+        modifier.insert_before(stmt, std::move(result));
         modifier.erase(stmt);
-      } else if (rhs && is_integral(rhs->ret_type.data_type) &&
-                 ((is_signed(rhs->ret_type.data_type) &&
-                   rhs->val[0].val_int() >= 0 &&
-                   rhs->val[0].val_int() <= max_weaken_exponent) ||
-                  (is_unsigned(rhs->ret_type.data_type) &&
-                   rhs->val[0].val_uint() <= max_weaken_exponent))) {
+      } else if (exponent == std::round(exponent) && exponent > 0 &&
+                 exponent <= max_weaken_exponent) {
         // a ** n -> Exponentiation by squaring
         auto a = stmt->lhs;
         cast_to_result_type(a, stmt);
-        int exponent = is_signed(rhs->ret_type.data_type)
-                           ? (int)rhs->val[0].val_int()
-                           : (int)rhs->val[0].val_uint();
+        const int exp = exponent;
         Stmt *result = nullptr;
         auto a_power_of_2 = a;
         int current_exponent = 1;
         while (true) {
-          if (exponent & current_exponent) {
+          if (exp & current_exponent) {
             if (!result)
               result = a_power_of_2;
             else {
@@ -166,7 +161,7 @@ class AlgSimp : public BasicStmtVisitor {
             }
           }
           current_exponent <<= 1;
-          if (current_exponent > exponent)
+          if (current_exponent > exp)
             break;
           auto new_a_power = Stmt::make<BinaryOpStmt>(
               BinaryOpType::mul, a_power_of_2, a_power_of_2);
@@ -176,24 +171,21 @@ class AlgSimp : public BasicStmtVisitor {
         }
         stmt->replace_with(result);
         modifier.erase(stmt);
-      } else if (rhs && is_integral(rhs->ret_type.data_type) &&
-                 is_signed(rhs->ret_type.data_type) &&
-                 rhs->val[0].val_int() < 0 &&
-                 rhs->val[0].val_int() >= -max_weaken_exponent) {
+      } else if (exponent == std::round(exponent) && exponent < 0 &&
+                 exponent >= -max_weaken_exponent) {
         // a ** -n -> 1 / a ** n
         auto one = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(1));
         auto one_raw = one.get();
         modifier.insert_before(stmt, std::move(one));
         cast_to_result_type(one_raw, stmt);
-        auto exponent =
-            Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(-rhs->val[0]));
+        auto new_exponent = Stmt::make<UnaryOpStmt>(UnaryOpType::neg, rhs);
         auto a_to_n = Stmt::make<BinaryOpStmt>(BinaryOpType::pow, stmt->lhs,
-                                               exponent.get());
+                                               new_exponent.get());
         a_to_n->ret_type.data_type = stmt->ret_type.data_type;
         auto result =
             Stmt::make<BinaryOpStmt>(BinaryOpType::div, one_raw, a_to_n.get());
         stmt->replace_with(result.get());
-        modifier.insert_before(stmt, std::move(exponent));
+        modifier.insert_before(stmt, std::move(new_exponent));
         modifier.insert_before(stmt, std::move(a_to_n));
         modifier.insert_before(stmt, std::move(result));
         modifier.erase(stmt);

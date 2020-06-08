@@ -28,11 +28,11 @@ def test_taichi_scope_vector_operations_with_global_vectors():
 
         @ti.kernel
         def run():
-            c = ops(m1, m2)
+            c[None] = ops(m1, m2)
 
         run()
 
-        # assert np.allclose(c.at(None).to_numpy(), ops(a, b))
+        assert np.allclose(c.at(None).to_numpy(), ops(a, b))
 
 
 @ti.host_arch_only
@@ -42,6 +42,23 @@ def test_python_scope_matrix_operations():
         m1, m2 = ti.Matrix(a), ti.Matrix(b)
         c = ops(m1, m2)
         assert np.allclose(c.to_numpy(), ops(a, b))
+
+
+@ti.host_arch_only
+def test_taichi_scope_matrix_operations_with_global_matrices():
+    for ops in operation_types:
+        ti.reset()
+        a, b = test_matrix_arrays
+        m1, m2 = ti.Matrix(a), ti.Matrix(b)
+        c = ti.Matrix(2, 2, dt=ti.i32, shape=())
+
+        @ti.kernel
+        def run():
+            c[None] = ops(m1, m2)
+        
+        run()
+
+        assert np.allclose(c.at(None).to_numpy(), ops(a, b))
 
 
 # TODO: Loops inside the function will cause AssertionError:

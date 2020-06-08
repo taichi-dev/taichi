@@ -96,6 +96,7 @@ def test_python_scope_matrix_tensor_matmul():
     c = t1.at(None) @ t2.at(None)
     assert np.allclose(c.to_numpy(), a @ b)
 
+
 @ti.host_arch_only
 def test_constant_matrices():
     print(ti.cos(ti.math.pi / 3))

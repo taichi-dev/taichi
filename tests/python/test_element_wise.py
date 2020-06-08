@@ -9,8 +9,8 @@ def _c_mod(a, b):
     return a - b * int(float(a) / b)
 
 
-@pytest.mark.parametrize('lhs_is_mat,rhs_is_mat',
-        [(True, True), (True, False), (False, True)])
+@pytest.mark.parametrize('lhs_is_mat,rhs_is_mat', [(True, True), (True, False),
+                                                   (False, True)])
 @ti.all_archs
 def test_binary_f(lhs_is_mat, rhs_is_mat):
     x = ti.Matrix(3, 2, ti.f32, 16)

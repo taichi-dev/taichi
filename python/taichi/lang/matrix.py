@@ -574,6 +574,7 @@ class Matrix(TaichiOperations):
 
     def fill(self, val):
         if impl.inside_kernel():
+
             def assign_renamed(x, y):
                 import taichi as ti
                 return ti.assign(x, y)

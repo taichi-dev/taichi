@@ -318,7 +318,7 @@ def raw_pow(a, b):
         a, b = wrap_if_not_expr(a), wrap_if_not_expr(b)
         return Expr(taichi_lang_core.expr_pow(a.ptr, b.ptr), tb=stack_info())
     else:
-        return a ** b
+        return a**b
 
 
 @binary

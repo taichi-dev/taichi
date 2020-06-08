@@ -296,6 +296,7 @@ def mul(a, b):
         return a - b
 
 
+@binary
 def mod(a, b):
     if is_taichi_expr(a) or is_taichi_expr(b):
         a, b = wrap_if_not_expr(a, b)

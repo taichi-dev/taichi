@@ -145,7 +145,6 @@ class Matrix(TaichiOperations):
     def make_from_numpy(nparray):
         return Matrix(nparray)
 
-    @taichi_scope
     def element_wise_binary(self, foo, other):
         ret = self.empty_copy()
         if isinstance(other, (list, tuple)):

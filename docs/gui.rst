@@ -314,12 +314,76 @@ A *event filter* is a list combined of *key*, *type* and *(type, key)* tuple, e.
 Image I/O
 ---------
 
+.. function:: ti.imwrite(img, filename)
+
+    :parameter img: (Matrix or Expr) the images you want to export. 
+    :parameter filename: (string) the location you want to save to
+
+    Export a ``np.ndarray`` or Taichi tensor(``ti.Matrix``, ``ti.Vector``, or ``ti.var``) to a specified location ``filename``.
+    
+    Though ``ti.imwrite`` supports exporting images in ``png``, ``img`` and ``jpg``, we recommend to use ``png``.Same as ``ti.GUI.show(filename)``, The format of exported image is determinted by **the suffix of ``filename``** as well.
+
+    Please make sure that the input image has **a valid shape**. If you want to export a grayscale image, the input shape of tensor should be ``(height, weight)`` or ``(height, weight, 1)``
+    For RGB or RGBA images, ``ti.imwrite`` needs to receve a tensor which has shape ``(height, width, 3)`` and ``(height, width, 4)`` individually. For example:
+
+    .. code-block:: python
+
+        import taichi as ti
+
+        ti.init()
+
+        shape = (512, 512)
+        type = ti.u8
+        pixels = ti.var(dt=type, shape=shape)
+
+        @ti.kernel
+        def draw():
+            for i, j in pixels:
+                pixels[i, j] = ti.random() * 255
+
+        draw()
+
+        ti.imwrite(pixels, f"export_u8.png")
+
+    Generally the value of the pixels on each channel of a ``png`` image is integars in [0, 255]. For this reason, ``ti.imwrite`` will **cast tensors** which has different datatypes all **into integars between [0, 255]**.This casting procedure differs from datatypes:
+
+    - For float-type(ti.f16, ti.f32, etc) tensors, the value of each pixels should be float between [0.0, 1.0]. Otherwise ``ti.imwrite`` will first clip them into [0.0, 1.0]. And then they are multiplied by 256 and **casted to integaters ranging from [0, 255]**
+
+    - For int-type tensors (ti.u8, ti.u16), the value of each pixels can be any valid integar in its own bounds. These integars in this intensor will **be scaled to [0, 255]** by being divided over the upper bound of its basic type accordingly.
+
+    Here is another example:
+
+    .. code-block:: python
+
+        import taichi as ti
+
+        ti.init()
+
+        shape = (512, 512)
+        channels = 3
+        type = ti.f32
+        pixels = ti.Matrix(channels, dt=type, shape=shape)
+
+        @ti.kernel
+        def draw():
+            for i, j in pixels:
+                for k in ti.static(range(channels)):
+                    pixels[i, j][k] = ti.random()
+
+        draw()
+
+        ti.imwrite(pixels, f"export_f32.png")
+
 .. function:: ti.imread(filename, channels=0)
 
     :parameter filename: (string) the filename of the image to load
-    :parameter channels: (int) the number of channels in your specified image. The default value ``0`` means the channels of the returned image is adaptive to the image file.
+    :parameter channels: (optional int) the number of channels in your specified image. The default value ``0`` means the channels of the returned image is adaptive to the image file.
 
-    This function loads an image from the target filename and returns it as a ``np.ndarray``.
+    :return: (np.ndarray) the image read from ``filename``
+
+    This function loads an image from the target filename and returns it as a ``np.ndarray(dt=np.uint8)``. 
+    
+    Each value in this returned tensor is integers in [0, 255]
 
 .. function:: ti.imshow(img, windname)
 
@@ -328,14 +392,4 @@ Image I/O
 
     This function will create an instance of ``ti.GUI`` and show the input image on the screen.
 
-.. function:: ti.imwrite(img, filename)
-
-    :parameter img: (Matrix or Expr) the images you want to export
-    :parameter filename: (string) filename you want to save
-
-    Please make sure that the input image is a Taichi tensor of scalar or Vector, and **the tensor has correct shape (height, width, components)**, see ``ti.GUI.set_image``. For example:
-.. code-block:: python
-
-    img = ti.imread('hello.png')
-    ti.imshow(img, 'Window Title')
-    ti.imwrite(img, 'hello2.png')
+    It has the same logic as ``ti.imwrite`` for differnt datatypes.

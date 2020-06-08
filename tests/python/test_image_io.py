@@ -6,7 +6,8 @@ import os
 
 # jpg is also supported but hard to test here since it's lossy:
 @pytest.mark.parametrize('resx,resy', [(201, 173)])
-@pytest.mark.parametrize('comp,ext', [(3, 'bmp'), (1, 'png'), (3, 'png'), (4, 'png')])
+@pytest.mark.parametrize('comp,ext', [(3, 'bmp'), (1, 'png'), (3, 'png'),
+                                      (4, 'png')])
 @ti.host_arch_only
 def test_image_io(resx, resy, comp, ext):
     from tempfile import mkstemp

@@ -36,8 +36,6 @@ setuptools.setup(
         # For testing:
         'pytest',
         'pytest-xdist',
-        'pytest-rerunfailures',
-        'pytest-cov',
     ],
     data_files=[('lib', data_files)],
     keywords=['graphics', 'simulation'],

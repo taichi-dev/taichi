@@ -146,13 +146,23 @@ void GUI::create_window() {
 
   RegisterClass(&wc);
 
+  RECT window_rect;
+  window_rect.left = 0;
+  window_rect.right = width;
+  window_rect.top = 0;
+  window_rect.bottom = height;
+
+  AdjustWindowRect(&window_rect, WS_OVERLAPPEDWINDOW, false);
+
   hwnd = CreateWindowEx(0,           // Optional window styles.
                         CLASS_NAME,  // Window class
                         std::wstring(window_name.begin(), window_name.end())
                             .data(),          // Window text
                         WS_OVERLAPPEDWINDOW,  // Window style
                         // Size and position
-                        CW_USEDEFAULT, CW_USEDEFAULT, width + 16, height + 32,
+                        CW_USEDEFAULT, CW_USEDEFAULT,
+                        window_rect.right - window_rect.left,
+                        window_rect.bottom - window_rect.top,
                         NULL,                // Parent window
                         NULL,                // Menu
                         GetModuleHandle(0),  // Instance handle

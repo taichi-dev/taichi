@@ -44,7 +44,7 @@ CUDADriver::CUDADriver() {
     driver_get_version(&version);
 
     TI_INFO("CUDA driver API (v{}.{}) loaded.", version / 1000,
-             version % 1000 / 10);
+            version % 1000 / 10);
   } else {
     TI_DEBUG("CUDA driver not found.");
   }

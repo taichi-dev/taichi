@@ -781,7 +781,8 @@ class TaichiMain:
             default=None,
             dest='cov_append',
             action='store_true',
-            help='Append coverage result to existing one instead of overriding it')
+            help=
+            'Append coverage result to existing one instead of overriding it')
         parser.add_argument(
             '-t',
             '--threads',

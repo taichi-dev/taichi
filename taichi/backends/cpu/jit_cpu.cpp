@@ -102,6 +102,7 @@ class JITSessionCPU : public JITSession {
 
   JITModule *add_module(std::unique_ptr<llvm::Module> M) override {
     TI_ASSERT(M);
+    TI_TAG;
     global_optimize_module_cpu(M);
     std::lock_guard<std::mutex> _(mut);
     auto &dylib = ES.createJITDylib(fmt::format("{}", module_counter));
@@ -110,13 +111,17 @@ class JITSessionCPU : public JITSession {
     auto *thread_safe_context = get_current_program()
                                     .get_llvm_context(host_arch())
                                     ->get_this_thread_thread_safe_context();
+    TI_TAG;
     cantFail(compile_layer.add(dylib, llvm::orc::ThreadSafeModule(
                                           std::move(M), *thread_safe_context)));
     all_libs.push_back(&dylib);
+    TI_TAG;
     auto new_module = std::make_unique<JITModuleCPU>(this, &dylib);
     auto new_module_raw_ptr = new_module.get();
+    TI_TAG;
     modules.push_back(std::move(new_module));
     module_counter++;
+    TI_TAG;
     return new_module_raw_ptr;
   }
 

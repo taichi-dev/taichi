@@ -16,11 +16,14 @@ StructCompilerLLVM::StructCompilerLLVM(Program *prog, Arch arch)
       LLVMModuleBuilder(prog->get_llvm_context(arch)->clone_runtime_module(),
                         prog->get_llvm_context(arch)),
       arch(arch) {
+  TI_TAG;
   tlctx = prog->get_llvm_context(arch);
   llvm_ctx = tlctx->get_this_thread_context();
+  TI_TAG;
 }
 
 void StructCompilerLLVM::generate_types(SNode &snode) {
+  TI_TAG;
   TI_AUTO_PROF;
   auto type = snode.type;
   llvm::Type *node_type = nullptr;
@@ -96,6 +99,7 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
 }
 
 void StructCompilerLLVM::generate_refine_coordinates(SNode *snode) {
+  TI_TAG;
   TI_AUTO_PROF;
   auto coord_type = get_runtime_type("PhysicalCoordinates");
   auto coord_type_ptr = llvm::PointerType::get(coord_type, 0);
@@ -195,9 +199,11 @@ std::string StructCompilerLLVM::type_stub_name(SNode *snode) {
 
 void StructCompilerLLVM::run(SNode &root, bool host) {
   TI_AUTO_PROF;
+  TI_TAG;
   // bottom to top
   collect_snodes(root);
 
+  TI_TAG;
   if (host)
     infer_snode_properties(root);
 
@@ -208,23 +214,32 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
     generate_types(*n);
 
   generate_child_accessors(root);
+  TI_TAG;
 
   if (prog->config.print_struct_llvm_ir) {
     TI_INFO("Struct Module IR");
     module->print(errs(), nullptr);
   }
+  TI_TAG;
 
   TI_ASSERT((int)snodes.size() <= taichi_max_num_snodes);
 
+  TI_TAG;
+  TI_TAG;
   auto node_type = get_llvm_node_type(module.get(), &root);
+  TI_TAG;
   root_size = tlctx->get_data_layout().getTypeAllocSize(node_type);
+  TI_TAG;
 
+  TI_TAG;
   tlctx->set_struct_module(module);
+  TI_TAG;
 }
 
 llvm::Type *StructCompilerLLVM::get_stub(llvm::Module *module,
                                          SNode *snode,
                                          uint32 index) {
+  TI_TAG;
   TI_ASSERT(module);
   TI_ASSERT(snode);
   auto stub = module->getTypeByName(type_stub_name(snode));

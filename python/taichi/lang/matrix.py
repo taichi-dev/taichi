@@ -6,6 +6,7 @@ import numpy as np
 from .util import taichi_scope, python_scope, deprecated, to_numpy_type, to_pytorch_type
 from .common_ops import TaichiOperations
 from collections.abc import Iterable
+import warnings
 
 
 class Matrix(TaichiOperations):
@@ -25,39 +26,33 @@ class Matrix(TaichiOperations):
                  keep_raw=False,
                  rows=None,
                  cols=None):
-        # TODO: refactor: use multiple initializer like `ti.Matrix.cols([a, b, c])`
-        # and `ti.Matrix.empty(n, m)` instead of ad-hoc `ti.Matrix(cols=[a, b, c])`.
         self.grad = None
         # construct from rows or cols
         if rows is not None or cols is not None:
+            warnings.warn(
+                f"ti.Matrix(rows=[...]) or ti.Matrix(cols=[...]) is deprecated, use ti.Matrix.rows([...]) or ti.Matrix.cols([...]) instead.",
+                DeprecationWarning,
+                stacklevel=3)
             if rows is not None and cols is not None:
                 raise Exception("cannot specify both rows and columns")
-            if cols is not None:
-                rows = cols
-            self.n = len(rows)
-            if isinstance(rows[0], Matrix):
-                for row in rows:
-                    assert row.m == 1, "inputs must be vectors, ie. size n by 1"
-                    assert row.n == rows[
-                        0].n, "input vectors must be the same shape"
-                self.m = rows[0].n
-                # l-value copy:
-                self.entries = [row(i) for row in rows for i in range(row.n)]
-            elif isinstance(rows[0], list):
-                for row in rows:
-                    assert len(row) == len(
-                        rows[0]), "input lists must be the same shape"
-                self.m = len(rows[0])
-                # l-value copy:
-                self.entries = [x for row in rows for x in row]
-            else:
-                raise Exception(
-                    "rows/cols must be list of lists or lists of vectors")
-            if cols is not None:
-                t = self.transpose()
-                self.n = t.n
-                self.m = t.m
-                self.entries = t.entries
+            self.dt = dt
+            import taichi as ti
+            mat = ti.Matrix.cols(cols) if cols is not None else ti.Matrix.rows(
+                rows)
+            self.n = mat.n
+            self.m = mat.m
+            self.entries = mat.entries
+            return
+
+        elif empty == True:
+            warnings.warn(
+                f"ti.Matrix(n, m, empty=True) is deprecated, use ti.Matrix.empty(n, m) instead",
+                DeprecationWarning,
+                stacklevel=3)
+            self.dt = dt
+            self.entries = [[None] * m for _ in range(n)]
+            return
+
         elif isinstance(n, (list, tuple, np.ndarray)):
             if len(n) == 0:
                 mat = []
@@ -87,17 +82,14 @@ class Matrix(TaichiOperations):
             self.n = n
             self.m = m
             self.dt = dt
-            if empty:
-                self.entries = [None] * n * m
+            if dt is None:
+                for i in range(n * m):
+                    self.entries.append(impl.expr_init(None))
             else:
-                if dt is None:
-                    for i in range(n * m):
-                        self.entries.append(impl.expr_init(None))
-                else:
-                    assert not impl.inside_kernel()
-                    for i in range(n * m):
-                        self.entries.append(impl.var(dt))
-                    self.grad = self.make_grad()
+                assert not impl.inside_kernel()
+                for i in range(n * m):
+                    self.entries.append(impl.var(dt))
+                self.grad = self.make_grad()
 
         if layout is not None:
             assert shape is not None, 'layout is useless without shape'
@@ -370,7 +362,8 @@ class Matrix(TaichiOperations):
         return ret
 
     def empty_copy(self):
-        return Matrix(self.n, self.m, empty=True)
+        import taichi as ti
+        return ti.Matrix.empty(self.n, self.m)
 
     def zeros_copy(self):
         return Matrix(self.n, self.m)
@@ -480,7 +473,7 @@ class Matrix(TaichiOperations):
 
     @taichi_scope
     def transpose(a):
-        ret = Matrix(a.m, a.n, empty=True)
+        ret = Matrix.empty(a.m, a.n)
         for i in range(a.n):
             for j in range(a.m):
                 ret.set_entry(j, i, a(i, j))
@@ -737,6 +730,47 @@ class Matrix(TaichiOperations):
         import taichi as ti
         return ti.Matrix([[ti.cos(alpha), -ti.sin(alpha)],
                           [ti.sin(alpha), ti.cos(alpha)]])
+
+    @staticmethod
+    def var(n, m, dt, **kwargs):
+        import taichi as ti
+        return ti.Matrix(n=n, m=m, dt=dt, **kwargs)
+
+    @staticmethod
+    def rows(rows):
+        import taichi as ti
+        mat = ti.Matrix()
+        mat.n = len(rows)
+        if isinstance(rows[0], Matrix):
+            for row in rows:
+                assert row.m == 1, "Inputs must be vectors, i.e. m == 1"
+                assert row.n == rows[
+                    0].n, "Input vectors must share the same shape"
+            mat.m = rows[0].n
+            # l-value copy:
+            mat.entries = [row(i) for row in rows for i in range(row.n)]
+        elif isinstance(rows[0], list):
+            for row in rows:
+                assert len(row) == len(
+                    rows[0]), "Input lists share the same shape"
+            mat.m = len(rows[0])
+            # l-value copy:
+            mat.entries = [x for row in rows for x in row]
+        else:
+            raise Exception(
+                "Cols/rows must be a list of lists, or a list of vectors")
+        return mat
+
+    @staticmethod
+    def cols(cols):
+        import taichi as ti
+        return ti.Matrix.rows(cols).transpose()
+
+    @staticmethod
+    def empty(n, m):
+        import taichi as ti
+        mat = ti.Matrix([[None] * m for _ in range(n)])
+        return mat
 
     def __hash__(self):
         # TODO: refactor KernelTemplateMapper

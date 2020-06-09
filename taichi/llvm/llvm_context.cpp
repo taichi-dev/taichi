@@ -174,8 +174,8 @@ void compile_runtime_bitcode(Arch arch) {
         return;
       }
     }
-    auto clang =
-        find_existing_command({"clang-7", "clang-8", "clang-9", "clang-10", "clang"});
+    auto clang = find_existing_command(
+        {"clang-7", "clang-8", "clang-9", "clang-10", "clang"});
     TI_ASSERT(command_exist("llvm-as"));
     TI_TRACE("Compiling runtime module bitcode...");
     std::string macro = fmt::format(" -D ARCH_{} ", arch_name(arch));
@@ -660,14 +660,13 @@ void TaichiLLVMContext::eliminate_unused_functions(
   if (llvm::verifyModule(*module, &llvm::errs())) {
     TI_ERROR("Module broken\n");
   }
-  llvm::InternalizePass internalize_pass([&](const GlobalValue &val) -> bool {
-    return export_indicator(val.getName());
-  });
   llvm::ModulePassManager manager;
   llvm::ModuleAnalysisManager ana;
   llvm::PassBuilder pb;
   pb.registerModuleAnalyses(ana);
-  manager.addPass(internalize_pass);
+  manager.addPass(llvm::InternalizePass([&](const GlobalValue &val) -> bool {
+    return export_indicator(val.getName());
+  }));
   manager.addPass(GlobalDCEPass());
   manager.run(*module, ana);
 }

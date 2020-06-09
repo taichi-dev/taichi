@@ -47,15 +47,7 @@ jobs:
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
           export PYTHONPATH=$TAICHI_REPO_DIR/python
           python examples/laplace.py
-          ti test -Cvr2 -t2
-
-      - name: Upload Coverage Report
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: |
-          test -f .coverage
-          bash <(curl -s https://codecov.io/bash)
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+          ti test -vr2 -t2
 
   code_format:
     name: Code Format

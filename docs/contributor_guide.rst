@@ -211,6 +211,7 @@ Tests should be added to ``taichi/tests``.
 
 - Use ``ti test`` to run all the tests.
 - Use ``ti test -v`` for verbose outputs.
+- Use ``ti test -C`` to run tests and record code coverage, see :ref:`coverage` for more infomations.
 - Use ``ti test <filename(s)>`` to run specific tests. e.g. ``ti test numpy_io`` and ``ti test test_numpy_io.py`` are equivalent.
 - Use ``ti test -a <arch(s)>`` for test against specified architectures. e.g. ``ti test -a opengl`` or ``ti test numpy_io -a cuda,metal``.
 - Use ``ti test -na <arch(s)>`` for test all architectures exclude some of them. e.g. ``ti test -na opengl,cuda``.

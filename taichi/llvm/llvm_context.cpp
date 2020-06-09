@@ -172,7 +172,7 @@ void compile_runtime_bitcode(Arch arch) {
       }
     }
     auto clang =
-        find_existing_command({"clang-7", "clang-8", "clang-9", "clang"});
+        find_existing_command({"clang-7", "clang-8", "clang-9", "clang-10", "clang"});
     TI_ASSERT(command_exist("llvm-as"));
     TI_TRACE("Compiling runtime module bitcode...");
     std::string macro = fmt::format(" -D ARCH_{} ", arch_name(arch));

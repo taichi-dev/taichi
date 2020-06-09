@@ -315,6 +315,7 @@ else:
 
     elif get_os_name() == 'win':
         bin_dir = get_bin_directory()
+        possible_folders = ['Debug', 'RelWithDebInfo', 'Release']
         dll_path1 = os.path.join(bin_dir, 'RelWithDebInfo', 'taichi_core.dll')
         dll_path2 = os.path.join(bin_dir, 'libtaichi_core.dll')
         assert os.path.exists(dll_path1) and not os.path.exists(dll_path2)

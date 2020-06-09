@@ -247,8 +247,7 @@ std::string JITSessionCUDA::compile_module_to_ptx(
 
   // Ask the target to add backend passes as necessary.
   bool fail = target_machine->addPassesToEmitFile(
-      module_pass_manager, ostream, nullptr, llvm::CGFT_AssemblyFile,
-      true);
+      module_pass_manager, ostream, nullptr, llvm::CGFT_AssemblyFile, true);
 
   TI_ERROR_IF(fail, "Failed to set up passes to emit PTX source\n");
 

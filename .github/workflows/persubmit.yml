@@ -52,6 +52,7 @@ jobs:
       - name: Upload Coverage Report
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
+          test -f .coverage
           bash <(curl -s https://codecov.io/bash)
         env:
           CODECOV_TOKEN: 61f3408d-220d-4598-a243-7e06bd91ea15

@@ -659,6 +659,8 @@ class TaichiMain:
             pytest_args += ['--reruns', args.rerun]
         if args.coverage:
             pytest_args += ['--cov-branch', '--cov=python/taichi']
+        if args.cov_append:
+            pytest_args += ['--cov-append']
 
         try:
             from multiprocessing import cpu_count
@@ -772,6 +774,14 @@ class TaichiMain:
                             dest='coverage',
                             action='store_true',
                             help='Run tests and record the coverage result')
+        parser.add_argument(
+            '-A',
+            '--cov-append',
+            required=False,
+            default=None,
+            dest='cov_append',
+            action='store_true',
+            help='Append coverage result to existing one instead of overriding it')
         parser.add_argument(
             '-t',
             '--threads',

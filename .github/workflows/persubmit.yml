@@ -54,7 +54,7 @@ jobs:
         run: |
           bash <(curl -s https://codecov.io/bash)
         env:
-          CODECOV_TOKEN: 629e156854d543378f0ddb7b0ecd4316
+          CODECOV_TOKEN: 61f3408d-220d-4598-a243-7e06bd91ea15
 
   code_format:
     name: Code Format

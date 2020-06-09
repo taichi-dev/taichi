@@ -11,47 +11,77 @@ For precise build instructions on Windows, please check out `appveyor.yml <https
 
 Note that on Linux/OS X, ``clang`` is the only supported compiler for compiling the Taichi compiler. On Windows only MSVC supported.
 
-Installing Depedencies
-----------------------
+Installing Dependencies
+-----------------------
 
 - Make sure you are using Python 3.6/3.7/3.8
-- Execute
+- Install Python dependencies:
 
   .. code-block:: bash
 
-    python3 -m pip install --user setuptools astpretty astor pybind11 opencv-python
+    python3 -m pip install --user setuptools astpretty astor pybind11
     python3 -m pip install --user pytest pytest-rerunfailures pytest-xdist yapf Pillow
-    python3 -m pip install --user numpy scipy GitPython colorama psutil autograd
+    python3 -m pip install --user numpy GitPython colorama autograd
 
-* (If on Ubuntu) Execute ``sudo apt install libtinfo-dev clang-8``. (``clang-7`` should work as well).
+- Make sure you have ``clang`` with version >= 7
 
-* (If on other Linux distributions) Please build clang 8.0.1 from source:
+  * On Windows: Download ``clang-8`` via `this link <https://releases.llvm.org/8.0.0/LLVM-8.0.0-win64.exe>`_.
+    Make sure you add the ``bin`` folder containing ``clang.exe`` to the ``PATH`` environment variable.
 
-  .. code-block:: bash
+  * On OS X: you don't need to do anything.
 
-    wget https://github.com/llvm/llvm-project/releases/download/llvmorg-8.0.1/cfe-8.0.1.src.tar.xz
-    tar xvJf cfe-8.0.1.src.tar.xz
-    cd cfe-8.0.1.src
-    mkdir build
-    cd build
-    cmake ..
-    make -j 8
-    sudo make install
+  * On Ubuntu, execute ``sudo apt install libtinfo-dev clang-8``.
+
+  * On other Linux distributions, please build clang 8.0.1 from source:
+
+    .. code-block:: bash
+
+        wget https://github.com/llvm/llvm-project/releases/download/llvmorg-8.0.1/cfe-8.0.1.src.tar.xz
+        tar xvJf cfe-8.0.1.src.tar.xz
+        cd cfe-8.0.1.src
+        mkdir build
+        cd build
+        cmake ..
+        make -j 8
+        sudo make install
 
 
-- Make sure you have LLVM 8.0.1 built from source. To do so:
+- Make sure you have LLVM 8.0.1. Note that Taichi uses a customized LLVM so the pre-built binaries from the LLVM official website or other sources probably doesn't work.
+  Here we provide LLVM binaries customized for Taichi, which may or may not work depending on your system environment:
+  `Linux <https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/taichi-llvm-8.0.1-linux-x64.zip>`_,
+  `OS X <https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/taichi-llvm-8.0.1.zip>`_,
+  `Windows <https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/taichi-llvm-8.0.1-msvc2017.zip>`_.
 
-  .. code-block:: bash
+   If the downloaded LLVM does not work, please build from source:
 
-    wget https://github.com/llvm/llvm-project/releases/download/llvmorg-8.0.1/llvm-8.0.1.src.tar.xz
-    tar xvJf llvm-8.0.1.src.tar.xz
-    cd llvm-8.0.1.src
-    mkdir build
-    cd build
-    cmake .. -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON
-    # If you are building on NVIDIA Jetson TX2, use -DLLVM_TARGETS_TO_BUILD="ARM;NVPTX"
-    make -j 8
-    sudo make install
+  - On Linux or OS X:
+
+      .. code-block:: bash
+
+        wget https://github.com/llvm/llvm-project/releases/download/llvmorg-8.0.1/llvm-8.0.1.src.tar.xz
+        tar xvJf llvm-8.0.1.src.tar.xz
+        cd llvm-8.0.1.src
+        mkdir build
+        cd build
+        cmake .. -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON
+        # If you are building on NVIDIA Jetson TX2, use -DLLVM_TARGETS_TO_BUILD="ARM;NVPTX"
+        make -j 8
+        sudo make install
+
+  - On Windows:
+
+    .. code-block:: bash
+
+      # LLVM 8.0.1 + MSVC 2017
+      cmake .. -G"Visual Studio 15 2017 Win64"  -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON -Thost=x64 -DLLVM_BUILD_TESTS:BOOL=OFF -DCMAKE_INSTALL_PREFIX=installed
+
+      # LLVM 10.0.0 + MSVC 2019
+      cmake .. -G"Visual Studio 16 2019" -A x64  -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON -Thost=x64 -DLLVM_BUILD_TESTS:BOOL=OFF -DCMAKE_INSTALL_PREFIX=installed
+
+    Then open ``LLVM.sln`` and use Visual Studio 2017+ to build. Please make sure you are using the ``Release`` configuration. After building the ``INSTALL`` project (under folder ``CMakePredefinedTargets`` in the Solution Explorer window). After build completes, find your LLVM binaries and headers in ``build/installed``.
+    Please add ``build/installed/bin`` to ``PATH``.
+    Later, when you build Taichi, set ``LLVM_DIR`` to ``build/installed/lib/cmake/llvm``.
+
 
 Setting up CUDA (optional)
 --------------------------
@@ -101,15 +131,6 @@ Setting up Taichi for development
 - Check out ``examples`` for runnable examples. Run them with ``python3``.
 
 
-
-Prebuilt LLVM for Windows CI
-----------------------------
-
-.. code-block:: bash
-
-  cmake .. -G"Visual Studio 15 2017 Win64"  -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON -Thost=x64 -DLLVM_BUILD_TESTS:BOOL=OFF -DCMAKE_INSTALL_PREFIX=installed
-
-Then use Visual Studio to build. After building the ``INSTALL`` project (under folder "CMakePredefinedTargets"). After build completes, find your LLVM binaries/headers in `build/include`.
 
 Troubleshooting
 ---------------

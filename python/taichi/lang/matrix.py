@@ -152,7 +152,7 @@ class Matrix(TaichiOperations):
         if foo.__name__ == 'assign' and not isinstance(other, Matrix):
             raise SyntaxError(
                 'cannot assign scalar expr to '
-                f'taichi class {type(a)}, maybe you want to use `a.fill(b)` instead?'
+                f'taichi class {type(self)}, maybe you want to use `a.fill(b)` instead?'
             )
         if isinstance(other, Matrix):
             assert self.m == other.m and self.n == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"

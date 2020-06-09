@@ -19,8 +19,9 @@ Installing Depedencies
 
   .. code-block:: bash
 
-    python3 -m pip install --user setuptools astpretty astor pytest opencv-python pybind11
-    python3 -m pip install --user Pillow numpy scipy GitPython yapf colorama psutil autograd
+    python3 -m pip install --user setuptools astpretty astor pybind11 opencv-python
+    python3 -m pip install --user pytest pytest-rerunfailures pytest-xdist yapf Pillow
+    python3 -m pip install --user numpy scipy GitPython colorama psutil autograd
 
 * (If on Ubuntu) Execute ``sudo apt install libtinfo-dev clang-8``. (``clang-7`` should work as well).
 

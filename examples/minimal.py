@@ -1,9 +1,11 @@
 import taichi as ti
 
+ti.init()
 
 @ti.kernel
 def p():
-    print(42)
+    pass
 
-
+print(1)
 p()
+print(2)

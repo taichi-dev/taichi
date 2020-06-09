@@ -17,7 +17,6 @@
 #include "llvm/IR/IntrinsicsNVPTX.h"
 #endif
 #include "llvm/IR/LLVMContext.h"
-#include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Verifier.h"
@@ -29,6 +28,10 @@
 #include "llvm/Transforms/Scalar/GVN.h"
 #include "llvm/Transforms/Utils.h"
 #include "llvm/Transforms/IPO.h"
+#include "llvm/Transforms/IPO/Internalize.h"
+#include "llvm/Transforms/IPO/GlobalDCE.h"
+#include "llvm/Pass.h"
+#include "llvm/Passes/PassBuilder.h"
 #include "llvm/Bitcode/BitcodeReader.h"
 #include "llvm/Linker/Linker.h"
 #include "llvm/Demangle/Demangle.h"
@@ -439,6 +442,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
 
   TI_ASSERT(cloned != nullptr);
 
+TI_TAG;
   return cloned;
 }
 
@@ -485,13 +489,18 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_struct_module() {
 
 void TaichiLLVMContext::set_struct_module(
     const std::unique_ptr<llvm::Module> &module) {
+  TI_TAG;
   auto data = get_this_thread_data();
+  TI_TAG;
   TI_ASSERT(module);
+  TI_TAG;
   if (llvm::verifyModule(*module, &llvm::errs())) {
     module->print(llvm::errs(), nullptr);
     TI_ERROR("module broken");
   }
+  TI_TAG;
   data->struct_module = llvm::CloneModule(*module);
+  TI_TAG;
   if (!arch_is_cpu(arch)) {
     for (auto &f : *data->struct_module) {
       bool is_kernel = false;
@@ -511,11 +520,14 @@ void TaichiLLVMContext::set_struct_module(
     }
   }
 
+  TI_TAG;
   auto runtime_module = clone_struct_module();
+  TI_TAG;
   eliminate_unused_functions(runtime_module.get(), [](std::string func_name) {
     return starts_with(func_name, "runtime_") ||
            starts_with(func_name, "LLVMRuntime_");
   });
+  TI_TAG;
   runtime_jit_module = add_module(std::move(runtime_module));
 }
 
@@ -652,14 +664,35 @@ void TaichiLLVMContext::eliminate_unused_functions(
     llvm::Module *module,
     std::function<bool(const std::string &)> export_indicator) {
   TI_AUTO_PROF
+  TI_TAG;
   using namespace llvm;
-  legacy::PassManager manager;
-  ModuleAnalysisManager ana;
-  manager.add(createInternalizePass([&](const GlobalValue &val) -> bool {
+  TI_TAG;
+  TI_ASSERT(module);
+  TI_TAG;
+  if (llvm::verifyModule(*module, &llvm::errs())) {
+    TI_ERROR("Module broken\n");
+  }
+  TI_TAG;
+  llvm::InternalizePass internalize_pass([&](const GlobalValue &val) -> bool {
     return export_indicator(val.getName());
-  }));
-  manager.add(createGlobalDCEPass());
-  manager.run(*module);
+  });
+  TI_TAG;
+  llvm::ModulePassManager manager;
+  TI_TAG;
+  llvm::ModuleAnalysisManager ana;
+  TI_TAG;
+  llvm::PassBuilder pb;
+  TI_TAG;
+  pb.registerModuleAnalyses(ana);
+  TI_TAG;
+  //ana.registerPass( return int))
+  TI_TAG;
+  manager.addPass(internalize_pass);
+  TI_TAG;
+  manager.addPass(GlobalDCEPass());
+  TI_TAG;
+  manager.run(*module, ana);
+  TI_TAG;
 }
 
 TaichiLLVMContext::ThreadLocalData *TaichiLLVMContext::get_this_thread_data() {

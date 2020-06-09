@@ -8,6 +8,7 @@
 TLANG_NAMESPACE_BEGIN
 
 StructCompiler::StructCompiler(Program *prog) : prog(prog) {
+  TI_TAG;
   root_size = 0;
 }
 

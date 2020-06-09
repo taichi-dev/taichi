@@ -691,7 +691,7 @@ void TaichiLLVMContext::eliminate_unused_functions(
   TI_TAG;
   manager.addPass(GlobalDCEPass());
   TI_TAG;
-  manager.run(*module, ana);
+  //manager.run(*module, ana);
   TI_TAG;
 }
 

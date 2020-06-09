@@ -47,7 +47,7 @@ Export images using ``ti.GUI.show``
 
 Export images using ``ti.imwrite``
 ++++++++++++++++++++++++++++++++++
-To save images without creating a ``ti.GUI.show(filename)``, use ``ti.imwrite(filename)``. For example:
+To save images without invoking ``ti.GUI.show(filename)``, use ``ti.imwrite(filename)``. For example:
 
     .. code-block:: python
 

@@ -319,7 +319,7 @@ Image I/O
     :parameter img: (Matrix or Expr) the images you want to export.
     :parameter filename: (string) the location you want to save to
 
-    Export a ``np.ndarray`` or Taichi tensor(``ti.Matrix``, ``ti.Vector``, or ``ti.var``) to a specified location ``filename``.
+    Export a ``np.ndarray`` or Taichi tensor (``ti.Matrix``, ``ti.Vector``, or ``ti.var``) to a specified location ``filename``.
 
     Though ``ti.imwrite`` supports exporting images in ``png``, ``img`` and ``jpg``, we recommend to use ``png``.Same as ``ti.GUI.show(filename)``, The format of exported image is determinted by **the suffix of ``filename``** as well.
 
@@ -392,4 +392,4 @@ Image I/O
 
     This function will create an instance of ``ti.GUI`` and show the input image on the screen.
 
-    It has the same logic as ``ti.imwrite`` for differnt datatypes.
+    It has the same logic as ``ti.imwrite`` for different datatypes.

@@ -67,18 +67,18 @@ To save images without creating a ``ti.GUI.show(filename)``, use ``ti.imwrite(fi
         ti.imwrite(pixels.to_numpy(), filename)
         print(f'The image has been saved to {filename}')
 
-- ``ti.imwrite`` can export both Taichi tensors ``ti.Matrix``, ``ti.Vector`` or ``ti.var`` and numpy tensors ``np.ndarray``. 
+- ``ti.imwrite`` can export both Taichi tensors ``ti.Matrix``, ``ti.Vector`` or ``ti.var`` and numpy tensors ``np.ndarray``.
 - Same as above ``ti.GUI.show(filename)``, the image format (``png``, ``jpg`` and ``bmp``) is also controlled by the suffix of ``filename`` in ``ti.imwrite(filename)``.
-- Meanwhile, The resulted image type (``grayscale``, ``RGB``, or ``RGBA``) is determined by **the number of channels in the input tensor**, aka the length of the third dimension, i.e. ``tensor.shape[2]``. 
+- Meanwhile, The resulted image type (``grayscale``, ``RGB``, or ``RGBA``) is determined by **the number of channels in the input tensor**, aka the length of the third dimension, i.e. ``tensor.shape[2]``.
 - For example, A tensor that has shape ``[w, h]`` or ``[w, h, 1]`` will be exported as a ``grayscale`` image.
 - If you want to export ``RGB`` or ``RGBA`` images instead, the input tensor should have a shape ``[w, h, 3]`` or ``[w, h, 4]`` respectively.
 
 .. note::
-    
+
     A Taichi tensor can have a different datatype. Different datatype makes ``ti.imwrite`` have different behaviors.
-    
+
     For a floating type(ti.f16, ti.f32) tensor, the pixel value on each channel of the image should be **a floating number between 0 and 1**.
-    
+
     For an int type (ti.u8, ti.u16, etc) tensor, the values can be arbitrary valid **integer in its own bounds of datatype**.
 
 - Taichi offers other helper functions that read and show images in addition to ``ti.imwrite``. Please check out :ref:`gui` for more details.

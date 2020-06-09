@@ -316,11 +316,11 @@ Image I/O
 
 .. function:: ti.imwrite(img, filename)
 
-    :parameter img: (Matrix or Expr) the images you want to export. 
+    :parameter img: (Matrix or Expr) the images you want to export.
     :parameter filename: (string) the location you want to save to
 
     Export a ``np.ndarray`` or Taichi tensor(``ti.Matrix``, ``ti.Vector``, or ``ti.var``) to a specified location ``filename``.
-    
+
     Though ``ti.imwrite`` supports exporting images in ``png``, ``img`` and ``jpg``, we recommend to use ``png``.Same as ``ti.GUI.show(filename)``, The format of exported image is determinted by **the suffix of ``filename``** as well.
 
     Please make sure that the input image has **a valid shape**. If you want to export a grayscale image, the input shape of tensor should be ``(height, weight)`` or ``(height, weight, 1)``
@@ -381,8 +381,8 @@ Image I/O
 
     :return: (np.ndarray) the image read from ``filename``
 
-    This function loads an image from the target filename and returns it as a ``np.ndarray(dt=np.uint8)``. 
-    
+    This function loads an image from the target filename and returns it as a ``np.ndarray(dt=np.uint8)``.
+
     Each value in this returned tensor is integers in [0, 255]
 
 .. function:: ti.imshow(img, windname)

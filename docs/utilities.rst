@@ -101,7 +101,7 @@ The suggested workflow for the performance related PR author to run the regressi
 Code coverage
 -------------
 
-To ensure that our tests covered every situations, we need to **coverage report**.
+To ensure that our tests covered every situations, we need to have **coverage report**.
 That is, to detect how many percent of code lines in is executed in test.
 
 - Generally, the higher the coverage percentage is, the stronger our tests are.

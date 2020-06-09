@@ -98,7 +98,7 @@ def benchmark_range():
                 g_v = grid_v[base + ti.Vector([i, j])]
                 weight = w[i][0] * w[j][1]
                 new_v += weight * g_v
-                new_C += 4 * inv_dx * weight * ti.outer_product(g_v, dpos)
+                new_C += 4 * inv_dx * weight * g_v.outer_product(dpos)
             v[p], C[p] = new_v, new_C
             x[p] += dt * v[p]  # advection
 
@@ -226,7 +226,7 @@ def benchmark_struct():
                 g_v = grid_v[base + ti.Vector([i, j])]
                 weight = w[i][0] * w[j][1]
                 new_v += weight * g_v
-                new_C += 4 * inv_dx * weight * ti.outer_product(g_v, dpos)
+                new_C += 4 * inv_dx * weight * g_v.outer_product(dpos)
             v[p], C[p] = new_v, new_C
             x[p] += dt * v[p]  # advection
 

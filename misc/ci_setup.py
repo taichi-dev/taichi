@@ -190,6 +190,7 @@ class Installer:
             "astor",
             "pytest-xdist",
             "pytest-rerunfailures",
+            "pytest-cov",
         ])
         print("importing numpy test:")
         ret = subprocess.run(

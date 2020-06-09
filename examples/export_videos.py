@@ -4,13 +4,17 @@ ti.init()
 
 pixels = ti.var(ti.u8, shape=(512, 512, 3))
 
+
 @ti.kernel
 def paint():
     for i, j, k in pixels:
         pixels[i, j, k] = ti.random() * 255
 
+
 result_dir = "./results"
-video_manger = ti.VideoManager(output_dir=result_dir, framerate=24, automatic_build=False)
+video_manger = ti.VideoManager(output_dir=result_dir,
+                               framerate=24,
+                               automatic_build=False)
 
 for i in range(50):
     paint()

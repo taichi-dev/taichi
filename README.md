@@ -6,7 +6,7 @@
 
 [![Build Status](https://img.shields.io/travis/taichi-dev/taichi?logo=Travis&branch=master)](https://travis-ci.com/taichi-dev/taichi)
 [![Build Status](https://img.shields.io/appveyor/build/yuanming-hu/taichi?logo=AppVeyor)](https://ci.appveyor.com/project/yuanming-hu/taichi/branch/master)
-[![Codecov Status](https://codecov.io/gh/taichi-dev/taichi/branch/master/graph/badge.svg)](https://codecov.io/gh/taichi-dev/taichi)
+[![Codecov Status](https://codecov.io/gh/taichi-dev/taichi/branch/master/graph/badge.svg)](https://codecov.io/gh/taichi-dev/taichi/src/master)
 [![Latest Release](https://img.shields.io/github/v/release/taichi-dev/taichi?color=blue)](https://github.com/taichi-dev/taichi/releases/latest)
 
 ## Overview

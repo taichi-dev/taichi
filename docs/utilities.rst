@@ -106,7 +106,7 @@ That is, to detect how many percent of code lines in is executed in test.
 
 - Generally, the higher the coverage percentage is, the stronger our tests are.
 - When making a PR, we want to **ensure that it comes with corresponding tests**. Or code coverage will decrease.
-- Code coverage statuses are visible at `Codecov <https://codecov.io/gh/taichi-dev/taichi/src/master>`_.
+- Code coverage statuses are visible at `Codecov <https://codecov.io/gh/taichi-dev/taichi>`_.
 - Currently, Taichi is only set up for Python code coverage report, not for C++ yet.
 
 .. code-block:: bash

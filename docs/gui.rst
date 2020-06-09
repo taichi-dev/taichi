@@ -310,22 +310,20 @@ A *event filter* is a list combined of *key*, *type* and *(type, key)* tuple, e.
         mouse_x, mouse_y = gui.get_cursor_pos()
 
 
-
 Image I/O
 ---------
 
 .. function:: ti.imwrite(img, filename)
 
-    :parameter img: (Matrix or Expr) the images you want to export.
+    :parameter img: (Matrix or Expr) the image you want to export
     :parameter filename: (string) the location you want to save to
 
     Export a ``np.ndarray`` or Taichi tensor (``ti.Matrix``, ``ti.Vector``, or ``ti.var``) to a specified location ``filename``.
 
-    Though ``ti.imwrite`` supports exporting images in ``png``, ``img`` and ``jpg``, we recommend to use ``png``.Same as ``ti.GUI.show(filename)``, The format of exported image is determinted by **the suffix of ``filename``** as well.
+    Same as ``ti.GUI.show(filename)``, the format of the exported image is determined by **the suffix of** ``filename`` as well. Now ``ti.imwrite`` supports exporting images to ``png``, ``img`` and ``jpg`` and we recommend using ``png``.
 
-    Please make sure that the input image has **a valid shape**. If you want to export a grayscale image, the input shape of tensor should be ``(height, weight)`` or ``(height, weight, 1)``
-    For RGB or RGBA images, ``ti.imwrite`` needs to receve a tensor which has shape ``(height, width, 3)`` and ``(height, width, 4)`` individually. For example:
-
+    Please make sure that the input image has **a valid shape**. If you want to export a grayscale image, the input shape of tensor should be ``(height, weight)`` or ``(height, weight, 1)``. For example:
+    
     .. code-block:: python
 
         import taichi as ti
@@ -339,17 +337,19 @@ Image I/O
         @ti.kernel
         def draw():
             for i, j in pixels:
-                pixels[i, j] = ti.random() * 255
+                pixels[i, j] = ti.random() * 255    # integars between [0, 255] for ti.u8
 
         draw()
 
         ti.imwrite(pixels, f"export_u8.png")
 
-    Generally the value of the pixels on each channel of a ``png`` image is integars in [0, 255]. For this reason, ``ti.imwrite`` will **cast tensors** which has different datatypes all **into integars between [0, 255]**.This casting procedure differs from datatypes:
+    Besides, for RGB or RGBA images, ``ti.imwrite`` needs to receive a tensor which has shape ``(height, width, 3)`` and ``(height, width, 4)`` individually.
 
-    - For float-type(ti.f16, ti.f32, etc) tensors, the value of each pixels should be float between [0.0, 1.0]. Otherwise ``ti.imwrite`` will first clip them into [0.0, 1.0]. And then they are multiplied by 256 and **casted to integaters ranging from [0, 255]**
+    Generally the value of the pixels on each channel of a ``png`` image is an integar in [0, 255]. For this reason, ``ti.imwrite`` will **cast tensors** which has different datatypes all **into integars between [0, 255]**. As a result, ``ti.imwrite`` has the following requirements for different datatypes of input tensors:
 
-    - For int-type tensors (ti.u8, ti.u16), the value of each pixels can be any valid integar in its own bounds. These integars in this intensor will **be scaled to [0, 255]** by being divided over the upper bound of its basic type accordingly.
+    - For float-type (``ti.f16``, ``ti.f32``, etc) input tensors, **the value of each pixel should be float between [0.0, 1.0]**. Otherwise ``ti.imwrite`` will first clip them into [0.0, 1.0]. Then they are multiplied by 256 and casted to integaters ranging from [0, 255].
+
+    - For int-type (``ti.u8``, ``ti.u16``, etc) input tensors, **the value of each pixel can be any valid integer in its own bounds**. These integers in this tensor will be scaled to [0, 255] by being divided over the upper bound of its basic type accordingly.
 
     Here is another example:
 
@@ -368,7 +368,7 @@ Image I/O
         def draw():
             for i, j in pixels:
                 for k in ti.static(range(channels)):
-                    pixels[i, j][k] = ti.random()
+                    pixels[i, j][k] = ti.random()   # floats between [0, 1] for ti.f32
 
         draw()
 
@@ -377,13 +377,13 @@ Image I/O
 .. function:: ti.imread(filename, channels=0)
 
     :parameter filename: (string) the filename of the image to load
-    :parameter channels: (optional int) the number of channels in your specified image. The default value ``0`` means the channels of the returned image is adaptive to the image file.
+    :parameter channels: (optional int) the number of channels in your specified image. The default value ``0`` means the channels of the returned image is adaptive to the image file
 
     :return: (np.ndarray) the image read from ``filename``
 
-    This function loads an image from the target filename and returns it as a ``np.ndarray(dt=np.uint8)``.
+    This function loads an image from the target filename and returns it as a ``np.ndarray(dtype=np.uint8)``.
 
-    Each value in this returned tensor is integers in [0, 255]
+    Each value in this returned tensor is an integer in [0, 255].
 
 .. function:: ti.imshow(img, windname)
 

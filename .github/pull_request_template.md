@@ -4,4 +4,5 @@
 
 Related issue = #... (if any)
 
-[[Click here for the format server]](http://kun.csail.mit.edu:31415/)
+- [[Click here for the format server]](http://kun.csail.mit.edu:31415/)
+- [[Click here for coverage report]](http://codecov.io/gh/taichi-dev/taichi/)

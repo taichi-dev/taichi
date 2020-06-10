@@ -8,14 +8,14 @@ Matrices
 - Differentiate element-wise product ``*`` and matrix product ``@``.
 - ``ti.Vector(n, dt=ti.f32)`` or ``ti.Matrix(n, m, dt=ti.f32)`` to create tensors of vectors/matrices.
 - ``A.transpose()``
-- ``A.inverse()``
 - ``A.trace()``
-- ``A.determinant()``
-- ``A.cast(type)`` or simply ``int(A)`` and ``float(A)``
+- ``A.inverse()`` (Taichi-scope only)
+- ``A.determinant()`` (Taichi-scope only)
+- ``A.cast(type)`` or simply ``int(A)`` and ``float(A)`` (Taichi-scope only)
 - ``R, S = ti.polar_decompose(A, ti.f32)``
 - ``U, sigma, V = ti.svd(A, ti.f32)`` (Note that ``sigma`` is a ``3x3`` diagonal matrix)
-- ``any(A)``
-- ``all(A)``
+- ``any(A)`` (Taichi-scope only)
+- ``all(A)`` (Taichi-scope only)
 
 TODO: doc here better like Vector. WIP
 

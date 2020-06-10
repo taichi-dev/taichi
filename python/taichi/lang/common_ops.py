@@ -1,3 +1,6 @@
+from .util import in_python_scope
+
+
 def numpy_or_constant(x):
     import taichi as ti
     if ti.is_taichi_class(x):
@@ -16,7 +19,7 @@ class TaichiOperations:
         return ti.abs(self)
 
     def __add__(self, other):
-        if self.is_pyconstant():
+        if self.is_pyconstant() and in_python_scope():
             return self.make_from_numpy(self.to_numpy() +
                                         numpy_or_constant(other))
 
@@ -24,7 +27,7 @@ class TaichiOperations:
         return ti.add(self, other)
 
     def __radd__(self, other):
-        if self.is_pyconstant():
+        if self.is_pyconstant() and in_python_scope():
             return self.make_from_numpy(
                 numpy_or_constant(other) + self.to_numpy())
 
@@ -32,7 +35,7 @@ class TaichiOperations:
         return ti.add(other, self)
 
     def __sub__(self, other):
-        if self.is_pyconstant():
+        if self.is_pyconstant() and in_python_scope():
             return self.make_from_numpy(self.to_numpy() -
                                         numpy_or_constant(other))
 
@@ -40,7 +43,7 @@ class TaichiOperations:
         return ti.sub(self, other)
 
     def __rsub__(self, other):
-        if self.is_pyconstant():
+        if self.is_pyconstant() and in_python_scope():
             return self.make_from_numpy(
                 numpy_or_constant(other) - self.to_numpy())
 

@@ -178,13 +178,21 @@ def deprecated(old, new):
     return decorator
 
 
+def in_taichi_scope():
+    from . import impl
+    return impl.inside_kernel()
+
+
+def in_python_scope():
+    return not in_taichi_scope()
+
+
 def taichi_scope(func):
     import functools
-    from . import impl
 
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
-        assert impl.inside_kernel(), \
+        assert in_taichi_scope(), \
                 f'{func.__name__} cannot be called in Python-scope'
         return func(*args, **kwargs)
 
@@ -193,11 +201,10 @@ def taichi_scope(func):
 
 def python_scope(func):
     import functools
-    from . import impl
 
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
-        assert not impl.inside_kernel(), \
+        assert in_python_scope(), \
                 f'{func.__name__} cannot be called in Taichi-scope'
         return func(*args, **kwargs)
 

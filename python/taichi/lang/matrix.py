@@ -3,7 +3,7 @@ from . import impl
 import copy
 import numbers
 import numpy as np
-from .util import taichi_scope, python_scope, deprecated, to_numpy_type, to_pytorch_type
+from .util import taichi_scope, python_scope, deprecated, to_numpy_type, to_pytorch_type, in_python_scope
 from .common_ops import TaichiOperations
 from collections.abc import Iterable
 import warnings
@@ -174,7 +174,7 @@ class Matrix(TaichiOperations):
 
     def __matmul__(self, other):
         # TODO: move to common_ops.py, redirect to `ti.matmul` too?
-        if self.is_pyconstant():
+        if in_python_scope() and self.is_pyconstant():
             return self.make_from_numpy(self.to_numpy() @ other.to_numpy())
 
         assert self.m == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"

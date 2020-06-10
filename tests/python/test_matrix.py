@@ -21,17 +21,17 @@ def test_python_scope_vector_operations():
 @pytest.mark.parametrize('ops', vector_operation_types)
 @ti.host_arch_only
 def test_taichi_scope_vector_operations_with_global_vectors(ops):
-        a, b = test_vector_arrays
-        m1, m2 = ti.Vector(a), ti.Vector(b)
-        c = ti.Vector(2, dt=ti.i32, shape=())
+    a, b = test_vector_arrays
+    m1, m2 = ti.Vector(a), ti.Vector(b)
+    c = ti.Vector(2, dt=ti.i32, shape=())
 
-        @ti.kernel
-        def run():
-            c[None] = ops(m1, m2)
+    @ti.kernel
+    def run():
+        c[None] = ops(m1, m2)
 
-        run()
+    run()
 
-        assert np.allclose(c.at(None).to_numpy(), ops(a, b))
+    assert np.allclose(c.at(None).to_numpy(), ops(a, b))
 
 
 @ti.host_arch_only

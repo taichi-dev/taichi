@@ -46,8 +46,8 @@ Installing Dependencies
         sudo make install
 
 
-- Make sure you have LLVM 8.0.1. Note that Taichi uses a customized LLVM so the pre-built binaries from the LLVM official website or other sources probably doesn't work.
-  Here we provide LLVM binaries customized for Taichi, which may or may not work depending on your system environment:
+- Make sure you have LLVM 8.0.1/10.0.0. Note that Taichi uses a customized LLVM so the pre-built binaries from the LLVM official website or other sources probably doesn't work.
+  Here we provide LLVM 8.0.1 binaries customized for Taichi, which may or may not work depending on your system environment:
   `Linux <https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/taichi-llvm-8.0.1-linux-x64.zip>`_,
   `OS X <https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/taichi-llvm-8.0.1.zip>`_,
   `Windows <https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/taichi-llvm-8.0.1-msvc2017.zip>`_.
@@ -78,9 +78,15 @@ Installing Dependencies
       # LLVM 10.0.0 + MSVC 2019
       cmake .. -G"Visual Studio 16 2019" -A x64  -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON -Thost=x64 -DLLVM_BUILD_TESTS:BOOL=OFF -DCMAKE_INSTALL_PREFIX=installed
 
-    Then open ``LLVM.sln`` and use Visual Studio 2017+ to build. Please make sure you are using the ``Release`` configuration. After building the ``INSTALL`` project (under folder ``CMakePredefinedTargets`` in the Solution Explorer window). After build completes, find your LLVM binaries and headers in ``build/installed``.
+    Then open ``LLVM.sln`` and use Visual Studio 2017+ to build. Please make sure you are using the ``Release`` configuration. After building the ``INSTALL`` project (under folder ``CMakePredefinedTargets`` in the Solution Explorer window).
+    After the build is complete, find your LLVM binaries and headers in ``build/installed``.
+    If you use MSVC 2019, **make sure you use C++17** for the ``INSTALL`` project.
+
     Please add ``build/installed/bin`` to ``PATH``.
-    Later, when you build Taichi, set ``LLVM_DIR`` to ``build/installed/lib/cmake/llvm``.
+    Later, when you build Taichi using ``CMake``, set ``LLVM_DIR`` to ``build/installed/lib/cmake/llvm``.
+
+- On Windows, if you use the pre-built LLVM for Taichi, please add ``$LLVM_FOLDER/bin`` to ``PATH``.
+  Later, when you build Taichi using ``CMake``, set ``LLVM_DIR`` to ``$LLVM_FOLDER/lib/cmake/llvm``.
 
 
 Setting up CUDA (optional)

@@ -336,7 +336,7 @@ class Matrix(TaichiOperations):
             return Matrix.Proxy(self, indices)
         else:
             if not isinstance(indices, (list, tuple)):
-                indices = (indices, )
+                indices = [indices]
             assert len(indices) in [1, 2]
             i = indices[0]
             if len(indices) >= 2:
@@ -376,9 +376,6 @@ class Matrix(TaichiOperations):
     def empty_copy(self):
         import taichi as ti
         return ti.Matrix.empty(self.n, self.m)
-
-    def zeros_copy(self):
-        return Matrix(self.n, self.m)
 
     def copy(self):
         ret = self.empty_copy()
@@ -602,7 +599,7 @@ class Matrix(TaichiOperations):
         if isinstance(val, numbers.Number):
             val = tuple(
                 [tuple([val for _ in range(self.m)]) for _ in range(self.n)])
-        elif isinstance(val[0], numbers.Number):
+        elif isinstance(val, (list, tuple)) and isinstance(val[0], numbers.Number):
             assert self.m == 1
             val = tuple([(v, ) for v in val])
         if isinstance(val, Matrix):

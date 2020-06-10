@@ -187,7 +187,7 @@ Tips on the Taichi compiler development
 
 :ref:`compilation` may worth checking out. It explains the whole compilation process.
 
-:ref:`regress` may worth checking out when the work involves IR optimization.
+See also :ref:`regress` if your work involves IR optimization.
 
 When creating a Taichi program using ``ti.init(arch=desired_arch, **kwargs)``, pass in the following parameters to make the Taichi compiler print out IR:
 
@@ -195,6 +195,7 @@ When creating a Taichi program using ``ti.init(arch=desired_arch, **kwargs)``, p
 - ``print_ir = True``: print the Taichi IR transformation process of kernel (excluding accessors) compilation.
 - ``print_kernel_llvm_ir = True``: print the emitted LLVM IR by Taichi.
 - ``print_kernel_llvm_ir_optimized = True``: print the optimized LLVM IR for each kernel.
+- ``print_kernel_nvptx = True``: print the emitted NVPTX for each kernel (CUDA only).
 - ``print_accessor_ir = True``: print the IR transformation process of data accessors, which are special and simple kernels. (This is rarely used, unless you are debugging the compilation of data accessors.)
 
 .. note::

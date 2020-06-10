@@ -36,8 +36,7 @@ class Matrix(TaichiOperations):
             if rows is not None and cols is not None:
                 raise Exception("cannot specify both rows and columns")
             self.dt = dt
-            mat = Matrix.cols(cols) if cols is not None else Matrix.rows(
-                rows)
+            mat = Matrix.cols(cols) if cols is not None else Matrix.rows(rows)
             self.n = mat.n
             self.m = mat.m
             self.entries = mat.entries
@@ -696,15 +695,13 @@ class Matrix(TaichiOperations):
     @taichi_scope
     def zero(dt, n, m=1):
         import taichi as ti
-        return Matrix([[ti.cast(0, dt) for _ in range(m)]
-                          for _ in range(n)])
+        return Matrix([[ti.cast(0, dt) for _ in range(m)] for _ in range(n)])
 
     @staticmethod
     @taichi_scope
     def one(dt, n, m=1):
         import taichi as ti
-        return Matrix([[ti.cast(1, dt) for _ in range(m)]
-                          for _ in range(n)])
+        return Matrix([[ti.cast(1, dt) for _ in range(m)] for _ in range(n)])
 
     @staticmethod
     @taichi_scope
@@ -720,14 +717,14 @@ class Matrix(TaichiOperations):
     def identity(dt, n):
         import taichi as ti
         return Matrix([[ti.cast(int(i == j), dt) for j in range(n)]
-                          for i in range(n)])
+                       for i in range(n)])
 
     @staticmethod
     @taichi_scope
     def rotation2d(alpha):
         import taichi as ti
         return Matrix([[ti.cos(alpha), -ti.sin(alpha)],
-                          [ti.sin(alpha), ti.cos(alpha)]])
+                       [ti.sin(alpha), ti.cos(alpha)]])
 
     @staticmethod
     def var(n, m, dt, shape=None, offset=None, **kwargs):

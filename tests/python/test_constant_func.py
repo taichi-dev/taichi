@@ -44,7 +44,7 @@ unary_func_table = [
 ]
 
 @pytest.mark.parametrize('ti_func,np_func', binary_func_table)
-def test_binary(ti_func, np_func):
+def test_python_scope_vector_binary(ti_func, np_func):
     x = ti.Vector([2, 3])
     y = ti.Vector([5, 4])
 
@@ -55,7 +55,7 @@ def test_binary(ti_func, np_func):
     assert allclose(result, expected)
 
 @pytest.mark.parametrize('ti_func,np_func', unary_func_table)
-def test_unary(ti_func, np_func):
+def test_python_scope_vector_unary(ti_func, np_func):
     x = ti.Vector([2, 3] if ti_func in [ops.invert, ti.logical_not] else [0.2, 0.3])
 
     result = ti_func(x).to_numpy()
@@ -63,3 +63,27 @@ def test_unary(ti_func, np_func):
         result = result.astype(np.bool)
     expected = np_func(x.to_numpy())
     assert allclose(result, expected)
+
+
+def test_python_scope_matmul():
+    a = np.array([[1, 2], [3, 4]])
+    b = np.array([[5, 6], [7, 8]])
+    x = ti.Vector(a)
+    y = ti.Vector(b)
+
+    result = (x @ y).to_numpy()
+    expected = a @ b
+    assert allclose(result, expected)
+
+
+def test_python_scope_linalg():
+    a = np.array([3, 4, -2])
+    b = np.array([-5, 0, 6])
+    x = ti.Vector(a)
+    y = ti.Vector(b)
+
+    assert allclose(x.dot(y), np.dot(a, b))
+    assert allclose(x.norm(), np.sqrt(np.dot(a, a)))
+    assert allclose(x.normalized(), a / np.sqrt(np.dot(a, a)))
+    assert x.any() == -1  # To match that of Taichi IR, we return -1 for True
+    assert y.all() == 0

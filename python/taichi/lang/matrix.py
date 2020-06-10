@@ -778,7 +778,7 @@ class Matrix(TaichiOperations):
     def dot(self, other):
         assert self.m == 1
         assert other.m == 1
-        return (self.transpose() @ other).subscript(0, 0)
+        return (self.transpose() @ other).entries[0]
 
     def cross(self, b):
         if self.n == 3 and self.m == 1 and b.n == 3 and b.m == 1:

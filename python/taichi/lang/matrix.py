@@ -3,7 +3,7 @@ from . import impl
 import copy
 import numbers
 import numpy as np
-from .util import taichi_scope, python_scope, deprecated, to_numpy_type, to_pytorch_type
+from .util import taichi_scope, python_scope, deprecated, to_numpy_type, to_pytorch_type, in_python_scope
 from .common_ops import TaichiOperations
 from collections.abc import Iterable
 import warnings

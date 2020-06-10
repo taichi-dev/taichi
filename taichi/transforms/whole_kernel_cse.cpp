@@ -118,8 +118,6 @@ class WholeKernelCSE : public BasicStmtVisitor {
   }
 
   static bool run(IRNode *node) {
-    std::cout << "before\n";
-    irpass::print(node);
     WholeKernelCSE eliminator;
     bool modified = false;
     while (true) {
@@ -128,10 +126,6 @@ class WholeKernelCSE : public BasicStmtVisitor {
         modified = true;
       else
         break;
-    }
-    if (modified) {
-      std::cout << "after\n";
-      irpass::print(node);
     }
     return modified;
   }

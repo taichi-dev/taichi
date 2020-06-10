@@ -4,7 +4,11 @@ import operator
 import pytest
 
 operation_types = operator.add, operator.sub, operator.matmul
-test_matrix_arrays = np.array([[1, 2], [3, 4]]), np.array([[5, 6], [7, 8]]), np.array([[2, 8], [-1, 3]])
+test_matrix_arrays = np.array([[1, 2],
+                               [3, 4]]), np.array([[5, 6],
+                                                   [7, 8]]), np.array([[2, 8],
+                                                                       [-1,
+                                                                        3]])
 
 vector_operation_types = operator.add, operator.sub
 test_vector_arrays = np.array([42, 42]), np.array([24, 24]), np.array([83, 12])

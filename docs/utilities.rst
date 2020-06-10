@@ -96,6 +96,26 @@ The suggested workflow for the performance related PR author to run the regressi
   then find the line of code triggering the error.
 
 
+.. _coverage:
+
+Code coverage
+-------------
+
+To ensure that our tests covered every situations, we need to have **coverage report**.
+That is, to detect how many percent of code lines in is executed in test.
+
+- Generally, the higher the coverage percentage is, the stronger our tests are.
+- When making a PR, we want to **ensure that it comes with corresponding tests**. Or code coverage will decrease.
+- Code coverage statuses are visible at `Codecov <https://codecov.io/gh/taichi-dev/taichi>`_.
+- Currently, Taichi is only set up for Python code coverage report, not for C++ yet.
+
+.. code-block:: bash
+
+    ti test -C       # run tests and save results to .coverage
+    coverage report  # generate a coverage report on terminal output
+    coverage html    # generate a HTML form report in htmlcov/index.html
+
+
 Interface system (legacy)
 -------------------------
 Print all interfaces and units

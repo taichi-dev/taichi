@@ -31,6 +31,7 @@ runtimes/task*
 runtimes/*.exe
 runtimes/*.dll
 runtimes/Release
+runtimes/Debug
 runtimes/RelWithDebInfo
 runtimes/*.png
 runtimes/taichi_core*
@@ -58,9 +59,13 @@ __pycache__
 /taichi/common/commit_hash.h
 /python/test_env
 /CHANGELOG.md
+/.coverage
+/coverage.xml
+/htmlcov
 libpython_path.txt
 .vscode
 _build
 *.bin
 *.gif
 *.mp4
+*.dat

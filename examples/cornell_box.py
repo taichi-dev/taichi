@@ -446,7 +446,8 @@ def render():
 
 gui = ti.GUI('Cornell Box', res)
 last_t = time.time()
-for i in range(50000):
+i = 0
+while gui.running:
     render()
     interval = 10
     if i % interval == 0 and i > 0:
@@ -457,5 +458,4 @@ for i in range(50000):
         last_t = time.time()
         gui.set_image(img)
         gui.show()
-
-input("Press any key to quit")
+    i += 1

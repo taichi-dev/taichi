@@ -18,10 +18,9 @@ def test_python_scope_vector_operations():
         assert np.allclose(c.to_numpy(), ops(a, b))
 
 
+@pytest.mark.parametrize('ops', vector_operation_types)
 @ti.host_arch_only
-def test_taichi_scope_vector_operations_with_global_vectors():
-    for ops in vector_operation_types:
-        ti.reset()
+def test_taichi_scope_vector_operations_with_global_vectors(ops):
         a, b = test_vector_arrays
         m1, m2 = ti.Vector(a), ti.Vector(b)
         c = ti.Vector(2, dt=ti.i32, shape=())
@@ -46,11 +45,10 @@ def test_python_scope_matrix_operations():
 
 @ti.host_arch_only
 def test_taichi_scope_matrix_operations_with_global_matrices():
+    c = ti.Matrix(2, 2, dt=ti.i32, shape=())
     for ops in operation_types:
-        ti.reset()
         a, b = test_matrix_arrays
         m1, m2 = ti.Matrix(a), ti.Matrix(b)
-        c = ti.Matrix(2, 2, dt=ti.i32, shape=())
 
         @ti.kernel
         def run():

@@ -92,7 +92,7 @@ class JITSessionCPU : public JITSession {
         memory_manager(nullptr) {
     if (JTMB.getTargetTriple().isOSBinFormatCOFF()) {
       object_layer.setOverrideObjectFlagsWithResponsibilityFlags(true);
-	  object_layer.setAutoClaimResponsibilityForObjectSymbols(true);
+      object_layer.setAutoClaimResponsibilityForObjectSymbols(true);
     }
   }
 

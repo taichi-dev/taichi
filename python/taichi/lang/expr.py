@@ -67,9 +67,6 @@ class Expr(TaichiOperations):
     def loop_range(self):
         return self
 
-    def serialize(self):
-        return self.ptr.serialize()
-
     @python_scope
     def initialize_accessor(self):
         if self.getter:

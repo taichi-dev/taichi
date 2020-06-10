@@ -36,8 +36,7 @@ class Matrix(TaichiOperations):
             if rows is not None and cols is not None:
                 raise Exception("cannot specify both rows and columns")
             self.dt = dt
-            import taichi as ti
-            mat = ti.Matrix.cols(cols) if cols is not None else ti.Matrix.rows(
+            mat = Matrix.cols(cols) if cols is not None else Matrix.rows(
                 rows)
             self.n = mat.n
             self.m = mat.m
@@ -362,8 +361,7 @@ class Matrix(TaichiOperations):
         return ret
 
     def empty_copy(self):
-        import taichi as ti
-        return ti.Matrix.empty(self.n, self.m)
+        return Matrix.empty(self.n, self.m)
 
     def zeros_copy(self):
         return Matrix(self.n, self.m)
@@ -698,14 +696,14 @@ class Matrix(TaichiOperations):
     @taichi_scope
     def zero(dt, n, m=1):
         import taichi as ti
-        return ti.Matrix([[ti.cast(0, dt) for _ in range(m)]
+        return Matrix([[ti.cast(0, dt) for _ in range(m)]
                           for _ in range(n)])
 
     @staticmethod
     @taichi_scope
-    def one(dt, n):
+    def one(dt, n, m=1):
         import taichi as ti
-        return ti.Matrix([[ti.cast(1, dt) for _ in range(n)]
+        return Matrix([[ti.cast(1, dt) for _ in range(m)]
                           for _ in range(n)])
 
     @staticmethod
@@ -715,31 +713,29 @@ class Matrix(TaichiOperations):
         if dt is None:
             dt = ti.get_runtime().default_ip
         assert 0 <= i < n
-        return ti.Matrix([ti.cast(int(j == i), dt) for j in range(n)])
+        return Matrix([ti.cast(int(j == i), dt) for j in range(n)])
 
     @staticmethod
     @taichi_scope
     def identity(dt, n):
         import taichi as ti
-        return ti.Matrix([[ti.cast(int(i == j), dt) for j in range(n)]
+        return Matrix([[ti.cast(int(i == j), dt) for j in range(n)]
                           for i in range(n)])
 
     @staticmethod
     @taichi_scope
     def rotation2d(alpha):
         import taichi as ti
-        return ti.Matrix([[ti.cos(alpha), -ti.sin(alpha)],
+        return Matrix([[ti.cos(alpha), -ti.sin(alpha)],
                           [ti.sin(alpha), ti.cos(alpha)]])
 
     @staticmethod
-    def var(n, m, dt, **kwargs):
-        import taichi as ti
-        return ti.Matrix(n=n, m=m, dt=dt, **kwargs)
+    def var(n, m, dt, shape=None, offset=None, **kwargs):
+        return Matrix(n=n, m=m, dt=dt, shape=shape, offset=offset, **kwargs)
 
     @staticmethod
     def rows(rows):
-        import taichi as ti
-        mat = ti.Matrix()
+        mat = Matrix()
         mat.n = len(rows)
         if isinstance(rows[0], Matrix):
             for row in rows:
@@ -763,14 +759,11 @@ class Matrix(TaichiOperations):
 
     @staticmethod
     def cols(cols):
-        import taichi as ti
-        return ti.Matrix.rows(cols).transpose()
+        return Matrix.rows(cols).transpose()
 
     @staticmethod
     def empty(n, m):
-        import taichi as ti
-        mat = ti.Matrix([[None] * m for _ in range(n)])
-        return mat
+        return Matrix([[None] * m for _ in range(n)])
 
     def __hash__(self):
         # TODO: refactor KernelTemplateMapper
@@ -816,6 +809,7 @@ def Vector(n, dt=None, shape=None, offset=None, **kwargs):
     return Matrix(n, 1, dt=dt, shape=shape, offset=offset, **kwargs)
 
 
+Vector.var = Vector
 Vector.zero = Matrix.zero
 Vector.one = Matrix.one
 Vector.dot = Matrix.dot

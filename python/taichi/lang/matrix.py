@@ -174,7 +174,7 @@ class Matrix(TaichiOperations):
 
     def __matmul__(self, other):
         # TODO: move to common_ops.py, redirect to `ti.matmul` too?
-        if in_python_scope() and self.is_pyconstant():
+        if self.is_pyconstant() and in_python_scope():
             return self.make_from_numpy(self.to_numpy() @ other.to_numpy())
 
         assert self.m == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"

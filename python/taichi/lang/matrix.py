@@ -138,9 +138,6 @@ class Matrix(TaichiOperations):
                 "Matrices with mixed global/local entries are not allowed"
         return results[0]
 
-    def is_pyconstant(self):
-        return all([not isinstance(e, expr.Expr) for e in self.entries])
-
     def element_wise_binary(self, foo, other):
         ret = self.empty_copy()
         if isinstance(other, (list, tuple)):
@@ -253,33 +250,26 @@ class Matrix(TaichiOperations):
         else:
             return self[3]
 
+    # since Taichi-scope use v.x.assign() instead
     @x.setter
+    @python_scope
     def x(self, value):
-        if impl.inside_kernel():
-            self.subscript(0).assign(value)
-        else:
-            self[0] = value
+        self[0] = value
 
     @y.setter
+    @python_scope
     def y(self, value):
-        if impl.inside_kernel():
-            self.subscript(1).assign(value)
-        else:
-            self[1] = value
+        self[1] = value
 
     @z.setter
+    @python_scope
     def z(self, value):
-        if impl.inside_kernel():
-            self.subscript(2).assign(value)
-        else:
-            self[2] = value
+        self[2] = value
 
     @w.setter
+    @python_scope
     def w(self, value):
-        if impl.inside_kernel():
-            self.subscript(3).assign(value)
-        else:
-            self[3] = value
+        self[3] = value
 
     class Proxy:
         def __init__(self, mat, index):
@@ -287,11 +277,13 @@ class Matrix(TaichiOperations):
             self.mat = mat
             self.index = index
 
+        @python_scope
         def __getitem__(self, item):
             if not isinstance(item, (list, tuple)):
                 item = [item]
             return self.mat(*item)[self.index]
 
+        @python_scope
         def __setitem__(self, key, value):
             if not isinstance(key, (list, tuple)):
                 key = [key]

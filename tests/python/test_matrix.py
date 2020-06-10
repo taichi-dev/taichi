@@ -72,9 +72,14 @@ def test_constant_matrices():
     print(ti.Matrix([[2, 3], [4, 5]]) @ ti.Vector([2, 3]))
     v = ti.Vector([3, 4])
     w = ti.Vector([5, -12])
+    r = ti.Vector([1, 2, 3, 4])
     print(v.normalized())
     print(v.cross(w))
     w.y = v.x * w[0]
+    r.x = r.y
+    r.y = r.z
+    r.z = r.w
+    r.w = r.x
     print(w)
 
     @ti.kernel
@@ -83,6 +88,7 @@ def test_constant_matrices():
         print(m @ ti.Vector([2, 3]))
         m += ti.Matrix([[3, 4], [5, t]])
         print(m @ v)
+        print(r.x, r.y, r.z, r.w)
         s = w.transpose() @ m
         print(s)
         print(m)

@@ -37,6 +37,7 @@ def test_image_io(resx, resy, comp, ext, is_tensor, dt):
     assert (pixel_r == pixel).all()
     os.remove(fn)
 
+
 @pytest.mark.parametrize('comp,ext', [(3, 'png'), (4, 'png')])
 @pytest.mark.parametrize('resx,resy', [(91, 81)])
 @pytest.mark.parametrize('dt', [ti.f32, ti.f64])
@@ -55,6 +56,7 @@ def test_image_io_vector(resx, resy, comp, ext, dt):
     print(pixel)
     assert np.allclose(pixel_r, pixel, atol=2e-2)
     os.remove(fn)
+
 
 @pytest.mark.parametrize('comp,ext', [(3, 'png')])
 @pytest.mark.parametrize('resx,resy', [(91, 81)])

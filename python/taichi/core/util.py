@@ -315,11 +315,29 @@ else:
 
     elif get_os_name() == 'win':
         bin_dir = get_bin_directory()
-        dll_path1 = os.path.join(bin_dir, 'RelWithDebInfo', 'taichi_core.dll')
-        dll_path2 = os.path.join(bin_dir, 'libtaichi_core.dll')
-        assert os.path.exists(dll_path1) and not os.path.exists(dll_path2)
+        dll_path_invalid = os.path.join(bin_dir, 'libtaichi_core.dll')
+        assert not os.path.exists(dll_path_invalid)
 
-        # On windows when an dll/pyd is loaded, we can not write to it any more
+        possible_folders = ['Debug', 'RelWithDebInfo', 'Release']
+        detected_dlls = []
+        for folder in possible_folders:
+            dll_path = os.path.join(bin_dir, folder, 'taichi_core.dll')
+            if os.path.exists(dll_path):
+                detected_dlls.append(dll_path)
+
+        if len(detected_dlls) == 0:
+            raise FileNotFoundError(
+                f'Cannot find Taichi core dll under {get_bin_directory()}/{possible_folders}'
+            )
+        elif len(detected_dlls) != 1:
+            print('Warning: multiple Taichi core dlls found:')
+            for dll in detected_dlls:
+                print(' ', dll)
+            print(f'Using {detected_dlls[0]}')
+
+        dll_path = detected_dlls[0]
+
+        # On windows when an dll/pyd is loaded, we cannot write to it any more
         old_wd = os.getcwd()
         os.chdir(bin_dir)
 
@@ -332,10 +350,7 @@ else:
             os.environ['PATH'] += ';' + lib_dir
 
             os.makedirs(folder)
-            if os.path.exists(dll_path1):
-                shutil.copy(dll_path1, os.path.join(folder, 'taichi_core.pyd'))
-            else:
-                shutil.copy(dll_path2, os.path.join(folder, 'taichi_core.pyd'))
+            shutil.copy(dll_path, os.path.join(folder, 'taichi_core.pyd'))
             os.environ['PATH'] += ';' + folder
             sys.path.append(folder)
         else:

@@ -326,9 +326,9 @@ class Matrix(TaichiOperations):
             ret = self.mat.empty_copy()
             for i in range(self.mat.n):
                 for j in range(self.mat.m):
-                    ret.entries[i * self.mat.m + j] = self.mat(i, j)[self.index]
+                    ret.entries[i * self.mat.m + j] = self.mat(i,
+                                                               j)[self.index]
             return ret
-
 
     # host access & python scope operation
     @python_scope

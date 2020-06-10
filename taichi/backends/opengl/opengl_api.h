@@ -51,8 +51,9 @@ struct CompiledProgram {
 
   void add(const std::string &kernel_name,
            const std::string &kernel_source_code,
-           KernelParallelAttrib &&kpa,
-           const UsedFeature &used);
+           KernelParallelAttrib &&kpa);
+  void set_used(const UsedFeature &used);
+  int lookup_or_add_string(const std::string &str);
   void launch(Context &ctx, GLSLLauncher *launcher) const;
 };
 

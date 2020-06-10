@@ -34,9 +34,7 @@ def benchmark_nested_struct():
     a = ti.var(dt=ti.f32)
     N = 512
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.ij, [N, N]).dense(ti.ij, [8, 8]).place(a)
+    ti.root.dense(ti.ij, [N, N]).dense(ti.ij, [8, 8]).place(a)
 
     @ti.kernel
     def fill():
@@ -52,9 +50,7 @@ def benchmark_nested_struct_listgen_8x8():
     ti.cfg.demote_dense_struct_fors = False
     N = 512
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.ij, [N, N]).dense(ti.ij, [8, 8]).place(a)
+    ti.root.dense(ti.ij, [N, N]).dense(ti.ij, [8, 8]).place(a)
 
     @ti.kernel
     def fill():
@@ -70,9 +66,7 @@ def benchmark_nested_struct_listgen_16x16():
     ti.cfg.demote_dense_struct_fors = False
     N = 256
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.ij, [N, N]).dense(ti.ij, [16, 16]).place(a)
+    ti.root.dense(ti.ij, [N, N]).dense(ti.ij, [16, 16]).place(a)
 
     @ti.kernel
     def fill():
@@ -87,9 +81,7 @@ def benchmark_nested_range_blocked():
     a = ti.var(dt=ti.f32)
     N = 512
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.ij, [N, N]).dense(ti.ij, [8, 8]).place(a)
+    ti.root.dense(ti.ij, [N, N]).dense(ti.ij, [8, 8]).place(a)
 
     @ti.kernel
     def fill():
@@ -105,9 +97,7 @@ def benchmark_nested_range():
     a = ti.var(dt=ti.f32)
     N = 512
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.ij, [N, N]).dense(ti.ij, [8, 8]).place(a)
+    ti.root.dense(ti.ij, [N, N]).dense(ti.ij, [8, 8]).place(a)
 
     @ti.kernel
     def fill():
@@ -124,9 +114,7 @@ def benchmark_root_listgen():
     ti.cfg.demote_dense_struct_fors = False
     N = 512
 
-    @ti.layout
-    def place():
-        ti.root.dense(ti.ij, [N, N]).dense(ti.ij, [8, 8]).place(a)
+    ti.root.dense(ti.ij, [N, N]).dense(ti.ij, [8, 8]).place(a)
 
     @ti.kernel
     def fill():

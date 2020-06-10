@@ -252,7 +252,7 @@ class GUI:
             if key in ['Shift', 'Alt', 'Control']:
                 if key + '_L' in self.key_pressed or key + '_R' in self.key_pressed:
                     return True
-            elif key in self.key_pressed:
+            if key in self.key_pressed:
                 return True
         else:
             return False

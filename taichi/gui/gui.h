@@ -7,6 +7,7 @@
 #include <atomic>
 #include <ctime>
 #include <numeric>
+#include <unordered_map>
 
 #if defined(TI_PLATFORM_LINUX)
 #define TI_GUI_X11
@@ -457,6 +458,14 @@ class GUIBaseCocoa {
   std::size_t img_data_length;
   std::vector<uint8_t> img_data;
   std::atomic_bool window_received_close = false;
+  // Some key are called *modifier keys* and are not detected by regular key
+  // events in Cocoa. Instead, they will trigger a flags changed event.
+  // https://developer.apple.com/documentation/appkit/nseventtype/nseventtypeflagschanged?language=objc
+  //
+  // We have to:
+  // 1. check [event modifierFlags] to retrieve the key code,
+  // 2. maintain the press/released events on our own.
+  std::unordered_map<std::string, bool> active_modifier_flags;
 };
 
 using GUIBase = GUIBaseCocoa;

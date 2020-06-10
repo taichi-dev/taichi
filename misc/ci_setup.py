@@ -185,11 +185,13 @@ class Installer:
             "GitPython",
             "yapf",
             "distro",
-            "pytest",
             "autograd",
             "astor",
+            "pytest",
             "pytest-xdist",
             "pytest-rerunfailures",
+            "pytest-cov",
+            "coverage",
         ])
         print("importing numpy test:")
         ret = subprocess.run(

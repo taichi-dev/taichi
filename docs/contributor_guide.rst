@@ -187,7 +187,7 @@ Tips on the Taichi compiler development
 
 :ref:`compilation` may worth checking out. It explains the whole compilation process.
 
-:ref:`regress` may worth checking out when the work involves IR optimization.
+See also :ref:`regress` if your work involves IR optimization.
 
 When creating a Taichi program using ``ti.init(arch=desired_arch, **kwargs)``, pass in the following parameters to make the Taichi compiler print out IR:
 
@@ -195,6 +195,7 @@ When creating a Taichi program using ``ti.init(arch=desired_arch, **kwargs)``, p
 - ``print_ir = True``: print the Taichi IR transformation process of kernel (excluding accessors) compilation.
 - ``print_kernel_llvm_ir = True``: print the emitted LLVM IR by Taichi.
 - ``print_kernel_llvm_ir_optimized = True``: print the optimized LLVM IR for each kernel.
+- ``print_kernel_nvptx = True``: print the emitted NVPTX for each kernel (CUDA only).
 - ``print_accessor_ir = True``: print the IR transformation process of data accessors, which are special and simple kernels. (This is rarely used, unless you are debugging the compilation of data accessors.)
 
 .. note::
@@ -211,6 +212,7 @@ Tests should be added to ``taichi/tests``.
 
 - Use ``ti test`` to run all the tests.
 - Use ``ti test -v`` for verbose outputs.
+- Use ``ti test -C`` to run tests and record code coverage, see :ref:`coverage` for more infomations.
 - Use ``ti test <filename(s)>`` to run specific tests. e.g. ``ti test numpy_io`` and ``ti test test_numpy_io.py`` are equivalent.
 - Use ``ti test -a <arch(s)>`` for test against specified architectures. e.g. ``ti test -a opengl`` or ``ti test numpy_io -a cuda,metal``.
 - Use ``ti test -na <arch(s)>`` for test all architectures exclude some of them. e.g. ``ti test -na opengl,cuda``.

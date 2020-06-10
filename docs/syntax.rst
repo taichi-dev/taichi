@@ -206,3 +206,35 @@ Debug your program with ``print()`` in Taichi-scope. For example:
         v = ti.Vector([3, 4])
         print('v is', v)
         #=> v is [3, 4]
+
+.. note::
+
+    For now, print is only supported on CPU, CUDA and OpenGL backends.
+
+    For the CUDA backend, the printed result won't shows up until ``ti.sync()``:
+
+    .. code-block:: python
+
+        import taichi as ti
+        ti.init(arch=ti.cuda)
+
+        @ti.kernel
+        def kern():
+            print('inside kernel')
+
+        print('before kernel')
+        kern()
+        print('after kernel')
+        ti.sync()
+        print('after sync')
+
+    obtains:
+
+    .. code-block:: none
+
+        before kernel
+        after kernel
+        inside kernel
+        after
+
+    Also note that host access or program end will also implicitly invoke for ``ti.sync()``.

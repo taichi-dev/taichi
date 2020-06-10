@@ -78,6 +78,13 @@ class JITSessionCUDA : public JITSession {
 
   virtual JITModule *add_module(std::unique_ptr<llvm::Module> M) override {
     auto ptx = compile_module_to_ptx(M);
+    if (get_current_program().config.print_kernel_nvptx) {
+      static int counter = 0;
+      auto fn = fmt::format("taichi_kernel_{:04d}.ptx", counter);
+      std::ofstream(fn) << ptx;
+      TI_INFO("Module NVPTX emitted to file {}", fn);
+      counter++;
+    }
     // TODO: figure out why using the guard leads to wrong tests results
     // auto context_guard = CUDAContext::get_instance().get_guard();
     CUDAContext::get_instance().make_current();
@@ -246,9 +253,14 @@ std::string JITSessionCUDA::compile_module_to_ptx(
   // Output string stream
 
   // Ask the target to add backend passes as necessary.
+#if LLVM_VERSION_MAJOR >= 10
+  bool fail = target_machine->addPassesToEmitFile(
+      module_pass_manager, ostream, nullptr, llvm::CGFT_AssemblyFile, true);
+#else
   bool fail = target_machine->addPassesToEmitFile(
       module_pass_manager, ostream, nullptr, TargetMachine::CGFT_AssemblyFile,
       true);
+#endif
 
   TI_ERROR_IF(fail, "Failed to set up passes to emit PTX source\n");
 

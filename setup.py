@@ -35,6 +35,7 @@ setuptools.setup(
         'astor',
         # For testing:
         'pytest',
+        'pytest-xdist',
     ],
     data_files=[('lib', data_files)],
     keywords=['graphics', 'simulation'],

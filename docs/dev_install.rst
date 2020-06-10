@@ -19,8 +19,10 @@ Installing Depedencies
 
   .. code-block:: bash
 
-    python3 -m pip install --user setuptools astpretty astor pytest opencv-python pybind11
-    python3 -m pip install --user Pillow numpy scipy GitPython yapf colorama psutil autograd
+    python3 -m pip install --user setuptools astor pybind11 numpy
+    python3 -m pip install --user pytest pytest-rerunfailures pytest-xdist pytest-cov
+    python3 -m pip install --user GitPython coverage autograd Pillow yapf
+    python3 -m pip install --user scipy psutil opencv-python astpretty
 
 * (If on Ubuntu) Execute ``sudo apt install libtinfo-dev clang-8``. (``clang-7`` should work as well).
 
@@ -108,7 +110,7 @@ Prebuilt LLVM for Windows CI
 
   cmake .. -G"Visual Studio 15 2017 Win64"  -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON -Thost=x64 -DLLVM_BUILD_TESTS:BOOL=OFF -DCMAKE_INSTALL_PREFIX=installed
 
-Then use Visual Studio to build. After building the ``INSTALL`` project (under folder "CMakePredefinedTargets"). After build completes, find your LLVM binaries/headers in `build/include`.
+Then use Visual Studio (Build Tools) to build, after which build the ``INSTALL`` project (under folder "CMakePredefinedTargets"). Once the build completes, find your LLVM binaries/headers in `build/include`.
 
 Troubleshooting
 ---------------

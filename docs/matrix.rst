@@ -16,6 +16,7 @@ Matrices
 - ``U, sigma, V = ti.svd(A, ti.f32)`` (Note that ``sigma`` is a ``3x3`` diagonal matrix)
 - ``any(A)``
 - ``all(A)``
+- Currently, only ``+, -, @`` Matrix operations have experimental support in Python-scope. An exception will be raised if you try to apply other operations in Python-scope, use them in Taichi-scope (`@ti.kernel`) instead.
 
 TODO: doc here better like Vector. WIP
 
@@ -82,8 +83,8 @@ As a temporary local variable
         a = ti.Matrix([[2, 3, 4], [5, 6, 7]])
 
 
-.. function:: ti.Matrix(rows=[v0, v1, v2, ...])
-.. function:: ti.Matrix(cols=[v0, v1, v2, ...])
+.. function:: ti.Matrix.rows([v0, v1, v2, ...])
+.. function:: ti.Matrix.cols([v0, v1, v2, ...])
 
     :parameter v0: (vector) vector of elements forming first row (or column)
     :parameter v1: (vector) vector of elements forming second row (or column)
@@ -98,13 +99,13 @@ As a temporary local variable
         v2 = ti.Vector([7.0, 8.0, 9.0])
 
         # to specify data in rows
-        a = ti.Matrix(rows=[v0, v1, v2])
+        a = ti.Matrix.rows([v0, v1, v2])
 
         # to specify data in columns instead
-        a = ti.Matrix(cols=[v0, v1, v2])
+        a = ti.Matrix.cols([v0, v1, v2])
 
         # lists can be used instead of vectors
-        a = ti.Matrix(rows=[[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]])
+        a = ti.Matrix.rows([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]])
 
 
 Accessing components

@@ -1,6 +1,7 @@
 import taichi as ti
 import numpy as np
 from taichi import approx
+import pytest
 
 
 @ti.all_archs
@@ -269,6 +270,38 @@ def test_init_matrix_from_vectors():
             a = ti.Vector([1.0, 4.0, 7.0])
             b = ti.Vector([2.0, 5.0, 8.0])
             c = ti.Vector([3.0, 6.0, 9.0])
+            m1[i] = ti.Matrix.rows([a, b, c])
+            m2[i] = ti.Matrix.cols([a, b, c])
+            m3[i] = ti.Matrix.rows([[1.0, 4.0, 7.0], [2.0, 5.0, 8.0],
+                                    [3.0, 6.0, 9.0]])
+            m4[i] = ti.Matrix.cols([[1.0, 4.0, 7.0], [2.0, 5.0, 8.0],
+                                    [3.0, 6.0, 9.0]])
+
+    fill()
+
+    for j in range(3):
+        for i in range(3):
+            assert m1[0][i, j] == int(i + 3 * j + 1)
+            assert m2[0][j, i] == int(i + 3 * j + 1)
+            assert m3[0][i, j] == int(i + 3 * j + 1)
+            assert m4[0][j, i] == int(i + 3 * j + 1)
+
+
+# Remove this once the apis are fully deprecated in incoming version.
+@pytest.mark.filterwarnings('ignore')
+@ti.host_arch_only
+def test_init_matrix_from_vectors_deprecated():
+    m1 = ti.Matrix(3, 3, dt=ti.f32, shape=(3))
+    m2 = ti.Matrix(3, 3, dt=ti.f32, shape=(3))
+    m3 = ti.Matrix(3, 3, dt=ti.f32, shape=(3))
+    m4 = ti.Matrix(3, 3, dt=ti.f32, shape=(3))
+
+    @ti.kernel
+    def fill():
+        for i in range(3):
+            a = ti.Vector([1.0, 4.0, 7.0])
+            b = ti.Vector([2.0, 5.0, 8.0])
+            c = ti.Vector([3.0, 6.0, 9.0])
             m1[i] = ti.Matrix(rows=[a, b, c])
             m2[i] = ti.Matrix(cols=[a, b, c])
             m3[i] = ti.Matrix(
@@ -284,6 +317,16 @@ def test_init_matrix_from_vectors():
             assert m2[0][j, i] == int(i + 3 * j + 1)
             assert m3[0][i, j] == int(i + 3 * j + 1)
             assert m4[0][j, i] == int(i + 3 * j + 1)
+
+
+@pytest.mark.filterwarnings('ignore')
+@ti.host_arch_only
+def test_to_numpy_as_vector_deprecated():
+    v = ti.Vector(3, dt=ti.f32, shape=(2))
+    u = np.array([[2, 3, 4], [5, 6, 7]])
+    v.from_numpy(u)
+    assert v.to_numpy(as_vector=True) == approx(u)
+    assert v.to_numpy() == approx(u)
 
 
 @ti.all_archs
@@ -314,6 +357,29 @@ def test_any_all():
                 assert c[None] == 1
             else:
                 assert c[None] == 0
+
+
+@ti.all_archs
+def test_min_max():
+    a = ti.Matrix(2, 2, dt=ti.i32, shape=())
+    b = ti.var(dt=ti.i32, shape=())
+    c = ti.var(dt=ti.i32, shape=())
+
+    @ti.kernel
+    def func():
+        b[None] = a[None].max()
+        c[None] = a[None].min()
+
+    for i in range(2):
+        for j in range(2):
+            a[None][0, 0] = i
+            a[None][1, 0] = j
+            a[None][1, 1] = i
+            a[None][0, 1] = j
+
+            func()
+            assert b[None] == max(i, j)
+            assert c[None] == min(i, j)
 
 
 # must not throw any error:

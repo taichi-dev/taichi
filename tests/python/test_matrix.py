@@ -1,6 +1,7 @@
 import taichi as ti
 import numpy as np
 import operator
+import pytest
 
 operation_types = (operator.add, operator.sub, operator.matmul)
 test_matrix_arrays = (np.array([[1, 2], [3, 4]]), np.array([[5, 6], [7, 8]]))
@@ -121,3 +122,35 @@ def test_constant_matrices():
         print(m)
 
     func(5)
+
+
+@pytest.mark.parametrize('ops', vector_operation_types)
+@ti.host_arch_only
+def test_taichi_scope_vector_operations_with_global_vectors(ops):
+    a, b = test_vector_arrays
+    m1, m2 = ti.Vector(a), ti.Vector(b)
+    c = ti.Vector(2, dt=ti.i32, shape=())
+
+    @ti.kernel
+    def run():
+        c[None] = ops(m1, m2)
+
+    run()
+
+    assert np.allclose(c.at(None).to_numpy(), ops(a, b))
+
+
+@pytest.mark.parametrize('ops', vector_operation_types)
+@ti.host_arch_only
+def test_taichi_scope_matrix_operations_with_global_matrices(ops):
+    a, b = test_matrix_arrays
+    m1, m2 = ti.Matrix(a), ti.Matrix(b)
+    c = ti.Matrix(2, 2, dt=ti.i32, shape=())
+
+    @ti.kernel
+    def run():
+        c[None] = ops(m1, m2)
+
+    run()
+
+    assert np.allclose(c.at(None).to_numpy(), ops(a, b))

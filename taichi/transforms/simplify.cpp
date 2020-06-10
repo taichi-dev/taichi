@@ -593,8 +593,7 @@ class BasicBlockSimplify : public IRVisitor {
         auto &bstmt_data = *bstmt;
         if (typeid(bstmt_data) == typeid(*stmt)) {
           auto bstmt_ = bstmt->as<LoopIndexStmt>();
-          if (bstmt_->loop == stmt->loop &&
-              bstmt_->index == stmt->index) {
+          if (bstmt_->loop == stmt->loop && bstmt_->index == stmt->index) {
             stmt->replace_with(bstmt.get());
             stmt->parent->erase(current_stmt_id);
             throw IRModified();

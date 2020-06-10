@@ -90,6 +90,10 @@ class JITSessionCPU : public JITSession {
         Mangle(ES, this->DL),
         module_counter(0),
         memory_manager(nullptr) {
+    if (JTMB.getTargetTriple().isOSBinFormatCOFF()) {
+      object_layer.setOverrideObjectFlagsWithResponsibilityFlags(true);
+	  object_layer.setAutoClaimResponsibilityForObjectSymbols(true);
+    }
   }
 
   ~JITSessionCPU() {
@@ -125,7 +129,7 @@ class JITSessionCPU : public JITSession {
 
   void *lookup(const std::string Name) override {
     std::lock_guard<std::mutex> _(mut);
-    auto symbol = ES.lookup(all_libs, Mangle(Name));
+    auto symbol = ES.lookup(all_libs, ES.intern(Name));
     if (!symbol)
       TI_ERROR("Function \"{}\" not found", Name);
     return (void *)(symbol->getAddress());
@@ -133,7 +137,7 @@ class JITSessionCPU : public JITSession {
 
   void *lookup_in_module(JITDylib *lib, const std::string Name) {
     std::lock_guard<std::mutex> _(mut);
-    auto symbol = ES.lookup({lib}, Mangle(Name));
+    auto symbol = ES.lookup({lib}, ES.intern(Name));
     if (!symbol)
       TI_ERROR("Function \"{}\" not found", Name);
     return (void *)(symbol->getAddress());

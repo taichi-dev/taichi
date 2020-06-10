@@ -599,7 +599,8 @@ class Matrix(TaichiOperations):
         if isinstance(val, numbers.Number):
             val = tuple(
                 [tuple([val for _ in range(self.m)]) for _ in range(self.n)])
-        elif isinstance(val, (list, tuple)) and isinstance(val[0], numbers.Number):
+        elif isinstance(val,
+                        (list, tuple)) and isinstance(val[0], numbers.Number):
             assert self.m == 1
             val = tuple([(v, ) for v in val])
         if isinstance(val, Matrix):

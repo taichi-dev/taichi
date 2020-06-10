@@ -6,9 +6,7 @@ def benchmark_nested_struct():
     a = ti.var(dt=ti.f32)
     N = 512
 
-    @ti.layout
-    def place():
-        ti.root.pointer(ti.ij, [N, N]).dense(ti.ij, [8, 8]).place(a)
+    ti.root.pointer(ti.ij, [N, N]).dense(ti.ij, [8, 8]).place(a)
 
     @ti.kernel
     def fill():
@@ -25,9 +23,7 @@ def benchmark_nested_struct_fill_and_clear():
     a = ti.var(dt=ti.f32)
     N = 512
 
-    @ti.layout
-    def place():
-        ti.root.pointer(ti.ij, [N, N]).dense(ti.ij, [8, 8]).place(a)
+    ti.root.pointer(ti.ij, [N, N]).dense(ti.ij, [8, 8]).place(a)
 
     @ti.kernel
     def fill():

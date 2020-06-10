@@ -17,7 +17,6 @@
 #include "llvm/IR/IntrinsicsNVPTX.h"
 #endif
 #include "llvm/IR/LLVMContext.h"
-#include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Verifier.h"
@@ -29,6 +28,10 @@
 #include "llvm/Transforms/Scalar/GVN.h"
 #include "llvm/Transforms/Utils.h"
 #include "llvm/Transforms/IPO.h"
+#include "llvm/Transforms/IPO/Internalize.h"
+#include "llvm/Transforms/IPO/GlobalDCE.h"
+#include "llvm/Pass.h"
+#include "llvm/Passes/PassBuilder.h"
 #include "llvm/Bitcode/BitcodeReader.h"
 #include "llvm/Linker/Linker.h"
 #include "llvm/Demangle/Demangle.h"
@@ -171,8 +174,8 @@ void compile_runtime_bitcode(Arch arch) {
         return;
       }
     }
-    auto clang =
-        find_existing_command({"clang-7", "clang-8", "clang-9", "clang"});
+    auto clang = find_existing_command(
+        {"clang-7", "clang-8", "clang-9", "clang-10", "clang"});
     TI_ASSERT(command_exist("llvm-as"));
     TI_TRACE("Compiling runtime module bitcode...");
     std::string macro = fmt::format(" -D ARCH_{} ", arch_name(arch));
@@ -653,13 +656,19 @@ void TaichiLLVMContext::eliminate_unused_functions(
     std::function<bool(const std::string &)> export_indicator) {
   TI_AUTO_PROF
   using namespace llvm;
-  legacy::PassManager manager;
-  ModuleAnalysisManager ana;
-  manager.add(createInternalizePass([&](const GlobalValue &val) -> bool {
+  TI_ASSERT(module);
+  if (llvm::verifyModule(*module, &llvm::errs())) {
+    TI_ERROR("Module broken\n");
+  }
+  llvm::ModulePassManager manager;
+  llvm::ModuleAnalysisManager ana;
+  llvm::PassBuilder pb;
+  pb.registerModuleAnalyses(ana);
+  manager.addPass(llvm::InternalizePass([&](const GlobalValue &val) -> bool {
     return export_indicator(val.getName());
   }));
-  manager.add(createGlobalDCEPass());
-  manager.run(*module);
+  manager.addPass(GlobalDCEPass());
+  manager.run(*module, ana);
 }
 
 TaichiLLVMContext::ThreadLocalData *TaichiLLVMContext::get_this_thread_data() {

@@ -1,7 +1,7 @@
 import taichi as ti
 import numpy as np
 
-ti.init(arch=ti.x64)
+ti.init(arch=ti.cuda)
 
 RES = 1024
 K = 2
@@ -27,7 +27,7 @@ def action(p: ti.ext_arr()):
 
 
 @ti.func
-def draw_rect(b, i, j, s, k, dx, dy):
+def draw_rect(b: ti.template(), i, j, s, k, dx, dy):
     x = i // s
     y = j // s
     a = 0

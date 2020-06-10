@@ -36,3 +36,43 @@ def test_image_io(resx, resy, comp, ext, is_tensor, dt):
     print(pixel)
     assert (pixel_r == pixel).all()
     os.remove(fn)
+
+@pytest.mark.parametrize('comp,ext', [(3, 'png'), (4, 'png')])
+@pytest.mark.parametrize('resx,resy', [(91, 81)])
+@pytest.mark.parametrize('dt', [ti.f32, ti.f64])
+@ti.host_arch_only
+def test_image_io_vector(resx, resy, comp, ext, dt):
+    from tempfile import mkstemp
+    shape = (resx, resy)
+    pixel = np.random.rand(*shape, comp).astype(ti.to_numpy_type(dt))
+    pixel_t = ti.Vector(comp, dt, shape)
+    pixel_t.from_numpy(pixel)
+    fn = mkstemp(suffix='.' + ext)[1]
+    ti.imwrite(pixel_t, fn)
+    pixel_r = (ti.imread(fn).astype(ti.to_numpy_type(dt)) + 0.5) / 256.0
+    print(pixel_r)
+    print('=====')
+    print(pixel)
+    assert np.allclose(pixel_r, pixel, atol=2e-2)
+    os.remove(fn)
+
+@pytest.mark.parametrize('comp,ext', [(3, 'png')])
+@pytest.mark.parametrize('resx,resy', [(91, 81)])
+@pytest.mark.parametrize('dt', [ti.u16, ti.u32, ti.u64])
+@ti.host_arch_only
+def test_image_io_uint(resx, resy, comp, ext, dt):
+    from tempfile import mkstemp
+    shape = (resx, resy)
+    np_type = ti.to_numpy_type(dt)
+    np_max = np.iinfo(np_type).max // 256
+    pixel = np.random.randint(256, size=(*shape, comp), dtype=np_type) * np_max
+    pixel_t = ti.Vector(comp, dt, shape)
+    pixel_t.from_numpy(pixel)
+    fn = mkstemp(suffix='.' + ext)[1]
+    ti.imwrite(pixel_t, fn)
+    pixel_r = ti.imread(fn).astype(np_type) * np_max
+    print(pixel_r)
+    print('=====')
+    print(pixel)
+    assert (pixel_r == pixel).all()
+    os.remove(fn)

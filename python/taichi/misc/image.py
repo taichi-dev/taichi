@@ -7,7 +7,7 @@ def imwrite(img, filename):
         img = img.to_numpy()
 
     if img.dtype in [np.uint16, np.uint32, np.uint64]:
-        img = (img // (np.iinfo(img.dtype).max / 256)).astype(np.uint8)
+        img = (img // (np.iinfo(img.dtype).max // 256)).astype(np.uint8)
     elif img.dtype in [np.float32, np.float64]:
         img = (np.clip(img, 0, 1) * 255.0 + 0.5).astype(np.uint8)
     elif img.dtype != np.uint8:

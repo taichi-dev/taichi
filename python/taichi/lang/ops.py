@@ -224,7 +224,7 @@ def logical_not(a):
     if is_taichi_expr(a):
         return Expr(taichi_lang_core.expr_logic_not(a.ptr), tb=stack_info())
     else:
-        return int(not a)
+        return -int(not a)
 
 
 def random(dt=None):
@@ -347,7 +347,8 @@ def max(a, b):
         a, b = wrap_if_not_expr(a), wrap_if_not_expr(b)
         return Expr(taichi_lang_core.expr_max(a.ptr, b.ptr), tb=stack_info())
     else:
-        return max(a, b)
+        import builtins
+        return builtins.max(a, b)
 
 
 @binary
@@ -356,7 +357,8 @@ def min(a, b):
         a, b = wrap_if_not_expr(a), wrap_if_not_expr(b)
         return Expr(taichi_lang_core.expr_min(a.ptr, b.ptr), tb=stack_info())
     else:
-        return min(a, b)
+        import builtins
+        return builtins.min(a, b)
 
 
 @binary

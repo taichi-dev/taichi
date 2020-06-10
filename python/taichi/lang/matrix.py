@@ -329,23 +329,31 @@ class Matrix(TaichiOperations):
         def w(self, value):
             self[3] = value
 
-    # host access
+        @property
+        def value(self):
+            ret = self.mat.empty_copy()
+            for i in range(self.mat.n):
+                for j in range(self.mat.m):
+                    ret.entries[i * self.mat.m + j] = self.mat(i, j)[self.index]
+            return ret
+
+
+    # host access & python scope operation
     @python_scope
     def __getitem__(self, indices):
         if self.is_global():
             return Matrix.Proxy(self, indices)
-        else:
-            if not isinstance(indices, (list, tuple)):
-                indices = [indices]
-            assert len(indices) in [1, 2]
-            i = indices[0]
-            if len(indices) >= 2:
-                j = indices[1]
-            else:
-                j = 0
-            return self(i, j)
 
-    # host access
+        if not isinstance(indices, (list, tuple)):
+            indices = [indices]
+        assert len(indices) in [1, 2]
+        i = indices[0]
+        if len(indices) >= 2:
+            j = indices[1]
+        else:
+            j = 0
+        return self(i, j)
+
     @python_scope
     def __setitem__(self, indices, item):
         if self.is_global():
@@ -354,24 +362,17 @@ class Matrix(TaichiOperations):
             for i in range(self.n):
                 for j in range(self.m):
                     self(i, j)[indices] = item[i][j]
-        else:
-            if not isinstance(indices, (list, tuple)):
-                indices = (indices, )
-            assert len(indices) in [1, 2]
-            i = indices[0]
-            if len(indices) >= 2:
-                j = indices[1]
-            else:
-                j = 0
-            self.set_entry(i, j, item)
+            return
 
-    # host access, return a complete Matrix instead of Proxy
-    def at(self, index):
-        ret = self.empty_copy()
-        for i in range(self.n):
-            for j in range(self.m):
-                ret.entries[i * self.m + j] = self[index][i, j]
-        return ret
+        if not isinstance(indices, (list, tuple)):
+            indices = [indices]
+        assert len(indices) in [1, 2]
+        i = indices[0]
+        if len(indices) >= 2:
+            j = indices[1]
+        else:
+            j = 0
+        self.set_entry(i, j, item)
 
     def empty_copy(self):
         import taichi as ti

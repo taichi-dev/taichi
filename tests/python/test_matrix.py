@@ -33,69 +33,31 @@ def test_python_scope_matrix_operations():
 # or Python-scope tensor accesses.
 # ideally we should use pytest.fixture to parameterize the tests
 # over explicit loops
+@pytest.mark.parametrize('ops', vector_operation_types)
 @ti.host_arch_only
-def test_python_scope_vector_tensor_add():
+def test_python_scope_vector_tensor(ops):
     t1 = ti.Vector(2, dt=ti.i32, shape=())
     t2 = ti.Vector(2, dt=ti.i32, shape=())
     a, b = test_vector_arrays
-    t1[None], t2[None] = a, b
+    t1[None], t2[None] = a.tolist(), b.tolist()
 
-    # TODO: hook Matrix.Proxy to redirect to at + Matrix.__add__
-    c = t1.at(None) + t2.at(None)
-    assert np.allclose(c.to_numpy(), a + b)
+    c = ops(t1[None].value, t2[None].value)
+    assert np.allclose(c.to_numpy(), ops(a, b))
 
 
+@pytest.mark.parametrize('ops', vector_operation_types)
 @ti.host_arch_only
-def test_python_scope_vector_tensor_sub():
-    t1 = ti.Vector(2, dt=ti.i32, shape=())
-    t2 = ti.Vector(2, dt=ti.i32, shape=())
-    a, b = test_vector_arrays
-    t1[None], t2[None] = a, b
-
-    # TODO: hook Matrix.Proxy to redirect to at + Matrix.__sub__
-    c = t1.at(None) - t2.at(None)
-    assert np.allclose(c.to_numpy(), a - b)
-
-
-@ti.host_arch_only
-def test_python_scope_matrix_tensor_add():
+def test_python_scope_matrix_tensor(ops):
     t1 = ti.Matrix(2, 2, dt=ti.i32, shape=())
     t2 = ti.Matrix(2, 2, dt=ti.i32, shape=())
     a, b = test_matrix_arrays
     # ndarray not supported here
     t1[None], t2[None] = a.tolist(), b.tolist()
 
-    # TODO: hook Matrix.Proxy to redirect to at + Matrix.__add__
-    c = t1.at(None) + t2.at(None)
+    c = ops(t1[None].value, t2[None].value)
     print(c)
 
-    assert np.allclose(c.to_numpy(), a + b)
-
-
-@ti.host_arch_only
-def test_python_scope_matrix_tensor_sub():
-    t1 = ti.Matrix(2, 2, dt=ti.i32, shape=())
-    t2 = ti.Matrix(2, 2, dt=ti.i32, shape=())
-    a, b = test_matrix_arrays
-    # ndarray not supported here
-    t1[None], t2[None] = a.tolist(), b.tolist()
-
-    # TODO: hook Matrix.Proxy to redirect to at + Matrix.__sub__
-    c = t1.at(None) - t2.at(None)
-    assert np.allclose(c.to_numpy(), a - b)
-
-
-@ti.host_arch_only
-def test_python_scope_matrix_tensor_matmul():
-    t1 = ti.Matrix(2, 2, dt=ti.i32, shape=())
-    t2 = ti.Matrix(2, 2, dt=ti.i32, shape=())
-    a, b = test_matrix_arrays
-    # ndarray not supported here
-    t1[None], t2[None] = a.tolist(), b.tolist()
-
-    # TODO: hook Matrix.Proxy to redirect to at + Matrix.__matmul__
-    c = t1.at(None) @ t2.at(None)
-    assert np.allclose(c.to_numpy(), a @ b)
+    assert np.allclose(c.to_numpy(), ops(a, b))
 
 
 @ti.host_arch_only
@@ -103,6 +65,8 @@ def test_constant_matrices():
     print(ti.cos(ti.math.pi / 3))
     print(-ti.Vector([2, 3]))
     print(ti.cos(ti.Vector([2, 3])))
+    print(ti.max(2, 3))
+    print(ti.max(2, ti.Vector([3, 4, 5])))
     print(ti.Vector([2, 3]) + ti.Vector([3, 4]))
     print(ti.atan2(ti.Vector([2, 3]), ti.Vector([3, 4])))
     print(ti.Matrix([[2, 3], [4, 5]]) @ ti.Vector([2, 3]))
@@ -139,7 +103,7 @@ def test_taichi_scope_vector_operations_with_global_vectors(ops):
 
     run()
 
-    assert np.allclose(c.at(None).to_numpy(), ops(a, b))
+    assert np.allclose(c[None].value.to_numpy(), ops(a, b))
 
 
 @pytest.mark.parametrize('ops', vector_operation_types)
@@ -155,4 +119,4 @@ def test_taichi_scope_matrix_operations_with_global_matrices(ops):
 
     run()
 
-    assert np.allclose(c.at(None).to_numpy(), ops(a, b))
+    assert np.allclose(c[None].value.to_numpy(), ops(a, b))

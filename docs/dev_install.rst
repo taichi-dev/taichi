@@ -21,7 +21,7 @@ Installing Dependencies
 
     python3 -m pip install --user setuptools astpretty astor pybind11
     python3 -m pip install --user pytest pytest-rerunfailures pytest-xdist yapf Pillow
-    python3 -m pip install --user numpy GitPython colorama autograd
+    python3 -m pip install --user numpy GitPython coverage colorama autograd
 
 - Make sure you have ``clang`` with version >= 7
 

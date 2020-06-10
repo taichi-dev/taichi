@@ -41,7 +41,7 @@ def send_crash_report(message, receiver=None):
     except:
         print('Error sending mail')
     server.quit()
-    print('Press enter or Ctrl + \ to exit.')
+    print('Press enter or Ctrl + \\ to exit.')
 
 
 def enable(task_name):

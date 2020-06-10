@@ -110,7 +110,7 @@ Prebuilt LLVM for Windows CI
 
   cmake .. -G"Visual Studio 15 2017 Win64"  -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON -Thost=x64 -DLLVM_BUILD_TESTS:BOOL=OFF -DCMAKE_INSTALL_PREFIX=installed
 
-Then use Visual Studio to build. After building the ``INSTALL`` project (under folder "CMakePredefinedTargets"). After build completes, find your LLVM binaries/headers in `build/include`.
+Then use Visual Studio (Build Tools) to build, after which build the ``INSTALL`` project (under folder "CMakePredefinedTargets"). Once the build completes, find your LLVM binaries/headers in `build/include`.
 
 Troubleshooting
 ---------------

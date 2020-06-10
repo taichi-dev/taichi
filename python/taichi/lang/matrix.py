@@ -141,10 +141,6 @@ class Matrix(TaichiOperations):
     def is_pyconstant(self):
         return all([not isinstance(e, expr.Expr) for e in self.entries])
 
-    @staticmethod
-    def make_from_numpy(nparray):
-        return Matrix(nparray)
-
     def element_wise_binary(self, foo, other):
         ret = self.empty_copy()
         if isinstance(other, (list, tuple)):
@@ -335,17 +331,39 @@ class Matrix(TaichiOperations):
 
     # host access
     @python_scope
-    def __getitem__(self, index):
-        return Matrix.Proxy(self, index)
+    def __getitem__(self, indices):
+        if self.is_global():
+            return Matrix.Proxy(self, indices)
+        else:
+            if not isinstance(indices, (list, tuple)):
+                indices = (indices, )
+            assert len(indices) in [1, 2]
+            i = indices[0]
+            if len(indices) >= 2:
+                j = indices[1]
+            else:
+                j = 0
+            return self(i, j)
 
     # host access
     @python_scope
-    def __setitem__(self, index, item):
-        if not isinstance(item[0], list):
-            item = [[i] for i in item]
-        for i in range(self.n):
-            for j in range(self.m):
-                self(i, j)[index] = item[i][j]
+    def __setitem__(self, indices, item):
+        if self.is_global():
+            if not isinstance(item[0], (list, tuple)):
+                item = [[i] for i in item]
+            for i in range(self.n):
+                for j in range(self.m):
+                    self(i, j)[indices] = item[i][j]
+        else:
+            if not isinstance(indices, (list, tuple)):
+                indices = (indices, )
+            assert len(indices) in [1, 2]
+            i = indices[0]
+            if len(indices) >= 2:
+                j = indices[1]
+            else:
+                j = 0
+            self.set_entry(i, j, item)
 
     # host access, return a complete Matrix instead of Proxy
     def at(self, index):
@@ -614,7 +632,7 @@ class Matrix(TaichiOperations):
         as_vector = self.m == 1 and not keep_dims
         shape_ext = (self.n, ) if as_vector else (self.n, self.m)
 
-        if self.is_pyconstant():
+        if not self.is_global():
             return np.array(self.entries).reshape(shape_ext)
 
         ret = np.empty(self.loop_range().shape() + shape_ext,

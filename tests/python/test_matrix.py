@@ -110,6 +110,8 @@ def test_constant_matrices():
     w = ti.Vector([5, -12])
     print(v.normalized())
     print(v.cross(w))
+    w.y = v.x * w[0]
+    print(w)
 
     @ti.kernel
     def func(t: ti.i32):

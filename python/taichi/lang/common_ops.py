@@ -1,11 +1,3 @@
-def numpy_or_constant(x):
-    import taichi as ti
-    if ti.is_taichi_class(x):
-        return x.to_numpy()
-    else:
-        return x
-
-
 class TaichiOperations:
     def __neg__(self):
         import taichi as ti
@@ -217,10 +209,3 @@ class TaichiOperations:
     def __ti_float__(self):
         import taichi as ti
         return ti.cast(self, ti.get_runtime().default_fp)
-
-    def is_pyconstant(self):  # overrided by ti.Matrix
-        return False
-
-    def make_from_numpy(self):
-        raise NotImplementedError(
-            f'Python-scope operation for {type(self)} not implemented yet')

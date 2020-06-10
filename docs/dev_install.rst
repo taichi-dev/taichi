@@ -7,7 +7,7 @@ Note this is for the compiler developers of the Taichi programming language.
 End users should use the pip packages instead of building from source.
 To build with NVIDIA GPU support, CUDA 10.0+ is needed.
 This installation guide works for Ubuntu 16.04+ and OS X 10.14+.
-For precise build instructions on Windows, please check out `appveyor.yml <https://github.com/taichi-dev/taichi/blob/master/appveyor.yml>`_, which does basically the same thing as the following instructions.
+For precise build instructions on Windows, please check out `appveyor.yml <https://github.com/taichi-dev/taichi/blob/master/appveyor.yml>`_, which does basically the same thing as the following instructions. Please note that Windows could have multiple instances of msbuild.exe shipped with different products. Please make sure you add the path for msbuild.exe shipped with your MSVS and make it a higher priority (for instance than the one shipped with c#).
 
 Note that on Linux/OS X, ``clang`` is the only supported compiler for compiling the Taichi compiler. On Windows only MSVC supported.
 

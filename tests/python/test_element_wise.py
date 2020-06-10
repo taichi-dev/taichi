@@ -1,4 +1,3 @@
-# TODO: make test_element_wise slim (#1055)
 import taichi as ti
 import numpy as np
 from taichi import allclose

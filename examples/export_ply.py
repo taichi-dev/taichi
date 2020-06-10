@@ -1,23 +1,37 @@
 import taichi as ti
+import numpy as np
 import random
 import os
+
 ti.init(arch=ti.cpu)
 
-dim = 3
-n_particles = 8192
+x = ti.Vector(3, dt=ti.f32, shape=(10, 10, 10))
+color = ti.var(ti.f32, shape=(10, 10, 10, 3))
 
-x = ti.Vector(dim, dt=ti.f32, shape=n_particles)
 
-for i in range(n_particles):
-    x[i] = [random.random() * 0.4 + 0.2, random.random() *
-            0.4 + 0.2, random.random() * 0.4 + 0.2]
-x = x.to_numpy()
-writer = ti.PLYWriter(num_vertices=n_particles)
-writer.add_vertex_pos(x[:, 0], x[:, 1], x[:, 2])
+@ti.kernel
+def init():
+    for i, j, k in x:
+        x[i, j, k][0] = 0.1*i
+        x[i, j, k][1] = 0.1*j
+        x[i, j, k][2] = 0.1*k
+
+
+@ti.kernel
+def paint():
+    for I in ti.grouped(color):
+        color[I] = random.random() * 255
+
+
+init()
+paint()
+writer = ti.PLYWriter(num_vertices=1000)
+writer.add_vertex_pos(x)
+writer.add_vertex_color(color)
 
 # export binary ply file
-writer.export("example.ply")
-os.remove("example.ply")
+# writer.export("example.ply")
+# os.remove("example.ply")
 # export ascii ply file
 writer.export_ascii("example_ascii.ply")
-os.remove("example_ascii.ply")
+# os.remove("example_ascii.ply")

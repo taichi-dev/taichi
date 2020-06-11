@@ -3,6 +3,7 @@
 import sys, os
 from git import Repo
 
+
 def load_pr_tags():
     this_dir = os.path.dirname(os.path.abspath(__file__))
     details = {}

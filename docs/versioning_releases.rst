@@ -26,11 +26,11 @@ Workflow: releasing a new version
 - Open a PR titled "[release] vX.Y.Z" with the branch and commit you just now created.
 
     * Use the ``ti changelog`` output you saved in the previous step as the content of the PR description.
-    * Wait for all the checks and build bots to complete. (This step may take up to 2 hours).
+    * Wait for all the checks and build bots to complete. (This step may take up to two hours).
 
 - Squash and merge the PR.
 - Trigger the Linux build on Jenkins, again, so that Linux packages are uploaded to PyPI.
-- Wait for all build bots to finish. This step uploads PyPI packages for OS X and Windows.
+- Wait for all build bots to finish. This step uploads PyPI packages for OS X and Windows. You may have to wait for up to two hours.
 - Update the ``stable`` branch so that the head of that branch is your release commit on ``master``.
 
 - Draft a new release `(here) <https://github.com/taichi-dev/taichi/releases>`_:

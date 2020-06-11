@@ -793,7 +793,6 @@ class ExternalPtrStmt : public Stmt {
  public:
   LaneAttribute<Stmt *> base_ptrs;
   std::vector<Stmt *> indices;
-  bool activate;
 
   ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
                   const std::vector<Stmt *> &indices);
@@ -802,7 +801,7 @@ class ExternalPtrStmt : public Stmt {
     return false;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, base_ptrs, indices, activate);
+  TI_STMT_DEF_FIELDS(ret_type, base_ptrs, indices);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

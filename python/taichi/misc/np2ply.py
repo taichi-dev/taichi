@@ -119,10 +119,20 @@ class PLYWriter:
         self.add_vertex_channel("green", "float", color[:, 1])
         self.add_vertex_channel("blue", "float", color[:, 2])
 
-    def add_vertex_color_uchar(self, r: np.array, g: np.array, b: np.array):
-        self.add_vertex_channel("red", "uchar", r)
-        self.add_vertex_channel("green", "uchar", g)
-        self.add_vertex_channel("blue", "uchar", b)
+    def add_vertex_alpha(self, alpha: np.array):
+        self.add_vertex_channel("Alpha", "float", alpha)
+
+    def add_vertex_rgba(self, r: np.array, g: np.array, b: np.array, a: np.array):
+        self.add_vertex_channel("red", "float", r)
+        self.add_vertex_channel("green", "float", g)
+        self.add_vertex_channel("blue", "float", b)
+        self.add_vertex_channel("Alpha", "float", a)
+
+    def add_vertex_id(self):
+        self.add_vertex_channel("id", "int", np.arange(self.num_vertices))
+
+    def add_vertex_piece(self, piece: np.array):
+        self.add_vertex_channel("piece", "int", piece)
 
     def add_faces(self, indices: np.array):
         if self.face_type == "tri":
@@ -159,6 +169,12 @@ class PLYWriter:
                 self.face_channels.append(item_key)
                 self.face_data_type.append(type)
                 self.face_data.append(self.type_map[type](data[:, i]))
+
+    def add_face_id(self):
+        self.add_face_channel("id", "int", np.arange(self.num_faces))
+
+    def add_face_piece(self, piece: np.array):
+        self.add_face_channel("piece", "int", piece)
 
     def sanity_check(self):
         assert "x" in self.vertex_channels, "The vertex pos channel is missing"

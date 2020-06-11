@@ -129,16 +129,17 @@ PR title format and tags
 ------------------------
 PR titles will be part of the commit history reflected in the ``master`` branch, therefore it is important to keep PR titles readable.
 
- - The first letter of the PR title body should be capitalized, unless the title starts with an identifier:
-
-     - E.g., "[doc] improve documentation" should be formatted as "[doc] Improve documentation";
-     - "[Lang] ti.sqr(x) is now deprecated" is fine because ``ti`` is an identifier.
-
- - Please do not include back quotes ("`") in PR titles.
- - Please always prepend at least one tag such as ``[Metal]`` to PR titles:
+ - Please always prepend **at least one tag** such as ``[Lang]`` to PR titles:
 
      - When using multiple tags, make sure there is exactly one space between tags;
-     - E.g., "[Metal][refactor]" (no space) should be formatted as "[Metal] [refactor]";
+     - E.g., "[Lang][refactor]" (no space) should be replaced by "[Lang] [refactor]";
+
+ - The first letter of the PR title body should be capitalized:
+
+     - E.g., ``[Doc] improve documentation`` should be replaced by ``[Doc] Improve documentation``;
+     - ``[Lang] "ti.sqr(x)" is now deprecated`` is fine because ``"`` is a symbol.
+
+ - Please do not include back quotes ("`") in PR titles.
 
  - For example, "[Metal] Support bitmasked SNode", "[OpenGL] AtomicMin/Max support", or "[Opt] [IR] Enhanced constant folding".
 
@@ -174,6 +175,7 @@ Frequently used tags:
    - PRs with visible/notable features to the users should be marked with tags starting with **the first letter capitalized**, e.g. ``[Metal], [OpenGL], [IR], [Lang], [CLI]``.
      When releasing a new version, a script (``python/taichi/make_changelog.py``) will generate a changelog with these changes (PR title) highlighted. Therefore it is **important** to make sure the end-users can understand what your PR does, **based on your PR title**.
    - Other PRs (underlying development/intermediate implementation) should use tags with **everything in lowercase letters**: e.g. ``[metal], [opengl], [ir], [lang], [cli]``.
+   - There should be **at most one captialized tag** in a PR title, e.g. ``[GUI] [Mac] Support modifier keys`` (#1189) is a bad example, we should use ``[gui] [Mac] Support modifier keys in GUI`` instead.
 
 Tips on the Taichi compiler development
 ---------------------------------------

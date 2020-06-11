@@ -291,6 +291,10 @@ class StackAllocaStmt : public Stmt {
     return false;
   }
 
+  bool common_statement_eliminable() const override {
+    return false;
+  }
+
   TI_STMT_DEF_FIELDS(ret_type, dt, max_size);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
@@ -306,6 +310,10 @@ class StackLoadTopStmt : public Stmt {
   }
 
   bool has_global_side_effect() const override {
+    return false;
+  }
+
+  bool common_statement_eliminable() const override {
     return false;
   }
 
@@ -327,6 +335,10 @@ class StackLoadTopAdjStmt : public Stmt {
     return false;
   }
 
+  bool common_statement_eliminable() const override {
+    return false;
+  }
+
   TI_STMT_DEF_FIELDS(ret_type, stack);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
@@ -339,6 +351,18 @@ class StackPopStmt : public Stmt {
     TI_ASSERT(stack->is<StackAllocaStmt>());
     this->stack = stack;
     TI_STMT_REG_FIELDS;
+  }
+
+  bool has_global_side_effect() const override {
+    return false;
+  }
+
+  bool dead_instruction_eliminable() const override {
+    return false;
+  }
+
+  bool common_statement_eliminable() const override {
+    return false;
   }
 
   TI_STMT_DEF_FIELDS(ret_type, stack);
@@ -357,6 +381,18 @@ class StackPushStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
+  bool has_global_side_effect() const override {
+    return false;
+  }
+
+  bool dead_instruction_eliminable() const override {
+    return false;
+  }
+
+  bool common_statement_eliminable() const override {
+    return false;
+  }
+
   TI_STMT_DEF_FIELDS(ret_type, stack, v);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
@@ -371,6 +407,18 @@ class StackAccAdjointStmt : public Stmt {
     this->stack = stack;
     this->v = v;
     TI_STMT_REG_FIELDS;
+  }
+
+  bool has_global_side_effect() const override {
+    return false;
+  }
+
+  bool dead_instruction_eliminable() const override {
+    return false;
+  }
+
+  bool common_statement_eliminable() const override {
+    return false;
   }
 
   TI_STMT_DEF_FIELDS(ret_type, stack, v);

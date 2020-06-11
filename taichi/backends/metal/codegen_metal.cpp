@@ -36,6 +36,7 @@ constexpr char kLinearLoopIndexName[] = "linear_loop_idx_";
 constexpr char kListgenElemVarName[] = "listgen_elem_";
 constexpr char kRandStateVarName[] = "rand_state_";
 constexpr char kSNodeMetaVarName[] = "sn_meta_";
+constexpr char kMemAllocVarName[] = "mem_alloc_";
 
 std::string buffer_to_name(BuffersEnum b) {
   switch (b) {
@@ -757,11 +758,13 @@ class KernelCodegen : public IRVisitor {
     emit("device Runtime *{} = reinterpret_cast<device Runtime *>({});",
          kRuntimeVarName, kRuntimeBufferName);
     emit(
-        "device byte *list_data_addr = reinterpret_cast<device byte *>({} + "
-        "1);",
-        kRuntimeVarName);
-    emit("device ListManager *parent_list = &({}->snode_lists[{}]);",
-         kRuntimeVarName, sn_id);
+        "device MemoryAllocator *{} = reinterpret_cast<device MemoryAllocator "
+        "*>({} + 1);",
+        kMemAllocVarName, kRuntimeVarName);
+    emit("ListManager parent_list;");
+    emit("parent_list.lm_data = ({}->snode_lists + {});", kRuntimeVarName,
+         sn_id);
+    emit("parent_list.mem_alloc = {};", kMemAllocVarName);
     emit("const SNodeMeta parent_meta = {}->snode_metas[{}];", kRuntimeVarName,
          sn_id);
     emit("const int child_stride = parent_meta.element_stride;");
@@ -773,11 +776,11 @@ class KernelCodegen : public IRVisitor {
     {
       ScopedIndent s2(current_appender());
       emit("const int parent_idx_ = (ii / child_num_slots);");
-      emit("if (parent_idx_ >= num_active(parent_list)) return;");
+      emit("if (parent_idx_ >= num_active(&parent_list)) return;");
       emit("const int child_idx_ = (ii % child_num_slots);");
       emit(
-          "const auto parent_elem_ = get<ListgenElement>(parent_list, "
-          "parent_idx_, list_data_addr);");
+          "const auto parent_elem_ = get<ListgenElement>(&parent_list, "
+          "parent_idx_);");
 
       emit("ListgenElement {};", kListgenElemVarName);
       // No need to add mem_offset_in_parent, because place() always starts at 0

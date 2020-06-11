@@ -1,7 +1,7 @@
 import taichi as ti
 import numpy as np
 
-ti.init(arch=ti.cuda)
+ti.init(arch=ti.cpu)
 
 RES = 1024
 K = 2

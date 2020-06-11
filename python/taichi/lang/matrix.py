@@ -519,6 +519,12 @@ class Matrix(TaichiOperations):
     def loop_range(self):
         return self.entries[0]
 
+    def parent(self, n=1):
+        return self.loop_range().parent(n)
+
+    def snode(self):
+        return self.loop_range().snode()
+
     def shape(self):
         # Took `self.entries[0]` as a representation of this tensor-of-matrices.
         # https://github.com/taichi-dev/taichi/issues/1069#issuecomment-635712140

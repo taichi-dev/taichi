@@ -48,8 +48,11 @@ class SNode:
     def lazy_grad(self):
         self.ptr.lazy_grad()
 
-    def parent(self):
-        return SNode(self.ptr.snode().parent)
+    def parent(self, n=1):
+        p = self.ptr
+        for i in range(n):
+            p = p.parent
+        return SNode(p)
 
     def data_type(self):
         return self.ptr.data_type()

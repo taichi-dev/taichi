@@ -11,10 +11,10 @@ If it's your first time contributing to Taichi, please make sure you have read o
 
 - Please fill the following blank with the issue number this PR related to (if any):
     Related issue = #2345
-- If your PR will fix the issue **completely**, use the `close` keyword:
+- If your PR will fix the issue **completely**, use the `close` or `fixes` keyword:
     Related issue = close #2345
 - So that when the PR get's merged, GitHub will **automatically** close the issue #2345 for you :)
-- If the PR doesn't belong to any existing issue, feel free to leave it blank :)
+- If the PR doesn't belong to any existing issue, and this is a trivial change, feel free to leave it blank :)
   -->
 Related issue = #
 

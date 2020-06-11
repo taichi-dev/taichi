@@ -657,10 +657,13 @@ class TaichiMain:
             pytest_args += ['-s', '-v']
         if args.rerun:
             pytest_args += ['--reruns', args.rerun]
-        if args.coverage:
-            pytest_args += ['--cov-branch', '--cov=python/taichi']
-        if args.cov_append:
-            pytest_args += ['--cov-append']
+        try:
+            if args.coverage:
+                pytest_args += ['--cov-branch', '--cov=python/taichi']
+            if args.cov_append:
+                pytest_args += ['--cov-append']
+        except AttributeError:
+            pass
 
         try:
             from multiprocessing import cpu_count

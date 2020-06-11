@@ -5,10 +5,10 @@ import taichi as ti
 def test_accessor():
     a = ti.var(dt=ti.i32)
 
-    ti.root.dense(ti.ijkl, 128).place(a, offset=(1024, 2048, 2100, 2200))
+    ti.root.dense(ti.ijk, 128).place(a, offset=(1024, 2048, 2100))
 
-    a[1029, 2100, 2200, 2300] = 1
-    assert a[1029, 2100, 2200, 2300] == 1
+    a[1029, 2100, 2200] = 1
+    assert a[1029, 2100, 2200] == 1
 
 
 @ti.all_archs

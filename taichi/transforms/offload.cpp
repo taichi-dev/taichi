@@ -237,6 +237,10 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
         return;
       }
     }
+    if (stmt->is<GlobalPtrStmt>()) {
+      // We don't support storing a pointer for now.
+      return;
+    }
     if (local_to_global.find(stmt) == local_to_global.end()) {
       // Not yet allocated
       local_to_global[stmt] = allocate_global(stmt->ret_type);
@@ -453,6 +457,14 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
         stmt->insert_before_me(std::move(copy));
         return true;
       }
+    }
+    if (op->is<GlobalPtrStmt>()) {
+      TI_ASSERT(!op->has_global_side_effect());
+      auto copy = op->clone();
+      stmt_to_offloaded[copy.get()] = stmt_to_offloaded[stmt];
+      stmt->set_operand(index, copy.get());
+      stmt->insert_before_me(std::move(copy));
+      return true;
     }
     if (local_to_global_offset.find(op) == local_to_global_offset.end())
       return false;

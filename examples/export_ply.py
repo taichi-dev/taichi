@@ -10,7 +10,7 @@ color = ti.var(ti.f32, shape=(10, 10, 10, 3))
 
 
 @ti.kernel
-def init():
+def place_pos():
     for i, j, k in x:
         x[i, j, k][0] = 0.1*i
         x[i, j, k][1] = 0.1*j
@@ -18,19 +18,19 @@ def init():
 
 
 @ti.kernel
-def paint():
+def fill_color():
     for I in ti.grouped(color):
         color[I] = random.random() * 255
 
 
-init()
-paint()
+place_pos()
+fill_color()
 writer = ti.PLYWriter(num_vertices=1000)
 writer.add_vertex_pos(x)
 writer.add_vertex_color(color)
 
 # export binary ply file
-# writer.export("example.ply")
+writer.export("example.ply")
 # os.remove("example.ply")
 # export ascii ply file
 writer.export_ascii("example_ascii.ply")

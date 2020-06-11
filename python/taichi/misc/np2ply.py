@@ -62,21 +62,17 @@ class PLYWriter:
                 self.vertex_data_type.append(type)
                 self.vertex_data.append(self.type_map[type](data[:, i]))
 
-    # def add_vertex_pos(self, x: np.array, y: np.array, z: np.array):
-    #     self.add_vertex_channel("x", "float", x)
-    #     self.add_vertex_channel("y", "float", y)
-    #     self.add_vertex_channel("z", "float", z)
+    def add_vertex_pos(self, x: np.array, y: np.array, z: np.array):
+        self.add_vertex_channel("x", "float", x)
+        self.add_vertex_channel("y", "float", y)
+        self.add_vertex_channel("z", "float", z)
 
-    # use vec instead of xyz since its more common
-
+    # pass ti vector/matrix tensor directly
     def add_vertex_pos(self, pos):
         if not isinstance(pos, np.ndarray):
             pos = pos.to_numpy()
-        # n = 1
         dim = pos.shape[pos.ndim-1]
         assert dim == 2 or dim == 3, "Only 2D and 3D positions are supported"
-        # for i in range(len(pos.shape)-1):
-        #     n = n*pos.shape[i]
         n = pos.size // dim
         pos = np.reshape(pos, (n, dim))
         self.add_vertex_channel("x", "float", pos[:, 0])
@@ -86,20 +82,17 @@ class PLYWriter:
         if(dim == 2):
             self.add_vertex_channel("z", "float", np.zeros(n))
 
-    # def add_vertex_normal(self, nx: np.array, ny: np.array, nz: np.array):
-    #     self.add_vertex_channel("nx", "float", nx)
-    #     self.add_vertex_channel("ny", "float", ny)
-    #     self.add_vertex_channel("nz", "float", nz)
+    def add_vertex_normal(self, nx: np.array, ny: np.array, nz: np.array):
+        self.add_vertex_channel("nx", "float", nx)
+        self.add_vertex_channel("ny", "float", ny)
+        self.add_vertex_channel("nz", "float", nz)
 
-    # use vec instead of nxyz since its more common
+    # pass ti vector/matrix tensor directly
     def add_vertex_normal(self, normal):
         if not isinstance(normal, np.ndarray):
             normal = normal.to_numpy()
-        # n = 1
         dim = normal.shape[normal.ndim-1]
         assert dim == 3, "Only 3D normal is supported"
-        # for i in range(len(normal.shape)-1):
-        #     n = n*normal.shape[i]
         n = normal.size // dim
         normal = np.reshape(normal, (n, dim))
         self.add_vertex_channel("nx", "float", normal[:, 0])
@@ -111,7 +104,7 @@ class PLYWriter:
         self.add_vertex_channel("green", "float", g)
         self.add_vertex_channel("blue", "float", b)
 
-    # keep both rgb and vector of color as input, both of them reasonalble
+    # pass ti vector/matrix tensor directly
     def add_vertex_color(self, color):
         if not isinstance(color, np.ndarray):
             color = color.to_numpy()

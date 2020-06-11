@@ -1,7 +1,6 @@
 import sys, os
 from git import Repo
 
-
 commits = list(Repo('.').iter_commits('master'))
 
 authors = {}

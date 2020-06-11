@@ -13,7 +13,7 @@ and patch version bumps for backward-compatible changes.
 Workflow: releasing a new version
 ---------------------------------
 
- - Trigger a Linux build on Jenkins to see if CUDA passes all tests.
+ - Trigger a Linux build on `Jenkins <http://f11.csail.mit.edu:8080/job/taichi/>`_ to see if CUDA passes all tests.
    Note that Jenkins is the only build bot we have that tests CUDA. (This may take half an hour.)
  - Create a branch for the release PR, forking from the latest commit of the ``master`` branch.
 

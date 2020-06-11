@@ -247,26 +247,6 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
     }
   }
 
-  void visit(LocalLoadStmt *stmt) override {
-    TI_ASSERT(current_offloaded);
-    TI_ASSERT(stmt->width() == 1);
-    test_and_allocate(stmt->ptr[0].var);
-  }
-
-  void visit(LocalStoreStmt *stmt) override {
-    TI_ASSERT(current_offloaded);
-    TI_ASSERT(stmt->width() == 1);
-    test_and_allocate(stmt->ptr);
-  }
-
-  void visit(AtomicOpStmt *stmt) override {
-    TI_ASSERT(current_offloaded);
-    TI_ASSERT(stmt->width() == 1);
-    if (stmt->dest->is<AllocaStmt>()) {
-      test_and_allocate(stmt->dest);
-    }
-  }
-
   void visit(Stmt *stmt) override {
     int n_op = stmt->num_operands();
     for (int i = 0; i < n_op; i++) {

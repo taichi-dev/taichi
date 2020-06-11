@@ -2,6 +2,7 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/visitors.h"
+#include <typeindex>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -10,13 +11,16 @@ class WholeKernelCSE : public BasicStmtVisitor {
  private:
   std::unordered_set<int> visited;
   // each scope corresponds to an unordered_set
-  std::vector<std::unordered_set<Stmt *>> visible_stmts;
+  std::vector<std::unordered_map<std::type_index, std::unordered_set<Stmt *>>>
+      visible_stmts;
   DelayedIRModifier modifier;
 
  public:
   using BasicStmtVisitor::visit;
 
   WholeKernelCSE() {
+    allow_undefined_visitor = true;
+    invoke_default_visitor = true;
   }
 
   bool is_done(Stmt *stmt) {
@@ -28,16 +32,15 @@ class WholeKernelCSE : public BasicStmtVisitor {
   }
 
   void visit(Stmt *stmt) override {
-    if (stmt->has_global_side_effect())
+    if (!stmt->common_statement_eliminable())
       return;
-    // Generic visitor for all non-container statements that don't have global
-    // side effect.
+    // Generic visitor for all CSE-able statements.
     if (is_done(stmt)) {
-      visible_stmts.back().insert(stmt);
+      visible_stmts.back()[std::type_index(typeid(*stmt))].insert(stmt);
       return;
     }
     for (auto &scope : visible_stmts) {
-      for (auto &prev_stmt : scope) {
+      for (auto &prev_stmt : scope[std::type_index(typeid(*stmt))]) {
         if (irpass::analysis::same_statements(stmt, prev_stmt)) {
           stmt->replace_with(prev_stmt);
           modifier.erase(stmt);
@@ -45,7 +48,7 @@ class WholeKernelCSE : public BasicStmtVisitor {
         }
       }
     }
-    visible_stmts.back().insert(stmt);
+    visible_stmts.back()[std::type_index(typeid(*stmt))].insert(stmt);
     set_done(stmt);
   }
 

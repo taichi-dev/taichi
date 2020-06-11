@@ -19,7 +19,7 @@
 
 static_assert(taichi_max_num_indices == 8,
               "Please update kTaichiMaxNumIndices");
-
+static_assert(sizeof(char *) == 8, "Metal pointers are 64-bit.");
 #define METAL_BEGIN_RUNTIME_STRUCTS_DEF
 #define METAL_END_RUNTIME_STRUCTS_DEF
 
@@ -30,23 +30,30 @@ METAL_BEGIN_RUNTIME_STRUCTS_DEF
 STR(
     // clang-format on
     constant constexpr int kTaichiMaxNumIndices = 8;
+    constant constexpr int kTaichiNumChunks = 1024;
+
+    struct MemoryAllocator { atomic_int next; };
 
     struct ListgenElement {
       int32_t coords[kTaichiMaxNumIndices];
       int32_t root_mem_offset = 0;
     };
 
-    // ListManager manages the activeness of its associated SNode.
-    struct ListManager {
+    // ListManagerData manages the activeness of its associated SNode.
+    struct ListManagerData {
       int32_t element_stride = 0;
-      // Total number of this SNode in the hierarchy.
-      // Same as |total_num_self_from_root| of this SNode.
-      int32_t max_num_elems = 0;
+
+      int32_t log2_num_elems_per_chunk = 0;
       // Index to the next element in this list.
-      // |next| can never go beyond |max_num_elems|.
-      int32_t next = 0;
-      // The data offset from the runtime memory beginning.
-      int32_t mem_begin = 0;
+      // |next| can never go beyond |kTaichiNumChunks| * |num_elems_per_chunk|.
+      atomic_int next;
+
+      atomic_int chunks[kTaichiNumChunks];
+    };
+
+    struct ListManager {
+      device ListManagerData *lm_data;
+      device MemoryAllocator *mem_alloc;
     };
 
     // This class is very similar to metal::SNodeDescriptor

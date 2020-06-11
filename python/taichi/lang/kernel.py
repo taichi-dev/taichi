@@ -569,8 +569,10 @@ def data_oriented(cls):
         x = super(cls, self).__getattribute__(item)
         if hasattr(x, '_is_wrapped_kernel'):
             import inspect
-            assert inspect.ismethod(x)
-            wrapped = x.__func__
+            if inspect.ismethod(x):
+                wrapped = x.__func__
+            else:
+                wrapped = x
             assert inspect.isfunction(wrapped)
             if wrapped._is_classkernel:
                 return BoundedDifferentiableMethod(self, wrapped)

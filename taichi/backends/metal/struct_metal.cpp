@@ -26,7 +26,6 @@ namespace shaders {
 
 }  // namespace shaders
 
-constexpr size_t kListgenElementSize = sizeof(shaders::ListgenElement);
 constexpr size_t kListManagerSize = sizeof(shaders::ListManager);
 constexpr size_t kSNodeMetaSize = sizeof(shaders::SNodeMeta);
 constexpr size_t kSNodeExtractorsSize = sizeof(shaders::SNodeExtractors);
@@ -221,7 +220,7 @@ class StructCompiler {
     emit("struct Runtime {{");
     emit("  SNodeMeta snode_metas[{}];", max_snodes_);
     emit("  SNodeExtractors snode_extractors[{}];", max_snodes_);
-    emit("  ListManager snode_lists[{}];", max_snodes_);
+    emit("  ListManagerData snode_lists[{}];", max_snodes_);
     emit("  uint32_t rand_seeds[{}];", kNumRandSeeds);
     emit("}};");
   }
@@ -230,20 +229,6 @@ class StructCompiler {
     size_t result = (max_snodes_) *
                     (kSNodeMetaSize + kSNodeExtractorsSize + kListManagerSize);
     result += sizeof(uint32_t) * kNumRandSeeds;
-    TI_DEBUG("Metal sizeof(Runtime): {} bytes", result);
-    if (has_sparse_snode_) {
-      // We only need additional memory to hold sparsity information. Don't
-      // allocate it if there is no sparse SNode at all.
-      int total_items = 0;
-      for (const auto &kv : snode_descriptors_) {
-        total_items += kv.second.total_num_self_from_root(snode_descriptors_);
-      }
-      const size_t list_data_size = total_items * kListgenElementSize;
-      TI_DEBUG("Metal runtime sparse list data size: {} bytes", list_data_size);
-      result += list_data_size;
-    } else {
-      TI_TRACE("Metal runtime doesn't need additional memory for snode_lists");
-    }
     return result;
   }
 
@@ -269,6 +254,10 @@ int SNodeDescriptor::total_num_self_from_root(
   const auto *psn = snode->parent;
   TI_ASSERT(psn != nullptr);
   return sn_descs.find(psn->id)->second.total_num_elems_from_root;
+}
+
+int total_num_self_from_root(const SNodeDescriptorsMap &m, int snode_id) {
+  return m.at(snode_id).total_num_self_from_root(m);
 }
 
 CompiledStructs compile_structs(SNode &root) {

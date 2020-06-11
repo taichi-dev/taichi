@@ -81,6 +81,6 @@ jobs:
 
       - name: Run PR Title Checker
         run: |
-          python misc/pr_title_check.py "$PR_TITLE"
+          python misc/check_pr_title.py "$PR_TITLE"
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}

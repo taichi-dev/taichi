@@ -142,35 +142,28 @@ PR titles will be part of the commit history reflected in the ``master`` branch,
 
  - For example, "[Metal] Support bitmasked SNode", "[OpenGL] AtomicMin/Max support", or "[Opt] [IR] Enhanced constant folding".
 
-Existing tags:
+Frequently used tags:
 
-- ``[Metal], [OpenGL], [CPU], [CUDA], [AMDGPU], [LLVM]``: backends;
+- ``[Metal], [OpenGL], [CPU], [CUDA], [LLVM]``: backends;
 - ``[LLVM]``: the LLVM backend shared by CPUs and CUDA;
 - ``[Lang]``: frontend language features, including syntax sugars;
 - ``[Std]``: standard library, e.g. ``ti.Matrix`` and ``ti.Vector``;
 - ``[IR]``: intermediate representation;
-- ``[Sparse]``: sparse computation, dynamic memory allocator, and garbage collection;
 - ``[Opt]``: IR optimization passes;
-- ``[Async]``: asynchronous execution engine;
-- ``[Type]``: type system;
-- ``[Infra]``: general infrastructure, e.g. logging, image reader;
 - ``[GUI]``: the built-in GUI system;
 - ``[Refactor]``: code refactoring;
-- ``[AutoDiff]``: automatic differentiation;
 - ``[CLI]``: commandline interfaces, e.g. the ``ti`` command;
 - ``[Doc]``: documentation under ``docs/``;
 - ``[Example]``: examples under ``examples/``;
 - ``[Test]``: adding or improving tests under ``tests/``;
-- ``[Benchmark]``: Benchmarking & regression tests;
 - ``[Linux]``: Linux platform;
 - ``[Mac]``: Mac OS X platform;
 - ``[Windows]``: Windows platform;
-- ``[PyPI]``: PyPI package release;
-- ``[Workflow]``: GitHub Actions/Workflows;
 - ``[Perf]``: performance improvements;
 - ``[Misc]``: something that doesn't belong to any category, such as version bump, reformatting;
 - ``[Bug]``: bug fixes;
-- **When introducing a new tag, please update the list here in the first PR with that tag, so that people can follow.**
+- Check out more tags in `misc/prtags.txt <https://github.com/taichi-dev/taichi/blob/master/misc/prtags.txt>`_.
+- When introducing a new tag, please update the list in ``misc/prtags.txt`` in the first PR with that tag, so that people can follow.
 
 .. note::
 
@@ -179,7 +172,7 @@ Existing tags:
   This is done by **capitalizing PR tags**:
 
    - PRs with visible/notable features to the users should be marked with tags starting with **the first letter capitalized**, e.g. ``[Metal], [OpenGL], [IR], [Lang], [CLI]``.
-     When releasing a new version, a script will generate a changelog with these changes (PR title) highlighted. Therefore it is **important** to make sure the end-users can understand what your PR does, **based on your PR title**.
+     When releasing a new version, a script (``python/taichi/make_changelog.py``) will generate a changelog with these changes (PR title) highlighted. Therefore it is **important** to make sure the end-users can understand what your PR does, **based on your PR title**.
    - Other PRs (underlying development/intermediate implementation) should use tags with **everything in lowercase letters**: e.g. ``[metal], [opengl], [ir], [lang], [cli]``.
 
 Tips on the Taichi compiler development

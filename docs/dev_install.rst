@@ -137,7 +137,6 @@ Setting up Taichi for development
 - Check out ``examples`` for runnable examples. Run them with ``python3``.
 
 
-
 Troubleshooting
 ---------------
 

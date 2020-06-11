@@ -129,7 +129,11 @@ class JITSessionCPU : public JITSession {
 
   void *lookup(const std::string Name) override {
     std::lock_guard<std::mutex> _(mut);
+#ifdef __APPLE__
+    auto symbol = ES.lookup(all_libs, Mangle(Name));
+#else
     auto symbol = ES.lookup(all_libs, ES.intern(Name));
+#endif
     if (!symbol)
       TI_ERROR("Function \"{}\" not found", Name);
     return (void *)(symbol->getAddress());
@@ -137,7 +141,11 @@ class JITSessionCPU : public JITSession {
 
   void *lookup_in_module(JITDylib *lib, const std::string Name) {
     std::lock_guard<std::mutex> _(mut);
+#ifdef __APPLE__
+    auto symbol = ES.lookup({lib}, Mangle(Name));
+#else
     auto symbol = ES.lookup({lib}, ES.intern(Name));
+#endif
     if (!symbol)
       TI_ERROR("Function \"{}\" not found", Name);
     return (void *)(symbol->getAddress());

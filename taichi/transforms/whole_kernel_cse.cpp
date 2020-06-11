@@ -17,6 +17,8 @@ class WholeKernelCSE : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
 
   WholeKernelCSE() {
+    allow_undefined_visitor = true;
+    invoke_default_visitor = true;
   }
 
   bool is_done(Stmt *stmt) {
@@ -30,8 +32,16 @@ class WholeKernelCSE : public BasicStmtVisitor {
   void visit(Stmt *stmt) override {
     if (stmt->has_global_side_effect())
       return;
+    if (stmt->is<AllocaStmt>() || stmt->is<LocalStoreStmt>() ||
+        stmt->is<LocalLoadStmt>() || stmt->is<AtomicOpStmt>() ||
+        stmt->is<GlobalLoadStmt>() || stmt->is<GlobalStoreStmt>() ||
+        stmt->is<StackAllocaStmt>() || stmt->is<StackLoadTopStmt>() ||
+        stmt->is<StackLoadTopAdjStmt>() || stmt->is<StackPopStmt>() ||
+        stmt->is<StackPushStmt>() || stmt->is<StackAccAdjointStmt>() ||
+        stmt->is<RandStmt>() || stmt->is<SNodeOpStmt>())
+      return;
     // Generic visitor for all non-container statements that don't have global
-    // side effect.
+    // side effect and aren't RandStmt/SNodeOpStmt/related to variables/stacks.
     if (is_done(stmt)) {
       visible_stmts.back().insert(stmt);
       return;

@@ -1,0 +1,22 @@
+name: Documentation Build Check
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+    - "docs/**"
+
+jobs:
+  check_docs_build:
+    name: Check Docs Build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.7
+    - name: Install dependencies
+      run: |
+        pip install sphinx sphinx_rtd_theme
+    - name: Try to build docs
+      run: |
+        cd docs && sphinx-build -b html . build

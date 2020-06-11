@@ -19,8 +19,8 @@ Installing Dependencies
 
   .. code-block:: bash
 
-    python3 -m pip install --user setuptools astpretty astor pybind11
-    python3 -m pip install --user pytest pytest-rerunfailures pytest-xdist yapf Pillow
+    python3 -m pip install --user setuptools astpretty astor pybind11 Pillow
+    python3 -m pip install --user pytest pytest-rerunfailures pytest-xdist yapf
     python3 -m pip install --user numpy GitPython coverage colorama autograd
 
 - Make sure you have ``clang`` with version >= 7
@@ -54,7 +54,7 @@ Installing Dependencies
 
    If the downloaded LLVM does not work, please build from source:
 
-  - On Linux or OS X:
+  * On Linux or OS X:
 
       .. code-block:: bash
 
@@ -68,7 +68,7 @@ Installing Dependencies
         make -j 8
         sudo make install
 
-  - On Windows:
+  * On Windows:
 
     .. code-block:: bash
 

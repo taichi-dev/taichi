@@ -33,6 +33,7 @@ setuptools.setup(
         'colorama',
         'setuptools',
         'astor',
+        'dill',
         # For testing:
         'pytest',
         'pytest-xdist',

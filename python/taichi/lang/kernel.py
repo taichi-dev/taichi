@@ -1,4 +1,5 @@
 import re
+import dill
 import inspect
 from .transformer import ASTTransformer
 import ast
@@ -262,7 +263,7 @@ class Kernel:
         import taichi as ti
         ti.trace("Compiling kernel {}...".format(kernel_name))
 
-        src = remove_indent(inspect.getsource(self.func))
+        src = remove_indent(dill.source.getsource(self.func))
         tree = ast.parse(src)
         if self.runtime.print_preprocessed:
             import astor
@@ -302,7 +303,7 @@ class Kernel:
             print('After preprocessing:')
             print(astor.to_source(tree.body[0], indent_with='  '))
 
-        ast.increment_lineno(tree, inspect.getsourcelines(self.func)[1] - 1)
+        ast.increment_lineno(tree, dill.source.getsourcelines(self.func)[1] - 1)
 
         freevar_names = self.func.__code__.co_freevars
         closure = self.func.__closure__

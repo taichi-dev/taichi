@@ -148,6 +148,7 @@ class RuntimeListOpsMtlKernel : public CompiledMtlKernelBase {
  public:
   struct Params : public CompiledMtlKernelBase::Params {
     MemoryPool *mem_pool = nullptr;
+    const SNodeDescriptorsMap *snode_descriptors = nullptr;
 
     const SNode *snode() const {
       return kernel_attribs->runtime_list_op_attribs.snode;
@@ -159,7 +160,7 @@ class RuntimeListOpsMtlKernel : public CompiledMtlKernelBase {
         parent_snode_id_(params.snode()->parent->id),
         child_snode_id_(params.snode()->id),
         args_mem_(std::make_unique<BufferMemoryView>(
-            /*size=*/sizeof(int32_t) * 2,
+            /*size=*/sizeof(int32_t) * 3,
             params.mem_pool)),
         args_buffer_(new_mtl_buffer_no_copy(params.device,
                                             args_mem_->ptr(),
@@ -168,6 +169,8 @@ class RuntimeListOpsMtlKernel : public CompiledMtlKernelBase {
     auto *mem = reinterpret_cast<int32_t *>(args_mem_->ptr());
     mem[0] = parent_snode_id_;
     mem[1] = child_snode_id_;
+    const auto &sn_descs = *params.snode_descriptors;
+    mem[2] = total_num_self_from_root(sn_descs, child_snode_id_);
   }
 
   void launch(InputBuffersMap &input_buffers,
@@ -189,6 +192,7 @@ class RuntimeListOpsMtlKernel : public CompiledMtlKernelBase {
   // For such Metal kernels, it always takes in an args buffer of two int32's:
   // args[0] = parent_snode_id
   // args[1] = child_snode_id
+  // args[2] = child_snode.total_num_self_from_root
   // Note that this args buffer has nothing to do with the one passed to Taichi
   // kernel.
   // See taichi/backends/metal/shaders/runtime_kernels.metal.h
@@ -205,6 +209,7 @@ class CompiledTaichiKernel {
     std::string mtl_source_code;
     const std::vector<KernelAttributes> *mtl_kernels_attribs;
     const KernelContextAttributes *ctx_attribs;
+    const SNodeDescriptorsMap *snode_descriptors;
     MTLDevice *device;
     MemoryPool *mem_pool;
     ProfilerBase *profiler;
@@ -230,6 +235,7 @@ class CompiledTaichiKernel {
         kparams.device = device;
         kparams.mtl_func = mtl_func.get();
         kparams.mem_pool = params.mem_pool;
+        kparams.snode_descriptors = params.snode_descriptors;
         kernel = std::make_unique<RuntimeListOpsMtlKernel>(kparams);
       } else {
         UserMtlKernel::Params kparams;
@@ -413,18 +419,21 @@ class KernelManager::Impl {
         device_.get(), global_tmps_mem_->ptr(), global_tmps_mem_->size());
     TI_ASSERT(global_tmps_buffer_ != nullptr);
 
-    if (compiled_structs_.runtime_size > 0) {
-      runtime_mem_ = std::make_unique<BufferMemoryView>(
-          compiled_structs_.runtime_size, mem_pool_);
-      runtime_buffer_ = new_mtl_buffer_no_copy(
-          device_.get(), runtime_mem_->ptr(), runtime_mem_->size());
-      TI_DEBUG("Metal runtime buffer size: {} bytes", runtime_mem_->size());
-      TI_ASSERT_INFO(
-          runtime_buffer_ != nullptr,
-          "Failed to allocate Metal runtime buffer, requested {} bytes",
-          runtime_mem_->size());
-      init_runtime(params.root_id);
-    }
+    TI_ASSERT(compiled_structs_.runtime_size > 0);
+    const int mem_pool_bytes = (config_->device_memory_GB * 1024 * 1024 * 1024);
+    runtime_mem_ = std::make_unique<BufferMemoryView>(
+        compiled_structs_.runtime_size + mem_pool_bytes, mem_pool_);
+    runtime_buffer_ = new_mtl_buffer_no_copy(device_.get(), runtime_mem_->ptr(),
+                                             runtime_mem_->size());
+    TI_DEBUG(
+        "Metal runtime buffer size: {} bytes (sizeof(Runtime)={} "
+        "memory_pool={})",
+        runtime_mem_->size(), compiled_structs_.runtime_size, mem_pool_bytes);
+    TI_ASSERT_INFO(
+        runtime_buffer_ != nullptr,
+        "Failed to allocate Metal runtime buffer, requested {} bytes",
+        runtime_mem_->size());
+    init_runtime(params.root_id);
   }
 
   void register_taichi_kernel(
@@ -447,6 +456,7 @@ class KernelManager::Impl {
     params.mtl_source_code = mtl_kernel_source_code;
     params.mtl_kernels_attribs = &kernels_attribs;
     params.ctx_attribs = &ctx_attribs;
+    params.snode_descriptors = &compiled_structs_.snode_descriptors;
     params.device = device_.get();
     params.mem_pool = mem_pool_;
     params.profiler = profiler_;
@@ -560,32 +570,27 @@ class KernelManager::Impl {
     TI_DEBUG("Initialized SNodeExtractors, size={} accumuated={}", addr_offset,
              (addr - addr_begin));
     // init snode_lists
-    ListManager *const rtm_list_head = reinterpret_cast<ListManager *>(addr);
-    int list_data_mem_begin = 0;
+    ListManagerData *const rtm_list_head =
+        reinterpret_cast<ListManagerData *>(addr);
     for (int i = 0; i < max_snodes; ++i) {
       auto iter = snode_descriptors.find(i);
       if (iter == snode_descriptors.end()) {
         continue;
       }
       const SNodeDescriptor &sn_desc = iter->second;
-      ListManager *rtm_list = reinterpret_cast<ListManager *>(addr) + i;
+      ListManagerData *rtm_list = reinterpret_cast<ListManagerData *>(addr) + i;
       rtm_list->element_stride = sizeof(ListgenElement);
-      // This can be really large, especially for other sparse SNodes (e.g.
-      // dynamic, hash). In the future, Metal might also be able to support
-      // dynamic memory allocation from the kernel side. That should help reduce
-      // the initial size.
-      rtm_list->max_num_elems =
-          sn_desc.total_num_self_from_root(snode_descriptors);
 
+      const int num_elems_per_chunk = compute_num_elems_per_chunk(
+          sn_desc.total_num_self_from_root(snode_descriptors));
+      rtm_list->log2_num_elems_per_chunk = log2int(num_elems_per_chunk);
       rtm_list->next = 0;
-      rtm_list->mem_begin = list_data_mem_begin;
-      list_data_mem_begin += rtm_list->max_num_elems * rtm_list->element_stride;
-      TI_DEBUG("ListManager\n  id={}\n  num_slots={}\n  mem_begin={}\n", i,
-               rtm_list->max_num_elems, rtm_list->mem_begin);
+      TI_DEBUG("ListManagerData\n  id={}\n  num_elems_per_chunk={}\n", i,
+               num_elems_per_chunk);
     }
-    addr_offset = sizeof(ListManager) * max_snodes;
+    addr_offset = sizeof(ListManagerData) * max_snodes;
     addr += addr_offset;
-    TI_DEBUG("Initialized ListManager, size={} accumuated={}", addr_offset,
+    TI_DEBUG("Initialized ListManagerData, size={} accumuated={}", addr_offset,
              (addr - addr_begin));
     // init rand_seeds
     // TODO(k-ye): Provide a way to use a fixed seed in dev mode.
@@ -604,14 +609,30 @@ class KernelManager::Impl {
              kNumRandSeeds * sizeof(uint32_t), (addr - addr_begin));
 
     if (compiled_structs_.need_snode_lists_data) {
+      auto *alloc = reinterpret_cast<MemoryAllocator *>(addr);
+      // Make sure the retured memory address is always greater than 1.
+      alloc->next = shaders::kAlignment;
       // root list data are static
       ListgenElement root_elem;
       root_elem.root_mem_offset = 0;
       for (int i = 0; i < taichi_max_num_indices; ++i) {
         root_elem.coords[i] = 0;
       }
-      append(rtm_list_head + root_id, root_elem, addr);
+      ListManager root_lm;
+      root_lm.lm_data = rtm_list_head + root_id;
+      root_lm.mem_alloc = alloc;
+      append(&root_lm, root_elem);
     }
+  }
+
+  static int compute_num_elems_per_chunk(int n) {
+    const int lb =
+        (n + shaders::kTaichiNumChunks - 1) / shaders::kTaichiNumChunks;
+    int result = 1024;
+    while (result < lb) {
+      result <<= 1;
+    }
+    return result;
   }
 
   void create_new_command_buffer() {

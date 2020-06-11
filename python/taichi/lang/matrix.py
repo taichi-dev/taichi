@@ -216,10 +216,7 @@ class Matrix(TaichiOperations):
         else:
             assert len(indices) in [1, 2]
             i = indices[0]
-            if len(indices) >= 2:
-                j = indices[1]
-            else:
-                j = 0
+            j = 0 if len(indices) == 1 else indices[1]
             return self(i, j)
 
     @property
@@ -340,10 +337,7 @@ class Matrix(TaichiOperations):
             indices = [indices]
         assert len(indices) in [1, 2]
         i = indices[0]
-        if len(indices) >= 2:
-            j = indices[1]
-        else:
-            j = 0
+        j = 0 if len(indices) == 1 else indices[1]
         return self(i, j)
 
     @python_scope
@@ -360,10 +354,7 @@ class Matrix(TaichiOperations):
             indices = [indices]
         assert len(indices) in [1, 2]
         i = indices[0]
-        if len(indices) >= 2:
-            j = indices[1]
-        else:
-            j = 0
+        j = 0 if len(indices) == 1 else indices[1]
         self.set_entry(i, j, item)
 
     def empty_copy(self):

@@ -376,8 +376,10 @@ def raw_div(a, b):
     if is_taichi_expr(a) or is_taichi_expr(b):
         a, b = wrap_if_not_expr(a), wrap_if_not_expr(b)
         return Expr(taichi_lang_core.expr_div(a.ptr, b.ptr), tb=stack_info())
+    elif isinstance(a, int) and isinstance(b, int):
+        return a // b
     else:
-        return a // b  # TODO: Is this correct???
+        return a / b
 
 
 @binary

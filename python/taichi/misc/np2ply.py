@@ -99,20 +99,17 @@ class PLYWriter:
         self.add_vertex_channel("ny", "float", normal[:, 1])
         self.add_vertex_channel("nz", "float", normal[:, 2])
 
-    def add_vertex_color(self, r: np.array, g: np.array, b: np.array):
+    def add_vertex_rgb(self, r: np.array, g: np.array, b: np.array):
         self.add_vertex_channel("red", "float", r)
         self.add_vertex_channel("green", "float", g)
         self.add_vertex_channel("blue", "float", b)
 
     # pass ti vector/matrix tensor directly
-    def add_vertex_color(self, color):
+    def add_vertex_rgb(self, color):
         if not isinstance(color, np.ndarray):
             color = color.to_numpy()
-        # n = 1
         channels = color.shape[color.ndim-1]
-        assert channels == 3, "Now only rgb is supported"
-        # for i in range(len(color.shape)-1):
-        #     n = n*color.shape[i]
+        assert channels == 3, "The dimension for rgb should be 3"
         n = color.size // channels
         color = np.reshape(color, (n, channels))
         self.add_vertex_channel("red", "float", color[:, 0])
@@ -127,6 +124,19 @@ class PLYWriter:
         self.add_vertex_channel("green", "float", g)
         self.add_vertex_channel("blue", "float", b)
         self.add_vertex_channel("Alpha", "float", a)
+
+    # pass ti vector/matrix tensor directly
+    def add_vertex_rgba(self, rgba):
+        if not isinstance(rgba, np.ndarray):
+            rgba = rgba.to_numpy()
+        channels = rgba.shape[rgba.ndim-1]
+        assert channels == 4, "The dimension for rgba should be 4"
+        n = rgba.size // channels
+        rgba = np.reshape(rgba, (n, channels))
+        self.add_vertex_channel("red", "float", rgba[:, 0])
+        self.add_vertex_channel("green", "float", rgba[:, 1])
+        self.add_vertex_channel("blue", "float", rgba[:, 2])
+        self.add_vertex_channel("Alpha", "float", rgba[:, 3])
 
     def add_vertex_id(self):
         self.add_vertex_channel("id", "int", np.arange(self.num_vertices))
@@ -236,3 +246,21 @@ class PLYWriter:
                 for j in range(self.num_face_channels):
                     f.write(str(self.face_data[j][i]) + " ")
                 f.write("\n")
+
+    def export_for_time_series_ascii(self, series_num: int, path):
+        # if path has ply ending
+        last_4_char = path[-4:]
+        if last_4_char == ".ply":
+            path = path[:-4]
+
+        real_path = path+"_" + "{0:0=6d}".format(series_num) + ".ply"
+        self.export_ascii(real_path)
+
+    def export_for_time_series(self, series_num: int, path):
+        # if path has ply ending
+        last_4_char = path[-4:]
+        if last_4_char == ".ply":
+            path = path[:-4]
+
+        real_path = path+"_" + "{0:0=6d}".format(series_num) + ".ply"
+        self.export(real_path)

@@ -18,6 +18,8 @@ B.place(qt)
 
 img = ti.Vector(3, dt=ti.f32, shape=(RES, RES))
 
+print('The quad tree layout is:\n', qt.snode())
+
 
 @ti.kernel
 def action(p: ti.ext_arr()):

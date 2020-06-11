@@ -30,6 +30,8 @@ See :ref:`layout` for more details. ``ti.root`` is the root node of the data str
         x = ti.var(dt=ti.i32)
         y = ti.var(dt=ti.f32)
         ti.root.place(x, y)
+        assert x.snode() == y.snode()
+
 
 .. function:: tensor.shape()
 
@@ -44,22 +46,6 @@ See :ref:`layout` for more details. ``ti.root`` is the root node of the data str
         x.shape() # returns (3, 5, 4)
 
 
-.. function:: snode.get_shape(index)
-
-    :parameter snode: (SNode)
-    :parameter index: axis (0 for ``i`` and 1 for ``j``)
-    :return: (scalar) the size of tensor along that axis
-
-    Equivalent to ``tensor.shape()[i]``.
-
-    ::
-
-        ti.root.dense(ti.ijk, (3, 5, 4)).place(x)
-        x.snode().get_shape(0)  # 3
-        x.snode().get_shape(1)  # 5
-        x.snode().get_shape(2)  # 4
-
-
 .. function:: tensor.dim()
 
     :parameter tensor: (Tensor)
@@ -71,6 +57,58 @@ See :ref:`layout` for more details. ``ti.root`` is the root node of the data str
 
         ti.root.dense(ti.ijk, (8, 9, 10)).place(x)
         x.dim()  # 3
+
+
+.. function:: tensor.snode()
+
+    :parameter tensor: (Tensor)
+    :return: (SNode) the structual node where ``tensor`` is placed
+
+    ::
+
+        x = ti.var(dt=ti.i32)
+        y = ti.var(dt=ti.f32)
+        ti.root.place(x, y)
+        x.snode()
+
+
+.. function:: snode.shape()
+
+    :parameter snode: (SNode)
+    :parameter index: axis (0 for ``i`` and 1 for ``j``)
+    :return: (scalar) the size of tensor along that axis
+
+    Equivalent to ``tensor.shape()``.
+
+    ::
+
+        blk1 = ti.root
+        blk2 = blk1.dense(ti.i,  3)
+        blk3 = blk2.dense(ti.jk, (5, 2))
+        blk4 = blk3.dense(ti.k,  2)
+        blk1.shape()  # ()
+        blk2.shape()  # (3, )
+        blk3.shape()  # (3, 5, 2)
+        blk4.shape()  # (3, 5, 4)
+
+
+.. function:: snode.get_shape(index)
+
+    :parameter snode: (SNode)
+    :parameter index: axis (0 for ``i`` and 1 for ``j``)
+    :return: (scalar) the size of tensor along that axis
+
+    Equivalent to ``snode.shape()[i]``, used in Taichi-scope to prevent `[...]` being transformed to tensor access.
+
+    ::
+
+        blk = ti.root.dense(ti.ijk, (3, 5, 4))
+
+        @ti.kernel
+        def taichi_scope():
+            blk.get_shape(0)  # 3
+            blk.get_shape(1)  # 5
+            blk.get_shape(2)  # 4
 
 
 .. function:: snode.parent()
@@ -188,6 +226,11 @@ Indices
 .. function:: ti.j
 .. function:: ti.k
 .. function:: ti.ij
+.. function:: ti.ji
+.. function:: ti.jk
+.. function:: ti.kj
+.. function:: ti.ik
+.. function:: ti.ki
 .. function:: ti.ijk
 .. function:: ti.ijkl
 .. function:: ti.indices(a, b, ...)

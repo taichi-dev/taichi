@@ -7,9 +7,6 @@ import traceback
 
 # Scalar, basic data type
 class Expr(TaichiOperations):
-    materialize_layout_callback = None
-    layout_materialized = False
-
     def __init__(self, *args, tb=None):
         self.getter = None
         self.setter = None
@@ -39,8 +36,7 @@ class Expr(TaichiOperations):
 
     @python_scope
     def __setitem__(self, key, value):
-        if not Expr.layout_materialized:
-            self.materialize_layout_callback()
+        impl.get_runtime().try_materialize()
         self.initialize_accessor()
         if key is None:
             key = ()
@@ -53,8 +49,7 @@ class Expr(TaichiOperations):
 
     @python_scope
     def __getitem__(self, key):
-        if not Expr.layout_materialized:
-            self.materialize_layout_callback()
+        impl.get_runtime().try_materialize()
         self.initialize_accessor()
         if key is None:
             key = ()
@@ -132,13 +127,11 @@ class Expr(TaichiOperations):
         return self.ptr.get_raw_address()
 
     def dim(self):
-        if not Expr.layout_materialized:
-            self.materialize_layout_callback()
+        impl.get_runtime().try_materialize()
         return self.snode().dim()
 
     def shape(self):
-        if not Expr.layout_materialized:
-            self.materialize_layout_callback()
+        impl.get_runtime().try_materialize()
         return self.snode().shape()
 
     def data_type(self):

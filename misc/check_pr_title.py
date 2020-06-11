@@ -45,7 +45,8 @@ for x in title.split('] ')[:-1]:
     # 'misc'.islower() -> True, 'misc'.isupper() -> False
     if not x[1:].islower():
         if had_upper:
-            raise Exception(f'At most 1 uppercase tag expected, got: [{x[1:]}]')
+            raise Exception(
+                f'At most 1 uppercase tag expected, got: [{x[1:]}]')
         had_upper = True
 
 print('OK!')

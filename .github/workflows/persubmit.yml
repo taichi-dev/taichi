@@ -11,9 +11,6 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python: [3.6, 3.7, 3.8]
-        include:
-          - os: ubuntu-16.04
-            python: 3.7
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
@@ -72,3 +69,14 @@ jobs:
           git commit -m "enforce code format" || true
           # exit with 1 if there were differences:
           git diff _last_squash _enforced_format --exit-code
+
+    title_format:
+      name: Check PR Title
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v2
+        - name: Run PR Title Checker
+          run: |
+            python misc/pr_title_check.py $PR_TITLE
+          env:
+            PR_TITLE: ${{ github.event.pull_request.title }}

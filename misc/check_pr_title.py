@@ -14,16 +14,16 @@ with open(os.path.join(this_dir, 'prtags.txt')) as f:
             pass
 
 if not title.startswith('['):
-    raise Exception(f'PR tltle does not starts with any tag: {title}')
+    raise Exception(f'PR title does not start with any tag: {title}')
 
 if title.endswith(' '):
-    raise Exception(f'PR tltle should not ends with a space: {title}')
+    raise Exception(f'PR title should not end with a space: {title}')
 
 if title.endswith(']'):
-    raise Exception(f'PR tltle should have bodies regardless tags: {title}')
+    raise Exception(f'PR title should have bodies regardless tags: {title}')
 
 if '`' in title:
-    raise Exception(f'PR tltle should not contain backquotes (`): {title}')
+    raise Exception(f'PR title should not contain backquotes (`): {title}')
 
 for x in title.split(']')[1:]:
     if x[0] != ' ':

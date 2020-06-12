@@ -101,7 +101,9 @@ int LoopIndexStmt::max_num_bits() const {
     if (offload->task_type == OffloadedStmt::TaskType::range_for) {
       if (!offload->const_begin || !offload->const_end)
         return -1;
-      return bit::ceil_log2int(offload->end_offset);
+      if (offload->begin_value < 0)
+        return -1;
+      return bit::ceil_log2int(offload->end_value);
     } else if (offload->task_type == OffloadedStmt::TaskType::struct_for) {
       return offload->snode->get_num_bits(index);
     } else {

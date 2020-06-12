@@ -163,8 +163,8 @@ Frequently used tags:
 - ``[Perf]``: performance improvements;
 - ``[Misc]``: something that doesn't belong to any category, such as version bump, reformatting;
 - ``[Bug]``: bug fixes;
-- Check out more tags in `misc/prtags.txt <https://github.com/taichi-dev/taichi/blob/master/misc/prtags.txt>`_.
-- When introducing a new tag, please update the list in ``misc/prtags.txt`` in the first PR with that tag, so that people can follow.
+- Check out more tags in `misc/prtags.json <https://github.com/taichi-dev/taichi/blob/master/misc/prtags.json>`_.
+- When introducing a new tag, please update the list in ``misc/prtags.json`` in the first PR with that tag, so that people can follow.
 
 .. note::
 

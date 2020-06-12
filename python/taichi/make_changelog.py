@@ -1,19 +1,15 @@
 # Usage: make_changelog.py [v0.x.y]
 
-import sys, os
+import sys, os, json
 from git import Repo
 
 
 def load_pr_tags():
     this_dir = os.path.dirname(os.path.abspath(__file__))
+    json_path = os.path.join(this_dir, '../../misc/prtags.json')
     details = {}
-    with open(os.path.join(this_dir, '../../misc/prtags.txt')) as f:
-        for line in f.readlines():
-            try:
-                tag, desc = line.strip().split(maxsplit=1)
-                details[tag] = desc
-            except ValueError:
-                pass
+    with open(json_path) as f:
+        details = json.load(f)
     details['release'] = ''
     return details
 

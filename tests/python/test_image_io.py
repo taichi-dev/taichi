@@ -31,9 +31,6 @@ def test_image_io(resx, resy, comp, ext, is_tensor, dt):
     if comp == 1:
         # from (resx, resy, 1) to (resx, resy)
         pixel_r = pixel_r.reshape((resx, resy))
-    print(pixel_r)
-    print('=====')
-    print(pixel)
     assert (pixel_r == pixel).all()
     os.remove(fn)
 
@@ -51,9 +48,6 @@ def test_image_io_vector(resx, resy, comp, ext, dt):
     fn = mkstemp(suffix='.' + ext)[1]
     ti.imwrite(pixel_t, fn)
     pixel_r = (ti.imread(fn).astype(ti.to_numpy_type(dt)) + 0.5) / 256.0
-    print(pixel_r)
-    print('=====')
-    print(pixel)
     assert np.allclose(pixel_r, pixel, atol=2e-2)
     os.remove(fn)
 
@@ -66,6 +60,8 @@ def test_image_io_uint(resx, resy, comp, ext, dt):
     from tempfile import mkstemp
     shape = (resx, resy)
     np_type = ti.to_numpy_type(dt)
+    # When saving to disk, pixel data will be truncated into 8 bits.
+    # Be careful here if you want lossless saving.
     np_max = np.iinfo(np_type).max // 256
     pixel = np.random.randint(256, size=(*shape, comp), dtype=np_type) * np_max
     pixel_t = ti.Vector(comp, dt, shape)
@@ -73,8 +69,5 @@ def test_image_io_uint(resx, resy, comp, ext, dt):
     fn = mkstemp(suffix='.' + ext)[1]
     ti.imwrite(pixel_t, fn)
     pixel_r = ti.imread(fn).astype(np_type) * np_max
-    print(pixel_r)
-    print('=====')
-    print(pixel)
     assert (pixel_r == pixel).all()
     os.remove(fn)

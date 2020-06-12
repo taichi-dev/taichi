@@ -349,12 +349,12 @@ def test_any_all():
 
             func()
             if i == 1 or j == 1:
-                assert b[None] == -1
+                assert b[None] == 1
             else:
                 assert b[None] == 0
 
             if i == 1 and j == 1:
-                assert c[None] == -1
+                assert c[None] == 1
             else:
                 assert c[None] == 0
 

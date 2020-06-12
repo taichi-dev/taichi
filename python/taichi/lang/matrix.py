@@ -167,10 +167,10 @@ class Matrix(TaichiOperations):
         ret = Matrix.empty(self.n, other.m)
         for i in range(self.n):
             for j in range(other.m):
-                ret_ij = ret.linearize_entry_id(i, j)
-                ret.entries[ret_ij] = self(i, 0) * other(0, j)
+                acc = self(i, 0) * other(0, j)
                 for k in range(1, other.n):
-                    ret.entries[ret_ij] = ret(i, j) + self(i, k) * other(k, j)
+                    acc = acc + self(i, k) * other(k, j)
+                ret.set_entry(i, j, acc)
         return ret
 
     def linearize_entry_id(self, *args):
@@ -376,11 +376,10 @@ class Matrix(TaichiOperations):
     def cast(self, dt):
         ret = self.copy()
         if type(dt) is type and issubclass(dt, numbers.Number):
-            import taichi as ti
             if dt is float:
-                dt = ti.get_runtime().default_fp
+                dt = impl.get_runtime().default_fp
             elif dt is int:
-                dt = ti.get_runtime().default_ip
+                dt = impl.get_runtime().default_ip
             else:
                 assert False
         for i in range(len(self.entries)):
@@ -562,14 +561,14 @@ class Matrix(TaichiOperations):
         ret = ti.cmp_ne(self.entries[0], 0)
         for i in range(1, len(self.entries)):
             ret = ret + ti.cmp_ne(self.entries[i], 0)
-        return ti.cmp_lt(ret, 0)
+        return -ti.cmp_lt(ret, 0)
 
     def all(self):
         import taichi as ti
         ret = ti.cmp_ne(self.entries[0], 0)
         for i in range(1, len(self.entries)):
             ret = ret + ti.cmp_ne(self.entries[i], 0)
-        return ti.cmp_eq(ret, -len(self.entries))
+        return -ti.cmp_eq(ret, -len(self.entries))
 
     def fill(self, val):
         if impl.inside_kernel():

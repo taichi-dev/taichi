@@ -225,7 +225,7 @@ def logical_not(a):
     if is_taichi_expr(a):
         return Expr(taichi_lang_core.expr_logic_not(a.ptr), tb=stack_info())
     else:
-        return -int(not a)
+        return int(not a)
 
 
 def random(dt=None):

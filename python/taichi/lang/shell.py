@@ -15,8 +15,11 @@ def _show_idle_error_message():
         path = os.path.join(os.path.abspath(sys.executable), f'lib/python{ver}/code.py')
     else:
         path = f'/lib/python{ver}/code.py'
-    print('Taichi cannot be functional due to IDLE limitation, to make things work perfectly, please open'
-         f' "{path}" and add the following line to `InteractiveInterpreter.runsource`, right below `# Case 3`:')
+    print('It\'s detected that you are using Python IDLE as interactive shell.')
+    print('However, Taichi cannot be functional due to IDLE limitation, sorry :(')
+    print('We do care about your experience, no matter which shell you prefer.')
+    print('So, if you would like to play with Taichi in your favorite IDLE, we may do a dirty hack:')
+    print(f'Open "{path}" and add the following line to `InteractiveInterpreter.runsource`, right below `# Case 3`:')
     print('''
 class InteractiveInterpreter:
     ...
@@ -30,7 +33,9 @@ class InteractiveInterpreter:
         return False
 
     ...
+
         ''')
+    print('Then, restart IDLE and enjoy, the sky is blue again and we are wizards!')
 
 def get_shell_name():
     try:  # IPython / Jupyter?
@@ -88,8 +93,9 @@ class ShellInspectorWrapper:
                 try:
                     with open('.tmp_idle_source') as f:
                         src = f.read()
-                except FileNotFoundError:
+                except FileNotFoundError as e:
                     _show_idle_error_message()
+                    raise e
 
                 # Thanking IDLE dev :( It works anyway :)
                 for x in src.split('====='):
@@ -139,10 +145,12 @@ oinspect = ShellInspectorWrapper()
 
 def reset_callback():
     if oinspect.name == ShellType.IDLE:
+        import os
         try:
             os.unlink('.tmp_idle_source')
-            print('[Taichi] File ".tmp_idle_source" cleaned')
         except:
             pass
+        else:
+            print('[Taichi] File ".tmp_idle_source" cleaned')
 
 reset_callback()

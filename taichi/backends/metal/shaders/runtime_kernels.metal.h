@@ -49,10 +49,11 @@ STR(
       if (utid_ > 0)
         return;
       int child_snode_id = args[1];
-      device ListManager *child_list =
-          &(reinterpret_cast<device Runtime *>(runtime_addr)
-                ->snode_lists[child_snode_id]);
-      clear(child_list);
+      ListManager child_list;
+      child_list.lm_data =
+          (reinterpret_cast<device Runtime *>(runtime_addr)->snode_lists +
+           child_snode_id);
+      clear(&child_list);
     }
 
     kernel void element_listgen(device byte *runtime_addr[[buffer(0)]],
@@ -62,30 +63,33 @@ STR(
                                 const uint grid_size[[threads_per_grid]]) {
       device Runtime *runtime =
           reinterpret_cast<device Runtime *>(runtime_addr);
-      device byte *list_data_addr =
-          reinterpret_cast<device byte *>(runtime + 1);
+      device MemoryAllocator *mem_alloc =
+          reinterpret_cast<device MemoryAllocator *>(runtime + 1);
 
-      int parent_snode_id = args[0];
-      int child_snode_id = args[1];
-      device ListManager *parent_list =
-          &(runtime->snode_lists[parent_snode_id]);
-      device ListManager *child_list = &(runtime->snode_lists[child_snode_id]);
+      const int parent_snode_id = args[0];
+      const int child_snode_id = args[1];
+      ListManager parent_list;
+      parent_list.lm_data = (runtime->snode_lists + parent_snode_id);
+      parent_list.mem_alloc = mem_alloc;
+      ListManager child_list;
+      child_list.lm_data = (runtime->snode_lists + child_snode_id);
+      child_list.mem_alloc = mem_alloc;
       const SNodeMeta parent_meta = runtime->snode_metas[parent_snode_id];
       const int child_stride = parent_meta.element_stride;
       const int num_slots = parent_meta.num_slots;
       const SNodeMeta child_meta = runtime->snode_metas[child_snode_id];
       // |max_num_elems| is NOT padded to power-of-two, while |num_slots| is.
       // So we need to cap the loop precisely at child's |max_num_elems|.
-      for (int ii = utid_; ii < child_list->max_num_elems; ii += grid_size) {
+      const int max_num_elems = args[2];
+      for (int ii = utid_; ii < max_num_elems; ii += grid_size) {
         const int parent_idx = (ii / num_slots);
-        if (parent_idx >= num_active(parent_list)) {
+        if (parent_idx >= num_active(&parent_list)) {
           // Since |parent_idx| increases monotonically, we can return directly
           // once it goes beyond the number of active parent elements.
           return;
         }
         const int child_idx = (ii % num_slots);
-        const auto parent_elem =
-            get<ListgenElement>(parent_list, parent_idx, list_data_addr);
+        const auto parent_elem = get<ListgenElement>(&parent_list, parent_idx);
         ListgenElement child_elem;
         child_elem.root_mem_offset = parent_elem.root_mem_offset +
                                      child_idx * child_stride +
@@ -95,7 +99,7 @@ STR(
           refine_coordinates(parent_elem,
                              runtime->snode_extractors[parent_snode_id],
                              child_idx, &child_elem);
-          append(child_list, child_elem, list_data_addr);
+          append(&child_list, child_elem);
         }
       }
     }

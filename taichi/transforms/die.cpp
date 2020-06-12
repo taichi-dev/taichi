@@ -51,7 +51,7 @@ class DIE : public IRVisitor {
     if (phase == 0) {
       register_usage(stmt);
     } else {
-      if (!stmt->has_global_side_effect() &&
+      if (stmt->dead_instruction_eliminable() &&
           used.find(stmt->instance_id) == used.end()) {
         stmt->parent->erase(stmt);
         throw IRModified();

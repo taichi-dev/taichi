@@ -14,6 +14,7 @@ template <typename T>
 bool atomic_compare_exchange_weak_explicit(T *object,
                                            T *expected,
                                            T desired,
+                                           metal::memory_order,
                                            metal::memory_order) {
   const T val = *object;
   if (val == *expected) {

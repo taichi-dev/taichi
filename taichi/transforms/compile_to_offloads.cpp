@@ -73,10 +73,6 @@ void compile_to_offloads(IRNode *ir,
     irpass::analysis::verify(ir);
   }
 
-  irpass::extract_constant(ir);
-  print("Constant extracted");
-  irpass::analysis::verify(ir);
-
   irpass::variable_optimization(ir, false);
   print("Store forwarded");
   irpass::analysis::verify(ir);
@@ -114,18 +110,9 @@ void compile_to_offloads(IRNode *ir,
     irpass::analysis::verify(ir);
   }
 
-  irpass::extract_constant(ir);
-  print("Constant extracted II");
-
   irpass::demote_atomics(ir);
   print("Atomics demoted");
   irpass::analysis::verify(ir);
-
-  irpass::full_simplify(ir);
-  print("Simplified III");
-
-  irpass::extract_constant(ir);
-  print("Constant extracted III");
 
   irpass::variable_optimization(ir, true);
   print("Store forwarded II");
@@ -135,7 +122,7 @@ void compile_to_offloads(IRNode *ir,
   irpass::analysis::verify(ir);
 
   irpass::full_simplify(ir);
-  print("Simplified IV");
+  print("Simplified III");
 
   // Final field registration correctness & type checking
   irpass::typecheck(ir);

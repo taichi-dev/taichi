@@ -13,7 +13,7 @@ namespace irpass {
 void re_id(IRNode *root);
 void flag_access(IRNode *root);
 void die(IRNode *root);
-void simplify(IRNode *root, Kernel *kernel = nullptr);
+bool simplify(IRNode *root, Kernel *kernel = nullptr);
 void cfg_optimization(IRNode *root);
 bool alg_simp(IRNode *root);
 bool whole_kernel_cse(IRNode *root);
@@ -30,7 +30,7 @@ void replace_all_usages_with(IRNode *root, Stmt *old_stmt, Stmt *new_stmt);
 void check_out_of_bound(IRNode *root);
 void lower_access(IRNode *root, bool lower_atomic, Kernel *kernel = nullptr);
 void make_adjoint(IRNode *root, bool use_stack = false);
-void constant_fold(IRNode *root);
+bool constant_fold(IRNode *root);
 void offload(IRNode *root);
 void fix_block_parents(IRNode *root);
 void replace_statements_with(IRNode *root,

@@ -62,18 +62,20 @@ class PLYWriter:
                 self.vertex_data_type.append(type)
                 self.vertex_data.append(self.type_map[type](data[:, i]))
 
-    def add_vertex_pos(self, x: np.array, y: np.array, z: np.array):
+    def add_vertex_xyz(self, x: np.array, y: np.array, z: np.array):
         self.add_vertex_channel("x", "float", x)
         self.add_vertex_channel("y", "float", y)
         self.add_vertex_channel("z", "float", z)
 
     # pass ti vector/matrix tensor directly
     def add_vertex_pos(self, pos):
+        assert isinstance(pos, (np.ndarray, ti.Matrix))
         if not isinstance(pos, np.ndarray):
             pos = pos.to_numpy()
         dim = pos.shape[pos.ndim-1]
         assert dim == 2 or dim == 3, "Only 2D and 3D positions are supported"
         n = pos.size // dim
+        assert n == self.num_vertices, "Size of the input is not correct"
         pos = np.reshape(pos, (n, dim))
         self.add_vertex_channel("x", "float", pos[:, 0])
         self.add_vertex_channel("y", "float", pos[:, 1])
@@ -82,18 +84,20 @@ class PLYWriter:
         if(dim == 2):
             self.add_vertex_channel("z", "float", np.zeros(n))
 
-    def add_vertex_normal(self, nx: np.array, ny: np.array, nz: np.array):
+    def add_vertex_normalxyz(self, nx: np.array, ny: np.array, nz: np.array):
         self.add_vertex_channel("nx", "float", nx)
         self.add_vertex_channel("ny", "float", ny)
         self.add_vertex_channel("nz", "float", nz)
 
     # pass ti vector/matrix tensor directly
     def add_vertex_normal(self, normal):
+        assert isinstance(normal, (np.ndarray, ti.Matrix))
         if not isinstance(normal, np.ndarray):
             normal = normal.to_numpy()
         dim = normal.shape[normal.ndim-1]
         assert dim == 3, "Only 3D normal is supported"
         n = normal.size // dim
+        assert n == self.num_vertices, "Size of the input is not correct"
         normal = np.reshape(normal, (n, dim))
         self.add_vertex_channel("nx", "float", normal[:, 0])
         self.add_vertex_channel("ny", "float", normal[:, 1])
@@ -103,18 +107,6 @@ class PLYWriter:
         self.add_vertex_channel("red", "float", r)
         self.add_vertex_channel("green", "float", g)
         self.add_vertex_channel("blue", "float", b)
-
-    # pass ti vector/matrix tensor directly
-    def add_vertex_rgb(self, color):
-        if not isinstance(color, np.ndarray):
-            color = color.to_numpy()
-        channels = color.shape[color.ndim-1]
-        assert channels == 3, "The dimension for rgb should be 3"
-        n = color.size // channels
-        color = np.reshape(color, (n, channels))
-        self.add_vertex_channel("red", "float", color[:, 0])
-        self.add_vertex_channel("green", "float", color[:, 1])
-        self.add_vertex_channel("blue", "float", color[:, 2])
 
     def add_vertex_alpha(self, alpha: np.array):
         self.add_vertex_channel("Alpha", "float", alpha)
@@ -126,17 +118,20 @@ class PLYWriter:
         self.add_vertex_channel("Alpha", "float", a)
 
     # pass ti vector/matrix tensor directly
-    def add_vertex_rgba(self, rgba):
-        if not isinstance(rgba, np.ndarray):
-            rgba = rgba.to_numpy()
-        channels = rgba.shape[rgba.ndim-1]
-        assert channels == 4, "The dimension for rgba should be 4"
-        n = rgba.size // channels
-        rgba = np.reshape(rgba, (n, channels))
-        self.add_vertex_channel("red", "float", rgba[:, 0])
-        self.add_vertex_channel("green", "float", rgba[:, 1])
-        self.add_vertex_channel("blue", "float", rgba[:, 2])
-        self.add_vertex_channel("Alpha", "float", rgba[:, 3])
+    def add_vertex_color(self, color):
+        assert isinstance(color, (np.ndarray, ti.Matrix))
+        if not isinstance(color, np.ndarray):
+            color = color.to_numpy()
+        channels = color.shape[color.ndim-1]
+        assert channels == 3 or channels == 4, "The dimension for color should be either be 3 (rgb) or 4 (rgba)"
+        n = color.size // channels
+        assert n == self.num_vertices, "Size of the input is not correct"
+        color = np.reshape(color, (n, channels))
+        self.add_vertex_channel("red", "float", color[:, 0])
+        self.add_vertex_channel("green", "float", color[:, 1])
+        self.add_vertex_channel("blue", "float", color[:, 2])
+        if channels == 4:
+            self.add_vertex_channel("Alpha", "float", color[:, 3])
 
     def add_vertex_id(self):
         self.add_vertex_channel("id", "int", np.arange(self.num_vertices))
@@ -247,7 +242,7 @@ class PLYWriter:
                     f.write(str(self.face_data[j][i]) + " ")
                 f.write("\n")
 
-    def export_for_time_series_ascii(self, series_num: int, path):
+    def export_frame_ascii(self, series_num: int, path: str):
         # if path has ply ending
         last_4_char = path[-4:]
         if last_4_char == ".ply":
@@ -256,7 +251,7 @@ class PLYWriter:
         real_path = path+"_" + "{0:0=6d}".format(series_num) + ".ply"
         self.export_ascii(real_path)
 
-    def export_for_time_series(self, series_num: int, path):
+    def export_frame(self, series_num: int, path: str):
         # if path has ply ending
         last_4_char = path[-4:]
         if last_4_char == ".ply":

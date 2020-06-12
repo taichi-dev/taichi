@@ -230,6 +230,9 @@ class LoopIndexStmt : public Stmt {
     return false;
   }
 
+  // Return the number of bits of the loop, or -1 if unknown.
+  int max_num_bits() const;
+
   TI_STMT_DEF_FIELDS(ret_type, loop, index);
   TI_DEFINE_ACCEPT_AND_CLONE
 };

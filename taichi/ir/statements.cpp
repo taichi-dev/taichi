@@ -1,6 +1,7 @@
 // TODO: gradually cppize statements.h
 #include "statements.h"
 #include "taichi/program/program.h"
+#include "taichi/util/bit.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -75,6 +76,42 @@ std::unique_ptr<Stmt> OffloadedStmt::clone() const {
   if (body)
     new_stmt->body = body->clone();
   return new_stmt;
+}
+
+int LoopIndexStmt::max_num_bits() const {
+  if (auto range_for = loop->cast<RangeForStmt>()) {
+    // Return the max number of bits only if both begin and end are
+    // non-negative consts.
+    if (!range_for->begin->is<ConstStmt>() || !range_for->end->is<ConstStmt>())
+      return -1;
+    auto begin = range_for->begin->as<ConstStmt>();
+    for (int i = 0; i < (int)begin->val.size(); i++) {
+      if (begin->val[i].val_int() < 0)
+        return -1;
+    }
+    auto end = range_for->end->as<ConstStmt>();
+    int result = 0;
+    for (int i = 0; i < (int)end->val.size(); i++) {
+      result = std::max(result, (int)bit::ceil_log2int(end->val[i].val_int()));
+    }
+    return result;
+  } else if (auto struct_for = loop->cast<StructForStmt>()) {
+    return struct_for->snode->get_num_bits(index);
+  } else if (auto offload = loop->cast<OffloadedStmt>()) {
+    if (offload->task_type == OffloadedStmt::TaskType::range_for) {
+      if (!offload->const_begin || !offload->const_end)
+        return -1;
+      if (offload->begin_value < 0)
+        return -1;
+      return bit::ceil_log2int(offload->end_value);
+    } else if (offload->task_type == OffloadedStmt::TaskType::struct_for) {
+      return offload->snode->get_num_bits(index);
+    } else {
+      TI_NOT_IMPLEMENTED
+    }
+  } else {
+    TI_NOT_IMPLEMENTED
+  }
 }
 
 TLANG_NAMESPACE_END

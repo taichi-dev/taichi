@@ -69,11 +69,6 @@ class TaichiMain:
         parser.add_argument('command',
                             help="command from the above list to run")
 
-        # Print help if no command provided
-        if len(sys.argv[1:2]) == 0:
-            parser.print_help()
-            exit(1)
-
         # Flag for unit testing
         self.test_mode = test_mode
 
@@ -81,6 +76,11 @@ class TaichiMain:
 
     @timer
     def __call__(self):
+        # Print help if no command provided
+        if len(sys.argv[1:2]) == 0:
+            self.main_parser.print_help()
+            return 1
+
         # Parse the command
         args = self.main_parser.parse_args(sys.argv[1:2])
 
@@ -90,7 +90,7 @@ class TaichiMain:
                 TaichiMain._exec_python_file(args.command)
             print(f"{args.command} is not a valid command!")
             self.main_parser.print_help()
-            exit(1)
+            return 1
 
         return getattr(self, args.command)(sys.argv[2:])
 
@@ -892,4 +892,4 @@ def main_debug():
 
 
 if __name__ == "__main__":
-    exit(main())
+    sys.exit(main())

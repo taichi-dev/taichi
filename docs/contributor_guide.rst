@@ -175,7 +175,7 @@ Frequently used tags:
    - PRs with visible/notable features to the users should be marked with tags starting with **the first letter capitalized**, e.g. ``[Metal], [OpenGL], [IR], [Lang], [CLI]``.
      When releasing a new version, a script (``python/taichi/make_changelog.py``) will generate a changelog with these changes (PR title) highlighted. Therefore it is **important** to make sure the end-users can understand what your PR does, **based on your PR title**.
    - Other PRs (underlying development/intermediate implementation) should use tags with **everything in lowercase letters**: e.g. ``[metal], [opengl], [ir], [lang], [cli]``.
-   - There should be **at most one captialized tag** in a PR title, e.g. ``[GUI] [Mac] Support modifier keys`` (#1189) is a bad example, we should use ``[gui] [Mac] Support modifier keys in GUI`` instead.
+   - Because of the way the release changelog is generated, there should be **at most one captialized tag** in a PR title to prevent duplicate PR highlights. For example, ``[GUI] [Mac] Support modifier keys`` (#1189) is a bad example, we should use ``[gui] [Mac] Support modifier keys in GUI`` instead. Please capitalize the tag that is most relevant to the PR.
 
 Tips on the Taichi compiler development
 ---------------------------------------

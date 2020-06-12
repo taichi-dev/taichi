@@ -880,7 +880,6 @@ class TaichiMain:
         task = ti.Task(args.taskname)
         task.run(*args.taskargs)
 
-
     @register
     def dist(self, arguments: list = sys.argv[2:]):
         """Build package and test in release mode"""
@@ -897,6 +896,7 @@ class TaichiMain:
         sys.argv.pop(0)
         sys.argv.append(args.mode)
         runpy.run_path('build.py')
+
 
 def main():
     cli = TaichiMain()

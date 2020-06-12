@@ -208,10 +208,13 @@ std::string SNode::get_node_type_name_hinted() const {
 }
 
 int SNode::get_num_bits(int physical_index) const {
-  if (extractors[physical_index].num_bits)
-    return extractors[physical_index].num_bits;
-  TI_ASSERT(parent);
-  return parent->get_num_bits(physical_index);
+  int result = 0;
+  const SNode *snode = this;
+  while (snode) {
+    result += extractors[physical_index].num_bits;
+    snode = snode->parent;
+  }
+  return result;
 }
 
 void SNode::print() {

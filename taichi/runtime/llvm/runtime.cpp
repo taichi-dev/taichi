@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <type_traits>
 #include <cstring>
+#include <cstdio>
 
 #include "taichi/inc/constants.h"
 #include "taichi/math/arithmetic.h"
@@ -1308,7 +1309,8 @@ Ptr stack_top_primal(Ptr stack, std::size_t element_size) {
 }
 
 Ptr stack_top_adjoint(Ptr stack, std::size_t element_size) {
-  return stack_top_primal(stack, element_size) + element_size;
+  auto ptr = stack_top_primal(stack, element_size) + element_size;
+  return ptr;
 }
 
 void stack_init(Ptr stack) {

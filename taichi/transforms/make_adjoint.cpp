@@ -576,10 +576,16 @@ class BackupSSA : public BasicStmtVisitor {
               leaf_to_root.end() &&
           !op->is<AllocaStmt>()) {
         TI_P(stmt->id);
-        auto alloca = load(op);
-        TI_ASSERT(op->width() == 1);
-        stmt->set_operand(i, stmt->insert_before_me(Stmt::make<LocalLoadStmt>(
-                                 LocalAddress(alloca, 0))));
+        if (op->is<StackLoadTopStmt>()) {
+          // Just create another StackLoadTopStmt
+          stmt->set_operand(i, stmt->insert_before_me(op->clone()));
+        } else {
+          auto alloca = load(op);
+          TI_ASSERT(op->width() == 1);
+          stmt->set_operand(i, stmt->insert_before_me(Stmt::make<LocalLoadStmt>(
+              LocalAddress(alloca, 0))));
+
+        }
       }
     }
   }

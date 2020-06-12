@@ -13,7 +13,7 @@ def test_ad_pow():
     def pow():
         for i in range(N):
             ret = 1.0
-            for j in range(2):
+            for j in range(b[i]):
                 ret = ret * a[i]
             p[i] = ret
             
@@ -37,3 +37,5 @@ test_ad_pow()
 # TODO: test Fibonacci
 
 # TODO: test local atomic add gradients
+
+# TODO: test integer stack (primal without adjoint)

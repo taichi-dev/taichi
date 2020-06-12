@@ -854,6 +854,8 @@ class TaichiMain:
         # Short circuit for testing
         if self.test_mode: return args
 
+        os.environ['TI_DEBUG'] = '1'
+        os.environ['TI_LOG_LEVEL'] = 'debug'
         ti.core.set_core_trigger_gdb_when_crash(True)
 
         runpy.run_path(args.filename, run_name='__main__')

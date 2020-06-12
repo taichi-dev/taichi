@@ -1,9 +1,9 @@
 import taichi as ti
 
 
+@ti.require(ti.extension.adstack)
+@ti.all_archs
 def test_ad_pow():
-    ti.init(print_ir=True)
-    
     N = 10
     a = ti.var(ti.f32, shape=N, needs_grad=True)
     b = ti.var(ti.i32, shape=N)
@@ -24,15 +24,13 @@ def test_ad_pow():
     pow()
     
     for i in range(N):
-        # assert p[i] == 3 * b[i]
+        assert p[i] == 3 ** b[i]
         p.grad[i] = 1
     
     pow.grad()
 
     for i in range(N):
-        print(a.grad[i])
-        
-test_ad_pow()
+        assert a.grad[i] == b[i] * 3 ** (b[i] - 1)
         
 # TODO: test Fibonacci
 

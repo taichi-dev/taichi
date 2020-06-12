@@ -4,7 +4,7 @@ import taichi as ti
 def test_ad_pow():
     ti.init(print_ir=True)
     
-    N = 1
+    N = 10
     a = ti.var(ti.f32, shape=N, needs_grad=True)
     b = ti.var(ti.i32, shape=N)
     p = ti.var(ti.f32, shape=N, needs_grad=True)
@@ -12,10 +12,9 @@ def test_ad_pow():
     @ti.kernel
     def pow():
         for i in range(N):
-            ret = a[i]
+            ret = 1.0
             for j in range(2):
-                ret = ret * 2
-            # ret = a[i]
+                ret = ret * a[i]
             p[i] = ret
             
     for i in range(N):

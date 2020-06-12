@@ -12,23 +12,19 @@ rgba = ti.var(ti.f32, shape=(10, 10, 10, 4))
 @ti.kernel
 def place_pos():
     for i, j, k in pos:
-        pos[i, j, k][0] = 0.1*i
-        pos[i, j, k][1] = 0.1*j
-        pos[i, j, k][2] = 0.1*k
+        pos[i, j, k] = 0.1* ti.Vector([i, j, k])
 
 
 @ti.kernel
 def move_particles():
     for i, j, k in pos:
-        pos[i, j, k][0] = pos[i, j, k][0]+0.01
-        pos[i, j, k][1] = pos[i, j, k][1]+0.01
-        pos[i, j, k][2] = pos[i, j, k][2]+0.01
+        pos[i, j, k] += ti.Vector([0.1, 0.1, 0.1])
 
 
 @ti.kernel
 def fill_rgba():
-    for I in ti.grouped(rgba):
-        rgba[I] = ti.random()
+    for i, j, k, l in rgba:
+        rgba[i, j, k, l] = ti.random()
 
 
 num_vertices = 1000

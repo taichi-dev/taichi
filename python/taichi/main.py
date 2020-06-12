@@ -171,7 +171,7 @@ class TaichiMain:
             required=False,
             dest='save',
             action='store_true',
-            help="Save source code to current directory instead of run")
+            help="Save source code to current directory instead of running it")
         args = parser.parse_args(arguments)
 
         examples_dir = TaichiMain._get_examples_dir()
@@ -185,7 +185,7 @@ class TaichiMain:
         if args.save:
             print(f"Saving example {args.name} to current directory...")
             shutil.copy(target, '.')
-            return
+            return 0
 
         if args.pretty_print:
             try:
@@ -193,17 +193,17 @@ class TaichiMain:
                 import rich.console
             except ImportError as e:
                 print('To make -P work, please: python3 -m pip install rich')
-                raise e
+                return 1
             # https://rich.readthedocs.io/en/latest/syntax.html
             syntax = rich.syntax.Syntax.from_path(target, line_numbers=True)
             console = rich.console.Console()
             console.print(syntax)
-            return
+            return 0
 
         if args.print:
             with open(target) as f:
                 print(f.read())
-            return
+            return 0
 
         print(f"Running example {args.name} ...")
 

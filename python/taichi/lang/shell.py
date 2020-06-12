@@ -9,13 +9,8 @@ class ShellType:
     SCRIPT = None
 
 def _show_idle_error_message():
-    import taichi as ti
-    ver = sys.version[:3]
-    if ti.get_os_name() == 'win':
-        # For Windows Python IDLE: sys.executable = "../pythonw.exe"
-        path = os.path.join(os.path.abspath(sys.executable), f'lib/python{ver}/code.py')
-    else:
-        path = f'/lib/python{ver}/code.py'
+    import code
+    path = code.__path__
     print('It\'s detected that you are using Python IDLE in **interactive mode**.')
     print('However, Taichi could not be fully functional due to IDLE limitation, sorry :(')
     print('Either run Taichi directly from script, or use IPython notebook instead.')
@@ -37,6 +32,9 @@ class InteractiveInterpreter:
     ...
 
         ''')
+    print('If you don\'t find where to add, we provided a script to automatically inject the code:')
+    print('  sudo python3 $(python3 -m pip show taichi | grep Location | cut -f2 -d:)/taichi/idle_hacker.py')
+    print('')
     print('Then, restart IDLE and enjoy, the sky is blue and we are wizards!')
 
 

@@ -1181,7 +1181,6 @@ void simplify(IRNode *root, Kernel *kernel) {
 }
 
 void full_simplify(IRNode *root, Kernel *kernel) {
-  binary_op_simplify(root);
   constant_fold(root);
   if (advanced_optimization) {
     alg_simp(root);

@@ -26,7 +26,7 @@ class BinaryOpSimp : public BasicStmtVisitor {
       return;
     }
     auto binary_lhs = stmt->lhs->cast<BinaryOpStmt>();
-    auto const_rhs = stmt->lhs->cast<ConstStmt>();
+    auto const_rhs = stmt->rhs->cast<ConstStmt>();
     if (!binary_lhs || !const_rhs) {
       return;
     }
@@ -35,19 +35,23 @@ class BinaryOpSimp : public BasicStmtVisitor {
       return;
     }
     if (is_associative(binary_lhs->op_type, stmt->op_type)) {
-      stmt->lhs->replace_with(binary_lhs->lhs);
-      stmt->op_type = binary_lhs->op_type;
       auto bin_op = Stmt::make<BinaryOpStmt>(
         stmt->op_type, const_lhs_rhs, const_rhs
       );
+      bin_op->ret_type.data_type = stmt->ret_type.data_type;
+      stmt->lhs->replace_with(binary_lhs->lhs);
+      stmt->op_type = binary_lhs->op_type;
       stmt->rhs->replace_with(bin_op.get());
-      modifier.insert_before(stmt->rhs, std::move(bin_op));
-      modifier.erase(stmt->rhs);
+      modifier.insert_before(binary_lhs, std::move(bin_op));
+      modifier.erase(binary_lhs);
     }
   }
 
   static bool is_associative(BinaryOpType op1, BinaryOpType op2) {
-    if (op1 == BinaryOpType::add && op2 == BinaryOpType::sub) {
+    if (op1 == BinaryOpType::add && (op2 == BinaryOpType::add || op2 == BinaryOpType::sub)) {
+      return true;
+    }
+    if (op1 == BinaryOpType::mul && op2 == BinaryOpType::mul) {
       return true;
     }
     return false;

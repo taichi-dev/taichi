@@ -124,6 +124,9 @@ void compile_to_offloads(IRNode *ir,
   irpass::full_simplify(ir);
   print("Simplified III");
 
+  irpass::binary_op_simplify(ir);
+  print("binary_op_simplify");
+
   irpass::extract_constant(ir);
   print("Constant extracted III");
 

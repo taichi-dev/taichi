@@ -856,11 +856,7 @@ class TaichiMain:
 
         ti.core.set_core_trigger_gdb_when_crash(True)
 
-        with open(args.filename) as script:
-            script = script.read()
-
-        # FIXME: exec is a security risk here!
-        exec(script, {'__name__': '__main__'})
+        runpy.run_path(args.filename, run_name='__main__')
 
     @register
     def run(self, arguments: list = sys.argv[2:]):

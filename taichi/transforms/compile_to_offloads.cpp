@@ -62,6 +62,9 @@ void compile_to_offloads(IRNode *ir,
   print("Simplified I");
   irpass::analysis::verify(ir);
 
+  irpass::constant_fold(ir);
+  print("Constant folded I");
+
   if (grad) {
     irpass::demote_atomics(ir);
     irpass::full_simplify(ir);
@@ -99,6 +102,9 @@ void compile_to_offloads(IRNode *ir,
   irpass::full_simplify(ir);
   print("Simplified II");
   irpass::analysis::verify(ir);
+
+  irpass::constant_fold(ir);
+  print("Constant folded II");
 
   irpass::offload(ir);
   print("Offloaded");

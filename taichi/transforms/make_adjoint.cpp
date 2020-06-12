@@ -3,6 +3,7 @@
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/visitors.h"
 #include "taichi/ir/frontend.h"
+
 #include <typeinfo>
 
 TLANG_NAMESPACE_BEGIN
@@ -365,12 +366,23 @@ class MakeAdjoint : public IRVisitor {
   }
 
   void visit(RangeForStmt *for_stmt) override {
+    /*
+    // TODO: restore pure loops that only needs reversing
     if (for_depth > 0)  // reverse non-parallelized for-loops
       for_stmt->reverse();
-    for_depth += 1;
-    alloca_block = for_stmt->body.get();
-    for_stmt->body->accept(this);
-    for_depth -= 1;
+    */
+    if (for_depth > 0) {
+      auto new_for = for_stmt->clone();
+      auto new_for_ptr = (RangeForStmt *)new_for.get();
+      new_for_ptr->reversed = !new_for_ptr->reversed;
+      insert_back(std::move(new_for));
+      new_for_ptr->body->accept(this);
+    } else {
+      for_depth += 1;
+      alloca_block = for_stmt->body.get();
+      for_stmt->body->accept(this);
+      for_depth -= 1;
+    }
   }
 
   void visit(StructForStmt *for_stmt) override {

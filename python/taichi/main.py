@@ -151,16 +151,42 @@ class TaichiMain:
             help=f"Name of an example (supports .py extension too)\n",
             type=TaichiMain._example_choices_type(choices),
             choices=sorted(choices))
+        parser.add_argument(
+            '-p',
+            '--print',
+            required=False,
+            dest='print',
+            action='store_true',
+            help="Print example source code instead of running it")
+        parser.add_argument(
+            '-s',
+            '--save',
+            required=False,
+            dest='save',
+            action='store_true',
+            help="Save source code to current directory instead of run")
         args = parser.parse_args(arguments)
 
         examples_dir = TaichiMain._get_examples_dir()
         target = str((examples_dir / f"{args.name}.py").resolve())
         # path for examples needs to be modified for implicit relative imports
         sys.path.append(str(examples_dir.resolve()))
-        print(f"Running example {args.name} ...")
 
         # Short circuit for testing
         if self.test_mode: return args
+
+        if args.print:
+            with open(target) as f:
+                print(f.read())
+
+        if args.save:
+            print(f"Saving example {args.name} to current directory...")
+            shutil.copy(target, '.')
+
+        if args.print or args.save:
+            return
+
+        print(f"Running example {args.name} ...")
 
         runpy.run_path(target, run_name='__main__')
 

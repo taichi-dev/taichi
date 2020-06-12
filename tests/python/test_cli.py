@@ -60,6 +60,16 @@ def test_cli_example():
         args = cli()
         assert args.name == "minimal"
 
+    with patch_sys_argv_helper(["ti", "example", "-s", "minimal.py"]) as custom_argv:
+        cli = TaichiMain(test_mode=True)
+        args = cli()
+        assert args.name == "minimal" and args.save == True
+
+    with patch_sys_argv_helper(["ti", "example", "-p", "minimal.py"]) as custom_argv:
+        cli = TaichiMain(test_mode=True)
+        args = cli()
+        assert args.name == "minimal" and args.print == True
+
 
 def test_cli_gif():
     with patch_sys_argv_helper(["ti", "gif", "-i", "video.mp4", "-f",

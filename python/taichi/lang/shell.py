@@ -1,4 +1,4 @@
-import sys, os
+import sys, os, atexit
 
 class ShellType:
     NATIVE = 'Python shell'
@@ -17,8 +17,8 @@ def _show_idle_error_message():
     else:
         path = f'/lib/python{ver}/code.py'
     print('It\'s detected that you are using Python IDLE as interactive shell.')
-    print('However, Taichi cannot be functional due to IDLE limitation, sorry :(')
-    print('We do care about your experience, no matter which shell you prefer.')
+    print('However, Taichi could not be fully functional due to IDLE limitation, sorry :(')
+    print('We do care about your experience, no matter which shell you prefer to use.')
     print('So, if you would like to play with Taichi in your favorite IDLE, we may do a dirty hack:')
     print(f'Open "{path}" and add the following line to `InteractiveInterpreter.runsource`, right below `# Case 3`:')
     print('''
@@ -36,7 +36,7 @@ class InteractiveInterpreter:
     ...
 
         ''')
-    print('Then, restart IDLE and enjoy, the sky is blue again and we are wizards!')
+    print('Then, restart IDLE and enjoy, the sky is blue and we are wizards!')
 
 def get_shell_name():
     shell = os.environ.get('TI_SHELL_TYPE')
@@ -57,6 +57,7 @@ def get_shell_name():
 
     try:
         import psutil
+        # XXX: Is psutil a hard dep of taichi? What if user doesn't install it?
         proc = psutil.Process().parent()
         if proc.name() == 'idle':  # launched from KDE win menu?
             return ShellType.IDLE
@@ -119,6 +120,21 @@ class ShellInspectorWrapper:
                     _show_idle_error_message()
                     raise e
 
+                # If user added our 'hacker-code' correctly,
+                # then the content of .tmp_idle_source should be:
+                #
+                # =====
+                # import taichi as ti
+                #
+                # =====
+                # @ti.kernel
+                # def func():    # x.find('def ') locate to here
+                #     pass
+                #
+                # ====
+                # func()
+                #
+                #
                 # Thanking IDLE dev :( It works anyway :)
                 for x in src.split('====='):
                     x = x.strip()
@@ -177,3 +193,4 @@ def reset_callback():
             print('[Taichi] File ".tmp_idle_source" cleaned')
 
 reset_callback()
+atexit.register(reset_callback)

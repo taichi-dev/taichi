@@ -721,7 +721,7 @@ class BasicBlockSimplify : public IRVisitor {
         stmt->input->is<LoopIndexStmt>()) {
       auto bstmt = stmt->input->as<LoopIndexStmt>();
       const int max_num_bits = bstmt->max_num_bits();
-      if (max_num_bits != -1 && stmt->bit_end == max_num_bits) {
+      if (max_num_bits != -1 && stmt->bit_end >= max_num_bits) {
         stmt->replace_with(bstmt);
         stmt->parent->erase(current_stmt_id);
         throw IRModified();

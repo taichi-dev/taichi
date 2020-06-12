@@ -390,10 +390,13 @@ class MakeAdjoint : public IRVisitor {
         statements.push_back(stmt.get());
       }
       std::reverse(statements.begin(), statements.end());  // reverse-mode AD...
+      auto old_alloca_block = alloca_block;
       for (auto stmt : statements) {
+        alloca_block = new_for_ptr->body.get();
         current_block = new_for_ptr->body.get();
         stmt->accept(this);
       }
+      alloca_block = old_alloca_block;
 
 
     } else {

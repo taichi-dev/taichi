@@ -176,8 +176,17 @@ class TaichiMain:
         if self.test_mode: return args
 
         if args.print:
-            with open(target) as f:
-                print(f.read())
+            try:
+                # If user have installed `rich`, we can provide syntax highlight:
+                # https://rich.readthedocs.io/en/latest/syntax.html
+                import rich.syntax
+                import rich.console
+                syntax = rich.syntax.Syntax.from_path(target, line_numbers=True)
+                console = rich.console.Console()
+                console.print(syntax)
+            except:
+                with open(target) as f:
+                    print(f.read())
 
         if args.save:
             print(f"Saving example {args.name} to current directory...")

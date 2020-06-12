@@ -16,7 +16,7 @@ class BinaryOpSimp : public BasicStmtVisitor {
   }
 
   void visit(BinaryOpStmt *stmt) override {
-    // swap lhs and rhs if lhs is a const
+    // swap lhs and rhs if lhs is a const and op is commutative
     auto const_lhs = stmt->lhs->cast<ConstStmt>();
     if (const_lhs && is_commutative(stmt->op_type)) {
       auto rhs_stmt = stmt->rhs;
@@ -43,7 +43,6 @@ class BinaryOpSimp : public BasicStmtVisitor {
       auto bin_op =
           Stmt::make<BinaryOpStmt>(stmt->op_type, const_lhs_rhs, const_rhs);
       bin_op->ret_type.data_type = stmt->ret_type.data_type;
-      // TODO: confirm this
       stmt->lhs = binary_lhs->lhs;
       stmt->op_type = binary_lhs->op_type;
       stmt->rhs = bin_op.get();

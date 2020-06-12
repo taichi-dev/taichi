@@ -1189,6 +1189,8 @@ void full_simplify(IRNode *root, Kernel *kernel) {
     while (true) {
       bool modified = false;
       extract_constant(root);
+      if (binary_op_simplify(root))
+        modified = true;
       if (constant_fold(root))
         modified = true;
       if (alg_simp(root))

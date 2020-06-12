@@ -17,10 +17,10 @@ class BinaryOpSimp : public BasicStmtVisitor {
 
   void visit(BinaryOpStmt *stmt) override {
     auto const_lhs = stmt->lhs->cast<ConstStmt>();
-    if (const_lhs) {
-      auto lhs_stmt = stmt->lhs;
-      stmt->lhs->replace_with(stmt->rhs);
-      stmt->rhs->replace_with(lhs_stmt);
+    if (const_lhs && is_commutative(stmt->op_type)) {
+      auto rhs_stmt = stmt->rhs;
+      stmt->lhs = rhs_stmt;
+      stmt->rhs = const_lhs;
     }
     if (!fast_math) {
       return;
@@ -34,27 +34,28 @@ class BinaryOpSimp : public BasicStmtVisitor {
     if (!const_lhs_rhs) {
       return;
     }
-    if (is_associative(binary_lhs->op_type, stmt->op_type)) {
+    // TODO: fix this
+    if (binary_lhs->op_type == BinaryOpType::add &&
+        stmt->op_type == BinaryOpType::sub) {
       auto bin_op =
           Stmt::make<BinaryOpStmt>(stmt->op_type, const_lhs_rhs, const_rhs);
       bin_op->ret_type.data_type = stmt->ret_type.data_type;
-      stmt->lhs->replace_with(binary_lhs->lhs);
+      // TODO: confirm this
+      stmt->lhs = binary_lhs->lhs;
       stmt->op_type = binary_lhs->op_type;
-      stmt->rhs->replace_with(bin_op.get());
-      modifier.insert_before(binary_lhs, std::move(bin_op));
-      modifier.erase(binary_lhs);
+      stmt->rhs = bin_op.get();
+      stmt->parent->insert_before(stmt, std::move(bin_op));
     }
   }
 
-  static bool is_associative(BinaryOpType op1, BinaryOpType op2) {
-    if (op1 == BinaryOpType::add &&
-        (op2 == BinaryOpType::add || op2 == BinaryOpType::sub)) {
-      return true;
-    }
-    if (op1 == BinaryOpType::mul && op2 == BinaryOpType::mul) {
-      return true;
-    }
-    return false;
+  static bool is_associative(BinaryOpType op) {
+    return op == BinaryOpType::add;
+  }
+
+  static bool is_commutative(BinaryOpType op) {
+    return op == BinaryOpType::add || op == BinaryOpType::mul ||
+           op == BinaryOpType::bit_and || op == BinaryOpType::bit_or ||
+           op == BinaryOpType::bit_xor;
   }
 
   static bool run(IRNode *node, bool fast_math) {

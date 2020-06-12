@@ -159,6 +159,13 @@ class TaichiMain:
             action='store_true',
             help="Print example source code instead of running it")
         parser.add_argument(
+            '-P',
+            '--pretty-print',
+            required=False,
+            dest='pretty_print',
+            action='store_true',
+            help="Like --print, but print in a rich format with line numbers")
+        parser.add_argument(
             '-s',
             '--save',
             required=False,
@@ -175,24 +182,27 @@ class TaichiMain:
         # Short circuit for testing
         if self.test_mode: return args
 
-        if args.print:
-            try:
-                # If user have installed `rich`, we can provide syntax highlight:
-                # https://rich.readthedocs.io/en/latest/syntax.html
-                import rich.syntax
-                import rich.console
-                syntax = rich.syntax.Syntax.from_path(target, line_numbers=True)
-                console = rich.console.Console()
-                console.print(syntax)
-            except:
-                with open(target) as f:
-                    print(f.read())
-
         if args.save:
             print(f"Saving example {args.name} to current directory...")
             shutil.copy(target, '.')
+            return
 
-        if args.print or args.save:
+        if args.pretty_print:
+            try:
+                import rich.syntax
+                import rich.console
+            except ImportError as e:
+                print('To make -P work, please: python3 -m pip install rich')
+                raise e
+            # https://rich.readthedocs.io/en/latest/syntax.html
+            syntax = rich.syntax.Syntax.from_path(target, line_numbers=True)
+            console = rich.console.Console()
+            console.print(syntax)
+            return
+
+        if args.print:
+            with open(target) as f:
+                print(f.read())
             return
 
         print(f"Running example {args.name} ...")

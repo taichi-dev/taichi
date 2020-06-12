@@ -1,3 +1,5 @@
+import sys, os
+
 class ShellType:
     NATIVE = 'Python shell'
     IDLE = 'Python IDLE shell'
@@ -7,7 +9,6 @@ class ShellType:
     SCRIPT = None
 
 def _show_idle_error_message():
-    import sys
     import taichi as ti
     ver = sys.version[:3]
     if ti.get_os_name() == 'win':
@@ -38,19 +39,36 @@ class InteractiveInterpreter:
     print('Then, restart IDLE and enjoy, the sky is blue again and we are wizards!')
 
 def get_shell_name():
+    shell = os.environ.get('TI_SHELL_TYPE')
+    if shell is not None:
+        return getattr(ShellType, shell.upper())
+
     try:  # IPython / Jupyter?
         return 'IPython ' + get_ipython().__class__.__name__
     except:
         if hasattr(__builtins__,'__IPYTHON__'):
             return self.IPYBASED
 
-    import sys
     if 'pythonw.exe' in sys.executable:  # Windows Python IDLE?
         return ShellType.IDLE
 
-    import os
-    if 'idle' in os.path.basename(os.environ['_']):
+    if os.path.basename(os.environ.get('_', '')) == 'idle':  # /usr/bin/idle?
         return ShellType.IDLE
+
+    try:
+        import psutil
+        proc = psutil.Process().parent()
+        if proc.name() == 'idle':  # launched from KDE win menu?
+            return ShellType.IDLE
+        cmdline = proc.cmdline()
+        # python -m idlelib?
+        if 'idlelib' in cmdline:
+            return ShellType.IDLE
+        # sh-bomb: /usr/bin/python /usr/bin/idle?
+        if len(cmdline) >= 2 and os.path.basename(cmdline[1]) == 'idle':
+            return ShellType.IDLE
+    except:
+        pass
 
     try:
         import __main__ as main
@@ -151,7 +169,6 @@ oinspect = ShellInspectorWrapper()
 def reset_callback():
     if oinspect.name == ShellType.IDLE:
         oinspect.cache = {}
-        import os
         try:
             os.unlink('.tmp_idle_source')
         except:

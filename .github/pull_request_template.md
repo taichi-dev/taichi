@@ -1,5 +1,5 @@
 <!--
-Thank for your PR!
+Thanks for your PR!
 If it's your first time contributing to Taichi, please make sure you have read our Contributor Guideline:
   https://taichi.readthedocs.io/en/latest/contributor_guide.html
 

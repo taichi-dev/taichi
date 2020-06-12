@@ -34,7 +34,7 @@ class KernelSimplicityASTChecker(ast.NodeVisitor):
         super().__init__()
         import inspect
         self._func_file = oinspect.getsourcefile(func)
-        self._func_lineno = oinspect.getsourcelines(func)[1}
+        self._func_lineno = oinspect.getsourcelines(func)[1]
         self._func_name = func.__name__
         self._scope_guards = []
 

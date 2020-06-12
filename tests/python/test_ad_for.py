@@ -33,6 +33,39 @@ def test_ad_sum():
         assert a.grad[i] == b[i]
 
 
+# @ti.require(ti.extension.adstack)
+# @ti.all_archs
+def test_ad_sum_local_atomic():
+    ti.init(print_ir=True)
+    N = 10
+    a = ti.var(ti.f32, shape=N, needs_grad=True)
+    b = ti.var(ti.i32, shape=N)
+    p = ti.var(ti.f32, shape=N, needs_grad=True)
+
+    @ti.kernel
+    def comptue_sum():
+        for i in range(N):
+            ret = 1.0
+            for j in range(b[i]):
+                ret += a[i]
+            p[i] = ret
+
+    for i in range(N):
+        a[i] = 3
+        b[i] = i
+
+    comptue_sum()
+
+    for i in range(N):
+        assert p[i] == 3 * b[i] + 1
+        p.grad[i] = 1
+
+    comptue_sum.grad()
+
+    for i in range(N):
+        assert a.grad[i] == b[i]
+
+
 @ti.require(ti.extension.adstack)
 @ti.all_archs
 def test_ad_power():
@@ -106,8 +139,7 @@ def test_ad_fibonacci():
         assert b.grad[i] == f[i]
 
 
-# TODO: test local atomic add gradients
-
 # TODO: test integer stack (primal without adjoint)
 
 # test_ad_fibonacci()
+test_ad_sum_local_atomic()

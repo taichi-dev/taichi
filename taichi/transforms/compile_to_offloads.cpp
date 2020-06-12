@@ -66,7 +66,9 @@ void compile_to_offloads(IRNode *ir,
   print("Constant folded I");
 
   if (grad) {
+    // Remove local atomics here so that we don't have to handle their gradients
     irpass::demote_atomics(ir);
+
     irpass::full_simplify(ir);
     irpass::make_adjoint(ir, ad_use_stack);
     irpass::full_simplify(ir);

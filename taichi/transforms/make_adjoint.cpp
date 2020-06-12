@@ -135,6 +135,7 @@ class MakeAdjoint : public IRVisitor {
     node->accept(&p);
   }
 
+  // TODO: current block might not be the right block to insert adjoint instructions!
   void visit(Block *block) override {
     if (current_block == nullptr) {
       // serial
@@ -376,7 +377,25 @@ class MakeAdjoint : public IRVisitor {
       auto new_for_ptr = (RangeForStmt *)new_for.get();
       new_for_ptr->reversed = !new_for_ptr->reversed;
       insert_back(std::move(new_for));
-      new_for_ptr->body->accept(this);
+      int len = new_for_ptr->body->statements.size();
+
+      for (int i = 0; i < len; i++) {
+        new_for_ptr->body->erase(0);
+      }
+
+
+      std::vector<Stmt *> statements;
+      // always make a copy since the list can be modified.
+      for (auto &stmt : for_stmt->body->statements) {
+        statements.push_back(stmt.get());
+      }
+      std::reverse(statements.begin(), statements.end());  // reverse-mode AD...
+      for (auto stmt : statements) {
+        current_block = new_for_ptr->body.get();
+        stmt->accept(this);
+      }
+
+
     } else {
       for_depth += 1;
       alloca_block = for_stmt->body.get();
@@ -525,10 +544,16 @@ class BackupSSA : public BasicStmtVisitor {
     if (backup_alloca.find(stmt) == backup_alloca.end()) {
       auto alloca =
           Stmt::make<AllocaStmt>(stmt->width(), stmt->ret_type.data_type);
+      alloca->ret_type.set_is_pointer(stmt->ret_type.is_pointer());
+      if (stmt->ret_type.is_pointer()) {
+        irpass::print(alloca.get());
+      }
       auto alloca_ptr = alloca.get();
       TI_ASSERT(current_block != nullptr);
-      current_block->insert(std::move(alloca), 0);
-      stmt->insert_after_me(Stmt::make<LocalStoreStmt>(alloca_ptr, stmt));
+      stmt->parent->parent->insert(std::move(alloca), 0);
+      auto local_store = Stmt::make<LocalStoreStmt>(alloca_ptr, stmt);
+      local_store->ret_type.set_is_pointer(stmt->ret_type.is_pointer());
+      stmt->insert_after_me(std::move(local_store));
       backup_alloca[stmt] = alloca_ptr;
     }
     return backup_alloca[stmt];
@@ -547,6 +572,7 @@ class BackupSSA : public BasicStmtVisitor {
       if (std::find(leaf_to_root.begin(), leaf_to_root.end(), op->parent) ==
               leaf_to_root.end() &&
           !op->is<AllocaStmt>()) {
+        TI_P(stmt->id);
         auto alloca = load(op);
         TI_ASSERT(op->width() == 1);
         stmt->set_operand(i, stmt->insert_before_me(Stmt::make<LocalLoadStmt>(
@@ -600,13 +626,25 @@ void make_adjoint(IRNode *root, bool use_stack) {
     fix_block_parents(root);
     ConvertLocalVar converter;
     root->accept(&converter);
+    TI_INFO("Convert local var:");
+    irpass::re_id(root);
+    irpass::print(root);
     typecheck(root);
     MakeAdjoint::run(root);
+    TI_INFO("make_adjoint:");
+    irpass::re_id(root);
+    irpass::print(root);
     typecheck(root);
     fix_block_parents(root);
     BackupSSA b;
     root->accept(&b);
+    TI_INFO("backupssa no typecheck:");
+    irpass::re_id(root);
+    irpass::print(root);
     typecheck(root);
+    TI_INFO("backupssa:");
+    irpass::re_id(root);
+    irpass::print(root);
   } else {
     MakeAdjoint::run(root);
     typecheck(root);

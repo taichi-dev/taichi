@@ -151,3 +151,23 @@ def test_loop_arg_as_range():
         test(b, e)
         for i in range(b, e):
             assert x[i - b] == i
+
+
+@ti.all_archs
+def test_assignment_in_nested_loops():
+    # https://github.com/taichi-dev/taichi/issues/1109
+    m = ti.var(ti.f32, 3)
+    x = ti.var(ti.f32, ())
+
+    @ti.kernel
+    def func():
+        a = x[None]
+        for i in m:
+            b = a
+            for j in range(1):
+                b = b
+            x[None] = b
+
+    x[None] = 1
+    func()
+    assert x[None] == 1

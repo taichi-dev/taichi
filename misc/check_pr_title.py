@@ -9,9 +9,11 @@ json_path = os.path.join(this_dir, 'prtags.json')
 with open(json_path) as f:
     prtags = json.load(f)
 
+
 def error(msg):
     print(Style.BRIGHT + Fore.YELLOW + msg + Style.RESET_ALL)
     exit(1)
+
 
 if not title.startswith('['):
     error(f'PR title does not start with any tag: {title}')

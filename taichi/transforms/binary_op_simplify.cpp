@@ -16,6 +16,7 @@ class BinaryOpSimp : public BasicStmtVisitor {
   }
 
   void visit(BinaryOpStmt *stmt) override {
+    // swap lhs and rhs if lhs is a const
     auto const_lhs = stmt->lhs->cast<ConstStmt>();
     if (const_lhs && is_commutative(stmt->op_type)) {
       auto rhs_stmt = stmt->rhs;
@@ -34,9 +35,11 @@ class BinaryOpSimp : public BasicStmtVisitor {
     if (!const_lhs_rhs) {
       return;
     }
-    // TODO: fix this
-    if (binary_lhs->op_type == BinaryOpType::add &&
-        stmt->op_type == BinaryOpType::sub) {
+    // original:
+    // stmt = (a op1 b) op2 c
+    // rearrange to:
+    // stmt = a op1 (b op2 c)
+    if (can_rearrange_associative(binary_lhs->op_type, stmt->op_type)) {
       auto bin_op =
           Stmt::make<BinaryOpStmt>(stmt->op_type, const_lhs_rhs, const_rhs);
       bin_op->ret_type.data_type = stmt->ret_type.data_type;
@@ -48,8 +51,16 @@ class BinaryOpSimp : public BasicStmtVisitor {
     }
   }
 
-  static bool is_associative(BinaryOpType op) {
-    return op == BinaryOpType::add;
+  static bool can_rearrange_associative(BinaryOpType op1, BinaryOpType op2) {
+    if (op1 == BinaryOpType::add &&
+        (op2 == BinaryOpType::add || op2 == BinaryOpType::sub)) {
+      return true;
+    }
+    if (op1 == BinaryOpType::mul &&
+        (op2 == BinaryOpType::mul || op2 == BinaryOpType::div)) {
+      return true;
+    }
+    return false;
   }
 
   static bool is_commutative(BinaryOpType op) {

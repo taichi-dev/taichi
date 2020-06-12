@@ -8,7 +8,6 @@ json_path = os.path.join(this_dir, 'prtags.json')
 with open(json_path) as f:
     prtags = json.load(f)
 
-
 if not title.startswith('['):
     exit(f'PR title does not start with any tag: {title}')
 

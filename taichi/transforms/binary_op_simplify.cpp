@@ -6,7 +6,7 @@
 TLANG_NAMESPACE_BEGIN
 
 class BinaryOpSimp : public BasicStmtVisitor {
-  public:
+ public:
   using BasicStmtVisitor::visit;
   bool fast_math;
   DelayedIRModifier modifier;
@@ -35,9 +35,8 @@ class BinaryOpSimp : public BasicStmtVisitor {
       return;
     }
     if (is_associative(binary_lhs->op_type, stmt->op_type)) {
-      auto bin_op = Stmt::make<BinaryOpStmt>(
-        stmt->op_type, const_lhs_rhs, const_rhs
-      );
+      auto bin_op =
+          Stmt::make<BinaryOpStmt>(stmt->op_type, const_lhs_rhs, const_rhs);
       bin_op->ret_type.data_type = stmt->ret_type.data_type;
       stmt->lhs->replace_with(binary_lhs->lhs);
       stmt->op_type = binary_lhs->op_type;
@@ -48,7 +47,8 @@ class BinaryOpSimp : public BasicStmtVisitor {
   }
 
   static bool is_associative(BinaryOpType op1, BinaryOpType op2) {
-    if (op1 == BinaryOpType::add && (op2 == BinaryOpType::add || op2 == BinaryOpType::sub)) {
+    if (op1 == BinaryOpType::add &&
+        (op2 == BinaryOpType::add || op2 == BinaryOpType::sub)) {
       return true;
     }
     if (op1 == BinaryOpType::mul && op2 == BinaryOpType::mul) {
@@ -70,7 +70,6 @@ class BinaryOpSimp : public BasicStmtVisitor {
     return modified;
   }
 };
-
 
 namespace irpass {
 

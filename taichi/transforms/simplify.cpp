@@ -1172,21 +1172,40 @@ class Simplify : public IRVisitor {
 
 namespace irpass {
 
-void simplify(IRNode *root, Kernel *kernel) {
-  while (1) {
+bool simplify(IRNode *root, Kernel *kernel) {
+  bool modified = false;
+  while (true) {
     Simplify pass(root, kernel);
-    if (!pass.modified)
+    if (pass.modified)
+      modified = true;
+    else
       break;
   }
+  return modified;
 }
 
 void full_simplify(IRNode *root, Kernel *kernel) {
-  constant_fold(root);
   if (advanced_optimization) {
-    alg_simp(root);
-    die(root);
-    whole_kernel_cse(root);
+    while (true) {
+      bool modified = false;
+      extract_constant(root);
+      if (constant_fold(root))
+        modified = true;
+      if (alg_simp(root))
+        modified = true;
+      die(root);
+      if (whole_kernel_cse(root))
+        modified = true;
+      die(root);
+      if (simplify(root, kernel))
+        modified = true;
+      die(root);
+      if (!modified)
+        break;
+    }
+    return;
   }
+  constant_fold(root);
   die(root);
   simplify(root, kernel);
   die(root);

@@ -183,24 +183,27 @@ class ConstantFold : public BasicStmtVisitor {
     }
   }
 
-  static void run(IRNode *node) {
+  static bool run(IRNode *node) {
     ConstantFold folder;
+    bool result = false;
     while (true) {
       bool modified = false;
       try {
         node->accept(&folder);
       } catch (IRModified) {
         modified = true;
+        result = true;
       }
       if (!modified)
         break;
     }
+    return result;
   }
 };
 
 namespace irpass {
 
-void constant_fold(IRNode *root) {
+bool constant_fold(IRNode *root) {
   // @archibate found that `debug=True` will cause JIT kernels
   // failed to evaluate correctly (always return 0), so we simply
   // disable constant_fold when config.debug is turned on.
@@ -209,10 +212,10 @@ void constant_fold(IRNode *root) {
   auto kernel = root->get_kernel();
   if (kernel && kernel->program.config.debug) {
     TI_TRACE("config.debug enabled, ignoring constant fold");
-    return;
+    return false;
   }
   if (!advanced_optimization)
-    return;
+    return false;
   return ConstantFold::run(root);
 }
 

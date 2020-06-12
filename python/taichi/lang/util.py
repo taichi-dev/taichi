@@ -9,9 +9,9 @@ try:
 except:
     pass
 
-
 def has_pytorch():
     return _has_pytorch
+
 
 
 def is_taichi_class(rhs):

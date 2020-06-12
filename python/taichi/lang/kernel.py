@@ -5,6 +5,7 @@ from .transformer import ASTTransformer
 import ast
 from .kernel_arguments import *
 from .util import *
+from .shell import oinspect
 import functools
 
 
@@ -58,7 +59,7 @@ class Func:
 
     def do_compile(self):
         from .impl import get_runtime
-        src = remove_indent(inspect.getsource(self.func))
+        src = remove_indent(oinspect.getsource(self.func))
         tree = ast.parse(src)
 
         func_body = tree.body[0]
@@ -78,7 +79,7 @@ class Func:
             print('After preprocessing:')
             print(astor.to_source(tree.body[0], indent_with='  '))
 
-        ast.increment_lineno(tree, inspect.getsourcelines(self.func)[1] - 1)
+        ast.increment_lineno(tree, oinspect.getsourcelines(self.func)[1] - 1)
 
         local_vars = {}
         #frame = inspect.currentframe().f_back
@@ -87,7 +88,7 @@ class Func:
         global_vars = copy.copy(self.func.__globals__)
         exec(
             compile(tree,
-                    filename=inspect.getsourcefile(self.func),
+                    filename=oinspect.getsourcefile(self.func),
                     mode='exec'), global_vars, local_vars)
         self.compiled = local_vars[self.func.__name__]
 
@@ -263,7 +264,7 @@ class Kernel:
         import taichi as ti
         ti.trace("Compiling kernel {}...".format(kernel_name))
 
-        src = remove_indent(dill.source.getsource(self.func))
+        src = remove_indent(oinspect.getsource(self.func))
         tree = ast.parse(src)
         if self.runtime.print_preprocessed:
             import astor
@@ -303,7 +304,7 @@ class Kernel:
             print('After preprocessing:')
             print(astor.to_source(tree.body[0], indent_with='  '))
 
-        ast.increment_lineno(tree, dill.source.getsourcelines(self.func)[1] - 1)
+        ast.increment_lineno(tree, oinspect.getsourcelines(self.func)[1] - 1)
 
         freevar_names = self.func.__code__.co_freevars
         closure = self.func.__closure__
@@ -319,7 +320,7 @@ class Kernel:
 
         exec(
             compile(tree,
-                    filename=inspect.getsourcefile(self.func),
+                    filename=oinspect.getsourcefile(self.func),
                     mode='exec'), global_vars, local_vars)
         compiled = local_vars[self.func.__name__]
 

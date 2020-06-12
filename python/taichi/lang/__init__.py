@@ -152,6 +152,10 @@ def init(arch=None,
     if len(gdb_trigger):
         ti.set_gdb_trigger(bool(int(gdb_trigger)))
 
+    advanced_optimization = os.environ.get('TI_ADVANCED_OPTIMIZATION', '')
+    if len(advanced_optimization):
+        ti.core.toggle_advanced_optimization(bool(int(advanced_optimization)))
+
     # Q: Why not environ_config("arch", ti.core.arch_from_name)?
     # A: We need adaptive_arch_select for all.
     env_arch = os.environ.get("TI_ARCH")

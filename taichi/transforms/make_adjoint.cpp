@@ -135,7 +135,8 @@ class MakeAdjoint : public IRVisitor {
     node->accept(&p);
   }
 
-  // TODO: current block might not be the right block to insert adjoint instructions!
+  // TODO: current block might not be the right block to insert adjoint
+  // instructions!
   void visit(Block *block) override {
     if (current_block == nullptr) {
       // serial
@@ -383,7 +384,6 @@ class MakeAdjoint : public IRVisitor {
         new_for_ptr->body->erase(0);
       }
 
-
       std::vector<Stmt *> statements;
       // always make a copy since the list can be modified.
       for (auto &stmt : for_stmt->body->statements) {
@@ -397,7 +397,6 @@ class MakeAdjoint : public IRVisitor {
         stmt->accept(this);
       }
       alloca_block = old_alloca_block;
-
 
     } else {
       for_depth += 1;
@@ -583,8 +582,7 @@ class BackupSSA : public BasicStmtVisitor {
           auto alloca = load(op);
           TI_ASSERT(op->width() == 1);
           stmt->set_operand(i, stmt->insert_before_me(Stmt::make<LocalLoadStmt>(
-              LocalAddress(alloca, 0))));
-
+                                   LocalAddress(alloca, 0))));
         }
       }
     }

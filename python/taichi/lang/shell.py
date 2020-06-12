@@ -88,7 +88,11 @@ class ShellInspectorWrapper:
             # `.tmp_idle_source` for "Python IDLE shell"
             # Thanks to IDLE's lack of support with `inspect`,
             # we have to use a dirty hack to support Taichi there.
+            self.cache = {}
             def getsource(o):
+                func_name = o.__name__
+                if func_name in self.cache:
+                    return self.cache[func_name]
                 src = None
                 try:
                     with open('.tmp_idle_source') as f:
@@ -105,7 +109,8 @@ class ShellInspectorWrapper:
                         continue
                     name = x[i + 4:].split(':', maxsplit=1)[0]
                     name = name.split('(', maxsplit=1)[0]
-                    if name.strip() == o.__name__:
+                    if name.strip() == func_name:
+                        self.cache[func_name] = x
                         return x
                 else:
                     raise NameError(f'Could not find source for {o.__name__}!')
@@ -145,6 +150,7 @@ oinspect = ShellInspectorWrapper()
 
 def reset_callback():
     if oinspect.name == ShellType.IDLE:
+        oinspect.cache = {}
         import os
         try:
             os.unlink('.tmp_idle_source')

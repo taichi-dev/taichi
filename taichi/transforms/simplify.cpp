@@ -29,7 +29,6 @@ class BasicBlockSimplify : public IRVisitor {
         kernel(kernel) {
     allow_undefined_visitor = true;
     invoke_default_visitor = false;
-    current_struct_for = nullptr;
     run();
   }
 
@@ -696,7 +695,40 @@ class BasicBlockSimplify : public IRVisitor {
   void visit(OffsetAndExtractBitsStmt *stmt) override {
     if (is_done(stmt))
       return;
-    // step 1: try weakening when a struct for is used
+
+    // step 0: eliminate empty extraction
+    if (stmt->bit_begin == stmt->bit_end) {
+      auto zero = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(0));
+      stmt->replace_with(zero.get());
+      stmt->insert_after_me(std::move(zero));
+      stmt->parent->erase(current_stmt_id);
+      throw IRModified();
+    }
+
+    // step 1: eliminate useless extraction of another OffsetAndExtractBitsStmt
+    if (stmt->offset == 0 && stmt->bit_begin == 0 &&
+        stmt->input->is<OffsetAndExtractBitsStmt>()) {
+      auto bstmt = stmt->input->as<OffsetAndExtractBitsStmt>();
+      if (stmt->bit_end == bstmt->bit_end - bstmt->bit_begin) {
+        stmt->replace_with(bstmt);
+        stmt->parent->erase(current_stmt_id);
+        throw IRModified();
+      }
+    }
+
+    // step 2: eliminate useless extraction of a LoopIndexStmt
+    if (stmt->offset == 0 && stmt->bit_begin == 0 &&
+        stmt->input->is<LoopIndexStmt>()) {
+      auto bstmt = stmt->input->as<LoopIndexStmt>();
+      const int max_num_bits = bstmt->max_num_bits();
+      if (max_num_bits != -1 && stmt->bit_end == max_num_bits) {
+        stmt->replace_with(bstmt);
+        stmt->parent->erase(current_stmt_id);
+        throw IRModified();
+      }
+    }
+
+    // step 3: try weakening when a struct for is used
     if (current_struct_for && !stmt->simplified) {
       const int num_loop_vars = current_struct_for->snode->num_active_indices;
       for (int k = 0; k < num_loop_vars; k++) {
@@ -746,20 +778,7 @@ class BasicBlockSimplify : public IRVisitor {
       }
     }
 
-    // step 2: eliminate useless extraction of another OffsetAndExtractBitsStmt
-    if (advanced_optimization) {
-      if (stmt->offset == 0 && stmt->bit_begin == 0 &&
-          stmt->input->is<OffsetAndExtractBitsStmt>()) {
-        auto bstmt = stmt->input->as<OffsetAndExtractBitsStmt>();
-        if (stmt->bit_end == bstmt->bit_end - bstmt->bit_begin) {
-          stmt->replace_with(bstmt);
-          stmt->parent->erase(current_stmt_id);
-          throw IRModified();
-        }
-      }
-    }
-
-    // step 3: eliminate dup
+    // step 4: eliminate dup
     for (int i = 0; i < current_stmt_id; i++) {
       auto &bstmt = block->statements[i];
       if (stmt->ret_type == bstmt->ret_type) {

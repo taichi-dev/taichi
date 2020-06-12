@@ -18,7 +18,8 @@ class BinaryOpSimp : public BasicStmtVisitor {
   void visit(BinaryOpStmt *stmt) override {
     // swap lhs and rhs if lhs is a const and op is commutative
     auto const_lhs = stmt->lhs->cast<ConstStmt>();
-    if (const_lhs && is_commutative(stmt->op_type)) {
+    if (const_lhs && is_commutative(stmt->op_type) &&
+        !stmt->rhs->is<ConstStmt>()) {
       auto rhs_stmt = stmt->rhs;
       stmt->lhs = rhs_stmt;
       stmt->rhs = const_lhs;
@@ -43,10 +44,14 @@ class BinaryOpSimp : public BasicStmtVisitor {
       auto bin_op =
           Stmt::make<BinaryOpStmt>(stmt->op_type, const_lhs_rhs, const_rhs);
       bin_op->ret_type.data_type = stmt->ret_type.data_type;
-      stmt->lhs = binary_lhs->lhs;
-      stmt->op_type = binary_lhs->op_type;
-      stmt->rhs = bin_op.get();
-      stmt->parent->insert_before(stmt, std::move(bin_op));
+      auto new_stmt = Stmt::make<BinaryOpStmt>(binary_lhs->op_type,
+                                               binary_lhs->lhs, bin_op.get());
+      new_stmt->ret_type.data_type = stmt->ret_type.data_type;
+
+      modifier.insert_before(stmt, std::move(bin_op));
+      stmt->replace_with(new_stmt.get());
+      modifier.insert_before(stmt, std::move(new_stmt));
+      modifier.erase(stmt);
     }
   }
 
@@ -57,6 +62,12 @@ class BinaryOpSimp : public BasicStmtVisitor {
     }
     if (op1 == BinaryOpType::mul &&
         (op2 == BinaryOpType::mul || op2 == BinaryOpType::div)) {
+      return true;
+    }
+    // for bit operations only it holds when two ops are the same
+    if ((op1 == BinaryOpType::bit_and || op1 == BinaryOpType::bit_or ||
+         op1 == BinaryOpType::bit_xor) &&
+        op1 == op2) {
       return true;
     }
     return false;

@@ -53,10 +53,8 @@ max_num_particles = 1024 * 1024 * 4
 
 assert sphere_radius * 2 * particle_grid_res < 1
 
-
-ti.root.dense(ti.ij,
-              (res[0] // 8, res[1] // 8)).dense(ti.ij,
-                                                8).place(color_buffer)
+ti.root.dense(ti.ij, (res[0] // 8, res[1] // 8)).dense(ti.ij,
+                                                       8).place(color_buffer)
 
 ti.root.dense(ti.ijk, 2).dense(ti.ijk, particle_grid_res // 8).dense(
     ti.ijk, 8).place(voxel_has_particle)

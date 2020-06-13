@@ -18,7 +18,6 @@ def laplace():
 
 ti.root.dense(ti.ij, (16, 16)).place(x).place(y)
 
-
 laplace()
 
 t = time.time()

@@ -25,7 +25,6 @@ n_input = 28**2
 n_hidden = 500
 n_output = 10
 
-
 ti.root.dense(ti.i, n_input).place(input)
 ti.root.dense(ti.ij, (n_input, n_hidden)).place(weight1)
 ti.root.dense(ti.i, n_hidden).place(output1)

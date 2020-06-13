@@ -161,7 +161,6 @@ def to_taichi_type(dt):
 
     raise AssertionError("Unknown type {}".format(dt))
 
-
 def deprecated(old, new):
     import functools
 

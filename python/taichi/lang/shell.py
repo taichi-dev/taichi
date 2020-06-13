@@ -5,7 +5,7 @@ class ShellType:
     IDLE = 'Python IDLE shell'
     IPYTHON = 'IPython TerminalInteractiveShell'
     JUPYTER = 'IPython ZMQInteractiveShell'
-    IPYBASED = 'IPython Based Unknown Shell'
+    IPYBASED = 'IPython Based Shell'
     SCRIPT = None
 
 def _show_idle_error_message():
@@ -42,6 +42,10 @@ class InteractiveInterpreter:
 
 
 def get_shell_name():
+    """
+    Detect which type of shell is using.
+    Can be IPython, IDLE, Python native, or none.
+    """
     shell = os.environ.get('TI_SHELL_TYPE')
     if shell is not None:
         return getattr(ShellType, shell.upper())
@@ -60,8 +64,10 @@ def get_shell_name():
     try:  # IPython / Jupyter?
         return 'IPython ' + get_ipython().__class__.__name__
     except:
-        if hasattr(__builtins__,'__IPYTHON__'):
-            return self.IPYBASED
+        # Note that we can't simply do `'IPython' in sys.modules`,
+        # since it seems `torch` will import IPython on it's own too..
+        if hasattr(__builtins__, '__IPYTHON__'):
+            return ShellType.IPYBASED
 
     if os.path.basename(sys.executable) == 'pythonw.exe':  # Windows Python IDLE?
         return ShellType.IDLE
@@ -88,10 +94,22 @@ def get_shell_name():
     if 'idlelib' in sys.modules:
         return ShellType.IDLE
 
-    return ShellType.NATIVE
+    try:
+        if getattr(sys, 'ps1', sys.flags.interactive):
+            return ShellType.NATIVE
+    except:
+        pass
+
+    return ShellType.SCRIPT
 
 
 class ShellInspectorWrapper:
+    """
+    Wrapper of the `inspect` module. When interactive shell detected,
+    we will redirect getsource() calls to the corresponding inspector
+    provided by / suitable for each type of shell.
+    """
+
     def __init__(self):
         self.name = get_shell_name()
 
@@ -178,8 +196,12 @@ class ShellInspectorWrapper:
 
         elif self.name.startswith('IPython'):
             # `IPython.core.oinspect` for "IPython advanced shell"
-            import IPython
+            def getsource(o):
+                import IPython
+                return IPython.core.oinspect.getsource(o)
+
             def getsourcelines(o):
+                import IPython
                 lineno = IPython.core.oinspect.find_source_lines(o)
                 lines = IPython.core.oinspect.getsource(o).split('\n')
                 return lines, lineno
@@ -187,7 +209,7 @@ class ShellInspectorWrapper:
             def getsourcefile(o):
                 return '<IPython>'
 
-            self.getsource = IPython.core.oinspect.getsource
+            self.getsource = getsource
             self.getsourcelines = getsourcelines
             self.getsourcefile = getsourcefile
 

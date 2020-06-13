@@ -39,9 +39,9 @@ class PLYWriter:
         self.face_data = []
         self.face_type = face_type
         if face_type == "tri":
-            self.face_indices = -np.ones((self.num_faces, 3), dtype=int)
+            self.face_indices = -np.ones((self.num_faces, 3), dtype=np.int32)
         elif face_type == "quad":
-            self.face_indices = -np.ones((self.num_faces, 4), dtype=int)
+            self.face_indices = -np.ones((self.num_faces, 4), dtype=np.int32)
         self.comment = comment
 
     def add_vertex_channel(self, key: str, type: str, data: np.array):
@@ -152,7 +152,6 @@ class PLYWriter:
         self.add_vertex_channel("piece", "int", piece)
 
     def add_faces(self, indices: np.array):
-        indices = indices.astype(int)
         if self.face_type == "tri":
             vert_per_face = 3
         else:
@@ -161,6 +160,7 @@ class PLYWriter:
             self.num_faces == indices.size, "The dimension of the face vertices is not correct"
         self.face_indices = np.reshape(indices,
                                        (self.num_faces, vert_per_face))
+        self.face_indices = self.face_indices.astype(np.int32)
 
     def add_face_channel(self, key: str, type: str, data: np.array):
         if type not in self.ply_supported_types:

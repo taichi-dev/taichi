@@ -70,16 +70,15 @@ series_prefix_ascii = "example_ascii.ply"
 # use ascii so you can read the content
 writer.export_ascii(series_prefix_ascii)
 
-# TODO bug for binary format with face data
 # alternatively, use binary for a bit better performance
-# writer.export(series_prefix)
+writer.export(series_prefix)
 
 # Export a sequence of files, ie in 10 frames
 for frame in range(10):
     # write each frame as i.e. "example_000000.ply" in your current running folder
     writer.export_frame_ascii(frame, series_prefix_ascii)
     # alternatively, use binary
-    # writer.export_frame(frame, series_prefix)
+    writer.export_frame(frame, series_prefix)
 
     # update location/color
     x = x + 0.1*np.random.rand(20)

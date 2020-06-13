@@ -324,7 +324,6 @@ After running the code above, you will find the output sequence of ``ply`` files
     # use ascii so you can read the content
     writer.export_ascii(series_prefix_ascii)
 
-    # TODO bug for binary format with face data
     # alternatively, use binary for a bit better performance
     # writer.export(series_prefix)
 

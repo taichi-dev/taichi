@@ -211,8 +211,9 @@ class LowerAccess : public IRVisitor {
       }
     } else {
       if (stmt->ptr->is<GlobalPtrStmt>()) {
-        auto lowered = lower_vector_ptr(stmt->ptr->as<GlobalPtrStmt>(),
-            SNodeOpStmt::need_activation(stmt->op_type));
+        auto lowered =
+            lower_vector_ptr(stmt->ptr->as<GlobalPtrStmt>(),
+                             SNodeOpStmt::need_activation(stmt->op_type));
         stmt->ptr = lowered.back().get();
         stmt->parent->insert_before(stmt, std::move(lowered));
         throw IRModified();

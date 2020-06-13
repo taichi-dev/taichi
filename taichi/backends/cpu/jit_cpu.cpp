@@ -354,8 +354,10 @@ void JITSessionCPU::global_optimize_module_cpu(
       TI_INFO("Functions with > 100 instructions in optimized LLVM IR:");
       TaichiLLVMContext::print_huge_functions(module.get());
     }
-    static FileSequenceWriter writer("taichi_kernel_llvm_ir_optimized_{:04d}.ll",
-                                     "optimized LLVM IR");
+    static FileSequenceWriter writer(
+        "taichi_kernel_cpu_llvm_ir_optimized_{:04d}.ll",
+        "optimized LLVM IR (CPU)");
+    writer.write(module.get());
   }
 }
 

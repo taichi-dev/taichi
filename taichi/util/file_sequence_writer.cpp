@@ -3,11 +3,10 @@
 
 #include "taichi/util/file_sequence_writer.h"
 
-
 TLANG_NAMESPACE_BEGIN
 
 FileSequenceWriter::FileSequenceWriter(std::string filename_template,
-                                                     std::string file_type)
+                                       std::string file_type)
     : counter(0), filename_template(filename_template), file_type(file_type) {
 }
 

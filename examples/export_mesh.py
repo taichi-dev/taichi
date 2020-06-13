@@ -20,13 +20,13 @@ writer = ti.PLYWriter(num_vertices=20, num_faces=12, face_type="quad")
 # which can be added by passing 3 np.array x, y, z into the following function.
 
 x = np.zeros(20)
-y = np.array(list(np.arange(0, 4))*5)
+y = np.array(list(np.arange(0, 4)) * 5)
 z = np.repeat(np.arange(5), 4)
 writer.add_vertex_pos(x, y, z)
 
 # For faces (if any), the only required channel is the list of vertex indices that each face contains.
-indices = np.array([0, 1, 5, 4]*12)+np.repeat(
-    np.array(list(np.arange(0, 3))*4)+4*np.repeat(np.arange(4), 3), 4)
+indices = np.array([0, 1, 5, 4] * 12) + np.repeat(
+    np.array(list(np.arange(0, 3)) * 4) + 4 * np.repeat(np.arange(4), 3), 4)
 writer.add_faces(indices)
 
 # Add custome vertex channel, the input should include a key, a supported datatype and, the data np.array
@@ -81,9 +81,9 @@ for frame in range(10):
     writer.export_frame(frame, series_prefix)
 
     # update location/color
-    x = x + 0.1*np.random.rand(20)
-    y = y + 0.1*np.random.rand(20)
-    z = z + 0.1*np.random.rand(20)
+    x = x + 0.1 * np.random.rand(20)
+    y = y + 0.1 * np.random.rand(20)
+    z = z + 0.1 * np.random.rand(20)
     r = np.random.rand(20)
     g = np.random.rand(20)
     b = np.random.rand(20)

@@ -29,6 +29,8 @@
 
 TLANG_NAMESPACE_BEGIN
 
+FileSequenceWriter ptx_writer("taichi_kernel_nvptx_{:04d}.ptx", "module NVPTX");
+
 #if defined(TI_WITH_CUDA)
 class JITModuleCUDA : public JITModule {
  private:
@@ -80,9 +82,7 @@ class JITSessionCUDA : public JITSession {
   virtual JITModule *add_module(std::unique_ptr<llvm::Module> M) override {
     auto ptx = compile_module_to_ptx(M);
     if (get_current_program().config.print_kernel_nvptx) {
-      FileSequenceWriter writer("taichi_kernel_nvptx_{:04d}.ptx",
-                                "module NVPTX");
-      writer.write(ptx);
+      ptx_writer.write(ptx);
     }
     // TODO: figure out why using the guard leads to wrong tests results
     // auto context_guard = CUDAContext::get_instance().get_guard();
@@ -149,6 +149,12 @@ std::string JITSessionCUDA::compile_module_to_ptx(
   */
 
   using namespace llvm;
+
+  if (get_current_program().config.print_kernel_llvm_ir) {
+    static FileSequenceWriter writer("taichi_kernel_cuda_llvm_ir_{:04d}.ll",
+                                     "unoptimized LLVM IR (CUDA)");
+    writer.write(module.get());
+  }
 
   for (auto &f : module->globals())
     f.setName(convert(f.getName()));
@@ -273,7 +279,8 @@ std::string JITSessionCUDA::compile_module_to_ptx(
 
   if (get_current_program().config.print_kernel_llvm_ir_optimized) {
     static FileSequenceWriter writer(
-        "taichi_kernel_llvm_ir_optimized_{:04d}.ll", "optimized LLVM IR");
+        "taichi_kernel_cuda_llvm_ir_optimized_{:04d}.ll",
+        "optimized LLVM IR (CUDA)");
     writer.write(module.get());
   }
 

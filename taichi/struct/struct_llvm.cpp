@@ -212,8 +212,8 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
   generate_child_accessors(root);
 
   if (prog->config.print_struct_llvm_ir) {
-    static FileSequenceWriter writer(
-        "taichi_struct_llvm_ir_optimized_{:04d}.ll", "struct LLVM IR");
+    static FileSequenceWriter writer("taichi_struct_llvm_ir_{:04d}.ll",
+                                     "struct LLVM IR");
     writer.write(module.get());
   }
 

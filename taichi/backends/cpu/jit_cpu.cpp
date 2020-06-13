@@ -1,7 +1,6 @@
 // A LLVM JIT compiler for CPU archs wrapper
 
 #include <memory>
-#include <taichi/util/file_sequence_writer.h>
 
 #include "llvm/Analysis/TargetTransformInfo.h"
 #include "llvm/ADT/StringRef.h"

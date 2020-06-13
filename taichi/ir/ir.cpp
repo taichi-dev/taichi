@@ -901,7 +901,7 @@ SNodeOpStmt::SNodeOpStmt(SNodeOpType op_type,
 
 bool SNodeOpStmt::activation_related(SNodeOpType op) {
   return op == SNodeOpType::activate || op == SNodeOpType::deactivate ||
-      op == SNodeOpType::is_active;
+         op == SNodeOpType::is_active;
 }
 
 bool SNodeOpStmt::need_activation(SNodeOpType op) {

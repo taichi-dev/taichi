@@ -2,6 +2,13 @@ import taichi as ti
 import numpy as np
 import pytest
 import os
+from tempfile import mkstemp
+
+
+def make_temp(*args, **kwargs):
+    fd, name = mkstemp(*args, **kwargs)
+    os.close(fd)
+    return name
 
 
 # jpg is also supported but hard to test here since it's lossy:
@@ -12,7 +19,6 @@ import os
 @pytest.mark.parametrize('dt', [ti.u8])
 @ti.host_arch_only
 def test_image_io(resx, resy, comp, ext, is_tensor, dt):
-    from tempfile import mkstemp
     if comp != 1:
         shape = (resx, resy, comp)
     else:
@@ -22,7 +28,7 @@ def test_image_io(resx, resy, comp, ext, is_tensor, dt):
     pixel = np.random.randint(256, size=shape, dtype=ti.to_numpy_type(dt))
     if is_tensor:
         pixel_t.from_numpy(pixel)
-    fn = mkstemp(suffix='.' + ext)[1]
+    fn = make_temp(suffix='.' + ext)
     if is_tensor:
         ti.imwrite(pixel_t, fn)
     else:
@@ -40,12 +46,11 @@ def test_image_io(resx, resy, comp, ext, is_tensor, dt):
 @pytest.mark.parametrize('dt', [ti.f32, ti.f64])
 @ti.host_arch_only
 def test_image_io_vector(resx, resy, comp, ext, dt):
-    from tempfile import mkstemp
     shape = (resx, resy)
     pixel = np.random.rand(*shape, comp).astype(ti.to_numpy_type(dt))
     pixel_t = ti.Vector(comp, dt, shape)
     pixel_t.from_numpy(pixel)
-    fn = mkstemp(suffix='.' + ext)[1]
+    fn = make_temp(suffix='.' + ext)
     ti.imwrite(pixel_t, fn)
     pixel_r = (ti.imread(fn).astype(ti.to_numpy_type(dt)) + 0.5) / 256.0
     assert np.allclose(pixel_r, pixel, atol=2e-2)
@@ -57,7 +62,6 @@ def test_image_io_vector(resx, resy, comp, ext, dt):
 @pytest.mark.parametrize('dt', [ti.u16, ti.u32, ti.u64])
 @ti.host_arch_only
 def test_image_io_uint(resx, resy, comp, ext, dt):
-    from tempfile import mkstemp
     shape = (resx, resy)
     np_type = ti.to_numpy_type(dt)
     # When saving to disk, pixel data will be truncated into 8 bits.
@@ -66,7 +70,7 @@ def test_image_io_uint(resx, resy, comp, ext, dt):
     pixel = np.random.randint(256, size=(*shape, comp), dtype=np_type) * np_max
     pixel_t = ti.Vector(comp, dt, shape)
     pixel_t.from_numpy(pixel)
-    fn = mkstemp(suffix='.' + ext)[1]
+    fn = make_temp(suffix='.' + ext)
     ti.imwrite(pixel_t, fn)
     pixel_r = ti.imread(fn).astype(np_type) * np_max
     assert (pixel_r == pixel).all()

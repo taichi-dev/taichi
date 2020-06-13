@@ -861,6 +861,16 @@ class TaichiMain:
         runpy.run_path(args.filename, run_name='__main__')
 
     @register
+    def idle_hacker(self, arguments: list = sys.argv[2:]):
+        """Run idle hack code injector"""
+        parser = argparse.ArgumentParser(prog='ti idle_hacker',
+                                         description=f"{self.idle_hacker.__doc__}")
+        args = parser.parse_args(arguments)
+
+        from .idle_hacker import main
+        return main()
+
+    @register
     def run(self, arguments: list = sys.argv[2:]):
         """Run a specific task"""
         parser = argparse.ArgumentParser(prog='ti run',

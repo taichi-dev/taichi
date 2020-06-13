@@ -19,7 +19,7 @@ def main():
     with open(code.__file__) as f:
        ret = ''
        for x in f.readlines():
-           i = x.strip().find('# Case 3')
+           i = x.find('# Case 3')
            if i == -1:
                ret += x
            else:

@@ -224,8 +224,9 @@ class LowerAccess : public IRVisitor {
     if (!lower_atomic_ptr)
       return;
     if (stmt->dest->is<GlobalPtrStmt>()) {
-      auto lowered = lower_vector_ptr(stmt->dest->as<GlobalPtrStmt>(),
-          stmt->dest->as<GlobalPtrStmt>()->activate);
+      auto lowered =
+          lower_vector_ptr(stmt->dest->as<GlobalPtrStmt>(),
+                           stmt->dest->as<GlobalPtrStmt>()->activate);
       stmt->dest = lowered.back().get();
       stmt->parent->insert_before(stmt, std::move(lowered));
       throw IRModified();

@@ -33,7 +33,7 @@ class BinaryOpSimp : public BasicStmtVisitor {
       return;
     }
     auto const_lhs_rhs = binary_lhs->rhs->cast<ConstStmt>();
-    if (!const_lhs_rhs) {
+    if (!const_lhs_rhs || binary_lhs->lhs->is<ConstStmt>()) {
       return;
     }
     // original:
@@ -84,9 +84,10 @@ class BinaryOpSimp : public BasicStmtVisitor {
     bool modified = false;
     while (true) {
       node->accept(&simplifier);
-      if (simplifier.modifier.modify_ir())
+      if (simplifier.modifier.modify_ir()) {
+        // TI_TAG;
         modified = true;
-      else
+      } else
         break;
     }
     return modified;

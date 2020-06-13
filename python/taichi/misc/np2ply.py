@@ -152,6 +152,7 @@ class PLYWriter:
         self.add_vertex_channel("piece", "int", piece)
 
     def add_faces(self, indices: np.array):
+        indices = indices.astype(int)
         if self.face_type == "tri":
             vert_per_face = 3
         else:

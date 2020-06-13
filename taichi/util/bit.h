@@ -121,6 +121,11 @@ TI_FORCE_INLINE constexpr uint32 log2int(uint64 value) {
   return ret;
 }
 
+TI_FORCE_INLINE constexpr uint32 ceil_log2int(uint64 value) {
+  // Returns ceil(log2(value)). When value == 0, it returns 0.
+  return log2int(value) + ((value & (value - 1)) != 0);
+}
+
 template <typename G, typename T>
 constexpr TI_FORCE_INLINE copy_refcv_t<T, G> &&reinterpret_bits(T &&t) {
   TI_STATIC_ASSERT(sizeof(G) == sizeof(T));

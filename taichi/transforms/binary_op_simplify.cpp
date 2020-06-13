@@ -85,7 +85,6 @@ class BinaryOpSimp : public BasicStmtVisitor {
     while (true) {
       node->accept(&simplifier);
       if (simplifier.modifier.modify_ir()) {
-        // TI_TAG;
         modified = true;
       } else
         break;

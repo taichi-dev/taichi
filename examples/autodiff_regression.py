@@ -10,17 +10,11 @@ number_coeffs = 4
 learning_rate = 1e-4
 
 N = 32
-x, y = ti.var(ti.f32), ti.var(ti.f32)
-coeffs = [ti.var(ti.f32) for _ in range(number_coeffs)]
-loss = ti.var(ti.f32)
-
-
-@ti.layout
-def xy():
-    ti.root.dense(ti.i, N).place(x, x.grad, y, y.grad)
-    ti.root.place(loss, loss.grad)
-    for i in range(number_coeffs):
-        ti.root.place(coeffs[i], coeffs[i].grad)
+x, y = ti.var(ti.f32, shape=N, needs_grad=True), ti.var(ti.f32,
+                                                        shape=N,
+                                                        needs_grad=True)
+coeffs = ti.var(ti.f32, shape=number_coeffs, needs_grad=True)
+loss = ti.var(ti.f32, shape=(), needs_grad=True)
 
 
 @ti.kernel
@@ -36,8 +30,7 @@ def regress():
 @ti.kernel
 def update():
     for i in ti.static(range(number_coeffs)):
-        coeffs[i][None] -= learning_rate * coeffs[i].grad[None]
-        coeffs[i].grad[None] = 0
+        coeffs[i] -= learning_rate * coeffs.grad[i]
 
 
 xs = []
@@ -57,21 +50,28 @@ for i in range(N):
     ys.append(y[i])
 print()
 
+use_tape = True
+
 for i in range(1000):
-    loss[None] = 0
-    loss.grad[None] = 1
-    regress()
-    regress.grad()
+    if use_tape:
+        with ti.Tape(loss=loss):
+            regress()
+    else:
+        ti.clear_all_gradients()
+        loss[None] = 0
+        loss.grad[None] = 1
+        regress()
+        regress.grad()
     print('Loss =', loss[None])
     update()
     for i in range(number_coeffs):
-        print(coeffs[i][None], end=', ')
+        print(coeffs[i], end=', ')
     print()
 
 curve_xs = np.arange(-2.5, 2.5, 0.01)
 curve_ys = curve_xs * 0
 for i in range(number_coeffs):
-    curve_ys += coeffs[i][None] * np.power(curve_xs, i)
+    curve_ys += coeffs[i] * np.power(curve_xs, i)
 
 plt.title('Nonlinear Regression with Gradient Descent (3rd order polynomial)')
 ax = plt.gca()

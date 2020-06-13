@@ -62,48 +62,50 @@ class PLYWriter:
                 self.vertex_data_type.append(type)
                 self.vertex_data.append(self.type_map[type](data[:, i]))
 
-    def add_vertex_xyz(self, x: np.array, y: np.array, z: np.array):
+    def add_vertex_pos(self, x: np.array, y: np.array, z: np.array):
         self.add_vertex_channel("x", "float", x)
         self.add_vertex_channel("y", "float", y)
         self.add_vertex_channel("z", "float", z)
 
+    # TODO active and refactor later if user feedback indicates the necessity for a compact the input list
     # pass ti vector/matrix tensor directly
-    def add_vertex_pos(self, pos):
-        assert isinstance(pos, (np.ndarray, ti.Matrix))
-        if not isinstance(pos, np.ndarray):
-            pos = pos.to_numpy()
-        dim = pos.shape[pos.ndim-1]
-        assert dim == 2 or dim == 3, "Only 2D and 3D positions are supported"
-        n = pos.size // dim
-        assert n == self.num_vertices, "Size of the input is not correct"
-        pos = np.reshape(pos, (n, dim))
-        self.add_vertex_channel("x", "float", pos[:, 0])
-        self.add_vertex_channel("y", "float", pos[:, 1])
-        if(dim == 3):
-            self.add_vertex_channel("z", "float", pos[:, 2])
-        if(dim == 2):
-            self.add_vertex_channel("z", "float", np.zeros(n))
+    # def add_vertex_pos(self, pos):
+    #     assert isinstance(pos, (np.ndarray, ti.Matrix))
+    #     if not isinstance(pos, np.ndarray):
+    #         pos = pos.to_numpy()
+    #     dim = pos.shape[pos.ndim-1]
+    #     assert dim == 2 or dim == 3, "Only 2D and 3D positions are supported"
+    #     n = pos.size // dim
+    #     assert n == self.num_vertices, "Size of the input is not correct"
+    #     pos = np.reshape(pos, (n, dim))
+    #     self.add_vertex_channel("x", "float", pos[:, 0])
+    #     self.add_vertex_channel("y", "float", pos[:, 1])
+    #     if(dim == 3):
+    #         self.add_vertex_channel("z", "float", pos[:, 2])
+    #     if(dim == 2):
+    #         self.add_vertex_channel("z", "float", np.zeros(n))
 
-    def add_vertex_normalxyz(self, nx: np.array, ny: np.array, nz: np.array):
+    def add_vertex_normal(self, nx: np.array, ny: np.array, nz: np.array):
         self.add_vertex_channel("nx", "float", nx)
         self.add_vertex_channel("ny", "float", ny)
         self.add_vertex_channel("nz", "float", nz)
 
+    # TODO active and refactor later if user feedback indicates the necessity for a compact the input list
     # pass ti vector/matrix tensor directly
-    def add_vertex_normal(self, normal):
-        assert isinstance(normal, (np.ndarray, ti.Matrix))
-        if not isinstance(normal, np.ndarray):
-            normal = normal.to_numpy()
-        dim = normal.shape[normal.ndim-1]
-        assert dim == 3, "Only 3D normal is supported"
-        n = normal.size // dim
-        assert n == self.num_vertices, "Size of the input is not correct"
-        normal = np.reshape(normal, (n, dim))
-        self.add_vertex_channel("nx", "float", normal[:, 0])
-        self.add_vertex_channel("ny", "float", normal[:, 1])
-        self.add_vertex_channel("nz", "float", normal[:, 2])
+    # def add_vertex_normal(self, normal):
+    #     assert isinstance(normal, (np.ndarray, ti.Matrix))
+    #     if not isinstance(normal, np.ndarray):
+    #         normal = normal.to_numpy()
+    #     dim = normal.shape[normal.ndim-1]
+    #     assert dim == 3, "Only 3D normal is supported"
+    #     n = normal.size // dim
+    #     assert n == self.num_vertices, "Size of the input is not correct"
+    #     normal = np.reshape(normal, (n, dim))
+    #     self.add_vertex_channel("nx", "float", normal[:, 0])
+    #     self.add_vertex_channel("ny", "float", normal[:, 1])
+    #     self.add_vertex_channel("nz", "float", normal[:, 2])
 
-    def add_vertex_rgb(self, r: np.array, g: np.array, b: np.array):
+    def add_vertex_color(self, r: np.array, g: np.array, b: np.array):
         self.add_vertex_channel("red", "float", r)
         self.add_vertex_channel("green", "float", g)
         self.add_vertex_channel("blue", "float", b)
@@ -117,21 +119,22 @@ class PLYWriter:
         self.add_vertex_channel("blue", "float", b)
         self.add_vertex_channel("Alpha", "float", a)
 
+    # TODO active and refactor later if user feedback indicates the necessity for a compact the input list
     # pass ti vector/matrix tensor directly
-    def add_vertex_color(self, color):
-        assert isinstance(color, (np.ndarray, ti.Matrix))
-        if not isinstance(color, np.ndarray):
-            color = color.to_numpy()
-        channels = color.shape[color.ndim-1]
-        assert channels == 3 or channels == 4, "The dimension for color should be either be 3 (rgb) or 4 (rgba)"
-        n = color.size // channels
-        assert n == self.num_vertices, "Size of the input is not correct"
-        color = np.reshape(color, (n, channels))
-        self.add_vertex_channel("red", "float", color[:, 0])
-        self.add_vertex_channel("green", "float", color[:, 1])
-        self.add_vertex_channel("blue", "float", color[:, 2])
-        if channels == 4:
-            self.add_vertex_channel("Alpha", "float", color[:, 3])
+    # def add_vertex_color(self, color):
+    #     assert isinstance(color, (np.ndarray, ti.Matrix))
+    #     if not isinstance(color, np.ndarray):
+    #         color = color.to_numpy()
+    #     channels = color.shape[color.ndim-1]
+    #     assert channels == 3 or channels == 4, "The dimension for color should be either be 3 (rgb) or 4 (rgba)"
+    #     n = color.size // channels
+    #     assert n == self.num_vertices, "Size of the input is not correct"
+    #     color = np.reshape(color, (n, channels))
+    #     self.add_vertex_channel("red", "float", color[:, 0])
+    #     self.add_vertex_channel("green", "float", color[:, 1])
+    #     self.add_vertex_channel("blue", "float", color[:, 2])
+    #     if channels == 4:
+    #         self.add_vertex_channel("Alpha", "float", color[:, 3])
 
     def add_vertex_id(self):
         self.add_vertex_channel("id", "int", np.arange(self.num_vertices))

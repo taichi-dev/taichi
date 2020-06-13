@@ -2,6 +2,7 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/visitors.h"
+#include "taichi/program/kernel.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -37,6 +38,14 @@ void compile_to_offloads(IRNode *ir,
   irpass::typecheck(ir);
   print("Typechecked");
   irpass::analysis::verify(ir);
+
+  if (ir->get_kernel()->is_evaluator) {
+    TI_ASSERT(!grad);
+    irpass::offload(ir);
+    print("Offloaded");
+    irpass::analysis::verify(ir);
+    return;
+  }
 
   if (vectorize) {
     irpass::loop_vectorize(ir);

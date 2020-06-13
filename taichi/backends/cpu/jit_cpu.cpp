@@ -1,6 +1,7 @@
 // A LLVM JIT compiler for CPU archs wrapper
 
 #include <memory>
+#include <taichi/util/file_sequence_writer.h>
 
 #include "llvm/Analysis/TargetTransformInfo.h"
 #include "llvm/ADT/StringRef.h"
@@ -36,6 +37,7 @@
 #include "taichi/lang_util.h"
 #include "taichi/program/program.h"
 #include "taichi/jit/jit_session.h"
+#include "taichi/util/file_sequence_writer.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -348,15 +350,12 @@ void JITSessionCPU::global_optimize_module_cpu(
   }
 
   if (get_current_program().config.print_kernel_llvm_ir_optimized) {
-    TI_INFO("Functions with > 100 instructions in optimized LLVM IR:");
-    static int counter = 0;
-    std::error_code ec;
-    auto fn = fmt::format("taichi_optimized_{:04d}.ll", counter);
-    llvm::raw_fd_ostream fdos(fn, ec);
-    module->print(fdos, nullptr);
-    TaichiLLVMContext::print_huge_functions(module.get());
-    TI_INFO("Optimized LLVM IR emitted to file {}", fn);
-    counter++;
+    if (false) {
+      TI_INFO("Functions with > 100 instructions in optimized LLVM IR:");
+      TaichiLLVMContext::print_huge_functions(module.get());
+    }
+    static FileSequenceWriter writer("taichi_kernel_llvm_ir_optimized_{:04d}.ll",
+                                     "optimized LLVM IR");
   }
 }
 

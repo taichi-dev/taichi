@@ -33,8 +33,8 @@ def test_ad_sum():
         assert a.grad[i] == b[i]
 
 
-# @ti.require(ti.extension.adstack)
-# @ti.all_archs
+@ti.require(ti.extension.adstack)
+@ti.all_archs
 def test_ad_sum_local_atomic():
     ti.init(print_ir=True)
     N = 10
@@ -139,10 +139,10 @@ def test_ad_fibonacci():
         assert b.grad[i] == f[i]
 
 
-# @ti.require(ti.extension.adstack)
-# @ti.all_archs
+@ti.require(ti.extension.adstack)
+@ti.all_archs
 def test_integer_stack():
-    ti.init()
+    ti.init(print_ir=True)
     N = 5
     a = ti.var(ti.f32, shape=N, needs_grad=True)
     b = ti.var(ti.f32, shape=N, needs_grad=True)
@@ -156,7 +156,7 @@ def test_integer_stack():
             weight = 1
             s = 0.0
             for j in range(c[i]):
-                s += weight * a[i] + b[i]
+                s += weight * a[i]
                 weight *= 10
             f[i] = s
 

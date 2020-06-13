@@ -6,6 +6,7 @@ from taichi.core.util import require_version
 from taichi.tools import *
 from taichi.misc import *
 from taichi.misc.gui import GUI
+from taichi.misc.np2ply import PLYWriter
 from taichi.misc.image import imread, imwrite, imshow
 from taichi.misc.task import Task
 from taichi.misc.test import *

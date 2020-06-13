@@ -129,48 +129,42 @@ PR title format and tags
 ------------------------
 PR titles will be part of the commit history reflected in the ``master`` branch, therefore it is important to keep PR titles readable.
 
- - The first letter of the PR title body should be capitalized, unless the title starts with an identifier:
-
-     - E.g., "[doc] improve documentation" should be formatted as "[doc] Improve documentation";
-     - "[Lang] ti.sqr(x) is now deprecated" is fine because ``ti`` is an identifier.
-
- - Please do not include back quotes ("`") in PR titles.
- - Please always prepend at least one tag such as ``[Metal]`` to PR titles:
+ - Please always prepend **at least one tag** such as ``[Lang]`` to PR titles:
 
      - When using multiple tags, make sure there is exactly one space between tags;
-     - E.g., "[Metal][refactor]" (no space) should be formatted as "[Metal] [refactor]";
+     - E.g., "[Lang][refactor]" (no space) should be replaced by "[Lang] [refactor]";
+
+ - The first letter of the PR title body should be capitalized:
+
+     - E.g., ``[Doc] improve documentation`` should be replaced by ``[Doc] Improve documentation``;
+     - ``[Lang] "ti.sqr(x)" is now deprecated`` is fine because ``"`` is a symbol.
+
+ - Please do not include back quotes ("`") in PR titles.
 
  - For example, "[Metal] Support bitmasked SNode", "[OpenGL] AtomicMin/Max support", or "[Opt] [IR] Enhanced constant folding".
 
-Existing tags:
+Frequently used tags:
 
-- ``[Metal], [OpenGL], [CPU], [CUDA], [AMDGPU], [LLVM]``: backends;
+- ``[Metal], [OpenGL], [CPU], [CUDA], [LLVM]``: backends;
 - ``[LLVM]``: the LLVM backend shared by CPUs and CUDA;
 - ``[Lang]``: frontend language features, including syntax sugars;
 - ``[Std]``: standard library, e.g. ``ti.Matrix`` and ``ti.Vector``;
 - ``[IR]``: intermediate representation;
-- ``[Sparse]``: sparse computation, dynamic memory allocator, and garbage collection;
 - ``[Opt]``: IR optimization passes;
-- ``[Async]``: asynchronous execution engine;
-- ``[Type]``: type system;
-- ``[Infra]``: general infrastructure, e.g. logging, image reader;
 - ``[GUI]``: the built-in GUI system;
 - ``[Refactor]``: code refactoring;
-- ``[AutoDiff]``: automatic differentiation;
 - ``[CLI]``: commandline interfaces, e.g. the ``ti`` command;
 - ``[Doc]``: documentation under ``docs/``;
 - ``[Example]``: examples under ``examples/``;
 - ``[Test]``: adding or improving tests under ``tests/``;
-- ``[Benchmark]``: Benchmarking & regression tests;
 - ``[Linux]``: Linux platform;
 - ``[Mac]``: Mac OS X platform;
 - ``[Windows]``: Windows platform;
-- ``[PyPI]``: PyPI package release;
-- ``[Workflow]``: GitHub Actions/Workflows;
 - ``[Perf]``: performance improvements;
 - ``[Misc]``: something that doesn't belong to any category, such as version bump, reformatting;
 - ``[Bug]``: bug fixes;
-- **When introducing a new tag, please update the list here in the first PR with that tag, so that people can follow.**
+- Check out more tags in `misc/prtags.json <https://github.com/taichi-dev/taichi/blob/master/misc/prtags.json>`_.
+- When introducing a new tag, please update the list in ``misc/prtags.json`` in the first PR with that tag, so that people can follow.
 
 .. note::
 
@@ -179,15 +173,16 @@ Existing tags:
   This is done by **capitalizing PR tags**:
 
    - PRs with visible/notable features to the users should be marked with tags starting with **the first letter capitalized**, e.g. ``[Metal], [OpenGL], [IR], [Lang], [CLI]``.
-     When releasing a new version, a script will generate a changelog with these changes (PR title) highlighted. Therefore it is **important** to make sure the end-users can understand what your PR does, **based on your PR title**.
+     When releasing a new version, a script (``python/taichi/make_changelog.py``) will generate a changelog with these changes (PR title) highlighted. Therefore it is **important** to make sure the end-users can understand what your PR does, **based on your PR title**.
    - Other PRs (underlying development/intermediate implementation) should use tags with **everything in lowercase letters**: e.g. ``[metal], [opengl], [ir], [lang], [cli]``.
+   - Because of the way the release changelog is generated, there should be **at most one captialized tag** in a PR title to prevent duplicate PR highlights. For example, ``[GUI] [Mac] Support modifier keys`` (#1189) is a bad example, we should use ``[gui] [Mac] Support modifier keys in GUI`` instead. Please capitalize the tag that is most relevant to the PR.
 
 Tips on the Taichi compiler development
 ---------------------------------------
 
 :ref:`compilation` may worth checking out. It explains the whole compilation process.
 
-:ref:`regress` may worth checking out when the work involves IR optimization.
+See also :ref:`regress` if your work involves IR optimization.
 
 When creating a Taichi program using ``ti.init(arch=desired_arch, **kwargs)``, pass in the following parameters to make the Taichi compiler print out IR:
 
@@ -195,6 +190,7 @@ When creating a Taichi program using ``ti.init(arch=desired_arch, **kwargs)``, p
 - ``print_ir = True``: print the Taichi IR transformation process of kernel (excluding accessors) compilation.
 - ``print_kernel_llvm_ir = True``: print the emitted LLVM IR by Taichi.
 - ``print_kernel_llvm_ir_optimized = True``: print the optimized LLVM IR for each kernel.
+- ``print_kernel_nvptx = True``: print the emitted NVPTX for each kernel (CUDA only).
 - ``print_accessor_ir = True``: print the IR transformation process of data accessors, which are special and simple kernels. (This is rarely used, unless you are debugging the compilation of data accessors.)
 
 .. note::

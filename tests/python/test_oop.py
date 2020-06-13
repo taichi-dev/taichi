@@ -197,3 +197,27 @@ def test_oop_class_must_be_data_oriented():
 
     # Array1D is not properly decorated, this will raise an Exception
     arr.reduce()
+
+
+@ti.host_arch_only
+def test_hook():
+    @ti.data_oriented
+    class Solver:
+        def __init__(self, n, m, hook):
+            self.val = ti.var(ti.f32, shape=(n, m))
+            self.hook = hook
+
+        def run_hook(self):
+            self.hook(self.val)
+
+    @ti.kernel
+    def hook(x: ti.template()):
+        for i, j in x:
+            x[i, j] = 1.0
+
+    solver = Solver(32, 32, hook)
+    solver.run_hook()
+
+    for i in range(32):
+        for j in range(32):
+            assert (solver.val[i, j] == 1.0)

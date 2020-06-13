@@ -5,19 +5,27 @@ import taichi as ti
 
 
 class PLYWriter:
-    def __init__(self, num_vertices: int, num_faces=0, face_type="tri", comment="created by PLYWriter"):
+    def __init__(self,
+                 num_vertices: int,
+                 num_faces=0,
+                 face_type="tri",
+                 comment="created by PLYWriter"):
         assert num_vertices > 0, "num_vertices should be greater than 0"
         assert num_faces >= 0, "num_faces shouldn't be less than 0"
         assert face_type == "tri" or face_type == "quad", "Only tri and quad faces are supported for now"
 
         self.ply_supported_types = [
-            'char', 'uchar', 'short', 'ushort', 'int', 'uint', 'float', 'double']
+            'char', 'uchar', 'short', 'ushort', 'int', 'uint', 'float',
+            'double'
+        ]
         self.corresponding_numpy_types = [
-            np.int8, np.uint8, np.int16, np.uint16, np.int32, np.uint32, np.float32, np.float64]
+            np.int8, np.uint8, np.int16, np.uint16, np.int32, np.uint32,
+            np.float32, np.float64
+        ]
         self.type_map = {}
         for i in range(len(self.ply_supported_types)):
-            self.type_map[self.ply_supported_types[i]
-                          ] = self.corresponding_numpy_types[i]
+            self.type_map[self.ply_supported_types[
+                i]] = self.corresponding_numpy_types[i]
 
         self.num_vertices = num_vertices
         self.num_vertex_channels = 0
@@ -55,7 +63,7 @@ class PLYWriter:
             data.shape = (self.num_vertices, num_col)
             self.num_vertex_channels += num_col
             for i in range(num_col):
-                item_key = key + "_" + str(i+1)
+                item_key = key + "_" + str(i + 1)
                 if item_key in self.vertex_channels:
                     print("WARNING: duplicate key " + item_key + " detected")
                 self.vertex_channels.append(item_key)
@@ -113,7 +121,8 @@ class PLYWriter:
     def add_vertex_alpha(self, alpha: np.array):
         self.add_vertex_channel("Alpha", "float", alpha)
 
-    def add_vertex_rgba(self, r: np.array, g: np.array, b: np.array, a: np.array):
+    def add_vertex_rgba(self, r: np.array, g: np.array, b: np.array,
+                        a: np.array):
         self.add_vertex_channel("red", "float", r)
         self.add_vertex_channel("green", "float", g)
         self.add_vertex_channel("blue", "float", b)
@@ -149,8 +158,8 @@ class PLYWriter:
             vert_per_face = 4
         assert vert_per_face * \
             self.num_faces == indices.size, "The dimension of the face vertices is not correct"
-        self.face_indices = np.reshape(
-            indices, (self.num_faces, vert_per_face))
+        self.face_indices = np.reshape(indices,
+                                       (self.num_faces, vert_per_face))
 
     def add_face_channel(self, key: str, type: str, data: np.array):
         if type not in self.ply_supported_types:
@@ -171,7 +180,7 @@ class PLYWriter:
             data.shape = (self.num_faces, num_col)
             self.num_face_channels += num_col
             for i in range(num_col):
-                item_key = key + "_" + str(i+1)
+                item_key = key + "_" + str(i + 1)
                 if item_key in self.face_channels:
                     print("WARNING: duplicate key " + item_key + " detected")
                 self.face_channels.append(item_key)
@@ -194,18 +203,20 @@ class PLYWriter:
 
     def print_header(self, path: str, format: str):
         with open(path, "w") as f:
-            f.writelines(["ply\n", "format " + format + " 1.0\n",
-                          "comment " + self.comment + "\n"])
+            f.writelines([
+                "ply\n", "format " + format + " 1.0\n",
+                "comment " + self.comment + "\n"
+            ])
             f.write("element vertex " + str(self.num_vertices) + "\n")
             for i in range(self.num_vertex_channels):
-                f.write(
-                    "property " + self.vertex_data_type[i] + " " + self.vertex_channels[i] + "\n")
-            if(self.num_faces != 0):
+                f.write("property " + self.vertex_data_type[i] + " " +
+                        self.vertex_channels[i] + "\n")
+            if (self.num_faces != 0):
                 f.write("element face " + str(self.num_faces) + "\n")
                 f.write("property list uchar int vertex_indices\n")
                 for i in range(self.num_face_channels):
-                    f.write(
-                        "property " + self.face_data_type[i] + " " + self.face_channels[i] + "\n")
+                    f.write("property " + self.face_data_type[i] + " " +
+                            self.face_channels[i] + "\n")
             f.write("end_header\n")
 
     def export(self, path):
@@ -239,8 +250,10 @@ class PLYWriter:
             else:
                 vert_per_face = 4
             for i in range(self.num_faces):
-                f.writelines(
-                    [str(vert_per_face) + " ", " ".join(map(str, self.face_indices[i, :])), " "])
+                f.writelines([
+                    str(vert_per_face) + " ",
+                    " ".join(map(str, self.face_indices[i, :])), " "
+                ])
                 for j in range(self.num_face_channels):
                     f.write(str(self.face_data[j][i]) + " ")
                 f.write("\n")
@@ -251,7 +264,7 @@ class PLYWriter:
         if last_4_char == ".ply":
             path = path[:-4]
 
-        real_path = path+"_" + "{0:0=6d}".format(series_num) + ".ply"
+        real_path = path + "_" + "{0:0=6d}".format(series_num) + ".ply"
         self.export_ascii(real_path)
 
     def export_frame(self, series_num: int, path: str):
@@ -260,5 +273,5 @@ class PLYWriter:
         if last_4_char == ".ply":
             path = path[:-4]
 
-        real_path = path+"_" + "{0:0=6d}".format(series_num) + ".ply"
+        real_path = path + "_" + "{0:0=6d}".format(series_num) + ".ply"
         self.export(real_path)

@@ -1,7 +1,17 @@
-# Usage: python3 misc/make_changelog.py [v0.x.y]
+# Usage: make_changelog.py [v0.x.y]
 
-import sys
+import sys, os, json
 from git import Repo
+
+
+def load_pr_tags():
+    this_dir = os.path.dirname(os.path.abspath(__file__))
+    json_path = os.path.join(this_dir, '../../misc/prtags.json')
+    details = {}
+    with open(json_path) as f:
+        details = json.load(f)
+    details['release'] = ''
+    return details
 
 
 def main(ver='master', repo_dir='.'):
@@ -15,37 +25,7 @@ def main(ver='master', repo_dir='.'):
     notable_changes = {}
     all_changes = []
 
-    details = {
-        'cpu': 'CPU backends',
-        'cuda': 'CUDA backend',
-        'doc': 'Documentation',
-        'infra': 'Infrastructure',
-        'cli': 'Command line interface',
-        'ir': 'Intermediate representation',
-        'lang': 'Language and syntax',
-        'metal': 'Metal backend',
-        'opengl': 'OpenGL backend',
-        'misc': 'Miscellaneous',
-        'std': 'Standard library',
-        'opt': 'IR optimization passes',
-        'example': 'Examples',
-        'pypi': 'PyPI package',
-        'autodiff': 'Automatic differentiation',
-        'sparse': 'Sparse computation',
-        'gui': 'GUI',
-        'llvm': 'LLVM backend (CPU and CUDA)',
-        'refactor': 'Refactor',
-        'bug': 'Bug fixes',
-        'test': 'Tests',
-        'benchmark': 'Benchmarking',
-        'async': 'AsyncEngine',
-        'workflow': 'GitHub Actions/Workflows',
-        'linux': 'Linux',
-        'mac': 'Mac OS X',
-        'windows': 'Windows',
-        'perf': 'Performance improvements',
-        'release': '',
-    }
+    details = load_pr_tags()
 
     for i, c in enumerate(commits):
         s = format(c)

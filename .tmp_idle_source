@@ -1,0 +1,11 @@
+
+=====
+@ti.kernel
+def func(): pass
+
+
+=====
+func()
+
+=====
+func()

@@ -176,7 +176,7 @@ Install ``ffmpeg`` on OS X
 
 Export PLY files
 ----------------
-- ``ti.PLYwriter`` can help you export results in the ``ply`` format. Below is a short example of exporting 10 frames of a moving cube with a random color,
+- ``ti.PLYwriter`` can help you export results in the ``ply`` format. Below is a short example of exporting 10 frames of a moving cube with vertices randomly colored,
 
 .. code-block:: python
 
@@ -226,7 +226,7 @@ Export PLY files
             np_rgba[:, 0], np_rgba[:, 1], np_rgba[:, 2], np_rgba[:, 3])
         writer.export_frame_ascii(frame, series_prefix)
 
-After running the code above, you will find the output sequence of ``ply`` files in the current running folder. Next, we will break up the process of using ``ti.PLYWriter`` into 4 steps and show some examples.
+After running the code above, you will find the output sequence of ``ply`` files in the current working directory. Next, we will break down the usage of ``ti.PLYWriter`` into 4 steps and show some examples.
 
 - Setup ``ti.PLYWriter``
 
@@ -247,7 +247,7 @@ After running the code above, you will find the output sequence of ``ply`` files
 
 .. code-block:: python
 
-    # a 2d matrix with quad face
+    # A 2D grid with quad faces
     #     y
     #     |
     # z---/
@@ -270,7 +270,7 @@ After running the code above, you will find the output sequence of ``ply`` files
     z = np.repeat(np.arange(5), 4)
     writer.add_vertex_pos(x, y, z)
 
-    # For the faces, if there exist any, the only required channel is the list of vertex indices that each face contains.
+    # For faces (if any), the only required channel is the list of vertex indices that each face contains.
     indices = np.array([0, 1, 5, 4]*12)+np.repeat(
         np.array(list(np.arange(0, 3))*4)+4*np.repeat(np.arange(4), 3), 4)
 

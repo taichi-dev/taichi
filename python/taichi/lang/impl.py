@@ -33,7 +33,8 @@ def expr_init_list(xs, expected):
     if not isinstance(xs, (list, tuple)):
         raise TypeError(f'Cannot unpack type: {type(xs)}')
     if expected != len(xs):
-        raise ValueError(f'Tuple assignment size mismatch: {expected} != {len(xs)}')
+        raise ValueError(
+            f'Tuple assignment size mismatch: {expected} != {len(xs)}')
     if isinstance(xs, list):
         return [expr_init(e) for e in xs]
     elif isinstance(xs, tuple):

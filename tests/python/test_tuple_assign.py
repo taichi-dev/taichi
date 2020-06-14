@@ -1,5 +1,6 @@
 import taichi as ti
 
+
 @ti.all_archs
 def test_fibonacci():
     @ti.kernel
@@ -19,6 +20,7 @@ def test_fibonacci():
     for n in range(5):
         assert ti_fibonacci(n) == py_fibonacci(n)
 
+
 @ti.host_arch_only
 def test_assign2():
     a = ti.var(ti.f32, ())
@@ -31,6 +33,7 @@ def test_assign2():
     func()
     assert a[None] == 2
     assert b[None] == 3
+
 
 @ti.host_arch_only
 @ti.must_throw(ValueError)
@@ -46,6 +49,7 @@ def test_assign2_mismatch3():
 
     func()
 
+
 @ti.host_arch_only
 @ti.must_throw(TypeError)
 def test_assign2_mismatch1():
@@ -59,6 +63,7 @@ def test_assign2_mismatch1():
         a[None], b[None] = 2
 
     func()
+
 
 @ti.host_arch_only
 def test_swap2():
@@ -75,6 +80,7 @@ def test_swap2():
     assert a[None] == 3
     assert b[None] == 2
 
+
 @ti.host_arch_only
 def test_assign2_static():
     a = ti.var(ti.f32, ())
@@ -89,6 +95,7 @@ def test_assign2_static():
     func()
     assert a[None] == 3
     assert b[None] == 2
+
 
 @ti.host_arch_only
 def test_swap3():

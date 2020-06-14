@@ -10,7 +10,7 @@ test_vector_arrays = (np.array([42, 42]), np.array([24, 24]))
 
 
 @ti.host_arch_only
-def _test_python_scope_vector_operations():
+def test_python_scope_vector_operations():
     for ops in vector_operation_types:
         a, b = test_vector_arrays
         m1, m2 = ti.Vector(a), ti.Vector(b)
@@ -19,7 +19,7 @@ def _test_python_scope_vector_operations():
 
 
 @ti.host_arch_only
-def _test_python_scope_matrix_operations():
+def test_python_scope_matrix_operations():
     for ops in operation_types:
         a, b = test_matrix_arrays
         m1, m2 = ti.Matrix(a), ti.Matrix(b)
@@ -33,7 +33,7 @@ def _test_python_scope_matrix_operations():
 # ideally we should use pytest.fixture to parameterize the tests
 # over explicit loops
 @ti.host_arch_only
-def _test_python_scope_vector_tensor_add():
+def test_python_scope_vector_tensor_add():
     t1 = ti.Vector(2, dt=ti.i32, shape=())
     t2 = ti.Vector(2, dt=ti.i32, shape=())
     a, b = test_vector_arrays
@@ -45,7 +45,7 @@ def _test_python_scope_vector_tensor_add():
 
 
 @ti.host_arch_only
-def _test_python_scope_vector_tensor_sub():
+def test_python_scope_vector_tensor_sub():
     t1 = ti.Vector(2, dt=ti.i32, shape=())
     t2 = ti.Vector(2, dt=ti.i32, shape=())
     a, b = test_vector_arrays
@@ -57,7 +57,7 @@ def _test_python_scope_vector_tensor_sub():
 
 
 @ti.host_arch_only
-def _test_python_scope_matrix_tensor_add():
+def test_python_scope_matrix_tensor_add():
     t1 = ti.Matrix(2, 2, dt=ti.i32, shape=())
     t2 = ti.Matrix(2, 2, dt=ti.i32, shape=())
     a, b = test_matrix_arrays
@@ -72,7 +72,7 @@ def _test_python_scope_matrix_tensor_add():
 
 
 @ti.host_arch_only
-def _test_python_scope_matrix_tensor_sub():
+def test_python_scope_matrix_tensor_sub():
     t1 = ti.Matrix(2, 2, dt=ti.i32, shape=())
     t2 = ti.Matrix(2, 2, dt=ti.i32, shape=())
     a, b = test_matrix_arrays
@@ -85,7 +85,7 @@ def _test_python_scope_matrix_tensor_sub():
 
 
 @ti.host_arch_only
-def _test_python_scope_matrix_tensor_matmul():
+def test_python_scope_matrix_tensor_matmul():
     t1 = ti.Matrix(2, 2, dt=ti.i32, shape=())
     t2 = ti.Matrix(2, 2, dt=ti.i32, shape=())
     a, b = test_matrix_arrays

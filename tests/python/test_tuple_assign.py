@@ -20,6 +20,47 @@ def test_fibonacci():
         assert ti_fibonacci(n) == py_fibonacci(n)
 
 @ti.host_arch_only
+def test_assign2():
+    a = ti.var(ti.f32, ())
+    b = ti.var(ti.f32, ())
+
+    @ti.kernel
+    def func():
+        a[None], b[None] = 2, 3
+
+    func()
+    assert a[None] == 2
+    assert b[None] == 3
+
+@ti.host_arch_only
+@ti.must_throw(ValueError)
+def test_assign2_mismatch3():
+    ti.init(print_preprocessed=True)
+
+    a = ti.var(ti.f32, ())
+    b = ti.var(ti.f32, ())
+
+    @ti.kernel
+    def func():
+        a[None], b[None] = 2, 3, 4
+
+    func()
+
+@ti.host_arch_only
+@ti.must_throw(TypeError)
+def test_assign2_mismatch1():
+    ti.init(print_preprocessed=True)
+
+    a = ti.var(ti.f32, ())
+    b = ti.var(ti.f32, ())
+
+    @ti.kernel
+    def func():
+        a[None], b[None] = 2
+
+    func()
+
+@ti.host_arch_only
 def test_swap2():
     a = ti.var(ti.f32, ())
     b = ti.var(ti.f32, ())
@@ -36,7 +77,6 @@ def test_swap2():
 
 @ti.host_arch_only
 def test_assign2_static():
-    ti.init(print_preprocessed=True)
     a = ti.var(ti.f32, ())
     b = ti.var(ti.f32, ())
 
@@ -67,3 +107,54 @@ def test_swap3():
     assert a[None] == 3
     assert b[None] == 4
     assert c[None] == 2
+
+
+@ti.host_arch_only
+def test_unpack_from_tuple():
+    a = ti.var(ti.f32, ())
+    b = ti.var(ti.f32, ())
+    c = ti.var(ti.f32, ())
+
+    list = [2, 3, 4]
+
+    @ti.kernel
+    def func():
+        a[None], b[None], c[None] = list
+
+    func()
+    assert a[None] == 2
+    assert b[None] == 3
+    assert c[None] == 4
+
+
+@ti.host_arch_only
+@ti.must_throw(ValueError)
+def test_unpack_mismatch():
+    ti.init(print_preprocessed=True)
+    a = ti.var(ti.f32, ())
+    b = ti.var(ti.f32, ())
+
+    list = [2, 3, 4]
+
+    @ti.kernel
+    def func():
+        a[None], b[None] = list
+
+    func()
+
+
+@ti.host_arch_only
+def test_unpack_from_shape():
+    a = ti.var(ti.f32, ())
+    b = ti.var(ti.f32, ())
+    c = ti.var(ti.f32, ())
+    d = ti.var(ti.f32, (2, 3, 4))
+
+    @ti.kernel
+    def func():
+        a[None], b[None], c[None] = d.shape()
+
+    func()
+    assert a[None] == 2
+    assert b[None] == 3
+    assert c[None] == 4

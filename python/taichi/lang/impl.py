@@ -29,6 +29,20 @@ def expr_init(rhs):
 
 
 @taichi_scope
+def expr_init_list(xs, expected):
+    if not isinstance(xs, (list, tuple)):
+        raise TypeError(f'Cannot unpack type: {type(xs)}')
+    if expected != len(xs):
+        raise ValueError(f'Tuple assignment size mismatch: {expected} != {len(xs)}')
+    if isinstance(xs, list):
+        return [expr_init(e) for e in xs]
+    elif isinstance(xs, tuple):
+        return tuple(expr_init(e) for e in xs)
+    else:
+        raise ValueError(f'Cannot unpack from {type(xs)}')
+
+
+@taichi_scope
 def expr_init_func(rhs):  # temporary solution to allow passing in tensors as
     import taichi as ti
     if isinstance(rhs, Expr) and rhs.ptr.is_global_var():

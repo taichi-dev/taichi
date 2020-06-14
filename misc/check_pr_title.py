@@ -1,5 +1,6 @@
 import sys, os, json, semver, git
 
+
 def get_old_ver():
     repo = git.Repo('.')
     for c in repo.iter_commits('master', max_count=200):
@@ -11,6 +12,7 @@ def get_old_ver():
             oldver = semver.VersionInfo.parse(ver)
             return oldver
     raise ValueError('Could not find old version!')
+
 
 title = sys.argv[1]
 print(f'Checking PR title: {title}')

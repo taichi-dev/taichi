@@ -62,19 +62,15 @@ position_deltas = ti.Vector(dim, dt=ti.f32)
 # 0: x-pos, 1: timestep in sin()
 board_states = ti.Vector(2, dt=ti.f32)
 
-
-@ti.layout
-def layout():
-    ti.root.dense(ti.i, num_particles).place(old_positions, positions,
-                                             velocities)
-    grid_snode = ti.root.dense(ti.ij, grid_size)
-    grid_snode.place(grid_num_particles)
-    grid_snode.dense(ti.k, max_num_particles_per_cell).place(grid2particles)
-    nb_node = ti.root.dense(ti.i, num_particles)
-    nb_node.place(particle_num_neighbors)
-    nb_node.dense(ti.j, max_num_neighbors).place(particle_neighbors)
-    ti.root.dense(ti.i, num_particles).place(lambdas, position_deltas)
-    ti.root.place(board_states)
+ti.root.dense(ti.i, num_particles).place(old_positions, positions, velocities)
+grid_snode = ti.root.dense(ti.ij, grid_size)
+grid_snode.place(grid_num_particles)
+grid_snode.dense(ti.k, max_num_particles_per_cell).place(grid2particles)
+nb_node = ti.root.dense(ti.i, num_particles)
+nb_node.place(particle_num_neighbors)
+nb_node.dense(ti.j, max_num_neighbors).place(particle_neighbors)
+ti.root.dense(ti.i, num_particles).place(lambdas, position_deltas)
+ti.root.place(board_states)
 
 
 @ti.func

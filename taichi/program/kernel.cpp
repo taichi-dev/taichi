@@ -71,7 +71,8 @@ void Kernel::lower(bool lower_access) {  // TODO: is a "Lowerer" class necessary
     auto codegen = KernelCodeGen::create(arch, this);
     auto config = program.config;
     bool verbose = config.print_ir;
-    if (is_accessor && !config.print_accessor_ir)
+    if ((is_accessor && !config.print_accessor_ir) ||
+        (is_evaluator && !config.print_evaluator_ir))
       verbose = false;
     irpass::compile_to_offloads(
         ir.get(), config, /*vectorize*/ arch_is_cpu(arch), grad,

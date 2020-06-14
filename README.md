@@ -47,7 +47,7 @@ Please build from source for other configurations (e.g., your CPU is ARM).
 
 ## Links
 
-- [Taichi Forum](https://forum.taichi.graphics): Powered by Discourage, Taichi offical forum for discussing issues and sharing ideas.
+- [Taichi Forum](https://forum.taichi.graphics): Powered by Discourse, Taichi offical forum for discussing issues and sharing ideas.
 - [Taichi Simplified Chinese Documentation](https://github.com/taichi-dev/taichi-docs-zh-cn): Translated by Taichi community, welcome contribution!
 - [Taichi Conference](https://github.com/taichi-dev/taichicon): Taichi Online Virtual Conference available in both Chinese and English, approximately per-month.
 - [GAMES 201 Lectures](https://github.com/taichi-dev/games201): (Chinese) A hands-on tutorial on advanced physics engines based on Taichi, per-week.

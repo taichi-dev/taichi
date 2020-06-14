@@ -1,6 +1,7 @@
 #include "taichi/ir/ir.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
+#include "taichi/program/kernel.h"
 #include <set>
 
 TLANG_NAMESPACE_BEGIN
@@ -32,7 +33,8 @@ class CheckOutOfBound : public BasicStmtVisitor {
     Stmt *result =
         new_stmts.push_back<ConstStmt>(LaneAttribute<TypedConstant>(true));
 
-    std::string msg = "Accessing Tensor of Size [";
+    std::string msg = fmt::format("(kernel={}) Accessing Tensor of Size [",
+                                  stmt->get_kernel()->name);
     std::string offset_msg = "Offset [";
     std::vector<Stmt *> args;
     for (int i = 0; i < stmt->indices.size(); i++) {

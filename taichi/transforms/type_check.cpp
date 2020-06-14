@@ -322,6 +322,7 @@ class TypeCheck : public IRVisitor {
     if (current_kernel == nullptr) {
       current_kernel = stmt->get_kernel();
     }
+    TI_ASSERT(current_kernel != nullptr);
     auto &args = current_kernel->args;
     TI_ASSERT(0 <= stmt->arg_id && stmt->arg_id < args.size());
     stmt->ret_type = VectorType(1, args[stmt->arg_id].dt);

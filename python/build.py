@@ -87,8 +87,12 @@ else:
 
 os.system(f'cd .. && {get_python_executable()} -m taichi changelog --save')
 
-with open('CHANGELOG.md') as f:
-    print(f.read())
+try:
+    with open('../CHANGELOG.md') as f:
+        print(f.read())
+except FileNotFoundError:
+    print('CHANGELOG.md not found')
+    pass
 
 try:
     shutil.copy('../CHANGELOG.md', './taichi/CHANGELOG.md')

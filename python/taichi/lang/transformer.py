@@ -130,8 +130,9 @@ class ASTTransformer(ast.NodeTransformer):
             # Create
             stmts = []
 
-            holder = self.parse_stmt('__tmp_tuple = 0')
-            holder.value = node.value
+            holder = self.parse_stmt('__tmp_tuple = ti.expr_init_list(0, '
+                                     f'{len(targets)})')
+            holder.value.args[0] = node.value
 
             stmts.append(holder)
 

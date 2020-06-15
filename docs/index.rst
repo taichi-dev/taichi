@@ -55,6 +55,7 @@ The Taichi Programming Language
    cpp_style
    internal
    taichicon
+   versioning_releases
 
 
 .. toctree::

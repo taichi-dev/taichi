@@ -7,8 +7,8 @@ Pre-1.0 versioning
 Taichi follows `Semantic Versioning 2.0.0 <https://semver.org/>`_.
 
 Since Taichi is still under version 1.0.0,
-we use minor version bumps for breaking API changes,
-and patch version bumps for backward-compatible changes.
+we use minor version bumps (e.g., ``0.6.17->0.7.0``) for breaking API changes,
+and patch version bumps (e.g., ``0.6.9->0.6.10``) for backward-compatible changes.
 
 Workflow: releasing a new version
 ---------------------------------

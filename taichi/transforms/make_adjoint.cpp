@@ -115,12 +115,14 @@ class MakeAdjoint : public IRVisitor {
  public:
   Block *current_block;
   Block *alloca_block;
+  bool reentrant;
   std::map<Stmt *, Stmt *> adjoint_stmt;
   int for_depth;
 
   MakeAdjoint() {
     current_block = nullptr;
     alloca_block = nullptr;
+    reentrant = false;
     // Note:
     // MakeAdjoint acts on the block with if's and without struct/range/while
     // loops. This is basically a straight-line code with forking and merging
@@ -374,6 +376,8 @@ class MakeAdjoint : public IRVisitor {
       for_stmt->reverse();
     */
     if (for_depth > 0) {
+      bool old_reentrant = reentrant;
+      reentrant = true;
       auto new_for = for_stmt->clone();
       auto new_for_ptr = (RangeForStmt *)new_for.get();
       new_for_ptr->reversed = !new_for_ptr->reversed;
@@ -397,7 +401,7 @@ class MakeAdjoint : public IRVisitor {
         stmt->accept(this);
       }
       alloca_block = old_alloca_block;
-
+      reentrant = old_reentrant;
     } else {
       for_depth += 1;
       alloca_block = for_stmt->body.get();

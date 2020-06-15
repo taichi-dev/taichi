@@ -21,6 +21,7 @@ but not limited to:
 2. GLSL-alike vector functions like ``normalize``, ``distance``, ``reflect``.
 3. Well-behaved random generators including ``randUnit2D``, ``randNDRange``.
 4. Possible Taichi BUG hotfixes that are not yet released in it's cycle.
+5. Handy vector and matrix initializer: ``vec`` and ``mat``.
 
 Click here for `Taichi GLSL Documentation <https://taichi-glsl.readthedocs.io>`_.
 

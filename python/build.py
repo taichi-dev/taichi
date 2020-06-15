@@ -6,7 +6,7 @@ import shutil
 import taichi as ti
 
 if len(sys.argv) != 2:
-    print("Usage: python3 build.py [upload/test]")
+    print("Usage: python3 build.py [upload/try_upload/test]")
     exit(-1)
 
 version = ti.core.get_version_string()
@@ -22,7 +22,7 @@ if mode == 'try_upload':
         exit(0)
     mode = 'upload'
 
-if env_pypi_pwd == '':
+if mode == 'upload' and env_pypi_pwd == '':
     assert False, "Missing environment variable PYPI_PWD"
 
 
@@ -44,7 +44,8 @@ def get_python_executable():
 
 
 if platform.system() == 'Linux':
-    if os.environ['CXX'] not in ['clang++-8', 'clang++-7', 'clang++']:
+    if os.environ.get('CXX',
+                      'clang++') not in ['clang++-8', 'clang++-7', 'clang++']:
         print('Only the wheel with clang will be released to PyPI.')
         sys.exit(-1)
 

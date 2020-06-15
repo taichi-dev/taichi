@@ -1,5 +1,5 @@
-TaichiCon
-=========
+Taichi Conferences
+==================
 
 We are hosting a series of online **TaichiCon** events for developers to gather and share their Taichi experiences.
 

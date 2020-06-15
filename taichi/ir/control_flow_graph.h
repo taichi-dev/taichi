@@ -15,7 +15,11 @@ class CFGNode {
   CFGNode *prev_node_in_same_block;
   CFGNode *next_node_in_same_block;
 
+  // Edges in the graph
   std::vector<CFGNode *> prev, next;
+
+  // Reaching definition analysis
+  std::unordered_set<Stmt *> reach_gen, reach_kill, reach_in, reach_out;
 
   CFGNode(Block *block,
           int begin_location,
@@ -26,6 +30,8 @@ class CFGNode {
   bool empty() const;
   void erase(int location);
   bool erase_entire_node();
+  void reaching_definition_analysis();
+  bool reach_kill_variable(Stmt *var);
 };
 
 class ControlFlowGraph {
@@ -45,6 +51,8 @@ class ControlFlowGraph {
 
   std::size_t size() const;
   CFGNode *back();
+
+  void reaching_definition_analysis();
 
   void simplify_graph();
   bool unreachable_code_elimination();

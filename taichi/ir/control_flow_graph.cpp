@@ -56,6 +56,42 @@ bool CFGNode::erase_entire_node() {
   return true;
 }
 
+void CFGNode::reaching_definition_analysis() {
+  // Calculate reach_gen and reach_kill.
+  reach_gen.clear();
+  reach_kill.clear();
+  for (int i = begin_location; i < end_location; i++) {
+    auto stmt = block->statements[i].get();
+    // Presume BasicBlockSimplify is already done here, so that we don't need
+    // to kill some definitions in reach_gen.
+    if (auto local_store = stmt->cast<LocalStoreStmt>()) {
+      reach_gen.insert(local_store);
+      reach_kill.insert(local_store->ptr);
+    } else if (auto global_store = stmt->cast<GlobalStoreStmt>()) {
+      reach_gen.insert(global_store);
+      reach_kill.insert(global_store->ptr);
+    } else if (auto atomic = stmt->cast<AtomicOpStmt>()) {
+      // Note that we can't do store-to-load forwarding from this.
+      reach_gen.insert(atomic);
+      reach_kill.insert(atomic->dest);
+    }
+  }
+}
+
+bool CFGNode::reach_kill_variable(Stmt *var) {
+  if (var->is<AllocaStmt>()) {
+    return reach_kill.find(var) != reach_kill.end();
+  } else {
+    // TODO: How to optimize this?
+    for (auto killed_var : reach_kill) {
+      if (maybe_same_address(var, killed_var)) {
+        return true;
+      }
+    }
+    return false;
+  }
+}
+
 void ControlFlowGraph::erase(int node_id) {
   // Erase an empty node.
   TI_ASSERT(node_id >= 0 && node_id < (int)size());
@@ -90,6 +126,56 @@ std::size_t ControlFlowGraph::size() const {
 
 CFGNode *ControlFlowGraph::back() {
   return nodes.back().get();
+}
+
+void ControlFlowGraph::reaching_definition_analysis() {
+  const int num_nodes = size();
+  std::queue<CFGNode *> to_visit;
+  std::unordered_map<CFGNode *, bool> in_queue;
+  for (int i = 0; i < num_nodes; i++) {
+    nodes[i]->reaching_definition_analysis();
+    nodes[i]->reach_in.clear();
+    nodes[i]->reach_out = nodes[i]->reach_gen;
+    to_visit.push(nodes[i].get());
+    in_queue[nodes[i].get()] = true;
+  }
+  while (!to_visit.empty()) {
+    auto now = to_visit.front();
+    to_visit.pop();
+    in_queue[now] = false;
+
+    now->reach_in.clear();
+    for (auto prev_node : now->prev) {
+      now->reach_in.insert(prev_node->reach_out.begin(),
+                           prev_node->reach_out.end());
+    }
+    auto old_out = std::move(now->reach_out);
+    now->reach_out = now->reach_gen;
+    for (auto stmt : now->reach_in) {
+      bool killed;
+      if (auto local_store = stmt->cast<LocalStoreStmt>()) {
+        killed = now->reach_kill_variable(local_store->ptr);
+      } else if (auto global_store = stmt->cast<GlobalStoreStmt>()) {
+        killed = now->reach_kill_variable(global_store->ptr);
+      } else if (auto atomic = stmt->cast<AtomicOpStmt>()) {
+        killed = now->reach_kill_variable(atomic->dest);
+      } else {
+        TI_NOT_IMPLEMENTED
+      }
+      if (!killed) {
+        now->reach_out.insert(stmt);
+      }
+    }
+    if (!(now->reach_out == old_out)) {
+      // changed
+      for (auto next_node : now->next) {
+        if (!in_queue[next_node]) {
+          to_visit.push(next_node);
+          in_queue[next_node] = true;
+        }
+      }
+    }
+  }
 }
 
 void ControlFlowGraph::simplify_graph() {

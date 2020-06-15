@@ -10,6 +10,11 @@ TLANG_NAMESPACE_BEGIN
 // IR passes
 namespace irpass {
 
+// TODO(#1243): Pass kernel to the relevant passes instead of doing this hack
+namespace hack {
+bool use_fast_math(IRNode *root);
+}  // namespace hack
+
 void re_id(IRNode *root);
 void flag_access(IRNode *root);
 void die(IRNode *root);
@@ -34,6 +39,7 @@ void make_adjoint(IRNode *root, bool use_stack = false);
 bool constant_fold(IRNode *root);
 void offload(IRNode *root);
 void fix_block_parents(IRNode *root);
+void fix_root_block_kernel(IRNode *root, Kernel *kernel);
 void replace_statements_with(IRNode *root,
                              std::function<bool(Stmt *)> filter,
                              std::function<std::unique_ptr<Stmt>()> generator);

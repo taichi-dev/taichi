@@ -28,7 +28,7 @@ void loop_vectorize(IRNode *root);
 void slp_vectorize(IRNode *root);
 void vector_split(IRNode *root, int max_width, bool serial_schedule);
 void replace_all_usages_with(IRNode *root, Stmt *old_stmt, Stmt *new_stmt);
-void check_out_of_bound(IRNode *root);
+bool check_out_of_bound(IRNode *root);
 void lower_access(IRNode *root, bool lower_atomic, Kernel *kernel = nullptr);
 void make_adjoint(IRNode *root, bool use_stack = false);
 bool constant_fold(IRNode *root);

@@ -1,6 +1,7 @@
 import taichi as ti
 import math
 
+
 @ti.data_oriented
 class SolarSystem:
     def __init__(self, n, dt):
@@ -16,7 +17,7 @@ class SolarSystem:
     def random_vector_in(rmax):
         # create a random vector
         a = ti.random() * math.tau
-        r = (ti.random() ** 0.7) * rmax  # For adjusting PDF
+        r = (ti.random()**0.7) * rmax  # For adjusting PDF
         return r * ti.Vector([ti.cos(a), ti.sin(a)])
 
     @ti.kernel
@@ -24,10 +25,10 @@ class SolarSystem:
         # initialization or reset
         for i in range(self.n):
             offset = self.random_vector_in(0.5)
-            self.x[i] = self.center[None] + offset    # Offset from center
-            self.v[i] = [-offset.y, offset.x]         # Perpendicular to offset
+            self.x[i] = self.center[None] + offset  # Offset from center
+            self.v[i] = [-offset.y, offset.x]  # Perpendicular to offset
             self.v[i] += self.random_vector_in(0.02)  # Shaking
-            self.v[i] *= 1 / offset.norm()**1.5       # Kepler's 3rd law
+            self.v[i] *= 1 / offset.norm()**1.5  # Kepler's 3rd law
 
     @ti.func
     def gravity(self, pos):

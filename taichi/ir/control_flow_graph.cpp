@@ -126,14 +126,13 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
     return result;
   }
   Stmt *result = nullptr;
-  auto update_result = [&] (Stmt *stmt) {
+  auto update_result = [&](Stmt *stmt) {
     if (!result) {
       result = stmt->store_data();
-      if (!result) {  // AtomicOpStmt
+      if (!result) {   // AtomicOpStmt
         return false;  // return nullptr
       }
-    } else if (!irpass::analysis::same_statements(result,
-                                                  stmt->store_data())) {
+    } else if (!irpass::analysis::same_statements(result, stmt->store_data())) {
       return false;  // return nullptr
     }
     return true;  // continue
@@ -179,7 +178,7 @@ bool CFGNode::store_to_load_forwarding() {
     if (result) {
       stmt->replace_with(result);
       erase(i);  // This causes end_location--
-      i--;  // to cancel i++ in the for loop
+      i--;       // to cancel i++ in the for loop
       modified = true;
     }
   }

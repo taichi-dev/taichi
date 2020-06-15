@@ -136,7 +136,7 @@ def test_unpack_from_tuple():
 
 @ti.host_arch_only
 @ti.must_throw(ValueError)
-def test_unpack_mismatch():
+def test_unpack_mismatch_tuple():
     ti.init(print_preprocessed=True)
     a = ti.var(ti.f32, ())
     b = ti.var(ti.f32, ())
@@ -146,6 +146,38 @@ def test_unpack_mismatch():
     @ti.kernel
     def func():
         a[None], b[None] = list
+
+    func()
+
+
+@ti.host_arch_only
+def test_unpack_from_vector():
+    a = ti.var(ti.f32, ())
+    b = ti.var(ti.f32, ())
+    c = ti.var(ti.f32, ())
+
+    @ti.kernel
+    def func():
+        vector = ti.Vector([2, 3, 4])
+        a[None], b[None], c[None] = vector
+
+    func()
+    assert a[None] == 2
+    assert b[None] == 3
+    assert c[None] == 4
+
+
+@ti.host_arch_only
+@ti.must_throw(ValueError)
+def test_unpack_mismatch_vector():
+    ti.init(print_preprocessed=True)
+    a = ti.var(ti.f32, ())
+    b = ti.var(ti.f32, ())
+
+    @ti.kernel
+    def func():
+        vector = ti.Vector([2, 3, 4])
+        a[None], b[None] = vector
 
     func()
 

@@ -1,4 +1,5 @@
 import taichi as ti
+import math
 
 
 @ti.data_oriented
@@ -12,17 +13,20 @@ class SolarSystem:
 
     @staticmethod
     @ti.func
-    def random_around(center, radius):
-        # random number in [center - radius, center + radius)
-        return center + radius * (ti.random() - 0.5) * 2
+    def random_vector_in(rmax):
+        # create a random vector
+        a = ti.random() * math.tau
+        r = (ti.random() ** 0.8) * rmax  # 0.8 for adjusting pdf
+        return r * ti.Vector([ti.cos(a), ti.sin(a)])
 
     @ti.kernel
     def initialize(self):
         for i in range(self.n):
-            offset = ti.Vector([0.0, self.random_around(0.3, 0.15)])
-            self.x[i] = self.center[None] + offset
-            self.v[i] = [-offset[1], offset[0]]
-            self.v[i] *= 1.5 / offset.norm()
+            offset = self.random_vector_in(0.5)
+            self.x[i] = self.center[None] + offset    # Offset from center
+            self.v[i] = [-offset.y, offset.x]         # Perpendicular to offset
+            self.v[i] += self.random_vector_in(0.02)  # Shaking
+            self.v[i] *= 1 / offset.norm()**1.5       # Kepler's 3rd law
 
     @ti.func
     def gravity(self, pos):
@@ -36,18 +40,20 @@ class SolarSystem:
             self.x[i] += self.dt * self.v[i]
 
 
-solar = SolarSystem(9, 0.0005)
+solar = SolarSystem(8, 0.0001)
 solar.center[None] = [0.5, 0.5]
 solar.initialize()
 
-gui = ti.GUI("Solar System", background_color=0x25A6D9)
+gui = ti.GUI("Solar System", background_color=0x000010)
 
-while True:
-    if gui.get_event():
-        if gui.event.key == gui.SPACE and gui.event.type == gui.PRESS:
+while gui.running:
+    if gui.get_event(gui.PRESS):
+        if gui.event.key == gui.SPACE:
             solar.initialize()
+        elif gui.event.key == gui.ESCAPE:
+            gui.running = False
     for i in range(10):
         solar.integrate()
-    gui.circle([0.5, 0.5], radius=20, color=0x8C274C)
-    gui.circles(solar.x.to_numpy(), radius=5, color=0xFFFFFF)
+    gui.circle([0.5, 0.5], radius=10, color=0xFFaa88)
+    gui.circles(solar.x.to_numpy(), radius=3, color=0xFFFFFF)
     gui.show()

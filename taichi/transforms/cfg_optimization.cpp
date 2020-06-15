@@ -13,7 +13,8 @@ void cfg_optimization(IRNode *root) {
     cfg->simplify_graph();
     if (cfg->unreachable_code_elimination())
       modified = true;
-    cfg->reaching_definition_analysis(); // for debug
+    if (cfg->store_to_load_forwarding())
+      modified = true;
     if (!modified)
       break;
   }

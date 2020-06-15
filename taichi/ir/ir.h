@@ -580,6 +580,15 @@ class Stmt : public IRNode {
     return !has_global_side_effect();
   }
 
+  // return the pointer this statement stores if it does store
+  virtual Stmt *store_ptr() const {
+    return nullptr;
+  }
+
+  virtual Stmt *store_data() const {
+    return nullptr;
+  }
+
   template <typename T, typename... Args>
   static std::unique_ptr<T> make_typed(Args &&... args) {
     return std::make_unique<T>(std::forward<Args>(args)...);
@@ -783,6 +792,10 @@ class AtomicOpStmt : public Stmt {
   AtomicOpStmt(AtomicOpType op_type, Stmt *dest, Stmt *val)
       : op_type(op_type), dest(dest), val(val) {
     TI_STMT_REG_FIELDS;
+  }
+
+  Stmt *store_ptr() const override {
+    return dest;
   }
 
   TI_STMT_DEF_FIELDS(ret_type, op_type, dest, val);
@@ -1008,6 +1021,14 @@ class GlobalStoreStmt : public Stmt {
     return false;
   }
 
+  Stmt *store_ptr() const override {
+    return ptr;
+  }
+
+  Stmt *store_data() const override {
+    return data;
+  }
+
   TI_STMT_DEF_FIELDS(ret_type, ptr, data);
   TI_DEFINE_ACCEPT_AND_CLONE;
 };
@@ -1069,6 +1090,14 @@ class LocalStoreStmt : public Stmt {
 
   bool common_statement_eliminable() const override {
     return false;
+  }
+
+  Stmt *store_ptr() const override {
+    return ptr;
+  }
+
+  Stmt *store_data() const override {
+    return data;
   }
 
   TI_STMT_DEF_FIELDS(ret_type, ptr, data);

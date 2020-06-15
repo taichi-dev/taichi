@@ -1,4 +1,5 @@
 #include "taichi/ir/control_flow_graph.h"
+#include "taichi/ir/analysis.h"
 #include <queue>
 
 TLANG_NAMESPACE_BEGIN
@@ -60,36 +61,129 @@ void CFGNode::reaching_definition_analysis() {
   // Calculate reach_gen and reach_kill.
   reach_gen.clear();
   reach_kill.clear();
-  for (int i = begin_location; i < end_location; i++) {
+  for (int i = end_location - 1; i >= begin_location; i--) {
     auto stmt = block->statements[i].get();
-    // Presume BasicBlockSimplify is already done here, so that we don't need
-    // to kill some definitions in reach_gen.
     if (auto local_store = stmt->cast<LocalStoreStmt>()) {
-      reach_gen.insert(local_store);
-      reach_kill.insert(local_store->ptr);
+      if (!reach_kill_variable(local_store->ptr)) {
+        reach_gen.insert(local_store);
+        reach_kill.insert(local_store->ptr);
+      }
     } else if (auto global_store = stmt->cast<GlobalStoreStmt>()) {
-      reach_gen.insert(global_store);
-      reach_kill.insert(global_store->ptr);
+      if (!reach_kill_variable(global_store->ptr)) {
+        reach_gen.insert(global_store);
+        reach_kill.insert(global_store->ptr);
+      }
     } else if (auto atomic = stmt->cast<AtomicOpStmt>()) {
-      // Note that we can't do store-to-load forwarding from this.
-      reach_gen.insert(atomic);
-      reach_kill.insert(atomic->dest);
+      // Note that we can't do store-to-load forwarding from an AtomicOpStmt.
+      if (!reach_kill_variable(atomic->dest)) {
+        reach_gen.insert(atomic);
+        reach_kill.insert(atomic->dest);
+      }
     }
   }
 }
 
-bool CFGNode::reach_kill_variable(Stmt *var) {
-  if (var->is<AllocaStmt>()) {
+bool CFGNode::reach_kill_variable(Stmt *var) const {
+  // Does this node (definitely) kill a definition of var?
+  return reach_kill.find(var) != reach_kill.end();
+  /*if (var->is<AllocaStmt>()) {
     return reach_kill.find(var) != reach_kill.end();
   } else {
     // TODO: How to optimize this?
     for (auto killed_var : reach_kill) {
-      if (maybe_same_address(var, killed_var)) {
+      if (irpass::analysis::same_statements(var, killed_var)) {
         return true;
       }
     }
     return false;
+  }*/
+}
+
+Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
+  // Return the stored data if all definitions in the UD-chain of var at
+  // this position store the same data.
+  int last_def_position = -1;
+  for (auto stmt : reach_gen) {
+    if (stmt->store_ptr() == var) {
+      int stmt_position = stmt->parent->locate(stmt);
+      if (stmt_position < position && stmt_position > last_def_position) {
+        last_def_position = stmt_position;
+      }
+    }
   }
+  if (last_def_position != -1) {
+    // The UD-chain is inside this node.
+    Stmt *result = block->statements[last_def_position]->store_data();
+    if (!var->is<AllocaStmt>()) {
+      for (int i = last_def_position + 1; i < position; i++) {
+        if (maybe_same_address(var, block->statements[i]->store_ptr()) &&
+            !irpass::analysis::same_statements(
+                result, block->statements[i]->store_data())) {
+          return nullptr;
+        }
+      }
+    }
+    return result;
+  }
+  Stmt *result = nullptr;
+  auto update_result = [&] (Stmt *stmt) {
+    if (!result) {
+      result = stmt->store_data();
+      if (!result) {  // AtomicOpStmt
+        return false;  // return nullptr
+      }
+    } else if (!irpass::analysis::same_statements(result,
+                                                  stmt->store_data())) {
+      return false;  // return nullptr
+    }
+    return true;  // continue
+  };
+  for (auto stmt : reach_in) {
+    if (maybe_same_address(var, stmt->store_ptr())) {
+      if (!update_result(stmt))
+        return nullptr;
+    }
+  }
+  for (auto stmt : reach_gen) {
+    if (maybe_same_address(var, stmt->store_ptr()) &&
+        stmt->parent->locate(stmt) < position) {
+      if (!update_result(stmt))
+        return nullptr;
+    }
+  }
+  if (!result) {
+    // The UD-chain is empty.
+    // TODO: insert zero if val is alloca
+  }
+  return result;
+}
+
+bool CFGNode::store_to_load_forwarding() {
+  bool modified = false;
+  for (int i = begin_location; i < end_location; i++) {
+    auto stmt = block->statements[i].get();
+    Stmt *result = nullptr;
+    if (auto local_load = stmt->cast<LocalLoadStmt>()) {
+      bool regular = true;
+      auto alloca = local_load->ptr[0].var;
+      for (int l = 0; l < stmt->width(); l++) {
+        if (local_load->ptr[l].offset != l ||
+            local_load->ptr[l].var != alloca) {
+          regular = false;
+        }
+      }
+      result = get_store_forwarding_data(alloca, i);
+    } else if (auto global_load = stmt->cast<GlobalLoadStmt>()) {
+      result = get_store_forwarding_data(global_load->ptr, i);
+    }
+    if (result) {
+      stmt->replace_with(result);
+      erase(i);  // This causes end_location--
+      i--;  // to cancel i++ in the for loop
+      modified = true;
+    }
+  }
+  return modified;
 }
 
 void ControlFlowGraph::erase(int node_id) {
@@ -222,6 +316,17 @@ bool ControlFlowGraph::unreachable_code_elimination() {
       if (node->erase_entire_node())
         modified = true;
     }
+  }
+  return modified;
+}
+
+bool ControlFlowGraph::store_to_load_forwarding() {
+  reaching_definition_analysis();
+  const int num_nodes = size();
+  bool modified = false;
+  for (int i = 0; i < num_nodes; i++) {
+    if (nodes[i]->store_to_load_forwarding())
+      modified = true;
   }
   return modified;
 }

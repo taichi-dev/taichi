@@ -31,7 +31,9 @@ class CFGNode {
   void erase(int location);
   bool erase_entire_node();
   void reaching_definition_analysis();
-  bool reach_kill_variable(Stmt *var);
+  bool reach_kill_variable(Stmt *var) const;
+  Stmt *get_store_forwarding_data(Stmt *var, int position) const;
+  bool store_to_load_forwarding();
 };
 
 class ControlFlowGraph {
@@ -56,6 +58,7 @@ class ControlFlowGraph {
 
   void simplify_graph();
   bool unreachable_code_elimination();
+  bool store_to_load_forwarding();
 };
 
 TLANG_NAMESPACE_END

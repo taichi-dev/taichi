@@ -78,16 +78,17 @@ void OpenglStructCompiler::generate_types(const SNode &snode) {
   }
 }
 
-size_t OpenglStructCompiler::compute_snode_size(const SNode &sn) {
-  if (sn.is_place()) {
-    return data_type_size(sn.dt);
+size_t OpenglStructCompiler::compute_snode_size(const SNode &snode) {
+  if (snode.is_place()) {
+    return data_type_size(snode.dt);
   }
   size_t ch_size = 0;
-  for (const auto &ch : sn.ch) {
+  for (const auto &ch : snode.ch) {
     ch_size += compute_snode_size(*ch);
   }
-  const int n = (sn.type == SNodeType::root) ? 1 : sn.n;
-  return n * ch_size;
+  int extension = (snode.type == SNodeType::dynamic) ? sizeof(int) : 0;
+  int n = (snode.type == SNodeType::root) ? 1 : snode.n;
+  return n * ch_size + extension;
 }
 
 }  // namespace opengl

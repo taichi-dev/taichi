@@ -6,6 +6,10 @@ TLANG_NAMESPACE_BEGIN
 
 // A basic block in control-flow graph
 class CFGNode {
+ private:
+  // For accelerating get_store_forwarding_data
+  std::unordered_set<Block *> parent_blocks;
+
  public:
   // This node corresponds to block->statements[i]
   // for i in [begin_location, end_location).

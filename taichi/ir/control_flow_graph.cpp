@@ -18,6 +18,12 @@ CFGNode::CFGNode(Block *block,
   if (!empty()) {
     TI_ASSERT(begin_location >= 0);
   }
+  auto parent_block = block;
+  parent_blocks.insert(parent_block);
+  while (parent_block->parent) {
+    parent_block = parent_block->parent;
+    parent_blocks.insert(parent_block);
+  }
 }
 
 void CFGNode::add_edge(CFGNode *from, CFGNode *to) {
@@ -126,16 +132,22 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
     return result;
   }
   Stmt *result = nullptr;
+  auto visible = [&](Stmt *stmt) {
+    return parent_blocks.find(stmt->parent) != parent_blocks.end();
+  };
   auto update_result = [&](Stmt *stmt) {
+    auto data = irpass::analysis::get_data_source(stmt);
     if (!result) {
-      result = irpass::analysis::get_data_source(stmt);
+      result = data;
       if (!result) {   // not forwardable
+        // TODO: optimize for alloca
         return false;  // return nullptr
       }
-    } else if (!irpass::analysis::same_statements(
-               result, irpass::analysis::get_data_source(stmt))) {
+    } else if (!irpass::analysis::same_statements(result, data)) {
       return false;  // return nullptr
     }
+    if (visible(data))
+      result = data;
     return true;  // continue the following loops
   };
   for (auto stmt : reach_in) {
@@ -155,7 +167,12 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
   }
   if (!result) {
     // The UD-chain is empty.
-    // TODO: insert zero if val is alloca
+    TI_WARN("stmt {} loaded in stmt {} before storing.", var->id,
+            block->statements[position]->id);
+    return nullptr;
+  }
+  if (!visible(result)) {
+    return nullptr;
   }
   return result;
 }

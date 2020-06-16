@@ -899,6 +899,15 @@ SNodeOpStmt::SNodeOpStmt(SNodeOpType op_type,
   TI_STMT_REG_FIELDS;
 }
 
+bool SNodeOpStmt::activation_related(SNodeOpType op) {
+  return op == SNodeOpType::activate || op == SNodeOpType::deactivate ||
+         op == SNodeOpType::is_active;
+}
+
+bool SNodeOpStmt::need_activation(SNodeOpType op) {
+  return op == SNodeOpType::activate || op == SNodeOpType::append;
+}
+
 std::string AtomicOpExpression::serialize() {
   if (op_type == AtomicOpType::add) {
     return fmt::format("atomic_add({}, {})", dest.serialize(), val.serialize());

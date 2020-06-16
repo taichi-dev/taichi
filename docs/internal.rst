@@ -146,6 +146,7 @@ For example,
  - In ``a[i, j, k]``, ``i``, ``j``, and ``k`` are **virtual** indices.
  - In ``for i, j in x:``, ``i`` and ``j`` are **virtual** indices.
  - ``ti.i, ti.j, ti.k, ti.l, ...`` are **physical** indices.
+ - In struct-for statements, ``LoopIndexStmt::index`` is a **physical** index.
 
 The mapping between virtual indices and physical indices for each ``SNode`` is
 stored in ``SNode::physical_index_position``.

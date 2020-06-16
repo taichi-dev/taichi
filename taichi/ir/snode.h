@@ -98,7 +98,7 @@ class SNode {
 
   std::string get_node_type_name_hinted() const;
 
-  int get_num_bits(int virtual_index) const;
+  int get_num_bits(int physical_index) const;
 
   SNode &insert_children(SNodeType t) {
     ch.push_back(create(depth + 1, t));

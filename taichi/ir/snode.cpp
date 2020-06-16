@@ -207,11 +207,12 @@ std::string SNode::get_node_type_name_hinted() const {
   return fmt::format("S{}{}{}", id, snode_type_name(type), suffix);
 }
 
-int SNode::get_num_bits(int physical_index) const {
+int SNode::get_num_bits(int virtual_index) const {
   int result = 0;
   const SNode *snode = this;
+  auto physical_index = snode->physical_index_position[virtual_index];
   while (snode) {
-    result += extractors[physical_index].num_bits;
+    result += snode->extractors[physical_index].num_bits;
     snode = snode->parent;
   }
   return result;

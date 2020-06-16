@@ -17,11 +17,13 @@ void KernelProfileRecord::insert_sample(double t) {
 }
 
 void KernelProfilerBase::profiler_start(KernelProfilerBase *profiler,
-                                  const char *kernel_name) {
+                                        const char *kernel_name) {
+  TI_ASSERT(profiler);
   profiler->start(std::string(kernel_name));
 }
 
 void KernelProfilerBase::profiler_stop(KernelProfilerBase *profiler) {
+  TI_ASSERT(profiler);
   profiler->stop();
 }
 
@@ -60,9 +62,9 @@ class DefaultProfiler : public KernelProfilerBase {
   void stop() override {
     auto t = Time::get_time() - start_t_;
     auto ms = t * 1000.0;
-    auto it =
-        std::find_if(records.begin(), records.end(),
-                     [&](KernelProfileRecord &r) { return r.name == event_name_; });
+    auto it = std::find_if(
+        records.begin(), records.end(),
+        [&](KernelProfileRecord &r) { return r.name == event_name_; });
     if (it == records.end()) {
       records.emplace_back(event_name_);
       it = std::prev(records.end());

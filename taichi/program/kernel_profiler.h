@@ -42,7 +42,8 @@ class KernelProfilerBase {
 
   virtual void start(const std::string &kernel_name) = 0;
 
-  static void profiler_start(KernelProfilerBase *profiler, const char *kernel_name);
+  static void profiler_start(KernelProfilerBase *profiler,
+                             const char *kernel_name);
 
   virtual void stop() = 0;
 

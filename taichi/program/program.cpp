@@ -264,7 +264,9 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
 
     runtime->call<void *, void *>("LLVMRuntime_set_assert_failed", llvm_runtime,
                                   (void *)assert_failed_host);
-    // Profiler functions can only be called on host kernels
+  }
+  if (arch_is_cpu(config.arch)) {
+    // Profiler functions can only be called on CPU kernels
     runtime->call<void *, void *>("LLVMRuntime_set_profiler", llvm_runtime,
                                   profiler.get());
     runtime->call<void *, void *>("LLVMRuntime_set_profiler_start",
@@ -272,6 +274,9 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
                                   (void *)&KernelProfilerBase::profiler_start);
     runtime->call<void *, void *>("LLVMRuntime_set_profiler_stop", llvm_runtime,
                                   (void *)&KernelProfilerBase::profiler_stop);
+  } else {
+    runtime->call<void *, void *>("LLVMRuntime_set_profiler", llvm_runtime,
+                                  nullptr);
   }
 }
 

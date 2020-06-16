@@ -199,6 +199,23 @@ def test_unpack_mismatch_type():
 
 
 @ti.host_arch_only
+@ti.must_throw(TypeError)
+def test_unpack_mismatch_matrix():
+    ti.init(print_preprocessed=True)
+    a = ti.var(ti.f32, ())
+    b = ti.var(ti.f32, ())
+    c = ti.var(ti.f32, ())
+    d = ti.var(ti.f32, ())
+
+    @ti.kernel
+    def func():
+        bad = ti.Matrix([[2, 3], [4, 5]])
+        a[None], b[None], c[None], d[None] = bad
+
+    func()
+
+
+@ti.host_arch_only
 def test_unpack_from_shape():
     a = ti.var(ti.f32, ())
     b = ti.var(ti.f32, ())

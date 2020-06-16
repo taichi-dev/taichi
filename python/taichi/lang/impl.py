@@ -34,6 +34,8 @@ def expr_init_list(xs, expected):
     if not isinstance(xs, (list, tuple, ti.Matrix)):
         raise TypeError(f'Cannot unpack type: {type(xs)}')
     if isinstance(xs, ti.Matrix):
+        if not xs.m == 1:
+            raise TypeError(f'Unpacking matrices are not allowed')
         xs = xs.entries
     if expected != len(xs):
         raise ValueError(

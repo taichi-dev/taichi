@@ -305,7 +305,7 @@ class KernelGen : public IRVisitor {
       if (stmt->snode->type == SNodeType::dense) {
         // do nothing
       } else if (stmt->snode->type == SNodeType::dynamic) {
-        emit("atomicMax(_data_i32_[{} >> 2], {}); // activate",
+        emit("atomicMax(_data_i32_[{} >> 2], {} + 1); // activate",
             get_dynamic_length_address_of(stmt->snode),
             stmt->input_index->short_name());
       } else {

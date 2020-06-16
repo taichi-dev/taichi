@@ -126,6 +126,7 @@ class WholeKernelCSE : public BasicStmtVisitor {
 
 namespace irpass {
 bool whole_kernel_cse(IRNode *root) {
+  TI_AUTO_PROF;
   return WholeKernelCSE::run(root);
 }
 }  // namespace irpass

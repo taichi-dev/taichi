@@ -583,6 +583,7 @@ class BackupSSA : public BasicStmtVisitor {
 namespace irpass {
 
 void make_adjoint(IRNode *root, bool use_stack) {
+  TI_AUTO_PROF;
   if (use_stack) {
     fix_block_parents(root);
     ConvertLocalVar converter;

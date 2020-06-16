@@ -211,7 +211,7 @@ int SNode::get_num_bits(int physical_index) const {
   int result = 0;
   const SNode *snode = this;
   while (snode) {
-    result += extractors[physical_index].num_bits;
+    result += snode->extractors[physical_index].num_bits;
     snode = snode->parent;
   }
   return result;

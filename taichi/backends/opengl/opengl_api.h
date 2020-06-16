@@ -37,7 +37,7 @@ struct KernelParallelAttrib {
   KernelParallelAttrib() = default;
   KernelParallelAttrib(OffloadedStmt *stmt);
   KernelParallelAttrib(int num_threads_);
-  size_t eval(const void *gtmp) const;
+  size_t calc_num_groups(GLSLLaunchGuard &guard) const;
   inline bool is_dynamic() const {
     return num_groups == -1;
   }

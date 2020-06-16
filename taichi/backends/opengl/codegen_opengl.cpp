@@ -638,6 +638,38 @@ class KernelGen : public IRVisitor {
     emit("}}\n");
   }
 
+  void generate_clear_list_kernel(OffloadedStmt *stmt) {
+    TI_ASSERT(stmt->task_type == OffloadedStmt::TaskType::clear_list);
+    const std::string glsl_kernel_name = make_kernel_name();
+    emit("void {}()", glsl_kernel_name);
+    this->glsl_kernel_name_ = glsl_kernel_name;
+    emit("{{ // clear list");
+    {
+      ScopedIndent _s(line_appender_);
+      emit("_list_len_ = 0;");
+    }
+    emit("}}\n");
+  }
+
+  void generate_listgen_kernel(OffloadedStmt *stmt) {
+    TI_ASSERT(stmt->task_type == OffloadedStmt::TaskType::listgen);
+    const std::string glsl_kernel_name = make_kernel_name();
+    emit("void {}()", glsl_kernel_name);
+    this->glsl_kernel_name_ = glsl_kernel_name;
+    emit("{{ // list generator");
+    {
+      ScopedIndent _s(line_appender_);
+      emit("_list_len_ = 0;");
+      emit("for (int i = 0; i < 5; i++) {{");
+      {
+        ScopedIndent _s(line_appender_);
+        emit("_list_[_list_len_++] = i;");
+      }
+      emit("}}");
+    }
+    emit("}}\n");
+  }
+
   void visit(GlobalTemporaryStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     used.global_temp = true;
@@ -652,7 +684,7 @@ class KernelGen : public IRVisitor {
       if (type == OffloadedStmt::TaskType::range_for) {
         emit("int {} = _itv;", stmt->short_name());
       } else if (type == OffloadedStmt::TaskType::struct_for) {
-        emit("int {} = _itv;", stmt->short_name());
+        emit("int {} = _itv; // struct for", stmt->short_name());
       } else {
         TI_NOT_IMPLEMENTED
       }
@@ -711,6 +743,10 @@ class KernelGen : public IRVisitor {
       generate_range_for_kernel(stmt);
     } else if (stmt->task_type == Type::struct_for) {
       generate_struct_for_kernel(stmt);
+    } else if (stmt->task_type == Type::listgen) {
+      generate_listgen_kernel(stmt);
+    } else if (stmt->task_type == Type::clear_list) {
+      generate_clear_list_kernel(stmt);
     } else {
       // struct_for is automatically lowered to ranged_for for dense snodes
       // (#378). So we only need to support serial and range_for tasks.

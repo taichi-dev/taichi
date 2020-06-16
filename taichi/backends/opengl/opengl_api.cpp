@@ -5,6 +5,7 @@
 #include "taichi/program/kernel.h"
 #include "taichi/program/program.h"
 #include "taichi/util/environ_config.h"
+#include "taichi/backends/opengl/runtime.h"
 
 #ifdef TI_WITH_OPENGL
 #include "glad/glad.h"
@@ -70,13 +71,28 @@ KernelParallelAttrib::KernelParallelAttrib(int num_threads_)
   }
 }
 
-size_t KernelParallelAttrib::eval(const void *gtmp) const {
-  size_t b = range_begin, e = range_end, tpg = opengl_get_threads_per_group();
-  if (!const_begin)
-    b = *(const int *)((const char *)gtmp + b);
-  if (!const_end)
-    e = *(const int *)((const char *)gtmp + e);
-  return std::max((e - b + tpg - 1) / tpg, (size_t)1);
+size_t KernelParallelAttrib::calc_num_groups(GLSLLaunchGuard &guard) const {
+  if (!is_dynamic()) {
+    return num_groups;
+  }
+  size_t tpg = opengl_get_threads_per_group();
+  size_t n;
+  // TODO: grid-stride-loop
+  if (is_list) {
+    auto rt_buf = (GLSLRuntime *)guard.map_runtime_buffer();
+    n = rt_buf->list_len;
+    guard.unmap_runtime_buffer();
+  } else {
+    void *gtmp_now = guard.map_gtmp_buffer(); // TODO: wrap impl.static_ssbo
+    size_t b = range_begin, e = range_end;
+    if (!const_begin)
+      b = *(const int *)((const char *)gtmp_now + b);
+    if (!const_end)
+      e = *(const int *)((const char *)gtmp_now + e);
+    n = b - e;
+    guard.unmap_gtmp_buffer(); // TODO: RAII
+  }
+  return std::max((n + tpg - 1) / tpg, (size_t)1);
 }
 
 static std::string add_line_markers(std::string x) {
@@ -373,14 +389,7 @@ struct CompiledKernel {
   }
 
   void dispatch_compute(GLSLLaunchGuard &guard) const {
-    int num_groups;
-    if (kpa.is_dynamic()) {                      // TODO: grid-stride-loop
-      void *gtmp_now = guard.map_gtmp_buffer();  // TODO: wrap impl.static_ssbo
-      num_groups = kpa.eval((const void *)gtmp_now);
-      guard.unmap_gtmp_buffer();  // TODO: RAII
-    } else {
-      num_groups = kpa.num_groups;
-    }
+    int num_groups = kpa.calc_num_groups(guard);
 
     // TI_PERF();
     glsl->use();
@@ -400,8 +409,6 @@ struct CompiledKernel {
     check_opengl_error("glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT)");
   }
 };
-
-#include "taichi/backends/opengl/runtime.h"
 
 struct GLSLLauncherImpl {
   std::unique_ptr<GLSSBO> root_ssbo;
@@ -606,6 +613,15 @@ void GLSLLaunchGuard::unmap_gtmp_buffer() {
   impl->gtmp_ssbo->unmap();
 }
 
+void *GLSLLaunchGuard::map_runtime_buffer() {
+  void *p = impl->runtime_ssbo->map();
+  return p;
+}
+
+void GLSLLaunchGuard::unmap_runtime_buffer() {
+  impl->runtime_ssbo->unmap();
+}
+
 GLSLLaunchGuard::~GLSLLaunchGuard() {
   for (int i = 0; i < impl->ssbo.size(); i++) {
     if (!iov[i].size)
@@ -687,6 +703,14 @@ void *GLSLLaunchGuard::map_gtmp_buffer() {
 }
 
 void GLSLLaunchGuard::unmap_gtmp_buffer() {
+  TI_NOT_IMPLEMENTED;
+}
+
+void *GLSLLaunchGuard::map_runtime_buffer() {
+  TI_NOT_IMPLEMENTED;
+}
+
+void GLSLLaunchGuard::unmap_runtime_buffer() {
   TI_NOT_IMPLEMENTED;
 }
 

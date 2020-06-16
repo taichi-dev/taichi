@@ -99,6 +99,7 @@ class DemoteAtomics : public BasicStmtVisitor {
 namespace irpass {
 
 void demote_atomics(IRNode *root) {
+  TI_AUTO_PROF;
   DemoteAtomics::run(root);
   typecheck(root);
 }

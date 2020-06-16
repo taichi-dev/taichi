@@ -98,6 +98,7 @@ class DIE : public IRVisitor {
 namespace irpass {
 
 void die(IRNode *root) {
+  TI_AUTO_PROF;
   DIE instance(root);
 }
 

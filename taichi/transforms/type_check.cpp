@@ -422,6 +422,7 @@ class TypeCheck : public IRVisitor {
 namespace irpass {
 
 void typecheck(IRNode *root) {
+  TI_AUTO_PROF;
   analysis::check_fields_registered(root);
   TypeCheck inst(root);
   root->accept(&inst);

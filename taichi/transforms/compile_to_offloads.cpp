@@ -94,9 +94,6 @@ void compile_to_offloads(IRNode *ir,
   print("Simplified II");
   irpass::analysis::verify(ir);
 
-  irpass::constant_fold(ir);
-  print("Constant folded");
-
   irpass::offload(ir);
   print("Offloaded");
   irpass::analysis::verify(ir);

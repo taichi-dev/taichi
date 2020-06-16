@@ -322,6 +322,7 @@ class VectorSplit : public IRVisitor {
 namespace irpass {
 
 void vector_split(IRNode *root, int max_width, bool serial_schedule) {
+  TI_AUTO_PROF;
   VectorSplit(root, max_width, serial_schedule);
 }
 

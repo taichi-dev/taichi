@@ -101,9 +101,11 @@ def _test_var_parent():  # doesn't work :(
     m = 7
     p = 11
 
-    blk1 = ti.root.dense(ti.k, n).place(val1)
+    blk1 = ti.root.dense(ti.k, n)
+    blk1.place(val1)
     blk2 = blk1.dense(ti.i, m).place(val2)
-    blk3 = blk2.dense(ti.j, p).place(val3)
+    blk3 = blk2.dense(ti.j, p)
+    blk3.place(val3)
 
     assert val3.parent() == val3
     assert val3.parent(1) == val3

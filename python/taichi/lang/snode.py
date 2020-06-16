@@ -57,7 +57,9 @@ class SNode:
         for i in range(n):
             p = p.parent
         if p.type == impl.taichi_lang_core.SNodeType.root:
-            return impl.root
+            # The parent of root is nullptr, according to @k-ye in:
+            # https://github.com/taichi-dev/taichi/pull/1214#discussion_r440768343
+            return None
         else:
             return SNode(p)
 

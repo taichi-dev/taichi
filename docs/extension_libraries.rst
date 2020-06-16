@@ -17,20 +17,3 @@ library of Taichi, aiming at providing useful helper functions including:
 5. Handy vector and matrix initializer: ``vec`` and ``mat``.
 
 Click here for `Taichi GLSL Documentation <https://taichi-glsl.readthedocs.io>`_.
-
-
-Taichi Elements
----------------
-
-`Taichi Elements <https://github.com/taichi-dev/taichi_elements>`_ is a
-High-Performance Multi-Material Continuum Physics Engine (work in progress).
-
-The solver is being developed using Taichi, therefore it is cross-platform and
-supports multithreaded CPUs and massively parallel GPUs.
-
-The short-term plan is:
-
-- To build a reusable multimaterial (water/elastic/snow/sand/mud) simulator
-- To integrate the simulator into Blender
-
-Click here for `Taichi Elements Documentation <https://taichi-elements.readthedocs.io>`_.

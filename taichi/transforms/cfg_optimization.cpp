@@ -6,7 +6,7 @@
 TLANG_NAMESPACE_BEGIN
 
 namespace irpass {
-void cfg_optimization(IRNode *root) {
+void cfg_optimization(IRNode *root, bool after_lower_access) {
   TI_AUTO_PROF;
   auto cfg = analysis::build_cfg(root);
   while (true) {
@@ -14,7 +14,7 @@ void cfg_optimization(IRNode *root) {
     cfg->simplify_graph();
     if (cfg->unreachable_code_elimination())
       modified = true;
-    if (cfg->store_to_load_forwarding())
+    if (!after_lower_access && cfg->store_to_load_forwarding())
       modified = true;
     if (!modified)
       break;

@@ -62,22 +62,20 @@ void CFGNode::reaching_definition_analysis() {
   reach_gen.clear();
   reach_kill.clear();
   for (int i = end_location - 1; i >= begin_location; i--) {
+    // loop in reversed order
     auto stmt = block->statements[i].get();
-    if (auto local_store = stmt->cast<LocalStoreStmt>()) {
-      if (!reach_kill_variable(local_store->ptr)) {
-        reach_gen.insert(local_store);
-        reach_kill.insert(local_store->ptr);
-      }
-    } else if (auto global_store = stmt->cast<GlobalStoreStmt>()) {
-      if (!reach_kill_variable(global_store->ptr)) {
-        reach_gen.insert(global_store);
-        reach_kill.insert(global_store->ptr);
-      }
-    } else if (auto atomic = stmt->cast<AtomicOpStmt>()) {
-      // Note that we can't do store-to-load forwarding from an AtomicOpStmt.
-      if (!reach_kill_variable(atomic->dest)) {
-        reach_gen.insert(atomic);
-        reach_kill.insert(atomic->dest);
+    auto data_source_ptr = irpass::analysis::get_data_source_pointer(stmt);
+    if (data_source_ptr) {
+      // stmt provides a data source
+      // TODO: If stmt is a GlobalPtrStmt or a GlobalTemporaryStmt, we may lose
+      // optimization opportunities in this case (we could replace $4 with b):
+      // $1: global ptr a
+      // $2: global store [$1 <- b]
+      // $3(stmt): global ptr a
+      // $4: global load $3
+      if (!reach_kill_variable(data_source_ptr)) {
+        reach_gen.insert(stmt);
+        reach_kill.insert(data_source_ptr);
       }
     }
   }
@@ -85,8 +83,8 @@ void CFGNode::reaching_definition_analysis() {
 
 bool CFGNode::reach_kill_variable(Stmt *var) const {
   // Does this node (definitely) kill a definition of var?
-  return reach_kill.find(var) != reach_kill.end();
-  /*if (var->is<AllocaStmt>()) {
+  // return reach_kill.find(var) != reach_kill.end();
+  if (var->is<AllocaStmt>()) {
     return reach_kill.find(var) != reach_kill.end();
   } else {
     // TODO: How to optimize this?
@@ -96,7 +94,7 @@ bool CFGNode::reach_kill_variable(Stmt *var) const {
       }
     }
     return false;
-  }*/
+  }
 }
 
 Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
@@ -104,7 +102,7 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
   // this position store the same data.
   int last_def_position = -1;
   for (auto stmt : reach_gen) {
-    if (stmt->store_ptr() == var) {
+    if (irpass::analysis::get_data_source_pointer(stmt) == var) {
       int stmt_position = stmt->parent->locate(stmt);
       if (stmt_position < position && stmt_position > last_def_position) {
         last_def_position = stmt_position;
@@ -113,12 +111,14 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
   }
   if (last_def_position != -1) {
     // The UD-chain is inside this node.
-    Stmt *result = block->statements[last_def_position]->store_data();
+    Stmt *result = irpass::analysis::get_data_source(block->statements[last_def_position].get());
     if (!var->is<AllocaStmt>()) {
       for (int i = last_def_position + 1; i < position; i++) {
-        if (maybe_same_address(var, block->statements[i]->store_ptr()) &&
+        if (maybe_same_address(var, irpass::analysis::get_data_source_pointer(
+            block->statements[i].get())) &&
             !irpass::analysis::same_statements(
-                result, block->statements[i]->store_data())) {
+                result, irpass::analysis::get_data_source(
+                    block->statements[i].get()))) {
           return nullptr;
         }
       }
@@ -128,23 +128,26 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
   Stmt *result = nullptr;
   auto update_result = [&](Stmt *stmt) {
     if (!result) {
-      result = stmt->store_data();
-      if (!result) {   // AtomicOpStmt
+      result = irpass::analysis::get_data_source(stmt);
+      if (!result) {   // not forwardable
         return false;  // return nullptr
       }
-    } else if (!irpass::analysis::same_statements(result, stmt->store_data())) {
+    } else if (!irpass::analysis::same_statements(
+               result, irpass::analysis::get_data_source(stmt))) {
       return false;  // return nullptr
     }
-    return true;  // continue
+    return true;  // continue the following loops
   };
   for (auto stmt : reach_in) {
-    if (maybe_same_address(var, stmt->store_ptr())) {
+    if (maybe_same_address(var,
+                           irpass::analysis::get_data_source_pointer(stmt))) {
       if (!update_result(stmt))
         return nullptr;
     }
   }
   for (auto stmt : reach_gen) {
-    if (maybe_same_address(var, stmt->store_ptr()) &&
+    if (maybe_same_address(var,
+                           irpass::analysis::get_data_source_pointer(stmt)) &&
         stmt->parent->locate(stmt) < position) {
       if (!update_result(stmt))
         return nullptr;
@@ -171,7 +174,9 @@ bool CFGNode::store_to_load_forwarding() {
           regular = false;
         }
       }
-      result = get_store_forwarding_data(alloca, i);
+      if (regular) {
+        result = get_store_forwarding_data(alloca, i);
+      }
     } else if (auto global_load = stmt->cast<GlobalLoadStmt>()) {
       result = get_store_forwarding_data(global_load->ptr, i);
     }
@@ -245,17 +250,8 @@ void ControlFlowGraph::reaching_definition_analysis() {
     auto old_out = std::move(now->reach_out);
     now->reach_out = now->reach_gen;
     for (auto stmt : now->reach_in) {
-      bool killed;
-      if (auto local_store = stmt->cast<LocalStoreStmt>()) {
-        killed = now->reach_kill_variable(local_store->ptr);
-      } else if (auto global_store = stmt->cast<GlobalStoreStmt>()) {
-        killed = now->reach_kill_variable(global_store->ptr);
-      } else if (auto atomic = stmt->cast<AtomicOpStmt>()) {
-        killed = now->reach_kill_variable(atomic->dest);
-      } else {
-        TI_NOT_IMPLEMENTED
-      }
-      if (!killed) {
+      if (!now->reach_kill_variable(
+          irpass::analysis::get_data_source_pointer(stmt))) {
         now->reach_out.insert(stmt);
       }
     }

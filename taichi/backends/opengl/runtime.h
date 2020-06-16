@@ -17,8 +17,11 @@ struct _msg_entry_t {
 
 layout(std430, binding = 6) buffer runtime {
   int _rand_state_;
+  int _list_len_;
   int _msg_count_;
-  _msg_entry_t _msg_buf_[];
+  // TODO: move msg buf to gtmp
+  _msg_entry_t _msg_buf_[1024 * 4];
+  int _list_[];
 };
 )
 

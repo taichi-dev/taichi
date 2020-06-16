@@ -229,6 +229,7 @@ class KernelGen : public IRVisitor {
     }
     auto msgid_name = fmt::format("_mi_{}", stmt->short_name());
     emit("int {} = atomicAdd(_msg_count_, 1);", msgid_name);
+    emit("{} %= {};", msgid_name, MAX_MESSAGES);
     for (int i = 0; i < size; i++) {
       auto const &content = stmt->contents[i];
 
@@ -583,16 +584,18 @@ class KernelGen : public IRVisitor {
     emit("{{ // range for");
 
     if (stmt->const_begin && stmt->const_end) {
-      ScopedIndent _s(line_appender_);
-      auto begin_value = stmt->begin_value;
-      auto end_value = stmt->end_value;
-      if (end_value < begin_value)
-        std::swap(end_value, begin_value);
-      kpa = KernelParallelAttrib(end_value - begin_value);
-      emit("// range known at compile time");
-      emit("int _tid = int(gl_GlobalInvocationID.x);");
-      emit("if (_tid >= {}) return;", end_value - begin_value);
-      emit("int _itv = {} + _tid * {};", begin_value, 1 /* stmt->step? */);
+      {
+        ScopedIndent _s(line_appender_);
+        auto begin_value = stmt->begin_value;
+        auto end_value = stmt->end_value;
+        if (end_value < begin_value)
+          std::swap(end_value, begin_value);
+        kpa = KernelParallelAttrib(end_value - begin_value);
+        emit("// range known at compile time");
+        emit("int _tid = int(gl_GlobalInvocationID.x);");
+        emit("if (_tid >= {}) return;", end_value - begin_value);
+        emit("int _itv = {} + _tid * {};", begin_value, 1 /* stmt->step? */);
+      }
       stmt->body->accept(this);
     } else {
       {
@@ -616,6 +619,25 @@ class KernelGen : public IRVisitor {
     emit("}}\n");
   }
 
+  void generate_struct_for_kernel(OffloadedStmt *stmt) {
+    TI_ASSERT(stmt->task_type == OffloadedStmt::TaskType::struct_for);
+    const std::string glsl_kernel_name = make_kernel_name();
+    emit("void {}()", glsl_kernel_name);
+    this->glsl_kernel_name_ = glsl_kernel_name;
+    emit("{{ // struct for");
+    {
+      ScopedIndent _s(line_appender_);
+      emit("// list known at runtime");
+      emit("int _tid = int(gl_GlobalInvocationID.x);");
+      emit("if (_tid >= _list_len_) return;");
+      emit("int _itv = _list_[_tid];");
+      kpa = KernelParallelAttrib(-1);
+      kpa.is_list = true;
+    }
+    stmt->body->accept(this);
+    emit("}}\n");
+  }
+
   void visit(GlobalTemporaryStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     used.global_temp = true;
@@ -626,9 +648,14 @@ class KernelGen : public IRVisitor {
   void visit(LoopIndexStmt *stmt) override {
     TI_ASSERT(stmt->index == 0);  // TODO: multiple indices
     if (stmt->loop->is<OffloadedStmt>()) {
-      TI_ASSERT(stmt->loop->as<OffloadedStmt>()->task_type ==
-                OffloadedStmt::TaskType::range_for);
-      emit("int {} = _itv;", stmt->short_name());
+      auto type = stmt->loop->as<OffloadedStmt>()->task_type;
+      if (type == OffloadedStmt::TaskType::range_for) {
+        emit("int {} = _itv;", stmt->short_name());
+      } else if (type == OffloadedStmt::TaskType::struct_for) {
+        emit("int {} = _itv;", stmt->short_name());
+      } else {
+        TI_NOT_IMPLEMENTED
+      }
     } else if (stmt->loop->is<RangeForStmt>()) {
       emit("int {} = {};", stmt->short_name(), stmt->loop->short_name());
     } else {
@@ -682,6 +709,8 @@ class KernelGen : public IRVisitor {
       generate_serial_kernel(stmt);
     } else if (stmt->task_type == Type::range_for) {
       generate_range_for_kernel(stmt);
+    } else if (stmt->task_type == Type::struct_for) {
+      generate_struct_for_kernel(stmt);
     } else {
       // struct_for is automatically lowered to ranged_for for dense snodes
       // (#378). So we only need to support serial and range_for tasks.

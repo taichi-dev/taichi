@@ -1192,6 +1192,7 @@ class Simplify : public IRVisitor {
 namespace irpass {
 
 bool simplify(IRNode *root, Kernel *kernel) {
+  TI_AUTO_PROF;
   bool modified = false;
   while (true) {
     Simplify pass(root, kernel);
@@ -1204,6 +1205,7 @@ bool simplify(IRNode *root, Kernel *kernel) {
 }
 
 void full_simplify(IRNode *root, Kernel *kernel) {
+  TI_AUTO_PROF;
   if (advanced_optimization) {
     while (true) {
       bool modified = false;

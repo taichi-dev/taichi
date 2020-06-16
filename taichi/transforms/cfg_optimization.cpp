@@ -7,6 +7,7 @@ TLANG_NAMESPACE_BEGIN
 
 namespace irpass {
 void cfg_optimization(IRNode *root) {
+  TI_AUTO_PROF;
   auto cfg = analysis::build_cfg(root);
   while (true) {
     bool modified = false;

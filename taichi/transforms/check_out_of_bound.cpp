@@ -97,6 +97,7 @@ class CheckOutOfBound : public BasicStmtVisitor {
 namespace irpass {
 
 bool check_out_of_bound(IRNode *root) {
+  TI_AUTO_PROF;
   return CheckOutOfBound::run(root);
 }
 

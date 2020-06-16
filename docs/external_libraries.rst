@@ -1,21 +1,14 @@
-External libraries
-==================
+Extension libraries
+===================
 
-The Taichi Programming Language provides a set of built-in standard library.
-The Taichi built-in library is aimed to be simple for maintainability, and
-therefore generic and less domain specific.
-
-However users may find that the built-in library along may not enough,
-so here we provide some external libraries that hopefully could extend your
-productivity in Taichi.
+The Taichi programming language offers a minimal and generic built-in standard library. Extra domain-specific functionalities are provided via **extension libraries**:
 
 
 Taichi GLSL
 -----------
 
-`Taichi GLSL <https://github.com/taichi-dev/taichi_glsl>`_ is an external
-library of Taichi, aimed to provide a set of useful helper functions including
-but not limited to:
+`Taichi GLSL <https://github.com/taichi-dev/taichi_glsl>`_ is an extension
+library of Taichi, aiming at providing useful helper functions including:
 
 1. Handy scalar functions like ``clamp``, ``smoothstep``, ``mix``, ``round``.
 2. GLSL-alike vector functions like ``normalize``, ``distance``, ``reflect``.

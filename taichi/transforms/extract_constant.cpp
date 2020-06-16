@@ -51,6 +51,7 @@ class ExtractConstant : public BasicStmtVisitor {
 
 namespace irpass {
 void extract_constant(IRNode *root) {
+  TI_AUTO_PROF;
   if (advanced_optimization)
     ExtractConstant::run(root);
 }

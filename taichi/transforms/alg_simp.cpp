@@ -274,6 +274,7 @@ bool use_fast_math(IRNode *root) {
 }  // namespace hack
 
 bool alg_simp(IRNode *root) {
+  TI_AUTO_PROF;
   return AlgSimp::run(root, hack::use_fast_math(root));
 }
 

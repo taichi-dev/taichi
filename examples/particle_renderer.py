@@ -53,22 +53,18 @@ max_num_particles = 1024 * 1024 * 4
 
 assert sphere_radius * 2 * particle_grid_res < 1
 
+ti.root.dense(ti.ij, (res[0] // 8, res[1] // 8)).dense(ti.ij,
+                                                       8).place(color_buffer)
 
-@ti.layout
-def buffers():
-    ti.root.dense(ti.ij,
-                  (res[0] // 8, res[1] // 8)).dense(ti.ij,
-                                                    8).place(color_buffer)
+ti.root.dense(ti.ijk, 2).dense(ti.ijk, particle_grid_res // 8).dense(
+    ti.ijk, 8).place(voxel_has_particle)
+ti.root.dense(ti.ijk, 4).pointer(ti.ijk, particle_grid_res // 8).dense(
+    ti.ijk, 8).dynamic(ti.l, max_num_particles_per_cell, 512).place(pid)
 
-    ti.root.dense(ti.ijk, 2).dense(ti.ijk, particle_grid_res // 8).dense(
-        ti.ijk, 8).place(voxel_has_particle)
-    ti.root.dense(ti.ijk, 4).pointer(ti.ijk, particle_grid_res // 8).dense(
-        ti.ijk, 8).dynamic(ti.l, max_num_particles_per_cell, 512).place(pid)
-
-    ti.root.dense(ti.l, max_num_particles).place(particle_x, particle_v,
-                                                 particle_color)
-    ti.root.dense(ti.ijk, grid_resolution // 8).dense(ti.ijk,
-                                                      8).place(grid_density)
+ti.root.dense(ti.l, max_num_particles).place(particle_x, particle_v,
+                                             particle_color)
+ti.root.dense(ti.ijk, grid_resolution // 8).dense(ti.ijk,
+                                                  8).place(grid_density)
 
 
 @ti.func

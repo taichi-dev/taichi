@@ -6,7 +6,7 @@ import shutil
 import taichi as ti
 
 if len(sys.argv) != 2:
-    print("Usage: python3 build.py [upload/test]")
+    print("Usage: python3 build.py [upload/try_upload/test]")
     exit(-1)
 
 version = ti.core.get_version_string()
@@ -22,7 +22,7 @@ if mode == 'try_upload':
         exit(0)
     mode = 'upload'
 
-if env_pypi_pwd == '':
+if mode == 'upload' and env_pypi_pwd == '':
     assert False, "Missing environment variable PYPI_PWD"
 
 
@@ -44,7 +44,8 @@ def get_python_executable():
 
 
 if platform.system() == 'Linux':
-    if os.environ['CXX'] not in ['clang++-8', 'clang++-7', 'clang++']:
+    if os.environ.get('CXX',
+                      'clang++') not in ['clang++-8', 'clang++-7', 'clang++']:
         print('Only the wheel with clang will be released to PyPI.')
         sys.exit(-1)
 
@@ -85,10 +86,19 @@ else:
     shutil.copy('../runtimes/RelWithDebInfo/taichi_core.dll',
                 'taichi/lib/taichi_core.pyd')
 
-os.system('{} -m taichi changelog --save && cat ../CHANGELOG.md'.format(
-    get_python_executable()))
+os.system(f'cd .. && {get_python_executable()} -m taichi changelog --save')
 
-shutil.copy('../CHANGELOG.md', './taichi/CHANGELOG.md')
+try:
+    with open('../CHANGELOG.md') as f:
+        print(f.read())
+except FileNotFoundError:
+    print('CHANGELOG.md not found')
+    pass
+
+try:
+    shutil.copy('../CHANGELOG.md', './taichi/CHANGELOG.md')
+except FileNotFoundError:
+    pass
 shutil.copytree('../tests/python', './taichi/tests')
 shutil.copytree('../examples', './taichi/examples')
 shutil.copytree('../external/assets', './taichi/assets')
@@ -133,9 +143,8 @@ if mode == 'upload':
             '%PYPI_PWD%' if get_os_name() == 'win' else '$PYPI_PWD'))
 elif mode == 'test':
     print('Uninstalling old taichi packages...')
-    os.system('{} -m pip uninstall taichi-nightly'.format(
-        get_python_executable()))
-    os.system('{} -m pip uninstall taichi'.format(get_python_executable()))
+    os.system(f'{get_python_executable()} -m pip uninstall taichi-nightly')
+    os.system(f'{get_python_executable()} -m pip uninstall taichi')
     dists = os.listdir('dist')
     assert len(dists) == 1
     dist = dists[0]

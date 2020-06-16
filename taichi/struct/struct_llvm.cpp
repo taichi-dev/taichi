@@ -1,11 +1,13 @@
 // Codegen for the hierarchical data structure (LLVM)
 
-#include "struct_llvm.h"
-#include "taichi/ir/ir.h"
-#include "taichi/program/program.h"
-#include "struct.h"
 #include "llvm/IR/Verifier.h"
 #include "llvm/IR/IRBuilder.h"
+
+#include "taichi/ir/ir.h"
+#include "taichi/struct/struct.h"
+#include "taichi/struct/struct_llvm.h"
+#include "taichi/program/program.h"
+#include "taichi/util/file_sequence_writer.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -210,8 +212,9 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
   generate_child_accessors(root);
 
   if (prog->config.print_struct_llvm_ir) {
-    TI_INFO("Struct Module IR");
-    module->print(errs(), nullptr);
+    static FileSequenceWriter writer("taichi_struct_llvm_ir_{:04d}.ll",
+                                     "struct LLVM IR");
+    writer.write(module.get());
   }
 
   TI_ASSERT((int)snodes.size() <= taichi_max_num_snodes);

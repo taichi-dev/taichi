@@ -4,13 +4,10 @@ x = ti.var(ti.i32)
 l = ti.var(ti.i32)
 n = 16
 
-ti.init()  #print_preprocessed=True)
+ti.init()
 
-
-@ti.layout
-def lists():
-    ti.root.dense(ti.i, n).dynamic(ti.j, n).place(x)
-    ti.root.dense(ti.i, n).place(l)
+ti.root.dense(ti.i, n).dynamic(ti.j, n).place(x)
+ti.root.dense(ti.i, n).place(l)
 
 
 @ti.kernel

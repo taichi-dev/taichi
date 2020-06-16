@@ -598,6 +598,7 @@ class AssociateContinueScope : public BasicStmtVisitor {
 }  // namespace
 
 void offload(IRNode *root) {
+  TI_AUTO_PROF;
   auto offloaded_ranges = Offloader::run(root);
   typecheck(root);
   fix_block_parents(root);

@@ -215,6 +215,8 @@ class IRVisitor {
     invoke_default_visitor = false;
   }
 
+  virtual ~IRVisitor() = default;
+
   // default visitor
   virtual void visit(Stmt *stmt) {
     if (!allow_undefined_visitor) {

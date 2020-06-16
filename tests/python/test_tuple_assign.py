@@ -183,6 +183,22 @@ def test_unpack_mismatch_vector():
 
 
 @ti.host_arch_only
+@ti.must_throw(TypeError)
+def test_unpack_mismatch_type():
+    ti.init(print_preprocessed=True)
+    a = ti.var(ti.f32, ())
+    b = ti.var(ti.f32, ())
+
+    bad = 12
+
+    @ti.kernel
+    def func():
+        a[None], b[None] = bad
+
+    func()
+
+
+@ti.host_arch_only
 def test_unpack_from_shape():
     a = ti.var(ti.f32, ())
     b = ti.var(ti.f32, ())

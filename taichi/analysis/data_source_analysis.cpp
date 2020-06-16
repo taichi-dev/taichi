@@ -20,7 +20,7 @@ Stmt *get_data_source(Stmt *store_stmt) {
 Stmt *get_data_source_pointer(Stmt *store_stmt) {
   // If store_stmt provides a data source, return the pointer of the data.
   if (store_stmt->is<AllocaStmt>() || store_stmt->is<GlobalTemporaryStmt>() ||
-      store_stmt->is<GlobalPtrStmt>()) {
+      store_stmt->is<GlobalPtrStmt>() || store_stmt->is<ExternalPtrStmt>()) {
     // The statement itself provides a data source.
     return store_stmt;
   } else if (auto local_store = store_stmt->cast<LocalStoreStmt>()) {

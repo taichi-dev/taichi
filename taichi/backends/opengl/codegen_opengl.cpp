@@ -24,6 +24,15 @@ KernelParallelAttrib::KernelParallelAttrib(OffloadedStmt *stmt)
 
 namespace {
 
+int find_children_id(const SNode *snode) {
+  auto parent = snode->parent;
+  for (int i = 0; i < parent->ch.size(); i++) {
+    if (parent->ch[i].get() == snode)
+      return i;
+  }
+  TI_ERROR("Child not found in parent!");
+}
+
 std::string opengl_atomic_op_type_cap_name(AtomicOpType type) {
   static std::map<AtomicOpType, std::string> type_names;
   if (type_names.empty()) {
@@ -292,6 +301,17 @@ class KernelGen : public IRVisitor {
          parent->short_name(),
          struct_compiled_->snode_map.at(parent_type).elem_stride,
          stmt->input_index->short_name(), stmt->snode->node_type_name);
+    if (stmt->activate) {
+      if (stmt->snode->type == SNodeType::dense) {
+        // do nothing
+      } else if (stmt->snode->type == SNodeType::dynamic) {
+        emit("atomicMax(_data_i32_[{} >> 2], {}); // activate",
+            get_dynamic_length_address_of(stmt->snode),
+            stmt->input_index->short_name());
+      } else {
+        TI_NOT_IMPLEMENTED
+      }
+    }
   }
 
   std::map<int, std::string> ptr_signats;
@@ -624,10 +644,9 @@ class KernelGen : public IRVisitor {
     const std::string glsl_kernel_name = make_kernel_name();
     emit("void {}()", glsl_kernel_name);
     this->glsl_kernel_name_ = glsl_kernel_name;
-    emit("{{ // struct for");
+    emit("{{ // struct for {}", stmt->snode->node_type_name);
     {
       ScopedIndent _s(line_appender_);
-      emit("// list known at runtime");
       emit("int _tid = int(gl_GlobalInvocationID.x);");
       emit("if (_tid >= _list_len_) return;");
       emit("int _itv = _list_[_tid];");
@@ -643,7 +662,7 @@ class KernelGen : public IRVisitor {
     const std::string glsl_kernel_name = make_kernel_name();
     emit("void {}()", glsl_kernel_name);
     this->glsl_kernel_name_ = glsl_kernel_name;
-    emit("{{ // clear list");
+    emit("{{ // clear list {}", stmt->snode->node_type_name);
     {
       ScopedIndent _s(line_appender_);
       emit("_list_len_ = 0;");
@@ -651,21 +670,51 @@ class KernelGen : public IRVisitor {
     emit("}}\n");
   }
 
+  size_t get_address_of(const SNode *snode) {
+    int chid = find_children_id(snode);
+    const auto &parent_meta = struct_compiled_->snode_map.at(
+        snode->parent->node_type_name);
+    auto choff = parent_meta.children_offsets[chid];
+    return choff;
+  }
+
+  size_t get_dynamic_length_address_of(const SNode *snode) {
+    auto addr = get_address_of(snode);
+    addr += struct_compiled_->snode_map.at(snode->node_type_name).stride;
+    addr -= sizeof(int);
+    return addr;
+  }
+
+  void generate_listgen_for_dynamic(const SNode *snode)
+  {
+    TI_ASSERT(snode->type == SNodeType::dynamic);
+    // the `length` field of a dynamic SNode is at it's end:
+    // | x[0] | x[1] | x[2] | x[3] | ... | len |
+    TI_ASSERT_INFO(snode->parent->type == SNodeType::root,
+        "Non-top-level dynamic not supported yet on OpenGL");
+    size_t addr = get_dynamic_length_address_of(snode);
+    emit("_list_len_ = _data_i32_[{} >> 2];", addr);
+    emit("for (int i = 0; i < _list_len_; i++) {{");
+    {
+      ScopedIndent _s(line_appender_);
+      emit("_list_[i] = i;");
+    }
+    emit("}}");
+  }
+
   void generate_listgen_kernel(OffloadedStmt *stmt) {
     TI_ASSERT(stmt->task_type == OffloadedStmt::TaskType::listgen);
     const std::string glsl_kernel_name = make_kernel_name();
     emit("void {}()", glsl_kernel_name);
     this->glsl_kernel_name_ = glsl_kernel_name;
-    emit("{{ // list generator");
+    emit("{{ // listgen {}", stmt->snode->node_type_name);
     {
       ScopedIndent _s(line_appender_);
-      emit("_list_len_ = 0;");
-      emit("for (int i = 0; i < 5; i++) {{");
-      {
-        ScopedIndent _s(line_appender_);
-        emit("_list_[_list_len_++] = i;");
+      if (stmt->snode->type == SNodeType::dynamic) {
+        generate_listgen_for_dynamic(stmt->snode);
+      } else {
+        TI_NOT_IMPLEMENTED
       }
-      emit("}}");
     }
     emit("}}\n");
   }

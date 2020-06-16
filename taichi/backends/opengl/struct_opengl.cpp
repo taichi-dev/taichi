@@ -64,10 +64,13 @@ void OpenglStructCompiler::generate_types(const SNode &snode) {
   } else if (snode.type == SNodeType::dense
       || snode.type == SNodeType::dynamic
       || snode.type == SNodeType::root) {
-    const int n = (snode.type == SNodeType::root) ? 1 : snode.n;
+    int n = (snode.type == SNodeType::root) ? 1 : snode.n;
+    // the `length` field of a dynamic SNode is at it's end:
+    // | x[0] | x[1] | x[2] | x[3] | ... | len |
+    int extension = (snode.type == SNodeType::dynamic) ? sizeof(int) : 0;
     snode_info.length = n;
-    snode_info.stride = snode_child_info.stride * snode_info.length;
-    snode_info.elem_stride = snode_child_info.stride;
+    snode_info.stride = snode_child_info.stride * n + extension; // my stride
+    snode_info.elem_stride = snode_child_info.stride;      // my child stride
   } else {
     TI_ERROR("SNodeType={} not supported on OpenGL",
              snode_type_name(snode.type));

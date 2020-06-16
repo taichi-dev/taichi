@@ -107,12 +107,11 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
   // Return the stored data if all definitions in the UD-chain of var at
   // this position store the same data.
   int last_def_position = -1;
-  for (auto stmt : reach_gen) {
-    if (irpass::analysis::get_data_source_pointer(stmt) == var) {
-      int stmt_position = stmt->parent->locate(stmt);
-      if (stmt_position < position && stmt_position > last_def_position) {
-        last_def_position = stmt_position;
-      }
+  for (int i = position - 1; i >= 0; i--) {
+    if (irpass::analysis::get_data_source_pointer(
+        block->statements[i].get()) == var) {
+      last_def_position = i;
+      break;
     }
   }
   if (last_def_position != -1) {
@@ -133,16 +132,17 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
   }
   Stmt *result = nullptr;
   auto visible = [&](Stmt *stmt) {
+    // Do we need to check if `stmt` is before `position` here?
     return parent_blocks.find(stmt->parent) != parent_blocks.end();
   };
   auto update_result = [&](Stmt *stmt) {
     auto data = irpass::analysis::get_data_source(stmt);
+    if (!data) {  // not forwardable
+      // TODO: optimize for alloca
+      return false;  // return nullptr
+    }
     if (!result) {
       result = data;
-      if (!result) {   // not forwardable
-        // TODO: optimize for alloca
-        return false;  // return nullptr
-      }
     } else if (!irpass::analysis::same_statements(result, data)) {
       return false;  // return nullptr
     }

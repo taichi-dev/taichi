@@ -617,6 +617,7 @@ class OtherVariableOptimize : public VariableOptimize {
 
 namespace irpass {
 void variable_optimization(IRNode *root, bool after_lower_access) {
+  TI_AUTO_PROF;
   if (!advanced_optimization)
     return;
   AllocaOptimize alloca_optimizer;

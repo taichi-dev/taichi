@@ -1,11 +1,11 @@
-#include "profiler.h"
+#include "kernel_profiler.h"
 
 #include "taichi/system/timer.h"
 #include "taichi/backends/cuda/cuda_driver.h"
 
 TLANG_NAMESPACE_BEGIN
 
-void ProfileRecord::insert_sample(double t) {
+void KernelProfileRecord::insert_sample(double t) {
   if (counter == 0) {
     min = t;
     max = t;
@@ -16,21 +16,21 @@ void ProfileRecord::insert_sample(double t) {
   total += t;
 }
 
-void ProfilerBase::profiler_start(ProfilerBase *profiler,
+void KernelProfilerBase::profiler_start(KernelProfilerBase *profiler,
                                   const char *kernel_name) {
   profiler->start(std::string(kernel_name));
 }
 
-void ProfilerBase::profiler_stop(ProfilerBase *profiler) {
+void KernelProfilerBase::profiler_stop(KernelProfilerBase *profiler) {
   profiler->stop();
 }
 
-void ProfilerBase::print() {
+void KernelProfilerBase::print() {
   sync();
   printf("%s\n", title().c_str());
   for (auto &rec : records) {
     printf(
-        "[%6.2f%%] %-40s     min %7.3f ms   avg %7.3f ms    max %7.3f ms   "
+        "[%6.2f%%] %-40s    min %7.3f ms   avg %7.3f ms   max %7.3f ms   "
         "total %7.3f s [%7dx]\n",
         rec.total / total_time * 100.0f, rec.name.c_str(), rec.min,
         rec.total / rec.counter, rec.max, rec.total / 1000.0f, rec.counter);
@@ -39,7 +39,7 @@ void ProfilerBase::print() {
 
 namespace {
 // A simple profiler that uses Time::get_time()
-class DefaultProfiler : public ProfilerBase {
+class DefaultProfiler : public KernelProfilerBase {
  public:
   explicit DefaultProfiler(Arch arch)
       : title_(fmt::format("{} Profiler", arch_name(arch))) {
@@ -62,7 +62,7 @@ class DefaultProfiler : public ProfilerBase {
     auto ms = t * 1000.0;
     auto it =
         std::find_if(records.begin(), records.end(),
-                     [&](ProfileRecord &r) { return r.name == event_name_; });
+                     [&](KernelProfileRecord &r) { return r.name == event_name_; });
     if (it == records.end()) {
       records.emplace_back(event_name_);
       it = std::prev(records.end());
@@ -78,7 +78,7 @@ class DefaultProfiler : public ProfilerBase {
 };
 
 // A CUDA kernel profiler that uses CUDA timing events
-class CUDAProfiler : public ProfilerBase {
+class KernelProfilerCUDA : public KernelProfilerBase {
  public:
 #if defined(TI_WITH_CUDA)
   void *current_stop;
@@ -123,7 +123,7 @@ class CUDAProfiler : public ProfilerBase {
         CUDADriver::get_instance().event_elapsed_time(&ms, start, stop);
         auto it = std::find_if(
             records.begin(), records.end(),
-            [&](ProfileRecord &r) { return r.name == map_elem.first; });
+            [&](KernelProfileRecord &r) { return r.name == map_elem.first; });
         if (it == records.end()) {
           records.emplace_back(map_elem.first);
           it = std::prev(records.end());
@@ -138,19 +138,19 @@ class CUDAProfiler : public ProfilerBase {
 #endif
   }
 
-  static CUDAProfiler &get_instance() {
-    static CUDAProfiler profiler;
+  static KernelProfilerCUDA &get_instance() {
+    static KernelProfilerCUDA profiler;
     return profiler;
   }
 };
 }  // namespace
 
-std::unique_ptr<ProfilerBase> make_profiler(Arch arch) {
+std::unique_ptr<KernelProfilerBase> make_profiler(Arch arch) {
   if (arch == Arch::x64 || arch == Arch::arm64 || arch == Arch::metal ||
       arch == Arch::opengl) {
     return std::make_unique<DefaultProfiler>(arch);
   } else if (arch == Arch::cuda) {
-    return std::make_unique<CUDAProfiler>();
+    return std::make_unique<KernelProfilerCUDA>();
   } else {
     TI_NOT_IMPLEMENTED;
   }

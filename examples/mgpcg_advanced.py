@@ -3,7 +3,7 @@ import time
 import taichi as ti
 
 real = ti.f32
-ti.init(default_fp=real, arch=ti.x64, enable_profiler=True)
+ti.init(default_fp=real, arch=ti.x64, kernel_profiler=True)
 
 
 @ti.data_oriented
@@ -207,7 +207,7 @@ class MGPCG:
             gui.set_image(self.pixels)
             gui.show()
 
-        ti.profiler_print()
+        ti.kernel_profiler_print()
 
 
 solver = MGPCG()

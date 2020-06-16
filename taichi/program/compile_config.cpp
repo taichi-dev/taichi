@@ -29,7 +29,7 @@ CompileConfig::CompileConfig() {
   default_fp = DataType::f32;
   default_ip = DataType::i32;
   verbose_kernel_launches = false;
-  enable_profiler = false;
+  kernel_profiler = false;
   default_cpu_block_dim = 0;  // 0 = adaptive
   default_gpu_block_dim = 64;
   verbose = true;

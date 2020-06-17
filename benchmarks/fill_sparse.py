@@ -43,7 +43,7 @@ def benchmark_nested_struct_fill_and_clear():
 
 
 '''
-ti.init(arch=ti.cuda, enable_profiler=True)
+ti.init(arch=ti.cuda, kernel_profiler=True)
 benchmark_nested_struct_fill_and_clear()
-ti.profiler_print()
+ti.kernel_profiler_print()
 '''

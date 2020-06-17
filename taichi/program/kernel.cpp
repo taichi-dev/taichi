@@ -90,13 +90,17 @@ void Kernel::operator()() {
     }
     compiled(program.get_context());
     program.sync = (program.sync && arch_is_cpu(arch));
-    if (program.config.debug && arch_is_cpu(arch)) {
+    // Note that Kernel::arch may be different from program.config.arch
+    if (program.config.debug && arch_is_cpu(arch) &&
+        arch_is_cpu(program.config.arch)) {
       program.check_runtime_error();
     }
   } else {
     program.sync = false;
     program.async_engine->launch(this);
-    if (program.config.debug && arch_is_cpu(arch)) {
+    // Note that Kernel::arch may be different from program.config.arch
+    if (program.config.debug && arch_is_cpu(arch) &&
+        arch_is_cpu(program.config.arch)) {
       program.check_runtime_error();
     }
   }

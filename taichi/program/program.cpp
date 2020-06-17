@@ -8,7 +8,7 @@
 #if defined(TI_WITH_CUDA)
 #include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/backends/cuda/codegen_cuda.h"
-#include "taichi/backends/cuda/cuda_driver.h"
+#include "taichi/backends/cuda/cuda_context.h"
 #endif
 #include "taichi/backends/metal/codegen_metal.h"
 #include "taichi/backends/opengl/codegen_opengl.h"
@@ -98,9 +98,18 @@ Program::Program(Arch desired_arch) {
 
   preallocated_device_buffer = nullptr;
 
-  if (config.enable_profiler && runtime) {
+  if (config.kernel_profiler && runtime) {
     runtime->set_profiler(profiler.get());
   }
+#if defined(TI_WITH_CUDA)
+  if (config.arch == Arch::cuda) {
+    if (config.kernel_profiler) {
+      CUDAContext::get_instance().set_profiler(profiler.get());
+    } else {
+      CUDAContext::get_instance().set_profiler(nullptr);
+    }
+  }
+#endif
 
   result_buffer = nullptr;
   current_kernel = nullptr;
@@ -255,14 +264,19 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
 
     runtime->call<void *, void *>("LLVMRuntime_set_assert_failed", llvm_runtime,
                                   (void *)assert_failed_host);
-    // Profiler functions can only be called on host kernels
+  }
+  if (arch_is_cpu(config.arch)) {
+    // Profiler functions can only be called on CPU kernels
     runtime->call<void *, void *>("LLVMRuntime_set_profiler", llvm_runtime,
                                   profiler.get());
     runtime->call<void *, void *>("LLVMRuntime_set_profiler_start",
                                   llvm_runtime,
-                                  (void *)&ProfilerBase::profiler_start);
+                                  (void *)&KernelProfilerBase::profiler_start);
     runtime->call<void *, void *>("LLVMRuntime_set_profiler_stop", llvm_runtime,
-                                  (void *)&ProfilerBase::profiler_stop);
+                                  (void *)&KernelProfilerBase::profiler_stop);
+  } else {
+    runtime->call<void *, void *>("LLVMRuntime_set_profiler", llvm_runtime,
+                                  nullptr);
   }
 }
 

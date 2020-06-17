@@ -30,8 +30,14 @@ def expr_init(rhs):
 
 @taichi_scope
 def expr_init_list(xs, expected):
-    if not isinstance(xs, (list, tuple)):
+    import taichi as ti
+    if not isinstance(xs, (list, tuple, ti.Matrix)):
         raise TypeError(f'Cannot unpack type: {type(xs)}')
+    if isinstance(xs, ti.Matrix):
+        if not xs.m == 1:
+            raise ValueError(
+                f'Matrices with more than one columns cannot be unpacked')
+        xs = xs.entries
     if expected != len(xs):
         raise ValueError(
             f'Tuple assignment size mismatch: {expected} != {len(xs)}')

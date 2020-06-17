@@ -41,9 +41,6 @@ class GUI:
         self.key_pressed = set()
         self.event = None
         self.clear()
-        if ti.core.get_current_program():
-            self.core.set_profiler(
-                ti.core.get_current_program().get_profiler())
 
     def __enter__(self):
         return self

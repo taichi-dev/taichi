@@ -78,7 +78,7 @@ bool CFGNode::erase_entire_node() {
   return true;
 }
 
-void CFGNode::reaching_definition_analysis() {
+void CFGNode::reaching_definition_analysis(bool after_lower_access) {
   // Calculate reach_gen and reach_kill.
   reach_gen.clear();
   reach_kill.clear();
@@ -88,6 +88,10 @@ void CFGNode::reaching_definition_analysis() {
     auto data_source_ptr = irpass::analysis::get_store_destination(stmt);
     if (data_source_ptr) {
       // stmt provides a data source
+      if (after_lower_access &&
+          !(stmt->is<AllocaStmt>() || stmt->is<LocalStoreStmt>())) {
+        continue;
+      }
       // TODO: If stmt is a GlobalPtrStmt or a GlobalTemporaryStmt, we may lose
       // optimization opportunities in this case (we could replace $4 with b):
       // $1: global ptr a
@@ -197,7 +201,7 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
   return result;
 }
 
-bool CFGNode::store_to_load_forwarding() {
+bool CFGNode::store_to_load_forwarding(bool after_lower_access) {
   bool modified = false;
   for (int i = begin_location; i < end_location; i++) {
     auto stmt = block->statements[i].get();
@@ -215,7 +219,9 @@ bool CFGNode::store_to_load_forwarding() {
         result = get_store_forwarding_data(alloca, i);
       }
     } else if (auto global_load = stmt->cast<GlobalLoadStmt>()) {
-      result = get_store_forwarding_data(global_load->ptr, i);
+      if (!after_lower_access) {
+        result = get_store_forwarding_data(global_load->ptr, i);
+      }
     }
     if (result) {
       if (result->is<AllocaStmt>()) {
@@ -308,13 +314,13 @@ void ControlFlowGraph::print_graph_structure() const {
   }
 }
 
-void ControlFlowGraph::reaching_definition_analysis() {
+void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
   TI_AUTO_PROF;
   const int num_nodes = size();
   std::queue<CFGNode *> to_visit;
   std::unordered_map<CFGNode *, bool> in_queue;
   for (int i = 0; i < num_nodes; i++) {
-    nodes[i]->reaching_definition_analysis();
+    nodes[i]->reaching_definition_analysis(after_lower_access);
     nodes[i]->reach_in.clear();
     nodes[i]->reach_out = nodes[i]->reach_gen;
     to_visit.push(nodes[i].get());
@@ -399,13 +405,13 @@ bool ControlFlowGraph::unreachable_code_elimination() {
   return modified;
 }
 
-bool ControlFlowGraph::store_to_load_forwarding() {
+bool ControlFlowGraph::store_to_load_forwarding(bool after_lower_access) {
   TI_AUTO_PROF;
-  reaching_definition_analysis();
+  reaching_definition_analysis(after_lower_access);
   const int num_nodes = size();
   bool modified = false;
   for (int i = 0; i < num_nodes; i++) {
-    if (nodes[i]->store_to_load_forwarding())
+    if (nodes[i]->store_to_load_forwarding(after_lower_access))
       modified = true;
   }
   return modified;

@@ -14,7 +14,7 @@ void cfg_optimization(IRNode *root, bool after_lower_access) {
     cfg->simplify_graph();
     if (cfg->unreachable_code_elimination())
       modified = true;
-    if (!after_lower_access && cfg->store_to_load_forwarding())
+    if (cfg->store_to_load_forwarding(after_lower_access))
       modified = true;
     if (!modified)
       break;

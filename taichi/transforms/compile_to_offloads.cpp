@@ -124,6 +124,10 @@ void compile_to_offloads(IRNode *ir,
   print("Atomics demoted");
   irpass::analysis::verify(ir);
 
+  irpass::cfg_optimization(ir, true);
+  print("Optimized by CFG II");
+  irpass::analysis::verify(ir);
+
   irpass::variable_optimization(ir, true);
   print("Store forwarded II");
 

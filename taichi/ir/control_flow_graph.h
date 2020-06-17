@@ -36,10 +36,10 @@ class CFGNode {
   void erase(int location);
   void insert(std::unique_ptr<Stmt> &&new_stmt, int location);
   bool erase_entire_node();
-  void reaching_definition_analysis();
+  void reaching_definition_analysis(bool after_lower_access);
   bool reach_kill_variable(Stmt *var) const;
   Stmt *get_store_forwarding_data(Stmt *var, int position) const;
-  bool store_to_load_forwarding();
+  bool store_to_load_forwarding(bool after_lower_access);
 };
 
 class ControlFlowGraph {
@@ -61,11 +61,11 @@ class ControlFlowGraph {
   CFGNode *back();
 
   void print_graph_structure() const;
-  void reaching_definition_analysis();
+  void reaching_definition_analysis(bool after_lower_access);
 
   void simplify_graph();
   bool unreachable_code_elimination();
-  bool store_to_load_forwarding();
+  bool store_to_load_forwarding(bool after_lower_access);
 };
 
 TLANG_NAMESPACE_END

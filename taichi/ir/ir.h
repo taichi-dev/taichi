@@ -923,10 +923,9 @@ class SNodeOpStmt : public Stmt {
               SNode *snode,
               const std::vector<Stmt *> &indices);
 
-  static bool activation_related(SNodeOpType op) {
-    return op == SNodeOpType::activate || op == SNodeOpType::deactivate ||
-           op == SNodeOpType::is_active;
-  }
+  static bool activation_related(SNodeOpType op);
+
+  static bool need_activation(SNodeOpType op);
 
   TI_STMT_DEF_FIELDS(ret_type, op_type, snode, ptr, val, indices);
   TI_DEFINE_ACCEPT_AND_CLONE

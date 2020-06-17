@@ -35,10 +35,10 @@ metal = core.metal
 opengl = core.opengl
 gpu = [cuda, metal, opengl]
 cpu = core.host_arch()
-profiler_print = lambda: core.get_current_program().profiler_print()
-profiler_clear = lambda: core.get_current_program().profiler_clear()
-profiler_start = lambda n: core.get_current_program().profiler_start(n)
-profiler_stop = lambda: core.get_current_program().profiler_stop()
+kernel_profiler_print = lambda: core.get_current_program(
+).kernel_profiler_print()
+kernel_profiler_clear = lambda: core.get_current_program(
+).kernel_profiler_clear()
 
 
 class _Extension(object):

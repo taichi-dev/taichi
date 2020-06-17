@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include <thread>
 
-#include "taichi/program/profiler.h"
+#include "taichi/program/kernel_profiler.h"
 #include "taichi/backends/cuda/cuda_driver.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -23,7 +23,7 @@ class CUDAContext {
   int dev_count;
   std::string mcpu;
   std::mutex lock;
-  ProfilerBase *profiler;
+  KernelProfilerBase *profiler;
   CUDADriver &driver;
 
   static std::unordered_map<std::thread::id, std::unique_ptr<CUDAContext>>
@@ -45,9 +45,10 @@ class CUDAContext {
               unsigned gridDim,
               unsigned blockDim);
 
-  void set_profiler(ProfilerBase *profiler) {
+  void set_profiler(KernelProfilerBase *profiler) {
     this->profiler = profiler;
   }
+
   std::string get_mcpu() const {
     return mcpu;
   }

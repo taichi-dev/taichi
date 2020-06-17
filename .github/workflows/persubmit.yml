@@ -81,6 +81,7 @@ jobs:
 
       - name: Run PR Title Checker
         run: |
+          pip install semver GitPython
           python misc/check_pr_title.py "$PR_TITLE"
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}

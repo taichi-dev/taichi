@@ -2,7 +2,7 @@ import numpy as np
 import taichi as ti
 
 real = ti.f32
-ti.init(default_fp=real, arch=ti.x64, enable_profiler=True)
+ti.init(default_fp=real, arch=ti.x64, kernel_profiler=True)
 
 # grid parameters
 N = 128
@@ -207,4 +207,4 @@ for i in range(400):
     gui.set_image(pixels)
     gui.show()
 
-ti.profiler_print()
+ti.kernel_profiler_print()

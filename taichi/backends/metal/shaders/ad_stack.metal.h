@@ -3,26 +3,26 @@
 #ifdef TI_INSIDE_METAL_CODEGEN
 
 #ifndef TI_METAL_NESTED_INCLUDE
-#define METAL_BEGIN_RUNTIME_STRUCTS_DEF constexpr auto kMetalAdStackSourceCode =
-#define METAL_END_RUNTIME_STRUCTS_DEF ;
+#define METAL_BEGIN_AD_STACK_DEF constexpr auto kMetalAdStackSourceCode =
+#define METAL_END_AD_STACK_DEF ;
 #else
-#define METAL_BEGIN_RUNTIME_STRUCTS_DEF
-#define METAL_END_RUNTIME_STRUCTS_DEF
+#define METAL_BEGIN_AD_STACK_DEF
+#define METAL_END_AD_STACK_DEF
 #endif  // TI_METAL_NESTED_INCLUDE
 
 #else
 
 #include <cstdint>
 
-#define METAL_BEGIN_RUNTIME_STRUCTS_DEF
-#define METAL_END_RUNTIME_STRUCTS_DEF
+#define METAL_BEGIN_AD_STACK_DEF
+#define METAL_END_AD_STACK_DEF
 
 #endif  // TI_INSIDE_METAL_CODEGEN
 
 // Autodiff stack for local mutables
 
 // clang-format off
-METAL_BEGIN_RUNTIME_STRUCTS_DEF
+METAL_BEGIN_AD_STACK_DEF
 STR(
     // clang-format on
     using AdStackPtr = thread byte *;
@@ -67,10 +67,10 @@ STR(
     }
     // clang-format off
 )
-METAL_END_RUNTIME_STRUCTS_DEF
+METAL_END_AD_STACK_DEF
 // clang-format on
 
-#undef METAL_BEGIN_RUNTIME_STRUCTS_DEF
-#undef METAL_END_RUNTIME_STRUCTS_DEF
+#undef METAL_BEGIN_AD_STACK_DEF
+#undef METAL_END_AD_STACK_DEF
 
 #include "taichi/backends/metal/shaders/epilog.h"

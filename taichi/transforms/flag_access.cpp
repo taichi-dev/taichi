@@ -101,6 +101,17 @@ class WeakenAccess : public BasicStmtVisitor {
     current_offload = nullptr;
   }
 
+  static SNode *least_sparse_ancestor(SNode *a) {
+    while (a->type == SNodeType::place || a->type == SNodeType::dense) {
+      a = a->parent;
+    }
+    return a;
+  }
+
+  static bool share_sparsity(SNode *a, SNode *b) {
+    return least_sparse_ancestor(a) == least_sparse_ancestor(b);
+  }
+
   void visit(GlobalPtrStmt *stmt) {
     if (stmt->activate) {
       bool is_struct_for =
@@ -110,16 +121,13 @@ class WeakenAccess : public BasicStmtVisitor {
       if (is_struct_for) {
         bool same_as_loop_snode = true;
         for (auto snode : stmt->snodes.data) {
-          if (snode->type == SNodeType::place) {
-            snode = snode->parent;
-          }
           SNode *loop_snode = nullptr;
           if (current_struct_for) {
             loop_snode = current_struct_for->snode;
           } else {
             loop_snode = current_offload->snode;
           }
-          if (snode != loop_snode) {
+          if (!share_sparsity(snode, loop_snode)) {
             same_as_loop_snode = false;
           }
           TI_ASSERT(loop_snode);

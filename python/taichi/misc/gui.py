@@ -83,16 +83,16 @@ class GUI:
         import taichi as ti
 
         if isinstance(img, ti.Expr):
-            if ti.core.is_real(img.data_type()) and len(img.shape()) == 2:
+            if ti.core.is_integral(img.data_type()) or len(img.shape()) != 2:
+                # Images of uint is not optimized by xxx_to_image
+                self.img = self.cook_image(img.to_numpy())
+            else:
                 # Type matched! We can use an optimized copy kernel.
                 assert img.shape(
                 ) == self.res, "Image resolution does not match GUI resolution"
                 from taichi.lang.meta import tensor_to_image
                 tensor_to_image(img, self.img)
                 ti.sync()
-            else:
-                # image of uint is not optimized by xxx_to_image
-                self.img = self.cook_image(img.to_numpy())
 
         elif isinstance(img, ti.Matrix):
             if ti.core.is_integral(img.data_type()):

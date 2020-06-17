@@ -19,7 +19,7 @@ void re_id(IRNode *root);
 void flag_access(IRNode *root);
 bool die(IRNode *root);
 bool simplify(IRNode *root, Kernel *kernel = nullptr);
-void cfg_optimization(IRNode *root);
+void cfg_optimization(IRNode *root, bool after_lower_access);
 bool alg_simp(IRNode *root);
 bool binary_op_simplify(IRNode *root);
 bool whole_kernel_cse(IRNode *root);

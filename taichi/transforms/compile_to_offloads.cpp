@@ -82,6 +82,10 @@ void compile_to_offloads(IRNode *ir,
     irpass::analysis::verify(ir);
   }
 
+  irpass::cfg_optimization(ir, false);
+  print("Optimized by CFG I");
+  irpass::analysis::verify(ir);
+
   irpass::variable_optimization(ir, false);
   print("Store forwarded");
   irpass::analysis::verify(ir);
@@ -96,6 +100,10 @@ void compile_to_offloads(IRNode *ir,
 
   irpass::offload(ir);
   print("Offloaded");
+  irpass::analysis::verify(ir);
+
+  irpass::cfg_optimization(ir, false);
+  print("Optimized by CFG II");
   irpass::analysis::verify(ir);
 
   irpass::flag_access(ir);
@@ -120,12 +128,12 @@ void compile_to_offloads(IRNode *ir,
   print("Atomics demoted");
   irpass::analysis::verify(ir);
 
+  irpass::cfg_optimization(ir, true);
+  print("Optimized by CFG III");
+  irpass::analysis::verify(ir);
+
   irpass::variable_optimization(ir, true);
   print("Store forwarded II");
-
-  irpass::cfg_optimization(ir);
-  print("Optimized by CFG");
-  irpass::analysis::verify(ir);
 
   irpass::full_simplify(ir);
   print("Simplified III");

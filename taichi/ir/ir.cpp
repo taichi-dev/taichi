@@ -28,6 +28,8 @@ bool maybe_same_address(Stmt *var1, Stmt *var2) {
   // If only one of them is an alloca, they can never share the same address.
   if (var1 == var2)
     return true;
+  if (!var1 || !var2)
+    return false;
   if (var1->is<AllocaStmt>() || var2->is<AllocaStmt>())
     return false;
 

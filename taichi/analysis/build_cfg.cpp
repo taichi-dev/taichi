@@ -130,26 +130,20 @@ class CFGBuilder : public IRVisitor {
   void visit(OffloadedStmt *stmt) override {
     if (stmt->has_body()) {
       auto before_offload = new_node(-1);
-      if (stmt->task_type == OffloadedStmt::TaskType::struct_for ||
-          stmt->task_type == OffloadedStmt::TaskType::range_for) {
-        visit_loop(stmt->body.get(), before_offload, false);
-      } else {
-        TI_ASSERT(stmt->task_type == OffloadedStmt::TaskType::serial);
-        int offload_stmt_id = current_stmt_id;
-        auto block_begin_index = graph->size();
-        stmt->body->accept(this);
-        prev_nodes.push_back(graph->back());
-        // Container statements don't belong to any CFGNodes.
-        begin_location = offload_stmt_id + 1;
-        CFGNode::add_edge(before_offload,
-                          graph->nodes[block_begin_index].get());
-      }
+      int offload_stmt_id = current_stmt_id;
+      auto block_begin_index = graph->size();
+      stmt->body->accept(this);
+      prev_nodes.push_back(graph->back());
+      // Container statements don't belong to any CFGNodes.
+      begin_location = offload_stmt_id + 1;
+      CFGNode::add_edge(before_offload, graph->nodes[block_begin_index].get());
     }
   }
 
   void visit(Block *block) override {
     auto backup_block = current_block;
     auto backup_last_node = last_node_in_current_block;
+    auto backup_stmt_id = current_stmt_id;
     TI_ASSERT(begin_location == -1);
     TI_ASSERT(prev_nodes.empty());
     current_block = block;
@@ -165,6 +159,7 @@ class CFGBuilder : public IRVisitor {
 
     current_block = backup_block;
     last_node_in_current_block = backup_last_node;
+    current_stmt_id = backup_stmt_id;
   }
 
   static std::unique_ptr<ControlFlowGraph> run(IRNode *root) {

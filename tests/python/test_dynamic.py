@@ -6,7 +6,7 @@ def ti_support_dynamic(test):
 
 
 def ti_support_non_top_dynamic(test):
-    return ti.all_archs_excluding(ti.opengl)(test)
+    return ti.archs_excluding(ti.opengl)(test)
 
 
 @ti_support_dynamic

@@ -6,7 +6,7 @@ TLANG_NAMESPACE_BEGIN
 
 namespace irpass::analysis {
 
-Stmt *get_data_source(Stmt *store_stmt) {
+Stmt *get_store_data(Stmt *store_stmt) {
   // If store_stmt provides a data source, return the data.
   // For convenience, return store_stmt if store_stmt is an AllocaStmt.
   if (store_stmt->is<AllocaStmt>()) {
@@ -20,7 +20,7 @@ Stmt *get_data_source(Stmt *store_stmt) {
   }
 }
 
-Stmt *get_data_source_pointer(Stmt *store_stmt) {
+Stmt *get_store_destination(Stmt *store_stmt) {
   // If store_stmt provides a data source, return the pointer of the data.
   if (store_stmt->is<AllocaStmt>() || store_stmt->is<GlobalTemporaryStmt>() ||
       store_stmt->is<GlobalPtrStmt>() || store_stmt->is<ExternalPtrStmt>()) {

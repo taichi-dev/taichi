@@ -85,7 +85,7 @@ void CFGNode::reaching_definition_analysis() {
   for (int i = end_location - 1; i >= begin_location; i--) {
     // loop in reversed order
     auto stmt = block->statements[i].get();
-    auto data_source_ptr = irpass::analysis::get_data_source_pointer(stmt);
+    auto data_source_ptr = irpass::analysis::get_store_destination(stmt);
     if (data_source_ptr) {
       // stmt provides a data source
       // TODO: If stmt is a GlobalPtrStmt or a GlobalTemporaryStmt, we may lose
@@ -123,7 +123,7 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
   // this position store the same data.
   int last_def_position = -1;
   for (int i = position - 1; i >= begin_location; i--) {
-    if (irpass::analysis::get_data_source_pointer(block->statements[i].get()) ==
+    if (irpass::analysis::get_store_destination(block->statements[i].get()) ==
         var) {
       last_def_position = i;
       break;
@@ -131,15 +131,15 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
   }
   if (last_def_position != -1) {
     // The UD-chain is inside this node.
-    Stmt *result = irpass::analysis::get_data_source(
+    Stmt *result = irpass::analysis::get_store_data(
         block->statements[last_def_position].get());
     if (!var->is<AllocaStmt>()) {
       for (int i = last_def_position + 1; i < position; i++) {
-        if (maybe_same_address(var, irpass::analysis::get_data_source_pointer(
+        if (maybe_same_address(var, irpass::analysis::get_store_destination(
                                         block->statements[i].get())) &&
             !irpass::analysis::same_statements(
-                result, irpass::analysis::get_data_source(
-                            block->statements[i].get()))) {
+                result,
+                irpass::analysis::get_store_data(block->statements[i].get()))) {
           return nullptr;
         }
       }
@@ -152,7 +152,7 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
     return parent_blocks.find(stmt->parent) != parent_blocks.end();
   };
   auto update_result = [&](Stmt *stmt) {
-    auto data = irpass::analysis::get_data_source(stmt);
+    auto data = irpass::analysis::get_store_data(stmt);
     if (!data) {     // not forwardable
       return false;  // return nullptr
     }
@@ -172,14 +172,14 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
   };
   for (auto stmt : reach_in) {
     if (maybe_same_address(var,
-                           irpass::analysis::get_data_source_pointer(stmt))) {
+                           irpass::analysis::get_store_destination(stmt))) {
       if (!update_result(stmt))
         return nullptr;
     }
   }
   for (auto stmt : reach_gen) {
     if (maybe_same_address(var,
-                           irpass::analysis::get_data_source_pointer(stmt)) &&
+                           irpass::analysis::get_store_destination(stmt)) &&
         stmt->parent->locate(stmt) < position) {
       if (!update_result(stmt))
         return nullptr;
@@ -334,7 +334,7 @@ void ControlFlowGraph::reaching_definition_analysis() {
     now->reach_out = now->reach_gen;
     for (auto stmt : now->reach_in) {
       if (!now->reach_kill_variable(
-              irpass::analysis::get_data_source_pointer(stmt))) {
+              irpass::analysis::get_store_destination(stmt))) {
         now->reach_out.insert(stmt);
       }
     }

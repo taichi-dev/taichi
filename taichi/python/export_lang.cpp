@@ -190,6 +190,12 @@ void export_lang(py::module &m) {
       .def("write_int", &SNode::write_int)
       .def("write_float", &SNode::write_float)
       .def("get_num_elements_along_axis", &SNode::num_elements_along_axis)
+      .def("get_physical_index_position",
+           [](SNode *snode) {
+             return std::vector<int>(
+                 snode->physical_index_position,
+                 snode->physical_index_position + taichi_max_num_indices);
+           })
       .def("num_active_indices",
            [](SNode *snode) { return snode->num_active_indices; });
 

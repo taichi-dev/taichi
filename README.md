@@ -4,10 +4,10 @@
   <h3> <a href="https://taichi.readthedocs.io/en/stable/"> Documentation </a> | <a href="https://taichi.readthedocs.io/zh_CN/latest/"> 简体中文文档 </a> </h3>
 </div>
 
-[![Travis CI Status](https://img.shields.io/travis/taichi-dev/taichi?logo=Travis&branch=master)](https://travis-ci.com/taichi-dev/taichi)
-[![AppVeyor Status](https://img.shields.io/appveyor/build/yuanming-hu/taichi?logo=AppVeyor)](https://ci.appveyor.com/project/yuanming-hu/taichi/branch/master)
+[![Travis CI Status](https://img.shields.io/travis/taichi-dev/taichi?logo=Travis&branch=master&label=Travis%20CI)](https://travis-ci.com/taichi-dev/taichi)
+[![AppVeyor Status](https://img.shields.io/appveyor/build/yuanming-hu/taichi?logo=AppVeyor&label=AppVeyor)](https://ci.appveyor.com/project/yuanming-hu/taichi/branch/master)
 [![Python Codecov Status](https://img.shields.io/codecov/c/github/taichi-dev/taichi?label=Python%20Coverage&logo=codecov)](https://codecov.io/gh/taichi-dev/taichi/src/master)
-[![Latest Release](https://img.shields.io/github/v/release/taichi-dev/taichi?color=blue)](https://github.com/taichi-dev/taichi/releases/latest)
+[![Latest Release](https://img.shields.io/github/v/release/taichi-dev/taichi?color=blue&label=Latest%20Release)](https://github.com/taichi-dev/taichi/releases/latest)
 
 ## Overview
 
@@ -38,7 +38,7 @@ Please build from source for other configurations (e.g., your CPU is ARM).
  - Starting April 13 2020 (v0.5.12), we release the Python package [`taichi`](https://pypi.org/project/taichi/) instead of [`taichi-nightly`](https://pypi.org/project/taichi-nightly/). Now this PyPI package includes CPU, CUDA 10, Metal and OpenGL support.
  - On Ubuntu 19.04+, please `sudo apt install libtinfo5`.
  - On Windows, please install [Microsoft Visual C++ Redistributable](https://aka.ms/vs/16/release/vc_redist.x64.exe) if you haven't.
- - [[All releases]](https://github.com/taichi-dev/taichi/releases) [[Change log]](misc/changelog.md)
+ - [[All releases]](https://github.com/taichi-dev/taichi/releases)
 
 || **Linux (CUDA)** | **OS X (10.14+)** | **Windows** | **Documentation**|
 |:------|:-----|:-----|:-----|:-----|
@@ -58,7 +58,7 @@ Please build from source for other configurations (e.g., your CPU is ARM).
 - [LBM Taichi](https://github.com/hietwll/LBM_Taichi): Fluid solver based on Lattice Boltzmann method implemented by Taichi programming language, by [Zhuo Wang (hietwll)](https://github.com/hietwll).
 - [Shadertoy reproduced by Taichi](https://github.com/Phonicavi/Shadertoy-taichi): Some prevalent shadertoys implemented in Taichi, by [QIU Feng (Phonicavi)](https://github.com/Phonicavi).
 - [DiffTaichi](https://github.com/yuanming-hu/difftaichi): 10 differentiable physical simulators built with Taichi differentiable programming, by [Yuanming Hu (yuanming-hu)](https://github.com/yuanming-hu).
-- [Taichi GLSL](https://github.com/yuanming-hu/difftaichi): Manipulate Taichi with GLSL-alike helper functions.
+- [Taichi GLSL](https://github.com/taichi-dev/taichi_glsl): Manipulate Taichi with GLSL-alike helper functions.
 
 ## Developers
 

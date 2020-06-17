@@ -150,6 +150,7 @@ class WeakenAccess : public BasicStmtVisitor {
 namespace irpass {
 
 void flag_access(IRNode *root) {
+  TI_AUTO_PROF;
   FlagAccess flag_access(root);
   WeakenAccess weaken_access(root);
 }

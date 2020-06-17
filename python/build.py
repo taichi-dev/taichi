@@ -86,10 +86,19 @@ else:
     shutil.copy('../runtimes/RelWithDebInfo/taichi_core.dll',
                 'taichi/lib/taichi_core.pyd')
 
-os.system('{} -m taichi changelog --save && cat ../CHANGELOG.md'.format(
-    get_python_executable()))
+os.system(f'cd .. && {get_python_executable()} -m taichi changelog --save')
 
-shutil.copy('../CHANGELOG.md', './taichi/CHANGELOG.md')
+try:
+    with open('../CHANGELOG.md') as f:
+        print(f.read())
+except FileNotFoundError:
+    print('CHANGELOG.md not found')
+    pass
+
+try:
+    shutil.copy('../CHANGELOG.md', './taichi/CHANGELOG.md')
+except FileNotFoundError:
+    pass
 shutil.copytree('../tests/python', './taichi/tests')
 shutil.copytree('../examples', './taichi/examples')
 shutil.copytree('../external/assets', './taichi/assets')
@@ -134,9 +143,8 @@ if mode == 'upload':
             '%PYPI_PWD%' if get_os_name() == 'win' else '$PYPI_PWD'))
 elif mode == 'test':
     print('Uninstalling old taichi packages...')
-    os.system('{} -m pip uninstall taichi-nightly'.format(
-        get_python_executable()))
-    os.system('{} -m pip uninstall taichi'.format(get_python_executable()))
+    os.system(f'{get_python_executable()} -m pip uninstall taichi-nightly')
+    os.system(f'{get_python_executable()} -m pip uninstall taichi')
     dists = os.listdir('dist')
     assert len(dists) == 1
     dist = dists[0]

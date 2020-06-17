@@ -10,6 +10,7 @@ class CheckOutOfBound : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
   std::set<int> visited;
+  DelayedIRModifier modifier;
 
   CheckOutOfBound() : BasicStmtVisitor(), visited() {
   }
@@ -74,29 +75,29 @@ class CheckOutOfBound : public BasicStmtVisitor {
     msg += ")";
 
     new_stmts.push_back<AssertStmt>(result, msg, args);
-    stmt->parent->insert_before(stmt, std::move(new_stmts));
+    modifier.insert_before(stmt, std::move(new_stmts));
     set_done(stmt);
-    throw IRModified();
   }
 
-  static void run(IRNode *node) {
+  static bool run(IRNode *node) {
     CheckOutOfBound checker;
+    bool modified = false;
     while (true) {
-      bool modified = false;
-      try {
-        node->accept(&checker);
-      } catch (IRModified) {
+      node->accept(&checker);
+      if (checker.modifier.modify_ir()) {
         modified = true;
-      }
-      if (!modified)
+      } else {
         break;
+      }
     }
+    return modified;
   }
 };
 
 namespace irpass {
 
-void check_out_of_bound(IRNode *root) {
+bool check_out_of_bound(IRNode *root) {
+  TI_AUTO_PROF;
   return CheckOutOfBound::run(root);
 }
 

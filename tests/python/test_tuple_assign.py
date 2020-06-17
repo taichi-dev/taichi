@@ -199,7 +199,7 @@ def test_unpack_mismatch_type():
 
 
 @ti.host_arch_only
-@ti.must_throw(TypeError)
+@ti.must_throw(ValueError)
 def test_unpack_mismatch_matrix():
     ti.init(print_preprocessed=True)
     a = ti.var(ti.f32, ())

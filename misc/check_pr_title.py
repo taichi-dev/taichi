@@ -11,7 +11,7 @@ def get_old_ver():
             ver = ver.split(' ')[0]
             oldver = semver.VersionInfo.parse(ver)
             return oldver
-    raise ValueError('Could not find old version!')
+    raise ValueError('Could not find an old version!')
 
 
 title = sys.argv[1]
@@ -67,7 +67,7 @@ if is_release:
         exit(f'Release PRs must have only one tag "[release]", got: {title}')
     ver = ts[1][1:]
     if ver[0] != 'v':
-        exit(f'Release version must be prepended with "v", got: {ver}')
+        exit(f'Release version must start with "v", got: {ver}')
     ver = ver[1:]
     try:
         ver = semver.VersionInfo.parse(ver)
@@ -79,6 +79,6 @@ if is_release:
 else:
     x = title.split(']')[-1].strip()
     if x[0].islower():
-        exit(f'PR title should be uppercase at: {x}')
+        exit(f'PR titles must start with uppercase letters: {x}')
 
 print('OK!')

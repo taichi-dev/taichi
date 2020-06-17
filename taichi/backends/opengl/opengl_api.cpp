@@ -391,7 +391,6 @@ struct CompiledKernel {
   void dispatch_compute(GLSLLaunchGuard &guard) const {
     int num_groups = kpa.calc_num_groups(guard);
 
-    // TI_PERF();
     glsl->use();
 
     // https://www.khronos.org/opengl/wiki/Compute_Shader
@@ -403,7 +402,6 @@ struct CompiledKernel {
     //
     glDispatchCompute(num_groups, 1, 1);
     check_opengl_error("glDispatchCompute");
-    // TI_PERF(kernel_name.c_str(), kernel_name.size(), 107);
 
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
     check_opengl_error("glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT)");

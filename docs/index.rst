@@ -62,7 +62,7 @@ The Taichi Programming Language
    :caption: Miscellaneous
    :maxdepth: 3
 
-   external_libraries
+   extension_libraries
    gui
    export_results
    cli_utilities

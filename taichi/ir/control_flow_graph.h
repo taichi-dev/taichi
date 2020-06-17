@@ -32,6 +32,7 @@ class CFGNode {
 
   static void add_edge(CFGNode *from, CFGNode *to);
   bool empty() const;
+  std::size_t size() const;
   void erase(int location);
   bool erase_entire_node();
   void reaching_definition_analysis();
@@ -58,6 +59,7 @@ class ControlFlowGraph {
   std::size_t size() const;
   CFGNode *back();
 
+  void print_graph_structure() const;
   void reaching_definition_analysis();
 
   void simplify_graph();

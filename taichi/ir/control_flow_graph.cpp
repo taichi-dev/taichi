@@ -35,6 +35,10 @@ bool CFGNode::empty() const {
   return begin_location >= end_location;
 }
 
+std::size_t CFGNode::size() const {
+  return end_location - begin_location;
+}
+
 void CFGNode::erase(int location) {
   TI_ASSERT(location >= begin_location && location < end_location);
   block->erase(location);
@@ -107,7 +111,7 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
   // Return the stored data if all definitions in the UD-chain of var at
   // this position store the same data.
   int last_def_position = -1;
-  for (int i = position - 1; i >= 0; i--) {
+  for (int i = position - 1; i >= begin_location; i--) {
     if (irpass::analysis::get_data_source_pointer(
         block->statements[i].get()) == var) {
       last_def_position = i;
@@ -241,6 +245,43 @@ std::size_t ControlFlowGraph::size() const {
 
 CFGNode *ControlFlowGraph::back() {
   return nodes.back().get();
+}
+
+void ControlFlowGraph::print_graph_structure() const {
+  const int num_nodes = size();
+  std::cout << "Control Flow Graph with " << num_nodes << " nodes:" <<
+      std::endl;
+  std::unordered_map<CFGNode *, int> to_index;
+  for (int i = 0; i < num_nodes; i++) {
+    to_index[nodes[i].get()] = i;
+  }
+  for (int i = 0; i < num_nodes; i++) {
+    std::string node_info = fmt::format("Node {} : ", i);
+    if (nodes[i]->empty()) {
+      node_info += "empty";
+    } else {
+      node_info += fmt::format(
+          "{}~{} (size={})",
+          nodes[i]->block->statements[nodes[i]->begin_location]->name(),
+          nodes[i]->block->statements[nodes[i]->end_location - 1]->name(),
+          nodes[i]->size());
+    }
+    if (!nodes[i]->prev.empty()) {
+      std::vector<std::string> indices;
+      for (auto prev_node : nodes[i]->prev) {
+        indices.push_back(std::to_string(to_index[prev_node]));
+      }
+      node_info += fmt::format("; prev={{{}}}", fmt::join(indices, ", "));
+    }
+    if (!nodes[i]->next.empty()) {
+      std::vector<std::string> indices;
+      for (auto next_node : nodes[i]->next) {
+        indices.push_back(std::to_string(to_index[next_node]));
+      }
+      node_info += fmt::format("; next={{{}}}", fmt::join(indices, ", "));
+    }
+    std::cout << node_info << std::endl;
+  }
 }
 
 void ControlFlowGraph::reaching_definition_analysis() {

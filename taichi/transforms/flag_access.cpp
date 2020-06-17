@@ -127,10 +127,10 @@ class WeakenAccess : public BasicStmtVisitor {
           } else {
             loop_snode = current_offload->snode;
           }
+          TI_ASSERT(loop_snode);
           if (!share_sparsity(snode, loop_snode)) {
             same_as_loop_snode = false;
           }
-          TI_ASSERT(loop_snode);
           if (stmt->indices.size() == loop_snode->num_active_indices)
             for (int i = 0; i < loop_snode->num_active_indices; i++) {
               auto ind = stmt->indices[i];

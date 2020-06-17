@@ -34,6 +34,7 @@ class CFGNode {
   bool empty() const;
   std::size_t size() const;
   void erase(int location);
+  void insert(std::unique_ptr<Stmt> &&new_stmt, int location);
   bool erase_entire_node();
   void reaching_definition_analysis();
   bool reach_kill_variable(Stmt *var) const;

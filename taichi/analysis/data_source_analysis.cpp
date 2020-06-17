@@ -8,7 +8,10 @@ namespace irpass::analysis {
 
 Stmt *get_data_source(Stmt *store_stmt) {
   // If store_stmt provides a data source, return the data.
-  if (auto local_store = store_stmt->cast<LocalStoreStmt>()) {
+  // For convenience, return store_stmt if store_stmt is an AllocaStmt.
+  if (store_stmt->is<AllocaStmt>()) {
+    return store_stmt;
+  } else if (auto local_store = store_stmt->cast<LocalStoreStmt>()) {
     return local_store->data;
   } else if (auto global_store = store_stmt->cast<GlobalStoreStmt>()) {
     return global_store->data;

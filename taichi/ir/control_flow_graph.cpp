@@ -50,6 +50,17 @@ void CFGNode::erase(int location) {
   }
 }
 
+void CFGNode::insert(std::unique_ptr<Stmt> &&new_stmt, int location) {
+  TI_ASSERT(location >= begin_location && location <= end_location);
+  block->insert(std::move(new_stmt), location);
+  end_location++;
+  for (auto node = next_node_in_same_block; node != nullptr;
+       node = node->next_node_in_same_block) {
+    node->begin_location++;
+    node->end_location++;
+  }
+}
+
 bool CFGNode::erase_entire_node() {
   if (empty())
     return false;
@@ -141,14 +152,18 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
   };
   auto update_result = [&](Stmt *stmt) {
     auto data = irpass::analysis::get_data_source(stmt);
-    if (!data) {  // not forwardable
-      // TODO: optimize for alloca
+    if (!data) {     // not forwardable
       return false;  // return nullptr
     }
     if (!result) {
       result = data;
     } else if (!irpass::analysis::same_statements(result, data)) {
-      return false;  // return nullptr
+      // check the special case of alloca (initialized to 0)
+      if (!(result->is<AllocaStmt>() && data->is<ConstStmt>() &&
+            data->width() == 1 &&
+            data->as<ConstStmt>()->val[0].equal_value(0))) {
+        return false;  // return nullptr
+      }
     }
     if (visible(data))
       result = data;
@@ -202,10 +217,18 @@ bool CFGNode::store_to_load_forwarding() {
       result = get_store_forwarding_data(global_load->ptr, i);
     }
     if (result) {
-      stmt->replace_with(result);
-      erase(i);  // This causes end_location--
-      i--;       // to cancel i++ in the for loop
-      modified = true;
+      if (result->is<AllocaStmt>()) {
+        // special case of alloca (initialized to 0)
+        auto zero = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(0));
+        stmt->replace_with(zero.get());
+        erase(i);
+        insert(std::move(zero), i);
+      } else {
+        stmt->replace_with(result);
+        erase(i);  // This causes end_location--
+        i--;       // to cancel i++ in the for loop
+        modified = true;
+      }
     }
   }
   return modified;
@@ -285,6 +308,7 @@ void ControlFlowGraph::print_graph_structure() const {
 }
 
 void ControlFlowGraph::reaching_definition_analysis() {
+  TI_AUTO_PROF;
   const int num_nodes = size();
   std::queue<CFGNode *> to_visit;
   std::unordered_map<CFGNode *, bool> in_queue;
@@ -347,6 +371,7 @@ void ControlFlowGraph::simplify_graph() {
 }
 
 bool ControlFlowGraph::unreachable_code_elimination() {
+  TI_AUTO_PROF;
   std::unordered_set<CFGNode *> visited;
   std::queue<CFGNode *> to_visit;
   to_visit.push(nodes[start_node].get());
@@ -374,6 +399,7 @@ bool ControlFlowGraph::unreachable_code_elimination() {
 }
 
 bool ControlFlowGraph::store_to_load_forwarding() {
+  TI_AUTO_PROF;
   reaching_definition_analysis();
   const int num_nodes = size();
   bool modified = false;

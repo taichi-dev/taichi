@@ -83,14 +83,14 @@ size_t KernelParallelAttrib::calc_num_groups(GLSLLaunchGuard &guard) const {
     n = rt_buf->list_len;
     guard.unmap_runtime_buffer();
   } else {
-    void *gtmp_now = guard.map_gtmp_buffer(); // TODO: wrap impl.static_ssbo
+    void *gtmp_now = guard.map_gtmp_buffer();  // TODO: wrap impl.static_ssbo
     size_t b = range_begin, e = range_end;
     if (!const_begin)
       b = *(const int *)((const char *)gtmp_now + b);
     if (!const_end)
       e = *(const int *)((const char *)gtmp_now + e);
     n = b - e;
-    guard.unmap_gtmp_buffer(); // TODO: RAII
+    guard.unmap_gtmp_buffer();  // TODO: RAII
   }
   return std::max((n + tpg - 1) / tpg, (size_t)1);
 }

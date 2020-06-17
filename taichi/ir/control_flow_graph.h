@@ -23,6 +23,7 @@ class CFGNode {
   std::vector<CFGNode *> prev, next;
 
   // Reaching definition analysis
+  // https://en.wikipedia.org/wiki/Reaching_definition
   std::unordered_set<Stmt *> reach_gen, reach_kill, reach_in, reach_out;
 
   CFGNode(Block *block,

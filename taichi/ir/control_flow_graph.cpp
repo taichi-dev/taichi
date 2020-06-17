@@ -344,7 +344,7 @@ void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
         now->reach_out.insert(stmt);
       }
     }
-    if (!(now->reach_out == old_out)) {
+    if (now->reach_out != old_out) {
       // changed
       for (auto next_node : now->next) {
         if (!in_queue[next_node]) {

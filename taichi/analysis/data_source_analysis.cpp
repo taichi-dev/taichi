@@ -37,6 +37,6 @@ Stmt *get_data_source_pointer(Stmt *store_stmt) {
   }
 }
 
-}
+}  // namespace irpass::analysis
 
 TLANG_NAMESPACE_END

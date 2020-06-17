@@ -123,22 +123,23 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
   // this position store the same data.
   int last_def_position = -1;
   for (int i = position - 1; i >= begin_location; i--) {
-    if (irpass::analysis::get_data_source_pointer(
-        block->statements[i].get()) == var) {
+    if (irpass::analysis::get_data_source_pointer(block->statements[i].get()) ==
+        var) {
       last_def_position = i;
       break;
     }
   }
   if (last_def_position != -1) {
     // The UD-chain is inside this node.
-    Stmt *result = irpass::analysis::get_data_source(block->statements[last_def_position].get());
+    Stmt *result = irpass::analysis::get_data_source(
+        block->statements[last_def_position].get());
     if (!var->is<AllocaStmt>()) {
       for (int i = last_def_position + 1; i < position; i++) {
         if (maybe_same_address(var, irpass::analysis::get_data_source_pointer(
-            block->statements[i].get())) &&
+                                        block->statements[i].get())) &&
             !irpass::analysis::same_statements(
                 result, irpass::analysis::get_data_source(
-                    block->statements[i].get()))) {
+                            block->statements[i].get()))) {
           return nullptr;
         }
       }
@@ -272,8 +273,8 @@ CFGNode *ControlFlowGraph::back() {
 
 void ControlFlowGraph::print_graph_structure() const {
   const int num_nodes = size();
-  std::cout << "Control Flow Graph with " << num_nodes << " nodes:" <<
-      std::endl;
+  std::cout << "Control Flow Graph with " << num_nodes
+            << " nodes:" << std::endl;
   std::unordered_map<CFGNode *, int> to_index;
   for (int i = 0; i < num_nodes; i++) {
     to_index[nodes[i].get()] = i;
@@ -333,7 +334,7 @@ void ControlFlowGraph::reaching_definition_analysis() {
     now->reach_out = now->reach_gen;
     for (auto stmt : now->reach_in) {
       if (!now->reach_kill_variable(
-          irpass::analysis::get_data_source_pointer(stmt))) {
+              irpass::analysis::get_data_source_pointer(stmt))) {
         now->reach_out.insert(stmt);
       }
     }

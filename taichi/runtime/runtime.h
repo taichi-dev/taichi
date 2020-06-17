@@ -2,7 +2,7 @@
 
 #include "taichi/common/core.h"
 #include "taichi/program/arch.h"
-#include "taichi/program/profiler.h"
+#include "taichi/program/kernel_profiler.h"
 
 #include <map>
 #include <memory>
@@ -12,7 +12,7 @@ TLANG_NAMESPACE_BEGIN
 
 class Runtime {
  protected:
-  ProfilerBase *profiler;
+  KernelProfilerBase *profiler;
 
  public:
   Runtime() : profiler(nullptr) {
@@ -21,7 +21,7 @@ class Runtime {
   // Does the machine really have the corresponding hardware?
   virtual bool detected() = 0;
 
-  void set_profiler(ProfilerBase *profiler) {
+  void set_profiler(KernelProfilerBase *profiler) {
     this->profiler = profiler;
   }
 

@@ -271,9 +271,9 @@ A *event filter* is a list combined of *key*, *type* and *(type, key)* tuple, e.
         for e in gui.get_events():
             if e.key == ti.GUI.ESCAPE:
                 exit()
-            elif e.type == ti.GUI.SPACE:
+            elif e.key == ti.GUI.SPACE:
                 do_something()
-            elif e.type in ['a', ti.GUI.LEFT]:
+            elif e.key in ['a', ti.GUI.LEFT]:
                 ...
 
 
@@ -373,6 +373,7 @@ Image I/O
         draw()
 
         ti.imwrite(pixels, f"export_f32.png")
+
 
 .. function:: ti.imread(filename, channels=0)
 

@@ -11,7 +11,7 @@ bool is_supported(Arch arch, Extension ext) {
       {Arch::x64, {Extension::sparse, Extension::data64, Extension::adstack}},
       {Arch::arm64, {Extension::sparse, Extension::data64, Extension::adstack}},
       {Arch::cuda, {Extension::sparse, Extension::data64, Extension::adstack}},
-      {Arch::metal, {}},
+      {Arch::metal, {Extension::adstack}},
       {Arch::opengl, {}},
   };
   // if (with_opengl_extension_data64())

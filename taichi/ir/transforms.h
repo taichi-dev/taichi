@@ -17,7 +17,7 @@ bool use_fast_math(IRNode *root);
 
 void re_id(IRNode *root);
 void flag_access(IRNode *root);
-void die(IRNode *root);
+bool die(IRNode *root);
 bool simplify(IRNode *root, Kernel *kernel = nullptr);
 void cfg_optimization(IRNode *root, bool after_lower_access);
 bool alg_simp(IRNode *root);

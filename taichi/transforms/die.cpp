@@ -12,21 +12,24 @@ class DIE : public IRVisitor {
  public:
   std::unordered_set<int> used;
   int phase;  // 0: mark usage 1: eliminate
+  DelayedIRModifier modifier;
+  bool modified_ir;
 
   DIE(IRNode *node) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
-    while (1) {
+    modified_ir = false;
+    while (true) {
       bool modified = false;
       phase = 0;
       used.clear();
       node->accept(this);
       phase = 1;
-      while (1) {
-        try {
-          node->accept(this);
-        } catch (IRModified) {
+      while (true) {
+        node->accept(this);
+        if (modifier.modify_ir()) {
           modified = true;
+          modified_ir = true;
           continue;
         }
         break;
@@ -53,8 +56,7 @@ class DIE : public IRVisitor {
     } else {
       if (stmt->dead_instruction_eliminable() &&
           used.find(stmt->instance_id) == used.end()) {
-        stmt->parent->erase(stmt);
-        throw IRModified();
+        modifier.erase(stmt);
       }
     }
   }
@@ -97,9 +99,10 @@ class DIE : public IRVisitor {
 
 namespace irpass {
 
-void die(IRNode *root) {
+bool die(IRNode *root) {
   TI_AUTO_PROF;
   DIE instance(root);
+  return instance.modified_ir;
 }
 
 }  // namespace irpass

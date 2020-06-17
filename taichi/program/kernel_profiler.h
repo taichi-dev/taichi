@@ -11,23 +11,23 @@
 
 TLANG_NAMESPACE_BEGIN
 
-struct ProfileRecord {
+struct KernelProfileRecord {
   std::string name;
   int counter;
   double min;
   double max;
   double total;
 
-  ProfileRecord(const std::string &name)
+  KernelProfileRecord(const std::string &name)
       : name(name), counter(0), min(0), max(0), total(0) {
   }
 
   void insert_sample(double t);
 };
 
-class ProfilerBase {
+class KernelProfilerBase {
  protected:
-  std::vector<ProfileRecord> records;
+  std::vector<KernelProfileRecord> records;
   double total_time;
 
  public:
@@ -42,18 +42,19 @@ class ProfilerBase {
 
   virtual void start(const std::string &kernel_name) = 0;
 
-  static void profiler_start(ProfilerBase *profiler, const char *kernel_name);
+  static void profiler_start(KernelProfilerBase *profiler,
+                             const char *kernel_name);
 
   virtual void stop() = 0;
 
-  static void profiler_stop(ProfilerBase *profiler);
+  static void profiler_stop(KernelProfilerBase *profiler);
 
   void print();
 
-  virtual ~ProfilerBase() {
+  virtual ~KernelProfilerBase() {
   }
 };
 
-std::unique_ptr<ProfilerBase> make_profiler(Arch arch);
+std::unique_ptr<KernelProfilerBase> make_profiler(Arch arch);
 
 TLANG_NAMESPACE_END

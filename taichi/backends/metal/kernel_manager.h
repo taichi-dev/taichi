@@ -7,7 +7,7 @@
 
 #include "taichi/backends/metal/kernel_util.h"
 #include "taichi/lang_util.h"
-#include "taichi/program/profiler.h"
+#include "taichi/program/kernel_profiler.h"
 #include "taichi/backends/metal/struct_metal.h"
 #include "taichi/system/memory_pool.h"
 
@@ -27,7 +27,7 @@ class KernelManager {
     CompiledStructs compiled_structs;
     CompileConfig *config;
     MemoryPool *mem_pool;
-    ProfilerBase *profiler;
+    KernelProfilerBase *profiler;
     int root_id;
   };
 

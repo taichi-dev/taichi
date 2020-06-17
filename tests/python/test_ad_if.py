@@ -111,7 +111,7 @@ def test_ad_if_parallel():
     assert x.grad[1] == 1
 
 
-@ti.require(ti.extension.adstack)
+@ti.require(ti.extension.adstack, ti.extension.data64)
 @ti.all_archs_with(default_fp=ti.f64)
 def test_ad_if_parallel_f64():
     x = ti.var(ti.f64, shape=2)
@@ -169,7 +169,7 @@ def test_ad_if_parallel_complex():
     assert x.grad[1] == -0.25
 
 
-@ti.require(ti.extension.adstack)
+@ti.require(ti.extension.adstack, ti.extension.data64)
 @ti.all_archs_with(default_fp=ti.f64)
 def test_ad_if_parallel_complex_f64():
     x = ti.var(ti.f64, shape=2)

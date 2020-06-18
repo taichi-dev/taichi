@@ -6,6 +6,7 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <variant>
+#include <tuple>
 #include "taichi/common/core.h"
 #include "taichi/util/bit.h"
 #include "taichi/lang_util.h"
@@ -894,6 +895,7 @@ class DelayedIRModifier {
  private:
   std::vector<std::pair<Stmt *, VecStatement>> to_insert_before;
   std::vector<std::pair<Stmt *, VecStatement>> to_insert_after;
+  std::vector<std::tuple<Stmt *, VecStatement, bool>> to_replace_with;
   std::vector<Stmt *> to_erase;
 
  public:
@@ -903,6 +905,7 @@ class DelayedIRModifier {
   void insert_before(Stmt *old_statement, VecStatement &&new_statements);
   void insert_after(Stmt *old_statement, std::unique_ptr<Stmt> new_statement);
   void insert_after(Stmt *old_statement, VecStatement &&new_statements);
+  void replace_with(Stmt *stmt, VecStatement&& new_statements, bool replace_usages = true);
   bool modify_ir();
 };
 

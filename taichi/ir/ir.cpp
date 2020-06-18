@@ -819,6 +819,7 @@ std::unique_ptr<Block> Block::clone() const {
 DelayedIRModifier::~DelayedIRModifier() {
   TI_ASSERT(to_insert_before.empty());
   TI_ASSERT(to_erase.empty());
+  TI_ASSERT(to_replace_with.empty());
 }
 
 void DelayedIRModifier::erase(Stmt *stmt) {
@@ -847,8 +848,14 @@ void DelayedIRModifier::insert_after(Stmt *old_statement,
   to_insert_after.emplace_back(old_statement, std::move(new_statements));
 }
 
+void DelayedIRModifier::replace_with(Stmt *stmt,
+                                     VecStatement &&new_statements,
+                                     bool replace_usages) {
+  to_replace_with.emplace_back(stmt, std::move(new_statements), replace_usages);
+}
+
 bool DelayedIRModifier::modify_ir() {
-  if (to_insert_before.empty() && to_insert_after.empty() && to_erase.empty())
+  if (to_insert_before.empty() && to_insert_after.empty() && to_erase.empty() && to_replace_with.empty())
     return false;
   for (auto &i : to_insert_before) {
     i.first->parent->insert_before(i.first, std::move(i.second));
@@ -862,6 +869,10 @@ bool DelayedIRModifier::modify_ir() {
     stmt->parent->erase(stmt);
   }
   to_erase.clear();
+  for (auto &i : to_replace_with) {
+    std::get<0>(i)->replace_with(std::move(std::get<1>(i)), std::get<2>(i));
+  }
+  to_replace_with.empty();
   return true;
 }
 

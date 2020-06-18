@@ -20,8 +20,10 @@ void compile_to_offloads(IRNode *ir,
   auto print = [&](const std::string &name) {
     if (verbose) {
       TI_INFO(name + ":");
+      std::cout << std::flush;
       irpass::re_id(ir);
       irpass::print(ir);
+      std::cout << std::flush;
     }
   };
 

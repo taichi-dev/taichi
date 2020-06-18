@@ -5,7 +5,7 @@ import math
 @ti.data_oriented
 class SolarSystem:
     def __init__(self, n, dt):
-        # initializer of our solar system simulator
+        # initializer of the solar system simulator
         self.n = n
         self.dt = dt
         self.x = ti.Vector(2, dt=ti.f32, shape=n)
@@ -17,7 +17,7 @@ class SolarSystem:
     def random_vector_in(rmax):
         # create a random vector
         a = ti.random() * math.tau
-        r = (ti.random()**0.7) * rmax  # For adjusting PDF
+        r = ti.random() * rmax
         return r * ti.Vector([ti.cos(a), ti.sin(a)])
 
     @ti.kernel
@@ -32,19 +32,19 @@ class SolarSystem:
 
     @ti.func
     def gravity(self, pos):
-        # compute gravity field at position
+        # compute gravitational acceleration at pos
         offset = -(pos - self.center[None])
         return offset / offset.norm()**3
 
     @ti.kernel
     def integrate(self):
-        # semi-implicit time integrate
+        # semi-implicit time integration
         for i in range(self.n):
             self.v[i] += self.dt * self.gravity(self.x[i])
             self.x[i] += self.dt * self.v[i]
 
     def render(self, gui):
-        # render the simulation scene on GUI
+        # render the simulation scene on the GUI
         gui.circle([0.5, 0.5], radius=10, color=0xffaa88)
         gui.circles(solar.x.to_numpy(), radius=3, color=0xffffff)
 

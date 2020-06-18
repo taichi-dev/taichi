@@ -178,8 +178,9 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
   for (auto stmt : reach_in) {
     // var == stmt is for the case that a global ptr is never stored.
     // In this case, stmt is from nodes[start_node]->reach_gen.
-    if (var == stmt || maybe_same_address(
-        var, irpass::analysis::get_store_destination(stmt))) {
+    if (var == stmt ||
+        maybe_same_address(var,
+                           irpass::analysis::get_store_destination(stmt))) {
       if (!update_result(stmt))
         return nullptr;
     }
@@ -329,7 +330,7 @@ void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
     for (int i = 0; i < num_nodes; i++) {
       for (int j = nodes[i]->begin_location; j < nodes[i]->end_location; j++) {
         if (auto global_load =
-            nodes[i]->block->statements[j]->cast<GlobalLoadStmt>()) {
+                nodes[i]->block->statements[j]->cast<GlobalLoadStmt>()) {
           nodes[start_node]->reach_gen.insert(global_load->ptr);
         }
       }

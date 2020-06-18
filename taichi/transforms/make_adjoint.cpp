@@ -29,9 +29,9 @@ class ConvertLocalVar : public BasicStmtVisitor {
                          })
                          .empty();
     if (!load_only) {
-      alloc->replace_with(
-          Stmt::make<StackAllocaStmt>(alloc->ret_type.data_type, 16));
-      // TODO: remove 16 here
+      alloc->replace_with(Stmt::make<StackAllocaStmt>(
+          alloc->ret_type.data_type,
+          get_current_program().config.ad_stack_size));
     }
   }
 
@@ -126,7 +126,7 @@ class MakeAdjoint : public IRVisitor {
     // Note:
     // MakeAdjoint acts on the block with if's and without struct/range/while
     // loops. This is basically a straight-line code with forking and merging
-    // due to if's. Therefore we the adjoint allocas must belong to this block
+    // due to if's. Therefore the adjoint allocas must belong to this block
     // for it to be visible. We call this block `alloca_block`.
 
     for_depth = 0;

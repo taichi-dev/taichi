@@ -42,6 +42,7 @@ struct CompileConfig {
   std::string extra_flags;
   int default_cpu_block_dim;
   int default_gpu_block_dim;
+  int ad_stack_size;
 
   float64 device_memory_GB;
   float64 device_memory_fraction;

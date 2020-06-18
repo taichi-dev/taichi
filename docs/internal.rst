@@ -133,3 +133,52 @@ However, this design has drawbacks as well:
   * For example, indexing is always needed when accessing elements in Taichi tensors, even if the tensor is 0D. Use ``x[None] = 123`` to set the value in ``x`` if ``x`` is 0D. This is because ``x = 123`` will set ``x`` itself (instead of its containing value) to be the constant ``123`` in python syntax, and, unfortunately, we cannot modify this behavior.
 
 * Python has relatively low performance. This can cause a performance issue when initializing large Taichi tensors with pure python scripts. A Taichi kernel should be used to initialize a huge tensor.
+
+
+Virtual indices v.s. physical indices
+-------------------------------------
+
+In Taichi, *virtual indices* are used to locate elements in tensors, and *physical indices*
+are used to specify data layouts in memory.
+
+For example,
+
+ - In ``a[i, j, k]``, ``i``, ``j``, and ``k`` are **virtual** indices.
+ - In ``for i, j in x:``, ``i`` and ``j`` are **virtual** indices.
+ - ``ti.i, ti.j, ti.k, ti.l, ...`` are **physical** indices.
+ - In struct-for statements, ``LoopIndexStmt::index`` is a **physical** index.
+
+The mapping between virtual indices and physical indices for each ``SNode`` is
+stored in ``SNode::physical_index_position``.
+I.e.,  ``physical_index_position[i]`` answers the question: **which physical index does the i-th virtual index**
+correspond to?
+
+Each ``SNode`` can have a different virtual-to-physical mapping. ``physical_index_position[i] == -1``
+means the ``i``-th virtual index does not corrspond to any physical index in this ``SNode``.
+
+``SNode`` s in handy dense tensors (i.e., ``a = ti.var(ti.i32, shape=(128, 256, 512))``)
+have **trivial** virtual-to-physical mapping, e.g. ``physical_index_position[i] = i``.
+
+However, more complex data layouts, such as column-major 2D tensors can lead to ``SNodes`` with
+``physical_index_position[0] = 1`` and ``physical_index_position[1] = 0``.
+
+.. code-block:: python
+
+    a = ti.var(ti.f32, shape=(128, 32, 8))
+
+    b = ti.var(ti.f32)
+    ti.root.dense(ti.j, 32).dense(ti.i, 16).place(b)
+
+    ti.get_runtime().materialize()
+
+    mapping_a = a.snode().physical_index_position()
+
+    assert mapping_a == {0: 0, 1: 1, 2: 2}
+
+    mapping_b = b.snode().physical_index_position()
+
+    assert mapping_b == {0: 1, 1: 0}
+    # Note that b is column-major:
+    # the virtual first index exposed to the user comes second in memory layout.
+
+Taichi supports up to 8 (``constexpr int taichi_max_num_indices = 8``) virtual indices and physical indices.

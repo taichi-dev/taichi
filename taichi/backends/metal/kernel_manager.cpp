@@ -212,7 +212,7 @@ class CompiledTaichiKernel {
     const SNodeDescriptorsMap *snode_descriptors;
     MTLDevice *device;
     MemoryPool *mem_pool;
-    ProfilerBase *profiler;
+    KernelProfilerBase *profiler;
   };
 
   CompiledTaichiKernel(Params params) : ctx_attribs(*params.ctx_attribs) {
@@ -651,7 +651,7 @@ class KernelManager::Impl {
   CompileConfig *const config_;
   const CompiledStructs compiled_structs_;
   MemoryPool *const mem_pool_;
-  ProfilerBase *const profiler_;
+  KernelProfilerBase *const profiler_;
   nsobj_unique_ptr<MTLDevice> device_;
   nsobj_unique_ptr<MTLCommandQueue> command_queue_;
   nsobj_unique_ptr<MTLCommandBuffer> cur_command_buffer_;

@@ -143,8 +143,7 @@ class PyTaichi:
         self.target_tape = None
         self.inside_complex_kernel = False
         self.kernels = kernels or []
-        self.materialize_layout_callback = self.materialize
-        self.layout_materialized = False
+        Expr.materialize_layout_callback = self.materialize
 
     def get_num_compiled_functions(self):
         return len(self.compiled_functions) + len(self.compiled_grad_functions)
@@ -164,14 +163,14 @@ class PyTaichi:
             self.prog = taichi_lang_core.Program()
 
     def try_materialize(self):
-        if not self.layout_materialized:
-            self.materialize_layout_callback()
+        if not Expr.layout_materialized:
+            Expr.materialize_layout_callback()
 
     def materialize(self):
         if self.materialized:
             return
         self.create_program()
-        self.layout_materialized = True
+        Expr.layout_materialized = True
 
         def layout():
             for func in self.layout_functions:
@@ -189,8 +188,8 @@ class PyTaichi:
         if self.prog:
             self.prog.finalize()
             self.prog = None
-        self.materialize_layout_callback = None
-        self.layout_materialized = False
+        Expr.materialize_layout_callback = None
+        Expr.layout_materialized = False
 
     def get_tape(self, loss=None):
         from .tape import Tape

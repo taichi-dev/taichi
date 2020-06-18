@@ -8,6 +8,32 @@
 
 TLANG_NAMESPACE_BEGIN
 
+std::string serialize_scratch_pad(const ScratchPadOptions &opt) {
+  std::string ser;
+  if (!opt.empty()) {
+    ser += "scratch_pad_opt [ ";
+    for (auto s : opt) {
+      // TODO: standardize scratch pad types
+      std::string type;
+      if (s.first == 0) {
+        type = "thread-local";
+      } else if (s.first == 1) {
+        type = "read-only";
+      } else {
+        TI_ERROR("scratch type {} not supported", s.first);
+      }
+      ser += s.second->get_node_type_name_hinted() + ":" + type + " ";
+    }
+    ser += "] ";
+  }
+  return ser;
+}
+
+std::string block_dim_hinted(int block_dim) {
+  return "block_dim=" +
+         (block_dim == 0 ? "adaptive" : std::to_string(block_dim)) + " ";
+}
+
 class IRPrinter : public IRVisitor {
  public:
   int current_indent;
@@ -263,28 +289,34 @@ class IRPrinter : public IRVisitor {
         for_stmt->loop_var_id,
         [](const Identifier &id) -> std::string { return id.name(); });
     if (for_stmt->is_ranged()) {
-      print("{} : for {} in range({}, {}) {{", for_stmt->name(), vars,
-            for_stmt->begin->serialize(), for_stmt->end->serialize());
+      print("{} : for {} in range({}, {}) {}{{", for_stmt->name(), vars,
+            for_stmt->begin->serialize(), for_stmt->end->serialize(),
+            block_dim_hinted(for_stmt->block_dim));
     } else {
-      print("{} : for {} where {} active {{", for_stmt->name(), vars,
+      print("{} : for {} in {} {}{}{{", for_stmt->name(), vars,
             for_stmt->global_var.cast<GlobalVariableExpression>()
-                ->snode->get_node_type_name_hinted());
+                ->snode->get_node_type_name_hinted(),
+            serialize_scratch_pad(for_stmt->scratch_opt),
+            block_dim_hinted(for_stmt->block_dim));
     }
     for_stmt->body->accept(this);
     print("}}");
   }
 
   void visit(RangeForStmt *for_stmt) override {
-    print("{} : {}for in range({}, {}, step {}) {{", for_stmt->name(),
+    print("{} : {}for in range({}, {}) (vectorize {}) {}{{", for_stmt->name(),
           for_stmt->reversed ? "reversed " : "", for_stmt->begin->name(),
-          for_stmt->end->name(), for_stmt->vectorize);
+          for_stmt->end->name(), for_stmt->vectorize,
+          block_dim_hinted(for_stmt->block_dim));
     for_stmt->body->accept(this);
     print("}}");
   }
 
   void visit(StructForStmt *for_stmt) override {
-    print("{} : for where {} active, step {} {{", for_stmt->name(),
-          for_stmt->snode->get_node_type_name_hinted(), for_stmt->vectorize);
+    print("{} : struct for in {} (vectorize {}) {}{}{{", for_stmt->name(),
+          for_stmt->snode->get_node_type_name_hinted(), for_stmt->vectorize,
+          serialize_scratch_pad(for_stmt->scratch_opt),
+          block_dim_hinted(for_stmt->block_dim));
     for_stmt->body->accept(this);
     print("}}");
   }
@@ -441,13 +473,13 @@ class IRPrinter : public IRVisitor {
       } else {
         end_str = fmt::format("tmp(offset={}B)", stmt->end_offset);
       }
-      details = fmt::format(
-          "range_for({}, {}) block_dim={}", begin_str, end_str,
-          stmt->block_dim == 0 ? "adaptive" : std::to_string(stmt->block_dim));
+      details = fmt::format("range_for({}, {}) {}", begin_str, end_str,
+                            block_dim_hinted(stmt->block_dim));
     } else if (stmt->task_type == stmt->struct_for) {
-      details = fmt::format("struct_for({}) block_dim={}",
+      details = fmt::format("struct_for({}) {} {}",
                             stmt->snode->get_node_type_name_hinted(),
-                            stmt->block_dim);
+                            block_dim_hinted(stmt->block_dim),
+                            serialize_scratch_pad(stmt->scratch_opt));
     }
     if (stmt->task_type == OffloadedStmt::TaskType::listgen) {
       print("{} = offloaded listgen {}->{}", stmt->name(),

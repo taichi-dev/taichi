@@ -181,6 +181,7 @@ class OffloadedStmt : public Stmt {
   int num_cpu_threads;
   Arch device;
   std::unique_ptr<Block> body;
+  ScratchPadOptions scratch_opt;
 
   OffloadedStmt(TaskType task_type);
 

@@ -10,6 +10,50 @@ TLANG_NAMESPACE_BEGIN
 
 // Do automatic differentiation pass in the reverse order (reverse-mode AD)
 
+class PromoteSSA2LocalVar : public BasicStmtVisitor {
+ public:
+  using BasicStmtVisitor::visit;
+
+  PromoteSSA2LocalVar() {
+    invoke_default_visitor = false;
+  }
+
+  void visit(UnaryOpStmt *stmt) override {
+    TI_ASSERT(stmt->width() == 1);
+    if (for_depth == 0) {
+      return;
+    }
+    TI_TAG;
+    // Create a alloc
+    auto alloc = Stmt::make<AllocaStmt>(1, stmt->ret_type.data_type);
+    auto alloc_ptr = alloc.get();
+    TI_ASSERT(alloca_block);
+    alloca_block->insert(std::move(alloc), 0);
+    auto load = stmt->insert_after_me(
+        Stmt::make<LocalLoadStmt>(LocalAddress(alloc_ptr, 0)));
+    irpass::replace_all_usages_with(stmt->parent, stmt, load);
+    // Create the load first so that the operand of the store won't get replaced
+    stmt->insert_after_me(Stmt::make<LocalStoreStmt>(alloc_ptr, stmt));
+    irpass::print(stmt);
+  }
+
+  void visit(RangeForStmt *stmt) override {
+    TI_P(for_depth);
+    TI_TAG;
+    if (for_depth == 0) {
+      alloca_block = stmt->body.get();
+      TI_P(alloca_block);
+    }
+    for_depth += 1;
+    stmt->body->accept(this);
+    for_depth -= 1;
+  }
+
+ private:
+  int for_depth{0};
+  Block *alloca_block{nullptr};
+};
+
 class ConvertLocalVar : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
@@ -634,9 +678,15 @@ namespace irpass {
 void make_adjoint(IRNode *root, bool use_stack) {
   TI_AUTO_PROF;
   if (use_stack) {
+    PromoteSSA2LocalVar promoter;
+    root->accept(&promoter);
+    irpass::re_id(root);
+    irpass::print(root);
+
     fix_block_parents(root);
     ConvertLocalVar converter;
     root->accept(&converter);
+
     TI_INFO("Convert local var:");
     irpass::re_id(root);
     irpass::print(root);

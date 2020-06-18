@@ -156,7 +156,7 @@ def test_integer_stack():
             weight = 1
             s = 0.0
             for j in range(c[i]):
-                s += weight * a[i]
+                s += weight * a[i] + b[i]
                 weight *= 10
             f[i] = s
 
@@ -174,9 +174,12 @@ def test_integer_stack():
     
     int_stack.grad()
     
+    t = 0
     for i in range(N):
-        print(a.grad[i], b.grad[i])
+        assert a.grad[i] == t
+        assert b.grad[i] == i
+        t = t * 10 + 1
 
 # TODO: test integer stack (primal without adjoint)
+# TODO: test global pointer stack
 
-test_integer_stack()

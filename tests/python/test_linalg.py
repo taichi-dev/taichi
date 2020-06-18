@@ -239,19 +239,11 @@ def test_mat_inverse():
 
 
 @ti.all_archs
-def test_matrix_factories():
-    import math
-
-    a = ti.Vector.var(3, dt=ti.i32, shape=3)
-    b = ti.Matrix.var(2, 2, dt=ti.f32, shape=2)
-    c = ti.Matrix.var(2, 3, dt=ti.f32, shape=2)
+def test_unit_vectors():
+    a = ti.Vector(3, dt=ti.i32, shape=3)
 
     @ti.kernel
     def fill():
-        b[0] = ti.Matrix.identity(ti.f32, 2)
-        b[1] = ti.Matrix.rotation2d(math.pi / 3)
-        c[0] = ti.Matrix.zero(ti.f32, 2, 3)
-        c[1] = ti.Matrix.one(ti.f32, 2, 3)
         for i in ti.static(range(3)):
             a[i] = ti.Vector.unit(3, i)
 
@@ -260,13 +252,6 @@ def test_matrix_factories():
     for i in range(3):
         for j in range(3):
             assert a[i][j] == int(i == j)
-
-    sqrt3o2 = math.sqrt(3) / 2
-    assert b.at(0).to_numpy() == approx(np.eye(2))
-    assert b.at(1).to_numpy() == approx(
-        np.array([[0.5, -sqrt3o2], [sqrt3o2, 0.5]]))
-    assert c.at(0).to_numpy() == approx(np.zeros((2, 3)))
-    assert c.at(1).to_numpy() == approx(np.ones((2, 3)))
 
 
 # TODO: move codes below to test_matrix.py:

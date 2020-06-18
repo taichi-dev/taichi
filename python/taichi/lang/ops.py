@@ -189,8 +189,7 @@ def bit_not(a):
 
 @unary
 def logical_not(a):
-    return _unary_operation(ti_core.expr_logic_not,
-            lambda x: int(not x), a)
+    return _unary_operation(ti_core.expr_logic_not, lambda x: int(not x), a)
 
 
 def random(dt=None):
@@ -325,38 +324,38 @@ def raw_mod(a, b):
 
 @binary
 def cmp_lt(a, b):
-    return _binary_operation(ti_core.expr_cmp_lt,
-            lambda a, b: -int(a < b), a, b)
+    return _binary_operation(ti_core.expr_cmp_lt, lambda a, b: -int(a < b), a,
+                             b)
 
 
 @binary
 def cmp_le(a, b):
-    return _binary_operation(ti_core.expr_cmp_le,
-            lambda a, b: -int(a <= b), a, b)
+    return _binary_operation(ti_core.expr_cmp_le, lambda a, b: -int(a <= b), a,
+                             b)
 
 
 @binary
 def cmp_gt(a, b):
-    return _binary_operation(ti_core.expr_cmp_gt,
-            lambda a, b: -int(a > b), a, b)
+    return _binary_operation(ti_core.expr_cmp_gt, lambda a, b: -int(a > b), a,
+                             b)
 
 
 @binary
 def cmp_ge(a, b):
-    return _binary_operation(ti_core.expr_cmp_ge,
-            lambda a, b: -int(a >= b), a, b)
+    return _binary_operation(ti_core.expr_cmp_ge, lambda a, b: -int(a >= b), a,
+                             b)
 
 
 @binary
 def cmp_eq(a, b):
-    return _binary_operation(ti_core.expr_cmp_eq,
-            lambda a, b: -int(a == b), a, b)
+    return _binary_operation(ti_core.expr_cmp_eq, lambda a, b: -int(a == b), a,
+                             b)
 
 
 @binary
 def cmp_ne(a, b):
-    return _binary_operation(ti_core.expr_cmp_ne,
-            lambda a, b: -int(a != b), a, b)
+    return _binary_operation(ti_core.expr_cmp_ne, lambda a, b: -int(a != b), a,
+                             b)
 
 
 @binary
@@ -406,22 +405,19 @@ def atomic_max(a, b):
 @writeback_binary
 def atomic_and(a, b):
     return expr_init(
-        Expr(ti_core.expr_atomic_bit_and(a.ptr, b.ptr),
-             tb=stack_info()))
+        Expr(ti_core.expr_atomic_bit_and(a.ptr, b.ptr), tb=stack_info()))
 
 
 @writeback_binary
 def atomic_or(a, b):
     return expr_init(
-        Expr(ti_core.expr_atomic_bit_or(a.ptr, b.ptr),
-             tb=stack_info()))
+        Expr(ti_core.expr_atomic_bit_or(a.ptr, b.ptr), tb=stack_info()))
 
 
 @writeback_binary
 def atomic_xor(a, b):
     return expr_init(
-        Expr(ti_core.expr_atomic_bit_xor(a.ptr, b.ptr),
-             tb=stack_info()))
+        Expr(ti_core.expr_atomic_bit_xor(a.ptr, b.ptr), tb=stack_info()))
 
 
 @writeback_binary
@@ -466,14 +462,13 @@ def append(l, indices, val):
     import taichi as ti
     a = ti.expr_init(
         ti_core.insert_append(l.snode().ptr, make_expr_group(indices),
-                                       Expr(val).ptr))
+                              Expr(val).ptr))
     return a
 
 
 def is_active(l, indices):
     return Expr(
-        ti_core.insert_is_active(l.snode().ptr,
-                                          make_expr_group(indices)))
+        ti_core.insert_is_active(l.snode().ptr, make_expr_group(indices)))
 
 
 def deactivate(l, indices):
@@ -481,5 +476,4 @@ def deactivate(l, indices):
 
 
 def length(l, indices):
-    return Expr(
-        ti_core.insert_len(l.snode().ptr, make_expr_group(indices)))
+    return Expr(ti_core.insert_len(l.snode().ptr, make_expr_group(indices)))

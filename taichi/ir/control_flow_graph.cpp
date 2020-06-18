@@ -17,12 +17,13 @@ CFGNode::CFGNode(Block *block,
     prev_node_in_same_block->next_node_in_same_block = this;
   if (!empty()) {
     TI_ASSERT(begin_location >= 0);
-  }
-  auto parent_block = block;
-  parent_blocks.insert(parent_block);
-  while (parent_block->parent) {
-    parent_block = parent_block->parent;
+    TI_ASSERT(block);
+    auto parent_block = block;
     parent_blocks.insert(parent_block);
+    while (parent_block->parent) {
+      parent_block = parent_block->parent;
+      parent_blocks.insert(parent_block);
+    }
   }
 }
 
@@ -175,8 +176,10 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
     return true;  // continue the following loops
   };
   for (auto stmt : reach_in) {
-    if (maybe_same_address(var,
-                           irpass::analysis::get_store_destination(stmt))) {
+    // var == stmt is for the case that a global ptr is never stored.
+    // In this case, stmt is from nodes[start_node]->reach_gen.
+    if (var == stmt || maybe_same_address(
+        var, irpass::analysis::get_store_destination(stmt))) {
       if (!update_result(stmt))
         return nullptr;
     }
@@ -319,8 +322,23 @@ void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
   const int num_nodes = size();
   std::queue<CFGNode *> to_visit;
   std::unordered_map<CFGNode *, bool> in_queue;
+  TI_ASSERT(nodes[start_node]->empty());
+  nodes[start_node]->reach_gen.clear();
+  nodes[start_node]->reach_kill.clear();
+  if (!after_lower_access) {
+    for (int i = 0; i < num_nodes; i++) {
+      for (int j = nodes[i]->begin_location; j < nodes[i]->end_location; j++) {
+        if (auto global_load =
+            nodes[i]->block->statements[j]->cast<GlobalLoadStmt>()) {
+          nodes[start_node]->reach_gen.insert(global_load->ptr);
+        }
+      }
+    }
+  }
   for (int i = 0; i < num_nodes; i++) {
-    nodes[i]->reaching_definition_analysis(after_lower_access);
+    if (i != start_node) {
+      nodes[i]->reaching_definition_analysis(after_lower_access);
+    }
     nodes[i]->reach_in.clear();
     nodes[i]->reach_out = nodes[i]->reach_gen;
     to_visit.push(nodes[i].get());
@@ -359,11 +377,17 @@ void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
 void ControlFlowGraph::simplify_graph() {
   // Simplify the graph structure, do not modify the IR.
   const int num_nodes = size();
-  for (int i = 0; i < num_nodes; i++) {
-    if (nodes[i] && nodes[i]->empty() && i != start_node &&
-        (nodes[i]->prev.size() <= 1 || nodes[i]->next.size() <= 1)) {
-      erase(i);
+  while (true) {
+    bool modified = false;
+    for (int i = 0; i < num_nodes; i++) {
+      if (nodes[i] && nodes[i]->empty() && i != start_node &&
+          (nodes[i]->prev.size() <= 1 || nodes[i]->next.size() <= 1)) {
+        erase(i);
+        modified = true;
+      }
     }
+    if (!modified)
+      break;
   }
   int new_num_nodes = 0;
   for (int i = 0; i < num_nodes; i++) {

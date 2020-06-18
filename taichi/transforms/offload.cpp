@@ -237,29 +237,13 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
         return;
       }
     }
+    if (stmt->is<GlobalPtrStmt>()) {
+      // We don't support storing a pointer for now.
+      return;
+    }
     if (local_to_global.find(stmt) == local_to_global.end()) {
       // Not yet allocated
       local_to_global[stmt] = allocate_global(stmt->ret_type);
-    }
-  }
-
-  void visit(LocalLoadStmt *stmt) override {
-    TI_ASSERT(current_offloaded);
-    TI_ASSERT(stmt->width() == 1);
-    test_and_allocate(stmt->ptr[0].var);
-  }
-
-  void visit(LocalStoreStmt *stmt) override {
-    TI_ASSERT(current_offloaded);
-    TI_ASSERT(stmt->width() == 1);
-    test_and_allocate(stmt->ptr);
-  }
-
-  void visit(AtomicOpStmt *stmt) override {
-    TI_ASSERT(current_offloaded);
-    TI_ASSERT(stmt->width() == 1);
-    if (stmt->dest->is<AllocaStmt>()) {
-      test_and_allocate(stmt->dest);
     }
   }
 
@@ -454,6 +438,14 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
         return true;
       }
     }
+    if (op->is<GlobalPtrStmt>()) {
+      TI_ASSERT(!op->has_global_side_effect());
+      auto copy = op->clone();
+      stmt_to_offloaded[copy.get()] = stmt_to_offloaded[stmt];
+      stmt->set_operand(index, copy.get());
+      stmt->insert_before_me(std::move(copy));
+      return true;
+    }
     if (local_to_global_offset.find(op) == local_to_global_offset.end())
       return false;
 
@@ -606,6 +598,7 @@ class AssociateContinueScope : public BasicStmtVisitor {
 }  // namespace
 
 void offload(IRNode *root) {
+  TI_AUTO_PROF;
   auto offloaded_ranges = Offloader::run(root);
   typecheck(root);
   fix_block_parents(root);

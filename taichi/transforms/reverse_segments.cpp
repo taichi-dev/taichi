@@ -26,6 +26,7 @@ class GatherStmts : public BasicStmtVisitor {
 };
 
 void reverse_segments(IRNode *root) {
+  TI_AUTO_PROF;
   auto block = dynamic_cast<Block *>(root);
   std::vector<std::vector<pStmt>> statement_blocks(1);
   bool has_for = false;

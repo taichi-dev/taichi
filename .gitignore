@@ -69,3 +69,6 @@ _build
 *.gif
 *.mp4
 *.dat
+*.ptx
+*.ll
+*.bc

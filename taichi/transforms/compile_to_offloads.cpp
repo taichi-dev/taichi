@@ -2,6 +2,7 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/visitors.h"
+#include "taichi/program/kernel.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -38,6 +39,14 @@ void compile_to_offloads(IRNode *ir,
   print("Typechecked");
   irpass::analysis::verify(ir);
 
+  if (ir->get_kernel()->is_evaluator) {
+    TI_ASSERT(!grad);
+    irpass::offload(ir);
+    print("Offloaded");
+    irpass::analysis::verify(ir);
+    return;
+  }
+
   if (vectorize) {
     irpass::loop_vectorize(ir);
     print("Loop Vectorized");
@@ -73,8 +82,8 @@ void compile_to_offloads(IRNode *ir,
     irpass::analysis::verify(ir);
   }
 
-  irpass::extract_constant(ir);
-  print("Constant extracted");
+  irpass::cfg_optimization(ir, false);
+  print("Optimized by CFG I");
   irpass::analysis::verify(ir);
 
   irpass::variable_optimization(ir, false);
@@ -89,11 +98,12 @@ void compile_to_offloads(IRNode *ir,
   print("Simplified II");
   irpass::analysis::verify(ir);
 
-  irpass::constant_fold(ir);
-  print("Constant folded");
-
   irpass::offload(ir);
   print("Offloaded");
+  irpass::analysis::verify(ir);
+
+  irpass::cfg_optimization(ir, false);
+  print("Optimized by CFG II");
   irpass::analysis::verify(ir);
 
   irpass::flag_access(ir);
@@ -114,28 +124,19 @@ void compile_to_offloads(IRNode *ir,
     irpass::analysis::verify(ir);
   }
 
-  irpass::extract_constant(ir);
-  print("Constant extracted II");
-
   irpass::demote_atomics(ir);
   print("Atomics demoted");
   irpass::analysis::verify(ir);
 
-  irpass::full_simplify(ir);
-  print("Simplified III");
-
-  irpass::extract_constant(ir);
-  print("Constant extracted III");
+  irpass::cfg_optimization(ir, true);
+  print("Optimized by CFG III");
+  irpass::analysis::verify(ir);
 
   irpass::variable_optimization(ir, true);
   print("Store forwarded II");
 
-  irpass::cfg_optimization(ir);
-  print("Optimized by CFG");
-  irpass::analysis::verify(ir);
-
   irpass::full_simplify(ir);
-  print("Simplified IV");
+  print("Simplified III");
 
   // Final field registration correctness & type checking
   irpass::typecheck(ir);

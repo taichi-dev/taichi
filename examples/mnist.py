@@ -25,22 +25,19 @@ n_input = 28**2
 n_hidden = 500
 n_output = 10
 
+ti.root.dense(ti.i, n_input).place(input)
+ti.root.dense(ti.ij, (n_input, n_hidden)).place(weight1)
+ti.root.dense(ti.i, n_hidden).place(output1)
+ti.root.dense(ti.i, n_hidden).place(output1_nonlinear)
+ti.root.dense(ti.ij, (n_hidden, n_output)).place(weight2)
+ti.root.dense(ti.i, n_output).place(gt)
+ti.root.dense(ti.i, n_output).place(output)
+ti.root.dense(ti.i, n_output).place(output_exp)
+ti.root.dense(ti.i, n_output).place(output_softmax)
+ti.root.place(softmax_sum)
+ti.root.place(loss, learning_rate)
 
-@ti.layout
-def layout():
-    ti.root.dense(ti.i, n_input).place(input)
-    ti.root.dense(ti.ij, (n_input, n_hidden)).place(weight1)
-    ti.root.dense(ti.i, n_hidden).place(output1)
-    ti.root.dense(ti.i, n_hidden).place(output1_nonlinear)
-    ti.root.dense(ti.ij, (n_hidden, n_output)).place(weight2)
-    ti.root.dense(ti.i, n_output).place(gt)
-    ti.root.dense(ti.i, n_output).place(output)
-    ti.root.dense(ti.i, n_output).place(output_exp)
-    ti.root.dense(ti.i, n_output).place(output_softmax)
-    ti.root.place(softmax_sum)
-    ti.root.place(loss, learning_rate)
-
-    ti.root.lazy_grad()
+ti.root.lazy_grad()
 
 
 @ti.kernel

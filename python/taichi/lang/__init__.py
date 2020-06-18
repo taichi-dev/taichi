@@ -40,10 +40,10 @@ metal = core.metal
 opengl = core.opengl
 gpu = [cuda, metal, opengl]
 cpu = core.host_arch()
-profiler_print = lambda: core.get_current_program().profiler_print()
-profiler_clear = lambda: core.get_current_program().profiler_clear()
-profiler_start = lambda n: core.get_current_program().profiler_start(n)
-profiler_stop = lambda: core.get_current_program().profiler_stop()
+kernel_profiler_print = lambda: core.get_current_program(
+).kernel_profiler_print()
+kernel_profiler_clear = lambda: core.get_current_program(
+).kernel_profiler_clear()
 
 
 class _Extension(object):
@@ -156,6 +156,10 @@ def init(arch=None,
     gdb_trigger = os.environ.get('TI_GDB_TRIGGER', '')
     if len(gdb_trigger):
         ti.set_gdb_trigger(bool(int(gdb_trigger)))
+
+    advanced_optimization = os.environ.get('TI_ADVANCED_OPTIMIZATION', '')
+    if len(advanced_optimization):
+        ti.core.toggle_advanced_optimization(bool(int(advanced_optimization)))
 
     # Q: Why not environ_config("arch", ti.core.arch_from_name)?
     # A: We need adaptive_arch_select for all.

@@ -50,7 +50,7 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
     stat.add("codegen_offloaded_tasks");
     using Type = OffloadedStmt::TaskType;
     auto offloaded_task_name = init_offloaded_task_function(stmt);
-    if (prog->config.enable_profiler) {
+    if (prog->config.kernel_profiler && arch_is_cpu(prog->config.arch)) {
       call(
           builder.get(), "LLVMRuntime_profiler_start",
           {get_runtime(), builder->CreateGlobalStringPtr(offloaded_task_name)});
@@ -72,7 +72,7 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
     } else {
       TI_NOT_IMPLEMENTED
     }
-    if (prog->config.enable_profiler) {
+    if (prog->config.kernel_profiler && arch_is_cpu(prog->config.arch)) {
       call(builder.get(), "LLVMRuntime_profiler_stop", {get_runtime()});
     }
     finalize_offloaded_task_function();

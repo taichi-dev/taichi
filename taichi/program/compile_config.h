@@ -19,6 +19,7 @@ struct CompileConfig {
   int max_vector_width;
   bool print_ir;
   bool print_accessor_ir;
+  bool print_evaluator_ir;
   bool print_benchmark_stat;
   bool serial_schedule;
   bool simplify_before_lower_access;
@@ -29,8 +30,9 @@ struct CompileConfig {
   bool print_struct_llvm_ir;
   bool print_kernel_llvm_ir;
   bool print_kernel_llvm_ir_optimized;
+  bool print_kernel_nvptx;
   bool verbose_kernel_launches;
-  bool enable_profiler;
+  bool kernel_profiler;
   bool verbose;
   bool fast_math;
   bool use_unified_memory;

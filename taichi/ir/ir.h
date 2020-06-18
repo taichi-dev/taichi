@@ -215,6 +215,8 @@ class IRVisitor {
     invoke_default_visitor = false;
   }
 
+  virtual ~IRVisitor() = default;
+
   // default visitor
   virtual void visit(Stmt *stmt) {
     if (!allow_undefined_visitor) {
@@ -572,6 +574,14 @@ class Stmt : public IRNode {
     return true;
   }
 
+  virtual bool dead_instruction_eliminable() const {
+    return !has_global_side_effect();
+  }
+
+  virtual bool common_statement_eliminable() const {
+    return !has_global_side_effect();
+  }
+
   template <typename T, typename... Args>
   static std::unique_ptr<T> make_typed(Args &&... args) {
     return std::make_unique<T>(std::forward<Args>(args)...);
@@ -609,7 +619,11 @@ class AllocaStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
-  virtual bool has_global_side_effect() const override {
+  bool has_global_side_effect() const override {
+    return false;
+  }
+
+  bool common_statement_eliminable() const override {
     return false;
   }
 
@@ -678,7 +692,7 @@ class UnaryOpStmt : public Stmt {
   bool same_operation(UnaryOpStmt *o) const;
   bool is_cast() const;
 
-  virtual bool has_global_side_effect() const override {
+  bool has_global_side_effect() const override {
     return false;
   }
 
@@ -695,7 +709,7 @@ class ArgLoadStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
-  virtual bool has_global_side_effect() const override {
+  bool has_global_side_effect() const override {
     return false;
   }
 
@@ -710,7 +724,11 @@ class RandStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
-  virtual bool has_global_side_effect() const override {
+  bool has_global_side_effect() const override {
+    return false;
+  }
+
+  bool common_statement_eliminable() const override {
     return false;
   }
 
@@ -730,7 +748,7 @@ class BinaryOpStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
-  virtual bool has_global_side_effect() const override {
+  bool has_global_side_effect() const override {
     return false;
   }
 
@@ -751,7 +769,7 @@ class TernaryOpStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
-  virtual bool has_global_side_effect() const override {
+  bool has_global_side_effect() const override {
     return false;
   }
 
@@ -777,16 +795,15 @@ class ExternalPtrStmt : public Stmt {
  public:
   LaneAttribute<Stmt *> base_ptrs;
   std::vector<Stmt *> indices;
-  bool activate;
 
   ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
                   const std::vector<Stmt *> &indices);
 
-  virtual bool has_global_side_effect() const override {
+  bool has_global_side_effect() const override {
     return false;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, base_ptrs, indices, activate);
+  TI_STMT_DEF_FIELDS(ret_type, base_ptrs, indices);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
@@ -800,7 +817,7 @@ class GlobalPtrStmt : public Stmt {
                 const std::vector<Stmt *> &indices,
                 bool activate = true);
 
-  virtual bool has_global_side_effect() const override {
+  bool has_global_side_effect() const override {
     return activate;
   }
 
@@ -906,10 +923,9 @@ class SNodeOpStmt : public Stmt {
               SNode *snode,
               const std::vector<Stmt *> &indices);
 
-  static bool activation_related(SNodeOpType op) {
-    return op == SNodeOpType::activate || op == SNodeOpType::deactivate ||
-           op == SNodeOpType::is_active;
-  }
+  static bool activation_related(SNodeOpType op);
+
+  static bool need_activation(SNodeOpType op);
 
   TI_STMT_DEF_FIELDS(ret_type, op_type, snode, ptr, val, indices);
   TI_DEFINE_ACCEPT_AND_CLONE
@@ -949,6 +965,14 @@ class RangeAssumptionStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
+  bool has_global_side_effect() const override {
+    return false;
+  }
+
+  bool dead_instruction_eliminable() const override {
+    return false;
+  }
+
   TI_STMT_DEF_FIELDS(ret_type, input, base, low, high);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
@@ -961,7 +985,11 @@ class GlobalLoadStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
-  virtual bool has_global_side_effect() const override {
+  bool has_global_side_effect() const override {
+    return false;
+  }
+
+  bool common_statement_eliminable() const override {
     return false;
   }
 
@@ -975,6 +1003,10 @@ class GlobalStoreStmt : public Stmt {
 
   GlobalStoreStmt(Stmt *ptr, Stmt *data) : ptr(ptr), data(data) {
     TI_STMT_REG_FIELDS;
+  }
+
+  bool common_statement_eliminable() const override {
+    return false;
   }
 
   TI_STMT_DEF_FIELDS(ret_type, ptr, data);
@@ -1006,7 +1038,11 @@ class LocalLoadStmt : public Stmt {
 
   Stmt *previous_store_or_alloca_in_block();
 
-  virtual bool has_global_side_effect() const override {
+  bool has_global_side_effect() const override {
+    return false;
+  }
+
+  bool common_statement_eliminable() const override {
     return false;
   }
 
@@ -1022,6 +1058,18 @@ class LocalStoreStmt : public Stmt {
   LocalStoreStmt(Stmt *ptr, Stmt *data) : ptr(ptr), data(data) {
     TI_ASSERT(ptr->is<AllocaStmt>());
     TI_STMT_REG_FIELDS;
+  }
+
+  bool has_global_side_effect() const override {
+    return false;
+  }
+
+  bool dead_instruction_eliminable() const override {
+    return false;
+  }
+
+  bool common_statement_eliminable() const override {
+    return false;
   }
 
   TI_STMT_DEF_FIELDS(ret_type, ptr, data);
@@ -1079,7 +1127,7 @@ class ConstStmt : public Stmt {
     val.repeat(factor);
   }
 
-  virtual bool has_global_side_effect() const override {
+  bool has_global_side_effect() const override {
     return false;
   }
 
@@ -1184,10 +1232,6 @@ class FuncCallStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
-  bool is_container_statement() const override {
-    return false;
-  }
-
   TI_STMT_DEF_FIELDS(ret_type, funcid);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
@@ -1198,10 +1242,6 @@ class KernelReturnStmt : public Stmt {
 
   KernelReturnStmt(Stmt *value) : value(value) {
     TI_STMT_REG_FIELDS;
-  }
-
-  bool is_container_statement() const override {
-    return false;
   }
 
   TI_STMT_DEF_FIELDS(value);

@@ -41,9 +41,6 @@ class GUI:
         self.key_pressed = set()
         self.event = None
         self.clear()
-        if ti.core.get_current_program():
-            self.core.set_profiler(
-                ti.core.get_current_program().get_profiler())
 
     def __enter__(self):
         return self
@@ -83,10 +80,11 @@ class GUI:
         import taichi as ti
 
         if isinstance(img, ti.Expr):
-            if ti.core.is_integral(img.data_type()):
-                # image of uint is not optimized by xxx_to_image
+            if ti.core.is_integral(img.data_type()) or len(img.shape()) != 2:
+                # Images of uint is not optimized by xxx_to_image
                 self.img = self.cook_image(img.to_numpy())
             else:
+                # Type matched! We can use an optimized copy kernel.
                 assert img.shape(
                 ) == self.res, "Image resolution does not match GUI resolution"
                 from taichi.lang.meta import tensor_to_image
@@ -97,6 +95,7 @@ class GUI:
             if ti.core.is_integral(img.data_type()):
                 self.img = self.cook_image(img.to_numpy())
             else:
+                # Type matched! We can use an optimized copy kernel.
                 assert img.shape(
                 ) == self.res, "Image resolution does not match GUI resolution"
                 assert img.n in [

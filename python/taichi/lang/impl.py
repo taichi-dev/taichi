@@ -29,6 +29,27 @@ def expr_init(rhs):
 
 
 @taichi_scope
+def expr_init_list(xs, expected):
+    import taichi as ti
+    if not isinstance(xs, (list, tuple, ti.Matrix)):
+        raise TypeError(f'Cannot unpack type: {type(xs)}')
+    if isinstance(xs, ti.Matrix):
+        if not xs.m == 1:
+            raise ValueError(
+                f'Matrices with more than one columns cannot be unpacked')
+        xs = xs.entries
+    if expected != len(xs):
+        raise ValueError(
+            f'Tuple assignment size mismatch: {expected} != {len(xs)}')
+    if isinstance(xs, list):
+        return [expr_init(e) for e in xs]
+    elif isinstance(xs, tuple):
+        return tuple(expr_init(e) for e in xs)
+    else:
+        raise ValueError(f'Cannot unpack from {type(xs)}')
+
+
+@taichi_scope
 def expr_init_func(rhs):  # temporary solution to allow passing in tensors as
     import taichi as ti
     if isinstance(rhs, Expr) and rhs.ptr.is_global_var():
@@ -378,7 +399,7 @@ def static(x, *xs):
         return x
     elif isinstance(x, ti.Matrix) and x.is_global():
         return x
-    elif isinstance(x, ti.Func) or isinstance(x, types.MethodType):
+    elif isinstance(x, types.FunctionType) or isinstance(x, types.MethodType):
         return x
     else:
         raise ValueError(

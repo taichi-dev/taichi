@@ -2,7 +2,7 @@
 
 #include "taichi/math/math.h"
 #include "taichi/system/timer.h"
-#include "taichi/program/profiler.h"
+#include "taichi/program/kernel_profiler.h"
 
 #include <atomic>
 #include <ctime>
@@ -488,7 +488,6 @@ class GUI : public GUIBase {
   Vector2i cursor_pos;
   bool button_status[3];
   int widget_height;
-  lang::ProfilerBase *profiler;
 
   void set_mouse_pos(int x, int y) {
     cursor_pos = Vector2i(x, y);
@@ -886,10 +885,6 @@ class GUI : public GUIBase {
   }
 
   ~GUI();
-
-  void set_profiler(lang::ProfilerBase *profiler) {
-    this->profiler = profiler;
-  }
 };
 
 TI_NAMESPACE_END

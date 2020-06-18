@@ -36,6 +36,11 @@ struct SNodeDescriptor {
       const std::unordered_map<int, SNodeDescriptor> &sn_descs) const;
 };
 
+using SNodeDescriptorsMap = std::unordered_map<int, SNodeDescriptor>;
+
+// See SNodeDescriptor::total_num_self_from_root
+int total_num_self_from_root(const SNodeDescriptorsMap &m, int snode_id);
+
 struct CompiledStructs {
   // Source code of the SNode data structures compiled to Metal
   std::string snode_structs_source_code;
@@ -49,34 +54,30 @@ struct CompiledStructs {
   // struct Runtime {
   //     SNodeMeta snode_metas[max_snodes];
   //     SNodeExtractors snode_extractors[max_snodes];
-  //     ListManager snode_lists[max_snodes];
+  //     ListManagerData snode_lists[max_snodes];
   //     uint32_t rand_seeds[kNumRandSeeds];
   // };
   //
-  // If |need_snode_lists_data| is `true`, |runtime_size| will be greater than
-  // sizeof(Runtime). This is because the memory is divided into two parts. The
-  // first part, with size being sizeof(Runtime), is used to hold the Runtime
-  // struct as expected. The second part is used to hold the data of
-  // |snode_lists|.
+  // |runtime_size| will be sizeof(Runtime), which is useful for allocating the
+  // buffer memory.
   //
-  // |---- Runtime ----|--------------- |snode_lists| data ---------------|
-  // |<------------------------- runtime_size --------------------------->|
+  // If |need_snode_lists_data| is true, the buffer will consist of two parts.
+  // The first part, with size being |runtime_size|, is used to hold the Runtime
+  // struct as expected. The second part is used as a kernel-side memory pool.
   //
-  // The actual data address for the i-th ListManager is then:
-  // runtime memory address + list[i].mem_begin
-  //
-  // Otherwise if |need_snode_lists_data| is `false`, |runtime_size| will be
-  // equal to sizeof(Runtime).
+  // |------ Runtime -----|--------------- Metal memory pool ---------------|
+  // |<-- runtime_size -->|<------- decided by config, usually ~GB -------->|
   //
   // TODO(k-ye): See if Metal ArgumentBuffer can directly store the pointers.
   size_t runtime_size;
   // In case there is no sparse SNode (e.g. bitmasked), we don't need to
   // allocate the additional memory for |snode_lists|.
+  // TODO(k-ye): Rename to |needs_kernel_memory_allocator|.
   bool need_snode_lists_data;
   // max(ID of Root or Dense Snode) + 1
   int max_snodes;
   // Map from SNode ID to its descriptor.
-  std::unordered_map<int, SNodeDescriptor> snode_descriptors;
+  SNodeDescriptorsMap snode_descriptors;
 };
 
 // Compile all snodes to Metal source code

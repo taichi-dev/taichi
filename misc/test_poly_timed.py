@@ -15,9 +15,7 @@ def grad_test(tifunc, npfunc=None, default_fp=ti.f32):
         x = ti.var(default_fp)
         y = ti.var(default_fp)
 
-        @ti.layout
-        def place():
-            ti.root.dense(ti.i, 1).place(x, x.grad, y, y.grad)
+        ti.root.dense(ti.i, 1).place(x, x.grad, y, y.grad)
 
         @ti.kernel
         def func():

@@ -211,8 +211,9 @@ class LowerAccess : public IRVisitor {
       }
     } else {
       if (stmt->ptr->is<GlobalPtrStmt>()) {
-        // TODO: return do not activate for read only accesses such as ti.length
-        auto lowered = lower_vector_ptr(stmt->ptr->as<GlobalPtrStmt>(), true);
+        auto lowered =
+            lower_vector_ptr(stmt->ptr->as<GlobalPtrStmt>(),
+                             SNodeOpStmt::need_activation(stmt->op_type));
         stmt->ptr = lowered.back().get();
         stmt->parent->insert_before(stmt, std::move(lowered));
         throw IRModified();
@@ -224,7 +225,9 @@ class LowerAccess : public IRVisitor {
     if (!lower_atomic_ptr)
       return;
     if (stmt->dest->is<GlobalPtrStmt>()) {
-      auto lowered = lower_vector_ptr(stmt->dest->as<GlobalPtrStmt>(), true);
+      auto lowered =
+          lower_vector_ptr(stmt->dest->as<GlobalPtrStmt>(),
+                           stmt->dest->as<GlobalPtrStmt>()->activate);
       stmt->dest = lowered.back().get();
       stmt->parent->insert_before(stmt, std::move(lowered));
       throw IRModified();

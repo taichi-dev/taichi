@@ -109,3 +109,11 @@ class SNode:
 
     def __eq__(self, other):
         return self.ptr == other.ptr
+
+    def physical_index_position(self):
+        ret = {}
+        for virtual, physical in enumerate(
+                self.ptr.get_physical_index_position()):
+            if physical != -1:
+                ret[virtual] = physical
+        return ret

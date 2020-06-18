@@ -16,6 +16,7 @@ TLANG_NAMESPACE_BEGIN
 class ConstantFold : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
+  DelayedIRModifier modifier;
 
   ConstantFold() : BasicStmtVisitor() {
   }
@@ -159,9 +160,8 @@ class ConstantFold : public BasicStmtVisitor {
       auto evaluated =
           Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(new_constant));
       stmt->replace_with(evaluated.get());
-      stmt->parent->insert_before(stmt, VecStatement(std::move(evaluated)));
-      stmt->parent->erase(stmt);
-      throw IRModified();
+      modifier.insert_before(stmt, VecStatement(std::move(evaluated)));
+      modifier.erase(stmt);
     }
   }
 
@@ -177,30 +177,30 @@ class ConstantFold : public BasicStmtVisitor {
       auto evaluated =
           Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(new_constant));
       stmt->replace_with(evaluated.get());
-      stmt->parent->insert_before(stmt, VecStatement(std::move(evaluated)));
-      stmt->parent->erase(stmt);
-      throw IRModified();
+      modifier.insert_before(stmt, VecStatement(std::move(evaluated)));
+      modifier.erase(stmt);
     }
   }
 
-  static void run(IRNode *node) {
+  static bool run(IRNode *node) {
     ConstantFold folder;
+    bool modified = false;
     while (true) {
-      bool modified = false;
-      try {
-        node->accept(&folder);
-      } catch (IRModified) {
+      node->accept(&folder);
+      if (folder.modifier.modify_ir()) {
         modified = true;
-      }
-      if (!modified)
+      } else {
         break;
+      }
     }
+    return modified;
   }
 };
 
 namespace irpass {
 
-void constant_fold(IRNode *root) {
+bool constant_fold(IRNode *root) {
+  TI_AUTO_PROF;
   // @archibate found that `debug=True` will cause JIT kernels
   // failed to evaluate correctly (always return 0), so we simply
   // disable constant_fold when config.debug is turned on.
@@ -209,10 +209,10 @@ void constant_fold(IRNode *root) {
   auto kernel = root->get_kernel();
   if (kernel && kernel->program.config.debug) {
     TI_TRACE("config.debug enabled, ignoring constant fold");
-    return;
+    return false;
   }
   if (!advanced_optimization)
-    return;
+    return false;
   return ConstantFold::run(root);
 }
 

@@ -11,14 +11,14 @@ TLANG_NAMESPACE_BEGIN
 std::string serialize_scratch_pad(const ScratchPadOptions &opt) {
   std::string ser;
   if (!opt.empty()) {
-    ser += "scratch_pad_opt [ ";
+    ser += "scratch_pad [ ";
     for (auto s : opt) {
       // TODO: standardize scratch pad types
       std::string type;
       if (s.first == 0) {
-        type = "thread-local";
+        type = "thread_local";
       } else if (s.first == 1) {
-        type = "read-only";
+        type = "read_only";
       } else {
         TI_ERROR("scratch type {} not supported", s.first);
       }

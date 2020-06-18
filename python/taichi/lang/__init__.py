@@ -160,7 +160,7 @@ def init(arch=None,
     # A: We need adaptive_arch_select for all.
     env_arch = os.environ.get("TI_ARCH")
     if env_arch is not None:
-        print(f'Following TI_ARCH setting up for arch={env_arch}')
+        ti.info(f'Following TI_ARCH setting up for arch={env_arch}')
         arch = ti.core.arch_from_name(env_arch)
 
     ti.cfg.arch = adaptive_arch_select(arch)
@@ -327,7 +327,7 @@ def adaptive_arch_select(arch):
                 return a
     elif arch in supported:
         return arch
-    print(f'Arch={arch} is not supported, falling back to CPU')
+    ti.warn(f'Arch={arch} is not supported, falling back to CPU')
     return cpu
 
 

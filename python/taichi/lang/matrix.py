@@ -164,7 +164,7 @@ class Matrix(TaichiOperations):
 
     def __matmul__(self, other):
         assert self.m == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
-        ret = Matrix.empty(self.n, other.m)
+        ret = Matrix.new(self.n, other.m)
         for i in range(self.n):
             for j in range(other.m):
                 acc = self(i, 0) * other(0, j)
@@ -200,7 +200,11 @@ class Matrix(TaichiOperations):
         return self.entries[self.linearize_entry_id(*args)]
 
     def set_entry(self, i, j, e):
-        self.entries[self.linearize_entry_id(i, j)] = e
+        id = self.linearize_entry_id(i, j)
+        if impl.inside_kernel():
+            self.entries[id].assign(e)
+        else:
+            self.entries[id] = e
 
     def place(self, snode):
         for e in self.entries:
@@ -462,7 +466,7 @@ class Matrix(TaichiOperations):
         return self.transpose()
 
     def transpose(a):
-        ret = Matrix.empty(a.m, a.n)
+        ret = Matrix.new(a.m, a.n)
         for i in range(a.n):
             for j in range(a.m):
                 ret.set_entry(j, i, a(i, j))
@@ -759,6 +763,13 @@ class Matrix(TaichiOperations):
         mat = ti.Matrix([[None] * m for _ in range(n)])
         return mat
 
+    @staticmethod
+    def new(n, m):
+        if impl.inside_kernel():
+            return Matrix(n, m)
+        else:
+            return Matrix.empty(n, m)
+
     def __hash__(self):
         # TODO: refactor KernelTemplateMapper
         # If not, we get `unhashable type: Matrix` when
@@ -789,7 +800,7 @@ class Matrix(TaichiOperations):
     def outer_product(self, b):
         assert self.m == 1
         assert b.m == 1
-        c = Matrix(self.n, b.n)
+        c = Matrix.new(self.n, b.n)
         for i in range(self.n):
             for j in range(b.n):
                 c.set_entry(i, j, self(i) * b(j))

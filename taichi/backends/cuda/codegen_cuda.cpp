@@ -403,8 +403,42 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     return true;  // on CUDA, pass the argument by value
   }
 
+  void visit(GlobalLoadStmt *stmt) override {
+    if (auto get_ch = stmt->ptr->cast<GetChStmt>(); get_ch) {
+      bool should_cache_as_read_only = false;
+      for (auto s : current_offload->scratch_opt) {
+        if (s.first == 1 && get_ch->output_snode == s.second) {
+          should_cache_as_read_only = true;
+        }
+      }
+      if (should_cache_as_read_only) {
+        // Issue an CUDA "__ldg" instruction so that data are cached in
+        // the CUDA read-only data cache.
+        auto dtype = stmt->ret_type.data_type;
+        auto llvm_dtype = llvm_type(dtype);
+        auto llvm_dtype_ptr = llvm::PointerType::get(llvm_type(dtype), 0);
+        llvm::Intrinsic::ID intrin;
+        if (is_real(dtype)) {
+          intrin = llvm::Intrinsic::nvvm_ldg_global_f;
+        } else {
+          intrin = llvm::Intrinsic::nvvm_ldg_global_i;
+        }
+
+        llvm_val[stmt] = builder->CreateIntrinsic(
+            intrin, {llvm_dtype, llvm_dtype_ptr},
+            {llvm_val[stmt->ptr], tlctx->get_constant(data_type_size(dtype))});
+      } else {
+        CodeGenLLVM::visit(stmt);
+      }
+    } else {
+      CodeGenLLVM::visit(stmt);
+    }
+  }
+
   void visit(OffloadedStmt *stmt) override {
 #if defined(TI_WITH_CUDA)
+    TI_ASSERT(current_offload == nullptr);
+    current_offload = stmt;
     using Type = OffloadedStmt::TaskType;
     if (stmt->task_type == Type::gc) {
       // gc has 3 kernels, so we treat it specially
@@ -443,6 +477,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       current_task->end();
       current_task = nullptr;
     }
+    current_offload = nullptr;
 #else
     TI_NOT_IMPLEMENTED
 #endif

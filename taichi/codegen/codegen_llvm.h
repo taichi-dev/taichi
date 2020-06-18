@@ -67,6 +67,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   llvm::FunctionType *task_function_type;
   std::unordered_map<Stmt *, llvm::Value *> llvm_val;
   llvm::Function *func;
+  OffloadedStmt *current_offload{nullptr};
   std::unique_ptr<OffloadedTask> current_task;
   std::vector<OffloadedTask> offloaded_tasks;
   BasicBlock *func_body_bb;

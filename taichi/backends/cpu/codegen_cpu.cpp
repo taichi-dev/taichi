@@ -48,6 +48,8 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
 
   void visit(OffloadedStmt *stmt) override {
     stat.add("codegen_offloaded_tasks");
+    TI_ASSERT(current_offload == nullptr);
+    current_offload = stmt;
     using Type = OffloadedStmt::TaskType;
     auto offloaded_task_name = init_offloaded_task_function(stmt);
     if (prog->config.kernel_profiler && arch_is_cpu(prog->config.arch)) {
@@ -78,6 +80,7 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
     finalize_offloaded_task_function();
     current_task->end();
     current_task = nullptr;
+    current_offload = nullptr;
   }
 };
 

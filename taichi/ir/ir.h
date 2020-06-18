@@ -905,7 +905,9 @@ class DelayedIRModifier {
   void insert_before(Stmt *old_statement, VecStatement &&new_statements);
   void insert_after(Stmt *old_statement, std::unique_ptr<Stmt> new_statement);
   void insert_after(Stmt *old_statement, VecStatement &&new_statements);
-  void replace_with(Stmt *stmt, VecStatement&& new_statements, bool replace_usages = true);
+  void replace_with(Stmt *stmt,
+                    VecStatement &&new_statements,
+                    bool replace_usages = true);
   bool modify_ir();
 };
 

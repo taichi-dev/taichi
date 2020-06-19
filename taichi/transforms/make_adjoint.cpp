@@ -753,7 +753,6 @@ class BackupSSA : public BasicStmtVisitor {
       if (std::find(leaf_to_root.begin(), leaf_to_root.end(), op->parent) ==
               leaf_to_root.end() &&
           !op->is<AllocaStmt>()) {
-        TI_P(stmt->id);
         if (op->is<StackLoadTopStmt>()) {
           // Just create another StackLoadTopStmt
           stmt->set_operand(i, stmt->insert_before_me(op->clone()));

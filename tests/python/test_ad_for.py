@@ -179,6 +179,45 @@ def test_integer_stack():
         assert b.grad[i] == i
         t = t * 10 + 1
         
+@ti.require(ti.extension.adstack)
+@ti.all_archs
+def test_double_for_loops():
+    N = 5
+    a = ti.var(ti.f32, shape=N, needs_grad=True)
+    b = ti.var(ti.f32, shape=N, needs_grad=True)
+    c = ti.var(ti.i32, shape=N)
+    f = ti.var(ti.f32, shape=N, needs_grad=True)
+    
+    @ti.kernel
+    def double_for():
+        for i in range(N):
+            weight = 1.0
+            for j in range(c[i]):
+                weight *= a[i]
+            s = 0.0
+            for j in range(c[i] * 2):
+                s += weight + b[i]
+            f[i] = s
+    
+    a.fill(2)
+    b.fill(1)
+    
+    for i in range(N):
+        c[i] = i
+    
+    double_for()
+    
+    for i in range(N):
+        f.grad[i] = 1
+    
+    double_for.grad()
+    
+    t = 0
+    for i in range(N):
+        assert a.grad[i] == 2 * i * i * 2 ** (i - 1)
+        assert b.grad[i] == 2 * i
+        t = t * 10 + 1
+        
 def test_misc():
     ti.init(print_ir=True)
     N = 5
@@ -199,6 +238,6 @@ def test_misc():
     
 
 # test_integer_stack()
-test_misc()
+# test_misc()
 # TODO: test global pointer stack
 

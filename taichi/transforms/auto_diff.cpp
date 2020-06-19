@@ -731,9 +731,6 @@ class BackupSSA : public BasicStmtVisitor {
       auto alloca =
           Stmt::make<AllocaStmt>(stmt->width(), stmt->ret_type.data_type);
       alloca->ret_type.set_is_pointer(stmt->ret_type.is_pointer());
-      if (stmt->ret_type.is_pointer()) {
-        irpass::print(alloca.get());
-      }
       auto alloca_ptr = alloca.get();
       TI_ASSERT(current_block != nullptr);
       stmt->parent->parent->insert(std::move(alloca), 0);
@@ -827,14 +824,9 @@ void auto_diff(IRNode *root, bool use_stack) {
   TI_AUTO_PROF;
   if (use_stack) {
     irpass::re_id(root);
-    irpass::print(root);
     auto IB = IdentifyIndependentBlocks::run(root);
 
     irpass::re_id(root);
-    for (auto ib : IB) {
-      TI_INFO("IB");
-      irpass::print(ib);
-    }
 
     ReverseOuterLoops::run(root, IB);
 
@@ -844,14 +836,10 @@ void auto_diff(IRNode *root, bool use_stack) {
       PromoteSSA2LocalVar::run(ib);
       ReplaceLocalVarWithStacks replace;
       ib->accept(&replace);
-      TI_INFO("ReplaceLocalVarWithStacks:");
       irpass::re_id(root);
-      irpass::print(ib);
       typecheck(root);
       MakeAdjoint::run(ib);
-      TI_INFO("auto_diff:");
       irpass::re_id(root);
-      irpass::print(ib);
       typecheck(root);
       fix_block_parents(root);
       BackupSSA backup;

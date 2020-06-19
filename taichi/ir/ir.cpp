@@ -818,6 +818,7 @@ std::unique_ptr<Block> Block::clone() const {
 
 DelayedIRModifier::~DelayedIRModifier() {
   TI_ASSERT(to_insert_before.empty());
+  TI_ASSERT(to_insert_after.empty());
   TI_ASSERT(to_erase.empty());
   TI_ASSERT(to_replace_with.empty());
 }

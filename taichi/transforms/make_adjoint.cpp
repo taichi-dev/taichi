@@ -149,9 +149,7 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
   }
 };
 
-// Replace local variables with stacks
-
-class ConvertLocalVar : public BasicStmtVisitor {
+class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
 
@@ -185,6 +183,40 @@ class ConvertLocalVar : public BasicStmtVisitor {
   void visit(LocalStoreStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     stmt->replace_with(Stmt::make<StackPushStmt>(stmt->ptr, stmt->data));
+  }
+};
+
+class ReverseOuterLoops : public BasicStmtVisitor {
+  using BasicStmtVisitor::visit;
+
+ private:
+  ReverseOuterLoops(Block *IB) {
+  }
+
+  void visit(StructForStmt *stmt) {
+    loop_depth += 1;
+    if (stmt->body.get() != IB)
+      stmt->body->accept(this);
+    loop_depth -= 1;
+  }
+
+  void visit(RangeForStmt *stmt) {
+    loop_depth += 1;
+    if (loop_depth >= 1) {
+      stmt->reversed = !stmt->reversed;
+    }
+    if (stmt->body.get() != IB)
+      stmt->body->accept(this);
+    loop_depth -= 1;
+  }
+
+  int loop_depth;
+  Block *IB;
+
+ public:
+  static void run(IRNode *root, Block *IB) {
+    ReverseOuterLoops pass(IB);
+    root->accept(&pass);
   }
 };
 
@@ -757,8 +789,10 @@ void make_adjoint(IRNode *root, bool use_stack) {
     irpass::re_id(root);
     irpass::print(root);
 
+    ReverseOuterLoops::run(root, IB);
+
     fix_block_parents(root);
-    ConvertLocalVar converter;
+    ReplaceLocalVarWithStacks converter;
     IB->accept(&converter);
 
     TI_INFO("Convert local var:");
@@ -781,8 +815,21 @@ void make_adjoint(IRNode *root, bool use_stack) {
     irpass::re_id(root);
     irpass::print(root);
   } else {
-    TI_NOT_IMPLEMENTED
-    // MakeAdjoint::run(root);
+    auto IB = IdentifyIndependentBlocks::run(root);
+    irpass::re_id(root);
+    TI_INFO("IB");
+    irpass::print(IB);
+
+    PromoteSSA2LocalVar::run(IB);
+    irpass::re_id(root);
+    irpass::print(root);
+
+    ReverseOuterLoops::run(root, IB);
+
+    fix_block_parents(root);
+
+    typecheck(root);
+    MakeAdjoint::run(IB);
     typecheck(root);
   }
 }

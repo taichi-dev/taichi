@@ -365,5 +365,4 @@ def test_complex_body():
     complex.grad()
 
     for i in range(N):
-        print(a.grad[i], g[i])
         assert a.grad[i] == g[i]

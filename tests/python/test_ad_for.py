@@ -265,7 +265,49 @@ def test_double_for_loops_more_nests():
         assert b.grad[i] == total_grad_b
 
 
-test_double_for_loops_more_nests()
+@ti.require(ti.extension.adstack)
+@ti.all_archs
+def test_complex_body():
+    N = 5
+    a = ti.var(ti.f32, shape=N, needs_grad=True)
+    b = ti.var(ti.f32, shape=N, needs_grad=True)
+    c = ti.var(ti.i32, shape=N)
+    f = ti.var(ti.f32, shape=N, needs_grad=True)
+    g = ti.var(ti.f32, shape=N, needs_grad=False)
+
+    @ti.kernel
+    def complex():
+        for i in range(N):
+            weight = 2.0
+            tot = 0.0
+            tot_weight = 0.0
+            for j in range(c[i]):
+                tot_weight += weight + 1
+                tot += (weight + 1) * a[i]
+                weight = weight + 1
+                weight = weight * 4
+                weight = ti.cast(weight, ti.f64)
+                weight = ti.cast(weight, ti.f32)
+
+            g[i] = tot_weight
+            f[i] = tot
+
+    a.fill(2)
+    b.fill(1)
+
+    for i in range(N):
+        c[i] = i
+        f.grad[i] = 1
+
+    complex()
+    complex.grad()
+
+    for i in range(N):
+        print(a.grad[i], g[i])
+        assert a.grad[i] == g[i]
+
+
+test_complex_body()
 
 
 def test_misc():

@@ -138,14 +138,19 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
 
   PromoteSSA2LocalVar(Block *block) {
     alloca_block = block;
-    invoke_default_visitor = false;
+    invoke_default_visitor = true;
     execute_once = true;
   }
 
-  void visit(UnaryOpStmt *stmt) override {
+  void visit(Stmt *stmt) override {
     if (execute_once)
       return;
     TI_ASSERT(stmt->width() == 1);
+    if (!(stmt->is<UnaryOpStmt>() || stmt->is<BinaryOpStmt>() ||
+          stmt->is<TernaryOpStmt>() || stmt->is<OffsetAndExtractBitsStmt>())) {
+      // TODO: this list is probably incomplete
+      return;
+    }
     // Create a alloc
     auto alloc = Stmt::make<AllocaStmt>(1, stmt->ret_type.data_type);
     auto alloc_ptr = alloc.get();
@@ -217,7 +222,7 @@ class ReverseOuterLoops : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
 
  private:
-  ReverseOuterLoops(std::vector<Block *> IB) : IB(IB) {
+  ReverseOuterLoops(const std::vector<Block *> &IB) : IB(IB) {
   }
 
   bool is_IB(Block *block) const {
@@ -839,13 +844,7 @@ void make_adjoint(IRNode *root, bool use_stack) {
       fix_block_parents(root);
       BackupSSA backup;
       ib->accept(&backup);
-      TI_INFO("backupssa no typecheck:");
-      irpass::re_id(root);
-      irpass::print(root);
       typecheck(root);
-      TI_INFO("backupssa:");
-      irpass::re_id(root);
-      irpass::print(root);
     }
 
   } else {

@@ -142,7 +142,6 @@ def test_ad_fibonacci():
 @ti.require(ti.extension.adstack)
 @ti.all_archs
 def test_integer_stack():
-    ti.init(print_ir=True)
     N = 5
     a = ti.var(ti.f32, shape=N, needs_grad=True)
     b = ti.var(ti.f32, shape=N, needs_grad=True)
@@ -179,7 +178,28 @@ def test_integer_stack():
         assert a.grad[i] == t
         assert b.grad[i] == i
         t = t * 10 + 1
+        
+def test_misc():
+    ti.init(print_ir=True)
+    N = 5
+    a = ti.var(ti.f32, shape=N, needs_grad=True)
+    b = ti.var(ti.f32, shape=N, needs_grad=True)
+    c = ti.var(ti.i32, shape=N)
+    f = ti.var(ti.f32, shape=N, needs_grad=True)
+    
+    
+    @ti.kernel
+    def int_stack():
+        for i in range(N):
+            for j in range(N // 2):
+                # a += j
+                print(i + j)
+    
+    int_stack.grad()
+    
 
+
+test_misc()
 # TODO: test integer stack (primal without adjoint)
 # TODO: test global pointer stack
 

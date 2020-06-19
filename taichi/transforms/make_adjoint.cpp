@@ -10,6 +10,99 @@ TLANG_NAMESPACE_BEGIN
 
 // Do automatic differentiation pass in the reverse order (reverse-mode AD)
 
+// Independent Block (IB): blocks (i.e. loop bodies) whose iterations are
+// independent of previous iterations and outer scopes. IBs are where the
+// MakeAdjoint pass. IBs may contain if's and for-loops.
+
+// IBs are not always the inner-most for loop body. If the inner-most for-loop
+// has iterations carries an iteration-dependent variable, it's not an IB.
+
+// Clearly the outermost level is always an IB, but we want IBs to be as small
+// as possible. Outside IBs, we just need to reverse the for-loop orders.
+
+// TODO: support cases with two for loops in an single outer for loop
+// TODO: reverse for-loops outside independent blocks
+
+// Figure out the IB.
+class IdentifyIndependentBlocks : public BasicStmtVisitor {
+ public:
+  using BasicStmtVisitor::visit;
+
+  // std::vector<Block *> independent_blocks;
+
+  Block *IB;
+
+  void visit(WhileStmt *stmt) {
+    TI_ERROR("WhileStmt is not supported in AutoDiff.");
+  }
+
+  void visit(ContinueStmt *stmt) {
+    TI_ERROR("ContinueStmt is not supported in AutoDiff.");
+  }
+
+  void visit(WhileControlStmt *stmt) {
+    TI_ERROR("WhileControlStmt (break) is not supported in AutoDiff.");
+  }
+
+  bool is_independent_block(Block *block) {
+    // An IB has no local load/store to allocas *outside* itself
+    // Note:
+    //  - Local atomics should have been demoted before this pass.
+    //  - It is OK for an IB to have more than two for loops.
+    bool qualified = true;
+    std::set<AllocaStmt *> touched_allocas;
+    // TODO: remove this abuse since it *gathers nothing*
+    irpass::analysis::gather_statements(block, [&](Stmt *stmt) -> bool {
+      if (auto local_load = stmt->cast<LocalLoadStmt>(); local_load) {
+        for (auto &lane : local_load->ptr.data) {
+          touched_allocas.insert(lane.var->as<AllocaStmt>());
+        }
+      } else if (auto local_store = stmt->cast<LocalStoreStmt>(); local_store) {
+        touched_allocas.insert(local_store->ptr->as<AllocaStmt>());
+      }
+      return false;
+    });
+    for (auto alloca : touched_allocas) {
+      // Test if the alloca belongs to the current block
+      bool belong_to_this_block = false;
+      for (auto b = alloca->parent; b; b = b->parent) {
+        if (b == block) {
+          belong_to_this_block = true;
+        }
+      }
+      if (!belong_to_this_block) {
+        // This block is not an IB since it loads/modifies outside variables
+        qualified = false;
+        break;
+      }
+    }
+    return qualified;
+  }
+
+  void visit_loop_body(Block *block) {
+    if (is_independent_block(block)) {
+      IB = block;
+      block->accept(this);
+    } else {
+      // No need to dive further
+    }
+  }
+
+  void visit(StructForStmt *stmt) {
+    visit_loop_body(stmt->body.get());
+  }
+
+  void visit(RangeForStmt *stmt) {
+    visit_loop_body(stmt->body.get());
+  }
+
+  static Block *run(IRNode *root) {
+    IdentifyIndependentBlocks pass;
+    root->accept(&pass);
+    return pass.IB;
+  }
+};
+
 class PromoteSSA2LocalVar : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
@@ -90,6 +183,8 @@ class ConvertLocalVar : public BasicStmtVisitor {
     stmt->replace_with(Stmt::make<StackPushStmt>(stmt->ptr, stmt->data));
   }
 };
+
+// Generate the adjoint version of an independent block
 
 class MakeAdjoint : public IRVisitor {
  private:
@@ -678,6 +773,13 @@ namespace irpass {
 void make_adjoint(IRNode *root, bool use_stack) {
   TI_AUTO_PROF;
   if (use_stack) {
+
+    auto IB = IdentifyIndependentBlocks::run(root);
+    irpass::re_id(root);
+    TI_INFO("IB");
+    irpass::print(IB);
+    exit(0);
+
     PromoteSSA2LocalVar promoter;
     root->accept(&promoter);
     irpass::re_id(root);

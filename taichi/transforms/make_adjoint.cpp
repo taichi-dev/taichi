@@ -861,8 +861,10 @@ void make_adjoint(IRNode *root, bool use_stack) {
     for (auto ib : IB) {
       MakeAdjoint::run(ib);
     }
-    typecheck(root);
   }
+  typecheck(root);
+  TI_INFO("ad typechecked");
+  irpass::print(root);
 }
 
 }  // namespace irpass

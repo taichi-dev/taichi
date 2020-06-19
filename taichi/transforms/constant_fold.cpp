@@ -154,6 +154,7 @@ class ConstantFold : public BasicStmtVisitor {
       return;
     if (stmt->width() != 1)
       return;
+    irpass::print(stmt);
     auto dst_type = stmt->ret_type.data_type;
     TypedConstant new_constant(dst_type);
     if (jit_evaluate_binary_op(new_constant, stmt, lhs->val[0], rhs->val[0])) {
@@ -201,6 +202,8 @@ namespace irpass {
 
 bool constant_fold(IRNode *root) {
   TI_AUTO_PROF;
+  TI_INFO("Folding input");
+  irpass::print(root);
   // @archibate found that `debug=True` will cause JIT kernels
   // failed to evaluate correctly (always return 0), so we simply
   // disable constant_fold when config.debug is turned on.

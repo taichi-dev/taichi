@@ -12,23 +12,18 @@ TLANG_NAMESPACE_BEGIN
 
 // Independent Block (IB): blocks (i.e. loop bodies) whose iterations are
 // independent of previous iterations and outer scopes. IBs are where the
-// MakeAdjoint pass. IBs may contain if's and for-loops.
+// MakeAdjoint pass happens. IBs may contain if's and for-loops.
 
 // IBs are not always the inner-most for loop body. If the inner-most for-loop
-// has iterations carries an iteration-dependent variable, it's not an IB.
+// has iterations that carry iteration-dependent variables, it's not an IB.
 
 // Clearly the outermost level is always an IB, but we want IBs to be as small
 // as possible. Outside IBs, we just need to reverse the for-loop orders.
 
-// Figure out the IB.
+// Figure out the IBs.
 class IdentifyIndependentBlocks : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
-
-  std::vector<Block *> independent_blocks;
-
-  int depth{0};
-  Block *current_ib{nullptr};
 
   void visit(WhileStmt *stmt) {
     TI_ERROR("WhileStmt is not supported in AutoDiff.");
@@ -127,8 +122,16 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
     TI_ASSERT(!pass.independent_blocks.empty());
     return pass.independent_blocks;
   }
+
+ private:
+  std::vector<Block *> independent_blocks;
+  int depth{0};
+  Block *current_ib{nullptr};
 };
 
+// Note that SSA does not mean the instruction will be executed at most once.
+// For instructions that may be executed multiple times, we treat them as a
+// mutable local variables.
 class PromoteSSA2LocalVar : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
 

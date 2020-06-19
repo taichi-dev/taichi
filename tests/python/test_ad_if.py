@@ -89,8 +89,6 @@ def test_ad_if_nested():
     for i in range(n):
         assert z.grad[i] == i % 4
 
-test_ad_if_nested()
-
 @ti.require(ti.extension.adstack)
 @ti.all_archs
 def test_ad_if_mutable():
@@ -244,6 +242,3 @@ def test_stack():
         ti.call_internal("test_stack")
 
     func()
-
-
-test_ad_if_mutable()

@@ -823,23 +823,16 @@ namespace irpass {
 void auto_diff(IRNode *root, bool use_stack) {
   TI_AUTO_PROF;
   if (use_stack) {
-    irpass::re_id(root);
     auto IB = IdentifyIndependentBlocks::run(root);
-
-    irpass::re_id(root);
-
     ReverseOuterLoops::run(root, IB);
 
     fix_block_parents(root);
-    irpass::re_id(root);
     for (auto ib : IB) {
       PromoteSSA2LocalVar::run(ib);
       ReplaceLocalVarWithStacks replace;
       ib->accept(&replace);
-      irpass::re_id(root);
       typecheck(root);
       MakeAdjoint::run(ib);
-      irpass::re_id(root);
       typecheck(root);
       fix_block_parents(root);
       BackupSSA backup;
@@ -849,12 +842,8 @@ void auto_diff(IRNode *root, bool use_stack) {
     }
   } else {
     auto IB = IdentifyIndependentBlocks::run(root);
-    irpass::re_id(root);
-
     ReverseOuterLoops::run(root, IB);
-
     fix_block_parents(root);
-
     typecheck(root);
     for (auto ib : IB) {
       MakeAdjoint::run(ib);

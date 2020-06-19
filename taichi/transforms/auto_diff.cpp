@@ -742,7 +742,7 @@ class BackupSSA : public BasicStmtVisitor {
     return backup_alloca[stmt];
   }
 
-  void visit(Stmt *stmt) override {
+  void generic_visit(Stmt *stmt) {
     std::vector<Block *> leaf_to_root;
     auto t = stmt->parent;
     while (t != nullptr) {
@@ -752,6 +752,9 @@ class BackupSSA : public BasicStmtVisitor {
     int num_operands = stmt->get_operands().size();
     for (int i = 0; i < num_operands; i++) {
       auto op = stmt->operand(i);
+      if (op == nullptr) {
+        continue;
+      }
       if (std::find(leaf_to_root.begin(), leaf_to_root.end(), op->parent) ==
               leaf_to_root.end() &&
           !op->is<AllocaStmt>()) {
@@ -768,6 +771,16 @@ class BackupSSA : public BasicStmtVisitor {
     }
   }
 
+  void visit(Stmt *stmt) override {
+    generic_visit(stmt);
+  }
+
+  void visit(IfStmt *stmt) override {
+    generic_visit(stmt);
+    BasicStmtVisitor::visit(stmt);
+  }
+
+  // TODO: test operands for statements
   void visit(RangeForStmt *stmt) override {
     auto old_current_block = current_block;
     current_block = stmt->body.get();
@@ -840,9 +853,9 @@ void auto_diff(IRNode *root, bool use_stack) {
       fix_block_parents(root);
       BackupSSA backup;
       ib->accept(&backup);
-      typecheck(root);
+      fix_block_parents(root);
+      irpass::analysis::verify(root);
     }
-
   } else {
     auto IB = IdentifyIndependentBlocks::run(root);
     irpass::re_id(root);
@@ -856,7 +869,9 @@ void auto_diff(IRNode *root, bool use_stack) {
       MakeAdjoint::run(ib);
     }
   }
+  fix_block_parents(root);
   typecheck(root);
+  irpass::analysis::verify(root);
 }
 
 }  // namespace irpass

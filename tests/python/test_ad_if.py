@@ -50,7 +50,46 @@ def test_ad_if():
 
     assert x.grad[0] == 2
     assert x.grad[1] == 1
+    
+@ti.require(ti.extension.adstack)
+@ti.all_archs
+def test_ad_if_nested():
+    n = 20
+    x = ti.var(ti.f32, shape=n)
+    y = ti.var(ti.f32, shape=n)
+    z = ti.var(ti.f32, shape=n)
+    
+    ti.root.lazy_grad()
+    
+    @ti.kernel
+    def func():
+        for i in x:
+            if x[i] < 2:
+                if x[i] == 0:
+                    y[i] = 0
+                else:
+                    y[i] = z[i] * 1
+            else:
+                if x[i] == 2:
+                    y[i] = z[i] * 2
+                else:
+                    y[i] = z[i] * 3
+                    
+    z.fill(1)
+    
+    for i in range(n):
+        x[i] = i % 4
+    
+    func()
+    for i in range(n):
+        assert y[i] == i % 4
+        y.grad[i] = 1
+    func.grad()
 
+    for i in range(n):
+        assert z.grad[i] == i % 4
+
+test_ad_if_nested()
 
 @ti.require(ti.extension.adstack)
 @ti.all_archs

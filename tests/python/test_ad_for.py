@@ -135,7 +135,8 @@ def test_ad_fibonacci():
         else:
             assert a.grad[i] == f[i - 1]
         assert b.grad[i] == f[i]
-        
+
+
 @ti.require(ti.extension.adstack)
 @ti.all_archs
 def test_ad_fibonacci_index():
@@ -144,7 +145,7 @@ def test_ad_fibonacci_index():
     a = ti.var(ti.f32, shape=M, needs_grad=True)
     b = ti.var(ti.f32, shape=M, needs_grad=True)
     f = ti.var(ti.f32, shape=(), needs_grad=True)
-    
+
     @ti.kernel
     def fib():
         for i in range(N):
@@ -152,22 +153,23 @@ def test_ad_fibonacci_index():
             q = 1
             for j in range(5):
                 p, q = q, p + q
-                b[q] += a[q] * a[q]
-                
+                b[q] += a[q]
+
         for i in range(M):
             f[None] += b[i]
-    
+
     f.grad[None] = 1
     a.fill(1)
-    
+
     fib()
     fib.grad()
-    
+
     for i in range(M):
         is_fib = int(i in [1, 2, 3, 5, 8])
         assert a.grad[i] == is_fib * N
         assert b[i] == is_fib * N
-        
+
+
 @ti.require(ti.extension.adstack)
 @ti.all_archs
 def test_ad_global_ptr():
@@ -175,25 +177,25 @@ def test_ad_global_ptr():
     a = ti.var(ti.f32, shape=N, needs_grad=True)
     b = ti.var(ti.f32, shape=N, needs_grad=True)
     f = ti.var(ti.f32, shape=(), needs_grad=True)
-    
+
     @ti.kernel
     def task():
         for i in range(N):
             p = 0
             for j in range(N):
-                b[i] += a[p] ** 2
+                b[i] += a[p]**2
                 p += 1
-        
+
         for i in range(N):
             f[None] += b[i]
-    
+
     f.grad[None] = 1
     for i in range(N):
         a[i] = i
-    
+
     task()
     task.grad()
-    
+
     for i in range(N):
         print(a.grad[i])
         assert a.grad[i] == 2 * i * N
@@ -365,6 +367,3 @@ def test_complex_body():
     for i in range(N):
         print(a.grad[i], g[i])
         assert a.grad[i] == g[i]
-
-# test_integer_stack()
-# TODO: test global pointer stack

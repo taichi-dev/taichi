@@ -110,16 +110,16 @@ Use ``@ti.func`` to decorate your Taichi functions. These functions are callable
 
 .. note::
 
-    Unlike kernels, **functions do support vectors or matrices as arguments**:
+    Unlike functions, **kernels do support vectors or matrices as arguments**:
 
     .. code-block:: python
 
         @ti.func
-        def sdf(u):  # functions support vectors as arguments and do not need to be type-hinted
+        def sdf(u):  # functions support matrices and vectors as arguments. No type-hints needed.
             return u.norm() - 1
 
         @ti.kernel
-        def render(d_x: ti.f32, d_y: ti.f32):  # kernels doesn't, we have to use a workaround
+        def render(d_x: ti.f32, d_y: ti.f32):  # kernels do not support vector/matrix arguments yet. We have to use a workaround.
             d = ti.Vector([d_x, d_y])
             p = ti.Vector([0.0, 0.0])
             t = sdf(p)

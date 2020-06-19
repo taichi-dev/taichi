@@ -357,17 +357,8 @@ class StackPopStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
-  bool has_global_side_effect() const override {
-    return false;
-  }
-
-  bool dead_instruction_eliminable() const override {
-    return false;
-  }
-
-  bool common_statement_eliminable() const override {
-    return false;
-  }
+  // Mark has_global_side_effect == true to prevent being moved out of an if
+  // clause in the simplify pass for now.
 
   TI_STMT_DEF_FIELDS(ret_type, stack);
   TI_DEFINE_ACCEPT_AND_CLONE
@@ -385,17 +376,8 @@ class StackPushStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
-  bool has_global_side_effect() const override {
-    return false;
-  }
-
-  bool dead_instruction_eliminable() const override {
-    return false;
-  }
-
-  bool common_statement_eliminable() const override {
-    return false;
-  }
+  // Mark has_global_side_effect == true to prevent being moved out of an if
+  // clause in the simplify pass for now.
 
   TI_STMT_DEF_FIELDS(ret_type, stack, v);
   TI_DEFINE_ACCEPT_AND_CLONE
@@ -413,17 +395,8 @@ class StackAccAdjointStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
-  bool has_global_side_effect() const override {
-    return false;
-  }
-
-  bool dead_instruction_eliminable() const override {
-    return false;
-  }
-
-  bool common_statement_eliminable() const override {
-    return false;
-  }
+  // Mark has_global_side_effect == true to prevent being moved out of an if
+  // clause in the simplify pass for now.
 
   TI_STMT_DEF_FIELDS(ret_type, stack, v);
   TI_DEFINE_ACCEPT_AND_CLONE

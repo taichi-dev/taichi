@@ -812,11 +812,11 @@ void make_adjoint(IRNode *root, bool use_stack) {
     irpass::re_id(root);
     irpass::print(root);
     auto IB = IdentifyIndependentBlocks::run(root);
+
     irpass::re_id(root);
     for (auto ib : IB) {
       TI_INFO("IB");
       irpass::print(ib);
-      PromoteSSA2LocalVar::run(ib);
     }
 
     ReverseOuterLoops::run(root, IB);
@@ -825,6 +825,7 @@ void make_adjoint(IRNode *root, bool use_stack) {
     irpass::re_id(root);
     TI_P(IB.size());
     for (auto ib : IB) {
+      PromoteSSA2LocalVar::run(ib);
       ReplaceLocalVarWithStacks replace;
       ib->accept(&replace);
       TI_INFO("ReplaceLocalVarWithStacks:");

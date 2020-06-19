@@ -113,9 +113,7 @@ def test_ad_fibonacci():
             p = a[i]
             q = b[i]
             for j in range(c[i]):
-                new_p = q
-                new_q = p + q
-                p, q = new_p, new_q
+                p, q = q, p + q
             f[i] = q
 
     b.fill(1)
@@ -137,6 +135,38 @@ def test_ad_fibonacci():
         else:
             assert a.grad[i] == f[i - 1]
         assert b.grad[i] == f[i]
+        
+@ti.require(ti.extension.adstack)
+@ti.all_archs
+def test_ad_fibonacci_index():
+    N = 5
+    M = 10
+    a = ti.var(ti.f32, shape=M, needs_grad=True)
+    b = ti.var(ti.f32, shape=M, needs_grad=True)
+    f = ti.var(ti.f32, shape=(), needs_grad=True)
+    
+    @ti.kernel
+    def fib():
+        for i in range(N):
+            p = 0
+            q = 1
+            for j in range(5):
+                p, q = q, p + q
+                b[q] += a[q]
+                
+        for i in range(M):
+            f[None] += b[i]
+    
+    f.grad[None] = 1
+    a.fill(1)
+    
+    fib()
+    fib.grad()
+    
+    for i in range(M):
+        is_fib = int(i in [1, 2, 3, 5, 8])
+        assert a.grad[i] == is_fib * N
+        assert b[i] == is_fib * N
 
 
 @ti.require(ti.extension.adstack)
@@ -306,10 +336,6 @@ def test_complex_body():
         print(a.grad[i], g[i])
         assert a.grad[i] == g[i]
 
-
-test_complex_body()
-
-
 def test_misc():
     ti.init(print_ir=True)
     N = 5
@@ -326,7 +352,6 @@ def test_misc():
                 print(i + j)
 
     int_stack.grad()
-
 
 # test_integer_stack()
 # test_misc()

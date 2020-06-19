@@ -103,9 +103,28 @@ Use ``@ti.func`` to decorate your Taichi functions. These functions are callable
 
     Currently, all functions are force-inlined. Therefore, no recursion is allowed.
 
+
 .. note::
 
     Function arguments are passed by value.
+
+.. note::
+
+    Unlike functions, **kernels do support vectors or matrices as arguments**:
+
+    .. code-block:: python
+
+        @ti.func
+        def sdf(u):  # functions support matrices and vectors as arguments. No type-hints needed.
+            return u.norm() - 1
+
+        @ti.kernel
+        def render(d_x: ti.f32, d_y: ti.f32):  # kernels do not support vector/matrix arguments yet. We have to use a workaround.
+            d = ti.Vector([d_x, d_y])
+            p = ti.Vector([0.0, 0.0])
+            t = sdf(p)
+            p += d * t
+            ...
 
 
 

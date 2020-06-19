@@ -320,6 +320,7 @@ def supported_archs():
 def adaptive_arch_select(arch):
     if arch is None:
         return cpu
+    import taichi as ti
     supported = supported_archs()
     if isinstance(arch, list):
         for a in arch:

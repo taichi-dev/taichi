@@ -833,22 +833,22 @@ void make_adjoint(IRNode *root, bool use_stack) {
       irpass::print(root);
       typecheck(root);
       MakeAdjoint::run(ib);
+      TI_INFO("make_adjoint:");
+      irpass::re_id(root);
+      irpass::print(ib);
+      typecheck(root);
+      fix_block_parents(root);
+      BackupSSA backup;
+      ib->accept(&backup);
+      TI_INFO("backupssa no typecheck:");
+      irpass::re_id(root);
+      irpass::print(root);
+      typecheck(root);
+      TI_INFO("backupssa:");
+      irpass::re_id(root);
+      irpass::print(root);
     }
 
-    TI_INFO("make_adjoint:");
-    irpass::re_id(root);
-    irpass::print(root);
-    typecheck(root);
-    fix_block_parents(root);
-    BackupSSA backup;
-    root->accept(&backup);
-    TI_INFO("backupssa no typecheck:");
-    irpass::re_id(root);
-    irpass::print(root);
-    typecheck(root);
-    TI_INFO("backupssa:");
-    irpass::re_id(root);
-    irpass::print(root);
   } else {
     auto IB = IdentifyIndependentBlocks::run(root);
     irpass::re_id(root);

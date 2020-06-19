@@ -337,8 +337,6 @@ class TypeCheck : public IRVisitor {
     TI_ASSERT(rets.size() >= 1);
     auto ret = rets[0];  // TODO: stmt->ret_id?
     auto ret_type = ret.dt;
-    TI_P(data_type_name(ret_type));
-    TI_P(data_type_name(stmt->value->ret_type.data_type));
     TI_ASSERT(stmt->value->ret_type.data_type == ret_type);
     stmt->ret_type = VectorType(1, ret_type);
   }
@@ -425,7 +423,6 @@ namespace irpass {
 
 void typecheck(IRNode *root) {
   TI_AUTO_PROF;
-  irpass::print(root);
   analysis::check_fields_registered(root);
   TypeCheck inst(root);
   root->accept(&inst);

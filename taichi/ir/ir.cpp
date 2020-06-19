@@ -873,7 +873,7 @@ bool DelayedIRModifier::modify_ir() {
   for (auto &i : to_replace_with) {
     std::get<0>(i)->replace_with(std::move(std::get<1>(i)), std::get<2>(i));
   }
-  to_replace_with.empty();
+  to_replace_with.clear();
   return true;
 }
 

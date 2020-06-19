@@ -71,9 +71,6 @@ class DemoteAtomics : public BasicStmtVisitor {
         stmt->replace_with(load);
         modifier.replace_with(stmt, std::move(new_stmts),
                               /*replace_usages=*/false);
-        // stmt->parent->replace_with(stmt, std::move(new_stmts),
-        //                            /*replace_usages=*/false);
-        // throw IRModified();
       }
     }
   }

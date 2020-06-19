@@ -29,9 +29,10 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
 
-  // std::vector<Block *> independent_blocks;
+  std::vector<Block *> independent_blocks;
 
-  Block *IB = nullptr;
+  int depth{0};
+  Block *current_ib{nullptr};
 
   void visit(WhileStmt *stmt) {
     TI_ERROR("WhileStmt is not supported in AutoDiff.");
@@ -82,7 +83,7 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
 
   void visit_loop_body(Block *block) {
     if (is_independent_block(block)) {
-      IB = block;
+      current_ib = block;
       block->accept(this);
     } else {
       // No need to dive further
@@ -90,19 +91,45 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
   }
 
   void visit(StructForStmt *stmt) {
+    TI_ASSERT(depth == 0);
+    depth++;
+    current_ib = stmt->body.get();
     visit_loop_body(stmt->body.get());
+    depth--;
+    if (depth == 0) {
+      independent_blocks.push_back(current_ib);
+    }
   }
 
   void visit(RangeForStmt *stmt) {
+    if (depth == 0) {
+      current_ib = stmt->body.get();
+    }
+    depth++;
     visit_loop_body(stmt->body.get());
+    depth--;
+    if (depth == 0) {
+      independent_blocks.push_back(current_ib);
+    }
   }
 
-  static Block *run(IRNode *root) {
+  static std::vector<Block *> run(IRNode *root) {
     IdentifyIndependentBlocks pass;
-    pass.IB = root->as<Block>();
-    root->accept(&pass);
-    TI_ASSERT(pass.IB);
-    return pass.IB;
+    Block *block = root->as<Block>();
+    bool has_for = false;
+    for (auto &s : block->statements) {
+      if (s->is<StructForStmt>() || s->is<RangeForStmt>()) {
+        has_for = true;
+      }
+    }
+    if (!has_for) {
+      // The whole block is an IB
+      pass.independent_blocks.push_back(block);
+    } else {
+      root->accept(&pass);
+    }
+    TI_ASSERT(!pass.independent_blocks.empty());
+    return pass.independent_blocks;
   }
 };
 
@@ -190,31 +217,35 @@ class ReverseOuterLoops : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
 
  private:
-  ReverseOuterLoops(Block *IB) {
+  ReverseOuterLoops(std::vector<Block *> IB) : IB(IB) {
+  }
+
+  bool is_IB(Block *block) const {
+    return std::find(IB.begin(), IB.end(), block) != IB.end();
   }
 
   void visit(StructForStmt *stmt) {
     loop_depth += 1;
-    if (stmt->body.get() != IB)
+    if (!is_IB(stmt->body.get()))
       stmt->body->accept(this);
     loop_depth -= 1;
   }
 
   void visit(RangeForStmt *stmt) {
-    loop_depth += 1;
     if (loop_depth >= 1) {
       stmt->reversed = !stmt->reversed;
     }
-    if (stmt->body.get() != IB)
+    loop_depth += 1;
+    if (!is_IB(stmt->body.get()))
       stmt->body->accept(this);
     loop_depth -= 1;
   }
 
   int loop_depth;
-  Block *IB;
+  std::vector<Block *> IB;
 
  public:
-  static void run(IRNode *root, Block *IB) {
+  static void run(IRNode *root, const std::vector<Block *> &IB) {
     ReverseOuterLoops pass(IB);
     root->accept(&pass);
   }
@@ -782,24 +813,27 @@ void make_adjoint(IRNode *root, bool use_stack) {
     irpass::print(root);
     auto IB = IdentifyIndependentBlocks::run(root);
     irpass::re_id(root);
-    TI_INFO("IB");
-    irpass::print(IB);
-
-    PromoteSSA2LocalVar::run(IB);
-    irpass::re_id(root);
-    irpass::print(root);
+    for (auto ib : IB) {
+      TI_INFO("IB");
+      irpass::print(ib);
+      PromoteSSA2LocalVar::run(ib);
+    }
 
     ReverseOuterLoops::run(root, IB);
 
     fix_block_parents(root);
-    ReplaceLocalVarWithStacks converter;
-    IB->accept(&converter);
-
-    TI_INFO("Convert local var:");
     irpass::re_id(root);
-    irpass::print(root);
-    typecheck(root);
-    MakeAdjoint::run(IB);
+    TI_P(IB.size());
+    for (auto ib : IB) {
+      ReplaceLocalVarWithStacks replace;
+      ib->accept(&replace);
+      TI_INFO("ReplaceLocalVarWithStacks:");
+      irpass::re_id(root);
+      irpass::print(root);
+      typecheck(root);
+      MakeAdjoint::run(ib);
+    }
+
     TI_INFO("make_adjoint:");
     irpass::re_id(root);
     irpass::print(root);
@@ -817,19 +851,15 @@ void make_adjoint(IRNode *root, bool use_stack) {
   } else {
     auto IB = IdentifyIndependentBlocks::run(root);
     irpass::re_id(root);
-    TI_INFO("IB");
-    irpass::print(IB);
-
-    PromoteSSA2LocalVar::run(IB);
-    irpass::re_id(root);
-    irpass::print(root);
 
     ReverseOuterLoops::run(root, IB);
 
     fix_block_parents(root);
 
     typecheck(root);
-    MakeAdjoint::run(IB);
+    for (auto ib : IB) {
+      MakeAdjoint::run(ib);
+    }
     typecheck(root);
   }
 }

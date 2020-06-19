@@ -147,8 +147,7 @@ def test_integer_stack():
     b = ti.var(ti.f32, shape=N, needs_grad=True)
     c = ti.var(ti.i32, shape=N)
     f = ti.var(ti.f32, shape=N, needs_grad=True)
-    
-    
+
     @ti.kernel
     def int_stack():
         for i in range(N):
@@ -161,24 +160,25 @@ def test_integer_stack():
 
     a.fill(1)
     b.fill(1)
-    
+
     for i in range(N):
         c[i] = i
-    
+
     int_stack()
-    
+
     for i in range(N):
         print(f[i])
         f.grad[i] = 1
-    
+
     int_stack.grad()
-    
+
     t = 0
     for i in range(N):
         assert a.grad[i] == t
         assert b.grad[i] == i
         t = t * 10 + 1
-        
+
+
 @ti.require(ti.extension.adstack)
 @ti.all_archs
 def test_double_for_loops():
@@ -187,7 +187,7 @@ def test_double_for_loops():
     b = ti.var(ti.f32, shape=N, needs_grad=True)
     c = ti.var(ti.i32, shape=N)
     f = ti.var(ti.f32, shape=N, needs_grad=True)
-    
+
     @ti.kernel
     def double_for():
         for i in range(N):
@@ -198,26 +198,76 @@ def test_double_for_loops():
             for j in range(c[i] * 2):
                 s += weight + b[i]
             f[i] = s
-    
+
     a.fill(2)
     b.fill(1)
-    
+
     for i in range(N):
         c[i] = i
-    
+
     double_for()
-    
+
     for i in range(N):
+        assert f[i] == 2 * i * (1 + 2**i)
         f.grad[i] = 1
-    
+
     double_for.grad()
-    
-    t = 0
+
     for i in range(N):
-        assert a.grad[i] == 2 * i * i * 2 ** (i - 1)
+        assert a.grad[i] == 2 * i * i * 2**(i - 1)
         assert b.grad[i] == 2 * i
-        t = t * 10 + 1
-        
+
+
+@ti.require(ti.extension.adstack)
+@ti.all_archs
+def test_double_for_loops_more_nests():
+    N = 6
+    a = ti.var(ti.f32, shape=N, needs_grad=True)
+    b = ti.var(ti.f32, shape=N, needs_grad=True)
+    c = ti.var(ti.i32, shape=(N, N // 2))
+    f = ti.var(ti.f32, shape=(N, N // 2), needs_grad=True)
+
+    @ti.kernel
+    def double_for():
+        for i in range(N):
+            for k in range(N // 2):
+                weight = 1.0
+                for j in range(c[i, k]):
+                    weight *= a[i]
+                s = 0.0
+                for j in range(c[i, k] * 2):
+                    s += weight + b[i]
+                f[i, k] = s
+
+    a.fill(2)
+    b.fill(1)
+
+    for i in range(N):
+        for k in range(N // 2):
+            c[i, k] = i + k
+
+    double_for()
+
+    for i in range(N):
+        for k in range(N // 2):
+            assert f[i, k] == 2 * (i + k) * (1 + 2**(i + k))
+            f.grad[i, k] = 1
+
+    double_for.grad()
+
+    for i in range(N):
+        total_grad_a = 0
+        total_grad_b = 0
+        for k in range(N // 2):
+            total_grad_a += 2 * (i + k)**2 * 2**(i + k - 1)
+            total_grad_b += 2 * (i + k)
+        assert a.grad[i] == total_grad_a
+        assert b.grad[i] == total_grad_b
+
+
+test_double_for_loops_more_nests()
+
+
 def test_misc():
     ti.init(print_ir=True)
     N = 5
@@ -225,19 +275,17 @@ def test_misc():
     b = ti.var(ti.f32, shape=N, needs_grad=True)
     c = ti.var(ti.i32, shape=N)
     f = ti.var(ti.f32, shape=N, needs_grad=True)
-    
-    
+
     @ti.kernel
     def int_stack():
         for i in range(N):
             for j in range(N // 2):
                 # a += j
                 print(i + j)
-    
+
     int_stack.grad()
-    
+
 
 # test_integer_stack()
 # test_misc()
 # TODO: test global pointer stack
-

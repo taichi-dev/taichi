@@ -198,8 +198,7 @@ def test_misc():
     int_stack.grad()
     
 
-
+# test_integer_stack()
 test_misc()
-# TODO: test integer stack (primal without adjoint)
 # TODO: test global pointer stack
 

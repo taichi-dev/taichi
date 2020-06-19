@@ -926,7 +926,7 @@ void CodeGenLLVM::visit(SNodeOpStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
-  create_print("atomic contrib", DataType::f32, llvm_val[stmt->val]);
+  // create_print("atomic contrib", DataType::f32, llvm_val[stmt->val]);
   // auto mask = stmt->parent->mask();
   // TODO: deal with mask when vectorized
   TI_ASSERT(stmt->width() == 1);

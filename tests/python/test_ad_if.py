@@ -205,3 +205,5 @@ def test_stack():
         ti.call_internal("test_stack")
 
     func()
+    
+test_ad_if_mutable()

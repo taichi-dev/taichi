@@ -22,6 +22,7 @@ TLANG_NAMESPACE_BEGIN
 
 // TODO: support cases with two for loops in an single outer for loop
 // TODO: reverse for-loops outside independent blocks
+// TODO: restore old make_adjoint for OpenGL
 
 // Figure out the IB.
 class IdentifyIndependentBlocks : public BasicStmtVisitor {
@@ -30,7 +31,7 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
 
   // std::vector<Block *> independent_blocks;
 
-  Block *IB;
+  Block *IB = nullptr;
 
   void visit(WhileStmt *stmt) {
     TI_ERROR("WhileStmt is not supported in AutoDiff.");
@@ -98,25 +99,26 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
 
   static Block *run(IRNode *root) {
     IdentifyIndependentBlocks pass;
+    pass.IB = root->as<Block>();
     root->accept(&pass);
+    TI_ASSERT(pass.IB);
     return pass.IB;
   }
 };
 
 class PromoteSSA2LocalVar : public BasicStmtVisitor {
- public:
   using BasicStmtVisitor::visit;
 
-  PromoteSSA2LocalVar() {
+  PromoteSSA2LocalVar(Block *block) {
+    alloca_block = block;
     invoke_default_visitor = false;
+    execute_once = true;
   }
 
   void visit(UnaryOpStmt *stmt) override {
-    TI_ASSERT(stmt->width() == 1);
-    if (for_depth == 0) {
+    if (execute_once)
       return;
-    }
-    TI_TAG;
+    TI_ASSERT(stmt->width() == 1);
     // Create a alloc
     auto alloc = Stmt::make<AllocaStmt>(1, stmt->ret_type.data_type);
     auto alloc_ptr = alloc.get();
@@ -127,25 +129,27 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
     irpass::replace_all_usages_with(stmt->parent, stmt, load);
     // Create the load first so that the operand of the store won't get replaced
     stmt->insert_after_me(Stmt::make<LocalStoreStmt>(alloc_ptr, stmt));
-    irpass::print(stmt);
   }
 
   void visit(RangeForStmt *stmt) override {
-    TI_P(for_depth);
-    TI_TAG;
-    if (for_depth == 0) {
-      alloca_block = stmt->body.get();
-      TI_P(alloca_block);
-    }
-    for_depth += 1;
+    auto old_execute_once = execute_once;
+    execute_once = false;  // loop body may be executed many times
     stmt->body->accept(this);
-    for_depth -= 1;
+    execute_once = old_execute_once;
   }
 
  private:
-  int for_depth{0};
   Block *alloca_block{nullptr};
+  bool execute_once;
+
+ public:
+  static void run(Block *block) {
+    PromoteSSA2LocalVar pass(block);
+    block->accept(&pass);
+  }
 };
+
+// Replace local variables with stacks
 
 class ConvertLocalVar : public BasicStmtVisitor {
  public:
@@ -254,35 +258,21 @@ class MakeAdjoint : public IRVisitor {
  public:
   Block *current_block;
   Block *alloca_block;
-  bool reentrant;
   std::map<Stmt *, Stmt *> adjoint_stmt;
-  int for_depth;
 
-  MakeAdjoint() {
+  MakeAdjoint(Block *block) {
     current_block = nullptr;
-    alloca_block = nullptr;
-    reentrant = false;
-    // Note:
-    // MakeAdjoint acts on the block with if's and without struct/range/while
-    // loops. This is basically a straight-line code with forking and merging
-    // due to if's. Therefore the adjoint allocas must belong to this block
-    // for it to be visible. We call this block `alloca_block`.
-
-    for_depth = 0;
+    alloca_block = block;
   }
 
-  static void run(IRNode *node) {
-    auto p = MakeAdjoint();
-    node->accept(&p);
+  static void run(Block *block) {
+    auto p = MakeAdjoint(block);
+    block->accept(&p);
   }
 
   // TODO: current block might not be the right block to insert adjoint
   // instructions!
   void visit(Block *block) override {
-    if (current_block == nullptr) {
-      // serial
-      alloca_block = block;
-    }
     std::vector<Stmt *> statements;
     // always make a copy since the list can be modified.
     for (auto &stmt : block->statements) {
@@ -509,51 +499,34 @@ class MakeAdjoint : public IRVisitor {
   }
 
   void visit(RangeForStmt *for_stmt) override {
-    /*
-    // TODO: restore pure loops that only needs reversing
-    if (for_depth > 0)  // reverse non-parallelized for-loops
-      for_stmt->reverse();
-    */
-    if (for_depth > 0) {
-      bool old_reentrant = reentrant;
-      reentrant = true;
-      auto new_for = for_stmt->clone();
-      auto new_for_ptr = (RangeForStmt *)new_for.get();
-      new_for_ptr->reversed = !new_for_ptr->reversed;
-      insert_back(std::move(new_for));
-      int len = new_for_ptr->body->statements.size();
+    auto new_for = for_stmt->clone();
+    auto new_for_ptr = (RangeForStmt *)new_for.get();
+    new_for_ptr->reversed = !new_for_ptr->reversed;
+    insert_back(std::move(new_for));
+    int len = new_for_ptr->body->statements.size();
 
-      for (int i = 0; i < len; i++) {
-        new_for_ptr->body->erase(0);
-      }
-
-      std::vector<Stmt *> statements;
-      // always make a copy since the list can be modified.
-      for (auto &stmt : for_stmt->body->statements) {
-        statements.push_back(stmt.get());
-      }
-      std::reverse(statements.begin(), statements.end());  // reverse-mode AD...
-      auto old_alloca_block = alloca_block;
-      for (auto stmt : statements) {
-        alloca_block = new_for_ptr->body.get();
-        current_block = new_for_ptr->body.get();
-        stmt->accept(this);
-      }
-      alloca_block = old_alloca_block;
-      reentrant = old_reentrant;
-    } else {
-      for_depth += 1;
-      alloca_block = for_stmt->body.get();
-      for_stmt->body->accept(this);
-      for_depth -= 1;
+    for (int i = 0; i < len; i++) {
+      new_for_ptr->body->erase(0);
     }
+
+    std::vector<Stmt *> statements;
+    // always make a copy since the list can be modified.
+    for (auto &stmt : for_stmt->body->statements) {
+      statements.push_back(stmt.get());
+    }
+    std::reverse(statements.begin(), statements.end());  // reverse-mode AD...
+    auto old_alloca_block = alloca_block;
+    for (auto stmt : statements) {
+      alloca_block = new_for_ptr->body.get();
+      current_block = new_for_ptr->body.get();
+      stmt->accept(this);
+    }
+    alloca_block = old_alloca_block;
   }
 
   void visit(StructForStmt *for_stmt) override {
-    for_depth += 1;
     alloca_block = for_stmt->body.get();
     for_stmt->body->accept(this);
-    for_depth -= 1;
   }
 
   void visit(GlobalPtrStmt *stmt) override {
@@ -746,7 +719,7 @@ class BackupSSA : public BasicStmtVisitor {
   }
 
   void visit(WhileStmt *stmt) override {
-    TI_ERROR("WhileStmt not supported by autodiff for now");
+    TI_ERROR("WhileStmt not supported in AutoDiff for now.");
   }
 
   void visit(Block *block) override {
@@ -773,34 +746,33 @@ namespace irpass {
 void make_adjoint(IRNode *root, bool use_stack) {
   TI_AUTO_PROF;
   if (use_stack) {
-
+    irpass::re_id(root);
+    irpass::print(root);
     auto IB = IdentifyIndependentBlocks::run(root);
     irpass::re_id(root);
     TI_INFO("IB");
     irpass::print(IB);
-    exit(0);
 
-    PromoteSSA2LocalVar promoter;
-    root->accept(&promoter);
+    PromoteSSA2LocalVar::run(IB);
     irpass::re_id(root);
     irpass::print(root);
 
     fix_block_parents(root);
     ConvertLocalVar converter;
-    root->accept(&converter);
+    IB->accept(&converter);
 
     TI_INFO("Convert local var:");
     irpass::re_id(root);
     irpass::print(root);
     typecheck(root);
-    MakeAdjoint::run(root);
+    MakeAdjoint::run(IB);
     TI_INFO("make_adjoint:");
     irpass::re_id(root);
     irpass::print(root);
     typecheck(root);
     fix_block_parents(root);
-    BackupSSA b;
-    root->accept(&b);
+    BackupSSA backup;
+    root->accept(&backup);
     TI_INFO("backupssa no typecheck:");
     irpass::re_id(root);
     irpass::print(root);
@@ -809,7 +781,8 @@ void make_adjoint(IRNode *root, bool use_stack) {
     irpass::re_id(root);
     irpass::print(root);
   } else {
-    MakeAdjoint::run(root);
+    TI_NOT_IMPLEMENTED
+    // MakeAdjoint::run(root);
     typecheck(root);
   }
 }

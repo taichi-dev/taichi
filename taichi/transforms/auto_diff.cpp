@@ -20,10 +20,6 @@ TLANG_NAMESPACE_BEGIN
 // Clearly the outermost level is always an IB, but we want IBs to be as small
 // as possible. Outside IBs, we just need to reverse the for-loop orders.
 
-// TODO: support cases with two for loops in an single outer for loop
-// TODO: reverse for-loops outside independent blocks
-// TODO: restore old make_adjoint for OpenGL
-
 // Figure out the IB.
 class IdentifyIndependentBlocks : public BasicStmtVisitor {
  public:
@@ -147,8 +143,9 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
       return;
     TI_ASSERT(stmt->width() == 1);
     if (!(stmt->is<UnaryOpStmt>() || stmt->is<BinaryOpStmt>() ||
-          stmt->is<TernaryOpStmt>() || stmt->is<OffsetAndExtractBitsStmt>())) {
-      // TODO: this list is probably incomplete
+          stmt->is<TernaryOpStmt>() || stmt->is<OffsetAndExtractBitsStmt>() ||
+          stmt->is<GlobalLoadStmt>())) {
+      // TODO: this list may be incomplete
       return;
     }
     // Create a alloc
@@ -810,7 +807,7 @@ class BackupSSA : public BasicStmtVisitor {
 
 namespace irpass {
 
-void make_adjoint(IRNode *root, bool use_stack) {
+void auto_diff(IRNode *root, bool use_stack) {
   TI_AUTO_PROF;
   if (use_stack) {
     irpass::re_id(root);
@@ -827,17 +824,16 @@ void make_adjoint(IRNode *root, bool use_stack) {
 
     fix_block_parents(root);
     irpass::re_id(root);
-    TI_P(IB.size());
     for (auto ib : IB) {
       PromoteSSA2LocalVar::run(ib);
       ReplaceLocalVarWithStacks replace;
       ib->accept(&replace);
       TI_INFO("ReplaceLocalVarWithStacks:");
       irpass::re_id(root);
-      irpass::print(root);
+      irpass::print(ib);
       typecheck(root);
       MakeAdjoint::run(ib);
-      TI_INFO("make_adjoint:");
+      TI_INFO("auto_diff:");
       irpass::re_id(root);
       irpass::print(ib);
       typecheck(root);
@@ -861,8 +857,6 @@ void make_adjoint(IRNode *root, bool use_stack) {
     }
   }
   typecheck(root);
-  TI_INFO("ad typechecked");
-  irpass::print(root);
 }
 
 }  // namespace irpass

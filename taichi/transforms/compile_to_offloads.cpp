@@ -70,9 +70,9 @@ void compile_to_offloads(IRNode *ir,
     irpass::demote_atomics(ir);
 
     irpass::full_simplify(ir);
-    irpass::make_adjoint(ir, ad_use_stack);
+    irpass::auto_diff(ir, ad_use_stack);
     irpass::full_simplify(ir);
-    print("Adjoint");
+    print("Gradient");
     irpass::analysis::verify(ir);
   }
 

@@ -568,10 +568,10 @@ class MakeAdjoint : public IRVisitor {
 
   void visit(RangeForStmt *for_stmt) override {
     auto new_for = for_stmt->clone();
-    auto new_for_ptr = (RangeForStmt *)new_for.get();
+    auto new_for_ptr = new_for->as<RangeForStmt>();
     new_for_ptr->reversed = !new_for_ptr->reversed;
     insert_back(std::move(new_for));
-    int len = new_for_ptr->body->statements.size();
+    const int len = new_for_ptr->body->size();
 
     for (int i = 0; i < len; i++) {
       new_for_ptr->body->erase(0);

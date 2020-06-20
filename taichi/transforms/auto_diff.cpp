@@ -717,11 +717,10 @@ class BackupSSA : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
 
-  Block *current_block;
+  Block *independent_block;
   std::map<Stmt *, Stmt *> backup_alloca;
 
-  BackupSSA() {
-    current_block = nullptr;
+  BackupSSA(Block *independent_block) : independent_block(independent_block) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
   }
@@ -732,8 +731,7 @@ class BackupSSA : public BasicStmtVisitor {
           Stmt::make<AllocaStmt>(stmt->width(), stmt->ret_type.data_type);
       alloca->ret_type.set_is_pointer(stmt->ret_type.is_pointer());
       auto alloca_ptr = alloca.get();
-      TI_ASSERT(current_block != nullptr);
-      stmt->parent->parent->insert(std::move(alloca), 0);
+      independent_block->insert(std::move(alloca), 0);
       auto local_store = Stmt::make<LocalStoreStmt>(alloca_ptr, stmt);
       local_store->ret_type.set_is_pointer(stmt->ret_type.is_pointer());
       stmt->insert_after_me(std::move(local_store));
@@ -782,17 +780,11 @@ class BackupSSA : public BasicStmtVisitor {
 
   // TODO: test operands for statements
   void visit(RangeForStmt *stmt) override {
-    auto old_current_block = current_block;
-    current_block = stmt->body.get();
     stmt->body->accept(this);
-    current_block = old_current_block;
   }
 
   void visit(StructForStmt *stmt) override {
-    auto old_current_block = current_block;
-    current_block = stmt->body.get();
     stmt->body->accept(this);
-    current_block = old_current_block;
   }
 
   void visit(WhileStmt *stmt) override {
@@ -800,10 +792,6 @@ class BackupSSA : public BasicStmtVisitor {
   }
 
   void visit(Block *block) override {
-    // top-level block case
-    auto old_current_block = current_block;
-    if (old_current_block == nullptr)
-      current_block = block;
     std::vector<Stmt *> statements;
     // always make a copy since the list can be modified.
     for (auto &stmt : block->statements) {
@@ -813,8 +801,12 @@ class BackupSSA : public BasicStmtVisitor {
       TI_ASSERT(!stmt->erased);
       stmt->accept(this);
     }
-    if (old_current_block == nullptr)
-      current_block = old_current_block;
+  }
+
+ public:
+  static void run(Block *block) {
+    BackupSSA pass(block);
+    block->accept(&pass);
   }
 };
 
@@ -835,8 +827,7 @@ void auto_diff(IRNode *root, bool use_stack) {
       MakeAdjoint::run(ib);
       typecheck(root);
       fix_block_parents(root);
-      BackupSSA backup;
-      ib->accept(&backup);
+      BackupSSA::run(ib);
       fix_block_parents(root);
       irpass::analysis::verify(root);
     }

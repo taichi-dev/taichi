@@ -12,7 +12,7 @@ tot = ti.var(ti.i32, shape=())
 @ti.kernel
 def fill():
     for i in a:
-        a[i] = 3
+        a[i] = i
 
 @ti.kernel
 def reduce():
@@ -24,6 +24,6 @@ fill()
 for i in range(10):
     reduce()
 
-print(tot[None])
-assert tot[None] == 3 * 10 * N
+ground_truth = 10 * N * (N - 1) / 2 % 2 ** 32
+assert tot[None] % 2 ** 32 == ground_truth
 ti.kernel_profiler_print()

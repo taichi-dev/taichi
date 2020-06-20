@@ -520,4 +520,5 @@ std::string get_commit_hash();
 
 std::string get_cuda_version_string();
 
+std::string get_llvm_version_string();
 TI_NAMESPACE_END

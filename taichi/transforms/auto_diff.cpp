@@ -222,7 +222,7 @@ class ReverseOuterLoops : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
 
  private:
-  ReverseOuterLoops(const std::vector<Block *> &IB) : IB(IB), loop_depth(0) {
+  ReverseOuterLoops(const std::vector<Block *> &IB) : loop_depth(0), IB(IB) {
   }
 
   bool is_IB(Block *block) const {

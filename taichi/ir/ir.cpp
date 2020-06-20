@@ -666,7 +666,10 @@ Stmt *Block::insert(std::unique_ptr<Stmt> &&stmt, int location) {
 }
 
 Stmt *Block::insert(VecStatement &&stmt, int location) {
-  auto stmt_ptr = stmt.back().get();
+  Stmt *stmt_ptr = nullptr;
+  if (stmt.size()) {
+    stmt_ptr = stmt.back().get();
+  }
   if (location == -1) {
     location = (int)statements.size() - 1;
   }

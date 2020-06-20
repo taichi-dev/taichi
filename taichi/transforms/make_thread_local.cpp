@@ -41,7 +41,7 @@ void make_thread_local_offload(OffloadedStmt *offload) {
 
   for (auto dest : atomic_destinations) {
     // check if there is any other global load/store/atomic operations
-    auto global_mem_ops =
+    auto related_global_mem_ops =
         irpass::analysis::gather_statements(offload, [&](Stmt *stmt) {
           if (auto load = stmt->cast<GlobalLoadStmt>()) {
             if (maybe_same_address(load->ptr, dest)) {
@@ -56,13 +56,22 @@ void make_thread_local_offload(OffloadedStmt *offload) {
               return !is_atomic_op_linear(atomic->op_type);
             }
           }
+          for (auto &op : stmt->get_operands()) {
+            // Make sure the values of related atomic add operation are not
+            // used.
+            if (auto atomic = op->cast<AtomicOpStmt>()) {
+              if (maybe_same_address(atomic->dest, dest)) {
+                return true;
+              }
+            }
+          }
           return false;  // The statement is not related
         });
     TI_ASSERT(dest->width() == 1);
     // We can only optimized reductions to global ptrs with form like loss[None]
     // for now
-    if (global_mem_ops.empty() && dest->snodes[0]->type == SNodeType::place &&
-        dest->indices.empty()) {
+    if (related_global_mem_ops.empty() &&
+        dest->snodes[0]->type == SNodeType::place && dest->indices.empty()) {
       reduction_values.push_back(dest);
     }
   }

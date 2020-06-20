@@ -35,7 +35,7 @@ void vector_split(IRNode *root, int max_width, bool serial_schedule);
 void replace_all_usages_with(IRNode *root, Stmt *old_stmt, Stmt *new_stmt);
 bool check_out_of_bound(IRNode *root);
 void make_thread_local(IRNode *root);
-void lower_access(IRNode *root, bool lower_atomic, Kernel *kernel = nullptr);
+bool lower_access(IRNode *root, bool lower_atomic, Kernel *kernel = nullptr);
 void auto_diff(IRNode *root, bool use_stack = false);
 bool constant_fold(IRNode *root);
 void offload(IRNode *root);

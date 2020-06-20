@@ -494,7 +494,7 @@ class IRPrinter : public IRVisitor {
       print("{} = offloaded {} ", stmt->name(), details);
       if (stmt->prologue) {
         print("prologue {{");
-        stmt->body->accept(this);
+        stmt->prologue->accept(this);
         print("}}");
       }
       TI_ASSERT(stmt->body);
@@ -503,7 +503,7 @@ class IRPrinter : public IRVisitor {
       print("}}");
       if (stmt->epilogue) {
         print("epilogue {{");
-        stmt->body->accept(this);
+        stmt->epilogue->accept(this);
         print("}}");
       }
     }
@@ -516,6 +516,11 @@ class IRPrinter : public IRVisitor {
 
   void visit(GlobalTemporaryStmt *stmt) override {
     print("{}{} = global tmp var (offset = {} B)", stmt->type_hint(),
+          stmt->name(), stmt->offset);
+  }
+
+  void visit(ThreadLocalPtrStmt *stmt) override {
+    print("{}{} = thread local ptr (offset = {} B)", stmt->type_hint(),
           stmt->name(), stmt->offset);
   }
 

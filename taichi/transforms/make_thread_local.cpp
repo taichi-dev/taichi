@@ -56,7 +56,6 @@ void make_thread_local_offload(OffloadedStmt *offload) {
               return !is_atomic_op_linear(atomic->op_type);
             }
           }
-          TI_TAG;
           return false;  // The statement is not related
         });
     TI_ASSERT(dest->width() == 1);
@@ -67,6 +66,50 @@ void make_thread_local_offload(OffloadedStmt *offload) {
       ptr_to_reduce.push_back(dest);
       TI_INFO("Detected reduction:");
       irpass::print(dest);
+    }
+  }
+
+  TI_ASSERT(ptr_to_reduce.size() <= 1);
+  for (auto ptr : ptr_to_reduce) {
+    auto data_type = ptr->ret_type.data_type;
+    auto offset = 0;
+    // Step 1:
+    // Create thread local storage
+    {
+      if (offload->prologue == nullptr) {
+        offload->prologue = std::make_unique<Block>();
+      }
+      irpass::analysis::clone(ptr);
+      auto tls_ptr = offload->prologue->push_back<ThreadLocalPtrStmt>(
+          offset, VectorType(1, data_type));
+      auto zero = offload->prologue->insert(
+          std::make_unique<ConstStmt>(TypedConstant(data_type, 0)), -1);
+      offload->prologue->push_back<GlobalStoreStmt>(tls_ptr, zero);
+    }
+
+    // Step 2:
+    // Make loop body accumulate to TLS
+    {
+      auto tls_ptr = offload->body->insert(
+          Stmt::make<ThreadLocalPtrStmt>(offset, VectorType(1, data_type)), 0);
+      ptr->replace_with(tls_ptr);
+    }
+
+    // Step 3:
+    // Atomic-add contribution to global version
+    {
+      if (offload->epilogue == nullptr) {
+        offload->epilogue = std::make_unique<Block>();
+      }
+      auto tls_ptr = offload->epilogue->push_back<ThreadLocalPtrStmt>(
+          offset, VectorType(1, data_type));
+      // TODO: do not use global load from TLS.
+      auto tls_load = offload->epilogue->push_back<GlobalLoadStmt>(tls_ptr);
+      auto global_ptr = offload->epilogue->insert(
+          std::unique_ptr<Stmt>((Stmt *)irpass::analysis::clone(ptr).release()),
+          -1);
+      offload->epilogue->push_back<AtomicOpStmt>(AtomicOpType::add, global_ptr,
+                                                 tls_load);
     }
   }
 }
@@ -81,6 +124,10 @@ void make_thread_local(IRNode *root) {
   for (auto &offload : root_block->statements) {
     make_thread_local_offload(offload->cast<OffloadedStmt>());
   }
+  irpass::typecheck(root);
+  fix_block_parents(root);
+  TI_INFO("after:");
+  irpass::print(root);
 }
 
 }  // namespace irpass

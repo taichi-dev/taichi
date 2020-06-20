@@ -491,10 +491,21 @@ class IRPrinter : public IRVisitor {
       print("{} = offloaded garbage collect {}", stmt->name(),
             stmt->snode->get_node_type_name_hinted());
     } else {
-      print("{} = offloaded {} {{", stmt->name(), details);
+      print("{} = offloaded {} ", stmt->name(), details);
+      if (stmt->prologue) {
+        print("prologue {{");
+        stmt->body->accept(this);
+        print("}}");
+      }
       TI_ASSERT(stmt->body);
+      print("body {{");
       stmt->body->accept(this);
       print("}}");
+      if (stmt->epilogue) {
+        print("epilogue {{");
+        stmt->body->accept(this);
+        print("}}");
+      }
     }
   }
 

@@ -180,7 +180,9 @@ class OffloadedStmt : public Stmt {
   bool reversed;
   int num_cpu_threads;
   Arch device;
+  std::unique_ptr<Block> prologue;
   std::unique_ptr<Block> body;
+  std::unique_ptr<Block> epilogue;
   ScratchPadOptions scratch_opt;
 
   OffloadedStmt(TaskType task_type);

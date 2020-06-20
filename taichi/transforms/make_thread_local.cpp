@@ -37,7 +37,7 @@ void make_thread_local_offload(OffloadedStmt *offload) {
         return false;
       });
 
-  std::vector<GlobalPtrStmt *> ptr_to_reduce;
+  std::vector<GlobalPtrStmt *> reduction_values;
 
   for (auto dest : atomic_destinations) {
     // check if there is any other global load/store/atomic operations
@@ -63,16 +63,16 @@ void make_thread_local_offload(OffloadedStmt *offload) {
     // for now
     if (global_mem_ops.empty() && dest->snodes[0]->type == SNodeType::place &&
         dest->indices.empty()) {
-      ptr_to_reduce.push_back(dest);
-      TI_INFO("Detected reduction:");
-      irpass::print(dest);
+      reduction_values.push_back(dest);
     }
   }
 
-  TI_ASSERT(ptr_to_reduce.size() <= 1);
-  for (auto ptr : ptr_to_reduce) {
+  // We use 8 here for TLS variable alignment
+  constexpr std::size_t tls_stride = 8;
+  std::size_t tls_offset = 0;
+
+  for (auto ptr : reduction_values) {
     auto data_type = ptr->ret_type.data_type;
-    auto offset = 0;
     // Step 1:
     // Create thread local storage
     {
@@ -81,7 +81,7 @@ void make_thread_local_offload(OffloadedStmt *offload) {
       }
       irpass::analysis::clone(ptr);
       auto tls_ptr = offload->prologue->push_back<ThreadLocalPtrStmt>(
-          offset, VectorType(1, data_type));
+          tls_offset, VectorType(1, data_type));
       auto zero = offload->prologue->insert(
           std::make_unique<ConstStmt>(TypedConstant(data_type, 0)), -1);
       offload->prologue->push_back<GlobalStoreStmt>(tls_ptr, zero);
@@ -91,7 +91,8 @@ void make_thread_local_offload(OffloadedStmt *offload) {
     // Make loop body accumulate to TLS ptr instead of global ptr
     {
       auto tls_ptr = offload->body->insert(
-          Stmt::make<ThreadLocalPtrStmt>(offset, VectorType(1, data_type)), 0);
+          Stmt::make<ThreadLocalPtrStmt>(tls_offset, VectorType(1, data_type)),
+          0);
       ptr->replace_with(tls_ptr);
     }
 
@@ -102,7 +103,7 @@ void make_thread_local_offload(OffloadedStmt *offload) {
         offload->epilogue = std::make_unique<Block>();
       }
       auto tls_ptr = offload->epilogue->push_back<ThreadLocalPtrStmt>(
-          offset, VectorType(1, data_type));
+          tls_offset, VectorType(1, data_type));
       // TODO: do not use global load from TLS.
       auto tls_load = offload->epilogue->push_back<GlobalLoadStmt>(tls_ptr);
       auto global_ptr = offload->epilogue->insert(
@@ -111,6 +112,9 @@ void make_thread_local_offload(OffloadedStmt *offload) {
       offload->epilogue->push_back<AtomicOpStmt>(AtomicOpType::add, global_ptr,
                                                  tls_load);
     }
+    tls_offset += tls_stride;
+    if (tls_offset >= taichi_tls_buffer_size)
+      break;
   }
 }
 

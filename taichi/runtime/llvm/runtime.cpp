@@ -1037,9 +1037,7 @@ struct range_task_helper_context {
 
 void parallel_range_for_task(void *range_context, int task_id) {
   auto ctx = *(range_task_helper_context *)range_context;
-  // TODO: TLS here
-  // TODO: rename ctx.task to ctx.body
-  char tls_buffer[4];
+  char tls_buffer[taichi_tls_buffer_size];
   auto tls_ptr = &tls_buffer[0];
   if (ctx.prologue)
     ctx.prologue(ctx.context, tls_ptr);

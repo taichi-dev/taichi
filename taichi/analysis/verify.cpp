@@ -4,6 +4,7 @@
 
 #include <vector>
 #include <unordered_set>
+#include <taichi/ir/transforms.h>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -97,6 +98,7 @@ class IRVerifier : public BasicStmtVisitor {
 namespace irpass::analysis {
 void verify(IRNode *root) {
   TI_AUTO_PROF;
+  irpass::print(root);
   IRVerifier::run(root);
 }
 }  // namespace irpass::analysis

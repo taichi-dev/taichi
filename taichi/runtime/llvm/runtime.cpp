@@ -23,7 +23,7 @@ using host_vsnprintf_type = int (*)(char *,
                                     const char *,
                                     std::va_list);
 using vm_allocator_type = void *(*)(void *, std::size_t, std::size_t);
-using RangeForTaskFunc = void(Context *, int i);
+using RangeForTaskFunc = void(Context *, const char *tls, int i);
 using parallel_for_type = void (*)(void *thread_pool,
                                    int splits,
                                    int num_desired_threads,
@@ -1022,12 +1022,12 @@ void for_each_block(Context *context,
 #endif
 }
 
-using range_for_xlogue = void (*)(void *);
+using range_for_xlogue = void (*)(Context *, /*TLS*/ char *tls_base);
 
 struct range_task_helper_context {
   Context *context;
   range_for_xlogue prologue{nullptr};
-  RangeForTaskFunc *task;
+  RangeForTaskFunc *body{nullptr};
   range_for_xlogue epilogue{nullptr};
   int begin;
   int end;
@@ -1039,24 +1039,25 @@ void parallel_range_for_task(void *range_context, int task_id) {
   auto ctx = *(range_task_helper_context *)range_context;
   // TODO: TLS here
   // TODO: rename ctx.task to ctx.body
-  int *tls[4];
+  char tls_buffer[4];
+  auto tls_ptr = &tls_buffer[0];
   if (ctx.prologue)
-    ctx.prologue(tls);
+    ctx.prologue(ctx.context, tls_ptr);
   if (ctx.step == 1) {
     int block_start = ctx.begin + task_id * ctx.block_size;
     int block_end = std::min(block_start + ctx.block_size, ctx.end);
     for (int i = block_start; i < block_end; i++) {
-      ctx.task(ctx.context, i);
+      ctx.body(ctx.context, tls_ptr, i);
     }
   } else if (ctx.step == -1) {
     int block_start = ctx.end - task_id * ctx.block_size;
     int block_end = std::max(ctx.begin, block_start * ctx.block_size);
     for (int i = block_start - 1; i >= block_end; i--) {
-      ctx.task(ctx.context, i);
+      ctx.body(ctx.context, tls_ptr, i);
     }
   }
   if (ctx.epilogue)
-    ctx.epilogue(tls);
+    ctx.epilogue(ctx.context, tls_ptr);
 }
 
 void cpu_parallel_range_for(Context *context,
@@ -1065,10 +1066,14 @@ void cpu_parallel_range_for(Context *context,
                             int end,
                             int step,
                             int block_dim,
-                            RangeForTaskFunc *task) {
+                            range_for_xlogue prologue,
+                            RangeForTaskFunc *body,
+                            range_for_xlogue epilogue) {
   range_task_helper_context ctx;
   ctx.context = context;
-  ctx.task = task;
+  ctx.prologue = prologue;
+  ctx.body = body;
+  ctx.epilogue = epilogue;
   ctx.begin = begin;
   ctx.end = end;
   ctx.step = step;
@@ -1096,7 +1101,7 @@ void gpu_parallel_range_for(Context *context,
                             RangeForTaskFunc *func) {
   int idx = thread_idx() + block_dim() * block_idx() + begin;
   while (idx < end) {
-    func(context, idx);
+    func(context, nullptr, idx);
     idx += block_dim() * grid_dim();
   }
 }

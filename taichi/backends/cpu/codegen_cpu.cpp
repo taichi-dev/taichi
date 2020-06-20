@@ -14,8 +14,25 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
  public:
   using IRVisitor::visit;
 
-  CodeGenLLVMCPU(Kernel *kernel, IRNode *ir) : CodeGenLLVM(kernel, ir) {
-    TI_AUTO_PROF
+  CodeGenLLVMCPU(Kernel *kernel, IRNode *ir)
+      : CodeGenLLVM(kernel, ir){TI_AUTO_PROF}
+
+        llvm::Value
+        *
+        get_tls_base_ptr() {
+    return get_arg(1);
+  }
+
+  void visit(ThreadLocalPtrStmt *stmt) override {
+    auto base = get_tls_base_ptr();
+    TI_ASSERT(stmt->width() == 1);
+    TI_P(type_name(base->getType()));
+    auto ptr = builder->CreateGEP(base, tlctx->get_constant(stmt->offset));
+    TI_P(type_name(ptr->getType()));
+    auto ptr_type = llvm::PointerType::get(
+        tlctx->get_data_type(stmt->ret_type.data_type), 0);
+    TI_P(type_name(ptr_type));
+    llvm_val[stmt] = builder->CreatePointerCast(ptr, ptr_type);
   }
 
   void create_offload_range_for(OffloadedStmt *stmt) override {
@@ -24,26 +41,59 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
       step = -1;
     }
 
+    auto tls_ptr_type = llvm::Type::getInt8PtrTy(*llvm_context);
+
+    std::vector<llvm::Type *> xlogue_arguments{
+        llvm::PointerType::get(get_runtime_type("Context"), 0), tls_ptr_type};
+
+    auto xlogue_type = llvm::FunctionType::get(
+        llvm::Type::getVoidTy(*llvm_context), xlogue_arguments, false);
+    auto xlogue_ptr_type = llvm::PointerType::get(xlogue_type, 0);
+
+    llvm::Value *prologue = nullptr;
+    if (stmt->prologue) {
+      auto guard = get_function_creation_guard(xlogue_arguments);
+
+      stmt->prologue->accept(this);
+
+      prologue = guard.body;
+    } else {
+      prologue = llvm::ConstantPointerNull::get(xlogue_ptr_type);
+    }
+
     llvm::Function *body;
 
     {
       auto guard = get_function_creation_guard(
           {llvm::PointerType::get(get_runtime_type("Context"), 0),
+           llvm::Type::getInt8PtrTy(*llvm_context),
            tlctx->get_data_type<int>()});
 
       auto loop_var = create_entry_block_alloca(DataType::i32);
       loop_vars_llvm[stmt].push_back(loop_var);
-      builder->CreateStore(get_arg(1), loop_var);
+      builder->CreateStore(get_arg(2), loop_var);
       stmt->body->accept(this);
 
       body = guard.body;
     }
 
+    llvm::Value *epilogue = nullptr;
+    if (stmt->epilogue) {
+      auto guard = get_function_creation_guard(xlogue_arguments);
+
+      stmt->epilogue->accept(this);
+
+      epilogue = guard.body;
+    } else {
+      epilogue = llvm::ConstantPointerNull::get(xlogue_ptr_type);
+    }
+
     auto [begin, end] = get_range_for_bounds(stmt);
-    create_call("cpu_parallel_range_for",
-                {get_arg(0), tlctx->get_constant(stmt->num_cpu_threads), begin,
-                 end, tlctx->get_constant(step),
-                 tlctx->get_constant(stmt->block_dim), body});
+    create_call(
+        "cpu_parallel_range_for",
+        {get_arg(0), tlctx->get_constant(stmt->num_cpu_threads), begin, end,
+         tlctx->get_constant(step), tlctx->get_constant(stmt->block_dim),
+         prologue, body, epilogue});
   }
 
   void visit(OffloadedStmt *stmt) override {

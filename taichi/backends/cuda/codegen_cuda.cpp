@@ -350,14 +350,15 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 
     llvm::Function *body;
 
+    auto tls_ptr_type = llvm::Type::getInt8PtrTy(*llvm_context);
     {
       auto guard = get_function_creation_guard(
-          {llvm::PointerType::get(get_runtime_type("Context"), 0),
+          {llvm::PointerType::get(get_runtime_type("Context"), 0), tls_ptr_type,
            tlctx->get_data_type<int>()});
 
       auto loop_var = create_entry_block_alloca(DataType::i32);
       loop_vars_llvm[stmt].push_back(loop_var);
-      builder->CreateStore(get_arg(1), loop_var);
+      builder->CreateStore(get_arg(2), loop_var);
       stmt->body->accept(this);
 
       body = guard.body;

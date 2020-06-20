@@ -62,12 +62,20 @@ void compile_to_offloads(IRNode *ir,
   print("Simplified I");
   irpass::analysis::verify(ir);
 
+  irpass::constant_fold(ir);
+  print("Constant folded I");
+
   if (grad) {
+    // Remove local atomics here so that we don't have to handle their gradients
     irpass::demote_atomics(ir);
+
     irpass::full_simplify(ir);
-    irpass::make_adjoint(ir, ad_use_stack);
+    irpass::auto_diff(ir, ad_use_stack);
     irpass::full_simplify(ir);
-    print("Adjoint");
+    print("Gradient");
+    // TODO: removing the following line break the verify pass. Need to figure
+    // out why.
+    irpass::fix_block_parents(ir);
     irpass::analysis::verify(ir);
   }
 
@@ -99,6 +107,9 @@ void compile_to_offloads(IRNode *ir,
   irpass::full_simplify(ir);
   print("Simplified II");
   irpass::analysis::verify(ir);
+
+  irpass::constant_fold(ir);
+  print("Constant folded II");
 
   irpass::offload(ir);
   print("Offloaded");

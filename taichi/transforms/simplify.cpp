@@ -1232,6 +1232,7 @@ void full_simplify(IRNode *root, Kernel *kernel) {
   die(root);
   simplify(root, kernel);
   die(root);
+  fix_block_parents(root);
 }
 
 }  // namespace irpass

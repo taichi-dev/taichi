@@ -108,6 +108,7 @@ void export_lang(py::module &m) {
       .def_readwrite("device_memory_fraction",
                      &CompileConfig::device_memory_fraction)
       .def_readwrite("fast_math", &CompileConfig::fast_math)
+      .def_readwrite("ad_stack_size", &CompileConfig::ad_stack_size)
       .def_readwrite("async", &CompileConfig::async);
 
   m.def("reset_default_compile_config",

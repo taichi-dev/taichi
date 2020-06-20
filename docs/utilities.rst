@@ -1,26 +1,6 @@
 Developer utilities
 ===================
 
-Logging
--------
-
-.. code-block:: python
-
-    '''
-    level can be {}
-        ti.TRACE
-        ti.DEBUG
-        ti.INFO
-        ti.WARN
-        ti.ERR
-        ti.CRITICAL
-    '''
-    ti.set_logging_level(level)
-
-The default logging level is ``ti.INFO``.
-You can also override default logging level by setting the environment variable like
-``TI_LOG_LEVEL=warn``.
-
 .. _regress:
 
 Benchmarking and regression tests

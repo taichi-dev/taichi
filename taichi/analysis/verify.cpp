@@ -98,7 +98,6 @@ class IRVerifier : public BasicStmtVisitor {
 namespace irpass::analysis {
 void verify(IRNode *root) {
   TI_AUTO_PROF;
-  irpass::print(root);
   IRVerifier::run(root);
 }
 }  // namespace irpass::analysis

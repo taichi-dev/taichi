@@ -1,7 +1,8 @@
 import taichi as ti
 
-# ti.init(print_ir=True, kernel_profiler=True)
-ti.init(kernel_profiler=True)
+ti.init(print_ir=True, kernel_profiler=True)
+# ti.init(kernel_profiler=True)
+# ti.core.toggle_advanced_optimization(False)
 
 N = 1024 * 1024
 

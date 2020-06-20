@@ -262,11 +262,11 @@ def test_matrix_factories():
             assert a[i][j] == int(i == j)
 
     sqrt3o2 = math.sqrt(3) / 2
-    assert b.at(0).to_numpy() == approx(np.eye(2))
-    assert b.at(1).to_numpy() == approx(
+    assert b[0].value.to_numpy() == approx(np.eye(2))
+    assert b[1].value.to_numpy() == approx(
         np.array([[0.5, -sqrt3o2], [sqrt3o2, 0.5]]))
-    assert c.at(0).to_numpy() == approx(np.zeros((2, 3)))
-    assert c.at(1).to_numpy() == approx(np.ones((2, 3)))
+    assert c[0].value.to_numpy() == approx(np.zeros((2, 3)))
+    assert c[1].value.to_numpy() == approx(np.ones((2, 3)))
 
 
 # TODO: move codes below to test_matrix.py:

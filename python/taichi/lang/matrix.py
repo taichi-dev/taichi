@@ -198,11 +198,11 @@ class Matrix(TaichiOperations):
         return self.entries[self.linearize_entry_id(*args)]
 
     def set_entry(self, i, j, e):
-        id = self.linearize_entry_id(i, j)
+        idx = self.linearize_entry_id(i, j)
         if impl.inside_kernel():
-            self.entries[id].assign(e)
+            self.entries[idx].assign(e)
         else:
-            self.entries[id] = e
+            self.entries[idx] = e
 
     def place(self, snode):
         for e in self.entries:
@@ -749,16 +749,16 @@ class Matrix(TaichiOperations):
     def cols(cols):
         return Matrix.rows(cols).transpose()
 
-    @staticmethod
-    def empty(n, m):
-        return Matrix([[None] * m for _ in range(n)])
+    @classmethod
+    def empty(cls, n, m):
+        return cls([[None] * m for _ in range(n)])
 
-    @staticmethod
-    def new(n, m):
+    @classmethod
+    def new(cls, n, m):
         if impl.inside_kernel():
-            return Matrix(n, m)
+            return cls(n, m)
         else:
-            return Matrix.empty(n, m)
+            return cls.empty(n, m)
 
     def __hash__(self):
         # TODO: refactor KernelTemplateMapper

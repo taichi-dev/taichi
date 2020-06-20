@@ -4,9 +4,11 @@
 *******************************************************************************/
 
 #include "taichi/common/core.h"
+
+#include "llvm/Config/llvm-config.h"
+
 #include "taichi/common/version.h"
 #include "taichi/common/commit_hash.h"
-#include "llvm/Config/llvm-config.h"
 
 TI_NAMESPACE_BEGIN
 

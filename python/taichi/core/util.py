@@ -480,7 +480,7 @@ def _print_taichi_header():
     archs_str = ', '.join(sorted(supported_archs))
     header += f'supported archs: [{archs_str}], '
 
-    llvm_version = ti_core.get_version_llvm()
+    llvm_version = ti_core.get_llvm_version_string()
     header += f'llvm {llvm_version}, '
     
     commit_hash = ti_core.get_commit_hash()

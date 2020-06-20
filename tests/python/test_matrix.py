@@ -1,5 +1,6 @@
 import taichi as ti
 import numpy as np
+from taichi import approx
 import operator
 import pytest
 
@@ -70,28 +71,34 @@ def test_python_scope_matrix_tensor(ops):
 
 @ti.host_arch_only
 def test_constant_matrices():
-    print(ti.cos(ti.math.pi / 3))
-    print(-ti.Vector([2, 3]))
-    print(ti.cos(ti.Vector([2, 3])))
-    print(ti.max(2, 3))
-    print(ti.max(2, ti.Vector([3, 4, 5])))
-    print(ti.Vector([2, 3]) + ti.Vector([3, 4]))
-    print(ti.atan2(ti.Vector([2, 3]), ti.Vector([3, 4])))
-    print(ti.Matrix([[2, 3], [4, 5]]) @ ti.Vector([2, 3]))
+    assert ti.cos(ti.math.pi / 3) == approx(0.5)
+    assert np.allclose((-ti.Vector([2, 3])).to_numpy(), np.array([-2, -3]))
+    assert ti.cos(ti.Vector([2, 3])).to_numpy() == approx(
+            np.cos(np.array([2, 3])))
+    assert ti.max(2, 3) == 3
+    res = ti.max(4, ti.Vector([3, 4, 5]))
+    assert np.allclose(res.to_numpy(), np.array([4, 4, 5]))
+    res = ti.Vector([2, 3]) + ti.Vector([3, 4])
+    assert np.allclose(res.to_numpy(), np.array([5, 7]))
+    res = ti.atan2(ti.Vector([2, 3]), ti.Vector([3, 4]))
+    assert res.to_numpy() == approx(np.arctan2(
+        np.array([2, 3]), np.array([3, 4])))
+    res = ti.Matrix([[2, 3], [4, 5]]) @ ti.Vector([2, 3])
+    assert np.allclose(res.to_numpy(), np.array([13, 23]))
     v = ti.Vector([3, 4])
     w = ti.Vector([5, -12])
     r = ti.Vector([1, 2, 3, 4])
     s = ti.Matrix([[1, 2], [3, 4]])
-    print(v.normalized())
-    print(v.cross(w))
+    assert v.normalized().to_numpy() == approx(np.array([0.6, 0.8]))
+    assert v.cross(w) == approx(-12 * 3 - 4 * 5)
     w.y = v.x * w[0]
     r.x = r.y
     r.y = r.z
     r.z = r.w
     r.w = r.x
-    print(w)
+    assert np.allclose(w.to_numpy(), np.array([5, 15]))
     s[0, 1] = 2
-    print(s[0, 1])
+    assert s[0, 1] == 2
 
     @ti.kernel
     def func(t: ti.i32):

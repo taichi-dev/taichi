@@ -73,16 +73,17 @@ def test_python_scope_matrix_tensor(ops):
 def test_constant_matrices():
     assert ti.cos(ti.math.pi / 3) == approx(0.5)
     assert np.allclose((-ti.Vector([2, 3])).to_numpy(), np.array([-2, -3]))
-    assert ti.cos(ti.Vector([2, 3])).to_numpy() == approx(
-            np.cos(np.array([2, 3])))
+    assert ti.cos(ti.Vector([2,
+                             3])).to_numpy() == approx(np.cos(np.array([2,
+                                                                        3])))
     assert ti.max(2, 3) == 3
     res = ti.max(4, ti.Vector([3, 4, 5]))
     assert np.allclose(res.to_numpy(), np.array([4, 4, 5]))
     res = ti.Vector([2, 3]) + ti.Vector([3, 4])
     assert np.allclose(res.to_numpy(), np.array([5, 7]))
     res = ti.atan2(ti.Vector([2, 3]), ti.Vector([3, 4]))
-    assert res.to_numpy() == approx(np.arctan2(
-        np.array([2, 3]), np.array([3, 4])))
+    assert res.to_numpy() == approx(
+        np.arctan2(np.array([2, 3]), np.array([3, 4])))
     res = ti.Matrix([[2, 3], [4, 5]]) @ ti.Vector([2, 3])
     assert np.allclose(res.to_numpy(), np.array([13, 23]))
     v = ti.Vector([3, 4])

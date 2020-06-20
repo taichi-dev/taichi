@@ -968,11 +968,11 @@ struct block_task_helper_context {
 };
 
 void block_helper(void *ctx_, int i) {
+  // TODO: TLS here
   auto ctx = (block_task_helper_context *)(ctx_);
   int element_id = i / ctx->element_split;
   int part_size = ctx->element_size / ctx->element_split;
   int part_id = i % ctx->element_split;
-  // printf("%d %d %d\n", element_id, part_size, part_id);
   auto &e = ctx->list->get<Element>(element_id);
   int lower = e.loop_bounds[0] + part_id * part_size;
   int upper = e.loop_bounds[0] + (part_id + 1) * part_size;
@@ -1022,9 +1022,13 @@ void for_each_block(Context *context,
 #endif
 }
 
+using range_for_xlogue = void (*)(void *);
+
 struct range_task_helper_context {
   Context *context;
+  range_for_xlogue prologue{nullptr};
   RangeForTaskFunc *task;
+  range_for_xlogue epilogue{nullptr};
   int begin;
   int end;
   int block_size;
@@ -1033,6 +1037,11 @@ struct range_task_helper_context {
 
 void parallel_range_for_task(void *range_context, int task_id) {
   auto ctx = *(range_task_helper_context *)range_context;
+  // TODO: TLS here
+  // TODO: rename ctx.task to ctx.body
+  int *tls[4];
+  if (ctx.prologue)
+    ctx.prologue(tls);
   if (ctx.step == 1) {
     int block_start = ctx.begin + task_id * ctx.block_size;
     int block_end = std::min(block_start + ctx.block_size, ctx.end);
@@ -1046,6 +1055,8 @@ void parallel_range_for_task(void *range_context, int task_id) {
       ctx.task(ctx.context, i);
     }
   }
+  if (ctx.epilogue)
+    ctx.epilogue(tls);
 }
 
 void cpu_parallel_range_for(Context *context,

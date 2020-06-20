@@ -14,7 +14,8 @@ void compile_to_offloads(IRNode *ir,
                          bool grad,
                          bool ad_use_stack,
                          bool verbose,
-                         bool lower_global_access) {
+                         bool lower_global_access,
+                         bool make_thread_local) {
   TI_AUTO_PROF;
 
   auto print = [&](const std::string &name) {
@@ -122,6 +123,11 @@ void compile_to_offloads(IRNode *ir,
   irpass::flag_access(ir);
   print("Access flagged II");
   irpass::analysis::verify(ir);
+
+  if (make_thread_local) {
+    irpass::make_thread_local(ir);
+    print("Access flagged II");
+  }
 
   if (lower_global_access) {
     irpass::lower_access(ir, true);

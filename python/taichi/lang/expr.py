@@ -44,7 +44,7 @@ class Expr(TaichiOperations):
         self.initialize_accessor()
         if key is None:
             key = ()
-        if not isinstance(key, tuple):
+        if not isinstance(key, (tuple, list)):
             key = (key, )
         assert len(key) == self.dim()
         key = key + ((0, ) *
@@ -58,7 +58,7 @@ class Expr(TaichiOperations):
         self.initialize_accessor()
         if key is None:
             key = ()
-        if not isinstance(key, tuple):
+        if not isinstance(key, (tuple, list)):
             key = (key, )
         key = key + ((0, ) *
                      (taichi_lang_core.get_max_num_indices() - len(key)))

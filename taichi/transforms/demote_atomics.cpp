@@ -11,6 +11,7 @@ class DemoteAtomics : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
 
   OffloadedStmt *current_offloaded;
+  DelayedIRModifier modifier;
 
   DemoteAtomics() : BasicStmtVisitor() {
     current_offloaded = nullptr;
@@ -68,9 +69,8 @@ class DemoteAtomics : public BasicStmtVisitor {
         // old value $d'.
         // See also: https://github.com/taichi-dev/taichi/issues/332
         stmt->replace_with(load);
-        stmt->parent->replace_with(stmt, std::move(new_stmts),
-                                   /*replace_usages=*/false);
-        throw IRModified();
+        modifier.replace_with(stmt, std::move(new_stmts),
+                              /*replace_usages=*/false);
       }
     }
   }
@@ -83,25 +83,28 @@ class DemoteAtomics : public BasicStmtVisitor {
     current_offloaded = nullptr;
   }
 
-  static void run(IRNode *node) {
+  static bool run(IRNode *node) {
     DemoteAtomics demoter;
+    bool modified = false;
     while (true) {
-      try {
-        node->accept(&demoter);
-      } catch (IRModified) {
-        continue;
+      node->accept(&demoter);
+      if (demoter.modifier.modify_ir()) {
+        modified = true;
+      } else {
+        break;
       }
-      break;
     }
+    return modified;
   }
 };
 
 namespace irpass {
 
-void demote_atomics(IRNode *root) {
+bool demote_atomics(IRNode *root) {
   TI_AUTO_PROF;
-  DemoteAtomics::run(root);
+  bool modified = DemoteAtomics::run(root);
   typecheck(root);
+  return modified;
 }
 
 }  // namespace irpass

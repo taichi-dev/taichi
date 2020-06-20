@@ -25,6 +25,9 @@ class CFGBuilder : public IRVisitor {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
     graph = std::make_unique<ControlFlowGraph>();
+    // Make an empty start node.
+    auto start_node = graph->push_back(nullptr, -1, -1, nullptr);
+    prev_nodes.push_back(start_node);
   }
 
   void visit(Stmt *stmt) override {
@@ -145,7 +148,7 @@ class CFGBuilder : public IRVisitor {
     auto backup_last_node = last_node_in_current_block;
     auto backup_stmt_id = current_stmt_id;
     TI_ASSERT(begin_location == -1);
-    TI_ASSERT(prev_nodes.empty());
+    TI_ASSERT(prev_nodes.empty() || graph->size() == 1);
     current_block = block;
     last_node_in_current_block = nullptr;
     begin_location = 0;

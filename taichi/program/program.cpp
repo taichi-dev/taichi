@@ -274,9 +274,6 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
                                   (void *)&KernelProfilerBase::profiler_start);
     runtime->call<void *, void *>("LLVMRuntime_set_profiler_stop", llvm_runtime,
                                   (void *)&KernelProfilerBase::profiler_stop);
-  } else {
-    runtime->call<void *, void *>("LLVMRuntime_set_profiler", llvm_runtime,
-                                  nullptr);
   }
 }
 

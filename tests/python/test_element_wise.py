@@ -246,7 +246,7 @@ def test_writeback_binary_i(rhs_is_mat):
 def test_unary():
     xi = ti.Matrix(3, 2, ti.i32, 4)
     yi = ti.Matrix(3, 2, ti.i32, ())
-    xf = ti.Matrix(3, 2, ti.f32, 13)
+    xf = ti.Matrix(3, 2, ti.f32, 14)
     yf = ti.Matrix(3, 2, ti.f32, ())
 
     yi.from_numpy(np.array([[3, 2], [9, 0], [7, 4]], np.int32))
@@ -271,6 +271,7 @@ def test_unary():
         xf[10] = ti.ceil(yf[None])
         xf[11] = ti.exp(yf[None])
         xf[12] = ti.log(yf[None])
+        xf[13] = ti.rsqrt(yf[None])
 
     func()
     xi = xi.to_numpy()
@@ -293,3 +294,4 @@ def test_unary():
     assert allclose(xf[10], np.ceil(yf))
     assert allclose(xf[11], np.exp(yf))
     assert allclose(xf[12], np.log(yf))
+    assert allclose(xf[13], 1 / np.sqrt(yf))

@@ -364,8 +364,8 @@ class KernelGen : public IRVisitor {
       emit("{} {} = {}(-{});", dt_name, stmt->short_name(), dt_name,
            stmt->operand->short_name());
     } else if (stmt->op_type == UnaryOpType::rsqrt) {
-      emit("{} {} = {}(1 / sqrt({}));", dt_name, stmt->short_name(), dt_name,
-           stmt->operand->short_name());
+      emit("{} {} = {}(inversesqrt({}));", dt_name, stmt->short_name(),
+          dt_name, stmt->operand->short_name());
     } else if (stmt->op_type == UnaryOpType::sgn) {
       emit("{} {} = {}(sign({}));", dt_name, stmt->short_name(), dt_name,
            stmt->operand->short_name());

@@ -137,6 +137,11 @@ def sqrt(expr):
 
 
 @unary
+def rsqrt(expr):
+    return Expr(taichi_lang_core.expr_rsqrt(expr.ptr), tb=stack_info())
+
+
+@unary
 def floor(expr):
     return Expr(taichi_lang_core.expr_floor(expr.ptr), tb=stack_info())
 

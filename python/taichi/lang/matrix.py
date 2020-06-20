@@ -549,6 +549,11 @@ class Matrix(TaichiOperations):
         return impl.sqrt(self.norm_sqr() + eps)
 
     @taichi_scope
+    def norm_inv(self, l=2, eps=0):
+        assert l == 2
+        return impl.rsqrt(self.norm_sqr() + eps)
+
+    @taichi_scope
     def norm_sqr(self):
         return (self**2).sum()
 

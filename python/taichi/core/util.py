@@ -482,7 +482,7 @@ def _print_taichi_header():
 
     llvm_version = ti_core.get_llvm_version_string()
     header += f'llvm {llvm_version}, '
-    
+
     commit_hash = ti_core.get_commit_hash()
     commit_hash = commit_hash[:8]
     header += f'commit {commit_hash}, '

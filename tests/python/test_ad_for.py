@@ -327,7 +327,7 @@ def test_double_for_loops_more_nests():
         assert b.grad[i] == total_grad_b
 
 
-@ti.require(ti.extension.adstack)
+@ti.require(ti.extension.adstack, ti.extension.data64)
 @ti.all_archs
 def test_complex_body():
     N = 5

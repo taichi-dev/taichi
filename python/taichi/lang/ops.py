@@ -150,6 +150,7 @@ def sqrt(a):
 def rsqrt(a):
     def _rsqrt(a):
         return 1 / math.sqrt(a)
+
     return _unary_operation(ti_core.expr_rsqrt, _rsqrt, a)
 
 

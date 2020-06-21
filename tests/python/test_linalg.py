@@ -33,8 +33,9 @@ def test_basic_utils():
 
     normA = ti.var(ti.f32)
     normSqrA = ti.var(ti.f32)
+    normInvA = ti.var(ti.f32)
 
-    ti.root.place(a, b, abT, aNormalized, normA, normSqrA)
+    ti.root.place(a, b, abT, aNormalized, normA, normSqrA, normInvA)
 
     @ti.kernel
     def init():
@@ -44,6 +45,7 @@ def test_basic_utils():
 
         normA[None] = a.norm()
         normSqrA[None] = a.norm_sqr()
+        normInvA[None] = a.norm_inv()
 
         aNormalized[None] = a.normalized()
 
@@ -55,7 +57,8 @@ def test_basic_utils():
 
     sqrt14 = np.sqrt(14.0)
     invSqrt14 = 1.0 / sqrt14
-    assert normSqrA[None] == 14.0
+    assert normSqrA[None] == approx(14.0)
+    assert normInvA[None] == approx(invSqrt14)
     assert normA[None] == approx(sqrt14)
     assert aNormalized[None][0] == approx(1.0 * invSqrt14)
     assert aNormalized[None][1] == approx(2.0 * invSqrt14)

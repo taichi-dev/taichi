@@ -586,7 +586,7 @@ class KernelCodegen : public IRVisitor {
         "{}*>(mtl_ad_stack_top_primal({}, {}));",
         primal_name, metal_data_type_name(stmt->element_type()),
         stack->raw_name(), stack->element_size_in_bytes());
-    emit("{} = *{};", stmt->raw_name(), primal_name);
+    emit("const auto {} = *{};", stmt->raw_name(), primal_name);
   }
 
   void visit(StackLoadTopAdjStmt *stmt) override {
@@ -597,7 +597,7 @@ class KernelCodegen : public IRVisitor {
         "{}*>(mtl_ad_stack_top_adjoint({}, {}));",
         adjoint_name, metal_data_type_name(stmt->element_type()),
         stack->raw_name(), stack->element_size_in_bytes());
-    emit("auto {} = *{};", stmt->raw_name(), adjoint_name);
+    emit("const auto {} = *{};", stmt->raw_name(), adjoint_name);
   }
 
   void visit(StackAccAdjointStmt *stmt) override {

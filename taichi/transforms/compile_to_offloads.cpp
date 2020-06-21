@@ -126,7 +126,7 @@ void compile_to_offloads(IRNode *ir,
 
   if (make_thread_local) {
     irpass::make_thread_local(ir);
-    print("Access flagged II");
+    print("Make thread local");
   }
 
   if (lower_global_access) {

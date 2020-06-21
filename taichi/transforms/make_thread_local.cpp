@@ -133,7 +133,7 @@ void make_thread_local_offload(OffloadedStmt *offload) {
   }
 }
 
-}  // namespace 
+}  // namespace
 
 namespace irpass {
 

@@ -147,6 +147,13 @@ def sqrt(a):
 
 
 @unary
+def rsqrt(a):
+    def _rsqrt(a):
+        return 1 / math.sqrt(a)
+    return _unary_operation(ti_core.expr_rsqrt, _rsqrt, a)
+
+
+@unary
 def floor(a):
     return _unary_operation(ti_core.expr_floor, math.floor, a)
 

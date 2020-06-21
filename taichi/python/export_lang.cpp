@@ -108,6 +108,7 @@ void export_lang(py::module &m) {
       .def_readwrite("device_memory_fraction",
                      &CompileConfig::device_memory_fraction)
       .def_readwrite("fast_math", &CompileConfig::fast_math)
+      .def_readwrite("ad_stack_size", &CompileConfig::ad_stack_size)
       .def_readwrite("async", &CompileConfig::async);
 
   m.def("reset_default_compile_config",
@@ -536,6 +537,7 @@ void export_lang(py::module &m) {
   m.def("get_version_major", get_version_major);
   m.def("get_version_minor", get_version_minor);
   m.def("get_version_patch", get_version_patch);
+  m.def("get_llvm_version_string", get_llvm_version_string);
   m.def("test_printf", [] { printf("test_printf\n"); });
   m.def("test_logging", [] { TI_INFO("test_logging\n"); });
   m.def("trigger_crash", [] { *(int *)(1) = 0; });

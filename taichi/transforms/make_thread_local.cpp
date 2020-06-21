@@ -92,7 +92,6 @@ void make_thread_local_offload(OffloadedStmt *offload) {
       if (offload->prologue == nullptr) {
         offload->prologue = std::make_unique<Block>();
       }
-      irpass::analysis::clone(dest);
       auto tls_ptr = offload->prologue->push_back<ThreadLocalPtrStmt>(
           tls_offset, VectorType(1, data_type));
       auto zero = offload->prologue->insert(

@@ -665,7 +665,7 @@ void Block::insert(std::unique_ptr<Stmt> &&stmt, int location) {
 
 void Block::insert(VecStatement &&stmt, int location) {
   if (location == -1) {
-    location = (int)statements.size() - 1;
+    location = (int)statements.size();
   }
   for (int i = 0; i < stmt.size(); i++) {
     insert(std::move(stmt[i]), location + i);

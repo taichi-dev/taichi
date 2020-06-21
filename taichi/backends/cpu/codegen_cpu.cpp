@@ -24,21 +24,13 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
       step = -1;
     }
 
-    auto tls_ptr_type = llvm::Type::getInt8PtrTy(*llvm_context);
-
-    std::vector<llvm::Type *> xlogue_arguments{
-        llvm::PointerType::get(get_runtime_type("Context"), 0), tls_ptr_type};
-
-    auto xlogue_type = llvm::FunctionType::get(
-        llvm::Type::getVoidTy(*llvm_context), xlogue_arguments, false);
+    auto xlogue_type = get_xlogue_function_type();
     auto xlogue_ptr_type = llvm::PointerType::get(xlogue_type, 0);
 
     llvm::Value *prologue = nullptr;
     if (stmt->prologue) {
-      auto guard = get_function_creation_guard(xlogue_arguments);
-
+      auto guard = get_function_creation_guard(get_xlogue_argument_types());
       stmt->prologue->accept(this);
-
       prologue = guard.body;
     } else {
       prologue = llvm::ConstantPointerNull::get(xlogue_ptr_type);
@@ -62,10 +54,8 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
 
     llvm::Value *epilogue = nullptr;
     if (stmt->epilogue) {
-      auto guard = get_function_creation_guard(xlogue_arguments);
-
+      auto guard = get_function_creation_guard(get_xlogue_argument_types());
       stmt->epilogue->accept(this);
-
       epilogue = guard.body;
     } else {
       epilogue = llvm::ConstantPointerNull::get(xlogue_ptr_type);

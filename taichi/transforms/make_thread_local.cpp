@@ -15,7 +15,7 @@ void make_thread_local_offload(OffloadedStmt *offload) {
     return;
 
   // Gather all atomic adds/subs destinations
-  // We do not use std::set to keep an deterministic order here.
+  // We use std::vector instead of std::set to keep an deterministic order here.
   std::vector<GlobalPtrStmt *> atomic_destinations;
   // TODO: this is again an abuse since it gathers nothing. Need to design a IR
   // map/reduce system
@@ -36,7 +36,7 @@ void make_thread_local_offload(OffloadedStmt *offload) {
         return false;
       });
 
-  std::vector<GlobalPtrStmt *> reduction_values;
+  std::vector<GlobalPtrStmt *> valid_reduction_values;
 
   for (auto dest : atomic_destinations) {
     // check if there is any other global load/store/atomic operations
@@ -64,34 +64,38 @@ void make_thread_local_offload(OffloadedStmt *offload) {
               }
             }
           }
-          return false;  // The statement is not related
+          return false;  // Now we are sure the statement is not related to the
+                         // destination
         });
     TI_ASSERT(dest->width() == 1);
     // We can only optimized reductions to global ptrs with form like loss[None]
-    // for now
+    // (0-D tensors) for now
     if (related_global_mem_ops.empty() &&
         dest->snodes[0]->type == SNodeType::place && dest->indices.empty()) {
-      reduction_values.push_back(dest);
+      valid_reduction_values.push_back(dest);
     }
   }
 
-  // We use 8 here for TLS variable alignment
+  // We use 8 here (instead of sizeof(data_type) for TLS variable alignment
+  // (sizeof(f64) = 8).
   constexpr std::size_t tls_stride = 8;
+
   std::size_t tls_offset = 0;
 
-  for (auto ptr : reduction_values) {
-    auto data_type = ptr->ret_type.data_type;
+  for (auto dest : valid_reduction_values) {
+    auto data_type = dest->ret_type.data_type;
     // Step 1:
     // Create thread local storage
     {
       if (offload->prologue == nullptr) {
         offload->prologue = std::make_unique<Block>();
       }
-      irpass::analysis::clone(ptr);
+      irpass::analysis::clone(dest);
       auto tls_ptr = offload->prologue->push_back<ThreadLocalPtrStmt>(
           tls_offset, VectorType(1, data_type));
       auto zero = offload->prologue->insert(
           std::make_unique<ConstStmt>(TypedConstant(data_type, 0)), -1);
+      // Zero-fill
       offload->prologue->push_back<GlobalStoreStmt>(tls_ptr, zero);
     }
 
@@ -101,11 +105,11 @@ void make_thread_local_offload(OffloadedStmt *offload) {
       auto tls_ptr = offload->body->insert(
           Stmt::make<ThreadLocalPtrStmt>(tls_offset, VectorType(1, data_type)),
           0);
-      ptr->replace_with(tls_ptr);
+      dest->replace_with(tls_ptr);
     }
 
     // Step 3:
-    // Atomic-add contribution to global version
+    // Atomic-add thread local contribution to its global version
     {
       if (offload->epilogue == nullptr) {
         offload->epilogue = std::make_unique<Block>();
@@ -115,14 +119,15 @@ void make_thread_local_offload(OffloadedStmt *offload) {
       // TODO: do not use global load from TLS.
       auto tls_load = offload->epilogue->push_back<GlobalLoadStmt>(tls_ptr);
       auto global_ptr = offload->epilogue->insert(
-          std::unique_ptr<Stmt>((Stmt *)irpass::analysis::clone(ptr).release()),
+          std::unique_ptr<Stmt>(
+              (Stmt *)irpass::analysis::clone(dest).release()),
           -1);
       offload->epilogue->push_back<AtomicOpStmt>(AtomicOpType::add, global_ptr,
                                                  tls_load);
     }
     tls_offset += tls_stride;
     if (tls_offset >= taichi_tls_buffer_size)
-      break;
+      break;  // Do not overflow TLS buffer.  TODO: make it adaptive
   }
 }
 
@@ -136,7 +141,7 @@ void make_thread_local(IRNode *root) {
   for (auto &offload : root_block->statements) {
     make_thread_local_offload(offload->cast<OffloadedStmt>());
   }
-  irpass::typecheck(root);
+  typecheck(root);
   fix_block_parents(root);
 }
 

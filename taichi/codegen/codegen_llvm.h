@@ -91,6 +91,12 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   llvm::Value *get_tls_base_ptr();
 
+  llvm::Type *get_tls_buffer_type();
+
+  std::vector<llvm::Type *> get_xlogue_argument_types();
+
+  llvm::Type *get_xlogue_function_type();
+
   llvm::Value *get_root();
 
   llvm::Value *get_runtime();

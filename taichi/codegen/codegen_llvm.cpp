@@ -1542,6 +1542,20 @@ llvm::Value *CodeGenLLVM::get_tls_base_ptr() {
   return get_arg(1);
 }
 
+llvm::Type *CodeGenLLVM::get_tls_buffer_type() {
+  return llvm::Type::getInt8PtrTy(*llvm_context);
+}
+
+std::vector<llvm::Type *> CodeGenLLVM::get_xlogue_argument_types() {
+  return {llvm::PointerType::get(get_runtime_type("Context"), 0),
+          get_tls_buffer_type()};
+}
+
+llvm::Type *CodeGenLLVM::get_xlogue_function_type() {
+  return llvm::FunctionType::get(llvm::Type::getVoidTy(*llvm_context),
+                                 get_xlogue_argument_types(), false);
+}
+
 llvm::Value *CodeGenLLVM::get_root() {
   return create_call("LLVMRuntime_get_root", {get_runtime()});
 }

@@ -5,8 +5,10 @@
 
 TLANG_NAMESPACE_BEGIN
 
+namespace {
+
 bool is_atomic_op_linear(AtomicOpType op_type) {
-  return op_type == AtomicOpType::add || op_type == AtomicOpType ::sub;
+  return op_type == AtomicOpType::add || op_type == AtomicOpType::sub;
 }
 
 void make_thread_local_offload(OffloadedStmt *offload) {
@@ -130,6 +132,8 @@ void make_thread_local_offload(OffloadedStmt *offload) {
       break;  // Do not overflow TLS buffer.  TODO: make it adaptive
   }
 }
+
+}  // namespace 
 
 namespace irpass {
 

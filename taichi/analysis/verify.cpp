@@ -4,7 +4,6 @@
 
 #include <vector>
 #include <unordered_set>
-#include <taichi/ir/transforms.h>
 
 TLANG_NAMESPACE_BEGIN
 

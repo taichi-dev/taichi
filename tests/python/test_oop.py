@@ -31,7 +31,8 @@ def test_classfunc():
     for i in range(arr.n):
         for j in range(arr.m):
             assert arr.val[i, j] == i * j * 2
-            
+
+
 @ti.host_arch_only
 def test_oop():
     @ti.data_oriented
@@ -76,8 +77,6 @@ def test_oop():
 
     with ti.Tape(loss=arr.total):
         arr.reduce()
-        
-    return
 
     for i in range(arr.n):
         for j in range(arr.m):
@@ -95,7 +94,6 @@ def test_oop():
         for j in range(arr.m):
             assert arr.val.grad[i, j] == 8
 
-test_oop()
 
 @ti.host_arch_only
 def test_oop_two_items():

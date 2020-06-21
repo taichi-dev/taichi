@@ -852,9 +852,10 @@ class Block : public IRNode {
   std::unique_ptr<Stmt> extract(Stmt *stmt);
 
   // Returns stmt.get()
-  Stmt * insert(std::unique_ptr<Stmt> &&stmt, int location = -1);
-  // Returns stmt.back().get()
-  Stmt * insert(VecStatement &&stmt, int location = -1);
+  Stmt *insert(std::unique_ptr<Stmt> &&stmt, int location = -1);
+
+  // Returns stmt.back().get() or nullptr if stmt is empty
+  Stmt *insert(VecStatement &&stmt, int location = -1);
 
   void replace_statements_in_range(int start, int end, VecStatement &&stmts);
   void set_statements(VecStatement &&stmts);

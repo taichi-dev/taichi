@@ -89,6 +89,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   llvm::Value *get_context();
 
+  llvm::Value *get_tls_base_ptr();
+
   llvm::Value *get_root();
 
   llvm::Value *get_runtime();
@@ -224,6 +226,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   void visit(LoopIndexStmt *stmt) override;
 
   void visit(GlobalTemporaryStmt *stmt) override;
+
+  void visit(ThreadLocalPtrStmt *stmt) override;
 
   void visit(InternalFuncStmt *stmt) override;
 

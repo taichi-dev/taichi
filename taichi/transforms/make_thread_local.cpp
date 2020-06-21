@@ -10,7 +10,6 @@ bool is_atomic_op_linear(AtomicOpType op_type) {
 }
 
 void make_thread_local_offload(OffloadedStmt *offload) {
-  irpass::print(offload);
   // TODO: deal with struct for
   if (offload->task_type != offload->range_for)
     return;
@@ -139,8 +138,6 @@ void make_thread_local(IRNode *root) {
   }
   irpass::typecheck(root);
   fix_block_parents(root);
-  TI_INFO("after:");
-  irpass::print(root);
 }
 
 }  // namespace irpass

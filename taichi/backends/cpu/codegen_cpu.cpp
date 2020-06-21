@@ -14,25 +14,8 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
  public:
   using IRVisitor::visit;
 
-  CodeGenLLVMCPU(Kernel *kernel, IRNode *ir)
-      : CodeGenLLVM(kernel, ir){TI_AUTO_PROF}
-
-        llvm::Value
-        *
-        get_tls_base_ptr() {
-    return get_arg(1);
-  }
-
-  void visit(ThreadLocalPtrStmt *stmt) override {
-    auto base = get_tls_base_ptr();
-    TI_ASSERT(stmt->width() == 1);
-    TI_P(type_name(base->getType()));
-    auto ptr = builder->CreateGEP(base, tlctx->get_constant(stmt->offset));
-    TI_P(type_name(ptr->getType()));
-    auto ptr_type = llvm::PointerType::get(
-        tlctx->get_data_type(stmt->ret_type.data_type), 0);
-    TI_P(type_name(ptr_type));
-    llvm_val[stmt] = builder->CreatePointerCast(ptr, ptr_type);
+  CodeGenLLVMCPU(Kernel *kernel, IRNode *ir) : CodeGenLLVM(kernel, ir) {
+    TI_AUTO_PROF
   }
 
   void create_offload_range_for(OffloadedStmt *stmt) override {

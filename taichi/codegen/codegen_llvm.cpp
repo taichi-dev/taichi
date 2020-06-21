@@ -1416,6 +1416,15 @@ void CodeGenLLVM::visit(GlobalTemporaryStmt *stmt) {
   llvm_val[stmt] = builder->CreatePointerCast(buffer, ptr_type);
 }
 
+void CodeGenLLVM::visit(ThreadLocalPtrStmt *stmt) {
+  auto base = get_tls_base_ptr();
+  TI_ASSERT(stmt->width() == 1);
+  auto ptr = builder->CreateGEP(base, tlctx->get_constant(stmt->offset));
+  auto ptr_type =
+      llvm::PointerType::get(tlctx->get_data_type(stmt->ret_type.data_type), 0);
+  llvm_val[stmt] = builder->CreatePointerCast(ptr, ptr_type);
+}
+
 void CodeGenLLVM::visit(InternalFuncStmt *stmt) {
   create_call(stmt->func_name, {get_context()});
 }
@@ -1527,6 +1536,10 @@ llvm::Value *CodeGenLLVM::get_arg(int i) {
 
 llvm::Value *CodeGenLLVM::get_context() {
   return get_arg(0);
+}
+
+llvm::Value *CodeGenLLVM::get_tls_base_ptr() {
+  return get_arg(1);
 }
 
 llvm::Value *CodeGenLLVM::get_root() {

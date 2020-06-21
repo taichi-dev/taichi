@@ -540,13 +540,11 @@ class Matrix(TaichiOperations):
         assert l == 2
         return ti.sqrt(self.norm_sqr() + eps)
 
-    @taichi_scope
     def norm_inv(self, l=2, eps=0):
         import taichi as ti
         assert l == 2
         return ti.rsqrt(self.norm_sqr() + eps)
 
-    @taichi_scope
     def norm_sqr(self):
         return (self**2).sum()
 

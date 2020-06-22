@@ -212,3 +212,31 @@ def python_scope(func):
         return func(*args, **kwargs)
 
     return wrapped
+
+
+def global_scope(func):
+    import functools
+
+    @functools.wraps(func)
+    def wrapped(self, *args, **kwargs):
+        assert self.is_global(), \
+                f'{self.__class__.__name__}.{func.__name__} cannot be' \
+                'called in local-scope'
+        return func(self, *args, **kwargs)
+
+    return wrapped
+
+
+def local_scope(func):
+    import functools
+
+    @functools.wraps(func)
+    def wrapped(self, *args, **kwargs):
+        assert not self.is_global(), \
+                f'{self.__class__.__name__}.{func.__name__} cannot be' \
+                'called in global-scope'
+        return func(self, *args, **kwargs)
+
+    return wrapped
+
+

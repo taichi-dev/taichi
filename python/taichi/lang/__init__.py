@@ -1,5 +1,6 @@
 from .impl import *
 from .util import deprecated
+from .odop import TaichiClass
 from .matrix import Matrix, Vector
 from .transformer import TaichiSyntaxError
 from .ndrange import ndrange, GroupedNDRange

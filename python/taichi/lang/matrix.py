@@ -3,15 +3,14 @@ from . import impl
 import copy
 import numbers
 import numpy as np
-from .util import taichi_scope, python_scope, deprecated, to_numpy_type, to_pytorch_type, in_python_scope
+from .util import *
 from .common_ops import TaichiOperations
+from .odop import TaichiClass
 from collections.abc import Iterable
 import warnings
 
 
-class Matrix(TaichiOperations):
-    is_taichi_class = True
-
+class Matrix(TaichiClass, TaichiOperations):
     # TODO(archibate): move the last two line to **kwargs,
     # since they're not commonly used as positional args.
     def __init__(self,
@@ -126,16 +125,6 @@ class Matrix(TaichiOperations):
         else:
             assert offset is None, f"shape cannot be None when offset is being set"
 
-    def is_global(self):
-        results = [False for _ in self.entries]
-        for i, e in enumerate(self.entries):
-            if isinstance(e, expr.Expr):
-                if e.ptr.is_global_var():
-                    results[i] = True
-            assert results[i] == results[0], \
-                "Matrices with mixed global/local entries are not allowed"
-        return results[0]
-
     def element_wise_binary(self, foo, other):
         ret = self.empty_copy()
         if isinstance(other, (list, tuple)):
@@ -186,16 +175,13 @@ class Matrix(TaichiOperations):
             ), f'The {i}-th index of a Matrix/Vector must be a compile-time constant integer, got {a}'
         return args[0] * self.m + args[1]
 
-    def __call__(self, *args, **kwargs):
-        assert kwargs == {}
-        return self.entries[self.linearize_entry_id(*args)]
+    def __call__(self, *indices):
+        assert len(indices) in [1, 2]
+        return self.entries[self.linearize_entry_id(*indices)]
 
-    def get_tensor_members(self):
-        return self.entries
-
-    def get_entry(self, *args, **kwargs):
+    def get_entry(self, i, j):
         assert kwargs == {}
-        return self.entries[self.linearize_entry_id(*args)]
+        return self.entries[self.linearize_entry_id(i, j)]
 
     def set_entry(self, i, j, e):
         idx = self.linearize_entry_id(i, j)
@@ -208,44 +194,36 @@ class Matrix(TaichiOperations):
         for e in self.entries:
             snode.place(e)
 
+    @local_scope
     @taichi_scope
-    def subscript(self, *indices):
-        if self.is_global():
-            ret = self.empty_copy()
-            for i, e in enumerate(self.entries):
-                ret.entries[i] = impl.subscript(e, *indices)
-            return ret
-        else:
-            assert len(indices) in [1, 2]
-            i = indices[0]
-            j = 0 if len(indices) == 1 else indices[1]
-            return self(i, j)
+    def local_subscript(self, *indices):
+        return self(*indices)
 
     @property
     def x(self):
         if impl.inside_kernel():
-            return self.subscript(0)
+            return self.local_subscript(0)
         else:
             return self[0]
 
     @property
     def y(self):
         if impl.inside_kernel():
-            return self.subscript(1)
+            return self.local_subscript(1)
         else:
             return self[1]
 
     @property
     def z(self):
         if impl.inside_kernel():
-            return self.subscript(2)
+            return self.local_subscript(2)
         else:
             return self[2]
 
     @property
     def w(self):
         if impl.inside_kernel():
-            return self.subscript(3)
+            return self.local_subscript(3)
         else:
             return self[3]
 

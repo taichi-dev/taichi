@@ -53,12 +53,14 @@ void *MemoryPool::allocate(std::size_t size, std::size_t alignment) {
 template <typename T>
 T MemoryPool::fetch(volatile void *ptr) {
   T ret;
-  if (prog->config.arch == Arch::cuda) {
+  if (false && prog->config.arch == Arch::cuda) {
 #if TI_WITH_CUDA
-    // TI_P(cuda_stream);
+    TI_P(cuda_stream);
     CUDADriver::get_instance().memcpy_device_to_host_async(
         &ret, (void *)ptr, sizeof(T), cuda_stream);
+    TI_TAG;
     CUDADriver::get_instance().stream_synchronize(cuda_stream);
+    TI_TAG;
 #else
     TI_NOT_IMPLEMENTED
 #endif
@@ -70,9 +72,9 @@ T MemoryPool::fetch(volatile void *ptr) {
 
 template <typename T>
 void MemoryPool::push(volatile T *dest, const T &val) {
-  if (prog->config.arch == Arch::cuda) {
+  if (false && prog->config.arch == Arch::cuda) {
 #if TI_WITH_CUDA
-    // TI_P(cuda_stream);
+    TI_P(cuda_stream);
     CUDADriver::get_instance().memcpy_host_to_device_async(
         (void *)dest, (void *)&val, sizeof(T), cuda_stream);
     CUDADriver::get_instance().stream_synchronize(cuda_stream);

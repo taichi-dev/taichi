@@ -671,7 +671,7 @@ Stmt *Block::insert(VecStatement &&stmt, int location) {
     stmt_ptr = stmt.back().get();
   }
   if (location == -1) {
-    location = (int)statements.size() - 1;
+    location = (int)statements.size();
   }
   for (int i = 0; i < stmt.size(); i++) {
     insert(std::move(stmt[i]), location + i);

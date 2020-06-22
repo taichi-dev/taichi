@@ -958,7 +958,13 @@ class BasicBlockSimplify : public IRVisitor {
   }
 
   void visit(ContinueStmt *stmt) override {
-    return;
+    if (stmt != stmt->parent->back()) {
+      const int location = stmt->parent->locate(stmt);
+      while (location + 1 < (int)stmt->parent->size()) {
+        stmt->parent->erase(location + 1);
+      }
+      throw IRModified();
+    }
   }
 
   static bool is_global_write(Stmt *stmt) {
@@ -1205,6 +1211,8 @@ bool simplify(IRNode *root, Kernel *kernel) {
     else
       break;
   }
+  if (modified)
+    fix_block_parents(root);
   return modified;
 }
 

@@ -27,5 +27,6 @@
   "mac"             : "Mac OS X",
   "windows"         : "Windows",
   "perf"            : "Performance improvements",
+  "ipython"         : "IPython and other shells",
   "release"         : "Release"
 }

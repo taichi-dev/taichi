@@ -721,8 +721,8 @@ class Matrix(TaichiOperations):
         return Matrix([[ti.cos(alpha), -ti.sin(alpha)],
                        [ti.sin(alpha), ti.cos(alpha)]])
 
-    @python_scope
     @staticmethod
+    @python_scope
     def var(n, m, dt, shape=None, offset=None, **kwargs):
         return Matrix(n=n, m=m, dt=dt, shape=shape, offset=offset, **kwargs)
 

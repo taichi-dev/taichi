@@ -134,17 +134,18 @@ class ShellInspectorWrapper:
             # `.tmp_idle_source` for "Python IDLE shell"
             # Thanks to IDLE's lack of support with `inspect`,
             # we have to use a dirty hack to support Taichi there.
-            self.cache = {}
+            self.idle_cache = {}
 
             ppid_file = '.tmp_idle_ppid_' + str(os.getppid())
             with open(ppid_file, 'w') as f:
-                print(f'[Taichi] touching {ppid_file}')
+                import taichi as ti
+                ti.info(f'[Taichi] touching {ppid_file}')
                 f.write('taichi')
 
             def getsource(o):
                 func_name = o.__name__
-                if func_name in self.cache:
-                    return self.cache[func_name]
+                if func_name in self.idle_cache:
+                    return self.idle_cache[func_name]
                 src = None
                 try:
                     with open('.tmp_idle_source') as f:
@@ -177,7 +178,7 @@ class ShellInspectorWrapper:
                     name = x[i + 4:].split(':', maxsplit=1)[0]
                     name = name.split('(', maxsplit=1)[0]
                     if name.strip() == func_name:
-                        self.cache[func_name] = x
+                        self.idle_cache[func_name] = x
                         return x
                 else:
                     raise NameError(f'Could not find source for {o.__name__}!')
@@ -217,28 +218,32 @@ class ShellInspectorWrapper:
             raise RuntimeError(f'Shell type "{self.name}" not supported')
 
 
-oinspect = ShellInspectorWrapper()
+oinspect = None
+
+def _try_clean(filename):
+    try:
+        os.unlink(filename)
+    except:
+        pass
+    else:
+        import taichi as ti
+        ti.info('File ".tmp_idle_source" cleaned')
 
 def reset_callback():
-    if oinspect.name == ShellType.IDLE:
-        oinspect.cache = {}
-        try:
-            os.unlink('.tmp_idle_source')
-        except:
-            pass
-        else:
-            print('[Taichi] File ".tmp_idle_source" cleaned')
+    global oinspect
+    oinspect = ShellInspectorWrapper()
 
-def exit_callback():
-    reset_callback()
-    if oinspect.name == ShellType.IDLE:
-        ppid_file = '.tmp_idle_ppid_' + os.getppid()
-        try:
-            os.unlink(ppid_file)
-        except:
-            pass
-        else:
-            print(f'[Taichi] File {ppid_file} cleaned')
+    def is_idle_oinspect():
+        return isinstance(oinspect, ShellInspectorWrapper) and \
+                oinspect.name == ShellType.IDLE
+
+    if is_idle_oinspect():
+        _try_clean('.tmp_idle_source')
+
+        def exit_callback():
+            if is_idle_oinspect():
+                _try_clean('.tmp_idle_source')
+                _try_clean('.tmp_idle_ppid_' + os.getppid())
+        atexit.register(exit_callback)
 
 reset_callback()
-atexit.register(exit_callback)

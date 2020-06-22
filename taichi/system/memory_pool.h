@@ -29,7 +29,7 @@ class MemoryPool {
   Program *prog;
 
   MemRequestQueue *queue;
-  void *cuda_stream;
+  void *cuda_stream{nullptr};
 
   MemoryPool(Program *prog);
 

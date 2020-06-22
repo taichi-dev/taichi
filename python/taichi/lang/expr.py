@@ -78,6 +78,11 @@ class Expr(TaichiOperations):
     def loop_range(self):
         return self
 
+    @global_scope
+    @taichi_scope
+    def subscript(self, *indices):
+        return impl.subscript(self, indices)
+
     def serialize(self):
         return self.ptr.serialize()
 

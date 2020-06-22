@@ -32,6 +32,15 @@ class TaichiClass:
                "Taichi classes with mixed global/local entries are not allowed"
         return results[0]
 
+    def empty_copy(self):
+        raise NotImplementedError
+
+    def copy(self):
+        import copy
+        ret = self.empty_copy()
+        ret.entries = copy.copy(self.entries)
+        return ret
+
     @local_scope
     @taichi_scope
     def local_subscript(self, *indices):

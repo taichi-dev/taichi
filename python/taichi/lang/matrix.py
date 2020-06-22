@@ -1,6 +1,5 @@
 from . import expr
 from . import impl
-import copy
 import numbers
 import numpy as np
 from .util import *
@@ -339,11 +338,6 @@ class Matrix(TaichiClass, TaichiOperations):
 
     def empty_copy(self):
         return Matrix.empty(self.n, self.m)
-
-    def copy(self):
-        ret = self.empty_copy()
-        ret.entries = copy.copy(self.entries)
-        return ret
 
     @taichi_scope
     def variable(self):

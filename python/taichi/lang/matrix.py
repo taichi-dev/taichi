@@ -668,13 +668,13 @@ class Matrix(TaichiOperations):
     @taichi_scope
     def __ti_repr__(self):
         yield '['
-        for j in range(self.n):
-            if j:
+        for i in range(self.n):
+            if i:
                 yield ', '
             if self.m != 1:
                 yield '['
-            for i in range(self.m):
-                if i:
+            for j in range(self.m):
+                if j:
                     yield ', '
                 yield self(i, j)
             if self.m != 1:
@@ -684,7 +684,6 @@ class Matrix(TaichiOperations):
     @python_scope
     def __repr__(self):
         """Python scope object print support."""
-        assert not self.is_global()
         return str(self.to_numpy())
 
     @staticmethod

@@ -1,6 +1,7 @@
 #include "codegen_llvm.h"
 
 #include "taichi/struct/struct_llvm.h"
+#include "taichi/util/file_sequence_writer.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -127,10 +128,12 @@ void CodeGenLLVM::visit(Block *stmt_list) {
 
 void CodeGenLLVM::visit(AllocaStmt *stmt) {
   TI_ASSERT(stmt->width() == 1);
-  llvm_val[stmt] = create_entry_block_alloca(stmt->ret_type.data_type);
-  // initialize as zero
-  builder->CreateStore(tlctx->get_constant(stmt->ret_type.data_type, 0),
-                       llvm_val[stmt]);
+  llvm_val[stmt] = create_entry_block_alloca(stmt->ret_type.data_type,
+                                             stmt->ret_type.is_pointer());
+  // initialize as zero if element is not a pointer
+  if (!stmt->ret_type.is_pointer())
+    builder->CreateStore(tlctx->get_constant(stmt->ret_type.data_type, 0),
+                         llvm_val[stmt]);
 }
 
 void CodeGenLLVM::visit(RandStmt *stmt) {
@@ -1229,8 +1232,9 @@ void CodeGenLLVM::finalize_offloaded_task_function() {
   builder->CreateBr(func_body_bb);
 
   if (prog->config.print_kernel_llvm_ir) {
-    TI_INFO("Kernel Module IR");
-    module->print(errs(), nullptr);
+    static FileSequenceWriter writer("taichi_kernel_generic_llvm_ir_{:04d}.ll",
+                                     "unoptimized LLVM IR (generic)");
+    writer.write(module.get());
   }
   TI_ASSERT(!llvm::verifyFunction(*func, &errs()));
   // TI_INFO("Kernel function verified.");

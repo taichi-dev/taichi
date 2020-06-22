@@ -71,7 +71,7 @@ class Offloader {
         root_block->insert(std::move(offloaded));
       } else if (auto s = stmt->cast<StructForStmt>()) {
         assemble_serial_statements();
-        emit_struct_for(s, root_block);
+        emit_struct_for(s, root_block, s->scratch_opt);
       } else {
         pending_serial_statements->body->insert(std::move(stmt));
       }
@@ -81,7 +81,9 @@ class Offloader {
   }
 
  private:
-  static void emit_struct_for(StructForStmt *for_stmt, Block *root_block) {
+  static void emit_struct_for(StructForStmt *for_stmt,
+                              Block *root_block,
+                              const ScratchPadOptions &scratch_opt) {
     auto leaf = for_stmt->snode;
     // make a list of nodes, from the leaf block (instead of 'place') to root
     std::vector<SNode *> path;
@@ -118,6 +120,7 @@ class Offloader {
     offloaded_struct_for->block_dim = for_stmt->block_dim;
     offloaded_struct_for->snode = for_stmt->snode;
     offloaded_struct_for->num_cpu_threads = for_stmt->parallelize;
+    offloaded_struct_for->scratch_opt = scratch_opt;
 
     root_block->insert(std::move(offloaded_struct_for));
   }
@@ -598,6 +601,7 @@ class AssociateContinueScope : public BasicStmtVisitor {
 }  // namespace
 
 void offload(IRNode *root) {
+  TI_AUTO_PROF;
   auto offloaded_ranges = Offloader::run(root);
   typecheck(root);
   fix_block_parents(root);

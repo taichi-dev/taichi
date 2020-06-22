@@ -84,6 +84,8 @@ class KernelSimplicityASTChecker(ast.NodeVisitor):
             self._scope_guards.pop()
 
     def visit_For(self, node):
+        # TODO: since autodiff is enhanced, AST checker rules should be relaxed. This part should be updated.
+        return
         if (isinstance(node.iter, ast.Call)
                 and isinstance(node.iter.func, ast.Attribute)
                 and isinstance(node.iter.func.value, ast.Name)

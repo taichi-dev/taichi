@@ -1,0 +1,14 @@
+coverage:
+  status:
+    patch:
+      default: false
+      lang:
+        paths:
+          - python/taichi/lang
+        target: 60%
+    project:
+      default: false
+      lang:
+        paths:
+          - python/taichi/lang
+        threshold: 2%

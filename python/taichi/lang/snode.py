@@ -84,3 +84,11 @@ class SNode:
         if self.ptr.type == ti.core.SNodeType.pointer or self.ptr.type == ti.core.SNodeType.bitmasked:
             from .meta import snode_deactivate
             snode_deactivate(self)
+
+    def physical_index_position(self):
+        ret = {}
+        for virtual, physical in enumerate(
+                self.ptr.get_physical_index_position()):
+            if physical != -1:
+                ret[virtual] = physical
+        return ret

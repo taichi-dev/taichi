@@ -65,5 +65,5 @@ def substep():
 for i in range(32):
     substep()
 
-ti.profiler_print()
+ti.kernel_profiler_print()
 ti.core.print_profile_info()

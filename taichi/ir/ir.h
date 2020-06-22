@@ -6,6 +6,7 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <variant>
+#include <tuple>
 #include "taichi/common/core.h"
 #include "taichi/util/bit.h"
 #include "taichi/lang_util.h"
@@ -214,6 +215,8 @@ class IRVisitor {
     allow_undefined_visitor = false;
     invoke_default_visitor = false;
   }
+
+  virtual ~IRVisitor() = default;
 
   // default visitor
   virtual void visit(Stmt *stmt) {
@@ -892,6 +895,7 @@ class DelayedIRModifier {
  private:
   std::vector<std::pair<Stmt *, VecStatement>> to_insert_before;
   std::vector<std::pair<Stmt *, VecStatement>> to_insert_after;
+  std::vector<std::tuple<Stmt *, VecStatement, bool>> to_replace_with;
   std::vector<Stmt *> to_erase;
 
  public:
@@ -901,6 +905,9 @@ class DelayedIRModifier {
   void insert_before(Stmt *old_statement, VecStatement &&new_statements);
   void insert_after(Stmt *old_statement, std::unique_ptr<Stmt> new_statement);
   void insert_after(Stmt *old_statement, VecStatement &&new_statements);
+  void replace_with(Stmt *stmt,
+                    VecStatement &&new_statements,
+                    bool replace_usages = true);
   bool modify_ir();
 };
 
@@ -921,10 +928,9 @@ class SNodeOpStmt : public Stmt {
               SNode *snode,
               const std::vector<Stmt *> &indices);
 
-  static bool activation_related(SNodeOpType op) {
-    return op == SNodeOpType::activate || op == SNodeOpType::deactivate ||
-           op == SNodeOpType::is_active;
-  }
+  static bool activation_related(SNodeOpType op);
+
+  static bool need_activation(SNodeOpType op);
 
   TI_STMT_DEF_FIELDS(ret_type, op_type, snode, ptr, val, indices);
   TI_DEFINE_ACCEPT_AND_CLONE

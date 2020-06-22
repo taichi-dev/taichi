@@ -71,3 +71,5 @@ _build
 *.mp4
 *.dat
 *.ptx
+*.ll
+*.bc

@@ -154,6 +154,7 @@ class LoopVectorize : public IRVisitor {
 namespace irpass {
 
 void loop_vectorize(IRNode *root) {
+  TI_AUTO_PROF;
   return LoopVectorize::run(root);
 }
 

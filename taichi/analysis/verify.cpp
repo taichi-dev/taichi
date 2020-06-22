@@ -1,6 +1,7 @@
 #include "taichi/ir/ir.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/visitors.h"
+
 #include <vector>
 #include <unordered_set>
 
@@ -95,6 +96,7 @@ class IRVerifier : public BasicStmtVisitor {
 
 namespace irpass::analysis {
 void verify(IRNode *root) {
+  TI_AUTO_PROF;
   IRVerifier::run(root);
 }
 }  // namespace irpass::analysis

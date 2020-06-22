@@ -75,6 +75,7 @@ void export_lang(py::module &m) {
       .def_readwrite("debug", &CompileConfig::debug)
       .def_readwrite("check_out_of_bound", &CompileConfig::check_out_of_bound)
       .def_readwrite("print_accessor_ir", &CompileConfig::print_accessor_ir)
+      .def_readwrite("print_evaluator_ir", &CompileConfig::print_evaluator_ir)
       .def_readwrite("use_llvm", &CompileConfig::use_llvm)
       .def_readwrite("print_benchmark_stat",
                      &CompileConfig::print_benchmark_stat)
@@ -100,13 +101,14 @@ void export_lang(py::module &m) {
       .def_readwrite("demote_dense_struct_fors",
                      &CompileConfig::demote_dense_struct_fors)
       .def_readwrite("use_unified_memory", &CompileConfig::use_unified_memory)
-      .def_readwrite("enable_profiler", &CompileConfig::enable_profiler)
+      .def_readwrite("kernel_profiler", &CompileConfig::kernel_profiler)
       .def_readwrite("default_fp", &CompileConfig::default_fp)
       .def_readwrite("default_ip", &CompileConfig::default_ip)
       .def_readwrite("device_memory_GB", &CompileConfig::device_memory_GB)
       .def_readwrite("device_memory_fraction",
                      &CompileConfig::device_memory_fraction)
       .def_readwrite("fast_math", &CompileConfig::fast_math)
+      .def_readwrite("ad_stack_size", &CompileConfig::ad_stack_size)
       .def_readwrite("async", &CompileConfig::async);
 
   m.def("reset_default_compile_config",
@@ -119,17 +121,8 @@ void export_lang(py::module &m) {
   py::class_<Program>(m, "Program")
       .def(py::init<>())
       .def_readonly("config", &Program::config)
-      .def("profiler_print", &Program::profiler_print)
-      .def("profiler_clear", &Program::profiler_clear)
-      .def("profiler_start", &Program::profiler_start)
-      .def("profiler_stop", &Program::profiler_stop)
-      .def("get_profiler",
-           [](Program *program) -> void * {
-             // We didn't expose the ProfilerBase interface, so the only purpose
-             // of this method is to expose the address of the profiler, so that
-             // other modules (e.g. GUI) can receive the profiler.
-             return (void *)(program->get_profiler());
-           })
+      .def("kernel_profiler_print", &Program::kernel_profiler_print)
+      .def("kernel_profiler_clear", &Program::kernel_profiler_clear)
       .def("finalize", &Program::finalize)
       .def("get_root",
            [&](Program *program) -> SNode * {
@@ -189,6 +182,12 @@ void export_lang(py::module &m) {
       .def("write_int", &SNode::write_int)
       .def("write_float", &SNode::write_float)
       .def("get_num_elements_along_axis", &SNode::num_elements_along_axis)
+      .def("get_physical_index_position",
+           [](SNode *snode) {
+             return std::vector<int>(
+                 snode->physical_index_position,
+                 snode->physical_index_position + taichi_max_num_indices);
+           })
       .def("num_active_indices",
            [](SNode *snode) { return snode->num_active_indices; });
 
@@ -538,6 +537,7 @@ void export_lang(py::module &m) {
   m.def("get_version_major", get_version_major);
   m.def("get_version_minor", get_version_minor);
   m.def("get_version_patch", get_version_patch);
+  m.def("get_llvm_version_string", get_llvm_version_string);
   m.def("test_printf", [] { printf("test_printf\n"); });
   m.def("test_logging", [] { TI_INFO("test_logging\n"); });
   m.def("trigger_crash", [] { *(int *)(1) = 0; });

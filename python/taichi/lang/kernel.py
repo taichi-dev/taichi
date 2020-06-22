@@ -30,16 +30,14 @@ def remove_indent(lines):
 
 # The ti.func decorator
 def func(foo):
-    if _inside_class(level_of_class_stackframe=3):
-        func = Func(foo, classfunc=True)
+    is_classfunc = _inside_class(level_of_class_stackframe=3)
+    func = Func(foo, classfunc=is_classfunc)
 
-        @functools.wraps(foo)
-        def decorated(*args):
-            return func.__call__(*args)
+    @functools.wraps(foo)
+    def decorated(*args):
+        return func.__call__(*args)
 
-        return decorated
-    else:
-        return Func(foo)
+    return decorated
 
 
 class Func:
@@ -509,7 +507,6 @@ def _kernel_impl(func, level_of_class_stackframe, verbose=False):
     # Having |primal| contains |grad| makes the tape work.
     primal.grad = adjoint
 
-    from functools import wraps
     if is_classkernel:
         # For class kernels, their primal/adjoint callables are constructed when the
         # kernel is accessed via the instance inside BoundedDifferentiableMethod.
@@ -517,7 +514,7 @@ def _kernel_impl(func, level_of_class_stackframe, verbose=False):
         # owning the kernel, which is not known until the kernel is accessed.
         #
         # See also: BoundedDifferentiableMethod, data_oriented.
-        @wraps(func)
+        @functools.wraps(func)
         def wrapped(*args, **kwargs):
             # If we reach here (we should never), it means the class is not decorated
             # with @data_oriented, otherwise getattr would have intercepted the call.
@@ -527,7 +524,7 @@ def _kernel_impl(func, level_of_class_stackframe, verbose=False):
                 f'Please decorate class {clsobj.__name__} with @data_oriented')
     else:
 
-        @wraps(func)
+        @functools.wraps(func)
         def wrapped(*args, **kwargs):
             return primal(*args, **kwargs)
 

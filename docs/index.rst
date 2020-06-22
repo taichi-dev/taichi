@@ -55,15 +55,17 @@ The Taichi Programming Language
    cpp_style
    internal
    taichicon
+   versioning_releases
 
 
 .. toctree::
    :caption: Miscellaneous
    :maxdepth: 3
 
+   extension_libraries
    gui
-   cli_utilities
    export_results
+   cli_utilities
    global_settings
    faq
    acknowledgments

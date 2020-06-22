@@ -33,8 +33,9 @@ def test_basic_utils():
 
     normA = ti.var(ti.f32)
     normSqrA = ti.var(ti.f32)
+    normInvA = ti.var(ti.f32)
 
-    ti.root.place(a, b, abT, aNormalized, normA, normSqrA)
+    ti.root.place(a, b, abT, aNormalized, normA, normSqrA, normInvA)
 
     @ti.kernel
     def init():
@@ -44,6 +45,7 @@ def test_basic_utils():
 
         normA[None] = a.norm()
         normSqrA[None] = a.norm_sqr()
+        normInvA[None] = a.norm_inv()
 
         aNormalized[None] = a.normalized()
 
@@ -55,7 +57,8 @@ def test_basic_utils():
 
     sqrt14 = np.sqrt(14.0)
     invSqrt14 = 1.0 / sqrt14
-    assert normSqrA[None] == 14.0
+    assert normSqrA[None] == approx(14.0)
+    assert normInvA[None] == approx(invSqrt14)
     assert normA[None] == approx(sqrt14)
     assert aNormalized[None][0] == approx(1.0 * invSqrt14)
     assert aNormalized[None][1] == approx(2.0 * invSqrt14)
@@ -239,11 +242,19 @@ def test_mat_inverse():
 
 
 @ti.all_archs
-def test_unit_vectors():
-    a = ti.Vector(3, dt=ti.i32, shape=3)
+def test_matrix_factories():
+    import math
+
+    a = ti.Vector.var(3, dt=ti.i32, shape=3)
+    b = ti.Matrix.var(2, 2, dt=ti.f32, shape=2)
+    c = ti.Matrix.var(2, 3, dt=ti.f32, shape=2)
 
     @ti.kernel
     def fill():
+        b[0] = ti.Matrix.identity(ti.f32, 2)
+        b[1] = ti.Matrix.rotation2d(math.pi / 3)
+        c[0] = ti.Matrix.zero(ti.f32, 2, 3)
+        c[1] = ti.Matrix.one(ti.f32, 2, 3)
         for i in ti.static(range(3)):
             a[i] = ti.Vector.unit(3, i)
 
@@ -252,6 +263,13 @@ def test_unit_vectors():
     for i in range(3):
         for j in range(3):
             assert a[i][j] == int(i == j)
+
+    sqrt3o2 = math.sqrt(3) / 2
+    assert b[0].value.to_numpy() == approx(np.eye(2))
+    assert b[1].value.to_numpy() == approx(
+        np.array([[0.5, -sqrt3o2], [sqrt3o2, 0.5]]))
+    assert c[0].value.to_numpy() == approx(np.zeros((2, 3)))
+    assert c[1].value.to_numpy() == approx(np.ones((2, 3)))
 
 
 # TODO: move codes below to test_matrix.py:
@@ -413,6 +431,7 @@ def test_vector_xyzw_accessor():
     v = ti.Vector(4, dt=ti.i32, shape=(2, 2, 1))
 
     u[1, 0, 0].y = 3
+    v[1, 0, 0].z = 0
     v[1, 0, 0].w = 4
 
     @ti.kernel
@@ -424,4 +443,6 @@ def test_vector_xyzw_accessor():
     func()
     assert u[1, 0, 0].x == 24
     assert u[1, 0, 0].y == 3
+    assert v[1, 0, 0].z == -3
+    assert v[1, 0, 0].w == 4
     assert np.allclose(v.to_numpy()[1, 0, 0, :], np.array([6, 0, -3, 4]))

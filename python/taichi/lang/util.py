@@ -1,13 +1,16 @@
 from .core import taichi_lang_core
 import numpy as np
+import os
 
 _has_pytorch = False
 
-try:
-    import torch
-    _has_pytorch = True
-except:
-    pass
+_env_torch = os.environ.get('TI_ENABLE_TORCH', '1')
+if not _env_torch or int(_env_torch):
+    try:
+        import torch
+        _has_pytorch = True
+    except:
+        pass
 
 def has_pytorch():
     return _has_pytorch

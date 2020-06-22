@@ -2,23 +2,15 @@ import taichi as ti
 import random
 
 n = 8
-x = ti.var(dt=ti.f32)
-y = ti.var(dt=ti.f32)
-L = ti.var(dt=ti.f32)
-
-
-@ti.layout
-def data():
-    ti.root.dense(ti.i, n).place(x, y, x.grad,
-                                 y.grad)  # place gradient tensors
-    ti.root.place(L, L.grad)
+x = ti.var(dt=ti.f32, shape=n, needs_grad=True)
+y = ti.var(dt=ti.f32, shape=n)
+L = ti.var(dt=ti.f32, shape=(), needs_grad=True)
 
 
 @ti.kernel
 def reduce():
-    global L
     for i in range(n):
-        ti.atomic_add(L, 0.5 * (x[i] - y[i])**2)
+        L[None] += 0.5 * (x[i] - y[i])**2
 
 
 # Initialize vectors
@@ -28,7 +20,7 @@ for i in range(n):
 
 
 @ti.kernel
-def update():
+def gradient_descent():
     for i in x:
         x[i] -= x.grad[i] * 0.1
 
@@ -38,7 +30,7 @@ for k in range(100):
     with ti.Tape(loss=L):
         reduce()
     print('Loss =', L[None])
-    update()
+    gradient_descent()
 
 for i in range(n):
     # Now you should approximately have x[i] == y[i]

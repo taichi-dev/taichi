@@ -199,6 +199,10 @@ class IRNodeComparator : public IRVisitor {
 
 namespace irpass::analysis {
 bool same_statements(IRNode *root1, IRNode *root2) {
+  if (root1 == root2)
+    return true;
+  if (!root1 || !root2)
+    return false;
   return IRNodeComparator::run(root1, root2);
 }
 }  // namespace irpass::analysis

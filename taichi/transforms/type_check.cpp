@@ -36,7 +36,6 @@ class TypeCheck : public IRVisitor {
     // visiting order, at compile time.
 
     // ret_type stands for its element type.
-    stmt->ret_type.set_is_pointer(false);
   }
 
   void visit(IfStmt *if_stmt) {
@@ -78,7 +77,6 @@ class TypeCheck : public IRVisitor {
     TI_ASSERT(stmt->width() == 1);
     auto lookup = stmt->ptr[0].var->ret_type;
     stmt->ret_type = lookup;
-    stmt->ret_type.set_is_pointer(false);
   }
 
   void visit(LocalStoreStmt *stmt) {
@@ -100,7 +98,6 @@ class TypeCheck : public IRVisitor {
       fmt::print(stmt->tb);
     }
     stmt->ret_type = stmt->ptr->ret_type;
-    stmt->ret_type.set_is_pointer(false);
   }
 
   void visit(GlobalLoadStmt *stmt) {
@@ -322,6 +319,7 @@ class TypeCheck : public IRVisitor {
     if (current_kernel == nullptr) {
       current_kernel = stmt->get_kernel();
     }
+    TI_ASSERT(current_kernel != nullptr);
     auto &args = current_kernel->args;
     TI_ASSERT(0 <= stmt->arg_id && stmt->arg_id < args.size());
     stmt->ret_type = VectorType(1, args[stmt->arg_id].dt);
@@ -421,6 +419,7 @@ class TypeCheck : public IRVisitor {
 namespace irpass {
 
 void typecheck(IRNode *root) {
+  TI_AUTO_PROF;
   analysis::check_fields_registered(root);
   TypeCheck inst(root);
   root->accept(&inst);

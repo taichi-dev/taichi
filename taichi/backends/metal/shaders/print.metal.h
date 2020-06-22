@@ -19,7 +19,10 @@
 
 #endif  // TI_INSIDE_METAL_CODEGEN
 
-// Autodiff stack for local mutables
+// Kernel side utils to support print()
+//
+// Each print() call on each thread generates a PrintMsg to be stored inside the
+// print buffer.
 
 // clang-format off
 METAL_BEGIN_PRINT_DEF
@@ -52,6 +55,14 @@ STR(
 
     class PrintMsg {
      public:
+      // Data layout:
+      //
+      // * 1 i32 to record how many args there are
+      // * Followed by M i32s, which are the type masks. Each i32 can encode
+      // hold up to |kMetalNumPrintMsgTypePerI32| types.
+      // * Followed by N i32s, one for each print arg. F32 are encoded to I32.
+      // For strings, there is a string table on the host side, so that the
+      // kernel only needs to store a I32 string ID.
       enum Type { I32 = 1, F32 = 2, Str = 3 };
 
       PrintMsg(device int32_t * buf, int num_entries)

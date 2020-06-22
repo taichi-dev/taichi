@@ -1099,7 +1099,7 @@ void gpu_parallel_range_for(Context *context,
                             RangeForTaskFunc *func) {
   int idx = thread_idx() + block_dim() * block_idx() + begin;
   while (idx < end) {
-    func(context, nullptr, idx);
+    func(context, /*tls=*/nullptr, idx);
     idx += block_dim() * grid_dim();
   }
 }

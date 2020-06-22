@@ -25,7 +25,7 @@ void make_thread_local_offload(OffloadedStmt *offload) {
       irpass::analysis::gather_statements(offload, [&](Stmt *stmt) {
         if (auto atomic_op = stmt->cast<AtomicOpStmt>()) {
           if (is_atomic_op_linear(atomic_op->op_type)) {
-            // Local atomics does not count
+            // Local or global tmp atomics does not count
             if (auto dest = atomic_op->dest->cast<GlobalPtrStmt>()) {
               if (std::find(atomic_destinations.begin(),
                             atomic_destinations.end(),
@@ -97,6 +97,7 @@ void make_thread_local_offload(OffloadedStmt *offload) {
       auto zero = offload->prologue->insert(
           std::make_unique<ConstStmt>(TypedConstant(data_type, 0)), -1);
       // Zero-fill
+      // TODO: do not use GlobalStore for TLS ptr.
       offload->prologue->push_back<GlobalStoreStmt>(tls_ptr, zero);
     }
 

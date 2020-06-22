@@ -69,5 +69,8 @@ PER_STATEMENT(OffloadedStmt)
 PER_STATEMENT(LoopIndexStmt)
 PER_STATEMENT(GlobalTemporaryStmt)
 
+// Thread local storage
+PER_STATEMENT(ThreadLocalPtrStmt)
+
 // Special
 PER_STATEMENT(InternalFuncStmt)

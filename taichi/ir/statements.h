@@ -180,7 +180,9 @@ class OffloadedStmt : public Stmt {
   bool reversed;
   int num_cpu_threads;
   Arch device;
+  std::unique_ptr<Block> prologue;
   std::unique_ptr<Block> body;
+  std::unique_ptr<Block> epilogue;
   ScratchPadOptions scratch_opt;
 
   OffloadedStmt(TaskType task_type);
@@ -244,6 +246,23 @@ class GlobalTemporaryStmt : public Stmt {
 
   GlobalTemporaryStmt(std::size_t offset, VectorType ret_type)
       : offset(offset) {
+    this->ret_type = ret_type;
+    TI_STMT_REG_FIELDS;
+  }
+
+  bool has_global_side_effect() const override {
+    return false;
+  }
+
+  TI_STMT_DEF_FIELDS(ret_type, offset);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
+class ThreadLocalPtrStmt : public Stmt {
+ public:
+  std::size_t offset;
+
+  ThreadLocalPtrStmt(std::size_t offset, VectorType ret_type) : offset(offset) {
     this->ret_type = ret_type;
     TI_STMT_REG_FIELDS;
   }

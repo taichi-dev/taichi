@@ -51,8 +51,12 @@ class StatementUsageReplace : public IRVisitor {
   }
 
   void visit(OffloadedStmt *stmt) {
+    if (stmt->prologue)
+      stmt->prologue->accept(this);
     if (stmt->body)
       stmt->body->accept(this);
+    if (stmt->epilogue)
+      stmt->epilogue->accept(this);
   }
 
   static void run(IRNode *node, Stmt *old_stmt, Stmt *new_stmt) {

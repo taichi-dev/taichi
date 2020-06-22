@@ -491,10 +491,21 @@ class IRPrinter : public IRVisitor {
       print("{} = offloaded garbage collect {}", stmt->name(),
             stmt->snode->get_node_type_name_hinted());
     } else {
-      print("{} = offloaded {} {{", stmt->name(), details);
+      print("{} = offloaded {} ", stmt->name(), details);
+      if (stmt->prologue) {
+        print("prologue {{");
+        stmt->prologue->accept(this);
+        print("}}");
+      }
       TI_ASSERT(stmt->body);
+      print("body {{");
       stmt->body->accept(this);
       print("}}");
+      if (stmt->epilogue) {
+        print("epilogue {{");
+        stmt->epilogue->accept(this);
+        print("}}");
+      }
     }
   }
 
@@ -505,6 +516,11 @@ class IRPrinter : public IRVisitor {
 
   void visit(GlobalTemporaryStmt *stmt) override {
     print("{}{} = global tmp var (offset = {} B)", stmt->type_hint(),
+          stmt->name(), stmt->offset);
+  }
+
+  void visit(ThreadLocalPtrStmt *stmt) override {
+    print("{}{} = thread local ptr (offset = {} B)", stmt->type_hint(),
           stmt->name(), stmt->offset);
   }
 

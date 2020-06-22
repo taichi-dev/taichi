@@ -667,24 +667,24 @@ class Matrix(TaichiOperations):
 
     @taichi_scope
     def __ti_repr__(self):
-        if self.m != 1:
-            yield '['
-
-        for j in range(self.m):
+        yield '['
+        for j in range(self.n):
             if j:
                 yield ', '
-            yield '['
-            for i in range(self.n):
+            if self.m != 1:
+                yield '['
+            for i in range(self.m):
                 if i:
                     yield ', '
                 yield self(i, j)
-            yield ']'
+            if self.m != 1:
+                yield ']'
+        yield ']'
 
-        if self.m != 1:
-            yield ']'
-
+    @python_scope
     def __repr__(self):
         """Python scope object print support."""
+        assert not self.is_global()
         return str(self.to_numpy())
 
     @staticmethod
@@ -722,6 +722,7 @@ class Matrix(TaichiOperations):
         return Matrix([[ti.cos(alpha), -ti.sin(alpha)],
                        [ti.sin(alpha), ti.cos(alpha)]])
 
+    @python_scope
     @staticmethod
     def var(n, m, dt, shape=None, offset=None, **kwargs):
         return Matrix(n=n, m=m, dt=dt, shape=shape, offset=offset, **kwargs)

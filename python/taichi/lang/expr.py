@@ -64,6 +64,9 @@ class Expr(TaichiOperations):
                      (taichi_lang_core.get_max_num_indices() - len(key)))
         return self.getter(*key)
 
+    def get_tensor_members(self):
+        return [self]
+
     def loop_range(self):
         return self
 

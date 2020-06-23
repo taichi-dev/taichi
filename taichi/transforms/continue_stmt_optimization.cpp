@@ -37,33 +37,36 @@ class ContinueStmtOptimizer : public BasicStmtVisitor {
     allow_undefined_visitor = true;
   }
 
-  void visit_loop(Stmt *loop_stmt, Block *body) {
-    const int body_size = body->size();
-    for (int i = 0; i < body_size - 1; i++) {
-      if (auto continue_stmt = body->statements[i]->cast<ContinueStmt>()) {
-        TI_ASSERT(continue_stmt->scope == loop_stmt ||
-                  continue_stmt->scope == nullptr);
+  void visit(Block *stmt_list) override {
+    const int block_size = stmt_list->size();
+    for (int i = 0; i < block_size - 1; i++) {
+      if (auto continue_stmt = stmt_list->statements[i]->cast<ContinueStmt>()) {
         // Eliminate statements after ContinueStmt
-        for (int j = body_size - 1; j > i; j--)
-          body->erase(j);
+        for (int j = block_size - 1; j > i; j--)
+          stmt_list->erase(j);
         modified = true;
       }
     }
+    for (auto &stmt : stmt_list->statements)
+      stmt->accept(this);
+  }
+
+  void visit_loop(Block *body) {
     if (body->size())
       body->back()->accept(&useless_continue_eliminator);
     body->accept(this);
   }
 
   void visit(RangeForStmt *stmt) override {
-    visit_loop(stmt, stmt->body.get());
+    visit_loop(stmt->body.get());
   }
 
   void visit(StructForStmt *stmt) override {
-    visit_loop(stmt, stmt->body.get());
+    visit_loop(stmt->body.get());
   }
 
   void visit(WhileStmt *stmt) override {
-    visit_loop(stmt, stmt->body.get());
+    visit_loop(stmt->body.get());
   }
 
   void visit(OffloadedStmt *stmt) override {
@@ -71,7 +74,7 @@ class ContinueStmtOptimizer : public BasicStmtVisitor {
       stmt->prologue->accept(this);
     if (stmt->task_type == OffloadedStmt::TaskType::range_for ||
         stmt->task_type == OffloadedStmt::TaskType::struct_for)
-      visit_loop(stmt, stmt->body.get());
+      visit_loop(stmt->body.get());
     else if (stmt->body)
       stmt->body->accept(this);
     if (stmt->epilogue)
@@ -79,9 +82,18 @@ class ContinueStmtOptimizer : public BasicStmtVisitor {
   }
 
   static bool run(IRNode *node) {
-    ContinueStmtOptimizer optimizer;
-    node->accept(&optimizer);
-    return optimizer.modified || optimizer.useless_continue_eliminator.modified;
+    bool modified = false;
+    while (true) {
+      ContinueStmtOptimizer optimizer;
+      node->accept(&optimizer);
+      if (optimizer.modified ||
+          optimizer.useless_continue_eliminator.modified) {
+        modified = true;
+      } else {
+        break;
+      }
+    }
+    return modified;
   }
 };
 

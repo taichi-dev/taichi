@@ -63,6 +63,9 @@ def test_print_sep():
     def func():
         # hello 42 world!
         print('hello', 42, 'world!')
+        # hello 42 Taichi 233 world!
+        print('hello', 42, 'Tai', end='')
+        print('chi', 233, 'world!')
         # hello42world!
         print('hello', 42, 'world!', sep='')
 

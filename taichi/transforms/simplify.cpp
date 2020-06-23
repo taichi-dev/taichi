@@ -708,7 +708,7 @@ class BasicBlockSimplify : public IRVisitor {
     // step 1: eliminate useless extraction of another BitExtractStmt
     if (stmt->bit_begin == 0 && stmt->input->is<BitExtractStmt>()) {
       auto bstmt = stmt->input->as<BitExtractStmt>();
-      if (stmt->bit_end == bstmt->bit_end - bstmt->bit_begin) {
+      if (stmt->bit_end >= bstmt->bit_end - bstmt->bit_begin) {
         stmt->replace_with(bstmt);
         stmt->parent->erase(current_stmt_id);
         throw IRModified();

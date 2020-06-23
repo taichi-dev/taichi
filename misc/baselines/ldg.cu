@@ -5,7 +5,7 @@ __device__ int cube(int x) {
       " mul.lo.u32 %0, t1, %1;"      // y = t1 * x
       : "=r"(y)
       : "r"(x));
-  return y;
+  return y + clock64();
 }
 
 __global__ void test_ldg(float *a, float *b) {

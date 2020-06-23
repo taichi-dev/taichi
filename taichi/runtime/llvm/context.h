@@ -49,6 +49,7 @@ struct MemRequestQueue {
   MemRequest requests[taichi_max_num_mem_requests];
   int tail;
   int processed;
+  int trash;
 };
 
 #if defined(TI_RUNTIME_HOST)

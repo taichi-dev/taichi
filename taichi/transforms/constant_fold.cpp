@@ -188,16 +188,18 @@ class ConstantFold : public BasicStmtVisitor {
       return;
     if (stmt->width() != 1)
       return;
-    int32 result;
+    std::unique_ptr<Stmt> result_stmt;
     if (is_signed(input->val[0].dt)) {
-      result = (input->val[0].val_int() >> stmt->bit_begin) &
-               ((1LL << (stmt->bit_end - stmt->bit_begin)) - 1);
+      auto result = (input->val[0].val_int() >> stmt->bit_begin) &
+                    ((1LL << (stmt->bit_end - stmt->bit_begin)) - 1);
+      result_stmt = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(
+          TypedConstant(input->val[0].dt, result)));
     } else {
-      result = (input->val[0].val_uint() >> stmt->bit_begin) &
-               ((1LL << (stmt->bit_end - stmt->bit_begin)) - 1);
+      auto result = (input->val[0].val_uint() >> stmt->bit_begin) &
+                    ((1LL << (stmt->bit_end - stmt->bit_begin)) - 1);
+      result_stmt = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(
+          TypedConstant(input->val[0].dt, result)));
     }
-    auto result_stmt = Stmt::make<ConstStmt>(
-        LaneAttribute<TypedConstant>(TypedConstant(DataType::i32, result)));
     stmt->replace_with(result_stmt.get());
     modifier.insert_before(stmt, std::move(result_stmt));
     modifier.erase(stmt);

@@ -653,8 +653,8 @@ void CodeGenLLVM::visit(PrintStmt *stmt) {
     }
   }
   auto runtime_printf = call("LLVMRuntime_get_host_printf", get_runtime());
-  args.insert(args.begin(), builder->CreateGlobalStringPtr(
-                                (formats + "\n").c_str(), "format_string"));
+  args.insert(args.begin(),
+              builder->CreateGlobalStringPtr(formats.c_str(), "format_string"));
 
   llvm_val[stmt] = builder->CreateCall(runtime_printf, args);
 }

@@ -128,10 +128,12 @@ void CodeGenLLVM::visit(Block *stmt_list) {
 
 void CodeGenLLVM::visit(AllocaStmt *stmt) {
   TI_ASSERT(stmt->width() == 1);
-  llvm_val[stmt] = create_entry_block_alloca(stmt->ret_type.data_type);
-  // initialize as zero
-  builder->CreateStore(tlctx->get_constant(stmt->ret_type.data_type, 0),
-                       llvm_val[stmt]);
+  llvm_val[stmt] = create_entry_block_alloca(stmt->ret_type.data_type,
+                                             stmt->ret_type.is_pointer());
+  // initialize as zero if element is not a pointer
+  if (!stmt->ret_type.is_pointer())
+    builder->CreateStore(tlctx->get_constant(stmt->ret_type.data_type, 0),
+                         llvm_val[stmt]);
 }
 
 void CodeGenLLVM::visit(RandStmt *stmt) {
@@ -1090,12 +1092,11 @@ void CodeGenLLVM::visit(GetRootStmt *stmt) {
                                    0));
 }
 
-void CodeGenLLVM::visit(OffsetAndExtractBitsStmt *stmt) {
-  auto shifted = builder->CreateAdd(llvm_val[stmt->input],
-                                    tlctx->get_constant((int32)stmt->offset));
+void CodeGenLLVM::visit(BitExtractStmt *stmt) {
   int mask = (1u << (stmt->bit_end - stmt->bit_begin)) - 1;
   llvm_val[stmt] = builder->CreateAnd(
-      builder->CreateLShr(shifted, stmt->bit_begin), tlctx->get_constant(mask));
+      builder->CreateLShr(llvm_val[stmt->input], stmt->bit_begin),
+      tlctx->get_constant(mask));
 }
 
 void CodeGenLLVM::visit(LinearizeStmt *stmt) {
@@ -1414,6 +1415,15 @@ void CodeGenLLVM::visit(GlobalTemporaryStmt *stmt) {
   llvm_val[stmt] = builder->CreatePointerCast(buffer, ptr_type);
 }
 
+void CodeGenLLVM::visit(ThreadLocalPtrStmt *stmt) {
+  auto base = get_tls_base_ptr();
+  TI_ASSERT(stmt->width() == 1);
+  auto ptr = builder->CreateGEP(base, tlctx->get_constant(stmt->offset));
+  auto ptr_type =
+      llvm::PointerType::get(tlctx->get_data_type(stmt->ret_type.data_type), 0);
+  llvm_val[stmt] = builder->CreatePointerCast(ptr, ptr_type);
+}
+
 void CodeGenLLVM::visit(InternalFuncStmt *stmt) {
   create_call(stmt->func_name, {get_context()});
 }
@@ -1525,6 +1535,24 @@ llvm::Value *CodeGenLLVM::get_arg(int i) {
 
 llvm::Value *CodeGenLLVM::get_context() {
   return get_arg(0);
+}
+
+llvm::Value *CodeGenLLVM::get_tls_base_ptr() {
+  return get_arg(1);
+}
+
+llvm::Type *CodeGenLLVM::get_tls_buffer_type() {
+  return llvm::Type::getInt8PtrTy(*llvm_context);
+}
+
+std::vector<llvm::Type *> CodeGenLLVM::get_xlogue_argument_types() {
+  return {llvm::PointerType::get(get_runtime_type("Context"), 0),
+          get_tls_buffer_type()};
+}
+
+llvm::Type *CodeGenLLVM::get_xlogue_function_type() {
+  return llvm::FunctionType::get(llvm::Type::getVoidTy(*llvm_context),
+                                 get_xlogue_argument_types(), false);
 }
 
 llvm::Value *CodeGenLLVM::get_root() {

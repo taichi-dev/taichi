@@ -54,7 +54,7 @@ PER_STATEMENT(StackAccAdjointStmt)
 // SNode Micro Ops
 PER_STATEMENT(GetRootStmt)
 PER_STATEMENT(IntegerOffsetStmt)
-PER_STATEMENT(OffsetAndExtractBitsStmt)
+PER_STATEMENT(BitExtractStmt)
 PER_STATEMENT(LinearizeStmt)
 PER_STATEMENT(SNodeLookupStmt)
 PER_STATEMENT(GetChStmt)
@@ -68,6 +68,9 @@ PER_STATEMENT(ElementShuffleStmt)
 PER_STATEMENT(OffloadedStmt)
 PER_STATEMENT(LoopIndexStmt)
 PER_STATEMENT(GlobalTemporaryStmt)
+
+// Thread local storage
+PER_STATEMENT(ThreadLocalPtrStmt)
 
 // Special
 PER_STATEMENT(InternalFuncStmt)

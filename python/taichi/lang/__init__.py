@@ -181,7 +181,7 @@ def cache_shared(v):
     taichi_lang_core.cache(0, v.ptr)
 
 
-def cache_l1(v):
+def cache_read_only(v):
     taichi_lang_core.cache(1, v.ptr)
 
 

@@ -80,8 +80,11 @@ class LLVMModuleBuilder {
     return alloca;
   }
 
-  llvm::Value *create_entry_block_alloca(DataType dt) {
-    return create_entry_block_alloca(tlctx->get_data_type(dt));
+  llvm::Value *create_entry_block_alloca(DataType dt, bool is_pointer = false) {
+    auto type = tlctx->get_data_type(dt);
+    if (is_pointer)
+      type = llvm::PointerType::get(type, 0);
+    return create_entry_block_alloca(type);
   }
 
   llvm::Type *get_runtime_type(const std::string &name) {

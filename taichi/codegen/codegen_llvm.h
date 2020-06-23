@@ -67,6 +67,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   llvm::FunctionType *task_function_type;
   std::unordered_map<Stmt *, llvm::Value *> llvm_val;
   llvm::Function *func;
+  OffloadedStmt *current_offload{nullptr};
   std::unique_ptr<OffloadedTask> current_task;
   std::vector<OffloadedTask> offloaded_tasks;
   BasicBlock *func_body_bb;
@@ -87,6 +88,14 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   llvm::Value *get_arg(int i);
 
   llvm::Value *get_context();
+
+  llvm::Value *get_tls_base_ptr();
+
+  llvm::Type *get_tls_buffer_type();
+
+  std::vector<llvm::Type *> get_xlogue_argument_types();
+
+  llvm::Type *get_xlogue_function_type();
 
   llvm::Value *get_root();
 
@@ -189,7 +198,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(GetRootStmt *stmt) override;
 
-  void visit(OffsetAndExtractBitsStmt *stmt) override;
+  void visit(BitExtractStmt *stmt) override;
 
   void visit(LinearizeStmt *stmt) override;
 
@@ -223,6 +232,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   void visit(LoopIndexStmt *stmt) override;
 
   void visit(GlobalTemporaryStmt *stmt) override;
+
+  void visit(ThreadLocalPtrStmt *stmt) override;
 
   void visit(InternalFuncStmt *stmt) override;
 

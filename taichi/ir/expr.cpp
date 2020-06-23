@@ -160,10 +160,6 @@ void Cache(int v, const Expr &var) {
   dec.scratch_opt.push_back(std::make_pair(v, var.snode()));
 }
 
-void CacheL1(const Expr &var) {
-  dec.scratch_opt.push_back(std::make_pair(1, var.snode()));
-}
-
 Expr load_if_ptr(const Expr &ptr) {
   if (ptr.is<GlobalPtrExpression>()) {
     return load(ptr);

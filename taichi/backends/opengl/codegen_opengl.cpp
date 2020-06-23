@@ -263,9 +263,9 @@ class KernelGen : public IRVisitor {
     emit("int {} = {};", stmt->short_name(), val);
   }
 
-  void visit(OffsetAndExtractBitsStmt *stmt) override {
-    emit("int {} = ((({} + {}) >> {}) & ((1 << {}) - 1));", stmt->short_name(),
-         stmt->offset, stmt->input->short_name(), stmt->bit_begin,
+  void visit(BitExtractStmt *stmt) override {
+    emit("int {} = (({} >> {}) & ((1 << {}) - 1));", stmt->short_name(),
+         stmt->input->short_name(), stmt->bit_begin,
          stmt->bit_end - stmt->bit_begin);
   }
 
@@ -364,7 +364,7 @@ class KernelGen : public IRVisitor {
       emit("{} {} = {}(-{});", dt_name, stmt->short_name(), dt_name,
            stmt->operand->short_name());
     } else if (stmt->op_type == UnaryOpType::rsqrt) {
-      emit("{} {} = {}(1 / sqrt({}));", dt_name, stmt->short_name(), dt_name,
+      emit("{} {} = {}(inversesqrt({}));", dt_name, stmt->short_name(), dt_name,
            stmt->operand->short_name());
     } else if (stmt->op_type == UnaryOpType::sgn) {
       emit("{} {} = {}(sign({}));", dt_name, stmt->short_name(), dt_name,

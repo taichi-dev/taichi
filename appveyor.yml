@@ -63,4 +63,4 @@ build_script:
   - "%PYTHON% examples/laplace.py"
   - "%PYTHON% bin/taichi test -Cvr2 -t2"
   - "cd python && %PYTHON% build.py try_upload"
-  - "bash <(curl -s https://codecov.io/bash)"
+  - "cd %TAICHI_REPO_DIR% && bash <(curl -s https://codecov.io/bash)"

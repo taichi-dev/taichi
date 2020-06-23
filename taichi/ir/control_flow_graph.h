@@ -65,6 +65,7 @@ class ControlFlowGraph {
   void reaching_definition_analysis(bool after_lower_access);
 
   void simplify_graph();
+  // This pass cannot eliminate container statements properly for now.
   bool unreachable_code_elimination();
   bool store_to_load_forwarding(bool after_lower_access);
 };

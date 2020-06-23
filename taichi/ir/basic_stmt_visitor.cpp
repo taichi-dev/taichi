@@ -8,9 +8,12 @@ BasicStmtVisitor::BasicStmtVisitor() {
 }
 
 void BasicStmtVisitor::visit(Block *stmt_list) {
-  for (auto &stmt : stmt_list->statements) {
+  std::vector<Stmt *> statements;
+  // Make a copy in case the pass modifies the block itself
+  for (auto &stmt : stmt_list->statements)
+    statements.push_back(stmt.get());
+  for (auto &stmt : statements)
     stmt->accept(this);
-  }
 }
 
 void BasicStmtVisitor::visit(IfStmt *if_stmt) {
@@ -38,8 +41,12 @@ void BasicStmtVisitor::visit(StructForStmt *for_stmt) {
 
 void BasicStmtVisitor::visit(OffloadedStmt *stmt) {
   preprocess_container_stmt(stmt);
+  if (stmt->prologue)
+    stmt->prologue->accept(this);
   if (stmt->body)
     stmt->body->accept(this);
+  if (stmt->epilogue)
+    stmt->epilogue->accept(this);
 }
 
 void BasicStmtVisitor::visit(FuncBodyStmt *stmt) {

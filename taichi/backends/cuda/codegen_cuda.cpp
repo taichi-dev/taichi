@@ -76,7 +76,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       }
 
       for (auto task : offloaded_local) {
-        TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
+        TI_DEBUG("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
                  task.block_dim);
 
         cuda_module->launch(task.name, task.grid_dim, task.block_dim,

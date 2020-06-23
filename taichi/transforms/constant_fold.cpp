@@ -160,7 +160,7 @@ class ConstantFold : public BasicStmtVisitor {
       auto evaluated =
           Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(new_constant));
       stmt->replace_with(evaluated.get());
-      modifier.insert_before(stmt, VecStatement(std::move(evaluated)));
+      modifier.insert_before(stmt, std::move(evaluated));
       modifier.erase(stmt);
     }
   }
@@ -177,9 +177,30 @@ class ConstantFold : public BasicStmtVisitor {
       auto evaluated =
           Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(new_constant));
       stmt->replace_with(evaluated.get());
-      modifier.insert_before(stmt, VecStatement(std::move(evaluated)));
+      modifier.insert_before(stmt, std::move(evaluated));
       modifier.erase(stmt);
     }
+  }
+
+  void visit(BitExtractStmt *stmt) override {
+    auto input = stmt->input->cast<ConstStmt>();
+    if (!input)
+      return;
+    if (stmt->width() != 1)
+      return;
+    int32 result;
+    if (is_signed(input->val[0].dt)) {
+      result = (input->val[0].val_int() >> stmt->bit_begin) &&
+               ((1LL << (stmt->bit_end - stmt->bit_begin)) - 1);
+    } else {
+      result = (input->val[0].val_uint() >> stmt->bit_begin) &&
+               ((1LL << (stmt->bit_end - stmt->bit_begin)) - 1);
+    }
+    auto result_stmt = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(
+        TypedConstant(DataType::i32, result)));
+    stmt->replace_with(result_stmt.get());
+    modifier.insert_before(stmt, std::move(result_stmt));
+    modifier.erase(stmt);
   }
 
   static bool run(IRNode *node) {

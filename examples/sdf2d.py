@@ -1,7 +1,7 @@
 import taichi as ti
 from math import tau
 from renderer_utils import reflect, refract
-ti.init(ti.opengl)
+ti.init(arch=ti.opengl)
 
 N = 512
 img = ti.var(dt=ti.f32, shape=(N, N))

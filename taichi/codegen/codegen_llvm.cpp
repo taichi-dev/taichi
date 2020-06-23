@@ -1092,12 +1092,11 @@ void CodeGenLLVM::visit(GetRootStmt *stmt) {
                                    0));
 }
 
-void CodeGenLLVM::visit(OffsetAndExtractBitsStmt *stmt) {
-  auto shifted = builder->CreateAdd(llvm_val[stmt->input],
-                                    tlctx->get_constant((int32)stmt->offset));
+void CodeGenLLVM::visit(BitExtractStmt *stmt) {
   int mask = (1u << (stmt->bit_end - stmt->bit_begin)) - 1;
   llvm_val[stmt] = builder->CreateAnd(
-      builder->CreateLShr(shifted, stmt->bit_begin), tlctx->get_constant(mask));
+      builder->CreateLShr(llvm_val[stmt->input], stmt->bit_begin),
+      tlctx->get_constant(mask));
 }
 
 void CodeGenLLVM::visit(LinearizeStmt *stmt) {

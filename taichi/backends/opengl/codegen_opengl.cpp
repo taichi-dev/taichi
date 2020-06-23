@@ -263,9 +263,9 @@ class KernelGen : public IRVisitor {
     emit("int {} = {};", stmt->short_name(), val);
   }
 
-  void visit(OffsetAndExtractBitsStmt *stmt) override {
-    emit("int {} = ((({} + {}) >> {}) & ((1 << {}) - 1));", stmt->short_name(),
-         stmt->offset, stmt->input->short_name(), stmt->bit_begin,
+  void visit(BitExtractStmt *stmt) override {
+    emit("int {} = (({} >> {}) & ((1 << {}) - 1));", stmt->short_name(),
+         stmt->input->short_name(), stmt->bit_begin,
          stmt->bit_end - stmt->bit_begin);
   }
 

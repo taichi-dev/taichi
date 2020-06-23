@@ -74,14 +74,13 @@ class LinearizeStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
-class OffsetAndExtractBitsStmt : public Stmt {
+class BitExtractStmt : public Stmt {
  public:
   Stmt *input;
   int bit_begin, bit_end;
-  int64 offset;
   bool simplified;
-  OffsetAndExtractBitsStmt(Stmt *input, int bit_begin, int bit_end, int offset)
-      : input(input), bit_begin(bit_begin), bit_end(bit_end), offset(offset) {
+  BitExtractStmt(Stmt *input, int bit_begin, int bit_end)
+      : input(input), bit_begin(bit_begin), bit_end(bit_end) {
     simplified = false;
     TI_STMT_REG_FIELDS;
   }
@@ -90,7 +89,7 @@ class OffsetAndExtractBitsStmt : public Stmt {
     return false;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, input, bit_begin, bit_end, offset, simplified);
+  TI_STMT_DEF_FIELDS(ret_type, input, bit_begin, bit_end, simplified);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

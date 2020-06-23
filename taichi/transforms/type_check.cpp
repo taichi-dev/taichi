@@ -370,7 +370,7 @@ class TypeCheck : public IRVisitor {
       stmt->epilogue->accept(this);
   }
 
-  void visit(OffsetAndExtractBitsStmt *stmt) {
+  void visit(BitExtractStmt *stmt) {
     stmt->ret_type.data_type = DataType::i32;
   }
 

@@ -313,7 +313,7 @@ def layout(func):
 
 
 @taichi_scope
-def ti_print(*vars):
+def ti_print(*vars, sep=' '):
     def entry2content(var):
         if isinstance(var, str):
             return var
@@ -330,12 +330,8 @@ def ti_print(*vars):
                 yield var
 
     def add_separators(vars):
-        prev_is_str = True
-        for var in vars:
-            cur_is_str = isinstance(var, str)
-            if not (prev_is_str or cur_is_str):
-                yield ' '
-            prev_is_str = cur_is_str
+        for i, var in enumerate(vars):
+            if i: yield sep
             yield var
 
     def fused_string(entries):

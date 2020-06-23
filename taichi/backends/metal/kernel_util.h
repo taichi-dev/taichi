@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -21,6 +22,16 @@ class SNode;
 
 namespace metal {
 
+// TODO(k-ye): Share this between OpenGL and Metal?
+class PrintStringTable {
+ public:
+  int put(const std::string &str);
+  const std::string &get(int i);
+
+ private:
+  std::vector<std::string> strs_;
+};
+
 // This struct holds the necessary information to launch a Metal kernel.
 struct KernelAttributes {
   enum class Buffers {
@@ -28,6 +39,7 @@ struct KernelAttributes {
     GlobalTmps,
     Context,
     Runtime,
+    Print,
   };
   std::string name;
   int num_threads;
@@ -58,6 +70,9 @@ struct KernelAttributes {
   RangeForAttributes range_for_attribs;
   // clear_list + listgen
   RuntimeListOpAttributes runtime_list_op_attribs;
+
+  // Whether print() is called inside this kernel.
+  bool uses_print = false;
 
   static std::string buffers_name(Buffers b);
   std::string debug_string() const;

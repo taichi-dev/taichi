@@ -564,6 +564,7 @@ class KernelCodegen : public IRVisitor {
     const std::string msgbuf_var_name = stmt->raw_name() + "_msgbuf_";
     emit("device auto* {} = mtl_print_alloc_buf({}, {});", msgbuf_var_name,
          kPrintAllocVarName, num_entries);
+    // Check for buffer overflow
     emit("if ({}) {{", msgbuf_var_name);
     {
       ScopedIndent s(current_appender());

@@ -55,6 +55,7 @@ __pycache__
 *.ini
 *.egg-info
 .tlang_cache
+.tmp_idle_*
 /taichi/common/version.h
 /taichi/common/commit_hash.h
 /python/test_env

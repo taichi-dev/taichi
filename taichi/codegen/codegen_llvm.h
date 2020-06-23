@@ -198,7 +198,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(GetRootStmt *stmt) override;
 
-  void visit(OffsetAndExtractBitsStmt *stmt) override;
+  void visit(BitExtractStmt *stmt) override;
 
   void visit(LinearizeStmt *stmt) override;
 

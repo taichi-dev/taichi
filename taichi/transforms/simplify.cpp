@@ -692,7 +692,7 @@ class BasicBlockSimplify : public IRVisitor {
     set_done(stmt);
   }
 
-  void visit(OffsetAndExtractBitsStmt *stmt) override {
+  void visit(BitExtractStmt *stmt) override {
     if (is_done(stmt))
       return;
 
@@ -705,11 +705,10 @@ class BasicBlockSimplify : public IRVisitor {
       throw IRModified();
     }
 
-    // step 1: eliminate useless extraction of another OffsetAndExtractBitsStmt
-    if (stmt->offset == 0 && stmt->bit_begin == 0 &&
-        stmt->input->is<OffsetAndExtractBitsStmt>()) {
-      auto bstmt = stmt->input->as<OffsetAndExtractBitsStmt>();
-      if (stmt->bit_end == bstmt->bit_end - bstmt->bit_begin) {
+    // step 1: eliminate useless extraction of another BitExtractStmt
+    if (stmt->bit_begin == 0 && stmt->input->is<BitExtractStmt>()) {
+      auto bstmt = stmt->input->as<BitExtractStmt>();
+      if (stmt->bit_end >= bstmt->bit_end - bstmt->bit_begin) {
         stmt->replace_with(bstmt);
         stmt->parent->erase(current_stmt_id);
         throw IRModified();
@@ -717,8 +716,7 @@ class BasicBlockSimplify : public IRVisitor {
     }
 
     // step 2: eliminate useless extraction of a LoopIndexStmt
-    if (stmt->offset == 0 && stmt->bit_begin == 0 &&
-        stmt->input->is<LoopIndexStmt>()) {
+    if (stmt->bit_begin == 0 && stmt->input->is<LoopIndexStmt>()) {
       auto bstmt = stmt->input->as<LoopIndexStmt>();
       const int max_num_bits = bstmt->max_num_bits();
       if (max_num_bits != -1 && stmt->bit_end >= max_num_bits) {
@@ -756,9 +754,15 @@ class BasicBlockSimplify : public IRVisitor {
               stmt->replace_with(offset_stmt);
               // fix the offset stmt operand
               offset_stmt->as<IntegerOffsetStmt>()->input = stmt;
-              stmt->offset = 0;
             } else {
-              stmt->offset = offset;
+              if (offset != 0) {
+                auto offset_const = stmt->insert_before_me(
+                    Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(
+                        TypedConstant(DataType::i32, offset))));
+                auto sum = stmt->insert_before_me(Stmt::make<BinaryOpStmt>(
+                    BinaryOpType::add, load, offset_const));
+                stmt->input = sum;
+              }
             }
           } else {
             // insert constant
@@ -784,11 +788,10 @@ class BasicBlockSimplify : public IRVisitor {
       if (stmt->ret_type == bstmt->ret_type) {
         auto &bstmt_data = *bstmt;
         if (typeid(bstmt_data) == typeid(*stmt)) {
-          auto bstmt_ = bstmt->as<OffsetAndExtractBitsStmt>();
+          auto bstmt_ = bstmt->as<BitExtractStmt>();
           if (bstmt_->input == stmt->input &&
               bstmt_->bit_begin == stmt->bit_begin &&
-              bstmt_->bit_end == stmt->bit_end &&
-              bstmt_->offset == stmt->offset) {
+              bstmt_->bit_end == stmt->bit_end) {
             stmt->replace_with(bstmt.get());
             stmt->parent->erase(current_stmt_id);
             throw IRModified();

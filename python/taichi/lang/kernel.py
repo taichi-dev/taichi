@@ -1,5 +1,4 @@
 import re
-import dill
 import inspect
 from .transformer import ASTTransformer
 import ast

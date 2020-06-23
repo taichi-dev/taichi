@@ -12,9 +12,9 @@ if not _env_torch or int(_env_torch):
     except:
         pass
 
+
 def has_pytorch():
     return _has_pytorch
-
 
 
 def is_taichi_class(rhs):

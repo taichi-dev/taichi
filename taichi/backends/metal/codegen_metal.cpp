@@ -15,6 +15,7 @@ namespace {
 
 namespace shaders {
 #define TI_INSIDE_METAL_CODEGEN
+#include "taichi/backends/metal/shaders/ad_stack.metal.h"
 #include "taichi/backends/metal/shaders/helpers.metal.h"
 #include "taichi/backends/metal/shaders/runtime_kernels.metal.h"
 #undef TI_INSIDE_METAL_CODEGEN
@@ -187,10 +188,10 @@ class KernelCodegen : public IRVisitor {
     emit(R"(auto {} = {};)", stmt->raw_name(), val);
   }
 
-  void visit(OffsetAndExtractBitsStmt *stmt) override {
-    emit(R"(auto {} = ((({} + {}) >> {}) & ((1 << {}) - 1));)",
-         stmt->raw_name(), stmt->offset, stmt->input->raw_name(),
-         stmt->bit_begin, stmt->bit_end - stmt->bit_begin);
+  void visit(BitExtractStmt *stmt) override {
+    emit(R"(auto {} = (({} >> {}) & ((1 << {}) - 1));)", stmt->raw_name(),
+         stmt->input->raw_name(), stmt->bit_begin,
+         stmt->bit_end - stmt->bit_begin);
   }
 
   void visit(SNodeLookupStmt *stmt) override {
@@ -551,6 +552,65 @@ class KernelCodegen : public IRVisitor {
     TI_WARN("Cannot print inside Metal kernel, ignored");
   }
 
+  void visit(StackAllocaStmt *stmt) override {
+    TI_ASSERT(stmt->width() == 1);
+
+    const auto &var_name = stmt->raw_name();
+    emit("byte {}[{}];", var_name, stmt->size_in_bytes());
+    emit("mtl_ad_stack_init({});", var_name);
+  }
+
+  void visit(StackPopStmt *stmt) override {
+    emit("mtl_ad_stack_pop({});", stmt->stack->raw_name());
+  }
+
+  void visit(StackPushStmt *stmt) override {
+    auto *stack = stmt->stack->as<StackAllocaStmt>();
+    const auto &stack_name = stack->raw_name();
+    const auto elem_size = stack->element_size_in_bytes();
+    emit("mtl_ad_stack_push({}, {});", stack_name, elem_size);
+    const auto primal_name = stmt->raw_name() + "_primal_";
+    emit(
+        "thread auto* {} = reinterpret_cast<thread "
+        "{}*>(mtl_ad_stack_top_primal({}, {}));",
+        primal_name, metal_data_type_name(stmt->element_type()), stack_name,
+        elem_size);
+    emit("*{} = {};", primal_name, stmt->v->raw_name());
+  }
+
+  void visit(StackLoadTopStmt *stmt) override {
+    auto *stack = stmt->stack->as<StackAllocaStmt>();
+    const auto primal_name = stmt->raw_name() + "_primal_";
+    emit(
+        "thread auto* {} = reinterpret_cast<thread "
+        "{}*>(mtl_ad_stack_top_primal({}, {}));",
+        primal_name, metal_data_type_name(stmt->element_type()),
+        stack->raw_name(), stack->element_size_in_bytes());
+    emit("const auto {} = *{};", stmt->raw_name(), primal_name);
+  }
+
+  void visit(StackLoadTopAdjStmt *stmt) override {
+    auto *stack = stmt->stack->as<StackAllocaStmt>();
+    const auto adjoint_name = stmt->raw_name() + "_adjoint_";
+    emit(
+        "thread auto* {} = reinterpret_cast<thread "
+        "{}*>(mtl_ad_stack_top_adjoint({}, {}));",
+        adjoint_name, metal_data_type_name(stmt->element_type()),
+        stack->raw_name(), stack->element_size_in_bytes());
+    emit("const auto {} = *{};", stmt->raw_name(), adjoint_name);
+  }
+
+  void visit(StackAccAdjointStmt *stmt) override {
+    auto *stack = stmt->stack->as<StackAllocaStmt>();
+    const auto adjoint_name = stmt->raw_name() + "_adjoint_";
+    emit(
+        "thread auto* {} = reinterpret_cast<thread "
+        "{}*>(mtl_ad_stack_top_adjoint({}, {}));",
+        adjoint_name, metal_data_type_name(stmt->element_type()),
+        stack->raw_name(), stack->element_size_in_bytes());
+    emit("*{} += {};", adjoint_name, stmt->v->raw_name());
+  }
+
  private:
   void emit_headers() {
     SectionGuard sg(this, Section::Headers);
@@ -567,6 +627,8 @@ class KernelCodegen : public IRVisitor {
     current_appender().append_raw(compiled_structs_->runtime_utils_source_code);
     emit("");
     current_appender().append_raw(compiled_structs_->snode_structs_source_code);
+    emit("");
+    current_appender().append_raw(shaders::kMetalAdStackSourceCode);
     emit("");
     emit_kernel_args_struct();
   }
@@ -1045,7 +1107,7 @@ FunctionType CodeGen::compile() {
   config.demote_dense_struct_fors = true;
   irpass::compile_to_offloads(kernel_->ir.get(), config,
                               /*vectorize=*/false, kernel_->grad,
-                              /*ad_use_stack=*/false, config.print_ir);
+                              /*ad_use_stack=*/true, config.print_ir);
 
   KernelCodegen codegen(taichi_kernel_name_,
                         kernel_->program.snode_root->node_type_name, kernel_,

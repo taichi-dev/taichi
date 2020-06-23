@@ -15,6 +15,11 @@ j = indices(1)
 k = indices(2)
 l = indices(3)
 ij = indices(0, 1)
+ji = indices(1, 0)
+jk = indices(1, 2)
+kj = indices(2, 1)
+ik = indices(0, 2)
+ki = indices(2, 0)
 ijk = indices(0, 1, 2)
 ijkl = indices(0, 1, 2, 3)
 
@@ -49,7 +54,7 @@ class _Extension(object):
 
 
 extension = _Extension()
-is_supported = core.is_supported
+is_extension_supported = core.is_extension_supported
 
 
 def reset():
@@ -160,10 +165,11 @@ def init(arch=None,
     # A: We need adaptive_arch_select for all.
     env_arch = os.environ.get("TI_ARCH")
     if env_arch is not None:
-        print(f'Following TI_ARCH setting up for arch={env_arch}')
+        ti.info(f'Following TI_ARCH setting up for arch={env_arch}')
         arch = ti.core.arch_from_name(env_arch)
 
     ti.cfg.arch = adaptive_arch_select(arch)
+    print(f'[Taichi] Starting on arch={ti.core.arch_name(ti.cfg.arch)}')
 
     log_level = os.environ.get("TI_LOG_LEVEL")
     if log_level is not None:
@@ -176,7 +182,7 @@ def cache_shared(v):
     taichi_lang_core.cache(0, v.ptr)
 
 
-def cache_l1(v):
+def cache_read_only(v):
     taichi_lang_core.cache(1, v.ptr)
 
 
@@ -279,15 +285,22 @@ def stat_write(avg):
         f.write(f'time_avg: {avg:.4f}')
 
 
+def is_arch_supported(arch):
+    if arch == cuda:
+        return core.with_cuda()
+    elif arch == metal:
+        return core.with_metal()
+    elif arch == opengl:
+        return core.with_opengl()
+    elif arch == cpu:
+        return True
+    else:
+        return False
+
+
 def supported_archs():
-    import taichi as ti
-    archs = [ti.core.host_arch()]
-    if ti.core.with_cuda():
-        archs.append(cuda)
-    if ti.core.with_metal():
-        archs.append(metal)
-    if ti.core.with_opengl():
-        archs.append(opengl)
+    archs = [cpu, cuda, metal, opengl]
+
     wanted_archs = os.environ.get('TI_WANTED_ARCHS', '')
     want_exclude = wanted_archs.startswith('^')
     if want_exclude:
@@ -298,22 +311,29 @@ def supported_archs():
     if len(wanted_archs):
         archs, old_archs = [], archs
         for arch in old_archs:
-            if want_exclude == (ti.core.arch_name(arch) not in wanted_archs):
+            if want_exclude == (core.arch_name(arch) not in wanted_archs):
                 archs.append(arch)
+
+    archs, old_archs = [], archs
+    for arch in old_archs:
+        if is_arch_supported(arch):
+            archs.append(arch)
+
     return archs
 
 
 def adaptive_arch_select(arch):
     if arch is None:
         return cpu
+    import taichi as ti
     supported = supported_archs()
     if isinstance(arch, list):
         for a in arch:
-            if a in supported:
+            if is_arch_supported(a):
                 return a
     elif arch in supported:
         return arch
-    print(f'Arch={arch} not supported, falling back to CPU')
+    ti.warn(f'Arch={arch} is not supported, falling back to CPU')
     return cpu
 
 
@@ -360,7 +380,7 @@ def all_archs_with(**kwargs):
             ip = kwargs.get('default_ip', ti.i32)
             if fp == ti.f64 or ip == ti.i64:
                 can_run_on.register(
-                    lambda arch: is_supported(arch, extension.data64))
+                    lambda arch: is_extension_supported(arch, extension.data64))
 
             for arch in ti.supported_archs():
                 if can_run_on(arch):
@@ -428,7 +448,7 @@ def require(*exts):
         @functools.wraps(test)
         def wrapped(*test_args, **test_kwargs):
             def checker(arch):
-                return all([is_supported(arch, e) for e in exts])
+                return all([is_extension_supported(arch, e) for e in exts])
 
             _get_or_make_arch_checkers(test_kwargs).register(checker)
             test(*test_args, **test_kwargs)

@@ -138,7 +138,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       }
     }
 
-    auto format_str = formats + "\n";
+    auto format_str = formats;
     auto stype = llvm::StructType::get(*llvm_context, types, false);
     auto value_arr = builder->CreateAlloca(stype);
     for (int i = 0; i < values.size(); i++) {
@@ -350,14 +350,15 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 
     llvm::Function *body;
 
+    auto tls_ptr_type = llvm::Type::getInt8PtrTy(*llvm_context);
     {
       auto guard = get_function_creation_guard(
-          {llvm::PointerType::get(get_runtime_type("Context"), 0),
+          {llvm::PointerType::get(get_runtime_type("Context"), 0), tls_ptr_type,
            tlctx->get_data_type<int>()});
 
       auto loop_var = create_entry_block_alloca(DataType::i32);
       loop_vars_llvm[stmt].push_back(loop_var);
-      builder->CreateStore(get_arg(1), loop_var);
+      builder->CreateStore(get_arg(2), loop_var);
       stmt->body->accept(this);
 
       body = guard.body;
@@ -403,8 +404,42 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     return true;  // on CUDA, pass the argument by value
   }
 
+  void visit(GlobalLoadStmt *stmt) override {
+    if (auto get_ch = stmt->ptr->cast<GetChStmt>(); get_ch) {
+      bool should_cache_as_read_only = false;
+      for (auto s : current_offload->scratch_opt) {
+        if (s.first == 1 && get_ch->output_snode == s.second) {
+          should_cache_as_read_only = true;
+        }
+      }
+      if (should_cache_as_read_only) {
+        // Issue an CUDA "__ldg" instruction so that data are cached in
+        // the CUDA read-only data cache.
+        auto dtype = stmt->ret_type.data_type;
+        auto llvm_dtype = llvm_type(dtype);
+        auto llvm_dtype_ptr = llvm::PointerType::get(llvm_type(dtype), 0);
+        llvm::Intrinsic::ID intrin;
+        if (is_real(dtype)) {
+          intrin = llvm::Intrinsic::nvvm_ldg_global_f;
+        } else {
+          intrin = llvm::Intrinsic::nvvm_ldg_global_i;
+        }
+
+        llvm_val[stmt] = builder->CreateIntrinsic(
+            intrin, {llvm_dtype, llvm_dtype_ptr},
+            {llvm_val[stmt->ptr], tlctx->get_constant(data_type_size(dtype))});
+      } else {
+        CodeGenLLVM::visit(stmt);
+      }
+    } else {
+      CodeGenLLVM::visit(stmt);
+    }
+  }
+
   void visit(OffloadedStmt *stmt) override {
 #if defined(TI_WITH_CUDA)
+    TI_ASSERT(current_offload == nullptr);
+    current_offload = stmt;
     using Type = OffloadedStmt::TaskType;
     if (stmt->task_type == Type::gc) {
       // gc has 3 kernels, so we treat it specially
@@ -443,6 +478,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       current_task->end();
       current_task = nullptr;
     }
+    current_offload = nullptr;
 #else
     TI_NOT_IMPLEMENTED
 #endif

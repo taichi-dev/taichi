@@ -162,6 +162,10 @@ class PyTaichi:
         if self.prog is None:
             self.prog = taichi_lang_core.Program()
 
+    def try_materialize(self):
+        if not Expr.layout_materialized:
+            Expr.materialize_layout_callback()
+
     def materialize(self):
         if self.materialized:
             return
@@ -249,6 +253,9 @@ class Root:
         root = SNode(ti.get_runtime().prog.get_root())
         return getattr(root, item)
 
+    def __repr__(self):
+        return 'ti.root'
+
 
 root = Root()
 
@@ -313,7 +320,7 @@ def layout(func):
 
 
 @taichi_scope
-def ti_print(*vars):
+def ti_print(*vars, sep=' ', end='\n'):
     def entry2content(var):
         if isinstance(var, str):
             return var
@@ -331,8 +338,9 @@ def ti_print(*vars):
 
     def add_separators(vars):
         for i, var in enumerate(vars):
-            if i: yield ' '
+            if i: yield sep
             yield var
+        yield end
 
     def fused_string(entries):
         accumated = ''

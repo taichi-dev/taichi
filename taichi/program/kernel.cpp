@@ -74,9 +74,14 @@ void Kernel::lower(bool lower_access) {  // TODO: is a "Lowerer" class necessary
     if ((is_accessor && !config.print_accessor_ir) ||
         (is_evaluator && !config.print_evaluator_ir))
       verbose = false;
+
+    // For now we only enable TLS on CPUs
+    bool make_thread_local = arch_is_cpu(arch);
+
     irpass::compile_to_offloads(
         ir.get(), config, /*vectorize*/ arch_is_cpu(arch), grad,
-        /*ad_use_stack*/ true, verbose, /*lower_global_access*/ lower_access);
+        /*ad_use_stack*/ true, verbose, /*lower_global_access*/ lower_access,
+        /*make_thread_local*/ make_thread_local);
   } else {
     TI_NOT_IMPLEMENTED
   }

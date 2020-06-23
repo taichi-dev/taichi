@@ -468,17 +468,8 @@ def _print_taichi_header():
     else:
         header += f'version {ti_core.get_version_string()}, '
 
-    supported_archs = ['cpu']
-    if ti_core.with_cuda():
-        supported_archs.append('cuda')
-    if ti_core.with_opengl():
-        supported_archs.append('opengl')
-    if ti_core.with_metal():
-        supported_archs.append('metal')
-    if len(supported_archs) == 1:
-        supported_archs[0] = 'cpu only'
-    archs_str = ', '.join(sorted(supported_archs))
-    header += f'supported archs: [{archs_str}], '
+    llvm_version = ti_core.get_llvm_version_string()
+    header += f'llvm {llvm_version}, '
 
     commit_hash = ti_core.get_commit_hash()
     commit_hash = commit_hash[:8]

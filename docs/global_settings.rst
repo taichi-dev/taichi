@@ -8,6 +8,7 @@ Backends
 - To specify which GPU to use for CUDA: ``export CUDA_VISIBLE_DEVICES=[gpuid]``.
 - To specify pre-allocated memory size for CUDA: ``export TI_DEVICE_MEMORY_GB=0.5`` or ``ti.init(device_memory_GB=0.5)``.
 - To disable unified memory usage on CUDA: ``export TI_USE_UNIFIED_MEMORY=0``.
+- To disable a backend on start up, say, CUDA: ``export TI_ENABLE_CUDA=0``.
 
 Compilation
 ***********
@@ -21,6 +22,7 @@ Runtime
 
 - Restart the entire Taichi system (destroy all tensors and kernels): ``ti.reset()``.
 - To start program in debug mode: ``export TI_DEBUG=1`` or ``ti.init(debug=True)``.
+- To disable importing torch on start up: ``export TI_ENABLE_TORCH=0``.
 
 Logging
 *******
@@ -32,4 +34,5 @@ Develop
 *******
 
 - Cache compiled runtime bitcode in **dev mode** to save start up time: ``export TI_CACHE_RUNTIME_BITCODE=1``.
+- To specify how many threads to run test: ``export TI_TEST_THREADS=4`` or ``ti test -t4``.
 - To trigger GDB when Taichi crashes: ``export TI_GDB_TRIGGER=1``.

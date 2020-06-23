@@ -15,7 +15,7 @@ def test_normal_grad():
     @ti.kernel
     def func():
         for i in range(n):
-            ti.atomic_add(loss, x[i]**2)
+            loss[None] += x[i]**2
 
     for i in range(n):
         x[i] = i
@@ -42,7 +42,7 @@ def test_stop_grad():
     def func():
         for i in range(n):
             ti.core.stop_grad(x.snode().ptr)
-            ti.atomic_add(loss, x[i]**2)
+            loss[None] += x[i]**2
 
     for i in range(n):
         x[i] = i
@@ -70,9 +70,9 @@ def test_stop_grad2():
         # Two loops, one with stop grad on without
         for i in range(n):
             ti.stop_grad(x)
-            ti.atomic_add(loss, x[i]**2)
+            loss[None] += x[i]**2
         for i in range(n):
-            ti.atomic_add(loss, x[i]**2)
+            loss[None] += x[i]**2
 
     for i in range(n):
         x[i] = i

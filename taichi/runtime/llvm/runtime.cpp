@@ -109,11 +109,22 @@ T ifloordiv(T a, T b) {
   return r;
 }
 
+
 struct LLVMRuntime;
 template <typename... Args>
 void taichi_printf(LLVMRuntime *runtime, const char *format, Args &&... args);
 
 extern "C" {
+
+i64 cuda_clock_i64() {
+  return 0;
+}
+
+
+void system_memfence() {
+  cuda_clock_i64();
+}
+
 
 #if ARCH_cuda
 void cuda_vprintf(Ptr format, Ptr arg);
@@ -337,10 +348,6 @@ void taichi_assert(Context *context, i32 test, const char *msg);
 void taichi_assert_runtime(LLVMRuntime *runtime, i32 test, const char *msg);
 #define TI_ASSERT_INFO(x, msg) taichi_assert(context, (int)(x), msg)
 #define TI_ASSERT(x) TI_ASSERT_INFO(x, #x)
-
-i64 cuda_clock_i64() {
-  return 0;
-}
 
 void ___stubs___() {
 #if ARCH_cuda
@@ -742,6 +749,7 @@ Ptr LLVMRuntime::request_allocate_aligned(std::size_t size,
     auto volatile r = &mem_req_queue->requests[i];
     atomic_exchange_u64((uint64 *)&r->size, size);
     atomic_exchange_u64((uint64 *)&r->alignment, alignment);
+
     // wait for host to allocate
     while (r->ptr == nullptr) {
 #if defined(ARCH_cuda)
@@ -751,6 +759,7 @@ Ptr LLVMRuntime::request_allocate_aligned(std::size_t size,
         sum += i;
       }
       mem_req_queue->trash += sum;
+      // system_memfence();
 #endif
     };
 #if defined(ARCH_cuda)
@@ -908,9 +917,6 @@ void block_memfence() {
 }
 
 void grid_memfence() {
-}
-
-void system_memfence() {
 }
 
 // "Element", "component" are different concepts

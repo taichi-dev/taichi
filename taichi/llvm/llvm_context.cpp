@@ -355,7 +355,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
                                  bool ret = true,
                                  std::vector<Type *> types = {}) {
         auto func = runtime_module->getFunction(name);
-        TI_ASSERT(func);
+        TI_ERROR_UNLESS(func, "Function {} not found", name);
         func->deleteBody();
         auto bb = llvm::BasicBlock::Create(*ctx, "entry", func);
         IRBuilder<> builder(*ctx);

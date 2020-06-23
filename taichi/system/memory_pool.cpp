@@ -74,7 +74,7 @@ T MemoryPool::fetch(volatile void *ptr) {
 
 template <typename T>
 void MemoryPool::push(volatile T *dest, const T &val) {
-  if (prog->config.arch == Arch::cuda) {
+  if (false && prog->config.arch == Arch::cuda) {
 #if TI_WITH_CUDA
     TI_TAG;
     CUDADriver::get_instance().stream_synchronize(cuda_stream);

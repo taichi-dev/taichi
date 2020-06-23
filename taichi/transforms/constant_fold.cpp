@@ -190,14 +190,14 @@ class ConstantFold : public BasicStmtVisitor {
       return;
     int32 result;
     if (is_signed(input->val[0].dt)) {
-      result = (input->val[0].val_int() >> stmt->bit_begin) &&
+      result = (input->val[0].val_int() >> stmt->bit_begin) &
                ((1LL << (stmt->bit_end - stmt->bit_begin)) - 1);
     } else {
-      result = (input->val[0].val_uint() >> stmt->bit_begin) &&
+      result = (input->val[0].val_uint() >> stmt->bit_begin) &
                ((1LL << (stmt->bit_end - stmt->bit_begin)) - 1);
     }
-    auto result_stmt = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(
-        TypedConstant(DataType::i32, result)));
+    auto result_stmt = Stmt::make<ConstStmt>(
+        LaneAttribute<TypedConstant>(TypedConstant(DataType::i32, result)));
     stmt->replace_with(result_stmt.get());
     modifier.insert_before(stmt, std::move(result_stmt));
     modifier.erase(stmt);

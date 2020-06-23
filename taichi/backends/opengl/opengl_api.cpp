@@ -276,6 +276,8 @@ struct GLSSBO {
 bool initialize_opengl(bool error_tolerance) {
   static std::optional<bool> supported;  // std::nullopt
 
+  TI_TRACE("initialize_opengl({}) called", error_tolerance);
+
   if (supported.has_value()) {  // this function has been called before
     if (supported.value()) {    // detected to be true in last call
       return true;
@@ -482,7 +484,6 @@ struct CompiledProgram::Impl {
         };
         std::cout << str;
       }
-      std::cout << std::endl;
     }
     rt_buf->msg_count = 0;
     launcher->impl->runtime_ssbo->unmap();

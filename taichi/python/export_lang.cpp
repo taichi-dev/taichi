@@ -549,7 +549,7 @@ void export_lang(py::module &m) {
   m.def("global_var_expr_from_snode", [](SNode *snode) {
     return Expr::make<GlobalVariableExpression>(snode);
   });
-  m.def("is_supported", is_supported);
+  m.def("is_extension_supported", is_extension_supported);
 
   m.def("print_stat", [] { stat.print(); });
 

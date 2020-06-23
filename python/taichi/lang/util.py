@@ -238,5 +238,3 @@ def local_scope(func):
         return func(self, *args, **kwargs)
 
     return wrapped
-
-

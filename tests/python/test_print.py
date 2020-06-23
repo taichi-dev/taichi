@@ -55,3 +55,16 @@ def test_print_matrix():
 
     func(233.3)
     ti.sync()
+
+
+@ti.archs_excluding(ti.metal)
+def test_print_sep():
+    @ti.kernel
+    def func():
+        # hello 42 world!
+        print('hello', 42, 'world!')
+        # hello42world!
+        print('hello', 42, 'world!', sep='')
+
+    func()
+    ti.sync()

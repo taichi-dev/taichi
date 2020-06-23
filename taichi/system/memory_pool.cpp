@@ -18,12 +18,10 @@ MemoryPool::MemoryPool(Program *prog) : prog(prog) {
   // Stream 0 has special synchronization rules: Operations in stream 0 cannot
   // overlap other streams except for those streams with cudaStreamNonBlocking
   // Do not use cudaCreateStream (with no flags) here!
-  // if (prog->config.arch == Arch::cuda) {
-  TI_WARN("Creating CUDA stream");
-  CUDADriver::get_instance().stream_create(&cuda_stream,
-                                           CU_STREAM_NON_BLOCKING);
-  TI_WARN("Created {}", cuda_stream);
-  //}
+  if (use_cuda_stream && prog->config.arch == Arch::cuda) {
+    CUDADriver::get_instance().stream_create(&cuda_stream,
+                                             CU_STREAM_NON_BLOCKING);
+  }
 #endif
   th = std::make_unique<std::thread>([this] { this->daemon(); });
 }
@@ -53,16 +51,12 @@ void *MemoryPool::allocate(std::size_t size, std::size_t alignment) {
 template <typename T>
 T MemoryPool::fetch(volatile void *ptr) {
   T ret;
-  if (false && prog->config.arch == Arch::cuda) {
+  if (use_cuda_stream && prog->config.arch == Arch::cuda) {
 #if TI_WITH_CUDA
-    TI_TAG;
     CUDADriver::get_instance().stream_synchronize(cuda_stream);
-    TI_TAG;
     CUDADriver::get_instance().memcpy_device_to_host_async(
         &ret, (void *)ptr, sizeof(T), cuda_stream);
-    TI_TAG;
     CUDADriver::get_instance().stream_synchronize(cuda_stream);
-    TI_TAG;
 #else
     TI_NOT_IMPLEMENTED
 #endif
@@ -74,16 +68,11 @@ T MemoryPool::fetch(volatile void *ptr) {
 
 template <typename T>
 void MemoryPool::push(volatile T *dest, const T &val) {
-  if (false && prog->config.arch == Arch::cuda) {
+  if (use_cuda_stream && prog->config.arch == Arch::cuda) {
 #if TI_WITH_CUDA
-    TI_TAG;
-    CUDADriver::get_instance().stream_synchronize(cuda_stream);
-    TI_TAG;
     CUDADriver::get_instance().memcpy_host_to_device_async(
         (void *)(dest), (void *)&val, sizeof(T), cuda_stream);
-    TI_TAG;
     CUDADriver::get_instance().stream_synchronize(cuda_stream);
-    TI_TAG;
 #else
     TI_NOT_IMPLEMENTED
 #endif
@@ -94,7 +83,7 @@ void MemoryPool::push(volatile T *dest, const T &val) {
 
 void MemoryPool::daemon() {
   while (1) {
-    Time::usleep(100000);
+    Time::usleep(1000);
     std::lock_guard<std::mutex> _(mut);
     if (terminating) {
       killed = true;

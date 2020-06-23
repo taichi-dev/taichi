@@ -1,3 +1,6 @@
+// Compile this file with clang to see how CUDA
+// is translated into NVVM IR.
+
 __device__ int cube(int x) {
   int y;
   asm(".reg .u32 t1;\n\t"            // temp reg t1

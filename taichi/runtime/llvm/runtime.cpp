@@ -109,7 +109,6 @@ T ifloordiv(T a, T b) {
   return r;
 }
 
-
 struct LLVMRuntime;
 template <typename... Args>
 void taichi_printf(LLVMRuntime *runtime, const char *format, Args &&... args);
@@ -120,11 +119,8 @@ i64 cuda_clock_i64() {
   return 0;
 }
 
-
 void system_memfence() {
-  cuda_clock_i64();
 }
-
 
 #if ARCH_cuda
 void cuda_vprintf(Ptr format, Ptr arg);
@@ -753,18 +749,9 @@ Ptr LLVMRuntime::request_allocate_aligned(std::size_t size,
     // wait for host to allocate
     while (r->ptr == nullptr) {
 #if defined(ARCH_cuda)
-      taichi_printf(nullptr, "waiting here\n");
-      float sum = 0.01;
-      for (int i = 0; i < 10000000; i++) {
-        sum += i;
-      }
-      mem_req_queue->trash += sum;
-      // system_memfence();
+      system_memfence();
 #endif
     };
-#if defined(ARCH_cuda)
-taichi_printf(nullptr, "alllocated!!!!\n");
-#endif
     return r->ptr;
   }
 }

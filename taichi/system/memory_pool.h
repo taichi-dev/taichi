@@ -48,6 +48,9 @@ class MemoryPool {
   void terminate();
 
   ~MemoryPool();
+
+ private:
+  static constexpr bool use_cuda_stream = false;
 };
 
 TLANG_NAMESPACE_END

@@ -38,6 +38,8 @@ See :ref:`layout` for more details. ``ti.root`` is the root node of the data str
     :parameter tensor: (Tensor)
     :return: (tuple of integers) the shape of tensor
 
+    Equivalent to ``tensor.snode().shape()``.
+
     For example,
 
     ::
@@ -75,10 +77,7 @@ See :ref:`layout` for more details. ``ti.root`` is the root node of the data str
 .. function:: snode.shape()
 
     :parameter snode: (SNode)
-    :parameter index: axis (0 for ``i`` and 1 for ``j``)
-    :return: (scalar) the size of tensor along that axis
-
-    Equivalent to ``tensor.shape()``.
+    :return: (tuple) the size of node along that axis
 
     ::
 
@@ -92,23 +91,18 @@ See :ref:`layout` for more details. ``ti.root`` is the root node of the data str
         blk4.shape()  # (3, 5, 4)
 
 
-.. function:: snode.get_shape(index)
+.. function:: snode.dim()
 
     :parameter snode: (SNode)
-    :parameter index: axis (0 for ``i`` and 1 for ``j``)
-    :return: (scalar) the size of tensor along that axis
+    :return: (scalar) the dimensionality of ``snode``
 
-    Equivalent to ``snode.shape()[i]``, used in Taichi-scope to prevent `[...]` being transformed to tensor access.
+    Equivalent to ``len(snode.shape())``.
 
     ::
 
-        blk = ti.root.dense(ti.ijk, (3, 5, 4))
-
-        @ti.kernel
-        def taichi_scope():
-            blk.get_shape(0)  # 3
-            blk.get_shape(1)  # 5
-            blk.get_shape(2)  # 4
+        blk1 = ti.root.dense(ti.ijk, (8, 9, 10))
+        ti.root.dim()  # 0
+        blk1.dim()     # 3
 
 
 .. function:: snode.parent()

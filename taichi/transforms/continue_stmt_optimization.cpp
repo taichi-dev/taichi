@@ -40,7 +40,7 @@ class ContinueStmtOptimizer : public BasicStmtVisitor {
   void visit(Block *stmt_list) override {
     const int block_size = stmt_list->size();
     for (int i = 0; i < block_size - 1; i++) {
-      if (auto continue_stmt = stmt_list->statements[i]->cast<ContinueStmt>()) {
+      if (stmt_list->statements[i]->is<ContinueStmt>()) {
         // Eliminate statements after ContinueStmt
         for (int j = block_size - 1; j > i; j--)
           stmt_list->erase(j);

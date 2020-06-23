@@ -45,6 +45,7 @@ class ContinueStmtOptimizer : public BasicStmtVisitor {
         for (int j = block_size - 1; j > i; j--)
           stmt_list->erase(j);
         modified = true;
+        break;
       }
     }
     for (auto &stmt : stmt_list->statements)

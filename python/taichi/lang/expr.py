@@ -7,9 +7,6 @@ import traceback
 
 # Scalar, basic data type
 class Expr(TaichiOperations):
-    materialize_layout_callback = None
-    layout_materialized = False
-
     def __init__(self, *args, tb=None):
         self.getter = None
         self.setter = None
@@ -39,8 +36,7 @@ class Expr(TaichiOperations):
 
     @python_scope
     def __setitem__(self, key, value):
-        if not Expr.layout_materialized:
-            self.materialize_layout_callback()
+        impl.get_runtime().try_materialize()
         self.initialize_accessor()
         if key is None:
             key = ()
@@ -53,8 +49,7 @@ class Expr(TaichiOperations):
 
     @python_scope
     def __getitem__(self, key):
-        if not Expr.layout_materialized:
-            self.materialize_layout_callback()
+        impl.get_runtime().try_materialize()
         self.initialize_accessor()
         if key is None:
             key = ()
@@ -66,9 +61,6 @@ class Expr(TaichiOperations):
 
     def loop_range(self):
         return self
-
-    def serialize(self):
-        return self.ptr.serialize()
 
     @python_scope
     def initialize_accessor(self):
@@ -124,10 +116,8 @@ class Expr(TaichiOperations):
 
     def parent(self, n=1):
         import taichi as ti
-        p = self.ptr.snode()
-        for i in range(n):
-            p = p.parent
-        return Expr(ti.core.global_var_expr_from_snode(p))
+        p = self.snode().parent(n)
+        return Expr(ti.core.global_var_expr_from_snode(p.ptr))
 
     def snode(self):
         from .snode import SNode
@@ -137,13 +127,11 @@ class Expr(TaichiOperations):
         return self.ptr.get_raw_address()
 
     def dim(self):
-        if not Expr.layout_materialized:
-            self.materialize_layout_callback()
+        impl.get_runtime().try_materialize()
         return self.snode().dim()
 
     def shape(self):
-        if not Expr.layout_materialized:
-            self.materialize_layout_callback()
+        impl.get_runtime().try_materialize()
         return self.snode().shape()
 
     def data_type(self):

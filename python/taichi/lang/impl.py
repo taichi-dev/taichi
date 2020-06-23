@@ -162,6 +162,10 @@ class PyTaichi:
         if self.prog is None:
             self.prog = taichi_lang_core.Program()
 
+    def try_materialize(self):
+        if not Expr.layout_materialized:
+            Expr.materialize_layout_callback()
+
     def materialize(self):
         if self.materialized:
             return
@@ -248,6 +252,9 @@ class Root:
         ti.get_runtime().create_program()
         root = SNode(ti.get_runtime().prog.get_root())
         return getattr(root, item)
+
+    def __repr__(self):
+        return 'ti.root'
 
 
 root = Root()

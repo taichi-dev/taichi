@@ -334,7 +334,7 @@ def ti_print(*vars):
         for var in vars:
             cur_is_str = isinstance(var, str)
             if not (prev_is_str or cur_is_str):
-              yield ' '
+                yield ' '
             prev_is_str = cur_is_str
             yield var
 

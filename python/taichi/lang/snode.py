@@ -71,8 +71,8 @@ class SNode:
 
     def shape(self):
         impl.get_runtime().try_materialize()
-        return tuple(self.ptr.get_num_elements_along_axis(i)
-                for i in range(self.dim()))
+        return tuple(
+            self.ptr.get_num_elements_along_axis(i) for i in range(self.dim()))
 
     @deprecated('snode.get_shape(i)', 'snode.shape()[i]')
     def get_shape(self, i):

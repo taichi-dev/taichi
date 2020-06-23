@@ -67,8 +67,8 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
           // replace host buffer with device buffer
           host_buffers[i] = get_current_program().context.get_arg<void *>(i);
           if (args[i].size > 0) {
-            // Note: both numpy and PyTorch supports arrays/tensors with zeros
-            // in shape, e.g., shape=(0) or shape=(100, 0, 200). This makes
+            // Note: both numpy and PyTorch support arrays/tensors with zeros
+            // in shapes, e.g., shape=(0) or shape=(100, 0, 200). This makes
             // args[i].size = 0.
             CUDADriver::get_instance().malloc(&device_buffers[i], args[i].size);
             CUDADriver::get_instance().memcpy_host_to_device(

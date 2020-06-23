@@ -95,4 +95,4 @@ class ShellInspectorWrapper:
             raise RuntimeError(f'Shell type "{self.name}" not supported')
 
 
-oinspect = None
+oinspect = ShellInspectorWrapper()

@@ -1,6 +1,6 @@
 import taichi as ti
 
-ti.init(arch=ti.cuda)
+ti.init(arch=ti.cuda, debug=True)
 
 res = 512
 

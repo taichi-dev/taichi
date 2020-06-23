@@ -18,11 +18,11 @@ MemoryPool::MemoryPool(Program *prog) : prog(prog) {
   // Stream 0 has special synchronization rules: Operations in stream 0 cannot
   // overlap other streams except for those streams with cudaStreamNonBlocking
   // Do not use cudaCreateStream (with no flags) here!
-  //if (prog->config.arch == Arch::cuda) {
-    TI_WARN("Creating CUDA stream");
-    CUDADriver::get_instance().stream_create(&cuda_stream,
-                                             CU_STREAM_NON_BLOCKING);
-    TI_WARN("Created {}", cuda_stream);
+  // if (prog->config.arch == Arch::cuda) {
+  TI_WARN("Creating CUDA stream");
+  CUDADriver::get_instance().stream_create(&cuda_stream,
+                                           CU_STREAM_NON_BLOCKING);
+  TI_WARN("Created {}", cuda_stream);
   //}
 #endif
   th = std::make_unique<std::thread>([this] { this->daemon(); });
@@ -74,7 +74,7 @@ T MemoryPool::fetch(volatile void *ptr) {
 
 template <typename T>
 void MemoryPool::push(volatile T *dest, const T &val) {
-  if (false && prog->config.arch == Arch::cuda) {
+  if (prog->config.arch == Arch::cuda) {
 #if TI_WITH_CUDA
     // TI_TAG;
     CUDADriver::get_instance().memcpy_host_to_device_async(

@@ -342,7 +342,6 @@ i64 cuda_clock_i64() {
   return 0;
 }
 
-
 void ___stubs___() {
 #if ARCH_cuda
   cuda_vprintf(nullptr, nullptr);
@@ -732,7 +731,6 @@ Ptr LLVMRuntime::allocate(std::size_t size) {
   return allocate_aligned(size, 1);
 }
 
-
 Ptr LLVMRuntime::request_allocate_aligned(std::size_t size,
                                           std::size_t alignment) {
   if (preallocated)
@@ -745,18 +743,17 @@ Ptr LLVMRuntime::request_allocate_aligned(std::size_t size,
     atomic_exchange_u64((uint64 *)&r->size, size);
     atomic_exchange_u64((uint64 *)&r->alignment, alignment);
     // wait for host to allocate
-    u64 ptr = 0;
-    while (!(ptr = atomic_exchange_u64((uint64 *)&r->ptr, 0))) {
+    while (r->ptr == nullptr) {
 #if defined(ARCH_cuda)
       taichi_printf(nullptr, "waiting here\n");
       float sum = 0.01;
-      for (int i =0 ; i< 10000000; i++) {
+      for (int i = 0; i < 10000000; i++) {
         sum += i;
       }
-      mem_req_queue->trash += sum;
+      // mem_req_queue->trash += sum;
 #endif
     };
-    return (Ptr)ptr;
+    return r->ptr;
   }
 }
 
@@ -792,7 +789,7 @@ void runtime_initialize(
   runtime->root_mem_size =
       taichi::iroundup((size_t)root_size, taichi_page_size);
 
-  runtime->preallocated = false;  // preallocated_size > 0;
+  runtime->preallocated = preallocated_size > 0;
   runtime->preallocated_head = preallocated_buffer;
   runtime->preallocated_tail = preallocated_tail;
 
@@ -1284,7 +1281,6 @@ i32 cuda_rand_i32(Context *context) {
 i64 cuda_rand_i64(Context *context) {
   return cuda_rand_u64(context);
 }
-
 };
 
 #endif

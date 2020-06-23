@@ -27,7 +27,7 @@ def get_shell_name():
 
     # Let's detect which type of interactive shell is being used.
     # As you can see, huge engineering efforts are done here just to
-    # make IDLE and IPython happy, wish our user really love them :)
+    # make IDLE and IPython happy. Hope our users really love them :)
 
     try:  # IPython / Jupyter?
         return 'IPython ' + get_ipython().__class__.__name__

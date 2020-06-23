@@ -106,8 +106,8 @@ class LowerAccess : public IRVisitor {
           if (snode->physical_index_position[k_] == k) {
             int begin = snode->extractors[k].start;
             int end = begin + snode->extractors[k].num_bits;
-            auto extracted = Stmt::make<BitExtractStmt>(
-                indices[k_], begin, end);
+            auto extracted =
+                Stmt::make<BitExtractStmt>(indices[k_], begin, end);
             lowered_indices.push_back(extracted.get());
             lowered.push_back(std::move(extracted));
             strides.push_back(1 << snode->extractors[k].num_bits);

@@ -757,12 +757,10 @@ class BasicBlockSimplify : public IRVisitor {
             } else {
               if (offset != 0) {
                 auto offset_const = stmt->insert_before_me(
-                    Stmt::make<ConstStmt>(
-                        LaneAttribute<TypedConstant>(
-                            TypedConstant(DataType::i32, offset))));
-                auto sum = stmt->insert_before_me(
-                    Stmt::make<BinaryOpStmt>(
-                        BinaryOpType::add, load, offset_const));
+                    Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(
+                        TypedConstant(DataType::i32, offset))));
+                auto sum = stmt->insert_before_me(Stmt::make<BinaryOpStmt>(
+                    BinaryOpType::add, load, offset_const));
                 stmt->input = sum;
               }
             }

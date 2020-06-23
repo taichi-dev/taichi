@@ -750,9 +750,12 @@ Ptr LLVMRuntime::request_allocate_aligned(std::size_t size,
       for (int i = 0; i < 10000000; i++) {
         sum += i;
       }
-      // mem_req_queue->trash += sum;
+      mem_req_queue->trash += sum;
 #endif
     };
+#if defined(ARCH_cuda)
+taichi_printf(nullptr, "alllocated!!!!\n");
+#endif
     return r->ptr;
   }
 }

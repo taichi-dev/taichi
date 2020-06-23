@@ -92,8 +92,12 @@ class DIE : public IRVisitor {
   }
 
   void visit(OffloadedStmt *stmt) {
+    if (stmt->prologue)
+      stmt->prologue->accept(this);
     if (stmt->body)
       stmt->body->accept(this);
+    if (stmt->epilogue)
+      stmt->epilogue->accept(this);
   }
 };
 

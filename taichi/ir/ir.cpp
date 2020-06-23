@@ -654,22 +654,29 @@ std::unique_ptr<Stmt> Block::extract(Stmt *stmt) {
   TI_ERROR("stmt not found");
 }
 
-void Block::insert(std::unique_ptr<Stmt> &&stmt, int location) {
+Stmt *Block::insert(std::unique_ptr<Stmt> &&stmt, int location) {
+  auto stmt_ptr = stmt.get();
   stmt->parent = this;
   if (location == -1) {
     statements.push_back(std::move(stmt));
   } else {
     statements.insert(statements.begin() + location, std::move(stmt));
   }
+  return stmt_ptr;
 }
 
-void Block::insert(VecStatement &&stmt, int location) {
+Stmt *Block::insert(VecStatement &&stmt, int location) {
+  Stmt *stmt_ptr = nullptr;
+  if (stmt.size()) {
+    stmt_ptr = stmt.back().get();
+  }
   if (location == -1) {
-    location = (int)statements.size() - 1;
+    location = (int)statements.size();
   }
   for (int i = 0; i < stmt.size(); i++) {
     insert(std::move(stmt[i]), location + i);
   }
+  return stmt_ptr;
 }
 
 void Block::replace_statements_in_range(int start,

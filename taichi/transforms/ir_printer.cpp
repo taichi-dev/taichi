@@ -250,7 +250,7 @@ class IRPrinter : public IRVisitor {
 
   void visit(ContinueStmt *stmt) override {
     if (stmt->scope) {
-      print("{} continue (scope={})", stmt->name(), stmt->name());
+      print("{} continue (scope={})", stmt->name(), stmt->scope->name());
     } else {
       print("{} continue", stmt->name());
     }
@@ -414,10 +414,9 @@ class IRPrinter : public IRVisitor {
           stmt->input->name(), stmt->offset);
   }
 
-  void visit(OffsetAndExtractBitsStmt *stmt) override {
-    print("{}{} = bit_extract({} + {}) bit_range=[{}, {})", stmt->type_hint(),
-          stmt->name(), stmt->input->name(), stmt->offset, stmt->bit_begin,
-          stmt->bit_end);
+  void visit(BitExtractStmt *stmt) override {
+    print("{}{} = bit_extract({}) bit_range=[{}, {})", stmt->type_hint(),
+          stmt->name(), stmt->input->name(), stmt->bit_begin, stmt->bit_end);
   }
 
   void visit(GetRootStmt *stmt) override {
@@ -491,10 +490,21 @@ class IRPrinter : public IRVisitor {
       print("{} = offloaded garbage collect {}", stmt->name(),
             stmt->snode->get_node_type_name_hinted());
     } else {
-      print("{} = offloaded {} {{", stmt->name(), details);
+      print("{} = offloaded {} ", stmt->name(), details);
+      if (stmt->prologue) {
+        print("prologue {{");
+        stmt->prologue->accept(this);
+        print("}}");
+      }
       TI_ASSERT(stmt->body);
+      print("body {{");
       stmt->body->accept(this);
       print("}}");
+      if (stmt->epilogue) {
+        print("epilogue {{");
+        stmt->epilogue->accept(this);
+        print("}}");
+      }
     }
   }
 
@@ -505,6 +515,11 @@ class IRPrinter : public IRVisitor {
 
   void visit(GlobalTemporaryStmt *stmt) override {
     print("{}{} = global tmp var (offset = {} B)", stmt->type_hint(),
+          stmt->name(), stmt->offset);
+  }
+
+  void visit(ThreadLocalPtrStmt *stmt) override {
+    print("{}{} = thread local ptr (offset = {} B)", stmt->type_hint(),
           stmt->name(), stmt->offset);
   }
 

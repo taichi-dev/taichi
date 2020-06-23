@@ -24,26 +24,49 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
       step = -1;
     }
 
+    auto xlogue_type = get_xlogue_function_type();
+    auto xlogue_ptr_type = llvm::PointerType::get(xlogue_type, 0);
+
+    llvm::Value *prologue = nullptr;
+    if (stmt->prologue) {
+      auto guard = get_function_creation_guard(get_xlogue_argument_types());
+      stmt->prologue->accept(this);
+      prologue = guard.body;
+    } else {
+      prologue = llvm::ConstantPointerNull::get(xlogue_ptr_type);
+    }
+
     llvm::Function *body;
 
     {
       auto guard = get_function_creation_guard(
           {llvm::PointerType::get(get_runtime_type("Context"), 0),
+           llvm::Type::getInt8PtrTy(*llvm_context),
            tlctx->get_data_type<int>()});
 
       auto loop_var = create_entry_block_alloca(DataType::i32);
       loop_vars_llvm[stmt].push_back(loop_var);
-      builder->CreateStore(get_arg(1), loop_var);
+      builder->CreateStore(get_arg(2), loop_var);
       stmt->body->accept(this);
 
       body = guard.body;
     }
 
+    llvm::Value *epilogue = nullptr;
+    if (stmt->epilogue) {
+      auto guard = get_function_creation_guard(get_xlogue_argument_types());
+      stmt->epilogue->accept(this);
+      epilogue = guard.body;
+    } else {
+      epilogue = llvm::ConstantPointerNull::get(xlogue_ptr_type);
+    }
+
     auto [begin, end] = get_range_for_bounds(stmt);
-    create_call("cpu_parallel_range_for",
-                {get_arg(0), tlctx->get_constant(stmt->num_cpu_threads), begin,
-                 end, tlctx->get_constant(step),
-                 tlctx->get_constant(stmt->block_dim), body});
+    create_call(
+        "cpu_parallel_range_for",
+        {get_arg(0), tlctx->get_constant(stmt->num_cpu_threads), begin, end,
+         tlctx->get_constant(step), tlctx->get_constant(stmt->block_dim),
+         prologue, body, epilogue});
   }
 
   void visit(OffloadedStmt *stmt) override {

@@ -82,3 +82,67 @@ def test_unconditional_continue():
     xs = x.to_numpy()
     for i in range(n):
         assert xs[i] == 0
+
+
+@ti.all_archs
+def test_kernel_continue_in_nested_if():
+    x = ti.var(ti.i32, shape=n)
+
+    @ti.kernel
+    def run(a: ti.i32):
+        for i in range(1):
+            if a:
+                if a:
+                    continue
+            if a:
+                if a:
+                    continue
+            x[i] = i
+
+    x[0] = 1
+    run(1)
+    assert x[0] == 1
+    run(0)
+    assert x[0] == 0
+
+
+@ti.all_archs
+def test_kernel_continue_in_nested_if_2():
+    x = ti.var(ti.i32, shape=n)
+
+    @ti.kernel
+    def run(a: ti.i32):
+        for i in range(1):
+            if a:
+                if a:
+                    continue
+            if a:
+                continue
+            x[i] = i
+
+    x[0] = 1
+    run(1)
+    assert x[0] == 1
+    run(0)
+    assert x[0] == 0
+
+
+@ti.all_archs
+def test_kernel_continue_in_nested_if_3():
+    x = ti.var(ti.i32, shape=n)
+
+    @ti.kernel
+    def run(a: ti.i32):
+        for i in range(1):
+            if a:
+                continue
+            if a:
+                if a:
+                    continue
+            x[i] = i
+
+    x[0] = 1
+    run(1)
+    assert x[0] == 1
+    run(0)
+    assert x[0] == 0

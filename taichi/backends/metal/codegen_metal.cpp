@@ -188,10 +188,10 @@ class KernelCodegen : public IRVisitor {
     emit(R"(auto {} = {};)", stmt->raw_name(), val);
   }
 
-  void visit(OffsetAndExtractBitsStmt *stmt) override {
-    emit(R"(auto {} = ((({} + {}) >> {}) & ((1 << {}) - 1));)",
-         stmt->raw_name(), stmt->offset, stmt->input->raw_name(),
-         stmt->bit_begin, stmt->bit_end - stmt->bit_begin);
+  void visit(BitExtractStmt *stmt) override {
+    emit(R"(auto {} = (({} >> {}) & ((1 << {}) - 1));)", stmt->raw_name(),
+         stmt->input->raw_name(), stmt->bit_begin,
+         stmt->bit_end - stmt->bit_begin);
   }
 
   void visit(SNodeLookupStmt *stmt) override {

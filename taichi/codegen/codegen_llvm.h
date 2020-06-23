@@ -89,6 +89,14 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   llvm::Value *get_context();
 
+  llvm::Value *get_tls_base_ptr();
+
+  llvm::Type *get_tls_buffer_type();
+
+  std::vector<llvm::Type *> get_xlogue_argument_types();
+
+  llvm::Type *get_xlogue_function_type();
+
   llvm::Value *get_root();
 
   llvm::Value *get_runtime();
@@ -190,7 +198,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(GetRootStmt *stmt) override;
 
-  void visit(OffsetAndExtractBitsStmt *stmt) override;
+  void visit(BitExtractStmt *stmt) override;
 
   void visit(LinearizeStmt *stmt) override;
 
@@ -224,6 +232,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   void visit(LoopIndexStmt *stmt) override;
 
   void visit(GlobalTemporaryStmt *stmt) override;
+
+  void visit(ThreadLocalPtrStmt *stmt) override;
 
   void visit(InternalFuncStmt *stmt) override;
 

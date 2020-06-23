@@ -146,7 +146,7 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
       return;
     TI_ASSERT(stmt->width() == 1);
     if (!(stmt->is<UnaryOpStmt>() || stmt->is<BinaryOpStmt>() ||
-          stmt->is<TernaryOpStmt>() || stmt->is<OffsetAndExtractBitsStmt>() ||
+          stmt->is<TernaryOpStmt>() || stmt->is<BitExtractStmt>() ||
           stmt->is<GlobalLoadStmt>())) {
       // TODO: this list may be incomplete
       return;
@@ -704,7 +704,7 @@ class MakeAdjoint : public IRVisitor {
     // do nothing
   }
 
-  void visit(OffsetAndExtractBitsStmt *stmt) override {
+  void visit(BitExtractStmt *stmt) override {
     // do nothing
   }
 

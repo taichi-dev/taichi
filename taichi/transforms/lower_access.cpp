@@ -35,8 +35,14 @@ class LowerAccess : public IRVisitor {
   }
 
   void visit(OffloadedStmt *stmt) override {
+    if (stmt->prologue) {
+      stmt->prologue->accept(this);
+    }
     if (stmt->body) {
       stmt->body->accept(this);
+    }
+    if (stmt->epilogue) {
+      stmt->epilogue->accept(this);
     }
   }
 
@@ -100,8 +106,8 @@ class LowerAccess : public IRVisitor {
           if (snode->physical_index_position[k_] == k) {
             int begin = snode->extractors[k].start;
             int end = begin + snode->extractors[k].num_bits;
-            auto extracted = Stmt::make<OffsetAndExtractBitsStmt>(
-                indices[k_], begin, end, 0);
+            auto extracted =
+                Stmt::make<BitExtractStmt>(indices[k_], begin, end);
             lowered_indices.push_back(extracted.get());
             lowered.push_back(std::move(extracted));
             strides.push_back(1 << snode->extractors[k].num_bits);

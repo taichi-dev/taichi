@@ -34,6 +34,7 @@ void slp_vectorize(IRNode *root);
 void vector_split(IRNode *root, int max_width, bool serial_schedule);
 void replace_all_usages_with(IRNode *root, Stmt *old_stmt, Stmt *new_stmt);
 bool check_out_of_bound(IRNode *root);
+void make_thread_local(IRNode *root);
 bool lower_access(IRNode *root, bool lower_atomic, Kernel *kernel = nullptr);
 void auto_diff(IRNode *root, bool use_stack = false);
 bool constant_fold(IRNode *root);
@@ -53,7 +54,8 @@ void compile_to_offloads(IRNode *ir,
                          bool grad,
                          bool ad_use_stack,
                          bool verbose,
-                         bool lower_global_access = true);
+                         bool lower_global_access = true,
+                         bool make_thread_local = false);
 
 }  // namespace irpass
 

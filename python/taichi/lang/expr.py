@@ -122,6 +122,7 @@ class Expr(TaichiOperations):
         from .meta import fill_tensor
         fill_tensor(self, val)
 
+    @deprecated('tensor.parent()', 'tensor.snode().parent()')
     def parent(self, n=1):
         import taichi as ti
         p = self.ptr.snode()

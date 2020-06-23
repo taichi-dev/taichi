@@ -1,5 +1,6 @@
 import sys, os, atexit
 
+
 class ShellType:
     NATIVE = 'Python shell'
     IPYTHON = 'IPython TerminalInteractiveShell'
@@ -51,7 +52,6 @@ class ShellInspectorWrapper:
     we will redirect getsource() calls to the corresponding inspector
     provided by / suitable for each type of shell.
     """
-
     def __init__(self):
         self.name = get_shell_name()
 

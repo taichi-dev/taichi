@@ -1,4 +1,4 @@
-import sys, os, atexit
+import sys, os
 
 class ShellType:
     NATIVE = 'Python shell'

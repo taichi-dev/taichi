@@ -4,7 +4,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-// Eliminate useless ContinueStmt
+// Unconditionally eliminate ContinueStmt's at **ends** of loops
 class UselessContinueEliminator : public IRVisitor {
  public:
   bool modified;

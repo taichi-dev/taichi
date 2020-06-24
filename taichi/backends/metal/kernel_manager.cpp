@@ -679,7 +679,6 @@ class KernelManager::Impl {
           TI_ERROR("Unexecpted data type={}", dt);
         }
       }
-      std::cout << "\n";
       buf += shaders::mtl_compute_print_msg_bytes(num_entries);
     }
 

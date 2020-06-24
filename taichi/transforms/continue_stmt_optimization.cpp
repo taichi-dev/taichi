@@ -26,14 +26,15 @@ class UselessContinueEliminator : public IRVisitor {
   }
 };
 
-// Eliminate useless ContinueStmt and the statements after ContinueStmt
-class ContinueStmtOptimizer : public BasicStmtVisitor {
+// Eliminate useless ContinueStmt, the statements after ContinueStmt and
+// unreachable if branches
+class UnreachableCodeEliminator : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
   bool modified;
   UselessContinueEliminator useless_continue_eliminator;
 
-  ContinueStmtOptimizer() : modified(false) {
+  UnreachableCodeEliminator() : modified(false) {
     allow_undefined_visitor = true;
   }
 
@@ -82,13 +83,35 @@ class ContinueStmtOptimizer : public BasicStmtVisitor {
       stmt->epilogue->accept(this);
   }
 
+  void visit(IfStmt *if_stmt) override {
+    if (if_stmt->cond->is<ConstStmt>() && if_stmt->cond->width() == 1) {
+      if (if_stmt->cond->as<ConstStmt>()->val[0].equal_value(0)) {
+        // if (0)
+        if (if_stmt->true_statements) {
+          if_stmt->true_statements = nullptr;
+          modified = true;
+        }
+      } else {
+        // if (1)
+        if (if_stmt->false_statements) {
+          if_stmt->false_statements = nullptr;
+          modified = true;
+        }
+      }
+    }
+    if (if_stmt->true_statements)
+      if_stmt->true_statements->accept(this);
+    if (if_stmt->false_statements)
+      if_stmt->false_statements->accept(this);
+  }
+
   static bool run(IRNode *node) {
     bool modified = false;
     while (true) {
-      ContinueStmtOptimizer optimizer;
-      node->accept(&optimizer);
-      if (optimizer.modified ||
-          optimizer.useless_continue_eliminator.modified) {
+      UnreachableCodeEliminator eliminator;
+      node->accept(&eliminator);
+      if (eliminator.modified ||
+          eliminator.useless_continue_eliminator.modified) {
         modified = true;
       } else {
         break;
@@ -99,9 +122,9 @@ class ContinueStmtOptimizer : public BasicStmtVisitor {
 };
 
 namespace irpass {
-bool continue_stmt_optimization(IRNode *root) {
+bool unreachable_code_elimination(IRNode *root) {
   TI_AUTO_PROF;
-  return ContinueStmtOptimizer::run(root);
+  return UnreachableCodeEliminator::run(root);
 }
 }  // namespace irpass
 

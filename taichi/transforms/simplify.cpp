@@ -1219,7 +1219,7 @@ void full_simplify(IRNode *root, Kernel *kernel) {
     while (true) {
       bool modified = false;
       extract_constant(root);
-      if (continue_stmt_optimization(root))
+      if (unreachable_code_elimination(root))
         modified = true;
       if (binary_op_simplify(root))
         modified = true;

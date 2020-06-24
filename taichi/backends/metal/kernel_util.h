@@ -72,6 +72,8 @@ struct KernelAttributes {
   RuntimeListOpAttributes runtime_list_op_attribs;
 
   // Whether print() is called inside this kernel.
+  // TODO(k-ye): Encapsulate this inside a UsedFeatures. However, we need a
+  // TaichiKernelAttributes before we can do this.
   bool uses_print = false;
 
   static std::string buffers_name(Buffers b);

@@ -127,12 +127,11 @@ class Expr(TaichiOperations):
         return self.ptr.get_raw_address()
 
     def dim(self):
-        impl.get_runtime().try_materialize()
         return self.snode().dim()
 
+    @property
     def shape(self):
-        impl.get_runtime().try_materialize()
-        return self.snode().shape()
+        return self.snode().shape
 
     def data_type(self):
         return self.snode().data_type()

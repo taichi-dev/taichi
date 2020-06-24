@@ -512,13 +512,14 @@ class Matrix(TaichiOperations):
     def loop_range(self):
         return self.entries[0]
 
+    def dim(self):
+        return self.loop_range().dim()
+
+    @property
     def shape(self):
         # Took `self.entries[0]` as a representation of this tensor-of-matrices.
         # https://github.com/taichi-dev/taichi/issues/1069#issuecomment-635712140
-        return self.loop_range().shape()
-
-    def dim(self):
-        return self.loop_range().dim()
+        return self.loop_range().shape
 
     def data_type(self):
         return self.loop_range().data_type()

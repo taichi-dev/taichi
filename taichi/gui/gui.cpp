@@ -63,8 +63,7 @@ void Canvas::triangle(Vector2 a, Vector2 b, Vector2 c, Vector4 color) {
       bool inside_c = cross(pixel - c, a - c) <= 0;
 
       // cover both clockwise and counterclockwise case for vertices [a, b, c]
-      bool inside_triangle =
-          (inside_a == inside_b) && (inside_a == inside_c);
+      bool inside_triangle = (inside_a == inside_b) && (inside_a == inside_c);
 
       if (inside_triangle && img.inside(i, j)) {
         img[i][j] = color;

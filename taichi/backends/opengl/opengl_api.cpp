@@ -5,6 +5,7 @@
 #include "taichi/program/kernel.h"
 #include "taichi/program/program.h"
 #include "taichi/util/environ_config.h"
+#include "taichi/python/print_buffer.h"
 
 #ifdef TI_WITH_OPENGL
 #include "glad/glad.h"
@@ -482,7 +483,7 @@ struct CompiledProgram::Impl {
             TI_WARN("[glsl] Unexpected serialization type: {}, ignoring", type);
             break;
         };
-        std::cout << str;
+        py_cout << str;
       }
     }
     rt_buf->msg_count = 0;

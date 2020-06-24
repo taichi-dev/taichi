@@ -456,7 +456,9 @@ class Kernel:
         instance_id, arg_features = self.mapper.lookup(args)
         key = (self.func, instance_id)
         self.materialize(key=key, args=args, arg_features=arg_features)
-        return self.compiled_functions[key](*args)
+        ret = self.compiled_functions[key](*args)
+        print(taichi_lang_core.pop_python_print_buffer(), end='')
+        return ret
 
 
 # For a Taichi class definition like below:

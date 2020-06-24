@@ -114,7 +114,7 @@ class SNode:
         # ti.root.dense(ti.i, 3).dense(ti.jk, (4, 5)).place(x)
         # ti.root => dense [3] => dense [3, 4, 5] => place [3, 4, 5]
         type = repr(self.ptr.type)[len('SNodeType.'):]
-        shape = repr(list(self.shape()))
+        shape = repr(list(self.shape))
         parent = repr(self.parent())
         return f'{parent} => {type} {shape}'
 

@@ -140,7 +140,7 @@ class Expr(TaichiOperations):
     def to_numpy(self):
         from .meta import tensor_to_ext_arr
         import numpy as np
-        arr = np.zeros(shape=self.shape(),
+        arr = np.zeros(shape=self.shape,
                        dtype=to_numpy_type(self.snode().data_type()))
         tensor_to_ext_arr(self, arr)
         import taichi as ti
@@ -151,7 +151,7 @@ class Expr(TaichiOperations):
     def to_torch(self, device=None):
         from .meta import tensor_to_ext_arr
         import torch
-        arr = torch.zeros(size=self.shape(),
+        arr = torch.zeros(size=self.shape,
                           dtype=to_pytorch_type(self.snode().data_type()),
                           device=device)
         tensor_to_ext_arr(self, arr)
@@ -162,7 +162,7 @@ class Expr(TaichiOperations):
     @python_scope
     def from_numpy(self, arr):
         assert self.dim() == len(arr.shape)
-        s = self.shape()
+        s = self.shape
         for i in range(self.dim()):
             assert s[i] == arr.shape[i]
         from .meta import ext_arr_to_tensor

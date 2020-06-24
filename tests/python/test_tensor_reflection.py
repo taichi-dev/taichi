@@ -1,4 +1,5 @@
 import taichi as ti
+import pytest
 
 
 @ti.all_archs
@@ -78,7 +79,6 @@ def test_unordered_matrix():
     blk3.place(val)
 
     assert val.shape == (n, m, p)
-    assert val.shape() == (n, m, p)  # deprecated
     assert val.data_type() == ti.i32
     assert val.loop_range().snode().parent(0) == val.loop_range().snode()
     assert val.loop_range().snode().parent() == blk3
@@ -86,3 +86,26 @@ def test_unordered_matrix():
     assert val.loop_range().snode().parent(2) == blk2
     assert val.loop_range().snode().parent(3) == blk1
     assert val.loop_range().snode().parent(4) == ti.root
+
+
+@pytest.mark.filterwarnings('ignore')
+@ti.host_arch_only
+def test_deprecated():
+    val = ti.var(ti.f32)
+    mat = ti.Matrix(3, 2, ti.i32)
+
+    n = 3
+    m = 7
+    p = 11
+
+    blk1 = ti.root.dense(ti.k, n)
+    blk2 = blk1.dense(ti.i, m)
+    blk3 = blk2.dense(ti.j, p)
+    blk3.place(val, mat)
+
+    assert val.dim() == 3
+    assert val.shape() == (n, m, p)
+    assert mat.dim() == 3
+    assert mat.shape() == (n, m, p)
+    assert blk3.dim() == 3
+    assert blk3.shape() == (n, m, p)

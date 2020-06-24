@@ -623,7 +623,7 @@ class Matrix(TaichiOperations):
         if not self.is_global():
             return np.array(self.entries).reshape(shape_ext)
 
-        ret = np.empty(self.loop_range().shape() + shape_ext,
+        ret = np.empty(self.loop_range().shape + shape_ext,
                        dtype=to_numpy_type(
                            self.loop_range().snode().data_type()))
         from .meta import matrix_to_ext_arr
@@ -637,7 +637,7 @@ class Matrix(TaichiOperations):
         import torch
         as_vector = self.m == 1 and not keep_dims
         shape_ext = (self.n, ) if as_vector else (self.n, self.m)
-        ret = torch.empty(self.loop_range().shape() + shape_ext,
+        ret = torch.empty(self.loop_range().shape + shape_ext,
                           dtype=to_pytorch_type(
                               self.loop_range().snode().data_type()),
                           device=device)

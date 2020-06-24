@@ -16,12 +16,10 @@ def imcook(img):
     assert len(img.shape) in [2,
                               3], "Image must be either RGB/RGBA or greyscale"
 
-    resx, resy = img.shape[:2]
     if len(img.shape) == 2:
-        comp = 1
-    else:
-        comp = img.shape[2]
-    assert comp in [1, 3, 4], "Image must be either RGB/RGBA or greyscale"
+        img = img.reshape(*img.shape, 1)
+
+    assert img.shape[2] in [1, 3, 4], "Image must be either RGB/RGBA or greyscale"
 
     return img.swapaxes(0, 1)[::-1, :]
 
@@ -48,6 +46,7 @@ def imwrite(img, filename):
     img = imcook(img)
     img = np.ascontiguousarray(img)
     ptr = img.ctypes.data
+    resy, resx, comp = img.shape
     ti.core.imwrite(filename, ptr, resx, resy, comp)
 
 

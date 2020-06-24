@@ -1,7 +1,7 @@
 import taichi as ti
 import numpy as np
 
-ti.init(arch=ti.cuda)
+ti.init(arch=ti.cpu)
 
 RES = 1024
 K = 2
@@ -17,6 +17,8 @@ qt = ti.var(ti.f32)
 B.place(qt)
 
 img = ti.Vector(3, dt=ti.f32, shape=(RES, RES))
+
+print('The quad tree layout is:\n', qt.snode())
 
 
 @ti.kernel

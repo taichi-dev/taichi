@@ -60,6 +60,22 @@ def test_print_matrix():
 
 
 @ti.all_archs
+def test_print_sep():
+    @ti.kernel
+    def func():
+        # hello 42 world!
+        print('hello', 42, 'world!')
+        # hello 42 Taichi 233 world!
+        print('hello', 42, 'Tai', end='')
+        print('chi', 233, 'world!')
+        # hello42world!
+        print('hello', 42, 'world!', sep='')
+
+    func()
+    ti.sync()
+
+
+@ti.all_archs
 def test_print_multiple_threads():
     x = ti.var(dt=ti.f32, shape=(128, ))
 

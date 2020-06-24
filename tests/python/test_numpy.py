@@ -182,3 +182,14 @@ def test_numpy_multiple_external_arrays():
 def test_index_mismatch():
     val = ti.var(ti.i32, shape=(1, 2, 3))
     val[0, 0] = 1
+
+
+@ti.all_archs
+def test_numpy_zero():
+    @ti.kernel
+    def test_numpy(arr: ti.ext_arr()):
+        pass
+
+    test_numpy(np.empty(shape=(0), dtype=np.int32))
+    test_numpy(np.empty(shape=(0, 5), dtype=np.int32))
+    test_numpy(np.empty(shape=(5, 0), dtype=np.int32))

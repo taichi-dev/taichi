@@ -1,3 +1,7 @@
+from . import impl
+from .util import deprecated
+
+
 class SNode:
     def __init__(self, ptr):
         self.ptr = ptr
@@ -48,20 +52,31 @@ class SNode:
     def lazy_grad(self):
         self.ptr.lazy_grad()
 
-    def parent(self):
-        return SNode(self.ptr.snode().parent)
+    def parent(self, n=1):
+        impl.get_runtime().try_materialize()
+        p = self.ptr
+        for i in range(n):
+            p = p.parent
+        if p.type == impl.taichi_lang_core.SNodeType.root:
+            return impl.root
+        else:
+            return SNode(p)
 
     def data_type(self):
         return self.ptr.data_type()
 
     def dim(self):
+        impl.get_runtime().try_materialize()
         return self.ptr.num_active_indices()
 
     def shape(self):
-        return tuple(self.get_shape(i) for i in range(self.dim()))
+        impl.get_runtime().try_materialize()
+        return tuple(
+            self.ptr.get_num_elements_along_axis(i) for i in range(self.dim()))
 
+    @deprecated('snode.get_shape(i)', 'snode.shape()[i]')
     def get_shape(self, i):
-        return self.ptr.get_num_elements_along_axis(i)
+        return self.shape()[i]
 
     def loop_range(self):
         import taichi as ti
@@ -84,6 +99,17 @@ class SNode:
         if self.ptr.type == ti.core.SNodeType.pointer or self.ptr.type == ti.core.SNodeType.bitmasked:
             from .meta import snode_deactivate
             snode_deactivate(self)
+
+    def __repr__(self):
+        # ti.root.dense(ti.i, 3).dense(ti.jk, (4, 5)).place(x)
+        # ti.root => dense [3] => dense [3, 4, 5] => place [3, 4, 5]
+        type = repr(self.ptr.type)[len('SNodeType.'):]
+        shape = repr(list(self.shape()))
+        parent = repr(self.parent())
+        return f'{parent} => {type} {shape}'
+
+    def __eq__(self, other):
+        return self.ptr == other.ptr
 
     def physical_index_position(self):
         ret = {}

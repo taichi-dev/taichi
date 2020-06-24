@@ -371,7 +371,7 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(BitExtractStmt *stmt) {
-    stmt->ret_type.data_type = DataType::i32;
+    stmt->ret_type = stmt->input->ret_type;
   }
 
   void visit(LinearizeStmt *stmt) {

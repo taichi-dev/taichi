@@ -484,7 +484,6 @@ struct CompiledProgram::Impl {
         };
         std::cout << str;
       }
-      std::cout << std::endl;
     }
     rt_buf->msg_count = 0;
     launcher->impl->runtime_ssbo->unmap();

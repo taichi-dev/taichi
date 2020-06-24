@@ -29,6 +29,7 @@ class MemoryPool {
   Program *prog;
 
   MemRequestQueue *queue;
+  void *cuda_stream{nullptr};
 
   MemoryPool(Program *prog);
 
@@ -47,6 +48,9 @@ class MemoryPool {
   void terminate();
 
   ~MemoryPool();
+
+ private:
+  static constexpr bool use_cuda_stream = false;
 };
 
 TLANG_NAMESPACE_END

@@ -1,6 +1,7 @@
 #include "memory_pool.h"
 #include "taichi/system/timer.h"
 #include "taichi/program/program.h"
+#include "taichi/backends/cuda/cuda_driver.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -12,14 +13,14 @@ MemoryPool::MemoryPool(Program *prog) : prog(prog) {
   use_unified_memory = prog->config.use_unified_memory;
   processed_tail = 0;
   queue = nullptr;
-#if 0 && defined(TI_WITH_CUDA)
+#if defined(TI_WITH_CUDA)
   // http://on-demand.gputechconf.com/gtc/2014/presentations/S4158-cuda-streams-best-practices-common-pitfalls.pdf
   // Stream 0 has special synchronization rules: Operations in stream 0 cannot
   // overlap other streams except for those streams with cudaStreamNonBlocking
   // Do not use cudaCreateStream (with no flags) here!
-  if (prog->config.arch == Arch::cuda) {
-    check_cuda_error(
-        cudaStreamCreateWithFlags(&cuda_stream, cudaStreamNonBlocking));
+  if (use_cuda_stream && prog->config.arch == Arch::cuda) {
+    CUDADriver::get_instance().stream_create(&cuda_stream,
+                                             CU_STREAM_NON_BLOCKING);
   }
 #endif
   th = std::make_unique<std::thread>([this] { this->daemon(); });
@@ -50,37 +51,34 @@ void *MemoryPool::allocate(std::size_t size, std::size_t alignment) {
 template <typename T>
 T MemoryPool::fetch(volatile void *ptr) {
   T ret;
-  /*
-  if (false && prog->config.arch == Arch::cuda) {
+  if (use_cuda_stream && prog->config.arch == Arch::cuda) {
 #if TI_WITH_CUDA
-    CUDADriver::get_instance().cudaMemcpyAsync(&ret, (void *)ptr, sizeof(T,
-                                     cudaMemcpyDeviceToHost, cuda_stream));
-    CUDADriver::get_instance().cudaStreamSynchronize(cuda_stream);
+    CUDADriver::get_instance().stream_synchronize(cuda_stream);
+    CUDADriver::get_instance().memcpy_device_to_host_async(
+        &ret, (void *)ptr, sizeof(T), cuda_stream);
+    CUDADriver::get_instance().stream_synchronize(cuda_stream);
 #else
     TI_NOT_IMPLEMENTED
 #endif
   } else {
-  */
-  ret = *(T *)ptr;
-  //}
+    ret = *(T *)ptr;
+  }
   return ret;
 }
 
 template <typename T>
 void MemoryPool::push(volatile T *dest, const T &val) {
-  /*
-  if (false && prog->config.arch == Arch::cuda) {
+  if (use_cuda_stream && prog->config.arch == Arch::cuda) {
 #if TI_WITH_CUDA
-    CUDADriver::get_instance().cudaMemcpyAsync((void *)dest, &val, sizeof(T,
-                                     cudaMemcpyHostToDevice, cuda_stream));
-    CUDADriver::get_instance().cudaStreamSynchronize(cuda_stream);
+    CUDADriver::get_instance().memcpy_host_to_device_async(
+        (void *)(dest), (void *)&val, sizeof(T), cuda_stream);
+    CUDADriver::get_instance().stream_synchronize(cuda_stream);
 #else
     TI_NOT_IMPLEMENTED
 #endif
   } else {
-  */
-  *(T *)dest = val;
-  // }
+    *(T *)dest = val;
+  }
 }
 
 void MemoryPool::daemon() {

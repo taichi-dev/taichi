@@ -89,3 +89,23 @@ def test_unordered_matrix():
     assert val.loop_range().snode().parent(2) == blk2
     assert val.loop_range().snode().parent(3) == blk1
     assert val.loop_range().snode().parent(4) == ti.root
+
+
+@ti.all_archs
+def test_parent_exceeded():
+    val = ti.var(ti.f32)
+
+    m = 7
+    n = 3
+
+    blk1 = ti.root.dense(ti.i, m)
+    blk2 = blk1.dense(ti.j, n)
+    blk2.place(val)
+
+    assert val.snode().parent() == blk2
+    assert val.snode().parent(2) == blk1
+    assert val.snode().parent(3) == ti.root
+    assert val.snode().parent(4) == None
+    assert val.snode().parent(42) == None
+
+    assert ti.root.parent() == None

@@ -9,6 +9,7 @@
 #include "taichi/program/program.h"
 #include "taichi/lang_util.h"
 #include "taichi/backends/cuda/cuda_driver.h"
+#include "taichi/backends/cuda/cuda_context.h"
 #include "taichi/codegen/codegen_llvm.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -57,18 +58,23 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
             kernel = this->kernel](Context &context) {
       // copy data to GRAM
       auto args = kernel->args;
-      std::vector<void *> host_buffers(args.size());
-      std::vector<void *> device_buffers(args.size());
+      std::vector<void *> host_buffers(args.size(), nullptr);
+      std::vector<void *> device_buffers(args.size(), nullptr);
       bool has_buffer = false;
       for (int i = 0; i < (int)args.size(); i++) {
         if (args[i].is_nparray) {
           has_buffer = true;
-          CUDADriver::get_instance().malloc(&device_buffers[i], args[i].size);
           // replace host buffer with device buffer
           host_buffers[i] = get_current_program().context.get_arg<void *>(i);
+          if (args[i].size > 0) {
+            // Note: both numpy and PyTorch support arrays/tensors with zeros
+            // in shapes, e.g., shape=(0) or shape=(100, 0, 200). This makes
+            // args[i].size = 0.
+            CUDADriver::get_instance().malloc(&device_buffers[i], args[i].size);
+            CUDADriver::get_instance().memcpy_host_to_device(
+                (void *)device_buffers[i], host_buffers[i], args[i].size);
+          }
           kernel->set_arg_nparray(i, (uint64)device_buffers[i], args[i].size);
-          CUDADriver::get_instance().memcpy_host_to_device(
-              (void *)device_buffers[i], host_buffers[i], args[i].size);
         }
       }
       if (has_buffer) {
@@ -87,7 +93,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         CUDADriver::get_instance().stream_synchronize(nullptr);
       }
       for (int i = 0; i < (int)args.size(); i++) {
-        if (args[i].is_nparray) {
+        if (args[i].is_nparray && args[i].size > 0) {
           CUDADriver::get_instance().memcpy_device_to_host(
               host_buffers[i], (void *)device_buffers[i], args[i].size);
           CUDADriver::get_instance().mem_free((void *)device_buffers[i]);
@@ -138,7 +144,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       }
     }
 
-    auto format_str = formats + "\n";
+    auto format_str = formats;
     auto stype = llvm::StructType::get(*llvm_context, types, false);
     auto value_arr = builder->CreateAlloca(stype);
     for (int i = 0; i < values.size(); i++) {

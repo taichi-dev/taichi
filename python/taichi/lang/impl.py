@@ -256,10 +256,6 @@ class Root:
     def __repr__(self):
         return 'ti.root'
 
-    def parent(self, n=0):
-        # |n| is ignored. This just keeps the interface consistent with SNode.
-        return None
-
 
 root = Root()
 

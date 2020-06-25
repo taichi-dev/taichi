@@ -306,7 +306,7 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
       if (!after_lower_access ||
           (store_ptr->is<AllocaStmt>() || store_ptr->is<StackAllocaStmt>())) {
         // After lower_access, we only analyze local variables and stacks.
-        if (!contain_variable(live_out, store_ptr) &&
+        if (!stmt->is<AllocaStmt>() && !contain_variable(live_out, store_ptr) &&
             !contain_variable(live_in_this_node, store_ptr)) {
           // Neither used in other nodes nor used in this node.
           if (auto atomic = stmt->cast<AtomicOpStmt>()) {

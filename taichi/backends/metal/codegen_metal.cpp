@@ -242,6 +242,9 @@ class KernelCodegen : public IRVisitor {
         // is_active(device byte *addr, SNodeMeta meta, int i);
         emit("{} = is_active({}, {}, {});", result_var, ch_addr,
              kSNodeMetaVarName, ch_id);
+      } else if (opty == SNodeOpType::activate) {
+        // activate(device byte *addr, SNodeMeta meta, int i);
+        emit("activate({}, {}, {});", ch_addr, kSNodeMetaVarName, ch_id);
       } else if (opty == SNodeOpType::deactivate) {
         // deactivate(device byte *addr, SNodeMeta meta, int i);
         emit("deactivate({}, {}, {});", ch_addr, kSNodeMetaVarName, ch_id);

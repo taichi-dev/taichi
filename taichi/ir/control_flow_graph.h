@@ -45,13 +45,13 @@ class CFGNode {
                     bool replace_usages = true);
   bool erase_entire_node();
 
+  static bool contain_variable(const std::unordered_set<Stmt *> &var_set, Stmt *var);
   void reaching_definition_analysis(bool after_lower_access);
   bool reach_kill_variable(Stmt *var) const;
   Stmt *get_store_forwarding_data(Stmt *var, int position) const;
   bool store_to_load_forwarding(bool after_lower_access);
 
   void live_variable_analysis(bool after_lower_access);
-  bool live_kill_variable(Stmt *var) const;
   bool dead_store_elimination(bool after_lower_access);
 };
 

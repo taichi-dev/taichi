@@ -88,6 +88,21 @@ bool CFGNode::erase_entire_node() {
   return true;
 }
 
+bool CFGNode::contain_variable(const std::unordered_set<Stmt *> &var_set,
+                               Stmt *var) {
+  if (var->is<AllocaStmt>() || var->is<StackAllocaStmt>()) {
+    return var_set.find(var) != var_set.end();
+  } else {
+    // TODO: How to optimize this?
+    for (auto set_var : var_set) {
+      if (irpass::analysis::same_statements(var, set_var)) {
+        return true;
+      }
+    }
+    return false;
+  }
+}
+
 void CFGNode::reaching_definition_analysis(bool after_lower_access) {
   // Calculate reach_gen and reach_kill.
   reach_gen.clear();
@@ -113,17 +128,7 @@ void CFGNode::reaching_definition_analysis(bool after_lower_access) {
 
 bool CFGNode::reach_kill_variable(Stmt *var) const {
   // Does this node (definitely) kill a definition of var?
-  if (var->is<AllocaStmt>()) {
-    return reach_kill.find(var) != reach_kill.end();
-  } else {
-    // TODO: How to optimize this?
-    for (auto killed_var : reach_kill) {
-      if (irpass::analysis::same_statements(var, killed_var)) {
-        return true;
-      }
-    }
-    return false;
-  }
+  return contain_variable(reach_kill, var);
 }
 
 Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
@@ -257,7 +262,7 @@ void CFGNode::live_variable_analysis(bool after_lower_access) {
       if (!after_lower_access ||
           (load_ptr->is<AllocaStmt>() || load_ptr->is<StackAllocaStmt>())) {
         // After lower_access, we only analyze local variables and stacks.
-        if (!live_kill_variable(load_ptr)) {
+        if (!contain_variable(live_kill, load_ptr)) {
           live_gen.insert(load_ptr);
         }
       }
@@ -282,21 +287,6 @@ void CFGNode::live_variable_analysis(bool after_lower_access) {
   }
 }
 
-bool CFGNode::live_kill_variable(Stmt *var) const {
-  // Does this node (definitely) assign a value to var?
-  if (var->is<AllocaStmt>() || var->is<StackAllocaStmt>()) {
-    return live_kill.find(var) != live_kill.end();
-  } else {
-    // TODO: How to optimize this?
-    for (auto killed_var : live_kill) {
-      if (irpass::analysis::same_statements(var, killed_var)) {
-        return true;
-      }
-    }
-    return false;
-  }
-}
-
 bool CFGNode::dead_store_elimination(bool after_lower_access) {
   bool modified = false;
   std::unordered_set<Stmt *> live_in_this_node;
@@ -316,13 +306,13 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
       if (!after_lower_access ||
           (store_ptr->is<AllocaStmt>() || store_ptr->is<StackAllocaStmt>())) {
         // After lower_access, we only analyze local variables and stacks.
-        if (live_out.find(store_ptr) == live_out.end() &&
-            live_in_this_node.find(store_ptr) == live_in_this_node.end() &&
-            !stmt->is<AtomicOpStmt>()) {
+        if (!contain_variable(live_out, store_ptr) &&
+            !contain_variable(live_in_this_node, store_ptr)) {
           // Neither used in other nodes nor used in this node.
           if (auto atomic = stmt->cast<AtomicOpStmt>()) {
             if (atomic->dest->is<AllocaStmt>()) {
-              auto local_load = Stmt::make<LocalLoadStmt>(LocalAddress(atomic->dest, 0));
+              auto local_load =
+                  Stmt::make<LocalLoadStmt>(LocalAddress(atomic->dest, 0));
               replace_with(i, std::move(local_load), true);
             } else {
               auto global_load = Stmt::make<GlobalLoadStmt>(atomic->dest);
@@ -526,7 +516,7 @@ void ControlFlowGraph::live_variable_analysis(bool after_lower_access) {
     auto old_in = std::move(now->live_in);
     now->live_in = now->live_gen;
     for (auto stmt : now->live_out) {
-      if (!now->live_kill_variable(stmt)) {
+      if (!CFGNode::contain_variable(now->live_kill, stmt)) {
         now->live_in.insert(stmt);
       }
     }

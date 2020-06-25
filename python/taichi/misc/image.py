@@ -2,7 +2,7 @@ import numpy as np
 import taichi as ti
 
 
-def imcook(img):
+def imwrite(img, filename):
     if not isinstance(img, np.ndarray):
         img = img.to_numpy()
 
@@ -16,37 +16,15 @@ def imcook(img):
     assert len(img.shape) in [2,
                               3], "Image must be either RGB/RGBA or greyscale"
 
+    resx, resy = img.shape[:2]
     if len(img.shape) == 2:
-        img = img.reshape(*img.shape, 1)
-
-    assert img.shape[2] in [1, 3, 4], "Image must be either RGB/RGBA or greyscale"
-
-    return img.swapaxes(0, 1)[::-1, :]
-
-
-
-def imdisplay(img):
-    """
-    Try to display image in interactive shell.
-    """
-    if ti.lang.shell.oinspect.name.startswith('IPython'):
-        import PIL.Image
-        from io import BytesIO
-        import IPython.display
-        import numpy as np
-        img = imcook(img)
-        f = BytesIO()
-        PIL.Image.fromarray(img).save(f, 'png')
-        IPython.display.display(IPython.display.Image(data=f.getvalue()))
+        comp = 1
     else:
-        ti.imshow(img)
+        comp = img.shape[2]
+    assert comp in [1, 3, 4], "Image must be either RGB/RGBA or greyscale"
 
-
-def imwrite(img, filename):
-    img = imcook(img)
-    img = np.ascontiguousarray(img)
+    img = np.ascontiguousarray(img.swapaxes(0, 1)[::-1, :])
     ptr = img.ctypes.data
-    resy, resx, comp = img.shape
     ti.core.imwrite(filename, ptr, resx, resy, comp)
 
 

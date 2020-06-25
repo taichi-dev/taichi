@@ -279,6 +279,7 @@ void CFGNode::live_variable_analysis(bool after_lower_access) {
 bool CFGNode::dead_store_elimination(bool after_lower_access) {
   bool modified = false;
   std::unordered_set<Stmt *> live_in_this_node;
+  std::unordered_set<Stmt *> killed_in_this_node;
   for (int i = end_location - 1; i >= begin_location; i--) {
     auto stmt = block->statements[i].get();
     auto store_ptr = irpass::analysis::get_store_destination(stmt);
@@ -296,8 +297,10 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
           (store_ptr->is<AllocaStmt>() || store_ptr->is<StackAllocaStmt>())) {
         // After lower_access, we only analyze local variables and stacks.
         // Do not eliminate AllocaStmt here.
-        if (!stmt->is<AllocaStmt>() && !contain_variable(live_out, store_ptr) &&
-            !contain_variable(live_in_this_node, store_ptr)) {
+        if (!stmt->is<AllocaStmt>() &&
+            (contain_variable(killed_in_this_node, store_ptr) ||
+             (!contain_variable(live_out, store_ptr) &&
+              !contain_variable(live_in_this_node, store_ptr)))) {
           // Neither used in other nodes nor used in this node.
           if (auto atomic = stmt->cast<AtomicOpStmt>()) {
             // Weaken the atomic operation to a load.
@@ -307,6 +310,7 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
               local_load->ret_type = atomic->ret_type;
               replace_with(i, std::move(local_load), true);
               // Notice that we have a load here.
+              killed_in_this_node.erase(atomic->dest);
               live_in_this_node.insert(atomic->dest);
               modified = true;
               continue;
@@ -319,6 +323,7 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
               global_load->ret_type = atomic->ret_type;
               replace_with(i, std::move(global_load), true);
               // Notice that we have a load here.
+              killed_in_this_node.erase(atomic->dest);
               live_in_this_node.insert(atomic->dest);
               modified = true;
               continue;
@@ -330,6 +335,7 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
           }
         } else {
           // A non-eliminated store.
+          killed_in_this_node.insert(store_ptr);
           live_in_this_node.erase(store_ptr);
         }
       }
@@ -339,6 +345,7 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
       if (!after_lower_access ||
           (load_ptr->is<AllocaStmt>() || load_ptr->is<StackAllocaStmt>())) {
         // After lower_access, we only analyze local variables and stacks.
+        killed_in_this_node.erase(load_ptr);
         live_in_this_node.insert(load_ptr);
       }
     }

@@ -98,9 +98,6 @@ void make_thread_local_offload(OffloadedStmt *offload) {
       auto tls_ptr = offload->prologue->push_back<ThreadLocalPtrStmt>(
           tls_offset, VectorType(1, data_type));
 
-      // allocate storage for the TLS variable
-      tls_offset += dtype_size;
-
       auto zero = offload->prologue->insert(
           std::make_unique<ConstStmt>(TypedConstant(data_type, 0)), -1);
       // Zero-fill
@@ -134,7 +131,11 @@ void make_thread_local_offload(OffloadedStmt *offload) {
       offload->epilogue->push_back<AtomicOpStmt>(AtomicOpType::add, global_ptr,
                                                  tls_load);
     }
+
+    // allocate storage for the TLS variable
+    tls_offset += dtype_size;
   }
+
   offload->tls_size = tls_offset;
 }
 

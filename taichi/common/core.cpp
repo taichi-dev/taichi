@@ -12,6 +12,11 @@
 
 TI_NAMESPACE_BEGIN
 
+// Remove LLVM's denendency on GLIB 2.27
+#if defined(__linux__)
+__asm__(".symver log2f,log2f@GLIBC_2.2.5");
+#endif
+
 bool is_release() {
   auto dir = std::getenv("TAICHI_REPO_DIR");
   if (dir == nullptr || std::string(dir) == "") {

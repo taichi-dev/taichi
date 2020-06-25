@@ -1105,12 +1105,20 @@ void cpu_parallel_range_for(Context *context,
 void gpu_parallel_range_for(Context *context,
                             int begin,
                             int end,
-                            RangeForTaskFunc *func) {
+                            range_for_xlogue prologue,
+                            RangeForTaskFunc *func,
+                            range_for_xlogue epilogue) {
   int idx = thread_idx() + block_dim() * block_idx() + begin;
+  char tls_buffer[taichi_tls_buffer_size];
+  auto tls_ptr = &tls_buffer[0];
+  if (prologue)
+    prologue(context, tls_ptr);
   while (idx < end) {
-    func(context, /*tls=*/nullptr, idx);
+    func(context, tls_ptr, idx);
     idx += block_dim() * grid_dim();
   }
+  if (epilogue)
+    epilogue(context, tls_ptr);
 }
 
 i32 linear_thread_idx() {

@@ -37,7 +37,6 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
     }
 
     llvm::Function *body;
-
     {
       auto guard = get_function_creation_guard(
           {llvm::PointerType::get(get_runtime_type("Context"), 0),

@@ -14,8 +14,12 @@ void cfg_optimization(IRNode *root, bool after_lower_access) {
     cfg->simplify_graph();
     if (cfg->store_to_load_forwarding(after_lower_access))
       modified = true;
+    std::cout << "before:" << std::endl;
+    print(root);
     if (cfg->dead_store_elimination(after_lower_access))
       modified = true;
+    std::cout << "after:" << std::endl;
+    print(root);
     if (!modified)
       break;
   }

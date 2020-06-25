@@ -432,6 +432,20 @@ void ControlFlowGraph::print_graph_structure() const {
       }
       node_info += fmt::format("; next={{{}}}", fmt::join(indices, ", "));
     }
+    if (!nodes[i]->live_in.empty()) {
+      std::vector<std::string> indices;
+      for (auto stmt : nodes[i]->live_in) {
+        indices.push_back(stmt->name());
+      }
+      node_info += fmt::format("; live_in={{{}}}", fmt::join(indices, ", "));
+    }
+    if (!nodes[i]->live_out.empty()) {
+      std::vector<std::string> indices;
+      for (auto stmt : nodes[i]->live_out) {
+        indices.push_back(stmt->name());
+      }
+      node_info += fmt::format("; live_out={{{}}}", fmt::join(indices, ", "));
+    }
     std::cout << node_info << std::endl;
   }
 }
@@ -628,6 +642,7 @@ bool ControlFlowGraph::store_to_load_forwarding(bool after_lower_access) {
 bool ControlFlowGraph::dead_store_elimination(bool after_lower_access) {
   TI_AUTO_PROF;
   live_variable_analysis(after_lower_access);
+  print_graph_structure();
   const int num_nodes = size();
   bool modified = false;
   for (int i = 0; i < num_nodes; i++) {

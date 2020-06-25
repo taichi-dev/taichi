@@ -133,6 +133,16 @@ class CFGBuilder : public IRVisitor {
   }
 
   void visit(OffloadedStmt *stmt) override {
+    if (stmt->prologue) {
+      auto before_offload = new_node(-1);
+      int offload_stmt_id = current_stmt_id;
+      auto block_begin_index = graph->size();
+      stmt->prologue->accept(this);
+      prev_nodes.push_back(graph->back());
+      // Container statements don't belong to any CFGNodes.
+      begin_location = offload_stmt_id + 1;
+      CFGNode::add_edge(before_offload, graph->nodes[block_begin_index].get());
+    }
     if (stmt->has_body()) {
       auto before_offload = new_node(-1);
       int offload_stmt_id = current_stmt_id;
@@ -143,6 +153,16 @@ class CFGBuilder : public IRVisitor {
       }
       stmt->body->accept(this);
       in_offloaded_for = false;
+      prev_nodes.push_back(graph->back());
+      // Container statements don't belong to any CFGNodes.
+      begin_location = offload_stmt_id + 1;
+      CFGNode::add_edge(before_offload, graph->nodes[block_begin_index].get());
+    }
+    if (stmt->epilogue) {
+      auto before_offload = new_node(-1);
+      int offload_stmt_id = current_stmt_id;
+      auto block_begin_index = graph->size();
+      stmt->epilogue->accept(this);
       prev_nodes.push_back(graph->back());
       // Container statements don't belong to any CFGNodes.
       begin_location = offload_stmt_id + 1;

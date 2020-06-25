@@ -244,10 +244,10 @@ def main():
     md_gen = MouseDataGen()
     paused = False
     while True:
-        while gui.get_event(ti.GUI.PRESS):
+        if gui.get_event(ti.GUI.PRESS):
             e = gui.event
             if e.key == ti.GUI.ESCAPE:
-                exit(0)
+                break
             elif e.key == 'r':
                 paused = False
                 reset()

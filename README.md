@@ -48,17 +48,21 @@ Please build from source for other configurations (e.g., your CPU is ARM).
 ## Links
 
 - [Taichi Forum](https://forum.taichi.graphics): Powered by Discourse, Taichi offical forum for discussing issues and sharing ideas.
-- [Taichi Simplified Chinese Documentation](https://github.com/taichi-dev/taichi-docs-zh-cn): Translated by Taichi community, welcome contribution!
+- [Taichi Simplified Chinese Documentation](https://github.com/taichi-dev/taichi-docs-zh-cn): Translated by the Taichi community, welcome contribution!
 - [Taichi Conference](https://github.com/taichi-dev/taichicon): Taichi Online Virtual Conference available in both Chinese and English, approximately per-month.
 - [GAMES 201 Lectures](https://github.com/taichi-dev/games201): (Chinese) A hands-on tutorial on advanced physics engines based on Taichi, per-week.
 
 ---
 
+- [Taichi GLSL](https://github.com/taichi-dev/taichi_glsl): A Taichi extension library providing a set of GLSL-alike helper functions.
+- [Taichi THREE](https://github.com/taichi-dev/taichi_three): A 3D rendering library based on Taichi (work in progress).
 - [Taichi Elements](https://github.com/taichi-dev/taichi_elements): A High-Performance Multi-Material Continuum Physics Engine based on Taichi (work in progress).
+
+---
+
 - [LBM Taichi](https://github.com/hietwll/LBM_Taichi): Fluid solver based on Lattice Boltzmann method implemented by Taichi programming language, by [Zhuo Wang (hietwll)](https://github.com/hietwll).
 - [Shadertoy reproduced by Taichi](https://github.com/Phonicavi/Shadertoy-taichi): Some prevalent shadertoys implemented in Taichi, by [QIU Feng (Phonicavi)](https://github.com/Phonicavi).
 - [DiffTaichi](https://github.com/yuanming-hu/difftaichi): 10 differentiable physical simulators built with Taichi differentiable programming, by [Yuanming Hu (yuanming-hu)](https://github.com/yuanming-hu).
-- [Taichi GLSL](https://github.com/taichi-dev/taichi_glsl): A Taichi extension library providing a set of GLSL-alike helper functions.
 
 ## Developers
 

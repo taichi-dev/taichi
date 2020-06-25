@@ -22,6 +22,8 @@ TLANG_NAMESPACE_BEGIN
 // Driver constants from cuda.h
 
 constexpr uint32 CU_EVENT_DEFAULT = 0x0;
+constexpr uint32 CU_STREAM_DEFAULT = 0x0;
+constexpr uint32 CU_STREAM_NON_BLOCKING = 0x1;
 constexpr uint32 CU_MEM_ATTACH_GLOBAL = 0x1;
 constexpr uint32 CU_MEM_ADVISE_SET_PREFERRED_LOCATION = 3;
 constexpr uint32 CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_X = 2;

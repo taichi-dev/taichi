@@ -19,7 +19,7 @@ Installing Dependencies
 
   .. code-block:: bash
 
-    python3 -m pip install --user setuptools astpretty astor pybind11 Pillow
+    python3 -m pip install --user setuptools astpretty astor pybind11 Pillow dill
     python3 -m pip install --user pytest pytest-rerunfailures pytest-xdist yapf
     python3 -m pip install --user numpy GitPython coverage colorama autograd
 

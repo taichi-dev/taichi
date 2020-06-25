@@ -115,6 +115,13 @@ void taichi_printf(LLVMRuntime *runtime, const char *format, Args &&... args);
 
 extern "C" {
 
+i64 cuda_clock_i64() {
+  return 0;
+}
+
+void system_memfence() {
+}
+
 #if ARCH_cuda
 void cuda_vprintf(Ptr format, Ptr arg);
 #endif
@@ -341,6 +348,7 @@ void taichi_assert_runtime(LLVMRuntime *runtime, i32 test, const char *msg);
 void ___stubs___() {
 #if ARCH_cuda
   cuda_vprintf(nullptr, nullptr);
+  cuda_clock_i64();
 #endif
 }
 }
@@ -737,9 +745,13 @@ Ptr LLVMRuntime::request_allocate_aligned(std::size_t size,
     auto volatile r = &mem_req_queue->requests[i];
     atomic_exchange_u64((uint64 *)&r->size, size);
     atomic_exchange_u64((uint64 *)&r->alignment, alignment);
+
     // wait for host to allocate
-    while (r->ptr == nullptr)
-      ;
+    while (r->ptr == nullptr) {
+#if defined(ARCH_cuda)
+      system_memfence();
+#endif
+    };
     return r->ptr;
   }
 }
@@ -892,9 +904,6 @@ void block_memfence() {
 }
 
 void grid_memfence() {
-}
-
-void system_memfence() {
 }
 
 // "Element", "component" are different concepts

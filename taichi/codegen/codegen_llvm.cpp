@@ -913,10 +913,8 @@ void CodeGenLLVM::visit(SNodeOpStmt *stmt) {
     llvm_val[stmt] =
         call(snode, llvm_val[stmt->ptr], "is_active", {llvm_val[stmt->val]});
   } else if (stmt->op_type == SNodeOpType::activate) {
-    if (snode->type == SNodeType::pointer || snode->type == SNodeType::hash ||
-        snode->type == SNodeType::bitmasked) {
-      llvm_val[stmt] =
-          call(snode, llvm_val[stmt->ptr], "activate", {llvm_val[stmt->val]});
+    llvm_val[stmt] =
+        call(snode, llvm_val[stmt->ptr], "activate", {llvm_val[stmt->val]});
   } else if (stmt->op_type == SNodeOpType::deactivate) {
     if (snode->type == SNodeType::pointer || snode->type == SNodeType::hash ||
         snode->type == SNodeType::bitmasked) {

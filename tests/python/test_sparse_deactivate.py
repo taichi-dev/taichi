@@ -9,7 +9,8 @@ def test_pointer():
     n = 16
 
     ptr = ti.root.pointer(ti.i, n)
-    ptr.dense(ti.i, n).place(x)
+    den = ptr.dense(ti.i, n)
+    den.place(x)
     ti.root.place(s)
 
     s[None] = 0
@@ -32,6 +33,41 @@ def test_pointer():
     s[None] = 0
     func()
     assert s[None] == 16
+
+
+@ti.archs_support_sparse
+def test_pointer1():
+    x = ti.var(ti.f32)
+    s = ti.var(ti.i32)
+
+    n = 16
+
+    ptr = ti.root.pointer(ti.i, n)
+    ptr.dense(ti.i, n).place(x)
+    ti.root.place(s)
+
+    s[None] = 0
+
+    @ti.kernel
+    def func():
+        for i in x:
+            s[None] += 1
+
+    x[0] = 1
+    x[19] = 1
+    x[20] = 1
+    x[45] = 1
+    func()
+    assert s[None] == 48
+
+    @ti.kernel
+    def deactivate():
+        ti.deactivate(ptr, 4)
+
+    deactivate()
+    s[None] = 0
+    func()
+    assert s[None] == 32
 
 
 @ti.archs_support_sparse

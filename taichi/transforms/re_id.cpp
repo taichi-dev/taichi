@@ -8,6 +8,8 @@ TLANG_NAMESPACE_BEGIN
 // starting from 0
 class ReId : public BasicStmtVisitor {
  public:
+  using BasicStmtVisitor::visit;
+
   int id_counter;
 
   ReId() : id_counter(0) {

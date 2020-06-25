@@ -4,9 +4,8 @@
 #include <cuda_runtime.h>
 #include "get_time.h"
 
-__inline__ __device__
-int warpReduceSum(int val) {
-  for (int offset = warpSize/2; offset > 0; offset /= 2)
+__inline__ __device__ int warpReduceSum(int val) {
+  for (int offset = warpSize / 2; offset > 0; offset /= 2)
     val += __shfl_down_sync(val, offset, 0xFFFFFFFF);
   return val;
 }

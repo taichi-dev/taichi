@@ -8,10 +8,12 @@ TLANG_NAMESPACE_BEGIN
 CFGNode::CFGNode(Block *block,
                  int begin_location,
                  int end_location,
+                 bool is_parallel_executed,
                  CFGNode *prev_node_in_same_block)
     : block(block),
       begin_location(begin_location),
       end_location(end_location),
+      is_parallel_executed(is_parallel_executed),
       prev_node_in_same_block(prev_node_in_same_block),
       next_node_in_same_block(nullptr) {
   if (prev_node_in_same_block != nullptr)
@@ -26,6 +28,9 @@ CFGNode::CFGNode(Block *block,
       parent_blocks.insert(parent_block);
     }
   }
+}
+
+CFGNode::CFGNode() : CFGNode(nullptr, -1, -1, false, nullptr) {
 }
 
 void CFGNode::add_edge(CFGNode *from, CFGNode *to) {
@@ -240,6 +245,7 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access) {
         // special case of alloca (initialized to 0)
         auto zero =
             Stmt::make<ConstStmt>(TypedConstant(result->ret_type.data_type, 0));
+        zero->repeat(result->width());
         replace_with(i, std::move(zero), true);
       } else {
         stmt->replace_with(result);
@@ -306,24 +312,41 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
       if (!after_lower_access ||
           (store_ptr->is<AllocaStmt>() || store_ptr->is<StackAllocaStmt>())) {
         // After lower_access, we only analyze local variables and stacks.
+        // Do not eliminate AllocaStmt here.
         if (!stmt->is<AllocaStmt>() && !contain_variable(live_out, store_ptr) &&
             !contain_variable(live_in_this_node, store_ptr)) {
           // Neither used in other nodes nor used in this node.
           if (auto atomic = stmt->cast<AtomicOpStmt>()) {
+            // Weaken the atomic operation to a load.
             if (atomic->dest->is<AllocaStmt>()) {
               auto local_load =
                   Stmt::make<LocalLoadStmt>(LocalAddress(atomic->dest, 0));
+              local_load->ret_type = atomic->ret_type;
               replace_with(i, std::move(local_load), true);
-            } else {
+              // Notice that we have a load here.
+              live_in_this_node.insert(atomic->dest);
+              modified = true;
+              continue;
+            } else if (!is_parallel_executed) {
+              // If this node is parallel executed, we can't weaken a global
+              // atomic operation to a global load.
+              // TODO: analyze if atomic->dest is never accessed by other
+              //  threads.
               auto global_load = Stmt::make<GlobalLoadStmt>(atomic->dest);
+              global_load->ret_type = atomic->ret_type;
               replace_with(i, std::move(global_load), true);
+              // Notice that we have a load here.
+              live_in_this_node.insert(atomic->dest);
+              modified = true;
+              continue;
             }
           } else {
             erase(i);
+            modified = true;
+            continue;
           }
-          modified = true;
-          continue;
         } else {
+          // A non-eliminated store.
           live_in_this_node.erase(store_ptr);
         }
       }

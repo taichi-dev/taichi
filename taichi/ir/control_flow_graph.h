@@ -15,6 +15,9 @@ class CFGNode {
   // for i in [begin_location, end_location).
   Block *block;
   int begin_location, end_location;
+  // Is this node in an offloaded range_for/struct_for?
+  bool is_parallel_executed;
+
   // For updating begin/end locations when modifying the block.
   CFGNode *prev_node_in_same_block;
   CFGNode *next_node_in_same_block;
@@ -33,7 +36,11 @@ class CFGNode {
   CFGNode(Block *block,
           int begin_location,
           int end_location,
-          CFGNode *prev_node_in_same_block = nullptr);
+          bool is_parallel_executed,
+          CFGNode *prev_node_in_same_block);
+
+  // An empty node
+  CFGNode();
 
   static void add_edge(CFGNode *from, CFGNode *to);
   bool empty() const;

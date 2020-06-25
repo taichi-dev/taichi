@@ -512,14 +512,15 @@ class Matrix(TaichiOperations):
     def loop_range(self):
         return self.entries[0]
 
-    def dim(self):
-        return self.loop_range().dim()
-
     @property
     def shape(self):
         # Took `self.entries[0]` as a representation of this tensor-of-matrices.
         # https://github.com/taichi-dev/taichi/issues/1069#issuecomment-635712140
         return self.loop_range().shape
+
+    @deprecated('x.dim()', 'len(x.shape)')
+    def dim(self):
+        return len(self.shape)
 
     def data_type(self):
         return self.loop_range().data_type()
@@ -649,14 +650,14 @@ class Matrix(TaichiOperations):
 
     @python_scope
     def from_numpy(self, ndarray):
-        if len(ndarray.shape) == self.loop_range().dim() + 1:
+        if len(ndarray.shape) == len(self.loop_range().shape) + 1:
             as_vector = True
             assert self.m == 1, "This matrix is not a vector"
         else:
             as_vector = False
-            assert len(ndarray.shape) == self.loop_range().dim() + 2
+            assert len(ndarray.shape) == len(self.loop_range().shape) + 2
         dim_ext = 1 if as_vector else 2
-        assert len(ndarray.shape) == self.loop_range().dim() + dim_ext
+        assert len(ndarray.shape) == len(self.loop_range().shape) + dim_ext
         from .meta import ext_arr_to_matrix
         ext_arr_to_matrix(ndarray, self, as_vector)
         import taichi as ti

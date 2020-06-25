@@ -42,7 +42,7 @@ class Expr(TaichiOperations):
             key = ()
         if not isinstance(key, (tuple, list)):
             key = (key, )
-        assert len(key) == self.dim()
+        assert len(key) == len(self.shape)
         key = key + ((0, ) *
                      (taichi_lang_core.get_max_num_indices() - len(key)))
         self.setter(value, *key)
@@ -127,12 +127,13 @@ class Expr(TaichiOperations):
     def __hash__(self):
         return self.ptr.get_raw_address()
 
-    def dim(self):
-        return self.snode().dim()
-
     @property
     def shape(self):
         return self.snode().shape
+
+    @deprecated('x.dim()', 'len(x.shape)')
+    def dim(self):
+        return len(self.shape)
 
     def data_type(self):
         return self.snode().data_type()
@@ -162,9 +163,9 @@ class Expr(TaichiOperations):
 
     @python_scope
     def from_numpy(self, arr):
-        assert self.dim() == len(arr.shape)
+        assert len(self.shape) == len(arr.shape)
         s = self.shape
-        for i in range(self.dim()):
+        for i in range(len(self.shape)):
             assert s[i] == arr.shape[i]
         from .meta import ext_arr_to_tensor
         if hasattr(arr, 'contiguous'):
@@ -181,7 +182,7 @@ class Expr(TaichiOperations):
     def copy_from(self, other):
         assert isinstance(other, Expr)
         from .meta import tensor_to_tensor
-        assert self.dim() == other.dim()
+        assert len(self.shape) == len(other.shape)
         tensor_to_tensor(self, other)
 
 

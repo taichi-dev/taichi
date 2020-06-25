@@ -523,8 +523,7 @@ void ControlFlowGraph::live_variable_analysis(bool after_lower_access) {
         auto stmt = nodes[i]->block->statements[j].get();
         auto store_ptr = irpass::analysis::get_store_destination(stmt);
         if (store_ptr && !store_ptr->is<AllocaStmt>() &&
-            !store_ptr->is<StackAllocaStmt>() &&
-            !store_ptr->is<GlobalTemporaryStmt>()) {
+            !store_ptr->is<StackAllocaStmt>()) {
           // A global pointer that may be loaded after this kernel.
           nodes[end_node]->live_gen.insert(store_ptr);
         }
@@ -642,7 +641,6 @@ bool ControlFlowGraph::store_to_load_forwarding(bool after_lower_access) {
 bool ControlFlowGraph::dead_store_elimination(bool after_lower_access) {
   TI_AUTO_PROF;
   live_variable_analysis(after_lower_access);
-  print_graph_structure();
   const int num_nodes = size();
   bool modified = false;
   for (int i = 0; i < num_nodes; i++) {

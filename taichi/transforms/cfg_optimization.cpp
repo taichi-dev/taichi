@@ -19,6 +19,8 @@ void cfg_optimization(IRNode *root, bool after_lower_access) {
     if (!modified)
       break;
   }
+  // TODO: implement cfg->dead_instruction_elimination()
+  die(root);  // remove unused allocas
 }
 }  // namespace irpass
 

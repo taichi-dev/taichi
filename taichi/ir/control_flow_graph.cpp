@@ -76,23 +76,6 @@ void CFGNode::replace_with(int location,
                       replace_usages);
 }
 
-bool CFGNode::erase_entire_node() {
-  if (empty())
-    return false;
-  int node_size = end_location - begin_location;
-  for (int location = end_location - 1; location >= begin_location;
-       location--) {
-    block->erase(location);
-  }
-  end_location -= node_size;  // become empty
-  for (auto node = next_node_in_same_block; node != nullptr;
-       node = node->next_node_in_same_block) {
-    node->begin_location -= node_size;
-    node->end_location -= node_size;
-  }
-  return true;
-}
-
 bool CFGNode::contain_variable(const std::unordered_set<Stmt *> &var_set,
                                Stmt *var) {
   if (var->is<AllocaStmt>() || var->is<StackAllocaStmt>()) {
@@ -330,8 +313,8 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
             } else if (!is_parallel_executed) {
               // If this node is parallel executed, we can't weaken a global
               // atomic operation to a global load.
-              // TODO: analyze if atomic->dest is never accessed by other
-              //  threads.
+              // TODO: we can weaken it if it's element-wise (i.e. never
+              //  accessed by other threads).
               auto global_load = Stmt::make<GlobalLoadStmt>(atomic->dest);
               global_load->ret_type = atomic->ret_type;
               replace_with(i, std::move(global_load), true);
@@ -432,20 +415,6 @@ void ControlFlowGraph::print_graph_structure() const {
       }
       node_info += fmt::format("; next={{{}}}", fmt::join(indices, ", "));
     }
-    if (!nodes[i]->live_in.empty()) {
-      std::vector<std::string> indices;
-      for (auto stmt : nodes[i]->live_in) {
-        indices.push_back(stmt->name());
-      }
-      node_info += fmt::format("; live_in={{{}}}", fmt::join(indices, ", "));
-    }
-    if (!nodes[i]->live_out.empty()) {
-      std::vector<std::string> indices;
-      for (auto stmt : nodes[i]->live_out) {
-        indices.push_back(stmt->name());
-      }
-      node_info += fmt::format("; live_out={{{}}}", fmt::join(indices, ", "));
-    }
     std::cout << node_info << std::endl;
   }
 }
@@ -465,8 +434,8 @@ void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
                 nodes[i]->block->statements[j]->cast<GlobalLoadStmt>()) {
           nodes[start_node]->reach_gen.insert(global_load->ptr);
         }
-        // Since we only do store-to-load forwarding, we don't need to mark the
-        // start node as data sources of other global pointers.
+        // Since we only do store-to-load forwarding, we don't need to mark
+        // other global pointers' data source at the start node.
       }
     }
   }
@@ -514,9 +483,9 @@ void ControlFlowGraph::live_variable_analysis(bool after_lower_access) {
   const int num_nodes = size();
   std::queue<CFGNode *> to_visit;
   std::unordered_map<CFGNode *, bool> in_queue;
-  TI_ASSERT(nodes[end_node]->empty());
-  nodes[end_node]->live_gen.clear();
-  nodes[end_node]->live_kill.clear();
+  TI_ASSERT(nodes[final_node]->empty());
+  nodes[final_node]->live_gen.clear();
+  nodes[final_node]->live_kill.clear();
   if (!after_lower_access) {
     for (int i = 0; i < num_nodes; i++) {
       for (int j = nodes[i]->begin_location; j < nodes[i]->end_location; j++) {
@@ -525,13 +494,14 @@ void ControlFlowGraph::live_variable_analysis(bool after_lower_access) {
         if (store_ptr && !store_ptr->is<AllocaStmt>() &&
             !store_ptr->is<StackAllocaStmt>()) {
           // A global pointer that may be loaded after this kernel.
-          nodes[end_node]->live_gen.insert(store_ptr);
+          nodes[final_node]->live_gen.insert(store_ptr);
         }
       }
     }
   }
   for (int i = num_nodes - 1; i >= 0; i--) {
-    if (i != end_node) {
+    // push into the queue in reversed order to make it slightly faster
+    if (i != final_node) {
       nodes[i]->live_variable_analysis(after_lower_access);
     }
     nodes[i]->live_out.clear();
@@ -574,7 +544,7 @@ void ControlFlowGraph::simplify_graph() {
   while (true) {
     bool modified = false;
     for (int i = 0; i < num_nodes; i++) {
-      if (nodes[i] && nodes[i]->empty() && i != start_node && i != end_node &&
+      if (nodes[i] && nodes[i]->empty() && i != start_node && i != final_node &&
           (nodes[i]->prev.size() <= 1 || nodes[i]->next.size() <= 1)) {
         erase(i);
         modified = true;
@@ -589,8 +559,8 @@ void ControlFlowGraph::simplify_graph() {
       if (i != new_num_nodes) {
         nodes[new_num_nodes] = std::move(nodes[i]);
       }
-      if (end_node == i) {
-        end_node = new_num_nodes;
+      if (final_node == i) {
+        final_node = new_num_nodes;
       }
       new_num_nodes++;
     }
@@ -619,8 +589,11 @@ bool ControlFlowGraph::unreachable_code_elimination() {
   for (auto &node : nodes) {
     if (visited.find(node.get()) == visited.end()) {
       // unreachable
-      if (node->erase_entire_node())
+      if (!node->empty()) {
+        while (!node->empty())
+          node->erase(node->end_location - 1);
         modified = true;
+      }
     }
   }
   return modified;

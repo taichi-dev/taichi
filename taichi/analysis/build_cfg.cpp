@@ -186,7 +186,7 @@ class CFGBuilder : public IRVisitor {
     }
     current_stmt_id = block->size();
     new_node(-1);  // Each block has a deterministic last node.
-    graph->end_node = (int)graph->size() - 1;
+    graph->final_node = (int)graph->size() - 1;
 
     current_block = backup_block;
     last_node_in_current_block = backup_last_node;
@@ -196,11 +196,11 @@ class CFGBuilder : public IRVisitor {
   static std::unique_ptr<ControlFlowGraph> run(IRNode *root) {
     CFGBuilder builder;
     root->accept(&builder);
-    if (!builder.graph->nodes[builder.graph->end_node]->empty()) {
+    if (!builder.graph->nodes[builder.graph->final_node]->empty()) {
       builder.graph->push_back();
-      CFGNode::add_edge(builder.graph->nodes[builder.graph->end_node].get(),
+      CFGNode::add_edge(builder.graph->nodes[builder.graph->final_node].get(),
                         builder.graph->back());
-      builder.graph->end_node = (int)builder.graph->size() - 1;
+      builder.graph->final_node = (int)builder.graph->size() - 1;
     }
     return std::move(builder.graph);
   }

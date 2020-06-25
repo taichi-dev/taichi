@@ -50,7 +50,6 @@ class CFGNode {
   void replace_with(int location,
                     std::unique_ptr<Stmt> &&new_stmt,
                     bool replace_usages = true);
-  bool erase_entire_node();
 
   static bool contain_variable(const std::unordered_set<Stmt *> &var_set,
                                Stmt *var);
@@ -71,7 +70,7 @@ class ControlFlowGraph {
  public:
   std::vector<std::unique_ptr<CFGNode>> nodes;
   const int start_node = 0;
-  int end_node{0};
+  int final_node{0};
 
   template <typename... Args>
   CFGNode *push_back(Args &&... args) {

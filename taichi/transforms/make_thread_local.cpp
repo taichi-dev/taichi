@@ -80,16 +80,27 @@ void make_thread_local_offload(OffloadedStmt *offload) {
 
   std::size_t tls_offset = 0;
 
+  // TODO: sort thread local storage variables according to dtype_size to
+  // reduce buffer fragmentation.
   for (auto dest : valid_reduction_values) {
     auto data_type = dest->ret_type.data_type;
+    auto dtype_size = data_type_size(data_type);
     // Step 1:
     // Create thread local storage
     {
       if (offload->prologue == nullptr) {
         offload->prologue = std::make_unique<Block>();
       }
+
+      // ensure alignment
+      tls_offset += (dtype_size - tls_offset % dtype_size) % dtype_size;
+
       auto tls_ptr = offload->prologue->push_back<ThreadLocalPtrStmt>(
           tls_offset, VectorType(1, data_type));
+
+      // allocate storage for the TLS variable
+      tls_offset += dtype_size;
+
       auto zero = offload->prologue->insert(
           std::make_unique<ConstStmt>(TypedConstant(data_type, 0)), -1);
       // Zero-fill
@@ -123,14 +134,6 @@ void make_thread_local_offload(OffloadedStmt *offload) {
       offload->epilogue->push_back<AtomicOpStmt>(AtomicOpType::add, global_ptr,
                                                  tls_load);
     }
-    auto dtype_size = data_type_size(data_type);
-    // TODO: sort thread local storage variables according to dtype_size to
-    // reduce buffer fragmentation.
-
-    // ensure alignment
-    tls_offset += (dtype_size - tls_offset % dtype_size) % dtype_size;
-    // allocate the variable
-    tls_offset += dtype_size;
   }
   offload->tls_size = tls_offset;
 }

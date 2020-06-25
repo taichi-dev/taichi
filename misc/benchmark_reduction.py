@@ -2,7 +2,7 @@ import taichi as ti
 
 # TODO: make this a real benchmark and set up regression
 
-ti.init(print_ir=True, print_kernel_llvm_ir=True, kernel_profiler=True, arch=ti.gpu, print_kernel_llvm_ir_optimized=True)
+ti.init(arch=ti.gpu, print_ir=True, print_kernel_llvm_ir=True, kernel_profiler=True, print_kernel_llvm_ir_optimized=True)
 # ti.init(kernel_profiler=True)
 # ti.core.toggle_advanced_optimization(False)
 

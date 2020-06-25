@@ -1038,7 +1038,7 @@ struct range_task_helper_context {
   range_for_xlogue prologue{nullptr};
   RangeForTaskFunc *body{nullptr};
   range_for_xlogue epilogue{nullptr};
-  std::size_t tls_size{1};  // avoid allocating dynamic memory with 0 bytes
+  std::size_t tls_size{1};
   int begin;
   int end;
   int block_size;

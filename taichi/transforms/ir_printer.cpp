@@ -543,7 +543,7 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(StackPushStmt *stmt) override {
-    print("{}{} = stack push {}, val = {}", stmt->type_hint(), stmt->name(),
+    print("{}{} : stack push {}, val = {}", stmt->type_hint(), stmt->name(),
           stmt->stack->name(), stmt->v->name());
   }
 

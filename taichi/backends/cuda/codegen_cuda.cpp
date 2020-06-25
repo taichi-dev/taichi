@@ -392,7 +392,8 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     auto [begin, end] = get_range_for_bounds(stmt);
 
     create_call("gpu_parallel_range_for",
-                {get_arg(0), begin, end, prologue, body, epilogue});
+                {get_arg(0), begin, end, prologue, body, epilogue,
+                 tlctx->get_constant(stmt->tls_size)});
   }
 
   void emit_cuda_gc(OffloadedStmt *stmt) {

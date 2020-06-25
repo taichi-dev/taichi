@@ -21,7 +21,7 @@ def fill():
 
 @ti.kernel
 def reduce():
-    ti.block_dim(256)
+    ti.block_dim(1024)
     for i in a:
         tot[None] += a[i]
 

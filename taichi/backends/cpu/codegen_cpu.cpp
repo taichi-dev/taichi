@@ -65,7 +65,7 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
         "cpu_parallel_range_for",
         {get_arg(0), tlctx->get_constant(stmt->num_cpu_threads), begin, end,
          tlctx->get_constant(step), tlctx->get_constant(stmt->block_dim),
-         prologue, body, epilogue});
+         prologue, body, epilogue, tlctx->get_constant(stmt->tls_size)});
   }
 
   void visit(OffloadedStmt *stmt) override {

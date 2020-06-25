@@ -15,7 +15,6 @@ constexpr std::size_t taichi_result_buffer_entries = 32;
 constexpr std::size_t taichi_result_buffer_ret_value_id = 0;
 // slot for error code and error message char *
 constexpr std::size_t taichi_result_buffer_error_id = 1;
-constexpr std::size_t taichi_tls_buffer_size = 8;
 
 template <typename T, typename G>
 T taichi_union_cast_with_different_sizes(G g) {

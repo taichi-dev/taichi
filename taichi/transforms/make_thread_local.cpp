@@ -78,10 +78,6 @@ void make_thread_local_offload(OffloadedStmt *offload) {
     }
   }
 
-  // We use 8 here (instead of sizeof(data_type) for TLS variable alignment
-  // (sizeof(f64) = 8).
-  constexpr std::size_t tls_stride = 8;
-
   std::size_t tls_offset = 0;
 
   for (auto dest : valid_reduction_values) {
@@ -127,10 +123,16 @@ void make_thread_local_offload(OffloadedStmt *offload) {
       offload->epilogue->push_back<AtomicOpStmt>(AtomicOpType::add, global_ptr,
                                                  tls_load);
     }
-    tls_offset += tls_stride;
-    if (tls_offset >= taichi_tls_buffer_size)
-      break;  // Do not overflow TLS buffer.  TODO: make it adaptive
+    auto dtype_size = data_type_size(data_type);
+    // TODO: sort thread local storage variables according to dtype_size to
+    // reduce buffer fragmentation.
+
+    // ensure alignment
+    tls_offset += (dtype_size - tls_offset % dtype_size) % dtype_size;
+    // allocate the variable
+    tls_offset += dtype_size;
   }
+  offload->tls_size = tls_offset;
 }
 
 }  // namespace

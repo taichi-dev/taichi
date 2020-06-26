@@ -2,7 +2,12 @@ import numpy as np
 import taichi as ti
 
 
-def imcook(img):
+def cook_image_to_bytes(img):
+    """
+    Takes a NumPy array or Taichi tensor of any type.
+    Returns a NumPy array of uint8.
+    This is used by ti.imwrite and ti.imdisplay.
+    """
     if not isinstance(img, np.ndarray):
         img = img.to_numpy()
 
@@ -29,21 +34,24 @@ def imdisplay(img):
     """
     Try to display image in interactive shell.
     """
-    if ti.lang.shell.oinspect.name.startswith('IPython'):
+    if ti.lang.shell.oinspect.name == ti.lang.shell.JUPYTER:
         import PIL.Image
         from io import BytesIO
         import IPython.display
         import numpy as np
-        img = imcook(img)
-        f = BytesIO()
-        PIL.Image.fromarray(img).save(f, 'png')
-        IPython.display.display(IPython.display.Image(data=f.getvalue()))
+        img = cook_image_to_bytes(img)
+        with BytesIO() as f:
+            PIL.Image.fromarray(img).save(f, 'png')
+            IPython.display.display(IPython.display.Image(data=f.getvalue()))
     else:
         ti.imshow(img)
 
 
 def imwrite(img, filename):
-    img = imcook(img)
+    """
+    Save image to a specific file.
+    """
+    img = cook_image_to_bytes(img)
     img = np.ascontiguousarray(img)
     ptr = img.ctypes.data
     resy, resx, comp = img.shape
@@ -51,6 +59,9 @@ def imwrite(img, filename):
 
 
 def imread(filename, channels=0):
+    """
+    Load image from a specific file.
+    """
     ptr, resx, resy, comp = ti.core.imread(filename, channels)
     img = np.ndarray(shape=(resy, resx, comp), dtype=np.uint8)
     img = np.ascontiguousarray(img)
@@ -61,6 +72,9 @@ def imread(filename, channels=0):
 
 
 def imshow(img, window_name='Taichi'):
+    """
+    Show image in a Taichi GUI.
+    """
     if not isinstance(img, np.ndarray):
         img = img.to_numpy()
     assert len(img.shape) in [2,

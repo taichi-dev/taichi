@@ -79,10 +79,6 @@ class KernelCodegen : public IRVisitor {
       Section::Kernels,
   };
 
-  struct UsedFeatures {
-    bool runtime_list_ops = false;
-  };
-
  public:
   // TODO(k-ye): Create a Params to hold these ctor params.
   KernelCodegen(const std::string &mtl_kernel_prefix,

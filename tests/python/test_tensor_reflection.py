@@ -110,6 +110,7 @@ def test_deprecated():
     assert blk3.dim() == 3
     assert blk3.shape() == (n, m, p)
 
+
 @ti.all_archs
 def test_parent_exceeded():
     val = ti.var(ti.f32)

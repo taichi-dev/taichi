@@ -75,8 +75,7 @@ class SNode:
     def shape(self):
         impl.get_runtime().try_materialize()
         dim = self.ptr.num_active_indices()
-        ret = [
-            self.ptr.get_num_elements_along_axis(i) for i in range(dim)]
+        ret = [self.ptr.get_num_elements_along_axis(i) for i in range(dim)]
 
         class callable_tuple(tuple):
             @deprecated('x.shape()', 'x.shape')

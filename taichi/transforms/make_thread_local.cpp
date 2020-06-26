@@ -136,7 +136,7 @@ void make_thread_local_offload(OffloadedStmt *offload) {
     tls_offset += dtype_size;
   }
 
-  offload->tls_size = tls_offset;
+  offload->tls_size = std::max(std::size_t(1), tls_offset);
 }
 
 }  // namespace

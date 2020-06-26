@@ -34,7 +34,7 @@ def imdisplay(img):
     """
     Try to display image in interactive shell.
     """
-    if ti.lang.shell.oinspect.name == ti.lang.shell.JUPYTER:
+    if ti.lang.shell.oinspect.name == ti.lang.shell.ShellType.JUPYTER:
         import PIL.Image
         from io import BytesIO
         import IPython.display

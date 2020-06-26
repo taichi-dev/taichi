@@ -125,6 +125,9 @@ class Matrix(TaichiOperations):
                                                              offset=offset)
         else:
             assert offset is None, f"shape cannot be None when offset is being set"
+            
+        if impl.inside_kernel():
+            self.entries = list(map(impl.expr_init, self.entries))
 
     def is_global(self):
         results = [False for _ in self.entries]
@@ -538,7 +541,7 @@ class Matrix(TaichiOperations):
     def norm(self, l=2, eps=0):
         import taichi as ti
         assert l == 2
-        return ti.sqrt(self.norm_sqr() + eps)
+        return ti.expr_init(ti.sqrt(self.norm_sqr() + eps))
 
     def norm_inv(self, l=2, eps=0):
         import taichi as ti
@@ -546,7 +549,8 @@ class Matrix(TaichiOperations):
         return ti.rsqrt(self.norm_sqr() + eps)
 
     def norm_sqr(self):
-        return (self**2).sum()
+        import taichi as ti
+        return ti.expr_init((self**2).sum())
 
     def max(self):
         import taichi as ti

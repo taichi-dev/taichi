@@ -208,4 +208,6 @@ Use ``ti.static_assert``
 
 TODO:
 
-1. add ``ti.static_assert`` and documeted it: what is ``ti.static_print`` exactly?
+1. what do we want ``ti.static_print`` exactly?
+
+2. add ``ti.static_assert`` and documeted it.

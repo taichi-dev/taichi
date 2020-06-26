@@ -512,13 +512,15 @@ class Matrix(TaichiOperations):
     def loop_range(self):
         return self.entries[0]
 
+    @property
     def shape(self):
         # Took `self.entries[0]` as a representation of this tensor-of-matrices.
         # https://github.com/taichi-dev/taichi/issues/1069#issuecomment-635712140
-        return self.loop_range().shape()
+        return self.loop_range().shape
 
+    @deprecated('x.dim()', 'len(x.shape)')
     def dim(self):
-        return self.loop_range().dim()
+        return len(self.shape)
 
     def data_type(self):
         return self.loop_range().data_type()
@@ -622,7 +624,7 @@ class Matrix(TaichiOperations):
         if not self.is_global():
             return np.array(self.entries).reshape(shape_ext)
 
-        ret = np.empty(self.loop_range().shape() + shape_ext,
+        ret = np.empty(self.loop_range().shape + shape_ext,
                        dtype=to_numpy_type(
                            self.loop_range().snode().data_type()))
         from .meta import matrix_to_ext_arr
@@ -636,7 +638,7 @@ class Matrix(TaichiOperations):
         import torch
         as_vector = self.m == 1 and not keep_dims
         shape_ext = (self.n, ) if as_vector else (self.n, self.m)
-        ret = torch.empty(self.loop_range().shape() + shape_ext,
+        ret = torch.empty(self.loop_range().shape + shape_ext,
                           dtype=to_pytorch_type(
                               self.loop_range().snode().data_type()),
                           device=device)
@@ -648,14 +650,14 @@ class Matrix(TaichiOperations):
 
     @python_scope
     def from_numpy(self, ndarray):
-        if len(ndarray.shape) == self.loop_range().dim() + 1:
+        if len(ndarray.shape) == len(self.loop_range().shape) + 1:
             as_vector = True
             assert self.m == 1, "This matrix is not a vector"
         else:
             as_vector = False
-            assert len(ndarray.shape) == self.loop_range().dim() + 2
+            assert len(ndarray.shape) == len(self.loop_range().shape) + 2
         dim_ext = 1 if as_vector else 2
-        assert len(ndarray.shape) == self.loop_range().dim() + dim_ext
+        assert len(ndarray.shape) == len(self.loop_range().shape) + dim_ext
         from .meta import ext_arr_to_matrix
         ext_arr_to_matrix(ndarray, self, as_vector)
         import taichi as ti

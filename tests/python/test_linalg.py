@@ -305,7 +305,7 @@ def test_init_matrix_from_vectors():
             assert m4[0][j, i] == int(i + 3 * j + 1)
 
 
-# Remove this once the apis are fully deprecated in incoming version.
+# TODO: Remove this once the apis are fully deprecated in incoming version.
 @pytest.mark.filterwarnings('ignore')
 @ti.host_arch_only
 def test_init_matrix_from_vectors_deprecated():

@@ -15,7 +15,7 @@ Compilation
 
 - Disable advanced optimization to save compile time & possible erros: ``ti.core.toggle_advanced_optimization(False)`` or ``export TI_ADVANCED_OPTIMIZATION=0``.
 - To print intermediate IR generated: ``export TI_PRINT_IR=1`` or ``ti.init(print_ir=True)``.
-- To print preprocessed Python code: ``export TI_PRINT_PREPROCESSED=1`` or ``ti.init(print_preprocessed=True)``..
+- To print preprocessed Python code: ``export TI_PRINT_PREPROCESSED=1`` or ``ti.init(print_preprocessed=True)``.
 
 Runtime
 *******

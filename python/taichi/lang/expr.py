@@ -42,7 +42,7 @@ class Expr(TaichiOperations):
             key = ()
         if not isinstance(key, (tuple, list)):
             key = (key, )
-        assert len(key) == self.dim()
+        assert len(key) == len(self.shape)
         key = key + ((0, ) *
                      (taichi_lang_core.get_max_num_indices() - len(key)))
         self.setter(value, *key)
@@ -114,6 +114,7 @@ class Expr(TaichiOperations):
         from .meta import fill_tensor
         fill_tensor(self, val)
 
+    @deprecated('tensor.parent()', 'tensor.snode().parent()')
     def parent(self, n=1):
         import taichi as ti
         p = self.snode().parent(n)
@@ -126,13 +127,13 @@ class Expr(TaichiOperations):
     def __hash__(self):
         return self.ptr.get_raw_address()
 
-    def dim(self):
-        impl.get_runtime().try_materialize()
-        return self.snode().dim()
-
+    @property
     def shape(self):
-        impl.get_runtime().try_materialize()
-        return self.snode().shape()
+        return self.snode().shape
+
+    @deprecated('x.dim()', 'len(x.shape)')
+    def dim(self):
+        return len(self.shape)
 
     def data_type(self):
         return self.snode().data_type()
@@ -141,7 +142,7 @@ class Expr(TaichiOperations):
     def to_numpy(self):
         from .meta import tensor_to_ext_arr
         import numpy as np
-        arr = np.zeros(shape=self.shape(),
+        arr = np.zeros(shape=self.shape,
                        dtype=to_numpy_type(self.snode().data_type()))
         tensor_to_ext_arr(self, arr)
         import taichi as ti
@@ -152,7 +153,7 @@ class Expr(TaichiOperations):
     def to_torch(self, device=None):
         from .meta import tensor_to_ext_arr
         import torch
-        arr = torch.zeros(size=self.shape(),
+        arr = torch.zeros(size=self.shape,
                           dtype=to_pytorch_type(self.snode().data_type()),
                           device=device)
         tensor_to_ext_arr(self, arr)
@@ -162,9 +163,9 @@ class Expr(TaichiOperations):
 
     @python_scope
     def from_numpy(self, arr):
-        assert self.dim() == len(arr.shape)
-        s = self.shape()
-        for i in range(self.dim()):
+        assert len(self.shape) == len(arr.shape)
+        s = self.shape
+        for i in range(len(self.shape)):
             assert s[i] == arr.shape[i]
         from .meta import ext_arr_to_tensor
         if hasattr(arr, 'contiguous'):
@@ -181,7 +182,7 @@ class Expr(TaichiOperations):
     def copy_from(self, other):
         assert isinstance(other, Expr)
         from .meta import tensor_to_tensor
-        assert self.dim() == other.dim()
+        assert len(self.shape) == len(other.shape)
         tensor_to_tensor(self, other)
 
 

@@ -26,8 +26,9 @@ namespace metal {
 
 namespace {
 namespace shaders {
+#include "taichi/backends/metal/shaders/print.metal.h"
 #include "taichi/backends/metal/shaders/runtime_utils.metal.h"
-}
+}  // namespace shaders
 
 using KernelTaskType = OffloadedStmt::TaskType;
 using BufferEnum = KernelAttributes::Buffers;
@@ -433,7 +434,15 @@ class KernelManager::Impl {
         runtime_buffer_ != nullptr,
         "Failed to allocate Metal runtime buffer, requested {} bytes",
         runtime_mem_->size());
+    print_mem_ = std::make_unique<BufferMemoryView>(
+        sizeof(shaders::PrintMsgAllocator) + shaders::kMetalPrintBufferSize,
+        mem_pool_);
+    print_buffer_ = new_mtl_buffer_no_copy(device_.get(), print_mem_->ptr(),
+                                           print_mem_->size());
+    TI_ASSERT(print_buffer_ != nullptr);
+
     init_runtime(params.root_id);
+    init_print_buffer();
   }
 
   void register_taichi_kernel(
@@ -477,20 +486,30 @@ class KernelManager::Impl {
         {BufferEnum::Root, root_buffer_.get()},
         {BufferEnum::GlobalTmps, global_tmps_buffer_.get()},
         {BufferEnum::Runtime, runtime_buffer_.get()},
+        {BufferEnum::Print, print_buffer_.get()},
     };
     if (ctx_blitter) {
       ctx_blitter->host_to_metal();
       input_buffers[BufferEnum::Context] = ctk.ctx_buffer.get();
     }
+
+    bool uses_print = false;
     for (const auto &mk : ctk.compiled_mtl_kernels) {
       mk->launch(input_buffers, cur_command_buffer_.get());
+      uses_print = (uses_print || mk->kernel_attribs()->uses_print);
     }
-    if (ctx_blitter) {
+
+    if (ctx_blitter || uses_print) {
       // TODO(k-ye): One optimization is to synchronize only when we absolutely
       // need to transfer the data back to host. This includes the cases where
       // an arg is 1) an array, or 2) used as return value.
       synchronize();
-      ctx_blitter->metal_to_host();
+      if (ctx_blitter) {
+        ctx_blitter->metal_to_host();
+      }
+      if (uses_print) {
+        flush_print_buffers();
+      }
     }
   }
 
@@ -500,6 +519,10 @@ class KernelManager::Impl {
     wait_until_completed(cur_command_buffer_.get());
     create_new_command_buffer();
     profiler_->stop();
+  }
+
+  PrintStringTable *print_strtable() {
+    return &print_strtable_;
   }
 
  private:
@@ -625,6 +648,47 @@ class KernelManager::Impl {
     }
   }
 
+  void init_print_buffer() {
+    // This includes setting PrintMsgAllocator::next to zero.
+    std::memset(print_mem_->ptr(), 0, print_mem_->size());
+  }
+
+  void flush_print_buffers() {
+    auto *pa =
+        reinterpret_cast<shaders::PrintMsgAllocator *>(print_mem_->ptr());
+    const int used_sz = std::min(pa->next, shaders::kMetalPrintBufferSize);
+    using MsgType = shaders::PrintMsg::Type;
+    char *buf = reinterpret_cast<char *>(pa + 1);
+    const char *buf_end = buf + used_sz;
+
+    while (buf < buf_end) {
+      int32_t *msg_ptr = reinterpret_cast<int32_t *>(buf);
+      const int num_entries = *msg_ptr;
+      ++msg_ptr;
+      shaders::PrintMsg msg(msg_ptr, num_entries);
+      for (int i = 0; i < num_entries; ++i) {
+        const auto dt = msg.pm_get_type(i);
+        const int32_t x = msg.pm_get_data(i);
+        if (dt == MsgType::I32) {
+          std::cout << x;
+        } else if (dt == MsgType::F32) {
+          std::cout << *reinterpret_cast<const float *>(&x);
+        } else if (dt == MsgType::Str) {
+          std::cout << print_strtable_.get(x);
+        } else {
+          TI_ERROR("Unexecpted data type={}", dt);
+        }
+      }
+      buf += shaders::mtl_compute_print_msg_bytes(num_entries);
+    }
+
+    if (pa->next >= shaders::kMetalPrintBufferSize) {
+      std::cout << "...(maximum print buffer reached)\n";
+    }
+
+    pa->next = 0;
+  }
+
   static int compute_num_elems_per_chunk(int n) {
     const int lb =
         (n + shaders::kTaichiNumChunks - 1) / shaders::kTaichiNumChunks;
@@ -662,8 +726,11 @@ class KernelManager::Impl {
   nsobj_unique_ptr<MTLBuffer> global_tmps_buffer_;
   std::unique_ptr<BufferMemoryView> runtime_mem_;
   nsobj_unique_ptr<MTLBuffer> runtime_buffer_;
+  std::unique_ptr<BufferMemoryView> print_mem_;
+  nsobj_unique_ptr<MTLBuffer> print_buffer_;
   std::unordered_map<std::string, std::unique_ptr<CompiledTaichiKernel>>
       compiled_taichi_kernels_;
+  PrintStringTable print_strtable_;
 };
 
 #else
@@ -689,6 +756,11 @@ class KernelManager::Impl {
 
   void synchronize() {
     TI_ERROR("Metal not supported on the current OS");
+  }
+
+  PrintStringTable *print_strtable() {
+    TI_ERROR("Metal not supported on the current OS");
+    return nullptr;
   }
 };
 
@@ -717,6 +789,10 @@ void KernelManager::launch_taichi_kernel(const std::string &taichi_kernel_name,
 
 void KernelManager::synchronize() {
   impl_->synchronize();
+}
+
+PrintStringTable *KernelManager::print_strtable() {
+  return impl_->print_strtable();
 }
 
 }  // namespace metal

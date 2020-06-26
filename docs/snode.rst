@@ -193,7 +193,7 @@ Working with ``dynamic`` SNodes
 
     :parameter snode: (SNode, dynamic)
     :parameter indices: (scalar or tuple of scalars) the ``dynamic`` node indices
-    :return: (scalar) the current size of the dynamic node
+    :return: (int32) the current size of the dynamic node
 
 
 .. function:: ti.append(snode, indices, val)
@@ -201,7 +201,7 @@ Working with ``dynamic`` SNodes
     :parameter snode: (SNode, dynamic)
     :parameter indices: (scalar or tuple of scalars) the ``dynamic`` node indices
     :parameter val: (depends on SNode data type) value to store
-    :return: (``int32``) the size of the dynamic node, before appending
+    :return: (int32) the size of the dynamic node, before appending
 
     Inserts ``val`` into the ``dynamic`` node with indices ``indices``.
 
@@ -216,17 +216,17 @@ For example, a (dense) tensor of size ``(18, 65)`` will be materialized as ``(32
 Indices
 -------
 
-.. function:: ti.i
-.. function:: ti.j
-.. function:: ti.k
-.. function:: ti.ij
-.. function:: ti.ji
-.. function:: ti.jk
-.. function:: ti.kj
-.. function:: ti.ik
-.. function:: ti.ki
-.. function:: ti.ijk
-.. function:: ti.ijkl
+.. attribute:: ti.i
+.. attribute:: ti.j
+.. attribute:: ti.k
+.. attribute:: ti.ij
+.. attribute:: ti.ji
+.. attribute:: ti.jk
+.. attribute:: ti.kj
+.. attribute:: ti.ik
+.. attribute:: ti.ki
+.. attribute:: ti.ijk
+.. attribute:: ti.ijkl
 .. function:: ti.indices(a, b, ...)
 
 (TODO)

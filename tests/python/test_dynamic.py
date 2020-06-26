@@ -2,6 +2,10 @@ import taichi as ti
 
 
 def ti_support_dynamic(test):
+    return ti.all_archs(test)
+
+
+def ti_support_non_top_dynamic(test):
     return ti.archs_excluding(ti.opengl)(test)
 
 
@@ -135,7 +139,7 @@ def test_append_ret_value():
         assert x[i] + 3 == z[i]
 
 
-@ti_support_dynamic
+@ti_support_non_top_dynamic
 def test_dense_dynamic():
     n = 128
     x = ti.var(ti.i32)
@@ -159,7 +163,7 @@ def test_dense_dynamic():
         assert l[i] == n
 
 
-@ti_support_dynamic
+@ti_support_non_top_dynamic
 def test_dense_dynamic_len():
     n = 128
     x = ti.var(ti.i32)

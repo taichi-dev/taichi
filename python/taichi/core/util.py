@@ -30,7 +30,7 @@ def import_ti_core(tmp_dir=None):
     global ti_core
     if get_os_name() != 'win':
         old_flags = sys.getdlopenflags()
-        sys.setdlopenflags(258)  # 258 = RTLD_NOW | RTLD_GLOBAL
+        sys.setdlopenflags(2)    # 2 = RTLD_NOW
     else:
         pyddir = os.path.join(package_root(), 'lib')
         os.environ['PATH'] += ';' + pyddir

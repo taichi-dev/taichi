@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <chrono>
 #include <cstring>
-#include <iostream>
 #include <limits>
 #include <random>
 #include <string_view>
@@ -11,6 +10,7 @@
 #include "taichi/backends/metal/constants.h"
 #include "taichi/inc/constants.h"
 #include "taichi/math/arithmetic.h"
+#include "taichi/python/print_buffer.h"
 
 #ifdef TI_PLATFORM_OSX
 #include <sys/mman.h>
@@ -668,11 +668,11 @@ class KernelManager::Impl {
         const auto dt = msg.pm_get_type(i);
         const int32_t x = msg.pm_get_data(i);
         if (dt == MsgType::I32) {
-          std::cout << x;
+          py_cout << x;
         } else if (dt == MsgType::F32) {
-          std::cout << *reinterpret_cast<const float *>(&x);
+          py_cout << *reinterpret_cast<const float *>(&x);
         } else if (dt == MsgType::Str) {
-          std::cout << print_strtable_.get(x);
+          py_cout << print_strtable_.get(x);
         } else {
           TI_ERROR("Unexecpted data type={}", dt);
         }
@@ -681,7 +681,7 @@ class KernelManager::Impl {
     }
 
     if (pa->next >= shaders::kMetalPrintBufferSize) {
-      std::cout << "...(maximum print buffer reached)\n";
+      py_cout << "...(maximum print buffer reached)\n";
     }
 
     pa->next = 0;

@@ -34,6 +34,21 @@ std::string block_dim_info(int block_dim) {
          (block_dim == 0 ? "adaptive" : std::to_string(block_dim)) + " ";
 }
 
+void erase_last_newline(std::vector<std::string> *contents) {
+  if (contents->empty()) {
+    return;
+  }
+  auto &back = contents->back();
+  const int sz = back.size();
+  if (sz < 2) {
+    return;
+  }
+  if ((back[sz - 2] == '\n') && (back[sz - 1] == '"')) {
+    back.pop_back();
+    back.back() = '"';
+  }
+}
+
 class IRPrinter : public IRVisitor {
  public:
   int current_indent;
@@ -221,6 +236,7 @@ class IRPrinter : public IRVisitor {
         name = "\"" + std::get<std::string>(c) + "\"";
       contents.push_back(name);
     }
+    erase_last_newline(&contents);
     print("print {}", fmt::join(contents, ", "));
   }
 
@@ -234,6 +250,7 @@ class IRPrinter : public IRVisitor {
         name = "\"" + std::get<std::string>(c) + "\"";
       names.push_back(name);
     }
+    erase_last_newline(&names);
     print("print {}", fmt::join(names, ", "));
   }
 

@@ -670,10 +670,16 @@ void CodeGenLLVM::visit(ConstStmt *stmt) {
         llvm::ConstantFP::get(*llvm_context, llvm::APFloat(val.val_float64()));
   } else if (val.dt == DataType::i32) {
     llvm_val[stmt] = llvm::ConstantInt::get(
-        *llvm_context, llvm::APInt(32, val.val_int32(), true));
+        *llvm_context, llvm::APInt(32, (uint64)val.val_int32(), true));
+  } else if (val.dt == DataType::u32) {
+    llvm_val[stmt] = llvm::ConstantInt::get(
+        *llvm_context, llvm::APInt(32, (uint64)val.val_uint32(), false));
   } else if (val.dt == DataType::i64) {
     llvm_val[stmt] = llvm::ConstantInt::get(
-        *llvm_context, llvm::APInt(64, val.val_int64(), true));
+        *llvm_context, llvm::APInt(64, (uint64)val.val_int64(), true));
+  } else if (val.dt == DataType::u64) {
+    llvm_val[stmt] = llvm::ConstantInt::get(
+        *llvm_context, llvm::APInt(64, val.val_uint64(), false));
   } else {
     TI_P(data_type_name(val.dt));
     TI_NOT_IMPLEMENTED;

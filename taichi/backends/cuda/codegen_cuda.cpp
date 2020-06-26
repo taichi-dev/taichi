@@ -354,13 +354,23 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     kernel_grid_dim = saturating_num_blocks;
     kernel_block_dim = loop_block_dim;
 
-    llvm::Function *body;
+    auto xlogue_type = get_xlogue_function_type();
+    auto xlogue_ptr_type = llvm::PointerType::get(xlogue_type, 0);
 
-    auto tls_ptr_type = llvm::Type::getInt8PtrTy(*llvm_context);
+    llvm::Value *prologue = nullptr;
+    if (stmt->prologue) {
+      auto guard = get_function_creation_guard(get_xlogue_argument_types());
+      stmt->prologue->accept(this);
+      prologue = guard.body;
+    } else {
+      prologue = llvm::ConstantPointerNull::get(xlogue_ptr_type);
+    }
+
+    llvm::Function *body;
     {
       auto guard = get_function_creation_guard(
-          {llvm::PointerType::get(get_runtime_type("Context"), 0), tls_ptr_type,
-           tlctx->get_data_type<int>()});
+          {llvm::PointerType::get(get_runtime_type("Context"), 0),
+           get_tls_buffer_type(), tlctx->get_data_type<int>()});
 
       auto loop_var = create_entry_block_alloca(DataType::i32);
       loop_vars_llvm[stmt].push_back(loop_var);
@@ -370,9 +380,20 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       body = guard.body;
     }
 
+    llvm::Value *epilogue = nullptr;
+    if (stmt->epilogue) {
+      auto guard = get_function_creation_guard(get_xlogue_argument_types());
+      stmt->epilogue->accept(this);
+      epilogue = guard.body;
+    } else {
+      epilogue = llvm::ConstantPointerNull::get(xlogue_ptr_type);
+    }
+
     auto [begin, end] = get_range_for_bounds(stmt);
 
-    create_call("gpu_parallel_range_for", {get_arg(0), begin, end, body});
+    create_call("gpu_parallel_range_for",
+                {get_arg(0), begin, end, prologue, body, epilogue,
+                 tlctx->get_constant(stmt->tls_size)});
   }
 
   void emit_cuda_gc(OffloadedStmt *stmt) {

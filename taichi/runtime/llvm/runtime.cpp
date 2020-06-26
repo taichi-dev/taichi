@@ -1038,6 +1038,7 @@ struct range_task_helper_context {
   range_for_xlogue prologue{nullptr};
   RangeForTaskFunc *body{nullptr};
   range_for_xlogue epilogue{nullptr};
+  std::size_t tls_size{1};
   int begin;
   int end;
   int block_size;
@@ -1046,7 +1047,7 @@ struct range_task_helper_context {
 
 void parallel_range_for_task(void *range_context, int task_id) {
   auto ctx = *(range_task_helper_context *)range_context;
-  char tls_buffer[taichi_tls_buffer_size];
+  alignas(8) char tls_buffer[ctx.tls_size];
   auto tls_ptr = &tls_buffer[0];
   if (ctx.prologue)
     ctx.prologue(ctx.context, tls_ptr);
@@ -1075,10 +1076,12 @@ void cpu_parallel_range_for(Context *context,
                             int block_dim,
                             range_for_xlogue prologue,
                             RangeForTaskFunc *body,
-                            range_for_xlogue epilogue) {
+                            range_for_xlogue epilogue,
+                            std::size_t tls_size) {
   range_task_helper_context ctx;
   ctx.context = context;
   ctx.prologue = prologue;
+  ctx.tls_size = tls_size;
   ctx.body = body;
   ctx.epilogue = epilogue;
   ctx.begin = begin;
@@ -1105,12 +1108,21 @@ void cpu_parallel_range_for(Context *context,
 void gpu_parallel_range_for(Context *context,
                             int begin,
                             int end,
-                            RangeForTaskFunc *func) {
+                            range_for_xlogue prologue,
+                            RangeForTaskFunc *func,
+                            range_for_xlogue epilogue,
+                            const std::size_t tls_size) {
   int idx = thread_idx() + block_dim() * block_idx() + begin;
+  alignas(8) char tls_buffer[tls_size];
+  auto tls_ptr = &tls_buffer[0];
+  if (prologue)
+    prologue(context, tls_ptr);
   while (idx < end) {
-    func(context, /*tls=*/nullptr, idx);
+    func(context, tls_ptr, idx);
     idx += block_dim() * grid_dim();
   }
+  if (epilogue)
+    epilogue(context, tls_ptr);
 }
 
 i32 linear_thread_idx() {

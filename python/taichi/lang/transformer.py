@@ -435,7 +435,7 @@ if ti.static(1):
             template = '''
 if 1:
     ___loop_var = 0
-    {} = ti.make_var_vector(size=___loop_var.loop_range().dim())
+    {} = ti.make_var_vector(size=len(___loop_var.loop_range().shape))
     ___expr_group = ti.make_expr_group({})
     ti.core.begin_frontend_struct_for(___expr_group, ___loop_var.loop_range().ptr)
     ti.core.end_frontend_range_for()

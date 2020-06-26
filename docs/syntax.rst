@@ -254,8 +254,7 @@ Debug your program with ``print()`` in Taichi-scope. For example:
         inside kernel
         after sync
 
-    This is due to the fact that GPU memories are only copied on demand, i.e.
-    only when the output data is accessed, or performance will be harmed.
+    This is because GPU memory is only copied when necessary, for performance considerations.
 
     Also note that host access or program end will also implicitly invoke for
     ``ti.sync()``.

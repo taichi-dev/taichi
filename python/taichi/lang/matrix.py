@@ -448,8 +448,9 @@ class Matrix(TaichiOperations):
 
     inversed = deprecated('a.inversed()', 'a.inverse()')(inverse)
 
+    @impl.pyfunc
     def normalized(self, eps=0):
-        assert self.m == 1
+        impl.static(impl.static_assert(self.m == 1, "normalized() only works on vector"))
         invlen = 1 / (self.norm() + eps)
         return invlen * self
 
@@ -462,11 +463,10 @@ class Matrix(TaichiOperations):
     def T(self):
         return self.transpose()
 
-    def transpose(a):
-        ret = Matrix.new(a.m, a.n)
-        for i in range(a.n):
-            for j in range(a.m):
-                ret.set_entry(j, i, a(i, j))
+    @impl.pyfunc
+    def transpose(self):
+        ret = Matrix([[self[i, j] for i in range(self.n)]
+            for j in range(self.m)])
         return ret
 
     @taichi_scope
@@ -534,33 +534,26 @@ class Matrix(TaichiOperations):
         for i in range(1, len(self.entries)):
             ret = ret + self.entries[i]
         return ret
+ 
+    @impl.pyfunc
+    def norm(self, eps=0):
+        return impl.sqrt(self.norm_sqr() + eps)
 
-    def norm(self, l=2, eps=0):
-        import taichi as ti
-        assert l == 2
-        return ti.sqrt(self.norm_sqr() + eps)
+    @impl.pyfunc
+    def norm_inv(self, eps=0):
+        return impl.rsqrt(self.norm_sqr() + eps)
 
-    def norm_inv(self, l=2, eps=0):
-        import taichi as ti
-        assert l == 2
-        return ti.rsqrt(self.norm_sqr() + eps)
-
+    @impl.pyfunc
     def norm_sqr(self):
         return (self**2).sum()
 
+    @impl.pyfunc
     def max(self):
-        import taichi as ti
-        ret = self.entries[0]
-        for i in range(1, len(self.entries)):
-            ret = ti.max(ret, self.entries[i])
-        return ret
+        return impl.ti_max(*self.entries)
 
+    @impl.pyfunc
     def min(self):
-        import taichi as ti
-        ret = self.entries[0]
-        for i in range(1, len(self.entries)):
-            ret = ti.min(ret, self.entries[i])
-        return ret
+        return impl.ti_min(*self.entries)
 
     def any(self):
         import taichi as ti
@@ -771,35 +764,35 @@ class Matrix(TaichiOperations):
         # using matrices as template arguments.
         return id(self)
 
+    @impl.pyfunc
     def dot(self, other):
-        assert self.m == 1
-        assert other.m == 1
-        return (self.transpose() @ other).entries[0]
+        impl.static(impl.static_assert(self.m == 1, "lhs for dot is not a vector"))
+        impl.static(impl.static_assert(other.m == 1, "rhs for dot is not a vector"))
+        return (self * other).sum()
 
+    @impl.pyfunc
     def cross(self, b):
-        if self.n == 3 and self.m == 1 and b.n == 3 and b.m == 1:
+        if impl.static(self.n == 3 and self.m == 1 and b.n == 3 and b.m == 1):
             return Matrix([
-                self(1) * b(2) - self(2) * b(1),
-                self(2) * b(0) - self(0) * b(2),
-                self(0) * b(1) - self(1) * b(0),
+                self[1] * b[2] - self[2] * b[1],
+                self[2] * b[0] - self[0] * b[2],
+                self[0] * b[1] - self[1] * b[0],
             ])
 
-        elif self.n == 2 and self.m == 1 and b.n == 2 and b.m == 1:
-            return self(0) * b(1) - self(1) * b(0)
+        elif impl.static(self.n == 2 and self.m == 1 and b.n == 2 and b.m == 1):
+            return self[0] * b[1] - self[1] * b[0]
 
         else:
-            raise Exception(
-                "Cross product is only supported between pairs of 2D/3D vectors"
-            )
+            impl.static(impl.static_assert(0,
+                    "Cross product is only supported between pairs of 2D/3D vectors"))
 
-    def outer_product(self, b):
-        assert self.m == 1
-        assert b.m == 1
-        c = Matrix.new(self.n, b.n)
-        for i in range(self.n):
-            for j in range(b.n):
-                c.set_entry(i, j, self(i) * b(j))
-        return c
+    @impl.pyfunc
+    def outer_product(self, other):
+        impl.static(impl.static_assert(self.m == 1, "lhs for outer_product is not a vector"))
+        impl.static(impl.static_assert(other.m == 1, "rhs for outer_product is not a vector"))
+        ret = Matrix([[self[i] * other[j] for i in range(self.n)]
+            for j in range(self.m)])
+        return ret
 
 
 def Vector(n, dt=None, shape=None, offset=None, **kwargs):

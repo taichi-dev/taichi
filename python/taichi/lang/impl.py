@@ -235,6 +235,17 @@ def reset():
     taichi_lang_core.reset_default_compile_config()
 
 
+def static_print(*args, __p=print, **kwargs):
+    __p(*args, **kwargs)
+
+
+def static_assert(cond, msg=None):
+    if msg is not None:
+        assert cond, msg
+    else:
+        assert cond
+
+
 def inside_kernel():
     return pytaichi.inside_kernel
 
@@ -390,10 +401,8 @@ def static(x, *xs):
         return [static(x)] + [static(x) for x in xs]
     import types
     import taichi as ti
-    assert get_runtime(
-    ).inside_kernel, 'ti.static can only be used inside Taichi kernels'
     if isinstance(x, (bool, int, float, range, list, tuple, enumerate,
-                      ti.ndrange, ti.GroupedNDRange)):
+                      ti.ndrange, ti.GroupedNDRange)) or x is None:
         return x
     elif isinstance(x, ti.lang.expr.Expr) and x.ptr.is_global_var():
         return x

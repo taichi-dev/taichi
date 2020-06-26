@@ -771,27 +771,36 @@ class Matrix(TaichiOperations):
         return (self * other).sum()
 
     @impl.pyfunc
-    def cross(self, b):
-        if impl.static(self.n == 3 and self.m == 1 and b.n == 3 and b.m == 1):
-            return Matrix([
-                self[1] * b[2] - self[2] * b[1],
-                self[2] * b[0] - self[0] * b[2],
-                self[0] * b[1] - self[1] * b[0],
-            ])
+    def _cross3d(self, other):
+        ret = Matrix([
+            self[1] * other[2] - self[2] * other[1],
+            self[2] * other[0] - self[0] * other[2],
+            self[0] * other[1] - self[1] * other[0],
+        ])
+        return ret
 
-        elif impl.static(self.n == 2 and self.m == 1 and b.n == 2 and b.m == 1):
-            return self[0] * b[1] - self[1] * b[0]
+    @impl.pyfunc
+    def _cross2d(self, other):
+        ret = self[0] * other[1] - self[1] * other[0]
+        return ret
+
+    def cross(self, other):
+        if self.n == 3 and self.m == 1 and other.n == 3 and other.m == 1:
+            return self._cross3d(other)
+
+        elif self.n == 2 and self.m == 1 and other.n == 2 and other.m == 1:
+            return self._cross2d(other)
 
         else:
-            impl.static(impl.static_assert(0,
-                    "Cross product is only supported between pairs of 2D/3D vectors"))
+            raise ValueError(
+                    "Cross product is only supported between pairs of 2D/3D vectors")
 
     @impl.pyfunc
     def outer_product(self, other):
         impl.static(impl.static_assert(self.m == 1, "lhs for outer_product is not a vector"))
         impl.static(impl.static_assert(other.m == 1, "rhs for outer_product is not a vector"))
-        ret = Matrix([[self[i] * other[j] for i in range(self.n)]
-            for j in range(self.m)])
+        ret = Matrix([[self[i] * other[j] for j in range(other.n)]
+            for i in range(other.n)])
         return ret
 
 

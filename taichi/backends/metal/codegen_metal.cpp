@@ -107,8 +107,8 @@ class KernelCodegen : public IRVisitor {
     return ctx_attribs_;
   }
 
-  const std::vector<KernelAttributes> &kernels_attribs() const {
-    return mtl_kernels_attribs_;
+  const TaichiKernelAttributes &ti_kernels_attribs() const {
+    return ti_kernel_attribus_;
   }
 
   std::string run() {
@@ -558,7 +558,8 @@ class KernelCodegen : public IRVisitor {
   }
 
   void visit(PrintStmt *stmt) override {
-    mark_print_used();
+    used_features()->print = true;
+
     const auto &contents = stmt->contents;
     const int num_entries = contents.size();
     const std::string msgbuf_var_name = stmt->raw_name() + "_msgbuf_";
@@ -719,7 +720,7 @@ class KernelCodegen : public IRVisitor {
     SectionGuard sg(this, Section::Kernels);
     kernel_->ir->accept(this);
 
-    if (used_features_.runtime_list_ops) {
+    if (used_features()->sparse) {
       emit("");
       current_appender().append_raw(shaders::kMetalRuntimeKernelsSourceCode);
     }
@@ -765,7 +766,7 @@ class KernelCodegen : public IRVisitor {
     emit("}}\n");
     current_kernel_attribs_ = nullptr;
 
-    mtl_kernels_attribs_.push_back(ka);
+    mtl_kernels_attribs()->push_back(ka);
   }
 
   void generate_range_for_kernel(OffloadedStmt *stmt) {
@@ -778,7 +779,8 @@ class KernelCodegen : public IRVisitor {
 
     emit_mtl_kernel_sig(mtl_kernel_name, ka.buffers);
 
-    auto &range_for_attribs = ka.range_for_attribs;
+    ka.range_for_attribs = KernelAttributes::RangeForAttributes();
+    auto &range_for_attribs = ka.range_for_attribs.value();
     range_for_attribs.const_begin = stmt->const_begin;
     range_for_attribs.const_end = stmt->const_end;
     range_for_attribs.begin =
@@ -833,7 +835,7 @@ class KernelCodegen : public IRVisitor {
     emit("}}\n");
     current_kernel_attribs_ = nullptr;
 
-    mtl_kernels_attribs_.push_back(ka);
+    mtl_kernels_attribs()->push_back(ka);
   }
 
   void generate_struct_for_kernel(OffloadedStmt *stmt) {
@@ -916,7 +918,7 @@ class KernelCodegen : public IRVisitor {
     current_appender().pop_indent();
     emit("}}\n");  // closes kernel
 
-    mtl_kernels_attribs_.push_back(ka);
+    mtl_kernels_attribs()->push_back(ka);
   }
 
   void add_runtime_list_op_kernel(OffloadedStmt *stmt,
@@ -941,11 +943,13 @@ class KernelCodegen : public IRVisitor {
     } else {
       TI_ERROR("Unsupported offload task type {}", stmt->task_name());
     }
-    ka.runtime_list_op_attribs.snode = sn;
+
+    ka.runtime_list_op_attribs = KernelAttributes::RuntimeListOpAttributes();
+    ka.runtime_list_op_attribs->snode = sn;
     current_kernel_attribs_ = nullptr;
 
-    mtl_kernels_attribs_.push_back(ka);
-    used_features_.runtime_list_ops = true;
+    mtl_kernels_attribs()->push_back(ka);
+    used_features()->sparse = true;
   }
 
   std::string inject_load_global_tmp(int offset, DataType dt = DataType::i32) {
@@ -1086,11 +1090,6 @@ class KernelCodegen : public IRVisitor {
     return kernel_name + "_func";
   }
 
-  void mark_print_used() {
-    TI_ASSERT(current_kernel_attribs_ != nullptr);
-    current_kernel_attribs_->uses_print = true;
-  }
-
   class SectionGuard {
    public:
     SectionGuard(KernelCodegen *kg, Section new_sec)
@@ -1121,6 +1120,14 @@ class KernelCodegen : public IRVisitor {
     current_appender().append(std::move(f), std::forward<Args>(args)...);
   }
 
+  std::vector<KernelAttributes> *mtl_kernels_attribs() {
+    return &(ti_kernel_attribus_.mtl_kernels_attribs);
+  }
+
+  TaichiKernelAttributes::UsedFeatures *used_features() {
+    return &(ti_kernel_attribus_.used_features);
+  }
+
   const std::string mtl_kernel_prefix_;
   const std::string root_snode_type_name_;
   Kernel *const kernel_;
@@ -1131,8 +1138,7 @@ class KernelCodegen : public IRVisitor {
 
   bool is_top_level_{true};
   int mtl_kernel_count_{0};
-  std::vector<KernelAttributes> mtl_kernels_attribs_;
-  UsedFeatures used_features_;
+  TaichiKernelAttributes ti_kernel_attribus_;
   GetRootStmt *root_stmt_{nullptr};
   KernelAttributes *current_kernel_attribs_{nullptr};
   Section code_section_{Section::Structs};
@@ -1163,7 +1169,7 @@ FunctionType CodeGen::compile() {
                         compiled_structs_, kernel_mgr_->print_strtable());
   const auto source_code = codegen.run();
   kernel_mgr_->register_taichi_kernel(taichi_kernel_name_, source_code,
-                                      codegen.kernels_attribs(),
+                                      codegen.ti_kernels_attribs(),
                                       codegen.kernel_ctx_attribs());
   return [kernel_mgr = kernel_mgr_,
           kernel_name = taichi_kernel_name_](Context &ctx) {

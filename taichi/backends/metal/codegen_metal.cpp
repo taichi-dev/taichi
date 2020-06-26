@@ -17,10 +17,13 @@ namespace shaders {
 #define TI_INSIDE_METAL_CODEGEN
 #include "taichi/backends/metal/shaders/ad_stack.metal.h"
 #include "taichi/backends/metal/shaders/helpers.metal.h"
+#include "taichi/backends/metal/shaders/print.metal.h"
 #include "taichi/backends/metal/shaders/runtime_kernels.metal.h"
 #undef TI_INSIDE_METAL_CODEGEN
 
+#include "taichi/backends/metal/shaders/print.metal.h"
 #include "taichi/backends/metal/shaders/runtime_structs.metal.h"
+
 }  // namespace shaders
 
 using BuffersEnum = KernelAttributes::Buffers;
@@ -33,6 +36,8 @@ constexpr char kContextBufferName[] = "ctx_addr";
 constexpr char kContextVarName[] = "kernel_ctx_";
 constexpr char kRuntimeBufferName[] = "runtime_addr";
 constexpr char kRuntimeVarName[] = "runtime_";
+constexpr char kPrintBufferName[] = "print_addr";
+constexpr char kPrintAllocVarName[] = "print_alloc_";
 constexpr char kLinearLoopIndexName[] = "linear_loop_idx_";
 constexpr char kListgenElemVarName[] = "listgen_elem_";
 constexpr char kRandStateVarName[] = "rand_state_";
@@ -49,6 +54,8 @@ std::string buffer_to_name(BuffersEnum b) {
       return kContextBufferName;
     case BuffersEnum::Runtime:
       return kRuntimeBufferName;
+    case BuffersEnum::Print:
+      return kPrintBufferName;
     default:
       TI_NOT_IMPLEMENTED;
       break;
@@ -77,16 +84,19 @@ class KernelCodegen : public IRVisitor {
   };
 
  public:
+  // TODO(k-ye): Create a Params to hold these ctor params.
   KernelCodegen(const std::string &mtl_kernel_prefix,
                 const std::string &root_snode_type_name,
                 Kernel *kernel,
-                const CompiledStructs *compiled_structs)
+                const CompiledStructs *compiled_structs,
+                PrintStringTable *print_strtab)
       : mtl_kernel_prefix_(mtl_kernel_prefix),
         root_snode_type_name_(root_snode_type_name),
         kernel_(kernel),
         compiled_structs_(compiled_structs),
         needs_root_buffer_(compiled_structs_->root_size > 0),
-        ctx_attribs_(*kernel_) {
+        ctx_attribs_(*kernel_),
+        print_strtab_(print_strtab) {
     // allow_undefined_visitor = true;
     for (const auto s : kAllSections) {
       section_appenders_[s] = LineAppender();
@@ -548,8 +558,34 @@ class KernelCodegen : public IRVisitor {
   }
 
   void visit(PrintStmt *stmt) override {
-    // TODO: Add a flag to control whether ignoring print() stmt is allowed.
-    TI_WARN("Cannot print inside Metal kernel, ignored");
+    mark_print_used();
+    const auto &contents = stmt->contents;
+    const int num_entries = contents.size();
+    const std::string msgbuf_var_name = stmt->raw_name() + "_msgbuf_";
+    emit("device auto* {} = mtl_print_alloc_buf({}, {});", msgbuf_var_name,
+         kPrintAllocVarName, num_entries);
+    // Check for buffer overflow
+    emit("if ({}) {{", msgbuf_var_name);
+    {
+      ScopedIndent s(current_appender());
+      const std::string msg_var_name = stmt->raw_name() + "_msg_";
+      emit("PrintMsg {}({}, {});", msg_var_name, msgbuf_var_name, num_entries);
+      for (int i = 0; i < num_entries; ++i) {
+        const auto &entry = contents[i];
+        if (std::holds_alternative<Stmt *>(entry)) {
+          auto *arg_stmt = std::get<Stmt *>(entry);
+          const auto dt = arg_stmt->element_type();
+          TI_ASSERT_INFO(dt == DataType::i32 || dt == DataType::f32,
+                         "print() only supports i32 or f32 scalars for now.");
+          emit("{}.pm_set_{}({}, {});", msg_var_name, data_type_short_name(dt),
+               i, arg_stmt->raw_name());
+        } else {
+          const int str_id = print_strtab_->put(std::get<std::string>(entry));
+          emit("{}.pm_set_str({}, {});", msg_var_name, i, str_id);
+        }
+      }
+    }
+    emit("}}");
   }
 
   void visit(StackAllocaStmt *stmt) override {
@@ -630,6 +666,8 @@ class KernelCodegen : public IRVisitor {
     emit("");
     current_appender().append_raw(shaders::kMetalAdStackSourceCode);
     emit("");
+    current_appender().append_raw(shaders::kMetalPrintSourceCode);
+    emit("");
     emit_kernel_args_struct();
   }
 
@@ -697,6 +735,8 @@ class KernelCodegen : public IRVisitor {
       result.push_back(BuffersEnum::Context);
     }
     result.push_back(BuffersEnum::Runtime);
+    // TODO(k-ye): Bind this buffer only when print() is used.
+    result.push_back(BuffersEnum::Print);
     return result;
   }
 
@@ -955,6 +995,9 @@ class KernelCodegen : public IRVisitor {
           fmt::arg("rtm", kRuntimeVarName),
           fmt::arg("lidx", kLinearLoopIndexName),
           fmt::arg("nums", kNumRandSeeds));
+      // Init PrintMsgAllocator
+      emit("device auto* {} = reinterpret_cast<device PrintMsgAllocator*>({});",
+           kPrintAllocVarName, kPrintBufferName);
     }
     // We do not need additional indentation, because |func_ir| itself is a
     // block, which will be indented automatically.
@@ -1043,6 +1086,11 @@ class KernelCodegen : public IRVisitor {
     return kernel_name + "_func";
   }
 
+  void mark_print_used() {
+    TI_ASSERT(current_kernel_attribs_ != nullptr);
+    current_kernel_attribs_->uses_print = true;
+  }
+
   class SectionGuard {
    public:
     SectionGuard(KernelCodegen *kg, Section new_sec)
@@ -1079,6 +1127,7 @@ class KernelCodegen : public IRVisitor {
   const CompiledStructs *const compiled_structs_;
   const bool needs_root_buffer_;
   const KernelContextAttributes ctx_attribs_;
+  PrintStringTable *const print_strtab_;
 
   bool is_top_level_{true};
   int mtl_kernel_count_{0};
@@ -1111,7 +1160,7 @@ FunctionType CodeGen::compile() {
 
   KernelCodegen codegen(taichi_kernel_name_,
                         kernel_->program.snode_root->node_type_name, kernel_,
-                        compiled_structs_);
+                        compiled_structs_, kernel_mgr_->print_strtable());
   const auto source_code = codegen.run();
   kernel_mgr_->register_taichi_kernel(taichi_kernel_name_, source_code,
                                       codegen.kernels_attribs(),

@@ -3,8 +3,6 @@ import taichi as ti
 
 @ti.archs_support_sparse
 def test_pointer():
-    ti.init(print_ir=True)
-
     x = ti.var(ti.f32)
     s = ti.var(ti.i32)
 

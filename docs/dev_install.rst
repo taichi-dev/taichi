@@ -165,7 +165,8 @@ Developer's Troubleshooting
   * On Windows, add a environment variable called ``TAICHI_REPO_DIR`` with value ``/home/XXX/taichi`` (Taichi repo path), this may be either done in your IDE configuation panel or system settings.
   * On Linux / OS X, add ``export TAICHI_REPO_DIR=/home/XXX/taichi`` to your ``~/.bashrc`` and restart ``bash``.
 
-- If the build succeed, but running a Taichi example result in an error, please make sure ``clang`` is in your ``PATH``:
+- If the build succeed, but running any Taichi code will result in an error like ``Bitcode file (/tmp/taichi-tero94pl/runtime//runtime_x64.bc) not found``,
+  please make sure ``clang`` is in your ``PATH``:
 
   .. code-block:: bash
   

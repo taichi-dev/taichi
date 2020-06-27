@@ -383,8 +383,8 @@ class LowerAST : public IRVisitor {
       fctx.push_back<SNodeOpStmt>(stmt->op_type, stmt->snode, indices_stmt);
     } else {
       TI_ERROR("The {} operation is not supported on {} SNode",
-          snode_op_type_name(stmt->op_type),
-          snode_type_name(stmt->snode->type));
+               snode_op_type_name(stmt->op_type),
+               snode_type_name(stmt->snode->type));
       TI_NOT_IMPLEMENTED
     }
 

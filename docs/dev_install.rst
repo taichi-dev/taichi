@@ -156,11 +156,12 @@ Developer's Troubleshooting
 - If ``make`` failed to compile and reporting ``fatal error: 'spdlog/XXX.h' file not found``,
   please try run ``git submodule init --update --recursive --depth=1``.
 
+- If ``cmake`` failed and reporting ``clang and MSVC are the only supported compilers for Taichi compiler development``,
   please make sure you have installed clang with version >= 7, and build with ``cmake -DCMAKE_CXX_COMPILER=clang``.
 
 - If importing Taichi cause ``FileNotFoundError: [Errno 2] No such file or directory: '/root/taichi/python/taichi/core/../lib/taichi_core.so' -> '/root/taichi/python/taichi/core/../lib/libtaichi_core.so'``, please:
 
-  * On Windows, add a environment variable called ``TAICHI_REPO_DIR`` with value ``/home/XXX/taichi`` (Taichi repo path), this may be either done in your IDE configuation panel or system settings.
+  * On Windows, add a environment variable called ``TAICHI_REPO_DIR`` with value ``C:\\path\\to\\taichi`` (your Taichi repo path), this may be either done in your IDE configuation panel or system settings.
   * On Linux / OS X, add ``export TAICHI_REPO_DIR=/home/XXX/taichi`` to your ``~/.bashrc`` and restart ``bash``.
 
 - If the build succeed, but running any Taichi code will result in an error like ``Bitcode file (/tmp/taichi-tero94pl/runtime//runtime_x64.bc) not found``,

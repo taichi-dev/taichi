@@ -24,10 +24,10 @@ def cook_image_to_bytes(img):
     if len(img.shape) == 2:
         img = img.reshape(*img.shape, 1)
 
-    assert img.shape[2] in [1, 3, 4], "Image must be either RGB/RGBA or greyscale"
+    assert img.shape[2] in [1, 3,
+                            4], "Image must be either RGB/RGBA or greyscale"
 
     return img.swapaxes(0, 1)[::-1, :]
-
 
 
 def imdisplay(img):

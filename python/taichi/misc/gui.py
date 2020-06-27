@@ -85,8 +85,7 @@ class GUI:
                 self.img = self.cook_image(img.to_numpy())
             else:
                 # Type matched! We can use an optimized copy kernel.
-                assert img.shape(
-                ) == self.res, "Image resolution does not match GUI resolution"
+                assert img.shape == self.res, "Image resolution does not match GUI resolution"
                 from taichi.lang.meta import tensor_to_image
                 tensor_to_image(img, self.img)
                 ti.sync()
@@ -96,8 +95,7 @@ class GUI:
                 self.img = self.cook_image(img.to_numpy())
             else:
                 # Type matched! We can use an optimized copy kernel.
-                assert img.shape(
-                ) == self.res, "Image resolution does not match GUI resolution"
+                assert img.shape == self.res, "Image resolution does not match GUI resolution"
                 assert img.n in [
                     3, 4
                 ], "Only greyscale, RGB or RGBA images are supported in GUI.set_image"

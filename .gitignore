@@ -1,6 +1,7 @@
 *.swp
 *.swo
 /.vs
+/.*localrc
 /Debug
 *.sdf
 /x64

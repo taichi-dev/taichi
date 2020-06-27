@@ -144,3 +144,87 @@ For example:
     def is_odd(x: ti.template()):
         ti.static_assert(x.data_type() == ti.i32, "is_odd() is only supported for i32")
         return x % 2 == 1
+
+
+Tips for debugging
+------------------
+
+Debugging a Taichi program can be hard even with the builtin tools above.
+Taichi developers are currently devoting themselves in improving error messages and warnings
+to help user find potential BUGs in their programs.
+
+Here we collected some common BUGs that one might encounter with a Taichi program:
+
+Static typing system
+++++++++++++++++++++
+
+Taichi pertend that it's a dynamical-typed language like Python, but it's actually a
+statically-typed language which will be translated into high performance CPU/GPU instructions.
+
+So the code behavior in Taichi-scope is actually very different from Python-scope!
+
+Type of a variable is simply **determined at its first initialization and never changes later**.
+
+Although static-type provides better performance and simplicity, but may leads to BUGs if
+users not distinguished Taichi-scope from Python-scope, e.g.:
+
+.. code-block:: python
+
+    @ti.kernel
+    def buggy():
+        ret = 0  # 0 is a integer, so `ret` is typed as int32
+        for i in range(3):
+            ret += 0.1 * i  # i32 += f32, the result is still stored in int32!
+        print(ret)  # will shows 0
+
+    buggy()
+
+The codes above shows a common BUG due to the limitation of the static-type system.
+The Taichi compiler should shows a warning like:
+
+.. code-block:: none
+
+    [W 06/27/20 21:43:51.853] [type_check.cpp:visit@66] [$19] Atomic add (float32 to int32) may lose precision.
+
+This means that it can not store a float32 result to int32.
+The solution is to type ``ret`` as float32 at the first place:
+
+.. code-block:: python
+
+    @ti.kernel
+    def not_buggy():
+        ret = 0.0  # 0 is a floating point number, so `ret` is typed as float32
+        for i in range(3):
+            ret += 0.1 * i  # f32 += f32, OK!!
+        print(ret)  # will shows 0.6
+
+    not_buggy()
+
+
+`@archibate <https://github.com/archibate>`_'s personal suggestion to prevent issues like this:
+
+* Recall the ``float ret = 0;`` in C/C++, always use ``ret = float(0)`` on **initialization**,
+  and ``ret = int(0)`` for integers. So that you are always clear of what type every variable.
+
+Advanced Optimization
++++++++++++++++++++++
+
+Taichi has a advanced optimization engine to make your Taichi kernel to be as fast as it could.
+But like the ``gcc -O3`` does, sometimes advanced optimization can leads to BUGs as it tried
+too hard, including runtime errors like:
+
+```RuntimeError: [verify.cpp:basic_verify@40] stmt 8 cannot have operand 7.```
+
+You may use ``ti.core.toggle_advance_optimization(False)`` to turn off advanced
+optimization and see if the issue still exists:
+
+.. code-block:: python
+
+    import taichi as ti
+
+    ti.init()
+    ti.core.toggle_advance_optimization()
+
+    ...
+
+If that fixed the issue, please report this BUG on `GitHub <https://github.com/taichi-dev/taichi/issues/new?labels=potential+bug&template=bug_report.md>`_ to help us improve, if you would like to.

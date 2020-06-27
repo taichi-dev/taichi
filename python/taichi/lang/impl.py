@@ -195,6 +195,9 @@ class PyTaichi:
     def sync(self):
         self.materialize()
         self.prog.synchronize()
+        # print's in kernel won't take effect until ti.sync(), discussion:
+        # https://github.com/taichi-dev/taichi/pull/1303#discussion_r444897102
+        print(taichi_lang_core.pop_python_print_buffer(), end='')
 
 
 pytaichi = PyTaichi()

@@ -252,10 +252,6 @@ schedules = [parallelize, vectorize, block_dim, cache]
 lang_core = core
 
 
-def static_print(*args, __p=print, **kwargs):
-    __p(*args, **kwargs)
-
-
 def benchmark(func, repeat=300, args=()):
     import taichi as ti
     import time

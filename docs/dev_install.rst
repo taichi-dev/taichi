@@ -47,20 +47,6 @@ Installing Dependencies
         cmake ..
         make -j 8
         sudo make install
-        
-        
-- (If on Linux) Make sure you have `/lib/libtinfo.so.5` (for LLVM)
-
-    * On Ubuntu, execute ``sudo apt install libtinfo-dev``.
-
-    * On Arch Linux, first edit ``/etc/pacman.conf``, and append these lines:
-      
-    .. code-block:: none
-    
-      [archlinuxcn]
-      Server = https://mirrors.tuna.tsinghua.edu.cn/archlinuxcn/$arch
-      
-    Then execute ``sudo pacman -Syy ncurses5-compat-libs`.
 
 
 - Make sure you have LLVM 8.0.1/10.0.0. Note that Taichi uses a customized LLVM so the pre-built binaries from the LLVM official website or other sources probably doesn't work.
@@ -165,7 +151,38 @@ Setting up Taichi for development
 - Check out ``examples`` for runnable examples. Run them with ``python3``.
 
 
-Troubleshooting
----------------
+Developer's Troubleshooting
+---------------------------
 
-See `:ref:troubleshooting`.
+- If ``make`` failed to compile and reporting ``fatal error: 'spdlog/XXX.h' file not found``,
+  please try run ``git submodule init --update --recursive --depth=1``.
+
+- If ``cmake`` failed to generate and reporting ``clang and MSVC are the only supported compilers for Taichi compiler development``,
+  please make sure you have installed clang with version >= 7, and add ``export CMAKE_CXX_COMPILER=/path/to/clang`` to ``.bashrc``.
+
+- If importing Taichi cause ``FileNotFoundError: [Errno 2] No such file or directory: '/root/taichi/python/taichi/core/../lib/taichi_core.so' -> '/root/taichi/python/taichi/core/../lib/libtaichi_core.so'``, please:
+
+  * On Windows, add a environment variable called ``TAICHI_REPO_DIR`` to environment variables, this may be either done in your IDE configuation panel or system settings.
+  * On Linux / OS X, add ``export TAICHI_REPO_DIR=/home/XXX/taichi`` to your ``~/.bashrc`` and restart ``bash``.
+
+- If the build succeed, but running a Taichi example result in an error, please make sure ``clang`` is in your ``PATH``:
+
+  .. code-block:: bash
+  
+      clang --version
+      # version should be >= 7
+      
+  and our **Taichi configured** ``llvm-as``:
+
+  .. code-block:: bash
+  
+      llvm-as --version
+      # version should be 8.0.1 or 10.0.0
+      which llvm-as
+      # should be /usr/local/bin/llvm-as or /opt/XXX/bin/llvm-as, which is our configured installation
+      
+  If not, please install ``clang`` and **build LLVM from source** with instructions above in `:ref:dev_install`, then add their path to environment variable ``PATH``.
+
+- If you encountered other issues, feel free to report it by `opening an issue on GitHub <https://github.com/taichi-dev/taichi/issues/new?labels=potential+bug&template=bug_report.md>`_, we are willing to help!
+
+- See also `:ref:troubleshooting` for issues that may share with end-user installation.

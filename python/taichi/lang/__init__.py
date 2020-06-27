@@ -379,8 +379,8 @@ def all_archs_with(**kwargs):
             fp = kwargs.get('default_fp', ti.f32)
             ip = kwargs.get('default_ip', ti.i32)
             if fp == ti.f64 or ip == ti.i64:
-                can_run_on.register(
-                    lambda arch: is_extension_supported(arch, extension.data64))
+                can_run_on.register(lambda arch: is_extension_supported(
+                    arch, extension.data64))
 
             for arch in ti.supported_archs():
                 if can_run_on(arch):

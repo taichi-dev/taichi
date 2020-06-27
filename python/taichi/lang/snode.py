@@ -55,28 +55,39 @@ class SNode:
     def parent(self, n=1):
         impl.get_runtime().try_materialize()
         p = self.ptr
-        for i in range(n):
+        while p and n > 0:
             p = p.parent
+            n -= 1
+        if p is None:
+            return None
         if p.type == impl.taichi_lang_core.SNodeType.root:
             return impl.root
-        else:
-            return SNode(p)
+        return SNode(p)
 
     def data_type(self):
         return self.ptr.data_type()
 
+    @deprecated('x.dim()', 'len(x.shape)')
     def dim(self):
-        impl.get_runtime().try_materialize()
-        return self.ptr.num_active_indices()
+        return len(self.shape)
 
+    @property
     def shape(self):
         impl.get_runtime().try_materialize()
-        return tuple(
-            self.ptr.get_num_elements_along_axis(i) for i in range(self.dim()))
+        dim = self.ptr.num_active_indices()
+        ret = [self.ptr.get_num_elements_along_axis(i) for i in range(dim)]
 
-    @deprecated('snode.get_shape(i)', 'snode.shape()[i]')
+        class callable_tuple(tuple):
+            @deprecated('x.shape()', 'x.shape')
+            def __call__(self):
+                return self
+
+        ret = callable_tuple(ret)
+        return ret
+
+    @deprecated('x.get_shape(i)', 'x.shape[i]')
     def get_shape(self, i):
-        return self.shape()[i]
+        return self.shape[i]
 
     def loop_range(self):
         import taichi as ti
@@ -104,7 +115,7 @@ class SNode:
         # ti.root.dense(ti.i, 3).dense(ti.jk, (4, 5)).place(x)
         # ti.root => dense [3] => dense [3, 4, 5] => place [3, 4, 5]
         type = repr(self.ptr.type)[len('SNodeType.'):]
-        shape = repr(list(self.shape()))
+        shape = repr(list(self.shape))
         parent = repr(self.parent())
         return f'{parent} => {type} {shape}'
 

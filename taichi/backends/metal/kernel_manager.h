@@ -54,6 +54,8 @@ class KernelManager {
   // Synchronize the memory content from Metal to host (x86_64).
   void synchronize();
 
+  PrintStringTable *print_strtable();
+
  private:
   // Use Pimpl so that we can expose this interface without conditionally
   // compiling on TI_PLATFORM_OSX

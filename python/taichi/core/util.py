@@ -56,10 +56,9 @@ def import_ti_core(tmp_dir=None):
 def locale_encode(s):
     try:
         import locale
-        encoding = locale.getdefaultlocale()[1]
+        s.encode(locale.getdefaultlocale()[1])
     except:
-        encoding = 'utf8'
-    return s.encode(encoding)
+        s.encode('utf8')
 
 
 def is_ci():

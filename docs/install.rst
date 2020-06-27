@@ -17,6 +17,8 @@ Taichi can be easily installed via ``pip``:
 - On Windows, please install `Microsoft Visual C++ Redistributable <https://aka.ms/vs/16/release/vc_redist.x64.exe>`_ if you haven't.
 
 
+.. troubleshooting:
+
 Troubleshooting
 ---------------
 
@@ -100,7 +102,18 @@ OpenGL issues
 Linux issues
 ************
 
-- If Taichi crashes and reports ``libtinfo.so.5 not found``: Please install ``libtinfo5`` for Ubuntu or ``ncurses5-compat-libs`` (AUR) for Arch Linux.
+- If Taichi crashes and reports ``libtinfo.so.5 not found``:
+
+    * On Ubuntu, execute ``sudo apt install libtinfo-dev``.
+
+    * On Arch Linux, first edit ``/etc/pacman.conf``, and append these lines:
+      
+      .. code-block:: none
+    
+        [archlinuxcn]
+        Server = https://mirrors.tuna.tsinghua.edu.cn/archlinuxcn/$arch
+      
+      Then execute ``sudo pacman -Syy ncurses5-compat-libs`.
 
 
 Other issues

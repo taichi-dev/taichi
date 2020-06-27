@@ -62,12 +62,12 @@ The Taichi Programming Language
    :caption: Miscellaneous
    :maxdepth: 3
 
-   extension_libraries
    gui
+   debugging
+   extension_libraries
    export_results
    cli_utilities
    global_settings
-   faq
    acknowledgments
 
 
@@ -76,3 +76,4 @@ The Taichi Programming Language
    :maxdepth: 3
 
    legacy_installation
+   faq

@@ -122,7 +122,6 @@ Setting up Taichi for development
     export PYTHONPATH=$TAICHI_REPO_DIR/python:$PYTHONPATH
     export PATH=$TAICHI_REPO_DIR/bin:$PATH
     # export PATH=/opt/llvm/bin:$PATH # Uncomment if your llvm-8 or clang-8 is in /opt
-    export CMAKE_CXX_COMPILER=clang++
 
 - Execute ``source ~/.bashrc`` to reload shell config.
 
@@ -157,8 +156,7 @@ Developer's Troubleshooting
 - If ``make`` failed to compile and reporting ``fatal error: 'spdlog/XXX.h' file not found``,
   please try run ``git submodule init --update --recursive --depth=1``.
 
-- If ``cmake`` failed to generate and reporting ``clang and MSVC are the only supported compilers for Taichi compiler development``,
-  please make sure you have installed clang with version >= 7, and add ``export CMAKE_CXX_COMPILER=/path/to/clang`` to ``.bashrc``.
+  please make sure you have installed clang with version >= 7, and build with ``cmake -DCMAKE_CXX_COMPILER=clang``.
 
 - If importing Taichi cause ``FileNotFoundError: [Errno 2] No such file or directory: '/root/taichi/python/taichi/core/../lib/taichi_core.so' -> '/root/taichi/python/taichi/core/../lib/libtaichi_core.so'``, please:
 

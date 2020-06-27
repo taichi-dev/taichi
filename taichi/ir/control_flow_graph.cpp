@@ -1,5 +1,6 @@
 #include "taichi/ir/control_flow_graph.h"
 #include "taichi/ir/analysis.h"
+#include "taichi/ir/statements.h"
 #include <queue>
 
 TLANG_NAMESPACE_BEGIN
@@ -7,10 +8,12 @@ TLANG_NAMESPACE_BEGIN
 CFGNode::CFGNode(Block *block,
                  int begin_location,
                  int end_location,
+                 bool is_parallel_executed,
                  CFGNode *prev_node_in_same_block)
     : block(block),
       begin_location(begin_location),
       end_location(end_location),
+      is_parallel_executed(is_parallel_executed),
       prev_node_in_same_block(prev_node_in_same_block),
       next_node_in_same_block(nullptr) {
   if (prev_node_in_same_block != nullptr)
@@ -25,6 +28,9 @@ CFGNode::CFGNode(Block *block,
       parent_blocks.insert(parent_block);
     }
   }
+}
+
+CFGNode::CFGNode() : CFGNode(nullptr, -1, -1, false, nullptr) {
 }
 
 void CFGNode::add_edge(CFGNode *from, CFGNode *to) {
@@ -62,21 +68,27 @@ void CFGNode::insert(std::unique_ptr<Stmt> &&new_stmt, int location) {
   }
 }
 
-bool CFGNode::erase_entire_node() {
-  if (empty())
+void CFGNode::replace_with(int location,
+                           std::unique_ptr<Stmt> &&new_stmt,
+                           bool replace_usages) {
+  TI_ASSERT(location >= begin_location && location < end_location);
+  block->replace_with(block->statements[location].get(), std::move(new_stmt),
+                      replace_usages);
+}
+
+bool CFGNode::contain_variable(const std::unordered_set<Stmt *> &var_set,
+                               Stmt *var) {
+  if (var->is<AllocaStmt>() || var->is<StackAllocaStmt>()) {
+    return var_set.find(var) != var_set.end();
+  } else {
+    // TODO: How to optimize this?
+    for (auto set_var : var_set) {
+      if (irpass::analysis::same_statements(var, set_var)) {
+        return true;
+      }
+    }
     return false;
-  int node_size = end_location - begin_location;
-  for (int location = end_location - 1; location >= begin_location;
-       location--) {
-    block->erase(location);
   }
-  end_location -= node_size;  // become empty
-  for (auto node = next_node_in_same_block; node != nullptr;
-       node = node->next_node_in_same_block) {
-    node->begin_location -= node_size;
-    node->end_location -= node_size;
-  }
-  return true;
 }
 
 void CFGNode::reaching_definition_analysis(bool after_lower_access) {
@@ -91,14 +103,9 @@ void CFGNode::reaching_definition_analysis(bool after_lower_access) {
       // stmt provides a data source
       if (after_lower_access &&
           !(stmt->is<AllocaStmt>() || stmt->is<LocalStoreStmt>())) {
+        // After lower_access, we only analyze local variables.
         continue;
       }
-      // TODO: If stmt is a GlobalPtrStmt or a GlobalTemporaryStmt, we may lose
-      // optimization opportunities in this case (we could replace $4 with b):
-      // $1: global ptr a
-      // $2: global store [$1 <- b]
-      // $3(stmt): global ptr a
-      // $4: global load $3
       if (!reach_kill_variable(data_source_ptr)) {
         reach_gen.insert(stmt);
         reach_kill.insert(data_source_ptr);
@@ -109,18 +116,7 @@ void CFGNode::reaching_definition_analysis(bool after_lower_access) {
 
 bool CFGNode::reach_kill_variable(Stmt *var) const {
   // Does this node (definitely) kill a definition of var?
-  // return reach_kill.find(var) != reach_kill.end();
-  if (var->is<AllocaStmt>()) {
-    return reach_kill.find(var) != reach_kill.end();
-  } else {
-    // TODO: How to optimize this?
-    for (auto killed_var : reach_kill) {
-      if (irpass::analysis::same_statements(var, killed_var)) {
-        return true;
-      }
-    }
-    return false;
-  }
+  return contain_variable(reach_kill, var);
 }
 
 Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
@@ -232,14 +228,125 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access) {
         // special case of alloca (initialized to 0)
         auto zero =
             Stmt::make<ConstStmt>(TypedConstant(result->ret_type.data_type, 0));
-        stmt->replace_with(zero.get());
-        erase(i);
-        insert(std::move(zero), i);
+        zero->repeat(result->width());
+        replace_with(i, std::move(zero), true);
       } else {
         stmt->replace_with(result);
         erase(i);  // This causes end_location--
         i--;       // to cancel i++ in the for loop
         modified = true;
+      }
+    }
+  }
+  return modified;
+}
+
+void CFGNode::live_variable_analysis(bool after_lower_access) {
+  live_gen.clear();
+  live_kill.clear();
+  for (int i = begin_location; i < end_location; i++) {
+    auto stmt = block->statements[i].get();
+    auto load_ptrs = irpass::analysis::get_load_pointers(stmt);
+    for (auto &load_ptr : load_ptrs) {
+      if (!after_lower_access ||
+          (load_ptr->is<AllocaStmt>() || load_ptr->is<StackAllocaStmt>())) {
+        // After lower_access, we only analyze local variables and stacks.
+        if (!contain_variable(live_kill, load_ptr)) {
+          live_gen.insert(load_ptr);
+        }
+      }
+    }
+    auto store_ptr = irpass::analysis::get_store_destination(stmt);
+    // TODO: Consider stacks in get_store_destination instead of here
+    //  for store-to-load forwarding on stacks
+    if (auto stack_pop = stmt->cast<StackPopStmt>()) {
+      store_ptr = stack_pop->stack;
+    } else if (auto stack_push = stmt->cast<StackPushStmt>()) {
+      store_ptr = stack_push->stack;
+    } else if (auto stack_acc_adj = stmt->cast<StackAccAdjointStmt>()) {
+      store_ptr = stack_acc_adj->stack;
+    }
+    if (store_ptr) {
+      if (!after_lower_access ||
+          (store_ptr->is<AllocaStmt>() || store_ptr->is<StackAllocaStmt>())) {
+        // After lower_access, we only analyze local variables and stacks.
+        live_kill.insert(store_ptr);
+      }
+    }
+  }
+}
+
+bool CFGNode::dead_store_elimination(bool after_lower_access) {
+  bool modified = false;
+  std::unordered_set<Stmt *> live_in_this_node;
+  std::unordered_set<Stmt *> killed_in_this_node;
+  for (int i = end_location - 1; i >= begin_location; i--) {
+    auto stmt = block->statements[i].get();
+    auto store_ptr = irpass::analysis::get_store_destination(stmt);
+    // TODO: Consider stacks in get_store_destination instead of here
+    //  for store-to-load forwarding on stacks
+    if (auto stack_pop = stmt->cast<StackPopStmt>()) {
+      store_ptr = stack_pop->stack;
+    } else if (auto stack_push = stmt->cast<StackPushStmt>()) {
+      store_ptr = stack_push->stack;
+    } else if (auto stack_acc_adj = stmt->cast<StackAccAdjointStmt>()) {
+      store_ptr = stack_acc_adj->stack;
+    }
+    if (store_ptr) {
+      if (!after_lower_access ||
+          (store_ptr->is<AllocaStmt>() || store_ptr->is<StackAllocaStmt>())) {
+        // After lower_access, we only analyze local variables and stacks.
+        // Do not eliminate AllocaStmt here.
+        if (!stmt->is<AllocaStmt>() &&
+            (contain_variable(killed_in_this_node, store_ptr) ||
+             (!contain_variable(live_out, store_ptr) &&
+              !contain_variable(live_in_this_node, store_ptr)))) {
+          // Neither used in other nodes nor used in this node.
+          if (auto atomic = stmt->cast<AtomicOpStmt>()) {
+            // Weaken the atomic operation to a load.
+            if (atomic->dest->is<AllocaStmt>()) {
+              auto local_load =
+                  Stmt::make<LocalLoadStmt>(LocalAddress(atomic->dest, 0));
+              local_load->ret_type = atomic->ret_type;
+              replace_with(i, std::move(local_load), true);
+              // Notice that we have a load here.
+              killed_in_this_node.erase(atomic->dest);
+              live_in_this_node.insert(atomic->dest);
+              modified = true;
+              continue;
+            } else if (!is_parallel_executed) {
+              // If this node is parallel executed, we can't weaken a global
+              // atomic operation to a global load.
+              // TODO: we can weaken it if it's element-wise (i.e. never
+              //  accessed by other threads).
+              auto global_load = Stmt::make<GlobalLoadStmt>(atomic->dest);
+              global_load->ret_type = atomic->ret_type;
+              replace_with(i, std::move(global_load), true);
+              // Notice that we have a load here.
+              killed_in_this_node.erase(atomic->dest);
+              live_in_this_node.insert(atomic->dest);
+              modified = true;
+              continue;
+            }
+          } else {
+            erase(i);
+            modified = true;
+            continue;
+          }
+        } else {
+          // A non-eliminated store.
+          killed_in_this_node.insert(store_ptr);
+          live_in_this_node.erase(store_ptr);
+        }
+      }
+    }
+    auto load_ptrs = irpass::analysis::get_load_pointers(stmt);
+    for (auto &load_ptr : load_ptrs) {
+      if (!after_lower_access ||
+          (load_ptr->is<AllocaStmt>() || load_ptr->is<StackAllocaStmt>())) {
+        // After lower_access, we only analyze local variables and stacks.
+        killed_in_this_node.erase(load_ptr);
+        live_in_this_node.insert(load_ptr);
       }
     }
   }
@@ -334,6 +441,8 @@ void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
                 nodes[i]->block->statements[j]->cast<GlobalLoadStmt>()) {
           nodes[start_node]->reach_gen.insert(global_load->ptr);
         }
+        // Since we only do store-to-load forwarding, we don't need to mark
+        // other global pointers' data source at the start node.
       }
     }
   }
@@ -376,13 +485,73 @@ void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
   }
 }
 
+void ControlFlowGraph::live_variable_analysis(bool after_lower_access) {
+  TI_AUTO_PROF;
+  const int num_nodes = size();
+  std::queue<CFGNode *> to_visit;
+  std::unordered_map<CFGNode *, bool> in_queue;
+  TI_ASSERT(nodes[final_node]->empty());
+  nodes[final_node]->live_gen.clear();
+  nodes[final_node]->live_kill.clear();
+  if (!after_lower_access) {
+    for (int i = 0; i < num_nodes; i++) {
+      for (int j = nodes[i]->begin_location; j < nodes[i]->end_location; j++) {
+        auto stmt = nodes[i]->block->statements[j].get();
+        auto store_ptr = irpass::analysis::get_store_destination(stmt);
+        if (store_ptr && !store_ptr->is<AllocaStmt>() &&
+            !store_ptr->is<StackAllocaStmt>()) {
+          // A global pointer that may be loaded after this kernel.
+          nodes[final_node]->live_gen.insert(store_ptr);
+        }
+      }
+    }
+  }
+  for (int i = num_nodes - 1; i >= 0; i--) {
+    // push into the queue in reversed order to make it slightly faster
+    if (i != final_node) {
+      nodes[i]->live_variable_analysis(after_lower_access);
+    }
+    nodes[i]->live_out.clear();
+    nodes[i]->live_in = nodes[i]->live_gen;
+    to_visit.push(nodes[i].get());
+    in_queue[nodes[i].get()] = true;
+  }
+  while (!to_visit.empty()) {
+    auto now = to_visit.front();
+    to_visit.pop();
+    in_queue[now] = false;
+
+    now->live_out.clear();
+    for (auto next_node : now->next) {
+      now->live_out.insert(next_node->live_in.begin(),
+                           next_node->live_in.end());
+    }
+    auto old_in = std::move(now->live_in);
+    now->live_in = now->live_gen;
+    for (auto stmt : now->live_out) {
+      if (!CFGNode::contain_variable(now->live_kill, stmt)) {
+        now->live_in.insert(stmt);
+      }
+    }
+    if (now->live_in != old_in) {
+      // changed
+      for (auto prev_node : now->prev) {
+        if (!in_queue[prev_node]) {
+          to_visit.push(prev_node);
+          in_queue[prev_node] = true;
+        }
+      }
+    }
+  }
+}
+
 void ControlFlowGraph::simplify_graph() {
   // Simplify the graph structure, do not modify the IR.
   const int num_nodes = size();
   while (true) {
     bool modified = false;
     for (int i = 0; i < num_nodes; i++) {
-      if (nodes[i] && nodes[i]->empty() && i != start_node &&
+      if (nodes[i] && nodes[i]->empty() && i != start_node && i != final_node &&
           (nodes[i]->prev.size() <= 1 || nodes[i]->next.size() <= 1)) {
         erase(i);
         modified = true;
@@ -396,6 +565,9 @@ void ControlFlowGraph::simplify_graph() {
     if (nodes[i]) {
       if (i != new_num_nodes) {
         nodes[new_num_nodes] = std::move(nodes[i]);
+      }
+      if (final_node == i) {
+        final_node = new_num_nodes;
       }
       new_num_nodes++;
     }
@@ -424,8 +596,11 @@ bool ControlFlowGraph::unreachable_code_elimination() {
   for (auto &node : nodes) {
     if (visited.find(node.get()) == visited.end()) {
       // unreachable
-      if (node->erase_entire_node())
+      if (!node->empty()) {
+        while (!node->empty())
+          node->erase(node->end_location - 1);
         modified = true;
+      }
     }
   }
   return modified;
@@ -438,6 +613,18 @@ bool ControlFlowGraph::store_to_load_forwarding(bool after_lower_access) {
   bool modified = false;
   for (int i = 0; i < num_nodes; i++) {
     if (nodes[i]->store_to_load_forwarding(after_lower_access))
+      modified = true;
+  }
+  return modified;
+}
+
+bool ControlFlowGraph::dead_store_elimination(bool after_lower_access) {
+  TI_AUTO_PROF;
+  live_variable_analysis(after_lower_access);
+  const int num_nodes = size();
+  bool modified = false;
+  for (int i = 0; i < num_nodes; i++) {
+    if (nodes[i]->dead_store_elimination(after_lower_access))
       modified = true;
   }
   return modified;

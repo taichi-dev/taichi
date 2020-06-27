@@ -55,12 +55,14 @@ class SNode:
     def parent(self, n=1):
         impl.get_runtime().try_materialize()
         p = self.ptr
-        for i in range(n):
+        while p and n > 0:
             p = p.parent
+            n -= 1
+        if p is None:
+            return None
         if p.type == impl.taichi_lang_core.SNodeType.root:
             return impl.root
-        else:
-            return SNode(p)
+        return SNode(p)
 
     def data_type(self):
         return self.ptr.data_type()
@@ -73,8 +75,7 @@ class SNode:
     def shape(self):
         impl.get_runtime().try_materialize()
         dim = self.ptr.num_active_indices()
-        ret = [
-            self.ptr.get_num_elements_along_axis(i) for i in range(dim)]
+        ret = [self.ptr.get_num_elements_along_axis(i) for i in range(dim)]
 
         class callable_tuple(tuple):
             @deprecated('x.shape()', 'x.shape')

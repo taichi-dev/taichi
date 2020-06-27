@@ -13,6 +13,9 @@ assert: assert.cu
 gpu_memory_bound: gpu_memory_bound.cu
 	nvcc -std=c++14 gpu_memory_bound.cu -O3 -o gpu_memory_bound --gpu-architecture=compute_61 --gpu-code=sm_61,compute_61
 
+gpu_reduction: gpu_reduction.cu
+	nvcc -std=c++14 gpu_reduction.cu -O3 -o gpu_reduction --gpu-architecture=compute_61 --gpu-code=sm_61,compute_61
+
 ldg:
 	clang++-8 -std=c++14 ldg.cu -S -emit-llvm --cuda-gpu-arch=sm_61
 

@@ -450,7 +450,9 @@ class Matrix(TaichiOperations):
 
     @impl.pyfunc
     def normalized(self, eps=0):
-        impl.static(impl.static_assert(self.m == 1, "normalized() only works on vector"))
+        impl.static(
+            impl.static_assert(self.m == 1,
+                               "normalized() only works on vector"))
         invlen = 1 / (self.norm() + eps)
         return invlen * self
 
@@ -466,7 +468,7 @@ class Matrix(TaichiOperations):
     @impl.pyfunc
     def transpose(self):
         ret = Matrix([[self[i, j] for i in range(self.n)]
-            for j in range(self.m)])
+                      for j in range(self.m)])
         return ret
 
     @taichi_scope
@@ -534,7 +536,7 @@ class Matrix(TaichiOperations):
         for i in range(1, len(self.entries)):
             ret = ret + self.entries[i]
         return ret
- 
+
     @impl.pyfunc
     def norm(self, eps=0):
         return impl.sqrt(self.norm_sqr() + eps)
@@ -766,8 +768,10 @@ class Matrix(TaichiOperations):
 
     @impl.pyfunc
     def dot(self, other):
-        impl.static(impl.static_assert(self.m == 1, "lhs for dot is not a vector"))
-        impl.static(impl.static_assert(other.m == 1, "rhs for dot is not a vector"))
+        impl.static(
+            impl.static_assert(self.m == 1, "lhs for dot is not a vector"))
+        impl.static(
+            impl.static_assert(other.m == 1, "rhs for dot is not a vector"))
         return (self * other).sum()
 
     @impl.pyfunc
@@ -793,14 +797,19 @@ class Matrix(TaichiOperations):
 
         else:
             raise ValueError(
-                    "Cross product is only supported between pairs of 2D/3D vectors")
+                "Cross product is only supported between pairs of 2D/3D vectors"
+            )
 
     @impl.pyfunc
     def outer_product(self, other):
-        impl.static(impl.static_assert(self.m == 1, "lhs for outer_product is not a vector"))
-        impl.static(impl.static_assert(other.m == 1, "rhs for outer_product is not a vector"))
+        impl.static(
+            impl.static_assert(self.m == 1,
+                               "lhs for outer_product is not a vector"))
+        impl.static(
+            impl.static_assert(other.m == 1,
+                               "rhs for outer_product is not a vector"))
         ret = Matrix([[self[i] * other[j] for j in range(other.n)]
-            for i in range(other.n)])
+                      for i in range(other.n)])
         return ret
 
 

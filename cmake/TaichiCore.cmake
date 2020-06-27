@@ -90,7 +90,8 @@ if(${LLVM_PACKAGE_VERSION} VERSION_LESS "8.0")
 endif()
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 include_directories(${LLVM_INCLUDE_DIRS})
-    message("llvm include dirs ${LLVM_INCLUDE_DIRS}")
+message("LLVM include dirs ${LLVM_INCLUDE_DIRS}")
+message("LLVM library dirs ${LLVM_LIBRARY_DIRS}")
 add_definitions(${LLVM_DEFINITIONS})
 
 llvm_map_components_to_libnames(llvm_libs
@@ -134,6 +135,7 @@ if (NOT WIN32)
         # Linux
         target_link_libraries(${CORE_LIBRARY_NAME} stdc++fs X11)
         target_link_libraries(${CORE_LIBRARY_NAME} -static-libgcc -static-libstdc++)
+        target_link_libraries(${CORE_LIBRARY_NAME} -Wl,--wrap=log2f) # Avoid glibc dependencies
     endif()
 endif ()
 message("PYTHON_LIBRARIES" ${PYTHON_LIBRARIES})

@@ -19,9 +19,10 @@ Installing Dependencies
 
   .. code-block:: bash
 
-    python3 -m pip install --user setuptools astpretty astor pybind11 Pillow
+    python3 -m pip install --user setuptools wheel astor pybind11 Pillow
     python3 -m pip install --user pytest pytest-rerunfailures pytest-xdist yapf
     python3 -m pip install --user numpy GitPython coverage colorama autograd
+
 
 - Make sure you have ``clang`` with version >= 7
 
@@ -30,7 +31,9 @@ Installing Dependencies
 
   * On OS X: you don't need to do anything.
 
-  * On Ubuntu, execute ``sudo apt install libtinfo-dev clang-8``.
+  * On Ubuntu, execute ``sudo apt install clang-8``.
+  
+  * On Arch Linux, execute ``sudo pacman -S clang``. (this will install ``clang-10``, which should work as well).
 
   * On other Linux distributions, please build clang 8.0.1 from source:
 
@@ -44,6 +47,20 @@ Installing Dependencies
         cmake ..
         make -j 8
         sudo make install
+        
+        
+- (If on Linux) Make sure you have `/lib/libtinfo.so.5` (for LLVM)
+
+    * On Ubuntu, execute ``sudo apt install libtinfo-dev``.
+
+    * On Arch Linux, first edit ``/etc/pacman.conf``, and append these lines:
+      
+    .. code-block:: none
+    
+      [archlinuxcn]
+      Server = https://mirrors.tuna.tsinghua.edu.cn/archlinuxcn/$arch
+      
+    Then execute ``sudo pacman -Syy ncurses5-compat-libs`.
 
 
 - Make sure you have LLVM 8.0.1/10.0.0. Note that Taichi uses a customized LLVM so the pre-built binaries from the LLVM official website or other sources probably doesn't work.
@@ -111,6 +128,18 @@ If you don't have CUDA, go to `this website <https://developer.nvidia.com/cuda-d
 Setting up Taichi for development
 ---------------------------------
 
+- Add the following script to your ``~/.bashrc``:
+
+  .. code-block:: bash
+
+    export TAICHI_REPO_DIR=/home/XXX/taichi  # Path to your taichi repository
+    export PYTHONPATH=$TAICHI_REPO_DIR/python:$PYTHONPATH
+    export PATH=$TAICHI_REPO_DIR/bin:$PATH
+    # export PATH=/opt/llvm/bin:$PATH # Uncomment if your llvm-8 or clang-8 is in /opt
+    export CMAKE_CXX_COMPILER=clang++
+
+- Execute ``source ~/.bashrc`` to reload shell config.
+
 - Clone the taichi repo **recursively**, and build:
 
   .. code-block:: bash
@@ -132,16 +161,6 @@ Setting up Taichi for development
     #   cmake .. -DCUDA_VERSION=10.0 -DTI_WITH_CUDA:BOOL=True
     make -j 8
 
-- Add the following script to your ``~/.bashrc``:
-
-  .. code-block:: bash
-
-    export TAICHI_REPO_DIR=/home/XXX/taichi  # Path to your taichi repository
-    export PYTHONPATH=$TAICHI_REPO_DIR/python/:$PYTHONPATH
-    export PATH=$TAICHI_REPO_DIR/bin/:$PATH
-    # export PATH=/opt/llvm/bin:$PATH # Uncomment if your llvm-8 or clang-8 is in /opt
-
-- Execute ``source ~/.bashrc`` to reload shell config.
 - Execute ``python3 -m taichi test`` to run all the tests. It may take up to 5 minutes to run all tests.
 - Check out ``examples`` for runnable examples. Run them with ``python3``.
 
@@ -149,5 +168,4 @@ Setting up Taichi for development
 Troubleshooting
 ---------------
 
-- Run with debug mode to see if there's any illegal memory access
-- Disable compiler optimizations to quickly confirm that the issue is not cause by optimization
+See `:ref:troubleshooting`.

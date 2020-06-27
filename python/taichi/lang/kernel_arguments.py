@@ -33,9 +33,8 @@ template = Template
 
 
 def decl_scalar_arg(dt):
-    import taichi as ti
     id = taichi_lang_core.decl_arg(dt, False)
-    return ti.expr_init(Expr(taichi_lang_core.make_arg_load_expr(id)))
+    return Expr(taichi_lang_core.make_arg_load_expr(id))
 
 
 def decl_ext_arr_arg(dt, dim):

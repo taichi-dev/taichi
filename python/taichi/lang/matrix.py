@@ -125,7 +125,7 @@ class Matrix(TaichiOperations):
                                                              offset=offset)
         else:
             assert offset is None, f"shape cannot be None when offset is being set"
-            
+
         if impl.inside_kernel():
             self.entries = list(map(impl.expr_init, self.entries))
 

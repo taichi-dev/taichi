@@ -162,7 +162,7 @@ Developer's Troubleshooting
 
 - If importing Taichi cause ``FileNotFoundError: [Errno 2] No such file or directory: '/root/taichi/python/taichi/core/../lib/taichi_core.so' -> '/root/taichi/python/taichi/core/../lib/libtaichi_core.so'``, please:
 
-  * On Windows, add a environment variable called ``TAICHI_REPO_DIR`` to environment variables, this may be either done in your IDE configuation panel or system settings.
+  * On Windows, add a environment variable called ``TAICHI_REPO_DIR`` with value ``/home/XXX/taichi`` (Taichi repo path), this may be either done in your IDE configuation panel or system settings.
   * On Linux / OS X, add ``export TAICHI_REPO_DIR=/home/XXX/taichi`` to your ``~/.bashrc`` and restart ``bash``.
 
 - If the build succeed, but running a Taichi example result in an error, please make sure ``clang`` is in your ``PATH``:

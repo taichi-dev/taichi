@@ -9,8 +9,7 @@ def test_pointer():
     n = 16
 
     ptr = ti.root.pointer(ti.i, n)
-    den = ptr.dense(ti.i, n)
-    den.place(x)
+    ptr.dense(ti.i, n).place(x)
     ti.root.place(s)
 
     s[None] = 0

@@ -294,7 +294,7 @@ def is_arch_supported(arch):
     elif arch == opengl:
         return core.with_opengl()
     elif arch == cc:
-        return core.with_c_backend()
+        return core.with_cc()
     elif arch == cpu:
         return True
     else:

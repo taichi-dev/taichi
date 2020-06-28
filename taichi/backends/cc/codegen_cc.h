@@ -33,7 +33,7 @@ class CCKernelGen {
 FunctionType compile_kernel(
       Program *program,
       Kernel *kernel,
-      CCLayout *layout, 
+      CCLayout *layout,
       CCLauncher *launcher);
 
 }  // namespace cccp

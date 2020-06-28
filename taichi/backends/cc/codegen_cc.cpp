@@ -80,7 +80,7 @@ std::unique_ptr<CCKernel> CCKernelGen::compile() {
 FunctionType compile_kernel(
       Program *program,
       Kernel *kernel,
-      CCLayout *layout, 
+      CCLayout *layout,
       CCLauncher *launcher) {
   CCKernelGen codegen(program, kernel, layout);
   auto compiled = codegen.compile();

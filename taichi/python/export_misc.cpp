@@ -163,7 +163,11 @@ void export_misc(py::module &m) {
   m.def("with_cuda", is_cuda_api_available);
   m.def("with_metal", taichi::lang::metal::is_metal_api_available);
   m.def("with_opengl", taichi::lang::opengl::is_opengl_api_available);
-  m.def("with_c_backend", taichi::lang::cccp::is_c_backend_available);
+#ifdef TI_WITH_CC
+  m.def("with_cc", taichi::lang::cccp::is_c_backend_available);
+#else
+  m.def("with_cc", [] () -> { return false; });
+#endif
 }
 
 TI_NAMESPACE_END

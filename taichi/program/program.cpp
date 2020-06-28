@@ -162,9 +162,11 @@ FunctionType Program::compile(Kernel &kernel) {
     opengl::OpenglCodeGen codegen(kernel.name, &opengl_struct_compiled_.value(),
                                   opengl_kernel_launcher_.get());
     ret = codegen.compile(*this, kernel);
+#ifdef TI_WITH_CC
   } else if (kernel.arch == Arch::cc) {
     ret = cccp::compile_kernel(this, &kernel,
-          cccp_struct_layout_.get(), cccp_kernel_launcher_.get());
+          cc_struct_layout_.get(), cc_kernel_launcher_.get());
+#endif
   } else {
     TI_NOT_IMPLEMENTED;
   }
@@ -323,8 +325,8 @@ void Program::materialize_layout() {
         opengl_struct_compiled_->root_size);
   } else if (config.arch == Arch::cc) {
     cccp::CCLayoutGen scomp(snode_root.get());
-    cccp_struct_layout_ = scomp.compile();
-    cccp_kernel_launcher_ = std::make_unique<cccp::CCLauncher>();
+    cc_struct_layout_ = scomp.compile();
+    cc_kernel_launcher_ = std::make_unique<cccp::CCLauncher>();
   }
 }
 

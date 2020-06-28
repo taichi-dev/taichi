@@ -15,6 +15,7 @@
 #include "taichi/system/dynamic_loader.h"
 #include "taichi/backends/metal/api.h"
 #include "taichi/backends/opengl/opengl_api.h"
+#include "taichi/backends/cc/cc_configuation.h"
 #if defined(TI_WITH_CUDA)
 #include "taichi/backends/cuda/cuda_driver.h"
 #endif
@@ -162,6 +163,7 @@ void export_misc(py::module &m) {
   m.def("with_cuda", is_cuda_api_available);
   m.def("with_metal", taichi::lang::metal::is_metal_api_available);
   m.def("with_opengl", taichi::lang::opengl::is_opengl_api_available);
+  m.def("with_c_backend", taichi::lang::cccp::is_c_backend_available);
 }
 
 TI_NAMESPACE_END

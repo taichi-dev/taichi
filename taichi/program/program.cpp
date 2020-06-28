@@ -12,11 +12,14 @@
 #endif
 #include "taichi/backends/metal/codegen_metal.h"
 #include "taichi/backends/opengl/codegen_opengl.h"
+#include "taichi/backends/cc/codegen_cc.h"
 #include "taichi/backends/cpu/codegen_cpu.h"
 #include "taichi/struct/struct.h"
 #include "taichi/struct/struct_llvm.h"
 #include "taichi/backends/metal/struct_metal.h"
 #include "taichi/backends/opengl/struct_opengl.h"
+#include "taichi/backends/cc/struct_cc.h"
+#include "taichi/backends/cc/cc_kernel.h"
 #include "taichi/system/unified_allocator.h"
 #include "taichi/ir/snode.h"
 #include "taichi/ir/frontend_ir.h"
@@ -159,6 +162,9 @@ FunctionType Program::compile(Kernel &kernel) {
     opengl::OpenglCodeGen codegen(kernel.name, &opengl_struct_compiled_.value(),
                                   opengl_kernel_launcher_.get());
     ret = codegen.compile(*this, kernel);
+  } else if (kernel.arch == Arch::cc) {
+    ret = cccp::compile_kernel(this, &kernel,
+          cccp_struct_layout_.get(), cccp_kernel_launcher_.get());
   } else {
     TI_NOT_IMPLEMENTED;
   }
@@ -315,6 +321,10 @@ void Program::materialize_layout() {
              opengl_struct_compiled_->root_size);
     opengl_kernel_launcher_ = std::make_unique<opengl::GLSLLauncher>(
         opengl_struct_compiled_->root_size);
+  } else if (config.arch == Arch::cc) {
+    cccp::CCLayoutGen scomp(snode_root.get());
+    cccp_struct_layout_ = scomp.compile();
+    cccp_kernel_launcher_ = std::make_unique<cccp::CCLauncher>();
   }
 }
 

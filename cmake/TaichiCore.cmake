@@ -3,6 +3,7 @@ set(CORE_LIBRARY_NAME taichi_core)
 option(USE_STDCPP "Use -stdlib=libc++" OFF)
 option(TI_WITH_CUDA "Build with the CUDA backend" ON)
 option(TI_WITH_OPENGL "Build with the OpenGL backend" ON)
+option(TI_WITH_CCCP "Build with the CCCP backend" ON)
 
 if (APPLE)
     if (TI_WITH_CUDA)
@@ -12,6 +13,17 @@ if (APPLE)
     if (TI_WITH_OPENGL)
         set(TI_WITH_OPENGL OFF)
         message(WARNING "OpenGL not supported on OS X. Setting TI_WITH_OPENGL to OFF.")
+    endif()
+    if (TI_WITH_CCCP)
+        set(TI_WITH_CCCP OFF)
+        message(WARNING "CCCP not supported on OS X. Setting TI_WITH_CCCP to OFF.")
+    endif()
+endif()
+
+if (WIN32)
+    if (TI_WITH_CCCP)
+        set(TI_WITH_CCCP OFF)
+        message(WARNING "CCCP not supported on Windows. Setting TI_WITH_CCCP to OFF.")
     endif()
 endif()
 
@@ -30,6 +42,7 @@ file(GLOB TAICHI_CPU_SOURCE "taichi/backends/cpu/*.cpp" "taichi/backends/cpu/*.h
 file(GLOB TAICHI_CUDA_SOURCE "taichi/backends/cuda/*.cpp" "taichi/backends/cuda/*.h")
 file(GLOB TAICHI_METAL_SOURCE "taichi/backends/metal/*.h" "taichi/backends/metal/*.cpp" "taichi/backends/metal/shaders/*")
 file(GLOB TAICHI_OPENGL_SOURCE "taichi/backends/opengl/*.h" "taichi/backends/opengl/*.cpp" "taichi/backends/opengl/shaders/*")
+file(GLOB TAICHI_CCCP_SOURCE "taichi/backends/cc/*.h" "taichi/backends/cc/*.cpp")
 
 list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_BACKEND_SOURCE})
 
@@ -54,6 +67,11 @@ if (TI_WITH_OPENGL)
   # A: To ensure glad submodule exists when TI_WITH_OPENGL is ON.
   file(GLOB TAICHI_GLAD_SOURCE "external/glad/src/glad.c")
   list(APPEND TAICHI_CORE_SOURCE ${TAICHI_GLAD_SOURCE})
+endif()
+
+if (TI_WITH_CCCP)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_CCCP")
+  list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CCCP_SOURCE})
 endif()
 
 add_library(${CORE_LIBRARY_NAME} SHARED ${TAICHI_CORE_SOURCE} ${PROJECT_SOURCES})

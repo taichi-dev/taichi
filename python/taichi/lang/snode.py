@@ -53,7 +53,7 @@ class SNode:
         self.ptr.lazy_grad()
 
     def parent(self, n=1):
-        impl.get_runtime().try_materialize()
+        impl.get_runtime().materialize()
         p = self.ptr
         while p and n > 0:
             p = p.parent
@@ -73,7 +73,7 @@ class SNode:
 
     @property
     def shape(self):
-        impl.get_runtime().try_materialize()
+        impl.get_runtime().materialize()
         dim = self.ptr.num_active_indices()
         ret = [self.ptr.get_num_elements_along_axis(i) for i in range(dim)]
 

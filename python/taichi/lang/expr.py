@@ -36,7 +36,7 @@ class Expr(TaichiOperations):
 
     @python_scope
     def __setitem__(self, key, value):
-        impl.get_runtime().try_materialize()
+        impl.get_runtime().materialize()
         self.initialize_accessor()
         if key is None:
             key = ()
@@ -49,7 +49,7 @@ class Expr(TaichiOperations):
 
     @python_scope
     def __getitem__(self, key):
-        impl.get_runtime().try_materialize()
+        impl.get_runtime().materialize()
         self.initialize_accessor()
         if key is None:
             key = ()
@@ -114,7 +114,7 @@ class Expr(TaichiOperations):
         from .meta import fill_tensor
         fill_tensor(self, val)
 
-    @deprecated('tensor.parent()', 'tensor.snode().parent()')
+    #@deprecated('tensor.parent()', 'tensor.snode().parent()')
     def parent(self, n=1):
         import taichi as ti
         p = self.snode().parent(n)

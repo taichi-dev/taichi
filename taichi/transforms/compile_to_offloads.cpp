@@ -74,9 +74,6 @@ void compile_to_offloads(IRNode *ir,
     irpass::auto_diff(ir, ad_use_stack);
     irpass::full_simplify(ir);
     print("Gradient");
-    // TODO: removing the following line break the verify pass. Need to figure
-    // out why.
-    irpass::fix_block_parents(ir);
     irpass::analysis::verify(ir);
   }
 

@@ -322,10 +322,12 @@ void Program::materialize_layout() {
              opengl_struct_compiled_->root_size);
     opengl_kernel_launcher_ = std::make_unique<opengl::GLSLLauncher>(
         opengl_struct_compiled_->root_size);
+#ifdef TI_WITH_CC
   } else if (config.arch == Arch::cc) {
     cc_program = std::make_unique<cccp::CCProgram>();
     cccp::CCLayoutGen scomp(snode_root.get());
     cc_program->layout = scomp.compile();
+#endif
   }
 }
 

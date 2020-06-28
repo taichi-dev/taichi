@@ -10,7 +10,7 @@ struct CCConfiguation {
   std::string execute_cmd;
 
   CCConfiguation()
-      : compile_cmd("gcc -o '{}' '{}'")
+      : compile_cmd("gcc -shared -fPIC -o '{}' '{}'")
       , execute_cmd("'{}'")
   {}
 }; 

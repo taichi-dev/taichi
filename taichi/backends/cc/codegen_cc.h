@@ -7,34 +7,21 @@ TLANG_NAMESPACE_BEGIN
 namespace cccp {
 
 class CCKernel;
-class CCLayout;
-class CCLauncher;
 
 class CCKernelGen {
   // Generate corresponding C Source Code for a Taichi Kernel
  public:
-  CCKernelGen(
-      Program *program,
-      Kernel *kernel,
-      CCLayout *layout)
-      : program(program)
-      , kernel(kernel)
-      , layout(layout) {
+  CCKernelGen(Kernel *kernel)
+      : kernel(kernel) {
   }
 
   std::unique_ptr<CCKernel> compile();
 
  private:
-  Program *program;
   Kernel *kernel;
-  CCLayout *layout;
 };
 
-FunctionType compile_kernel(
-      Program *program,
-      Kernel *kernel,
-      CCLayout *layout,
-      CCLauncher *launcher);
+FunctionType compile_kernel(Kernel *kernel);
 
 }  // namespace cccp
 TLANG_NAMESPACE_END

@@ -7,6 +7,7 @@ namespace cccp {
 
 std::unique_ptr<CCLayout> CCLayoutGen::compile() {
   auto lay = std::make_unique<CCLayout>();
+  // W.I.P.
   return lay;
 }
 

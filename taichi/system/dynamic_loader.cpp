@@ -21,7 +21,7 @@ void DynamicLoader::load_dll(const std::string &dll_path) {
 }
 
 void *DynamicLoader::load_function(const std::string &func_name) {
-  TI_ASSERT(loaded());
+  TI_ASSERT_INFO(loaded(), "DLL not opened");
 #ifdef WIN32
   auto func = (void *)GetProcAddress((HMODULE)dll, func_name.c_str());
 #else
@@ -34,7 +34,7 @@ void *DynamicLoader::load_function(const std::string &func_name) {
 }
 
 void DynamicLoader::close_dll() {
-  TI_ERROR_IF(!loaded(), "DLL not opened.");
+  TI_ASSERT_INFO(loaded(), "DLL not opened");
 #ifdef WIN32
   FreeLibrary((HMODULE)dll);
 #else

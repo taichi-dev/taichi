@@ -6,18 +6,18 @@ TLANG_NAMESPACE_BEGIN
 namespace cccp {
 
 class CCKernel;
+class CCLayout;
 
-class CCLauncher {
+class CCProgram {
   // Launch C compiler to compile generated source code, and run them
  public:
-  CCLauncher();
-  ~CCLauncher();
+  CCProgram();
+  ~CCProgram();
 
   void launch(CCKernel *kernel, Context *ctx);
-  void keep(std::unique_ptr<CCKernel> kernel);
 
- private:
-  std::vector<std::unique_ptr<CCKernel>> kept_kernels;
+  std::vector<std::unique_ptr<CCKernel>> kernels;
+  std::unique_ptr<CCLayout> layout;
 };
 
 }  // namespace cccp

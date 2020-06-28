@@ -274,10 +274,11 @@ def var(dt, shape=None, offset=None, needs_grad=False):
 
     if get_runtime().materialized:
         raise RuntimeError(
-        "No new variables can be declared after materialization, i.e. kernel invocations "
-        "or Python-scope tensor accesses. I.e. only after all the data layouts are defined, "
-        "we can initialize our data and run computation. Try append ti.init() or ti.reset() "
-        "right after 'import taichi as ti' if you are using Jupyter notebook.")
+            "No new variables can be declared after materialization, i.e. kernel invocations "
+            "or Python-scope tensor accesses. I.e. only after all the data layouts are defined, "
+            "we can initialize our data and run computation. Try append ti.init() or ti.reset() "
+            "right after 'import taichi as ti' if you are using Jupyter notebook."
+        )
 
     # primal
     x = Expr(taichi_lang_core.make_id_expr(""))

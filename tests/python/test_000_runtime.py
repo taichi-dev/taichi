@@ -1,5 +1,6 @@
 import taichi as ti
 
+
 # The first test to run, ever:
 def test_000_without_init():
     assert ti.cfg.arch == ti.cpu
@@ -9,6 +10,7 @@ def test_000_without_init():
 
     x[1, 2] = 4
     assert x[1, 2] == 4
+
 
 @ti.all_archs
 @ti.all_archs
@@ -25,6 +27,7 @@ def test_materialization_after_kernel():
     y = ti.var(ti.f32, (2, 3))
     # ERROR: No new variable should be declared after kernel invocation!
 
+
 @ti.all_archs
 @ti.must_throw(RuntimeError)
 def test_materialization_after_access():
@@ -34,6 +37,7 @@ def test_materialization_after_access():
 
     y = ti.var(ti.f32, (2, 3))
     # ERROR: No new variable should be declared after Python-scope tensor access!
+
 
 @ti.all_archs
 @ti.must_throw(RuntimeError)

@@ -52,8 +52,8 @@ For now, Taichi-scope ``print`` supports string, scalar, vector, and matrix expr
         import taichi as ti
         ti.init(arch=ti.cpu)
         a = ti.var(ti.f32, 4)
-        
-                
+
+
         @ti.kernel
         def kern():
             a[0] = 1.0
@@ -103,7 +103,7 @@ It behaves the same as Python-scope ``print``, just being embedded into Taichi k
 
     x = ti.var(ti.f32, (2, 3))
     y = 1
-    
+
     @ti.kernel
     def inside_taichi_scope():
         ti.static_print(y)

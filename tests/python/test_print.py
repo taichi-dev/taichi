@@ -70,8 +70,10 @@ def test_print_sep_end():
         print('chi', 233, 'world!')
         # hello42world!
         print('hello', 42, 'world!', sep='')
-        # '  '
+        # '  ' (with no newline)
         print('  ', end='')
+        # 'helloaswd42qwer'
+        print('  ', 42, sep='aswd', end='qwer')
 
     func()
     ti.sync()

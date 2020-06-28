@@ -11,6 +11,11 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python: [3.6, 3.7, 3.8]
+	  	with_cc: [OFF]
+		include:
+          - os: ubuntu-latest
+            python: 3.7
+            with_cc: ON
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
@@ -30,7 +35,7 @@ jobs:
           export TAICHI_REPO_DIR=`pwd`
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
           export CXX=clang++
-          export CI_SETUP_CMAKE_ARGS=-DTI_WITH_OPENGL:BOOL=OFF
+          export CI_SETUP_CMAKE_ARGS="-DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{matrix.with_cc}}"
           # GLFW dependencies:
           #export CI_SETUP_CMAKE_ARGS=-DTI_WITH_OPENGL:BOOL=ON
           #sudo apt-get install libx11-dev libxcursor-dev libxi-dev

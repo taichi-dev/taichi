@@ -29,7 +29,6 @@ void CCKernel::launch(CCProgram *launcher, Context *ctx) {
   TI_INFO("[cc] entering kernel [{}]", name);
   (*main)();
   TI_INFO("[cc] leaving kernel [{}]", name);
-  //execute(cfg.execute_cmd, bin_path);
 }
 
 void CCProgram::launch(CCKernel *kernel, Context *ctx) {

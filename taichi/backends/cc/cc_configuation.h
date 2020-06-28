@@ -7,11 +7,9 @@ namespace cccp {
 
 struct CCConfiguation {
   std::string compile_cmd;
-  std::string execute_cmd;
 
   CCConfiguation()
       : compile_cmd("gcc -shared -fPIC -o '{}' '{}'")
-      , execute_cmd("'{}'")
   {}
 }; 
 

@@ -7,6 +7,7 @@
 #include "taichi/common/task.h"
 #include "taichi/math/math.h"
 #include "taichi/python/exception.h"
+#include "taichi/python/print_buffer.h"
 #include "taichi/python/export.h"
 #include "taichi/system/benchmark.h"
 #include "taichi/system/profiler.h"
@@ -19,6 +20,8 @@
 #endif
 
 TI_NAMESPACE_BEGIN
+
+PythonPrintBuffer py_cout;
 
 Config config_from_py_dict(py::dict &c) {
   Config config;
@@ -152,6 +155,9 @@ void export_misc(py::module &m) {
       printf("caught.\n");
     }
     printf("test was successful.\n");
+  });
+  m.def("pop_python_print_buffer", []() {
+      return py_cout.pop_content();
   });
   m.def("with_cuda", is_cuda_api_available);
   m.def("with_metal", taichi::lang::metal::is_metal_api_available);

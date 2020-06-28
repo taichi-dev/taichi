@@ -35,7 +35,7 @@ Debug your program with ``print()`` in Taichi-scope. For example:
         print('v =', v)
         #=> v = [3, 4]
 
-For now, Taichi-scope ``print`` support string, scalar, vector, matrix expressions as argument.
+For now, Taichi-scope ``print`` supports string, scalar, vector, and matrix expressions as the argument.
 ``print`` in Taichi-scope maybe a little different from the ones in Python-scope, see below.
 
 .. warning::
@@ -45,6 +45,22 @@ For now, Taichi-scope ``print`` support string, scalar, vector, matrix expressio
     Taichi developers are trying to solve this now. Use **OpenGL backend** if you wish to
     use ``print`` in IDLE / Jupyter.
 
+.. warning::
+
+    Note that ``print`` in Taichi-scope can only receive **comma-seperated paramater**. Neither f-string nor formatted string should be used. For example:
+    .. code-block:: python
+        import taichi as ti
+        ti.init(arch=ti.cpu)
+        a = ti.var(ti.f32, 4)
+        
+                
+        @ti.kernel
+        def kern():
+            a[0] = 1.0
+            print('a[0] = ', a[0]) # right
+            print(f'a[0] = {a[0]}') # wrong, f-string is not supported
+            print("a[0] = %f" % a[0]) # wrong, formatted string is not supported
+        kern()
 .. note::
 
     For the **OpenGL and CUDA backend**, the printed result won't shows up until ``ti.sync()``:
@@ -79,16 +95,19 @@ For now, Taichi-scope ``print`` support string, scalar, vector, matrix expressio
 Compile-time ``ti.static_print``
 --------------------------------
 
-Sometimes it's also useful to print Python-scope objects / constants like data type, SNode.
+Sometimes it's also useful to print Python-scope objects and constants like datatype or SNode in Taichi-scope.
 So, similar to ``ti.static`` we provide ``ti.static_print`` to print compile-time constants.
-It behave as same as Python-scope ``print`` does, just being embbed into Taichi kernel.
+It behaves the same as Python-scope ``print``, just being embedded into Taichi kernel.
 
 .. code-block:: python
 
     x = ti.var(ti.f32, (2, 3))
-
+    y = 1
+    
     @ti.kernel
     def inside_taichi_scope():
+        ti.static_print(y)
+        # => 1
         ti.static_print(x.shape)
         # => (2, 3)
         ti.static_print(x.data_type())
@@ -98,7 +117,7 @@ It behave as same as Python-scope ``print`` does, just being embbed into Taichi 
                 # => DataType.int32
                 # will only print once
 
-Unlike ``print``, ``ti.static_print`` will only print the expression once at compile-time. And
+Unlike ``print``, ``ti.static_print`` will only print the expression once at compile-time, and
 therefore has no runtime cost.
 
 
@@ -109,7 +128,7 @@ We may use ``assert`` statement in Taichi-scope. When assertion condition failed
 ``RuntimeError`` will be raised to indicate error.
 
 To make ``assert`` work, first make sure you are using the **CPU backend**.
-For performance reason, ``assert`` is only work when ``debug`` mode is on, For example:
+For performance reason, ``assert`` only works when ``debug`` mode is on, For example:
 
 .. code-block:: python
 
@@ -124,16 +143,16 @@ For performance reason, ``assert`` is only work when ``debug`` mode is on, For e
             x[i] = ti.sqrt(x)
 
 
-When your debugging work is done, set ``debug=False``. Now ``assert`` will be simply ignored
+When your debugging work is done, simply set ``debug=False``. Now ``assert`` will be ignored
 therefore no runtime overhead, making your program easy to debug without losing performance.
 
 
 Compile-time ``ti.static_assert``
 ---------------------------------
 
-Like ``ti.static_print``, we also provide a static version for ``assert``:
+Like ``ti.static_print``, we also provide a static version of ``assert``:
 ``ti.static_assert``, it can be useful to make assertion on data type / dimention / shape.
-It works no matter wheater ``debug=True`` is specified. When assertion failure, it will
+It works no matter whether ``debug=True`` is specified. When assertion fails, it will
 raise ``AssertionError`` as a Python-scope ``assert`` does.
 
 For example:
@@ -158,7 +177,7 @@ Here we collected some common BUGs that one might encounter with a Taichi progra
 Static typing system
 ++++++++++++++++++++
 
-Taichi pertend that it's a dynamical-typed language like Python, but it's actually a
+Taichi pretends that it's a dynamical-typed language like Python, but it's actually a
 statically-typed language which will be translated into high performance CPU/GPU instructions.
 
 So the code behavior in Taichi-scope is actually very different from Python-scope!
@@ -179,15 +198,15 @@ users not distinguished Taichi-scope from Python-scope, e.g.:
 
     buggy()
 
-The codes above shows a common BUG due to the limitation of the static-type system.
+The code above shows a common BUG due to the limitation of the static-type system.
 The Taichi compiler should shows a warning like:
 
 .. code-block:: none
 
     [W 06/27/20 21:43:51.853] [type_check.cpp:visit@66] [$19] Atomic add (float32 to int32) may lose precision.
 
-This means that it can not store a float32 result to int32.
-The solution is to type ``ret`` as float32 at the first place:
+This means that it cannot store a ``float32`` result to ``int32``.
+The solution is to type ``ret`` as ``float32`` at the first place:
 
 .. code-block:: python
 
@@ -209,8 +228,8 @@ The solution is to type ``ret`` as float32 at the first place:
 Advanced Optimization
 +++++++++++++++++++++
 
-Taichi has a advanced optimization engine to make your Taichi kernel to be as fast as it could.
-But like the ``gcc -O3`` does, sometimes advanced optimization can leads to BUGs as it tried
+Taichi has an advanced optimization engine to make your Taichi kernel to be as fast as it could.
+But like the ``gcc -O3`` does, sometimes advanced optimization can lead to BUGs as it tried
 too hard, including runtime errors like:
 
 ```RuntimeError: [verify.cpp:basic_verify@40] stmt 8 cannot have operand 7.```
@@ -227,4 +246,4 @@ optimization and see if the issue still exists:
 
     ...
 
-If that fixed the issue, please report this BUG on `GitHub <https://github.com/taichi-dev/taichi/issues/new?labels=potential+bug&template=bug_report.md>`_ to help us improve, if you would like to.
+If turning of optimization fixed the issue, please report this BUG on `GitHub <https://github.com/taichi-dev/taichi/issues/new?labels=potential+bug&template=bug_report.md>`_ to help us improve, if you would like to.

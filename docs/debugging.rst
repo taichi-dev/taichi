@@ -1,10 +1,10 @@
 Debugging
 =========
 
-Debugging a massive-parallelized CPU/GPU program is not easy, so Taichi provides some
-builtin utilities that hopefully could help you debug your Taichi program.
+Debugging a parallel program is not easy, so Taichi provides
+builtin utilities that could hopefully help you debug your Taichi program.
 
-Runtime ``print`` in kernel
+Run-time ``print`` in kernels
 ---------------------------
 
 Debug your program with ``print()`` in Taichi-scope. For example:
@@ -36,13 +36,13 @@ Debug your program with ``print()`` in Taichi-scope. For example:
         #=> v = [3, 4]
 
 For now, Taichi-scope ``print`` supports string, scalar, vector, and matrix expressions as the argument.
-``print`` in Taichi-scope maybe a little different from the ones in Python-scope, see below.
+``print`` in Taichi-scope may be a little different from ``print`` in Python-scope, see below.
 
 .. warning::
 
-    For the **CPU, CUDA and Metal backend**, ``print`` will not work in Graphical Python Shells
-    including IDLE and Jupyter notebook, since they print the result to console, instead of GUI.
-    Taichi developers are trying to solve this now. Use **OpenGL backend** if you wish to
+    For the **CPU, CUDA, and Metal backend**, ``print`` will not work in Graphical Python Shells
+    including IDLE and Jupyter notebook. This is because these backends prints the outputs to the console instead of the GUI.
+    Taichi developers are trying to solve this now. Use the **OpenGL backend** if you wish to
     use ``print`` in IDLE / Jupyter.
 
 .. warning::
@@ -63,7 +63,7 @@ For now, Taichi-scope ``print`` supports string, scalar, vector, and matrix expr
         kern()
 .. note::
 
-    For the **OpenGL and CUDA backend**, the printed result won't shows up until ``ti.sync()``:
+    For the **OpenGL and CUDA backend**, the printed result will not show up until ``ti.sync()`` is called:
 
     .. code-block:: python
 
@@ -89,7 +89,7 @@ For now, Taichi-scope ``print`` supports string, scalar, vector, and matrix expr
         inside kernel
         after
 
-    Also note that host access or program end will also implicitly invoke for ``ti.sync()``.
+    Please note that host access or program end will also implicitly invoke ``ti.sync()``.
 
 
 Compile-time ``ti.static_print``
@@ -199,7 +199,7 @@ users not distinguished Taichi-scope from Python-scope, e.g.:
     buggy()
 
 The code above shows a common BUG due to the limitation of the static-type system.
-The Taichi compiler should shows a warning like:
+The Taichi compiler should show a warning like:
 
 .. code-block:: none
 

@@ -522,8 +522,13 @@ class Matrix(TaichiOperations):
     def dim(self):
         return len(self.shape)
 
+    @property
+    def dtype(self):
+        return self.loop_range().dtype
+
+    @deprecated('x.data_type()', 'x.dtype')
     def data_type(self):
-        return self.loop_range().data_type()
+        return self.dtype
 
     def make_grad(self):
         ret = self.empty_copy()
@@ -624,9 +629,7 @@ class Matrix(TaichiOperations):
         if not self.is_global():
             return np.array(self.entries).reshape(shape_ext)
 
-        ret = np.empty(self.loop_range().shape + shape_ext,
-                       dtype=to_numpy_type(
-                           self.loop_range().snode().data_type()))
+        ret = np.empty(self.shape + shape_ext, dtype=to_numpy_type(self.dtype)
         from .meta import matrix_to_ext_arr
         matrix_to_ext_arr(self, ret, as_vector)
         import taichi as ti
@@ -638,9 +641,8 @@ class Matrix(TaichiOperations):
         import torch
         as_vector = self.m == 1 and not keep_dims
         shape_ext = (self.n, ) if as_vector else (self.n, self.m)
-        ret = torch.empty(self.loop_range().shape + shape_ext,
-                          dtype=to_pytorch_type(
-                              self.loop_range().snode().data_type()),
+        ret = torch.empty(self.shape + shape_ext,
+                          dtype=to_pytorch_type(self.dtype),
                           device=device)
         from .meta import matrix_to_ext_arr
         matrix_to_ext_arr(self, ret, as_vector)

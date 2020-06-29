@@ -5,16 +5,15 @@ Taichi provides several development tools that can be used to greatly improve de
 
 * Logging
 * Profiler
-* Assertation
 
 Logging
 -------
 
-Based on spdlog, Taichi provides a series of APIs for logging. Note that these functions will be called in compile-time but not runtime, if you want to logging in runtime, please use ``print()`` instead.
+Based on spdlog, Taichi provides a series of APIs for logging. Note that these functions will be called in compile-time but not run-time, if you want to log in run-time, please use ``print()`` instead.
 
 .. Note::
 
-    The current taichi logging API only supports standard output, not output to files.
+    The current taichi logging API only supports standard output.
 
 .. function:: ti.set_logging_level(level)
 
@@ -73,7 +72,7 @@ Based on spdlog, Taichi provides a series of APIs for logging. Note that these f
 
     Note that it crashes the Taichi kernel as well as your Taichi program then throw an ``RuntimeError`` out.
 
-.. Note::
+.. Warn::
 
     The usages of ``ti.trace()``, ``ti.debug()`` and ``ti.warn()`` are all similar to ``ti.info()``.But ``ti.error()`` is different from them. When it is called, the program will be crashed immediately.
 
@@ -92,13 +91,6 @@ Here is an example:
         ti.error("It's a big error! Now exit...")
     except RuntimeError as err:
         print(err)
-
-TODO:
-
-1. say something about ``print`` and ``ti.static_print``?
-2. for example, print tensor value in f-string is not supported
-3. ``ti.static_print`` runs in only compile-time the same as ``ti.info``
-
 
 Profiler
 --------
@@ -136,7 +128,7 @@ ScopedProfiler
 ProfilerBase
 ############
 
-1. ``ProfilerBase`` records the cost of kernel launches on devices. ``kernel_profiler`` must be set to ``True`` in ``ti.init`` in order to enable this profiler.
+1. ``ProfilerBase`` records the cost of kernel launches on devices. ``kernel_profiler`` must be set to ``True`` in ``ti.init`` to enable this profiler.
 
 2. When all the computation is finished in your program, call ``ti.kernel_profiler_print()`` to show to profiling result. For example:
 
@@ -160,54 +152,3 @@ Its output is like:
     [ 22.73%] jit_evaluator_0_kernel_0_serial             min   0.001 ms   avg   0.001 ms   max   0.001 ms   total   0.000 s [      1x]
     [  0.00%] jit_evaluator_1_kernel_1_serial             min   0.000 ms   avg   0.000 ms   max   0.000 ms   total   0.000 s [      1x]
     [ 77.27%] compute_c4_0_kernel_2_serial                min   0.004 ms   avg   0.004 ms   max   0.004 ms   total   0.000 s [      1x]
-
-TODO:
-
-1. Do we need exposing ``ProfilerBase`` and ``ScopedProfiler`` to the end-user?
-
-2. ``ti.core.print_profile_info()`` to `ti.print_profile_info()`?
-
-3. Now ``ProfilerBase`` in ``Metal`` backend is out of control.
-
-4. We need to explain more about both the formats and contents for these output of profilers...
-
-Assertation
------------
-
-Assertation can make your Taichi program more reliable and help you debug easily.
-Except the built-in ``assert`` in python, Taichi offers ``ti.static_assert`` additionaly for XXXX?
-
-Use python built-in ``assert``
-##############################
-
-A taichi program can usually have 2 scopes: Taichi scope and python scope.
-
-1. In python scope, ``assert`` can be used as usual.
-
-2. But in Taichi scope, all of `assert` will be ignored and won't be executed.
-
-For example:
-
-.. code-block:: python
-    :emphasize-lines: 8, 11
-
-    import taichi as ti
-    ti.init(ti.cpu)
-    var = ti.var(ti.f32, shape = 1)
-
-    @ti.kernel
-    def compute():
-        var[0] = 1.0
-        assert var[0] == 2.0, f"assert in taichi scope" # it will be ignored
-
-    compute()
-    assert var[0] == 2.0, "assert fail in python scope" # it will be executed as usual
-
-Use ``ti.static_assert``
-########################
-
-TODO:
-
-1. what do we want ``ti.static_print`` exactly?
-
-2. add ``ti.static_assert`` and documeted it.

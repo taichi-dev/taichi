@@ -16,32 +16,33 @@ void CCKernel::compile() {
   src_path = fmt::format("{}/{}.c", runtime_tmp_dir, name);
 
   std::ofstream(src_path) << source;
-  TI_INFO("[cc] compiling kernel [{}]:\n{}\n", name, source);
+  TI_DEBUG("[cc] compiling [{}] -> [{}]:\n{}\n", name, src_path, source);
   execute(cfg.compile_cmd, obj_path, src_path);
 }
 
 void CCKernel::launch(Context *ctx) {
   program->relink();
   auto entry = program->load_kernel(name);
-  TI_INFO("[cc] entering kernel [{}]", name);
+  TI_TRACE("[cc] entering kernel [{}]", name);
   (*entry)();
-  TI_INFO("[cc] leaving kernel [{}]", name);
+  TI_TRACE("[cc] leaving kernel [{}]", name);
 }
 
 void CCLayout::compile() {
   obj_path = fmt::format("{}/_root.o", runtime_tmp_dir);
   src_path = fmt::format("{}/_root.c", runtime_tmp_dir);
 
-  std::ofstream(src_path) << source;
-  TI_INFO("[cc] compiling root struct [{}]:\n{}\n", name, source);
+  std::ofstream(src_path) << source <<
+      "\n\nstruct S0root *_Ti_get_root() {\n\tstatic struct S0root r;\n\treturn &r;\n}\n";
+  TI_DEBUG("[cc] compiling root struct -> [{}]:\n{}\n", obj_path, source);
   execute(cfg.compile_cmd, obj_path, src_path);
 }
 
-void CCProgram::relink(Context *ctx) {
+void CCProgram::relink() {
   if (!need_relink)
     return;
 
-  dll_path = fmt::format("{}/libthis_program.so", runtime_tmp_dir);
+  dll_path = fmt::format("{}/libti_program.so", runtime_tmp_dir);
 
   std::vector<std::string> objects;
   objects.push_back(layout->get_object());
@@ -49,10 +50,10 @@ void CCProgram::relink(Context *ctx) {
     objects.push_back(ker->get_object());
   }
 
-  TI_INFO("[cc] linking program [{}] with [{}]", dll_path, fmt::join("] [", objects));
-  execute(cfg.link_cmd, dll_path, fmt::join(" ", objects));
+  TI_DEBUG("[cc] linking shared object [{}] with [{}]", dll_path, fmt::join(objects, "] ["));
+  execute(cfg.link_cmd, dll_path, fmt::join(objects, "' '"));
 
-  TI_INFO("[cc] loading program: {}", dll_path);
+  TI_DEBUG("[cc] loading shared object: {}", dll_path);
   dll = std::make_unique<DynamicLoader>(dll_path);
   TI_ASSERT_INFO(dll->loaded(), "[cc] could not load shared object: {}", dll_path);
 
@@ -65,7 +66,7 @@ void CCProgram::add_kernel(std::unique_ptr<CCKernel> kernel) {
 }
 
 CCFuncEntryType *CCProgram::load_kernel(std::string const &name) {
-  return reinterpret_cast<CCFuncEntryType *>(program->dll->load_function(get_func_sym(name)));
+  return reinterpret_cast<CCFuncEntryType *>(dll->load_function(get_func_sym(name)));
 }
 
 CCProgram::CCProgram() {

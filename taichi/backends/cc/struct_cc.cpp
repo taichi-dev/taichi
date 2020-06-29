@@ -16,8 +16,7 @@ void CCLayoutGen::generate_children(SNode *snode) {
 void CCLayoutGen::generate_types(SNode *snode) {
   // suffix is for the array size
   auto node_name = snode->node_type_name;
-  auto struct_name = fmt::format("{}_{}", snode->node_type_name,
-                          snode_type_name(snode->type));
+  auto struct_name = snode->get_node_type_name_hinted();
 
   if (snode->type == SNodeType::place) {
     const auto type = cc_data_type_name(snode->dt);
@@ -26,7 +25,7 @@ void CCLayoutGen::generate_types(SNode *snode) {
   } else if (snode->type == SNodeType::root) {
     emit("struct {} {{", struct_name);
     generate_children(snode);
-    emit("}} {};", node_name);
+    emit("}} *_Ti_get_root();");
 
   } else if (snode->type == SNodeType::dense) {
     emit("struct {} {{", struct_name);
@@ -45,7 +44,6 @@ std::unique_ptr<CCLayout> CCLayoutGen::compile() {
 
   auto lay = std::make_unique<CCLayout>();
   lay->source = line_appender.lines();
-  TI_INFO("[cc] struct compiled result:\n{}\n", lay->source);
   lay->compile();
   return lay;
 }

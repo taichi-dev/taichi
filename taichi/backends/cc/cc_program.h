@@ -2,8 +2,11 @@
 
 #include "taichi/lang_util.h"
 
-TLANG_NAMESPACE_BEGIN
+TI_NAMESPACE_BEGIN
 class DynamicLoader;
+TI_NAMESPACE_END
+
+TLANG_NAMESPACE_BEGIN
 
 namespace cccp {
 

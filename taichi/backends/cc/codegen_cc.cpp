@@ -6,8 +6,16 @@
 #include "taichi/util/line_appender.h"
 #include "cc_utils.h"
 
+#define C99_COMPAT 0
+
 TLANG_NAMESPACE_BEGIN
 namespace cccp {  // Codegen for C Compiler Processor
+
+namespace {
+  std::string get_node_ptr_name(SNode *snode) {
+    return fmt::format("struct {} *", snode->get_node_type_name_hinted());
+  }
+}
 
 class CCTransformer : public IRVisitor {
 private:
@@ -17,6 +25,7 @@ private:
   LineAppender line_appender;
   LineAppender line_appender_header;
   bool is_top_level{true};
+  GetRootStmt *root_stmt;
 
 public:
   CCTransformer(Kernel *kernel, CCLayout *layout)
@@ -29,7 +38,7 @@ public:
   void run() {
     this->lower_ast();
     emit_header("#include <stdio.h>");
-    emit_header("\nextern {}", layout->source);
+    emit_header("\n{}", layout->source);
     kernel->ir->accept(this);
   }
 
@@ -62,10 +71,79 @@ private:
     TI_WARN("[cc] unsupported statement type {}", typeid(*stmt).name());
   }
 
+  void visit(BitExtractStmt *stmt) override {
+    emit("{} = (({} >> {}) & ((1 << {}) - 1));", define_var("int", stmt->raw_name()),
+         stmt->input->raw_name(), stmt->bit_begin,
+         stmt->bit_end - stmt->bit_begin);
+  }
+
+  std::string define_var(std::string const &type, std::string const &name) {
+    if (C99_COMPAT) {
+      emit_header("{} {};", type, name);
+      return name;
+    } else {
+      return fmt::format("{} {}", type, name);
+    }
+  }
+
+  void visit(GetRootStmt *stmt) override {
+    auto root = kernel->program.snode_root.get();
+    emit("{} = _Ti_get_root();", define_var(get_node_ptr_name(root), stmt->raw_name()));
+    root_stmt = stmt;
+  }
+
+  void visit(SNodeLookupStmt *stmt) override {
+    Stmt *input_ptr;
+    if (stmt->input_snode) {
+      input_ptr = stmt->input_snode;
+    } else {
+      TI_ASSERT(root_stmt != nullptr);
+      input_ptr = root_stmt;
+    }
+
+    emit("{} = &{}[{}];", define_var(get_node_ptr_name(stmt->snode), stmt->raw_name()),
+         input_ptr->raw_name(), stmt->input_index->raw_name());
+  }
+
+  void visit(GetChStmt *stmt) override {
+    auto snode = stmt->output_snode;
+    std::string type;
+    if (snode->type == SNodeType::place) {
+      auto dt = fmt::format("{} *", cc_data_type_name(snode->dt));
+      emit("{} = &{}->{};", define_var(dt, stmt->raw_name()),
+           stmt->input_ptr->raw_name(), snode->get_node_type_name());
+    } else {
+      emit("{} = {}->{};", define_var(get_node_ptr_name(snode), stmt->raw_name()),
+           stmt->input_ptr->raw_name(), snode->get_node_type_name());
+    }
+  }
+
+  void visit(GlobalLoadStmt *stmt) override {
+    TI_ASSERT(stmt->width() == 1);
+    emit("{} = *{};", define_var(cc_data_type_name(stmt->element_type()), stmt->raw_name()),
+        stmt->ptr->raw_name());
+  }
+
+  void visit(GlobalStoreStmt *stmt) override {
+    TI_ASSERT(stmt->width() == 1);
+    emit("*{} = {};", stmt->ptr->raw_name(), stmt->raw_name());
+  }
+
   void visit(ConstStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    emit("{} {} = {};", cc_data_type_name(stmt->element_type()),
-         stmt->raw_name(), stmt->val[0].stringify());
+    emit("{} = {};", define_var(cc_data_type_name(stmt->element_type()), stmt->raw_name()),
+        stmt->val[0].stringify());
+  }
+
+  void visit(BinaryOpStmt *bin) override {
+    TI_ASSERT(bin->width() == 1);
+    const auto dt_name = cc_data_type_name(bin->element_type());
+    const auto lhs_name = bin->lhs->raw_name();
+    const auto rhs_name = bin->rhs->raw_name();
+    const auto bin_name = bin->raw_name();
+    const auto binop = binary_op_type_symbol(bin->op_type);
+    emit("{} = {} {} {};", define_var(dt_name, bin_name), lhs_name,
+        binop, rhs_name);
   }
 
   void visit(PrintStmt *stmt) override {
@@ -93,10 +171,10 @@ private:
 
   void generate_serial_kernel(OffloadedStmt *stmt) {
     auto kernel_sym_name = get_func_sym(kernel->name);
-    emit_header("void {}(void);", kernel_sym_name);
-    emit("void {}(void) {{", kernel_sym_name);
+    emit_header("void {}(void) {{", kernel_sym_name);
     {
-      ScopedIndent _s(line_appender);
+      ScopedIndent _s1(line_appender);
+      ScopedIndent _s2(line_appender_header);
       stmt->body->accept(this);
     }
     emit("}}");

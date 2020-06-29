@@ -58,9 +58,9 @@ inline std::string get_data_sym(std::string const &name) {
 template <typename... Args>
 inline int execute(std::string fmt, Args &&... args) {
   auto cmd = fmt::format(fmt, std::forward<Args>(args)...);
-  TI_INFO("Executing command: {}", cmd);
+  TI_TRACE("Executing command: {}", cmd);
   int ret = std::system(cmd.c_str());
-  TI_INFO("Command exit status: {}", ret);
+  TI_TRACE("Command exit status: {}", ret);
   return ret;
 }
 

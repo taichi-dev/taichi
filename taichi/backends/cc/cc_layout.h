@@ -16,8 +16,8 @@ class CCLayout {
 
   void compile();
 
- private:
   std::string source;
+ private:
   std::string src_path;
   std::string obj_path;
 };

@@ -1225,15 +1225,18 @@ void full_simplify(IRNode *root, Kernel *kernel) {
         modified = true;
       if (constant_fold(root))
         modified = true;
+      if (die(root))
+        modified = true;
       if (alg_simp(root))
         modified = true;
-      die(root);
-      if (whole_kernel_cse(root))
+      if (die(root))
         modified = true;
-      die(root);
       if (simplify(root, kernel))
         modified = true;
-      die(root);
+      if (die(root))
+        modified = true;
+      if (whole_kernel_cse(root))
+        modified = true;
       if (!modified)
         break;
     }

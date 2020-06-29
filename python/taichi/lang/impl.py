@@ -64,8 +64,7 @@ def begin_frontend_struct_for(group, loop_range):
         raise IndexError(
             'Size mismatch between struct-for indices and loop range: '
             f'{group.size()} != {len(loop_range.shape)}. Maybe you want to '
-            ' use ti.grouped(x) to group all indices into a single vector?'
-            )
+            ' use ti.grouped(x) to group all indices into a single vector?')
     taichi_lang_core.begin_frontend_struct_for(group, loop_range.ptr)
 
 

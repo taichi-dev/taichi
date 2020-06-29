@@ -915,7 +915,8 @@ SNodeOpStmt::SNodeOpStmt(SNodeOpType op_type,
   ptr = nullptr;
   val = nullptr;
   TI_ASSERT(op_type == SNodeOpType::is_active ||
-            op_type == SNodeOpType::deactivate);
+            op_type == SNodeOpType::deactivate ||
+            op_type == SNodeOpType::activate);
   width() = 1;
   element_type() = DataType::i32;
   TI_STMT_REG_FIELDS;

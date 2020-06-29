@@ -64,8 +64,13 @@ class SNode:
             return impl.root
         return SNode(p)
 
-    def data_type(self):
+    @property
+    def dtype(self):
         return self.ptr.data_type()
+
+    @deprecated('x.data_type()', 'x.dtype')
+    def data_type(self):
+        return self.dtype
 
     @deprecated('x.dim()', 'len(x.shape)')
     def dim(self):

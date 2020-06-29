@@ -68,7 +68,7 @@ class Expr(TaichiOperations):
             return
         snode = self.ptr.snode()
 
-        if self.snode().data_type() == f32 or self.snode().data_type() == f64:
+        if self.dtype == f32 or self.dtype == f64:
 
             def getter(*key):
                 assert len(key) == taichi_lang_core.get_max_num_indices()
@@ -78,7 +78,7 @@ class Expr(TaichiOperations):
                 assert len(key) == taichi_lang_core.get_max_num_indices()
                 snode.write_float(key, value)
         else:
-            if taichi_lang_core.is_signed(self.snode().data_type()):
+            if taichi_lang_core.is_signed(self.dtype):
 
                 def getter(*key):
                     assert len(key) == taichi_lang_core.get_max_num_indices()
@@ -135,15 +135,20 @@ class Expr(TaichiOperations):
     def dim(self):
         return len(self.shape)
 
+    @property
+    def dtype(self):
+        return self.snode().dtype
+
+    @deprecated('x.data_type()', 'x.dtype'):
     def data_type(self):
-        return self.snode().data_type()
+        return self.snode().dtype
 
     @python_scope
     def to_numpy(self):
         from .meta import tensor_to_ext_arr
         import numpy as np
         arr = np.zeros(shape=self.shape,
-                       dtype=to_numpy_type(self.snode().data_type()))
+                       dtype=to_numpy_type(self.dtype))
         tensor_to_ext_arr(self, arr)
         import taichi as ti
         ti.sync()
@@ -154,7 +159,7 @@ class Expr(TaichiOperations):
         from .meta import tensor_to_ext_arr
         import torch
         arr = torch.zeros(size=self.shape,
-                          dtype=to_pytorch_type(self.snode().data_type()),
+                          dtype=to_pytorch_type(self.dtype),
                           device=device)
         tensor_to_ext_arr(self, arr)
         import taichi as ti

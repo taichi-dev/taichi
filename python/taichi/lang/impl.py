@@ -102,10 +102,13 @@ def subscript(value, *indices):
 def chain_compare(comparators, ops):
     assert len(comparators) == len(ops) + 1, \
       f'Chain comparison invoked with {len(comparators)} comparators but {len(ops)} operators'
-    ret = True
+    evaluated_comparators = []
+    for i in range(len(comparators)):
+        evaluated_comparators += [expr_init(comparators[i])]
+    ret = expr_init(True)
     for i in range(len(ops)):
-        lhs = comparators[i]
-        rhs = comparators[i + 1]
+        lhs = evaluated_comparators[i]
+        rhs = evaluated_comparators[i + 1]
         if ops[i] == 'Lt':
             now = lhs < rhs
         elif ops[i] == 'LtE':
@@ -120,7 +123,7 @@ def chain_compare(comparators, ops):
             now = lhs != rhs
         else:
             assert False, f'Unknown operator {ops[i]}'
-        ret = logical_and(ret, now)
+        ret = ret.logical_and(now)
     return ret
 
 

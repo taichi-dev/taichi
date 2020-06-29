@@ -9,18 +9,24 @@ class CCProgram;
 
 class CCKernel {
  public:
-  CCKernel(std::string const &source, std::string const &name)
-    : source(source), name(name) {
+  CCKernel(CCProgram *program, std::string const &source, std::string const &name)
+    : program(program), source(source), name(name) {
   }
 
   void compile();
-  void launch(CCProgram *program, Context *ctx);
+  void launch(Context *ctx);
+  std::string get_object() {
+    return obj_path;
+  }
+
+ private:
+  CCProgram *program;
 
   std::string source;
   std::string name;
 
   std::string src_path;
-  std::string bin_path;
+  std::string obj_path;
 };
 
 }  // namespace cccp

@@ -6,10 +6,11 @@ TLANG_NAMESPACE_BEGIN
 namespace cccp {
 
 struct CCConfiguation {
-  std::string compile_cmd;
+  std::string compile_cmd, link_cmd;
 
   CCConfiguation()
-      : compile_cmd("gcc -shared -fPIC -o '{}' '{}'")
+      : compile_cmd("gcc -c -o '{}' '{}'")
+      , link_cmd("gcc -shared -fPIC -o '{}' '{}'")
   {}
 }; 
 

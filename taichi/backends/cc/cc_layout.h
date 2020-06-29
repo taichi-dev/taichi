@@ -10,7 +10,16 @@ class CCLayout {
   CCLayout() {
   }
 
+  std::string get_object() {
+    return obj_path;
+  }
+
+  void compile();
+
+ private:
   std::string source;
+  std::string src_path;
+  std::string obj_path;
 };
 
 }  // namespace cccp

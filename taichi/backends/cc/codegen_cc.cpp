@@ -29,6 +29,7 @@ public:
   void run() {
     this->lower_ast();
     emit_header("#include <stdio.h>");
+    emit_header("\nextern {}", layout->source);
     kernel->ir->accept(this);
   }
 
@@ -91,8 +92,9 @@ private:
   }
 
   void generate_serial_kernel(OffloadedStmt *stmt) {
-    emit_header("void {}(void);", get_sym_name(kernel->name));
-    emit("void {}(void) {{", get_sym_name(kernel->name));
+    auto kernel_sym_name = get_func_sym(kernel->name);
+    emit_header("void {}(void);", kernel_sym_name);
+    emit("void {}(void) {{", kernel_sym_name);
     {
       ScopedIndent _s(line_appender);
       stmt->body->accept(this);
@@ -124,24 +126,25 @@ private:
 };
 
 std::unique_ptr<CCKernel> CCKernelGen::compile() {
-  auto layout = kernel->program.cc_program->layout.get();
+  auto program = kernel->program.cc_program.get();
+  auto layout = program->layout.get();
   CCTransformer tran(kernel, layout);
 
   tran.run();
   auto source = tran.get_source();
-  auto ker = std::make_unique<CCKernel>(source, kernel->name);
+  auto ker = std::make_unique<CCKernel>(program, source, kernel->name);
   ker->compile();
   return ker;
 }
 
 FunctionType compile_kernel(Kernel *kernel) {
   CCKernelGen codegen(kernel);
-  auto compiled = codegen.compile();
-  auto compiled_ptr = compiled.get();
+  auto ker = codegen.compile();
+  auto ker_ptr = ker.get();
   auto program = kernel->program.cc_program.get();
-  program->kernels.push_back(std::move(compiled));
-  return [program, compiled_ptr] (Context &ctx) {
-    return program->launch(compiled_ptr, &ctx);
+  program->add_kernel(std::move(ker));
+  return [ker_ptr] (Context &ctx) {
+    return ker_ptr->launch(&ctx);
   };
 }
 

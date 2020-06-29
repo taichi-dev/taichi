@@ -40,13 +40,19 @@ inline std::string cc_data_type_name(DataType dt) {
     return "int";
   case DataType::f32:
     return "float";
+  case DataType::f64:
+    return "double";
   default:
-    TI_NOT_IMPLEMENTED
+    TI_ERROR("Unsupported DataType={} on C backend", data_type_name(dt));
   }
 }
 
-inline std::string get_sym_name(std::string const &name) {
+inline std::string get_func_sym(std::string const &name) {
   return fmt::format("Ti_{}", name);
+}
+
+inline std::string get_data_sym(std::string const &name) {
+  return fmt::format("ti_{}", name);
 }
 
 template <typename... Args>

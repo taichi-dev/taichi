@@ -139,7 +139,7 @@ class Expr(TaichiOperations):
     def dtype(self):
         return self.snode().dtype
 
-    @deprecated('x.data_type()', 'x.dtype'):
+    @deprecated('x.data_type()', 'x.dtype')
     def data_type(self):
         return self.snode().dtype
 

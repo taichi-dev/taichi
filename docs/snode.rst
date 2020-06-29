@@ -33,32 +33,19 @@ See :ref:`layout` for more details. ``ti.root`` is the root node of the data str
         assert x.snode() == y.snode()
 
 
-.. function:: tensor.shape()
+.. function:: tensor.shape
 
     :parameter tensor: (Tensor)
     :return: (tuple of integers) the shape of tensor
 
-    Equivalent to ``tensor.snode().shape()``.
+    Equivalent to ``tensor.snode().shape``.
 
     For example,
 
     ::
 
         ti.root.dense(ti.ijk, (3, 5, 4)).place(x)
-        x.shape() # returns (3, 5, 4)
-
-
-.. function:: tensor.dim()
-
-    :parameter tensor: (Tensor)
-    :return: (scalar) the dimensionality of the tensor
-
-    Equivalent to ``len(tensor.shape())``.
-
-    ::
-
-        ti.root.dense(ti.ijk, (8, 9, 10)).place(x)
-        x.dim()  # 3
+        x.shape # returns (3, 5, 4)
 
 
 .. function:: tensor.snode()
@@ -74,7 +61,7 @@ See :ref:`layout` for more details. ``ti.root`` is the root node of the data str
         x.snode()
 
 
-.. function:: snode.shape()
+.. function:: snode.shape
 
     :parameter snode: (SNode)
     :return: (tuple) the size of node along that axis
@@ -85,29 +72,16 @@ See :ref:`layout` for more details. ``ti.root`` is the root node of the data str
         blk2 = blk1.dense(ti.i,  3)
         blk3 = blk2.dense(ti.jk, (5, 2))
         blk4 = blk3.dense(ti.k,  2)
-        blk1.shape()  # ()
-        blk2.shape()  # (3, )
-        blk3.shape()  # (3, 5, 2)
-        blk4.shape()  # (3, 5, 4)
+        blk1.shape  # ()
+        blk2.shape  # (3, )
+        blk3.shape  # (3, 5, 2)
+        blk4.shape  # (3, 5, 4)
 
 
-.. function:: snode.dim()
-
-    :parameter snode: (SNode)
-    :return: (scalar) the dimensionality of ``snode``
-
-    Equivalent to ``len(snode.shape())``.
-
-    ::
-
-        blk1 = ti.root.dense(ti.ijk, (8, 9, 10))
-        ti.root.dim()  # 0
-        blk1.dim()     # 3
-
-
-.. function:: snode.parent()
+.. function:: snode.parent(n = 1)
 
     :parameter snode: (SNode)
+    :parameter n: (optional, scalar) the number of parent steps, i.e. ``n=1`` for parent, ``n=2`` grandparent, etc.
     :return: (SNode) the parent node of ``snode``
 
     ::
@@ -118,6 +92,10 @@ See :ref:`layout` for more details. ``ti.root`` is the root node of the data str
         blk1.parent()  # ti.root
         blk2.parent()  # blk1
         blk3.parent()  # blk2
+        blk3.parent(1) # blk2
+        blk3.parent(2) # blk1
+        blk3.parent(3) # ti.root
+        blk3.parent(4) # None
 
 
 Node types

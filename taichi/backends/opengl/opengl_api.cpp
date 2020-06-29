@@ -322,7 +322,7 @@ bool initialize_opengl(bool error_tolerance) {
       desc = "Unknown Error";
     if (error_tolerance) {
       // error tolerated, returning false
-      TI_TRACE("[glsl] cannot create GLFW window: error {}: {}", status, desc);
+      TI_DEBUG("[glsl] cannot create GLFW window: error {}: {}", status, desc);
       supported = std::make_optional<bool>(false);
       return false;
     }

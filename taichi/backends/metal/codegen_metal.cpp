@@ -1109,7 +1109,8 @@ class KernelCodegen : public IRVisitor {
 
   struct KernelSigExtensions {
     // https://stackoverflow.com/a/44693603/12003165
-    KernelSigExtensions() noexcept {}
+    KernelSigExtensions() noexcept {
+    }
 
     bool use_simdgroup = false;
   };

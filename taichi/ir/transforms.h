@@ -57,7 +57,8 @@ void compile_to_offloads(IRNode *ir,
                          bool ad_use_stack,
                          bool verbose,
                          bool lower_global_access = true,
-                         bool make_thread_local = false);
+                         bool make_thread_local = false,
+                         bool make_block_local = false);
 
 }  // namespace irpass
 

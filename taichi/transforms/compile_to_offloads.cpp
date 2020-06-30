@@ -15,7 +15,8 @@ void compile_to_offloads(IRNode *ir,
                          bool ad_use_stack,
                          bool verbose,
                          bool lower_global_access,
-                         bool make_thread_local) {
+                         bool make_thread_local,
+                         bool make_block_local) {
   TI_AUTO_PROF;
 
   auto print = [&](const std::string &name) {
@@ -117,6 +118,11 @@ void compile_to_offloads(IRNode *ir,
   if (make_thread_local) {
     irpass::make_thread_local(ir);
     print("Make thread local");
+  }
+
+  if (make_block_local) {
+    irpass::make_block_local(ir);
+    print("Make block local");
   }
 
   if (lower_global_access) {

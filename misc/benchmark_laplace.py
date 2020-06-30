@@ -19,6 +19,7 @@ def populate():
 
 @ti.kernel
 def laplace():
+    ti.cache_shared(x)
     for i, j in x:
             y[i, j] = 4.0 * x[i, j] - x[i - 1,
                                         j] - x[i + 1,

@@ -14,8 +14,10 @@ blk1.place(x)
 blk1.place(y)
 blk2.place(z)
 
+
 @ti.kernel
 def func():
     print('Nice to meet you!', z[3])
+
 
 func()

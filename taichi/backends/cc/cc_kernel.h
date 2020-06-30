@@ -9,8 +9,10 @@ class CCProgram;
 
 class CCKernel {
  public:
-  CCKernel(CCProgram *program, std::string const &source, std::string const &name)
-    : program(program), source(source), name(name) {
+  CCKernel(CCProgram *program,
+           std::string const &source,
+           std::string const &name)
+      : program(program), source(source), name(name) {
   }
 
   void compile();

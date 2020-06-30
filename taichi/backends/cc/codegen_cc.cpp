@@ -12,13 +12,13 @@ TLANG_NAMESPACE_BEGIN
 namespace cccp {  // Codegen for C Compiler Processor
 
 namespace {
-  std::string get_node_ptr_name(SNode *snode) {
-    return fmt::format("struct {} *", snode->get_node_type_name_hinted());
-  }
+std::string get_node_ptr_name(SNode *snode) {
+  return fmt::format("struct {} *", snode->get_node_type_name_hinted());
 }
+}  // namespace
 
 class CCTransformer : public IRVisitor {
-private:
+ private:
   [[maybe_unused]] Kernel *kernel;
   [[maybe_unused]] CCLayout *layout;
 
@@ -27,12 +27,11 @@ private:
   bool is_top_level{true};
   GetRootStmt *root_stmt;
 
-public:
+ public:
   CCTransformer(Kernel *kernel, CCLayout *layout)
-      : kernel(kernel), layout(layout)
-  {
-      allow_undefined_visitor = true;
-      invoke_default_visitor = true;
+      : kernel(kernel), layout(layout) {
+    allow_undefined_visitor = true;
+    invoke_default_visitor = true;
   }
 
   void run() {
@@ -47,16 +46,16 @@ public:
     auto config = kernel->program.config;
     config.demote_dense_struct_fors = true;
     irpass::compile_to_offloads(ir, config,
-        /*vectorize=*/false, kernel->grad,
-        /*ad_use_stack=*/false, config.print_ir,
-        /*lower_global_access*/ true);
+                                /*vectorize=*/false, kernel->grad,
+                                /*ad_use_stack=*/false, config.print_ir,
+                                /*lower_global_access*/ true);
   }
 
   std::string get_source() {
     return line_appender_header.lines() + "\n" + line_appender.lines();
   }
 
-private:
+ private:
   void visit(Block *stmt) override {
     if (!is_top_level)
       line_appender.push_indent();
@@ -72,9 +71,9 @@ private:
   }
 
   void visit(BitExtractStmt *stmt) override {
-    emit("{} = (({} >> {}) & ((1 << {}) - 1));", define_var("int", stmt->raw_name()),
-         stmt->input->raw_name(), stmt->bit_begin,
-         stmt->bit_end - stmt->bit_begin);
+    emit("{} = (({} >> {}) & ((1 << {}) - 1));",
+         define_var("int", stmt->raw_name()), stmt->input->raw_name(),
+         stmt->bit_begin, stmt->bit_end - stmt->bit_begin);
   }
 
   std::string define_var(std::string const &type, std::string const &name) {
@@ -88,7 +87,8 @@ private:
 
   void visit(GetRootStmt *stmt) override {
     auto root = kernel->program.snode_root.get();
-    emit("{} = _Ti_get_root();", define_var(get_node_ptr_name(root), stmt->raw_name()));
+    emit("{} = _Ti_get_root();",
+         define_var(get_node_ptr_name(root), stmt->raw_name()));
     root_stmt = stmt;
   }
 
@@ -101,7 +101,8 @@ private:
       input_ptr = root_stmt;
     }
 
-    emit("{} = &{}[{}];", define_var(get_node_ptr_name(stmt->snode), stmt->raw_name()),
+    emit("{} = &{}[{}];",
+         define_var(get_node_ptr_name(stmt->snode), stmt->raw_name()),
          input_ptr->raw_name(), stmt->input_index->raw_name());
   }
 
@@ -113,15 +114,17 @@ private:
       emit("{} = &{}->{};", define_var(dt, stmt->raw_name()),
            stmt->input_ptr->raw_name(), snode->get_node_type_name());
     } else {
-      emit("{} = {}->{};", define_var(get_node_ptr_name(snode), stmt->raw_name()),
+      emit("{} = {}->{};",
+           define_var(get_node_ptr_name(snode), stmt->raw_name()),
            stmt->input_ptr->raw_name(), snode->get_node_type_name());
     }
   }
 
   void visit(GlobalLoadStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    emit("{} = *{};", define_var(cc_data_type_name(stmt->element_type()), stmt->raw_name()),
-        stmt->ptr->raw_name());
+    emit("{} = *{};",
+         define_var(cc_data_type_name(stmt->element_type()), stmt->raw_name()),
+         stmt->ptr->raw_name());
   }
 
   void visit(GlobalStoreStmt *stmt) override {
@@ -131,8 +134,9 @@ private:
 
   void visit(ConstStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    emit("{} = {};", define_var(cc_data_type_name(stmt->element_type()), stmt->raw_name()),
-        stmt->val[0].stringify());
+    emit("{} = {};",
+         define_var(cc_data_type_name(stmt->element_type()), stmt->raw_name()),
+         stmt->val[0].stringify());
   }
 
   void visit(BinaryOpStmt *bin) override {
@@ -142,8 +146,8 @@ private:
     const auto rhs_name = bin->rhs->raw_name();
     const auto bin_name = bin->raw_name();
     const auto binop = binary_op_type_symbol(bin->op_type);
-    emit("{} = {} {} {};", define_var(dt_name, bin_name), lhs_name,
-        binop, rhs_name);
+    emit("{} = {} {} {};", define_var(dt_name, bin_name), lhs_name, binop,
+         rhs_name);
   }
 
   void visit(PrintStmt *stmt) override {
@@ -221,9 +225,7 @@ FunctionType compile_kernel(Kernel *kernel) {
   auto ker_ptr = ker.get();
   auto program = kernel->program.cc_program.get();
   program->add_kernel(std::move(ker));
-  return [ker_ptr] (Context &ctx) {
-    return ker_ptr->launch(&ctx);
-  };
+  return [ker_ptr](Context &ctx) { return ker_ptr->launch(&ctx); };
 }
 
 }  // namespace cccp

@@ -2,13 +2,12 @@
 #include "cc_layout.h"
 #include "cc_utils.h"
 
-
 TLANG_NAMESPACE_BEGIN
 namespace cccp {
 
 void CCLayoutGen::generate_children(SNode *snode) {
   ScopedIndent _s(line_appender);
-  for (auto const &ch: snode->ch) {
+  for (auto const &ch : snode->ch) {
     generate_types(ch.get());
   }
 }

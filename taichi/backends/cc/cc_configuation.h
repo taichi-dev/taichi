@@ -9,10 +9,10 @@ struct CCConfiguation {
   std::string compile_cmd, link_cmd;
 
   CCConfiguation()
-      : compile_cmd("gcc -c -o '{}' '{}'")
-      , link_cmd("gcc -shared -fPIC -o '{}' '{}'")
-  {}
-}; 
+      : compile_cmd("gcc -c -o '{}' '{}'"),
+        link_cmd("gcc -shared -fPIC -o '{}' '{}'") {
+  }
+};
 
 extern CCConfiguation cfg;
 

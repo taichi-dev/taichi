@@ -32,8 +32,9 @@ void CCLayout::compile() {
   obj_path = fmt::format("{}/_root.o", runtime_tmp_dir);
   src_path = fmt::format("{}/_root.c", runtime_tmp_dir);
 
-  std::ofstream(src_path) << source <<
-      "\n\nstruct S0root *_Ti_get_root() {\n\tstatic struct S0root r;\n\treturn &r;\n}\n";
+  std::ofstream(src_path) << source
+                          << "\n\nstruct S0root *_Ti_get_root() {\n\tstatic "
+                             "struct S0root r;\n\treturn &r;\n}\n";
   TI_DEBUG("[cc] compiling root struct -> [{}]:\n{}\n", obj_path, source);
   execute(cfg.compile_cmd, obj_path, src_path);
 }
@@ -46,16 +47,18 @@ void CCProgram::relink() {
 
   std::vector<std::string> objects;
   objects.push_back(layout->get_object());
-  for (auto const &ker: kernels) {
+  for (auto const &ker : kernels) {
     objects.push_back(ker->get_object());
   }
 
-  TI_DEBUG("[cc] linking shared object [{}] with [{}]", dll_path, fmt::join(objects, "] ["));
+  TI_DEBUG("[cc] linking shared object [{}] with [{}]", dll_path,
+           fmt::join(objects, "] ["));
   execute(cfg.link_cmd, dll_path, fmt::join(objects, "' '"));
 
   TI_DEBUG("[cc] loading shared object: {}", dll_path);
   dll = std::make_unique<DynamicLoader>(dll_path);
-  TI_ASSERT_INFO(dll->loaded(), "[cc] could not load shared object: {}", dll_path);
+  TI_ASSERT_INFO(dll->loaded(), "[cc] could not load shared object: {}",
+                 dll_path);
 
   need_relink = false;
 }
@@ -66,7 +69,8 @@ void CCProgram::add_kernel(std::unique_ptr<CCKernel> kernel) {
 }
 
 CCFuncEntryType *CCProgram::load_kernel(std::string const &name) {
-  return reinterpret_cast<CCFuncEntryType *>(dll->load_function(get_func_sym(name)));
+  return reinterpret_cast<CCFuncEntryType *>(
+      dll->load_function(get_func_sym(name)));
 }
 
 CCProgram::CCProgram() {
@@ -81,4 +85,3 @@ bool is_c_backend_available() {
 
 }  // namespace cccp
 TLANG_NAMESPACE_END
-

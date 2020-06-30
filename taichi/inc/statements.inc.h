@@ -67,10 +67,12 @@ PER_STATEMENT(ElementShuffleStmt)
 // Offloaded
 PER_STATEMENT(OffloadedStmt)
 PER_STATEMENT(LoopIndexStmt)
+PER_STATEMENT(LoopIndexBaseStmt)
 PER_STATEMENT(GlobalTemporaryStmt)
 
-// Thread local storage
+// Local storage
 PER_STATEMENT(ThreadLocalPtrStmt)
+PER_STATEMENT(SharedPtrStmt)
 
 // Special
 PER_STATEMENT(InternalFuncStmt)

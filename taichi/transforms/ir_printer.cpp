@@ -523,6 +523,11 @@ class IRPrinter : public IRVisitor {
           stmt->name(), stmt->offset);
   }
 
+  void visit(SharedPtrStmt *stmt) override {
+    print("{}{} = shared ptr (offset = {})", stmt->type_hint(), stmt->name(),
+          stmt->offset->name());
+  }
+
   void visit(InternalFuncStmt *stmt) override {
     print("{} = call internal \"{}\"", stmt->name(), stmt->func_name);
   }

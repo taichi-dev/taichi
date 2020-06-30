@@ -29,6 +29,8 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 
   using IRVisitor::visit;
 
+  llvm::GlobalVariable *shmem;
+
   CodeGenLLVMCUDA(Kernel *kernel, IRNode *ir = nullptr)
       : CodeGenLLVM(kernel, ir) {
 #if defined(TI_WITH_CUDA)
@@ -463,7 +465,17 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     }
   }
 
+  void create_shmem() {
+    // Assuming BS = 16
+    auto type =
+        llvm::ArrayType::get(llvm::Type::getFloatTy(*llvm_context), 18 * 18);
+    shmem = new GlobalVariable(*module, type, false,
+                               llvm::GlobalValue::InternalLinkage, 0, "shmem");
+    shmem->setAlignment(llvm::MaybeAlign(4));
+  }
+
   void visit(OffloadedStmt *stmt) override {
+    create_shmem();
 #if defined(TI_WITH_CUDA)
     TI_ASSERT(current_offload == nullptr);
     current_offload = stmt;
@@ -488,6 +500,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         kernel_block_dim =
             std::min(stmt->snode->max_num_elements(), kernel_block_dim);
         stmt->block_dim = kernel_block_dim;
+        {}
         create_offload_struct_for(stmt, true);
       } else if (stmt->task_type == Type::clear_list) {
         emit_clear_list(stmt);

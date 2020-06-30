@@ -240,6 +240,23 @@ class LoopIndexStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+class LoopIndexBaseStmt : public Stmt {
+ public:
+  Stmt *loop;
+  int index;
+
+  LoopIndexBaseStmt(Stmt *loop, int index) : loop(loop), index(index) {
+    TI_STMT_REG_FIELDS;
+  }
+
+  bool has_global_side_effect() const override {
+    return false;
+  }
+
+  TI_STMT_DEF_FIELDS(ret_type, loop, index);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
 class GlobalTemporaryStmt : public Stmt {
  public:
   std::size_t offset;
@@ -263,6 +280,23 @@ class ThreadLocalPtrStmt : public Stmt {
   std::size_t offset;
 
   ThreadLocalPtrStmt(std::size_t offset, VectorType ret_type) : offset(offset) {
+    this->ret_type = ret_type;
+    TI_STMT_REG_FIELDS;
+  }
+
+  bool has_global_side_effect() const override {
+    return false;
+  }
+
+  TI_STMT_DEF_FIELDS(ret_type, offset);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
+class SharedPtrStmt : public Stmt {
+ public:
+  Stmt *offset;
+
+  SharedPtrStmt(Stmt *offset, VectorType ret_type) : offset(offset) {
     this->ret_type = ret_type;
     TI_STMT_REG_FIELDS;
   }

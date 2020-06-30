@@ -8,6 +8,8 @@ TLANG_NAMESPACE_BEGIN
 
 // Figure out accessed snodes, and their ranges in this for stmt
 class AccessAnalysis : public BasicStmtVisitor {
+  using BasicStmtVisitor::visit;
+
  public:
   OffloadedStmt *for_stmt;
   ScratchPads *pads;
@@ -73,7 +75,6 @@ class AccessAnalysis : public BasicStmtVisitor {
       offsets.resize(ptr->indices.size());
       int num_indices = (int)ptr->indices.size();
       for (int i = 0; i < num_indices; i++) {
-        // TODO: StructForStmt::loop_vars is deprecated
         auto diff = irpass::analysis::value_diff_loop_index(ptr->indices[i],
                                                             for_stmt, i);
         if (diff.linear_related()) {
@@ -93,6 +94,7 @@ class AccessAnalysis : public BasicStmtVisitor {
           matching_indices = false;
         }
       }
+      TI_P(matching_indices);
       if (matching_indices) {
         /*
         TI_INFO("Detected regular access");

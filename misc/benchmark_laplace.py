@@ -1,6 +1,6 @@
 import taichi as ti
 
-ti.init(arch=ti.cuda, kernel_profiler=True)
+ti.init(arch=ti.cuda, kernel_profiler=True, print_ir=True)
 x, y = ti.var(ti.f32), ti.var(ti.f32)
 
 N = 4096

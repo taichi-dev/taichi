@@ -12,6 +12,7 @@ void make_block_local_offload(OffloadedStmt *offload) {
   if (offload->task_type != offload->struct_for)
     return;
 
+  /*
   for (auto s : offload->scratch_opt) {
     if (s.first != 0) {  // 0 means shared
       continue;
@@ -20,7 +21,13 @@ void make_block_local_offload(OffloadedStmt *offload) {
             s.second->get_node_type_name_hinted());
 
     auto snode = s.second;
-    auto pads = irpass::initialize_scratch_pad(offload);
+  }
+  */
+  auto pads = irpass::initialize_scratch_pad(offload);
+
+  if (pads->pads.size())  {
+    TI_WARN("Exiting now for debugging");
+    exit(0);
   }
 
   std::size_t shared_offset = 0;

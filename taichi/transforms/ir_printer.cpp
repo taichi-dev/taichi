@@ -16,7 +16,7 @@ std::string scratch_pad_info(const ScratchPadOptions &opt) {
       // TODO: standardize scratch pad types
       std::string type;
       if (s.first == 0) {
-        type = "thread_local";
+        type = "block local";
       } else if (s.first == 1) {
         type = "read_only";
       } else {

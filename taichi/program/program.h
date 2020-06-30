@@ -14,6 +14,7 @@
 #include "taichi/backends/metal/kernel_manager.h"
 #include "taichi/backends/opengl/opengl_kernel_launcher.h"
 #include "taichi/backends/opengl/opengl_kernel_util.h"
+#include "taichi/backends/cc/cc_program.h"
 #include "taichi/program/kernel.h"
 #include "taichi/program/kernel_profiler.h"
 #include "taichi/runtime/llvm/context.h"
@@ -245,6 +246,11 @@ class Program {
   // OpenGL related data structures
   std::optional<opengl::StructCompiledResult> opengl_struct_compiled_;
   std::unique_ptr<opengl::GLSLLauncher> opengl_kernel_launcher_;
+ public:
+#ifdef TI_WITH_CC
+  // C backend related data structures
+  std::unique_ptr<cccp::CCProgram> cc_program;
+#endif
 };
 
 TLANG_NAMESPACE_END

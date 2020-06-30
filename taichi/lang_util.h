@@ -7,7 +7,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-real get_cpu_frequency();
+real     get_cpu_frequency();
 
 extern real default_measurement_time;
 

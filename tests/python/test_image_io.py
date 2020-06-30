@@ -1,14 +1,8 @@
 import taichi as ti
 import numpy as np
+from taichi import make_temp_file
 import pytest
 import os
-from tempfile import mkstemp
-
-
-def make_temp(*args, **kwargs):
-    fd, name = mkstemp(*args, **kwargs)
-    os.close(fd)
-    return name
 
 
 # jpg is also supported but hard to test here since it's lossy:
@@ -28,7 +22,7 @@ def test_image_io(resx, resy, comp, ext, is_tensor, dt):
     pixel = np.random.randint(256, size=shape, dtype=ti.to_numpy_type(dt))
     if is_tensor:
         pixel_t.from_numpy(pixel)
-    fn = make_temp(suffix='.' + ext)
+    fn = make_temp_file(suffix='.' + ext)
     if is_tensor:
         ti.imwrite(pixel_t, fn)
     else:

@@ -26,7 +26,7 @@ class ValueDiffLoopIndex : public IRVisitor {
   std::map<int, ret_type> results;
 
   ValueDiffLoopIndex(Stmt *stmt, int lane, Stmt *loop, int loop_index)
-      : lane(lane), input_stmt(stmt), loop(loop) {
+      : lane(lane), input_stmt(stmt), loop(loop), loop_index(loop_index) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
   }

@@ -3,7 +3,7 @@ set(CORE_LIBRARY_NAME taichi_core)
 option(USE_STDCPP "Use -stdlib=libc++" OFF)
 option(TI_WITH_CUDA "Build with the CUDA backend" ON)
 option(TI_WITH_OPENGL "Build with the OpenGL backend" ON)
-option(TI_WITH_CC "Build with the C backend" ON)
+option(TI_WITH_CC "Build with the C backend" OFF)
 
 if (APPLE)
     if (TI_WITH_CUDA)

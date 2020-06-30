@@ -17,7 +17,7 @@ Taichi can be easily installed via ``pip``:
 - On Windows, please install `Microsoft Visual C++ Redistributable <https://aka.ms/vs/16/release/vc_redist.x64.exe>`_ if you haven't.
 
 
-.. troubleshooting:
+.. _troubleshooting:
 
 Troubleshooting
 ---------------

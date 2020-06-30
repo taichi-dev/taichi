@@ -47,7 +47,7 @@ The Taichi Programming Language
 
 .. toctree::
    :caption: Contributing
-   :maxdepth: 1
+   :maxdepth: 3
 
    dev_install
    contributor_guide

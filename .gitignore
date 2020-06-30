@@ -2,6 +2,7 @@
 *.swo
 /.vs
 /.*localrc
+/tags
 /Debug
 *.sdf
 /x64

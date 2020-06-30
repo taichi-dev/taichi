@@ -49,7 +49,7 @@ Installing Dependencies
         sudo make install
 
 
-- Make sure you have LLVM 8.0.1/10.0.0. Note that Taichi uses a customized LLVM so the pre-built binaries from the LLVM official website or other sources probably doesn't work.
+- Make sure you have LLVM 8.0.1/10.0.0. Note that Taichi uses a **customized LLVM** so the pre-built binaries from the LLVM official website or other sources probably doesn't work.
   Here we provide LLVM 8.0.1 binaries customized for Taichi, which may or may not work depending on your system environment:
   `Linux <https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/taichi-llvm-8.0.1-linux-x64.zip>`_,
   `OS X <https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/taichi-llvm-8.0.1.zip>`_,
@@ -111,19 +111,30 @@ If you don't have CUDA, go to `this website <https://developer.nvidia.com/cuda-d
 - On **Arch Linux**, you can easily install CUDA via ``pacman -S cuda`` without downloading the installer manually.
 
 
+.. _dev_env_settings:
+
 Setting up Taichi for development
 ---------------------------------
 
-- Add the following script to your ``~/.bashrc``:
+- Set up environment variables for Taichi:
 
-  .. code-block:: bash
+  * On Linux / OS X, please add the following script to your ``~/.bashrc``:
 
-    export TAICHI_REPO_DIR=/home/XXX/taichi  # Path to your taichi repository
-    export PYTHONPATH=$TAICHI_REPO_DIR/python:$PYTHONPATH
-    export PATH=$TAICHI_REPO_DIR/bin:$PATH
-    # export PATH=/opt/llvm/bin:$PATH # Uncomment if your llvm-8 or clang-8 is in /opt
+    .. code-block:: bash
 
-- Execute ``source ~/.bashrc`` to reload shell config.
+      export TAICHI_REPO_DIR=/home/XXX/taichi  # Path to your taichi repository
+      export PYTHONPATH=$TAICHI_REPO_DIR/python:$PYTHONPATH
+      export PATH=$TAICHI_REPO_DIR/bin:$PATH
+      # export PATH=/opt/llvm/bin:$PATH  # Uncomment if your llvm-8 or clang-8 is in /opt
+
+    Then execute ``source ~/.bashrc`` to reload shell config.
+
+  * On Windows, please add these variables by accessing your system settings:
+
+    1. Add ``TAICHI_REPO_DIR`` whose value is path to your taichi repository so that Taichi knows you're a developer.
+    2. Add or append ``PYTHONPATH`` with ``%TAICHI_REPO_DIR%/python`` so that Python import Taichi from the local repo.
+    3. Add or append ``PATH`` with ``%TAICHI_REPO_DIR%/bin`` so that you can use ``ti`` command.
+    4. Add or append ``PATH`` with path to LLVM binary directory installed in previous section.
 
 - Clone the taichi repo **recursively**, and build:
 
@@ -135,32 +146,32 @@ Setting up Taichi for development
     mkdir build
     cd build
     cmake ..
-    # if you do not set clang as the default compiler
+    # On Linux / OS X, if you do not set clang as the default compiler
     # use the line below:
     #   cmake .. -DCMAKE_CXX_COMPILER=clang-8
     #
     # Alternatively, if you would like to set clang as the default compiler
     # On Unix CMake honors environment variables $CC and $CXX upon deciding which C and C++ compilers to use
-    #
-    # if you are building with CUDA 10.0, use the line below:
-    #   cmake .. -DCUDA_VERSION=10.0 -DTI_WITH_CUDA:BOOL=True
     make -j 8
 
+- Check out ``examples`` for runnable examples. Run them with command like ``python3 examples/mpm128.py``.
 - Execute ``python3 -m taichi test`` to run all the tests. It may take up to 5 minutes to run all tests.
-- Check out ``examples`` for runnable examples. Run them with ``python3``.
 
 
 Troubleshooting Developer Installation
 --------------------------------------
 
 - If ``make`` fails to compile and reports ``fatal error: 'spdlog/XXX.h' file not found``,
-  please try run ``git submodule init --update --recursive --depth=1``.
+  please try run ``git submodule update --init --recursive --depth=1``.
 
 
-- If importing Taichi cause ``FileNotFoundError: [Errno 2] No such file or directory: '/root/taichi/python/taichi/core/../lib/taichi_core.so' -> '/root/taichi/python/taichi/core/../lib/libtaichi_core.so'``, please:
+- If importing Taichi cause
 
-  * On Windows, add a environment variable called ``TAICHI_REPO_DIR`` with value ``C:\\path\\to\\taichi`` (your Taichi repo path), this may be either done in your IDE configuation panel or system settings.
-  * On Linux / OS X, add ``export TAICHI_REPO_DIR=/home/XXX/taichi`` to your ``~/.bashrc`` and restart ``bash``.
+  .. code-block:: none
+
+      FileNotFoundError: [Errno 2] No such file or directory: '/root/taichi/python/taichi/core/../lib/taichi_core.so' -> '/root/taichi/python/taichi/core/../lib/libtaichi_core.so'``
+
+  Please try adding ``TAICHI_REPO_DIR`` to environment variables, see :ref:`dev_env_settings`.
 
 - If the build succeed, but running any Taichi code will result in errors like ``Bitcode file (/tmp/taichi-tero94pl/runtime//runtime_x64.bc) not found``,
   please make sure ``clang`` is in your ``PATH``:
@@ -179,8 +190,8 @@ Troubleshooting Developer Installation
       which llvm-as
       # should be /usr/local/bin/llvm-as or /opt/XXX/bin/llvm-as, which is our configured installation
       
-  If not, please install ``clang`` and **build LLVM from source** with instructions above in `:ref:dev_install`, then add their path to environment variable ``PATH``.
+  If not, please install ``clang`` and **build LLVM from source** with instructions above in :ref:`dev_install`, then add their path to environment variable ``PATH``.
 
 - If you encountered other issues, feel free to report by `opening an issue on GitHub <https://github.com/taichi-dev/taichi/issues/new?labels=potential+bug&template=bug_report.md>`_. We are willing to help!
 
-- See also `:ref:troubleshooting` for issues that may share with end-user installation.
+- See also :ref:`troubleshooting` for issues that may share with end-user installation.

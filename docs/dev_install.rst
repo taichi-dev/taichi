@@ -19,7 +19,7 @@ Installing Dependencies
 
   .. code-block:: bash
 
-    python3 -m pip install --user setuptools wheel astor pybind11 Pillow
+    python3 -m pip install --user setuptools wheel astor pybind11 Pillow dill
     python3 -m pip install --user pytest pytest-rerunfailures pytest-xdist yapf
     python3 -m pip install --user numpy GitPython coverage colorama autograd
 
@@ -33,7 +33,7 @@ Installing Dependencies
 
   * On Ubuntu, execute ``sudo apt install clang-8``.
   
-  * On Arch Linux, execute ``sudo pacman -S clang``. (this will install ``clang-10``, which should work as well).
+  * On Arch Linux, execute ``sudo pacman -S clang``. (This will install ``clang-10``, which should work too).
 
   * On other Linux distributions, please build clang 8.0.1 from source:
 
@@ -150,21 +150,19 @@ Setting up Taichi for development
 - Check out ``examples`` for runnable examples. Run them with ``python3``.
 
 
-Developer's Troubleshooting
----------------------------
+Troubleshooting Developer Installation
+--------------------------------------
 
-- If ``make`` failed to compile and reporting ``fatal error: 'spdlog/XXX.h' file not found``,
+- If ``make`` fails to compile and reports ``fatal error: 'spdlog/XXX.h' file not found``,
   please try run ``git submodule init --update --recursive --depth=1``.
 
-- If ``cmake`` failed and reporting ``clang and MSVC are the only supported compilers for Taichi compiler development``,
-  please make sure you have installed clang with version >= 7, and build with ``cmake -DCMAKE_CXX_COMPILER=clang``.
 
 - If importing Taichi cause ``FileNotFoundError: [Errno 2] No such file or directory: '/root/taichi/python/taichi/core/../lib/taichi_core.so' -> '/root/taichi/python/taichi/core/../lib/libtaichi_core.so'``, please:
 
   * On Windows, add a environment variable called ``TAICHI_REPO_DIR`` with value ``C:\\path\\to\\taichi`` (your Taichi repo path), this may be either done in your IDE configuation panel or system settings.
   * On Linux / OS X, add ``export TAICHI_REPO_DIR=/home/XXX/taichi`` to your ``~/.bashrc`` and restart ``bash``.
 
-- If the build succeed, but running any Taichi code will result in an error like ``Bitcode file (/tmp/taichi-tero94pl/runtime//runtime_x64.bc) not found``,
+- If the build succeed, but running any Taichi code will result in errors like ``Bitcode file (/tmp/taichi-tero94pl/runtime//runtime_x64.bc) not found``,
   please make sure ``clang`` is in your ``PATH``:
 
   .. code-block:: bash
@@ -177,12 +175,12 @@ Developer's Troubleshooting
   .. code-block:: bash
   
       llvm-as --version
-      # version should be 8.0.1 or 10.0.0
+      # version should be >= 8
       which llvm-as
       # should be /usr/local/bin/llvm-as or /opt/XXX/bin/llvm-as, which is our configured installation
       
   If not, please install ``clang`` and **build LLVM from source** with instructions above in `:ref:dev_install`, then add their path to environment variable ``PATH``.
 
-- If you encountered other issues, feel free to report it by `opening an issue on GitHub <https://github.com/taichi-dev/taichi/issues/new?labels=potential+bug&template=bug_report.md>`_, we are willing to help!
+- If you encountered other issues, feel free to report by `opening an issue on GitHub <https://github.com/taichi-dev/taichi/issues/new?labels=potential+bug&template=bug_report.md>`_. We are willing to help!
 
 - See also `:ref:troubleshooting` for issues that may share with end-user installation.

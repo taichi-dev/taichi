@@ -246,6 +246,7 @@ class Program {
   // OpenGL related data structures
   std::optional<opengl::StructCompiledResult> opengl_struct_compiled_;
   std::unique_ptr<opengl::GLSLLauncher> opengl_kernel_launcher_;
+
  public:
 #ifdef TI_WITH_CC
   // C backend related data structures

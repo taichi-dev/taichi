@@ -8,10 +8,9 @@ namespace cccp {
 struct CCConfiguation {
   std::string compile_cmd;
 
-  CCConfiguation()
-      : compile_cmd("gcc -shared -fPIC -o '{}' '{}'")
-  {}
-}; 
+  CCConfiguation() : compile_cmd("gcc -shared -fPIC -o '{}' '{}'") {
+  }
+};
 
 extern CCConfiguation cfg;
 

@@ -1,7 +1,6 @@
 #include "struct_cc.h"
 #include "cc_layout.h"
 
-
 TLANG_NAMESPACE_BEGIN
 namespace cccp {
 

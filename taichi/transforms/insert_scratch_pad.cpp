@@ -7,14 +7,14 @@
 TLANG_NAMESPACE_BEGIN
 
 // Figure out accessed snodes, and their ranges in this for stmt
-class AccessAnalysis : public IRVisitor {
+class AccessAnalysis : public BasicStmtVisitor {
  public:
-  StructForStmt *for_stmt;
+  OffloadedStmt *for_stmt;
   ScratchPads *pads;
 
   std::vector<std::vector<int>> block_indices;
 
-  AccessAnalysis(StructForStmt *for_stmt, ScratchPads *pads)
+  AccessAnalysis(OffloadedStmt *for_stmt, ScratchPads *pads)
       : for_stmt(for_stmt), pads(pads) {
     allow_undefined_visitor = true;
     invoke_default_visitor = false;
@@ -74,8 +74,8 @@ class AccessAnalysis : public IRVisitor {
       int num_indices = (int)ptr->indices.size();
       for (int i = 0; i < num_indices; i++) {
         // TODO: StructForStmt::loop_vars is deprecated
-        auto diff = irpass::analysis::value_diff(ptr->indices[i], l, nullptr);
-        //                                       for_stmt->loop_vars[i]);
+        auto diff = irpass::analysis::value_diff_loop_index(ptr->indices[i],
+                                                            for_stmt, i);
         if (diff.linear_related()) {
           offsets[i].first = diff.low;
           offsets[i].second = diff.high;
@@ -141,61 +141,22 @@ class AccessAnalysis : public IRVisitor {
   }
 };
 
-class InsertScratchPad : public IRVisitor {
- public:
-  std::unique_ptr<ScratchPads> pads;
-  InsertScratchPad(StructForStmt *node) {
-    pads = std::make_unique<ScratchPads>();
-    allow_undefined_visitor = true;
-    invoke_default_visitor = true;
-    node->accept(this);
-    pads->finalize();
-  }
-
-  void visit(Block *block) override {
-    for (auto &stmt : block->statements) {
-      stmt->accept(this);
-    }
-  }
-
-  void visit(IfStmt *if_stmt) override {
-    if (if_stmt->true_statements)
-      if_stmt->true_statements->accept(this);
-    if (if_stmt->false_statements) {
-      if_stmt->false_statements->accept(this);
-    }
-  }
-
-  void visit(RangeForStmt *for_stmt) override {
-    for_stmt->body->accept(this);
-  }
-
-  void visit(WhileStmt *stmt) override {
-    stmt->body->accept(this);
-  }
-
-  void visit(StructForStmt *for_stmt) override {
-    // do the work here...
-    if (!for_stmt->scratch_opt.empty()) {
-      for (auto &opt : for_stmt->scratch_opt) {
-        pads->insert(opt.second);
-      }
-      AccessAnalysis _(for_stmt, pads.get());
-      // WeakenAccess _(for_stmt);
-    }
-    for_stmt->body->accept(this);
-  }
-
-  std::unique_ptr<ScratchPads> get() {
-    return std::move(pads);
-  }
-};
-
 namespace irpass {
 
-std::unique_ptr<ScratchPads> initialize_scratch_pad(StructForStmt *root) {
-  InsertScratchPad _(root);
-  return _.get();
+std::unique_ptr<ScratchPads> initialize_scratch_pad(OffloadedStmt *offload) {
+  TI_ASSERT(offload->task_type == OffloadedStmt::struct_for);
+  std::unique_ptr<ScratchPads> pads;
+  pads = std::make_unique<ScratchPads>();
+  if (!offload->scratch_opt.empty()) {
+    for (auto &opt : offload->scratch_opt) {
+      if (opt.first == 0 /* shared */) {
+        pads->insert(opt.second);
+      }
+    }
+    AccessAnalysis _(offload, pads.get());
+  }
+  pads->finalize();
+  return pads;
 }
 
 }  // namespace irpass

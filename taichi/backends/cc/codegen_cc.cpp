@@ -10,7 +10,7 @@ TLANG_NAMESPACE_BEGIN
 namespace cccp {  // Codegen for C Compiler Processor
 
 class CCTransformer : public IRVisitor {
-private:
+ private:
   [[maybe_unused]] Kernel *kernel;
   [[maybe_unused]] CCLayout *layout;
 
@@ -18,12 +18,11 @@ private:
   LineAppender line_appender_header;
   bool is_top_level{true};
 
-public:
+ public:
   CCTransformer(Kernel *kernel, CCLayout *layout)
-      : kernel(kernel), layout(layout)
-  {
-      allow_undefined_visitor = true;
-      invoke_default_visitor = true;
+      : kernel(kernel), layout(layout) {
+    allow_undefined_visitor = true;
+    invoke_default_visitor = true;
   }
 
   void run() {
@@ -37,16 +36,16 @@ public:
     auto config = kernel->program.config;
     config.demote_dense_struct_fors = true;
     irpass::compile_to_offloads(ir, config,
-        /*vectorize=*/false, kernel->grad,
-        /*ad_use_stack=*/false, config.print_ir,
-        /*lower_global_access*/ true);
+                                /*vectorize=*/false, kernel->grad,
+                                /*ad_use_stack=*/false, config.print_ir,
+                                /*lower_global_access*/ true);
   }
 
   std::string get_source() {
     return line_appender_header.lines() + "\n" + line_appender.lines();
   }
 
-private:
+ private:
   void visit(Block *stmt) override {
     if (!is_top_level)
       line_appender.push_indent();
@@ -140,7 +139,7 @@ FunctionType compile_kernel(Kernel *kernel) {
   auto compiled_ptr = compiled.get();
   auto program = kernel->program.cc_program.get();
   program->kernels.push_back(std::move(compiled));
-  return [program, compiled_ptr] (Context &ctx) {
+  return [program, compiled_ptr](Context &ctx) {
     return program->launch(compiled_ptr, &ctx);
   };
 }

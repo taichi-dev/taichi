@@ -179,7 +179,8 @@ Expr load(const Expr &ptr) {
 Expr ptr_if_global(const Expr &var) {
   if (var.is<GlobalVariableExpression>()) {
     // singleton global variable
-    TI_ASSERT_INFO(var.snode()->num_active_indices == 0,
+    TI_ASSERT_INFO(
+        var.snode()->num_active_indices == 0,
         "Tensors cannot be operated directly, use indices to access elements."
         "e.g.: `tensor + 1` (BAD); `tensor[None] + 1` (OK);");
     return var[ExprGroup()];

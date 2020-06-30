@@ -682,10 +682,10 @@ class MakeAdjoint : public IRVisitor {
       snodes[0] = snodes[0]->get_grad();
       auto adjoint_ptr = insert<GlobalPtrStmt>(snodes, ptr->indices);
       accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
+      stmt->parent->erase(stmt);
     } else {
       // no gradient (likely integer types)
     }
-    stmt->parent->erase(stmt);
   }
 
   void visit(ElementShuffleStmt *stmt) override {

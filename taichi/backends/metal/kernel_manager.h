@@ -39,11 +39,10 @@ class KernelManager {
   // * |mtl_kernel_source_code| is the complete source code compiled from a
   // Taichi kernel. It may include one or more Metal compute kernels. Each
   // Metal kernel is identified by one item in |kernels_attribs|.
-  void register_taichi_kernel(
-      const std::string &taichi_kernel_name,
-      const std::string &mtl_kernel_source_code,
-      const std::vector<KernelAttributes> &kernels_attribs,
-      const KernelContextAttributes &ctx_attribs);
+  void register_taichi_kernel(const std::string &taichi_kernel_name,
+                              const std::string &mtl_kernel_source_code,
+                              const TaichiKernelAttributes &ti_kernel_attribs,
+                              const KernelContextAttributes &ctx_attribs);
 
   // Launch the given |taichi_kernel_name|.
   // Kernel launching is asynchronous, therefore the Metal memory is not valid

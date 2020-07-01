@@ -62,9 +62,9 @@ def expr_init_func(rhs):  # temporary solution to allow passing in tensors as
 def begin_frontend_struct_for(group, loop_range):
     if group.size() != len(loop_range.shape):
         raise IndexError(
-            'Size mismatch between struct-for indices and loop range: '
-            f'{group.size()} != {len(loop_range.shape)}. Maybe you want to '
-            ' use ti.grouped(x) to group all indices into a single vector?')
+            'Number of struct-for indices does not match loop variable dimensionality '
+            f'({group.size()} != {len(loop_range.shape)}). Maybe you wanted to '
+            'use "for I in ti.grouped(x)" to group all indices into a single vector I?')
     taichi_lang_core.begin_frontend_struct_for(group, loop_range.ptr)
 
 

@@ -15,6 +15,7 @@ class CFGBuilder : public IRVisitor {
   int current_stmt_id;
   int begin_location;
   std::vector<CFGNode *> prev_nodes;
+  OffloadedStmt *current_offload;
   bool in_parallel_for;
 
  public:
@@ -23,6 +24,7 @@ class CFGBuilder : public IRVisitor {
         last_node_in_current_block(nullptr),
         current_stmt_id(-1),
         begin_location(-1),
+        current_offload(nullptr),
         in_parallel_for(false) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
@@ -126,19 +128,22 @@ class CFGBuilder : public IRVisitor {
 
   void visit(RangeForStmt *stmt) override {
     auto old_in_parallel_for = in_parallel_for;
-    in_parallel_for = true;
+    if (!current_offload)
+      in_parallel_for = true;
     visit_loop(stmt->body.get(), new_node(-1), false);
     in_parallel_for = old_in_parallel_for;
   }
 
   void visit(StructForStmt *stmt) override {
     auto old_in_parallel_for = in_parallel_for;
-    in_parallel_for = true;
+    if (!current_offload)
+      in_parallel_for = true;
     visit_loop(stmt->body.get(), new_node(-1), false);
     in_parallel_for = old_in_parallel_for;
   }
 
   void visit(OffloadedStmt *stmt) override {
+    current_offload = stmt;
     if (stmt->prologue) {
       auto before_offload = new_node(-1);
       int offload_stmt_id = current_stmt_id;
@@ -174,6 +179,7 @@ class CFGBuilder : public IRVisitor {
       begin_location = offload_stmt_id + 1;
       CFGNode::add_edge(before_offload, graph->nodes[block_begin_index].get());
     }
+    current_offload = nullptr;
   }
 
   void visit(Block *block) override {

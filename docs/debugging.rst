@@ -201,7 +201,7 @@ The Taichi compiler should show a warning like:
 
     [W 06/27/20 21:43:51.853] [type_check.cpp:visit@66] [$19] Atomic add (float32 to int32) may lose precision.
 
-This means that it cannot store a ``float32`` result to ``int32``.
+This means that Taichi cannot store a ``float32`` result precisely to ``int32``.
 The solution is to initialize ``ret`` as a float-point value:
 
 .. code-block:: python

@@ -216,8 +216,6 @@ void make_block_local(IRNode *root) {
   for (auto &offload : root_block->statements) {
     make_block_local_offload(offload->cast<OffloadedStmt>());
   }
-  irpass::re_id(root);
-  irpass::print(root);
   typecheck(root);
   fix_block_parents(root);
   irpass::re_id(root);

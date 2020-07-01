@@ -91,6 +91,9 @@ void make_block_local_offload(OffloadedStmt *offload) {
 
         auto bls_index = element_block->push_back<BinaryOpStmt>(
             BinaryOpType::add, loop_offset_stmt, linear_index);
+        auto bls_index_bytes = element_block->push_back<BinaryOpStmt>(
+            BinaryOpType::mul, bls_index,
+            element_block->push_back<ConstStmt>(TypedConstant(dtype_size)));
 
         std::vector<Stmt *> global_indices;
         auto partial_indices = scratch_element_id;
@@ -115,7 +118,7 @@ void make_block_local_offload(OffloadedStmt *offload) {
             element_block->push_back<GlobalPtrStmt>(snode, global_indices);
         auto load = element_block->push_back<GlobalLoadStmt>(glb_ptr);
         auto bls_ptr = element_block->push_back<BlockLocalPtrStmt>(
-            bls_index, VectorType(1, data_type));
+            bls_index_bytes, VectorType(1, data_type));
         element_block->push_back<GlobalStoreStmt>(bls_ptr, load);
         loop_offset += pad.second.block_size_linear();
         scratch_element_id = block->push_back<BinaryOpStmt>(

@@ -1370,7 +1370,6 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
       builder->CreateCondBr(exec_cond, bounded_body_bb, body_bb_tail);
       builder->SetInsertPoint(bounded_body_bb);
 
-
       if (stmt->prologue) {
         stmt->prologue->accept(this);
         call("block_barrier");  // "__syncthreads()"
@@ -1464,7 +1463,8 @@ void CodeGenLLVM::visit(BlockLocalPtrStmt *stmt) {
   TI_ASSERT(bls_buffer);
   auto base = bls_buffer;
   TI_ASSERT(stmt->width() == 1);
-  auto ptr = builder->CreateGEP(base, llvm_val[stmt->offset]);
+  auto ptr = builder->CreateGEP(
+      base, {tlctx->get_constant(0), llvm_val[stmt->offset]});
   auto ptr_type =
       llvm::PointerType::get(tlctx->get_data_type(stmt->ret_type.data_type), 0);
   llvm_val[stmt] = builder->CreatePointerCast(ptr, ptr_type);

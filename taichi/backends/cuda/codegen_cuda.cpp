@@ -464,8 +464,10 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   }
 
   void create_bls_buffer(OffloadedStmt *stmt) {
-    auto type = llvm::ArrayType::get(llvm::Type::getInt8Ty(*llvm_context),
-                                     stmt->bls_size);
+    auto type = llvm::ArrayType::get(
+        llvm::Type::getInt8Ty(*llvm_context),
+        stmt->bls_size);  // It's OK to use 0 bytes for shared memory placeholder since we
+             // specify shared memory size on kernel launches
     bls_buffer = new GlobalVariable(
         *module, type, false, llvm::GlobalValue::InternalLinkage, nullptr,
         "bls_buffer", nullptr, llvm::GlobalVariable::NotThreadLocal,

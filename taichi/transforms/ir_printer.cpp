@@ -34,19 +34,16 @@ std::string block_dim_info(int block_dim) {
          (block_dim == 0 ? "adaptive" : std::to_string(block_dim)) + " ";
 }
 
-void erase_last_newline(std::vector<std::string> *contents) {
-  if (contents->empty()) {
-    return;
+std::string escape_new_line(const std::string &s) {
+  std::stringstream ss;
+  for (char c : s) {
+    if (c == '\n') {
+      ss << '\\' << 'n';
+    } else {
+      ss << c;
+    }
   }
-  auto &back = contents->back();
-  const int sz = back.size();
-  if (sz < 2) {
-    return;
-  }
-  if ((back[sz - 2] == '\n') && (back[sz - 1] == '"')) {
-    back.pop_back();
-    back.back() = '"';
-  }
+  return ss.str();
 }
 
 class IRPrinter : public IRVisitor {
@@ -233,10 +230,9 @@ class IRPrinter : public IRVisitor {
       if (std::holds_alternative<Expr>(c))
         name = std::get<Expr>(c).serialize();
       else
-        name = "\"" + std::get<std::string>(c) + "\"";
+        name = escape_new_line("\"" + std::get<std::string>(c) + "\"");
       contents.push_back(name);
     }
-    erase_last_newline(&contents);
     print("print {}", fmt::join(contents, ", "));
   }
 
@@ -247,10 +243,9 @@ class IRPrinter : public IRVisitor {
       if (std::holds_alternative<Stmt *>(c))
         name = std::get<Stmt *>(c)->name();
       else
-        name = "\"" + std::get<std::string>(c) + "\"";
+        name = escape_new_line("\"" + std::get<std::string>(c) + "\"");
       names.push_back(name);
     }
-    erase_last_newline(&names);
     print("print {}", fmt::join(names, ", "));
   }
 

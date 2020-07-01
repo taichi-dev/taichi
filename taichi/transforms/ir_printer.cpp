@@ -475,9 +475,11 @@ class IRPrinter : public IRVisitor {
       details = fmt::format("range_for({}, {}) {}", begin_str, end_str,
                             block_dim_info(stmt->block_dim));
     } else if (stmt->task_type == stmt->struct_for) {
-      details = fmt::format(
-          "struct_for({}) {}{}", stmt->snode->get_node_type_name_hinted(),
-          block_dim_info(stmt->block_dim), scratch_pad_info(stmt->scratch_opt));
+      details =
+          fmt::format("struct_for({}) {}{} bls={}B",
+                      stmt->snode->get_node_type_name_hinted(),
+                      block_dim_info(stmt->block_dim),
+                      scratch_pad_info(stmt->scratch_opt), stmt->bls_size);
     }
     if (stmt->task_type == OffloadedStmt::TaskType::listgen) {
       print("{} = offloaded listgen {}->{}", stmt->name(),

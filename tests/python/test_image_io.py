@@ -44,7 +44,7 @@ def test_image_io_vector(resx, resy, comp, ext, dt):
     pixel = np.random.rand(*shape, comp).astype(ti.to_numpy_type(dt))
     pixel_t = ti.Vector(comp, dt, shape)
     pixel_t.from_numpy(pixel)
-    fn = make_temp(suffix='.' + ext)
+    fn = make_temp_file(suffix='.' + ext)
     ti.imwrite(pixel_t, fn)
     pixel_r = (ti.imread(fn).astype(ti.to_numpy_type(dt)) + 0.5) / 256.0
     assert np.allclose(pixel_r, pixel, atol=2e-2)
@@ -64,7 +64,7 @@ def test_image_io_uint(resx, resy, comp, ext, dt):
     pixel = np.random.randint(256, size=(*shape, comp), dtype=np_type) * np_max
     pixel_t = ti.Vector(comp, dt, shape)
     pixel_t.from_numpy(pixel)
-    fn = make_temp(suffix='.' + ext)
+    fn = make_temp_file(suffix='.' + ext)
     ti.imwrite(pixel_t, fn)
     pixel_r = ti.imread(fn).astype(np_type) * np_max
     assert (pixel_r == pixel).all()

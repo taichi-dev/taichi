@@ -31,6 +31,16 @@ void make_block_local_offload(OffloadedStmt *offload) {
     auto snode = pad.first;
     auto data_type = snode->dt;
     auto dtype_size = data_type_size(data_type);
+
+    auto get_stride = [&](int i) {
+      // TODO: fix the index correspondence here
+      int stride = 1;
+      for (int j = i + 1; j < pad.second.pad_size.size(); j++) {
+        stride *= pad.second.block_size[j];
+      }
+      return stride;
+    };
+
     // Step 1:
     // Fetch to block local memory storage
     {
@@ -43,15 +53,6 @@ void make_block_local_offload(OffloadedStmt *offload) {
       bls_offset += (dtype_size - bls_offset % dtype_size) % dtype_size;
 
       Stmt *linear_index = nullptr;
-
-      auto get_stride = [&](int i) {
-        // TODO: fix the index correspondence here
-        int stride = 1;
-        for (int j = i + 1; j < pad.second.pad_size.size(); j++) {
-          stride *= pad.second.block_size[j];
-        }
-        return stride;
-      };
 
       for (int i = 0; i < pad.second.pad_size.size(); i++) {
         // TODO: fix the index correspondence here
@@ -70,10 +71,13 @@ void make_block_local_offload(OffloadedStmt *offload) {
       // Unroll the loading while-loop here
       int loop_offset = 0;
       while (loop_offset < pad.second.pad_size_linear()) {
+        TI_P(loop_offset);
+        TI_P(pad.second.block_size_linear());
+        TI_P(pad.second.pad_size_linear());
         Block *element_block = nullptr;
         auto loop_offset_stmt =
             block->push_back<ConstStmt>(TypedConstant(loop_offset));
-        if (loop_offset + pad.second.block_size_linear() <
+        if (loop_offset + pad.second.block_size_linear() >
             pad.second.pad_size_linear()) {
           // Need to create an IfStmt to safeguard
           auto cond = block->push_back<BinaryOpStmt>(
@@ -84,7 +88,7 @@ void make_block_local_offload(OffloadedStmt *offload) {
                   TypedConstant(pad.second.pad_size_linear())));
           auto if_stmt = static_cast<IfStmt *>(block->push_back<IfStmt>(cond));
           if_stmt->true_statements = std::make_unique<Block>();
-          element_block = block;
+          element_block = if_stmt->true_statements.get();
         } else {
           element_block = block;
         }
@@ -131,20 +135,35 @@ void make_block_local_offload(OffloadedStmt *offload) {
       for (auto glb_ptr : global_ptrs) {
         VecStatement bls;
         Stmt *bls_element_offset = nullptr;
+        TI_P(pad.second.pad_size.size());
         for (int i = 0; i < pad.second.pad_size.size(); i++) {
           auto global_indices = glb_ptr->indices;
-          auto bls_element_offset = global_indices;
+          auto inc = bls.push_back<BinaryOpStmt>(
+              BinaryOpType::sub, global_indices[i],
+              bls.push_back<LoopIndexBaseStmt>(offload, i));
+          inc = bls.push_back<BinaryOpStmt>(
+              BinaryOpType::mul, inc,
+              bls.push_back<ConstStmt>(TypedConstant(get_stride(i))));
+          if (!bls_element_offset) {
+            bls_element_offset = inc;
+          } else {
+            bls_element_offset = bls.push_back<BinaryOpStmt>(
+                BinaryOpType::add, bls_element_offset, inc);
+          }
         }
-        bls.push_back<ConstStmt>(TypedConstant(4));
+
+        // convert to bytes
         bls_element_offset = bls.push_back<BinaryOpStmt>(
             BinaryOpType::mul, bls_element_offset,
-            bls.push_back<ConstStmt>(TypedConstant(4)));
+            bls.push_back<ConstStmt>(TypedConstant(dtype_size)));
+
+        // add array offset
         bls_element_offset = bls.push_back<BinaryOpStmt>(
             BinaryOpType::add, bls_element_offset,
             bls.push_back<ConstStmt>(TypedConstant((int32)bls_offset)));
 
-        auto bls_ptr = bls.push_back<BlockLocalPtrStmt>(
-            bls_element_offset, VectorType(1, data_type));
+        bls.push_back<BlockLocalPtrStmt>(bls_element_offset,
+                                         VectorType(1, data_type));
         glb_ptr->replace_with(std::move(bls));
       }
     }

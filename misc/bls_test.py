@@ -15,7 +15,6 @@ ti.root.pointer(ti.i, N // bs).dense(ti.i, bs).place(x, y)
 @ti.kernel
 def populate():
     for i in range(bs, N - bs):
-        # for j in range(bs, N - bs):
         x[i] = i
 
 @ti.kernel

@@ -60,6 +60,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   llvm::Type *context_ty;
   llvm::Type *physical_coordinate_ty;
   llvm::Value *current_coordinates;
+  llvm::Value *parent_coordinates{nullptr};
+  llvm::GlobalVariable *bls_buffer{nullptr};
   // Mainly for supporting continue stmt
   llvm::BasicBlock *current_loop_reentry;
   // Mainly for supporting break stmt
@@ -231,9 +233,13 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(LoopIndexStmt *stmt) override;
 
+  void visit(LoopIndexBaseStmt *stmt) override;
+
   void visit(GlobalTemporaryStmt *stmt) override;
 
   void visit(ThreadLocalPtrStmt *stmt) override;
+
+  void visit(BlockLocalPtrStmt *stmt) override;
 
   void visit(InternalFuncStmt *stmt) override;
 

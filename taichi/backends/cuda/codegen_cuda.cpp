@@ -29,8 +29,6 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 
   using IRVisitor::visit;
 
-  llvm::GlobalVariable *shmem;
-
   CodeGenLLVMCUDA(Kernel *kernel, IRNode *ir = nullptr)
       : CodeGenLLVM(kernel, ir) {
 #if defined(TI_WITH_CUDA)
@@ -465,25 +463,18 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     }
   }
 
-  void create_shmem(OffloadedStmt *stmt) {
-    if (stmt->scratch_pads) {
-      TI_ASSERT(stmt->scratch_pads->pads.size() == 1);
-      for (auto &pad : stmt->scratch_pads->pads) {
-        auto snode = pad.first;
-        auto linear_size = pad.second.pad_size_linear();
-        TI_P(linear_size);
-        auto type =
-            llvm::ArrayType::get(tlctx->get_data_type(snode->dt), linear_size);
-        shmem =
-            new GlobalVariable(*module, type, false,
-                               llvm::GlobalValue::InternalLinkage, 0, "shmem");
-        shmem->setAlignment(llvm::MaybeAlign(8));
-      }
-    }
+  void create_bls_buffer(OffloadedStmt *stmt) {
+    auto type = llvm::ArrayType::get(llvm::Type::getInt8Ty(*llvm_context),
+                                     stmt->bls_size);
+    bls_buffer = new GlobalVariable(
+        *module, type, false, llvm::GlobalValue::InternalLinkage, 0, "shmem");
+    bls_buffer->setAlignment(llvm::MaybeAlign(8));
   }
 
   void visit(OffloadedStmt *stmt) override {
-    create_shmem(stmt);
+    TI_P(stmt->bls_size);
+    if (stmt->bls_size > 0)
+      create_bls_buffer(stmt);
 #if defined(TI_WITH_CUDA)
     TI_ASSERT(current_offload == nullptr);
     current_offload = stmt;

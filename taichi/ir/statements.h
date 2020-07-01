@@ -184,7 +184,7 @@ class OffloadedStmt : public Stmt {
   std::unique_ptr<Block> body;
   std::unique_ptr<Block> epilogue;
   std::size_t tls_size{1};  // avoid allocating dynamic memory with 0 byte
-  std::size_t bls_size{1};  // avoid allocating dynamic memory with 0 byte
+  std::size_t bls_size{0};
   ScratchPadOptions scratch_opt;
   std::unique_ptr<ScratchPads> scratch_pads;
 

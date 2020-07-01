@@ -5,7 +5,9 @@ Debugging a parallel program is not easy, so Taichi provides
 builtin utilities that could hopefully help you debug your Taichi program.
 
 Run-time ``print`` in kernels
----------------------------
+-----------------------------
+
+.. function:: print(arg1, ..., sep=' ', end='\n')
 
 Debug your program with ``print()`` in Taichi-scope. For example:
 
@@ -151,6 +153,8 @@ and there will be no runtime overhead.
 Compile-time ``ti.static_assert``
 ---------------------------------
 
+.. function:: ti.static_assert(cond, msg=None)
+
 Like ``ti.static_print``, we also provide a static version of ``assert``:
 ``ti.static_assert``. It can be useful to make assertions on data types, dimensionality, and shapes.
 It works whether ``debug=True`` is specified or not. When an assertion fails, it will
@@ -234,8 +238,8 @@ optimization and see if the issue still exists:
     import taichi as ti
 
     ti.init()
-    ti.core.toggle_advance_optimization()
+    ti.core.toggle_advance_optimization(False)
 
     ...
 
-If turning off optimization fixed the issue, please report this bug on `GitHub <https://github.com/taichi-dev/taichi/issues/new?labels=potential+bug&template=bug_report.md>`_ to help us improve.
+If turning off optimization fixed the issue, please report this bug on `GitHub <https://github.com/taichi-dev/taichi/issues/new?labels=potential+bug&template=bug_report.md>`_ to help us improve, thank for support!

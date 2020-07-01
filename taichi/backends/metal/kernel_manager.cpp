@@ -33,6 +33,14 @@ namespace shaders {
 using KernelTaskType = OffloadedStmt::TaskType;
 using BufferEnum = KernelAttributes::Buffers;
 
+inline int infer_msl_version(const TaichiKernelAttributes::UsedFeatures &f) {
+  if (f.simdgroup) {
+    // https://developer.apple.com/documentation/metal/mtllanguageversion/version2_1
+    return 131073;
+  }
+  return kMslVersionNone;
+}
+
 // This class requests the Metal buffer memory of |size| bytes from |mem_pool|.
 // Once allocated, it does not own the memory (hence the name "view"). Instead,
 // GC is deferred to the memory pool.
@@ -220,7 +228,8 @@ class CompiledTaichiKernel {
       : ctx_attribs(*params.ctx_attribs),
         used_features(params.ti_kernel_attribs->used_features) {
     auto *const device = params.device;
-    auto kernel_lib = new_library_with_source(device, params.mtl_source_code);
+    auto kernel_lib = new_library_with_source(device, params.mtl_source_code,
+                                              infer_msl_version(used_features));
     if (kernel_lib == nullptr) {
       TI_ERROR("Failed to compile Metal kernel! Generated code:\n\n{}",
                params.mtl_source_code);

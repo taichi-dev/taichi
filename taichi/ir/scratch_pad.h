@@ -88,7 +88,7 @@ class ScratchPad {
     }
 
     finalized = true;
-    flags = std::vector<AccessFlag>(linear_size(), AccessFlag(0));
+    flags = std::vector<AccessFlag>(pad_size_linear(), AccessFlag(0));
 
     for (auto &acc : accesses) {
       total_flags |= acc.second;
@@ -107,11 +107,20 @@ class ScratchPad {
     return bit::is_power_of_two((unsigned)total_flags);
   }
 
-  int linear_size() {
+  int pad_size_linear() {
     TI_ASSERT(finalized);
     int s = 1;
     for (int i = 0; i < dim; i++) {
       s *= pad_size[i];
+    }
+    return s;
+  }
+
+  int block_size_linear() {
+    TI_ASSERT(finalized);
+    int s = 1;
+    for (int i = 0; i < dim; i++) {
+      s *= block_size[i];
     }
     return s;
   }

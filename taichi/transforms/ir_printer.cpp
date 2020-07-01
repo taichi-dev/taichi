@@ -523,9 +523,9 @@ class IRPrinter : public IRVisitor {
           stmt->name(), stmt->offset);
   }
 
-  void visit(SharedPtrStmt *stmt) override {
-    print("{}{} = shared ptr (offset = {})", stmt->type_hint(), stmt->name(),
-          stmt->offset->name());
+  void visit(BlockLocalPtrStmt *stmt) override {
+    print("{}{} = block local ptr (offset = {})", stmt->type_hint(),
+          stmt->name(), stmt->offset->name());
   }
 
   void visit(InternalFuncStmt *stmt) override {

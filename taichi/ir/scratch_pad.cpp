@@ -9,7 +9,7 @@ std::string ScratchPad::global_to_linearized_local(
     const std::vector<Stmt *> &indices) {
   std::string ret = "";
   TI_ASSERT((int)indices.size() == dim);
-  int step_size = linear_size();
+  int step_size = pad_size_linear();
   for (int i = 0; i < (int)indices.size(); i++) {
     TI_ASSERT(step_size % pad_size[i] == 0);
     step_size /= pad_size[i];

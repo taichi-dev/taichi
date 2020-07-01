@@ -470,7 +470,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       TI_ASSERT(stmt->scratch_pads->pads.size() == 1);
       for (auto &pad : stmt->scratch_pads->pads) {
         auto snode = pad.first;
-        auto linear_size = pad.second.linear_size();
+        auto linear_size = pad.second.pad_size_linear();
         TI_P(linear_size);
         auto type =
             llvm::ArrayType::get(tlctx->get_data_type(snode->dt), linear_size);

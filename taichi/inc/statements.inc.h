@@ -72,7 +72,7 @@ PER_STATEMENT(GlobalTemporaryStmt)
 
 // Local storage
 PER_STATEMENT(ThreadLocalPtrStmt)
-PER_STATEMENT(SharedPtrStmt)
+PER_STATEMENT(BlockLocalPtrStmt)
 
 // Special
 PER_STATEMENT(InternalFuncStmt)

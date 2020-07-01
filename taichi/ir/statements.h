@@ -184,6 +184,7 @@ class OffloadedStmt : public Stmt {
   std::unique_ptr<Block> body;
   std::unique_ptr<Block> epilogue;
   std::size_t tls_size{1};  // avoid allocating dynamic memory with 0 byte
+  std::size_t bls_size{1};  // avoid allocating dynamic memory with 0 byte
   ScratchPadOptions scratch_opt;
   std::unique_ptr<ScratchPads> scratch_pads;
 
@@ -294,11 +295,11 @@ class ThreadLocalPtrStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
-class SharedPtrStmt : public Stmt {
+class BlockLocalPtrStmt : public Stmt {
  public:
   Stmt *offset;
 
-  SharedPtrStmt(Stmt *offset, VectorType ret_type) : offset(offset) {
+  BlockLocalPtrStmt(Stmt *offset, VectorType ret_type) : offset(offset) {
     this->ret_type = ret_type;
     TI_STMT_REG_FIELDS;
   }

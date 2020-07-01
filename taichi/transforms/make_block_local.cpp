@@ -25,72 +25,157 @@ void make_block_local_offload(OffloadedStmt *offload) {
   */
   auto pads = irpass::initialize_scratch_pad(offload);
 
-  if (pads->pads.size())  {
-    TI_WARN("Exiting now for debugging");
-    exit(0);
-  }
+  std::size_t bls_offset = 0;
 
-  std::size_t shared_offset = 0;
-
-  /*
-  // reduce buffer fragmentation.
-  for (auto dest : valid_reduction_values) {
-    auto data_type = dest->ret_type.data_type;
+  for (auto &pad : pads->pads) {
+    auto snode = pad.first;
+    auto data_type = snode->dt;
     auto dtype_size = data_type_size(data_type);
     // Step 1:
-    // Fetch to shared memory storage
+    // Fetch to block local memory storage
     {
       if (offload->prologue == nullptr) {
         offload->prologue = std::make_unique<Block>();
       }
+      auto block = offload->prologue.get();
 
       // ensure alignment
-      // tls_offset += (dtype_size - tls_offset % dtype_size) % dtype_size;
+      bls_offset += (dtype_size - bls_offset % dtype_size) % dtype_size;
 
+      Stmt *linear_index = nullptr;
 
+      auto get_stride = [&](int i) {
+        // TODO: fix the index correspondence here
+        int stride = 1;
+        for (int j = i + 1; j < pad.second.pad_size.size(); j++) {
+          stride *= pad.second.block_size[j];
+        }
+        return stride;
+      };
 
-      auto tls_ptr = offload->prologue->push_back<ThreadLocalPtrStmt>(
-          tls_offset, VectorType(1, data_type));
+      for (int i = 0; i < pad.second.pad_size.size(); i++) {
+        // TODO: fix the index correspondence here
+        auto inc = block->push_back<BinaryOpStmt>(
+            BinaryOpType::mul,
+            block->push_back<ConstStmt>(TypedConstant(get_stride(i))),
+            block->push_back<LoopIndexStmt>(offload, i));
+        if (linear_index) {
+          linear_index = block->push_back<BinaryOpStmt>(BinaryOpType::add,
+                                                        linear_index, inc);
+        } else {
+          linear_index = inc;
+        }
+      }
 
-      auto zero = offload->prologue->insert(
-          std::make_unique<ConstStmt>(TypedConstant(data_type, 0)), -1);
-      // Zero-fill
-      // TODO: do not use GlobalStore for TLS ptr.
-      offload->prologue->push_back<GlobalStoreStmt>(tls_ptr, zero);
+      // Unroll the loading while-loop here
+      int loop_offset = 0;
+      while (loop_offset < pad.second.pad_size_linear()) {
+        Block *element_block = nullptr;
+        auto loop_offset_stmt =
+            block->push_back<ConstStmt>(TypedConstant(loop_offset));
+        if (loop_offset + pad.second.block_size_linear() <
+            pad.second.pad_size_linear()) {
+          // Need to create an IfStmt to safeguard
+          auto cond = block->push_back<BinaryOpStmt>(
+              BinaryOpType::cmp_lt,
+              block->push_back<BinaryOpStmt>(BinaryOpType ::add,
+                                             loop_offset_stmt, linear_index),
+              block->push_back<ConstStmt>(
+                  TypedConstant(pad.second.pad_size_linear())));
+          auto if_stmt = static_cast<IfStmt *>(block->push_back<IfStmt>(cond));
+          if_stmt->true_statements = std::make_unique<Block>();
+          element_block = block;
+        } else {
+          element_block = block;
+        }
+
+        auto bls_index = element_block->push_back<BinaryOpStmt>(
+            BinaryOpType::add, loop_offset_stmt, linear_index);
+
+        std::vector<Stmt *> global_indices;
+        for (int i = 0; i < pad.second.pad_size.size(); i++) {
+          auto global_index = element_block->push_back<BinaryOpStmt>(
+              BinaryOpType ::add,
+              element_block->push_back<ConstStmt>(
+                  TypedConstant(pad.second.bounds[0][i])),
+              loop_offset_stmt);
+          global_indices.push_back(global_index);
+        }
+        // Recompute global indices
+        // TODO: do not use GlobalStore for BLS ptr.
+        auto glb_ptr =
+            element_block->push_back<GlobalPtrStmt>(snode, global_indices);
+        auto load = element_block->push_back<GlobalLoadStmt>(glb_ptr);
+        auto bls_ptr = element_block->push_back<BlockLocalPtrStmt>(
+            bls_index, VectorType(1, data_type));
+        element_block->push_back<GlobalStoreStmt>(bls_ptr, load);
+        loop_offset += pad.second.block_size_linear();
+      }
     }
 
     // Step 2:
-    // Make loop body accumulate to TLS ptr instead of global ptr
+    // Make loop body load BLS ptr instead of global ptr
     {
-      auto tls_ptr = offload->body->insert(
-          Stmt::make<ThreadLocalPtrStmt>(tls_offset, VectorType(1, data_type)),
-          0);
-      dest->replace_with(tls_ptr);
+      std::vector<GlobalPtrStmt *> global_ptrs;
+      // TODO: no abuse of gather_statements...
+      irpass::analysis::gather_statements(offload->body.get(), [&](Stmt *stmt) {
+        if (auto global_ptr = stmt->cast<GlobalPtrStmt>()) {
+          TI_ASSERT(global_ptr->width() == 1);
+          if (global_ptr->snodes[0] == snode) {
+            global_ptrs.push_back(global_ptr);
+          }
+        }
+        return false;
+      });
+
+      for (auto glb_ptr : global_ptrs) {
+        VecStatement bls;
+        Stmt *bls_element_offset = nullptr;
+        for (int i = 0; i < pad.second.pad_size.size(); i++) {
+          auto global_indices = glb_ptr->indices;
+          auto bls_element_offset = global_indices;
+        }
+        bls.push_back<ConstStmt>(TypedConstant(4));
+        bls_element_offset = bls.push_back<BinaryOpStmt>(
+            BinaryOpType::mul, bls_element_offset,
+            bls.push_back<ConstStmt>(TypedConstant(4)));
+        bls_element_offset = bls.push_back<BinaryOpStmt>(
+            BinaryOpType::add, bls_element_offset,
+            bls.push_back<ConstStmt>(TypedConstant((int32)bls_offset)));
+
+        auto bls_ptr = bls.push_back<BlockLocalPtrStmt>(
+            bls_element_offset, VectorType(1, data_type));
+        glb_ptr->replace_with(std::move(bls));
+      }
     }
 
     // Step 3:
-    // Atomic-add thread local contribution to its global version
-    {
+    // Atomic-add block local contribution to its global version
+    if (pad.second.total_flags & AccessFlag::write) {
+      TI_NOT_IMPLEMENTED
+      /*
+      //
       if (offload->epilogue == nullptr) {
         offload->epilogue = std::make_unique<Block>();
       }
-      auto tls_ptr = offload->epilogue->push_back<ThreadLocalPtrStmt>(
-          tls_offset, VectorType(1, data_type));
-      // TODO: do not use global load from TLS.
-      auto tls_load = offload->epilogue->push_back<GlobalLoadStmt>(tls_ptr);
+      auto bls_ptr = offload->epilogue->push_back<BlockLocalPtrStmt>(
+          bls_offset, VectorType(1, data_type));
+      // TODO: do not use global load from BLS.
+      auto tls_load = offload->epilogue->push_back<GlobalLoadStmt>(bls_ptr);
       auto global_ptr = offload->epilogue->insert(
           std::unique_ptr<Stmt>(
               (Stmt *)irpass::analysis::clone(dest).release()),
-          -1); offload->epilogue->push_back<AtomicOpStmt>(AtomicOpType::add,
-  global_ptr, tls_load);
+          -1);
+      offload->epilogue->push_back<AtomicOpStmt>(AtomicOpType::add, global_ptr,
+                                                 tls_load);
+                                                 */
     }
 
-    // allocate storage for the TLS variable
-    tls_offset += dtype_size;
+    // allocate storage for the BLS variable
+    bls_offset += dtype_size * pad.second.pad_size_linear();
   }
 
-  offload->tls_size = std::max(std::size_t(1), tls_offset);
-  */
+  offload->bls_size = std::max(std::size_t(1), bls_offset);
 }
 
 }  // namespace

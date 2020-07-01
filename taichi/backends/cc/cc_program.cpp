@@ -20,13 +20,12 @@ void CCKernel::compile() {
   execute(cfg.compile_cmd, bin_path, src_path);
 }
 
+
 void CCKernel::launch(CCProgram *launcher, Context *ctx) {
   using FuncEntryType = void();
   DynamicLoader dll(bin_path);
-  TI_ASSERT_INFO(dll.loaded(), "[cc] could not load shared object: {}",
-                 bin_path);
-  auto main =
-      reinterpret_cast<FuncEntryType *>(dll.load_function(get_sym_name(name)));
+  TI_ASSERT_INFO(dll.loaded(), "[cc] could not load shared object: {}", bin_path);
+  auto main = reinterpret_cast<FuncEntryType *>(dll.load_function(get_sym_name(name)));
   TI_INFO("[cc] entering kernel [{}]", name);
   (*main)();
   TI_INFO("[cc] leaving kernel [{}]", name);
@@ -48,3 +47,4 @@ bool is_c_backend_available() {
 
 }  // namespace cccp
 TLANG_NAMESPACE_END
+

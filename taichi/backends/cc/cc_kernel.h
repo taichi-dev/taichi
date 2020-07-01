@@ -10,7 +10,7 @@ class CCProgram;
 class CCKernel {
  public:
   CCKernel(std::string const &source, std::string const &name)
-      : source(source), name(name) {
+    : source(source), name(name) {
   }
 
   void compile();

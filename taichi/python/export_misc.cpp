@@ -164,7 +164,7 @@ void export_misc(py::module &m) {
 #ifdef TI_WITH_CC
   m.def("with_cc", taichi::lang::cccp::is_c_backend_available);
 #else
-  m.def("with_cc", []() { return false; });
+  m.def("with_cc", [] () { return false; });
 #endif
 }
 

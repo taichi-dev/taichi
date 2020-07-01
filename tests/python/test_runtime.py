@@ -24,7 +24,6 @@ assert x[1, 2] == 4
 
 
 @ti.all_archs
-@ti.all_archs
 @ti.must_throw(RuntimeError)
 def test_materialization_after_kernel():
     x = ti.var(ti.f32, (3, 4))

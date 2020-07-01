@@ -1,6 +1,7 @@
 #pragma once
 
 #include "taichi/ir/ir.h"
+#include "taichi/ir/scratch_pad.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -184,6 +185,7 @@ class OffloadedStmt : public Stmt {
   std::unique_ptr<Block> epilogue;
   std::size_t tls_size{1};  // avoid allocating dynamic memory with 0 byte
   ScratchPadOptions scratch_opt;
+  std::unique_ptr<ScratchPads> scratch_pads;
 
   OffloadedStmt(TaskType task_type);
 

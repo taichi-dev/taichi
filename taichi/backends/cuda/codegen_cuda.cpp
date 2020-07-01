@@ -465,17 +465,25 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     }
   }
 
-  void create_shmem() {
-    // Assuming BS = 16
-    auto type =
-        llvm::ArrayType::get(llvm::Type::getFloatTy(*llvm_context), 18 * 18);
-    shmem = new GlobalVariable(*module, type, false,
+  void create_shmem(OffloadedStmt *stmt) {
+    if (stmt->scratch_pads) {
+      TI_ASSERT(stmt->scratch_pads->pads.size() == 1);
+      for (auto &pad : stmt->scratch_pads->pads) {
+        auto snode = pad.first;
+        auto linear_size = pad.second.linear_size();
+        TI_P(linear_size);
+        auto type =
+            llvm::ArrayType::get(tlctx->get_data_type(snode->dt), linear_size);
+        shmem =
+            new GlobalVariable(*module, type, false,
                                llvm::GlobalValue::InternalLinkage, 0, "shmem");
-    shmem->setAlignment(llvm::MaybeAlign(4));
+        shmem->setAlignment(llvm::MaybeAlign(8));
+      }
+    }
   }
 
   void visit(OffloadedStmt *stmt) override {
-    create_shmem();
+    create_shmem(stmt);
 #if defined(TI_WITH_CUDA)
     TI_ASSERT(current_offload == nullptr);
     current_offload = stmt;

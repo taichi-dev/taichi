@@ -1,5 +1,6 @@
-#include "taichi/util/testing.h"
-#include "taichi/ir/frontend.h"
+#pragma once
+
+#include "taichi/ir/snode.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -145,18 +146,7 @@ class ScratchPad {
    */
 
   std::string global_to_linearized_local(const std::vector<Stmt *> &loop_vars,
-                                         const std::vector<Stmt *> &indices) {
-    std::string ret = "";
-    TI_ASSERT((int)indices.size() == dim);
-    int step_size = linear_size();
-    for (int i = 0; i < (int)indices.size(); i++) {
-      TI_ASSERT(step_size % pad_size[i] == 0);
-      step_size /= pad_size[i];
-      ret += fmt::format(" + ({} - {}_base - {}) * {}", indices[i]->raw_name(),
-                         loop_vars[i]->raw_name(), bounds[0][i], step_size);
-    }
-    return ret;
-  }
+                                         const std::vector<Stmt *> &indices);
 };
 
 inline int div_floor(int a, int b) {
@@ -201,15 +191,6 @@ class ScratchPads {
     for (auto &pad : pads) {
       pad.second.finalize();
     }
-  }
-
-  void CSE() {
-  }
-
-  void emit_gather_code_cpu() {
-  }
-
-  void emit_gather_code_gpu() {
   }
 
   void generate_address_code(SNode *snode, const std::vector<int> &indices) {

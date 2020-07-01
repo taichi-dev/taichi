@@ -35,7 +35,7 @@ Debug your program with ``print()`` in Taichi-scope. For example:
         print('v =', v)
         #=> v = [3, 4]
 
-For now, Taichi-scope ``print`` supports string, scalar, vector, and matrix expressions as the argument.
+For now, Taichi-scope ``print`` supports string, scalar, vector, and matrix expressions as arguments.
 ``print`` in Taichi-scope may be a little different from ``print`` in Python-scope, see below.
 
 .. warning::
@@ -55,12 +55,13 @@ For now, Taichi-scope ``print`` supports string, scalar, vector, and matrix expr
 
 
         @ti.kernel
-        def kern():
+        def foo():
             a[0] = 1.0
             print('a[0] = ', a[0]) # right
             print(f'a[0] = {a[0]}') # wrong, f-string is not supported
             print("a[0] = %f" % a[0]) # wrong, formatted string is not supported
-        kern()
+
+        foo()
 .. note::
 
     For the **OpenGL and CUDA backend**, the printed result will not show up until ``ti.sync()`` is called:
@@ -95,9 +96,9 @@ For now, Taichi-scope ``print`` supports string, scalar, vector, and matrix expr
 Compile-time ``ti.static_print``
 --------------------------------
 
-Sometimes it's also useful to print Python-scope objects and constants like datatype or SNode in Taichi-scope.
+Sometimes it is useful to print Python-scope objects and constants like data types or SNodes in Taichi-scope.
 So, similar to ``ti.static`` we provide ``ti.static_print`` to print compile-time constants.
-It behaves the same as Python-scope ``print``, just being embedded into Taichi kernel.
+It is similar to Python-scope ``print``.
 
 .. code-block:: python
 
@@ -118,14 +119,14 @@ It behaves the same as Python-scope ``print``, just being embedded into Taichi k
                 # will only print once
 
 Unlike ``print``, ``ti.static_print`` will only print the expression once at compile-time, and
-therefore has no runtime cost.
+therefore it has no runtime cost.
 
 
 Runtime ``assert`` in kernel
 ----------------------------
 
-We may use ``assert`` statement in Taichi-scope. When assertion condition failed, a
-``RuntimeError`` will be raised to indicate error.
+Programmers may use ``assert`` statements in Taichi-scope. When the assertion condition failed, a
+``RuntimeError`` will be raised to indicate the error.
 
 To make ``assert`` work, first make sure you are using the **CPU backend**.
 For performance reason, ``assert`` only works when ``debug`` mode is on, For example:
@@ -143,16 +144,16 @@ For performance reason, ``assert`` only works when ``debug`` mode is on, For exa
             x[i] = ti.sqrt(x)
 
 
-When your debugging work is done, simply set ``debug=False``. Now ``assert`` will be ignored
-therefore no runtime overhead, making your program easy to debug without losing performance.
+When you are done with debugging, simply set ``debug=False``. Now ``assert`` will be ignored
+and there will be no runtime overhead.
 
 
 Compile-time ``ti.static_assert``
 ---------------------------------
 
 Like ``ti.static_print``, we also provide a static version of ``assert``:
-``ti.static_assert``, it can be useful to make assertion on data type / dimention / shape.
-It works no matter whether ``debug=True`` is specified. When assertion fails, it will
+``ti.static_assert``. It can be useful to make assertions on data types, dimensionality, and shapes.
+It works whether ``debug=True`` is specified or not. When an assertion fails, it will
 raise ``AssertionError`` as a Python-scope ``assert`` does.
 
 For example:
@@ -165,27 +166,22 @@ For example:
         return x % 2 == 1
 
 
-Tips for debugging
-------------------
+Debugging Tips
+--------------
 
 Debugging a Taichi program can be hard even with the builtin tools above.
-Taichi developers are currently devoting themselves in improving error messages and warnings
-to help user find potential BUGs in their programs.
 
-Here we collected some common BUGs that one might encounter with a Taichi program:
+Here we showcase some common bugs that one may encounter in a Taichi program:
 
-Static typing system
-++++++++++++++++++++
+Static type system
+++++++++++++++++++
 
-Taichi pretends that it's a dynamical-typed language like Python, but it's actually a
-statically-typed language which will be translated into high performance CPU/GPU instructions.
+Python code in Taichi-scope is translated into a statically typed language for high performance. This means code in Taichi-scope can have a different behavior compared with that in Python-scope, especially when it comes to types.
 
-So the code behavior in Taichi-scope is actually very different from Python-scope!
+The type of a variable is simply **determined at its initialization and never changes later**.
 
-Type of a variable is simply **determined at its first initialization and never changes later**.
-
-Although static-type provides better performance and simplicity, but may leads to BUGs if
-users not distinguished Taichi-scope from Python-scope, e.g.:
+Although Taichi's static type system provides better performance, it may lead to bugs if
+programmers carelessly used the wrong types. For example,
 
 .. code-block:: python
 
@@ -194,19 +190,19 @@ users not distinguished Taichi-scope from Python-scope, e.g.:
         ret = 0  # 0 is a integer, so `ret` is typed as int32
         for i in range(3):
             ret += 0.1 * i  # i32 += f32, the result is still stored in int32!
-        print(ret)  # will shows 0
+        print(ret)  # will show 0
 
     buggy()
 
-The code above shows a common BUG due to the limitation of the static-type system.
+The code above shows a common bug due to Taichi's static type system.
 The Taichi compiler should show a warning like:
 
 .. code-block:: none
 
     [W 06/27/20 21:43:51.853] [type_check.cpp:visit@66] [$19] Atomic add (float32 to int32) may lose precision.
 
-This means that it cannot store a ``float32`` result to ``int32``.
-The solution is to type ``ret`` as ``float32`` at the first place:
+This means that Taichi cannot store a ``float32`` result precisely to ``int32``.
+The solution is to initialize ``ret`` as a float-point value:
 
 .. code-block:: python
 
@@ -214,23 +210,19 @@ The solution is to type ``ret`` as ``float32`` at the first place:
     def not_buggy():
         ret = 0.0  # 0 is a floating point number, so `ret` is typed as float32
         for i in range(3):
-            ret += 0.1 * i  # f32 += f32, OK!!
-        print(ret)  # will shows 0.6
+            ret += 0.1 * i  # f32 += f32. OK!
+        print(ret)  # will show 0.6
 
     not_buggy()
 
 
-`@archibate <https://github.com/archibate>`_'s personal suggestion to prevent issues like this:
-
-* Recall the ``float ret = 0;`` in C/C++, always use ``ret = float(0)`` on **initialization**,
-  and ``ret = int(0)`` for integers. So that you are always clear of what type every variable.
 
 Advanced Optimization
 +++++++++++++++++++++
 
 Taichi has an advanced optimization engine to make your Taichi kernel to be as fast as it could.
-But like the ``gcc -O3`` does, sometimes advanced optimization can lead to BUGs as it tried
-too hard, including runtime errors like:
+But like what the ``gcc -O3`` does, sometimes advanced optimization can lead to bugs as it tries
+too hard. This includes runtime errors such as:
 
 ```RuntimeError: [verify.cpp:basic_verify@40] stmt 8 cannot have operand 7.```
 
@@ -246,4 +238,4 @@ optimization and see if the issue still exists:
 
     ...
 
-If turning of optimization fixed the issue, please report this BUG on `GitHub <https://github.com/taichi-dev/taichi/issues/new?labels=potential+bug&template=bug_report.md>`_ to help us improve, if you would like to.
+If turning off optimization fixed the issue, please report this bug on `GitHub <https://github.com/taichi-dev/taichi/issues/new?labels=potential+bug&template=bug_report.md>`_ to help us improve.

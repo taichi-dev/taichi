@@ -1176,7 +1176,9 @@ class Simplify : public IRVisitor {
   }
 
   void visit(StructForStmt *for_stmt) override {
-    TI_ASSERT(current_struct_for == nullptr);
+    TI_ASSERT_INFO(current_struct_for == nullptr,
+                   "Nested struct-fors are not supported for now. "
+                   "Please try to use range-fors for inner loops.");
     current_struct_for = for_stmt;
     for_stmt->body->accept(this);
     current_struct_for = nullptr;

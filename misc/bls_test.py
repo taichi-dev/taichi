@@ -1,6 +1,6 @@
 import taichi as ti
 
-ti.init(arch=ti.cuda, kernel_profiler=True, print_ir=True)
+ti.init(arch=ti.cuda, kernel_profiler=True, print_ir=True, print_kernel_llvm_ir_optimized=True)
 x, y = ti.var(ti.f32), ti.var(ti.f32)
 
 N = 48
@@ -21,8 +21,9 @@ def populate():
 def copy():
     ti.cache_shared(x)
     for i in x:
-        y[i] = x[i]
-        print(y[i])
+        print(x[i])
+        # y[i] = x[i]
+        # print(y[i])
 
 
 populate()

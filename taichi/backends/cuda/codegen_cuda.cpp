@@ -86,7 +86,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
                  task.block_dim);
 
         cuda_module->launch(task.name, task.grid_dim, task.block_dim,
-                            {&context});
+                            task.shmem_bytes, {&context});
       }
       // copy data back to host
       if (has_buffer) {
@@ -467,12 +467,13 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     auto type = llvm::ArrayType::get(llvm::Type::getInt8Ty(*llvm_context),
                                      stmt->bls_size);
     bls_buffer = new GlobalVariable(
-        *module, type, false, llvm::GlobalValue::InternalLinkage, 0, "shmem");
+        *module, type, false, llvm::GlobalValue::InternalLinkage, nullptr,
+        "bls_buffer", nullptr, llvm::GlobalVariable::NotThreadLocal,
+        3 /*addrspace=shared*/);
     bls_buffer->setAlignment(llvm::MaybeAlign(8));
   }
 
   void visit(OffloadedStmt *stmt) override {
-    TI_P(stmt->bls_size);
     if (stmt->bls_size > 0)
       create_bls_buffer(stmt);
 #if defined(TI_WITH_CUDA)
@@ -499,7 +500,6 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         kernel_block_dim =
             std::min(stmt->snode->max_num_elements(), kernel_block_dim);
         stmt->block_dim = kernel_block_dim;
-        {}
         create_offload_struct_for(stmt, true);
       } else if (stmt->task_type == Type::clear_list) {
         emit_clear_list(stmt);
@@ -514,6 +514,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       finalize_offloaded_task_function();
       current_task->grid_dim = kernel_grid_dim;
       current_task->block_dim = kernel_block_dim;
+      current_task->shmem_bytes = stmt->bls_size;
       current_task->end();
       current_task = nullptr;
     }

@@ -1369,8 +1369,20 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
           BasicBlock::Create(*llvm_context, "bound_guarded_loop_body", func);
       builder->CreateCondBr(exec_cond, bounded_body_bb, body_bb_tail);
       builder->SetInsertPoint(bounded_body_bb);
+
+
+      if (stmt->prologue) {
+        stmt->prologue->accept(this);
+        call("block_barrier");  // "__syncthreads()"
+      }
+
       // The real loop body
       stmt->body->accept(this);
+
+      if (stmt->epilogue) {
+        call("block_barrier");  // "__syncthreads()"
+        stmt->epilogue->accept(this);
+      }
       builder->CreateBr(body_bb_tail);
     }
 

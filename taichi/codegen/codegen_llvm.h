@@ -23,6 +23,7 @@ class OffloadedTask {
 
   int block_dim;
   int grid_dim;
+  std::size_t shmem_bytes{0};
 
   OffloadedTask(CodeGenLLVM *codegen);
 

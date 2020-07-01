@@ -71,22 +71,18 @@ void make_block_local_offload(OffloadedStmt *offload) {
       // Unroll the loading while-loop here
       int loop_offset = 0;
       while (loop_offset < pad.second.pad_size_linear()) {
-        TI_P(loop_offset);
-        TI_P(pad.second.block_size_linear());
-        TI_P(pad.second.pad_size_linear());
         Block *element_block = nullptr;
         auto loop_offset_stmt =
             block->push_back<ConstStmt>(TypedConstant(loop_offset));
+        auto scratch_element_id = linear_index;
         if (loop_offset + pad.second.block_size_linear() >
             pad.second.pad_size_linear()) {
           // Need to create an IfStmt to safeguard
           auto cond = block->push_back<BinaryOpStmt>(
-              BinaryOpType::cmp_lt,
-              block->push_back<BinaryOpStmt>(BinaryOpType ::add,
-                                             loop_offset_stmt, linear_index),
+              BinaryOpType::cmp_lt, scratch_element_id,
               block->push_back<ConstStmt>(
                   TypedConstant(pad.second.pad_size_linear())));
-          auto if_stmt = static_cast<IfStmt *>(block->push_back<IfStmt>(cond));
+          auto if_stmt = dynamic_cast<IfStmt *>(block->push_back<IfStmt>(cond));
           if_stmt->true_statements = std::make_unique<Block>();
           element_block = if_stmt->true_statements.get();
         } else {
@@ -97,12 +93,20 @@ void make_block_local_offload(OffloadedStmt *offload) {
             BinaryOpType::add, loop_offset_stmt, linear_index);
 
         std::vector<Stmt *> global_indices;
+        auto partial_indices = scratch_element_id;
         for (int i = 0; i < pad.second.pad_size.size(); i++) {
+          auto size = element_block->push_back<ConstStmt>(
+              TypedConstant(pad.second.pad_size[i]));
+          auto scratch_index = element_block->push_back<BinaryOpStmt>(
+              BinaryOpType::mod, partial_indices, size);
           auto global_index = element_block->push_back<BinaryOpStmt>(
-              BinaryOpType ::add,
+              BinaryOpType::add,
               element_block->push_back<ConstStmt>(
                   TypedConstant(pad.second.bounds[0][i])),
-              loop_offset_stmt);
+              scratch_index);
+          global_index = element_block->push_back<BinaryOpStmt>(
+              BinaryOpType::add, global_index,
+              element_block->push_back<LoopIndexBaseStmt>(offload, i));
           global_indices.push_back(global_index);
         }
         // Recompute global indices
@@ -114,6 +118,10 @@ void make_block_local_offload(OffloadedStmt *offload) {
             bls_index, VectorType(1, data_type));
         element_block->push_back<GlobalStoreStmt>(bls_ptr, load);
         loop_offset += pad.second.block_size_linear();
+        scratch_element_id = block->push_back<BinaryOpStmt>(
+            BinaryOpType::add, scratch_element_id,
+            block->push_back<ConstStmt>(
+                TypedConstant(pad.second.block_size_linear())));
       }
     }
 
@@ -135,7 +143,6 @@ void make_block_local_offload(OffloadedStmt *offload) {
       for (auto glb_ptr : global_ptrs) {
         VecStatement bls;
         Stmt *bls_element_offset = nullptr;
-        TI_P(pad.second.pad_size.size());
         for (int i = 0; i < pad.second.pad_size.size(); i++) {
           auto global_indices = glb_ptr->indices;
           auto inc = bls.push_back<BinaryOpStmt>(
@@ -209,8 +216,11 @@ void make_block_local(IRNode *root) {
   for (auto &offload : root_block->statements) {
     make_block_local_offload(offload->cast<OffloadedStmt>());
   }
+  irpass::re_id(root);
+  irpass::print(root);
   typecheck(root);
   fix_block_parents(root);
+  irpass::re_id(root);
   irpass::print(root);
 }
 

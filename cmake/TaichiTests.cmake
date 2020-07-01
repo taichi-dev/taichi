@@ -19,7 +19,8 @@ file(GLOB_RECURSE TAICHI_TESTS_SOURCE
         "tests/cpp/ir/*.cpp"
         "tests/cpp/program/*.cpp"
         "tests/cpp/struct/*.cpp"
-        "tests/cpp/transforms/*.cpp")
+        "tests/cpp/transforms/*.cpp"
+        "tests/cpp/util/*.cpp")
 
 include_directories(
     ${PROJECT_SOURCE_DIR},

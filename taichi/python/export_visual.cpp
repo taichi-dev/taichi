@@ -13,6 +13,19 @@ void export_visual(py::module &m) {
   // GUI
   using Line = Canvas::Line;
   using Circle = Canvas::Circle;
+  using Type = GUI::KeyEvent::Type;
+
+  auto key_event = py::class_<GUI::KeyEvent>(m, "KeyEvent")
+                       .def_readonly("type", &GUI::KeyEvent::type)
+                       .def_readonly("key", &GUI::KeyEvent::key)
+                       .def("pos", &GUI::KeyEvent::pos)
+                       .def("delta", &GUI::KeyEvent::delta);
+
+  py::enum_<GUI::KeyEvent::Type>(key_event, "EType")
+      .value("Scroll", Type::scroll)
+      .value("Move", Type::move)
+      .value("Press", Type::press)
+      .value("Release", Type::release);
   py::class_<GUI>(m, "GUI")
       .def(py::init<std::string, Vector2i>())
       .def_readwrite("should_close", &GUI::should_close)
@@ -26,9 +39,7 @@ void export_visual(py::module &m) {
       .def("screenshot", &GUI::screenshot)
       .def("has_key_event", &GUI::has_key_event)
       .def("wait_key_event", &GUI::wait_key_event)
-      .def("get_key_event_head_key", &GUI::get_key_event_head_key)
-      .def("get_key_event_head_type", &GUI::get_key_event_head_type)
-      .def("get_key_event_head_pos", &GUI::get_key_event_head_pos)
+      .def("get_key_event_head", &GUI::get_key_event_head)
       .def("pop_key_event_head", &GUI::pop_key_event_head)
       .def("get_cursor_pos", &GUI::get_cursor_pos)
       .def_readwrite("title", &GUI::window_name)

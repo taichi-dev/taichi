@@ -104,6 +104,16 @@ LRESULT CALLBACK WindowProc(HWND hwnd,
       gui->mouse_event(
           GUI::MouseEvent{GUI::MouseEvent::Type::move, gui->cursor_pos});
       break;
+    case WM_MOUSEWHEEL:
+      gui->key_events.push_back(
+          GUI::KeyEvent{GUI::KeyEvent::Type::scroll, "SCROLL",
+                        Vector2i{0, GET_WHEEL_DELTA_WPARAM(wParam)}});
+      break;
+    case WM_MOUSEHWHEEL:
+      gui->key_events.push_back(
+          GUI::KeyEvent{GUI::KeyEvent::Type::scroll, "SCROLL",
+                        Vector2i{GET_WHEEL_DELTA_WPARAM(wParam), 0}});
+      break;
     case WM_PAINT:
       break;
     case WM_KEYDOWN:

@@ -6,6 +6,7 @@ class GUI:
     class Event:
         pass
 
+    # Event keys
     SHIFT = 'Shift'
     ALT = 'Alt'
     CTRL = 'Control'
@@ -19,13 +20,20 @@ class GUI:
     LEFT = 'Left'
     RIGHT = 'Right'
     CAPSLOCK = 'Caps_Lock'
-    MOTION = 'Motion'
     LMB = 'LMB'
     MMB = 'MMB'
     RMB = 'RMB'
     EXIT = 'WMClose'
-    RELEASE = False
-    PRESS = True
+    WHEELUP = 'WHEELUP'
+    WHEELDOWN = 'WHEELDOWN'
+    WHEELLEFT = 'WHEELLEFT'
+    WHEELRIGHT = 'WHEELRIGHT'
+
+    # Event types
+    WHEEL = None  # KeyEvent.EType.Scroll
+    MOTION = None  # KeyEvent.EType.Move
+    PRESS = None  # KeyEvent.EType.Press
+    RELEASE = None  # KeyEvent.EType.Release
 
     def __init__(self, name, res=512, background_color=0x0):
         import taichi as ti
@@ -41,6 +49,11 @@ class GUI:
         self.key_pressed = set()
         self.event = None
         self.clear()
+
+        GUI.WHEEL = ti.core.KeyEvent.EType.Scroll
+        GUI.MOTION = ti.core.KeyEvent.EType.Move
+        GUI.PRESS = ti.core.KeyEvent.EType.Press
+        GUI.RELEASE = ti.core.KeyEvent.EType.Release
 
     def __enter__(self):
         return self
@@ -228,14 +241,30 @@ class GUI:
             if filter is None or filter.match(e):
                 yield e
 
+    def map_event(self, event):
+        e = GUI.Event()
+
+        e.type = event.type  #int(event.type)
+        e.key = event.key
+
+        if e.type != GUI.WHEEL:
+            e.pos = event.pos()
+        else:
+            dt = event.delta()
+            if dt[0] != 0:
+                e.key = GUI.WHEELLEFT if dt[0] > 0 else GUI.WHEELRIGHT
+                e.delta = abs(dt[0])
+            else:
+                e.key = GUI.WHEELUP if dt[1] > 0 else GUI.WHEELDOWN
+                e.delta = abs(dt[1])
+        return e
+
     def get_key_event(self):
         self.core.wait_key_event()
-        e = GUI.Event()
-        e.key = self.core.get_key_event_head_key()
-        e.type = self.core.get_key_event_head_type()
-        e.pos = self.core.get_key_event_head_pos()
-        e.pos = (e.pos[0], e.pos[1])
+
+        e = self.map_event(self.core.get_key_event_head())
         e.modifier = []
+
         for mod in ['Shift', 'Alt', 'Control']:
             if self.is_pressed(mod):
                 e.modifier.append(mod)

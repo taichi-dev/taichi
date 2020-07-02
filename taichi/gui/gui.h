@@ -503,10 +503,19 @@ class GUI : public GUIBase {
   };
 
   struct KeyEvent {
-    enum class Type { move, press, release };
+    enum class Type { scroll = 1, move, press, release };
     Type type;
     std::string key;
-    Vector2i pos;
+    Vector2i data;
+
+    Vector2i pos() {
+      return data;
+    }
+
+    // reuse pos to denote the scrolling distance , if type == scroll
+    Vector2i delta() {
+      return type == Type::scroll ? data : Vector2i{0, 0};
+    }
   };
 
   std::vector<KeyEvent> key_events;
@@ -829,16 +838,8 @@ class GUI : public GUIBase {
     }
   }
 
-  std::string get_key_event_head_key() {
-    return key_events[0].key;
-  }
-
-  bool get_key_event_head_type() {
-    return key_events[0].type == KeyEvent::Type::press;
-  }
-
-  Vector2 get_key_event_head_pos() {
-    return canvas->untransform(Vector2(key_events[0].pos));
+  KeyEvent get_key_event_head() {
+    return key_events[0];
   }
 
   Vector2 get_cursor_pos() {

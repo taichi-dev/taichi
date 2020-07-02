@@ -526,7 +526,8 @@ def _kernel_impl(func, level_of_class_stackframe, verbose=False):
             clsobj = type(args[0])
             assert not hasattr(clsobj, '_data_oriented')
             raise KernelDefError(
-                f'Please decorate class {clsobj.__name__} with @ti.data_oriented')
+                f'Please decorate class {clsobj.__name__} with @ti.data_oriented'
+            )
     else:
 
         @functools.wraps(func)
@@ -556,7 +557,8 @@ class BoundedDifferentiableMethod:
         clsobj = type(kernel_owner)
         if not getattr(clsobj, '_data_oriented', False):
             raise KernelDefError(
-                f'Please decorate class {clsobj.__name__} with @ti.data_oriented')
+                f'Please decorate class {clsobj.__name__} with @ti.data_oriented'
+            )
         self._kernel_owner = kernel_owner
         self._primal = wrapped_kernel_func._primal
         self._adjoint = wrapped_kernel_func._adjoint

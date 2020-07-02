@@ -181,7 +181,7 @@ Expr ptr_if_global(const Expr &var) {
     // singleton global variable
     TI_ASSERT_INFO(
         var.snode()->num_active_indices == 0,
-        "Please always use 'x[None]' (instead of simply 'x') to access any 0-D tensor."
+        "Please always use 'x[None]' (instead of simply 'x') to access any 0-D tensor.");
     return var[ExprGroup()];
   } else {
     // may be any local or global expr

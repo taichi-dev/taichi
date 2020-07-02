@@ -629,7 +629,7 @@ class Matrix(TaichiOperations):
         if not self.is_global():
             return np.array(self.entries).reshape(shape_ext)
 
-        ret = np.empty(self.shape + shape_ext, dtype=to_numpy_type(self.dtype)
+        ret = np.empty(self.shape + shape_ext, dtype=to_numpy_type(self.dtype))
         from .meta import matrix_to_ext_arr
         matrix_to_ext_arr(self, ret, as_vector)
         import taichi as ti

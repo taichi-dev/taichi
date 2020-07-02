@@ -31,12 +31,7 @@ def remove_indent(lines):
 def func(foo):
     is_classfunc = _inside_class(level_of_class_stackframe=3)
     func = Func(foo, classfunc=is_classfunc)
-
-    @functools.wraps(foo)
-    def decorated(*args):
-        return func.__call__(*args)
-
-    return decorated
+    return func
 
 
 class Func:
@@ -51,8 +46,11 @@ class Func:
     def __call__(self, *args):
         if self.compiled is None:
             self.do_compile()
-        ret = self.compiled(*args)
-        return ret
+        return self.compiled(*args)
+
+    def compiled(self, *args):
+        self.do_compile()
+        return self.compiled(*args)
 
     def do_compile(self):
         from .impl import get_runtime
@@ -523,10 +521,7 @@ def _kernel_impl(func, level_of_class_stackframe, verbose=False):
                 f'Please decorate class {clsobj.__name__} with @data_oriented')
     else:
 
-        @functools.wraps(func)
-        def wrapped(*args, **kwargs):
-            return primal(*args, **kwargs)
-
+        wrapped = functools.wraps(func)(primal)
         wrapped.grad = adjoint
 
     wrapped._is_wrapped_kernel = True

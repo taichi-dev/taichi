@@ -48,10 +48,6 @@ class Func:
             self.do_compile()
         return self.compiled(*args)
 
-    def compiled(self, *args):
-        self.do_compile()
-        return self.compiled(*args)
-
     def do_compile(self):
         from .impl import get_runtime
         src = remove_indent(oinspect.getsource(self.func))
@@ -331,7 +327,7 @@ class Kernel:
                     "Kernels cannot call other kernels. I.e., nested kernels are not allowed. Please check if you have direct/indirect invocation of kernels within kernels. Note that some methods provided by the Taichi standard library may invoke kernels, and please move their invocations to Python-scope."
                 )
             self.runtime.inside_kernel = True
-            compiled()
+            compiled()  # invoke AST transformed kernel
             self.runtime.inside_kernel = False
 
         taichi_kernel = taichi_kernel.define(taichi_ast_generator)

@@ -3,8 +3,8 @@ import taichi as ti
 ti.init(arch=ti.cuda, kernel_profiler=True)#, print_ir=True)
 x, y, y2 = ti.var(ti.i32), ti.var(ti.i32), ti.var(ti.i32)
 
-N = 3
-bs = 1
+N = 10
+bs = 2
 
 block = ti.root.pointer(ti.ij, N // bs)
 block.dense(ti.ij, bs).place(x)
@@ -26,6 +26,7 @@ def laplace(use_bls: ti.template(), y: ti.template()):
         # y[i, j] = x[i + 3, j - 1]#  - x[i, j]
         # print(x[i, j + 1], x[i, j])
         y[i, j] = x[i, j + 1] - x[i, j]
+        # y[i, j] = - x[i, j]
         '''
         y[i, j] = 4.0 * x[i, j] - x[i - 1,
                                     j] - x[i + 1,

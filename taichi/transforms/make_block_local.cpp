@@ -32,13 +32,21 @@ void make_block_local_offload(OffloadedStmt *offload) {
     auto data_type = snode->dt;
     auto dtype_size = data_type_size(data_type);
 
+    auto get_block_stride = [&](int i) {
+      // TODO: fix the index correspondence here
+      int stride = 1;
+      for (int j = i + 1; j < pad.second.pad_size.size(); j++) {
+        stride *= pad.second.block_size[j];
+      }
+      return stride;
+    };
+
     auto get_pad_stride = [&](int i) {
       // TODO: fix the index correspondence here
       int stride = 1;
       for (int j = i + 1; j < pad.second.pad_size.size(); j++) {
         stride *= pad.second.pad_size[j];
       }
-      TI_P(stride);
       return stride;
     };
 
@@ -59,7 +67,7 @@ void make_block_local_offload(OffloadedStmt *offload) {
         // TODO: fix the index correspondence here
         auto inc = block->push_back<BinaryOpStmt>(
             BinaryOpType::mul,
-            block->push_back<ConstStmt>(TypedConstant(get_pad_stride(i))),
+            block->push_back<ConstStmt>(TypedConstant(get_block_stride(i))),
             block->push_back<BinaryOpStmt>(
                 BinaryOpType::sub, block->push_back<LoopIndexStmt>(offload, i),
                 block->push_back<LoopIndexBaseStmt>(offload, i)));
@@ -99,8 +107,14 @@ void make_block_local_offload(OffloadedStmt *offload) {
             element_block->push_back<ConstStmt>(TypedConstant(dtype_size)));
 
         std::vector<Stmt *> global_indices(pad.second.pad_size.size());
+
+        element_block->push_back<PrintStmt>(std::vector<PrintStmt::EntryType>{
+            PrintStmt::EntryType("ele id ="),
+            PrintStmt::EntryType(scratch_element_id),
+            PrintStmt::EntryType("\n")});
+
         auto partial_indices = scratch_element_id;
-        for (int i = pad.second.pad_size.size() - 1; i >= 0; i--) {
+        for (int i = (int)pad.second.pad_size.size() - 1; i >= 0; i--) {
           auto size = element_block->push_back<ConstStmt>(
               TypedConstant(pad.second.pad_size[i]));
           auto scratch_index = element_block->push_back<BinaryOpStmt>(
@@ -163,12 +177,21 @@ void make_block_local_offload(OffloadedStmt *offload) {
           inc = bls.push_back<BinaryOpStmt>(
               BinaryOpType::mul, inc,
               bls.push_back<ConstStmt>(TypedConstant(get_pad_stride(i))));
+          std::vector<PrintStmt::EntryType> entries{
+              PrintStmt::EntryType("inc ="), PrintStmt::EntryType(inc),
+              PrintStmt::EntryType("\n")};
+          bls.push_back<PrintStmt>(entries);
           if (!bls_element_offset) {
             bls_element_offset = inc;
           } else {
             bls_element_offset = bls.push_back<BinaryOpStmt>(
                 BinaryOpType::add, bls_element_offset, inc);
           }
+          std::vector<PrintStmt::EntryType> entries2{
+              PrintStmt::EntryType("bls_offset ="),
+              PrintStmt::EntryType(bls_element_offset),
+              PrintStmt::EntryType("\n")};
+          bls.push_back<PrintStmt>(entries2);
         }
 
         // convert to bytes

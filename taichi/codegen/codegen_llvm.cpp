@@ -1470,6 +1470,7 @@ void CodeGenLLVM::visit(BlockLocalPtrStmt *stmt) {
   auto ptr_type =
       llvm::PointerType::get(tlctx->get_data_type(stmt->ret_type.data_type), 0);
   llvm_val[stmt] = builder->CreatePointerCast(ptr, ptr_type);
+  call("print_int", get_runtime(), llvm_val[stmt->offset]);
 }
 
 void CodeGenLLVM::visit(InternalFuncStmt *stmt) {

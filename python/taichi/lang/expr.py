@@ -147,8 +147,7 @@ class Expr(TaichiOperations):
     def to_numpy(self):
         from .meta import tensor_to_ext_arr
         import numpy as np
-        arr = np.zeros(shape=self.shape,
-                       dtype=to_numpy_type(self.dtype))
+        arr = np.zeros(shape=self.shape, dtype=to_numpy_type(self.dtype))
         tensor_to_ext_arr(self, arr)
         import taichi as ti
         ti.sync()

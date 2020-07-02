@@ -1,6 +1,6 @@
 import taichi as ti
 
-ti.init(arch=ti.cuda, kernel_profiler=True, print_ir=True)
+ti.init(arch=ti.cuda, kernel_profiler=True)
 dim = 2
 
 x, y, y2 = ti.var(ti.i32), ti.var(ti.i32), ti.var(ti.i32)
@@ -23,8 +23,6 @@ block.dense(index, bs).place(y2)
 
 ndrange = ((bs, N - bs),) * dim
 stencil_range = ((-1, 2),) * dim
-print(ndrange)
-print(stencil_range)
 
 @ti.kernel
 def populate():

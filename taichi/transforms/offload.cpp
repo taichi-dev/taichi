@@ -131,13 +131,14 @@ class Offloader {
         Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::struct_for);
 
     offloaded_struct_for->grid_dim = program->config.saturating_grid_dim;
-    if (for_stmt->block_dim == 0) {  // adaptive
-      offloaded_struct_for->block_dim = program->config.default_gpu_block_dim;
+    if (for_stmt->block_dim == 0) {
+      // adaptive
+      offloaded_struct_for->block_dim =
+          std::min(for_stmt->snode->parent->max_num_elements(),
+                   program->config.max_block_dim);
     } else {
       offloaded_struct_for->block_dim = for_stmt->block_dim;
     }
-    offloaded_struct_for->block_dim = std::min(
-        for_stmt->snode->max_num_elements(), offloaded_struct_for->block_dim);
 
     replace_all_usages_with(for_stmt, for_stmt, offloaded_struct_for.get());
 

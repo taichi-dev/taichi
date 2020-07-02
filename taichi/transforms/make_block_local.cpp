@@ -12,17 +12,6 @@ void make_block_local_offload(OffloadedStmt *offload) {
   if (offload->task_type != offload->struct_for)
     return;
 
-  /*
-  for (auto s : offload->scratch_opt) {
-    if (s.first != 0) {  // 0 means shared
-      continue;
-    }
-    TI_INFO("Emitting shared memory for {}",
-            s.second->get_node_type_name_hinted());
-
-    auto snode = s.second;
-  }
-  */
   auto pads = irpass::initialize_scratch_pad(offload);
 
   std::size_t bls_offset = 0;
@@ -108,13 +97,6 @@ void make_block_local_offload(OffloadedStmt *offload) {
 
         std::vector<Stmt *> global_indices(pad.second.pad_size.size());
 
-        /*
-        element_block->push_back<PrintStmt>(std::vector<PrintStmt::EntryType>{
-            PrintStmt::EntryType("ele id ="),
-            PrintStmt::EntryType(scratch_element_id),
-            PrintStmt::EntryType("\n")});
-            */
-
         auto partial_indices = scratch_element_id;
         for (int i = (int)pad.second.pad_size.size() - 1; i >= 0; i--) {
           auto size = element_block->push_back<ConstStmt>(
@@ -178,25 +160,12 @@ void make_block_local_offload(OffloadedStmt *offload) {
           inc = bls.push_back<BinaryOpStmt>(
               BinaryOpType::mul, inc,
               bls.push_back<ConstStmt>(TypedConstant(get_pad_stride(i))));
-          /*
-          std::vector<PrintStmt::EntryType> entries{
-              PrintStmt::EntryType("inc ="), PrintStmt::EntryType(inc),
-              PrintStmt::EntryType("\n")};
-          bls.push_back<PrintStmt>(entries);
-              */
           if (!bls_element_offset) {
             bls_element_offset = inc;
           } else {
             bls_element_offset = bls.push_back<BinaryOpStmt>(
                 BinaryOpType::add, bls_element_offset, inc);
           }
-          /*
-          std::vector<PrintStmt::EntryType> entries2{
-              PrintStmt::EntryType("bls_offset ="),
-              PrintStmt::EntryType(bls_element_offset),
-              PrintStmt::EntryType("\n")};
-          bls.push_back<PrintStmt>(entries2);
-           */
         }
 
         // convert to bytes
@@ -219,22 +188,6 @@ void make_block_local_offload(OffloadedStmt *offload) {
     // Atomic-add block local contribution to its global version
     if (pad.second.total_flags & AccessFlag::write) {
       TI_NOT_IMPLEMENTED
-      /*
-      //
-      if (offload->epilogue == nullptr) {
-        offload->epilogue = std::make_unique<Block>();
-      }
-      auto bls_ptr = offload->epilogue->push_back<BlockLocalPtrStmt>(
-          bls_offset, VectorType(1, data_type));
-      // TODO: do not use global load from BLS.
-      auto tls_load = offload->epilogue->push_back<GlobalLoadStmt>(bls_ptr);
-      auto global_ptr = offload->epilogue->insert(
-          std::unique_ptr<Stmt>(
-              (Stmt *)irpass::analysis::clone(dest).release()),
-          -1);
-      offload->epilogue->push_back<AtomicOpStmt>(AtomicOpType::add, global_ptr,
-                                                 tls_load);
-                                                 */
     }
 
     // allocate storage for the BLS variable

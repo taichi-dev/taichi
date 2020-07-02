@@ -28,6 +28,7 @@ std::string c_quoted(std::string const &str) {
         ss << c;
     }
   }
+#undef REG_ESC
   ss << '"';
   return ss.str();
 }

@@ -2,6 +2,8 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/visitors.h"
+#include "taichi/program/kernel.h"
+#include "taichi/program/program.h"
 #include <set>
 #include <unordered_set>
 #include <utility>
@@ -1062,13 +1064,15 @@ class BasicBlockSimplify : public IRVisitor {
       return false;
     };
 
-    if (if_stmt->true_statements &&
-        flatten(if_stmt->true_statements->statements, true)) {
-      throw IRModified();
-    }
-    if (if_stmt->false_statements &&
-        flatten(if_stmt->false_statements->statements, false)) {
-      throw IRModified();
+    if (kernel->program.config.flatten_if) {
+      if (if_stmt->true_statements &&
+          flatten(if_stmt->true_statements->statements, true)) {
+        throw IRModified();
+      }
+      if (if_stmt->false_statements &&
+          flatten(if_stmt->false_statements->statements, false)) {
+        throw IRModified();
+      }
     }
 
     if (if_stmt->true_statements) {
@@ -1141,6 +1145,9 @@ class Simplify : public IRVisitor {
   Kernel *kernel;
 
   Simplify(IRNode *node, Kernel *kernel) : kernel(kernel) {
+    if (!kernel)
+      this->kernel = node->get_kernel();
+    TI_ASSERT(this->kernel);
     modified = false;
     allow_undefined_visitor = true;
     invoke_default_visitor = true;

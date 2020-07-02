@@ -81,8 +81,8 @@ class Func:
         local_vars = {}
         #frame = inspect.currentframe().f_back
         #global_vars = dict(frame.f_globals, **frame.f_locals)
-        import copy
-        global_vars = copy.copy(self.func.__globals__)
+        global_vars = _get_global_vars(self.func)
+
         exec(
             compile(tree,
                     filename=oinspect.getsourcefile(self.func),
@@ -175,6 +175,21 @@ class KernelArgError(Exception):
     def message(self):
         return 'Argument {} (type={}) cannot be converted into required type {}'.format(
             self.pos, str(self.needed), str(self.provided))
+
+
+def _get_global_vars(func):
+    # Discussions: https://github.com/yuanming-hu/taichi/issues/282
+    import copy
+    global_vars = copy.copy(func.__globals__)
+
+    freevar_names = func.__code__.co_freevars
+    closure = func.__closure__
+    if closure:
+        freevar_values = list(map(lambda x: x.cell_contents, closure))
+        for name, value in zip(freevar_names, freevar_values):
+            global_vars[name] = value
+
+    return global_vars
 
 
 class Kernel:
@@ -272,17 +287,7 @@ class Kernel:
         func_body.decorator_list = []
 
         local_vars = {}
-        # Discussions: https://github.com/yuanming-hu/taichi/issues/282
-        import copy
-        global_vars = copy.copy(self.func.__globals__)
-
-        for i, arg in enumerate(func_body.args.args):
-            anno = arg.annotation
-            if isinstance(anno, ast.Name):
-                global_vars[anno.id] = self.arguments[i]
-
-        if isinstance(func_body.returns, ast.Name):
-            global_vars[func_body.returns.id] = self.return_type
+        global_vars = _get_global_vars(self.func)
 
         if self.is_grad:
             from .ast_checker import KernelSimplicityASTChecker
@@ -303,12 +308,13 @@ class Kernel:
 
         ast.increment_lineno(tree, oinspect.getsourcelines(self.func)[1] - 1)
 
-        freevar_names = self.func.__code__.co_freevars
-        closure = self.func.__closure__
-        if closure:
-            freevar_values = list(map(lambda x: x.cell_contents, closure))
-            for name, value in zip(freevar_names, freevar_values):
-                global_vars[name] = value
+        for i, arg in enumerate(func_body.args.args):
+            anno = arg.annotation
+            if isinstance(anno, ast.Name):
+                global_vars[anno.id] = self.arguments[i]
+
+        if isinstance(func_body.returns, ast.Name):
+            global_vars[func_body.returns.id] = self.return_type
 
         # inject template parameters into globals
         for i in self.template_slot_locations:
@@ -516,11 +522,11 @@ def _kernel_impl(func, level_of_class_stackframe, verbose=False):
         @functools.wraps(func)
         def wrapped(*args, **kwargs):
             # If we reach here (we should never), it means the class is not decorated
-            # with @data_oriented, otherwise getattr would have intercepted the call.
+            # with @ti.data_oriented, otherwise getattr would have intercepted the call.
             clsobj = type(args[0])
             assert not hasattr(clsobj, '_data_oriented')
             raise KernelDefError(
-                f'Please decorate class {clsobj.__name__} with @data_oriented')
+                f'Please decorate class {clsobj.__name__} with @ti.data_oriented')
     else:
 
         @functools.wraps(func)
@@ -550,7 +556,7 @@ class BoundedDifferentiableMethod:
         clsobj = type(kernel_owner)
         if not getattr(clsobj, '_data_oriented', False):
             raise KernelDefError(
-                f'Please decorate class {clsobj.__name__} with @data_oriented')
+                f'Please decorate class {clsobj.__name__} with @ti.data_oriented')
         self._kernel_owner = kernel_owner
         self._primal = wrapped_kernel_func._primal
         self._adjoint = wrapped_kernel_func._adjoint

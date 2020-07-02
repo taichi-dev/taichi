@@ -55,7 +55,6 @@ def test_ad_if():
 @ti.require(ti.extension.adstack)
 @ti.all_archs
 def test_ad_if_nested():
-    ti.core.toggle_advanced_optimization(False)
     n = 20
     x = ti.var(ti.f32, shape=n)
     y = ti.var(ti.f32, shape=n)
@@ -90,7 +89,6 @@ def test_ad_if_nested():
 
     for i in range(n):
         assert z.grad[i] == i % 4
-    assert 0
 
 
 @ti.require(ti.extension.adstack)

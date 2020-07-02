@@ -166,6 +166,12 @@ class ConstantFold : public BasicStmtVisitor {
   }
 
   void visit(UnaryOpStmt *stmt) override {
+    if (stmt->is_cast() &&
+        stmt->cast_type == stmt->operand->ret_type.data_type) {
+      stmt->replace_with(stmt->operand);
+      modifier.erase(stmt);
+      return;
+    }
     auto operand = stmt->operand->cast<ConstStmt>();
     if (!operand)
       return;

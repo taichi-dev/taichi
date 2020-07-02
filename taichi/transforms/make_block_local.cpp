@@ -108,10 +108,12 @@ void make_block_local_offload(OffloadedStmt *offload) {
 
         std::vector<Stmt *> global_indices(pad.second.pad_size.size());
 
+        /*
         element_block->push_back<PrintStmt>(std::vector<PrintStmt::EntryType>{
             PrintStmt::EntryType("ele id ="),
             PrintStmt::EntryType(scratch_element_id),
             PrintStmt::EntryType("\n")});
+            */
 
         auto partial_indices = scratch_element_id;
         for (int i = (int)pad.second.pad_size.size() - 1; i >= 0; i--) {
@@ -177,21 +179,25 @@ void make_block_local_offload(OffloadedStmt *offload) {
           inc = bls.push_back<BinaryOpStmt>(
               BinaryOpType::mul, inc,
               bls.push_back<ConstStmt>(TypedConstant(get_pad_stride(i))));
+          /*
           std::vector<PrintStmt::EntryType> entries{
               PrintStmt::EntryType("inc ="), PrintStmt::EntryType(inc),
               PrintStmt::EntryType("\n")};
           bls.push_back<PrintStmt>(entries);
+              */
           if (!bls_element_offset) {
             bls_element_offset = inc;
           } else {
             bls_element_offset = bls.push_back<BinaryOpStmt>(
                 BinaryOpType::add, bls_element_offset, inc);
           }
+          /*
           std::vector<PrintStmt::EntryType> entries2{
               PrintStmt::EntryType("bls_offset ="),
               PrintStmt::EntryType(bls_element_offset),
               PrintStmt::EntryType("\n")};
           bls.push_back<PrintStmt>(entries2);
+           */
         }
 
         // convert to bytes

@@ -1239,6 +1239,16 @@ void gc_parallel_2(LLVMRuntime *runtime, int snode_id) {
     i += grid_dim();
   }
 }
+
+void print_pcoord(LLVMRuntime *runtime, PhysicalCoordinates *coords) {
+  // for (int i = 0; i < taichi_max_num_indices; i++) {
+  taichi_printf(runtime, "coords %d\n", coords->val[0]);
+  //}
+}
+
+void print_int(LLVMRuntime *runtime, int val) {
+  taichi_printf(runtime, "debug %d\n", val);
+}
 }
 
 #if ARCH_cuda
@@ -1290,7 +1300,6 @@ i64 cuda_rand_i64(Context *context) {
   return cuda_rand_u64(context);
 }
 };
-
 #endif
 
 struct printf_helper {

@@ -59,7 +59,9 @@ void make_block_local_offload(OffloadedStmt *offload) {
         auto inc = block->push_back<BinaryOpStmt>(
             BinaryOpType::mul,
             block->push_back<ConstStmt>(TypedConstant(get_stride(i))),
-            block->push_back<LoopIndexStmt>(offload, i));
+            block->push_back<BinaryOpStmt>(
+                BinaryOpType::sub, block->push_back<LoopIndexStmt>(offload, i),
+                block->push_back<LoopIndexBaseStmt>(offload, i)));
         if (linear_index) {
           linear_index = block->push_back<BinaryOpStmt>(BinaryOpType::add,
                                                         linear_index, inc);

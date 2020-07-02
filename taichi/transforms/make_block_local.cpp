@@ -97,13 +97,15 @@ void make_block_local_offload(OffloadedStmt *offload) {
             BinaryOpType::mul, bls_index,
             element_block->push_back<ConstStmt>(TypedConstant(dtype_size)));
 
-        std::vector<Stmt *> global_indices;
+        std::vector<Stmt *> global_indices(pad.second.pad_size.size());
         auto partial_indices = scratch_element_id;
-        for (int i = 0; i < pad.second.pad_size.size(); i++) {
+        for (int i = pad.second.pad_size.size() - 1; i >= 0; i--) {
           auto size = element_block->push_back<ConstStmt>(
               TypedConstant(pad.second.pad_size[i]));
           auto scratch_index = element_block->push_back<BinaryOpStmt>(
               BinaryOpType::mod, partial_indices, size);
+          partial_indices = element_block->push_back<BinaryOpStmt>(
+              BinaryOpType::div, partial_indices, size);
           auto global_index = element_block->push_back<BinaryOpStmt>(
               BinaryOpType::add,
               element_block->push_back<ConstStmt>(
@@ -112,7 +114,7 @@ void make_block_local_offload(OffloadedStmt *offload) {
           global_index = element_block->push_back<BinaryOpStmt>(
               BinaryOpType::add, global_index,
               element_block->push_back<LoopIndexBaseStmt>(offload, i));
-          global_indices.push_back(global_index);
+          global_indices[i] = global_index;
         }
         // Recompute global indices
         // TODO: do not use GlobalStore for BLS ptr.

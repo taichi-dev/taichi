@@ -23,11 +23,14 @@ def copy():
     ti.cache_shared(x)
     for i in x:
         print(i, 'x[i]=', x[i])
-        # y[i] = x[i]
-        # print(y[i])
+        y[i] = x[i]
+        print(y[i])
 
 
 populate()
 copy()
+
+for i in range(N):
+    assert y[i] == i
 
 ti.kernel_profiler_print()

@@ -124,7 +124,6 @@ class TypeCheck : public IRVisitor {
                  stmt->indices.size());
       }
     }
-    irpass::print(stmt);
     for (int i = 0; i < stmt->indices.size(); i++) {
       TI_ASSERT_INFO(
           is_integral(stmt->indices[i]->ret_type.data_type),

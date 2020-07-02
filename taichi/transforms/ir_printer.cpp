@@ -476,7 +476,7 @@ class IRPrinter : public IRVisitor {
                             block_dim_info(stmt->block_dim));
     } else if (stmt->task_type == stmt->struct_for) {
       details =
-          fmt::format("struct_for({}) {}{} bls={}B",
+          fmt::format("struct_for({}) {}{} bls={} B",
                       stmt->snode->get_node_type_name_hinted(),
                       block_dim_info(stmt->block_dim),
                       scratch_pad_info(stmt->scratch_opt), stmt->bls_size);

@@ -32,12 +32,13 @@ void make_block_local_offload(OffloadedStmt *offload) {
     auto data_type = snode->dt;
     auto dtype_size = data_type_size(data_type);
 
-    auto get_stride = [&](int i) {
+    auto get_pad_stride = [&](int i) {
       // TODO: fix the index correspondence here
       int stride = 1;
       for (int j = i + 1; j < pad.second.pad_size.size(); j++) {
-        stride *= pad.second.block_size[j];
+        stride *= pad.second.pad_size[j];
       }
+      TI_P(stride);
       return stride;
     };
 
@@ -58,7 +59,7 @@ void make_block_local_offload(OffloadedStmt *offload) {
         // TODO: fix the index correspondence here
         auto inc = block->push_back<BinaryOpStmt>(
             BinaryOpType::mul,
-            block->push_back<ConstStmt>(TypedConstant(get_stride(i))),
+            block->push_back<ConstStmt>(TypedConstant(get_pad_stride(i))),
             block->push_back<BinaryOpStmt>(
                 BinaryOpType::sub, block->push_back<LoopIndexStmt>(offload, i),
                 block->push_back<LoopIndexBaseStmt>(offload, i)));
@@ -72,11 +73,11 @@ void make_block_local_offload(OffloadedStmt *offload) {
 
       // Unroll the loading while-loop here
       int loop_offset = 0;
+      auto scratch_element_id = linear_index;
       while (loop_offset < pad.second.pad_size_linear()) {
         Block *element_block = nullptr;
         auto loop_offset_stmt =
             block->push_back<ConstStmt>(TypedConstant(loop_offset));
-        auto scratch_element_id = linear_index;
         if (loop_offset + pad.second.block_size_linear() >
             pad.second.pad_size_linear()) {
           // Need to create an IfStmt to safeguard
@@ -147,17 +148,21 @@ void make_block_local_offload(OffloadedStmt *offload) {
         return false;
       });
 
-      for (auto glb_ptr : global_ptrs) {
+      for (auto gbl_ptr : global_ptrs) {
         VecStatement bls;
         Stmt *bls_element_offset = nullptr;
+        auto global_indices = gbl_ptr->indices;
         for (int i = 0; i < pad.second.pad_size.size(); i++) {
-          auto global_indices = glb_ptr->indices;
+          // inc = stride * (gbl_idx - loop_base - lower)
           auto inc = bls.push_back<BinaryOpStmt>(
               BinaryOpType::sub, global_indices[i],
               bls.push_back<LoopIndexBaseStmt>(offload, i));
           inc = bls.push_back<BinaryOpStmt>(
+              BinaryOpType::sub, inc,
+              bls.push_back<ConstStmt>(TypedConstant(pad.second.bounds[0][i])));
+          inc = bls.push_back<BinaryOpStmt>(
               BinaryOpType::mul, inc,
-              bls.push_back<ConstStmt>(TypedConstant(get_stride(i))));
+              bls.push_back<ConstStmt>(TypedConstant(get_pad_stride(i))));
           if (!bls_element_offset) {
             bls_element_offset = inc;
           } else {
@@ -178,7 +183,7 @@ void make_block_local_offload(OffloadedStmt *offload) {
 
         bls.push_back<BlockLocalPtrStmt>(bls_element_offset,
                                          VectorType(1, data_type));
-        glb_ptr->replace_with(std::move(bls));
+        gbl_ptr->replace_with(std::move(bls));
       }
     }
 

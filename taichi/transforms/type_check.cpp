@@ -352,6 +352,10 @@ class TypeCheck : public IRVisitor {
     stmt->ret_type = VectorType(1, DataType::i32);
   }
 
+  void visit(BlockDimStmt *stmt) {
+    stmt->ret_type = VectorType(1, DataType::i32);
+  }
+
   void visit(GetRootStmt *stmt) {
     stmt->ret_type = VectorType(1, DataType::gen, true);
   }

@@ -17,7 +17,6 @@ OffloadedStmt::OffloadedStmt(OffloadedStmt::TaskType task_type, SNode *snode)
   begin_value = 0;
   end_value = 0;
   step = 0;
-  block_dim = 0;
   reversed = false;
   device = get_current_program().config.arch;
   if (task_type != TaskType::listgen) {

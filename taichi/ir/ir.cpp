@@ -503,8 +503,6 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
     vectorize = 1;
     parallelize = 1;
   } else {
-    if (block_dim == 0)
-      block_dim = cfg.default_cpu_block_dim;
     if (parallelize == 0)
       parallelize = std::thread::hardware_concurrency();
   }
@@ -530,8 +528,6 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
     TI_ASSERT(block_dim <= taichi_max_gpu_block_dim);
   } else {
     // cpu
-    if (block_dim == 0)
-      block_dim = cfg.default_cpu_block_dim;
     if (parallelize == 0)
       parallelize = std::thread::hardware_concurrency();
   }

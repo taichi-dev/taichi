@@ -21,8 +21,6 @@ using namespace llvm;
 
 class CodeGenLLVMCUDA : public CodeGenLLVM {
  public:
-  int kernel_grid_dim;
-  int kernel_block_dim;
   int num_SMs;
   int max_block_dim;
   int saturating_num_blocks;
@@ -32,13 +30,6 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   CodeGenLLVMCUDA(Kernel *kernel, IRNode *ir = nullptr)
       : CodeGenLLVM(kernel, ir) {
 #if defined(TI_WITH_CUDA)
-    CUDADriver::get_instance().device_get_attribute(
-        &num_SMs, CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, 0);
-    CUDADriver::get_instance().device_get_attribute(
-        &max_block_dim, CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_X, 0);
-
-    // each SM can have 16-32 resident blocks
-    saturating_num_blocks = num_SMs * 32;
 #endif
   }
 
@@ -351,8 +342,6 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     if (loop_block_dim == 0) {
       loop_block_dim = prog->config.default_gpu_block_dim;
     }
-    kernel_grid_dim = saturating_num_blocks;
-    kernel_block_dim = loop_block_dim;
 
     auto xlogue_type = get_xlogue_function_type();
     auto xlogue_ptr_type = llvm::PointerType::get(xlogue_type, 0);
@@ -466,8 +455,9 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   void create_bls_buffer(OffloadedStmt *stmt) {
     auto type = llvm::ArrayType::get(
         llvm::Type::getInt8Ty(*llvm_context),
-        stmt->bls_size);  // It's OK to use 0 bytes for shared memory placeholder since we
-             // specify shared memory size on kernel launches
+        stmt->bls_size);  // It's OK to use 0 bytes for shared memory
+                          // placeholder since we specify shared memory size on
+                          // kernel launches
     bls_buffer = new GlobalVariable(
         *module, type, false, llvm::GlobalValue::InternalLinkage, nullptr,
         "bls_buffer", nullptr, llvm::GlobalVariable::NotThreadLocal,
@@ -487,35 +477,25 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       emit_cuda_gc(stmt);
       return;
     } else {
-      kernel_grid_dim = 1;
-      kernel_block_dim = 1;
       init_offloaded_task_function(stmt);
       if (stmt->task_type == Type::serial) {
         stmt->body->accept(this);
       } else if (stmt->task_type == Type::range_for) {
         create_offload_range_for(stmt);
       } else if (stmt->task_type == Type::struct_for) {
-        kernel_grid_dim = saturating_num_blocks;
-        kernel_block_dim = stmt->block_dim;
-        if (kernel_block_dim == 0)
-          kernel_block_dim = prog->config.default_gpu_block_dim;
-        kernel_block_dim =
-            std::min(stmt->snode->max_num_elements(), kernel_block_dim);
-        stmt->block_dim = kernel_block_dim;
         create_offload_struct_for(stmt, true);
       } else if (stmt->task_type == Type::clear_list) {
         emit_clear_list(stmt);
       } else if (stmt->task_type == Type::listgen) {
-        int branching = stmt->snode->max_num_elements();
-        kernel_grid_dim = saturating_num_blocks;
-        kernel_block_dim = std::min(branching, 64);
         emit_list_gen(stmt);
       } else {
         TI_NOT_IMPLEMENTED
       }
       finalize_offloaded_task_function();
-      current_task->grid_dim = kernel_grid_dim;
-      current_task->block_dim = kernel_block_dim;
+      current_task->grid_dim = stmt->grid_dim;
+      current_task->block_dim = stmt->block_dim;
+      TI_ASSERT(current_task->grid_dim != 0);
+      TI_ASSERT(current_task->block_dim != 0);
       current_task->shmem_bytes = stmt->bls_size;
       current_task->end();
       current_task = nullptr;

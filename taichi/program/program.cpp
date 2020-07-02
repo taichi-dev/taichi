@@ -141,6 +141,29 @@ Program::Program(Arch desired_arch) {
     }
   }
 
+  if (arch == Arch::cuda) {
+#if defined(TI_WITH_CUDA)
+    int num_SMs;
+    int device_id = 0;  // Assuming there's only one CUDA device
+    CUDADriver::get_instance().device_get_attribute(
+        &num_SMs, CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, nullptr);
+    int query_max_block_dim;
+    CUDADriver::get_instance().device_get_attribute(
+        &query_max_block_dim, CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_X, nullptr);
+
+    if (config.max_block_dim == 0) {
+      config.max_block_dim = query_max_block_dim;
+    }
+
+    if (config.saturating_grid_dim == 0) {
+      // each SM can have 16-32 resident blocks
+      config.saturating_grid_dim = num_SMs * 32;
+    }
+    TI_P(config.max_block_dim);
+    TI_P(config.saturating_grid_dim);
+#endif
+  }
+
   stat.clear();
 
   TI_TRACE("Program ({}) arch={} initialized.", fmt::ptr(this),
@@ -583,6 +606,14 @@ void Program::finalize() {
 
 void Program::launch_async(Kernel *kernel) {
   async_engine->launch(kernel);
+}
+
+int Program::default_block_dim() const {
+  if (arch_is_cpu(config.arch)) {
+    return config.default_cpu_block_dim;
+  } else {
+    return config.default_gpu_block_dim;
+  }
 }
 
 Program::~Program() {

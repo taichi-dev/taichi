@@ -45,6 +45,9 @@ struct CompileConfig {
   int default_gpu_block_dim;
   int ad_stack_size;
 
+  int saturating_grid_dim;
+  int max_block_dim;
+
   float64 device_memory_GB;
   float64 device_memory_fraction;
 

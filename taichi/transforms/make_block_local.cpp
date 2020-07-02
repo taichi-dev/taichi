@@ -82,12 +82,12 @@ void make_block_local_offload(OffloadedStmt *offload) {
       // Unroll the loading while-loop here
       int loop_offset = 0;
       auto scratch_element_id = linear_index;
+      int block_dim = offload->block_dim;
       while (loop_offset < pad.second.pad_size_linear()) {
         Block *element_block = nullptr;
         auto loop_offset_stmt =
             block->push_back<ConstStmt>(TypedConstant(loop_offset));
-        if (loop_offset + pad.second.block_size_linear() >
-            pad.second.pad_size_linear()) {
+        if (loop_offset + block_dim > pad.second.pad_size_linear()) {
           // Need to create an IfStmt to safeguard
           auto cond = block->push_back<BinaryOpStmt>(
               BinaryOpType::cmp_lt, scratch_element_id,
@@ -141,11 +141,10 @@ void make_block_local_offload(OffloadedStmt *offload) {
         auto bls_ptr = element_block->push_back<BlockLocalPtrStmt>(
             bls_index_bytes, VectorType(1, data_type));
         element_block->push_back<GlobalStoreStmt>(bls_ptr, load);
-        loop_offset += pad.second.block_size_linear();
+        loop_offset += block_dim;
         scratch_element_id = block->push_back<BinaryOpStmt>(
             BinaryOpType::add, scratch_element_id,
-            block->push_back<ConstStmt>(
-                TypedConstant(pad.second.block_size_linear())));
+            block->push_back<ConstStmt>(TypedConstant(block_dim)));
       }
     }
 

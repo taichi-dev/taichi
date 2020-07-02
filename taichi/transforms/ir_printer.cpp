@@ -472,14 +472,14 @@ class IRPrinter : public IRVisitor {
       } else {
         end_str = fmt::format("tmp(offset={}B)", stmt->end_offset);
       }
-      details = fmt::format("range_for({}, {}) {}", begin_str, end_str,
-                            block_dim_info(stmt->block_dim));
-    } else if (stmt->task_type == stmt->struct_for) {
       details =
-          fmt::format("struct_for({}) {}{} bls={} B",
-                      stmt->snode->get_node_type_name_hinted(),
-                      block_dim_info(stmt->block_dim),
-                      scratch_pad_info(stmt->scratch_opt), stmt->bls_size);
+          fmt::format("range_for({}, {}) grid_dim={} block_dim={}", begin_str,
+                      end_str, stmt->grid_dim, stmt->block_dim);
+    } else if (stmt->task_type == stmt->struct_for) {
+      details = fmt::format(
+          "struct_for({}) grid_dim={} block_dim={} bls={} B",
+          stmt->snode->get_node_type_name_hinted(), stmt->grid_dim,
+          stmt->block_dim, scratch_pad_info(stmt->scratch_opt), stmt->bls_size);
     }
     if (stmt->task_type == OffloadedStmt::TaskType::listgen) {
       print("{} = offloaded listgen {}->{}", stmt->name(),
@@ -518,6 +518,10 @@ class IRPrinter : public IRVisitor {
   void visit(LoopIndexBaseStmt *stmt) override {
     print("{}{} = loop {} index base {}", stmt->type_hint(), stmt->name(),
           stmt->loop->name(), stmt->index);
+  }
+
+  void visit(BlockDimStmt *stmt) override {
+    print("{}{} = block dim", stmt->type_hint(), stmt->name());
   }
 
   void visit(GlobalTemporaryStmt *stmt) override {

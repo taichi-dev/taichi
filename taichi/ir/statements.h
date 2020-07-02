@@ -176,7 +176,8 @@ class OffloadedStmt : public Stmt {
   bool const_begin, const_end;
   int32 begin_value, end_value;
   int step;
-  int block_dim;
+  int grid_dim{1};
+  int block_dim{1};
   bool reversed;
   int num_cpu_threads;
   Arch device;
@@ -257,6 +258,20 @@ class LoopIndexBaseStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type, loop, index);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
+class BlockDimStmt : public Stmt {
+ public:
+  BlockDimStmt() {
+    TI_STMT_REG_FIELDS;
+  }
+
+  bool has_global_side_effect() const override {
+    return false;
+  }
+
+  TI_STMT_DEF_FIELDS(ret_type);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

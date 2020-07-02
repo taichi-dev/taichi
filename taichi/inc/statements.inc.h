@@ -68,6 +68,7 @@ PER_STATEMENT(ElementShuffleStmt)
 PER_STATEMENT(OffloadedStmt)
 PER_STATEMENT(LoopIndexStmt)
 PER_STATEMENT(LoopIndexBaseStmt)
+PER_STATEMENT(BlockDimStmt)
 PER_STATEMENT(GlobalTemporaryStmt)
 
 // Local storage

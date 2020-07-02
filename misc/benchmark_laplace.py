@@ -1,6 +1,6 @@
 import taichi as ti
 
-ti.init(arch=ti.cuda, kernel_profiler=True)#, print_ir=True)
+ti.init(arch=ti.cuda, kernel_profiler=True, print_ir=True)
 dim = 2
 
 x, y, y2 = ti.var(ti.i32), ti.var(ti.i32), ti.var(ti.i32)
@@ -35,7 +35,7 @@ def populate():
 def laplace(use_bls: ti.template(), y: ti.template()):
     if ti.static(use_bls):
         ti.cache_shared(x)
-    ti.block_dim(bs ** dim)
+    # ti.block_dim(bs ** dim)
     for I in ti.grouped(x):
         s = 0
         for offset in ti.static(ti.grouped(ti.ndrange(*stencil_range))):

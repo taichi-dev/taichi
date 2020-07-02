@@ -11,11 +11,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python: [3.6, 3.7, 3.8]
-	  	with_cc: [OFF]
-		include:
-          - os: ubuntu-latest
-            python: 3.7
-            with_cc: ON
+        with_cc: [OFF]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2

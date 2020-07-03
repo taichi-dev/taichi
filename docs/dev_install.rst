@@ -131,7 +131,7 @@ Setting up Taichi for development
 
   * On Windows, please add these variables by accessing your system settings:
 
-    1. Add ``TAICHI_REPO_DIR`` whose value is path to your taichi repository so that Taichi knows you're a developer.
+    1. Add ``TAICHI_REPO_DIR`` whose value is the path to your taichi repository so that Taichi knows you're a developer.
     2. Add or append ``PYTHONPATH`` with ``%TAICHI_REPO_DIR%/python`` so that Python import Taichi from the local repo.
     3. Add or append ``PATH`` with ``%TAICHI_REPO_DIR%/bin`` so that you can use ``ti`` command.
     4. Add or append ``PATH`` with path to LLVM binary directory installed in previous section.
@@ -154,7 +154,7 @@ Setting up Taichi for development
     # On Unix CMake honors environment variables $CC and $CXX upon deciding which C and C++ compilers to use
     make -j 8
 
-- Check out ``examples`` for runnable examples. Run them with command like ``python3 examples/mpm128.py``.
+- Check out ``examples`` for runnable examples. Run them with commands like ``python3 examples/mpm128.py``.
 - Execute ``python3 -m taichi test`` to run all the tests. It may take up to 5 minutes to run all tests.
 
 
@@ -165,7 +165,7 @@ Troubleshooting Developer Installation
   please try run ``git submodule update --init --recursive --depth=1``.
 
 
-- If importing Taichi cause
+- If importing Taichi causes
 
   .. code-block:: none
 
@@ -173,7 +173,7 @@ Troubleshooting Developer Installation
 
   Please try adding ``TAICHI_REPO_DIR`` to environment variables, see :ref:`dev_env_settings`.
 
-- If the build succeed, but running any Taichi code will result in errors like ``Bitcode file (/tmp/taichi-tero94pl/runtime//runtime_x64.bc) not found``,
+- If the build succeeded but running any Taichi code results in errors like ``Bitcode file (/tmp/taichi-tero94pl/runtime//runtime_x64.bc) not found``,
   please make sure ``clang`` is in your ``PATH``:
 
   .. code-block:: bash

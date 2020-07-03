@@ -886,6 +886,22 @@ class TaichiMain:
             return TaichiMain._test_cpp(args)
 
     @register
+    def run(self, arguments: list = sys.argv[2:]):
+        """Run a single script"""
+        parser = argparse.ArgumentParser(prog='ti run',
+                                         description=f"{self.run.__doc__}")
+        parser.add_argument(
+            'filename',
+            help='A single (Python) script to run with Taichi, e.g. render.py'
+        )
+        args = parser.parse_args(arguments)
+
+        # Short circuit for testing
+        if self.test_mode: return args
+
+        runpy.run_path(args.filename)
+
+    @register
     def debug(self, arguments: list = sys.argv[2:]):
         """Debug a single script"""
         parser = argparse.ArgumentParser(prog='ti debug',
@@ -900,18 +916,15 @@ class TaichiMain:
         if self.test_mode: return args
 
         ti.core.set_core_trigger_gdb_when_crash(True)
+        os.environ['TI_DEBUG'] = '1'
 
-        with open(args.filename) as script:
-            script = script.read()
-
-        # FIXME: exec is a security risk here!
-        exec(script, {'__name__': '__main__'})
+        runpy.run_path(args.filename)
 
     @register
-    def run(self, arguments: list = sys.argv[2:]):
+    def task(self, arguments: list = sys.argv[2:]):
         """Run a specific task"""
-        parser = argparse.ArgumentParser(prog='ti run',
-                                         description=f"{self.run.__doc__}")
+        parser = argparse.ArgumentParser(prog='ti task',
+                                         description=f"{self.task.__doc__}")
         parser.add_argument('taskname',
                             help='A single task name to run, e.g. test_math')
         parser.add_argument('taskargs',

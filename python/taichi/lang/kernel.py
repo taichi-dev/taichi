@@ -334,7 +334,7 @@ class Kernel:
                     "Kernels cannot call other kernels. I.e., nested kernels are not allowed. Please check if you have direct/indirect invocation of kernels within kernels. Note that some methods provided by the Taichi standard library may invoke kernels, and please move their invocations to Python-scope."
                 )
             self.runtime.inside_kernel = True
-            compiled()  # invoke AST transformed kernel
+            compiled()  # invoke the AST transformed kernel
             self.runtime.inside_kernel = False
 
         taichi_kernel = taichi_kernel.define(taichi_ast_generator)
@@ -524,7 +524,10 @@ def _kernel_impl(func, level_of_class_stackframe, verbose=False):
                 f'Please decorate class {clsobj.__name__} with @data_oriented')
     else:
 
-        wrapped = functools.wraps(func)(primal)
+        @functools.wraps(func)
+        def wrapped(*args, **kwargs):
+            return primal(*args, **kwargs)
+
         wrapped.grad = adjoint
 
     wrapped._is_wrapped_kernel = True

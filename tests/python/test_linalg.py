@@ -41,13 +41,13 @@ def test_basic_utils():
     def init():
         a[None] = ti.Vector([1.0, 2.0, 3.0])
         b[None] = ti.Vector([4.0, 5.0, 6.0])
-        abT[None] = a.outer_product(b)
+        abT[None] = a[None].outer_product(b[None])
 
-        normA[None] = a.norm()
-        normSqrA[None] = a.norm_sqr()
-        normInvA[None] = a.norm_inv()
+        normA[None] = a[None].norm()
+        normSqrA[None] = a[None].norm_sqr()
+        normInvA[None] = a[None].norm_inv()
 
-        aNormalized[None] = a.normalized()
+        aNormalized[None] = a[None].normalized()
 
     init()
 
@@ -81,11 +81,11 @@ def test_cross():
     def init():
         a[None] = ti.Vector([1.0, 2.0, 3.0])
         b[None] = ti.Vector([4.0, 5.0, 6.0])
-        c[None] = a.cross(b)
+        c[None] = a[None].cross(b[None])
 
         a2[None] = ti.Vector([1.0, 2.0])
         b2[None] = ti.Vector([4.0, 5.0])
-        c2[None] = a2.cross(b2)
+        c2[None] = a2[None].cross(b2[None])
 
     init()
     assert c[None][0] == -3.0

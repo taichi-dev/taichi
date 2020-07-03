@@ -18,19 +18,6 @@ def test_try():
 
 
 @ti.must_throw(ti.TaichiSyntaxError)
-def test_import():
-    x = ti.var(ti.f32)
-
-    ti.root.dense(ti.i, 1).place(x)
-
-    @ti.kernel
-    def func():
-        import something
-
-    func()
-
-
-@ti.must_throw(ti.TaichiSyntaxError)
 def test_for_else():
     x = ti.var(ti.f32)
 

@@ -112,13 +112,10 @@ def subscript(value, *indices):
 def chain_compare(comparators, ops):
     assert len(comparators) == len(ops) + 1, \
       f'Chain comparison invoked with {len(comparators)} comparators but {len(ops)} operators'
-    evaluated_comparators = []
-    for i in range(len(comparators)):
-        evaluated_comparators += [expr_init(comparators[i])]
-    ret = expr_init(True)
+    ret = True
     for i in range(len(ops)):
-        lhs = evaluated_comparators[i]
-        rhs = evaluated_comparators[i + 1]
+        lhs = comparators[i]
+        rhs = comparators[i + 1]
         if ops[i] == 'Lt':
             now = lhs < rhs
         elif ops[i] == 'LtE':
@@ -133,7 +130,7 @@ def chain_compare(comparators, ops):
             now = lhs != rhs
         else:
             assert False, f'Unknown operator {ops[i]}'
-        ret = ret.logical_and(now)
+        ret = logical_and(ret, now)
     return ret
 
 
@@ -246,6 +243,17 @@ def reset():
     for k in old_kernels:
         k.reset()
     taichi_lang_core.reset_default_compile_config()
+
+
+def static_print(*args, __p=print, **kwargs):
+    __p(*args, **kwargs)
+
+
+def static_assert(cond, msg=None):
+    if msg is not None:
+        assert cond, msg
+    else:
+        assert cond
 
 
 def inside_kernel():
@@ -403,10 +411,8 @@ def static(x, *xs):
         return [static(x)] + [static(x) for x in xs]
     import types
     import taichi as ti
-    assert get_runtime(
-    ).inside_kernel, 'ti.static can only be used inside Taichi kernels'
     if isinstance(x, (bool, int, float, range, list, tuple, enumerate,
-                      ti.ndrange, ti.GroupedNDRange)):
+                      ti.ndrange, ti.GroupedNDRange)) or x is None:
         return x
     elif isinstance(x, ti.lang.expr.Expr) and x.ptr.is_global_var():
         return x

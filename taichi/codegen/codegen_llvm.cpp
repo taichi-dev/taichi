@@ -1442,6 +1442,7 @@ void CodeGenLLVM::visit(LoopIndexBaseStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(BlockDimStmt *stmt) {
+  TI_NOT_IMPLEMENTED // No need for this statement for now. Untested so mark it as a loud failure.
   llvm_val[stmt] = create_call("block_dim", {});
 }
 

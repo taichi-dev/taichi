@@ -1,17 +1,20 @@
 import taichi as ti
 
 ti.init(arch=ti.cuda, kernel_profiler=True)
-dim = 2
+
+dim = 3
 
 x, y, y2 = ti.var(ti.i32), ti.var(ti.i32), ti.var(ti.i32)
 
-N = 1024
-bs = 32
 
 if dim == 2:
     index = ti.ij
+    N = 1024
+    bs = 16
 elif dim == 3:
     index = ti.ijk
+    N = 256
+    bs = 8
 else:
     assert False
     
@@ -33,7 +36,7 @@ def populate():
 def laplace(use_bls: ti.template(), y: ti.template()):
     if ti.static(use_bls):
         ti.cache_shared(x)
-    # ti.block_dim(bs ** dim)
+    ti.block_dim(bs ** dim)
     for I in ti.grouped(x):
         s = 0
         for offset in ti.static(ti.grouped(ti.ndrange(*stencil_range))):

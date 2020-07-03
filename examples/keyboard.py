@@ -13,10 +13,10 @@ while gui.running:
         elif gui.event.key == ti.GUI.RMB:
             x, y = gui.event.pos
         elif gui.event.key == ti.GUI.WHEEL:
-            # delta is 2-dim vector (x,y)
-            # x denotes the horizontal direction , and y denotes the vertical direction
             x, y = gui.event.pos
             dt = gui.event.delta
+            # delta is 2-dim vector (dx,dy)
+            # dx(dt[0]) denotes the horizontal direction , and dy(dt[1]) denotes the vertical direction
             if dt[1] > 0:
                 radius += 10
             elif dt[1] < 0:

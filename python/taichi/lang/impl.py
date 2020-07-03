@@ -248,6 +248,7 @@ def reset():
     taichi_lang_core.reset_default_compile_config()
 
 
+@taichi_scope
 def static_print(*args, __p=print, **kwargs):
     __p(*args, **kwargs)
 
@@ -415,8 +416,6 @@ def static(x, *xs):
         return [static(x)] + [static(x) for x in xs]
     import types
     import taichi as ti
-    assert get_runtime(
-    ).inside_kernel, 'ti.static can only be used inside Taichi kernels'
     if isinstance(x, (bool, int, float, range, list, tuple, enumerate,
                       ti.ndrange, ti.GroupedNDRange)) or x is None:
         return x

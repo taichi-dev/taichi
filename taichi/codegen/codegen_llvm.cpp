@@ -1375,7 +1375,7 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
       llvm::Function *single_coord_func = nullptr;
       {
         auto single_index_guard = get_function_creation_guard({
-            runtime_context_ty, // The first arg is expected to be Context.
+            runtime_context_ty,  // The first arg is expected to be Context.
             llvm::PointerType::get(physical_coordinate_ty, 0),
         });
         single_coord_func = single_index_guard.body;

@@ -4,6 +4,7 @@
 #include "taichi/ir/ir.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/util/line_appender.h"
+#include "taichi/util/str.h"
 #include "cc_utils.h"
 
 TLANG_NAMESPACE_BEGIN

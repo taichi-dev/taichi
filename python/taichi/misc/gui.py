@@ -242,7 +242,7 @@ class GUI:
         e = GUI.Event()
         event = self.core.get_key_event_head()
 
-        e.type = event.type 
+        e.type = event.type
         e.key = event.key
         e.pos = event.pos
         e.modifier = []

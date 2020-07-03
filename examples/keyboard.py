@@ -15,11 +15,11 @@ while gui.running:
         elif gui.event.key == ti.GUI.WHEEL:
             # delta is 2-dim vector (x,y)
             # x denotes the horizontal direction , and y denotes the vertical direction
-            dt = gui.event.delta 
-            if dt[1] > 0 : 
-                radius += 10 
-            elif dt[1] < 0 :
-                radius = max( 8 , radius - 10)
+            dt = gui.event.delta
+            if dt[1] > 0:
+                radius += 10
+            elif dt[1] < 0:
+                radius = max(8, radius - 10)
 
     if gui.is_pressed(ti.GUI.LEFT, 'a'):
         x -= delta

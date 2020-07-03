@@ -18,11 +18,10 @@ void export_visual(py::module &m) {
   auto key_event = py::class_<GUI::KeyEvent>(m, "KeyEvent")
                        .def_readonly("type", &GUI::KeyEvent::type)
                        .def_readonly("key", &GUI::KeyEvent::key)
-                       .def("pos", &GUI::KeyEvent::pos)
-                       .def("delta", &GUI::KeyEvent::delta);
+                       .def_readonly("pos", &GUI::KeyEvent::pos)
+                       .def_readonly("delta", &GUI::KeyEvent::delta);
 
   py::enum_<GUI::KeyEvent::Type>(key_event, "EType")
-      .value("Scroll", Type::scroll)
       .value("Move", Type::move)
       .value("Press", Type::press)
       .value("Release", Type::release);

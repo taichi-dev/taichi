@@ -105,13 +105,19 @@ LRESULT CALLBACK WindowProc(HWND hwnd,
           GUI::MouseEvent{GUI::MouseEvent::Type::move, gui->cursor_pos});
       break;
     case WM_MOUSEWHEEL:
+      x = GET_X_LPARAM(lParam);
+      y = GET_Y_LPARAM(lParam);
+      gui->set_mouse_pos(x, gui->height - 1 - y);
       gui->key_events.push_back(
-          GUI::KeyEvent{GUI::KeyEvent::Type::scroll, "SCROLL",
+          GUI::KeyEvent{GUI::KeyEvent::Type::move, "WHEEL", gui->cursor_pos,
                         Vector2i{0, GET_WHEEL_DELTA_WPARAM(wParam)}});
       break;
     case WM_MOUSEHWHEEL:
+      x = GET_X_LPARAM(lParam);
+      y = GET_Y_LPARAM(lParam);
+      gui->set_mouse_pos(x, gui->height - 1 - y);
       gui->key_events.push_back(
-          GUI::KeyEvent{GUI::KeyEvent::Type::scroll, "SCROLL",
+          GUI::KeyEvent{GUI::KeyEvent::Type::move, "WHEEL", gui->cursor_pos,
                         Vector2i{GET_WHEEL_DELTA_WPARAM(wParam), 0}});
       break;
     case WM_PAINT:

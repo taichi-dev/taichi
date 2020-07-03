@@ -503,19 +503,11 @@ class GUI : public GUIBase {
   };
 
   struct KeyEvent {
-    enum class Type { scroll = 1, move, press, release };
+    enum class Type { move, press, release };
     Type type;
     std::string key;
-    Vector2i data;
-
-    Vector2i pos() {
-      return data;
-    }
-
-    // reuse pos to denote the scrolling distance , if type == scroll
-    Vector2i delta() {
-      return type == Type::scroll ? data : Vector2i{0, 0};
-    }
+    Vector2i pos;
+    Vector2i delta;
   };
 
   std::vector<KeyEvent> key_events;

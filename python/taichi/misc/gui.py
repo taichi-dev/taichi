@@ -24,13 +24,9 @@ class GUI:
     MMB = 'MMB'
     RMB = 'RMB'
     EXIT = 'WMClose'
-    WHEELUP = 'WHEELUP'
-    WHEELDOWN = 'WHEELDOWN'
-    WHEELLEFT = 'WHEELLEFT'
-    WHEELRIGHT = 'WHEELRIGHT'
+    WHEEL = 'WHEEL'
 
     # Event types
-    WHEEL = None  # KeyEvent.EType.Scroll
     MOTION = None  # KeyEvent.EType.Move
     PRESS = None  # KeyEvent.EType.Press
     RELEASE = None  # KeyEvent.EType.Release
@@ -50,7 +46,6 @@ class GUI:
         self.event = None
         self.clear()
 
-        GUI.WHEEL = ti.core.KeyEvent.EType.Scroll
         GUI.MOTION = ti.core.KeyEvent.EType.Move
         GUI.PRESS = ti.core.KeyEvent.EType.Press
         GUI.RELEASE = ti.core.KeyEvent.EType.Release
@@ -241,29 +236,19 @@ class GUI:
             if filter is None or filter.match(e):
                 yield e
 
-    def map_event(self, event):
-        e = GUI.Event()
-
-        e.type = event.type  #int(event.type)
-        e.key = event.key
-
-        if e.type != GUI.WHEEL:
-            e.pos = event.pos()
-        else:
-            dt = event.delta()
-            if dt[0] != 0:
-                e.key = GUI.WHEELLEFT if dt[0] > 0 else GUI.WHEELRIGHT
-                e.delta = abs(dt[0])
-            else:
-                e.key = GUI.WHEELUP if dt[1] > 0 else GUI.WHEELDOWN
-                e.delta = abs(dt[1])
-        return e
-
     def get_key_event(self):
         self.core.wait_key_event()
 
-        e = self.map_event(self.core.get_key_event_head())
+        e = GUI.Event()
+        event = self.core.get_key_event_head()
+
+        e.type = event.type 
+        e.key = event.key
+        e.pos = event.pos
         e.modifier = []
+
+        if e.key == GUI.WHEEL:
+            e.delta = event.delta
 
         for mod in ['Shift', 'Alt', 'Control']:
             if self.is_pressed(mod):

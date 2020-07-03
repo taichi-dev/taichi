@@ -33,6 +33,14 @@ namespace shaders {
 using KernelTaskType = OffloadedStmt::TaskType;
 using BufferEnum = KernelAttributes::Buffers;
 
+inline int infer_msl_version(const TaichiKernelAttributes::UsedFeatures &f) {
+  if (f.simdgroup) {
+    // https://developer.apple.com/documentation/metal/mtllanguageversion/version2_1
+    return 131073;
+  }
+  return kMslVersionNone;
+}
+
 // This class requests the Metal buffer memory of |size| bytes from |mem_pool|.
 // Once allocated, it does not own the memory (hence the name "view"). Instead,
 // GC is deferred to the memory pool.
@@ -152,7 +160,7 @@ class RuntimeListOpsMtlKernel : public CompiledMtlKernelBase {
     const SNodeDescriptorsMap *snode_descriptors = nullptr;
 
     const SNode *snode() const {
-      return kernel_attribs->runtime_list_op_attribs.snode;
+      return kernel_attribs->runtime_list_op_attribs->snode;
     }
   };
 
@@ -208,7 +216,7 @@ class CompiledTaichiKernel {
   struct Params {
     std::string_view taichi_kernel_name;
     std::string mtl_source_code;
-    const std::vector<KernelAttributes> *mtl_kernels_attribs;
+    const TaichiKernelAttributes *ti_kernel_attribs;
     const KernelContextAttributes *ctx_attribs;
     const SNodeDescriptorsMap *snode_descriptors;
     MTLDevice *device;
@@ -216,14 +224,17 @@ class CompiledTaichiKernel {
     KernelProfilerBase *profiler;
   };
 
-  CompiledTaichiKernel(Params params) : ctx_attribs(*params.ctx_attribs) {
+  CompiledTaichiKernel(Params params)
+      : ctx_attribs(*params.ctx_attribs),
+        used_features(params.ti_kernel_attribs->used_features) {
     auto *const device = params.device;
-    auto kernel_lib = new_library_with_source(device, params.mtl_source_code);
+    auto kernel_lib = new_library_with_source(device, params.mtl_source_code,
+                                              infer_msl_version(used_features));
     if (kernel_lib == nullptr) {
       TI_ERROR("Failed to compile Metal kernel! Generated code:\n\n{}",
                params.mtl_source_code);
     }
-    for (const auto &ka : *(params.mtl_kernels_attribs)) {
+    for (const auto &ka : params.ti_kernel_attribs->mtl_kernels_attribs) {
       auto mtl_func = new_function_with_name(kernel_lib.get(), ka.name);
       TI_ASSERT(mtl_func != nullptr);
       // Note that CompiledMtlKernel doesn't own |kernel_func|.
@@ -265,8 +276,7 @@ class CompiledTaichiKernel {
   KernelContextAttributes ctx_attribs;
   std::unique_ptr<BufferMemoryView> ctx_mem;
   nsobj_unique_ptr<MTLBuffer> ctx_buffer;
-
- private:
+  TaichiKernelAttributes::UsedFeatures used_features;
 };
 
 class HostMetalCtxBlitter {
@@ -445,11 +455,10 @@ class KernelManager::Impl {
     init_print_buffer();
   }
 
-  void register_taichi_kernel(
-      const std::string &taichi_kernel_name,
-      const std::string &mtl_kernel_source_code,
-      const std::vector<KernelAttributes> &kernels_attribs,
-      const KernelContextAttributes &ctx_attribs) {
+  void register_taichi_kernel(const std::string &taichi_kernel_name,
+                              const std::string &mtl_kernel_source_code,
+                              const TaichiKernelAttributes &ti_kernel_attribs,
+                              const KernelContextAttributes &ctx_attribs) {
     TI_ASSERT(compiled_taichi_kernels_.find(taichi_kernel_name) ==
               compiled_taichi_kernels_.end());
 
@@ -463,7 +472,7 @@ class KernelManager::Impl {
     CompiledTaichiKernel::Params params;
     params.taichi_kernel_name = taichi_kernel_name;
     params.mtl_source_code = mtl_kernel_source_code;
-    params.mtl_kernels_attribs = &kernels_attribs;
+    params.ti_kernel_attribs = &ti_kernel_attribs;
     params.ctx_attribs = &ctx_attribs;
     params.snode_descriptors = &compiled_structs_.snode_descriptors;
     params.device = device_.get();
@@ -493,13 +502,11 @@ class KernelManager::Impl {
       input_buffers[BufferEnum::Context] = ctk.ctx_buffer.get();
     }
 
-    bool uses_print = false;
     for (const auto &mk : ctk.compiled_mtl_kernels) {
       mk->launch(input_buffers, cur_command_buffer_.get());
-      uses_print = (uses_print || mk->kernel_attribs()->uses_print);
     }
-
-    if (ctx_blitter || uses_print) {
+    const bool used_print = ctk.used_features.print;
+    if (ctx_blitter || used_print) {
       // TODO(k-ye): One optimization is to synchronize only when we absolutely
       // need to transfer the data back to host. This includes the cases where
       // an arg is 1) an array, or 2) used as return value.
@@ -507,7 +514,7 @@ class KernelManager::Impl {
       if (ctx_blitter) {
         ctx_blitter->metal_to_host();
       }
-      if (uses_print) {
+      if (used_print) {
         flush_print_buffers();
       }
     }
@@ -741,11 +748,10 @@ class KernelManager::Impl {
     TI_ERROR("Metal not supported on the current OS");
   }
 
-  void register_taichi_kernel(
-      const std::string &taichi_kernel_name,
-      const std::string &mtl_kernel_source_code,
-      const std::vector<KernelAttributes> &kernels_attribs,
-      const KernelContextAttributes &ctx_attribs) {
+  void register_taichi_kernel(const std::string &taichi_kernel_name,
+                              const std::string &mtl_kernel_source_code,
+                              const TaichiKernelAttributes &ti_kernel_attribs,
+                              const KernelContextAttributes &ctx_attribs) {
     TI_ERROR("Metal not supported on the current OS");
   }
 
@@ -776,10 +782,10 @@ KernelManager::~KernelManager() {
 void KernelManager::register_taichi_kernel(
     const std::string &taichi_kernel_name,
     const std::string &mtl_kernel_source_code,
-    const std::vector<KernelAttributes> &kernels_attribs,
+    const TaichiKernelAttributes &ti_kernel_attribs,
     const KernelContextAttributes &ctx_attribs) {
   impl_->register_taichi_kernel(taichi_kernel_name, mtl_kernel_source_code,
-                                kernels_attribs, ctx_attribs);
+                                ti_kernel_attribs, ctx_attribs);
 }
 
 void KernelManager::launch_taichi_kernel(const std::string &taichi_kernel_name,

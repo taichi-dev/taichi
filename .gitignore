@@ -1,8 +1,8 @@
 *.swp
 *.swo
 /.vs
-/.*localrc
 /tags
+/.*_localrc
 /Debug
 *.sdf
 /x64

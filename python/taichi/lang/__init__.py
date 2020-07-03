@@ -38,6 +38,7 @@ arm64 = core.arm64
 cuda = core.cuda
 metal = core.metal
 opengl = core.opengl
+cc = core.cc
 gpu = [cuda, metal, opengl]
 cpu = core.host_arch()
 kernel_profiler_print = lambda: core.get_current_program(
@@ -252,10 +253,6 @@ schedules = [parallelize, vectorize, block_dim, cache]
 lang_core = core
 
 
-def static_print(*args, __p=print, **kwargs):
-    __p(*args, **kwargs)
-
-
 def benchmark(func, repeat=300, args=()):
     import taichi as ti
     import time
@@ -292,6 +289,8 @@ def is_arch_supported(arch):
         return core.with_metal()
     elif arch == opengl:
         return core.with_opengl()
+    elif arch == cc:
+        return core.with_cc()
     elif arch == cpu:
         return True
     else:
@@ -299,7 +298,7 @@ def is_arch_supported(arch):
 
 
 def supported_archs():
-    archs = [cpu, cuda, metal, opengl]
+    archs = [cpu, cuda, metal, opengl, cc]
 
     wanted_archs = os.environ.get('TI_WANTED_ARCHS', '')
     want_exclude = wanted_archs.startswith('^')

@@ -1275,8 +1275,10 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
   auto leaf_block = stmt->snode;
   {
     // Create the loop body function
+    auto *runtime_context_ty =
+        llvm::PointerType::get(get_runtime_type("Context"), 0);
     auto guard = get_function_creation_guard({
-        llvm::PointerType::get(get_runtime_type("Context"), 0),
+        runtime_context_ty,
         llvm::PointerType::get(get_runtime_type("Element"), 0),
         tlctx->get_data_type<int>(),
         tlctx->get_data_type<int>(),
@@ -1328,8 +1330,6 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     create_call(refine, {element.get_ptr("pcoord"), new_coordinates,
                          builder->CreateLoad(loop_index)});
 
-    current_coordinates = new_coordinates;
-
     // exec_cond: safe-guard the execution of loop body:
     //  - if non-POT tensor dim exists, make sure we don't go out of bounds
     //  - if leaf block is bitmasked, make sure we only loop over active
@@ -1368,7 +1368,21 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
       builder->CreateCondBr(exec_cond, bounded_body_bb, body_bb_tail);
       builder->SetInsertPoint(bounded_body_bb);
       // The real loop body
-      stmt->body->accept(this);
+      //
+      // We wrap the actual computation into yet another function,
+      // |single_coord_func|, so that the top-level `continue` can be directly
+      // translated into `return`.
+      llvm::Function *single_coord_func = nullptr;
+      {
+        auto single_index_guard = get_function_creation_guard({
+            runtime_context_ty, // The first arg is expected to be Context.
+            llvm::PointerType::get(physical_coordinate_ty, 0),
+        });
+        single_coord_func = single_index_guard.body;
+        current_coordinates = get_arg(1);
+        stmt->body->accept(this);
+      }
+      create_call(single_coord_func, {get_context(), new_coordinates});
       builder->CreateBr(body_bb_tail);
     }
 

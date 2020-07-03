@@ -146,3 +146,28 @@ def test_kernel_continue_in_nested_if_3():
     assert x[0] == 1
     run(0)
     assert x[0] == 0
+
+
+@ti.all_archs
+def test_kernel_continue_bitmasked():
+    N = 32
+    x = ti.var(ti.f32)
+    ti.root.bitmasked(ti.i, N).place(x)
+    visited = ti.var(ti.i32, shape=N)
+
+    will_visit = [1, 2, 5, 10, 23]
+
+    @ti.kernel
+    def run():
+        for i in x:
+            if i == 0 or i == 17:
+                continue
+            visited[i] = 1
+
+    for i in will_visit + [0, 17]:
+        x[i] = 3
+
+    run()
+    for i in range(N):
+        expect = i in will_visit
+        assert visited[i] == expect

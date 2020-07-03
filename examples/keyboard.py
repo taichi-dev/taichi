@@ -7,15 +7,19 @@ radius = 8
 gui = ti.GUI("Keyboard", res=(400, 400))
 
 while gui.running:
-    while gui.get_event(ti.GUI.PRESS, ti.GUI.WHEEL):
+    while gui.get_event(ti.GUI.PRESS, ti.GUI.MOTION):
         if gui.event.key == ti.GUI.ESCAPE:
             gui.running = False
         elif gui.event.key == ti.GUI.RMB:
             x, y = gui.event.pos
-        elif gui.event.key == ti.GUI.WHEELUP:
-            radius += 10
-        elif gui.event.key == ti.GUI.WHEELDOWN:
-            radius = max(radius - 10, 8)
+        elif gui.event.key == ti.GUI.WHEEL:
+            # delta is 2-dim vector (x,y)
+            # x denotes the horizontal direction , and y denotes the vertical direction
+            dt = gui.event.delta 
+            if dt[1] > 0 : 
+                radius += 10 
+            elif dt[1] < 0 :
+                radius = max( 8 , radius - 10)
 
     if gui.is_pressed(ti.GUI.LEFT, 'a'):
         x -= delta

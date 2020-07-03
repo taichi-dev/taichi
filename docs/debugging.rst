@@ -43,7 +43,7 @@ For now, Taichi-scope ``print`` supports string, scalar, vector, and matrix expr
 .. warning::
 
     For the **CPU, CUDA, and Metal backend**, ``print`` will not work in Graphical Python Shells
-    including IDLE and Jupyter notebook. This is because these backends prints the outputs to the console instead of the GUI.
+    including IDLE and Jupyter notebook. This is because these backends print the outputs to the console instead of the GUI.
     Taichi developers are trying to solve this now. Use the **OpenGL backend** if you wish to
     use ``print`` in IDLE / Jupyter.
 
@@ -158,15 +158,17 @@ Compile-time ``ti.static_assert``
 Like ``ti.static_print``, we also provide a static version of ``assert``:
 ``ti.static_assert``. It can be useful to make assertions on data types, dimensionality, and shapes.
 It works whether ``debug=True`` is specified or not. When an assertion fails, it will
-raise ``AssertionError`` as a Python-scope ``assert`` does.
+raise an ``AssertionError``, just like a Python-scope ``assert``.
 
 For example:
 
 .. code-block:: python
 
     @ti.func
-    def is_odd(x: ti.template()):
-        ti.static_assert(x.data_type() == ti.i32, "is_odd() is only supported for i32")
+    def copy(dst: ti.template(), src: ti.template()):
+        ti.static_assert(dst.shape == src.shape, "copy() needs src and dst tensors to be same shape")
+        for I in ti.grouped(src):
+            dst[I] = src[I]
         return x % 2 == 1
 
 
@@ -191,7 +193,7 @@ programmers carelessly used the wrong types. For example,
 
     @ti.kernel
     def buggy():
-        ret = 0  # 0 is a integer, so `ret` is typed as int32
+        ret = 0  # 0 is an integer, so `ret` is typed as int32
         for i in range(3):
             ret += 0.1 * i  # i32 += f32, the result is still stored in int32!
         print(ret)  # will show 0
@@ -242,4 +244,4 @@ optimization and see if the issue still exists:
 
     ...
 
-If turning off optimization fixed the issue, please report this bug on `GitHub <https://github.com/taichi-dev/taichi/issues/new?labels=potential+bug&template=bug_report.md>`_ to help us improve, thank for support!
+If turning off optimization fixed the issue, please report this bug on `GitHub <https://github.com/taichi-dev/taichi/issues/new?labels=potential+bug&template=bug_report.md>`_ to help us improve, thanks for the support!

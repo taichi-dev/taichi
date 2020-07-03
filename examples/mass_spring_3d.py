@@ -22,7 +22,6 @@ damping = 2
 steps = 15
 dt = 5e-3
 
-
 ### Physics
 
 x = ti.Vector(3, ti.f32, NN)

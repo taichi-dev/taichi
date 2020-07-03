@@ -37,21 +37,21 @@ STR(
     constant constexpr int kMetalPrintMsgTypeWidthMask =
         ((1 << kMetalNumBitsPerPrintMsgType) - 1);
 
-    [[maybe_unused]] inline int mtl_compute_num_print_msg_typemasks(
-        int num_entries) {
-      return (num_entries + kMetalNumPrintMsgTypePerI32 - 1) /
-             kMetalNumPrintMsgTypePerI32;
-    }
+        [[maybe_unused]] inline int mtl_compute_num_print_msg_typemasks(
+            int num_entries) {
+          return (num_entries + kMetalNumPrintMsgTypePerI32 - 1) /
+                 kMetalNumPrintMsgTypePerI32;
+        }
 
-    [[maybe_unused]] inline int mtl_compute_print_msg_bytes(int num_entries) {
-      // First int32: stores |num_entries|
-      // Then follows the number of int32's to store the type masks.
-      // Finally the print data. 4 byte for each entry.
-      const int sz =
-          sizeof(int32_t) *
-          (1 + mtl_compute_num_print_msg_typemasks(num_entries) + num_entries);
-      return sz;
-    }
+            [[maybe_unused]] inline int mtl_compute_print_msg_bytes(
+                int num_entries) {
+              // See PrintMsg's layout for how this is computed.
+              const int sz =
+                  sizeof(int32_t) *
+                  (1 + mtl_compute_num_print_msg_typemasks(num_entries) +
+                   num_entries);
+              return sz;
+            }
 
     class PrintMsg {
      public:

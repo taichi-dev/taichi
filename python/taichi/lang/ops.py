@@ -207,42 +207,6 @@ def random(dt=None):
     return Expr(ti_core.make_rand_expr(dt))
 
 
-# TODO: move this to a C++ pass (#944)
-def pow(self, power):
-    import taichi as ti
-    if not is_taichi_expr(self) and not is_taichi_expr(power):
-        # Python constant computations (#1188)
-        return raw_pow(self, power)
-    if not isinstance(power, int):
-        return raw_pow(self, power)
-    if power == 0:
-        # TODO: remove the hack, use {Expr,Matrix}.dup().fill(1)
-        # also note that this can be solved by #940
-        return self * 0 + 1
-
-    negative = power < 0
-    # Why not simply use `power = abs(power)`?
-    # Because `abs` is overrided by the `ti.abs` above.
-    if negative:
-        power = -power
-
-    tmp = self
-    ret = None
-    while power:
-        if power & 1:
-            if ret is None:
-                ret = tmp
-            else:
-                ret = ti.expr_init(ret * tmp)
-        tmp = ti.expr_init(tmp * tmp)
-        power >>= 1
-
-    if negative:
-        return 1 / ret
-    else:
-        return ret
-
-
 # NEXT: add matpow(self, power)
 
 
@@ -280,7 +244,7 @@ def mod(a, b):
 
 
 @binary
-def raw_pow(a, b):
+def pow(a, b):
     return _binary_operation(ti_core.expr_pow, ops.pow, a, b)
 
 
@@ -477,6 +441,10 @@ def append(l, indices, val):
 def is_active(l, indices):
     return Expr(
         ti_core.insert_is_active(l.snode().ptr, make_expr_group(indices)))
+
+
+def activate(l, indices):
+    ti_core.insert_activate(l.snode().ptr, make_expr_group(indices))
 
 
 def deactivate(l, indices):

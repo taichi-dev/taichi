@@ -63,6 +63,7 @@ std::vector<Stmt *> gather_statements(IRNode *root,
                                       const std::function<bool(Stmt *)> &test);
 std::unique_ptr<std::unordered_set<AtomicOpStmt *>> gather_used_atomics(
     IRNode *root);
+std::vector<Stmt *> get_load_pointers(Stmt *load_stmt);
 Stmt *get_store_data(Stmt *store_stmt);
 Stmt *get_store_destination(Stmt *store_stmt);
 bool has_store_or_atomic(IRNode *root, const std::vector<Stmt *> &vars);

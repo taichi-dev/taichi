@@ -224,7 +224,7 @@ def test_unpack_from_shape():
 
     @ti.kernel
     def func():
-        a[None], b[None], c[None] = d.shape()
+        a[None], b[None], c[None] = d.shape
 
     func()
     assert a[None] == 2

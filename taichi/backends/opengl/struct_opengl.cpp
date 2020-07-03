@@ -61,11 +61,16 @@ void OpenglStructCompiler::generate_types(const SNode &snode) {
   if (is_place) {
     const auto dt_name = opengl_data_type_name(snode.dt);
     snode_info.stride = data_type_size(snode.dt);
-  } else if (snode.type == SNodeType::dense || snode.type == SNodeType::root) {
-    const int n = (snode.type == SNodeType::root) ? 1 : snode.n;
+  } else if (snode.type == SNodeType::dense ||
+             snode.type == SNodeType::dynamic ||
+             snode.type == SNodeType::root) {
+    int n = (snode.type == SNodeType::root) ? 1 : snode.n;
+    // the `length` field of a dynamic SNode is at it's end:
+    // | x[0] | x[1] | x[2] | x[3] | ... | len |
+    int extension = opengl_get_snode_meta_size(snode);
     snode_info.length = n;
-    snode_info.stride = snode_child_info.stride * snode_info.length;
-    snode_info.elem_stride = snode_child_info.stride;
+    snode_info.stride = snode_child_info.stride * n + extension;  // my stride
+    snode_info.elem_stride = snode_child_info.stride;  // my child stride
   } else {
     TI_ERROR("SNodeType={} not supported on OpenGL",
              snode_type_name(snode.type));
@@ -73,16 +78,16 @@ void OpenglStructCompiler::generate_types(const SNode &snode) {
   }
 }
 
-size_t OpenglStructCompiler::compute_snode_size(const SNode &sn) {
-  if (sn.is_place()) {
-    return data_type_size(sn.dt);
+size_t OpenglStructCompiler::compute_snode_size(const SNode &snode) {
+  if (snode.is_place()) {
+    return data_type_size(snode.dt);
   }
   size_t ch_size = 0;
-  for (const auto &ch : sn.ch) {
+  for (const auto &ch : snode.ch) {
     ch_size += compute_snode_size(*ch);
   }
-  const int n = (sn.type == SNodeType::root) ? 1 : sn.n;
-  return n * ch_size;
+  int n = (snode.type == SNodeType::root) ? 1 : snode.n;
+  return n * ch_size + opengl_get_snode_meta_size(snode);
 }
 
 }  // namespace opengl

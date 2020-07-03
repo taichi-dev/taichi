@@ -37,6 +37,7 @@ struct CompileConfig {
   bool fast_math;
   bool use_unified_memory;
   bool async;
+  bool flatten_if;
   DataType default_fp;
   DataType default_ip;
   std::string extra_flags;

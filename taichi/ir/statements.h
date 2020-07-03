@@ -182,6 +182,7 @@ class OffloadedStmt : public Stmt {
   std::unique_ptr<Block> prologue;
   std::unique_ptr<Block> body;
   std::unique_ptr<Block> epilogue;
+  std::size_t tls_size{1};  // avoid allocating dynamic memory with 0 byte
   ScratchPadOptions scratch_opt;
 
   OffloadedStmt(TaskType task_type);

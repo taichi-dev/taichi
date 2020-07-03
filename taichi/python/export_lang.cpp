@@ -109,7 +109,8 @@ void export_lang(py::module &m) {
                      &CompileConfig::device_memory_fraction)
       .def_readwrite("fast_math", &CompileConfig::fast_math)
       .def_readwrite("ad_stack_size", &CompileConfig::ad_stack_size)
-      .def_readwrite("async", &CompileConfig::async);
+      .def_readwrite("async", &CompileConfig::async)
+      .def_readwrite("flatten_if", &CompileConfig::flatten_if);
 
   m.def("reset_default_compile_config",
         [&]() { default_compile_config = CompileConfig(); });
@@ -236,6 +237,10 @@ void export_lang(py::module &m) {
 
   m.def("insert_deactivate", [](SNode *snode, const ExprGroup &indices) {
     return Deactivate(snode, indices);
+  });
+
+  m.def("insert_activate", [](SNode *snode, const ExprGroup &indices) {
+    return Activate(snode, indices);
   });
 
   m.def("insert_append",

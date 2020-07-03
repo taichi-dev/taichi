@@ -2,6 +2,8 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/visitors.h"
+#include "taichi/program/kernel.h"
+#include "taichi/program/program.h"
 #include <set>
 #include <unordered_set>
 #include <utility>
@@ -1062,13 +1064,15 @@ class BasicBlockSimplify : public IRVisitor {
       return false;
     };
 
-    if (if_stmt->true_statements &&
-        flatten(if_stmt->true_statements->statements, true)) {
-      throw IRModified();
-    }
-    if (if_stmt->false_statements &&
-        flatten(if_stmt->false_statements->statements, false)) {
-      throw IRModified();
+    if (kernel->program.config.flatten_if) {
+      if (if_stmt->true_statements &&
+          flatten(if_stmt->true_statements->statements, true)) {
+        throw IRModified();
+      }
+      if (if_stmt->false_statements &&
+          flatten(if_stmt->false_statements->statements, false)) {
+        throw IRModified();
+      }
     }
 
     if (if_stmt->true_statements) {
@@ -1141,6 +1145,9 @@ class Simplify : public IRVisitor {
   Kernel *kernel;
 
   Simplify(IRNode *node, Kernel *kernel) : kernel(kernel) {
+    if (!kernel)
+      this->kernel = node->get_kernel();
+    TI_ASSERT(this->kernel);
     modified = false;
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
@@ -1176,7 +1183,9 @@ class Simplify : public IRVisitor {
   }
 
   void visit(StructForStmt *for_stmt) override {
-    TI_ASSERT(current_struct_for == nullptr);
+    TI_ASSERT_INFO(current_struct_for == nullptr,
+                   "Nested struct-fors are not supported for now. "
+                   "Please try to use range-fors for inner loops.");
     current_struct_for = for_stmt;
     for_stmt->body->accept(this);
     current_struct_for = nullptr;
@@ -1225,15 +1234,18 @@ void full_simplify(IRNode *root, Kernel *kernel) {
         modified = true;
       if (constant_fold(root))
         modified = true;
+      if (die(root))
+        modified = true;
       if (alg_simp(root))
         modified = true;
-      die(root);
-      if (whole_kernel_cse(root))
+      if (die(root))
         modified = true;
-      die(root);
       if (simplify(root, kernel))
         modified = true;
-      die(root);
+      if (die(root))
+        modified = true;
+      if (whole_kernel_cse(root))
+        modified = true;
       if (!modified)
         break;
     }

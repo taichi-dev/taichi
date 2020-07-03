@@ -56,7 +56,7 @@ As global tensors of vectors
 ++++++++++++++++++++++++++++
 .. attribute:: a[p, q, ...][i]
 
-    :parameter a: (Vector) the vector
+    :parameter a: (tensor of Vector) the vector
     :parameter p: (scalar) index of the first tensor dimension
     :parameter q: (scalar) index of the second tensor dimension
     :parameter i: (scalar) index of the vector component
@@ -189,6 +189,24 @@ Methods
 
 .. note::
     Vectors are special matrices with only 1 column. In fact, ``ti.Vector`` is just an alias of ``ti.Matrix``.
+
+
+.. attribute:: a.n
+
+   :parameter a: (Vector or tensor of Vector)
+   :return: (scalar) return the dimensionality of vector ``a``
+
+    E.g.,
+    ::
+
+        # Taichi-scope
+        a = ti.Vector([1, 2, 3])
+        a.n  # 3
+
+    ::
+        # Python-scope
+        a = ti.Vector(3, dt=ti.f32, shape=())
+        a.n  # 3
 
 
 TODO: add element wise operations docs

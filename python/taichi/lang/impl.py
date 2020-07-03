@@ -59,6 +59,16 @@ def expr_init_func(rhs):  # temporary solution to allow passing in tensors as
     return expr_init(rhs)
 
 
+def begin_frontend_struct_for(group, loop_range):
+    if group.size() != len(loop_range.shape):
+        raise IndexError(
+            'Number of struct-for indices does not match loop variable dimensionality '
+            f'({group.size()} != {len(loop_range.shape)}). Maybe you wanted to '
+            'use "for I in ti.grouped(x)" to group all indices into a single vector I?'
+        )
+    taichi_lang_core.begin_frontend_struct_for(group, loop_range.ptr)
+
+
 def wrap_scalar(x):
     if type(x) in [int, float]:
         return Expr(x)
@@ -198,6 +208,9 @@ class PyTaichi:
     def sync(self):
         self.materialize()
         self.prog.synchronize()
+        # print's in kernel won't take effect until ti.sync(), discussion:
+        # https://github.com/taichi-dev/taichi/pull/1303#discussion_r444897102
+        print(taichi_lang_core.pop_python_print_buffer(), end='')
 
 
 pytaichi = PyTaichi()

@@ -1,20 +1,20 @@
 .. _compilation:
 
-The life of a Taichi kernel
+Life of a Taichi kernel
 ===============================================
 
 Sometimes it is helpful to understand the life cycle of a Taichi kernel.
 In short, compilation will only happen on the first invocation of an instance of a kernel.
 
-Life cycle of a Taichi kernel looks like this:
+The life cycle of a Taichi kernel has the following stages:
 
  - Kernel registration
  - Template instantiation and caching
  - Python AST transforms
- - Taichi IR compilation, optimization, and binary generation
+ - Taichi IR compilation, optimization, and executable generation
  - Launching
 
-.. image:: life_of_kernel_lowres.jpg
+.. image:: https://raw.githubusercontent.com/taichi-dev/public_files/6bd234694270c83baf97ba32e0c6278b8cf37e6e/taichi/life_of_kernel.jpg
 
 Let's consider the following simple kernel:
 
@@ -26,7 +26,7 @@ Let's consider the following simple kernel:
       tensor[i] += delta
 
 
-We also allocate two 1D tensors to simplify discussion:
+We allocate two 1D tensors to simplify discussion:
 
 .. code-block:: python
 
@@ -50,7 +50,7 @@ Template instantiation and caching
 
 When ``add`` is called for the first time, the Taichi frontend compiler will instantiate the kernel.
 
-When you have a second call with the same template signature (explained later), e.g.,
+When you have a second call with the same **template signature** (explained later), e.g.,
 
 .. code-block:: python
 
@@ -69,12 +69,12 @@ will lead to a new instantiation of **add**.
 .. note::
   **Template signatures** are what distinguish different instantiations of a kernel template.
   The signature of ``add(x, 42)`` is ``(x, ti.i32)``, which is the same as that of ``add(x, 1)``. Therefore, the latter can reuse the previously compiled binary.
-  The signature of ``add(y, 42)`` is ``(y, ti.i32)``, a different value from the previous signature, therefore a new instantiation and compilation will happen.
+  The signature of ``add(y, 42)`` is ``(y, ti.i32)``, a different value from the previous signature, hence a new kernel will be instantiated and compiled.
 
 .. note::
 
-  Many basic operations in the Taichi standard library is implemented using Taichi kernels for performance,
-  with more or less metaprogramming tricks. Invoking them will incur **implicit kernel instantiations**
+  Many basic operations in the Taichi standard library are implemented using Taichi kernels
+  using metaprogramming tricks. Invoking them will incur **implicit kernel instantiations**.
 
   Examples include ``x.to_numpy()`` and ``y.from_torch(torch_tensor)``. When you invoke these functions,
   you will see kernel instantiations, as Taichi kernels will be generated to offload the hard work to multiple CPU cores/GPUs.
@@ -84,7 +84,7 @@ will lead to a new instantiation of **add**.
 Code transformation and optimizations
 ---------------------------------------
 
-When a new instantiation happens, the Taichi frontend compiler will transform the kernel body AST
+When a new instantiation happens, the Taichi frontend compiler (i.e., the ``ASTTransformer`` Python class) will transform the kernel body AST
 into a Python script, which, when executed, emits a Taichi frontend AST.
 Basically, some patches are applied to the Python AST so that the Taichi frontend can recognize it.
 
@@ -103,9 +103,10 @@ which allows a series of further IR passes to happen, such as
 The just-in-time (JIT) compilation engine
 -----------------------------------------
 
-Finally, the optimized SSA IR is fed into the LLVM IR codegen, and LLVM JIT generates high-performance executable CPU/GPU programs.
+Finally, the optimized SSA IR is fed into backend compilers such as LLVM or Apple Metal/OpenGL shader compilers.
+The backend compilers then generate high-performance executable CPU/GPU programs.
 
 Kernel launching
 ----------------
 
-Taichi kernels will be ultimately launched as multi-threaded CPU tasks or CUDA kernels.
+Taichi kernels will be ultimately launched as multi-threaded CPU tasks or GPU kernels.

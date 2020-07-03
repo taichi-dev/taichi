@@ -226,16 +226,14 @@ Debug your program with ``print()`` in Taichi-scope. For example:
         print('v is', v)
         #=> v is [3, 4]
 
-.. note::
+.. warning::
 
-    For now, print is only supported on CPU, CUDA and OpenGL backends.
-
-    For the CUDA backend, the printed result won't shows up until ``ti.sync()``:
+    General speaking, the printed result won't shows up until ``ti.sync()``:
 
     .. code-block:: python
 
         import taichi as ti
-        ti.init(arch=ti.cuda)
+        ti.init(arch=ti.gpu)
 
         @ti.kernel
         def kern():
@@ -254,6 +252,9 @@ Debug your program with ``print()`` in Taichi-scope. For example:
         before kernel
         after kernel
         inside kernel
-        after
+        after sync
 
-    Also note that host access or program end will also implicitly invoke for ``ti.sync()``.
+    This is because GPU memory is only copied when necessary, for performance considerations.
+
+    Also note that host access or program end will also implicitly invoke for
+    ``ti.sync()``.

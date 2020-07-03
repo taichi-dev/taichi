@@ -24,12 +24,14 @@ class GUI:
     MMB = 'MMB'
     RMB = 'RMB'
     EXIT = 'WMClose'
-    WHEEL = 'WHEEL'
+    WHEEL = 'Wheel'
+
+    from taichi import ti_core
 
     # Event types
-    MOTION = None  # KeyEvent.EType.Move
-    PRESS = None  # KeyEvent.EType.Press
-    RELEASE = None  # KeyEvent.EType.Release
+    MOTION = ti_core.KeyEvent.EType.Move
+    PRESS = ti_core.KeyEvent.EType.Press
+    RELEASE = ti_core.KeyEvent.EType.Release
 
     def __init__(self, name, res=512, background_color=0x0):
         import taichi as ti
@@ -45,10 +47,6 @@ class GUI:
         self.key_pressed = set()
         self.event = None
         self.clear()
-
-        GUI.MOTION = ti.core.KeyEvent.EType.Move
-        GUI.PRESS = ti.core.KeyEvent.EType.Press
-        GUI.RELEASE = ti.core.KeyEvent.EType.Release
 
     def __enter__(self):
         return self

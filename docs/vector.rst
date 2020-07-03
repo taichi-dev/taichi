@@ -191,9 +191,6 @@ Methods
     Vectors are special matrices with only 1 column. In fact, ``ti.Vector`` is just an alias of ``ti.Matrix``.
 
 
-Metadata
---------
-
 .. attribute:: a.n
 
    :parameter a: (Vector or tensor of Vector)

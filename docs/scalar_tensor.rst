@@ -107,8 +107,24 @@ You can access an element of the Taichi tensor by an index or indices.
 Meta data
 ---------
 
+.. function:: a.dim()
 
-.. attribute:: a.shape
+    :parameter a: (Tensor) the tensor
+    :return: (scalar) the length of ``a``
+
+    ::
+
+        x = ti.var(ti.i32, (6, 5))
+        x.dim()  # 2
+
+        y = ti.var(ti.i32, 6)
+        y.dim()  # 1
+
+        z = ti.var(ti.i32, ())
+        z.dim()  # 0
+
+
+.. function:: a.shape()
 
     :parameter a: (Tensor) the tensor
     :return: (tuple) the shape of tensor ``a``
@@ -116,16 +132,16 @@ Meta data
     ::
 
         x = ti.var(ti.i32, (6, 5))
-        x.shape  # (6, 5)
+        x.shape()  # (6, 5)
 
         y = ti.var(ti.i32, 6)
-        y.shape  # (6,)
+        y.shape()  # (6,)
 
         z = ti.var(ti.i32, ())
-        z.shape  # ()
+        z.shape()  # ()
 
 
-.. function:: a.dtype
+.. function:: a.data_type()
 
     :parameter a: (Tensor) the tensor
     :return: (DataType) the data type of ``a``
@@ -133,7 +149,7 @@ Meta data
     ::
 
         x = ti.var(ti.i32, (2, 3))
-        x.dtype  # ti.i32
+        x.data_type()  # ti.i32
 
 
 .. function:: a.parent(n = 1)

@@ -250,7 +250,7 @@ def static_print(*args, __p=print, **kwargs):
     __p(*args, **kwargs)
 
 
-@taichi_scope
+# we don't add @taichi_scope decorator for @ti.pyfunc
 def static_assert(cond, msg=None):
     if msg is not None:
         assert cond, msg

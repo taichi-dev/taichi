@@ -410,7 +410,7 @@ def static(x, *xs):
         return x
     elif isinstance(x, ti.lang.expr.Expr) and x.ptr.is_global_var():
         return x
-    elif isinstance(x, ti.Matrix) and x.is_global():
+    elif ti.is_taichi_class(x) and x.is_global():
         return x
     elif isinstance(x, types.FunctionType) or isinstance(x, types.MethodType):
         return x

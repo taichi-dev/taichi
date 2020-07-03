@@ -31,7 +31,14 @@ def remove_indent(lines):
 def func(foo):
     is_classfunc = _inside_class(level_of_class_stackframe=3)
     func = Func(foo, classfunc=is_classfunc)
-    return func
+
+    @functools.wraps(foo)
+    def wrapped(*args):
+        if func.compiled is None:
+            func.do_compile()
+        return func.compiled(*args)
+
+    return wrapped
 
 
 class Func:

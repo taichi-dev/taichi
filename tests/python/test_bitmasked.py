@@ -5,9 +5,8 @@ def archs_support_bitmasked(func):
     return ti.archs_excluding(ti.opengl)(func)
 
 
-# @archs_support_bitmasked
+@archs_support_bitmasked
 def test_basic():
-    ti.init(arch=ti.cuda, print_ir=True, kernel_profiler=True)
     x = ti.var(ti.i32)
     c = ti.var(ti.i32)
     s = ti.var(ti.i32)
@@ -25,21 +24,16 @@ def test_basic():
     @ti.kernel
     def sum():
         for i, j in x:
-            print(i, j)
-            # c[None] += ti.is_active(bm, [i, j])
-            # s[None] += x[i, j]
+            c[None] += ti.is_active(bm, [i, j])
+            s[None] += x[i, j]
 
     run()
-    print(x[5, 1])
     sum()
-    
-    ti.kernel_profiler_print()
 
     assert c[None] == 3
     assert s[None] == 42
 
 
-'''
 @archs_support_bitmasked
 def test_bitmasked_then_dense():
     x = ti.var(ti.f32)
@@ -209,4 +203,3 @@ def test_sparsity_changes():
     run()
     assert c[None] == 4
     assert s[None] == 42
-'''

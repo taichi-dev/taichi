@@ -122,8 +122,10 @@ class Offloader {
           Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::listgen);
       offloaded_listgen->snode = snode_child;
       offloaded_listgen->grid_dim = program->config.saturating_grid_dim;
-      offloaded_listgen->block_dim = std::min(snode_child->max_num_elements(),
-                                              program->config.max_block_dim);
+      offloaded_listgen->block_dim =
+          std::min(snode_child->max_num_elements(),
+                   std::min(program->default_block_dim(),
+                            program->config.max_block_dim));
       root_block->insert(std::move(offloaded_listgen));
     }
 
@@ -133,9 +135,8 @@ class Offloader {
     offloaded_struct_for->grid_dim = program->config.saturating_grid_dim;
     if (for_stmt->block_dim == 0) {
       // adaptive
-      offloaded_struct_for->block_dim =
-          std::min(for_stmt->snode->parent->max_num_elements(),
-                   program->config.max_block_dim);
+      offloaded_struct_for->block_dim = std::min(
+          for_stmt->snode->max_num_elements(), program->config.max_block_dim);
     } else {
       offloaded_struct_for->block_dim = for_stmt->block_dim;
     }

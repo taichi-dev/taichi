@@ -242,7 +242,8 @@ class GUI:
 
         e.type = event.type
         e.key = event.key
-        e.pos = event.pos
+        e.pos = self.core.pos_coord_uniform(event.pos)
+        e.pos = (e.pos[0], e.pos[1])
         e.modifier = []
 
         if e.key == GUI.WHEEL:

@@ -852,6 +852,10 @@ class GUI : public GUIBase {
     }
   }
 
+  Vector2 pos_coord_uniform(Vector2i pos) {
+    return canvas->untransform(Vector2(pos));
+  }
+
   void draw_log() {
     for (int i = 0; i < (int)log_entries.size(); i++) {
       canvas->text(log_entries[i], Vector2(0.0, -0.02_f * i), 15, Vector4(0));

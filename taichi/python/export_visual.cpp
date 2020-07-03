@@ -15,12 +15,11 @@ void export_visual(py::module &m) {
   using Circle = Canvas::Circle;
   using Type = GUI::KeyEvent::Type;
 
-  auto key_event = py::class_<GUI::KeyEvent>(m, "KeyEvent")
-                       .def_readonly("type", &GUI::KeyEvent::type)
-                       .def_readonly("key", &GUI::KeyEvent::key)
-                       .def_readonly("pos", &GUI::KeyEvent::pos)
-                       .def_readonly("delta", &GUI::KeyEvent::delta);
-
+  auto key_event = py::class_<GUI::KeyEvent>(m, "KeyEvent");
+  key_event.def_readonly("type", &GUI::KeyEvent::type)
+      .def_readonly("key", &GUI::KeyEvent::key)
+      .def_readonly("pos", &GUI::KeyEvent::pos)
+      .def_readonly("delta", &GUI::KeyEvent::delta);
   py::enum_<GUI::KeyEvent::Type>(key_event, "EType")
       .value("Move", Type::move)
       .value("Press", Type::press)
@@ -36,6 +35,7 @@ void export_visual(py::module &m) {
                          img.get_data_size());
            })
       .def("screenshot", &GUI::screenshot)
+      .def("pos_coord_uniform", &GUI::pos_coord_uniform)
       .def("has_key_event", &GUI::has_key_event)
       .def("wait_key_event", &GUI::wait_key_event)
       .def("get_key_event_head", &GUI::get_key_event_head)

@@ -104,18 +104,24 @@ LRESULT CALLBACK WindowProc(HWND hwnd,
       gui->mouse_event(
           GUI::MouseEvent{GUI::MouseEvent::Type::move, gui->cursor_pos});
       break;
-    case WM_MOUSEWHEEL:
-      x = GET_X_LPARAM(lParam);
-      y = GET_Y_LPARAM(lParam);
+    case WM_MOUSEWHEEL: {
+      POINT p{0, 0};
+      ClientToScreen(hwnd, &p);
+      x = GET_X_LPARAM(lParam) - p.x;
+      y = GET_Y_LPARAM(lParam) - p.y;
       gui->set_mouse_pos(x, gui->height - 1 - y);
+    }
       gui->key_events.push_back(
           GUI::KeyEvent{GUI::KeyEvent::Type::move, "Wheel", gui->cursor_pos,
                         Vector2i{0, GET_WHEEL_DELTA_WPARAM(wParam)}});
       break;
-    case WM_MOUSEHWHEEL:
-      x = GET_X_LPARAM(lParam);
-      y = GET_Y_LPARAM(lParam);
+    case WM_MOUSEHWHEEL: {
+      POINT p{0, 0};
+      ClientToScreen(hwnd, &p);
+      x = GET_X_LPARAM(lParam) - p.x;
+      y = GET_Y_LPARAM(lParam) - p.y;
       gui->set_mouse_pos(x, gui->height - 1 - y);
+    }
       gui->key_events.push_back(
           GUI::KeyEvent{GUI::KeyEvent::Type::move, "Wheel", gui->cursor_pos,
                         Vector2i{GET_WHEEL_DELTA_WPARAM(wParam), 0}});

@@ -1,6 +1,10 @@
 import taichi as ti
-import taichi_glsl as tl
-import taichi_three as t3
+try:
+    import taichi_glsl as tl
+    import taichi_three as t3
+except ImportError:
+    print('This example needs the extension library Taichi THREE to work.'
+          'Please run `pip install --user taichi_three` to install it.')
 import numpy as np
 import math
 ti.init(ti.gpu)

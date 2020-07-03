@@ -202,10 +202,6 @@ class ASTTransformer(ast.NodeTransformer):
         raise TaichiSyntaxError(
             "Keyword 'try' not supported in Taichi kernels")
 
-    def visit_Import(self, node):
-        raise TaichiSyntaxError(
-            "Keyword 'import' not supported in Taichi kernels")
-
     def visit_While(self, node):
         if node.orelse:
             raise TaichiSyntaxError(
@@ -666,6 +662,7 @@ if 1:
             self.generic_visit(node)
 
         node.body = arg_decls + node.body
+        node.body = [self.parse_stmt('import taichi as ti')] + node.body
         return node
 
     def visit_UnaryOp(self, node):

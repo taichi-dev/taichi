@@ -892,8 +892,7 @@ class TaichiMain:
                                          description=f"{self.run.__doc__}")
         parser.add_argument(
             'filename',
-            help='A single (Python) script to run with Taichi, e.g. render.py'
-        )
+            help='A single (Python) script to run with Taichi, e.g. render.py')
         args = parser.parse_args(arguments)
 
         # Short circuit for testing

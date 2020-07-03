@@ -309,6 +309,14 @@ class Kernel:
         local_vars = {}
         global_vars = _get_global_vars(self.func)
 
+        for i, arg in enumerate(func_body.args.args):
+            anno = arg.annotation
+            if isinstance(anno, ast.Name):
+                global_vars[anno.id] = self.arguments[i]
+
+        if isinstance(func_body.returns, ast.Name):
+            global_vars[func_body.returns.id] = self.return_type
+
         if self.is_grad:
             from .ast_checker import KernelSimplicityASTChecker
             KernelSimplicityASTChecker(self.func).visit(tree)
@@ -327,14 +335,6 @@ class Kernel:
             print(astor.to_source(tree.body[0], indent_with='  '))
 
         ast.increment_lineno(tree, oinspect.getsourcelines(self.func)[1] - 1)
-
-        for i, arg in enumerate(func_body.args.args):
-            anno = arg.annotation
-            if isinstance(anno, ast.Name):
-                global_vars[anno.id] = self.arguments[i]
-
-        if isinstance(func_body.returns, ast.Name):
-            global_vars[func_body.returns.id] = self.return_type
 
         # inject template parameters into globals
         for i in self.template_slot_locations:

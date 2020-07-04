@@ -88,17 +88,21 @@ class UnreachableCodeEliminator : public BasicStmtVisitor {
     if (if_stmt->cond->is<ConstStmt>() && if_stmt->cond->width() == 1) {
       if (if_stmt->cond->as<ConstStmt>()->val[0].equal_value(0)) {
         // if (0)
-        modifier.insert_before(
-            if_stmt,
-            VecStatement(std::move(if_stmt->false_statements->statements)));
+        if (if_stmt->false_statements) {
+          modifier.insert_before(
+              if_stmt,
+              VecStatement(std::move(if_stmt->false_statements->statements)));
+        }
         modifier.erase(if_stmt);
         modified = true;
         return;
       } else {
         // if (1)
-        modifier.insert_before(
-            if_stmt,
-            VecStatement(std::move(if_stmt->true_statements->statements)));
+        if (if_stmt->true_statements) {
+          modifier.insert_before(
+              if_stmt,
+              VecStatement(std::move(if_stmt->true_statements->statements)));
+        }
         modifier.erase(if_stmt);
         modified = true;
         return;

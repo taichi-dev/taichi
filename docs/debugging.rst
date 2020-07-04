@@ -38,7 +38,7 @@ Debug your program with ``print()`` in Taichi-scope. For example:
         #=> v = [3, 4]
 
 For now, Taichi-scope ``print`` supports string, scalar, vector, and matrix expressions as arguments.
-``print`` in Taichi-scope may be a little different from ``print`` in Python-scope, see below.
+``print`` in Taichi-scope may be a little different from ``print`` in Python-scope. Please see details below.
 
 .. warning::
 
@@ -49,7 +49,7 @@ For now, Taichi-scope ``print`` supports string, scalar, vector, and matrix expr
 
 .. warning::
 
-    Note that ``print`` in Taichi-scope can only receive **comma-seperated paramater**. Neither f-string nor formatted string should be used. For example:
+    Note that ``print`` in Taichi-scope can only receive **comma-separated parameter**. Neither f-string nor formatted string should be used. For example:
     .. code-block:: python
         import taichi as ti
         ti.init(arch=ti.cpu)
@@ -244,4 +244,4 @@ optimization and see if the issue still exists:
 
     ...
 
-If turning off optimization fixed the issue, please report this bug on `GitHub <https://github.com/taichi-dev/taichi/issues/new?labels=potential+bug&template=bug_report.md>`_ to help us improve, thanks for the support!
+If turning off optimization fixes the issue, please report this bug on `GitHub <https://github.com/taichi-dev/taichi/issues/new?labels=potential+bug&template=bug_report.md>`_ to help us improve, thanks for the support!

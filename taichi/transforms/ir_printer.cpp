@@ -4,6 +4,7 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
 #include "taichi/ir/frontend_ir.h"
+#include "taichi/util/str.h"
 #include <typeinfo>
 
 TLANG_NAMESPACE_BEGIN
@@ -32,18 +33,6 @@ std::string scratch_pad_info(const ScratchPadOptions &opt) {
 std::string block_dim_info(int block_dim) {
   return "block_dim=" +
          (block_dim == 0 ? "adaptive" : std::to_string(block_dim)) + " ";
-}
-
-std::string escape_new_line(const std::string &s) {
-  std::stringstream ss;
-  for (char c : s) {
-    if (c == '\n') {
-      ss << '\\' << 'n';
-    } else {
-      ss << c;
-    }
-  }
-  return ss.str();
 }
 
 class IRPrinter : public IRVisitor {
@@ -230,7 +219,7 @@ class IRPrinter : public IRVisitor {
       if (std::holds_alternative<Expr>(c))
         name = std::get<Expr>(c).serialize();
       else
-        name = escape_new_line("\"" + std::get<std::string>(c) + "\"");
+        name = c_quoted(std::get<std::string>(c));
       contents.push_back(name);
     }
     print("print {}", fmt::join(contents, ", "));
@@ -243,7 +232,7 @@ class IRPrinter : public IRVisitor {
       if (std::holds_alternative<Stmt *>(c))
         name = std::get<Stmt *>(c)->name();
       else
-        name = escape_new_line("\"" + std::get<std::string>(c) + "\"");
+        name = c_quoted(std::get<std::string>(c));
       names.push_back(name);
     }
     print("print {}", fmt::join(names, ", "));

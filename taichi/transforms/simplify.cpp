@@ -270,7 +270,8 @@ class BasicBlockSimplify : public IRVisitor {
           if (same) {
             // no store to the var?
             bool has_related_store = false;
-            auto advanced_optimization = block->get_config().advanced_optimization;
+            auto advanced_optimization =
+                block->get_config().advanced_optimization;
             for (int j = i + 1; j < current_stmt_id; j++) {
               if (!advanced_optimization) {
                 if (block->statements[j]
@@ -499,7 +500,8 @@ class BasicBlockSimplify : public IRVisitor {
           if (same) {
             // no store to the var?
             bool has_store = false;
-            auto advanced_optimization = block->get_config().advanced_optimization;
+            auto advanced_optimization =
+                block->get_config().advanced_optimization;
             for (int j = i + 1; j < current_stmt_id; j++) {
               if (!advanced_optimization) {
                 if (block->statements[j]

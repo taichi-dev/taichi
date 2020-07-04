@@ -60,30 +60,42 @@ def test_simple_2d():
 
 @ti.require(ti.extension.bls)
 @ti.all_archs
-def _test_bls_stencil(dim, N, bs, ext, offset):
+def _test_bls_stencil(dim, N, bs, ext, offset, block_dim=None):
     x, y, y2 = ti.var(ti.i32), ti.var(ti.i32), ti.var(ti.i32)
+    
     index = ti.indices(*range(dim))
     mismatch = ti.var(ti.i32, shape=())
     
-    block = ti.root.pointer(index, N // bs)
+    if not isinstance(bs, (tuple, list)):
+        bs = [bs for _ in range(dim)]
+    
+    block = ti.root.pointer(index, [N // bs[i] for i in range(dim)])
 
     block.dense(index, bs).place(x)
     block.dense(index, bs).place(y)
     block.dense(index, bs).place(y2)
 
-    ndrange = ((bs, N - bs),) * dim
+    ndrange = ((bs[i], N - bs[i]) for i in range(dim))
     stencil_range = tuple((-ext + offset[i], 1 + ext + offset[i]) for i in range(dim))
+    
+    if block_dim is None:
+        block_dim = 1
+        for i in range(dim):
+            block_dim *= bs[i]
     
     @ti.kernel
     def populate():
         for I in ti.grouped(ti.ndrange(*ndrange)):
-            x[I] = I.sum()
+            s = 0
+            for i in ti.static(range(dim)):
+                s += I[i] ** (i + 1)
+            x[I] = s
 
     @ti.kernel
     def stencil(use_bls: ti.template(), y: ti.template()):
         if ti.static(use_bls):
             ti.cache_shared(x)
-        ti.block_dim(bs ** dim)
+        ti.block_dim(block_dim)
         for I in ti.grouped(x):
             s = 0
             for offset in ti.static(ti.grouped(ti.ndrange(*stencil_range))):

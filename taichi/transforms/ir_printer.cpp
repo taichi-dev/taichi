@@ -4,6 +4,7 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
 #include "taichi/ir/frontend_ir.h"
+#include "taichi/util/str.h"
 #include <typeinfo>
 
 TLANG_NAMESPACE_BEGIN
@@ -218,7 +219,7 @@ class IRPrinter : public IRVisitor {
       if (std::holds_alternative<Expr>(c))
         name = std::get<Expr>(c).serialize();
       else
-        name = "\"" + std::get<std::string>(c) + "\"";
+        name = c_quoted(std::get<std::string>(c));
       contents.push_back(name);
     }
     print("print {}", fmt::join(contents, ", "));
@@ -231,7 +232,7 @@ class IRPrinter : public IRVisitor {
       if (std::holds_alternative<Stmt *>(c))
         name = std::get<Stmt *>(c)->name();
       else
-        name = "\"" + std::get<std::string>(c) + "\"";
+        name = c_quoted(std::get<std::string>(c));
       names.push_back(name);
     }
     print("print {}", fmt::join(names, ", "));

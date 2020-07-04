@@ -60,7 +60,7 @@ def test_print_matrix():
 
 
 @ti.all_archs
-def test_print_sep():
+def test_print_sep_end():
     @ti.kernel
     def func():
         # hello 42 world!
@@ -70,6 +70,10 @@ def test_print_sep():
         print('chi', 233, 'world!')
         # hello42world!
         print('hello', 42, 'world!', sep='')
+        # '  ' (with no newline)
+        print('  ', end='')
+        # 'helloaswd42qwer'
+        print('  ', 42, sep='aswd', end='qwer')
 
     func()
     ti.sync()

@@ -12,7 +12,7 @@ class CCKernel {
   CCKernel(CCProgram *program,
            std::string const &source,
            std::string const &name)
-      : program(program), source(source), name(name) {
+      : name(name), source(source), program(program) {
   }
 
   void compile();
@@ -21,11 +21,11 @@ class CCKernel {
     return obj_path;
   }
 
+  std::string name;
+  std::string source;
+
  private:
   CCProgram *program;
-
-  std::string source;
-  std::string name;
 
   std::string src_path;
   std::string obj_path;

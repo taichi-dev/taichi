@@ -25,11 +25,11 @@ inline std::string cc_data_type_name(DataType dt) {
 inline std::string cc_type_signature(DataType dt) {
   switch (dt) {
     case DataType::i32:
-      return "int";
+      return "i";
     case DataType::f32:
-      return "float";
+      return "f";
     case DataType::f64:
-      return "double";
+      return "d";
     default:
       TI_ERROR("Unsupported DataType={} on C backend", data_type_name(dt));
   }
@@ -65,6 +65,30 @@ inline bool cc_is_binary_op_infix(BinaryOpType op) {
       return false;
     default:
       return true;
+  }
+}
+inline bool cc_is_unary_op_infix(UnaryOpType op) {
+  switch (op) {
+    case UnaryOpType::neg:
+    case UnaryOpType::bit_not:
+    case UnaryOpType::logic_not:
+      return true;
+    default:
+      return false;
+  }
+}
+
+// TODO: move this to lang_util.h:
+inline std::string unary_op_type_symbol(UnaryOpType op) {
+  switch (op) {
+    case UnaryOpType::neg:
+      return "-";
+    case UnaryOpType::bit_not:
+      return "~";
+    case UnaryOpType::logic_not:
+      return "!";
+    default:
+      return unary_op_type_name(op);
   }
 }
 

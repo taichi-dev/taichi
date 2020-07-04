@@ -9,7 +9,7 @@ struct CCConfiguation {
   std::string compile_cmd, link_cmd;
 
   CCConfiguation()
-      : compile_cmd("gcc -c -o '{}' '{}'"),
+      : compile_cmd("gcc -Wc90-c99-compat -Wc99-c11-compat -c -o '{}' '{}'"),
         link_cmd("gcc -shared -fPIC -o '{}' '{}'") {
   }
 };

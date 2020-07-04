@@ -17,6 +17,7 @@ blk2.place(z)
 
 @ti.kernel
 def func():
+    z[3] = 2.3 + z[1]
     print('Nice to meet you!', z[3])
 
 

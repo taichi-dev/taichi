@@ -60,7 +60,7 @@ def test_simple_2d():
 
 @ti.require(ti.extension.bls)
 @ti.all_archs
-def _test_bls_stencil(dim, N, bs, ext, offset, block_dim=None):
+def _test_bls_stencil(dim, N, bs, stencil, block_dim=None):
     x, y, y2 = ti.var(ti.i32), ti.var(ti.i32), ti.var(ti.i32)
     
     index = ti.indices(*range(dim))
@@ -76,7 +76,6 @@ def _test_bls_stencil(dim, N, bs, ext, offset, block_dim=None):
     block.dense(index, bs).place(y2)
 
     ndrange = ((bs[i], N - bs[i]) for i in range(dim))
-    stencil_range = tuple((-ext + offset[i], 1 + ext + offset[i]) for i in range(dim))
     
     if block_dim is None:
         block_dim = 1
@@ -92,20 +91,20 @@ def _test_bls_stencil(dim, N, bs, ext, offset, block_dim=None):
             x[I] = s
 
     @ti.kernel
-    def stencil(use_bls: ti.template(), y: ti.template()):
+    def apply(use_bls: ti.template(), y: ti.template()):
         if ti.static(use_bls):
             ti.cache_shared(x)
         ti.block_dim(block_dim)
         for I in ti.grouped(x):
             s = 0
-            for offset in ti.static(ti.grouped(ti.ndrange(*stencil_range))):
-                s = s + x[I + offset]
+            for offset in ti.static(stencil):
+                s = s + x[I + ti.Vector(offset)]
             y[I] = s
 
 
     populate()
-    stencil(False, y2)
-    stencil(True, y)
+    apply(False, y2)
+    apply(True, y)
     
     @ti.kernel
     def check():
@@ -116,16 +115,22 @@ def _test_bls_stencil(dim, N, bs, ext, offset, block_dim=None):
     check()
     
     assert mismatch[None] == 0
-    
 
-def test_laplace_1d():
-    _test_bls_stencil(1, 128, 16, 1, (0,))
+def test_stencil_1d_trivial():
+    # y[i] = x[i]
+    _test_bls_stencil(1, 128, bs=32, stencil=((0,)))
+
+def test_stencil_1d():
+    # y[i] = x[i - 1] + x[i]
+    _test_bls_stencil(1, 128, bs=32, stencil=((-1,), (0, )))
     
-def test_laplace_2d():
-    _test_bls_stencil(2, 128, 16, 1, (0, 0))
+def test_stencil_2d():
+    stencil = [(0, 0), (0, -1), (0, 1), (1, 0)]
+    _test_bls_stencil(2, 128, bs=16, stencil=stencil)
     
-def test_laplace_3d():
-    _test_bls_stencil(3, 64, 4, 1, (0, 0, 0))
+def test_stencil_3d():
+    stencil = [(-1, -1, -1), (2, 0, 1)]
+    _test_bls_stencil(3, 64, bs=4, stencil=stencil)
     
 # TODO: multiple-variable BLS
 # TODO: BLS epilogues

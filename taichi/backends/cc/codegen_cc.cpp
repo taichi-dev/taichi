@@ -140,17 +140,17 @@ class CCTransformer : public IRVisitor {
 
   static std::string _get_libc_function_name(std::string name, DataType dt) {
     switch (dt) {
-    case DataType::i32:
-      return name;
-    case DataType::i64:
-      return "ll" + name;
-    case DataType::f32:
-      return name + "f";
-    case DataType::f64:
-      return name;
-    default:
-      TI_ERROR("Unsupported function \"{}\" for DataType={} on C backend",
-          name, data_type_name(dt));
+      case DataType::i32:
+        return name;
+      case DataType::i64:
+        return "ll" + name;
+      case DataType::f32:
+        return name + "f";
+      case DataType::f64:
+        return name;
+      default:
+        TI_ERROR("Unsupported function \"{}\" for DataType={} on C backend",
+                 name, data_type_name(dt));
     }
   }
 
@@ -167,14 +167,17 @@ class CCTransformer : public IRVisitor {
   }
 
   static std::string invoke_libc(std::string name,
-        DataType dt, std::string arguments) {
+                                 DataType dt,
+                                 std::string arguments) {
     auto func_name = get_libc_function_name(name, dt);
     return fmt::format("{}({})", func_name, arguments);
   }
 
   template <typename... Args>
   static inline std::string invoke_libc(std::string name,
-          DataType dt, std::string const &fmt, Args &&... args) {
+                                        DataType dt,
+                                        std::string const &fmt,
+                                        Args &&... args) {
     auto arguments = fmt::format(fmt, std::forward<Args>(args)...);
     return invoke_libc(name, dt, arguments);
   }
@@ -189,10 +192,10 @@ class CCTransformer : public IRVisitor {
     const auto binop = binary_op_type_symbol(bin->op_type);
     const auto var = define_var(dt_name, bin_name);
     if (cc_is_binary_op_infix(bin->op_type)) {
-      emit("{} = {} {} {};", var, lhs_name, binop,
-           rhs_name);
+      emit("{} = {} {} {};", var, lhs_name, binop, rhs_name);
     } else {
-      emit("{} = {};", var, invoke_libc(binop, type, "{}, {}", lhs_name, rhs_name));
+      emit("{} = {};", var,
+           invoke_libc(binop, type, "{}, {}", lhs_name, rhs_name));
     }
   }
 
@@ -208,9 +211,10 @@ class CCTransformer : public IRVisitor {
       emit("{} = ({}) {};", var, dt_name, operand_name);
 
     } else if (stmt->op_type == UnaryOpType::cast_bits) {
-      const auto operand_dt_name = cc_data_type_name(stmt->operand->element_type());
-      emit("union {{ {} bc_src; {} bc_dst; }} {}_bitcast;",
-          operand_dt_name, dt_name, dest_name);
+      const auto operand_dt_name =
+          cc_data_type_name(stmt->operand->element_type());
+      emit("union {{ {} bc_src; {} bc_dst; }} {}_bitcast;", operand_dt_name,
+           dt_name, dest_name);
       emit("{}_bitcast.bc_src = {};", dest_name, operand_name);
       emit("{} = {}_bitcast.bc_dst;", var, dest_name);
 
@@ -228,7 +232,8 @@ class CCTransformer : public IRVisitor {
     const auto type = stmt->element_type();
     auto var = define_var(cc_data_type_name(type), stmt->raw_name());
     emit("{} = *{};", var, dest_ptr);
-    if (stmt->op_type == AtomicOpType::max || stmt->op_type == AtomicOpType::min) {
+    if (stmt->op_type == AtomicOpType::max ||
+        stmt->op_type == AtomicOpType::min) {
       emit("*{} = {};", invoke_libc(op, type, "*{}, {}", dest_ptr, src_name));
     } else {
       emit("*{} {}= {};", dest_ptr, op, src_name);

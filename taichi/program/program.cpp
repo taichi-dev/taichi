@@ -82,7 +82,7 @@ Program::Program(Arch desired_arch) {
     }
   }
 
-  if (arch == Arch::cc) { 
+  if (arch == Arch::cc) {
     if (!cccp::is_c_backend_available()) {
       TI_WARN("No C backend detected.");
       arch = host_arch();

@@ -16,10 +16,9 @@ void CCKernel::compile() {
   obj_path = fmt::format("{}/{}.o", runtime_tmp_dir, name);
   src_path = fmt::format("{}/{}.c", runtime_tmp_dir, name);
 
-  std::ofstream(src_path)
-        << program->runtime->header << "\n"
-        << program->layout->source << "\n"
-        << source;
+  std::ofstream(src_path) << program->runtime->header << "\n"
+                          << program->layout->source << "\n"
+                          << source;
   TI_DEBUG("[cc] compiling [{}] -> [{}]:\n{}\n", name, obj_path, source);
   execute(cfg.compile_cmd, obj_path, src_path);
 }
@@ -36,9 +35,9 @@ void CCLayout::compile() {
   obj_path = fmt::format("{}/_root.o", runtime_tmp_dir);
   src_path = fmt::format("{}/_root.c", runtime_tmp_dir);
 
-  std::ofstream(src_path) << source
-                          << "\n\nstruct S0root *RTi_get_root() {\n"
-                          << "\tstatic struct S0root ti_root;\n\treturn &ti_root;\n}\n";
+  std::ofstream(src_path)
+      << source << "\n\nstruct S0root *RTi_get_root() {\n"
+      << "\tstatic struct S0root ti_root;\n\treturn &ti_root;\n}\n";
   TI_DEBUG("[cc] compiling root struct -> [{}]:\n{}\n", obj_path, source);
   execute(cfg.compile_cmd, obj_path, src_path);
 }
@@ -86,15 +85,14 @@ void CCProgram::add_kernel(std::unique_ptr<CCKernel> kernel) {
 void CCProgram::init_runtime() {
   runtime = std::make_unique<CCRuntime>(
 #include "runtime/base.h"
-  ,
+      ,
 #include "runtime/base.c"
   );
   runtime->compile();
 }
 
 CCFuncEntryType *CCProgram::load_kernel(std::string const &name) {
-  return reinterpret_cast<CCFuncEntryType *>(
-      dll->load_function("Ti_" + name));
+  return reinterpret_cast<CCFuncEntryType *>(dll->load_function("Ti_" + name));
 }
 
 CCProgram::CCProgram() {

@@ -13,7 +13,9 @@ Backends
 Compilation
 ***********
 
-- Disable advanced optimization to save compile time & possible erros: ``ti.core.toggle_advanced_optimization(False)`` or ``export TI_ADVANCED_OPTIMIZATION=0``.
+- Disable advanced optimization to save compile time & possible errors: ``ti.core.toggle_advanced_optimization(False)`` or ``export TI_ADVANCED_OPTIMIZATION=0``.
+- Disable **all** optimization to futher save compile time: ``ti.init(zero_optimization=True)`` or ``export TI_ZERO_OPTIMIZATION=1``.
+- Enable the experimental fast math optimization for better performance: ``ti.init(fast_math=True)`` or ``export TI_FAST_MATH=1``.
 - To print intermediate IR generated: ``export TI_PRINT_IR=1`` or ``ti.init(print_ir=True)``.
 - To print preprocessed Python code: ``export TI_PRINT_PREPROCESSED=1`` or ``ti.init(print_preprocessed=True)``.
 

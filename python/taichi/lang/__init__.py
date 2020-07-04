@@ -148,6 +148,7 @@ def init(arch=None,
     environ_config("fast_math")
     environ_config("async")
     environ_config("print_benchmark_stat")
+    environ_config("zero_optimization")
     environ_config("device_memory_fraction", float)
     environ_config("device_memory_GB", float)
 

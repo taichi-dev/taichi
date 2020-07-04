@@ -42,7 +42,7 @@ void compile_to_offloads(IRNode *ir,
   print("Typechecked");
   irpass::analysis::verify(ir);
 
-  if (ir->get_kernel()->is_evaluator) {
+  if (ir->get_config().zero_optimization || ir->get_kernel()->is_evaluator) {
     TI_ASSERT(!grad);
     irpass::offload(ir);
     print("Offloaded");

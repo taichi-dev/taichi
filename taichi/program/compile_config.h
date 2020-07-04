@@ -23,6 +23,7 @@ struct CompileConfig {
   bool simplify_after_lower_access;
   bool demote_dense_struct_fors;
   bool advanced_optimization;
+  bool zero_optimization;
   bool use_llvm;
   bool print_struct_llvm_ir;
   bool print_kernel_llvm_ir;

@@ -56,7 +56,7 @@ build_script:
   - "%PYTHON% misc/ci_setup.py ci"
   - mkdir build
   - cd build
-  - cmake ..  -G"Visual Studio 16 2019" -A x64 -DPYTHON_EXECUTABLE="%PYTHON%" -DLLVM_DIR="C:\taichi_llvm\lib\cmake\llvm"
+  - cmake .. -G"Visual Studio 16 2019" -A x64 -DPYTHON_EXECUTABLE="%PYTHON%" -DLLVM_DIR="C:\taichi_llvm\lib\cmake\llvm"
   - msbuild /p:Configuration=RelWithDebInfo /p:Platform=x64 /m taichi.sln
   - cd ..
   - '%PYTHON% -c "import taichi"'

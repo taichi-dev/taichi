@@ -457,7 +457,11 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         *module, type, false, llvm::GlobalValue::InternalLinkage, nullptr,
         "bls_buffer", nullptr, llvm::GlobalVariable::NotThreadLocal,
         3 /*addrspace=shared*/);
+#if LLVM_VERSION_MAJOR >= 10
     bls_buffer->setAlignment(llvm::MaybeAlign(8));
+#else
+    bls_buffer->setAlignment(8);
+#endif
   }
 
   void visit(OffloadedStmt *stmt) override {

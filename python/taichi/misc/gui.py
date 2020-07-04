@@ -1,6 +1,8 @@
 import numbers
 import numpy as np
 
+from taichi import ti_core
+
 
 class GUI:
     class Event:
@@ -25,8 +27,6 @@ class GUI:
     RMB = 'RMB'
     EXIT = 'WMClose'
     WHEEL = 'Wheel'
-
-    from taichi import ti_core
 
     # Event types
     MOTION = ti_core.KeyEvent.EType.Move
@@ -242,7 +242,7 @@ class GUI:
 
         e.type = event.type
         e.key = event.key
-        e.pos = self.core.pos_coord_uniform(event.pos)
+        e.pos = self.core.canvas_untransform(event.pos)
         e.pos = (e.pos[0], e.pos[1])
         e.modifier = []
 

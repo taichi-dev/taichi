@@ -852,7 +852,7 @@ class GUI : public GUIBase {
     }
   }
 
-  Vector2 pos_coord_uniform(Vector2i pos) {
+  Vector2 canvas_untransform(Vector2i pos) {
     return canvas->untransform(Vector2(pos));
   }
 

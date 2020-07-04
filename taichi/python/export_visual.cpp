@@ -35,7 +35,7 @@ void export_visual(py::module &m) {
                          img.get_data_size());
            })
       .def("screenshot", &GUI::screenshot)
-      .def("pos_coord_uniform", &GUI::pos_coord_uniform)
+      .def("canvas_untransform", &GUI::canvas_untransform)
       .def("has_key_event", &GUI::has_key_event)
       .def("wait_key_event", &GUI::wait_key_event)
       .def("get_key_event_head", &GUI::get_key_event_head)

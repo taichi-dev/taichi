@@ -81,6 +81,9 @@ struct TaichiKernelAttributes {
     bool print = false;
     // Whether this kernel accesses (read or write) sparse SNodes.
     bool sparse = false;
+    // Whether [[thread_index_in_simdgroup]] is used. This is only supported
+    // since MSL 2.1
+    bool simdgroup = false;
   };
 
   // Attributes of all the Metal kernels produced from this Taichi kernel.

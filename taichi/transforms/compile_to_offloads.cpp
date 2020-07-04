@@ -59,12 +59,9 @@ void compile_to_offloads(IRNode *ir,
     print("Loop Split");
     irpass::analysis::verify(ir);
   }
-  irpass::simplify(ir);
+  irpass::full_simplify(ir);
   print("Simplified I");
   irpass::analysis::verify(ir);
-
-  irpass::constant_fold(ir);
-  print("Constant folded I");
 
   if (grad) {
     // Remove local atomics here so that we don't have to handle their gradients
@@ -104,9 +101,6 @@ void compile_to_offloads(IRNode *ir,
   irpass::full_simplify(ir);
   print("Simplified II");
   irpass::analysis::verify(ir);
-
-  irpass::constant_fold(ir);
-  print("Constant folded II");
 
   irpass::offload(ir);
   print("Offloaded");

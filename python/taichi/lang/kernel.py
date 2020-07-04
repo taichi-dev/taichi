@@ -5,6 +5,7 @@ import ast
 from .kernel_arguments import *
 from .util import *
 from .shell import oinspect
+from . import impl
 import functools
 
 
@@ -30,39 +31,60 @@ def remove_indent(lines):
 # The ti.func decorator
 def func(foo):
     is_classfunc = _inside_class(level_of_class_stackframe=3)
-    func = Func(foo, classfunc=is_classfunc)
+    fun = Func(foo, classfunc=is_classfunc)
 
     @functools.wraps(foo)
     def decorated(*args):
-        return func.__call__(*args)
+        return fun.__call__(*args)
+
+    return decorated
+
+
+# The ti.pyfunc decorator
+def pyfunc(foo):
+    '''
+    Creates a function that are callable both in Taichi-scope and Python-scope.
+    The function should be simple, and not contains Taichi-scope specifc syntax
+    including struct-for.
+    '''
+    is_classfunc = _inside_class(level_of_class_stackframe=3)
+    fun = Func(foo, classfunc=is_classfunc, pyfunc=True)
+
+    @functools.wraps(foo)
+    def decorated(*args):
+        return fun.__call__(*args)
 
     return decorated
 
 
 class Func:
-    def __init__(self, func, classfunc=False):
+    def __init__(self, func, classfunc=False, pyfunc=False):
         self.func = func
         self.compiled = None
         self.classfunc = classfunc
+        self.pyfunc = pyfunc
         self.arguments = []
         self.argument_names = []
         self.extract_arguments()
 
     def __call__(self, *args):
+        if not impl.inside_kernel():
+            assert self.pyfunc, "Use @ti.pyfunc if you wish to call " \
+                                "Taichi functions from Python-scope"
+            return self.func(*args)
         if self.compiled is None:
             self.do_compile()
         ret = self.compiled(*args)
         return ret
 
     def do_compile(self):
-        from .impl import get_runtime
         src = remove_indent(oinspect.getsource(self.func))
         tree = ast.parse(src)
 
         func_body = tree.body[0]
         func_body.decorator_list = []
 
-        if get_runtime().print_preprocessed:
+        if impl.get_runtime().print_preprocessed:
             import astor
             print('Before preprocessing:')
             print(astor.to_source(tree.body[0], indent_with='  '))
@@ -71,7 +93,7 @@ class Func:
         visitor.visit(tree)
         ast.fix_missing_locations(tree)
 
-        if get_runtime().print_preprocessed:
+        if impl.get_runtime().print_preprocessed:
             import astor
             print('After preprocessing:')
             print(astor.to_source(tree.body[0], indent_with='  '))
@@ -196,13 +218,11 @@ class Kernel:
                 self.template_slot_locations.append(i)
         self.mapper = KernelTemplateMapper(self.arguments,
                                            self.template_slot_locations)
-        from .impl import get_runtime
-        get_runtime().kernels.append(self)
+        impl.get_runtime().kernels.append(self)
         self.reset()
 
     def reset(self):
-        from .impl import get_runtime
-        self.runtime = get_runtime()
+        self.runtime = impl.get_runtime()
         if self.is_grad:
             self.compiled_functions = self.runtime.compiled_functions
         else:

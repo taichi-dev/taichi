@@ -7,7 +7,7 @@ from taichi.tools import *
 from taichi.misc import *
 from taichi.misc.gui import GUI
 from taichi.misc.np2ply import PLYWriter
-from taichi.misc.image import *
+from taichi.misc.image import imread, imwrite, imshow, imdisplay
 from taichi.misc.task import Task
 from taichi.misc.test import *
 from taichi.misc import settings as settings

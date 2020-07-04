@@ -13,7 +13,7 @@ def test_POT():
     ti.root.dense(ti.i, n).dense(ti.j, m).dense(ti.k, p).place(val)
 
     assert val.shape == (n, m, p)
-    assert val.data_type() == ti.i32
+    assert val.dtype == ti.i32
 
 
 @ti.all_archs
@@ -30,7 +30,7 @@ def test_non_POT():
     blk3.place(val)
 
     assert val.shape == (n, m, p)
-    assert val.data_type() == ti.i32
+    assert val.dtype == ti.i32
 
 
 @ti.all_archs
@@ -46,7 +46,7 @@ def test_unordered():
     blk3 = blk2.dense(ti.j, p)
     blk3.place(val)
 
-    assert val.data_type() == ti.i32
+    assert val.dtype == ti.i32
     assert val.shape == (n, m, p)
     assert val.snode().parent(0) == val.snode()
     assert val.snode().parent() == blk3
@@ -79,7 +79,7 @@ def test_unordered_matrix():
     blk3.place(val)
 
     assert val.shape == (n, m, p)
-    assert val.data_type() == ti.i32
+    assert val.dtype == ti.i32
     assert val.loop_range().snode().parent(0) == val.loop_range().snode()
     assert val.loop_range().snode().parent() == blk3
     assert val.loop_range().snode().parent(1) == blk3
@@ -104,8 +104,10 @@ def test_deprecated():
     blk3.place(val, mat)
 
     assert val.dim() == 3
+    assert val.data_type() == ti.f32
     assert val.shape() == (n, m, p)
     assert mat.dim() == 3
+    assert mat.data_type() == ti.i32
     assert mat.shape() == (n, m, p)
     assert blk3.dim() == 3
     assert blk3.shape() == (n, m, p)

@@ -148,13 +148,10 @@ class KernelProfilerCUDA : public KernelProfilerBase {
 }  // namespace
 
 std::unique_ptr<KernelProfilerBase> make_profiler(Arch arch) {
-  if (arch == Arch::x64 || arch == Arch::arm64 || arch == Arch::metal ||
-      arch == Arch::opengl) {
-    return std::make_unique<DefaultProfiler>(arch);
-  } else if (arch == Arch::cuda) {
+  if (arch == Arch::cuda) {
     return std::make_unique<KernelProfilerCUDA>();
   } else {
-    TI_NOT_IMPLEMENTED;
+    return std::make_unique<DefaultProfiler>(arch);
   }
 }
 

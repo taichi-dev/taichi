@@ -17,10 +17,10 @@ NN = N, N
 W = 1
 L = W / N
 gravity = 0.5
-stiffness = 16
+stiffness = 1600
 damping = 2
-steps = 15
-dt = 5e-3
+steps = 30
+dt = 5e-4
 
 ### Physics
 
@@ -36,7 +36,7 @@ def init():
         x[i] = tl.vec((i + 0.5) * L - 0.5, 0.8).xzy
 
 
-links = [tl.vec(*_) for _ in [(-1, 0), (1, 0), (0, -1), (0, 1)]]
+links = [tl.vec(*_) for _ in [(-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (1, -1), (-1, 1), (1, 1)]]
 
 
 @ti.func
@@ -57,7 +57,8 @@ def substep():
         acc = x[i] * 0
         for d in ti.static(links):
             disp = x[tl.clamp(i + d, 0, tl.vec(*NN) - 1)] - x[i]
-            acc += disp * (disp.norm() - L) / L**2
+            length = L * float(d).norm()
+            acc += disp * (disp.norm() - length) / length**2
         v[i] += stiffness * acc * dt
     for i in ti.grouped(x):
         v[i].y -= gravity * dt

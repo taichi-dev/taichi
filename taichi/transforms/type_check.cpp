@@ -86,6 +86,8 @@ class TypeCheck : public IRVisitor {
     }
     auto common_container_type = promoted_type(stmt->ptr->ret_type.data_type,
                                                stmt->data->ret_type.data_type);
+
+    auto old_data = stmt->data;
     if (stmt->ptr->ret_type.data_type != stmt->data->ret_type.data_type) {
       stmt->data = insert_type_cast_before(stmt, stmt->data,
                                            stmt->ptr->ret_type.data_type);
@@ -94,7 +96,7 @@ class TypeCheck : public IRVisitor {
       TI_WARN(
           "[{}] Local store may lose precision (target = {}, value = {}, at",
           stmt->name(), stmt->ptr->ret_data_type_name(),
-          stmt->data->ret_data_type_name(), stmt->id);
+          old_data->ret_data_type_name(), stmt->id);
       fmt::print(stmt->tb);
     }
     stmt->ret_type = stmt->ptr->ret_type;

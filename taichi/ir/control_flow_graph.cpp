@@ -101,8 +101,7 @@ void CFGNode::reaching_definition_analysis(bool after_lower_access) {
     auto data_source_ptr = irpass::analysis::get_store_destination(stmt);
     if (data_source_ptr) {
       // stmt provides a data source
-      if (after_lower_access &&
-          !(stmt->is<AllocaStmt>() || stmt->is<LocalStoreStmt>())) {
+      if (after_lower_access && !(data_source_ptr->is<AllocaStmt>())) {
         // After lower_access, we only analyze local variables.
         continue;
       }

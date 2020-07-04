@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <chrono>
 #include <cstring>
-#include <iostream>
 #include <limits>
 #include <random>
 #include <string_view>
@@ -11,6 +10,7 @@
 #include "taichi/backends/metal/constants.h"
 #include "taichi/inc/constants.h"
 #include "taichi/math/arithmetic.h"
+#include "taichi/python/print_buffer.h"
 
 #ifdef TI_PLATFORM_OSX
 #include <sys/mman.h>
@@ -32,6 +32,14 @@ namespace shaders {
 
 using KernelTaskType = OffloadedStmt::TaskType;
 using BufferEnum = KernelAttributes::Buffers;
+
+inline int infer_msl_version(const TaichiKernelAttributes::UsedFeatures &f) {
+  if (f.simdgroup) {
+    // https://developer.apple.com/documentation/metal/mtllanguageversion/version2_1
+    return 131073;
+  }
+  return kMslVersionNone;
+}
 
 // This class requests the Metal buffer memory of |size| bytes from |mem_pool|.
 // Once allocated, it does not own the memory (hence the name "view"). Instead,
@@ -220,7 +228,8 @@ class CompiledTaichiKernel {
       : ctx_attribs(*params.ctx_attribs),
         used_features(params.ti_kernel_attribs->used_features) {
     auto *const device = params.device;
-    auto kernel_lib = new_library_with_source(device, params.mtl_source_code);
+    auto kernel_lib = new_library_with_source(device, params.mtl_source_code,
+                                              infer_msl_version(used_features));
     if (kernel_lib == nullptr) {
       TI_ERROR("Failed to compile Metal kernel! Generated code:\n\n{}",
                params.mtl_source_code);
@@ -668,11 +677,11 @@ class KernelManager::Impl {
         const auto dt = msg.pm_get_type(i);
         const int32_t x = msg.pm_get_data(i);
         if (dt == MsgType::I32) {
-          std::cout << x;
+          py_cout << x;
         } else if (dt == MsgType::F32) {
-          std::cout << *reinterpret_cast<const float *>(&x);
+          py_cout << *reinterpret_cast<const float *>(&x);
         } else if (dt == MsgType::Str) {
-          std::cout << print_strtable_.get(x);
+          py_cout << print_strtable_.get(x);
         } else {
           TI_ERROR("Unexecpted data type={}", dt);
         }
@@ -681,7 +690,7 @@ class KernelManager::Impl {
     }
 
     if (pa->next >= shaders::kMetalPrintBufferSize) {
-      std::cout << "...(maximum print buffer reached)\n";
+      py_cout << "...(maximum print buffer reached)\n";
     }
 
     pa->next = 0;

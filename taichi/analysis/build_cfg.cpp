@@ -15,7 +15,8 @@ class CFGBuilder : public IRVisitor {
   int current_stmt_id;
   int begin_location;
   std::vector<CFGNode *> prev_nodes;
-  bool in_offloaded_for;
+  OffloadedStmt *current_offload;
+  bool in_parallel_for;
 
  public:
   CFGBuilder()
@@ -23,7 +24,8 @@ class CFGBuilder : public IRVisitor {
         last_node_in_current_block(nullptr),
         current_stmt_id(-1),
         begin_location(-1),
-        in_offloaded_for(false) {
+        current_offload(nullptr),
+        in_parallel_for(false) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
     graph = std::make_unique<ControlFlowGraph>();
@@ -40,7 +42,7 @@ class CFGBuilder : public IRVisitor {
 
   CFGNode *new_node(int next_begin_location) {
     auto node = graph->push_back(current_block, begin_location, current_stmt_id,
-                                 in_offloaded_for, last_node_in_current_block);
+                                 in_parallel_for, last_node_in_current_block);
     for (auto &prev_node : prev_nodes) {
       CFGNode::add_edge(prev_node, node);
     }
@@ -125,14 +127,23 @@ class CFGBuilder : public IRVisitor {
   }
 
   void visit(RangeForStmt *stmt) override {
+    auto old_in_parallel_for = in_parallel_for;
+    if (!current_offload)
+      in_parallel_for = true;
     visit_loop(stmt->body.get(), new_node(-1), false);
+    in_parallel_for = old_in_parallel_for;
   }
 
   void visit(StructForStmt *stmt) override {
+    auto old_in_parallel_for = in_parallel_for;
+    if (!current_offload)
+      in_parallel_for = true;
     visit_loop(stmt->body.get(), new_node(-1), false);
+    in_parallel_for = old_in_parallel_for;
   }
 
   void visit(OffloadedStmt *stmt) override {
+    current_offload = stmt;
     if (stmt->prologue) {
       auto before_offload = new_node(-1);
       int offload_stmt_id = current_stmt_id;
@@ -149,10 +160,10 @@ class CFGBuilder : public IRVisitor {
       auto block_begin_index = graph->size();
       if (stmt->task_type == OffloadedStmt::TaskType::range_for ||
           stmt->task_type == OffloadedStmt::TaskType::struct_for) {
-        in_offloaded_for = true;
+        in_parallel_for = true;
       }
       stmt->body->accept(this);
-      in_offloaded_for = false;
+      in_parallel_for = false;
       prev_nodes.push_back(graph->back());
       // Container statements don't belong to any CFGNodes.
       begin_location = offload_stmt_id + 1;
@@ -168,6 +179,7 @@ class CFGBuilder : public IRVisitor {
       begin_location = offload_stmt_id + 1;
       CFGNode::add_edge(before_offload, graph->nodes[block_begin_index].get());
     }
+    current_offload = nullptr;
   }
 
   void visit(Block *block) override {

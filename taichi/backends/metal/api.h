@@ -3,11 +3,11 @@
 // Reference implementation:
 // https://github.com/halide/Halide/blob/master/src/runtime/metal.cpp
 
+#include <string>
+
 #include "taichi/common/trait.h"
 #include "taichi/lang_util.h"
 #include "taichi/platform/mac/objc_api.h"
-
-#include <string>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -42,8 +42,11 @@ nsobj_unique_ptr<MTLCommandBuffer> new_command_buffer(MTLCommandQueue *queue);
 nsobj_unique_ptr<MTLComputeCommandEncoder> new_compute_command_encoder(
     MTLCommandBuffer *buffer);
 
+// msl_version: Metal Shader Language version. 0 means not set.
+// See https://developer.apple.com/documentation/metal/mtllanguageversion
 nsobj_unique_ptr<MTLLibrary> new_library_with_source(MTLDevice *device,
-                                                     const std::string &source);
+                                                     const std::string &source,
+                                                     int msl_version);
 
 nsobj_unique_ptr<MTLFunction> new_function_with_name(MTLLibrary *library,
                                                      const std::string &name);

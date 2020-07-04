@@ -113,10 +113,10 @@ It is similar to Python-scope ``print``.
         # => 1
         ti.static_print(x.shape)
         # => (2, 3)
-        ti.static_print(x.data_type())
+        ti.static_print(x.dtype)
         # => DataType.float32
         for i in range(4):
-                ti.static_print(i.data_type())
+                ti.static_print(i.dtype)
                 # => DataType.int32
                 # will only print once
 
@@ -176,8 +176,7 @@ Debugging Tips
 --------------
 
 Debugging a Taichi program can be hard even with the builtin tools above.
-
-Here we showcase some common bugs that one may encounter in a Taichi program:
+Here we showcase some common bugs that one may encounter in a Taichi program.
 
 Static type system
 ++++++++++++++++++
@@ -227,7 +226,7 @@ Advanced Optimization
 +++++++++++++++++++++
 
 Taichi has an advanced optimization engine to make your Taichi kernel to be as fast as it could.
-But like what the ``gcc -O3`` does, sometimes advanced optimization can lead to bugs as it tries
+But like what ``gcc -O3`` does, advanced optimization may occasionally lead to bugs as it tries
 too hard. This includes runtime errors such as:
 
 ```RuntimeError: [verify.cpp:basic_verify@40] stmt 8 cannot have operand 7.```
@@ -244,4 +243,4 @@ optimization and see if the issue still exists:
 
     ...
 
-If turning off optimization fixes the issue, please report this bug on `GitHub <https://github.com/taichi-dev/taichi/issues/new?labels=potential+bug&template=bug_report.md>`_ to help us improve, thanks for the support!
+If turning off optimization fixes the issue, please report this bug on `GitHub <https://github.com/taichi-dev/taichi/issues/new?labels=potential+bug&template=bug_report.md>`_. Thank you!

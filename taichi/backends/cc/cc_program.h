@@ -1,7 +1,8 @@
 #pragma once
 
 #include "taichi/lang_util.h"
-#include <map>
+#include <vector>
+#include <memory>
 
 TI_NAMESPACE_BEGIN
 class DynamicLoader;
@@ -24,13 +25,12 @@ class CCProgram {
   ~CCProgram();
 
   void add_kernel(std::unique_ptr<CCKernel> kernel);
-  void add_runtime(std::unique_ptr<CCRuntime> runtime);
   CCFuncEntryType *load_kernel(std::string const &name);
-  void import_runtime(std::string const &name);
+  void init_runtime();
   void relink();
 
-  std::map<std::string, std::unique_ptr<CCKernel>> kernels;
-  std::map<std::string, std::unique_ptr<CCRuntime>> runtimes;
+  std::vector<std::unique_ptr<CCKernel>> kernels;
+  std::unique_ptr<CCRuntime> runtime;
   std::unique_ptr<CCLayout> layout;
   std::unique_ptr<DynamicLoader> dll;
   std::string dll_path;

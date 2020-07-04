@@ -82,6 +82,14 @@ Program::Program(Arch desired_arch) {
     }
   }
 
+  if (arch == Arch::cc) { 
+    if (!cccp::is_c_backend_available()) {
+      TI_WARN("No C backend detected.");
+      arch = host_arch();
+    }
+    cc_program = std::make_unique<cccp::CCProgram>();
+  }
+
   if (arch != desired_arch) {
     TI_WARN("Falling back to {}", arch_name(arch));
   }
@@ -328,7 +336,6 @@ void Program::materialize_layout() {
         opengl_struct_compiled_->root_size);
 #ifdef TI_WITH_CC
   } else if (config.arch == Arch::cc) {
-    cc_program = std::make_unique<cccp::CCProgram>();
     cccp::CCLayoutGen scomp(snode_root.get());
     cc_program->layout = scomp.compile();
 #endif

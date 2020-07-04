@@ -16,7 +16,7 @@ void CCKernel::compile() {
   obj_path = fmt::format("{}/{}.o", runtime_tmp_dir, name);
   src_path = fmt::format("{}/{}.c", runtime_tmp_dir, name);
 
-  std::ofstream(src_path) << source;
+  std::ofstream(src_path) << program->runtime->header << "\n" << source;
   TI_DEBUG("[cc] compiling [{}] -> [{}]:\n{}\n", name, obj_path, source);
   execute(cfg.compile_cmd, obj_path, src_path);
 }
@@ -57,10 +57,8 @@ void CCProgram::relink() {
 
   std::vector<std::string> objects;
   objects.push_back(layout->get_object());
-  for (auto const &[name, rt] : runtimes) {
-    objects.push_back(rt->get_object());
-  }
-  for (auto const &[name, ker] : kernels) {
+  objects.push_back(runtime->get_object());
+  for (auto const &ker : kernels) {
     objects.push_back(ker->get_object());
   }
 
@@ -77,31 +75,17 @@ void CCProgram::relink() {
 }
 
 void CCProgram::add_kernel(std::unique_ptr<CCKernel> kernel) {
-  TI_ASSERT_INFO(kernels.find(kernel->name) == kernels.end(),
-          "Kernel name already exists: {}", kernel->name);
-  kernels[kernel->name] = std::move(kernel);
+  kernels.push_back(std::move(kernel));
   need_relink = true;
 }
 
-void CCProgram::add_runtime(std::unique_ptr<CCRuntime> runtime) {
-  TI_ASSERT_INFO(runtimes.find(runtime->name) == runtimes.end(),
-          "Runtime module already exists: {}", runtime->name);
-  runtimes[runtime->name] = std::move(runtime);
-  need_relink = true;
-}
-
-void CCProgram::import_runtime(std::string const &name) {
-  static std::map<std::string, std::string> src_table;
-  if (src_table.empty()) {
-    src_table["base"] =
+// TODO: move this to cc_runtime.cpp:
+void CCProgram::init_runtime() {
+  this->runtime = std::make_unique<CRuntime>(
+#include "runtime/base.h"
+  ,
 #include "runtime/base.c"
-    ;
-  }
-  TI_DEBUG("[cc] importing runtime module [{}]", name);
-  auto it = src_table.find(name);
-  TI_ASSERT_INFO(it != src_table.end(), "Runtime module not found: {}", name);
-  auto rt = std::make_unique<CCRuntime>(name, it->second);
-  add_runtime(std::move(rt));
+  );
 }
 
 CCFuncEntryType *CCProgram::load_kernel(std::string const &name) {
@@ -110,6 +94,7 @@ CCFuncEntryType *CCProgram::load_kernel(std::string const &name) {
 }
 
 CCProgram::CCProgram() {
+  init_runtime();
 }
 
 CCProgram::~CCProgram() {

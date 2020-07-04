@@ -7,7 +7,7 @@
 #include "taichi/util/str.h"
 #include "cc_utils.h"
 
-#define C99_COMPAT 0
+#define C90_COMPAT 1
 
 TLANG_NAMESPACE_BEGIN
 namespace cccp {  // Codegen for C Compiler Processor
@@ -78,7 +78,7 @@ class CCTransformer : public IRVisitor {
   }
 
   std::string define_var(std::string const &type, std::string const &name) {
-    if (C99_COMPAT) {
+    if (C90_COMPAT) {
       emit_header("{} {};", type, name);
       return name;
     } else {
@@ -142,7 +142,7 @@ class CCTransformer : public IRVisitor {
 
   static std::string invoke_runtime(std::string const &name,
         std::string const &signature, std::string const &arguments) {
-    return fmt::format("RTi_{}_{}({})", name, signature, arguments);
+    return fmt::format("MTi_{}({}, {})", name, signature, arguments);
   }
 
   template <typename... Args>
@@ -200,7 +200,7 @@ class CCTransformer : public IRVisitor {
     const auto op = cc_atomic_op_type_symbol(stmt->op_type);
     const auto type_sig = cc_type_signature(stmt->dest->element_type());
     if (stmt->op_type == AtomicOpType::max || stmt->op_type == AtomicOpType::min) {
-      emit("*{} = {};", invoke_runtime(op, type_sig, "*{}, {}", dest_ptr, src_name));
+      emit("*{} = {};", invoke_runtime("atomic_" + op, type_sig, "*{}, {}", dest_ptr, src_name));
     } else {
       emit("*{} {}= {};", dest_ptr, op, src_name);
     }
@@ -289,7 +289,6 @@ FunctionType compile_kernel(Kernel *kernel) {
   auto ker_ptr = ker.get();
   auto program = kernel->program.cc_program.get();
   program->add_kernel(std::move(ker));
-  program->import_runtime("base");
   return [ker_ptr](Context &ctx) { return ker_ptr->launch(&ctx); };
 }
 

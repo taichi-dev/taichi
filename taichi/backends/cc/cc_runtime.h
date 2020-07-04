@@ -7,9 +7,9 @@ namespace cccp {
 
 class CCRuntime {
  public:
-  CCRuntime(std::string const &name,
-            std::string const &source = "")
-    : name(name), source(source) {
+  CCRuntime(std::string const &source,
+            std::string const &header)
+    : name(name), source(source), header(header) {
   }
 
   std::string get_object() {
@@ -18,8 +18,8 @@ class CCRuntime {
 
   void compile();
 
-  std::string name;
   std::string source;
+  std::string header;
 
  private:
   std::string src_path;

@@ -20,6 +20,12 @@ IRBuilder &current_ast_builder() {
   return context->builder();
 }
 
+CompileConfig &IRNode::get_config() {
+  auto kernel = get_kernel();
+  TI_ASSERT(kernel);
+  return kernel->program.config;
+}
+
 bool maybe_same_address(Stmt *var1, Stmt *var2) {
   // Return true when two statements might be the same address;
   // false when two statements cannot be the same address.

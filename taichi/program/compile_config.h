@@ -5,10 +5,6 @@
 
 TLANG_NAMESPACE_BEGIN
 
-// TODO(xumingkuan): Temporary variable for benchmarking.
-// TODO(xumingkuan): Will be removed in the future.
-extern bool advanced_optimization;
-
 struct CompileConfig {
   Arch arch;
   bool debug;
@@ -26,6 +22,7 @@ struct CompileConfig {
   bool lower_access;
   bool simplify_after_lower_access;
   bool demote_dense_struct_fors;
+  bool advanced_optimization;
   bool use_llvm;
   bool print_struct_llvm_ir;
   bool print_kernel_llvm_ir;

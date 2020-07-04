@@ -77,6 +77,6 @@ def test_static_assert_data_type_ok():
 
     @ti.kernel
     def func():
-        ti.static_assert(x.data_type() == ti.f32)
+        ti.static_assert(x.dtype == ti.f32)
 
     func()

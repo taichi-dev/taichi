@@ -21,23 +21,32 @@ void make_block_local_offload(OffloadedStmt *offload) {
     auto data_type = snode->dt;
     auto dtype_size = data_type_size(data_type);
 
-    auto get_block_stride = [&](int i) {
-      // TODO: fix the index correspondence here
+    // dim = Dimensionality of the BLS buffer and the block
+    auto dim = (int)pad.second.pad_size.size();
+    TI_ASSERT(dim == snode->num_active_indices);
+    auto bls_num_elements = pad.second.pad_size_linear();
+
+    auto block_stride = [&](int i) {
+      // TODO: fix the virtual/physical index correspondence here
       int stride = 1;
-      for (int j = i + 1; j < pad.second.pad_size.size(); j++) {
+      for (int j = i + 1; j < dim; j++) {
         stride *= pad.second.block_size[j];
       }
       return stride;
     };
 
-    auto get_pad_stride = [&](int i) {
-      // TODO: fix the index correspondence here
+    auto bls_stride = [&](int i) {
+      // TODO: fix the virtual/physical index correspondence here
+      // "pad" is the BLS buffer ("scratch pad")
+      // TODO: rename "pad"
       int stride = 1;
-      for (int j = i + 1; j < pad.second.pad_size.size(); j++) {
+      for (int j = i + 1; j < dim; j++) {
         stride *= pad.second.pad_size[j];
       }
       return stride;
     };
+
+    // TODO: improve IR builder to make this part easier to read
 
     // Step 1:
     // Fetch to block local memory storage
@@ -50,38 +59,57 @@ void make_block_local_offload(OffloadedStmt *offload) {
       // ensure alignment
       bls_offset += (dtype_size - bls_offset % dtype_size) % dtype_size;
 
-      Stmt *linear_index = nullptr;
+      Stmt *block_linear_index = nullptr;
 
-      for (int i = 0; i < pad.second.pad_size.size(); i++) {
-        // TODO: fix the index correspondence here
+      // Block linear index =
+      //   sum_i block_stride(i) * (loop_index[i] - loop_index_base[i])
+      for (int i = 0; i < dim; i++) {
+        // TODO: fix the virtual/physical index correspondence here
         auto inc = block->push_back<BinaryOpStmt>(
             BinaryOpType::mul,
-            block->push_back<ConstStmt>(TypedConstant(get_block_stride(i))),
+            block->push_back<ConstStmt>(TypedConstant(block_stride(i))),
             block->push_back<BinaryOpStmt>(
                 BinaryOpType::sub, block->push_back<LoopIndexStmt>(offload, i),
                 block->push_back<LoopIndexBaseStmt>(offload, i)));
-        if (linear_index) {
-          linear_index = block->push_back<BinaryOpStmt>(BinaryOpType::add,
-                                                        linear_index, inc);
+        if (block_linear_index) {
+          block_linear_index = block->push_back<BinaryOpStmt>(
+              BinaryOpType::add, block_linear_index, inc);
         } else {
-          linear_index = inc;
+          block_linear_index = inc;
         }
       }
 
-      // Unroll the loading while-loop here
+      /*
+      Note that since there are fewer elements in the block than in BLS,
+      each thread may have to fetch more than one element to BLS.
+      Therefore on CUDA we need something like
+
+      auto bls_element_id = block_linear_index;
+      while (bls_element_id < bls_size) {
+        i, j, k = bls_to_global(bls_element_id)
+        bls[bls_element_id] = x[i, j, k]
+        bls_element_id += block_dim;
+      }
+
+      Since we know block_dim and bls_size at compile time and there's usually
+      not too many iterations, we directly unroll this while loop for
+      performance.
+      */
+
+      // Unroll the while-loop
       int loop_offset = 0;
-      auto scratch_element_id = linear_index;
+      auto bls_element_id = block_linear_index;
       int block_dim = offload->block_dim;
-      while (loop_offset < pad.second.pad_size_linear()) {
+      while (loop_offset < bls_num_elements) {
         Block *element_block = nullptr;
         auto loop_offset_stmt =
             block->push_back<ConstStmt>(TypedConstant(loop_offset));
-        if (loop_offset + block_dim > pad.second.pad_size_linear()) {
-          // Need to create an IfStmt to safeguard
+        if (loop_offset + block_dim > bls_num_elements) {
+          // Need to create an IfStmt to safeguard since bls size may not be a
+          // multiple of block_size
           auto cond = block->push_back<BinaryOpStmt>(
-              BinaryOpType::cmp_lt, scratch_element_id,
-              block->push_back<ConstStmt>(
-                  TypedConstant(pad.second.pad_size_linear())));
+              BinaryOpType::cmp_lt, bls_element_id,
+              block->push_back<ConstStmt>(TypedConstant(bls_num_elements)));
           auto if_stmt = dynamic_cast<IfStmt *>(block->push_back<IfStmt>(cond));
           if_stmt->true_statements = std::make_unique<Block>();
           element_block = if_stmt->true_statements.get();
@@ -89,52 +117,62 @@ void make_block_local_offload(OffloadedStmt *offload) {
           element_block = block;
         }
 
-        auto bls_index = element_block->push_back<BinaryOpStmt>(
-            BinaryOpType::add, loop_offset_stmt, linear_index);
-        auto bls_index_bytes = element_block->push_back<BinaryOpStmt>(
-            BinaryOpType::mul, bls_index,
+        auto bls_element_id_this_iteration =
+            element_block->push_back<BinaryOpStmt>(
+                BinaryOpType::add, loop_offset_stmt, block_linear_index);
+
+        auto bls_element_offset_bytes = element_block->push_back<BinaryOpStmt>(
+            BinaryOpType::mul, bls_element_id_this_iteration,
             element_block->push_back<ConstStmt>(TypedConstant(dtype_size)));
 
-        std::vector<Stmt *> global_indices(pad.second.pad_size.size());
+        std::vector<Stmt *> global_indices(dim);
 
-        auto partial_indices = scratch_element_id;
-        for (int i = (int)pad.second.pad_size.size() - 1; i >= 0; i--) {
+        // Convert bls_element_id to global indices
+        // via a series of % and /
+        auto bls_element_id_partial = bls_element_id;
+        for (int i = dim - 1; i >= 0; i--) {
           auto size = element_block->push_back<ConstStmt>(
               TypedConstant(pad.second.pad_size[i]));
-          auto scratch_index = element_block->push_back<BinaryOpStmt>(
-              BinaryOpType::mod, partial_indices, size);
-          partial_indices = element_block->push_back<BinaryOpStmt>(
-              BinaryOpType::div, partial_indices, size);
+
+          auto bls_coord = element_block->push_back<BinaryOpStmt>(
+              BinaryOpType::mod, bls_element_id_partial, size);
+          bls_element_id_partial = element_block->push_back<BinaryOpStmt>(
+              BinaryOpType::div, bls_element_id_partial, size);
+
           auto global_index = element_block->push_back<BinaryOpStmt>(
               BinaryOpType::add,
               element_block->push_back<ConstStmt>(
                   TypedConstant(pad.second.bounds[0][i])),
-              scratch_index);
+              bls_coord);
+
           global_index = element_block->push_back<BinaryOpStmt>(
               BinaryOpType::add, global_index,
               element_block->push_back<LoopIndexBaseStmt>(offload, i));
           global_indices[i] = global_index;
         }
-        // Recompute global indices
+
         // TODO: do not use GlobalStore for BLS ptr.
-        auto glb_ptr =
+        // Fetch from global to BLS
+        auto global_pointer =
             element_block->push_back<GlobalPtrStmt>(snode, global_indices);
-        auto load = element_block->push_back<GlobalLoadStmt>(glb_ptr);
+        auto load = element_block->push_back<GlobalLoadStmt>(global_pointer);
         auto bls_ptr = element_block->push_back<BlockLocalPtrStmt>(
-            bls_index_bytes, VectorType(1, data_type));
+            bls_element_offset_bytes, VectorType(1, data_type));
         element_block->push_back<GlobalStoreStmt>(bls_ptr, load);
+
         loop_offset += block_dim;
-        scratch_element_id = block->push_back<BinaryOpStmt>(
-            BinaryOpType::add, scratch_element_id,
+        bls_element_id = block->push_back<BinaryOpStmt>(
+            BinaryOpType::add, bls_element_id,
             block->push_back<ConstStmt>(TypedConstant(block_dim)));
       }
     }
 
     // Step 2:
-    // Make loop body load BLS ptr instead of global ptr
+    // Make loop body load from BLS ptr instead of global ptr
     {
       std::vector<GlobalPtrStmt *> global_ptrs;
-      // TODO: no abuse of gather_statements...
+
+      // TODO: no more abuse of gather_statements...
       irpass::analysis::gather_statements(offload->body.get(), [&](Stmt *stmt) {
         if (auto global_ptr = stmt->cast<GlobalPtrStmt>()) {
           TI_ASSERT(global_ptr->width() == 1);
@@ -145,12 +183,14 @@ void make_block_local_offload(OffloadedStmt *offload) {
         return false;
       });
 
-      for (auto gbl_ptr : global_ptrs) {
+      for (auto global_ptr : global_ptrs) {
         VecStatement bls;
         Stmt *bls_element_offset = nullptr;
-        auto global_indices = gbl_ptr->indices;
-        for (int i = 0; i < pad.second.pad_size.size(); i++) {
-          // inc = stride * (gbl_idx - loop_base - lower)
+        auto global_indices = global_ptr->indices;
+        for (int i = 0; i < dim; i++) {
+          // BLS index = sum_i inc_i
+          // where inc_i =
+          //   bls_stride_i * (gbl_idx_i - loop_base_i - bls_lower_bound_i)
           auto inc = bls.push_back<BinaryOpStmt>(
               BinaryOpType::sub, global_indices[i],
               bls.push_back<LoopIndexBaseStmt>(offload, i));
@@ -159,7 +199,7 @@ void make_block_local_offload(OffloadedStmt *offload) {
               bls.push_back<ConstStmt>(TypedConstant(pad.second.bounds[0][i])));
           inc = bls.push_back<BinaryOpStmt>(
               BinaryOpType::mul, inc,
-              bls.push_back<ConstStmt>(TypedConstant(get_pad_stride(i))));
+              bls.push_back<ConstStmt>(TypedConstant(bls_stride(i))));
           if (!bls_element_offset) {
             bls_element_offset = inc;
           } else {
@@ -180,18 +220,18 @@ void make_block_local_offload(OffloadedStmt *offload) {
 
         bls.push_back<BlockLocalPtrStmt>(bls_element_offset,
                                          VectorType(1, data_type));
-        gbl_ptr->replace_with(std::move(bls));
+        global_ptr->replace_with(std::move(bls));
       }
     }
 
     // Step 3:
-    // Atomic-add block local contribution to its global version
+    // (TODO) Atomic-add block local contribution to its global version
     if (pad.second.total_flags & AccessFlag::write) {
       TI_NOT_IMPLEMENTED
     }
 
     // allocate storage for the BLS variable
-    bls_offset += dtype_size * pad.second.pad_size_linear();
+    bls_offset += dtype_size * bls_num_elements;
   }
 
   offload->bls_size = std::max(std::size_t(1), bls_offset);

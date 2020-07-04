@@ -118,7 +118,7 @@ def _test_bls_stencil(dim, N, bs, stencil, block_dim=None):
 
 def test_stencil_1d_trivial():
     # y[i] = x[i]
-    _test_bls_stencil(1, 128, bs=32, stencil=((0, )))
+    _test_bls_stencil(1, 128, bs=32, stencil=((0, ),))
 
 
 def test_stencil_1d():

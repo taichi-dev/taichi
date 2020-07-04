@@ -3,7 +3,6 @@ import numpy as np
 from taichi import approx
 import pytest
 
-
 @ti.all_archs
 def test_const_init():
     a = ti.Matrix(2, 3, dt=ti.i32, shape=())
@@ -446,3 +445,21 @@ def test_vector_xyzw_accessor():
     assert v[1, 0, 0].z == -3
     assert v[1, 0, 0].w == 4
     assert np.allclose(v.to_numpy()[1, 0, 0, :], np.array([6, 0, -3, 4]))
+
+
+@ti.host_arch_only
+def test_diag():
+    m1 = ti.Matrix(3, 3, dt=ti.f32, shape=())
+
+    @ti.kernel
+    def fill():
+        m1[None] = ti.Matrix.diag(dim=3, val=1.4)
+
+    fill()
+
+    for i in range(3):
+        for j in range(3):
+            if i == j:
+                assert m1[None][i, j] == approx(1.4)
+            else:
+                assert m1[None][i, j] == 0.0

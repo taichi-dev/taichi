@@ -16,7 +16,10 @@ void CCKernel::compile() {
   obj_path = fmt::format("{}/{}.o", runtime_tmp_dir, name);
   src_path = fmt::format("{}/{}.c", runtime_tmp_dir, name);
 
-  std::ofstream(src_path) << program->runtime->header << "\n" << source;
+  std::ofstream(src_path)
+        << program->runtime->header << "\n"
+        << program->layout->source << "\n"
+        << source;
   TI_DEBUG("[cc] compiling [{}] -> [{}]:\n{}\n", name, obj_path, source);
   execute(cfg.compile_cmd, obj_path, src_path);
 }
@@ -34,18 +37,18 @@ void CCLayout::compile() {
   src_path = fmt::format("{}/_root.c", runtime_tmp_dir);
 
   std::ofstream(src_path) << source
-                          << "\n\nstruct S0root *_RTi_get_root() {\n"
-                          << "\tstatic struct S0root r;\n\treturn &r;\n}\n";
+                          << "\n\nstruct S0root *RTi_get_root() {\n"
+                          << "\tstatic struct S0root ti_root;\n\treturn &ti_root;\n}\n";
   TI_DEBUG("[cc] compiling root struct -> [{}]:\n{}\n", obj_path, source);
   execute(cfg.compile_cmd, obj_path, src_path);
 }
 
 void CCRuntime::compile() {
-  obj_path = fmt::format("{}/_rt_{}.o", runtime_tmp_dir, name);
-  src_path = fmt::format("{}/_rt_{}.c", runtime_tmp_dir, name);
+  obj_path = fmt::format("{}/_runtime.o", runtime_tmp_dir);
+  src_path = fmt::format("{}/_runtime.c", runtime_tmp_dir);
 
-  std::ofstream(src_path) << source;
-  TI_DEBUG("[cc] compiling runtime [{}] -> [{}]:\n{}\n", name, obj_path, source);
+  std::ofstream(src_path) << header << "\n" << source;
+  TI_DEBUG("[cc] compiling runtime -> [{}]:\n{}\n", obj_path, source);
   execute(cfg.compile_cmd, obj_path, src_path);
 }
 
@@ -81,11 +84,12 @@ void CCProgram::add_kernel(std::unique_ptr<CCKernel> kernel) {
 
 // TODO: move this to cc_runtime.cpp:
 void CCProgram::init_runtime() {
-  this->runtime = std::make_unique<CRuntime>(
+  runtime = std::make_unique<CCRuntime>(
 #include "runtime/base.h"
   ,
 #include "runtime/base.c"
   );
+  runtime->compile();
 }
 
 CCFuncEntryType *CCProgram::load_kernel(std::string const &name) {

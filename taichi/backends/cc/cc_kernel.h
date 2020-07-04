@@ -13,7 +13,7 @@ class CCKernel {
   CCKernel(CCProgram *program,
            std::string const &source,
            std::string const &name)
-      : name(name), source(source), program(program) {
+      : program(program), name(name), source(source) {
   }
 
   void compile();

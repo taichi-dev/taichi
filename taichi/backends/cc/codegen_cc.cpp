@@ -7,7 +7,7 @@
 #include "taichi/util/str.h"
 #include "cc_utils.h"
 
-#define C90_COMPAT 1
+#define C90_COMPAT 0
 
 TLANG_NAMESPACE_BEGIN
 namespace cccp {  // Codegen for C Compiler Processor
@@ -37,8 +37,6 @@ class CCTransformer : public IRVisitor {
 
   void run() {
     this->lower_ast();
-    emit_header("#include <stdio.h>");
-    emit_header("\n{}", layout->source);
     kernel->ir->accept(this);
   }
 
@@ -88,7 +86,7 @@ class CCTransformer : public IRVisitor {
 
   void visit(GetRootStmt *stmt) override {
     auto root = kernel->program.snode_root.get();
-    emit("{} = _RTi_get_root();",
+    emit("{} = RTi_get_root();",
          define_var(get_node_ptr_name(root), stmt->raw_name()));
     root_stmt = stmt;
   }
@@ -140,16 +138,39 @@ class CCTransformer : public IRVisitor {
          stmt->val[0].stringify());
   }
 
-  static std::string invoke_runtime(std::string const &name,
-        std::string const &signature, std::string const &arguments) {
-    return fmt::format("MTi_{}({}, {})", name, signature, arguments);
+  static std::string _get_libc_function_name(std::string name, DataType dt) {
+    switch (dt) {
+    case DataType::i32:
+      return name;
+    case DataType::i64:
+      return "ll" + name;
+    case DataType::f32:
+      return name + "f";
+    case DataType::f64:
+      return name;
+    default:
+      TI_ERROR("Unsupported function \"{}\" for DataType={} on C backend",
+          name, data_type_name(dt));
+    }
+  }
+
+  static std::string get_libc_function_name(std::string name, DataType type) {
+    if (name == "max" || name == "min" || name == "abs")
+      name = "f" + name;
+    return _get_libc_function_name(name, type);
+  }
+
+  static std::string invoke_libc(std::string name,
+        DataType dt, std::string arguments) {
+    auto func_name = get_libc_function_name(name, dt);
+    return fmt::format("{}({})", func_name, arguments);
   }
 
   template <typename... Args>
-  static inline std::string invoke_runtime(std::string const &name,
-          std::string const &signature, std::string const &fmt, Args &&... args) {
+  static inline std::string invoke_libc(std::string name,
+          DataType dt, std::string const &fmt, Args &&... args) {
     auto arguments = fmt::format(fmt, std::forward<Args>(args)...);
-    return invoke_runtime(name, signature, arguments);
+    return invoke_libc(name, dt, arguments);
   }
 
   void visit(BinaryOpStmt *bin) override {
@@ -158,14 +179,14 @@ class CCTransformer : public IRVisitor {
     const auto lhs_name = bin->lhs->raw_name();
     const auto rhs_name = bin->rhs->raw_name();
     const auto bin_name = bin->raw_name();
-    const auto type_sig = cc_type_signature(bin->element_type());
+    const auto type = bin->element_type();
     const auto binop = binary_op_type_symbol(bin->op_type);
     const auto var = define_var(dt_name, bin_name);
     if (cc_is_binary_op_infix(bin->op_type)) {
       emit("{} = {} {} {};", var, lhs_name, binop,
            rhs_name);
     } else {
-      emit("{} = {};", var, invoke_runtime(binop, type_sig, "{}, {}", lhs_name, rhs_name));
+      emit("{} = {};", var, invoke_libc(binop, type, "{}, {}", lhs_name, rhs_name));
     }
   }
 
@@ -174,7 +195,7 @@ class CCTransformer : public IRVisitor {
     const auto dt_name = cc_data_type_name(stmt->element_type());
     const auto operand_name = stmt->operand->raw_name();
     const auto dest_name = stmt->raw_name();
-    const auto type_sig = cc_type_signature(stmt->element_type());
+    const auto type = stmt->element_type();
     const auto op = unary_op_type_symbol(stmt->op_type);
     const auto var = define_var(dt_name, dest_name);
     if (stmt->op_type == UnaryOpType::cast_value) {
@@ -190,7 +211,7 @@ class CCTransformer : public IRVisitor {
     } else if (cc_is_unary_op_infix(stmt->op_type)) {
       emit("{} = {}{};", var, op, operand_name);
     } else {
-      emit("{} = {};", var, invoke_runtime(op, type_sig, "{}", operand_name));
+      emit("{} = {};", var, invoke_libc(op, type, "{}", operand_name));
     }
   }
 
@@ -198,9 +219,11 @@ class CCTransformer : public IRVisitor {
     const auto dest_ptr = stmt->dest->raw_name();
     const auto src_name = stmt->val->raw_name();
     const auto op = cc_atomic_op_type_symbol(stmt->op_type);
-    const auto type_sig = cc_type_signature(stmt->dest->element_type());
+    const auto type = stmt->element_type();
+    auto var = define_var(stmt->raw_name(), cc_data_type_name(type));
+    emit("{} = *{};", var, dest_ptr);
     if (stmt->op_type == AtomicOpType::max || stmt->op_type == AtomicOpType::min) {
-      emit("*{} = {};", invoke_runtime("atomic_" + op, type_sig, "*{}, {}", dest_ptr, src_name));
+      emit("*{} = {};", invoke_libc(op, type, "*{}, {}", dest_ptr, src_name));
     } else {
       emit("*{} {}= {};", dest_ptr, op, src_name);
     }

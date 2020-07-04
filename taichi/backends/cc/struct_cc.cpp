@@ -24,7 +24,7 @@ void CCLayoutGen::generate_types(SNode *snode) {
   } else if (snode->type == SNodeType::root) {
     emit("struct {} {{", struct_name);
     generate_children(snode);
-    emit("}} *_RTi_get_root();");
+    emit("}} *RTi_get_root();");
 
   } else if (snode->type == SNodeType::dense) {
     emit("struct {} {{", struct_name);

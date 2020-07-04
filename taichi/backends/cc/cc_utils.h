@@ -12,24 +12,26 @@ namespace cccp {
 
 inline std::string cc_data_type_name(DataType dt) {
   switch (dt) {
+    case DataType::i8:
+      return "char";
+    case DataType::i16:
+      return "short";
     case DataType::i32:
       return "int";
+    case DataType::i64:
+      return "long long";
+    case DataType::u8:
+      return "unsigned char";
+    case DataType::u16:
+      return "unsigned short";
+    case DataType::u32:
+      return "unsigned int";
+    case DataType::u64:
+      return "unsigned long long";
     case DataType::f32:
       return "float";
     case DataType::f64:
       return "double";
-    default:
-      TI_ERROR("Unsupported DataType={} on C backend", data_type_name(dt));
-  }
-}
-inline std::string cc_type_signature(DataType dt) {
-  switch (dt) {
-    case DataType::i32:
-      return "i";
-    case DataType::f32:
-      return "f";
-    case DataType::f64:
-      return "d";
     default:
       TI_ERROR("Unsupported DataType={} on C backend", data_type_name(dt));
   }

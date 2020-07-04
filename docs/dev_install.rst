@@ -26,7 +26,8 @@ Installing Dependencies
 
 - Make sure you have ``clang`` with version >= 7
 
-  * On Windows: Download ``clang-8`` via `this link <https://releases.llvm.org/8.0.0/LLVM-8.0.0-win64.exe>`_.
+  * On Windows: Download from `clang-8 <https://releases.llvm.org/8.0.0/LLVM-8.0.0-win64.exe>`_ or 
+    `clang-10 <https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/clang-10.0.0-win.zip>`_.
     Make sure you add the ``bin`` folder containing ``clang.exe`` to the ``PATH`` environment variable.
 
   * On OS X: you don't need to do anything.
@@ -49,13 +50,22 @@ Installing Dependencies
         sudo make install
 
 
-- Make sure you have LLVM 8.0.1/10.0.0. Note that Taichi uses a **customized LLVM** so the pre-built binaries from the LLVM official website or other sources probably doesn't work.
-  Here we provide LLVM 8.0.1 binaries customized for Taichi, which may or may not work depending on your system environment:
-  `Linux <https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/taichi-llvm-8.0.1-linux-x64.zip>`_,
-  `OS X <https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/taichi-llvm-8.0.1.zip>`_,
-  `Windows <https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/taichi-llvm-8.0.1-msvc2017.zip>`_.
+- Make sure you have LLVM 8.0.1/10.0.0. Note that Taichi uses a **customized LLVM** so the pre-built binaries from the LLVM official website or other sources probably won't work.
+  Here we provide LLVM binaries customized for Taichi, which may or may not work depending on your system environment:
 
-   If the downloaded LLVM does not work, please build from source:
+  * `LLVM 8.0.1 for Linux <https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/taichi-llvm-8.0.1-linux-x64.zip>`_
+  * `LLVM 8.0.1 for OS X <https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/taichi-llvm-8.0.1.zip>`_
+  * `LLVM 8.0.1 for Windows MSVC 2017 <https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/taichi-llvm-8.0.1-msvc2017.zip>`_
+  * `LLVM 10.0.0 for Linux <https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-linux.zip>`_
+  * `LLVM 10.0.0 for Windows MSVC 2019 <https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-msvc2019.zip>`_
+
+.. note::
+
+    On Windows, if you use the pre-built LLVM for Taichi, please add ``$LLVM_FOLDER/bin`` to ``PATH``.
+    Later, when you build Taichi using ``CMake``, set ``LLVM_DIR`` to ``$LLVM_FOLDER/lib/cmake/llvm``.
+
+
+- If the downloaded LLVM does not work, please build from source:
 
   * On Linux or OS X:
 
@@ -84,10 +94,10 @@ Installing Dependencies
     .. code-block:: bash
 
       # LLVM 8.0.1 + MSVC 2017
-      cmake .. -G"Visual Studio 15 2017 Win64"  -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON -Thost=x64 -DLLVM_BUILD_TESTS:BOOL=OFF -DCMAKE_INSTALL_PREFIX=installed
+      cmake .. -G"Visual Studio 15 2017 Win64" -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON -Thost=x64 -DLLVM_BUILD_TESTS:BOOL=OFF -DCMAKE_INSTALL_PREFIX=installed
 
       # LLVM 10.0.0 + MSVC 2019
-      cmake .. -G"Visual Studio 16 2019" -A x64  -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON -Thost=x64 -DLLVM_BUILD_TESTS:BOOL=OFF -DCMAKE_INSTALL_PREFIX=installed
+      cmake .. -G"Visual Studio 16 2019" -A x64 -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON -Thost=x64 -DLLVM_BUILD_TESTS:BOOL=OFF -DCMAKE_INSTALL_PREFIX=installed
 
     - Then open ``LLVM.sln`` and use Visual Studio 2017+ to build.
     - Please make sure you are using the ``Release`` configuration. After building the ``INSTALL`` project (under folder ``CMakePredefinedTargets`` in the Solution Explorer window).
@@ -96,9 +106,6 @@ Installing Dependencies
 
     Please add ``build/installed/bin`` to ``PATH``.
     Later, when you build Taichi using ``CMake``, set ``LLVM_DIR`` to ``build/installed/lib/cmake/llvm``.
-
-- On Windows, if you use the pre-built LLVM for Taichi, please add ``$LLVM_FOLDER/bin`` to ``PATH``.
-  Later, when you build Taichi using ``CMake``, set ``LLVM_DIR`` to ``$LLVM_FOLDER/lib/cmake/llvm``.
 
 
 Setting up CUDA (optional)
@@ -122,7 +129,7 @@ Setting up Taichi for development
 
     .. code-block:: bash
 
-      export TAICHI_REPO_DIR=/home/XXX/taichi  # Path to your taichi repository
+      export TAICHI_REPO_DIR=/path/to/taichi  # Path to your taichi repository
       export PYTHONPATH=$TAICHI_REPO_DIR/python:$PYTHONPATH
       export PATH=$TAICHI_REPO_DIR/bin:$PATH
       # export PATH=/opt/llvm/bin:$PATH  # Uncomment if your llvm-8 or clang-8 is in /opt
@@ -162,7 +169,7 @@ Troubleshooting Developer Installation
 --------------------------------------
 
 - If ``make`` fails to compile and reports ``fatal error: 'spdlog/XXX.h' file not found``,
-  please try run ``git submodule update --init --recursive --depth=1``.
+  please try runing ``git submodule update --init --recursive --depth=1``.
 
 
 - If importing Taichi causes
@@ -174,7 +181,7 @@ Troubleshooting Developer Installation
   Please try adding ``TAICHI_REPO_DIR`` to environment variables, see :ref:`dev_env_settings`.
 
 - If the build succeeded but running any Taichi code results in errors like ``Bitcode file (/tmp/taichi-tero94pl/runtime//runtime_x64.bc) not found``,
-  please make sure ``clang`` is in your ``PATH``:
+  please double check ``clang`` is in your ``PATH``:
 
   .. code-block:: bash
   

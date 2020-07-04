@@ -3,6 +3,7 @@ import numpy as np
 from taichi import approx
 import pytest
 
+
 @ti.all_archs
 def test_const_init():
     a = ti.Matrix(2, 3, dt=ti.i32, shape=())

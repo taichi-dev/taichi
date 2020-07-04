@@ -154,10 +154,16 @@ class CCTransformer : public IRVisitor {
     }
   }
 
-  static std::string get_libc_function_name(std::string name, DataType type) {
-    if (name == "max" || name == "min" || name == "abs")
-      name = "f" + name;
-    return _get_libc_function_name(name, type);
+  static std::string get_libc_function_name(std::string name, DataType dt) {
+    name = _get_libc_function_name(name, dt);
+    if (name == "max" || name == "min" || name == "abs") {
+      if (is_real(dt)) {
+        name = "f" + name;
+      } else if (name != "abs") {
+        name = "RTi_" + name;
+      }
+    }
+    return name;
   }
 
   static std::string invoke_libc(std::string name,
@@ -220,7 +226,7 @@ class CCTransformer : public IRVisitor {
     const auto src_name = stmt->val->raw_name();
     const auto op = cc_atomic_op_type_symbol(stmt->op_type);
     const auto type = stmt->element_type();
-    auto var = define_var(stmt->raw_name(), cc_data_type_name(type));
+    auto var = define_var(cc_data_type_name(type), stmt->raw_name());
     emit("{} = *{};", var, dest_ptr);
     if (stmt->op_type == AtomicOpType::max || stmt->op_type == AtomicOpType::min) {
       emit("*{} = {};", invoke_libc(op, type, "*{}, {}", dest_ptr, src_name));

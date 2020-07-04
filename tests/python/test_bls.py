@@ -131,9 +131,14 @@ def test_stencil_2d():
     _test_bls_stencil(2, 128, bs=16, stencil=stencil)
 
 
+def test_stencil_2d_nonsquare():
+    stencil = [(0, 0), (0, -1), (0, 1), (1, 0)]
+    _test_bls_stencil(2, 128, bs=(4, 16), stencil=stencil)
+
+
 def test_stencil_3d():
     stencil = [(-1, -1, -1), (2, 0, 1)]
-    _test_bls_stencil(3, 64, bs=4, stencil=stencil)
+    _test_bls_stencil(3, 64, bs=(4, 8, 16), stencil=stencil)
 
 
 # TODO: multiple-variable BLS

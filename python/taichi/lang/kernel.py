@@ -101,8 +101,6 @@ class Func:
         ast.increment_lineno(tree, oinspect.getsourcelines(self.func)[1] - 1)
 
         local_vars = {}
-        #frame = inspect.currentframe().f_back
-        #global_vars = dict(frame.f_globals, **frame.f_locals)
         global_vars = _get_global_vars(self.func)
 
         exec(
@@ -200,7 +198,7 @@ class KernelArgError(Exception):
 
 
 def _get_global_vars(func):
-    # Discussions: https://github.com/yuanming-hu/taichi/issues/282
+    # Discussions: https://github.com/taichi-dev/taichi/issues/282
     import copy
     global_vars = copy.copy(func.__globals__)
 

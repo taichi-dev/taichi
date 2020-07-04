@@ -98,6 +98,7 @@ class EnvironConfig:
 def init(arch=None,
          default_fp=None,
          default_ip=None,
+         _test_mode=False,
          **kwargs):
     import taichi as ti
 
@@ -152,12 +153,12 @@ def init(arch=None,
     env.add('async', False)
     env.add('use_unified_memory', True)
     env.add('print_benchmark_stat', False)
-    env.add('device_memory_fraction', None, float)
-    env.add('device_memory_GB', None, float)
+    # sync default values with compiler_config.cpp:
+    env.add('device_memory_fraction', 0.0, float)
+    env.add('device_memory_GB', 1.0, float)
     for key in env.cfg_keys:
         value = env[key]
-        if value is not None:
-            setattr(ti.cfg, key, value)
+        setattr(ti.cfg, key, value)
 
     # dispatch configurations that are not in ti.cfg:
     ti.set_gdb_trigger(env['gdb_trigger'])
@@ -172,6 +173,9 @@ def init(arch=None,
         arch = ti.core.arch_from_name(env_arch)
     ti.cfg.arch = adaptive_arch_select(arch)
     print(f'[Taichi] Starting on arch={ti.core.arch_name(ti.cfg.arch)}')
+
+    if _test_mode:
+        return env.args
 
     # create a new program:
     ti.get_runtime().create_program()

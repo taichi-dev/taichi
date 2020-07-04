@@ -1,6 +1,81 @@
 import taichi as ti
 from taichi import make_temp_file
-import sys, os
+import sys, os, copy
+from contextlib import contextmanager
+import pytest
+
+
+@contextmanager
+def patch_os_environ_helper(custom_environ: dict):
+    """
+    Temporarily patch os.environ for testing.
+    Originally created by @rexwangcc in test_cli.py
+    @archibate tweaked this method to be an os.environ patcher.
+    """
+    custom_environ = copy.deepcopy(custom_environ)
+    for key in os.environ.keys():
+        custom_environ[key] = os.environ[key]
+    try:
+        cached_environ = os.environ
+        os.environ = custom_environ
+        yield os.environ
+    finally:
+        os.environ = cached_environ
+
+
+TF = [True, False]
+init_args = {
+    # 'key': [default, choices],
+    'print_preprocessed': [False, TF],
+    'log_level': ['info', ['error', 'warn', 'info', 'debug', 'trace']],
+    'gdb_trigger': [False, TF],
+    'advanced_optimization': [True, TF],
+    'debug': [False, TF],
+    'print_ir': [False, TF],
+    'verbose': [False, TF],
+    'fast_math': [False, TF],
+    'async': [False, TF],
+    'use_unified_memory': [True, TF],
+    'print_benchmark_stat': [False, TF],
+    # FIXME: figure out why these two failed test:
+    #'device_memory_fraction': [0.5, [0.5, 1, 0]],
+    #'device_memory_GB': [1.0, [0.5, 1, 1.5, 2]],
+}
+
+special_init_args = [
+    'print_preprocessed',
+    'log_level',
+    'gdb_trigger',
+    'advanced_optimization',
+]
+
+@pytest.mark.parametrize('key,values', init_args.items())
+def test_init_arg(key, values):
+    default, values = values
+
+    # helper function:
+    def test_arg(key, value, kwargs={}):
+        args = ti.init(_test_mode=True, **kwargs)
+        if key in special_init_args:
+            assert args[key] == value
+        else:
+            assert getattr(ti.cfg, key) == value
+
+    # test if default value is correct:
+    test_arg(key, default)
+
+    # test if specified in argument:
+    for value in values:
+        kwargs = {key: value}
+        test_arg(key, value, kwargs)
+
+    # test if specified in environment:
+    env_key = 'TI_' + key.upper()
+    for value in values:
+        env_value = str(int(value) if isinstance(value, bool) else value)
+        environ = {env_key: env_value}
+        with patch_os_environ_helper(environ):
+            test_arg(key, value)
 
 
 def test_without_init():

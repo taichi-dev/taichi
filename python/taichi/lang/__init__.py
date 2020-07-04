@@ -65,22 +65,54 @@ def reset():
     runtime = get_runtime()
 
 
+class EnvironConfig:
+    def __init__(self, args):
+        self.args = args
+        self.cfg_keys = []
+
+    def add(self, key, default, cast=None):
+        cast = cast or self.bool_int
+
+        self.cfg_keys.append(key)
+        # TI_ASYNC=   : no effect
+        # TI_ASYNC=0  : False
+        # TI_ASYNC=1  : True
+        name = 'TI_' + key.upper()
+        value = os.environ.get(name, '')
+        if len(value):
+            self.args[key] = cast(value)
+        elif key not in self.args:
+            self.args[key] = default
+
+    def __getitem__(self, key):
+        return self.args[key]
+
+    def __setitem__(self, key, value):
+        self.args[key] = value
+
+    @staticmethod
+    def bool_int(x):
+        return bool(int(x))
+
+
 def init(arch=None,
          default_fp=None,
          default_ip=None,
-         print_preprocessed=None,
-         debug=None,
          **kwargs):
+    import taichi as ti
+
     # Make a deepcopy in case these args reference to items from ti.cfg, which are
     # actually references. If no copy is made and the args are indeed references,
     # ti.reset() could override the args to their default values.
     default_fp = _deepcopy(default_fp)
     default_ip = _deepcopy(default_ip)
     kwargs = _deepcopy(kwargs)
-    import taichi as ti
     ti.reset()
 
-    if default_fp is None:  # won't override
+    env = EnvironConfig(kwargs)
+
+    # configure default_fp/ip:
+    if default_fp is None:
         dfl_fp = os.environ.get("TI_DEFAULT_FP")
         if dfl_fp == 32:
             default_fp = core.DataType.f32
@@ -89,6 +121,7 @@ def init(arch=None,
         elif dfl_fp is not None:
             raise ValueError(
                 f'Unrecognized TI_DEFAULT_FP: {dfl_fp}, should be 32 or 64')
+
     if default_ip is None:
         dfl_ip = os.environ.get("TI_DEFAULT_IP")
         if dfl_ip == 32:
@@ -99,83 +132,48 @@ def init(arch=None,
             raise ValueError(
                 f'Unrecognized TI_DEFAULT_IP: {dfl_ip}, should be 32 or 64')
 
-    if print_preprocessed is None:  # won't override
-        print_preprocessed = os.environ.get("TI_PRINT_PREPROCESSED")
-        if print_preprocessed is not None:
-            print_preprocessed = bool(int(print_preprocessed))
-
     if default_fp is not None:
         ti.get_runtime().set_default_fp(default_fp)
     if default_ip is not None:
         ti.get_runtime().set_default_ip(default_ip)
-    if print_preprocessed is not None:
-        ti.get_runtime().print_preprocessed = print_preprocessed
 
-    if debug is None:
-        debug = bool(int(os.environ.get('TI_DEBUG', '0')))
-    if debug:
-        ti.set_logging_level(ti.TRACE)
-    ti.cfg.debug = debug
+    # configurations that are not in ti.cfg:
+    env.add('print_preprocessed', False)
+    env.add('log_level', 'info', str)
+    env.add('gdb_trigger', False)
+    env.add('advanced_optimization', True)
 
-    unified_memory = os.environ.get('TI_USE_UNIFIED_MEMORY', '')
-    if unified_memory != '':
-        use_unified_memory = bool(int(unified_memory))
-        ti.cfg.use_unified_memory = use_unified_memory
-        if not use_unified_memory:
-            ti.trace(
-                'Unified memory disabled (env TI_USE_UNIFIED_MEMORY=0). This is experimental.'
-            )
+    # configurations in ti.cfg:
+    env.cfg_keys = []
+    env.add('debug', False)
+    env.add('print_ir', False)
+    env.add('verbose', False)
+    env.add('fast_math', False)
+    env.add('async', False)
+    env.add('use_unified_memory', True)
+    env.add('print_benchmark_stat', False)
+    env.add('device_memory_fraction', None, float)
+    env.add('device_memory_GB', None, float)
+    for key in env.cfg_keys:
+        value = env[key]
+        if value is not None:
+            setattr(ti.cfg, key, value)
 
-    for k, v in kwargs.items():
-        setattr(ti.cfg, k, v)
+    # dispatch configurations that are not in ti.cfg:
+    ti.set_gdb_trigger(env['gdb_trigger'])
+    ti.get_runtime().print_preprocessed = env['print_preprocessed']
+    ti.core.toggle_advanced_optimization(env['advanced_optimization'])
+    ti.set_logging_level(env['log_level'].lower())
 
-    def bool_int(x):
-        return bool(int(x))
-
-    def environ_config(key, cast=bool_int):
-        name = 'TI_' + key.upper()
-        value = os.environ.get(name, '')
-        if len(value):
-            setattr(ti.cfg, key, cast(value))
-
-        # TI_ASYNC=   : not work
-        # TI_ASYNC=0  : False
-        # TI_ASYNC=1  : True
-
-    # does override
-    environ_config("print_ir")
-    environ_config("verbose")
-    environ_config("fast_math")
-    environ_config("async")
-    environ_config("print_benchmark_stat")
-    environ_config("device_memory_fraction", float)
-    environ_config("device_memory_GB", float)
-
-    # Q: Why not environ_config("gdb_trigger")?
-    # A: We don't have ti.cfg.gdb_trigger yet.
-    # Discussion: https://github.com/taichi-dev/taichi/pull/879
-    gdb_trigger = os.environ.get('TI_GDB_TRIGGER', '')
-    if len(gdb_trigger):
-        ti.set_gdb_trigger(bool(int(gdb_trigger)))
-
-    advanced_optimization = os.environ.get('TI_ADVANCED_OPTIMIZATION', '')
-    if len(advanced_optimization):
-        ti.core.toggle_advanced_optimization(bool(int(advanced_optimization)))
-
-    # Q: Why not environ_config("arch", ti.core.arch_from_name)?
-    # A: We need adaptive_arch_select for all.
-    env_arch = os.environ.get("TI_ARCH")
+    # select arch (backend):
+    env_arch = os.environ.get('TI_ARCH')
     if env_arch is not None:
         ti.info(f'Following TI_ARCH setting up for arch={env_arch}')
         arch = ti.core.arch_from_name(env_arch)
-
     ti.cfg.arch = adaptive_arch_select(arch)
     print(f'[Taichi] Starting on arch={ti.core.arch_name(ti.cfg.arch)}')
 
-    log_level = os.environ.get("TI_LOG_LEVEL")
-    if log_level is not None:
-        ti.set_logging_level(log_level.lower())
-
+    # create a new program:
     ti.get_runtime().create_program()
 
 

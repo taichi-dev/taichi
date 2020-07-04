@@ -25,5 +25,3 @@ cpu_memory_bound: cpu_memory_bound.cpp
 cuda_atomic_reduce: cuda_atomic_reduce.cu
 	nvcc -std=c++14 cuda_atomic_reduce.cu -o cuda_atomic_reduce
 
-shared: shared.cu
-	nvcc -std=c++14 shared.cu -o shared

@@ -52,6 +52,7 @@ class _Extension(object):
         self.sparse = core.sparse
         self.data64 = core.data64
         self.adstack = core.adstack
+        self.bls = core.bls
 
 
 extension = _Extension()

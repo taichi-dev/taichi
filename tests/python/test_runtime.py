@@ -49,6 +49,7 @@ special_init_args = [
     'advanced_optimization',
 ]
 
+
 @pytest.mark.parametrize('key,values', init_args.items())
 def test_init_arg(key, values):
     default, values = values

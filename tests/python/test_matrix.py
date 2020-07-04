@@ -115,6 +115,18 @@ def test_constant_matrices():
     func(5)
 
 
+@ti.host_arch_only
+@ti.must_throw(ti.TaichiSyntaxError)
+def test_huge_matrix():
+    m = ti.Matrix(32, 128, ti.f32, ())
+
+    @ti.kernel
+    def func():
+        m[None][1, 1] = 0
+
+    func()
+
+
 @pytest.mark.parametrize('ops', vector_operation_types)
 @ti.host_arch_only
 def test_taichi_scope_vector_operations_with_global_vectors(ops):

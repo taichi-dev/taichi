@@ -30,8 +30,6 @@ class AccessAnalysis : public BasicStmtVisitor {
     for (int i = 0; i < (int)block->statements.size(); i++) {
       block->statements[i]->accept(this);
     }
-
-    pads->print();
   }
 
   void generate_block_indices(SNode *snode, std::vector<int> index, int s) {
@@ -94,7 +92,6 @@ class AccessAnalysis : public BasicStmtVisitor {
           matching_indices = false;
         }
       }
-      TI_P(matching_indices);
       if (matching_indices) {
         /*
         TI_INFO("Detected regular access");

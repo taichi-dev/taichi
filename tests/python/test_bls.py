@@ -1,5 +1,62 @@
 import taichi as ti
 
+@ti.require(ti.extension.bls)
+@ti.all_archs
+def test_simple_1d():
+    x, y = ti.var(ti.f32), ti.var(ti.f32)
+
+    N = 64
+    bs = 16
+
+    ti.root.pointer(ti.i, N // bs).dense(ti.i, bs).place(x, y)
+
+    @ti.kernel
+    def populate():
+        for i in range(N):
+            x[i] = i
+
+    @ti.kernel
+    def copy():
+        ti.cache_shared(x)
+        for i in x:
+            y[i] = x[i]
+
+
+    populate()
+    copy()
+
+    for i in range(N):
+        assert y[i] == i
+
+@ti.require(ti.extension.bls)
+@ti.all_archs
+def test_simple_2d():
+    x, y = ti.var(ti.f32), ti.var(ti.f32)
+
+    N = 16
+    bs = 16
+
+    ti.root.pointer(ti.ij, N // bs).dense(ti.ij, bs).place(x, y)
+
+    @ti.kernel
+    def populate():
+        for i,j in ti.ndrange(N, N):
+            x[i, j] = i - j
+
+    @ti.kernel
+    def copy():
+        ti.cache_shared(x)
+        for i, j in x:
+            y[i, j] = x[i, j]
+
+
+    populate()
+    copy()
+
+    for i in range(N):
+        for j in range(N):
+            assert y[i, j] == i - j
+
 
 @ti.require(ti.extension.bls)
 @ti.all_archs

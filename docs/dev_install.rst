@@ -145,6 +145,68 @@ Setting up Taichi for development
 - Execute ``python3 -m taichi test`` to run all the tests. It may take up to 5 minutes to run all tests.
 - Check out ``examples`` for runnable examples. Run them with ``python3``.
 
+Docker
+------
+For those who prefer to use Docker, we also provide a Dockerfile which helps
+setup the Taichi development environment with CUDA support based on Ubuntu docker image.
+
+.. note::
+    In order to follow the instructions in this section, please make sure you have the 
+    `Docker DeskTop (or Engine for Linux) <https://www.docker.com/products/docker-desktop>`_ installed and set up
+    properly.
+
+Build the Docker Image
+**********************
+From within the root directory of the taichi Git repository, execute ``docker build -t taichi:master .`` to build a
+Docker image based off the local master branch tagged with *master*. Since this builds the image from source, please
+expect up to 40 mins build time if you don't have cached Docker image layers.
+
+.. note::
+    In order to save the time on building Docker images, you could always visit our `Docker Hub repository <https://hub.docker.com/r/taichidev/taichi>`_ and pull the
+    versions of pre-built images you would like to use. Currently the builds are triggered per taichi Github release.
+
+    For example, to pull a image built from release v0.6.17, run ``docker pull taichidev/taichi:v0.6.17``
+
+Use Docker Image on macOS (cpu only)
+************************************
+1. Make sure ``XQuartz`` and ``socat`` are installed:
+
+.. code-block:: bash
+
+    brew cask install xquartz
+    brew install socat
+
+2. Temporally disable the xhost access-control: ``xhost +``
+3. Start the Docker container with ``docker run -it -e DISPLAY=$(ipconfig getifaddr en0):0 taichidev/taichi:v0.6.17``
+4. Do whatever you want within the container, e.g. you could run tests or an example, try: ``ti test`` or ``ti example mpm88``
+5. Exit from the container with ``exit`` or ``ctrl+D``
+6. [To keep your xhost safe] Re-enable the xhost access-control: ``xhost -``
+
+Use Docker Image on Ubuntu (with CUDA support)
+**********************************************
+1. Make sure your host machine has CUDA properly installed and configured. Usually you could verify it by running ``nvidia-smi`` 
+2. Make sure ` NVIDIA Container Toolkit <https://github.com/NVIDIA/nvidia-docker>`_ is properly installed:
+
+.. code-block:: bash
+
+    distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+    curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
+    curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
+
+    sudo apt-get update && sudo apt-get install -y nvidia-container-toolkit
+    sudo systemctl restart docker
+
+3. Make sure ``xorg`` is installed: ``sudo apt-get install xorg``
+4. Temporally disable the xhost access-control: ``xhost +``
+5. Start the Docker container with ``sudo docker run -it --gpus all -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix taichidev/taichi:v0.6.17``
+6. Do whatever you want within the container, e.g. you could run tests or an example, try: ``ti test`` or ``ti example mpm88``
+7. Exit from the container with ``exit`` or ``ctrl+D``
+8. [To keep your xhost safe] Re-enable the xhost access-control: ``xhost -``
+
+.. warning::
+    The nature of Docker container determines that no changes to the file system on the container could be preserved
+    once you exit from the container. If you want to use Docker as a persistent development environment, we recommend
+    you `mount the taichi Git repository to the container as a volume <https://docs.docker.com/storage/volumes/>`_ and set the Python path to the mounted directory. 
 
 Troubleshooting
 ---------------

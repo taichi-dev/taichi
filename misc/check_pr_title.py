@@ -75,7 +75,7 @@ if is_release:
         exit(f'Invalid SemVer version: {ver}')
     try:
         oldver = get_old_ver()
-    except:
+    except ValueError:
         pass
     else:
         if ver not in [oldver.bump_minor(), oldver.bump_patch()]:

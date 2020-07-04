@@ -148,7 +148,7 @@ def test_kernel_continue_in_nested_if_3():
     assert x[0] == 0
 
 
-@ti.all_archs
+@ti.archs_excluding(ti.opengl)
 def test_kernel_continue_bitmasked():
     N = 32
     x = ti.var(ti.f32)

@@ -112,13 +112,10 @@ def subscript(value, *indices):
 def chain_compare(comparators, ops):
     assert len(comparators) == len(ops) + 1, \
       f'Chain comparison invoked with {len(comparators)} comparators but {len(ops)} operators'
-    evaluated_comparators = []
-    for i in range(len(comparators)):
-        evaluated_comparators += [expr_init(comparators[i])]
-    ret = expr_init(True)
+    ret = True
     for i in range(len(ops)):
-        lhs = evaluated_comparators[i]
-        rhs = evaluated_comparators[i + 1]
+        lhs = comparators[i]
+        rhs = comparators[i + 1]
         if ops[i] == 'Lt':
             now = lhs < rhs
         elif ops[i] == 'LtE':
@@ -133,7 +130,7 @@ def chain_compare(comparators, ops):
             now = lhs != rhs
         else:
             assert False, f'Unknown operator {ops[i]}'
-        ret = ret.logical_and(now)
+        ret = logical_and(ret, now)
     return ret
 
 
@@ -153,7 +150,6 @@ class PyTaichi:
         self.target_tape = None
         self.inside_complex_kernel = False
         self.kernels = kernels or []
-        Expr.materialize_layout_callback = self.materialize
 
     def get_num_compiled_functions(self):
         return len(self.compiled_functions) + len(self.compiled_grad_functions)
@@ -172,15 +168,10 @@ class PyTaichi:
         if self.prog is None:
             self.prog = taichi_lang_core.Program()
 
-    def try_materialize(self):
-        if not Expr.layout_materialized:
-            Expr.materialize_layout_callback()
-
     def materialize(self):
         if self.materialized:
             return
         self.create_program()
-        Expr.layout_materialized = True
 
         def layout():
             for func in self.layout_functions:
@@ -198,8 +189,7 @@ class PyTaichi:
         if self.prog:
             self.prog.finalize()
             self.prog = None
-        Expr.materialize_layout_callback = None
-        Expr.layout_materialized = False
+        self.materialized = False
 
     def get_tape(self, loss=None):
         from .tape import Tape
@@ -300,8 +290,13 @@ def var(dt, shape=None, offset=None, needs_grad=False):
     assert (offset is not None and shape is None
             ) == False, f'The shape cannot be None when offset is being set'
 
-    assert not get_runtime(
-    ).materialized, 'No new variables can be declared after kernel invocations or Python-scope tensor accesses.'
+    if get_runtime().materialized:
+        raise RuntimeError(
+            "No new variables can be declared after materialization, i.e. kernel invocations "
+            "or Python-scope tensor accesses. I.e., data layouts must be specified before "
+            "any computation. Try appending ti.init() or ti.reset() "
+            "right after 'import taichi as ti' if you are using Jupyter notebook."
+        )
 
     # primal
     x = Expr(taichi_lang_core.make_id_expr(""))

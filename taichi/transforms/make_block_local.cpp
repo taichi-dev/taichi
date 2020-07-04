@@ -24,6 +24,7 @@ void make_block_local_offload(OffloadedStmt *offload) {
     // dim = Dimensionality of the BLS buffer and the block
     auto dim = (int)pad.second.pad_size.size();
     TI_ASSERT(dim == snode->num_active_indices);
+
     auto bls_num_elements = pad.second.pad_size_linear();
 
     auto block_stride = [&](int i) {
@@ -49,7 +50,7 @@ void make_block_local_offload(OffloadedStmt *offload) {
     // TODO: improve IR builder to make this part easier to read
 
     // Step 1:
-    // Fetch to block local memory storage
+    // Fetch to BLS
     {
       if (offload->prologue == nullptr) {
         offload->prologue = std::make_unique<Block>();
@@ -93,43 +94,45 @@ void make_block_local_offload(OffloadedStmt *offload) {
 
       Since we know block_dim and bls_size at compile time and there's usually
       not too many iterations, we directly unroll this while loop for
-      performance.
+      performance when constructing prologues/epilogues.
       */
 
       // Unroll the while-loop
       int loop_offset = 0;
-      auto bls_element_id = block_linear_index;
       int block_dim = offload->block_dim;
       while (loop_offset < bls_num_elements) {
         Block *element_block = nullptr;
         auto loop_offset_stmt =
             block->push_back<ConstStmt>(TypedConstant(loop_offset));
+
+        auto bls_element_id_this_iteration = block->push_back<BinaryOpStmt>(
+            BinaryOpType::add, loop_offset_stmt, block_linear_index);
+
+        auto bls_element_offset_bytes = block->push_back<BinaryOpStmt>(
+            BinaryOpType::mul, bls_element_id_this_iteration,
+            block->push_back<ConstStmt>(TypedConstant(dtype_size)));
+
         if (loop_offset + block_dim > bls_num_elements) {
           // Need to create an IfStmt to safeguard since bls size may not be a
-          // multiple of block_size
+          // multiple of block_size, and this iteration some threads may go over
+          // bls_num_elements ("block-stride" loop)
           auto cond = block->push_back<BinaryOpStmt>(
-              BinaryOpType::cmp_lt, bls_element_id,
+              BinaryOpType::cmp_lt, bls_element_id_this_iteration,
               block->push_back<ConstStmt>(TypedConstant(bls_num_elements)));
           auto if_stmt = dynamic_cast<IfStmt *>(block->push_back<IfStmt>(cond));
           if_stmt->true_statements = std::make_unique<Block>();
           element_block = if_stmt->true_statements.get();
         } else {
+          // No need to create an if since every thread is within
+          // bls_num_elements.
           element_block = block;
         }
-
-        auto bls_element_id_this_iteration =
-            element_block->push_back<BinaryOpStmt>(
-                BinaryOpType::add, loop_offset_stmt, block_linear_index);
-
-        auto bls_element_offset_bytes = element_block->push_back<BinaryOpStmt>(
-            BinaryOpType::mul, bls_element_id_this_iteration,
-            element_block->push_back<ConstStmt>(TypedConstant(dtype_size)));
 
         std::vector<Stmt *> global_indices(dim);
 
         // Convert bls_element_id to global indices
-        // via a series of % and /
-        auto bls_element_id_partial = bls_element_id;
+        // via a series of % and /.
+        auto bls_element_id_partial = bls_element_id_this_iteration;
         for (int i = dim - 1; i >= 0; i--) {
           auto size = element_block->push_back<ConstStmt>(
               TypedConstant(pad.second.pad_size[i]));
@@ -161,14 +164,11 @@ void make_block_local_offload(OffloadedStmt *offload) {
         element_block->push_back<GlobalStoreStmt>(bls_ptr, load);
 
         loop_offset += block_dim;
-        bls_element_id = block->push_back<BinaryOpStmt>(
-            BinaryOpType::add, bls_element_id,
-            block->push_back<ConstStmt>(TypedConstant(block_dim)));
       }
     }
 
     // Step 2:
-    // Make loop body load from BLS ptr instead of global ptr
+    // Make loop body load from BLS instead of global tensors
     {
       std::vector<GlobalPtrStmt *> global_ptrs;
 
@@ -225,7 +225,7 @@ void make_block_local_offload(OffloadedStmt *offload) {
     }
 
     // Step 3:
-    // (TODO) Atomic-add block local contribution to its global version
+    // (TODO) Atomic-add/write BLS contribution to its global version
     if (pad.second.total_flags & AccessFlag::write) {
       TI_NOT_IMPLEMENTED
     }

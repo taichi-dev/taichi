@@ -33,6 +33,7 @@ class UnreachableCodeEliminator : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
   bool modified;
   UselessContinueEliminator useless_continue_eliminator;
+  DelayedIRModifier modifier;
 
   UnreachableCodeEliminator() : modified(false) {
     allow_undefined_visitor = true;
@@ -87,16 +88,20 @@ class UnreachableCodeEliminator : public BasicStmtVisitor {
     if (if_stmt->cond->is<ConstStmt>() && if_stmt->cond->width() == 1) {
       if (if_stmt->cond->as<ConstStmt>()->val[0].equal_value(0)) {
         // if (0)
-        if (if_stmt->true_statements) {
-          if_stmt->true_statements = nullptr;
-          modified = true;
-        }
+        modifier.insert_before(
+            if_stmt,
+            VecStatement(std::move(if_stmt->false_statements->statements)));
+        modifier.erase(if_stmt);
+        modified = true;
+        return;
       } else {
         // if (1)
-        if (if_stmt->false_statements) {
-          if_stmt->false_statements = nullptr;
-          modified = true;
-        }
+        modifier.insert_before(
+            if_stmt,
+            VecStatement(std::move(if_stmt->true_statements->statements)));
+        modifier.erase(if_stmt);
+        modified = true;
+        return;
       }
     }
     if (if_stmt->true_statements)
@@ -110,6 +115,7 @@ class UnreachableCodeEliminator : public BasicStmtVisitor {
     while (true) {
       UnreachableCodeEliminator eliminator;
       node->accept(&eliminator);
+      eliminator.modifier.modify_ir();
       if (eliminator.modified ||
           eliminator.useless_continue_eliminator.modified) {
         modified = true;

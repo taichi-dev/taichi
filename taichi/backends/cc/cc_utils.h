@@ -22,13 +22,50 @@ inline std::string cc_data_type_name(DataType dt) {
       TI_ERROR("Unsupported DataType={} on C backend", data_type_name(dt));
   }
 }
-
-inline std::string get_func_sym(std::string const &name) {
-  return fmt::format("Ti_{}", name);
+inline std::string cc_type_signature(DataType dt) {
+  switch (dt) {
+    case DataType::i32:
+      return "int";
+    case DataType::f32:
+      return "float";
+    case DataType::f64:
+      return "double";
+    default:
+      TI_ERROR("Unsupported DataType={} on C backend", data_type_name(dt));
+  }
 }
 
-inline std::string get_data_sym(std::string const &name) {
-  return fmt::format("ti_{}", name);
+inline std::string cc_atomic_op_type_symbol(AtomicOpType op) {
+  switch (op) {
+    case AtomicOpType::add:
+      return "+";
+    case AtomicOpType::sub:
+      return "-";
+    case AtomicOpType::bit_or:
+      return "|";
+    case AtomicOpType::bit_xor:
+      return "^";
+    case AtomicOpType::bit_and:
+      return "&";
+    case AtomicOpType::max:
+      return "max";
+    case AtomicOpType::min:
+      return "min";
+    default:
+      TI_ERROR("Unsupported AtomicOpType={} on C backend", atomic_op_type_name(op));
+  }
+}
+
+inline bool cc_is_binary_op_infix(BinaryOpType op) {
+  switch (op) {
+    case BinaryOpType::max:
+    case BinaryOpType::min:
+    case BinaryOpType::atan2:
+    case BinaryOpType::pow:
+      return false;
+    default:
+      return true;
+  }
 }
 
 template <typename... Args>

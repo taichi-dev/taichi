@@ -33,8 +33,8 @@ void CCLayout::compile() {
   src_path = fmt::format("{}/_root.c", runtime_tmp_dir);
 
   std::ofstream(src_path) << source
-                          << "\n\nstruct S0root *_Ti_get_root() {\n\tstatic "
-                             "struct S0root r;\n\treturn &r;\n}\n";
+                          << "\n\nstruct S0root *_RTi_get_root() {\n"
+                          << "\tstatic struct S0root r;\n\treturn &r;\n}\n";
   TI_DEBUG("[cc] compiling root struct -> [{}]:\n{}\n", obj_path, source);
   execute(cfg.compile_cmd, obj_path, src_path);
 }
@@ -70,7 +70,7 @@ void CCProgram::add_kernel(std::unique_ptr<CCKernel> kernel) {
 
 CCFuncEntryType *CCProgram::load_kernel(std::string const &name) {
   return reinterpret_cast<CCFuncEntryType *>(
-      dll->load_function(get_func_sym(name)));
+      dll->load_function("Ti_" + name));
 }
 
 CCProgram::CCProgram() {

@@ -88,7 +88,7 @@ class CCTransformer : public IRVisitor {
 
   void visit(GetRootStmt *stmt) override {
     auto root = kernel->program.snode_root.get();
-    emit("{} = _Ti_get_root();",
+    emit("{} = _RTi_get_root();",
          define_var(get_node_ptr_name(root), stmt->raw_name()));
     root_stmt = stmt;
   }
@@ -147,8 +147,47 @@ class CCTransformer : public IRVisitor {
     const auto rhs_name = bin->rhs->raw_name();
     const auto bin_name = bin->raw_name();
     const auto binop = binary_op_type_symbol(bin->op_type);
-    emit("{} = {} {} {};", define_var(dt_name, bin_name), lhs_name, binop,
-         rhs_name);
+    if (cc_is_binary_op_infix(bin->op_type)) {
+      emit("{} = {} {} {};", define_var(dt_name, bin_name), lhs_name, binop,
+           rhs_name);
+    } else {
+      emit("{} = {}({}, {});", define_var(dt_name, bin_name), binop, lhs_name,
+           rhs_name);
+    }
+  }
+
+  static std::string invoke_runtime(std::string const &name,
+        std::string const &signature, std::string const &arguments)
+  {
+    return fmt::format("RTi_{}_{}({})", name, signature, arguments);
+  }
+
+  template <typename... Args>
+  static inline std::string invoke_runtime(std::string const &name,
+          std::string const &signature, std::string const &fmt, Args &&... args) {
+    auto arguments = fmt::format(fmt, std::forward<Args>(args)...);
+    return invoke_runtime(name, signature, arguments);
+  }
+
+  void visit(AtomicOpStmt *stmt) override {
+    const auto dest_ptr = stmt->dest->raw_name();
+    const auto src_name = stmt->val->raw_name();
+    const auto op = cc_atomic_op_type_symbol(stmt->op_type);
+    const auto type_sig = cc_type_signature(stmt->dest->element_type());
+    if (stmt->op_type == AtomicOpType::max || stmt->op_type == AtomicOpType::min) {
+      emit("*{} = {};", invoke_runtime(op, type_sig, "*{}, {}", dest_ptr, src_name));
+    } else {
+      emit("*{} {}= {};", dest_ptr, op, src_name);
+    }
+  }
+
+  void visit(LinearizeStmt *stmt) override {
+    std::string val = "0";
+    for (int i = 0; i < (int)stmt->inputs.size(); i++) {
+      val = fmt::format("({} * {} + {})", val, stmt->strides[i],
+                        stmt->inputs[i]->raw_name());
+    }
+    emit("{} = {};", define_var("int", stmt->raw_name()), val);
   }
 
   void visit(PrintStmt *stmt) override {
@@ -175,8 +214,7 @@ class CCTransformer : public IRVisitor {
   }
 
   void generate_serial_kernel(OffloadedStmt *stmt) {
-    auto kernel_sym_name = get_func_sym(kernel->name);
-    emit_header("void {}(void) {{", kernel_sym_name);
+    emit_header("void Ti_{}(void) {{", kernel->name);
     {
       ScopedIndent _s1(line_appender);
       ScopedIndent _s2(line_appender_header);

@@ -406,6 +406,10 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
   }
 
   void visit(AtomicOpStmt *stmt) override {
+    if (!stmt->dest->is<AllocaStmt>()) {
+      generic_visit(stmt);
+      return;
+    }
     if (visit_operand(stmt, stmt->locate_operand(&stmt->val)))
       throw IRModified();
     TI_ASSERT(stmt->width() == 1);
@@ -442,8 +446,8 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
       }
     }
     if (op->is<GlobalPtrStmt>()) {
-      TI_ASSERT(!op->has_global_side_effect());
       auto copy = op->clone();
+      copy->as<GlobalPtrStmt>()->activate = false;
       stmt_to_offloaded[copy.get()] = stmt_to_offloaded[stmt];
       stmt->set_operand(index, copy.get());
       stmt->insert_before_me(std::move(copy));
@@ -462,9 +466,7 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
     return true;
   }
 
-  // Generic visitor
-  void visit(Stmt *stmt) override {
-    TI_ASSERT(stmt->width() == 1);
+  void generic_visit(Stmt *stmt) {
     int n_op = stmt->num_operands();
     bool modified = false;
     for (int i = 0; i < n_op; i++) {
@@ -475,15 +477,13 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
       throw IRModified();
   }
 
+  void visit(Stmt *stmt) override {
+    TI_ASSERT(stmt->width() == 1);
+    generic_visit(stmt);
+  }
+
   void preprocess_container_stmt(Stmt *stmt) override {
-    int n_op = stmt->num_operands();
-    bool modified = false;
-    for (int i = 0; i < n_op; i++) {
-      if (visit_operand(stmt, i))
-        modified = true;
-    }
-    if (modified)
-      throw IRModified();
+    generic_visit(stmt);
   }
 
  public:

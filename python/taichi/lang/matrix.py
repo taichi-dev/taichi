@@ -506,9 +506,11 @@ class Matrix(TaichiOperations):
         ret = Matrix(dim, dim)
         for i in range(dim):
             for j in range(dim):
-                ret.set_entry(i, j, 0)
-        for i in range(dim):
-            ret.set_entry(i, i, val)
+                if i == j:
+                    ret.set_entry(i, j, val)
+                else:
+                    ret.set_entry(i, j, 0 * val)
+                    # TODO: need a more systematic way to create a "0" with the right type
         return ret
 
     def loop_range(self):

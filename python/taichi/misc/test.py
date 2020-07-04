@@ -23,3 +23,11 @@ def approx(expected, **kwargs):
 
 def allclose(x, y, **kwargs):
     return x == approx(y, **kwargs)
+
+
+def make_temp_file(*args, **kwargs):
+    import os
+    from tempfile import mkstemp
+    fd, name = mkstemp(*args, **kwargs)
+    os.close(fd)
+    return name

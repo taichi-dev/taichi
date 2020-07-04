@@ -73,9 +73,13 @@ if is_release:
         ver = semver.VersionInfo.parse(ver)
     except ValueError:
         exit(f'Invalid SemVer version: {ver}')
-    oldver = get_old_ver()
-    if ver not in [oldver.bump_minor(), oldver.bump_patch()]:
-        exit(f'Version bump incorrect: {oldver} -> {ver}')
+    try:
+        oldver = get_old_ver()
+    except:
+        pass
+    else:
+        if ver not in [oldver.bump_minor(), oldver.bump_patch()]:
+            exit(f'Version bump incorrect: {oldver} -> {ver}')
 else:
     x = title.split(']')[-1].strip()
     if x[0].islower():

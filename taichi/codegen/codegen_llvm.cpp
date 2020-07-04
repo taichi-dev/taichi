@@ -1328,7 +1328,6 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
 
     parent_coordinates = element.get_ptr("pcoord");
 
-    // create_call("print_pcoord", {get_runtime(), parent_coordinates});
     create_call(refine, {parent_coordinates, new_coordinates,
                          builder->CreateLoad(loop_index)});
 
@@ -1476,7 +1475,6 @@ void CodeGenLLVM::visit(BlockLocalPtrStmt *stmt) {
   auto ptr_type =
       llvm::PointerType::get(tlctx->get_data_type(stmt->ret_type.data_type), 0);
   llvm_val[stmt] = builder->CreatePointerCast(ptr, ptr_type);
-  // call("print_int", get_runtime(), llvm_val[stmt->offset]);
 }
 
 void CodeGenLLVM::visit(InternalFuncStmt *stmt) {

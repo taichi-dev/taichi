@@ -29,8 +29,6 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 
   CodeGenLLVMCUDA(Kernel *kernel, IRNode *ir = nullptr)
       : CodeGenLLVM(kernel, ir) {
-#if defined(TI_WITH_CUDA)
-#endif
   }
 
   FunctionType compile_module_to_executable() override {
@@ -453,11 +451,8 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   }
 
   void create_bls_buffer(OffloadedStmt *stmt) {
-    auto type = llvm::ArrayType::get(
-        llvm::Type::getInt8Ty(*llvm_context),
-        stmt->bls_size);  // It's OK to use 0 bytes for shared memory
-                          // placeholder since we specify shared memory size on
-                          // kernel launches
+    auto type = llvm::ArrayType::get(llvm::Type::getInt8Ty(*llvm_context),
+                                     stmt->bls_size);
     bls_buffer = new GlobalVariable(
         *module, type, false, llvm::GlobalValue::InternalLinkage, nullptr,
         "bls_buffer", nullptr, llvm::GlobalVariable::NotThreadLocal,

@@ -151,7 +151,7 @@ For those who prefer to use Docker, we also provide a Dockerfile which helps
 setup the Taichi development environment with CUDA support based on Ubuntu docker image.
 
 .. note::
-    In order to follow the instructions in this section, please make sure you have the 
+    In order to follow the instructions in this section, please make sure you have the
     `Docker DeskTop (or Engine for Linux) <https://www.docker.com/products/docker-desktop>`_ installed and set up
     properly.
 
@@ -184,7 +184,7 @@ Use Docker Image on macOS (cpu only)
 
 Use Docker Image on Ubuntu (with CUDA support)
 **********************************************
-1. Make sure your host machine has CUDA properly installed and configured. Usually you could verify it by running ``nvidia-smi`` 
+1. Make sure your host machine has CUDA properly installed and configured. Usually you could verify it by running ``nvidia-smi``
 2. Make sure ` NVIDIA Container Toolkit <https://github.com/NVIDIA/nvidia-docker>`_ is properly installed:
 
 .. code-block:: bash
@@ -206,7 +206,7 @@ Use Docker Image on Ubuntu (with CUDA support)
 .. warning::
     The nature of Docker container determines that no changes to the file system on the container could be preserved
     once you exit from the container. If you want to use Docker as a persistent development environment, we recommend
-    you `mount the taichi Git repository to the container as a volume <https://docs.docker.com/storage/volumes/>`_ and set the Python path to the mounted directory. 
+    you `mount the taichi Git repository to the container as a volume <https://docs.docker.com/storage/volumes/>`_ and set the Python path to the mounted directory.
 
 Troubleshooting
 ---------------

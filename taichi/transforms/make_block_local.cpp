@@ -211,8 +211,6 @@ void make_block_local(IRNode *root) {
   }
   typecheck(root);
   fix_block_parents(root);
-  // irpass::re_id(root);
-  // irpass::print(root);
 }
 
 }  // namespace irpass

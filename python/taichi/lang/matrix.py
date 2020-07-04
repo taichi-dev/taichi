@@ -112,8 +112,8 @@ class Matrix(TaichiOperations):
                 dim = len(shape)
                 if layout.soa:
                     for i, e in enumerate(self.entries):
-                        ti.root.dense(ti.index_nd(dim), shape).place(e,
-                                                                     offset=offset)
+                        ti.root.dense(ti.index_nd(dim),
+                                      shape).place(e, offset=offset)
                         if needs_grad:
                             ti.root.dense(ti.index_nd(dim),
                                           shape).place(e.grad, offset=offset)
@@ -124,8 +124,8 @@ class Matrix(TaichiOperations):
                     if needs_grad:
                         for i, e in enumerate(self.entries):
                             var_list.append(e.grad)
-                    ti.root.dense(ti.index_nd(dim), shape).place(*tuple(var_list),
-                                                                 offset=offset)
+                    ti.root.dense(ti.index_nd(dim),
+                                  shape).place(*tuple(var_list), offset=offset)
             else:
                 assert offset is None, f"shape cannot be None when offset is being set"
 
@@ -137,8 +137,7 @@ class Matrix(TaichiOperations):
                 ' You may use a tensor to store a large matrix like this, e.g.:\n'
                 f'    x = ti.var(ti.f32, ({self.n}, {self.m})).\n'
                 ' See https://taichi.readthedocs.io/en/stable/tensor_matrix.html#matrix-size'
-                ' for more details.'
-                )
+                ' for more details.')
 
     def is_global(self):
         results = [False for _ in self.entries]

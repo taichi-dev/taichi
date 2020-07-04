@@ -255,7 +255,7 @@ class IRNode {
   }
   virtual ~IRNode() = default;
 
-  virtual CompileConfig &get_config();
+  CompileConfig &get_config() const;
 
   template <typename T>
   bool is() const {

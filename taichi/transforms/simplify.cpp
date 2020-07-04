@@ -270,8 +270,9 @@ class BasicBlockSimplify : public IRVisitor {
           if (same) {
             // no store to the var?
             bool has_related_store = false;
+            auto advanced_optimization = block->get_config().advanced_optimization;
             for (int j = i + 1; j < current_stmt_id; j++) {
-              if (!root->get_config().advanced_optimization) {
+              if (!advanced_optimization) {
                 if (block->statements[j]
                         ->is_container_statement()) {  // no if, while, etc..
                   has_related_store = true;
@@ -313,7 +314,7 @@ class BasicBlockSimplify : public IRVisitor {
       auto stmt_id = block->locate(containing_statement);
       TI_ASSERT(stmt_id != -1);
       for (int i = stmt_id - 1; i >= 0; i--) {
-        if (!root->get_config().advanced_optimization) {
+        if (!block->get_config().advanced_optimization) {
           auto &bstmt = block->statements[i];
           // Find a previous store
           if (auto s = bstmt->cast<AtomicOpStmt>()) {
@@ -383,7 +384,7 @@ class BasicBlockSimplify : public IRVisitor {
           if (same) {
             bool has_load = false;
             for (int j = i + 1; j < current_stmt_id; j++) {
-              if (!root->get_config().advanced_optimization) {
+              if (!block->get_config().advanced_optimization) {
                 if (block->statements[j]
                         ->is_container_statement()) {  // no if, while, etc..
                   has_load = true;
@@ -436,7 +437,7 @@ class BasicBlockSimplify : public IRVisitor {
       bool has_related = false;
       for (int i = current_stmt_id + 1; i < (int)block->statements.size();
            i++) {
-        if (!root->get_config().advanced_optimization) {
+        if (!block->get_config().advanced_optimization) {
           auto &bstmt = block->statements[i];
           if (bstmt->is_container_statement()) {
             has_related = true;
@@ -498,8 +499,9 @@ class BasicBlockSimplify : public IRVisitor {
           if (same) {
             // no store to the var?
             bool has_store = false;
+            auto advanced_optimization = block->get_config().advanced_optimization;
             for (int j = i + 1; j < current_stmt_id; j++) {
-              if (!root->get_config().advanced_optimization) {
+              if (!advanced_optimization) {
                 if (block->statements[j]
                         ->is_container_statement()) {  // no if, while, etc..
                   has_store = true;
@@ -1094,7 +1096,7 @@ class BasicBlockSimplify : public IRVisitor {
       throw IRModified();
     }
 
-    if (root->get_config().advanced_optimization) {
+    if (block->get_config().advanced_optimization) {
       // Merge adjacent if's with the identical condition.
       // TODO: What about IfStmt::true_mask and IfStmt::false_mask?
       if (current_stmt_id > 0 &&

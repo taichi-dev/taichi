@@ -9,7 +9,7 @@ TLANG_NAMESPACE_BEGIN
 namespace {
 
 void make_block_local_offload(OffloadedStmt *offload) {
-  if (offload->task_type != offload->struct_for)
+  if (offload->task_type != OffloadedStmt::TaskType::struct_for)
     return;
 
   auto pads = irpass::initialize_scratch_pad(offload);
@@ -27,25 +27,17 @@ void make_block_local_offload(OffloadedStmt *offload) {
 
     auto bls_num_elements = pad.second.pad_size_linear();
 
-    auto block_stride = [&](int i) {
+    std::vector<int> block_strides(dim);
+    std::vector<int> bls_strides(dim);
+    block_strides[dim - 1] = 1;
+    bls_strides[dim - 1] = 1;
+    for (int i = dim - 2; i >= 0; i--) {
       // TODO: fix the virtual/physical index correspondence here
-      int stride = 1;
-      for (int j = i + 1; j < dim; j++) {
-        stride *= pad.second.block_size[j];
-      }
-      return stride;
-    };
-
-    auto bls_stride = [&](int i) {
-      // TODO: fix the virtual/physical index correspondence here
-      // "pad" is the BLS buffer ("scratch pad")
       // TODO: rename "pad"
-      int stride = 1;
-      for (int j = i + 1; j < dim; j++) {
-        stride *= pad.second.pad_size[j];
-      }
-      return stride;
-    };
+      // "pad" is the BLS buffer ("scratch pad")
+      block_strides[i] = block_strides[i + 1] * pad.second.block_size[i + 1];
+      bls_strides[i] = bls_strides[i + 1] * pad.second.pad_size[i + 1];
+    }
 
     // TODO: improve IR builder to make this part easier to read
 
@@ -68,10 +60,10 @@ void make_block_local_offload(OffloadedStmt *offload) {
         // TODO: fix the virtual/physical index correspondence here
         auto inc = block->push_back<BinaryOpStmt>(
             BinaryOpType::mul,
-            block->push_back<ConstStmt>(TypedConstant(block_stride(i))),
+            block->push_back<ConstStmt>(TypedConstant(block_strides[i])),
             block->push_back<BinaryOpStmt>(
                 BinaryOpType::sub, block->push_back<LoopIndexStmt>(offload, i),
-                block->push_back<LoopIndexBaseStmt>(offload, i)));
+                block->push_back<BlockCornerIndexStmt>(offload, i)));
         if (block_linear_index) {
           block_linear_index = block->push_back<BinaryOpStmt>(
               BinaryOpType::add, block_linear_index, inc);
@@ -150,7 +142,7 @@ void make_block_local_offload(OffloadedStmt *offload) {
 
           global_index = element_block->push_back<BinaryOpStmt>(
               BinaryOpType::add, global_index,
-              element_block->push_back<LoopIndexBaseStmt>(offload, i));
+              element_block->push_back<BlockCornerIndexStmt>(offload, i));
           global_indices[i] = global_index;
         }
 
@@ -193,13 +185,13 @@ void make_block_local_offload(OffloadedStmt *offload) {
           //   bls_stride_i * (gbl_idx_i - loop_base_i - bls_lower_bound_i)
           auto inc = bls.push_back<BinaryOpStmt>(
               BinaryOpType::sub, global_indices[i],
-              bls.push_back<LoopIndexBaseStmt>(offload, i));
+              bls.push_back<BlockCornerIndexStmt>(offload, i));
           inc = bls.push_back<BinaryOpStmt>(
               BinaryOpType::sub, inc,
               bls.push_back<ConstStmt>(TypedConstant(pad.second.bounds[0][i])));
           inc = bls.push_back<BinaryOpStmt>(
               BinaryOpType::mul, inc,
-              bls.push_back<ConstStmt>(TypedConstant(bls_stride(i))));
+              bls.push_back<ConstStmt>(TypedConstant(bls_strides[i])));
           if (!bls_element_offset) {
             bls_element_offset = inc;
           } else {
@@ -246,8 +238,10 @@ void make_block_local(IRNode *root) {
   TI_AUTO_PROF;
   auto root_block = root->cast<Block>();
   TI_ASSERT(root_block);
-  for (auto &offload : root_block->statements) {
-    make_block_local_offload(offload->cast<OffloadedStmt>());
+  for (auto &stmt : root_block->statements) {
+    auto offload = stmt->cast<OffloadedStmt>();
+    TI_ASSERT(offload);
+    make_block_local_offload(offload);
   }
   typecheck(root);
   fix_block_parents(root);

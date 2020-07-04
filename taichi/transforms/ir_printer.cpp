@@ -515,7 +515,7 @@ class IRPrinter : public IRVisitor {
           stmt->loop->name(), stmt->index);
   }
 
-  void visit(LoopIndexBaseStmt *stmt) override {
+  void visit(BlockCornerIndexStmt *stmt) override {
     print("{}{} = loop {} index base {}", stmt->type_hint(), stmt->name(),
           stmt->loop->name(), stmt->index);
   }

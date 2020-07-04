@@ -348,7 +348,7 @@ class TypeCheck : public IRVisitor {
     stmt->ret_type = VectorType(1, DataType::i32);
   }
 
-  void visit(LoopIndexBaseStmt *stmt) {
+  void visit(BlockCornerIndexStmt *stmt) {
     stmt->ret_type = VectorType(1, DataType::i32);
   }
 

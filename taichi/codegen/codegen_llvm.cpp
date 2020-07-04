@@ -1426,8 +1426,7 @@ void CodeGenLLVM::visit(LoopIndexStmt *stmt) {
   }
 }
 
-void CodeGenLLVM::visit(LoopIndexBaseStmt *stmt) {
-  irpass::print(stmt->loop);
+void CodeGenLLVM::visit(BlockCornerIndexStmt *stmt) {
   if (stmt->loop->is<OffloadedStmt>() &&
       stmt->loop->as<OffloadedStmt>()->task_type ==
           OffloadedStmt::TaskType::struct_for) {

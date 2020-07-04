@@ -244,12 +244,12 @@ class LoopIndexStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
-class LoopIndexBaseStmt : public Stmt {
+class BlockCornerIndexStmt : public Stmt {
  public:
   Stmt *loop;
   int index;
 
-  LoopIndexBaseStmt(Stmt *loop, int index) : loop(loop), index(index) {
+  BlockCornerIndexStmt(Stmt *loop, int index) : loop(loop), index(index) {
     TI_STMT_REG_FIELDS;
   }
 

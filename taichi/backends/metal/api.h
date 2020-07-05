@@ -89,8 +89,8 @@ inline void end_encoding(T *encoder) {
 // buffer resources between CPU and GPU.
 //
 // See also:
-// * https://developer.apple.com/documentation/metal/synchronizing_a_managed_resource
-// * https://developer.apple.com/documentation/metal/setting_resource_storage_modes/choosing_a_resource_storage_mode_in_macos
+// https://developer.apple.com/documentation/metal/synchronizing_a_managed_resource
+// https://developer.apple.com/documentation/metal/setting_resource_storage_modes/choosing_a_resource_storage_mode_in_macos
 nsobj_unique_ptr<MTLBuffer> new_mtl_buffer_no_copy(MTLDevice *device,
                                                    void *ptr,
                                                    size_t length);

@@ -376,7 +376,8 @@ void GUI::process_event() {
         case NSEventTypeScrollWheel: {
           set_mouse_pos(p.x, p.y);
           const auto dx = (int)cast_call<CGFloat>(event, "scrollingDeltaX");
-          const auto dy = (int)cast_call<CGFloat>(event, "scrollingDeltaY");
+          // Mac trackpad's vertical scroll is reversed.
+          const auto dy = -(int)cast_call<CGFloat>(event, "scrollingDeltaY");
           key_events.push_back(KeyEvent{KeyEvent::Type::move, "Wheel",
                                         cursor_pos, Vector2i{dx, dy}});
           break;

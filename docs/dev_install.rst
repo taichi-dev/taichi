@@ -111,6 +111,7 @@ Setting up Taichi for development
       export TAICHI_REPO_DIR=/path/to/taichi  # Path to your taichi repository
       export PYTHONPATH=$TAICHI_REPO_DIR/python:$PYTHONPATH
       export PATH=$TAICHI_REPO_DIR/bin:$PATH
+      # export CXX=/path/to/clang  # Uncomment if you encounter issue about compiler in the next step.
       # export PATH=/opt/llvm/bin:$PATH  # Uncomment if your llvm or clang is installed in /opt
 
     Then execute ``source ~/.bashrc`` to reload shell config.

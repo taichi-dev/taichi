@@ -2,8 +2,6 @@
 
 TLANG_NAMESPACE_BEGIN
 
-bool advanced_optimization = true;
-
 CompileConfig::CompileConfig() {
   arch = host_arch();
   simd_width = default_simd_width(arch);
@@ -18,6 +16,7 @@ CompileConfig::CompileConfig() {
   print_kernel_nvptx = false;
   print_kernel_llvm_ir_optimized = false;
   demote_dense_struct_fors = true;
+  advanced_optimization = true;
   max_vector_width = 8;
   debug = false;
   check_out_of_bound = false;

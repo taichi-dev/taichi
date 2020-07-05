@@ -264,7 +264,7 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
       return;
     if (stmt_to_offloaded[stmt] == current_offloaded)
       return;
-    if (advanced_optimization) {
+    if (stmt->get_config().advanced_optimization) {
       if (stmt->is<ConstStmt>()) {
         // Directly insert copies of ConstStmts later
         return;
@@ -466,7 +466,7 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
       return false;
     if (stmt_to_offloaded[stmt] == stmt_to_offloaded[op])  // same OffloadedStmt
       return false;
-    if (advanced_optimization) {
+    if (stmt->get_config().advanced_optimization) {
       if (op->is<ConstStmt>()) {
         auto copy = op->as<ConstStmt>()->copy();
         stmt_to_offloaded[copy.get()] = stmt_to_offloaded[stmt];

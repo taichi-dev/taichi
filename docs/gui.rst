@@ -184,8 +184,8 @@ Every event have a key and type.
 ::
 
   ti.GUI.RELEASE  # key up or mouse button up
-  ti.GUI.PRESS    # key down or mouse button down
-  ti.GUI.MOTION   # mouse motion or mouse wheel
+  ti.GUI.PRESS    # key down, mouse button down or mouse wheel
+  ti.GUI.MOTION   # mouse motion, doesn't have event key
 
 A *event filter* is a list combined of *key*, *type* and *(type, key)* tuple, e.g.:
 

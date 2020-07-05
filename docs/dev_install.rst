@@ -19,45 +19,31 @@ Installing Dependencies
 
   .. code-block:: bash
 
-    python3 -m pip install --user setuptools wheel astor pybind11 Pillow dill
+    python3 -m pip install --user setuptools astpretty astor pybind11 Pillow dill
     python3 -m pip install --user pytest pytest-rerunfailures pytest-xdist yapf
     python3 -m pip install --user numpy GitPython coverage colorama autograd
 
 
-- Make sure you have ``clang`` with version >= 7
+- Make sure you have ``clang`` with version >= 7:
 
-  * On Windows: Download `clang-8 <https://releases.llvm.org/8.0.0/LLVM-8.0.0-win64.exe>`_ or 
-    `clang-10 <https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/clang-10.0.0-win.zip>`_.
+  * On Windows: Download `clang-10 <https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/clang-10.0.0-win.zip>`_.
     Make sure you add the ``bin`` folder containing ``clang.exe`` to the ``PATH`` environment variable.
 
   * On OS X: you don't need to do anything.
 
   * On Ubuntu, execute ``sudo apt install libtinfo-dev clang-8``.
   
-  * On Arch Linux, execute ``sudo pacman -S clang``. (This will install ``clang-10``, which should work too).
+  * On Arch Linux, execute ``sudo pacman -S clang``. (This is ``clang-10``).
 
-  * On other Linux distributions, please build clang 8.0.1 from source:
-
-    .. code-block:: bash
-
-        wget https://github.com/llvm/llvm-project/releases/download/llvmorg-8.0.1/cfe-8.0.1.src.tar.xz
-        tar xvJf cfe-8.0.1.src.tar.xz
-        cd cfe-8.0.1.src
-        mkdir build
-        cd build
-        cmake ..
-        make -j 8
-        sudo make install
+  * On other Linux distributions, please search `this site <pkgs.org>`_ for clang version >= 7.
 
 
 - Make sure you have LLVM 8.0.1/10.0.0. Note that Taichi uses a **customized LLVM** so the pre-built binaries from the LLVM official website or other sources probably won't work.
   Here we provide LLVM binaries customized for Taichi, which may or may not work depending on your system environment:
 
-  * `LLVM 8.0.1 for Linux <https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/taichi-llvm-8.0.1-linux-x64.zip>`_
-  * `LLVM 8.0.1 for OS X <https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/taichi-llvm-8.0.1.zip>`_
-  * `LLVM 8.0.1 for Windows MSVC 2017 <https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/taichi-llvm-8.0.1-msvc2017.zip>`_
   * `LLVM 10.0.0 for Linux <https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-linux.zip>`_
   * `LLVM 10.0.0 for Windows MSVC 2019 <https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-msvc2019.zip>`_
+  * `LLVM 8.0.1 for OS X <https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/taichi-llvm-8.0.1.zip>`_
 
 .. note::
 
@@ -71,13 +57,9 @@ Installing Dependencies
 
       .. code-block:: bash
 
-        wget https://github.com/llvm/llvm-project/releases/download/llvmorg-8.0.1/llvm-8.0.1.src.tar.xz
-        tar xvJf llvm-8.0.1.src.tar.xz
-        cd llvm-8.0.1.src
-        # For LLVM 10.0.0:
-        #     wget https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.0/llvm-10.0.0.src.tar.xz
-        #     tar xvJf llvm-10.0.0.src.tar.xz
-        #     cd llvm-10.0.0.src
+        wget https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.0/llvm-10.0.0.src.tar.xz
+        tar xvJf llvm-10.0.0.src.tar.xz
+        cd llvm-10.0.0.src
         mkdir build
         cd build
         cmake .. -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON
@@ -87,14 +69,11 @@ Installing Dependencies
         sudo make install
 
         # Check your LLVM installation
-        llvm-config --version # You should get 8.0.1 or 10.0.0
+        llvm-config --version  # You should get 8.0.1 or 10.0.0
 
   * On Windows:
 
     .. code-block:: bash
-
-      # LLVM 8.0.1 + MSVC 2017
-      cmake .. -G"Visual Studio 15 2017 Win64" -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON -Thost=x64 -DLLVM_BUILD_TESTS:BOOL=OFF -DCMAKE_INSTALL_PREFIX=installed
 
       # LLVM 10.0.0 + MSVC 2019
       cmake .. -G"Visual Studio 16 2019" -A x64 -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON -Thost=x64 -DLLVM_BUILD_TESTS:BOOL=OFF -DCMAKE_INSTALL_PREFIX=installed
@@ -132,7 +111,7 @@ Setting up Taichi for development
       export TAICHI_REPO_DIR=/path/to/taichi  # Path to your taichi repository
       export PYTHONPATH=$TAICHI_REPO_DIR/python:$PYTHONPATH
       export PATH=$TAICHI_REPO_DIR/bin:$PATH
-      # export PATH=/opt/llvm/bin:$PATH  # Uncomment if your llvm-8 or clang-8 is in /opt
+      # export PATH=/opt/llvm/bin:$PATH  # Uncomment if your llvm or clang is installed in /opt
 
     Then execute ``source ~/.bashrc`` to reload shell config.
 
@@ -155,7 +134,7 @@ Setting up Taichi for development
     cmake ..
     # On Linux / OS X, if you do not set clang as the default compiler
     # use the line below:
-    #   cmake .. -DCMAKE_CXX_COMPILER=clang-8
+    #   cmake .. -DCMAKE_CXX_COMPILER=clang
     #
     # Alternatively, if you would like to set clang as the default compiler
     # On Unix CMake honors environment variables $CC and $CXX upon deciding which C and C++ compilers to use

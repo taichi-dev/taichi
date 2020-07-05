@@ -49,9 +49,14 @@ kernel_profiler_clear = lambda: core.get_current_program(
 
 class _Extension(object):
     def __init__(self):
-        self.sparse = core.sparse
-        self.data64 = core.data64
-        self.adstack = core.adstack
+        try:
+            self.sparse = core.sparse
+            self.data64 = core.data64
+            self.adstack = core.adstack
+            self.bls = core.bls
+        except:
+            # In case of adding an extension crashes the format server
+            core.warn("Extension list loading failed.")
 
 
 extension = _Extension()

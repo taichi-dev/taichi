@@ -1290,7 +1290,6 @@ i64 cuda_rand_i64(Context *context) {
   return cuda_rand_u64(context);
 }
 };
-
 #endif
 
 struct printf_helper {

@@ -235,12 +235,11 @@ bool constant_fold(IRNode *root) {
   // disable constant_fold when config.debug is turned on.
   // Discussion:
   // https://github.com/taichi-dev/taichi/pull/839#issuecomment-626107010
-  auto kernel = root->get_kernel();
-  if (kernel && kernel->program.config.debug) {
+  if (root->get_config().debug) {
     TI_TRACE("config.debug enabled, ignoring constant fold");
     return false;
   }
-  if (!advanced_optimization)
+  if (!root->get_config().advanced_optimization)
     return false;
   return ConstantFold::run(root);
 }

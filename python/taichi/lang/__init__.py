@@ -147,7 +147,6 @@ def init(arch=None,
     env.add('print_preprocessed', False)
     env.add('log_level', 'info', str)
     env.add('gdb_trigger', False)
-    env.add('advanced_optimization', True)
 
     # configurations in ti.cfg:
     env.cfg_keys = []
@@ -158,17 +157,19 @@ def init(arch=None,
     env.add('async', False)
     env.add('use_unified_memory', True)
     env.add('print_benchmark_stat', False)
-    # sync default values with compiler_config.cpp:
-    env.add('device_memory_fraction', 0.0, float)
-    env.add('device_memory_GB', 1.0, float)
+    env.add('advanced_optimization', True)
+    # TODO(yuanming-hu): Maybe these CUDA specific configs should be moved
+    # to somewhere like ti.cfg.cuda so that user don't get confused?
+    env.add('device_memory_fraction', None, float)
+    env.add('device_memory_GB', None, float)
     for key in env.cfg_keys:
         value = env[key]
-        setattr(ti.cfg, key, value)
+        if value is not None:
+            setattr(ti.cfg, key, value)
 
     # dispatch configurations that are not in ti.cfg:
     ti.set_gdb_trigger(env['gdb_trigger'])
     ti.get_runtime().print_preprocessed = env['print_preprocessed']
-    ti.core.toggle_advanced_optimization(env['advanced_optimization'])
     ti.set_logging_level(env['log_level'].lower())
 
     # select arch (backend):

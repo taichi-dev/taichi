@@ -56,7 +56,7 @@ init_args = {
     'use_unified_memory': [True, TF],
     'print_benchmark_stat': [False, TF],
     # FIXME: figure out why these two failed test:
-    #'device_memory_fraction': [0.5, [0.5, 1, 0]],
+    #'device_memory_fraction': [0.0, [0.5, 1, 0]],
     #'device_memory_GB': [1.0, [0.5, 1, 1.5, 2]],
 }
 
@@ -66,7 +66,6 @@ special_init_args = [
     'print_preprocessed',
     'log_level',
     'gdb_trigger',
-    'advanced_optimization',
 ]
 
 

@@ -125,7 +125,7 @@ Setting up Taichi for development
 
 - Set up environment variables for Taichi:
 
-  * On Linux / OS X, please add the following script to your ``~/.bashrc``:
+  * On Linux / OS X, please add the following script to your rc file (``~/.bashrc``, ``~/.zshrc`` or etc. , same for other occurrences in this documentation):
 
     .. code-block:: bash
 
@@ -199,7 +199,7 @@ Troubleshooting Developer Installation
       
   If not, please install ``clang`` and **build LLVM from source** with instructions above in :ref:`dev_install`, then add their path to environment variable ``PATH``.
 
-- If you encountered other issues, feel free to report by `opening an issue on GitHub <https://github.com/taichi-dev/taichi/issues/new?labels=potential+bug&template=bug_report.md>`_. We are willing to help!
+- If you encounter other issues, feel free to report by `opening an issue on GitHub <https://github.com/taichi-dev/taichi/issues/new?labels=potential+bug&template=bug_report.md>`_. We are willing to help!
 
 - See also :ref:`troubleshooting` for issues that may share with end-user installation.
 

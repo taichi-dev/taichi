@@ -6,15 +6,33 @@ import pytest
 
 
 @contextmanager
-def patch_os_environ_helper(custom_environ: dict):
+def patch_os_environ_helper(custom_environ: dict, excludes: dict):
     """
     Temporarily patch os.environ for testing.
     Originally created by @rexwangcc in test_cli.py
     @archibate tweaked this method to be an os.environ patcher.
+
+    The patched environ environ will be:
+        custom_environ + (os.environ - excludes - custom_environ).
+
+    I.e.:
+
+    1. custom_environ could override os.environ.
+    2. os.environ keys match excludes will not be included.
+
+    :parameter custom_environ:
+        Specify the base environment of patch, these values must
+        be included.
+
+    :parameter excludes:
+        When copying from os.environ, specify keys to be excluded.
     """
-    custom_environ = copy.deepcopy(custom_environ)
+    environ = {}
     for key in os.environ.keys():
-        custom_environ[key] = os.environ[key]
+        if key not in excludes:
+            environ[key] = os.environ[key]
+    for key in custom_environ.keys():
+        environ[key] = custom_environ[key]
     try:
         cached_environ = os.environ
         os.environ = custom_environ
@@ -41,6 +59,8 @@ init_args = {
     #'device_memory_fraction': [0.5, [0.5, 1, 0]],
     #'device_memory_GB': [1.0, [0.5, 1, 1.5, 2]],
 }
+
+env_configs = ['TI_' + key.upper() for key in init_args.keys()]
 
 special_init_args = [
     'print_preprocessed',
@@ -75,7 +95,7 @@ def test_init_arg(key, values):
     for value in values:
         env_value = str(int(value) if isinstance(value, bool) else value)
         environ = {env_key: env_value}
-        with patch_os_environ_helper(environ):
+        with patch_os_environ_helper(environ, env_configs):
             test_arg(key, value)
 
 

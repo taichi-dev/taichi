@@ -7,7 +7,7 @@ radius = 8
 gui = ti.GUI("Keyboard", res=(400, 400))
 
 while gui.running:
-    while gui.get_event(ti.GUI.PRESS):
+    while gui.get_event(ti.GUI.PRESS, ti.GUI.MOTION):
         if gui.event.key == ti.GUI.ESCAPE:
             gui.running = False
         elif gui.event.key == ti.GUI.RMB:

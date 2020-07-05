@@ -503,7 +503,7 @@ class GUI : public GUIBase {
   };
 
   struct KeyEvent {
-    enum class Type { move, press, release };
+    enum class Type { move, press, release, scroll };
     Type type;
     std::string key;
     Vector2i pos;

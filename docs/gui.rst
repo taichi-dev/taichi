@@ -165,10 +165,20 @@ Event processing
 ----------------
 
 Every event have a key and type.
+
+*Event type* is the type of event, for now, there are just three type of event:
+
+::
+
+  ti.GUI.RELEASE  # key up or mouse button up
+  ti.GUI.PRESS    # key down or mouse button down
+  ti.GUI.MOTION   # mouse motion or mouse wheel
+
 *Event key* is the key that you pressed on keyboard or mouse, can be one of:
 
 ::
 
+  # for ti.GUI.PRESS and ti.GUI.RELEASE event:
   ti.GUI.ESCAPE  # Esc
   ti.GUI.SHIFT   # Shift
   ti.GUI.LEFT    # Left Arrow
@@ -177,15 +187,10 @@ Every event have a key and type.
   ...
   ti.GUI.LMB     # Left Mouse Button
   ti.GUI.RMB     # Right Mouse Button
+
+  # for ti.GUI.MOTION event:
+  ti.GUI.MOVE    # Mouse Moved
   ti.GUI.WHEEL   # Mouse Wheel Scrolling
-
-*Event type* is the type of event, for now, there are just three type of event:
-
-::
-
-  ti.GUI.RELEASE  # key up or mouse button up
-  ti.GUI.PRESS    # key down, mouse button down or mouse wheel
-  ti.GUI.MOTION   # mouse motion, doesn't have event key
 
 A *event filter* is a list combined of *key*, *type* and *(type, key)* tuple, e.g.:
 

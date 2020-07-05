@@ -26,6 +26,7 @@ class GUI:
     RMB = 'RMB'
     EXIT = 'WMClose'
     WHEEL = 'Wheel'
+    MOVE = 'Motion'
 
     # Event types
     MOTION = ti_core.KeyEvent.EType.Move

@@ -92,19 +92,19 @@ void GUI::process_event() {
         switch (ev.xbutton.button) {
         case 4: // wheel up
           key_events.push_back(
-              KeyEvent{KeyEvent::Type::press, "Wheel", cursor_pos, Vector2i{0, +120}});
+              KeyEvent{KeyEvent::Type::move, "Wheel", cursor_pos, Vector2i{0, +120}});
           break;
         case 5: // wheel down
           key_events.push_back(
-              KeyEvent{KeyEvent::Type::press, "Wheel", cursor_pos, Vector2i{0, -120}});
+              KeyEvent{KeyEvent::Type::move, "Wheel", cursor_pos, Vector2i{0, -120}});
           break;
         case 6: // wheel right
           key_events.push_back(
-              KeyEvent{KeyEvent::Type::press, "Wheel", cursor_pos, Vector2i{+120, 0}});
+              KeyEvent{KeyEvent::Type::move, "Wheel", cursor_pos, Vector2i{+120, 0}});
           break;
         case 7: // wheel left
           key_events.push_back(
-              KeyEvent{KeyEvent::Type::press, "Wheel", cursor_pos, Vector2i{-120, 0}});
+              KeyEvent{KeyEvent::Type::move, "Wheel", cursor_pos, Vector2i{-120, 0}});
           break;
         default: // normal mouse button
           key_events.push_back(

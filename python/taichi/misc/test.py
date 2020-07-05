@@ -31,3 +31,10 @@ def make_temp_file(*args, **kwargs):
     fd, name = mkstemp(*args, **kwargs)
     os.close(fd)
     return name
+
+
+def run_in_sandbox(content):
+    filename = make_temp_file()
+    with open(filename, 'w') as f:
+        f.write(content)
+    return runpy.run_path(filename)

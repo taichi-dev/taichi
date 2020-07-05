@@ -1,13 +1,14 @@
 import taichi as ti
-from taichi import make_temp_file
+from taichi import run_in_sandbox
 import sys, os
+import runpy
 
 
 def test_without_init():
     # We want to check if Taichi works well without ``ti.init()``.
     # But in test ``ti.init()`` will always be called in last ``@ti.all_archs``.
     # So we have to create a new Taichi instance, i.e. test in a sandbox.
-    content = '''
+    run_in_sandbox('''
 import taichi as ti
 assert ti.cfg.arch == ti.cpu
 
@@ -16,11 +17,7 @@ assert x.shape == (2, 3)
 
 x[1, 2] = 4
 assert x[1, 2] == 4
-'''
-    filename = make_temp_file()
-    with open(filename, 'w') as f:
-        f.write(content)
-    assert os.system(f'{sys.executable} {filename}') == 0
+''')
 
 
 @ti.all_archs

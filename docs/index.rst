@@ -66,7 +66,6 @@ The Taichi Programming Language
    gui
    export_results
    cli_utilities
-   user_utilities
    global_settings
    faq
    acknowledgments

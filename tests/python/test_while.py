@@ -38,4 +38,4 @@ def test_break():
         ret[None] = s
 
     func()
-    print(ret[None])
+    assert ret[None] == 55

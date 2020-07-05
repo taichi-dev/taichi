@@ -67,7 +67,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd,
   auto dc = GetDC(hwnd);
   auto gui = gui_from_hwnd[hwnd];
   using namespace taichi;
-  int x, y;
+  POINT p{};
   switch (uMsg) {
     case WM_LBUTTONDOWN:
       gui->mouse_event(
@@ -98,11 +98,26 @@ LRESULT CALLBACK WindowProc(HWND hwnd,
           GUI::KeyEvent{GUI::KeyEvent::Type::release, "RMB", gui->cursor_pos});
       break;
     case WM_MOUSEMOVE:
-      x = GET_X_LPARAM(lParam);
-      y = GET_Y_LPARAM(lParam);
-      gui->set_mouse_pos(x, gui->height - 1 - y);
+      p = {GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
+      gui->set_mouse_pos(p.x, gui->height - 1 - p.y);
       gui->mouse_event(
           GUI::MouseEvent{GUI::MouseEvent::Type::move, gui->cursor_pos});
+      break;
+    case WM_MOUSEWHEEL:
+      p = {GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
+      ScreenToClient(hwnd, &p);
+      gui->set_mouse_pos(p.x, gui->height - 1 - p.y);
+      gui->key_events.push_back(
+          GUI::KeyEvent{GUI::KeyEvent::Type::move, "Wheel", gui->cursor_pos,
+                        Vector2i{0, GET_WHEEL_DELTA_WPARAM(wParam)}});
+      break;
+    case WM_MOUSEHWHEEL:
+      p = {GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
+      ScreenToClient(hwnd, &p);
+      gui->set_mouse_pos(p.x, gui->height - 1 - p.y);
+      gui->key_events.push_back(
+          GUI::KeyEvent{GUI::KeyEvent::Type::move, "Wheel", gui->cursor_pos,
+                        Vector2i{GET_WHEEL_DELTA_WPARAM(wParam), 0}});
       break;
     case WM_PAINT:
       break;

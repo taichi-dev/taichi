@@ -619,7 +619,7 @@ namespace irpass {
 void variable_optimization(IRNode *root, bool after_lower_access) {
   TI_AUTO_PROF;
   // This pass has been replaced with cfg_optimization.
-  if (!advanced_optimization)
+  if (!root->get_config().advanced_optimization)
     return;
   AllocaOptimize alloca_optimizer;
   alloca_optimizer.run(root);

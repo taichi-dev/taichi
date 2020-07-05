@@ -36,6 +36,8 @@ void vector_split(IRNode *root, int max_width, bool serial_schedule);
 void replace_all_usages_with(IRNode *root, Stmt *old_stmt, Stmt *new_stmt);
 bool check_out_of_bound(IRNode *root);
 void make_thread_local(IRNode *root);
+std::unique_ptr<ScratchPads> initialize_scratch_pad(OffloadedStmt *root);
+void make_block_local(IRNode *root);
 bool lower_access(IRNode *root, bool lower_atomic, Kernel *kernel = nullptr);
 void auto_diff(IRNode *root, bool use_stack = false);
 bool constant_fold(IRNode *root);
@@ -48,7 +50,6 @@ void replace_statements_with(IRNode *root,
 void demote_dense_struct_fors(IRNode *root);
 bool demote_atomics(IRNode *root);
 void reverse_segments(IRNode *root);  // for autograd
-std::unique_ptr<ScratchPads> initialize_scratch_pad(StructForStmt *root);
 void compile_to_offloads(IRNode *ir,
                          const CompileConfig &config,
                          bool vectorize,
@@ -56,7 +57,8 @@ void compile_to_offloads(IRNode *ir,
                          bool ad_use_stack,
                          bool verbose,
                          bool lower_global_access = true,
-                         bool make_thread_local = false);
+                         bool make_thread_local = false,
+                         bool make_block_local = false);
 
 }  // namespace irpass
 

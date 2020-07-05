@@ -17,7 +17,7 @@ std::string scratch_pad_info(const ScratchPadOptions &opt) {
       // TODO: standardize scratch pad types
       std::string type;
       if (s.first == 0) {
-        type = "thread_local";
+        type = "block local";
       } else if (s.first == 1) {
         type = "read_only";
       } else {
@@ -473,12 +473,14 @@ class IRPrinter : public IRVisitor {
       } else {
         end_str = fmt::format("tmp(offset={}B)", stmt->end_offset);
       }
-      details = fmt::format("range_for({}, {}) {}", begin_str, end_str,
-                            block_dim_info(stmt->block_dim));
+      details =
+          fmt::format("range_for({}, {}) grid_dim={} block_dim={}", begin_str,
+                      end_str, stmt->grid_dim, stmt->block_dim);
     } else if (stmt->task_type == stmt->struct_for) {
       details = fmt::format(
-          "struct_for({}) {}{}", stmt->snode->get_node_type_name_hinted(),
-          block_dim_info(stmt->block_dim), scratch_pad_info(stmt->scratch_opt));
+          "struct_for({}) grid_dim={} block_dim={} bls={} B",
+          stmt->snode->get_node_type_name_hinted(), stmt->grid_dim,
+          stmt->block_dim, scratch_pad_info(stmt->scratch_opt), stmt->bls_size);
     }
     if (stmt->task_type == OffloadedStmt::TaskType::listgen) {
       print("{} = offloaded listgen {}->{}", stmt->name(),
@@ -514,6 +516,15 @@ class IRPrinter : public IRVisitor {
           stmt->loop->name(), stmt->index);
   }
 
+  void visit(BlockCornerIndexStmt *stmt) override {
+    print("{}{} = loop {} block corner index {}", stmt->type_hint(),
+          stmt->name(), stmt->loop->name(), stmt->index);
+  }
+
+  void visit(BlockDimStmt *stmt) override {
+    print("{}{} = block dim", stmt->type_hint(), stmt->name());
+  }
+
   void visit(GlobalTemporaryStmt *stmt) override {
     print("{}{} = global tmp var (offset = {} B)", stmt->type_hint(),
           stmt->name(), stmt->offset);
@@ -522,6 +533,11 @@ class IRPrinter : public IRVisitor {
   void visit(ThreadLocalPtrStmt *stmt) override {
     print("{}{} = thread local ptr (offset = {} B)", stmt->type_hint(),
           stmt->name(), stmt->offset);
+  }
+
+  void visit(BlockLocalPtrStmt *stmt) override {
+    print("{}{} = block local ptr (offset = {})", stmt->type_hint(),
+          stmt->name(), stmt->offset->name());
   }
 
   void visit(InternalFuncStmt *stmt) override {

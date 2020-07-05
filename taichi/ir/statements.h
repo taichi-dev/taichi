@@ -1,6 +1,7 @@
 #pragma once
 
 #include "taichi/ir/ir.h"
+#include "taichi/ir/scratch_pad.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -175,7 +176,8 @@ class OffloadedStmt : public Stmt {
   bool const_begin, const_end;
   int32 begin_value, end_value;
   int step;
-  int block_dim;
+  int grid_dim{1};
+  int block_dim{1};
   bool reversed;
   int num_cpu_threads;
   Arch device;
@@ -183,7 +185,9 @@ class OffloadedStmt : public Stmt {
   std::unique_ptr<Block> body;
   std::unique_ptr<Block> epilogue;
   std::size_t tls_size{1};  // avoid allocating dynamic memory with 0 byte
+  std::size_t bls_size{0};
   ScratchPadOptions scratch_opt;
+  std::unique_ptr<ScratchPads> scratch_pads;
 
   OffloadedStmt(TaskType task_type);
 
@@ -240,6 +244,37 @@ class LoopIndexStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+class BlockCornerIndexStmt : public Stmt {
+ public:
+  Stmt *loop;
+  int index;
+
+  BlockCornerIndexStmt(Stmt *loop, int index) : loop(loop), index(index) {
+    TI_STMT_REG_FIELDS;
+  }
+
+  bool has_global_side_effect() const override {
+    return false;
+  }
+
+  TI_STMT_DEF_FIELDS(ret_type, loop, index);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
+class BlockDimStmt : public Stmt {
+ public:
+  BlockDimStmt() {
+    TI_STMT_REG_FIELDS;
+  }
+
+  bool has_global_side_effect() const override {
+    return false;
+  }
+
+  TI_STMT_DEF_FIELDS(ret_type);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
 class GlobalTemporaryStmt : public Stmt {
  public:
   std::size_t offset;
@@ -263,6 +298,23 @@ class ThreadLocalPtrStmt : public Stmt {
   std::size_t offset;
 
   ThreadLocalPtrStmt(std::size_t offset, VectorType ret_type) : offset(offset) {
+    this->ret_type = ret_type;
+    TI_STMT_REG_FIELDS;
+  }
+
+  bool has_global_side_effect() const override {
+    return false;
+  }
+
+  TI_STMT_DEF_FIELDS(ret_type, offset);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
+class BlockLocalPtrStmt : public Stmt {
+ public:
+  Stmt *offset;
+
+  BlockLocalPtrStmt(Stmt *offset, VectorType ret_type) : offset(offset) {
     this->ret_type = ret_type;
     TI_STMT_REG_FIELDS;
   }

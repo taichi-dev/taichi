@@ -160,6 +160,7 @@ Frequently used tags:
 - ``[Linux]``: Linux platform;
 - ``[Mac]``: Mac OS X platform;
 - ``[Windows]``: Windows platform;
+- ``[Docker]``: Docker container;
 - ``[Perf]``: performance improvements;
 - ``[Misc]``: something that doesn't belong to any category, such as version bump, reformatting;
 - ``[Bug]``: bug fixes;

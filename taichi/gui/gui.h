@@ -507,6 +507,7 @@ class GUI : public GUIBase {
     Type type;
     std::string key;
     Vector2i pos;
+    Vector2i delta;
   };
 
   std::vector<KeyEvent> key_events;
@@ -829,16 +830,8 @@ class GUI : public GUIBase {
     }
   }
 
-  std::string get_key_event_head_key() {
-    return key_events[0].key;
-  }
-
-  bool get_key_event_head_type() {
-    return key_events[0].type == KeyEvent::Type::press;
-  }
-
-  Vector2 get_key_event_head_pos() {
-    return canvas->untransform(Vector2(key_events[0].pos));
+  KeyEvent get_key_event_head() {
+    return key_events[0];
   }
 
   Vector2 get_cursor_pos() {
@@ -857,6 +850,10 @@ class GUI : public GUIBase {
         break;
       }
     }
+  }
+
+  Vector2 canvas_untransform(Vector2i pos) {
+    return canvas->untransform(Vector2(pos));
   }
 
   void draw_log() {

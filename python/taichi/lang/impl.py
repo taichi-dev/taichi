@@ -238,10 +238,12 @@ def reset():
     taichi_lang_core.reset_default_compile_config()
 
 
+@taichi_scope
 def static_print(*args, __p=print, **kwargs):
     __p(*args, **kwargs)
 
 
+# we don't add @taichi_scope decorator for @ti.pyfunc to work
 @no_traceback
 def static_assert(cond, msg=None):
     if msg is not None:

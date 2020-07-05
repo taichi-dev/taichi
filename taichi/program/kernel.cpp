@@ -78,7 +78,7 @@ void Kernel::lower(bool lower_access) {  // TODO: is a "Lowerer" class necessary
     irpass::compile_to_offloads(
         ir.get(), config, /*vectorize*/ arch_is_cpu(arch), grad,
         /*ad_use_stack*/ true, verbose, /*lower_global_access*/ lower_access,
-        /*make_thread_local*/ true);
+        /*make_thread_local*/ true, /*make_block_local*/ arch == Arch::cuda);
   } else {
     TI_NOT_IMPLEMENTED
   }

@@ -26,13 +26,13 @@ Installing Dependencies
 
 - Make sure you have ``clang`` with version >= 7
 
-  * On Windows: Download from `clang-8 <https://releases.llvm.org/8.0.0/LLVM-8.0.0-win64.exe>`_ or 
+  * On Windows: Download `clang-8 <https://releases.llvm.org/8.0.0/LLVM-8.0.0-win64.exe>`_ or 
     `clang-10 <https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/clang-10.0.0-win.zip>`_.
     Make sure you add the ``bin`` folder containing ``clang.exe`` to the ``PATH`` environment variable.
 
   * On OS X: you don't need to do anything.
 
-  * On Ubuntu, execute ``sudo apt install clang-8``.
+  * On Ubuntu, execute ``sudo apt install libtinfo-dev clang-8``.
   
   * On Arch Linux, execute ``sudo pacman -S clang``. (This will install ``clang-10``, which should work too).
 
@@ -139,7 +139,7 @@ Setting up Taichi for development
   * On Windows, please add these variables by accessing your system settings:
 
     1. Add ``TAICHI_REPO_DIR`` whose value is the path to your taichi repository so that Taichi knows you're a developer.
-    2. Add or append ``PYTHONPATH`` with ``%TAICHI_REPO_DIR%/python`` so that Python import Taichi from the local repo.
+    2. Add or append ``PYTHONPATH`` with ``%TAICHI_REPO_DIR%/python`` so that Python imports Taichi from the local repo.
     3. Add or append ``PATH`` with ``%TAICHI_REPO_DIR%/bin`` so that you can use ``ti`` command.
     4. Add or append ``PATH`` with path to LLVM binary directory installed in previous section.
 
@@ -205,6 +205,7 @@ Troubleshooting Developer Installation
 
 Docker
 ------
+
 For those who prefer to use Docker, we also provide a Dockerfile which helps
 setup the Taichi development environment with CUDA support based on Ubuntu docker image.
 

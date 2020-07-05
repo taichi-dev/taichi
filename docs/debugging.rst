@@ -176,7 +176,7 @@ Pretty Taichi-scope traceback
 -----------------------------
 
 As we all know, Python provides a useful stack traceback system, which could help you
-locale the issue easier. But sometimes stack tracebacks from **Taichi-scope** could be
+locate the issue easily. But sometimes stack tracebacks from **Taichi-scope** could be
 extremely complicated and hard to read. For example:
 
 .. code-block:: python
@@ -243,9 +243,9 @@ Running this code, of course, will result in an ``AssertionError``:
         assert cond
     AssertionError
 
-You may already being brain fried by the annoying ``decorated``'s and ``__call__``'s.
-These are the Taichi internal stack frames, has almost no benefit for end-users but
-making the traceback hard to read.
+You may already feel brain fried by the annoying ``decorated``'s and ``__call__``'s.
+These are the Taichi internal stack frames. They have almost no benefit for end-users
+but make the traceback hard to read.
 
 For this purpose, we may want to use ``ti.enable_excepthook()``, which *hooks* on the
 exception handler, and make the stack traceback from Taichi-scope easier to read and
@@ -317,7 +317,7 @@ And the result will be:
     AssertionError
 
 See? Our exception hook has removed some useless Taichi internal frames from
-traceback, and what's more, although not visible in doc, the output is
+traceback. What's more, although not visible in the doc, the output is
 **colorful**!
 
 

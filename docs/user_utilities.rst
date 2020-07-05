@@ -34,15 +34,17 @@ Based on spdlog, Taichi provides a series of APIs for logging. Note that these f
 .. code-block:: python
 
     import taichi as ti
-    ti.init(arch = ti.cpu)
+    ti.init(arch=ti.cpu)
 
     ti.set_logging_level(ti.INFO)
-    var = ti.var(ti.f32, shape = 1)
+    var = ti.var(ti.f32, shape=1)
+
 
     @ti.kernel
     def compute():
         var[0] = 1.0
         ti.info(f"set var[0] = 1.0")
+
 
     compute()
 
@@ -72,7 +74,7 @@ Based on spdlog, Taichi provides a series of APIs for logging. Note that these f
 
     Note that it crashes the Taichi kernel as well as your Taichi program then throw an ``RuntimeError`` out.
 
-.. Warn::
+.. warning::
 
     The usages of ``ti.trace()``, ``ti.debug()`` and ``ti.warn()`` are all similar to ``ti.info()``.But ``ti.error()`` is different from them. When it is called, the program will be crashed immediately.
 
@@ -85,12 +87,13 @@ Here is an example:
     import taichi as ti
 
     ti.init()
-    ti.set_logging_level(ti.ERROR)
+    ti.set_logging_level(ti.INFO)
 
     try:
         ti.error("It's a big error! Now exit...")
     except RuntimeError as err:
         print(err)
+
 
 Profiler
 --------
@@ -102,22 +105,27 @@ ScopedProfiler
 
 1. ``ScopedProfiler`` evaluates the time spent for each step of the **host tasks** during execution hierarchically.
 
-2. Moreover, this profiler is turned on automatically and no extra work is needed except writing ``ti.core.print_profile_info()`` at the end of your Taichi program. For example:
+2. Moreover, this profiler is turned on automatically and no extra work is needed except writing ``ti.print_profile_info()`` at the end of your Taichi program. For example:
 
 .. code-block:: python
 
-    ti.init(arch = ti.cpu)
-    var = ti.var(ti.f32, shape = 1)
+    import taichi as ti
+
+    ti.init(arch=ti.cpu)
+    var = ti.var(ti.f32, shape=1)
+
 
     @ti.kernel
     def compute():
         var[0] = 1.0
         print(f" set var[0] = {var[0]}")
 
-    compute()
-    ti.core.print_profile_info()
 
-``ti.core.print_profile_info()`` will output statistics in a hierarchical format, with different colors for different levels.
+    compute()
+    ti.print_profile_info()
+
+
+``ti.print_profile_info()`` will output statistics in a hierarchical format, with different colors for different levels.
 
 .. Note::
 
@@ -132,8 +140,10 @@ ProfilerBase
 
 2. When all the computation is finished in your program, call ``ti.kernel_profiler_print()`` to show to profiling result. For example:
 
-.. code-block :: python
-    :emphasize-lines: 1, 9
+.. code-block:: python
+    :emphasize-lines: 3, 11
+
+    import taichi as ti
 
     ti.init(ti.cpu, kernel_profiler = True)
     var = ti.var(ti.f32, shape = 1)

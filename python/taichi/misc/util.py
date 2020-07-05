@@ -184,3 +184,6 @@ def set_logging_level(level):
 
 def set_gdb_trigger(on=True):
     taichi.ti_core.set_core_trigger_gdb_when_crash(on)
+
+def print_profile_info():
+    taichi.ti_core.print_profile_info()

@@ -68,14 +68,17 @@ class JITModule {
   void launch(const std::string &name,
               std::size_t grid_dim,
               std::size_t block_dim,
+              std::size_t shared_mem_bytes,
               Args... args) {
     auto arg_pointers = JITModule::get_arg_pointers(args...);
-    launch_with_arg_pointers(name, grid_dim, block_dim, arg_pointers);
+    launch_with_arg_pointers(name, grid_dim, block_dim, shared_mem_bytes,
+                             arg_pointers);
   }
 
   virtual void launch(const std::string &name,
                       std::size_t grid_dim,
                       std::size_t block_dim,
+                      std::size_t shared_mem_bytes,
                       const std::vector<void *> &arg_pointers) {
     TI_NOT_IMPLEMENTED
   }

@@ -31,7 +31,7 @@ CompileConfig::CompileConfig() {
   verbose_kernel_launches = false;
   kernel_profiler = false;
   default_cpu_block_dim = 0;  // 0 = adaptive
-  default_gpu_block_dim = 64;
+  default_gpu_block_dim = 128;
   verbose = true;
   fast_math = true;
   async = false;
@@ -42,6 +42,9 @@ CompileConfig::CompileConfig() {
 #else
   use_unified_memory = true;
 #endif
+
+  saturating_grid_dim = 0;
+  max_block_dim = 0;
 
   device_memory_GB = 1;  // by default, preallocate 1 GB GPU memory
   device_memory_fraction = 0.0;

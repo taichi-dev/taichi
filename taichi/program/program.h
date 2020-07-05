@@ -237,6 +237,8 @@ class Program {
 
   void launch_async(Kernel *kernel);
 
+  int default_block_dim() const;
+
   ~Program();
 
  private:

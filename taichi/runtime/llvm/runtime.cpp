@@ -468,8 +468,6 @@ STRUCT_FIELD(Element, element);
 STRUCT_FIELD(Element, pcoord);
 STRUCT_FIELD_ARRAY(Element, loop_bounds);
 
-constexpr int num_rand_states = 1024 * 32;
-
 struct RandState {
   u32 x;
   u32 y;
@@ -525,6 +523,8 @@ struct LLVMRuntime {
 
   Ptr result_buffer;
   i32 allocator_lock;
+
+  i32 num_rand_states;
 
   template <typename T>
   void set_result(std::size_t i, T t) {
@@ -768,6 +768,7 @@ void runtime_initialize(
     std::size_t
         preallocated_size,  // Non-zero means use the preallocated buffer
     Ptr preallocated_buffer,
+    i32 num_rand_states,
     void *_vm_allocator,
     void *_host_printf,
     void *_host_vsnprintf) {
@@ -813,9 +814,10 @@ void runtime_initialize(
   runtime->temporaries = (Ptr)runtime->allocate_aligned(
       taichi_global_tmp_buffer_size, taichi_page_size);
 
+  runtime->num_rand_states = num_rand_states;
   runtime->rand_states = (RandState *)runtime->allocate_aligned(
-      sizeof(RandState) * num_rand_states, taichi_page_size);
-  for (int i = 0; i < num_rand_states; i++)
+      sizeof(RandState) * runtime->num_rand_states, taichi_page_size);
+  for (int i = 0; i < runtime->num_rand_states; i++)
     initialize_rand_state(&runtime->rand_states[i], i);
 }
 
@@ -1246,28 +1248,22 @@ void gc_parallel_2(LLVMRuntime *runtime, int snode_id) {
 extern "C" {
 
 u32 cuda_rand_u32(Context *context) {
-  auto state = &((LLVMRuntime *)context->runtime)
-                    ->rand_states[linear_thread_idx() % num_rand_states];
-  u32 ret;
-  auto lock = (Ptr)&state->lock;
+  auto state =
+      &((LLVMRuntime *)context->runtime)->rand_states[linear_thread_idx()];
 
-  bool done = false;
-  // TODO: locking here is very slow...
-  locked_task(lock, [&] {
-    auto &x = state->x;
-    auto &y = state->y;
-    auto &z = state->z;
-    auto &w = state->w;
-    auto t = x ^ (x << 11);
-    x = y;
-    y = z;
-    z = w;
-    w = (w ^ (w >> 19)) ^ (t ^ (t >> 8));
-    ret = w;
-    done = true;
-  });
-  return ret * 1000000007;  // multiply a prime number here is very necessary -
-                            // it decorrelates streams of PRNGs
+  auto &x = state->x;
+  auto &y = state->y;
+  auto &z = state->z;
+  auto &w = state->w;
+  auto t = x ^ (x << 11);
+
+  x = y;
+  y = z;
+  z = w;
+  w = (w ^ (w >> 19)) ^ (t ^ (t >> 8));
+
+  return w * 1000000007;  // multiply a prime number here is very necessary -
+                          // it decorrelates streams of PRNGs
 }
 
 uint64 cuda_rand_u64(Context *context) {

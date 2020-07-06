@@ -172,6 +172,161 @@ For example:
         return x % 2 == 1
 
 
+Pretty Taichi-scope traceback
+-----------------------------
+
+As we all know, Python provides a useful stack traceback system, which could help you
+locate the issue easily. But sometimes stack tracebacks from **Taichi-scope** could be
+extremely complicated and hard to read. For example:
+
+.. code-block:: python
+
+    import taichi as ti
+    ti.init()
+
+    @ti.func
+    def func3():
+        ti.static_assert(1 + 1 == 3)
+
+    @ti.func
+    def func2():
+        func3()
+
+    @ti.func
+    def func1():
+        func2()
+
+    @ti.kernel
+    def func0():
+        func1()
+
+    func0()
+
+Running this code, of course, will result in an ``AssertionError``:
+
+.. code-block:: none
+
+    Traceback (most recent call last):
+      File "misc/demo_excepthook.py", line 20, in <module>
+        func0()
+      File "/root/taichi/python/taichi/lang/kernel.py", line 559, in wrapped
+        return primal(*args, **kwargs)
+      File "/root/taichi/python/taichi/lang/kernel.py", line 488, in __call__
+        self.materialize(key=key, args=args, arg_features=arg_features)
+      File "/root/taichi/python/taichi/lang/kernel.py", line 367, in materialize
+        taichi_kernel = taichi_kernel.define(taichi_ast_generator)
+      File "/root/taichi/python/taichi/lang/kernel.py", line 364, in taichi_ast_generator
+        compiled()
+      File "misc/demo_excepthook.py", line 18, in func0
+        func1()
+      File "/root/taichi/python/taichi/lang/kernel.py", line 39, in decorated
+        return fun.__call__(*args)
+      File "/root/taichi/python/taichi/lang/kernel.py", line 79, in __call__
+        ret = self.compiled(*args)
+      File "misc/demo_excepthook.py", line 14, in func1
+        func2()
+      File "/root/taichi/python/taichi/lang/kernel.py", line 39, in decorated
+        return fun.__call__(*args)
+      File "/root/taichi/python/taichi/lang/kernel.py", line 79, in __call__
+        ret = self.compiled(*args)
+      File "misc/demo_excepthook.py", line 10, in func2
+        func3()
+      File "/root/taichi/python/taichi/lang/kernel.py", line 39, in decorated
+        return fun.__call__(*args)
+      File "/root/taichi/python/taichi/lang/kernel.py", line 79, in __call__
+        ret = self.compiled(*args)
+      File "misc/demo_excepthook.py", line 6, in func3
+        ti.static_assert(1 + 1 == 3)
+      File "/root/taichi/python/taichi/lang/error.py", line 14, in wrapped
+        return foo(*args, **kwargs)
+      File "/root/taichi/python/taichi/lang/impl.py", line 252, in static_assert
+        assert cond
+    AssertionError
+
+You may already feel brain fried by the annoying ``decorated``'s and ``__call__``'s.
+These are the Taichi internal stack frames. They have almost no benefit for end-users
+but make the traceback hard to read.
+
+For this purpose, we may want to use ``ti.enable_excepthook()``, which *hooks* on the
+exception handler, and make the stack traceback from Taichi-scope easier to read and
+intuitive. e.g.:
+
+
+.. code-block:: python
+
+    import taichi as ti
+    ti.init()
+    ti.enable_excepthook()  # just add this line!
+
+    ...
+
+
+And the result will be:
+
+.. code-block:: none
+
+    ========== Taichi Stack Traceback ==========
+    In <module>() at misc/demo_excepthook.py:21:
+    --------------------------------------------
+    @ti.kernel
+    def func0():
+        func1()
+
+    func0()  <--
+    --------------------------------------------
+    In func0() at misc/demo_excepthook.py:19:
+    --------------------------------------------
+        func2()
+
+    @ti.kernel
+    def func0():
+        func1()  <--
+
+    func0()
+    --------------------------------------------
+    In func1() at misc/demo_excepthook.py:15:
+    --------------------------------------------
+        func3()
+
+    @ti.func
+    def func1():
+        func2()  <--
+
+    @ti.kernel
+    --------------------------------------------
+    In func2() at misc/demo_excepthook.py:11:
+    --------------------------------------------
+        ti.static_assert(1 + 1 == 3)
+
+    @ti.func
+    def func2():
+        func3()  <--
+
+    @ti.func
+    --------------------------------------------
+    In func3() at misc/demo_excepthook.py:7:
+    --------------------------------------------
+    ti.enable_excepthook()
+
+    @ti.func
+    def func3():
+        ti.static_assert(1 + 1 == 3)  <--
+
+    @ti.func
+    --------------------------------------------
+    AssertionError
+
+See? Our exception hook has removed some useless Taichi internal frames from
+traceback. What's more, although not visible in the doc, the output is
+**colorful**!
+
+
+.. note::
+
+    For IPython / Jupyter notebook users, the IPython stack traceback hook
+    will be overriden by the Taichi one when ``ti.enable_excepthook()``.
+
+
 Debugging Tips
 --------------
 

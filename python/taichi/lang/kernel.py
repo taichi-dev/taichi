@@ -35,6 +35,7 @@ def func(foo):
 
     @functools.wraps(foo)
     def decorated(*args):
+        _taichi_skip_traceback = 1
         return fun.__call__(*args)
 
     return decorated
@@ -68,6 +69,7 @@ class Func:
         self.extract_arguments()
 
     def __call__(self, *args):
+        _taichi_skip_traceback = 1
         if not impl.inside_kernel():
             assert self.pyfunc, "Use @ti.pyfunc if you wish to call " \
                                 "Taichi functions from Python-scope"
@@ -279,6 +281,7 @@ class Kernel:
             self.argument_names.append(param.name)
 
     def materialize(self, key=None, args=None, arg_features=None):
+        _taichi_skip_traceback = 1
         if key is None:
             key = (self.func, 0)
         if not self.runtime.materialized:
@@ -351,6 +354,7 @@ class Kernel:
         # Do not change the name of 'taichi_ast_generator'
         # The warning system needs this identifier to remove unnecessary messages
         def taichi_ast_generator():
+            _taichi_skip_traceback = 1
             if self.runtime.inside_kernel:
                 import taichi as ti
                 raise ti.TaichiSyntaxError(
@@ -477,6 +481,7 @@ class Kernel:
     # For small kernels (< 3us), the performance can be pretty sensitive to overhead in __call__
     # Thus this part needs to be fast. (i.e. < 3us on a 4 GHz x64 CPU)
     def __call__(self, *args, **kwargs):
+        _taichi_skip_traceback = 1
         assert len(kwargs) == 0, 'kwargs not supported for Taichi kernels'
         instance_id, arg_features = self.mapper.lookup(args)
         key = (self.func, instance_id)
@@ -550,6 +555,7 @@ def _kernel_impl(func, level_of_class_stackframe, verbose=False):
 
         @functools.wraps(func)
         def wrapped(*args, **kwargs):
+            _taichi_skip_traceback = 1
             return primal(*args, **kwargs)
 
         wrapped.grad = adjoint
@@ -562,6 +568,7 @@ def _kernel_impl(func, level_of_class_stackframe, verbose=False):
 
 
 def kernel(func):
+    _taichi_skip_traceback = 1
     return _kernel_impl(func, level_of_class_stackframe=3)
 
 

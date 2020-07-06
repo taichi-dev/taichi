@@ -23,6 +23,12 @@ void export_visual(py::module &m) {
              std::memcpy((void *)img.get_data().data(), (void *)ptr,
                          img.get_data_size());
            })
+      .def("get_img",
+           [&](GUI *gui, std::size_t ptr) {
+             auto &img = gui->canvas->img;
+             std::memcpy((void *)ptr, (void *)img.get_data().data(),
+                         img.get_data_size());
+           })
       .def("screenshot", &GUI::screenshot)
       .def("has_key_event", &GUI::has_key_event)
       .def("wait_key_event", &GUI::wait_key_event)

@@ -241,12 +241,26 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
   auto snodes = scomp->snodes;
   int root_id = snode_root->id;
 
-  TI_TRACE("Allocating data structure of size {} B", scomp->root_size);
+  // A buffer of random states, one per CUDA thread
+  int num_rand_states = 0;
 
-  runtime->call<void *, void *, std::size_t, std::size_t, void *, void *,
+  if (config.arch == Arch::cuda) {
+#if defined(TI_WITH_CUDA)
+    // It is important to make sure that every CUDA thread has its own random
+    // state so that we do not need expensive per-state locks.
+    num_rand_states = config.saturating_grid_dim * config.max_block_dim;
+#else
+    TI_NOT_IMPLEMENTED
+#endif
+  }
+
+  TI_TRACE("Allocating data structure of size {} B", scomp->root_size);
+  TI_TRACE("Allocating {} random states (used by CUDA only)", num_rand_states);
+
+  runtime->call<void *, void *, std::size_t, std::size_t, void *, int, void *,
                 void *, void *>("runtime_initialize", result_buffer, this,
                                 (std::size_t)scomp->root_size, prealloc_size,
-                                preallocated_device_buffer,
+                                preallocated_device_buffer, num_rand_states,
                                 (void *)&taichi_allocate_aligned,
                                 (void *)std::printf, (void *)std::vsnprintf);
 

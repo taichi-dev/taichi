@@ -5,6 +5,7 @@ import numbers
 import numpy as np
 from .util import taichi_scope, python_scope, deprecated, to_numpy_type, to_pytorch_type, in_python_scope
 from .common_ops import TaichiOperations
+from .exception import TaichiSyntaxError
 from collections.abc import Iterable
 import warnings
 
@@ -181,9 +182,16 @@ class Matrix(TaichiOperations):
         assert 0 <= args[1] < self.m
         # TODO(#1004): See if it's possible to support indexing at runtime
         for i, a in enumerate(args):
-            assert isinstance(
-                a, int
-            ), f'The {i}-th index of a Matrix/Vector must be a compile-time constant integer, got {a}'
+            if not isinstance(a, int):
+                raise TaichiSyntaxError(
+                    f'The {i}-th index of a Matrix/Vector must be a compile-time constant '
+                    'integer, got {a}. This is because matrix operations will be **unrolled**'
+                    ' at compile-time for performance reason.\n'
+                    'If you want to *iterate through matrix elements*, use a static range:\n'
+                    '  for i in ti.static(range(3)):\n'
+                    '    print(i, "-th component is", vec[i])\n'
+                    'See https://taichi.readthedocs.io/en/stable/meta.html#when-to-use-for-loops-with-ti-static for more details.'
+                    )
         return args[0] * self.m + args[1]
 
     def __call__(self, *args, **kwargs):

@@ -141,8 +141,22 @@ class Matrix(TaichiOperations):
         ret = self.empty_copy()
         if isinstance(other, (list, tuple)):
             other = Matrix(other)
+        if isinstance(other, Matrix):
+            assert self.m == other.m and self.n == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
+            for i in range(self.n * self.m):
+                ret.entries[i] = foo(self.entries[i], other.entries[i])
+        else:  # assumed to be scalar
+            for i in range(self.n * self.m):
+                ret.entries[i] = foo(self.entries[i], other)
+        return ret
+
+    def element_wise_writeback_binary(self, foo, other):
+        ret = self.empty_copy()
+        if isinstance(other, (list, tuple)):
+            other = Matrix(other)
+        other = other.variable()
         if foo.__name__ == 'assign' and not isinstance(other, Matrix):
-            raise SyntaxError(
+            raise TaichiSyntaxError(
                 'cannot assign scalar expr to '
                 f'taichi class {type(self)}, maybe you want to use `a.fill(b)` instead?'
             )
@@ -595,7 +609,7 @@ class Matrix(TaichiOperations):
                 import taichi as ti
                 return ti.assign(x, y)
 
-            return self.element_wise_binary(assign_renamed, val)
+            return self.element_wise_writeback_binary(assign_renamed, val)
 
         if isinstance(val, numbers.Number):
             val = tuple(

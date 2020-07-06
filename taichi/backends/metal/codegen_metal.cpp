@@ -807,7 +807,7 @@ class KernelCodegen : public IRVisitor {
     ka.task_type = stmt->task_type;
     ka.buffers = get_common_buffers();
 
-    const bool used_tls = (stmt->prologue != nullptr);
+    const bool used_tls = (stmt->tls_prologue != nullptr);
     KernelSigExtensions kernel_exts;
     kernel_exts.use_simdgroup = (used_tls && cgen_config_.allow_simdgroup);
     used_features()->simdgroup =
@@ -863,7 +863,7 @@ class KernelCodegen : public IRVisitor {
       emit("int32_t {}[{}];", tls_bufi32_name, (stmt->tls_size + 3) / 4);
       emit("thread char* {} = reinterpret_cast<thread char*>({});",
            kTlsBufferName, tls_bufi32_name);
-      stmt->prologue->accept(this);
+      stmt->tls_prologue->accept(this);
     }
 
     emit("for (int ii = begin_; ii < end_; ii += {}) {{", kKernelGridSizeName);
@@ -886,10 +886,10 @@ class KernelCodegen : public IRVisitor {
     emit("}}");  // closes for loop
 
     if (used_tls) {
-      TI_ASSERT(stmt->epilogue != nullptr);
+      TI_ASSERT(stmt->tls_epilogue != nullptr);
       inside_tls_epilogue_ = true;
       emit("{{  // TLS epilogue");
-      stmt->epilogue->accept(this);
+      stmt->tls_epilogue->accept(this);
       inside_tls_epilogue_ = false;
       emit("}}");
     }

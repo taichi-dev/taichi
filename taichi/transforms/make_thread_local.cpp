@@ -117,21 +117,21 @@ void make_thread_local_offload(OffloadedStmt *offload) {
     // Step 1:
     // Create thread local storage
     {
-      if (offload->prologue == nullptr) {
-        offload->prologue = std::make_unique<Block>();
+      if (offload->tls_prologue == nullptr) {
+        offload->tls_prologue = std::make_unique<Block>();
       }
 
       // ensure alignment
       tls_offset += (dtype_size - tls_offset % dtype_size) % dtype_size;
 
-      auto tls_ptr = offload->prologue->push_back<ThreadLocalPtrStmt>(
+      auto tls_ptr = offload->tls_prologue->push_back<ThreadLocalPtrStmt>(
           tls_offset, VectorType(1, data_type));
 
-      auto zero = offload->prologue->insert(
+      auto zero = offload->tls_prologue->insert(
           std::make_unique<ConstStmt>(TypedConstant(data_type, 0)), -1);
       // Zero-fill
       // TODO: do not use GlobalStore for TLS ptr.
-      offload->prologue->push_back<GlobalStoreStmt>(tls_ptr, zero);
+      offload->tls_prologue->push_back<GlobalStoreStmt>(tls_ptr, zero);
     }
 
     // Step 2:
@@ -146,19 +146,19 @@ void make_thread_local_offload(OffloadedStmt *offload) {
     // Step 3:
     // Atomic-add thread local contribution to its global version
     {
-      if (offload->epilogue == nullptr) {
-        offload->epilogue = std::make_unique<Block>();
+      if (offload->tls_epilogue == nullptr) {
+        offload->tls_epilogue = std::make_unique<Block>();
       }
-      auto tls_ptr = offload->epilogue->push_back<ThreadLocalPtrStmt>(
+      auto tls_ptr = offload->tls_epilogue->push_back<ThreadLocalPtrStmt>(
           tls_offset, VectorType(1, data_type));
       // TODO: do not use global load from TLS.
-      auto tls_load = offload->epilogue->push_back<GlobalLoadStmt>(tls_ptr);
-      auto global_ptr = offload->epilogue->insert(
+      auto tls_load = offload->tls_epilogue->push_back<GlobalLoadStmt>(tls_ptr);
+      auto global_ptr = offload->tls_epilogue->insert(
           std::unique_ptr<Stmt>(
               (Stmt *)irpass::analysis::clone(dest).release()),
           -1);
-      offload->epilogue->push_back<AtomicOpStmt>(AtomicOpType::add, global_ptr,
-                                                 tls_load);
+      offload->tls_epilogue->push_back<AtomicOpStmt>(AtomicOpType::add,
+                                                     global_ptr, tls_load);
     }
 
     // allocate storage for the TLS variable

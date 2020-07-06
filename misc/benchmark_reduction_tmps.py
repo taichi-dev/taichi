@@ -3,7 +3,7 @@ import time
 from pytest import approx
 
 # TODO: make this a real benchmark and set up regression
-# TODO: merge this file into benchmakr_reduction.py
+# TODO: merge this file into benchmark_reduction.py
 ti.init(arch=ti.gpu,
         print_ir=True,
         print_kernel_llvm_ir=True,

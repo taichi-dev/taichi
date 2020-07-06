@@ -207,6 +207,8 @@ class OffloadedStmt : public Stmt {
 
   std::unique_ptr<Stmt> clone() const override;
 
+  void all_blocks_accept(IRVisitor *visitor);
+
   TI_STMT_DEF_FIELDS(ret_type,
                      task_type,
                      snode,

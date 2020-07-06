@@ -21,7 +21,8 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
   void create_offload_range_for(OffloadedStmt *stmt) override {
     int step = 1;
 
-    // We may need to support serial offloaded range for's so it still make sense to reverse
+    // We may need to support serial offloaded range for's so it still make
+    // sense to reverse
     if (stmt->reversed) {
       step = -1;
     }

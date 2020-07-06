@@ -77,6 +77,15 @@ std::unique_ptr<Stmt> OffloadedStmt::clone() const {
   return new_stmt;
 }
 
+void OffloadedStmt::all_blocks_accept(IRVisitor *visitor) {
+  if (prologue)
+    prologue->accept(visitor);
+  if (body)
+    body->accept(visitor);
+  if (epilogue)
+    epilogue->accept(visitor);
+}
+
 int LoopIndexStmt::max_num_bits() const {
   if (auto range_for = loop->cast<RangeForStmt>()) {
     // Return the max number of bits only if both begin and end are

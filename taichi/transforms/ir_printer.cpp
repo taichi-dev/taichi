@@ -494,18 +494,28 @@ class IRPrinter : public IRVisitor {
             stmt->snode->get_node_type_name_hinted());
     } else {
       print("{} = offloaded {} ", stmt->name(), details);
-      if (stmt->prologue) {
-        print("prologue {{");
-        stmt->prologue->accept(this);
+      if (stmt->tls_prologue) {
+        print("tls prologue {{");
+        stmt->tls_prologue->accept(this);
+        print("}}");
+      }
+      if (stmt->bls_prologue) {
+        print("bls prologue {{");
+        stmt->bls_prologue->accept(this);
         print("}}");
       }
       TI_ASSERT(stmt->body);
       print("body {{");
       stmt->body->accept(this);
       print("}}");
-      if (stmt->epilogue) {
-        print("epilogue {{");
-        stmt->epilogue->accept(this);
+      if (stmt->bls_epilogue) {
+        print("bls_epilogue {{");
+        stmt->bls_epilogue->accept(this);
+        print("}}");
+      }
+      if (stmt->tls_epilogue) {
+        print("tls_epilogue {{");
+        stmt->tls_epilogue->accept(this);
         print("}}");
       }
     }

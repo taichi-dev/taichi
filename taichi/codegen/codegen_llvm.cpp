@@ -1371,17 +1371,17 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
       builder->CreateCondBr(exec_cond, bounded_body_bb, body_bb_tail);
       builder->SetInsertPoint(bounded_body_bb);
 
-      if (stmt->prologue) {
-        stmt->prologue->accept(this);
+      if (stmt->bls_prologue) {
+        stmt->bls_prologue->accept(this);
         call("block_barrier");  // "__syncthreads()"
       }
 
       // The real loop body
       stmt->body->accept(this);
 
-      if (stmt->epilogue) {
+      if (stmt->bls_epilogue) {
         call("block_barrier");  // "__syncthreads()"
-        stmt->epilogue->accept(this);
+        stmt->bls_epilogue->accept(this);
       }
       builder->CreateBr(body_bb_tail);
     }

@@ -41,12 +41,7 @@ void BasicStmtVisitor::visit(StructForStmt *for_stmt) {
 
 void BasicStmtVisitor::visit(OffloadedStmt *stmt) {
   preprocess_container_stmt(stmt);
-  if (stmt->prologue)
-    stmt->prologue->accept(this);
-  if (stmt->body)
-    stmt->body->accept(this);
-  if (stmt->epilogue)
-    stmt->epilogue->accept(this);
+  stmt->all_blocks_accept(this);
 }
 
 void BasicStmtVisitor::visit(FuncBodyStmt *stmt) {

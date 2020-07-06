@@ -78,12 +78,16 @@ std::unique_ptr<Stmt> OffloadedStmt::clone() const {
 }
 
 void OffloadedStmt::all_blocks_accept(IRVisitor *visitor) {
-  if (prologue)
-    prologue->accept(visitor);
+  if (tls_prologue)
+    tls_prologue->accept(visitor);
+  if (bls_prologue)
+    bls_prologue->accept(visitor);
   if (body)
     body->accept(visitor);
-  if (epilogue)
-    epilogue->accept(visitor);
+  if (bls_epilogue)
+    bls_epilogue->accept(visitor);
+  if (tls_epilogue)
+    tls_epilogue->accept(visitor);
 }
 
 int LoopIndexStmt::max_num_bits() const {

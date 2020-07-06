@@ -334,7 +334,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   }
 
   void create_offload_range_for(OffloadedStmt *stmt) override {
-    auto prologue = create_xlogue(stmt->prologue);
+    auto tls_prologue = create_xlogue(stmt->tls_prologue);
 
     llvm::Function *body;
     {
@@ -350,11 +350,11 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       body = guard.body;
     }
 
-    auto epilogue = create_xlogue(stmt->epilogue);
+    auto epilogue = create_xlogue(stmt->tls_epilogue);
 
     auto [begin, end] = get_range_for_bounds(stmt);
     create_call("gpu_parallel_range_for",
-                {get_arg(0), begin, end, prologue, body, epilogue,
+                {get_arg(0), begin, end, tls_prologue, body, epilogue,
                  tlctx->get_constant(stmt->tls_size)});
   }
 

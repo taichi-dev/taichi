@@ -970,7 +970,7 @@ void element_listgen(LLVMRuntime *runtime,
 
 using BlockTask = void(Context *, Element *, int, int);
 
-struct block_task_helper_context {
+struct cpu_block_task_helper_context {
   Context *context;
   BlockTask *task;
   ListManager *list;
@@ -986,7 +986,7 @@ struct block_task_helper_context {
 // with the threads (instead of blocks).
 
 void block_helper(void *ctx_, int i) {
-  auto ctx = (block_task_helper_context *)(ctx_);
+  auto ctx = (cpu_block_task_helper_context *)(ctx_);
   int element_id = i / ctx->element_split;
   int part_size = ctx->element_size / ctx->element_split;
   int part_id = i % ctx->element_split;
@@ -1025,7 +1025,7 @@ void parallel_struct_for(Context *context,
     i += grid_dim();
   }
 #else
-  block_task_helper_context ctx;
+  cpu_block_task_helper_context ctx;
   ctx.context = context;
   ctx.task = task;
   ctx.list = list;

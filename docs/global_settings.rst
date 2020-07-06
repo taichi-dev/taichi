@@ -14,6 +14,7 @@ Compilation
 ***********
 
 - Disable advanced optimization to save compile time & possible errors: ``ti.init(advanced_optimization=False)``.
+- Disable fast math to prevent possible undefined math behavior: ``ti.init(fast_math=False)``.
 - To print intermediate IR generated: ``ti.init(print_ir=True)``.
 - To print preprocessed Python code: ``ti.init(print_preprocessed=True)``.
 

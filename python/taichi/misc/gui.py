@@ -79,7 +79,6 @@ class GUI:
         self.core.get_img(self.img.ctypes.data)
         return self.img
 
-
     def set_image(self, img):
         import numpy as np
         import taichi as ti
@@ -288,5 +287,5 @@ class GUI:
 
 
 def rgb_to_hex(c):
-    to255 = lambda x: min(255, max(0, int(x * 255)))
+    def to255(x): return min(255, max(0, int(x * 255)))
     return 65536 * to255(c[0]) + 256 * to255(c[1]) + to255(c[2])

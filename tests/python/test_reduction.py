@@ -18,11 +18,20 @@ def _test_reduction_single(dtype, criterion):
         for i in a:
             tot[None] += a[i]
 
+    @ti.kernel
+    def reduce_tmp() -> dtype:
+        s = tot[None] * 0  # Hack to get |s| to the correct type...
+        for i in a:
+            s += a[i]
+        return s
+
     fill()
     reduce()
+    tot2 = reduce_tmp()
 
     ground_truth = N * (N - 1) / 2
     assert criterion(tot[None], ground_truth)
+    assert criterion(tot2, ground_truth)
 
 
 @ti.all_archs

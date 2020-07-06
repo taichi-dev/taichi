@@ -1405,7 +1405,7 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
   }
   int num_splits = leaf_block->max_num_elements() / stmt->block_dim;
   // traverse leaf node
-  create_call("for_each_block",
+  create_call("parallel_struct_for",
               {get_context(), tlctx->get_constant(leaf_block->id),
                tlctx->get_constant(leaf_block->max_num_elements()),
                tlctx->get_constant(num_splits), body,

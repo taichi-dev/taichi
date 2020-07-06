@@ -978,11 +978,11 @@ struct cpu_block_task_helper_context {
   int element_split;
 };
 
-// To enforce inlining, we need to create in LLVM a new function that calls
-// block_helper and the BLS xlogues, and pass that function to the
+// TODO: To enforce inlining, we need to create in LLVM a new function that
+// calls block_helper and the BLS xlogues, and pass that function to the
 // scheduler.
 
-// Note that TLS should be directly passed to the scheduler, so that it lives
+// TODO: TLS should be directly passed to the scheduler, so that it lives
 // with the threads (instead of blocks).
 
 void block_helper(void *ctx_, int i) {

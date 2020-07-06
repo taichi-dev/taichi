@@ -76,9 +76,8 @@ class UnreachableCodeEliminator : public BasicStmtVisitor {
     if (stmt->tls_prologue)
       stmt->tls_prologue->accept(this);
 
-    // TODO: should we use visit_loop here?
     if (stmt->bls_prologue)
-      visit_loop(stmt->bls_prologue.get());
+      stmt->bls_prologue->accept(this);
 
     if (stmt->task_type == OffloadedStmt::TaskType::range_for ||
         stmt->task_type == OffloadedStmt::TaskType::struct_for)
@@ -86,9 +85,8 @@ class UnreachableCodeEliminator : public BasicStmtVisitor {
     else if (stmt->body)
       stmt->body->accept(this);
 
-    // TODO: should we use visit_loop here?
     if (stmt->bls_epilogue)
-      visit_loop(stmt->bls_epilogue.get());
+      stmt->bls_epilogue->accept(this);
 
     if (stmt->tls_epilogue)
       stmt->tls_epilogue->accept(this);

@@ -3,7 +3,7 @@ from . import impl
 import copy
 import numbers
 import numpy as np
-from .util import taichi_scope, python_scope, deprecated, to_numpy_type, to_pytorch_type, in_python_scope
+from .util import taichi_scope, python_scope, deprecated, to_numpy_type, to_pytorch_type, in_python_scope, is_taichi_class
 from .common_ops import TaichiOperations
 from .exception import TaichiSyntaxError
 from collections.abc import Iterable
@@ -154,7 +154,8 @@ class Matrix(TaichiOperations):
         ret = self.empty_copy()
         if isinstance(other, (list, tuple)):
             other = Matrix(other)
-        other = other.variable()
+        if is_taichi_class(other):
+            other = other.variable()
         if foo.__name__ == 'assign' and not isinstance(other, Matrix):
             raise TaichiSyntaxError(
                 'cannot assign scalar expr to '

@@ -57,7 +57,7 @@ def locale_encode(s):
     try:
         import locale
         return s.encode(locale.getdefaultlocale()[1])
-    except:
+    except TypeError:
         return s.encode('utf8')
 
 

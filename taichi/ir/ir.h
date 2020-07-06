@@ -243,6 +243,8 @@ class IRVisitor {
 #undef PER_STATEMENT
 };
 
+struct CompileConfig;
+
 class IRNode {
  public:
   virtual void accept(IRVisitor *visitor) {
@@ -252,6 +254,8 @@ class IRNode {
     return nullptr;
   }
   virtual ~IRNode() = default;
+
+  CompileConfig &get_config() const;
 
   template <typename T>
   bool is() const {

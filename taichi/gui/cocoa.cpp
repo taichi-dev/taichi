@@ -118,6 +118,7 @@ constexpr int NSApplicationActivationPolicyRegular = 0;
 constexpr int NSEventTypeKeyDown = 10;
 constexpr int NSEventTypeKeyUp = 11;
 constexpr int NSEventTypeFlagsChanged = 12;
+constexpr int NSEventTypeScrollWheel = 22;
 
 struct ModifierFlagsHandler {
   struct Result {
@@ -370,6 +371,15 @@ void GUI::process_event() {
             key_events.push_back(
                 KeyEvent{KeyEvent::Type::release, key, cursor_pos});
           }
+          break;
+        }
+        case NSEventTypeScrollWheel: {
+          set_mouse_pos(p.x, p.y);
+          const auto dx = (int)cast_call<CGFloat>(event, "scrollingDeltaX");
+          // Mac trackpad's vertical scroll is reversed.
+          const auto dy = -(int)cast_call<CGFloat>(event, "scrollingDeltaY");
+          key_events.push_back(KeyEvent{KeyEvent::Type::move, "Wheel",
+                                        cursor_pos, Vector2i{dx, dy}});
           break;
         }
       }

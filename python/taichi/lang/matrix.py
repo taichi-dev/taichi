@@ -682,10 +682,23 @@ class Matrix(TaichiOperations):
                 yield ']'
         yield ']'
 
-    @python_scope
     def __repr__(self):
         """Python scope object print support."""
-        return str(self.to_numpy())
+        if impl.inside_kernel():
+            '''
+            It seems that when pybind11 got an type mismatch, it will try
+            to invoke `repr` to show the object... e.g.:
+
+            TypeError: make_const_expr_f32(): incompatible function arguments. The following argument types are supported:
+                1. (arg0: float) -> taichi_core.Expr
+
+            Invoked with: <Taichi 2x1 Matrix>
+
+            So we have to make it happy with a dummy string...
+            '''
+            return f'<Taichi {self.n}x{self.m} Matrix>'
+        else:
+            return str(self.to_numpy())
 
     @staticmethod
     @taichi_scope

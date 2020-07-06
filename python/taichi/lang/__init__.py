@@ -70,12 +70,12 @@ def reset():
     runtime = get_runtime()
 
 
-class EnvironConfig:
+class _EnvironConfig:
     def __init__(self, args):
         self.args = args
         self.cfg_keys = []
 
-    def add(self, key, default, cast=None):
+    def add(self, key, default=None, cast=None):
         cast = cast or self.bool_int
 
         self.cfg_keys.append(key)
@@ -115,7 +115,7 @@ def init(arch=None,
     kwargs = _deepcopy(kwargs)
     ti.reset()
 
-    env = EnvironConfig(kwargs)
+    env = _EnvironConfig(kwargs)
 
     # configure default_fp/ip:
     if default_fp is None:
@@ -150,14 +150,14 @@ def init(arch=None,
 
     # configurations in ti.cfg:
     env.cfg_keys = []
-    env.add('debug', False)
-    env.add('print_ir', False)
-    env.add('verbose', False)
-    env.add('fast_math', False)
-    env.add('async', False)
-    env.add('use_unified_memory', True)
-    env.add('print_benchmark_stat', False)
-    env.add('advanced_optimization', True)
+    env.add('debug')
+    env.add('print_ir')
+    env.add('verbose')
+    env.add('fast_math')
+    env.add('async')
+    env.add('use_unified_memory')
+    env.add('print_benchmark_stat')
+    env.add('advanced_optimization')
     # TODO(yuanming-hu): Maybe these CUDA specific configs should be moved
     # to somewhere like ti.cfg.cuda so that user don't get confused?
     env.add('device_memory_fraction', None, float)

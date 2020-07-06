@@ -129,15 +129,16 @@ class Matrix(TaichiOperations):
             else:
                 assert offset is None, f"shape cannot be None when offset is being set"
 
-        if self.n * self.m > 100:
-            raise TaichiSyntaxError(
-                f'Taichi matrices/vectors with {self.n}x{self.m} > 100 entries are not suggested.'
+        if self.n * self.m > 32:
+            warnings.warn(
+                f'Taichi matrices/vectors with {self.n}x{self.m} > 32 entries are not suggested.'
                 ' Matrices/vectors will be automatically unrolled at compile-time for performance.'
                 ' So the compilation time could be extremely long if the matrix size is too big.'
                 ' You may use a tensor to store a large matrix like this, e.g.:\n'
                 f'    x = ti.var(ti.f32, ({self.n}, {self.m})).\n'
                 ' See https://taichi.readthedocs.io/en/stable/tensor_matrix.html#matrix-size'
-                ' for more details.'
+                ' for more details.',
+                UserWarning, stacklevel=2
                 )
 
     def is_global(self):

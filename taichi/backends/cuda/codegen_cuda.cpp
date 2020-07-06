@@ -21,8 +21,6 @@ using namespace llvm;
 
 class CodeGenLLVMCUDA : public CodeGenLLVM {
  public:
-  int num_SMs;
-  int max_block_dim;
   int saturating_num_blocks;
 
   using IRVisitor::visit;
@@ -336,22 +334,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   }
 
   void create_offload_range_for(OffloadedStmt *stmt) override {
-    auto loop_block_dim = stmt->block_dim;
-    if (loop_block_dim == 0) {
-      loop_block_dim = prog->config.default_gpu_block_dim;
-    }
-
-    auto xlogue_type = get_xlogue_function_type();
-    auto xlogue_ptr_type = llvm::PointerType::get(xlogue_type, 0);
-
-    llvm::Value *prologue = nullptr;
-    if (stmt->prologue) {
-      auto guard = get_function_creation_guard(get_xlogue_argument_types());
-      stmt->prologue->accept(this);
-      prologue = guard.body;
-    } else {
-      prologue = llvm::ConstantPointerNull::get(xlogue_ptr_type);
-    }
+    auto prologue = create_xlogue(stmt->prologue);
 
     llvm::Function *body;
     {
@@ -367,17 +350,9 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       body = guard.body;
     }
 
-    llvm::Value *epilogue = nullptr;
-    if (stmt->epilogue) {
-      auto guard = get_function_creation_guard(get_xlogue_argument_types());
-      stmt->epilogue->accept(this);
-      epilogue = guard.body;
-    } else {
-      epilogue = llvm::ConstantPointerNull::get(xlogue_ptr_type);
-    }
+    auto epilogue = create_xlogue(stmt->epilogue);
 
     auto [begin, end] = get_range_for_bounds(stmt);
-
     create_call("gpu_parallel_range_for",
                 {get_arg(0), begin, end, prologue, body, epilogue,
                  tlctx->get_constant(stmt->tls_size)});

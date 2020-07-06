@@ -20,21 +20,13 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
 
   void create_offload_range_for(OffloadedStmt *stmt) override {
     int step = 1;
+
+    // We may need to support serial offloaded range for's so it still make sense to reverse
     if (stmt->reversed) {
       step = -1;
     }
 
-    auto xlogue_type = get_xlogue_function_type();
-    auto xlogue_ptr_type = llvm::PointerType::get(xlogue_type, 0);
-
-    llvm::Value *prologue = nullptr;
-    if (stmt->prologue) {
-      auto guard = get_function_creation_guard(get_xlogue_argument_types());
-      stmt->prologue->accept(this);
-      prologue = guard.body;
-    } else {
-      prologue = llvm::ConstantPointerNull::get(xlogue_ptr_type);
-    }
+    auto *prologue = create_xlogue(stmt->prologue);
 
     llvm::Function *body;
     {
@@ -51,14 +43,7 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
       body = guard.body;
     }
 
-    llvm::Value *epilogue = nullptr;
-    if (stmt->epilogue) {
-      auto guard = get_function_creation_guard(get_xlogue_argument_types());
-      stmt->epilogue->accept(this);
-      epilogue = guard.body;
-    } else {
-      epilogue = llvm::ConstantPointerNull::get(xlogue_ptr_type);
-    }
+    llvm::Value *epilogue = create_xlogue(stmt->epilogue);
 
     auto [begin, end] = get_range_for_bounds(stmt);
     create_call(

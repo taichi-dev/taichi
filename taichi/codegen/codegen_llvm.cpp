@@ -1633,4 +1633,21 @@ FunctionType CodeGenLLVM::gen() {
   return compile_module_to_executable();
 }
 
+llvm::Value *CodeGenLLVM::create_xlogue(std::unique_ptr<Block> &block) {
+  llvm::Value *xlogue;
+
+  auto xlogue_type = get_xlogue_function_type();
+  auto xlogue_ptr_type = llvm::PointerType::get(xlogue_type, 0);
+
+  if (block) {
+    auto guard = get_function_creation_guard(get_xlogue_argument_types());
+    block->accept(this);
+    xlogue = guard.body;
+  } else {
+    xlogue = llvm::ConstantPointerNull::get(xlogue_ptr_type);
+  }
+
+  return xlogue;
+}
+
 TLANG_NAMESPACE_END

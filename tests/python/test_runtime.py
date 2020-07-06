@@ -12,7 +12,7 @@ def patch_os_environ_helper(custom_environ: dict, excludes: dict):
     Originally created by @rexwangcc in test_cli.py
     @archibate tweaked this method to be an os.environ patcher.
 
-    The patched environ environ will be:
+    The patched environ will be:
         custom_environ + (os.environ - excludes - custom_environ).
 
     I.e.:

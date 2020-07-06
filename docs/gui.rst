@@ -317,7 +317,7 @@ Image I/O
 
     :return a ``np.ndarray`` which is the current image shown on the GUI.
 
-    Get the shown image from the current GUI system.
+    Get the RGBA shown image from the current GUI system which has four channels.
 
 .. function:: ti.imwrite(img, filename)
 

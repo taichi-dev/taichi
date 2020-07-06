@@ -76,6 +76,7 @@ class GUI:
         return np.ascontiguousarray(img)
 
     def get_image(self):
+        self.img = np.ascontiguousarray(self.img)
         self.core.get_img(self.img.ctypes.data)
         return self.img
 

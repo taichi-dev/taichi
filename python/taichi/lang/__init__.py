@@ -148,6 +148,7 @@ def init(arch=None,
     env.add('print_preprocessed', False)
     env.add('log_level', 'info', str)
     env.add('gdb_trigger', False)
+    env.add('excepthook', False)
 
     # configurations in ti.cfg:
     env.cfg_keys = []
@@ -169,9 +170,13 @@ def init(arch=None,
             setattr(ti.cfg, key, value)
 
     # dispatch configurations that are not in ti.cfg:
-    ti.set_gdb_trigger(env['gdb_trigger'])
-    ti.get_runtime().print_preprocessed = env['print_preprocessed']
-    ti.set_logging_level(env['log_level'].lower())
+    if _test_mode:
+        ti.set_gdb_trigger(env['gdb_trigger'])
+        ti.get_runtime().print_preprocessed = env['print_preprocessed']
+        ti.set_logging_level(env['log_level'].lower())
+        if env['excepthook']:
+            # TODO(#1405): add a way to restore old excepthook
+            ti.enable_excepthook()
 
     # select arch (backend):
     env_arch = os.environ.get('TI_ARCH')

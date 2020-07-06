@@ -1,6 +1,5 @@
 import numbers
 import numpy as np
-
 from taichi import ti_core
 
 
@@ -27,6 +26,7 @@ class GUI:
     RMB = 'RMB'
     EXIT = 'WMClose'
     WHEEL = 'Wheel'
+    MOVE = 'Motion'
 
     # Event types
     MOTION = ti_core.KeyEvent.EType.Move
@@ -248,14 +248,18 @@ class GUI:
 
         if e.key == GUI.WHEEL:
             e.delta = event.delta
+        else:
+            e.delta = (0, 0)
 
         for mod in ['Shift', 'Alt', 'Control']:
             if self.is_pressed(mod):
                 e.modifier.append(mod)
+
         if e.type == GUI.PRESS:
             self.key_pressed.add(e.key)
         else:
             self.key_pressed.discard(e.key)
+
         self.core.pop_key_event_head()
         return e
 

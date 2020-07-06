@@ -138,7 +138,8 @@ class Matrix(TaichiOperations):
                 f'    x = ti.var(ti.f32, ({self.n}, {self.m})).\n'
                 ' See https://taichi.readthedocs.io/en/stable/tensor_matrix.html#matrix-size'
                 ' for more details.',
-                UserWarning, stacklevel=2)
+                UserWarning,
+                stacklevel=2)
 
     def is_global(self):
         results = [False for _ in self.entries]

@@ -287,5 +287,5 @@ class GUI:
 
 
 def rgb_to_hex(c):
-    def to255(x): return min(255, max(0, int(x * 255)))
+    to255 = lambda x: min(255, max(0, int(x * 255)))
     return 65536 * to255(c[0]) + 256 * to255(c[1]) + to255(c[2])

@@ -1,4 +1,5 @@
 from .impl import *
+from .error import enable_excepthook
 from .util import deprecated
 from .matrix import Matrix, Vector
 from .transformer import TaichiSyntaxError

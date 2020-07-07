@@ -100,7 +100,8 @@ def test_scatter_1d():
         (1, ),
         (0, ),
     ), scatter=True)
-    
+
+
 def test_scatter_2d():
     stencil = [(0, 0), (0, -1), (0, 1), (1, 0)]
     _test_bls_stencil(2, 128, bs=16, stencil=stencil, scatter=True)

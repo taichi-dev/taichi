@@ -5,6 +5,7 @@
 
 #include "taichi/common/dict.h"
 #include "taichi/util/testing.h"
+#include "taichi/util/action_recorder.h"
 
 TI_NAMESPACE_BEGIN
 
@@ -29,6 +30,16 @@ TI_TEST("dict") {
 
     dict.set("str", "Hello");
     TI_CHECK(dict.get<std::string>("str") == "Hello");
+
+    ActionRecorder::record(
+        "launch",
+        {ActionArg("grid_dim", 1024), ActionArg("kernel_name", "p2g"),
+         ActionArg("comment", "how to <> ,,,")});
+
+    ActionRecorder::record(
+        "launch2",
+        {ActionArg("grid_dim", 1024), ActionArg("kernel_name", "p2g"),
+         ActionArg("comment", "how to <> ,,,")});
   };
 }
 

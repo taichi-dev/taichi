@@ -6,42 +6,40 @@
 
 TI_NAMESPACE_BEGIN
 
-class ActionRecorder {
- public:
-  std::ofstream ofs;
-
-  int indentation{0};
-
-  ActionRecorder(std::string fn) {
-    ofs.open(fn);
-    ofs << "Taichi Kernel Action Recorder" << std::endl;
+struct ActionArg {
+  ActionArg(const std::string &key, const std::string &val)
+      : key(key), val_str(val), type(argument_type::str) {
   }
 
-  class IndentGuard {
-   public:
-    ActionRecorder *rec;
-    IndentGuard(ActionRecorder *rec) : rec(rec) {
-      rec->indentation += 1;
-    }
-
-    ~IndentGuard() {
-      rec->indentation -= 1;
-    }
-  };
-
-  IndentGuard get_indent_guard() {
-    return IndentGuard(this);
+  ActionArg(const std::string &key, int64 val)
+      : key(key), val_int64(val), type(argument_type::int64) {
   }
 
-  void record(std::string content) {
-    ofs << "* " + std::string(indentation * 2, ' ') + content << std::endl;
-    ofs.flush();
-  }
+  std::string serialize() const;
+
+  std::string key;
+
+  std::string val_str;
+  int64 val_int64;
+
+  enum argument_type { str, int64 };
+  argument_type type;
 };
 
-inline ActionRecorder &get_action_recorder() {
-  static ActionRecorder rec("actions.txt");
-  return rec;
-}
+class ActionRecorder {
+ public:
+  static ActionRecorder &get_instance();
+
+  static void record(const std::string &content,
+                     const std::vector<ActionArg> &arguments = {});
+
+ private:
+  void record_(const std::string &content,
+               const std::vector<ActionArg> &arguments);
+
+  ActionRecorder(const std::string &fn);
+
+  std::ofstream ofs;
+};
 
 TI_NAMESPACE_END

@@ -54,7 +54,7 @@ init_args = {
     'verbose': [True, TF],
     'fast_math': [True, TF],
     'async': [False, TF],
-    'use_unified_memory': [True, TF],
+    'use_unified_memory': [ti.get_os_name() != 'win', TF],
     'print_benchmark_stat': [False, TF],
     # FIXME: figure out why these two failed test:
     #'device_memory_fraction': [0.0, [0.5, 1, 0]],

@@ -87,7 +87,8 @@ class CompiledMtlKernelBase {
   };
 
   explicit CompiledMtlKernelBase(Params &params)
-      : kernel_attribs_(*params.kernel_attribs),
+      : is_jit_evalutor_(params.is_jit_evaluator),
+        kernel_attribs_(*params.kernel_attribs),
         pipeline_state_(
             new_compute_pipeline_state_with_function(params.device,
                                                      params.mtl_func)) {
@@ -133,6 +134,7 @@ class CompiledMtlKernelBase {
     end_encoding(encoder.get());
   }
 
+  const bool is_jit_evalutor_;
   KernelAttributes kernel_attribs_;
   nsobj_unique_ptr<MTLComputePipelineState> pipeline_state_;
 };

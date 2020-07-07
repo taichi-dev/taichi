@@ -103,7 +103,7 @@ class Matrix(TaichiOperations):
                 if offset is not None:
                     assert len(shape) == len(
                         offset
-                    ), f'The dimensionality of shape and offset must be the same  (f{len(shape)} != f{len(offset)})'
+                    ), f'The dimensionality of shape and offset must be the same  ({len(shape)} != {len(offset)})'
 
                 import taichi as ti
                 if layout is None:

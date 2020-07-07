@@ -49,7 +49,6 @@ CompileConfig::CompileConfig() {
   device_memory_fraction = 0.0;
 
   ad_stack_size = 16;
-  max_gpu_block_dim = 0;
 }
 
 TLANG_NAMESPACE_END

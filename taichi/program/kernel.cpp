@@ -113,8 +113,11 @@ void Kernel::set_arg_float(int i, float64 d) {
   TI_ASSERT_INFO(
       !args[i].is_nparray,
       "Assigning a scalar value to a numpy array argument is not allowed");
-  get_action_recorder().record(fmt::format(
-      "Setting argument {}.argument[{}] = {} (float-point)", name, i, d));
+
+  ActionRecorder::record("set_kernel_arg_float",
+                         {ActionArg("kernel_name", name),
+                          ActionArg("arg_id", i), ActionArg("val", d)});
+
   auto dt = args[i].dt;
   if (dt == DataType::f32) {
     program.context.set_arg(i, (float32)d);
@@ -145,8 +148,11 @@ void Kernel::set_arg_int(int i, int64 d) {
   TI_ASSERT_INFO(
       !args[i].is_nparray,
       "Assigning scalar value to numpy array argument is not allowed");
-  get_action_recorder().record(fmt::format(
-      "Setting argument {}.argument[{}] = {} (integral)", name, i, d));
+
+  ActionRecorder::record("set_kernel_arg_int",
+                         {ActionArg("kernel_name", name),
+                          ActionArg("arg_id", i), ActionArg("val", d)});
+
   auto dt = args[i].dt;
   if (dt == DataType::i32) {
     program.context.set_arg(i, (int32)d);
@@ -234,9 +240,13 @@ void Kernel::set_extra_arg_int(int i, int j, int32 d) {
 void Kernel::set_arg_nparray(int i, uint64 ptr, uint64 size) {
   TI_ASSERT_INFO(args[i].is_nparray,
                  "Assigning numpy array to scalar argument is not allowed");
-  get_action_recorder().record(fmt::format(
-      "Setting argument {}.argument[{}] = 0x{:x} (external pointer) size={}B",
-      name, i, ptr, size));
+
+  ActionRecorder::record(
+      "set_kernel_arg_ext_ptr",
+      {ActionArg("kernel_name", name), ActionArg("arg_id", i),
+       ActionArg("val", fmt::format("0x{:x}", ptr)),
+       ActionArg("array_size_bytes", (int64)size)});
+
   args[i].size = size;
   program.context.set_arg(i, ptr);
 }

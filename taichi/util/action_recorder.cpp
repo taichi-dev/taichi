@@ -6,8 +6,10 @@ std::string ActionArg::serialize() const {
   std::string ret = key + ": ";
   if (type == argument_type::str) {
     ret += "\"" + val_str + "\"";
-  } else {
+  } else if (type == argument_type::int64) {
     ret += std::to_string(val_int64);
+  } else {
+    ret += std::to_string(val_float64);
   }
   return ret;
 }
@@ -18,11 +20,14 @@ ActionRecorder &ActionRecorder::get_instance() {
 }
 
 ActionRecorder::ActionRecorder(const std::string &fn) {
-  ofs.open(fn);
 }
 
-void ActionRecorder::start_recording() {
-  TI_ASSERT(!get_instance().running);
+void ActionRecorder::start_recording(const std::string &fn) {
+  get_instance().start_recording_(fn);
+}
+
+void ActionRecorder::start_recording_(const std::string &fn) {
+  ofs.open(fn);
   get_instance().running = true;
 }
 

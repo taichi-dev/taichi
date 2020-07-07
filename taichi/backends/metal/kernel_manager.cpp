@@ -129,16 +129,22 @@ class CompiledMtlKernelBase {
     const int num_groups =
         ((num_threads + num_threads_per_group - 1) / num_threads_per_group);
 
-    auto action = fmt::format(
-        "Launching subkernel name={} num_groups={} threads_per_group={}",
-        kernel_attribs_.name, num_groups,
-        std::min(num_threads, num_threads_per_group));
+    const int dispatch_num_threads =
+        std::min(num_threads, num_threads_per_group);
+
     if (kernel_attribs_.name.find("jit_evaluator") == std::string::npos) {
-      get_action_recorder().record(action);
+      auto action = fmt::format(
+          "Launching subkernel name={} num_groups={} threads_per_group={}",
+          kernel_attribs_.name, num_groups,
+          std::min(num_threads, num_threads_per_group));
+      ActionRecorder::record(
+          "launch_kernel",
+          {ActionArg("kernel_name", kernel_attribs_.name),
+           ActionArg("num_groups", num_groups),
+           ActionArg("num_threads_per_group", dispatch_num_threads)});
     }
 
-    dispatch_threadgroups(encoder.get(), num_groups,
-                          std::min(num_threads, num_threads_per_group));
+    dispatch_threadgroups(encoder.get(), num_groups, dispatch_num_threads);
     end_encoding(encoder.get());
   }
 
@@ -247,11 +253,14 @@ class CompiledTaichiKernel {
     }
     if (params.taichi_kernel_name.find("jit_evaluator") == std::string::npos) {
       // dump metal
+
       static int counter = 0;
       auto fn = fmt::format("shader{:05d}.mtl", counter++);
-      get_action_recorder().record(
-          fmt::format("Taichi kernel {} saved to shader file {}",
-                      params.taichi_kernel_name, fn));
+      ActionRecorder::record(
+          "save_kernel",
+          {ActionArg("kernel_name", std::string(params.taichi_kernel_name)),
+           ActionArg("filename", fn)});
+
       std::ofstream ofs(fn);
       ofs << params.mtl_source_code.c_str();
     }
@@ -288,9 +297,10 @@ class CompiledTaichiKernel {
                                                    params.mem_pool);
       if (params.taichi_kernel_name.find("jit_evaluator") ==
           std::string::npos) {
-        get_action_recorder().record(fmt::format(
-            "Allocating context (ctx) buffer for kernel {}: size={}B",
-            params.taichi_kernel_name, ctx_attribs.total_bytes()));
+        ActionRecorder::record(
+            "allocate_context_buffer",
+            {ActionArg("kernel_name", std::string(params.taichi_kernel_name)),
+             ActionArg("size_in_bytes", (int64)ctx_attribs.total_bytes())});
       }
       ctx_buffer =
           new_mtl_buffer_no_copy(device, ctx_mem->ptr(), ctx_mem->size());
@@ -332,10 +342,12 @@ class HostMetalCtxBlitter {
       const auto &arg = ctx_attribs_->args()[i];
       const auto dt = arg.dt;
       char *device_ptr = base + arg.offset_in_mem;
-      if (kernel_name.find("jit_evaluator") == std::string::npos)
-        get_action_recorder().record(fmt::format(
-            "Copying kernel {}.argument[{}] to context buffer (offset={} B)",
-            kernel_name, i, arg.offset_in_mem));
+      if (kernel_name.find("jit_evaluator") == std::string::npos) {
+        ActionRecorder::record(
+            "allocate_context_buffer",
+            {ActionArg("kernel_name", kernel_name), ActionArg("arg_id", i),
+             ActionArg("offset_in_bytes", (int64)arg.offset_in_mem)});
+      }
       if (arg.is_array) {
         const void *host_ptr = host_ctx_->get_arg<void *>(i);
         std::memcpy(device_ptr, host_ptr, arg.stride);
@@ -464,16 +476,18 @@ class KernelManager::Impl {
                                             root_mem_->size());
       TI_ASSERT(root_buffer_ != nullptr);
       TI_DEBUG("Metal root buffer size: {} bytes", root_mem_->size());
-      get_action_recorder().record(
-          fmt::format("Metal root buffer size: {} bytes", root_mem_->size()));
+      ActionRecorder::record(
+          "allocate_root_buffer",
+          {ActionArg("size_in_bytes", (int64)root_mem_->size())});
     }
 
     global_tmps_mem_ = std::make_unique<BufferMemoryView>(
         taichi_global_tmp_buffer_size, mem_pool_);
-    get_action_recorder().record(
-        fmt::format("Allocating global tmp buffer: "
-                    "size={}B",
-                    taichi_global_tmp_buffer_size));
+
+    ActionRecorder::record(
+        "allocate_global_tmp_buffer",
+        {ActionArg("size_in_bytes", (int64)taichi_global_tmp_buffer_size)});
+
     global_tmps_buffer_ = new_mtl_buffer_no_copy(
         device_.get(), global_tmps_mem_->ptr(), global_tmps_mem_->size());
     TI_ASSERT(global_tmps_buffer_ != nullptr);
@@ -488,10 +502,14 @@ class KernelManager::Impl {
         "Metal runtime buffer size: {} bytes (sizeof(Runtime)={} "
         "memory_pool={})",
         runtime_mem_->size(), compiled_structs_.runtime_size, mem_pool_bytes);
-    get_action_recorder().record(fmt::format(
-        "Metal runtime buffer size: {} bytes (sizeof(Runtime)={} "
-        "memory_pool={})",
-        runtime_mem_->size(), compiled_structs_.runtime_size, mem_pool_bytes));
+
+    ActionRecorder::record(
+        "allocate_runtime_buffer",
+        {ActionArg("runtime_buffer_size_in_bytes", (int64)runtime_mem_->size()),
+         ActionArg("runtime_struct_size_in_bytes",
+                   (int64)compiled_structs_.runtime_size),
+         ActionArg("memory_pool_size", (int64)mem_pool_bytes)});
+
     TI_ASSERT_INFO(
         runtime_buffer_ != nullptr,
         "Failed to allocate Metal runtime buffer, requested {} bytes",

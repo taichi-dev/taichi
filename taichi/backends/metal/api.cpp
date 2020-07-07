@@ -144,8 +144,11 @@ size_t get_max_total_threads_per_threadgroup(
   // The value of the pointer returned by call is the actual result
   auto native_block_dim =
       (size_t)call(pipeline_state, "maxTotalThreadsPerThreadgroup");
+
+  // Sometimes it is helpful to specify a maximum GPU block dim.
+  // E.g., when you are generating iPhone shaders on a Mac.
   auto prescribed_block_dim =
-      (std::size_t)get_current_program().config.max_gpu_block_dim;
+      (std::size_t)get_current_program().config.max_block_dim;
   if (prescribed_block_dim != 0) {
     return std::min(native_block_dim, prescribed_block_dim);
   } else {

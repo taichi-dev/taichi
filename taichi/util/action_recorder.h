@@ -15,14 +15,27 @@ struct ActionArg {
       : key(key), val_int64(val), type(argument_type::int64) {
   }
 
+  ActionArg(const std::string &key, float64 val)
+      : key(key), val_float64(val), type(argument_type::float64) {
+  }
+
+  ActionArg(const std::string &key, int32 val)
+      : key(key), val_int64(val), type(argument_type::int64) {
+  }
+
+  ActionArg(const std::string &key, float32 val)
+      : key(key), val_float64(val), type(argument_type::float64) {
+  }
+
   std::string serialize() const;
 
   std::string key;
 
   std::string val_str;
   int64 val_int64;
+  float64 val_float64;
 
-  enum argument_type { str, int64 };
+  enum argument_type { str, int64, float64 };
   argument_type type;
 };
 
@@ -33,17 +46,20 @@ class ActionRecorder {
   static void record(const std::string &content,
                      const std::vector<ActionArg> &arguments = {});
 
-  static void start_recording();
+  static void start_recording(const std::string &fn);
 
   static void stop_recording();
 
  private:
+  ActionRecorder(const std::string &fn);
+
   void record_(const std::string &content,
                const std::vector<ActionArg> &arguments);
 
-  ActionRecorder(const std::string &fn);
+  void start_recording_(const std::string &fn);
 
   std::ofstream ofs;
+
   bool running{false};
 };
 

@@ -107,7 +107,42 @@ def test_scatter_2d():
     _test_bls_stencil(2, 128, bs=16, stencil=stencil, scatter=True)
 
 
-# TODO: multiple-variable BLS
+@ti.require(ti.extension.bls)
+@ti.all_archs
+def test_multiple_inputs():
+    x, y, z, w, w2 = ti.var(ti.i32), ti.var(ti.i32), ti.var(ti.i32), ti.var(
+        ti.i32), ti.var(ti.i32)
+
+    N = 128
+    bs = 8
+
+    ti.root.pointer(ti.ij, N // bs).dense(ti.ij, bs).place(x, y, z, w, w2)
+
+    @ti.kernel
+    def populate():
+        for i, j in ti.ndrange((bs, N - bs), (bs, N - bs)):
+            x[i, j] = i - j
+            y[i, j] = i + j * j
+            z[i, j] = i * i - j
+
+    @ti.kernel
+    def copy(bls: ti.template(), w: ti.template()):
+        if ti.static(bls):
+            ti.cache_shared(x, y, z)
+        for i, j in x:
+            w[i,
+              j] = x[i, j - 2] + y[i + 2, j -
+                                   1] + y[i - 1, j] + z[i - 1, j] + z[i + 1, j]
+
+    populate()
+    copy(False, w2)
+    copy(True, w)
+
+    for i in range(N):
+        for j in range(N):
+            assert w[i, j] == w2[i, j]
+
+
 # TODO: BLS on CPU
 # TODO: BLS boundary out of bound
 # TODO: BLS with TLS

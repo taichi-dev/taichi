@@ -60,7 +60,7 @@ def test_simple_2d():
 
 @ti.require(ti.extension.bls)
 @ti.all_archs
-def _test_bls_stencil(dim, N, bs, stencil, block_dim=None):
+def _test_bls_stencil(dim, N, bs, stencil, block_dim=None, scatter=False):
     x, y, y2 = ti.var(ti.i32), ti.var(ti.i32), ti.var(ti.i32)
 
     index = ti.indices(*range(dim))
@@ -69,11 +69,18 @@ def _test_bls_stencil(dim, N, bs, stencil, block_dim=None):
     if not isinstance(bs, (tuple, list)):
         bs = [bs for _ in range(dim)]
 
-    block = ti.root.pointer(index, [N // bs[i] for i in range(dim)])
+    grid_size = [N // bs[i] for i in range(dim)]
 
-    block.dense(index, bs).place(x)
-    block.dense(index, bs).place(y)
-    block.dense(index, bs).place(y2)
+    if scatter:
+        block = ti.root.pointer(index, grid_size)
+
+        block.dense(index, bs).place(x)
+        block.dense(index, bs).place(y)
+        block.dense(index, bs).place(y2)
+    else:
+        ti.root.pointer(index, grid_size).dense(index, bs).place(x)
+        ti.root.pointer(index, grid_size).dense(index, bs).place(y)
+        ti.root.pointer(index, grid_size).dense(index, bs).place(y2)
 
     ndrange = ((bs[i], N - bs[i]) for i in range(dim))
 
@@ -92,14 +99,22 @@ def _test_bls_stencil(dim, N, bs, stencil, block_dim=None):
 
     @ti.kernel
     def apply(use_bls: ti.template(), y: ti.template()):
-        if ti.static(use_bls):
+        if ti.static(use_bls and not scatter):
             ti.cache_shared(x)
+        if ti.static(use_bls and scatter):
+            ti.cache_shared(y)
+
         ti.block_dim(block_dim)
         for I in ti.grouped(x):
-            s = 0
-            for offset in ti.static(stencil):
-                s = s + x[I + ti.Vector(offset)]
-            y[I] = s
+            if ti.static(scatter):
+                for offset in ti.static(stencil):
+                    y[I + ti.Vector(offset)] += x[I]
+            else:
+                # gather
+                s = 0
+                for offset in ti.static(stencil):
+                    s = s + x[I + ti.Vector(offset)]
+                y[I] = s
 
     populate()
     apply(False, y2)
@@ -116,32 +131,43 @@ def _test_bls_stencil(dim, N, bs, stencil, block_dim=None):
     assert mismatch[None] == 0
 
 
-def test_stencil_1d_trivial():
+def test_gather_1d_trivial():
     # y[i] = x[i]
     _test_bls_stencil(1, 128, bs=32, stencil=((0, ), ))
 
 
-def test_stencil_1d():
+def test_gather_1d():
     # y[i] = x[i - 1] + x[i]
     _test_bls_stencil(1, 128, bs=32, stencil=((-1, ), (0, )))
 
 
-def test_stencil_2d():
+def test_gather_2d():
     stencil = [(0, 0), (0, -1), (0, 1), (1, 0)]
     _test_bls_stencil(2, 128, bs=16, stencil=stencil)
 
 
-def test_stencil_2d_nonsquare():
+def test_gather_2d_nonsquare():
     stencil = [(0, 0), (0, -1), (0, 1), (1, 0)]
     _test_bls_stencil(2, 128, bs=(4, 16), stencil=stencil)
 
 
-def test_stencil_3d():
+def test_gather_3d():
     stencil = [(-1, -1, -1), (2, 0, 1)]
     _test_bls_stencil(3, 64, bs=(4, 8, 16), stencil=stencil)
 
 
+def test_scatter_1d_trivial():
+    # y[i] = x[i]
+    _test_bls_stencil(1, 128, bs=32, stencil=((0, ), ), scatter=True)
+
+
+def test_scatter_1d():
+    _test_bls_stencil(1, 128, bs=32, stencil=(
+        (1, ),
+        (0, ),
+    ), scatter=True)
+
+
 # TODO: multiple-variable BLS
-# TODO: BLS epilogues
 # TODO: BLS on CPU
 # TODO: BLS with TLS

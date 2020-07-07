@@ -205,7 +205,7 @@ class Matrix(TaichiOperations):
                     '  for i in ti.static(range(3)):\n'
                     '    print(i, "-th component is", vec[i])\n'
                     'See https://taichi.readthedocs.io/en/stable/meta.html#when-to-use-for-loops-with-ti-static for more details.'
-                    )
+                )
         return args[0] * self.m + args[1]
 
     def __call__(self, *args, **kwargs):

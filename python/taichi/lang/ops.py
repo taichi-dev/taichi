@@ -1,6 +1,7 @@
 from .expr import *
 from .util import *
 from .impl import expr_init
+from .exception import TaichiSyntaxError
 from .util import taichi_lang_core as ti_core
 import operator as ops
 import numbers
@@ -26,6 +27,7 @@ def is_taichi_expr(a):
 
 
 def wrap_if_not_expr(a):
+    _taichi_skip_traceback = 1
     return Expr(a) if not is_taichi_expr(a) else a
 
 
@@ -33,11 +35,17 @@ def unary(foo):
     import taichi as ti
 
     @functools.wraps(foo)
+    def imp_foo(x):
+        _taichi_skip_traceback = 2
+        return foo(x)
+
+    @functools.wraps(foo)
     def wrapped(a):
+        _taichi_skip_traceback = 1
         if ti.is_taichi_class(a):
-            return a.element_wise_unary(foo)
+            return a.element_wise_unary(imp_foo)
         else:
-            return foo(a)
+            return imp_foo(a)
 
     unary_ops.append(wrapped)
     return wrapped
@@ -50,17 +58,24 @@ def binary(foo):
     import taichi as ti
 
     @functools.wraps(foo)
+    def imp_foo(x, y):
+        _taichi_skip_traceback = 2
+        return foo(y, x)
+
+    @functools.wraps(foo)
     def rev_foo(x, y):
+        _taichi_skip_traceback = 2
         return foo(y, x)
 
     @functools.wraps(foo)
     def wrapped(a, b):
+        _taichi_skip_traceback = 1
         if ti.is_taichi_class(a):
-            return a.element_wise_binary(foo, b)
+            return a.element_wise_binary(imp_foo, b)
         elif ti.is_taichi_class(b):
             return b.element_wise_binary(rev_foo, a)
         else:
-            return foo(a, b)
+            return imp_foo(a, b)
 
     binary_ops.append(wrapped)
     return wrapped
@@ -74,14 +89,16 @@ def writeback_binary(foo):
 
     @functools.wraps(foo)
     def imp_foo(x, y):
+        _taichi_skip_traceback = 2
         return foo(x, wrap_if_not_expr(y))
 
     @functools.wraps(foo)
     def wrapped(a, b):
+        _taichi_skip_traceback = 1
         if ti.is_taichi_class(a):
             return a.element_wise_binary(imp_foo, b)
         elif ti.is_taichi_class(b):
-            raise SyntaxError(
+            raise TaichiSyntaxError(
                 f'cannot augassign taichi class {type(b)} to scalar expr')
         else:
             return imp_foo(a, b)
@@ -91,6 +108,7 @@ def writeback_binary(foo):
 
 
 def cast(obj, type):
+    _taichi_skip_traceback = 1
     if is_taichi_class(obj):
         return obj.cast(type)
     else:
@@ -98,6 +116,7 @@ def cast(obj, type):
 
 
 def bit_cast(obj, type):
+    _taichi_skip_traceback = 1
     if is_taichi_class(obj):
         raise ValueError('Cannot apply bit_cast on Taichi classes')
     else:
@@ -110,6 +129,7 @@ def sqr(obj):
 
 
 def _unary_operation(taichi_op, python_op, a):
+    _taichi_skip_traceback = 1
     if is_taichi_expr(a):
         return Expr(taichi_op(a.ptr), tb=stack_info())
     else:
@@ -211,6 +231,7 @@ def random(dt=None):
 
 
 def _binary_operation(taichi_op, python_op, a, b):
+    _taichi_skip_traceback = 1
     if is_taichi_expr(a) or is_taichi_expr(b):
         a, b = wrap_if_not_expr(a), wrap_if_not_expr(b)
         return Expr(taichi_op(a.ptr, b.ptr), tb=stack_info())
@@ -421,16 +442,17 @@ def ti_min(*args):
 
 
 def ti_any(a):
-    assert hasattr(a, 'any')
+    _taichi_skip_traceback = 1
     return a.any()
 
 
 def ti_all(a):
-    assert hasattr(a, 'all')
+    _taichi_skip_traceback = 1
     return a.all()
 
 
 def append(l, indices, val):
+    _taichi_skip_traceback = 1
     import taichi as ti
     a = ti.expr_init(
         ti_core.insert_append(l.snode().ptr, make_expr_group(indices),
@@ -439,17 +461,21 @@ def append(l, indices, val):
 
 
 def is_active(l, indices):
+    _taichi_skip_traceback = 1
     return Expr(
         ti_core.insert_is_active(l.snode().ptr, make_expr_group(indices)))
 
 
 def activate(l, indices):
+    _taichi_skip_traceback = 1
     ti_core.insert_activate(l.snode().ptr, make_expr_group(indices))
 
 
 def deactivate(l, indices):
+    _taichi_skip_traceback = 1
     ti_core.insert_deactivate(l.snode().ptr, make_expr_group(indices))
 
 
 def length(l, indices):
+    _taichi_skip_traceback = 1
     return Expr(ti_core.insert_len(l.snode().ptr, make_expr_group(indices)))

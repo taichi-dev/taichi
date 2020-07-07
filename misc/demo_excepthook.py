@@ -3,19 +3,15 @@ ti.init()
 ti.enable_excepthook()
 
 @ti.func
-def func3():
-    ti.static_assert(1 + 1 == 3)
-
-@ti.func
-def func2():
-    func3()
-
-@ti.func
-def func1():
-    func2()
+def fun():
+    x = ti.Vector([2, 3])
+    if all(x == 2):
+        print(233)
+    for i in range(3):
+        print(x[i])
 
 @ti.kernel
-def func0():
-    func1()
+def kern():
+    fun()
 
-func0()
+kern()

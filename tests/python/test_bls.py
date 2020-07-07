@@ -108,4 +108,5 @@ def test_scatter_2d():
 
 # TODO: multiple-variable BLS
 # TODO: BLS on CPU
+# TODO: BLS boundary out of bound
 # TODO: BLS with TLS

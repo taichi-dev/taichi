@@ -50,12 +50,12 @@ Arguments for ``ti.init`` may also be specified from environment variables. For 
 - ``ti.init(debug=True)`` is equivalent to ``export TI_DEBUG=1``.
 - ``ti.init(use_unified_memory=False)`` is equivalent to ``export TI_USE_UNIFIED_MEMORY=0``.
 
-If both ``ti.init`` argument and the corresponding environment variable is specified, then
-the one in environment variable will **override** the one in argument, e.g.:
+If both ``ti.init`` argument and the corresponding environment variable are specified, then
+the one in the environment variable will **override** the one in the argument, e.g.:
 
-- if ``ti.init(arch=ti.cuda)`` and ``export TI_ARCH=opengl`` is specied at the same time,
+- if ``ti.init(arch=ti.cuda)`` and ``export TI_ARCH=opengl`` are specified at the same time,
   then Taichi will choose ``ti.opengl`` as backend.
-- if ``ti.init(debug=True)`` and ``export TI_DEBUG=0`` is specied at the same time,
+- if ``ti.init(debug=True)`` and ``export TI_DEBUG=0`` are specified at the same time,
   then Taichi will disable debug mode.
 
 .. note::

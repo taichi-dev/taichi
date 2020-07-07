@@ -561,8 +561,13 @@ void export_lang(py::module &m) {
 
   m.def("print_stat", [] { stat.print(); });
 
-  m.def("record_action",
-        [](std::string rec) { get_action_recorder().record(rec); });
+  m.def("record_action_hint", [](std::string content) {
+    ActionRecorder::record("hint", {ActionArg("content", content)});
+  });
+
+  m.def("start_recording", []() { ActionRecorder::start_recording(); });
+
+  m.def("stop_recording", []() { ActionRecorder::stop_recording(); });
 
   // A temporary option which will be removed soon in the future
   m.def("toggle_advanced_optimization", [](bool option) {

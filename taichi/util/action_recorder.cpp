@@ -21,8 +21,20 @@ ActionRecorder::ActionRecorder(const std::string &fn) {
   ofs.open(fn);
 }
 
+void ActionRecorder::start_recording() {
+  TI_ASSERT(!get_instance().running);
+  get_instance().running = true;
+}
+
+void ActionRecorder::stop_recording() {
+  TI_ASSERT(get_instance().running);
+  get_instance().running = false;
+}
+
 void ActionRecorder::record_(const std::string &content,
                              const std::vector<ActionArg> &arguments) {
+  if (!running)
+    return;
   ofs << "- " << std::endl;
   ofs << "  action: \"" << content << "\"" << std::endl;
   for (auto &arg : arguments) {

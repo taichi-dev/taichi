@@ -33,6 +33,10 @@ class ActionRecorder {
   static void record(const std::string &content,
                      const std::vector<ActionArg> &arguments = {});
 
+  static void start_recording();
+
+  static void stop_recording();
+
  private:
   void record_(const std::string &content,
                const std::vector<ActionArg> &arguments);
@@ -40,6 +44,7 @@ class ActionRecorder {
   ActionRecorder(const std::string &fn);
 
   std::ofstream ofs;
+  bool running{false};
 };
 
 TI_NAMESPACE_END

@@ -8,14 +8,22 @@ matrix:
     osx_image: xcode10.3
     env:
       - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON_VERSION=3.6.1 && PYTHON=python"
+      - LLVM_EVAL="LLVM_REMOTE_PATH=https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/taichi-llvm-8.0.1.zip && LLVM_FILE=taichi-llvm-8.0.1.zip"
   - os: osx
     osx_image: xcode10.3
     env:
       - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON_VERSION=3.7.1 && PYTHON=python"
+      - LLVM_EVAL="LLVM_REMOTE_PATH=https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/taichi-llvm-8.0.1.zip && LLVM_FILE=taichi-llvm-8.0.1.zip"
   - os: osx
     osx_image: xcode10.3
     env:
       - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON_VERSION=3.8.1 && PYTHON=python"
+      - LLVM_EVAL="LLVM_REMOTE_PATH=https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/taichi-llvm-8.0.1.zip && LLVM_FILE=taichi-llvm-8.0.1.zip"
+  - os: osx
+    osx_image: xcode10.3
+    env:
+      - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON_VERSION=3.8.1 && PYTHON=python"
+      - LLVM_EVAL="LLVM_REMOTE_PATH=https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-macos.zip && LLVM_FILE=taichi-llvm-10.0.0-macos.zip"
 
 skip_commits:
   files:
@@ -32,6 +40,7 @@ cache:
 
 before_install:
 - eval "${MATRIX_EVAL}"
+- eval "${LLVM_EVAL}"
 - echo $CXX
 - echo $PYTHON
 - sysctl -n hw.ncpu
@@ -39,8 +48,8 @@ before_install:
 - cd $TRAVIS_BUILD_DIR
 - mkdir taichi-llvm
 - cd taichi-llvm
-- wget https://github.com/yuanming-hu/taichi_assets/releases/download/llvm8/taichi-llvm-8.0.1.zip --retry-on-http-error=403 --waitretry=3 --tries=5
-- unzip taichi-llvm-8.0.1.zip
+- wget $LLVM_REMOTE_PATH --retry-on-http-error=403 --waitretry=3 --tries=5
+- unzip $LLVM_FILE
 - export PATH=$TRAVIS_BUILD_DIR/taichi-llvm/bin/:$PATH
 - ls $TRAVIS_BUILD_DIR/taichi-llvm/bin/
 - echo $PATH

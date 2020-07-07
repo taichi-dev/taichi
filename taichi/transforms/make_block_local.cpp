@@ -41,17 +41,10 @@ void make_block_local_offload(OffloadedStmt *offload) {
 
     // TODO: improve IR builder to make this part easier to read
 
-    // Step 1:
-    // Fetch to BLS
-    {
-      if (offload->bls_prologue == nullptr) {
-        offload->bls_prologue = std::make_unique<Block>();
-      }
-      auto block = offload->bls_prologue.get();
+    // Ensure BLS alignment
+    bls_offset += (dtype_size - bls_offset % dtype_size) % dtype_size;
 
-      // ensure alignment
-      bls_offset += (dtype_size - bls_offset % dtype_size) % dtype_size;
-
+    auto create_xlogue = [&](Block *block) {
       Stmt *block_linear_index = nullptr;
 
       // Block linear index =
@@ -81,6 +74,7 @@ void make_block_local_offload(OffloadedStmt *offload) {
       while (bls_element_id < bls_size) {
         i, j, k = bls_to_global(bls_element_id)
         bls[bls_element_id] = x[i, j, k]
+        // or x[i, j, k] = bls[bls_element_id]
         bls_element_id += block_dim;
       }
 
@@ -157,6 +151,15 @@ void make_block_local_offload(OffloadedStmt *offload) {
 
         loop_offset += block_dim;
       }
+    };
+
+    // Step 1:
+    // Fetch to BLS
+    {
+      if (offload->bls_prologue == nullptr) {
+        offload->bls_prologue = std::make_unique<Block>();
+      }
+      create_xlogue(offload->bls_prologue.get());
     }
 
     // Step 2:
@@ -218,7 +221,7 @@ void make_block_local_offload(OffloadedStmt *offload) {
 
     // Step 3:
     // (TODO) Atomic-add/write BLS contribution to its global version
-    if (pad.second.total_flags & AccessFlag::write) {
+    if (pad.second.total_flags & (AccessFlag::write | AccessFlag::accumulate)) {
       TI_NOT_IMPLEMENTED
     }
 

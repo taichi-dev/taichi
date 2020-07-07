@@ -10,14 +10,18 @@ import os
 
 core = taichi_lang_core
 
+
 def record_action_hint(s):
     core.record_action_hint(s)
+
 
 def begin_recording(fn):
     core.begin_recording(fn)
 
+
 def stop_recording():
     core.stop_recording()
+
 
 runtime = get_runtime()
 

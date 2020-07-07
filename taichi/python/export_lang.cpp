@@ -96,8 +96,7 @@ void export_lang(py::module &m) {
                      &CompileConfig::default_cpu_block_dim)
       .def_readwrite("default_gpu_block_dim",
                      &CompileConfig::default_gpu_block_dim)
-      .def_readwrite("max_block_dim",
-                     &CompileConfig::max_block_dim)
+      .def_readwrite("max_block_dim", &CompileConfig::max_block_dim)
       .def_readwrite("verbose_kernel_launches",
                      &CompileConfig::verbose_kernel_launches)
       .def_readwrite("verbose", &CompileConfig::verbose)
@@ -119,10 +118,9 @@ void export_lang(py::module &m) {
   m.def("reset_default_compile_config",
         [&]() { default_compile_config = CompileConfig(); });
 
-  m.def(
-      "default_compile_config",
-      [&]() -> CompileConfig & { return default_compile_config; },
-      py::return_value_policy::reference);
+  m.def("default_compile_config",
+        [&]() -> CompileConfig & { return default_compile_config; },
+        py::return_value_policy::reference);
 
   py::class_<Program>(m, "Program")
       .def(py::init<>())
@@ -130,12 +128,11 @@ void export_lang(py::module &m) {
       .def("kernel_profiler_print", &Program::kernel_profiler_print)
       .def("kernel_profiler_clear", &Program::kernel_profiler_clear)
       .def("finalize", &Program::finalize)
-      .def(
-          "get_root",
-          [&](Program *program) -> SNode * {
-            return program->snode_root.get();
-          },
-          py::return_value_policy::reference)
+      .def("get_root",
+           [&](Program *program) -> SNode * {
+             return program->snode_root.get();
+           },
+           py::return_value_policy::reference)
       .def("get_total_compilation_time", &Program::get_total_compilation_time)
       .def("print_snode_tree", &Program::print_snode_tree)
       .def("synchronize", &Program::synchronize);
@@ -143,10 +140,9 @@ void export_lang(py::module &m) {
   m.def("get_current_program", get_current_program,
         py::return_value_policy::reference);
 
-  m.def(
-      "current_compile_config",
-      [&]() -> CompileConfig & { return get_current_program().config; },
-      py::return_value_policy::reference);
+  m.def("current_compile_config",
+        [&]() -> CompileConfig & { return get_current_program().config; },
+        py::return_value_policy::reference);
 
   py::class_<Index>(m, "Index").def(py::init<int>());
   py::class_<SNode>(m, "SNode")
@@ -176,10 +172,9 @@ void export_lang(py::module &m) {
       .def("data_type", [](SNode *snode) { return snode->dt; })
       .def("get_num_ch",
            [](SNode *snode) -> int { return (int)snode->ch.size(); })
-      .def(
-          "get_ch",
-          [](SNode *snode, int i) -> SNode * { return snode->ch[i].get(); },
-          py::return_value_policy::reference)
+      .def("get_ch",
+           [](SNode *snode, int i) -> SNode * { return snode->ch[i].get(); },
+           py::return_value_policy::reference)
       .def("lazy_grad", &SNode::lazy_grad)
       .def("read_int", &SNode::read_int)
       .def("read_uint", &SNode::read_uint)
@@ -235,14 +230,13 @@ void export_lang(py::module &m) {
 
   py::class_<Stmt>(m, "Stmt");
   py::class_<Program::KernelProxy>(m, "KernelProxy")
-      .def(
-          "define",
-          [](Program::KernelProxy *ker,
-             const std::function<void()> &func) -> Kernel & {
-            py::gil_scoped_release release;
-            return ker->def(func);
-          },
-          py::return_value_policy::reference);
+      .def("define",
+           [](Program::KernelProxy *ker,
+              const std::function<void()> &func) -> Kernel & {
+             py::gil_scoped_release release;
+             return ker->def(func);
+           },
+           py::return_value_policy::reference);
 
   m.def("insert_deactivate", [](SNode *snode, const ExprGroup &indices) {
     return Deactivate(snode, indices);

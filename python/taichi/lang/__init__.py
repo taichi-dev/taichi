@@ -185,8 +185,9 @@ def init(arch=None,
     ti.get_runtime().create_program()
 
 
-def cache_shared(v):
-    taichi_lang_core.cache(0, v.ptr)
+def cache_shared(*args):
+    for v in args:
+        taichi_lang_core.cache(0, v.ptr)
 
 
 def cache_read_only(v):

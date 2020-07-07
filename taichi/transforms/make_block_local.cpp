@@ -104,6 +104,10 @@ void make_block_local_offload(OffloadedStmt *offload) {
                 BinaryOpType::mul, bls_element_id_this_iteration,
                 block->push_back<ConstStmt>(TypedConstant(dtype_size)));
 
+            bls_element_offset_bytes = block->push_back<BinaryOpStmt>(
+                BinaryOpType::add, bls_element_offset_bytes,
+                block->push_back<ConstStmt>(TypedConstant((int32)bls_offset)));
+
             if (loop_offset + block_dim > bls_num_elements) {
               // Need to create an IfStmt to safeguard since bls size may not be
               // a multiple of block_size, and this iteration some threads may

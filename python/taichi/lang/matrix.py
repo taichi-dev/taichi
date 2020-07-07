@@ -28,6 +28,7 @@ class Matrix(TaichiOperations):
                  rows=None,
                  cols=None):
         self.grad = None
+
         # construct from rows or cols
         if rows is not None or cols is not None:
             warnings.warn(
@@ -75,6 +76,7 @@ class Matrix(TaichiOperations):
             else:
                 self.m = 1
             self.entries = [x for row in mat for x in row]
+
         # construct global matrix
         else:
             self.entries = []
@@ -90,42 +92,54 @@ class Matrix(TaichiOperations):
                     self.entries.append(impl.var(dt))
                 self.grad = self.make_grad()
 
-        if layout is not None:
-            assert shape is not None, 'layout is useless without shape'
-        if shape is not None:
-            if isinstance(shape, numbers.Number):
-                shape = (shape, )
-            if isinstance(offset, numbers.Number):
-                offset = (offset, )
+            if layout is not None:
+                assert shape is not None, 'layout is useless without shape'
+            if shape is not None:
+                if isinstance(shape, numbers.Number):
+                    shape = (shape, )
+                if isinstance(offset, numbers.Number):
+                    offset = (offset, )
 
-            if offset is not None:
-                assert len(shape) == len(
-                    offset
-                ), f'The dimensionality of shape and offset must be the same  (f{len(shape)} != f{len(offset)})'
+                if offset is not None:
+                    assert len(shape) == len(
+                        offset
+                    ), f'The dimensionality of shape and offset must be the same  ({len(shape)} != {len(offset)})'
 
-            import taichi as ti
-            if layout is None:
-                layout = ti.AOS
+                import taichi as ti
+                if layout is None:
+                    layout = ti.AOS
 
-            dim = len(shape)
-            if layout.soa:
-                for i, e in enumerate(self.entries):
-                    ti.root.dense(ti.index_nd(dim), shape).place(e,
-                                                                 offset=offset)
-                    if needs_grad:
-                        ti.root.dense(ti.index_nd(dim),
-                                      shape).place(e.grad, offset=offset)
-            else:
-                var_list = []
-                for i, e in enumerate(self.entries):
-                    var_list.append(e)
-                if needs_grad:
+                dim = len(shape)
+                if layout.soa:
                     for i, e in enumerate(self.entries):
-                        var_list.append(e.grad)
-                ti.root.dense(ti.index_nd(dim), shape).place(*tuple(var_list),
-                                                             offset=offset)
-        else:
-            assert offset is None, f"shape cannot be None when offset is being set"
+                        ti.root.dense(ti.index_nd(dim),
+                                      shape).place(e, offset=offset)
+                        if needs_grad:
+                            ti.root.dense(ti.index_nd(dim),
+                                          shape).place(e.grad, offset=offset)
+                else:
+                    var_list = []
+                    for i, e in enumerate(self.entries):
+                        var_list.append(e)
+                    if needs_grad:
+                        for i, e in enumerate(self.entries):
+                            var_list.append(e.grad)
+                    ti.root.dense(ti.index_nd(dim),
+                                  shape).place(*tuple(var_list), offset=offset)
+            else:
+                assert offset is None, f"shape cannot be None when offset is being set"
+
+        if self.n * self.m > 32:
+            warnings.warn(
+                f'Taichi matrices/vectors with {self.n}x{self.m} > 32 entries are not suggested.'
+                ' Matrices/vectors will be automatically unrolled at compile-time for performance.'
+                ' So the compilation time could be extremely long if the matrix size is too big.'
+                ' You may use a tensor to store a large matrix like this, e.g.:\n'
+                f'    x = ti.var(ti.f32, ({self.n}, {self.m})).\n'
+                ' See https://taichi.readthedocs.io/en/stable/tensor_matrix.html#matrix-size'
+                ' for more details.',
+                UserWarning,
+                stacklevel=2)
 
     def is_global(self):
         results = [False for _ in self.entries]
@@ -142,7 +156,7 @@ class Matrix(TaichiOperations):
         if isinstance(other, (list, tuple)):
             other = Matrix(other)
         if foo.__name__ == 'assign' and not isinstance(other, Matrix):
-            raise SyntaxError(
+            raise TaichiSyntaxError(
                 'cannot assign scalar expr to '
                 f'taichi class {type(self)}, maybe you want to use `a.fill(b)` instead?'
             )

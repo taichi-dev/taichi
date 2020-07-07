@@ -51,7 +51,7 @@ class ActionRecorder {
   static void stop_recording();
 
  private:
-  ActionRecorder(const std::string &fn);
+  ActionRecorder();
 
   void record_(const std::string &content,
                const std::vector<ActionArg> &arguments);

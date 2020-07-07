@@ -5,7 +5,6 @@
 
 #include "taichi/common/dict.h"
 #include "taichi/util/testing.h"
-#include "taichi/util/action_recorder.h"
 
 TI_NAMESPACE_BEGIN
 

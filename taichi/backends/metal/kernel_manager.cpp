@@ -12,6 +12,7 @@
 #include "taichi/math/arithmetic.h"
 #include "taichi/util/action_recorder.h"
 #include "taichi/python/print_buffer.h"
+#include "taichi/util/file_sequence_writer.h"
 
 #ifdef TI_PLATFORM_OSX
 #include <sys/mman.h>
@@ -256,17 +257,12 @@ class CompiledTaichiKernel {
                params.mtl_source_code);
     }
     if (is_primary_kernel(params.taichi_kernel_name)) {
-      // dump metal
-
-      static int counter = 0;
-      auto fn = fmt::format("shader{:05d}.mtl", counter++);
+      static FileSequenceWriter writer("shader{:04d}.mtl", "Metal shader");
+      auto fn = writer.write(params.mtl_source_code);
       ActionRecorder::record(
           "save_kernel",
           {ActionArg("kernel_name", std::string(params.taichi_kernel_name)),
            ActionArg("filename", fn)});
-
-      std::ofstream ofs(fn);
-      ofs << params.mtl_source_code.c_str();
     }
     for (const auto &ka : params.ti_kernel_attribs->mtl_kernels_attribs) {
       auto mtl_func = new_function_with_name(kernel_lib.get(), ka.name);
@@ -321,11 +317,14 @@ class CompiledTaichiKernel {
 
 class HostMetalCtxBlitter {
  public:
-  HostMetalCtxBlitter(const CompiledTaichiKernel &kernel, Context *host_ctx)
+  HostMetalCtxBlitter(const CompiledTaichiKernel &kernel,
+                      Context *host_ctx,
+                      const std::string &kernel_name)
       : ctx_attribs_(&kernel.ctx_attribs),
         host_ctx_(host_ctx),
         kernel_ctx_mem_(kernel.ctx_mem.get()),
-        kernel_ctx_buffer_(kernel.ctx_buffer.get()) {
+        kernel_ctx_buffer_(kernel.ctx_buffer.get()),
+        kernel_name_(kernel_name) {
   }
 
   inline MTLBuffer *ctx_buffer() {
@@ -345,10 +344,10 @@ class HostMetalCtxBlitter {
       const auto &arg = ctx_attribs_->args()[i];
       const auto dt = arg.dt;
       char *device_ptr = base + arg.offset_in_mem;
-      if (is_primary_kernel(kernel_name)) {
+      if (is_primary_kernel(kernel_name_)) {
         ActionRecorder::record(
             "allocate_context_buffer",
-            {ActionArg("kernel_name", kernel_name), ActionArg("arg_id", i),
+            {ActionArg("kernel_name", kernel_name_), ActionArg("arg_id", i),
              ActionArg("offset_in_bytes", (int64)arg.offset_in_mem)});
       }
       if (arg.is_array) {
@@ -438,19 +437,15 @@ class HostMetalCtxBlitter {
     if (kernel.ctx_attribs.empty()) {
       return nullptr;
     }
-    auto ret = std::make_unique<HostMetalCtxBlitter>(kernel, ctx);
-    ret->kernel_name = name;
-    return ret;
+    return std::make_unique<HostMetalCtxBlitter>(kernel, ctx, name);
   }
-
- public:
-  std::string kernel_name;
 
  private:
   const KernelContextAttributes *const ctx_attribs_;
   Context *const host_ctx_;
   BufferMemoryView *const kernel_ctx_mem_;
   MTLBuffer *const kernel_ctx_buffer_;
+  std::string kernel_name_;
 };
 
 }  // namespace

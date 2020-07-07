@@ -15,11 +15,11 @@ std::string ActionArg::serialize() const {
 }
 
 ActionRecorder &ActionRecorder::get_instance() {
-  static ActionRecorder rec("actions.txt");
+  static ActionRecorder rec;
   return rec;
 }
 
-ActionRecorder::ActionRecorder(const std::string &fn) {
+ActionRecorder::ActionRecorder() {
 }
 
 void ActionRecorder::start_recording(const std::string &fn) {

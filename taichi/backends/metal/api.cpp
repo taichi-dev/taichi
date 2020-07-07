@@ -2,6 +2,7 @@
 
 #include "taichi/backends/metal/constants.h"
 #include "taichi/util/environ_config.h"
+#include "taichi/program/program.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -141,7 +142,15 @@ void dispatch_threadgroups(MTLComputeCommandEncoder *encoder,
 size_t get_max_total_threads_per_threadgroup(
     MTLComputePipelineState *pipeline_state) {
   // The value of the pointer returned by call is the actual result
-  return (size_t)call(pipeline_state, "maxTotalThreadsPerThreadgroup");
+  auto native_block_dim =
+      (size_t)call(pipeline_state, "maxTotalThreadsPerThreadgroup");
+  auto prescribed_block_dim =
+      (std::size_t)get_current_program().config.max_gpu_block_dim;
+  if (prescribed_block_dim != 0) {
+    return std::min(native_block_dim, prescribed_block_dim);
+  } else {
+    return native_block_dim;
+  }
 }
 
 void did_modify_range(MTLBuffer *buffer, size_t location, size_t length) {

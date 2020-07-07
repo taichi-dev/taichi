@@ -1027,6 +1027,8 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
   TI_ASSERT(!stmt->parent->mask() || stmt->width() == 1);
   TI_ASSERT(llvm_val[stmt->data]);
   TI_ASSERT(llvm_val[stmt->ptr]);
+  auto kernel = stmt->get_kernel();
+  TI_INFO(kernel->name);
   builder->CreateStore(llvm_val[stmt->data], llvm_val[stmt->ptr]);
 }
 

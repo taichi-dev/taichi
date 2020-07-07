@@ -9,6 +9,10 @@ import functools
 import os
 
 core = taichi_lang_core
+
+def record_action(s):
+    core.record_action('[Python-scope] ' + s)
+
 runtime = get_runtime()
 
 i = indices(0)

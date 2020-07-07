@@ -46,10 +46,13 @@ void make_block_local_offload(OffloadedStmt *offload) {
 
     // This lambda is used for both BLS prologue and epilogue creation
     auto create_xlogue =
-        [&](Block *block,
+        [&](std::unique_ptr<Block> &block,
             const std::function<void(
                 Block * element_block, std::vector<Stmt *> global_indices,
                 Stmt * bls_element_offset_bytes)> &operation) {
+          if (block == nullptr) {
+            block = std::make_unique<Block>();
+          }
           Stmt *block_linear_index = nullptr;
 
           // Block linear index =
@@ -122,7 +125,7 @@ void make_block_local_offload(OffloadedStmt *offload) {
             } else {
               // No need to create an if since every thread is within
               // bls_num_elements.
-              element_block = block;
+              element_block = block.get();
             }
 
             std::vector<Stmt *> global_indices(dim);
@@ -161,11 +164,8 @@ void make_block_local_offload(OffloadedStmt *offload) {
     // Step 1:
     // Fetch to BLS
     {
-      if (offload->bls_prologue == nullptr)
-        offload->bls_prologue = std::make_unique<Block>();
-
       create_xlogue(
-          offload->bls_prologue.get(),
+          offload->bls_prologue,
           [&](Block *element_block, std::vector<Stmt *> global_indices,
               Stmt *bls_element_offset_bytes) {
             // Fetch from global to BLS
@@ -245,11 +245,8 @@ void make_block_local_offload(OffloadedStmt *offload) {
           !(bls_has_write && bls_has_accumulate),
           "BLS with both write and atomic accumulation is not supported.")
 
-      if (offload->bls_epilogue == nullptr)
-        offload->bls_epilogue = std::make_unique<Block>();
-
       create_xlogue(
-          offload->bls_epilogue.get(),
+          offload->bls_epilogue,
           [&](Block *element_block, std::vector<Stmt *> global_indices,
               Stmt *bls_element_offset_bytes) {
             // Store/accumulate from BLS to global

@@ -18,7 +18,7 @@ debug = False
 
 assert res > 2
 
-ti.init(arch=ti.gpu, max_block_dim=256)
+ti.init(arch=ti.gpu)
 
 _velocities = ti.Vector(2, dt=ti.f32, shape=(res, res))
 _new_velocities = ti.Vector(2, dt=ti.f32, shape=(res, res))
@@ -180,9 +180,7 @@ def step(mouse_data):
     velocities_pair.swap()
     dyes_pair.swap()
 
-    ti.record_action('Begin applying impulse')
     apply_impulse(velocities_pair.cur, dyes_pair.cur, mouse_data)
-    ti.record_action('End applying impulse')
 
     divergence(velocities_pair.cur)
     for _ in range(p_jacobi_iters):
@@ -241,14 +239,11 @@ def reset():
 
 
 def main():
-    ti.get_runtime().materialize()
-    ti.record_action(f'****** Launching stable_fluid.py ******')
     global debug
     gui = ti.GUI('Stable-Fluid', (res, res))
     md_gen = MouseDataGen()
     paused = False
     while True:
-        ti.record_action(f'****** Frame start ******')
         if gui.get_event(ti.GUI.PRESS):
             e = gui.event
             if e.key == ti.GUI.ESCAPE:
@@ -263,16 +258,11 @@ def main():
 
         if not paused:
             mouse_data = md_gen(gui)
-            ti.record_action('Begin stepping')
             step(mouse_data)
-            ti.record_action('End stepping')
 
-        ti.record_action('Begin fetching color buffer')
         img = color_buffer.to_numpy()
-        ti.record_action('End fetching color buffer')
         gui.set_image(img)
         gui.show()
-        ti.record_action(f'====== Frame {frame} end =======')
 
 
 if __name__ == '__main__':

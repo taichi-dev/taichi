@@ -34,6 +34,14 @@ namespace shaders {
 using KernelTaskType = OffloadedStmt::TaskType;
 using BufferEnum = KernelAttributes::Buffers;
 
+inline bool is_primary_kernel(const std::string_view &name) {
+  return name.find("jit_evaluator") == std::string::npos;
+}
+
+inline bool is_primary_kernel(const std::string &name) {
+  return is_primary_kernel(std::string_view(name));
+}
+
 inline int infer_msl_version(const TaichiKernelAttributes::UsedFeatures &f) {
   if (f.simdgroup) {
     // https://developer.apple.com/documentation/metal/mtllanguageversion/version2_1
@@ -132,11 +140,7 @@ class CompiledMtlKernelBase {
     const int dispatch_num_threads =
         std::min(num_threads, num_threads_per_group);
 
-    if (kernel_attribs_.name.find("jit_evaluator") == std::string::npos) {
-      auto action = fmt::format(
-          "Launching subkernel name={} num_groups={} threads_per_group={}",
-          kernel_attribs_.name, num_groups,
-          std::min(num_threads, num_threads_per_group));
+    if (is_primary_kernel(kernel_attribs_.name)) {
       ActionRecorder::record(
           "launch_kernel",
           {ActionArg("kernel_name", kernel_attribs_.name),
@@ -251,7 +255,7 @@ class CompiledTaichiKernel {
       TI_ERROR("Failed to compile Metal kernel! Generated code:\n\n{}",
                params.mtl_source_code);
     }
-    if (params.taichi_kernel_name.find("jit_evaluator") == std::string::npos) {
+    if (is_primary_kernel(params.taichi_kernel_name)) {
       // dump metal
 
       static int counter = 0;
@@ -264,7 +268,7 @@ class CompiledTaichiKernel {
       std::ofstream ofs(fn);
       ofs << params.mtl_source_code.c_str();
     }
-    for (const auto &ka : *(params.mtl_kernels_attribs)) {
+    for (const auto &ka : params.ti_kernel_attribs->mtl_kernels_attribs) {
       auto mtl_func = new_function_with_name(kernel_lib.get(), ka.name);
       TI_ASSERT(mtl_func != nullptr);
       // Note that CompiledMtlKernel doesn't own |kernel_func|.
@@ -295,8 +299,7 @@ class CompiledTaichiKernel {
     if (!ctx_attribs.empty()) {
       ctx_mem = std::make_unique<BufferMemoryView>(ctx_attribs.total_bytes(),
                                                    params.mem_pool);
-      if (params.taichi_kernel_name.find("jit_evaluator") ==
-          std::string::npos) {
+      if (is_primary_kernel(params.taichi_kernel_name)) {
         ActionRecorder::record(
             "allocate_context_buffer",
             {ActionArg("kernel_name", std::string(params.taichi_kernel_name)),
@@ -342,7 +345,7 @@ class HostMetalCtxBlitter {
       const auto &arg = ctx_attribs_->args()[i];
       const auto dt = arg.dt;
       char *device_ptr = base + arg.offset_in_mem;
-      if (kernel_name.find("jit_evaluator") == std::string::npos) {
+      if (is_primary_kernel(kernel_name)) {
         ActionRecorder::record(
             "allocate_context_buffer",
             {ActionArg("kernel_name", kernel_name), ActionArg("arg_id", i),

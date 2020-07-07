@@ -141,6 +141,26 @@ Program::Program(Arch desired_arch) {
     }
   }
 
+  if (arch == Arch::cuda) {
+#if defined(TI_WITH_CUDA)
+    int num_SMs;
+    CUDADriver::get_instance().device_get_attribute(
+        &num_SMs, CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, nullptr);
+    int query_max_block_dim;
+    CUDADriver::get_instance().device_get_attribute(
+        &query_max_block_dim, CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_X, nullptr);
+
+    if (config.max_block_dim == 0) {
+      config.max_block_dim = query_max_block_dim;
+    }
+
+    if (config.saturating_grid_dim == 0) {
+      // each SM can have 16-32 resident blocks
+      config.saturating_grid_dim = num_SMs * 32;
+    }
+#endif
+  }
+
   stat.clear();
 
   TI_TRACE("Program ({}) arch={} initialized.", fmt::ptr(this),
@@ -221,12 +241,26 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
   auto snodes = scomp->snodes;
   int root_id = snode_root->id;
 
-  TI_TRACE("Allocating data structure of size {} B", scomp->root_size);
+  // A buffer of random states, one per CUDA thread
+  int num_rand_states = 0;
 
-  runtime->call<void *, void *, std::size_t, std::size_t, void *, void *,
+  if (config.arch == Arch::cuda) {
+#if defined(TI_WITH_CUDA)
+    // It is important to make sure that every CUDA thread has its own random
+    // state so that we do not need expensive per-state locks.
+    num_rand_states = config.saturating_grid_dim * config.max_block_dim;
+#else
+    TI_NOT_IMPLEMENTED
+#endif
+  }
+
+  TI_TRACE("Allocating data structure of size {} B", scomp->root_size);
+  TI_TRACE("Allocating {} random states (used by CUDA only)", num_rand_states);
+
+  runtime->call<void *, void *, std::size_t, std::size_t, void *, int, void *,
                 void *, void *>("runtime_initialize", result_buffer, this,
                                 (std::size_t)scomp->root_size, prealloc_size,
-                                preallocated_device_buffer,
+                                preallocated_device_buffer, num_rand_states,
                                 (void *)&taichi_allocate_aligned,
                                 (void *)std::printf, (void *)std::vsnprintf);
 
@@ -583,6 +617,14 @@ void Program::finalize() {
 
 void Program::launch_async(Kernel *kernel) {
   async_engine->launch(kernel);
+}
+
+int Program::default_block_dim() const {
+  if (arch_is_cpu(config.arch)) {
+    return config.default_cpu_block_dim;
+  } else {
+    return config.default_gpu_block_dim;
+  }
 }
 
 Program::~Program() {

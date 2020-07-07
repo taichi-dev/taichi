@@ -1,5 +1,6 @@
-#include "taichi/util/testing.h"
-#include "taichi/ir/frontend.h"
+#pragma once
+
+#include "taichi/ir/snode.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -81,13 +82,14 @@ class ScratchPad {
     block_size.resize(dim);
     for (int i = 0; i < dim; i++) {
       block_size[i] =
-          1 << snode->extractors[snode->physical_index_position[i]].num_bits;
+          1 << snode->parent->extractors[snode->physical_index_position[i]]
+                   .num_bits;
       TI_ASSERT(bounds[0][i] != std::numeric_limits<int>::max());
       TI_ASSERT(bounds[1][i] != std::numeric_limits<int>::min());
     }
 
     finalized = true;
-    flags = std::vector<AccessFlag>(linear_size(), AccessFlag(0));
+    flags = std::vector<AccessFlag>(pad_size_linear(), AccessFlag(0));
 
     for (auto &acc : accesses) {
       total_flags |= acc.second;
@@ -106,11 +108,20 @@ class ScratchPad {
     return bit::is_power_of_two((unsigned)total_flags);
   }
 
-  int linear_size() {
+  int pad_size_linear() {
     TI_ASSERT(finalized);
     int s = 1;
     for (int i = 0; i < dim; i++) {
       s *= pad_size[i];
+    }
+    return s;
+  }
+
+  int block_size_linear() {
+    TI_ASSERT(finalized);
+    int s = 1;
+    for (int i = 0; i < dim; i++) {
+      s *= block_size[i];
     }
     return s;
   }
@@ -145,18 +156,7 @@ class ScratchPad {
    */
 
   std::string global_to_linearized_local(const std::vector<Stmt *> &loop_vars,
-                                         const std::vector<Stmt *> &indices) {
-    std::string ret = "";
-    TI_ASSERT((int)indices.size() == dim);
-    int step_size = linear_size();
-    for (int i = 0; i < (int)indices.size(); i++) {
-      TI_ASSERT(step_size % pad_size[i] == 0);
-      step_size /= pad_size[i];
-      ret += fmt::format(" + ({} - {}_base - {}) * {}", indices[i]->raw_name(),
-                         loop_vars[i]->raw_name(), bounds[0][i], step_size);
-    }
-    return ret;
-  }
+                                         const std::vector<Stmt *> &indices);
 };
 
 inline int div_floor(int a, int b) {
@@ -201,15 +201,6 @@ class ScratchPads {
     for (auto &pad : pads) {
       pad.second.finalize();
     }
-  }
-
-  void CSE() {
-  }
-
-  void emit_gather_code_cpu() {
-  }
-
-  void emit_gather_code_gpu() {
   }
 
   void generate_address_code(SNode *snode, const std::vector<int> &indices) {

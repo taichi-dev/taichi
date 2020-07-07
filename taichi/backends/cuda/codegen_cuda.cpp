@@ -21,25 +21,12 @@ using namespace llvm;
 
 class CodeGenLLVMCUDA : public CodeGenLLVM {
  public:
-  int kernel_grid_dim;
-  int kernel_block_dim;
-  int num_SMs;
-  int max_block_dim;
   int saturating_num_blocks;
 
   using IRVisitor::visit;
 
   CodeGenLLVMCUDA(Kernel *kernel, IRNode *ir = nullptr)
       : CodeGenLLVM(kernel, ir) {
-#if defined(TI_WITH_CUDA)
-    CUDADriver::get_instance().device_get_attribute(
-        &num_SMs, CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, 0);
-    CUDADriver::get_instance().device_get_attribute(
-        &max_block_dim, CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_X, 0);
-
-    // each SM can have 16-32 resident blocks
-    saturating_num_blocks = num_SMs * 32;
-#endif
   }
 
   FunctionType compile_module_to_executable() override {
@@ -86,7 +73,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
                  task.block_dim);
 
         cuda_module->launch(task.name, task.grid_dim, task.block_dim,
-                            {&context});
+                            task.shmem_bytes, {&context});
       }
       // copy data back to host
       if (has_buffer) {
@@ -347,24 +334,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   }
 
   void create_offload_range_for(OffloadedStmt *stmt) override {
-    auto loop_block_dim = stmt->block_dim;
-    if (loop_block_dim == 0) {
-      loop_block_dim = prog->config.default_gpu_block_dim;
-    }
-    kernel_grid_dim = saturating_num_blocks;
-    kernel_block_dim = loop_block_dim;
-
-    auto xlogue_type = get_xlogue_function_type();
-    auto xlogue_ptr_type = llvm::PointerType::get(xlogue_type, 0);
-
-    llvm::Value *prologue = nullptr;
-    if (stmt->prologue) {
-      auto guard = get_function_creation_guard(get_xlogue_argument_types());
-      stmt->prologue->accept(this);
-      prologue = guard.body;
-    } else {
-      prologue = llvm::ConstantPointerNull::get(xlogue_ptr_type);
-    }
+    auto tls_prologue = create_xlogue(stmt->tls_prologue);
 
     llvm::Function *body;
     {
@@ -380,19 +350,11 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       body = guard.body;
     }
 
-    llvm::Value *epilogue = nullptr;
-    if (stmt->epilogue) {
-      auto guard = get_function_creation_guard(get_xlogue_argument_types());
-      stmt->epilogue->accept(this);
-      epilogue = guard.body;
-    } else {
-      epilogue = llvm::ConstantPointerNull::get(xlogue_ptr_type);
-    }
+    auto epilogue = create_xlogue(stmt->tls_epilogue);
 
     auto [begin, end] = get_range_for_bounds(stmt);
-
     create_call("gpu_parallel_range_for",
-                {get_arg(0), begin, end, prologue, body, epilogue,
+                {get_arg(0), begin, end, tls_prologue, body, epilogue,
                  tlctx->get_constant(stmt->tls_size)});
   }
 
@@ -463,7 +425,23 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     }
   }
 
+  void create_bls_buffer(OffloadedStmt *stmt) {
+    auto type = llvm::ArrayType::get(llvm::Type::getInt8Ty(*llvm_context),
+                                     stmt->bls_size);
+    bls_buffer = new GlobalVariable(
+        *module, type, false, llvm::GlobalValue::InternalLinkage, nullptr,
+        "bls_buffer", nullptr, llvm::GlobalVariable::NotThreadLocal,
+        3 /*addrspace=shared*/);
+#if LLVM_VERSION_MAJOR >= 10
+    bls_buffer->setAlignment(llvm::MaybeAlign(8));
+#else
+    bls_buffer->setAlignment(8);
+#endif
+  }
+
   void visit(OffloadedStmt *stmt) override {
+    if (stmt->bls_size > 0)
+      create_bls_buffer(stmt);
 #if defined(TI_WITH_CUDA)
     TI_ASSERT(current_offload == nullptr);
     current_offload = stmt;
@@ -473,35 +451,26 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       emit_cuda_gc(stmt);
       return;
     } else {
-      kernel_grid_dim = 1;
-      kernel_block_dim = 1;
       init_offloaded_task_function(stmt);
       if (stmt->task_type == Type::serial) {
         stmt->body->accept(this);
       } else if (stmt->task_type == Type::range_for) {
         create_offload_range_for(stmt);
       } else if (stmt->task_type == Type::struct_for) {
-        kernel_grid_dim = saturating_num_blocks;
-        kernel_block_dim = stmt->block_dim;
-        if (kernel_block_dim == 0)
-          kernel_block_dim = prog->config.default_gpu_block_dim;
-        kernel_block_dim =
-            std::min(stmt->snode->max_num_elements(), kernel_block_dim);
-        stmt->block_dim = kernel_block_dim;
         create_offload_struct_for(stmt, true);
       } else if (stmt->task_type == Type::clear_list) {
         emit_clear_list(stmt);
       } else if (stmt->task_type == Type::listgen) {
-        int branching = stmt->snode->max_num_elements();
-        kernel_grid_dim = saturating_num_blocks;
-        kernel_block_dim = std::min(branching, 64);
         emit_list_gen(stmt);
       } else {
         TI_NOT_IMPLEMENTED
       }
       finalize_offloaded_task_function();
-      current_task->grid_dim = kernel_grid_dim;
-      current_task->block_dim = kernel_block_dim;
+      current_task->grid_dim = stmt->grid_dim;
+      current_task->block_dim = stmt->block_dim;
+      TI_ASSERT(current_task->grid_dim != 0);
+      TI_ASSERT(current_task->block_dim != 0);
+      current_task->shmem_bytes = stmt->bls_size;
       current_task->end();
       current_task = nullptr;
     }

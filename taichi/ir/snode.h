@@ -12,6 +12,7 @@ TLANG_NAMESPACE_BEGIN
 
 class Expr;
 class Kernel;
+class Stmt;
 
 struct IndexExtractor {
   int start;

@@ -1325,7 +1325,10 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     auto refine =
         get_runtime_function(leaf_block->refine_coordinates_func_name());
     auto new_coordinates = create_entry_block_alloca(physical_coordinate_ty);
-    create_call(refine, {element.get_ptr("pcoord"), new_coordinates,
+
+    parent_coordinates = element.get_ptr("pcoord");
+
+    create_call(refine, {parent_coordinates, new_coordinates,
                          builder->CreateLoad(loop_index)});
 
     current_coordinates = new_coordinates;
@@ -1367,8 +1370,19 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
           BasicBlock::Create(*llvm_context, "bound_guarded_loop_body", func);
       builder->CreateCondBr(exec_cond, bounded_body_bb, body_bb_tail);
       builder->SetInsertPoint(bounded_body_bb);
+
+      if (stmt->bls_prologue) {
+        stmt->bls_prologue->accept(this);
+        call("block_barrier");  // "__syncthreads()"
+      }
+
       // The real loop body
       stmt->body->accept(this);
+
+      if (stmt->bls_epilogue) {
+        call("block_barrier");  // "__syncthreads()"
+        stmt->bls_epilogue->accept(this);
+      }
       builder->CreateBr(body_bb_tail);
     }
 
@@ -1391,7 +1405,7 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
   }
   int num_splits = leaf_block->max_num_elements() / stmt->block_dim;
   // traverse leaf node
-  create_call("for_each_block",
+  create_call("parallel_struct_for",
               {get_context(), tlctx->get_constant(leaf_block->id),
                tlctx->get_constant(leaf_block->max_num_elements()),
                tlctx->get_constant(num_splits), body,
@@ -1400,7 +1414,6 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
 }
 
 void CodeGenLLVM::visit(LoopIndexStmt *stmt) {
-  TI_ASSERT(&module->getContext() == tlctx->get_this_thread_context());
   if (stmt->loop->is<OffloadedStmt>() &&
       stmt->loop->as<OffloadedStmt>()->task_type ==
           OffloadedStmt::TaskType::struct_for) {
@@ -1411,6 +1424,25 @@ void CodeGenLLVM::visit(LoopIndexStmt *stmt) {
     llvm_val[stmt] =
         builder->CreateLoad(loop_vars_llvm[stmt->loop][stmt->index]);
   }
+}
+
+void CodeGenLLVM::visit(BlockCornerIndexStmt *stmt) {
+  if (stmt->loop->is<OffloadedStmt>() &&
+      stmt->loop->as<OffloadedStmt>()->task_type ==
+          OffloadedStmt::TaskType::struct_for) {
+    TI_ASSERT(parent_coordinates);
+    llvm_val[stmt] = builder->CreateLoad(builder->CreateGEP(
+        parent_coordinates, {tlctx->get_constant(0), tlctx->get_constant(0),
+                             tlctx->get_constant(stmt->index)}));
+  } else {
+    TI_NOT_IMPLEMENTED;
+  }
+}
+
+void CodeGenLLVM::visit(BlockDimStmt *stmt) {
+  TI_NOT_IMPLEMENTED  // No need for this statement for now. Untested so mark it
+                      // as a loud failure.
+      llvm_val[stmt] = create_call("block_dim", {});
 }
 
 void CodeGenLLVM::visit(GlobalTemporaryStmt *stmt) {
@@ -1428,6 +1460,17 @@ void CodeGenLLVM::visit(ThreadLocalPtrStmt *stmt) {
   auto base = get_tls_base_ptr();
   TI_ASSERT(stmt->width() == 1);
   auto ptr = builder->CreateGEP(base, tlctx->get_constant(stmt->offset));
+  auto ptr_type =
+      llvm::PointerType::get(tlctx->get_data_type(stmt->ret_type.data_type), 0);
+  llvm_val[stmt] = builder->CreatePointerCast(ptr, ptr_type);
+}
+
+void CodeGenLLVM::visit(BlockLocalPtrStmt *stmt) {
+  TI_ASSERT(bls_buffer);
+  auto base = bls_buffer;
+  TI_ASSERT(stmt->width() == 1);
+  auto ptr = builder->CreateGEP(
+      base, {tlctx->get_constant(0), llvm_val[stmt->offset]});
   auto ptr_type =
       llvm::PointerType::get(tlctx->get_data_type(stmt->ret_type.data_type), 0);
   llvm_val[stmt] = builder->CreatePointerCast(ptr, ptr_type);
@@ -1588,6 +1631,23 @@ void CodeGenLLVM::emit_to_module() {
 FunctionType CodeGenLLVM::gen() {
   emit_to_module();
   return compile_module_to_executable();
+}
+
+llvm::Value *CodeGenLLVM::create_xlogue(std::unique_ptr<Block> &block) {
+  llvm::Value *xlogue;
+
+  auto xlogue_type = get_xlogue_function_type();
+  auto xlogue_ptr_type = llvm::PointerType::get(xlogue_type, 0);
+
+  if (block) {
+    auto guard = get_function_creation_guard(get_xlogue_argument_types());
+    block->accept(this);
+    xlogue = guard.body;
+  } else {
+    xlogue = llvm::ConstantPointerNull::get(xlogue_ptr_type);
+  }
+
+  return xlogue;
 }
 
 TLANG_NAMESPACE_END

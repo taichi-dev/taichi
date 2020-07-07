@@ -130,9 +130,9 @@ class TypeCheck : public IRVisitor {
       TI_ASSERT_INFO(
           is_integral(stmt->indices[i]->ret_type.data_type),
           "[{}] Taichi tensors must be accessed with integral indices (e.g., "
-          "i32/i64). It seems that you have used a float point number as "
-          "an index. You can cast that to an integer using int(). Also note "
-          "that ti.floor(ti.f32) returns f32.",
+          "i32/i64). It seems that you have used something else as "
+          "an index. You can cast a float-pointer number to an integer using "
+          "int(). Also note that ti.floor(ti.f32) returns f32.",
           stmt->name());
       TI_ASSERT(stmt->indices[i]->ret_type.width == stmt->snodes.size());
     }
@@ -350,6 +350,14 @@ class TypeCheck : public IRVisitor {
     stmt->ret_type = VectorType(1, DataType::i32);
   }
 
+  void visit(BlockCornerIndexStmt *stmt) {
+    stmt->ret_type = VectorType(1, DataType::i32);
+  }
+
+  void visit(BlockDimStmt *stmt) {
+    stmt->ret_type = VectorType(1, DataType::i32);
+  }
+
   void visit(GetRootStmt *stmt) {
     stmt->ret_type = VectorType(1, DataType::gen, true);
   }
@@ -364,12 +372,7 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(OffloadedStmt *stmt) {
-    if (stmt->prologue)
-      stmt->prologue->accept(this);
-    if (stmt->body)
-      stmt->body->accept(this);
-    if (stmt->epilogue)
-      stmt->epilogue->accept(this);
+    stmt->all_blocks_accept(this);
   }
 
   void visit(BitExtractStmt *stmt) {

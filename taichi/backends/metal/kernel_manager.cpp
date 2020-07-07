@@ -180,6 +180,7 @@ class RuntimeListOpsMtlKernel : public CompiledMtlKernelBase {
     mem[1] = child_snode_id_;
     const auto &sn_descs = *params.snode_descriptors;
     mem[2] = total_num_self_from_root(sn_descs, child_snode_id_);
+    did_modify_range(args_buffer_.get(), /*location=*/0, args_mem_->size());
   }
 
   void launch(InputBuffersMap &input_buffers,
@@ -281,12 +282,15 @@ class CompiledTaichiKernel {
 
 class HostMetalCtxBlitter {
  public:
-  HostMetalCtxBlitter(const KernelContextAttributes *ctx_attribs,
-                      Context *host_ctx,
-                      BufferMemoryView *ctx_buffer_mem)
-      : ctx_attribs_(ctx_attribs),
+  HostMetalCtxBlitter(const CompiledTaichiKernel &kernel, Context *host_ctx)
+      : ctx_attribs_(&kernel.ctx_attribs),
         host_ctx_(host_ctx),
-        kernel_ctx_mem_(ctx_buffer_mem) {
+        kernel_ctx_mem_(kernel.ctx_mem.get()),
+        kernel_ctx_buffer_(kernel.ctx_buffer.get()) {
+  }
+
+  inline MTLBuffer *ctx_buffer() {
+    return kernel_ctx_buffer_;
   }
 
   void host_to_metal() {
@@ -328,6 +332,8 @@ class HostMetalCtxBlitter {
     std::memcpy(device_ptr, host_ctx_->extra_args,
                 ctx_attribs_->extra_args_bytes());
 #undef TO_METAL
+    did_modify_range(kernel_ctx_buffer_, /*location=*/0,
+                     kernel_ctx_mem_->size());
   }
 
   void metal_to_host() {
@@ -386,14 +392,14 @@ class HostMetalCtxBlitter {
     if (kernel.ctx_attribs.empty()) {
       return nullptr;
     }
-    return std::make_unique<HostMetalCtxBlitter>(&kernel.ctx_attribs, ctx,
-                                                 kernel.ctx_mem.get());
+    return std::make_unique<HostMetalCtxBlitter>(kernel, ctx);
   }
 
  private:
   const KernelContextAttributes *const ctx_attribs_;
   Context *const host_ctx_;
   BufferMemoryView *const kernel_ctx_mem_;
+  MTLBuffer *const kernel_ctx_buffer_;
 };
 
 }  // namespace
@@ -488,7 +494,7 @@ class KernelManager::Impl {
     auto &ctk = *compiled_taichi_kernels_.find(taichi_kernel_name)->second;
     auto ctx_blitter = HostMetalCtxBlitter::maybe_make(ctk, ctx);
     if (config_->verbose_kernel_launches) {
-      TI_INFO("Lauching Taichi kernel <{}>", taichi_kernel_name);
+      TI_INFO("Launching Taichi kernel <{}>", taichi_kernel_name);
     }
 
     InputBuffersMap input_buffers = {
@@ -510,7 +516,15 @@ class KernelManager::Impl {
       // TODO(k-ye): One optimization is to synchronize only when we absolutely
       // need to transfer the data back to host. This includes the cases where
       // an arg is 1) an array, or 2) used as return value.
-      synchronize();
+      std::vector<MTLBuffer *> buffers_to_blit;
+      if (ctx_blitter) {
+        buffers_to_blit.push_back(ctx_blitter->ctx_buffer());
+      }
+      if (used_print) {
+        buffers_to_blit.push_back(print_buffer_.get());
+      }
+      blit_buffers_and_sync(buffers_to_blit);
+
       if (ctx_blitter) {
         ctx_blitter->metal_to_host();
       }
@@ -521,11 +535,7 @@ class KernelManager::Impl {
   }
 
   void synchronize() {
-    profiler_->start("metal_synchronize");
-    commit_command_buffer(cur_command_buffer_.get());
-    wait_until_completed(cur_command_buffer_.get());
-    create_new_command_buffer();
-    profiler_->stop();
+    blit_buffers_and_sync();
   }
 
   PrintStringTable *print_strtable() {
@@ -653,11 +663,37 @@ class KernelManager::Impl {
       root_lm.mem_alloc = alloc;
       append(&root_lm, root_elem);
     }
+
+    did_modify_range(runtime_buffer_.get(), /*location=*/0,
+                     runtime_mem_->size());
   }
 
   void init_print_buffer() {
     // This includes setting PrintMsgAllocator::next to zero.
     std::memset(print_mem_->ptr(), 0, print_mem_->size());
+    did_modify_range(print_buffer_.get(), /*location=*/0, print_mem_->size());
+  }
+
+  void blit_buffers_and_sync(
+      const std::vector<MTLBuffer *> &buffers_to_blit = {}) {
+    // Blit the Metal buffers because they are in .managed mode.
+    // We don't have to blit any of the root, global tmps or runtime buffer.
+    // The data in these buffers are purely used inside GPU. When we need to
+    // read back data from root buffer to CPU, it's done through that kernel's
+    // context buffer.
+    if (!buffers_to_blit.empty()) {
+      auto encoder = new_blit_command_encoder(cur_command_buffer_.get());
+      for (auto *b : buffers_to_blit) {
+        synchronize_resource(encoder.get(), b);
+      }
+      end_encoding(encoder.get());
+    }
+    // Sync
+    profiler_->start("metal_synchronize");
+    commit_command_buffer(cur_command_buffer_.get());
+    wait_until_completed(cur_command_buffer_.get());
+    create_new_command_buffer();
+    profiler_->stop();
   }
 
   void flush_print_buffers() {

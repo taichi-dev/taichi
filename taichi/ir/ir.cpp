@@ -24,6 +24,51 @@ CompileConfig &IRNode::get_config() const {
   return get_kernel()->program.config;
 }
 
+bool definitely_same_address(Stmt *var1, Stmt *var2) {
+  // Return true when two statements must be the same address;
+  // false when two statements can be different addresses.
+
+  // If both stmts are allocas, they have the same address iff var1 == var2.
+  // If only one of them is an alloca, they can never share the same address.
+  if (var1 == var2)
+    return true;
+  if (!var1 || !var2)
+    return false;
+  if (var1->is<AllocaStmt>() || var2->is<AllocaStmt>())
+    return false;
+  if (var1->is<StackAllocaStmt>() || var2->is<StackAllocaStmt>())
+    return false;
+
+  // TODO(xumingkuan): Put GlobalTemporaryStmt, ThreadLocalPtrStmt and
+  //  BlockLocalPtrStmt into GlobalPtrStmt.
+  // If both statements are global temps, they have the same address iff they
+  // have the same offset. If only one of them is a global temp, they can never
+  // share the same address.
+  if (var1->is<GlobalTemporaryStmt>() || var2->is<GlobalTemporaryStmt>()) {
+    if (!var1->is<GlobalTemporaryStmt>() || !var2->is<GlobalTemporaryStmt>())
+      return false;
+    return var1->as<GlobalTemporaryStmt>()->offset ==
+           var2->as<GlobalTemporaryStmt>()->offset;
+  }
+
+  if (var1->is<ThreadLocalPtrStmt>() || var2->is<ThreadLocalPtrStmt>()) {
+    if (!var1->is<ThreadLocalPtrStmt>() || !var2->is<ThreadLocalPtrStmt>())
+      return false;
+    return var1->as<ThreadLocalPtrStmt>()->offset ==
+           var2->as<ThreadLocalPtrStmt>()->offset;
+  }
+
+  if (var1->is<BlockLocalPtrStmt>() || var2->is<BlockLocalPtrStmt>()) {
+    if (!var1->is<BlockLocalPtrStmt>() || !var2->is<BlockLocalPtrStmt>())
+      return false;
+    return irpass::analysis::same_statements(
+        var1->as<BlockLocalPtrStmt>()->offset,
+        var2->as<BlockLocalPtrStmt>()->offset);
+  }
+
+  return irpass::analysis::same_statements(var1, var2);
+}
+
 bool maybe_same_address(Stmt *var1, Stmt *var2) {
   // Return true when two statements might be the same address;
   // false when two statements cannot be the same address.
@@ -36,6 +81,8 @@ bool maybe_same_address(Stmt *var1, Stmt *var2) {
     return false;
   if (var1->is<AllocaStmt>() || var2->is<AllocaStmt>())
     return false;
+  if (var1->is<StackAllocaStmt>() || var2->is<StackAllocaStmt>())
+    return false;
 
   // If both statements are global temps, they have the same address iff they
   // have the same offset. If only one of them is a global temp, they can never
@@ -45,6 +92,21 @@ bool maybe_same_address(Stmt *var1, Stmt *var2) {
       return false;
     return var1->as<GlobalTemporaryStmt>()->offset ==
            var2->as<GlobalTemporaryStmt>()->offset;
+  }
+
+  if (var1->is<ThreadLocalPtrStmt>() || var2->is<ThreadLocalPtrStmt>()) {
+    if (!var1->is<ThreadLocalPtrStmt>() || !var2->is<ThreadLocalPtrStmt>())
+      return false;
+    return var1->as<ThreadLocalPtrStmt>()->offset ==
+        var2->as<ThreadLocalPtrStmt>()->offset;
+  }
+
+  if (var1->is<BlockLocalPtrStmt>() || var2->is<BlockLocalPtrStmt>()) {
+    if (!var1->is<BlockLocalPtrStmt>() || !var2->is<BlockLocalPtrStmt>())
+      return false;
+    return irpass::analysis::same_statements(
+        var1->as<BlockLocalPtrStmt>()->offset,
+        var2->as<BlockLocalPtrStmt>()->offset);
   }
 
   // If both statements are GlobalPtrStmts or GetChStmts, we can check by

@@ -53,6 +53,8 @@ class CFGNode {
 
   static bool contain_variable(const std::unordered_set<Stmt *> &var_set,
                                Stmt *var);
+  static bool may_contain_variable(const std::unordered_set<Stmt *> &var_set,
+                                   Stmt *var);
   void reaching_definition_analysis(bool after_lower_access);
   bool reach_kill_variable(Stmt *var) const;
   Stmt *get_store_forwarding_data(Stmt *var, int position) const;

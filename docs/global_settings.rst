@@ -15,8 +15,9 @@ Compilation
 
 - Disable advanced optimization to save compile time & possible errors: ``ti.init(advanced_optimization=False)``.
 - Disable fast math to prevent possible undefined math behavior: ``ti.init(fast_math=False)``.
-- To print intermediate IR generated: ``ti.init(print_ir=True)``.
 - To print preprocessed Python code: ``ti.init(print_preprocessed=True)``.
+- To show pretty Taichi-scope stack traceback: ``ti.init(excepthook=True)``.
+- To print intermediate IR generated: ``ti.init(print_ir=True)``.
 
 Runtime
 *******
@@ -56,3 +57,15 @@ the one in environment variable will **override** the one in argument, e.g.:
   then Taichi will choose ``ti.opengl`` as backend.
 - if ``ti.init(debug=True)`` and ``export TI_DEBUG=0`` is specied at the same time,
   then Taichi will disable debug mode.
+
+.. note::
+
+    If ``ti.init`` is called twice, then the configuation in first invocation will be
+    completely discarded, e.g.:
+
+    ::
+
+        ti.init(debug=True)
+        print(ti.cfg.debug)  # True
+        ti.init()
+        print(ti.cfg.debug)  # False

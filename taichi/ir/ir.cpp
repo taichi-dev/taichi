@@ -98,7 +98,7 @@ bool maybe_same_address(Stmt *var1, Stmt *var2) {
     if (!var1->is<ThreadLocalPtrStmt>() || !var2->is<ThreadLocalPtrStmt>())
       return false;
     return var1->as<ThreadLocalPtrStmt>()->offset ==
-        var2->as<ThreadLocalPtrStmt>()->offset;
+           var2->as<ThreadLocalPtrStmt>()->offset;
   }
 
   if (var1->is<BlockLocalPtrStmt>() || var2->is<BlockLocalPtrStmt>()) {

@@ -36,6 +36,10 @@ void ActionRecorder::stop_recording() {
   get_instance().running = false;
 }
 
+bool ActionRecorder::is_recording() {
+  return get_instance().running;
+}
+
 void ActionRecorder::record_(const std::string &content,
                              const std::vector<ActionArg> &arguments) {
   if (!running)

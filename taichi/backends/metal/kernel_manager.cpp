@@ -256,7 +256,8 @@ class CompiledTaichiKernel {
       TI_ERROR("Failed to compile Metal kernel! Generated code:\n\n{}",
                params.mtl_source_code);
     }
-    if (is_primary_kernel(params.taichi_kernel_name)) {
+    if (is_primary_kernel(params.taichi_kernel_name) &&
+        ActionRecorder::is_recording()) {
       static FileSequenceWriter writer("shader{:04d}.mtl", "Metal shader");
       auto fn = writer.write(params.mtl_source_code);
       ActionRecorder::record(

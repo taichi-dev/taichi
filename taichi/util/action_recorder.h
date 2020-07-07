@@ -50,6 +50,8 @@ class ActionRecorder {
 
   static void stop_recording();
 
+  static bool is_recording();
+
  private:
   ActionRecorder();
 

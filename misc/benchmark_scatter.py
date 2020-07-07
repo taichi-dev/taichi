@@ -60,7 +60,7 @@ def _test_bls_stencil(dim, N, bs, stencil, block_dim=None, scatter=False):
                 y[I] = s
     
     populate()
-    # apply(False, y2)
+    apply(False, y2)
     apply(True, y)
     
     @ti.kernel
@@ -70,11 +70,11 @@ def _test_bls_stencil(dim, N, bs, stencil, block_dim=None, scatter=False):
             if y[I] != y2[I]:
                 mismatch[None] = 1
     
-    # check()
+    check()
     
     assert mismatch[None] == 0
 
-_test_bls_stencil(1, 128, bs=32, stencil=((0, ), ), scatter=True)
+_test_bls_stencil(1, 128, bs=32, stencil=((1, ), (0, ), ), scatter=True)
 
 
 '''

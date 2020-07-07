@@ -44,6 +44,7 @@ void make_block_local_offload(OffloadedStmt *offload) {
     // Ensure BLS alignment
     bls_offset += (dtype_size - bls_offset % dtype_size) % dtype_size;
 
+    // This lambda is used for both BLS prologue and epilogue creation
     auto create_xlogue =
         [&](Block *block,
             const std::function<void(
@@ -261,7 +262,6 @@ void make_block_local_offload(OffloadedStmt *offload) {
                                                      global_pointer, bls_val);
             }
           });
-      TI_NOT_IMPLEMENTED
     }
 
     // allocate storage for the BLS variable

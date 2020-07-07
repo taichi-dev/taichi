@@ -81,6 +81,7 @@ class CompiledMtlKernelBase {
  public:
   struct Params {
     const KernelAttributes *kernel_attribs;
+    bool is_jit_evaluator;
     MTLDevice *device;
     MTLFunction *mtl_func;
   };
@@ -215,7 +216,6 @@ class RuntimeListOpsMtlKernel : public CompiledMtlKernelBase {
 class CompiledTaichiKernel {
  public:
   struct Params {
-    std::string_view taichi_kernel_name;
     std::string mtl_source_code;
     const TaichiKernelAttributes *ti_kernel_attribs;
     const KernelContextAttributes *ctx_attribs;
@@ -226,16 +226,17 @@ class CompiledTaichiKernel {
   };
 
   CompiledTaichiKernel(Params params)
-      : ctx_attribs(*params.ctx_attribs),
-        used_features(params.ti_kernel_attribs->used_features) {
+      : ti_kernel_attribs(*params.ti_kernel_attribs),
+        ctx_attribs(*params.ctx_attribs) {
     auto *const device = params.device;
-    auto kernel_lib = new_library_with_source(device, params.mtl_source_code,
-                                              infer_msl_version(used_features));
+    auto kernel_lib = new_library_with_source(
+        device, params.mtl_source_code,
+        infer_msl_version(ti_kernel_attribs.used_features));
     if (kernel_lib == nullptr) {
       TI_ERROR("Failed to compile Metal kernel! Generated code:\n\n{}",
                params.mtl_source_code);
     }
-    for (const auto &ka : params.ti_kernel_attribs->mtl_kernels_attribs) {
+    for (const auto &ka : ti_kernel_attribs.mtl_kernels_attribs) {
       auto mtl_func = new_function_with_name(kernel_lib.get(), ka.name);
       TI_ASSERT(mtl_func != nullptr);
       // Note that CompiledMtlKernel doesn't own |kernel_func|.
@@ -245,6 +246,7 @@ class CompiledTaichiKernel {
           ktype == KernelTaskType::listgen) {
         RuntimeListOpsMtlKernel::Params kparams;
         kparams.kernel_attribs = &ka;
+        kparams.is_jit_evaluator = ti_kernel_attribs.is_jit_evaluator;
         kparams.device = device;
         kparams.mtl_func = mtl_func.get();
         kparams.mem_pool = params.mem_pool;
@@ -253,6 +255,7 @@ class CompiledTaichiKernel {
       } else {
         UserMtlKernel::Params kparams;
         kparams.kernel_attribs = &ka;
+        kparams.is_jit_evaluator = ti_kernel_attribs.is_jit_evaluator;
         kparams.device = device;
         kparams.mtl_func = mtl_func.get();
         kernel = std::make_unique<UserMtlKernel>(kparams);
@@ -261,7 +264,7 @@ class CompiledTaichiKernel {
       TI_ASSERT(kernel != nullptr);
       compiled_mtl_kernels.push_back(std::move(kernel));
       TI_DEBUG("Added {} for Taichi kernel {}", ka.debug_string(),
-               params.taichi_kernel_name);
+               ti_kernel_attribs.name);
     }
     if (!ctx_attribs.empty()) {
       ctx_mem = std::make_unique<BufferMemoryView>(ctx_attribs.total_bytes(),
@@ -274,16 +277,17 @@ class CompiledTaichiKernel {
   // Have to be exposed as public for Impl to use. We cannot friend the Impl
   // class because it is private.
   std::vector<std::unique_ptr<CompiledMtlKernelBase>> compiled_mtl_kernels;
+  TaichiKernelAttributes ti_kernel_attribs;
   KernelContextAttributes ctx_attribs;
   std::unique_ptr<BufferMemoryView> ctx_mem;
   nsobj_unique_ptr<MTLBuffer> ctx_buffer;
-  TaichiKernelAttributes::UsedFeatures used_features;
 };
 
 class HostMetalCtxBlitter {
  public:
   HostMetalCtxBlitter(const CompiledTaichiKernel &kernel, Context *host_ctx)
-      : ctx_attribs_(&kernel.ctx_attribs),
+      : ti_kernel_attribs_(&kernel.ti_kernel_attribs),
+        ctx_attribs_(&kernel.ctx_attribs),
         host_ctx_(host_ctx),
         kernel_ctx_mem_(kernel.ctx_mem.get()),
         kernel_ctx_buffer_(kernel.ctx_buffer.get()) {
@@ -396,6 +400,7 @@ class HostMetalCtxBlitter {
   }
 
  private:
+  const TaichiKernelAttributes *const ti_kernel_attribs_;
   const KernelContextAttributes *const ctx_attribs_;
   Context *const host_ctx_;
   BufferMemoryView *const kernel_ctx_mem_;
@@ -476,7 +481,6 @@ class KernelManager::Impl {
               mtl_kernel_source_code);
     }
     CompiledTaichiKernel::Params params;
-    params.taichi_kernel_name = taichi_kernel_name;
     params.mtl_source_code = mtl_kernel_source_code;
     params.ti_kernel_attribs = &ti_kernel_attribs;
     params.ctx_attribs = &ctx_attribs;
@@ -511,7 +515,7 @@ class KernelManager::Impl {
     for (const auto &mk : ctk.compiled_mtl_kernels) {
       mk->launch(input_buffers, cur_command_buffer_.get());
     }
-    const bool used_print = ctk.used_features.print;
+    const bool used_print = ctk.ti_kernel_attribs.used_features.print;
     if (ctx_blitter || used_print) {
       // TODO(k-ye): One optimization is to synchronize only when we absolutely
       // need to transfer the data back to host. This includes the cases where

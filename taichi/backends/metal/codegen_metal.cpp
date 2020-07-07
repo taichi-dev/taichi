@@ -85,13 +85,13 @@ class KernelCodegen : public IRVisitor {
 
  public:
   // TODO(k-ye): Create a Params to hold these ctor params.
-  KernelCodegen(const std::string &mtl_kernel_prefix,
+  KernelCodegen(const std::string &taichi_kernel_name,
                 const std::string &root_snode_type_name,
                 Kernel *kernel,
                 const CompiledStructs *compiled_structs,
                 PrintStringTable *print_strtab,
                 const CodeGen::Config &config)
-      : mtl_kernel_prefix_(mtl_kernel_prefix),
+      : mtl_kernel_prefix_(taichi_kernel_name),
         root_snode_type_name_(root_snode_type_name),
         kernel_(kernel),
         compiled_structs_(compiled_structs),
@@ -99,6 +99,8 @@ class KernelCodegen : public IRVisitor {
         ctx_attribs_(*kernel_),
         print_strtab_(print_strtab),
         cgen_config_(config) {
+    ti_kernel_attribus_.name = taichi_kernel_name;
+    ti_kernel_attribus_.is_jit_evaluator = kernel->is_evaluator;
     // allow_undefined_visitor = true;
     for (const auto s : kAllSections) {
       section_appenders_[s] = LineAppender();

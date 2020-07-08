@@ -6,14 +6,14 @@ ti.init()
 
 kUseTree = True
 #kDisplay = 'tree mouse pixels save_result'
-kDisplay = 'pixels save_result'
+kDisplay = 'pixels'
 kResolution = 512
 kShapeFactor = 1
 kMaxParticles = 8192
 kMaxDepth = kMaxParticles * 1
 kMaxNodes = kMaxParticles * 4
 
-dt = 0.00005
+dt = 0.00002
 LEAF = -1
 TREE = -2
 
@@ -132,10 +132,12 @@ def add_particle_at(mx: ti.f32, my: ti.f32, mass: ti.f32):
 
 
 @ti.kernel
-def add_random_particles():
+def add_random_particles(angular_velocity: ti.f32):
     num = ti.static(1)
     particle_id = alloc_particle()
     particle_pos[particle_id] = tl.randSolid2D() * 0.2 + 0.5
+    velocity = (particle_pos[particle_id] - 0.5) * angular_velocity * 250
+    particle_vel[particle_id] = tl.vec(-velocity.y, velocity.x)
     particle_mass[particle_id] = tl.randRange(0.0, 1.5)
 
 
@@ -277,6 +279,7 @@ def render_tree(gui,
 
 
 print('[Hint] Press `r` to add 512 random particles')
+print('[Hint] Press `t` to add 512 random particles with angular velocity')
 print('[Hint] Drag with mouse left button to add a series of particles')
 print('[Hint] Drag with mouse middle button to add zero-mass particles')
 print('[Hint] Click mouse right button to add a single particle')
@@ -287,10 +290,10 @@ while gui.running:
             gui.running = False
         elif e.key == gui.RMB:
             add_particle_at(*gui.get_cursor_pos(), 1.0)
-        elif e.key == 'r':
+        elif e.key in 'rt':
             if particle_table_len[None] + 512 < kMaxParticles:
                 for i in range(512):
-                    add_random_particles()
+                    add_random_particles(e.key == 't')
     if gui.is_pressed(gui.MMB, gui.LMB):
         add_particle_at(*gui.get_cursor_pos(), gui.is_pressed(gui.LMB))
 

@@ -69,13 +69,14 @@ void make_block_local_offload(OffloadedStmt *offload) {
           //   sum_i block_stride(i) * (loop_index[i] - loop_index_base[i])
           for (int i = 0; i < dim; i++) {
             // TODO: fix the virtual/physical index correspondence here
+            auto cor_index = block->push_back<BlockCornerIndexStmt>(offload, i);
             auto inc = block->push_back<BinaryOpStmt>(
                 BinaryOpType::mul,
                 block->push_back<ConstStmt>(TypedConstant(block_strides[i])),
                 block->push_back<BinaryOpStmt>(
                     BinaryOpType::sub,
-                    block->push_back<LoopIndexStmt>(offload, i),
-                    block->push_back<BlockCornerIndexStmt>(offload, i)));
+                    block->push_back<LoopIndexStmt>(offload, i), cor_index));
+
             if (block_linear_index) {
               block_linear_index = block->push_back<BinaryOpStmt>(
                   BinaryOpType::add, block_linear_index, inc);
@@ -83,6 +84,12 @@ void make_block_local_offload(OffloadedStmt *offload) {
               block_linear_index = inc;
             }
           }
+
+          std::vector<PrintStmt::EntryType> entries1{
+              PrintStmt::EntryType{"debug linear: "},
+              PrintStmt::EntryType{block_linear_index},
+              PrintStmt::EntryType{"\n"}};
+          block->push_back<PrintStmt>(entries1);
 
           /*
           Note that since there are fewer elements in the block than in BLS,
@@ -265,6 +272,18 @@ void make_block_local_offload(OffloadedStmt *offload) {
             auto bls_ptr = element_block->push_back<BlockLocalPtrStmt>(
                 bls_element_offset_bytes, VectorType(1, data_type));
             auto bls_val = element_block->push_back<GlobalLoadStmt>(bls_ptr);
+
+            std::vector<PrintStmt::EntryType> entries1{
+                PrintStmt::EntryType{"debug bls_offsetbytes: "},
+                PrintStmt::EntryType{bls_element_offset_bytes},
+                PrintStmt::EntryType{"\n"}};
+            element_block->push_back<PrintStmt>(entries1);
+
+            std::vector<PrintStmt::EntryType> entries2{
+                PrintStmt::EntryType{"debug bls_val: "},
+                PrintStmt::EntryType{bls_val}, PrintStmt::EntryType{"\n"}};
+            element_block->push_back<PrintStmt>(entries2);
+
             auto global_pointer =
                 element_block->push_back<GlobalPtrStmt>(snode, global_indices);
             element_block->push_back<AtomicOpStmt>(AtomicOpType::add,

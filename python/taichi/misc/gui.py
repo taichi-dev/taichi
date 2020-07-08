@@ -46,6 +46,7 @@ class GUI:
         self.background_color = background_color
         self.key_pressed = set()
         self.event = None
+        self.frame = 0
         self.clear()
 
     def __enter__(self):
@@ -194,6 +195,7 @@ class GUI:
         self.core.update()
         if file:
             self.core.screenshot(file)
+        self.frame += 1
         self.clear()
 
     class EventFilter:

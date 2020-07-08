@@ -5,9 +5,9 @@ import taichi_glsl as tl
 ti.init()
 
 kUseTree = True
-#kDisplay = ['tree', 'mouse', 'pixels']
-kDisplay = ['pixels']
-kResolution = 832
+#kDisplay = 'tree mouse pixels save_result'
+kDisplay = 'pixels save_result'
+kResolution = 512
 kShapeFactor = 1
 kMaxParticles = 8192
 kMaxDepth = kMaxParticles * 1
@@ -311,4 +311,7 @@ while gui.running:
         render_tree(gui)
     if 'pixels' not in kDisplay:
         gui.circles(particle_pos.to_numpy()[:particle_table_len[None]])
-    gui.show()
+    if 'save_result' in kDisplay:
+        gui.show(f'{gui.frame:06d}.png')
+    else:
+        gui.show()

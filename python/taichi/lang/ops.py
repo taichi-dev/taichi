@@ -60,7 +60,7 @@ def binary(foo):
     @functools.wraps(foo)
     def imp_foo(x, y):
         _taichi_skip_traceback = 2
-        return foo(y, x)
+        return foo(x, y)
 
     @functools.wraps(foo)
     def rev_foo(x, y):

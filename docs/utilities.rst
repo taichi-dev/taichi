@@ -19,7 +19,7 @@ If you want to log at **run-time**, please simply use ``print()`` instead.
 
     :parameter level: (string) a valid logging level
 
-    - This function is used to set the level of logging. Currently the log levels in Taichi are sorted as ``ti.TRACE``, ``ti.DEBUG``, ``ti.INFO``, ``ti.WARN`` and ``ti.ERROR``. The default logging level is ``ti.INFO``.
+    - This function is used to set the level of logging. Currently, the log levels in Taichi are sorted as ``ti.TRACE``, ``ti.DEBUG``, ``ti.INFO``, ``ti.WARN`` and ``ti.ERROR``. The default logging level is ``ti.INFO``.
 
     - The lower the logging level is, the more content will be printed.
 
@@ -34,7 +34,7 @@ If you want to log at **run-time**, please simply use ``print()`` instead.
 
     :parameter info: (string) logging info
 
-    Print the input string in green color to stdout **only in Taichi-scope**, when the logging level is lower or equal to ``ti.INFO``. For example:
+    Print the input string to stdout **only in Taichi-scope**, when the logging level is lower or equal to ``ti.INFO``. For example:
 
 .. code-block:: python
 
@@ -53,29 +53,26 @@ If you want to log at **run-time**, please simply use ``print()`` instead.
 
     compute()
 
+
+The other logging functions below **are all similar to** ``ti.info``. They can all print out when the logging level is set to be lower than they required, respectively.
+
 .. function:: ti.warn(info)
 
     :parameter info: (string) logging info
-
-    Print the input string in yellow color to stdout **only in Taichi-scope**, when the logging level is lower or equal to ``ti.WARN``.
 
 .. function:: ti.debug(info)
 
     :parameter info: (string) logging info
 
-    Print the input string in blue color to stdout **only in Taichi-scope**, when the logging level is lower or equal to ``ti.DEBUG``.
-
 .. function:: ti.trace(info)
 
     :parameter info: (string) logging info
-
-    Print the input string in green color to stdout **only in Taichi-scope**, only when the logging level is equal to ``ti.TRACE``.
 
 .. function:: ti.error(info)
 
     :parameter info: (string) logging info
 
-    This function prints the input string in red color to stdout in any logging level and **only in Taichi-scope**.
+    This function prints the input string in any logging level and **crashes the program**.
 
 .. warning::
 
@@ -132,27 +129,30 @@ ScopedProfiler
 
     ``ScopedProfiler`` is a C++ class in the core of Taichi. It is not exposed to Python users.
 
-ProfilerBase
-############
+KernelProfiler
+##############
 
 1. ``KernelProfiler`` records the costs of Taichi kernels on devices. To enable this profiler, set ``kernel_profiler=True`` in ``ti.init``.
 
 2. Call ``ti.kernel_profiler_print()`` to show the kernel profiling result. For example:
 
 .. code-block:: python
-    :emphasize-lines: 3, 11
+    :emphasize-lines: 3, 13
 
     import taichi as ti
 
     ti.init(ti.cpu, kernel_profiler=True)
     var = ti.var(ti.f32, shape=1)
 
+
     @ti.kernel
     def compute():
         var[0] = 1.0
 
+
     compute()
     ti.kernel_profiler_print()
+
 
 The outputs would be:
 

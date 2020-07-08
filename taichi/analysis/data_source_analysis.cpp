@@ -26,6 +26,12 @@ std::vector<Stmt *> get_load_pointers(Stmt *load_stmt) {
   } else if (auto stack_acc_adj = load_stmt->cast<StackAccAdjointStmt>()) {
     // This statement loads and stores the adjoint data.
     return std::vector<Stmt *>(1, stack_acc_adj->stack);
+  } else if (auto stack_push = load_stmt->cast<StackPushStmt>()) {
+    // This is to make dead store elimination not eliminate consequent pushes.
+    return std::vector<Stmt *>(1, stack_push->stack);
+  } else if (auto stack_pop = load_stmt->cast<StackPopStmt>()) {
+    // This is to make dead store elimination not eliminate consequent pops.
+    return std::vector<Stmt *>(1, stack_pop->stack);
   } else {
     return std::vector<Stmt *>();
   }

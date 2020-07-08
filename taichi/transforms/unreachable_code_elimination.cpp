@@ -73,15 +73,23 @@ class UnreachableCodeEliminator : public BasicStmtVisitor {
   }
 
   void visit(OffloadedStmt *stmt) override {
-    if (stmt->prologue)
-      stmt->prologue->accept(this);
+    if (stmt->tls_prologue)
+      stmt->tls_prologue->accept(this);
+
+    if (stmt->bls_prologue)
+      stmt->bls_prologue->accept(this);
+
     if (stmt->task_type == OffloadedStmt::TaskType::range_for ||
         stmt->task_type == OffloadedStmt::TaskType::struct_for)
       visit_loop(stmt->body.get());
     else if (stmt->body)
       stmt->body->accept(this);
-    if (stmt->epilogue)
-      stmt->epilogue->accept(this);
+
+    if (stmt->bls_epilogue)
+      stmt->bls_epilogue->accept(this);
+
+    if (stmt->tls_epilogue)
+      stmt->tls_epilogue->accept(this);
   }
 
   void visit(IfStmt *if_stmt) override {

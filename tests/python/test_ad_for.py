@@ -10,7 +10,7 @@ def test_ad_sum():
     p = ti.var(ti.f32, shape=N, needs_grad=True)
 
     @ti.kernel
-    def comptue_sum():
+    def compute_sum():
         for i in range(N):
             ret = 1.0
             for j in range(b[i]):
@@ -21,13 +21,13 @@ def test_ad_sum():
         a[i] = 3
         b[i] = i
 
-    comptue_sum()
+    compute_sum()
 
     for i in range(N):
         assert p[i] == 3 * b[i] + 1
         p.grad[i] = 1
 
-    comptue_sum.grad()
+    compute_sum.grad()
 
     for i in range(N):
         assert a.grad[i] == b[i]
@@ -43,7 +43,7 @@ def test_ad_sum_local_atomic():
     p = ti.var(ti.f32, shape=N, needs_grad=True)
 
     @ti.kernel
-    def comptue_sum():
+    def compute_sum():
         for i in range(N):
             ret = 1.0
             for j in range(b[i]):
@@ -54,13 +54,13 @@ def test_ad_sum_local_atomic():
         a[i] = 3
         b[i] = i
 
-    comptue_sum()
+    compute_sum()
 
     for i in range(N):
         assert p[i] == 3 * b[i] + 1
         p.grad[i] = 1
 
-    comptue_sum.grad()
+    compute_sum.grad()
 
     for i in range(N):
         assert a.grad[i] == b[i]

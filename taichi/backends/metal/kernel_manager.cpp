@@ -417,9 +417,10 @@ class HostMetalCtxBlitter {
                   ActionArg("kernel_name", kernel_name_),
                   ActionArg("arg_id", i),
                   ActionArg("size_in_bytes", (int64)arg.stride),
-                  ActionArg("host_address", fmt::format("0x{:x}", host_ptr)),
+                  ActionArg("host_address",
+                            fmt::format("0x{:x}", (uint64)host_ptr)),
                   ActionArg("device_address",
-                            fmt::format("0x{:x}", device_ptr)),
+                            fmt::format("0x{:x}", (uint64)device_ptr)),
               });
         }
       }

@@ -65,8 +65,7 @@ class Matrix(TaichiOperations):
                     if keep_raw:
                         mat = [list([x]) for x in n]
                     else:
-                        # prevent duplicate evaluation:
-                        mat = [list([impl.expr_init(x)]) for x in n]
+                        mat = [list([expr.Expr(x)]) for x in n]
                 else:
                     mat = [[x] for x in n]
             else:

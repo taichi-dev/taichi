@@ -106,7 +106,9 @@ def subscript(value, *indices):
         tensor_dim = int(value.ptr.get_attribute("dim"))
         index_dim = indices_expr_group.size()
         if tensor_dim != index_dim:
-            raise IndexError(f'Tensor with dim {tensor_dim} accessed with indices of dim {index_dim}')
+            raise IndexError(
+                f'Tensor with dim {tensor_dim} accessed with indices of dim {index_dim}'
+            )
         return Expr(taichi_lang_core.subscript(value.ptr, indices_expr_group))
 
 

@@ -20,7 +20,7 @@ class Expr(TaichiOperations):
                 self.tb = args[0].tb
             elif is_taichi_class(args[0]):
                 raise ValueError('cannot initialize scalar expression from '
-                                f'taichi class: {type(args[0])}')
+                                 f'taichi class: {type(args[0])}')
             else:
                 # assume to be constant
                 arg = args[0]

@@ -67,29 +67,6 @@ def test_basic_utils():
 
 
 @ti.all_archs
-def test_matrix_ssa():
-    a = ti.Vector(2, ti.f32, ())
-    b = ti.Matrix(2, 2, ti.f32, ())
-    c = ti.Vector(2, ti.f32, ())
-
-    @ti.kernel
-    def func():
-        a[None] = a[None].normalized()
-        b[None] = b[None].transpose()
-        c[None] = ti.Vector([c[None][1], c[None][0]])
-
-    inv_sqrt2 = 1 / math.sqrt(2)
-
-    a[None] = [1, 1]
-    b[None] = [[1, 2], [3, 4]]
-    c[None] = [2, 3]
-    func()
-    assert a[None].value == ti.Vector([inv_sqrt2, inv_sqrt2])
-    assert b[None].value == ti.Matrix([[1, 3], [2, 4]])
-    assert c[None].value == ti.Vector([3, 2])
-
-
-@ti.all_archs
 def test_cross():
     a = ti.Vector(3, dt=ti.f32)
     b = ti.Vector(3, dt=ti.f32)

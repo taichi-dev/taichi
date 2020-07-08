@@ -65,7 +65,8 @@ class Matrix(TaichiOperations):
                     if keep_raw:
                         mat = [list([x]) for x in n]
                     else:
-                        mat = [list([expr.Expr(x)]) for x in n]
+                        # prevent duplicate evaluation:
+                        mat = [list([impl.expr_init(x)]) for x in n]
                 else:
                     mat = [[x] for x in n]
             else:
@@ -593,7 +594,7 @@ class Matrix(TaichiOperations):
 
     @impl.pyfunc
     def norm_sqr(self):
-        return (self**2).sum()
+        return self.dot(self)
 
     @impl.pyfunc
     def max(self):

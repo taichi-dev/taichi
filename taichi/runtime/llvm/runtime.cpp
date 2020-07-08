@@ -1020,8 +1020,7 @@ void parallel_struct_for(Context *context,
     int lower = e.loop_bounds[0] + part_id * part_size;
     int upper = e.loop_bounds[0] + (part_id + 1) * part_size;
     upper = std::min(upper, e.loop_bounds[1]);
-    if (lower < upper)
-      task(context, &list->get<Element>(element_id), lower, upper);
+    task(context, &list->get<Element>(element_id), lower, upper);
     i += grid_dim();
   }
 #else

@@ -1296,6 +1296,13 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     auto lower_bound = get_arg(2);
     auto upper_bound = get_arg(3);
 
+    parent_coordinates = element.get_ptr("pcoord");
+
+    if (stmt->bls_prologue) {
+      stmt->bls_prologue->accept(this);
+      call("block_barrier");  // "__syncthreads()"
+    }
+
     if (spmd) {
       thread_idx =
           builder->CreateIntrinsic(Intrinsic::nvvm_read_ptx_sreg_tid_x, {}, {});
@@ -1328,17 +1335,10 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
         get_runtime_function(leaf_block->refine_coordinates_func_name());
     auto new_coordinates = create_entry_block_alloca(physical_coordinate_ty);
 
-    parent_coordinates = element.get_ptr("pcoord");
-
     create_call(refine, {parent_coordinates, new_coordinates,
                          builder->CreateLoad(loop_index)});
 
     current_coordinates = new_coordinates;
-
-    if (stmt->bls_prologue) {
-      stmt->bls_prologue->accept(this);
-      call("block_barrier");  // "__syncthreads()"
-    }
 
     // exec_cond: safe-guard the execution of loop body:
     //  - if non-POT tensor dim exists, make sure we don't go out of bounds
@@ -1388,11 +1388,6 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
 
     builder->SetInsertPoint(body_bb_tail);
 
-    if (stmt->bls_epilogue) {
-      call("block_barrier");  // "__syncthreads()"
-      stmt->bls_epilogue->accept(this);
-    }
-
     if (spmd) {
       create_increment(loop_index, block_dim);
     } else {
@@ -1401,14 +1396,17 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     builder->CreateBr(test_bb);
 
     builder->SetInsertPoint(after_loop);
+
+    if (stmt->bls_epilogue) {
+      call("block_barrier");  // "__syncthreads()"
+      stmt->bls_epilogue->accept(this);
+    }
   }
 
   offload_loop_linear_index = nullptr;
 
-  if (stmt->block_dim == 0) {
-    stmt->block_dim = std::min(leaf_block->max_num_elements(), 256);
-  }
-  int num_splits = leaf_block->max_num_elements() / stmt->block_dim;
+  int num_splits =
+      std::max(1, leaf_block->max_num_elements() / stmt->block_dim);
   // traverse leaf node
   create_call("parallel_struct_for",
               {get_context(), tlctx->get_constant(leaf_block->id),
@@ -1436,7 +1434,7 @@ void CodeGenLLVM::visit(LoopLinearIndexStmt *stmt) {
       stmt->loop->as<OffloadedStmt>()->task_type ==
           OffloadedStmt::TaskType::struct_for) {
     TI_ASSERT(offload_loop_linear_index != nullptr);
-    llvm_val[stmt] = builder->CreateLoad(offload_loop_linear_index);
+    llvm_val[stmt] = create_call("thread_idx");
   } else {
     TI_NOT_IMPLEMENTED;
   }

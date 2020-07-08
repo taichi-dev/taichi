@@ -7,6 +7,7 @@ M = 1024 * 1024
 block_size = 16
 
 m = ti.var(ti.f32)
+m2 = ti.var(ti.f32)
 pid = ti.var(ti.i32)
 
 max_num_particles_per_block = 1024 * 32
@@ -14,7 +15,7 @@ max_num_particles_per_block = 1024 * 32
 x = ti.Vector(2, dt=ti.f32, shape=M)
 
 block = ti.root.pointer(ti.ij, N // block_size)
-block.dense(ti.ij, block_size).place(m)
+block.dense(ti.ij, block_size).place(m, m2)
 block.dynamic(ti.l, max_num_particles_per_block, chunk_size=1024).place(pid)
 
 
@@ -26,9 +27,10 @@ def insert():
         ti.append(pid.parent(), [int(x[i][0] * N), int(x[i][1] * N)], i)
 
 @ti.kernel
-def p2g():
+def p2g(use_shared: ti.template(), m: ti.template()):
     ti.block_dim(256)
-    ti.cache_shared(m)
+    if ti.static(use_shared):
+        ti.cache_shared(m)
     for i, j, l in pid:
         p = pid[i, j, l]
         
@@ -40,10 +42,8 @@ def p2g():
         
         u = ti.Vector([u0, u1])
         
-        for offset in ti.static(ti.grouped(ti.ndrange(2, 2))):
-            m[u + offset] += 1
-        # m[u] += 1
-        # m[i, j + 1] += 1
+        for offset in ti.static(ti.grouped(ti.ndrange(3, 3))):
+            m[u + offset] += (N * N / M) * 0.01
         
 @ti.kernel
 def p2g2():
@@ -57,7 +57,12 @@ insert()
 # m[0, 0] = 1
 
 for i in range(1):
-    p2g()
+    p2g(True, m)
+    p2g(False, m2)
+    
+for i in range(N):
+    for j in range(N):
+        assert abs(m[i, j] - m2[i, j]) < 1e-4
 
 ti.kernel_profiler_print()
 # print(m.to_numpy())

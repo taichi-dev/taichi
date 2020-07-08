@@ -2,9 +2,9 @@ import taichi as ti
 
 ti.init(arch=ti.cuda, kernel_profiler=True, print_ir=True, print_kernel_llvm_ir=True)
 
-N = 4
-M = 1
-block_size = 4
+N = 512
+M = 1024 * 1024
+block_size = 16
 
 m = ti.var(ti.f32)
 pid = ti.var(ti.i32)
@@ -15,13 +15,14 @@ x = ti.Vector(2, dt=ti.f32, shape=M)
 
 block = ti.root.pointer(ti.ij, N // block_size)
 block.dense(ti.ij, block_size).place(m)
-block.dynamic(ti.l, max_num_particles_per_block, chunk_size=32).place(pid)
+block.dynamic(ti.l, max_num_particles_per_block, chunk_size=1024).place(pid)
 
 
 @ti.kernel
 def insert():
     for i in x:
-        x[i] = [0, 0.26]# ti.Vector([ti.random() * 0.8 + 0.1, ti.random() * 0.8 + 0.1])
+        # x[i] = [0, 0.26]# ti.Vector([ti.random() * 0.8 + 0.1, ti.random() * 0.8 + 0.1])
+        x[i] = ti.Vector([ti.random() * 0.8 + 0.1, ti.random() * 0.8 + 0.1])
         ti.append(pid.parent(), [int(x[i][0] * N), int(x[i][1] * N)], i)
 
 @ti.kernel
@@ -39,9 +40,9 @@ def p2g():
         
         u = ti.Vector([u0, u1])
         
-        # for offset in ti.static(ti.grouped(ti.ndrange(2, 2))):
-        #     m[u + offset] += 1
-        m[u] += 1
+        for offset in ti.static(ti.grouped(ti.ndrange(2, 2))):
+            m[u + offset] += 1
+        # m[u] += 1
         # m[i, j + 1] += 1
         
 @ti.kernel
@@ -60,11 +61,10 @@ for i in range(1):
 
 ti.kernel_profiler_print()
 # print(m.to_numpy())
-exit(0)
+# exit(0)
 
 ti.imshow(m, 'density')
 
-# !!!!!!!!!!!!!!!!!!!!!!!1
 # TODO: debug dynamic: prologues/epilogues threads should not be limited to dynamic length!!
 
 

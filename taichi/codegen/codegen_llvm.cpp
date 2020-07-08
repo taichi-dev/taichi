@@ -1312,6 +1312,17 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     auto body_bb = BasicBlock::Create(*llvm_context, "loop_body", func);
     auto after_loop = BasicBlock::Create(*llvm_context, "after_loop", func);
 
+    builder->CreateBr(test_bb);
+    {
+      builder->SetInsertPoint(test_bb);
+      auto cond =
+          builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SLT,
+                              builder->CreateLoad(loop_index), upper_bound);
+      builder->CreateCondBr(cond, body_bb, after_loop);
+    }
+
+    builder->SetInsertPoint(body_bb);
+
     // initialize the coordinates
     auto refine =
         get_runtime_function(leaf_block->refine_coordinates_func_name());
@@ -1328,17 +1339,6 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
       stmt->bls_prologue->accept(this);
       call("block_barrier");  // "__syncthreads()"
     }
-
-    builder->CreateBr(test_bb);
-    {
-      builder->SetInsertPoint(test_bb);
-      auto cond =
-          builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SLT,
-                              builder->CreateLoad(loop_index), upper_bound);
-      builder->CreateCondBr(cond, body_bb, after_loop);
-    }
-
-    builder->SetInsertPoint(body_bb);
 
     // exec_cond: safe-guard the execution of loop body:
     //  - if non-POT tensor dim exists, make sure we don't go out of bounds
@@ -1388,6 +1388,11 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
 
     builder->SetInsertPoint(body_bb_tail);
 
+    if (stmt->bls_epilogue) {
+      call("block_barrier");  // "__syncthreads()"
+      stmt->bls_epilogue->accept(this);
+    }
+
     if (spmd) {
       create_increment(loop_index, block_dim);
     } else {
@@ -1396,11 +1401,6 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     builder->CreateBr(test_bb);
 
     builder->SetInsertPoint(after_loop);
-
-    if (stmt->bls_epilogue) {
-      call("block_barrier");  // "__syncthreads()"
-      stmt->bls_epilogue->accept(this);
-    }
   }
 
   offload_loop_linear_index = nullptr;

@@ -38,27 +38,23 @@ struct ActionArg {
   enum argument_type { str, int64, float64 };
   argument_type type;
 };
-TODO: Make this thread safe when switching to async mode.
+
+// TODO: Make this thread safe when switching to async mode.
 class ActionRecorder {
  public:
   static ActionRecorder &get_instance();
 
-  static void record(const std::string &content,
-                     const std::vector<ActionArg> &arguments = {});
+  void record(const std::string &content,
+              const std::vector<ActionArg> &arguments = {});
 
-  static void start_recording(const std::string &fn);
+  void start_recording(const std::string &fn);
 
-  static void stop_recording();
+  void stop_recording();
 
-  static bool is_recording();
+  bool is_recording();
 
  private:
   ActionRecorder();
-
-  void record_(const std::string &content,
-               const std::vector<ActionArg> &arguments);
-
-  void start_recording_(const std::string &fn);
 
   std::ofstream ofs;
 

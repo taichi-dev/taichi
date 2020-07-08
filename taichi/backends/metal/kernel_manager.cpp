@@ -17,8 +17,10 @@
 #ifdef TI_PLATFORM_OSX
 #include <sys/mman.h>
 #include <unistd.h>
+#include <algorithm>
 
 #include "taichi/backends/metal/api.h"
+#include "taichi/program/program.h"
 #endif  // TI_PLATFORM_OSX
 
 TLANG_NAMESPACE_BEGIN
@@ -34,14 +36,6 @@ namespace shaders {
 
 using KernelTaskType = OffloadedStmt::TaskType;
 using BufferEnum = KernelAttributes::Buffers;
-
-inline bool is_primary_kernel(const std::string_view &name) {
-  return name.find("jit_evaluator") == std::string::npos;
-}
-
-inline bool is_primary_kernel(const std::string &name) {
-  return is_primary_kernel(std::string_view(name));
-}
 
 inline int infer_msl_version(const TaichiKernelAttributes::UsedFeatures &f) {
   if (f.simdgroup) {
@@ -135,16 +129,29 @@ class CompiledMtlKernelBase {
       TI_ASSERT(b.second == kernel_attribs_.buffers[bi]);
       set_mtl_buffer(encoder.get(), b.first, /*offset=*/0, bi);
     }
-    const int num_threads_per_group =
+
+    const int native_block_dim =
         get_max_total_threads_per_threadgroup(pipeline_state_.get());
+
+    int num_threads_per_group = 0;
+    // Sometimes it is helpful to limit the maximum GPU block dim for the
+    // kernels. E.g., when you are generating iPhone shaders on a Mac.
+    const int prescribed_block_dim =
+        (std::size_t)get_current_program().config.max_block_dim;
+    if (prescribed_block_dim != 0) {
+      num_threads_per_group = std::min(native_block_dim, prescribed_block_dim);
+    } else {
+      num_threads_per_group = native_block_dim;
+    }
+
     const int num_groups =
         ((num_threads + num_threads_per_group - 1) / num_threads_per_group);
 
     const int dispatch_num_threads =
         std::min(num_threads, num_threads_per_group);
 
-    if (is_primary_kernel(kernel_attribs_.name)) {
-      ActionRecorder::record(
+    if (!is_jit_evalutor_) {
+      ActionRecorder::get_instance().record(
           "launch_kernel",
           {ActionArg("kernel_name", kernel_attribs_.name),
            ActionArg("num_groups", num_groups),
@@ -259,13 +266,13 @@ class CompiledTaichiKernel {
       TI_ERROR("Failed to compile Metal kernel! Generated code:\n\n{}",
                params.mtl_source_code);
     }
-    if (is_primary_kernel(params.taichi_kernel_name) &&
-        ActionRecorder::is_recording()) {
+    if (!ti_kernel_attribs.is_jit_evaluator &&
+        ActionRecorder::get_instance().is_recording()) {
       static FileSequenceWriter writer("shader{:04d}.mtl", "Metal shader");
       auto fn = writer.write(params.mtl_source_code);
-      ActionRecorder::record(
+      ActionRecorder::get_instance().record(
           "save_kernel",
-          {ActionArg("kernel_name", std::string(params.taichi_kernel_name)),
+          {ActionArg("kernel_name", std::string(ti_kernel_attribs.name)),
            ActionArg("filename", fn)});
     }
     for (const auto &ka : ti_kernel_attribs.mtl_kernels_attribs) {
@@ -301,10 +308,10 @@ class CompiledTaichiKernel {
     if (!ctx_attribs.empty()) {
       ctx_mem = std::make_unique<BufferMemoryView>(ctx_attribs.total_bytes(),
                                                    params.mem_pool);
-      if (is_primary_kernel(params.taichi_kernel_name)) {
-        ActionRecorder::record(
+      if (!ti_kernel_attribs.is_jit_evaluator) {
+        ActionRecorder::get_instance().record(
             "allocate_context_buffer",
-            {ActionArg("kernel_name", std::string(params.taichi_kernel_name)),
+            {ActionArg("kernel_name", std::string(ti_kernel_attribs.name)),
              ActionArg("size_in_bytes", (int64)ctx_attribs.total_bytes())});
       }
       ctx_buffer =
@@ -351,8 +358,8 @@ class HostMetalCtxBlitter {
       const auto &arg = ctx_attribs_->args()[i];
       const auto dt = arg.dt;
       char *device_ptr = base + arg.offset_in_mem;
-      if (is_primary_kernel(kernel_name_)) {
-        ActionRecorder::record(
+      if (!ti_kernel_attribs_->is_jit_evaluator) {
+        ActionRecorder::get_instance().record(
             "context_device_to_host",
             {ActionArg("kernel_name", kernel_name_), ActionArg("arg_id", i),
              ActionArg("offset_in_bytes", (int64)arg.offset_in_mem)});
@@ -482,7 +489,7 @@ class KernelManager::Impl {
                                             root_mem_->size());
       TI_ASSERT(root_buffer_ != nullptr);
       TI_DEBUG("Metal root buffer size: {} bytes", root_mem_->size());
-      ActionRecorder::record(
+      ActionRecorder::get_instance().record(
           "allocate_root_buffer",
           {ActionArg("size_in_bytes", (int64)root_mem_->size())});
     }
@@ -490,7 +497,7 @@ class KernelManager::Impl {
     global_tmps_mem_ = std::make_unique<BufferMemoryView>(
         taichi_global_tmp_buffer_size, mem_pool_);
 
-    ActionRecorder::record(
+    ActionRecorder::get_instance().record(
         "allocate_global_tmp_buffer",
         {ActionArg("size_in_bytes", (int64)taichi_global_tmp_buffer_size)});
 
@@ -509,7 +516,7 @@ class KernelManager::Impl {
         "memory_pool={})",
         runtime_mem_->size(), compiled_structs_.runtime_size, mem_pool_bytes);
 
-    ActionRecorder::record(
+    ActionRecorder::get_instance().record(
         "allocate_runtime_buffer",
         {ActionArg("runtime_buffer_size_in_bytes", (int64)runtime_mem_->size()),
          ActionArg("runtime_struct_size_in_bytes",

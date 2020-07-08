@@ -114,7 +114,7 @@ void Kernel::set_arg_float(int i, float64 d) {
       !args[i].is_nparray,
       "Assigning a scalar value to a numpy array argument is not allowed");
 
-  ActionRecorder::record("set_kernel_arg_float",
+  ActionRecorder::get_instance().record("set_kernel_arg_float",
                          {ActionArg("kernel_name", name),
                           ActionArg("arg_id", i), ActionArg("val", d)});
 
@@ -149,7 +149,7 @@ void Kernel::set_arg_int(int i, int64 d) {
       !args[i].is_nparray,
       "Assigning scalar value to numpy array argument is not allowed");
 
-  ActionRecorder::record("set_kernel_arg_int",
+  ActionRecorder::get_instance().record("set_kernel_arg_int",
                          {ActionArg("kernel_name", name),
                           ActionArg("arg_id", i), ActionArg("val", d)});
 
@@ -241,7 +241,7 @@ void Kernel::set_arg_nparray(int i, uint64 ptr, uint64 size) {
   TI_ASSERT_INFO(args[i].is_nparray,
                  "Assigning numpy array to scalar argument is not allowed");
 
-  ActionRecorder::record(
+  ActionRecorder::get_instance().record(
       "set_kernel_arg_ext_ptr",
       {ActionArg("kernel_name", name), ActionArg("arg_id", i),
        ActionArg("val", fmt::format("0x{:x}", ptr)),

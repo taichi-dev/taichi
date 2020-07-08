@@ -1,11 +1,12 @@
 #include "taichi/util/action_recorder.h"
+#include "taichi/util/str.h"
 
 TI_NAMESPACE_BEGIN
 
 std::string ActionArg::serialize() const {
   std::string ret = key + ": ";
   if (type == argument_type::str) {
-    ret += "\"" + val_str + "\"";
+    ret += lang::c_quoted(val_str);
   } else if (type == argument_type::int64) {
     ret += std::to_string(val_int64);
   } else {
@@ -23,25 +24,23 @@ ActionRecorder::ActionRecorder() {
 }
 
 void ActionRecorder::start_recording(const std::string &fn) {
-  get_instance().start_recording_(fn);
-}
-
-void ActionRecorder::start_recording_(const std::string &fn) {
+  TI_ASSERT(running);
   ofs.open(fn);
-  get_instance().running = true;
+  running = true;
 }
 
 void ActionRecorder::stop_recording() {
-  TI_ASSERT(get_instance().running);
-  get_instance().running = false;
+  TI_ASSERT(running);
+  running = false;
+  ofs.close();
 }
 
 bool ActionRecorder::is_recording() {
   return get_instance().running;
 }
 
-void ActionRecorder::record_(const std::string &content,
-                             const std::vector<ActionArg> &arguments) {
+void ActionRecorder::record(const std::string &content,
+                            const std::vector<ActionArg> &arguments) {
   if (!running)
     return;
   ofs << "- " << std::endl;
@@ -50,11 +49,6 @@ void ActionRecorder::record_(const std::string &content,
     ofs << "  " << arg.serialize() << std::endl;
   }
   ofs.flush();
-}
-
-void ActionRecorder::record(const std::string &content,
-                            const std::vector<ActionArg> &arguments) {
-  get_instance().record_(content, arguments);
 }
 
 TI_NAMESPACE_END

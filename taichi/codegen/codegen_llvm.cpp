@@ -1405,14 +1405,15 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
 
   offload_loop_linear_index = nullptr;
 
-  int num_splits =
-      std::max(1, leaf_block->max_num_elements() / stmt->block_dim);
+  int list_element_size =
+      std::min(leaf_block->max_num_elements(), taichi_listgen_max_element_size);
+  int num_splits = std::max(1, list_element_size / stmt->block_dim);
   // traverse leaf node
-  create_call("parallel_struct_for",
-              {get_context(), tlctx->get_constant(leaf_block->id),
-               tlctx->get_constant(leaf_block->max_num_elements()),
-               tlctx->get_constant(num_splits), body,
-               tlctx->get_constant(stmt->num_cpu_threads)});
+  create_call(
+      "parallel_struct_for",
+      {get_context(), tlctx->get_constant(leaf_block->id),
+       tlctx->get_constant(list_element_size), tlctx->get_constant(num_splits),
+       body, tlctx->get_constant(stmt->num_cpu_threads)});
   // TODO: why do we need num_cpu_threads on GPUs?
 }
 

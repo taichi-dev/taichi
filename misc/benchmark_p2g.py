@@ -1,6 +1,6 @@
 import taichi as ti
 
-ti.init(arch=ti.cuda, kernel_profiler=True, print_ir=True, print_kernel_llvm_ir_optimized=True)
+ti.init(arch=ti.gpu, kernel_profiler=True)
 
 N = 1024
 M = N * N * 10
@@ -11,7 +11,7 @@ m2 = ti.var(ti.f32)
 m3 = ti.var(ti.f32)
 pid = ti.var(ti.i32)
 
-max_num_particles_per_block = block_size ** 2 * 512
+max_num_particles_per_block = block_size ** 2 * 4096
 
 x = ti.Vector(2, dt=ti.f32)
 
@@ -66,10 +66,10 @@ def p2g_naive():
         
 insert()
 
-for i in range(10):
+for i in range(1):
     p2g(True, m1)
-    # p2g(False, m2)
-    # p2g_naive()
+    p2g(False, m2)
+    p2g_naive()
     
 ti.kernel_profiler_print()
 

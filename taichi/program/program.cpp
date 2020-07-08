@@ -182,6 +182,10 @@ Program::Program(Arch desired_arch) {
 #endif
   }
 
+  if (arch_is_cpu(arch)) {
+    config.max_block_dim = 1024;
+  }
+
   stat.clear();
 
   TI_TRACE("Program ({}) arch={} initialized.", fmt::ptr(this),

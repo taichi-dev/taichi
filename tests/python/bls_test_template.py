@@ -7,7 +7,7 @@ def bls_test_template(dim,
                       stencil,
                       block_dim=None,
                       scatter=False,
-                      benchmark=False,
+                      benchmark=0,
                       dense=False):
     x, y, y2 = ti.var(ti.i32), ti.var(ti.i32), ti.var(ti.i32)
 
@@ -72,7 +72,7 @@ def bls_test_template(dim,
     populate()
 
     if benchmark:
-        for i in range(50):
+        for i in range(benchmark):
             x.snode().parent().deactivate_all()
             if not scatter:
                 populate()

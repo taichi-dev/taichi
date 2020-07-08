@@ -21,6 +21,14 @@ void make_block_local_offload(OffloadedStmt *offload) {
     auto data_type = snode->dt;
     auto dtype_size = data_type_size(data_type);
 
+    bool bls_has_read = pad.second.total_flags & AccessFlag::read;
+    bool bls_has_write = pad.second.total_flags & AccessFlag::write;
+    bool bls_has_accumulate = pad.second.total_flags & AccessFlag::accumulate;
+
+    TI_ASSERT_INFO(!bls_has_write, "BLS with write accesses is not supported.")
+    TI_ASSERT_INFO(!(bls_has_accumulate && bls_has_read),
+                   "BLS with both read and accumulation is not supported.")
+
     // dim = Dimensionality of the BLS buffer and the block
     auto dim = (int)pad.second.pad_size.size();
     TI_ASSERT(dim == snode->num_active_indices);
@@ -168,14 +176,22 @@ void make_block_local_offload(OffloadedStmt *offload) {
           offload->bls_prologue,
           [&](Block *element_block, std::vector<Stmt *> global_indices,
               Stmt *bls_element_offset_bytes) {
-            // Fetch from global to BLS
-            auto global_pointer =
-                element_block->push_back<GlobalPtrStmt>(snode, global_indices);
-            auto load =
-                element_block->push_back<GlobalLoadStmt>(global_pointer);
+            Stmt *value;
+            if (bls_has_read) {
+              // Read access
+              // Fetch from global to BLS
+              auto global_pointer = element_block->push_back<GlobalPtrStmt>(
+                  snode, global_indices);
+              value = element_block->push_back<GlobalLoadStmt>(global_pointer);
+            } else {
+              // Accumulation access
+              // Zero-fill
+              value = element_block->push_back<ConstStmt>(
+                  TypedConstant(data_type, 0));
+            }
             auto bls_ptr = element_block->push_back<BlockLocalPtrStmt>(
                 bls_element_offset_bytes, VectorType(1, data_type));
-            element_block->push_back<GlobalStoreStmt>(bls_ptr, load);
+            element_block->push_back<GlobalStoreStmt>(bls_ptr, value);
           });
     }
 
@@ -237,14 +253,8 @@ void make_block_local_offload(OffloadedStmt *offload) {
     }
 
     // Step 3:
-    // (TODO) Atomic-add/write BLS contribution to its global version
-    bool bls_has_write = pad.second.total_flags & AccessFlag::write;
-    bool bls_has_accumulate = pad.second.total_flags & AccessFlag::accumulate;
-    if (bls_has_write || bls_has_accumulate) {
-      TI_ASSERT_INFO(
-          !(bls_has_write && bls_has_accumulate),
-          "BLS with both write and atomic accumulation is not supported.")
-
+    // Atomic-add BLS contribution to its global version if necessary
+    if (bls_has_accumulate) {
       create_xlogue(
           offload->bls_epilogue,
           [&](Block *element_block, std::vector<Stmt *> global_indices,
@@ -255,13 +265,8 @@ void make_block_local_offload(OffloadedStmt *offload) {
             auto bls_val = element_block->push_back<GlobalLoadStmt>(bls_ptr);
             auto global_pointer =
                 element_block->push_back<GlobalPtrStmt>(snode, global_indices);
-            if (bls_has_write) {
-              element_block->push_back<GlobalStoreStmt>(global_pointer,
-                                                        bls_val);
-            } else {
-              element_block->push_back<AtomicOpStmt>(AtomicOpType::add,
-                                                     global_pointer, bls_val);
-            }
+            element_block->push_back<AtomicOpStmt>(AtomicOpType::add,
+                                                   global_pointer, bls_val);
           });
     }
 

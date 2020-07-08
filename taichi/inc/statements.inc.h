@@ -67,6 +67,7 @@ PER_STATEMENT(ElementShuffleStmt)
 // Offloaded
 PER_STATEMENT(OffloadedStmt)
 PER_STATEMENT(LoopIndexStmt)
+PER_STATEMENT(LoopLinearIndexStmt)
 PER_STATEMENT(BlockCornerIndexStmt)
 PER_STATEMENT(BlockDimStmt)
 PER_STATEMENT(GlobalTemporaryStmt)

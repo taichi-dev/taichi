@@ -1,6 +1,6 @@
 import taichi as ti
 
-ti.init(arch=ti.cuda, kernel_profiler=True, print_ir=True)
+ti.init(arch=ti.cuda, kernel_profiler=True, print_ir=True, print_kernel_llvm_ir=True)
 
 N = 4
 M = 1
@@ -15,7 +15,7 @@ x = ti.Vector(2, dt=ti.f32, shape=M)
 
 block = ti.root.pointer(ti.ij, N // block_size)
 block.dense(ti.ij, block_size).place(m)
-block.dynamic(ti.l, max_num_particles_per_block, chunk_size=1024).place(pid)
+block.dynamic(ti.l, max_num_particles_per_block, chunk_size=32).place(pid)
 
 
 @ti.kernel
@@ -46,7 +46,7 @@ def p2g():
         
 @ti.kernel
 def p2g2():
-    ti.block_dim(256)
+    ti.block_dim(32)
     ti.cache_shared(m)
     for i, j in m:
         m[i, j] += 1

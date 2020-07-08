@@ -61,6 +61,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   llvm::Type *context_ty;
   llvm::Type *physical_coordinate_ty;
   llvm::Value *current_coordinates;
+  llvm::Value *offload_loop_linear_index{nullptr};
   llvm::Value *parent_coordinates{nullptr};
   llvm::GlobalVariable *bls_buffer{nullptr};
   // Mainly for supporting continue stmt
@@ -233,6 +234,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   void create_offload_struct_for(OffloadedStmt *stmt, bool spmd = false);
 
   void visit(LoopIndexStmt *stmt) override;
+
+  void visit(LoopLinearIndexStmt *stmt) override;
 
   void visit(BlockCornerIndexStmt *stmt) override;
 

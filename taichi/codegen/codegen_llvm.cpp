@@ -1288,18 +1288,20 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     auto loop_index =
         create_entry_block_alloca(Type::getInt32Ty(*llvm_context));
 
-    llvm::Value *threadIdx = nullptr, *blockDim = nullptr;
+    offload_loop_linear_index = loop_index;
+
+    llvm::Value *thread_idx = nullptr, *block_dim = nullptr;
 
     RuntimeObject element("Element", this, builder.get(), get_arg(1));
     auto lower_bound = get_arg(2);
     auto upper_bound = get_arg(3);
 
     if (spmd) {
-      threadIdx =
+      thread_idx =
           builder->CreateIntrinsic(Intrinsic::nvvm_read_ptx_sreg_tid_x, {}, {});
-      blockDim = builder->CreateIntrinsic(Intrinsic::nvvm_read_ptx_sreg_ntid_x,
-                                          {}, {});
-      builder->CreateStore(builder->CreateAdd(threadIdx, lower_bound),
+      block_dim = builder->CreateIntrinsic(Intrinsic::nvvm_read_ptx_sreg_ntid_x,
+                                           {}, {});
+      builder->CreateStore(builder->CreateAdd(thread_idx, lower_bound),
                            loop_index);
     } else {
       builder->CreateStore(lower_bound, loop_index);
@@ -1309,17 +1311,6 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     auto test_bb = BasicBlock::Create(*llvm_context, "test", func);
     auto body_bb = BasicBlock::Create(*llvm_context, "loop_body", func);
     auto after_loop = BasicBlock::Create(*llvm_context, "after_loop", func);
-
-    builder->CreateBr(test_bb);
-    {
-      builder->SetInsertPoint(test_bb);
-      auto cond =
-          builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SLT,
-                              builder->CreateLoad(loop_index), upper_bound);
-      builder->CreateCondBr(cond, body_bb, after_loop);
-    }
-
-    builder->SetInsertPoint(body_bb);
 
     // initialize the coordinates
     auto refine =
@@ -1332,6 +1323,22 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
                          builder->CreateLoad(loop_index)});
 
     current_coordinates = new_coordinates;
+
+    if (stmt->bls_prologue) {
+      stmt->bls_prologue->accept(this);
+      call("block_barrier");  // "__syncthreads()"
+    }
+
+    builder->CreateBr(test_bb);
+    {
+      builder->SetInsertPoint(test_bb);
+      auto cond =
+          builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SLT,
+                              builder->CreateLoad(loop_index), upper_bound);
+      builder->CreateCondBr(cond, body_bb, after_loop);
+    }
+
+    builder->SetInsertPoint(body_bb);
 
     // exec_cond: safe-guard the execution of loop body:
     //  - if non-POT tensor dim exists, make sure we don't go out of bounds
@@ -1371,18 +1378,9 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
       builder->CreateCondBr(exec_cond, bounded_body_bb, body_bb_tail);
       builder->SetInsertPoint(bounded_body_bb);
 
-      if (stmt->bls_prologue) {
-        stmt->bls_prologue->accept(this);
-        call("block_barrier");  // "__syncthreads()"
-      }
-
       // The real loop body
       stmt->body->accept(this);
 
-      if (stmt->bls_epilogue) {
-        call("block_barrier");  // "__syncthreads()"
-        stmt->bls_epilogue->accept(this);
-      }
       builder->CreateBr(body_bb_tail);
     }
 
@@ -1391,14 +1389,21 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     builder->SetInsertPoint(body_bb_tail);
 
     if (spmd) {
-      create_increment(loop_index, blockDim);
+      create_increment(loop_index, block_dim);
     } else {
       create_increment(loop_index, tlctx->get_constant(1));
     }
     builder->CreateBr(test_bb);
 
     builder->SetInsertPoint(after_loop);
+
+    if (stmt->bls_epilogue) {
+      call("block_barrier");  // "__syncthreads()"
+      stmt->bls_epilogue->accept(this);
+    }
   }
+
+  offload_loop_linear_index = nullptr;
 
   if (stmt->block_dim == 0) {
     stmt->block_dim = std::min(leaf_block->max_num_elements(), 256);
@@ -1423,6 +1428,17 @@ void CodeGenLLVM::visit(LoopIndexStmt *stmt) {
   } else {
     llvm_val[stmt] =
         builder->CreateLoad(loop_vars_llvm[stmt->loop][stmt->index]);
+  }
+}
+
+void CodeGenLLVM::visit(LoopLinearIndexStmt *stmt) {
+  if (stmt->loop->is<OffloadedStmt>() &&
+      stmt->loop->as<OffloadedStmt>()->task_type ==
+          OffloadedStmt::TaskType::struct_for) {
+    TI_ASSERT(offload_loop_linear_index != nullptr);
+    llvm_val[stmt] = builder->CreateLoad(offload_loop_linear_index);
+  } else {
+    TI_NOT_IMPLEMENTED;
   }
 }
 

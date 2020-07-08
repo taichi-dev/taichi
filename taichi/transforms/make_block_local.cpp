@@ -8,6 +8,24 @@ TLANG_NAMESPACE_BEGIN
 
 namespace {
 
+void make_entries_helper(std::vector<PrintStmt::EntryType> &entries) {
+}
+
+template <typename T, typename... Args>
+void make_entries_helper(std::vector<PrintStmt::EntryType> &entries,
+                         T &&t,
+                         Args &&... values) {
+  entries.push_back(PrintStmt::EntryType{t});
+  make_entries_helper(entries, std::forward<Args>(values)...);
+}
+
+template <typename... Args>
+std::vector<PrintStmt::EntryType> make_entries(Args &&... values) {
+  std::vector<PrintStmt::EntryType> ret;
+  make_entries_helper(ret, std::forward<Args>(values)...);
+  return ret;
+}
+
 void make_block_local_offload(OffloadedStmt *offload) {
   if (offload->task_type != OffloadedStmt::TaskType::struct_for)
     return;
@@ -63,19 +81,24 @@ void make_block_local_offload(OffloadedStmt *offload) {
           if (block == nullptr) {
             block = std::make_unique<Block>();
           }
-          Stmt *block_linear_index = nullptr;
+          Stmt *block_linear_index =
+              block->push_back<LoopLinearIndexStmt>(offload);
 
+          /*
           // Block linear index =
           //   sum_i block_stride(i) * (loop_index[i] - loop_index_base[i])
           for (int i = 0; i < dim; i++) {
             // TODO: fix the virtual/physical index correspondence here
             auto cor_index = block->push_back<BlockCornerIndexStmt>(offload, i);
+            auto diff = block->push_back<BinaryOpStmt>(
+                BinaryOpType::sub, block->push_back<LoopIndexStmt>(offload, i),
+                cor_index);
             auto inc = block->push_back<BinaryOpStmt>(
                 BinaryOpType::mul,
                 block->push_back<ConstStmt>(TypedConstant(block_strides[i])),
-                block->push_back<BinaryOpStmt>(
-                    BinaryOpType::sub,
-                    block->push_back<LoopIndexStmt>(offload, i), cor_index));
+                diff);
+
+            block->push_back<PrintStmt>(make_entries("diff: ", diff, "\n"));
 
             if (block_linear_index) {
               block_linear_index = block->push_back<BinaryOpStmt>(
@@ -84,6 +107,7 @@ void make_block_local_offload(OffloadedStmt *offload) {
               block_linear_index = inc;
             }
           }
+          */
 
           std::vector<PrintStmt::EntryType> entries1{
               PrintStmt::EntryType{"debug linear: "},

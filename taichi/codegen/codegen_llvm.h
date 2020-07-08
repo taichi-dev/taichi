@@ -260,6 +260,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(StackAccAdjointStmt *stmt) override;
 
+  void visit(RangeAssumptionStmt *stmt) override;
+
   llvm::Value *create_xlogue(std::unique_ptr<Block> &block);
 
   ~CodeGenLLVM() = default;

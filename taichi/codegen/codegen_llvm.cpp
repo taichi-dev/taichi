@@ -1539,6 +1539,10 @@ void CodeGenLLVM::visit(StackAccAdjointStmt *stmt) {
   builder->CreateStore(new_val, adjoint_ptr);
 }
 
+void CodeGenLLVM::visit(RangeAssumptionStmt *stmt) {
+  llvm_val[stmt] = llvm_val[stmt->input];
+}
+
 FunctionType CodeGenLLVM::compile_module_to_executable() {
   TI_AUTO_PROF
   TaichiLLVMContext::eliminate_unused_functions(

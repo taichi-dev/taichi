@@ -3,23 +3,26 @@
 import taichi as ti
 import taichi_glsl as tl
 ti.init()
+if not hasattr(ti, 'jkl'):
+    ti.jkl = ti.indices(1, 2, 3)
 
 kUseTree = True
-#kDisplay = 'tree mouse pixels save_result'
-kDisplay = 'pixels'
+#kDisplay = 'tree mouse pixels cmap save_result'
+kDisplay = 'pixels cmap'
 kResolution = 512
 kShapeFactor = 1
 kMaxParticles = 8192
 kMaxDepth = kMaxParticles * 1
 kMaxNodes = kMaxParticles * 4
+kDim = 2
 
 dt = 0.00005
 LEAF = -1
 TREE = -2
 
 particle_mass = ti.var(ti.f32)
-particle_pos = ti.Vector(2, ti.f32)
-particle_vel = ti.Vector(2, ti.f32)
+particle_pos = ti.Vector(kDim, ti.f32)
+particle_vel = ti.Vector(kDim, ti.f32)
 particle_table = ti.root.dense(ti.i, kMaxParticles)
 particle_table.place(particle_pos).place(particle_vel).place(particle_mass)
 particle_table_len = ti.var(ti.i32, ())
@@ -27,7 +30,7 @@ particle_table_len = ti.var(ti.i32, ())
 if kUseTree:
     trash_particle_id = ti.var(ti.i32)
     trash_base_parent = ti.var(ti.i32)
-    trash_base_geo_center = ti.Vector(2, ti.f32)
+    trash_base_geo_center = ti.Vector(kDim, ti.f32)
     trash_base_geo_size = ti.var(ti.f32)
     trash_table = ti.root.dense(ti.i, kMaxDepth)
     trash_table.place(trash_particle_id)
@@ -36,16 +39,18 @@ if kUseTree:
     trash_table_len = ti.var(ti.i32, ())
 
     node_mass = ti.var(ti.f32)
-    node_weighted_pos = ti.Vector(2, ti.f32)
+    node_weighted_pos = ti.Vector(kDim, ti.f32)
     node_particle_id = ti.var(ti.i32)
     node_children = ti.var(ti.i32)
     node_table = ti.root.dense(ti.i, kMaxNodes)
     node_table.place(node_mass, node_particle_id, node_weighted_pos)
-    node_table.dense(ti.jk, 2).place(node_children)
+    node_table.dense({2: ti.jk, 3: ti.jkl}[kDim], 2).place(node_children)
     node_table_len = ti.var(ti.i32, ())
 
-if len(kDisplay):
+if 'mouse' in kDisplay:
     display_image = ti.Vector(3, ti.f32, (kResolution, kResolution))
+elif len(kDisplay):
+    display_image = ti.var(ti.f32, (kResolution, kResolution))
 
 
 @ti.func
@@ -55,7 +60,7 @@ def alloc_node():
     node_mass[ret] = 0
     node_weighted_pos[ret] = particle_pos[0] * 0
     node_particle_id[ret] = LEAF
-    for which in ti.grouped(ti.ndrange(2, 2)):
+    for which in ti.grouped(ti.ndrange(*([2] * kDim))):
         node_children[ret, which] = LEAF
     return ret
 
@@ -73,7 +78,7 @@ def alloc_particle():
 @ti.func
 def alloc_trash():
     ret = ti.atomic_add(trash_table_len[None], 1)
-    assert ret < kMaxParticles
+    assert ret < kMaxDepth
     return ret
 
 
@@ -127,7 +132,10 @@ def add_particle_at(mx: ti.f32, my: ti.f32, mass: ti.f32):
     mouse_pos = tl.vec(mx, my) + tl.randND(2) * (0.05 / kResolution)
 
     particle_id = alloc_particle()
-    particle_pos[particle_id] = mouse_pos
+    if ti.static(kDim == 2):
+        particle_pos[particle_id] = mouse_pos
+    else:
+        particle_pos[particle_id] = tl.vec(mouse_pos, 0.0)
     particle_mass[particle_id] = mass
 
 
@@ -135,9 +143,14 @@ def add_particle_at(mx: ti.f32, my: ti.f32, mass: ti.f32):
 def add_random_particles(angular_velocity: ti.f32):
     num = ti.static(1)
     particle_id = alloc_particle()
-    particle_pos[particle_id] = tl.randSolid2D() * 0.2 + 0.5
-    velocity = (particle_pos[particle_id] - 0.5) * angular_velocity * 250
-    particle_vel[particle_id] = tl.vec(-velocity.y, velocity.x)
+    if ti.static(kDim == 2):
+        particle_pos[particle_id] = tl.randSolid2D() * 0.2 + 0.5
+        velocity = (particle_pos[particle_id] - 0.5) * angular_velocity * 250
+        particle_vel[particle_id] = tl.vec(-velocity.y, velocity.x)
+    else:
+        particle_pos[particle_id] = tl.randUnit3D() * 0.2 + 0.5
+        velocity = (particle_pos[particle_id].xy - 0.5) * angular_velocity * 180
+        particle_vel[particle_id] = tl.vec(-velocity.y, velocity.x, 0.0)
     particle_mass[particle_id] = tl.randRange(0.0, 1.5)
 
 
@@ -190,7 +203,7 @@ def get_tree_gravity_at(position):
             acc += particle_mass[particle_id] * gravity_func(distance)
 
         else:  # TREE or LEAF
-            for which in ti.grouped(ti.ndrange(2, 2)):
+            for which in ti.grouped(ti.ndrange(*([2] * kDim))):
                 child = node_children[parent, which]
                 if child == LEAF:
                     continue
@@ -253,7 +266,7 @@ def render_arrows(mx: ti.f32, my: ti.f32):
 @ti.kernel
 def render_pixels():
     for i in range(particle_table_len[None]):
-        position = particle_pos[i]
+        position = particle_pos[i].xy
         pix = int(position * kResolution)
         display_image[tl.clamp(pix, 0, kResolution - 1)] += 0.25
 
@@ -277,6 +290,10 @@ def render_tree(gui,
         gui.rect(a, b, radius=1, color=0xff0000)
         render_tree(gui, child, child_geo_center, child_geo_size)
 
+
+if 'cmap' in kDisplay:
+    import matplotlib.cm as cm
+    cmap = cm.get_cmap('magma')
 
 print('[Hint] Press `r` to add 512 random particles')
 print('[Hint] Press `t` to add 512 random particles with angular velocity')
@@ -308,7 +325,9 @@ while gui.running:
         render_arrows(*gui.get_cursor_pos())
     if 'pixels' in kDisplay:
         render_pixels()
-    if len(kDisplay):
+    if 'cmap' in kDisplay:
+        gui.set_image(cmap(display_image.to_numpy()))
+    elif len(kDisplay):
         gui.set_image(display_image)
     if 'tree' in kDisplay:
         render_tree(gui)

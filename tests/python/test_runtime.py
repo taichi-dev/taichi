@@ -83,13 +83,14 @@ def test_init_arg(key, values):
         else:
             assert getattr(ti.cfg, key) == value
 
-    # test if default value is correct:
-    test_arg(key, default)
+    with patch_os_environ_helper({}, env_configs):
+        # test if default value is correct:
+        test_arg(key, default)
 
-    # test if specified in argument:
-    for value in values:
-        kwargs = {key: value}
-        test_arg(key, value, kwargs)
+        # test if specified in argument:
+        for value in values:
+            kwargs = {key: value}
+            test_arg(key, value, kwargs)
 
     # test if specified in environment:
     env_key = 'TI_' + key.upper()

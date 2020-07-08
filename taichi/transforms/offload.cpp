@@ -133,12 +133,22 @@ class Offloader {
         Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::struct_for);
 
     offloaded_struct_for->grid_dim = program->config.saturating_grid_dim;
+
+    auto snode_num_elements = for_stmt->snode->max_num_elements();
     if (for_stmt->block_dim == 0) {
       // adaptive
-      offloaded_struct_for->block_dim = std::min(
-          for_stmt->snode->max_num_elements(), program->config.max_block_dim);
+      offloaded_struct_for->block_dim =
+          std::min(snode_num_elements, program->config.max_block_dim);
     } else {
-      offloaded_struct_for->block_dim = for_stmt->block_dim;
+      if (for_stmt->block_dim > snode_num_elements) {
+        TI_WARN(
+            "Specified block dim {} is bigger than SNode element size {}. "
+            "Clipping.",
+            for_stmt->block_dim, snode_num_elements);
+        offloaded_struct_for->block_dim = snode_num_elements;
+      } else {
+        offloaded_struct_for->block_dim = for_stmt->block_dim;
+      }
     }
 
     replace_all_usages_with(for_stmt, for_stmt, offloaded_struct_for.get());

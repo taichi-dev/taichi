@@ -13,7 +13,7 @@ kMaxParticles = 8192
 kMaxDepth = kMaxParticles * 1
 kMaxNodes = kMaxParticles * 4
 
-dt = 0.00002
+dt = 0.00005
 LEAF = -1
 TREE = -2
 

@@ -67,9 +67,4 @@ ti.imshow(m, 'density')
 
 # TODO: debug dynamic: prologues/epilogues threads should not be limited to dynamic length!!
 
-
-
-
-
-
 # TODO: debug mode behavior of assume_in_range

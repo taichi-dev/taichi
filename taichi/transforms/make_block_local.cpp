@@ -8,24 +8,6 @@ TLANG_NAMESPACE_BEGIN
 
 namespace {
 
-void make_entries_helper(std::vector<PrintStmt::EntryType> &entries) {
-}
-
-template <typename T, typename... Args>
-void make_entries_helper(std::vector<PrintStmt::EntryType> &entries,
-                         T &&t,
-                         Args &&... values) {
-  entries.push_back(PrintStmt::EntryType{t});
-  make_entries_helper(entries, std::forward<Args>(values)...);
-}
-
-template <typename... Args>
-std::vector<PrintStmt::EntryType> make_entries(Args &&... values) {
-  std::vector<PrintStmt::EntryType> ret;
-  make_entries_helper(ret, std::forward<Args>(values)...);
-  return ret;
-}
-
 void make_block_local_offload(OffloadedStmt *offload) {
   if (offload->task_type != OffloadedStmt::TaskType::struct_for)
     return;
@@ -83,14 +65,6 @@ void make_block_local_offload(OffloadedStmt *offload) {
           }
           Stmt *block_linear_index =
               block->push_back<LoopLinearIndexStmt>(offload);
-
-          /*
-          std::vector<PrintStmt::EntryType> entries1{
-              PrintStmt::EntryType{"debug linear: "},
-              PrintStmt::EntryType{block_linear_index},
-              PrintStmt::EntryType{"\n"}};
-          block->push_back<PrintStmt>(entries1);
-          */
 
           /*
           Note that since there are fewer elements in the block than in BLS,
@@ -273,19 +247,6 @@ void make_block_local_offload(OffloadedStmt *offload) {
             auto bls_ptr = element_block->push_back<BlockLocalPtrStmt>(
                 bls_element_offset_bytes, VectorType(1, data_type));
             auto bls_val = element_block->push_back<GlobalLoadStmt>(bls_ptr);
-
-            /*
-            std::vector<PrintStmt::EntryType> entries1{
-                PrintStmt::EntryType{"debug bls_offsetbytes: "},
-                PrintStmt::EntryType{bls_element_offset_bytes},
-                PrintStmt::EntryType{"\n"}};
-            element_block->push_back<PrintStmt>(entries1);
-
-            std::vector<PrintStmt::EntryType> entries2{
-                PrintStmt::EntryType{"debug bls_val: "},
-                PrintStmt::EntryType{bls_val}, PrintStmt::EntryType{"\n"}};
-            element_block->push_back<PrintStmt>(entries2);
-            */
 
             auto global_pointer =
                 element_block->push_back<GlobalPtrStmt>(snode, global_indices);

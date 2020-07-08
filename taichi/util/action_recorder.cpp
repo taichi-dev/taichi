@@ -36,7 +36,7 @@ void ActionRecorder::stop_recording() {
 }
 
 bool ActionRecorder::is_recording() {
-  return get_instance().running;
+  return running;
 }
 
 void ActionRecorder::record(const std::string &content,

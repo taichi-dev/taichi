@@ -2,7 +2,6 @@
 
 #include "taichi/backends/metal/constants.h"
 #include "taichi/util/environ_config.h"
-#include "taichi/program/program.h"
 
 TLANG_NAMESPACE_BEGIN
 

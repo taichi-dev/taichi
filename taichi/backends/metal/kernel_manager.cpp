@@ -409,6 +409,19 @@ class HostMetalCtxBlitter {
       if (arg.is_array) {
         void *host_ptr = host_ctx_->get_arg<void *>(i);
         std::memcpy(host_ptr, device_ptr, arg.stride);
+
+        if (!ti_kernel_attribs_->is_jit_evaluator) {
+          ActionRecorder::get_instance().record(
+              "context_metal_to_host",
+              {
+                  ActionArg("kernel_name", kernel_name_),
+                  ActionArg("arg_id", i),
+                  ActionArg("size_in_bytes", (int64)arg.stride),
+                  ActionArg("host_address", fmt::format("0x{:x}", host_ptr)),
+                  ActionArg("device_address",
+                            fmt::format("0x{:x}", device_ptr)),
+              });
+        }
       }
     }
     for (int i = 0; i < ctx_attribs_->rets().size(); ++i) {

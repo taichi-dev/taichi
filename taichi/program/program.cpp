@@ -44,7 +44,7 @@ namespace cccp {
 bool is_c_backend_available() {
   return false;
 }
-} // namespace cccp
+}  // namespace cccp
 #endif
 
 void assert_failed_host(const char *msg) {

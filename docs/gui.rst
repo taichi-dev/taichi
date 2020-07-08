@@ -318,6 +318,12 @@ A *event filter* is a list combined of *key*, *type* and *(type, key)* tuple, e.
 Image I/O
 ---------
 
+.. function:: gui.get_image()
+
+    :return a ``np.ndarray`` which is the current image shown on the GUI.
+
+    Get the RGBA shown image from the current GUI system which has four channels.
+
 .. function:: ti.imwrite(img, filename)
 
     :parameter img: (Matrix or Expr) the image you want to export

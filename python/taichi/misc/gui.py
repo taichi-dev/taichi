@@ -81,6 +81,11 @@ class GUI:
         assert res == self.res, "Image resolution does not match GUI resolution"
         return np.ascontiguousarray(img)
 
+    def get_image(self):
+        self.img = np.ascontiguousarray(self.img)
+        self.core.get_img(self.img.ctypes.data)
+        return self.img
+
     def set_image(self, img):
         import numpy as np
         import taichi as ti

@@ -16,6 +16,8 @@ void make_block_local_offload(OffloadedStmt *offload) {
 
   std::size_t bls_offset = 0;
 
+  pads->print();
+
   for (auto &pad : pads->pads) {
     auto snode = pad.first;
     auto data_type = snode->dt;

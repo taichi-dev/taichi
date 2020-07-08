@@ -179,7 +179,8 @@ def init(arch=None,
     unexpected_keys = kwargs.keys()
     if len(unexpected_keys):
         raise KeyError(
-            f'Unrecognized keyword argument(s) for ti.init: {", ".join(unexpected_keys)}')
+            f'Unrecognized keyword argument(s) for ti.init: {", ".join(unexpected_keys)}'
+        )
 
     # dispatch configurations that are not in ti.cfg:
     if not _test_mode:

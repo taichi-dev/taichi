@@ -114,9 +114,9 @@ void Kernel::set_arg_float(int i, float64 d) {
       !args[i].is_nparray,
       "Assigning a scalar value to a numpy array argument is not allowed");
 
-  ActionRecorder::get_instance().record("set_kernel_arg_float",
-                         {ActionArg("kernel_name", name),
-                          ActionArg("arg_id", i), ActionArg("val", d)});
+  ActionRecorder::get_instance().record(
+      "set_kernel_arg_float", {ActionArg("kernel_name", name),
+                               ActionArg("arg_id", i), ActionArg("val", d)});
 
   auto dt = args[i].dt;
   if (dt == DataType::f32) {
@@ -149,9 +149,9 @@ void Kernel::set_arg_int(int i, int64 d) {
       !args[i].is_nparray,
       "Assigning scalar value to numpy array argument is not allowed");
 
-  ActionRecorder::get_instance().record("set_kernel_arg_int",
-                         {ActionArg("kernel_name", name),
-                          ActionArg("arg_id", i), ActionArg("val", d)});
+  ActionRecorder::get_instance().record(
+      "set_kernel_arg_int", {ActionArg("kernel_name", name),
+                             ActionArg("arg_id", i), ActionArg("val", d)});
 
   auto dt = args[i].dt;
   if (dt == DataType::i32) {

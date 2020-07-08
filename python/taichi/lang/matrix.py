@@ -3,7 +3,7 @@ from . import impl
 import copy
 import numbers
 import numpy as np
-from .util import taichi_scope, python_scope, deprecated, to_numpy_type, to_pytorch_type, in_python_scope
+from .util import taichi_scope, python_scope, deprecated, to_numpy_type, to_pytorch_type, in_python_scope, is_taichi_class
 from .common_ops import TaichiOperations
 from .exception import TaichiSyntaxError
 from collections.abc import Iterable
@@ -155,6 +155,21 @@ class Matrix(TaichiOperations):
         ret = self.empty_copy()
         if isinstance(other, (list, tuple)):
             other = Matrix(other)
+        if isinstance(other, Matrix):
+            assert self.m == other.m and self.n == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
+            for i in range(self.n * self.m):
+                ret.entries[i] = foo(self.entries[i], other.entries[i])
+        else:  # assumed to be scalar
+            for i in range(self.n * self.m):
+                ret.entries[i] = foo(self.entries[i], other)
+        return ret
+
+    def element_wise_writeback_binary(self, foo, other):
+        ret = self.empty_copy()
+        if isinstance(other, (list, tuple)):
+            other = Matrix(other)
+        if is_taichi_class(other):
+            other = other.variable()
         if foo.__name__ == 'assign' and not isinstance(other, Matrix):
             raise TaichiSyntaxError(
                 'cannot assign scalar expr to '
@@ -205,7 +220,7 @@ class Matrix(TaichiOperations):
                     '  for i in ti.static(range(3)):\n'
                     '    print(i, "-th component is", vec[i])\n'
                     'See https://taichi.readthedocs.io/en/stable/meta.html#when-to-use-for-loops-with-ti-static for more details.'
-                    )
+                )
         return args[0] * self.m + args[1]
 
     def __call__(self, *args, **kwargs):
@@ -609,7 +624,7 @@ class Matrix(TaichiOperations):
                 import taichi as ti
                 return ti.assign(x, y)
 
-            return self.element_wise_binary(assign_renamed, val)
+            return self.element_wise_writeback_binary(assign_renamed, val)
 
         if isinstance(val, numbers.Number):
             val = tuple(

@@ -38,7 +38,7 @@ struct ActionArg {
   enum argument_type { str, int64, float64 };
   argument_type type;
 };
-
+TODO: Make this thread safe when switching to async mode.
 class ActionRecorder {
  public:
   static ActionRecorder &get_instance();

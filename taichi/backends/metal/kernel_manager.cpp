@@ -347,7 +347,7 @@ class HostMetalCtxBlitter {
       char *device_ptr = base + arg.offset_in_mem;
       if (is_primary_kernel(kernel_name_)) {
         ActionRecorder::record(
-            "allocate_context_buffer",
+            "context_device_to_host",
             {ActionArg("kernel_name", kernel_name_), ActionArg("arg_id", i),
              ActionArg("offset_in_bytes", (int64)arg.offset_in_mem)});
       }

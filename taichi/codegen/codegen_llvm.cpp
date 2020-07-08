@@ -1371,17 +1371,17 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
       builder->CreateCondBr(exec_cond, bounded_body_bb, body_bb_tail);
       builder->SetInsertPoint(bounded_body_bb);
 
-      if (stmt->prologue) {
-        stmt->prologue->accept(this);
+      if (stmt->bls_prologue) {
+        stmt->bls_prologue->accept(this);
         call("block_barrier");  // "__syncthreads()"
       }
 
       // The real loop body
       stmt->body->accept(this);
 
-      if (stmt->epilogue) {
+      if (stmt->bls_epilogue) {
         call("block_barrier");  // "__syncthreads()"
-        stmt->epilogue->accept(this);
+        stmt->bls_epilogue->accept(this);
       }
       builder->CreateBr(body_bb_tail);
     }
@@ -1405,7 +1405,7 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
   }
   int num_splits = leaf_block->max_num_elements() / stmt->block_dim;
   // traverse leaf node
-  create_call("for_each_block",
+  create_call("parallel_struct_for",
               {get_context(), tlctx->get_constant(leaf_block->id),
                tlctx->get_constant(leaf_block->max_num_elements()),
                tlctx->get_constant(num_splits), body,
@@ -1631,6 +1631,23 @@ void CodeGenLLVM::emit_to_module() {
 FunctionType CodeGenLLVM::gen() {
   emit_to_module();
   return compile_module_to_executable();
+}
+
+llvm::Value *CodeGenLLVM::create_xlogue(std::unique_ptr<Block> &block) {
+  llvm::Value *xlogue;
+
+  auto xlogue_type = get_xlogue_function_type();
+  auto xlogue_ptr_type = llvm::PointerType::get(xlogue_type, 0);
+
+  if (block) {
+    auto guard = get_function_creation_guard(get_xlogue_argument_types());
+    block->accept(this);
+    xlogue = guard.body;
+  } else {
+    xlogue = llvm::ConstantPointerNull::get(xlogue_ptr_type);
+  }
+
+  return xlogue;
 }
 
 TLANG_NAMESPACE_END

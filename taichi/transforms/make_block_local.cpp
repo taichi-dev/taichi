@@ -44,10 +44,10 @@ void make_block_local_offload(OffloadedStmt *offload) {
     // Step 1:
     // Fetch to BLS
     {
-      if (offload->prologue == nullptr) {
-        offload->prologue = std::make_unique<Block>();
+      if (offload->bls_prologue == nullptr) {
+        offload->bls_prologue = std::make_unique<Block>();
       }
-      auto block = offload->prologue.get();
+      auto block = offload->bls_prologue.get();
 
       // ensure alignment
       bls_offset += (dtype_size - bls_offset % dtype_size) % dtype_size;

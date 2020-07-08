@@ -144,11 +144,12 @@ class CFGBuilder : public IRVisitor {
 
   void visit(OffloadedStmt *stmt) override {
     current_offload = stmt;
-    if (stmt->prologue) {
+    // TODO: support BLS here
+    if (stmt->tls_prologue) {
       auto before_offload = new_node(-1);
       int offload_stmt_id = current_stmt_id;
       auto block_begin_index = graph->size();
-      stmt->prologue->accept(this);
+      stmt->tls_prologue->accept(this);
       prev_nodes.push_back(graph->back());
       // Container statements don't belong to any CFGNodes.
       begin_location = offload_stmt_id + 1;
@@ -169,11 +170,11 @@ class CFGBuilder : public IRVisitor {
       begin_location = offload_stmt_id + 1;
       CFGNode::add_edge(before_offload, graph->nodes[block_begin_index].get());
     }
-    if (stmt->epilogue) {
+    if (stmt->tls_epilogue) {
       auto before_offload = new_node(-1);
       int offload_stmt_id = current_stmt_id;
       auto block_begin_index = graph->size();
-      stmt->epilogue->accept(this);
+      stmt->tls_epilogue->accept(this);
       prev_nodes.push_back(graph->back());
       // Container statements don't belong to any CFGNodes.
       begin_location = offload_stmt_id + 1;

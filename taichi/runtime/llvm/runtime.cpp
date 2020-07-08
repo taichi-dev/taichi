@@ -970,7 +970,7 @@ void element_listgen(LLVMRuntime *runtime,
 
 using BlockTask = void(Context *, Element *, int, int);
 
-struct block_task_helper_context {
+struct cpu_block_task_helper_context {
   Context *context;
   BlockTask *task;
   ListManager *list;
@@ -978,9 +978,15 @@ struct block_task_helper_context {
   int element_split;
 };
 
+// TODO: To enforce inlining, we need to create in LLVM a new function that
+// calls block_helper and the BLS xlogues, and pass that function to the
+// scheduler.
+
+// TODO: TLS should be directly passed to the scheduler, so that it lives
+// with the threads (instead of blocks).
+
 void block_helper(void *ctx_, int i) {
-  // TODO: TLS here
-  auto ctx = (block_task_helper_context *)(ctx_);
+  auto ctx = (cpu_block_task_helper_context *)(ctx_);
   int element_id = i / ctx->element_split;
   int part_size = ctx->element_size / ctx->element_split;
   int part_id = i % ctx->element_split;
@@ -994,12 +1000,12 @@ void block_helper(void *ctx_, int i) {
   }
 }
 
-void for_each_block(Context *context,
-                    int snode_id,
-                    int element_size,
-                    int element_split,
-                    BlockTask *task,
-                    int num_threads) {
+void parallel_struct_for(Context *context,
+                         int snode_id,
+                         int element_size,
+                         int element_split,
+                         BlockTask *task,
+                         int num_threads) {
   auto list = (context->runtime)->element_lists[snode_id];
   auto list_tail = list->size();
 #if ARCH_cuda
@@ -1019,7 +1025,7 @@ void for_each_block(Context *context,
     i += grid_dim();
   }
 #else
-  block_task_helper_context ctx;
+  cpu_block_task_helper_context ctx;
   ctx.context = context;
   ctx.task = task;
   ctx.list = list;
@@ -1047,7 +1053,7 @@ struct range_task_helper_context {
   int step;
 };
 
-void parallel_range_for_task(void *range_context, int task_id) {
+void cpu_parallel_range_for_task(void *range_context, int task_id) {
   auto ctx = *(range_task_helper_context *)range_context;
   alignas(8) char tls_buffer[ctx.tls_size];
   auto tls_ptr = &tls_buffer[0];
@@ -1096,7 +1102,7 @@ void cpu_parallel_range_for(Context *context,
   if (block_dim == 0) {
     // adaptive block dim
     auto num_items = (ctx.end - ctx.begin) / std::abs(step);
-    // ensure each thread have at least ~32 tasks for load balancing
+    // ensure each thread has at least ~32 tasks for load balancing
     // and each task has at least 512 items to amortize scheduler overhead
     block_dim = std::min(512, std::max(1, num_items / (num_threads * 32)));
   }
@@ -1104,7 +1110,7 @@ void cpu_parallel_range_for(Context *context,
   auto runtime = context->runtime;
   runtime->parallel_for(runtime->thread_pool,
                         (end - begin + block_dim - 1) / block_dim, num_threads,
-                        &ctx, parallel_range_for_task);
+                        &ctx, cpu_parallel_range_for_task);
 }
 
 void gpu_parallel_range_for(Context *context,

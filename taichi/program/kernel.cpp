@@ -244,7 +244,7 @@ void Kernel::set_arg_nparray(int i, uint64 ptr, uint64 size) {
   ActionRecorder::get_instance().record(
       "set_kernel_arg_ext_ptr",
       {ActionArg("kernel_name", name), ActionArg("arg_id", i),
-       ActionArg("val", fmt::format("0x{:x}", ptr)),
+       ActionArg("address", fmt::format("0x{:x}", ptr)),
        ActionArg("array_size_bytes", (int64)size)});
 
   args[i].size = size;

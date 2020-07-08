@@ -360,7 +360,7 @@ class HostMetalCtxBlitter {
       char *device_ptr = base + arg.offset_in_mem;
       if (!ti_kernel_attribs_->is_jit_evaluator) {
         ActionRecorder::get_instance().record(
-            "context_device_to_host",
+            "context_host_to_metal",
             {ActionArg("kernel_name", kernel_name_), ActionArg("arg_id", i),
              ActionArg("offset_in_bytes", (int64)arg.offset_in_mem)});
       }

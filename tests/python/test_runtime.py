@@ -63,7 +63,7 @@ init_args = {
 
 env_configs = ['TI_' + key.upper() for key in init_args.keys()]
 
-special_init_args = [
+special_init_cfgs = [
     'print_preprocessed',
     'log_level',
     'gdb_trigger',
@@ -77,13 +77,14 @@ def test_init_arg(key, values):
 
     # helper function:
     def test_arg(key, value, kwargs={}):
-        args = ti.init(_test_mode=True, **kwargs)
-        if key in special_init_args:
-            assert args[key] == value
+        spec_cfg = ti.init(_test_mode=True, **kwargs)
+        if key in special_init_cfgs:
+            cfg = spec_cfg
         else:
-            assert getattr(ti.cfg, key) == value
+            cfg = ti.cfg
+        assert getattr(cfg, key) == value
 
-    with patch_os_environ_helper({}, env_configs):
+    with patch_os_environ_helper({}, excludes=env_configs):
         # test if default value is correct:
         test_arg(key, default)
 
@@ -97,8 +98,13 @@ def test_init_arg(key, values):
     for value in values:
         env_value = str(int(value) if isinstance(value, bool) else value)
         environ = {env_key: env_value}
-        with patch_os_environ_helper(environ, env_configs):
+        with patch_os_environ_helper(environ, excludes=env_configs):
             test_arg(key, value)
+
+
+@ti.must_throw(KeyError)
+def test_init_bad_arg():
+    ti.init(_test_mode=True, debug=True, foo_bar=233)
 
 
 def test_without_init():

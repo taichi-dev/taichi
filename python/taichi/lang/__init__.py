@@ -71,34 +71,43 @@ def reset():
     runtime = get_runtime()
 
 
-class _EnvironConfig:
-    def __init__(self, args):
-        self.args = args
-        self.cfg_keys = []
+class _EnvironmentConfigurator:
+    def __init__(self, kwargs, cfg):
+        self.cfg = cfg
+        self.kwargs = kwargs
 
-    def add(self, key, default=None, cast=None):
+    def add(self, key, cast=None):
         cast = cast or self.bool_int
 
-        self.cfg_keys.append(key)
         # TI_ASYNC=   : no effect
         # TI_ASYNC=0  : False
         # TI_ASYNC=1  : True
         name = 'TI_' + key.upper()
         value = os.environ.get(name, '')
         if len(value):
-            self.args[key] = cast(value)
-        elif key not in self.args:
-            self.args[key] = default
+            self[key] = cast(value)
+        elif key in self.kwargs:
+            self[key] = self.kwargs[key]
+            del self.kwargs[key]  # pop out
 
     def __getitem__(self, key):
-        return self.args[key]
+        return getattr(self.cfg, key)
 
     def __setitem__(self, key, value):
-        self.args[key] = value
+        setattr(self.cfg, key, value)
 
     @staticmethod
     def bool_int(x):
         return bool(int(x))
+
+
+class _SpecialConfig:
+    # like CompileConfig in C++, this is the configuations that belong to other submodules
+    def __init__(self):
+        self.print_preprocessed = False
+        self.log_level = 'info'
+        self.gdb_trigger = False
+        self.excepthook = False
 
 
 def init(arch=None,
@@ -116,9 +125,12 @@ def init(arch=None,
     kwargs = _deepcopy(kwargs)
     ti.reset()
 
-    env = _EnvironConfig(kwargs)
+    spec_cfg = _SpecialConfig()
+    env_comp = _EnvironmentConfigurator(kwargs, ti.cfg)
+    env_spec = _EnvironmentConfigurator(kwargs, spec_cfg)
 
     # configure default_fp/ip:
+    # TODO: move these stuff to _SpecialConfig too:
     if default_fp is None:
         dfl_fp = os.environ.get("TI_DEFAULT_FP")
         if dfl_fp == 32:
@@ -144,37 +156,37 @@ def init(arch=None,
     if default_ip is not None:
         ti.get_runtime().set_default_ip(default_ip)
 
-    # configurations that are not in ti.cfg:
-    env.add('print_preprocessed', False)
-    env.add('log_level', 'info', str)
-    env.add('gdb_trigger', False)
-    env.add('excepthook', False)
+    # submodule configurations (spec_cfg):
+    env_spec.add('print_preprocessed')
+    env_spec.add('log_level', str)
+    env_spec.add('gdb_trigger')
+    env_spec.add('excepthook')
 
-    # configurations in ti.cfg:
-    env.cfg_keys = []
-    env.add('debug')
-    env.add('print_ir')
-    env.add('verbose')
-    env.add('fast_math')
-    env.add('async')
-    env.add('use_unified_memory')
-    env.add('print_benchmark_stat')
-    env.add('advanced_optimization')
+    # compiler configuations (ti.cfg):
+    env_comp.add('debug')
+    env_comp.add('print_ir')
+    env_comp.add('verbose')
+    env_comp.add('fast_math')
+    env_comp.add('async')
+    env_comp.add('use_unified_memory')
+    env_comp.add('print_benchmark_stat')
+    env_comp.add('advanced_optimization')
     # TODO(yuanming-hu): Maybe these CUDA specific configs should be moved
     # to somewhere like ti.cfg.cuda so that user don't get confused?
-    env.add('device_memory_fraction', None, float)
-    env.add('device_memory_GB', None, float)
-    for key in env.cfg_keys:
-        value = env[key]
-        if value is not None:
-            setattr(ti.cfg, key, value)
+    env_comp.add('device_memory_fraction', float)
+    env_comp.add('device_memory_GB', float)
+
+    unexpected_keys = kwargs.keys()
+    if len(unexpected_keys):
+        raise KeyError(
+            f'Unrecognized keyword argument(s) for ti.init: {", ".join(unexpected_keys)}')
 
     # dispatch configurations that are not in ti.cfg:
-    if _test_mode:
-        ti.set_gdb_trigger(env['gdb_trigger'])
-        ti.get_runtime().print_preprocessed = env['print_preprocessed']
-        ti.set_logging_level(env['log_level'].lower())
-        if env['excepthook']:
+    if not _test_mode:
+        ti.set_gdb_trigger(spec_cfg.gdb_trigger)
+        ti.get_runtime().print_preprocessed = spec_cfg.print_preprocessed
+        ti.set_logging_level(spec_cfg.log_level.lower())
+        if spec_cfg.excepthook:
             # TODO(#1405): add a way to restore old excepthook
             ti.enable_excepthook()
 
@@ -187,7 +199,7 @@ def init(arch=None,
     print(f'[Taichi] Starting on arch={ti.core.arch_name(ti.cfg.arch)}')
 
     if _test_mode:
-        return env.args
+        return spec_cfg
 
     # create a new program:
     ti.get_runtime().create_program()

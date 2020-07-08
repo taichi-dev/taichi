@@ -23,9 +23,11 @@ block.dense(ti.ij, block_size).place(m1)
 block.dense(ti.ij, block_size).place(m2)
 block.dense(ti.ij, block_size).place(m3)
 
-block.dynamic(ti.l, max_num_particles_per_block, chunk_size=4096).place(pid)
+block.dynamic(ti.l, max_num_particles_per_block, chunk_size=2048).place(pid)
 
 bound = 0.1
+
+extend = 4
 
 print(f'ppc {M / ((1 - bound * 2) ** 2 * N ** 2)}')
 
@@ -50,8 +52,8 @@ def p2g(use_shared: ti.template(), m: ti.template()):
 
         u = ti.Vector([u0, u1])
 
-        for offset in ti.static(ti.grouped(ti.ndrange(1, 1))):
-            m[u + offset] += (N * N / M) * 0.003
+        for offset in ti.static(ti.grouped(ti.ndrange(extend, extend))):
+            m[u + offset] += (N * N / M) * 0.01
         
 
 @ti.kernel
@@ -60,8 +62,8 @@ def p2g_naive():
     for p in x:
         u = (x[p] * N).cast(ti.i32)
         
-        for offset in ti.static(ti.grouped(ti.ndrange(1, 1))):
-            m3[u + offset] += (N * N / M) * 0.003
+        for offset in ti.static(ti.grouped(ti.ndrange(extend, extend))):
+            m3[u + offset] += (N * N / M) * 0.01
         
         
 insert()

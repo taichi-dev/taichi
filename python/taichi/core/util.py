@@ -251,7 +251,8 @@ def build():
 
 def prepare_sandbox(src):
     global g_tmp_dir
-    assert os.path.exists(src)
+    if not os.path.exists(src):
+        raise FileNotFoundError(f'File {src} does not exist.')
     import atexit
     import shutil
     from tempfile import mkdtemp

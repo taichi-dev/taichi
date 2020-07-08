@@ -10,13 +10,17 @@
 #include "taichi/backends/metal/constants.h"
 #include "taichi/inc/constants.h"
 #include "taichi/math/arithmetic.h"
+#include "taichi/util/action_recorder.h"
 #include "taichi/python/print_buffer.h"
+#include "taichi/util/file_sequence_writer.h"
 
 #ifdef TI_PLATFORM_OSX
 #include <sys/mman.h>
 #include <unistd.h>
+#include <algorithm>
 
 #include "taichi/backends/metal/api.h"
+#include "taichi/program/program.h"
 #endif  // TI_PLATFORM_OSX
 
 TLANG_NAMESPACE_BEGIN
@@ -125,12 +129,36 @@ class CompiledMtlKernelBase {
       TI_ASSERT(b.second == kernel_attribs_.buffers[bi]);
       set_mtl_buffer(encoder.get(), b.first, /*offset=*/0, bi);
     }
-    const int num_threads_per_group =
+
+    const int native_block_dim =
         get_max_total_threads_per_threadgroup(pipeline_state_.get());
+
+    int num_threads_per_group = 0;
+    // Sometimes it is helpful to limit the maximum GPU block dim for the
+    // kernels. E.g., when you are generating iPhone shaders on a Mac.
+    const int prescribed_block_dim =
+        (std::size_t)get_current_program().config.max_block_dim;
+    if (prescribed_block_dim != 0) {
+      num_threads_per_group = std::min(native_block_dim, prescribed_block_dim);
+    } else {
+      num_threads_per_group = native_block_dim;
+    }
+
     const int num_groups =
         ((num_threads + num_threads_per_group - 1) / num_threads_per_group);
-    dispatch_threadgroups(encoder.get(), num_groups,
-                          std::min(num_threads, num_threads_per_group));
+
+    const int dispatch_num_threads =
+        std::min(num_threads, num_threads_per_group);
+
+    if (!is_jit_evalutor_) {
+      ActionRecorder::get_instance().record(
+          "launch_kernel",
+          {ActionArg("kernel_name", kernel_attribs_.name),
+           ActionArg("num_groups", num_groups),
+           ActionArg("num_threads_per_group", dispatch_num_threads)});
+    }
+
+    dispatch_threadgroups(encoder.get(), num_groups, dispatch_num_threads);
     end_encoding(encoder.get());
   }
 
@@ -238,6 +266,15 @@ class CompiledTaichiKernel {
       TI_ERROR("Failed to compile Metal kernel! Generated code:\n\n{}",
                params.mtl_source_code);
     }
+    if (!ti_kernel_attribs.is_jit_evaluator &&
+        ActionRecorder::get_instance().is_recording()) {
+      static FileSequenceWriter writer("shader{:04d}.mtl", "Metal shader");
+      auto fn = writer.write(params.mtl_source_code);
+      ActionRecorder::get_instance().record(
+          "save_kernel",
+          {ActionArg("kernel_name", std::string(ti_kernel_attribs.name)),
+           ActionArg("filename", fn)});
+    }
     for (const auto &ka : ti_kernel_attribs.mtl_kernels_attribs) {
       auto mtl_func = new_function_with_name(kernel_lib.get(), ka.name);
       TI_ASSERT(mtl_func != nullptr);
@@ -271,6 +308,12 @@ class CompiledTaichiKernel {
     if (!ctx_attribs.empty()) {
       ctx_mem = std::make_unique<BufferMemoryView>(ctx_attribs.total_bytes(),
                                                    params.mem_pool);
+      if (!ti_kernel_attribs.is_jit_evaluator) {
+        ActionRecorder::get_instance().record(
+            "allocate_context_buffer",
+            {ActionArg("kernel_name", std::string(ti_kernel_attribs.name)),
+             ActionArg("size_in_bytes", (int64)ctx_attribs.total_bytes())});
+      }
       ctx_buffer =
           new_mtl_buffer_no_copy(device, ctx_mem->ptr(), ctx_mem->size());
     }
@@ -287,12 +330,15 @@ class CompiledTaichiKernel {
 
 class HostMetalCtxBlitter {
  public:
-  HostMetalCtxBlitter(const CompiledTaichiKernel &kernel, Context *host_ctx)
+  HostMetalCtxBlitter(const CompiledTaichiKernel &kernel,
+                      Context *host_ctx,
+                      const std::string &kernel_name)
       : ti_kernel_attribs_(&kernel.ti_kernel_attribs),
         ctx_attribs_(&kernel.ctx_attribs),
         host_ctx_(host_ctx),
         kernel_ctx_mem_(kernel.ctx_mem.get()),
-        kernel_ctx_buffer_(kernel.ctx_buffer.get()) {
+        kernel_ctx_buffer_(kernel.ctx_buffer.get()),
+        kernel_name_(kernel_name) {
   }
 
   inline MTLBuffer *ctx_buffer() {
@@ -312,6 +358,12 @@ class HostMetalCtxBlitter {
       const auto &arg = ctx_attribs_->args()[i];
       const auto dt = arg.dt;
       char *device_ptr = base + arg.offset_in_mem;
+      if (!ti_kernel_attribs_->is_jit_evaluator) {
+        ActionRecorder::get_instance().record(
+            "context_host_to_metal",
+            {ActionArg("kernel_name", kernel_name_), ActionArg("arg_id", i),
+             ActionArg("offset_in_bytes", (int64)arg.offset_in_mem)});
+      }
       if (arg.is_array) {
         const void *host_ptr = host_ctx_->get_arg<void *>(i);
         std::memcpy(device_ptr, host_ptr, arg.stride);
@@ -357,6 +409,20 @@ class HostMetalCtxBlitter {
       if (arg.is_array) {
         void *host_ptr = host_ctx_->get_arg<void *>(i);
         std::memcpy(host_ptr, device_ptr, arg.stride);
+
+        if (!ti_kernel_attribs_->is_jit_evaluator) {
+          ActionRecorder::get_instance().record(
+              "context_metal_to_host",
+              {
+                  ActionArg("kernel_name", kernel_name_),
+                  ActionArg("arg_id", i),
+                  ActionArg("size_in_bytes", (int64)arg.stride),
+                  ActionArg("host_address",
+                            fmt::format("0x{:x}", (uint64)host_ptr)),
+                  ActionArg("device_address",
+                            fmt::format("0x{:x}", (uint64)device_ptr)),
+              });
+        }
       }
     }
     for (int i = 0; i < ctx_attribs_->rets().size(); ++i) {
@@ -394,11 +460,12 @@ class HostMetalCtxBlitter {
 
   static std::unique_ptr<HostMetalCtxBlitter> maybe_make(
       const CompiledTaichiKernel &kernel,
-      Context *ctx) {
+      Context *ctx,
+      std::string name = "") {
     if (kernel.ctx_attribs.empty()) {
       return nullptr;
     }
-    return std::make_unique<HostMetalCtxBlitter>(kernel, ctx);
+    return std::make_unique<HostMetalCtxBlitter>(kernel, ctx, name);
   }
 
  private:
@@ -407,6 +474,7 @@ class HostMetalCtxBlitter {
   Context *const host_ctx_;
   BufferMemoryView *const kernel_ctx_mem_;
   MTLBuffer *const kernel_ctx_buffer_;
+  std::string kernel_name_;
 };
 
 }  // namespace
@@ -435,10 +503,18 @@ class KernelManager::Impl {
                                             root_mem_->size());
       TI_ASSERT(root_buffer_ != nullptr);
       TI_DEBUG("Metal root buffer size: {} bytes", root_mem_->size());
+      ActionRecorder::get_instance().record(
+          "allocate_root_buffer",
+          {ActionArg("size_in_bytes", (int64)root_mem_->size())});
     }
 
     global_tmps_mem_ = std::make_unique<BufferMemoryView>(
         taichi_global_tmp_buffer_size, mem_pool_);
+
+    ActionRecorder::get_instance().record(
+        "allocate_global_tmp_buffer",
+        {ActionArg("size_in_bytes", (int64)taichi_global_tmp_buffer_size)});
+
     global_tmps_buffer_ = new_mtl_buffer_no_copy(
         device_.get(), global_tmps_mem_->ptr(), global_tmps_mem_->size());
     TI_ASSERT(global_tmps_buffer_ != nullptr);
@@ -453,6 +529,14 @@ class KernelManager::Impl {
         "Metal runtime buffer size: {} bytes (sizeof(Runtime)={} "
         "memory_pool={})",
         runtime_mem_->size(), compiled_structs_.runtime_size, mem_pool_bytes);
+
+    ActionRecorder::get_instance().record(
+        "allocate_runtime_buffer",
+        {ActionArg("runtime_buffer_size_in_bytes", (int64)runtime_mem_->size()),
+         ActionArg("runtime_struct_size_in_bytes",
+                   (int64)compiled_structs_.runtime_size),
+         ActionArg("memory_pool_size", (int64)mem_pool_bytes)});
+
     TI_ASSERT_INFO(
         runtime_buffer_ != nullptr,
         "Failed to allocate Metal runtime buffer, requested {} bytes",
@@ -498,7 +582,8 @@ class KernelManager::Impl {
   void launch_taichi_kernel(const std::string &taichi_kernel_name,
                             Context *ctx) {
     auto &ctk = *compiled_taichi_kernels_.find(taichi_kernel_name)->second;
-    auto ctx_blitter = HostMetalCtxBlitter::maybe_make(ctk, ctx);
+    auto ctx_blitter =
+        HostMetalCtxBlitter::maybe_make(ctk, ctx, taichi_kernel_name);
     if (config_->verbose_kernel_launches) {
       TI_INFO("Launching Taichi kernel <{}>", taichi_kernel_name);
     }
@@ -589,7 +674,7 @@ class KernelManager::Impl {
     }
     size_t addr_offset = sizeof(SNodeMeta) * max_snodes;
     addr += addr_offset;
-    TI_DEBUG("Initialized SNodeMeta, size={} accumuated={}", addr_offset,
+    TI_DEBUG("Initialized SNodeMeta, size={} accumulated={}", addr_offset,
              (addr - addr_begin));
     // init snode_extractors
     for (int i = 0; i < max_snodes; ++i) {
@@ -613,7 +698,7 @@ class KernelManager::Impl {
     }
     addr_offset = sizeof(SNodeExtractors) * max_snodes;
     addr += addr_offset;
-    TI_DEBUG("Initialized SNodeExtractors, size={} accumuated={}", addr_offset,
+    TI_DEBUG("Initialized SNodeExtractors, size={} accumulated={}", addr_offset,
              (addr - addr_begin));
     // init snode_lists
     ListManagerData *const rtm_list_head =

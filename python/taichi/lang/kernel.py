@@ -272,7 +272,7 @@ class Kernel:
                 )
             annotation = param.annotation
             if param.annotation is inspect.Parameter.empty:
-                if i == 0 and self.classkernel:
+                if i == 0 and self.classkernel and not isinstance(annotation, pass_value):
                     annotation = template()
                 else:
                     raise KernelDefError(

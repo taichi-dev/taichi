@@ -486,7 +486,7 @@ class Matrix(TaichiOperations):
     inversed = deprecated('a.inversed()', 'a.inverse()')(inverse)
 
     @impl.pyfunc
-    def normalized(self, eps=0):
+    def normalized(self: impl.pass_value(), eps=0):
         impl.static(
             impl.static_assert(self.m == 1,
                                "normalized() only works on vector"))
@@ -503,7 +503,7 @@ class Matrix(TaichiOperations):
         return self.transpose()
 
     @impl.pyfunc
-    def transpose(self):
+    def transpose(self: impl.pass_value()):
         ret = Matrix([[self[i, j] for i in range(self.n)]
                       for j in range(self.m)])
         return ret
@@ -584,23 +584,23 @@ class Matrix(TaichiOperations):
         return ret
 
     @impl.pyfunc
-    def norm(self, eps=0):
+    def norm(self: impl.pass_value(), eps=0):
         return impl.sqrt(self.norm_sqr() + eps)
 
     @impl.pyfunc
-    def norm_inv(self, eps=0):
+    def norm_inv(self: impl.pass_value(), eps=0):
         return impl.rsqrt(self.norm_sqr() + eps)
 
     @impl.pyfunc
-    def norm_sqr(self):
+    def norm_sqr(self: impl.pass_value()):
         return self.dot(self)
 
     @impl.pyfunc
-    def max(self):
+    def max(self: impl.pass_value()):
         return impl.ti_max(*self.entries)
 
     @impl.pyfunc
-    def min(self):
+    def min(self: impl.pass_value()):
         return impl.ti_min(*self.entries)
 
     def any(self):

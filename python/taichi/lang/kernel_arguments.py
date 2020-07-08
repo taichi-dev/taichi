@@ -32,6 +32,20 @@ class Template:
 template = Template
 
 
+class PassValue:
+    def __init__(self, dim=None):
+        self.dim = dim
+
+    def extract(self, x):
+        import taichi as ti
+        if isinstance(x, ti.Expr):
+            return ti.expr_init(x)
+        return x
+
+
+pass_value = PassValue
+
+
 def decl_scalar_arg(dt):
     id = taichi_lang_core.decl_arg(dt, False)
     return Expr(taichi_lang_core.make_arg_load_expr(id))

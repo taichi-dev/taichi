@@ -149,7 +149,8 @@ def add_random_particles(angular_velocity: ti.f32):
         particle_vel[particle_id] = tl.vec(-velocity.y, velocity.x)
     else:
         particle_pos[particle_id] = tl.randUnit3D() * 0.2 + 0.5
-        velocity = (particle_pos[particle_id].xy - 0.5) * angular_velocity * 180
+        velocity = (particle_pos[particle_id].xy -
+                    0.5) * angular_velocity * 180
         particle_vel[particle_id] = tl.vec(-velocity.y, velocity.x, 0.0)
     particle_mass[particle_id] = tl.randRange(0.0, 1.5)
 

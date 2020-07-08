@@ -1,6 +1,6 @@
 import taichi as ti
 
-ti.init(arch=ti.cuda, kernel_profiler=True)
+ti.init(arch=ti.cuda, kernel_profiler=True, print_ir=True, print_kernel_llvm_ir_optimized=True)
 
 N = 512
 M = 1024 * 1024 * 1
@@ -23,7 +23,7 @@ block.dense(ti.ij, block_size).place(m1)
 block.dense(ti.ij, block_size).place(m2)
 block.dense(ti.ij, block_size).place(m3)
 
-block.dynamic(ti.l, max_num_particles_per_block, chunk_size=1024).place(pid)
+block.dynamic(ti.l, max_num_particles_per_block, chunk_size=4096).place(pid)
 
 bound = 0.1
 
@@ -50,7 +50,7 @@ def p2g(use_shared: ti.template(), m: ti.template()):
 
         u = ti.Vector([u0, u1])
 
-        for offset in ti.static(ti.grouped(ti.ndrange(3, 3))):
+        for offset in ti.static(ti.grouped(ti.ndrange(1, 1))):
             m[u + offset] += (N * N / M) * 0.003
         
 
@@ -60,7 +60,7 @@ def p2g_naive():
     for p in x:
         u = (x[p] * N).cast(ti.i32)
         
-        for offset in ti.static(ti.grouped(ti.ndrange(3, 3))):
+        for offset in ti.static(ti.grouped(ti.ndrange(1, 1))):
             m3[u + offset] += (N * N / M) * 0.003
         
         

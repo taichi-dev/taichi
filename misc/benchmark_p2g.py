@@ -2,8 +2,8 @@ import taichi as ti
 
 ti.init(arch=ti.cuda, kernel_profiler=True, print_ir=True, print_kernel_llvm_ir_optimized=True)
 
-N = 512
-M = 1024 * 1024 * 1
+N = 1024
+M = N * N * 10
 block_size = 16
 
 m1 = ti.var(ti.f32)
@@ -11,7 +11,7 @@ m2 = ti.var(ti.f32)
 m3 = ti.var(ti.f32)
 pid = ti.var(ti.i32)
 
-max_num_particles_per_block = block_size ** 2 * 32
+max_num_particles_per_block = block_size ** 2 * 512
 
 x = ti.Vector(2, dt=ti.f32)
 
@@ -37,7 +37,7 @@ def insert():
         
 @ti.kernel
 def p2g(use_shared: ti.template(), m: ti.template()):
-    ti.block_dim(128)
+    ti.block_dim(256)
     if ti.static(use_shared):
         ti.cache_shared(m)
     for i, j, l in pid:
@@ -56,7 +56,7 @@ def p2g(use_shared: ti.template(), m: ti.template()):
 
 @ti.kernel
 def p2g_naive():
-    # ti.block_dim(128)
+    ti.block_dim(256)
     for p in x:
         u = (x[p] * N).cast(ti.i32)
         
@@ -68,8 +68,8 @@ insert()
 
 for i in range(10):
     p2g(True, m1)
-    p2g(False, m2)
-    p2g_naive()
+    # p2g(False, m2)
+    # p2g_naive()
     
 ti.kernel_profiler_print()
 
@@ -86,3 +86,5 @@ ti.imshow(m1, 'density')
 # TODO: debug dynamic: prologues/epilogues threads should not be limited to dynamic length!!
 
 # TODO: debug mode behavior of assume_in_range
+
+# Remove assume in range

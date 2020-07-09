@@ -51,13 +51,6 @@ STR(
       atomic_int chunks[kTaichiNumChunks];
     };
 
-    struct NodeManagerData {
-      ListManagerData data_list;
-      ListManagerData free_list;
-      ListManagerData recycled_list;
-      atomic_int free_list_used;
-    };
-
     // This class is very similar to metal::SNodeDescriptor
     struct SNodeMeta {
       enum Type { Root = 0, Dense = 1, Bitmasked = 2, Dynamic = 3 };

@@ -51,9 +51,11 @@ STR(
       atomic_int chunks[kTaichiNumChunks];
     };
 
-    struct ListManager {
-      device ListManagerData *lm_data;
-      device MemoryAllocator *mem_alloc;
+    struct NodeManagerData {
+      ListManagerData data_list;
+      ListManagerData free_list;
+      ListManagerData recycled_list;
+      atomic_int free_list_used;
     };
 
     // This class is very similar to metal::SNodeDescriptor

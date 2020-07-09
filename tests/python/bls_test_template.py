@@ -100,12 +100,13 @@ def bls_test_template(dim,
 
 
 def bls_scatter(N, ppc=8, block_size=16, benchmark=0):
-    M = N * N * 10
+    M = N * N * ppc
 
     m1 = ti.var(ti.f32)
     m2 = ti.var(ti.f32)
     m3 = ti.var(ti.f32)
     pid = ti.var(ti.i32)
+    err = ti.var(ti.i32, shape=())
 
     max_num_particles_per_block = block_size**2 * 4096
 
@@ -119,7 +120,7 @@ def bls_scatter(N, ppc=8, block_size=16, benchmark=0):
     block.dense(ti.ij, block_size).place(m3)
 
     block.dynamic(ti.l, max_num_particles_per_block,
-                  chunk_size=1024).place(pid)
+                  chunk_size=block_size ** 2 * ppc * 4).place(pid)
 
     bound = 0.1
 
@@ -127,6 +128,7 @@ def bls_scatter(N, ppc=8, block_size=16, benchmark=0):
 
     @ti.kernel
     def insert():
+        ti.block_dim(256)
         for i in x:
             x[i] = ti.Vector([
                 ti.random() * (1 - 2 * bound) + bound,
@@ -167,8 +169,15 @@ def bls_scatter(N, ppc=8, block_size=16, benchmark=0):
         p2g(True, m1)
         p2g(False, m2)
         p2g_naive()
-
-    for i in range(N):
-        for j in range(N):
-            assert abs(m1[i, j] - m3[i, j]) < 1e-4
-            assert abs(m2[i, j] - m3[i, j]) < 1e-4
+        
+    @ti.kernel
+    def check():
+        for i in range(N):
+            for j in range(N):
+                if abs(m1[i, j] - m3[i, j]) > 1e-4:
+                    err[None] = True
+                if abs(m2[i, j] - m3[i, j]) > 1e-4:
+                    err[None] = True
+    check()
+    
+    assert not err[None]

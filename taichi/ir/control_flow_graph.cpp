@@ -85,7 +85,7 @@ bool CFGNode::contain_variable(const std::unordered_set<Stmt *> &var_set,
     if (var_set.find(var) != var_set.end())
       return true;
     for (auto set_var : var_set) {
-      if (definitely_same_address(var, set_var)) {
+      if (irpass::analysis::definitely_same_address(var, set_var)) {
         return true;
       }
     }
@@ -102,7 +102,7 @@ bool CFGNode::may_contain_variable(const std::unordered_set<Stmt *> &var_set,
     if (var_set.find(var) != var_set.end())
       return true;
     for (auto set_var : var_set) {
-      if (maybe_same_address(var, set_var)) {
+      if (irpass::analysis::maybe_same_address(var, set_var)) {
         return true;
       }
     }
@@ -154,8 +154,9 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
         block->statements[last_def_position].get());
     if (!var->is<AllocaStmt>()) {
       for (int i = last_def_position + 1; i < position; i++) {
-        if (maybe_same_address(var, irpass::analysis::get_store_destination(
-                                        block->statements[i].get())) &&
+        if (irpass::analysis::maybe_same_address(
+                var, irpass::analysis::get_store_destination(
+                         block->statements[i].get())) &&
             !irpass::analysis::same_statements(
                 result,
                 irpass::analysis::get_store_data(block->statements[i].get()))) {
@@ -193,15 +194,15 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
     // var == stmt is for the case that a global ptr is never stored.
     // In this case, stmt is from nodes[start_node]->reach_gen.
     if (var == stmt ||
-        maybe_same_address(var,
-                           irpass::analysis::get_store_destination(stmt))) {
+        irpass::analysis::maybe_same_address(
+            var, irpass::analysis::get_store_destination(stmt))) {
       if (!update_result(stmt))
         return nullptr;
     }
   }
   for (auto stmt : reach_gen) {
-    if (maybe_same_address(var,
-                           irpass::analysis::get_store_destination(stmt)) &&
+    if (irpass::analysis::maybe_same_address(
+            var, irpass::analysis::get_store_destination(stmt)) &&
         stmt->parent->locate(stmt) < position) {
       if (!update_result(stmt))
         return nullptr;
@@ -357,7 +358,7 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
           auto old_live_in_this_node = std::move(live_in_this_node);
           live_in_this_node.clear();
           for (auto &var : old_live_in_this_node) {
-            if (!definitely_same_address(store_ptr, var))
+            if (!irpass::analysis::definitely_same_address(store_ptr, var))
               live_in_this_node.insert(var);
           }
         }

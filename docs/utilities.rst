@@ -42,17 +42,36 @@ If you want to log at **run-time**, please simply use ``print()`` instead.
     ti.init(arch=ti.cpu)
 
     ti.set_logging_level(ti.INFO)
-    var = ti.var(ti.f32, shape=1)
+    mat = ti.var(dt=ti.f32, shape=(5, 5))
+
+
+    @ti.func
+    def calc(i: ti.int32, j: ti.int32):
+        ti.info(f"set var in ti.func")
+        mat[i, j] = i * j
 
 
     @ti.kernel
     def compute():
-        var[0] = 1.0
-        ti.info(f"set var[0] = 1.0")
+        calc(0, 0)
+        calc(1, 1)
+        calc(2, 2)
+        ti.info(f"set var in ti.kernel")
 
 
     compute()
+    compute()
+    compute()
 
+
+As we statement before, the ``ti.info`` will **only print once** in compile-time. Its output is like:
+
+:: 
+
+    [I 07/09/20 13:15:24.517] [main.py:calc@10] set var in ti.func
+    [I 07/09/20 13:15:24.518] [main.py:calc@10] set var in ti.func
+    [I 07/09/20 13:15:24.518] [main.py:calc@10] set var in ti.func
+    [I 07/09/20 13:15:24.518] [main.py:compute@19] set var in ti.kernel
 
 The other logging functions below **are all similar to** ``ti.info``. They can all print out when the logging level is set to be lower than they required, respectively.
 

@@ -1288,8 +1288,6 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     auto loop_index =
         create_entry_block_alloca(Type::getInt32Ty(*llvm_context));
 
-    offload_loop_linear_index = loop_index;
-
     llvm::Value *thread_idx = nullptr, *block_dim = nullptr;
 
     RuntimeObject element("Element", this, builder.get(), get_arg(1));
@@ -1403,8 +1401,6 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     }
   }
 
-  offload_loop_linear_index = nullptr;
-
   int list_element_size =
       std::min(leaf_block->max_num_elements(), taichi_listgen_max_element_size);
   int num_splits = std::max(1, list_element_size / stmt->block_dim);
@@ -1434,7 +1430,6 @@ void CodeGenLLVM::visit(LoopLinearIndexStmt *stmt) {
   if (stmt->loop->is<OffloadedStmt>() &&
       stmt->loop->as<OffloadedStmt>()->task_type ==
           OffloadedStmt::TaskType::struct_for) {
-    TI_ASSERT(offload_loop_linear_index != nullptr);
     llvm_val[stmt] = create_call("thread_idx");
   } else {
     TI_NOT_IMPLEMENTED;

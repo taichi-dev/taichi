@@ -61,7 +61,6 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   llvm::Type *context_ty;
   llvm::Type *physical_coordinate_ty;
   llvm::Value *current_coordinates;
-  llvm::Value *offload_loop_linear_index{nullptr};
   llvm::Value *parent_coordinates{nullptr};
   llvm::GlobalVariable *bls_buffer{nullptr};
   // Mainly for supporting continue stmt

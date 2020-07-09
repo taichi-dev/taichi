@@ -66,7 +66,7 @@ If you want to log at **run-time**, please simply use ``print()`` instead.
 
 As we statement before, the ``ti.info`` will **only print once** in compile-time. Its output is like:
 
-:: 
+::
 
     [I 07/09/20 13:15:24.517] [main.py:calc@10] set var in ti.func
     [I 07/09/20 13:15:24.518] [main.py:calc@10] set var in ti.func

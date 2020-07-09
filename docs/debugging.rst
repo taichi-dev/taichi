@@ -247,7 +247,7 @@ You may already feel brain fried by the annoying ``decorated``'s and ``__call__`
 These are the Taichi internal stack frames. They have almost no benefit for end-users
 but make the traceback hard to read.
 
-For this purpose, we may want to use ``ti.enable_excepthook()``, which *hooks* on the
+For this purpose, we may want to use ``ti.init(excepthook=True)``, which *hooks* on the
 exception handler, and make the stack traceback from Taichi-scope easier to read and
 intuitive. e.g.:
 
@@ -255,8 +255,7 @@ intuitive. e.g.:
 .. code-block:: python
 
     import taichi as ti
-    ti.init()
-    ti.enable_excepthook()  # just add this line!
+    ti.init(excepthook=True)  # just add this option!
 
     ...
 

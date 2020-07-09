@@ -61,26 +61,8 @@ void make_block_local_offload(OffloadedStmt *offload) {
           if (block == nullptr) {
             block = std::make_unique<Block>();
           }
-          Stmt *block_linear_index = nullptr;
-
-          // Block linear index =
-          //   sum_i block_stride(i) * (loop_index[i] - loop_index_base[i])
-          for (int i = 0; i < dim; i++) {
-            // TODO: fix the virtual/physical index correspondence here
-            auto inc = block->push_back<BinaryOpStmt>(
-                BinaryOpType::mul,
-                block->push_back<ConstStmt>(TypedConstant(block_strides[i])),
-                block->push_back<BinaryOpStmt>(
-                    BinaryOpType::sub,
-                    block->push_back<LoopIndexStmt>(offload, i),
-                    block->push_back<BlockCornerIndexStmt>(offload, i)));
-            if (block_linear_index) {
-              block_linear_index = block->push_back<BinaryOpStmt>(
-                  BinaryOpType::add, block_linear_index, inc);
-            } else {
-              block_linear_index = inc;
-            }
-          }
+          Stmt *block_linear_index =
+              block->push_back<LoopLinearIndexStmt>(offload);
 
           /*
           Note that since there are fewer elements in the block than in BLS,
@@ -263,6 +245,7 @@ void make_block_local_offload(OffloadedStmt *offload) {
             auto bls_ptr = element_block->push_back<BlockLocalPtrStmt>(
                 bls_element_offset_bytes, VectorType(1, data_type));
             auto bls_val = element_block->push_back<GlobalLoadStmt>(bls_ptr);
+
             auto global_pointer =
                 element_block->push_back<GlobalPtrStmt>(snode, global_indices);
             element_block->push_back<AtomicOpStmt>(AtomicOpType::add,

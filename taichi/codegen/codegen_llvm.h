@@ -234,6 +234,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(LoopIndexStmt *stmt) override;
 
+  void visit(LoopLinearIndexStmt *stmt) override;
+
   void visit(BlockCornerIndexStmt *stmt) override;
 
   void visit(BlockDimStmt *stmt) override;
@@ -259,6 +261,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   void visit(StackLoadTopAdjStmt *stmt) override;
 
   void visit(StackAccAdjointStmt *stmt) override;
+
+  void visit(RangeAssumptionStmt *stmt) override;
 
   llvm::Value *create_xlogue(std::unique_ptr<Block> &block);
 

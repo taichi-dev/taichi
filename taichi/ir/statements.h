@@ -248,6 +248,28 @@ class LoopIndexStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+// All loop indices fused together
+class LoopLinearIndexStmt : public Stmt {
+ public:
+  Stmt *loop;
+  int index;
+
+  LoopLinearIndexStmt(Stmt *loop) : loop(loop) {
+    TI_STMT_REG_FIELDS;
+  }
+
+  bool has_global_side_effect() const override {
+    return false;
+  }
+
+  // Return the number of bits of the loop, or -1 if unknown.
+  // TODO: implement
+  // int max_num_bits() const;
+
+  TI_STMT_DEF_FIELDS(ret_type, loop);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
 class BlockCornerIndexStmt : public Stmt {
  public:
   Stmt *loop;

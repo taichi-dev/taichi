@@ -44,7 +44,7 @@ namespace cccp {
 bool is_c_backend_available() {
   return false;
 }
-} // namespace cccp
+}  // namespace cccp
 #endif
 
 void assert_failed_host(const char *msg) {
@@ -180,6 +180,10 @@ Program::Program(Arch desired_arch) {
       config.saturating_grid_dim = num_SMs * 32;
     }
 #endif
+  }
+
+  if (arch_is_cpu(arch)) {
+    config.max_block_dim = 1024;
   }
 
   stat.clear();

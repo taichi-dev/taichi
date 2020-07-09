@@ -526,6 +526,11 @@ class IRPrinter : public IRVisitor {
           stmt->loop->name(), stmt->index);
   }
 
+  void visit(LoopLinearIndexStmt *stmt) override {
+    print("{}{} = loop {} index linear", stmt->type_hint(), stmt->name(),
+          stmt->loop->name());
+  }
+
   void visit(BlockCornerIndexStmt *stmt) override {
     print("{}{} = loop {} block corner index {}", stmt->type_hint(),
           stmt->name(), stmt->loop->name(), stmt->index);

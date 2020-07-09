@@ -945,7 +945,7 @@ void element_listgen(LLVMRuntime *runtime,
   int parent_split =
       std::max(parent->max_num_elements / taichi_listgen_max_element_size, 1);
   // Note: if we split children, then parent doesn't need an extra loop (size
-  // always <= taichi_listgen_max_element_sie)
+  // always <= taichi_listgen_max_element_size)
   int range = (parent->max_num_elements + parent_split - 1) / parent_split;
   for (int i = i_start; i < num_parent_elements * parent_split; i += i_step) {
     auto element = parent_list->get<Element>(i / parent_split);

@@ -157,8 +157,8 @@ setup the Taichi development environment with CUDA support based on Ubuntu docke
 
 Build the Docker Image
 **********************
-From within the root directory of the taichi Git repository, execute ``docker build -t taichi:master .`` to build a
-Docker image based off the local master branch tagged with *master*. Since this builds the image from source, please
+From within the root directory of the taichi Git repository, execute ``docker build -t taichi:latest .`` to build a
+Docker image based off the local master branch tagged with *latest*. Since this builds the image from source, please
 expect up to 40 mins build time if you don't have cached Docker image layers.
 
 .. note::

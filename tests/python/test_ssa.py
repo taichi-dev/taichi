@@ -67,8 +67,8 @@ def test_func_random_argument_dup_eval():
         return ti.Vector([ti.cos(a), ti.sin(a)])
 
     @ti.kernel
-    def kern(t: ti.f32) -> ti.f32:
+    def kern() -> ti.f32:
         return func(ti.random()).norm_sqr()
 
     for i in range(4):
-        assert kern(1.0) == approx(1.0)
+        assert kern() == approx(1.0)

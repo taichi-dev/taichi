@@ -47,11 +47,7 @@ class DiffRange {
   }
 };
 
-enum AliasResult {
-  same,
-  uncertain,
-  different
-};
+enum AliasResult { same, uncertain, different };
 
 class ControlFlowGraph;
 

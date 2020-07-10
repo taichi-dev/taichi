@@ -21,8 +21,6 @@ using namespace llvm;
 
 class CodeGenLLVMCUDA : public CodeGenLLVM {
  public:
-  int saturating_num_blocks;
-
   using IRVisitor::visit;
 
   CodeGenLLVMCUDA(Kernel *kernel, IRNode *ir = nullptr)
@@ -69,7 +67,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       }
 
       for (auto task : offloaded_local) {
-        TI_DEBUG("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
+        TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
                  task.block_dim);
 
         cuda_module->launch(task.name, task.grid_dim, task.block_dim,
@@ -364,7 +362,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       init_offloaded_task_function(stmt, "gather_list");
       call("gc_parallel_0", get_runtime(), snode_id);
       finalize_offloaded_task_function();
-      current_task->grid_dim = saturating_num_blocks;
+      current_task->grid_dim = prog->config.saturating_grid_dim;
       current_task->block_dim = 64;
       current_task->end();
       current_task = nullptr;
@@ -382,7 +380,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       init_offloaded_task_function(stmt, "zero_fill");
       call("gc_parallel_2", get_runtime(), snode_id);
       finalize_offloaded_task_function();
-      current_task->grid_dim = saturating_num_blocks;
+      current_task->grid_dim = prog->config.saturating_grid_dim;
       current_task->block_dim = 64;
       current_task->end();
       current_task = nullptr;

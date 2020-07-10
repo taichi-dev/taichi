@@ -931,7 +931,6 @@ void element_listgen(LLVMRuntime *runtime,
   auto parent_lookup_element = parent->lookup_element;
   auto child_get_num_elements = child->get_num_elements;
   auto child_from_parent_element = child->from_parent_element;
-  int max_range = 1024;
 #if ARCH_cuda
   int i_start = block_idx();
   int i_step = grid_dim();
@@ -943,7 +942,10 @@ void element_listgen(LLVMRuntime *runtime,
   int j_start = 0;
   int j_step = 1;
 #endif
-  int parent_split = std::max(parent->max_num_elements / max_range, 1);
+  int parent_split =
+      std::max(parent->max_num_elements / taichi_listgen_max_element_size, 1);
+  // Note: if we split children, then parent doesn't need an extra loop (size
+  // always <= taichi_listgen_max_element_size)
   int range = (parent->max_num_elements + parent_split - 1) / parent_split;
   for (int i = i_start; i < num_parent_elements * parent_split; i += i_step) {
     auto element = parent_list->get<Element>(i / parent_split);
@@ -957,12 +959,19 @@ void element_listgen(LLVMRuntime *runtime,
         auto ch_element =
             parent_lookup_element((Ptr)parent, element.element, j);
         ch_element = child_from_parent_element((Ptr)ch_element);
-        Element elem;
-        elem.element = ch_element;
-        elem.loop_bounds[0] = 0;
-        elem.loop_bounds[1] = child_get_num_elements((Ptr)child, ch_element);
-        elem.pcoord = refined_coord;
-        child_list->append(&elem);
+        auto ch_num_elements = child_get_num_elements((Ptr)child, ch_element);
+        auto ch_element_size =
+            std::min(ch_num_elements, taichi_listgen_max_element_size);
+        for (int ch_lower = 0; ch_lower < ch_num_elements;
+             ch_lower += ch_element_size) {
+          Element elem;
+          elem.element = ch_element;
+          elem.loop_bounds[0] = ch_lower;
+          elem.loop_bounds[1] =
+              std::min(ch_lower + ch_element_size, ch_num_elements);
+          elem.pcoord = refined_coord;
+          child_list->append(&elem);
+        }
       }
     }
   }

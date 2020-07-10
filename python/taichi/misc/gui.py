@@ -46,6 +46,7 @@ class GUI:
         self.background_color = background_color
         self.key_pressed = set()
         self.event = None
+        self.frame = 0
         self.clear()
 
     def __enter__(self):
@@ -80,6 +81,11 @@ class GUI:
         res = img.shape[:2]
         assert res == self.res, "Image resolution does not match GUI resolution"
         return np.ascontiguousarray(img)
+
+    def get_image(self):
+        self.img = np.ascontiguousarray(self.img)
+        self.core.get_img(self.img.ctypes.data)
+        return self.img
 
     def set_image(self, img):
         import numpy as np
@@ -195,6 +201,7 @@ class GUI:
         if file:
             self.core.screenshot(file)
         self.clear()
+        self.frame += 1
 
     class EventFilter:
         def __init__(self, *filter):

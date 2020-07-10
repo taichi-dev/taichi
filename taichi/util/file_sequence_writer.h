@@ -10,18 +10,19 @@ class FileSequenceWriter {
  public:
   FileSequenceWriter(std::string filename_template, std::string file_type);
 
-  void write(llvm::Module *module);
+  // returns filename
+  std::string write(llvm::Module *module);
 
-  void write(IRNode *irnode);
+  std::string write(IRNode *irnode);
 
-  void write(const std::string &str);
+  std::string write(const std::string &str);
 
  private:
   int counter;
   std::string filename_template;
   std::string file_type;
 
-  std::ofstream create_new_file();
+  std::pair<std::ofstream, std::string> create_new_file();
 };
 
 TLANG_NAMESPACE_END

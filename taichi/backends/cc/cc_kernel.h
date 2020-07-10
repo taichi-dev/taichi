@@ -1,6 +1,7 @@
 #pragma once
 
 #include "taichi/lang_util.h"
+#include <set>
 
 TLANG_NAMESPACE_BEGIN
 namespace cccp {
@@ -12,7 +13,7 @@ class CCKernel {
   CCKernel(CCProgram *program,
            std::string const &source,
            std::string const &name)
-      : program(program), source(source), name(name) {
+      : program(program), name(name), source(source) {
   }
 
   void compile();
@@ -24,8 +25,8 @@ class CCKernel {
  private:
   CCProgram *program;
 
-  std::string source;
   std::string name;
+  std::string source;
 
   std::string src_path;
   std::string obj_path;

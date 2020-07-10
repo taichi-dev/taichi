@@ -47,15 +47,19 @@ class DiffRange {
   }
 };
 
+enum AliasResult { same, uncertain, different };
+
 class ControlFlowGraph;
 
 // IR Analysis
 namespace irpass::analysis {
 
+AliasResult alias_analysis(Stmt *var1, Stmt *var2);
 std::unique_ptr<ControlFlowGraph> build_cfg(IRNode *root);
 void check_fields_registered(IRNode *root);
 std::unique_ptr<IRNode> clone(IRNode *root, Kernel *kernel = nullptr);
 int count_statements(IRNode *root);
+bool definitely_same_address(Stmt *var1, Stmt *var2);
 std::unordered_set<Stmt *> detect_fors_with_break(IRNode *root);
 std::unordered_set<Stmt *> detect_loops_with_continue(IRNode *root);
 std::unordered_set<SNode *> gather_deactivations(IRNode *root);
@@ -68,6 +72,7 @@ Stmt *get_store_data(Stmt *store_stmt);
 Stmt *get_store_destination(Stmt *store_stmt);
 bool has_store_or_atomic(IRNode *root, const std::vector<Stmt *> &vars);
 std::pair<bool, Stmt *> last_store_or_atomic(IRNode *root, Stmt *var);
+bool maybe_same_address(Stmt *var1, Stmt *var2);
 bool same_statements(IRNode *root1, IRNode *root2);
 DiffRange value_diff(Stmt *stmt, int lane, Stmt *alloca);
 DiffRange value_diff_loop_index(Stmt *stmt, Stmt *loop, int index_id);

@@ -5,9 +5,11 @@
 TLANG_NAMESPACE_BEGIN
 namespace cccp {
 
-class CCLayout {
+class CCRuntime {
  public:
-  CCLayout() = default;
+  CCRuntime(std::string const &header, std::string const &source)
+      : header(header), source(source) {
+  }
 
   std::string get_object() {
     return obj_path;
@@ -15,6 +17,7 @@ class CCLayout {
 
   void compile();
 
+  std::string header;
   std::string source;
 
  private:

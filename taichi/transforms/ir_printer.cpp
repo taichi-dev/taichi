@@ -478,7 +478,7 @@ class IRPrinter : public IRVisitor {
                       end_str, stmt->grid_dim, stmt->block_dim);
     } else if (stmt->task_type == stmt->struct_for) {
       details = fmt::format(
-          "struct_for({}) grid_dim={} block_dim={} bls={} B",
+          "struct_for({}) grid_dim={} block_dim={} bls={}",
           stmt->snode->get_node_type_name_hinted(), stmt->grid_dim,
           stmt->block_dim, scratch_pad_info(stmt->scratch_opt), stmt->bls_size);
     }
@@ -524,6 +524,11 @@ class IRPrinter : public IRVisitor {
   void visit(LoopIndexStmt *stmt) override {
     print("{}{} = loop {} index {}", stmt->type_hint(), stmt->name(),
           stmt->loop->name(), stmt->index);
+  }
+
+  void visit(LoopLinearIndexStmt *stmt) override {
+    print("{}{} = loop {} index linear", stmt->type_hint(), stmt->name(),
+          stmt->loop->name());
   }
 
   void visit(BlockCornerIndexStmt *stmt) override {

@@ -13,19 +13,23 @@
 #include "taichi/backends/metal/codegen_metal.h"
 #include "taichi/backends/metal/env_config.h"
 #include "taichi/backends/opengl/codegen_opengl.h"
-#include "taichi/backends/cc/codegen_cc.h"
 #include "taichi/backends/cpu/codegen_cpu.h"
 #include "taichi/struct/struct.h"
 #include "taichi/struct/struct_llvm.h"
 #include "taichi/backends/metal/struct_metal.h"
 #include "taichi/backends/opengl/struct_opengl.h"
-#include "taichi/backends/cc/struct_cc.h"
-#include "taichi/backends/cc/cc_layout.h"
 #include "taichi/system/unified_allocator.h"
 #include "taichi/ir/snode.h"
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/program/async_engine.h"
 #include "taichi/util/statistics.h"
+#if defined(TI_WITH_CC)
+#include "taichi/backends/cc/struct_cc.h"
+#include "taichi/backends/cc/cc_layout.h"
+#include "taichi/backends/cc/codegen_cc.h"
+#include "taichi/backends/cc/cc_configuation.h"
+#else
+#endif
 
 TI_NAMESPACE_BEGIN
 
@@ -34,6 +38,14 @@ bool is_cuda_api_available();
 TI_NAMESPACE_END
 
 TLANG_NAMESPACE_BEGIN
+
+#ifndef TI_WITH_CC
+namespace cccp {
+bool is_c_backend_available() {
+  return false;
+}
+}  // namespace cccp
+#endif
 
 void assert_failed_host(const char *msg) {
   TI_ERROR("Assertion failure: {}", msg);
@@ -80,6 +92,15 @@ Program::Program(Arch desired_arch) {
       TI_WARN("No OpenGL API detected.");
       arch = host_arch();
     }
+  }
+
+  if (arch == Arch::cc) {
+#ifdef TI_WITH_CC
+    cc_program = std::make_unique<cccp::CCProgram>();
+#else
+    TI_WARN("No C backend detected.");
+    arch = host_arch();
+#endif
   }
 
   if (arch != desired_arch) {
@@ -159,6 +180,10 @@ Program::Program(Arch desired_arch) {
       config.saturating_grid_dim = num_SMs * 32;
     }
 #endif
+  }
+
+  if (arch_is_cpu(arch)) {
+    config.max_block_dim = 1024;
   }
 
   stat.clear();
@@ -362,7 +387,6 @@ void Program::materialize_layout() {
         opengl_struct_compiled_->root_size);
 #ifdef TI_WITH_CC
   } else if (config.arch == Arch::cc) {
-    cc_program = std::make_unique<cccp::CCProgram>();
     cccp::CCLayoutGen scomp(snode_root.get());
     cc_program->layout = scomp.compile();
 #endif

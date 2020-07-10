@@ -250,7 +250,9 @@ def build():
 
 def check_exists(src):
     if not os.path.exists(src):
-        raise FileNotFoundError(f'File "{src}" not exist. Installation corrupted or build incomplete?')
+        raise FileNotFoundError(
+            f'File "{src}" not exist. Installation corrupted or build incomplete?'
+        )
 
 
 def prepare_sandbox(src):

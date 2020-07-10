@@ -32,6 +32,7 @@ os.system("g++ a.cpp -o a.so -fPIC -shared")
 
 so = ctypes.CDLL("./a.so")
 
+
 @ti.kernel
 def call_ext() -> ti.i32:
     a = 2.0
@@ -41,30 +42,35 @@ def call_ext() -> ti.i32:
     e = 3
     ti.external_func_call(func=so.add_and_mul, args=(a, b), outputs=(c, d, e))
     p = 0
-    ti.external_func_call(func=so.pow_int, args=(int(c + d), e), outputs=(p,))
+    ti.external_func_call(func=so.pow_int, args=(int(c + d), e), outputs=(p, ))
     return p
+
 
 # Wrap the external function to make it easier to use
 @ti.func
 def pow_int_wrapper(a, b):
     p = 0
-    ti.external_func_call(func=so.pow_int, args=(int(a), int(b)), outputs=(p,))
+    ti.external_func_call(func=so.pow_int,
+                          args=(int(a), int(b)),
+                          outputs=(p, ))
     return p
+
 
 @ti.kernel
 def call_parallel():
     for i in range(N):
         z[i] = pow_int_wrapper(x[i], y[i])
-    
-assert call_ext() == 11 ** 8
+
+
+assert call_ext() == 11**8
 
 for i in range(N):
     x[i] = i
     y[i] = 3
-    
+
 call_parallel()
 for i in range(N):
-    assert z[i] == i ** 3
+    assert z[i] == i**3
 
 os.remove('a.cpp')
 os.remove('a.so')

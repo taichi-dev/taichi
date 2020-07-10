@@ -17,6 +17,7 @@ void make_block_local_offload(OffloadedStmt *offload) {
   std::size_t bls_offset = 0;
 
   for (auto &pad : pads->pads) {
+    pads->print();
     auto snode = pad.first;
     auto data_type = snode->dt;
     auto dtype_size = data_type_size(data_type);
@@ -141,6 +142,18 @@ void make_block_local_offload(OffloadedStmt *offload) {
               global_index = element_block->push_back<BinaryOpStmt>(
                   BinaryOpType::add, global_index,
                   element_block->push_back<BlockCornerIndexStmt>(offload, i));
+
+              auto offsets = offload->index_offsets;
+
+              TI_P(offsets);
+
+              if ((int)offsets.size() > i && offsets[i] != 0) {
+                auto offset_const = element_block->push_back<ConstStmt>(
+                    TypedConstant(offsets[i]));
+                global_index = element_block->push_back<BinaryOpStmt>(
+                    BinaryOpType::add, global_index, offset_const);
+              }
+
               global_indices[i] = global_index;
             }
 
@@ -162,6 +175,7 @@ void make_block_local_offload(OffloadedStmt *offload) {
             if (bls_has_read) {
               // Read access
               // Fetch from global to BLS
+
               auto global_pointer = element_block->push_back<GlobalPtrStmt>(
                   snode, global_indices);
               value = element_block->push_back<GlobalLoadStmt>(global_pointer);
@@ -200,13 +214,20 @@ void make_block_local_offload(OffloadedStmt *offload) {
         for (int i = 0; i < dim; i++) {
           // BLS index = sum_i inc_i
           // where inc_i =
-          //   bls_stride_i * (gbl_idx_i - loop_base_i - bls_lower_bound_i)
+          //   bls_stride_i * (gbl_idx_i - loop_base_i - bls_lower_bound_i +
+          //   offset_i)
           auto inc = bls.push_back<BinaryOpStmt>(
               BinaryOpType::sub, global_indices[i],
               bls.push_back<BlockCornerIndexStmt>(offload, i));
+          auto offsets = offload->index_offsets;
+          auto offset = 0;
+          if (i < (int)offsets.size()) {
+            offset = offsets[i];
+          }
           inc = bls.push_back<BinaryOpStmt>(
               BinaryOpType::sub, inc,
-              bls.push_back<ConstStmt>(TypedConstant(pad.second.bounds[0][i])));
+              bls.push_back<ConstStmt>(
+                  TypedConstant(pad.second.bounds[0][i] - offset)));
           inc = bls.push_back<BinaryOpStmt>(
               BinaryOpType::mul, inc,
               bls.push_back<ConstStmt>(TypedConstant(bls_strides[i])));

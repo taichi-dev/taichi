@@ -281,6 +281,7 @@ class LowerAST : public IRVisitor {
       auto &&new_for = std::make_unique<StructForStmt>(
           snode, std::move(stmt->body), stmt->vectorize, stmt->parallelize,
           stmt->block_dim);
+      new_for->index_offsets = offsets;
       VecStatement new_statements;
       for (int i = 0; i < (int)stmt->loop_var_id.size(); i++) {
         Stmt *loop_index = new_statements.push_back<LoopIndexStmt>(

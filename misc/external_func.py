@@ -2,6 +2,8 @@ import taichi as ti
 import os
 import ctypes
 
+ti.init(print_ir=True)
+
 os.system("g++ a.cpp -o a.so -fPIC -shared")
 
 so = ctypes.CDLL("./a.so")
@@ -12,6 +14,17 @@ print(dir(func))
 
 print(func(1, 2))
 
+add_and_mul = so.add_and_mul
+
+addr = ctypes.addressof(add_and_mul)
+
 @ti.kernel
 def call():
-    ti.external_func_call()
+    a = 2.0
+    b = 3.0
+    c = 0.0
+    d = 0.0
+    ti.external_func_call(addr, (a, b), (c, d))
+    print(c, d)
+    
+call()

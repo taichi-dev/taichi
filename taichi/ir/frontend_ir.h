@@ -91,7 +91,8 @@ class FrontendPrintStmt : public Stmt {
 };
 
 // This statement does nothing but evaluates the expression.
-// The expression should have side effects otherwise the expression will do nothing.
+// The expression should have side effects otherwise the expression will do
+// nothing.
 class FrontendEvalStmt : public Stmt {
  public:
   Expr expr;
@@ -494,6 +495,10 @@ class IdExpression : public Expression {
       TI_ASSERT(var_stmt->is<LoopIndexStmt>() || var_stmt->is<BinaryOpStmt>());
       stmt = var_stmt;
     }
+  }
+
+  Stmt *flatten_noload(FlattenContext *ctx) {
+    return ctx->current_block->lookup_var(id);
   }
 
   bool is_lvalue() const override {

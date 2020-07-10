@@ -101,7 +101,7 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(AssertStmt *assert) override {
-    std::string extras = "";
+    std::string extras;
     for (auto &arg : assert->args) {
       extras += ", ";
       extras += arg->name();
@@ -121,7 +121,8 @@ class IRPrinter : public IRVisitor {
       extras += ", ";
       extras += output->name();
     }
-    print("{} : func_call {:x}, \"{}\"{}", (std::size_t)stmt->func, extras);
+    print("{} : func_call {:x}, {}", stmt->name(), (std::size_t)stmt->func,
+          extras);
   }
 
   void visit(FrontendSNodeOpStmt *stmt) override {

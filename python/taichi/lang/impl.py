@@ -415,7 +415,8 @@ def static(x, *xs):
     if isinstance(x, (bool, int, float, range, list, tuple, enumerate,
                       ti.ndrange, ti.GroupedNDRange)) or x is None:
         return x
-    elif isinstance(x, ti.lang.expr.Expr) and x.ptr.is_global_var():
+    elif isinstance(x, ti.lang.expr.Expr):# and (x.ptr.is_global_var()):
+        # TODO: support ID expression
         return x
     elif isinstance(x, ti.Matrix) and x.is_global():
         return x

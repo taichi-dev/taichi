@@ -1,4 +1,6 @@
 import taichi as ti
+import numpy as np
+import random
 
 
 def bls_test_template(dim,
@@ -99,7 +101,7 @@ def bls_test_template(dim,
     assert mismatch[None] == 0
 
 
-def bls_scatter(N, ppc=8, block_size=16, benchmark=0):
+def bls_scatter(N, ppc=8, block_size=16, benchmark=0, pointer_level=1, sort_points=True):
     M = N * N * ppc
 
     m1 = ti.var(ti.f32)
@@ -114,7 +116,13 @@ def bls_scatter(N, ppc=8, block_size=16, benchmark=0):
 
     ti.root.dense(ti.i, M).place(x)
 
-    block = ti.root.pointer(ti.ij, N // block_size // 4).pointer(ti.ij, 4)
+    if pointer_level == 1:
+        block = ti.root.pointer(ti.ij, N // block_size)
+    elif pointer_level == 2:
+        block = ti.root.pointer(ti.ij, N // block_size // 4).pointer(ti.ij, 4)
+    else:
+        raise ValueError('pointer_level must be 1 or 2')
+        
     block.dense(ti.ij, block_size).place(m1)
     block.dense(ti.ij, block_size).place(m2)
     block.dense(ti.ij, block_size).place(m3)
@@ -125,6 +133,12 @@ def bls_scatter(N, ppc=8, block_size=16, benchmark=0):
     bound = 0.1
 
     extend = 4
+    
+    x_ = [(random.random() * (1 - 2 * bound) + bound, random.random() * (1 - 2 * bound) + bound) for _ in range(M)]
+    if sort_points:
+        x_.sort(key=lambda q: int(q[0] * N) // block_size * N + int(q[1] * N) // block_size)
+    
+    x.from_numpy(np.array(x_, dtype=np.float32))
 
     @ti.kernel
     def insert():

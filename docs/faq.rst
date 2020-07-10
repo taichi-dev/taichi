@@ -8,9 +8,9 @@ Frequently asked questions
 
 **Q:** Do we have something like ``ti.pi``?
 
-**A:** No, but you may use ``math.pi`` or ``numpy.pi`` instead.
+**A:** No, but you may use ``math.pi`` or ``numpy.pi`` instead. Taichi is able to bake in these constants during JIT, so your kernels incur no runtime cost.
 
-**Q:** How do I **force** a outer-most loop to be serial, i.e. **not parallelized**?
+**Q:** How do I **force** an outermost loop to be serial, i.e. **not parallelized**?
 
 **A:** Try this trick:
 
@@ -45,7 +45,7 @@ Frequently asked questions
 
 **A:** What you want may be the ``dynamic`` SNode, a kind of sparse tensor, see :ref:`dynamic`.
        Or simply allocate a dense tensor large enough, and another 0-D tensor ``tensor_len[None]`` for length record.
-       But in fact, currently the ``dynamic`` SNode has poor performance compared the latter solution, we are now trying to improve it.
+       But in fact, the ``dynamic`` SNode could be slower than the latter solution, due to the cost of maintaining the sparsity information.
 
 **Q:** Can a user iterate over irregular topologies (e.g., graphs or tetrahedral meshes) instead of regular grids?
 

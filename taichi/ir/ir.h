@@ -33,9 +33,6 @@ using ScratchPadOptions = std::vector<std::pair<int, SNode *>>;
 
 IRBuilder &current_ast_builder();
 
-bool definitely_same_address(Stmt *var1, Stmt *var2);
-bool maybe_same_address(Stmt *var1, Stmt *var2);
-
 struct VectorType {
  private:
   bool _is_pointer;

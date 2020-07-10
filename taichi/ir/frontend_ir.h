@@ -90,7 +90,7 @@ class FrontendPrintStmt : public Stmt {
   TI_DEFINE_ACCEPT
 };
 
-// This statement does nothing but evaluates the expression.
+// This statement evaluates the expression.
 // The expression should have side effects otherwise the expression will do
 // nothing.
 class FrontendEvalStmt : public Stmt {

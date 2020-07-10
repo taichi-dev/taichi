@@ -1222,6 +1222,7 @@ bool simplify(IRNode *root, Kernel *kernel) {
 }
 
 void full_simplify(IRNode *root, Kernel *kernel) {
+  return;
   TI_AUTO_PROF;
   if (root->get_config().advanced_optimization) {
     while (true) {

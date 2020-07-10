@@ -1,3 +1,4 @@
+
 // Intermediate representations
 
 #include "taichi/ir/ir.h"
@@ -484,6 +485,21 @@ void UnaryOpExpression::flatten(FlattenContext *ctx) {
   stmt = unary.get();
   stmt->tb = tb;
   ctx->push_back(std::move(unary));
+}
+
+void ExternalFuncCallExpression::flatten(FlattenContext *ctx) {
+  std::vector<Stmt *> arg_statements, output_statements;
+  for (auto &s : args) {
+    s->flatten(ctx);
+    arg_statements.push_back(s->stmt);
+  }
+  for (auto &s : outputs) {
+    s->flatten(ctx);
+    output_statements.push_back(s->stmt);
+  }
+  ctx->push_back(std::make_unique<ExternalFuncCallStmt>(func, arg_statements,
+                                                        output_statements));
+  stmt = ctx->back_stmt();
 }
 
 ExternalPtrStmt::ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,

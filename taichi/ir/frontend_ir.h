@@ -90,6 +90,8 @@ class FrontendPrintStmt : public Stmt {
   TI_DEFINE_ACCEPT
 };
 
+// This statement does nothing but evaluates the expression.
+// The expression should have side effects otherwise the expression will do nothing.
 class FrontendEvalStmt : public Stmt {
  public:
   Expr expr;
@@ -312,6 +314,37 @@ class TernaryOpExpression : public Expression {
         std::make_unique<TernaryOpStmt>(type, op1->stmt, op2->stmt, op3->stmt));
     stmt = ctx->back_stmt();
   }
+};
+
+class ExternalFuncCallExpression : public Expression {
+ public:
+  void *func;
+  std::vector<Expr> args;
+  std::vector<Expr> outputs;
+
+  ExternalFuncCallExpression(void *func,
+                             const std::vector<Expr> &args,
+                             const std::vector<Expr> &outputs)
+      : func(func), args(args), outputs(outputs) {
+  }
+
+  std::string serialize() override {
+    std::string io = "inputs=";
+
+    for (auto &s : args) {
+      io += s.serialize();
+    }
+
+    io += ", outputs=";
+
+    for (auto &s : outputs) {
+      io += s.serialize();
+    }
+
+    return fmt::format("call {:x} ({})", (uint64)func, io);
+  }
+
+  void flatten(FlattenContext *ctx) override;
 };
 
 class ExternalTensorExpression : public Expression {

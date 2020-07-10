@@ -110,6 +110,20 @@ class IRPrinter : public IRVisitor {
           assert->text, extras);
   }
 
+  void visit(ExternalFuncCallStmt *stmt) override {
+    std::string extras = "inputs=";
+    for (auto &arg : stmt->arg_stmts) {
+      extras += ", ";
+      extras += arg->name();
+    }
+    extras += "outputs=";
+    for (auto &output : stmt->output_stmts) {
+      extras += ", ";
+      extras += output->name();
+    }
+    print("{} : func_call {:x}, \"{}\"{}", (std::size_t)stmt->func, extras);
+  }
+
   void visit(FrontendSNodeOpStmt *stmt) override {
     std::string extras = "[";
     for (int i = 0; i < (int)stmt->indices.size(); i++) {

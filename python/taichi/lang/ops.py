@@ -437,6 +437,9 @@ def append(l, indices, val):
                               Expr(val).ptr))
     return a
 
+def external_func_call(func_addr, args, outputs):
+    import taichi as ti
+    ti_core.insert_external_func_call(func_addr, make_expr_group(args), make_expr_group(outputs))
 
 def is_active(l, indices):
     return Expr(

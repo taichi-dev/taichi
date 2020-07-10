@@ -3,10 +3,10 @@
 Matrices
 ========
 
-- ``ti.Matrix`` is for small matrices (e.g. `3x3`) only. If you have `64x64` matrices, you should consider using a 2D tensor of scalars.
+- ``ti.Matrix`` is for small matrices (e.g. `3x3`) only. If you have `64x64` matrices, you should consider using a 2D array of scalars.
 - ``ti.Vector`` is the same as ``ti.Matrix``, except that it has only one column.
 - Differentiate element-wise product ``*`` and matrix product ``@``.
-- ``ti.Vector(n, dt=ti.f32)`` or ``ti.Matrix(n, m, dt=ti.f32)`` to create tensors of vectors/matrices.
+- ``ti.Vector(n, dt=ti.f32)`` or ``ti.Matrix(n, m, dt=ti.f32)`` to create arrays of vectors/matrices.
 - ``A.transpose()``
 - ``A.trace()``
 - ``A.inverse()`` (Taichi-scope only)
@@ -22,12 +22,12 @@ TODO: doc here better like Vector. WIP
 A matrix in Taichi can have two forms:
 
   - as a temporary local variable. An ``n by m`` matrix consists of ``n * m`` scalar values.
-  - as a an element of a global tensor. In this case, the tensor is an N-dimensional array of ``n by m`` matrices.
+  - as a an element of a global array. In this case, the array is an N-dimensional array of ``n by m`` matrices.
 
 Declaration
 -----------
 
-As global tensors of matrices
+As global arrays of matrices
 +++++++++++++++++++++++++++++
 
 .. function:: ti.Matrix(n, m, dt, shape = None, offset = None)
@@ -35,10 +35,10 @@ As global tensors of matrices
     :parameter n: (scalar) the number of rows in the matrix
     :parameter m: (scalar) the number of columns in the matrix
     :parameter dt: (DataType) data type of the components
-    :parameter shape: (optional, scalar or tuple) shape the tensor of vectors, see :ref:`tensor`
+    :parameter shape: (optional, scalar or tuple) shape the array of vectors, see :ref:`array`
     :parameter offset: (optional, scalar or tuple) see :ref:`offset`
 
-    For example, this creates a 5x4 tensor of 3x3 matrices:
+    For example, this creates a 5x4 array of 3x3 matrices:
     ::
 
         # Python-scope
@@ -46,7 +46,7 @@ As global tensors of matrices
 
 .. note::
 
-    In Python-scope, ``ti.var`` declares :ref:`scalar_tensor`, while ``ti.Matrix`` declares tensors of matrices.
+    In Python-scope, ``ti.var`` declares :ref:`scalar_array`, while ``ti.Matrix`` declares arrays of matrices.
 
 
 As a temporary local variable
@@ -110,13 +110,13 @@ As a temporary local variable
 Accessing components
 --------------------
 
-As global tensors of vectors
+As global arrays of vectors
 ++++++++++++++++++++++++++++
 .. attribute:: a[p, q, ...][i, j]
 
-    :parameter a: (tensor of matrices) the tensor of matrices
-    :parameter p: (scalar) index of the first tensor dimension
-    :parameter q: (scalar) index of the second tensor dimension
+    :parameter a: (array of matrices) the array of matrices
+    :parameter p: (scalar) index of the first array dimension
+    :parameter q: (scalar) index of the second array dimension
     :parameter i: (scalar) row index of the matrix
     :parameter j: (scalar) column index of the matrix
 
@@ -131,12 +131,12 @@ As global tensors of vectors
 
 .. note::
 
-    **Always** use two pair of square brackets to access scalar elements from tensors of matrices.
+    **Always** use two pair of square brackets to access scalar elements from arrays of matrices.
 
-     - The indices in the first pair of brackets locate the matrix inside the tensor of matrices;
+     - The indices in the first pair of brackets locate the matrix inside the array of matrices;
      - The indices in the second pair of brackets locate the scalar element inside the matrix.
 
-    For 0-D tensors of matrices, indices in the first pair of brackets should be ``[None]``.
+    For 0-D arrays of matrices, indices in the first pair of brackets should be ``[None]``.
 
 
 

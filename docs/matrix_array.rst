@@ -1,0 +1,54 @@
+.. _array:
+
+Arrays and matrices
+===================
+
+Arrays are global variables provided by Taichi. Arrays can be either sparse or dense.
+An element of a array can be either a scalar or a vector/matrix.
+
+.. note::
+
+    Although mathematically matrices are treated as 2D arrays, in Taichi, **array** and **matrix** are two completely different concepts.
+    Matrices can be used as array elements, so you can have arrays with each element being a matrix.
+
+Arrays of scalars
+-----------------
+* Every global variable is an N-dimensional array.
+
+  - Global ``scalars`` are treated as 0-D arrays of scalars.
+
+* Arrays are always accessed using indices
+
+   - E.g. ``x[i, j, k]`` if ``x`` is a scalar 3D array.
+   - Even when accessing 0-D array ``x``, use ``x[None] = 0`` instead of ``x = 0``. Please **always** use indexing to access entries in arrays.
+
+* Array values are initially zero.
+* Sparse arrays are initially inactive.
+* See :ref:`scalar_array` for more details.
+
+
+Arrays of matrices
+------------------
+Array elements can also be matrices.
+
+Suppose you have a ``128 x 64`` array called ``A``, each element containing a ``3 x 2`` matrix. To allocate a ``128 x 64`` array of ``3 x 2`` matrix, use the statement ``A = ti.Matrix(3, 2, dt=ti.f32, shape=(128, 64))``.
+
+* If you want to get the matrix of grid node ``i, j``, please use ``mat = A[i, j]``. ``mat`` is simply a ``3 x 2`` matrix
+* To get the element on the first row and second column of that matrix, use ``mat[0, 1]`` or ``A[i, j][0, 1]``.
+* As you may have noticed, there are **two** indexing operators ``[]`` when you load an matrix element from a global array of matrices: the first is for array indexing, the second for matrix indexing.
+* ``ti.Vector`` is simply an alias of ``ti.Matrix``.
+* See :ref:`matrix` for more on matrices.
+
+
+Matrix size
+-----------
+For performance reasons matrix operations will be unrolled, therefore we suggest using only small matrices.
+For example, ``2x1``, ``3x3``, ``4x4`` matrices are fine, yet ``32x6`` is probably too big as a matrix size.
+
+.. warning::
+
+  Due to the unrolling mechanisms, operating on large matrices (e.g. ``32x128``) can lead to very long compilation time and low performance.
+
+If you have a dimension that is too large (e.g. ``64``), it's better to declare a array of size ``64``.
+E.g., instead of declaring ``ti.Matrix(64, 32, dt=ti.f32, shape=(3, 2))``, declare ``ti.Matrix(3, 2, dt=ti.f32, shape=(64, 32))``.
+Try to put large dimensions to arrays instead of matrices.

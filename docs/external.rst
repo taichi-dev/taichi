@@ -3,9 +3,9 @@
 Interacting with external arrays
 ================================
 
-**External arrays** refer to ``numpy.ndarray`` or ``torch.Tensor``.
+**External arrays** refer to ``numpy.ndarray`` or ``torch.Array``.
 
-Conversion between Taichi tensors and external arrays
+Conversion between Taichi arrays and external arrays
 -----------------------------------------------------
 
 Use ``to_numpy``/``from_numpy``/``to_torch``/``from_torch``:
@@ -20,7 +20,7 @@ Use ``to_numpy``/``from_numpy``/``to_torch``/``from_torch``:
   n = 4
   m = 7
 
-  # Taichi tensors
+  # Taichi arrays
   val = ti.var(ti.i32, shape=(n, m))
   vec = ti.Vector(3, dt=ti.i32, shape=(n, m))
   mat = ti.Matrix(3, 4, dt=ti.i32, shape=(n, m))

@@ -95,19 +95,19 @@ Taichi programs run on either CPUs or GPUs. Initialize Taichi according to your 
 .. note::
 
   When used with the CUDA backend on Windows or ARM devices (e.g. NVIDIA Jetson),
-  Taichi by default allocates 1 GB GPU memory for tensor storage. You can override this behavior by initializing with
+  Taichi by default allocates 1 GB GPU memory for array storage. You can override this behavior by initializing with
   ``ti.init(arch=ti.cuda, device_memory_GB=3.4)`` to allocate ``3.4`` GB GPU memory, or
   ``ti.init(arch=ti.cuda, device_memory_fraction=0.3)`` to allocate ``30%`` of the total GPU memory.
 
   On other platforms, Taichi will make use of its on-demand memory allocator to adaptively allocate memory.
 
-(Sparse) tensors
+(Sparse) arrays
 ----------------
 
-Taichi is a data-oriented programming language where dense or spatially-sparse tensors are the first-class citizens.
-See :ref:`sparse` for more details on sparse tensors.
+Taichi is a data-oriented programming language where dense or spatially-sparse arrays are the first-class citizens.
+See :ref:`sparse` for more details on sparse arrays.
 
-In the code above, ``pixels = ti.var(dt=ti.f32, shape=(n * 2, n))`` allocates a 2D dense tensor named ``pixels`` of
+In the code above, ``pixels = ti.var(dt=ti.f32, shape=(n * 2, n))`` allocates a 2D dense array named ``pixels`` of
 size ``(640, 320)`` and element data type ``ti.f32`` (i.e. ``float`` in C).
 
 Functions and kernels
@@ -178,12 +178,12 @@ when used at the outermost scope. Range-for loops can be nested.
                 for i in range(10): # Serial :-(
                     ...
 
-**Struct-for loops** are particularly useful when iterating over (sparse) tensor elements.
+**Struct-for loops** are particularly useful when iterating over (sparse) array elements.
 In the code above, ``for i, j in pixels`` loops over all the pixel coordinates, i.e. ``(0, 0), (0, 1), (0, 2), ... , (0, 319), (1, 0), ..., (639, 319)``.
 
 .. note::
 
-    Struct-for is the key to :ref:`sparse` in Taichi, as it will only loop over active elements in a sparse tensor. In dense tensors, all elements are active.
+    Struct-for is the key to :ref:`sparse` in Taichi, as it will only loop over active elements in a sparse array. In dense arrays, all elements are active.
 
 .. warning::
 
@@ -236,7 +236,7 @@ Interacting with Python
 ------------------------
 
 Everything outside Taichi-scopes (``ti.func`` and ``ti.kernel``) is simply Python code.
-In Python-scopes, you can access Taichi tensor elements using plain indexing syntax. For example,
+In Python-scopes, you can access Taichi array elements using plain indexing syntax. For example,
 to access a single pixel of the rendered image in Python, simply use
 
 .. code-block:: python
@@ -246,7 +246,7 @@ to access a single pixel of the rendered image in Python, simply use
 
 
 You can also use your favorite Python packages (e.g. ``numpy``, ``pytorch``, ``matplotlib``) together with Taichi.
-Taichi provides helper functions such as ``from_numpy`` and ``to_torch`` for tensor format conversion:
+Taichi provides helper functions such as ``from_numpy`` and ``to_torch`` for array format conversion:
 
 .. code-block:: python
 

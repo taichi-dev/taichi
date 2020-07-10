@@ -1,7 +1,5 @@
-.. _scalar_tensor:
-
-Tensors of scalars
-==================
+Arrays of scalars
+=================
 
 
 Declaration
@@ -9,21 +7,21 @@ Declaration
 
 .. function:: ti.var(dt, shape = None, offset = None)
 
-    :parameter dt: (DataType) type of the tensor element
-    :parameter shape: (optional, scalar or tuple) the shape of tensor
+    :parameter dt: (DataType) type of the array element
+    :parameter shape: (optional, scalar or tuple) the shape of array
     :parameter offset: (optional, scalar or tuple) see :ref:`offset`
 
-    For example, this creates a *dense* tensor with four ``int32`` as elements:
+    For example, this creates a *dense* array with four ``int32`` as elements:
     ::
 
         x = ti.var(ti.i32, shape=4)
 
-    This creates a 4x3 *dense* tensor with ``float32`` elements:
+    This creates a 4x3 *dense* array with ``float32`` elements:
     ::
 
         x = ti.var(ti.f32, shape=(4, 3))
 
-    If shape is ``()`` (empty tuple), then a 0-D tensor (scalar) is created:
+    If shape is ``()`` (empty tuple), then a 0-D array (scalar) is created:
     ::
 
         x = ti.var(ti.f32, shape=())
@@ -42,7 +40,7 @@ Declaration
 
 .. note::
 
-    Not providing ``shape`` allows you to *place* the tensor in a layout other than the default *dense*, see :ref:`layout` for more details.
+    Not providing ``shape`` allows you to *place* the array in a layout other than the default *dense*, see :ref:`layout` for more details.
 
 
 .. warning::
@@ -63,34 +61,34 @@ Declaration
 
         func()
         y = ti.var(ti.f32, shape=())
-        # ERROR: cannot create tensor after kernel invocation!
+        # ERROR: cannot create array after kernel invocation!
 
     .. code-block:: python
 
         x = ti.var(ti.f32, shape=())
         x[None] = 1
         y = ti.var(ti.f32, shape=())
-        # ERROR: cannot create tensor after any tensor accesses from the Python-scope!
+        # ERROR: cannot create array after any array accesses from the Python-scope!
 
 
 Accessing components
 --------------------
 
-You can access an element of the Taichi tensor by an index or indices.
+You can access an element of the Taichi array by an index or indices.
 
 .. attribute:: a[p, q, ...]
 
-    :parameter a: (Tensor) the tensor of scalars
-    :parameter p: (scalar) index of the first tensor dimension
-    :parameter q: (scalar) index of the second tensor dimension
+    :parameter a: (Array) the array of scalars
+    :parameter p: (scalar) index of the first array dimension
+    :parameter q: (scalar) index of the second array dimension
     :return: (scalar) the element at ``[p, q, ...]``
 
-    This extracts the element value at index ``[3, 4]`` of tensor ``a``:
+    This extracts the element value at index ``[3, 4]`` of array ``a``:
     ::
 
         x = a[3, 4]
 
-    This sets the element value at index ``2`` of 1D tensor ``b`` to ``5``:
+    This sets the element value at index ``2`` of 1D array ``b`` to ``5``:
     ::
 
         b[2] = 5
@@ -101,7 +99,7 @@ You can access an element of the Taichi tensor by an index or indices.
 
     .. note ::
 
-        The returned value can also be ``Vector`` / ``Matrix`` if ``a`` is a tensor of vector / matrix, see :ref:`vector` for more details.
+        The returned value can also be ``Vector`` / ``Matrix`` if ``a`` is a array of vector / matrix, see :ref:`vector` for more details.
 
 
 Meta data
@@ -109,7 +107,7 @@ Meta data
 
 .. function:: a.dim()
 
-    :parameter a: (Tensor) the tensor
+    :parameter a: (Array) the array
     :return: (scalar) the length of ``a``
 
     ::
@@ -126,8 +124,8 @@ Meta data
 
 .. function:: a.shape()
 
-    :parameter a: (Tensor) the tensor
-    :return: (tuple) the shape of tensor ``a``
+    :parameter a: (Array) the array
+    :return: (tuple) the shape of array ``a``
 
     ::
 
@@ -143,7 +141,7 @@ Meta data
 
 .. function:: a.data_type()
 
-    :parameter a: (Tensor) the tensor
+    :parameter a: (Array) the array
     :return: (DataType) the data type of ``a``
 
     ::
@@ -154,7 +152,7 @@ Meta data
 
 .. function:: a.parent(n = 1)
 
-    :parameter a: (Tensor) the tensor
+    :parameter a: (Array) the array
     :parameter n: (optional, scalar) the number of parent steps, i.e. ``n=1`` for parent, ``n=2`` grandparent, etc.
     :return: (SNode) the parent of ``a``'s containing SNode
 

@@ -16,7 +16,7 @@ The Taichi Programming Language
 
    syntax
    type
-   tensor_matrix
+   matrix_array
    atomic
    external
 
@@ -25,7 +25,7 @@ The Taichi Programming Language
    :caption: API References
    :maxdepth: 3
 
-   scalar_tensor
+   scalar_array
    vector
    matrix
    snode

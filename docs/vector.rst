@@ -6,24 +6,24 @@ Vectors
 A vector in Taichi can have two forms:
 
   - as a temporary local variable. An ``n`` component vector consists of ``n`` scalar values.
-  - as an element of a global tensor. In this case, the tensor is an N-dimensional array of ``n`` component vectors.
+  - as an element of a global array. In this case, the array is an N-dimensional array of ``n`` component vectors.
 
-In fact, ``Vector`` is simply an alias of ``Matrix``, just with ``m = 1``. See :ref:`matrix` and :ref:`tensor` for more details.
+In fact, ``Vector`` is simply an alias of ``Matrix``, just with ``m = 1``. See :ref:`matrix` and :ref:`array` for more details.
 
 Declaration
 -----------
 
-As global tensors of vectors
+As global arrays of vectors
 ++++++++++++++++++++++++++++
 
 .. function:: ti.Vector(n, dt, shape = None, offset = None)
 
     :parameter n: (scalar) the number of components in the vector
     :parameter dt: (DataType) data type of the components
-    :parameter shape: (optional, scalar or tuple) shape the tensor of vectors, see :ref:`tensor`
+    :parameter shape: (optional, scalar or tuple) shape the array of vectors, see :ref:`array`
     :parameter offset: (optional, scalar or tuple) see :ref:`offset`
 
-    For example, this creates a 5x4 tensor of 3 component vectors:
+    For example, this creates a 5x4 array of 3 component vectors:
     ::
 
         # Python-scope
@@ -31,7 +31,7 @@ As global tensors of vectors
 
 .. note::
 
-    In Python-scope, ``ti.var`` declares :ref:`scalar_tensor`, while ``ti.Vector`` declares tensors of vectors.
+    In Python-scope, ``ti.var`` declares :ref:`scalar_array`, while ``ti.Vector`` declares arrays of vectors.
 
 
 As a temporary local variable
@@ -52,13 +52,13 @@ As a temporary local variable
 Accessing components
 --------------------
 
-As global tensors of vectors
+As global arrays of vectors
 ++++++++++++++++++++++++++++
 .. attribute:: a[p, q, ...][i]
 
-    :parameter a: (tensor of Vector) the vector
-    :parameter p: (scalar) index of the first tensor dimension
-    :parameter q: (scalar) index of the second tensor dimension
+    :parameter a: (array of Vector) the vector
+    :parameter p: (scalar) index of the first array dimension
+    :parameter q: (scalar) index of the second array dimension
     :parameter i: (scalar) index of the vector component
 
     This extracts the first component of vector ``a[6, 3]``:
@@ -72,12 +72,12 @@ As global tensors of vectors
 
 .. note::
 
-    **Always** use two pairs of square brackets to access scalar elements from tensors of vectors.
+    **Always** use two pairs of square brackets to access scalar elements from arrays of vectors.
 
-     - The indices in the first pair of brackets locate the vector inside the tensor of vectors;
+     - The indices in the first pair of brackets locate the vector inside the array of vectors;
      - The indices in the second pair of brackets locate the scalar element inside the vector.
 
-    For 0-D tensors of vectors, indices in the first pair of brackets should be ``[None]``.
+    For 0-D arrays of vectors, indices in the first pair of brackets should be ``[None]``.
 
 
 
@@ -193,7 +193,7 @@ Methods
 
 .. attribute:: a.n
 
-   :parameter a: (Vector or tensor of Vector)
+   :parameter a: (Vector or array of Vector)
    :return: (scalar) return the dimensionality of vector ``a``
 
     E.g.,

@@ -21,12 +21,12 @@ Let's consider the following simple kernel:
 .. code-block:: python
 
   @ti.kernel
-  def add(tensor: ti.template(), delta: ti.i32):
-    for i in tensor:
-      tensor[i] += delta
+  def add(array: ti.template(), delta: ti.i32):
+    for i in array:
+      array[i] += delta
 
 
-We allocate two 1D tensors to simplify discussion:
+We allocate two 1D arrays to simplify discussion:
 
 .. code-block:: python
 

@@ -20,10 +20,10 @@ See :ref:`layout` for more details. ``ti.root`` is the root node of the data str
 .. function:: snode.place(x, ...)
 
     :parameter snode: (SNode) where to place
-    :parameter x: (tensor) tensor(s) to be placed
+    :parameter x: (array) array(s) to be placed
     :return: (SNode) the ``snode`` itself
 
-    The following code places two 0-D tensors named ``x`` and ``y``:
+    The following code places two 0-D arrays named ``x`` and ``y``:
 
     ::
 
@@ -33,12 +33,12 @@ See :ref:`layout` for more details. ``ti.root`` is the root node of the data str
         assert x.snode() == y.snode()
 
 
-.. function:: tensor.shape()
+.. function:: array.shape()
 
-    :parameter tensor: (Tensor)
-    :return: (tuple of integers) the shape of tensor
+    :parameter array: (Array)
+    :return: (tuple of integers) the shape of array
 
-    Equivalent to ``tensor.snode().shape()``.
+    Equivalent to ``array.snode().shape()``.
 
     For example,
 
@@ -48,12 +48,12 @@ See :ref:`layout` for more details. ``ti.root`` is the root node of the data str
         x.shape() # returns (3, 5, 4)
 
 
-.. function:: tensor.dim()
+.. function:: array.dim()
 
-    :parameter tensor: (Tensor)
-    :return: (scalar) the dimensionality of the tensor
+    :parameter array: (Array)
+    :return: (scalar) the dimensionality of the array
 
-    Equivalent to ``len(tensor.shape())``.
+    Equivalent to ``len(array.shape())``.
 
     ::
 
@@ -61,10 +61,10 @@ See :ref:`layout` for more details. ``ti.root`` is the root node of the data str
         x.dim()  # 3
 
 
-.. function:: tensor.snode()
+.. function:: array.snode()
 
-    :parameter tensor: (Tensor)
-    :return: (SNode) the structual node where ``tensor`` is placed
+    :parameter array: (Array)
+    :return: (SNode) the structual node where ``array`` is placed
 
     ::
 
@@ -128,17 +128,17 @@ Node types
 
     :parameter snode: (SNode) parent node where the child is derived from
     :parameter indices: (Index or Indices) indices used for this node
-    :parameter shape: (scalar or tuple) shape the tensor of vectors
+    :parameter shape: (scalar or tuple) shape the array of vectors
     :return: (SNode) the derived child node
 
-    The following code places a 1-D tensor of size ``3``:
+    The following code places a 1-D array of size ``3``:
 
     ::
 
         x = ti.var(dt=ti.i32)
         ti.root.dense(ti.i, 3).place(x)
 
-    The following code places a 2-D tensor of shape ``(3, 4)``:
+    The following code places a 2-D array of shape ``(3, 4)``:
 
     ::
 
@@ -172,7 +172,7 @@ Node types
     ``dynamic`` nodes acts like ``std::vector`` in C++ or ``list`` in Python.
     Taichi's dynamic memory allocation system allocates its memory on the fly.
 
-    The following places a 1-D dynamic tensor of maximum size ``16``:
+    The following places a 1-D dynamic array of maximum size ``16``:
 
     ::
 
@@ -206,11 +206,11 @@ Working with ``dynamic`` SNodes
     Inserts ``val`` into the ``dynamic`` node with indices ``indices``.
 
 
-Taichi tensors like powers of two
+Taichi arrays like powers of two
 ---------------------------------
 
-Non-power-of-two tensor dimensions are promoted into powers of two and thus these tensors will occupy more virtual address space.
-For example, a (dense) tensor of size ``(18, 65)`` will be materialized as ``(32, 128)``.
+Non-power-of-two array dimensions are promoted into powers of two and thus these arrays will occupy more virtual address space.
+For example, a (dense) array of size ``(18, 65)`` will be materialized as ``(32, 128)``.
 
 
 Indices

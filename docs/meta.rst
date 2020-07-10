@@ -37,17 +37,17 @@ Dimensionality-independent programming using grouped indices
 
     @ti.kernel
     def array_op(x: ti.template(), y: ti.template()):
-        # If tensor x is 2D
+        # If array x is 2D
         for I in ti.grouped(x): # I is a vector of size x.dim() and data type i32
             y[I + ti.Vector([0, 1])] = I[0] + I[1]
         # is equivalent to
         for i, j in x:
             y[i, j + 1] = i + j
 
-Tensor size reflection
+Array size reflection
 ----------------------
 
-Sometimes it will be useful to get the dimensionality (``tensor.dim()``) and shape (``tensor.shape()``) of tensors.
+Sometimes it will be useful to get the dimensionality (``array.dim()``) and shape (``array.shape()``) of arrays.
 These functions can be used in both Taichi kernels and python scripts.
 
 .. code-block:: python
@@ -58,7 +58,7 @@ These functions can be used in both Taichi kernels and python scripts.
     for i in ti.static(range(x.dim())):
       print(x.shape()[i])
 
-For sparse tensors, the full domain shape will be returned.
+For sparse arrays, the full domain shape will be returned.
 
 Compile-time evaluations
 ------------------------
@@ -111,9 +111,9 @@ When to use for loops with ``ti.static``
 There are several reasons why ``ti.static`` for loops should be used.
 
  - Loop unrolling for performance.
- - Loop over vector/matrix elements. Indices into Taichi matrices must be a compile-time constant. Indexing into taichi tensors can be run-time variables. For example, if ``x`` is a 1-D tensor of 3D vector, accessed as ``x[tensor_index][matrix index]``. The first index can be variable, yet the second must be a constant.
+ - Loop over vector/matrix elements. Indices into Taichi matrices must be a compile-time constant. Indexing into taichi arrays can be run-time variables. For example, if ``x`` is a 1-D array of 3D vector, accessed as ``x[array_index][matrix index]``. The first index can be variable, yet the second must be a constant.
 
-For example, code for resetting this tensor of vectors should be
+For example, code for resetting this array of vectors should be
 
 .. code-block:: python
 
@@ -122,5 +122,5 @@ For example, code for resetting this tensor of vectors should be
      for i in x:
        for j in ti.static(range(3)):
          # The inner loop must be unrolled since j is a vector index instead
-         # of a global tensor index.
+         # of a global array index.
          x[i][j] = 0

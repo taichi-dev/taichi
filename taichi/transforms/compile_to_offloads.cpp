@@ -118,6 +118,9 @@ void compile_to_offloads(IRNode *ir,
     print("Make block local");
   }
 
+  irpass::remove_range_assumption(ir);
+  print("Remove range assumption");
+
   if (lower_global_access) {
     irpass::lower_access(ir, true);
     print("Access lowered");

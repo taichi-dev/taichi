@@ -2,7 +2,7 @@ import taichi as ti
 import os
 import ctypes
 
-ti.init(print_ir=True)
+ti.init(print_ir=True, print_kernel_llvm_ir=True)
 
 os.system("g++ a.cpp -o a.so -fPIC -shared")
 

@@ -78,7 +78,7 @@ class TaichiMain:
     def __call__(self):
         # Print help if no command provided
         if len(sys.argv[1:2]) == 0:
-            self.main_parser.print_help()
+            self.help()
             return 1
 
         # Parse the command
@@ -88,11 +88,41 @@ class TaichiMain:
             # TODO: do we really need this?
             if args.command.endswith(".py"):
                 TaichiMain._exec_python_file(args.command)
-            print(f"{args.command} is not a valid command!")
-            self.main_parser.print_help()
+            else:
+                print(f"{args.command} is not a valid command!")
+                self.help()
             return 1
 
         return getattr(self, args.command)(sys.argv[2:])
+
+    @register
+    def help(self, arguments: list = sys.argv[2:]):
+        """Show help message."""
+        parser = argparse.ArgumentParser(prog='ti help',
+                                         description=f"{self.help.__doc__}")
+        parser.add_argument(
+            '-s',
+            '--save',
+            required=False,
+            dest='save',
+            action='store_true',
+            help="Save source code to current directory instead of running it")
+        args = parser.parse_args(arguments)
+
+        self.main_parser.print_help()
+        uri = 'en/stable'
+        try:
+            import locale
+            if 'zh' in locale.getdefaultlocale()[0]:
+                uri = 'zh_CN/latest'
+        except:
+            pass
+        print('')
+        print(f'Docs:   https://taichi.rtfd.io/{uri}')
+        print(f'GitHub: https://github.com/taichi-dev/taichi')
+        print(f'Forum:  https://forum.taichi.graphics')
+        print('')
+        return 0
 
     def _usage(self) -> str:
         """Compose deterministic usage message based on registered_commands."""

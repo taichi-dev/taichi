@@ -128,9 +128,11 @@ class TypeCheck : public IRVisitor {
     }
     for (int i = 0; i < stmt->indices.size(); i++) {
       if (!is_integral(stmt->indices[i]->ret_type.data_type)) {
-        TI_WARN("[{}] Tensor index {} not integral, casting into int32 implicitly",
-                        stmt->name(), i);
-        stmt->indices[i] = insert_type_cast_before(stmt, stmt->indices[i], DataType::i32);
+        TI_WARN(
+            "[{}] Tensor index {} not integral, casting into int32 implicitly",
+            stmt->name(), i);
+        stmt->indices[i] =
+            insert_type_cast_before(stmt, stmt->indices[i], DataType::i32);
       }
       TI_ASSERT(stmt->indices[i]->ret_type.width == stmt->snodes.size());
     }

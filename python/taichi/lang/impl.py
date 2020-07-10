@@ -97,7 +97,8 @@ def subscript(value, *indices):
     if is_taichi_class(value):
         return value.subscript(*indices)
     else:
-        if isinstance(indices, tuple) and len(indices) == 1 and indices[0] is None:
+        if isinstance(indices,
+                      tuple) and len(indices) == 1 and indices[0] is None:
             indices = []
         indices_expr_group = make_expr_group(*indices)
         tensor_dim = int(value.ptr.get_attribute("dim"))

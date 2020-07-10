@@ -21,7 +21,6 @@ def test_indices():
     # the virtual first index exposed to the user comes second in memory layout.
 
 
-
 @ti.host_arch_only
 def test_float_as_index():
     a = ti.var(ti.f32, (8, 5))
@@ -37,5 +36,5 @@ def test_float_as_index():
 
     func()
 
-    assert a[6, 3] == 233 
+    assert a[6, 3] == 233
     assert a[3, 4] == 666

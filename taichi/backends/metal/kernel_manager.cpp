@@ -115,7 +115,7 @@ class CompiledMtlKernelBase {
 
   void launch_if_not_empty(BindBuffers buffers,
                            MTLCommandBuffer *command_buffer) {
-    const int num_threads = get_total_num_threads();
+    const int num_threads = kernel_attribs_.num_threads;
     if (num_threads == 0) {
       return;
     }
@@ -132,33 +132,26 @@ class CompiledMtlKernelBase {
       set_mtl_buffer(encoder.get(), b.first, /*offset=*/0, bi);
     }
 
-    const int num_threads_per_group = get_num_threads_per_group(num_threads);
-    const int num_groups =
-        ((num_threads + num_threads_per_group - 1) / num_threads_per_group);
-
+    const auto tgs = get_thread_grid_settings(num_threads);
     if (!is_jit_evalutor_) {
       ActionRecorder::get_instance().record(
           "launch_kernel",
           {ActionArg("kernel_name", kernel_attribs_.name),
-           ActionArg("num_groups", num_groups),
-           ActionArg("num_threads_per_group", num_threads_per_group)});
+           ActionArg("num_threadgroups", tgs.num_threadgroups),
+           ActionArg("num_threads_per_group", tgs.num_threads_per_group)});
     }
 
-    dispatch_threadgroups(encoder.get(), num_groups, num_threads_per_group);
+    dispatch_threadgroups(encoder.get(), tgs.num_threadgroups,
+                          tgs.num_threads_per_group);
     end_encoding(encoder.get());
   }
 
-  int get_total_num_threads() const {
-    int num_threads = kernel_attribs_.num_threads;
-    // TODO(k-ye): Surface |saturating_grid_dim| to ti.init() once #1396 is in.
-    // const int prescribed_grid_dim = config_->saturating_grid_dim;
-    // if (prescribed_grid_dim > 0) {
-    //   num_threads = std::min(num_threads, prescribed_grid_dim);
-    // }
-    return num_threads;
-  }
+  struct ThreadGridSettings {
+    int num_threads_per_group;
+    int num_threadgroups;
+  };
 
-  int get_num_threads_per_group(int total_num_threads) const {
+  ThreadGridSettings get_thread_grid_settings(int num_threads) {
     int num_threads_per_group =
         get_max_total_threads_per_threadgroup(pipeline_state_.get());
     // Sometimes it is helpful to limit the maximum GPU block dim for the
@@ -168,8 +161,18 @@ class CompiledMtlKernelBase {
       num_threads_per_group =
           std::min(num_threads_per_group, prescribed_block_dim);
     }
-    // Cap by |total_num_threads| in case this is a very small kernel.
-    return std::min(num_threads_per_group, total_num_threads);
+    // Cap by |num_threads| in case this is a very small kernel.
+    num_threads_per_group = std::min(num_threads_per_group, num_threads);
+
+    int num_threadgroups =
+        ((num_threads + num_threads_per_group - 1) / num_threads_per_group);
+    // TODO(k-ye): Make sure |saturating_grid_dim| is configurable in ti.init()
+    // before enabling this.
+    // const int prescribed_grid_dim = config_->saturating_grid_dim;
+    // if (prescribed_grid_dim > 0) {
+    //   num_threadgroups = std::min(num_threadgroups, prescribed_grid_dim);
+    // }
+    return {num_threads_per_group, num_threadgroups};
   }
 
   KernelAttributes kernel_attribs_;

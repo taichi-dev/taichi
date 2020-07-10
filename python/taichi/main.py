@@ -54,6 +54,8 @@ class TaichiMain:
         self.banner = f"\n{'*' * 43}\n**      Taichi Programming Language      **\n{'*' * 43}"
         print(self.banner)
 
+        print(self._get_friend_links())
+
         if 'TI_DEBUG' in os.environ:
             val = os.environ['TI_DEBUG']
             if val not in ['0', '1']:
@@ -78,7 +80,7 @@ class TaichiMain:
     def __call__(self):
         # Print help if no command provided
         if len(sys.argv[1:2]) == 0:
-            self.help()
+            self.main_parser.print_help()
             return 1
 
         # Parse the command
@@ -90,26 +92,12 @@ class TaichiMain:
                 TaichiMain._exec_python_file(args.command)
             else:
                 print(f"{args.command} is not a valid command!")
-                self.help()
+                self.main_parser.print_help()
             return 1
 
         return getattr(self, args.command)(sys.argv[2:])
 
-    @register
-    def help(self, arguments: list = sys.argv[2:]):
-        """Show help message."""
-        parser = argparse.ArgumentParser(prog='ti help',
-                                         description=f"{self.help.__doc__}")
-        parser.add_argument(
-            '-s',
-            '--save',
-            required=False,
-            dest='save',
-            action='store_true',
-            help="Save source code to current directory instead of running it")
-        args = parser.parse_args(arguments)
-
-        self.main_parser.print_help()
+    def _get_friend_links(self):
         uri = 'en/stable'
         try:
             import locale
@@ -117,12 +105,10 @@ class TaichiMain:
                 uri = 'zh_CN/latest'
         except:
             pass
-        print('')
-        print(f'Docs:   https://taichi.rtfd.io/{uri}')
-        print(f'GitHub: https://github.com/taichi-dev/taichi')
-        print(f'Forum:  https://forum.taichi.graphics')
-        print('')
-        return 0
+        return '\n' \
+               f'Docs:   https://taichi.rtfd.io/{uri}\n' \
+               f'GitHub: https://github.com/taichi-dev/taichi\n' \
+               f'Forum:  https://forum.taichi.graphics\n'
 
     def _usage(self) -> str:
         """Compose deterministic usage message based on registered_commands."""

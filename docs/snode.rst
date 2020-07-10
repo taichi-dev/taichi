@@ -207,7 +207,7 @@ Working with ``dynamic`` SNodes
 
 
 Taichi arrays like powers of two
----------------------------------
+--------------------------------
 
 Non-power-of-two array dimensions are promoted into powers of two and thus these arrays will occupy more virtual address space.
 For example, a (dense) array of size ``(18, 65)`` will be materialized as ``(32, 128)``.

@@ -8,7 +8,7 @@ This page is work in progress. Please check out `the DiffTaichi paper <https://a
 The `DiffTaichi repo <https://github.com/yuanming-hu/difftaichi>`_ contains 10 differentiable physical simulators built with Taichi differentiable programming.
 
 .. note::
-    Unlike tools such as ArrayFlow where **immutable** output buffers are generated,
+    Unlike tools such as TensorFlow where **immutable** output buffers are generated,
     the **imperative** programming paradigm adopted in Taichi allows programmers to freely modify global arrays.
     To make automatic differentiation well-defined under this setting,
     we make the following assumption on Taichi programs for differentiable programming:

@@ -103,7 +103,7 @@ Linux issues
 - If Taichi crashes and reports ``libtinfo.so.5 not found``: Please install ``libtinfo5`` for Ubuntu or ``ncurses5-compat-libs`` (AUR) for Arch Linux.
 - If Taichi crashes and reports ``/usr/lib/libstdc++.so.6: version `CXXABI_1.3.11' not found``:
 
-  You might be using Ubuntu 16.04, please try the solution in `this thread <https://github.com/arrayflow/serving/issues/819#issuecomment-377776784>`_:
+  You might be using Ubuntu 16.04, please try the solution in `this thread <https://github.com/tensorflow/serving/issues/819#issuecomment-377776784>`_:
 
   .. code-block:: bash
 

@@ -6,7 +6,7 @@ Interacting with external arrays
 **External arrays** refer to ``numpy.ndarray`` or ``torch.Array``.
 
 Conversion between Taichi arrays and external arrays
------------------------------------------------------
+----------------------------------------------------
 
 Use ``to_numpy``/``from_numpy``/``to_torch``/``from_torch``:
 

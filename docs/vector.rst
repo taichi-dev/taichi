@@ -14,7 +14,7 @@ Declaration
 -----------
 
 As global arrays of vectors
-++++++++++++++++++++++++++++
++++++++++++++++++++++++++++
 
 .. function:: ti.Vector(n, dt, shape = None, offset = None)
 

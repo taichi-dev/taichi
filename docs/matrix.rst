@@ -6,7 +6,7 @@ Matrices
 - ``ti.Matrix`` is for small matrices (e.g. `3x3`) only. If you have `64x64` matrices, you should consider using a 2D array of scalars.
 - ``ti.Vector`` is the same as ``ti.Matrix``, except that it has only one column.
 - Differentiate element-wise product ``*`` and matrix product ``@``.
-- ``ti.Vector(n, dt=ti.f32)`` or ``ti.Matrix(n, m, dt=ti.f32)`` to create arrays of vectors/matrices.
+- ``ti.Vector(n, dt=ti.f32)`` or ``ti.Matrix(n, m, dt=ti.f32)`` to create an array of vectors/matrices.
 - ``A.transpose()``
 - ``A.trace()``
 - ``A.inverse()`` (Taichi-scope only)
@@ -28,7 +28,7 @@ Declaration
 -----------
 
 As global arrays of matrices
-+++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++
 
 .. function:: ti.Matrix(n, m, dt, shape = None, offset = None)
 

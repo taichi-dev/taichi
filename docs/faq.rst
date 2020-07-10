@@ -20,7 +20,11 @@ Frequently asked questions
         for i in range(100):  # This loop will not be parallelized
             ...
 
-**Q:** Can Taichi co-operate with **other Python packages** like ``matplotlib`` or ``PILImage``?
+**Q:** What's the most convinent way to load images / textures into Taichi tensors?
+
+**A:** Simply use ``tensor.from_numpy(ti.imread('filename.png'))``.
+
+**Q:** Can Taichi co-operate with **other Python packages** like ``matplotlib``?
 
 **A:** Yes, as long as that *package* provides an interface with ``numpy``, see :ref:`other_python_packages`.
 

@@ -38,7 +38,7 @@ Installing Dependencies
   * On other Linux distributions, please search `this site <pkgs.org>`_ for clang version >= 7.
 
 
-- Make sure you have LLVM 8.0.1/10.0.0. Note that Taichi uses a **customized LLVM** so the pre-built binaries from the LLVM official website or other sources probably won't work.
+- Make sure you have LLVM 10.0.0. Note that Taichi uses a **customized LLVM** so the pre-built binaries from the LLVM official website or other sources probably won't work.
   Here we provide LLVM binaries customized for Taichi, which may or may not work depending on your system environment:
 
   * `LLVM 10.0.0 for Linux <https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-linux.zip>`_
@@ -69,7 +69,7 @@ Installing Dependencies
         sudo make install
 
         # Check your LLVM installation
-        llvm-config --version  # You should get 8.0.1 or 10.0.0
+        llvm-config --version  # You should get 10.0.0
 
   * On Windows:
 

@@ -1259,6 +1259,7 @@ void full_simplify(IRNode *root, bool after_lower_access, Kernel *kernel) {
       if ((first_iteration || modified) &&
           cfg_optimization(root, after_lower_access))
         modified = true;
+      first_iteration = false;
       if (!modified)
         break;
     }

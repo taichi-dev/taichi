@@ -455,6 +455,20 @@ void ControlFlowGraph::print_graph_structure() const {
       }
       node_info += fmt::format("; next={{{}}}", fmt::join(indices, ", "));
     }
+    if (!nodes[i]->reach_in.empty()) {
+      std::vector<std::string> indices;
+      for (auto stmt : nodes[i]->reach_in) {
+        indices.push_back(stmt->name());
+      }
+      node_info += fmt::format("; reach_in={{{}}}", fmt::join(indices, ", "));
+    }
+    if (!nodes[i]->reach_out.empty()) {
+      std::vector<std::string> indices;
+      for (auto stmt : nodes[i]->reach_out) {
+        indices.push_back(stmt->name());
+      }
+      node_info += fmt::format("; reach_out={{{}}}", fmt::join(indices, ", "));
+    }
     std::cout << node_info << std::endl;
   }
 }
@@ -501,11 +515,16 @@ void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
     auto old_out = std::move(now->reach_out);
     now->reach_out = now->reach_gen;
     for (auto stmt : now->reach_in) {
-      for (auto store_ptr : irpass::analysis::get_store_destination(stmt)) {
+      auto store_ptrs = irpass::analysis::get_store_destination(stmt);
+      bool not_killed = store_ptrs.empty();  // for the case of a global pointer
+      for (auto store_ptr : store_ptrs) {
         if (!now->reach_kill_variable(store_ptr)) {
-          now->reach_out.insert(stmt);
+          not_killed = true;
           break;
         }
+      }
+      if (not_killed) {
+        now->reach_out.insert(stmt);
       }
     }
     if (now->reach_out != old_out) {

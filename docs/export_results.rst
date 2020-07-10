@@ -1,3 +1,5 @@
+.. _export_results:
+
 Export your results
 ===================
 Taichi has functions that help you **export visual results to images or videos**. This tutorial demonstrates how to use them step by step.
@@ -173,6 +175,8 @@ Install ``ffmpeg`` on OS X
 .. code-block:: shell
 
     brew install ffmpeg
+
+.. _export_ply_files:
 
 Export PLY files
 ----------------

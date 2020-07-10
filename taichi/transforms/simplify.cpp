@@ -1229,9 +1229,10 @@ bool simplify(IRNode *root, Kernel *kernel) {
   return modified;
 }
 
-void full_simplify(IRNode *root, Kernel *kernel) {
+void full_simplify(IRNode *root, bool after_lower_access, Kernel *kernel) {
   TI_AUTO_PROF;
   if (root->get_config().advanced_optimization) {
+    bool first_iteration = true;
     while (true) {
       bool modified = false;
       extract_constant(root);
@@ -1251,7 +1252,12 @@ void full_simplify(IRNode *root, Kernel *kernel) {
         modified = true;
       if (die(root))
         modified = true;
-      if (whole_kernel_cse(root))
+      // Don't do these time-consuming optimization passes again if the IR is
+      // not modified.
+      if ((first_iteration || modified) && whole_kernel_cse(root))
+        modified = true;
+      if ((first_iteration || modified) &&
+          cfg_optimization(root, after_lower_access))
         modified = true;
       if (!modified)
         break;

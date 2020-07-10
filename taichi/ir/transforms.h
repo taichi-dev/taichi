@@ -19,14 +19,16 @@ void re_id(IRNode *root);
 void flag_access(IRNode *root);
 bool die(IRNode *root);
 bool simplify(IRNode *root, Kernel *kernel = nullptr);
-void cfg_optimization(IRNode *root, bool after_lower_access);
+bool cfg_optimization(IRNode *root, bool after_lower_access);
 bool alg_simp(IRNode *root);
 bool binary_op_simplify(IRNode *root);
 bool whole_kernel_cse(IRNode *root);
 void variable_optimization(IRNode *root, bool after_lower_access);
 void extract_constant(IRNode *root);
 bool unreachable_code_elimination(IRNode *root);
-void full_simplify(IRNode *root, Kernel *kernel = nullptr);
+void full_simplify(IRNode *root,
+                   bool after_lower_access,
+                   Kernel *kernel = nullptr);
 void print(IRNode *root, std::string *output = nullptr);
 void lower(IRNode *root);
 void typecheck(IRNode *root);

@@ -97,11 +97,9 @@ def subscript(value, *indices):
     if is_taichi_class(value):
         return value.subscript(*indices)
     else:
-        if isinstance(indices,
-                      tuple) and len(indices) == 1 and indices[0] is None:
-            indices_expr_group = make_expr_group()
-        else:
-            indices_expr_group = make_expr_group(*indices)
+        if isinstance(indices, tuple) and len(indices) == 1 and indices[0] is None:
+            indices = []
+        indices_expr_group = make_expr_group(*indices)
         tensor_dim = int(value.ptr.get_attribute("dim"))
         index_dim = indices_expr_group.size()
         assert tensor_dim == index_dim, f'Tensor with dim {tensor_dim} accessed with indices of dim {index_dim}'

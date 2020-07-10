@@ -127,13 +127,11 @@ class TypeCheck : public IRVisitor {
       }
     }
     for (int i = 0; i < stmt->indices.size(); i++) {
-      TI_ASSERT_INFO(
-          is_integral(stmt->indices[i]->ret_type.data_type),
-          "[{}] Taichi tensors must be accessed with integral indices (e.g., "
-          "i32/i64). It seems that you have used something else as "
-          "an index. You can cast a float-pointer number to an integer using "
-          "int(). Also note that ti.floor(ti.f32) returns f32.",
-          stmt->name());
+      if (!is_integral(stmt->indices[i]->ret_type.data_type)) {
+        TI_WARN("[{}] Tensor accessed with non-integral indices (e.g., "
+                "i32/i64), casting into i32 by default...", stmt->name());
+        stmt->indices[i] = insert_type_cast_before(stmt, stmt->indices[i], DataType::i32);
+      }
       TI_ASSERT(stmt->indices[i]->ret_type.width == stmt->snodes.size());
     }
   }

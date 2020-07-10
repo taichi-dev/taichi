@@ -52,15 +52,15 @@ std::vector<T *> find_global_reduction_destinations(
     auto related_global_mem_ops =
         irpass::analysis::gather_statements(offload, [&](Stmt *stmt) {
           if (auto load = stmt->cast<GlobalLoadStmt>()) {
-            if (maybe_same_address(load->ptr, dest)) {
+            if (irpass::analysis::maybe_same_address(load->ptr, dest)) {
               return true;
             }
           } else if (auto store = stmt->cast<GlobalStoreStmt>()) {
-            if (maybe_same_address(store->ptr, dest)) {
+            if (irpass::analysis::maybe_same_address(store->ptr, dest)) {
               return true;
             }
           } else if (auto atomic = stmt->cast<AtomicOpStmt>()) {
-            if (maybe_same_address(atomic->dest, dest)) {
+            if (irpass::analysis::maybe_same_address(atomic->dest, dest)) {
               return !is_atomic_op_linear(atomic->op_type);
             }
           }
@@ -68,7 +68,7 @@ std::vector<T *> find_global_reduction_destinations(
             // Make sure the values of related atomic add operation are not
             // used.
             if (auto atomic = op->cast<AtomicOpStmt>()) {
-              if (maybe_same_address(atomic->dest, dest)) {
+              if (irpass::analysis::maybe_same_address(atomic->dest, dest)) {
                 return true;
               }
             }

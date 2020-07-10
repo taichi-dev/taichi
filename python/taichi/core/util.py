@@ -57,7 +57,7 @@ def locale_encode(s):
     try:
         import locale
         return s.encode(locale.getdefaultlocale()[1])
-    except:
+    except TypeError:
         return s.encode('utf8')
 
 
@@ -248,10 +248,14 @@ def build():
     os.chdir(tmp_cwd)
 
 
+def check_exists(src):
+    if not os.path.exists(src):
+        raise FileNotFoundError(f'File "{src}" not exist. Installation corrupted or build incomplete?')
+
+
 def prepare_sandbox(src):
     global g_tmp_dir
-    if not os.path.exists(src):
-        raise FileNotFoundError(f'File {src} does not exist.')
+    check_exists(src)
     import atexit
     import shutil
     from tempfile import mkdtemp
@@ -299,7 +303,7 @@ else:
         else:
             os.environ['LD_LIBRARY_PATH'] = '/usr/lib64/'
         lib_path = os.path.join(bin_dir, 'libtaichi_core.so')
-        assert os.path.exists(lib_path)
+        check_exists(lib_path)
         tmp_cwd = os.getcwd()
         tmp_dir = prepare_sandbox(lib_path)
         os.chdir(tmp_dir)
@@ -382,7 +386,7 @@ def get_dll_name(name):
     elif get_os_name() == 'win':
         return 'taichi_%s.dll' % name
     else:
-        assert False, "Unknown OS"
+        raise Exception(f"Unknown OS: {get_os_name()}")
 
 
 def load_module(name, verbose=True):

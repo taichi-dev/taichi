@@ -442,17 +442,14 @@ def ti_min(*args):
 
 
 def ti_any(a):
-    _taichi_skip_traceback = 1
     return a.any()
 
 
 def ti_all(a):
-    _taichi_skip_traceback = 1
     return a.all()
 
 
 def append(l, indices, val):
-    _taichi_skip_traceback = 1
     import taichi as ti
     a = ti.expr_init(
         ti_core.insert_append(l.snode().ptr, make_expr_group(indices),
@@ -461,21 +458,17 @@ def append(l, indices, val):
 
 
 def is_active(l, indices):
-    _taichi_skip_traceback = 1
     return Expr(
         ti_core.insert_is_active(l.snode().ptr, make_expr_group(indices)))
 
 
 def activate(l, indices):
-    _taichi_skip_traceback = 1
     ti_core.insert_activate(l.snode().ptr, make_expr_group(indices))
 
 
 def deactivate(l, indices):
-    _taichi_skip_traceback = 1
     ti_core.insert_deactivate(l.snode().ptr, make_expr_group(indices))
 
 
 def length(l, indices):
-    _taichi_skip_traceback = 1
     return Expr(ti_core.insert_len(l.snode().ptr, make_expr_group(indices)))

@@ -179,7 +179,6 @@ def init(arch=None,
     # compiler configuations (ti.cfg):
     env_comp.add('debug')
     env_comp.add('print_ir')
-    env_comp.add('print_kernel_llvm_ir')
     env_comp.add('verbose')
     env_comp.add('fast_math')
     env_comp.add('async')

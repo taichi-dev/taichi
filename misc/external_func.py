@@ -8,6 +8,7 @@ so = ctypes.CDLL("./a.so")
 func = so.add
 func.argtypes = [ctypes.c_float, ctypes.c_float]
 func.restype = ctypes.c_float
+print(dir(func))
 
 print(func(1, 2))
 

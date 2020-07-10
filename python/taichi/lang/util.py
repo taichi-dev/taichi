@@ -1,4 +1,5 @@
 from .core import taichi_lang_core
+from .error import no_traceback
 import numpy as np
 import os
 

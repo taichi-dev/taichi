@@ -10,28 +10,30 @@ FileSequenceWriter::FileSequenceWriter(std::string filename_template,
     : counter(0), filename_template(filename_template), file_type(file_type) {
 }
 
-void FileSequenceWriter::write(llvm::Module *module) {
+std::string FileSequenceWriter::write(llvm::Module *module) {
   std::string str;
   llvm::raw_string_ostream ros(str);
   module->print(ros, nullptr);
-  write(str);
+  return write(str);
 }
 
-void FileSequenceWriter::write(const std::string &str) {
-  create_new_file() << str;
+std::string FileSequenceWriter::write(const std::string &str) {
+  auto [ofs, fn] = create_new_file();
+  ofs << str;
+  return fn;
 }
 
-void FileSequenceWriter::write(IRNode *irnode) {
+std::string FileSequenceWriter::write(IRNode *irnode) {
   std::string content;
   irpass::print(irnode, &content);
-  write(content);
+  return write(content);
 }
 
-std::ofstream FileSequenceWriter::create_new_file() {
+std::pair<std::ofstream, std::string> FileSequenceWriter::create_new_file() {
   auto fn = fmt::format(filename_template, counter);
   TI_INFO("Saving {} to {}", file_type, fn);
   counter++;
-  return std::ofstream(fn);
+  return {std::ofstream(fn), fn};
 }
 
 TLANG_NAMESPACE_END

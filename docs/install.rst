@@ -104,9 +104,9 @@ Linux issues
 
 - If Taichi crashes and reports ``libtinfo.so.5 not found``:
 
-    * On Ubuntu, execute ``sudo apt install libtinfo-dev``.
+  * On Ubuntu, execute ``sudo apt install libtinfo-dev``.
 
-    * On Arch Linux, first edit ``/etc/pacman.conf``, and append these lines:
+  * On Arch Linux, first edit ``/etc/pacman.conf``, and append these lines:
       
       .. code-block:: none
     
@@ -114,6 +114,16 @@ Linux issues
         Server = https://mirrors.tuna.tsinghua.edu.cn/archlinuxcn/$arch
       
       Then execute ``sudo pacman -Syy ncurses5-compat-libs`.
+
+- If Taichi crashes and reports ``/usr/lib/libstdc++.so.6: version `CXXABI_1.3.11' not found``:
+
+  You might be using Ubuntu 16.04, please try the solution in `this thread <https://github.com/tensorflow/serving/issues/819#issuecomment-377776784>`_:
+
+  .. code-block:: bash
+
+      sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
+      sudo apt-get update
+      sudo apt-get install libstdc++6
 
 
 Other issues

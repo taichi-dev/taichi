@@ -79,7 +79,7 @@ def writeback_binary(foo):
     @functools.wraps(foo)
     def wrapped(a, b):
         if ti.is_taichi_class(a):
-            return a.element_wise_binary(imp_foo, b)
+            return a.element_wise_writeback_binary(imp_foo, b)
         elif ti.is_taichi_class(b):
             raise SyntaxError(
                 f'cannot augassign taichi class {type(b)} to scalar expr')

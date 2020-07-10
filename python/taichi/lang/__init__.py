@@ -1,4 +1,5 @@
 from .impl import *
+from .error import enable_excepthook
 from .util import deprecated
 from .matrix import Matrix, Vector
 from .transformer import TaichiSyntaxError
@@ -8,6 +9,20 @@ import functools
 import os
 
 core = taichi_lang_core
+
+
+def record_action_hint(s):
+    core.record_action_hint(s)
+
+
+def begin_recording(fn):
+    core.begin_recording(fn)
+
+
+def stop_recording():
+    core.stop_recording()
+
+
 runtime = get_runtime()
 
 i = indices(0)
@@ -184,12 +199,19 @@ def init(arch=None,
     ti.get_runtime().create_program()
 
 
-def cache_shared(v):
-    taichi_lang_core.cache(0, v.ptr)
+def cache_shared(*args):
+    for v in args:
+        taichi_lang_core.cache(0, v.ptr)
 
 
 def cache_read_only(v):
     taichi_lang_core.cache(1, v.ptr)
+
+
+def assume_in_range(val, base, low, high):
+    return taichi_lang_core.expr_assume_in_range(
+        Expr(val).ptr,
+        Expr(base).ptr, low, high)
 
 
 parallelize = core.parallelize

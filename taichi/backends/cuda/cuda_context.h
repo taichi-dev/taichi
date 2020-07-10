@@ -42,8 +42,8 @@ class CUDAContext {
   void launch(void *func,
               const std::string &task_name,
               std::vector<void *> arg_pointers,
-              unsigned gridDim,
-              unsigned blockDim,
+              unsigned grid_dim,
+              unsigned block_dim,
               std::size_t shared_mem_bytes);
 
   void set_profiler(KernelProfilerBase *profiler) {

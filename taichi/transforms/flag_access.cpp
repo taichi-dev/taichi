@@ -40,12 +40,7 @@ class FlagAccess : public IRVisitor {
   }
 
   void visit(OffloadedStmt *stmt) {
-    if (stmt->prologue)
-      stmt->prologue->accept(this);
-    if (stmt->body)
-      stmt->body->accept(this);
-    if (stmt->epilogue)
-      stmt->epilogue->accept(this);
+    stmt->all_blocks_accept(this);
   }
 
   // Assuming pointers will be visited before global load/st

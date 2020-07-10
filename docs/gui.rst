@@ -165,19 +165,6 @@ Event processing
 ----------------
 
 Every event have a key and type.
-*Event key* is the key that you pressed on keyboard or mouse, can be one of:
-
-::
-
-  ti.GUI.ESCAPE  # Esc
-  ti.GUI.SHIFT   # Shift
-  ti.GUI.LEFT    # Left Arrow
-  'a'            # we use lowercase for alphabet
-  'b'
-  ...
-  ti.GUI.LMB     # Left Mouse Button
-  ti.GUI.RMB     # Right Mouse Button
-  ti.GUI.WHEEL   # Mouse Wheel Scrolling
 
 *Event type* is the type of event, for now, there are just three type of event:
 
@@ -186,6 +173,24 @@ Every event have a key and type.
   ti.GUI.RELEASE  # key up or mouse button up
   ti.GUI.PRESS    # key down or mouse button down
   ti.GUI.MOTION   # mouse motion or mouse wheel
+
+*Event key* is the key that you pressed on keyboard or mouse, can be one of:
+
+::
+
+  # for ti.GUI.PRESS and ti.GUI.RELEASE event:
+  ti.GUI.ESCAPE  # Esc
+  ti.GUI.SHIFT   # Shift
+  ti.GUI.LEFT    # Left Arrow
+  'a'            # we use lowercase for alphabet
+  'b'
+  ...
+  ti.GUI.LMB     # Left Mouse Button
+  ti.GUI.RMB     # Right Mouse Button
+
+  # for ti.GUI.MOTION event:
+  ti.GUI.MOVE    # Mouse Moved
+  ti.GUI.WHEEL   # Mouse Wheel Scrolling
 
 A *event filter* is a list combined of *key*, *type* and *(type, key)* tuple, e.g.:
 
@@ -312,6 +317,12 @@ A *event filter* is a list combined of *key*, *type* and *(type, key)* tuple, e.
 
 Image I/O
 ---------
+
+.. function:: gui.get_image()
+
+    :return a ``np.ndarray`` which is the current image shown on the GUI.
+
+    Get the RGBA shown image from the current GUI system which has four channels.
 
 .. function:: ti.imwrite(img, filename)
 

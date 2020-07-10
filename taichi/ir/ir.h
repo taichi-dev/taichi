@@ -33,6 +33,7 @@ using ScratchPadOptions = std::vector<std::pair<int, SNode *>>;
 
 IRBuilder &current_ast_builder();
 
+bool definitely_same_address(Stmt *var1, Stmt *var2);
 bool maybe_same_address(Stmt *var1, Stmt *var2);
 
 struct VectorType {
@@ -1119,8 +1120,39 @@ class PrintStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
+  template <typename... Args>
+  PrintStmt(Stmt *t, Args &&... args)
+      : contents(make_entries(t, std::forward<Args>(args)...)) {
+    TI_STMT_REG_FIELDS;
+  }
+
+  template <typename... Args>
+  PrintStmt(const std::string &str, Args &&... args)
+      : contents(make_entries(str, std::forward<Args>(args)...)) {
+    TI_STMT_REG_FIELDS;
+  }
+
   TI_STMT_DEF_FIELDS(ret_type, contents);
   TI_DEFINE_ACCEPT_AND_CLONE
+
+ private:
+  static void make_entries_helper(std::vector<PrintStmt::EntryType> &entries) {
+  }
+
+  template <typename T, typename... Args>
+  static void make_entries_helper(std::vector<PrintStmt::EntryType> &entries,
+                                  T &&t,
+                                  Args &&... values) {
+    entries.push_back(EntryType{t});
+    make_entries_helper(entries, std::forward<Args>(values)...);
+  }
+
+  template <typename... Args>
+  static std::vector<EntryType> make_entries(Args &&... values) {
+    std::vector<EntryType> ret;
+    make_entries_helper(ret, std::forward<Args>(values)...);
+    return ret;
+  }
 };
 
 class ConstStmt : public Stmt {

@@ -3,8 +3,9 @@ from . import impl
 import copy
 import numbers
 import numpy as np
-from .util import taichi_scope, python_scope, deprecated, to_numpy_type, to_pytorch_type, in_python_scope
+from .util import taichi_scope, python_scope, deprecated, to_numpy_type, to_pytorch_type, in_python_scope, is_taichi_class
 from .common_ops import TaichiOperations
+from .exception import TaichiSyntaxError
 from collections.abc import Iterable
 import warnings
 
@@ -27,6 +28,7 @@ class Matrix(TaichiOperations):
                  rows=None,
                  cols=None):
         self.grad = None
+
         # construct from rows or cols
         if rows is not None or cols is not None:
             warnings.warn(
@@ -74,6 +76,7 @@ class Matrix(TaichiOperations):
             else:
                 self.m = 1
             self.entries = [x for row in mat for x in row]
+
         # construct global matrix
         else:
             self.entries = []
@@ -89,42 +92,54 @@ class Matrix(TaichiOperations):
                     self.entries.append(impl.var(dt))
                 self.grad = self.make_grad()
 
-        if layout is not None:
-            assert shape is not None, 'layout is useless without shape'
-        if shape is not None:
-            if isinstance(shape, numbers.Number):
-                shape = (shape, )
-            if isinstance(offset, numbers.Number):
-                offset = (offset, )
+            if layout is not None:
+                assert shape is not None, 'layout is useless without shape'
+            if shape is not None:
+                if isinstance(shape, numbers.Number):
+                    shape = (shape, )
+                if isinstance(offset, numbers.Number):
+                    offset = (offset, )
 
-            if offset is not None:
-                assert len(shape) == len(
-                    offset
-                ), f'The dimensionality of shape and offset must be the same  (f{len(shape)} != f{len(offset)})'
+                if offset is not None:
+                    assert len(shape) == len(
+                        offset
+                    ), f'The dimensionality of shape and offset must be the same  ({len(shape)} != {len(offset)})'
 
-            import taichi as ti
-            if layout is None:
-                layout = ti.AOS
+                import taichi as ti
+                if layout is None:
+                    layout = ti.AOS
 
-            dim = len(shape)
-            if layout.soa:
-                for i, e in enumerate(self.entries):
-                    ti.root.dense(ti.index_nd(dim), shape).place(e,
-                                                                 offset=offset)
-                    if needs_grad:
-                        ti.root.dense(ti.index_nd(dim),
-                                      shape).place(e.grad, offset=offset)
-            else:
-                var_list = []
-                for i, e in enumerate(self.entries):
-                    var_list.append(e)
-                if needs_grad:
+                dim = len(shape)
+                if layout.soa:
                     for i, e in enumerate(self.entries):
-                        var_list.append(e.grad)
-                ti.root.dense(ti.index_nd(dim), shape).place(*tuple(var_list),
-                                                             offset=offset)
-        else:
-            assert offset is None, f"shape cannot be None when offset is being set"
+                        ti.root.dense(ti.index_nd(dim),
+                                      shape).place(e, offset=offset)
+                        if needs_grad:
+                            ti.root.dense(ti.index_nd(dim),
+                                          shape).place(e.grad, offset=offset)
+                else:
+                    var_list = []
+                    for i, e in enumerate(self.entries):
+                        var_list.append(e)
+                    if needs_grad:
+                        for i, e in enumerate(self.entries):
+                            var_list.append(e.grad)
+                    ti.root.dense(ti.index_nd(dim),
+                                  shape).place(*tuple(var_list), offset=offset)
+            else:
+                assert offset is None, f"shape cannot be None when offset is being set"
+
+        if self.n * self.m > 32:
+            warnings.warn(
+                f'Taichi matrices/vectors with {self.n}x{self.m} > 32 entries are not suggested.'
+                ' Matrices/vectors will be automatically unrolled at compile-time for performance.'
+                ' So the compilation time could be extremely long if the matrix size is too big.'
+                ' You may use a tensor to store a large matrix like this, e.g.:\n'
+                f'    x = ti.var(ti.f32, ({self.n}, {self.m})).\n'
+                ' See https://taichi.readthedocs.io/en/stable/tensor_matrix.html#matrix-size'
+                ' for more details.',
+                UserWarning,
+                stacklevel=2)
 
     def is_global(self):
         results = [False for _ in self.entries]
@@ -140,8 +155,23 @@ class Matrix(TaichiOperations):
         ret = self.empty_copy()
         if isinstance(other, (list, tuple)):
             other = Matrix(other)
+        if isinstance(other, Matrix):
+            assert self.m == other.m and self.n == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
+            for i in range(self.n * self.m):
+                ret.entries[i] = foo(self.entries[i], other.entries[i])
+        else:  # assumed to be scalar
+            for i in range(self.n * self.m):
+                ret.entries[i] = foo(self.entries[i], other)
+        return ret
+
+    def element_wise_writeback_binary(self, foo, other):
+        ret = self.empty_copy()
+        if isinstance(other, (list, tuple)):
+            other = Matrix(other)
+        if is_taichi_class(other):
+            other = other.variable()
         if foo.__name__ == 'assign' and not isinstance(other, Matrix):
-            raise SyntaxError(
+            raise TaichiSyntaxError(
                 'cannot assign scalar expr to '
                 f'taichi class {type(self)}, maybe you want to use `a.fill(b)` instead?'
             )
@@ -181,9 +211,16 @@ class Matrix(TaichiOperations):
         assert 0 <= args[1] < self.m
         # TODO(#1004): See if it's possible to support indexing at runtime
         for i, a in enumerate(args):
-            assert isinstance(
-                a, int
-            ), f'The {i}-th index of a Matrix/Vector must be a compile-time constant integer, got {a}'
+            if not isinstance(a, int):
+                raise TaichiSyntaxError(
+                    f'The {i}-th index of a Matrix/Vector must be a compile-time constant '
+                    'integer, got {a}. This is because matrix operations will be **unrolled**'
+                    ' at compile-time for performance reason.\n'
+                    'If you want to *iterate through matrix elements*, use a static range:\n'
+                    '  for i in ti.static(range(3)):\n'
+                    '    print(i, "-th component is", vec[i])\n'
+                    'See https://taichi.readthedocs.io/en/stable/meta.html#when-to-use-for-loops-with-ti-static for more details.'
+                )
         return args[0] * self.m + args[1]
 
     def __call__(self, *args, **kwargs):
@@ -587,7 +624,7 @@ class Matrix(TaichiOperations):
                 import taichi as ti
                 return ti.assign(x, y)
 
-            return self.element_wise_binary(assign_renamed, val)
+            return self.element_wise_writeback_binary(assign_renamed, val)
 
         if isinstance(val, numbers.Number):
             val = tuple(
@@ -682,10 +719,23 @@ class Matrix(TaichiOperations):
                 yield ']'
         yield ']'
 
-    @python_scope
     def __repr__(self):
         """Python scope object print support."""
-        return str(self.to_numpy())
+        if impl.inside_kernel():
+            '''
+            It seems that when pybind11 got an type mismatch, it will try
+            to invoke `repr` to show the object... e.g.:
+
+            TypeError: make_const_expr_f32(): incompatible function arguments. The following argument types are supported:
+                1. (arg0: float) -> taichi_core.Expr
+
+            Invoked with: <Taichi 2x1 Matrix>
+
+            So we have to make it happy with a dummy string...
+            '''
+            return f'<Taichi {self.n}x{self.m} Matrix>'
+        else:
+            return str(self.to_numpy())
 
     @staticmethod
     @taichi_scope

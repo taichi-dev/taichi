@@ -1288,18 +1288,25 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     auto loop_index =
         create_entry_block_alloca(Type::getInt32Ty(*llvm_context));
 
-    llvm::Value *threadIdx = nullptr, *blockDim = nullptr;
+    llvm::Value *thread_idx = nullptr, *block_dim = nullptr;
 
     RuntimeObject element("Element", this, builder.get(), get_arg(1));
     auto lower_bound = get_arg(2);
     auto upper_bound = get_arg(3);
 
+    parent_coordinates = element.get_ptr("pcoord");
+
+    if (stmt->bls_prologue) {
+      stmt->bls_prologue->accept(this);
+      call("block_barrier");  // "__syncthreads()"
+    }
+
     if (spmd) {
-      threadIdx =
+      thread_idx =
           builder->CreateIntrinsic(Intrinsic::nvvm_read_ptx_sreg_tid_x, {}, {});
-      blockDim = builder->CreateIntrinsic(Intrinsic::nvvm_read_ptx_sreg_ntid_x,
-                                          {}, {});
-      builder->CreateStore(builder->CreateAdd(threadIdx, lower_bound),
+      block_dim = builder->CreateIntrinsic(Intrinsic::nvvm_read_ptx_sreg_ntid_x,
+                                           {}, {});
+      builder->CreateStore(builder->CreateAdd(thread_idx, lower_bound),
                            loop_index);
     } else {
       builder->CreateStore(lower_bound, loop_index);
@@ -1325,8 +1332,6 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     auto refine =
         get_runtime_function(leaf_block->refine_coordinates_func_name());
     auto new_coordinates = create_entry_block_alloca(physical_coordinate_ty);
-
-    parent_coordinates = element.get_ptr("pcoord");
 
     create_call(refine, {parent_coordinates, new_coordinates,
                          builder->CreateLoad(loop_index)});
@@ -1371,18 +1376,9 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
       builder->CreateCondBr(exec_cond, bounded_body_bb, body_bb_tail);
       builder->SetInsertPoint(bounded_body_bb);
 
-      if (stmt->prologue) {
-        stmt->prologue->accept(this);
-        call("block_barrier");  // "__syncthreads()"
-      }
-
       // The real loop body
       stmt->body->accept(this);
 
-      if (stmt->epilogue) {
-        call("block_barrier");  // "__syncthreads()"
-        stmt->epilogue->accept(this);
-      }
       builder->CreateBr(body_bb_tail);
     }
 
@@ -1391,25 +1387,29 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     builder->SetInsertPoint(body_bb_tail);
 
     if (spmd) {
-      create_increment(loop_index, blockDim);
+      create_increment(loop_index, block_dim);
     } else {
       create_increment(loop_index, tlctx->get_constant(1));
     }
     builder->CreateBr(test_bb);
 
     builder->SetInsertPoint(after_loop);
+
+    if (stmt->bls_epilogue) {
+      call("block_barrier");  // "__syncthreads()"
+      stmt->bls_epilogue->accept(this);
+    }
   }
 
-  if (stmt->block_dim == 0) {
-    stmt->block_dim = std::min(leaf_block->max_num_elements(), 256);
-  }
-  int num_splits = leaf_block->max_num_elements() / stmt->block_dim;
+  int list_element_size =
+      std::min(leaf_block->max_num_elements(), taichi_listgen_max_element_size);
+  int num_splits = std::max(1, list_element_size / stmt->block_dim);
   // traverse leaf node
-  create_call("for_each_block",
-              {get_context(), tlctx->get_constant(leaf_block->id),
-               tlctx->get_constant(leaf_block->max_num_elements()),
-               tlctx->get_constant(num_splits), body,
-               tlctx->get_constant(stmt->num_cpu_threads)});
+  create_call(
+      "parallel_struct_for",
+      {get_context(), tlctx->get_constant(leaf_block->id),
+       tlctx->get_constant(list_element_size), tlctx->get_constant(num_splits),
+       body, tlctx->get_constant(stmt->num_cpu_threads)});
   // TODO: why do we need num_cpu_threads on GPUs?
 }
 
@@ -1423,6 +1423,16 @@ void CodeGenLLVM::visit(LoopIndexStmt *stmt) {
   } else {
     llvm_val[stmt] =
         builder->CreateLoad(loop_vars_llvm[stmt->loop][stmt->index]);
+  }
+}
+
+void CodeGenLLVM::visit(LoopLinearIndexStmt *stmt) {
+  if (stmt->loop->is<OffloadedStmt>() &&
+      stmt->loop->as<OffloadedStmt>()->task_type ==
+          OffloadedStmt::TaskType::struct_for) {
+    llvm_val[stmt] = create_call("thread_idx");
+  } else {
+    TI_NOT_IMPLEMENTED;
   }
 }
 
@@ -1539,6 +1549,10 @@ void CodeGenLLVM::visit(StackAccAdjointStmt *stmt) {
   builder->CreateStore(new_val, adjoint_ptr);
 }
 
+void CodeGenLLVM::visit(RangeAssumptionStmt *stmt) {
+  llvm_val[stmt] = llvm_val[stmt->input];
+}
+
 FunctionType CodeGenLLVM::compile_module_to_executable() {
   TI_AUTO_PROF
   TaichiLLVMContext::eliminate_unused_functions(
@@ -1631,6 +1645,23 @@ void CodeGenLLVM::emit_to_module() {
 FunctionType CodeGenLLVM::gen() {
   emit_to_module();
   return compile_module_to_executable();
+}
+
+llvm::Value *CodeGenLLVM::create_xlogue(std::unique_ptr<Block> &block) {
+  llvm::Value *xlogue;
+
+  auto xlogue_type = get_xlogue_function_type();
+  auto xlogue_ptr_type = llvm::PointerType::get(xlogue_type, 0);
+
+  if (block) {
+    auto guard = get_function_creation_guard(get_xlogue_argument_types());
+    block->accept(this);
+    xlogue = guard.body;
+  } else {
+    xlogue = llvm::ConstantPointerNull::get(xlogue_ptr_type);
+  }
+
+  return xlogue;
 }
 
 TLANG_NAMESPACE_END

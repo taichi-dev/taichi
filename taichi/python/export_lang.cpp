@@ -11,6 +11,7 @@
 #include "taichi/gui/gui.h"
 #include "taichi/math/svd.h"
 #include "taichi/util/statistics.h"
+#include "taichi/util/action_recorder.h"
 
 TI_NAMESPACE_BEGIN
 
@@ -95,6 +96,7 @@ void export_lang(py::module &m) {
                      &CompileConfig::default_cpu_block_dim)
       .def_readwrite("default_gpu_block_dim",
                      &CompileConfig::default_gpu_block_dim)
+      .def_readwrite("max_block_dim", &CompileConfig::max_block_dim)
       .def_readwrite("verbose_kernel_launches",
                      &CompileConfig::verbose_kernel_launches)
       .def_readwrite("verbose", &CompileConfig::verbose)
@@ -403,6 +405,8 @@ void export_lang(py::module &m) {
 
   m.def("expr_index", expr_index);
 
+  m.def("expr_assume_in_range", AssumeInRange);
+
 #define DEFINE_EXPRESSION_OP_UNARY(x) m.def("expr_" #x, expr_##x);
 
   m.def("expr_neg", [&](const Expr &e) { return -e; });
@@ -557,6 +561,18 @@ void export_lang(py::module &m) {
   m.def("is_extension_supported", is_extension_supported);
 
   m.def("print_stat", [] { stat.print(); });
+
+  m.def("record_action_hint", [](std::string content) {
+    ActionRecorder::get_instance().record("hint",
+                                          {ActionArg("content", content)});
+  });
+
+  m.def("start_recording", [](const std::string &fn) {
+    ActionRecorder::get_instance().start_recording(fn);
+  });
+
+  m.def("stop_recording",
+        []() { ActionRecorder::get_instance().stop_recording(); });
 
   // A temporary option which will be removed soon in the future
   m.def("toggle_advanced_optimization", [](bool option) {

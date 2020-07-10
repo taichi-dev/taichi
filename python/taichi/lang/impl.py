@@ -243,7 +243,8 @@ def static_print(*args, __p=print, **kwargs):
     __p(*args, **kwargs)
 
 
-# we don't add @taichi_scope decorator for @ti.pyfunc
+# we don't add @taichi_scope decorator for @ti.pyfunc to work
+@no_traceback
 def static_assert(cond, msg=None):
     if msg is not None:
         assert cond, msg
@@ -426,10 +427,9 @@ def static(x, *xs):
         )
 
 
+@taichi_scope
 def grouped(x):
     import taichi as ti
-    assert get_runtime(
-    ).inside_kernel, 'ti.grouped can only be used inside Taichi kernels'
     if isinstance(x, ti.ndrange):
         return x.grouped()
     else:

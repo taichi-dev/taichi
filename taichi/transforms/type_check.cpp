@@ -350,6 +350,10 @@ class TypeCheck : public IRVisitor {
     stmt->ret_type = VectorType(1, DataType::i32);
   }
 
+  void visit(LoopLinearIndexStmt *stmt) {
+    stmt->ret_type = VectorType(1, DataType::i32);
+  }
+
   void visit(BlockCornerIndexStmt *stmt) {
     stmt->ret_type = VectorType(1, DataType::i32);
   }
@@ -372,12 +376,7 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(OffloadedStmt *stmt) {
-    if (stmt->prologue)
-      stmt->prologue->accept(this);
-    if (stmt->body)
-      stmt->body->accept(this);
-    if (stmt->epilogue)
-      stmt->epilogue->accept(this);
+    stmt->all_blocks_accept(this);
   }
 
   void visit(BitExtractStmt *stmt) {

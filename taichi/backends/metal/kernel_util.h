@@ -85,7 +85,9 @@ struct TaichiKernelAttributes {
     // since MSL 2.1
     bool simdgroup = false;
   };
-
+  std::string name;
+  // Is this kernel for evaluating the constant fold result?
+  bool is_jit_evaluator = false;
   // Attributes of all the Metal kernels produced from this Taichi kernel.
   std::vector<KernelAttributes> mtl_kernels_attribs;
   UsedFeatures used_features;

@@ -7,8 +7,7 @@ namespace cccp {
 
 class CCLayout {
  public:
-  CCLayout() {
-  }
+  CCLayout() = default;
 
   std::string get_object() {
     return obj_path;

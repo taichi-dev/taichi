@@ -1,6 +1,5 @@
 import numbers
 import numpy as np
-
 from taichi import ti_core
 
 
@@ -27,6 +26,7 @@ class GUI:
     RMB = 'RMB'
     EXIT = 'WMClose'
     WHEEL = 'Wheel'
+    MOVE = 'Motion'
 
     # Event types
     MOTION = ti_core.KeyEvent.EType.Move
@@ -80,6 +80,11 @@ class GUI:
         res = img.shape[:2]
         assert res == self.res, "Image resolution does not match GUI resolution"
         return np.ascontiguousarray(img)
+
+    def get_image(self):
+        self.img = np.ascontiguousarray(self.img)
+        self.core.get_img(self.img.ctypes.data)
+        return self.img
 
     def set_image(self, img):
         import numpy as np
@@ -248,14 +253,18 @@ class GUI:
 
         if e.key == GUI.WHEEL:
             e.delta = event.delta
+        else:
+            e.delta = (0, 0)
 
         for mod in ['Shift', 'Alt', 'Control']:
             if self.is_pressed(mod):
                 e.modifier.append(mod)
+
         if e.type == GUI.PRESS:
             self.key_pressed.add(e.key)
         else:
             self.key_pressed.discard(e.key)
+
         self.core.pop_key_event_head()
         return e
 

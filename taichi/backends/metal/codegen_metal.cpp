@@ -85,13 +85,13 @@ class KernelCodegen : public IRVisitor {
 
  public:
   // TODO(k-ye): Create a Params to hold these ctor params.
-  KernelCodegen(const std::string &mtl_kernel_prefix,
+  KernelCodegen(const std::string &taichi_kernel_name,
                 const std::string &root_snode_type_name,
                 Kernel *kernel,
                 const CompiledStructs *compiled_structs,
                 PrintStringTable *print_strtab,
                 const CodeGen::Config &config)
-      : mtl_kernel_prefix_(mtl_kernel_prefix),
+      : mtl_kernel_prefix_(taichi_kernel_name),
         root_snode_type_name_(root_snode_type_name),
         kernel_(kernel),
         compiled_structs_(compiled_structs),
@@ -99,6 +99,8 @@ class KernelCodegen : public IRVisitor {
         ctx_attribs_(*kernel_),
         print_strtab_(print_strtab),
         cgen_config_(config) {
+    ti_kernel_attribus_.name = taichi_kernel_name;
+    ti_kernel_attribus_.is_jit_evaluator = kernel->is_evaluator;
     // allow_undefined_visitor = true;
     for (const auto s : kAllSections) {
       section_appenders_[s] = LineAppender();
@@ -807,7 +809,7 @@ class KernelCodegen : public IRVisitor {
     ka.task_type = stmt->task_type;
     ka.buffers = get_common_buffers();
 
-    const bool used_tls = (stmt->prologue != nullptr);
+    const bool used_tls = (stmt->tls_prologue != nullptr);
     KernelSigExtensions kernel_exts;
     kernel_exts.use_simdgroup = (used_tls && cgen_config_.allow_simdgroup);
     used_features()->simdgroup =
@@ -863,7 +865,7 @@ class KernelCodegen : public IRVisitor {
       emit("int32_t {}[{}];", tls_bufi32_name, (stmt->tls_size + 3) / 4);
       emit("thread char* {} = reinterpret_cast<thread char*>({});",
            kTlsBufferName, tls_bufi32_name);
-      stmt->prologue->accept(this);
+      stmt->tls_prologue->accept(this);
     }
 
     emit("for (int ii = begin_; ii < end_; ii += {}) {{", kKernelGridSizeName);
@@ -886,10 +888,10 @@ class KernelCodegen : public IRVisitor {
     emit("}}");  // closes for loop
 
     if (used_tls) {
-      TI_ASSERT(stmt->epilogue != nullptr);
+      TI_ASSERT(stmt->tls_epilogue != nullptr);
       inside_tls_epilogue_ = true;
       emit("{{  // TLS epilogue");
-      stmt->epilogue->accept(this);
+      stmt->tls_epilogue->accept(this);
       inside_tls_epilogue_ = false;
       emit("}}");
     }

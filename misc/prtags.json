@@ -30,5 +30,6 @@
   "perf"            : "Performance improvements",
   "ipython"         : "IPython and other shells",
   "cc"              : "C source backend",
+  "error"           : "Error messages",
   "release"         : "Release"
 }

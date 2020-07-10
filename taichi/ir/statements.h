@@ -181,9 +181,11 @@ class OffloadedStmt : public Stmt {
   bool reversed;
   int num_cpu_threads;
   Arch device;
-  std::unique_ptr<Block> prologue;
+  std::unique_ptr<Block> tls_prologue;
+  std::unique_ptr<Block> bls_prologue;
   std::unique_ptr<Block> body;
-  std::unique_ptr<Block> epilogue;
+  std::unique_ptr<Block> bls_epilogue;
+  std::unique_ptr<Block> tls_epilogue;
   std::size_t tls_size{1};  // avoid allocating dynamic memory with 0 byte
   std::size_t bls_size{0};
   ScratchPadOptions scratch_opt;
@@ -206,6 +208,8 @@ class OffloadedStmt : public Stmt {
   }
 
   std::unique_ptr<Stmt> clone() const override;
+
+  void all_blocks_accept(IRVisitor *visitor);
 
   TI_STMT_DEF_FIELDS(ret_type,
                      task_type,
@@ -241,6 +245,28 @@ class LoopIndexStmt : public Stmt {
   int max_num_bits() const;
 
   TI_STMT_DEF_FIELDS(ret_type, loop, index);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
+// All loop indices fused together
+class LoopLinearIndexStmt : public Stmt {
+ public:
+  Stmt *loop;
+  int index;
+
+  LoopLinearIndexStmt(Stmt *loop) : loop(loop) {
+    TI_STMT_REG_FIELDS;
+  }
+
+  bool has_global_side_effect() const override {
+    return false;
+  }
+
+  // Return the number of bits of the loop, or -1 if unknown.
+  // TODO: implement
+  // int max_num_bits() const;
+
+  TI_STMT_DEF_FIELDS(ret_type, loop);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

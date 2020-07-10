@@ -155,3 +155,32 @@ def test_taichi_scope_matrix_operations_with_global_matrices(ops):
 
     assert np.allclose(r1[None].value.to_numpy(), ops(a, b))
     assert np.allclose(r2[None].value.to_numpy(), ops(a, c))
+
+
+@ti.host_arch_only
+@ti.must_throw(ti.TaichiSyntaxError)
+def test_matrix_non_constant_index():
+    m = ti.Matrix(2, 2, ti.i32, 5)
+
+    @ti.kernel
+    def func():
+        for i in range(5):
+            for j, k in ti.ndrange(2, 2):
+                m[i][j, k] = 12
+
+    func()
+
+
+@ti.host_arch_only
+def test_matrix_constant_index():
+    m = ti.Matrix(2, 2, ti.i32, 5)
+
+    @ti.kernel
+    def func():
+        for i in range(5):
+            for j, k in ti.static(ti.ndrange(2, 2)):
+                m[i][j, k] = 12
+
+    func()
+
+    assert np.allclose(m.to_numpy(), np.ones((5, 2, 2), np.int32) * 12)

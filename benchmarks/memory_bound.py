@@ -1,11 +1,13 @@
 import taichi as ti
+import pytest
 
 N = 1024**3 // 4  # 1 GB per buffer
 
 
 # 4 B/it
 @ti.archs_excluding(ti.opengl)
-def benchmark_memset():
+@pytest.mark.benchmark(min_rounds=10)
+def test_memset(benchmark):
     a = ti.var(dt=ti.f32, shape=N)
 
     @ti.kernel
@@ -13,12 +15,13 @@ def benchmark_memset():
         for i in a:
             a[i] = 1.0
 
-    return ti.benchmark(memset, repeat=10)
+    return benchmark(memset)
 
 
 # 8 B/it
 @ti.archs_excluding(ti.opengl)
-def benchmark_sscal():
+@pytest.mark.benchmark(min_rounds=10)
+def test_sscal(benchmark):
     a = ti.var(dt=ti.f32, shape=N)
 
     @ti.kernel
@@ -26,12 +29,13 @@ def benchmark_sscal():
         for i in a:
             a[i] = 0.5 * a[i]
 
-    return ti.benchmark(task, repeat=10)
+    return benchmark(task)
 
 
 # 8 B/it
 @ti.archs_excluding(ti.opengl)
-def benchmark_memcpy():
+@pytest.mark.benchmark(min_rounds=10)
+def test_memcpy(benchmark):
     a = ti.var(dt=ti.f32, shape=N)
     b = ti.var(dt=ti.f32, shape=N)
 
@@ -40,12 +44,13 @@ def benchmark_memcpy():
         for i in a:
             a[i] = b[i]
 
-    return ti.benchmark(memcpy, repeat=10)
+    return benchmark(memcpy)
 
 
 # 12 B/it
 @ti.archs_excluding(ti.opengl)
-def benchmark_saxpy():
+@pytest.mark.benchmark(min_rounds=10)
+def test_saxpy(benchmark):
     x = ti.var(dt=ti.f32, shape=N)
     y = ti.var(dt=ti.f32, shape=N)
     z = ti.var(dt=ti.f32, shape=N)
@@ -56,4 +61,4 @@ def benchmark_saxpy():
             a = 123
             z[i] = a * x[i] + y[i]
 
-    return ti.benchmark(task, repeat=10)
+    return benchmark(task)

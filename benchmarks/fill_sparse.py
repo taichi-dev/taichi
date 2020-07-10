@@ -1,8 +1,9 @@
 import taichi as ti
+import pytest
 
 
 @ti.archs_support_sparse
-def benchmark_nested_struct():
+def test_nested_struct(benchmark):
     a = ti.var(dt=ti.f32)
     N = 512
 
@@ -15,11 +16,12 @@ def benchmark_nested_struct():
 
     fill()
 
-    return ti.benchmark(fill)
+    return benchmark(fill)
 
 
 @ti.archs_support_sparse
-def benchmark_nested_struct_fill_and_clear():
+@pytest.mark.benchmark(min_rounds=30)
+def test_nested_struct_fill_and_clear(benchmark):
     a = ti.var(dt=ti.f32)
     N = 512
 
@@ -39,7 +41,7 @@ def benchmark_nested_struct_fill_and_clear():
         fill()
         clear()
 
-    return ti.benchmark(task, repeat=30)
+    return benchmark(task)
 
 
 '''

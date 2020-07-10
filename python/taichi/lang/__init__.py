@@ -301,23 +301,6 @@ schedules = [parallelize, vectorize, block_dim, cache]
 lang_core = core
 
 
-def benchmark(func, repeat=300, args=()):
-    import taichi as ti
-    import time
-    # The reason why we run 4 times is to warm up instruction/data caches.
-    # Discussion: https://github.com/taichi-dev/taichi/pull/1002#discussion_r426312136
-    for i in range(4):
-        func(*args)  # compile the kernel first
-    ti.sync()
-    t = time.time()
-    for n in range(repeat):
-        func(*args)
-    ti.get_runtime().sync()
-    elapsed = time.time() - t
-    avg = elapsed / repeat * 1000  # miliseconds
-    ti.stat_write(avg)
-
-
 def stat_write(avg):
     name = os.environ.get('TI_CURRENT_BENCHMARK')
     if name is None:

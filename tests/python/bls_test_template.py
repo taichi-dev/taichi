@@ -101,7 +101,7 @@ def bls_test_template(dim,
     assert mismatch[None] == 0
 
 
-def bls_scatter(N, ppc=8, block_size=16, benchmark=0, pointer_level=1, sort_points=True):
+def bls_particle_grid(N, ppc=8, block_size=16, scatter=True, benchmark=0, pointer_level=1, sort_points=True):
     M = N * N * ppc
 
     m1 = ti.var(ti.f32)
@@ -113,8 +113,13 @@ def bls_scatter(N, ppc=8, block_size=16, benchmark=0, pointer_level=1, sort_poin
     max_num_particles_per_block = block_size**2 * 4096
 
     x = ti.Vector(2, dt=ti.f32)
+    
+    s1 = ti.var(dt=ti.f32)
+    s2 = ti.var(dt=ti.f32)
+    s3 = ti.var(dt=ti.f32)
 
     ti.root.dense(ti.i, M).place(x)
+    ti.root.dense(ti.i, M).place(s1, s2, s3)
 
     if pointer_level == 1:
         block = ti.root.pointer(ti.ij, N // block_size)
@@ -149,6 +154,8 @@ def bls_scatter(N, ppc=8, block_size=16, benchmark=0, pointer_level=1, sort_poin
                 ti.random() * (1 - 2 * bound) + bound
             ])
             ti.append(pid.parent(), [int(x[i][0] * N), int(x[i][1] * N)], i)
+            
+    scatter_weight = (N * N / M) * 0.01
 
     @ti.kernel
     def p2g(use_shared: ti.template(), m: ti.template()):
@@ -166,7 +173,7 @@ def bls_scatter(N, ppc=8, block_size=16, benchmark=0, pointer_level=1, sort_poin
             u = ti.Vector([u0, u1])
 
             for offset in ti.static(ti.grouped(ti.ndrange(extend, extend))):
-                m[u + offset] += (N * N / M) * 0.01
+                m[u + offset] += scatter_weight
 
     @ti.kernel
     def p2g_naive():
@@ -175,23 +182,81 @@ def bls_scatter(N, ppc=8, block_size=16, benchmark=0, pointer_level=1, sort_poin
             u = (x[p] * N).cast(ti.i32)
 
             for offset in ti.static(ti.grouped(ti.ndrange(extend, extend))):
-                m3[u + offset] += (N * N / M) * 0.01
+                m3[u + offset] += scatter_weight
+
+
+    @ti.kernel
+    def fill_m1():
+        for i, j in ti.ndrange(N, N):
+            m1[i, j] = ti.random()
+
+    @ti.kernel
+    def g2p(use_shared: ti.template(), s: ti.template()):
+        ti.block_dim(256)
+        if ti.static(use_shared):
+            ti.cache_shared(m1)
+        for i, j, l in pid:
+            p = pid[i, j, l]
+        
+            u_ = (x[p] * N).cast(ti.i32)
+        
+            u0 = ti.assume_in_range(u_[0], i, 0, 1)
+            u1 = ti.assume_in_range(u_[1], j, 0, 1)
+        
+            u = ti.Vector([u0, u1])
+            
+            tot = 0.0
+        
+            for offset in ti.static(ti.grouped(ti.ndrange(extend, extend))):
+                tot += m1[u + offset]
+            
+            s[p] = tot
+
+    @ti.kernel
+    def g2p_naive(s: ti.template()):
+        ti.block_dim(256)
+        for p in x:
+            u = (x[p] * N).cast(ti.i32)
+        
+            tot = 0.0
+            for offset in ti.static(ti.grouped(ti.ndrange(extend, extend))):
+                tot += m1[u + offset]
+            s[p] = tot
 
     insert()
-
-    for i in range(max(benchmark, 1)):
-        p2g(True, m1)
-        p2g(False, m2)
-        p2g_naive()
-        
+    
+    for i in range(benchmark):
+        pid.parent(2).snode().deactivate_all()
+        insert()
+    
     @ti.kernel
-    def check():
+    def check_m():
         for i in range(N):
             for j in range(N):
                 if abs(m1[i, j] - m3[i, j]) > 1e-4:
-                    err[None] = True
+                    err[None] = 1
                 if abs(m2[i, j] - m3[i, j]) > 1e-4:
-                    err[None] = True
-    check()
+                    err[None] = 1
+                    
+    @ti.kernel
+    def check_s():
+        for i in range(M):
+            if abs(s1[i] - s2[i]) > 1e-4:
+                err[None] = 1
+            if abs(s1[i] - s3[i]) > 1e-4:
+                err[None] = 1
     
+    if scatter:
+        for i in range(max(benchmark, 1)):
+            p2g(True, m1)
+            p2g(False, m2)
+            p2g_naive()
+        check_m()
+    else:
+        for i in range(max(benchmark, 1)):
+            g2p(True, s1)
+            g2p(False, s2)
+            g2p_naive(s3)
+        check_s()
+        
     assert not err[None]

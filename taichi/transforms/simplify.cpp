@@ -250,6 +250,8 @@ class BasicBlockSimplify : public IRVisitor {
     if (is_done(stmt))
       return;
 
+    // TODO: Implement this in cfg_optimization
+    /*
     // Merge identical loads
     for (int i = 0; i < current_stmt_id; i++) {
       auto &bstmt = block->statements[i];
@@ -367,6 +369,7 @@ class BasicBlockSimplify : public IRVisitor {
       // For example, in a loop, later part of the loop body may alter the local
       // var value.
     }
+    */
     set_done(stmt);
   }
 
@@ -374,6 +377,8 @@ class BasicBlockSimplify : public IRVisitor {
     if (is_done(stmt))
       return;
 
+    // TODO: Implement this in cfg_optimization
+    /*
     // has previous store?
     for (int i = 0; i < current_stmt_id; i++) {
       auto &bstmt = block->statements[i];
@@ -483,6 +488,7 @@ class BasicBlockSimplify : public IRVisitor {
         throw IRModified();
       }
     }
+    */
 
     set_done(stmt);
   }
@@ -1224,7 +1230,6 @@ bool simplify(IRNode *root, Kernel *kernel) {
 }
 
 void full_simplify(IRNode *root, Kernel *kernel) {
-  return;
   TI_AUTO_PROF;
   if (root->get_config().advanced_optimization) {
     while (true) {

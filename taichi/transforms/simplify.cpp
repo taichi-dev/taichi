@@ -518,9 +518,11 @@ class BasicBlockSimplify : public IRVisitor {
                        block->statements[j].get(),
                        [&](Stmt *s) {
                          if (auto store = s->cast<GlobalStoreStmt>())
-                           return maybe_same_address(store->ptr, stmt->ptr);
+                           return irpass::analysis::maybe_same_address(
+                               store->ptr, stmt->ptr);
                          else if (auto atomic = s->cast<AtomicOpStmt>())
-                           return maybe_same_address(atomic->dest, stmt->ptr);
+                           return irpass::analysis::maybe_same_address(
+                               atomic->dest, stmt->ptr);
                          else
                            return false;
                        })

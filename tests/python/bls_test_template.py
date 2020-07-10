@@ -90,8 +90,8 @@ def bls_test_template(dim,
     @ti.kernel
     def check():
         for I in ti.grouped(y2):
-            # print('check', I, y[I], y2[I])
             if y[I] != y2[I]:
+                print('check failed', I, y[I], y2[I])
                 mismatch[None] = 1
 
     check()

@@ -9,10 +9,12 @@ input_image = ti.imread(input_file_name)
 image = ti.var(ti.u8, input_image.shape)
 image.from_numpy(input_image)
 
+
 @ti.kernel
 def process():
     for i, j, k in image:
         image[i, j, k] = 255 - image[i, j, k]  # revert color
+
 
 process()
 

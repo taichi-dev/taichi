@@ -89,9 +89,12 @@ class _EnvironmentConfigurator:
     def __init__(self, kwargs, cfg):
         self.cfg = cfg
         self.kwargs = kwargs
+        self.keys = []
 
     def add(self, key, cast=None):
         cast = cast or self.bool_int
+
+        self.keys.append(key)
 
         # TI_ASYNC=   : no effect
         # TI_ASYNC=0  : False
@@ -177,18 +180,15 @@ def init(arch=None,
     env_spec.add('excepthook')
 
     # compiler configuations (ti.cfg):
-    env_comp.add('debug')
-    env_comp.add('print_ir')
-    env_comp.add('verbose')
-    env_comp.add('fast_math')
-    env_comp.add('async')
-    env_comp.add('use_unified_memory')
-    env_comp.add('print_benchmark_stat')
-    env_comp.add('advanced_optimization')
-    # TODO(yuanming-hu): Maybe these CUDA specific configs should be moved
-    # to somewhere like ti.cfg.cuda so that user don't get confused?
-    env_comp.add('device_memory_fraction', float)
-    env_comp.add('device_memory_GB', float)
+    # TODO(yuanming-hu): Maybe CUDA specific configs like device_memory_* should be moved
+    # to somewhere like ti.cuda_cfg so that user don't get confused?
+    for key in dir(ti.cfg):
+        if key in ['default_fp', 'default_ip']:
+            continue
+        cast = type(getattr(ti.cfg, key))
+        if cast is bool:
+            cast = None
+        env_comp.add(key, cast)
 
     unexpected_keys = kwargs.keys()
     if len(unexpected_keys):

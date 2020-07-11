@@ -81,6 +81,43 @@ def binary(foo):
     return wrapped
 
 
+ternary_ops = []
+
+
+def ternary(foo):
+    import taichi as ti
+
+    @functools.wraps(foo)
+    def abc_foo(x, y, z):
+        _taichi_skip_traceback = 2
+        return foo(x, y, z)
+
+    @functools.wraps(foo)
+    def bac_foo(x, y, z):
+        _taichi_skip_traceback = 2
+        return foo(y, x, z)
+
+    @functools.wraps(foo)
+    def cab_foo(x, y, z):
+        _taichi_skip_traceback = 2
+        return foo(z, x, y)
+
+    @functools.wraps(foo)
+    def wrapped(a, b, c):
+        _taichi_skip_traceback = 1
+        if ti.is_taichi_class(a):
+            return a.element_wise_ternary(abc_foo, b, c)
+        elif ti.is_taichi_class(b):
+            return b.element_wise_ternary(bac_foo, a, c)
+        elif ti.is_taichi_class(c):
+            return c.element_wise_ternary(cab_foo, a, b)
+        else:
+            return abc_foo(a, b, c)
+
+    ternary_ops.append(wrapped)
+    return wrapped
+
+
 writeback_binary_ops = []
 
 
@@ -134,6 +171,24 @@ def _unary_operation(taichi_op, python_op, a):
         return Expr(taichi_op(a.ptr), tb=stack_info())
     else:
         return python_op(a)
+
+
+def _binary_operation(taichi_op, python_op, a, b):
+    _taichi_skip_traceback = 1
+    if is_taichi_expr(a) or is_taichi_expr(b):
+        a, b = wrap_if_not_expr(a), wrap_if_not_expr(b)
+        return Expr(taichi_op(a.ptr, b.ptr), tb=stack_info())
+    else:
+        return python_op(a, b)
+
+
+def _ternary_operation(taichi_op, python_op, a, b, c):
+    _taichi_skip_traceback = 1
+    if is_taichi_expr(a) or is_taichi_expr(b) or is_taichi_expr(c):
+        a, b, c = wrap_if_not_expr(a), wrap_if_not_expr(b), wrap_if_not_expr(c)
+        return Expr(taichi_op(a.ptr, b.ptr, c.ptr), tb=stack_info())
+    else:
+        return python_op(a, b, c)
 
 
 @unary
@@ -228,15 +283,6 @@ def random(dt=None):
 
 
 # NEXT: add matpow(self, power)
-
-
-def _binary_operation(taichi_op, python_op, a, b):
-    _taichi_skip_traceback = 1
-    if is_taichi_expr(a) or is_taichi_expr(b):
-        a, b = wrap_if_not_expr(a), wrap_if_not_expr(b)
-        return Expr(taichi_op(a.ptr, b.ptr), tb=stack_info())
-    else:
-        return python_op(a, b)
 
 
 @binary
@@ -369,6 +415,14 @@ def bit_xor(a, b):
 # We don't have logic_and/or instructions yet:
 logical_or = bit_or
 logical_and = bit_and
+
+
+@ternary
+def select(cond, a, b):
+    def py_select(cond, a, b):
+        return a if cond else b
+
+    return _ternary_operation(ti_core.expr_select, py_select, cond, a, b)
 
 
 @writeback_binary

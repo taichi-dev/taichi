@@ -22,9 +22,14 @@
     return lhs op rhs;                                                     \
   }
 
+#define DEFINE_EXPRESSION_OP_TERNARY(opname)                            \
+  Expr expr_##opname(const Expr &cond, const Expr &lhs, const Expr &rhs) {  \
+    return Expr::make<TernaryOpExpression>(BinaryOpType::opname, lhs, rhs); \
+  }                                                                        \
+
 #define DEFINE_EXPRESSION_FUNC(opname)                                     \
   Expr opname(const Expr &lhs, const Expr &rhs) {                          \
-    return Expr::make<BinaryOpExpression>(BinaryOpType::opname, lhs, rhs); \
+    return Expr::make<BinaryOpExpression>(TernaryOpType::opname, lhs, rhs); \
   }                                                                        \
   Expr expr_##opname(const Expr &lhs, const Expr &rhs) {                   \
     return opname(lhs, rhs);                                               \
@@ -35,6 +40,9 @@
 #define DEFINE_EXPRESSION_OP_BINARY(op, opname)       \
   Expr operator op(const Expr &lhs, const Expr &rhs); \
   Expr expr_##opname(const Expr &lhs, const Expr &rhs);
+
+#define DEFINE_EXPRESSION_OP_TERNARY(opname)       \
+  Expr expr_##opname(const Expr &cond, const Expr &lhs, const Expr &rhs);
 
 #define DEFINE_EXPRESSION_OP_UNARY(opname) \
   Expr opname(const Expr &expr);           \
@@ -81,6 +89,8 @@ DEFINE_EXPRESSION_OP_BINARY(>=, cmp_ge)
 DEFINE_EXPRESSION_OP_BINARY(==, cmp_eq)
 DEFINE_EXPRESSION_OP_BINARY(!=, cmp_ne)
 
+DEFINE_EXPRESSION_OP_TERNARY(select)
+
 DEFINE_EXPRESSION_FUNC(min);
 DEFINE_EXPRESSION_FUNC(max);
 DEFINE_EXPRESSION_FUNC(atan2);
@@ -90,4 +100,5 @@ DEFINE_EXPRESSION_FUNC(floordiv);
 
 #undef DEFINE_EXPRESSION_OP_UNARY
 #undef DEFINE_EXPRESSION_OP_BINARY
+#undef DEFINE_EXPRESSION_OP_TERNARY
 #undef DEFINE_EXPRESSION_FUNC

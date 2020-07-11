@@ -394,7 +394,6 @@ void Program::materialize_layout() {
 }
 
 void Program::check_runtime_error() {
-  TI_ASSERT(arch_is_cpu(config.arch));
   synchronize();
   auto tlctx = llvm_context_host.get();
   auto runtime_jit_module = tlctx->runtime_jit_module;

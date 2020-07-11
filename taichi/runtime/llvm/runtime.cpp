@@ -666,7 +666,14 @@ void __assertfail(const char *message,
 void taichi_assert_runtime(LLVMRuntime *runtime, i32 test, const char *msg) {
   if (enable_assert) {
     if (test == 0) {
-      __assertfail(msg, "", 1, "", 1);
+      locked_task(&runtime->error_message_lock, [&] {
+        if (!runtime->error_code) {
+          runtime->error_code = 1;  // Assertion failure
+          memcpy(runtime->error_message_buffer, msg,
+                 std::min(strlen(msg), taichi_max_message_length));
+        }
+      });
+      // __assertfail(msg, "", 1, "", 1);
     }
   }
 }

@@ -827,7 +827,7 @@ class GlobalPtrStmt : public Stmt {
   bool common_statement_eliminable() const override {
     return true;
   }
-  
+
   TI_STMT_DEF_FIELDS(ret_type, snodes, indices, activate);
   TI_DEFINE_ACCEPT_AND_CLONE
 };

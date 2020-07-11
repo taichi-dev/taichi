@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.all_archs
+@ti.test()
 def test_kernel_template_mapper():
     x = ti.var(ti.i32)
     y = ti.var(ti.f32)
@@ -30,7 +30,7 @@ def test_kernel_template_mapper():
     assert mapper.lookup((0, x, 1))[0] == 0
 
 
-@ti.all_archs
+@ti.test()
 def test_kernel_template_mapper_numpy():
     x = ti.var(ti.i32)
     y = ti.var(ti.f32)

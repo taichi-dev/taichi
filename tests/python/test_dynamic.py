@@ -2,7 +2,7 @@ import taichi as ti
 
 
 def ti_support_dynamic(test):
-    return ti.all_archs(test)
+    return ti.test()(test)
 
 
 def ti_support_non_top_dynamic(test):

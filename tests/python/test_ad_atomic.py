@@ -2,7 +2,7 @@ import taichi as ti
 from taichi import approx
 
 
-@ti.all_archs
+@ti.test()
 def test_ad_reduce():
     x = ti.var(ti.f32)
     loss = ti.var(ti.f32)

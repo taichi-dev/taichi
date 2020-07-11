@@ -2,7 +2,7 @@ import taichi as ti
 
 
 @ti.require(ti.extension.adstack)
-@ti.all_archs
+@ti.test()
 def test_ad_if_simple():
     x = ti.var(ti.f32, shape=())
     y = ti.var(ti.f32, shape=())
@@ -24,7 +24,7 @@ def test_ad_if_simple():
 
 
 @ti.require(ti.extension.adstack)
-@ti.all_archs
+@ti.test()
 def test_ad_if():
     x = ti.var(ti.f32, shape=2)
     y = ti.var(ti.f32, shape=2)
@@ -53,7 +53,7 @@ def test_ad_if():
 
 
 @ti.require(ti.extension.adstack)
-@ti.all_archs
+@ti.test()
 def test_ad_if_nested():
     n = 20
     x = ti.var(ti.f32, shape=n)
@@ -92,7 +92,7 @@ def test_ad_if_nested():
 
 
 @ti.require(ti.extension.adstack)
-@ti.all_archs
+@ti.test()
 def test_ad_if_mutable():
     x = ti.var(ti.f32, shape=2)
     y = ti.var(ti.f32, shape=2)
@@ -122,7 +122,7 @@ def test_ad_if_mutable():
 
 
 @ti.require(ti.extension.adstack)
-@ti.all_archs
+@ti.test()
 def test_ad_if_parallel():
     x = ti.var(ti.f32, shape=2)
     y = ti.var(ti.f32, shape=2)
@@ -180,7 +180,7 @@ def test_ad_if_parallel_f64():
 
 
 @ti.require(ti.extension.adstack)
-@ti.all_archs
+@ti.test()
 def test_ad_if_parallel_complex():
     x = ti.var(ti.f32, shape=2)
     y = ti.var(ti.f32, shape=2)

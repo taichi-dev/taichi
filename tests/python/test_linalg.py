@@ -5,7 +5,7 @@ import pytest
 import math
 
 
-@ti.all_archs
+@ti.test()
 def test_const_init():
     a = ti.Matrix(2, 3, dt=ti.i32, shape=())
     b = ti.Vector(3, dt=ti.i32, shape=())
@@ -25,7 +25,7 @@ def test_const_init():
         assert b[None][j] == j
 
 
-@ti.all_archs
+@ti.test()
 def test_basic_utils():
     a = ti.Vector(3, dt=ti.f32)
     b = ti.Vector(3, dt=ti.f32)
@@ -66,7 +66,7 @@ def test_basic_utils():
     assert aNormalized[None][2] == approx(3.0 * invSqrt14)
 
 
-@ti.all_archs
+@ti.test()
 def test_matrix_ssa():
     a = ti.Vector(2, ti.f32, ())
     b = ti.Matrix(2, 2, ti.f32, ())
@@ -89,7 +89,7 @@ def test_matrix_ssa():
     assert c[None].value == ti.Vector([3, 2])
 
 
-@ti.all_archs
+@ti.test()
 def test_cross():
     a = ti.Vector(3, dt=ti.f32)
     b = ti.Vector(3, dt=ti.f32)
@@ -118,7 +118,7 @@ def test_cross():
     assert c2[None] == -3.0
 
 
-@ti.all_archs
+@ti.test()
 def test_dot():
     a = ti.Vector(3, dt=ti.f32)
     b = ti.Vector(3, dt=ti.f32)
@@ -145,7 +145,7 @@ def test_dot():
     assert c2[None] == 14.0
 
 
-@ti.all_archs
+@ti.test()
 def test_transpose():
     dim = 3
     m = ti.Matrix(dim, dim, ti.f32)
@@ -215,7 +215,7 @@ def test_polar_decomp():
             wrapped()
 
 
-@ti.all_archs
+@ti.test()
 def test_matrix():
     x = ti.Matrix(2, 2, dt=ti.i32)
 
@@ -239,7 +239,7 @@ def test_matrix():
         assert x[i][1, 1] == 1 + i
 
 
-@ti.all_archs
+@ti.test()
 def _test_mat_inverse_size(n):
     m = ti.Matrix(n, n, dt=ti.f32, shape=())
     M = np.empty(shape=(n, n), dtype=np.float32)
@@ -265,7 +265,7 @@ def test_mat_inverse():
         _test_mat_inverse_size(n)
 
 
-@ti.all_archs
+@ti.test()
 def test_matrix_factories():
     a = ti.Vector.var(3, dt=ti.i32, shape=3)
     b = ti.Matrix.var(2, 2, dt=ti.f32, shape=2)
@@ -297,7 +297,7 @@ def test_matrix_factories():
 # TODO: move codes below to test_matrix.py:
 
 
-@ti.all_archs
+@ti.test()
 def test_init_matrix_from_vectors():
     m1 = ti.Matrix(3, 3, dt=ti.f32, shape=(3))
     m2 = ti.Matrix(3, 3, dt=ti.f32, shape=(3))
@@ -369,7 +369,7 @@ def test_to_numpy_as_vector_deprecated():
     assert v.to_numpy() == approx(u)
 
 
-@ti.all_archs
+@ti.test()
 def test_any_all():
     a = ti.Matrix(2, 2, dt=ti.i32, shape=())
     b = ti.var(dt=ti.i32, shape=())
@@ -399,7 +399,7 @@ def test_any_all():
                 assert c[None] == 0
 
 
-@ti.all_archs
+@ti.test()
 def test_min_max():
     a = ti.Matrix(2, 2, dt=ti.i32, shape=())
     b = ti.var(dt=ti.i32, shape=())
@@ -423,7 +423,7 @@ def test_min_max():
 
 
 # must not throw any error:
-@ti.all_archs
+@ti.test()
 def test_matrix_list_assign():
 
     m = ti.Matrix(2, 2, dt=ti.i32, shape=(2, 2, 1))

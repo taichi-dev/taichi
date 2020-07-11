@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.all_archs
+@ti.test()
 def _test_dimensionality(d):
     x = ti.Vector(2, dt=ti.i32, shape=(2, ) * d)
 

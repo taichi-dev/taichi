@@ -2,7 +2,7 @@ import taichi as ti
 
 
 @ti.require(ti.extension.adstack)
-@ti.all_archs
+@ti.test()
 def test_ad_sum():
     N = 10
     a = ti.var(ti.f32, shape=N, needs_grad=True)
@@ -34,7 +34,7 @@ def test_ad_sum():
 
 
 @ti.require(ti.extension.adstack)
-@ti.all_archs
+@ti.test()
 def test_ad_sum_local_atomic():
     ti.init(print_ir=True)
     N = 10
@@ -67,7 +67,7 @@ def test_ad_sum_local_atomic():
 
 
 @ti.require(ti.extension.adstack)
-@ti.all_archs
+@ti.test()
 def test_ad_power():
     N = 10
     a = ti.var(ti.f32, shape=N, needs_grad=True)
@@ -99,7 +99,7 @@ def test_ad_power():
 
 
 @ti.require(ti.extension.adstack)
-@ti.all_archs
+@ti.test()
 def test_ad_fibonacci():
     N = 15
     a = ti.var(ti.f32, shape=N, needs_grad=True)
@@ -138,7 +138,7 @@ def test_ad_fibonacci():
 
 
 @ti.require(ti.extension.adstack)
-@ti.all_archs
+@ti.test()
 def test_ad_fibonacci_index():
     N = 5
     M = 10
@@ -171,7 +171,7 @@ def test_ad_fibonacci_index():
 
 
 @ti.require(ti.extension.adstack)
-@ti.all_archs
+@ti.test()
 def test_ad_global_ptr():
     N = 5
     a = ti.var(ti.f32, shape=N, needs_grad=True)
@@ -202,7 +202,7 @@ def test_ad_global_ptr():
 
 
 @ti.require(ti.extension.adstack)
-@ti.all_archs
+@ti.test()
 def test_integer_stack():
     N = 5
     a = ti.var(ti.f32, shape=N, needs_grad=True)
@@ -242,7 +242,7 @@ def test_integer_stack():
 
 
 @ti.require(ti.extension.adstack)
-@ti.all_archs
+@ti.test()
 def test_double_for_loops():
     N = 5
     a = ti.var(ti.f32, shape=N, needs_grad=True)
@@ -281,7 +281,7 @@ def test_double_for_loops():
 
 
 @ti.require(ti.extension.adstack)
-@ti.all_archs
+@ti.test()
 def test_double_for_loops_more_nests():
     N = 6
     a = ti.var(ti.f32, shape=N, needs_grad=True)
@@ -328,7 +328,7 @@ def test_double_for_loops_more_nests():
 
 
 @ti.require(ti.extension.adstack, ti.extension.data64)
-@ti.all_archs
+@ti.test()
 def test_complex_body():
     N = 5
     a = ti.var(ti.f32, shape=N, needs_grad=True)

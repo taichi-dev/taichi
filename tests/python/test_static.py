@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.all_archs
+@ti.test()
 def test_static_if():
     for val in [0, 1]:
         ti.init()
@@ -36,7 +36,7 @@ def test_static_if_error():
     static()
 
 
-@ti.all_archs
+@ti.test()
 def test_static_ndrange():
     n = 3
     x = ti.Matrix(n, n, dt=ti.f32, shape=(n, n))

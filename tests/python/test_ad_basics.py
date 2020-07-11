@@ -51,7 +51,7 @@ def grad_test(tifunc, npfunc=None, default_fp=ti.f32):
 
 
 @if_has_autograd
-@ti.all_archs
+@ti.test()
 def test_size1():
     x = ti.var(ti.i32)
 
@@ -111,7 +111,7 @@ def test_minmax():
 
 
 @if_has_autograd
-@ti.all_archs
+@ti.test()
 def test_mod():
     x = ti.var(ti.i32)
     y = ti.var(ti.i32)
@@ -162,7 +162,7 @@ def test_pow_f64():
     grad_test(lambda y: y**0.4, lambda y: np.power(y, 0.4), default_fp=ti.f64)
 
 
-@ti.all_archs
+@ti.test()
 def test_obey_kernel_simplicity():
     x = ti.var(ti.f32)
     y = ti.var(ti.f32)
@@ -187,7 +187,7 @@ def test_obey_kernel_simplicity():
     assert x.grad[0] == approx((42 - 5) * 3)
 
 
-@ti.all_archs
+@ti.test()
 def test_violate_kernel_simplicity1():
     x = ti.var(ti.f32)
     y = ti.var(ti.f32)
@@ -206,7 +206,7 @@ def test_violate_kernel_simplicity1():
     func.grad()
 
 
-@ti.all_archs
+@ti.test()
 def test_violate_kernel_simplicity2():
     x = ti.var(ti.f32)
     y = ti.var(ti.f32)
@@ -236,7 +236,7 @@ def test_cast():
 
 
 @ti.require(ti.extension.data64)
-@ti.all_archs
+@ti.test()
 def test_ad_precision_1():
     loss = ti.var(ti.f32, shape=())
     x = ti.var(ti.f64, shape=())
@@ -254,7 +254,7 @@ def test_ad_precision_1():
 
 
 @ti.require(ti.extension.data64)
-@ti.all_archs
+@ti.test()
 def test_ad_precision_2():
     loss = ti.var(ti.f64, shape=())
     x = ti.var(ti.f32, shape=())

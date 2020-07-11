@@ -72,7 +72,7 @@ def test_svd():
             wrapped()
 
 
-@ti.all_archs
+@ti.test()
 def test_transpose_no_loop():
     A = ti.Matrix(3, 3, dt=ti.f32, shape=())
     U = ti.Matrix(3, 3, dt=ti.f32, shape=())

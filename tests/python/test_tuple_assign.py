@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.all_archs
+@ti.test()
 def test_fibonacci():
     @ti.kernel
     def ti_fibonacci(n: ti.i32) -> ti.i32:

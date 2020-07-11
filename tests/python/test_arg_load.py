@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.all_archs
+@ti.test()
 def test_arg_load():
     x = ti.var(ti.i32)
     y = ti.var(ti.f32)
@@ -30,7 +30,7 @@ def test_arg_load():
 
 
 @ti.require(ti.extension.data64)
-@ti.all_archs
+@ti.test()
 def test_arg_load_f64():
     x = ti.var(ti.i32)
     y = ti.var(ti.f32)
@@ -52,7 +52,7 @@ def test_arg_load_f64():
     assert y[None] == 2.5
 
 
-@ti.all_archs
+@ti.test()
 def test_ext_arr():
     N = 128
     x = ti.var(ti.f32)

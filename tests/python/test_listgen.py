@@ -2,7 +2,7 @@ import taichi as ti
 from random import randrange
 
 
-@ti.all_archs
+@ti.test()
 def test_listgen():
     x = ti.var(ti.i32)
     n = 1024
@@ -32,7 +32,7 @@ def test_listgen():
             assert x[i, j] == i * 10 + j + c
 
 
-@ti.all_archs
+@ti.test()
 def test_nested_3d():
     x = ti.var(ti.i32)
     n = 128

@@ -2,7 +2,7 @@ import taichi as ti
 
 
 @ti.require(ti.extension.bls)
-@ti.all_archs
+@ti.test()
 def test_simple_1d():
     x, y = ti.var(ti.f32), ti.var(ti.f32)
 
@@ -30,7 +30,7 @@ def test_simple_1d():
 
 
 @ti.require(ti.extension.bls)
-@ti.all_archs
+@ti.test()
 def test_simple_2d():
     x, y = ti.var(ti.f32), ti.var(ti.f32)
 
@@ -59,7 +59,7 @@ def test_simple_2d():
 
 
 @ti.require(ti.extension.bls)
-@ti.all_archs
+@ti.test()
 def _test_bls_stencil(*args, **kwargs):
     from .bls_test_template import bls_test_template
     bls_test_template(*args, **kwargs)
@@ -108,7 +108,7 @@ def test_scatter_2d():
 
 
 @ti.require(ti.extension.bls)
-@ti.all_archs
+@ti.test()
 def test_multiple_inputs():
     x, y, z, w, w2 = ti.var(ti.i32), ti.var(ti.i32), ti.var(ti.i32), ti.var(
         ti.i32), ti.var(ti.i32)

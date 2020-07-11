@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.all_archs
+@ti.test()
 def test_empty():
     @ti.kernel
     def func():
@@ -10,7 +10,7 @@ def test_empty():
     func()
 
 
-@ti.all_archs
+@ti.test()
 def test_empty_args():
     @ti.kernel
     def func(x: ti.i32, arr: ti.ext_arr()):

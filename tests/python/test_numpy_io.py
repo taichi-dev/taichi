@@ -2,7 +2,7 @@ import taichi as ti
 import numpy as np
 
 
-@ti.all_archs
+@ti.test()
 def test_to_numpy_2d():
     val = ti.var(ti.i32)
 
@@ -23,7 +23,7 @@ def test_to_numpy_2d():
             assert arr[i, j] == i + j * 3
 
 
-@ti.all_archs
+@ti.test()
 def test_from_numpy_2d():
     val = ti.var(ti.i32)
 
@@ -46,7 +46,7 @@ def test_from_numpy_2d():
 
 
 @ti.require(ti.extension.data64)
-@ti.all_archs
+@ti.test()
 def test_f64():
     val = ti.var(ti.f64)
 
@@ -66,7 +66,7 @@ def test_f64():
             assert val[i, j] == (i + j * 3) * 2e100
 
 
-@ti.all_archs
+@ti.test()
 def test_matrix():
     n = 4
     m = 7
@@ -84,7 +84,7 @@ def test_matrix():
     assert (nparr == new_nparr).all()
 
 
-@ti.all_archs
+@ti.test()
 def test_numpy_io_example():
     n = 4
     m = 7

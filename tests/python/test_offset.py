@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.all_archs
+@ti.test()
 def test_accessor():
     a = ti.var(dt=ti.i32)
 
@@ -11,7 +11,7 @@ def test_accessor():
     assert a[1029, 2100, 2200] == 1
 
 
-@ti.all_archs
+@ti.test()
 def test_struct_for_huge_offsets():
     a = ti.var(dt=ti.i32)
 
@@ -32,7 +32,7 @@ def test_struct_for_huge_offsets():
                     assert a[i, j, k, l] == i + j * 10 + k * 100 + l * 1000
 
 
-@ti.all_archs
+@ti.test()
 def test_struct_for_negative():
     a = ti.var(dt=ti.i32)
 
@@ -51,7 +51,7 @@ def test_struct_for_negative():
             assert a[i, j] == i + j * 10
 
 
-@ti.all_archs
+@ti.test()
 def test_offset_for_var():
     a = ti.var(dt=ti.i32, shape=16, offset=-48)
     b = ti.var(dt=ti.i32, shape=(16, ), offset=(16, ))
@@ -73,7 +73,7 @@ def test_offset_for_var():
             assert e[i, j] == i * j
 
 
-@ti.all_archs
+@ti.test()
 def test_offset_for_vector():
     a = ti.var(dt=ti.i32, shape=16, offset=-48)
     b = ti.var(dt=ti.i32, shape=16, offset=None)
@@ -92,7 +92,7 @@ def test_offset_for_vector():
         assert c[i][0] == 2 * i
 
 
-@ti.all_archs
+@ti.test()
 def test_offset_for_matrix():
     a = ti.Matrix(3, 3, shape=(16, 16), offset=(-16, 16), dt=ti.float32)
 

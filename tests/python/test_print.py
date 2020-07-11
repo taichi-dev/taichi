@@ -21,7 +21,7 @@ def test_print(dt):
 
 # TODO: As described by @k-ye above, what we want to ensure
 #       is that, the content shows on console is *correct*.
-@ti.all_archs
+@ti.test()
 def test_multi_print():
     @ti.kernel
     def func(x: ti.i32, y: ti.f32):
@@ -31,7 +31,7 @@ def test_multi_print():
     ti.sync()
 
 
-@ti.all_archs
+@ti.test()
 def test_print_string():
     @ti.kernel
     def func(x: ti.i32, y: ti.f32):
@@ -43,7 +43,7 @@ def test_print_string():
     ti.sync()
 
 
-@ti.all_archs
+@ti.test()
 def test_print_matrix():
     x = ti.Matrix(2, 3, dt=ti.f32, shape=())
     y = ti.Vector(3, dt=ti.f32, shape=3)
@@ -59,7 +59,7 @@ def test_print_matrix():
     ti.sync()
 
 
-@ti.all_archs
+@ti.test()
 def test_print_sep_end():
     @ti.kernel
     def func():
@@ -79,7 +79,7 @@ def test_print_sep_end():
     ti.sync()
 
 
-@ti.all_archs
+@ti.test()
 def test_print_multiple_threads():
     x = ti.var(dt=ti.f32, shape=(128, ))
 

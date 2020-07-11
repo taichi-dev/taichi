@@ -6,6 +6,39 @@
 
 TLANG_NAMESPACE_BEGIN
 
+// A helper class to maintain WholeKernelCSE::visited
+class MarkUndone : public BasicStmtVisitor {
+ private:
+  std::unordered_set<int> *const visited;
+  Stmt *const modified_operand;
+
+ public:
+  using BasicStmtVisitor::visit;
+
+  MarkUndone(std::unordered_set<int> *visited, Stmt *modified_operand)
+      : visited(visited), modified_operand(modified_operand) {
+    allow_undefined_visitor = true;
+    invoke_default_visitor = true;
+  }
+
+  void visit(Stmt *stmt) override {
+    if (stmt->has_operand(modified_operand)) {
+      visited->erase(stmt->instance_id);
+    }
+  }
+
+  void preprocess_container_stmt(Stmt *stmt) override {
+    if (stmt->has_operand(modified_operand)) {
+      visited->erase(stmt->instance_id);
+    }
+  }
+
+  static void run(std::unordered_set<int> *visited, Stmt *modified_operand) {
+    MarkUndone marker(visited, modified_operand);
+    modified_operand->get_ir_root()->accept(&marker);
+  }
+};
+
 // Whole Kernel Common Subexpression Elimination
 class WholeKernelCSE : public BasicStmtVisitor {
  private:
@@ -54,6 +87,7 @@ class WholeKernelCSE : public BasicStmtVisitor {
     for (auto &scope : visible_stmts) {
       for (auto &prev_stmt : scope[std::type_index(typeid(*stmt))]) {
         if (common_statement_eliminable(stmt, prev_stmt)) {
+          MarkUndone::run(&visited, stmt);
           stmt->replace_with(prev_stmt);
           modifier.erase(stmt);
           return;

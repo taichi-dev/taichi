@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.test()
+@ti.all_archs
 def test_linear():
     x = ti.var(ti.i32)
     y = ti.var(ti.i32)

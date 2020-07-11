@@ -56,7 +56,8 @@ def test_simple_2d():
             assert y[i, j] == i - j
 
 
-@ti.test(extensions=[ti.extension.bls])
+@ti.all_archs
+@ti.require(ti.extension.bls)
 def _test_bls_stencil(*args, **kwargs):
     from .bls_test_template import bls_test_template
     bls_test_template(*args, **kwargs)

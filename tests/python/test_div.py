@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.test()
+@ti.all_archs
 def _test_floor_div(arg1, a, arg2, b, arg3, c):
     z = ti.var(arg3, shape=())
 
@@ -13,7 +13,7 @@ def _test_floor_div(arg1, a, arg2, b, arg3, c):
     assert z[None] == c
 
 
-@ti.test()
+@ti.all_archs
 def _test_true_div(arg1, a, arg2, b, arg3, c):
     z = ti.var(arg3, shape=())
 

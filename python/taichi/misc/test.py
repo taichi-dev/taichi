@@ -43,30 +43,32 @@ def make_temp_file(*args, **kwargs):
 @pytest.fixture(params=ti.supported_archs(), ids=ti.core.arch_name)
 def archs(request):
     marker = request.node.get_closest_marker('taichi')
+    req_arch = request.param
 
-    if arch not in marker.get('archs', {}):
-        raise pytest.skip(f'Arch={arch} not included in test')
+    def ti_init(*archs, extensions=[], excludes=[], **options):
+        archs = archs or ti.supported_archs()
 
-    ti.init(arch=arch)
+        if req_arch not in archs or req_arch in excludes:
+            raise pytest.skip(f'Arch={req_arch} not included in test')
+
+        if not all(ti.core.is_extension_supported(req_arch, e) for e in extensions):
+            raise pytest.skip(f'Arch={req_arch} some extension not satisfied')
+
+        ti.init(arch=req_arch, **options)
+
+    ti_init(*marker.args, **marker.kwargs)
     yield
 
 
-def test(*archs, extensions=[], excludes=[], **options):
-    if not len(archs):
-        archs = ti.supported_archs()
-
+def test(*args, **kwargs):
     def decorator(foo):
         @functools.wraps(foo)
         @pytest.mark.usefixtures('archs')
-        @pytest.mark.taichi(archs=archs)
-        def wrapped(*args, **kwargs):
-            ti.init(arch=wrapped._ti_adhoc.arch, **options)
-            foo(*args, **kwargs)
+        @pytest.mark.taichi(*args, **kwargs)
+        def wrapped(*_, **__):
+            print('asas')
+            foo(*_, **__)
 
-        wrapped._ti_adhoc = lambda x: x
-        wrapped._ti_adhoc.archs = archs
-        wrapped._ti_adhoc.excludes = excludes
-        wrapped._ti_adhoc.extensions = extensions
-        wrapped._ti_adhoc.options = options
         return wrapped
+
     return decorator

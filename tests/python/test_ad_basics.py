@@ -111,7 +111,7 @@ def test_minmax():
 
 
 @if_has_autograd
-@ti.test()
+@ti.all_archs
 def test_mod():
     x = ti.var(ti.i32)
     y = ti.var(ti.i32)

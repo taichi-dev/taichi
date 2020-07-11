@@ -208,7 +208,7 @@ def test_polar_decomp():
     for dim in [2, 3]:
         for dt in [ti.f32, ti.f64]:
 
-            @ti.test(default_fp=dt)
+            @ti.all_archs_with(default_fp=dt)
             def wrapped():
                 _test_polar_decomp(dim, dt)
 
@@ -239,7 +239,7 @@ def test_matrix():
         assert x[i][1, 1] == 1 + i
 
 
-@ti.test()
+@ti.all_archs
 def _test_mat_inverse_size(n):
     m = ti.Matrix(n, n, dt=ti.f32, shape=())
     M = np.empty(shape=(n, n), dtype=np.float32)

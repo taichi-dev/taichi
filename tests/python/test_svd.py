@@ -3,7 +3,7 @@ import numpy as np
 from taichi import approx
 
 
-@ti.require(ti.extension.data64)
+@ti.test(extensions=[ti.extension.data64])
 @ti.all_archs_with(fast_math=False)
 def test_precision():
     u = ti.var(ti.f64, shape=())

@@ -29,7 +29,7 @@ def test_arg_load():
     assert y[None] == 1.5
 
 
-@ti.require(ti.extension.data64)
+@ti.test(extensions=[ti.extension.data64])
 @ti.test()
 def test_arg_load_f64():
     x = ti.var(ti.i32)

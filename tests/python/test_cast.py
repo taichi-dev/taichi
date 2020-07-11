@@ -13,7 +13,7 @@ def test_cast_f32():
     assert z[None] == 1000
 
 
-@ti.require(ti.extension.data64)
+@ti.test(extensions=[ti.extension.data64])
 @ti.test()
 def test_cast_f64():
     z = ti.var(ti.i32, shape=())

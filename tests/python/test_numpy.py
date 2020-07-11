@@ -30,7 +30,7 @@ def test_numpy_f32():
     with_data_type(np.float32)
 
 
-@ti.require(ti.extension.data64)
+@ti.test(extensions=[ti.extension.data64])
 @ti.test()
 def test_numpy_f64():
     with_data_type(np.float64)
@@ -41,7 +41,7 @@ def test_numpy_i32():
     with_data_type(np.int32)
 
 
-@ti.require(ti.extension.data64)
+@ti.test(extensions=[ti.extension.data64])
 @ti.test()
 def test_numpy_i64():
     with_data_type(np.int64)

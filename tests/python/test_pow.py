@@ -32,7 +32,7 @@ def test_pow_f32():
     _test_pow_f(ti.f32)
 
 
-@ti.require(ti.extension.data64)
+@ti.test(extensions=[ti.extension.data64])
 @ti.test()
 def test_pow_f64():
     _test_pow_f(ti.f64)
@@ -43,7 +43,7 @@ def test_pow_i32():
     _test_pow_i(ti.i32)
 
 
-@ti.require(ti.extension.data64)
+@ti.test(extensions=[ti.extension.data64])
 @ti.test()
 def test_pow_i64():
     _test_pow_i(ti.i64)

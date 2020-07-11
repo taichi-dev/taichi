@@ -225,7 +225,7 @@ def test_violate_kernel_simplicity2():
     func.grad()
 
 
-@ti.require(ti.extension.data64)
+@ti.test(extensions=[ti.extension.data64])
 @ti.all_archs_with(print_ir=True)
 def test_cast():
     @ti.kernel
@@ -235,7 +235,7 @@ def test_cast():
     func()
 
 
-@ti.require(ti.extension.data64)
+@ti.test(extensions=[ti.extension.data64])
 @ti.test()
 def test_ad_precision_1():
     loss = ti.var(ti.f32, shape=())
@@ -253,7 +253,7 @@ def test_ad_precision_1():
     assert x.grad[None] == 1
 
 
-@ti.require(ti.extension.data64)
+@ti.test(extensions=[ti.extension.data64])
 @ti.test()
 def test_ad_precision_2():
     loss = ti.var(ti.f64, shape=())

@@ -45,7 +45,7 @@ def test_from_numpy_2d():
             assert val[i, j] == i + j * 3
 
 
-@ti.require(ti.extension.data64)
+@ti.test(extensions=[ti.extension.data64])
 @ti.test()
 def test_f64():
     val = ti.var(ti.f64)

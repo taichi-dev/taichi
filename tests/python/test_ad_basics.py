@@ -51,7 +51,7 @@ def grad_test(tifunc, npfunc=None, default_fp=ti.f32):
 
 
 @if_has_autograd
-@ti.test()
+@ti.all_archs
 def test_size1():
     x = ti.var(ti.i32)
 

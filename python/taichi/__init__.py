@@ -16,11 +16,7 @@ from taichi.tools.video import VideoManager
 from taichi.tools.file import *
 from taichi.lang import *
 from .torch_io import from_torch, to_torch
-
-# https://stackoverflow.com/questions/25188119/test-if-code-is-executed-from-within-a-py-test-session
-if 'pytest' in __import__('sys').modules:
-    print('[Taichi] pytest detected')
-    from taichi.misc.test import *
+from taichi.misc.test import *
 
 
 __all__ = [s for s in dir() if not s.startswith('_')] + ['settings']

@@ -40,14 +40,16 @@ def make_temp_file(*args, **kwargs):
 
 
 ## Pytest options
-
-@pytest.fixture(params=ti.supported_archs() + [ti.cc], ids=ti.core.arch_name)
+@pytest.fixture(params=ti.supported_archs(), ids=ti.core.arch_name)
 def ti_adhoc_fixture(request):
     arch = request.param
     adhoc = request.function._ti_adhoc
 
     if arch not in adhoc.archs:
         pytest.skip(f'Arch={arch} not included in test')
+
+    if arch in adhoc.excludes:
+        pytest.skip(f'Arch={arch} is excluded from test')
 
     for e in adhoc.extensions:
         if not ti.core.is_extension_supported(arch, e):
@@ -56,7 +58,7 @@ def ti_adhoc_fixture(request):
     ti.init(arch=arch, **adhoc.options)
 
 
-def test(*archs, extensions=[], **options):
+def test(*archs, extensions=[], excludes=[], **options):
     if not len(archs):
         archs = ti.supported_archs()
 
@@ -68,6 +70,7 @@ def test(*archs, extensions=[], **options):
 
         wrapped._ti_adhoc = lambda x: x
         wrapped._ti_adhoc.archs = archs
+        wrapped._ti_adhoc.excludes = excludes
         wrapped._ti_adhoc.extensions = extensions
         wrapped._ti_adhoc.options = options
         return wrapped

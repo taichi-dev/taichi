@@ -89,7 +89,7 @@ def test_unordered_matrix():
 
 
 @pytest.mark.filterwarnings('ignore')
-@ti.host_arch_only
+@ti.test(ti.cpu)
 def test_deprecated():
     val = ti.var(ti.f32)
     mat = ti.Matrix(3, 2, ti.i32)

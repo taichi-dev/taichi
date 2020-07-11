@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.host_arch_only
+@ti.test(ti.cpu)
 def test_indices():
     a = ti.var(ti.f32, shape=(128, 32, 8))
 

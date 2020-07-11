@@ -110,7 +110,7 @@ def test_local_atomics():
 
 
 @ti.must_throw(UnboundLocalError)
-@ti.host_arch_only
+@ti.test(ti.cpu)
 def test_loop_var_life():
     @ti.kernel
     def test():
@@ -122,7 +122,7 @@ def test_loop_var_life():
 
 
 @ti.must_throw(UnboundLocalError)
-@ti.host_arch_only
+@ti.test(ti.cpu)
 def test_loop_var_life_double_iters():
     @ti.kernel
     def test():

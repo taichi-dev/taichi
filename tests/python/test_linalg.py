@@ -329,7 +329,7 @@ def test_init_matrix_from_vectors():
 
 # TODO: Remove this once the apis are fully deprecated in incoming version.
 @pytest.mark.filterwarnings('ignore')
-@ti.host_arch_only
+@ti.test(ti.cpu)
 def test_init_matrix_from_vectors_deprecated():
     m1 = ti.Matrix(3, 3, dt=ti.f32, shape=(3))
     m2 = ti.Matrix(3, 3, dt=ti.f32, shape=(3))
@@ -360,7 +360,7 @@ def test_init_matrix_from_vectors_deprecated():
 
 
 @pytest.mark.filterwarnings('ignore')
-@ti.host_arch_only
+@ti.test(ti.cpu)
 def test_to_numpy_as_vector_deprecated():
     v = ti.Vector(3, dt=ti.f32, shape=(2))
     u = np.array([[2, 3, 4], [5, 6, 7]])
@@ -447,7 +447,7 @@ def test_matrix_list_assign():
     assert np.allclose(v.to_numpy()[1, 0, 0, :], np.array([10, 12]))
 
 
-@ti.host_arch_only
+@ti.test(ti.cpu)
 def test_vector_xyzw_accessor():
     u = ti.Vector(2, dt=ti.i32, shape=(2, 2, 1))
     v = ti.Vector(4, dt=ti.i32, shape=(2, 2, 1))
@@ -470,7 +470,7 @@ def test_vector_xyzw_accessor():
     assert np.allclose(v.to_numpy()[1, 0, 0, :], np.array([6, 0, -3, 4]))
 
 
-@ti.host_arch_only
+@ti.test(ti.cpu)
 def test_diag():
     m1 = ti.Matrix(3, 3, dt=ti.f32, shape=())
 

@@ -24,6 +24,8 @@ class ScopeGuard:
 
 
 # Total transform
+# TODO: ASTTransformerBase -> ASTTransformer
+# TODO: ASTTransformer -> ASTTransformerTotal
 class ASTTransformer(object):
     def __init__(self, func=None, *args, **kwargs):
         self.pass_LowerAST = ASTTransformer_LowerAST(func=func, *args, **kwargs)

@@ -24,7 +24,7 @@ def grad_test(tifunc, npfunc=None, default_fp=ti.f32):
     if npfunc is None:
         npfunc = tifunc
 
-    @ti.all_archs_with(default_fp=default_fp)
+    @ti.test(default_fp=default_fp)
     def impl():
         print(f'arch={ti.cfg.arch} default_fp={ti.cfg.default_fp}')
         x = ti.var(default_fp)
@@ -226,7 +226,7 @@ def test_violate_kernel_simplicity2():
 
 
 @ti.test(extensions=[ti.extension.data64])
-@ti.all_archs_with(print_ir=True)
+@ti.test(print_ir=True)
 def test_cast():
     @ti.kernel
     def func():

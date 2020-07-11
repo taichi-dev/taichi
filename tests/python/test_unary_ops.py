@@ -40,7 +40,7 @@ def test_f64_trig():
     for dt in [ti.f32, ti.f64]:
         for taichi_op, np_op in op_pairs:
 
-            @ti.all_archs_with(default_fp=dt)
+            @ti.test(default_fp=dt)
             def wrapped():
                 _test_op(dt, taichi_op, np_op)
 

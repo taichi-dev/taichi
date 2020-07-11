@@ -151,7 +151,7 @@ def test_ad_if_parallel():
 
 
 @ti.test(extensions=[ti.extension.adstack, ti.extension.data64])
-@ti.all_archs_with(default_fp=ti.f64)
+@ti.test(default_fp=ti.f64)
 def test_ad_if_parallel_f64():
     x = ti.var(ti.f64, shape=2)
     y = ti.var(ti.f64, shape=2)
@@ -209,7 +209,7 @@ def test_ad_if_parallel_complex():
 
 
 @ti.test(extensions=[ti.extension.adstack, ti.extension.data64])
-@ti.all_archs_with(default_fp=ti.f64)
+@ti.test(default_fp=ti.f64)
 def test_ad_if_parallel_complex_f64():
     x = ti.var(ti.f64, shape=2)
     y = ti.var(ti.f64, shape=2)

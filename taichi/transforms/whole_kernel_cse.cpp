@@ -31,6 +31,18 @@ class WholeKernelCSE : public BasicStmtVisitor {
     visited.insert(stmt->instance_id);
   }
 
+  static bool common_statement_eliminable(Stmt *this_stmt, Stmt *prev_stmt) {
+    // Is this_stmt eliminable given that prev_stmt appears before it and has
+    // the same type with it?
+    if (this_stmt->is<GlobalPtrStmt>()) {
+      auto this_ptr = this_stmt->as<GlobalPtrStmt>();
+      auto prev_ptr = prev_stmt->as<GlobalPtrStmt>();
+      return irpass::analysis::definitely_same_address(this_ptr, prev_ptr) &&
+             (this_ptr->activate == prev_ptr->activate || prev_ptr->activate);
+    }
+    return irpass::analysis::same_statements(this_stmt, prev_stmt);
+  }
+
   void visit(Stmt *stmt) override {
     if (!stmt->common_statement_eliminable())
       return;
@@ -41,7 +53,7 @@ class WholeKernelCSE : public BasicStmtVisitor {
     }
     for (auto &scope : visible_stmts) {
       for (auto &prev_stmt : scope[std::type_index(typeid(*stmt))]) {
-        if (irpass::analysis::same_statements(stmt, prev_stmt)) {
+        if (common_statement_eliminable(stmt, prev_stmt)) {
           stmt->replace_with(prev_stmt);
           modifier.erase(stmt);
           return;

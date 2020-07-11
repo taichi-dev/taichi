@@ -824,6 +824,10 @@ class GlobalPtrStmt : public Stmt {
     return activate;
   }
 
+  bool common_statement_eliminable() const override {
+    return true;
+  }
+  
   TI_STMT_DEF_FIELDS(ret_type, snodes, indices, activate);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
@@ -1394,8 +1398,4 @@ inline void StmtFieldManager::operator()(const char *key, T &&value) {
         std::make_unique<StmtFieldSNode>(value));
   } else {
     stmt->field_manager.fields.emplace_back(
-        std::make_unique<StmtFieldNumeric<T>>(value));
-  }
-}
-
-TLANG_NAMESPACE_END
+       

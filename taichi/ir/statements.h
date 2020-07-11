@@ -133,6 +133,10 @@ class SNodeLookupStmt : public Stmt {
     return activate;
   }
 
+  bool common_statement_eliminable() const override {
+    return true;
+  }
+
   TI_STMT_DEF_FIELDS(ret_type,
                      snode,
                      input_snode,

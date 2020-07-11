@@ -139,6 +139,19 @@ def chain_compare(comparators, ops):
     return ret
 
 
+@taichi_scope
+def func_call(func, *args, **kwargs):
+    if getattr(func, '__module__') == '__main__':
+        import warnings
+        warnings.warn(f'Calling into non-Taichi function {func.__name__}.'
+                      ' This means that scope inside that function will not be processed'
+                      ' by the Taichi transformer. Proceed with caution! '
+                      ' Maybe you want to decorate it with @ti.func or @ti.pyfunc?',
+                UserWarning, stacklevel=2)
+
+    return func(*args, **kwargs)
+
+
 class PyTaichi:
     def __init__(self, kernels=None):
         self.materialized = False

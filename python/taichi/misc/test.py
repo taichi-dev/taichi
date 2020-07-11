@@ -46,16 +46,17 @@ def ti_adhoc_fixture(request):
     adhoc = request.function._ti_adhoc
 
     if arch not in adhoc.archs:
-        pytest.skip(f'Arch={arch} not included in test')
+        raise pytest.skip(f'Arch={arch} not included in test')
 
     if arch in adhoc.excludes:
-        pytest.skip(f'Arch={arch} is excluded from test')
+        raise pytest.skip(f'Arch={arch} is excluded from test')
 
     for e in adhoc.extensions:
         if not ti.core.is_extension_supported(arch, e):
-            pytest.skip(f'extension {e} not supported on Arch={arch}')
+            raise pytest.skip(f'extension {e} not supported on Arch={arch}')
 
-    ti.init(arch=arch, **adhoc.options)
+    adhoc.arch = arch
+    yield
 
 
 def test(*archs, extensions=[], excludes=[], **options):
@@ -66,6 +67,7 @@ def test(*archs, extensions=[], excludes=[], **options):
         @functools.wraps(foo)
         @pytest.mark.usefixtures('ti_adhoc_fixture')
         def wrapped(*args, **kwargs):
+            ti.init(arch=wrapped._ti_adhoc.arch, **options)
             foo(*args, **kwargs)
 
         wrapped._ti_adhoc = lambda x: x

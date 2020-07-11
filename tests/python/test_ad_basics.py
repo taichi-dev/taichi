@@ -24,7 +24,7 @@ def grad_test(tifunc, npfunc=None, default_fp=ti.f32):
     if npfunc is None:
         npfunc = tifunc
 
-    @ti.test(default_fp=default_fp)
+    @ti.all_archs_with(default_fp=default_fp)
     def impl():
         print(f'arch={ti.cfg.arch} default_fp={ti.cfg.default_fp}')
         x = ti.var(default_fp)

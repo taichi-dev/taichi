@@ -252,6 +252,15 @@ void export_lang(py::module &m) {
           return Append(snode, indices, val);
         });
 
+  m.def("insert_external_func_call",
+        [](std::size_t func_addr, const ExprGroup &args,
+           const ExprGroup &outputs) {
+          auto expr = Expr::make<ExternalFuncCallExpression>(
+              (void *)func_addr, args.exprs, outputs.exprs);
+
+          current_ast_builder().insert(Stmt::make<FrontendEvalStmt>(expr));
+        });
+
   m.def("insert_is_active", [](SNode *snode, const ExprGroup &indices) {
     return is_active(snode, indices);
   });

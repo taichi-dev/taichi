@@ -966,6 +966,24 @@ class AssertStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+class ExternalFuncCallStmt : public Stmt {
+ public:
+  void *func;
+  std::vector<Stmt *> arg_stmts;
+  std::vector<Stmt *> output_stmts;
+
+  ExternalFuncCallStmt(void *func,
+                       const std::vector<Stmt *> &arg_stmts,
+                       const std::vector<Stmt *> &output_stmts)
+      : func(func), arg_stmts(arg_stmts), output_stmts(output_stmts) {
+    TI_ASSERT(func);
+    TI_STMT_REG_FIELDS;
+  }
+
+  TI_STMT_DEF_FIELDS(func, arg_stmts, output_stmts);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
 class RangeAssumptionStmt : public Stmt {
  public:
   Stmt *input;

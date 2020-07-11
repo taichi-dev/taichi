@@ -101,13 +101,28 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(AssertStmt *assert) override {
-    std::string extras = "";
+    std::string extras;
     for (auto &arg : assert->args) {
       extras += ", ";
       extras += arg->name();
     }
     print("{} : assert {}, \"{}\"{}", assert->id, assert->cond->name(),
           assert->text, extras);
+  }
+
+  void visit(ExternalFuncCallStmt *stmt) override {
+    std::string extras = "inputs=";
+    for (auto &arg : stmt->arg_stmts) {
+      extras += ", ";
+      extras += arg->name();
+    }
+    extras += "outputs=";
+    for (auto &output : stmt->output_stmts) {
+      extras += ", ";
+      extras += output->name();
+    }
+    print("{} : func_call {:x}, {}", stmt->name(), (std::size_t)stmt->func,
+          extras);
   }
 
   void visit(FrontendSNodeOpStmt *stmt) override {

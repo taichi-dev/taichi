@@ -9,7 +9,6 @@ from taichi.misc.gui import GUI
 from taichi.misc.np2ply import PLYWriter
 from taichi.misc.image import imread, imwrite, imshow, imdisplay
 from taichi.misc.task import Task
-from taichi.misc.test import *
 from taichi.misc import settings as settings
 from taichi.misc.gui import rgb_to_hex
 from taichi.misc.settings import *
@@ -18,10 +17,10 @@ from taichi.tools.file import *
 from taichi.lang import *
 from .torch_io import from_torch, to_torch
 
-
-def test():
-    task = taichi.Task('test')
-    return task.run([])
+# https://stackoverflow.com/questions/25188119/test-if-code-is-executed-from-within-a-py-test-session
+if 'pytest' in __import__('sys').modules:
+    print('[Taichi] pytest detected')
+    from taichi.misc.test import *
 
 
 __all__ = [s for s in dir() if not s.startswith('_')] + ['settings']

@@ -87,19 +87,8 @@ class Func:
         func_body = tree.body[0]
         func_body.decorator_list = []
 
-        if impl.get_runtime().print_preprocessed:
-            import astor
-            print('Before preprocessing:')
-            print(astor.to_source(tree.body[0], indent_with='  '))
-
         visitor = ASTTransformer(is_kernel=False, func=self)
         visitor.visit(tree)
-        ast.fix_missing_locations(tree)
-
-        if impl.get_runtime().print_preprocessed:
-            import astor
-            print('After preprocessing:')
-            print(astor.to_source(tree.body[0], indent_with='  '))
 
         ast.increment_lineno(tree, oinspect.getsourcelines(self.func)[1] - 1)
 
@@ -330,12 +319,6 @@ class Kernel:
             arg_features=arg_features)
 
         visitor.visit(tree)
-        ast.fix_missing_locations(tree)
-
-        if self.runtime.print_preprocessed:
-            import astor
-            print('After preprocessing:')
-            print(astor.to_source(tree.body[0], indent_with='  '))
 
         ast.increment_lineno(tree, oinspect.getsourcelines(self.func)[1] - 1)
 

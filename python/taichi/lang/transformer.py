@@ -2,6 +2,7 @@ import ast
 from .util import to_taichi_type
 import copy
 from .exception import TaichiSyntaxError
+from . import impl
 
 
 class ScopeGuard:
@@ -28,9 +29,23 @@ class ASTTransformer(object):
         self.pass_LowerAST = ASTTransformer_LowerAST(func=func, *args, **kwargs)
         self.pass_Checks = ASTTransformer_Checks(func=func)
 
+    @staticmethod
+    def print_ast(tree, title=None):
+        if not impl.get_runtime().print_preprocessed:
+            return
+        if title is not None:
+            print(f'{title}:')
+        import astor
+        print(astor.to_source(tree.body[0], indent_with='  '))
+
     def visit(self, tree):
+        self.print_ast(tree, 'Initial AST')
         self.pass_LowerAST.visit(tree)
+        self.print_ast(tree, 'Lower AST')
         self.pass_Checks.visit(tree)
+        self.print_ast(tree, 'Checks')
+        ast.fix_missing_locations(tree)
+        self.print_ast(tree, 'Final AST')
 
 
 class ASTTransformerBase(ast.NodeTransformer):

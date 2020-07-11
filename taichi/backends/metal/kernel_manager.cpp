@@ -752,7 +752,7 @@ class KernelManager::Impl {
       ListManager root_lm;
       root_lm.lm_data = rtm_list_head + root_id;
       root_lm.mem_alloc = alloc;
-      append(&root_lm, root_elem);
+      root_lm.append(root_elem);
     }
 
     did_modify_range(runtime_buffer_.get(), /*location=*/0,

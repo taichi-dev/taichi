@@ -865,7 +865,7 @@ class Matrix(TaichiOperations):
             impl.static_assert(other.m == 1,
                                "rhs for outer_product is not a vector"))
         ret = Matrix([[self[i] * other[j] for j in range(other.n)]
-                      for i in range(other.n)])
+                      for i in range(self.n)])
         return ret
 
 

@@ -28,8 +28,8 @@ def test_const_init():
 @ti.all_archs
 def test_basic_utils():
     a = ti.Vector(3, dt=ti.f32)
-    b = ti.Vector(3, dt=ti.f32)
-    abT = ti.Matrix(3, 3, dt=ti.f32)
+    b = ti.Vector(2, dt=ti.f32)
+    abT = ti.Matrix(3, 2, dt=ti.f32)
     aNormalized = ti.Vector(3, dt=ti.f32)
 
     normA = ti.var(ti.f32)
@@ -41,7 +41,7 @@ def test_basic_utils():
     @ti.kernel
     def init():
         a[None] = ti.Vector([1.0, 2.0, 3.0])
-        b[None] = ti.Vector([4.0, 5.0, 6.0])
+        b[None] = ti.Vector([4.0, 5.0])
         abT[None] = a[None].outer_product(b[None])
 
         normA[None] = a[None].norm()
@@ -53,7 +53,7 @@ def test_basic_utils():
     init()
 
     for i in range(3):
-        for j in range(3):
+        for j in range(2):
             assert abT[None][i, j] == a[None][i] * b[None][j]
 
     sqrt14 = np.sqrt(14.0)

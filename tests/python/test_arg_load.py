@@ -30,7 +30,6 @@ def test_arg_load():
 
 
 @ti.test(extensions=[ti.extension.data64])
-@ti.test(extensions=[ti.extension.data64])
 def test_arg_load_f64():
     x = ti.var(ti.i32)
     y = ti.var(ti.f32)

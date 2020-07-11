@@ -50,24 +50,20 @@ def test_reduction_single_f32():
 
 
 @ti.test(extensions=[ti.extension.data64])
-@ti.test(extensions=[ti.extension.data64])
 def test_reduction_single_i64():
     _test_reduction_single(ti.i64, lambda x, y: x % 2**64 == y % 2**64)
 
 
-@ti.test(extensions=[ti.extension.data64])
 @ti.test(extensions=[ti.extension.data64], excludes=[ti.opengl])  # OpenGL doesn't have u64 yet
 def test_reduction_single_u64():
     _test_reduction_single(ti.u64, lambda x, y: x % 2**64 == y % 2**64)
 
 
 @ti.test(extensions=[ti.extension.data64])
-@ti.test(extensions=[ti.extension.data64])
 def test_reduction_single_f64():
     _test_reduction_single(ti.f64, lambda x, y: x == approx(y, 1e-12))
 
 
-@ti.test(extensions=[ti.extension.data64])
 @ti.test(extensions=[ti.extension.data64])
 def test_reduction_single():
     N = 1024 * 1024

@@ -2,7 +2,6 @@ import taichi as ti
 
 
 @ti.test(extensions=[ti.extension.adstack])
-@ti.test(extensions=[ti.extension.adstack])
 def test_ad_if_simple():
     x = ti.var(ti.f32, shape=())
     y = ti.var(ti.f32, shape=())
@@ -23,7 +22,6 @@ def test_ad_if_simple():
     assert x.grad[None] == 1
 
 
-@ti.test(extensions=[ti.extension.adstack])
 @ti.test(extensions=[ti.extension.adstack])
 def test_ad_if():
     x = ti.var(ti.f32, shape=2)
@@ -52,7 +50,6 @@ def test_ad_if():
     assert x.grad[1] == 1
 
 
-@ti.test(extensions=[ti.extension.adstack])
 @ti.test(extensions=[ti.extension.adstack])
 def test_ad_if_nested():
     n = 20
@@ -92,7 +89,6 @@ def test_ad_if_nested():
 
 
 @ti.test(extensions=[ti.extension.adstack])
-@ti.test(extensions=[ti.extension.adstack])
 def test_ad_if_mutable():
     x = ti.var(ti.f32, shape=2)
     y = ti.var(ti.f32, shape=2)
@@ -122,7 +118,6 @@ def test_ad_if_mutable():
 
 
 @ti.test(extensions=[ti.extension.adstack])
-@ti.test(extensions=[ti.extension.adstack])
 def test_ad_if_parallel():
     x = ti.var(ti.f32, shape=2)
     y = ti.var(ti.f32, shape=2)
@@ -150,7 +145,6 @@ def test_ad_if_parallel():
     assert x.grad[1] == 1
 
 
-@ti.test(extensions=[ti.extension.adstack, ti.extension.data64])
 @ti.test(extensions=[ti.extension.adstack, ti.extension.data64], default_fp=ti.f64)
 def test_ad_if_parallel_f64():
     x = ti.var(ti.f64, shape=2)
@@ -180,7 +174,6 @@ def test_ad_if_parallel_f64():
 
 
 @ti.test(extensions=[ti.extension.adstack])
-@ti.test(extensions=[ti.extension.adstack])
 def test_ad_if_parallel_complex():
     x = ti.var(ti.f32, shape=2)
     y = ti.var(ti.f32, shape=2)
@@ -208,7 +201,6 @@ def test_ad_if_parallel_complex():
     assert x.grad[1] == -0.25
 
 
-@ti.test(extensions=[ti.extension.adstack, ti.extension.data64])
 @ti.test(extensions=[ti.extension.adstack, ti.extension.data64], default_fp=ti.f64)
 def test_ad_if_parallel_complex_f64():
     x = ti.var(ti.f64, shape=2)

@@ -23,7 +23,6 @@ def test_type_assign_argument(dt):
 
 
 @pytest.mark.parametrize('dt', _TI_64_TYPES)
-@ti.test(extensions=[ti.extension.data64])
 @ti.test(extensions=[ti.extension.data64], excludes=[ti.opengl])
 def test_type_assign_argument64(dt):
     _test_type_assign_argument(dt)
@@ -56,7 +55,6 @@ def test_type_operator(dt):
 
 
 @pytest.mark.parametrize('dt', _TI_64_TYPES)
-@ti.test(extensions=[ti.extension.data64])
 @ti.test(extensions=[ti.extension.data64], excludes=[ti.opengl])
 def test_type_operator64(dt):
     _test_type_operator(dt)
@@ -82,7 +80,6 @@ def test_type_tensor(dt):
 
 
 @pytest.mark.parametrize('dt', _TI_64_TYPES)
-@ti.test(extensions=[ti.extension.data64])
 @ti.test(extensions=[ti.extension.data64], excludes=[ti.opengl])
 def test_type_tensor64(dt):
     _test_type_tensor(dt)
@@ -128,7 +125,6 @@ def test_overflow(dt, n):
     (ti.i64, 64),
     (ti.u64, 64),
 ])
-@ti.test(extensions=[ti.extension.data64])
 @ti.test(extensions=[ti.extension.data64], excludes=[ti.opengl])
 def test_overflow64(dt, n):
     _test_overflow(dt, n)

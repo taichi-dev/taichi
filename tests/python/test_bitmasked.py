@@ -2,7 +2,7 @@ import taichi as ti
 
 
 def archs_support_bitmasked(func):
-    return ti.archs_excluding(ti.opengl)(func)
+    return ti.test(excludes=[ti.opengl])(func)
 
 
 @archs_support_bitmasked

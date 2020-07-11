@@ -7,7 +7,7 @@ import pytest
 # Metal doesn't support print() or 64-bit data
 # While OpenGL does support print, but not 64-bit data
 @pytest.mark.parametrize('dt', [ti.i32, ti.f32, ti.i64, ti.f64])
-@ti.archs_excluding(ti.metal, ti.opengl)
+@ti.test(excludes=[ti.metal, ti.opengl])
 def test_print(dt):
     @ti.kernel
     def func():

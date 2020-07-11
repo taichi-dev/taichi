@@ -39,7 +39,7 @@ def test_reduction_single_i32():
     _test_reduction_single(ti.i32, lambda x, y: x % 2**32 == y % 2**32)
 
 
-@ti.archs_excluding(ti.opengl)
+@ti.test(excludes=[ti.opengl])
 def test_reduction_single_u32():
     _test_reduction_single(ti.u32, lambda x, y: x % 2**32 == y % 2**32)
 
@@ -56,7 +56,7 @@ def test_reduction_single_i64():
 
 
 @ti.require(ti.extension.data64)
-@ti.archs_excluding(ti.opengl)  # OpenGL doesn't have u64 yet
+@ti.test(excludes=[ti.opengl])  # OpenGL doesn't have u64 yet
 def test_reduction_single_u64():
     _test_reduction_single(ti.u64, lambda x, y: x % 2**64 == y % 2**64)
 

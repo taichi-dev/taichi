@@ -41,21 +41,13 @@ def make_temp_file(*args, **kwargs):
 
 ## Pytest options
 @pytest.fixture(params=ti.supported_archs(), ids=ti.core.arch_name)
-def ti_adhoc_fixture(request):
-    arch = request.param
-    adhoc = request.function._ti_adhoc
+def archs(request):
+    marker = request.node.get_closest_marker('taichi')
 
-    if arch not in adhoc.archs:
+    if arch not in marker.get('archs', {}):
         raise pytest.skip(f'Arch={arch} not included in test')
 
-    if arch in adhoc.excludes:
-        raise pytest.skip(f'Arch={arch} is excluded from test')
-
-    for e in adhoc.extensions:
-        if not ti.core.is_extension_supported(arch, e):
-            raise pytest.skip(f'extension {e} not supported on Arch={arch}')
-
-    adhoc.arch = arch
+    ti.init(arch=arch)
     yield
 
 
@@ -65,7 +57,8 @@ def test(*archs, extensions=[], excludes=[], **options):
 
     def decorator(foo):
         @functools.wraps(foo)
-        @pytest.mark.usefixtures('ti_adhoc_fixture')
+        @pytest.mark.usefixtures('archs')
+        @pytest.mark.taichi(archs=archs)
         def wrapped(*args, **kwargs):
             ti.init(arch=wrapped._ti_adhoc.arch, **options)
             foo(*args, **kwargs)

@@ -1,1 +1,1 @@
-from taichi import ti_adhoc_fixture
+from taichi import archs

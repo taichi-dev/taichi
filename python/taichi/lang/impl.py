@@ -217,15 +217,16 @@ def get_runtime():
 
 @taichi_scope
 def make_constant_expr(val):
+    import numpy as np
     _taichi_skip_traceback = 1
-    if isinstance(val, int):
+    if isinstance(val, (int, np.integer)):
         if pytaichi.default_ip == i32:
             return Expr(taichi_lang_core.make_const_expr_i32(val))
         elif pytaichi.default_ip == i64:
             return Expr(taichi_lang_core.make_const_expr_i64(val))
         else:
             assert False
-    elif isinstance(val, float):
+    elif isinstance(val, (float, np.floating, np.ndarray)):
         if pytaichi.default_fp == f32:
             return Expr(taichi_lang_core.make_const_expr_f32(val))
         elif pytaichi.default_fp == f64:

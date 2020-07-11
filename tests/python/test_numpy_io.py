@@ -46,7 +46,7 @@ def test_from_numpy_2d():
 
 
 @ti.test(extensions=[ti.extension.data64])
-@ti.test()
+@ti.test(extensions=[ti.extension.data64])
 def test_f64():
     val = ti.var(ti.f64)
 

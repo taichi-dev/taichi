@@ -4,7 +4,7 @@ from taichi import approx
 
 
 @ti.test(extensions=[ti.extension.data64])
-@ti.test(fast_math=False)
+@ti.test(extensions=[ti.extension.data64], fast_math=False)
 def test_precision():
     u = ti.var(ti.f64, shape=())
     v = ti.var(ti.f64, shape=())

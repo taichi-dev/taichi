@@ -2,7 +2,7 @@ import taichi as ti
 
 
 @ti.test(extensions=[ti.extension.adstack])
-@ti.test()
+@ti.test(extensions=[ti.extension.adstack])
 def test_ad_if_simple():
     x = ti.var(ti.f32, shape=())
     y = ti.var(ti.f32, shape=())
@@ -24,7 +24,7 @@ def test_ad_if_simple():
 
 
 @ti.test(extensions=[ti.extension.adstack])
-@ti.test()
+@ti.test(extensions=[ti.extension.adstack])
 def test_ad_if():
     x = ti.var(ti.f32, shape=2)
     y = ti.var(ti.f32, shape=2)
@@ -53,7 +53,7 @@ def test_ad_if():
 
 
 @ti.test(extensions=[ti.extension.adstack])
-@ti.test()
+@ti.test(extensions=[ti.extension.adstack])
 def test_ad_if_nested():
     n = 20
     x = ti.var(ti.f32, shape=n)
@@ -92,7 +92,7 @@ def test_ad_if_nested():
 
 
 @ti.test(extensions=[ti.extension.adstack])
-@ti.test()
+@ti.test(extensions=[ti.extension.adstack])
 def test_ad_if_mutable():
     x = ti.var(ti.f32, shape=2)
     y = ti.var(ti.f32, shape=2)
@@ -122,7 +122,7 @@ def test_ad_if_mutable():
 
 
 @ti.test(extensions=[ti.extension.adstack])
-@ti.test()
+@ti.test(extensions=[ti.extension.adstack])
 def test_ad_if_parallel():
     x = ti.var(ti.f32, shape=2)
     y = ti.var(ti.f32, shape=2)
@@ -151,7 +151,7 @@ def test_ad_if_parallel():
 
 
 @ti.test(extensions=[ti.extension.adstack, ti.extension.data64])
-@ti.test(default_fp=ti.f64)
+@ti.test(extensions=[ti.extension.adstack, ti.extension.data64], default_fp=ti.f64)
 def test_ad_if_parallel_f64():
     x = ti.var(ti.f64, shape=2)
     y = ti.var(ti.f64, shape=2)
@@ -180,7 +180,7 @@ def test_ad_if_parallel_f64():
 
 
 @ti.test(extensions=[ti.extension.adstack])
-@ti.test()
+@ti.test(extensions=[ti.extension.adstack])
 def test_ad_if_parallel_complex():
     x = ti.var(ti.f32, shape=2)
     y = ti.var(ti.f32, shape=2)
@@ -209,7 +209,7 @@ def test_ad_if_parallel_complex():
 
 
 @ti.test(extensions=[ti.extension.adstack, ti.extension.data64])
-@ti.test(default_fp=ti.f64)
+@ti.test(extensions=[ti.extension.adstack, ti.extension.data64], default_fp=ti.f64)
 def test_ad_if_parallel_complex_f64():
     x = ti.var(ti.f64, shape=2)
     y = ti.var(ti.f64, shape=2)

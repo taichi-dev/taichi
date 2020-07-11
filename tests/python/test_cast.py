@@ -14,7 +14,7 @@ def test_cast_f32():
 
 
 @ti.test(extensions=[ti.extension.data64])
-@ti.test()
+@ti.test(extensions=[ti.extension.data64])
 def test_cast_f64():
     z = ti.var(ti.i32, shape=())
 

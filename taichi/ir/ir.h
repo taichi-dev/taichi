@@ -1398,4 +1398,8 @@ inline void StmtFieldManager::operator()(const char *key, T &&value) {
         std::make_unique<StmtFieldSNode>(value));
   } else {
     stmt->field_manager.fields.emplace_back(
-       
+        std::make_unique<StmtFieldNumeric<T>>(value));
+  }
+}
+
+TLANG_NAMESPACE_END

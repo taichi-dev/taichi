@@ -92,15 +92,15 @@ TI_TEST("same_statements") {
     auto zero = block->push_back<ConstStmt>(LaneAttribute<TypedConstant>(0));
     SNode root(0, SNodeType::root);
     auto &child = root.insert_children(SNodeType::dense);
-    auto lookup1 = block->push_back<SNodeLookupStmt>(
-        &root, get_root, zero, false, std::vector<Stmt *>());
-    auto lookup2 = block->push_back<SNodeLookupStmt>(
-        &root, get_root, zero, false, std::vector<Stmt *>());
-    auto lookup_activate = block->push_back<SNodeLookupStmt>(
-        &root, get_root, zero, true, std::vector<Stmt *>());
+    auto lookup1 =
+        block->push_back<SNodeLookupStmt>(&root, get_root, zero, false);
+    auto lookup2 =
+        block->push_back<SNodeLookupStmt>(&root, get_root, zero, false);
+    auto lookup_activate =
+        block->push_back<SNodeLookupStmt>(&root, get_root, zero, true);
     auto get_child = block->push_back<GetChStmt>(lookup_activate, 0);
-    auto lookup_child = block->push_back<SNodeLookupStmt>(
-        &child, get_child, zero, false, std::vector<Stmt *>());
+    auto lookup_child =
+        block->push_back<SNodeLookupStmt>(&child, get_child, zero, false);
 
     irpass::typecheck(block.get());
     TI_CHECK(block->size() == 7);

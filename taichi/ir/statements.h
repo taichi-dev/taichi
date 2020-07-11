@@ -113,18 +113,15 @@ class SNodeLookupStmt : public Stmt {
   SNode *snode;
   Stmt *input_snode;
   Stmt *input_index;
-  std::vector<Stmt *> global_indices;
   bool activate;
 
   SNodeLookupStmt(SNode *snode,
                   Stmt *input_snode,
                   Stmt *input_index,
-                  bool activate,
-                  const std::vector<Stmt *> &global_indices)
+                  bool activate)
       : snode(snode),
         input_snode(input_snode),
         input_index(input_index),
-        global_indices(global_indices),
         activate(activate) {
     TI_STMT_REG_FIELDS;
   }
@@ -141,7 +138,6 @@ class SNodeLookupStmt : public Stmt {
                      snode,
                      input_snode,
                      input_index,
-                     global_indices,
                      activate);
   TI_DEFINE_ACCEPT_AND_CLONE
 };

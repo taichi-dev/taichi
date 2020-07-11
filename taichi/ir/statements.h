@@ -134,11 +134,7 @@ class SNodeLookupStmt : public Stmt {
     return true;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type,
-                     snode,
-                     input_snode,
-                     input_index,
-                     activate);
+  TI_STMT_DEF_FIELDS(ret_type, snode, input_snode, input_index, activate);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

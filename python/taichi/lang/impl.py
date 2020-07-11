@@ -141,7 +141,7 @@ def chain_compare(comparators, ops):
 
 @taichi_scope
 def func_call(func, *args, **kwargs):
-    if getattr(func, '__module__') == '__main__':
+    if getattr(func, '__module__', '') == '__main__' and not getattr(func, '__wrapped__', ''):
         import warnings
         warnings.warn(f'Calling into non-Taichi function {func.__name__}.'
                       ' This means that scope inside that function will not be processed'
@@ -447,6 +447,7 @@ def static(x, *xs):
     elif isinstance(x, ti.Matrix) and x.is_global():
         return x
     elif isinstance(x, types.FunctionType) or isinstance(x, types.MethodType):
+
         return x
     else:
         raise ValueError(

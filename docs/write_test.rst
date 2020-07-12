@@ -229,7 +229,7 @@ Sometimes some backends are not capable of specific tests, we have to exclude th
 .. code-block:: python
 
     # Run this test on all backends except for OpenGL
-    @ti.test(excludes=[ti.opengl]):
+    @ti.test(excludes=[ti.opengl])
     def test_sparse_tensor():
         # ... (some tests that requires sparse feature which is not supported by OpenGL)
 
@@ -238,6 +238,6 @@ You may also use the ``extensions`` keyword to exclude backends without specific
 .. code-block:: python
 
     # Run this test on all backends except for OpenGL
-    @ti.test(extensions=[ti.extension.sparse]):
+    @ti.test(extensions=[ti.extension.sparse])
     def test_sparse_tensor():
         # ... (some tests that requires sparse feature which is not supported by OpenGL)

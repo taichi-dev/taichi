@@ -10,7 +10,7 @@ from collections import defaultdict
 from functools import wraps
 from pathlib import Path
 
-from taichi.colorama import Back, Fore, Style
+from taichi.color import Back, Fore, Style
 
 import taichi as ti
 from taichi.tools.video import (accelerate_video, crop_video, make_video,

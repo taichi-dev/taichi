@@ -1,5 +1,8 @@
 '''
 Fake a colorama (if not installed)
+
+Q: Why I name this after taichi.color instead of taichi.colorama?
+A: To prevent possible self-import on `import colorama` :)
 '''
 
 _has_colorama = False

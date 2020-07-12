@@ -8,6 +8,7 @@ if not _env_torch or int(_env_torch):
     try:
         import torch
         _has_pytorch = True
+        print('[Taichi] pytorch detected')
     except:
         pass
 

@@ -1,6 +1,6 @@
 import functools
 import traceback
-from taichi.colorama import Fore, Style
+from taichi.color import Fore, Style
 import sys
 
 

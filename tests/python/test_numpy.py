@@ -132,8 +132,8 @@ def test_numpy_3d():
                 assert a[i, j, k] == i * j * (k + 1) + i + j + k * 2
 
 
-@ti.must_throw(AssertionError)
-def test_numpy_3d():
+@ti.must_throw(IndexError)
+def test_numpy_3d_error():
     val = ti.var(ti.i32)
 
     n = 4

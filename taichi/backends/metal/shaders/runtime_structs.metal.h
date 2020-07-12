@@ -51,11 +51,6 @@ STR(
       atomic_int chunks[kTaichiNumChunks];
     };
 
-    struct ListManager {
-      device ListManagerData *lm_data;
-      device MemoryAllocator *mem_alloc;
-    };
-
     // This class is very similar to metal::SNodeDescriptor
     struct SNodeMeta {
       enum Type { Root = 0, Dense = 1, Bitmasked = 2, Dynamic = 3 };

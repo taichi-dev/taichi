@@ -172,6 +172,7 @@ def deprecated(old, new):
     def decorator(foo):
         @functools.wraps(foo)
         def wrapped(*args, **kwargs):
+            _taichi_skip_traceback = 1
             import warnings
             msg = f'{old} is deprecated, please use {new} instead'
             warnings.warn(msg, DeprecationWarning, stacklevel=2)
@@ -196,6 +197,7 @@ def taichi_scope(func):
 
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
+        _taichi_skip_traceback = 1
         assert in_taichi_scope(), \
                 f'{func.__name__} cannot be called in Python-scope'
         return func(*args, **kwargs)
@@ -208,6 +210,7 @@ def python_scope(func):
 
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
+        _taichi_skip_traceback = 1
         assert in_python_scope(), \
                 f'{func.__name__} cannot be called in Taichi-scope'
         return func(*args, **kwargs)

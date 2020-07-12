@@ -113,18 +113,15 @@ class SNodeLookupStmt : public Stmt {
   SNode *snode;
   Stmt *input_snode;
   Stmt *input_index;
-  std::vector<Stmt *> global_indices;
   bool activate;
 
   SNodeLookupStmt(SNode *snode,
                   Stmt *input_snode,
                   Stmt *input_index,
-                  bool activate,
-                  const std::vector<Stmt *> &global_indices)
+                  bool activate)
       : snode(snode),
         input_snode(input_snode),
         input_index(input_index),
-        global_indices(global_indices),
         activate(activate) {
     TI_STMT_REG_FIELDS;
   }
@@ -133,12 +130,11 @@ class SNodeLookupStmt : public Stmt {
     return activate;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type,
-                     snode,
-                     input_snode,
-                     input_index,
-                     global_indices,
-                     activate);
+  bool common_statement_eliminable() const override {
+    return true;
+  }
+
+  TI_STMT_DEF_FIELDS(ret_type, snode, input_snode, input_index, activate);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

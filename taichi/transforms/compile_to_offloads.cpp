@@ -60,7 +60,7 @@ void compile_to_offloads(IRNode *ir,
     print("Loop Split");
     irpass::analysis::verify(ir);
   }
-  irpass::full_simplify(ir);
+  irpass::full_simplify(ir, false);
   print("Simplified I");
   irpass::analysis::verify(ir);
 
@@ -68,9 +68,9 @@ void compile_to_offloads(IRNode *ir,
     // Remove local atomics here so that we don't have to handle their gradients
     irpass::demote_atomics(ir);
 
-    irpass::full_simplify(ir);
+    irpass::full_simplify(ir, false);
     irpass::auto_diff(ir, ad_use_stack);
-    irpass::full_simplify(ir);
+    irpass::full_simplify(ir, false);
     print("Gradient");
     irpass::analysis::verify(ir);
   }
@@ -88,15 +88,11 @@ void compile_to_offloads(IRNode *ir,
     irpass::analysis::verify(ir);
   }
 
-  irpass::cfg_optimization(ir, false);
-  print("Optimized by CFG I");
-  irpass::analysis::verify(ir);
-
   irpass::flag_access(ir);
   print("Access flagged I");
   irpass::analysis::verify(ir);
 
-  irpass::full_simplify(ir);
+  irpass::full_simplify(ir, false);
   print("Simplified II");
   irpass::analysis::verify(ir);
 
@@ -105,7 +101,7 @@ void compile_to_offloads(IRNode *ir,
   irpass::analysis::verify(ir);
 
   irpass::cfg_optimization(ir, false);
-  print("Optimized by CFG II");
+  print("Optimized by CFG");
   irpass::analysis::verify(ir);
 
   irpass::flag_access(ir);
@@ -140,11 +136,7 @@ void compile_to_offloads(IRNode *ir,
   print("Atomics demoted");
   irpass::analysis::verify(ir);
 
-  irpass::cfg_optimization(ir, true);
-  print("Optimized by CFG III");
-  irpass::analysis::verify(ir);
-
-  irpass::full_simplify(ir);
+  irpass::full_simplify(ir, lower_global_access);
   print("Simplified III");
 
   // Final field registration correctness & type checking

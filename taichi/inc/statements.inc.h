@@ -42,6 +42,7 @@ PER_STATEMENT(LocalStoreStmt)
 PER_STATEMENT(SNodeOpStmt)
 PER_STATEMENT(RangeAssumptionStmt)
 PER_STATEMENT(AssertStmt)
+PER_STATEMENT(ExternalFuncCallStmt)
 
 // Locals with reverse-mode autodiff
 PER_STATEMENT(StackAllocaStmt)

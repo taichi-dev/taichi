@@ -152,6 +152,7 @@ class Matrix(TaichiOperations):
         return results[0]
 
     def element_wise_binary(self, foo, other):
+        _taichi_skip_traceback = 1
         ret = self.empty_copy()
         if isinstance(other, (list, tuple)):
             other = Matrix(other)
@@ -185,13 +186,16 @@ class Matrix(TaichiOperations):
         return ret
 
     def element_wise_unary(self, foo):
+        _taichi_skip_traceback = 1
         ret = self.empty_copy()
         for i in range(self.n * self.m):
             ret.entries[i] = foo(self.entries[i])
         return ret
 
     def __matmul__(self, other):
+        _taichi_skip_traceback = 1
         assert self.m == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
+        del _taichi_skip_traceback
         ret = Matrix.new(self.n, other.m)
         for i in range(self.n):
             for j in range(other.m):
@@ -209,13 +213,15 @@ class Matrix(TaichiOperations):
             args = args + (0, )
         assert 0 <= args[0] < self.n
         assert 0 <= args[1] < self.m
+        _taichi_skip_traceback = 1
         # TODO(#1004): See if it's possible to support indexing at runtime
         for i, a in enumerate(args):
             if not isinstance(a, int):
                 raise TaichiSyntaxError(
                     f'The {i}-th index of a Matrix/Vector must be a compile-time constant '
-                    'integer, got {a}. This is because matrix operations will be **unrolled**'
-                    ' at compile-time for performance reason.\n'
+                    f'integer, got {type(a)}.\n'
+                    'This is because matrix operations will be **unrolled** at compile-time '
+                    'for performance reason.\n'
                     'If you want to *iterate through matrix elements*, use a static range:\n'
                     '  for i in ti.static(range(3)):\n'
                     '    print(i, "-th component is", vec[i])\n'
@@ -224,6 +230,7 @@ class Matrix(TaichiOperations):
         return args[0] * self.m + args[1]
 
     def __call__(self, *args, **kwargs):
+        _taichi_skip_traceback = 1
         assert kwargs == {}
         return self.entries[self.linearize_entry_id(*args)]
 
@@ -247,6 +254,7 @@ class Matrix(TaichiOperations):
 
     @taichi_scope
     def subscript(self, *indices):
+        _taichi_skip_traceback = 1
         if self.is_global():
             ret = self.empty_copy()
             for i, e in enumerate(self.entries):
@@ -260,6 +268,7 @@ class Matrix(TaichiOperations):
 
     @property
     def x(self):
+        _taichi_skip_traceback = 1
         if impl.inside_kernel():
             return self.subscript(0)
         else:
@@ -267,6 +276,7 @@ class Matrix(TaichiOperations):
 
     @property
     def y(self):
+        _taichi_skip_traceback = 1
         if impl.inside_kernel():
             return self.subscript(1)
         else:
@@ -274,6 +284,7 @@ class Matrix(TaichiOperations):
 
     @property
     def z(self):
+        _taichi_skip_traceback = 1
         if impl.inside_kernel():
             return self.subscript(2)
         else:
@@ -281,6 +292,7 @@ class Matrix(TaichiOperations):
 
     @property
     def w(self):
+        _taichi_skip_traceback = 1
         if impl.inside_kernel():
             return self.subscript(3)
         else:
@@ -290,21 +302,25 @@ class Matrix(TaichiOperations):
     @x.setter
     @python_scope
     def x(self, value):
+        _taichi_skip_traceback = 1
         self[0] = value
 
     @y.setter
     @python_scope
     def y(self, value):
+        _taichi_skip_traceback = 1
         self[1] = value
 
     @z.setter
     @python_scope
     def z(self, value):
+        _taichi_skip_traceback = 1
         self[2] = value
 
     @w.setter
     @python_scope
     def w(self, value):
+        _taichi_skip_traceback = 1
         self[3] = value
 
     class Proxy:
@@ -412,6 +428,7 @@ class Matrix(TaichiOperations):
 
     @taichi_scope
     def cast(self, dt):
+        _taichi_skip_traceback = 1
         ret = self.copy()
         if type(dt) is type and issubclass(dt, numbers.Number):
             if dt is float:
@@ -865,7 +882,7 @@ class Matrix(TaichiOperations):
             impl.static_assert(other.m == 1,
                                "rhs for outer_product is not a vector"))
         ret = Matrix([[self[i] * other[j] for j in range(other.n)]
-                      for i in range(other.n)])
+                      for i in range(self.n)])
         return ret
 
 

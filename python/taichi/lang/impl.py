@@ -79,6 +79,7 @@ def wrap_scalar(x):
 @taichi_scope
 def subscript(value, *indices):
     import numpy as np
+    _taichi_skip_traceback = 1
     if isinstance(value, np.ndarray):
         return value.__getitem__(*indices)
 
@@ -104,12 +105,16 @@ def subscript(value, *indices):
             indices_expr_group = make_expr_group(*indices)
         tensor_dim = int(value.ptr.get_attribute("dim"))
         index_dim = indices_expr_group.size()
-        assert tensor_dim == index_dim, f'Tensor with dim {tensor_dim} accessed with indices of dim {index_dim}'
+        if tensor_dim != index_dim:
+            raise IndexError(
+                f'Tensor with dim {tensor_dim} accessed with indices of dim {index_dim}'
+            )
         return Expr(taichi_lang_core.subscript(value.ptr, indices_expr_group))
 
 
 @taichi_scope
 def chain_compare(comparators, ops):
+    _taichi_skip_traceback = 1
     assert len(comparators) == len(ops) + 1, \
       f'Chain comparison invoked with {len(comparators)} comparators but {len(ops)} operators'
     ret = True
@@ -212,20 +217,24 @@ def get_runtime():
 
 @taichi_scope
 def make_constant_expr(val):
-    if isinstance(val, int):
+    import numpy as np
+    _taichi_skip_traceback = 1
+    if isinstance(val, (int, np.integer)):
         if pytaichi.default_ip == i32:
             return Expr(taichi_lang_core.make_const_expr_i32(val))
         elif pytaichi.default_ip == i64:
             return Expr(taichi_lang_core.make_const_expr_i64(val))
         else:
             assert False
-    else:
+    elif isinstance(val, (float, np.floating, np.ndarray)):
         if pytaichi.default_fp == f32:
             return Expr(taichi_lang_core.make_const_expr_f32(val))
         elif pytaichi.default_fp == f64:
             return Expr(taichi_lang_core.make_const_expr_f64(val))
         else:
             assert False
+    else:
+        raise ValueError(f'Bad constant scalar expression: {type(val)}')
 
 
 def reset():
@@ -244,8 +253,8 @@ def static_print(*args, __p=print, **kwargs):
 
 
 # we don't add @taichi_scope decorator for @ti.pyfunc to work
-@no_traceback
 def static_assert(cond, msg=None):
+    _taichi_skip_traceback = 1
     if msg is not None:
         assert cond, msg
     else:
@@ -279,6 +288,7 @@ root = Root()
 
 @python_scope
 def var(dt, shape=None, offset=None, needs_grad=False):
+    _taichi_skip_traceback = 1
     if isinstance(shape, numbers.Number):
         shape = (shape, )
 
@@ -288,7 +298,7 @@ def var(dt, shape=None, offset=None, needs_grad=False):
     if shape is not None and offset is not None:
         assert len(shape) == len(
             offset
-        ), f'The dimensionality of shape and offset must be the same  (f{len(shape)} != f{len(offset)})'
+        ), f'The dimensionality of shape and offset must be the same  ({len(shape)} != {len(offset)})'
 
     assert (offset is not None and shape is None
             ) == False, f'The shape cannot be None when offset is being set'
@@ -300,6 +310,8 @@ def var(dt, shape=None, offset=None, needs_grad=False):
             "any computation. Try appending ti.init() or ti.reset() "
             "right after 'import taichi as ti' if you are using Jupyter notebook."
         )
+
+    del _taichi_skip_traceback
 
     # primal
     x = Expr(taichi_lang_core.make_id_expr(""))
@@ -386,6 +398,7 @@ def ti_print(*vars, sep=' ', end='\n'):
 
 @taichi_scope
 def ti_int(var):
+    _taichi_skip_traceback = 1
     if hasattr(var, '__ti_int__'):
         return var.__ti_int__()
     else:
@@ -394,6 +407,7 @@ def ti_int(var):
 
 @taichi_scope
 def ti_float(var):
+    _taichi_skip_traceback = 1
     if hasattr(var, '__ti_float__'):
         return var.__ti_float__()
     else:
@@ -408,6 +422,7 @@ index = indices
 
 
 def static(x, *xs):
+    _taichi_skip_traceback = 1
     if len(xs):  # for python-ish pointer assign: x, y = ti.static(y, x)
         return [static(x)] + [static(x) for x in xs]
     import types

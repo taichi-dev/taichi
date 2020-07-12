@@ -138,7 +138,7 @@ class LowerAccess : public IRVisitor {
       } else {
         auto lookup = lowered.push_back<SNodeLookupStmt>(
             snode, last, linearized,
-            snode->need_activation() && activate && !on_loop_tree, indices);
+            snode->need_activation() && activate && !on_loop_tree);
         // if snode has no possibility of null child, set activate = false
         int chid = snode->child_id(snodes[i + 1]);
         last = lowered.push_back<GetChStmt>(lookup, chid);

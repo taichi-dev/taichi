@@ -142,11 +142,9 @@ def chain_compare(comparators, ops):
 @taichi_scope
 def func_call(func, *args, **kwargs):
     _taichi_skip_traceback = 1
-    if '_sitebuiltins' == getattr(func, '__module__',
-               '') and getattr(getattr(func, '__class__',
-               ''), '__name__', '') == 'Quitter':
-        raise TaichiSyntaxError(
-                f'exit or quit not supported in Taichi-scope')
+    if '_sitebuiltins' == getattr(func, '__module__', '') and getattr(
+            getattr(func, '__class__', ''), '__name__', '') == 'Quitter':
+        raise TaichiSyntaxError(f'exit or quit not supported in Taichi-scope')
     if getattr(func, '__module__',
                '') == '__main__' and not getattr(func, '__wrapped__', ''):
         import warnings

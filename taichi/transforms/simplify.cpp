@@ -49,107 +49,6 @@ class BasicBlockSimplify : public IRVisitor {
     }
   }
 
-  void visit(Stmt *stmt) override {
-    if (stmt->is_container_statement())
-      return;
-    else {
-      TI_ERROR("Visitor for non-container stmt undefined.");
-    }
-  }
-
-  void visit(GlobalPtrStmt *stmt) override {
-    if (is_done(stmt))
-      return;
-    for (int i = 0; i < current_stmt_id; i++) {
-      auto &bstmt = block->statements[i];
-      // A previous GlobalPtrStmt in the basic block
-      if (stmt->ret_type == bstmt->ret_type) {
-        auto &bstmt_data = *bstmt;
-        if (typeid(bstmt_data) == typeid(*stmt)) {
-          auto bstmt_ = bstmt->as<GlobalPtrStmt>();
-          bool same = true;
-          for (int l = 0; l < stmt->width(); l++) {
-            if (stmt->snodes[l] != bstmt_->snodes[l]) {
-              same = false;
-              break;
-            }
-          }
-          if (stmt->indices.size() != bstmt_->indices.size()) {
-            same = false;
-          } else {
-            for (int j = 0; j < (int)stmt->indices.size(); j++) {
-              if (stmt->indices[j] != bstmt_->indices[j])
-                same = false;
-            }
-          }
-          if (same) {
-            if (bstmt_->activate == stmt->activate || bstmt_->activate) {
-              stmt->replace_with(bstmt.get());
-              stmt->parent->erase(current_stmt_id);
-              throw IRModified();
-            } else {
-              // bstmt->active == false && stmt->active == true
-              // do nothing.
-            }
-          }
-        }
-      }
-    }
-    set_done(stmt);
-  }
-
-  void visit(ArgLoadStmt *stmt) override {
-    if (is_done(stmt))
-      return;
-    for (int i = 0; i < current_stmt_id; i++) {
-      auto &bstmt = block->statements[i];
-      auto &bstmt_data = *bstmt;
-      if (typeid(bstmt_data) == typeid(*stmt)) {
-        if (stmt->width() == bstmt->width()) {
-          auto bstmt_ = bstmt->as<ArgLoadStmt>();
-          bool same = stmt->arg_id == bstmt_->arg_id;
-          if (same) {
-            stmt->replace_with(bstmt.get());
-            stmt->parent->erase(current_stmt_id);
-            throw IRModified();
-          }
-        }
-      }
-    }
-    set_done(stmt);
-  }
-
-  void visit(ConstStmt *stmt) override {
-    if (is_done(stmt))
-      return;
-    for (int i = 0; i < current_stmt_id; i++) {
-      auto &bstmt = block->statements[i];
-      auto &bstmt_data = *bstmt;
-      if (typeid(bstmt_data) == typeid(*stmt)) {
-        if (stmt->width() == bstmt->width()) {
-          auto bstmt_ = bstmt->as<ConstStmt>();
-          bool same = true;
-          for (int l = 0; l < stmt->width(); l++) {
-            if (!stmt->val[l].equal_type_and_value(bstmt_->val[l])) {
-              same = false;
-              break;
-            }
-          }
-          if (same) {
-            stmt->replace_with(bstmt.get());
-            stmt->parent->erase(current_stmt_id);
-            throw IRModified();
-          }
-        }
-      }
-    }
-    set_done(stmt);
-  }
-
-  void visit(AllocaStmt *stmt) override {
-    return;
-  }
-
   void visit(ElementShuffleStmt *stmt) override {
     if (is_done(stmt))
       return;
@@ -197,29 +96,6 @@ class BasicBlockSimplify : public IRVisitor {
       }
     }*/
 
-    // find dup
-    for (int i = 0; i < current_stmt_id; i++) {
-      auto &bstmt = block->statements[i];
-      if (stmt->ret_type == bstmt->ret_type) {
-        auto &bstmt_data = *bstmt;
-        if (typeid(bstmt_data) == typeid(*stmt)) {
-          auto bstmt_ = bstmt->as<ElementShuffleStmt>();
-          bool same = true;
-          for (int l = 0; l < stmt->width(); l++) {
-            if (stmt->elements[l].stmt != bstmt_->elements[l].stmt ||
-                stmt->elements[l].index != bstmt_->elements[l].index) {
-              same = false;
-              break;
-            }
-          }
-          if (same) {
-            stmt->replace_with(bstmt.get());
-            stmt->parent->erase(stmt);
-            throw IRModified();
-          }
-        }
-      }
-    }
     set_done(stmt);
   }
 
@@ -549,161 +425,12 @@ class BasicBlockSimplify : public IRVisitor {
     set_done(stmt);
   }
 
-  void visit(GlobalStoreStmt *stmt) override {
-    // do nothing for global mem ops
-  }
-
-  void visit(SNodeOpStmt *stmt) override {
-    return;
-  }
-
   void visit(IntegerOffsetStmt *stmt) override {
-    if (is_done(stmt))
-      return;
     if (stmt->offset == 0) {
       stmt->replace_with(stmt->input);
       stmt->parent->erase(stmt);
       throw IRModified();
     }
-
-    for (int i = 0; i < current_stmt_id; i++) {
-      auto &bstmt = block->statements[i];
-      if (stmt->ret_type == bstmt->ret_type) {
-        auto &bstmt_data = *bstmt;
-        if (typeid(bstmt_data) == typeid(*stmt)) {
-          auto bstmt_ = bstmt->as<IntegerOffsetStmt>();
-          if (bstmt_->input == stmt->input && bstmt_->offset == stmt->offset) {
-            stmt->replace_with(bstmt.get());
-            stmt->parent->erase(current_stmt_id);
-            throw IRModified();
-          }
-        }
-      }
-    }
-    set_done(stmt);
-  }
-
-  void visit(GetRootStmt *stmt) override {
-    if (is_done(stmt))
-      return;
-    for (int i = 0; i < current_stmt_id; i++) {
-      auto &bstmt = block->statements[i];
-      if (bstmt->is<GetRootStmt>()) {
-        stmt->replace_with(bstmt.get());
-        stmt->parent->erase(current_stmt_id);
-        throw IRModified();
-      }
-    }
-    set_done(stmt);
-  }
-
-  void visit(LoopIndexStmt *stmt) override {
-    if (is_done(stmt))
-      return;
-    for (int i = 0; i < current_stmt_id; i++) {
-      auto &bstmt = block->statements[i];
-      if (stmt->ret_type == bstmt->ret_type) {
-        auto &bstmt_data = *bstmt;
-        if (typeid(bstmt_data) == typeid(*stmt)) {
-          auto bstmt_ = bstmt->as<LoopIndexStmt>();
-          if (bstmt_->loop == stmt->loop && bstmt_->index == stmt->index) {
-            stmt->replace_with(bstmt.get());
-            stmt->parent->erase(current_stmt_id);
-            throw IRModified();
-          }
-        }
-      }
-    }
-    set_done(stmt);
-  }
-
-  void visit(UnaryOpStmt *stmt) override {
-    if (is_done(stmt))
-      return;
-    if (stmt->is_cast()) {
-      if (stmt->cast_type == stmt->operand->ret_type.data_type) {
-        stmt->replace_with(stmt->operand);
-        stmt->parent->erase(current_stmt_id);
-        set_done(stmt);
-        return;
-      }
-    }
-    for (int i = 0; i < current_stmt_id; i++) {
-      auto &bstmt = block->statements[i];
-      if (stmt->ret_type == bstmt->ret_type) {
-        auto &bstmt_data = *bstmt;
-        if (typeid(bstmt_data) == typeid(*stmt)) {
-          auto bstmt_ = bstmt->as<UnaryOpStmt>();
-          if (bstmt_->same_operation(stmt) &&
-              bstmt_->operand == stmt->operand) {
-            stmt->replace_with(bstmt.get());
-            stmt->parent->erase(current_stmt_id);
-            throw IRModified();
-          }
-        }
-      }
-    }
-    set_done(stmt);
-  }
-
-  void visit(BinaryOpStmt *stmt) override {
-    if (is_done(stmt))
-      return;
-    if ((stmt->op_type == BinaryOpType::add ||
-         stmt->op_type == BinaryOpType::sub) &&
-        stmt->ret_type.data_type == DataType::i32) {
-      if (stmt->rhs->is<ConstStmt>()) {
-        auto stmt_ = stmt->rhs->as<ConstStmt>();
-        bool all_zero = true;
-        for (int l = 0; l < stmt_->width(); l++) {
-          if (stmt_->val[l].val_int32() != 0) {
-            all_zero = false;
-          }
-        }
-        if (all_zero) {
-          stmt->replace_with(stmt->lhs);
-          stmt->parent->erase(current_stmt_id);
-          throw IRModified();
-        }
-      }
-    }
-    for (int i = 0; i < current_stmt_id; i++) {
-      auto &bstmt = block->statements[i];
-      if (stmt->ret_type == bstmt->ret_type) {
-        auto &bstmt_data = *bstmt;
-        if (typeid(bstmt_data) == typeid(*stmt)) {
-          auto bstmt_ = bstmt->as<BinaryOpStmt>();
-          if (bstmt_->op_type == stmt->op_type && bstmt_->lhs == stmt->lhs &&
-              bstmt_->rhs == stmt->rhs) {
-            stmt->replace_with(bstmt.get());
-            stmt->parent->erase(current_stmt_id);
-            throw IRModified();
-          }
-        }
-      }
-    }
-    set_done(stmt);
-  }
-
-  void visit(TernaryOpStmt *stmt) override {
-    if (is_done(stmt))
-      return;
-    for (int i = 0; i < current_stmt_id; i++) {
-      auto &bstmt = block->statements[i];
-      if (stmt->ret_type == bstmt->ret_type) {
-        auto &bstmt_data = *bstmt;
-        if (typeid(bstmt_data) == typeid(*stmt)) {
-          auto bstmt_ = bstmt->as<TernaryOpStmt>();
-          if (bstmt_->op_type == stmt->op_type && bstmt_->op1 == stmt->op1 &&
-              bstmt_->op2 == stmt->op2 && bstmt_->op3 == stmt->op3) {
-            stmt->replace_with(bstmt.get());
-            stmt->parent->erase(current_stmt_id);
-            throw IRModified();
-          }
-        }
-      }
-    }
-    set_done(stmt);
   }
 
   void visit(BitExtractStmt *stmt) override {
@@ -796,23 +523,6 @@ class BasicBlockSimplify : public IRVisitor {
       }
     }
 
-    // step 4: eliminate dup
-    for (int i = 0; i < current_stmt_id; i++) {
-      auto &bstmt = block->statements[i];
-      if (stmt->ret_type == bstmt->ret_type) {
-        auto &bstmt_data = *bstmt;
-        if (typeid(bstmt_data) == typeid(*stmt)) {
-          auto bstmt_ = bstmt->as<BitExtractStmt>();
-          if (bstmt_->input == stmt->input &&
-              bstmt_->bit_begin == stmt->bit_begin &&
-              bstmt_->bit_end == stmt->bit_end) {
-            stmt->replace_with(bstmt.get());
-            stmt->parent->erase(current_stmt_id);
-            throw IRModified();
-          }
-        }
-      }
-    }
     set_done(stmt);
   }
 
@@ -892,27 +602,6 @@ class BasicBlockSimplify : public IRVisitor {
       throw IRModified();
     }
 
-    for (int i = 0; i < current_stmt_id; i++) {
-      auto &bstmt = block->statements[i];
-      if (stmt->ret_type == bstmt->ret_type) {
-        auto &bstmt_data = *bstmt;
-        if (typeid(bstmt_data) == typeid(*stmt)) {
-          auto bstmt_ = bstmt->as<SNodeLookupStmt>();
-          if (bstmt_->snode == stmt->snode &&
-              bstmt_->input_snode == stmt->input_snode &&
-              bstmt_->input_index == stmt->input_index &&
-              // identical_vectors(bstmt_->global_indices,
-              // stmt->global_indices)
-              // && no need for the above line. As long as input_index are the
-              // same global indices comparison can be omitted
-              bstmt_->activate == stmt->activate) {
-            stmt->replace_with(bstmt.get());
-            stmt->parent->erase(current_stmt_id);
-            throw IRModified();
-          }
-        }
-      }
-    }
     set_done(stmt);
   }
 
@@ -936,35 +625,7 @@ class BasicBlockSimplify : public IRVisitor {
       throw IRModified();
     }
 
-    for (int i = 0; i < current_stmt_id; i++) {
-      auto &bstmt = block->statements[i];
-      if (stmt->ret_type == bstmt->ret_type) {
-        auto &bstmt_data = *bstmt;
-        if (typeid(bstmt_data) == typeid(*stmt)) {
-          auto bstmt_ = bstmt->as<GetChStmt>();
-          if (bstmt_->input_ptr == stmt->input_ptr &&
-              bstmt_->input_snode == stmt->input_snode &&
-              bstmt_->chid == stmt->chid) {
-            stmt->replace_with(bstmt.get());
-            stmt->parent->erase(current_stmt_id);
-            throw IRModified();
-          }
-        }
-      }
-    }
     set_done(stmt);
-  }
-
-  void visit(AtomicOpStmt *stmt) override {
-    return;
-  }
-
-  void visit(PrintStmt *stmt) override {
-    return;
-  }
-
-  void visit(RandStmt *stmt) override {
-    return;
   }
 
   void visit(WhileControlStmt *stmt) override {
@@ -972,10 +633,6 @@ class BasicBlockSimplify : public IRVisitor {
       stmt->mask = nullptr;
       throw IRModified();
     }
-  }
-
-  void visit(ContinueStmt *stmt) override {
-    return;
   }
 
   static bool is_global_write(Stmt *stmt) {
@@ -1129,10 +786,6 @@ class BasicBlockSimplify : public IRVisitor {
         }
       }
     }
-  }
-
-  void visit(RangeAssumptionStmt *stmt) override {
-    return;
   }
 
   void visit(OffloadedStmt *stmt) override {

@@ -84,6 +84,9 @@ AliasResult alias_analysis(Stmt *var1, Stmt *var2) {
           return AliasResult::different;
         }
       }
+      if (ptr1->indices[i] != ptr2->indices[i]) {
+        same = false;  // TODO: Replace this hotfix with value_diff
+      }
     }
     return same ? AliasResult::same : AliasResult::uncertain;
   }

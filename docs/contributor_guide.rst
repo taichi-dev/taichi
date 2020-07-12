@@ -250,7 +250,7 @@ Key folders are
 
 - ``python/taichi``: Python frontend implementation
 
-  - ``core``: Loading & interacting with Taichi core 
+  - ``core``: Loading & interacting with Taichi core
   - ``lang``: Python-embbed Taichi language & syntax (major)
   - ``misc``: Miscellaneous utilities
   - ``tools``: Handy end-user tools

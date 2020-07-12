@@ -53,6 +53,7 @@ def pyfunc(foo):
 
     @functools.wraps(foo)
     def decorated(*args):
+        _taichi_skip_traceback = 1
         return fun.__call__(*args)
 
     return decorated
@@ -172,7 +173,8 @@ class KernelTemplateMapper:
 
     def lookup(self, args):
         if len(args) != self.num_args:
-            raise Exception(
+            _taichi_skip_traceback = 1
+            raise TypeError(
                 f'{self.num_args} argument(s) needed but {len(args)} provided.'
             )
 
@@ -544,6 +546,7 @@ def _kernel_impl(func, level_of_class_stackframe, verbose=False):
         # See also: BoundedDifferentiableMethod, data_oriented.
         @functools.wraps(func)
         def wrapped(*args, **kwargs):
+            _taichi_skip_traceback = 1
             # If we reach here (we should never), it means the class is not decorated
             # with @ti.data_oriented, otherwise getattr would have intercepted the call.
             clsobj = type(args[0])

@@ -32,7 +32,7 @@ Installing Dependencies
   * On OS X: you don't need to do anything.
 
   * On Ubuntu, execute ``sudo apt install libtinfo-dev clang-8``.
-  
+
   * On Arch Linux, execute ``sudo pacman -S clang``. (This is ``clang-10``).
 
   * On other Linux distributions, please search `this site <pkgs.org>`_ for clang version >= 7.
@@ -164,19 +164,19 @@ Troubleshooting Developer Installation
   please double check ``clang`` is in your ``PATH``:
 
   .. code-block:: bash
-  
+
       clang --version
       # version should be >= 7
-      
+
   and our **Taichi configured** ``llvm-as``:
 
   .. code-block:: bash
-  
+
       llvm-as --version
       # version should be >= 8
       which llvm-as
       # should be /usr/local/bin/llvm-as or /opt/XXX/bin/llvm-as, which is our configured installation
-      
+
   If not, please install ``clang`` and **build LLVM from source** with instructions above in :ref:`dev_install`, then add their path to environment variable ``PATH``.
 
 - If you encounter other issues, feel free to report by `opening an issue on GitHub <https://github.com/taichi-dev/taichi/issues/new?labels=potential+bug&template=bug_report.md>`_. We are willing to help!

@@ -946,11 +946,11 @@ class KernelCodegen : public IRVisitor {
     {
       ScopedIndent s2(current_appender());
       emit("const int parent_idx_ = (ii / child_num_slots);");
-      emit("if (parent_idx_ >= num_active(&parent_list)) return;");
+      emit("if (parent_idx_ >= parent_list.num_active()) return;");
       emit("const int child_idx_ = (ii % child_num_slots);");
       emit(
-          "const auto parent_elem_ = get<ListgenElement>(&parent_list, "
-          "parent_idx_);");
+          "const auto parent_elem_ = "
+          "parent_list.get<ListgenElement>(parent_idx_);");
 
       emit("ListgenElement {};", kListgenElemVarName);
       // No need to add mem_offset_in_parent, because place() always starts at 0

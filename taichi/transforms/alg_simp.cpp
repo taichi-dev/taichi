@@ -28,6 +28,14 @@ class AlgSimp : public BasicStmtVisitor {
       : BasicStmtVisitor(), fast_math(fast_math_) {
   }
 
+  void visit(UnaryOpStmt *stmt) override {
+    if (stmt->is_cast() &&
+        stmt->cast_type == stmt->operand->ret_type.data_type) {
+      stmt->replace_with(stmt->operand);
+      modifier.erase(stmt);
+    }
+  }
+
   void visit(BinaryOpStmt *stmt) override {
     auto lhs = stmt->lhs->cast<ConstStmt>();
     auto rhs = stmt->rhs->cast<ConstStmt>();

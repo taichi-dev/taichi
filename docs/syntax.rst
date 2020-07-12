@@ -110,7 +110,7 @@ Use ``@ti.func`` to decorate your Taichi functions. These functions are callable
 
 .. note::
 
-    Unlike functions, **kernels do support vectors or matrices as arguments**:
+    Unlike functions, **kernels do not support vectors or matrices as arguments**:
 
     .. code-block:: python
 

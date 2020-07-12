@@ -163,8 +163,8 @@ STR(
       if (meta.type == SNodeMeta::Dynamic) {
         device auto *ptr = meta_ptr_begin;
         // Unfortunately we cannot check if i + 1 is in bound
-        atomic_store_explicit(ptr, (uint32_t)(i + 1),
-                              metal::memory_order_relaxed);
+        atomic_fetch_max_explicit(ptr, (uint32_t)(i + 1),
+                                  metal::memory_order_relaxed);
         return;
       }
       device auto *ptr = meta_ptr_begin + (i / (sizeof(uint32_t) * 8));

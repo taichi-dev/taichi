@@ -247,9 +247,17 @@ class KernelCodegen : public IRVisitor {
       current_appender().append_raw(
           make_sparse_snode_meta(stmt->snode, kSNodeMetaVarName));
       const bool is_dynamic = (stmt->snode->type == SNodeType::dynamic);
-      // Dynamic is a special case because |stmt| doesn't contain an index to
-      // its cells.
-      const std::string ch_id = (is_dynamic ? "0" : stmt->val->raw_name());
+      std::string ch_id;
+      if (is_dynamic &&
+          (opty == SNodeOpType::deactivate || opty == SNodeOpType::append ||
+           opty == SNodeOpType::length)) {
+        // For these ops, `dynamic` is a special case because |stmt| doesn't
+        // contain an index to its cells. Setting it to zero to store the
+        // address of the first child into |ch_addr|.
+        ch_id = "0";
+      } else {
+        ch_id = stmt->val->raw_name();
+      }
       const std::string ch_addr =
           fmt::format("{}.children({}).addr()", stmt->ptr->raw_name(), ch_id);
       if (opty == SNodeOpType::is_active) {

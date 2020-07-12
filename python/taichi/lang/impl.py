@@ -100,9 +100,8 @@ def subscript(value, *indices):
     else:
         if isinstance(indices,
                       tuple) and len(indices) == 1 and indices[0] is None:
-            indices_expr_group = make_expr_group()
-        else:
-            indices_expr_group = make_expr_group(*indices)
+            indices = []
+        indices_expr_group = make_expr_group(*indices)
         tensor_dim = int(value.ptr.get_attribute("dim"))
         index_dim = indices_expr_group.size()
         if tensor_dim != index_dim:

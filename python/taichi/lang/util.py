@@ -1,11 +1,10 @@
 from .core import taichi_lang_core
 from .error import no_traceback
 import numpy as np
-import os
+
 
 _has_pytorch = False
-
-_env_torch = os.environ.get('TI_ENABLE_TORCH', '1')
+_env_torch = __import__('os').environ.get('TI_ENABLE_TORCH', '1')
 if not _env_torch or int(_env_torch):
     try:
         import torch

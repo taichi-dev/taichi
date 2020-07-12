@@ -5,7 +5,7 @@ import sys
 import ctypes
 import warnings
 from pathlib import Path
-from colorama import Fore, Back, Style
+from taichi.colorama import Fore, Back, Style
 from taichi.misc.settings import get_output_directory, get_build_directory, get_bin_directory, get_repo_directory, get_runtime_directory
 from taichi.misc.util import get_os_name, get_unique_task_id
 
@@ -129,8 +129,8 @@ def _find_clang_format_bin():
                 break
         except:
             pass
-    import colorama
-    colorama.init()
+    import taichi.colorama
+    taichi.colorama.init()
     if result is None:
         print(Fore.YELLOW +
               'Did not find any clang-format executable, skipping C++ files',
@@ -313,7 +313,7 @@ else:
         try:
             import_ti_core(tmp_dir)
         except Exception as e:
-            from colorama import Fore, Back, Style
+            from taichi.colorama import Fore, Back, Style
             print_red_bold("Taichi core import failed: ", end='')
             print(e)
             exit(-1)

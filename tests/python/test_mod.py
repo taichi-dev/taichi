@@ -49,7 +49,7 @@ def test_c_style_mod():
     func(-10, -3)
 
 
-@ti.all_archs
+@ti.test()
 def test_mod_scan():
     z = ti.var(ti.i32, shape=())
     w = ti.var(ti.i32, shape=())

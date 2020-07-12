@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.all_archs
+@ti.test()
 def test_nested_subscript():
     x = ti.var(ti.i32)
     y = ti.var(ti.i32)
@@ -21,7 +21,7 @@ def test_nested_subscript():
     assert x[0] == 1
 
 
-@ti.all_archs
+@ti.test()
 def test_norm():
     val = ti.var(ti.i32)
     f = ti.var(ti.f32)
@@ -52,7 +52,7 @@ def test_norm():
         assert val[i] == 96 + i
 
 
-@ti.all_archs
+@ti.test()
 def test_simple2():
     val = ti.var(ti.i32)
     f = ti.var(ti.f32)
@@ -79,7 +79,7 @@ def test_simple2():
         assert val[i] == 1 + i * 2
 
 
-@ti.all_archs
+@ti.test()
 def test_recreate():
     @ti.kernel
     def test():
@@ -89,7 +89,7 @@ def test_recreate():
     test()
 
 
-@ti.all_archs
+@ti.test()
 def test_local_atomics():
     n = 32
     val = ti.var(ti.i32, shape=n)
@@ -110,7 +110,7 @@ def test_local_atomics():
 
 
 @ti.must_throw(UnboundLocalError)
-@ti.host_arch_only
+@ti.test(ti.cpu)
 def test_loop_var_life():
     @ti.kernel
     def test():
@@ -122,7 +122,7 @@ def test_loop_var_life():
 
 
 @ti.must_throw(UnboundLocalError)
-@ti.host_arch_only
+@ti.test(ti.cpu)
 def test_loop_var_life_double_iters():
     @ti.kernel
     def test():

@@ -3,7 +3,7 @@ from taichi import approx
 
 
 def archs_support_random(func):
-    return ti.archs_excluding(ti.metal)(func)
+    return ti.test(excludes=[ti.metal])(func)
 
 
 @archs_support_random

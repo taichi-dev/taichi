@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.archs_support_sparse
+@ti.test(extensions=[ti.extension.sparse])
 def test_pointer():
     x = ti.var(ti.f32)
     s = ti.var(ti.i32)

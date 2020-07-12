@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.all_archs
+@ti.test()
 def test_nested():
     ti.cfg.demote_dense_struct_fors = False
     x = ti.var(ti.i32)
@@ -23,7 +23,7 @@ def test_nested():
             assert x[i * n, j * m] == 1
 
 
-@ti.all_archs
+@ti.test()
 def test_nested_demote():
     ti.cfg.demote_dense_struct_fors = True
     ti.cfg.print_ir = True

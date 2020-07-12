@@ -2,7 +2,7 @@ import taichi as ti
 
 
 @ti.must_throw(IndexError)
-@ti.host_arch_only
+@ti.test(ti.cpu)
 def test_struct_for_mismatch():
     x = ti.var(ti.f32, (3, 4))
 
@@ -15,7 +15,7 @@ def test_struct_for_mismatch():
 
 
 @ti.must_throw(IndexError)
-@ti.host_arch_only
+@ti.test(ti.cpu)
 def test_struct_for_mismatch2():
     x = ti.var(ti.f32, (3, 4))
 
@@ -28,7 +28,7 @@ def test_struct_for_mismatch2():
 
 
 @ti.must_throw(IndexError)
-@ti.host_arch_only
+@ti.test(ti.cpu)
 def _test_grouped_struct_for_mismatch():
     # doesn't work for now
     # need grouped refactor
@@ -45,7 +45,7 @@ def _test_grouped_struct_for_mismatch():
 
 
 @ti.must_throw(IndexError)
-@ti.host_arch_only
+@ti.test(ti.cpu)
 def _test_ndrange_for_mismatch():
     # doesn't work for now
     # need ndrange refactor
@@ -58,7 +58,7 @@ def _test_ndrange_for_mismatch():
 
 
 @ti.must_throw(IndexError)
-@ti.host_arch_only
+@ti.test(ti.cpu)
 def _test_ndrange_for_mismatch2():
     # doesn't work for now
     # need ndrange and grouped refactor
@@ -71,7 +71,7 @@ def _test_ndrange_for_mismatch2():
 
 
 @ti.must_throw(IndexError)
-@ti.host_arch_only
+@ti.test(ti.cpu)
 def _test_grouped_ndrange_for_mismatch():
     # doesn't work for now
     # need ndrange and grouped refactor
@@ -84,7 +84,7 @@ def _test_grouped_ndrange_for_mismatch():
 
 
 @ti.must_throw(IndexError)
-@ti.host_arch_only
+@ti.test(ti.cpu)
 def _test_static_ndrange_for_mismatch():
     # doesn't work for now
     # need ndrange and static refactor

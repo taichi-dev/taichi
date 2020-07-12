@@ -25,29 +25,27 @@ def with_data_type(dt):
         assert a[i] == i * i * 4
 
 
-@ti.all_archs
+@ti.test()
 def test_numpy_f32():
     with_data_type(np.float32)
 
 
-@ti.require(ti.extension.data64)
-@ti.all_archs
+@ti.test(extensions=[ti.extension.data64])
 def test_numpy_f64():
     with_data_type(np.float64)
 
 
-@ti.all_archs
+@ti.test()
 def test_numpy_i32():
     with_data_type(np.int32)
 
 
-@ti.require(ti.extension.data64)
-@ti.all_archs
+@ti.test(extensions=[ti.extension.data64])
 def test_numpy_i64():
     with_data_type(np.int64)
 
 
-@ti.all_archs
+@ti.test()
 def test_numpy_2d():
     val = ti.var(ti.i32)
 
@@ -75,7 +73,7 @@ def test_numpy_2d():
             assert a[i, j] == i * j + i + j
 
 
-@ti.all_archs
+@ti.test()
 def test_numpy_2d_transpose():
     val = ti.var(ti.i32)
 
@@ -102,7 +100,7 @@ def test_numpy_2d_transpose():
             assert val[i, j] == i * j + j * 4
 
 
-@ti.all_archs
+@ti.test()
 def test_numpy_3d():
     val = ti.var(ti.i32)
 
@@ -156,7 +154,7 @@ def test_numpy_3d_error():
     test_numpy(a)
 
 
-@ti.all_archs
+@ti.test()
 def test_numpy_multiple_external_arrays():
 
     n = 4
@@ -184,7 +182,7 @@ def test_index_mismatch():
     val[0, 0] = 1
 
 
-@ti.all_archs
+@ti.test()
 def test_numpy_zero():
     @ti.kernel
     def test_numpy(arr: ti.ext_arr()):

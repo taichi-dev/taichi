@@ -119,7 +119,7 @@ def test_init_bad_arg():
 
 def test_without_init():
     # We want to check if Taichi works well without ``ti.init()``.
-    # But in test ``ti.init()`` will always be called in last ``@ti.all_archs``.
+    # But in test ``ti.init()`` will always be called in last ``@ti.test()``.
     # So we have to create a new Taichi instance, i.e. test in a sandbox.
     content = '''
 import taichi as ti
@@ -137,7 +137,7 @@ assert x[1, 2] == 4
     assert os.system(f'{sys.executable} {filename}') == 0
 
 
-@ti.all_archs
+@ti.test()
 @ti.must_throw(RuntimeError)
 def test_materialization_after_kernel():
     x = ti.var(ti.f32, (3, 4))
@@ -152,7 +152,7 @@ def test_materialization_after_kernel():
     # ERROR: No new variable should be declared after kernel invocation!
 
 
-@ti.all_archs
+@ti.test()
 @ti.must_throw(RuntimeError)
 def test_materialization_after_access():
     x = ti.var(ti.f32, (3, 4))
@@ -163,7 +163,7 @@ def test_materialization_after_access():
     # ERROR: No new variable should be declared after Python-scope tensor access!
 
 
-@ti.all_archs
+@ti.test()
 @ti.must_throw(RuntimeError)
 def test_materialization_after_get_shape():
     x = ti.var(ti.f32, (3, 4))

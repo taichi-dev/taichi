@@ -1,17 +1,11 @@
 import taichi as ti
-import functools
 
-_has_pytest = False
-_env_pytest = os.environ.get('TI_ENABLE_PYTEST', '1')
-if not _env_pytest or int(_env_pytest):
-    try:
-        import pytest
-        _has_pytest = True
-    except:
-        pass
+def _():
+########################################################
+    print('[Taichi] loading test module')
 
-
-if _has_pytest:
+    import functools
+    import pytest
 
     ## Helper functions
     def approx(expected, **kwargs):
@@ -83,3 +77,13 @@ if _has_pytest:
             return wrapped
 
         return decorator
+
+########################################################
+    return locals()
+
+_ = _()
+for __ in _:
+    if not __.startswith('_'):
+        setattr(ti, __, _[__])
+
+globals().update(_)

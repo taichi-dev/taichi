@@ -16,7 +16,6 @@ from taichi.tools.video import VideoManager
 from taichi.tools.file import *
 from taichi.lang import *
 from .torch_io import from_torch, to_torch
-from taichi.testing import *
 
 __all__ = [s for s in dir() if not s.startswith('_')] + ['settings']
 

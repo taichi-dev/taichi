@@ -54,6 +54,8 @@ class TaichiMain:
         self.banner = f"\n{'*' * 43}\n**      Taichi Programming Language      **\n{'*' * 43}"
         print(self.banner)
 
+        print(self._get_friend_links())
+
         if 'TI_DEBUG' in os.environ:
             val = os.environ['TI_DEBUG']
             if val not in ['0', '1']:
@@ -88,11 +90,25 @@ class TaichiMain:
             # TODO: do we really need this?
             if args.command.endswith(".py"):
                 TaichiMain._exec_python_file(args.command)
-            print(f"{args.command} is not a valid command!")
-            self.main_parser.print_help()
+            else:
+                print(f"{args.command} is not a valid command!")
+                self.main_parser.print_help()
             return 1
 
         return getattr(self, args.command)(sys.argv[2:])
+
+    def _get_friend_links(self):
+        uri = 'en/stable'
+        try:
+            import locale
+            if 'zh' in locale.getdefaultlocale()[0]:
+                uri = 'zh_CN/latest'
+        except:
+            pass
+        return '\n' \
+               f'Docs:   https://taichi.rtfd.io/{uri}\n' \
+               f'GitHub: https://github.com/taichi-dev/taichi\n' \
+               f'Forum:  https://forum.taichi.graphics\n'
 
     def _usage(self) -> str:
         """Compose deterministic usage message based on registered_commands."""

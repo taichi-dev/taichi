@@ -183,13 +183,16 @@ class KernelCodegen : public IRVisitor {
   }
 
   void visit(GetChStmt *stmt) override {
+    // E.g. `parent.get*()`
+    const auto get_call =
+        fmt::format("{}.get{}()", stmt->input_ptr->raw_name(), stmt->chid);
     if (stmt->output_snode->is_place()) {
-      emit(R"(device {}* {} = {}.get{}().val;)",
+      emit(R"(device {}* {} = {}.val;)",
            metal_data_type_name(stmt->output_snode->dt), stmt->raw_name(),
-           stmt->input_ptr->raw_name(), stmt->chid);
+           get_call);
     } else {
-      emit(R"({} {} = {}.get{}();)", stmt->output_snode->node_type_name,
-           stmt->raw_name(), stmt->input_ptr->raw_name(), stmt->chid);
+      emit(R"({} {} = {};)", stmt->output_snode->node_type_name,
+           stmt->raw_name(), get_call);
     }
   }
 
@@ -697,7 +700,7 @@ class KernelCodegen : public IRVisitor {
 
   void generate_structs() {
     SectionGuard sg(this, Section::Structs);
-    emit("using byte = uchar;");
+    emit("using byte = char;");
     emit("");
     current_appender().append_raw(shaders::kMetalHelpersSourceCode);
     emit("");
@@ -867,6 +870,9 @@ class KernelCodegen : public IRVisitor {
     emit("const int end_ = {} + {};", total_elems_name, begin_expr);
 
     if (used_tls) {
+      // Using TLS means we will access some SNodes within this kernel. The
+      // struct of an SNode needs Runtime and MemoryAllocator to construct.
+      emit_runtime_and_memalloc_def();
       // Using |int32_t| because it aligns to 4bytes.
       emit("// TLS prologue");
       const std::string tls_bufi32_name = "tls_bufi32_";
@@ -933,12 +939,7 @@ class KernelCodegen : public IRVisitor {
 
     current_appender().push_indent();
     emit("// struct_for");
-    emit("device Runtime *{} = reinterpret_cast<device Runtime *>({});",
-         kRuntimeVarName, kRuntimeBufferName);
-    emit(
-        "device MemoryAllocator *{} = reinterpret_cast<device MemoryAllocator "
-        "*>({} + 1);",
-        kMemAllocVarName, kRuntimeVarName);
+    emit_runtime_and_memalloc_def();
     emit("ListManager parent_list;");
     emit("parent_list.lm_data = ({}->snode_lists + {});", kRuntimeVarName,
          sn_id);
@@ -1059,8 +1060,7 @@ class KernelCodegen : public IRVisitor {
 
     {
       ScopedIndent s(current_appender());
-      emit("device Runtime *{} = reinterpret_cast<device Runtime *>({});",
-           kRuntimeVarName, kRuntimeBufferName);
+      emit_runtime_and_memalloc_def();
       if (!ctx_attribs_.empty()) {
         emit("{} {}({});", kernel_args_classname(), kContextVarName,
              kContextBufferName);
@@ -1162,6 +1162,14 @@ class KernelCodegen : public IRVisitor {
       TI_NOT_IMPLEMENTED;
     }
     return la.lines();
+  }
+
+  void emit_runtime_and_memalloc_def() {
+    emit("device auto *{} = reinterpret_cast<device Runtime *>({});",
+         kRuntimeVarName, kRuntimeBufferName);
+    emit(
+        "device auto *{} = reinterpret_cast<device MemoryAllocator *>({} + 1);",
+        kMemAllocVarName, kRuntimeVarName);
   }
 
   std::string make_kernel_name() {

@@ -702,6 +702,14 @@ class TaichiMain:
             pytest_args += ['-s', '-v']
         if args.rerun:
             pytest_args += ['--reruns', args.rerun]
+        if args.keys:
+            pytest_args += ['-k', args.keys]
+        if args.marks:
+            pytest_args += ['-m', args.marks]
+        if args.failed_first:
+            pytest_args += ['--failed-first']
+        if args.fail_fast:
+            pytest_args += ['--exitfirst']
         try:
             if args.coverage:
                 pytest_args += ['--cov-branch', '--cov=python/taichi']
@@ -815,6 +823,34 @@ class TaichiMain:
                             dest='rerun',
                             type=str,
                             help='Rerun failed tests for given times')
+        parser.add_argument('-k',
+                            '--keys',
+                            required=False,
+                            default=None,
+                            dest='keys',
+                            type=str,
+                            help='Only run tests that match the keys')
+        parser.add_argument('-m',
+                            '--marks',
+                            required=False,
+                            default=None,
+                            dest='marks',
+                            type=str,
+                            help='Only run tests with specific marks')
+        parser.add_argument('-f',
+                            '--failed-first',
+                            required=False,
+                            default=None,
+                            dest='failed_first',
+                            action='store_true',
+                            help='Run the previously failed test first')
+        parser.add_argument('-x',
+                            '--fail-fast',
+                            required=False,
+                            default=None,
+                            dest='fail_fast',
+                            action='store_true',
+                            help='Exit instantly on the first failed test')
         parser.add_argument('-C',
                             '--coverage',
                             required=False,

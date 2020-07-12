@@ -232,29 +232,54 @@ In the code above, ``for i, j in pixels`` loops over all the pixel coordinates, 
                 break # OK!
 
 
-Interacting with Python
-------------------------
+.. _other_python_packages:
+
+Interacting with other Python packages
+--------------------------------------
+
+Python-scope data access
+++++++++++++++++++++++++
 
 Everything outside Taichi-scopes (``ti.func`` and ``ti.kernel``) is simply Python code.
-In Python-scopes, you can access Taichi tensor elements using plain indexing syntax. For example,
-to access a single pixel of the rendered image in Python, simply use
+In Python-scopes, you can access Taichi tensor elements using plain indexing syntax.
+For example, to access a single pixel of the rendered image in Python-scope, simply use:
 
 .. code-block:: python
 
-  pixels[42, 11] = 0.7
+  import taichi as ti
+  pixels = ti.var(ti.f32, (1024, 512))
+
+  pixels[42, 11] = 0.7  # store data into pixels
   print(pixels[42, 11]) # prints 0.7
 
 
-You can also use your favorite Python packages (e.g. ``numpy``, ``pytorch``, ``matplotlib``) together with Taichi.
-Taichi provides helper functions such as ``from_numpy`` and ``to_torch`` for tensor format conversion:
+Sharing data with other packages
+++++++++++++++++++++++++++++++++
+
+Taichi provides helper functions such as ``from_numpy`` and ``to_numpy`` for transfer data between Taichi tensors and NumPy arrays,
+So that you can also use your favorite Python packages (e.g. ``numpy``, ``pytorch``, ``matplotlib``) together with Taichi. e.g.:
 
 .. code-block:: python
 
+    import taichi as ti
+    pixels = ti.var(ti.f32, (1024, 512))
+
     import numpy as np
-    pixels.from_numpy(np.random.rand(n * 2, n))
+    arr = np.random.rand(1024, 512)
+    pixels.from_numpy(arr)   # load numpy data into taichi tensors
 
     import matplotlib.pyplot as plt
-    plt.imshow(pixels.to_numpy())
+    arr = pixels.to_numpy()  # store taichi data into numpy arrays
+    plt.imshow(arr)
     plt.show()
+
+    import matplotlib.cm as cm
+    cmap = cm.get_cmap('magma')
+    gui = ti.GUI('Color map')
+    while gui.running:
+        render_pixels()
+        arr = pixels.to_numpy()
+        gui.set_image(cmap(arr))
+        gui.show()
 
 See :ref:`external` for more details.

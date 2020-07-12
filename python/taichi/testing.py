@@ -2,11 +2,13 @@ import taichi as ti
 import functools
 
 _has_pytest = False
-try:
-    import pytest
-    _has_pytest = True
-except:
-    pass
+_env_pytest = os.environ.get('TI_ENABLE_PYTEST', '1')
+if not _env_pytest or int(_env_pytest):
+    try:
+        import pytest
+        _has_pytest = True
+    except:
+        pass
 
 
 if _has_pytest:

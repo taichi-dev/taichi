@@ -4,7 +4,6 @@ import numpy as np
 import os
 
 _has_pytorch = False
-
 _env_torch = os.environ.get('TI_ENABLE_TORCH', '1')
 if not _env_torch or int(_env_torch):
     try:

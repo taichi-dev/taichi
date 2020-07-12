@@ -111,9 +111,12 @@ Using continuous integration
 - You can prepend ``[skip ci]`` to your commit message to avoid triggering CI. e.g. ``[skip ci] This commit will not trigger CI``
 - A tick on the right of commit hash means CI passed, a cross means CI failed.
 
+
 Enforcing code style
 --------------------
-- Locally, you can run ``ti format`` in the command line to re-format code style. Note that you have to install ``clang-format-6.0`` and ``yapf v0.29.0`` locally before you use ``ti format``.
+- Locally, you can run ``ti format`` in the command line to re-format code style.
+  Note that you have to install ``clang-format-6.0`` and ``yapf v0.29.0`` locally before you use ``ti format``.
+
 - If you don't have to install these formatting tools locally, use the **format server**. It's an online version of ``ti format``.
 
    - Go to http://kun.csail.mit.edu:31415/, and click at the desired PR id.
@@ -145,7 +148,7 @@ PR titles will be part of the commit history reflected in the ``master`` branch,
 
 Frequently used tags:
 
-- ``[Metal], [OpenGL], [CPU], [CUDA], [LLVM]``: backends;
+- ``[Metal], [OpenGL], [CPU], [CUDA]``: backends;
 - ``[LLVM]``: the LLVM backend shared by CPUs and CUDA;
 - ``[Lang]``: frontend language features, including syntax sugars;
 - ``[Std]``: standard library, e.g. ``ti.Matrix`` and ``ti.Vector``;
@@ -160,7 +163,6 @@ Frequently used tags:
 - ``[Linux]``: Linux platform;
 - ``[Mac]``: Mac OS X platform;
 - ``[Windows]``: Windows platform;
-- ``[Docker]``: Docker container;
 - ``[Perf]``: performance improvements;
 - ``[Misc]``: something that doesn't belong to any category, such as version bump, reformatting;
 - ``[Bug]``: bug fixes;
@@ -177,6 +179,14 @@ Frequently used tags:
      When releasing a new version, a script (``python/taichi/make_changelog.py``) will generate a changelog with these changes (PR title) highlighted. Therefore it is **important** to make sure the end-users can understand what your PR does, **based on your PR title**.
    - Other PRs (underlying development/intermediate implementation) should use tags with **everything in lowercase letters**: e.g. ``[metal], [opengl], [ir], [lang], [cli]``.
    - Because of the way the release changelog is generated, there should be **at most one captialized tag** in a PR title to prevent duplicate PR highlights. For example, ``[GUI] [Mac] Support modifier keys`` (#1189) is a bad example, we should use ``[gui] [Mac] Support modifier keys in GUI`` instead. Please capitalize the tag that is most relevant to the PR.
+
+
+C++ and Python standards
+------------------------
+
+The C++ part of Taichi is written in C++17, and the Python part in 3.6+.
+You can assume that C++17 and Python 3.6 features are always available.
+
 
 Tips on the Taichi compiler development
 ---------------------------------------
@@ -202,35 +212,110 @@ When creating a Taichi program using ``ti.init(arch=desired_arch, **kwargs)``, p
   and ``print(y[42])`` will call the reading accessor kernel of ``y``.
 
 
+Folder structure
+----------------
+
+Key folders are
+
+- ``taichi``: The core compiler implementation
+
+  - ``program``: Top-level constructs
+  - ``ir``: Intermediate representation
+  - ``analysis``: Static analysis passes
+  - ``transforms``: IR transform passes
+  - ``inc``: Small definition files to be included repeatedly
+
+  - ``jit``: Just-In-Time compilation base classes
+  - ``llvm``: LLVM utilities
+  - ``runtime``: LLVM runtime environments
+
+  - ``struct``: Struct compiler base classes
+  - ``codegen``: Code generation base classes
+  - ``backends``: Device-dependent code generators/runtime environments
+
+    - ``cpu``: CPU backend implementation
+    - ``cuda``: CUDA backend implementation
+    - ``opengl``: OpenGL backend implementation
+    - ``metal``: Metal backend implementation
+    - ``cc``: C backend implementation (WIP)
+
+  - ``gui``: GUI system
+  - ``math``: Math utilities
+  - ``python``: C++/Python interfaces
+
+  - ``platform``: Platform supports
+  - ``system``: OS-related infrastructure
+  - ``util``:  Miscellaneous utilities
+
+
+- ``python/taichi``: Python frontend implementation
+
+  - ``core``: Loading & interacting with Taichi core 
+  - ``lang``: Python-embbed Taichi language & syntax (major)
+  - ``misc``: Miscellaneous utilities
+  - ``tools``: Handy end-user tools
+
+- ``tests``: Functional tests
+
+   - ``python``: Python tests (major)
+   - ``cpp``: C++ tests
+
+- ``examples``: Examples
+- ``docs``: Documentation
+- ``benchmarks``: Performance benchmarks
+- ``external``: External libraries
+- ``misc``: Random (yet useful) files
+- ...
+
+
+
+
 Testing
 -------
 
-Tests should be added to ``taichi/tests``.
+Tests should be added to ``tests/``.
+
+Command line tools
+******************
 
 - Use ``ti test`` to run all the tests.
 - Use ``ti test -v`` for verbose outputs.
 - Use ``ti test -C`` to run tests and record code coverage, see :ref:`coverage` for more infomations.
-- Use ``ti test <filename(s)>`` to run specific tests. e.g. ``ti test numpy_io`` and ``ti test test_numpy_io.py`` are equivalent.
-- Use ``ti test -a <arch(s)>`` for test against specified architectures. e.g. ``ti test -a opengl`` or ``ti test numpy_io -a cuda,metal``.
-- Use ``ti test -na <arch(s)>`` for test all architectures exclude some of them. e.g. ``ti test -na opengl,cuda``.
-- Use ``ti test -c`` to run only the C++ tests. e.g. ``ti test -c alg_simp``
+
+- Use ``ti test -a <arch(s)>`` for test against specified backend(s).
+  e.g. ``ti test -a cuda,metal``.
+
+- Use ``ti test -na <arch(s)>`` for test all architectures excluding some of them.
+  e.g. ``ti test -na opengl,x64``.
+
+- Use ``ti test <filename(s)>`` to run specific tests in filenames.
+  e.g. ``ti test numpy_io`` will run all tests in ``tests/python/test_numpy_io.py``.
+
+- Use ``ti test -c`` to run only the C++ tests.
+  e.g. ``ti test -c alg_simp`` will run ``tests/cpp/test_alg_simp.cpp``.
+
+- Use ``ti test -k <key>`` to run specific tests that matched with the specific key.
+  e.g. ``ti test linalg -k "cross or diag"`` will run the ``test_cross`` and ``test_diag`` in ``tests/python/test_linalg.py``.
 
 For more options, see ``ti test -h``.
+
+For more details on how to write a test case, see :ref:`write_test`.
 
 Documentation
 -------------
 
+Documentations are put under the folder ``docs/``.
+
+- We use `reStructured text <https://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html>`_ (.rst) to write documentation.
+- We host our documentation online using `readthedocs.io <https://taichi.readthedocs.io/en/stable>`_.
 - Use ``ti doc`` to build the documentation locally.
-- Open the documentation at ``taichi/doc/build/index.html``.
-- On Linux/OS X, use ``watch -n 1 ti doc`` to continuously build the documentation.
+- Open the documentation at ``docs/build/index.html``.
 
-  - If the OpenGL backend detector keeps creating new windows, execute ``export TI_WITH_OPENGL=0`` for ``ti doc``.
+.. note::
 
-C++ and Python standards
-------------------------
+  On Linux/OS X, use ``watch -n 1 ti doc`` to continuously build the documentation.
 
-The C++ part of Taichi is written in C++17, and the Python part in 3.6+.
-You can assume that C++17 and Python 3.6 features are always available.
+  If the OpenGL backend detector keeps creating new windows, execute ``export TI_WITH_OPENGL=0`` for ``ti doc``.
 
 
 Efficient code navigation across Python/C++
@@ -239,39 +324,6 @@ If you work on the language frontend (Python/C++ interface), to navigate around 
 allows you to jump from Python bindings to their definitions in C++.
 Follow their README to set up your editor.
 
-
-Folder structure
-----------------
-
-Key folders are
-
-- ``taichi``: The core compiler implementation
-
-  - ``analysis``: Static analysis passes
-  - ``backends``: Device-dependent code generators/runtime environments
-  - ``codegen``: Code generation base classes
-  - ``gui``:  GUI
-  - ``inc``:  Small definition files to be included repeatedly
-  - ``ir``: Intermediate representation
-  - ``jit``: JIT-in-time compilation base classes
-  - ``llvm``: LLVM utils
-  - ``math``: Math utils
-  - ``platform``: Platform supports
-  - ``program``: Top-level constructs
-  - ``python``: C++/Python interfaces
-  - ``runtime``: Runtime environments
-  - ``struct``: Struct compiler base classes
-  - ``system``: OS-related infrastructure
-  - ``transforms``: IR transform passes
-  - ``util``:  Miscellaneous utilities
-
-- ``python``: Python frontend implementation
-- ``examples``: Examples
-- ``docs``: Documentation
-- ``tests``: C++ and Python tests
-- ``benchmarks``: Performance benchmarks
-- ``misc``: Random (yet useful) files
-- ...
 
 Upgrading CUDA
 --------------

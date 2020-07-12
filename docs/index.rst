@@ -51,6 +51,7 @@ The Taichi Programming Language
 
    dev_install
    contributor_guide
+   write_test
    utilities
    cpp_style
    internal

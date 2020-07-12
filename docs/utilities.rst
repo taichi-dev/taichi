@@ -4,22 +4,77 @@ Developer utilities
 Logging
 -------
 
+Taichi uses `spdlog <https://github.com/gabime/spdlog>`_ as its logging system.
+Logs can have different levels, from low to high, they are:
+
+.. code-block:: none
+
+    trace
+    debug
+    info
+    warn
+    error
+
+The higher the level is, the more critical the message is.
+
+The default logging level is ``info``. You may override the default logging level by:
+
+1. Setting the environment variable like ``export TI_LOG_LEVEL=warn``.
+2. Set log level from Python side: ``ti.set_logging_level(ti.WARN)``.
+
+In Python, you may write logs using the ``ti.*`` interface:
+
 .. code-block:: python
 
-    '''
-    level can be {}
-        ti.TRACE
-        ti.DEBUG
-        ti.INFO
-        ti.WARN
-        ti.ERR
-        ti.CRITICAL
-    '''
-    ti.set_logging_level(level)
+    # Python
+    ti.trace("Hello world!")
+    ti.debug("Hello world!")
+    ti.info("Hello world!")
+    ti.warn("Hello world!")
+    ti.error("Hello world!")
 
-The default logging level is ``ti.INFO``.
-You can also override default logging level by setting the environment variable like
-``TI_LOG_LEVEL=warn``.
+In C++, you may write logs using the ``TI_*`` interface:
+
+.. code-block:: cpp
+
+    // C++
+    TI_TRACE("Hello world!");
+    TI_DEBUG("Hello world!");
+    TI_INFO("Hello world!");
+    TI_WARN("Hello world!");
+    TI_ERROR("Hello world!");
+
+If one raised a message of level is ``error``, then Taichi will be **terminated** immediately
+and result in a ``RuntimeError`` in Python side.
+
+.. code-block:: cpp
+
+  int func(void *p) {
+    if (p == nullptr)
+      TI_ERROR("The pointer cannot be null!");
+
+    // will not reach here if p == nullptr
+    do_something(p);
+  }
+
+.. note::
+
+  For people from Linux kernels, ``TI_ERROR`` is just ``panic``.
+
+
+You may also simplify the above code by using ``TI_ASSERT``:
+
+.. code-block:: cpp
+
+  int func(void *p) {
+    TI_ASSERT_INFO(p != nullptr, "The pointer cannot be null!");
+    // or
+    // TI_ASSERT(p != nullptr);
+
+    // will not reach here if p == nullptr
+    do_something(p);
+  }
+
 
 .. _regress:
 
@@ -114,63 +169,3 @@ That is, to detect how many percent of code lines in is executed in test.
     ti test -C       # run tests and save results to .coverage
     coverage report  # generate a coverage report on terminal output
     coverage html    # generate a HTML form report in htmlcov/index.html
-
-
-Interface system (legacy)
--------------------------
-Print all interfaces and units
-
-.. code-block:: python
-
-    ti.core.print_all_units()
-
-Serialization (legacy)
-----------------------
-
-The serialization module of taichi allows you to serialize/deserialize objects into/from binary strings.
-
-You can use ``TI_IO`` macros to explicit define fields necessary in Taichi.
-
-.. code-block:: cpp
-
-    // TI_IO_DEF
-    struct Particle {
-        Vector3f position, velocity;
-        real mass;
-        string name;
-
-        TI_IO_DEF(position, velocity, mass, name);
-    }
-
-    // TI_IO_DECL
-    struct Particle {
-        Vector3f position, velocity;
-        real mass;
-        bool has_name
-        string name;
-
-        TI_IO_DECL() {
-            TI_IO(position);
-            TI_IO(velocity);
-            TI_IO(mass);
-            TI_IO(has_name);
-            // More flexibility:
-            if (has_name) {
-                TI_IO(name);
-            }
-        }
-    }
-
-    // TI_IO_DEF_VIRT();
-
-
-Progress notification (legacy)
-------------------------------
-
-The Taichi messenger can send an email to ``$TI_MONITOR_EMAIL`` when the task finishes or crashes.
-To enable:
-
-.. code-block:: python
-
-    from taichi.tools import messenger
-    messenger.enable(task_id='test')

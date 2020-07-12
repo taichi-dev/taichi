@@ -290,10 +290,6 @@ class Kernel:
 
         src = remove_indent(oinspect.getsource(self.func))
         tree = ast.parse(src)
-        if self.runtime.print_preprocessed:
-            import astor
-            print('Before preprocessing:')
-            print(astor.to_source(tree.body[0]))
 
         func_body = tree.body[0]
         func_body.decorator_list = []

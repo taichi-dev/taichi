@@ -829,7 +829,7 @@ class TaichiMain:
                             default=None,
                             dest='keys',
                             type=str,
-                            help='Only run tests that matched the keys')
+                            help='Only run tests that match the keys')
         parser.add_argument('-m',
                             '--marks',
                             required=False,
@@ -850,7 +850,7 @@ class TaichiMain:
                             default=None,
                             dest='fail_fast',
                             action='store_true',
-                            help='Exit instantly on first failed test')
+                            help='Exit instantly on the first failed test')
         parser.add_argument('-C',
                             '--coverage',
                             required=False,

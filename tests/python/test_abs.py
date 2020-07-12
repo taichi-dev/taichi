@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.test()
+@ti.all_archs
 def test_abs():
     x = ti.var(ti.f32)
     y = ti.var(ti.f32)

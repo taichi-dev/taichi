@@ -38,7 +38,7 @@ def test_assert_ok():
     func()
 
 
-@ti.test(ti.cpu)
+@ti.host_arch_only
 def test_static_assert_is_static():
     @ti.kernel
     def func():
@@ -48,7 +48,7 @@ def test_static_assert_is_static():
     func()
 
 
-@ti.test(ti.cpu)
+@ti.host_arch_only
 @ti.must_throw(AssertionError)
 def test_static_assert_message():
     x = 3
@@ -60,7 +60,7 @@ def test_static_assert_message():
     func()
 
 
-@ti.test(ti.cpu)
+@ti.host_arch_only
 def test_static_assert_vector_n_ok():
     x = ti.Vector(4, ti.f32, ())
 
@@ -71,7 +71,7 @@ def test_static_assert_vector_n_ok():
     func()
 
 
-@ti.test(ti.cpu)
+@ti.host_arch_only
 def test_static_assert_data_type_ok():
     x = ti.var(ti.f32, ())
 

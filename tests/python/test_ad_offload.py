@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.test()
+@ti.all_archs
 def test_offload_order():
     n = 128
     x = ti.var(ti.f32, shape=n, needs_grad=True)

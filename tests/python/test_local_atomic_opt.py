@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.test()
+@ti.all_archs
 def test_cse():
     A = ti.var(ti.f32, shape=())
 
@@ -16,7 +16,7 @@ def test_cse():
     assert A[None] == 133
 
 
-@ti.test()
+@ti.all_archs
 def test_store_forward():
     A = ti.var(ti.f32, shape=())
 

@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.test()
+@ti.all_archs
 def test_parallel_range_for():
     n = 1024 * 1024
     val = ti.var(ti.i32, shape=(n))

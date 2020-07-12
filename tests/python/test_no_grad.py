@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.test()
+@ti.all_archs
 def test_no_grad():
     x = ti.var(ti.f32)
     loss = ti.var(ti.f32)

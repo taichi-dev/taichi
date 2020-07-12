@@ -2,7 +2,7 @@ import taichi as ti
 ti.init()
 
 
-@ti.test(ti.cpu)
+@ti.host_arch_only
 def test_func_closure():
     # TODO: remove this after #1344 is merged:
     def static_assert(x):

@@ -1,7 +1,8 @@
 import taichi as ti
 
 
-@ti.test(extensions=[ti.extension.sparse])
+@ti.require(ti.extension.sparse)
+@ti.all_archs
 def test_compare_basics():
     a = ti.var(ti.i32)
     ti.root.dynamic(ti.i, 256).place(a)
@@ -40,7 +41,8 @@ def test_compare_basics():
     assert a[11]
 
 
-@ti.test(extensions=[ti.extension.sparse])
+@ti.require(ti.extension.sparse)
+@ti.all_archs
 def test_compare_equality():
     a = ti.var(ti.i32)
     ti.root.dynamic(ti.i, 256).place(a)
@@ -79,7 +81,8 @@ def test_compare_equality():
     assert not a[11]
 
 
-@ti.test(extensions=[ti.extension.sparse])
+@ti.require(ti.extension.sparse)
+@ti.all_archs
 def test_no_duplicate_eval():
     a = ti.var(ti.i32)
     ti.root.dynamic(ti.i, 256).place(a)
@@ -94,7 +97,7 @@ def test_no_duplicate_eval():
     assert a[2]  # ti.append returns 0
 
 
-@ti.test()
+@ti.all_archs
 def test_no_duplicate_eval_func():
     a = ti.var(ti.i32, ())
     b = ti.var(ti.i32, ())
@@ -115,7 +118,8 @@ def test_no_duplicate_eval_func():
     assert b[None] == 2
 
 
-@ti.test(extensions=[ti.extension.sparse])
+@ti.require(ti.extension.sparse)
+@ti.all_archs
 def test_chain_compare():
     a = ti.var(ti.i32)
     ti.root.dynamic(ti.i, 256).place(a)

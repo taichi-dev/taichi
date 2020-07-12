@@ -2,7 +2,7 @@ import taichi as ti
 import pytest
 
 
-@ti.test()
+@ti.all_archs
 def test_POT():
     val = ti.var(ti.i32)
 
@@ -16,7 +16,7 @@ def test_POT():
     assert val.dtype == ti.i32
 
 
-@ti.test()
+@ti.all_archs
 def test_non_POT():
     val = ti.var(ti.i32)
 
@@ -33,7 +33,7 @@ def test_non_POT():
     assert val.dtype == ti.i32
 
 
-@ti.test()
+@ti.all_archs
 def test_unordered():
     val = ti.var(ti.i32)
 
@@ -65,7 +65,7 @@ def test_unordered():
     assert repr(val.snode()) == expected_repr
 
 
-@ti.test()
+@ti.all_archs
 def test_unordered_matrix():
     val = ti.Matrix(3, 2, ti.i32)
 
@@ -89,7 +89,7 @@ def test_unordered_matrix():
 
 
 @pytest.mark.filterwarnings('ignore')
-@ti.test(ti.cpu)
+@ti.host_arch_only
 def test_deprecated():
     val = ti.var(ti.f32)
     mat = ti.Matrix(3, 2, ti.i32)
@@ -113,7 +113,7 @@ def test_deprecated():
     assert blk3.shape() == (n, m, p)
 
 
-@ti.test()
+@ti.all_archs
 def test_parent_exceeded():
     val = ti.var(ti.f32)
 

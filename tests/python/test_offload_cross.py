@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.test()
+@ti.all_archs
 def test_offload_with_cross_block_locals():
     ret = ti.var(ti.f32)
 
@@ -19,7 +19,7 @@ def test_offload_with_cross_block_locals():
     assert ret[None] == 45
 
 
-@ti.test()
+@ti.all_archs
 def test_offload_with_cross_block_locals2():
     ret = ti.var(ti.f32)
 
@@ -40,7 +40,7 @@ def test_offload_with_cross_block_locals2():
     assert ret[None] == 45 * 21
 
 
-@ti.test()
+@ti.all_archs
 def test_offload_with_cross_block_locals3():
     ret = ti.var(ti.f32, shape=())
 
@@ -57,7 +57,7 @@ def test_offload_with_cross_block_locals3():
     assert ret[None] == 1
 
 
-@ti.test()
+@ti.all_archs
 def test_offload_with_cross_block_locals4():
     ret = ti.var(ti.f32, shape=())
 
@@ -74,7 +74,7 @@ def test_offload_with_cross_block_locals4():
     assert ret[None] == 10
 
 
-@ti.test()
+@ti.all_archs
 def test_offload_with_flexible_bounds():
     s = ti.var(ti.i32, shape=())
     lower = ti.var(ti.i32, shape=())
@@ -92,7 +92,7 @@ def test_offload_with_flexible_bounds():
     assert s[None] == 29 * 10 // 2
 
 
-@ti.test()
+@ti.all_archs
 def test_offload_with_cross_block_globals():
     ret = ti.var(ti.f32)
 

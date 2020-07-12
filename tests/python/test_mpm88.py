@@ -2,7 +2,7 @@ import taichi as ti
 from taichi import approx
 
 
-@ti.test()
+@ti.all_archs
 def test_mpm88():
     dim = 2
     N = 64

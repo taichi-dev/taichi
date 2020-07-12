@@ -11,7 +11,7 @@ import os
 @pytest.mark.parametrize('resx,resy', [(201, 173)])
 @pytest.mark.parametrize('is_tensor', [False, True])
 @pytest.mark.parametrize('dt', [ti.u8])
-@ti.test(ti.cpu)
+@ti.host_arch_only
 def test_image_io(resx, resy, comp, ext, is_tensor, dt):
     if comp != 1:
         shape = (resx, resy, comp)
@@ -38,7 +38,7 @@ def test_image_io(resx, resy, comp, ext, is_tensor, dt):
 @pytest.mark.parametrize('comp,ext', [(3, 'png'), (4, 'png')])
 @pytest.mark.parametrize('resx,resy', [(91, 81)])
 @pytest.mark.parametrize('dt', [ti.f32, ti.f64])
-@ti.test(ti.cpu)
+@ti.host_arch_only
 def test_image_io_vector(resx, resy, comp, ext, dt):
     shape = (resx, resy)
     pixel = np.random.rand(*shape, comp).astype(ti.to_numpy_type(dt))
@@ -54,7 +54,7 @@ def test_image_io_vector(resx, resy, comp, ext, dt):
 @pytest.mark.parametrize('comp,ext', [(3, 'png')])
 @pytest.mark.parametrize('resx,resy', [(91, 81)])
 @pytest.mark.parametrize('dt', [ti.u16, ti.u32, ti.u64])
-@ti.test(ti.cpu)
+@ti.host_arch_only
 def test_image_io_uint(resx, resy, comp, ext, dt):
     shape = (resx, resy)
     np_type = ti.to_numpy_type(dt)

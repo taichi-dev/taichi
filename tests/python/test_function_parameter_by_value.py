@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.test()
+@ti.all_archs
 def test_pass_by_value():
     @ti.func
     def set_val(x, i):

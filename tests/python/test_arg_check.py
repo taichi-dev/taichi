@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.test()
+@ti.all_archs
 def test_argument_error():
     x = ti.var(ti.i32)
 

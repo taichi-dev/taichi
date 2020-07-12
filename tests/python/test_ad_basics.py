@@ -162,7 +162,7 @@ def test_pow_f64():
     grad_test(lambda y: y**0.4, lambda y: np.power(y, 0.4), default_fp=ti.f64)
 
 
-@ti.test()
+@ti.all_archs
 def test_obey_kernel_simplicity():
     x = ti.var(ti.f32)
     y = ti.var(ti.f32)
@@ -187,7 +187,7 @@ def test_obey_kernel_simplicity():
     assert x.grad[0] == approx((42 - 5) * 3)
 
 
-@ti.test()
+@ti.all_archs
 def test_violate_kernel_simplicity1():
     x = ti.var(ti.f32)
     y = ti.var(ti.f32)
@@ -206,7 +206,7 @@ def test_violate_kernel_simplicity1():
     func.grad()
 
 
-@ti.test()
+@ti.all_archs
 def test_violate_kernel_simplicity2():
     x = ti.var(ti.f32)
     y = ti.var(ti.f32)
@@ -225,7 +225,8 @@ def test_violate_kernel_simplicity2():
     func.grad()
 
 
-@ti.test(extensions=[ti.extension.data64], print_ir=True)
+@ti.require(ti.extension.data64)
+@ti.all_archs_with(print_ir=True)
 def test_cast():
     @ti.kernel
     def func():
@@ -234,7 +235,8 @@ def test_cast():
     func()
 
 
-@ti.test(extensions=[ti.extension.data64])
+@ti.require(ti.extension.data64)
+@ti.all_archs
 def test_ad_precision_1():
     loss = ti.var(ti.f32, shape=())
     x = ti.var(ti.f64, shape=())
@@ -251,7 +253,8 @@ def test_ad_precision_1():
     assert x.grad[None] == 1
 
 
-@ti.test(extensions=[ti.extension.data64])
+@ti.require(ti.extension.data64)
+@ti.all_archs
 def test_ad_precision_2():
     loss = ti.var(ti.f64, shape=())
     x = ti.var(ti.f32, shape=())

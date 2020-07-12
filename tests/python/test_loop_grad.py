@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.test()
+@ti.all_archs
 def test_loop_grad():
     x = ti.var(ti.f32)
 
@@ -31,7 +31,7 @@ def test_loop_grad():
             assert x.grad[k, i] == 2**(m - 1 - i)
 
 
-@ti.test()
+@ti.all_archs
 def test_loop_grad_complex():
     return  # This case is not supported yet
     x = ti.var(ti.f32)

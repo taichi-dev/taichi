@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.test()
+@ti.all_archs
 def test_fibonacci():
     @ti.kernel
     def ti_fibonacci(n: ti.i32) -> ti.i32:
@@ -22,7 +22,7 @@ def test_fibonacci():
         assert ti_fibonacci(n) == py_fibonacci(n)
 
 
-@ti.test(ti.cpu)
+@ti.host_arch_only
 def test_assign2():
     a = ti.var(ti.f32, ())
     b = ti.var(ti.f32, ())
@@ -36,7 +36,7 @@ def test_assign2():
     assert b[None] == 3
 
 
-@ti.test(ti.cpu)
+@ti.host_arch_only
 @ti.must_throw(ValueError)
 def test_assign2_mismatch3():
     ti.init(print_preprocessed=True)
@@ -51,7 +51,7 @@ def test_assign2_mismatch3():
     func()
 
 
-@ti.test(ti.cpu)
+@ti.host_arch_only
 @ti.must_throw(TypeError)
 def test_assign2_mismatch1():
     ti.init(print_preprocessed=True)
@@ -66,7 +66,7 @@ def test_assign2_mismatch1():
     func()
 
 
-@ti.test(ti.cpu)
+@ti.host_arch_only
 def test_swap2():
     a = ti.var(ti.f32, ())
     b = ti.var(ti.f32, ())
@@ -82,7 +82,7 @@ def test_swap2():
     assert b[None] == 2
 
 
-@ti.test(ti.cpu)
+@ti.host_arch_only
 def test_assign2_static():
     a = ti.var(ti.f32, ())
     b = ti.var(ti.f32, ())
@@ -98,7 +98,7 @@ def test_assign2_static():
     assert b[None] == 2
 
 
-@ti.test(ti.cpu)
+@ti.host_arch_only
 def test_swap3():
     a = ti.var(ti.f32, ())
     b = ti.var(ti.f32, ())
@@ -117,7 +117,7 @@ def test_swap3():
     assert c[None] == 2
 
 
-@ti.test(ti.cpu)
+@ti.host_arch_only
 def test_unpack_from_tuple():
     a = ti.var(ti.f32, ())
     b = ti.var(ti.f32, ())
@@ -135,7 +135,7 @@ def test_unpack_from_tuple():
     assert c[None] == 4
 
 
-@ti.test(ti.cpu)
+@ti.host_arch_only
 @ti.must_throw(ValueError)
 def test_unpack_mismatch_tuple():
     ti.init(print_preprocessed=True)
@@ -151,7 +151,7 @@ def test_unpack_mismatch_tuple():
     func()
 
 
-@ti.test(ti.cpu)
+@ti.host_arch_only
 def test_unpack_from_vector():
     a = ti.var(ti.f32, ())
     b = ti.var(ti.f32, ())
@@ -168,7 +168,7 @@ def test_unpack_from_vector():
     assert c[None] == 4
 
 
-@ti.test(ti.cpu)
+@ti.host_arch_only
 @ti.must_throw(ValueError)
 def test_unpack_mismatch_vector():
     ti.init(print_preprocessed=True)
@@ -183,7 +183,7 @@ def test_unpack_mismatch_vector():
     func()
 
 
-@ti.test(ti.cpu)
+@ti.host_arch_only
 @ti.must_throw(TypeError)
 def test_unpack_mismatch_type():
     ti.init(print_preprocessed=True)
@@ -199,7 +199,7 @@ def test_unpack_mismatch_type():
     func()
 
 
-@ti.test(ti.cpu)
+@ti.host_arch_only
 @ti.must_throw(ValueError)
 def test_unpack_mismatch_matrix():
     ti.init(print_preprocessed=True)
@@ -216,7 +216,7 @@ def test_unpack_mismatch_matrix():
     func()
 
 
-@ti.test(ti.cpu)
+@ti.host_arch_only
 def test_unpack_from_shape():
     a = ti.var(ti.f32, ())
     b = ti.var(ti.f32, ())

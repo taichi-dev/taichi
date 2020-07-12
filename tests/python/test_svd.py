@@ -3,7 +3,8 @@ import numpy as np
 from taichi import approx
 
 
-@ti.test(extensions=[ti.extension.data64], fast_math=False)
+@ti.require(ti.extension.data64)
+@ti.all_archs_with(fast_math=False)
 def test_precision():
     u = ti.var(ti.f64, shape=())
     v = ti.var(ti.f64, shape=())
@@ -71,7 +72,7 @@ def test_svd():
             wrapped()
 
 
-@ti.test()
+@ti.all_archs
 def test_transpose_no_loop():
     A = ti.Matrix(3, 3, dt=ti.f32, shape=())
     U = ti.Matrix(3, 3, dt=ti.f32, shape=())

@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.test()
+@ti.all_archs
 def test_kernel_sync():
     n = 128
     x = ti.var(ti.i32, shape=(3, ))

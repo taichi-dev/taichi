@@ -34,38 +34,41 @@ def _test_reduction_single(dtype, criterion):
     assert criterion(tot2, ground_truth)
 
 
-@ti.test()
+@ti.all_archs
 def test_reduction_single_i32():
     _test_reduction_single(ti.i32, lambda x, y: x % 2**32 == y % 2**32)
 
 
-@ti.test(excludes=[ti.opengl])
+@ti.archs_excluding(ti.opengl)
 def test_reduction_single_u32():
     _test_reduction_single(ti.u32, lambda x, y: x % 2**32 == y % 2**32)
 
 
-@ti.test()
+@ti.all_archs
 def test_reduction_single_f32():
     _test_reduction_single(ti.f32, lambda x, y: x == approx(y, 3e-4))
 
 
-@ti.test(extensions=[ti.extension.data64])
+@ti.require(ti.extension.data64)
+@ti.all_archs
 def test_reduction_single_i64():
     _test_reduction_single(ti.i64, lambda x, y: x % 2**64 == y % 2**64)
 
 
-@ti.test(extensions=[ti.extension.data64],
-         excludes=[ti.opengl])  # OpenGL doesn't have u64 yet
+@ti.require(ti.extension.data64)
+@ti.archs_excluding(ti.opengl)  # OpenGL doesn't have u64 yet
 def test_reduction_single_u64():
     _test_reduction_single(ti.u64, lambda x, y: x % 2**64 == y % 2**64)
 
 
-@ti.test(extensions=[ti.extension.data64])
+@ti.require(ti.extension.data64)
+@ti.all_archs
 def test_reduction_single_f64():
     _test_reduction_single(ti.f64, lambda x, y: x == approx(y, 1e-12))
 
 
-@ti.test(extensions=[ti.extension.data64])
+@ti.require(ti.extension.data64)
+@ti.all_archs
 def test_reduction_single():
     N = 1024 * 1024
 

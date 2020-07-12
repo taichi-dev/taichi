@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.test()
+@ti.all_archs
 def test_complex_kernels():
     x = ti.var(ti.f32)
     total = ti.var(ti.f32)
@@ -32,7 +32,7 @@ def test_complex_kernels():
         assert x.grad[0] == 4
 
 
-@ti.test()
+@ti.all_archs
 def test_complex_kernels_indirect():
     x = ti.var(ti.f32)
     total = ti.var(ti.f32)
@@ -66,7 +66,7 @@ def test_complex_kernels_indirect():
         assert x.grad[0] == 4
 
 
-@ti.test()
+@ti.all_archs
 def test_complex_kernels_oop():
     @ti.data_oriented
     class A:
@@ -102,7 +102,7 @@ def test_complex_kernels_oop():
         assert a.x.grad[0] == 4
 
 
-@ti.test()
+@ti.all_archs
 def test_complex_kernels_oop2():
     @ti.data_oriented
     class A:

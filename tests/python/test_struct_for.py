@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.test()
+@ti.all_archs
 def test_singleton():
     x = ti.var(ti.i32, shape=())
 
@@ -15,7 +15,7 @@ def test_singleton():
     assert x[None] == 3
 
 
-@ti.test()
+@ti.all_archs
 def test_singleton2():
     x = ti.var(ti.i32)
 
@@ -31,7 +31,7 @@ def test_singleton2():
     assert x[None] == 3
 
 
-@ti.test()
+@ti.all_archs
 def test_linear():
     x = ti.var(ti.i32)
     y = ti.var(ti.i32)
@@ -54,7 +54,7 @@ def test_linear():
         assert y[i] == i * 2
 
 
-@ti.test()
+@ti.all_archs
 def test_nested():
     x = ti.var(ti.i32)
     y = ti.var(ti.i32)
@@ -77,7 +77,7 @@ def test_nested():
         assert y[i] == i * 2
 
 
-@ti.test()
+@ti.all_archs
 def test_nested2():
     x = ti.var(ti.i32)
     y = ti.var(ti.i32)
@@ -102,7 +102,7 @@ def test_nested2():
         assert y[i] == i * 2
 
 
-@ti.test()
+@ti.all_archs
 def test_2d():
     x = ti.var(ti.i32)
     y = ti.var(ti.i32)
@@ -123,7 +123,7 @@ def test_2d():
             assert x[i, j] == i + j * 2
 
 
-@ti.test()
+@ti.all_archs
 def test_2d_non_POT():
     x = ti.var(ti.i32)
     y = ti.var(ti.i32, shape=())
@@ -146,7 +146,7 @@ def test_2d_non_POT():
     assert y[None] == tot
 
 
-@ti.test()
+@ti.all_archs
 def test_nested_2d():
     x = ti.var(ti.i32)
     y = ti.var(ti.i32)
@@ -167,7 +167,7 @@ def test_nested_2d():
             assert x[i, j] == i + j * 2
 
 
-@ti.test()
+@ti.all_archs
 def test_nested_2d_more_nests():
     x = ti.var(ti.i32)
     y = ti.var(ti.i32)
@@ -191,7 +191,7 @@ def test_nested_2d_more_nests():
             assert x[i, j] == i + j * 2
 
 
-@ti.test()
+@ti.all_archs
 def test_linear_k():
     x = ti.var(ti.i32)
 
@@ -210,7 +210,7 @@ def test_linear_k():
         assert x[i] == i
 
 
-@ti.test(extensions=[ti.extension.sparse])
+@ti.archs_support_sparse
 def test_struct_for_branching():
     # Related issue: https://github.com/taichi-dev/taichi/issues/704
     x = ti.var(dt=ti.i32)

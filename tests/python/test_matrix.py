@@ -19,7 +19,7 @@ test_vector_arrays = [
 ]
 
 
-@ti.test(ti.cpu)
+@ti.host_arch_only
 def test_python_scope_vector_operations():
     for ops in vector_operation_types:
         a, b = test_vector_arrays[:2]
@@ -28,7 +28,7 @@ def test_python_scope_vector_operations():
         assert np.allclose(c.to_numpy(), ops(a, b))
 
 
-@ti.test(ti.cpu)
+@ti.host_arch_only
 def test_python_scope_matrix_operations():
     for ops in operation_types:
         a, b = test_matrix_arrays[:2]
@@ -43,7 +43,7 @@ def test_python_scope_matrix_operations():
 # ideally we should use pytest.fixture to parameterize the tests
 # over explicit loops
 @pytest.mark.parametrize('ops', vector_operation_types)
-@ti.test(ti.cpu)
+@ti.host_arch_only
 def test_python_scope_vector_tensor(ops):
     t1 = ti.Vector(2, dt=ti.i32, shape=())
     t2 = ti.Vector(2, dt=ti.i32, shape=())
@@ -55,7 +55,7 @@ def test_python_scope_vector_tensor(ops):
 
 
 @pytest.mark.parametrize('ops', vector_operation_types)
-@ti.test(ti.cpu)
+@ti.host_arch_only
 def test_python_scope_matrix_tensor(ops):
     t1 = ti.Matrix(2, 2, dt=ti.i32, shape=())
     t2 = ti.Matrix(2, 2, dt=ti.i32, shape=())
@@ -69,7 +69,7 @@ def test_python_scope_matrix_tensor(ops):
     assert np.allclose(c.to_numpy(), ops(a, b))
 
 
-@ti.test(ti.cpu)
+@ti.host_arch_only
 def test_constant_matrices():
     assert ti.cos(ti.math.pi / 3) == approx(0.5)
     assert np.allclose((-ti.Vector([2, 3])).to_numpy(), np.array([-2, -3]))
@@ -116,7 +116,7 @@ def test_constant_matrices():
 
 
 @pytest.mark.parametrize('ops', vector_operation_types)
-@ti.test(ti.cpu)
+@ti.host_arch_only
 def test_taichi_scope_vector_operations_with_global_vectors(ops):
     a, b, c = test_vector_arrays[:3]
     m1, m2 = ti.Vector(a), ti.Vector(b)
@@ -137,7 +137,7 @@ def test_taichi_scope_vector_operations_with_global_vectors(ops):
 
 
 @pytest.mark.parametrize('ops', vector_operation_types)
-@ti.test(ti.cpu)
+@ti.host_arch_only
 def test_taichi_scope_matrix_operations_with_global_matrices(ops):
     a, b, c = test_matrix_arrays[:3]
     m1, m2 = ti.Matrix(a), ti.Matrix(b)
@@ -157,7 +157,7 @@ def test_taichi_scope_matrix_operations_with_global_matrices(ops):
     assert np.allclose(r2[None].value.to_numpy(), ops(a, c))
 
 
-@ti.test(ti.cpu)
+@ti.host_arch_only
 @ti.must_throw(ti.TaichiSyntaxError)
 def test_matrix_non_constant_index():
     m = ti.Matrix(2, 2, ti.i32, 5)
@@ -171,7 +171,7 @@ def test_matrix_non_constant_index():
     func()
 
 
-@ti.test(ti.cpu)
+@ti.host_arch_only
 def test_matrix_constant_index():
     m = ti.Matrix(2, 2, ti.i32, 5)
 

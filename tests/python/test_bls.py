@@ -1,7 +1,8 @@
 import taichi as ti
 
 
-@ti.test(extensions=[ti.extension.bls])
+@ti.require(ti.extension.bls)
+@ti.all_archs
 def test_simple_1d():
     x, y = ti.var(ti.f32), ti.var(ti.f32)
 
@@ -28,7 +29,8 @@ def test_simple_1d():
         assert y[i] == i
 
 
-@ti.test(extensions=[ti.extension.bls])
+@ti.require(ti.extension.bls)
+@ti.all_archs
 def test_simple_2d():
     x, y = ti.var(ti.f32), ti.var(ti.f32)
 
@@ -105,7 +107,8 @@ def test_scatter_2d():
     _test_bls_stencil(2, 128, bs=16, stencil=stencil, scatter=True)
 
 
-@ti.test(extensions=[ti.extension.bls])
+@ti.require(ti.extension.bls)
+@ti.all_archs
 def test_multiple_inputs():
     x, y, z, w, w2 = ti.var(ti.i32), ti.var(ti.i32), ti.var(ti.i32), ti.var(
         ti.i32), ti.var(ti.i32)

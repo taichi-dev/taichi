@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.test()
+@ti.all_archs
 def test_cast_f32():
     z = ti.var(ti.i32, shape=())
 
@@ -13,7 +13,8 @@ def test_cast_f32():
     assert z[None] == 1000
 
 
-@ti.test(extensions=[ti.extension.data64])
+@ti.require(ti.extension.data64)
+@ti.all_archs
 def test_cast_f64():
     z = ti.var(ti.i32, shape=())
 
@@ -25,7 +26,7 @@ def test_cast_f64():
     assert z[None] == 1000
 
 
-@ti.test()
+@ti.all_archs
 def test_cast_within_while():
     ret = ti.var(ti.i32, shape=())
 
@@ -40,7 +41,7 @@ def test_cast_within_while():
     func()
 
 
-@ti.test()
+@ti.all_archs
 def test_bit_cast():
     x = ti.var(ti.i32, shape=())
     y = ti.var(ti.f32, shape=())

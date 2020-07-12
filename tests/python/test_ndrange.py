@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.test()
+@ti.all_archs
 def test_1d():
     x = ti.var(ti.f32, shape=(16))
 
@@ -19,7 +19,7 @@ def test_1d():
             assert x[i] == 0
 
 
-@ti.test()
+@ti.all_archs
 def test_2d():
     x = ti.var(ti.f32, shape=(16, 32))
 
@@ -40,7 +40,7 @@ def test_2d():
                 assert x[i, j] == 0
 
 
-@ti.test()
+@ti.all_archs
 def test_3d():
     x = ti.var(ti.f32, shape=(16, 32, 64))
 
@@ -59,7 +59,7 @@ def test_3d():
                     assert x[i, j, k] == 0
 
 
-@ti.test()
+@ti.all_archs
 def test_static_grouped():
     x = ti.var(ti.f32, shape=(16, 32, 64))
 
@@ -78,7 +78,7 @@ def test_static_grouped():
                     assert x[i, j, k] == 0
 
 
-@ti.test()
+@ti.all_archs
 def test_static_grouped_static():
     x = ti.Matrix(2, 3, dt=ti.f32, shape=(16, 4))
 

@@ -25,7 +25,7 @@ def test_linear_repeated():
         test_linear()
 
 
-@ti.test()
+@ti.all_archs
 def test_linear_nested():
     x = ti.var(ti.i32)
     y = ti.var(ti.i32)
@@ -44,7 +44,7 @@ def test_linear_nested():
         assert y[i] == i + 123
 
 
-@ti.test()
+@ti.all_archs
 def test_linear_nested_aos():
     x = ti.var(ti.i32)
     y = ti.var(ti.i32)
@@ -62,7 +62,7 @@ def test_linear_nested_aos():
         assert y[i] == i + 123
 
 
-@ti.test()
+@ti.all_archs
 def test_2d_nested():
     x = ti.var(ti.i32)
 

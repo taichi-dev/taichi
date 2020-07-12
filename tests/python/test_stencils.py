@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.test()
+@ti.all_archs
 def test_simple():
     # Note: access simplification does not work in this case. Maybe worth fixing.
     x = ti.var(ti.i32)

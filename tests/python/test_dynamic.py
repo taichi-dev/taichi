@@ -2,11 +2,11 @@ import taichi as ti
 
 
 def ti_support_dynamic(test):
-    return ti.test()(test)
+    return ti.all_archs(test)
 
 
 def ti_support_non_top_dynamic(test):
-    return ti.test(excludes=[ti.opengl])(test)
+    return ti.archs_excluding(ti.opengl)(test)
 
 
 @ti_support_dynamic

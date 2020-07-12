@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.test()
+@ti.all_archs
 def test_1d():
     N = 16
 
@@ -22,7 +22,7 @@ def test_1d():
         assert y[i] == i * 2
 
 
-@ti.test()
+@ti.all_archs
 def test_3d():
     N = 2
     M = 2
@@ -46,7 +46,7 @@ def test_3d():
             assert y[i, j] == i * 10 + j
 
 
-@ti.test()
+@ti.all_archs
 def test_matrix():
     N = 16
 
@@ -66,7 +66,7 @@ def test_matrix():
         assert x[i][1, 1] == i + 3
 
 
-@ti.test()
+@ti.all_archs
 def test_alloc_in_kernel():
     return  # build bots may not have this much memory to tests...
     x = ti.var(ti.f32)

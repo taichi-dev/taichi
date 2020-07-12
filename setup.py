@@ -30,7 +30,6 @@ setuptools.setup(
     install_requires=[
         'numpy',
         'pybind11>=2.5.0',
-        'colorama',
         'setuptools',
         'astor',
         'dill',

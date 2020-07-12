@@ -336,7 +336,8 @@ def test_ternary_i(is_mat):
     y = y.to_numpy()
     z = z.to_numpy()
     w = w.to_numpy()
-    assert allclose(x[0], np.int32(np.bool_(y)) * z + np.int32(1 - np.bool_(y)) * w)
+    assert allclose(x[0],
+                    np.int32(np.bool_(y)) * z + np.int32(1 - np.bool_(y)) * w)
 
 
 import pytest_diff
@@ -344,6 +345,7 @@ import pytest_diff
 
 @pytest_diff.registry.register(np.ndarray)
 def diff(x, y):
-    return [f'{x}',
-            f'{y}',
-           ]
+    return [
+        f'{x}',
+        f'{y}',
+    ]

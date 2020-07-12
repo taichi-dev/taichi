@@ -117,12 +117,12 @@ def ternary(foo):
     ternary_ops.append(wrapped)
     return wrapped
 
+
 '''
 array([[4, 4], [5, 4], [5, 4]])
 array([[0, 1], [1, 0], [1, 1]]) * array(5)
 array([[1, 0], [0, 1], [0, 0]]) * array(4)
 '''
-
 
 writeback_binary_ops = []
 

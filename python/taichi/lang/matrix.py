@@ -184,7 +184,8 @@ class Matrix(TaichiOperations):
         assert self.m == other.m and self.n == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
         assert other.m == extra.m and other.n == extra.n, f"Dimension mismatch between shapes ({other.n}, {other.m}), ({other.n}, {extra.m})"
         for i in range(self.n * self.m):
-            ret.entries[i] = foo(self.entries[i], other.entries[i], extra.entries[i])
+            ret.entries[i] = foo(self.entries[i], other.entries[i],
+                                 extra.entries[i])
         return ret
 
     def element_wise_writeback_binary(self, foo, other):

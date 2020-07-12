@@ -7,8 +7,8 @@ TODO: Skips these tests after all tests adapted to @ti.test
 import taichi as ti
 import pytest
 
-
 # ti.test
+
 
 @ti.test()
 def test_all_archs():
@@ -42,6 +42,7 @@ def test_require_extensions():
 
 
 ### ti.approx
+
 
 @ti.test(ti.cpu)
 @pytest.mark.parametrize('x', [0.1, 3])

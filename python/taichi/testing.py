@@ -1,7 +1,8 @@
 import taichi as ti
 
+
 def _():
-########################################################
+    ########################################################
     print('[Taichi] loading test module')
 
     import functools
@@ -28,11 +29,9 @@ def _():
 
         return pytest.approx(expected, **kwargs)
 
-
     def allclose(x, y, **kwargs):
         '''Same as: x == approx(y, **kwargs)'''
         return x == approx(y, **kwargs)
-
 
     def make_temp_file(*args, **kwargs):
         '''Create a temporary file name'''
@@ -41,7 +40,6 @@ def _():
         fd, name = mkstemp(*args, **kwargs)
         os.close(fd)
         return name
-
 
     ## Pytest options
     @pytest.fixture(params=ti.supported_archs(), ids=ti.core.arch_name)
@@ -58,13 +56,13 @@ def _():
             if not all(
                     ti.core.is_extension_supported(req_arch, e)
                     for e in extensions):
-                raise pytest.skip(f'Arch={req_arch} some extension not satisfied')
+                raise pytest.skip(
+                    f'Arch={req_arch} some extension not satisfied')
 
             ti.init(arch=req_arch, **options)
 
         ti_init(*marker.args, **marker.kwargs)
         yield
-
 
     def test(*args, **kwargs):
         def decorator(foo):
@@ -78,7 +76,9 @@ def _():
 
         return decorator
 
+
 ########################################################
+
     return locals()
 
 _ = _()

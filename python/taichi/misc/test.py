@@ -51,7 +51,9 @@ def archs(request):
         if req_arch not in archs or req_arch in excludes:
             raise pytest.skip(f'Arch={req_arch} not included in test')
 
-        if not all(ti.core.is_extension_supported(req_arch, e) for e in extensions):
+        if not all(
+                ti.core.is_extension_supported(req_arch, e)
+                for e in extensions):
             raise pytest.skip(f'Arch={req_arch} some extension not satisfied')
 
         ti.init(arch=req_arch, **options)

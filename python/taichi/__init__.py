@@ -18,7 +18,6 @@ from taichi.lang import *
 from .torch_io import from_torch, to_torch
 from taichi.misc.test import *
 
-
 __all__ = [s for s in dir() if not s.startswith('_')] + ['settings']
 
 __version__ = (core.get_version_major(), core.get_version_minor(),

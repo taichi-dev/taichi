@@ -54,7 +54,8 @@ def test_reduction_single_i64():
     _test_reduction_single(ti.i64, lambda x, y: x % 2**64 == y % 2**64)
 
 
-@ti.test(extensions=[ti.extension.data64], excludes=[ti.opengl])  # OpenGL doesn't have u64 yet
+@ti.test(extensions=[ti.extension.data64],
+         excludes=[ti.opengl])  # OpenGL doesn't have u64 yet
 def test_reduction_single_u64():
     _test_reduction_single(ti.u64, lambda x, y: x % 2**64 == y % 2**64)
 

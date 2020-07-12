@@ -3,7 +3,7 @@
 import os, re
 import subprocess as sp
 from pathlib import Path
-from colorama import Fore, Back, Style
+from taichi.colorama import Fore, Back, Style
 from yapf.yapflib.yapf_api import FormatFile
 from git import Repo
 

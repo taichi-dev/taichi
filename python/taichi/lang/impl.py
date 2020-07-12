@@ -100,9 +100,8 @@ def subscript(value, *indices):
     else:
         if isinstance(indices,
                       tuple) and len(indices) == 1 and indices[0] is None:
-            indices_expr_group = make_expr_group()
-        else:
-            indices_expr_group = make_expr_group(*indices)
+            indices = []
+        indices_expr_group = make_expr_group(*indices)
         tensor_dim = int(value.ptr.get_attribute("dim"))
         index_dim = indices_expr_group.size()
         if tensor_dim != index_dim:
@@ -233,15 +232,16 @@ def get_runtime():
 
 @taichi_scope
 def make_constant_expr(val):
+    import numpy as np
     _taichi_skip_traceback = 1
-    if isinstance(val, int):
+    if isinstance(val, (int, np.integer)):
         if pytaichi.default_ip == i32:
             return Expr(taichi_lang_core.make_const_expr_i32(val))
         elif pytaichi.default_ip == i64:
             return Expr(taichi_lang_core.make_const_expr_i64(val))
         else:
             assert False
-    elif isinstance(val, float):
+    elif isinstance(val, (float, np.floating, np.ndarray)):
         if pytaichi.default_fp == f32:
             return Expr(taichi_lang_core.make_const_expr_f32(val))
         elif pytaichi.default_fp == f64:

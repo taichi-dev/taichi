@@ -396,4 +396,4 @@ optimization and see if the issue still exists:
 
     ...
 
-If turning off optimization fixes the issue (or not), please report this bug on `GitHub <https://github.com/taichi-dev/taichi/issues/new?labels=potential+bug&template=bug_report.md>`_. Thank you!
+Whether or not turning off optimization fixes the issue, please feel free to report this bug on `GitHub <https://github.com/taichi-dev/taichi/issues/new?labels=potential+bug&template=bug_report.md>`_. Thank you!

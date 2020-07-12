@@ -49,14 +49,14 @@ if _has_pytest:
 
     ## Pytest options
     @pytest.fixture(params=ti.supported_archs(), ids=ti.core.arch_name)
-    def archs(request):
+    def taichi_archs(request):
         marker = request.node.get_closest_marker('taichi')
         req_arch = request.param
 
         def ti_init(*archs, extensions=[], excludes=[], **options):
             archs = archs or ti.supported_archs()
 
-            if req_arch not in archs or req_arch in excludes:
+            if (req_arch not in archs) or (req_arch in excludes):
                 raise pytest.skip(f'Arch={req_arch} not included in test')
 
             if not all(
@@ -72,12 +72,11 @@ if _has_pytest:
 
     def test(*args, **kwargs):
         def decorator(foo):
-            @functools.wraps(foo)
-            @pytest.mark.usefixtures('archs')
+            @pytest.mark.usefixtures('taichi_archs')
             @pytest.mark.taichi(*args, **kwargs)
+            @functools.wraps(foo)
             def wrapped(*_, **__):
-                print('asas')
-                foo(*_, **__)
+                return foo(*_, **__)
 
             return wrapped
 

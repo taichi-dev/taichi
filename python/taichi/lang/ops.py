@@ -88,19 +88,19 @@ def ternary(foo):
     import taichi as ti
 
     @functools.wraps(foo)
-    def abc_foo(x, y, z):
+    def abc_foo(a, b, c):
         _taichi_skip_traceback = 2
-        return foo(x, y, z)
+        return foo(a, b, c)
 
     @functools.wraps(foo)
-    def bac_foo(x, y, z):
+    def bac_foo(b, a, c):
         _taichi_skip_traceback = 2
-        return foo(y, x, z)
+        return foo(a, b, c)
 
     @functools.wraps(foo)
-    def cab_foo(x, y, z):
+    def cab_foo(c, a, b):
         _taichi_skip_traceback = 2
-        return foo(z, x, y)
+        return foo(a, b, c)
 
     @functools.wraps(foo)
     def wrapped(a, b, c):
@@ -116,6 +116,12 @@ def ternary(foo):
 
     ternary_ops.append(wrapped)
     return wrapped
+
+'''
+array([[4, 4], [5, 4], [5, 4]])
+array([[0, 1], [1, 0], [1, 1]]) * array(5)
+array([[1, 0], [0, 1], [0, 0]]) * array(4)
+'''
 
 
 writeback_binary_ops = []
@@ -419,8 +425,11 @@ logical_and = bit_and
 
 @ternary
 def select(cond, a, b):
+    # TODO: systematically resolve `-1 = True` problem by introducing u1:
+    cond = logical_not(logical_not(cond))
+
     def py_select(cond, a, b):
-        return a if cond else b
+        return a * c + b * (1 - c)
 
     return _ternary_operation(ti_core.expr_select, py_select, cond, a, b)
 

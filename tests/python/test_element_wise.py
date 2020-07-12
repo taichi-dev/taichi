@@ -296,7 +296,7 @@ def test_unary():
 
 @pytest.mark.parametrize('is_mat', [(True, True, True), (True, False, False),
                                     (False, True, False), (False, False, True),
-                                    (False, True, True), (False, False, False)])
+                                    (False, True, True)])
 @ti.all_archs
 def test_ternary_i(is_mat):
     cond_is_mat, lhs_is_mat, rhs_is_mat = is_mat
@@ -323,9 +323,9 @@ def test_ternary_i(is_mat):
     else:
         z[None] = 5
     if rhs_is_mat:
-        z.from_numpy(np.array([[4, 5], [6, 3], [9, 2]], np.int32))
+        w.from_numpy(np.array([[4, 5], [6, 3], [9, 2]], np.int32))
     else:
-        z[None] = 4
+        w[None] = 4
 
     @ti.kernel
     def func():
@@ -336,4 +336,14 @@ def test_ternary_i(is_mat):
     y = y.to_numpy()
     z = z.to_numpy()
     w = w.to_numpy()
-    assert allclose(x[0], ti.select(y[None], z[None], w[None]))
+    assert allclose(x[0], np.int32(np.bool_(y)) * z + np.int32(1 - np.bool_(y)) * w)
+
+
+import pytest_diff
+
+
+@pytest_diff.registry.register(np.ndarray)
+def diff(x, y):
+    return [f'{x}',
+            f'{y}',
+           ]

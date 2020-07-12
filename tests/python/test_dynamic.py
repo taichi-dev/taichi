@@ -183,7 +183,7 @@ def test_dense_dynamic_len():
 
 
 @ti_support_dynamic
-def test_dense_activate():
+def test_dynamic_activate():
     ti.init(arch=ti.metal)
     # record the lengths
     l = ti.var(ti.i32, 3)

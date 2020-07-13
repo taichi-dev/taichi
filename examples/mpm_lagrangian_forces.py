@@ -66,7 +66,7 @@ def p2g():
         for i in ti.static(range(3)):
             for j in ti.static(range(3)):
                 I = ti.Vector([i, j])
-                dpos = (ti.cast(I, ti.f32) - fx) * dx
+                dpos = (float(I) - fx) * dx
                 weight = w[i].x * w[j].y
                 grid_v[base + I] += weight * (p_mass * v[p] - x.grad[p] +
                                               affine @ dpos)
@@ -113,7 +113,7 @@ def g2p():
         for i in ti.static(range(3)):
             for j in ti.static(range(3)):
                 I = ti.Vector([i, j])
-                dpos = ti.cast(I, ti.f32) - fx
+                dpos = float(I) - fx
                 g_v = grid_v[base + I]
                 weight = w[i].x * w[j].y
                 new_v += weight * g_v

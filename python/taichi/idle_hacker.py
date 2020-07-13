@@ -24,7 +24,7 @@ def main():
 
     if not os.path.exists('.tidle_backup.code.py'):
         shutil.copy(code.__file__, '.tidle_backup.code.py')
-        print('Backup saved in .tmp_idle_backup.code.py')
+        print('Backup saved in .tidle_backup.code.py')
 
     with open(code.__file__) as f:
        ret = ''

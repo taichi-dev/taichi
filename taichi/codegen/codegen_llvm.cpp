@@ -889,20 +889,10 @@ void CodeGenLLVM::visit(LocalStoreStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(AssertStmt *stmt) {
-  if (stmt->args.empty()) {
-    llvm_val[stmt] = call("taichi_assert", get_context(), llvm_val[stmt->cond],
-                          builder->CreateGlobalStringPtr(stmt->text));
-  } else {
-    std::vector<Value *> args;
-    args.emplace_back(get_runtime());
-    args.emplace_back(llvm_val[stmt->cond]);
-    args.emplace_back(builder->CreateGlobalStringPtr(stmt->text));
-    for (auto arg : stmt->args) {
-      TI_ASSERT(llvm_val[arg]);
-      args.emplace_back(llvm_val[arg]);
-    }
-    llvm_val[stmt] = create_call("taichi_assert_format", args);
-  }
+  // This visitor function ignores stmt->args since string formatting is not
+  // supported on all LLVM backends
+  llvm_val[stmt] = call("taichi_assert", get_context(), llvm_val[stmt->cond],
+                        builder->CreateGlobalStringPtr(stmt->text));
 }
 
 void CodeGenLLVM::visit(SNodeOpStmt *stmt) {

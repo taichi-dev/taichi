@@ -1,25 +1,7 @@
 Developer utilities
 ===================
 
-Logging
--------
-
-.. code-block:: python
-
-    '''
-    level can be {}
-        ti.TRACE
-        ti.DEBUG
-        ti.INFO
-        ti.WARN
-        ti.ERR
-        ti.CRITICAL
-    '''
-    ti.set_logging_level(level)
-
-The default logging level is ``ti.INFO``.
-You can also override default logging level by setting the environment variable like
-``TI_LOG_LEVEL=warn``.
+This section provides a detailed description of some commonly used utilities for Taichi developers.
 
 .. _regress:
 
@@ -28,9 +10,9 @@ Benchmarking and regression tests
 
 * Run ``ti benchmark`` to run tests in benchmark mode. This will record the performance of ``ti test``, and save it in ``benchmarks/output``.
 
-* Run ``ti regression`` to show the difference between previous result in ``benchmarks/baseline``. And you can see if the performance is increasing or decreasing after your commits. This is really helpful when your work is related to IR optimizations.
+* Run ``ti regression`` to show the difference between the previous result in ``benchmarks/baseline``. And you can see if the performance is increasing or decreasing after your commits. This is really helpful when your work is related to IR optimizations.
 
-* Run ``ti baseline`` to save the benchmark result to ``benchmarks/baseline`` for furture comparsion, this may be executed on performance related PRs, before they are merged into master.
+* Run ``ti baseline`` to save the benchmark result to ``benchmarks/baseline`` for future comparison, this may be executed on performance-related PRs, before they are merged into master.
 
 For example, this is part of the output by ``ti regression`` after enabling constant folding optimization pass:
 
@@ -50,14 +32,14 @@ For example, this is part of the output by ``ti regression`` after enabling cons
 
 .. note::
 
-    Currently ``ti benchmark`` only support benchmarking number-of-statements, no time benchmarking is included since it depends on hardware performance and therefore hard to compare if the baseline is from another machine.
+    Currently ``ti benchmark`` only supports benchmarking number-of-statements, no time benchmarking is included since it depends on hardware performance and therefore hard to compare if the baseline is from another machine.
     We are to purchase a fixed-performance machine as a time benchmark server at some point.
     Discussion at: https://github.com/taichi-dev/taichi/issue/948
 
 
-The suggested workflow for the performance related PR author to run the regression tests is:
+The suggested workflow for the performance-related PR author to run the regression tests is:
 
-* Run ``ti benchmark && ti baseline`` in ``master`` to save the current performance as baseline.
+* Run ``ti benchmark && ti baseline`` in ``master`` to save the current performance as a baseline.
 
 * Run ``git checkout -b your-branch-name``.
 
@@ -67,7 +49,7 @@ The suggested workflow for the performance related PR author to run the regressi
 
 * (If result BAD) Do further improvements, until the result is satisfying.
 
-* (If result OK) Run ``ti baseline`` to save stage 1 performance as baseline.
+* (If result OK) Run ``ti baseline`` to save stage 1 performance as a baseline.
 
 * Go forward to stage 2, 3, ..., and the same workflow is applied.
 
@@ -101,8 +83,8 @@ The suggested workflow for the performance related PR author to run the regressi
 Code coverage
 -------------
 
-To ensure that our tests covered every situations, we need to have **coverage report**.
-That is, to detect how many percent of code lines in is executed in test.
+To ensure that our tests covered every situation, we need to have **coverage report**.
+That is, to detect how many percents of code lines in is executed in test.
 
 - Generally, the higher the coverage percentage is, the stronger our tests are.
 - When making a PR, we want to **ensure that it comes with corresponding tests**. Or code coverage will decrease.
@@ -129,7 +111,7 @@ Serialization (legacy)
 
 The serialization module of taichi allows you to serialize/deserialize objects into/from binary strings.
 
-You can use ``TI_IO`` macros to explicit define fields necessary in Taichi.
+You can use ``TI_IO`` macros to explicitly define fields necessary in Taichi.
 
 .. code-block:: cpp
 

@@ -49,23 +49,6 @@ For now, Taichi-scope ``print`` supports string, scalar, vector, and matrix expr
 
 .. warning::
 
-    Note that ``print`` in Taichi-scope can only receive **comma-separated parameter**. Neither f-string nor formatted string should be used. For example:
-    .. code-block:: python
-        import taichi as ti
-        ti.init(arch=ti.cpu)
-        a = ti.var(ti.f32, 4)
-
-
-        @ti.kernel
-        def foo():
-            a[0] = 1.0
-            print('a[0] = ', a[0]) # right
-            print(f'a[0] = {a[0]}') # wrong, f-string is not supported
-            print("a[0] = %f" % a[0]) # wrong, formatted string is not supported
-
-        foo()
-.. note::
-
     For the **OpenGL and CUDA backend**, the printed result will not show up until ``ti.sync()`` is called:
 
     .. code-block:: python
@@ -93,6 +76,26 @@ For now, Taichi-scope ``print`` supports string, scalar, vector, and matrix expr
         after
 
     Please note that host access or program end will also implicitly invoke ``ti.sync()``.
+
+.. note::
+
+    Note that ``print`` in Taichi-scope can only receive **comma-separated parameter**. Neither f-string nor formatted string should be used. For example:
+
+    .. code-block:: python
+
+        import taichi as ti
+        ti.init(arch=ti.cpu)
+        a = ti.var(ti.f32, 4)
+
+
+        @ti.kernel
+        def foo():
+            a[0] = 1.0
+            print('a[0] = ', a[0]) # right
+            print(f'a[0] = {a[0]}') # wrong, f-string is not supported
+            print("a[0] = %f" % a[0]) # wrong, formatted string is not supported
+
+        foo()
 
 
 Compile-time ``ti.static_print``

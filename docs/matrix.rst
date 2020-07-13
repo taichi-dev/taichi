@@ -158,11 +158,6 @@ Methods
         ``a.transpose()`` will not effect the data in ``a``, it just return the result.
 
 
-.. attribute:: a.T
-
-    A shortcut to ``a.transpose()``.
-
-
 .. function:: a.trace()
 
     :parameter a: (Matrix) the matrix

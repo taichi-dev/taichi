@@ -117,6 +117,7 @@ def test_init_bad_arg():
 
 
 @pytest.mark.forked
+@pytest.mark.xfail  # `forked` seems to be not working on Windows (#1406, #1464)
 def test_without_init():
     # We want to check if Taichi works well without ``ti.init()``.
     # But in test ``ti.init()`` will always be called in last ``@ti.all_archs``.

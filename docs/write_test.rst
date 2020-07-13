@@ -1,7 +1,7 @@
 Workflow for writing a Python test
 ----------------------------------
 
-Normally we write functional test in Python.
+Normally we write functional tests in Python.
 
 - We use `pytest <https://github.com/pytest-dev/pytest>`_ for our Python test infrastructure.
 - Python tests should be added to ``tests/python/test_xxx.py``.
@@ -51,8 +51,8 @@ Testing against multiple backends
 *********************************
 
 But the above method is not good enough, for example, ``ti.init(arch=ti.cpu)``, means that it will only test on the CPU backend.
-So do we have to write many tests ``test_log10_cpu``, ``test_log10_cuda``, ... with just the first line different? No worry, we
-provides a useful decorator ``@ti.test``:
+So do we have to write many tests ``test_log10_cpu``, ``test_log10_cuda``, ... with only the first line different? No worries,
+we provide a useful decorator ``@ti.test``:
 
 .. code-block:: python
 
@@ -90,7 +90,7 @@ And you may test against **all backends** by simply not specifying the argument:
         foo()
         assert r[None] == 2
 
-Cool! Right?  But that's still not good enough.
+Cool! Right? But that's still not good enough.
 
 Using ``ti.approx`` for comparison with tolerance
 *************************************************
@@ -125,7 +125,7 @@ backends, for example ``2.001 == ti.approx(2)`` will return ``True`` on the Open
 
     ``ti.approx`` also do treatments on boolean types, e.g.: ``2 == ti.approx(True)``.
 
-Great on improving stablity! But the test is still not good enough, yet.
+Great on improving stability! But the test is still not good enough, yet.
 
 Parametrize test inputs
 ***********************
@@ -154,7 +154,7 @@ We may test against different input values using the ``@pytest.mark.parametrize`
         foo()
         assert r[None] == math.log10(x)
 
-Use comma-separated list for multiple input values:
+Use a comma-separated list for multiple input values:
 
 .. code-block:: python
 
@@ -177,7 +177,7 @@ Use comma-separated list for multiple input values:
         foo()
         assert r[None] == math.atan2(x, y)
 
-Use two separate ``parametrize`` for test **all combination** of input arguments:
+Use two separate ``parametrize`` to test **all combinations** of input arguments:
 
 .. code-block:: python
 

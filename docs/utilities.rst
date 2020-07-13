@@ -44,7 +44,7 @@ In C++, you may write logs using the ``TI_*`` interface:
     TI_WARN("Hello world!");
     TI_ERROR("Hello world!");
 
-If one raised a message of level is ``error``, then Taichi will be **terminated** immediately
+If one raises a message of the level ``error``, Taichi will be **terminated** immediately
 and result in a ``RuntimeError`` in Python side.
 
 .. code-block:: cpp

@@ -294,7 +294,7 @@ Command line tools
 - Use ``ti test -c`` to run only the C++ tests.
   e.g. ``ti test -c alg_simp`` will run ``tests/cpp/test_alg_simp.cpp``.
 
-- Use ``ti test -k <key>`` to run specific tests that matched with the specific key.
+- Use ``ti test -k <key>`` to run tests that match the specified key.
   e.g. ``ti test linalg -k "cross or diag"`` will run the ``test_cross`` and ``test_diag`` in ``tests/python/test_linalg.py``.
 
 For more options, see ``ti test -h``.

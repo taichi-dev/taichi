@@ -50,8 +50,8 @@ void export_visual(py::module &m) {
              return *gui->widget_values.at(wid);
            })
       .def("make_slider",
-           [](GUI *gui, std::string text, float init_value,
-           float minimum, float maximum, float step) {
+           [](GUI *gui, std::string text, float init_value, float minimum,
+              float maximum, float step) {
              auto val = std::make_unique<float>(init_value);
              auto val_ptr = val.get();
              gui->widget_values.push_back(std::move(val));
@@ -69,8 +69,8 @@ void export_visual(py::module &m) {
       .def("make_button",
            [](GUI *gui, std::string text, std::string event_name) {
              gui->button(text, [=]() {
-               gui->key_events.push_back(
-                   GUI::KeyEvent{GUI::KeyEvent::Type::press, event_name, gui->cursor_pos});
+               gui->key_events.push_back(GUI::KeyEvent{
+                   GUI::KeyEvent::Type::press, event_name, gui->cursor_pos});
              });
            })
       .def("canvas_untransform", &GUI::canvas_untransform)

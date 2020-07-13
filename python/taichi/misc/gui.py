@@ -70,7 +70,6 @@ class GUI:
         def value(self, value):
             self.gui.core.set_widget_value(self.wid, value)
 
-
     def slider(self, text, minimum, maximum, step=1):
         wid = self.core.make_slider(text, minimum, minimum, maximum, step)
         return GUI.WidgetValue(self, wid)

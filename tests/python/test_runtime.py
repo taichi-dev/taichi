@@ -116,23 +116,6 @@ def test_init_bad_arg():
     ti.init(_test_mode=True, debug=True, foo_bar=233)
 
 
-# :
-@pytest.mark.skipif(ti.get_os_name() == 'win',
-                reason='`forked` is not working on Windows (#1406, #1464)')
-@pytest.mark.forked
-def test_without_init():
-    # We want to check if Taichi works well without ``ti.init()``.
-    # But in test ``ti.init()`` will always be called in last ``@ti.all_archs``.
-    # So we have to create a new Taichi instance, i.e. test in a sandbox.
-    assert ti.cfg.arch == ti.cpu
-
-    x = ti.var(ti.i32, (2, 3))
-    assert x.shape == (2, 3)
-
-    x[1, 2] = 4
-    assert x[1, 2] == 4
-
-
 @ti.all_archs
 @ti.must_throw(RuntimeError)
 def test_materialization_after_kernel():

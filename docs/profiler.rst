@@ -9,7 +9,7 @@ ScopedProfiler
 
 1. ``ScopedProfiler`` measures time spent on the **host tasks** hierarchically.
 
-2. This profiler is turned on automatically. To show its results, call ``ti.print_profile_info()``. For example:
+2. This profiler is automatically on. To show its results, call ``ti.print_profile_info()``. For example:
 
 .. code-block:: python
 
@@ -22,7 +22,7 @@ ScopedProfiler
     @ti.kernel
     def compute():
         var[0] = 1.0
-        print(f"set var[0] =", var[0])
+        print("Setting var[0] =", var[0])
 
 
     compute()

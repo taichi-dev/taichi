@@ -30,7 +30,7 @@ def import_ti_core(tmp_dir=None):
     global ti_core
     if get_os_name() != 'win':
         old_flags = sys.getdlopenflags()
-        sys.setdlopenflags(258)  # 258 = RTLD_NOW | RTLD_GLOBAL
+        sys.setdlopenflags(2 | 8)  # RTLD_NOW | RTLD_DEEPBIND
     else:
         pyddir = os.path.join(package_root(), 'lib')
         os.environ['PATH'] += ';' + pyddir
@@ -56,10 +56,9 @@ def import_ti_core(tmp_dir=None):
 def locale_encode(s):
     try:
         import locale
-        encoding = locale.getdefaultlocale()[1]
-    except:
-        encoding = 'utf8'
-    return s.encode(encoding)
+        return s.encode(locale.getdefaultlocale()[1])
+    except TypeError:
+        return s.encode('utf8')
 
 
 def is_ci():
@@ -249,9 +248,16 @@ def build():
     os.chdir(tmp_cwd)
 
 
+def check_exists(src):
+    if not os.path.exists(src):
+        raise FileNotFoundError(
+            f'File "{src}" not exist. Installation corrupted or build incomplete?'
+        )
+
+
 def prepare_sandbox(src):
     global g_tmp_dir
-    assert os.path.exists(src)
+    check_exists(src)
     import atexit
     import shutil
     from tempfile import mkdtemp
@@ -299,7 +305,7 @@ else:
         else:
             os.environ['LD_LIBRARY_PATH'] = '/usr/lib64/'
         lib_path = os.path.join(bin_dir, 'libtaichi_core.so')
-        assert os.path.exists(lib_path)
+        check_exists(lib_path)
         tmp_cwd = os.getcwd()
         tmp_dir = prepare_sandbox(lib_path)
         os.chdir(tmp_dir)
@@ -382,7 +388,7 @@ def get_dll_name(name):
     elif get_os_name() == 'win':
         return 'taichi_%s.dll' % name
     else:
-        assert False, "Unknown OS"
+        raise Exception(f"Unknown OS: {get_os_name()}")
 
 
 def load_module(name, verbose=True):
@@ -467,18 +473,6 @@ def _print_taichi_header():
         header += '<dev mode>, '
     else:
         header += f'version {ti_core.get_version_string()}, '
-
-    supported_archs = ['cpu']
-    if ti_core.with_cuda():
-        supported_archs.append('cuda')
-    if ti_core.with_opengl():
-        supported_archs.append('opengl')
-    if ti_core.with_metal():
-        supported_archs.append('metal')
-    if len(supported_archs) == 1:
-        supported_archs[0] = 'cpu only'
-    archs_str = ', '.join(sorted(supported_archs))
-    header += f'supported archs: [{archs_str}], '
 
     llvm_version = ti_core.get_llvm_version_string()
     header += f'llvm {llvm_version}, '

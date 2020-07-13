@@ -5,10 +5,6 @@
 
 TLANG_NAMESPACE_BEGIN
 
-// TODO(xumingkuan): Temporary variable for benchmarking.
-// TODO(xumingkuan): Will be removed in the future.
-extern bool advanced_optimization;
-
 struct CompileConfig {
   Arch arch;
   bool debug;
@@ -26,6 +22,7 @@ struct CompileConfig {
   bool lower_access;
   bool simplify_after_lower_access;
   bool demote_dense_struct_fors;
+  bool advanced_optimization;
   bool use_llvm;
   bool print_struct_llvm_ir;
   bool print_kernel_llvm_ir;
@@ -37,12 +34,16 @@ struct CompileConfig {
   bool fast_math;
   bool use_unified_memory;
   bool async;
+  bool flatten_if;
   DataType default_fp;
   DataType default_ip;
   std::string extra_flags;
   int default_cpu_block_dim;
   int default_gpu_block_dim;
   int ad_stack_size;
+
+  int saturating_grid_dim;
+  int max_block_dim;
 
   float64 device_memory_GB;
   float64 device_memory_fraction;

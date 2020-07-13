@@ -1,3 +1,5 @@
+.. _export_results:
+
 Export your results
 ===================
 Taichi has functions that help you **export visual results to images or videos**. This tutorial demonstrates how to use them step by step.
@@ -86,7 +88,7 @@ Export videos
 
     The video export utilities of Taichi depend on ``ffmpeg``. If ``ffmpeg`` is not installed on your machine, please follow the installation instructions of ``ffmpeg`` at the end of this page.
 
-- ``ti.VideoManger`` can help you export results in ``mp4`` or ``gif`` format. For example,
+- ``ti.VideoManager`` can help you export results in ``mp4`` or ``gif`` format. For example,
 
 .. code-block:: python
 
@@ -102,20 +104,20 @@ Export videos
             pixels[i, j, k] = ti.random() * 255
 
     result_dir = "./results"
-    video_manger = ti.VideoManager(output_dir=result_dir, framerate=24, automatic_build=False)
+    video_manager = ti.VideoManager(output_dir=result_dir, framerate=24, automatic_build=False)
 
     for i in range(50):
         paint()
 
         pixels_img = pixels.to_numpy()
-        video_manger.write_frame(pixels_img)
+        video_manager.write_frame(pixels_img)
         print(f'\rFrame {i+1}/50 is recorded', end='')
 
     print()
     print('Exporting .mp4 and .gif videos...')
-    video_manger.make_video(gif=True, mp4=True)
-    print(f'MP4 video is saved to {video_manger.get_output_filename(".mp4")}')
-    print(f'GIF video is saved to {video_manger.get_output_filename(".gif")}')
+    video_manager.make_video(gif=True, mp4=True)
+    print(f'MP4 video is saved to {video_manager.get_output_filename(".mp4")}')
+    print(f'GIF video is saved to {video_manager.get_output_filename(".gif")}')
 
 After running the code above, you will find the output videos in the ``./results/`` folder.
 
@@ -173,6 +175,8 @@ Install ``ffmpeg`` on OS X
 .. code-block:: shell
 
     brew install ffmpeg
+
+.. _export_ply_files:
 
 Export PLY files
 ----------------

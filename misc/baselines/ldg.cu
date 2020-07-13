@@ -1,3 +1,6 @@
+// Compile this file with clang to see how CUDA
+// is translated into NVVM IR.
+
 __device__ int cube(int x) {
   int y;
   asm(".reg .u32 t1;\n\t"            // temp reg t1
@@ -5,7 +8,7 @@ __device__ int cube(int x) {
       " mul.lo.u32 %0, t1, %1;"      // y = t1 * x
       : "=r"(y)
       : "r"(x));
-  return y;
+  return y + clock64();
 }
 
 __global__ void test_ldg(float *a, float *b) {

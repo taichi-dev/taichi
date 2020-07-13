@@ -330,7 +330,9 @@ class LowerAST : public IRVisitor {
     auto expr = stmt->expr;
     auto fctx = make_flatten_ctx();
     expr->flatten(&fctx);
-    stmt->eval_expr.cast<EvalExpression>()->stmt_ptr = stmt->expr->stmt;
+    if (stmt->eval_expr.expr && stmt->eval_expr.is<EvalExpression>()) {
+      stmt->eval_expr.cast<EvalExpression>()->stmt_ptr = stmt->expr->stmt;
+    }
     stmt->parent->replace_with(stmt, std::move(fctx.stmts));
     throw IRModified();
   }
@@ -377,11 +379,14 @@ class LowerAST : public IRVisitor {
       fctx.push_back<SNodeOpStmt>(stmt->op_type, stmt->snode, ptr, val_stmt);
     } else if (stmt->snode->type == SNodeType::pointer ||
                stmt->snode->type == SNodeType::hash ||
-               stmt->snode->type == SNodeType::dynamic ||
+               stmt->snode->type == SNodeType::dense ||
                stmt->snode->type == SNodeType::bitmasked) {
       TI_ASSERT(SNodeOpStmt::activation_related(stmt->op_type));
       fctx.push_back<SNodeOpStmt>(stmt->op_type, stmt->snode, indices_stmt);
     } else {
+      TI_ERROR("The {} operation is not supported on {} SNode",
+               snode_op_type_name(stmt->op_type),
+               snode_type_name(stmt->snode->type));
       TI_NOT_IMPLEMENTED
     }
 

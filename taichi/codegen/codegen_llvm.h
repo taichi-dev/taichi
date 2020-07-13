@@ -23,6 +23,7 @@ class OffloadedTask {
 
   int block_dim;
   int grid_dim;
+  std::size_t shmem_bytes{0};
 
   OffloadedTask(CodeGenLLVM *codegen);
 
@@ -60,6 +61,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   llvm::Type *context_ty;
   llvm::Type *physical_coordinate_ty;
   llvm::Value *current_coordinates;
+  llvm::Value *parent_coordinates{nullptr};
+  llvm::GlobalVariable *bls_buffer{nullptr};
   // Mainly for supporting continue stmt
   llvm::BasicBlock *current_loop_reentry;
   // Mainly for supporting break stmt
@@ -231,9 +234,17 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(LoopIndexStmt *stmt) override;
 
+  void visit(LoopLinearIndexStmt *stmt) override;
+
+  void visit(BlockCornerIndexStmt *stmt) override;
+
+  void visit(BlockDimStmt *stmt) override;
+
   void visit(GlobalTemporaryStmt *stmt) override;
 
   void visit(ThreadLocalPtrStmt *stmt) override;
+
+  void visit(BlockLocalPtrStmt *stmt) override;
 
   void visit(InternalFuncStmt *stmt) override;
 
@@ -250,6 +261,10 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   void visit(StackLoadTopAdjStmt *stmt) override;
 
   void visit(StackAccAdjointStmt *stmt) override;
+
+  void visit(RangeAssumptionStmt *stmt) override;
+
+  llvm::Value *create_xlogue(std::unique_ptr<Block> &block);
 
   ~CodeGenLLVM() = default;
 };

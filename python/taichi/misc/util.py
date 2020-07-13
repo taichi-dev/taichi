@@ -138,7 +138,7 @@ def get_logging(name):
         if taichi.ti_core.logging_effective(name):
             msg_formatted = msg.format(*args, **kwargs)
             func = getattr(taichi.ti_core, name)
-            frame = inspect.currentframe().f_back.f_back
+            frame = inspect.currentframe().f_back
             file_name, lineno, func_name, _, _ = inspect.getframeinfo(frame)
             msg = f'[{file_name}:{func_name}@{lineno}] {msg_formatted}'
             func(msg)

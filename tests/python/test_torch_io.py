@@ -223,3 +223,14 @@ def test_shape_vector():
     X1 = x.to_torch()
 
     assert (X == X1).all()
+
+
+@ti.torch_test
+def test_torch_zero():
+    @ti.kernel
+    def test_torch(arr: ti.ext_arr()):
+        pass
+
+    test_torch(torch.zeros((0), dtype=torch.int32))
+    test_torch(torch.zeros((0, 5), dtype=torch.int32))
+    test_torch(torch.zeros((5, 0, 5), dtype=torch.int32))

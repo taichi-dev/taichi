@@ -160,6 +160,7 @@ Frequently used tags:
 - ``[Linux]``: Linux platform;
 - ``[Mac]``: Mac OS X platform;
 - ``[Windows]``: Windows platform;
+- ``[Docker]``: Docker container;
 - ``[Perf]``: performance improvements;
 - ``[Misc]``: something that doesn't belong to any category, such as version bump, reformatting;
 - ``[Bug]``: bug fixes;
@@ -279,4 +280,4 @@ Right now we are targeting CUDA 10. When upgrading CUDA version,
 the file ``external/cuda_libdevice/slim_libdevice.10.bc`` should also be replaced with a newer version.
 
 To generate the slimmed version of libdevice based on a full ``libdevice.X.bc`` file from a CUDA installation,
-use ``ti run make_slim_libdevice [libdevice.X.bc file]``
+use ``ti task make_slim_libdevice [libdevice.X.bc file]``

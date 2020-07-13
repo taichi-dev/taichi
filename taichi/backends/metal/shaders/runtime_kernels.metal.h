@@ -53,7 +53,7 @@ STR(
       child_list.lm_data =
           (reinterpret_cast<device Runtime *>(runtime_addr)->snode_lists +
            child_snode_id);
-      clear(&child_list);
+      child_list.clear();
     }
 
     kernel void element_listgen(device byte *runtime_addr[[buffer(0)]],
@@ -83,13 +83,13 @@ STR(
       const int max_num_elems = args[2];
       for (int ii = utid_; ii < max_num_elems; ii += grid_size) {
         const int parent_idx = (ii / num_slots);
-        if (parent_idx >= num_active(&parent_list)) {
+        if (parent_idx >= parent_list.num_active()) {
           // Since |parent_idx| increases monotonically, we can return directly
           // once it goes beyond the number of active parent elements.
           return;
         }
         const int child_idx = (ii % num_slots);
-        const auto parent_elem = get<ListgenElement>(&parent_list, parent_idx);
+        const auto parent_elem = parent_list.get<ListgenElement>(parent_idx);
         ListgenElement child_elem;
         child_elem.root_mem_offset = parent_elem.root_mem_offset +
                                      child_idx * child_stride +
@@ -99,7 +99,7 @@ STR(
           refine_coordinates(parent_elem,
                              runtime->snode_extractors[parent_snode_id],
                              child_idx, &child_elem);
-          append(&child_list, child_elem);
+          child_list.append(child_elem);
         }
       }
     }

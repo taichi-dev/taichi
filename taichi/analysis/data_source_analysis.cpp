@@ -6,8 +6,41 @@ TLANG_NAMESPACE_BEGIN
 
 namespace irpass::analysis {
 
+std::vector<Stmt *> get_load_pointers(Stmt *load_stmt) {
+  // If load_stmt loads some variables or a stack, return the pointers of them.
+  if (auto local_load = load_stmt->cast<LocalLoadStmt>()) {
+    std::vector<Stmt *> result;
+    for (auto &address : local_load->ptr.data) {
+      if (std::find(result.begin(), result.end(), address.var) == result.end())
+        result.push_back(address.var);
+    }
+    return result;
+  } else if (auto global_load = load_stmt->cast<GlobalLoadStmt>()) {
+    return std::vector<Stmt *>(1, global_load->ptr);
+  } else if (auto atomic = load_stmt->cast<AtomicOpStmt>()) {
+    return std::vector<Stmt *>(1, atomic->dest);
+  } else if (auto stack_load_top = load_stmt->cast<StackLoadTopStmt>()) {
+    return std::vector<Stmt *>(1, stack_load_top->stack);
+  } else if (auto stack_load_top_adj = load_stmt->cast<StackLoadTopAdjStmt>()) {
+    return std::vector<Stmt *>(1, stack_load_top_adj->stack);
+  } else if (auto stack_acc_adj = load_stmt->cast<StackAccAdjointStmt>()) {
+    // This statement loads and stores the adjoint data.
+    return std::vector<Stmt *>(1, stack_acc_adj->stack);
+  } else if (auto stack_push = load_stmt->cast<StackPushStmt>()) {
+    // This is to make dead store elimination not eliminate consequent pushes.
+    return std::vector<Stmt *>(1, stack_push->stack);
+  } else if (auto stack_pop = load_stmt->cast<StackPopStmt>()) {
+    // This is to make dead store elimination not eliminate consequent pops.
+    return std::vector<Stmt *>(1, stack_pop->stack);
+  } else if (auto external_func = load_stmt->cast<ExternalFuncCallStmt>()) {
+    return external_func->arg_stmts;
+  } else {
+    return std::vector<Stmt *>();
+  }
+}
+
 Stmt *get_store_data(Stmt *store_stmt) {
-  // If store_stmt provides a data source, return the data.
+  // If store_stmt provides one data source, return the data.
   if (store_stmt->is<AllocaStmt>()) {
     // For convenience, return store_stmt instead of the const [0] it actually
     // stores.
@@ -21,19 +54,21 @@ Stmt *get_store_data(Stmt *store_stmt) {
   }
 }
 
-Stmt *get_store_destination(Stmt *store_stmt) {
-  // If store_stmt provides a data source, return the pointer of the data.
+std::vector<Stmt *> get_store_destination(Stmt *store_stmt) {
+  // If store_stmt provides some data sources, return the pointers of the data.
   if (store_stmt->is<AllocaStmt>()) {
     // The statement itself provides a data source (const [0]).
-    return store_stmt;
+    return std::vector<Stmt *>(1, store_stmt);
   } else if (auto local_store = store_stmt->cast<LocalStoreStmt>()) {
-    return local_store->ptr;
+    return std::vector<Stmt *>(1, local_store->ptr);
   } else if (auto global_store = store_stmt->cast<GlobalStoreStmt>()) {
-    return global_store->ptr;
+    return std::vector<Stmt *>(1, global_store->ptr);
   } else if (auto atomic = store_stmt->cast<AtomicOpStmt>()) {
-    return atomic->dest;
+    return std::vector<Stmt *>(1, atomic->dest);
+  } else if (auto external_func = store_stmt->cast<ExternalFuncCallStmt>()) {
+    return external_func->output_stmts;
   } else {
-    return nullptr;
+    return std::vector<Stmt *>();
   }
 }
 

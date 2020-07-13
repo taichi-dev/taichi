@@ -355,6 +355,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
                                  bool ret = true,
                                  std::vector<Type *> types = {}) {
         auto func = runtime_module->getFunction(name);
+        TI_ERROR_UNLESS(func, "Function {} not found", name);
         func->deleteBody();
         auto bb = llvm::BasicBlock::Create(*ctx, "entry", func);
         IRBuilder<> builder(*ctx);
@@ -388,6 +389,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
       };
 
       patch_intrinsic("thread_idx", Intrinsic::nvvm_read_ptx_sreg_tid_x);
+      patch_intrinsic("cuda_clock_i64", Intrinsic::nvvm_read_ptx_sreg_clock64);
       patch_intrinsic("block_idx", Intrinsic::nvvm_read_ptx_sreg_ctaid_x);
       patch_intrinsic("block_dim", Intrinsic::nvvm_read_ptx_sreg_ntid_x);
       patch_intrinsic("grid_dim", Intrinsic::nvvm_read_ptx_sreg_nctaid_x);
@@ -729,7 +731,7 @@ template llvm::Value *TaichiLLVMContext::get_constant(unsigned long t);
 
 auto make_slim_libdevice = [](const std::vector<std::string> &args) {
   TI_ASSERT_INFO(args.size() == 1,
-                 "Usage: ti run make_slim_libdevice [libdevice.X.bc file]");
+                 "Usage: ti task make_slim_libdevice [libdevice.X.bc file]");
 
   auto ctx = std::make_unique<llvm::LLVMContext>();
   auto libdevice_module = module_from_bitcode_file(args[0], ctx.get());

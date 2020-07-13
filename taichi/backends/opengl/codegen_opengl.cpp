@@ -24,6 +24,15 @@ KernelParallelAttrib::KernelParallelAttrib(OffloadedStmt *stmt)
 
 namespace {
 
+int find_children_id(const SNode *snode) {
+  auto parent = snode->parent;
+  for (int i = 0; i < parent->ch.size(); i++) {
+    if (parent->ch[i].get() == snode)
+      return i;
+  }
+  TI_ERROR("Child not found in parent!");
+}
+
 std::string opengl_atomic_op_type_cap_name(AtomicOpType type) {
   static std::map<AtomicOpType, std::string> type_names;
   if (type_names.empty()) {
@@ -229,6 +238,7 @@ class KernelGen : public IRVisitor {
     }
     auto msgid_name = fmt::format("_mi_{}", stmt->short_name());
     emit("int {} = atomicAdd(_msg_count_, 1);", msgid_name);
+    emit("{} %= {};", msgid_name, MAX_MESSAGES);
     for (int i = 0; i < size; i++) {
       auto const &content = stmt->contents[i];
 
@@ -291,6 +301,77 @@ class KernelGen : public IRVisitor {
          parent->short_name(),
          struct_compiled_->snode_map.at(parent_type).elem_stride,
          stmt->input_index->short_name(), stmt->snode->node_type_name);
+    if (stmt->activate) {
+      if (stmt->snode->type == SNodeType::dense) {
+        // do nothing
+      } else if (stmt->snode->type == SNodeType::dynamic) {
+        emit("atomicMax(_data_i32_[{} >> 2], {} + 1); // dynamic activate",
+             get_snode_meta_address(stmt->snode),
+             stmt->input_index->short_name());
+      } else {
+        TI_NOT_IMPLEMENTED
+      }
+    }
+  }
+
+  void visit(SNodeOpStmt *stmt) override {  // IAPR?
+    if (stmt->op_type == SNodeOpType::activate) {
+      if (stmt->snode->type == SNodeType::dense ||
+          stmt->snode->type == SNodeType::root) {
+        // do nothing
+      } else if (stmt->snode->type == SNodeType::dynamic) {
+        emit("atomicMax(_data_i32_[{} >> 2], {} + 1); // dynamic activate",
+             get_snode_meta_address(stmt->snode), stmt->val->short_name());
+      } else {
+        TI_NOT_IMPLEMENTED
+      }
+
+    } else if (stmt->op_type == SNodeOpType::deactivate) {
+      if (stmt->snode->type == SNodeType::dense ||
+          stmt->snode->type == SNodeType::root) {
+        // do nothing
+      } else if (stmt->snode->type == SNodeType::dynamic) {
+        emit("_data_i32_[{} >> 2] = 0; // dynamic deactivate",
+             get_snode_meta_address(stmt->snode), stmt->val->short_name());
+      } else {
+        TI_NOT_IMPLEMENTED
+      }
+
+    } else if (stmt->op_type == SNodeOpType::is_active) {
+      TI_ASSERT(stmt->ret_type.data_type == DataType::i32);
+      if (stmt->snode->type == SNodeType::dense ||
+          stmt->snode->type == SNodeType::root) {
+        emit("int {} = 1;", stmt->short_name());
+      } else if (stmt->snode->type == SNodeType::dynamic) {
+        emit("int {} = int({} < _data_i32_[{} >> 2]);", stmt->short_name(),
+             stmt->val->short_name(), get_snode_meta_address(stmt->snode));
+      } else {
+        TI_NOT_IMPLEMENTED
+      }
+
+    } else if (stmt->op_type == SNodeOpType::append) {
+      TI_ASSERT(stmt->snode->type == SNodeType::dynamic);
+      TI_ASSERT(stmt->ret_type.data_type == DataType::i32);
+      emit("int {} = atomicAdd(_data_i32_[{} >> 2], 1);", stmt->short_name(),
+           get_snode_meta_address(stmt->snode));
+      auto dt = stmt->val->element_type();
+      emit("int _ad_{} = {} + {} * {};", stmt->short_name(),
+           get_snode_base_address(stmt->snode), stmt->short_name(),
+           struct_compiled_->snode_map.at(stmt->snode->node_type_name)
+               .elem_stride);
+      emit("_data_{}_[_ad_{} >> {}] = {};", opengl_data_type_short_name(dt),
+           stmt->short_name(), opengl_data_address_shifter(dt),
+           stmt->val->short_name());
+
+    } else if (stmt->op_type == SNodeOpType::length) {
+      TI_ASSERT(stmt->snode->type == SNodeType::dynamic);
+      TI_ASSERT(stmt->ret_type.data_type == DataType::i32);
+      emit("int {} = _data_i32_[{} >> 2];", stmt->short_name(),
+           get_snode_meta_address(stmt->snode));
+
+    } else {
+      TI_NOT_IMPLEMENTED
+    }
   }
 
   std::map<int, std::string> ptr_signats;
@@ -583,16 +664,18 @@ class KernelGen : public IRVisitor {
     emit("{{ // range for");
 
     if (stmt->const_begin && stmt->const_end) {
-      ScopedIndent _s(line_appender_);
-      auto begin_value = stmt->begin_value;
-      auto end_value = stmt->end_value;
-      if (end_value < begin_value)
-        std::swap(end_value, begin_value);
-      kpa = KernelParallelAttrib(end_value - begin_value);
-      emit("// range known at compile time");
-      emit("int _tid = int(gl_GlobalInvocationID.x);");
-      emit("if (_tid >= {}) return;", end_value - begin_value);
-      emit("int _itv = {} + _tid * {};", begin_value, 1 /* stmt->step? */);
+      {
+        ScopedIndent _s(line_appender_);
+        auto begin_value = stmt->begin_value;
+        auto end_value = stmt->end_value;
+        if (end_value < begin_value)
+          std::swap(end_value, begin_value);
+        kpa = KernelParallelAttrib(end_value - begin_value);
+        emit("// range known at compile time");
+        emit("int _tid = int(gl_GlobalInvocationID.x);");
+        emit("if (_tid >= {}) return;", end_value - begin_value);
+        emit("int _itv = {} + _tid * {};", begin_value, 1 /* stmt->step? */);
+      }
       stmt->body->accept(this);
     } else {
       {
@@ -616,6 +699,103 @@ class KernelGen : public IRVisitor {
     emit("}}\n");
   }
 
+  void generate_struct_for_kernel(OffloadedStmt *stmt) {
+    TI_ASSERT(stmt->task_type == OffloadedStmt::TaskType::struct_for);
+    const std::string glsl_kernel_name = make_kernel_name();
+    emit("void {}()", glsl_kernel_name);
+    this->glsl_kernel_name_ = glsl_kernel_name;
+    emit("{{ // struct for {}", stmt->snode->node_type_name);
+    {
+      ScopedIndent _s(line_appender_);
+      emit("int _tid = int(gl_GlobalInvocationID.x);");
+      emit("if (_tid >= _list_len_) return;");
+      emit("int _itv = _list_[_tid];");
+      kpa = KernelParallelAttrib(-1);
+      kpa.is_list = true;
+    }
+    stmt->body->accept(this);
+    emit("}}\n");
+  }
+
+  void generate_clear_list_kernel(OffloadedStmt *stmt) {
+    TI_ASSERT(stmt->task_type == OffloadedStmt::TaskType::clear_list);
+    const std::string glsl_kernel_name = make_kernel_name();
+    emit("void {}()", glsl_kernel_name);
+    this->glsl_kernel_name_ = glsl_kernel_name;
+    emit("{{ // clear list {}", stmt->snode->node_type_name);
+    {
+      ScopedIndent _s(line_appender_);
+      emit("_list_len_ = 0;");
+    }
+    emit("}}\n");
+  }
+
+  size_t get_snode_base_address(const SNode *snode) {
+    if (snode->type == SNodeType::root)
+      return 0;
+    int chid = find_children_id(snode);
+    const auto &parent_meta =
+        struct_compiled_->snode_map.at(snode->parent->node_type_name);
+    auto choff = parent_meta.children_offsets[chid];
+    return choff + get_snode_base_address(snode->parent);
+  }
+
+  size_t get_snode_meta_address(const SNode *snode) {
+    auto addr = get_snode_base_address(snode);
+    addr += struct_compiled_->snode_map.at(snode->node_type_name).stride;
+    addr -= opengl_get_snode_meta_size(*snode);
+    return addr;
+  }
+
+  void generate_listgen_for_dynamic(const SNode *snode) {
+    TI_ASSERT(snode->type == SNodeType::dynamic);
+    // the `length` field of a dynamic SNode is at it's end:
+    // | x[0] | x[1] | x[2] | x[3] | ... | len |
+    TI_ASSERT_INFO(snode->parent->type == SNodeType::root,
+                   "Non-top-level dynamic not supported yet on OpenGL");
+    size_t addr = get_snode_meta_address(snode);
+    emit("_list_len_ = _data_i32_[{} >> 2];", addr);
+    emit("for (int i = 0; i < _list_len_; i++) {{");
+    {
+      ScopedIndent _s(line_appender_);
+      emit("_list_[i] = i;");
+    }
+    emit("}}");
+  }
+
+  void generate_listgen_for_dense(const SNode *snode) {
+    TI_ASSERT(snode->type == SNodeType::dense);
+    // the `length` field of a dynamic SNode is at it's end:
+    // | x[0] | x[1] | x[2] | x[3] | ... | len |
+    emit("_list_len_ = {};",
+         struct_compiled_->snode_map[snode->node_type_name].length);
+    emit("for (int i = 0; i < _list_len_; i++) {{");
+    {
+      ScopedIndent _s(line_appender_);
+      emit("_list_[i] = i;");
+    }
+    emit("}}");
+  }
+
+  void generate_listgen_kernel(OffloadedStmt *stmt) {
+    TI_ASSERT(stmt->task_type == OffloadedStmt::TaskType::listgen);
+    const std::string glsl_kernel_name = make_kernel_name();
+    emit("void {}()", glsl_kernel_name);
+    this->glsl_kernel_name_ = glsl_kernel_name;
+    emit("{{ // listgen {}", stmt->snode->node_type_name);
+    {
+      ScopedIndent _s(line_appender_);
+      if (stmt->snode->type == SNodeType::dense) {
+        generate_listgen_for_dense(stmt->snode);
+      } else if (stmt->snode->type == SNodeType::dynamic) {
+        generate_listgen_for_dynamic(stmt->snode);
+      } else {
+        TI_NOT_IMPLEMENTED
+      }
+    }
+    emit("}}\n");
+  }
+
   void visit(GlobalTemporaryStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     used.global_temp = true;
@@ -626,9 +806,14 @@ class KernelGen : public IRVisitor {
   void visit(LoopIndexStmt *stmt) override {
     TI_ASSERT(stmt->index == 0);  // TODO: multiple indices
     if (stmt->loop->is<OffloadedStmt>()) {
-      TI_ASSERT(stmt->loop->as<OffloadedStmt>()->task_type ==
-                OffloadedStmt::TaskType::range_for);
-      emit("int {} = _itv;", stmt->short_name());
+      auto type = stmt->loop->as<OffloadedStmt>()->task_type;
+      if (type == OffloadedStmt::TaskType::range_for) {
+        emit("int {} = _itv;", stmt->short_name());
+      } else if (type == OffloadedStmt::TaskType::struct_for) {
+        emit("int {} = _itv; // struct for", stmt->short_name());
+      } else {
+        TI_NOT_IMPLEMENTED
+      }
     } else if (stmt->loop->is<RangeForStmt>()) {
       emit("int {} = {};", stmt->short_name(), stmt->loop->short_name());
     } else {
@@ -682,6 +867,12 @@ class KernelGen : public IRVisitor {
       generate_serial_kernel(stmt);
     } else if (stmt->task_type == Type::range_for) {
       generate_range_for_kernel(stmt);
+    } else if (stmt->task_type == Type::struct_for) {
+      generate_struct_for_kernel(stmt);
+    } else if (stmt->task_type == Type::listgen) {
+      generate_listgen_kernel(stmt);
+    } else if (stmt->task_type == Type::clear_list) {
+      generate_clear_list_kernel(stmt);
     } else {
       // struct_for is automatically lowered to ranged_for for dense snodes
       // (#378). So we only need to support serial and range_for tasks.

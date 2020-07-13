@@ -11,15 +11,28 @@ TLANG_NAMESPACE_BEGIN
 
 namespace metal {
 
+int PrintStringTable::put(const std::string &str) {
+  int i = 0;
+  for (; i < strs_.size(); ++i) {
+    if (str == strs_[i]) {
+      return i;
+    }
+  }
+  strs_.push_back(str);
+  return i;
+}
+
+const std::string &PrintStringTable::get(int i) {
+  return strs_[i];
+}
+
 // static
 std::string KernelAttributes::buffers_name(Buffers b) {
 #define REGISTER_NAME(x) \
   { Buffers::x, #x }
   const static std::unordered_map<Buffers, std::string> m = {
-      REGISTER_NAME(Root),
-      REGISTER_NAME(GlobalTmps),
-      REGISTER_NAME(Context),
-      REGISTER_NAME(Runtime),
+      REGISTER_NAME(Root),    REGISTER_NAME(GlobalTmps), REGISTER_NAME(Context),
+      REGISTER_NAME(Runtime), REGISTER_NAME(Print),
   };
 #undef REGISTER_NAME
   return m.find(b)->second;
@@ -37,7 +50,7 @@ std::string KernelAttributes::debug_string() const {
   // TODO(k-ye): show range_for
   if (task_type == OffloadedStmt::TaskType::clear_list ||
       task_type == OffloadedStmt::TaskType::listgen) {
-    result += fmt::format(" snode={}", runtime_list_op_attribs.snode->id);
+    result += fmt::format(" snode={}", runtime_list_op_attribs->snode->id);
   }
   result += ">";
   return result;

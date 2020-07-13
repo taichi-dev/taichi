@@ -18,19 +18,6 @@ def test_try():
 
 
 @ti.must_throw(ti.TaichiSyntaxError)
-def test_import():
-    x = ti.var(ti.f32)
-
-    ti.root.dense(ti.i, 1).place(x)
-
-    @ti.kernel
-    def func():
-        import something
-
-    func()
-
-
-@ti.must_throw(ti.TaichiSyntaxError)
 def test_for_else():
     x = ti.var(ti.f32)
 
@@ -192,3 +179,51 @@ def test_static_grouped_struct_for():
             pass
 
     test()
+
+
+@ti.must_throw(ti.TaichiSyntaxError)
+def test_is():
+    b = ti.var(ti.i32, shape=())
+    c = ti.var(ti.i32, shape=())
+
+    @ti.kernel
+    def func():
+        a = b is c
+
+    func()
+
+
+@ti.must_throw(ti.TaichiSyntaxError)
+def test_is_not():
+    b = ti.var(ti.i32, shape=())
+    c = ti.var(ti.i32, shape=())
+
+    @ti.kernel
+    def func():
+        a = b is not c
+
+    func()
+
+
+@ti.must_throw(ti.TaichiSyntaxError)
+def test_in():
+    b = ti.var(ti.i32, shape=())
+    c = ti.var(ti.i32, shape=())
+
+    @ti.kernel
+    def func():
+        a = b in c
+
+    func()
+
+
+@ti.must_throw(ti.TaichiSyntaxError)
+def test_not_in():
+    b = ti.var(ti.i32, shape=())
+    c = ti.var(ti.i32, shape=())
+
+    @ti.kernel
+    def func():
+        a = b not in c
+
+    func()

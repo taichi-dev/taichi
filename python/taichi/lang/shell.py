@@ -1,11 +1,12 @@
 import sys, os, atexit
 
+
 class ShellType:
     NATIVE = 'Python shell'
-    IDLE = 'Python IDLE shell'
     IPYTHON = 'IPython TerminalInteractiveShell'
     JUPYTER = 'IPython ZMQInteractiveShell'
     IPYBASED = 'IPython Based Shell'
+    IDLE = 'Python IDLE shell'
     SCRIPT = None
 
 def _show_idle_error_message():
@@ -16,7 +17,7 @@ def _show_idle_error_message():
         path = '/usr/lib/python3.8/code.py'
     print('It\'s detected that you are using Python IDLE in **interactive mode**.')
     print('However, Taichi could not be fully functional due to IDLE limitation, sorry :(')
-    print('Either run Taichi directly from script, or use IPython notebook instead.')
+    print('Either run Taichi directly from script, or use IPython or Jupyter notebook instead.')
     print('We do care about your experience, no matter which shell you prefer to use.')
     print('So, if you would like to play with Taichi in your favorite IDLE, we may do a dirty hack:')
     print(f'Open "{path}" and add the following line to `InteractiveInterpreter.runsource`, right below `# Case 3`:')
@@ -59,7 +60,7 @@ def get_shell_name():
 
     # Let's detect which type of interactive shell is being used.
     # As you can see, huge engineering efforts are done here just to
-    # make IDLE and IPython happy, wish our user really love them :)
+    # make IDLE and IPython happy. Hope our users really love them :)
 
     try:  # IPython / Jupyter?
         return 'IPython ' + get_ipython().__class__.__name__
@@ -71,25 +72,6 @@ def get_shell_name():
 
     if os.path.basename(sys.executable) == 'pythonw.exe':  # Windows Python IDLE?
         return ShellType.IDLE
-
-    if os.path.basename(os.environ.get('_', '')) == 'idle':  # /usr/bin/idle?
-        return ShellType.IDLE
-
-    try:
-        import psutil
-        # XXX: Is psutil a hard dep of taichi? What if user didn't install it?
-        proc = psutil.Process().parent()
-        if proc.name() == 'idle':  # launched from KDE win menu?
-            return ShellType.IDLE
-        cmdline = proc.cmdline()
-        # launched with: python -m idlelib?
-        if 'idlelib' in cmdline:
-            return ShellType.IDLE
-        # sh-bomb: /usr/bin/python /usr/bin/idle?
-        if len(cmdline) >= 2 and os.path.basename(cmdline[1]) == 'idle':
-            return ShellType.IDLE
-    except:
-        pass
 
     if 'idlelib' in sys.modules:
         return ShellType.IDLE
@@ -194,6 +176,7 @@ class ShellInspectorWrapper:
             self.getsource = getsource
             self.getsourcelines = getsourcelines
             self.getsourcefile = getsourcefile
+
 
         elif self.name.startswith('IPython'):
             # `IPython.core.oinspect` for "IPython advanced shell"

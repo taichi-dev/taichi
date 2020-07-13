@@ -59,6 +59,16 @@ def expr_init_func(rhs):  # temporary solution to allow passing in tensors as
     return expr_init(rhs)
 
 
+def begin_frontend_struct_for(group, loop_range):
+    if group.size() != len(loop_range.shape):
+        raise IndexError(
+            'Number of struct-for indices does not match loop variable dimensionality '
+            f'({group.size()} != {len(loop_range.shape)}). Maybe you wanted to '
+            'use "for I in ti.grouped(x)" to group all indices into a single vector I?'
+        )
+    taichi_lang_core.begin_frontend_struct_for(group, loop_range.ptr)
+
+
 def wrap_scalar(x):
     if type(x) in [int, float]:
         return Expr(x)
@@ -69,6 +79,7 @@ def wrap_scalar(x):
 @taichi_scope
 def subscript(value, *indices):
     import numpy as np
+    _taichi_skip_traceback = 1
     if isinstance(value, np.ndarray):
         return value.__getitem__(*indices)
 
@@ -89,26 +100,26 @@ def subscript(value, *indices):
     else:
         if isinstance(indices,
                       tuple) and len(indices) == 1 and indices[0] is None:
-            indices_expr_group = make_expr_group()
-        else:
-            indices_expr_group = make_expr_group(*indices)
+            indices = []
+        indices_expr_group = make_expr_group(*indices)
         tensor_dim = int(value.ptr.get_attribute("dim"))
         index_dim = indices_expr_group.size()
-        assert tensor_dim == index_dim, f'Tensor with dim {tensor_dim} accessed with indices of dim {index_dim}'
+        if tensor_dim != index_dim:
+            raise IndexError(
+                f'Tensor with dim {tensor_dim} accessed with indices of dim {index_dim}'
+            )
         return Expr(taichi_lang_core.subscript(value.ptr, indices_expr_group))
 
 
 @taichi_scope
 def chain_compare(comparators, ops):
+    _taichi_skip_traceback = 1
     assert len(comparators) == len(ops) + 1, \
       f'Chain comparison invoked with {len(comparators)} comparators but {len(ops)} operators'
-    evaluated_comparators = []
-    for i in range(len(comparators)):
-        evaluated_comparators += [expr_init(comparators[i])]
-    ret = expr_init(True)
+    ret = True
     for i in range(len(ops)):
-        lhs = evaluated_comparators[i]
-        rhs = evaluated_comparators[i + 1]
+        lhs = comparators[i]
+        rhs = comparators[i + 1]
         if ops[i] == 'Lt':
             now = lhs < rhs
         elif ops[i] == 'LtE':
@@ -123,7 +134,7 @@ def chain_compare(comparators, ops):
             now = lhs != rhs
         else:
             assert False, f'Unknown operator {ops[i]}'
-        ret = ret.logical_and(now)
+        ret = logical_and(ret, now)
     return ret
 
 
@@ -143,7 +154,6 @@ class PyTaichi:
         self.target_tape = None
         self.inside_complex_kernel = False
         self.kernels = kernels or []
-        Expr.materialize_layout_callback = self.materialize
 
     def get_num_compiled_functions(self):
         return len(self.compiled_functions) + len(self.compiled_grad_functions)
@@ -166,7 +176,6 @@ class PyTaichi:
         if self.materialized:
             return
         self.create_program()
-        Expr.layout_materialized = True
 
         def layout():
             for func in self.layout_functions:
@@ -184,8 +193,7 @@ class PyTaichi:
         if self.prog:
             self.prog.finalize()
             self.prog = None
-        Expr.materialize_layout_callback = None
-        Expr.layout_materialized = False
+        self.materialized = False
 
     def get_tape(self, loss=None):
         from .tape import Tape
@@ -194,6 +202,9 @@ class PyTaichi:
     def sync(self):
         self.materialize()
         self.prog.synchronize()
+        # print's in kernel won't take effect until ti.sync(), discussion:
+        # https://github.com/taichi-dev/taichi/pull/1303#discussion_r444897102
+        print(taichi_lang_core.pop_python_print_buffer(), end='')
 
 
 pytaichi = PyTaichi()
@@ -205,20 +216,24 @@ def get_runtime():
 
 @taichi_scope
 def make_constant_expr(val):
-    if isinstance(val, int):
+    import numpy as np
+    _taichi_skip_traceback = 1
+    if isinstance(val, (int, np.integer)):
         if pytaichi.default_ip == i32:
             return Expr(taichi_lang_core.make_const_expr_i32(val))
         elif pytaichi.default_ip == i64:
             return Expr(taichi_lang_core.make_const_expr_i64(val))
         else:
             assert False
-    else:
+    elif isinstance(val, (float, np.floating, np.ndarray)):
         if pytaichi.default_fp == f32:
             return Expr(taichi_lang_core.make_const_expr_f32(val))
         elif pytaichi.default_fp == f64:
             return Expr(taichi_lang_core.make_const_expr_f64(val))
         else:
             assert False
+    else:
+        raise ValueError(f'Bad constant scalar expression: {type(val)}')
 
 
 def reset():
@@ -231,6 +246,20 @@ def reset():
     taichi_lang_core.reset_default_compile_config()
     from .shell import reset_callback
     reset_callback()
+
+
+@taichi_scope
+def static_print(*args, __p=print, **kwargs):
+    __p(*args, **kwargs)
+
+
+# we don't add @taichi_scope decorator for @ti.pyfunc to work
+def static_assert(cond, msg=None):
+    _taichi_skip_traceback = 1
+    if msg is not None:
+        assert cond, msg
+    else:
+        assert cond
 
 
 def inside_kernel():
@@ -251,12 +280,16 @@ class Root:
         root = SNode(ti.get_runtime().prog.get_root())
         return getattr(root, item)
 
+    def __repr__(self):
+        return 'ti.root'
+
 
 root = Root()
 
 
 @python_scope
 def var(dt, shape=None, offset=None, needs_grad=False):
+    _taichi_skip_traceback = 1
     if isinstance(shape, numbers.Number):
         shape = (shape, )
 
@@ -266,13 +299,20 @@ def var(dt, shape=None, offset=None, needs_grad=False):
     if shape is not None and offset is not None:
         assert len(shape) == len(
             offset
-        ), f'The dimensionality of shape and offset must be the same  (f{len(shape)} != f{len(offset)})'
+        ), f'The dimensionality of shape and offset must be the same  ({len(shape)} != {len(offset)})'
 
     assert (offset is not None and shape is None
             ) == False, f'The shape cannot be None when offset is being set'
 
-    assert not get_runtime(
-    ).materialized, 'No new variables can be declared after kernel invocations or Python-scope tensor accesses.'
+    if get_runtime().materialized:
+        raise RuntimeError(
+            "No new variables can be declared after materialization, i.e. kernel invocations "
+            "or Python-scope tensor accesses. I.e., data layouts must be specified before "
+            "any computation. Try appending ti.init() or ti.reset() "
+            "right after 'import taichi as ti' if you are using Jupyter notebook."
+        )
+
+    del _taichi_skip_traceback
 
     # primal
     x = Expr(taichi_lang_core.make_id_expr(""))
@@ -315,7 +355,7 @@ def layout(func):
 
 
 @taichi_scope
-def ti_print(*vars):
+def ti_print(*vars, sep=' ', end='\n'):
     def entry2content(var):
         if isinstance(var, str):
             return var
@@ -333,8 +373,9 @@ def ti_print(*vars):
 
     def add_separators(vars):
         for i, var in enumerate(vars):
-            if i: yield ' '
+            if i: yield sep
             yield var
+        yield end
 
     def fused_string(entries):
         accumated = ''
@@ -358,6 +399,7 @@ def ti_print(*vars):
 
 @taichi_scope
 def ti_int(var):
+    _taichi_skip_traceback = 1
     if hasattr(var, '__ti_int__'):
         return var.__ti_int__()
     else:
@@ -366,6 +408,7 @@ def ti_int(var):
 
 @taichi_scope
 def ti_float(var):
+    _taichi_skip_traceback = 1
     if hasattr(var, '__ti_float__'):
         return var.__ti_float__()
     else:
@@ -380,14 +423,13 @@ index = indices
 
 
 def static(x, *xs):
+    _taichi_skip_traceback = 1
     if len(xs):  # for python-ish pointer assign: x, y = ti.static(y, x)
         return [static(x)] + [static(x) for x in xs]
     import types
     import taichi as ti
-    assert get_runtime(
-    ).inside_kernel, 'ti.static can only be used inside Taichi kernels'
     if isinstance(x, (bool, int, float, range, list, tuple, enumerate,
-                      ti.ndrange, ti.GroupedNDRange)):
+                      ti.ndrange, ti.GroupedNDRange)) or x is None:
         return x
     elif isinstance(x, ti.lang.expr.Expr) and x.ptr.is_global_var():
         return x
@@ -401,10 +443,9 @@ def static(x, *xs):
         )
 
 
+@taichi_scope
 def grouped(x):
     import taichi as ti
-    assert get_runtime(
-    ).inside_kernel, 'ti.grouped can only be used inside Taichi kernels'
     if isinstance(x, ti.ndrange):
         return x.grouped()
     else:

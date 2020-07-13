@@ -6,6 +6,7 @@ import ast
 from .kernel_arguments import *
 from .util import *
 from .shell import oinspect
+from . import impl
 import functools
 
 
@@ -31,39 +32,63 @@ def remove_indent(lines):
 # The ti.func decorator
 def func(foo):
     is_classfunc = _inside_class(level_of_class_stackframe=3)
-    func = Func(foo, classfunc=is_classfunc)
+    fun = Func(foo, classfunc=is_classfunc)
 
     @functools.wraps(foo)
     def decorated(*args):
-        return func.__call__(*args)
+        _taichi_skip_traceback = 1
+        return fun.__call__(*args)
+
+    return decorated
+
+
+# The ti.pyfunc decorator
+def pyfunc(foo):
+    '''
+    Creates a function that are callable both in Taichi-scope and Python-scope.
+    The function should be simple, and not contains Taichi-scope specifc syntax
+    including struct-for.
+    '''
+    is_classfunc = _inside_class(level_of_class_stackframe=3)
+    fun = Func(foo, classfunc=is_classfunc, pyfunc=True)
+
+    @functools.wraps(foo)
+    def decorated(*args):
+        _taichi_skip_traceback = 1
+        return fun.__call__(*args)
 
     return decorated
 
 
 class Func:
-    def __init__(self, func, classfunc=False):
+    def __init__(self, func, classfunc=False, pyfunc=False):
         self.func = func
         self.compiled = None
         self.classfunc = classfunc
+        self.pyfunc = pyfunc
         self.arguments = []
         self.argument_names = []
         self.extract_arguments()
 
     def __call__(self, *args):
+        _taichi_skip_traceback = 1
+        if not impl.inside_kernel():
+            assert self.pyfunc, "Use @ti.pyfunc if you wish to call " \
+                                "Taichi functions from Python-scope"
+            return self.func(*args)
         if self.compiled is None:
             self.do_compile()
         ret = self.compiled(*args)
         return ret
 
     def do_compile(self):
-        from .impl import get_runtime
         src = remove_indent(oinspect.getsource(self.func))
         tree = ast.parse(src)
 
         func_body = tree.body[0]
         func_body.decorator_list = []
 
-        if get_runtime().print_preprocessed:
+        if impl.get_runtime().print_preprocessed:
             import astor
             print('Before preprocessing:')
             print(astor.to_source(tree.body[0], indent_with='  '))
@@ -72,7 +97,7 @@ class Func:
         visitor.visit(tree)
         ast.fix_missing_locations(tree)
 
-        if get_runtime().print_preprocessed:
+        if impl.get_runtime().print_preprocessed:
             import astor
             print('After preprocessing:')
             print(astor.to_source(tree.body[0], indent_with='  '))
@@ -80,10 +105,8 @@ class Func:
         ast.increment_lineno(tree, oinspect.getsourcelines(self.func)[1] - 1)
 
         local_vars = {}
-        #frame = inspect.currentframe().f_back
-        #global_vars = dict(frame.f_globals, **frame.f_locals)
-        import copy
-        global_vars = copy.copy(self.func.__globals__)
+        global_vars = _get_global_vars(self.func)
+
         exec(
             compile(tree,
                     filename=oinspect.getsourcefile(self.func),
@@ -151,7 +174,8 @@ class KernelTemplateMapper:
 
     def lookup(self, args):
         if len(args) != self.num_args:
-            raise Exception(
+            _taichi_skip_traceback = 1
+            raise TypeError(
                 f'{self.num_args} argument(s) needed but {len(args)} provided.'
             )
 
@@ -178,6 +202,21 @@ class KernelArgError(Exception):
             self.pos, str(self.needed), str(self.provided))
 
 
+def _get_global_vars(func):
+    # Discussions: https://github.com/taichi-dev/taichi/issues/282
+    import copy
+    global_vars = copy.copy(func.__globals__)
+
+    freevar_names = func.__code__.co_freevars
+    closure = func.__closure__
+    if closure:
+        freevar_values = list(map(lambda x: x.cell_contents, closure))
+        for name, value in zip(freevar_names, freevar_values):
+            global_vars[name] = value
+
+    return global_vars
+
+
 class Kernel:
     counter = 0
 
@@ -197,13 +236,11 @@ class Kernel:
                 self.template_slot_locations.append(i)
         self.mapper = KernelTemplateMapper(self.arguments,
                                            self.template_slot_locations)
-        from .impl import get_runtime
-        get_runtime().kernels.append(self)
+        impl.get_runtime().kernels.append(self)
         self.reset()
 
     def reset(self):
-        from .impl import get_runtime
-        self.runtime = get_runtime()
+        self.runtime = impl.get_runtime()
         if self.is_grad:
             self.compiled_functions = self.runtime.compiled_functions
         else:
@@ -247,6 +284,7 @@ class Kernel:
             self.argument_names.append(param.name)
 
     def materialize(self, key=None, args=None, arg_features=None):
+        _taichi_skip_traceback = 1
         if key is None:
             key = (self.func, 0)
         if not self.runtime.materialized:
@@ -273,9 +311,7 @@ class Kernel:
         func_body.decorator_list = []
 
         local_vars = {}
-        # Discussions: https://github.com/yuanming-hu/taichi/issues/282
-        import copy
-        global_vars = copy.copy(self.func.__globals__)
+        global_vars = _get_global_vars(self.func)
 
         for i, arg in enumerate(func_body.args.args):
             anno = arg.annotation
@@ -304,13 +340,6 @@ class Kernel:
 
         ast.increment_lineno(tree, oinspect.getsourcelines(self.func)[1] - 1)
 
-        freevar_names = self.func.__code__.co_freevars
-        closure = self.func.__closure__
-        if closure:
-            freevar_values = list(map(lambda x: x.cell_contents, closure))
-            for name, value in zip(freevar_names, freevar_values):
-                global_vars[name] = value
-
         # inject template parameters into globals
         for i in self.template_slot_locations:
             template_var_name = self.argument_names[i]
@@ -328,6 +357,7 @@ class Kernel:
         # Do not change the name of 'taichi_ast_generator'
         # The warning system needs this identifier to remove unnecessary messages
         def taichi_ast_generator():
+            _taichi_skip_traceback = 1
             if self.runtime.inside_kernel:
                 import taichi as ti
                 raise ti.TaichiSyntaxError(
@@ -454,6 +484,7 @@ class Kernel:
     # For small kernels (< 3us), the performance can be pretty sensitive to overhead in __call__
     # Thus this part needs to be fast. (i.e. < 3us on a 4 GHz x64 CPU)
     def __call__(self, *args, **kwargs):
+        _taichi_skip_traceback = 1
         assert len(kwargs) == 0, 'kwargs not supported for Taichi kernels'
         instance_id, arg_features = self.mapper.lookup(args)
         key = (self.func, instance_id)
@@ -516,16 +547,19 @@ def _kernel_impl(func, level_of_class_stackframe, verbose=False):
         # See also: BoundedDifferentiableMethod, data_oriented.
         @functools.wraps(func)
         def wrapped(*args, **kwargs):
+            _taichi_skip_traceback = 1
             # If we reach here (we should never), it means the class is not decorated
-            # with @data_oriented, otherwise getattr would have intercepted the call.
+            # with @ti.data_oriented, otherwise getattr would have intercepted the call.
             clsobj = type(args[0])
             assert not hasattr(clsobj, '_data_oriented')
             raise KernelDefError(
-                f'Please decorate class {clsobj.__name__} with @data_oriented')
+                f'Please decorate class {clsobj.__name__} with @ti.data_oriented'
+            )
     else:
 
         @functools.wraps(func)
         def wrapped(*args, **kwargs):
+            _taichi_skip_traceback = 1
             return primal(*args, **kwargs)
 
         wrapped.grad = adjoint
@@ -538,6 +572,7 @@ def _kernel_impl(func, level_of_class_stackframe, verbose=False):
 
 
 def kernel(func):
+    _taichi_skip_traceback = 1
     return _kernel_impl(func, level_of_class_stackframe=3)
 
 
@@ -551,7 +586,8 @@ class BoundedDifferentiableMethod:
         clsobj = type(kernel_owner)
         if not getattr(clsobj, '_data_oriented', False):
             raise KernelDefError(
-                f'Please decorate class {clsobj.__name__} with @data_oriented')
+                f'Please decorate class {clsobj.__name__} with @ti.data_oriented'
+            )
         self._kernel_owner = kernel_owner
         self._primal = wrapped_kernel_func._primal
         self._adjoint = wrapped_kernel_func._adjoint

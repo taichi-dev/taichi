@@ -10,3 +10,5 @@ rand_clang
 *.ptx
 gpu_memory_bound
 cpu_memory_bound
+gpu_reduction
+laplace

@@ -13,6 +13,17 @@ void export_visual(py::module &m) {
   // GUI
   using Line = Canvas::Line;
   using Circle = Canvas::Circle;
+  using Type = GUI::KeyEvent::Type;
+
+  auto key_event = py::class_<GUI::KeyEvent>(m, "KeyEvent");
+  key_event.def_readonly("type", &GUI::KeyEvent::type)
+      .def_readonly("key", &GUI::KeyEvent::key)
+      .def_readonly("pos", &GUI::KeyEvent::pos)
+      .def_readonly("delta", &GUI::KeyEvent::delta);
+  py::enum_<GUI::KeyEvent::Type>(key_event, "EType")
+      .value("Move", Type::move)
+      .value("Press", Type::press)
+      .value("Release", Type::release);
   py::class_<GUI>(m, "GUI")
       .def(py::init<std::string, Vector2i>())
       .def_readwrite("should_close", &GUI::should_close)
@@ -23,12 +34,17 @@ void export_visual(py::module &m) {
              std::memcpy((void *)img.get_data().data(), (void *)ptr,
                          img.get_data_size());
            })
+      .def("get_img",
+           [&](GUI *gui, std::size_t ptr) {
+             auto &img = gui->canvas->img;
+             std::memcpy((void *)ptr, (void *)img.get_data().data(),
+                         img.get_data_size());
+           })
       .def("screenshot", &GUI::screenshot)
+      .def("canvas_untransform", &GUI::canvas_untransform)
       .def("has_key_event", &GUI::has_key_event)
       .def("wait_key_event", &GUI::wait_key_event)
-      .def("get_key_event_head_key", &GUI::get_key_event_head_key)
-      .def("get_key_event_head_type", &GUI::get_key_event_head_type)
-      .def("get_key_event_head_pos", &GUI::get_key_event_head_pos)
+      .def("get_key_event_head", &GUI::get_key_event_head)
       .def("pop_key_event_head", &GUI::pop_key_event_head)
       .def("get_cursor_pos", &GUI::get_cursor_pos)
       .def_readwrite("title", &GUI::window_name)

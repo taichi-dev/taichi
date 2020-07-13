@@ -160,12 +160,18 @@ class ConstantFold : public BasicStmtVisitor {
       auto evaluated =
           Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(new_constant));
       stmt->replace_with(evaluated.get());
-      modifier.insert_before(stmt, VecStatement(std::move(evaluated)));
+      modifier.insert_before(stmt, std::move(evaluated));
       modifier.erase(stmt);
     }
   }
 
   void visit(UnaryOpStmt *stmt) override {
+    if (stmt->is_cast() &&
+        stmt->cast_type == stmt->operand->ret_type.data_type) {
+      stmt->replace_with(stmt->operand);
+      modifier.erase(stmt);
+      return;
+    }
     auto operand = stmt->operand->cast<ConstStmt>();
     if (!operand)
       return;
@@ -177,9 +183,32 @@ class ConstantFold : public BasicStmtVisitor {
       auto evaluated =
           Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(new_constant));
       stmt->replace_with(evaluated.get());
-      modifier.insert_before(stmt, VecStatement(std::move(evaluated)));
+      modifier.insert_before(stmt, std::move(evaluated));
       modifier.erase(stmt);
     }
+  }
+
+  void visit(BitExtractStmt *stmt) override {
+    auto input = stmt->input->cast<ConstStmt>();
+    if (!input)
+      return;
+    if (stmt->width() != 1)
+      return;
+    std::unique_ptr<Stmt> result_stmt;
+    if (is_signed(input->val[0].dt)) {
+      auto result = (input->val[0].val_int() >> stmt->bit_begin) &
+                    ((1LL << (stmt->bit_end - stmt->bit_begin)) - 1);
+      result_stmt = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(
+          TypedConstant(input->val[0].dt, result)));
+    } else {
+      auto result = (input->val[0].val_uint() >> stmt->bit_begin) &
+                    ((1LL << (stmt->bit_end - stmt->bit_begin)) - 1);
+      result_stmt = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(
+          TypedConstant(input->val[0].dt, result)));
+    }
+    stmt->replace_with(result_stmt.get());
+    modifier.insert_before(stmt, std::move(result_stmt));
+    modifier.erase(stmt);
   }
 
   static bool run(IRNode *node) {
@@ -206,12 +235,11 @@ bool constant_fold(IRNode *root) {
   // disable constant_fold when config.debug is turned on.
   // Discussion:
   // https://github.com/taichi-dev/taichi/pull/839#issuecomment-626107010
-  auto kernel = root->get_kernel();
-  if (kernel && kernel->program.config.debug) {
+  if (root->get_config().debug) {
     TI_TRACE("config.debug enabled, ignoring constant fold");
     return false;
   }
-  if (!advanced_optimization)
+  if (!root->get_config().advanced_optimization)
     return false;
   return ConstantFold::run(root);
 }

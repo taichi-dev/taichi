@@ -51,7 +51,7 @@ void ExecutionQueue::enqueue(KernelLaunchRecord &&ker) {
         flag_access(stmt);
         lower_access(stmt, true, kernel);
         flag_access(stmt);
-        full_simplify(stmt, kernel);
+        full_simplify(stmt, true, kernel);
         // analysis::verify(stmt);
       }
       auto func = CodeGenCPU(kernel, stmt).codegen();
@@ -266,7 +266,7 @@ bool AsyncEngine::fuse() {
       irpass::fix_block_parents(task_a);
 
       auto kernel = task_queue[i].kernel;
-      irpass::full_simplify(task_a, kernel);
+      irpass::full_simplify(task_a, true, kernel);
       task_queue[i].h = hash(task_a);
 
       modified = true;

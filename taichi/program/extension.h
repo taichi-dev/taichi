@@ -21,6 +21,6 @@ enum class Extension {
 #undef PER_EXTENSION
 };
 
-bool is_supported(Arch arch, Extension ext);
+bool is_extension_supported(Arch arch, Extension ext);
 
 TLANG_NAMESPACE_END

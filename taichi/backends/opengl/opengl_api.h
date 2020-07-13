@@ -22,16 +22,22 @@ bool is_opengl_api_available();
 #undef PER_OPENGL_EXTENSION
 
 struct KernelParallelAttrib {
+  // static_range_for
   int num_groups{1};
   int num_threads{1};
   int threads_per_group{1};
-  bool const_begin{true}, const_end{true};
-  size_t range_begin{0}, range_end{1};
+  // dynamic_range_for
+  bool const_begin{true};
+  bool const_end{true};
+  size_t range_begin{0};
+  size_t range_end{1};
+  // list_struct_for
+  bool is_list{false};
 
   KernelParallelAttrib() = default;
   KernelParallelAttrib(OffloadedStmt *stmt);
   KernelParallelAttrib(int num_threads_);
-  size_t eval(const void *gtmp) const;
+  size_t calc_num_groups(GLSLLaunchGuard &guard) const;
   inline bool is_dynamic() const {
     return num_groups == -1;
   }

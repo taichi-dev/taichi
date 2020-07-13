@@ -7,10 +7,8 @@ import traceback
 
 # Scalar, basic data type
 class Expr(TaichiOperations):
-    materialize_layout_callback = None
-    layout_materialized = False
-
     def __init__(self, *args, tb=None):
+        _taichi_skip_traceback = 1
         self.getter = None
         self.setter = None
         self.tb = tb
@@ -20,7 +18,11 @@ class Expr(TaichiOperations):
             elif isinstance(args[0], Expr):
                 self.ptr = args[0].ptr
                 self.tb = args[0].tb
+            elif is_taichi_class(args[0]):
+                raise ValueError('cannot initialize scalar expression from '
+                                 f'taichi class: {type(args[0])}')
             else:
+                # assume to be constant
                 arg = args[0]
                 try:
                     import numpy as np
@@ -28,8 +30,7 @@ class Expr(TaichiOperations):
                         arg = arg.dtype(arg)
                 except:
                     pass
-                from .impl import make_constant_expr
-                self.ptr = make_constant_expr(arg).ptr
+                self.ptr = impl.make_constant_expr(arg).ptr
         else:
             assert False
         if self.tb:
@@ -39,22 +40,20 @@ class Expr(TaichiOperations):
 
     @python_scope
     def __setitem__(self, key, value):
-        if not Expr.layout_materialized:
-            self.materialize_layout_callback()
+        impl.get_runtime().materialize()
         self.initialize_accessor()
         if key is None:
             key = ()
         if not isinstance(key, (tuple, list)):
             key = (key, )
-        assert len(key) == self.dim()
+        assert len(key) == len(self.shape)
         key = key + ((0, ) *
                      (taichi_lang_core.get_max_num_indices() - len(key)))
         self.setter(value, *key)
 
     @python_scope
     def __getitem__(self, key):
-        if not Expr.layout_materialized:
-            self.materialize_layout_callback()
+        impl.get_runtime().materialize()
         self.initialize_accessor()
         if key is None:
             key = ()
@@ -67,16 +66,13 @@ class Expr(TaichiOperations):
     def loop_range(self):
         return self
 
-    def serialize(self):
-        return self.ptr.serialize()
-
     @python_scope
     def initialize_accessor(self):
         if self.getter:
             return
         snode = self.ptr.snode()
 
-        if self.snode().data_type() == f32 or self.snode().data_type() == f64:
+        if self.dtype == f32 or self.dtype == f64:
 
             def getter(*key):
                 assert len(key) == taichi_lang_core.get_max_num_indices()
@@ -86,7 +82,7 @@ class Expr(TaichiOperations):
                 assert len(key) == taichi_lang_core.get_max_num_indices()
                 snode.write_float(key, value)
         else:
-            if taichi_lang_core.is_signed(self.snode().data_type()):
+            if taichi_lang_core.is_signed(self.dtype):
 
                 def getter(*key):
                     assert len(key) == taichi_lang_core.get_max_num_indices()
@@ -122,12 +118,11 @@ class Expr(TaichiOperations):
         from .meta import fill_tensor
         fill_tensor(self, val)
 
+    #@deprecated('tensor.parent()', 'tensor.snode().parent()')
     def parent(self, n=1):
         import taichi as ti
-        p = self.ptr.snode()
-        for i in range(n):
-            p = p.parent
-        return Expr(ti.core.global_var_expr_from_snode(p))
+        p = self.snode().parent(n)
+        return Expr(ti.core.global_var_expr_from_snode(p.ptr))
 
     def snode(self):
         from .snode import SNode
@@ -136,25 +131,27 @@ class Expr(TaichiOperations):
     def __hash__(self):
         return self.ptr.get_raw_address()
 
-    def dim(self):
-        if not Expr.layout_materialized:
-            self.materialize_layout_callback()
-        return self.snode().dim()
-
+    @property
     def shape(self):
-        if not Expr.layout_materialized:
-            self.materialize_layout_callback()
-        return self.snode().shape()
+        return self.snode().shape
 
+    @deprecated('x.dim()', 'len(x.shape)')
+    def dim(self):
+        return len(self.shape)
+
+    @property
+    def dtype(self):
+        return self.snode().dtype
+
+    @deprecated('x.data_type()', 'x.dtype')
     def data_type(self):
-        return self.snode().data_type()
+        return self.snode().dtype
 
     @python_scope
     def to_numpy(self):
         from .meta import tensor_to_ext_arr
         import numpy as np
-        arr = np.zeros(shape=self.shape(),
-                       dtype=to_numpy_type(self.snode().data_type()))
+        arr = np.zeros(shape=self.shape, dtype=to_numpy_type(self.dtype))
         tensor_to_ext_arr(self, arr)
         import taichi as ti
         ti.sync()
@@ -164,8 +161,8 @@ class Expr(TaichiOperations):
     def to_torch(self, device=None):
         from .meta import tensor_to_ext_arr
         import torch
-        arr = torch.zeros(size=self.shape(),
-                          dtype=to_pytorch_type(self.snode().data_type()),
+        arr = torch.zeros(size=self.shape,
+                          dtype=to_pytorch_type(self.dtype),
                           device=device)
         tensor_to_ext_arr(self, arr)
         import taichi as ti
@@ -174,9 +171,9 @@ class Expr(TaichiOperations):
 
     @python_scope
     def from_numpy(self, arr):
-        assert self.dim() == len(arr.shape)
-        s = self.shape()
-        for i in range(self.dim()):
+        assert len(self.shape) == len(arr.shape)
+        s = self.shape
+        for i in range(len(self.shape)):
             assert s[i] == arr.shape[i]
         from .meta import ext_arr_to_tensor
         if hasattr(arr, 'contiguous'):
@@ -193,7 +190,7 @@ class Expr(TaichiOperations):
     def copy_from(self, other):
         assert isinstance(other, Expr)
         from .meta import tensor_to_tensor
-        assert self.dim() == other.dim()
+        assert len(self.shape) == len(other.shape)
         tensor_to_tensor(self, other)
 
 

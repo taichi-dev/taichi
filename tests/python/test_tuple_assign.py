@@ -6,7 +6,8 @@ def test_fibonacci():
     @ti.kernel
     def ti_fibonacci(n: ti.i32) -> ti.i32:
         a, b = 0, 1
-        if 1:
+        # This is to make the inner for loop serial on purpose...
+        for _ in range(1):
             for i in range(n):
                 a, b = b, a + b
         return b
@@ -224,7 +225,7 @@ def test_unpack_from_shape():
 
     @ti.kernel
     def func():
-        a[None], b[None], c[None] = d.shape()
+        a[None], b[None], c[None] = d.shape
 
     func()
     assert a[None] == 2

@@ -19,7 +19,7 @@ In this way, the tensor's indices are from ``(-16, 8)`` to ``(16, 72)`` (exclusi
     a[-16, 64]  # upper left corner
     a[16, 64]   # upper right corner
 
-.. note:: The dimensionality of tensor shapes should **be consistent** with that of the offset. Otherwise, a ``ValueError`` will be raised.
+.. note:: The dimensionality of tensor shapes should **be consistent** with that of the offset. Otherwise, a ``AssertionError`` will be raised.
 
 .. code-block:: python
 

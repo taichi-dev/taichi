@@ -11,6 +11,7 @@
 #include "taichi/backends/cuda/cuda_context.h"
 #endif
 #include "taichi/backends/metal/codegen_metal.h"
+#include "taichi/backends/metal/env_config.h"
 #include "taichi/backends/opengl/codegen_opengl.h"
 #include "taichi/backends/cpu/codegen_cpu.h"
 #include "taichi/struct/struct.h"
@@ -22,6 +23,13 @@
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/program/async_engine.h"
 #include "taichi/util/statistics.h"
+#if defined(TI_WITH_CC)
+#include "taichi/backends/cc/struct_cc.h"
+#include "taichi/backends/cc/cc_layout.h"
+#include "taichi/backends/cc/codegen_cc.h"
+#include "taichi/backends/cc/cc_configuation.h"
+#else
+#endif
 
 TI_NAMESPACE_BEGIN
 
@@ -30,6 +38,14 @@ bool is_cuda_api_available();
 TI_NAMESPACE_END
 
 TLANG_NAMESPACE_BEGIN
+
+#ifndef TI_WITH_CC
+namespace cccp {
+bool is_c_backend_available() {
+  return false;
+}
+}  // namespace cccp
+#endif
 
 void assert_failed_host(const char *msg) {
   TI_ERROR("Assertion failure: {}", msg);
@@ -76,6 +92,15 @@ Program::Program(Arch desired_arch) {
       TI_WARN("No OpenGL API detected.");
       arch = host_arch();
     }
+  }
+
+  if (arch == Arch::cc) {
+#ifdef TI_WITH_CC
+    cc_program = std::make_unique<cccp::CCProgram>();
+#else
+    TI_WARN("No C backend detected.");
+    arch = host_arch();
+#endif
   }
 
   if (arch != desired_arch) {
@@ -137,6 +162,30 @@ Program::Program(Arch desired_arch) {
     }
   }
 
+  if (arch == Arch::cuda) {
+#if defined(TI_WITH_CUDA)
+    int num_SMs;
+    CUDADriver::get_instance().device_get_attribute(
+        &num_SMs, CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, nullptr);
+    int query_max_block_dim;
+    CUDADriver::get_instance().device_get_attribute(
+        &query_max_block_dim, CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_X, nullptr);
+
+    if (config.max_block_dim == 0) {
+      config.max_block_dim = query_max_block_dim;
+    }
+
+    if (config.saturating_grid_dim == 0) {
+      // each SM can have 16-32 resident blocks
+      config.saturating_grid_dim = num_SMs * 32;
+    }
+#endif
+  }
+
+  if (arch_is_cpu(arch)) {
+    config.max_block_dim = 1024;
+  }
+
   stat.clear();
 
   TI_TRACE("Program ({}) arch={} initialized.", fmt::ptr(this),
@@ -152,13 +201,20 @@ FunctionType Program::compile(Kernel &kernel) {
     auto codegen = KernelCodeGen::create(kernel.arch, &kernel);
     ret = codegen->compile();
   } else if (kernel.arch == Arch::metal) {
+    metal::CodeGen::Config cgen_config;
+    cgen_config.allow_simdgroup =
+        metal::EnvConfig::instance().is_simdgroup_enabled();
     metal::CodeGen codegen(&kernel, metal_kernel_mgr_.get(),
-                           &metal_compiled_structs_.value());
+                           &metal_compiled_structs_.value(), cgen_config);
     ret = codegen.compile();
   } else if (kernel.arch == Arch::opengl) {
     opengl::OpenglCodeGen codegen(kernel.name, &opengl_struct_compiled_.value(),
                                   opengl_kernel_launcher_.get());
     ret = codegen.compile(*this, kernel);
+#ifdef TI_WITH_CC
+  } else if (kernel.arch == Arch::cc) {
+    ret = cccp::compile_kernel(&kernel);
+#endif
   } else {
     TI_NOT_IMPLEMENTED;
   }
@@ -210,12 +266,26 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
   auto snodes = scomp->snodes;
   int root_id = snode_root->id;
 
-  TI_TRACE("Allocating data structure of size {} B", scomp->root_size);
+  // A buffer of random states, one per CUDA thread
+  int num_rand_states = 0;
 
-  runtime->call<void *, void *, std::size_t, std::size_t, void *, void *,
+  if (config.arch == Arch::cuda) {
+#if defined(TI_WITH_CUDA)
+    // It is important to make sure that every CUDA thread has its own random
+    // state so that we do not need expensive per-state locks.
+    num_rand_states = config.saturating_grid_dim * config.max_block_dim;
+#else
+    TI_NOT_IMPLEMENTED
+#endif
+  }
+
+  TI_TRACE("Allocating data structure of size {} B", scomp->root_size);
+  TI_TRACE("Allocating {} random states (used by CUDA only)", num_rand_states);
+
+  runtime->call<void *, void *, std::size_t, std::size_t, void *, int, void *,
                 void *, void *>("runtime_initialize", result_buffer, this,
                                 (std::size_t)scomp->root_size, prealloc_size,
-                                preallocated_device_buffer,
+                                preallocated_device_buffer, num_rand_states,
                                 (void *)&taichi_allocate_aligned,
                                 (void *)std::printf, (void *)std::vsnprintf);
 
@@ -315,6 +385,11 @@ void Program::materialize_layout() {
              opengl_struct_compiled_->root_size);
     opengl_kernel_launcher_ = std::make_unique<opengl::GLSLLauncher>(
         opengl_struct_compiled_->root_size);
+#ifdef TI_WITH_CC
+  } else if (config.arch == Arch::cc) {
+    cccp::CCLayoutGen scomp(snode_root.get());
+    cc_program->layout = scomp.compile();
+#endif
   }
 }
 
@@ -566,6 +641,14 @@ void Program::finalize() {
 
 void Program::launch_async(Kernel *kernel) {
   async_engine->launch(kernel);
+}
+
+int Program::default_block_dim() const {
+  if (arch_is_cpu(config.arch)) {
+    return config.default_cpu_block_dim;
+  } else {
+    return config.default_gpu_block_dim;
+  }
 }
 
 Program::~Program() {

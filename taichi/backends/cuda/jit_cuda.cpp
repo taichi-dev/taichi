@@ -52,16 +52,17 @@ class JITModuleCUDA : public JITModule {
 
   void call(const std::string &name,
             const std::vector<void *> &arg_pointers) override {
-    launch(name, 1, 1, arg_pointers);
+    launch(name, 1, 1, 0, arg_pointers);
   }
 
   virtual void launch(const std::string &name,
                       std::size_t grid_dim,
                       std::size_t block_dim,
+                      std::size_t shared_mem_bytes,
                       const std::vector<void *> &arg_pointers) override {
     auto func = lookup_function(name);
     CUDAContext::get_instance().launch(func, name, arg_pointers, grid_dim,
-                                       block_dim);
+                                       block_dim, shared_mem_bytes);
   }
 
   bool direct_dispatch() const override {

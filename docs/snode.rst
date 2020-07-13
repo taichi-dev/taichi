@@ -30,11 +30,15 @@ See :ref:`layout` for more details. ``ti.root`` is the root node of the data str
         x = ti.var(dt=ti.i32)
         y = ti.var(dt=ti.f32)
         ti.root.place(x, y)
+        assert x.snode() == y.snode()
+
 
 .. function:: tensor.shape()
 
     :parameter tensor: (Tensor)
     :return: (tuple of integers) the shape of tensor
+
+    Equivalent to ``tensor.snode().shape()``.
 
     For example,
 
@@ -42,22 +46,6 @@ See :ref:`layout` for more details. ``ti.root`` is the root node of the data str
 
         ti.root.dense(ti.ijk, (3, 5, 4)).place(x)
         x.shape() # returns (3, 5, 4)
-
-
-.. function:: snode.get_shape(index)
-
-    :parameter snode: (SNode)
-    :parameter index: axis (0 for ``i`` and 1 for ``j``)
-    :return: (scalar) the size of tensor along that axis
-
-    Equivalent to ``tensor.shape()[i]``.
-
-    ::
-
-        ti.root.dense(ti.ijk, (3, 5, 4)).place(x)
-        x.snode().get_shape(0)  # 3
-        x.snode().get_shape(1)  # 5
-        x.snode().get_shape(2)  # 4
 
 
 .. function:: tensor.dim()
@@ -71,6 +59,50 @@ See :ref:`layout` for more details. ``ti.root`` is the root node of the data str
 
         ti.root.dense(ti.ijk, (8, 9, 10)).place(x)
         x.dim()  # 3
+
+
+.. function:: tensor.snode()
+
+    :parameter tensor: (Tensor)
+    :return: (SNode) the structual node where ``tensor`` is placed
+
+    ::
+
+        x = ti.var(dt=ti.i32)
+        y = ti.var(dt=ti.f32)
+        ti.root.place(x, y)
+        x.snode()
+
+
+.. function:: snode.shape()
+
+    :parameter snode: (SNode)
+    :return: (tuple) the size of node along that axis
+
+    ::
+
+        blk1 = ti.root
+        blk2 = blk1.dense(ti.i,  3)
+        blk3 = blk2.dense(ti.jk, (5, 2))
+        blk4 = blk3.dense(ti.k,  2)
+        blk1.shape()  # ()
+        blk2.shape()  # (3, )
+        blk3.shape()  # (3, 5, 2)
+        blk4.shape()  # (3, 5, 4)
+
+
+.. function:: snode.dim()
+
+    :parameter snode: (SNode)
+    :return: (scalar) the dimensionality of ``snode``
+
+    Equivalent to ``len(snode.shape())``.
+
+    ::
+
+        blk1 = ti.root.dense(ti.ijk, (8, 9, 10))
+        ti.root.dim()  # 0
+        blk1.dim()     # 3
 
 
 .. function:: snode.parent()
@@ -154,6 +186,8 @@ Node types
 
     TODO: add descriptions here
 
+.. _dynamic:
+
 Working with ``dynamic`` SNodes
 -------------------------------
 
@@ -161,7 +195,7 @@ Working with ``dynamic`` SNodes
 
     :parameter snode: (SNode, dynamic)
     :parameter indices: (scalar or tuple of scalars) the ``dynamic`` node indices
-    :return: (scalar) the current size of the dynamic node
+    :return: (int32) the current size of the dynamic node
 
 
 .. function:: ti.append(snode, indices, val)
@@ -169,7 +203,7 @@ Working with ``dynamic`` SNodes
     :parameter snode: (SNode, dynamic)
     :parameter indices: (scalar or tuple of scalars) the ``dynamic`` node indices
     :parameter val: (depends on SNode data type) value to store
-    :return: (``int32``) the size of the dynamic node, before appending
+    :return: (int32) the size of the dynamic node, before appending
 
     Inserts ``val`` into the ``dynamic`` node with indices ``indices``.
 
@@ -184,12 +218,17 @@ For example, a (dense) tensor of size ``(18, 65)`` will be materialized as ``(32
 Indices
 -------
 
-.. function:: ti.i
-.. function:: ti.j
-.. function:: ti.k
-.. function:: ti.ij
-.. function:: ti.ijk
-.. function:: ti.ijkl
+.. attribute:: ti.i
+.. attribute:: ti.j
+.. attribute:: ti.k
+.. attribute:: ti.ij
+.. attribute:: ti.ji
+.. attribute:: ti.jk
+.. attribute:: ti.kj
+.. attribute:: ti.ik
+.. attribute:: ti.ki
+.. attribute:: ti.ijk
+.. attribute:: ti.ijkl
 .. function:: ti.indices(a, b, ...)
 
 (TODO)

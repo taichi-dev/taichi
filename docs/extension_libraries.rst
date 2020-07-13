@@ -14,5 +14,26 @@ library of Taichi, aiming at providing useful helper functions including:
 2. GLSL-alike vector functions like ``normalize``, ``distance``, ``reflect``.
 3. Well-behaved random generators including ``randUnit2D``, ``randNDRange``.
 4. Handy vector and matrix initializer: ``vec`` and ``mat``.
+5. Handy vector component shuffle accessor like ``v.xy``.
 
 Click here for `Taichi GLSL Documentation <https://taichi-glsl.readthedocs.io>`_.
+
+.. code-block:: bash
+
+    python3 -m pip install taichi_glsl
+
+
+Taichi THREE
+------------
+
+`Taichi THREE <https://github.com/taichi-dev/taichi_three>`_ is an extension
+library of Taichi to render 3D scenes into nice-looking 2D images in real-time
+(work in progress).
+
+.. image:: https://raw.githubusercontent.com/taichi-dev/taichi_three/16d98cb1c1f2ab7a37c9e42260878c047209fafc/assets/monkey.png
+
+Click here for `Taichi THREE Tutorial <https://github.com/taichi-dev/taichi_three#how-to-play>`_.
+
+.. code-block:: bash
+
+    python3 -m pip install taichi_three

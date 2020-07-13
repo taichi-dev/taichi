@@ -81,7 +81,7 @@ void build_taichi() {
     $CC --version
     $CXX --version
     echo $WORKSPACE
-    $PYTHON_EXECUTABLE -m pip install twine numpy Pillow scipy pybind11 colorama setuptools astor matplotlib pytest autograd GitPython --user
+    $PYTHON_EXECUTABLE -m pip install twine numpy Pillow scipy pybind11 colorama setuptools astor matplotlib pytest autograd GitPython dill --user
     export TAICHI_REPO_DIR=$WORKSPACE/
     echo $TAICHI_REPO_DIR
     export PYTHONPATH=$TAICHI_REPO_DIR/python
@@ -95,6 +95,7 @@ void build_taichi() {
     cmake .. -DPYTHON_EXECUTABLE=$PYTHON_EXECUTABLE -DCUDA_VERSION=$CUDA_VERSION
     make -j 8
     ldd libtaichi_core.so
+    objdump -T libtaichi_core.so| grep GLIBC
     cd ../python
     ti test -t 1 -na opengl
     $PYTHON_EXECUTABLE build.py upload

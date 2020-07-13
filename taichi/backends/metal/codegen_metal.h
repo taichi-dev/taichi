@@ -18,9 +18,14 @@ namespace metal {
 
 class CodeGen {
  public:
+  struct Config {
+    bool allow_simdgroup = true;
+  };
+
   CodeGen(Kernel *kernel,
           KernelManager *kernel_mgr,
-          const CompiledStructs *compiled_structs);
+          const CompiledStructs *compiled_structs,
+          const Config &config);
 
   FunctionType compile();
 
@@ -33,6 +38,7 @@ class CodeGen {
   const CompiledStructs *const compiled_structs_;
   const int id_;
   const std::string taichi_kernel_name_;
+  const Config config_;
 };
 
 }  // namespace metal

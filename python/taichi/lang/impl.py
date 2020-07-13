@@ -433,7 +433,7 @@ def static(x, *xs):
         return x
     elif isinstance(x, ti.Matrix) and x.is_global():
         return x
-    elif isinstance(x, (types.FunctionType, types.MethodType)):
+    elif isinstance(x, types.FunctionType) or isinstance(x, types.MethodType):
         return x
     else:
         raise ValueError(

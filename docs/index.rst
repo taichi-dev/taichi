@@ -52,6 +52,7 @@ The Taichi Programming Language
    dev_install
    contributor_guide
    utilities
+   profiler
    cpp_style
    internal
    taichicon

@@ -16,14 +16,15 @@ img = ti.var(ti.f32, shape=(img_size, img_size))  # image to be displayed
 
 @ti.func
 def get_count(i, j):
-    return (alive[i - 1, j] + alive[i + 1, j] + alive[i, j - 1] + alive[i, j + 1] +
-            alive[i - 1, j - 1] + alive[i + 1, j - 1] + alive[i - 1, j + 1] +
-            alive[i + 1, j + 1])
+    return (alive[i - 1, j] + alive[i + 1, j] + alive[i, j - 1] +
+            alive[i, j + 1] + alive[i - 1, j - 1] + alive[i + 1, j - 1] +
+            alive[i - 1, j + 1] + alive[i + 1, j + 1])
 
 
 # See https://www.conwaylife.com/wiki/Cellular_automaton#Rules for more rules
 B, S = [3], [2, 3]
 #B, S = [2], [0]
+
 
 @ti.func
 def calc_rule(a, c):

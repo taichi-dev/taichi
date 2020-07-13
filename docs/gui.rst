@@ -330,7 +330,7 @@ could make variable control more intuitive:
     :parameter text: (str) the text to be displayed above this slider.
     :parameter minumum: (float) the minimum value of the slider value.
     :parameter maxumum: (float) the maximum value of the slider value.
-    :parameter step: (float) the step between two separate value.
+    :parameter step: (optional, float) the step between two separate value.
 
     :return: (WidgetValue) a value getter / setter, see :class:`WidgetValue`.
 
@@ -346,9 +346,10 @@ could make variable control more intuitive:
     The widget will be display as: ``{text}: {value:.3f}``.
 
 
-.. function:: gui.button(text)
+.. function:: gui.button(text, event_name=None)
 
     :parameter text: (str) the text to be displayed in the button.
+    :parameter event_name: (optional, str) customize the event name.
 
     :return: (EventKey) the event key for this button, see :ref:`gui_event`.
 
@@ -367,6 +368,9 @@ could make variable control more intuitive:
 
         while gui.running:
             print('The radius now is', radius.value)
+            ...
+            radius.value += 0.01
+            ...
             gui.show()
 
 Image I/O

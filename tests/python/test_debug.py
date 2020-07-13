@@ -17,7 +17,7 @@ def test_cpu_debug_snode_writer_out_of_bound():
     ti.set_gdb_trigger(False)
 
     x = ti.var(ti.f32, shape=3)
-    
+
     with pytest.raises(RuntimeError):
         x[3] = 10.0
 
@@ -91,7 +91,6 @@ def test_out_of_bound_dynamic():
     @ti.kernel
     def func():
         x[17] = 1
-
 
     with pytest.raises(RuntimeError):
         func()

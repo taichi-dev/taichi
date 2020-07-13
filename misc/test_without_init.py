@@ -2,7 +2,6 @@ import taichi as ti
 import pytest
 
 
-# :
 @pytest.mark.tryfirst
 def test_without_init():
     # We want to check if Taichi works well without ``ti.init()``.

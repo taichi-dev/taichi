@@ -1,10 +1,19 @@
 # A dirty hack injector for python/taichi/lang/shell.py
 
-our_code = "(lambda o,k:o.path.exists(k+'ppid_'+str(o.getpid()))and(lambda f:(f.write(f'\\n===\\n'+source),f.close()))(open(k+'source','a')))(__import__('os'),'.tmp_idle_')\n"
+our_code = "__import__('taichi.idle_hacker').idle_hacker.idleipc(source)"
+
+def idleipc(source):
+    import os
+    import taichi as ti
+    taichi_dir = os.path.dirname(os.path.abspath(ti.__file__))
+    filename = os.path.join(taichi_dir, '.tidle_' + str(os.getpid()))
+    with open(filename, 'a') as f:
+       f.write('\n===\n' + source)
 
 def main():
     import code
     import shutil
+    import os
 
     print('Injection dest:', code.__file__)
 
@@ -13,8 +22,9 @@ def main():
             print('Taichi hijacking code already exists')
             return 1
 
-    shutil.copy(code.__file__, '.tmp_idle_backup.code.py')
-    print('Backup saved in .tmp_idle_backup.code.py')
+    if not os.path.exists('.tidle_backup.code.py'):
+        shutil.copy(code.__file__, '.tidle_backup.code.py')
+        print('Backup saved in .tmp_idle_backup.code.py')
 
     with open(code.__file__) as f:
        ret = ''
@@ -23,7 +33,7 @@ def main():
            if i == -1:
                ret += x
            else:
-               ret += x + x[:i] + our_code
+               ret += x + x[:i] + our_code + '\n'
 
     if our_code not in ret:
         print('Error: Signature "# Case 3" not found!')

@@ -12,14 +12,14 @@ class ShellType:
 
 
 class ShellInspectorWrapper:
-"""
-Wrapper of the `inspect` module. When interactive shell detected,
-we will redirect getsource() calls to the corresponding inspector
-provided by / suitable for each type of shell.
-"""
+    """
+    Wrapper of the `inspect` module. When interactive shell detected,
+    we will redirect getsource() calls to the corresponding inspector
+    provided by / suitable for each type of shell.
+    """
 
     @staticmethod
-    def get_shell_name():
+    def get_shell_name(exclude_script=False):
         """
         Detect which type of shell is using.
         Can be IPython, IDLE, Python native, or none.
@@ -28,12 +28,13 @@ provided by / suitable for each type of shell.
         if shell is not None:
             return getattr(ShellType, shell.upper())
 
-        try:
-            import __main__ as main
-            if hasattr(main, '__file__'):  # Called from a script?
-                return ShellType.SCRIPT
-        except:
-            pass
+        if not exclude_script:
+            try:
+                import __main__ as main
+                if hasattr(main, '__file__'):  # Called from a script?
+                    return ShellType.SCRIPT
+            except:
+                pass
 
         # Let's detect which type of interactive shell is being used.
         # As you can see, huge engineering efforts are done here just to
@@ -87,19 +88,53 @@ provided by / suitable for each type of shell.
 
 
     def __init__(self):
-        name = self.get_shell_name()
-        if name is not None:
-            print('[Taichi] Interactive shell detected:', name)
+        self.name = self.get_shell_name()
+        if self.name is not None:
+            print(f'[Taichi] Interactive shell detected: {self.name}')
 
-        self.inspector = self.create_inspector(name)
+        self.inspector = self.create_inspector(self.name)
+
+        if hasattr(self.inspector, 'startup_clean'):
+            self.inspector.startup_clean()
 
 
+    def try_reset_shell_type(self):
+        new_name = self.get_shell_name(exclude_script=True)
+        if self.name != new_name:
+            print(f'[Taichi] Shell type changed from "{self.name}" to "{new_name}"')
+
+            self.name = new_name
+            self.inspector = self.create_inspector(self.name)
+
+
+    def _catch_forward(foo):
+        """
+        If Taichi starts within IDLE file mode, and after that user moved to interactive mode,
+        then there will be an OSError, since it's switched from None to Python IDLE shell...
+        We have to reset the shell type and create a corresponding inspector at this moment.
+        """
+        import functools
+
+        @functools.wraps(foo)
+        def wrapped(self, *args, **kwargs):
+            try:
+                return foo(self, *args, **kwargs)
+            except OSError:
+                self.try_reset_shell_type()
+                return foo(self, *args, **kwargs)
+
+        return wrapped
+
+
+    @_catch_forward
     def getsource(self, o):
         return self.inspector.getsource(o)
 
+    @_catch_forward
     def getsourcelines(self, o):
         return self.inspector.getsourcelines(o)
 
+    @_catch_forward
     def getsourcefile(self, o):
         return self.inspector.getsourcefile(o)
 
@@ -149,7 +184,7 @@ class IDLEInspectorWrapper:
             ...
 
             # Case 3
-            (lambda o,k:o.path.exists(k+'ppid_'+str(o.getpid()))and(lambda f:(f.write(f'\\n===\\n'+source),f.close()))(open(k+'source','a')))(__import__('os'),'.tmp_idle_') # Add this line!
+            __import__('taichi.idle_hacker').idle_hacker.idleipc(source)
             self.runcode(code)
             return False
 
@@ -162,7 +197,8 @@ class IDLEInspectorWrapper:
         print('Then, restart IDLE and enjoy, the sky is blue and we are wizards!')
 
     @staticmethod
-    def file_clean(filename):
+    def startup_clean():
+        filename = IDLEInspectorWrapper.get_filename()
         try:
             os.unlink(filename)
         except:
@@ -172,46 +208,40 @@ class IDLEInspectorWrapper:
             ti.info(f'File "{filename}" cleaned')
 
     @staticmethod
-    def file_create(filename):
-        with open(filename, 'w') as f:
-            import taichi as ti
-            f.write('[Taichi/IDLE temporary IPC file]')
-        ti.info(f'File "{filename}" created')
-
-    @staticmethod
-    def file_read(filename):
+    def read_ipc_file():
+        # The IDLE GUI and Taichi is running in separate process,
+        # So we have to create temporary files for portable IPC :(
+        filename = IDLEInspectorWrapper.get_filename()
         try:
             with open(filename) as f:
                 src = f.read()
         except FileNotFoundError as e:
             IDLEInspectorWrapper.show_idle_error_message()
-            raise e
+            src = ''
+        return src
+
+    @staticmethod
+    def get_filename():
+        import taichi as ti
+        taichi_dir = os.path.dirname(os.path.abspath(ti.__file__))
+        return os.path.join(taichi_dir, '.tidle_' + str(os.getppid()))
+
 
     def __init__(self):
         # Thanks to IDLE's lack of support with `inspect`,
         # we have to use a dirty hack to support Taichi there.
         self.idle_cache = {}
 
-        # The IDLE GUI and Taichi is running in separate process,
-        # So we have to create temporary files for portable IPC :(
-        self.file_create('.tmp_idle_ppid_' + str(os.getppid()))
-        self.file_clean('.tmp_idle_source')
-
-        def exit_callback():
-            self.file_clean('.tmp_idle_ppid_' + os.getppid())
-            self.file_clean('.tmp_idle_source')
-
-        atexit.register(exit_callback)
-
 
     def getsource(self, o):
+        func_id = id(o)
         if func_id in self.idle_cache:
             return self.idle_cache[func_id]
 
-        src = self.file_read('.tmp_idle_source')
+        src = self.read_ipc_file()
 
         # If user added our 'hacker-code' correctly,
-        # then the content of .tmp_idle_source should be:
+        # then the content of .tidle_xxx should be:
         #
         # ===
         # import taichi as ti
@@ -225,8 +255,7 @@ class IDLEInspectorWrapper:
         # func()
         #
 
-        func_name == o.__name__
-
+        func_name = o.__name__
         for x in reversed(src.split('===')):
             x = x.strip()
             i = x.find('def ')

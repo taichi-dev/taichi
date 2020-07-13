@@ -588,8 +588,8 @@ void export_lang(py::module &m) {
   // A temporary option which will be removed soon in the future
   m.def("toggle_advanced_optimization", [](bool option) {
     TI_WARN(
-        "`ti.core.toggle_advance_optimization(False)` is deprecated,"
-        " use `ti.init(advanced_optimization=False)` intead");
+        "'ti.core.toggle_advance_optimization(False)' is deprecated."
+        " Use 'ti.init(advanced_optimization=False)' instead");
     get_current_program().config.advanced_optimization = option;
   });
 }

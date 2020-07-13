@@ -1,4 +1,4 @@
-# Game of Life written in 81 lines of Taichi
+# Game of Life written in 100 lines of Taichi
 # In memory of John Horton Conway (1937 - 2020)
 
 import taichi as ti

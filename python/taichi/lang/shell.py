@@ -157,7 +157,8 @@ class IPythonInspectorWrapper:
         return lines, lineno
 
     def getsourcefile(self, o):
-        return '<IPython>'
+        lineno = IPython.core.oinspect.find_source_lines(o)
+        return f'<IPython:{lineno}>'
 
 
 class IDLEInspectorWrapper:
@@ -241,7 +242,7 @@ class IDLEInspectorWrapper:
         src = self.read_ipc_file()
 
         # If user added our 'hacker-code' correctly,
-        # then the content of .tidle_xxx should be:
+        # then the content of `.tidle_xxx` should be:
         #
         # ===
         # import taichi as ti

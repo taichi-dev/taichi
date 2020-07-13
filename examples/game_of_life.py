@@ -4,7 +4,7 @@
 import taichi as ti
 import numpy as np
 
-ti.init(arch=ti.cpu)
+ti.init()
 
 n = 64
 cell_size = 8
@@ -21,62 +21,36 @@ def get_count(i, j):
             alive[i + 1, j + 1])
 
 
-# https://www.conwaylife.com/wiki/Cellular_automaton#Rules
+# See https://www.conwaylife.com/wiki/Cellular_automaton#Rules for more rules
+B, S = [3], [2, 3]
+#B, S = [2], [0]
 
 @ti.func
-def rule_3_23(a, c):
-    if a == 0 and c == 3:
-        a = 1
-    elif a == 1 and c != 2 and c != 3:
+def calc_rule(a, c):
+    if a == 0:
+        for t in ti.static(B):
+            if c == t:
+                a = 1
+    elif a == 1:
         a = 0
-    return a
-
-@ti.func
-def rule_2_0(a, c):
-    if a == 0 and c == 2:
-        a = 1
-    elif a == 1 and c != 0:
-        a = 0
-    return a
-
-@ti.func
-def rule_3_1234(a, c):
-    if a == 0 and c == 3:
-        a = 1
-    elif a == 1 and (c == 0 or c >= 5):
-        a = 0
-    return a
-
-@ti.func
-def rule_3_125(a, c):
-    if a == 0 and c == 3:
-        a = 1
-    elif a == 1 and c != 1 and c != 2 and c != 5:
-        a = 0
-    return a
-
-@ti.func
-def rule_1357_1357(a, c):
-    tmp = c != 1 and c != 3 and c != 5 and c != 7
-    if a == 0 and not tmp:
-        a = 1
-    elif a == 1 and tmp:
-        a = 0
+        for t in ti.static(S):
+            if c == t:
+                a = 1
     return a
 
 
 @ti.kernel
 def run():
-    for i, j in ti.ndrange((1, n - 1), (1, n - 1)):
+    for i, j in alive:
         count[i, j] = get_count(i, j)
 
-    for i, j in ti.ndrange((1, n - 1), (1, n - 1)):
-        alive[i, j] = rule_3_23(alive[i, j], count[i, j])
+    for i, j in alive:
+        alive[i, j] = calc_rule(alive[i, j], count[i, j])
 
 
 @ti.kernel
 def init():
-    for i, j in ti.ndrange((1, n - 1), (1, n - 1)):
+    for i, j in alive:
         if ti.random() > 0.8:
             alive[i, j] = 1
         else:
@@ -85,7 +59,7 @@ def init():
 
 @ti.kernel
 def render():
-    for i, j in ti.ndrange((1, n - 1), (1, n - 1)):
+    for i, j in alive:
         for u, v in ti.static(ti.ndrange(cell_size, cell_size)):
             img[i * cell_size + u, j * cell_size + v] = alive[i, j]
 

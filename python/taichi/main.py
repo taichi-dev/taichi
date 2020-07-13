@@ -54,6 +54,8 @@ class TaichiMain:
         self.banner = f"\n{'*' * 43}\n**      Taichi Programming Language      **\n{'*' * 43}"
         print(self.banner)
 
+        print(self._get_friend_links())
+
         if 'TI_DEBUG' in os.environ:
             val = os.environ['TI_DEBUG']
             if val not in ['0', '1']:
@@ -88,11 +90,25 @@ class TaichiMain:
             # TODO: do we really need this?
             if args.command.endswith(".py"):
                 TaichiMain._exec_python_file(args.command)
-            print(f"{args.command} is not a valid command!")
-            self.main_parser.print_help()
+            else:
+                print(f"{args.command} is not a valid command!")
+                self.main_parser.print_help()
             return 1
 
         return getattr(self, args.command)(sys.argv[2:])
+
+    def _get_friend_links(self):
+        uri = 'en/stable'
+        try:
+            import locale
+            if 'zh' in locale.getdefaultlocale()[0]:
+                uri = 'zh_CN/latest'
+        except:
+            pass
+        return '\n' \
+               f'Docs:   https://taichi.rtfd.io/{uri}\n' \
+               f'GitHub: https://github.com/taichi-dev/taichi\n' \
+               f'Forum:  https://forum.taichi.graphics\n'
 
     def _usage(self) -> str:
         """Compose deterministic usage message based on registered_commands."""
@@ -702,6 +718,14 @@ class TaichiMain:
             pytest_args += ['-s', '-v']
         if args.rerun:
             pytest_args += ['--reruns', args.rerun]
+        if args.keys:
+            pytest_args += ['-k', args.keys]
+        if args.marks:
+            pytest_args += ['-m', args.marks]
+        if args.failed_first:
+            pytest_args += ['--failed-first']
+        if args.fail_fast:
+            pytest_args += ['--exitfirst']
         try:
             if args.coverage:
                 pytest_args += ['--cov-branch', '--cov=python/taichi']
@@ -815,6 +839,34 @@ class TaichiMain:
                             dest='rerun',
                             type=str,
                             help='Rerun failed tests for given times')
+        parser.add_argument('-k',
+                            '--keys',
+                            required=False,
+                            default=None,
+                            dest='keys',
+                            type=str,
+                            help='Only run tests that match the keys')
+        parser.add_argument('-m',
+                            '--marks',
+                            required=False,
+                            default=None,
+                            dest='marks',
+                            type=str,
+                            help='Only run tests with specific marks')
+        parser.add_argument('-f',
+                            '--failed-first',
+                            required=False,
+                            default=None,
+                            dest='failed_first',
+                            action='store_true',
+                            help='Run the previously failed test first')
+        parser.add_argument('-x',
+                            '--fail-fast',
+                            required=False,
+                            default=None,
+                            dest='fail_fast',
+                            action='store_true',
+                            help='Exit instantly on the first failed test')
         parser.add_argument('-C',
                             '--coverage',
                             required=False,

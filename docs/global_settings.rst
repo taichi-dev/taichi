@@ -41,7 +41,7 @@ Develop
 
 
 Specifying ``ti.init`` arguments from environment variables
------------------------------------------------------------
+***********************************************************
 
 Arguments for ``ti.init`` may also be specified from environment variables. For example:
 

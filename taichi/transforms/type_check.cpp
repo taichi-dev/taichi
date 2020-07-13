@@ -94,10 +94,10 @@ class TypeCheck : public IRVisitor {
     }
     if (stmt->ptr->ret_type.data_type != common_container_type) {
       TI_WARN(
-          "[{}] Local store may lose precision (target = {}, value = {}, at",
+          "[{}] Local store may lose precision (target = {}, value = {}) at",
           stmt->name(), stmt->ptr->ret_data_type_name(),
           old_data->ret_data_type_name(), stmt->id);
-      fmt::print(stmt->tb);
+      TI_WARN("\n{}", stmt->tb);
     }
     stmt->ret_type = stmt->ptr->ret_type;
   }
@@ -127,13 +127,13 @@ class TypeCheck : public IRVisitor {
       }
     }
     for (int i = 0; i < stmt->indices.size(); i++) {
-      TI_ASSERT_INFO(
-          is_integral(stmt->indices[i]->ret_type.data_type),
-          "[{}] Taichi tensors must be accessed with integral indices (e.g., "
-          "i32/i64). It seems that you have used something else as "
-          "an index. You can cast a float-pointer number to an integer using "
-          "int(). Also note that ti.floor(ti.f32) returns f32.",
-          stmt->name());
+      if (!is_integral(stmt->indices[i]->ret_type.data_type)) {
+        TI_WARN(
+            "[{}] Tensor index {} not integral, casting into int32 implicitly",
+            stmt->name(), i);
+        stmt->indices[i] =
+            insert_type_cast_before(stmt, stmt->indices[i], DataType::i32);
+      }
       TI_ASSERT(stmt->indices[i]->ret_type.width == stmt->snodes.size());
     }
   }
@@ -148,8 +148,8 @@ class TypeCheck : public IRVisitor {
     }
     if (stmt->ptr->ret_type.data_type != promoted) {
       TI_WARN("[{}] Global store may lose precision: {} <- {}, at",
-              stmt->name(), stmt->ptr->ret_data_type_name(), input_type,
-              stmt->tb);
+              stmt->name(), stmt->ptr->ret_data_type_name(), input_type);
+      TI_WARN("\n{}", stmt->tb);
     }
     stmt->ret_type = stmt->ptr->ret_type;
   }
@@ -229,7 +229,7 @@ class TypeCheck : public IRVisitor {
       } else {
         TI_WARN("[{}] {} at", stmt->name(), comment);
       }
-      fmt::print(stmt->tb);
+      TI_WARN("\n{}", stmt->tb);
       TI_WARN("Compilation stopped due to type mismatch.");
       throw std::runtime_error("Binary operator type mismatch");
     };

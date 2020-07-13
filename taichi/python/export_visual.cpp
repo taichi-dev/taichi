@@ -41,6 +41,38 @@ void export_visual(py::module &m) {
                          img.get_data_size());
            })
       .def("screenshot", &GUI::screenshot)
+      .def("set_widget_value",
+           [](GUI *gui, int wid, float value) {
+             *gui->widget_values.at(wid) = value;
+           })
+      .def("get_widget_value",
+           [](GUI *gui, int wid) -> float {
+             return *gui->widget_values.at(wid);
+           })
+      .def("make_slider",
+           [](GUI *gui, std::string text, float init_value,
+           float minimum, float maximum, float step) {
+             auto val = std::make_unique<float>(init_value);
+             auto val_ptr = val.get();
+             gui->widget_values.push_back(std::move(val));
+             gui->slider(text, *val_ptr, minimum, maximum, step);
+             return gui->widget_values.size() - 1;
+           })
+      .def("make_label",
+           [](GUI *gui, std::string text, float init_value) {
+             auto val = std::make_unique<float>(init_value);
+             auto val_ptr = val.get();
+             gui->widget_values.push_back(std::move(val));
+             gui->label(text, *val_ptr);
+             return gui->widget_values.size() - 1;
+           })
+      .def("make_button",
+           [](GUI *gui, std::string text, std::string event_name) {
+             gui->button(text, [=]() {
+               gui->key_events.push_back(
+                   GUI::KeyEvent{GUI::KeyEvent::Type::press, event_name, gui->cursor_pos});
+             });
+           })
       .def("canvas_untransform", &GUI::canvas_untransform)
       .def("has_key_event", &GUI::has_key_event)
       .def("wait_key_event", &GUI::wait_key_event)

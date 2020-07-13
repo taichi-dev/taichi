@@ -55,6 +55,37 @@ class GUI:
     def __exit__(self, type, val, tb):
         self.core = None  # dereference to call GUI::~GUI()
 
+    ## Widget system
+
+    class WidgetValue:
+        def __init__(self, gui, wid):
+            self.gui = gui
+            self.wid = wid
+
+        @property
+        def value(self):
+            return self.gui.core.get_widget_value(self.wid)
+
+        @value.setter
+        def value(self, value):
+            self.gui.core.set_widget_value(self.wid, value)
+
+
+    def slider(self, text, minimum, maximum, step=1):
+        wid = self.core.make_slider(text, minimum, minimum, maximum, step)
+        return GUI.WidgetValue(self, wid)
+
+    def label(self, text):
+        wid = self.core.make_label(text, 0)
+        return GUI.WidgetValue(self, wid)
+
+    def button(self, text, event_name=None):
+        event_name = event_name or f'WidgetButton_{text}'
+        self.core.make_button(text, event_name)
+        return event_name
+
+    ## Drawing system
+
     def clear(self, color=None):
         if color is None:
             color = self.background_color
@@ -203,6 +234,8 @@ class GUI:
         self.frame += 1
         self.clear()
         self.frame += 1
+
+    ## Event system
 
     class EventFilter:
         def __init__(self, *filter):

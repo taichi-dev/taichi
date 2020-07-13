@@ -1,5 +1,3 @@
-.. _atomic:
-
 Atomic operations
 =================
 

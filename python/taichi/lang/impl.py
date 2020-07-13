@@ -244,8 +244,6 @@ def reset():
     for k in old_kernels:
         k.reset()
     taichi_lang_core.reset_default_compile_config()
-    from .shell import reset_callback
-    reset_callback()
 
 
 @taichi_scope

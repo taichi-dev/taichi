@@ -23,7 +23,7 @@ else:
         def __getattribute__(self, x):
             return ''
 
-    def init():
+    def init(*args, **kwargs):
         pass
 
     Fore = DummyStyle()

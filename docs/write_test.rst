@@ -7,7 +7,7 @@ Normally we write functional tests in Python.
 - Python tests should be added to ``tests/python/test_xxx.py``.
 
 For example, you've just added a utility function ``ti.log10``.
-Now you want to write a **test**, to test if it's functional properly.
+Now you want to write a **test**, to test if it functions properly.
 
 Adding a new test case
 **********************
@@ -50,7 +50,7 @@ Execute ``ti test logarithm``, and the functions starting with ``test_`` in ``te
 Testing against multiple backends
 *********************************
 
-But the above method is not good enough, for example, ``ti.init(arch=ti.cpu)``, means that it will only test on the CPU backend.
+The above method is not good enough, for example, ``ti.init(arch=ti.cpu)``, means that it will only test on the CPU backend.
 So do we have to write many tests ``test_log10_cpu``, ``test_log10_cuda``, ... with only the first line different? No worries,
 we provide a useful decorator ``@ti.test``:
 
@@ -98,7 +98,7 @@ Using ``ti.approx`` for comparison with tolerance
 Sometimes the math percison could be poor on some backends like OpenGL, e.g. ``ti.log10(100)``
 may return ``2.001`` or ``1.999`` in this case.
 
-To treat this behavior, we provide ``ti.approx`` which can tolerate some errors on different
+To cope with this behavior, we provide ``ti.approx`` which can tolerate such errors on different
 backends, for example ``2.001 == ti.approx(2)`` will return ``True`` on the OpenGL backend.
 
 .. code-block:: python
@@ -120,7 +120,7 @@ backends, for example ``2.001 == ti.approx(2)`` will return ``True`` on the Open
 
 .. warning::
 
-    Simply ``pytest.approx`` won't work well here, since it's tolerance won't vary among
+    Simply using ``pytest.approx`` won't work well here, since it's tolerance won't vary among
     different Taichi backends. It'll be likely to fail on the OpenGL backend.
 
     ``ti.approx`` also do treatments on boolean types, e.g.: ``2 == ti.approx(True)``.

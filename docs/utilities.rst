@@ -22,7 +22,7 @@ The higher the level is, the more critical the message is.
 The default logging level is ``info``. You may override the default logging level by:
 
 1. Setting the environment variable like ``export TI_LOG_LEVEL=warn``.
-2. Set log level from Python side: ``ti.set_logging_level(ti.WARN)``.
+2. Setting the log level from Python side: ``ti.set_logging_level(ti.WARN)``.
 
 In Python, you may write logs using the ``ti.*`` interface:
 
@@ -47,7 +47,7 @@ In C++, you may write logs using the ``TI_*`` interface:
     TI_ERROR("Hello world!");
 
 If one raises a message of the level ``error``, Taichi will be **terminated** immediately
-and result in a ``RuntimeError`` in Python side.
+and result in a ``RuntimeError`` on Python side.
 
 .. code-block:: cpp
 

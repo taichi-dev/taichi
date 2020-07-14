@@ -1,4 +1,3 @@
-
 import sys, os, atexit
 
 
@@ -169,74 +168,14 @@ class IPythonInspectorWrapper:
 class IDLEInspectorWrapper:
     """`inspect` module wrapper for IDLE / Blender scripting module"""
 
-    @staticmethod
-    def show_idle_error_message():
-        try:
-            import code
-            path = code.__file__
-        except:
-            path = '/usr/lib/python3.8/code.py'
-        print('It\'s detected that you are using Python IDLE in **interactive mode**.')
-        print('However, Taichi could not be fully functional due to IDLE limitation, sorry :(')
-        print('Either run Taichi directly from script, or use IPython or Jupyter notebook instead.')
-        print('We do care about your experience, no matter which shell you prefer to use.')
-        print('So, if you would like to play with Taichi in your favorite IDLE, we may do a dirty hack:')
-        print(f'Open "{path}" and add the following line to `InteractiveInterpreter.runsource`, right below `# Case 3`:')
-        print('''
-    class InteractiveInterpreter:
-        ...
-
-        def runsource(self, source, filename="<input>", symbol="single"):
-            ...
-
-            # Case 3
-            __import__('taichi.idle_hacker').idle_hacker.idleipc(source)
-            self.runcode(code)
-            return False
-
-        ...
-
-            ''')
-        print('If you don\'t find where to add, we provided a script to automatically inject the code:')
-        print('  sudo python3 -m taichi idle_hacker')
-        print('')
-        print('Then, restart IDLE and enjoy, the sky is blue and we are wizards!')
-
-    @staticmethod
-    def startup_clean():
-        filename = IDLEInspectorWrapper.get_filename()
-        try:
-            os.unlink(filename)
-        except:
-            pass
-        else:
-            import taichi as ti
-            ti.info(f'File "{filename}" cleaned')
-
-    @staticmethod
-    def read_ipc_file():
-        # The IDLE GUI and Taichi is running in separate process,
-        # So we have to create temporary files for portable IPC :(
-        filename = IDLEInspectorWrapper.get_filename()
-        try:
-            with open(filename) as f:
-                src = f.read()
-        except FileNotFoundError as e:
-            IDLEInspectorWrapper.show_idle_error_message()
-            src = ''
-        return src
-
-    @staticmethod
-    def get_filename():
-        import taichi as ti
-        taichi_dir = os.path.dirname(os.path.abspath(ti.__file__))
-        return os.path.join(taichi_dir, '.tidle_' + str(os.getppid()))
+    # Thanks to IDLE's lack of support with `inspect`,
+    # we have to use a dirty hack to support Taichi there.
 
 
     def __init__(self):
-        # Thanks to IDLE's lack of support with `inspect`,
-        # we have to use a dirty hack to support Taichi there.
         self.idle_cache = {}
+        from taichi.idle_hacker import startup_clean
+        self.startup_clean = startup_clean
 
 
     def getsource(self, o):
@@ -244,7 +183,8 @@ class IDLEInspectorWrapper:
         if func_id in self.idle_cache:
             return self.idle_cache[func_id]
 
-        src = self.read_ipc_file()
+        from taichi.idle_hacker import read_ipc_file
+        src = read_ipc_file()
 
         # If user added our 'hacker-code' correctly,
         # then the content of `.tidle_xxx` should be:

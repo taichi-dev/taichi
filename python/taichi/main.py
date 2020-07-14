@@ -50,7 +50,7 @@ def register(func):
 
 @registerableCLI
 class TaichiMain:
-    def __init__(self, debug: bool = False, test_mode: bool = False):
+    def __init__(self, test_mode: bool = False):
         self.banner = f"\n{'*' * 43}\n**      Taichi Programming Language      **\n{'*' * 43}"
         print(self.banner)
 
@@ -62,9 +62,6 @@ class TaichiMain:
                 raise ValueError(
                     "Environment variable TI_DEBUG can only have value 0 or 1."
                 )
-        if debug:
-            print(f"\n{'*' * 17} Debug Mode {'*' * 17}\n")
-            os.environ['TI_DEBUG'] = '1'
 
         parser = argparse.ArgumentParser(description="Taichi CLI",
                                          usage=self._usage())
@@ -1009,11 +1006,6 @@ class TaichiMain:
 
 def main():
     cli = TaichiMain()
-    return cli()
-
-
-def main_debug():
-    cli = TaichiMain(debug=True)
     return cli()
 
 

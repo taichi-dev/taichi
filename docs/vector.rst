@@ -131,7 +131,7 @@ Methods
     ::
 
         a = ti.Vector([3, 4])
-        a.norm() # 3*3 + 4*4 = 25
+        a.norm_sqr() # 3*3 + 4*4 = 25
 
     ``a.norm_sqr()`` is equivalent to ``a.dot(a)``
 

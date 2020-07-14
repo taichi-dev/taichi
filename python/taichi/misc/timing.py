@@ -1,4 +1,4 @@
-import time
+import time, functools
 from colorama import Fore, Back, Style
 
 
@@ -16,6 +16,31 @@ def _c(cnt):
 
 def _n(name):
     return f'{Fore.MAGENTA}{name}{Fore.RESET}'
+
+
+class RecordStatistics:
+    def __init__(self, rec):
+        self.rec = rec
+
+    @property
+    def min(self):
+        return min(self.rec)
+
+    @property
+    def max(self):
+        return max(self.rec)
+
+    @property
+    def total(self):
+        return sum(rec)
+
+    @property
+    def avg(self):
+        return sum(self.rec) / len(self.rec)
+
+    @property
+    def count(self):
+        return len(self.rec)
 
 
 class PythonProfiler:
@@ -46,31 +71,48 @@ class PythonProfiler:
 
     def print(self, name=None):
         print('  min   |   avg   |   max   |  nr  |    name')
-        for name in self.records.keys() if name is None else [name]:
-            rec = self.records[name]
-            maximum = max(rec)
-            minimum = min(rec)
-            avg = sum(rec) / len(rec)
-            cnt = len(rec)
-            print(f'{_m(minimum)} | {_m(avg)} | {_m(maximum)} | {_c(cnt)} | {_n(name)}')
+        if name is not None:
+            names = [name]
+        else:
+            def keyfunc(name):
+                rec = RecordStatistics(self.records[name])
+                return -rec.avg
+            names = sorted(self.records.keys(), key=keyfunc)
+        for name in names:
+            rec = RecordStatistics(self.records[name])
+            print(f'{_m(rec.min)} | {_m(rec.avg)} | {_m(rec.max)} | {_c(rec.count)} '
+                  f'| {_n(name)}')
 
-    def timed(self, name):
+    def timed(self, name=None, warmup=0):
         if callable(name):
             foo = name
-            name = foo.__name__
-            return decorator(name)
+            name = None
+        else:
+            foo = None
 
-        def decorator(foo):
+        def deco(foo):
+            if deco.name is None:
+                name = foo.__name__
+            else:
+                name = deco.name
+
+            @functools.wraps(foo)
             def wrapped(*args, **kwargs):
+                if deco.warmup > 0:
+                    deco.warmup -= 1
+                    return foo(*args, **kwargs)
+
                 self.start(name)
                 ret = foo(*args, **kwargs)
                 self.stop(name)
-                self.print(name)
                 return ret
 
             return wrapped
 
-        return decorator
+        deco.name = name
+        deco.warmup = warmup
+
+        return deco(foo) if foo is not None else deco
 
 
 

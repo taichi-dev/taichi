@@ -16,6 +16,7 @@ def func2():
 @ti.func
 def func1():
     func2()
+    print(233)
 
 
 @ti.kernel

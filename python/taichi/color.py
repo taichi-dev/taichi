@@ -52,27 +52,39 @@ else:
             WHITE = 7
             YELLOW = 3
 
-        class AnsiStyle:
             BRIGHT = 1
             DIM = 2
             NORMAL = 22
+            RESET_ALL = 0
+
+            def __getattr__(self, key):
+                return ''
+
+        Codes = AnsiCodes()
 
         class AnsiSeq:
             def __init__(self, num):
                 self.num = num
 
             def __str__(self):
-                return f'\033[{self.num}m'
+                if self.num > 60:
+                    return f'\033[1;{self.num - 60}m'
+                else:
+                    return f'\033[{self.num}m'
 
             __repr__ = __str__
 
+        class AnsiStyle:
+            def __getattr__(self, key):
+                return str(AnsiSeq(getattr(Codes, key) + 0))
+
         class AnsiFore:
             def __getattr__(self, key):
-                return AnsiSeq(getattr(AnsiCodes, key) + 30)
+                return str(AnsiSeq(getattr(Codes, key) + 30))
 
         class AnsiBack:
             def __getattr__(self, key):
-                return AnsiSeq(getattr(AnsiCodes, key) + 30)
+                return str(AnsiSeq(getattr(Codes, key) + 40))
 
         Fore = AnsiFore()
         Back = AnsiBack()

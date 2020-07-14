@@ -1,4 +1,5 @@
 import taichi as ti
+import numpy as np
 
 
 @ti.all_archs
@@ -55,7 +56,7 @@ def test_static_ndrange():
 
 @ti.host_arch_only
 def test_static_break():
-    x = ti.var(ti.f32, 5)
+    x = ti.var(ti.i32, 5)
 
     @ti.kernel
     def func():
@@ -66,20 +67,20 @@ def test_static_break():
 
     func()
 
-    assert x.to_numpy() == np.array([1, 1, 1, 0, 0])
+    assert np.allclose(x.to_numpy(), np.array([1, 1, 1, 0, 0]))
 
 
 @ti.host_arch_only
 def test_static_continue():
-    x = ti.var(ti.f32, 5)
+    x = ti.var(ti.i32, 5)
 
     @ti.kernel
     def func():
         for i in ti.static(range(5)):
-            x[i] = 1
             if ti.static(i == 2):
                 continue
+            x[i] = 1
 
     func()
 
-    assert x.to_numpy() == np.array([1, 1, 0, 1, 1])
+    assert np.allclose(x.to_numpy(), np.array([1, 1, 0, 1, 1]))

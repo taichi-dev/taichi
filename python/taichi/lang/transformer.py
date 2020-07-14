@@ -488,7 +488,8 @@ if 1:
             if decorator == 'static':
                 if double_decorator == 'static':
                     raise TaichiSyntaxError("'ti.static' cannot be nested")
-                return self.visit_static_for(node, double_decorator == 'grouped')
+                return self.visit_static_for(node,
+                                             double_decorator == 'grouped')
             elif decorator == 'ndrange':
                 if double_decorator != '':
                     raise TaichiSyntaxError(

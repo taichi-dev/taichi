@@ -161,6 +161,8 @@ Paint on a window
     Draw a line of text on screen.
 
 
+.. _gui_event:
+
 Event processing
 ----------------
 
@@ -315,12 +317,68 @@ A *event filter* is a list combined of *key*, *type* and *(type, key)* tuple, e.
         mouse_x, mouse_y = gui.get_cursor_pos()
 
 
+GUI Widgets
+-----------
+
+Sometimes it's more intuitive to use widgets like slider, button to control program variables
+instead of chaotic keyboard bindings. Taichi GUI provides a set of widgets that hopefully
+could make variable control more intuitive:
+
+
+.. function:: gui.slider(text, minimum, maximum, step=1)
+
+    :parameter text: (str) the text to be displayed above this slider.
+    :parameter minumum: (float) the minimum value of the slider value.
+    :parameter maxumum: (float) the maximum value of the slider value.
+    :parameter step: (optional, float) the step between two separate value.
+
+    :return: (WidgetValue) a value getter / setter, see :class:`WidgetValue`.
+
+    The widget will be display as: ``{text}: {value:.3f}``, followed with a slider.
+
+
+.. function:: gui.label(text)
+
+    :parameter text: (str) the text to be displayed in the label.
+
+    :return: (WidgetValue) a value getter / setter, see :class:`WidgetValue`.
+
+    The widget will be display as: ``{text}: {value:.3f}``.
+
+
+.. function:: gui.button(text, event_name=None)
+
+    :parameter text: (str) the text to be displayed in the button.
+    :parameter event_name: (optional, str) customize the event name.
+
+    :return: (EventKey) the event key for this button, see :ref:`gui_event`.
+
+
+.. class:: WidgetValue
+
+    A getter / setter for widget values.
+
+    .. attribute:: value
+
+        Get / set the current value in the widget where we're returned from.
+
+    For example::
+
+        radius = gui.slider('Radius', 1, 50)
+
+        while gui.running:
+            print('The radius now is', radius.value)
+            ...
+            radius.value += 0.01
+            ...
+            gui.show()
+
 Image I/O
 ---------
 
 .. function:: gui.get_image()
 
-    :return a ``np.ndarray`` which is the current image shown on the GUI.
+    :return: a ``np.ndarray`` which is the current image shown on the GUI.
 
     Get the RGBA shown image from the current GUI system which has four channels.
 

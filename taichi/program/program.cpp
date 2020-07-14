@@ -155,7 +155,8 @@ Program::Program(Arch desired_arch) {
 
   if (!is_extension_supported(config.arch, Extension::assertion)) {
     if (config.check_out_of_bound) {
-      TI_WARN("Out-of-bound access checking is not supported on arch={}", arch_name(config.arch));
+      TI_WARN("Out-of-bound access checking is not supported on arch={}",
+              arch_name(config.arch));
       config.check_out_of_bound = false;
     }
   }

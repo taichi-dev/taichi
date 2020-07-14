@@ -1,4 +1,5 @@
 import taichi as ti
+import pytest
 
 
 @ti.must_throw(RuntimeError)
@@ -24,6 +25,17 @@ def test_assert_basic():
         assert 10 <= x < 20
 
     func()
+
+
+@ti.all_archs_with(debug=True, gdb_trigger=False)
+def test_assert_message():
+    @ti.kernel
+    def func():
+        x = 20
+        assert 10 <= x < 20, 'Foo bar'
+
+    with pytest.raises(RuntimeError, match='Foo bar'):
+        func()
 
 
 def test_assert_ok():

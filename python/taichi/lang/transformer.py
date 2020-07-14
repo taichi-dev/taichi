@@ -745,7 +745,8 @@ if 1:
 
     def visit_Assert(self, node):
         if node.msg is not None:
-            assert isinstance(node.msg, ast.Constant), "assert info must be constant"
+            assert isinstance(node.msg,
+                              ast.Constant), "assert info must be constant"
             msg = node.msg.value
         else:
             import astor

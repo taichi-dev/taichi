@@ -162,8 +162,6 @@ def deprecated(old, new):
     return decorator
 
 
-
-
 def get_logging(name):
     def logger(msg, *args, **kwargs):
         # Python inspection takes time (~0.1ms) so avoid it as much as possible

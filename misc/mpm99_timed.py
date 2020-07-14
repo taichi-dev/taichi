@@ -18,7 +18,7 @@ Jp = ti.var(dt=ti.f32, shape=n_particles) # plastic deformation
 grid_v = ti.Vector(2, dt=ti.f32, shape=(n_grid, n_grid)) # grid node momentum/velocity
 grid_m = ti.var(dt=ti.f32, shape=(n_grid, n_grid)) # grid node mass
 
-@ti.profiler.timed(warmup=5)
+@ti.profiler.timed(warmup=10)
 @ti.kernel
 def substep():
   for i, j in grid_m:

@@ -2,7 +2,7 @@
 Profiler
 ========
 
-Taichi's profiler can help you analyze the run-time cost of your program.
+Taichi's profiler can help you analyze the run-time cost of your program, i.e. performance.
 
 Currently there are three profiling systems in Taichi:
 
@@ -13,10 +13,13 @@ Currently there are three profiling systems in Taichi:
 
 
 PythonProfiler
-##############
+--------------
 
 ``PythonProfiler`` basically measures time spent between ``start()`` and ``stop()`` using
 the Python-builtin function ``time.time()``.
+
+Profiling APIs
+**************
 
 There are 3 ways to use this profiler:
 
@@ -102,15 +105,17 @@ There are 3 ways to use this profiler:
     ti.profiler.print()
 
 
-When combining ``@ti.profiler.timed`` with other decorators like ``@ti.kernel``,
-then ``@ti.profiler.timed`` should be put **above** it, e.g.:
+.. warning::
 
-.. code-block:: python
+    When combining ``@ti.profiler.timed`` with other decorators like ``@ti.kernel``,
+    then ``@ti.profiler.timed`` should be put **above** it, e.g.:
 
-        @ti.profiler.timed
-        @ti.kernel
-        def substep():
-            ...
+    .. code-block:: python
+
+            @ti.profiler.timed
+            @ti.kernel
+            def substep():
+                ...
 
 
 .. note::
@@ -124,7 +129,83 @@ then ``@ti.profiler.timed`` should be put **above** it, e.g.:
         10.10ms | 10.10ms | 10.10ms |    1x | 10.10ms | do_something_A
 
 
-See `misc/mpm99_timed.py <https://github.com/taichi-dev/taichi/blob/master/misc/mpm99_timed.py>`_ for their usage example.
+Recording multiple entries
+**************************
+
+When a same **name** is used for multiple times, then they will be merged into one, e.g.:
+
+.. code-block:: python
+
+    from time import sleep
+    import taichi as ti
+    ti.init()
+
+    def do_something_A():
+        sleep(0.01)
+
+    def do_something_B():
+        sleep(0.1)
+
+    ti.profiler.start('A')
+    do_something_A()
+    ti.profiler.stop('A')
+
+    ti.profiler.start('A')
+    do_something_B()
+    ti.profiler.stop('A')
+
+    ti.profiler.print()
+
+will obtain:
+
+.. code-block:: none
+
+      min   |   avg   |   max   |  num  |  total  |    name
+    10.10ms | 55.12ms |  0.100s |    2x |  0.110s | A
+
+
+- ``min`` is the minimum time in records.
+- ``avg`` is the average time of records.
+- ``max`` is the maximum time in records.
+- ``num`` is the number of record entries.
+- ``total`` is the total costed time of records.
+
+
+Profiler options
+****************
+
+Due to Taichi's JIT mechinism, a kernel will be **compiled** on its first invocation.
+So the first record will be extremely long compared to the following records since it
+**involves both compile time and execution time**, e.g.:
+
+.. code-block:: none
+
+       min   |   avg   |   max   |  num  |  total  |    name
+      2.37ms |  3.79ms |  1.615s | 1900x |  7.204s | substep
+
+.. code-block:: none
+
+       min   |   avg   |   max   |  num  |  total  |    name
+      2.37ms |  2.95ms | 12.70ms | 1895x |  5.592s | substep
+
+
+As you see, this make our result inaccurate, especially the ``max`` column.
+
+To avoid this, you may specify a ``warmup`` option to ``ti.profiler``, e.g.:
+
+.. code-block:: python
+
+    @ti.profiler.timed(warmup=5)
+    @ti.kernel
+    def substep():
+        ...
+
+
+Set ``warmup=5`` for example, will **discard** the first 5 record entries.
+I.e. discard the kernel compile time and possible TLB and cache misses on start up.
+
+
+Check out `misc/mpm99_timed.py <https://github.com/taichi-dev/taichi/blob/master/misc/mpm99_timed.py>`_ for sum up usage example.
 
 
 .. warning::
@@ -146,7 +227,7 @@ See `misc/mpm99_timed.py <https://github.com/taichi-dev/taichi/blob/master/misc/
 
 
 KernelProfiler
-##############
+--------------
 
 ``KernelProfiler`` records the costs of Taichi kernels on devices.
 
@@ -182,7 +263,7 @@ The outputs would be:
 
 
 ScopedProfiler
-##############
+--------------
 
 ``ScopedProfiler`` measures time spent on the **host tasks** hierarchically.
 

@@ -220,14 +220,14 @@ class ASTTransformer(ast.NodeTransformer):
             self.current_control_scope().append('while')
 
             template = '''
-    if 1:
-      ti.core.begin_frontend_while(ti.Expr(1).ptr)
-      __while_cond = 0
-      if __while_cond:
-        pass
-      else:
-        break
-      ti.core.pop_scope()
+if 1:
+  ti.core.begin_frontend_while(ti.Expr(1).ptr)
+  __while_cond = 0
+  if __while_cond:
+    pass
+  else:
+    break
+  ti.core.pop_scope()
     '''
             cond = node.test
             t = ast.parse(template).body[0]

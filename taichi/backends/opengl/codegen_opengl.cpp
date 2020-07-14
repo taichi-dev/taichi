@@ -301,6 +301,7 @@ class KernelGen : public IRVisitor {
          parent->short_name(),
          struct_compiled_->snode_map.at(parent_type).elem_stride,
          stmt->input_index->short_name(), stmt->snode->node_type_name);
+
     if (stmt->activate) {
       if (stmt->snode->type == SNodeType::dense) {
         // do nothing

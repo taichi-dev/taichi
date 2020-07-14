@@ -2,6 +2,7 @@ import ast
 from .util import to_taichi_type
 import copy
 from .exception import TaichiSyntaxError
+from .util import warning
 
 
 class ScopeGuard:
@@ -752,8 +753,9 @@ if 1:
                 raise ImportError
                 import astor
             except ImportError:
-                print('Assert statement without message ignored since astor is not installed.'
-                     ' Please run `pip install --user astor` to make it functional.')
+                warning(
+                    'Assert statement without message ignored since astor is not installed.'
+                    ' Please run `pip install --user astor` to make it functional.')
                 msg = ast.dump(node)
             else:
                 msg = astor.to_source(node.test)

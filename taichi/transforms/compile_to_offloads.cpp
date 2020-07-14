@@ -136,22 +136,6 @@ void compile_to_offloads(IRNode *ir,
     irpass::analysis::verify(ir);
   }
 
-  /*
-  if (starts_with(ir->get_kernel()->name, "p2g")) {
-    irpass::analysis::gather_statements(ir, [&](Stmt *stmt) -> bool {
-      if (auto lookup = stmt->cast<SNodeLookupStmt>()) {
-        irpass::print(lookup);
-        if (lookup->snode->id == 24) {
-          lookup->activate = false;
-          TI_TAG;
-        }
-      }
-      return false;
-    });
-  }
-   */
-
-
   irpass::demote_atomics(ir);
   print("Atomics demoted");
   irpass::analysis::verify(ir);

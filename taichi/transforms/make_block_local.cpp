@@ -17,7 +17,6 @@ void make_block_local_offload(OffloadedStmt *offload) {
   std::size_t bls_offset = 0;
 
   for (auto &pad : pads->pads) {
-    pads->print();
     auto snode = pad.first;
     auto data_type = snode->dt;
     auto dtype_size = data_type_size(data_type);
@@ -144,8 +143,6 @@ void make_block_local_offload(OffloadedStmt *offload) {
                   element_block->push_back<BlockCornerIndexStmt>(offload, i));
 
               auto offsets = offload->index_offsets;
-
-              TI_P(offsets);
 
               if ((int)offsets.size() > i && offsets[i] != 0) {
                 auto offset_const = element_block->push_back<ConstStmt>(

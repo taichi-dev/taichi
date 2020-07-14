@@ -5,21 +5,21 @@ from .exception import TaichiSyntaxError
 
 
 class ScopeGuard:
-    def __init__(self, t, stmt_block=None):
-        self.t = t
+    def __init__(self, local_scopes, stmt_block=None):
+        self.local_scopes = local_scopes
         self.stmt_block = stmt_block
 
     def __enter__(self):
-        self.t.local_scopes.append([])
+        self.local_scopes.append([])
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        local = self.t.local_scopes[-1]
+        local = self.local_scopes[-1]
         if self.stmt_block is not None:
             for var in reversed(local):
                 stmt = ASTTransformer.parse_stmt('del var')
                 stmt.targets[0].id = var
                 self.stmt_block.append(stmt)
-        self.t.local_scopes = self.t.local_scopes[:-1]
+        self.local_scopes.pop()
 
 
 # Single-pass transform
@@ -39,7 +39,7 @@ class ASTTransformer(ast.NodeTransformer):
         self.returns = None
 
     def variable_scope(self, *args):
-        return ScopeGuard(self, *args)
+        return ScopeGuard(self.local_scopes, *args)
 
     def current_scope(self):
         return self.local_scopes[-1]

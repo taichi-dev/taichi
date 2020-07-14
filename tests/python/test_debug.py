@@ -122,7 +122,8 @@ def test_out_of_bound_with_offset():
     def func():
         x[0, 0] = 1
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(RuntimeError, match='out of bound'):
+        func()
         func()
 
 

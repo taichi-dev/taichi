@@ -93,7 +93,7 @@ class PythonProfiler:
         else:
             def keyfunc(name):
                 rec = RecordStatistics(self, name)
-                return -rec.avg
+                return -rec.total
             names = sorted(self.records.keys(), key=keyfunc)
         for name in names:
             rec = RecordStatistics(self, name)

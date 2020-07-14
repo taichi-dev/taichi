@@ -93,13 +93,12 @@ def initialize():
 initialize()
 gui = ti.GUI("Taichi MLS-MPM-99", res=512, background_color=0x112F41)
 for frame in range(100):
-  ti.profiler('total_step')
   for s in range(int(2e-3 // dt)):
     substep()
   colors = np.array([0x068587, 0xED553B, 0xEEEEF0], dtype=np.uint32)
-  ti.profiler('circles', warmup=5)
+  ti.profiler('gui.circles', warmup=5)
   gui.circles(x.to_numpy(), radius=1.5, color=colors[material.to_numpy()])
-  ti.profiler('show', warmup=5)
+  ti.profiler('gui.show', warmup=5)
   gui.show()
   ti.profiler()
 

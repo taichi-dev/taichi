@@ -64,13 +64,14 @@ nsobj_unique_ptr<MTLBlitCommandEncoder> new_blit_command_encoder(
 
 nsobj_unique_ptr<MTLLibrary> new_library_with_source(MTLDevice *device,
                                                      const std::string &source,
+                                                     bool fast_math,
                                                      int msl_version) {
   auto source_str = mac::wrap_string_as_ns_string(source);
 
   id options = clscall("MTLCompileOptions", "alloc");
   options = call(options, "init");
   auto options_cleanup = wrap_as_nsobj_unique_ptr(options);
-  call(options, "setFastMathEnabled:", false);
+  call(options, "setFastMathEnabled:", fast_math);
   if (msl_version != kMslVersionNone) {
     call(options, "setLanguageVersion:", msl_version);
   }

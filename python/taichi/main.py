@@ -974,8 +974,8 @@ class TaichiMain:
     @register
     def idle_hacker(self, arguments: list = sys.argv[2:]):
         """Run idle hack code injector"""
-        parser = argparse.ArgumentParser(prog='ti idle_hacker',
-                                         description=f"{self.idle_hacker.__doc__}")
+        parser = argparse.ArgumentParser(
+            prog='ti idle_hacker', description=f"{self.idle_hacker.__doc__}")
         args = parser.parse_args(arguments)
 
         from .idle_hacker import main

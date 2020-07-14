@@ -16,7 +16,6 @@ class ShellInspectorWrapper:
     we will redirect getsource() calls to the corresponding inspector
     provided by / suitable for each type of shell.
     """
-
     @staticmethod
     def get_shell_name(exclude_script=False):
         """
@@ -58,7 +57,6 @@ class ShellInspectorWrapper:
 
         return ShellType.SCRIPT
 
-
     @staticmethod
     def create_inspector(name):
         if name is None:
@@ -87,7 +85,6 @@ class ShellInspectorWrapper:
         else:
             raise RuntimeError(f'Shell type "{name}" not supported')
 
-
     def __init__(self):
         self.name = self.get_shell_name()
         if self.name is not None:
@@ -98,15 +95,15 @@ class ShellInspectorWrapper:
         if hasattr(self.inspector, 'startup_clean'):
             self.inspector.startup_clean()
 
-
     def try_reset_shell_type(self):
         new_name = self.get_shell_name(exclude_script=True)
         if self.name != new_name:
-            print(f'[Taichi] Shell type changed from "{self.name}" to "{new_name}"')
+            print(
+                f'[Taichi] Shell type changed from "{self.name}" to "{new_name}"'
+            )
 
             self.name = new_name
             self.inspector = self.create_inspector(self.name)
-
 
     def _catch_forward(foo):
         """
@@ -126,7 +123,6 @@ class ShellInspectorWrapper:
 
         return wrapped
 
-
     @_catch_forward
     def getsource(self, o):
         return self.inspector.getsource(o)
@@ -140,10 +136,8 @@ class ShellInspectorWrapper:
         return self.inspector.getsourcefile(o)
 
 
-
 class IPythonInspectorWrapper:
     """`inspect` module wrapper for IPython / Jupyter notebook"""
-
     def __init__(self):
         pass
 

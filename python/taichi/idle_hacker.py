@@ -16,7 +16,7 @@ def get_filename(pid):
 
 def idle_ipc_write(source):
     with open(get_filename(os.getpid()), 'a') as f:
-       f.write('\n===\n' + source)
+        f.write('\n===\n' + source)
 
 
 def hack(InteractiveInterpreter):
@@ -47,8 +47,8 @@ def show_error():
   Open "{path}" and append the following line to the buttom of this file:
 
 '''
-f'    {our_code}'
-'''
+          f'    {our_code}'
+          '''
 
 If you don't find where to append, we offer a script to inject the code:
 ''')
@@ -61,8 +61,6 @@ If you don't find where to append, we offer a script to inject the code:
     print('''
   Then, restart IDLE and enjoy, the sky is blue and we are wizards!
 ''')
-
-
 
 
 def startup_clean():
@@ -107,7 +105,7 @@ def main():
     print('Appending our hack code...')
 
     with open(code.__file__, 'a') as f:
-       f.write('\n' + our_code)
+        f.write('\n' + our_code)
 
     print('Done, thank for trusting!')
     return 0

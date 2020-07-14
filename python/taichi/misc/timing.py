@@ -3,15 +3,21 @@ from colorama import Fore, Back, Style
 
 
 def _m(sec):
-    ms = sec * 1000
-    if sec > 0.099:
+    if sec > 9.9:
+        return f'{Fore.LIGHTRED_EX}{sec:6.1f}{Fore.RESET}s'
+    elif sec > 0.099:
         return f'{Fore.LIGHTRED_EX}{sec:6.3f}{Fore.RESET}s'
     else:
-        return f'{Fore.LIGHTMAGENTA_EX}{ms:5.2f}{Fore.RESET}ms'
+        ms = sec * 1000
+        if ms > 0.099:
+            return f'{Fore.LIGHTMAGENTA_EX}{ms:5.2f}{Fore.RESET}ms'
+        else:
+            ns = ms * 1000
+            return f'{Fore.BLUE}{ns:5.2f}{Fore.RESET}ns'
 
 
 def _c(cnt):
-    return f'{Fore.MAGENTA}{cnt:3d}{Fore.RESET}x'
+    return f'{Fore.MAGENTA}{cnt:4d}{Fore.RESET}x'
 
 
 def _n(name):
@@ -19,8 +25,13 @@ def _n(name):
 
 
 class RecordStatistics:
-    def __init__(self, rec):
-        self.rec = rec
+    def __init__(self, profiler, name):
+        self.record = profiler.records[name]
+        self.options = profiler.options[name]
+        self.rec = self.record
+
+        warmup = self.options.get('warmup', 0)
+        self.rec = self.rec[warmup:]
 
     @property
     def min(self):
@@ -32,7 +43,7 @@ class RecordStatistics:
 
     @property
     def total(self):
-        return sum(rec)
+        return sum(self.rec)
 
     @property
     def avg(self):
@@ -48,71 +59,73 @@ class PythonProfiler:
         self.timer = timer
         self.records = {}
         self.started = {}
+        self.options = {}
         self.last_started = None
 
-    def start(self, name):
+    def start(self, name, **options):
+        self.last_started = name
+        self.options[name] = self.options.get(name, options)
         t = self.timer()
         self.started[name] = t
-        self.last_started = name
 
     def stop(self, name=None):
-        name = name or self.last_started
         t = self.timer()
+        if not name and self.last_started:
+            name = self.last_started
+            self.last_started = None
         diff = t - self.started[name]
+        del self.started[name]
+        self.last_started = None
         if name not in self.records:
             self.records[name] = []
         self.records[name].append(diff)
 
-    def __call__(self, name=None):
+    def __call__(self, name=None, **options):
         if self.last_started:
             self.stop()
-        if name:
-            self.start(name)
+        if name is not None:
+            self.start(name, **options)
 
     def print(self, name=None):
-        print('  min   |   avg   |   max   |  nr  |    name')
+        print('  min   |   avg   |   max   |  num  |  total  |    name')
         if name is not None:
             names = [name]
         else:
             def keyfunc(name):
-                rec = RecordStatistics(self.records[name])
+                rec = RecordStatistics(self, name)
                 return -rec.avg
             names = sorted(self.records.keys(), key=keyfunc)
         for name in names:
-            rec = RecordStatistics(self.records[name])
+            rec = RecordStatistics(self, name)
             print(f'{_m(rec.min)} | {_m(rec.avg)} | {_m(rec.max)} | {_c(rec.count)} '
-                  f'| {_n(name)}')
+                  f'| {_m(rec.total)} | {_n(name)}')
 
-    def timed(self, name=None, warmup=0):
+    def timed(self, name=None, **options):
         if callable(name):
             foo = name
             name = None
         else:
             foo = None
 
-        def deco(foo):
-            if deco.name is None:
+        def decorator(foo):
+            if decorator.name is None:
                 name = foo.__name__
             else:
-                name = deco.name
+                name = decorator.name
 
             @functools.wraps(foo)
             def wrapped(*args, **kwargs):
-                if deco.warmup > 0:
-                    deco.warmup -= 1
-                    return foo(*args, **kwargs)
-
-                self.start(name)
+                self.start(name, **decorator.options)
                 ret = foo(*args, **kwargs)
                 self.stop(name)
                 return ret
 
             return wrapped
 
-        deco.name = name
-        deco.warmup = warmup
+        decorator.name = name
+        decorator.options = options
 
-        return deco(foo) if foo is not None else deco
+        return decorator(foo) if foo is not None else decorator
 
 
 

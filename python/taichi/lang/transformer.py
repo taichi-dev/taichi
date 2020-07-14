@@ -546,12 +546,15 @@ if 1:
 
     def visit_Break(self, node):
         if 'static' in self.current_control_scope():
-            return self.parse_stmt('break')
+            return node
         else:
             return self.parse_stmt('ti.core.insert_break_stmt()')
 
     def visit_Continue(self, node):
-        return self.parse_stmt('ti.core.insert_continue_stmt()')
+        if 'static' in self.current_control_scope():
+            return node
+        else:
+            return self.parse_stmt('ti.core.insert_continue_stmt()')
 
     def visit_Call(self, node):
         if not (isinstance(node.func, ast.Attribute)

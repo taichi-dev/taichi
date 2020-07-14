@@ -19,35 +19,31 @@ print(data_files)
 packages = setuptools.find_packages() + ['taichi.examples']
 print(packages)
 
-setuptools.setup(
-    name=project_name,
-    packages=packages,
-    version=version,
-    description='The Taichi Programming Language',
-    author='Yuanming Hu',
-    author_email='yuanmhu@gmail.com',
-    url='https://github.com/taichi-dev/taichi',
-    install_requires=[
-        'numpy',
-        'pybind11>=2.5.0',
-        'setuptools',
-        'astor',
-        'dill',
-        # For testing:
-        'pytest',
-        'pytest-xdist',
-    ],
-    data_files=[('lib', data_files)],
-    keywords=['graphics', 'simulation'],
-    license='MIT',
-    include_package_data=True,
-    entry_points={
-        'console_scripts': [
-            'ti=taichi.main:main',
-            'tid=taichi.main:main_debug',
-        ],
-    },
-    classifiers=classifiers,
-    has_ext_modules=lambda: True)
+setuptools.setup(name=project_name,
+                 packages=packages,
+                 version=version,
+                 description='The Taichi Programming Language',
+                 author='Taichi developers',
+                 author_email='yuanmhu@gmail.com',
+                 url='https://github.com/taichi-dev/taichi',
+                 install_requires=[
+                     'numpy',
+                     'pybind11>=2.5.0',
+                     'setuptools',
+                     'astor',
+                 ],
+                 data_files=[('lib', data_files)],
+                 keywords=['graphics', 'simulation'],
+                 license='MIT',
+                 include_package_data=True,
+                 entry_points={
+                     'console_scripts': [
+                         'ti=taichi.main:main',
+                         'tid=taichi.main:main_debug',
+                     ],
+                 },
+                 classifiers=classifiers,
+                 has_ext_modules=lambda: True)
+>>>>>>> master
 
 # Note: this is a template setup.py used by python/build.py

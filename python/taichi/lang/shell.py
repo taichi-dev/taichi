@@ -67,7 +67,12 @@ class ShellInspectorWrapper:
 
         elif self.name == ShellType.NATIVE:
             # `dill.source` for "Python native shell"
-            import dill
+            try:
+                import dill
+            except ImportError as e:
+                raise ImportError(
+                    'In order to run Taichi in Python interactive shell, '
+                    'Please execute `python3 -m pip install --user dill`')
             self.getsource = dill.source.getsource
             self.getsourcelines = dill.source.getsourcelines
             self.getsourcefile = dill.source.getsourcefile

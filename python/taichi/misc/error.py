@@ -4,18 +4,6 @@ from taichi.color import Fore, Style
 import sys
 
 
-def no_traceback(foo):
-    '''
-    Don't include the decorated frame in traceback, if ti.set_excepthook() was called.
-    '''
-    @functools.wraps(foo)
-    def wrapped(*args, **kwargs):
-        _taichi_skip_traceback = 2
-        return foo(*args, **kwargs)
-
-    return wrapped
-
-
 def enable_excepthook():
     def excepthook(exctype, value, tb):
         skip = 0

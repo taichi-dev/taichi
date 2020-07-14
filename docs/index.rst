@@ -53,6 +53,7 @@ The Taichi Programming Language
    contributor_guide
    write_test
    utilities
+   profiler
    cpp_style
    internal
    taichicon

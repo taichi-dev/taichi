@@ -86,8 +86,8 @@ This saves the overhead of those computations at runtime.
  for p in range(0, n_particles):
   base = ti.cast(x[f, p] * inv_dx - 0.5, ti.i32)
   fx = x[f, p] * inv_dx - ti.cast(base, real)
-  w = [0.5 * ti.sqr(1.5 - fx), 0.75 - ti.sqr(fx - 1.0),
-       0.5 * ti.sqr(fx - 0.5)]
+  w = [0.5 * (1.5 - fx) ** 2, 0.75 - (fx - 1.0) ** 2,
+       0.5 * (fx - 0.5) ** 2]
   new_v = ti.Vector([0.0, 0.0])
   new_C = ti.Matrix([[0.0, 0.0], [0.0, 0.0]])
 

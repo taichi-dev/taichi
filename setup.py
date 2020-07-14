@@ -44,6 +44,5 @@ setuptools.setup(name=project_name,
                  },
                  classifiers=classifiers,
                  has_ext_modules=lambda: True)
->>>>>>> master
 
 # Note: this is a template setup.py used by python/build.py

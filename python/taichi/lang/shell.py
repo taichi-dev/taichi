@@ -81,7 +81,7 @@ class ShellInspectorWrapper:
             return IPythonInspectorWrapper()
 
         elif name == ShellType.IDLE:
-            # `.tmp_idle_source` for "Python IDLE shell"
+            # `.tidle_xxx` for "Python IDLE shell"
             return IDLEInspectorWrapper()
 
         else:
@@ -211,7 +211,7 @@ class IDLEInspectorWrapper:
             raise NameError(f'Could not find source for {func_name}!')
 
     def getsourcelines(self, o):
-        lineno = 2  # TODO: consider include lineno in .tmp_idle_source?
+        lineno = 2  # TODO: consider include lineno in .tidle_xxx?
         lines = self.getsource(o).split('\n')
         return lines, lineno
 
@@ -220,3 +220,4 @@ class IDLEInspectorWrapper:
 
 
 oinspect = ShellInspectorWrapper()
+# TODO: also detect print according to shell type

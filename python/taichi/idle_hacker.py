@@ -36,23 +36,31 @@ def show_error():
         path = code.__file__
     except:
         path = '/usr/lib/python3.8/code.py'
-    print('It\'s detected that you are using Python IDLE in **interactive mode**.')
-    print('However, Taichi could not be fully functional due to IDLE limitation, sorry :(')
-    print('Either run Taichi in IDLE file mode, or use IPython / Jupyter notebook instead.')
-    print('We do care about your experience, no matter which shell you prefer to use.')
-    print('So, if you would like to play with Taichi in your favorite IDLE, we may do a dirty hack:')
-    print(f'Open "{path}" and append the following line to the buttom of this file:')
-    print('')
-    print(f'  {our_code}')
-    print('')
-    print('If you don\'t find where to add, we provided a script to automatically inject the code:')
-    print('')
+
+    print('''Hi! Dear Taichi user:
+
+  It's detected that you are using Python IDLE in **interactive mode**.
+  However, Taichi could not be fully functional due to IDLE limitation, sorry :(
+  Either run Taichi in IDLE file mode, or use IPython / Jupyter instead.
+  But we do care about your experience, no matter which shell you prefer to use.
+  So, in order to play Taichi with your favorite IDLE, we may do a dirty hack:
+  Open "{path}" and append the following line to the buttom of this file:
+
+'''
+f'    {our_code}'
+'''
+
+If you don't find where to append, we offer a script to inject the code:
+''')
+
     if ti.get_os_name() == 'win':
         print('  python3 -m taichi idle_hacker')
     else:
         print('  sudo python3 -m taichi idle_hacker')
-    print('')
-    print('Then, restart IDLE and enjoy, the sky is blue and we are wizards!')
+
+    print('''
+  Then, restart IDLE and enjoy, the sky is blue and we are wizards!
+''')
 
 
 

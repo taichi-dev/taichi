@@ -312,7 +312,7 @@ else:
         sys.path.append(tmp_dir)
         try:
             import_ti_core(tmp_dir)
-        except Exception as e:
+        except ImportError as e:
             from colorama import Fore, Back, Style
             print_red_bold("Taichi core import failed: ", end='')
             print(e)

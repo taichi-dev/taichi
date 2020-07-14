@@ -3,11 +3,10 @@ from . import impl
 import copy
 import numbers
 import numpy as np
-from .util import taichi_scope, python_scope, deprecated, to_numpy_type, to_pytorch_type, in_python_scope, is_taichi_class
+from .util import taichi_scope, python_scope, deprecated, to_numpy_type, to_pytorch_type, in_python_scope, is_taichi_class, warning
 from .common_ops import TaichiOperations
 from .exception import TaichiSyntaxError
 from collections.abc import Iterable
-import warnings
 
 
 class Matrix(TaichiOperations):
@@ -31,7 +30,7 @@ class Matrix(TaichiOperations):
 
         # construct from rows or cols
         if rows is not None or cols is not None:
-            warnings.warn(
+            warning(
                 f"ti.Matrix(rows=[...]) or ti.Matrix(cols=[...]) is deprecated, use ti.Matrix.rows([...]) or ti.Matrix.cols([...]) instead.",
                 DeprecationWarning,
                 stacklevel=2)
@@ -45,7 +44,7 @@ class Matrix(TaichiOperations):
             return
 
         elif empty == True:
-            warnings.warn(
+            warning(
                 f"ti.Matrix(n, m, empty=True) is deprecated, use ti.Matrix.empty(n, m) instead",
                 DeprecationWarning,
                 stacklevel=2)
@@ -130,7 +129,7 @@ class Matrix(TaichiOperations):
                 assert offset is None, f"shape cannot be None when offset is being set"
 
         if self.n * self.m > 32:
-            warnings.warn(
+            warning(
                 f'Taichi matrices/vectors with {self.n}x{self.m} > 32 entries are not suggested.'
                 ' Matrices/vectors will be automatically unrolled at compile-time for performance.'
                 ' So the compilation time could be extremely long if the matrix size is too big.'
@@ -668,8 +667,7 @@ class Matrix(TaichiOperations):
     def to_numpy(self, keep_dims=False, as_vector=None):
         # Discussion: https://github.com/taichi-dev/taichi/pull/1046#issuecomment-633548858
         if as_vector is not None:
-            import warnings
-            warnings.warn(
+            warning(
                 'v.to_numpy(as_vector=True) is deprecated, '
                 'please use v.to_numpy() directly instead',
                 DeprecationWarning,

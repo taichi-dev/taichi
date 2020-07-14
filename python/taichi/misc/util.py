@@ -132,6 +132,31 @@ def get_line_number(asc=0):
     return inspect.stack()[1 + asc][2]
 
 
+def warning(msg, type=UserWarning, stacklevel=1):
+    import warnings
+    import taichi as ti
+    warnings.warn(msg, type, stacklevel=stacklevel + 1)
+    #ti.warn(f'{type.__name__}: {msg}')
+
+
+def deprecated(old, new):
+    import functools
+
+    def decorator(foo):
+        @functools.wraps(foo)
+        def wrapped(*args, **kwargs):
+            _taichi_skip_traceback = 1
+            msg = f'{old} is deprecated, please use {new} instead'
+            warning(msg, DeprecationWarning, stacklevel=2)
+            return foo(*args, **kwargs)
+
+        return wrapped
+
+    return decorator
+
+
+
+
 def get_logging(name):
     def logger(msg, *args, **kwargs):
         # Python inspection takes time (~0.1ms) so avoid it as much as possible

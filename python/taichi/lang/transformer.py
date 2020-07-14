@@ -744,8 +744,19 @@ if 1:
         return new_node
 
     def visit_Assert(self, node):
-        import astor
-        msg = astor.to_source(node.test)
+        if node.msg is not None:
+            assert isinstance(node.msg, ast.Constant), "assert info must be constant"
+            msg = node.msg.value
+        else:
+            try:
+                raise ImportError
+                import astor
+            except ImportError:
+                print('Assert statement without message ignored since astor is not installed.'
+                     ' Please run `pip install --user astor` to make it functional.')
+                msg = ast.dump(node)
+            else:
+                msg = astor.to_source(node.test)
         self.generic_visit(node)
         new_node = self.parse_stmt(
             'ti.core.create_assert_stmt(ti.Expr(0).ptr, 0)')

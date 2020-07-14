@@ -30,4 +30,3 @@ __all__ = [s for s in dir() if not s.startswith('_')] + ['settings']
 
 __version__ = (core.get_version_major(), core.get_version_minor(),
                core.get_version_patch())
-profiler()

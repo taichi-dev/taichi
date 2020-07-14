@@ -10,7 +10,7 @@ class ScopeGuard:
         self.stmt_block = stmt_block
 
     def __enter__(self):
-        self.local_scopes.append([])
+        self.scopes.append([])
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         local = self.scopes[-1]

@@ -1266,7 +1266,12 @@ class StructForStmt : public Stmt {
 
   std::unique_ptr<Stmt> clone() const override;
 
-  TI_STMT_DEF_FIELDS(snode, index_offsets, vectorize, parallelize, block_dim, scratch_opt);
+  TI_STMT_DEF_FIELDS(snode,
+                     index_offsets,
+                     vectorize,
+                     parallelize,
+                     block_dim,
+                     scratch_opt);
   TI_DEFINE_ACCEPT
 };
 

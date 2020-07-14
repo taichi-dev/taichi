@@ -101,7 +101,14 @@ def bls_test_template(dim,
     assert mismatch[None] == 0
 
 
-def bls_particle_grid(N, ppc=8, block_size=16, scatter=True, benchmark=0, pointer_level=1, sort_points=True, use_offset=True):
+def bls_particle_grid(N,
+                      ppc=8,
+                      block_size=16,
+                      scatter=True,
+                      benchmark=0,
+                      pointer_level=1,
+                      sort_points=True,
+                      use_offset=True):
     M = N * N * ppc
 
     m1 = ti.var(ti.f32)
@@ -113,7 +120,7 @@ def bls_particle_grid(N, ppc=8, block_size=16, scatter=True, benchmark=0, pointe
     max_num_particles_per_block = block_size**2 * 4096
 
     x = ti.Vector(2, dt=ti.f32)
-    
+
     s1 = ti.var(dt=ti.f32)
     s2 = ti.var(dt=ti.f32)
     s3 = ti.var(dt=ti.f32)
@@ -127,29 +134,34 @@ def bls_particle_grid(N, ppc=8, block_size=16, scatter=True, benchmark=0, pointe
         block = ti.root.pointer(ti.ij, N // block_size // 4).pointer(ti.ij, 4)
     else:
         raise ValueError('pointer_level must be 1 or 2')
-    
+
     if use_offset:
         grid_offset = (-N // 2, -N // 2)
         world_offset = -0.5
     else:
         grid_offset = (0, 0)
         world_offset = 0
-        
+
     block.dense(ti.ij, block_size).place(m1, offset=grid_offset)
     block.dense(ti.ij, block_size).place(m2, offset=grid_offset)
     block.dense(ti.ij, block_size).place(m3, offset=grid_offset)
 
-    block.dynamic(ti.l, max_num_particles_per_block,
-                  chunk_size=block_size ** 2 * ppc * 4).place(pid, offset=grid_offset + (0,))
+    block.dynamic(ti.l,
+                  max_num_particles_per_block,
+                  chunk_size=block_size**2 * ppc * 4).place(
+                      pid, offset=grid_offset + (0, ))
 
     bound = 0.1
 
     extend = 4
-    
-    x_ = [(random.random() * (1 - 2 * bound) + bound + world_offset, random.random() * (1 - 2 * bound) + bound + world_offset) for _ in range(M)]
+
+    x_ = [(random.random() * (1 - 2 * bound) + bound + world_offset,
+           random.random() * (1 - 2 * bound) + bound + world_offset)
+          for _ in range(M)]
     if sort_points:
-        x_.sort(key=lambda q: int(q[0] * N) // block_size * N + int(q[1] * N) // block_size)
-    
+        x_.sort(key=lambda q: int(q[0] * N) // block_size * N + int(q[1] * N)
+                // block_size)
+
     x.from_numpy(np.array(x_, dtype=np.float32))
 
     @ti.kernel
@@ -161,7 +173,7 @@ def bls_particle_grid(N, ppc=8, block_size=16, scatter=True, benchmark=0, pointe
                 ti.random() * (1 - 2 * bound) + bound
             ])
             ti.append(pid.parent(), [int(x[i][0] * N), int(x[i][1] * N)], i)
-            
+
     scatter_weight = (N * N / M) * 0.01
 
     @ti.kernel
@@ -191,7 +203,6 @@ def bls_particle_grid(N, ppc=8, block_size=16, scatter=True, benchmark=0, pointe
             for offset in ti.static(ti.grouped(ti.ndrange(extend, extend))):
                 m3[u + offset] += scatter_weight
 
-
     @ti.kernel
     def fill_m1():
         for i, j in ti.ndrange(N, N):
@@ -204,19 +215,19 @@ def bls_particle_grid(N, ppc=8, block_size=16, scatter=True, benchmark=0, pointe
             ti.cache_shared(m1)
         for i, j, l in pid:
             p = pid[i, j, l]
-        
+
             u_ = ti.floor(x[p] * N).cast(ti.i32)
-        
+
             u0 = ti.assume_in_range(u_[0], i, 0, 1)
             u1 = ti.assume_in_range(u_[1], j, 0, 1)
-        
+
             u = ti.Vector([u0, u1])
-            
+
             tot = 0.0
-        
+
             for offset in ti.static(ti.grouped(ti.ndrange(extend, extend))):
                 tot += m1[u + offset]
-            
+
             s[p] = tot
 
     @ti.kernel
@@ -224,18 +235,18 @@ def bls_particle_grid(N, ppc=8, block_size=16, scatter=True, benchmark=0, pointe
         ti.block_dim(256)
         for p in x:
             u = ti.floor(x[p] * N).cast(ti.i32)
-        
+
             tot = 0.0
             for offset in ti.static(ti.grouped(ti.ndrange(extend, extend))):
                 tot += m1[u + offset]
             s[p] = tot
 
     insert()
-    
+
     for i in range(benchmark):
         pid.parent(2).snode().deactivate_all()
         insert()
-    
+
     @ti.kernel
     def check_m():
         for i in range(grid_offset[0], grid_offset[0] + N):
@@ -244,7 +255,7 @@ def bls_particle_grid(N, ppc=8, block_size=16, scatter=True, benchmark=0, pointe
                     err[None] = 1
                 if abs(m2[i, j] - m3[i, j]) > 1e-4:
                     err[None] = 1
-                    
+
     @ti.kernel
     def check_s():
         for i in range(M):
@@ -252,7 +263,7 @@ def bls_particle_grid(N, ppc=8, block_size=16, scatter=True, benchmark=0, pointe
                 err[None] = 1
             if abs(s1[i] - s3[i]) > 1e-4:
                 err[None] = 1
-    
+
     if scatter:
         for i in range(max(benchmark, 1)):
             p2g(True, m1)
@@ -265,5 +276,5 @@ def bls_particle_grid(N, ppc=8, block_size=16, scatter=True, benchmark=0, pointe
             g2p(False, s2)
             g2p_naive(s3)
         check_s()
-        
+
     assert not err[None]

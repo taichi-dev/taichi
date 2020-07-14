@@ -228,7 +228,7 @@ if 1:
   else:
     break
   ti.core.pop_scope()
-    '''
+'''
             cond = node.test
             t = ast.parse(template).body[0]
             t.body[1].value = cond
@@ -584,12 +584,12 @@ if 1:
         return node
 
     def visit_Module(self, node):
-        with self.variable_scope(), self.control_scope():
+        with self.variable_scope():
             self.generic_visit(node)
         return node
 
     def visit_Global(self, node):
-        with self.variable_scope(), self.control_scope():
+        with self.variable_scope():
             self.generic_visit(node)
         for name in node.names:
             self.create_variable(name)
@@ -682,7 +682,7 @@ if 1:
                 args.args[i].arg += '_by_value__'
                 arg_decls.append(arg_init)
 
-        with self.variable_scope(), self.control_scope():
+        with self.variable_scope():
             self.generic_visit(node)
 
         node.body = arg_decls + node.body

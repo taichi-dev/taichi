@@ -35,5 +35,4 @@ for k in range(5):
 
     ti.profiler.stop('step')
 
-
 ti.profiler.print()

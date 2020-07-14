@@ -91,14 +91,17 @@ class PythonProfiler:
         if name is not None:
             names = [name]
         else:
+
             def keyfunc(name):
                 rec = RecordStatistics(self, name)
                 return -rec.total
+
             names = sorted(self.records.keys(), key=keyfunc)
         for name in names:
             rec = RecordStatistics(self, name)
-            print(f'{_m(rec.min)} | {_m(rec.avg)} | {_m(rec.max)} | {_c(rec.count)} '
-                  f'| {_m(rec.total)} | {_n(name)}')
+            print(
+                f'{_m(rec.min)} | {_m(rec.avg)} | {_m(rec.max)} | {_c(rec.count)} '
+                f'| {_m(rec.total)} | {_n(name)}')
 
     def timed(self, name=None, **options):
         if callable(name):
@@ -126,7 +129,6 @@ class PythonProfiler:
         decorator.options = options
 
         return decorator(foo) if foo is not None else decorator
-
 
 
 profiler = PythonProfiler()

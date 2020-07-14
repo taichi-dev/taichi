@@ -294,4 +294,3 @@ To show its results, call ``ti.print_profile_info()``. For example:
 .. Note::
 
     ``ScopedProfiler`` is a C++ class in the core of Taichi. It is not exposed to Python users.
-

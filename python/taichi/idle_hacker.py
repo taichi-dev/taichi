@@ -3,9 +3,10 @@ A dirty hack injector for python/taichi/lang/shell.py:IDLEInspectorWrapper
 '''
 
 import os
+import functools
 import taichi as ti
 
-our_code = "__import__('taichi.idle_hacker').idle_hacker.idleipc(source)"
+our_code = "__import__('taichi.idle_hacker').idle_hacker.hack(InteractiveInterpreter)"
 
 
 def get_filename(pid):
@@ -13,9 +14,20 @@ def get_filename(pid):
     return os.path.join(taichi_dir, '.tidle_' + str(pid))
 
 
-def idleipc(source):
+def idle_ipc_write(source):
     with open(get_filename(os.getpid()), 'a') as f:
        f.write('\n===\n' + source)
+
+
+def hack(InteractiveInterpreter):
+    old_runsource = InteractiveInterpreter.runsource
+
+    @functools.wraps(old_runsource)
+    def new_runsource(self, source, *args, **kwargs):
+        idle_ipc_write(source)
+        return old_runsource(self, source, *args, **kwargs)
+
+    InteractiveInterpreter.runsource = new_runsource
 
 
 def show_error():
@@ -26,27 +38,19 @@ def show_error():
         path = '/usr/lib/python3.8/code.py'
     print('It\'s detected that you are using Python IDLE in **interactive mode**.')
     print('However, Taichi could not be fully functional due to IDLE limitation, sorry :(')
-    print('Either run Taichi directly from script, or use IPython or Jupyter notebook instead.')
+    print('Either run Taichi in IDLE file mode, or use IPython / Jupyter notebook instead.')
     print('We do care about your experience, no matter which shell you prefer to use.')
     print('So, if you would like to play with Taichi in your favorite IDLE, we may do a dirty hack:')
-    print(f'Open "{path}" and add the following line to `InteractiveInterpreter.runsource`, right below `# Case 3`:')
-    print('''
-class InteractiveInterpreter:
-    ...
-
-    def runsource(self, source, filename="<input>", symbol="single"):
-        ...
-
-        # Case 3
-        __import__('taichi.idle_hacker').idle_hacker.idleipc(source)
-        self.runcode(code)
-        return False
-
-    ...
-
-        ''')
+    print(f'Open "{path}" and append the following line to the buttom of this file:')
+    print('')
+    print(f'  {our_code}')
+    print('')
     print('If you don\'t find where to add, we provided a script to automatically inject the code:')
-    print('  sudo python3 -m taichi idle_hacker')
+    print('')
+    if ti.get_os_name() == 'win':
+        print('  python3 -m taichi idle_hacker')
+    else:
+        print('  sudo python3 -m taichi idle_hacker')
     print('')
     print('Then, restart IDLE and enjoy, the sky is blue and we are wizards!')
 
@@ -84,31 +88,18 @@ def main():
     print('Injection dest:', code.__file__)
 
     with open(code.__file__) as f:
-        if our_code[:20] in f.read():
-            print('Taichi hijacking code already exists')
+        if our_code in f.read():
+            print('Taichi hack code already exists')
             return 1
 
     if not os.path.exists('.tidle_backup.code.py'):
         shutil.copy(code.__file__, '.tidle_backup.code.py')
         print('Backup saved in .tidle_backup.code.py')
 
-    with open(code.__file__) as f:
-       ret = ''
-       for x in f.readlines():
-           i = x.find('# Case 3')
-           if i == -1:
-               ret += x
-           else:
-               ret += x + x[:i] + our_code + '\n'
+    print('Appending our hack code...')
 
-    if our_code not in ret:
-        print('Error: Signature "# Case 3" not found!')
-        return 2
-
-    print('Writing back result...')
-
-    with open(code.__file__, 'w') as f: 
-        f.write(ret)
+    with open(code.__file__, 'a') as f:
+       f.write('\n' + our_code)
 
     print('Done, thank for trusting!')
     return 0

@@ -47,9 +47,6 @@ class ShellInspectorWrapper:
             if hasattr(__builtins__, '__IPYTHON__'):
                 return ShellType.IPYBASED
 
-        if os.path.basename(sys.executable) == 'pythonw.exe':  # Windows Python IDLE?
-            return ShellType.IDLE
-
         if 'idlelib' in sys.modules:
             return ShellType.IDLE
 
@@ -171,12 +168,10 @@ class IDLEInspectorWrapper:
     # Thanks to IDLE's lack of support with `inspect`,
     # we have to use a dirty hack to support Taichi there.
 
-
     def __init__(self):
         self.idle_cache = {}
         from taichi.idle_hacker import startup_clean
         self.startup_clean = startup_clean
-
 
     def getsource(self, o):
         func_id = id(o)

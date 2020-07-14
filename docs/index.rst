@@ -47,11 +47,12 @@ The Taichi Programming Language
 
 .. toctree::
    :caption: Contributing
-   :maxdepth: 1
+   :maxdepth: 3
 
    dev_install
    contributor_guide
    utilities
+   profiler
    cpp_style
    internal
    taichicon
@@ -62,12 +63,13 @@ The Taichi Programming Language
    :caption: Miscellaneous
    :maxdepth: 3
 
-   extension_libraries
+   faq
    gui
+   debugging
+   extension_libraries
    export_results
    cli_utilities
    global_settings
-   faq
    acknowledgments
 
 

@@ -85,13 +85,13 @@ class KernelCodegen : public IRVisitor {
 
  public:
   // TODO(k-ye): Create a Params to hold these ctor params.
-  KernelCodegen(const std::string &mtl_kernel_prefix,
+  KernelCodegen(const std::string &taichi_kernel_name,
                 const std::string &root_snode_type_name,
                 Kernel *kernel,
                 const CompiledStructs *compiled_structs,
                 PrintStringTable *print_strtab,
                 const CodeGen::Config &config)
-      : mtl_kernel_prefix_(mtl_kernel_prefix),
+      : mtl_kernel_prefix_(taichi_kernel_name),
         root_snode_type_name_(root_snode_type_name),
         kernel_(kernel),
         compiled_structs_(compiled_structs),
@@ -99,6 +99,8 @@ class KernelCodegen : public IRVisitor {
         ctx_attribs_(*kernel_),
         print_strtab_(print_strtab),
         cgen_config_(config) {
+    ti_kernel_attribus_.name = taichi_kernel_name;
+    ti_kernel_attribus_.is_jit_evaluator = kernel->is_evaluator;
     // allow_undefined_visitor = true;
     for (const auto s : kAllSections) {
       section_appenders_[s] = LineAppender();
@@ -245,9 +247,17 @@ class KernelCodegen : public IRVisitor {
       current_appender().append_raw(
           make_sparse_snode_meta(stmt->snode, kSNodeMetaVarName));
       const bool is_dynamic = (stmt->snode->type == SNodeType::dynamic);
-      // Dynamic is a special case because |stmt| doesn't contain an index to
-      // its cells.
-      const std::string ch_id = (is_dynamic ? "0" : stmt->val->raw_name());
+      std::string ch_id;
+      if (is_dynamic &&
+          (opty == SNodeOpType::deactivate || opty == SNodeOpType::append ||
+           opty == SNodeOpType::length)) {
+        // For these ops, `dynamic` is a special case because |stmt| doesn't
+        // contain an index to its cells. Setting it to zero to store the
+        // address of the first child into |ch_addr|.
+        ch_id = "0";
+      } else {
+        ch_id = stmt->val->raw_name();
+      }
       const std::string ch_addr =
           fmt::format("{}.children({}).addr()", stmt->ptr->raw_name(), ch_id);
       if (opty == SNodeOpType::is_active) {
@@ -807,7 +817,7 @@ class KernelCodegen : public IRVisitor {
     ka.task_type = stmt->task_type;
     ka.buffers = get_common_buffers();
 
-    const bool used_tls = (stmt->prologue != nullptr);
+    const bool used_tls = (stmt->tls_prologue != nullptr);
     KernelSigExtensions kernel_exts;
     kernel_exts.use_simdgroup = (used_tls && cgen_config_.allow_simdgroup);
     used_features()->simdgroup =
@@ -863,7 +873,7 @@ class KernelCodegen : public IRVisitor {
       emit("int32_t {}[{}];", tls_bufi32_name, (stmt->tls_size + 3) / 4);
       emit("thread char* {} = reinterpret_cast<thread char*>({});",
            kTlsBufferName, tls_bufi32_name);
-      stmt->prologue->accept(this);
+      stmt->tls_prologue->accept(this);
     }
 
     emit("for (int ii = begin_; ii < end_; ii += {}) {{", kKernelGridSizeName);
@@ -886,10 +896,10 @@ class KernelCodegen : public IRVisitor {
     emit("}}");  // closes for loop
 
     if (used_tls) {
-      TI_ASSERT(stmt->epilogue != nullptr);
+      TI_ASSERT(stmt->tls_epilogue != nullptr);
       inside_tls_epilogue_ = true;
       emit("{{  // TLS epilogue");
-      stmt->epilogue->accept(this);
+      stmt->tls_epilogue->accept(this);
       inside_tls_epilogue_ = false;
       emit("}}");
     }
@@ -944,11 +954,11 @@ class KernelCodegen : public IRVisitor {
     {
       ScopedIndent s2(current_appender());
       emit("const int parent_idx_ = (ii / child_num_slots);");
-      emit("if (parent_idx_ >= num_active(&parent_list)) return;");
+      emit("if (parent_idx_ >= parent_list.num_active()) return;");
       emit("const int child_idx_ = (ii % child_num_slots);");
       emit(
-          "const auto parent_elem_ = get<ListgenElement>(&parent_list, "
-          "parent_idx_);");
+          "const auto parent_elem_ = "
+          "parent_list.get<ListgenElement>(parent_idx_);");
 
       emit("ListgenElement {};", kListgenElemVarName);
       // No need to add mem_offset_in_parent, because place() always starts at 0

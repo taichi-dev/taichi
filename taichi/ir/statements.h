@@ -1,6 +1,7 @@
 #pragma once
 
 #include "taichi/ir/ir.h"
+#include "taichi/ir/scratch_pad.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -112,18 +113,15 @@ class SNodeLookupStmt : public Stmt {
   SNode *snode;
   Stmt *input_snode;
   Stmt *input_index;
-  std::vector<Stmt *> global_indices;
   bool activate;
 
   SNodeLookupStmt(SNode *snode,
                   Stmt *input_snode,
                   Stmt *input_index,
-                  bool activate,
-                  const std::vector<Stmt *> &global_indices)
+                  bool activate)
       : snode(snode),
         input_snode(input_snode),
         input_index(input_index),
-        global_indices(global_indices),
         activate(activate) {
     TI_STMT_REG_FIELDS;
   }
@@ -132,12 +130,11 @@ class SNodeLookupStmt : public Stmt {
     return activate;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type,
-                     snode,
-                     input_snode,
-                     input_index,
-                     global_indices,
-                     activate);
+  bool common_statement_eliminable() const override {
+    return true;
+  }
+
+  TI_STMT_DEF_FIELDS(ret_type, snode, input_snode, input_index, activate);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
@@ -175,15 +172,20 @@ class OffloadedStmt : public Stmt {
   bool const_begin, const_end;
   int32 begin_value, end_value;
   int step;
-  int block_dim;
+  int grid_dim{1};
+  int block_dim{1};
   bool reversed;
   int num_cpu_threads;
   Arch device;
-  std::unique_ptr<Block> prologue;
+  std::unique_ptr<Block> tls_prologue;
+  std::unique_ptr<Block> bls_prologue;
   std::unique_ptr<Block> body;
-  std::unique_ptr<Block> epilogue;
+  std::unique_ptr<Block> bls_epilogue;
+  std::unique_ptr<Block> tls_epilogue;
   std::size_t tls_size{1};  // avoid allocating dynamic memory with 0 byte
+  std::size_t bls_size{0};
   ScratchPadOptions scratch_opt;
+  std::unique_ptr<ScratchPads> scratch_pads;
 
   OffloadedStmt(TaskType task_type);
 
@@ -202,6 +204,8 @@ class OffloadedStmt : public Stmt {
   }
 
   std::unique_ptr<Stmt> clone() const override;
+
+  void all_blocks_accept(IRVisitor *visitor);
 
   TI_STMT_DEF_FIELDS(ret_type,
                      task_type,
@@ -240,6 +244,59 @@ class LoopIndexStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+// All loop indices fused together
+class LoopLinearIndexStmt : public Stmt {
+ public:
+  Stmt *loop;
+  int index;
+
+  LoopLinearIndexStmt(Stmt *loop) : loop(loop) {
+    TI_STMT_REG_FIELDS;
+  }
+
+  bool has_global_side_effect() const override {
+    return false;
+  }
+
+  // Return the number of bits of the loop, or -1 if unknown.
+  // TODO: implement
+  // int max_num_bits() const;
+
+  TI_STMT_DEF_FIELDS(ret_type, loop);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
+class BlockCornerIndexStmt : public Stmt {
+ public:
+  Stmt *loop;
+  int index;
+
+  BlockCornerIndexStmt(Stmt *loop, int index) : loop(loop), index(index) {
+    TI_STMT_REG_FIELDS;
+  }
+
+  bool has_global_side_effect() const override {
+    return false;
+  }
+
+  TI_STMT_DEF_FIELDS(ret_type, loop, index);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
+class BlockDimStmt : public Stmt {
+ public:
+  BlockDimStmt() {
+    TI_STMT_REG_FIELDS;
+  }
+
+  bool has_global_side_effect() const override {
+    return false;
+  }
+
+  TI_STMT_DEF_FIELDS(ret_type);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
 class GlobalTemporaryStmt : public Stmt {
  public:
   std::size_t offset;
@@ -263,6 +320,23 @@ class ThreadLocalPtrStmt : public Stmt {
   std::size_t offset;
 
   ThreadLocalPtrStmt(std::size_t offset, VectorType ret_type) : offset(offset) {
+    this->ret_type = ret_type;
+    TI_STMT_REG_FIELDS;
+  }
+
+  bool has_global_side_effect() const override {
+    return false;
+  }
+
+  TI_STMT_DEF_FIELDS(ret_type, offset);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
+class BlockLocalPtrStmt : public Stmt {
+ public:
+  Stmt *offset;
+
+  BlockLocalPtrStmt(Stmt *offset, VectorType ret_type) : offset(offset) {
     this->ret_type = ret_type;
     TI_STMT_REG_FIELDS;
   }

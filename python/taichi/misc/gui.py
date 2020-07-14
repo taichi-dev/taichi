@@ -1,11 +1,13 @@
 import numbers
 import numpy as np
+from taichi import ti_core
 
 
 class GUI:
     class Event:
         pass
 
+    # Event keys
     SHIFT = 'Shift'
     ALT = 'Alt'
     CTRL = 'Control'
@@ -19,13 +21,17 @@ class GUI:
     LEFT = 'Left'
     RIGHT = 'Right'
     CAPSLOCK = 'Caps_Lock'
-    MOTION = 'Motion'
     LMB = 'LMB'
     MMB = 'MMB'
     RMB = 'RMB'
     EXIT = 'WMClose'
-    RELEASE = False
-    PRESS = True
+    WHEEL = 'Wheel'
+    MOVE = 'Motion'
+
+    # Event types
+    MOTION = ti_core.KeyEvent.EType.Move
+    PRESS = ti_core.KeyEvent.EType.Press
+    RELEASE = ti_core.KeyEvent.EType.Release
 
     def __init__(self, name, res=512, background_color=0x0):
         import taichi as ti
@@ -40,6 +46,7 @@ class GUI:
         self.background_color = background_color
         self.key_pressed = set()
         self.event = None
+        self.frame = 0
         self.clear()
 
     def __enter__(self):
@@ -74,6 +81,11 @@ class GUI:
         res = img.shape[:2]
         assert res == self.res, "Image resolution does not match GUI resolution"
         return np.ascontiguousarray(img)
+
+    def get_image(self):
+        self.img = np.ascontiguousarray(self.img)
+        self.core.get_img(self.img.ctypes.data)
+        return self.img
 
     def set_image(self, img):
         import numpy as np
@@ -188,7 +200,9 @@ class GUI:
         self.core.update()
         if file:
             self.core.screenshot(file)
+        self.frame += 1
         self.clear()
+        self.frame += 1
 
     class EventFilter:
         def __init__(self, *filter):
@@ -230,19 +244,30 @@ class GUI:
 
     def get_key_event(self):
         self.core.wait_key_event()
+
         e = GUI.Event()
-        e.key = self.core.get_key_event_head_key()
-        e.type = self.core.get_key_event_head_type()
-        e.pos = self.core.get_key_event_head_pos()
+        event = self.core.get_key_event_head()
+
+        e.type = event.type
+        e.key = event.key
+        e.pos = self.core.canvas_untransform(event.pos)
         e.pos = (e.pos[0], e.pos[1])
         e.modifier = []
+
+        if e.key == GUI.WHEEL:
+            e.delta = event.delta
+        else:
+            e.delta = (0, 0)
+
         for mod in ['Shift', 'Alt', 'Control']:
             if self.is_pressed(mod):
                 e.modifier.append(mod)
+
         if e.type == GUI.PRESS:
             self.key_pressed.add(e.key)
         else:
             self.key_pressed.discard(e.key)
+
         self.core.pop_key_event_head()
         return e
 

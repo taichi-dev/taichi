@@ -55,16 +55,26 @@ std::size_t CUDAContext::get_free_memory() {
 void CUDAContext::launch(void *func,
                          const std::string &task_name,
                          std::vector<void *> arg_pointers,
-                         unsigned gridDim,
-                         unsigned blockDim) {
+                         unsigned grid_dim,
+                         unsigned block_dim,
+                         std::size_t shared_mem_bytes) {
   // Kernel launch
   if (profiler)
     profiler->start(task_name);
   auto context_guard = CUDAContext::get_instance().get_guard();
-  if (gridDim > 0) {
+
+  // TODO: remove usages of get_current_program here.
+  // Make sure there are not too many threads for the device.
+  // Note that the CUDA random number generator does not allow more than
+  // [saturating_grid_dim * max_block_dim] threads.
+  TI_ASSERT(grid_dim <= get_current_program().config.saturating_grid_dim);
+  TI_ASSERT(block_dim <= get_current_program().config.max_block_dim);
+
+  if (grid_dim > 0) {
     std::lock_guard<std::mutex> _(lock);
-    driver.launch_kernel(func, gridDim, 1, 1, blockDim, 1, 1, 0, nullptr,
-                         arg_pointers.data(), nullptr);
+    driver.launch_kernel(func, grid_dim, 1, 1, block_dim, 1, 1,
+                         shared_mem_bytes, nullptr, arg_pointers.data(),
+                         nullptr);
   }
   if (profiler)
     profiler->stop();

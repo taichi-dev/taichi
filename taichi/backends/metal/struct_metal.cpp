@@ -26,7 +26,7 @@ namespace shaders {
 
 }  // namespace shaders
 
-constexpr size_t kListManagerSize = sizeof(shaders::ListManager);
+constexpr size_t kListManagerDataSize = sizeof(shaders::ListManagerData);
 constexpr size_t kSNodeMetaSize = sizeof(shaders::SNodeMeta);
 constexpr size_t kSNodeExtractorsSize = sizeof(shaders::SNodeExtractors);
 
@@ -226,8 +226,8 @@ class StructCompiler {
   }
 
   size_t compute_runtime_size() {
-    size_t result = (max_snodes_) *
-                    (kSNodeMetaSize + kSNodeExtractorsSize + kListManagerSize);
+    size_t result = (max_snodes_) * (kSNodeMetaSize + kSNodeExtractorsSize +
+                                     kListManagerDataSize);
     result += sizeof(uint32_t) * kNumRandSeeds;
     return result;
   }

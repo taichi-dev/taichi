@@ -164,6 +164,8 @@ Node types
 
     TODO: add descriptions here
 
+.. _dynamic:
+
 Working with ``dynamic`` SNodes
 -------------------------------
 

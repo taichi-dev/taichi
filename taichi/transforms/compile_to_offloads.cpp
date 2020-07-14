@@ -15,7 +15,8 @@ void compile_to_offloads(IRNode *ir,
                          bool ad_use_stack,
                          bool verbose,
                          bool lower_global_access,
-                         bool make_thread_local) {
+                         bool make_thread_local,
+                         bool make_block_local) {
   TI_AUTO_PROF;
 
   auto print = [&](const std::string &name) {
@@ -59,7 +60,7 @@ void compile_to_offloads(IRNode *ir,
     print("Loop Split");
     irpass::analysis::verify(ir);
   }
-  irpass::full_simplify(ir);
+  irpass::full_simplify(ir, false);
   print("Simplified I");
   irpass::analysis::verify(ir);
 
@@ -67,13 +68,10 @@ void compile_to_offloads(IRNode *ir,
     // Remove local atomics here so that we don't have to handle their gradients
     irpass::demote_atomics(ir);
 
-    irpass::full_simplify(ir);
+    irpass::full_simplify(ir, false);
     irpass::auto_diff(ir, ad_use_stack);
-    irpass::full_simplify(ir);
+    irpass::full_simplify(ir, false);
     print("Gradient");
-    // TODO: removing the following line break the verify pass. Need to figure
-    // out why.
-    irpass::fix_block_parents(ir);
     irpass::analysis::verify(ir);
   }
 
@@ -90,15 +88,11 @@ void compile_to_offloads(IRNode *ir,
     irpass::analysis::verify(ir);
   }
 
-  irpass::cfg_optimization(ir, false);
-  print("Optimized by CFG I");
-  irpass::analysis::verify(ir);
-
   irpass::flag_access(ir);
   print("Access flagged I");
   irpass::analysis::verify(ir);
 
-  irpass::full_simplify(ir);
+  irpass::full_simplify(ir, false);
   print("Simplified II");
   irpass::analysis::verify(ir);
 
@@ -107,7 +101,7 @@ void compile_to_offloads(IRNode *ir,
   irpass::analysis::verify(ir);
 
   irpass::cfg_optimization(ir, false);
-  print("Optimized by CFG II");
+  print("Optimized by CFG");
   irpass::analysis::verify(ir);
 
   irpass::flag_access(ir);
@@ -117,6 +111,11 @@ void compile_to_offloads(IRNode *ir,
   if (make_thread_local) {
     irpass::make_thread_local(ir);
     print("Make thread local");
+  }
+
+  if (make_block_local) {
+    irpass::make_block_local(ir);
+    print("Make block local");
   }
 
   if (lower_global_access) {
@@ -137,11 +136,7 @@ void compile_to_offloads(IRNode *ir,
   print("Atomics demoted");
   irpass::analysis::verify(ir);
 
-  irpass::cfg_optimization(ir, true);
-  print("Optimized by CFG III");
-  irpass::analysis::verify(ir);
-
-  irpass::full_simplify(ir);
+  irpass::full_simplify(ir, lower_global_access);
   print("Simplified III");
 
   // Final field registration correctness & type checking

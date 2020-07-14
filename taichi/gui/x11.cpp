@@ -89,8 +89,28 @@ void GUI::process_event() {
       case ButtonPress:
         set_mouse_pos(ev.xbutton.x, height - ev.xbutton.y - 1);
         mouse_event(MouseEvent{MouseEvent::Type::press, cursor_pos});
-        key_events.push_back(
-            KeyEvent{KeyEvent::Type::press, lookup_button(&ev), cursor_pos});
+        switch (ev.xbutton.button) {
+        case 4: // wheel up
+          key_events.push_back(
+              KeyEvent{KeyEvent::Type::move, "Wheel", cursor_pos, Vector2i{0, +120}});
+          break;
+        case 5: // wheel down
+          key_events.push_back(
+              KeyEvent{KeyEvent::Type::move, "Wheel", cursor_pos, Vector2i{0, -120}});
+          break;
+        case 6: // wheel right
+          key_events.push_back(
+              KeyEvent{KeyEvent::Type::move, "Wheel", cursor_pos, Vector2i{+120, 0}});
+          break;
+        case 7: // wheel left
+          key_events.push_back(
+              KeyEvent{KeyEvent::Type::move, "Wheel", cursor_pos, Vector2i{-120, 0}});
+          break;
+        default: // normal mouse button
+          key_events.push_back(
+              KeyEvent{KeyEvent::Type::press, lookup_button(&ev), cursor_pos});
+          break;
+        }
         break;
       case ButtonRelease:
         set_mouse_pos(ev.xbutton.x, height - ev.xbutton.y - 1);

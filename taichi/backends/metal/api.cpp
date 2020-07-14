@@ -55,15 +55,23 @@ nsobj_unique_ptr<MTLComputeCommandEncoder> new_compute_command_encoder(
   return wrap_as_nsobj_unique_ptr(encoder);
 }
 
+nsobj_unique_ptr<MTLBlitCommandEncoder> new_blit_command_encoder(
+    MTLCommandBuffer *buffer) {
+  auto *encoder =
+      cast_call<MTLBlitCommandEncoder *>(buffer, "blitCommandEncoder");
+  return wrap_as_nsobj_unique_ptr(encoder);
+}
+
 nsobj_unique_ptr<MTLLibrary> new_library_with_source(MTLDevice *device,
                                                      const std::string &source,
+                                                     bool fast_math,
                                                      int msl_version) {
   auto source_str = mac::wrap_string_as_ns_string(source);
 
   id options = clscall("MTLCompileOptions", "alloc");
   options = call(options, "init");
   auto options_cleanup = wrap_as_nsobj_unique_ptr(options);
-  call(options, "setFastMathEnabled:", false);
+  call(options, "setFastMathEnabled:", fast_math);
   if (msl_version != kMslVersionNone) {
     call(options, "setLanguageVersion:", msl_version);
   }
@@ -91,19 +99,11 @@ new_compute_pipeline_state_with_function(MTLDevice *device,
   return wrap_as_nsobj_unique_ptr(pipeline_state);
 }
 
-nsobj_unique_ptr<MTLBuffer> new_mtl_buffer(MTLDevice *device, size_t length) {
-  constexpr int kMtlBufferResourceOptions = 0;
-  auto *buffer =
-      cast_call<MTLBuffer *>(device, "newBufferWithLength:options:", length,
-                             kMtlBufferResourceOptions);
-  return wrap_as_nsobj_unique_ptr(buffer);
-}
-
 nsobj_unique_ptr<MTLBuffer> new_mtl_buffer_no_copy(MTLDevice *device,
                                                    void *ptr,
                                                    size_t length) {
-  // MTLResourceCPUCacheModeDefaultCache | MTLResourceStorageModeShared
-  constexpr int kMtlBufferResourceOptions = 0;
+  // MTLResourceCPUCacheModeDefaultCache | MTLResourceStorageModeManaged
+  constexpr int kMtlBufferResourceOptions = 16;
 
   auto *buffer = cast_call<MTLBuffer *>(
       device, "newBufferWithBytesNoCopy:length:options:deallocator:", ptr,
@@ -143,6 +143,19 @@ size_t get_max_total_threads_per_threadgroup(
     MTLComputePipelineState *pipeline_state) {
   // The value of the pointer returned by call is the actual result
   return (size_t)call(pipeline_state, "maxTotalThreadsPerThreadgroup");
+}
+
+void did_modify_range(MTLBuffer *buffer, size_t location, size_t length) {
+  // TODO(k-ye): Maybe move this to Mac API?
+  struct TI_NSRange {
+    size_t location;
+    size_t length;
+  };
+
+  TI_NSRange range;
+  range.location = location;
+  range.length = length;
+  call(buffer, "didModifyRange:", range);
 }
 
 #endif  // TI_PLATFORM_OSX

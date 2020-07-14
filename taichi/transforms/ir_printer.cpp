@@ -4,6 +4,7 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
 #include "taichi/ir/frontend_ir.h"
+#include "taichi/util/str.h"
 #include <typeinfo>
 
 TLANG_NAMESPACE_BEGIN
@@ -16,7 +17,7 @@ std::string scratch_pad_info(const ScratchPadOptions &opt) {
       // TODO: standardize scratch pad types
       std::string type;
       if (s.first == 0) {
-        type = "thread_local";
+        type = "block local";
       } else if (s.first == 1) {
         type = "read_only";
       } else {
@@ -100,13 +101,28 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(AssertStmt *assert) override {
-    std::string extras = "";
+    std::string extras;
     for (auto &arg : assert->args) {
       extras += ", ";
       extras += arg->name();
     }
     print("{} : assert {}, \"{}\"{}", assert->id, assert->cond->name(),
           assert->text, extras);
+  }
+
+  void visit(ExternalFuncCallStmt *stmt) override {
+    std::string extras = "inputs=";
+    for (auto &arg : stmt->arg_stmts) {
+      extras += ", ";
+      extras += arg->name();
+    }
+    extras += "outputs=";
+    for (auto &output : stmt->output_stmts) {
+      extras += ", ";
+      extras += output->name();
+    }
+    print("{} : func_call {:x}, {}", stmt->name(), (std::size_t)stmt->func,
+          extras);
   }
 
   void visit(FrontendSNodeOpStmt *stmt) override {
@@ -218,7 +234,7 @@ class IRPrinter : public IRVisitor {
       if (std::holds_alternative<Expr>(c))
         name = std::get<Expr>(c).serialize();
       else
-        name = "\"" + std::get<std::string>(c) + "\"";
+        name = c_quoted(std::get<std::string>(c));
       contents.push_back(name);
     }
     print("print {}", fmt::join(contents, ", "));
@@ -231,7 +247,7 @@ class IRPrinter : public IRVisitor {
       if (std::holds_alternative<Stmt *>(c))
         name = std::get<Stmt *>(c)->name();
       else
-        name = "\"" + std::get<std::string>(c) + "\"";
+        name = c_quoted(std::get<std::string>(c));
       names.push_back(name);
     }
     print("print {}", fmt::join(names, ", "));
@@ -472,12 +488,14 @@ class IRPrinter : public IRVisitor {
       } else {
         end_str = fmt::format("tmp(offset={}B)", stmt->end_offset);
       }
-      details = fmt::format("range_for({}, {}) {}", begin_str, end_str,
-                            block_dim_info(stmt->block_dim));
+      details =
+          fmt::format("range_for({}, {}) grid_dim={} block_dim={}", begin_str,
+                      end_str, stmt->grid_dim, stmt->block_dim);
     } else if (stmt->task_type == stmt->struct_for) {
       details = fmt::format(
-          "struct_for({}) {}{}", stmt->snode->get_node_type_name_hinted(),
-          block_dim_info(stmt->block_dim), scratch_pad_info(stmt->scratch_opt));
+          "struct_for({}) grid_dim={} block_dim={} bls={}",
+          stmt->snode->get_node_type_name_hinted(), stmt->grid_dim,
+          stmt->block_dim, scratch_pad_info(stmt->scratch_opt), stmt->bls_size);
     }
     if (stmt->task_type == OffloadedStmt::TaskType::listgen) {
       print("{} = offloaded listgen {}->{}", stmt->name(),
@@ -491,18 +509,28 @@ class IRPrinter : public IRVisitor {
             stmt->snode->get_node_type_name_hinted());
     } else {
       print("{} = offloaded {} ", stmt->name(), details);
-      if (stmt->prologue) {
-        print("prologue {{");
-        stmt->prologue->accept(this);
+      if (stmt->tls_prologue) {
+        print("tls prologue {{");
+        stmt->tls_prologue->accept(this);
+        print("}}");
+      }
+      if (stmt->bls_prologue) {
+        print("bls prologue {{");
+        stmt->bls_prologue->accept(this);
         print("}}");
       }
       TI_ASSERT(stmt->body);
       print("body {{");
       stmt->body->accept(this);
       print("}}");
-      if (stmt->epilogue) {
-        print("epilogue {{");
-        stmt->epilogue->accept(this);
+      if (stmt->bls_epilogue) {
+        print("bls_epilogue {{");
+        stmt->bls_epilogue->accept(this);
+        print("}}");
+      }
+      if (stmt->tls_epilogue) {
+        print("tls_epilogue {{");
+        stmt->tls_epilogue->accept(this);
         print("}}");
       }
     }
@@ -513,6 +541,20 @@ class IRPrinter : public IRVisitor {
           stmt->loop->name(), stmt->index);
   }
 
+  void visit(LoopLinearIndexStmt *stmt) override {
+    print("{}{} = loop {} index linear", stmt->type_hint(), stmt->name(),
+          stmt->loop->name());
+  }
+
+  void visit(BlockCornerIndexStmt *stmt) override {
+    print("{}{} = loop {} block corner index {}", stmt->type_hint(),
+          stmt->name(), stmt->loop->name(), stmt->index);
+  }
+
+  void visit(BlockDimStmt *stmt) override {
+    print("{}{} = block dim", stmt->type_hint(), stmt->name());
+  }
+
   void visit(GlobalTemporaryStmt *stmt) override {
     print("{}{} = global tmp var (offset = {} B)", stmt->type_hint(),
           stmt->name(), stmt->offset);
@@ -521,6 +563,11 @@ class IRPrinter : public IRVisitor {
   void visit(ThreadLocalPtrStmt *stmt) override {
     print("{}{} = thread local ptr (offset = {} B)", stmt->type_hint(),
           stmt->name(), stmt->offset);
+  }
+
+  void visit(BlockLocalPtrStmt *stmt) override {
+    print("{}{} = block local ptr (offset = {})", stmt->type_hint(),
+          stmt->name(), stmt->offset->name());
   }
 
   void visit(InternalFuncStmt *stmt) override {

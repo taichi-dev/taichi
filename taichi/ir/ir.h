@@ -33,8 +33,6 @@ using ScratchPadOptions = std::vector<std::pair<int, SNode *>>;
 
 IRBuilder &current_ast_builder();
 
-bool maybe_same_address(Stmt *var1, Stmt *var2);
-
 struct VectorType {
  private:
   bool _is_pointer;
@@ -243,6 +241,8 @@ class IRVisitor {
 #undef PER_STATEMENT
 };
 
+struct CompileConfig;
+
 class IRNode {
  public:
   virtual void accept(IRVisitor *visitor) {
@@ -252,6 +252,8 @@ class IRNode {
     return nullptr;
   }
   virtual ~IRNode() = default;
+
+  CompileConfig &get_config() const;
 
   template <typename T>
   bool is() const {
@@ -822,6 +824,10 @@ class GlobalPtrStmt : public Stmt {
     return activate;
   }
 
+  bool common_statement_eliminable() const override {
+    return true;
+  }
+
   TI_STMT_DEF_FIELDS(ret_type, snodes, indices, activate);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
@@ -961,6 +967,24 @@ class AssertStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(cond, text, args);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
+class ExternalFuncCallStmt : public Stmt {
+ public:
+  void *func;
+  std::vector<Stmt *> arg_stmts;
+  std::vector<Stmt *> output_stmts;
+
+  ExternalFuncCallStmt(void *func,
+                       const std::vector<Stmt *> &arg_stmts,
+                       const std::vector<Stmt *> &output_stmts)
+      : func(func), arg_stmts(arg_stmts), output_stmts(output_stmts) {
+    TI_ASSERT(func);
+    TI_STMT_REG_FIELDS;
+  }
+
+  TI_STMT_DEF_FIELDS(func, arg_stmts, output_stmts);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
@@ -1115,8 +1139,39 @@ class PrintStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
+  template <typename... Args>
+  PrintStmt(Stmt *t, Args &&... args)
+      : contents(make_entries(t, std::forward<Args>(args)...)) {
+    TI_STMT_REG_FIELDS;
+  }
+
+  template <typename... Args>
+  PrintStmt(const std::string &str, Args &&... args)
+      : contents(make_entries(str, std::forward<Args>(args)...)) {
+    TI_STMT_REG_FIELDS;
+  }
+
   TI_STMT_DEF_FIELDS(ret_type, contents);
   TI_DEFINE_ACCEPT_AND_CLONE
+
+ private:
+  static void make_entries_helper(std::vector<PrintStmt::EntryType> &entries) {
+  }
+
+  template <typename T, typename... Args>
+  static void make_entries_helper(std::vector<PrintStmt::EntryType> &entries,
+                                  T &&t,
+                                  Args &&... values) {
+    entries.push_back(EntryType{t});
+    make_entries_helper(entries, std::forward<Args>(values)...);
+  }
+
+  template <typename... Args>
+  static std::vector<EntryType> make_entries(Args &&... values) {
+    std::vector<EntryType> ret;
+    make_entries_helper(ret, std::forward<Args>(values)...);
+    return ret;
+  }
 };
 
 class ConstStmt : public Stmt {

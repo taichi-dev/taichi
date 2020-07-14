@@ -21,6 +21,7 @@ struct MTLComputePipelineState;
 struct MTLCommandQueue;
 struct MTLCommandBuffer;
 struct MTLComputeCommandEncoder;
+struct MTLBlitCommandEncoder;
 struct MTLFunction;
 struct MTLComputePipelineState;
 struct MTLBuffer;
@@ -42,10 +43,14 @@ nsobj_unique_ptr<MTLCommandBuffer> new_command_buffer(MTLCommandQueue *queue);
 nsobj_unique_ptr<MTLComputeCommandEncoder> new_compute_command_encoder(
     MTLCommandBuffer *buffer);
 
+nsobj_unique_ptr<MTLBlitCommandEncoder> new_blit_command_encoder(
+    MTLCommandBuffer *buffer);
+
 // msl_version: Metal Shader Language version. 0 means not set.
 // See https://developer.apple.com/documentation/metal/mtllanguageversion
 nsobj_unique_ptr<MTLLibrary> new_library_with_source(MTLDevice *device,
                                                      const std::string &source,
+                                                     bool fast_math,
                                                      int msl_version);
 
 nsobj_unique_ptr<MTLFunction> new_function_with_name(MTLLibrary *library,
@@ -61,12 +66,32 @@ inline void set_compute_pipeline_state(
   mac::call(encoder, "setComputePipelineState:", pipeline_state);
 }
 
-inline void end_encoding(MTLComputeCommandEncoder *encoder) {
+inline void synchronize_resource(MTLBlitCommandEncoder *encoder,
+                                 MTLBuffer *buffer) {
+  mac::call(encoder, "synchronizeResource:", buffer);
+}
+
+template <typename T>
+inline void end_encoding(T *encoder) {
+  static_assert(std::is_same_v<T, MTLComputeCommandEncoder> ||
+                std::is_same_v<T, MTLBlitCommandEncoder>);
   mac::call(encoder, "endEncoding");
 }
 
-nsobj_unique_ptr<MTLBuffer> new_mtl_buffer(MTLDevice *device, size_t length);
-
+// The created MTLBuffer has its storege mode being .manged.
+// API ref:
+// https://developer.apple.com/documentation/metal/mtldevice/1433382-makebuffer
+//
+// We initially used .shared storage mode, meaning the GPU and CPU shared the
+// system memory. This turned out to be slow as page fault on GPU was very
+// costly. By switching to .managed mode, on GPUs with discrete memory model,
+// the data will reside in both GPU's VRAM and CPU's system RAM. This made the
+// GPU memory access much faster. But we will need to manually synchronize the
+// buffer resources between CPU and GPU.
+//
+// See also:
+// https://developer.apple.com/documentation/metal/synchronizing_a_managed_resource
+// https://developer.apple.com/documentation/metal/setting_resource_storage_modes/choosing_a_resource_storage_mode_in_macos
 nsobj_unique_ptr<MTLBuffer> new_mtl_buffer_no_copy(MTLDevice *device,
                                                    void *ptr,
                                                    size_t length);
@@ -121,6 +146,8 @@ inline void wait_until_completed(MTLCommandBuffer *cmd_buffer) {
 inline void *mtl_buffer_contents(MTLBuffer *buffer) {
   return mac::cast_call<void *>(buffer, "contents");
 }
+
+void did_modify_range(MTLBuffer *buffer, size_t location, size_t length);
 
 size_t get_max_total_threads_per_threadgroup(
     MTLComputePipelineState *pipeline_state);

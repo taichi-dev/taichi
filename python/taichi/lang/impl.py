@@ -79,6 +79,7 @@ def wrap_scalar(x):
 @taichi_scope
 def subscript(value, *indices):
     import numpy as np
+    _taichi_skip_traceback = 1
     if isinstance(value, np.ndarray):
         return value.__getitem__(*indices)
 
@@ -99,17 +100,20 @@ def subscript(value, *indices):
     else:
         if isinstance(indices,
                       tuple) and len(indices) == 1 and indices[0] is None:
-            indices_expr_group = make_expr_group()
-        else:
-            indices_expr_group = make_expr_group(*indices)
+            indices = []
+        indices_expr_group = make_expr_group(*indices)
         tensor_dim = int(value.ptr.get_attribute("dim"))
         index_dim = indices_expr_group.size()
-        assert tensor_dim == index_dim, f'Tensor with dim {tensor_dim} accessed with indices of dim {index_dim}'
+        if tensor_dim != index_dim:
+            raise IndexError(
+                f'Tensor with dim {tensor_dim} accessed with indices of dim {index_dim}'
+            )
         return Expr(taichi_lang_core.subscript(value.ptr, indices_expr_group))
 
 
 @taichi_scope
 def chain_compare(comparators, ops):
+    _taichi_skip_traceback = 1
     assert len(comparators) == len(ops) + 1, \
       f'Chain comparison invoked with {len(comparators)} comparators but {len(ops)} operators'
     ret = True
@@ -150,7 +154,6 @@ class PyTaichi:
         self.target_tape = None
         self.inside_complex_kernel = False
         self.kernels = kernels or []
-        Expr.materialize_layout_callback = self.materialize
 
     def get_num_compiled_functions(self):
         return len(self.compiled_functions) + len(self.compiled_grad_functions)
@@ -169,15 +172,10 @@ class PyTaichi:
         if self.prog is None:
             self.prog = taichi_lang_core.Program()
 
-    def try_materialize(self):
-        if not Expr.layout_materialized:
-            Expr.materialize_layout_callback()
-
     def materialize(self):
         if self.materialized:
             return
         self.create_program()
-        Expr.layout_materialized = True
 
         def layout():
             for func in self.layout_functions:
@@ -195,8 +193,7 @@ class PyTaichi:
         if self.prog:
             self.prog.finalize()
             self.prog = None
-        Expr.materialize_layout_callback = None
-        Expr.layout_materialized = False
+        self.materialized = False
 
     def get_tape(self, loss=None):
         from .tape import Tape
@@ -219,20 +216,24 @@ def get_runtime():
 
 @taichi_scope
 def make_constant_expr(val):
-    if isinstance(val, int):
+    import numpy as np
+    _taichi_skip_traceback = 1
+    if isinstance(val, (int, np.integer)):
         if pytaichi.default_ip == i32:
             return Expr(taichi_lang_core.make_const_expr_i32(val))
         elif pytaichi.default_ip == i64:
             return Expr(taichi_lang_core.make_const_expr_i64(val))
         else:
             assert False
-    else:
+    elif isinstance(val, (float, np.floating, np.ndarray)):
         if pytaichi.default_fp == f32:
             return Expr(taichi_lang_core.make_const_expr_f32(val))
         elif pytaichi.default_fp == f64:
             return Expr(taichi_lang_core.make_const_expr_f64(val))
         else:
             assert False
+    else:
+        raise ValueError(f'Bad constant scalar expression: {type(val)}')
 
 
 def reset():
@@ -245,11 +246,14 @@ def reset():
     taichi_lang_core.reset_default_compile_config()
 
 
+@taichi_scope
 def static_print(*args, __p=print, **kwargs):
     __p(*args, **kwargs)
 
 
+# we don't add @taichi_scope decorator for @ti.pyfunc to work
 def static_assert(cond, msg=None):
+    _taichi_skip_traceback = 1
     if msg is not None:
         assert cond, msg
     else:
@@ -283,6 +287,7 @@ root = Root()
 
 @python_scope
 def var(dt, shape=None, offset=None, needs_grad=False):
+    _taichi_skip_traceback = 1
     if isinstance(shape, numbers.Number):
         shape = (shape, )
 
@@ -292,13 +297,20 @@ def var(dt, shape=None, offset=None, needs_grad=False):
     if shape is not None and offset is not None:
         assert len(shape) == len(
             offset
-        ), f'The dimensionality of shape and offset must be the same  (f{len(shape)} != f{len(offset)})'
+        ), f'The dimensionality of shape and offset must be the same  ({len(shape)} != {len(offset)})'
 
     assert (offset is not None and shape is None
             ) == False, f'The shape cannot be None when offset is being set'
 
-    assert not get_runtime(
-    ).materialized, 'No new variables can be declared after kernel invocations or Python-scope tensor accesses.'
+    if get_runtime().materialized:
+        raise RuntimeError(
+            "No new variables can be declared after materialization, i.e. kernel invocations "
+            "or Python-scope tensor accesses. I.e., data layouts must be specified before "
+            "any computation. Try appending ti.init() or ti.reset() "
+            "right after 'import taichi as ti' if you are using Jupyter notebook."
+        )
+
+    del _taichi_skip_traceback
 
     # primal
     x = Expr(taichi_lang_core.make_id_expr(""))
@@ -385,6 +397,7 @@ def ti_print(*vars, sep=' ', end='\n'):
 
 @taichi_scope
 def ti_int(var):
+    _taichi_skip_traceback = 1
     if hasattr(var, '__ti_int__'):
         return var.__ti_int__()
     else:
@@ -393,6 +406,7 @@ def ti_int(var):
 
 @taichi_scope
 def ti_float(var):
+    _taichi_skip_traceback = 1
     if hasattr(var, '__ti_float__'):
         return var.__ti_float__()
     else:
@@ -407,6 +421,7 @@ index = indices
 
 
 def static(x, *xs):
+    _taichi_skip_traceback = 1
     if len(xs):  # for python-ish pointer assign: x, y = ti.static(y, x)
         return [static(x)] + [static(x) for x in xs]
     import types
@@ -426,10 +441,9 @@ def static(x, *xs):
         )
 
 
+@taichi_scope
 def grouped(x):
     import taichi as ti
-    assert get_runtime(
-    ).inside_kernel, 'ti.grouped can only be used inside Taichi kernels'
     if isinstance(x, ti.ndrange):
         return x.grouped()
     else:

@@ -17,7 +17,6 @@ OffloadedStmt::OffloadedStmt(OffloadedStmt::TaskType task_type, SNode *snode)
   begin_value = 0;
   end_value = 0;
   step = 0;
-  block_dim = 0;
   reversed = false;
   device = get_current_program().config.arch;
   if (task_type != TaskType::listgen) {
@@ -76,6 +75,19 @@ std::unique_ptr<Stmt> OffloadedStmt::clone() const {
   if (body)
     new_stmt->body = body->clone();
   return new_stmt;
+}
+
+void OffloadedStmt::all_blocks_accept(IRVisitor *visitor) {
+  if (tls_prologue)
+    tls_prologue->accept(visitor);
+  if (bls_prologue)
+    bls_prologue->accept(visitor);
+  if (body)
+    body->accept(visitor);
+  if (bls_epilogue)
+    bls_epilogue->accept(visitor);
+  if (tls_epilogue)
+    tls_epilogue->accept(visitor);
 }
 
 int LoopIndexStmt::max_num_bits() const {

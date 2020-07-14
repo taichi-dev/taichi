@@ -8,6 +8,7 @@ import traceback
 # Scalar, basic data type
 class Expr(TaichiOperations):
     def __init__(self, *args, tb=None):
+        _taichi_skip_traceback = 1
         self.getter = None
         self.setter = None
         self.tb = tb
@@ -17,7 +18,11 @@ class Expr(TaichiOperations):
             elif isinstance(args[0], Expr):
                 self.ptr = args[0].ptr
                 self.tb = args[0].tb
+            elif is_taichi_class(args[0]):
+                raise ValueError('cannot initialize scalar expression from '
+                                 f'taichi class: {type(args[0])}')
             else:
+                # assume to be constant
                 arg = args[0]
                 try:
                     import numpy as np
@@ -25,8 +30,7 @@ class Expr(TaichiOperations):
                         arg = arg.dtype(arg)
                 except:
                     pass
-                from .impl import make_constant_expr
-                self.ptr = make_constant_expr(arg).ptr
+                self.ptr = impl.make_constant_expr(arg).ptr
         else:
             assert False
         if self.tb:
@@ -36,7 +40,7 @@ class Expr(TaichiOperations):
 
     @python_scope
     def __setitem__(self, key, value):
-        impl.get_runtime().try_materialize()
+        impl.get_runtime().materialize()
         self.initialize_accessor()
         if key is None:
             key = ()
@@ -49,7 +53,7 @@ class Expr(TaichiOperations):
 
     @python_scope
     def __getitem__(self, key):
-        impl.get_runtime().try_materialize()
+        impl.get_runtime().materialize()
         self.initialize_accessor()
         if key is None:
             key = ()
@@ -114,7 +118,7 @@ class Expr(TaichiOperations):
         from .meta import fill_tensor
         fill_tensor(self, val)
 
-    @deprecated('tensor.parent()', 'tensor.snode().parent()')
+    #@deprecated('tensor.parent()', 'tensor.snode().parent()')
     def parent(self, n=1):
         import taichi as ti
         p = self.snode().parent(n)

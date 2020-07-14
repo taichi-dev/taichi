@@ -11,6 +11,7 @@
 #include "taichi/gui/gui.h"
 #include "taichi/math/svd.h"
 #include "taichi/util/statistics.h"
+#include "taichi/util/action_recorder.h"
 
 TI_NAMESPACE_BEGIN
 
@@ -95,6 +96,7 @@ void export_lang(py::module &m) {
                      &CompileConfig::default_cpu_block_dim)
       .def_readwrite("default_gpu_block_dim",
                      &CompileConfig::default_gpu_block_dim)
+      .def_readwrite("max_block_dim", &CompileConfig::max_block_dim)
       .def_readwrite("verbose_kernel_launches",
                      &CompileConfig::verbose_kernel_launches)
       .def_readwrite("verbose", &CompileConfig::verbose)
@@ -108,6 +110,8 @@ void export_lang(py::module &m) {
       .def_readwrite("device_memory_fraction",
                      &CompileConfig::device_memory_fraction)
       .def_readwrite("fast_math", &CompileConfig::fast_math)
+      .def_readwrite("advanced_optimization",
+                     &CompileConfig::advanced_optimization)
       .def_readwrite("ad_stack_size", &CompileConfig::ad_stack_size)
       .def_readwrite("async", &CompileConfig::async)
       .def_readwrite("flatten_if", &CompileConfig::flatten_if);
@@ -246,6 +250,15 @@ void export_lang(py::module &m) {
   m.def("insert_append",
         [](SNode *snode, const ExprGroup &indices, const Expr &val) {
           return Append(snode, indices, val);
+        });
+
+  m.def("insert_external_func_call",
+        [](std::size_t func_addr, const ExprGroup &args,
+           const ExprGroup &outputs) {
+          auto expr = Expr::make<ExternalFuncCallExpression>(
+              (void *)func_addr, args.exprs, outputs.exprs);
+
+          current_ast_builder().insert(Stmt::make<FrontendEvalStmt>(expr));
         });
 
   m.def("insert_is_active", [](SNode *snode, const ExprGroup &indices) {
@@ -403,6 +416,8 @@ void export_lang(py::module &m) {
 
   m.def("expr_index", expr_index);
 
+  m.def("expr_assume_in_range", AssumeInRange);
+
 #define DEFINE_EXPRESSION_OP_UNARY(x) m.def("expr_" #x, expr_##x);
 
   m.def("expr_neg", [&](const Expr &e) { return -e; });
@@ -558,9 +573,25 @@ void export_lang(py::module &m) {
 
   m.def("print_stat", [] { stat.print(); });
 
+  m.def("record_action_hint", [](std::string content) {
+    ActionRecorder::get_instance().record("hint",
+                                          {ActionArg("content", content)});
+  });
+
+  m.def("start_recording", [](const std::string &fn) {
+    ActionRecorder::get_instance().start_recording(fn);
+  });
+
+  m.def("stop_recording",
+        []() { ActionRecorder::get_instance().stop_recording(); });
+
   // A temporary option which will be removed soon in the future
-  m.def("toggle_advanced_optimization",
-        [](bool option) { advanced_optimization = option; });
+  m.def("toggle_advanced_optimization", [](bool option) {
+    TI_WARN(
+        "'ti.core.toggle_advance_optimization(False)' is deprecated."
+        " Use 'ti.init(advanced_optimization=False)' instead");
+    get_current_program().config.advanced_optimization = option;
+  });
 }
 
 TI_NAMESPACE_END

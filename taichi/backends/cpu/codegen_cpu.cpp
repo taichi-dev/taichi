@@ -20,21 +20,15 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
 
   void create_offload_range_for(OffloadedStmt *stmt) override {
     int step = 1;
+
+    // In parallel for-loops reversing the order doesn't make sense.
+    // However, we may need to support serial offloaded range for's in the
+    // future, so it still makes sense to reverse the order here.
     if (stmt->reversed) {
       step = -1;
     }
 
-    auto xlogue_type = get_xlogue_function_type();
-    auto xlogue_ptr_type = llvm::PointerType::get(xlogue_type, 0);
-
-    llvm::Value *prologue = nullptr;
-    if (stmt->prologue) {
-      auto guard = get_function_creation_guard(get_xlogue_argument_types());
-      stmt->prologue->accept(this);
-      prologue = guard.body;
-    } else {
-      prologue = llvm::ConstantPointerNull::get(xlogue_ptr_type);
-    }
+    auto *tls_prologue = create_xlogue(stmt->tls_prologue);
 
     llvm::Function *body;
     {
@@ -51,21 +45,14 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
       body = guard.body;
     }
 
-    llvm::Value *epilogue = nullptr;
-    if (stmt->epilogue) {
-      auto guard = get_function_creation_guard(get_xlogue_argument_types());
-      stmt->epilogue->accept(this);
-      epilogue = guard.body;
-    } else {
-      epilogue = llvm::ConstantPointerNull::get(xlogue_ptr_type);
-    }
+    llvm::Value *epilogue = create_xlogue(stmt->tls_epilogue);
 
     auto [begin, end] = get_range_for_bounds(stmt);
     create_call(
         "cpu_parallel_range_for",
         {get_arg(0), tlctx->get_constant(stmt->num_cpu_threads), begin, end,
          tlctx->get_constant(step), tlctx->get_constant(stmt->block_dim),
-         prologue, body, epilogue, tlctx->get_constant(stmt->tls_size)});
+         tls_prologue, body, epilogue, tlctx->get_constant(stmt->tls_size)});
   }
 
   void visit(OffloadedStmt *stmt) override {
@@ -103,6 +90,33 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
     current_task->end();
     current_task = nullptr;
     current_offload = nullptr;
+  }
+
+  void visit(ExternalFuncCallStmt *stmt) override {
+    std::vector<llvm::Type *> arg_types;
+    std::vector<llvm::Value *> arg_values;
+
+    for (auto s : stmt->arg_stmts) {
+      TI_ASSERT(s->width() == 1);
+      arg_types.push_back(tlctx->get_data_type(s->ret_type.data_type));
+      arg_values.push_back(llvm_val[s]);
+    }
+
+    for (auto s : stmt->output_stmts) {
+      TI_ASSERT(s->width() == 1);
+      auto t = tlctx->get_data_type(s->ret_type.data_type);
+      auto ptr = llvm::PointerType::get(t, 0);
+      arg_types.push_back(ptr);
+      arg_values.push_back(llvm_val[s]);
+    }
+
+    auto func_type = llvm::FunctionType::get(
+        llvm::Type::getVoidTy(*llvm_context), arg_types, false);
+    auto func_ptr_type = llvm::PointerType::get(func_type, 0);
+
+    auto addr = tlctx->get_constant((std::size_t)stmt->func);
+    auto func = builder->CreateIntToPtr(addr, func_ptr_type);
+    builder->CreateCall(func, arg_values);
   }
 };
 

@@ -7,10 +7,19 @@ namespace cccp {
 
 class CCLayout {
  public:
-  CCLayout() {
+  CCLayout() = default;
+
+  std::string get_object() {
+    return obj_path;
   }
 
+  void compile();
+
   std::string source;
+
+ private:
+  std::string src_path;
+  std::string obj_path;
 };
 
 }  // namespace cccp

@@ -125,3 +125,20 @@ def test_advanced_store_elimination_in_loop():
 
     func()
     assert val[None] == 8
+
+
+@ti.all_archs
+def test_parallel_assignment():
+    mat = ti.var(ti.i32, shape=(3, 4))
+
+    @ti.kernel
+    def func():
+        c = 0
+        for i in ti.static(range(4)):
+            mat[0, c], mat[1, c], mat[2, c] = 1, 2, 3
+            c += 1
+
+    func()
+    for i in range(3):
+        for j in range(4):
+            assert mat[i, j] == i + 1

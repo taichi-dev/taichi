@@ -43,7 +43,7 @@ Installing Dependencies
 
   * `LLVM 10.0.0 for Linux <https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-linux.zip>`_
   * `LLVM 10.0.0 for Windows MSVC 2019 <https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-msvc2019.zip>`_
-  * `LLVM 8.0.1 for OS X <https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-macos.zip>`_
+  * `LLVM 10.0.0 for OS X <https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-macos.zip>`_
 
 .. note::
 

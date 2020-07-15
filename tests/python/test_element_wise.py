@@ -10,7 +10,7 @@ def _c_mod(a, b):
 
 @pytest.mark.parametrize('lhs_is_mat,rhs_is_mat', [(True, True), (True, False),
                                                    (False, True)])
-@ti.all_archs
+@ti.all_archs_with(fast_math=False)
 def test_binary_f(lhs_is_mat, rhs_is_mat):
     x = ti.Matrix(3, 2, ti.f32, 16)
     if lhs_is_mat:
@@ -145,7 +145,7 @@ def test_binary_i(is_mat):
 
 
 @pytest.mark.parametrize('rhs_is_mat', [True, False])
-@ti.all_archs
+@ti.all_archs_with(fast_math=False)
 def test_writeback_binary_f(rhs_is_mat):
     x = ti.Matrix(3, 2, ti.f32, 9)
     y = ti.Matrix(3, 2, ti.f32, ())

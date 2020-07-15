@@ -166,11 +166,6 @@ def bit_cast(obj, type):
         return Expr(ti_core.bits_cast(Expr(obj).ptr, type))
 
 
-@deprecated('ti.sqr(x)', 'x ** 2')
-def sqr(obj):
-    return obj * obj
-
-
 def _unary_operation(taichi_op, python_op, a):
     _taichi_skip_traceback = 1
     if is_taichi_expr(a):

@@ -52,6 +52,7 @@ The Taichi Programming Language
    dev_install
    contributor_guide
    utilities
+   profiler
    cpp_style
    internal
    taichicon
@@ -62,6 +63,7 @@ The Taichi Programming Language
    :caption: Miscellaneous
    :maxdepth: 3
 
+   faq
    gui
    debugging
    extension_libraries
@@ -76,4 +78,3 @@ The Taichi Programming Language
    :maxdepth: 3
 
    legacy_installation
-   faq

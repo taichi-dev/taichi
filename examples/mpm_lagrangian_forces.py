@@ -1,5 +1,4 @@
 import taichi as ti
-import os
 
 ti.init(arch=ti.gpu)
 
@@ -18,21 +17,14 @@ p_vol = 1
 mu = 1
 la = 1
 
-scalar = lambda: ti.var(dt=real)
-vec = lambda: ti.Vector(dim, dt=real)
-mat = lambda: ti.Matrix(dim, dim, dt=real)
-
-x, v, C = vec(), vec(), mat()
-grid_v, grid_m = vec(), scalar()
-restT = mat()
-total_energy = scalar()
-vertices = ti.var(ti.i32)
-
-ti.root.dense(ti.k, n_particles).place(x, x.grad, v, C)
-ti.root.dense(ti.ij, n_grid).place(grid_v, grid_m)
-ti.root.dense(ti.i, n_elements).place(restT, restT.grad)
-ti.root.dense(ti.ij, (n_elements, 3)).place(vertices)
-ti.root.place(total_energy, total_energy.grad)
+x = ti.Vector(dim, dt=ti.f32, shape=n_particles, needs_grad=True)
+v = ti.Vector(dim, dt=ti.f32, shape=n_particles)
+C = ti.Matrix(dim, dim, dt=ti.f32, shape=n_particles)
+grid_v = ti.Vector(dim, dt=ti.f32, shape=(n_grid, n_grid))
+grid_m = ti.var(dt=ti.f32, shape=(n_grid, n_grid))
+restT = ti.Matrix(dim, dim, dt=ti.f32, shape=n_particles, needs_grad=True)
+total_energy = ti.var(ti.f32, shape=(), needs_grad=True)
+vertices = ti.var(ti.i32, shape=(n_elements, 3))
 
 
 @ti.func
@@ -73,12 +65,12 @@ def p2g():
         affine = p_mass * C[p]
         for i in ti.static(range(3)):
             for j in ti.static(range(3)):
-                offset = ti.Vector([i, j])
-                dpos = (ti.cast(ti.Vector([i, j]), ti.f32) - fx) * dx
-                weight = w[i](0) * w[j](1)
-                grid_v[base + offset] += weight * (p_mass * v[p] - x.grad[p] +
-                                                   affine @ dpos)
-                grid_m[base + offset] += weight * p_mass
+                I = ti.Vector([i, j])
+                dpos = (float(I) - fx) * dx
+                weight = w[i].x * w[j].y
+                grid_v[base + I] += weight * (p_mass * v[p] - x.grad[p] +
+                                              affine @ dpos)
+                grid_m[base + I] += weight * p_mass
 
 
 bound = 3
@@ -90,23 +82,23 @@ def grid_op():
         if grid_m[i, j] > 0:
             inv_m = 1 / grid_m[i, j]
             grid_v[i, j] = inv_m * grid_v[i, j]
-            grid_v(1)[i, j] -= dt * 9.8
+            grid_v[i, j].y -= dt * 9.8
 
-            # center sticky circle
+            # center collision circle
             dist = ti.Vector([i * dx - 0.5, j * dx - 0.5])
             if dist.norm_sqr() < 0.005:
                 dist = dist.normalized()
-                grid_v[i, j] -= dist * grid_v[i, j].dot(dist)
+                grid_v[i, j] -= dist * min(0, grid_v[i, j].dot(dist))
 
             # box
-            if i < bound and grid_v(0)[i, j] < 0:
-                grid_v(0)[i, j] = 0
-            if i > n_grid - bound and grid_v(0)[i, j] > 0:
-                grid_v(0)[i, j] = 0
-            if j < bound and grid_v(1)[i, j] < 0:
-                grid_v(1)[i, j] = 0
-            if j > n_grid - bound and grid_v(1)[i, j] > 0:
-                grid_v(1)[i, j] = 0
+            if i < bound and grid_v[i, j].x < 0:
+                grid_v[i, j].x = 0
+            if i > n_grid - bound and grid_v[i, j].x > 0:
+                grid_v[i, j].x = 0
+            if j < bound and grid_v[i, j].y < 0:
+                grid_v[i, j].y = 0
+            if j > n_grid - bound and grid_v[i, j].y > 0:
+                grid_v[i, j].y = 0
 
 
 @ti.kernel
@@ -120,9 +112,10 @@ def g2p():
 
         for i in ti.static(range(3)):
             for j in ti.static(range(3)):
-                dpos = ti.cast(ti.Vector([i, j]), ti.f32) - fx
-                g_v = grid_v[base(0) + i, base(1) + j]
-                weight = w[i](0) * w[j](1)
+                I = ti.Vector([i, j])
+                dpos = float(I) - fx
+                g_v = grid_v[base + I]
+                weight = w[i].x * w[j].y
                 new_v += weight * g_v
                 new_C += 4 * weight * g_v.outer_product(dpos) * inv_dx
 

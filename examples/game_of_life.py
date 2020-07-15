@@ -1,64 +1,96 @@
+# Game of Life written in 100 lines of Taichi
+# In memory of John Horton Conway (1937 - 2020)
+
 import taichi as ti
 import numpy as np
 
-ti.init(arch=ti.gpu)
+ti.init()
 
-n = 100
-celsiz = 4
-res = n * celsiz
-x = ti.var(ti.i32, shape=(n, n))
-c = ti.var(ti.i32, shape=(n, n))
-img = ti.var(ti.i32, shape=(res, res))
+n = 64
+cell_size = 8
+img_size = n * cell_size
+alive = ti.var(ti.i32, shape=(n, n))  # alive = 1, dead = 0
+count = ti.var(ti.i32, shape=(n, n))  # count of neighbours
+img = ti.var(ti.f32, shape=(img_size, img_size))  # image to be displayed
 
 
 @ti.func
-def count(i, j):
-    return (x[i - 1, j] + x[i + 1, j] + x[i, j - 1] + x[i, j + 1] +
-            x[i - 1, j - 1] + x[i + 1, j - 1] + x[i - 1, j + 1] +
-            x[i + 1, j + 1])
+def get_count(i, j):
+    return (alive[i - 1, j] + alive[i + 1, j] + alive[i, j - 1] +
+            alive[i, j + 1] + alive[i - 1, j - 1] + alive[i + 1, j - 1] +
+            alive[i - 1, j + 1] + alive[i + 1, j + 1])
+
+
+# See https://www.conwaylife.com/wiki/Cellular_automaton#Rules for more rules
+B, S = [3], [2, 3]
+#B, S = [2], [0]
+
+
+@ti.func
+def calc_rule(a, c):
+    if a == 0:
+        for t in ti.static(B):
+            if c == t:
+                a = 1
+    elif a == 1:
+        a = 0
+        for t in ti.static(S):
+            if c == t:
+                a = 1
+    return a
 
 
 @ti.kernel
 def run():
-    for i, j in ti.ndrange((1, n - 1), (1, n - 1)):
-        c[i, j] = count(i, j)
-    for i, j in ti.ndrange((1, n - 1), (1, n - 1)):
-        if x[i, j] == 0:
-            if c[i, j] == 3:
-                x[i, j] = 1
-        elif c[i, j] != 2 and c[i, j] != 3:
-            x[i, j] = 0
+    for i, j in alive:
+        count[i, j] = get_count(i, j)
+
+    for i, j in alive:
+        alive[i, j] = calc_rule(alive[i, j], count[i, j])
 
 
 @ti.kernel
 def init():
-    for i, j in x:
+    for i, j in alive:
         if ti.random() > 0.8:
-            x[i, j] = 1
+            alive[i, j] = 1
         else:
-            x[i, j] = 0
+            alive[i, j] = 0
 
 
 @ti.kernel
 def render():
-    for i, j in x:
-        c = 0
-        if x[i, j] != 0: c = 255
-        for u, v in ti.ndrange(celsiz, celsiz):
-            img[i * celsiz + u, j * celsiz + v] = c
+    for i, j in alive:
+        for u, v in ti.static(ti.ndrange(cell_size, cell_size)):
+            img[i * cell_size + u, j * cell_size + v] = alive[i, j]
 
+
+gui = ti.GUI('Game of Life', (img_size, img_size))
+
+print('[Hint] Press `r` to reset')
+print('[Hint] Press SPACE to pause')
+print('[Hint] Click LMB, RMB and drag to add alive / dead cells')
 
 init()
-gui = ti.GUI('Game of Life', (res, res))
-print('Press the spacebar to run.')
-
-render()
+paused = False
 while gui.running:
-    while gui.get_event(ti.GUI.PRESS):
-        if gui.event.key == ti.GUI.SPACE:
-            run()
-            render()
-        elif gui.event.key == ti.GUI.ESCAPE:
+    for e in gui.get_events(gui.PRESS, gui.MOTION):
+        if e.key == gui.ESCAPE:
             gui.running = False
-    gui.set_image(img.to_numpy().astype(np.uint8))
+        elif e.key == gui.SPACE:
+            paused = not paused
+        elif e.key == 'r':
+            alive.fill(0)
+
+    if gui.is_pressed(gui.LMB, gui.RMB):
+        mx, my = gui.get_cursor_pos()
+        alive[int(mx * n), int(my * n)] = gui.is_pressed(gui.LMB)
+        paused = True
+
+    if not paused and gui.frame % 4 == 0:
+        run()
+
+    render()
+
+    gui.set_image(img)
     gui.show()

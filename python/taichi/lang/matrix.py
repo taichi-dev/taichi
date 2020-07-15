@@ -170,7 +170,7 @@ class Matrix(TaichiOperations):
             other = Matrix(other)
         if not isinstance(other, Matrix):
             ret = self.empty_copy()
-            ret.entries = [other for _ in other.entries]
+            ret.entries = [other for _ in ret.entries]
             other = ret
         assert self.m == other.m and self.n == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
         return other

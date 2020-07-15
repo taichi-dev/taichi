@@ -2,29 +2,29 @@ import taichi as ti
 import pytest
 
 
-@ti.must_throw(RuntimeError)
+@ti.require(ti.extension.assertion)
+@ti.all_archs_with(debug=True, gdb_trigger=False)
 def test_assert_minimal():
-    ti.init(debug=True)
     ti.set_gdb_trigger(False)
 
     @ti.kernel
     def func():
         assert 0
 
-    func()
+    with pytest.raises(RuntimeError):
+        func()
 
 
-@ti.must_throw(RuntimeError)
+@ti.require(ti.extension.assertion)
+@ti.all_archs_with(debug=True, gdb_trigger=False)
 def test_assert_basic():
-    ti.init(debug=True)
-    ti.set_gdb_trigger(False)
-
     @ti.kernel
     def func():
         x = 20
         assert 10 <= x < 20
 
-    func()
+    with pytest.raises(RuntimeError):
+        func()
 
 
 @ti.all_archs_with(debug=True, gdb_trigger=False)
@@ -38,10 +38,9 @@ def test_assert_message():
         func()
 
 
+@ti.require(ti.extension.assertion)
+@ti.all_archs_with(debug=True, gdb_trigger=False)
 def test_assert_ok():
-    ti.init(debug=True)
-    ti.set_gdb_trigger(False)
-
     @ti.kernel
     def func():
         x = 20

@@ -31,9 +31,10 @@
 // clang-format off
 METAL_BEGIN_RUNTIME_UTILS_DEF
 STR(
-    using PtrOffset = int32_t; constant constexpr int kAlignment = 8;
+    using PtrOffset = int32_t;
+    constant constexpr int kAlignment = 8;
 
-    [[maybe_unused]] PtrOffset mtl_memalloc_alloc(device MemoryAllocator * ma,
+    [[maybe_unused]] PtrOffset mtl_memalloc_alloc(device MemoryAllocator *ma,
                                                   int32_t size) {
       size = ((size + kAlignment - 1) / kAlignment) * kAlignment;
       return atomic_fetch_add_explicit(&ma->next, size,
@@ -93,19 +94,22 @@ STR(
         }
       }
 
-      template <typename T>
-      T get(int i) {
+      device char *get_ptr(int i) {
         const int chunk_idx = i >> lm_data->log2_num_elems_per_chunk;
         const PtrOffset chunk_ptr_offs = atomic_load_explicit(
             lm_data->chunks + chunk_idx, metal::memory_order_relaxed);
-        return *reinterpret_cast<device T *>(
-            get_elem_from_chunk(i, chunk_ptr_offs));
+        return get_elem_from_chunk(i, chunk_ptr_offs);
+      }
+
+      template <typename T>
+      T get(int i) {
+        return *reinterpret_cast<device T *>(get_ptr(i));
       }
 
      private:
       PtrOffset ensure_chunk(int i) {
         PtrOffset offs = 0;
-        const int kChunkBytes =
+        const int chunk_bytes =
             (lm_data->element_stride << lm_data->log2_num_elems_per_chunk);
 
         while (true) {
@@ -117,7 +121,7 @@ STR(
               lm_data->chunks + i, &stored, 1, metal::memory_order_relaxed,
               metal::memory_order_relaxed);
           if (is_me) {
-            offs = mtl_memalloc_alloc(mem_alloc, kChunkBytes);
+            offs = mtl_memalloc_alloc(mem_alloc, chunk_bytes);
             atomic_store_explicit(lm_data->chunks + i, offs,
                                   metal::memory_order_relaxed);
             break;
@@ -163,8 +167,8 @@ STR(
       if (meta.type == SNodeMeta::Dynamic) {
         device auto *ptr = meta_ptr_begin;
         // Unfortunately we cannot check if i + 1 is in bound
-        atomic_store_explicit(ptr, (uint32_t)(i + 1),
-                              metal::memory_order_relaxed);
+        atomic_fetch_max_explicit(ptr, (uint32_t)(i + 1),
+                                  metal::memory_order_relaxed);
         return;
       }
       device auto *ptr = meta_ptr_begin + (i / (sizeof(uint32_t) * 8));

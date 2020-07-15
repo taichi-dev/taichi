@@ -16,7 +16,7 @@ Declaration
 As global tensors of vectors
 ++++++++++++++++++++++++++++
 
-.. function:: ti.Vector(n, dt, shape = None, offset = None)
+.. function:: ti.Vector.var(n, dt, shape = None, offset = None)
 
     :parameter n: (scalar) the number of components in the vector
     :parameter dt: (DataType) data type of the components
@@ -27,7 +27,7 @@ As global tensors of vectors
     ::
 
         # Python-scope
-        a = ti.Vector(3, dt=ti.f32, shape=(5, 4))
+        a = ti.Vector.var(3, dt=ti.f32, shape=(5, 4))
 
 .. note::
 
@@ -122,6 +122,34 @@ Methods
     Set ``eps = 1e-5`` for example, to safe guard the operator's gradient on zero vectors during differentiable programming.
 
 
+.. function:: a.norm_sqr()
+
+    :parameter a: (Vector)
+    :return: (scalar) the square of the magnitude / length / norm of vector
+
+    For example,
+    ::
+
+        a = ti.Vector([3, 4])
+        a.norm_sqr() # 3*3 + 4*4 = 25
+
+    ``a.norm_sqr()`` is equivalent to ``a.dot(a)``
+
+
+.. function:: a.normalized()
+
+    :parameter a: (Vector)
+    :return: (Vector) the normalized / unit vector of ``a``
+
+    For example,
+    ::
+
+        a = ti.Vector([3, 4])
+        a.normalized() # [3 / 5, 4 / 5]
+
+    ``a.normalized()`` is equivalent to ``a / a.norm()``.
+
+
 .. function:: a.dot(b)
 
     :parameter a: (Vector)
@@ -205,8 +233,7 @@ Methods
 
     ::
         # Python-scope
-        a = ti.Vector(3, dt=ti.f32, shape=())
+        a = ti.Vector.var(3, dt=ti.f32, shape=())
         a.n  # 3
-
 
 TODO: add element wise operations docs

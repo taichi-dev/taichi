@@ -514,7 +514,7 @@ class Matrix(TaichiOperations):
     def transposed(a):
         return a.transpose()
 
-    #@deprecated('a.T()', 'a.transpose()')
+    @deprecated('a.T()', 'a.transpose()')
     def T(self):
         return self.transpose()
 

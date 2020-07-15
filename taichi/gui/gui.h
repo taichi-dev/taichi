@@ -488,6 +488,7 @@ class GUI : public GUIBase {
   Vector2i cursor_pos;
   bool button_status[3];
   int widget_height;
+  std::vector<std::unique_ptr<float>> widget_values;
 
   void set_mouse_pos(int x, int y) {
     cursor_pos = Vector2i(x, y);

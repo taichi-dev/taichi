@@ -84,15 +84,17 @@ using InputBuffersMap = std::unordered_map<BufferEnum, MTLBuffer *>;
 class CompiledMtlKernelBase {
  public:
   struct Params {
-    const KernelAttributes *kernel_attribs;
     bool is_jit_evaluator;
+    const CompileConfig *config;
+    const KernelAttributes *kernel_attribs;
     MTLDevice *device;
     MTLFunction *mtl_func;
   };
 
   explicit CompiledMtlKernelBase(Params &params)
-      : is_jit_evalutor_(params.is_jit_evaluator),
-        kernel_attribs_(*params.kernel_attribs),
+      : kernel_attribs_(*params.kernel_attribs),
+        config_(params.config),
+        is_jit_evalutor_(params.is_jit_evaluator),
         pipeline_state_(
             new_compute_pipeline_state_with_function(params.device,
                                                      params.mtl_func)) {
@@ -130,40 +132,52 @@ class CompiledMtlKernelBase {
       set_mtl_buffer(encoder.get(), b.first, /*offset=*/0, bi);
     }
 
-    const int native_block_dim =
-        get_max_total_threads_per_threadgroup(pipeline_state_.get());
-
-    int num_threads_per_group = 0;
-    // Sometimes it is helpful to limit the maximum GPU block dim for the
-    // kernels. E.g., when you are generating iPhone shaders on a Mac.
-    const int prescribed_block_dim =
-        (std::size_t)get_current_program().config.max_block_dim;
-    if (prescribed_block_dim != 0) {
-      num_threads_per_group = std::min(native_block_dim, prescribed_block_dim);
-    } else {
-      num_threads_per_group = native_block_dim;
-    }
-
-    const int num_groups =
-        ((num_threads + num_threads_per_group - 1) / num_threads_per_group);
-
-    const int dispatch_num_threads =
-        std::min(num_threads, num_threads_per_group);
-
+    const auto tgs = get_thread_grid_settings(num_threads);
     if (!is_jit_evalutor_) {
       ActionRecorder::get_instance().record(
           "launch_kernel",
           {ActionArg("kernel_name", kernel_attribs_.name),
-           ActionArg("num_groups", num_groups),
-           ActionArg("num_threads_per_group", dispatch_num_threads)});
+           ActionArg("num_threadgroups", tgs.num_threadgroups),
+           ActionArg("num_threads_per_group", tgs.num_threads_per_group)});
     }
 
-    dispatch_threadgroups(encoder.get(), num_groups, dispatch_num_threads);
+    dispatch_threadgroups(encoder.get(), tgs.num_threadgroups,
+                          tgs.num_threads_per_group);
     end_encoding(encoder.get());
   }
 
-  const bool is_jit_evalutor_;
+  struct ThreadGridSettings {
+    int num_threads_per_group;
+    int num_threadgroups;
+  };
+
+  ThreadGridSettings get_thread_grid_settings(int num_threads) {
+    int num_threads_per_group =
+        get_max_total_threads_per_threadgroup(pipeline_state_.get());
+    // Sometimes it is helpful to limit the maximum GPU block dim for the
+    // kernels. E.g., when you are generating iPhone shaders on a Mac.
+    const int prescribed_block_dim = config_->max_block_dim;
+    if (prescribed_block_dim > 0) {
+      num_threads_per_group =
+          std::min(num_threads_per_group, prescribed_block_dim);
+    }
+    // Cap by |num_threads| in case this is a very small kernel.
+    num_threads_per_group = std::min(num_threads_per_group, num_threads);
+
+    int num_threadgroups =
+        ((num_threads + num_threads_per_group - 1) / num_threads_per_group);
+    // TODO(k-ye): Make sure |saturating_grid_dim| is configurable in ti.init()
+    // before enabling this.
+    // const int prescribed_grid_dim = config_->saturating_grid_dim;
+    // if (prescribed_grid_dim > 0) {
+    //   num_threadgroups = std::min(num_threadgroups, prescribed_grid_dim);
+    // }
+    return {num_threads_per_group, num_threadgroups};
+  }
+
   KernelAttributes kernel_attribs_;
+  const CompileConfig *const config_;
+  const bool is_jit_evalutor_;
   nsobj_unique_ptr<MTLComputePipelineState> pipeline_state_;
 };
 
@@ -253,6 +267,7 @@ class CompiledTaichiKernel {
     MTLDevice *device;
     MemoryPool *mem_pool;
     KernelProfilerBase *profiler;
+    const CompileConfig *compile_config;
   };
 
   CompiledTaichiKernel(Params params)
@@ -260,8 +275,8 @@ class CompiledTaichiKernel {
         ctx_attribs(*params.ctx_attribs) {
     auto *const device = params.device;
     auto kernel_lib = new_library_with_source(
-        device, params.mtl_source_code,
-        infer_msl_version(ti_kernel_attribs.used_features));
+        device, params.mtl_source_code, params.compile_config->fast_math,
+        infer_msl_version(params.ti_kernel_attribs->used_features));
     if (kernel_lib == nullptr) {
       TI_ERROR("Failed to compile Metal kernel! Generated code:\n\n{}",
                params.mtl_source_code);
@@ -286,6 +301,7 @@ class CompiledTaichiKernel {
         RuntimeListOpsMtlKernel::Params kparams;
         kparams.kernel_attribs = &ka;
         kparams.is_jit_evaluator = ti_kernel_attribs.is_jit_evaluator;
+        kparams.config = params.compile_config;
         kparams.device = device;
         kparams.mtl_func = mtl_func.get();
         kparams.mem_pool = params.mem_pool;
@@ -295,6 +311,7 @@ class CompiledTaichiKernel {
         UserMtlKernel::Params kparams;
         kparams.kernel_attribs = &ka;
         kparams.is_jit_evaluator = ti_kernel_attribs.is_jit_evaluator;
+        kparams.config = params.compile_config;
         kparams.device = device;
         kparams.mtl_func = mtl_func.get();
         kernel = std::make_unique<UserMtlKernel>(kparams);
@@ -574,6 +591,7 @@ class KernelManager::Impl {
     params.device = device_.get();
     params.mem_pool = mem_pool_;
     params.profiler = profiler_;
+    params.compile_config = config_;
     compiled_taichi_kernels_[taichi_kernel_name] =
         std::make_unique<CompiledTaichiKernel>(params);
     TI_DEBUG("Registered Taichi kernel <{}>", taichi_kernel_name);

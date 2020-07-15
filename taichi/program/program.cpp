@@ -2,7 +2,7 @@
 
 #include "program.h"
 
-#include "taichi/common/task.h"
+#include "taichi/program/extension.h"
 #include "taichi/backends/metal/api.h"
 #include "taichi/backends/opengl/opengl_api.h"
 #if defined(TI_WITH_CUDA)
@@ -153,11 +153,10 @@ Program::Program(Arch desired_arch) {
   if (config.debug)
     config.check_out_of_bound = true;
 
-  if (!arch_is_cpu(config.arch)) {
+  if (!is_extension_supported(config.arch, Extension::assertion)) {
     if (config.check_out_of_bound) {
-      TI_WARN(
-          "Out-of-bound access checking is only implemented on CPUs backends "
-          "for now.");
+      TI_WARN("Out-of-bound access checking is not supported on arch={}",
+              arch_name(config.arch));
       config.check_out_of_bound = false;
     }
   }
@@ -394,7 +393,6 @@ void Program::materialize_layout() {
 }
 
 void Program::check_runtime_error() {
-  TI_ASSERT(arch_is_cpu(config.arch));
   synchronize();
   auto tlctx = llvm_context_host.get();
   auto runtime_jit_module = tlctx->runtime_jit_module;

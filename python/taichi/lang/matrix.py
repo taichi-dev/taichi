@@ -805,11 +805,13 @@ class Matrix(TaichiOperations):
         _taichi_skip_traceback = 1
         return cls.field(n=n, m=m, dtype=dtype, shape=shape, offset=offset, **kwargs)
 
+    @classmethod
     def _Vector_field(cls, n, dtype=None, shape=None, offset=None, **kwargs):
         '''ti.Vector.field'''
         _taichi_skip_traceback = 1
         return cls.field(n=n, m=1, dtype=dtype, shape=shape, offset=offset, **kwargs)
 
+    @classmethod
     #@deprecated('ti.Vector.var', 'ti.Vector.field')
     def _Vector_var(cls, n, dt=None, shape=None, offset=None, **kwargs):
         '''ti.Vector.var'''
@@ -911,7 +913,7 @@ class Matrix(TaichiOperations):
 
 # TODO: deprecate ad-hoc use ti.Matrix() as global (#1500:2.2/2)
 def Vector(n, dt=None, shape=None, offset=None, **kwargs):
-    return Matrix(n, 1, dt=dt, shape=shape, offset=offset, **kwargs)
+    return Matrix(n=n, m=1, dt=dt, shape=shape, offset=offset, **kwargs)
 
 
 Vector.var = Matrix._Vector_var

@@ -23,7 +23,7 @@ Profiling APIs
 
 There are 3 ways to use this profiler:
 
-1. ``ti.profiler.start()`` and ``ti.profiler.stop()``, these are the most fundemental APIs:
+1. ``ti.profiler.start()`` and ``ti.profiler.stop()`` are the most fundemental APIs:
 
 .. code-block:: python
 
@@ -174,7 +174,7 @@ will obtain:
 Profiler options
 ****************
 
-Due to Taichi's JIT mechinism, a kernel will be **compiled** on its first invocation.
+Due to Taichi's JIT mechanism, a kernel will be **compiled** on its first invocation.
 So the first record will be extremely long compared to the following records since it
 **involves both compile time and execution time**, e.g.:
 
@@ -205,7 +205,7 @@ Set ``warmup=5`` for example, will **discard** the first 5 record entries.
 I.e. discard the kernel compile time and possible TLB and cache misses on start up.
 
 
-Check out `misc/mpm99_timed.py <https://github.com/taichi-dev/taichi/blob/master/misc/mpm99_timed.py>`_ for sum up usage example.
+Check out `misc/mpm99_timed.py <https://github.com/taichi-dev/taichi/blob/master/misc/mpm99_timed.py>`_ for a summary example.
 
 
 .. warning::

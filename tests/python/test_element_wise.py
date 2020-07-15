@@ -338,14 +338,3 @@ def test_ternary_i(is_mat):
     w = w.to_numpy()
     assert allclose(x[0],
                     np.int32(np.bool_(y)) * z + np.int32(1 - np.bool_(y)) * w)
-
-
-import pytest_diff
-
-
-@pytest_diff.registry.register(np.ndarray)
-def diff(x, y):
-    return [
-        f'{x}',
-        f'{y}',
-    ]

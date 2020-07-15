@@ -139,6 +139,7 @@ std::string convert(std::string new_name) {
 
 std::string JITSessionCUDA::compile_module_to_ptx(
     std::unique_ptr<llvm::Module> &module) {
+  TI_AUTO_PROF
   // Part of this function is borrowed from Halide::CodeGen_PTX_Dev.cpp
   // TODO: enabling this leads to LLVM error "comdat global value has private
   // linkage"
@@ -270,13 +271,19 @@ std::string JITSessionCUDA::compile_module_to_ptx(
 
   TI_ERROR_IF(fail, "Failed to set up passes to emit PTX source\n");
 
-  // Run optimization passes
-  function_pass_manager.doInitialization();
-  for (llvm::Module::iterator i = module->begin(); i != module->end(); i++) {
-    function_pass_manager.run(*i);
+  {
+    TI_PROFILER("llvm_function_pass");
+    function_pass_manager.doInitialization();
+    for (llvm::Module::iterator i = module->begin(); i != module->end(); i++)
+      function_pass_manager.run(*i);
+
+    function_pass_manager.doFinalization();
   }
-  function_pass_manager.doFinalization();
-  module_pass_manager.run(*module);
+
+  {
+    TI_PROFILER("llvm_module_pass");
+    module_pass_manager.run(*module);
+  }
 
   if (get_current_program().config.print_kernel_llvm_ir_optimized) {
     static FileSequenceWriter writer(

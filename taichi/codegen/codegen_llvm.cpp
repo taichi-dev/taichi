@@ -1543,8 +1543,7 @@ void CodeGenLLVM::visit(RangeAssumptionStmt *stmt) {
   llvm_val[stmt] = llvm_val[stmt->input];
 }
 
-FunctionType CodeGenLLVM::compile_module_to_executable() {
-  TI_AUTO_PROF
+void CodeGenLLVM::eliminate_unused_functions() {
   TaichiLLVMContext::eliminate_unused_functions(
       module.get(), [&](std::string func_name) {
         for (auto &task : offloaded_tasks) {
@@ -1553,6 +1552,12 @@ FunctionType CodeGenLLVM::compile_module_to_executable() {
         }
         return false;
       });
+}
+
+FunctionType CodeGenLLVM::compile_module_to_executable() {
+  TI_AUTO_PROF
+  eliminate_unused_functions();
+
   tlctx->add_module(std::move(module));
 
   for (auto &task : offloaded_tasks) {

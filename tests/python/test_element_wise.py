@@ -292,3 +292,49 @@ def test_unary():
     assert allclose(xf[11], np.exp(yf))
     assert allclose(xf[12], np.log(yf))
     assert allclose(xf[13], 1 / np.sqrt(yf))
+
+
+@pytest.mark.parametrize('is_mat', [(True, True, True), (True, False, False),
+                                    (False, True, False), (False, False, True),
+                                    (False, True, True)])
+@ti.all_archs
+def test_ternary_i(is_mat):
+    cond_is_mat, lhs_is_mat, rhs_is_mat = is_mat
+    x = ti.Matrix(3, 2, ti.i32, 1)
+    if cond_is_mat:
+        y = ti.Matrix(3, 2, ti.i32, ())
+    else:
+        y = ti.var(ti.i32, ())
+    if lhs_is_mat:
+        z = ti.Matrix(3, 2, ti.i32, ())
+    else:
+        z = ti.var(ti.i32, ())
+    if rhs_is_mat:
+        w = ti.Matrix(3, 2, ti.i32, ())
+    else:
+        w = ti.var(ti.i32, ())
+
+    if cond_is_mat:
+        y.from_numpy(np.array([[0, 2], [9, 0], [7, 4]], np.int32))
+    else:
+        y[None] = 0
+    if lhs_is_mat:
+        z.from_numpy(np.array([[4, 5], [6, 3], [9, 2]], np.int32))
+    else:
+        z[None] = 5
+    if rhs_is_mat:
+        w.from_numpy(np.array([[4, 5], [6, 3], [9, 2]], np.int32))
+    else:
+        w[None] = 4
+
+    @ti.kernel
+    def func():
+        x[0] = z[None] if y[None] else w[None]
+
+    func()
+    x = x.to_numpy()
+    y = y.to_numpy()
+    z = z.to_numpy()
+    w = w.to_numpy()
+    assert allclose(x[0],
+                    np.int32(np.bool_(y)) * z + np.int32(1 - np.bool_(y)) * w)

@@ -55,7 +55,7 @@ class AccessAnalysis : public BasicStmtVisitor {
 
   void access(Stmt *stmt, AccessFlag flag) {
     if (!stmt->is<GlobalPtrStmt>())
-      return; // local alloca
+      return;  // local alloca
     auto ptr = stmt->as<GlobalPtrStmt>();
     for (int l = 0; l < stmt->width(); l++) {
       auto snode = ptr->snodes[l];

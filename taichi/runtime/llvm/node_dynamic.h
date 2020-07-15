@@ -16,6 +16,8 @@ STRUCT_FIELD(DynamicMeta, chunk_size);
 void Dynamic_activate(Ptr meta_, Ptr node_, int i) {
   auto meta = (DynamicMeta *)(meta_);
   auto node = (DynamicNode *)(node_);
+  if (i < node->n)
+    return;
   locked_task(Ptr(&node->lock), [&] {
     if (i < node->n)
       return;
@@ -45,7 +47,7 @@ void Dynamic_deactivate(Ptr meta_, Ptr node_) {
     locked_task(Ptr(&node->lock), [&] {
       node->n = 0;
       auto p_chunk_ptr = &node->ptr;
-      auto rt = (LLVMRuntime *)meta->context->runtime;
+      auto rt = meta->context->runtime;
       auto alloc = rt->node_allocators[meta->snode_id];
       while (*p_chunk_ptr) {
         alloc->recycle(*p_chunk_ptr);

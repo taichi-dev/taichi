@@ -132,6 +132,8 @@ class Offloader {
     auto offloaded_struct_for =
         Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::struct_for);
 
+    offloaded_struct_for->index_offsets = for_stmt->index_offsets;
+
     offloaded_struct_for->grid_dim = program->config.saturating_grid_dim;
 
     auto snode_num_elements = for_stmt->snode->max_num_elements();

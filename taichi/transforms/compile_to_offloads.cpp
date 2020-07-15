@@ -105,6 +105,7 @@ void compile_to_offloads(IRNode *ir,
   irpass::analysis::verify(ir);
 
   irpass::flag_access(ir);
+
   print("Access flagged II");
   irpass::analysis::verify(ir);
 
@@ -117,6 +118,9 @@ void compile_to_offloads(IRNode *ir,
     irpass::make_block_local(ir);
     print("Make block local");
   }
+
+  irpass::remove_range_assumption(ir);
+  print("Remove range assumption");
 
   if (lower_global_access) {
     irpass::lower_access(ir, true);

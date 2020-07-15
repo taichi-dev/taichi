@@ -32,6 +32,28 @@ setuptools.setup(name=project_name,
                      'setuptools',
                      'astor',
                  ],
+                 tests_requires=[  # To run test with Taichi:
+                     'pytest',
+                     'pytest-rerunfailures',
+                     'pytest-xdist',
+                     'autograd',
+                 ],
+                 extra_requires={
+                     'dev': {  # Required for Taichi developers:
+                         'GitPython',
+                         'coverage',
+                         'sphinx',
+                     },
+                     'torch': {  # Optional PyTorch support:
+                         'torch',
+                     },
+                     'shell': {  # To use Taichi in interactive shell:
+                         'dill',
+                     },
+                     'color': {  # To make Taichi output colorful:
+                         'colorama',
+                     },
+                 },
                  data_files=[('lib', data_files)],
                  keywords=['graphics', 'simulation'],
                  license='MIT',

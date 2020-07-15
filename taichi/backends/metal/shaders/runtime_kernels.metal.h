@@ -91,14 +91,16 @@ STR(
         const int child_idx = (ii % num_slots);
         const auto parent_elem = parent_list.get<ListgenElement>(parent_idx);
         ListgenElement child_elem;
-        child_elem.root_mem_offset = parent_elem.root_mem_offset +
-                                     child_idx * child_stride +
-                                     child_meta.mem_offset_in_parent;
+        child_elem.root_mem_offset =
+            parent_elem.root_mem_offset + child_idx * child_stride;
+        // We are testing the activation of *parent* cells, do not add the
+        // offset of the child within its parent cell here.
         if (is_active(root_addr + child_elem.root_mem_offset, parent_meta,
                       child_idx)) {
           refine_coordinates(parent_elem,
                              runtime->snode_extractors[parent_snode_id],
                              child_idx, &child_elem);
+          child_elem.root_mem_offset += child_meta.mem_offset_in_parent;
           child_list.append(child_elem);
         }
       }

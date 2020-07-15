@@ -12,6 +12,8 @@
 
 TLANG_NAMESPACE_BEGIN
 
+namespace {
+
 uint64 hash(IRNode *stmt) {
   TI_ASSERT(stmt);
   // TODO: upgrade this using IR comparisons
@@ -25,15 +27,29 @@ uint64 hash(IRNode *stmt) {
   return ret;
 }
 
+std::unique_ptr<IRNode> clone_offloaded_task(OffloadedStmt *from,
+                                             Kernel *kernel,
+                                             Block *dummy_root) {
+  auto new_ir = irpass::analysis::clone(from, kernel);
+  // This is not the ideal fix, because |new_ir|'s children blocks are NOT
+  // linked to |dummy_root|. However, if I manually do the linking, I got error
+  // during LLVM codegen.
+  new_ir->as<OffloadedStmt>()->parent = dummy_root;
+  return new_ir;
+}
+
+}  // namespace
+
 KernelLaunchRecord::KernelLaunchRecord(Context context,
                                        Kernel *kernel,
                                        std::unique_ptr<IRNode> &&stmt_)
     : context(context),
       kernel(kernel),
       stmt(dynamic_cast<OffloadedStmt *>(stmt_.get())),
-      stmt_(std::move(stmt_)),
+      stmt_holder(std::move(stmt_)),
       h(hash(stmt)) {
   TI_ASSERT(stmt != nullptr);
+  TI_ASSERT(stmt->get_kernel() != nullptr);
 }
 
 void ExecutionQueue::enqueue(KernelLaunchRecord &&ker) {
@@ -111,10 +127,16 @@ void AsyncEngine::launch(Kernel *kernel) {
   auto block = dynamic_cast<Block *>(kernel->ir.get());
   TI_ASSERT(block);
   auto &offloads = block->statements;
+  auto &dummy_root = kernel_to_dummy_roots_[kernel];
+  if (dummy_root == nullptr) {
+    dummy_root = std::make_unique<Block>();
+    dummy_root->kernel = kernel;
+  }
   for (std::size_t i = 0; i < offloads.size(); i++) {
     auto offload = offloads[i]->as<OffloadedStmt>();
-    KernelLaunchRecord rec(kernel->program.get_context(), kernel,
-                           irpass::analysis::clone(offload, kernel));
+    KernelLaunchRecord rec(
+        kernel->program.get_context(), kernel,
+        clone_offloaded_task(offload, kernel, dummy_root.get()));
     enqueue(std::move(rec));
   }
 }

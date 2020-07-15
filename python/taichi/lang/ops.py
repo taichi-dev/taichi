@@ -118,12 +118,6 @@ def ternary(foo):
     return wrapped
 
 
-'''
-array([[4, 4], [5, 4], [5, 4]])
-array([[0, 1], [1, 0], [1, 1]]) * array(5)
-array([[1, 0], [0, 1], [0, 0]]) * array(4)
-'''
-
 writeback_binary_ops = []
 
 
@@ -424,7 +418,7 @@ def select(cond, a, b):
     cond = logical_not(logical_not(cond))
 
     def py_select(cond, a, b):
-        return a * c + b * (1 - c)
+        return a * cond + b * (1 - cond)
 
     return _ternary_operation(ti_core.expr_select, py_select, cond, a, b)
 

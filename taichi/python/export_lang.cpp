@@ -113,7 +113,7 @@ void export_lang(py::module &m) {
       .def_readwrite("advanced_optimization",
                      &CompileConfig::advanced_optimization)
       .def_readwrite("ad_stack_size", &CompileConfig::ad_stack_size)
-      .def_readwrite("async", &CompileConfig::async)
+      .def_readwrite("async_mode", &CompileConfig::async_mode)
       .def_readwrite("flatten_if", &CompileConfig::flatten_if);
 
   m.def("reset_default_compile_config",

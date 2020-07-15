@@ -44,8 +44,8 @@ class ASTTransformer(ast.NodeTransformer):
         return ScopeGuard(self.local_scopes, *args)
 
     # e.g.: For, While
-    def control_scope(self, *args):
-        return ScopeGuard(self.control_scopes, *args)
+    def control_scope(self):
+        return ScopeGuard(self.control_scopes)
 
     def current_scope(self):
         return self.local_scopes[-1]

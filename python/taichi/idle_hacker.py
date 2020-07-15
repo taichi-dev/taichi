@@ -127,7 +127,9 @@ def main(revert=False):
 
         if not os.path.exists(backup_file):
             print(f'ERROR: Backup file {backup_file} not found!')
-            print('Sorry, please consider manually remove the code or reinstall IDLE :(')
+            print(
+                'Sorry, please consider manually remove the code or reinstall IDLE :('
+            )
             return 1
 
         print('Moving backup file to dest...')

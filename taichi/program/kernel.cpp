@@ -87,7 +87,7 @@ void Kernel::lower(bool lower_access) {  // TODO: is a "Lowerer" class necessary
 }
 
 void Kernel::operator()() {
-  if (!program.config.async) {
+  if (!program.config.async_mode) {
     if (!compiled) {
       compile();
     }

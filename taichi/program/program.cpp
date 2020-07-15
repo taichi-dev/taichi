@@ -143,7 +143,7 @@ Program::Program(Arch desired_arch) {
   finalized = false;
   snode_root = std::make_unique<SNode>(0, SNodeType::root);
 
-  if (config.async) {
+  if (config.async_mode) {
     TI_WARN("Running in async mode. This is experimental.");
     TI_ASSERT(arch_is_cpu(config.arch));
     async_engine = std::make_unique<AsyncEngine>();
@@ -420,7 +420,7 @@ void Program::synchronize() {
 #endif
     } else if (config.arch == Arch::metal) {
       metal_kernel_mgr_->synchronize();
-    } else if (config.async == true) {
+    } else if (config.async_mode) {
       async_engine->synchronize();
     }
     sync = true;

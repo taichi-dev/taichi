@@ -532,6 +532,28 @@ def host_arch_only(func):
     return test
 
 
+def archs_with(archs, **init_kwags):
+    """
+    Run the test on the given archs with the given init args.
+
+    Args:
+      archs: a list of Taichi archs
+      init_kwargs: kwargs passed to ti.init()
+    """
+    import taichi as ti
+
+    def decorator(test):
+        @functools.wraps(test)
+        def wrapped(*test_args, **test_kwargs):
+            for arch in archs:
+                ti.init(arch=arch, **init_kwags)
+                test(*test_args, **test_kwargs)
+
+        return wrapped
+
+    return decorator
+
+
 def must_throw(ex):
     def decorator(func):
         def func__(*args, **kwargs):

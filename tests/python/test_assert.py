@@ -27,6 +27,7 @@ def test_assert_basic():
         func()
 
 
+@ti.require(ti.extension.assertion)
 @ti.all_archs_with(debug=True, gdb_trigger=False)
 def test_assert_message():
     @ti.kernel

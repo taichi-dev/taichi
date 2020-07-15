@@ -910,7 +910,6 @@ class Matrix(TaichiOperations):
         return ret
 
 
-
 # TODO: deprecate ad-hoc use ti.Matrix() as global (#1500:2.2/2)
 def Vector(n, dt=None, shape=None, offset=None, **kwargs):
     return Matrix(n, 1, dt=dt, shape=shape, offset=offset, **kwargs)

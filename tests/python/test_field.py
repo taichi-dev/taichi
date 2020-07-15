@@ -5,10 +5,9 @@ To test our new `ti.field` API is functional (#1500)
 import taichi as ti
 import pytest
 
-
 # TODO(archibate): add 64-bit dtypes after #1462
 data_types = [ti.i32, ti.f32]
-field_shapes = [(), 8, (8,), (6, 12)]
+field_shapes = [(), 8, (8, ), (6, 12)]
 vector_dims = [2, 3]
 matrix_dims = [(1, 2), (3, 1), (4, 3), (2, 2)]
 
@@ -22,7 +21,7 @@ def test_scalar_field(dtype, shape):
     if isinstance(shape, tuple):
         assert x.shape == shape
     else:
-        assert x.shape == (shape,)
+        assert x.shape == (shape, )
 
     assert x.dtype == dtype
 
@@ -37,7 +36,7 @@ def test_vector_field(n, dtype, shape):
     if isinstance(shape, tuple):
         assert x.shape == shape
     else:
-        assert x.shape == (shape,)
+        assert x.shape == (shape, )
 
     assert x.dtype == dtype
     assert x.n == n
@@ -54,7 +53,7 @@ def test_matrix_field(n, M, dtype, shape):
     if isinstance(shape, tuple):
         assert x.shape == shape
     else:
-        assert x.shape == (shape,)
+        assert x.shape == (shape, )
 
     assert x.dtype == dtype
     assert x.n == n

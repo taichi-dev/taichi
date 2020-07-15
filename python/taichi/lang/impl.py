@@ -290,6 +290,7 @@ def var(dt, shape=None, offset=None, needs_grad=False):
     _taichi_skip_traceback = 1
     return field(dt, shape, offset, needs_grad)
 
+
 @python_scope
 def field(dtype, shape=None, offset=None, needs_grad=False):
     _taichi_skip_traceback = 1

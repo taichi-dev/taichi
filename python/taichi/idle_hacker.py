@@ -9,13 +9,20 @@ import taichi as ti
 our_code = "__import__('taichi.idle_hacker').idle_hacker.hack(InteractiveInterpreter)"
 
 
-def get_filename(pid):
-    taichi_dir = os.path.dirname(os.path.abspath(ti.__file__))
-    return os.path.join(taichi_dir, '.tidle_' + str(pid))
+def get_taichi_dir():
+    return os.path.dirname(os.path.abspath(ti.__file__))
+
+
+def get_ipc_file(pid):
+    return os.path.join(get_taichi_dir(), '.tidle_' + str(pid))
+
+
+def get_backup_file():
+    return os.path.join(get_taichi_dir(), '.tidle_backup.code.py')
 
 
 def idle_ipc_write(source):
-    with open(get_filename(os.getpid()), 'a') as f:
+    with open(get_ipc_file(os.getpid()), 'a') as f:
         f.write('\n===\n' + source)
 
 
@@ -64,7 +71,7 @@ If you don't find where to append, we offer a script to inject the code:
 
 
 def startup_clean():
-    filename = get_filename(os.getppid())
+    filename = get_ipc_file(os.getppid())
     try:
         os.unlink(filename)
     except:
@@ -77,7 +84,7 @@ def startup_clean():
 def read_ipc_file():
     # The IDLE GUI and Taichi is running in separate process,
     # So we have to create temporary files for portable IPC :(
-    filename = get_filename(os.getppid())
+    filename = get_ipc_file(os.getppid())
     try:
         with open(filename) as f:
             src = f.read()
@@ -87,27 +94,47 @@ def read_ipc_file():
     return src
 
 
-def main():
+def main(revert=False):
     import code
     import shutil
 
     print('Injection dest:', code.__file__)
 
-    with open(code.__file__) as f:
-        if our_code in f.read():
-            print('Taichi hack code already exists')
+    backup_file = get_backup_file()
+
+    if not revert:
+        with open(code.__file__) as f:
+            if our_code in f.read():
+                print('ERROR: Taichi hack code already exists')
+                return 1
+
+        if not os.path.exists(backup_file):
+            shutil.copy(code.__file__, backup_file)
+            print(f'Backup saved in {backup_file}')
+
+        print('Appending our hack code...')
+
+        with open(code.__file__, 'a') as f:
+            f.write('\n' + our_code)
+
+        print('Done, thank for trusting!')
+
+    else:
+        with open(code.__file__) as f:
+            if our_code not in f.read():
+                print('ERROR: Taichi hack code not exist')
+                return 1
+
+        if not os.path.exists(backup_file):
+            print(f'ERROR: Backup file {backup_file} not found!')
+            print('Sorry, please consider manually remove the code or reinstall IDLE :(')
             return 1
 
-    if not os.path.exists('.tidle_backup.code.py'):
-        shutil.copy(code.__file__, '.tidle_backup.code.py')
-        print('Backup saved in .tidle_backup.code.py')
+        print('Moving backup file to dest...')
+        shutil.move(backup_file, code.__file__)
 
-    print('Appending our hack code...')
+        print('Done, sorry for the trouble!')
 
-    with open(code.__file__, 'a') as f:
-        f.write('\n' + our_code)
-
-    print('Done, thank for trusting!')
     return 0
 
 

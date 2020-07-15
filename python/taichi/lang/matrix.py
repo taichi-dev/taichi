@@ -791,32 +791,32 @@ class Matrix(TaichiOperations):
 
     @classmethod
     @python_scope
-    def field(n, m, dtype, shape=None, offset=None, **kwargs):
+    def field(cls, n, m, dtype, *args, **kwargs):
         '''ti.Matrix.field'''
         _taichi_skip_traceback = 1
         # TODO: deprecate ad-hoc use ti.Matrix() as global (#1500:2.2/2)
-        return cls(n=n, m=m, dt=dtype, shape=shape, offset=offset, **kwargs)
+        return cls(n, m, dtype, *args, **kwargs)
 
     @classmethod
     @python_scope
     #@deprecated('ti.Matrix.var', 'ti.Matrix.field')
-    def var(cls, n, m, dtype, shape=None, offset=None, **kwargs):
+    def var(cls, n, m, dt, *args, **kwargs):
         '''ti.Matrix.var'''
         _taichi_skip_traceback = 1
-        return cls.field(n=n, m=m, dtype=dtype, shape=shape, offset=offset, **kwargs)
+        return cls.field(n, m, dt, *args, **kwargs)
 
     @classmethod
-    def _Vector_field(cls, n, dtype=None, shape=None, offset=None, **kwargs):
+    def _Vector_field(cls, n, dt, *args, **kwargs):
         '''ti.Vector.field'''
         _taichi_skip_traceback = 1
-        return cls.field(n=n, m=1, dtype=dtype, shape=shape, offset=offset, **kwargs)
+        return cls.field(n, 1, dt, *args, **kwargs)
 
     @classmethod
     #@deprecated('ti.Vector.var', 'ti.Vector.field')
-    def _Vector_var(cls, n, dt=None, shape=None, offset=None, **kwargs):
+    def _Vector_var(cls, n, dt, *args, **kwargs):
         '''ti.Vector.var'''
         _taichi_skip_traceback = 1
-        return cls._Vector_field(n=n, dt=dt, shape=shape, offset=offset, **kwargs)
+        return cls._Vector_field(n, dt, *args, **kwargs)
 
     @staticmethod
     def rows(rows):
@@ -913,7 +913,7 @@ class Matrix(TaichiOperations):
 
 # TODO: deprecate ad-hoc use ti.Matrix() as global (#1500:2.2/2)
 def Vector(n, dt=None, shape=None, offset=None, **kwargs):
-    return Matrix(n=n, m=1, dt=dt, shape=shape, offset=offset, **kwargs)
+    return Matrix(n, 1, dt=dt, shape=shape, offset=offset, **kwargs)
 
 
 Vector.var = Matrix._Vector_var

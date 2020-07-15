@@ -291,7 +291,7 @@ def var(dt, shape=None, offset=None, needs_grad=False):
     return field(dt, shape, offset, needs_grad)
 
 @python_scope
-def field(dt, shape=None, offset=None, needs_grad=False):
+def field(dtype, shape=None, offset=None, needs_grad=False):
     _taichi_skip_traceback = 1
     if isinstance(shape, numbers.Number):
         shape = (shape, )
@@ -319,14 +319,14 @@ def field(dt, shape=None, offset=None, needs_grad=False):
 
     # primal
     x = Expr(taichi_lang_core.make_id_expr(""))
-    x.ptr = taichi_lang_core.global_new(x.ptr, dt)
+    x.ptr = taichi_lang_core.global_new(x.ptr, dtype)
     x.ptr.set_is_primal(True)
     pytaichi.global_vars.append(x)
 
-    if taichi_lang_core.needs_grad(dt):
+    if taichi_lang_core.needs_grad(dtype):
         # adjoint
         x_grad = Expr(taichi_lang_core.make_id_expr(""))
-        x_grad.ptr = taichi_lang_core.global_new(x_grad.ptr, dt)
+        x_grad.ptr = taichi_lang_core.global_new(x_grad.ptr, dtype)
         x_grad.ptr.set_is_primal(False)
         x.set_grad(x_grad)
 

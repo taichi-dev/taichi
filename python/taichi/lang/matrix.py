@@ -791,26 +791,30 @@ class Matrix(TaichiOperations):
 
     @classmethod
     @python_scope
-    def field(n, m, dt, shape=None, offset=None, **kwargs):
+    def field(n, m, dtype, shape=None, offset=None, **kwargs):
+        '''ti.Matrix.field'''
         _taichi_skip_traceback = 1
         # TODO: deprecate ad-hoc use ti.Matrix() as global (#1500:2.2/2)
-        return cls(n=n, m=m, dt=dt, shape=shape, offset=offset, **kwargs)
+        return cls(n=n, m=m, dt=dtype, shape=shape, offset=offset, **kwargs)
 
     @classmethod
     @python_scope
     #@deprecated('ti.Matrix.var', 'ti.Matrix.field')
     def var(cls, n, m, dtype, shape=None, offset=None, **kwargs):
+        '''ti.Matrix.var'''
         _taichi_skip_traceback = 1
         return cls.field(n=n, m=m, dtype=dtype, shape=shape, offset=offset, **kwargs)
 
     def _Vector_field(cls, n, dtype=None, shape=None, offset=None, **kwargs):
+        '''ti.Vector.field'''
         _taichi_skip_traceback = 1
         return cls.field(n=n, m=1, dtype=dtype, shape=shape, offset=offset, **kwargs)
 
     #@deprecated('ti.Vector.var', 'ti.Vector.field')
-    def _Vector_var(cls, n, dtype=None, shape=None, offset=None, **kwargs):
+    def _Vector_var(cls, n, dt=None, shape=None, offset=None, **kwargs):
+        '''ti.Vector.var'''
         _taichi_skip_traceback = 1
-        return cls._Vector_field(n=n, dtype=dtype, shape=shape, offset=offset, **kwargs)
+        return cls._Vector_field(n=n, dt=dt, shape=shape, offset=offset, **kwargs)
 
     @staticmethod
     def rows(rows):

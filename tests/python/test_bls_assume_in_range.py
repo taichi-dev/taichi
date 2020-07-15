@@ -39,7 +39,7 @@ def test_gathering():
     bls_particle_grid(N=128,
                       ppc=10,
                       block_size=8,
-                      scatter=True,
+                      scatter=False,
                       use_offset=False)
 
 
@@ -49,7 +49,7 @@ def test_gathering_offset():
     bls_particle_grid(N=128,
                       ppc=10,
                       block_size=8,
-                      scatter=True,
+                      scatter=False,
                       use_offset=True)
 
 

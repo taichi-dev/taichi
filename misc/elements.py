@@ -1,4 +1,5 @@
 import taichi as ti
+import numpy as np
 
 
 @ti.data_oriented
@@ -31,11 +32,8 @@ class MPMSolver:
         # position
         self.x = ti.Vector(self.dim, dt=ti.f32)
         
-        if self.dim == 2:
-            indices = ti.ij
-        else:
-            indices = ti.ijk
-            
+        indices = ti.ij
+        
         offset = tuple(-2048 for _ in range(self.dim))
         self.offset = offset
 
@@ -44,29 +42,11 @@ class MPMSolver:
         # grid node mass
         self.grid_m = ti.var(dt=ti.f32)
         self.grid = ti.root.pointer(indices, 32)
-        if self.dim == 2:
-            block = self.grid.pointer(indices, 16)
-            voxel = block.dense(indices, 8)
-        else:
-            block = self.grid.pointer(indices, 32)
-            voxel = block.dense(indices, 4)
-            
+        block = self.grid.pointer(indices, 16)
+        voxel = block.dense(indices, 8)
+        
         voxel.place(self.grid_m, self.grid_v, offset=offset)
         block.dynamic(ti.indices(self.dim), 1024 * 1024, chunk_size=4096).place(self.pid, offset=offset + (0,))
-        
-        self.padding = padding
-
-        # Young's modulus and Poisson's ratio
-        self.E, self.nu = 1e6 * size, 0.2
-        # Lame parameters
-        self.mu_0, self.lambda_0 = self.E / (
-            2 * (1 + self.nu)), self.E * self.nu / ((1 + self.nu) *
-                                                    (1 - 2 * self.nu))
-
-        # Sand parameters
-        friction_angle = math.radians(45)
-        sin_phi = math.sin(friction_angle)
-        self.alpha = math.sqrt(2 / 3) * 2 * sin_phi / (3 - sin_phi)
 
         ti.root.dynamic(ti.i, max_num_particles, 2**20).place(self.x)
         self.substeps = 0
@@ -138,10 +118,6 @@ class MPMSolver:
             'position': np_x,
         }
     
-
-import taichi as ti
-import numpy as np
-import math
 
 write_to_disk = False
 

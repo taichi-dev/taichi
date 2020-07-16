@@ -7,7 +7,8 @@ TODO: Skips these tests after all tests adapted to @ti.test
 import taichi as ti
 import pytest
 
-# ti.test
+
+### `ti.test`
 
 
 @ti.test()
@@ -41,7 +42,7 @@ def test_require_extensions():
     assert ti.cfg.arch in [ti.cpu]
 
 
-### ti.approx
+### `ti.approx`
 
 
 @ti.test(ti.cpu)

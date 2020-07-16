@@ -49,10 +49,6 @@ if platform.system() == 'Linux':
         print('Only the wheel with clang will be released to PyPI.')
         sys.exit(-1)
 
-    if not gpu:
-        print('Linux release must ship with the CUDA backend.')
-        sys.exit(-1)
-
 with open('../setup.py') as fin:
     with open('setup.py', 'w') as fout:
         project_name = 'taichi'

@@ -1,4 +1,5 @@
 import taichi as ti
+import random
 import numpy as np
 
 
@@ -8,10 +9,7 @@ class MPMSolver:
     def __init__(self,
                  res,
                  size=1,
-                 max_num_particles=2**25,
-                 # Max 128 MB particles
-                 padding=3,
-                 unbounded=False):
+                 max_num_particles=2**25):
         self.dim = len(res)
         assert self.dim in (
             2, 3), "MPM solver supports only 2D and 3D simulations."
@@ -20,10 +18,6 @@ class MPMSolver:
         self.n_particles = ti.var(ti.i32, shape=())
         self.dx = size / res[0]
         self.inv_dx = 1.0 / self.dx
-        self.default_dt = 2e-2 * self.dx / size
-        self.p_vol = self.dx**self.dim
-        self.p_rho = 1000
-        self.p_mass = self.p_vol * self.p_rho
         self.max_num_particles = max_num_particles
         self.gravity = ti.Vector(self.dim, dt=ti.f32, shape=())
         self.source_bound = ti.Vector(self.dim, dt=ti.f32, shape=2)
@@ -31,6 +25,7 @@ class MPMSolver:
         self.pid = ti.var(ti.i32)
         # position
         self.x = ti.Vector(self.dim, dt=ti.f32)
+        self.grid_m = ti.var(dt=ti.f32)
         
         indices = ti.ij
         
@@ -38,18 +33,20 @@ class MPMSolver:
         self.offset = offset
 
         # grid node momentum/velocity
-        self.grid_v = ti.Vector(self.dim, dt=ti.f32)
-        # grid node mass
-        self.grid_m = ti.var(dt=ti.f32)
         self.grid = ti.root.pointer(indices, 32)
         block = self.grid.pointer(indices, 16)
         voxel = block.dense(indices, 8)
         
-        voxel.place(self.grid_m, self.grid_v, offset=offset)
+        voxel.place(self.grid_m, offset=offset)
         block.dynamic(ti.indices(self.dim), 1024 * 1024, chunk_size=4096).place(self.pid, offset=offset + (0,))
 
         ti.root.dynamic(ti.i, max_num_particles, 2**20).place(self.x)
         self.substeps = 0
+        
+        self.n_particles[None] = 10000
+        for i in range(10000):
+            self.x[i] = [random.random() * 0.5, random.random() * 0.5]
+        
         
 
     @ti.kernel
@@ -59,9 +56,8 @@ class MPMSolver:
             base = ti.floor(self.x[p] * self.inv_dx - 0.5).cast(int)
             ti.append(self.pid.parent(), base - ti.Vector(list(self.offset)), p)
 
-    def step(self, frame_dt):
-        substeps = int(frame_dt / self.default_dt) + 1
-        for i in range(substeps):
+    def step(self):
+        for i in range(1000000):
             self.substeps += 1
             print(self.substeps)
             self.grid.deactivate_all()
@@ -72,7 +68,7 @@ class MPMSolver:
         self.x[i] = x
 
     @ti.kernel
-    def seed(self, new_particles: ti.i32, color: ti.i32):
+    def seed(self, new_particles: ti.i32):
         for i in range(self.n_particles[None],
                        self.n_particles[None] + new_particles):
             x = ti.Vector.zero(ti.f32, self.dim)
@@ -83,8 +79,7 @@ class MPMSolver:
             
     def add_cube(self,
                  lower_corner,
-                 cube_size,
-                 color=0xFFFFFF):
+                 cube_size):
         sample_density = 2**self.dim
         vol = 1
         for i in range(self.dim):
@@ -97,7 +92,7 @@ class MPMSolver:
             self.source_bound[0][i] = lower_corner[i]
             self.source_bound[1][i] = cube_size[i]
 
-        self.seed(num_new_particles, color)
+        self.seed(num_new_particles)
         self.n_particles[None] += num_new_particles
 
     @ti.kernel
@@ -121,18 +116,18 @@ class MPMSolver:
 
 write_to_disk = False
 
-ti.init(arch=ti.cuda, use_unified_memory=False, kernel_profiler=True, device_memory_GB=4, debug=True)  # Try to run on GPU
+ti.init(arch=ti.cuda, use_unified_memory=False, kernel_profiler=True, device_memory_GB=0.5, debug=True)  # Try to run on GPU
 
 gui = ti.GUI("Taichi MLS-MPM", res=512, background_color=0x112F41)
 
-mpm = MPMSolver(res=(128, 128), unbounded=False)
+mpm = MPMSolver(res=(128, 128))
 
 for i in range(5):
     mpm.add_cube(lower_corner=[0.2 + i * 0.1, 0.3 + i * 0.1],
                  cube_size=[0.1, 0.1])
 
 for frame in range(500):
-    mpm.step(8e-3)
+    mpm.step()
     particles = mpm.particle_info()
     pos = particles['position'] * 0.4 + 0.3
     gui.circles(pos)

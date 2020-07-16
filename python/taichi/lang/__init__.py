@@ -1,5 +1,4 @@
 from .impl import *
-from .error import enable_excepthook
 from .util import deprecated
 from .matrix import Matrix, Vector
 from .transformer import TaichiSyntaxError
@@ -68,6 +67,7 @@ class _Extension(object):
             self.sparse = core.sparse
             self.data64 = core.data64
             self.adstack = core.adstack
+            self.assertion = core.assertion
             self.bls = core.bls
         except:
             # In case of adding an extension crashes the format server
@@ -119,7 +119,7 @@ class _EnvironmentConfigurator:
 
 
 class _SpecialConfig:
-    # like CompileConfig in C++, this is the configuations that belong to other submodules
+    # like CompileConfig in C++, this is the configurations that belong to other submodules
     def __init__(self):
         self.print_preprocessed = False
         self.log_level = 'info'
@@ -179,8 +179,7 @@ def init(arch=None,
     env_spec.add('gdb_trigger')
     env_spec.add('excepthook')
 
-    # compiler configuations (ti.cfg):
-    # TODO(yuanming-hu): Maybe CUDA specific configs like device_memory_* should be moved
+    # compiler configurations (ti.cfg):
     # to somewhere like ti.cuda_cfg so that user don't get confused?
     for key in dir(ti.cfg):
         if key in ['default_fp', 'default_ip']:
@@ -531,6 +530,28 @@ def host_arch_only(func):
             func(*args, **kwargs)
 
     return test
+
+
+def archs_with(archs, **init_kwags):
+    """
+    Run the test on the given archs with the given init args.
+
+    Args:
+      archs: a list of Taichi archs
+      init_kwargs: kwargs passed to ti.init()
+    """
+    import taichi as ti
+
+    def decorator(test):
+        @functools.wraps(test)
+        def wrapped(*test_args, **test_kwargs):
+            for arch in archs:
+                ti.init(arch=arch, **init_kwags)
+                test(*test_args, **test_kwargs)
+
+        return wrapped
+
+    return decorator
 
 
 def must_throw(ex):

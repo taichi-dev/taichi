@@ -50,9 +50,11 @@ def register(func):
 
 @registerableCLI
 class TaichiMain:
-    def __init__(self, debug: bool = False, test_mode: bool = False):
+    def __init__(self, test_mode: bool = False):
         self.banner = f"\n{'*' * 43}\n**      Taichi Programming Language      **\n{'*' * 43}"
         print(self.banner)
+
+        print(self._get_friend_links())
 
         if 'TI_DEBUG' in os.environ:
             val = os.environ['TI_DEBUG']
@@ -60,9 +62,6 @@ class TaichiMain:
                 raise ValueError(
                     "Environment variable TI_DEBUG can only have value 0 or 1."
                 )
-        if debug:
-            print(f"\n{'*' * 17} Debug Mode {'*' * 17}\n")
-            os.environ['TI_DEBUG'] = '1'
 
         parser = argparse.ArgumentParser(description="Taichi CLI",
                                          usage=self._usage())
@@ -88,11 +87,25 @@ class TaichiMain:
             # TODO: do we really need this?
             if args.command.endswith(".py"):
                 TaichiMain._exec_python_file(args.command)
-            print(f"{args.command} is not a valid command!")
-            self.main_parser.print_help()
+            else:
+                print(f"{args.command} is not a valid command!")
+                self.main_parser.print_help()
             return 1
 
         return getattr(self, args.command)(sys.argv[2:])
+
+    def _get_friend_links(self):
+        uri = 'en/stable'
+        try:
+            import locale
+            if 'zh' in locale.getdefaultlocale()[0]:
+                uri = 'zh_CN/latest'
+        except:
+            pass
+        return '\n' \
+               f'Docs:   https://taichi.rtfd.io/{uri}\n' \
+               f'GitHub: https://github.com/taichi-dev/taichi\n' \
+               f'Forum:  https://forum.taichi.graphics\n'
 
     def _usage(self) -> str:
         """Compose deterministic usage message based on registered_commands."""
@@ -702,19 +715,19 @@ class TaichiMain:
             pytest_args += ['-s', '-v']
         if args.rerun:
             pytest_args += ['--reruns', args.rerun]
-        if args.keys:
-            pytest_args += ['-k', args.keys]
-        if args.marks:
-            pytest_args += ['-m', args.marks]
-        if args.failed_first:
-            pytest_args += ['--failed-first']
-        if args.fail_fast:
-            pytest_args += ['--exitfirst']
         try:
             if args.coverage:
                 pytest_args += ['--cov-branch', '--cov=python/taichi']
             if args.cov_append:
                 pytest_args += ['--cov-append']
+            if args.keys:
+                pytest_args += ['-k', args.keys]
+            if args.marks:
+                pytest_args += ['-m', args.marks]
+            if args.failed_first:
+                pytest_args += ['--failed-first']
+            if args.fail_fast:
+                pytest_args += ['--exitfirst']
         except AttributeError:
             pass
 
@@ -993,11 +1006,6 @@ class TaichiMain:
 
 def main():
     cli = TaichiMain()
-    return cli()
-
-
-def main_debug():
-    cli = TaichiMain(debug=True)
     return cli()
 
 

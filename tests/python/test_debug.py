@@ -1,4 +1,5 @@
 import taichi as ti
+import pytest
 
 
 def test_cpu_debug_snode_reader():
@@ -10,45 +11,51 @@ def test_cpu_debug_snode_reader():
     assert x[None] == 10.0
 
 
-@ti.must_throw(RuntimeError)
+@ti.require(ti.extension.assertion)
+@ti.all_archs_with(debug=True)
 def test_cpu_debug_snode_writer_out_of_bound():
-    ti.init(arch=ti.x64, debug=True)
     ti.set_gdb_trigger(False)
 
     x = ti.var(ti.f32, shape=3)
-    x[3] = 10.0
+
+    with pytest.raises(RuntimeError):
+        x[3] = 10.0
 
 
-@ti.must_throw(RuntimeError)
+@ti.require(ti.extension.assertion)
+@ti.all_archs_with(debug=True)
 def test_cpu_debug_snode_writer_out_of_bound_negative():
-    ti.init(arch=ti.x64, debug=True)
     ti.set_gdb_trigger(False)
 
     x = ti.var(ti.f32, shape=3)
-    x[-1] = 10.0
+    with pytest.raises(RuntimeError):
+        x[-1] = 10.0
 
 
-@ti.must_throw(RuntimeError)
+@ti.require(ti.extension.assertion)
+@ti.all_archs_with(debug=True)
 def test_cpu_debug_snode_reader_out_of_bound():
-    ti.init(arch=ti.x64, debug=True)
     ti.set_gdb_trigger(False)
 
     x = ti.var(ti.f32, shape=3)
-    a = x[3]
+
+    with pytest.raises(RuntimeError):
+        a = x[3]
 
 
-@ti.must_throw(RuntimeError)
+@ti.require(ti.extension.assertion)
+@ti.all_archs_with(debug=True)
 def test_cpu_debug_snode_reader_out_of_bound_negative():
-    ti.init(arch=ti.x64, debug=True)
     ti.set_gdb_trigger(False)
 
     x = ti.var(ti.f32, shape=3)
-    a = x[-1]
+    with pytest.raises(RuntimeError):
+        a = x[-1]
 
 
-@ti.must_throw(RuntimeError)
+@ti.require(ti.extension.assertion)
+@ti.all_archs_with(debug=True)
 def test_out_of_bound():
-    ti.init(debug=True)
     ti.set_gdb_trigger(False)
     x = ti.var(ti.i32, shape=(8, 16))
 
@@ -56,11 +63,13 @@ def test_out_of_bound():
     def func():
         x[3, 16] = 1
 
-    func()
+    with pytest.raises(RuntimeError):
+        func()
 
 
+@ti.require(ti.extension.assertion)
+@ti.all_archs_with(debug=True)
 def test_not_out_of_bound():
-    ti.init(debug=True)
     ti.set_gdb_trigger(False)
     x = ti.var(ti.i32, shape=(8, 16))
 
@@ -71,9 +80,9 @@ def test_not_out_of_bound():
     func()
 
 
-@ti.must_throw(RuntimeError)
+@ti.require(ti.extension.assertion)
+@ti.all_archs_with(debug=True)
 def test_out_of_bound_dynamic():
-    ti.init(debug=True)
     ti.set_gdb_trigger(False)
     x = ti.var(ti.i32)
 
@@ -83,11 +92,13 @@ def test_out_of_bound_dynamic():
     def func():
         x[17] = 1
 
-    func()
+    with pytest.raises(RuntimeError):
+        func()
 
 
+@ti.require(ti.extension.assertion)
+@ti.all_archs_with(debug=True)
 def test_not_out_of_bound_dynamic():
-    ti.init(debug=True)
     ti.set_gdb_trigger(False)
     x = ti.var(ti.i32)
 
@@ -100,7 +111,8 @@ def test_not_out_of_bound_dynamic():
     func()
 
 
-@ti.must_throw(RuntimeError)
+@ti.require(ti.extension.assertion)
+@ti.all_archs_with(debug=True)
 def test_out_of_bound_with_offset():
     ti.init(debug=True)
     ti.set_gdb_trigger(False)
@@ -110,11 +122,14 @@ def test_out_of_bound_with_offset():
     def func():
         x[0, 0] = 1
 
-    func()
+    with pytest.raises(RuntimeError):
+        func()
+        func()
 
 
+@ti.require(ti.extension.assertion)
+@ti.all_archs_with(debug=True)
 def test_not_out_of_bound_with_offset():
-    ti.init(debug=True)
     ti.set_gdb_trigger(False)
     x = ti.var(ti.i32, shape=(8, 16), offset=(-4, -8))
 

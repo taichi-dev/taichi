@@ -31,7 +31,7 @@ def test_scalar_field(dtype, shape):
 @pytest.mark.parametrize('shape', field_shapes)
 @ti.host_arch_only
 def test_vector_field(n, dtype, shape):
-    x = ti.Vector.field(n, dt=dtype, shape=shape)
+    x = ti.Vector.field(n, dtype=dtype, shape=shape)
 
     if isinstance(shape, tuple):
         assert x.shape == shape

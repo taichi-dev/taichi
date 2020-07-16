@@ -88,3 +88,11 @@ def imshow(img, window_name='Taichi'):
 
             gui.set_image(img)
             gui.show()
+
+
+__all__ = [
+    'imshow',
+    'imread',
+    'imwrite',
+    'imdisplay',
+    ]

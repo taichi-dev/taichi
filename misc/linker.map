@@ -1,0 +1,10 @@
+{
+global:
+	extern "C++" {
+		taichi::*;
+	};
+local:
+	extern "C++" {
+		llvm::*;
+	};
+};

@@ -516,7 +516,9 @@ struct LLVMRuntime {
 
   template <typename T>
   void set_result(std::size_t i, T t) {
-    ((u64 *)result_buffer)[i] = taichi_union_cast<uint64>(t);
+    static_assert(sizeof(T) <= sizeof(uint64));
+    ((u64 *)result_buffer)[i] =
+        taichi_union_cast_with_different_sizes<uint64>(t);
   }
 
   template <typename T, typename... Args>
@@ -639,9 +641,9 @@ void runtime_retrieve_error_code(LLVMRuntime *runtime) {
   runtime->set_result(taichi_result_buffer_error_id, runtime->error_code);
 }
 
-void runtime_retrieve_error_message(LLVMRuntime *runtime) {
+void runtime_retrieve_error_message(LLVMRuntime *runtime, int i) {
   runtime->set_result(taichi_result_buffer_error_id,
-                      runtime->error_message_template);
+                      runtime->error_message_template[i]);
 }
 
 void runtime_retrieve_error_message_argument(LLVMRuntime *runtime,

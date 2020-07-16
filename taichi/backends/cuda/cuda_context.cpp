@@ -14,6 +14,9 @@ TLANG_NAMESPACE_BEGIN
 CUDAContext::CUDAContext()
     : profiler(nullptr), driver(CUDADriver::get_instance_without_context()) {
   // CUDA initialization
+
+  TI_WARN("Creating new CUDA context");
+
   dev_count = 0;
   driver.init(0);
   driver.device_get_count(&dev_count);
@@ -32,6 +35,7 @@ CUDAContext::CUDAContext()
 
   TI_TRACE("CUDA Device Compute Capability: {}.{}", cc_major, cc_minor);
   driver.context_create(&context, 0, device);
+  TI_WARN("Context created");
 
   const auto GB = std::pow(1024.0, 3.0);
   TI_TRACE("Total memory {:.2f} GB; free memory {:.2f} GB",

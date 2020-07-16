@@ -3,6 +3,8 @@
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/visitors.h"
 #include "taichi/ir/scratch_pad.h"
+#include "taichi/program/kernel.h"
+#include "taichi/program/program.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -11,6 +13,8 @@ namespace {
 void make_block_local_offload(OffloadedStmt *offload) {
   if (offload->task_type != OffloadedStmt::TaskType::struct_for)
     return;
+
+  bool debug = offload->get_kernel()->program.config.debug;
 
   auto pads = irpass::initialize_scratch_pad(offload);
 
@@ -210,6 +214,31 @@ void make_block_local_offload(OffloadedStmt *offload) {
           inc = bls.push_back<BinaryOpStmt>(
               BinaryOpType::sub, inc,
               bls.push_back<ConstStmt>(TypedConstant(pad.second.bounds[0][i])));
+
+          if (debug) {
+            auto bls_axis_size =
+                pad.second.bounds[1][i] - pad.second.bounds[0][i];
+            std::string msg = fmt::format(
+                "(kernel={}, body) Access out of bound: BLS buffer axis {} "
+                "(size {}) with "
+                "index %d.",
+                offload->get_kernel()->name, i, bls_axis_size);
+
+            auto lower_bound =
+                bls.push_back<ConstStmt>(LaneAttribute<TypedConstant>(0));
+            auto check_lower_bound = bls.push_back<BinaryOpStmt>(
+                BinaryOpType::cmp_ge, inc, lower_bound);
+
+            auto upper_bound = bls.push_back<ConstStmt>(
+                LaneAttribute<TypedConstant>(bls_axis_size));
+            auto check_upper_bound = bls.push_back<BinaryOpStmt>(
+                BinaryOpType::cmp_lt, inc, upper_bound);
+
+            auto check_i = bls.push_back<BinaryOpStmt>(
+                BinaryOpType::bit_and, check_lower_bound, check_upper_bound);
+
+            bls.push_back<AssertStmt>(check_i, msg, std::vector<Stmt *>{inc});
+          }
 
           inc = bls.push_back<BinaryOpStmt>(
               BinaryOpType::mul, inc,

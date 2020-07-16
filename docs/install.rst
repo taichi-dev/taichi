@@ -113,7 +113,7 @@ Linux issues
         [archlinuxcn]
         Server = https://mirrors.tuna.tsinghua.edu.cn/archlinuxcn/$arch
 
-      Then execute ``sudo pacman -Syy ncurses5-compat-libs`.
+    Then execute ``sudo pacman -Syy ncurses5-compat-libs``.
 
 - If Taichi crashes and reports ``/usr/lib/libstdc++.so.6: version `CXXABI_1.3.11' not found``:
 

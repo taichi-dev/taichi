@@ -8,10 +8,6 @@ Matrices
 - Differentiate element-wise product ``*`` and matrix product ``@``.
 - ``ti.Vector(n, dt=ti.f32)`` or ``ti.Matrix(n, m, dt=ti.f32)`` to create tensors of vectors/matrices.
 - ``A.transpose()``
-- ``A.trace()``
-- ``A.inverse()`` (Taichi-scope only)
-- ``A.determinant()`` (Taichi-scope only)
-- ``A.cast(type)`` or simply ``int(A)`` and ``float(A)`` (Taichi-scope only)
 - ``R, S = ti.polar_decompose(A, ti.f32)``
 - ``U, sigma, V = ti.svd(A, ti.f32)`` (Note that ``sigma`` is a ``3x3`` diagonal matrix)
 - ``any(A)`` (Taichi-scope only)
@@ -30,7 +26,7 @@ Declaration
 As global tensors of matrices
 +++++++++++++++++++++++++++++
 
-.. function:: ti.Matrix(n, m, dt, shape = None, offset = None)
+.. function:: ti.Matrix.var(n, m, dt, shape = None, offset = None)
 
     :parameter n: (scalar) the number of rows in the matrix
     :parameter m: (scalar) the number of columns in the matrix
@@ -42,7 +38,7 @@ As global tensors of matrices
     ::
 
         # Python-scope
-        a = ti.Matrix(3, 3, dt=ti.f32, shape=(5, 4))
+        a = ti.Matrix.var(3, 3, dt=ti.f32, shape=(5, 4))
 
 .. note::
 
@@ -51,22 +47,6 @@ As global tensors of matrices
 
 As a temporary local variable
 +++++++++++++++++++++++++++++
-
-.. function:: ti.Matrix([x, y, ...])
-
-    :parameter x: (scalar) the first component of the vector
-    :parameter y: (scalar) the second component of the vector
-
-    For example, this creates a 3x1 matrix with components (2, 3, 4):
-    ::
-
-        # Taichi-scope
-        a = ti.Matrix([2, 3, 4])
-
-.. note::
-
-    this is equivalent to ti.Vector([x, y, ...])
-
 
 .. function:: ti.Matrix([[x, y, ...], [z, w, ...], ...])
 
@@ -162,6 +142,49 @@ As a temporary local variable
 Methods
 -------
 
-TODO: WIP
+.. function:: a.transpose()
 
-TODO: add element wise operations docs
+    :parameter a: (Matrix) the matrix
+    :return: (Matrix) the transposed matrix of ``a``.
+
+    For example::
+
+        a = ti.Matrix([[2, 3], [4, 5]])
+        b = a.transpose()
+        # Now b = ti.Matrix([[2, 4], [3, 5]])
+
+    .. note::
+
+        ``a.transpose()`` will not effect the data in ``a``, it just return the result.
+
+
+.. function:: a.trace()
+
+    :parameter a: (Matrix) the matrix
+    :return: (scalar) the trace of matrix ``a``.
+
+    The return value can be computed as ``a[0, 0] + a[1, 1] + ...``.
+
+
+.. function:: a.determinant()
+
+    :parameter a: (Matrix) the matrix
+    :return: (scalar) the determinant of matrix ``a``.
+
+    .. note::
+
+        The matrix size of matrix must be 1x1, 2x2, 3x3 or 4x4 for now.
+
+        This function only works in Taichi-scope for now.
+
+
+.. function:: a.inverse()
+
+    :parameter a: (Matrix) the matrix
+    :return: (Matrix) the inverse of matrix ``a``.
+
+    .. note::
+
+        The matrix size of matrix must be 1x1, 2x2, 3x3 or 4x4 for now.
+
+        This function only works in Taichi-scope for now.

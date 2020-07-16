@@ -1,5 +1,4 @@
 import taichi as ti
-from taichi import make_temp_file
 import sys, os, copy
 from contextlib import contextmanager
 import pytest
@@ -53,7 +52,7 @@ init_args = {
     'print_ir': [False, TF],
     'verbose': [True, TF],
     'fast_math': [True, TF],
-    'async': [False, TF],
+    'async_mode': [False, TF],
     'flatten_if': [False, TF],
     'simplify_before_lower_access': [True, TF],
     'simplify_after_lower_access': [True, TF],
@@ -115,26 +114,6 @@ def test_init_arg(key, values):
 @ti.must_throw(KeyError)
 def test_init_bad_arg():
     ti.init(_test_mode=True, debug=True, foo_bar=233)
-
-
-def test_without_init():
-    # We want to check if Taichi works well without ``ti.init()``.
-    # But in test ``ti.init()`` will always be called in last ``@ti.all_archs``.
-    # So we have to create a new Taichi instance, i.e. test in a sandbox.
-    content = '''
-import taichi as ti
-assert ti.cfg.arch == ti.cpu
-
-x = ti.var(ti.i32, (2, 3))
-assert x.shape == (2, 3)
-
-x[1, 2] = 4
-assert x[1, 2] == 4
-'''
-    filename = make_temp_file()
-    with open(filename, 'w') as f:
-        f.write(content)
-    assert os.system(f'{sys.executable} {filename}') == 0
 
 
 @ti.all_archs

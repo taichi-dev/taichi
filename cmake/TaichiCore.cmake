@@ -153,10 +153,11 @@ if (NOT WIN32)
         # Linux
         target_link_libraries(${CORE_LIBRARY_NAME} stdc++fs X11)
         target_link_libraries(${CORE_LIBRARY_NAME} -static-libgcc -static-libstdc++)
+        target_link_libraries(${CORE_LIBRARY_NAME} -Wl,--version-script,${CMAKE_CURRENT_SOURCE_DIR}/misc/linker.map)
         target_link_libraries(${CORE_LIBRARY_NAME} -Wl,--wrap=log2f) # Avoid glibc dependencies
     endif()
 endif ()
-message("PYTHON_LIBRARIES" ${PYTHON_LIBRARIES})
+message("PYTHON_LIBRARIES: " ${PYTHON_LIBRARIES})
 
 foreach (source IN LISTS TAICHI_CORE_SOURCE)
     file(RELATIVE_PATH source_rel ${CMAKE_CURRENT_LIST_DIR} ${source})

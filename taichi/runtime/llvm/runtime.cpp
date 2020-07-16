@@ -666,7 +666,13 @@ void __assertfail(const char *message,
 void taichi_assert_runtime(LLVMRuntime *runtime, i32 test, const char *msg) {
   if (enable_assert) {
     if (test == 0) {
-      __assertfail(msg, "", 1, "", 1);
+      locked_task(&runtime->error_message_lock, [&] {
+        if (!runtime->error_code) {
+          runtime->error_code = 1;  // Assertion failure
+          memcpy(runtime->error_message_buffer, msg,
+                 std::min(strlen(msg), taichi_max_message_length));
+        }
+      });
     }
   }
 }
@@ -691,10 +697,14 @@ void taichi_assert(Context *context, i32 test, const char *msg) {
 const std::size_t ASSERT_MSG_BUFFER_SIZE = 2048;
 char assert_msg_buffer[ASSERT_MSG_BUFFER_SIZE];
 i32 assert_msg_buffer_lock = 0;
+
 void taichi_assert_format(LLVMRuntime *runtime,
                           i32 test,
                           const char *format,
                           ...) {
+  // This function is CPU-only.
+  // It seems that using std::va_list leads to an llvm::SelectionDAG error.
+  // Also note that CUDA cannot call runtime->host_vsnprintf.
   if (!enable_assert || test != 0 || runtime->error_code)
     return;
   std::va_list args;

@@ -55,6 +55,7 @@ class BufferMemoryView {
     size_ = iroundup(size, taichi_page_size);
     ptr_ = mem_pool->allocate(size_, /*alignment=*/taichi_page_size);
     TI_ASSERT(ptr_ != nullptr);
+    std::memset(ptr_, 0, size_);
   }
   // Move only
   BufferMemoryView(BufferMemoryView &&) = default;
@@ -84,15 +85,17 @@ using InputBuffersMap = std::unordered_map<BufferEnum, MTLBuffer *>;
 class CompiledMtlKernelBase {
  public:
   struct Params {
-    const KernelAttributes *kernel_attribs;
     bool is_jit_evaluator;
+    const CompileConfig *config;
+    const KernelAttributes *kernel_attribs;
     MTLDevice *device;
     MTLFunction *mtl_func;
   };
 
   explicit CompiledMtlKernelBase(Params &params)
-      : is_jit_evalutor_(params.is_jit_evaluator),
-        kernel_attribs_(*params.kernel_attribs),
+      : kernel_attribs_(*params.kernel_attribs),
+        config_(params.config),
+        is_jit_evalutor_(params.is_jit_evaluator),
         pipeline_state_(
             new_compute_pipeline_state_with_function(params.device,
                                                      params.mtl_func)) {
@@ -130,40 +133,52 @@ class CompiledMtlKernelBase {
       set_mtl_buffer(encoder.get(), b.first, /*offset=*/0, bi);
     }
 
-    const int native_block_dim =
-        get_max_total_threads_per_threadgroup(pipeline_state_.get());
-
-    int num_threads_per_group = 0;
-    // Sometimes it is helpful to limit the maximum GPU block dim for the
-    // kernels. E.g., when you are generating iPhone shaders on a Mac.
-    const int prescribed_block_dim =
-        (std::size_t)get_current_program().config.max_block_dim;
-    if (prescribed_block_dim != 0) {
-      num_threads_per_group = std::min(native_block_dim, prescribed_block_dim);
-    } else {
-      num_threads_per_group = native_block_dim;
-    }
-
-    const int num_groups =
-        ((num_threads + num_threads_per_group - 1) / num_threads_per_group);
-
-    const int dispatch_num_threads =
-        std::min(num_threads, num_threads_per_group);
-
+    const auto tgs = get_thread_grid_settings(num_threads);
     if (!is_jit_evalutor_) {
       ActionRecorder::get_instance().record(
           "launch_kernel",
           {ActionArg("kernel_name", kernel_attribs_.name),
-           ActionArg("num_groups", num_groups),
-           ActionArg("num_threads_per_group", dispatch_num_threads)});
+           ActionArg("num_threadgroups", tgs.num_threadgroups),
+           ActionArg("num_threads_per_group", tgs.num_threads_per_group)});
     }
 
-    dispatch_threadgroups(encoder.get(), num_groups, dispatch_num_threads);
+    dispatch_threadgroups(encoder.get(), tgs.num_threadgroups,
+                          tgs.num_threads_per_group);
     end_encoding(encoder.get());
   }
 
-  const bool is_jit_evalutor_;
+  struct ThreadGridSettings {
+    int num_threads_per_group;
+    int num_threadgroups;
+  };
+
+  ThreadGridSettings get_thread_grid_settings(int num_threads) {
+    int num_threads_per_group =
+        get_max_total_threads_per_threadgroup(pipeline_state_.get());
+    // Sometimes it is helpful to limit the maximum GPU block dim for the
+    // kernels. E.g., when you are generating iPhone shaders on a Mac.
+    const int prescribed_block_dim = config_->max_block_dim;
+    if (prescribed_block_dim > 0) {
+      num_threads_per_group =
+          std::min(num_threads_per_group, prescribed_block_dim);
+    }
+    // Cap by |num_threads| in case this is a very small kernel.
+    num_threads_per_group = std::min(num_threads_per_group, num_threads);
+
+    int num_threadgroups =
+        ((num_threads + num_threads_per_group - 1) / num_threads_per_group);
+    // TODO(k-ye): Make sure |saturating_grid_dim| is configurable in ti.init()
+    // before enabling this.
+    // const int prescribed_grid_dim = config_->saturating_grid_dim;
+    // if (prescribed_grid_dim > 0) {
+    //   num_threadgroups = std::min(num_threadgroups, prescribed_grid_dim);
+    // }
+    return {num_threads_per_group, num_threadgroups};
+  }
+
   KernelAttributes kernel_attribs_;
+  const CompileConfig *const config_;
+  const bool is_jit_evalutor_;
   nsobj_unique_ptr<MTLComputePipelineState> pipeline_state_;
 };
 
@@ -211,6 +226,12 @@ class RuntimeListOpsMtlKernel : public CompiledMtlKernelBase {
     mem[1] = child_snode_id_;
     const auto &sn_descs = *params.snode_descriptors;
     mem[2] = total_num_self_from_root(sn_descs, child_snode_id_);
+    TI_DEBUG(
+        "Registered RuntimeListOpsMtlKernel: name={} num_threads={} "
+        "parent_snode={} "
+        "child_snode={} max_num_elems={} ",
+        params.kernel_attribs->name, params.kernel_attribs->num_threads, mem[0],
+        mem[1], mem[2]);
     did_modify_range(args_buffer_.get(), /*location=*/0, args_mem_->size());
   }
 
@@ -253,6 +274,7 @@ class CompiledTaichiKernel {
     MTLDevice *device;
     MemoryPool *mem_pool;
     KernelProfilerBase *profiler;
+    const CompileConfig *compile_config;
   };
 
   CompiledTaichiKernel(Params params)
@@ -260,8 +282,8 @@ class CompiledTaichiKernel {
         ctx_attribs(*params.ctx_attribs) {
     auto *const device = params.device;
     auto kernel_lib = new_library_with_source(
-        device, params.mtl_source_code,
-        infer_msl_version(ti_kernel_attribs.used_features));
+        device, params.mtl_source_code, params.compile_config->fast_math,
+        infer_msl_version(params.ti_kernel_attribs->used_features));
     if (kernel_lib == nullptr) {
       TI_ERROR("Failed to compile Metal kernel! Generated code:\n\n{}",
                params.mtl_source_code);
@@ -286,6 +308,7 @@ class CompiledTaichiKernel {
         RuntimeListOpsMtlKernel::Params kparams;
         kparams.kernel_attribs = &ka;
         kparams.is_jit_evaluator = ti_kernel_attribs.is_jit_evaluator;
+        kparams.config = params.compile_config;
         kparams.device = device;
         kparams.mtl_func = mtl_func.get();
         kparams.mem_pool = params.mem_pool;
@@ -295,6 +318,7 @@ class CompiledTaichiKernel {
         UserMtlKernel::Params kparams;
         kparams.kernel_attribs = &ka;
         kparams.is_jit_evaluator = ti_kernel_attribs.is_jit_evaluator;
+        kparams.config = params.compile_config;
         kparams.device = device;
         kparams.mtl_func = mtl_func.get();
         kernel = std::make_unique<UserMtlKernel>(kparams);
@@ -574,6 +598,7 @@ class KernelManager::Impl {
     params.device = device_.get();
     params.mem_pool = mem_pool_;
     params.profiler = profiler_;
+    params.compile_config = config_;
     compiled_taichi_kernels_[taichi_kernel_name] =
         std::make_unique<CompiledTaichiKernel>(params);
     TI_DEBUG("Registered Taichi kernel <{}>", taichi_kernel_name);
@@ -651,8 +676,6 @@ class KernelManager::Impl {
       rtm_meta->element_stride = sn_meta.element_stride;
       rtm_meta->num_slots = sn_meta.num_slots;
       rtm_meta->mem_offset_in_parent = sn_meta.mem_offset_in_parent;
-      TI_DEBUG("SnodeMeta\n  id={}\n  element_stride={}\n  num_slots={}\n", i,
-               rtm_meta->element_stride, rtm_meta->num_slots);
       switch (sn_meta.snode->type) {
         case SNodeType::dense:
           rtm_meta->type = SNodeMeta::Dense;
@@ -671,6 +694,11 @@ class KernelManager::Impl {
                    snode_type_name(sn_meta.snode->type));
           break;
       }
+      TI_DEBUG(
+          "SnodeMeta\n  id={}\n  type={}\n  element_stride={}\n  "
+          "num_slots={}\n",
+          i, snode_type_name(sn_meta.snode->type), rtm_meta->element_stride,
+          rtm_meta->num_slots);
     }
     size_t addr_offset = sizeof(SNodeMeta) * max_snodes;
     addr += addr_offset;
@@ -701,7 +729,7 @@ class KernelManager::Impl {
     TI_DEBUG("Initialized SNodeExtractors, size={} accumulated={}", addr_offset,
              (addr - addr_begin));
     // init snode_lists
-    ListManagerData *const rtm_list_head =
+    ListManagerData *const rtm_list_begin =
         reinterpret_cast<ListManagerData *>(addr);
     for (int i = 0; i < max_snodes; ++i) {
       auto iter = snode_descriptors.find(i);
@@ -721,7 +749,7 @@ class KernelManager::Impl {
     }
     addr_offset = sizeof(ListManagerData) * max_snodes;
     addr += addr_offset;
-    TI_DEBUG("Initialized ListManagerData, size={} accumuated={}", addr_offset,
+    TI_DEBUG("Initialized ListManagerData, size={} accumulated={}", addr_offset,
              (addr - addr_begin));
     // init rand_seeds
     // TODO(k-ye): Provide a way to use a fixed seed in dev mode.
@@ -740,9 +768,9 @@ class KernelManager::Impl {
              kNumRandSeeds * sizeof(uint32_t), (addr - addr_begin));
 
     if (compiled_structs_.need_snode_lists_data) {
-      auto *alloc = reinterpret_cast<MemoryAllocator *>(addr);
+      auto *mem_alloc = reinterpret_cast<MemoryAllocator *>(addr);
       // Make sure the retured memory address is always greater than 1.
-      alloc->next = shaders::kAlignment;
+      mem_alloc->next = shaders::kAlignment;
       // root list data are static
       ListgenElement root_elem;
       root_elem.root_mem_offset = 0;
@@ -750,8 +778,8 @@ class KernelManager::Impl {
         root_elem.coords[i] = 0;
       }
       ListManager root_lm;
-      root_lm.lm_data = rtm_list_head + root_id;
-      root_lm.mem_alloc = alloc;
+      root_lm.lm_data = rtm_list_begin + root_id;
+      root_lm.mem_alloc = mem_alloc;
       root_lm.append(root_elem);
     }
 
@@ -760,8 +788,7 @@ class KernelManager::Impl {
   }
 
   void init_print_buffer() {
-    // This includes setting PrintMsgAllocator::next to zero.
-    std::memset(print_mem_->ptr(), 0, print_mem_->size());
+    // TODO(k-ye): Do we need this at all?
     did_modify_range(print_buffer_.get(), /*location=*/0, print_mem_->size());
   }
 

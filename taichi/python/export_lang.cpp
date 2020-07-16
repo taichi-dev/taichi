@@ -113,7 +113,7 @@ void export_lang(py::module &m) {
       .def_readwrite("advanced_optimization",
                      &CompileConfig::advanced_optimization)
       .def_readwrite("ad_stack_size", &CompileConfig::ad_stack_size)
-      .def_readwrite("async", &CompileConfig::async)
+      .def_readwrite("async_mode", &CompileConfig::async_mode)
       .def_readwrite("flatten_if", &CompileConfig::flatten_if);
 
   m.def("reset_default_compile_config",
@@ -418,6 +418,8 @@ void export_lang(py::module &m) {
 
   m.def("expr_assume_in_range", AssumeInRange);
 
+  m.def("expr_select", expr_select);
+
 #define DEFINE_EXPRESSION_OP_UNARY(x) m.def("expr_" #x, expr_##x);
 
   m.def("expr_neg", [&](const Expr &e) { return -e; });
@@ -587,6 +589,9 @@ void export_lang(py::module &m) {
 
   // A temporary option which will be removed soon in the future
   m.def("toggle_advanced_optimization", [](bool option) {
+    TI_WARN(
+        "'ti.core.toggle_advance_optimization(False)' is deprecated."
+        " Use 'ti.init(advanced_optimization=False)' instead");
     get_current_program().config.advanced_optimization = option;
   });
 }

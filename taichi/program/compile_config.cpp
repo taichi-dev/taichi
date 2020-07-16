@@ -33,7 +33,7 @@ CompileConfig::CompileConfig() {
   default_gpu_block_dim = 128;
   verbose = true;
   fast_math = true;
-  async = false;
+  async_mode = false;
   flatten_if = false;
 
 #if defined(TI_PLATFORM_WINDOWS) or defined(TI_ARCH_ARM)

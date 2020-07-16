@@ -68,15 +68,15 @@ class StructCompiler {
       ++max_snodes_;
     }
 
+    CompiledStructs result;
+    result.root_size = compute_snode_size(&root);
+    emit_runtime_structs();
+    line_appender_.dump(&result.runtime_utils_source_code);
+    result.runtime_size = compute_runtime_size();
     for (auto &n : snodes_rev) {
       generate_types(*n);
     }
-    CompiledStructs result;
-    result.root_size = compute_snode_size(&root);
     line_appender_.dump(&result.snode_structs_source_code);
-    emit_runtime_structs(&root);
-    line_appender_.dump(&result.runtime_utils_source_code);
-    result.runtime_size = compute_runtime_size();
     result.need_snode_lists_data = has_sparse_snode_;
     result.max_snodes = max_snodes_;
     result.snode_descriptors = std::move(snode_descriptors_);
@@ -97,34 +97,27 @@ class StructCompiler {
   void generate_types(const SNode &snode) {
     const bool is_place = snode.is_place();
     if (!is_place) {
+      // Generate {snode}_ch
       const std::string class_name = snode.node_type_name + "_ch";
       emit("class {} {{", class_name);
       emit(" public:");
-      emit("  {}(device byte* a) : addr_(a) {{}}", class_name);
+      emit("  {}(device byte *a) : addr_(a) {{}}", class_name);
 
-      std::string stride_str;
+      std::string stride_str = "0";
       for (int i = 0; i < (int)snode.ch.size(); i++) {
         const auto &ch_node_name = snode.ch[i]->node_type_name;
         emit("  {} get{}() {{", ch_node_name, i);
-        if (stride_str.empty()) {
-          emit("    return {{addr_}};");
-          stride_str = ch_node_name + "::stride";
-        } else {
-          emit("    return {{addr_ + ({})}};", stride_str);
-          stride_str += " + " + ch_node_name + "::stride";
-        }
+        emit("    return {{addr_ + ({})}};", stride_str);
+        stride_str += " + " + ch_node_name + "::stride";
         emit("  }}");
         emit("");
       }
-      emit("  device byte* addr() {{ return addr_; }}");
+      emit("  device byte *addr() {{ return addr_; }}");
       emit("");
-      if (stride_str.empty()) {
-        // Is it possible for this to have no children?
-        stride_str = "0";
-      }
+      // Is it possible for this to have no children?
       emit("  constant static constexpr int stride = {};", stride_str);
       emit(" private:");
-      emit("  device byte* addr_;");
+      emit("  device byte *addr_;");
       emit("}};");
     }
     emit("");
@@ -212,10 +205,8 @@ class StructCompiler {
     return sn_desc.stride;
   }
 
-  void emit_runtime_structs(const SNode *root) {
+  void emit_runtime_structs() {
     line_appender_.append_raw(shaders::kMetalRuntimeStructsSourceCode);
-    emit("");
-    line_appender_.append_raw(shaders::kMetalRuntimeUtilsSourceCode);
     emit("");
     emit("struct Runtime {{");
     emit("  SNodeMeta snode_metas[{}];", max_snodes_);
@@ -223,6 +214,8 @@ class StructCompiler {
     emit("  ListManagerData snode_lists[{}];", max_snodes_);
     emit("  uint32_t rand_seeds[{}];", kNumRandSeeds);
     emit("}};");
+    line_appender_.append_raw(shaders::kMetalRuntimeUtilsSourceCode);
+    emit("");
   }
 
   size_t compute_runtime_size() {

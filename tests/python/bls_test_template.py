@@ -109,13 +109,6 @@ def bls_particle_grid(N,
                       pointer_level=1,
                       sort_points=True,
                       use_offset=True):
-    if use_offset:
-        grid_offset = (-N // 2, -N // 2)
-        world_offset = -0.5
-    else:
-        grid_offset = (0, 0)
-        world_offset = 0
-
     M = N * N * ppc
 
     m1 = ti.var(ti.f32)
@@ -141,6 +134,13 @@ def bls_particle_grid(N,
         block = ti.root.pointer(ti.ij, N // block_size // 4).pointer(ti.ij, 4)
     else:
         raise ValueError('pointer_level must be 1 or 2')
+    
+    if use_offset:
+        grid_offset = (-N // 2, -N // 2)
+        world_offset = -0.5
+    else:
+        grid_offset = (0, 0)
+        world_offset = 0
 
     block.dense(ti.ij, block_size).place(m1, offset=grid_offset)
     block.dense(ti.ij, block_size).place(m2, offset=grid_offset)
@@ -168,7 +168,7 @@ def bls_particle_grid(N,
     def insert():
         ti.block_dim(256)
         for i in x:
-            base = ti.Vector([int(x[i][0] * N - grid_offset[0]), int(x[i][1] * N - grid_offset[1])])
+            base = ti.Vector([int(ti.floor(x[i][0] * N - grid_offset[0])), int(ti.floor(x[i][1] * N - grid_offset[1]))])
             ti.append(pid.parent(), base, i)
 
     scatter_weight = (N * N / M) * 0.01

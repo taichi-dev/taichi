@@ -98,6 +98,8 @@ def test_constant_matrices():
     r.z = r.w
     r.w = r.x
     assert np.allclose(w.to_numpy(), np.array([5, 15]))
+    assert ti.select(ti.Vector([1, 0]), ti.Vector([2, 3]),
+                     ti.Vector([4, 5])) == ti.Vector([2, 5])
     s[0, 1] = 2
     assert s[0, 1] == 2
 

@@ -95,19 +95,6 @@ def test_loop_var_struct():
 
 
 @ti.must_throw(ti.TaichiSyntaxError)
-def test_ternary():
-    x = ti.var(ti.f32)
-
-    ti.root.dense(ti.i, 1).place(x)
-
-    @ti.kernel
-    def func():
-        a = 0 if True else 123
-
-    func()
-
-
-@ti.must_throw(ti.TaichiSyntaxError)
 def test_func_def_in_kernel():
     @ti.kernel
     def kernel():

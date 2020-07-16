@@ -164,6 +164,25 @@ class Matrix(TaichiOperations):
                 ret.entries[i] = foo(self.entries[i], other)
         return ret
 
+    def broadcast_copy(self, other):
+        if isinstance(other, (list, tuple)):
+            other = Matrix(other)
+        if not isinstance(other, Matrix):
+            ret = self.empty_copy()
+            ret.entries = [other for _ in ret.entries]
+            other = ret
+        assert self.m == other.m and self.n == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
+        return other
+
+    def element_wise_ternary(self, foo, other, extra):
+        ret = self.empty_copy()
+        other = self.broadcast_copy(other)
+        extra = self.broadcast_copy(extra)
+        for i in range(self.n * self.m):
+            ret.entries[i] = foo(self.entries[i], other.entries[i],
+                                 extra.entries[i])
+        return ret
+
     def element_wise_writeback_binary(self, foo, other):
         ret = self.empty_copy()
         if isinstance(other, (list, tuple)):

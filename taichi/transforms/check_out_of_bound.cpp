@@ -28,6 +28,10 @@ class CheckOutOfBound : public BasicStmtVisitor {
       return;
     TI_ASSERT(stmt->snodes.size() == 1);
     auto snode = stmt->snodes[0];
+    if (snode->type != SNodeType::place) {
+      // TODO: support non-place node bound check
+      return;
+    }
     bool has_offset = !(snode->index_offsets.empty());
     auto new_stmts = VecStatement();
     auto zero = new_stmts.push_back<ConstStmt>(LaneAttribute<TypedConstant>(0));

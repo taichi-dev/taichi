@@ -33,7 +33,7 @@ struct CompileConfig {
   bool verbose;
   bool fast_math;
   bool use_unified_memory;
-  bool async;
+  bool async_mode;
   bool flatten_if;
   DataType default_fp;
   DataType default_ip;

@@ -230,16 +230,17 @@ namespace irpass {
 
 bool constant_fold(IRNode *root) {
   TI_AUTO_PROF;
+  const auto &cfg = root->get_config();
   // @archibate found that `debug=True` will cause JIT kernels
   // failed to evaluate correctly (always return 0), so we simply
   // disable constant_fold when config.debug is turned on.
   // Discussion:
   // https://github.com/taichi-dev/taichi/pull/839#issuecomment-626107010
-  if (root->get_config().debug) {
+  if (cfg.debug) {
     TI_TRACE("config.debug enabled, ignoring constant fold");
     return false;
   }
-  if (!root->get_config().advanced_optimization)
+  if (!cfg.advanced_optimization || cfg.async_mode)
     return false;
   return ConstantFold::run(root);
 }

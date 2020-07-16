@@ -177,6 +177,9 @@ class OffloadedStmt : public Stmt {
   bool reversed;
   int num_cpu_threads;
   Arch device;
+
+  std::vector<int> index_offsets;
+
   std::unique_ptr<Block> tls_prologue;
   std::unique_ptr<Block> bls_prologue;
   std::unique_ptr<Block> body;
@@ -220,7 +223,8 @@ class OffloadedStmt : public Stmt {
                      block_dim,
                      reversed,
                      num_cpu_threads,
-                     device);
+                     device,
+                     index_offsets);
   TI_DEFINE_ACCEPT
 };
 

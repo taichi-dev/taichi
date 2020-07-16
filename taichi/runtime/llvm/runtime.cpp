@@ -1,6 +1,9 @@
 // This file will only be compiled into llvm bitcode by clang.
 // The generated bitcode will likely get inlined for performance.
 
+// TODO: rename error message buffer to format buffer
+// TODO: remove host_vnsprintf
+
 #if !defined(TI_INCLUDED) || !defined(_WIN32)
 
 #include <atomic>
@@ -518,6 +521,7 @@ struct LLVMRuntime {
   void (*profiler_stop)(Ptr);
 
   char error_message_buffer[taichi_max_message_length];
+  uint64 error_message_arguments[taichi_max_message_length];
   i32 error_message_lock = 0;
   i64 error_code = 0;
 
@@ -656,6 +660,12 @@ void runtime_retrieve_error_message(LLVMRuntime *runtime) {
                       runtime->error_message_buffer);
 }
 
+void runtime_retrieve_error_message_argument(LLVMRuntime *runtime,
+                                             int argument_id) {
+  runtime->set_result(taichi_result_buffer_error_id,
+                      runtime->error_message_arguments[argument_id]);
+}
+
 #if ARCH_cuda
 void __assertfail(const char *message,
                   const char *file,
@@ -701,22 +711,20 @@ i32 assert_msg_buffer_lock = 0;
 void taichi_assert_format(LLVMRuntime *runtime,
                           i32 test,
                           const char *format,
-                          ...) {
-  // This function is CPU-only.
-  // It seems that using std::va_list leads to an llvm::SelectionDAG error.
-  // Also note that CUDA cannot call runtime->host_vsnprintf.
+                          int num_arguments,
+                          uint64 *arguments) {
   if (!enable_assert || test != 0 || runtime->error_code)
     return;
-  std::va_list args;
-  va_start(args, format);
   locked_task(&runtime->error_message_lock, [&] {
     if (!runtime->error_code) {
       runtime->error_code = 1;  // Assertion failure
-      runtime->host_vsnprintf(runtime->error_message_buffer,
-                              taichi_max_message_length, format, args);
+      memcpy(runtime->error_message_buffer, format,
+             std::min(strlen(format), taichi_max_message_length));
+      for (int i = 0; i < num_arguments; i++) {
+        runtime->error_message_arguments[i] = arguments[i];
+      }
     }
   });
-  va_end(args);
 }
 
 Ptr LLVMRuntime::allocate_aligned(std::size_t size, std::size_t alignment) {

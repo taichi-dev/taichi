@@ -401,9 +401,36 @@ void Program::check_runtime_error() {
   if (error_code) {
     runtime_jit_module->call<void *>("runtime_retrieve_error_message",
                                      llvm_runtime);
-    auto error_message = fetch_result<char *>(taichi_result_buffer_error_id);
+    auto error_message_template =
+        std::string(fetch_result<char *>(taichi_result_buffer_error_id));
+
     if (error_code == 1) {
-      TI_ERROR("Assertion failure: {}", error_message);
+      std::string error_message_formatted;
+      int argument_id = 0;
+      for (int i = 0; i < (int)error_message_template.size(); i++) {
+        if (error_message_template[i] != '%') {
+          error_message_formatted += error_message_template[i];
+        } else {
+          auto dtype = error_message_template[i + 1];
+          runtime_jit_module->call<void *>(
+              "runtime_retrieve_error_message_argument", llvm_runtime,
+              argument_id);
+          auto argument = fetch_result<uint64>(taichi_result_buffer_error_id);
+          if (dtype == 'd') {
+            error_message_formatted += fmt::format(
+                "{}", taichi_union_cast_with_different_sizes<int32>(argument));
+          } else if (dtype == 'f') {
+            error_message_formatted += fmt::format(
+                "{}",
+                taichi_union_cast_with_different_sizes<float32>(argument));
+          } else {
+            TI_ERROR("Data type identifier %{} is not supported", dtype);
+          }
+          argument_id += 1;
+          i++;  // skip the dtype char
+        }
+      }
+      TI_ERROR("Assertion failure: {}", error_message_formatted);
     } else {
       TI_NOT_IMPLEMENTED
     }

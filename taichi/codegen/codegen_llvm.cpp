@@ -889,10 +889,42 @@ void CodeGenLLVM::visit(LocalStoreStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(AssertStmt *stmt) {
-  // This visitor function ignores stmt->args since string formatting is not
-  // supported on all LLVM backends
-  llvm_val[stmt] = call("taichi_assert", get_context(), llvm_val[stmt->cond],
-                        builder->CreateGlobalStringPtr(stmt->text));
+  if (stmt->args.empty()) {
+    llvm_val[stmt] = call("taichi_assert", get_context(), llvm_val[stmt->cond],
+                          builder->CreateGlobalStringPtr(stmt->text));
+  } else {
+    auto argument_buffer_size = llvm::ArrayType::get(
+        llvm::Type::getInt64Ty(*llvm_context), stmt->args.size());
+    // TODO: maybe let all asserts in a single offload share a single buffer?
+    auto arguments = create_entry_block_alloca(argument_buffer_size);
+
+    std::vector<Value *> args;
+    args.emplace_back(get_runtime());
+    args.emplace_back(llvm_val[stmt->cond]);
+    args.emplace_back(builder->CreateGlobalStringPtr(stmt->text));
+
+    for (int i = 0; i < stmt->args.size(); i++) {
+      auto arg = stmt->args[i];
+      TI_ASSERT(llvm_val[arg]);
+
+      auto cast_type = llvm::Type::getIntNTy(
+          *llvm_context,
+          8 * (std::size_t)data_type_size(arg->ret_type.data_type));
+      auto cast_int = builder->CreateBitCast(llvm_val[arg], cast_type);
+      auto cast_int64 =
+          builder->CreateZExt(cast_int, llvm::Type::getInt64Ty(*llvm_context));
+
+      builder->CreateStore(
+          cast_int64, builder->CreateGEP(arguments, {tlctx->get_constant(0),
+                                                     tlctx->get_constant(i)}));
+    }
+
+    args.emplace_back(tlctx->get_constant((int)stmt->args.size()));
+    args.emplace_back(builder->CreateGEP(
+        arguments, {tlctx->get_constant(0), tlctx->get_constant(0)}));
+
+    llvm_val[stmt] = create_call("taichi_assert_format", args);
+  }
 }
 
 void CodeGenLLVM::visit(SNodeOpStmt *stmt) {

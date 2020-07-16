@@ -1,9 +1,6 @@
 // This file will only be compiled into llvm bitcode by clang.
 // The generated bitcode will likely get inlined for performance.
 
-// TODO: rename error message buffer to format buffer
-// TODO: remove host_vnsprintf
-
 #if !defined(TI_INCLUDED) || !defined(_WIN32)
 
 #include <atomic>
@@ -520,7 +517,7 @@ struct LLVMRuntime {
   void (*profiler_start)(Ptr, Ptr);
   void (*profiler_stop)(Ptr);
 
-  char error_message_buffer[taichi_max_message_length];
+  char error_message_template[taichi_max_message_length];
   uint64 error_message_arguments[taichi_max_message_length];
   i32 error_message_lock = 0;
   i64 error_code = 0;
@@ -657,7 +654,7 @@ void runtime_retrieve_error_code(LLVMRuntime *runtime) {
 
 void runtime_retrieve_error_message(LLVMRuntime *runtime) {
   runtime->set_result(taichi_result_buffer_error_id,
-                      runtime->error_message_buffer);
+                      runtime->error_message_template);
 }
 
 void runtime_retrieve_error_message_argument(LLVMRuntime *runtime,
@@ -679,7 +676,7 @@ void taichi_assert_runtime(LLVMRuntime *runtime, i32 test, const char *msg) {
       locked_task(&runtime->error_message_lock, [&] {
         if (!runtime->error_code) {
           runtime->error_code = 1;  // Assertion failure
-          memcpy(runtime->error_message_buffer, msg,
+          memcpy(runtime->error_message_template, msg,
                  std::min(strlen(msg), taichi_max_message_length));
         }
       });
@@ -693,7 +690,7 @@ void taichi_assert_runtime(LLVMRuntime *runtime, i32 test, const char *msg) {
   locked_task(&runtime->error_message_lock, [&] {
     if (!runtime->error_code) {
       runtime->error_code = 1;  // Assertion failure
-      memcpy(runtime->error_message_buffer, msg,
+      memcpy(runtime->error_message_template, msg,
              std::min(strlen(msg), taichi_max_message_length));
     }
   });
@@ -718,7 +715,7 @@ void taichi_assert_format(LLVMRuntime *runtime,
   locked_task(&runtime->error_message_lock, [&] {
     if (!runtime->error_code) {
       runtime->error_code = 1;  // Assertion failure
-      memcpy(runtime->error_message_buffer, format,
+      memcpy(runtime->error_message_template, format,
              std::min(strlen(format), taichi_max_message_length));
       for (int i = 0; i < num_arguments; i++) {
         runtime->error_message_arguments[i] = arguments[i];

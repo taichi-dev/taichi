@@ -40,7 +40,7 @@ class CheckOutOfBound : public BasicStmtVisitor {
 
     std::string msg = fmt::format("(kernel={}) Accessing Tensor of size [",
                                   stmt->get_kernel()->name);
-    std::string offset_msg = "Offset [";
+    std::string offset_msg = "offset [";
     std::vector<Stmt *> args;
     for (int i = 0; i < stmt->indices.size(); i++) {
       int offset_i = has_offset ? snode->index_offsets[i] : 0;
@@ -69,8 +69,8 @@ class CheckOutOfBound : public BasicStmtVisitor {
       offset_msg += std::to_string(offset_i);
       args.emplace_back(stmt->indices[i]);
     }
-    offset_msg += "]";
-    msg += "] " + (has_offset ? offset_msg : "") + " with indices (";
+    offset_msg += "] ";
+    msg += "] " + (has_offset ? offset_msg : "") + "with indices (";
     for (int i = 0; i < stmt->indices.size(); i++) {
       if (i > 0)
         msg += ", ";

@@ -5,21 +5,21 @@ from .exception import TaichiSyntaxError
 
 
 class ScopeGuard:
-    def __init__(self, t, stmt_block=None):
-        self.t = t
+    def __init__(self, scopes, stmt_block=None):
+        self.scopes = scopes
         self.stmt_block = stmt_block
 
     def __enter__(self):
-        self.t.local_scopes.append([])
+        self.scopes.append([])
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        local = self.t.local_scopes[-1]
+        local = self.scopes[-1]
         if self.stmt_block is not None:
             for var in reversed(local):
                 stmt = ASTTransformer.parse_stmt('del var')
                 stmt.targets[0].id = var
                 self.stmt_block.append(stmt)
-        self.t.local_scopes = self.t.local_scopes[:-1]
+        self.scopes.pop()
 
 
 # Single-pass transform
@@ -32,17 +32,26 @@ class ASTTransformer(ast.NodeTransformer):
                  arg_features=None):
         super().__init__()
         self.local_scopes = []
+        self.control_scopes = []
         self.excluded_parameters = excluded_paremeters
         self.is_kernel = is_kernel
         self.func = func
         self.arg_features = arg_features
         self.returns = None
 
+    # e.g.: FunctionDef, Module, Global
     def variable_scope(self, *args):
-        return ScopeGuard(self, *args)
+        return ScopeGuard(self.local_scopes, *args)
+
+    # e.g.: For, While
+    def control_scope(self):
+        return ScopeGuard(self.control_scopes)
 
     def current_scope(self):
         return self.local_scopes[-1]
+
+    def current_control_scope(self):
+        return self.control_scopes[-1]
 
     def var_declared(self, name):
         for s in self.local_scopes:
@@ -207,7 +216,10 @@ class ASTTransformer(ast.NodeTransformer):
             raise TaichiSyntaxError(
                 "'else' clause for 'while' not supported in Taichi kernels")
 
-        template = '''
+        with self.control_scope():
+            self.current_control_scope().append('while')
+
+            template = '''
 if 1:
   ti.core.begin_frontend_while(ti.Expr(1).ptr)
   __while_cond = 0
@@ -217,13 +229,13 @@ if 1:
     break
   ti.core.pop_scope()
 '''
-        cond = node.test
-        t = ast.parse(template).body[0]
-        t.body[1].value = cond
-        t.body = t.body[:3] + node.body + t.body[3:]
+            cond = node.test
+            t = ast.parse(template).body[0]
+            t.body[1].value = cond
+            t.body = t.body[:3] + node.body + t.body[3:]
 
-        self.generic_visit(t, ['body'])
-        return ast.copy_location(t, node)
+            self.generic_visit(t, ['body'])
+            return ast.copy_location(t, node)
 
     def visit_block(self, list_stmt):
         for i, l in enumerate(list_stmt):
@@ -290,6 +302,8 @@ if 1:
         # for i in ti.static(range(n))
         # for i, j in ti.static(ti.ndrange(n))
         # for I in ti.static(ti.grouped(ti.ndrange(n, m)))
+
+        self.current_control_scope().append('static')
         self.generic_visit(node, ['body'])
         if is_grouped:
             assert len(node.iter.args[0].args) == 1
@@ -462,36 +476,40 @@ if 1:
             raise TaichiSyntaxError(
                 "'else' clause for 'for' not supported in Taichi kernels")
 
-        decorator = self.get_decorator(node.iter)
-        double_decorator = ''
-        if decorator != '' and len(node.iter.args) == 1:
-            double_decorator = self.get_decorator(node.iter.args[0])
-        ast.fix_missing_locations(node)
+        with self.control_scope():
+            self.current_control_scope().append('for')
 
-        if decorator == 'static':
-            if double_decorator == 'static':
-                raise TaichiSyntaxError("'ti.static' cannot be nested")
-            return self.visit_static_for(node, double_decorator == 'grouped')
-        elif decorator == 'ndrange':
-            if double_decorator != '':
-                raise TaichiSyntaxError(
-                    "No decorator is allowed inside 'ti.ndrange")
-            return self.visit_ndrange_for(node)
-        elif decorator == 'grouped':
-            if double_decorator == 'static':
-                raise TaichiSyntaxError(
-                    "'ti.static' is not allowed inside 'ti.grouped'")
-            elif double_decorator == 'ndrange':
-                return self.visit_grouped_ndrange_for(node)
-            elif double_decorator == 'grouped':
-                raise TaichiSyntaxError("'ti.grouped' cannot be nested")
-            else:
-                return self.visit_struct_for(node, is_grouped=True)
-        elif isinstance(node.iter, ast.Call) and isinstance(
-                node.iter.func, ast.Name) and node.iter.func.id == 'range':
-            return self.visit_range_for(node)
-        else:  # Struct for
-            return self.visit_struct_for(node, is_grouped=False)
+            decorator = self.get_decorator(node.iter)
+            double_decorator = ''
+            if decorator != '' and len(node.iter.args) == 1:
+                double_decorator = self.get_decorator(node.iter.args[0])
+            ast.fix_missing_locations(node)
+
+            if decorator == 'static':
+                if double_decorator == 'static':
+                    raise TaichiSyntaxError("'ti.static' cannot be nested")
+                return self.visit_static_for(node,
+                                             double_decorator == 'grouped')
+            elif decorator == 'ndrange':
+                if double_decorator != '':
+                    raise TaichiSyntaxError(
+                        "No decorator is allowed inside 'ti.ndrange")
+                return self.visit_ndrange_for(node)
+            elif decorator == 'grouped':
+                if double_decorator == 'static':
+                    raise TaichiSyntaxError(
+                        "'ti.static' is not allowed inside 'ti.grouped'")
+                elif double_decorator == 'ndrange':
+                    return self.visit_grouped_ndrange_for(node)
+                elif double_decorator == 'grouped':
+                    raise TaichiSyntaxError("'ti.grouped' cannot be nested")
+                else:
+                    return self.visit_struct_for(node, is_grouped=True)
+            elif isinstance(node.iter, ast.Call) and isinstance(
+                    node.iter.func, ast.Name) and node.iter.func.id == 'range':
+                return self.visit_range_for(node)
+            else:  # Struct for
+                return self.visit_struct_for(node, is_grouped=False)
 
     @staticmethod
     def parse_stmt(stmt):
@@ -531,10 +549,16 @@ if 1:
         return ast.copy_location(call, node)
 
     def visit_Break(self, node):
-        return self.parse_stmt('ti.core.insert_break_stmt()')
+        if 'static' in self.current_control_scope():
+            return node
+        else:
+            return self.parse_stmt('ti.core.insert_break_stmt()')
 
     def visit_Continue(self, node):
-        return self.parse_stmt('ti.core.insert_continue_stmt()')
+        if 'static' in self.current_control_scope():
+            return node
+        else:
+            return self.parse_stmt('ti.core.insert_continue_stmt()')
 
     def visit_Call(self, node):
         if not (isinstance(node.func, ast.Attribute)

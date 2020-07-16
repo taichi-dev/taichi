@@ -24,6 +24,8 @@ Profiling APIs
 There are 3 ways to use this profiler:
 
 1. ``ti.profiler.start()`` and ``ti.profiler.stop()`` are the most fundemental APIs:
+   It will measure the time difference between ``start`` and ``stop``.
+   Then save the result according to the given name. e.g.:
 
 .. code-block:: python
 
@@ -48,7 +50,15 @@ There are 3 ways to use this profiler:
     ti.profiler.print()
 
 
-2. ``ti.profiler()``, this one makes our code cleaner:
+.. code-block:: none
+
+      min   |   avg   |   max   |  num  |  total  |    name
+     0.100s |  0.100s |  0.100s |    1x |  0.100s | B
+    10.10ms | 10.10ms | 10.10ms |    1x | 10.10ms | A
+
+
+2. ``ti.profiler()``, this one makes our code cleaner.
+   Basically, it will automatically invoke ``stop`` when a new record is started. e.g.:
 
 .. code-block:: python
 
@@ -72,18 +82,16 @@ There are 3 ways to use this profiler:
     ti.profiler.print()
 
 
-.. note::
+.. code-block:: none
 
-    Running 1 and 2 should obtain something like:
-
-    .. code-block:: none
-
-          min   |   avg   |   max   |  num  |  total  |    name
-         0.100s |  0.100s |  0.100s |    1x |  0.100s | B
-        10.10ms | 10.10ms | 10.10ms |    1x | 10.10ms | A
+      min   |   avg   |   max   |  num  |  total  |    name
+     0.100s |  0.100s |  0.100s |    1x |  0.100s | B
+    10.10ms | 10.10ms | 10.10ms |    1x | 10.10ms | A
 
 
-3. ``@ti.profiler.timed``, this one is very intuitive when profiling kernels:
+3. ``@ti.profiler.timed``, this one is very intuitive when profiling kernels.
+   It will measure the time spent in the function, i.e. ``start`` when entering the function,
+   ``stop`` when leaving the function, and the record name is the function name.
 
 .. code-block:: python
 
@@ -105,6 +113,13 @@ There are 3 ways to use this profiler:
     ti.profiler.print()
 
 
+.. code-block:: none
+
+      min   |   avg   |   max   |  num  |  total  |    name
+     0.100s |  0.100s |  0.100s |    1x |  0.100s | do_something_B
+    10.10ms | 10.10ms | 10.10ms |    1x | 10.10ms | do_something_A
+
+
 .. warning::
 
     When combining ``@ti.profiler.timed`` with other decorators like ``@ti.kernel``,
@@ -116,17 +131,6 @@ There are 3 ways to use this profiler:
             @ti.kernel
             def substep():
                 ...
-
-
-.. note::
-
-    Running 3 should obtain something like:
-
-    .. code-block:: none
-
-          min   |   avg   |   max   |  num  |  total  |    name
-         0.100s |  0.100s |  0.100s |    1x |  0.100s | do_something_B
-        10.10ms | 10.10ms | 10.10ms |    1x | 10.10ms | do_something_A
 
 
 Recording multiple entries

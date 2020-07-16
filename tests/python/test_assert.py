@@ -3,7 +3,7 @@ import pytest
 
 
 @ti.require(ti.extension.assertion)
-@ti.all_archs_with(debug=True)
+@ti.all_archs_with(debug=True, gdb_trigger=False)
 def test_assert_minimal():
     ti.set_gdb_trigger(False)
 
@@ -16,10 +16,8 @@ def test_assert_minimal():
 
 
 @ti.require(ti.extension.assertion)
-@ti.all_archs_with(debug=True)
+@ti.all_archs_with(debug=True, gdb_trigger=False)
 def test_assert_basic():
-    ti.set_gdb_trigger(False)
-
     @ti.kernel
     def func():
         x = 20
@@ -30,10 +28,20 @@ def test_assert_basic():
 
 
 @ti.require(ti.extension.assertion)
-@ti.all_archs_with(debug=True)
-def test_assert_ok():
-    ti.set_gdb_trigger(False)
+@ti.all_archs_with(debug=True, gdb_trigger=False)
+def test_assert_message():
+    @ti.kernel
+    def func():
+        x = 20
+        assert 10 <= x < 20, 'Foo bar'
 
+    with pytest.raises(RuntimeError, match='Foo bar'):
+        func()
+
+
+@ti.require(ti.extension.assertion)
+@ti.all_archs_with(debug=True, gdb_trigger=False)
+def test_assert_ok():
     @ti.kernel
     def func():
         x = 20

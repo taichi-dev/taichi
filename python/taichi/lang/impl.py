@@ -1,5 +1,4 @@
 import inspect
-import warnings
 from .core import taichi_lang_core
 from .expr import Expr
 from .snode import SNode
@@ -345,7 +344,7 @@ AOS = Layout(soa=False)
 @python_scope
 def layout(func):
     assert not pytaichi.materialized, "All layout must be specified before the first kernel launch / data access."
-    warnings.warn(
+    warning(
         f"@ti.layout will be deprecated in the future, use ti.root directly to specify data layout anytime before the data structure materializes.",
         PendingDeprecationWarning,
         stacklevel=3)

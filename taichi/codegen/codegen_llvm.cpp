@@ -892,6 +892,7 @@ void CodeGenLLVM::visit(AssertStmt *stmt) {
   TI_ASSERT((int)stmt->args.size() <= taichi_error_message_max_num_arguments);
   auto argument_buffer_size = llvm::ArrayType::get(
       llvm::Type::getInt64Ty(*llvm_context), stmt->args.size());
+
   // TODO: maybe let all asserts in a single offload share a single buffer?
   auto arguments = create_entry_block_alloca(argument_buffer_size);
 
@@ -904,13 +905,18 @@ void CodeGenLLVM::visit(AssertStmt *stmt) {
     auto arg = stmt->args[i];
     TI_ASSERT(llvm_val[arg]);
 
+    // First convert the argument to an integral type with the same number of
+    // bits:
     auto cast_type = llvm::Type::getIntNTy(
         *llvm_context,
         8 * (std::size_t)data_type_size(arg->ret_type.data_type));
     auto cast_int = builder->CreateBitCast(llvm_val[arg], cast_type);
+
+    // Then zero-extend the conversion result into int64:
     auto cast_int64 =
         builder->CreateZExt(cast_int, llvm::Type::getInt64Ty(*llvm_context));
 
+    // Finally store the int64 value to the argument buffer:
     builder->CreateStore(
         cast_int64, builder->CreateGEP(arguments, {tlctx->get_constant(0),
                                                    tlctx->get_constant(i)}));

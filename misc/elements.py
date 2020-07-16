@@ -46,8 +46,6 @@ class MPMSolver:
         self.n_particles[None] = 10000
         for i in range(10000):
             self.x[i] = [random.random() * 0.5, random.random() * 0.5]
-        
-        
 
     @ti.kernel
     def build_pid(self):
@@ -62,38 +60,7 @@ class MPMSolver:
             print(self.substeps)
             self.grid.deactivate_all()
             self.build_pid()
-
-    @ti.func
-    def seed_particle(self, i, x):
-        self.x[i] = x
-
-    @ti.kernel
-    def seed(self, new_particles: ti.i32):
-        for i in range(self.n_particles[None],
-                       self.n_particles[None] + new_particles):
-            x = ti.Vector.zero(ti.f32, self.dim)
-            for k in ti.static(range(self.dim)):
-                x[k] = self.source_bound[0][k] + ti.random(
-                ) * self.source_bound[1][k]
-            self.seed_particle(i, x)
-            
-    def add_cube(self,
-                 lower_corner,
-                 cube_size):
-        sample_density = 2**self.dim
-        vol = 1
-        for i in range(self.dim):
-            vol = vol * cube_size[i]
-        num_new_particles = int(sample_density * vol / self.dx**self.dim + 1)
-        assert self.n_particles[
-            None] + num_new_particles <= self.max_num_particles
-
-        for i in range(self.dim):
-            self.source_bound[0][i] = lower_corner[i]
-            self.source_bound[1][i] = cube_size[i]
-
-        self.seed(num_new_particles)
-        self.n_particles[None] += num_new_particles
+            ti.kernel_profiler_print()
 
     @ti.kernel
     def copy_dynamic_nd(self, np_x: ti.ext_arr(), input_x: ti.template()):
@@ -122,14 +89,9 @@ gui = ti.GUI("Taichi MLS-MPM", res=512, background_color=0x112F41)
 
 mpm = MPMSolver(res=(128, 128))
 
-for i in range(5):
-    mpm.add_cube(lower_corner=[0.2 + i * 0.1, 0.3 + i * 0.1],
-                 cube_size=[0.1, 0.1])
-
 for frame in range(500):
     mpm.step()
     particles = mpm.particle_info()
     pos = particles['position'] * 0.4 + 0.3
     gui.circles(pos)
     gui.show(f'{frame:06d}.png' if write_to_disk else None)
-    ti.kernel_profiler_print()

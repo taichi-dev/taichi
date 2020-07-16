@@ -7,7 +7,6 @@ TODO: Skips these tests after all tests adapted to @ti.test
 import taichi as ti
 import pytest
 
-
 ### `ti.test`
 
 

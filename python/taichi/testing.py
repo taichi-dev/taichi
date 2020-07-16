@@ -1,6 +1,6 @@
 # The load-on-request closure (LoR-C) infrastructure, credit by @archibate
 def _():
-############## HUMAN TOUCHABLE BEGIN ###################
+    ############## HUMAN TOUCHABLE BEGIN ###################
     import taichi as ti
 
     print('[Taichi] loading test module')
@@ -76,10 +76,10 @@ def _():
 
         return decorator
 
-
 ############### HUMAN TOUCHABLE END ####################
 
     return locals()
+
 
 # Equivalent to `from taichi.testing import *` in `taichi/__init__.py`:
 _ = _()

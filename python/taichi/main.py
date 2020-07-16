@@ -715,19 +715,19 @@ class TaichiMain:
             pytest_args += ['-s', '-v']
         if args.rerun:
             pytest_args += ['--reruns', args.rerun]
-        if args.keys:
-            pytest_args += ['-k', args.keys]
-        if args.marks:
-            pytest_args += ['-m', args.marks]
-        if args.failed_first:
-            pytest_args += ['--failed-first']
-        if args.fail_fast:
-            pytest_args += ['--exitfirst']
         try:
             if args.coverage:
                 pytest_args += ['--cov-branch', '--cov=python/taichi']
             if args.cov_append:
                 pytest_args += ['--cov-append']
+            if args.keys:
+                pytest_args += ['-k', args.keys]
+            if args.marks:
+                pytest_args += ['-m', args.marks]
+            if args.failed_first:
+                pytest_args += ['--failed-first']
+            if args.fail_fast:
+                pytest_args += ['--exitfirst']
         except AttributeError:
             pass
 

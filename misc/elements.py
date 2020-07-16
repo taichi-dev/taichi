@@ -30,17 +30,6 @@ class MPMSolver:
         self.pid = ti.var(ti.i32)
         # position
         self.x = ti.Vector(self.dim, dt=ti.f32)
-        # velocity
-        self.v = ti.Vector(self.dim, dt=ti.f32)
-        # affine velocity field
-        self.C = ti.Matrix(self.dim, self.dim, dt=ti.f32)
-        # deformation gradient
-        self.F = ti.Matrix(self.dim, self.dim, dt=ti.f32)
-        # material id
-        self.material = ti.var(dt=ti.i32)
-        self.color = ti.var(dt=ti.i32)
-        # plastic deformation
-        self.Jp = ti.var(dt=ti.f32)
         
         if self.dim == 2:
             indices = ti.ij
@@ -79,10 +68,7 @@ class MPMSolver:
         sin_phi = math.sin(friction_angle)
         self.alpha = math.sqrt(2 / 3) * 2 * sin_phi / (3 - sin_phi)
 
-        ti.root.dynamic(ti.i, max_num_particles,
-                        2**20).place(self.x, self.v, self.C, self.F,
-                                     self.material, self.color, self.Jp)
-
+        ti.root.dynamic(ti.i, max_num_particles, 2**20).place(self.x)
         self.substeps = 0
         
 
@@ -102,39 +88,24 @@ class MPMSolver:
             self.build_pid()
 
     @ti.func
-    def seed_particle(self, i, x, material, color, velocity):
+    def seed_particle(self, i, x):
         self.x[i] = x
-        self.v[i] = velocity
-        self.F[i] = ti.Matrix.identity(ti.f32, self.dim)
-        self.color[i] = color
-        self.material[i] = material
-
-        if material == self.material_sand:
-            self.Jp[i] = 0
-        else:
-            self.Jp[i] = 1
 
     @ti.kernel
-    def seed(self, new_particles: ti.i32, new_material: ti.i32, color: ti.i32):
+    def seed(self, new_particles: ti.i32, color: ti.i32):
         for i in range(self.n_particles[None],
                        self.n_particles[None] + new_particles):
-            self.material[i] = new_material
             x = ti.Vector.zero(ti.f32, self.dim)
             for k in ti.static(range(self.dim)):
                 x[k] = self.source_bound[0][k] + ti.random(
                 ) * self.source_bound[1][k]
-            self.seed_particle(i, x, new_material, color,
-                               self.source_velocity[None])
+            self.seed_particle(i, x)
             
     def add_cube(self,
                  lower_corner,
                  cube_size,
-                 material,
-                 color=0xFFFFFF,
-                 sample_density=None,
-                 velocity=None):
-        if sample_density is None:
-            sample_density = 2**self.dim
+                 color=0xFFFFFF):
+        sample_density = 2**self.dim
         vol = 1
         for i in range(self.dim):
             vol = vol * cube_size[i]
@@ -146,7 +117,7 @@ class MPMSolver:
             self.source_bound[0][i] = lower_corner[i]
             self.source_bound[1][i] = cube_size[i]
 
-        self.seed(num_new_particles, material, color)
+        self.seed(num_new_particles, color)
         self.n_particles[None] += num_new_particles
 
     @ti.kernel
@@ -163,17 +134,8 @@ class MPMSolver:
     def particle_info(self):
         np_x = np.ndarray((self.n_particles[None], self.dim), dtype=np.float32)
         self.copy_dynamic_nd(np_x, self.x)
-        np_v = np.ndarray((self.n_particles[None], self.dim), dtype=np.float32)
-        self.copy_dynamic_nd(np_v, self.v)
-        np_material = np.ndarray((self.n_particles[None], ), dtype=np.int32)
-        self.copy_dynamic(np_material, self.material)
-        np_color = np.ndarray((self.n_particles[None], ), dtype=np.int32)
-        self.copy_dynamic(np_color, self.color)
         return {
             'position': np_x,
-            'velocity': np_v,
-            'material': np_material,
-            'color': np_color
         }
     
 
@@ -191,14 +153,12 @@ mpm = MPMSolver(res=(128, 128), unbounded=False)
 
 for i in range(5):
     mpm.add_cube(lower_corner=[0.2 + i * 0.1, 0.3 + i * 0.1],
-                 cube_size=[0.1, 0.1],
-                 material=MPMSolver.material_elastic)
+                 cube_size=[0.1, 0.1])
 
 for frame in range(500):
     mpm.step(8e-3)
-    colors = np.array([0x068587, 0xED553B, 0xEEEEF0, 0xFFFF00], dtype=np.uint32)
     particles = mpm.particle_info()
     pos = particles['position'] * 0.4 + 0.3
-    gui.circles(pos, radius=0.75, color=colors[particles['material']])
+    gui.circles(pos)
     gui.show(f'{frame:06d}.png' if write_to_disk else None)
     ti.kernel_profiler_print()

@@ -81,7 +81,7 @@ See :ref:`layout` for more details. ``ti.root`` is the root node of the data str
 .. function:: snode.parent(n = 1)
 
     :parameter snode: (SNode)
-    :parameter n: (optional, scalar) the number of parent steps, i.e. ``n=1`` for parent, ``n=2`` grandparent, etc.
+    :parameter n: (optional, scalar) the number of steps, i.e. ``n=1`` for parent, ``n=2`` grandparent, etc.
     :return: (SNode) the parent node of ``snode``
 
     ::

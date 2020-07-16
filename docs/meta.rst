@@ -17,8 +17,8 @@ Taichi kernels are *lazily instantiated* and a lot of computation can happen at 
 Template metaprogramming
 ------------------------
 
-Taichi tensors oftenly are used as globals. But you may use ``ti.template()``
-as type hint to pass a tensor as argument. For example:
+You may use ``ti.template()``
+as a type hint to pass a tensor as an argument. For example:
 
 .. code-block:: python
 
@@ -35,14 +35,14 @@ as type hint to pass a tensor as argument. For example:
     copy(c, d)
 
 
-As shown by the above example, template programming may enable us to reuse our
-code and improve better flexibility.
+As shown in the example above, template programming may enable us to reuse our
+code and provide more flexibility.
 
 
 Dimensionality-independent programming using grouped indices
 ------------------------------------------------------------
 
-However, the ``copy`` template shown above is not perfect, i.e., it can only be
+However, the ``copy`` template shown above is not perfect. For example, it can only be
 used to copy 1D tensors. What if we want to copy 2D tensors? Do we have to write
 another kernel?
 
@@ -53,8 +53,8 @@ another kernel?
         for i, j in x:
             y[i, j] = x[i, j]
 
-Not necessary! Taichi provides ``ti.grouped`` syntax which enable you to get
-loop indices into a grouped vector, therefore unify different dimensionalities.
+Not necessary! Taichi provides ``ti.grouped`` syntax which enables you to pack
+loop indices into a grouped vector to unify kernels of different dimensionalities.
 For example:
 
 .. code-block:: python
@@ -81,11 +81,11 @@ For example:
             y[i, j + 1] = i + j
 
 
-Tensor meta data
-----------------
+Tensor metadata
+---------------
 
-Sometimes it will be useful to get the data type (``tensor.dtype``) and shape (``tensor.shape``) of tensors.
-These attributes can be accessed in both Taichi kernels and python scripts.
+Sometimes it is useful to get the data type (``tensor.dtype``) and shape (``tensor.shape``) of tensors.
+These attributes can be accessed in both Taichi- and Python-scopes.
 
 .. code-block:: python
 
@@ -103,17 +103,17 @@ See :ref:`scalar_tensor` for more details.
     For sparse tensors, the full domain shape will be returned.
 
 
-Matrix & vector meta data
--------------------------
+Matrix & vector metadata
+------------------------
 
-Sometimes it will also be useful to get the matrix column and row numbers when
-you want to write dimensionality-independent code, such as reusing code between
-2D/3D physical simulations.
+Getting the number of matrix columns and rows will allow
+you to write dimensionality-independent code. For example, this can be used to unify
+2D and 3D physical simulators.
 
-``matrix.m`` equals to the column number of matrix, while ``matrix.n`` equals to
-the row number of matrix.
+``matrix.m`` equals to the number of columns of a matrix, while ``matrix.n`` equals to
+the number of rows of a matrix.
 Since vectors are considered as matrices with one column, ``vector.n`` is simply
-the dimensionality of vector.
+the dimensionality of the vector.
 
 .. code-block:: python
 

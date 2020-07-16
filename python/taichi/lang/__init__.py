@@ -103,6 +103,9 @@ class _EnvironmentConfigurator:
         value = os.environ.get(name, '')
         if len(value):
             self[key] = cast(value)
+            # TODO: maybe use a WARNING since it's
+            if key in self.kwargs:
+                del self.kwargs[key]  # pop out
         elif key in self.kwargs:
             self[key] = self.kwargs[key]
             del self.kwargs[key]  # pop out
@@ -180,7 +183,6 @@ def init(arch=None,
     env_spec.add('excepthook')
 
     # compiler configurations (ti.cfg):
-    # to somewhere like ti.cuda_cfg so that user don't get confused?
     for key in dir(ti.cfg):
         if key in ['default_fp', 'default_ip']:
             continue

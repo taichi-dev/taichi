@@ -29,6 +29,8 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 
   FunctionType compile_module_to_executable() override {
 #ifdef TI_WITH_CUDA
+    eliminate_unused_functions();
+
     auto offloaded_local = offloaded_tasks;
     for (auto &task : offloaded_local) {
       llvm::Function *func = module->getFunction(task.name);

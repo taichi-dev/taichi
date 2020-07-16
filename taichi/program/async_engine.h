@@ -1,13 +1,14 @@
-#include <deque>
-#include <thread>
-#include <mutex>
 #include <atomic>
+#include <deque>
+#include <mutex>
+#include <thread>
+#include <unordered_map>
 
 #define TI_RUNTIME_HOST
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
-#include "taichi/runtime/llvm/context.h"
 #include "taichi/lang_util.h"
+#include "taichi/runtime/llvm/context.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -109,7 +110,7 @@ class KernelLaunchRecord {
   Context context;
   Kernel *kernel;  // TODO: remove this
   OffloadedStmt *stmt;
-  std::unique_ptr<IRNode> stmt_;
+  std::unique_ptr<IRNode> stmt_holder;
   uint64 h;
 
   KernelLaunchRecord(Context contxet,
@@ -180,6 +181,13 @@ class AsyncEngine {
   void enqueue(KernelLaunchRecord &&t);
 
   void synchronize();
+
+ private:
+  // In async mode, the root of an AST is an OffloadedStmt instead of a Block.
+  // This map provides a dummy Block root for these OffloadedStmt, so that
+  // get_kernel() could still work correctly.
+  std::unordered_map<const Kernel *, std::unique_ptr<Block>>
+      kernel_to_dummy_roots_;
 };
 
 TLANG_NAMESPACE_END

@@ -8,11 +8,15 @@ TLANG_NAMESPACE_BEGIN
 
 bool is_extension_supported(Arch arch, Extension ext) {
   static std::unordered_map<Arch, std::unordered_set<Extension>> arch2ext = {
-      {Arch::x64, {Extension::sparse, Extension::data64, Extension::adstack}},
-      {Arch::arm64, {Extension::sparse, Extension::data64, Extension::adstack}},
+      {Arch::x64,
+       {Extension::sparse, Extension::data64, Extension::adstack,
+        Extension::assertion}},
+      {Arch::arm64,
+       {Extension::sparse, Extension::data64, Extension::adstack,
+        Extension::assertion}},
       {Arch::cuda,
        {Extension::sparse, Extension::data64, Extension::adstack,
-        Extension::bls}},
+        Extension::bls, Extension::assertion}},
       {Arch::metal, {Extension::adstack}},
       {Arch::opengl, {}},
   };

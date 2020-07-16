@@ -50,6 +50,7 @@ nsobj_unique_ptr<MTLBlitCommandEncoder> new_blit_command_encoder(
 // See https://developer.apple.com/documentation/metal/mtllanguageversion
 nsobj_unique_ptr<MTLLibrary> new_library_with_source(MTLDevice *device,
                                                      const std::string &source,
+                                                     bool fast_math,
                                                      int msl_version);
 
 nsobj_unique_ptr<MTLFunction> new_function_with_name(MTLLibrary *library,

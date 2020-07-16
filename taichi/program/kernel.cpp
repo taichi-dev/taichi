@@ -87,15 +87,15 @@ void Kernel::lower(bool lower_access) {  // TODO: is a "Lowerer" class necessary
 }
 
 void Kernel::operator()() {
-  if (!program.config.async) {
+  if (!program.config.async_mode) {
     if (!compiled) {
       compile();
     }
     compiled(program.get_context());
     program.sync = (program.sync && arch_is_cpu(arch));
     // Note that Kernel::arch may be different from program.config.arch
-    if (program.config.debug && arch_is_cpu(arch) &&
-        arch_is_cpu(program.config.arch)) {
+    if (program.config.debug && (arch_is_cpu(program.config.arch) ||
+                                 program.config.arch == Arch::cuda)) {
       program.check_runtime_error();
     }
   } else {

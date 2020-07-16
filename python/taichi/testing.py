@@ -85,6 +85,6 @@ def _():
 _ = _()
 for __ in _:
     if not __.startswith('_'):
-        setattr(ti, __, _[__])
+        setattr(__import__('taichi'), __, _[__])
 
 globals().update(_)

@@ -9,7 +9,7 @@ bls_particle_grid(N=128,
                   ppc=10,
                   block_size=16,
                   scatter=True,
-                  benchmark=10,
+                  benchmark=10000000,
                   pointer_level=2,
                   use_offset=True)
 

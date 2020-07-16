@@ -243,6 +243,7 @@ def bls_particle_grid(N,
     insert()
 
     for i in range(benchmark):
+        print(i)
         pid.parent(2).snode().deactivate_all()
         insert()
 

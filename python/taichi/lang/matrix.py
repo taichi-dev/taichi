@@ -88,7 +88,7 @@ class Matrix(TaichiOperations):
             else:
                 assert not impl.inside_kernel()
                 for i in range(n * m):
-                    self.entries.append(impl.var(dt))
+                    self.entries.append(impl.field(dt))
                 self.grad = self.make_grad()
 
             if layout is not None:
@@ -806,10 +806,34 @@ class Matrix(TaichiOperations):
         return Matrix([[ti.cos(alpha), -ti.sin(alpha)],
                        [ti.sin(alpha), ti.cos(alpha)]])
 
-    @staticmethod
+    @classmethod
     @python_scope
-    def var(n, m, dt, shape=None, offset=None, **kwargs):
-        return Matrix(n=n, m=m, dt=dt, shape=shape, offset=offset, **kwargs)
+    def field(cls, n, m, dtype, *args, **kwargs):
+        '''ti.Matrix.field'''
+        _taichi_skip_traceback = 1
+        # TODO: deprecate ad-hoc use ti.Matrix() as global (#1500:2.2/2)
+        return cls(n, m, dtype, *args, **kwargs)
+
+    @classmethod
+    @python_scope
+    #@deprecated('ti.Matrix.var', 'ti.Matrix.field')
+    def var(cls, n, m, dt, *args, **kwargs):
+        '''ti.Matrix.var'''
+        _taichi_skip_traceback = 1
+        return cls.field(n, m, dt, *args, **kwargs)
+
+    @classmethod
+    def _Vector_field(cls, n, dt, *args, **kwargs):
+        '''ti.Vector.field'''
+        _taichi_skip_traceback = 1
+        return cls.field(n, 1, dt, *args, **kwargs)
+
+    @classmethod
+    #@deprecated('ti.Vector.var', 'ti.Vector.field')
+    def _Vector_var(cls, n, dt, *args, **kwargs):
+        '''ti.Vector.var'''
+        _taichi_skip_traceback = 1
+        return cls._Vector_field(n, dt, *args, **kwargs)
 
     @staticmethod
     def rows(rows):
@@ -903,11 +927,13 @@ class Matrix(TaichiOperations):
         return ret
 
 
+# TODO: deprecate ad-hoc use ti.Matrix() as global (#1500:2.2/2)
 def Vector(n, dt=None, shape=None, offset=None, **kwargs):
     return Matrix(n, 1, dt=dt, shape=shape, offset=offset, **kwargs)
 
 
-Vector.var = Vector
+Vector.var = Matrix._Vector_var
+Vector.field = Matrix._Vector_field
 Vector.zero = Matrix.zero
 Vector.one = Matrix.one
 Vector.dot = Matrix.dot

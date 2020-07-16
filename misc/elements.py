@@ -1,41 +1,9 @@
 import taichi as ti
-import numpy as np
-import numbers
-import math
-
-USE_IN_BLENDER = False
-
-ti.require_version(0, 6, 10)
 
 
 @ti.data_oriented
 class MPMSolver:
-    material_water = 0
-    material_elastic = 1
-    material_snow = 2
-    material_sand = 3
-    materials = {
-        'WATER': material_water,
-        'ELASTIC': material_elastic,
-        'SNOW': material_snow,
-        'SAND': material_sand
-    }
-
-    # Surface boundary conditions
-
-    # Stick to the boundary
-    surface_sticky = 0
-    # Slippy boundary
-    surface_slip = 1
-    # Slippy and free to separate
-    surface_separate = 2
-
-    surfaces = {
-        'STICKY': surface_sticky,
-        'SLIP': surface_slip,
-        'SEPARATE': surface_separate
-    }
-
+    
     def __init__(self,
                  res,
                  size=1,
@@ -116,9 +84,6 @@ class MPMSolver:
                                      self.material, self.color, self.Jp)
 
         self.substeps = 0
-        self.unbounded = unbounded
-
-        self.voxelizer = None
         
 
     @ti.kernel
@@ -127,7 +92,6 @@ class MPMSolver:
         for p in self.x:
             base = ti.floor(self.x[p] * self.inv_dx - 0.5).cast(int)
             ti.append(self.pid.parent(), base - ti.Vector(list(self.offset)), p)
-            # ti.append(self.pid.parent(), base, p)
 
     def step(self, frame_dt):
         substeps = int(frame_dt / self.default_dt) + 1
@@ -136,7 +100,6 @@ class MPMSolver:
             print(self.substeps)
             self.grid.deactivate_all()
             self.build_pid()
-            continue
 
     @ti.func
     def seed_particle(self, i, x, material, color, velocity):
@@ -162,16 +125,7 @@ class MPMSolver:
                 ) * self.source_bound[1][k]
             self.seed_particle(i, x, new_material, color,
                                self.source_velocity[None])
-
-    def set_source_velocity(self, velocity):
-        if velocity is not None:
-            velocity = list(velocity)
-            assert len(velocity) == self.dim
-            self.source_velocity[None] = velocity
-        else:
-            for i in range(self.dim):
-                self.source_velocity[None][i] = 0
-
+            
     def add_cube(self,
                  lower_corner,
                  cube_size,
@@ -191,8 +145,6 @@ class MPMSolver:
         for i in range(self.dim):
             self.source_bound[0][i] = lower_corner[i]
             self.source_bound[1][i] = cube_size[i]
-
-        self.set_source_velocity(velocity=velocity)
 
         self.seed(num_new_particles, material, color)
         self.n_particles[None] += num_new_particles
@@ -224,12 +176,6 @@ class MPMSolver:
             'color': np_color
         }
     
-    
-    @ti.kernel
-    def clear_particles(self):
-        self.n_particles[None] = 0
-        ti.deactivate(self.x.loop_range().parent().snode(), [])
-
 
 import taichi as ti
 import numpy as np

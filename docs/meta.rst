@@ -73,7 +73,7 @@ For example:
     @ti.kernel
     def array_op(x: ti.template(), y: ti.template()):
         # if tensor x is 2D:
-        for I in ti.grouped(x): # I is simply a 2D vector with x data type i32
+        for I in ti.grouped(x): # I is simply a 2D vector with data type i32
             y[I + ti.Vector([0, 1])] = I[0] + I[1]
 
         # then it is equivalent to:

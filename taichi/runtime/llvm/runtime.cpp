@@ -414,13 +414,6 @@ struct ListManager {
   Ptr get_element_ptr(i32 i) {
     return chunks[i >> log2chunk_num_elements] +
            element_size * (i & ((1 << log2chunk_num_elements) - 1));
-
-    /*
-    auto c = chunks[i >> log2chunk_num_elements];
-    auto ret = c + element_size * (i & ((1 << log2chunk_num_elements) - 1));
-    Printf("allocating c %p ret %p i %d\n", c, ret, i);
-    return ret;
-     */
   }
 
   template <typename T>
@@ -439,18 +432,12 @@ struct ListManager {
 
   i32 ptr2index(Ptr ptr) {
     auto chunk_size = max_num_elements_per_chunk * element_size;
-    // int sum = 0;
     for (int i = 0; i < max_num_chunks; i++) {
-      /*
-      Printf("i %d sum %d Ptr %p chunk %p ptr-chunk %lld chunk_size %lld\n", i,
-             sum, ptr, chunks[i], ptr - chunks[i], chunk_size);
-             */
       taichi_assert_runtime(runtime, chunks[i] != nullptr, "ptr not found.");
       if (chunks[i] <= ptr && ptr < chunks[i] + chunk_size) {
         return (i << log2chunk_num_elements) +
                i32((ptr - chunks[i]) / element_size);
       }
-      // sum += (i + 1);
     }
     return -1;
   }
@@ -517,7 +504,8 @@ struct LLVMRuntime {
   void (*profiler_start)(Ptr, Ptr);
   void (*profiler_stop)(Ptr);
 
-  char error_message_buffer[taichi_max_message_length];
+  char error_message_template[taichi_error_message_max_length];
+  uint64 error_message_arguments[taichi_error_message_max_num_arguments];
   i32 error_message_lock = 0;
   i64 error_code = 0;
 
@@ -528,7 +516,9 @@ struct LLVMRuntime {
 
   template <typename T>
   void set_result(std::size_t i, T t) {
-    ((u64 *)result_buffer)[i] = taichi_union_cast<uint64>(t);
+    static_assert(sizeof(T) <= sizeof(uint64));
+    ((u64 *)result_buffer)[i] =
+        taichi_union_cast_with_different_sizes<uint64>(t);
   }
 
   template <typename T, typename... Args>
@@ -651,9 +641,15 @@ void runtime_retrieve_error_code(LLVMRuntime *runtime) {
   runtime->set_result(taichi_result_buffer_error_id, runtime->error_code);
 }
 
-void runtime_retrieve_error_message(LLVMRuntime *runtime) {
+void runtime_retrieve_error_message(LLVMRuntime *runtime, int i) {
   runtime->set_result(taichi_result_buffer_error_id,
-                      runtime->error_message_buffer);
+                      runtime->error_message_template[i]);
+}
+
+void runtime_retrieve_error_message_argument(LLVMRuntime *runtime,
+                                             int argument_id) {
+  runtime->set_result(taichi_result_buffer_error_id,
+                      runtime->error_message_arguments[argument_id]);
 }
 
 #if ARCH_cuda
@@ -662,61 +658,36 @@ void __assertfail(const char *message,
                   i32 line,
                   const char *function,
                   std::size_t charSize);
-
-void taichi_assert_runtime(LLVMRuntime *runtime, i32 test, const char *msg) {
-  if (enable_assert) {
-    if (test == 0) {
-      locked_task(&runtime->error_message_lock, [&] {
-        if (!runtime->error_code) {
-          runtime->error_code = 1;  // Assertion failure
-          memcpy(runtime->error_message_buffer, msg,
-                 std::min(strlen(msg), taichi_max_message_length));
-        }
-      });
-    }
-  }
-}
-#else
-void taichi_assert_runtime(LLVMRuntime *runtime, i32 test, const char *msg) {
-  if (!enable_assert || test != 0 || runtime->error_code)
-    return;
-  locked_task(&runtime->error_message_lock, [&] {
-    if (!runtime->error_code) {
-      runtime->error_code = 1;  // Assertion failure
-      memcpy(runtime->error_message_buffer, msg,
-             std::min(strlen(msg), taichi_max_message_length));
-    }
-  });
-}
 #endif
 
 void taichi_assert(Context *context, i32 test, const char *msg) {
   taichi_assert_runtime(context->runtime, test, msg);
 }
 
-const std::size_t ASSERT_MSG_BUFFER_SIZE = 2048;
-char assert_msg_buffer[ASSERT_MSG_BUFFER_SIZE];
-i32 assert_msg_buffer_lock = 0;
-
 void taichi_assert_format(LLVMRuntime *runtime,
                           i32 test,
                           const char *format,
-                          ...) {
-  // This function is CPU-only.
-  // It seems that using std::va_list leads to an llvm::SelectionDAG error.
-  // Also note that CUDA cannot call runtime->host_vsnprintf.
+                          int num_arguments,
+                          uint64 *arguments) {
   if (!enable_assert || test != 0 || runtime->error_code)
     return;
-  std::va_list args;
-  va_start(args, format);
   locked_task(&runtime->error_message_lock, [&] {
     if (!runtime->error_code) {
       runtime->error_code = 1;  // Assertion failure
-      runtime->host_vsnprintf(runtime->error_message_buffer,
-                              taichi_max_message_length, format, args);
+
+      memset(runtime->error_message_template, 0,
+             taichi_error_message_max_length);
+      memcpy(runtime->error_message_template, format,
+             std::min(strlen(format), taichi_error_message_max_length - 1));
+      for (int i = 0; i < num_arguments; i++) {
+        runtime->error_message_arguments[i] = arguments[i];
+      }
     }
   });
-  va_end(args);
+}
+
+void taichi_assert_runtime(LLVMRuntime *runtime, i32 test, const char *msg) {
+  taichi_assert_format(runtime, test, msg, 0, nullptr);
 }
 
 Ptr LLVMRuntime::allocate_aligned(std::size_t size, std::size_t alignment) {

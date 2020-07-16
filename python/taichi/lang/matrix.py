@@ -823,10 +823,10 @@ class Matrix(TaichiOperations):
         return cls.field(n, m, dt, *args, **kwargs)
 
     @classmethod
-    def _Vector_field(cls, n, dt, *args, **kwargs):
+    def _Vector_field(cls, n, dtype, *args, **kwargs):
         '''ti.Vector.field'''
         _taichi_skip_traceback = 1
-        return cls.field(n, 1, dt, *args, **kwargs)
+        return cls.field(n, 1, dtype, *args, **kwargs)
 
     @classmethod
     #@deprecated('ti.Vector.var', 'ti.Vector.field')

@@ -347,4 +347,4 @@ def rgb_to_hex(c):
 __all__ = [
     'GUI',
     'rgb_to_hex',
-    ]
+]

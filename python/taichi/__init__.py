@@ -1,6 +1,6 @@
 from .core import *
 from .misc import *
-from .lang import *   # TODO(archibate): It's `taichi.lang.core` overriding `taichi.core`
+from .lang import *  # TODO(archibate): It's `taichi.lang.core` overriding `taichi.core`
 from .tools import *
 from .main import main
 from .torch_io import from_torch, to_torch

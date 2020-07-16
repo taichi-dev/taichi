@@ -191,4 +191,4 @@ __all__ = [
     'ERROR',
     'DEBUG',
     'TRACE',
-    ]
+]

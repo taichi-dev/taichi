@@ -95,4 +95,4 @@ __all__ = [
     'imread',
     'imwrite',
     'imdisplay',
-    ]
+]

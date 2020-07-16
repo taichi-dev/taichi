@@ -488,7 +488,6 @@ def _print_taichi_header():
 
 _print_taichi_header()
 
-
 __all__ = [
     'ti_core',
     'build',
@@ -498,4 +497,4 @@ __all__ = [
     'is_release',
     'package_root',
     'require_version',
-    ]
+]

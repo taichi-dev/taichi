@@ -414,13 +414,6 @@ struct ListManager {
   Ptr get_element_ptr(i32 i) {
     return chunks[i >> log2chunk_num_elements] +
            element_size * (i & ((1 << log2chunk_num_elements) - 1));
-
-    /*
-    auto c = chunks[i >> log2chunk_num_elements];
-    auto ret = c + element_size * (i & ((1 << log2chunk_num_elements) - 1));
-    Printf("allocating c %p ret %p i %d\n", c, ret, i);
-    return ret;
-     */
   }
 
   template <typename T>
@@ -439,18 +432,12 @@ struct ListManager {
 
   i32 ptr2index(Ptr ptr) {
     auto chunk_size = max_num_elements_per_chunk * element_size;
-    // int sum = 0;
     for (int i = 0; i < max_num_chunks; i++) {
-      /*
-      Printf("i %d sum %d Ptr %p chunk %p ptr-chunk %lld chunk_size %lld\n", i,
-             sum, ptr, chunks[i], ptr - chunks[i], chunk_size);
-             */
       taichi_assert_runtime(runtime, chunks[i] != nullptr, "ptr not found.");
       if (chunks[i] <= ptr && ptr < chunks[i] + chunk_size) {
         return (i << log2chunk_num_elements) +
                i32((ptr - chunks[i]) / element_size);
       }
-      // sum += (i + 1);
     }
     return -1;
   }
@@ -517,8 +504,8 @@ struct LLVMRuntime {
   void (*profiler_start)(Ptr, Ptr);
   void (*profiler_stop)(Ptr);
 
-  char error_message_template[taichi_max_message_length];
-  uint64 error_message_arguments[taichi_max_message_length];
+  char error_message_template[taichi_error_message_max_length];
+  uint64 error_message_arguments[taichi_error_message_max_num_arguments];
   i32 error_message_lock = 0;
   i64 error_code = 0;
 
@@ -669,41 +656,11 @@ void __assertfail(const char *message,
                   i32 line,
                   const char *function,
                   std::size_t charSize);
-
-void taichi_assert_runtime(LLVMRuntime *runtime, i32 test, const char *msg) {
-  if (enable_assert) {
-    if (test == 0) {
-      locked_task(&runtime->error_message_lock, [&] {
-        if (!runtime->error_code) {
-          runtime->error_code = 1;  // Assertion failure
-          memcpy(runtime->error_message_template, msg,
-                 std::min(strlen(msg), taichi_max_message_length));
-        }
-      });
-    }
-  }
-}
-#else
-void taichi_assert_runtime(LLVMRuntime *runtime, i32 test, const char *msg) {
-  if (!enable_assert || test != 0 || runtime->error_code)
-    return;
-  locked_task(&runtime->error_message_lock, [&] {
-    if (!runtime->error_code) {
-      runtime->error_code = 1;  // Assertion failure
-      memcpy(runtime->error_message_template, msg,
-             std::min(strlen(msg), taichi_max_message_length));
-    }
-  });
-}
 #endif
 
 void taichi_assert(Context *context, i32 test, const char *msg) {
   taichi_assert_runtime(context->runtime, test, msg);
 }
-
-const std::size_t ASSERT_MSG_BUFFER_SIZE = 2048;
-char assert_msg_buffer[ASSERT_MSG_BUFFER_SIZE];
-i32 assert_msg_buffer_lock = 0;
 
 void taichi_assert_format(LLVMRuntime *runtime,
                           i32 test,
@@ -716,12 +673,16 @@ void taichi_assert_format(LLVMRuntime *runtime,
     if (!runtime->error_code) {
       runtime->error_code = 1;  // Assertion failure
       memcpy(runtime->error_message_template, format,
-             std::min(strlen(format), taichi_max_message_length));
+             std::min(strlen(format), taichi_error_message_max_length));
       for (int i = 0; i < num_arguments; i++) {
         runtime->error_message_arguments[i] = arguments[i];
       }
     }
   });
+}
+
+void taichi_assert_runtime(LLVMRuntime *runtime, i32 test, const char *msg) {
+  taichi_assert_format(runtime, test, msg, 0, nullptr);
 }
 
 Ptr LLVMRuntime::allocate_aligned(std::size_t size, std::size_t alignment) {

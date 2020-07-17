@@ -659,7 +659,7 @@ void TaichiLLVMContext::mark_function_as_cuda_kernel(llvm::Function *func,
   // Add the nvvm annotation that it is considered a kernel function.
   insert_nvvm_annotation(func, "kernel", 1);
   if (block_dim != 0) {
-    // CUDA Launch bounds
+    // CUDA launch bounds
     insert_nvvm_annotation(func, "maxntidx", block_dim);
     insert_nvvm_annotation(func, "minctasm", 2);
   }

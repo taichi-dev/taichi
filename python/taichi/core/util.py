@@ -3,7 +3,6 @@ import re
 import shutil
 import sys
 import ctypes
-import warnings
 from pathlib import Path
 from colorama import Fore, Back, Style
 from .settings import *
@@ -12,8 +11,6 @@ if sys.version_info[0] < 3 or sys.version_info[1] <= 5:
     print("\nPlease restart with Python 3.6+\n")
     print("Current Python version:", sys.version_info)
     exit(-1)
-
-warnings.filterwarnings('always')
 
 ti_core = None
 

@@ -1,6 +1,7 @@
 from . import impl
 from .util import deprecated
 
+
 class SNode:
     def __init__(self, ptr):
         self.ptr = ptr
@@ -105,8 +106,6 @@ class SNode:
         for i in range(self.ptr.get_num_ch()):
             children.append(SNode(self.ptr.get_ch(i)))
         return children
-
-
 
     def deactivate_all(self):
         ch = self.get_children()

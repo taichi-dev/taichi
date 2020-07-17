@@ -134,7 +134,7 @@ def bls_particle_grid(N,
         block = ti.root.pointer(ti.ij, N // block_size // 4).pointer(ti.ij, 4)
     else:
         raise ValueError('pointer_level must be 1 or 2')
-    
+
     if use_offset:
         grid_offset = (-N // 2, -N // 2)
         world_offset = -0.5
@@ -170,7 +170,10 @@ def bls_particle_grid(N,
         for i in x:
             # Note that since we manually subtract grid offset from base, its values are always positive.
             # So no ti.floor is needed here and int() suffices.
-            base = ti.Vector([int(x[i][0] * N - grid_offset[0]), int(x[i][1] * N - grid_offset[1])])
+            base = ti.Vector([
+                int(x[i][0] * N - grid_offset[0]),
+                int(x[i][1] * N - grid_offset[1])
+            ])
             ti.append(pid.parent(), base, i)
 
     scatter_weight = (N * N / M) * 0.01

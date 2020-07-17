@@ -1003,10 +1003,6 @@ class RangeAssumptionStmt : public Stmt {
     return false;
   }
 
-  bool dead_instruction_eliminable() const override {
-    return false;
-  }
-
   TI_STMT_DEF_FIELDS(ret_type, input, base, low, high);
   TI_DEFINE_ACCEPT_AND_CLONE
 };

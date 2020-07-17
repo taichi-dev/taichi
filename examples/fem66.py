@@ -54,7 +54,7 @@ def init():
         B[e] = ti.Matrix.cols([a_c, b_c]).inverse()  # pre-compute rhs of F = D @ B
 
 init()
-gui = ti.GUI('FEM88')
+gui = ti.GUI('FEM66')
 while gui.running and not gui.get_event(gui.ESCAPE):
     for i in range(50):
         with ti.Tape(loss=U):  # from our accumation to U, obtain the gradient of U

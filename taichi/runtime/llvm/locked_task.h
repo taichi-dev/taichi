@@ -17,10 +17,8 @@ class lock_guard {
         // Memory fences here are necessary since CUDA has a weakly ordered
         // memory model across threads
         mutex_lock_i32(lock);
-        grid_memfence();
         func();
         mutex_unlock_i32(lock);
-        grid_memfence();
       }
     }
     // Unfortunately critical sections on CUDA has undefined behavior (deadlock

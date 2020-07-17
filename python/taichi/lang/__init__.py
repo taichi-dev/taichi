@@ -104,7 +104,9 @@ class _EnvironmentConfigurator:
         if len(value):
             self[key] = cast(value)
             if key in self.kwargs:
-                core.warn(f'ti.init argument "{key}" overridden by environment variable "{name}"={value}')
+                core.warn(
+                    f'ti.init argument "{key}" overridden by environment variable "{name}"={value}'
+                )
                 del self.kwargs[key]  # mark as recognized
         elif key in self.kwargs:
             self[key] = self.kwargs[key]

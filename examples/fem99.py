@@ -6,14 +6,14 @@ except ImportError:
           'Please run `pip install --user taichi_glsl` to install it.')
 ti.init(arch=ti.gpu)
 
-N = 20
+N = 32
 dt = 1e-4
 dx = 1 / N
 NF = 2 * N ** 2
 NV = (N + 1) ** 2
-E, nu = 2e4, 0.2
+E, nu = 4e4, 0.2
 mu, lam = E / 2 / (1 + nu), E * nu / (1 + nu) / (1 - 2 * nu)
-ball_pos, ball_radius = tl.vec(0.5, 0.0), 0.31
+ball_pos, ball_radius = tl.vec(0.5, 0.0), 0.32
 gravity = tl.vec(0, -40)
 damping = 12.5
 
@@ -90,7 +90,7 @@ while gui.running:
             gui.running = False
         elif e.key == 'r':
             init_pos()
-    for i in range(20):
+    for i in range(30):
         with ti.Tape(loss=U):
             update_U()
         advance()

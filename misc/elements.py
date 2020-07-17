@@ -2,10 +2,8 @@ import taichi as ti
 import random
 import numpy as np
 
-
 @ti.data_oriented
 class MPMSolver:
-    
     def __init__(self,
                  res,
                  size=1,
@@ -62,17 +60,6 @@ class MPMSolver:
             self.build_pid()
             ti.kernel_profiler_print()
 
-    @ti.kernel
-    def copy_dynamic_nd(self, np_x: ti.ext_arr(), input_x: ti.template()):
-        for i in self.x:
-            for j in ti.static(range(self.dim)):
-                np_x[i, j] = input_x[i][j]
-
-    @ti.kernel
-    def copy_dynamic(self, np_x: ti.ext_arr(), input_x: ti.template()):
-        for i in self.x:
-            np_x[i] = input_x[i]
-
     def particle_info(self):
         np_x = np.ndarray((self.n_particles[None], self.dim), dtype=np.float32)
         self.copy_dynamic_nd(np_x, self.x)
@@ -80,8 +67,6 @@ class MPMSolver:
             'position': np_x,
         }
     
-
-write_to_disk = False
 
 ti.init(arch=ti.cuda, use_unified_memory=False, kernel_profiler=True, device_memory_GB=0.5, debug=True)  # Try to run on GPU
 
@@ -94,4 +79,4 @@ for frame in range(500):
     particles = mpm.particle_info()
     pos = particles['position'] * 0.4 + 0.3
     gui.circles(pos)
-    gui.show(f'{frame:06d}.png' if write_to_disk else None)
+    gui.show()

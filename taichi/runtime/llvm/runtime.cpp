@@ -82,6 +82,17 @@ using Ptr = uint8 *;
 
 using ContextArgType = long long;
 
+#if ARCH_cuda
+extern "C" {
+
+void __assertfail(const char *message,
+                  const char *file,
+                  i32 line,
+                  const char *function,
+                  std::size_t charSize);
+};
+#endif
+
 template <typename T>
 void locked_task(void *lock, const T &func);
 
@@ -652,14 +663,6 @@ void runtime_retrieve_error_message_argument(LLVMRuntime *runtime,
                       runtime->error_message_arguments[argument_id]);
 }
 
-#if ARCH_cuda
-void __assertfail(const char *message,
-                  const char *file,
-                  i32 line,
-                  const char *function,
-                  std::size_t charSize);
-#endif
-
 void taichi_assert(Context *context, i32 test, const char *msg) {
   taichi_assert_runtime(context->runtime, test, msg);
 }
@@ -704,15 +707,27 @@ Ptr LLVMRuntime::allocate_aligned(std::size_t size, std::size_t alignment) {
 
 Ptr LLVMRuntime::allocate_from_buffer(std::size_t size, std::size_t alignment) {
   Ptr ret;
+  bool success = false;
   locked_task(&allocator_lock, [&] {
-    preallocated_head +=
+    auto alignment_bytes =
         alignment - 1 -
         ((std::size_t)preallocated_head + alignment - 1) % alignment;
-    ret = preallocated_head;
-    preallocated_head += size;
-    taichi_assert_runtime(this, preallocated_head <= preallocated_tail,
-                          "Out of pre-allocated memory");
+    size += alignment_bytes;
+    if (preallocated_head + size <= preallocated_tail) {
+      ret = preallocated_head;
+      preallocated_head += size;
+      success = true;
+    } else {
+      success = false;
+    }
   });
+  if (!success) {
+#if ARCH_cuda
+    __assertfail("Out of CUDA pre-allocated memory", "Taichi JIT", 0,
+                 "allocate_from_buffer", 1);
+#endif
+  }
+  taichi_assert_runtime(this, success, "Out of pre-allocated memory");
   return ret;
 }
 

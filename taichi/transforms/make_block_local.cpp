@@ -207,6 +207,8 @@ void make_block_local_offload(OffloadedStmt *offload) {
           // BLS index = sum_i inc_i
           // where inc_i =
           //   bls_stride_i * (gbl_idx_i - loop_base_i - bls_lower_bound_i)
+          // Note that when index offsets are used, the offset contributions are
+          // already included in bls_lower_bound_i.
           auto block_corner = bls.push_back<BlockCornerIndexStmt>(offload, i);
 
           auto inc = bls.push_back<BinaryOpStmt>(

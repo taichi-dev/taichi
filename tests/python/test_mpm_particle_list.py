@@ -28,8 +28,6 @@ class MPMSolver:
         for i in range(10000):
             self.x[i] = [random.random() * 0.5, random.random() * 0.5]
 
-        self.step()
-
     @ti.kernel
     def build_pid(self):
         ti.block_dim(256)
@@ -49,3 +47,4 @@ class MPMSolver:
 def test_mpm_particle_list_no_leakage():
     # By default Taichi will allocate 0.5 GB for testing.
     mpm = MPMSolver(res=(128, 128))
+    mpm.step()

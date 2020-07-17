@@ -43,9 +43,9 @@ struct Runtime {
 METAL_BEGIN_RUNTIME_KERNELS_DEF
 STR(
     // clang-format on
-    kernel void clear_list(device byte *runtime_addr[[buffer(0)]],
-                           device int *args[[buffer(1)]],
-                           const uint utid_[[thread_position_in_grid]]) {
+    kernel void clear_list(device byte *runtime_addr [[buffer(0)]],
+                           device int *args [[buffer(1)]],
+                           const uint utid_ [[thread_position_in_grid]]) {
       if (utid_ > 0)
         return;
       int child_snode_id = args[1];
@@ -56,11 +56,11 @@ STR(
       child_list.clear();
     }
 
-    kernel void element_listgen(device byte *runtime_addr[[buffer(0)]],
-                                device byte *root_addr[[buffer(1)]],
-                                device int *args[[buffer(2)]],
-                                const uint utid_[[thread_position_in_grid]],
-                                const uint grid_size[[threads_per_grid]]) {
+    kernel void element_listgen(device byte *runtime_addr [[buffer(0)]],
+                                device byte *root_addr [[buffer(1)]],
+                                device int *args [[buffer(2)]],
+                                const uint utid_ [[thread_position_in_grid]],
+                                const uint grid_size [[threads_per_grid]]) {
       device Runtime *runtime =
           reinterpret_cast<device Runtime *>(runtime_addr);
       device MemoryAllocator *mem_alloc =
@@ -90,17 +90,15 @@ STR(
         }
         const int child_idx = (ii % num_slots);
         const auto parent_elem = parent_list.get<ListgenElement>(parent_idx);
-        ListgenElement child_elem;
-        child_elem.root_mem_offset =
-            parent_elem.root_mem_offset + child_idx * child_stride;
-        // We are testing the activation of *parent* cells, do not add the
-        // offset of the child within its parent cell here.
-        if (is_active(root_addr + child_elem.root_mem_offset, parent_meta,
-                      child_idx)) {
+        device byte *parent_addr = root_addr + parent_elem.root_mem_offset;
+        if (is_active(parent_addr, parent_meta, child_idx)) {
+          ListgenElement child_elem;
+          child_elem.root_mem_offset = parent_elem.root_mem_offset +
+                                       child_idx * child_stride +
+                                       child_meta.mem_offset_in_parent;
           refine_coordinates(parent_elem,
                              runtime->snode_extractors[parent_snode_id],
                              child_idx, &child_elem);
-          child_elem.root_mem_offset += child_meta.mem_offset_in_parent;
           child_list.append(child_elem);
         }
       }

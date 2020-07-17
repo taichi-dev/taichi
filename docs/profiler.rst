@@ -57,8 +57,10 @@ There are 3 ways to use this profiler:
     10.10ms | 10.10ms | 10.10ms |    1x | 10.10ms | A
 
 
-2. ``ti.profiler()``, this one makes our code cleaner.
-   Basically, it will automatically invoke ``stop`` when a new record is started. e.g.:
+2. ``with ti.profiler()``, this one makes our code cleaner and readable.
+   Basically, it will automatically invoke ``stop`` when the indented block exited.
+   For more details about the ``with`` syntax in Python,
+   see `this tutorial <https://www.pythonforbeginners.com/files/with-statement-in-python>`_.
 
 .. code-block:: python
 
@@ -72,12 +74,13 @@ There are 3 ways to use this profiler:
     def do_something_B():
         sleep(0.1)
 
-    ti.profiler('A')  # start('A')
-    do_something_A()
+    with ti.profiler('A'):
+        do_something_A()
+    # automatically invoke stop('A')
 
-    ti.profiler('B')  # stop('A') & start('B')
-    do_something_B()
-    ti.profiler()     # stop('B')
+    with ti.profiler('B'):
+        do_something_B()
+    # automatically invoke stop('B')
 
     ti.profiler.print()
 
@@ -158,6 +161,10 @@ When a same **name** is used for multiple times, then they will be merged into o
     do_something_B()
     ti.profiler.stop('A')
 
+    ti.profiler.start('B')
+    do_something_B()
+    ti.profiler.stop('B')
+
     ti.profiler.print()
 
 will obtain:
@@ -166,6 +173,7 @@ will obtain:
 
       min   |   avg   |   max   |  num  |  total  |    name
     10.10ms | 55.12ms |  0.100s |    2x |  0.110s | A
+     0.100s |  0.100s |  0.100s |    1x |  0.100s | B
 
 
 - ``min`` is the minimum time in records.

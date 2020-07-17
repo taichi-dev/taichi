@@ -80,11 +80,20 @@ class PythonProfiler:
             self.records[name] = []
         self.records[name].append(diff)
 
-    def __call__(self, name=None, **options):
-        if self.last_started:
-            self.stop()
-        if name is not None:
-            self.start(name, **options)
+    class TimedScope:
+        def __init__(self, profiler, name, **options):
+            self.profiler = profiler
+            self.name = name
+            self.profiler.start(name, **options)
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            self.profiler.stop(self.name)
+
+    def __call__(self, name, **options):
+        return self.TimedScope(self, name, **options)
 
     def print(self, name=None):
         print('  min   |   avg   |   max   |  num  |  total  |    name')

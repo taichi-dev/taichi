@@ -7,14 +7,14 @@ except ImportError:
 ti.init(arch=ti.gpu)
 
 N = 12
-dt = 6e-5
+dt = 5e-5
 dx = 1 / N
 NF = 2 * N ** 2
 NV = (N + 1) ** 2
-E, nu = 5e4, 0.2
+E, nu = 4e4, 0.2
 mu, lam = E / 2 / (1 + nu), E * nu / (1 + nu) / (1 - 2 * nu)
 ball_pos, ball_radius = tl.vec(0.5, 0.0), 0.31
-damping = 12.5
+damping = 14.5
 
 pos = ti.Vector.var(2, ti.f32, NV, needs_grad=True)
 vel = ti.Vector.var(2, ti.f32, NV)
@@ -117,7 +117,7 @@ while gui.running:
     mouse_pos = gui.get_cursor_pos()
     attractor_pos[None] = mouse_pos
     attractor_strength[None] = gui.is_pressed(gui.LMB) - gui.is_pressed(gui.RMB)
-    for i in range(36):
+    for i in range(50):
         with ti.Tape(loss=U):
             update_U()
         advance()

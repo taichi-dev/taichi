@@ -288,8 +288,7 @@ void make_block_local_offload(OffloadedStmt *offload) {
     }
 
     // allocate storage for the BLS variable
-    auto bls_size_bytes = dtype_size * bls_num_elements;
-    bls_offset += bls_size_bytes;
+    bls_offset += dtype_size * bls_num_elements;
   }
 
   offload->bls_size = std::max(std::size_t(1), bls_offset);

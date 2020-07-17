@@ -11,7 +11,7 @@ __device__ int cube(int x) {
   return y + clock64();
 }
 
-__global__ void test_ldg(float *a, float *b) {
+__global__ void __launch_bounds__(1024, 2) test_ldg(float *a, float *b) {
   unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
   a[i] = cube(1);
   auto c = __ldg((float4 *)a);

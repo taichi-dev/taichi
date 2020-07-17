@@ -35,7 +35,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     for (auto &task : offloaded_local) {
       llvm::Function *func = module->getFunction(task.name);
       TI_ASSERT(func);
-      tlctx->mark_function_as_cuda_kernel(func);
+      tlctx->mark_function_as_cuda_kernel(func, task.block_dim);
     }
 
     auto jit = get_current_program().llvm_context_device->jit.get();

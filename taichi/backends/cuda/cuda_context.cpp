@@ -14,7 +14,6 @@ TLANG_NAMESPACE_BEGIN
 CUDAContext::CUDAContext()
     : profiler(nullptr), driver(CUDADriver::get_instance_without_context()) {
   // CUDA initialization
-
   dev_count = 0;
   driver.init(0);
   driver.device_get_count(&dev_count);

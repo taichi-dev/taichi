@@ -690,10 +690,10 @@ void taichi_assert_format(LLVMRuntime *runtime,
     });
   }
 #if ARCH_cuda
-  // This kills this CUDA thread.
+  // Kill this CUDA thread.
   asm("exit;");
 #else
-  // TODO: kill the CPU thread.
+  // TODO: kill this CPU thread here.
 #endif
 }
 

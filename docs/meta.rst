@@ -63,7 +63,7 @@ For example:
     def copy(x: ti.template(), y: ti.template()):
         for I in ti.grouped(y):
             # I is a vector with same dimensionality with x and data type i32
-            # If y is 0D, then I = None
+            # If y is 0D, then I = ti.Vector([]), which is equivalent to `None` when used in x[I]
             # If y is 1D, then I = ti.Vector([i])
             # If y is 2D, then I = ti.Vector([i, j])
             # If y is 3D, then I = ti.Vector([i, j, k])

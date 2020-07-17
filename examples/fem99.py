@@ -6,16 +6,16 @@ except ImportError:
           'Please run `pip install --user taichi_glsl` to install it.')
 ti.init(arch=ti.gpu)
 
-N = 12
+N = 20
+dt = 1e-4
+dx = 1 / N
 NF = 2 * N ** 2
 NV = (N + 1) ** 2
-E, nu = 1e5, 0.2
+E, nu = 2e4, 0.2
 mu, lam = E / 2 / (1 + nu), E * nu / (1 + nu) / (1 - 2 * nu)
+ball_pos, ball_radius = tl.vec(0.5, 0.0), 0.31
 gravity = tl.vec(0, -40)
 damping = 12.5
-dt = 1.5e-4
-
-ball_pos, ball_radius = tl.vec(0.5, 0.0), 0.31
 
 pos = ti.Vector.var(2, ti.f32, NV, needs_grad=True)
 vel = ti.Vector.var(2, ti.f32, NV)
@@ -49,7 +49,7 @@ def update_U():
 @ti.kernel
 def advance():
     for i in range(NV):
-        f_i = -pos.grad[i]
+        f_i = -pos.grad[i] * (1 / dx)
         vel[i] += dt * (f_i + gravity)
         vel[i] *= ti.exp(-dt * damping)
     for i in range(NV):
@@ -90,7 +90,7 @@ while gui.running:
             gui.running = False
         elif e.key == 'r':
             init_pos()
-    for i in range(15):
+    for i in range(20):
         with ti.Tape(loss=U):
             update_U()
         advance()

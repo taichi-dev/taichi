@@ -7,15 +7,14 @@ except ImportError:
 ti.init(arch=ti.gpu)
 
 N = 12
+dt = 6e-5
+dx = 1 / N
 NF = 2 * N ** 2
 NV = (N + 1) ** 2
-E, nu = 4e5, 0.2
+E, nu = 5e4, 0.2
 mu, lam = E / 2 / (1 + nu), E * nu / (1 + nu) / (1 - 2 * nu)
-damping = 12.5
-dt = 1e-4
-
 ball_pos, ball_radius = tl.vec(0.5, 0.0), 0.31
-mouse_radius = 0.03
+damping = 12.5
 
 pos = ti.Vector.var(2, ti.f32, NV, needs_grad=True)
 vel = ti.Vector.var(2, ti.f32, NV)
@@ -53,7 +52,7 @@ def update_U():
 @ti.kernel
 def advance():
     for i in range(NV):
-        f_i = -pos.grad[i]
+        f_i = -pos.grad[i] * (1 / dx)
         g = gravity[None] * 0.8 + attractor_strength[None] * (attractor_pos[None] - pos[i]).normalized(1e-5)
         vel[i] += dt * (f_i + g * 50)
         vel[i] *= ti.exp(-dt * damping)
@@ -118,12 +117,12 @@ while gui.running:
     mouse_pos = gui.get_cursor_pos()
     attractor_pos[None] = mouse_pos
     attractor_strength[None] = gui.is_pressed(gui.LMB) - gui.is_pressed(gui.RMB)
-    for i in range(15):
+    for i in range(36):
         with ti.Tape(loss=U):
             update_U()
         advance()
     paint_phi(gui)
-    gui.circle(mouse_pos, radius=mouse_radius * 512, color=0x336699)
+    gui.circle(mouse_pos, radius=15, color=0x336699)
     gui.circle(ball_pos, radius=ball_radius * 512, color=0x666666)
     gui.circles(pos.to_numpy(), radius=2, color=0xffaa33)
     gui.show()

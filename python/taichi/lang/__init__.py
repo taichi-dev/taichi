@@ -110,7 +110,7 @@ class _EnvironmentConfigurator:
                 del self.kwargs[key]  # mark as recognized
         elif key in self.kwargs:
             self[key] = self.kwargs[key]
-            del self.kwargs[key]  # mark_as_recognized
+            del self.kwargs[key]  # mark as recognized
 
     def __getitem__(self, key):
         return getattr(self.cfg, key)

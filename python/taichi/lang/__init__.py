@@ -103,9 +103,14 @@ class _EnvironmentConfigurator:
         value = os.environ.get(name, '')
         if len(value):
             self[key] = cast(value)
+            if key in self.kwargs:
+                core.warn(
+                    f'ti.init argument "{key}" overridden by environment variable "{name}"={value}'
+                )
+                del self.kwargs[key]  # mark as recognized
         elif key in self.kwargs:
             self[key] = self.kwargs[key]
-            del self.kwargs[key]  # pop out
+            del self.kwargs[key]  # mark as recognized
 
     def __getitem__(self, key):
         return getattr(self.cfg, key)
@@ -180,7 +185,6 @@ def init(arch=None,
     env_spec.add('excepthook')
 
     # compiler configurations (ti.cfg):
-    # to somewhere like ti.cuda_cfg so that user don't get confused?
     for key in dir(ti.cfg):
         if key in ['default_fp', 'default_ip']:
             continue

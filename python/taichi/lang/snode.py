@@ -117,6 +117,7 @@ class SNode:
             snode_deactivate(self)
         if self.ptr.type == ti.core.SNodeType.dynamic:
             from .meta import snode_deactivate_dynamic
+            # Ntoe that dynamic nodes are different from other sparse nodes: instead of deactivate each element, we only need to deactivate its parent, whose linked list of chunks will be deleted.
             snode_deactivate_dynamic(self)
 
     def __repr__(self):

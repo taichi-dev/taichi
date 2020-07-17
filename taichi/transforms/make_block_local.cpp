@@ -216,6 +216,8 @@ void make_block_local_offload(OffloadedStmt *offload) {
               bls.push_back<ConstStmt>(TypedConstant(pad.second.bounds[0][i])));
 
           if (debug) {
+            // This part insert an assertion to make sure BLS access is within
+            // the bound.
             auto bls_axis_size =
                 pad.second.bounds[1][i] - pad.second.bounds[0][i];
             std::string msg = fmt::format(

@@ -690,7 +690,10 @@ void taichi_assert_format(LLVMRuntime *runtime,
     });
   }
 #if ARCH_cuda
+  // This kills this CUDA thread.
   asm("exit;");
+#else
+  // TODO: kill the CPU thread.
 #endif
 }
 
@@ -723,6 +726,9 @@ Ptr LLVMRuntime::allocate_from_buffer(std::size_t size, std::size_t alignment) {
   });
   if (!success) {
 #if ARCH_cuda
+    // Here unfortunately we have to rely on a native CUDA assert failure to
+    // halt the whole grid. Using a taichi_assert_runtime will not finish the
+    // whole kernel execution immediately.
     __assertfail("Out of CUDA pre-allocated memory", "Taichi JIT", 0,
                  "allocate_from_buffer", 1);
 #endif

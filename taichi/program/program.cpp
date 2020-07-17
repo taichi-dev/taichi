@@ -151,7 +151,7 @@ Program::Program(Arch desired_arch) {
 
   // TODO: allow users to run in debug mode without out-of-bound checks
   if (config.debug)
-    config.check_out_of_bound = false;
+    config.check_out_of_bound = true;
 
   if (!is_extension_supported(config.arch, Extension::assertion)) {
     if (config.check_out_of_bound) {

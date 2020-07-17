@@ -1155,7 +1155,6 @@ i32 linear_thread_idx() {
 
 void ListManager::touch_chunk(int chunk_id) {
   if (!chunks[chunk_id]) {
-    // Printf("chunkid %d\n", chunk_id);
     locked_task(&lock, [&] {
       // may have been allocated during lock contention
       if (!chunks[chunk_id]) {

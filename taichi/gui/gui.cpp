@@ -19,11 +19,8 @@ void Canvas::triangles_batched(int n,
     if (color_arr) {
       clr = color_arr[i];
     }
-    triangle_single(
-      a[i * 2], a[i * 2 + 1],
-      b[i * 2], b[i * 2 + 1],
-      c[i * 2], c[i * 2 + 1],
-      clr);
+    triangle_single(a[i * 2], a[i * 2 + 1], b[i * 2], b[i * 2 + 1], c[i * 2],
+                    c[i * 2 + 1], clr);
   }
 }
 

@@ -234,7 +234,8 @@ class GUI:
             raise ValueError(
                 'Color must be an ndarray or int (e.g., 0x956333)')
 
-        self.canvas.triangles_batched(n, a_ptr, b_ptr, c_ptr, color_single, color_array)
+        self.canvas.triangles_batched(n, a_ptr, b_ptr, c_ptr, color_single,
+                                      color_array)
 
     def triangle(self, a, b, c, color=0xFFFFFF):
         self.canvas.triangle_single(a[0], a[1], b[0], b[1], c[0], c[1], color)

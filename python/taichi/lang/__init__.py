@@ -103,12 +103,12 @@ class _EnvironmentConfigurator:
         value = os.environ.get(name, '')
         if len(value):
             self[key] = cast(value)
-            # TODO: maybe use a WARNING since it's
             if key in self.kwargs:
-                del self.kwargs[key]  # pop out
+                core.warn(f'ti.init argument "{key}" overridden by environment variable "{name}"={value}')
+                del self.kwargs[key]  # mark as recognized
         elif key in self.kwargs:
             self[key] = self.kwargs[key]
-            del self.kwargs[key]  # pop out
+            del self.kwargs[key]  # mark_as_recognized
 
     def __getitem__(self, key):
         return getattr(self.cfg, key)

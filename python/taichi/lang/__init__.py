@@ -266,7 +266,8 @@ tr = deprecated('ti.tr(a)', 'a.trace()')(Matrix.trace)
 def Tape(loss, clear_gradients=True):
     get_runtime().materialize()
     if len(loss.shape) != 0:
-        raise RuntimeError('The loss tensor for `Tape` must be a 0D tensor, i.e. scalar')
+        raise RuntimeError(
+            'The loss tensor for `Tape` must be a 0D tensor, i.e. scalar')
     if not loss.snode().ptr.has_grad():
         raise RuntimeError(
             'Gradient for loss not allocated, please use ti.var(..., needs_grad=True)'

@@ -58,7 +58,7 @@ class MPMSolver:
             print(self.substeps)
             self.grid.deactivate_all()
             self.build_pid()
-            ti.kernel_profiler_print()
+            # ti.kernel_profiler_print()
 
     def particle_info(self):
         np_x = np.ndarray((self.n_particles[None], self.dim), dtype=np.float32)

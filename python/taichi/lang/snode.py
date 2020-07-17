@@ -1,7 +1,6 @@
 from . import impl
 from .util import deprecated
 
-
 class SNode:
     def __init__(self, ptr):
         self.ptr = ptr
@@ -107,6 +106,8 @@ class SNode:
             children.append(SNode(self.ptr.get_ch(i)))
         return children
 
+
+
     def deactivate_all(self):
         ch = self.get_children()
         for c in ch:
@@ -115,6 +116,9 @@ class SNode:
         if self.ptr.type == ti.core.SNodeType.pointer or self.ptr.type == ti.core.SNodeType.bitmasked:
             from .meta import snode_deactivate
             snode_deactivate(self)
+        if self.ptr.type == ti.core.SNodeType.dynamic:
+            from .meta import snode_deactivate_dynamic
+            snode_deactivate_dynamic(self)
 
     def __repr__(self):
         # ti.root.dense(ti.i, 3).dense(ti.jk, (4, 5)).place(x)

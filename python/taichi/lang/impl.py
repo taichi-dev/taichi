@@ -151,7 +151,7 @@ def func_call(func, *args, **kwargs):
             f'Calling into non-Taichi function {func.__name__}.'
             ' This means that scope inside that function will not be processed'
             ' by the Taichi transformer. Proceed with caution! '
-            ' Maybe you want to decorate it with @ti.func or @ti.pyfunc?',
+            ' Maybe you want to decorate it with @ti.func?',
             UserWarning,
             stacklevel=2)
 

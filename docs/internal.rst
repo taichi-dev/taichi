@@ -31,7 +31,7 @@ For example,
 
     ti.init(print_ir=True)
 
-    x = ti.var(ti.i32)
+    x = ti.field(ti.i32)
     ti.root.dense(ti.i, 4).bitmasked(ti.i, 4).place(x)
 
     @ti.kernel
@@ -156,7 +156,7 @@ correspond to?
 Each ``SNode`` can have a different virtual-to-physical mapping. ``physical_index_position[i] == -1``
 means the ``i``-th virtual index does not corrspond to any physical index in this ``SNode``.
 
-``SNode`` s in handy dense tensors (i.e., ``a = ti.var(ti.i32, shape=(128, 256, 512))``)
+``SNode`` s in handy dense tensors (i.e., ``a = ti.field(ti.i32, shape=(128, 256, 512))``)
 have **trivial** virtual-to-physical mapping, e.g. ``physical_index_position[i] = i``.
 
 However, more complex data layouts, such as column-major 2D tensors can lead to ``SNodes`` with
@@ -164,9 +164,9 @@ However, more complex data layouts, such as column-major 2D tensors can lead to 
 
 .. code-block:: python
 
-    a = ti.var(ti.f32, shape=(128, 32, 8))
+    a = ti.field(ti.f32, shape=(128, 32, 8))
 
-    b = ti.var(ti.f32)
+    b = ti.field(ti.f32)
     ti.root.dense(ti.j, 32).dense(ti.i, 16).place(b)
 
     ti.get_runtime().materialize()

@@ -21,7 +21,7 @@ Use ``to_numpy``/``from_numpy``/``to_torch``/``from_torch``:
   m = 7
 
   # Taichi tensors
-  val = ti.var(ti.i32, shape=(n, m))
+  val = ti.field(ti.i32, shape=(n, m))
   vec = ti.Vector(3, dt=ti.i32, shape=(n, m))
   mat = ti.Matrix(3, 4, dt=ti.i32, shape=(n, m))
 
@@ -74,7 +74,7 @@ Note that struct-for's on external arrays are not supported.
   n = 4
   m = 7
 
-  val = ti.var(ti.i32, shape=(n, m))
+  val = ti.field(ti.i32, shape=(n, m))
 
   @ti.kernel
   def test_numpy(arr: ti.ext_arr()):

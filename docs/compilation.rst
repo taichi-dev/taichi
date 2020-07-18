@@ -30,8 +30,8 @@ We allocate two 1D tensors to simplify discussion:
 
 .. code-block:: python
 
-  x = ti.var(dt=ti.f32, shape=128)
-  y = ti.var(dt=ti.f32, shape=16)
+  x = ti.field(dt=ti.f32, shape=128)
+  y = ti.field(dt=ti.f32, shape=16)
 
 
 Kernel registration

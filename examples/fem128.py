@@ -1,9 +1,4 @@
 import taichi as ti
-try:
-    import taichi_glsl as tl
-except ImportError:
-    print('This example needs the extension library Taichi GLSL to work.'
-          'Please run `pip install --user taichi_glsl` to install it.')
 ti.init(arch=ti.gpu)
 
 N = 12
@@ -14,17 +9,17 @@ NF = 2 * N ** 2   # number of faces
 NV = (N + 1) ** 2 # number of vertices
 E, nu = 4e4, 0.2  # Young's modulus and Poisson's ratio
 mu, lam = E / 2 / (1 + nu), E * nu / (1 + nu) / (1 - 2 * nu) # Lame parameters
-ball_pos, ball_radius = tl.vec(0.5, 0.0), 0.31
+ball_pos, ball_radius = ti.Vector([0.5, 0.0]), 0.31
 damping = 14.5
 
 pos = ti.Vector.var(2, ti.f32, NV, needs_grad=True)
 vel = ti.Vector.var(2, ti.f32, NV)
-f2v = ti.Vector.var(3, ti.i32, NF)
+f2v = ti.Vector.var(3, ti.i32, NF) # ids of three vertices of each face
 B = ti.Matrix.var(2, 2, ti.f32, NF)
 F = ti.Matrix.var(2, 2, ti.f32, NF, needs_grad=True)
 V = ti.var(ti.f32, NF)
-phi = ti.var(ti.f32, NF)
-U = ti.var(ti.f32, (), needs_grad=True)
+phi = ti.var(ti.f32, NF)  # potential energy of each face (Neo-Hookean)
+U = ti.var(ti.f32, (), needs_grad=True)  # total potential energy
 
 gravity = ti.Vector.var(2, ti.f32, ())
 attractor_pos = ti.Vector.var(2, ti.f32, ())
@@ -34,16 +29,13 @@ attractor_strength = ti.var(ti.f32, ())
 def update_U():
     for i in range(NF):
         ia, ib, ic = f2v[i]
-        a = pos[ia]
-        b = pos[ib]
-        c = pos[ic]
+        a, b, c = pos[ia], pos[ib], pos[ic]
         V[i] = abs((a - c).cross(b - c))
         D_i = ti.Matrix.cols([a - c, b - c])
         F[i] = D_i @ B[i]
     for i in range(NF):
         F_i = F[i]
-        J_i = F_i.determinant()
-        log_J_i = ti.log(J_i)
+        log_J_i = ti.log(F_i.determinant())
         phi_i = mu / 2 * ((F_i.transpose() @ F_i).trace() - 2)
         phi_i -= mu * log_J_i
         phi_i += lam / 2 * log_J_i ** 2
@@ -53,30 +45,37 @@ def update_U():
 @ti.kernel
 def advance():
     for i in range(NV):
-        f_i = -pos.grad[i] * (1 / dx)
+        acc = -pos.grad[i] / (rho * dx ** 2)
         g = gravity[None] * 0.8 + attractor_strength[None] * (attractor_pos[None] - pos[i]).normalized(1e-5)
-        vel[i] += dt * (f_i + g * 50)
+        vel[i] += dt * (acc + g * 40)
         vel[i] *= ti.exp(-dt * damping)
     for i in range(NV):
-        vel[i] = tl.ballBoundReflect(pos[i], vel[i], ball_pos, ball_radius)
-        vel[i] = tl.boundReflect(pos[i], vel[i], 0, 1, 0)
+        # ball boundary condition:
+        disp = pos[i] - ball_pos
+        disp2 = disp.norm_sqr()
+        if disp2 <= ball_radius ** 2:
+            NoV = vel[i].dot(disp)
+            if NoV < 0: vel[i] -= NoV * disp / disp2
+        cond = pos[i] < 0 and vel[i] < 0 or pos[i] > 1 and vel[i] > 0
+        # rect boundary condition:
+        for j in ti.static(range(pos.n)):
+           if cond[j]: vel[i][j] = 0
         pos[i] += dt * vel[i]
 
 @ti.kernel
 def init_pos():
     for i, j in ti.ndrange(N + 1, N + 1):
         k = i * (N + 1) + j
-        pos[k] = tl.vec(i, j) / N * 0.25 + tl.vec(0.45, 0.45)
-        vel[k] = tl.vec2(0.0)
+        pos[k] = ti.Vector([i, j]) / N * 0.25 + ti.Vector([0.45, 0.45])
+        vel[k] = ti.Vector([0, 0])
     for i in range(NF):
-        a = pos[f2v[i].x]
-        b = pos[f2v[i].y]
-        c = pos[f2v[i].z]
+        ia, ib, ic = f2v[i]
+        a, b, c = pos[ia], pos[ib], pos[ic]
         B_i_inv = ti.Matrix.cols([a - c, b - c])
         B[i] = B_i_inv.inverse()
 
 @ti.kernel
-def init_geo():
+def init_mesh():
     for i, j in ti.ndrange(N, N):
         k = (i * N + j) * 2
         a = i * (N + 1) + j
@@ -96,11 +95,12 @@ def paint_phi(gui):
     color = [k + gb, gb, gb]
     gui.triangles(a, b, c, color=ti.rgb_to_hex(color))
 
-gravity[None] = [0, -1]
-print("[Hint] Use WSAD/arrow keys to control gravity. Use left/right mouse bottons to attract/repel. Press R to reset.")
-init_geo()
+init_mesh()
 init_pos()
+gravity[None] = [0, -1]
+
 gui = ti.GUI('FEM128')
+print("[Hint] Use WSAD/arrow keys to control gravity. Use left/right mouse bottons to attract/repel. Press R to reset.")
 while gui.running:
     for e in gui.get_events(gui.PRESS):
         if e.key == gui.ESCAPE:

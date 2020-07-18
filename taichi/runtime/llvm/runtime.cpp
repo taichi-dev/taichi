@@ -895,6 +895,26 @@ int32 block_dim() {
   return 0;
 }
 
+int32 ctlz_i32(i32 val) {
+  return 0;
+}
+
+int32 cttz_i32(i32 val) {
+  return 0;
+}
+
+uint32 cuda_ballot(bool bit) {
+  return 0;
+}
+
+uint32 cuda_ballot_sync(uint32 mask, bool bit) {
+  return 0;
+}
+
+int32 cuda_active_mask() {
+  return cuda_ballot(true);
+}
+
 int32 grid_dim() {
   return 0;
 }

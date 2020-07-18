@@ -266,6 +266,13 @@ def prepare_sandbox(src):
     return tmp_dir
 
 
+def get_unique_task_id():
+    import datetime
+    import random
+    return datetime.datetime.now().strftime('task-%Y-%m-%d-%H-%M-%S-r') + (
+        '%05d' % random.randint(0, 10000))
+
+
 if is_release():
     print("[Taichi] mode=release")
     sys.path.append(os.path.join(package_root(), 'lib'))
@@ -481,13 +488,6 @@ def _print_taichi_header():
     header += f'python {py_ver}'
 
     print(header)
-
-
-def get_unique_task_id():
-    import datetime
-    import random
-    return datetime.datetime.now().strftime('task-%Y-%m-%d-%H-%M-%S-r') + (
-        '%05d' % random.randint(0, 10000))
 
 
 _print_taichi_header()

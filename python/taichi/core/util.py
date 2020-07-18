@@ -344,7 +344,6 @@ else:
         os.chdir(bin_dir)
 
         if create_sand_box_on_windows:
-            from taichi.misc.util import get_unique_task_id
             # Create a sandbox for separated core lib development and loading
             folder = os.path.join(get_output_directory(), 'tmp',
                                   get_unique_task_id())
@@ -482,6 +481,13 @@ def _print_taichi_header():
     header += f'python {py_ver}'
 
     print(header)
+
+
+def get_unique_task_id():
+    import datetime
+    import random
+    return datetime.datetime.now().strftime('task-%Y-%m-%d-%H-%M-%S-r') + (
+        '%05d' % random.randint(0, 10000))
 
 
 _print_taichi_header()

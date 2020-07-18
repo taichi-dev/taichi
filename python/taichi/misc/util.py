@@ -1,13 +1,6 @@
 import taichi
 import sys
 import copy
-import datetime
-import random
-
-
-def get_unique_task_id():
-    return datetime.datetime.now().strftime('task-%Y-%m-%d-%H-%M-%S-r') + (
-        '%05d' % random.randint(0, 10000))
 
 
 def config_from_dict(args):

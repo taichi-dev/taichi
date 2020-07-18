@@ -29,8 +29,8 @@ class ScopeGuard:
 class ASTTransformer(object):
     def __init__(self, func=None, *args, **kwargs):
         self.pass_Preprocess = ASTTransformerPreprocess(func=func,
-                                                     *args,
-                                                     **kwargs)
+                                                        *args,
+                                                        **kwargs)
         self.pass_Checks = ASTTransformerChecks(func=func)
 
     @staticmethod

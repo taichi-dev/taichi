@@ -16,28 +16,28 @@ STRUCT_FIELD(DynamicMeta, chunk_size);
 void Dynamic_activate(Ptr meta_, Ptr node_, int i) {
   auto meta = (DynamicMeta *)(meta_);
   auto node = (DynamicNode *)(node_);
-  if (i < node->n)
-    return;
-  locked_task(Ptr(&node->lock), [&] {
-    if (i < node->n)
-      return;
-    node->n = i + 1;
-    int chunk_start = 0;
-    auto p_chunk_ptr = &node->ptr;
-    auto chunk_size = meta->chunk_size;
-    auto rt = meta->context->runtime;
-    auto alloc = rt->node_allocators[meta->snode_id];
-    while (true) {
-      if (*p_chunk_ptr == nullptr) {
-        *p_chunk_ptr = alloc->allocate();
-      }
-      if (i < chunk_start + chunk_size) {
-        return;
-      }
-      p_chunk_ptr = (Ptr *)*p_chunk_ptr;
-      chunk_start += chunk_size;
+  // We need to not only update node->n, but also make sure the chunk containing
+  // element i is allocated.
+  atomic_max_i32(&node->n, i + 1);
+  int chunk_start = 0;
+  auto p_chunk_ptr = &node->ptr;
+  auto chunk_size = meta->chunk_size;
+  while (true) {
+    if (*p_chunk_ptr == nullptr) {
+      locked_task(Ptr(&node->lock), [&] {
+        if (*p_chunk_ptr == nullptr) {
+          auto rt = meta->context->runtime;
+          auto alloc = rt->node_allocators[meta->snode_id];
+          *p_chunk_ptr = alloc->allocate();
+        }
+      });
     }
-  });
+    if (i < chunk_start + chunk_size) {
+      return;
+    }
+    p_chunk_ptr = (Ptr *)*p_chunk_ptr;
+    chunk_start += chunk_size;
+  }
 }
 
 void Dynamic_deactivate(Ptr meta_, Ptr node_) {

@@ -267,10 +267,10 @@ def Tape(loss, clear_gradients=True):
     get_runtime().materialize()
     if len(loss.shape) != 0:
         raise RuntimeError(
-            'The loss tensor for `Tape` must be a 0D tensor, i.e. scalar')
+            'The loss of `Tape` must be a 0D tensor, i.e. scalar')
     if not loss.snode().ptr.has_grad():
         raise RuntimeError(
-            'Gradient for loss not allocated, please use ti.var(..., needs_grad=True)'
+            'Gradients of loss are not allocated, please use ti.var(..., needs_grad=True)'
             ' for all tensors that are required by autodiff.')
     if clear_gradients:
         clear_all_gradients()

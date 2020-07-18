@@ -33,7 +33,7 @@ def substep():
                 r = p - pos[j]
                 x = r0 / r.norm(1e-4)
                 # Molecular force: https://www.zhihu.com/question/38966526
-                acc += eps * (x ** 13 - 2 * x ** 7) * r
+                acc += eps * (x ** 13 - x ** 7) * r
                 # Long-distance gravity force:
                 acc += G * (x ** 3) * r
 

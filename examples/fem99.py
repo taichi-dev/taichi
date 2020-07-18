@@ -1,9 +1,4 @@
 import taichi as ti
-try:
-    import taichi_glsl as tl
-except ImportError:
-    print('This example needs the extension library Taichi GLSL to work.'
-          'Please run `pip install --user taichi_glsl` to install it.')
 ti.init(arch=ti.gpu)
 
 N = 32
@@ -14,8 +9,8 @@ NF = 2 * N ** 2   # number of faces
 NV = (N + 1) ** 2 # number of vertices
 E, nu = 4e4, 0.2  # Young's modulus and Poisson's ratio
 mu, lam = E / 2 / (1 + nu), E * nu / (1 + nu) / (1 - 2 * nu) # Lame parameters
-ball_pos, ball_radius = tl.vec(0.5, 0.0), 0.32
-gravity = tl.vec(0, -40)
+ball_pos, ball_radius = ti.Vector([0.5, 0.0]), 0.32
+gravity = ti.Vector([0, -40])
 damping = 12.5
 
 pos = ti.Vector.var(2, ti.f32, NV, needs_grad=True)
@@ -37,8 +32,7 @@ def update_U():
         F[i] = D_i @ B[i]
     for i in range(NF):
         F_i = F[i]
-        J_i = F_i.determinant()
-        log_J_i = ti.log(J_i)
+        log_J_i = ti.log(F_i.determinant())
         phi_i = mu / 2 * ((F_i.transpose() @ F_i).trace() - 2)
         phi_i -= mu * log_J_i
         phi_i += lam / 2 * log_J_i ** 2
@@ -52,16 +46,24 @@ def advance():
         vel[i] += dt * (acc + gravity)
         vel[i] *= ti.exp(-dt * damping)
     for i in range(NV):
-        vel[i] = tl.ballBoundReflect(pos[i], vel[i], ball_pos, ball_radius)
-        vel[i] = tl.boundReflect(pos[i], vel[i], 0, 1, 0)
+        # ball boundary condition:
+        disp = pos[i] - ball_pos
+        disp2 = disp.norm_sqr()
+        if disp2 <= ball_radius ** 2:
+            NoV = vel[i].dot(disp)
+            if NoV < 0: vel[i] -= NoV * disp / disp2
+        cond = pos[i] < 0 and vel[i] < 0 or pos[i] > 1 and vel[i] > 0
+        # rect boundary condition:
+        for j in ti.static(range(pos.n)):
+           if cond[j]: vel[i][j] = 0
         pos[i] += dt * vel[i]
 
 @ti.kernel
 def init_pos():
     for i, j in ti.ndrange(N + 1, N + 1):
         k = i * (N + 1) + j
-        pos[k] = tl.vec(i, j) / N * 0.25 + tl.vec(0.45, 0.45)
-        vel[k] = tl.vec2(0.0)
+        pos[k] = ti.Vector([i, j]) / N * 0.25 + ti.Vector([0.45, 0.45])
+        vel[k] = ti.Vector([0, 0])
     for i in range(NF):
         ia, ib, ic = f2v[i]
         a, b, c = pos[ia], pos[ib], pos[ic]

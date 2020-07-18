@@ -9,10 +9,11 @@ ti.init(arch=ti.gpu)
 N = 12
 dt = 5e-5
 dx = 1 / N
-NF = 2 * N ** 2
-NV = (N + 1) ** 2
-E, nu = 4e4, 0.2
-mu, lam = E / 2 / (1 + nu), E * nu / (1 + nu) / (1 - 2 * nu)
+rho = 4e1
+NF = 2 * N ** 2   # number of faces
+NV = (N + 1) ** 2 # number of vertices
+E, nu = 4e4, 0.2  # Young's modulus and Poisson's ratio
+mu, lam = E / 2 / (1 + nu), E * nu / (1 + nu) / (1 - 2 * nu) # Lame parameters
 ball_pos, ball_radius = tl.vec(0.5, 0.0), 0.31
 damping = 14.5
 

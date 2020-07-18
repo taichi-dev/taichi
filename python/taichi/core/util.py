@@ -344,6 +344,7 @@ else:
         os.chdir(bin_dir)
 
         if create_sand_box_on_windows:
+            from taichi.misc.util import get_unique_task_id
             # Create a sandbox for separated core lib development and loading
             folder = os.path.join(get_output_directory(), 'tmp',
                                   get_unique_task_id())

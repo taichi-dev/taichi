@@ -92,8 +92,7 @@ def paint_phi(gui):
     a, b, c = pos_[f2v_[:, 0]], pos_[f2v_[:, 1]], pos_[f2v_[:, 2]]
     k = phi_ * (10 / E)
     gb = (1 - k) * 0.5
-    color = [k + gb, gb, gb]
-    gui.triangles(a, b, c, color=ti.rgb_to_hex(color))
+    gui.triangles(a, b, c, color=ti.rgb_to_hex([k + gb, gb, gb]))
 
 init_mesh()
 init_pos()

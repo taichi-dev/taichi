@@ -1,49 +1,53 @@
 import taichi as ti
+import math
 
 ti.init(arch=ti.gpu)
 
-N = 8000
-pos = ti.Vector(2, dt=ti.f32, shape=N)
-vel = ti.Vector(2, dt=ti.f32, shape=N)
-bounce = 0.8
+N = 1600
+r0 = 0.05
+dt = 1e-5
+steps = 160
+eps = 1e-3
+G = -1e1
+
+pos = ti.Vector.var(2, ti.f32, N)
+vel = ti.Vector.var(2, ti.f32, N)
 
 
 @ti.kernel
 def initialize():
     for i in range(N):
-        for k in ti.static(range(2)):
-            pos[i][k] = ti.random() * 0.5 - 0.25 + 0.5
-            vel[i][k] = ti.random() * 2 - 1
+        a = ti.random() * math.tau
+        r = ti.sqrt(ti.random()) * 0.3
+        pos[i] = 0.5 + ti.Vector([ti.cos(a), ti.sin(a)]) * r
 
 
 @ti.kernel
-def advance(dt: ti.f32):
+def substep():
     for i in range(N):
-        for k in ti.static(range(2)):
-            if pos[i][k] < 0 and vel[i][k] < 0 or pos[i][k] > 1 and vel[i][
-                    k] > 0:
-                vel[i][k] = -bounce * vel[i][k]
+        acc = ti.Vector([0.0, 0.0])
 
-        p = pos[i] - ti.Vector([0.5, 0.5])
-        pas = -80.0 * p.norm()
-        a = p * pas
-
+        p = pos[i]
         for j in range(N):
             if i != j:
-                d = pos[i] - pos[j]
-                d2 = d.norm_sqr()
-                das = 233.0 * 0.001**2 / (0.001**2 + d2)
-                a = a + d * das
+                r = p - pos[j]
+                x = r0 / r.norm(1e-4)
+                # Molecular force: https://www.zhihu.com/question/38966526
+                acc += eps * (x**13 - x**7) * r
+                # Long-distance gravity force:
+                acc += G * (x**3) * r
 
-        pos[i] = pos[i] + vel[i] * dt
-        vel[i] = vel[i] + a * dt
+        vel[i] += acc * dt
+
+    for i in range(N):
+        pos[i] += vel[i] * dt
 
 
-gui = ti.GUI("n-body", res=(400, 400))
+gui = ti.GUI('N-body Star')
 
 initialize()
-while not gui.get_event(ti.GUI.ESCAPE, ti.GUI.EXIT):
-    _pos = pos.to_numpy()
-    gui.circles(_pos, radius=1, color=0x66ccff)
+while gui.running and not gui.get_event(ti.GUI.ESCAPE):
+    gui.circles(pos.to_numpy(), radius=2, color=0xfbfcbf)
     gui.show()
-    advance(0.005)
+    for i in range(steps):
+        substep()

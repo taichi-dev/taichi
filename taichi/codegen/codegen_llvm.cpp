@@ -1327,6 +1327,7 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     parent_coordinates = element.get_ptr("pcoord");
 
     if (stmt->bls_prologue) {
+      call("block_barrier");  // "__syncthreads()"
       stmt->bls_prologue->accept(this);
       call("block_barrier");  // "__syncthreads()"
     }
@@ -1428,6 +1429,7 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     if (stmt->bls_epilogue) {
       call("block_barrier");  // "__syncthreads()"
       stmt->bls_epilogue->accept(this);
+      call("block_barrier");  // "__syncthreads()"
     }
   }
 

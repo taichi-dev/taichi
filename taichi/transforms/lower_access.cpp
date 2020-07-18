@@ -126,12 +126,12 @@ class LowerAccess : public IRVisitor {
                   diff.high <= current_struct_for->vectorize)) {
               on_loop_tree = false;
             }
-          }
-        }
           } else {
             if (!diff.certain() || diff.low != 0) {
               on_loop_tree = false;
             }
+          }
+        }
       }
 
       // linearize
@@ -142,7 +142,6 @@ class LowerAccess : public IRVisitor {
         // Create a SNodeOp querying if element i(linearized) of node is active
         lowered.push_back<SNodeOpStmt>(snode_op, snodes[i], last, linearized);
       } else {
-        auto kernel = &get_current_program().get_current_kernel();
         bool no_activate =
             std::find(kernel->no_activate.begin(), kernel->no_activate.end(),
                       snode) != kernel->no_activate.end();
@@ -212,6 +211,9 @@ class LowerAccess : public IRVisitor {
       if (stmt->val == nullptr) {
         std::vector<SNode *> snodes(stmt->width(), stmt->snode);
         auto proxy_ptr = Stmt::make_typed<GlobalPtrStmt>(snodes, stmt->indices);
+        // Pretend to be in the IR hierarchy so that we can safely query
+        // stmt->get_kernel() later.
+        proxy_ptr->parent = stmt->parent;
         auto lowered = lower_vector_ptr(proxy_ptr.get(), false, stmt->op_type);
         modifier.replace_with(stmt, std::move(lowered), true);
       } else {
@@ -265,7 +267,7 @@ class LowerAccess : public IRVisitor {
 
 namespace irpass {
 
-bool lower_access(IRNode *root, bool lower_atomic, Kernel *kernel) {
+bool lower_access(IRNode *root, bool lower_atomic) {
   bool modified = LowerAccess::run(root, lower_atomic);
   typecheck(root);
   return modified;

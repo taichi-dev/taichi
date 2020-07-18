@@ -85,7 +85,7 @@ For now, Taichi-scope ``print`` supports string, scalar, vector, and matrix expr
 
         import taichi as ti
         ti.init(arch=ti.cpu)
-        a = ti.var(ti.f32, 4)
+        a = ti.field(ti.f32, 4)
 
 
         @ti.kernel
@@ -107,7 +107,7 @@ It is similar to Python-scope ``print``.
 
 .. code-block:: python
 
-    x = ti.var(ti.f32, (2, 3))
+    x = ti.field(ti.f32, (2, 3))
     y = 1
 
     @ti.kernel
@@ -140,7 +140,7 @@ For performance reason, ``assert`` only works when ``debug`` mode is on, For exa
 
     ti.init(arch=ti.cpu, debug=True)
 
-    x = ti.var(ti.f32, 128)
+    x = ti.field(ti.f32, 128)
 
     @ti.kernel
     def do_sqrt_all():

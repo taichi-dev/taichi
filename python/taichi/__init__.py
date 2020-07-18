@@ -12,7 +12,7 @@ def test():
     return task.run([])
 
 
-__all__ = [s for s in dir() if not s.startswith('_')]
+__all__ = ['core', 'misc', 'lang', 'tools', 'main', 'torch_io']
 
 __version__ = (core.get_version_major(), core.get_version_minor(),
                core.get_version_patch())

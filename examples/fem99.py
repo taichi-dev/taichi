@@ -9,8 +9,8 @@ ti.init(arch=ti.gpu)
 N = 32
 dt = 1e-4
 dx = 1 / N
-NF = 2 * N ** 2
-NV = (N + 1) ** 2
+NF = 2 * N ** 2   # Number of faces
+NV = (N + 1) ** 2 # Number of vertices
 E, nu = 4e4, 0.2
 mu, lam = E / 2 / (1 + nu), E * nu / (1 + nu) / (1 - 2 * nu)
 ball_pos, ball_radius = tl.vec(0.5, 0.0), 0.32
@@ -19,11 +19,11 @@ damping = 12.5
 
 pos = ti.Vector.var(2, ti.f32, NV, needs_grad=True)
 vel = ti.Vector.var(2, ti.f32, NV)
-f2v = ti.Vector.var(3, ti.i32, NF)
+f2v = ti.Vector.var(3, ti.i32, NF) # Ids of three vertices of each face
 B = ti.Matrix.var(2, 2, ti.f32, NF)
 F = ti.Matrix.var(2, 2, ti.f32, NF, needs_grad=True)
 V = ti.var(ti.f32, NF)
-phi = ti.var(ti.f32, NF)
+phi = ti.var(ti.f32, NF)  # Potential energy of each face (Neo-Hookean)
 U = ti.var(ti.f32, (), needs_grad=True)
 
 @ti.kernel
@@ -71,7 +71,7 @@ def init_pos():
         B[i] = B_i_inv.inverse()
 
 @ti.kernel
-def init_geo():
+def init_mesh():
     for i, j in ti.ndrange(N, N):
         k = (i * N + j) * 2
         a = i * (N + 1) + j
@@ -81,7 +81,7 @@ def init_geo():
         f2v[k + 0] = [a, b, c]
         f2v[k + 1] = [c, d, a]
 
-init_geo()
+init_mesh()
 init_pos()
 gui = ti.GUI('FEM99')
 while gui.running:

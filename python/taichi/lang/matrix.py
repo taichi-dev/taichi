@@ -89,8 +89,13 @@ class Matrix(TaichiOperations):
                 #    "use `ti.Matrix.field(n, m, dt, shape)` instead",
                 #    DeprecationWarning,
                 #    stacklevel=2)
-                mat = Matrix.field(n=n, m=m, dtype=dt, shape=shape, offset=offset,
-                                   layout=layout, needs_grad=needs_grad)
+                mat = Matrix.field(n=n,
+                                   m=m,
+                                   dtype=dt,
+                                   shape=shape,
+                                   offset=offset,
+                                   layout=layout,
+                                   needs_grad=needs_grad)
                 self.n = mat.n
                 self.m = mat.m
                 self.entries = mat.entries
@@ -817,8 +822,8 @@ class Matrix(TaichiOperations):
             dim = len(shape)
             if layout.soa:
                 for i, e in enumerate(self.entries):
-                    ti.root.dense(ti.index_nd(dim),
-                                  shape).place(e, offset=offset)
+                    ti.root.dense(ti.index_nd(dim), shape).place(e,
+                                                                 offset=offset)
                     if needs_grad:
                         ti.root.dense(ti.index_nd(dim),
                                       shape).place(e.grad, offset=offset)
@@ -829,8 +834,8 @@ class Matrix(TaichiOperations):
                 if needs_grad:
                     for i, e in enumerate(self.entries):
                         var_list.append(e.grad)
-                ti.root.dense(ti.index_nd(dim),
-                              shape).place(*tuple(var_list), offset=offset)
+                ti.root.dense(ti.index_nd(dim), shape).place(*tuple(var_list),
+                                                             offset=offset)
         return self
 
     @classmethod

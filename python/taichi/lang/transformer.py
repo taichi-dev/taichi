@@ -28,10 +28,10 @@ class ScopeGuard:
 # TODO: ASTTransformer -> ASTTransformerTotal
 class ASTTransformer(object):
     def __init__(self, func=None, *args, **kwargs):
-        self.pass_LowerAST = ASTTransformer_LowerAST(func=func,
+        self.pass_Preprocess = ASTTransformerPreprocess(func=func,
                                                      *args,
                                                      **kwargs)
-        self.pass_Checks = ASTTransformer_Checks(func=func)
+        self.pass_Checks = ASTTransformerChecks(func=func)
 
     @staticmethod
     def print_ast(tree, title=None):
@@ -44,10 +44,10 @@ class ASTTransformer(object):
 
     def visit(self, tree):
         self.print_ast(tree, 'Initial AST')
-        self.pass_LowerAST.visit(tree)
-        self.print_ast(tree, 'Lower AST')
+        self.pass_Preprocess.visit(tree)
+        self.print_ast(tree, 'Preprocessed')
         self.pass_Checks.visit(tree)
-        self.print_ast(tree, 'Checks')
+        self.print_ast(tree, 'Checked')
         ast.fix_missing_locations(tree)
         self.print_ast(tree, 'Final AST')
 
@@ -88,7 +88,7 @@ class ASTTransformerBase(ast.NodeTransformer):
 
 
 # First-pass transform
-class ASTTransformer_LowerAST(ASTTransformerBase):
+class ASTTransformerPreprocess(ASTTransformerBase):
     def __init__(self,
                  excluded_paremeters=(),
                  is_kernel=True,
@@ -845,7 +845,7 @@ if 1:
 
 
 # Second-pass transform
-class ASTTransformer_Checks(ASTTransformerBase):
+class ASTTransformerChecks(ASTTransformerBase):
     def __init__(self, func):
         super().__init__(func)
 

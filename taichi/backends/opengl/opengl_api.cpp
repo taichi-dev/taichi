@@ -90,7 +90,8 @@ size_t KernelParallelAttrib::calc_num_groups(GLSLLaunchGuard &guard) const {
       b = *(const int *)((const char *)gtmp_now + b);
     if (!const_end)
       e = *(const int *)((const char *)gtmp_now + e);
-    n = b - e;
+    TI_ASSERT(e > b);
+    n = e - b;
     guard.unmap_gtmp_buffer();  // TODO: RAII
   }
   return std::max((n + tpg - 1) / tpg, (size_t)1);
@@ -404,7 +405,7 @@ struct CompiledKernel {
     // `layout(local_size_x = X) in;` - the X      == `Threads`  in CUDA
     //
     glDispatchCompute(num_groups, 1, 1);
-    check_opengl_error("glDispatchCompute");
+    check_opengl_error(fmt::format("glDispatchCompute({})", num_groups));
 
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
     check_opengl_error("glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT)");

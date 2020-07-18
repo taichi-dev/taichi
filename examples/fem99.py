@@ -9,30 +9,29 @@ ti.init(arch=ti.gpu)
 N = 32
 dt = 1e-4
 dx = 1 / N
-NF = 2 * N ** 2   # Number of faces
-NV = (N + 1) ** 2 # Number of vertices
-E, nu = 4e4, 0.2
-mu, lam = E / 2 / (1 + nu), E * nu / (1 + nu) / (1 - 2 * nu)
+rho = 4e1
+NF = 2 * N ** 2   # number of faces
+NV = (N + 1) ** 2 # number of vertices
+E, nu = 4e4, 0.2  # Young's modulus and Poisson's ratio
+mu, lam = E / 2 / (1 + nu), E * nu / (1 + nu) / (1 - 2 * nu) # Lame parameters
 ball_pos, ball_radius = tl.vec(0.5, 0.0), 0.32
 gravity = tl.vec(0, -40)
 damping = 12.5
 
 pos = ti.Vector.var(2, ti.f32, NV, needs_grad=True)
 vel = ti.Vector.var(2, ti.f32, NV)
-f2v = ti.Vector.var(3, ti.i32, NF) # Ids of three vertices of each face
+f2v = ti.Vector.var(3, ti.i32, NF) # ids of three vertices of each face
 B = ti.Matrix.var(2, 2, ti.f32, NF)
 F = ti.Matrix.var(2, 2, ti.f32, NF, needs_grad=True)
 V = ti.var(ti.f32, NF)
-phi = ti.var(ti.f32, NF)  # Potential energy of each face (Neo-Hookean)
-U = ti.var(ti.f32, (), needs_grad=True)
+phi = ti.var(ti.f32, NF)  # potential energy of each face (Neo-Hookean)
+U = ti.var(ti.f32, (), needs_grad=True)  # total potential energy
 
 @ti.kernel
 def update_U():
     for i in range(NF):
         ia, ib, ic = f2v[i]
-        a = pos[ia]
-        b = pos[ib]
-        c = pos[ic]
+        a, b, c = pos[ia], pos[ib], pos[ic]
         V[i] = abs((a - c).cross(b - c))
         D_i = ti.Matrix.cols([a - c, b - c])
         F[i] = D_i @ B[i]
@@ -49,8 +48,8 @@ def update_U():
 @ti.kernel
 def advance():
     for i in range(NV):
-        f_i = -pos.grad[i] * (1 / dx)
-        vel[i] += dt * (f_i + gravity)
+        acc = -pos.grad[i] / (rho * dx ** 2)
+        vel[i] += dt * (acc + gravity)
         vel[i] *= ti.exp(-dt * damping)
     for i in range(NV):
         vel[i] = tl.ballBoundReflect(pos[i], vel[i], ball_pos, ball_radius)
@@ -64,9 +63,8 @@ def init_pos():
         pos[k] = tl.vec(i, j) / N * 0.25 + tl.vec(0.45, 0.45)
         vel[k] = tl.vec2(0.0)
     for i in range(NF):
-        a = pos[f2v[i].x]
-        b = pos[f2v[i].y]
-        c = pos[f2v[i].z]
+        ia, ib, ic = f2v[i]
+        a, b, c = pos[ia], pos[ib], pos[ic]
         B_i_inv = ti.Matrix.cols([a - c, b - c])
         B[i] = B_i_inv.inverse()
 

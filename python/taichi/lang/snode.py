@@ -115,6 +115,12 @@ class SNode:
         if self.ptr.type == ti.core.SNodeType.pointer or self.ptr.type == ti.core.SNodeType.bitmasked:
             from .meta import snode_deactivate
             snode_deactivate(self)
+        if self.ptr.type == ti.core.SNodeType.dynamic:
+            from .meta import snode_deactivate_dynamic
+            # Note that dynamic nodes are different from other sparse nodes:
+            # instead of deactivating each element, we only need to deactivate
+            # its parent, whose linked list of chunks of elements will be deleted.
+            snode_deactivate_dynamic(self)
 
     def __repr__(self):
         # ti.root.dense(ti.i, 3).dense(ti.jk, (4, 5)).place(x)

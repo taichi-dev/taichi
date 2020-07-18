@@ -284,6 +284,9 @@ bool AsyncEngine::fuse() {
     const bool same_kernel = (rec_a.kernel == rec_b.kernel);
     bool kernel_args_match = true;
     if (!same_kernel) {
+      // Merging kernels with different signatures will break invariants. E.g.
+      // https://github.com/taichi-dev/taichi/blob/a6575fb97557267e2f550591f43b183076b72ac2/taichi/transforms/type_check.cpp#L326
+      //
       // TODO: we could merge different kernels if their args are the same. But
       // we have no way to check that for now.
       auto check = [](const Kernel *k) {

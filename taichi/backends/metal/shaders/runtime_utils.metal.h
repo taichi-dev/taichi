@@ -238,7 +238,7 @@ STR(
 
       void deactivate() {
         device auto *ptr = to_meta_ptr();
-        // For dynamic, deactivate() applies for all the slots
+        // For dynamic, deactivate() applies to all the slots
         atomic_store_explicit(ptr, 0, metal::memory_order_relaxed);
       }
 

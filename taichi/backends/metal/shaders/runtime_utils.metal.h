@@ -142,6 +142,127 @@ STR(
       }
     };
 
+    // To make codegen implementation easier, I've made these exceptions:
+    // * The somewhat strange SNodeRep_* naming style.
+    // * init(), instead of doing initiliaztion in the constructor.
+    class SNodeRep_dense {
+     public:
+      void init(device byte *addr) {
+        addr_ = addr;
+      }
+
+      inline device byte *addr() {
+        return addr_;
+      }
+
+      inline bool is_active(int) {
+        return true;
+      }
+
+      inline void activate(int) {
+      }
+
+      inline void deactivate(int) {
+      }
+
+     private:
+      device byte *addr_ = nullptr;
+    };
+
+    using SNodeRep_root = SNodeRep_dense;
+
+    class SNodeRep_bitmasked {
+     public:
+      constant static constexpr int kBitsPerMask = (sizeof(uint32_t) * 8);
+
+      void init(device byte *addr, int meta_offset) {
+        addr_ = addr;
+        meta_offset_ = meta_offset;
+      }
+
+      inline device byte *addr() {
+        return addr_;
+      }
+
+      bool is_active(int i) {
+        device auto *ptr = to_bitmask_ptr(i);
+        uint32_t bits = atomic_load_explicit(ptr, metal::memory_order_relaxed);
+        return ((bits >> (i % kBitsPerMask)) & 1);
+      }
+
+      void activate(int i) {
+        device auto *ptr = to_bitmask_ptr(i);
+        const uint32_t mask = (1 << (i % kBitsPerMask));
+        atomic_fetch_or_explicit(ptr, mask, metal::memory_order_relaxed);
+      }
+
+      void deactivate(int i) {
+        device auto *ptr = to_bitmask_ptr(i);
+        const uint32_t mask = ~(1 << (i % kBitsPerMask));
+        atomic_fetch_and_explicit(ptr, mask, metal::memory_order_relaxed);
+      }
+
+     private:
+      inline device atomic_uint *to_bitmask_ptr(int i) {
+        return reinterpret_cast<device atomic_uint *>(addr_ + meta_offset_) +
+               (i / kBitsPerMask);
+      }
+
+      device byte *addr_ = nullptr;
+      int32_t meta_offset_ = 0;
+    };
+
+    class SNodeRep_dynamic {
+     public:
+      void init(device byte *addr, int meta_offset) {
+        addr_ = addr;
+        meta_offset_ = meta_offset;
+      }
+
+      inline device byte *addr() {
+        return addr_;
+      }
+
+      bool is_active(int i) {
+        const auto n =
+            atomic_load_explicit(to_meta_ptr(), metal::memory_order_relaxed);
+        return i < n;
+      }
+
+      void activate(int i) {
+        device auto *ptr = to_meta_ptr();
+        // Unfortunately we cannot check if i + 1 is in bound
+        atomic_fetch_max_explicit(ptr, (i + 1), metal::memory_order_relaxed);
+        return;
+      }
+
+      void deactivate() {
+        device auto *ptr = to_meta_ptr();
+        // For dynamic, deactivate() applies to all the slots
+        atomic_store_explicit(ptr, 0, metal::memory_order_relaxed);
+      }
+
+      int append(int32_t data) {
+        device auto *ptr = to_meta_ptr();
+        // Unfortunately we cannot check if |me| is in bound
+        int me = atomic_fetch_add_explicit(ptr, 1, metal::memory_order_relaxed);
+        *(reinterpret_cast<device int32_t *>(addr_) + me) = data;
+        return me;
+      }
+
+      int length() {
+        return atomic_load_explicit(to_meta_ptr(), metal::memory_order_relaxed);
+      }
+
+     private:
+      inline device atomic_int *to_meta_ptr() {
+        return reinterpret_cast<device atomic_int *>(addr_ + meta_offset_);
+      }
+
+      device byte *addr_ = nullptr;
+      int32_t meta_offset_ = 0;
+    };
+
     [[maybe_unused]] int is_active(device byte *addr, SNodeMeta meta, int i) {
       if (meta.type == SNodeMeta::Root || meta.type == SNodeMeta::Dense) {
         return true;

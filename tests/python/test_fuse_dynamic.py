@@ -53,6 +53,6 @@ def benchmark_fuse_dynamic_x2y2z(size=1024**2, repeat=10, first_n=100):
         assert z[i] == x[i] + 5
 
 
-@ti.archs_with([ti.cpu], async_mode=True)
+@ti.run_async_test
 def test_fuse_dynamic_x2y2z():
     benchmark_fuse_dynamic_x2y2z()

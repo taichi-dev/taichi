@@ -558,6 +558,10 @@ def archs_with(archs, **init_kwags):
     return decorator
 
 
+def run_async_test(test):
+    return archs_with([cpu], async_mode=True)(test)
+
+
 def must_throw(ex):
     def decorator(func):
         def func__(*args, **kwargs):

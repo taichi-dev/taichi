@@ -84,11 +84,36 @@ def benchmark_fuse_reduction(size=1024**3, repeat=10, first_n=100):
         assert x[i] == i * 10 + repeat
 
 
-@ti.archs_with([ti.cpu], async_mode=True)
+@ti.run_async_test
 def test_fuse_dense_x2y2z():
     benchmark_fuse_dense_x2y2z(size=100 * 1024**2)
 
 
-@ti.archs_with([ti.cpu], async_mode=True)
+@ti.run_async_test
 def test_fuse_reduction():
     benchmark_fuse_reduction(size=10 * 1024**2)
+
+
+@ti.run_async_test
+def test_no_fuse_sigs_mismatch():
+    n = 4096
+    x = ti.field(ti.i32, shape=(n, ))
+
+    @ti.kernel
+    def inc_i():
+        for i in x:
+            x[i] += i
+
+    @ti.kernel
+    def inc_by(k: ti.i32):
+        for i in x:
+            x[i] += k
+
+    repeat = 5
+    for i in range(repeat):
+        inc_i()
+        inc_by(i)
+
+    x = x.to_numpy()
+    for i in range(n):
+        assert x[i] == i * repeat + ((repeat - 1) * repeat // 2)

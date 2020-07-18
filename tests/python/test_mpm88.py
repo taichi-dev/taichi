@@ -2,8 +2,7 @@ import taichi as ti
 from taichi import approx
 
 
-@ti.all_archs
-def test_mpm88():
+def run_mpm88_test():
     dim = 2
     N = 64
     n_particles = N * N
@@ -105,3 +104,14 @@ def test_mpm88():
     canvas.circle(ti.vec(pos[i, 0], pos[i, 1])).radius(1.5).color(0x068587).finish()
   gui.update()
   '''
+
+
+@ti.all_archs
+def test_mpm88():
+    run_mpm88_test()
+
+
+@ti.run_async_test
+def test_mpm88_async():
+    ti.init(arch=ti.cpu, async_mode=True)
+    run_mpm88_test()

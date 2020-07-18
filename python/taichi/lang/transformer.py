@@ -625,8 +625,6 @@ if 1:
             elif func_name == 'all':
                 node.func = self.parse_expr('ti.ti_all')
             else:
-                #node.args = [node.func] + node.args
-                #node.func = self.parse_expr('ti.func_call')
                 pass
         return node
 
@@ -854,5 +852,5 @@ class ASTTransformer_Checks(ASTTransformerBase):
     def visit_Call(self, node):
         if isinstance(node.func, ast.Name):
             node.args = [node.func] + node.args
-            node.func = self.parse_expr('ti.func_call')
+            node.func = self.parse_expr('ti.func_call_with_check')
         return node

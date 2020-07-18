@@ -7,7 +7,7 @@ Tensors of scalars
 Declaration
 -----------
 
-.. function:: ti.var(dt, shape = None, offset = None)
+.. function:: ti.field(dt, shape = None, offset = None)
 
     :parameter dt: (DataType) type of the tensor element
     :parameter shape: (optional, scalar or tuple) the shape of tensor
@@ -16,17 +16,17 @@ Declaration
     For example, this creates a *dense* tensor with four ``int32`` as elements:
     ::
 
-        x = ti.var(ti.i32, shape=4)
+        x = ti.field(ti.i32, shape=4)
 
     This creates a 4x3 *dense* tensor with ``float32`` elements:
     ::
 
-        x = ti.var(ti.f32, shape=(4, 3))
+        x = ti.field(ti.f32, shape=(4, 3))
 
     If shape is ``()`` (empty tuple), then a 0-D tensor (scalar) is created:
     ::
 
-        x = ti.var(ti.f32, shape=())
+        x = ti.field(ti.f32, shape=())
 
     Then access it by passing ``None`` as index:
     ::
@@ -36,9 +36,9 @@ Declaration
     If shape is **not provided** or ``None``, the user must manually ``place`` it afterwards:
     ::
 
-        x = ti.var(ti.f32)
+        x = ti.field(ti.f32)
         ti.root.dense(ti.ij, (4, 3)).place(x)
-        # equivalent to: x = ti.var(ti.f32, shape=(4, 3))
+        # equivalent to: x = ti.field(ti.f32, shape=(4, 3))
 
 .. note::
 
@@ -51,25 +51,25 @@ Declaration
 
     .. code-block:: python
 
-        x = ti.var(ti.f32)
+        x = ti.field(ti.f32)
         x[None] = 1 # ERROR: x not placed!
 
     .. code-block:: python
 
-        x = ti.var(ti.f32, shape=())
+        x = ti.field(ti.f32, shape=())
         @ti.kernel
         def func():
             x[None] = 1
 
         func()
-        y = ti.var(ti.f32, shape=())
+        y = ti.field(ti.f32, shape=())
         # ERROR: cannot create tensor after kernel invocation!
 
     .. code-block:: python
 
-        x = ti.var(ti.f32, shape=())
+        x = ti.field(ti.f32, shape=())
         x[None] = 1
-        y = ti.var(ti.f32, shape=())
+        y = ti.field(ti.f32, shape=())
         # ERROR: cannot create tensor after any tensor accesses from the Python-scope!
 
 
@@ -114,13 +114,13 @@ Meta data
 
     ::
 
-        x = ti.var(ti.i32, (6, 5))
+        x = ti.field(ti.i32, (6, 5))
         x.dim()  # 2
 
-        y = ti.var(ti.i32, 6)
+        y = ti.field(ti.i32, 6)
         y.dim()  # 1
 
-        z = ti.var(ti.i32, ())
+        z = ti.field(ti.i32, ())
         z.dim()  # 0
 
 
@@ -131,13 +131,13 @@ Meta data
 
     ::
 
-        x = ti.var(ti.i32, (6, 5))
+        x = ti.field(ti.i32, (6, 5))
         x.shape()  # (6, 5)
 
-        y = ti.var(ti.i32, 6)
+        y = ti.field(ti.i32, 6)
         y.shape()  # (6,)
 
-        z = ti.var(ti.i32, ())
+        z = ti.field(ti.i32, ())
         z.shape()  # ()
 
 
@@ -148,7 +148,7 @@ Meta data
 
     ::
 
-        x = ti.var(ti.i32, (2, 3))
+        x = ti.field(ti.i32, (2, 3))
         x.data_type()  # ti.i32
 
 
@@ -160,8 +160,8 @@ Meta data
 
     ::
 
-        x = ti.var(ti.i32)
-        y = ti.var(ti.i32)
+        x = ti.field(ti.i32)
+        y = ti.field(ti.i32)
         blk1 = ti.root.dense(ti.ij, (6, 5))
         blk2 = blk1.dense(ti.ij, (3, 2))
         blk1.place(x)

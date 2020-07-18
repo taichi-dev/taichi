@@ -31,7 +31,7 @@ As global tensors of vectors
 
 .. note::
 
-    In Python-scope, ``ti.var`` declares :ref:`scalar_tensor`, while ``ti.Vector`` declares tensors of vectors.
+    In Python-scope, ``ti.field`` declares :ref:`scalar_tensor`, while ``ti.Vector`` declares tensors of vectors.
 
 
 As a temporary local variable

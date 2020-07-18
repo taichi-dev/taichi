@@ -42,7 +42,7 @@ As global tensors of matrices
 
 .. note::
 
-    In Python-scope, ``ti.var`` declares :ref:`scalar_tensor`, while ``ti.Matrix`` declares tensors of matrices.
+    In Python-scope, ``ti.field`` declares :ref:`scalar_tensor`, while ``ti.Matrix`` declares tensors of matrices.
 
 
 As a temporary local variable

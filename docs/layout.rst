@@ -6,7 +6,7 @@ Advanced dense layouts
 Tensors (:ref:`scalar_tensor`) can be *placed* in a specific shape and *layout*.
 Defining a proper layout can be critical to performance, especially for memory-bound applications. A carefully designed data layout can significantly improve cache/TLB-hit rates and cacheline utilization. Although when performance is not the first priority, you probably don't have to worry about it.
 
-In Taichi, the layout is defined in a recursive manner. See :ref:`snode` for more details about how this works. We suggest starting with the default layout specification (simply by specifying ``shape`` when creating tensors using ``ti.var/Vector/Matrix``),
+In Taichi, the layout is defined in a recursive manner. See :ref:`snode` for more details about how this works. We suggest starting with the default layout specification (simply by specifying ``shape`` when creating tensors using ``ti.field/Vector/Matrix``),
 and then migrate to more advanced layouts using the ``ti.root.X`` syntax if necessary.
 
 Taichi decouples algorithms from data layouts, and the Taichi compiler automatically optimizes data accesses on a specific data layout. These Taichi features allow programmers to quickly experiment with different data layouts and figure out the most efficient one on a specific task and computer architecture.
@@ -19,28 +19,28 @@ For example, this declares a 0-D tensor:
 
 .. code-block:: python
 
-    x = ti.var(ti.f32)
+    x = ti.field(ti.f32)
     ti.root.place(x)
     # is equivalent to:
-    x = ti.var(ti.f32, shape=())
+    x = ti.field(ti.f32, shape=())
 
 This declares a 1D tensor of size ``3``:
 
 .. code-block:: python
 
-    x = ti.var(ti.f32)
+    x = ti.field(ti.f32)
     ti.root.dense(ti.i, 3).place(x)
     # is equivalent to:
-    x = ti.var(ti.f32, shape=3)
+    x = ti.field(ti.f32, shape=3)
 
 This declares a 2D tensor of shape ``(3, 4)``:
 
 .. code-block:: python
 
-    x = ti.var(ti.f32)
+    x = ti.field(ti.f32)
     ti.root.dense(ti.ij, (3, 4)).place(x)
     # is equivalent to:
-    x = ti.var(ti.f32, shape=(3, 4))
+    x = ti.field(ti.f32, shape=(3, 4))
 
 You may wonder, why not simply specify the ``shape`` of the tensor? Why bother using the more complex version?
 Good question, let go forward and figure out why.
@@ -137,8 +137,8 @@ Take a simple 1D wave equation solver for example:
 .. code-block:: python
 
     N = 200000
-    pos = ti.var(ti.f32)
-    vel = ti.var(ti.f32)
+    pos = ti.field(ti.f32)
+    vel = ti.field(ti.f32)
     ti.root.dense(ti.i, N).place(pos)
     ti.root.dense(ti.i, N).place(vel)
 
@@ -161,11 +161,11 @@ Then ``vel[i]`` is placed right next to ``pos[i]``, this can increase the cache-
 Flat layouts versus hierarchical layouts
 ----------------------------------------
 
-By default, when allocating a ``ti.var``, it follows the simplest data layout.
+By default, when allocating a ``ti.field``, it follows the simplest data layout.
 
 .. code-block:: python
 
-  val = ti.var(ti.f32, shape=(32, 64, 128))
+  val = ti.field(ti.f32, shape=(32, 64, 128))
   # C++ equivalent: float val[32][64][128]
 
 However, at times this data layout can be suboptimal for certain types of computer graphics tasks.
@@ -175,7 +175,7 @@ A better layout might be
 
 .. code-block:: python
 
-  val = ti.var(ti.f32)
+  val = ti.field(ti.f32)
   ti.root.dense(ti.ijk, (8, 16, 32)).dense(ti.ijk, (4, 4, 4)).place(val)
 
 This organizes ``val`` in ``4x4x4`` blocks, so that with high probability ``val[i, j, k]`` and its neighbours are close to each other (i.e., in the same cacheline or memory page).
@@ -205,21 +205,21 @@ Examples
 
 .. code-block:: python
 
-  A = ti.var(ti.f32)
+  A = ti.field(ti.f32)
   ti.root.dense(ti.ij, (256, 256)).place(A)
 
 2D matrix, column-major
 
 .. code-block:: python
 
-  A = ti.var(ti.f32)
+  A = ti.field(ti.f32)
   ti.root.dense(ti.ji, (256, 256)).place(A) # Note ti.ji instead of ti.ij
 
 `8x8` blocked 2D array of size `1024x1024`
 
 .. code-block:: python
 
-  density = ti.var(ti.f32)
+  density = ti.field(ti.f32)
   ti.root.dense(ti.ij, (128, 128)).dense(ti.ij, (8, 8)).place(density)
 
 

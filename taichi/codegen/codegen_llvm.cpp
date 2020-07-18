@@ -749,7 +749,13 @@ void CodeGenLLVM::emit_list_gen(OffloadedStmt *listgen) {
   auto snode_parent = listgen->snode->parent;
   auto meta_child = cast_pointer(emit_struct_meta(snode_child), "StructMeta");
   auto meta_parent = cast_pointer(emit_struct_meta(snode_parent), "StructMeta");
-  call("element_listgen", get_runtime(), meta_parent, meta_child);
+  if (snode_parent->type == SNodeType::root) {
+    // Since there's only one container to expand, we need a special kernel for
+    // more parallelism.
+    call("element_listgen_root", get_runtime(), meta_parent, meta_child);
+  } else {
+    call("element_listgen_nonroot", get_runtime(), meta_parent, meta_child);
+  }
 }
 
 void CodeGenLLVM::emit_gc(OffloadedStmt *stmt) {

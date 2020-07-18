@@ -2,6 +2,9 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/visitors.h"
+#include "taichi/program/kernel.h"
+#include "taichi/program/program.h"
+
 #include <deque>
 #include <set>
 
@@ -15,6 +18,7 @@ class LowerAccess : public IRVisitor {
   DelayedIRModifier modifier;
   StructForStmt *current_struct_for;
   bool lower_atomic_ptr;
+
   LowerAccess(bool lower_atomic_ptr) : lower_atomic_ptr(lower_atomic_ptr) {
     // TODO: change this to false
     allow_undefined_visitor = true;
@@ -57,6 +61,7 @@ class LowerAccess : public IRVisitor {
                         SNode *leaf_snode,
                         std::vector<Stmt *> indices,
                         bool activate,
+                        Kernel *kernel,
                         SNodeOpType snode_op = SNodeOpType::undefined) {
     if (snode_op == SNodeOpType::is_active) {
       // For ti.is_active
@@ -121,12 +126,12 @@ class LowerAccess : public IRVisitor {
                   diff.high <= current_struct_for->vectorize)) {
               on_loop_tree = false;
             }
+          }
+        }
           } else {
             if (!diff.certain() || diff.low != 0) {
               on_loop_tree = false;
             }
-          }
-        }
       }
 
       // linearize
@@ -137,9 +142,14 @@ class LowerAccess : public IRVisitor {
         // Create a SNodeOp querying if element i(linearized) of node is active
         lowered.push_back<SNodeOpStmt>(snode_op, snodes[i], last, linearized);
       } else {
+        auto kernel = &get_current_program().get_current_kernel();
+        bool no_activate =
+            std::find(kernel->no_activate.begin(), kernel->no_activate.end(),
+                      snode) != kernel->no_activate.end();
         auto lookup = lowered.push_back<SNodeLookupStmt>(
             snode, last, linearized,
-            snode->need_activation() && activate && !on_loop_tree);
+            snode->need_activation() && activate && !no_activate &&
+                !on_loop_tree);
         // if snode has no possibility of null child, set activate = false
         int chid = snode->child_id(snodes[i + 1]);
         last = lowered.push_back<GetChStmt>(lookup, chid);
@@ -160,7 +170,8 @@ class LowerAccess : public IRVisitor {
         indices.push_back(extractor.get());
         lowered.push_back(std::move(extractor));
       }
-      lower_scalar_ptr(lowered, ptr->snodes[i], indices, activate, snode_op);
+      lower_scalar_ptr(lowered, ptr->snodes[i], indices, activate,
+                       ptr->get_kernel(), snode_op);
       TI_ASSERT(lowered.size());
       lowered_pointers.push_back(lowered.back().get());
     }

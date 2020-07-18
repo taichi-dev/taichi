@@ -222,6 +222,9 @@ def init(arch=None,
     # create a new program:
     ti.get_runtime().create_program()
 
+def no_activate(*args):
+    for v in args:
+        taichi_lang_core.no_activate(v.ptr)
 
 def cache_shared(*args):
     for v in args:

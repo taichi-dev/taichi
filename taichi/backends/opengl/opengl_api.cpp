@@ -90,8 +90,10 @@ size_t KernelParallelAttrib::calc_num_groups(GLSLLaunchGuard &guard) const {
       b = *(const int *)((const char *)gtmp_now + b);
     if (!const_end)
       e = *(const int *)((const char *)gtmp_now + e);
-    TI_ASSERT(e > b);
-    n = e - b;
+    if (e <= b)
+      n = 0;
+    else
+      n = e - b;
     guard.unmap_gtmp_buffer();  // TODO: RAII
   }
   return std::max((n + tpg - 1) / tpg, (size_t)1);

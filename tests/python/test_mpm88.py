@@ -113,5 +113,4 @@ def test_mpm88():
 
 @ti.archs_with([ti.cpu], async_mode=True)
 def test_mpm88_async():
-    ti.init(arch=ti.cpu, async_mode=True)
     run_mpm88_test()

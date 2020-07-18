@@ -52,8 +52,8 @@ def advance():
         if disp2 <= ball_radius ** 2:
             NoV = vel[i].dot(disp)
             if NoV < 0: vel[i] -= NoV * disp / disp2
-        cond = pos[i] < 0 and vel[i] < 0 or pos[i] > 1 and vel[i] > 0
         # rect boundary condition:
+        cond = pos[i] < 0 and vel[i] < 0 or pos[i] > 1 and vel[i] > 0
         for j in ti.static(range(pos.n)):
            if cond[j]: vel[i][j] = 0
         pos[i] += dt * vel[i]

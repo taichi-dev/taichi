@@ -21,6 +21,7 @@ class lock_guard {
         func();
         grid_memfence();
         mutex_unlock_i32(lock);
+        grid_memfence();
       }
     }
     // Unfortunately critical sections on CUDA has undefined behavior (deadlock

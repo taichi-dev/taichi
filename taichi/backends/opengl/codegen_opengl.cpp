@@ -64,7 +64,8 @@ class KernelGen : public IRVisitor {
         compiled_program_(std::make_unique<CompiledProgram>(kernel)),
         struct_compiled_(struct_compiled),
         kernel_name_(kernel_name),
-        glsl_kernel_prefix_(kernel_name) {
+        glsl_kernel_prefix_(kernel_name),
+        kpa(std::make_unique<ParallelSize_ConstRange>(0)) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
   }
@@ -84,7 +85,7 @@ class KernelGen : public IRVisitor {
   bool is_top_level_{true};
   LineAppender line_appender_;
   LineAppender line_appender_header_;
-  KernelParallelAttrib kpa;
+  std::unique_ptr<ParallelSize> kpa;
   UsedFeature used;
 
   template <typename... Args>
@@ -196,10 +197,8 @@ class KernelGen : public IRVisitor {
 
     line_appender_header_.append_raw(kernel_header);
 
-    emit(
-        "layout(local_size_x = {} /* {}, {} */, "
-        "local_size_y = 1, local_size_z = 1) in;",
-        kpa.threads_per_group, kpa.num_groups, kpa.num_threads);
+    emit("layout(local_size_x = {}, local_size_y = 1, local_size_z = 1) in;",
+        kpa->get_threads_per_group());
     std::string extensions = "";
 #define PER_OPENGL_EXTENSION(x) \
   if (opengl_has_##x)           \
@@ -213,7 +212,7 @@ class KernelGen : public IRVisitor {
                            std::move(kpa));
     line_appender_header_.clear_all();
     line_appender_.clear_all();
-    kpa = KernelParallelAttrib();
+    kpa = std::make_unique<ParallelSize_ConstRange>(0);
   }
 
   void visit(Block *stmt) override {
@@ -673,7 +672,7 @@ class KernelGen : public IRVisitor {
         auto end_value = stmt->end_value;
         if (end_value < begin_value)
           end_value = begin_value;
-        kpa = KernelDist_ConstRange(end_value - begin_value);
+        kpa = std::make_unique<ParallelSize_ConstRange>(end_value - begin_value);
         emit("// range known at compile time");
         emit("int _tid = int(gl_GlobalInvocationID.x);");
         emit("if (_tid >= {}) return;", end_value - begin_value);
@@ -694,7 +693,7 @@ class KernelGen : public IRVisitor {
         emit("int _beg = {}, _end = {};", begin_expr, end_expr);
         emit("int _itv = _beg + _tid;");
         emit("if (_itv >= _end) return;");
-        kpa = KernelParallelAttrib(stmt);
+        kpa = std::make_unique<ParallelSize_DynamicRange>(stmt);
       }
       stmt->body->accept(this);
     }
@@ -713,8 +712,7 @@ class KernelGen : public IRVisitor {
       emit("int _tid = int(gl_GlobalInvocationID.x);");
       emit("if (_tid >= _list_len_) return;");
       emit("int _itv = _list_[_tid];");
-      kpa = KernelParallelAttrib(-1);
-      kpa.is_list = true;
+      kpa = std::make_unique<ParallelSize_StructFor>(stmt);
     }
     stmt->body->accept(this);
     emit("}}\n");

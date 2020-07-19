@@ -55,6 +55,17 @@ int opengl_get_threads_per_group() {
   return ret;
 }
 
+ParallelSize::~ParallelSize() {
+}
+
+size_t ParallelSize::get_threads_per_group() const {
+  return opengl_get_threads_per_group();
+}
+
+size_t ParallelSize_ConstRange::get_threads_per_group() const {
+  return threads_per_group;
+}
+
 ParallelSize_ConstRange::ParallelSize_ConstRange(int num_threads_)
     : num_threads(num_threads_) {
   const size_t TPG = opengl_get_threads_per_group();
@@ -69,11 +80,11 @@ ParallelSize_ConstRange::ParallelSize_ConstRange(int num_threads_)
   }
 }
 
-size_t ParallelSize_ConstRange::calc_num_groups(GLSLLaunchGuard &guard) const {
+size_t ParallelSize_ConstRange::get_num_groups(GLSLLaunchGuard &guard) const {
   return num_groups;
 }
 
-size_t ParallelSize_DynamicRange::calc_num_groups(GLSLLaunchGuard &guard) const {
+size_t ParallelSize_DynamicRange::get_num_groups(GLSLLaunchGuard &guard) const {
   const size_t TPG = opengl_get_threads_per_group();
 
   size_t n;
@@ -91,14 +102,12 @@ size_t ParallelSize_DynamicRange::calc_num_groups(GLSLLaunchGuard &guard) const 
   return std::max((n + TPG - 1) / TPG, (size_t)1);
 }
 
-size_t ParallelSize_StructFor::calc_num_groups(GLSLLaunchGuard &guard) const {
+size_t ParallelSize_StructFor::get_num_groups(GLSLLaunchGuard &guard) const {
   const size_t TPG = opengl_get_threads_per_group();
 
-  if (is_list) {
-    auto rt_buf = (GLSLRuntime *)guard.map_runtime_buffer();
-    n = rt_buf->list_len;
-    guard.unmap_runtime_buffer();
-  }
+  auto rt_buf = (GLSLRuntime *)guard.map_runtime_buffer();
+  auto n = rt_buf->list_len;
+  guard.unmap_runtime_buffer();
   return std::max((n + TPG - 1) / TPG, (size_t)1);
 }
 
@@ -364,13 +373,12 @@ bool initialize_opengl(bool error_tolerance) {
 }
 
 void display_kernel_info(std::string const &kernel_name,
-                         std::string const &kernel_source_code,
-                         KernelParallelAttrib const &kpa) {
+                         std::string const &kernel_source_code) {
   bool is_accessor = taichi::starts_with(kernel_name, "snode_") ||
                      taichi::starts_with(kernel_name, "tensor_");
   is_accessor = false;
   if (!is_accessor)
-    TI_DEBUG("source of kernel [{}] * {}:\n{}", kernel_name, kpa.num_groups,
+    TI_DEBUG("source of kernel [{}]:\n{}", kernel_name,
              kernel_source_code);
 #ifdef _GLSL_DEBUG
   std::ofstream(fmt::format("/tmp/{}.comp", kernel_name))
@@ -381,7 +389,7 @@ void display_kernel_info(std::string const &kernel_name,
 struct CompiledKernel {
   std::string kernel_name;
   std::unique_ptr<GLProgram> glsl;
-  KernelParallelAttrib kpa;
+  std::unique_ptr<ParallelSize> kpa;
 
   // disscussion:
   // https://github.com/taichi-dev/taichi/pull/696#issuecomment-609332527
@@ -390,15 +398,15 @@ struct CompiledKernel {
 
   explicit CompiledKernel(const std::string &kernel_name_,
                           const std::string &kernel_source_code,
-                          const KernelParallelAttrib &kpa_)
+                          std::unique_ptr<ParallelSize> kpa_)
       : kernel_name(kernel_name_), kpa(std::move(kpa_)) {
-    display_kernel_info(kernel_name_, kernel_source_code, kpa);
+    display_kernel_info(kernel_name_, kernel_source_code);
     glsl = std::make_unique<GLProgram>(GLShader(kernel_source_code));
     glsl->link();
   }
 
   void dispatch_compute(GLSLLaunchGuard &guard) const {
-    int num_groups = kpa.calc_num_groups(guard);
+    int num_groups = kpa->get_num_groups(guard);
 
     glsl->use();
 
@@ -447,7 +455,7 @@ struct CompiledProgram::Impl {
 
   void add(const std::string &kernel_name,
            const std::string &kernel_source_code,
-           KernelParallelAttrib &&kpa) {
+           std::unique_ptr<ParallelSize> kpa) {
     kernels.push_back(std::make_unique<CompiledKernel>(
         kernel_name, kernel_source_code, std::move(kpa)));
   }
@@ -657,7 +665,7 @@ struct CompiledProgram::Impl {
 
   void add(const std::string &kernel_name,
            const std::string &kernel_source_code,
-           KernelParallelAttrib &&kpa) {
+           std::unique_ptr<ParallelSize> kpa) {
     TI_NOT_IMPLEMENTED;
   }
 
@@ -734,7 +742,7 @@ CompiledProgram::~CompiledProgram() = default;
 
 void CompiledProgram::add(const std::string &kernel_name,
                           const std::string &kernel_source_code,
-                          KernelParallelAttrib &&kpa) {
+                          std::unique_ptr<ParallelSize> kpa) {
   impl->add(kernel_name, kernel_source_code, std::move(kpa));
 }
 

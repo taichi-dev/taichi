@@ -727,7 +727,10 @@ void GLSLLaunchGuard::unmap_runtime_buffer() {
   TI_NOT_IMPLEMENTED;
 }
 
-KernelParallelAttrib::KernelParallelAttrib(int num_threads_) {
+ParallelSize::~ParallelSize() {
+}
+
+size_t ParallelSize::get_threads_per_group() const {
   TI_NOT_IMPLEMENTED;
 }
 

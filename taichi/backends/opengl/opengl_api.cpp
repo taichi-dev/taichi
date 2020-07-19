@@ -55,48 +55,51 @@ int opengl_get_threads_per_group() {
   return ret;
 }
 
-KernelParallelAttrib::KernelParallelAttrib(int num_threads_)
+ParallelSize_ConstRange::ParallelSize_ConstRange(int num_threads_)
     : num_threads(num_threads_) {
-  threads_per_group = opengl_get_threads_per_group();
-  if (num_threads == -1) {  // is dyn loop
-    num_groups = -1;
+  const size_t TPG = opengl_get_threads_per_group();
+  threads_per_group = TPG;
+  if (num_threads <= 0)
+    num_threads = 1;
+  if (num_threads <= threads_per_group) {
+    threads_per_group = num_threads;
+    num_groups = 1;
   } else {
-    if (num_threads <= 0)
-      num_threads = 1;
-    if (num_threads <= threads_per_group) {
-      threads_per_group = num_threads;
-      num_groups = 1;
-    } else {
-      num_groups = (num_threads + threads_per_group - 1) / threads_per_group;
-    }
+    num_groups = (num_threads + TPG - 1) / TPG;
   }
 }
 
-size_t KernelParallelAttrib::calc_num_groups(GLSLLaunchGuard &guard) const {
-  if (!is_dynamic()) {
-    return num_groups;
-  }
-  size_t tpg = opengl_get_threads_per_group();
+size_t ParallelSize_ConstRange::calc_num_groups(GLSLLaunchGuard &guard) const {
+  return num_groups;
+}
+
+size_t ParallelSize_DynamicRange::calc_num_groups(GLSLLaunchGuard &guard) const {
+  const size_t TPG = opengl_get_threads_per_group();
+
   size_t n;
-  // TODO: grid-stride-loop
+  void *gtmp_now = guard.map_gtmp_buffer();  // TODO: wrap impl.static_ssbo
+  size_t b = range_begin, e = range_end;
+  if (!const_begin)
+    b = *(const int *)((const char *)gtmp_now + b);
+  if (!const_end)
+    e = *(const int *)((const char *)gtmp_now + e);
+  guard.unmap_gtmp_buffer();  // TODO: RAII
+  if (e <= b)
+    n = 0;
+  else
+    n = e - b;
+  return std::max((n + TPG - 1) / TPG, (size_t)1);
+}
+
+size_t ParallelSize_StructFor::calc_num_groups(GLSLLaunchGuard &guard) const {
+  const size_t TPG = opengl_get_threads_per_group();
+
   if (is_list) {
     auto rt_buf = (GLSLRuntime *)guard.map_runtime_buffer();
     n = rt_buf->list_len;
     guard.unmap_runtime_buffer();
-  } else {
-    void *gtmp_now = guard.map_gtmp_buffer();  // TODO: wrap impl.static_ssbo
-    size_t b = range_begin, e = range_end;
-    if (!const_begin)
-      b = *(const int *)((const char *)gtmp_now + b);
-    if (!const_end)
-      e = *(const int *)((const char *)gtmp_now + e);
-    if (e <= b)
-      n = 0;
-    else
-      n = e - b;
-    guard.unmap_gtmp_buffer();  // TODO: RAII
   }
-  return std::max((n + tpg - 1) / tpg, (size_t)1);
+  return std::max((n + TPG - 1) / TPG, (size_t)1);
 }
 
 static std::string add_line_markers(std::string x) {

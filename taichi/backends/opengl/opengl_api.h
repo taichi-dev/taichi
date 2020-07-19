@@ -35,12 +35,41 @@ struct KernelParallelAttrib {
   bool is_list{false};
 
   KernelParallelAttrib() = default;
-  KernelParallelAttrib(OffloadedStmt *stmt);
   KernelParallelAttrib(int num_threads_);
   size_t calc_num_groups(GLSLLaunchGuard &guard) const;
   inline bool is_dynamic() const {
     return num_groups == -1;
   }
+};
+
+class ParallelSize {
+ public:
+  virtual size_t calc_num_groups(GLSLLaunchGuard &guard) const = 0;
+};
+
+class ParallelSize_ConstRange : public ParallelSize {
+  int num_groups{1};
+  int num_threads{1};
+  int threads_per_group{1};
+ public:
+  ParallelSize_ConstRange(int num_threads_);
+  virtual size_t calc_num_groups(GLSLLaunchGuard &guard) const override;
+};
+
+class ParallelSize_DynamicRange : public ParallelSize {
+  bool const_begin;
+  bool const_end;
+  int range_begin;
+  int range_end;
+ public:
+  ParallelSize_DynamicRange(OffloadedStmt *stmt);
+  virtual size_t calc_num_groups(GLSLLaunchGuard &guard) const override;
+};
+
+class ParallelSize_StructFor : public ParallelSize {
+ public:
+  ParallelSize_StructFor(OffloadedStmt *stmt);
+  virtual size_t calc_num_groups(GLSLLaunchGuard &guard) const override;
 };
 
 struct CompiledProgram {

@@ -14,12 +14,14 @@
 TLANG_NAMESPACE_BEGIN
 namespace opengl {
 
-KernelParallelAttrib::KernelParallelAttrib(OffloadedStmt *stmt)
-    : KernelParallelAttrib(-1) {
+ParallelSize_DynamicRange::ParallelSize_DynamicRange(OffloadedStmt *stmt) {
   const_begin = stmt->const_begin;
   const_end = stmt->const_end;
   range_begin = stmt->const_begin ? stmt->begin_value : stmt->begin_offset;
   range_end = stmt->const_end ? stmt->end_value : stmt->end_offset;
+}
+
+ParallelSize_StructFor::ParallelSize_StructFor(OffloadedStmt *stmt) {
 }
 
 namespace {
@@ -670,8 +672,8 @@ class KernelGen : public IRVisitor {
         auto begin_value = stmt->begin_value;
         auto end_value = stmt->end_value;
         if (end_value < begin_value)
-          std::swap(end_value, begin_value);
-        kpa = KernelParallelAttrib(end_value - begin_value);
+          end_value = begin_value;
+        kpa = KernelDist_ConstRange(end_value - begin_value);
         emit("// range known at compile time");
         emit("int _tid = int(gl_GlobalInvocationID.x);");
         emit("if (_tid >= {}) return;", end_value - begin_value);

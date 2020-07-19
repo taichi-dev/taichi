@@ -279,13 +279,12 @@ class CCTransformer : public IRVisitor {
   }
 
   void generate_range_for_kernel(OffloadedStmt *stmt) {
-    //TI_ASSERT(stmt->const_begin && stmt->const_end);
+    // TI_ASSERT(stmt->const_begin && stmt->const_end);
     auto begin_value = stmt->begin_value;
     auto end_value = stmt->end_value;
     auto var = define_var("int", stmt->raw_name());
-    emit("for ({} = {}; {} < {}; {} += {}) {{",
-        var, begin_value, stmt->raw_name(), end_value,
-        stmt->raw_name(), 1 /* stmt->step? */);
+    emit("for ({} = {}; {} < {}; {} += {}) {{", var, begin_value,
+         stmt->raw_name(), end_value, stmt->raw_name(), 1 /* stmt->step? */);
     {
       ScopedIndent _s(line_appender);
       stmt->body->accept(this);
@@ -327,14 +326,13 @@ class CCTransformer : public IRVisitor {
     TI_ASSERT(stmt->width() == 1);
     auto var = define_var("int", stmt->raw_name());
     if (!stmt->reversed) {
-      emit("for ({} = {}; {} < {}; {} += {}) {{",
-           var, stmt->begin->raw_name(), stmt->raw_name(),
-           stmt->end->raw_name(), stmt->raw_name(), 1);
+      emit("for ({} = {}; {} < {}; {} += {}) {{", var, stmt->begin->raw_name(),
+           stmt->raw_name(), stmt->end->raw_name(), stmt->raw_name(), 1);
     } else {
       // reversed for loop
-      emit("for ({} = {} - {}; {} >= {}; {} -= {}) {{",
-           var, stmt->end->raw_name(), stmt->raw_name(), 1,
-           stmt->begin->raw_name(), stmt->raw_name(), 1);
+      emit("for ({} = {} - {}; {} >= {}; {} -= {}) {{", var,
+           stmt->end->raw_name(), stmt->raw_name(), 1, stmt->begin->raw_name(),
+           stmt->raw_name(), 1);
     }
     stmt->body->accept(this);
     emit("}}");

@@ -429,7 +429,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     auto type = llvm::ArrayType::get(llvm::Type::getInt8Ty(*llvm_context),
                                      stmt->bls_size);
     bls_buffer = new GlobalVariable(
-        *module, type, false, llvm::GlobalValue::InternalLinkage, nullptr,
+        *module, type, false, llvm::GlobalValue::ExternalLinkage, nullptr,
         "bls_buffer", nullptr, llvm::GlobalVariable::NotThreadLocal,
         3 /*addrspace=shared*/);
 #if LLVM_VERSION_MAJOR >= 10

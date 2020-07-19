@@ -903,17 +903,28 @@ int32 cttz_i32(i32 val) {
   return 0;
 }
 
-uint32 cuda_ballot(bool bit) {
+int32 cuda_ballot(bool bit) {
   return 0;
 }
 
-uint32 cuda_ballot_sync(uint32 mask, bool bit) {
+int32 cuda_ballot_sync(int32 mask, bool bit) {
   return 0;
 }
 
-int32 cuda_active_mask() {
+#if ARCH_cuda
+uint32 cuda_active_mask() {
+  /*
+  unsigned int mask;
+  asm volatile("activemask.b32 %0;" : "=r"(mask));
+  return mask;
+  */
   return cuda_ballot(true);
 }
+#else
+uint32 cuda_active_mask() {
+  return 0;
+}
+#endif
 
 int32 grid_dim() {
   return 0;
@@ -925,8 +936,7 @@ void sync_warp(uint32 mask) {
 void block_barrier() {
 }
 
-int32 warp_active_mask() {
-  return 0;
+void warp_barrier(uint32 mask) {
 }
 
 void block_memfence() {

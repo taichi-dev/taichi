@@ -3,6 +3,7 @@ from .core import taichi_lang_core
 from .expr import Expr
 from .snode import SNode
 from .util import *
+from .exception import TaichiSyntaxError
 
 
 @taichi_scope
@@ -135,6 +136,26 @@ def chain_compare(comparators, ops):
             assert False, f'Unknown operator {ops[i]}'
         ret = logical_and(ret, now)
     return ret
+
+
+@taichi_scope
+def func_call_with_check(func, *args, **kwargs):
+    _taichi_skip_traceback = 1
+    if '_sitebuiltins' == getattr(func, '__module__', '') and getattr(
+            getattr(func, '__class__', ''), '__name__', '') == 'Quitter':
+        raise TaichiSyntaxError(f'exit or quit not supported in Taichi-scope')
+    if getattr(func, '__module__',
+               '') == '__main__' and not getattr(func, '__wrapped__', ''):
+        import warnings
+        warnings.warn(
+            f'Calling into non-Taichi function {func.__name__}.'
+            ' This means that scope inside that function will not be processed'
+            ' by the Taichi transformer. Proceed with caution! '
+            ' Maybe you want to decorate it with @ti.func?',
+            UserWarning,
+            stacklevel=2)
+
+    return func(*args, **kwargs)
 
 
 class PyTaichi:

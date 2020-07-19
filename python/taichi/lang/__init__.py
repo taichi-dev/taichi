@@ -186,7 +186,7 @@ def init(arch=None,
 
     # compiler configurations (ti.cfg):
     for key in dir(ti.cfg):
-        if key in ['default_fp', 'default_ip']:
+        if key in ['arch', 'default_fp', 'default_ip']:
             continue
         cast = type(getattr(ti.cfg, key))
         if cast is bool:
@@ -269,7 +269,13 @@ tr = deprecated('ti.tr(a)', 'a.trace()')(Matrix.trace)
 
 def Tape(loss, clear_gradients=True):
     get_runtime().materialize()
-    assert loss.snode().ptr.has_grad(), "gradient for loss not allocated"
+    if len(loss.shape) != 0:
+        raise RuntimeError(
+            'The loss of `Tape` must be a 0D tensor, i.e. scalar')
+    if not loss.snode().ptr.has_grad():
+        raise RuntimeError(
+            'Gradients of loss are not allocated, please use ti.var(..., needs_grad=True)'
+            ' for all tensors that are required by autodiff.')
     if clear_gradients:
         clear_all_gradients()
     loss[None] = 0

@@ -16,6 +16,10 @@ void KernelProfileRecord::insert_sample(double t) {
   total += t;
 }
 
+bool KernelProfileRecord::operator<(const KernelProfileRecord &o) const {
+  return total > o.total;
+}
+
 void KernelProfilerBase::profiler_start(KernelProfilerBase *profiler,
                                         const char *kernel_name) {
   TI_ASSERT(profiler);
@@ -29,14 +33,30 @@ void KernelProfilerBase::profiler_stop(KernelProfilerBase *profiler) {
 
 void KernelProfilerBase::print() {
   sync();
-  printf("%s\n", title().c_str());
+  fmt::print("{}\n", title());
+  fmt::print(
+      "========================================================================"
+      "=\n");
+  fmt::print(
+      "[      %     total   count |      min       avg       max   ] Kernel "
+      "name\n");
+  std::sort(records.begin(), records.end());
   for (auto &rec : records) {
-    printf(
-        "[%6.2f%%] %-40s    min %7.3f ms   avg %7.3f ms   max %7.3f ms   "
-        "total %7.3f s [%7dx]\n",
-        rec.total / total_time * 100.0f, rec.name.c_str(), rec.min,
-        rec.total / rec.counter, rec.max, rec.total / 1000.0f, rec.counter);
+    auto fraction = rec.total / total_time * 100.0f;
+    fmt::print("[{:6.2f}% {:7.3f} s {:6d}x |{:9.3f} {:9.3f} {:9.3f} ms] {}\n",
+               fraction, rec.total / 1000.0f, rec.counter, rec.min,
+               rec.total / rec.counter, rec.max, rec.name);
   }
+  fmt::print(
+      "------------------------------------------------------------------------"
+      "-\n");
+  fmt::print(
+      "[100.00%] Total kernel execution time: {:7.3f} s   number of records: "
+      "{}\n",
+      total_time / 1000.0f, records.size());
+  fmt::print(
+      "========================================================================"
+      "=\n");
 }
 
 namespace {

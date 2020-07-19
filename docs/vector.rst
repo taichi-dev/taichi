@@ -16,7 +16,7 @@ Declaration
 As global tensors of vectors
 ++++++++++++++++++++++++++++
 
-.. function:: ti.Vector.var(n, dt, shape = None, offset = None)
+.. function:: ti.Vector.field(n, dt, shape = None, offset = None)
 
     :parameter n: (scalar) the number of components in the vector
     :parameter dt: (DataType) data type of the components
@@ -27,11 +27,11 @@ As global tensors of vectors
     ::
 
         # Python-scope
-        a = ti.Vector.var(3, dt=ti.f32, shape=(5, 4))
+        a = ti.Vector.field(3, dt=ti.f32, shape=(5, 4))
 
 .. note::
 
-    In Python-scope, ``ti.field`` declares :ref:`scalar_tensor`, while ``ti.Vector`` declares tensors of vectors.
+    In Python-scope, ``ti.field`` declares :ref:`scalar_tensor`, while ``ti.Vector.field`` declares tensors of vectors.
 
 
 As a temporary local variable
@@ -236,7 +236,7 @@ Metadata
 
     ::
         # Python-scope
-        a = ti.Vector.var(3, dt=ti.f32, shape=())
+        a = ti.Vector.field(3, dt=ti.f32, shape=())
         a.n  # 3
 
 TODO: add element wise operations docs

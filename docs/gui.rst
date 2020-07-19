@@ -67,7 +67,7 @@ Paint on a window
 
     * ``ti.field(shape=(x, y, 3))``, where `3` is for ``(r, g, b)`` channels
 
-    * ``ti.Vector(3, shape=(x, y))`` (see :ref:`vector`)
+    * ``ti.Vector.field(3, shape=(x, y))`` (see :ref:`vector`)
 
     * ``np.ndarray(shape=(x, y))``
 
@@ -387,7 +387,7 @@ Image I/O
     :parameter img: (Matrix or Expr) the image you want to export
     :parameter filename: (string) the location you want to save to
 
-    Export a ``np.ndarray`` or Taichi tensor (``ti.Matrix``, ``ti.Vector``, or ``ti.field``) to a specified location ``filename``.
+    Export a ``np.ndarray`` or Taichi tensor (``ti.Matrix``, ``ti.Vector.field``, or ``ti.field``) to a specified location ``filename``.
 
     Same as ``ti.GUI.show(filename)``, the format of the exported image is determined by **the suffix of** ``filename`` as well. Now ``ti.imwrite`` supports exporting images to ``png``, ``img`` and ``jpg`` and we recommend using ``png``.
 

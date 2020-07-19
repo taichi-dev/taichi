@@ -86,7 +86,7 @@ class Matrix(TaichiOperations):
                 # construct global matrix (deprecated)
                 #warning(  # TODO(archibate): uncomment this when #1500 is complete
                 #    "Declaring global matrices using `ti.Matrix(n, m, dt, shape)` is deprecated, "
-                #    "use `ti.Matrix.field(n, m, dt, shape)` instead",
+                #    "use `ti.Matrix.field(n, m, dtype, shape)` instead",
                 #    DeprecationWarning,
                 #    stacklevel=2)
                 mat = Matrix.field(n=n,
@@ -794,7 +794,6 @@ class Matrix(TaichiOperations):
         self.n = n
         self.m = m
         self.dt = dtype
-        assert not impl.inside_kernel()
         for i in range(n * m):
             self.entries.append(impl.field(dtype))
         self.grad = self.make_grad()
@@ -802,7 +801,7 @@ class Matrix(TaichiOperations):
         if layout is not None:  # TODO(archibate): deprecate layout
             assert shape is not None, 'layout is useless without shape'
         if shape is None:
-            assert offset is None, f"shape cannot be None when offset is being set"
+            assert offset is None, "shape cannot be None when offset is being set"
 
         if shape is not None:
             if isinstance(shape, numbers.Number):

@@ -1,28 +1,6 @@
 import taichi
-
 import sys
-import datetime
-import platform
-import random
 import copy
-
-
-def get_os_name():
-    name = platform.platform()
-    # in python 3.8, platform.platform() uses mac_ver() on macOS
-    # it will return 'macOS-XXXX' instead of 'Darwin-XXXX'
-    if name.lower().startswith('darwin') or name.lower().startswith('macos'):
-        return 'osx'
-    elif name.lower().startswith('windows'):
-        return 'win'
-    elif name.lower().startswith('linux'):
-        return 'linux'
-    assert False, "Unknown platform name %s" % name
-
-
-def get_unique_task_id():
-    return datetime.datetime.now().strftime('task-%Y-%m-%d-%H-%M-%S-r') + (
-        '%05d' % random.randint(0, 10000))
 
 
 def config_from_dict(args):
@@ -220,3 +198,22 @@ def set_gdb_trigger(on=True):
 
 def print_profile_info():
     taichi.ti_core.print_profile_info()
+
+
+__all__ = [
+    'vec',
+    'veci',
+    'set_gdb_trigger',
+    'print_profile_info',
+    'set_logging_level',
+    'info',
+    'warn',
+    'error',
+    'debug',
+    'trace',
+    'INFO',
+    'WARN',
+    'ERROR',
+    'DEBUG',
+    'TRACE',
+]

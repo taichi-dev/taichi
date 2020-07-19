@@ -779,8 +779,14 @@ class Matrix(TaichiOperations):
 
     @classmethod
     @python_scope
-    def field(cls, n, m, dtype, shape=None, offset=None, needs_grad=False,
-            layout=None):  # TODO(archibate): deprecate layout
+    def field(cls,
+              n,
+              m,
+              dtype,
+              shape=None,
+              offset=None,
+              needs_grad=False,
+              layout=None):  # TODO(archibate): deprecate layout
         '''ti.Matrix.field'''
         self = cls.empty(n, m)
         self.entries = []

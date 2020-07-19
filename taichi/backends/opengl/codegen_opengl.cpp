@@ -658,6 +658,30 @@ class KernelGen : public IRVisitor {
     emit("}}\n");
   }
 
+  void generate_grid_stride_loop_header() {
+    ScopedIndent _s(line_appender_);
+  }
+
+  struct ScopedGridStrideLoop {
+    KernelGen *gen;
+    std::unique_ptr<ScopedIndent> s;
+
+    ScopedGridStrideLoop(KernelGen *gen) : gen(gen) {
+      size_t stride_size = gen->kernel->program.config.max_block_dim;
+      stride_size = std::max((size_t)1, stride_size);
+      gen->emit("int _sid0 = int(gl_GlobalInvocationID.x) * {};",
+            stride_size);
+      gen->emit("for (int _sid = _sid0; _sid < _sid0 + {}; _sid++) {{",
+            stride_size);
+      s = std::make_unique<ScopedIndent>(gen->line_appender_);
+    }
+
+    ~ScopedGridStrideLoop() {
+      s = nullptr;
+      gen->emit("}}");
+    }
+  };
+
   void generate_range_for_kernel(OffloadedStmt *stmt) {
     TI_ASSERT(stmt->task_type == OffloadedStmt::TaskType::range_for);
     const std::string glsl_kernel_name = make_kernel_name();
@@ -666,7 +690,6 @@ class KernelGen : public IRVisitor {
     emit("{{ // range for");
 
     if (stmt->const_begin && stmt->const_end) {
-      {
         ScopedIndent _s(line_appender_);
         auto begin_value = stmt->begin_value;
         auto end_value = stmt->end_value;
@@ -674,27 +697,24 @@ class KernelGen : public IRVisitor {
           end_value = begin_value;
         ps = std::make_unique<ParallelSize_ConstRange>(end_value - begin_value);
         emit("// range known at compile time");
-        emit("int _tid = int(gl_GlobalInvocationID.x);");
-        emit("if (_tid >= {}) return;", end_value - begin_value);
-        emit("int _itv = {} + _tid * {};", begin_value, 1 /* stmt->step? */);
-      }
-      stmt->body->accept(this);
+        ScopedGridStrideLoop _gsl(this);
+        emit("if (_sid >= {}) return;", end_value - begin_value);
+        emit("int _itv = {} + _sid * {};", begin_value, 1 /* stmt->step? */);
+        stmt->body->accept(this);
     } else {
-      {
-        ScopedIndent _s(line_appender_);
-        emit("// range known at runtime");
-        auto begin_expr = stmt->const_begin ? std::to_string(stmt->begin_value)
-                                            : fmt::format("_gtmp_i32_[{} >> 2]",
-                                                          stmt->begin_offset);
-        auto end_expr = stmt->const_end ? std::to_string(stmt->end_value)
-                                        : fmt::format("_gtmp_i32_[{} >> 2]",
-                                                      stmt->end_offset);
-        emit("int _tid = int(gl_GlobalInvocationID.x);");
-        emit("int _beg = {}, _end = {};", begin_expr, end_expr);
-        emit("int _itv = _beg + _tid;");
-        emit("if (_itv >= _end) return;");
-        ps = std::make_unique<ParallelSize_DynamicRange>(stmt);
-      }
+      ScopedIndent _s(line_appender_);
+      emit("// range known at runtime");
+      auto begin_expr = stmt->const_begin ? std::to_string(stmt->begin_value)
+                                          : fmt::format("_gtmp_i32_[{} >> 2]",
+                                                        stmt->begin_offset);
+      auto end_expr = stmt->const_end ? std::to_string(stmt->end_value)
+                                      : fmt::format("_gtmp_i32_[{} >> 2]",
+                                                    stmt->end_offset);
+      ScopedGridStrideLoop _gsl(this);
+      emit("int _beg = {}, _end = {};", begin_expr, end_expr);
+      emit("int _itv = _beg + _sid;");
+      emit("if (_itv >= _end) return;");
+      ps = std::make_unique<ParallelSize_DynamicRange>(stmt);
       stmt->body->accept(this);
     }
 
@@ -709,12 +729,12 @@ class KernelGen : public IRVisitor {
     emit("{{ // struct for {}", stmt->snode->node_type_name);
     {
       ScopedIndent _s(line_appender_);
-      emit("int _tid = int(gl_GlobalInvocationID.x);");
-      emit("if (_tid >= _list_len_) return;");
-      emit("int _itv = _list_[_tid];");
+      ScopedGridStrideLoop _gsl(this);
+      emit("if (_sid >= _list_len_) return;");
+      emit("int _itv = _list_[_sid];");
       ps = std::make_unique<ParallelSize_StructFor>(stmt);
+      stmt->body->accept(this);
     }
-    stmt->body->accept(this);
     emit("}}\n");
   }
 

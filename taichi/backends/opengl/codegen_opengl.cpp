@@ -198,7 +198,7 @@ class KernelGen : public IRVisitor {
     line_appender_header_.append_raw(kernel_header);
 
     emit("layout(local_size_x = {}, local_size_y = 1, local_size_z = 1) in;",
-        ps->get_threads_per_group());
+         ps->get_threads_per_group());
     std::string extensions = "";
 #define PER_OPENGL_EXTENSION(x) \
   if (opengl_has_##x)           \

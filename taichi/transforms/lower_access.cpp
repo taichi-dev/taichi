@@ -8,6 +8,7 @@
 TLANG_NAMESPACE_BEGIN
 
 // Lower GlobalPtrStmt into smaller pieces for access optimization
+// Note that this pass also applies index offsets to the global pointers
 
 class LowerAccess : public IRVisitor {
  public:

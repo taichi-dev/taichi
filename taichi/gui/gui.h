@@ -380,6 +380,13 @@ class Canvas {
 
   void triangle(Vector2 a, Vector2 b, Vector2 c, Vector4 color);
 
+  void triangles_batched(int n,
+                         std::size_t a_,
+                         std::size_t b_,
+                         std::size_t c_,
+                         uint32 color_single,
+                         std::size_t color_array);
+
   void triangle_single(real x0,
                        real y0,
                        real x1,

@@ -46,7 +46,7 @@ class JITModuleCUDA : public JITModule {
     auto t = Time::get_time();
     CUDADriver::get_instance().module_get_function(&func, module, name.c_str());
     t = Time::get_time() - t;
-    TI_TRACE("Kernel {} compilation time: {}ms", name, t * 1000);
+    TI_TRACE("CUDA module_get_function {} costs {} ms", name, t * 1000);
     return func;
   }
 

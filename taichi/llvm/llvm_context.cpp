@@ -41,6 +41,8 @@
 #include "taichi/jit/jit_session.h"
 #include "taichi/common/task.h"
 #include "taichi/util/environ_config.h"
+#include "llvm_context.h"
+
 #ifdef _WIN32
 // Travis CI seems doesn't support <filesystem>...
 #include <filesystem>
@@ -624,8 +626,9 @@ JITModule *TaichiLLVMContext::add_module(std::unique_ptr<llvm::Module> module) {
   return jit->add_module(std::move(module));
 }
 
-void TaichiLLVMContext::mark_function_as_cuda_kernel(llvm::Function *func) {
-  auto ctx = get_this_thread_context();
+void TaichiLLVMContext::insert_nvvm_annotation(llvm::Function *func,
+                                               std::string key,
+                                               int val) {
   /*******************************************************************
   Example annotation from llvm PTX doc:
 
@@ -638,19 +641,28 @@ void TaichiLLVMContext::mark_function_as_cuda_kernel(llvm::Function *func) {
                float addrspace(1)*,
                float addrspace(1)*)* @kernel, !"kernel", i32 1}
   *******************************************************************/
-
-  // Mark kernel function as a CUDA __global__ function
-  // Add the nvvm annotation that it is considered a kernel function.
-
+  auto ctx = get_this_thread_context();
   llvm::Metadata *md_args[] = {llvm::ValueAsMetadata::get(func),
-                               MDString::get(*ctx, "kernel"),
-                               llvm::ValueAsMetadata::get(get_constant(1))};
+                               MDString::get(*ctx, key),
+                               llvm::ValueAsMetadata::get(get_constant(val))};
 
   MDNode *md_node = MDNode::get(*ctx, md_args);
 
   func->getParent()
       ->getOrInsertNamedMetadata("nvvm.annotations")
       ->addOperand(md_node);
+}
+
+void TaichiLLVMContext::mark_function_as_cuda_kernel(llvm::Function *func,
+                                                     int block_dim) {
+  // Mark kernel function as a CUDA __global__ function
+  // Add the nvvm annotation that it is considered a kernel function.
+  insert_nvvm_annotation(func, "kernel", 1);
+  if (block_dim != 0) {
+    // CUDA launch bounds
+    insert_nvvm_annotation(func, "maxntidx", block_dim);
+    insert_nvvm_annotation(func, "minctasm", 2);
+  }
 }
 
 void TaichiLLVMContext::eliminate_unused_functions(

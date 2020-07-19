@@ -1,6 +1,6 @@
 <div align="center">
   <img width="500px" src="https://github.com/taichi-dev/taichi/raw/master/misc/logo.png">
-  <h3> <a href="https://taichi.readthedocs.io/en/stable/hello.html"> Tutorial </a> | <a href="https://github.com/taichi-dev/taichi/tree/master/examples"> Examples </a> | <a href="https://taichi.readthedocs.io/en/stable/contributor_guide.html"> Contributor Guidelines </a> | <a href="https://forum.taichi.graphics/"> Forum </a> </h3>
+  <h3> <a href="https://taichi.readthedocs.io/en/stable/hello.html"> Tutorial </a> | <a href="https://github.com/taichi-dev/taichi/tree/master/examples"> Examples </a> | <a href="https://forum.taichi.graphics/"> Forum </a> | <a href="https://taichi.readthedocs.io/en/stable/contributor_guide.html"> Contributor Guidelines </a> </h3>
   <h3> <a href="https://taichi.readthedocs.io/en/stable/"> Documentation </a> | <a href="https://taichi.readthedocs.io/zh_CN/latest/"> 简体中文文档 </a> </h3>
 </div>
 
@@ -48,21 +48,19 @@ Please build from source for other configurations (e.g., your CPU is ARM).
 
 ## Links
 
-- [Taichi Forum](https://forum.taichi.graphics): Powered by Discourse, Taichi offical forum for discussing issues and sharing ideas.
-- [Taichi Simplified Chinese Documentation](https://github.com/taichi-dev/taichi-docs-zh-cn): Translated by the Taichi community, welcome contribution!
-- [Taichi Conference](https://github.com/taichi-dev/taichicon): Taichi Online Virtual Conference available in both Chinese and English, approximately per-month.
-- [GAMES 201 Lectures](https://github.com/taichi-dev/games201): (Chinese) A hands-on tutorial on advanced physics engines based on Taichi, per-week.
+- [Taichi Conference](https://github.com/taichi-dev/taichicon): Taichi developer conferences.
+- [GAMES 201 Lectures](https://github.com/taichi-dev/games201): (Chinese) A hands-on tutorial on building advanced physics engines, based on Taichi.
 
 ---
 
-- [Taichi GLSL](https://github.com/taichi-dev/taichi_glsl): A Taichi extension library providing a set of GLSL-alike helper functions.
+- [Taichi GLSL](https://github.com/taichi-dev/taichi_glsl): A Taichi extension library that provides a set of GLSL-style helper functions.
 - [Taichi THREE](https://github.com/taichi-dev/taichi_three): A 3D rendering library based on Taichi (work in progress).
-- [Taichi Elements](https://github.com/taichi-dev/taichi_elements): A High-Performance Multi-Material Continuum Physics Engine based on Taichi (work in progress).
+- [Taichi Elements](https://github.com/taichi-dev/taichi_elements): A high-performance multi-material continuum physics engine based on Taichi (work in progress).
 
 ---
 
-- [LBM Taichi](https://github.com/hietwll/LBM_Taichi): Fluid solver based on Lattice Boltzmann method implemented by Taichi programming language, by [Zhuo Wang (hietwll)](https://github.com/hietwll).
-- [Shadertoy reproduced by Taichi](https://github.com/Phonicavi/Shadertoy-taichi): Some prevalent shadertoys implemented in Taichi, by [QIU Feng (Phonicavi)](https://github.com/Phonicavi).
+- [LBM Taichi](https://github.com/hietwll/LBM_Taichi): A fluid solver based on the Lattice Boltzmann Method (LBM) using Taich, by [Zhuo Wang (hietwll)](https://github.com/hietwll).
+- [Shadertoy in Taichi](https://github.com/Phonicavi/Shadertoy-taichi): Some shadertoy examples implemented in Taichi, by [Qiu Feng (Phonicavi)](https://github.com/Phonicavi).
 - [DiffTaichi](https://github.com/yuanming-hu/difftaichi): 10 differentiable physical simulators built with Taichi differentiable programming, by [Yuanming Hu (yuanming-hu)](https://github.com/yuanming-hu).
 
 ## Developers

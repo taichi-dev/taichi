@@ -12,16 +12,40 @@ class lock_guard {
     mutex_unlock_i32(lock);
 #else
     // CUDA
-    for (int i = 0; i < warp_size(); i++) {
-      if (warp_idx() == i) {
-        // Memory fences here are necessary since CUDA has a weakly ordered
-        // memory model across threads
-        mutex_lock_i32(lock);
-        grid_memfence();
-        func();
-        grid_memfence();
-        mutex_unlock_i32(lock);
-        grid_memfence();
+    auto fast = false;
+    if (fast) {
+      auto active_mask = cuda_active_mask();
+      auto remaining = active_mask;
+      while (remaining) {
+        auto leader = cttz_i32(remaining);
+        if (~remaining & (1u << leader)) {
+          while(true);
+        }
+        if (warp_idx() == leader) {
+          // Memory fences here are necessary since CUDA has a weakly ordered
+          // memory model across threads
+          mutex_lock_i32(lock);
+          grid_memfence();
+          func();
+          grid_memfence();
+          mutex_unlock_i32(lock);
+          grid_memfence();
+        }
+        warp_barrier(active_mask);
+        remaining ^= 1u << leader;
+      }
+    } else {
+      for (int i = 0; i < warp_size(); i++) {
+        if (warp_idx() == i) {
+          // Memory fences here are necessary since CUDA has a weakly ordered
+          // memory model across threads
+          mutex_lock_i32(lock);
+          grid_memfence();
+          func();
+          grid_memfence();
+          mutex_unlock_i32(lock);
+          grid_memfence();
+        }
       }
     }
     // Unfortunately critical sections on CUDA has undefined behavior (deadlock

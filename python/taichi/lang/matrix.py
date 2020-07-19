@@ -94,8 +94,8 @@ class Matrix(TaichiOperations):
                                    dtype=dt,
                                    shape=shape,
                                    offset=offset,
-                                   layout=layout,
-                                   needs_grad=needs_grad)
+                                   needs_grad=needs_grad,
+                                   layout=layout)
                 self.n = mat.n
                 self.m = mat.m
                 self.entries = mat.entries
@@ -779,15 +779,8 @@ class Matrix(TaichiOperations):
 
     @classmethod
     @python_scope
-    def field(cls,
-              n=1,
-              m=1,
-              dtype=None,
-              shape=None,
-              offset=None,
-              empty=False,
-              layout=None,
-              needs_grad=False):
+    def field(cls, n, m, dtype, shape=None, offset=None, needs_grad=False,
+            layout=None):  # TODO(archibate): deprecate layout
         '''ti.Matrix.field'''
         self = cls.empty(n, m)
         self.entries = []
@@ -798,7 +791,7 @@ class Matrix(TaichiOperations):
             self.entries.append(impl.field(dtype))
         self.grad = self.make_grad()
 
-        if layout is not None:  # TODO(archibate): deprecate layout
+        if layout is not None:
             assert shape is not None, 'layout is useless without shape'
         if shape is None:
             assert offset is None, "shape cannot be None when offset is being set"

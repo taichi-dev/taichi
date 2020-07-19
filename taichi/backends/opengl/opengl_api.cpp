@@ -389,7 +389,7 @@ void display_kernel_info(std::string const &kernel_name,
 struct CompiledKernel {
   std::string kernel_name;
   std::unique_ptr<GLProgram> glsl;
-  std::unique_ptr<ParallelSize> kpa;
+  std::unique_ptr<ParallelSize> ps;
 
   // disscussion:
   // https://github.com/taichi-dev/taichi/pull/696#issuecomment-609332527
@@ -398,15 +398,15 @@ struct CompiledKernel {
 
   explicit CompiledKernel(const std::string &kernel_name_,
                           const std::string &kernel_source_code,
-                          std::unique_ptr<ParallelSize> kpa_)
-      : kernel_name(kernel_name_), kpa(std::move(kpa_)) {
+                          std::unique_ptr<ParallelSize> ps_)
+      : kernel_name(kernel_name_), ps(std::move(ps_)) {
     display_kernel_info(kernel_name_, kernel_source_code);
     glsl = std::make_unique<GLProgram>(GLShader(kernel_source_code));
     glsl->link();
   }
 
   void dispatch_compute(GLSLLaunchGuard &guard) const {
-    int num_groups = kpa->get_num_groups(guard);
+    int num_groups = ps->get_num_groups(guard);
 
     glsl->use();
 
@@ -455,9 +455,9 @@ struct CompiledProgram::Impl {
 
   void add(const std::string &kernel_name,
            const std::string &kernel_source_code,
-           std::unique_ptr<ParallelSize> kpa) {
+           std::unique_ptr<ParallelSize> ps) {
     kernels.push_back(std::make_unique<CompiledKernel>(
-        kernel_name, kernel_source_code, std::move(kpa)));
+        kernel_name, kernel_source_code, std::move(ps)));
   }
 
   int lookup_or_add_string(const std::string &str) {
@@ -665,7 +665,7 @@ struct CompiledProgram::Impl {
 
   void add(const std::string &kernel_name,
            const std::string &kernel_source_code,
-           std::unique_ptr<ParallelSize> kpa) {
+           std::unique_ptr<ParallelSize> ps) {
     TI_NOT_IMPLEMENTED;
   }
 
@@ -742,8 +742,8 @@ CompiledProgram::~CompiledProgram() = default;
 
 void CompiledProgram::add(const std::string &kernel_name,
                           const std::string &kernel_source_code,
-                          std::unique_ptr<ParallelSize> kpa) {
-  impl->add(kernel_name, kernel_source_code, std::move(kpa));
+                          std::unique_ptr<ParallelSize> ps) {
+  impl->add(kernel_name, kernel_source_code, std::move(ps));
 }
 
 void CompiledProgram::set_used(const UsedFeature &used) {

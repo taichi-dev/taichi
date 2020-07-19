@@ -19,6 +19,7 @@ struct IndexExtractor {
   int num_bits;
   int acc_offset;
   int num_elements;
+  int padded;
 
   // TODO: rename start to src_offset
 
@@ -30,6 +31,7 @@ struct IndexExtractor {
     active = false;
     acc_offset = 0;
     num_elements = 1;
+    padded = 0;
   }
 
   void activate(int num_bits) {

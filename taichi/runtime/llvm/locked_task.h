@@ -18,9 +18,11 @@ class lock_guard {
       auto remaining = active_mask;
       while (remaining) {
         auto leader = cttz_i32(remaining);
+        /*
         if (~remaining & (1u << leader)) {
           while(true);
         }
+         */
         if (warp_idx() == leader) {
           // Memory fences here are necessary since CUDA has a weakly ordered
           // memory model across threads

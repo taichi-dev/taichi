@@ -8,6 +8,9 @@ TLANG_NAMESPACE_BEGIN
 
 namespace irpass {
 
+// TODO: Rename this to compile_to_executable, since it does two things:
+// 1. compile to offloads
+// 2. offloads to executable (with further optimization)
 void compile_to_offloads(IRNode *ir,
                          const CompileConfig &config,
                          bool vectorize,
@@ -21,7 +24,7 @@ void compile_to_offloads(IRNode *ir,
 
   auto print = [&](const std::string &name) {
     if (verbose) {
-      TI_INFO(name + ":");
+      TI_INFO("[{}] {}:", ir->get_kernel()->name, name);
       std::cout << std::flush;
       irpass::re_id(ir);
       irpass::print(ir);
@@ -75,13 +78,6 @@ void compile_to_offloads(IRNode *ir,
     irpass::analysis::verify(ir);
   }
 
-  if (config.demote_dense_struct_fors) {
-    irpass::demote_dense_struct_fors(ir);
-    irpass::typecheck(ir);
-    print("Dense struct-for demoted");
-    irpass::analysis::verify(ir);
-  }
-
   if (config.check_out_of_bound) {
     irpass::check_out_of_bound(ir);
     print("Bound checked");
@@ -108,6 +104,17 @@ void compile_to_offloads(IRNode *ir,
 
   print("Access flagged II");
   irpass::analysis::verify(ir);
+
+  // TODO: This is just a proof that we can demote struct-fors after offloading.
+  // Eventually we might want the order to be TLS/BLS -> demote struct-for.
+  // For now, putting this after TLS will disable TLS, because it can only
+  // handle range-fors at this point.
+  if (config.demote_dense_struct_fors) {
+    irpass::demote_dense_struct_fors(ir);
+    irpass::typecheck(ir);
+    print("Dense struct-for demoted");
+    irpass::analysis::verify(ir);
+  }
 
   if (make_thread_local) {
     irpass::make_thread_local(ir);

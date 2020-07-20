@@ -261,6 +261,16 @@ struct GLBuffer : GLSSBO {
     bind_data(base, size);
     bind_index((int)index);
   }
+
+  void copy_back() {
+    if (!size)
+      return;
+    void *mapped = this->map();
+    TI_ASSERT(mapped);
+    TI_INFO("cb_buf {}: mapped[0] = {}", index, ((int *)mapped)[0]);
+    std::memcpy(base, mapped, size);
+    this->unmap();
+  }
 };
 
 struct GLBufferTable {
@@ -271,7 +281,8 @@ struct GLBufferTable {
   }
 
   void add_buffer(GLBufId index, void *base, size_t size) {
-    TI_INFO("Adding buffer {}, {}, {}", index, base, size);
+    if (base)
+      TI_INFO("addbuf {}, {}: buffer[0] = {}", index, size, ((int *)base)[0]);
     bufs[index] = std::make_unique<GLBuffer>(index, base, size);
   }
 
@@ -408,7 +419,8 @@ bool initialize_opengl(bool error_tolerance) {
 void display_kernel_info(std::string const &kernel_name,
                          std::string const &kernel_source_code) {
   bool is_accessor = taichi::starts_with(kernel_name, "snode_") ||
-                     taichi::starts_with(kernel_name, "tensor_");
+                     taichi::starts_with(kernel_name, "tensor_") ||
+                     taichi::starts_with(kernel_name, "jit_evaluator_");
   if (!is_accessor)
     TI_DEBUG("source of kernel [{}]:\n{}", kernel_name, kernel_source_code);
   else
@@ -546,17 +558,10 @@ struct CompiledProgram::Impl {
 
   void launch(Context &ctx, GLSLLauncher *launcher) const {
     GLBufferTable &bufs = launcher->impl->user_bufs;
-    bufs.add_buffer(GLBufId::Args,
-          ctx.args, std::max(arg_count, ret_count) * sizeof(uint64_t));
     std::vector<char> base_arr;
     std::vector<void *> saved_ctx_ptrs;
-    if (used.print) {
-      auto runtime_buf = launcher->impl->core_bufs.get(GLBufId::Runtime);
-      auto mapped_rt_buf = (GLSLRuntime *)runtime_buf->map();
-      mapped_rt_buf->msg_count = 0;
-      runtime_buf->unmap();
-    }
     // NOTE: these dirty codes are introduced by #694, TODO: RAII
+    /// DIRTY_BEGIN {{{
     if (ext_arr_map.size()) {
       bufs.add_buffer(GLBufId::Earg,
           ctx.extra_args, arg_count * taichi_max_num_args * sizeof(int));
@@ -564,7 +569,7 @@ struct CompiledProgram::Impl {
         auto it = ext_arr_map.begin();
         auto extptr = (void *)ctx.args[it->first];
         ctx.args[it->first] = 0;
-        bufs.add_buffer(GLBufId::Earg, extptr, it->second);
+        bufs.add_buffer(GLBufId::Extr, extptr, it->second);
       } else {
         size_t accum_size = 0;
         std::vector<void *> ptrarr;
@@ -581,8 +586,17 @@ struct CompiledProgram::Impl {
           ctx.args[i] = accum_size;
           accum_size += size;
         }  // concat all extptr into my baseptr
-        bufs.add_buffer(GLBufId::Earg, baseptr, accum_size);
+        bufs.add_buffer(GLBufId::Extr, baseptr, accum_size);
       }
+    }
+    /// DIRTY_END }}}
+    bufs.add_buffer(GLBufId::Args,
+          ctx.args, std::max(arg_count, ret_count) * sizeof(uint64_t));
+    if (used.print) {
+      auto runtime_buf = launcher->impl->core_bufs.get(GLBufId::Runtime);
+      auto mapped = (GLSLRuntime *)runtime_buf->map();
+      mapped->msg_count = 0;
+      runtime_buf->unmap();
     }
     {
       GLSLLaunchGuard guard(launcher);
@@ -590,6 +604,10 @@ struct CompiledProgram::Impl {
         ker->dispatch_compute(guard);
       }
     }
+    if (used.print) {
+      dump_message_buffer(launcher);
+    }
+    /// DIRTY_BEGIN {{{
     if (ext_arr_map.size() > 1) {
       void *baseptr = base_arr.data();
       auto cpit = saved_ctx_ptrs.begin();
@@ -600,9 +618,7 @@ struct CompiledProgram::Impl {
         cpit++;
       }  // extract back to all extptr from my baseptr
     }
-    if (used.print) {
-      dump_message_buffer(launcher);
-    }
+    /// DIRTY_END }}}
   }
 };
 
@@ -645,11 +661,7 @@ GLBuffer *GLSLLaunchGuard::get_core_buf(GLBufId idx) {
 
 GLSLLaunchGuard::~GLSLLaunchGuard() {
   for (auto &[idx, buf]: impl->user_bufs.bufs) {
-    if (!buf->size)
-      continue;
-    void *mapped_buf = buf->map();
-    TI_ASSERT(mapped_buf);
-    std::memcpy(buf->base, mapped_buf, buf->size);
+    buf->copy_back();
   }
   impl->user_bufs.clear();
 }

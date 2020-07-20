@@ -734,6 +734,27 @@ size_t ParallelSize::get_threads_per_group() const {
   TI_NOT_IMPLEMENTED;
 }
 
+size_t ParallelSize_ConstRange::get_threads_per_group() const {
+  TI_NOT_IMPLEMENTED;
+}
+
+size_t ParallelSize_DynamicRange::get_threads_per_group() const {
+  TI_NOT_IMPLEMENTED;
+}
+
+size_t ParallelSize_StructFor::get_threads_per_group() const {
+  TI_NOT_IMPLEMENTED;
+}
+
+ParallelSize_ConstRange::ParallelSize_ConstRange(int num_threads_) {
+}
+
+ParallelSize_DynamicRange::ParallelSize_DynamicRange(int num_threads_) {
+}
+
+ParallelSize_StructFor::ParallelSize_StructFor(int num_threads_) {
+}
+
 #endif  // TI_WITH_OPENGL
 
 CompiledProgram::CompiledProgram(Kernel *kernel)

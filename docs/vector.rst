@@ -16,10 +16,10 @@ Declaration
 As global tensors of vectors
 ++++++++++++++++++++++++++++
 
-.. function:: ti.Vector.field(n, dtype, shape = None, offset = None)
+.. function:: ti.Vector.field(n, dt, shape = None, offset = None)
 
     :parameter n: (scalar) the number of components in the vector
-    :parameter dtype: (DataType) data type of the components
+    :parameter dt: (DataType) data type of the components
     :parameter shape: (optional, scalar or tuple) shape the tensor of vectors, see :ref:`tensor`
     :parameter offset: (optional, scalar or tuple) see :ref:`offset`
 

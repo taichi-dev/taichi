@@ -69,7 +69,7 @@ To save images without invoking ``ti.GUI.show(filename)``, use ``ti.imwrite(file
         ti.imwrite(pixels.to_numpy(), filename)
         print(f'The image has been saved to {filename}')
 
-- ``ti.imwrite`` can export Taichi tensors (``ti.Matrix``, ``ti.Vector``, ``ti.field``) and numpy tensors ``np.ndarray``.
+- ``ti.imwrite`` can export Taichi tensors (``ti.Matrix``, ``ti.Vector.field``, ``ti.field``) and numpy tensors ``np.ndarray``.
 - Same as above ``ti.GUI.show(filename)``, the image format (``png``, ``jpg`` and ``bmp``) is also controlled by the suffix of ``filename`` in ``ti.imwrite(filename)``.
 - Meanwhile, the resulted image type (grayscale, RGB, or RGBA) is determined by **the number of channels in the input tensor**, i.e., the length of the third dimension (``tensor.shape[2]``).
 - In other words, a tensor that has shape ``(w, h)`` or ``(w, h, 1)`` will be exported as a grayscale image.
@@ -190,8 +190,8 @@ Export PLY files
     ti.init(arch=ti.cpu)
 
     num_vertices = 1000
-    pos = ti.Vector(3, dt=ti.f32, shape=(10, 10, 10))
-    rgba = ti.Vector(4, dt=ti.f32, shape=(10, 10, 10))
+    pos = ti.Vector.field(3, dtype=ti.f32, shape=(10, 10, 10))
+    rgba = ti.Vector.field(4, dtype=ti.f32, shape=(10, 10, 10))
 
 
     @ti.kernel

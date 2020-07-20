@@ -913,12 +913,9 @@ int32 cuda_ballot_sync(int32 mask, bool bit) {
 
 #if ARCH_cuda
 uint32 cuda_active_mask() {
-  /*
   unsigned int mask;
   asm volatile("activemask.b32 %0;" : "=r"(mask));
   return mask;
-  */
-  return cuda_ballot(true);
 }
 #else
 uint32 cuda_active_mask() {
@@ -928,9 +925,6 @@ uint32 cuda_active_mask() {
 
 int32 grid_dim() {
   return 0;
-}
-
-void sync_warp(uint32 mask) {
 }
 
 void block_barrier() {

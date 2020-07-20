@@ -140,6 +140,7 @@ std::string convert(std::string new_name) {
 std::string JITSessionCUDA::compile_module_to_ptx(
     std::unique_ptr<llvm::Module> &module) {
   TI_AUTO_PROF
+  // Part of this function is borrowed from Halide::CodeGen_PTX_Dev.cpp
   if (llvm::verifyModule(*module, &llvm::errs())) {
     module->print(llvm::errs(), nullptr);
     TI_ERROR("Module broken");

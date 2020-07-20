@@ -429,7 +429,6 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
           {llvm::PointerType::get(get_data_type(DataType::f64), 0)});
 #endif
 
-      // patch_intrinsic("sync_warp", Intrinsic::nvvm_bar_warp_sync, false);
       patch_intrinsic("block_memfence", Intrinsic::nvvm_membar_cta, false);
 
       link_module_with_cuda_libdevice(data->runtime_module);

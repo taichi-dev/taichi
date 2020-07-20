@@ -98,16 +98,20 @@ class KernelGen : public IRVisitor {
   }
 
   // Note that the following two functions not only returns the corresponding
-  // data type, but also **records** the usage of `i64`.
+  // data type, but also **records** the usage of `i64` and `f64`.
   std::string opengl_data_type_short_name(DataType dt) {
     if (dt == DataType::i64)
       used.int64 = true;
+    if (dt == DataType::f64)
+      used.float64 = true;
     return data_type_short_name(dt);
   }
 
   std::string opengl_data_type_name(DataType dt) {
     if (dt == DataType::i64)
       used.int64 = true;
+    if (dt == DataType::f64)
+      used.float64 = true;
     return opengl::opengl_data_type_name(dt);
   }
 
@@ -123,42 +127,50 @@ class KernelGen : public IRVisitor {
 
     // clang-format off
 #define __GLSL__
-    std::string kernel_header =
-#include "taichi/backends/opengl/runtime.h"
-      ;
+    std::string kernel_header = (
+#include "taichi/backends/opengl/shaders/runtime.h"
+        );
+    if (used.listman)
+      kernel_header += (
+#include "taichi/backends/opengl/shaders/listman.h"
+          );
 #undef __GLSL__
     kernel_header +=
       "layout(std430, binding = 0) buffer data_i32 { int _data_i32_[]; };\n"
-      "layout(std430, binding = 0) buffer data_f32 { float _data_f32_[]; };\n"
-      "layout(std430, binding = 0) buffer data_f64 { double _data_f64_[]; };\n";
+      "layout(std430, binding = 0) buffer data_f32 { float _data_f32_[]; };\n";
+    if (used.float64)
+      kernel_header += "layout(std430, binding = 0) buffer data_f64 { double _data_f64_[]; };\n";
     if (used.int64)
       kernel_header += "layout(std430, binding = 0) buffer data_i64 { int64_t _data_i64_[]; };\n";
 
-    if (used.global_temp) {
+    if (used.buf_gtmp) {
       kernel_header +=
           "layout(std430, binding = 1) buffer gtmp_i32 { int _gtmp_i32_[]; };\n"
-          "layout(std430, binding = 1) buffer gtmp_f32 { float _gtmp_f32_[]; };\n"
-          "layout(std430, binding = 1) buffer gtmp_f64 { double _gtmp_f64_[]; };\n";
+          "layout(std430, binding = 1) buffer gtmp_f32 { float _gtmp_f32_[]; };\n";
+      if (used.float64)
+        kernel_header += "layout(std430, binding = 1) buffer gtmp_f64 { double _gtmp_f64_[]; };\n";
       if (used.int64)
         kernel_header += "layout(std430, binding = 1) buffer gtmp_i64 { int64_t _gtmp_i64_[]; };\n";
     }
-    if (used.argument) {
+    if (used.buf_args) {
       kernel_header +=
           "layout(std430, binding = 2) buffer args_i32 { int _args_i32_[]; };\n"
-          "layout(std430, binding = 2) buffer args_f32 { float _args_f32_[]; };\n"
-          "layout(std430, binding = 2) buffer args_f64 { double _args_f64_[]; };\n";
+          "layout(std430, binding = 2) buffer args_f32 { float _args_f32_[]; };\n";
+      if (used.float64)
+        kernel_header += "layout(std430, binding = 2) buffer args_f64 { double _args_f64_[]; };\n";
       if (used.int64)
         kernel_header += "layout(std430, binding = 2) buffer args_i64 { int64_t _args_i64_[]; };\n";
     }
-    if (used.extra_arg) {
+    if (used.buf_earg) {
       kernel_header +=
           "layout(std430, binding = 3) buffer earg_i32 { int _earg_i32_[]; };\n";
     }
-    if (used.external_ptr) {
+    if (used.buf_extr) {
       kernel_header +=
           "layout(std430, binding = 4) buffer extr_i32 { int _extr_i32_[]; };\n"
-          "layout(std430, binding = 4) buffer extr_f32 { float _extr_f32_[]; };\n"
-          "layout(std430, binding = 4) buffer extr_f64 { double _extr_f64_[]; };\n";
+          "layout(std430, binding = 4) buffer extr_f32 { float _extr_f32_[]; };\n";
+      if (used.float64)
+        kernel_header += "layout(std430, binding = 4) buffer extr_f64 { double _extr_f64_[]; };\n";
       if (used.int64)
         kernel_header += "layout(std430, binding = 4) buffer extr_i64 { int64_t _extr_i64_[]; };\n";
     }
@@ -167,23 +179,23 @@ class KernelGen : public IRVisitor {
       kernel_header += (
 #include "taichi/backends/opengl/shaders/atomics_data_f32.glsl.h"
       );
-      if (used.global_temp) {
+      if (used.buf_gtmp) {
         kernel_header += (
 #include "taichi/backends/opengl/shaders/atomics_gtmp_f32.glsl.h"
         );
       }
-      if (used.external_ptr) {
+      if (used.buf_extr) {
         kernel_header += (
 #include "taichi/backends/opengl/shaders/atomics_extr_f32.glsl.h"
         );
       }
     }
-    if (used.random) {  // TODO(archibate): random in different offloads should
-                        // share rand seed? {{{
+    // TODO(archibate): random in different offloads should share rand seed?
+    if (used.random) {
       kernel_header += (
 #include "taichi/backends/opengl/shaders/random.glsl.h"
       );
-    }  // }}}
+    }
 
     if (used.fast_pow) {
       kernel_header += (
@@ -419,7 +431,7 @@ class KernelGen : public IRVisitor {
       const int num_indices = stmt->indices.size();
       std::vector<std::string> size_var_names;
       for (int i = 0; i < num_indices; i++) {
-        used.extra_arg = true;
+        used.buf_earg = true;
         std::string var_name = fmt::format("_s{}_{}", i, stmt->short_name());
         emit("int {} = _earg_i32_[{} * {} + {}];", var_name, arg_id,
              taichi_max_num_indices, i);
@@ -435,7 +447,7 @@ class KernelGen : public IRVisitor {
     emit("int {} = {} + ({} << {});", stmt->short_name(),
          stmt->base_ptrs[0]->short_name(), linear_index_name,
          opengl_data_address_shifter(stmt->base_ptrs[0]->element_type()));
-    used.external_ptr = true;
+    used.buf_extr = true;
     ptr_signats[stmt->id] = "extr";
   }
 
@@ -624,7 +636,7 @@ class KernelGen : public IRVisitor {
   }
 
   void visit(KernelReturnStmt *stmt) override {
-    used.argument = true;
+    used.buf_args = true;
     // TODO: consider use _rets_{}_ instead of _args_{}_
     // TODO: use stmt->ret_id instead of 0 as index
     emit("_args_{}_[0] = {};",
@@ -634,7 +646,7 @@ class KernelGen : public IRVisitor {
 
   void visit(ArgLoadStmt *stmt) override {
     const auto dt = opengl_data_type_name(stmt->element_type());
-    used.argument = true;
+    used.buf_args = true;
     if (stmt->is_ptr) {
       emit("int {} = _args_i32_[{} << 1]; // is ext pointer {}",
            stmt->short_name(), stmt->arg_id, dt);
@@ -811,6 +823,7 @@ class KernelGen : public IRVisitor {
     const std::string glsl_kernel_name = make_kernel_name();
     emit("void {}()", glsl_kernel_name);
     this->glsl_kernel_name_ = glsl_kernel_name;
+    used.listman = true;
     emit("{{ // listgen {}", stmt->snode->node_type_name);
     {
       ScopedIndent _s(line_appender_);
@@ -827,7 +840,7 @@ class KernelGen : public IRVisitor {
 
   void visit(GlobalTemporaryStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    used.global_temp = true;
+    used.buf_gtmp = true;
     emit("int {} = {};", stmt->short_name(), stmt->offset);
     ptr_signats[stmt->id] = "gtmp";
   }
@@ -971,7 +984,8 @@ void OpenglCodeGen::lower() {
   irpass::compile_to_offloads(ir, config,
                               /*vectorize=*/false, kernel_->grad,
                               /*ad_use_stack=*/false, config.print_ir,
-                              /*lower_global_access*/ true);
+                              /*lower_global_access=*/true,
+                              /*make_thread_local=*/false);
 #ifdef _GLSL_DEBUG
   irpass::print(ir);
 #endif

@@ -19,8 +19,8 @@ struct GLSLLaunchGuard {
   // TODO: RAII, buffer_guard
   void *map_gtmp_buffer();
   void unmap_gtmp_buffer();
-  void *map_runtime_buffer();
-  void unmap_runtime_buffer();
+  void *map_listman_buffer();
+  void unmap_listman_buffer();
   void *map_buffer(size_t idx);
   void unmap_buffer(size_t idx);
 };

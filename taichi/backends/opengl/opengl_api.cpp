@@ -6,7 +6,8 @@
 #include "taichi/program/program.h"
 #include "taichi/util/environ_config.h"
 #include "taichi/python/print_buffer.h"
-#include "taichi/backends/opengl/runtime.h"
+#include "taichi/backends/opengl/shaders/runtime.h"
+#include "taichi/backends/opengl/shaders/listman.h"
 
 #ifdef TI_WITH_OPENGL
 #include "glad/glad.h"
@@ -105,9 +106,9 @@ size_t ParallelSize_DynamicRange::get_num_groups(GLSLLaunchGuard &guard) const {
 size_t ParallelSize_StructFor::get_num_groups(GLSLLaunchGuard &guard) const {
   const size_t TPG = opengl_get_threads_per_group();
 
-  auto rt_buf = (GLSLRuntime *)guard.map_runtime_buffer();
+  auto rt_buf = (GLSLListman *)guard.map_listman_buffer();
   auto n = rt_buf->list_len;
-  guard.unmap_runtime_buffer();
+  guard.unmap_listman_buffer();
   return std::max((n + TPG - 1) / TPG, (size_t)1);
 }
 
@@ -427,11 +428,13 @@ struct CompiledKernel {
 struct GLSLLauncherImpl {
   std::unique_ptr<GLSSBO> root_ssbo;
   std::unique_ptr<GLSSBO> runtime_ssbo;
+  std::unique_ptr<GLSSBO> listman_ssbo;
   std::unique_ptr<GLSSBO> gtmp_ssbo;
   std::vector<GLSSBO> ssbo;
   std::vector<char> root_buffer;
   std::vector<char> gtmp_buffer;
   std::unique_ptr<GLSLRuntime> runtime;
+  std::unique_ptr<GLSLListman> listman;
   std::vector<std::unique_ptr<CompiledProgram>> programs;
 };
 
@@ -578,6 +581,11 @@ GLSLLauncher::GLSLLauncher(size_t root_size) {
   impl->runtime_ssbo->bind_data(impl->runtime.get(), sizeof(GLSLRuntime));
   impl->runtime_ssbo->bind_index(6);
 
+  impl->listman_ssbo = std::make_unique<GLSSBO>();
+  impl->listman = std::make_unique<GLSLListman>();
+  impl->listman_ssbo->bind_data(impl->listman.get(), sizeof(GLSLListman));
+  impl->listman_ssbo->bind_index(7);
+
   impl->root_ssbo = std::make_unique<GLSSBO>();
   impl->root_buffer.resize(root_size, 0);
   impl->root_ssbo->bind_data(impl->root_buffer.data(), root_size);
@@ -626,13 +634,13 @@ void GLSLLaunchGuard::unmap_gtmp_buffer() {
   impl->gtmp_ssbo->unmap();
 }
 
-void *GLSLLaunchGuard::map_runtime_buffer() {
-  void *p = impl->runtime_ssbo->map();
+void *GLSLLaunchGuard::map_listman_buffer() {
+  void *p = impl->listman_ssbo->map();
   return p;
 }
 
-void GLSLLaunchGuard::unmap_runtime_buffer() {
-  impl->runtime_ssbo->unmap();
+void GLSLLaunchGuard::unmap_listman_buffer() {
+  impl->listman_ssbo->unmap();
 }
 
 GLSLLaunchGuard::~GLSLLaunchGuard() {
@@ -719,11 +727,11 @@ void GLSLLaunchGuard::unmap_gtmp_buffer() {
   TI_NOT_IMPLEMENTED;
 }
 
-void *GLSLLaunchGuard::map_runtime_buffer() {
+void *GLSLLaunchGuard::map_listman_buffer() {
   TI_NOT_IMPLEMENTED;
 }
 
-void GLSLLaunchGuard::unmap_runtime_buffer() {
+void GLSLLaunchGuard::unmap_listman_buffer() {
   TI_NOT_IMPLEMENTED;
 }
 

@@ -13,14 +13,23 @@ class SNode;
 namespace opengl {
 
 struct UsedFeature {
-  bool random{false};
-  bool argument{false};
-  bool extra_arg{false};
-  bool external_ptr{false};
+  // types:
   bool simulated_atomic_float{false};
   bool int64{false};
-  bool global_temp{false};
+  bool float64{false};
+
+  // sparse:
+  bool listman{false};
+
+  // buffers:
+  bool buf_args{false};
+  bool buf_earg{false};
+  bool buf_extr{false};
+  bool buf_gtmp{false};
+
+  // utilties:
   bool fast_pow{false};
+  bool random{false};
   bool print{false};
 };
 

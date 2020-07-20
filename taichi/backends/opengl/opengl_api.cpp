@@ -738,6 +738,18 @@ size_t ParallelSize_ConstRange::get_threads_per_group() const {
   TI_NOT_IMPLEMENTED;
 }
 
+size_t ParallelSize_ConstRange::get_num_groups(GLSLLaunchGuard &guard) const {
+  TI_NOT_IMPLEMENTED;
+}
+
+size_t ParallelSize_DynamicRange::get_num_groups(GLSLLaunchGuard &guard) const {
+  TI_NOT_IMPLEMENTED;
+}
+
+size_t ParallelSize_StructFor::get_num_groups(GLSLLaunchGuard &guard) const {
+  TI_NOT_IMPLEMENTED;
+}
+
 ParallelSize_ConstRange::ParallelSize_ConstRange(int num_threads_) {
 }
 

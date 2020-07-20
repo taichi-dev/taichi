@@ -866,11 +866,8 @@ class KernelGen : public IRVisitor {
   }
 
   void visit(ContinueStmt *stmt) override {
-    if (stmt->as_return()) {
-      emit("return;");
-    } else {
-      emit("continue;");
-    }
+    // stmt->as_return() is unused since we always embrace a grid-stride-loop
+    emit("continue;");
   }
 
   void visit(WhileStmt *stmt) override {

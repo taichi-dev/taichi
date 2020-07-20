@@ -378,8 +378,7 @@ void display_kernel_info(std::string const &kernel_name,
                      taichi::starts_with(kernel_name, "tensor_");
   is_accessor = false;
   if (!is_accessor)
-    TI_DEBUG("source of kernel [{}]:\n{}", kernel_name,
-             kernel_source_code);
+    TI_DEBUG("source of kernel [{}]:\n{}", kernel_name, kernel_source_code);
 #ifdef _GLSL_DEBUG
   std::ofstream(fmt::format("/tmp/{}.comp", kernel_name))
       .write(kernel_source_code.c_str(), kernel_source_code.size());
@@ -728,7 +727,10 @@ void GLSLLaunchGuard::unmap_runtime_buffer() {
   TI_NOT_IMPLEMENTED;
 }
 
-KernelParallelAttrib::KernelParallelAttrib(int num_threads_) {
+ParallelSize::~ParallelSize() {
+}
+
+size_t ParallelSize::get_threads_per_group() const {
   TI_NOT_IMPLEMENTED;
 }
 

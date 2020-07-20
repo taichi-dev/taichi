@@ -32,6 +32,7 @@ class ParallelSize_ConstRange : public ParallelSize {
   int num_groups{1};
   int num_threads{1};
   int threads_per_group{1};
+
  public:
   ParallelSize_ConstRange(int num_threads_);
   virtual size_t get_num_groups(GLSLLaunchGuard &guard) const override;
@@ -44,6 +45,7 @@ class ParallelSize_DynamicRange : public ParallelSize {
   bool const_end;
   int range_begin;
   int range_end;
+
  public:
   ParallelSize_DynamicRange(OffloadedStmt *stmt);
   virtual size_t get_num_groups(GLSLLaunchGuard &guard) const override;

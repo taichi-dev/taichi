@@ -3,11 +3,10 @@ from . import impl
 import copy
 import numbers
 import numpy as np
-from .util import taichi_scope, python_scope, deprecated, to_numpy_type, to_pytorch_type, in_python_scope, is_taichi_class
+from .util import taichi_scope, python_scope, deprecated, to_numpy_type, to_pytorch_type, in_python_scope, is_taichi_class, warning
 from .common_ops import TaichiOperations
 from .exception import TaichiSyntaxError
 from collections.abc import Iterable
-import warnings
 
 
 class Matrix(TaichiOperations):
@@ -29,9 +28,9 @@ class Matrix(TaichiOperations):
                  cols=None):
         self.grad = None
 
-        # construct from rows or cols
+        # construct from rows or cols (deprecated)
         if rows is not None or cols is not None:
-            warnings.warn(
+            warning(
                 f"ti.Matrix(rows=[...]) or ti.Matrix(cols=[...]) is deprecated, use ti.Matrix.rows([...]) or ti.Matrix.cols([...]) instead.",
                 DeprecationWarning,
                 stacklevel=2)
@@ -45,7 +44,7 @@ class Matrix(TaichiOperations):
             return
 
         elif empty == True:
-            warnings.warn(
+            warning(
                 f"ti.Matrix(n, m, empty=True) is deprecated, use ti.Matrix.empty(n, m) instead",
                 DeprecationWarning,
                 stacklevel=2)
@@ -77,60 +76,32 @@ class Matrix(TaichiOperations):
                 self.m = 1
             self.entries = [x for row in mat for x in row]
 
-        # construct global matrix
         else:
-            self.entries = []
-            self.n = n
-            self.m = m
-            self.dt = dt
             if dt is None:
-                for i in range(n * m):
-                    self.entries.append(impl.expr_init(None))
+                # create a local matrix with specific (n, m)
+                self.entries = [impl.expr_init(None) for i in range(n * m)]
+                self.n = n
+                self.m = m
             else:
-                assert not impl.inside_kernel()
-                for i in range(n * m):
-                    self.entries.append(impl.var(dt))
-                self.grad = self.make_grad()
-
-            if layout is not None:
-                assert shape is not None, 'layout is useless without shape'
-            if shape is not None:
-                if isinstance(shape, numbers.Number):
-                    shape = (shape, )
-                if isinstance(offset, numbers.Number):
-                    offset = (offset, )
-
-                if offset is not None:
-                    assert len(shape) == len(
-                        offset
-                    ), f'The dimensionality of shape and offset must be the same  ({len(shape)} != {len(offset)})'
-
-                import taichi as ti
-                if layout is None:
-                    layout = ti.AOS
-
-                dim = len(shape)
-                if layout.soa:
-                    for i, e in enumerate(self.entries):
-                        ti.root.dense(ti.index_nd(dim),
-                                      shape).place(e, offset=offset)
-                        if needs_grad:
-                            ti.root.dense(ti.index_nd(dim),
-                                          shape).place(e.grad, offset=offset)
-                else:
-                    var_list = []
-                    for i, e in enumerate(self.entries):
-                        var_list.append(e)
-                    if needs_grad:
-                        for i, e in enumerate(self.entries):
-                            var_list.append(e.grad)
-                    ti.root.dense(ti.index_nd(dim),
-                                  shape).place(*tuple(var_list), offset=offset)
-            else:
-                assert offset is None, f"shape cannot be None when offset is being set"
+                # construct global matrix (deprecated)
+                #warning(  # TODO(archibate): uncomment this when #1500 is complete
+                #    "Declaring global matrices using `ti.Matrix(n, m, dt, shape)` is deprecated, "
+                #    "use `ti.Matrix.field(n, m, dtype, shape)` instead",
+                #    DeprecationWarning,
+                #    stacklevel=2)
+                mat = Matrix.field(n=n,
+                                   m=m,
+                                   dtype=dt,
+                                   shape=shape,
+                                   offset=offset,
+                                   needs_grad=needs_grad,
+                                   layout=layout)
+                self.n = mat.n
+                self.m = mat.m
+                self.entries = mat.entries
 
         if self.n * self.m > 32:
-            warnings.warn(
+            warning(
                 f'Taichi matrices/vectors with {self.n}x{self.m} > 32 entries are not suggested.'
                 ' Matrices/vectors will be automatically unrolled at compile-time for performance.'
                 ' So the compilation time could be extremely long if the matrix size is too big.'
@@ -687,8 +658,7 @@ class Matrix(TaichiOperations):
     def to_numpy(self, keep_dims=False, as_vector=None):
         # Discussion: https://github.com/taichi-dev/taichi/pull/1046#issuecomment-633548858
         if as_vector is not None:
-            import warnings
-            warnings.warn(
+            warning(
                 'v.to_numpy(as_vector=True) is deprecated, '
                 'please use v.to_numpy() directly instead',
                 DeprecationWarning,
@@ -802,16 +772,90 @@ class Matrix(TaichiOperations):
                        for i in range(n)])
 
     @staticmethod
-    @taichi_scope
     def rotation2d(alpha):
         import taichi as ti
         return Matrix([[ti.cos(alpha), -ti.sin(alpha)],
                        [ti.sin(alpha), ti.cos(alpha)]])
 
-    @staticmethod
+    @classmethod
     @python_scope
-    def var(n, m, dt, shape=None, offset=None, **kwargs):
-        return Matrix(n=n, m=m, dt=dt, shape=shape, offset=offset, **kwargs)
+    def field(cls,
+              n,
+              m,
+              dtype,
+              shape=None,
+              offset=None,
+              needs_grad=False,
+              layout=None):  # TODO(archibate): deprecate layout
+        '''ti.Matrix.field'''
+        self = cls.empty(n, m)
+        self.entries = []
+        self.n = n
+        self.m = m
+        self.dt = dtype
+        for i in range(n * m):
+            self.entries.append(impl.field(dtype))
+        self.grad = self.make_grad()
+
+        if layout is not None:
+            assert shape is not None, 'layout is useless without shape'
+        if shape is None:
+            assert offset is None, "shape cannot be None when offset is being set"
+
+        if shape is not None:
+            if isinstance(shape, numbers.Number):
+                shape = (shape, )
+            if isinstance(offset, numbers.Number):
+                offset = (offset, )
+
+            if offset is not None:
+                assert len(shape) == len(
+                    offset
+                ), f'The dimensionality of shape and offset must be the same  ({len(shape)} != {len(offset)})'
+
+            import taichi as ti
+            if layout is None:
+                layout = ti.AOS
+
+            dim = len(shape)
+            if layout.soa:
+                for i, e in enumerate(self.entries):
+                    ti.root.dense(ti.index_nd(dim), shape).place(e,
+                                                                 offset=offset)
+                    if needs_grad:
+                        ti.root.dense(ti.index_nd(dim),
+                                      shape).place(e.grad, offset=offset)
+            else:
+                var_list = []
+                for i, e in enumerate(self.entries):
+                    var_list.append(e)
+                if needs_grad:
+                    for i, e in enumerate(self.entries):
+                        var_list.append(e.grad)
+                ti.root.dense(ti.index_nd(dim), shape).place(*tuple(var_list),
+                                                             offset=offset)
+        return self
+
+    @classmethod
+    @python_scope
+    #@deprecated('ti.Matrix.var', 'ti.Matrix.field')
+    def var(cls, n, m, dt, *args, **kwargs):
+        '''ti.Matrix.var'''
+        _taichi_skip_traceback = 1
+        return cls.field(n, m, dt, *args, **kwargs)
+
+    @classmethod
+    def _Vector_field(cls, n, dtype, *args, **kwargs):
+        '''ti.Vector.field'''
+        _taichi_skip_traceback = 1
+        return cls.field(n, 1, dtype, *args, **kwargs)
+
+    @classmethod
+    #@deprecated('ti.Vector.var', 'ti.Vector.field')
+    def _Vector_var(cls, n, dt, *args, **kwargs):
+        '''ti.Vector.var'''
+        _taichi_skip_traceback = 1
+        return cls._Vector_field(n, dt, *args, **kwargs)
 
     @staticmethod
     def rows(rows):
@@ -905,11 +949,13 @@ class Matrix(TaichiOperations):
         return ret
 
 
+# TODO: deprecate ad-hoc use ti.Matrix() as global (#1500:2.2/2)
 def Vector(n, dt=None, shape=None, offset=None, **kwargs):
     return Matrix(n, 1, dt=dt, shape=shape, offset=offset, **kwargs)
 
 
-Vector.var = Vector
+Vector.var = Matrix._Vector_var
+Vector.field = Matrix._Vector_field
 Vector.zero = Matrix.zero
 Vector.one = Matrix.one
 Vector.dot = Matrix.dot

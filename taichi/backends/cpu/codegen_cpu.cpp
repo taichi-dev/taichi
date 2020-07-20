@@ -18,22 +18,6 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
     TI_AUTO_PROF
   }
 
-  void visit(AssertStmt *stmt) override {
-    if (stmt->args.empty()) {
-      CodeGenLLVM::visit(stmt);
-    } else {
-      std::vector<Value *> args;
-      args.emplace_back(get_runtime());
-      args.emplace_back(llvm_val[stmt->cond]);
-      args.emplace_back(builder->CreateGlobalStringPtr(stmt->text));
-      for (auto arg : stmt->args) {
-        TI_ASSERT(llvm_val[arg]);
-        args.emplace_back(llvm_val[arg]);
-      }
-      llvm_val[stmt] = create_call("taichi_assert_format", args);
-    }
-  }
-
   void create_offload_range_for(OffloadedStmt *stmt) override {
     int step = 1;
 

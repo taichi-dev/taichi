@@ -16,7 +16,9 @@ void check_func_call_signature(llvm::Value *func,
   if (func_type->isFunctionVarArg()) {
     TI_ASSERT(num_params <= arglist.size());
   } else {
-    TI_ASSERT(num_params == arglist.size());
+    TI_ERROR_IF(num_params != arglist.size(),
+                "Function requires {} arguments but {} provided", num_params,
+                arglist.size());
   }
 
   for (int i = 0; i < num_params; i++) {

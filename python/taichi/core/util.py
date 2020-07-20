@@ -3,18 +3,14 @@ import re
 import shutil
 import sys
 import ctypes
-import warnings
 from pathlib import Path
 from colorama import Fore, Back, Style
-from taichi.misc.settings import get_output_directory, get_build_directory, get_bin_directory, get_repo_directory, get_runtime_directory
-from taichi.misc.util import get_os_name, get_unique_task_id
+from .settings import *
 
 if sys.version_info[0] < 3 or sys.version_info[1] <= 5:
     print("\nPlease restart with Python 3.6+\n")
     print("Current Python version:", sys.version_info)
     exit(-1)
-
-warnings.filterwarnings('always')
 
 ti_core = None
 
@@ -270,6 +266,13 @@ def prepare_sandbox(src):
     return tmp_dir
 
 
+def get_unique_task_id():
+    import datetime
+    import random
+    return datetime.datetime.now().strftime('task-%Y-%m-%d-%H-%M-%S-r') + (
+        '%05d' % random.randint(0, 10000))
+
+
 if is_release():
     print("[Taichi] mode=release")
     sys.path.append(os.path.join(package_root(), 'lib'))
@@ -488,3 +491,14 @@ def _print_taichi_header():
 
 
 _print_taichi_header()
+
+__all__ = [
+    'ti_core',
+    'build',
+    'format',
+    'load_module',
+    'start_memory_monitoring',
+    'is_release',
+    'package_root',
+    'require_version',
+]

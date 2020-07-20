@@ -23,6 +23,8 @@ struct KernelProfileRecord {
   }
 
   void insert_sample(double t);
+
+  bool operator<(const KernelProfileRecord &o) const;
 };
 
 class KernelProfilerBase {

@@ -168,11 +168,13 @@ def bls_particle_grid(N,
     def insert():
         ti.block_dim(256)
         for i in x:
-            x[i] = ti.Vector([
-                ti.random() * (1 - 2 * bound) + bound,
-                ti.random() * (1 - 2 * bound) + bound
+            # Note that since we manually subtract grid offset from base, its values are always positive.
+            # So no ti.floor is needed here and int() suffices.
+            base = ti.Vector([
+                int(x[i][0] * N - grid_offset[0]),
+                int(x[i][1] * N - grid_offset[1])
             ])
-            ti.append(pid.parent(), [int(x[i][0] * N), int(x[i][1] * N)], i)
+            ti.append(pid.parent(), base, i)
 
     scatter_weight = (N * N / M) * 0.01
 

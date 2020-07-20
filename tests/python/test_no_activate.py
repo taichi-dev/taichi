@@ -21,12 +21,10 @@ def test_no_activate():
         ti.no_activate(d)
         for i in range(n // 2):
             x[i * 2 + 1] += 1
-    
+
     initialize()
-        
+
     func()
-    
+
     for i in range(n):
         assert x[i] == i % 2 + 1
-        
-

@@ -34,7 +34,7 @@ class lock_guard {
           grid_memfence();
         }
         warp_barrier(active_mask);
-        remaining ^= 1u << leader;
+        remaining &= ~(1u << leader);
       }
     } else {
       for (int i = 0; i < warp_size(); i++) {
@@ -42,9 +42,9 @@ class lock_guard {
           // Memory fences here are necessary since CUDA has a weakly ordered
           // memory model across threads
           mutex_lock_i32(lock);
-          // grid_memfence();
+          grid_memfence();
           func();
-          // grid_memfence();
+          grid_memfence();
           mutex_unlock_i32(lock);
           //grid_memfence();
         }

@@ -227,8 +227,8 @@ Examples
 
 .. code-block:: python
 
-  pos = ti.Vector.field(3, dt=ti.f32)
-  vel = ti.Vector.field(3, dt=ti.f32)
+  pos = ti.Vector.field(3, dtype=ti.f32)
+  vel = ti.Vector.field(3, dtype=ti.f32)
   ti.root.dense(ti.i, 1024).place(pos, vel)
   # equivalent to
   ti.root.dense(ti.i, 1024).place(pos(0), pos(1), pos(2), vel(0), vel(1), vel(2))
@@ -237,8 +237,8 @@ Examples
 
 .. code-block:: python
 
-  pos = ti.Vector.field(3, dt=ti.f32)
-  vel = ti.Vector.field(3, dt=ti.f32)
+  pos = ti.Vector.field(3, dtype=ti.f32)
+  vel = ti.Vector.field(3, dtype=ti.f32)
   for i in range(3):
     ti.root.dense(ti.i, 1024).place(pos(i))
   for i in range(3):

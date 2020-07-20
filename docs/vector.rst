@@ -16,10 +16,10 @@ Declaration
 As global tensors of vectors
 ++++++++++++++++++++++++++++
 
-.. function:: ti.Vector.field(n, dt, shape = None, offset = None)
+.. function:: ti.Vector.field(n, dtype, shape = None, offset = None)
 
     :parameter n: (scalar) the number of components in the vector
-    :parameter dt: (DataType) data type of the components
+    :parameter dtype: (DataType) data type of the components
     :parameter shape: (optional, scalar or tuple) shape the tensor of vectors, see :ref:`tensor`
     :parameter offset: (optional, scalar or tuple) see :ref:`offset`
 
@@ -27,7 +27,7 @@ As global tensors of vectors
     ::
 
         # Python-scope
-        a = ti.Vector.field(3, dt=ti.f32, shape=(5, 4))
+        a = ti.Vector.field(3, dtype=ti.f32, shape=(5, 4))
 
 .. note::
 
@@ -236,7 +236,7 @@ Metadata
 
     ::
         # Python-scope
-        a = ti.Vector.field(3, dt=ti.f32, shape=())
+        a = ti.Vector.field(3, dtype=ti.f32, shape=())
         a.n  # 3
 
 TODO: add element wise operations docs

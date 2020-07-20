@@ -190,8 +190,8 @@ Export PLY files
     ti.init(arch=ti.cpu)
 
     num_vertices = 1000
-    pos = ti.Vector.field(3, dt=ti.f32, shape=(10, 10, 10))
-    rgba = ti.Vector.field(4, dt=ti.f32, shape=(10, 10, 10))
+    pos = ti.Vector.field(3, dtype=ti.f32, shape=(10, 10, 10))
+    rgba = ti.Vector.field(4, dtype=ti.f32, shape=(10, 10, 10))
 
 
     @ti.kernel

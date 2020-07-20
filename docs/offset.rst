@@ -24,7 +24,7 @@ In this way, the tensor's indices are from ``(-16, 8)`` to ``(16, 72)`` (exclusi
 .. code-block:: python
 
     a = ti.Matrix(2, 3, dt=ti.f32, shape=(32,), offset=(-16, ))          # Works!
-    b = ti.Vector.field(3, dt=ti.f32, shape=(16, 32, 64), offset=(7, 3, -4))   # Works!
+    b = ti.Vector.field(3, dtype=ti.f32, shape=(16, 32, 64), offset=(7, 3, -4))   # Works!
     c = ti.Matrix(2, 1, dt=ti.f32, shape=None, offset=(32,))             # AssertionError
     d = ti.Matrix(3, 2, dt=ti.f32, shape=(32, 32), offset=(-16, ))       # AssertionError
     e = ti.field(dt=ti.i32, shape=16, offset=-16)                          # Works!

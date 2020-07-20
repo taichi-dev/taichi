@@ -943,7 +943,8 @@ void element_listgen_root(LLVMRuntime *runtime,
   auto child_get_num_elements = child->get_num_elements;
   auto child_from_parent_element = child->from_parent_element;
 #if ARCH_cuda
-  // All blocks share the only root container, which has only one child container.
+  // All blocks share the only root container, which has only one child
+  // container.
   int j_start = block_idx();
   int j_step = grid_dim();
   // Each thread processes a subset of the child container for more parallelism.

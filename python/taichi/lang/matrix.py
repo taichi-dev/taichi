@@ -99,6 +99,7 @@ class Matrix(TaichiOperations):
                 self.n = mat.n
                 self.m = mat.m
                 self.entries = mat.entries
+                self.grad = mat.grad
 
         if self.n * self.m > 32:
             warning(

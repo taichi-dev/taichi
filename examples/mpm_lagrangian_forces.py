@@ -17,14 +17,14 @@ p_vol = 1
 mu = 1
 la = 1
 
-x = ti.Vector(dim, dt=ti.f32, shape=n_particles, needs_grad=True)
-v = ti.Vector(dim, dt=ti.f32, shape=n_particles)
-C = ti.Matrix(dim, dim, dt=ti.f32, shape=n_particles)
-grid_v = ti.Vector(dim, dt=ti.f32, shape=(n_grid, n_grid))
-grid_m = ti.var(dt=ti.f32, shape=(n_grid, n_grid))
-restT = ti.Matrix(dim, dim, dt=ti.f32, shape=n_particles, needs_grad=True)
-total_energy = ti.var(ti.f32, shape=(), needs_grad=True)
-vertices = ti.var(ti.i32, shape=(n_elements, 3))
+x = ti.Vector.field(dim, dtype=ti.f32, shape=n_particles, needs_grad=True)
+v = ti.Vector.field(dim, dtype=ti.f32, shape=n_particles)
+C = ti.Matrix.field(dim, dim, dtype=ti.f32, shape=n_particles)
+grid_v = ti.Vector.field(dim, dtype=ti.f32, shape=(n_grid, n_grid))
+grid_m = ti.field(dtype=ti.f32, shape=(n_grid, n_grid))
+restT = ti.Matrix.field(dim, dim, dtype=ti.f32, shape=n_particles, needs_grad=True)
+total_energy = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
+vertices = ti.field(dtype=ti.i32, shape=(n_elements, 3))
 
 
 @ti.func

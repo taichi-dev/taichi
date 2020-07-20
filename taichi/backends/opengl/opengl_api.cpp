@@ -267,7 +267,6 @@ struct GLBuffer : GLSSBO {
       return;
     void *mapped = this->map();
     TI_ASSERT(mapped);
-    TI_INFO("cb_buf {}: mapped[0] = {}", index, ((int *)mapped)[0]);
     std::memcpy(base, mapped, size);
     this->unmap();
   }
@@ -281,8 +280,6 @@ struct GLBufferTable {
   }
 
   void add_buffer(GLBufId index, void *base, size_t size) {
-    if (base)
-      TI_INFO("addbuf {}, {}: buffer[0] = {}", index, size, ((int *)base)[0]);
     bufs[index] = std::make_unique<GLBuffer>(index, base, size);
   }
 
@@ -290,6 +287,19 @@ struct GLBufferTable {
     bufs.clear();
   }
 };
+
+struct GLSLLauncherImpl {
+  GLBufferTable core_bufs;
+  GLBufferTable user_bufs;
+
+  std::vector<char> root_buffer;
+  std::vector<char> gtmp_buffer;
+  std::unique_ptr<GLSLRuntime> runtime;
+  std::unique_ptr<GLSLListman> listman;
+
+  std::vector<std::unique_ptr<CompiledProgram>> programs;
+};
+
 
 ParallelSize::~ParallelSize() {
 }
@@ -316,15 +326,15 @@ ParallelSize_ConstRange::ParallelSize_ConstRange(int num_threads_)
   }
 }
 
-size_t ParallelSize_ConstRange::get_num_groups(GLSLLaunchGuard &guard) const {
+size_t ParallelSize_ConstRange::get_num_groups(GLSLLauncher *launcher) const {
   return num_groups;
 }
 
-size_t ParallelSize_DynamicRange::get_num_groups(GLSLLaunchGuard &guard) const {
+size_t ParallelSize_DynamicRange::get_num_groups(GLSLLauncher *launcher) const {
   const size_t TPG = opengl_get_threads_per_group();
 
   size_t n;
-  auto gtmp = guard.get_core_buf(GLBufId::Gtmp);
+  auto gtmp = launcher->impl->core_bufs.get(GLBufId::Gtmp);
   void *gtmp_now = gtmp->map(); // TODO: RAII map/unmap
   size_t b = range_begin, e = range_end;
   if (!const_begin)
@@ -339,10 +349,10 @@ size_t ParallelSize_DynamicRange::get_num_groups(GLSLLaunchGuard &guard) const {
   return std::max((n + TPG - 1) / TPG, (size_t)1);
 }
 
-size_t ParallelSize_StructFor::get_num_groups(GLSLLaunchGuard &guard) const {
+size_t ParallelSize_StructFor::get_num_groups(GLSLLauncher *launcher) const {
   const size_t TPG = opengl_get_threads_per_group();
 
-  auto listman = guard.get_core_buf(GLBufId::Listman);
+  auto listman = launcher->impl->core_bufs.get(GLBufId::Listman);
   auto lm_buf = (GLSLListman *)listman->map();
   auto n = lm_buf->list_len;
   listman->unmap();
@@ -450,8 +460,8 @@ struct CompiledKernel {
     glsl->link();
   }
 
-  void dispatch_compute(GLSLLaunchGuard &guard) const {
-    int num_groups = ps->get_num_groups(guard);
+  void dispatch_compute(GLSLLauncher *launcher) const {
+    int num_groups = ps->get_num_groups(launcher);
 
     glsl->use();
 
@@ -468,18 +478,6 @@ struct CompiledKernel {
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
     check_opengl_error("glMemoryBarrier");
   }
-};
-
-struct GLSLLauncherImpl {
-  GLBufferTable core_bufs;
-  GLBufferTable user_bufs;
-
-  std::vector<char> root_buffer;
-  std::vector<char> gtmp_buffer;
-  std::unique_ptr<GLSLRuntime> runtime;
-  std::unique_ptr<GLSLListman> listman;
-
-  std::vector<std::unique_ptr<CompiledProgram>> programs;
 };
 
 struct CompiledProgram::Impl {
@@ -598,12 +596,13 @@ struct CompiledProgram::Impl {
       mapped->msg_count = 0;
       runtime_buf->unmap();
     }
-    {
-      GLSLLaunchGuard guard(launcher);
-      for (const auto &ker : kernels) {
-        ker->dispatch_compute(guard);
-      }
+    for (const auto &ker : kernels) {
+      ker->dispatch_compute(launcher);
     }
+    for (auto &[idx, buf]: launcher->impl->user_bufs.bufs) {
+      buf->copy_back();
+    }
+    launcher->impl->user_bufs.clear();
     if (used.print) {
       dump_message_buffer(launcher);
     }
@@ -645,25 +644,6 @@ GLSLLauncher::GLSLLauncher(size_t root_size) {
 
 void GLSLLauncher::keep(std::unique_ptr<CompiledProgram> program) {
   impl->programs.push_back(std::move(program));
-}
-
-GLSLLaunchGuard::GLSLLaunchGuard(GLSLLauncher *launcher)
-    : impl(launcher->impl.get()) {
-}
-
-GLBuffer *GLSLLaunchGuard::get_user_buf(GLBufId idx) {
-  return impl->user_bufs.get(idx);
-}
-
-GLBuffer *GLSLLaunchGuard::get_core_buf(GLBufId idx) {
-  return impl->core_bufs.get(idx);
-}
-
-GLSLLaunchGuard::~GLSLLaunchGuard() {
-  for (auto &[idx, buf]: impl->user_bufs.bufs) {
-    buf->copy_back();
-  }
-  impl->user_bufs.clear();
 }
 
 bool is_opengl_api_available() {
@@ -711,22 +691,6 @@ bool is_opengl_api_available() {
 }
 
 bool initialize_opengl(bool error_tolerance) {
-  TI_NOT_IMPLEMENTED;
-}
-
-GLSLLaunchGuard::GLSLLaunchGuard(GLSLLauncher *launcher) {
-  TI_NOT_IMPLEMENTED;
-}
-
-GLSLLaunchGuard::~GLSLLaunchGuard() {
-  TI_NOT_IMPLEMENTED;
-}
-
-GLBuffer *GLSLLaunchGuard::get_user_buf(GLBufId idx) {
-  TI_NOT_IMPLEMENTED;
-}
-
-GLBuffer *GLSLLaunchGuard::get_core_buf(GLBufId idx) {
   TI_NOT_IMPLEMENTED;
 }
 

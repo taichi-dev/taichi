@@ -749,10 +749,10 @@ size_t ParallelSize_StructFor::get_threads_per_group() const {
 ParallelSize_ConstRange::ParallelSize_ConstRange(int num_threads_) {
 }
 
-ParallelSize_DynamicRange::ParallelSize_DynamicRange(int num_threads_) {
+ParallelSize_DynamicRange::ParallelSize_DynamicRange(OffloadedStmt *stmt) {
 }
 
-ParallelSize_StructFor::ParallelSize_StructFor(int num_threads_) {
+ParallelSize_StructFor::ParallelSize_StructFor(OffloadedStmt *stmt) {
 }
 
 #endif  // TI_WITH_OPENGL

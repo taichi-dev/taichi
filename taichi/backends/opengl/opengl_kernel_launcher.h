@@ -9,29 +9,21 @@ namespace opengl {
 
 struct CompiledProgram;
 struct GLSLLauncherImpl;
+struct GLSLLauncher;
+struct GLBuffer;
 
 struct GLSLLaunchGuard {
   GLSLLauncherImpl *impl;
-  const std::vector<IOV> &iov;
-  GLSLLaunchGuard(GLSLLauncherImpl *impl, const std::vector<IOV> &iov);
+  GLSLLaunchGuard(GLSLLauncher *launcher);
   ~GLSLLaunchGuard();
-  // TODO: void *map_static_buffer(size_t idx);
-  // TODO: RAII, buffer_guard
-  void *map_gtmp_buffer();
-  void unmap_gtmp_buffer();
-  void *map_listman_buffer();
-  void unmap_listman_buffer();
-  void *map_buffer(size_t idx);
-  void unmap_buffer(size_t idx);
+  GLBuffer *get_user_buf(GLBufId idx);
+  GLBuffer *get_core_buf(GLBufId idx);
 };
 
 struct GLSLLauncher {
   std::unique_ptr<GLSLLauncherImpl> impl;
   GLSLLauncher(size_t size);
   ~GLSLLauncher();
-  GLSLLaunchGuard create_launch_guard(const std::vector<IOV> &iov) {
-    return GLSLLaunchGuard(impl.get(), iov);
-  }
 
   void keep(std::unique_ptr<CompiledProgram> program);
 };

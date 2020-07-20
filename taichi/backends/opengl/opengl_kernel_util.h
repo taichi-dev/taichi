@@ -49,6 +49,16 @@ struct StructCompiledResult {
   size_t root_size;
 };
 
+enum class GLBufId {
+  Root = 0,
+  Runtime = 6,
+  Listman = 7,
+  Gtmp = 1,
+  Args = 2,
+  Earg = 3,
+  Extr = 4,
+};
+
 struct IOV {
   void *base;
   size_t size;

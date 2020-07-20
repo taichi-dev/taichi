@@ -56,62 +56,6 @@ int opengl_get_threads_per_group() {
   return ret;
 }
 
-ParallelSize::~ParallelSize() {
-}
-
-size_t ParallelSize::get_threads_per_group() const {
-  return opengl_get_threads_per_group();
-}
-
-size_t ParallelSize_ConstRange::get_threads_per_group() const {
-  return threads_per_group;
-}
-
-ParallelSize_ConstRange::ParallelSize_ConstRange(int num_threads_)
-    : num_threads(num_threads_) {
-  const size_t TPG = opengl_get_threads_per_group();
-  threads_per_group = TPG;
-  if (num_threads <= 0)
-    num_threads = 1;
-  if (num_threads <= threads_per_group) {
-    threads_per_group = num_threads;
-    num_groups = 1;
-  } else {
-    num_groups = (num_threads + TPG - 1) / TPG;
-  }
-}
-
-size_t ParallelSize_ConstRange::get_num_groups(GLSLLaunchGuard &guard) const {
-  return num_groups;
-}
-
-size_t ParallelSize_DynamicRange::get_num_groups(GLSLLaunchGuard &guard) const {
-  const size_t TPG = opengl_get_threads_per_group();
-
-  size_t n;
-  void *gtmp_now = guard.map_gtmp_buffer();  // TODO: wrap impl.static_ssbo
-  size_t b = range_begin, e = range_end;
-  if (!const_begin)
-    b = *(const int *)((const char *)gtmp_now + b);
-  if (!const_end)
-    e = *(const int *)((const char *)gtmp_now + e);
-  guard.unmap_gtmp_buffer();  // TODO: RAII
-  if (e <= b)
-    n = 0;
-  else
-    n = e - b;
-  return std::max((n + TPG - 1) / TPG, (size_t)1);
-}
-
-size_t ParallelSize_StructFor::get_num_groups(GLSLLaunchGuard &guard) const {
-  const size_t TPG = opengl_get_threads_per_group();
-
-  auto rt_buf = (GLSLListman *)guard.map_listman_buffer();
-  auto n = rt_buf->list_len;
-  guard.unmap_listman_buffer();
-  return std::max((n + TPG - 1) / TPG, (size_t)1);
-}
-
 static std::string add_line_markers(std::string x) {
   std::string marker;
   size_t pos = 0, npos;
@@ -306,6 +250,94 @@ struct GLSSBO {
   }
 };
 
+struct GLBuffer : GLSSBO {
+  GLBufId index;
+  void *base;
+  size_t size;
+
+  GLBuffer(GLBufId index, void *base, size_t size)
+    : index(index), base(base), size(size)
+  {
+    bind_data(base, size);
+    bind_index((int)index);
+  }
+};
+
+struct GLBufferTable {
+  std::map<GLBufId, std::unique_ptr<GLBuffer>> bufs;
+
+  GLBuffer *get(GLBufId id) {
+    return bufs[id].get();
+  }
+
+  void add_buffer(GLBufId index, void *base, size_t size) {
+    TI_INFO("Adding buffer {}, {}, {}", index, base, size);
+    bufs[index] = std::make_unique<GLBuffer>(index, base, size);
+  }
+
+  void clear() {
+    bufs.clear();
+  }
+};
+
+ParallelSize::~ParallelSize() {
+}
+
+size_t ParallelSize::get_threads_per_group() const {
+  return opengl_get_threads_per_group();
+}
+
+size_t ParallelSize_ConstRange::get_threads_per_group() const {
+  return threads_per_group;
+}
+
+ParallelSize_ConstRange::ParallelSize_ConstRange(int num_threads_)
+    : num_threads(num_threads_) {
+  const size_t TPG = opengl_get_threads_per_group();
+  threads_per_group = TPG;
+  if (num_threads <= 0)
+    num_threads = 1;
+  if (num_threads <= threads_per_group) {
+    threads_per_group = num_threads;
+    num_groups = 1;
+  } else {
+    num_groups = (num_threads + TPG - 1) / TPG;
+  }
+}
+
+size_t ParallelSize_ConstRange::get_num_groups(GLSLLaunchGuard &guard) const {
+  return num_groups;
+}
+
+size_t ParallelSize_DynamicRange::get_num_groups(GLSLLaunchGuard &guard) const {
+  const size_t TPG = opengl_get_threads_per_group();
+
+  size_t n;
+  auto gtmp = guard.get_core_buf(GLBufId::Gtmp);
+  void *gtmp_now = gtmp->map(); // TODO: RAII map/unmap
+  size_t b = range_begin, e = range_end;
+  if (!const_begin)
+    b = *(const int *)((const char *)gtmp_now + b);
+  if (!const_end)
+    e = *(const int *)((const char *)gtmp_now + e);
+  gtmp->unmap();
+  if (e <= b)
+    n = 0;
+  else
+    n = e - b;
+  return std::max((n + TPG - 1) / TPG, (size_t)1);
+}
+
+size_t ParallelSize_StructFor::get_num_groups(GLSLLaunchGuard &guard) const {
+  const size_t TPG = opengl_get_threads_per_group();
+
+  auto listman = guard.get_core_buf(GLBufId::Listman);
+  auto lm_buf = (GLSLListman *)listman->map();
+  auto n = lm_buf->list_len;
+  listman->unmap();
+  return std::max((n + TPG - 1) / TPG, (size_t)1);
+}
+
 bool initialize_opengl(bool error_tolerance) {
   static std::optional<bool> supported;  // std::nullopt
 
@@ -377,9 +409,10 @@ void display_kernel_info(std::string const &kernel_name,
                          std::string const &kernel_source_code) {
   bool is_accessor = taichi::starts_with(kernel_name, "snode_") ||
                      taichi::starts_with(kernel_name, "tensor_");
-  is_accessor = false;
   if (!is_accessor)
     TI_DEBUG("source of kernel [{}]:\n{}", kernel_name, kernel_source_code);
+  else
+    TI_TRACE("source of kernel [{}]:\n{}", kernel_name, kernel_source_code);
 #ifdef _GLSL_DEBUG
   std::ofstream(fmt::format("/tmp/{}.comp", kernel_name))
       .write(kernel_source_code.c_str(), kernel_source_code.size());
@@ -421,20 +454,19 @@ struct CompiledKernel {
     check_opengl_error(fmt::format("glDispatchCompute({})", num_groups));
 
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-    check_opengl_error("glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT)");
+    check_opengl_error("glMemoryBarrier");
   }
 };
 
 struct GLSLLauncherImpl {
-  std::unique_ptr<GLSSBO> root_ssbo;
-  std::unique_ptr<GLSSBO> runtime_ssbo;
-  std::unique_ptr<GLSSBO> listman_ssbo;
-  std::unique_ptr<GLSSBO> gtmp_ssbo;
-  std::vector<GLSSBO> ssbo;
+  GLBufferTable core_bufs;
+  GLBufferTable user_bufs;
+
   std::vector<char> root_buffer;
   std::vector<char> gtmp_buffer;
   std::unique_ptr<GLSLRuntime> runtime;
   std::unique_ptr<GLSLListman> listman;
+
   std::vector<std::unique_ptr<CompiledProgram>> programs;
 };
 
@@ -474,7 +506,8 @@ struct CompiledProgram::Impl {
   }
 
   void dump_message_buffer(GLSLLauncher *launcher) const {
-    auto rt_buf = (GLSLRuntime *)launcher->impl->runtime_ssbo->map();
+    auto runtime = launcher->impl->core_bufs.get(GLBufId::Runtime);
+    auto rt_buf = (GLSLRuntime *)runtime->map();
 
     auto msg_count = rt_buf->msg_count;
     if (msg_count > MAX_MESSAGES) {
@@ -508,29 +541,30 @@ struct CompiledProgram::Impl {
       }
     }
     rt_buf->msg_count = 0;
-    launcher->impl->runtime_ssbo->unmap();
+    runtime->unmap();
   }
 
   void launch(Context &ctx, GLSLLauncher *launcher) const {
-    std::vector<IOV> iov;
-    iov.push_back(
-        IOV{ctx.args, std::max(arg_count, ret_count) * sizeof(uint64_t)});
+    GLBufferTable &bufs = launcher->impl->user_bufs;
+    bufs.add_buffer(GLBufId::Args,
+          ctx.args, std::max(arg_count, ret_count) * sizeof(uint64_t));
     std::vector<char> base_arr;
     std::vector<void *> saved_ctx_ptrs;
     if (used.print) {
-      auto rt_buf = (GLSLRuntime *)launcher->impl->runtime_ssbo->map();
-      rt_buf->msg_count = 0;
-      launcher->impl->runtime_ssbo->unmap();
+      auto runtime_buf = launcher->impl->core_bufs.get(GLBufId::Runtime);
+      auto mapped_rt_buf = (GLSLRuntime *)runtime_buf->map();
+      mapped_rt_buf->msg_count = 0;
+      runtime_buf->unmap();
     }
-    // TODO: these dirty codes are introduced by #694
+    // NOTE: these dirty codes are introduced by #694, TODO: RAII
     if (ext_arr_map.size()) {
-      iov.push_back(
-          IOV{ctx.extra_args, arg_count * taichi_max_num_args * sizeof(int)});
+      bufs.add_buffer(GLBufId::Earg,
+          ctx.extra_args, arg_count * taichi_max_num_args * sizeof(int));
       if (ext_arr_map.size() == 1) {  // zero-copy for only one ext_arr
         auto it = ext_arr_map.begin();
         auto extptr = (void *)ctx.args[it->first];
         ctx.args[it->first] = 0;
-        iov.push_back(IOV{extptr, it->second});
+        bufs.add_buffer(GLBufId::Earg, extptr, it->second);
       } else {
         size_t accum_size = 0;
         std::vector<void *> ptrarr;
@@ -547,11 +581,11 @@ struct CompiledProgram::Impl {
           ctx.args[i] = accum_size;
           accum_size += size;
         }  // concat all extptr into my baseptr
-        iov.push_back(IOV{baseptr, accum_size});
+        bufs.add_buffer(GLBufId::Earg, baseptr, accum_size);
       }
     }
     {
-      auto guard = launcher->create_launch_guard(iov);
+      GLSLLaunchGuard guard(launcher);
       for (const auto &ker : kernels) {
         ker->dispatch_compute(guard);
       }
@@ -576,81 +610,48 @@ GLSLLauncher::GLSLLauncher(size_t root_size) {
   initialize_opengl();
   impl = std::make_unique<GLSLLauncherImpl>();
 
-  impl->runtime_ssbo = std::make_unique<GLSSBO>();
   impl->runtime = std::make_unique<GLSLRuntime>();
-  impl->runtime_ssbo->bind_data(impl->runtime.get(), sizeof(GLSLRuntime));
-  impl->runtime_ssbo->bind_index(6);
+  impl->core_bufs.add_buffer(GLBufId::Runtime,
+      impl->runtime.get(), sizeof(GLSLRuntime));
 
-  impl->listman_ssbo = std::make_unique<GLSSBO>();
   impl->listman = std::make_unique<GLSLListman>();
-  impl->listman_ssbo->bind_data(impl->listman.get(), sizeof(GLSLListman));
-  impl->listman_ssbo->bind_index(7);
+  impl->core_bufs.add_buffer(GLBufId::Listman,
+      impl->listman.get(), sizeof(GLSLListman));
 
-  impl->root_ssbo = std::make_unique<GLSSBO>();
   impl->root_buffer.resize(root_size, 0);
-  impl->root_ssbo->bind_data(impl->root_buffer.data(), root_size);
-  impl->root_ssbo->bind_index(0);
+  impl->core_bufs.add_buffer(GLBufId::Root,
+      impl->root_buffer.data(), root_size);
 
-  impl->gtmp_ssbo = std::make_unique<GLSSBO>();
   impl->gtmp_buffer.resize(taichi_global_tmp_buffer_size, 0);
-  impl->gtmp_ssbo->bind_data(impl->gtmp_buffer.data(),
-                             taichi_global_tmp_buffer_size);
-  impl->gtmp_ssbo->bind_index(1);
+  impl->core_bufs.add_buffer(GLBufId::Gtmp,
+      impl->gtmp_buffer.data(), taichi_global_tmp_buffer_size);
 }
 
 void GLSLLauncher::keep(std::unique_ptr<CompiledProgram> program) {
   impl->programs.push_back(std::move(program));
 }
 
-GLSLLaunchGuard::GLSLLaunchGuard(GLSLLauncherImpl *impl,
-                                 const std::vector<IOV> &iov)
-    : impl(impl), iov(iov) {
-  impl->ssbo = std::vector<GLSSBO>(iov.size());
-
-  for (int i = 0; i < impl->ssbo.size(); i++) {
-    if (!iov[i].size)
-      continue;
-    impl->ssbo[i].bind_index(i + 2);                    // skip root and gtmp
-    impl->ssbo[i].bind_data(iov[i].base, iov[i].size);  // input
-  }
+GLSLLaunchGuard::GLSLLaunchGuard(GLSLLauncher *launcher)
+    : impl(launcher->impl.get()) {
 }
 
-void *GLSLLaunchGuard::map_buffer(size_t idx) {
-  TI_ASSERT(iov[idx].size);
-  void *p = impl->ssbo[idx].map();  // 0, iov[i].size);  // sync
-  return p;
+GLBuffer *GLSLLaunchGuard::get_user_buf(GLBufId idx) {
+  return impl->user_bufs.get(idx);
 }
 
-void GLSLLaunchGuard::unmap_buffer(size_t idx) {
-  impl->ssbo[idx].unmap();
-}
-
-void *GLSLLaunchGuard::map_gtmp_buffer() {
-  void *p = impl->gtmp_ssbo->map();
-  return p;
-}
-
-void GLSLLaunchGuard::unmap_gtmp_buffer() {
-  impl->gtmp_ssbo->unmap();
-}
-
-void *GLSLLaunchGuard::map_listman_buffer() {
-  void *p = impl->listman_ssbo->map();
-  return p;
-}
-
-void GLSLLaunchGuard::unmap_listman_buffer() {
-  impl->listman_ssbo->unmap();
+GLBuffer *GLSLLaunchGuard::get_core_buf(GLBufId idx) {
+  return impl->core_bufs.get(idx);
 }
 
 GLSLLaunchGuard::~GLSLLaunchGuard() {
-  for (int i = 0; i < impl->ssbo.size(); i++) {
-    if (!iov[i].size)
+  for (auto &[idx, buf]: impl->user_bufs.bufs) {
+    if (!buf->size)
       continue;
-    void *p = impl->ssbo[i].map();  // 0, iov[i].size);  // output
-    std::memcpy(iov[i].base, p, iov[i].size);
+    void *mapped_buf = buf->map();
+    TI_ASSERT(mapped_buf);
+    std::memcpy(buf->base, mapped_buf, buf->size);
   }
-  impl->ssbo.clear();
+  impl->user_bufs.clear();
 }
 
 bool is_opengl_api_available() {
@@ -701,9 +702,7 @@ bool initialize_opengl(bool error_tolerance) {
   TI_NOT_IMPLEMENTED;
 }
 
-GLSLLaunchGuard::GLSLLaunchGuard(GLSLLauncherImpl *impl,
-                                 const std::vector<IOV> &iov)
-    : impl(impl), iov(iov) {
+GLSLLaunchGuard::GLSLLaunchGuard(GLSLLauncher *launcher) {
   TI_NOT_IMPLEMENTED;
 }
 
@@ -711,27 +710,11 @@ GLSLLaunchGuard::~GLSLLaunchGuard() {
   TI_NOT_IMPLEMENTED;
 }
 
-void *GLSLLaunchGuard::map_buffer(size_t idx) {
+GLBuffer *GLSLLaunchGuard::get_user_buf(GLBufId idx) {
   TI_NOT_IMPLEMENTED;
 }
 
-void GLSLLaunchGuard::unmap_buffer(size_t idx) {
-  TI_NOT_IMPLEMENTED;
-}
-
-void *GLSLLaunchGuard::map_gtmp_buffer() {
-  TI_NOT_IMPLEMENTED;
-}
-
-void GLSLLaunchGuard::unmap_gtmp_buffer() {
-  TI_NOT_IMPLEMENTED;
-}
-
-void *GLSLLaunchGuard::map_listman_buffer() {
-  TI_NOT_IMPLEMENTED;
-}
-
-void GLSLLaunchGuard::unmap_listman_buffer() {
+GLBuffer *GLSLLaunchGuard::get_core_buf(GLBufId idx) {
   TI_NOT_IMPLEMENTED;
 }
 

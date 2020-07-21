@@ -670,7 +670,7 @@ class KernelGen : public IRVisitor {
         auto begin_value = stmt->begin_value;
         auto end_value = stmt->end_value;
         if (end_value < begin_value)
-          std::swap(end_value, begin_value);
+          end_value = begin_value;
         kpa = KernelParallelAttrib(end_value - begin_value);
         emit("// range known at compile time");
         emit("int _tid = int(gl_GlobalInvocationID.x);");
@@ -826,15 +826,15 @@ class KernelGen : public IRVisitor {
     TI_ASSERT(for_stmt->width() == 1);
     auto loop_var_name = for_stmt->short_name();
     if (!for_stmt->reversed) {
-      emit("for (int {}_ = {}; {}_ < {}; {}_ = {}_ + {}) {{", loop_var_name,
+      emit("for (int {}_ = {}; {}_ < {}; {}_ += {}) {{", loop_var_name,
            for_stmt->begin->short_name(), loop_var_name,
-           for_stmt->end->short_name(), loop_var_name, loop_var_name, 1);
+           for_stmt->end->short_name(), loop_var_name, 1);
       emit("  int {} = {}_;", loop_var_name, loop_var_name);
     } else {
       // reversed for loop
-      emit("for (int {}_ = {} - 1; {}_ >= {}; {}_ = {}_ - {}) {{",
-           loop_var_name, for_stmt->end->short_name(), loop_var_name,
-           for_stmt->begin->short_name(), loop_var_name, loop_var_name, 1);
+      emit("for (int {}_ = {} - {}; {}_ >= {}; {}_ -= {}) {{", loop_var_name,
+           for_stmt->end->short_name(), loop_var_name, 1,
+           for_stmt->begin->short_name(), loop_var_name, 1);
       emit("  int {} = {}_;", loop_var_name, loop_var_name);
     }
     for_stmt->body->accept(this);

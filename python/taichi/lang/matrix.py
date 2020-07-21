@@ -217,9 +217,9 @@ class Matrix(TaichiOperations):
                     'See https://taichi.readthedocs.io/en/stable/meta.html#when-to-use-for-loops-with-ti-static for more details.'
                 )
         assert 0 <= args[0] < self.n, \
-                f"The 0-th matrix index is out of range: 0 < {args[0]} < {self.n}"
+                f"The 0-th matrix index is out of range: 0 <= {args[0]} < {self.n}"
         assert 0 <= args[1] < self.m, \
-                f"The 1-th matrix index is out of range: 0 < {args[1]} < {self.m}"
+                f"The 1-th matrix index is out of range: 0 <= {args[1]} < {self.m}"
         return args[0] * self.m + args[1]
 
     def __call__(self, *args, **kwargs):

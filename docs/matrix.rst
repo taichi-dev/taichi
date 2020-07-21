@@ -30,7 +30,7 @@ As global tensors of matrices
 
     :parameter n: (scalar) the number of rows in the matrix
     :parameter m: (scalar) the number of columns in the matrix
-    :parameter dtype: (DataType) data type of the components
+    :parameter dt: (DataType) data type of the components
     :parameter shape: (optional, scalar or tuple) shape the tensor of vectors, see :ref:`tensor`
     :parameter offset: (optional, scalar or tuple) see :ref:`offset`
 

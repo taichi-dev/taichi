@@ -37,7 +37,9 @@ class CCTransformer : public IRVisitor {
 
   void run() {
     this->lower_ast();
+    emit_header("void Ti_{}(void) {{", kernel->name);
     kernel->ir->accept(this);
+    emit("}}");
   }
 
   void lower_ast() {
@@ -51,7 +53,7 @@ class CCTransformer : public IRVisitor {
   }
 
   std::string get_source() {
-    return line_appender_header.lines() + "\n" + line_appender.lines();
+    return line_appender_header.lines() + line_appender.lines();
   }
 
  private:
@@ -273,10 +275,18 @@ class CCTransformer : public IRVisitor {
   }
 
   void generate_serial_kernel(OffloadedStmt *stmt) {
-    emit_header("void Ti_{}(void) {{", kernel->name);
+    stmt->body->accept(this);
+  }
+
+  void generate_range_for_kernel(OffloadedStmt *stmt) {
+    // TI_ASSERT(stmt->const_begin && stmt->const_end);
+    auto begin_value = stmt->begin_value;
+    auto end_value = stmt->end_value;
+    auto var = define_var("int", stmt->raw_name());
+    emit("for ({} = {}; {} < {}; {} += {}) {{", var, begin_value,
+         stmt->raw_name(), end_value, stmt->raw_name(), 1 /* stmt->step? */);
     {
-      ScopedIndent _s1(line_appender);
-      ScopedIndent _s2(line_appender_header);
+      ScopedIndent _s(line_appender);
       stmt->body->accept(this);
     }
     emit("}}");
@@ -287,11 +297,71 @@ class CCTransformer : public IRVisitor {
     is_top_level = false;
     if (stmt->task_type == OffloadedStmt::TaskType::serial) {
       generate_serial_kernel(stmt);
+    } else if (stmt->task_type == OffloadedStmt::TaskType::range_for) {
+      generate_range_for_kernel(stmt);
     } else {
       TI_ERROR("[glsl] Unsupported offload type={} on C backend",
                stmt->task_name());
     }
     is_top_level = true;
+  }
+
+  void visit(LoopIndexStmt *stmt) override {
+    TI_ASSERT(stmt->index == 0);  // TODO: multiple indices
+    if (stmt->loop->is<OffloadedStmt>()) {
+      auto type = stmt->loop->as<OffloadedStmt>()->task_type;
+      if (type == OffloadedStmt::TaskType::range_for) {
+        emit("int {} = {};", stmt->raw_name(), stmt->loop->raw_name());
+      } else {
+        TI_NOT_IMPLEMENTED
+      }
+    } else if (stmt->loop->is<RangeForStmt>()) {
+      emit("int {} = {};", stmt->raw_name(), stmt->loop->raw_name());
+    } else {
+      TI_NOT_IMPLEMENTED
+    }
+  }
+
+  void visit(RangeForStmt *stmt) override {
+    TI_ASSERT(stmt->width() == 1);
+    auto var = define_var("int", stmt->raw_name());
+    if (!stmt->reversed) {
+      emit("for ({} = {}; {} < {}; {} += {}) {{", var, stmt->begin->raw_name(),
+           stmt->raw_name(), stmt->end->raw_name(), stmt->raw_name(), 1);
+    } else {
+      // reversed for loop
+      emit("for ({} = {} - {}; {} >= {}; {} -= {}) {{", var,
+           stmt->end->raw_name(), stmt->raw_name(), 1, stmt->begin->raw_name(),
+           stmt->raw_name(), 1);
+    }
+    stmt->body->accept(this);
+    emit("}}");
+  }
+
+  void visit(WhileControlStmt *stmt) override {
+    emit("if ({} == 0) break;", stmt->cond->raw_name());
+  }
+
+  void visit(ContinueStmt *stmt) override {
+    emit("continue;");
+  }
+
+  void visit(WhileStmt *stmt) override {
+    emit("while (1) {{");
+    stmt->body->accept(this);
+    emit("}}");
+  }
+
+  void visit(IfStmt *stmt) override {
+    emit("if ({} != 0) {{", stmt->cond->raw_name());
+    if (stmt->true_statements) {
+      stmt->true_statements->accept(this);
+    }
+    if (stmt->false_statements) {
+      emit("}} else {{");
+      stmt->false_statements->accept(this);
+    }
+    emit("}}");
   }
 
   template <typename... Args>

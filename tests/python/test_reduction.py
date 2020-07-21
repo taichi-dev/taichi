@@ -4,6 +4,9 @@ from pytest import approx
 
 def _test_reduction_single(dtype, criterion):
     N = 1024 * 1024
+    if ti.cfg.arch == ti.opengl and dtype == ti.f32:
+        # OpenGL is not capable of such large number in its float32...
+        N = 1024 * 16
 
     a = ti.var(dtype, shape=N)
     tot = ti.var(dtype, shape=())

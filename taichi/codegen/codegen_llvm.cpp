@@ -1436,9 +1436,6 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
   int list_element_size =
       std::min(leaf_block->max_num_elements(), taichi_listgen_max_element_size);
   int num_splits = std::max(1, list_element_size / stmt->block_dim);
-  TI_P(list_element_size);
-  TI_P(stmt->block_dim);
-  TI_P(num_splits);
   // traverse leaf node
   create_call(
       "parallel_struct_for",

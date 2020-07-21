@@ -111,15 +111,15 @@ void StructCompiler::infer_snode_properties(SNode &snode) {
   }
 }
 
-void StructCompiler::fix_padding(SNode &snode) {
+void StructCompiler::compute_trailing_bits(SNode &snode) {
   std::function<void(SNode &)> bottom_up = [&](SNode &s) {
     for (auto &c : s.ch) {
       bottom_up(*c);
       if (s.type != SNodeType::root)
         for (int i = 0; i < taichi_max_num_indices; i++) {
-          s.extractors[i].padded =
-              std::max(s.extractors[i].padded,
-                       c->extractors[i].num_bits + c->extractors[i].padded);
+          s.extractors[i].trailing_bits = std::max(
+              s.extractors[i].trailing_bits,
+              c->extractors[i].num_bits + c->extractors[i].trailing_bits);
         }
     }
   };
@@ -130,17 +130,11 @@ void StructCompiler::fix_padding(SNode &snode) {
     for (auto &c : s.ch) {
       if (s.type != SNodeType::root)
         for (int i = 0; i < taichi_max_num_indices; i++) {
-          c->extractors[i].padded =
-              s.extractors[i].padded - c->extractors[i].num_bits;
+          c->extractors[i].trailing_bits =
+              s.extractors[i].trailing_bits - c->extractors[i].num_bits;
         }
       top_down(*c);
     }
-    /*
-    for (int i = 0; i < taichi_max_num_indices; i++) {
-      TI_INFO("SNode {} index {} padding {}", s.get_node_type_name_hinted(), i,
-              s.extractors[i].padded);
-    }
-    */
   };
 
   top_down(snode);

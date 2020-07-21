@@ -48,7 +48,7 @@ class CheckOutOfBound : public BasicStmtVisitor {
       auto check_lower_bound = new_stmts.push_back<BinaryOpStmt>(
           BinaryOpType::cmp_ge, stmt->indices[i], lower_bound);
       auto extractor = snode->extractors[snode->physical_index_position[i]];
-      int size_i = extractor.num_elements * (1 << extractor.padded);
+      int size_i = extractor.num_elements * (1 << extractor.trailing_bits);
       int upper_bound_i = offset_i + size_i;
       auto upper_bound = new_stmts.push_back<ConstStmt>(
           LaneAttribute<TypedConstant>(upper_bound_i));

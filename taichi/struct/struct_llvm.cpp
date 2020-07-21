@@ -202,7 +202,7 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
 
   if (host) {
     infer_snode_properties(root);
-    fix_padding(root);
+    compute_trailing_bits(root);
   }
 
   auto snodes_rev = snodes;

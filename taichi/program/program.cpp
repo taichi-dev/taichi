@@ -402,7 +402,8 @@ void Program::check_runtime_error() {
     tlctx = llvm_context_device.get();
   }
   auto runtime_jit_module = tlctx->runtime_jit_module;
-  runtime_jit_module->call<void *>("runtime_retrieve_error_code", llvm_runtime);
+  runtime_jit_module->call<void *>("runtime_retrieve_and_reset_error_code",
+                                   llvm_runtime);
   auto error_code = fetch_result<int64>(taichi_result_buffer_error_id);
 
   if (error_code) {

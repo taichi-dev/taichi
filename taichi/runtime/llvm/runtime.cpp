@@ -648,8 +648,9 @@ Ptr get_temporary_pointer(LLVMRuntime *runtime, u64 offset) {
   return runtime->temporaries + offset;
 }
 
-void runtime_retrieve_error_code(LLVMRuntime *runtime) {
+void runtime_retrieve_and_reset_error_code(LLVMRuntime *runtime) {
   runtime->set_result(taichi_result_buffer_error_id, runtime->error_code);
+  runtime->error_code = 0;
 }
 
 void runtime_retrieve_error_message(LLVMRuntime *runtime, int i) {
@@ -1100,7 +1101,6 @@ void parallel_struct_for(Context *context,
   auto list_tail = list->size();
 #if ARCH_cuda
   int i = block_idx();
-  element_split = 1;
   const auto part_size = element_size / element_split;
   while (true) {
     int element_id = i / element_split;

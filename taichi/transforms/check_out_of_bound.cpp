@@ -23,6 +23,17 @@ class CheckOutOfBound : public BasicStmtVisitor {
     visited.insert(stmt->instance_id);
   }
 
+  void visit(SNodeOpStmt *stmt) override {
+    if (stmt->ptr != nullptr) {
+      TI_ASSERT(stmt->ptr->is<GlobalPtrStmt>());
+      // We have already done the check on its ptr argument. No need to do
+      // anything here.
+      return;
+    }
+
+    // TODO: implement bound check here for other situations.
+  }
+
   void visit(GlobalPtrStmt *stmt) override {
     if (is_done(stmt))
       return;
@@ -47,8 +58,7 @@ class CheckOutOfBound : public BasicStmtVisitor {
                              : zero;
       auto check_lower_bound = new_stmts.push_back<BinaryOpStmt>(
           BinaryOpType::cmp_ge, stmt->indices[i], lower_bound);
-      auto extractor = snode->extractors[snode->physical_index_position[i]];
-      int size_i = extractor.num_elements * (1 << extractor.trailing_bits);
+      int size_i = snode->shape_along_axis(i);
       int upper_bound_i = offset_i + size_i;
       auto upper_bound = new_stmts.push_back<ConstStmt>(
           LaneAttribute<TypedConstant>(upper_bound_i));

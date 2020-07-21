@@ -117,9 +117,19 @@ void StructCompiler::compute_trailing_bits(SNode &snode) {
       bottom_up(*c);
       if (s.type != SNodeType::root)
         for (int i = 0; i < taichi_max_num_indices; i++) {
-          s.extractors[i].trailing_bits = std::max(
-              s.extractors[i].trailing_bits,
-              c->extractors[i].num_bits + c->extractors[i].trailing_bits);
+          auto trailing_bits_according_to_this_child =
+              c->extractors[i].num_bits + c->extractors[i].trailing_bits;
+
+          if (s.extractors[i].trailing_bits == 0) {
+            s.extractors[i].trailing_bits =
+                trailing_bits_according_to_this_child;
+          } else if (trailing_bits_according_to_this_child != 0) {
+            TI_ERROR_IF(s.extractors[i].trailing_bits !=
+                            trailing_bits_according_to_this_child,
+                        "Inconsistent trailing bit configuration. Please make "
+                        "sure the children of the SNodes are providing the "
+                        "same amount of trailing bit.");
+          }
         }
     }
   };

@@ -186,7 +186,7 @@ void export_lang(py::module &m) {
       .def("get_expr", &SNode::get_expr, py::return_value_policy::reference)
       .def("write_int", &SNode::write_int)
       .def("write_float", &SNode::write_float)
-      .def("get_num_elements_along_axis", &SNode::num_elements_along_axis)
+      .def("get_shape_along_axis", &SNode::shape_along_axis)
       .def("get_physical_index_position",
            [](SNode *snode) {
              return std::vector<int>(

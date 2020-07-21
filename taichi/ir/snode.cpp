@@ -174,8 +174,9 @@ uint64 SNode::read_uint(const std::vector<int> &I) {
   return (uint64)read_int(I);
 }
 
-int SNode::num_elements_along_axis(int i) const {
-  return extractors[physical_index_position[i]].num_elements;
+int SNode::shape_along_axis(int i) const {
+  const auto &extractor = extractors[physical_index_position[i]];
+  return extractor.num_elements * (1 << extractor.trailing_bits);
 }
 
 void SNode::set_kernel_args(Kernel *kernel, const std::vector<int> &I) {

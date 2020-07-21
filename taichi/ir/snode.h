@@ -247,7 +247,7 @@ class SNode {
     return 1 << total_num_bits;
   }
 
-  int num_elements_along_axis(int i) const;
+  int shape_along_axis(int i) const;
 
   void set_kernel_args(Kernel *kernel, const std::vector<int> &I);
 

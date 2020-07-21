@@ -938,49 +938,45 @@ void element_listgen_root(LLVMRuntime *runtime,
   auto child_list = runtime->element_lists[child->snode_id];
   // Cache the func pointers here for better compiler optimization
   auto parent_refine_coordinates = parent->refine_coordinates;
-  auto parent_is_active = parent->is_active;
   auto parent_lookup_element = parent->lookup_element;
   auto child_get_num_elements = child->get_num_elements;
   auto child_from_parent_element = child->from_parent_element;
 #if ARCH_cuda
   // All blocks share the only root container, which has only one child
   // container.
-  int j_start = block_idx();
-  int j_step = grid_dim();
   // Each thread processes a subset of the child container for more parallelism.
-  int c_start = thread_idx();
-  int c_step = block_dim();
+  int c_start = block_dim() * block_idx() + thread_idx();
+  int c_step = grid_dim() * block_dim();
 #else
-  int j_start = 0;
-  int j_step = 1;
   int c_start = 0;
   int c_step = 1;
 #endif
+  // Note that the root node has only one container, and the `element`
+  // representing that single container has only one 'child':
+  // element.loop_bounds[0] = 0 and element.loop_bounds[1] = 1
+  // Therefore, compared with element_listgen_nonroot,
+  // we need neither `i` to loop over the `elements`, nor `j` to
+  // loop over the children.
+
   auto element = parent_list->get<Element>(0);
 
-  int j_lower = element.loop_bounds[0] + j_start;
-  int j_higher = element.loop_bounds[1];
-  for (int j = j_lower; j < j_higher; j += j_step) {
-    PhysicalCoordinates refined_coord;
-    parent_refine_coordinates(&element.pcoord, &refined_coord, j);
-    if (parent_is_active((Ptr)parent, element.element, j)) {
-      auto ch_element = parent_lookup_element((Ptr)parent, element.element, j);
-      ch_element = child_from_parent_element((Ptr)ch_element);
-      auto ch_num_elements = child_get_num_elements((Ptr)child, ch_element);
-      auto ch_element_size =
-          std::min(ch_num_elements, taichi_listgen_max_element_size);
+  PhysicalCoordinates refined_coord;
+  parent_refine_coordinates(&element.pcoord, &refined_coord, 0);
 
-      for (int c = c_start; c * ch_element_size < ch_num_elements;
-           c += c_step) {
-        Element elem;
-        elem.element = ch_element;
-        elem.loop_bounds[0] = c * ch_element_size;
-        elem.loop_bounds[1] =
-            std::min((c + 1) * ch_element_size, ch_num_elements);
-        elem.pcoord = refined_coord;
-        child_list->append(&elem);
-      }
-    }
+  auto ch_element = parent_lookup_element((Ptr)parent, element.element, 0);
+  ch_element = child_from_parent_element((Ptr)ch_element);
+  auto ch_num_elements = child_get_num_elements((Ptr)child, ch_element);
+  auto ch_element_size =
+      std::min(ch_num_elements, taichi_listgen_max_element_size);
+
+  // Here is a grid-stride loop.
+  for (int c = c_start; c * ch_element_size < ch_num_elements; c += c_step) {
+    Element elem;
+    elem.element = ch_element;
+    elem.loop_bounds[0] = c * ch_element_size;
+    elem.loop_bounds[1] = std::min((c + 1) * ch_element_size, ch_num_elements);
+    elem.pcoord = refined_coord;
+    child_list->append(&elem);
   }
 }
 
@@ -997,7 +993,7 @@ void element_listgen_nonroot(LLVMRuntime *runtime,
   auto child_get_num_elements = child->get_num_elements;
   auto child_from_parent_element = child->from_parent_element;
 #if ARCH_cuda
-  // Each block processes a parent container
+  // Each block processes a slice of a parent container
   int i_start = block_idx();
   int i_step = grid_dim();
   // Each thread processes an element of the parent container

@@ -60,12 +60,12 @@ class LowerAccess : public IRVisitor {
   void lower_scalar_ptr(VecStatement &lowered,
                         SNode *leaf_snode,
                         std::vector<Stmt *> indices,
-                        bool activate,
+                        bool pointer_needs_activation,
                         Kernel *kernel,
                         SNodeOpType snode_op = SNodeOpType::undefined) {
     if (snode_op == SNodeOpType::is_active) {
       // For ti.is_active
-      TI_ASSERT(!activate);
+      TI_ASSERT(!pointer_needs_activation);
     }
 
     // emit a sequence of micro access ops
@@ -142,14 +142,16 @@ class LowerAccess : public IRVisitor {
         // Create a SNodeOp querying if element i(linearized) of node is active
         lowered.push_back<SNodeOpStmt>(snode_op, snodes[i], last, linearized);
       } else {
-        bool no_activate =
+        bool kernel_forces_no_activate =
             std::find(kernel->no_activate.begin(), kernel->no_activate.end(),
                       snode) != kernel->no_activate.end();
+
+        auto needs_activation = snode->need_activation() &&
+                                pointer_needs_activation &&
+                                !kernel_forces_no_activate && !on_loop_tree;
+
         auto lookup = lowered.push_back<SNodeLookupStmt>(
-            snode, last, linearized,
-            snode->need_activation() && activate && !no_activate &&
-                !on_loop_tree);
-        // if snode has no possibility of null child, set activate = false
+            snode, last, linearized, needs_activation);
         int chid = snode->child_id(snodes[i + 1]);
         last = lowered.push_back<GetChStmt>(lookup, chid);
       }

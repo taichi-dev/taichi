@@ -203,10 +203,6 @@ class Matrix(TaichiOperations):
         if len(args) == 1:
             args = args + (0, )
         _taichi_skip_traceback = 1
-        assert 0 <= args[0] < self.n, \
-                f"The 0-th matrix index {args[0]} out-of-range, should be < {self.n}"
-        assert 0 <= args[1] < self.m, \
-                f"The 1-th matrix index {args[1]} out-of-range, should be < {self.m}"
         # TODO(#1004): See if it's possible to support indexing at runtime
         for i, a in enumerate(args):
             if not isinstance(a, int):
@@ -220,6 +216,10 @@ class Matrix(TaichiOperations):
                     '    print(i, "-th component is", vec[i])\n'
                     'See https://taichi.readthedocs.io/en/stable/meta.html#when-to-use-for-loops-with-ti-static for more details.'
                 )
+        assert 0 <= args[0] < self.n, \
+                f"The 0-th matrix index is out of range: 0 < {args[0]} < {self.n}"
+        assert 0 <= args[1] < self.m, \
+                f"The 1-th matrix index is out of range: 0 < {args[1]} < {self.m}"
         return args[0] * self.m + args[1]
 
     def __call__(self, *args, **kwargs):

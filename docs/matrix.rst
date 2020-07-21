@@ -6,7 +6,7 @@ Matrices
 - ``ti.Matrix`` is for small matrices (e.g. `3x3`) only. If you have `64x64` matrices, you should consider using a 2D tensor of scalars.
 - ``ti.Vector`` is the same as ``ti.Matrix``, except that it has only one column.
 - Differentiate element-wise product ``*`` and matrix product ``@``.
-- ``ti.Vector.field(n, dtype=ti.f32)`` or ``ti.Matrix(n, m, dt=ti.f32)`` to create tensors of vectors/matrices.
+- ``ti.Vector.field(n, dtype=ti.f32)`` or ``ti.Matrix.field(n, m, dtype=ti.f32)`` to create tensors of vectors/matrices.
 - ``A.transpose()``
 - ``R, S = ti.polar_decompose(A, ti.f32)``
 - ``U, sigma, V = ti.svd(A, ti.f32)`` (Note that ``sigma`` is a ``3x3`` diagonal matrix)
@@ -26,11 +26,11 @@ Declaration
 As global tensors of matrices
 +++++++++++++++++++++++++++++
 
-.. function:: ti.Matrix.var(n, m, dt, shape = None, offset = None)
+.. function:: ti.Matrix.field(n, m, dtype, shape = None, offset = None)
 
     :parameter n: (scalar) the number of rows in the matrix
     :parameter m: (scalar) the number of columns in the matrix
-    :parameter dt: (DataType) data type of the components
+    :parameter dtype: (DataType) data type of the components
     :parameter shape: (optional, scalar or tuple) shape the tensor of vectors, see :ref:`tensor`
     :parameter offset: (optional, scalar or tuple) see :ref:`offset`
 
@@ -38,11 +38,11 @@ As global tensors of matrices
     ::
 
         # Python-scope
-        a = ti.Matrix.var(3, 3, dt=ti.f32, shape=(5, 4))
+        a = ti.Matrix.field(3, 3, dtype=ti.f32, shape=(5, 4))
 
 .. note::
 
-    In Python-scope, ``ti.field`` declares :ref:`scalar_tensor`, while ``ti.Matrix`` declares tensors of matrices.
+    In Python-scope, ``ti.field`` declares :ref:`scalar_tensor`, while ``ti.Matrix.field`` declares tensors of matrices.
 
 
 As a temporary local variable

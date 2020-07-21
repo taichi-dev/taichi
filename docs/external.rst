@@ -23,7 +23,7 @@ Use ``to_numpy``/``from_numpy``/``to_torch``/``from_torch``:
   # Taichi tensors
   val = ti.field(ti.i32, shape=(n, m))
   vec = ti.Vector.field(3, dtype=ti.i32, shape=(n, m))
-  mat = ti.Matrix(3, 4, dt=ti.i32, shape=(n, m))
+  mat = ti.Matrix.field(3, 4, dtype=ti.i32, shape=(n, m))
 
   # Scalar
   arr = np.ones(shape=(n, m), dtype=np.int32)

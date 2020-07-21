@@ -13,8 +13,7 @@ class CCProgram;
 class CCLayoutGen {
   // Generate corresponding C Source Code for Taichi Structures
  public:
-  CCLayoutGen(CCProgram *program, SNode *root)
-    : program(program), root(root) {
+  CCLayoutGen(CCProgram *program, SNode *root) : program(program), root(root) {
   }
 
   std::unique_ptr<CCLayout> compile();

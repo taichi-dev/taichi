@@ -9,8 +9,7 @@ class CCProgram;
 
 class CCLayout {
  public:
-  CCLayout(CCProgram *program)
-      : program(program) {
+  CCLayout(CCProgram *program) : program(program) {
   }
 
   std::string get_object() {

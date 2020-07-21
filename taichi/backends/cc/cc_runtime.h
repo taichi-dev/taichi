@@ -10,7 +10,8 @@ class CCProgram;
 class CCRuntime {
  public:
   CCRuntime(CCProgram *program,
-        std::string const &header, std::string const &source)
+            std::string const &header,
+            std::string const &source)
       : header(header), source(source), program(program) {
   }
 

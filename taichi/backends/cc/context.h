@@ -1,7 +1,6 @@
 #ifdef _CC_INSIDE_KERNEL
 #include "taichi/util/macros.h"
-STR(
-union RTi_BitCast {
+STR(union RTi_BitCast {
   RTi_i64 val_i64;
   RTi_i32 val_i32;
   RTi_i16 val_i16;
@@ -24,15 +23,14 @@ union RTi_BitCast {
   RTi_f64 *ptr_f64;
 };
 
-struct RTi_Context {
-  struct S0root *root;
-  // In some C compilers `void *p; p + 1 == p;`, so let's use `char *p`:
-  RTi_i8 *gtmp;
+    struct RTi_Context {
+      struct S0root *root;
+      // In some C compilers `void *p; p + 1 == p;`, so let's use `char *p`:
+      RTi_i8 *gtmp;
 
-  union RTi_BitCast *args;
-  int *earg;
-};
-)
+      union RTi_BitCast *args;
+      int *earg;
+    };)
 
 #else  // _CC_INSIDE_KERNEL
 
@@ -53,8 +51,8 @@ struct CCContext {
   CCContext(CCProgram *program, Context *ctx);
 };
 
-};
+};  // namespace cccp
 
 TLANG_NAMESPACE_END
 
-#endif // _CC_INSIDE_KERNEL
+#endif  // _CC_INSIDE_KERNEL

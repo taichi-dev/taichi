@@ -28,9 +28,9 @@ void CCKernel::compile() {
 }
 
 CCContext::CCContext(CCProgram *program, Context *ctx)
-  : args(ctx->args), earg((int *)ctx->extra_args) {
-    root = program->get_root_buffer();
-    gtmp = program->get_gtmp_buffer();
+    : args(ctx->args), earg((int *)ctx->extra_args) {
+  root = program->get_root_buffer();
+  gtmp = program->get_gtmp_buffer();
 }
 
 void CCKernel::launch(Context *ctx) {
@@ -48,17 +48,16 @@ size_t CCLayout::compile() {
   src_path = fmt::format("{}/_rti_root.c", runtime_tmp_dir);
   auto dll_path = fmt::format("{}/libti_roottest.so", runtime_tmp_dir);
 
-  std::ofstream(src_path)
-      << program->get_runtime()->header << "\n" << source << "\n"
-      << "void *RTi_get_root_size(void) { \n"
-      << "  return (void *) sizeof(struct S0root);\n"
-      << "}\n";
+  std::ofstream(src_path) << program->get_runtime()->header << "\n"
+                          << source << "\n"
+                          << "void *RTi_get_root_size(void) { \n"
+                          << "  return (void *) sizeof(struct S0root);\n"
+                          << "}\n";
 
   TI_DEBUG("[cc] compiling root struct -> [{}]:\n{}\n", obj_path, source);
   execute(cfg.compile_cmd, obj_path, src_path);
 
-  TI_DEBUG("[cc] linking root struct object [{}] -> [{}]",
-        obj_path, dll_path);
+  TI_DEBUG("[cc] linking root struct object [{}] -> [{}]", obj_path, dll_path);
   execute(cfg.link_cmd, dll_path, obj_path);
 
   TI_DEBUG("[cc] loading root struct object: {}", dll_path);
@@ -68,7 +67,7 @@ size_t CCLayout::compile() {
 
   using FuncGetRootSizeType = size_t();
   auto get_root_size = reinterpret_cast<FuncGetRootSizeType *>(
-        dll.load_function("RTi_get_root_size"));
+      dll.load_function("RTi_get_root_size"));
   TI_ASSERT(get_root_size);
   return (*get_root_size)();
 }
@@ -123,10 +122,9 @@ void CCProgram::add_kernel(std::unique_ptr<CCKernel> kernel) {
 
 // TODO: move this to cc_runtime.cpp:
 void CCProgram::init_runtime() {
-  runtime = std::make_unique<CCRuntime>(
-      this,
+  runtime = std::make_unique<CCRuntime>(this,
 #include "runtime/base.h"
-      ,
+                                        ,
 #include "runtime/base.c"
   );
   runtime->compile();

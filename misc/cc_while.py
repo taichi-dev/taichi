@@ -2,6 +2,7 @@ import taichi as ti
 
 ti.init(arch=ti.cc, log_level=ti.DEBUG, debug=True)
 
+
 @ti.kernel
 def func():
     t = 0
@@ -9,5 +10,6 @@ def func():
         t += 1
         break
     print(t)
+
 
 func()

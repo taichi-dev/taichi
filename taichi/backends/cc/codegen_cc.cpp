@@ -161,29 +161,28 @@ class CCTransformer : public IRVisitor {
     }
 
     auto var = define_var(cc_data_type_name(stmt->element_type()) + " *",
-                      stmt->raw_name());
-    emit("{} = {} + {};", var,
-         stmt->base_ptrs[0]->raw_name(), linear_index_name);
+                          stmt->raw_name());
+    emit("{} = {} + {};", var, stmt->base_ptrs[0]->raw_name(),
+         linear_index_name);
   }
 
   void visit(ArgLoadStmt *stmt) override {
     if (stmt->is_ptr) {
       auto var = define_var(cc_data_type_name(stmt->element_type()) + " *",
-                    stmt->raw_name());
+                            stmt->raw_name());
       emit("{} = ti_ctx->args[{}].ptr_{};", var, stmt->arg_id,
-        data_type_short_name(stmt->element_type()));
+           data_type_short_name(stmt->element_type()));
     } else {
-      auto var = define_var(cc_data_type_name(stmt->element_type()),
-                    stmt->raw_name());
+      auto var =
+          define_var(cc_data_type_name(stmt->element_type()), stmt->raw_name());
       emit("{} = ti_ctx->args[{}].val_{};", var, stmt->arg_id,
-        data_type_short_name(stmt->element_type()));
+           data_type_short_name(stmt->element_type()));
     }
   }
 
   void visit(KernelReturnStmt *stmt) override {
     emit("ti_ctx->args[0].val_{} = {};",
-        data_type_short_name(stmt->element_type()),
-        stmt->value->raw_name());
+         data_type_short_name(stmt->element_type()), stmt->value->raw_name());
   }
 
   void visit(ConstStmt *stmt) override {
@@ -194,8 +193,8 @@ class CCTransformer : public IRVisitor {
   }
 
   void visit(AllocaStmt *stmt) override {
-    emit("{} = 0;", define_var(cc_data_type_name(stmt->element_type()),
-                               stmt->raw_name()));
+    emit("{} = 0;",
+         define_var(cc_data_type_name(stmt->element_type()), stmt->raw_name()));
   }
 
   void visit(LocalLoadStmt *stmt) override {
@@ -206,10 +205,10 @@ class CCTransformer : public IRVisitor {
       }
     }
     TI_ASSERT(stmt->same_source() && linear_index &&
-        stmt->width() == stmt->ptr[0].var->width());
+              stmt->width() == stmt->ptr[0].var->width());
 
-    auto var = define_var(cc_data_type_name(stmt->element_type()),
-                                 stmt->raw_name());
+    auto var =
+        define_var(cc_data_type_name(stmt->element_type()), stmt->raw_name());
     emit("{} = {};", var, stmt->ptr[0].var->raw_name());
   }
 
@@ -455,9 +454,9 @@ class CCTransformer : public IRVisitor {
 
   void visit(RandStmt *stmt) override {
     auto var = define_var(cc_data_type_name(stmt->ret_type.data_type),
-                                  stmt->raw_name());
+                          stmt->raw_name());
     emit("{} = RTi_rand_{}();", var,
-          data_type_short_name(stmt->ret_type.data_type));
+         data_type_short_name(stmt->ret_type.data_type));
   }
 
   template <typename... Args>

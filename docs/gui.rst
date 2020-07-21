@@ -387,7 +387,7 @@ Image I/O
     :parameter img: (Matrix or Expr) the image you want to export
     :parameter filename: (string) the location you want to save to
 
-    Export a ``np.ndarray`` or Taichi tensor (``ti.Matrix``, ``ti.Vector.field``, or ``ti.field``) to a specified location ``filename``.
+    Export a ``np.ndarray`` or Taichi tensor (``ti.Matrix.field``, ``ti.Vector.field``, or ``ti.field``) to a specified location ``filename``.
 
     Same as ``ti.GUI.show(filename)``, the format of the exported image is determined by **the suffix of** ``filename`` as well. Now ``ti.imwrite`` supports exporting images to ``png``, ``img`` and ``jpg`` and we recommend using ``png``.
 
@@ -431,7 +431,7 @@ Image I/O
         shape = (512, 512)
         channels = 3
         type = ti.f32
-        pixels = ti.Matrix(channels, dt=type, shape=shape)
+        pixels = ti.Matrix.field(channels, dtype=type, shape=shape)
 
         @ti.kernel
         def draw():

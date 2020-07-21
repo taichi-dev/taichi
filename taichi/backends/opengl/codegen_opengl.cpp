@@ -826,15 +826,17 @@ class KernelGen : public IRVisitor {
     TI_ASSERT(for_stmt->width() == 1);
     auto loop_var_name = for_stmt->short_name();
     if (!for_stmt->reversed) {
-      emit("for (int {}_ = {}; {}_ < {}; {}_ += {}) {{", loop_var_name,
-           for_stmt->begin->short_name(), loop_var_name,
-           for_stmt->end->short_name(), loop_var_name, 1);
+      emit("for (int {}_ = {}; {}_ < {}; {}_ += {}) {{",
+           loop_var_name, for_stmt->begin->short_name(),
+           loop_var_name, for_stmt->end->short_name(),
+           loop_var_name, 1);
       emit("  int {} = {}_;", loop_var_name, loop_var_name);
     } else {
       // reversed for loop
-      emit("for (int {}_ = {} - {}; {}_ >= {}; {}_ -= {}) {{", loop_var_name,
-           for_stmt->end->short_name(), loop_var_name, 1,
-           for_stmt->begin->short_name(), loop_var_name, 1);
+      emit("for (int {}_ = {} - {}; {}_ >= {}; {}_ -= {}) {{",
+           loop_var_name, for_stmt->end->short_name(), 1,
+           loop_var_name, for_stmt->begin->short_name(),
+           loop_var_name, 1);
       emit("  int {} = {}_;", loop_var_name, loop_var_name);
     }
     for_stmt->body->accept(this);

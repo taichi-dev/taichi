@@ -2,7 +2,7 @@ import taichi as ti
 
 ti.init(arch=ti.cc, debug=True, log_level=ti.DEBUG)
 
-n = 320
+n = 32
 pixels = ti.var(dt=ti.f32, shape=(n * 2, n))
 
 

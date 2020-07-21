@@ -15,8 +15,9 @@ namespace cccp {
 class CCKernel;
 class CCLayout;
 class CCRuntime;
+struct CCContext;
 
-using CCFuncEntryType = void();
+using CCFuncEntryType = void(CCContext *);
 
 class CCProgram {
   // Launch C compiler to compile generated source code, and run them

@@ -1,4 +1,6 @@
 #include "taichi/common/core.h"
+#include "taichi/program/kernel.h"
+#include "taichi/program/program.h"
 #include "taichi/system/dynamic_loader.h"
 #include "cc_program.h"
 #include "cc_configuation.h"
@@ -6,6 +8,7 @@
 #include "cc_kernel.h"
 #include "cc_layout.h"
 #include "cc_utils.h"
+#include "context.h"
 
 TLANG_NAMESPACE_BEGIN
 namespace cccp {
@@ -23,11 +26,16 @@ void CCKernel::compile() {
   execute(cfg.compile_cmd, obj_path, src_path);
 }
 
+CCContext::CCContext(CCProgram *program, Context *ctx)
+  : args(ctx->args), earg((int *)ctx->extra_args) {
+}
+
 void CCKernel::launch(Context *ctx) {
   program->relink();
   auto entry = program->load_kernel(name);
   TI_TRACE("[cc] entering kernel [{}]", name);
-  (*entry)();
+  CCContext cc_ctx(program, ctx);
+  (*entry)(&cc_ctx);
   TI_TRACE("[cc] leaving kernel [{}]", name);
 }
 
@@ -36,6 +44,7 @@ void CCLayout::compile() {
   src_path = fmt::format("{}/_root.c", runtime_tmp_dir);
 
   std::ofstream(src_path)
+      << program->runtime->header << "\n"
       << source << "\n\nstruct S0root *RTi_get_root() {\n"
       << "\tstatic struct S0root ti_root;\n\treturn &ti_root;\n}\n";
   TI_DEBUG("[cc] compiling root struct -> [{}]:\n{}\n", obj_path, source);
@@ -68,6 +77,7 @@ void CCProgram::relink() {
            fmt::join(objects, "] ["));
   execute(cfg.link_cmd, dll_path, fmt::join(objects, "' '"));
 
+  dll = nullptr;
   TI_DEBUG("[cc] loading shared object: {}", dll_path);
   dll = std::make_unique<DynamicLoader>(dll_path);
   TI_ASSERT_INFO(dll->loaded(), "[cc] could not load shared object: {}",
@@ -84,6 +94,7 @@ void CCProgram::add_kernel(std::unique_ptr<CCKernel> kernel) {
 // TODO: move this to cc_runtime.cpp:
 void CCProgram::init_runtime() {
   runtime = std::make_unique<CCRuntime>(
+      this,
 #include "runtime/base.h"
       ,
 #include "runtime/base.c"

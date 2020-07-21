@@ -37,7 +37,7 @@ class CCTransformer : public IRVisitor {
 
   void run() {
     this->lower_ast();
-    emit_header("void Ti_{}(void) {{", kernel->name);
+    emit_header("void Ti_{}(struct RTi_Context *ti_ctx) {{", kernel->name);
     kernel->ir->accept(this);
     emit("}}");
   }
@@ -133,11 +133,81 @@ class CCTransformer : public IRVisitor {
     emit("*{} = {};", stmt->ptr->raw_name(), stmt->data->raw_name());
   }
 
+  void visit(ExternalPtrStmt *stmt) override {
+    TI_ASSERT(stmt->width() == 1);
+    const auto linear_index_name = fmt::format("_li_{}", stmt->raw_name());
+    emit("int {} = 0;", linear_index_name);
+    const auto *argload = stmt->base_ptrs[0]->as<ArgLoadStmt>();
+    const int arg_id = argload->arg_id;
+    const int num_indices = stmt->indices.size();
+    std::vector<std::string> size_var_names;
+    for (int i = 0; i < num_indices; i++) {
+      auto var_name = fmt::format("_s{}_{}", i, stmt->raw_name());
+      auto var = define_var("int", var_name);
+      emit("{} = ti_ctx->earg[{} * {} + {}];", var, arg_id,
+           taichi_max_num_indices, i);
+      size_var_names.push_back(std::move(var_name));
+    }
+    for (int i = 0; i < num_indices; i++) {
+      emit("{} *= {};", linear_index_name, size_var_names[i]);
+      emit("{} += {};", linear_index_name, stmt->indices[i]->raw_name());
+    }
+
+    auto var = define_var(cc_data_type_name(stmt->element_type()) + " *",
+                      stmt->raw_name());
+    emit("{} = {} + {};", var,
+         stmt->base_ptrs[0]->raw_name(), linear_index_name);
+  }
+
+  void visit(ArgLoadStmt *stmt) override {
+    if (stmt->is_ptr) {
+      auto var = define_var(cc_data_type_name(stmt->element_type()) + " *",
+                    stmt->raw_name());
+      emit("{} = ti_ctx->args[{}].ptr_{};", var, stmt->arg_id,
+        data_type_short_name(stmt->element_type()));
+    } else {
+      auto var = define_var(cc_data_type_name(stmt->element_type()),
+                    stmt->raw_name());
+      emit("{} = ti_ctx->args[{}].val_{};", var, stmt->arg_id,
+        data_type_short_name(stmt->element_type()));
+    }
+  }
+
+  void visit(KernelReturnStmt *stmt) override {
+    emit("ti_ctx->args[0].val_{} = {};",
+        data_type_short_name(stmt->element_type()),
+        stmt->value->raw_name());
+  }
+
   void visit(ConstStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     emit("{} = {};",
          define_var(cc_data_type_name(stmt->element_type()), stmt->raw_name()),
          stmt->val[0].stringify());
+  }
+
+  void visit(AllocaStmt *stmt) override {
+    emit("{} = 0;", define_var(cc_data_type_name(stmt->element_type()),
+                               stmt->raw_name()));
+  }
+
+  void visit(LocalLoadStmt *stmt) override {
+    bool linear_index = true;
+    for (int i = 0; i < (int)stmt->ptr.size(); i++) {
+      if (stmt->ptr[i].offset != i) {
+        linear_index = false;
+      }
+    }
+    TI_ASSERT(stmt->same_source() && linear_index &&
+        stmt->width() == stmt->ptr[0].var->width());
+
+    auto var = define_var(cc_data_type_name(stmt->element_type()),
+                                 stmt->raw_name());
+    emit("{} = {};", var, stmt->ptr[0].var->raw_name());
+  }
+
+  void visit(LocalStoreStmt *stmt) override {
+    emit("{} = 0;", stmt->ptr->raw_name(), stmt->data->raw_name());
   }
 
   static std::string _get_libc_function_name(std::string name, DataType dt) {
@@ -280,15 +350,13 @@ class CCTransformer : public IRVisitor {
 
   void generate_range_for_kernel(OffloadedStmt *stmt) {
     // TI_ASSERT(stmt->const_begin && stmt->const_end);
+    ScopedIndent _s(line_appender);
     auto begin_value = stmt->begin_value;
     auto end_value = stmt->end_value;
     auto var = define_var("int", stmt->raw_name());
     emit("for ({} = {}; {} < {}; {} += {}) {{", var, begin_value,
          stmt->raw_name(), end_value, stmt->raw_name(), 1 /* stmt->step? */);
-    {
-      ScopedIndent _s(line_appender);
-      stmt->body->accept(this);
-    }
+    stmt->body->accept(this);
     emit("}}");
   }
 

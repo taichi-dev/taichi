@@ -30,3 +30,4 @@ def func():
 
 
 func()
+print(z.to_numpy())

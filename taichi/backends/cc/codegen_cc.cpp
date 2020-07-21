@@ -227,15 +227,15 @@ class CCTransformer : public IRVisitor {
   }
 
   static std::string get_libc_function_name(std::string name, DataType dt) {
-    name = _get_libc_function_name(name, dt);
+    auto ret = _get_libc_function_name(name, dt);
     if (name == "max" || name == "min" || name == "abs") {
       if (is_real(dt)) {
-        name = "f" + name;
-      } else if (name != "abs") {
-        name = "RTi_" + name;
+        ret = "f" + ret;
+      } else if (ret != "abs") {
+        ret = "RTi_" + ret;
       }
     }
-    return name;
+    return ret;
   }
 
   static std::string invoke_libc(std::string name,
@@ -267,6 +267,15 @@ class CCTransformer : public IRVisitor {
       if (is_comparison(bin->op_type)) {
         // XXX(#577): Taichi uses -1 as true due to LLVM i1...
         emit("{} = -({} {} {});", var, lhs_name, binop, rhs_name);
+      } else if (bin->op_type == BinaryOpType::truediv) {
+        emit("{} = ({}) {} / {};", var, dt_name, lhs_name, rhs_name);
+      } else if (bin->op_type == BinaryOpType::floordiv) {
+        if (is_integral(bin->lhs->element_type()) &&
+            is_integral(bin->rhs->element_type())) {
+          emit("{} = {} / {};", var, lhs_name, rhs_name);
+        } else {
+          emit("{} = ({}) {} / {};", var, dt_name, lhs_name, rhs_name);
+        }
       } else {
         emit("{} = {} {} {};", var, lhs_name, binop, rhs_name);
       }
@@ -435,6 +444,13 @@ class CCTransformer : public IRVisitor {
       stmt->false_statements->accept(this);
     }
     emit("}}");
+  }
+
+  void visit(RandStmt *stmt) override {
+    auto var = define_var(cc_data_type_name(stmt->ret_type.data_type),
+                                  stmt->raw_name());
+    emit("{} = RTi_rand_{}();", var,
+          data_type_short_name(stmt->ret_type.data_type));
   }
 
   template <typename... Args>

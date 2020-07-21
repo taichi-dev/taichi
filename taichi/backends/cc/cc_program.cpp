@@ -110,6 +110,7 @@ void CCProgram::compile_layout(SNode *root) {
   CCLayoutGen gen(this, root);
   layout = gen.compile();
   size_t root_size = layout->compile();
+  TI_INFO("[cc] C backend root buffer size: {} B", root_size);
   root_buf.resize(root_size, 0);
 }
 

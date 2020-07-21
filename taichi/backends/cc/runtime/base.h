@@ -34,6 +34,23 @@ static inline RTi_i64 RTi_llmin(RTi_i64 x, RTi_i64 y) {
 }
 
 ) "\n" STR(
+
+static inline RTi_i32 RTi_rand_i32(void) {
+  return mrand48();  // includes negative
+}
+
+static inline RTi_i64 RTi_rand_i64(void) {
+  return (RTi_i64) (mrand48() << 32) | mrand48();
+}
+
+static inline RTi_f64 RTi_rand_f64(void) {
+  return drand48();  // [0.0, 1.0)
+}
+
+static inline RTi_f32 RTi_rand_f32(void) {
+  return (RTi_f32) drand48();  // [0.0, 1.0)
+}
+
 )
 
 #define _CC_INSIDE_KERNEL

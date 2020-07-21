@@ -5,8 +5,8 @@ N = 8
 dt = 1e-5
 
 x = ti.Vector.var(2, ti.f32, N, needs_grad=True)  # position of particles
-v = ti.Vector.var(2, ti.f32, N)                   # velocity of particles
-U = ti.var(ti.f32, (), needs_grad=True)           # potential energy
+v = ti.Vector.var(2, ti.f32, N)  # velocity of particles
+U = ti.var(ti.f32, (), needs_grad=True)  # potential energy
 
 
 @ti.kernel
@@ -23,7 +23,7 @@ def advance():
     for i in x:
         v[i] += dt * -x.grad[i]  # dv/dt = -dU/dx
     for i in x:
-        x[i] += dt * v[i]        # dx/dt = v
+        x[i] += dt * v[i]  # dx/dt = v
 
 
 def substep():
@@ -31,7 +31,7 @@ def substep():
         # every kernel invocation within this indent scope
         # will also be accounted into the partial derivate of U
         # with corresponding input variables like x.
-        compute_U()   # will also computes dU/dx and save in x.grad
+        compute_U()  # will also computes dU/dx and save in x.grad
     advance()
 
 

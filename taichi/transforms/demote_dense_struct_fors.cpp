@@ -4,11 +4,15 @@
 
 TLANG_NAMESPACE_BEGIN
 
-VecStatement convert_to_range_for(StructForStmt *struct_for) {
-  VecStatement ret;
-  auto lower = ret.push_back<ConstStmt>(TypedConstant(0));
+namespace {
+
+using TaskType = OffloadedStmt::TaskType;
+
+void convert_to_range_for(OffloadedStmt *offloaded) {
+  TI_ASSERT(offloaded->task_type == TaskType::struct_for);
+
   std::vector<SNode *> snodes;
-  auto snode = struct_for->snode;
+  auto *snode = offloaded->snode;
   int total_bits = 0;
   while (snode->type != SNodeType::root) {
     snodes.push_back(snode);
@@ -18,10 +22,13 @@ VecStatement convert_to_range_for(StructForStmt *struct_for) {
   std::reverse(snodes.begin(), snodes.end());
   TI_ASSERT(total_bits <= 30);
 
-  auto upper_bound = 1 << total_bits;
-  auto upper = ret.push_back<ConstStmt>(TypedConstant(upper_bound));
-  auto body = std::move(struct_for->body);
+  offloaded->const_begin = true;
+  offloaded->const_end = true;
+  offloaded->begin_value = 0;
+  offloaded->end_value = 1 << total_bits;
 
+  ////// Begin core transformation
+  auto body = std::move(offloaded->body);
   const int num_loop_vars = snodes.back()->num_active_indices;
   std::vector<Stmt *> new_loop_vars;
 
@@ -83,7 +90,7 @@ VecStatement convert_to_range_for(StructForStmt *struct_for) {
         body.get(),
         [&](Stmt *s) {
           if (auto loop_index = s->cast<LoopIndexStmt>()) {
-            return loop_index->loop == struct_for &&
+            return loop_index->loop == offloaded &&
                    loop_index->index ==
                        snodes.back()->physical_index_position[i];
           }
@@ -101,37 +108,24 @@ VecStatement convert_to_range_for(StructForStmt *struct_for) {
   }
   body->insert(std::move(body_header), 0);
 
-  auto range_for = Stmt::make<RangeForStmt>(
-      lower, upper, std::move(body), struct_for->vectorize,
-      struct_for->parallelize, struct_for->block_dim, false);
-  main_loop_var->loop = range_for.get();
-  ret.push_back(std::move(range_for));
+  offloaded->body = std::move(body);
+  main_loop_var->loop = offloaded;
+  ////// End core transformation
 
-  // TODO: safe guard range
-  return ret;
+  offloaded->task_type = TaskType::range_for;
 }
+
+}  // namespace
 
 namespace irpass {
 
 void demote_dense_struct_fors(IRNode *root) {
   auto *block = dynamic_cast<Block *>(root);
-  std::vector<Stmt *> block_body;
-  for (int i = 0; i < (int)block->statements.size(); i++) {
-    block_body.push_back(block->statements[i].get());
-  }
-  for (int i = 0; i < (int)block_body.size(); i++) {
-    auto s_ = block_body[i];
-    if (auto s = s_->cast<StructForStmt>()) {
-      auto snode = s->snode;
-      bool all_dense = true;
-      while (all_dense && snode->type != SNodeType::root) {
-        if (snode->type != SNodeType::dense) {
-          all_dense = false;
-        }
-        snode = snode->parent;
-      }
-      if (all_dense) {
-        s->parent->replace_with(s, convert_to_range_for(s), false);
+  for (auto &s_ : block->statements) {
+    if (auto *s = s_->cast<OffloadedStmt>()) {
+      if ((s->task_type == TaskType::struct_for) &&
+          s->snode->is_path_all_dense) {
+        convert_to_range_for(s);
       }
     }
   }

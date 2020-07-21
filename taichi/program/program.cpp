@@ -387,8 +387,7 @@ void Program::materialize_layout() {
         opengl_struct_compiled_->root_size);
 #ifdef TI_WITH_CC
   } else if (config.arch == Arch::cc) {
-    cccp::CCLayoutGen scomp(cc_program.get(), snode_root.get());
-    cc_program->layout = scomp.compile();
+    cc_program->compile_layout(snode_root.get());
 #endif
   }
 }

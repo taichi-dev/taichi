@@ -88,7 +88,7 @@ class CCTransformer : public IRVisitor {
 
   void visit(GetRootStmt *stmt) override {
     auto root = kernel->program.snode_root.get();
-    emit("{} = RTi_get_root();",
+    emit("{} = ti_ctx->root;",
          define_var(get_node_ptr_name(root), stmt->raw_name()));
     root_stmt = stmt;
   }
@@ -445,7 +445,7 @@ class CCTransformer : public IRVisitor {
 
 std::unique_ptr<CCKernel> CCKernelGen::compile() {
   auto program = kernel->program.cc_program.get();
-  auto layout = program->layout.get();
+  auto layout = program->get_layout();
   CCTransformer tran(kernel, layout);
 
   tran.run();

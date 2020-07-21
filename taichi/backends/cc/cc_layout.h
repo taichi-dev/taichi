@@ -17,7 +17,7 @@ class CCLayout {
     return obj_path;
   }
 
-  void compile();
+  size_t compile();
 
   std::string source;
 

@@ -27,6 +27,11 @@ def func():
             print('z[', i, '] = ', z[i], sep='')
         elif i < 10:
             print('asas')
+    t = 0
+    while t < 0:
+        print(t)
+        t = t + 1
+        print(t)
 
 
 func()

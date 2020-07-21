@@ -207,7 +207,7 @@ class CCTransformer : public IRVisitor {
   }
 
   void visit(LocalStoreStmt *stmt) override {
-    emit("{} = 0;", stmt->ptr->raw_name(), stmt->data->raw_name());
+    emit("{} = {};", stmt->ptr->raw_name(), stmt->data->raw_name());
   }
 
   static std::string _get_libc_function_name(std::string name, DataType dt) {
@@ -264,7 +264,12 @@ class CCTransformer : public IRVisitor {
     const auto binop = binary_op_type_symbol(bin->op_type);
     const auto var = define_var(dt_name, bin_name);
     if (cc_is_binary_op_infix(bin->op_type)) {
-      emit("{} = {} {} {};", var, lhs_name, binop, rhs_name);
+      if (is_comparison(bin->op_type)) {
+        // XXX(#577): Taichi uses -1 as true due to LLVM i1...
+        emit("{} = -({} {} {});", var, lhs_name, binop, rhs_name);
+      } else {
+        emit("{} = {} {} {};", var, lhs_name, binop, rhs_name);
+      }
     } else {
       emit("{} = {};", var,
            invoke_libc(binop, type, "{}, {}", lhs_name, rhs_name));
@@ -407,7 +412,7 @@ class CCTransformer : public IRVisitor {
   }
 
   void visit(WhileControlStmt *stmt) override {
-    emit("if ({} == 0) break;", stmt->cond->raw_name());
+    emit("if (!{}) break;", stmt->cond->raw_name());
   }
 
   void visit(ContinueStmt *stmt) override {
@@ -421,7 +426,7 @@ class CCTransformer : public IRVisitor {
   }
 
   void visit(IfStmt *stmt) override {
-    emit("if ({} != 0) {{", stmt->cond->raw_name());
+    emit("if ({}) {{", stmt->cond->raw_name());
     if (stmt->true_statements) {
       stmt->true_statements->accept(this);
     }

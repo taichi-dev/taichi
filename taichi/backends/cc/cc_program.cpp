@@ -30,6 +30,7 @@ void CCKernel::compile() {
 CCContext::CCContext(CCProgram *program, Context *ctx)
   : args(ctx->args), earg((int *)ctx->extra_args) {
     root = program->get_root_buffer();
+    gtmp = program->get_gtmp_buffer();
 }
 
 void CCKernel::launch(Context *ctx) {
@@ -50,7 +51,7 @@ size_t CCLayout::compile() {
   std::ofstream(src_path)
       << program->get_runtime()->header << "\n" << source << "\n"
       << "void *RTi_get_root_size(void) { \n"
-      << "  return (void *)sizeof(struct S0root);\n"
+      << "  return (void *) sizeof(struct S0root);\n"
       << "}\n";
 
   TI_DEBUG("[cc] compiling root struct -> [{}]:\n{}\n", obj_path, source);
@@ -112,10 +113,7 @@ void CCProgram::compile_layout(SNode *root) {
   size_t root_size = layout->compile();
   TI_INFO("[cc] C backend root buffer size: {} B", root_size);
   root_buf.resize(root_size, 0);
-}
-
-void *CCProgram::get_root_buffer() {
-  return root_buf.data();
+  gtmp_buf.resize(taichi_global_tmp_buffer_size, 0);
 }
 
 void CCProgram::add_kernel(std::unique_ptr<CCKernel> kernel) {

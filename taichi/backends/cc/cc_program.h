@@ -30,19 +30,28 @@ class CCProgram {
   void add_kernel(std::unique_ptr<CCKernel> kernel);
   CCFuncEntryType *load_kernel(std::string const &name);
   void compile_layout(SNode *root);
-  void *get_root_buffer();
   void init_runtime();
   void relink();
 
   CCLayout *get_layout() {
     return layout.get();
   }
+
   CCRuntime *get_runtime() {
     return runtime.get();
   }
 
+  void *get_root_buffer() {
+    return root_buf.data();
+  }
+
+  void *get_gtmp_buffer() {
+    return root_buf.data();
+  }
+
  private:
   std::vector<char> root_buf;
+  std::vector<char> gtmp_buf;
   std::vector<std::unique_ptr<CCKernel>> kernels;
   std::unique_ptr<CCRuntime> runtime;
   std::unique_ptr<CCLayout> layout;

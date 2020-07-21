@@ -133,6 +133,13 @@ class CCTransformer : public IRVisitor {
     emit("*{} = {};", stmt->ptr->raw_name(), stmt->data->raw_name());
   }
 
+  void visit(GlobalTemporaryStmt *stmt) override {
+    TI_ASSERT(stmt->width() == 1);
+    auto ptr_type = cc_data_type_name(stmt->element_type()) + " *";
+    auto var = define_var(ptr_type, stmt->raw_name());
+    emit("{} = ({}) (ti_ctx->gtmp + {});", var, ptr_type, stmt->offset);
+  }
+
   void visit(ExternalPtrStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     const auto linear_index_name = fmt::format("_li_{}", stmt->raw_name());

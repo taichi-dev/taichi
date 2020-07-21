@@ -26,6 +26,9 @@ union RTi_BitCast {
 
 struct RTi_Context {
   struct S0root *root;
+  // In some C compilers `void *p; p + 1 == p;`, so let's use `char *p`:
+  RTi_i8 *gtmp;
+
   union RTi_BitCast *args;
   int *earg;
 };
@@ -42,6 +45,8 @@ namespace cccp {
 
 struct CCContext {
   void *root;
+  void *gtmp;
+
   uint64_t *args;
   int *earg;
 

@@ -47,7 +47,7 @@ def test_require_extensions():
 @ti.test()
 @pytest.mark.parametrize('x', [0.1, 3])
 @pytest.mark.parametrize('allclose',
-        [ti.allclose, lambda x, y: x == ti.approx(y)])
+                         [ti.allclose, lambda x, y: x == ti.approx(y)])
 def test_allclose_rel(x, allclose):
     rel = 1e-3 if ti.cfg.arch == ti.opengl else 1e-6
     assert not allclose(x + x * rel * 3.0, x)
@@ -60,10 +60,11 @@ def test_allclose_rel(x, allclose):
     assert not allclose(x - x * rel * 1.2, x)
     assert not allclose(x - x * rel * 3.0, x)
 
+
 @pytest.mark.parametrize('x', [0.1, 3])
 @ti.test()
 @pytest.mark.parametrize('allclose',
-        [ti.allclose, lambda x, y: x == ti.approx(y)])
+                         [ti.allclose, lambda x, y: x == ti.approx(y)])
 def test_allclose_rel_reordered1(x, allclose):
     rel = 1e-3 if ti.cfg.arch == ti.opengl else 1e-6
     assert not allclose(x + x * rel * 3.0, x)
@@ -76,9 +77,10 @@ def test_allclose_rel_reordered1(x, allclose):
     assert not allclose(x - x * rel * 1.2, x)
     assert not allclose(x - x * rel * 3.0, x)
 
+
 @pytest.mark.parametrize('x', [0.1, 3])
 @pytest.mark.parametrize('allclose',
-        [ti.allclose, lambda x, y: x == ti.approx(y)])
+                         [ti.allclose, lambda x, y: x == ti.approx(y)])
 @ti.test()
 def test_allclose_rel_reordered2(x, allclose):
     rel = 1e-3 if ti.cfg.arch == ti.opengl else 1e-6

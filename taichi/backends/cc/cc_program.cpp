@@ -50,7 +50,7 @@ size_t CCLayout::compile() {
 
   std::ofstream(src_path) << program->get_runtime()->header << "\n"
                           << source << "\n"
-                          << "void *RTi_get_root_size(void) { \n"
+                          << "void *Ti_get_root_size(void) { \n"
                           << "  return (void *) sizeof(struct S0root);\n"
                           << "}\n";
 
@@ -67,7 +67,7 @@ size_t CCLayout::compile() {
 
   using FuncGetRootSizeType = size_t();
   auto get_root_size = reinterpret_cast<FuncGetRootSizeType *>(
-      dll.load_function("RTi_get_root_size"));
+      dll.load_function("Ti_get_root_size"));
   TI_ASSERT(get_root_size);
   return (*get_root_size)();
 }
@@ -131,7 +131,7 @@ void CCProgram::init_runtime() {
 }
 
 CCFuncEntryType *CCProgram::load_kernel(std::string const &name) {
-  return reinterpret_cast<CCFuncEntryType *>(dll->load_function("Ti_" + name));
+  return reinterpret_cast<CCFuncEntryType *>(dll->load_function("Tk_" + name));
 }
 
 CCProgram::CCProgram() {

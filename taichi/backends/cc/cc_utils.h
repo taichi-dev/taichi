@@ -11,7 +11,7 @@ TLANG_NAMESPACE_BEGIN
 namespace cccp {
 
 inline std::string cc_data_type_name(DataType dt) {
-  return "RTi_" + data_type_short_name(dt);
+  return "Ti_" + data_type_short_name(dt);
 }
 
 inline std::string cc_atomic_op_type_symbol(AtomicOpType op) {

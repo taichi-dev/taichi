@@ -37,7 +37,7 @@ class CCTransformer : public IRVisitor {
 
   void run() {
     this->lower_ast();
-    emit_header("void Ti_{}(struct RTi_Context *ti_ctx) {{", kernel->name);
+    emit_header("void Tk_{}(struct Ti_Context *ti_ctx) {{", kernel->name);
     kernel->ir->accept(this);
     emit("}}");
   }
@@ -238,7 +238,7 @@ class CCTransformer : public IRVisitor {
       if (is_real(dt)) {
         ret = "f" + ret;
       } else if (ret != "abs") {
-        ret = "RTi_" + ret;
+        ret = "Ti_" + ret;
       }
     }
     return ret;
@@ -455,7 +455,7 @@ class CCTransformer : public IRVisitor {
   void visit(RandStmt *stmt) override {
     auto var = define_var(cc_data_type_name(stmt->ret_type.data_type),
                           stmt->raw_name());
-    emit("{} = RTi_rand_{}();", var,
+    emit("{} = Ti_rand_{}();", var,
          data_type_short_name(stmt->ret_type.data_type));
   }
 

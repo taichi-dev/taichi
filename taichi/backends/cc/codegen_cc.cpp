@@ -14,7 +14,7 @@ namespace cccp {  // Codegen for C Compiler Processor
 
 namespace {
 std::string get_node_ptr_name(SNode *snode) {
-  return fmt::format("struct {} *", snode->get_node_type_name_hinted());
+  return fmt::format("struct Ti_{} *", snode->get_node_type_name_hinted());
 }
 }  // namespace
 

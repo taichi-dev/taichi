@@ -1,6 +1,8 @@
 #ifdef _CC_INSIDE_KERNEL
 #include "taichi/util/macros.h"
-STR(union Ti_BitCast {
+// clang-format off
+STR(
+union Ti_BitCast {
   Ti_i64 val_i64;
   Ti_i32 val_i32;
   Ti_i16 val_i16;
@@ -23,15 +25,17 @@ STR(union Ti_BitCast {
   Ti_f64 *ptr_f64;
 };
 
-    struct Ti_Context {
-      struct S0root *root;
-      // In some C compilers `void *p; p + 1 == p;`, so let's use `char *p`:
-      Ti_i8 *gtmp;
+struct Ti_Context {
+  struct Ti_S0root *root;
+  // In some C compilers `void *p; p + 1 == p;`, so let's use `char *p`:
+  Ti_i8 *gtmp;
 
-      union Ti_BitCast *args;
-      int *earg;
-    };)
+  union Ti_BitCast *args;
+  int *earg;
+};
+)
 
+// clang-format on
 #else  // _CC_INSIDE_KERNEL
 
 #include "cc_program.h"

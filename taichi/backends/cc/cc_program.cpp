@@ -51,7 +51,7 @@ size_t CCLayout::compile() {
   std::ofstream(src_path) << program->get_runtime()->header << "\n"
                           << source << "\n"
                           << "void *Ti_get_root_size(void) { \n"
-                          << "  return (void *) sizeof(struct S0root);\n"
+                          << "  return (void *) sizeof(struct Ti_S0root);\n"
                           << "}\n";
 
   TI_DEBUG("[cc] compiling root struct -> [{}]:\n{}\n", obj_path, source);

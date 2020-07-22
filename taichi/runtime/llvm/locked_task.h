@@ -11,8 +11,6 @@ class lock_guard {
 #else
     // CUDA
 
-#if CUDA_CC < 70
-
     auto body = [&]() {
       if (test()) {
         mutex_lock_i32(lock);
@@ -24,6 +22,7 @@ class lock_guard {
       }
     };
 
+#if CUDA_CC < 70
     auto fast = false;
     if (fast) {
       auto active_mask = cuda_active_mask();

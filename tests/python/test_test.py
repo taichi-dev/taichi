@@ -15,30 +15,55 @@ def test_all_archs():
     assert ti.cfg.arch in ti.supported_archs()
 
 
-@ti.test(ti.cpu)
+@ti.test(arch=ti.cpu)
 def test_arch_cpu():
     assert ti.cfg.arch in [ti.cpu]
 
 
-@ti.test(ti.opengl)
+@ti.test(arch=[ti.cpu])
+def test_arch_list_cpu():
+    assert ti.cfg.arch in [ti.cpu]
+
+
+@ti.test(exclude=ti.cpu)
+def test_exclude_cpu():
+    assert ti.cfg.arch not in [ti.cpu]
+
+
+@ti.test(exclude=[ti.cpu])
+def test_exclude_list_cpu():
+    assert ti.cfg.arch not in [ti.cpu]
+
+
+@ti.test(arch=ti.opengl)
 def test_arch_opengl():
     assert ti.cfg.arch in [ti.opengl]
 
 
-@ti.test(ti.cpu, ti.opengl, ti.metal)
+@ti.test(arch=[ti.cpu, ti.opengl, ti.metal])
 def test_multiple_archs():
     assert ti.cfg.arch in [ti.cpu, ti.opengl, ti.metal]
 
 
-@ti.test(ti.cpu, debug=True, advanced_optimization=False)
+@ti.test(arch=ti.cpu, debug=True, advanced_optimization=False)
 def test_init_args():
     assert ti.cfg.debug == True
     assert ti.cfg.advanced_optimization == False
 
 
-@ti.test(ti.cpu, ti.opengl, extensions=[ti.extension.sparse])
-def test_require_extensions():
+@ti.test(require=ti.extension.sparse)
+def test_require_extensions_1():
+    assert ti.cfg.arch in [ti.cpu, ti.cuda]
+
+
+@ti.test(arch=[ti.cpu, ti.opengl], require=ti.extension.sparse)
+def test_require_extensions_2():
     assert ti.cfg.arch in [ti.cpu]
+
+
+@ti.test(arch=[ti.cpu, ti.opengl], require=[ti.extension.sparse, ti.extension.bls])
+def test_require_extensions_2():
+    assert ti.cfg.arch in [ti.cuda]
 
 
 ### `ti.approx` and `ti.allclose`

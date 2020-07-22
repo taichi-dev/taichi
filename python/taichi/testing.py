@@ -47,15 +47,22 @@ def _():
         marker = request.node.get_closest_marker('taichi')
         req_arch = request.param
 
-        def ti_init(*archs, extensions=[], excludes=[], **options):
-            archs = archs or ti.supported_archs()
+        def ti_init(arch=[], exclude=[], require=[], **options):
+            if not isinstance(arch, (list, tuple)):
+                arch = [arch]
+            if not isinstance(exclude, (list, tuple)):
+                exclude = [exclude]
+            if not isinstance(require, (list, tuple)):
+                require = [require]
+            if len(arch) == 0:
+                arch = ti.supported_archs()
 
-            if (req_arch not in archs) or (req_arch in excludes):
+            if (req_arch not in arch) or (req_arch in exclude):
                 raise pytest.skip(f'Arch={req_arch} not included in test')
 
             if not all(
                     ti.core.is_extension_supported(req_arch, e)
-                    for e in extensions):
+                    for e in require):
                 raise pytest.skip(
                     f'Arch={req_arch} some extension not satisfied')
 

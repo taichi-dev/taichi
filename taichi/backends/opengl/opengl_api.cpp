@@ -445,6 +445,7 @@ struct CompiledKernel {
   std::string kernel_name;
   std::unique_ptr<GLProgram> glsl;
   std::unique_ptr<ParallelSize> ps;
+  std::string source;
 
   // disscussion:
   // https://github.com/taichi-dev/taichi/pull/696#issuecomment-609332527
@@ -455,8 +456,11 @@ struct CompiledKernel {
                           const std::string &kernel_source_code,
                           std::unique_ptr<ParallelSize> ps_)
       : kernel_name(kernel_name_), ps(std::move(ps_)) {
-    display_kernel_info(kernel_name_, kernel_source_code);
-    glsl = std::make_unique<GLProgram>(GLShader(kernel_source_code));
+    source = kernel_source_code + fmt::format(
+        "layout(local_size_x = {}, local_size_y = 1, local_size_z = 1) in;",
+        ps->get_threads_per_group());
+    display_kernel_info(kernel_name_, source);
+    glsl = std::make_unique<GLProgram>(GLShader(source));
     glsl->link();
   }
 

@@ -1,6 +1,6 @@
 import taichi as ti
 
-ti.init(ti.opengl, max_block_dim=8)
+ti.init(ti.opengl, saturating_grid_dim=8)
 ti.set_logging_level(ti.DEBUG)
 
 @ti.kernel

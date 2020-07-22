@@ -667,7 +667,7 @@ class KernelGen : public IRVisitor {
     std::unique_ptr<ScopedIndent> s;
 
     ScopedGridStrideLoop(KernelGen *gen) : gen(gen) {
-      size_t stride_size = gen->kernel->program.config.max_block_dim;
+      size_t stride_size = gen->kernel->program.config.saturating_grid_dim;
       stride_size = std::max((size_t)1, stride_size);
       gen->emit("int _sid0 = int(gl_GlobalInvocationID.x) * {};",
             stride_size);

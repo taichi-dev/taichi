@@ -18,11 +18,12 @@ namespace cccp {
 CCConfiguation cfg;
 
 void CCKernel::compile() {
-  ActionRecorder::get_instance().record(
-      "compile_kernel", {
-        ActionArg("kernel_name", name),
-        ActionArg("kernel_source", source),
-      });
+  if (!kernel->is_evaluator)
+    ActionRecorder::get_instance().record(
+        "compile_kernel", {
+          ActionArg("kernel_name", name),
+          ActionArg("kernel_source", source),
+        });
 
   obj_path = fmt::format("{}/{}.o", runtime_tmp_dir, name);
   src_path = fmt::format("{}/{}.c", runtime_tmp_dir, name);
@@ -41,13 +42,11 @@ CCContext::CCContext(CCProgram *program, Context *ctx)
 }
 
 void CCKernel::launch(Context *ctx) {
-  std::vector<ActionArg> args = { ActionArg("kernel_name", name), };
-  args.push_back(ActionArg("arg_count", (int32)kernel->args.size()));
-  for (int i = 0; i < kernel->args.size(); i++) {
-    args.push_back(ActionArg(fmt::format("arg{}", i), (int64)ctx->args[i]));
-  }
-  ActionRecorder::get_instance().record(
-      "launch_kernel", args);
+  if (!kernel->is_evaluator)
+    ActionRecorder::get_instance().record(
+        "launch_kernel", {
+          ActionArg("kernel_name", name),
+        });
 
   program->relink();
   TI_TRACE("[cc] entering kernel [{}]", name);

@@ -209,6 +209,7 @@ void ActionExecuterCCSave::do_allocate_buffer(ActionEntry const &ae) {
   auto root_size = ::atoi(ae.at("root_size").c_str());
   auto gtmp_size = ::atoi(ae.at("gtmp_size").c_str());
   os << "Ti_i8 Ti_gtmp[" << gtmp_size << "];\n";
+  os << "union Ti_BitCast Ti_args[8];\n";
 }
 
 void ActionExecuterCCSave::do_compile_kernel(ActionEntry const &ae) {
@@ -226,14 +227,10 @@ void ActionExecuterCCSave::make_main() {
   os << "  struct Ti_Context ti_ctx;\n";
   os << "  ti_ctx.root = &Ti_root;\n";
   os << "  ti_ctx.gtmp = Ti_gtmp;\n";
+  os << "  ti_ctx.args = Ti_args;\n";
   for (auto const &ae: launches) {
     auto name = ae.at("kernel_name");
-    auto arg_count = ::atoi(ae.at("arg_count").c_str());
-    for (int i = 0; i < arg_count; i++) {
-      auto arg = ::atoll(ae.at("arg" + std::to_string(i)).c_str());
-      os << "  ti_ctx.args[" << i << "] = " << arg << ";\n";
-    }
-      os << "  Tk_" << name << "(&ti_ctx);\n";
+    os << "  Tk_" << name << "(&ti_ctx);\n";
   }
   os << "}\n";
 }

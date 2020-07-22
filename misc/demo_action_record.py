@@ -2,29 +2,32 @@ import taichi as ti
 ti.core.start_recording('record.yml')
 ti.init(arch=ti.cc)
 
-x = ti.Vector(3, ti.f32, (512, 512))
+n = 512
+x = ti.Vector(3, ti.f32, (n, n))
 
 @ti.kernel
 def render():
     for i, j in x:
-        x[i, j] = [i / 512, j / 512, 0]
+        x[i, j] = [i / x.shape[0], j / x.shape[1], 0]
 
 @ti.kernel
 def dump_ppm(tensor: ti.template()):
     if ti.static(isinstance(tensor, ti.Matrix)):
-        print('P2')
-    else:
         print('P3')
-        print(tensor.shape[0], tensor.shape[1])
-    print(255)
+    else:
+        print('P2')
+    print(tensor.shape[0], tensor.shape[1], 255)
     for _ in range(1):
-        for i in ti.grouped(ti.ndrange(*tensor.shape)):
-            c = min(255, max(0, int(tensor[i] * 255 + 0.5)))
-            if ti.static(isinstance(tensor, ti.Matrix)):
-                r, g, b = c
-                print(r, g, b)
-            else:
-                print(c)
+        for i in range(x.shape[0]):
+            for j in range(x.shape[1]):
+                c = min(255, max(0, int(
+                    tensor[j, x.shape[1] - 1 - i] * 255 + 0.5)))
+                if ti.static(isinstance(tensor, ti.Matrix)):
+                    r, g, b = c
+                    print(r, g, b)
+                else:
+                    print(c)
 
 render()
 dump_ppm(x)
+ti.imshow(x)

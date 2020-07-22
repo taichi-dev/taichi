@@ -1,3 +1,4 @@
+#define _DEBUG
 #include <iostream>
 #include <fstream>
 #include <cassert>
@@ -173,49 +174,61 @@ void ActionExecuter::run(std::ifstream &ifs) {
 }
 
 
-class ActionExecuterCC : public ActionExecuter {
+class ActionExecuterCCSave : public ActionExecuter {
  public:
+  ActionExecuterCCSave(std::ostream &os) : os(os) {}
 
  private:
-  std::string layout_source;
-  std::string runtime_header;
+  std::ostream &os;
 
  protected:
-  virtual void do_compile_runtime(ActionEntry const &ae) override;
-  virtual void do_compile_layout(ActionEntry const &ae) override;
-  virtual void do_allocate_buffer(ActionEntry const &ae) override;
-  virtual void do_compile_kernel(ActionEntry const &ae) override;
-  virtual void do_launch_kernel(ActionEntry const &ae) override;
+#define REG_ACTION(name) \
+  virtual void do_##name(ActionEntry const &ae) override;
+  ACTION_LIST;
+#undef REG_ACTION
 };
 
-void ActionExecuterCC::do_compile_runtime(ActionEntry const &ae) {
+void ActionExecuterCCSave::do_compile_runtime(ActionEntry const &ae) {
   auto header = ae.at("runtime_header");
   auto source = ae.at("runtime_source");
+  os << header;
+  os << source;
 }
 
-void ActionExecuterCC::do_compile_layout(ActionEntry const &ae) {
+void ActionExecuterCCSave::do_compile_layout(ActionEntry const &ae) {
   auto source = ae.at("layout_source");
+  os << source;
+  os << "struct Ti_S0root Ti_root;\n";
 }
 
-void ActionExecuterCC::do_allocate_buffer(ActionEntry const &ae) {
-  auto root_size = ae.at("root_size");
-  auto gtmp_size = ae.at("gtmp_size");
+void ActionExecuterCCSave::do_allocate_buffer(ActionEntry const &ae) {
+  auto root_size = ::atoi(ae.at("root_size").c_str());
+  auto gtmp_size = ::atoi(ae.at("gtmp_size").c_str());
+  os << "char Ti_gtmp[" << gtmp_size << "];\n";
 }
 
-void ActionExecuterCC::do_compile_kernel(ActionEntry const &ae) {
+void ActionExecuterCCSave::do_compile_kernel(ActionEntry const &ae) {
   auto name = ae.at("kernel_name");
   auto source = ae.at("kernel_source");
+  os << source;
 }
 
-void ActionExecuterCC::do_launch_kernel(ActionEntry const &ae) {
+void ActionExecuterCCSave::do_launch_kernel(ActionEntry const &ae) {
   auto name = ae.at("kernel_name");
 }
 
 
-int main(void)
+int main(int argc, char **argv)
 {
-  std::ifstream ifs("record.yml");
-  ActionExecuterCC ax;
-  ax.run(ifs);
+#ifdef _DEBUG
+  std::ifstream is("record.yml");
+  auto &os = std::cout;
+#else
+  auto &is = std::cin;
+  std::ifstream is("record.yml");
+#endif
+
+  ActionExecuterCCSave ax(os);
+  ax.run(is);
   return 0;
 }

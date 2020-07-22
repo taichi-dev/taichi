@@ -54,7 +54,7 @@ std::string ActionParser::toke_str() {
     is.unget();
     while (1) {
       is.get(c);
-      if (!isalnum(c) && c != '_') {
+      if (!isalnum(c) && c != '_' && c != '-') {
         is.unget();
         break;
       }
@@ -177,7 +177,8 @@ void ActionExecuter::run(std::ifstream &ifs) {
 class ActionExecuterCCSave : public ActionExecuter {
  public:
   ActionExecuterCCSave(std::ostream &os) : os(os) {}
-  ~ActionExecuterCCSave();
+
+  void make_main();
 
  private:
   std::ostream &os;
@@ -220,7 +221,7 @@ void ActionExecuterCCSave::do_launch_kernel(ActionEntry const &ae) {
   launches.push_back(ae);
 }
 
-ActionExecuterCCSave::~ActionExecuterCCSave() {
+void ActionExecuterCCSave::make_main() {
   os << "int main(void) {\n";
   os << "  struct Ti_Context ti_ctx;\n";
   os << "  ti_ctx.root = &Ti_root;\n";
@@ -232,7 +233,7 @@ ActionExecuterCCSave::~ActionExecuterCCSave() {
       auto arg = ::atoll(ae.at("arg" + std::to_string(i)).c_str());
       os << "  ti_ctx.args[" << i << "] = " << arg << ";\n";
     }
-      os << "  " << name << "(&ti_ctx);\n";
+      os << "  Tk_" << name << "(&ti_ctx);\n";
   }
   os << "}\n";
 }
@@ -243,12 +244,22 @@ int main(int argc, char **argv)
 #ifdef _DEBUG
   std::ifstream is("record.yml");
   auto &os = std::cout;
+  bool has_main = true;
 #else
-  auto &is = std::cin;
-  std::ifstream is("record.yml");
+  if (argc <= 2) {
+    std::cerr << "usage: " << argv[0]
+      << " <input.yml> <output.c> [-m]" << std::endl;
+    return 1;
+  }
+  std::ifstream is(argv[1]);
+  std::ifstream os(argv[2]);
+  bool has_main = (argv[3] && std::string(argv[3]) == "-m";
 #endif
 
   ActionExecuterCCSave ax(os);
   ax.run(is);
+  if (has_main) {
+    ax.make_main();
+  }
   return 0;
 }

@@ -2,7 +2,7 @@ from .core import taichi_lang_core as ti_core
 
 
 class ActionRecord:
-    def __init__(self):
+    def __init__(self, output):
         self.output = output
 
     def __enter__(self):

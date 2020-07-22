@@ -2,6 +2,7 @@
 #include "taichi/program/kernel.h"
 #include "taichi/program/program.h"
 #include "taichi/system/dynamic_loader.h"
+#include "taichi/util/action_recorder.h"
 #include "struct_cc.h"
 #include "cc_program.h"
 #include "cc_configuation.h"
@@ -17,6 +18,12 @@ namespace cccp {
 CCConfiguation cfg;
 
 void CCKernel::compile() {
+  ActionRecorder::get_instance().record(
+      "compile_kernel", {
+        ActionArg("kernel_name", name),
+        ActionArg("kernel_source", source),
+      });
+
   obj_path = fmt::format("{}/{}.o", runtime_tmp_dir, name);
   src_path = fmt::format("{}/{}.c", runtime_tmp_dir, name);
 
@@ -34,6 +41,11 @@ CCContext::CCContext(CCProgram *program, Context *ctx)
 }
 
 void CCKernel::launch(Context *ctx) {
+  ActionRecorder::get_instance().record(
+      "launch_kernel", {
+        ActionArg("kernel_name", name),
+      });
+
   program->relink();
   TI_TRACE("[cc] entering kernel [{}]", name);
   auto entry = program->load_kernel(name);
@@ -44,6 +56,11 @@ void CCKernel::launch(Context *ctx) {
 }
 
 size_t CCLayout::compile() {
+  ActionRecorder::get_instance().record(
+      "compile_layout", {
+        ActionArg("layout_source", source),
+      });
+
   obj_path = fmt::format("{}/_rti_root.o", runtime_tmp_dir);
   src_path = fmt::format("{}/_rti_root.c", runtime_tmp_dir);
   auto dll_path = fmt::format("{}/libti_roottest.so", runtime_tmp_dir);
@@ -73,6 +90,12 @@ size_t CCLayout::compile() {
 }
 
 void CCRuntime::compile() {
+  ActionRecorder::get_instance().record(
+      "compile_runtime", {
+        ActionArg("runtime_header", header),
+        ActionArg("runtime_source", source),
+      });
+
   obj_path = fmt::format("{}/_rti_runtime.o", runtime_tmp_dir);
   src_path = fmt::format("{}/_rti_runtime.c", runtime_tmp_dir);
 
@@ -110,9 +133,18 @@ void CCProgram::compile_layout(SNode *root) {
   CCLayoutGen gen(this, root);
   layout = gen.compile();
   size_t root_size = layout->compile();
+  size_t gtmp_size = taichi_global_tmp_buffer_size;
+
   TI_INFO("[cc] C backend root buffer size: {} B", root_size);
+
+  ActionRecorder::get_instance().record(
+      "allocate_buffer", {
+        ActionArg("root_size", (int32)root_size),
+        ActionArg("gtmp_size", (int32)gtmp_size),
+      });
+
   root_buf.resize(root_size, 0);
-  gtmp_buf.resize(taichi_global_tmp_buffer_size, 0);
+  gtmp_buf.resize(gtmp_size, 0);
 }
 
 void CCProgram::add_kernel(std::unique_ptr<CCKernel> kernel) {

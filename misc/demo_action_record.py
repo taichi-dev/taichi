@@ -7,5 +7,5 @@ def func():
     print(233)
 
 
-with ti.ActionRecord('hello.c'):
+with ti.ActionRecord('record.yml'):
     func()

@@ -43,7 +43,6 @@ std::unique_ptr<CCLayout> CCLayoutGen::compile() {
 
   auto lay = std::make_unique<CCLayout>(program);
   lay->source = line_appender.lines();
-  lay->compile();
   return lay;
 }
 

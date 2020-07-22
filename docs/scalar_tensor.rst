@@ -9,7 +9,7 @@ Declaration
 
 .. function:: ti.field(dt, shape = None, offset = None)
 
-    :parameter dt: (DataType) type of the tensor element
+    :parameter dtype: (DataType) type of the tensor element
     :parameter shape: (optional, scalar or tuple) the shape of tensor
     :parameter offset: (optional, scalar or tuple) see :ref:`offset`
 

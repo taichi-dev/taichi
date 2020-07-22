@@ -27,10 +27,10 @@ as a type hint to pass a tensor as an argument. For example:
         for i in x:
             y[i] = x[i]
 
-    a = ti.var(ti.f32, 4)
-    b = ti.var(ti.f32, 4)
-    c = ti.var(ti.f32, 12)
-    d = ti.var(ti.f32, 12)
+    a = ti.field(ti.f32, 4)
+    b = ti.field(ti.f32, 4)
+    c = ti.field(ti.f32, 12)
+    d = ti.field(ti.f32, 12)
     copy(a, b)
     copy(c, d)
 

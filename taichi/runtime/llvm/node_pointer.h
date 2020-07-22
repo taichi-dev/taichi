@@ -32,7 +32,7 @@ void Pointer_activate(Ptr meta_, Ptr node, int i) {
 #else
     // Volta +
     i32 equiv_mask = cuda_match_any_sync_i64(mask, i64(lock));
-    auto leader = ctlz_i32(equiv_mask);
+    auto leader = cttz_i32(equiv_mask);
     bool needs_activation = warp_idx() == leader;
 #endif
     if (needs_activation) {

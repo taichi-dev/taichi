@@ -31,7 +31,7 @@ void Pointer_activate(Ptr meta_, Ptr node, int i) {
     bool needs_activation = !has_following_eqiv;
 #else
     // Volta +
-    auto equiv_mask = cuda_match_any_sync_i64(mask, i64(lock));
+    i32 equiv_mask = cuda_match_any_sync_i64(mask, i64(lock));
     auto leader = ctlz_i32(equiv_mask);
     bool needs_activation = warp_idx() == leader;
 #endif

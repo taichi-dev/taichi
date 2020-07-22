@@ -931,8 +931,16 @@ i32 cuda_match_any_sync_i32(i32 mask, i32 value) {
   return 0;
 }
 
-i64 cuda_match_any_sync_i64(i32 mask, i64 value) {
+i32 cuda_match_any_sync_i64(i32 mask, i64 value) {
+#if ARCH_cuda
+  u32 ret;
+  asm volatile("match.any.sync.b64  %0, %1, %2;"
+               : "=r"(ret)
+               : "r"(value), "r"(mask));
+  return ret;
+#else
   return 0;
+#endif
 }
 
 #if ARCH_cuda

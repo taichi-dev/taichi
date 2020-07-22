@@ -427,9 +427,10 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
 
       patch_intrinsic("cuda_match_any_sync_i32",
                       Intrinsic::nvvm_match_any_sync_i32);
-
+      /*
       patch_intrinsic("cuda_match_any_sync_i64",
                       Intrinsic::nvvm_match_any_sync_i64);
+                      */
 
       patch_intrinsic("ctlz_i32", Intrinsic::ctlz, true,
                       {llvm::Type::getInt32Ty(*ctx)}, {get_constant(false)});

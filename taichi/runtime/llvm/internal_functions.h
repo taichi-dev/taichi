@@ -121,4 +121,29 @@ i32 test_node_allocator_gc_cpu(Context *context) {
   return 0;
 }
 
+i32 test_active_mask(Context *context) {
+  auto rt = context->runtime;
+  taichi_printf(rt, "%d activemask %x\n", thread_idx(), cuda_active_mask());
+
+  auto active_mask = cuda_active_mask();
+  auto remaining = active_mask;
+  while (remaining) {
+    auto leader = cttz_i32(remaining);
+    taichi_printf(rt, "currnet leader %d bid %d tid %d\n", leader, block_idx(),
+                  thread_idx());
+    warp_barrier(active_mask);
+    remaining &= ~(1u << leader);
+  }
+
+  return 0;
+}
+
+i32 test_shfl(Context *context) {
+  auto rt = context->runtime;
+  auto s = cuda_shfl_down_sync_i32(cuda_active_mask(), warp_idx() + 1000, 2, 31);
+  taichi_printf(rt, "tid %d tid_shfl %d\n", thread_idx(), s);
+
+  return 0;
+}
+
 #undef TI_TEST_CHECK

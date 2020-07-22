@@ -11,19 +11,41 @@ i32 Pointer_get_num_elements(Ptr meta, Ptr node) {
   return ((StructMeta *)meta)->max_num_elements;
 }
 
-void Pointer_activate(Ptr meta, Ptr node, int i) {
-  auto num_elements = Pointer_get_num_elements(meta, node);
+void Pointer_activate(Ptr meta_, Ptr node, int i) {
+  auto meta = (StructMeta *)meta_;
+  auto num_elements = Pointer_get_num_elements(meta_, node);
   Ptr lock = node + 8 * i;
-  Ptr &data_ptr = *(Ptr *)(node + 8 * (num_elements + i));
+  volatile Ptr &data_ptr = *(Ptr *)(node + 8 * (num_elements + i));
+
+
+  // if ((!has_following_eqiv) && data_ptr == nullptr) {
   if (data_ptr == nullptr) {
-    locked_task(lock, [&] {
-      if (data_ptr == nullptr) {
-        auto smeta = (StructMeta *)meta;
-        auto rt = smeta->context->runtime;
-        auto alloc = rt->node_allocators[smeta->snode_id];
-        data_ptr = alloc->allocate();
-      }
-    });
+    i32 mask = cuda_active_mask();
+    bool has_following_eqiv = false;
+    for (int s = 1; s < 32; s++) {
+#define TEST(x) ((x) == cuda_shfl_down_sync_i32(mask, (x), s, 31))
+      auto cond = warp_idx() + s < 32 && ((mask >> (warp_idx() + s)) & 1);
+      auto equiv = cond && TEST(i32(i64(lock))) && TEST(i32((u64)lock >> 32));
+      has_following_eqiv = has_following_eqiv || equiv;
+#undef TEST
+    }
+    /*
+    taichi_printf(meta->context->runtime, "activemask %x warp_id %d h %d\n", cuda_active_mask(), warp_idx(), (int)has_following_eqiv);
+    if (warp_idx() == 0) {
+      taichi_printf(meta->context->runtime, "is unique %d\n", cuda_ballot(!has_following_eqiv));
+    }
+     */
+    if (!has_following_eqiv) {
+      locked_task(lock, [&] {
+        if (data_ptr == nullptr) {
+          auto smeta = (StructMeta *)meta;
+          auto rt = smeta->context->runtime;
+          auto alloc = rt->node_allocators[smeta->snode_id];
+          data_ptr = alloc->allocate();
+        }
+      });  //,
+      //[&] { return data_ptr == nullptr; });
+    }
   }
 }
 

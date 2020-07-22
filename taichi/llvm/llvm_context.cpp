@@ -406,6 +406,13 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
       patch_intrinsic("cuda_ballot", Intrinsic::nvvm_vote_ballot);
       patch_intrinsic("cuda_ballot_sync", Intrinsic::nvvm_vote_ballot_sync);
 
+      patch_intrinsic("cuda_shfl_down_sync_i32",
+                      Intrinsic::nvvm_shfl_sync_down_i32, true,
+                      {});
+
+      patch_intrinsic("cuda_shfl_down_i32", Intrinsic::nvvm_shfl_down_i32, true,
+                      {});
+
       patch_intrinsic("ctlz_i32", Intrinsic::ctlz, true,
                       {llvm::Type::getInt32Ty(*ctx)}, {get_constant(false)});
       patch_intrinsic("cttz_i32", Intrinsic::cttz, true,

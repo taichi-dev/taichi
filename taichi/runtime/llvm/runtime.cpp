@@ -96,6 +96,9 @@ void __assertfail(const char *message,
 template <typename T>
 void locked_task(void *lock, const T &func);
 
+template <typename T, typename G>
+void locked_task2(void *lock, const T &func, const G &test);
+
 template <typename T>
 T ifloordiv(T a, T b) {
   auto r = a / b;
@@ -364,14 +367,14 @@ void ___stubs___() {
 }
 }
 
-/*
-A simple list data structure
-Data are organized in chunks, where each chunk is a piece of virtual memory
-*/
-
 bool is_power_of_two(uint32 x) {
   return x != 0 && (x & (x - 1)) == 0;
 }
+
+/*
+A simple list data structure that is infinitely long.
+Data are organized in chunks, where each chunk is allocated on demand.
+*/
 
 struct ListManager {
   static constexpr std::size_t max_num_chunks = 1024;
@@ -399,6 +402,7 @@ struct ListManager {
   void append(void *data_ptr);
 
   i32 reserve_new_element() {
+    // taichi_printf(runtime, "reserving new...\n");
     auto i = atomic_add_i32(&num_elements, 1);
     auto chunk_id = i >> log2chunk_num_elements;
     touch_chunk(chunk_id);
@@ -553,6 +557,7 @@ STRUCT_FIELD(LLVMRuntime, profiler_start);
 STRUCT_FIELD(LLVMRuntime, profiler_stop);
 
 // NodeManager of node S (hash, pointer) managers the memory allocation of S_ch
+// It makes use of three ListManagers.
 struct NodeManager {
   LLVMRuntime *runtime;
   i32 lock;
@@ -590,6 +595,8 @@ struct NodeManager {
   Ptr allocate() {
     int old_cursor = atomic_add_i32(&free_list_used, 1);
     i32 l;
+    // taichi_printf(runtime, "old cursor %d  free_list_size %d\n", old_cursor,
+    // free_list->size());
     if (old_cursor >= free_list->size()) {
       // running out of free list. allocate new.
       l = data_list->reserve_new_element();
@@ -905,6 +912,14 @@ int32 cttz_i32(i32 val) {
 }
 
 int32 cuda_ballot(bool bit) {
+  return 0;
+}
+
+i32 cuda_shfl_down_sync_i32(u32 mask, i32 delta, i32 val, int width) {
+  return 0;
+}
+
+i32 cuda_shfl_down_i32(i32 delta, i32 val, int width) {
   return 0;
 }
 
@@ -1235,6 +1250,7 @@ i32 linear_thread_idx() {
 #include "node_bitmasked.h"
 
 void ListManager::touch_chunk(int chunk_id) {
+  // taichi_printf(runtime, "touching ...\n");
   if (!chunks[chunk_id]) {
     locked_task(&lock, [&] {
       // may have been allocated during lock contention
@@ -1255,6 +1271,7 @@ void ListManager::append(void *data_ptr) {
 }
 
 Ptr ListManager::allocate() {
+  // taichi_printf(runtime, "calling ListManager::allocate...\n");
   auto i = reserve_new_element();
   return get_element_ptr(i);
 }

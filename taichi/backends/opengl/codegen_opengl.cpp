@@ -83,6 +83,7 @@ class KernelGen : public IRVisitor {
   int glsl_kernel_count_{0};
 
   bool is_top_level_{true};
+  bool is_grid_stride_loop_{false};
   LineAppender line_appender_;
   LineAppender line_appender_header_;
   std::unique_ptr<ParallelSize> ps;
@@ -669,12 +670,13 @@ class KernelGen : public IRVisitor {
     ScopedGridStrideLoop(KernelGen *gen) : gen(gen) {
       size_t stride_size = gen->kernel->program.config.saturating_grid_dim;
       if (stride_size > 0) {
+        gen->is_grid_stride_loop_ = true;
         gen->emit("int _sid0 = int(gl_GlobalInvocationID.x) * {};",
                   stride_size);
         gen->emit("for (int _sid = _sid0; _sid < _sid0 + {}; _sid++) {{",
                   stride_size);
         s = std::make_unique<ScopedIndent>(gen->line_appender_);
-      } else {
+      } else {  // zero regression
         gen->emit("int _sid = int(gl_GlobalInvocationID.x);");
       }
     }
@@ -683,6 +685,8 @@ class KernelGen : public IRVisitor {
       if (s)
         gen->emit("}}");
       s = nullptr;
+
+      gen->is_grid_stride_loop_ = false;
     }
   };
 
@@ -870,8 +874,12 @@ class KernelGen : public IRVisitor {
   }
 
   void visit(ContinueStmt *stmt) override {
-    // stmt->as_return() is unused since we always embrace a grid-stride-loop
-    emit("continue;");
+    // stmt->as_return() is unused when embraced with a grid-stride-loop
+    if (stmt->as_return() && !is_grid_stride_loop_) {
+      emit("return;");
+    } else {
+      emit("continue;");
+    }
   }
 
   void visit(WhileStmt *stmt) override {

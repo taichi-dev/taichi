@@ -156,9 +156,9 @@ void CCProgram::add_kernel(std::unique_ptr<CCKernel> kernel) {
 void CCProgram::init_runtime() {
   runtime = std::make_unique<CCRuntime>(this,
 #include "runtime/base.h"
-                                        ,
+      "\n",
 #include "runtime/base.c"
-  );
+      "\n");
   runtime->compile();
 }
 

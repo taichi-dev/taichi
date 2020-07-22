@@ -40,7 +40,7 @@ static inline Ti_i32 Ti_rand_i32(void) {
 }
 
 static inline Ti_i64 Ti_rand_i64(void) {
-  return (Ti_i64) (mrand48() << 32) | mrand48();
+  return ((Ti_i64) mrand48() << 32) | mrand48();
 }
 
 static inline Ti_f64 Ti_rand_f64(void) {

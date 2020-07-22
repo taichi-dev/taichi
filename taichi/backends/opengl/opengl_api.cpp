@@ -17,7 +17,7 @@
 TLANG_NAMESPACE_BEGIN
 namespace opengl {
 
-#define PER_OPENGL_EXTENSION(x) bool opengl_has_##x;
+#define PER_OPENGL_EXTENSION(x) bool opengl_extension_##x;
 #include "taichi/inc/opengl_extension.inc.h"
 #undef PER_OPENGL_EXTENSION
 
@@ -409,11 +409,11 @@ bool initialize_opengl(bool error_tolerance) {
     TI_ERROR("[glsl] cannot initialize GLAD");
   }
 #define PER_OPENGL_EXTENSION(x)    \
-  if ((opengl_has_##x = GLAD_##x)) \
+  if ((opengl_extension_##x = GLAD_##x)) \
     TI_TRACE("[glsl] Found " #x);
 #include "taichi/inc/opengl_extension.inc.h"
 #undef PER_OPENGL_EXTENSION
-  if (!opengl_has_GL_ARB_compute_shader) {
+  if (!opengl_extension_GL_ARB_compute_shader) {
     if (error_tolerance) {
       TI_INFO("Your OpenGL does not support GL_ARB_compute_shader extension");
       supported = std::make_optional<bool>(false);

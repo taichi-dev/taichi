@@ -142,6 +142,7 @@ Program::Program(Arch desired_arch) {
   llvm_runtime = nullptr;
   finalized = false;
   snode_root = std::make_unique<SNode>(0, SNodeType::root);
+  snode_root->is_path_all_dense = true;
 
   if (config.async_mode) {
     TI_WARN("Running in async mode. This is experimental.");

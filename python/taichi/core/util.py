@@ -284,7 +284,7 @@ if is_release():
             os.symlink(link_src, link_dst)
     import_ti_core()
     if get_os_name() != 'win':
-        dll = ctypes.CDLL(get_core_shared_object(), mode=ctypes.RTLD_GLOBAL)
+        dll = ctypes.CDLL(get_core_shared_object(), mode=ctypes.RTLD_LOCAL)
 
     ti_core.set_python_package_dir(package_root())
     os.makedirs(ti_core.get_repo_dir(), exist_ok=True)

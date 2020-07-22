@@ -65,7 +65,7 @@ void ExecutionQueue::enqueue(KernelLaunchRecord &&ker) {
         using namespace irpass;
 
         flag_access(stmt);
-        lower_access(stmt, true, kernel);
+        lower_access(stmt, true);
         flag_access(stmt);
         full_simplify(stmt, true, kernel);
         // analysis::verify(stmt);

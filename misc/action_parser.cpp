@@ -1,4 +1,3 @@
-#define _DEBUG
 #include <iostream>
 #include <fstream>
 #include <cassert>

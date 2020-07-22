@@ -24,7 +24,7 @@ ActionRecorder::ActionRecorder() {
 }
 
 void ActionRecorder::start_recording(const std::string &fn) {
-  TI_INFO("ActionRecorder: start recording");
+  TI_INFO("ActionRecorder: start recording to [{}]", fn);
   TI_ASSERT(!running);
   running = true;
   ofs.open(fn);

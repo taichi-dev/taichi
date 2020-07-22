@@ -539,6 +539,9 @@ void export_lang(py::module &m) {
   m.def("vectorize", Vectorize);
   m.def("block_dim", BlockDim);
   m.def("cache", Cache);
+  m.def("no_activate", [](SNode *snode) {
+    get_current_program().get_current_kernel().no_activate.push_back(snode);
+  });
   m.def("stop_grad",
         [](SNode *snode) { current_ast_builder().stop_gradient(snode); });
 

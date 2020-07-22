@@ -50,6 +50,10 @@
 #include <unistd.h>
 #endif
 
+#if defined(TI_WITH_CUDA)
+#include "taichi/backends/cuda/cuda_context.h"
+#endif
+
 TLANG_NAMESPACE_BEGIN
 
 using namespace llvm;
@@ -180,7 +184,16 @@ void compile_runtime_bitcode(Arch arch) {
         {"clang-7", "clang-8", "clang-9", "clang-10", "clang"});
     TI_ASSERT(command_exist("llvm-as"));
     TI_TRACE("Compiling runtime module bitcode...");
-    std::string macro = fmt::format(" -D ARCH_{} ", arch_name(arch));
+
+    std::string cuda_compute_capability = "0";
+
+#if defined(TI_WITH_CUDA)
+    cuda_compute_capability =
+        std::to_string(CUDAContext::get_instance().get_compute_capability());
+#endif
+
+    std::string macro = fmt::format(" -D ARCH_{} -D CUDA_CC={}",
+                                    arch_name(arch), cuda_compute_capability);
     auto cmd = fmt::format(
         "{} -S {}runtime.cpp -o {}runtime.ll -fno-exceptions "
         "-emit-llvm -std=c++17 {} -I {}",
@@ -407,11 +420,16 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
       patch_intrinsic("cuda_ballot_sync", Intrinsic::nvvm_vote_ballot_sync);
 
       patch_intrinsic("cuda_shfl_down_sync_i32",
-                      Intrinsic::nvvm_shfl_sync_down_i32, true,
-                      {});
+                      Intrinsic::nvvm_shfl_sync_down_i32);
 
-      patch_intrinsic("cuda_shfl_down_i32", Intrinsic::nvvm_shfl_down_i32, true,
-                      {});
+      patch_intrinsic("cuda_shfl_down_sync_i32",
+                      Intrinsic::nvvm_shfl_sync_down_i32);
+
+      patch_intrinsic("cuda_match_any_sync_i32",
+                      Intrinsic::nvvm_match_any_sync_i32);
+
+      patch_intrinsic("cuda_match_any_sync_i64",
+                      Intrinsic::nvvm_match_any_sync_i64);
 
       patch_intrinsic("ctlz_i32", Intrinsic::ctlz, true,
                       {llvm::Type::getInt32Ty(*ctx)}, {get_constant(false)});

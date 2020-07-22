@@ -927,6 +927,14 @@ int32 cuda_ballot_sync(int32 mask, bool bit) {
   return 0;
 }
 
+i32 cuda_match_any_sync_i32(i32 mask, i32 value) {
+  return 0;
+}
+
+i64 cuda_match_any_sync_i64(i32 mask, i64 value) {
+  return 0;
+}
+
 #if ARCH_cuda
 uint32 cuda_active_mask() {
   unsigned int mask;
@@ -1116,6 +1124,7 @@ void parallel_struct_for(Context *context,
   auto list_tail = list->size();
 #if ARCH_cuda
   int i = block_idx();
+  element_split = 1;
   const auto part_size = element_size / element_split;
   while (true) {
     int element_id = i / element_split;

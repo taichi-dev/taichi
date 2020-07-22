@@ -17,10 +17,9 @@ void Pointer_activate(Ptr meta_, Ptr node, int i) {
   Ptr lock = node + 8 * i;
   volatile Ptr &data_ptr = *(Ptr *)(node + 8 * (num_elements + i));
 
-
-  // if ((!has_following_eqiv) && data_ptr == nullptr) {
   if (data_ptr == nullptr) {
     i32 mask = cuda_active_mask();
+#if CUDA_CC < 70
     bool has_following_eqiv = false;
     for (int s = 1; s < 32; s++) {
 #define TEST(x) ((x) == cuda_shfl_down_sync_i32(mask, (x), s, 31))
@@ -29,13 +28,14 @@ void Pointer_activate(Ptr meta_, Ptr node, int i) {
       has_following_eqiv = has_following_eqiv || equiv;
 #undef TEST
     }
-    /*
-    taichi_printf(meta->context->runtime, "activemask %x warp_id %d h %d\n", cuda_active_mask(), warp_idx(), (int)has_following_eqiv);
-    if (warp_idx() == 0) {
-      taichi_printf(meta->context->runtime, "is unique %d\n", cuda_ballot(!has_following_eqiv));
-    }
-     */
-    if (!has_following_eqiv) {
+    bool needs_activation = !has_following_eqiv;
+#else
+    // Volta +
+    auto equiv_mask = cuda_match_any_sync_i64(mask, i64(lock));
+    auto leader = ctlz_i32(equiv_mask);
+    bool needs_activation = warp_idx() == leader;
+#endif
+    if (needs_activation) {
       locked_task(lock, [&] {
         if (data_ptr == nullptr) {
           auto smeta = (StructMeta *)meta;
@@ -43,8 +43,7 @@ void Pointer_activate(Ptr meta_, Ptr node, int i) {
           auto alloc = rt->node_allocators[smeta->snode_id];
           data_ptr = alloc->allocate();
         }
-      });  //,
-      //[&] { return data_ptr == nullptr; });
+      });
     }
   }
 }

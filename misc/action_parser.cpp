@@ -11,6 +11,7 @@ class ActionParser {
  public:
   ActionParser(std::istream &is) : is(is) {}
   ActionEntry parse();
+  bool iseof();
 
  private:
   std::string toke_str();
@@ -39,7 +40,7 @@ case y:             \
     REG_ESC('\"', '\"');
     REG_ESC('\\', '\\');
   default:
-    assert(0 && c);
+    assert(0 && "undefined escape sequence");
   }
 #undef REG_ESC
 }
@@ -85,7 +86,14 @@ void ActionParser::skip_space() {
 }
 
 
+bool ActionParser::iseof() {
+  return !is;
+}
+
+
 ActionEntry ActionParser::parse() {
+  assert(is && "already eof");
+
   ActionEntry ret;
   char c;
 
@@ -112,24 +120,102 @@ ActionEntry ActionParser::parse() {
 }
 
 
+#define ACTION_LIST \
+  REG_ACTION(compile_runtime); \
+  REG_ACTION(compile_layout); \
+  REG_ACTION(allocate_buffer); \
+  REG_ACTION(compile_kernel); \
+  REG_ACTION(launch_kernel); \
+  ;
+
+
+class ActionExecuter {
+ public:
+  void run(std::ifstream &ifs);
+
+ private:
+  void execute_action(ActionEntry const &ae);
+
+ protected:
+#define REG_ACTION(name) \
+  virtual void do_##name(ActionEntry const &ae);
+  ACTION_LIST;
+#undef REG_ACTION
+};
+
+
+#define REG_ACTION(name) \
+  void ActionExecuter::do_##name(ActionEntry const &ae) { \
+    assert(0 && "unhandled action " #name); \
+  }
+  ACTION_LIST;
+#undef REG_ACTION
+
+
+void ActionExecuter::execute_action(ActionEntry const &ae) {
+  auto action = ae.at("action");
+  if (0) {
+#define REG_ACTION(name) \
+  } else if (action == #name) { \
+    do_##name(ae);
+    ACTION_LIST;
+  }
+#undef REG_ACTION
+}
+
+
+void ActionExecuter::run(std::ifstream &ifs) {
+  ActionParser ap(ifs);
+  while (!ap.iseof()) {
+    auto ae = ap.parse();
+    execute_action(ae);
+  }
+}
+
+
+class ActionExecuterCC : public ActionExecuter {
+ public:
+
+ private:
+  std::string layout_source;
+  std::string runtime_header;
+
+ protected:
+  virtual void do_compile_runtime(ActionEntry const &ae) override;
+  virtual void do_compile_layout(ActionEntry const &ae) override;
+  virtual void do_allocate_buffer(ActionEntry const &ae) override;
+  virtual void do_compile_kernel(ActionEntry const &ae) override;
+  virtual void do_launch_kernel(ActionEntry const &ae) override;
+};
+
+void ActionExecuterCC::do_compile_runtime(ActionEntry const &ae) {
+  auto header = ae.at("runtime_header");
+  auto source = ae.at("runtime_source");
+}
+
+void ActionExecuterCC::do_compile_layout(ActionEntry const &ae) {
+  auto source = ae.at("layout_source");
+}
+
+void ActionExecuterCC::do_allocate_buffer(ActionEntry const &ae) {
+  auto root_size = ae.at("root_size");
+  auto gtmp_size = ae.at("gtmp_size");
+}
+
+void ActionExecuterCC::do_compile_kernel(ActionEntry const &ae) {
+  auto name = ae.at("kernel_name");
+  auto source = ae.at("kernel_source");
+}
+
+void ActionExecuterCC::do_launch_kernel(ActionEntry const &ae) {
+  auto name = ae.at("kernel_name");
+}
+
+
 int main(void)
 {
   std::ifstream ifs("record.yml");
-  ActionParser ap(ifs);
-  ActionEntry ae;
-  ae = ap.parse();
-  std::cout << ae["action"] << std::endl;
-  std::cout << ae["layout_source"] << std::endl;
-  ae = ap.parse();
-  std::cout << ae["action"] << std::endl;
-  std::cout << ae["root_size"] << std::endl;
-  std::cout << ae["gtmp_size"] << std::endl;
-  ae = ap.parse();
-  std::cout << ae["action"] << std::endl;
-  std::cout << ae["kernel_name"] << std::endl;
-  std::cout << ae["kernel_source"] << std::endl;
-  ae = ap.parse();
-  std::cout << ae["action"] << std::endl;
-  std::cout << ae["kernel_name"] << std::endl;
+  ActionExecuterCC ax;
+  ax.run(ifs);
   return 0;
 }

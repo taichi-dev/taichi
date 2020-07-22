@@ -88,7 +88,9 @@ class lock_guard2 {
         if (test()) {
           mutex_lock_i32(lock);
           grid_memfence();
-          func();
+          if (test()) {
+            func();
+          }
           grid_memfence();
           mutex_unlock_i32(lock);
           // grid_memfence();
@@ -99,6 +101,6 @@ class lock_guard2 {
   }
 };
 template <typename T, typename G>
-void locked_task2(void *lock, const T &func, const G &test) {
+void locked_task(void *lock, const T &func, const G &test) {
   lock_guard2<T, G> _((Ptr)lock, func, test);
 }

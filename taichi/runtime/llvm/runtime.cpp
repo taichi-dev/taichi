@@ -97,7 +97,7 @@ template <typename T>
 void locked_task(void *lock, const T &func);
 
 template <typename T, typename G>
-void locked_task2(void *lock, const T &func, const G &test);
+void locked_task(void *lock, const T &func, const G &test);
 
 template <typename T>
 T ifloordiv(T a, T b) {

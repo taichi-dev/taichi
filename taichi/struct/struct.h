@@ -23,6 +23,8 @@ class StructCompiler {
   // propagate root-to-leaf for a well-formed data structure
   void infer_snode_properties(SNode &snode);
 
+  void compute_trailing_bits(SNode &snode);
+
   // generate C++/llvm IR
   virtual void generate_types(SNode &snode) = 0;
 

@@ -19,6 +19,7 @@ struct IndexExtractor {
   int num_bits;
   int acc_offset;
   int num_elements;
+  int trailing_bits;
 
   // TODO: rename start to src_offset
 
@@ -30,6 +31,7 @@ struct IndexExtractor {
     active = false;
     acc_offset = 0;
     num_elements = 1;
+    trailing_bits = 0;
   }
 
   void activate(int num_bits) {
@@ -245,7 +247,7 @@ class SNode {
     return 1 << total_num_bits;
   }
 
-  int num_elements_along_axis(int i) const;
+  int shape_along_axis(int i) const;
 
   void set_kernel_args(Kernel *kernel, const std::vector<int> &I);
 

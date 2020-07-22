@@ -670,9 +670,9 @@ class KernelGen : public IRVisitor {
       size_t stride_size = gen->kernel->program.config.saturating_grid_dim;
       if (stride_size > 0) {
         gen->emit("int _sid0 = int(gl_GlobalInvocationID.x) * {};",
-              stride_size);
+                  stride_size);
         gen->emit("for (int _sid = _sid0; _sid < _sid0 + {}; _sid++) {{",
-              stride_size);
+                  stride_size);
         s = std::make_unique<ScopedIndent>(gen->line_appender_);
       } else {
         gen->emit("int _sid = int(gl_GlobalInvocationID.x);");
@@ -694,17 +694,17 @@ class KernelGen : public IRVisitor {
     emit("{{ // range for");
 
     if (stmt->const_begin && stmt->const_end) {
-        ScopedIndent _s(line_appender_);
-        auto begin_value = stmt->begin_value;
-        auto end_value = stmt->end_value;
-        if (end_value < begin_value)
-          end_value = begin_value;
-        ps = std::make_unique<ParallelSize_ConstRange>(end_value - begin_value);
-        emit("// range known at compile time");
-        ScopedGridStrideLoop _gsl(this);
-        emit("if (_sid >= {}) return;", end_value - begin_value);
-        emit("int _itv = {} + _sid * {};", begin_value, 1 /* stmt->step? */);
-        stmt->body->accept(this);
+      ScopedIndent _s(line_appender_);
+      auto begin_value = stmt->begin_value;
+      auto end_value = stmt->end_value;
+      if (end_value < begin_value)
+        end_value = begin_value;
+      ps = std::make_unique<ParallelSize_ConstRange>(end_value - begin_value);
+      emit("// range known at compile time");
+      ScopedGridStrideLoop _gsl(this);
+      emit("if (_sid >= {}) return;", end_value - begin_value);
+      emit("int _itv = {} + _sid * {};", begin_value, 1 /* stmt->step? */);
+      stmt->body->accept(this);
     } else {
       ScopedIndent _s(line_appender_);
       emit("// range known at runtime");

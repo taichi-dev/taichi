@@ -61,7 +61,8 @@ def test_require_extensions_2():
     assert ti.cfg.arch in [ti.cpu]
 
 
-@ti.test(arch=[ti.cpu, ti.opengl], require=[ti.extension.sparse, ti.extension.bls])
+@ti.test(arch=[ti.cpu, ti.opengl],
+         require=[ti.extension.sparse, ti.extension.bls])
 def test_require_extensions_2():
     assert ti.cfg.arch in [ti.cuda]
 

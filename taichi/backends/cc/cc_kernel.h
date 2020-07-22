@@ -17,8 +17,7 @@ class CCKernel {
            Kernel *kernel,
            std::string const &source,
            std::string const &name)
-      : program(program), kernel(kernel)
-      , name(name), source(source) {
+      : program(program), kernel(kernel), name(name), source(source) {
   }
 
   void compile();

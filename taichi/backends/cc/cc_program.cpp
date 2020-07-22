@@ -21,9 +21,9 @@ void CCKernel::compile() {
   if (!kernel->is_evaluator)
     ActionRecorder::get_instance().record(
         "compile_kernel", {
-          ActionArg("kernel_name", name),
-          ActionArg("kernel_source", source),
-        });
+                              ActionArg("kernel_name", name),
+                              ActionArg("kernel_source", source),
+                          });
 
   obj_path = fmt::format("{}/{}.o", runtime_tmp_dir, name);
   src_path = fmt::format("{}/{}.c", runtime_tmp_dir, name);
@@ -43,10 +43,10 @@ CCContext::CCContext(CCProgram *program, Context *ctx)
 
 void CCKernel::launch(Context *ctx) {
   if (!kernel->is_evaluator)
-    ActionRecorder::get_instance().record(
-        "launch_kernel", {
-          ActionArg("kernel_name", name),
-        });
+    ActionRecorder::get_instance().record("launch_kernel",
+                                          {
+                                              ActionArg("kernel_name", name),
+                                          });
 
   program->relink();
   TI_TRACE("[cc] entering kernel [{}]", name);
@@ -58,10 +58,10 @@ void CCKernel::launch(Context *ctx) {
 }
 
 size_t CCLayout::compile() {
-  ActionRecorder::get_instance().record(
-      "compile_layout", {
-        ActionArg("layout_source", source),
-      });
+  ActionRecorder::get_instance().record("compile_layout",
+                                        {
+                                            ActionArg("layout_source", source),
+                                        });
 
   obj_path = fmt::format("{}/_rti_root.o", runtime_tmp_dir);
   src_path = fmt::format("{}/_rti_root.c", runtime_tmp_dir);
@@ -92,11 +92,11 @@ size_t CCLayout::compile() {
 }
 
 void CCRuntime::compile() {
-  ActionRecorder::get_instance().record(
-      "compile_runtime", {
-        ActionArg("runtime_header", header),
-        ActionArg("runtime_source", source),
-      });
+  ActionRecorder::get_instance().record("compile_runtime",
+                                        {
+                                            ActionArg("runtime_header", header),
+                                            ActionArg("runtime_source", source),
+                                        });
 
   obj_path = fmt::format("{}/_rti_runtime.o", runtime_tmp_dir);
   src_path = fmt::format("{}/_rti_runtime.c", runtime_tmp_dir);
@@ -141,9 +141,9 @@ void CCProgram::compile_layout(SNode *root) {
 
   ActionRecorder::get_instance().record(
       "allocate_buffer", {
-        ActionArg("root_size", (int32)root_size),
-        ActionArg("gtmp_size", (int32)gtmp_size),
-      });
+                             ActionArg("root_size", (int32)root_size),
+                             ActionArg("gtmp_size", (int32)gtmp_size),
+                         });
 
   root_buf.resize(root_size, 0);
   gtmp_buf.resize(gtmp_size, 0);
@@ -158,9 +158,9 @@ void CCProgram::add_kernel(std::unique_ptr<CCKernel> kernel) {
 void CCProgram::init_runtime() {
   runtime = std::make_unique<CCRuntime>(this,
 #include "runtime/base.h"
-      "\n",
+                                        "\n",
 #include "runtime/base.c"
-      "\n");
+                                        "\n");
   runtime->compile();
 }
 

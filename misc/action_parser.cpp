@@ -10,7 +10,8 @@ using ActionEntry = std::map<std::string, std::string>;
 
 class ActionParser {
  public:
-  ActionParser(std::istream &is) : is(is) {}
+  ActionParser(std::istream &is) : is(is) {
+  }
   ActionEntry parse();
   bool iseof();
 
@@ -28,8 +29,8 @@ char ActionParser::c_unquote(char c) {
   // https://zh.cppreference.com/w/cpp/language/escape
   switch (c) {
 #define REG_ESC(x, y) \
-case y:             \
-  return x;
+  case y:             \
+    return x;
     REG_ESC('\n', 'n');
     REG_ESC('\a', 'a');
     REG_ESC('\b', 'b');
@@ -40,8 +41,8 @@ case y:             \
     REG_ESC('\'', '\'');
     REG_ESC('\"', '\"');
     REG_ESC('\\', '\\');
-  default:
-    assert(0 && "undefined escape sequence");
+    default:
+      assert(0 && "undefined escape sequence");
   }
 #undef REG_ESC
 }
@@ -76,7 +77,6 @@ std::string ActionParser::toke_str() {
   return ret;
 }
 
-
 void ActionParser::skip_space() {
   char c;
   do {
@@ -86,11 +86,9 @@ void ActionParser::skip_space() {
   is.unget();
 }
 
-
 bool ActionParser::iseof() {
   return !is;
 }
-
 
 ActionEntry ActionParser::parse() {
   assert(is && "already eof");
@@ -120,15 +118,13 @@ ActionEntry ActionParser::parse() {
   return ret;
 }
 
-
-#define ACTION_LIST \
+#define ACTION_LIST            \
   REG_ACTION(compile_runtime); \
-  REG_ACTION(compile_layout); \
+  REG_ACTION(compile_layout);  \
   REG_ACTION(allocate_buffer); \
-  REG_ACTION(compile_kernel); \
-  REG_ACTION(launch_kernel); \
+  REG_ACTION(compile_kernel);  \
+  REG_ACTION(launch_kernel);   \
   ;
-
 
 class ActionExecuter {
  public:
@@ -138,32 +134,29 @@ class ActionExecuter {
   void execute_action(ActionEntry const &ae);
 
  protected:
-#define REG_ACTION(name) \
-  virtual void do_##name(ActionEntry const &ae);
+#define REG_ACTION(name) virtual void do_##name(ActionEntry const &ae);
   ACTION_LIST;
 #undef REG_ACTION
 };
 
-
-#define REG_ACTION(name) \
+#define REG_ACTION(name)                                  \
   void ActionExecuter::do_##name(ActionEntry const &ae) { \
-    assert(0 && "unhandled action " #name); \
+    assert(0 && "unhandled action " #name);               \
   }
-  ACTION_LIST;
+ACTION_LIST;
 #undef REG_ACTION
-
 
 void ActionExecuter::execute_action(ActionEntry const &ae) {
   auto action = ae.at("action");
   if (0) {
-#define REG_ACTION(name) \
-  } else if (action == #name) { \
+#define REG_ACTION(name)      \
+  }                           \
+  else if (action == #name) { \
     do_##name(ae);
     ACTION_LIST;
   }
 #undef REG_ACTION
 }
-
 
 void ActionExecuter::run(std::ifstream &ifs) {
   ActionParser ap(ifs);
@@ -173,10 +166,10 @@ void ActionExecuter::run(std::ifstream &ifs) {
   }
 }
 
-
 class ActionExecuterCCSave : public ActionExecuter {
  public:
-  ActionExecuterCCSave(std::ostream &os) : os(os) {}
+  ActionExecuterCCSave(std::ostream &os) : os(os) {
+  }
 
   void make_main();
 
@@ -184,8 +177,7 @@ class ActionExecuterCCSave : public ActionExecuter {
   std::ostream &os;
 
  protected:
-#define REG_ACTION(name) \
-  virtual void do_##name(ActionEntry const &ae) override;
+#define REG_ACTION(name) virtual void do_##name(ActionEntry const &ae) override;
   ACTION_LIST;
 #undef REG_ACTION
 
@@ -228,24 +220,22 @@ void ActionExecuterCCSave::make_main() {
   os << "  ti_ctx.root = &Ti_root;\n";
   os << "  ti_ctx.gtmp = Ti_gtmp;\n";
   os << "  ti_ctx.args = Ti_args;\n";
-  for (auto const &ae: launches) {
+  for (auto const &ae : launches) {
     auto name = ae.at("kernel_name");
     os << "  Tk_" << name << "(&ti_ctx);\n";
   }
   os << "}\n";
 }
 
-
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
 #ifdef _DEBUG
   std::ifstream is("record.yml");
   auto &os = std::cout;
   bool has_main = true;
 #else
   if (argc <= 2) {
-    std::cerr << "usage: " << argv[0]
-      << " <input.yml> <output.c> [-m]" << std::endl;
+    std::cerr << "usage: " << argv[0] << " <input.yml> <output.c> [-m]"
+              << std::endl;
     return 1;
   }
   std::ifstream is(argv[1]);

@@ -4,6 +4,9 @@
 #include <set>
 
 TLANG_NAMESPACE_BEGIN
+
+class Kernel;
+
 namespace cccp {
 
 class CCProgram;
@@ -11,9 +14,11 @@ class CCProgram;
 class CCKernel {
  public:
   CCKernel(CCProgram *program,
+           Kernel *kernel,
            std::string const &source,
            std::string const &name)
-      : program(program), name(name), source(source) {
+      : program(program), kernel(kernel)
+      , name(name), source(source) {
   }
 
   void compile();
@@ -24,6 +29,7 @@ class CCKernel {
 
  private:
   CCProgram *program;
+  Kernel *kernel;
 
   std::string name;
   std::string source;

@@ -477,7 +477,8 @@ std::unique_ptr<CCKernel> CCKernelGen::compile() {
 
   tran.run();
   auto source = tran.get_source();
-  auto ker = std::make_unique<CCKernel>(program, source, kernel->name);
+  auto ker = std::make_unique<CCKernel>(
+          program, kernel, source, kernel->name);
   ker->compile();
   return ker;
 }

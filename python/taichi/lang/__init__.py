@@ -4,7 +4,6 @@ from .matrix import Matrix, Vector
 from .transformer import TaichiSyntaxError
 from .ndrange import ndrange, GroupedNDRange
 from copy import deepcopy as _deepcopy
-from .record import ActionRecord
 import functools
 import os
 

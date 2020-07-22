@@ -41,10 +41,13 @@ CCContext::CCContext(CCProgram *program, Context *ctx)
 }
 
 void CCKernel::launch(Context *ctx) {
+  std::vector<ActionArg> args = { ActionArg("kernel_name", name), };
+  args.push_back(ActionArg("arg_count", (int32)kernel->args.size()));
+  for (int i = 0; i < kernel->args.size(); i++) {
+    args.push_back(ActionArg(fmt::format("arg{}", i), (int64)ctx->args[i]));
+  }
   ActionRecorder::get_instance().record(
-      "launch_kernel", {
-        ActionArg("kernel_name", name),
-      });
+      "launch_kernel", args);
 
   program->relink();
   TI_TRACE("[cc] entering kernel [{}]", name);

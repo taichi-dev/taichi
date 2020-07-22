@@ -177,6 +177,7 @@ void ActionExecuter::run(std::ifstream &ifs) {
 class ActionExecuterCCSave : public ActionExecuter {
  public:
   ActionExecuterCCSave(std::ostream &os) : os(os) {}
+  ~ActionExecuterCCSave();
 
  private:
   std::ostream &os;
@@ -186,6 +187,8 @@ class ActionExecuterCCSave : public ActionExecuter {
   virtual void do_##name(ActionEntry const &ae) override;
   ACTION_LIST;
 #undef REG_ACTION
+
+  std::vector<ActionEntry> launches;
 };
 
 void ActionExecuterCCSave::do_compile_runtime(ActionEntry const &ae) {
@@ -204,7 +207,7 @@ void ActionExecuterCCSave::do_compile_layout(ActionEntry const &ae) {
 void ActionExecuterCCSave::do_allocate_buffer(ActionEntry const &ae) {
   auto root_size = ::atoi(ae.at("root_size").c_str());
   auto gtmp_size = ::atoi(ae.at("gtmp_size").c_str());
-  os << "char Ti_gtmp[" << gtmp_size << "];\n";
+  os << "Ti_i8 Ti_gtmp[" << gtmp_size << "];\n";
 }
 
 void ActionExecuterCCSave::do_compile_kernel(ActionEntry const &ae) {
@@ -214,7 +217,24 @@ void ActionExecuterCCSave::do_compile_kernel(ActionEntry const &ae) {
 }
 
 void ActionExecuterCCSave::do_launch_kernel(ActionEntry const &ae) {
-  auto name = ae.at("kernel_name");
+  launches.push_back(ae);
+}
+
+ActionExecuterCCSave::~ActionExecuterCCSave() {
+  os << "int main(void) {\n";
+  os << "  struct Ti_Context ti_ctx;\n";
+  os << "  ti_ctx.root = &Ti_root;\n";
+  os << "  ti_ctx.gtmp = Ti_gtmp;\n";
+  for (auto const &ae: launches) {
+    auto name = ae.at("kernel_name");
+    auto arg_count = ::atoi(ae.at("arg_count").c_str());
+    for (int i = 0; i < arg_count; i++) {
+      auto arg = ::atoll(ae.at("arg" + std::to_string(i)).c_str());
+      os << "  ti_ctx.args[" << i << "] = " << arg << ";\n";
+    }
+      os << "  " << name << "(&ti_ctx);\n";
+  }
+  os << "}\n";
 }
 
 

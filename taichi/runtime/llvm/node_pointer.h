@@ -34,8 +34,6 @@ void Pointer_activate(Ptr meta_, Ptr node, int i) {
     i32 equiv_mask = cuda_match_any_sync_i64(mask, i64(lock));
     auto leader = cttz_i32(equiv_mask);
     bool needs_activation = warp_idx() == leader;
-    // taichi_printf(meta->context->runtime, "mask %08x emask %08x leader %d warp_idx %d ptr %lld, needs %d\n", mask, equiv_mask, leader, warp_idx(), int64(lock), (int)needs_activation);
-    // needs_activation = true;
 #endif
     if (needs_activation) {
       locked_task(lock,

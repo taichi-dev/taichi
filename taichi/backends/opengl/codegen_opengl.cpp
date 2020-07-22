@@ -668,17 +668,21 @@ class KernelGen : public IRVisitor {
 
     ScopedGridStrideLoop(KernelGen *gen) : gen(gen) {
       size_t stride_size = gen->kernel->program.config.saturating_grid_dim;
-      stride_size = std::max((size_t)1, stride_size);
-      gen->emit("int _sid0 = int(gl_GlobalInvocationID.x) * {};",
-            stride_size);
-      gen->emit("for (int _sid = _sid0; _sid < _sid0 + {}; _sid++) {{",
-            stride_size);
-      s = std::make_unique<ScopedIndent>(gen->line_appender_);
+      if (stride_size > 0) {
+        gen->emit("int _sid0 = int(gl_GlobalInvocationID.x) * {};",
+              stride_size);
+        gen->emit("for (int _sid = _sid0; _sid < _sid0 + {}; _sid++) {{",
+              stride_size);
+        s = std::make_unique<ScopedIndent>(gen->line_appender_);
+      } else {
+        gen->emit("int _sid = int(gl_GlobalInvocationID.x);");
+      }
     }
 
     ~ScopedGridStrideLoop() {
+      if (s)
+        gen->emit("}}");
       s = nullptr;
-      gen->emit("}}");
     }
   };
 

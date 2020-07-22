@@ -936,7 +936,7 @@ i32 cuda_match_any_sync_i64(i32 mask, i64 value) {
   u32 ret;
   asm volatile("match.any.sync.b64  %0, %1, %2;"
                : "=r"(ret)
-               : "r"(value), "r"(mask));
+               : "l"(value), "r"(mask));
   return ret;
 #else
   return 0;

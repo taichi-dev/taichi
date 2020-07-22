@@ -7,7 +7,7 @@ Tensors of scalars
 Declaration
 -----------
 
-.. function:: ti.field(dt, shape = None, offset = None)
+.. function:: ti.field(dtype, shape = None, offset = None)
 
     :parameter dtype: (DataType) type of the tensor element
     :parameter shape: (optional, scalar or tuple) the shape of tensor

@@ -58,3 +58,19 @@ def test_matrix_field(n, m, dtype, shape):
     assert x.dtype == dtype
     assert x.n == n
     assert x.m == m
+
+
+@ti.host_arch_only
+def test_field_needs_grad():
+    # Just make sure the usage doesn't crash, see https://github.com/taichi-dev/taichi/pull/1545
+    n = 8
+    m1 = ti.field(ti.f32, n, needs_grad=True)
+    m2 = ti.field(ti.f32, n, needs_grad=True)
+    gr = ti.field(ti.f32, n)
+
+    @ti.kernel
+    def func():
+        for i in range(n):
+            gr[i] = m1.grad[i] + m2.grad[i]
+
+    func()

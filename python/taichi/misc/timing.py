@@ -141,3 +141,6 @@ class PythonProfiler:
 
 
 profiler = PythonProfiler()
+
+
+__all__ = ['profiler']

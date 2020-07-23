@@ -47,8 +47,8 @@ def substep():
     if material[p] == 0:  # Reset deformation gradient to avoid numerical instability
       F[p] = ti.Matrix.identity(ti.f32, 2) * ti.sqrt(J)
     elif material[p] == 2:
-      F[p] = U @ sig @ V.T() # Reconstruct elastic deformation gradient after plasticity
-    stress = 2 * mu * (F[p] - U @ V.T()) @ F[p].T() + ti.Matrix.identity(ti.f32, 2) * la * J * (J - 1)
+      F[p] = U @ sig @ V.transpose() # Reconstruct elastic deformation gradient after plasticity
+    stress = 2 * mu * (F[p] - U @ V.transpose()) @ F[p].transpose() + ti.Matrix.identity(ti.f32, 2) * la * J * (J - 1)
     stress = (-dt * p_vol * 4 * inv_dx * inv_dx) * stress
     affine = stress + p_mass * C[p]
     for i, j in ti.static(ti.ndrange(3, 3)): # Loop over 3x3 grid node neighborhood

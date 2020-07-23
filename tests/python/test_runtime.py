@@ -111,6 +111,17 @@ def test_init_arg(key, values):
             test_arg(key, value)
 
 
+@pytest.mark.parametrize('arch', ti.supported_archs())
+def test_init_arch(arch):
+    with patch_os_environ_helper({}, excludes=['TI_ARCH']):
+        ti.init(arch=arch)
+        assert ti.cfg.arch == arch
+    with patch_os_environ_helper({'TI_ARCH': ti.core.arch_name(arch)},
+                                 excludes=['TI_ARCH']):
+        ti.init(arch=ti.cc)
+        assert ti.cfg.arch == arch
+
+
 @ti.must_throw(KeyError)
 def test_init_bad_arg():
     ti.init(_test_mode=True, debug=True, foo_bar=233)

@@ -2,6 +2,7 @@ import ast
 from .util import to_taichi_type
 import copy
 from .exception import TaichiSyntaxError
+from . import impl
 
 
 class ScopeGuard:
@@ -16,26 +17,89 @@ class ScopeGuard:
         local = self.scopes[-1]
         if self.stmt_block is not None:
             for var in reversed(local):
-                stmt = ASTTransformer.parse_stmt('del var')
+                stmt = ASTTransformerBase.parse_stmt('del var')
                 stmt.targets[0].id = var
                 self.stmt_block.append(stmt)
         self.scopes.pop()
 
 
-# Single-pass transform
-class ASTTransformer(ast.NodeTransformer):
+# Total transform
+# TODO: ASTTransformerBase -> ASTTransformer
+# TODO: ASTTransformer -> ASTTransformerTotal
+class ASTTransformer(object):
+    def __init__(self, func=None, *args, **kwargs):
+        self.pass_Preprocess = ASTTransformerPreprocess(func=func,
+                                                        *args,
+                                                        **kwargs)
+        self.pass_Checks = ASTTransformerChecks(func=func)
+
+    @staticmethod
+    def print_ast(tree, title=None):
+        if not impl.get_runtime().print_preprocessed:
+            return
+        if title is not None:
+            print(f'{title}:')
+        import astor
+        print(astor.to_source(tree.body[0], indent_with='  '))
+
+    def visit(self, tree):
+        self.print_ast(tree, 'Initial AST')
+        self.pass_Preprocess.visit(tree)
+        self.print_ast(tree, 'Preprocessed')
+        self.pass_Checks.visit(tree)
+        self.print_ast(tree, 'Checked')
+        ast.fix_missing_locations(tree)
+        self.print_ast(tree, 'Final AST')
+
+
+class ASTTransformerBase(ast.NodeTransformer):
+    def __init__(self, func):
+        super().__init__()
+        self.func = func
+
+    @staticmethod
+    def parse_stmt(stmt):
+        return ast.parse(stmt).body[0]
+
+    @staticmethod
+    def parse_expr(expr):
+        return ast.parse(expr).body[0].value
+
+    @staticmethod
+    def func_call(name, *args):
+        return ast.Call(func=ASTTransformerBase.parse_expr(name).value,
+                        args=list(args),
+                        keywords=[])
+
+    @staticmethod
+    def make_constant(value):
+        # Do not use ast.Constant which does not exist in python3.5
+        node = ASTTransformerBase.parse_expr('0')
+        node.value = value
+        return node
+
+    @staticmethod
+    def get_targets(node):
+        if isinstance(node.target, ast.Name):
+            return [node.target.id]
+        else:
+            assert isinstance(node.target, ast.Tuple)
+            return [name.id for name in node.target.elts]
+
+
+# First-pass transform
+class ASTTransformerPreprocess(ASTTransformerBase):
     def __init__(self,
                  excluded_paremeters=(),
                  is_kernel=True,
-                 is_classfunc=False,
                  func=None,
+                 is_classfunc=False,
                  arg_features=None):
-        super().__init__()
+        super().__init__(func)
         self.local_scopes = []
         self.control_scopes = []
         self.excluded_parameters = excluded_paremeters
         self.is_kernel = is_kernel
-        self.func = func
         self.arg_features = arg_features
         self.returns = None
 
@@ -290,14 +354,6 @@ if 1:
             return ''
         return iter.func.attr
 
-    @staticmethod
-    def get_targets(node):
-        if isinstance(node.target, ast.Name):
-            return [node.target.id]
-        else:
-            assert isinstance(node.target, ast.Tuple)
-            return [name.id for name in node.target.elts]
-
     def visit_static_for(self, node, is_grouped):
         # for i in ti.static(range(n))
         # for i, j in ti.static(ti.ndrange(n))
@@ -511,20 +567,6 @@ if 1:
             else:  # Struct for
                 return self.visit_struct_for(node, is_grouped=False)
 
-    @staticmethod
-    def parse_stmt(stmt):
-        return ast.parse(stmt).body[0]
-
-    @staticmethod
-    def parse_expr(expr):
-        return ast.parse(expr).body[0].value
-
-    @staticmethod
-    def func_call(name, *args):
-        return ast.Call(func=ASTTransformer.parse_expr(name).value,
-                        args=list(args),
-                        keywords=[])
-
     def visit_Subscript(self, node):
         self.generic_visit(node)
 
@@ -596,13 +638,6 @@ if 1:
             self.generic_visit(node)
         for name in node.names:
             self.create_variable(name)
-        return node
-
-    @staticmethod
-    def make_constant(value):
-        # Do not use ast.Constant which does not exist in python3.5
-        node = ASTTransformer.parse_expr('0')
-        node.value = value
         return node
 
     def visit_FunctionDef(self, node):
@@ -806,4 +841,16 @@ if 1:
                     'ti.core.create_kernel_return(ret.ptr)')
                 ret_stmt.value.args[0].value = ret_expr
                 return ret_stmt
+        return node
+
+
+# Second-pass transform
+class ASTTransformerChecks(ASTTransformerBase):
+    def __init__(self, func):
+        super().__init__(func)
+
+    def visit_Call(self, node):
+        if isinstance(node.func, ast.Name):
+            node.args = [node.func] + node.args
+            node.func = self.parse_expr('ti.func_call_with_check')
         return node

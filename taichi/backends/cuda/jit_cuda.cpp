@@ -112,7 +112,7 @@ class JITSessionCUDA : public JITSession {
 };
 
 std::string cuda_mattrs() {
-  return "+ptx50";
+  return "+ptx63";
 }
 
 std::string convert(std::string new_name) {
@@ -141,14 +141,10 @@ std::string JITSessionCUDA::compile_module_to_ptx(
     std::unique_ptr<llvm::Module> &module) {
   TI_AUTO_PROF
   // Part of this function is borrowed from Halide::CodeGen_PTX_Dev.cpp
-  // TODO: enabling this leads to LLVM error "comdat global value has private
-  // linkage"
-  /*
   if (llvm::verifyModule(*module, &llvm::errs())) {
     module->print(llvm::errs(), nullptr);
-    TI_ERROR("Module broken");
+    TI_WARN("Module broken");
   }
-  */
 
   using namespace llvm;
 

@@ -200,8 +200,10 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
   // bottom to top
   collect_snodes(root);
 
-  if (host)
+  if (host) {
     infer_snode_properties(root);
+    compute_trailing_bits(root);
+  }
 
   auto snodes_rev = snodes;
   std::reverse(snodes_rev.begin(), snodes_rev.end());

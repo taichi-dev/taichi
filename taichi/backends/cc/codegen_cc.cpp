@@ -14,7 +14,7 @@ namespace cccp {  // Codegen for C Compiler Processor
 
 namespace {
 std::string get_node_ptr_name(SNode *snode) {
-  return fmt::format("struct {} *", snode->get_node_type_name_hinted());
+  return fmt::format("struct Ti_{} *", snode->get_node_type_name_hinted());
 }
 }  // namespace
 
@@ -73,7 +73,7 @@ class CCTransformer : public IRVisitor {
 
   void visit(BitExtractStmt *stmt) override {
     emit("{} = (({} >> {}) & ((1 << {}) - 1));",
-         define_var("int", stmt->raw_name()), stmt->input->raw_name(),
+         define_var("Ti_i32", stmt->raw_name()), stmt->input->raw_name(),
          stmt->bit_begin, stmt->bit_end - stmt->bit_begin);
   }
 
@@ -143,14 +143,14 @@ class CCTransformer : public IRVisitor {
   void visit(ExternalPtrStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     const auto linear_index_name = fmt::format("_li_{}", stmt->raw_name());
-    emit("int {} = 0;", linear_index_name);
+    emit("Ti_i32 {} = 0;", linear_index_name);
     const auto *argload = stmt->base_ptrs[0]->as<ArgLoadStmt>();
     const int arg_id = argload->arg_id;
     const int num_indices = stmt->indices.size();
     std::vector<std::string> size_var_names;
     for (int i = 0; i < num_indices; i++) {
       auto var_name = fmt::format("_s{}_{}", i, stmt->raw_name());
-      auto var = define_var("int", var_name);
+      auto var = define_var("Ti_i32", var_name);
       emit("{} = ti_ctx->earg[{} * {} + {}];", var, arg_id,
            taichi_max_num_indices, i);
       size_var_names.push_back(std::move(var_name));
@@ -334,11 +334,11 @@ class CCTransformer : public IRVisitor {
 
   void visit(LinearizeStmt *stmt) override {
     std::string val = "0";
-    for (int i = 0; i < (int)stmt->inputs.size(); i++) {
+    for (int i = 0; i < stmt->inputs.size(); i++) {
       val = fmt::format("({} * {} + {})", val, stmt->strides[i],
                         stmt->inputs[i]->raw_name());
     }
-    emit("{} = {};", define_var("int", stmt->raw_name()), val);
+    emit("{} = {};", define_var("Ti_i32", stmt->raw_name()), val);
   }
 
   void visit(PrintStmt *stmt) override {
@@ -373,7 +373,7 @@ class CCTransformer : public IRVisitor {
     ScopedIndent _s(line_appender);
     auto begin_value = stmt->begin_value;
     auto end_value = stmt->end_value;
-    auto var = define_var("int", stmt->raw_name());
+    auto var = define_var("Ti_i32", stmt->raw_name());
     emit("for ({} = {}; {} < {}; {} += {}) {{", var, begin_value,
          stmt->raw_name(), end_value, stmt->raw_name(), 1 /* stmt->step? */);
     stmt->body->accept(this);
@@ -399,12 +399,12 @@ class CCTransformer : public IRVisitor {
     if (stmt->loop->is<OffloadedStmt>()) {
       auto type = stmt->loop->as<OffloadedStmt>()->task_type;
       if (type == OffloadedStmt::TaskType::range_for) {
-        emit("int {} = {};", stmt->raw_name(), stmt->loop->raw_name());
+        emit("Ti_i32 {} = {};", stmt->raw_name(), stmt->loop->raw_name());
       } else {
         TI_NOT_IMPLEMENTED
       }
     } else if (stmt->loop->is<RangeForStmt>()) {
-      emit("int {} = {};", stmt->raw_name(), stmt->loop->raw_name());
+      emit("Ti_i32 {} = {};", stmt->raw_name(), stmt->loop->raw_name());
     } else {
       TI_NOT_IMPLEMENTED
     }
@@ -412,7 +412,7 @@ class CCTransformer : public IRVisitor {
 
   void visit(RangeForStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    auto var = define_var("int", stmt->raw_name());
+    auto var = define_var("Ti_i32", stmt->raw_name());
     if (!stmt->reversed) {
       emit("for ({} = {}; {} < {}; {} += {}) {{", var, stmt->begin->raw_name(),
            stmt->raw_name(), stmt->end->raw_name(), stmt->raw_name(), 1);
@@ -477,7 +477,7 @@ std::unique_ptr<CCKernel> CCKernelGen::compile() {
 
   tran.run();
   auto source = tran.get_source();
-  auto ker = std::make_unique<CCKernel>(program, source, kernel->name);
+  auto ker = std::make_unique<CCKernel>(program, kernel, source, kernel->name);
   ker->compile();
   return ker;
 }

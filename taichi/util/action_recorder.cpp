@@ -24,12 +24,14 @@ ActionRecorder::ActionRecorder() {
 }
 
 void ActionRecorder::start_recording(const std::string &fn) {
+  TI_INFO("ActionRecorder: start recording to [{}]", fn);
   TI_ASSERT(!running);
   running = true;
   ofs.open(fn);
 }
 
 void ActionRecorder::stop_recording() {
+  TI_INFO("ActionRecorder: stop recording");
   TI_ASSERT(running);
   running = false;
   ofs.close();
@@ -43,8 +45,7 @@ void ActionRecorder::record(const std::string &content,
                             const std::vector<ActionArg> &arguments) {
   if (!running)
     return;
-  ofs << "- " << std::endl;
-  ofs << "  action: \"" << content << "\"" << std::endl;
+  ofs << "- action: \"" << content << "\"" << std::endl;
   for (auto &arg : arguments) {
     ofs << "  " << arg.serialize() << std::endl;
   }

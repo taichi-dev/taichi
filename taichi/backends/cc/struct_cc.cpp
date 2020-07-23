@@ -15,7 +15,7 @@ void CCLayoutGen::generate_children(SNode *snode) {
 void CCLayoutGen::generate_types(SNode *snode) {
   // suffix is for the array size
   auto node_name = snode->node_type_name;
-  auto struct_name = snode->get_node_type_name_hinted();
+  auto struct_name = "Ti_" + snode->get_node_type_name_hinted();
 
   if (snode->type == SNodeType::place) {
     const auto type = cc_data_type_name(snode->dt);
@@ -43,7 +43,6 @@ std::unique_ptr<CCLayout> CCLayoutGen::compile() {
 
   auto lay = std::make_unique<CCLayout>(program);
   lay->source = line_appender.lines();
-  lay->compile();
   return lay;
 }
 

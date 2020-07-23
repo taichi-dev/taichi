@@ -117,4 +117,7 @@ def test_mpm88():
 #                     reason='Stuck on Appveyor?')
 @ti.archs_with([ti.cpu], async_mode=True)
 def test_mpm88_async():
+    # It seems that all async tests on Appveyor run super slow. For example,
+    # on Appveyor, 10+ tests have passed during the execution of
+    # test_fuse_dense_x2y2z. Maybe thread synchronizations are expensive?
     run_mpm88_test()

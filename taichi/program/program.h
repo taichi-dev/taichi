@@ -250,8 +250,8 @@ class Program {
 
     auto runtime = tlctx->runtime_jit_module;
 
-    runtime->call<void *, void *>("runtime_" + key, llvm_runtime,
-                                  std::forward<Args>(args)...);
+    runtime->call<void *, Args...>("runtime_" + key, llvm_runtime,
+                                   std::forward<Args>(args)...);
     return fetch_result<T>(taichi_result_buffer_runtime_query_id);
   }
 

@@ -723,15 +723,19 @@ void Program::print_memory_profiler_info() {
   };
 
   std::function<void(SNode *, int)> visit = [&](SNode *snode, int depth) {
-    auto element_list = runtime_query<void *>("LLVMRuntime_get_node_allocators",
-                                              llvm_runtime, snode->id);
-    fetch_result<void *>(taichi_result_buffer_runtime_query_id);
+    auto element_list =
+        runtime_query<void *>("retrieve_element_list", snode->id);
 
     if (snode->type != SNodeType::place) {
       fmt::print("SNode {:10}\n", snode->get_node_type_name_hinted());
       if (element_list) {
         fmt::print("element_list:\n");
         print_list(element_list);
+      }
+
+      if (element_list) {
+        auto node_allocator = runtime_query<void *>(
+            "LLVMRuntime_get_node_allocators", llvm_runtime, snode->id);
       }
     }
     for (const auto &ch : snode->ch) {

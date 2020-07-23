@@ -1,5 +1,5 @@
 # The load-on-request closure (LoR-C) infrastructure, credit by @archibate
-def _():
+def _scope():
     ############## HUMAN TOUCHABLE BEGIN ###################
     import taichi as ti
 
@@ -47,7 +47,13 @@ def _():
         marker = request.node.get_closest_marker('taichi')
         req_arch = request.param
 
-        def ti_init(arch=[], exclude=[], require=[], **options):
+        def ti_init(arch=None, exclude=None, require=None, **options):
+            if arch is None:
+                arch = []
+            if exclude is None:
+                exclude = []
+            if require is None:
+                require = []
             if not isinstance(arch, (list, tuple)):
                 arch = [arch]
             if not isinstance(exclude, (list, tuple)):
@@ -89,9 +95,9 @@ def _():
 
 
 # Equivalent to `from taichi.testing import *` in `taichi/__init__.py`:
-_ = _()
-for __ in _:
-    if not __.startswith('_'):
-        setattr(__import__('taichi'), __, _[__])
+_scope = _scope()
+for _k, _v in _scope.keys():
+    if not _k.startswith('_'):
+        setattr(__import__('taichi'), _k, _v)
 
-globals().update(_)
+globals().update(_scope)

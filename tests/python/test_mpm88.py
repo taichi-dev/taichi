@@ -1,9 +1,10 @@
+import platform
+import pytest
 import taichi as ti
 from taichi import approx
 
 
-@ti.all_archs
-def test_mpm88():
+def run_mpm88_test():
     dim = 2
     N = 64
     n_particles = N * N
@@ -105,3 +106,18 @@ def test_mpm88():
     canvas.circle(ti.vec(pos[i, 0], pos[i, 1])).radius(1.5).color(0x068587).finish()
   gui.update()
   '''
+
+
+@ti.all_archs
+def test_mpm88():
+    run_mpm88_test()
+
+
+# @pytest.mark.skipif(platform.system() == 'Windows',
+#                     reason='Stuck on Appveyor?')
+@ti.archs_with([ti.cpu], async_mode=True)
+def test_mpm88_async():
+    # It seems that all async tests on Appveyor run super slow. For example,
+    # on Appveyor, 10+ tests have passed during the execution of
+    # test_fuse_dense_x2y2z. Maybe thread synchronizations are expensive?
+    run_mpm88_test()

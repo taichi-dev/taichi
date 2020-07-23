@@ -223,7 +223,7 @@ def test_bitmasked_offset_child():
     bm = ti.root.bitmasked(ti.i, n)
     bm.dense(ti.i, 16).place(x, x2)
     bm2 = bm.bitmasked(ti.i, 4)
-    
+
     bm2.dense(ti.i, 4).place(y, y2, y3)
     bm2.bitmasked(ti.i, 4).place(z)
 

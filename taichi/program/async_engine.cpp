@@ -269,7 +269,7 @@ bool AsyncEngine::fuse() {
     // 1. This could incorrectly fuse two range-for kernels that have different
     // sizes, but then the loop ranges get padded to the same power-of-two (E.g.
     // maybe a side effect when a struct-for is demoted to range-for).
-    // 1. It has also fused range-fors that have the same linear range, but are
+    // 2. It has also fused range-fors that have the same linear range, but are
     // of different dimensions of loop indices, e.g. (16, ) and (4, 4).
     bool is_same_range_for = task_a->task_type == OffloadedStmt::range_for &&
                              task_b->task_type == OffloadedStmt::range_for &&

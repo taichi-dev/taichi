@@ -113,8 +113,8 @@ def test_mpm88():
     run_mpm88_test()
 
 
-@pytest.mark.skipif(platform.system() == 'Windows',
-                    reason='Stuck on Appveyor?')
+# @pytest.mark.skipif(platform.system() == 'Windows',
+#                     reason='Stuck on Appveyor?')
 @ti.archs_with([ti.cpu], async_mode=True)
 def test_mpm88_async():
     run_mpm88_test()

@@ -60,7 +60,23 @@ kernel_profiler_print = lambda: core.get_current_program(
 kernel_profiler_clear = lambda: core.get_current_program(
 ).kernel_profiler_clear()
 
-extension = core.Extension
+memory_profiler_print = lambda: core.get_current_program().print_memory_profiler_info()
+
+
+class _Extension(object):
+    def __init__(self):
+        try:
+            self.sparse = core.sparse
+            self.data64 = core.data64
+            self.adstack = core.adstack
+            self.assertion = core.assertion
+            self.bls = core.bls
+        except:
+            # In case of adding an extension crashes the format server
+            core.warn("Extension list loading failed.")
+
+
+extension = _Extension()
 is_extension_supported = core.is_extension_supported
 
 

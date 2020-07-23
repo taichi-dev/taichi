@@ -700,6 +700,43 @@ int Program::default_block_dim() const {
   }
 }
 
+void Program::print_memory_profiler_info() {
+  TI_ASSERT(arch_uses_llvm(config.arch));
+
+  auto tlctx = llvm_context_host.get();
+  if (llvm_context_device) {
+    tlctx = llvm_context_device.get();
+  }
+
+  auto runtime = tlctx->runtime_jit_module;
+
+  std::function<void(SNode *, int)> visit = [&](SNode *snode, int depth) {
+    runtime->call<void *, int32>("runtime_retrieve_element_list", llvm_runtime,
+                                 snode->id);
+    auto element_list =
+        fetch_result<void *>(taichi_result_buffer_memory_profiler_id);
+
+    if (snode->type != SNodeType::place) {
+      fmt::print("SNode {:10} list ptr {}\n",
+                 snode->get_node_type_name_hinted(), element_list);
+    }
+
+    if (element_list) {
+      runtime->call<void *, void *>("runtime_element_list_retrieve_length",
+                                    llvm_runtime, element_list);
+
+      auto element_list_len =
+          fetch_result<int32>(taichi_result_buffer_memory_profiler_id);
+      TI_P(element_list_len);
+    }
+    for (const auto &ch : snode->ch) {
+      visit(ch.get(), depth + 1);
+    }
+  };
+
+  visit(snode_root.get(), 0);
+}
+
 Program::~Program() {
   if (!finalized)
     finalize();

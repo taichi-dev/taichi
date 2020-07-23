@@ -16,6 +16,7 @@ constexpr std::size_t taichi_result_buffer_entries = 32;
 constexpr std::size_t taichi_result_buffer_ret_value_id = 0;
 // slot for error code and error message char *
 constexpr std::size_t taichi_result_buffer_error_id = 1;
+constexpr std::size_t taichi_result_buffer_memory_profiler_id = 2;
 
 constexpr int taichi_listgen_max_element_size = 1024;
 

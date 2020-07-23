@@ -417,6 +417,14 @@ struct ListManager {
 
   void touch_chunk(int chunk_id);
 
+  i32 get_num_active_chunks() {
+    i32 counter = 0;
+    for (int i = 0; i < max_num_chunks; i++) {
+      counter += (chunks[i] != nullptr);
+    }
+    return counter;
+  }
+
   void clear() {
     num_elements = 0;
   }
@@ -456,6 +464,14 @@ struct ListManager {
     return -1;
   }
 };
+
+STRUCT_FIELD(ListManager, element_size);
+STRUCT_FIELD(ListManager, max_num_elements_per_chunk);
+STRUCT_FIELD(ListManager, num_elements);
+
+i32 ListManager_get_num_active_chunks(ListManager *list_manager) {
+  return list_manager->get_num_active_chunks();
+}
 
 extern "C" {
 
@@ -663,10 +679,14 @@ void runtime_retrieve_error_message(LLVMRuntime *runtime, int i) {
                       runtime->error_message_template[i]);
 }
 
-void runtime_retrieve_error_message_argument(LLVMRuntime *runtime,
-                                             int argument_id) {
-  runtime->set_result(taichi_result_buffer_error_id,
-                      runtime->error_message_arguments[argument_id]);
+void runtime_retrieve_element_list(LLVMRuntime *runtime, int snode_id) {
+  runtime->set_result(taichi_result_buffer_memory_profiler_id,
+                      runtime->element_lists[snode_id]);
+}
+
+void runtime_element_list_retrieve_length(LLVMRuntime *runtime, ListManager *list) {
+  runtime->set_result(taichi_result_buffer_memory_profiler_id,
+                      list->num_elements);
 }
 
 void taichi_assert(Context *context, i32 test, const char *msg) {

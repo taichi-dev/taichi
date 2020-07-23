@@ -239,6 +239,8 @@ class Program {
 
   int default_block_dim() const;
 
+  void print_memory_profiler_info();
+
   ~Program();
 
  private:

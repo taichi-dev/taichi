@@ -1,7 +1,6 @@
 #pragma once
 
 #include <vector>
-#include "opengl_kernel_util.h"
 
 TLANG_NAMESPACE_BEGIN
 

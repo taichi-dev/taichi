@@ -17,7 +17,7 @@
 TLANG_NAMESPACE_BEGIN
 namespace opengl {
 
-#define PER_OPENGL_EXTENSION(x) bool opengl_has_##x;
+#define PER_OPENGL_EXTENSION(x) bool opengl_extension_##x;
 #include "taichi/inc/opengl_extension.inc.h"
 #undef PER_OPENGL_EXTENSION
 
@@ -256,8 +256,7 @@ struct GLBuffer : GLSSBO {
   size_t size;
 
   GLBuffer(GLBufId index, void *base, size_t size)
-    : index(index), base(base), size(size)
-  {
+      : index(index), base(base), size(size) {
     bind_data(base, size);
     bind_index((int)index);
   }
@@ -300,7 +299,6 @@ struct GLSLLauncherImpl {
   std::vector<std::unique_ptr<CompiledProgram>> programs;
 };
 
-
 ParallelSize::~ParallelSize() {
 }
 
@@ -335,7 +333,7 @@ size_t ParallelSize_DynamicRange::get_num_groups(GLSLLauncher *launcher) const {
 
   size_t n;
   auto gtmp = launcher->impl->core_bufs.get(GLBufId::Gtmp);
-  void *gtmp_now = gtmp->map(); // TODO: RAII map/unmap
+  void *gtmp_now = gtmp->map();  // TODO: RAII map/unmap
   size_t b = range_begin, e = range_end;
   if (!const_begin)
     b = *(const int *)((const char *)gtmp_now + b);
@@ -408,12 +406,12 @@ bool initialize_opengl(bool error_tolerance) {
     }
     TI_ERROR("[glsl] cannot initialize GLAD");
   }
-#define PER_OPENGL_EXTENSION(x)    \
-  if ((opengl_has_##x = GLAD_##x)) \
+#define PER_OPENGL_EXTENSION(x)          \
+  if ((opengl_extension_##x = GLAD_##x)) \
     TI_TRACE("[glsl] Found " #x);
 #include "taichi/inc/opengl_extension.inc.h"
 #undef PER_OPENGL_EXTENSION
-  if (!opengl_has_GL_ARB_compute_shader) {
+  if (!opengl_extension_GL_ARB_compute_shader) {
     if (error_tolerance) {
       TI_INFO("Your OpenGL does not support GL_ARB_compute_shader extension");
       supported = std::make_optional<bool>(false);
@@ -445,6 +443,7 @@ struct CompiledKernel {
   std::string kernel_name;
   std::unique_ptr<GLProgram> glsl;
   std::unique_ptr<ParallelSize> ps;
+  std::string source;
 
   // disscussion:
   // https://github.com/taichi-dev/taichi/pull/696#issuecomment-609332527
@@ -455,8 +454,13 @@ struct CompiledKernel {
                           const std::string &kernel_source_code,
                           std::unique_ptr<ParallelSize> ps_)
       : kernel_name(kernel_name_), ps(std::move(ps_)) {
-    display_kernel_info(kernel_name_, kernel_source_code);
-    glsl = std::make_unique<GLProgram>(GLShader(kernel_source_code));
+    source =
+        kernel_source_code +
+        fmt::format(
+            "layout(local_size_x = {}, local_size_y = 1, local_size_z = 1) in;",
+            ps->get_threads_per_group());
+    display_kernel_info(kernel_name_, source);
+    glsl = std::make_unique<GLProgram>(GLShader(source));
     glsl->link();
   }
 
@@ -561,8 +565,8 @@ struct CompiledProgram::Impl {
     // NOTE: these dirty codes are introduced by #694, TODO: RAII
     /// DIRTY_BEGIN {{{
     if (ext_arr_map.size()) {
-      bufs.add_buffer(GLBufId::Earg,
-          ctx.extra_args, arg_count * taichi_max_num_args * sizeof(int));
+      bufs.add_buffer(GLBufId::Earg, ctx.extra_args,
+                      arg_count * taichi_max_num_args * sizeof(int));
       if (ext_arr_map.size() == 1) {  // zero-copy for only one ext_arr
         auto it = ext_arr_map.begin();
         auto extptr = (void *)ctx.args[it->first];
@@ -588,8 +592,8 @@ struct CompiledProgram::Impl {
       }
     }
     /// DIRTY_END }}}
-    bufs.add_buffer(GLBufId::Args,
-          ctx.args, std::max(arg_count, ret_count) * sizeof(uint64_t));
+    bufs.add_buffer(GLBufId::Args, ctx.args,
+                    std::max(arg_count, ret_count) * sizeof(uint64_t));
     if (used.print) {
       auto runtime_buf = launcher->impl->core_bufs.get(GLBufId::Runtime);
       auto mapped = (GLSLRuntime *)runtime_buf->map();
@@ -599,7 +603,7 @@ struct CompiledProgram::Impl {
     for (const auto &ker : kernels) {
       ker->dispatch_compute(launcher);
     }
-    for (auto &[idx, buf]: launcher->impl->user_bufs.bufs) {
+    for (auto &[idx, buf] : launcher->impl->user_bufs.bufs) {
       buf->copy_back();
     }
     launcher->impl->user_bufs.clear();
@@ -626,20 +630,20 @@ GLSLLauncher::GLSLLauncher(size_t root_size) {
   impl = std::make_unique<GLSLLauncherImpl>();
 
   impl->runtime = std::make_unique<GLSLRuntime>();
-  impl->core_bufs.add_buffer(GLBufId::Runtime,
-      impl->runtime.get(), sizeof(GLSLRuntime));
+  impl->core_bufs.add_buffer(GLBufId::Runtime, impl->runtime.get(),
+                             sizeof(GLSLRuntime));
 
   impl->listman = std::make_unique<GLSLListman>();
-  impl->core_bufs.add_buffer(GLBufId::Listman,
-      impl->listman.get(), sizeof(GLSLListman));
+  impl->core_bufs.add_buffer(GLBufId::Listman, impl->listman.get(),
+                             sizeof(GLSLListman));
 
   impl->root_buffer.resize(root_size, 0);
-  impl->core_bufs.add_buffer(GLBufId::Root,
-      impl->root_buffer.data(), root_size);
+  impl->core_bufs.add_buffer(GLBufId::Root, impl->root_buffer.data(),
+                             root_size);
 
   impl->gtmp_buffer.resize(taichi_global_tmp_buffer_size, 0);
-  impl->core_bufs.add_buffer(GLBufId::Gtmp,
-      impl->gtmp_buffer.data(), taichi_global_tmp_buffer_size);
+  impl->core_bufs.add_buffer(GLBufId::Gtmp, impl->gtmp_buffer.data(),
+                             taichi_global_tmp_buffer_size);
 }
 
 void GLSLLauncher::keep(std::unique_ptr<CompiledProgram> program) {

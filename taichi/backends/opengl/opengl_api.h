@@ -6,6 +6,7 @@
 #include <vector>
 #include <optional>
 
+#include "opengl_kernel_util.h"
 #include "opengl_kernel_launcher.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -17,9 +18,19 @@ namespace opengl {
 
 bool initialize_opengl(bool error_tolerance = false);
 bool is_opengl_api_available();
-#define PER_OPENGL_EXTENSION(x) extern bool opengl_has_##x;
+
+#define PER_OPENGL_EXTENSION(x) extern bool opengl_extension_##x;
 #include "taichi/inc/opengl_extension.inc.h"
 #undef PER_OPENGL_EXTENSION
+
+#define TI_OPENGL_REQUIRE(used, x) \
+  ([&]() {                         \
+    if (opengl_extension_##x) {    \
+      used.extension_##x = true;   \
+      return true;                 \
+    }                              \
+    return false;                  \
+  })()
 
 class ParallelSize {
  public:

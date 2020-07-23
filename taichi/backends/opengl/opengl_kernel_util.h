@@ -31,6 +31,11 @@ struct UsedFeature {
   bool fast_pow{false};
   bool random{false};
   bool print{false};
+
+  // extensions:
+#define PER_OPENGL_EXTENSION(x) bool extension_##x{false};
+#include "taichi/inc/opengl_extension.inc.h"
+#undef PER_OPENGL_EXTENSION
 };
 
 using SNodeId = std::string;

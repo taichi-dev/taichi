@@ -23,7 +23,7 @@ bool is_opengl_api_available();
 
 class ParallelSize {
  public:
-  virtual size_t get_num_groups(GLSLLaunchGuard &guard) const = 0;
+  virtual size_t get_num_groups(GLSLLauncher *launcher) const = 0;
   virtual size_t get_threads_per_group() const;
   virtual ~ParallelSize();
 };
@@ -35,7 +35,7 @@ class ParallelSize_ConstRange : public ParallelSize {
 
  public:
   ParallelSize_ConstRange(int num_threads_);
-  virtual size_t get_num_groups(GLSLLaunchGuard &guard) const override;
+  virtual size_t get_num_groups(GLSLLauncher *launcher) const override;
   virtual size_t get_threads_per_group() const override;
   virtual ~ParallelSize_ConstRange() override = default;
 };
@@ -48,14 +48,14 @@ class ParallelSize_DynamicRange : public ParallelSize {
 
  public:
   ParallelSize_DynamicRange(OffloadedStmt *stmt);
-  virtual size_t get_num_groups(GLSLLaunchGuard &guard) const override;
+  virtual size_t get_num_groups(GLSLLauncher *launcher) const override;
   virtual ~ParallelSize_DynamicRange() override = default;
 };
 
 class ParallelSize_StructFor : public ParallelSize {
  public:
   ParallelSize_StructFor(OffloadedStmt *stmt);
-  virtual size_t get_num_groups(GLSLLaunchGuard &guard) const override;
+  virtual size_t get_num_groups(GLSLLauncher *launcher) const override;
   virtual ~ParallelSize_StructFor() override = default;
 };
 

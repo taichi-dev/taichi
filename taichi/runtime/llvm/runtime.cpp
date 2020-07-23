@@ -379,7 +379,7 @@ Data are organized in chunks, where each chunk is allocated on demand.
 struct ListManager {
   static constexpr std::size_t max_num_chunks = 1024;
   Ptr chunks[max_num_chunks];
-  std::size_t element_size;
+  std::size_t element_size{0};
   std::size_t max_num_elements_per_chunk;
   i32 log2chunk_num_elements;
   i32 lock;
@@ -468,10 +468,6 @@ struct ListManager {
 STRUCT_FIELD(ListManager, element_size);
 STRUCT_FIELD(ListManager, max_num_elements_per_chunk);
 STRUCT_FIELD(ListManager, num_elements);
-
-i32 ListManager_get_num_active_chunks(ListManager *list_manager) {
-  return list_manager->get_num_active_chunks();
-}
 
 extern "C" {
 
@@ -674,6 +670,12 @@ void runtime_retrieve_and_reset_error_code(LLVMRuntime *runtime) {
   runtime->error_code = 0;
 }
 
+void runtime_listmanager_get_num_active_chunks(LLVMRuntime *runtime,
+                                               ListManager *list_manager) {
+  runtime->set_result(taichi_result_buffer_memory_profiler_id,
+                      list_manager->get_num_active_chunks());
+}
+
 void runtime_retrieve_error_message(LLVMRuntime *runtime, int i) {
   runtime->set_result(taichi_result_buffer_error_id,
                       runtime->error_message_template[i]);
@@ -684,9 +686,23 @@ void runtime_retrieve_element_list(LLVMRuntime *runtime, int snode_id) {
                       runtime->element_lists[snode_id]);
 }
 
-void runtime_element_list_retrieve_length(LLVMRuntime *runtime, ListManager *list) {
+void runtime_element_list_retrieve_length(LLVMRuntime *runtime,
+                                          ListManager *list) {
   runtime->set_result(taichi_result_buffer_memory_profiler_id,
                       list->num_elements);
+}
+
+void runtime_element_list_retrieve_element_size(LLVMRuntime *runtime,
+                                                ListManager *list) {
+  runtime->set_result(taichi_result_buffer_memory_profiler_id,
+                      list->element_size);
+}
+
+void runtime_element_list_retrieve_max_num_elements_per_chunk(
+    LLVMRuntime *runtime,
+    ListManager *list) {
+  runtime->set_result(taichi_result_buffer_memory_profiler_id,
+                      list->max_num_elements_per_chunk);
 }
 
 void taichi_assert(Context *context, i32 test, const char *msg) {

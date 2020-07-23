@@ -717,17 +717,38 @@ void Program::print_memory_profiler_info() {
         fetch_result<void *>(taichi_result_buffer_memory_profiler_id);
 
     if (snode->type != SNodeType::place) {
-      fmt::print("SNode {:10} list ptr {}\n",
-                 snode->get_node_type_name_hinted(), element_list);
-    }
+      fmt::print("SNode {:10}\n", snode->get_node_type_name_hinted());
 
-    if (element_list) {
-      runtime->call<void *, void *>("runtime_element_list_retrieve_length",
-                                    llvm_runtime, element_list);
+      if (element_list) {
+        runtime->call<void *, void *>("runtime_element_list_retrieve_length",
+                                      llvm_runtime, element_list);
+        auto element_list_len =
+            fetch_result<int32>(taichi_result_buffer_memory_profiler_id);
 
-      auto element_list_len =
-          fetch_result<int32>(taichi_result_buffer_memory_profiler_id);
-      TI_P(element_list_len);
+        runtime->call<void *, void *>(
+            "runtime_element_list_retrieve_element_size", llvm_runtime,
+            element_list);
+        auto element_size =
+            fetch_result<int32>(taichi_result_buffer_memory_profiler_id);
+
+        runtime->call<void *, void *>(
+            "runtime_element_list_retrieve_max_num_elements_per_chunk",
+            llvm_runtime, element_list);
+        auto elements_per_chunk =
+            fetch_result<int32>(taichi_result_buffer_memory_profiler_id);
+
+        runtime->call<void *, void *>(
+            "runtime_listmanager_get_num_active_chunks", llvm_runtime,
+            element_list);
+        auto num_active_chunks =
+            fetch_result<int32>(taichi_result_buffer_memory_profiler_id);
+
+        fmt::print(
+            "  length {}   element size {} B   elements_per_chunk "
+            "{}  active chunks {}\n",
+            element_list_len, element_size, elements_per_chunk,
+            num_active_chunks);
+      }
     }
     for (const auto &ch : snode->ch) {
       visit(ch.get(), depth + 1);

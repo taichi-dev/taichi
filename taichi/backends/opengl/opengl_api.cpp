@@ -149,12 +149,6 @@ struct GLProgram {
   void use() const {
     glUseProgram(id_);
   }
-
-  template <typename T>
-  void set_uniform(const std::string &name, T value) const {
-    GLuint loc = glGetUniformLocation(id_, name.c_str());
-    glapi_set_uniform(loc, value);
-  }
 };
 
 // https://blog.csdn.net/ylbs110/article/details/52074826
@@ -261,6 +255,21 @@ struct GLBuffer : GLSSBO {
     bind_index((int)index);
   }
 
+  GLBuffer(GLBufId index)
+      : index(index), base(nullptr), size(0) {
+    bind_index((int)index);
+  }
+
+  void copy_forward() {
+    bind_data(base, size);
+  }
+
+  void rebind(void *new_base, size_t new_size) {
+    base = new_base;
+    size = new_size;
+    bind_data(base, size);
+  }
+
   void copy_back() {
     if (!size)
       return;
@@ -275,7 +284,7 @@ struct GLBufferTable {
   std::map<GLBufId, std::unique_ptr<GLBuffer>> bufs;
 
   GLBuffer *get(GLBufId id) {
-    return bufs[id].get();
+    return bufs.at(id).get();
   }
 
   void add_buffer(GLBufId index, void *base, size_t size) {

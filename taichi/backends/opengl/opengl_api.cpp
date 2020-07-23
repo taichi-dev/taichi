@@ -43,13 +43,14 @@ std::string get_opengl_error_string(GLenum err) {
 
 void check_opengl_error(const std::string &msg = "OpenGL") {
   auto err = glGetError();
-  if (err != GL_NO_ERROR) {
-    auto estr = get_opengl_error_string(err);
-    TI_ERROR("{}: {}", msg, estr);
-  }
+  if (err == GL_NO_ERROR)
+    return;
+  auto estr = get_opengl_error_string(err);
+  TI_ERROR("{}: {}", msg, estr);
 }
 
 int opengl_get_threads_per_group() {
+  TI_AUTO_PROF;
   int ret = 1000;
   glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &ret);
   check_opengl_error("glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS)");
@@ -88,6 +89,7 @@ struct GLShader {
   }
 
   void compile(const std::string &source) const {
+    TI_AUTO_PROF;
     const GLchar *source_cstr = source.c_str();
     glShaderSource(id_, 1, &source_cstr, nullptr);
 
@@ -131,6 +133,7 @@ struct GLProgram {
   }
 
   void link() const {
+    TI_AUTO_PROF;
     TI_TRACE("glLinkProgram IN");
     glLinkProgram(id_);
     TI_TRACE("glLinkProgram OUT");
@@ -196,6 +199,7 @@ struct GLSSBO {
   void bind_data(void *data,
                  size_t size,
                  GLuint usage = GL_DYNAMIC_READ) const {
+    TI_AUTO_PROF;
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, id_);
     check_opengl_error("glBindBuffer");
     glBufferData(GL_SHADER_STORAGE_BUFFER, size, data, usage);
@@ -228,6 +232,7 @@ struct GLSSBO {
   }
 
   void *map(GLbitfield access = GL_READ_ONLY) const {
+    TI_AUTO_PROF;
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, id_);
     check_opengl_error("glBindBuffer");
     void *p = glMapBuffer(GL_SHADER_STORAGE_BUFFER, access);
@@ -251,6 +256,7 @@ struct GLBuffer : GLSSBO {
 
   GLBuffer(GLBufId index, void *base, size_t size)
       : index(index), base(base), size(size) {
+    TI_AUTO_PROF;
     bind_data(base, size);
     bind_index((int)index);
   }
@@ -261,16 +267,19 @@ struct GLBuffer : GLSSBO {
   }
 
   void copy_forward() {
+    TI_AUTO_PROF;
     bind_data(base, size);
   }
 
   void rebind(void *new_base, size_t new_size) {
+    TI_AUTO_PROF;
     base = new_base;
     size = new_size;
     bind_data(base, size);
   }
 
   void copy_back() {
+    TI_AUTO_PROF;
     if (!size)
       return;
     void *mapped = this->map();
@@ -288,6 +297,7 @@ struct GLBufferTable {
   }
 
   void add_buffer(GLBufId index, void *base, size_t size) {
+    TI_AUTO_PROF;
     bufs[index] = std::make_unique<GLBuffer>(index, base, size);
   }
 
@@ -338,6 +348,7 @@ size_t ParallelSize_ConstRange::get_num_groups(GLSLLauncher *launcher) const {
 }
 
 size_t ParallelSize_DynamicRange::get_num_groups(GLSLLauncher *launcher) const {
+  TI_AUTO_PROF;
   const size_t TPG = opengl_get_threads_per_group();
 
   size_t n;
@@ -474,6 +485,7 @@ struct CompiledKernel {
   }
 
   void dispatch_compute(GLSLLauncher *launcher) const {
+    TI_AUTO_PROF;
     int num_groups = ps->get_num_groups(launcher);
 
     glsl->use();
@@ -485,11 +497,17 @@ struct CompiledKernel {
     // `glDispatchCompute(X, Y, Z)`   - the X*Y*Z  == `Blocks`   in CUDA
     // `layout(local_size_x = X) in;` - the X      == `Threads`  in CUDA
     //
-    glDispatchCompute(num_groups, 1, 1);
-    check_opengl_error(fmt::format("glDispatchCompute({})", num_groups));
+    {
+      TI_PROFILER("glDispatchCompute");
+      glDispatchCompute(num_groups, 1, 1);
+      check_opengl_error("glDispatchCompute");
+    }
 
-    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-    check_opengl_error("glMemoryBarrier");
+    {
+      TI_PROFILER("glMemoryBarrier");
+      glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+      check_opengl_error("glMemoryBarrier");
+    }
   }
 };
 
@@ -568,19 +586,20 @@ struct CompiledProgram::Impl {
   }
 
   void launch(Context &ctx, GLSLLauncher *launcher) const {
-    GLBufferTable &bufs = launcher->impl->user_bufs;
+    TI_AUTO_PROF;
+    GLBufferTable &user_bufs = launcher->impl->user_bufs;
     std::vector<char> base_arr;
     std::vector<void *> saved_ctx_ptrs;
     // NOTE: these dirty codes are introduced by #694, TODO: RAII
-    /// DIRTY_BEGIN {{{
-    if (ext_arr_map.size()) {
-      bufs.add_buffer(GLBufId::Earg, ctx.extra_args,
+    if (ext_arr_map.size()) { /// DIRTY_BEGIN {{{
+      TI_PROFILER("launch:ext_arr1");
+      user_bufs.add_buffer(GLBufId::Earg, ctx.extra_args,
                       arg_count * taichi_max_num_args * sizeof(int));
       if (ext_arr_map.size() == 1) {  // zero-copy for only one ext_arr
         auto it = ext_arr_map.begin();
         auto extptr = (void *)ctx.args[it->first];
         ctx.args[it->first] = 0;
-        bufs.add_buffer(GLBufId::Extr, extptr, it->second);
+        user_bufs.add_buffer(GLBufId::Extr, extptr, it->second);
       } else {
         size_t accum_size = 0;
         std::vector<void *> ptrarr;
@@ -597,14 +616,15 @@ struct CompiledProgram::Impl {
           ctx.args[i] = accum_size;
           accum_size += size;
         }  // concat all extptr into my baseptr
-        bufs.add_buffer(GLBufId::Extr, baseptr, accum_size);
+        user_bufs.add_buffer(GLBufId::Extr, baseptr, accum_size);
       }
+    } /// DIRTY_END }}}
+    auto n_args = std::max(arg_count, ret_count);
+    if (n_args) {
+      user_bufs.add_buffer(GLBufId::Args, ctx.args, n_args * sizeof(uint64_t));
     }
-    /// DIRTY_END }}}
-    bufs.add_buffer(GLBufId::Args, ctx.args,
-                    std::max(arg_count, ret_count) * sizeof(uint64_t));
     if (used.print) {
-      auto runtime_buf = launcher->impl->core_bufs.get(GLBufId::Runtime);
+      auto runtime_buf = core_bufs.get(GLBufId::Runtime);
       auto mapped = (GLSLRuntime *)runtime_buf->map();
       mapped->msg_count = 0;
       runtime_buf->unmap();
@@ -612,10 +632,10 @@ struct CompiledProgram::Impl {
     for (const auto &ker : kernels) {
       ker->dispatch_compute(launcher);
     }
-    for (auto &[idx, buf] : launcher->impl->user_bufs.bufs) {
+    for (auto &[idx, buf] : user_bufs.bufs) {
       buf->copy_back();
     }
-    launcher->impl->user_bufs.clear();
+    user_bufs.clear();
     if (used.print) {
       dump_message_buffer(launcher);
     }

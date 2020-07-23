@@ -24,13 +24,13 @@ bool is_opengl_api_available();
 #undef PER_OPENGL_EXTENSION
 
 #define TI_OPENGL_REQUIRE(used, x) \
-  ([&] () { \
-     if (opengl_extension_##x) { \
-       used.extension_##x = true; \
-       return true; \
-     } \
-     return false; \
-   })()
+  ([&]() {                         \
+    if (opengl_extension_##x) {    \
+      used.extension_##x = true;   \
+      return true;                 \
+    }                              \
+    return false;                  \
+  })()
 
 class ParallelSize {
  public:

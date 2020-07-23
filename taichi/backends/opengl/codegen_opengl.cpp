@@ -564,14 +564,14 @@ class KernelGen : public IRVisitor {
     TI_ASSERT(stmt->width() == 1);
     auto dt = stmt->dest->element_type();
     if (dt == DataType::i32 ||
-        (TI_OPENGL_REQUIRE(used, GL_NV_shader_atomic_int64)
-         && dt == DataType::i64) ||
+        (TI_OPENGL_REQUIRE(used, GL_NV_shader_atomic_int64) &&
+         dt == DataType::i64) ||
         ((stmt->op_type == AtomicOpType::add ||
           stmt->op_type == AtomicOpType::sub) &&
-         ((TI_OPENGL_REQUIRE(used, GL_NV_shader_atomic_float)
-           && dt == DataType::f32) ||
-          (TI_OPENGL_REQUIRE(used, GL_NV_shader_atomic_float64)
-           && dt == DataType::f64)))) {
+         ((TI_OPENGL_REQUIRE(used, GL_NV_shader_atomic_float) &&
+           dt == DataType::f32) ||
+          (TI_OPENGL_REQUIRE(used, GL_NV_shader_atomic_float64) &&
+           dt == DataType::f64)))) {
       emit("{} {} = {}(_{}_{}_[{} >> {}], {});",
            opengl_data_type_name(stmt->val->element_type()), stmt->short_name(),
            opengl_atomic_op_type_cap_name(stmt->op_type),

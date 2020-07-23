@@ -186,7 +186,7 @@ void export_lang(py::module &m) {
       .def("get_expr", &SNode::get_expr, py::return_value_policy::reference)
       .def("write_int", &SNode::write_int)
       .def("write_float", &SNode::write_float)
-      .def("get_num_elements_along_axis", &SNode::num_elements_along_axis)
+      .def("get_shape_along_axis", &SNode::shape_along_axis)
       .def("get_physical_index_position",
            [](SNode *snode) {
              return std::vector<int>(
@@ -539,6 +539,9 @@ void export_lang(py::module &m) {
   m.def("vectorize", Vectorize);
   m.def("block_dim", BlockDim);
   m.def("cache", Cache);
+  m.def("no_activate", [](SNode *snode) {
+    get_current_program().get_current_kernel().no_activate.push_back(snode);
+  });
   m.def("stop_grad",
         [](SNode *snode) { current_ast_builder().stop_gradient(snode); });
 
@@ -561,7 +564,7 @@ void export_lang(py::module &m) {
   m.def("get_version_patch", get_version_patch);
   m.def("get_llvm_version_string", get_llvm_version_string);
   m.def("test_printf", [] { printf("test_printf\n"); });
-  m.def("test_logging", [] { TI_INFO("test_logging\n"); });
+  m.def("test_logging", [] { TI_INFO("test_logging"); });
   m.def("trigger_crash", [] { *(int *)(1) = 0; });
   m.def("get_max_num_indices", [] { return taichi_max_num_indices; });
   m.def("get_max_num_args", [] { return taichi_max_num_args; });

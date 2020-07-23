@@ -387,8 +387,7 @@ void Program::materialize_layout() {
         opengl_struct_compiled_->root_size);
 #ifdef TI_WITH_CC
   } else if (config.arch == Arch::cc) {
-    cccp::CCLayoutGen scomp(snode_root.get());
-    cc_program->layout = scomp.compile();
+    cc_program->compile_layout(snode_root.get());
 #endif
   }
 }
@@ -402,7 +401,8 @@ void Program::check_runtime_error() {
     tlctx = llvm_context_device.get();
   }
   auto runtime_jit_module = tlctx->runtime_jit_module;
-  runtime_jit_module->call<void *>("runtime_retrieve_error_code", llvm_runtime);
+  runtime_jit_module->call<void *>("runtime_retrieve_and_reset_error_code",
+                                   llvm_runtime);
   auto error_code = fetch_result<int64>(taichi_result_buffer_error_id);
 
   if (error_code) {
@@ -568,6 +568,8 @@ Arch Program::get_snode_accessor_arch() {
     return Arch::cuda;
   } else if (config.arch == Arch::metal) {
     return Arch::metal;
+  } else if (config.arch == Arch::cc) {
+    return Arch::cc;
   } else {
     return get_host_arch();
   }

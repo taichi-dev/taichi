@@ -69,15 +69,15 @@ To save images without invoking ``ti.GUI.show(filename)``, use ``ti.imwrite(file
         ti.imwrite(pixels.to_numpy(), filename)
         print(f'The image has been saved to {filename}')
 
-- ``ti.imwrite`` can export Taichi tensors (``ti.Matrix.field``, ``ti.Vector.field``, ``ti.field``) and numpy tensors ``np.ndarray``.
+- ``ti.imwrite`` can export Taichi fields (``ti.Matrix.field``, ``ti.Vector.field``, ``ti.field``) and numpy tensors ``np.ndarray``.
 - Same as above ``ti.GUI.show(filename)``, the image format (``png``, ``jpg`` and ``bmp``) is also controlled by the suffix of ``filename`` in ``ti.imwrite(filename)``.
-- Meanwhile, the resulted image type (grayscale, RGB, or RGBA) is determined by **the number of channels in the input tensor**, i.e., the length of the third dimension (``tensor.shape[2]``).
-- In other words, a tensor that has shape ``(w, h)`` or ``(w, h, 1)`` will be exported as a grayscale image.
-- If you want to export ``RGB`` or ``RGBA`` images instead, the input tensor should have a shape ``(w, h, 3)`` or ``(w, h, 4)`` respectively.
+- Meanwhile, the resulted image type (grayscale, RGB, or RGBA) is determined by **the number of channels in the input field**, i.e., the length of the third dimension (``field.shape[2]``).
+- In other words, a field that has shape ``(w, h)`` or ``(w, h, 1)`` will be exported as a grayscale image.
+- If you want to export ``RGB`` or ``RGBA`` images instead, the input field should have a shape ``(w, h, 3)`` or ``(w, h, 4)`` respectively.
 
 .. note::
 
-    All Taichi tensors have their own data types, such as ``ti.u8`` and ``ti.f32``. Different data types can lead to different behaviors of ``ti.imwrite``. Please check out :ref:`gui` for more details.
+    All Taichi fields have their own data types, such as ``ti.u8`` and ``ti.f32``. Different data types can lead to different behaviors of ``ti.imwrite``. Please check out :ref:`gui` for more details.
 
 - Taichi offers other helper functions that read and show images in addition to ``ti.imwrite``. They are also demonstrated in :ref:`gui`.
 

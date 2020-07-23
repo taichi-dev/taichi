@@ -53,7 +53,7 @@ Paint on a window
 .. function:: gui.set_image(img)
 
     :parameter gui: (GUI) the window object
-    :parameter img: (np.array or field) field containing the image, see notes below
+    :parameter img: (np.array or ti.field) field containing the image, see notes below
 
     Set an image to display on the window.
 

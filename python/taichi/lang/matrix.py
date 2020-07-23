@@ -28,7 +28,7 @@ class Matrix(TaichiOperations):
                  cols=None):
         self.grad = None
 
-        # construct from rows or cols
+        # construct from rows or cols (deprecated)
         if rows is not None or cols is not None:
             warning(
                 f"ti.Matrix(rows=[...]) or ti.Matrix(cols=[...]) is deprecated, use ti.Matrix.rows([...]) or ti.Matrix.cols([...]) instead.",
@@ -76,57 +76,30 @@ class Matrix(TaichiOperations):
                 self.m = 1
             self.entries = [x for row in mat for x in row]
 
-        # construct global matrix
         else:
-            self.entries = []
-            self.n = n
-            self.m = m
-            self.dt = dt
             if dt is None:
-                for i in range(n * m):
-                    self.entries.append(impl.expr_init(None))
+                # create a local matrix with specific (n, m)
+                self.entries = [impl.expr_init(None) for i in range(n * m)]
+                self.n = n
+                self.m = m
             else:
-                assert not impl.inside_kernel()
-                for i in range(n * m):
-                    self.entries.append(impl.field(dt))
-                self.grad = self.make_grad()
-
-            if layout is not None:
-                assert shape is not None, 'layout is useless without shape'
-            if shape is not None:
-                if isinstance(shape, numbers.Number):
-                    shape = (shape, )
-                if isinstance(offset, numbers.Number):
-                    offset = (offset, )
-
-                if offset is not None:
-                    assert len(shape) == len(
-                        offset
-                    ), f'The dimensionality of shape and offset must be the same  ({len(shape)} != {len(offset)})'
-
-                import taichi as ti
-                if layout is None:
-                    layout = ti.AOS
-
-                dim = len(shape)
-                if layout.soa:
-                    for i, e in enumerate(self.entries):
-                        ti.root.dense(ti.index_nd(dim),
-                                      shape).place(e, offset=offset)
-                        if needs_grad:
-                            ti.root.dense(ti.index_nd(dim),
-                                          shape).place(e.grad, offset=offset)
-                else:
-                    var_list = []
-                    for i, e in enumerate(self.entries):
-                        var_list.append(e)
-                    if needs_grad:
-                        for i, e in enumerate(self.entries):
-                            var_list.append(e.grad)
-                    ti.root.dense(ti.index_nd(dim),
-                                  shape).place(*tuple(var_list), offset=offset)
-            else:
-                assert offset is None, f"shape cannot be None when offset is being set"
+                # construct global matrix (deprecated)
+                #warning(  # TODO(archibate): uncomment this when #1500 is complete
+                #    "Declaring global matrices using `ti.Matrix(n, m, dt, shape)` is deprecated, "
+                #    "use `ti.Matrix.field(n, m, dtype, shape)` instead",
+                #    DeprecationWarning,
+                #    stacklevel=2)
+                mat = Matrix.field(n=n,
+                                   m=m,
+                                   dtype=dt,
+                                   shape=shape,
+                                   offset=offset,
+                                   needs_grad=needs_grad,
+                                   layout=layout)
+                self.n = mat.n
+                self.m = mat.m
+                self.entries = mat.entries
+                self.grad = mat.grad
 
         if self.n * self.m > 32:
             warning(
@@ -212,6 +185,7 @@ class Matrix(TaichiOperations):
 
     def __matmul__(self, other):
         _taichi_skip_traceback = 1
+        assert isinstance(other, Matrix), "rhs of `@` is not a matrix / vector"
         assert self.m == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
         del _taichi_skip_traceback
         ret = Matrix.new(self.n, other.m)
@@ -229,8 +203,6 @@ class Matrix(TaichiOperations):
             args = args[0]
         if len(args) == 1:
             args = args + (0, )
-        assert 0 <= args[0] < self.n
-        assert 0 <= args[1] < self.m
         _taichi_skip_traceback = 1
         # TODO(#1004): See if it's possible to support indexing at runtime
         for i, a in enumerate(args):
@@ -245,6 +217,10 @@ class Matrix(TaichiOperations):
                     '    print(i, "-th component is", vec[i])\n'
                     'See https://taichi.readthedocs.io/en/stable/meta.html#when-to-use-for-loops-with-ti-static for more details.'
                 )
+        assert 0 <= args[0] < self.n, \
+                f"The 0-th matrix index is out of range: 0 <= {args[0]} < {self.n}"
+        assert 0 <= args[1] < self.m, \
+                f"The 1-th matrix index is out of range: 0 <= {args[1]} < {self.m}"
         return args[0] * self.m + args[1]
 
     def __call__(self, *args, **kwargs):
@@ -800,7 +776,6 @@ class Matrix(TaichiOperations):
                        for i in range(n)])
 
     @staticmethod
-    @taichi_scope
     def rotation2d(alpha):
         import taichi as ti
         return Matrix([[ti.cos(alpha), -ti.sin(alpha)],
@@ -808,11 +783,62 @@ class Matrix(TaichiOperations):
 
     @classmethod
     @python_scope
-    def field(cls, n, m, dtype, *args, **kwargs):
+    def field(cls,
+              n,
+              m,
+              dtype,
+              shape=None,
+              offset=None,
+              needs_grad=False,
+              layout=None):  # TODO(archibate): deprecate layout
         '''ti.Matrix.field'''
-        _taichi_skip_traceback = 1
-        # TODO: deprecate ad-hoc use ti.Matrix() as global (#1500:2.2/2)
-        return cls(n, m, dtype, *args, **kwargs)
+        self = cls.empty(n, m)
+        self.entries = []
+        self.n = n
+        self.m = m
+        self.dt = dtype
+        for i in range(n * m):
+            self.entries.append(impl.field(dtype))
+        self.grad = self.make_grad()
+
+        if layout is not None:
+            assert shape is not None, 'layout is useless without shape'
+        if shape is None:
+            assert offset is None, "shape cannot be None when offset is being set"
+
+        if shape is not None:
+            if isinstance(shape, numbers.Number):
+                shape = (shape, )
+            if isinstance(offset, numbers.Number):
+                offset = (offset, )
+
+            if offset is not None:
+                assert len(shape) == len(
+                    offset
+                ), f'The dimensionality of shape and offset must be the same  ({len(shape)} != {len(offset)})'
+
+            import taichi as ti
+            if layout is None:
+                layout = ti.AOS
+
+            dim = len(shape)
+            if layout.soa:
+                for i, e in enumerate(self.entries):
+                    ti.root.dense(ti.index_nd(dim), shape).place(e,
+                                                                 offset=offset)
+                    if needs_grad:
+                        ti.root.dense(ti.index_nd(dim),
+                                      shape).place(e.grad, offset=offset)
+            else:
+                var_list = []
+                for i, e in enumerate(self.entries):
+                    var_list.append(e)
+                if needs_grad:
+                    for i, e in enumerate(self.entries):
+                        var_list.append(e.grad)
+                ti.root.dense(ti.index_nd(dim), shape).place(*tuple(var_list),
+                                                             offset=offset)
+        return self
 
     @classmethod
     @python_scope

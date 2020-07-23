@@ -1,6 +1,6 @@
 import numbers
 import numpy as np
-from taichi import ti_core
+from taichi.core import ti_core
 from .util import deprecated
 
 
@@ -375,3 +375,9 @@ class GUI:
 def rgb_to_hex(c):
     to255 = lambda x: np.clip(np.int32(x * 255), 0, 255)
     return 65536 * to255(c[0]) + 256 * to255(c[1]) + to255(c[2])
+
+
+__all__ = [
+    'GUI',
+    'rgb_to_hex',
+]

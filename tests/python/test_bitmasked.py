@@ -208,7 +208,10 @@ def test_sparsity_changes():
 @archs_support_bitmasked
 def test_bitmasked_offset_child():
     x = ti.var(ti.i32)
+    x2 = ti.var(ti.i32)
     y = ti.var(ti.i32)
+    y2 = ti.var(ti.i32)
+    y3 = ti.var(ti.i32)
     z = ti.var(ti.i32)
     s = ti.var(ti.i32, shape=())
 
@@ -218,9 +221,10 @@ def test_bitmasked_offset_child():
     # * In |bm2|'s cell: |z| has a non-zero offset
     # * We iterate over |z| to test the listgen handles offsets correctly
     bm = ti.root.bitmasked(ti.i, n)
-    bm.dense(ti.i, 2).place(x)
+    bm.dense(ti.i, 16).place(x, x2)
     bm2 = bm.bitmasked(ti.i, 4)
-    bm2.dense(ti.i, 2).place(y)
+    
+    bm2.dense(ti.i, 4).place(y, y2, y3)
     bm2.bitmasked(ti.i, 4).place(z)
 
     @ti.kernel

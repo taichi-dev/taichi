@@ -355,7 +355,8 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
 
       auto patch_intrinsic = [&](std::string name, Intrinsic::ID intrin,
                                  bool ret = true,
-                                 std::vector<Type *> types = {}) {
+                                 std::vector<Type *> types = {},
+                                 std::vector<llvm::Value *> extra_args = {}) {
         auto func = runtime_module->getFunction(name);
         TI_ERROR_UNLESS(func, "Function {} not found", name);
         func->deleteBody();
@@ -365,6 +366,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
         std::vector<llvm::Value *> args;
         for (auto &arg : func->args())
           args.push_back(&arg);
+        args.insert(args.end(), extra_args.begin(), extra_args.end());
         if (ret) {
           builder.CreateRet(builder.CreateIntrinsic(intrin, types, args));
         } else {
@@ -396,9 +398,18 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
       patch_intrinsic("block_dim", Intrinsic::nvvm_read_ptx_sreg_ntid_x);
       patch_intrinsic("grid_dim", Intrinsic::nvvm_read_ptx_sreg_nctaid_x);
       patch_intrinsic("block_barrier", Intrinsic::nvvm_barrier0, false);
+      patch_intrinsic("warp_barrier", Intrinsic::nvvm_bar_warp_sync, false);
       patch_intrinsic("block_memfence", Intrinsic::nvvm_membar_cta, false);
       patch_intrinsic("grid_memfence", Intrinsic::nvvm_membar_gl, false);
       patch_intrinsic("system_memfence", Intrinsic::nvvm_membar_sys, false);
+
+      patch_intrinsic("cuda_ballot", Intrinsic::nvvm_vote_ballot);
+      patch_intrinsic("cuda_ballot_sync", Intrinsic::nvvm_vote_ballot_sync);
+
+      patch_intrinsic("ctlz_i32", Intrinsic::ctlz, true,
+                      {llvm::Type::getInt32Ty(*ctx)}, {get_constant(false)});
+      patch_intrinsic("cttz_i32", Intrinsic::cttz, true,
+                      {llvm::Type::getInt32Ty(*ctx)}, {get_constant(false)});
 
       patch_atomic_add("atomic_add_i32", llvm::AtomicRMWInst::Add);
 
@@ -418,9 +429,6 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
           {llvm::PointerType::get(get_data_type(DataType::f64), 0)});
 #endif
 
-      // patch_intrinsic("sync_warp", Intrinsic::nvvm_bar_warp_sync, false);
-      // patch_intrinsic("warp_ballot", Intrinsic::nvvm_vote_ballot, false);
-      // patch_intrinsic("warp_active_mask", Intrinsic::nvvm_membar_cta, false);
       patch_intrinsic("block_memfence", Intrinsic::nvvm_membar_cta, false);
 
       link_module_with_cuda_libdevice(data->runtime_module);

@@ -19,6 +19,7 @@ struct IndexExtractor {
   int num_bits;
   int acc_offset;
   int num_elements;
+  int trailing_bits;
 
   // TODO: rename start to src_offset
 
@@ -30,6 +31,7 @@ struct IndexExtractor {
     active = false;
     acc_offset = 0;
     num_elements = 1;
+    trailing_bits = 0;
   }
 
   void activate(int num_bits) {
@@ -83,6 +85,9 @@ class SNode {
   Kernel *writer_kernel{};
   Expr expr;
 
+  // Whether the path from root to |this| contains only `dense` SNodes.
+  bool is_path_all_dense{false};
+
   SNode();
 
   SNode(int depth, SNodeType t);
@@ -101,11 +106,7 @@ class SNode {
 
   int get_num_bits(int physical_index) const;
 
-  SNode &insert_children(SNodeType t) {
-    ch.push_back(create(depth + 1, t));
-    // Note: parent will not be set until structural nodes are compiled!
-    return *ch.back();
-  }
+  SNode &insert_children(SNodeType t);
 
   SNode &create_node(std::vector<Index> indices,
                      std::vector<int> sizes,
@@ -162,11 +163,6 @@ class SNode {
 
   SNode &hash(const Index &index, int size) {
     return hash(std::vector<Index>{index}, size);
-  }
-
-  template <typename... Args>
-  static std::unique_ptr<SNode> create(Args &&... args) {
-    return std::make_unique<SNode>(std::forward<Args>(args)...);
   }
 
   std::string type_name() {
@@ -251,7 +247,7 @@ class SNode {
     return 1 << total_num_bits;
   }
 
-  int num_elements_along_axis(int i) const;
+  int shape_along_axis(int i) const;
 
   void set_kernel_args(Kernel *kernel, const std::vector<int> &I);
 

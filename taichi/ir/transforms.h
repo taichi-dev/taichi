@@ -41,7 +41,7 @@ void make_thread_local(IRNode *root);
 std::unique_ptr<ScratchPads> initialize_scratch_pad(OffloadedStmt *root);
 void make_block_local(IRNode *root);
 bool remove_range_assumption(IRNode *root);
-bool lower_access(IRNode *root, bool lower_atomic, Kernel *kernel = nullptr);
+bool lower_access(IRNode *root, bool lower_atomic);
 void auto_diff(IRNode *root, bool use_stack = false);
 bool constant_fold(IRNode *root);
 void offload(IRNode *root);

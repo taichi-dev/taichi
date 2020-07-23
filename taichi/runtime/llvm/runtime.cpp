@@ -402,7 +402,6 @@ struct ListManager {
   void append(void *data_ptr);
 
   i32 reserve_new_element() {
-    // taichi_printf(runtime, "reserving new...\n");
     auto i = atomic_add_i32(&num_elements, 1);
     auto chunk_id = i >> log2chunk_num_elements;
     touch_chunk(chunk_id);
@@ -595,8 +594,6 @@ struct NodeManager {
   Ptr allocate() {
     int old_cursor = atomic_add_i32(&free_list_used, 1);
     i32 l;
-    // taichi_printf(runtime, "old cursor %d  free_list_size %d\n", old_cursor,
-    // free_list->size());
     if (old_cursor >= free_list->size()) {
       // running out of free list. allocate new.
       l = data_list->reserve_new_element();
@@ -1136,6 +1133,7 @@ void parallel_struct_for(Context *context,
   auto list_tail = list->size();
 #if ARCH_cuda
   int i = block_idx();
+  // TODO: refactor element_split more systematically.
   element_split = 1;
   const auto part_size = element_size / element_split;
   while (true) {
@@ -1271,12 +1269,10 @@ i32 linear_thread_idx() {
 #include "node_bitmasked.h"
 
 void ListManager::touch_chunk(int chunk_id) {
-  // taichi_printf(runtime, "touching ...\n");
   if (!chunks[chunk_id]) {
     locked_task(&lock, [&] {
       // may have been allocated during lock contention
       if (!chunks[chunk_id]) {
-        // Printf("Allocating chunk %d\n", chunk_id);
         grid_memfence();
         auto chunk_ptr = runtime->request_allocate_aligned(
             max_num_elements_per_chunk * element_size, 4096);
@@ -1292,7 +1288,6 @@ void ListManager::append(void *data_ptr) {
 }
 
 Ptr ListManager::allocate() {
-  // taichi_printf(runtime, "calling ListManager::allocate...\n");
   auto i = reserve_new_element();
   return get_element_ptr(i);
 }

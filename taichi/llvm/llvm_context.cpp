@@ -434,6 +434,8 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
 
       patch_intrinsic("cuda_match_any_sync_i32",
                       Intrinsic::nvvm_match_any_sync_i32);
+
+      // LLVM 10.0.0 seems to have a bug on this intrinsic function
       /*
       patch_intrinsic("cuda_match_any_sync_i64",
                       Intrinsic::nvvm_match_any_sync_i64);

@@ -46,10 +46,10 @@ class CCTransformer : public IRVisitor {
     auto ir = kernel->ir.get();
     auto config = kernel->program.config;
     config.demote_dense_struct_fors = true;
-    irpass::compile_to_offloads(ir, config,
-                                /*vectorize=*/false, kernel->grad,
-                                /*ad_use_stack=*/false, config.print_ir,
-                                /*lower_global_access*/ true);
+    irpass::compile_to_executable(ir, config,
+                                  /*vectorize=*/false, kernel->grad,
+                                  /*ad_use_stack=*/false, config.print_ir,
+                                  /*lower_global_access*/ true);
   }
 
   std::string get_source() {

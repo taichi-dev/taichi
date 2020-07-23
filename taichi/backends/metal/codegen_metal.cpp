@@ -1228,11 +1228,11 @@ CodeGen::CodeGen(Kernel *kernel,
 FunctionType CodeGen::compile() {
   auto &config = kernel_->program.config;
   config.demote_dense_struct_fors = true;
-  irpass::compile_to_offloads(kernel_->ir.get(), config,
-                              /*vectorize=*/false, kernel_->grad,
-                              /*ad_use_stack=*/true, config.print_ir,
-                              /*lower_global_access=*/true,
-                              /*make_thread_local=*/true);
+  irpass::compile_to_executable(kernel_->ir.get(), config,
+                                /*vectorize=*/false, kernel_->grad,
+                                /*ad_use_stack=*/true, config.print_ir,
+                                /*lower_global_access=*/true,
+                                /*make_thread_local=*/true);
 
   KernelCodegen codegen(
       taichi_kernel_name_, kernel_->program.snode_root->node_type_name, kernel_,

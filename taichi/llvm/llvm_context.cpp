@@ -187,17 +187,11 @@ void compile_runtime_bitcode(Arch arch) {
 
     std::string cuda_compute_capability = "0";
 
-#if defined(TI_WITH_CUDA)
-    cuda_compute_capability =
-        std::to_string(CUDAContext::get_instance().get_compute_capability());
-#endif
-
-    std::string macro = fmt::format(" -D ARCH_{} -D CUDA_CC={}",
-                                    arch_name(arch), cuda_compute_capability);
+    std::string arch_macro = fmt::format(" -D ARCH_{}", arch_name(arch));
     auto cmd = fmt::format(
         "{} -S {}runtime.cpp -o {}runtime.ll -fno-exceptions "
         "-emit-llvm -std=c++17 {} -I {}",
-        clang, runtime_src_folder, runtime_folder, macro, get_repo_dir());
+        clang, runtime_src_folder, runtime_folder, arch_macro, get_repo_dir());
     int ret = std::system(cmd.c_str());
     if (ret) {
       TI_ERROR("LLVMRuntime compilation failed.");
@@ -362,9 +356,22 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
       data->runtime_module = module_from_bitcode_file(
           fmt::format("{}/{}", get_runtime_dir(), get_runtime_fn(arch)), ctx);
     }
+
     if (arch == Arch::cuda) {
       auto &runtime_module = data->runtime_module;
       runtime_module->setTargetTriple("nvptx64-nvidia-cuda");
+
+#if defined(TI_WITH_CUDA)
+      auto func = runtime_module->getFunction("cuda_compute_capability");
+      TI_ERROR_UNLESS(func, "Function cuda_compute_capability not found");
+      func->deleteBody();
+      auto bb = llvm::BasicBlock::Create(*ctx, "entry", func);
+      IRBuilder<> builder(*ctx);
+      builder.SetInsertPoint(bb);
+      builder.CreateRet(
+          get_constant(CUDAContext::get_instance().get_compute_capability()));
+      TaichiLLVMContext::force_inline(func);
+#endif
 
       auto patch_intrinsic = [&](std::string name, Intrinsic::ID intrin,
                                  bool ret = true,

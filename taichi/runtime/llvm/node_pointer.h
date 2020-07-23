@@ -11,6 +11,29 @@ i32 Pointer_get_num_elements(Ptr meta, Ptr node) {
   return ((StructMeta *)meta)->max_num_elements;
 }
 
+bool is_representative(uint32 mask, uint64 value) {
+  // If many threads in the mask share the same value, simply
+  // elect one thread to return true and let others return false.
+  if (cuda_compute_capability() < 70) {
+    // <= Pascal
+    bool has_following_eqiv = false;
+    for (int s = 1; s < 32; s++) {
+      auto cond = warp_idx() + s < 32 && ((mask >> (warp_idx() + s)) & 1);
+#define TEST_PEER(x) ((x) == cuda_shfl_down_sync_i32(mask, (x), s, 31))
+      auto equiv = cond && TEST_PEER(i32(i64(value))) &&
+                   TEST_PEER(i32((u64)value >> 32));
+#undef TEST_PEER
+      has_following_eqiv = has_following_eqiv || equiv;
+    }
+    return !has_following_eqiv;
+  } else {
+    // >= Volta > Pascal
+    i32 equiv_mask = cuda_match_any_sync_i64(mask, i64(value));
+    auto leader = cttz_i32(equiv_mask);
+    return warp_idx() == leader;
+  }
+}
+
 void Pointer_activate(Ptr meta_, Ptr node, int i) {
   auto meta = (StructMeta *)meta_;
   auto num_elements = Pointer_get_num_elements(meta_, node);
@@ -18,24 +41,9 @@ void Pointer_activate(Ptr meta_, Ptr node, int i) {
   Ptr volatile *data_ptr = (Ptr *)(node + 8 * (num_elements + i));
 
   if (*data_ptr == nullptr) {
-    i32 mask = cuda_active_mask();
-#if CUDA_CC < 70
-    bool has_following_eqiv = false;
-    for (int s = 1; s < 32; s++) {
-#define TEST(x) ((x) == cuda_shfl_down_sync_i32(mask, (x), s, 31))
-      auto cond = warp_idx() + s < 32 && ((mask >> (warp_idx() + s)) & 1);
-      auto equiv = cond && TEST(i32(i64(lock))) && TEST(i32((u64)lock >> 32));
-      has_following_eqiv = has_following_eqiv || equiv;
-#undef TEST
-    }
-    bool needs_activation = !has_following_eqiv;
-#else
-    // Volta +
-    i32 equiv_mask = cuda_match_any_sync_i64(mask, i64(lock));
-    auto leader = cttz_i32(equiv_mask);
-    bool needs_activation = warp_idx() == leader;
-#endif
-    if (needs_activation) {
+    // The cuda_ calls will return 0 or do noop on CPUs
+    u32 mask = cuda_active_mask();
+    if (is_representative(mask, (u64)lock)) {
       locked_task(lock,
                   [&] {
                     auto rt = meta->context->runtime;

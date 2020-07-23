@@ -911,6 +911,10 @@ int32 cttz_i32(i32 val) {
   return 0;
 }
 
+int32 cuda_compute_capability() {
+  return 0;
+}
+
 int32 cuda_ballot(bool bit) {
   return 0;
 }

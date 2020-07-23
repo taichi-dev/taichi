@@ -14,6 +14,8 @@ class lock_guard {
     auto body = [&]() {
       if (test()) {
         mutex_lock_i32(lock);
+        // Memory fences here are necessary since CUDA has a weakly ordered
+        // memory model across threads
         grid_memfence();
         if (test())
           func();
@@ -22,48 +24,44 @@ class lock_guard {
       }
     };
 
-#if CUDA_CC < 70
-    auto fast = false;
-    if (fast) {
-      auto active_mask = cuda_active_mask();
-      auto remaining = active_mask;
-      while (remaining) {
-        auto leader = cttz_i32(remaining);
-        if (warp_idx() == leader) {
-          // Memory fences here are necessary since CUDA has a weakly ordered
-          // memory model across threads
-          body();
+    if (cuda_compute_capability() < 70) {
+      // Note that unfortunately critical sections on pre-Pascal (inclusive)
+      // devices has undefined behavior (deadlock or not), if more than one
+      // threads in a warp try to acquire the same lock.
+      // Therefore we need a serialization within a warp
+      /*
+      bool done = false;
+      while (!done) {
+        if (atomic_exchange_i32((i32 *)lock, 1) == 1) {
+          func();
+          done = true;
+          mutex_unlock_i32(lock);
         }
-        remaining &= ~(1u << leader);
+      }
+      */
+      auto fast = false;
+      if (fast) {
+        auto active_mask = cuda_active_mask();
+        auto remaining = active_mask;
+        while (remaining) {
+          auto leader = cttz_i32(remaining);
+          if (warp_idx() == leader) {
+            // Memory fences here are necessary since CUDA has a weakly ordered
+            // memory model across threads
+            body();
+          }
+          remaining &= ~(1u << leader);
+        }
+      } else {
+        for (int i = 0; i < warp_size(); i++)
+          if (warp_idx() == i)
+            body();
       }
     } else {
-      for (int i = 0; i < warp_size(); i++) {
-        if (warp_idx() == i) {
-          // Memory fences here are necessary since CUDA has a weakly ordered
-          // memory model across threads
-          body();
-        }
-      }
+      // post-Volta devices have independent thread scheduling, so mutexes are
+      // safe.
+      body();
     }
-    // Note that unfortunately critical sections on pre-Pascal (inclusive)
-    // devices has undefined behavior (deadlock or not), if more than one
-    // threads in a warp try to acquire the same lock.
-    /*
-    bool done = false;
-    while (!done) {
-      if (atomic_exchange_i32((i32 *)lock, 1) == 1) {
-        func();
-        done = true;
-        mutex_unlock_i32(lock);
-      }
-    }
-    */
-#else
-    // post-Volta devices have independent thread scheduling, so mutexes are
-    // safe.
-    body();
-#endif  // CUDA_CC < 70
-
 #endif  // CUDA
   }
 };

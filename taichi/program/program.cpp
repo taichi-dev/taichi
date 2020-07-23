@@ -703,51 +703,35 @@ int Program::default_block_dim() const {
 void Program::print_memory_profiler_info() {
   TI_ASSERT(arch_uses_llvm(config.arch));
 
-  auto tlctx = llvm_context_host.get();
-  if (llvm_context_device) {
-    tlctx = llvm_context_device.get();
-  }
+  auto print_list = [&](void *element_list) {
+    auto element_list_len = runtime_query<int32>(
+        "element_list_retrieve_num_elements", element_list);
 
-  auto runtime = tlctx->runtime_jit_module;
+    auto element_size = runtime_query<int32>(
+        "element_list_retrieve_element_size", element_list);
+
+    auto elements_per_chunk = runtime_query<int32>(
+        "element_list_retrieve_max_num_elements_per_chunk", element_list);
+
+    auto num_active_chunks =
+        runtime_query<int32>("listmanager_get_num_active_chunks", element_list);
+
+    fmt::print(
+        "  length {}   element size {} B   elements_per_chunk "
+        "{}  active chunks {}\n",
+        element_list_len, element_size, elements_per_chunk, num_active_chunks);
+  };
 
   std::function<void(SNode *, int)> visit = [&](SNode *snode, int depth) {
-    runtime->call<void *, int32>("runtime_retrieve_element_list", llvm_runtime,
-                                 snode->id);
-    auto element_list =
-        fetch_result<void *>(taichi_result_buffer_memory_profiler_id);
+    auto element_list = runtime_query<void *>("LLVMRuntime_get_node_allocators",
+                                              llvm_runtime, snode->id);
+    fetch_result<void *>(taichi_result_buffer_runtime_query_id);
 
     if (snode->type != SNodeType::place) {
       fmt::print("SNode {:10}\n", snode->get_node_type_name_hinted());
-
       if (element_list) {
-        runtime->call<void *, void *>("runtime_element_list_retrieve_length",
-                                      llvm_runtime, element_list);
-        auto element_list_len =
-            fetch_result<int32>(taichi_result_buffer_memory_profiler_id);
-
-        runtime->call<void *, void *>(
-            "runtime_element_list_retrieve_element_size", llvm_runtime,
-            element_list);
-        auto element_size =
-            fetch_result<int32>(taichi_result_buffer_memory_profiler_id);
-
-        runtime->call<void *, void *>(
-            "runtime_element_list_retrieve_max_num_elements_per_chunk",
-            llvm_runtime, element_list);
-        auto elements_per_chunk =
-            fetch_result<int32>(taichi_result_buffer_memory_profiler_id);
-
-        runtime->call<void *, void *>(
-            "runtime_listmanager_get_num_active_chunks", llvm_runtime,
-            element_list);
-        auto num_active_chunks =
-            fetch_result<int32>(taichi_result_buffer_memory_profiler_id);
-
-        fmt::print(
-            "  length {}   element size {} B   elements_per_chunk "
-            "{}  active chunks {}\n",
-            element_list_len, element_size, elements_per_chunk,
-            num_active_chunks);
+        fmt::print("element_list:\n");
+        print_list(element_list);
       }
     }
     for (const auto &ch : snode->ch) {

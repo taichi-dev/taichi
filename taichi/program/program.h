@@ -241,6 +241,20 @@ class Program {
 
   void print_memory_profiler_info();
 
+  template <typename T, typename... Args>
+  T runtime_query(const std::string &key, Args... args) {
+    auto tlctx = llvm_context_host.get();
+    if (llvm_context_device) {
+      tlctx = llvm_context_device.get();
+    }
+
+    auto runtime = tlctx->runtime_jit_module;
+
+    runtime->call<void *, void *>("runtime_" + key, llvm_runtime,
+                                  std::forward<Args>(args)...);
+    return fetch_result<T>(taichi_result_buffer_runtime_query_id);
+  }
+
   ~Program();
 
  private:

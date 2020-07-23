@@ -60,9 +60,10 @@ class CUDADriverFunction {
            fmt::format(" while calling {} ({})", name, symbol_name);
   }
 
-  void call_with_warning(Args... args) {
+  uint32 call_with_warning(Args... args) {
     auto err = call(args...);
     TI_WARN_IF(err, get_error_message(err));
+    return err;
   }
 
   // Note: CUDA driver API passes everything as value

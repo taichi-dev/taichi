@@ -573,9 +573,11 @@ STRUCT_FIELD(LLVMRuntime, profiler_stop);
 struct NodeManager {
   LLVMRuntime *runtime;
   i32 lock;
+
   i32 element_size;
   i32 chunk_num_elements;
   i32 free_list_used;
+
   ListManager *free_list, *recycled_list, *data_list;
   i32 recycle_list_size_backup;
 
@@ -670,40 +672,53 @@ void runtime_retrieve_and_reset_error_code(LLVMRuntime *runtime) {
   runtime->error_code = 0;
 }
 
-void runtime_listmanager_get_num_active_chunks(LLVMRuntime *runtime,
-                                               ListManager *list_manager) {
-  runtime->set_result(taichi_result_buffer_memory_profiler_id,
-                      list_manager->get_num_active_chunks());
-}
-
 void runtime_retrieve_error_message(LLVMRuntime *runtime, int i) {
   runtime->set_result(taichi_result_buffer_error_id,
                       runtime->error_message_template[i]);
 }
 
 void runtime_retrieve_element_list(LLVMRuntime *runtime, int snode_id) {
-  runtime->set_result(taichi_result_buffer_memory_profiler_id,
+  runtime->set_result(taichi_result_buffer_runtime_query_id,
                       runtime->element_lists[snode_id]);
 }
 
-void runtime_element_list_retrieve_length(LLVMRuntime *runtime,
-                                          ListManager *list) {
-  runtime->set_result(taichi_result_buffer_memory_profiler_id,
+void runtime_element_list_retrieve_num_elements(LLVMRuntime *runtime,
+                                                ListManager *list) {
+  runtime->set_result(taichi_result_buffer_runtime_query_id,
                       list->num_elements);
 }
 
 void runtime_element_list_retrieve_element_size(LLVMRuntime *runtime,
                                                 ListManager *list) {
-  runtime->set_result(taichi_result_buffer_memory_profiler_id,
+  runtime->set_result(taichi_result_buffer_runtime_query_id,
                       list->element_size);
 }
 
 void runtime_element_list_retrieve_max_num_elements_per_chunk(
     LLVMRuntime *runtime,
     ListManager *list) {
-  runtime->set_result(taichi_result_buffer_memory_profiler_id,
+  runtime->set_result(taichi_result_buffer_runtime_query_id,
                       list->max_num_elements_per_chunk);
 }
+
+void runtime_listmanager_get_num_active_chunks(LLVMRuntime *runtime,
+                                               ListManager *list_manager) {
+  runtime->set_result(taichi_result_buffer_runtime_query_id,
+                      list_manager->get_num_active_chunks());
+}
+
+#define RUNTIME_STRUCT_FIELD(S, F)                                    \
+  extern "C" void runtime_##S##_get_##F(LLVMRuntime *runtime, S *s) { \
+    runtime->set_result(taichi_result_buffer_runtime_query_id, s->F); \
+  }
+
+#define RUNTIME_STRUCT_FIELD_ARRAY(S, F)                                     \
+  extern "C" void runtime_##S##_get_##F(LLVMRuntime *runtime, S *s, int i) { \
+    runtime->set_result(taichi_result_buffer_runtime_query_id, s->F[i]);     \
+  }
+
+RUNTIME_STRUCT_FIELD(NodeManager, free_list);
+RUNTIME_STRUCT_FIELD_ARRAY(LLVMRuntime, node_allocators);
 
 void taichi_assert(Context *context, i32 test, const char *msg) {
   taichi_assert_runtime(context->runtime, test, msg);

@@ -55,6 +55,6 @@ def paint():
 paint()
 
 gui = ti.GUI('Logo', (512, 512))
-while not gui.running:
+while gui.running:
     gui.set_image(x.to_numpy())
     gui.show()

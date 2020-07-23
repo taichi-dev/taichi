@@ -5,19 +5,24 @@
 TLANG_NAMESPACE_BEGIN
 namespace cccp {
 
+class CCProgram;
+
 class CCLayout {
  public:
-  CCLayout() = default;
+  CCLayout(CCProgram *program) : program(program) {
+  }
 
   std::string get_object() {
     return obj_path;
   }
 
-  void compile();
+  size_t compile();
 
   std::string source;
 
  private:
+  CCProgram *program;
+
   std::string src_path;
   std::string obj_path;
 };

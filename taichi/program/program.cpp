@@ -387,8 +387,7 @@ void Program::materialize_layout() {
         opengl_struct_compiled_->root_size);
 #ifdef TI_WITH_CC
   } else if (config.arch == Arch::cc) {
-    cccp::CCLayoutGen scomp(snode_root.get());
-    cc_program->layout = scomp.compile();
+    cc_program->compile_layout(snode_root.get());
 #endif
   }
 }
@@ -568,6 +567,8 @@ Arch Program::get_snode_accessor_arch() {
     return Arch::cuda;
   } else if (config.arch == Arch::metal) {
     return Arch::metal;
+  } else if (config.arch == Arch::cc) {
+    return Arch::cc;
   } else {
     return get_host_arch();
   }

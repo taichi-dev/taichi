@@ -15,7 +15,9 @@ __global__ void __launch_bounds__(1024, 2) test_ldg(float *a, float *b) {
   unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
   a[i] = cube(1);
   auto c = __ldg((float4 *)a);
-  a[i] = __ldg(&b[i]) + __ldg((double *)&b[i]) + __ldg((char *)&b[i]);
+  *a += __ffs(__ballot_sync(__activemask(), 1));
+  a[i] = __ldg(&b[i]) + __ldg((double *)&b[i]) + __ldg((char *)&b[i]) +
+         __shfl_down_sync(__activemask(), i, 3);
 }
 
 int main() {

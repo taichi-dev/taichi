@@ -96,6 +96,9 @@ void __assertfail(const char *message,
 template <typename T>
 void locked_task(void *lock, const T &func);
 
+template <typename T, typename G>
+void locked_task(void *lock, const T &func, const G &test);
+
 template <typename T>
 T ifloordiv(T a, T b) {
   auto r = a / b;
@@ -364,14 +367,14 @@ void ___stubs___() {
 }
 }
 
-/*
-A simple list data structure
-Data are organized in chunks, where each chunk is a piece of virtual memory
-*/
-
 bool is_power_of_two(uint32 x) {
   return x != 0 && (x & (x - 1)) == 0;
 }
+
+/*
+A simple list data structure that is infinitely long.
+Data are organized in chunks, where each chunk is allocated on demand.
+*/
 
 struct ListManager {
   static constexpr std::size_t max_num_chunks = 1024;
@@ -553,6 +556,7 @@ STRUCT_FIELD(LLVMRuntime, profiler_start);
 STRUCT_FIELD(LLVMRuntime, profiler_stop);
 
 // NodeManager of node S (hash, pointer) managers the memory allocation of S_ch
+// It makes use of three ListManagers.
 struct NodeManager {
   LLVMRuntime *runtime;
   i32 lock;
@@ -904,12 +908,40 @@ int32 cttz_i32(i32 val) {
   return 0;
 }
 
+int32 cuda_compute_capability() {
+  return 0;
+}
+
 int32 cuda_ballot(bool bit) {
+  return 0;
+}
+
+i32 cuda_shfl_down_sync_i32(u32 mask, i32 delta, i32 val, int width) {
+  return 0;
+}
+
+i32 cuda_shfl_down_i32(i32 delta, i32 val, int width) {
   return 0;
 }
 
 int32 cuda_ballot_sync(int32 mask, bool bit) {
   return 0;
+}
+
+i32 cuda_match_any_sync_i32(i32 mask, i32 value) {
+  return 0;
+}
+
+i32 cuda_match_any_sync_i64(i32 mask, i64 value) {
+#if ARCH_cuda
+  u32 ret;
+  asm volatile("match.any.sync.b64  %0, %1, %2;"
+               : "=r"(ret)
+               : "l"(value), "r"(mask));
+  return ret;
+#else
+  return 0;
+#endif
 }
 
 #if ARCH_cuda
@@ -1101,6 +1133,8 @@ void parallel_struct_for(Context *context,
   auto list_tail = list->size();
 #if ARCH_cuda
   int i = block_idx();
+  // TODO: refactor element_split more systematically.
+  element_split = 1;
   const auto part_size = element_size / element_split;
   while (true) {
     int element_id = i / element_split;
@@ -1239,7 +1273,6 @@ void ListManager::touch_chunk(int chunk_id) {
     locked_task(&lock, [&] {
       // may have been allocated during lock contention
       if (!chunks[chunk_id]) {
-        // Printf("Allocating chunk %d\n", chunk_id);
         grid_memfence();
         auto chunk_ptr = runtime->request_allocate_aligned(
             max_num_elements_per_chunk * element_size, 4096);

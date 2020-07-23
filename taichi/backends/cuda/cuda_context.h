@@ -21,6 +21,7 @@ class CUDAContext {
   void *device;
   void *context;
   int dev_count;
+  int compute_capability;
   std::string mcpu;
   std::mutex lock;
   KernelProfilerBase *profiler;
@@ -56,6 +57,10 @@ class CUDAContext {
 
   void make_current() {
     driver.context_set_current(context);
+  }
+
+  int get_compute_capability() const {
+    return compute_capability;
   }
 
   ~CUDAContext();

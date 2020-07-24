@@ -81,7 +81,7 @@ For example:
             y[i, j + 1] = i + j
 
 
-Tensor metadata
+Field metadata
 ---------------
 
 Sometimes it is useful to get the data type (``field.dtype``) and shape (``field.shape``) of fields.
@@ -91,10 +91,10 @@ These attributes can be accessed in both Taichi- and Python-scopes.
 
   @ti.func
   def print_field_info(x: ti.template()):
-    print('Tensor dimensionality is', len(x.shape))
+    print('Field dimensionality is', len(x.shape))
     for i in ti.static(range(len(x.shape))):
       print('Size alone dimension', i, 'is', x.shape[i])
-    ti.static_print('Tensor data type is', x.dtype)
+    ti.static_print('Field data type is', x.dtype)
 
 See :ref:`scalar_tensor` for more details.
 

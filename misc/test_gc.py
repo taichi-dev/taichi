@@ -14,7 +14,7 @@ grid.pointer(ti.i, 128).dense(ti.i, 32).place(m)
 
 @ti.kernel
 def act():
-    ti.parallelize(4)
+    ti.parallelize(2)
     for j in range(10000000):
         m[0] += 1
 

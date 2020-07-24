@@ -50,12 +50,7 @@ void Dynamic_deactivate(Ptr meta_, Ptr node_) {
       auto rt = meta->context->runtime;
       auto alloc = rt->node_allocators[meta->snode_id];
       while (*p_chunk_ptr) {
-        taichi_printf(rt, "recycling... %p\n", *p_chunk_ptr);
         alloc->recycle(*p_chunk_ptr);
-        if (p_chunk_ptr == (Ptr *)*p_chunk_ptr) {
-          taichi_printf(rt, "WTH??... %p\n", *p_chunk_ptr);
-          return;
-        }
         p_chunk_ptr = (Ptr *)*p_chunk_ptr;
       }
       node->ptr = nullptr;

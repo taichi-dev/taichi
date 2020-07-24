@@ -679,6 +679,12 @@ void runtime_retrieve_error_message(LLVMRuntime *runtime, int i) {
                       runtime->error_message_template[i]);
 }
 
+void runtime_retrieve_error_message_argument(LLVMRuntime *runtime,
+                                             int argument_id) {
+  runtime->set_result(taichi_result_buffer_error_id,
+                      runtime->error_message_arguments[argument_id]);
+}
+
 void runtime_retrieve_element_list(LLVMRuntime *runtime, int snode_id) {
   runtime->set_result(taichi_result_buffer_runtime_query_id,
                       runtime->element_lists[snode_id]);

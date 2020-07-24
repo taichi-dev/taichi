@@ -624,7 +624,7 @@ struct CompiledProgram::Impl {
       user_bufs.add_buffer(GLBufId::Args, ctx.args, n_args * sizeof(uint64_t));
     }
     if (used.print) {
-      auto runtime_buf = core_bufs.get(GLBufId::Runtime);
+      auto runtime_buf = launcher->impl->core_bufs.get(GLBufId::Runtime);
       auto mapped = (GLSLRuntime *)runtime_buf->map();
       mapped->msg_count = 0;
       runtime_buf->unmap();

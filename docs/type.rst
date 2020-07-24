@@ -73,7 +73,7 @@ Currently, supported basic types in Taichi are
 
 .. note::
 
-    Boolean types should be represented using ``ti.i32``.
+    Boolean types are represented using ``ti.i32``.
 
 
 

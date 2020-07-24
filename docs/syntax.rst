@@ -13,6 +13,7 @@ parallelization performance, on the cost of less flexibility.
 
     For people from CUDA, Taichi-scope = **device** side.
 
+
 Codes outside ``@ti.kernel`` or ``@ti.func`` is the **Python-scope**.
 
 They are not compiled by the Taichi compiler and have lower performance
@@ -21,6 +22,7 @@ but with a richer type system and better flexibility.
 .. note::
 
     For people from CUDA, Python-scope = **host** side.
+
 
 Kernels
 -------
@@ -40,7 +42,8 @@ Kernels are to be called from **Python-scope**.
 
 .. note::
 
-    For people from CUDA, Taichi functions = ``__global__``.
+    For people from CUDA, Taichi kernels = ``__global__``.
+
 
 Arguments
 *********
@@ -102,7 +105,7 @@ The return value will be automatically cast into the hinted type. e.g.,
 
 .. note::
 
-    For now, we only support one scalar as return value. Returning ``ti.Matrix`` or ``ti.Vector`` is not supported. Python-style tuple return is not supported either. For example:
+    For now, kernels only support one scalar as return value. Returning ``ti.Matrix`` or ``ti.Vector`` is not supported. Python-style tuple return is not supported either. For example:
 
     .. code-block:: python
 

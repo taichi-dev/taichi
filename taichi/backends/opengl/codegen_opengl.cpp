@@ -1037,7 +1037,7 @@ void OpenglCodeGen::lower() {
                               /*vectorize=*/false, kernel_->grad,
                               /*ad_use_stack=*/false, config.print_ir,
                               /*lower_global_access=*/true,
-                              /*make_thread_local=*/true);
+                              /*make_thread_local=*/config.make_thread_local);
 #ifdef _GLSL_DEBUG
   irpass::print(ir);
 #endif

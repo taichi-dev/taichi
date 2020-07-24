@@ -2,15 +2,18 @@ import taichi as ti
 
 ti.init(arch=ti.opengl, log_level=ti.DEBUG)
 
-x = ti.var(ti.f32, ())
+n = 512
 
+x = ti.var(ti.f32, (n, n))
 
 @ti.kernel
-def func(a: ti.f32, b: ti.f32):
-    t = 0.0
-    ti.asm('$0 = %0 * %1', inputs=[a, b], outputs=[t])
-    x[None] = t
+def render():
+    for i, j in x:
+        ret = 0.0
+        # outputs must be alloca's, i.e. outputs=[x[i, j]] is not allowed
+        ti.asm('$0 = round(length(vec2(%0, %1) - 0.5) * 20) * 0.1',
+                inputs=[i / n, j / n], outputs=[ret])
+        x[i, j] = ret
 
-
-func(3, 4)
-print(x[None])
+render()
+ti.imshow(x)

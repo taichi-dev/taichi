@@ -187,7 +187,7 @@ Working with ``dynamic`` SNodes
 
 
 Taichi fields like powers of two
----------------------------------
+--------------------------------
 
 Non-power-of-two field dimensions are promoted into powers of two and thus these fields will occupy more virtual address space.
 For example, a (dense) field of size ``(18, 65)`` will be materialized as ``(32, 128)``.

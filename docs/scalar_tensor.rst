@@ -1,7 +1,7 @@
 .. _scalar_tensor:
 
 Fields of scalars
-==================
+=================
 
 
 Declaration

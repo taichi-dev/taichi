@@ -31,7 +31,7 @@ As global fields of matrices
     :parameter n: (scalar) the number of rows in the matrix
     :parameter m: (scalar) the number of columns in the matrix
     :parameter dtype: (DataType) data type of the components
-    :parameter shape: (optional, scalar or tuple) shape the field of vectors, see :ref:`field`
+    :parameter shape: (optional, scalar or tuple) shape the field of vectors, see :ref:`tensor`
     :parameter offset: (optional, scalar or tuple) see :ref:`offset`
 
     For example, this creates a 5x4 field of 3x3 matrices:

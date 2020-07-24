@@ -540,6 +540,8 @@ struct LLVMRuntime {
 
   i32 num_rand_states;
 
+  i64 total_requested_memory;
+
   template <typename T>
   void set_result(std::size_t i, T t) {
     static_assert(sizeof(T) <= sizeof(uint64));
@@ -717,8 +719,12 @@ void runtime_listmanager_get_num_active_chunks(LLVMRuntime *runtime,
     runtime->set_result(taichi_result_buffer_runtime_query_id, s->F[i]);     \
   }
 
-RUNTIME_STRUCT_FIELD(NodeManager, free_list);
 RUNTIME_STRUCT_FIELD_ARRAY(LLVMRuntime, node_allocators);
+RUNTIME_STRUCT_FIELD(LLVMRuntime, total_requested_memory);
+RUNTIME_STRUCT_FIELD(NodeManager, free_list);
+RUNTIME_STRUCT_FIELD(NodeManager, recycled_list);
+RUNTIME_STRUCT_FIELD(NodeManager, data_list);
+RUNTIME_STRUCT_FIELD(NodeManager, free_list_used);
 
 void taichi_assert(Context *context, i32 test, const char *msg) {
   taichi_assert_runtime(context->runtime, test, msg);
@@ -800,6 +806,7 @@ Ptr LLVMRuntime::allocate(std::size_t size) {
 
 Ptr LLVMRuntime::request_allocate_aligned(std::size_t size,
                                           std::size_t alignment) {
+  atomic_add_i64(&total_requested_memory, size);
   if (preallocated)
     return allocate_from_buffer(size, alignment);
   else {
@@ -863,6 +870,8 @@ void runtime_initialize(
   runtime->host_printf = host_printf;
   runtime->host_vsnprintf = host_vsnprintf;
   runtime->prog = prog;
+
+  runtime->total_requested_memory = 0;
 
   // runtime->allocate ready to use
   runtime->mem_req_queue = (MemRequestQueue *)runtime->allocate_aligned(

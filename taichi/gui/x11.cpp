@@ -90,26 +90,26 @@ void GUI::process_event() {
         set_mouse_pos(ev.xbutton.x, height - ev.xbutton.y - 1);
         mouse_event(MouseEvent{MouseEvent::Type::press, cursor_pos});
         switch (ev.xbutton.button) {
-        case 4: // wheel up
-          key_events.push_back(
-              KeyEvent{KeyEvent::Type::move, "Wheel", cursor_pos, Vector2i{0, +120}});
-          break;
-        case 5: // wheel down
-          key_events.push_back(
-              KeyEvent{KeyEvent::Type::move, "Wheel", cursor_pos, Vector2i{0, -120}});
-          break;
-        case 6: // wheel right
-          key_events.push_back(
-              KeyEvent{KeyEvent::Type::move, "Wheel", cursor_pos, Vector2i{+120, 0}});
-          break;
-        case 7: // wheel left
-          key_events.push_back(
-              KeyEvent{KeyEvent::Type::move, "Wheel", cursor_pos, Vector2i{-120, 0}});
-          break;
-        default: // normal mouse button
-          key_events.push_back(
-              KeyEvent{KeyEvent::Type::press, lookup_button(&ev), cursor_pos});
-          break;
+          case 4:  // wheel up
+            key_events.push_back(KeyEvent{KeyEvent::Type::move, "Wheel",
+                                          cursor_pos, Vector2i{0, +120}});
+            break;
+          case 5:  // wheel down
+            key_events.push_back(KeyEvent{KeyEvent::Type::move, "Wheel",
+                                          cursor_pos, Vector2i{0, -120}});
+            break;
+          case 6:  // wheel right
+            key_events.push_back(KeyEvent{KeyEvent::Type::move, "Wheel",
+                                          cursor_pos, Vector2i{+120, 0}});
+            break;
+          case 7:  // wheel left
+            key_events.push_back(KeyEvent{KeyEvent::Type::move, "Wheel",
+                                          cursor_pos, Vector2i{-120, 0}});
+            break;
+          default:  // normal mouse button
+            key_events.push_back(KeyEvent{KeyEvent::Type::press,
+                                          lookup_button(&ev), cursor_pos});
+            break;
         }
         break;
       case ButtonRelease:
@@ -133,9 +133,10 @@ void GUI::process_event() {
 
 void GUI::create_window() {
   display = XOpenDisplay(nullptr);
-  TI_ASSERT_INFO(display, "Taichi fails to create a window."
-      " This is probably due to the lack of an X11 GUI environment."
-      " If you are using ssh, try ssh -XY.");
+  TI_ASSERT_INFO(display,
+                 "Taichi fails to create a window."
+                 " This is probably due to the lack of an X11 GUI environment."
+                 " If you are using ssh, try ssh -XY.");
   visual = DefaultVisual(display, 0);
   window =
       XCreateSimpleWindow((Display *)display, RootWindow((Display *)display, 0),

@@ -10,16 +10,16 @@ inv_dx = 1.0 / dx
 
 m = ti.var(dt=ti.f32)
 
-grid = ti.root.pointer(ti.i, 32)
-grid.pointer(ti.i, 32).dense(ti.i, 8).place(m)
+grid = ti.root.pointer(ti.i, 1)
+grid.pointer(ti.i, 128).dense(ti.i, 32).place(m)
 
 @ti.kernel
-def build_pid():
+def act():
     ti.parallelize(2)
-    for j in range(100):
-        m[j] += 1
+    for j in range(100000):
+        m[0] += 1
 
 for i in range(100):
-    grid.deactivate_all()
-    build_pid()
+    # grid.deactivate_all()
+    # act()
     ti.memory_profiler_print()

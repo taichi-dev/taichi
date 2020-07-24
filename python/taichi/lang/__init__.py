@@ -60,7 +60,9 @@ kernel_profiler_print = lambda: core.get_current_program(
 kernel_profiler_clear = lambda: core.get_current_program(
 ).kernel_profiler_clear()
 
-memory_profiler_print = lambda: core.get_current_program().print_memory_profiler_info()
+def memory_profiler_print():
+    get_runtime().materialize()
+    core.get_current_program().print_memory_profiler_info()
 
 
 class _Extension(object):

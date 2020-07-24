@@ -130,15 +130,15 @@ However, this design has drawbacks as well:
 
 * Taichi kernels must parse-able by Python parsers. This means Taichi syntax cannot go beyond Python syntax.
 
-  * For example, indexing is always needed when accessing elements in Taichi fieldss, even if the fields is 0D. Use ``x[None] = 123`` to set the value in ``x`` if ``x`` is 0D. This is because ``x = 123`` will set ``x`` itself (instead of its containing value) to be the constant ``123`` in python syntax, and, unfortunately, we cannot modify this behavior.
+  * For example, indexing is always needed when accessing elements in Taichi fields, even if the fields is 0D. Use ``x[None] = 123`` to set the value in ``x`` if ``x`` is 0D. This is because ``x = 123`` will set ``x`` itself (instead of its containing value) to be the constant ``123`` in python syntax, and, unfortunately, we cannot modify this behavior.
 
-* Python has relatively low performance. This can cause a performance issue when initializing large Taichi fieldss with pure python scripts. A Taichi kernel should be used to initialize a huge fields.
+* Python has relatively low performance. This can cause a performance issue when initializing large Taichi fields with pure python scripts. A Taichi kernel should be used to initialize a huge fields.
 
 
 Virtual indices v.s. physical indices
 -------------------------------------
 
-In Taichi, *virtual indices* are used to locate elements in fieldss, and *physical indices*
+In Taichi, *virtual indices* are used to locate elements in fields, and *physical indices*
 are used to specify data layouts in memory.
 
 For example,
@@ -156,10 +156,10 @@ correspond to?
 Each ``SNode`` can have a different virtual-to-physical mapping. ``physical_index_position[i] == -1``
 means the ``i``-th virtual index does not corrspond to any physical index in this ``SNode``.
 
-``SNode`` s in handy dense fieldss (i.e., ``a = ti.field(ti.i32, shape=(128, 256, 512))``)
+``SNode`` s in handy dense fields (i.e., ``a = ti.field(ti.i32, shape=(128, 256, 512))``)
 have **trivial** virtual-to-physical mapping, e.g. ``physical_index_position[i] = i``.
 
-However, more complex data layouts, such as column-major 2D fieldss can lead to ``SNodes`` with
+However, more complex data layouts, such as column-major 2D fields can lead to ``SNodes`` with
 ``physical_index_position[0] = 1`` and ``physical_index_position[1] = 0``.
 
 .. code-block:: python

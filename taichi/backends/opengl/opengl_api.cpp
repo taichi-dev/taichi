@@ -261,8 +261,7 @@ struct GLBuffer : GLSSBO {
     bind_index((int)index);
   }
 
-  GLBuffer(GLBufId index)
-      : index(index), base(nullptr), size(0) {
+  GLBuffer(GLBufId index) : index(index), base(nullptr), size(0) {
     bind_index((int)index);
   }
 
@@ -591,10 +590,10 @@ struct CompiledProgram::Impl {
     std::vector<char> base_arr;
     std::vector<void *> saved_ctx_ptrs;
     // NOTE: these dirty codes are introduced by #694, TODO: RAII
-    if (ext_arr_map.size()) { /// DIRTY_BEGIN {{{
+    if (ext_arr_map.size()) {  /// DIRTY_BEGIN {{{
       TI_PROFILER("launch:ext_arr1");
       user_bufs.add_buffer(GLBufId::Earg, ctx.extra_args,
-                      arg_count * taichi_max_num_args * sizeof(int));
+                           arg_count * taichi_max_num_args * sizeof(int));
       if (ext_arr_map.size() == 1) {  // zero-copy for only one ext_arr
         auto it = ext_arr_map.begin();
         auto extptr = (void *)ctx.args[it->first];
@@ -618,7 +617,7 @@ struct CompiledProgram::Impl {
         }  // concat all extptr into my baseptr
         user_bufs.add_buffer(GLBufId::Extr, baseptr, accum_size);
       }
-    } /// DIRTY_END }}}
+    }  /// DIRTY_END }}}
     auto n_args = std::max(arg_count, ret_count);
     if (n_args) {
       user_bufs.add_buffer(GLBufId::Args, ctx.args, n_args * sizeof(uint64_t));

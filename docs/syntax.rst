@@ -175,7 +175,7 @@ Unlike kernel, function arguments don't need to be type-hinted:
     def my_add(x, y):
         return x + y
 
-    
+
     @ti.kernel
     def my_kern():
         ...
@@ -193,7 +193,7 @@ won't affect the outside value in the caller:
     def my_func(x):
         x = x + 1  # won't change the original value of x
 
-    
+
     @ti.kernel
     def my_kern():
         ...
@@ -212,7 +212,7 @@ reference:
     def my_func(x: ti.template()):
         x = x + 1  # will change the original value of x
 
-    
+
     @ti.kernel
     def my_kern():
         ...

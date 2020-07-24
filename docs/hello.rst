@@ -102,7 +102,7 @@ Taichi programs run on either CPUs or GPUs. Initialize Taichi according to your 
   On other platforms, Taichi will make use of its on-demand memory allocator to adaptively allocate memory.
 
 (Sparse) fields
-----------------
+---------------
 
 Taichi is a data-oriented programming language where dense or spatially-sparse fields are the first-class citizens.
 See :ref:`sparse` for more details on sparse fields.

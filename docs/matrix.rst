@@ -24,7 +24,7 @@ Declaration
 -----------
 
 As global fields of matrices
-+++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++
 
 .. function:: ti.Matrix.field(n, m, dtype, shape = None, offset = None)
 
@@ -91,7 +91,7 @@ Accessing components
 --------------------
 
 As global fields of vectors
-++++++++++++++++++++++++++++
++++++++++++++++++++++++++++
 .. attribute:: a[p, q, ...][i, j]
 
     :parameter a: (field of matrices) the field of matrices

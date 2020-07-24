@@ -82,7 +82,7 @@ For example:
 
 
 Field metadata
----------------
+--------------
 
 Sometimes it is useful to get the data type (``field.dtype``) and shape (``field.shape``) of fields.
 These attributes can be accessed in both Taichi- and Python-scopes.

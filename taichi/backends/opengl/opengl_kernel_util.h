@@ -26,6 +26,7 @@ struct UsedFeature {
   bool buf_earg{false};
   bool buf_extr{false};
   bool buf_gtmp{false};
+  bool buf_thls{false};
 
   // utilties:
   bool fast_pow{false};

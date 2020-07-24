@@ -88,6 +88,7 @@ class KernelGen : public IRVisitor {
   LineAppender line_appender_header_;
   std::unique_ptr<ParallelSize> ps;
   UsedFeature used;
+  size_t max_tls_size{0};
 
   template <typename... Args>
   void emit(std::string f, Args &&... args) {
@@ -164,6 +165,18 @@ class KernelGen : public IRVisitor {
     if (used.buf_earg) {
       kernel_header +=
           "layout(std430, binding = 3) buffer earg_i32 { int _earg_i32_[]; };\n";
+    }
+    if (used.buf_thls) {
+      kernel_header +=
+        fmt::format("int _thls_i32_[{}];\n", max_tls_size);
+      kernel_header +=
+        fmt::format("float _thls_f32_[{}];\n", max_tls_size);
+      if (used.float64)
+        kernel_header +=
+          fmt::format("double _thls_f64_[{}];\n", max_tls_size);
+      if (used.int64)
+        kernel_header +=
+          fmt::format("int64_t _thls_i64_[{}];\n", max_tls_size);
     }
     if (used.buf_extr) {
       kernel_header +=
@@ -876,6 +889,14 @@ class KernelGen : public IRVisitor {
     ptr_signats[stmt->id] = "gtmp";
   }
 
+  void visit(ThreadLocalPtrStmt *stmt) override {
+    TI_ASSERT(stmt->width() == 1);
+    used.buf_thls = true;
+    max_tls_size = stmt->offset + 1;
+    emit("int {} = {};", stmt->short_name(), stmt->offset);
+    ptr_signats[stmt->id] = "thls";
+  }
+
   void visit(LoopIndexStmt *stmt) override {
     TI_ASSERT(stmt->index == 0);  // TODO: multiple indices
     if (stmt->loop->is<OffloadedStmt>()) {
@@ -1016,7 +1037,7 @@ void OpenglCodeGen::lower() {
                               /*vectorize=*/false, kernel_->grad,
                               /*ad_use_stack=*/false, config.print_ir,
                               /*lower_global_access=*/true,
-                              /*make_thread_local=*/false);
+                              /*make_thread_local=*/true);
 #ifdef _GLSL_DEBUG
   irpass::print(ir);
 #endif

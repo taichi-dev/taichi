@@ -74,7 +74,14 @@ void Pointer_deactivate(Ptr meta, Ptr node, int i) {
       if (data_ptr != nullptr) {
         auto alloc = rt->node_allocators[smeta->snode_id];
         alloc->recycle(data_ptr);
-        // taichi_printf(rt, "deactivating %p\n", data_ptr);
+        /*
+        if (smeta->snode_id == 1) {
+          taichi_printf(
+              rt,
+              "deallocating snode %d... %d node %p lock %p num_elements %d\n",
+              smeta->snode_id, i, node, lock, num_elements);
+        }
+        */
         data_ptr = nullptr;
       }
     });

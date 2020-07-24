@@ -703,6 +703,8 @@ int Program::default_block_dim() const {
 void Program::print_memory_profiler_info() {
   TI_ASSERT(arch_uses_llvm(config.arch));
 
+  fmt::print("\n[Memory Profiler]\n");
+
   std::locale::global(std::locale("en_US.UTF-8"));
   // So that thousand separators are added to "{:n}" slots in fmtlib.
   // TODO: is there a way to set locale only locally in this function?

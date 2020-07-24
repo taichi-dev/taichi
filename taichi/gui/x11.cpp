@@ -133,10 +133,14 @@ void GUI::process_event() {
 
 void GUI::create_window() {
   display = XOpenDisplay(nullptr);
+  TI_ASSERT_INFO(display, "Taichi fails to create a window."
+      " This is probably due to the lack of an X11 GUI environment."
+      " If you are using ssh, try ssh -XY.");
   visual = DefaultVisual(display, 0);
   window =
       XCreateSimpleWindow((Display *)display, RootWindow((Display *)display, 0),
                           0, 0, width, height, 1, 0, 0);
+  TI_ASSERT_INFO(window, "failed to create X window");
   XSelectInput((Display *)display, window,
                ButtonPressMask | ExposureMask | KeyPressMask | KeyReleaseMask |
                    ButtonPress | ButtonReleaseMask | EnterWindowMask |

@@ -46,17 +46,21 @@ Running the Taichi code below (``python3 fractal.py`` or ``ti example fractal``)
 
 Let's dive into this simple Taichi program.
 
+
 import taichi as ti
 -------------------
+
 Taichi is a domain-specific language (DSL) embedded in Python. To make Taichi as easy to use as a Python package,
 we have done heavy engineering with this goal in mind - letting every Python programmer write Taichi programs with
 minimal learning effort. You can even use your favorite Python package management system, Python IDEs and other
 Python packages in conjunction with Taichi.
 
+
 Portability
 -----------
 
-Taichi programs run on either CPUs or GPUs. Initialize Taichi according to your hardware platform as follows:
+Taichi programs run on either CPUs or GPUs.
+Initialize Taichi according to your hardware platform as follows:
 
 .. code-block:: python
 
@@ -65,7 +69,7 @@ Taichi programs run on either CPUs or GPUs. Initialize Taichi according to your 
 
   # Run on GPU, with the NVIDIA CUDA backend
   ti.init(arch=ti.cuda)
-  # Run on GPU, with the OpenGL backend
+  # Run on GPU, with the OpenGL compute shader backend
   ti.init(arch=ti.opengl)
   # Run on GPU, with the Apple Metal backend, if you are on OS X
   ti.init(arch=ti.metal)
@@ -74,6 +78,7 @@ Taichi programs run on either CPUs or GPUs. Initialize Taichi according to your 
   ti.init(arch=ti.cpu)
 
 .. note::
+
     Supported backends on different platforms:
 
     +----------+------+------+--------+-------+
@@ -101,33 +106,35 @@ Taichi programs run on either CPUs or GPUs. Initialize Taichi according to your 
 
   On other platforms, Taichi will make use of its on-demand memory allocator to adaptively allocate memory.
 
-(Sparse) tensors
-----------------
+Tensors
+-------
 
-Taichi is a data-oriented programming language where dense or spatially-sparse tensors are the first-class citizens.
-See :ref:`sparse` for more details on sparse tensors.
+Taichi is a data-oriented programming language where **tensors** are the first-class citizens.
 
 In the code above, ``pixels = ti.var(dt=ti.f32, shape=(n * 2, n))`` allocates a 2D dense tensor named ``pixels`` of
-size ``(640, 320)`` and element data type ``ti.f32`` (i.e. ``float`` in C).
+size ``(640, 320)`` with data type ``ti.f32`` (32-bit floating-point number).
+
 
 Functions and kernels
 ---------------------
 
 Computation resides in Taichi **kernels**. Kernel arguments must be type-hinted.
-The language used in Taichi kernels and functions looks exactly like Python, yet the Taichi frontend compiler converts it
+The language used in Taichi kernels and functions looks much like Python, yet the Taichi frontend compiler converts it
 into a language that is **compiled, statically-typed, lexically-scoped, parallel and differentiable**.
 
 Taichi **functions**, which can be called by Taichi kernels and other Taichi functions, should be defined with the keyword ``ti.func``.
 
 .. note::
 
-  **Taichi-scopes v.s. Python-scopes**: everything decorated with ``ti.kernel`` and ``ti.func`` is in Taichi-scope, which will be compiled by the Taichi compiler.
-  Everything else is in Python-scopes. They are simply Python code.
+  **Taichi-scopes v.s. Python-scopes**: everything decorated with ``@ti.kernel`` and ``@ti.func`` is in Taichi-scope, which will be compiled by the Taichi compiler.
+
+  Everything else is in Python-scopes. They are simply Python native code.
 
 .. warning::
 
   Taichi kernels must be called in the Python-scope. I.e., **nested kernels are not supported**.
-  Nested functions are allowed. **Recursive functions are not supported for now**.
+
+  But nested functions are allowed. **Recursive functions are not supported for now**.
 
   Taichi functions can only be called in Taichi-scope.
 

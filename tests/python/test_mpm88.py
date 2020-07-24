@@ -114,7 +114,9 @@ def test_mpm88():
 
 
 def _is_appveyor():
-    return int(os.getenv('IS_APPVEYOR', 0)) > 0
+    # AppVeyor adds `APPVEYOR=True` ('true' on Ubuntu)
+    # https://www.appveyor.com/docs/environment-variables/
+    return os.getenv('APPVEYOR', '').lower() == 'true'
 
 
 @pytest.mark.skipif(_is_appveyor(), reason='Stuck on Appveyor.')

@@ -40,7 +40,6 @@ cache:
 
 build_script:
   - set TAICHI_REPO_DIR=C:\taichi
-  - set IS_APPVEYOR=1
   - "%PYTHON% %TAICHI_REPO_DIR%/misc/appveyor_filter.py || appveyor exit 0"
   - cd C:\
   - curl --retry 10 --retry-delay 5 https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-msvc2019.zip -LO

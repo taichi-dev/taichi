@@ -640,10 +640,12 @@ struct NodeManager {
     allocated_elements = 0;
     free_list->resize(num_unused);
 
+    taichi_printf(runtime, "recycled_list size %d\n", recycled_list->size());
     // zero-fill recycled and push to free list
     for (int i = 0; i < recycled_list->size(); i++) {
       auto idx = recycled_list->get<list_data_type>(i);
       auto ptr = data_list->get_element_ptr(idx);
+      taichi_printf(runtime, "idx %d element_size %d\n", idx, element_size);
       std::memset(ptr, 0, element_size);
       free_list->push_back(idx);
     }

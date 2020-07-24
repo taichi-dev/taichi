@@ -973,14 +973,15 @@ class AssertStmt : public Stmt {
 class ExternalFuncCallStmt : public Stmt {
  public:
   void *func;
+  std::string source;
   std::vector<Stmt *> arg_stmts;
   std::vector<Stmt *> output_stmts;
 
-  ExternalFuncCallStmt(void *func,
+  ExternalFuncCallStmt(void *func, std::string const &source,
                        const std::vector<Stmt *> &arg_stmts,
                        const std::vector<Stmt *> &output_stmts)
-      : func(func), arg_stmts(arg_stmts), output_stmts(output_stmts) {
-    TI_ASSERT(func);
+      : func(func), source(source),
+        arg_stmts(arg_stmts), output_stmts(output_stmts) {
     TI_STMT_REG_FIELDS;
   }
 

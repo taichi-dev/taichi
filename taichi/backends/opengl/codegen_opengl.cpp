@@ -644,6 +644,36 @@ class KernelGen : public IRVisitor {
     }
   }
 
+  void visit(ExternalFuncCallStmt *stmt) override {
+    TI_ASSERT(!stmt->func);
+    auto format = stmt->source;
+    std::string source;
+
+    for (int i = 0; i < format.size(); i++) {
+      char c = format[i];
+      if (c == '%' || c == '$') {  // '$' for output, '%' for input
+        int num = 0;
+        while (i < format.size()) {
+          i += 1;
+          if (!::isdigit(format[i])) {
+            i -= 1;
+            break;
+          }
+          num *= 10;
+          num += format[i] - '0';
+        }
+        auto args = (c == '%') ? stmt->arg_stmts : stmt->output_stmts;
+        TI_ASSERT_INFO(num < args.size(),
+            "{}{} out of argument range {}", c, num, args.size());
+        source += args[num]->short_name();
+        continue;
+      }
+      source.push_back(c);
+    }
+
+    emit("{};", source);
+  }
+
   std::string make_kernel_name() {
     return fmt::format("{}{}", glsl_kernel_prefix_, glsl_kernel_count_++);
   }

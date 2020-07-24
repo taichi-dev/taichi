@@ -320,13 +320,14 @@ class TernaryOpExpression : public Expression {
 class ExternalFuncCallExpression : public Expression {
  public:
   void *func;
+  std::string source;
   std::vector<Expr> args;
   std::vector<Expr> outputs;
 
-  ExternalFuncCallExpression(void *func,
+  ExternalFuncCallExpression(void *func, std::string const &source,
                              const std::vector<Expr> &args,
                              const std::vector<Expr> &outputs)
-      : func(func), args(args), outputs(outputs) {
+      : func(func), source(source), args(args), outputs(outputs) {
   }
 
   std::string serialize() override {
@@ -342,7 +343,11 @@ class ExternalFuncCallExpression : public Expression {
       io += s.serialize();
     }
 
-    return fmt::format("call {:x} ({})", (uint64)func, io);
+    if (func) {
+      return fmt::format("call {:x} ({})", (uint64)func, io);
+    } else {
+      return fmt::format("asm \"{}\" ({})", source, io);
+    }
   }
 
   void flatten(FlattenContext *ctx) override;

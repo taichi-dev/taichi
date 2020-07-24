@@ -1,7 +1,7 @@
 .. _tensor:
 
 Fields and matrices
-====================
+===================
 
 Fields are global variables provided by Taichi. Fields can be either sparse or dense.
 An element of a field can be either a scalar or a vector/matrix.
@@ -12,7 +12,7 @@ An element of a field can be either a scalar or a vector/matrix.
     Matrices can be used as field elements, so you can have fields with each element being a matrix.
 
 Fields of scalars
-------------------
+-----------------
 * Every global variable is an N-dimensional field.
 
   - Global ``scalars`` are treated as 0-D fields of scalars.
@@ -28,7 +28,7 @@ Fields of scalars
 
 
 Fields of matrices
--------------------
+------------------
 Field elements can also be matrices.
 
 Suppose you have a ``128 x 64`` field called ``A``, each element containing a ``3 x 2`` matrix. To allocate a ``128 x 64`` field of ``3 x 2`` matrix, use the statement ``A = ti.Matrix.field(3, 2, dtype=ti.f32, shape=(128, 64))``.

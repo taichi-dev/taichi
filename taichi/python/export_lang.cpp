@@ -13,6 +13,10 @@
 #include "taichi/util/statistics.h"
 #include "taichi/util/action_recorder.h"
 
+#if defined(TI_WITH_CUDA)
+#include "taichi/backends/cuda/cuda_context.h"
+#endif
+
 TI_NAMESPACE_BEGIN
 
 bool test_threading();
@@ -596,6 +600,18 @@ void export_lang(py::module &m) {
         "'ti.core.toggle_advance_optimization(False)' is deprecated."
         " Use 'ti.init(advanced_optimization=False)' instead");
     get_current_program().config.advanced_optimization = option;
+  });
+
+  m.def("query_int64", [](const std::string &key) {
+    if (key == "cuda_compute_capability") {
+#if defined(TI_WITH_CUDA)
+      return CUDAContext::get_instance().get_compute_capability();
+#else
+      TI_NOT_IMPLEMENTED
+#endif
+    } else {
+      TI_ERROR("Key {} not supported in query_int64", key);
+    }
   });
 }
 

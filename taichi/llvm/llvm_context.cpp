@@ -50,6 +50,10 @@
 #include <unistd.h>
 #endif
 
+#if defined(TI_WITH_CUDA)
+#include "taichi/backends/cuda/cuda_context.h"
+#endif
+
 TLANG_NAMESPACE_BEGIN
 
 using namespace llvm;
@@ -180,11 +184,14 @@ void compile_runtime_bitcode(Arch arch) {
         {"clang-7", "clang-8", "clang-9", "clang-10", "clang"});
     TI_ASSERT(command_exist("llvm-as"));
     TI_TRACE("Compiling runtime module bitcode...");
-    std::string macro = fmt::format(" -D ARCH_{} ", arch_name(arch));
+
+    std::string cuda_compute_capability = "0";
+
+    std::string arch_macro = fmt::format(" -D ARCH_{}", arch_name(arch));
     auto cmd = fmt::format(
         "{} -S {}runtime.cpp -o {}runtime.ll -fno-exceptions "
         "-emit-llvm -std=c++17 {} -I {}",
-        clang, runtime_src_folder, runtime_folder, macro, get_repo_dir());
+        clang, runtime_src_folder, runtime_folder, arch_macro, get_repo_dir());
     int ret = std::system(cmd.c_str());
     if (ret) {
       TI_ERROR("LLVMRuntime compilation failed.");
@@ -349,9 +356,22 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
       data->runtime_module = module_from_bitcode_file(
           fmt::format("{}/{}", get_runtime_dir(), get_runtime_fn(arch)), ctx);
     }
+
     if (arch == Arch::cuda) {
       auto &runtime_module = data->runtime_module;
       runtime_module->setTargetTriple("nvptx64-nvidia-cuda");
+
+#if defined(TI_WITH_CUDA)
+      auto func = runtime_module->getFunction("cuda_compute_capability");
+      TI_ERROR_UNLESS(func, "Function cuda_compute_capability not found");
+      func->deleteBody();
+      auto bb = llvm::BasicBlock::Create(*ctx, "entry", func);
+      IRBuilder<> builder(*ctx);
+      builder.SetInsertPoint(bb);
+      builder.CreateRet(
+          get_constant(CUDAContext::get_instance().get_compute_capability()));
+      TaichiLLVMContext::force_inline(func);
+#endif
 
       auto patch_intrinsic = [&](std::string name, Intrinsic::ID intrin,
                                  bool ret = true,
@@ -405,6 +425,21 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
 
       patch_intrinsic("cuda_ballot", Intrinsic::nvvm_vote_ballot);
       patch_intrinsic("cuda_ballot_sync", Intrinsic::nvvm_vote_ballot_sync);
+
+      patch_intrinsic("cuda_shfl_down_sync_i32",
+                      Intrinsic::nvvm_shfl_sync_down_i32);
+
+      patch_intrinsic("cuda_shfl_down_sync_i32",
+                      Intrinsic::nvvm_shfl_sync_down_i32);
+
+      patch_intrinsic("cuda_match_any_sync_i32",
+                      Intrinsic::nvvm_match_any_sync_i32);
+
+      // LLVM 10.0.0 seems to have a bug on this intrinsic function
+      /*
+      patch_intrinsic("cuda_match_any_sync_i64",
+                      Intrinsic::nvvm_match_any_sync_i64);
+                      */
 
       patch_intrinsic("ctlz_i32", Intrinsic::ctlz, true,
                       {llvm::Type::getInt32Ty(*ctx)}, {get_constant(false)});

@@ -125,7 +125,7 @@ Meta data
         z.shape  # ()
 
 
-.. function:: a.dtype
+.. attribute:: a.dtype
 
     :parameter a: (Tensor) the tensor
     :return: (DataType) the data type of ``a``

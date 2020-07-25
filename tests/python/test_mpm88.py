@@ -1,7 +1,7 @@
-import platform
 import pytest
 import taichi as ti
 from taichi import approx
+import os
 
 
 def run_mpm88_test():
@@ -113,8 +113,13 @@ def test_mpm88():
     run_mpm88_test()
 
 
-# @pytest.mark.skipif(platform.system() == 'Windows',
-#                     reason='Stuck on Appveyor?')
+def _is_appveyor():
+    # AppVeyor adds `APPVEYOR=True` ('true' on Ubuntu)
+    # https://www.appveyor.com/docs/environment-variables/
+    return os.getenv('APPVEYOR', '').lower() == 'true'
+
+
+@pytest.mark.skipif(_is_appveyor(), reason='Stuck on Appveyor.')
 @ti.archs_with([ti.cpu], async_mode=True)
 def test_mpm88_async():
     # It seems that all async tests on Appveyor run super slow. For example,

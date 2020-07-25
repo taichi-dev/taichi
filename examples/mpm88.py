@@ -81,8 +81,8 @@ def init():
 init()
 gui = ti.GUI('MPM88')
 while gui.running and not gui.get_event(gui.PRESS):
-  for s in range(50):
-    substep()
-  gui.clear(0x112F41)
-  gui.circles(x.to_numpy(), radius=1.5, color=0x068587)
-  gui.show()
+    for s in range(50):
+        substep()
+    gui.clear(0x112F41)
+    gui.circles(x.to_numpy(), radius=1.5, color=0x068587)
+    gui.show()

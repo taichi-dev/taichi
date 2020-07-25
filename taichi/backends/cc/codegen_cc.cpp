@@ -295,6 +295,14 @@ class CCTransformer : public IRVisitor {
     return invoke_libc(name, dt, arguments);
   }
 
+  void visit(TernaryOpStmt *tri) override {
+    TI_ASSERT(tri->op_type == TernaryOpType::select);
+    emit("{} {} = {} != 0 ? {} : {};",
+         cc_data_type_name(tri->element_type()), tri->raw_name(),
+         tri->op1->raw_name(), tri->op2->raw_name(),
+         tri->op3->raw_name());
+  }
+
   void visit(BinaryOpStmt *bin) override {
     TI_ASSERT(bin->width() == 1);
     const auto dt_name = cc_data_type_name(bin->element_type());

@@ -67,7 +67,6 @@ def render():
         img[p] += color[i]
 
 
-
 inv_m[0] = 0
 x[0].x = +0.5
 x[0].y = -0.01

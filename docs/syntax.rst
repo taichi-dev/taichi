@@ -161,7 +161,7 @@ Taichi functions can only be called from **Taichi-scope**.
 .. note::
 
     Taichi functions can be nested.
-    
+
 .. warning::
 
     Currently, all functions are force-inlined. Therefore, no recursion is allowed.

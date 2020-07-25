@@ -105,7 +105,7 @@ class _EnvironmentConfigurator:
             self[key] = cast(value)
             if key in self.kwargs:
                 core.warn(
-                    f'ti.init argument "{key}" overridden by environment variable "{name}"={value}'
+                    f'ti.init argument "{key}" overridden by environment variable {name}={value}'
                 )
                 del self.kwargs[key]  # mark as recognized
         elif key in self.kwargs:
@@ -153,25 +153,33 @@ def init(arch=None,
 
     # configure default_fp/ip:
     # TODO: move these stuff to _SpecialConfig too:
-    if default_fp is None:
-        dfl_fp = os.environ.get("TI_DEFAULT_FP")
-        if dfl_fp == 32:
-            default_fp = core.DataType.f32
-        elif dfl_fp == 64:
-            default_fp = core.DataType.f64
+    dfl_fp = os.environ.get("TI_DEFAULT_FP")
+    if dfl_fp:
+        if default_fp is not None:
+            core.warn(
+                f'ti.init argument "default_fp" overridden by environment variable TI_DEFAULT_FP={dfl_fp}'
+            )
+        if dfl_fp == '32':
+            default_fp = f32
+        elif dfl_fp == '64':
+            default_fp = f64
         elif dfl_fp is not None:
             raise ValueError(
-                f'Unrecognized TI_DEFAULT_FP: {dfl_fp}, should be 32 or 64')
+                f'Invalid TI_DEFAULT_FP={dfl_fp}, should be 32 or 64')
 
-    if default_ip is None:
-        dfl_ip = os.environ.get("TI_DEFAULT_IP")
-        if dfl_ip == 32:
-            default_ip = core.DataType.i32
-        elif dfl_ip == 64:
-            default_ip = core.DataType.i64
+    dfl_ip = os.environ.get("TI_DEFAULT_IP")
+    if dfl_ip:
+        if default_ip is not None:
+            core.warn(
+                f'ti.init argument "default_ip" overridden by environment variable TI_DEFAULT_IP={dfl_ip}'
+            )
+        if dfl_ip == '32':
+            default_ip = i32
+        elif dfl_ip == '64':
+            default_ip = i64
         elif dfl_ip is not None:
             raise ValueError(
-                f'Unrecognized TI_DEFAULT_IP: {dfl_ip}, should be 32 or 64')
+                f'Invalid TI_DEFAULT_IP={dfl_ip}, should be 32 or 64')
 
     if default_fp is not None:
         ti.get_runtime().set_default_fp(default_fp)

@@ -561,11 +561,9 @@ STRUCT_FIELD(LLVMRuntime, profiler_stop);
 struct NodeManager {
   LLVMRuntime *runtime;
   i32 lock;
-
   i32 element_size;
   i32 chunk_num_elements;
-  i32 allocated_elements;
-
+  i32 free_list_used;
   ListManager *free_list, *recycled_list, *data_list;
   i32 recycle_list_size_backup;
 
@@ -585,7 +583,7 @@ struct NodeManager {
       chunk_num_elements /= 2;
     }
     this->chunk_num_elements = chunk_num_elements;
-    allocated_elements = 0;
+    free_list_used = 0;
     free_list = runtime->create<ListManager>(runtime, sizeof(list_data_type),
                                              chunk_num_elements);
     recycled_list = runtime->create<ListManager>(
@@ -595,7 +593,7 @@ struct NodeManager {
   }
 
   Ptr allocate() {
-    int old_cursor = atomic_add_i32(&allocated_elements, 1);
+    int old_cursor = atomic_add_i32(&free_list_used, 1);
     i32 l;
     if (old_cursor >= free_list->size()) {
       // running out of free list. allocate new.
@@ -618,12 +616,12 @@ struct NodeManager {
 
   void gc_serial() {
     // compact free list
-    for (int i = allocated_elements; i < free_list->size(); i++) {
-      free_list->get<list_data_type>(i - allocated_elements) =
+    for (int i = free_list_used; i < free_list->size(); i++) {
+      free_list->get<list_data_type>(i - free_list_used) =
           free_list->get<list_data_type>(i);
     }
-    const i32 num_unused = max_i32(free_list->size() - allocated_elements, 0);
-    allocated_elements = 0;
+    const i32 num_unused = max_i32(free_list->size() - free_list_used, 0);
+    free_list_used = 0;
     free_list->resize(num_unused);
 
     // zero-fill recycled and push to free list
@@ -1308,21 +1306,21 @@ void gc_parallel_0(LLVMRuntime *runtime, int snode_id) {
   auto allocator = runtime->node_allocators[snode_id];
   auto free_list = allocator->free_list;
   auto free_list_size = free_list->size();
-  auto allocated_elements = allocator->allocated_elements;
+  auto free_list_used = allocator->free_list_used;
   using T = NodeManager::list_data_type;
 
   // Move unused elements to the beginning of the free_list
   int i = linear_thread_idx();
-  if (allocated_elements * 2 > free_list_size) {
+  if (free_list_used * 2 > free_list_size) {
     // Directly copy. Dst and src does not overlap
-    auto items_to_copy = free_list_size - allocated_elements;
+    auto items_to_copy = free_list_size - free_list_used;
     while (i < items_to_copy) {
-      free_list->get<T>(i) = free_list->get<T>(allocated_elements + i);
+      free_list->get<T>(i) = free_list->get<T>(free_list_used + i);
       i += grid_dim() * block_dim();
     }
   } else {
     // Move only non-overlapping parts
-    auto items_to_copy = allocated_elements;
+    auto items_to_copy = free_list_used;
     while (i < items_to_copy) {
       free_list->get<T>(i) =
           free_list->get<T>(free_list_size - items_to_copy + i);
@@ -1335,10 +1333,11 @@ void gc_parallel_1(LLVMRuntime *runtime, int snode_id) {
   auto allocator = runtime->node_allocators[snode_id];
   auto free_list = allocator->free_list;
 
-  const i32 num_unused = max_i32(free_list->size() - allocator->allocated_elements, 0);
+  const i32 num_unused =
+      max_i32(free_list->size() - allocator->free_list_used, 0);
   free_list->resize(num_unused);
 
-  allocator->allocated_elements = 0;
+  allocator->free_list_used = 0;
   allocator->recycle_list_size_backup = allocator->recycled_list->size();
   allocator->recycled_list->clear();
 }

@@ -620,8 +620,8 @@ uint64 Program::fetch_result_uint64(int i) {
   uint64 ret;
   auto arch = config.arch;
   sync = false;
-  // Runtime calls that set result buffer doesn't set sync=false, so we set it
-  // here...
+  // Runtime calls that set result buffer don't execute sync=false, so we have
+  // to set it here otherwise synchronize() does nothing.
   // TODO: systematically fix this.
   synchronize();
   if (arch == Arch::cuda) {

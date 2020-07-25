@@ -410,15 +410,38 @@ class CCTransformer : public IRVisitor {
   }
 
   void generate_range_for_kernel(OffloadedStmt *stmt) {
-    // TI_ASSERT(stmt->const_begin && stmt->const_end);
-    ScopedIndent _s(line_appender);
-    auto begin_value = stmt->begin_value;
-    auto end_value = stmt->end_value;
-    auto var = define_var("Ti_i32", stmt->raw_name());
-    emit("for ({} = {}; {} < {}; {} += {}) {{", var, begin_value,
-         stmt->raw_name(), end_value, stmt->raw_name(), 1 /* stmt->step? */);
-    stmt->body->accept(this);
-    emit("}}");
+    if (stmt->const_begin && stmt->const_end) {
+      ScopedIndent _s(line_appender);
+      auto begin_value = stmt->begin_value;
+      auto end_value = stmt->end_value;
+      auto var = define_var("Ti_i32", stmt->raw_name());
+      emit("for ({} = {}; {} < {}; {} += {}) {{", var, begin_value,
+           stmt->raw_name(), end_value, stmt->raw_name(), 1 /* stmt->step? */);
+      stmt->body->accept(this);
+      emit("}}");
+    } else {
+      auto var = define_var("Ti_i32", stmt->raw_name());
+      auto begin_expr = "tmp_begin_" + stmt->raw_name();
+      auto end_expr = "tmp_end_" + stmt->raw_name();
+      auto begin_var = define_var("Ti_i32", begin_expr);
+      auto end_var = define_var("Ti_i32", end_expr);
+      if (!stmt->const_begin) {
+        emit("{} = *(Ti_i32 *) (ti_ctx->gtmp + {});",
+              begin_var, stmt->begin_offset);
+      } else {
+        emit("{} = {};", begin_var, stmt->begin_value);
+      }
+      if (!stmt->const_end) {
+        emit("{} = *(Ti_i32 *) (ti_ctx->gtmp + {});",
+              end_var, stmt->end_offset);
+      } else {
+        emit("{} = {};", end_var, stmt->end_value);
+      }
+      emit("for ({} = {}; {} < {}; {} += {}) {{", var, begin_expr,
+           stmt->raw_name(), end_expr, stmt->raw_name(), 1 /* stmt->step? */);
+      stmt->body->accept(this);
+      emit("}}");
+    }
   }
 
   void visit(OffloadedStmt *stmt) override {

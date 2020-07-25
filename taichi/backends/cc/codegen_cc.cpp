@@ -460,8 +460,8 @@ class CCTransformer : public IRVisitor {
     } else {
       // reversed for loop
       emit("for ({} = {} - {}; {} >= {}; {} -= {}) {{", var,
-           stmt->end->raw_name(), stmt->raw_name(), 1, stmt->begin->raw_name(),
-           stmt->raw_name(), 1);
+           stmt->end->raw_name(), 1, stmt->raw_name(),
+           stmt->begin->raw_name(), stmt->raw_name(), 1);
     }
     stmt->body->accept(this);
     emit("}}");

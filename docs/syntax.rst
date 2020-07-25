@@ -160,7 +160,11 @@ Taichi functions can only be called from **Taichi-scope**.
 
 .. note::
 
-    Functions can be nested.
+    Taichi functions can be nested.
+    
+.. warning::
+
+    Currently, all functions are force-inlined. Therefore, no recursion is allowed.
 
 
 Arguments and return values
@@ -263,12 +267,6 @@ reference:
         else:
           ret = 0.0
         return ret
-
-
-.. warning::
-
-    Currently, all functions are force-inlined. Therefore, no recursion is allowed.
-
 
 
 Scalar arithmetics

@@ -29,11 +29,13 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 
   FunctionType compile_module_to_executable() override {
 #ifdef TI_WITH_CUDA
+    eliminate_unused_functions();
+
     auto offloaded_local = offloaded_tasks;
     for (auto &task : offloaded_local) {
       llvm::Function *func = module->getFunction(task.name);
       TI_ASSERT(func);
-      tlctx->mark_function_as_cuda_kernel(func);
+      tlctx->mark_function_as_cuda_kernel(func, task.block_dim);
     }
 
     auto jit = get_current_program().llvm_context_device->jit.get();
@@ -427,7 +429,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     auto type = llvm::ArrayType::get(llvm::Type::getInt8Ty(*llvm_context),
                                      stmt->bls_size);
     bls_buffer = new GlobalVariable(
-        *module, type, false, llvm::GlobalValue::InternalLinkage, nullptr,
+        *module, type, false, llvm::GlobalValue::ExternalLinkage, nullptr,
         "bls_buffer", nullptr, llvm::GlobalVariable::NotThreadLocal,
         3 /*addrspace=shared*/);
 #if LLVM_VERSION_MAJOR >= 10

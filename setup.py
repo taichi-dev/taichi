@@ -40,7 +40,6 @@ setuptools.setup(name=project_name,
                  entry_points={
                      'console_scripts': [
                          'ti=taichi.main:main',
-                         'tid=taichi.main:main_debug',
                      ],
                  },
                  classifiers=classifiers,

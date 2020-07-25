@@ -1,9 +1,9 @@
 import inspect
-import warnings
 from .core import taichi_lang_core
 from .expr import Expr
 from .snode import SNode
 from .util import *
+from .exception import TaichiSyntaxError
 
 
 @taichi_scope
@@ -136,6 +136,26 @@ def chain_compare(comparators, ops):
             assert False, f'Unknown operator {ops[i]}'
         ret = logical_and(ret, now)
     return ret
+
+
+@taichi_scope
+def func_call_with_check(func, *args, **kwargs):
+    _taichi_skip_traceback = 1
+    if '_sitebuiltins' == getattr(func, '__module__', '') and getattr(
+            getattr(func, '__class__', ''), '__name__', '') == 'Quitter':
+        raise TaichiSyntaxError(f'exit or quit not supported in Taichi-scope')
+    if getattr(func, '__module__',
+               '') == '__main__' and not getattr(func, '__wrapped__', ''):
+        import warnings
+        warnings.warn(
+            f'Calling into non-Taichi function {func.__name__}.'
+            ' This means that scope inside that function will not be processed'
+            ' by the Taichi transformer. Proceed with caution! '
+            ' Maybe you want to decorate it with @ti.func?',
+            UserWarning,
+            stacklevel=2)
+
+    return func(*args, **kwargs)
 
 
 class PyTaichi:
@@ -285,8 +305,14 @@ class Root:
 root = Root()
 
 
-@python_scope
+#@deprecated('ti.var', 'ti.field')
 def var(dt, shape=None, offset=None, needs_grad=False):
+    _taichi_skip_traceback = 1
+    return field(dt, shape, offset, needs_grad)
+
+
+@python_scope
+def field(dtype, shape=None, offset=None, needs_grad=False):
     _taichi_skip_traceback = 1
     if isinstance(shape, numbers.Number):
         shape = (shape, )
@@ -314,14 +340,14 @@ def var(dt, shape=None, offset=None, needs_grad=False):
 
     # primal
     x = Expr(taichi_lang_core.make_id_expr(""))
-    x.ptr = taichi_lang_core.global_new(x.ptr, dt)
+    x.ptr = taichi_lang_core.global_new(x.ptr, dtype)
     x.ptr.set_is_primal(True)
     pytaichi.global_vars.append(x)
 
-    if taichi_lang_core.needs_grad(dt):
+    if taichi_lang_core.needs_grad(dtype):
         # adjoint
         x_grad = Expr(taichi_lang_core.make_id_expr(""))
-        x_grad.ptr = taichi_lang_core.global_new(x_grad.ptr, dt)
+        x_grad.ptr = taichi_lang_core.global_new(x_grad.ptr, dtype)
         x_grad.ptr.set_is_primal(False)
         x.set_grad(x_grad)
 
@@ -345,7 +371,7 @@ AOS = Layout(soa=False)
 @python_scope
 def layout(func):
     assert not pytaichi.materialized, "All layout must be specified before the first kernel launch / data access."
-    warnings.warn(
+    warning(
         f"@ti.layout will be deprecated in the future, use ti.root directly to specify data layout anytime before the data structure materializes.",
         PendingDeprecationWarning,
         stacklevel=3)
@@ -433,7 +459,7 @@ def static(x, *xs):
         return x
     elif isinstance(x, ti.Matrix) and x.is_global():
         return x
-    elif isinstance(x, types.FunctionType) or isinstance(x, types.MethodType):
+    elif isinstance(x, (types.FunctionType, types.MethodType)):
         return x
     else:
         raise ValueError(

@@ -8,6 +8,18 @@ TLANG_NAMESPACE_BEGIN
 
 std::atomic<int> SNode::counter = 0;
 
+SNode &SNode::insert_children(SNodeType t) {
+  TI_ASSERT(t != SNodeType::root);
+
+  auto new_ch = std::make_unique<SNode>(depth + 1, t);
+  new_ch->is_path_all_dense = (is_path_all_dense && ((t == SNodeType::dense) ||
+                                                     (t == SNodeType::place)));
+  ch.push_back(std::move(new_ch));
+  // Note: |new_ch->parent| will not be set until structural nodes are compiled!
+  // (But why..?)
+  return *ch.back();
+}
+
 void SNode::place(Expr &expr_, const std::vector<int> &offset) {
   if (type == SNodeType::root) {  // never directly place to root
     this->dense(std::vector<Index>(), {}).place(expr_, offset);
@@ -162,8 +174,9 @@ uint64 SNode::read_uint(const std::vector<int> &I) {
   return (uint64)read_int(I);
 }
 
-int SNode::num_elements_along_axis(int i) const {
-  return extractors[physical_index_position[i]].num_elements;
+int SNode::shape_along_axis(int i) const {
+  const auto &extractor = extractors[physical_index_position[i]];
+  return extractor.num_elements * (1 << extractor.trailing_bits);
 }
 
 void SNode::set_kernel_args(Kernel *kernel, const std::vector<int> &I) {

@@ -1,13 +1,25 @@
 import os
+import platform
 import multiprocessing
-
-from taichi.misc.util import get_os_name
 
 default_num_threads = multiprocessing.cpu_count()
 
 
 def get_num_cores():
     return os.environ.get('TAICHI_NUM_THREADS', default_num_threads)
+
+
+def get_os_name():
+    name = platform.platform()
+    # in python 3.8, platform.platform() uses mac_ver() on macOS
+    # it will return 'macOS-XXXX' instead of 'Darwin-XXXX'
+    if name.lower().startswith('darwin') or name.lower().startswith('macos'):
+        return 'osx'
+    elif name.lower().startswith('windows'):
+        return 'win'
+    elif name.lower().startswith('linux'):
+        return 'linux'
+    assert False, "Unknown platform name %s" % name
 
 
 def get_directory(dir):
@@ -74,3 +86,13 @@ def get_asset_directory():
 
 def get_asset_path(path, *args):
     return os.path.join(get_asset_directory(), path, *args)
+
+
+__all__ = [
+    'get_output_directory',
+    'get_build_directory',
+    'get_bin_directory',
+    'get_repo_directory',
+    'get_runtime_directory',
+    'get_os_name',
+]

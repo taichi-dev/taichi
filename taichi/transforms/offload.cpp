@@ -110,27 +110,35 @@ class Offloader {
 
     auto program = &for_stmt->get_kernel()->program;
 
-    for (int i = 1; i < path.size(); i++) {
-      auto snode_child = path[i];
-      auto offloaded_clear_list =
-          Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::clear_list);
-      offloaded_clear_list->grid_dim = 1;
-      offloaded_clear_list->block_dim = 1;
-      offloaded_clear_list->snode = snode_child;
-      root_block->insert(std::move(offloaded_clear_list));
-      auto offloaded_listgen =
-          Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::listgen);
-      offloaded_listgen->snode = snode_child;
-      offloaded_listgen->grid_dim = program->config.saturating_grid_dim;
-      offloaded_listgen->block_dim =
-          std::min(snode_child->max_num_elements(),
-                   std::min(program->default_block_dim(),
-                            program->config.max_block_dim));
-      root_block->insert(std::move(offloaded_listgen));
+    // If |demotable| is true, this will later be demoting into a range-for
+    // task, so we don't need to generate clear/listgen tasks.
+    const bool demotable =
+        (leaf->is_path_all_dense && program->config.demote_dense_struct_fors);
+    if (!demotable) {
+      for (int i = 1; i < path.size(); i++) {
+        auto snode_child = path[i];
+        auto offloaded_clear_list = Stmt::make_typed<OffloadedStmt>(
+            OffloadedStmt::TaskType::clear_list);
+        offloaded_clear_list->grid_dim = 1;
+        offloaded_clear_list->block_dim = 1;
+        offloaded_clear_list->snode = snode_child;
+        root_block->insert(std::move(offloaded_clear_list));
+        auto offloaded_listgen =
+            Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::listgen);
+        offloaded_listgen->snode = snode_child;
+        offloaded_listgen->grid_dim = program->config.saturating_grid_dim;
+        offloaded_listgen->block_dim =
+            std::min(snode_child->max_num_elements(),
+                     std::min(program->default_block_dim(),
+                              program->config.max_block_dim));
+        root_block->insert(std::move(offloaded_listgen));
+      }
     }
 
     auto offloaded_struct_for =
         Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::struct_for);
+
+    offloaded_struct_for->index_offsets = for_stmt->index_offsets;
 
     offloaded_struct_for->grid_dim = program->config.saturating_grid_dim;
 

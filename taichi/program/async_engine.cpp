@@ -12,6 +12,8 @@
 
 TLANG_NAMESPACE_BEGIN
 
+namespace {
+
 uint64 hash(IRNode *stmt) {
   TI_ASSERT(stmt);
   // TODO: upgrade this using IR comparisons
@@ -25,15 +27,29 @@ uint64 hash(IRNode *stmt) {
   return ret;
 }
 
+std::unique_ptr<IRNode> clone_offloaded_task(OffloadedStmt *from,
+                                             Kernel *kernel,
+                                             Block *dummy_root) {
+  auto new_ir = irpass::analysis::clone(from, kernel);
+  // This is not the ideal fix, because |new_ir|'s children blocks are NOT
+  // linked to |dummy_root|. However, if I manually do the linking, I got error
+  // during LLVM codegen.
+  new_ir->as<OffloadedStmt>()->parent = dummy_root;
+  return new_ir;
+}
+
+}  // namespace
+
 KernelLaunchRecord::KernelLaunchRecord(Context context,
                                        Kernel *kernel,
                                        std::unique_ptr<IRNode> &&stmt_)
     : context(context),
       kernel(kernel),
       stmt(dynamic_cast<OffloadedStmt *>(stmt_.get())),
-      stmt_(std::move(stmt_)),
+      stmt_holder(std::move(stmt_)),
       h(hash(stmt)) {
   TI_ASSERT(stmt != nullptr);
+  TI_ASSERT(stmt->get_kernel() != nullptr);
 }
 
 void ExecutionQueue::enqueue(KernelLaunchRecord &&ker) {
@@ -49,7 +65,7 @@ void ExecutionQueue::enqueue(KernelLaunchRecord &&ker) {
         using namespace irpass;
 
         flag_access(stmt);
-        lower_access(stmt, true, kernel);
+        lower_access(stmt, true);
         flag_access(stmt);
         full_simplify(stmt, true, kernel);
         // analysis::verify(stmt);
@@ -111,10 +127,16 @@ void AsyncEngine::launch(Kernel *kernel) {
   auto block = dynamic_cast<Block *>(kernel->ir.get());
   TI_ASSERT(block);
   auto &offloads = block->statements;
+  auto &dummy_root = kernel_to_dummy_roots_[kernel];
+  if (dummy_root == nullptr) {
+    dummy_root = std::make_unique<Block>();
+    dummy_root->kernel = kernel;
+  }
   for (std::size_t i = 0; i < offloads.size(); i++) {
     auto offload = offloads[i]->as<OffloadedStmt>();
-    KernelLaunchRecord rec(kernel->program.get_context(), kernel,
-                           irpass::analysis::clone(offload, kernel));
+    KernelLaunchRecord rec(
+        kernel->program.get_context(), kernel,
+        clone_offloaded_task(offload, kernel, dummy_root.get()));
     enqueue(std::move(rec));
   }
 }
@@ -235,12 +257,20 @@ bool AsyncEngine::fuse() {
   }
 
   for (int i = 0; i < (int)task_queue.size() - 1; i++) {
-    auto task_a = task_queue[i].stmt;
-    auto task_b = task_queue[i + 1].stmt;
+    auto &rec_a = task_queue[i];
+    auto &rec_b = task_queue[i + 1];
+    auto task_a = rec_a.stmt;
+    auto task_b = rec_b.stmt;
     bool is_same_struct_for = task_a->task_type == OffloadedStmt::struct_for &&
                               task_b->task_type == OffloadedStmt::struct_for &&
                               task_a->snode == task_b->snode &&
                               task_a->block_dim == task_b->block_dim;
+    // TODO: a few problems with the range-for test condition:
+    // 1. This could incorrectly fuse two range-for kernels that have different
+    // sizes, but then the loop ranges get padded to the same power-of-two (E.g.
+    // maybe a side effect when a struct-for is demoted to range-for).
+    // 2. It has also fused range-fors that have the same linear range, but are
+    // of different dimensions of loop indices, e.g. (16, ) and (4, 4).
     bool is_same_range_for = task_a->task_type == OffloadedStmt::range_for &&
                              task_b->task_type == OffloadedStmt::range_for &&
                              task_a->const_begin && task_b->const_begin &&
@@ -251,8 +281,20 @@ bool AsyncEngine::fuse() {
     // We do not fuse serial kernels for now since they can be SNode accessors
     bool are_both_serial = task_a->task_type == OffloadedStmt::serial &&
                            task_b->task_type == OffloadedStmt::serial;
-    bool same_kernel = task_queue[i].kernel == task_queue[i + 1].kernel;
-    if (is_same_range_for || is_same_struct_for) {
+    const bool same_kernel = (rec_a.kernel == rec_b.kernel);
+    bool kernel_args_match = true;
+    if (!same_kernel) {
+      // Merging kernels with different signatures will break invariants. E.g.
+      // https://github.com/taichi-dev/taichi/blob/a6575fb97557267e2f550591f43b183076b72ac2/taichi/transforms/type_check.cpp#L326
+      //
+      // TODO: we could merge different kernels if their args are the same. But
+      // we have no way to check that for now.
+      auto check = [](const Kernel *k) {
+        return (k->args.empty() && k->rets.empty());
+      };
+      kernel_args_match = (check(rec_a.kernel) && check(rec_b.kernel));
+    }
+    if (kernel_args_match && (is_same_range_for || is_same_struct_for)) {
       // TODO: in certain cases this optimization can be wrong!
       // Fuse task b into task_a
       for (int j = 0; j < (int)task_b->body->size(); j++) {

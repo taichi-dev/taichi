@@ -98,6 +98,8 @@ def test_constant_matrices():
     r.z = r.w
     r.w = r.x
     assert np.allclose(w.to_numpy(), np.array([5, 15]))
+    assert ti.select(ti.Vector([1, 0]), ti.Vector([2, 3]),
+                     ti.Vector([4, 5])) == ti.Vector([2, 5])
     s[0, 1] = 2
     assert s[0, 1] == 2
 
@@ -184,3 +186,19 @@ def test_matrix_constant_index():
     func()
 
     assert np.allclose(m.to_numpy(), np.ones((5, 2, 2), np.int32) * 12)
+
+
+@ti.all_archs
+def test_matrix_needs_grad():
+    # Just make sure the usage doesn't crash, see https://github.com/taichi-dev/taichi/pull/1545
+    n = 8
+    m1 = ti.Matrix.field(2, 2, ti.f32, n, needs_grad=True)
+    m2 = ti.Matrix.field(2, 2, ti.f32, n, needs_grad=True)
+    gr = ti.Matrix.field(2, 2, ti.f32, n)
+
+    @ti.kernel
+    def func():
+        for i in range(n):
+            gr[i] = m1.grad[i] + m2.grad[i]
+
+    func()

@@ -46,7 +46,7 @@ class JITModuleCUDA : public JITModule {
     auto t = Time::get_time();
     CUDADriver::get_instance().module_get_function(&func, module, name.c_str());
     t = Time::get_time() - t;
-    TI_TRACE("Kernel {} compilation time: {}ms", name, t * 1000);
+    TI_TRACE("CUDA module_get_function {} costs {} ms", name, t * 1000);
     return func;
   }
 
@@ -112,7 +112,7 @@ class JITSessionCUDA : public JITSession {
 };
 
 std::string cuda_mattrs() {
-  return "+ptx50";
+  return "+ptx63";
 }
 
 std::string convert(std::string new_name) {
@@ -139,15 +139,12 @@ std::string convert(std::string new_name) {
 
 std::string JITSessionCUDA::compile_module_to_ptx(
     std::unique_ptr<llvm::Module> &module) {
+  TI_AUTO_PROF
   // Part of this function is borrowed from Halide::CodeGen_PTX_Dev.cpp
-  // TODO: enabling this leads to LLVM error "comdat global value has private
-  // linkage"
-  /*
   if (llvm::verifyModule(*module, &llvm::errs())) {
     module->print(llvm::errs(), nullptr);
-    TI_ERROR("Module broken");
+    TI_WARN("Module broken");
   }
-  */
 
   using namespace llvm;
 
@@ -270,13 +267,19 @@ std::string JITSessionCUDA::compile_module_to_ptx(
 
   TI_ERROR_IF(fail, "Failed to set up passes to emit PTX source\n");
 
-  // Run optimization passes
-  function_pass_manager.doInitialization();
-  for (llvm::Module::iterator i = module->begin(); i != module->end(); i++) {
-    function_pass_manager.run(*i);
+  {
+    TI_PROFILER("llvm_function_pass");
+    function_pass_manager.doInitialization();
+    for (llvm::Module::iterator i = module->begin(); i != module->end(); i++)
+      function_pass_manager.run(*i);
+
+    function_pass_manager.doFinalization();
   }
-  function_pass_manager.doFinalization();
-  module_pass_manager.run(*module);
+
+  {
+    TI_PROFILER("llvm_module_pass");
+    module_pass_manager.run(*module);
+  }
 
   if (get_current_program().config.print_kernel_llvm_ir_optimized) {
     static FileSequenceWriter writer(

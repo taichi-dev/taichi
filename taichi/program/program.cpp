@@ -142,8 +142,9 @@ Program::Program(Arch desired_arch) {
   llvm_runtime = nullptr;
   finalized = false;
   snode_root = std::make_unique<SNode>(0, SNodeType::root);
+  snode_root->is_path_all_dense = true;
 
-  if (config.async) {
+  if (config.async_mode) {
     TI_WARN("Running in async mode. This is experimental.");
     TI_ASSERT(arch_is_cpu(config.arch));
     async_engine = std::make_unique<AsyncEngine>();
@@ -386,8 +387,7 @@ void Program::materialize_layout() {
         opengl_struct_compiled_->root_size);
 #ifdef TI_WITH_CC
   } else if (config.arch == Arch::cc) {
-    cccp::CCLayoutGen scomp(snode_root.get());
-    cc_program->layout = scomp.compile();
+    cc_program->compile_layout(snode_root.get());
 #endif
   }
 }
@@ -395,15 +395,60 @@ void Program::materialize_layout() {
 void Program::check_runtime_error() {
   synchronize();
   auto tlctx = llvm_context_host.get();
+  if (llvm_context_device) {
+    // In case there is a standalone device context (e.g. CUDA without unified
+    // memory), use the device context instead.
+    tlctx = llvm_context_device.get();
+  }
   auto runtime_jit_module = tlctx->runtime_jit_module;
-  runtime_jit_module->call<void *>("runtime_retrieve_error_code", llvm_runtime);
+  runtime_jit_module->call<void *>("runtime_retrieve_and_reset_error_code",
+                                   llvm_runtime);
   auto error_code = fetch_result<int64>(taichi_result_buffer_error_id);
+
   if (error_code) {
-    runtime_jit_module->call<void *>("runtime_retrieve_error_message",
-                                     llvm_runtime);
-    auto error_message = fetch_result<char *>(taichi_result_buffer_error_id);
+    std::string error_message_template;
+
+    // Here we fetch the error_message_template char by char.
+    // This is not efficient, but fortunately we only need to do this when an
+    // assertion fails. Note that we may not have unified memory here, so using
+    // "fetch_result" that works across device/host memroy is necessary.
+    for (int i = 0;; i++) {
+      runtime_jit_module->call<void *>("runtime_retrieve_error_message",
+                                       llvm_runtime, i);
+      auto c = fetch_result<char>(taichi_result_buffer_error_id);
+      error_message_template += c;
+      if (c == '\0') {
+        break;
+      }
+    }
+
     if (error_code == 1) {
-      TI_ERROR("Assertion failure: {}", error_message);
+      std::string error_message_formatted;
+      int argument_id = 0;
+      for (int i = 0; i < (int)error_message_template.size(); i++) {
+        if (error_message_template[i] != '%') {
+          error_message_formatted += error_message_template[i];
+        } else {
+          auto dtype = error_message_template[i + 1];
+          runtime_jit_module->call<void *>(
+              "runtime_retrieve_error_message_argument", llvm_runtime,
+              argument_id);
+          auto argument = fetch_result<uint64>(taichi_result_buffer_error_id);
+          if (dtype == 'd') {
+            error_message_formatted += fmt::format(
+                "{}", taichi_union_cast_with_different_sizes<int32>(argument));
+          } else if (dtype == 'f') {
+            error_message_formatted += fmt::format(
+                "{}",
+                taichi_union_cast_with_different_sizes<float32>(argument));
+          } else {
+            TI_ERROR("Data type identifier %{} is not supported", dtype);
+          }
+          argument_id += 1;
+          i++;  // skip the dtype char
+        }
+      }
+      TI_ERROR("Assertion failure: {}", error_message_formatted);
     } else {
       TI_NOT_IMPLEMENTED
     }
@@ -420,7 +465,7 @@ void Program::synchronize() {
 #endif
     } else if (config.arch == Arch::metal) {
       metal_kernel_mgr_->synchronize();
-    } else if (config.async == true) {
+    } else if (config.async_mode) {
       async_engine->synchronize();
     }
     sync = true;
@@ -523,6 +568,8 @@ Arch Program::get_snode_accessor_arch() {
     return Arch::cuda;
   } else if (config.arch == Arch::metal) {
     return Arch::metal;
+  } else if (config.arch == Arch::cc) {
+    return Arch::cc;
   } else {
     return get_host_arch();
   }

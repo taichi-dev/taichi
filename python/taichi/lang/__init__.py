@@ -103,9 +103,14 @@ class _EnvironmentConfigurator:
         value = os.environ.get(name, '')
         if len(value):
             self[key] = cast(value)
+            if key in self.kwargs:
+                core.warn(
+                    f'ti.init argument "{key}" overridden by environment variable "{name}"={value}'
+                )
+                del self.kwargs[key]  # mark as recognized
         elif key in self.kwargs:
             self[key] = self.kwargs[key]
-            del self.kwargs[key]  # pop out
+            del self.kwargs[key]  # mark as recognized
 
     def __getitem__(self, key):
         return getattr(self.cfg, key)
@@ -180,9 +185,8 @@ def init(arch=None,
     env_spec.add('excepthook')
 
     # compiler configurations (ti.cfg):
-    # to somewhere like ti.cuda_cfg so that user don't get confused?
     for key in dir(ti.cfg):
-        if key in ['default_fp', 'default_ip']:
+        if key in ['arch', 'default_fp', 'default_ip']:
             continue
         cast = type(getattr(ti.cfg, key))
         if cast is bool:
@@ -217,6 +221,11 @@ def init(arch=None,
 
     # create a new program:
     ti.get_runtime().create_program()
+
+
+def no_activate(*args):
+    for v in args:
+        taichi_lang_core.no_activate(v.ptr)
 
 
 def cache_shared(*args):
@@ -265,7 +274,13 @@ tr = deprecated('ti.tr(a)', 'a.trace()')(Matrix.trace)
 
 def Tape(loss, clear_gradients=True):
     get_runtime().materialize()
-    assert loss.snode().ptr.has_grad(), "gradient for loss not allocated"
+    if len(loss.shape) != 0:
+        raise RuntimeError(
+            'The loss of `Tape` must be a 0D tensor, i.e. scalar')
+    if not loss.snode().ptr.has_grad():
+        raise RuntimeError(
+            'Gradients of loss are not allocated, please use ti.var(..., needs_grad=True)'
+            ' for all tensors that are required by autodiff.')
     if clear_gradients:
         clear_all_gradients()
     loss[None] = 0
@@ -530,6 +545,28 @@ def host_arch_only(func):
             func(*args, **kwargs)
 
     return test
+
+
+def archs_with(archs, **init_kwags):
+    """
+    Run the test on the given archs with the given init args.
+
+    Args:
+      archs: a list of Taichi archs
+      init_kwargs: kwargs passed to ti.init()
+    """
+    import taichi as ti
+
+    def decorator(test):
+        @functools.wraps(test)
+        def wrapped(*test_args, **test_kwargs):
+            for arch in archs:
+                ti.init(arch=arch, **init_kwags)
+                test(*test_args, **test_kwargs)
+
+        return wrapped
+
+    return decorator
 
 
 def must_throw(ex):

@@ -1,12 +1,12 @@
 // Note that TI_ASSERT provided by runtime doesn't check fail immediately. As
 // a hack, we just check the last error code whenever we call TI_ASSERT.
-#define TI_TEST_CHECK(cond, r)                             \
-  do {                                                     \
-    TI_ASSERT(cond);                                       \
-    if ((r)->error_code) {                                 \
-      taichi_printf((r), "%s", (r)->error_message_buffer); \
-      abort();                                             \
-    }                                                      \
+#define TI_TEST_CHECK(cond, r)                               \
+  do {                                                       \
+    TI_ASSERT(cond);                                         \
+    if ((r)->error_code) {                                   \
+      taichi_printf((r), "%s", (r)->error_message_template); \
+      abort();                                               \
+    }                                                        \
   } while (0)
 
 i32 do_nothing(Context *context) {
@@ -117,6 +117,32 @@ i32 test_node_allocator_gc_cpu(Context *context) {
   // After GC, all items should be returned to |free_list|.
   taichi_printf(runtime, "free_list_size=%d\n", nodes->free_list->size());
   TI_TEST_CHECK(nodes->free_list->size() == kN, runtime);
+
+  return 0;
+}
+
+i32 test_active_mask(Context *context) {
+  auto rt = context->runtime;
+  taichi_printf(rt, "%d activemask %x\n", thread_idx(), cuda_active_mask());
+
+  auto active_mask = cuda_active_mask();
+  auto remaining = active_mask;
+  while (remaining) {
+    auto leader = cttz_i32(remaining);
+    taichi_printf(rt, "currnet leader %d bid %d tid %d\n", leader, block_idx(),
+                  thread_idx());
+    warp_barrier(active_mask);
+    remaining &= ~(1u << leader);
+  }
+
+  return 0;
+}
+
+i32 test_shfl(Context *context) {
+  auto rt = context->runtime;
+  auto s =
+      cuda_shfl_down_sync_i32(cuda_active_mask(), warp_idx() + 1000, 2, 31);
+  taichi_printf(rt, "tid %d tid_shfl %d\n", thread_idx(), s);
 
   return 0;
 }

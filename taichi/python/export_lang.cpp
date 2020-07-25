@@ -13,6 +13,10 @@
 #include "taichi/util/statistics.h"
 #include "taichi/util/action_recorder.h"
 
+#if defined(TI_WITH_CUDA)
+#include "taichi/backends/cuda/cuda_context.h"
+#endif
+
 TI_NAMESPACE_BEGIN
 
 bool test_threading();
@@ -113,7 +117,7 @@ void export_lang(py::module &m) {
       .def_readwrite("advanced_optimization",
                      &CompileConfig::advanced_optimization)
       .def_readwrite("ad_stack_size", &CompileConfig::ad_stack_size)
-      .def_readwrite("async", &CompileConfig::async)
+      .def_readwrite("async_mode", &CompileConfig::async_mode)
       .def_readwrite("flatten_if", &CompileConfig::flatten_if);
 
   m.def("reset_default_compile_config",
@@ -186,7 +190,7 @@ void export_lang(py::module &m) {
       .def("get_expr", &SNode::get_expr, py::return_value_policy::reference)
       .def("write_int", &SNode::write_int)
       .def("write_float", &SNode::write_float)
-      .def("get_num_elements_along_axis", &SNode::num_elements_along_axis)
+      .def("get_shape_along_axis", &SNode::shape_along_axis)
       .def("get_physical_index_position",
            [](SNode *snode) {
              return std::vector<int>(
@@ -418,6 +422,8 @@ void export_lang(py::module &m) {
 
   m.def("expr_assume_in_range", AssumeInRange);
 
+  m.def("expr_select", expr_select);
+
 #define DEFINE_EXPRESSION_OP_UNARY(x) m.def("expr_" #x, expr_##x);
 
   m.def("expr_neg", [&](const Expr &e) { return -e; });
@@ -537,6 +543,9 @@ void export_lang(py::module &m) {
   m.def("vectorize", Vectorize);
   m.def("block_dim", BlockDim);
   m.def("cache", Cache);
+  m.def("no_activate", [](SNode *snode) {
+    get_current_program().get_current_kernel().no_activate.push_back(snode);
+  });
   m.def("stop_grad",
         [](SNode *snode) { current_ast_builder().stop_gradient(snode); });
 
@@ -559,7 +568,7 @@ void export_lang(py::module &m) {
   m.def("get_version_patch", get_version_patch);
   m.def("get_llvm_version_string", get_llvm_version_string);
   m.def("test_printf", [] { printf("test_printf\n"); });
-  m.def("test_logging", [] { TI_INFO("test_logging\n"); });
+  m.def("test_logging", [] { TI_INFO("test_logging"); });
   m.def("trigger_crash", [] { *(int *)(1) = 0; });
   m.def("get_max_num_indices", [] { return taichi_max_num_indices; });
   m.def("get_max_num_args", [] { return taichi_max_num_args; });
@@ -591,6 +600,18 @@ void export_lang(py::module &m) {
         "'ti.core.toggle_advance_optimization(False)' is deprecated."
         " Use 'ti.init(advanced_optimization=False)' instead");
     get_current_program().config.advanced_optimization = option;
+  });
+
+  m.def("query_int64", [](const std::string &key) {
+    if (key == "cuda_compute_capability") {
+#if defined(TI_WITH_CUDA)
+      return CUDAContext::get_instance().get_compute_capability();
+#else
+      TI_NOT_IMPLEMENTED
+#endif
+    } else {
+      TI_ERROR("Key {} not supported in query_int64", key);
+    }
   });
 }
 

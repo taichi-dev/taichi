@@ -2,47 +2,120 @@ import ast
 from .util import to_taichi_type
 import copy
 from .exception import TaichiSyntaxError
+from . import impl
 
 
 class ScopeGuard:
-    def __init__(self, t, stmt_block=None):
-        self.t = t
+    def __init__(self, scopes, stmt_block=None):
+        self.scopes = scopes
         self.stmt_block = stmt_block
 
     def __enter__(self):
-        self.t.local_scopes.append([])
+        self.scopes.append([])
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        local = self.t.local_scopes[-1]
+        local = self.scopes[-1]
         if self.stmt_block is not None:
             for var in reversed(local):
-                stmt = ASTTransformer.parse_stmt('del var')
+                stmt = ASTTransformerBase.parse_stmt('del var')
                 stmt.targets[0].id = var
                 self.stmt_block.append(stmt)
-        self.t.local_scopes = self.t.local_scopes[:-1]
+        self.scopes.pop()
 
 
-# Single-pass transform
-class ASTTransformer(ast.NodeTransformer):
+# Total transform
+# TODO: ASTTransformerBase -> ASTTransformer
+# TODO: ASTTransformer -> ASTTransformerTotal
+class ASTTransformer(object):
+    def __init__(self, func=None, *args, **kwargs):
+        self.pass_Preprocess = ASTTransformerPreprocess(func=func,
+                                                        *args,
+                                                        **kwargs)
+        self.pass_Checks = ASTTransformerChecks(func=func)
+
+    @staticmethod
+    def print_ast(tree, title=None):
+        if not impl.get_runtime().print_preprocessed:
+            return
+        if title is not None:
+            print(f'{title}:')
+        import astor
+        print(astor.to_source(tree.body[0], indent_with='  '))
+
+    def visit(self, tree):
+        self.print_ast(tree, 'Initial AST')
+        self.pass_Preprocess.visit(tree)
+        self.print_ast(tree, 'Preprocessed')
+        self.pass_Checks.visit(tree)
+        self.print_ast(tree, 'Checked')
+        ast.fix_missing_locations(tree)
+        self.print_ast(tree, 'Final AST')
+
+
+class ASTTransformerBase(ast.NodeTransformer):
+    def __init__(self, func):
+        super().__init__()
+        self.func = func
+
+    @staticmethod
+    def parse_stmt(stmt):
+        return ast.parse(stmt).body[0]
+
+    @staticmethod
+    def parse_expr(expr):
+        return ast.parse(expr).body[0].value
+
+    @staticmethod
+    def func_call(name, *args):
+        return ast.Call(func=ASTTransformerBase.parse_expr(name).value,
+                        args=list(args),
+                        keywords=[])
+
+    @staticmethod
+    def make_constant(value):
+        # Do not use ast.Constant which does not exist in python3.5
+        node = ASTTransformerBase.parse_expr('0')
+        node.value = value
+        return node
+
+    @staticmethod
+    def get_targets(node):
+        if isinstance(node.target, ast.Name):
+            return [node.target.id]
+        else:
+            assert isinstance(node.target, ast.Tuple)
+            return [name.id for name in node.target.elts]
+
+
+# First-pass transform
+class ASTTransformerPreprocess(ASTTransformerBase):
     def __init__(self,
                  excluded_paremeters=(),
                  is_kernel=True,
-                 is_classfunc=False,
                  func=None,
+                 is_classfunc=False,
                  arg_features=None):
-        super().__init__()
+        super().__init__(func)
         self.local_scopes = []
+        self.control_scopes = []
         self.excluded_parameters = excluded_paremeters
         self.is_kernel = is_kernel
-        self.func = func
         self.arg_features = arg_features
         self.returns = None
 
+    # e.g.: FunctionDef, Module, Global
     def variable_scope(self, *args):
-        return ScopeGuard(self, *args)
+        return ScopeGuard(self.local_scopes, *args)
+
+    # e.g.: For, While
+    def control_scope(self):
+        return ScopeGuard(self.control_scopes)
 
     def current_scope(self):
         return self.local_scopes[-1]
+
+    def current_control_scope(self):
+        return self.control_scopes[-1]
 
     def var_declared(self, name):
         for s in self.local_scopes:
@@ -207,7 +280,10 @@ class ASTTransformer(ast.NodeTransformer):
             raise TaichiSyntaxError(
                 "'else' clause for 'while' not supported in Taichi kernels")
 
-        template = '''
+        with self.control_scope():
+            self.current_control_scope().append('while')
+
+            template = '''
 if 1:
   ti.core.begin_frontend_while(ti.Expr(1).ptr)
   __while_cond = 0
@@ -217,13 +293,13 @@ if 1:
     break
   ti.core.pop_scope()
 '''
-        cond = node.test
-        t = ast.parse(template).body[0]
-        t.body[1].value = cond
-        t.body = t.body[:3] + node.body + t.body[3:]
+            cond = node.test
+            t = ast.parse(template).body[0]
+            t.body[1].value = cond
+            t.body = t.body[:3] + node.body + t.body[3:]
 
-        self.generic_visit(t, ['body'])
-        return ast.copy_location(t, node)
+            self.generic_visit(t, ['body'])
+            return ast.copy_location(t, node)
 
     def visit_block(self, list_stmt):
         for i, l in enumerate(list_stmt):
@@ -278,18 +354,12 @@ if 1:
             return ''
         return iter.func.attr
 
-    @staticmethod
-    def get_targets(node):
-        if isinstance(node.target, ast.Name):
-            return [node.target.id]
-        else:
-            assert isinstance(node.target, ast.Tuple)
-            return [name.id for name in node.target.elts]
-
     def visit_static_for(self, node, is_grouped):
         # for i in ti.static(range(n))
         # for i, j in ti.static(ti.ndrange(n))
         # for I in ti.static(ti.grouped(ti.ndrange(n, m)))
+
+        self.current_control_scope().append('static')
         self.generic_visit(node, ['body'])
         if is_grouped:
             assert len(node.iter.args[0].args) == 1
@@ -462,50 +532,40 @@ if 1:
             raise TaichiSyntaxError(
                 "'else' clause for 'for' not supported in Taichi kernels")
 
-        decorator = self.get_decorator(node.iter)
-        double_decorator = ''
-        if decorator != '' and len(node.iter.args) == 1:
-            double_decorator = self.get_decorator(node.iter.args[0])
-        ast.fix_missing_locations(node)
+        with self.control_scope():
+            self.current_control_scope().append('for')
 
-        if decorator == 'static':
-            if double_decorator == 'static':
-                raise TaichiSyntaxError("'ti.static' cannot be nested")
-            return self.visit_static_for(node, double_decorator == 'grouped')
-        elif decorator == 'ndrange':
-            if double_decorator != '':
-                raise TaichiSyntaxError(
-                    "No decorator is allowed inside 'ti.ndrange")
-            return self.visit_ndrange_for(node)
-        elif decorator == 'grouped':
-            if double_decorator == 'static':
-                raise TaichiSyntaxError(
-                    "'ti.static' is not allowed inside 'ti.grouped'")
-            elif double_decorator == 'ndrange':
-                return self.visit_grouped_ndrange_for(node)
-            elif double_decorator == 'grouped':
-                raise TaichiSyntaxError("'ti.grouped' cannot be nested")
-            else:
-                return self.visit_struct_for(node, is_grouped=True)
-        elif isinstance(node.iter, ast.Call) and isinstance(
-                node.iter.func, ast.Name) and node.iter.func.id == 'range':
-            return self.visit_range_for(node)
-        else:  # Struct for
-            return self.visit_struct_for(node, is_grouped=False)
+            decorator = self.get_decorator(node.iter)
+            double_decorator = ''
+            if decorator != '' and len(node.iter.args) == 1:
+                double_decorator = self.get_decorator(node.iter.args[0])
+            ast.fix_missing_locations(node)
 
-    @staticmethod
-    def parse_stmt(stmt):
-        return ast.parse(stmt).body[0]
-
-    @staticmethod
-    def parse_expr(expr):
-        return ast.parse(expr).body[0].value
-
-    @staticmethod
-    def func_call(name, *args):
-        return ast.Call(func=ASTTransformer.parse_expr(name).value,
-                        args=list(args),
-                        keywords=[])
+            if decorator == 'static':
+                if double_decorator == 'static':
+                    raise TaichiSyntaxError("'ti.static' cannot be nested")
+                return self.visit_static_for(node,
+                                             double_decorator == 'grouped')
+            elif decorator == 'ndrange':
+                if double_decorator != '':
+                    raise TaichiSyntaxError(
+                        "No decorator is allowed inside 'ti.ndrange")
+                return self.visit_ndrange_for(node)
+            elif decorator == 'grouped':
+                if double_decorator == 'static':
+                    raise TaichiSyntaxError(
+                        "'ti.static' is not allowed inside 'ti.grouped'")
+                elif double_decorator == 'ndrange':
+                    return self.visit_grouped_ndrange_for(node)
+                elif double_decorator == 'grouped':
+                    raise TaichiSyntaxError("'ti.grouped' cannot be nested")
+                else:
+                    return self.visit_struct_for(node, is_grouped=True)
+            elif isinstance(node.iter, ast.Call) and isinstance(
+                    node.iter.func, ast.Name) and node.iter.func.id == 'range':
+                return self.visit_range_for(node)
+            else:  # Struct for
+                return self.visit_struct_for(node, is_grouped=False)
 
     def visit_Subscript(self, node):
         self.generic_visit(node)
@@ -523,15 +583,24 @@ if 1:
         return ast.copy_location(call, node)
 
     def visit_IfExp(self, node):
-        raise TaichiSyntaxError(
-            'Ternary operator ("a if cond else b") is not yet supported in Taichi kernels. Please walk around by changing loop conditions.'
-        )
+        self.generic_visit(node)
+
+        call = ast.Call(func=self.parse_expr('ti.select'),
+                        args=[node.test, node.body, node.orelse],
+                        keywords=[])
+        return ast.copy_location(call, node)
 
     def visit_Break(self, node):
-        return self.parse_stmt('ti.core.insert_break_stmt()')
+        if 'static' in self.current_control_scope():
+            return node
+        else:
+            return self.parse_stmt('ti.core.insert_break_stmt()')
 
     def visit_Continue(self, node):
-        return self.parse_stmt('ti.core.insert_continue_stmt()')
+        if 'static' in self.current_control_scope():
+            return node
+        else:
+            return self.parse_stmt('ti.core.insert_continue_stmt()')
 
     def visit_Call(self, node):
         if not (isinstance(node.func, ast.Attribute)
@@ -569,13 +638,6 @@ if 1:
             self.generic_visit(node)
         for name in node.names:
             self.create_variable(name)
-        return node
-
-    @staticmethod
-    def make_constant(value):
-        # Do not use ast.Constant which does not exist in python3.5
-        node = ASTTransformer.parse_expr('0')
-        node.value = value
         return node
 
     def visit_FunctionDef(self, node):
@@ -744,8 +806,17 @@ if 1:
         return new_node
 
     def visit_Assert(self, node):
-        import astor
-        msg = astor.to_source(node.test)
+        if node.msg is not None:
+            if isinstance(node.msg, ast.Constant):
+                msg = node.msg.value
+            elif isinstance(node.msg, ast.Str):
+                msg = node.msg.s
+            else:
+                raise ValueError(
+                    f"assert info must be constant, not {ast.dump(node.msg)}")
+        else:
+            import astor
+            msg = astor.to_source(node.test)
         self.generic_visit(node)
         new_node = self.parse_stmt(
             'ti.core.create_assert_stmt(ti.Expr(0).ptr, 0)')
@@ -770,4 +841,16 @@ if 1:
                     'ti.core.create_kernel_return(ret.ptr)')
                 ret_stmt.value.args[0].value = ret_expr
                 return ret_stmt
+        return node
+
+
+# Second-pass transform
+class ASTTransformerChecks(ASTTransformerBase):
+    def __init__(self, func):
+        super().__init__(func)
+
+    def visit_Call(self, node):
+        if isinstance(node.func, ast.Name):
+            node.args = [node.func] + node.args
+            node.func = self.parse_expr('ti.func_call_with_check')
         return node

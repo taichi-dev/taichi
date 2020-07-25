@@ -52,7 +52,7 @@ init_args = {
     'print_ir': [False, TF],
     'verbose': [True, TF],
     'fast_math': [True, TF],
-    'async': [False, TF],
+    'async_mode': [False, TF],
     'flatten_if': [False, TF],
     'simplify_before_lower_access': [True, TF],
     'simplify_after_lower_access': [True, TF],
@@ -109,6 +109,17 @@ def test_init_arg(key, values):
         environ = {env_key: env_value}
         with patch_os_environ_helper(environ, excludes=env_configs):
             test_arg(key, value)
+
+
+@pytest.mark.parametrize('arch', ti.supported_archs())
+def test_init_arch(arch):
+    with patch_os_environ_helper({}, excludes=['TI_ARCH']):
+        ti.init(arch=arch)
+        assert ti.cfg.arch == arch
+    with patch_os_environ_helper({'TI_ARCH': ti.core.arch_name(arch)},
+                                 excludes=['TI_ARCH']):
+        ti.init(arch=ti.cc)
+        assert ti.cfg.arch == arch
 
 
 @ti.must_throw(KeyError)

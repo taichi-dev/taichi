@@ -1,4 +1,5 @@
 from .core import taichi_lang_core
+from taichi.misc.util import warning, deprecated
 import numpy as np
 import os
 
@@ -163,23 +164,6 @@ def to_taichi_type(dt):
             return u64
 
     raise AssertionError("Unknown type {}".format(dt))
-
-
-def deprecated(old, new):
-    import functools
-
-    def decorator(foo):
-        @functools.wraps(foo)
-        def wrapped(*args, **kwargs):
-            _taichi_skip_traceback = 1
-            import warnings
-            msg = f'{old} is deprecated, please use {new} instead'
-            warnings.warn(msg, DeprecationWarning, stacklevel=2)
-            return foo(*args, **kwargs)
-
-        return wrapped
-
-    return decorator
 
 
 def in_taichi_scope():

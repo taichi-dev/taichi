@@ -107,7 +107,9 @@ class TaichiLLVMContext {
       llvm::Module *module,
       std::function<bool(const std::string &)> export_indicator);
 
-  void mark_function_as_cuda_kernel(llvm::Function *func);
+  void mark_function_as_cuda_kernel(llvm::Function *func, int block_dim = 0);
+
+  void insert_nvvm_annotation(llvm::Function *func, std::string key, int val);
 
   std::unique_ptr<llvm::Module> clone_module_to_this_thread_context(
       llvm::Module *module);

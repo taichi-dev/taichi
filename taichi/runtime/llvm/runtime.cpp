@@ -82,8 +82,22 @@ using Ptr = uint8 *;
 
 using ContextArgType = long long;
 
+#if ARCH_cuda
+extern "C" {
+
+void __assertfail(const char *message,
+                  const char *file,
+                  i32 line,
+                  const char *function,
+                  std::size_t charSize);
+};
+#endif
+
 template <typename T>
 void locked_task(void *lock, const T &func);
+
+template <typename T, typename G>
+void locked_task(void *lock, const T &func, const G &test);
 
 template <typename T>
 T ifloordiv(T a, T b) {
@@ -353,14 +367,14 @@ void ___stubs___() {
 }
 }
 
-/*
-A simple list data structure
-Data are organized in chunks, where each chunk is a piece of virtual memory
-*/
-
 bool is_power_of_two(uint32 x) {
   return x != 0 && (x & (x - 1)) == 0;
 }
+
+/*
+A simple list data structure that is infinitely long.
+Data are organized in chunks, where each chunk is allocated on demand.
+*/
 
 struct ListManager {
   static constexpr std::size_t max_num_chunks = 1024;
@@ -414,13 +428,6 @@ struct ListManager {
   Ptr get_element_ptr(i32 i) {
     return chunks[i >> log2chunk_num_elements] +
            element_size * (i & ((1 << log2chunk_num_elements) - 1));
-
-    /*
-    auto c = chunks[i >> log2chunk_num_elements];
-    auto ret = c + element_size * (i & ((1 << log2chunk_num_elements) - 1));
-    Printf("allocating c %p ret %p i %d\n", c, ret, i);
-    return ret;
-     */
   }
 
   template <typename T>
@@ -439,18 +446,12 @@ struct ListManager {
 
   i32 ptr2index(Ptr ptr) {
     auto chunk_size = max_num_elements_per_chunk * element_size;
-    // int sum = 0;
     for (int i = 0; i < max_num_chunks; i++) {
-      /*
-      Printf("i %d sum %d Ptr %p chunk %p ptr-chunk %lld chunk_size %lld\n", i,
-             sum, ptr, chunks[i], ptr - chunks[i], chunk_size);
-             */
       taichi_assert_runtime(runtime, chunks[i] != nullptr, "ptr not found.");
       if (chunks[i] <= ptr && ptr < chunks[i] + chunk_size) {
         return (i << log2chunk_num_elements) +
                i32((ptr - chunks[i]) / element_size);
       }
-      // sum += (i + 1);
     }
     return -1;
   }
@@ -517,7 +518,8 @@ struct LLVMRuntime {
   void (*profiler_start)(Ptr, Ptr);
   void (*profiler_stop)(Ptr);
 
-  char error_message_buffer[taichi_max_message_length];
+  char error_message_template[taichi_error_message_max_length];
+  uint64 error_message_arguments[taichi_error_message_max_num_arguments];
   i32 error_message_lock = 0;
   i64 error_code = 0;
 
@@ -528,7 +530,9 @@ struct LLVMRuntime {
 
   template <typename T>
   void set_result(std::size_t i, T t) {
-    ((u64 *)result_buffer)[i] = taichi_union_cast<uint64>(t);
+    static_assert(sizeof(T) <= sizeof(uint64));
+    ((u64 *)result_buffer)[i] =
+        taichi_union_cast_with_different_sizes<uint64>(t);
   }
 
   template <typename T, typename... Args>
@@ -552,6 +556,7 @@ STRUCT_FIELD(LLVMRuntime, profiler_start);
 STRUCT_FIELD(LLVMRuntime, profiler_stop);
 
 // NodeManager of node S (hash, pointer) managers the memory allocation of S_ch
+// It makes use of three ListManagers.
 struct NodeManager {
   LLVMRuntime *runtime;
   i32 lock;
@@ -647,76 +652,58 @@ Ptr get_temporary_pointer(LLVMRuntime *runtime, u64 offset) {
   return runtime->temporaries + offset;
 }
 
-void runtime_retrieve_error_code(LLVMRuntime *runtime) {
+void runtime_retrieve_and_reset_error_code(LLVMRuntime *runtime) {
   runtime->set_result(taichi_result_buffer_error_id, runtime->error_code);
+  runtime->error_code = 0;
 }
 
-void runtime_retrieve_error_message(LLVMRuntime *runtime) {
+void runtime_retrieve_error_message(LLVMRuntime *runtime, int i) {
   runtime->set_result(taichi_result_buffer_error_id,
-                      runtime->error_message_buffer);
+                      runtime->error_message_template[i]);
 }
 
-#if ARCH_cuda
-void __assertfail(const char *message,
-                  const char *file,
-                  i32 line,
-                  const char *function,
-                  std::size_t charSize);
-
-void taichi_assert_runtime(LLVMRuntime *runtime, i32 test, const char *msg) {
-  if (enable_assert) {
-    if (test == 0) {
-      locked_task(&runtime->error_message_lock, [&] {
-        if (!runtime->error_code) {
-          runtime->error_code = 1;  // Assertion failure
-          memcpy(runtime->error_message_buffer, msg,
-                 std::min(strlen(msg), taichi_max_message_length));
-        }
-      });
-    }
-  }
+void runtime_retrieve_error_message_argument(LLVMRuntime *runtime,
+                                             int argument_id) {
+  runtime->set_result(taichi_result_buffer_error_id,
+                      runtime->error_message_arguments[argument_id]);
 }
-#else
-void taichi_assert_runtime(LLVMRuntime *runtime, i32 test, const char *msg) {
-  if (!enable_assert || test != 0 || runtime->error_code)
-    return;
-  locked_task(&runtime->error_message_lock, [&] {
-    if (!runtime->error_code) {
-      runtime->error_code = 1;  // Assertion failure
-      memcpy(runtime->error_message_buffer, msg,
-             std::min(strlen(msg), taichi_max_message_length));
-    }
-  });
-}
-#endif
 
 void taichi_assert(Context *context, i32 test, const char *msg) {
   taichi_assert_runtime(context->runtime, test, msg);
 }
 
-const std::size_t ASSERT_MSG_BUFFER_SIZE = 2048;
-char assert_msg_buffer[ASSERT_MSG_BUFFER_SIZE];
-i32 assert_msg_buffer_lock = 0;
-
 void taichi_assert_format(LLVMRuntime *runtime,
                           i32 test,
                           const char *format,
-                          ...) {
-  // This function is CPU-only.
-  // It seems that using std::va_list leads to an llvm::SelectionDAG error.
-  // Also note that CUDA cannot call runtime->host_vsnprintf.
-  if (!enable_assert || test != 0 || runtime->error_code)
+                          int num_arguments,
+                          uint64 *arguments) {
+  if (!enable_assert || test != 0)
     return;
-  std::va_list args;
-  va_start(args, format);
-  locked_task(&runtime->error_message_lock, [&] {
-    if (!runtime->error_code) {
-      runtime->error_code = 1;  // Assertion failure
-      runtime->host_vsnprintf(runtime->error_message_buffer,
-                              taichi_max_message_length, format, args);
-    }
-  });
-  va_end(args);
+  if (!runtime->error_code) {
+    locked_task(&runtime->error_message_lock, [&] {
+      if (!runtime->error_code) {
+        runtime->error_code = 1;  // Assertion failure
+
+        memset(runtime->error_message_template, 0,
+               taichi_error_message_max_length);
+        memcpy(runtime->error_message_template, format,
+               std::min(strlen(format), taichi_error_message_max_length - 1));
+        for (int i = 0; i < num_arguments; i++) {
+          runtime->error_message_arguments[i] = arguments[i];
+        }
+      }
+    });
+  }
+#if ARCH_cuda
+  // Kill this CUDA thread.
+  asm("exit;");
+#else
+  // TODO: kill this CPU thread here.
+#endif
+}
+
+void taichi_assert_runtime(LLVMRuntime *runtime, i32 test, const char *msg) {
+  taichi_assert_format(runtime, test, msg, 0, nullptr);
 }
 
 Ptr LLVMRuntime::allocate_aligned(std::size_t size, std::size_t alignment) {
@@ -728,15 +715,30 @@ Ptr LLVMRuntime::allocate_aligned(std::size_t size, std::size_t alignment) {
 
 Ptr LLVMRuntime::allocate_from_buffer(std::size_t size, std::size_t alignment) {
   Ptr ret;
+  bool success = false;
   locked_task(&allocator_lock, [&] {
-    preallocated_head +=
+    auto alignment_bytes =
         alignment - 1 -
         ((std::size_t)preallocated_head + alignment - 1) % alignment;
-    ret = preallocated_head;
-    preallocated_head += size;
-    taichi_assert_runtime(this, preallocated_head <= preallocated_tail,
-                          "Out of pre-allocated memory");
+    size += alignment_bytes;
+    if (preallocated_head + size <= preallocated_tail) {
+      ret = preallocated_head;
+      preallocated_head += size;
+      success = true;
+    } else {
+      success = false;
+    }
   });
+  if (!success) {
+#if ARCH_cuda
+    // Here unfortunately we have to rely on a native CUDA assert failure to
+    // halt the whole grid. Using a taichi_assert_runtime will not finish the
+    // whole kernel execution immediately.
+    __assertfail("Out of CUDA pre-allocated memory", "Taichi JIT", 0,
+                 "allocate_from_buffer", 1);
+#endif
+  }
+  taichi_assert_runtime(this, success, "Out of pre-allocated memory");
   return ret;
 }
 
@@ -898,18 +900,70 @@ int32 block_dim() {
   return 0;
 }
 
-int32 grid_dim() {
+int32 ctlz_i32(i32 val) {
   return 0;
 }
 
-void sync_warp(uint32 mask) {
+int32 cttz_i32(i32 val) {
+  return 0;
+}
+
+int32 cuda_compute_capability() {
+  return 0;
+}
+
+int32 cuda_ballot(bool bit) {
+  return 0;
+}
+
+i32 cuda_shfl_down_sync_i32(u32 mask, i32 delta, i32 val, int width) {
+  return 0;
+}
+
+i32 cuda_shfl_down_i32(i32 delta, i32 val, int width) {
+  return 0;
+}
+
+int32 cuda_ballot_sync(int32 mask, bool bit) {
+  return 0;
+}
+
+i32 cuda_match_any_sync_i32(i32 mask, i32 value) {
+  return 0;
+}
+
+i32 cuda_match_any_sync_i64(i32 mask, i64 value) {
+#if ARCH_cuda
+  u32 ret;
+  asm volatile("match.any.sync.b64  %0, %1, %2;"
+               : "=r"(ret)
+               : "l"(value), "r"(mask));
+  return ret;
+#else
+  return 0;
+#endif
+}
+
+#if ARCH_cuda
+uint32 cuda_active_mask() {
+  unsigned int mask;
+  asm volatile("activemask.b32 %0;" : "=r"(mask));
+  return mask;
+}
+#else
+uint32 cuda_active_mask() {
+  return 0;
+}
+#endif
+
+int32 grid_dim() {
+  return 0;
 }
 
 void block_barrier() {
 }
 
-int32 warp_active_mask() {
-  return 0;
+void warp_barrier(uint32 mask) {
 }
 
 void block_memfence() {
@@ -929,9 +983,63 @@ void clear_list(LLVMRuntime *runtime, StructMeta *parent, StructMeta *child) {
  * The element list of a SNode, maintains pointers to its instances, and
  * instances' parents' coordinates
  */
-void element_listgen(LLVMRuntime *runtime,
-                     StructMeta *parent,
-                     StructMeta *child) {
+
+// For the root node there is only one container,
+// therefore we use a special kernel for more parallelism.
+void element_listgen_root(LLVMRuntime *runtime,
+                          StructMeta *parent,
+                          StructMeta *child) {
+  // If there's just one element in the parent list, we need to use the blocks
+  // (instead of threads) to split the parent container
+  auto parent_list = runtime->element_lists[parent->snode_id];
+  auto child_list = runtime->element_lists[child->snode_id];
+  // Cache the func pointers here for better compiler optimization
+  auto parent_refine_coordinates = parent->refine_coordinates;
+  auto parent_lookup_element = parent->lookup_element;
+  auto child_get_num_elements = child->get_num_elements;
+  auto child_from_parent_element = child->from_parent_element;
+#if ARCH_cuda
+  // All blocks share the only root container, which has only one child
+  // container.
+  // Each thread processes a subset of the child container for more parallelism.
+  int c_start = block_dim() * block_idx() + thread_idx();
+  int c_step = grid_dim() * block_dim();
+#else
+  int c_start = 0;
+  int c_step = 1;
+#endif
+  // Note that the root node has only one container, and the `element`
+  // representing that single container has only one 'child':
+  // element.loop_bounds[0] = 0 and element.loop_bounds[1] = 1
+  // Therefore, compared with element_listgen_nonroot,
+  // we need neither `i` to loop over the `elements`, nor `j` to
+  // loop over the children.
+
+  auto element = parent_list->get<Element>(0);
+
+  PhysicalCoordinates refined_coord;
+  parent_refine_coordinates(&element.pcoord, &refined_coord, 0);
+
+  auto ch_element = parent_lookup_element((Ptr)parent, element.element, 0);
+  ch_element = child_from_parent_element((Ptr)ch_element);
+  auto ch_num_elements = child_get_num_elements((Ptr)child, ch_element);
+  auto ch_element_size =
+      std::min(ch_num_elements, taichi_listgen_max_element_size);
+
+  // Here is a grid-stride loop.
+  for (int c = c_start; c * ch_element_size < ch_num_elements; c += c_step) {
+    Element elem;
+    elem.element = ch_element;
+    elem.loop_bounds[0] = c * ch_element_size;
+    elem.loop_bounds[1] = std::min((c + 1) * ch_element_size, ch_num_elements);
+    elem.pcoord = refined_coord;
+    child_list->append(&elem);
+  }
+}
+
+void element_listgen_nonroot(LLVMRuntime *runtime,
+                             StructMeta *parent,
+                             StructMeta *child) {
   auto parent_list = runtime->element_lists[parent->snode_id];
   int num_parent_elements = parent_list->size();
   auto child_list = runtime->element_lists[child->snode_id];
@@ -942,8 +1050,10 @@ void element_listgen(LLVMRuntime *runtime,
   auto child_get_num_elements = child->get_num_elements;
   auto child_from_parent_element = child->from_parent_element;
 #if ARCH_cuda
+  // Each block processes a slice of a parent container
   int i_start = block_idx();
   int i_step = grid_dim();
+  // Each thread processes an element of the parent container
   int j_start = thread_idx();
   int j_step = block_dim();
 #else
@@ -952,16 +1062,10 @@ void element_listgen(LLVMRuntime *runtime,
   int j_start = 0;
   int j_step = 1;
 #endif
-  int parent_split =
-      std::max(parent->max_num_elements / taichi_listgen_max_element_size, 1);
-  // Note: if we split children, then parent doesn't need an extra loop (size
-  // always <= taichi_listgen_max_element_size)
-  int range = (parent->max_num_elements + parent_split - 1) / parent_split;
-  for (int i = i_start; i < num_parent_elements * parent_split; i += i_step) {
-    auto element = parent_list->get<Element>(i / parent_split);
-    int split_id = i % parent_split;
-    int j_lower = element.loop_bounds[0] + split_id * range + j_start;
-    int j_higher = std::min(element.loop_bounds[1], j_lower + range);
+  for (int i = i_start; i < num_parent_elements; i += i_step) {
+    auto element = parent_list->get<Element>(i);
+    int j_lower = element.loop_bounds[0] + j_start;
+    int j_higher = element.loop_bounds[1];
     for (int j = j_lower; j < j_higher; j += j_step) {
       PhysicalCoordinates refined_coord;
       parent_refine_coordinates(&element.pcoord, &refined_coord, j);
@@ -1029,6 +1133,8 @@ void parallel_struct_for(Context *context,
   auto list_tail = list->size();
 #if ARCH_cuda
   int i = block_idx();
+  // TODO: refactor element_split more systematically.
+  element_split = 1;
   const auto part_size = element_size / element_split;
   while (true) {
     int element_id = i / element_split;
@@ -1164,11 +1270,9 @@ i32 linear_thread_idx() {
 
 void ListManager::touch_chunk(int chunk_id) {
   if (!chunks[chunk_id]) {
-    // Printf("chunkid %d\n", chunk_id);
     locked_task(&lock, [&] {
       // may have been allocated during lock contention
       if (!chunks[chunk_id]) {
-        // Printf("Allocating chunk %d\n", chunk_id);
         grid_memfence();
         auto chunk_ptr = runtime->request_allocate_aligned(
             max_num_elements_per_chunk * element_size, 4096);

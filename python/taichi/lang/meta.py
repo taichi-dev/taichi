@@ -92,3 +92,9 @@ def fill_matrix(mat: ti.template(), vals: ti.template()):
 def snode_deactivate(b: ti.template()):
     for I in ti.grouped(b):
         ti.deactivate(b, I)
+
+
+@ti.kernel
+def snode_deactivate_dynamic(b: ti.template()):
+    for I in ti.grouped(b.parent()):
+        ti.deactivate(b, I)

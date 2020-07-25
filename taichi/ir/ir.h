@@ -1003,10 +1003,6 @@ class RangeAssumptionStmt : public Stmt {
     return false;
   }
 
-  bool dead_instruction_eliminable() const override {
-    return false;
-  }
-
   TI_STMT_DEF_FIELDS(ret_type, input, base, low, high);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
@@ -1248,6 +1244,7 @@ class StructForStmt : public Stmt {
   std::unique_ptr<Block> body;
   std::unique_ptr<Block> block_initialization;
   std::unique_ptr<Block> block_finalization;
+  std::vector<int> index_offsets;
   int vectorize;
   int parallelize;
   int block_dim;
@@ -1265,7 +1262,12 @@ class StructForStmt : public Stmt {
 
   std::unique_ptr<Stmt> clone() const override;
 
-  TI_STMT_DEF_FIELDS(snode, vectorize, parallelize, block_dim, scratch_opt);
+  TI_STMT_DEF_FIELDS(snode,
+                     index_offsets,
+                     vectorize,
+                     parallelize,
+                     block_dim,
+                     scratch_opt);
   TI_DEFINE_ACCEPT
 };
 

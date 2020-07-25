@@ -2,9 +2,6 @@ import taichi as ti
 
 print('[Taichi] loading test module')
 
-import functools
-import pytest
-
 ## Helper functions
 def approx(expected, **kwargs):
     '''Tweaked pytest.approx for OpenGL low percisions'''
@@ -43,6 +40,8 @@ def make_temp_file(*args, **kwargs):
 
 ## Pytest options
 def get_conftest(_glbs):
+    import pytest
+
     @pytest.fixture(params=ti.supported_archs(), ids=ti.core.arch_name)
     def taichi_archs(request):
         marker = request.node.get_closest_marker('taichi')
@@ -86,11 +85,14 @@ def get_conftest(_glbs):
 
 def test(*args, **kwargs):
     def decorator(foo):
+        import functools
+        import pytest
+
         @pytest.mark.usefixtures('taichi_archs')
         @pytest.mark.taichi(*args, **kwargs)
         @functools.wraps(foo)
-        def wrapped(*_, **__):
-            return foo(*_, **__)
+        def wrapped(*args, **kwargs):
+            return foo(*args, **kwargs)
 
         return wrapped
 

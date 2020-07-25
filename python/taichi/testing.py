@@ -2,6 +2,7 @@ import taichi as ti
 
 print('[Taichi] loading test module')
 
+
 ## Helper functions
 def approx(expected, **kwargs):
     '''Tweaked pytest.approx for OpenGL low percisions'''
@@ -100,8 +101,8 @@ def test(*args, **kwargs):
 
 
 __all__ = [
-        'approx',
-        'allclose',
-        'make_temp_file',
-        'test',
-        ]
+    'approx',
+    'allclose',
+    'make_temp_file',
+    'test',
+]

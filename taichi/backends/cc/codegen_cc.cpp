@@ -140,30 +140,31 @@ class CCTransformer : public IRVisitor {
     emit("{} = ({}) (ti_ctx->gtmp + {});", var, ptr_type, stmt->offset);
   }
 
+  void visit(LinearizeStmt *stmt) override {
+    std::string val = "0";
+    for (int i = 0; i < stmt->inputs.size(); i++) {
+      val = fmt::format("({} * {} + {})", val, stmt->strides[i],
+                        stmt->inputs[i]->raw_name());
+    }
+    emit("{} = {};", define_var("Ti_i32", stmt->raw_name()), val);
+  }
+
+
   void visit(ExternalPtrStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    const auto linear_index_name = fmt::format("_li_{}", stmt->raw_name());
-    emit("Ti_i32 {} = 0;", linear_index_name);
+    std::string offset = "0";
     const auto *argload = stmt->base_ptrs[0]->as<ArgLoadStmt>();
     const int arg_id = argload->arg_id;
-    const int num_indices = stmt->indices.size();
-    std::vector<std::string> size_var_names;
-    for (int i = 0; i < num_indices; i++) {
-      auto var_name = fmt::format("_s{}_{}", i, stmt->raw_name());
-      auto var = define_var("Ti_i32", var_name);
-      emit("{} = ti_ctx->earg[{} * {} + {}];", var, arg_id,
-           taichi_max_num_indices, i);
-      size_var_names.push_back(std::move(var_name));
+    for (int i = 0; i < stmt->indices.size(); i++) {
+      auto stride = fmt::format(
+          "ti_ctx->earg[{} * {} + {}]", arg_id,
+          taichi_max_num_indices, i);
+      offset = fmt::format("({} * {} + {})", offset, stride,
+                        stmt->indices[i]->raw_name());
     }
-    for (int i = 0; i < num_indices; i++) {
-      emit("{} *= {};", linear_index_name, size_var_names[i]);
-      emit("{} += {};", linear_index_name, stmt->indices[i]->raw_name());
-    }
-
     auto var = define_var(cc_data_type_name(stmt->element_type()) + " *",
                           stmt->raw_name());
-    emit("{} = {} + {};", var, stmt->base_ptrs[0]->raw_name(),
-         linear_index_name);
+    emit("{} = {} + {};", var, stmt->base_ptrs[0]->raw_name(), offset);
   }
 
   void visit(ArgLoadStmt *stmt) override {
@@ -319,11 +320,14 @@ class CCTransformer : public IRVisitor {
       } else if (bin->op_type == BinaryOpType::truediv) {
         emit("{} = ({}) {} / {};", var, dt_name, lhs_name, rhs_name);
       } else if (bin->op_type == BinaryOpType::floordiv) {
+        auto lhs_dt_name = data_type_short_name(bin->lhs->element_type());
         if (is_integral(bin->lhs->element_type()) &&
             is_integral(bin->rhs->element_type())) {
-          emit("{} = {} / {};", var, lhs_name, rhs_name);
+          emit("{} = Ti_floordiv_{}({}, {});", var,
+              lhs_dt_name, lhs_name, rhs_name);
         } else {
-          emit("{} = ({}) {} / {};", var, dt_name, lhs_name, rhs_name);
+          emit("{} = Ti_floordiv_{}({}, {});", var,
+              lhs_dt_name, lhs_name, rhs_name);
         }
       } else {
         emit("{} = {} {} {};", var, lhs_name, binop, rhs_name);
@@ -374,15 +378,6 @@ class CCTransformer : public IRVisitor {
     } else {
       emit("*{} {}= {};", dest_ptr, op, src_name);
     }
-  }
-
-  void visit(LinearizeStmt *stmt) override {
-    std::string val = "0";
-    for (int i = 0; i < stmt->inputs.size(); i++) {
-      val = fmt::format("({} * {} + {})", val, stmt->strides[i],
-                        stmt->inputs[i]->raw_name());
-    }
-    emit("{} = {};", define_var("Ti_i32", stmt->raw_name()), val);
   }
 
   void visit(PrintStmt *stmt) override {

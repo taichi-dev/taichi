@@ -423,7 +423,7 @@ class Kernel:
                         t_kernel.set_extra_arg_int(actual_argument_slot, i, s)
                 else:
                     raise ValueError(
-                            f'Bad argument, expecting {needed}, got {type(v)}')
+                        f'Bad argument, expecting {needed}, got {type(v)}')
                 actual_argument_slot += 1
             # Both the class kernels and the plain-function kernels are unified now.
             # In both cases, |self.grad| is another Kernel instance that computes the

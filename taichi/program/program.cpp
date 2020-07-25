@@ -323,7 +323,7 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
           "runtime_NodeAllocator_initialize", rt, i, node_size);
       TI_TRACE("Allocating ambient element for snode {} (node size {})",
                snodes[i]->id, node_size);
-      runtime->call<void *, int>("runtime_allocate_ambient", rt, i);
+      runtime->call<void *, int>("runtime_allocate_ambient", rt, i, node_size);
     }
   }
 
@@ -619,6 +619,10 @@ Kernel &Program::get_snode_writer(SNode *snode) {
 uint64 Program::fetch_result_uint64(int i) {
   uint64 ret;
   auto arch = config.arch;
+  sync = false;
+  // Runtime calls that set result buffer doesn't set sync=false, so we set it
+  // here...
+  // TODO: systematically fix this.
   synchronize();
   if (arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)

@@ -29,7 +29,9 @@ void convert_to_range_for(OffloadedStmt *offloaded) {
 
   ////// Begin core transformation
   auto body = std::move(offloaded->body);
-  const int num_loop_vars = snodes.back()->num_active_indices;
+  const int num_loop_vars =
+      snodes.empty() ? 0 : snodes.back()->num_active_indices;
+
   std::vector<Stmt *> new_loop_vars;
 
   VecStatement body_header;

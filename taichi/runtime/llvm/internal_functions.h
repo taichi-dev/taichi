@@ -107,7 +107,7 @@ i32 test_node_allocator_gc_cpu(Context *context) {
     ptrs[i] = nodes->allocate();
     taichi_printf(runtime, "[2] ptr %p\n", ptrs[i]);
   }
-  TI_TEST_CHECK(nodes->free_list_used == kHalfN, runtime);
+  TI_TEST_CHECK(nodes->allocated_elements == kHalfN, runtime);
   for (int i = 0; i < kHalfN; i++) {
     taichi_printf(runtime, "[2] deallocating %d\n", i);
     taichi_printf(runtime, "[2] ptr %p\n", ptrs[i]);

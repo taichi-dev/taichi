@@ -38,10 +38,10 @@ The Taichi Programming Language
    meta
    layout
    sparse
-   offset
    differentiable_programming
    odop
    compilation
+   offset
    syntax_sugars
 
 

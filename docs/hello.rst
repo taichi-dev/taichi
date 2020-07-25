@@ -3,8 +3,7 @@ Hello, world!
 
 We introduce the Taichi programming language through a very basic `fractal` example.
 
-Running the Taichi code below (``python3 fractal.py`` or ``ti example fractal``) will give you an animation of
-`Julia set <https://en.wikipedia.org/wiki/Julia_set>`_:
+Running the Taichi code below (``python3 fractal.py`` or ``ti example fractal``) will give you an animation of `Julia set <https://en.wikipedia.org/wiki/Julia_set>`_:
 
 .. image:: https://github.com/yuanming-hu/public_files/raw/master/graphics/taichi/fractal.gif
 
@@ -50,10 +49,7 @@ Let's dive into this simple Taichi program.
 import taichi as ti
 -------------------
 
-Taichi is a domain-specific language (DSL) embedded in Python. To make Taichi as easy to use as a Python package,
-we have done heavy engineering with this goal in mind - letting every Python programmer write Taichi programs with
-minimal learning effort. You can even use your favorite Python package management system, Python IDEs and other
-Python packages in conjunction with Taichi.
+Taichi is a domain-specific language (DSL) embedded in Python. To make Taichi as easy to use as a Python package, we have done heavy engineering with this goal in mind - letting every Python programmer write Taichi programs with minimal learning effort. You can even use your favorite Python package management system, Python IDEs and other Python packages in conjunction with Taichi.
 
 
 Portability

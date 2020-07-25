@@ -32,10 +32,10 @@ A Python function decorated by ``@ti.kernel`` is a **Taichi kernel**:
 .. code-block:: python
 
    @ti.kernel
-   def my_kern():
+   def my_kernel():
        ...
 
-   my_kern()
+   my_kernel()
 
 
 Kernels should be called from **Python-scope**.
@@ -56,10 +56,10 @@ Kernel arguments must be type-hinted:
 .. code-block:: python
 
     @ti.kernel
-    def my_kern(x: ti.i32, y: ti.f64):
+    def my_kernel(x: ti.i32, y: ti.f64):
         print(x + y)
 
-    my_kern(2, 3.3)  # prints: 5.3
+    my_kernel(2, 3.3)  # prints: 5.3
 
 .. note::
 
@@ -86,10 +86,10 @@ If it does, the type of return value must be hinted:
 .. code-block:: python
 
     @ti.kernel
-    def my_kern() -> ti.f32:
+    def my_kernel() -> ti.f32:
         return 233.33
 
-    print(my_kern())  # 233.33
+    print(my_kernel())  # 233.33
 
 
 The return value will be automatically cast into the hinted type. e.g.,
@@ -100,7 +100,7 @@ The return value will be automatically cast into the hinted type. e.g.,
     def add_xy() -> ti.i32:  # int32
         return 233.33
 
-    print(my_kern())  # 233, since return type is ti.i32
+    print(my_kernel())  # 233, since return type is ti.i32
 
 
 .. note::
@@ -144,15 +144,15 @@ A Python function decorated by ``@ti.func`` is a **Taichi function**:
         ...
 
     @ti.kernel
-    def my_kern():
+    def my_kernel():
         ...
         my_func()  # call functions from Taichi-scope
         ...
 
-    my_kern()      # call kernels from Python-scope
+    my_kernel()    # call kernels from Python-scope
 
 
-Taichi functions can only be called from **Taichi-scope**.
+Taichi functions should be called from **Taichi-scope**.
 
 .. note::
 
@@ -161,7 +161,7 @@ Taichi functions can only be called from **Taichi-scope**.
 .. note::
 
     Taichi functions can be nested.
-    
+
 .. warning::
 
     Currently, all functions are force-inlined. Therefore, no recursion is allowed.
@@ -181,7 +181,7 @@ Unlike kernels, arguments in functions don't need to be type-hinted:
 
 
     @ti.kernel
-    def my_kern():
+    def my_kernel():
         ...
         ret = my_add(2, 3.3)
         print(ret)  # 5.3
@@ -199,13 +199,16 @@ won't affect the outside value in the caller:
 
 
     @ti.kernel
-    def my_kern():
+    def my_kernel():
         ...
         x = 233
         my_func(x)
         print(x)  # 233
         ...
 
+
+Advanced arguments
+******************
 
 You may use ``ti.template()`` as type-hint to force arguments to be passed by
 reference:
@@ -218,7 +221,7 @@ reference:
 
 
     @ti.kernel
-    def my_kern():
+    def my_kernel():
         ...
         x = 233
         my_func(x)

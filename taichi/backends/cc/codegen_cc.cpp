@@ -149,18 +149,16 @@ class CCTransformer : public IRVisitor {
     emit("{} = {};", define_var("Ti_i32", stmt->raw_name()), val);
   }
 
-
   void visit(ExternalPtrStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     std::string offset = "0";
     const auto *argload = stmt->base_ptrs[0]->as<ArgLoadStmt>();
     const int arg_id = argload->arg_id;
     for (int i = 0; i < stmt->indices.size(); i++) {
-      auto stride = fmt::format(
-          "ti_ctx->earg[{} * {} + {}]", arg_id,
-          taichi_max_num_indices, i);
+      auto stride = fmt::format("ti_ctx->earg[{} * {} + {}]", arg_id,
+                                taichi_max_num_indices, i);
       offset = fmt::format("({} * {} + {})", offset, stride,
-                        stmt->indices[i]->raw_name());
+                           stmt->indices[i]->raw_name());
     }
     auto var = define_var(cc_data_type_name(stmt->element_type()) + " *",
                           stmt->raw_name());
@@ -300,9 +298,8 @@ class CCTransformer : public IRVisitor {
 
   void visit(TernaryOpStmt *tri) override {
     TI_ASSERT(tri->op_type == TernaryOpType::select);
-    emit("{} {} = {} != 0 ? {} : {};",
-         cc_data_type_name(tri->element_type()), tri->raw_name(),
-         tri->op1->raw_name(), tri->op2->raw_name(),
+    emit("{} {} = {} != 0 ? {} : {};", cc_data_type_name(tri->element_type()),
+         tri->raw_name(), tri->op1->raw_name(), tri->op2->raw_name(),
          tri->op3->raw_name());
   }
 
@@ -325,11 +322,11 @@ class CCTransformer : public IRVisitor {
         auto lhs_dt_name = data_type_short_name(bin->lhs->element_type());
         if (is_integral(bin->lhs->element_type()) &&
             is_integral(bin->rhs->element_type())) {
-          emit("{} = Ti_floordiv_{}({}, {});", var,
-              lhs_dt_name, lhs_name, rhs_name);
+          emit("{} = Ti_floordiv_{}({}, {});", var, lhs_dt_name, lhs_name,
+               rhs_name);
         } else {
-          emit("{} = Ti_floordiv_{}({}, {});", var,
-              lhs_dt_name, lhs_name, rhs_name);
+          emit("{} = Ti_floordiv_{}({}, {});", var, lhs_dt_name, lhs_name,
+               rhs_name);
         }
       } else {
         emit("{} = {} {} {};", var, lhs_name, binop, rhs_name);
@@ -376,7 +373,7 @@ class CCTransformer : public IRVisitor {
     if (stmt->op_type == AtomicOpType::max ||
         stmt->op_type == AtomicOpType::min) {
       emit("*{} = {};", dest_ptr,
-          invoke_libc(op, type, "*{}, {}", dest_ptr, src_name));
+           invoke_libc(op, type, "*{}, {}", dest_ptr, src_name));
     } else {
       emit("*{} {}= {};", dest_ptr, op, src_name);
     }
@@ -426,14 +423,14 @@ class CCTransformer : public IRVisitor {
       auto begin_var = define_var("Ti_i32", begin_expr);
       auto end_var = define_var("Ti_i32", end_expr);
       if (!stmt->const_begin) {
-        emit("{} = *(Ti_i32 *) (ti_ctx->gtmp + {});",
-              begin_var, stmt->begin_offset);
+        emit("{} = *(Ti_i32 *) (ti_ctx->gtmp + {});", begin_var,
+             stmt->begin_offset);
       } else {
         emit("{} = {};", begin_var, stmt->begin_value);
       }
       if (!stmt->const_end) {
-        emit("{} = *(Ti_i32 *) (ti_ctx->gtmp + {});",
-              end_var, stmt->end_offset);
+        emit("{} = *(Ti_i32 *) (ti_ctx->gtmp + {});", end_var,
+             stmt->end_offset);
       } else {
         emit("{} = {};", end_var, stmt->end_value);
       }
@@ -483,8 +480,8 @@ class CCTransformer : public IRVisitor {
     } else {
       // reversed for loop
       emit("for ({} = {} - {}; {} >= {}; {} -= {}) {{", var,
-           stmt->end->raw_name(), 1, stmt->raw_name(),
-           stmt->begin->raw_name(), stmt->raw_name(), 1);
+           stmt->end->raw_name(), 1, stmt->raw_name(), stmt->begin->raw_name(),
+           stmt->raw_name(), 1);
     }
     stmt->body->accept(this);
     emit("}}");

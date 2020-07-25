@@ -40,9 +40,9 @@ Downside:
    tensors / fields with plain indices. It would be great if we could decouple
    computations from data structures.
 
-6. It's an often case that we need to compute the derivitive of a kernel
+6. It is often the case that we need to compute the derivative of a kernel
    function, e.g. compute forces from gradients of potential energy. We will
-   have to calculate the derivitive by hand or external tools like Matlab.
+   have to calculate the derivative by hand or external tools like Matlab.
 
 All these reasons make it very hard for **computer graphics and computational
 physics** beginners to write a GPGPU program.

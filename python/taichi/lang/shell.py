@@ -6,6 +6,7 @@ class ShellType:
     IPYTHON = 'IPython TerminalInteractiveShell'
     JUPYTER = 'IPython ZMQInteractiveShell'
     IPYBASED = 'IPython Based Shell'
+    IDLE = 'Python IDLE shell'
     SCRIPT = None
 
 
@@ -45,6 +46,9 @@ class ShellInspectorWrapper:
             if hasattr(__builtins__, '__IPYTHON__'):
                 return ShellType.IPYBASED
 
+        if 'idlelib' in sys.modules:
+            return ShellType.IDLE
+
         try:
             if getattr(sys, 'ps1', sys.flags.interactive):
                 return ShellType.NATIVE
@@ -74,6 +78,10 @@ class ShellInspectorWrapper:
             # `IPython.core.oinspect` for "IPython advanced shell"
             return IPythonInspectorWrapper()
 
+        elif name == ShellType.IDLE:
+            # `.tidle_xxx` for "Python IDLE shell"
+            return IDLEInspectorWrapper()
+
         else:
             raise RuntimeError(f'Shell type "{name}" not supported')
 
@@ -84,12 +92,46 @@ class ShellInspectorWrapper:
 
         self.inspector = self.create_inspector(self.name)
 
+        if hasattr(self.inspector, 'startup_clean'):
+            self.inspector.startup_clean()
+
+    def try_reset_shell_type(self):
+        new_name = self.get_shell_name(exclude_script=True)
+        if self.name != new_name:
+            print(
+                f'[Taichi] Shell type changed from "{self.name}" to "{new_name}"'
+            )
+
+            self.name = new_name
+            self.inspector = self.create_inspector(self.name)
+
+    def _catch_forward(foo):
+        """
+        If Taichi starts within IDLE file mode, and after that user moved to interactive mode,
+        then there will be an OSError, since it's switched from None to Python IDLE shell...
+        We have to reset the shell type and create a corresponding inspector at this moment.
+        """
+        import functools
+
+        @functools.wraps(foo)
+        def wrapped(self, *args, **kwargs):
+            try:
+                return foo(self, *args, **kwargs)
+            except OSError:
+                self.try_reset_shell_type()
+                return foo(self, *args, **kwargs)
+
+        return wrapped
+
+    @_catch_forward
     def getsource(self, o):
         return self.inspector.getsource(o)
 
+    @_catch_forward
     def getsourcelines(self, o):
         return self.inspector.getsourcelines(o)
 
+    @_catch_forward
     def getsourcefile(self, o):
         return self.inspector.getsourcefile(o)
 
@@ -113,6 +155,63 @@ class IPythonInspectorWrapper:
         import IPython
         lineno = IPython.core.oinspect.find_source_lines(o)
         return f'<IPython:{lineno}>'
+
+
+class IDLEInspectorWrapper:
+    """`inspect` module wrapper for IDLE / Blender scripting module"""
+
+    # Thanks to IDLE's lack of support with `inspect`,
+    # we have to use a dirty hack to support Taichi there.
+
+    def __init__(self):
+        self.idle_cache = {}
+        from taichi.idle_hacker import startup_clean
+        self.startup_clean = startup_clean
+
+    def getsource(self, o):
+        func_id = id(o)
+        if func_id in self.idle_cache:
+            return self.idle_cache[func_id]
+
+        from taichi.idle_hacker import read_ipc_file
+        src = read_ipc_file()
+
+        # If user added our 'hacker-code' correctly,
+        # then the content of `.tidle_xxx` should be:
+        #
+        # ===
+        # import taichi as ti
+        #
+        # ===
+        # @ti.kernel
+        # def func():    # x.find('def ') locate to here
+        #     pass
+        #
+        # ===
+        # func()
+        #
+
+        func_name = o.__name__
+        for x in reversed(src.split('===')):
+            x = x.strip()
+            i = x.find('def ')
+            if i == -1:
+                continue
+            name = x[i + 4:].split(':', maxsplit=1)[0]
+            name = name.split('(', maxsplit=1)[0]
+            if name.strip() == func_name:
+                self.idle_cache[func_name] = x
+                return x
+        else:
+            raise NameError(f'Could not find source for {func_name}!')
+
+    def getsourcelines(self, o):
+        lineno = 2  # TODO: consider include lineno in .tidle_xxx?
+        lines = self.getsource(o).split('\n')
+        return lines, lineno
+
+    def getsourcefile(self, o):
+        return '<IDLE>'
 
 
 oinspect = ShellInspectorWrapper()

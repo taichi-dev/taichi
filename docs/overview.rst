@@ -17,15 +17,15 @@ program, we have to manipulate through tons of different APIs, e.g.:
 
 Downside:
 
-1. CUDA for example, despite it's powerfulness, is only supported on NVIDIA
-   cards. One could not share/distribute his/her work with/to a computer
+1. CUDA, for example, despite its powerfulness, can run only on supported NVIDIA
+   GPUs. One could not share/distribute his/her work with/to a computer
    without NVIDIA GPUs.
    This means the loss of portability.
 
-2. OpenGL for example, due to the historical debt, is too complicated when
-   used as a GPGPU programming tool for beginners, make people easily get
-   lost in API manuals and could not focus the real goal.
-   This could depress the productivity.
+2. OpenGL, due to its historical debt, is too complicated for beginners when
+   used as a GPGPU programming tool. People could easily get
+   lost in API manuals instead of focusing on their original goals.
+   This could cause the loss of productivity.
 
 3. GPU programming langurages are often less flexible and less functional.
    It's easy to make use of high-level C++ features and external libraries

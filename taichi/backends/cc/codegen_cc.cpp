@@ -216,6 +216,36 @@ class CCTransformer : public IRVisitor {
     emit("{} = {};", stmt->ptr->raw_name(), stmt->data->raw_name());
   }
 
+  void visit(ExternalFuncCallStmt *stmt) override {
+    TI_ASSERT(!stmt->func);
+    auto format = stmt->source;
+    std::string source;
+
+    for (int i = 0; i < format.size(); i++) {
+      char c = format[i];
+      if (c == '%' || c == '$') {  // '$' for output, '%' for input
+        int num = 0;
+        while (i < format.size()) {
+          i += 1;
+          if (!::isdigit(format[i])) {
+            i -= 1;
+            break;
+          }
+          num *= 10;
+          num += format[i] - '0';
+        }
+        auto args = (c == '%') ? stmt->arg_stmts : stmt->output_stmts;
+        TI_ASSERT_INFO(num < args.size(), "{}{} out of {} argument range {}", c,
+                       num, ((c == '%') ? "input" : "output"), args.size());
+        source += args[num]->raw_name();
+      } else {
+        source.push_back(c);
+      }
+    }
+
+    emit("{};", source);
+  }
+
   static std::string _get_libc_function_name(std::string name, DataType dt) {
     switch (dt) {
       case DataType::i32:

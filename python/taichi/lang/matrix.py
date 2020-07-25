@@ -582,6 +582,9 @@ class Matrix(TaichiOperations):
     def data_type(self):
         return self.dtype
 
+    def snode(self):
+        return self.loop_range().snode()
+
     def make_grad(self):
         ret = self.empty_copy()
         for i in range(len(ret.entries)):

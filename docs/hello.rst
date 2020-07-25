@@ -126,7 +126,7 @@ Taichi **functions**, which can be called by Taichi kernels and other Taichi fun
 
 .. note::
 
-  **Taichi-scopes v.s. Python-scopes**: everything decorated with ``@ti.kernel`` and ``@ti.func`` is in Taichi-scope, which will be compiled by the Taichi compiler.
+  **Taichi-scopes v.s. Python-scopes**: everything decorated with ``@ti.kernel`` and ``@ti.func`` is in Taichi-scope and hence will be compiled by the Taichi compiler.
 
   Everything else is in Python-scopes. They are simply Python native code.
 

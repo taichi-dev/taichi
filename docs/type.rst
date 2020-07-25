@@ -1,7 +1,7 @@
 Type system
 ===========
 
-Taichi supports many kind of data types, the type name is recognized as
+Taichi supports many data types. The type name is recognized as
 a *prefix character* + a *digital number*.
 
 The *prefix character* can be one of:
@@ -17,8 +17,8 @@ The *digital number* can be one of:
 - ``32``
 - ``64``
 
-It represents how much **bits** is used in storing the data.
-The larger the bit number, the higher precision is.
+It represents how many **bits** are used in storing the data.
+The larger the bit number, the higher the precision is.
 
 For example, the two most commonly used types:
 
@@ -80,7 +80,7 @@ Currently, supported basic types in Taichi are
 Type promotion
 --------------
 
-Binary operations on different types will give you a promoted type, following the C programming language, e.g.:
+Binary operations on different types will give you a promoted type, following the C programming language convention, e.g.:
 
 - ``i32 + f32 = f32`` (integer + float = float)
 - ``i32 + i64 = i64`` (less-bits + more-bits = lamore-bits)
@@ -155,7 +155,7 @@ Equivalently, use ``int()`` and ``float()`` to convert values to default float-p
 Casting vector / matrix elements
 ********************************
 
-Type cast applied to vectors / matrices are element-wise:
+Type casts applied to vectors/matrices are element-wise:
 
 .. code-block:: python
 

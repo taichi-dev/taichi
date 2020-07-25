@@ -42,7 +42,7 @@ Kernels are to be called from **Python-scope**.
 
 .. note::
 
-    For people from CUDA, Taichi kernels = ``__global__``.
+    For people from CUDA, Taichi kernels = ``__global__`` functions.
 
 
 Arguments
@@ -81,7 +81,7 @@ Return value
 ************
 
 A kernel may or may not have a **scalar** return value.
-The type of return value must be hinted:
+If it does, the type of return value must be hinted:
 
 .. code-block:: python
 
@@ -105,7 +105,7 @@ The return value will be automatically cast into the hinted type. e.g.,
 
 .. note::
 
-    For now, kernels only support one scalar as return value. Returning ``ti.Matrix`` or ``ti.Vector`` is not supported. Python-style tuple return is not supported either. For example:
+    For now, a kernel can only have one scalar return value. Returning ``ti.Matrix`` or ``ti.Vector`` is not supported. Python-style tuple return is not supported either. For example:
 
     .. code-block:: python
 
@@ -156,7 +156,7 @@ Functions are to be called from **Taichi-scope**.
 
 .. note::
 
-    For people from CUDA, Taichi functions = ``__device__``.
+    For people from CUDA, Taichi functions = ``__device__`` functions.
 
 .. note::
 
@@ -167,7 +167,7 @@ Arguments and return values
 ***************************
 
 Functions can have multiple arguments and return values.
-Unlike kernel, function arguments don't need to be type-hinted:
+Unlike kernels, arguments in functions don't need to be type-hinted:
 
 .. code-block:: python
 

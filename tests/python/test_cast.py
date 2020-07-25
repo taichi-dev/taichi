@@ -1,4 +1,5 @@
 import taichi as ti
+import pytest
 
 
 @ti.all_archs
@@ -24,6 +25,29 @@ def test_cast_f64():
 
     func()
     assert z[None] == 1000
+
+
+@pytest.mark.parametrize('dtype', [ti.f32, ti.f64])
+def test_cast_default_fp(dtype):
+    ti.init(default_fp=dtype)
+
+    @ti.kernel
+    def func(x: int, y: int) -> float:
+        return ti.cast(x, float) * float(y)
+
+    assert func(23, 4) == pytest.approx(23.0 * 4.0)
+
+
+@pytest.mark.parametrize('dtype', [ti.i32, ti.i64])
+def test_cast_default_ip(dtype):
+    ti.init(default_ip=dtype)
+
+    @ti.kernel
+    def func(x: float, y: float) -> int:
+        return ti.cast(x, int) * int(y)
+
+    # make sure that int(4.6) == 4:
+    assert func(23.3, 4.6) == 23 * 4
 
 
 @ti.all_archs

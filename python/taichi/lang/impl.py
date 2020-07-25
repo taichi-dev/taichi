@@ -305,18 +305,6 @@ class Root:
 root = Root()
 
 
-def cook_dtype(dtype):
-    _taichi_skip_traceback = 1
-    if isinstance(dtype, taichi_lang_core.DataType):
-        return dtype
-    elif dtype is float:
-        return get_runtime().default_fp
-    elif dtype is int:
-        return get_runtime().default_ip
-    else:
-        raise ValueError(f'Bad data type {dtype}')
-
-
 #@deprecated('ti.var', 'ti.field')
 def var(dt, shape=None, offset=None, needs_grad=False):
     _taichi_skip_traceback = 1

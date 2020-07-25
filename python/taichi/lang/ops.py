@@ -1,6 +1,6 @@
 from .expr import *
 from .util import *
-from .impl import expr_init, cook_dtype
+from .impl import expr_init
 from .exception import TaichiSyntaxError
 from .util import taichi_lang_core as ti_core
 import operator as ops

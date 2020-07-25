@@ -422,7 +422,8 @@ class Kernel:
                     for i, s in enumerate(shape):
                         t_kernel.set_extra_arg_int(actual_argument_slot, i, s)
                 else:
-                    assert False
+                    raise ValueError(
+                            f'Bad argument, expecting {needed}, got {type(v)}')
                 actual_argument_slot += 1
             # Both the class kernels and the plain-function kernels are unified now.
             # In both cases, |self.grad| is another Kernel instance that computes the
@@ -435,7 +436,7 @@ class Kernel:
             ret = None
             ret_dt = self.return_type
             if ret_dt is not None:
-                if taichi_lang_core.is_integral(ret_dt):
+                if id(ret_dt) in integer_type_ids:
                     ret = t_kernel.get_ret_int(0)
                 else:
                     ret = t_kernel.get_ret_float(0)

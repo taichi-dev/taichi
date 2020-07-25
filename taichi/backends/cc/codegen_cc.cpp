@@ -265,7 +265,9 @@ class CCTransformer : public IRVisitor {
 
   static std::string get_libc_function_name(std::string name, DataType dt) {
     auto ret = _get_libc_function_name(name, dt);
-    if (name == "sgn") {
+    if (name == "rsqrt") {
+      ret = "Ti_" + ret;
+    } else if (name == "sgn") {
       if (is_real(dt)) {
         ret = "f" + ret;
       }

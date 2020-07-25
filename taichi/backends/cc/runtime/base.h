@@ -58,6 +58,12 @@ static inline Ti_f32 Ti_floordiv_f32(Ti_f32 x, Ti_f32 y) {
 static inline Ti_f64 Ti_floordiv_f64(Ti_f64 x, Ti_f64 y) {
   return floor(x / y);
 }
+static inline Ti_f32 Ti_rsqrtf(Ti_f32 x) {
+  return 1 / sqrt(x);
+}
+static inline Ti_f64 Ti_rsqrt(Ti_f64 x) {
+  return 1 / sqrt(x);
+}
 
 ) "\n" STR(
 

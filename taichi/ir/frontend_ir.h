@@ -324,7 +324,8 @@ class ExternalFuncCallExpression : public Expression {
   std::vector<Expr> args;
   std::vector<Expr> outputs;
 
-  ExternalFuncCallExpression(void *func, std::string const &source,
+  ExternalFuncCallExpression(void *func,
+                             std::string const &source,
                              const std::vector<Expr> &args,
                              const std::vector<Expr> &outputs)
       : func(func), source(source), args(args), outputs(outputs) {

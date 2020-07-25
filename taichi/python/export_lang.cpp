@@ -253,8 +253,8 @@ void export_lang(py::module &m) {
         });
 
   m.def("insert_external_func_call",
-        [](std::size_t func_addr, std::string source,
-          const ExprGroup &args, const ExprGroup &outputs) {
+        [](std::size_t func_addr, std::string source, const ExprGroup &args,
+           const ExprGroup &outputs) {
           auto expr = Expr::make<ExternalFuncCallExpression>(
               (void *)func_addr, source, args.exprs, outputs.exprs);
 

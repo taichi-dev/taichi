@@ -663,9 +663,8 @@ class KernelGen : public IRVisitor {
           num += format[i] - '0';
         }
         auto args = (c == '%') ? stmt->arg_stmts : stmt->output_stmts;
-        TI_ASSERT_INFO(num < args.size(),
-            "{}{} out of {} argument range {}", c, num,
-            ((c == '%') ? "input" : "output"), args.size());
+        TI_ASSERT_INFO(num < args.size(), "{}{} out of {} argument range {}", c,
+                       num, ((c == '%') ? "input" : "output"), args.size());
         source += args[num]->short_name();
       } else {
         source.push_back(c);

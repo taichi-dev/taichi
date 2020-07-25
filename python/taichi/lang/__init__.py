@@ -60,7 +60,6 @@ kernel_profiler_print = lambda: core.get_current_program(
 kernel_profiler_clear = lambda: core.get_current_program(
 ).kernel_profiler_clear()
 
-
 extension = core.Extension
 is_extension_supported = core.is_extension_supported
 

@@ -423,14 +423,21 @@ class StmtField {
 template <typename T>
 class StmtFieldNumeric final : public StmtField {
  private:
+  T *value_ptr;
   T value;
 
  public:
-  explicit StmtFieldNumeric(T value) : value(value) {
+  explicit StmtFieldNumeric(T *value_ptr) : value_ptr(value_ptr), value() {
+  }
+
+  explicit StmtFieldNumeric(T value) : value_ptr(nullptr), value(value) {
   }
 
   bool equal(const StmtField *other_generic) const override {
     if (auto other = dynamic_cast<const StmtFieldNumeric *>(other_generic)) {
+      if (other->value_ptr && value_ptr) {
+        return *(other->value_ptr) == *value_ptr;
+      }
       return other->value == value;
     } else {
       // Different types
@@ -1400,7 +1407,7 @@ inline void StmtFieldManager::operator()(const char *key, T &&value) {
         std::make_unique<StmtFieldSNode>(value));
   } else {
     stmt->field_manager.fields.emplace_back(
-        std::make_unique<StmtFieldNumeric<T>>(value));
+        std::make_unique<StmtFieldNumeric<std::remove_reference_t<T>>>(&value));
   }
 }
 

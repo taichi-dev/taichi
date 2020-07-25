@@ -1,47 +1,48 @@
-# The load-on-request closure (LoR-C) infrastructure, credit by @archibate
-def _scope():
-    ############## HUMAN TOUCHABLE BEGIN ###################
-    import taichi as ti
+import taichi as ti
 
-    print('[Taichi] loading test module')
+print('[Taichi] loading test module')
 
-    import functools
-    import pytest
+import functools
+import pytest
 
-    ## Helper functions
-    def approx(expected, **kwargs):
-        '''Tweaked pytest.approx for OpenGL low percisions'''
-        class boolean_integer:
-            def __init__(self, value):
-                self.value = value
+## Helper functions
+def approx(expected, **kwargs):
+    '''Tweaked pytest.approx for OpenGL low percisions'''
+    class boolean_integer:
+        def __init__(self, value):
+            self.value = value
 
-            def __eq__(self, other):
-                return bool(self.value) == bool(other)
+        def __eq__(self, other):
+            return bool(self.value) == bool(other)
 
-            def __ne__(self, other):
-                return bool(self.value) != bool(other)
+        def __ne__(self, other):
+            return bool(self.value) != bool(other)
 
-        if isinstance(expected, bool):
-            return boolean_integer(expected)
+    if isinstance(expected, bool):
+        return boolean_integer(expected)
 
-        if ti.cfg.arch == ti.opengl:
-            kwargs['rel'] = max(kwargs.get('rel', 1e-6), 1e-3)
+    if ti.cfg.arch == ti.opengl:
+        kwargs['rel'] = max(kwargs.get('rel', 1e-6), 1e-3)
 
-        return pytest.approx(expected, **kwargs)
+    return pytest.approx(expected, **kwargs)
 
-    def allclose(x, y, **kwargs):
-        '''Same as: x == approx(y, **kwargs)'''
-        return x == approx(y, **kwargs)
 
-    def make_temp_file(*args, **kwargs):
-        '''Create a temporary file name'''
-        import os
-        from tempfile import mkstemp
-        fd, name = mkstemp(*args, **kwargs)
-        os.close(fd)
-        return name
+def allclose(x, y, **kwargs):
+    '''Same as: x == approx(y, **kwargs)'''
+    return x == approx(y, **kwargs)
 
-    ## Pytest options
+
+def make_temp_file(*args, **kwargs):
+    '''Create a temporary file name'''
+    import os
+    from tempfile import mkstemp
+    fd, name = mkstemp(*args, **kwargs)
+    os.close(fd)
+    return name
+
+
+## Pytest options
+def get_conftest(_glbs):
     @pytest.fixture(params=ti.supported_archs(), ids=ti.core.arch_name)
     def taichi_archs(request):
         marker = request.node.get_closest_marker('taichi')
@@ -77,27 +78,28 @@ def _scope():
         ti_init(*marker.args, **marker.kwargs)
         yield
 
-    def test(*args, **kwargs):
-        def decorator(foo):
-            @pytest.mark.usefixtures('taichi_archs')
-            @pytest.mark.taichi(*args, **kwargs)
-            @functools.wraps(foo)
-            def wrapped(*_, **__):
-                return foo(*_, **__)
-
-            return wrapped
-
-        return decorator
-
-############### HUMAN TOUCHABLE END ####################
-
-    return locals()
+    _lcls = dict(locals())
+    for _k, _v in _lcls.items():
+        if not _k.startswith('_'):
+            _glbs[_k] = _v
 
 
-# Equivalent to `from taichi.testing import *` in `taichi/__init__.py`:
-_scope = _scope()
-for _k, _v in _scope.keys():
-    if not _k.startswith('_'):
-        setattr(__import__('taichi'), _k, _v)
+def test(*args, **kwargs):
+    def decorator(foo):
+        @pytest.mark.usefixtures('taichi_archs')
+        @pytest.mark.taichi(*args, **kwargs)
+        @functools.wraps(foo)
+        def wrapped(*_, **__):
+            return foo(*_, **__)
 
-globals().update(_scope)
+        return wrapped
+
+    return decorator
+
+
+__all__ = [
+        'approx',
+        'allclose',
+        'make_temp_file',
+        'test',
+        ]

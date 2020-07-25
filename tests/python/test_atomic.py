@@ -30,8 +30,13 @@ def run_atomic_add_global_case(vartype, step, valproc=lambda x: x):
     y_actual = sorted(y.to_numpy())
     expect = [i * step for i in range(n)]
     for (xa, ya, e) in zip(x_actual, y_actual, expect):
+        print(xa, ya, e)
         assert valproc(xa) == e
         assert valproc(ya) == e
+
+
+ti.init(ti.cc, log_level=ti.DEBUG)
+run_atomic_add_global_case(ti.i32, 42)
 
 
 @ti.all_archs

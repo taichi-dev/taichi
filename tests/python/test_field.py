@@ -88,6 +88,6 @@ def test_default_fp(dtype):
 def test_default_ip(dtype):
     ti.init(default_ip=dtype)
 
-    x = ti.Vector.field(2, float, ())
+    x = ti.Vector.field(2, int, ())
 
-    assert x.dtype == ti.get_runtime().default_fp
+    assert x.dtype == ti.get_runtime().default_ip

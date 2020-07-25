@@ -664,11 +664,12 @@ class KernelGen : public IRVisitor {
         }
         auto args = (c == '%') ? stmt->arg_stmts : stmt->output_stmts;
         TI_ASSERT_INFO(num < args.size(),
-            "{}{} out of argument range {}", c, num, args.size());
+            "{}{} out of {} argument range {}", c, num,
+            ((c == '%') ? "input" : "output"), args.size());
         source += args[num]->short_name();
-        continue;
+      } else {
+        source.push_back(c);
       }
-      source.push_back(c);
     }
 
     emit("{};", source);

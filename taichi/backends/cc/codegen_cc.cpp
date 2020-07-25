@@ -264,7 +264,12 @@ class CCTransformer : public IRVisitor {
 
   static std::string get_libc_function_name(std::string name, DataType dt) {
     auto ret = _get_libc_function_name(name, dt);
-    if (name == "max" || name == "min" || name == "abs") {
+    if (name == "sgn") {
+      if (is_real(dt)) {
+        ret = "f" + ret;
+      }
+      ret = "Ti_" + ret;
+    } else if (name == "max" || name == "min" || name == "abs") {
       if (is_real(dt)) {
         ret = "f" + ret;
       } else if (ret != "abs") {
@@ -356,7 +361,8 @@ class CCTransformer : public IRVisitor {
     emit("{} = *{};", var, dest_ptr);
     if (stmt->op_type == AtomicOpType::max ||
         stmt->op_type == AtomicOpType::min) {
-      emit("*{} = {};", invoke_libc(op, type, "*{}, {}", dest_ptr, src_name));
+      emit("*{} = {};", dest_ptr,
+          invoke_libc(op, type, "*{}, {}", dest_ptr, src_name));
     } else {
       emit("*{} {}= {};", dest_ptr, op, src_name);
     }

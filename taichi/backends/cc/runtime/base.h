@@ -32,6 +32,18 @@ static inline Ti_i64 Ti_llmax(Ti_i64 x, Ti_i64 y) {
 static inline Ti_i64 Ti_llmin(Ti_i64 x, Ti_i64 y) {
   return x < y ? x : y;
 }
+static inline Ti_i64 Ti_llsgn(Ti_i64 x) {
+  return x < 0 ? -1 : x != 0;
+}
+static inline Ti_i32 Ti_sgn(Ti_i32 x) {
+  return x < 0 ? -1 : x != 0;
+}
+static inline Ti_f32 Ti_fsgnf(Ti_f32 x) {
+  return x < 0 ? -1 : x != 0;
+}
+static inline Ti_f64 Ti_fsgn(Ti_f64 x) {
+  return x < 0 ? -1 : x != 0;
+}
 
 ) "\n" STR(
 

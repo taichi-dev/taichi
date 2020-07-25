@@ -4,9 +4,9 @@ ti.init()
 N = 8
 dt = 5e-5
 
-pos = ti.Vector.var(2, ti.f32, N, needs_grad=True)
-vel = ti.Vector.var(2, ti.f32, N)
-potential = ti.var(ti.f32, (), needs_grad=True)
+pos = ti.Vector.field(2, float, N, needs_grad=True)
+vel = ti.Vector.field(2, float, N)
+potential = ti.field(float, (), needs_grad=True)
 
 
 @ti.kernel

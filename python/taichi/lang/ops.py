@@ -1,6 +1,6 @@
 from .expr import *
 from .util import *
-from .impl import expr_init
+from .impl import expr_init, cook_dtype
 from .exception import TaichiSyntaxError
 from .util import taichi_lang_core as ti_core
 import operator as ops
@@ -144,20 +144,22 @@ def writeback_binary(foo):
     return wrapped
 
 
-def cast(obj, type):
+def cast(obj, dtype):
     _taichi_skip_traceback = 1
+    dtype = cook_dtype(dtype)
     if is_taichi_class(obj):
-        return obj.cast(type)
+        # TODO: unify with element_wise_unary
+        return obj.cast(dtype)
     else:
-        return Expr(ti_core.value_cast(Expr(obj).ptr, type))
+        return Expr(ti_core.value_cast(Expr(obj).ptr, dtype))
 
 
-def bit_cast(obj, type):
+def bit_cast(obj, dtype):
     _taichi_skip_traceback = 1
     if is_taichi_class(obj):
         raise ValueError('Cannot apply bit_cast on Taichi classes')
     else:
-        return Expr(ti_core.bits_cast(Expr(obj).ptr, type))
+        return Expr(ti_core.bits_cast(Expr(obj).ptr, dtype))
 
 
 def _unary_operation(taichi_op, python_op, a):

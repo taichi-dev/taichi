@@ -133,8 +133,7 @@ Taichi **functions**, which can be called by Taichi kernels and other Taichi fun
 .. warning::
 
   Taichi kernels must be called in the Python-scope. I.e., **nested kernels are not supported**.
-
-  But nested functions are allowed. **Recursive functions are not supported for now**.
+  Nested functions are allowed. **Recursive functions are not supported for now**.
 
   Taichi functions can only be called in Taichi-scope.
 

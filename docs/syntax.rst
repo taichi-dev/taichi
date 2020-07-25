@@ -4,7 +4,7 @@ Syntax
 Taichi-scope vs Python-scope
 ----------------------------
 
-Codes decorated by ``@ti.kernel`` or ``@ti.func`` is the **Taichi-scope**.
+Code decorated by ``@ti.kernel`` or ``@ti.func`` is in the **Taichi-scope**.
 
 They are to be compiled and executed on CPU or GPU devices with high
 parallelization performance, on the cost of less flexibility.
@@ -14,7 +14,7 @@ parallelization performance, on the cost of less flexibility.
     For people from CUDA, Taichi-scope = **device** side.
 
 
-Codes outside ``@ti.kernel`` or ``@ti.func`` is the **Python-scope**.
+Code outside ``@ti.kernel`` or ``@ti.func`` is in the **Python-scope**.
 
 They are not compiled by the Taichi compiler and have lower performance
 but with a richer type system and better flexibility.
@@ -38,7 +38,7 @@ A Python function decorated by ``@ti.kernel`` is a **Taichi kernel**:
    my_kern()
 
 
-Kernels are to be called from **Python-scope**.
+Kernels should be called from **Python-scope**.
 
 .. note::
 
@@ -152,7 +152,7 @@ A Python function decorated by ``@ti.func`` is a **Taichi function**:
     my_kern()      # call kernels from Python-scope
 
 
-Functions are to be called from **Taichi-scope**.
+Taichi functions can only be called from **Taichi-scope**.
 
 .. note::
 

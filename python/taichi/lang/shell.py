@@ -152,6 +152,7 @@ class IPythonInspectorWrapper:
         return lines, lineno
 
     def getsourcefile(self, o):
+        import IPython
         lineno = IPython.core.oinspect.find_source_lines(o)
         return f'<IPython:{lineno}>'
 

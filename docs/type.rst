@@ -111,7 +111,7 @@ Type casts
 ----------
 
 Implicit casts
-****************
+**************
 
 WARNING: The type of a variable is **determinated on it's initialization**.
 

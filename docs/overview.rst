@@ -19,8 +19,7 @@ Downside:
 
 1. CUDA, for example, despite its powerfulness, can run only on supported NVIDIA
    GPUs. One could not share/distribute his/her work with/to a computer
-   without NVIDIA GPUs.
-   This means the loss of portability.
+   without NVIDIA GPUs. This means the loss of portability.
 
 2. OpenGL, due to its historical debt, is too complicated for beginners when
    used as a GPGPU programming tool. People could easily get
@@ -33,8 +32,7 @@ Downside:
    to do so.
 
 4. It's relatively hard to visualize the results in GUI. You will have to
-   make a bridge to your native GUI system before start to debug the program
-   so that you could debug with it.
+   make a bridge to your native GUI system before starting the debugging process.
 
 5. It's very hard to optimize data structures for sparse computation accessing
    tensors / fields with plain indices. It would be great if we could decouple
@@ -44,6 +42,9 @@ Downside:
    function, e.g. compute forces from gradients of potential energy. We will
    have to calculate the derivative by hand or external tools like Matlab.
 
+7. A lot of repetitive work during study or research can be pretty distressing. This will not 
+   only waste a lot of programming time, and kill off many beginner's interest. A high 
+   integrated tool will significantly improve this situation.
 All these reasons make it very hard for **computer graphics and computational
 physics** beginners to write a GPGPU program.
 
@@ -73,7 +74,7 @@ programming easier & accessible:
 
 4. **Cross-platform GUI support**.
    Taichi have a built-in GUI support that can run on either Windows, OS X
-   or X11 for Linux. You can visualize the computation result with a minimize
+   or X11 for Linux. You can visualize the computation result with very little
    effort. Not to say the external data visualizing packages like matplotlib.
 
 5. **Decouple computation from data structures**.
@@ -82,8 +83,8 @@ programming easier & accessible:
    becomes affordable. See :ref:`sparse` for more details.
 
 6. **Differentiable programming**.
-   Taichi have a built-in automatically differator that is capable of compute
-   the derivitive of a kernel. Once you have a kernel that computes potential
+   Taichi have a built-in differator that is capable of compute
+   the derivative of a kernel automatically. Once you have a kernel that computes potential
    energy, you can easily get the forces on each elements.
    See :ref:`differentiable` for more details.
 

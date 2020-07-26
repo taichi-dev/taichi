@@ -233,9 +233,8 @@ class KernelGen : public IRVisitor {
 #include "taichi/inc/opengl_extension.inc.h"
 #undef PER_OPENGL_EXTENSION
     auto kernel_src_code =
-        "#version 430 core\n" + extensions
-        + "precision highp float;\nprecision highp int;\n"
-        + line_appender_header_.lines() + line_appender_.lines();
+        "#version 430 core\n" + extensions + "precision highp float;\n" +
+        line_appender_header_.lines() + line_appender_.lines();
     compiled_program_->add(std::move(glsl_kernel_name_), kernel_src_code,
                            std::move(ps));
     line_appender_header_.clear_all();

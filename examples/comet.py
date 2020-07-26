@@ -1,6 +1,6 @@
 import taichi as ti
 import taichi_glsl as tl
-#ti.init(arch=[ti.cuda, ti.metal])
+ti.init(arch=[ti.cuda, ti.metal])
 
 dim = 3
 N = 1024 * 8
@@ -26,6 +26,7 @@ img = ti.field(ti.f32, (res, res))
 
 @ti.kernel
 def substep():
+    ti.no_activate(x)
     for i in x:
         r = x[i] - sun
         ir = r / r.norm(1e-3)**3

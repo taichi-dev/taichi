@@ -63,14 +63,14 @@ Declaration
 
         func()
         y = ti.field(ti.f32, shape=())
-        # ERROR: cannot create field after kernel invocation!
+        # ERROR: cannot create fields after kernel invocation!
 
     .. code-block:: python
 
         x = ti.field(ti.f32, shape=())
         x[None] = 1
         y = ti.field(ti.f32, shape=())
-        # ERROR: cannot create field after any field accesses from the Python-scope!
+        # ERROR: cannot create fields after any field accesses from the Python-scope!
 
 
 Accessing components
@@ -80,7 +80,7 @@ You can access an element of the Taichi field by an index or indices.
 
 .. attribute:: a[p, q, ...]
 
-    :parameter a: (Field) the field of scalars
+    :parameter a: (ti.field) the field of scalars
     :parameter p: (scalar) index of the first field dimension
     :parameter q: (scalar) index of the second field dimension
     :return: (scalar) the element at ``[p, q, ...]``
@@ -110,7 +110,7 @@ Meta data
 
 .. attribute:: a.shape
 
-    :parameter a: (Field) the field
+    :parameter a: (ti.field) the field
     :return: (tuple) the shape of field ``a``
 
     ::

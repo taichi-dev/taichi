@@ -439,7 +439,9 @@ class StmtFieldNumeric final : public StmtField {
         return *(std::get<T *>(other->value)) == *(std::get<T *>(value));
       } else if (std::holds_alternative<T *>(other->value) ||
                  std::holds_alternative<T *>(value)) {
-        TI_ERROR("Inconsistent StmtField value types: a pointer value is compared to a non-pointer value.");
+        TI_ERROR(
+            "Inconsistent StmtField value types: a pointer value is compared "
+            "to a non-pointer value.");
         return false;
       } else {
         return std::get<T>(other->value) == std::get<T>(value);

@@ -42,8 +42,8 @@ Downside:
    function, e.g. compute forces from gradients of potential energy. We will
    have to calculate the derivative by hand or external tools like Matlab.
 
-7. A lot of repetitive work during study or research can be pretty distressing. This will not 
-   only waste a lot of programming time, and kill off many beginner's interest. A high 
+7. A lot of repetitive work during study or research can be pretty distressing. This will not
+   only waste a lot of programming time, and kill off many beginner's interest. A high
    integrated tool will significantly improve this situation.
 All these reasons make it very hard for **computer graphics and computational
 physics** beginners to write a GPGPU program.

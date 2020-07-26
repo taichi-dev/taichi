@@ -61,33 +61,37 @@ class KernelGen : public IRVisitor {
             std::string kernel_name,
             StructCompiledResult *struct_compiled)
       : kernel(kernel),
-        compiled_program_(std::make_unique<CompiledProgram>(kernel)),
         struct_compiled_(struct_compiled),
         kernel_name_(kernel_name),
         glsl_kernel_prefix_(kernel_name),
+        compiled_program_(std::make_unique<CompiledProgram>(kernel)),
         ps(std::make_unique<ParallelSize_ConstRange>(0)) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
   }
 
  private:
-  std::unique_ptr<CompiledProgram> compiled_program_;
-
+  // constants:
   StructCompiledResult *struct_compiled_;
   const SNode *root_snode_;
   GetRootStmt *root_stmt_;
   std::string kernel_name_;
-  std::string glsl_kernel_name_;
   std::string root_snode_type_name_;
   std::string glsl_kernel_prefix_;
-  int glsl_kernel_count_{0};
 
+  // throughout variables:
+  int glsl_kernel_count_{0};
   bool is_top_level_{true};
-  bool is_grid_stride_loop_{false};
+  std::unique_ptr<CompiledProgram> compiled_program_;
+  UsedFeature used;  // TODO: is this actually per-offload?
+
+  // per-offload variables:
   LineAppender line_appender_;
   LineAppender line_appender_header_;
+  std::string glsl_kernel_name_;
   std::unique_ptr<ParallelSize> ps;
-  UsedFeature used;
+  bool is_grid_stride_loop_{false};
+  size_t max_tls_size{0};
 
   template <typename... Args>
   void emit(std::string f, Args &&... args) {
@@ -174,6 +178,18 @@ class KernelGen : public IRVisitor {
       if (used.int64)
         kernel_header += "layout(std430, binding = 4) buffer extr_i64 { int64_t _extr_i64_[]; };\n";
     }
+    if (max_tls_size != 0) {
+      kernel_header +=
+        fmt::format("int _tls_i32_[{}];\n", max_tls_size);
+      kernel_header +=
+        fmt::format("float _tls_f32_[{}];\n", max_tls_size);
+      if (used.float64)
+        kernel_header +=
+          fmt::format("double _tls_f64_[{}];\n", max_tls_size);
+      if (used.int64)
+        kernel_header +=
+          fmt::format("int64_t _tls_i64_[{}];\n", max_tls_size);
+    }
     // clang-format on
     if (used.simulated_atomic_float) {
       kernel_header += (
@@ -224,6 +240,7 @@ class KernelGen : public IRVisitor {
     line_appender_header_.clear_all();
     line_appender_.clear_all();
     ps = std::make_unique<ParallelSize_ConstRange>(0);
+    max_tls_size = 0;
   }
 
   void visit(Block *stmt) override {
@@ -876,6 +893,13 @@ class KernelGen : public IRVisitor {
     ptr_signats[stmt->id] = "gtmp";
   }
 
+  void visit(ThreadLocalPtrStmt *stmt) override {
+    TI_ASSERT(stmt->width() == 1);
+    max_tls_size = stmt->offset + 1;
+    emit("int {} = {};", stmt->short_name(), stmt->offset);
+    ptr_signats[stmt->id] = "tls";
+  }
+
   void visit(LoopIndexStmt *stmt) override {
     TI_ASSERT(stmt->index == 0);  // TODO: multiple indices
     if (stmt->loop->is<OffloadedStmt>()) {
@@ -1016,7 +1040,7 @@ void OpenglCodeGen::lower() {
                               /*vectorize=*/false, kernel_->grad,
                               /*ad_use_stack=*/false, config.print_ir,
                               /*lower_global_access=*/true,
-                              /*make_thread_local=*/false);
+                              /*make_thread_local=*/config.make_thread_local);
 #ifdef _GLSL_DEBUG
   irpass::print(ir);
 #endif

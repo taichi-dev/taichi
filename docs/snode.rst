@@ -20,7 +20,7 @@ See :ref:`layout` for more details. ``ti.root`` is the root node of the data str
 .. function:: snode.place(x, ...)
 
     :parameter snode: (SNode) where to place
-    :parameter x: (field) field(s) to be placed
+    :parameter a: (ti.field) field(s) to be placed
     :return: (SNode) the ``snode`` itself
 
     The following code places two 0-D fields named ``x`` and ``y``:
@@ -35,7 +35,7 @@ See :ref:`layout` for more details. ``ti.root`` is the root node of the data str
 
 .. function:: field.shape
 
-    :parameter field: (Field)
+    :parameter a: (ti.field)
     :return: (tuple of integers) the shape of field
 
     Equivalent to ``field.snode().shape``.
@@ -50,7 +50,7 @@ See :ref:`layout` for more details. ``ti.root`` is the root node of the data str
 
 .. function:: field.snode()
 
-    :parameter field: (Field)
+    :parameter a: (ti.field)
     :return: (SNode) the structual node where ``field`` is placed
 
     ::

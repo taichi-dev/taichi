@@ -127,7 +127,7 @@ Meta data
 
 .. function:: a.dtype
 
-    :parameter a: (Field) the field
+    :parameter a: (ti.field) the field
     :return: (DataType) the data type of ``a``
 
     ::
@@ -138,7 +138,7 @@ Meta data
 
 .. function:: a.parent(n = 1)
 
-    :parameter a: (Field) the field
+    :parameter a: (ti.field) the field
     :parameter n: (optional, scalar) the number of parent steps, i.e. ``n=1`` for parent, ``n=2`` grandparent, etc.
     :return: (SNode) the parent of ``a``'s containing SNode
 

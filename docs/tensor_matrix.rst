@@ -36,7 +36,7 @@ Suppose you have a ``128 x 64`` field called ``A``, each element containing a ``
 * If you want to get the matrix of grid node ``i, j``, please use ``mat = A[i, j]``. ``mat`` is simply a ``3 x 2`` matrix
 * To get the element on the first row and second column of that matrix, use ``mat[0, 1]`` or ``A[i, j][0, 1]``.
 * As you may have noticed, there are **two** indexing operators ``[]`` when you load an matrix element from a global matrix field: the first is for field indexing, the second for matrix indexing.
-* ``ti.Vector.field`` is simply an alias of ``ti.Matrix.field``.
+* ``ti.Vector.field`` is simply an alias of ``ti.Matrix.field``, as well as `ti.Vector` and `ti.Matrix`.
 * See :ref:`matrix` for more on matrices.
 
 

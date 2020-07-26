@@ -6,7 +6,7 @@ a = ti.var(ti.f32, ())
 @ti.kernel
 def func():
     x = 0
-    for i in range(31):
+    for i in range(10):
         ti.atomic_add(x, i)
     print(x)
 

@@ -771,7 +771,7 @@ class KernelGen : public IRVisitor {
         end_value = begin_value;
       ps = std::make_unique<ParallelSize_ConstRange>(end_value - begin_value);
       ScopedGridStrideLoop _gsl(this);
-      emit("if (_sid >= {}) return;", end_value - begin_value);
+      emit("if (_sid >= {}) {};", end_value - begin_value, get_return_stmt());
       emit("int _itv = {} + _sid * {};", begin_value, 1 /* stmt->step? */);
       stmt->body->accept(this);
     } else {
@@ -787,7 +787,7 @@ class KernelGen : public IRVisitor {
       ScopedGridStrideLoop _gsl(this);
       emit("int _beg = {}, _end = {};", begin_expr, end_expr);
       emit("int _itv = _beg + _sid;");
-      emit("if (_itv >= _end) return;");
+      emit("if (_itv >= _end) {};", get_return_stmt());
       stmt->body->accept(this);
     }
 
@@ -812,7 +812,7 @@ class KernelGen : public IRVisitor {
       ps = std::make_unique<ParallelSize_StructFor>(stmt);
       ScopedIndent _s(line_appender_);
       ScopedGridStrideLoop _gsl(this);
-      emit("if (_sid >= _list_len_) return;");
+      emit("if (_sid >= _end) {};", get_return_stmt());
       emit("int _itv = _list_[_sid];");
       stmt->body->accept(this);
     }
@@ -953,10 +953,14 @@ class KernelGen : public IRVisitor {
     emit("if ({} == 0) break;", stmt->cond->short_name());
   }
 
+  std::string get_return_stmt() {
+    return is_grid_stride_loop_ ? "continue" : "return";
+  }
+
   void visit(ContinueStmt *stmt) override {
     // stmt->as_return() is unused when embraced with a grid-stride-loop
-    if (stmt->as_return() && !is_grid_stride_loop_) {
-      emit("return;");
+    if (stmt->as_return()) {
+      emit("{};", get_return_stmt());
     } else {
       emit("continue;");
     }

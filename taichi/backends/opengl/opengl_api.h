@@ -6,6 +6,7 @@
 #include <vector>
 #include <optional>
 
+#include "opengl_kernel_util.h"
 #include "opengl_kernel_launcher.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -17,13 +18,23 @@ namespace opengl {
 
 bool initialize_opengl(bool error_tolerance = false);
 bool is_opengl_api_available();
-#define PER_OPENGL_EXTENSION(x) extern bool opengl_has_##x;
+
+#define PER_OPENGL_EXTENSION(x) extern bool opengl_extension_##x;
 #include "taichi/inc/opengl_extension.inc.h"
 #undef PER_OPENGL_EXTENSION
 
+#define TI_OPENGL_REQUIRE(used, x) \
+  ([&]() {                         \
+    if (opengl_extension_##x) {    \
+      used.extension_##x = true;   \
+      return true;                 \
+    }                              \
+    return false;                  \
+  })()
+
 class ParallelSize {
  public:
-  virtual size_t get_num_groups(GLSLLaunchGuard &guard) const = 0;
+  virtual size_t get_num_groups(GLSLLauncher *launcher) const = 0;
   virtual size_t get_threads_per_group() const;
   virtual ~ParallelSize();
 };
@@ -35,7 +46,7 @@ class ParallelSize_ConstRange : public ParallelSize {
 
  public:
   ParallelSize_ConstRange(int num_threads_);
-  virtual size_t get_num_groups(GLSLLaunchGuard &guard) const override;
+  virtual size_t get_num_groups(GLSLLauncher *launcher) const override;
   virtual size_t get_threads_per_group() const override;
   virtual ~ParallelSize_ConstRange() override = default;
 };
@@ -48,14 +59,14 @@ class ParallelSize_DynamicRange : public ParallelSize {
 
  public:
   ParallelSize_DynamicRange(OffloadedStmt *stmt);
-  virtual size_t get_num_groups(GLSLLaunchGuard &guard) const override;
+  virtual size_t get_num_groups(GLSLLauncher *launcher) const override;
   virtual ~ParallelSize_DynamicRange() override = default;
 };
 
 class ParallelSize_StructFor : public ParallelSize {
  public:
   ParallelSize_StructFor(OffloadedStmt *stmt);
-  virtual size_t get_num_groups(GLSLLaunchGuard &guard) const override;
+  virtual size_t get_num_groups(GLSLLauncher *launcher) const override;
   virtual ~ParallelSize_StructFor() override = default;
 };
 

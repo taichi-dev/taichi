@@ -966,7 +966,7 @@ class TaichiMain:
         ti.core.set_core_trigger_gdb_when_crash(True)
         os.environ['TI_DEBUG'] = '1'
 
-        runpy.run_path(args.filename)
+        runpy.run_path(args.filename, run_name='__main__')
 
     @register
     def task(self, arguments: list = sys.argv[2:]):

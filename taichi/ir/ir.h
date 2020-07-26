@@ -423,22 +423,26 @@ class StmtField {
 template <typename T>
 class StmtFieldNumeric final : public StmtField {
  private:
-  T *value_ptr;
-  T value;
+  std::variant<T *, T> value;
 
  public:
-  explicit StmtFieldNumeric(T *value_ptr) : value_ptr(value_ptr), value() {
+  explicit StmtFieldNumeric(T *value) : value(value) {
   }
 
-  explicit StmtFieldNumeric(T value) : value_ptr(nullptr), value(value) {
+  explicit StmtFieldNumeric(T value) : value(value) {
   }
 
   bool equal(const StmtField *other_generic) const override {
     if (auto other = dynamic_cast<const StmtFieldNumeric *>(other_generic)) {
-      if (other->value_ptr && value_ptr) {
-        return *(other->value_ptr) == *value_ptr;
+      if (std::holds_alternative<T *>(other->value) &&
+          std::holds_alternative<T *>(value)) {
+        return *(std::get<T *>(other->value)) == *(std::get<T *>(value));
+      } else if (std::holds_alternative<T *>(other->value) ||
+                 std::holds_alternative<T *>(value)) {
+        return false;
+      } else {
+        return std::get<T>(other->value) == std::get<T>(value);
       }
-      return other->value == value;
     } else {
       // Different types
       return false;

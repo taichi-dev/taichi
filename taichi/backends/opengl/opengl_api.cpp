@@ -435,7 +435,9 @@ bool initialize_opengl(bool error_tolerance) {
 void display_kernel_info(std::string const &kernel_name,
                          std::string const &kernel_source_code) {
   bool is_accessor = taichi::starts_with(kernel_name, "snode_") ||
-                     taichi::starts_with(kernel_name, "tensor_") ||
+                     taichi::starts_with(kernel_name, "tensor_to_") ||
+                     taichi::starts_with(kernel_name, "matrix_to_") ||
+                     taichi::starts_with(kernel_name, "ext_arr_to_") ||
                      taichi::starts_with(kernel_name, "jit_evaluator_");
   if (!is_accessor)
     TI_DEBUG("source of kernel [{}]:\n{}", kernel_name, kernel_source_code);

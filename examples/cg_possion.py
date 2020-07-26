@@ -11,9 +11,11 @@ x = ti.field(ti.f32, (n, n))
 d = ti.field(ti.f32, (n, n))
 r = ti.field(ti.f32, (n, n))
 
+
 @ti.func
 def c(x: ti.template(), i, j):
     return x[i, j] if 0 <= i < n and 0 <= j < n else 0.0
+
 
 @ti.func
 def A(x: ti.template(), I):
@@ -21,11 +23,13 @@ def A(x: ti.template(), I):
     return x[i, j] * 4 - c(x, i - 1, j) - c(x, i + 1, j) \
             - c(x, i, j - 1) - c(x, i, j + 1)
 
+
 @ti.kernel
 def init():
     for i in ti.grouped(x):
         d[i] = b[i] - A(x, i)
         r[i] = d[i]
+
 
 @ti.kernel
 def substep():
@@ -40,6 +44,7 @@ def substep():
         beta += r[i]**2 / (alpha * dAd)
     for i in ti.grouped(x):
         d[i] = r[i] + beta * d[i]
+
 
 gui = ti.GUI('Possion Solver', (n, n))
 while gui.running:

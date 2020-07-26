@@ -13,17 +13,17 @@ In fact, ``Vector`` is simply an alias of ``Matrix``, just with ``m = 1``. See :
 Declaration
 -----------
 
-As global fields of vectors
+As global vector fields
 +++++++++++++++++++++++++++
 
 .. function:: ti.Vector.field(n, dtype, shape = None, offset = None)
 
     :parameter n: (scalar) the number of components in the vector
     :parameter dtype: (DataType) data type of the components
-    :parameter shape: (optional, scalar or tuple) shape the field of vectors, see :ref:`tensor`
+    :parameter shape: (optional, scalar or tuple) shape of the vector field, see :ref:`tensor`
     :parameter offset: (optional, scalar or tuple) see :ref:`offset`
 
-    For example, this creates a 5x4 field of 3 component vectors:
+    For example, this creates a ``5x4`` vector field which has a vector of 3 component on each entry:
     ::
 
         # Python-scope
@@ -31,7 +31,7 @@ As global fields of vectors
 
 .. note::
 
-    In Python-scope, ``ti.field`` declares :ref:`scalar_tensor`, while ``ti.Vector.field`` declares fields of vectors.
+    In Python-scope, ``ti.field`` declares :ref:`scalar_tensor`, while ``ti.Vector.field`` declares vector fields.
 
 
 As a temporary local variable
@@ -52,11 +52,11 @@ As a temporary local variable
 Accessing components
 --------------------
 
-As global fields of vectors
+As global vector fields
 +++++++++++++++++++++++++++
 .. attribute:: a[p, q, ...][i]
 
-    :parameter a: (field of Vector) the vector
+    :parameter a: (Vector field) the vector
     :parameter p: (scalar) index of the first field dimension
     :parameter q: (scalar) index of the second field dimension
     :parameter i: (scalar) index of the vector component
@@ -72,12 +72,12 @@ As global fields of vectors
 
 .. note::
 
-    **Always** use two pairs of square brackets to access scalar elements from fields of vectors.
+    **Always** use two pairs of square brackets to access scalar elements from vector fields.
 
-     - The indices in the first pair of brackets locate the vector inside the field of vectors;
+     - The indices in the first pair of brackets locate the vector inside the vector fields;
      - The indices in the second pair of brackets locate the scalar element inside the vector.
 
-    For 0-D fields of vectors, indices in the first pair of brackets should be ``[None]``.
+    For 0-D vector fields, indices in the first pair of brackets should be ``[None]``.
 
 
 
@@ -224,17 +224,18 @@ Metadata
 
 .. attribute:: a.n
 
-   :parameter a: (Vector or field of Vector)
+   :parameter a: (Vector or Vector field)
    :return: (scalar) return the dimensionality of vector ``a``
 
-    E.g.,
+    E.g.
     ::
 
         # Taichi-scope
         a = ti.Vector([1, 2, 3])
         a.n  # 3
-
+        
     ::
+    
         # Python-scope
         a = ti.Vector.field(3, dtype=ti.f32, shape=())
         a.n  # 3

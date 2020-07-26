@@ -255,8 +255,7 @@ struct GLBuffer : GLSSBO {
     bind_index((int)index);
   }
 
-  GLBuffer(GLBufId index)
-      : index(index), base(nullptr), size(0) {
+  GLBuffer(GLBufId index) : index(index), base(nullptr), size(0) {
     bind_index((int)index);
   }
 

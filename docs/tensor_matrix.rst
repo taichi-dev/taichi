@@ -11,11 +11,11 @@ An element of a field can be either a scalar or a vector/matrix.
     Although mathematically matrices are treated as 2D fields, in Taichi, **field** and **matrix** are two completely different concepts.
     Matrices can be used as field elements, so you can have fields with each element being a matrix.
 
-Scalar field
+Scalar fields
 -----------------
 * Every global variable is an N-dimensional field.
 
-  - Global ``scalars`` are treated as 0-D scalar field.
+  - Global ``scalars`` are treated as 0-D scalar fields.
 
 * Fields are always accessed using indices
 

@@ -23,7 +23,7 @@ As global vector fields
     :parameter shape: (optional, scalar or tuple) shape of the vector field, see :ref:`tensor`
     :parameter offset: (optional, scalar or tuple) see :ref:`offset`
 
-    For example, this creates a ``5x4`` vector field which has a vector of 3 component on each entry:
+    For example, this creates a ``5x4`` vector field which has a 3 component vector on each entry:
     ::
 
         # Python-scope
@@ -227,15 +227,15 @@ Metadata
    :parameter a: (Vector or Vector field)
    :return: (scalar) return the dimensionality of vector ``a``
 
-    E.g.
+    E.g.,
     ::
 
         # Taichi-scope
         a = ti.Vector([1, 2, 3])
         a.n  # 3
-        
+
     ::
-    
+
         # Python-scope
         a = ti.Vector.field(3, dtype=ti.f32, shape=())
         a.n  # 3

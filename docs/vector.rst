@@ -14,7 +14,7 @@ Declaration
 -----------
 
 As global vector fields
-+++++++++++++++++++++++++++
+++++++++++++++++++++++++
 
 .. function:: ti.Vector.field(n, dtype, shape = None, offset = None)
 
@@ -56,7 +56,7 @@ As global vector fields
 +++++++++++++++++++++++++++
 .. attribute:: a[p, q, ...][i]
 
-    :parameter a: (Vector field) the vector
+    :parameter a: (ti.Vector.field) the vector
     :parameter p: (scalar) index of the first field dimension
     :parameter q: (scalar) index of the second field dimension
     :parameter i: (scalar) index of the vector component

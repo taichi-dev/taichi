@@ -161,6 +161,8 @@ Type casts applied to vectors/matrices are element-wise:
 
     u = ti.Vector([2.3, 4.7])
     v = int(u)  # ti.Vector([2, 4])
+    # equivalent to:
+    v = ti.cast(u, ti.i32)  # ti.Vector([2, 4])
 
 Bit casting
 ***********

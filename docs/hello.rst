@@ -114,11 +114,13 @@ size ``(640, 320)`` with data type ``ti.f32`` (32-bit floating-point number).
 Functions and kernels
 ---------------------
 
-Computation resides in Taichi **kernels**. Kernel arguments must be type-hinted.
+Computation resides in Taichi **kernels**, which is defined with the decorator ``@ti.kernel``.
+Kernel arguments must be type-hinted (if any).
 The language used in Taichi kernels and functions looks much like Python, yet the Taichi frontend compiler converts it
 into a language that is **compiled, statically-typed, lexically-scoped, parallel and differentiable**.
 
-Taichi **functions**, which can be called by Taichi kernels and other Taichi functions, should be defined with the keyword ``ti.func``.
+Taichi **functions** are defined with the decorator ``@ti.func``.
+They can be called by Taichi kernels and other Taichi functions.
 
 .. note::
 

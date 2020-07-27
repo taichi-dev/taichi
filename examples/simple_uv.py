@@ -1,17 +1,17 @@
-import taichi as ti
+import taichi as ti  # make sure you've 'pip3 install taichi' already
 
-# declare a 512x512 field whose elements are 3D vectors (RGB channels)
-rgb_image = ti.Vector.field(3, dtype=ti.f32, shape=(512, 512))
+# declare a 512x512x3 field whose elements are 32-bit floating-point numbers
+rgb_image = ti.field(dtype=ti.f32, shape=(512, 512, 3))
 
 
 @ti.kernel  # functions decorated by @ti.kernel will be compiled by Taichi
 def render():
-    for i, j in rgb_image:  # iterate over each pixels in the 512x512 field
+    # iterate through 512x512 pixels in parallel
+    for i, j in ti.ndrange(512, 512):
         r = i / 512
         g = j / 512
-        b = 0.0
-        # set the vector value at [i, j] in the field:
-        rgb_image[i, j] = ti.Vector([r, g, b])
+        rgb_image[i, j, 0] = r  # red channel, from 0.0 to 1.0
+        rgb_image[i, j, 1] = g  # green channel, from 0.0 to 1.0
 
 
 gui = ti.GUI('UV', (512, 512))  # create a 512x512 window

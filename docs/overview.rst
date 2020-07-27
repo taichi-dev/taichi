@@ -99,40 +99,6 @@ programming easier & accessible:
 Summary
 -------
 
-Example
-*******
-
-Here we showcase an example on how to render a classical image via Taichi:
-
-.. code-block:: python
-
-    import taichi as ti
-
-    # declare a 512x512 field whose elements are 3D vectors (RGB channels)
-    rgb_image = ti.Vector.field(3, dtype=ti.f32, shape=(512, 512))
-
-
-    @ti.kernel  # functions decorated by @ti.kernel will be compiled by Taichi
-    def render():
-        for i, j in rgb_image:  # iterate over each pixels in the 512x512 field
-            r = i / 512
-            g = j / 512
-            b = 0.0
-            # set the vector value at [i, j] in the field:
-            rgb_image[i, j] = ti.Vector([r, g, b])
-
-
-    gui = ti.GUI('UV', (512, 512))  # create a 512x512 window
-    while gui.running:
-        render()
-        gui.set_image(rgb_image)  # display the field as an image
-        gui.show()
-
-
-See :ref:`install` for more details about how to install Taichi via ``pip``.
-
-See :ref:`hello` for more details about Taichi langurage and syntax.
-
 Features
 ********
 
@@ -154,3 +120,37 @@ Design decisions
 - Customizable megakernels
 - Two-scale automatic differentiation
 - Embedding in Python
+
+Example
+*******
+
+Here we showcase an example on how to render a classical UV image via Taichi:
+
+.. code-block:: python
+
+    import taichi as ti  # make sure you've 'pip3 install taichi' already
+
+    # declare a 512x512x3 field whose elements are 32-bit floating-point numbers
+    rgb_image = ti.field(dtype=ti.f32, shape=(512, 512, 3))
+
+
+    @ti.kernel  # functions decorated by @ti.kernel will be compiled by Taichi
+    def render():
+        # iterate through 512x512 pixels in parallel
+        for i, j in ti.ndrange(512, 512):
+            r = i / 512
+            g = j / 512
+            rgb_image[i, j, 0] = r  # red channel, from 0.0 to 1.0
+            rgb_image[i, j, 1] = g  # green channel, from 0.0 to 1.0
+
+
+    gui = ti.GUI('UV', (512, 512))  # create a 512x512 window
+    while gui.running:
+        render()
+        gui.set_image(rgb_image)  # display the field as an image
+        gui.show()
+
+
+See :ref:`install` for more details about how to install Taichi via ``pip``.
+
+See :ref:`hello` for more details about Taichi langurage and syntax.

@@ -42,9 +42,16 @@ Downside:
    function, e.g. compute forces from gradients of potential energy. We will
    have to calculate the derivative by hand or external tools like Matlab.
 
-7. A lot of repetitive work during study or research can be pretty distressing. This will not
-   only waste a lot of programming time, and kill off many beginner's interest. A high
-   integrated tool will significantly improve this situation.
+7. A lot of repetitive work during study or research can be pretty distressing.
+   This will not only waste a lot of programming time, but also kill off many
+   beginner's interest. A highly integrated tool will significantly improve
+   this situation.
+
+8. Despite there are tools like Unity or Unreal providing a cross-backend
+   computer graphics infrastructure, they are often aimed for game developers
+   and artists, instead of **physics engine** developers, including industrial
+   CFD applications.
+
 All these reasons make it very hard for **computer graphics and computational
 physics** beginners to write a GPGPU program.
 
@@ -84,8 +91,8 @@ programming easier & accessible:
 
 6. **Differentiable programming**.
    Taichi have a built-in differator that is capable of compute
-   the derivative of a kernel automatically. Once you have a kernel that computes potential
-   energy, you can easily get the forces on each elements.
+   the derivative of a kernel automatically. Once you have a kernel that
+   computes potential energy, you can easily get the forces on each elements.
    See :ref:`differentiable` for more details.
 
 
@@ -118,11 +125,12 @@ Here we showcase an example on how to render a classical image via Taichi:
     gui = ti.GUI('UV', (512, 512))  # create a 512x512 window
     while gui.running:
         render()
-        gui.set_image(rgb_image)  # display the rendered image
+        gui.set_image(rgb_image)  # display the field as an image
         gui.show()
 
 
 See :ref:`install` for more details about how to install Taichi via ``pip``.
+
 See :ref:`hello` for more details about Taichi langurage and syntax.
 
 Features

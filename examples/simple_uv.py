@@ -17,5 +17,5 @@ def render():
 gui = ti.GUI('UV', (512, 512))  # create a 512x512 window
 while gui.running:
     render()
-    gui.set_image(rgb_image)  # display the rendered image
+    gui.set_image(rgb_image)  # display the field as an image
     gui.show()

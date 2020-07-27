@@ -61,32 +61,37 @@ class KernelGen : public IRVisitor {
             std::string kernel_name,
             StructCompiledResult *struct_compiled)
       : kernel(kernel),
-        compiled_program_(std::make_unique<CompiledProgram>(kernel)),
         struct_compiled_(struct_compiled),
         kernel_name_(kernel_name),
         glsl_kernel_prefix_(kernel_name),
+        compiled_program_(std::make_unique<CompiledProgram>(kernel)),
         ps(std::make_unique<ParallelSize_ConstRange>(0)) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
   }
 
- private:  // {{{
-  std::unique_ptr<CompiledProgram> compiled_program_;
-
+ private:
+  // constants:
   StructCompiledResult *struct_compiled_;
   const SNode *root_snode_;
   GetRootStmt *root_stmt_;
   std::string kernel_name_;
-  std::string glsl_kernel_name_;
   std::string root_snode_type_name_;
   std::string glsl_kernel_prefix_;
-  int glsl_kernel_count_{0};
 
+  // throughout variables:
+  int glsl_kernel_count_{0};
   bool is_top_level_{true};
+  std::unique_ptr<CompiledProgram> compiled_program_;
+  UsedFeature used;  // TODO: is this actually per-offload?
+
+  // per-offload variables:
   LineAppender line_appender_;
   LineAppender line_appender_header_;
+  std::string glsl_kernel_name_;
   std::unique_ptr<ParallelSize> ps;
-  UsedFeature used;
+  bool is_grid_stride_loop_{false};
+  bool used_tls;  // TODO: move into UsedFeature?
 
   template <typename... Args>
   void emit(std::string f, Args &&... args) {
@@ -97,16 +102,20 @@ class KernelGen : public IRVisitor {
   }
 
   // Note that the following two functions not only returns the corresponding
-  // data type, but also **records** the usage of `i64`.
+  // data type, but also **records** the usage of `i64` and `f64`.
   std::string opengl_data_type_short_name(DataType dt) {
     if (dt == DataType::i64)
       used.int64 = true;
+    if (dt == DataType::f64)
+      used.float64 = true;
     return data_type_short_name(dt);
   }
 
   std::string opengl_data_type_name(DataType dt) {
     if (dt == DataType::i64)
       used.int64 = true;
+    if (dt == DataType::f64)
+      used.float64 = true;
     return opengl::opengl_data_type_name(dt);
   }
 
@@ -122,42 +131,50 @@ class KernelGen : public IRVisitor {
 
     // clang-format off
 #define __GLSL__
-    std::string kernel_header =
-#include "taichi/backends/opengl/runtime.h"
-      ;
+    std::string kernel_header = (
+#include "taichi/backends/opengl/shaders/runtime.h"
+        );
+    if (used.listman)
+      kernel_header += (
+#include "taichi/backends/opengl/shaders/listman.h"
+          );
 #undef __GLSL__
     kernel_header +=
       "layout(std430, binding = 0) buffer data_i32 { int _data_i32_[]; };\n"
-      "layout(std430, binding = 0) buffer data_f32 { float _data_f32_[]; };\n"
-      "layout(std430, binding = 0) buffer data_f64 { double _data_f64_[]; };\n";
+      "layout(std430, binding = 0) buffer data_f32 { float _data_f32_[]; };\n";
+    if (used.float64)
+      kernel_header += "layout(std430, binding = 0) buffer data_f64 { double _data_f64_[]; };\n";
     if (used.int64)
       kernel_header += "layout(std430, binding = 0) buffer data_i64 { int64_t _data_i64_[]; };\n";
 
-    if (used.global_temp) {
+    if (used.buf_gtmp) {
       kernel_header +=
           "layout(std430, binding = 1) buffer gtmp_i32 { int _gtmp_i32_[]; };\n"
-          "layout(std430, binding = 1) buffer gtmp_f32 { float _gtmp_f32_[]; };\n"
-          "layout(std430, binding = 1) buffer gtmp_f64 { double _gtmp_f64_[]; };\n";
+          "layout(std430, binding = 1) buffer gtmp_f32 { float _gtmp_f32_[]; };\n";
+      if (used.float64)
+        kernel_header += "layout(std430, binding = 1) buffer gtmp_f64 { double _gtmp_f64_[]; };\n";
       if (used.int64)
         kernel_header += "layout(std430, binding = 1) buffer gtmp_i64 { int64_t _gtmp_i64_[]; };\n";
     }
-    if (used.argument) {
+    if (used.buf_args) {
       kernel_header +=
           "layout(std430, binding = 2) buffer args_i32 { int _args_i32_[]; };\n"
-          "layout(std430, binding = 2) buffer args_f32 { float _args_f32_[]; };\n"
-          "layout(std430, binding = 2) buffer args_f64 { double _args_f64_[]; };\n";
+          "layout(std430, binding = 2) buffer args_f32 { float _args_f32_[]; };\n";
+      if (used.float64)
+        kernel_header += "layout(std430, binding = 2) buffer args_f64 { double _args_f64_[]; };\n";
       if (used.int64)
         kernel_header += "layout(std430, binding = 2) buffer args_i64 { int64_t _args_i64_[]; };\n";
     }
-    if (used.extra_arg) {
+    if (used.buf_earg) {
       kernel_header +=
           "layout(std430, binding = 3) buffer earg_i32 { int _earg_i32_[]; };\n";
     }
-    if (used.external_ptr) {
+    if (used.buf_extr) {
       kernel_header +=
           "layout(std430, binding = 4) buffer extr_i32 { int _extr_i32_[]; };\n"
-          "layout(std430, binding = 4) buffer extr_f32 { float _extr_f32_[]; };\n"
-          "layout(std430, binding = 4) buffer extr_f64 { double _extr_f64_[]; };\n";
+          "layout(std430, binding = 4) buffer extr_f32 { float _extr_f32_[]; };\n";
+      if (used.float64)
+        kernel_header += "layout(std430, binding = 4) buffer extr_f64 { double _extr_f64_[]; };\n";
       if (used.int64)
         kernel_header += "layout(std430, binding = 4) buffer extr_i64 { int64_t _extr_i64_[]; };\n";
     }
@@ -166,23 +183,23 @@ class KernelGen : public IRVisitor {
       kernel_header += (
 #include "taichi/backends/opengl/shaders/atomics_data_f32.glsl.h"
       );
-      if (used.global_temp) {
+      if (used.buf_gtmp) {
         kernel_header += (
 #include "taichi/backends/opengl/shaders/atomics_gtmp_f32.glsl.h"
         );
       }
-      if (used.external_ptr) {
+      if (used.buf_extr) {
         kernel_header += (
 #include "taichi/backends/opengl/shaders/atomics_extr_f32.glsl.h"
         );
       }
     }
-    if (used.random) {  // TODO(archibate): random in different offloads should
-                        // share rand seed? {{{
+    // TODO(archibate): random in different offloads should share rand seed?
+    if (used.random) {
       kernel_header += (
 #include "taichi/backends/opengl/shaders/random.glsl.h"
       );
-    }  // }}}
+    }
 
     if (used.fast_pow) {
       kernel_header += (
@@ -197,11 +214,9 @@ class KernelGen : public IRVisitor {
 
     line_appender_header_.append_raw(kernel_header);
 
-    emit("layout(local_size_x = {}, local_size_y = 1, local_size_z = 1) in;",
-         ps->get_threads_per_group());
     std::string extensions = "";
 #define PER_OPENGL_EXTENSION(x) \
-  if (opengl_has_##x)           \
+  if (used.extension_##x)       \
     extensions += "#extension " #x ": enable\n";
 #include "taichi/inc/opengl_extension.inc.h"
 #undef PER_OPENGL_EXTENSION
@@ -418,7 +433,7 @@ class KernelGen : public IRVisitor {
       const int num_indices = stmt->indices.size();
       std::vector<std::string> size_var_names;
       for (int i = 0; i < num_indices; i++) {
-        used.extra_arg = true;
+        used.buf_earg = true;
         std::string var_name = fmt::format("_s{}_{}", i, stmt->short_name());
         emit("int {} = _earg_i32_[{} * {} + {}];", var_name, arg_id,
              taichi_max_num_indices, i);
@@ -434,7 +449,7 @@ class KernelGen : public IRVisitor {
     emit("int {} = {} + ({} << {});", stmt->short_name(),
          stmt->base_ptrs[0]->short_name(), linear_index_name,
          opengl_data_address_shifter(stmt->base_ptrs[0]->element_type()));
-    used.external_ptr = true;
+    used.buf_extr = true;
     ptr_signats[stmt->id] = "extr";
   }
 
@@ -553,11 +568,14 @@ class KernelGen : public IRVisitor {
     TI_ASSERT(stmt->width() == 1);
     auto dt = stmt->dest->element_type();
     if (dt == DataType::i32 ||
-        (opengl_has_GL_NV_shader_atomic_int64 && dt == DataType::i64) ||
+        (TI_OPENGL_REQUIRE(used, GL_NV_shader_atomic_int64) &&
+         dt == DataType::i64) ||
         ((stmt->op_type == AtomicOpType::add ||
           stmt->op_type == AtomicOpType::sub) &&
-         ((opengl_has_GL_NV_shader_atomic_float && dt == DataType::f32) ||
-          (opengl_has_GL_NV_shader_atomic_float64 && dt == DataType::f64)))) {
+         ((TI_OPENGL_REQUIRE(used, GL_NV_shader_atomic_float) &&
+           dt == DataType::f32) ||
+          (TI_OPENGL_REQUIRE(used, GL_NV_shader_atomic_float64) &&
+           dt == DataType::f64)))) {
       emit("{} {} = {}(_{}_{}_[{} >> {}], {});",
            opengl_data_type_name(stmt->val->element_type()), stmt->short_name(),
            opengl_atomic_op_type_cap_name(stmt->op_type),
@@ -623,7 +641,7 @@ class KernelGen : public IRVisitor {
   }
 
   void visit(KernelReturnStmt *stmt) override {
-    used.argument = true;
+    used.buf_args = true;
     // TODO: consider use _rets_{}_ instead of _args_{}_
     // TODO: use stmt->ret_id instead of 0 as index
     emit("_args_{}_[0] = {};",
@@ -633,7 +651,7 @@ class KernelGen : public IRVisitor {
 
   void visit(ArgLoadStmt *stmt) override {
     const auto dt = opengl_data_type_name(stmt->element_type());
-    used.argument = true;
+    used.buf_args = true;
     if (stmt->is_ptr) {
       emit("int {} = _args_i32_[{} << 1]; // is ext pointer {}",
            stmt->short_name(), stmt->arg_id, dt);
@@ -642,6 +660,36 @@ class KernelGen : public IRVisitor {
            opengl_data_type_short_name(stmt->element_type()), stmt->arg_id,
            opengl_argument_address_shifter(stmt->element_type()));
     }
+  }
+
+  void visit(ExternalFuncCallStmt *stmt) override {
+    TI_ASSERT(!stmt->func);
+    auto format = stmt->source;
+    std::string source;
+
+    for (int i = 0; i < format.size(); i++) {
+      char c = format[i];
+      if (c == '%' || c == '$') {  // '$' for output, '%' for input
+        int num = 0;
+        while (i < format.size()) {
+          i += 1;
+          if (!::isdigit(format[i])) {
+            i -= 1;
+            break;
+          }
+          num *= 10;
+          num += format[i] - '0';
+        }
+        auto args = (c == '%') ? stmt->arg_stmts : stmt->output_stmts;
+        TI_ASSERT_INFO(num < args.size(), "{}{} out of {} argument range {}", c,
+                       num, ((c == '%') ? "input" : "output"), args.size());
+        source += args[num]->short_name();
+      } else {
+        source.push_back(c);
+      }
+    }
+
+    emit("{};", source);
   }
 
   std::string make_kernel_name() {
@@ -658,6 +706,44 @@ class KernelGen : public IRVisitor {
     emit("}}\n");
   }
 
+  void generate_grid_stride_loop_header() {
+    ScopedIndent _s(line_appender_);
+  }
+
+  struct ScopedGridStrideLoop {
+    KernelGen *gen;
+    std::unique_ptr<ScopedIndent> s;
+
+    ScopedGridStrideLoop(KernelGen *gen) : gen(gen) {
+      size_t stride_size = gen->kernel->program.config.saturating_grid_dim;
+      if (gen->used_tls && stride_size == 0) {
+        // automatically enable grid-stride-loop when TLS used:
+        stride_size = 32;  // seems to be the most optimal number for fem99.py
+      }
+      if (stride_size != 0) {
+        gen->is_grid_stride_loop_ = true;
+        gen->emit("int _sid0 = int(gl_GlobalInvocationID.x) * {};",
+                  stride_size);
+        gen->emit("for (int _sid = _sid0; _sid < _sid0 + {}; _sid++) {{",
+                  stride_size);
+        s = std::make_unique<ScopedIndent>(gen->line_appender_);
+        TI_ASSERT(gen->ps);
+        gen->ps->strides_per_thread = stride_size;
+
+      } else {  // zero regression
+        gen->emit("int _sid = int(gl_GlobalInvocationID.x);");
+      }
+    }
+
+    ~ScopedGridStrideLoop() {
+      if (s)
+        gen->emit("}}");
+      s = nullptr;
+
+      gen->is_grid_stride_loop_ = false;
+    }
+  };
+
   void generate_range_for_kernel(OffloadedStmt *stmt) {
     TI_ASSERT(stmt->task_type == OffloadedStmt::TaskType::range_for);
     const std::string glsl_kernel_name = make_kernel_name();
@@ -665,38 +751,57 @@ class KernelGen : public IRVisitor {
     this->glsl_kernel_name_ = glsl_kernel_name;
     emit("{{ // range for");
 
+    used_tls = (stmt->tls_prologue != nullptr);
+    if (used_tls) {
+      TI_ASSERT(stmt->tls_prologue != nullptr);
+      auto tls_size = stmt->tls_size;
+      emit("int _tls_i32_[{}];", (tls_size + 3) / 4);
+      emit("float _tls_f32_[{}];", (tls_size + 3) / 4);
+      if (used.float64)
+        emit("double _tls_f64_[{}];", (tls_size + 7) / 8);
+      if (used.int64)
+        emit("int64_t _tls_i64_[{}];", (tls_size + 7) / 8);
+      emit("{{  // TLS prologue");
+      stmt->tls_prologue->accept(this);
+      emit("}}");
+    }
+
     if (stmt->const_begin && stmt->const_end) {
-      {
-        ScopedIndent _s(line_appender_);
-        auto begin_value = stmt->begin_value;
-        auto end_value = stmt->end_value;
-        if (end_value < begin_value)
-          end_value = begin_value;
-        ps = std::make_unique<ParallelSize_ConstRange>(end_value - begin_value);
-        emit("// range known at compile time");
-        emit("int _tid = int(gl_GlobalInvocationID.x);");
-        emit("if (_tid >= {}) return;", end_value - begin_value);
-        emit("int _itv = {} + _tid * {};", begin_value, 1 /* stmt->step? */);
-      }
+      ScopedIndent _s(line_appender_);
+      emit("// range known at compile time");
+      auto begin_value = stmt->begin_value;
+      auto end_value = stmt->end_value;
+      if (end_value < begin_value)
+        end_value = begin_value;
+      ps = std::make_unique<ParallelSize_ConstRange>(end_value - begin_value);
+      ScopedGridStrideLoop _gsl(this);
+      emit("if (_sid >= {}) {};", end_value - begin_value, get_return_stmt());
+      emit("int _itv = {} + _sid * {};", begin_value, 1 /* stmt->step? */);
       stmt->body->accept(this);
     } else {
-      {
-        ScopedIndent _s(line_appender_);
-        emit("// range known at runtime");
-        auto begin_expr = stmt->const_begin ? std::to_string(stmt->begin_value)
-                                            : fmt::format("_gtmp_i32_[{} >> 2]",
-                                                          stmt->begin_offset);
-        auto end_expr = stmt->const_end ? std::to_string(stmt->end_value)
-                                        : fmt::format("_gtmp_i32_[{} >> 2]",
-                                                      stmt->end_offset);
-        emit("int _tid = int(gl_GlobalInvocationID.x);");
-        emit("int _beg = {}, _end = {};", begin_expr, end_expr);
-        emit("int _itv = _beg + _tid;");
-        emit("if (_itv >= _end) return;");
-        ps = std::make_unique<ParallelSize_DynamicRange>(stmt);
-      }
+      ScopedIndent _s(line_appender_);
+      emit("// range known at runtime");
+      auto begin_expr = stmt->const_begin ? std::to_string(stmt->begin_value)
+                                          : fmt::format("_gtmp_i32_[{} >> 2]",
+                                                        stmt->begin_offset);
+      auto end_expr = stmt->const_end ? std::to_string(stmt->end_value)
+                                      : fmt::format("_gtmp_i32_[{} >> 2]",
+                                                    stmt->end_offset);
+      ps = std::make_unique<ParallelSize_DynamicRange>(stmt);
+      ScopedGridStrideLoop _gsl(this);
+      emit("int _beg = {}, _end = {};", begin_expr, end_expr);
+      emit("int _itv = _beg + _sid;");
+      emit("if (_itv >= _end) {};", get_return_stmt());
       stmt->body->accept(this);
     }
+
+    if (used_tls) {
+      TI_ASSERT(stmt->tls_epilogue != nullptr);
+      emit("{{  // TLS epilogue");
+      stmt->tls_epilogue->accept(this);
+      emit("}}");
+    }
+    used_tls = false;
 
     emit("}}\n");
   }
@@ -708,13 +813,13 @@ class KernelGen : public IRVisitor {
     this->glsl_kernel_name_ = glsl_kernel_name;
     emit("{{ // struct for {}", stmt->snode->node_type_name);
     {
-      ScopedIndent _s(line_appender_);
-      emit("int _tid = int(gl_GlobalInvocationID.x);");
-      emit("if (_tid >= _list_len_) return;");
-      emit("int _itv = _list_[_tid];");
       ps = std::make_unique<ParallelSize_StructFor>(stmt);
+      ScopedIndent _s(line_appender_);
+      ScopedGridStrideLoop _gsl(this);
+      emit("if (_sid >= _end) {};", get_return_stmt());
+      emit("int _itv = _list_[_sid];");
+      stmt->body->accept(this);
     }
-    stmt->body->accept(this);
     emit("}}\n");
   }
 
@@ -783,6 +888,7 @@ class KernelGen : public IRVisitor {
     const std::string glsl_kernel_name = make_kernel_name();
     emit("void {}()", glsl_kernel_name);
     this->glsl_kernel_name_ = glsl_kernel_name;
+    used.listman = true;
     emit("{{ // listgen {}", stmt->snode->node_type_name);
     {
       ScopedIndent _s(line_appender_);
@@ -799,9 +905,15 @@ class KernelGen : public IRVisitor {
 
   void visit(GlobalTemporaryStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    used.global_temp = true;
+    used.buf_gtmp = true;
     emit("int {} = {};", stmt->short_name(), stmt->offset);
     ptr_signats[stmt->id] = "gtmp";
+  }
+
+  void visit(ThreadLocalPtrStmt *stmt) override {
+    TI_ASSERT(stmt->width() == 1);
+    emit("int {} = {};", stmt->short_name(), stmt->offset);
+    ptr_signats[stmt->id] = "tls";
   }
 
   void visit(LoopIndexStmt *stmt) override {
@@ -845,9 +957,14 @@ class KernelGen : public IRVisitor {
     emit("if ({} == 0) break;", stmt->cond->short_name());
   }
 
+  std::string get_return_stmt() {
+    return is_grid_stride_loop_ ? "continue" : "return";
+  }
+
   void visit(ContinueStmt *stmt) override {
+    // stmt->as_return() is unused when embraced with a grid-stride-loop
     if (stmt->as_return()) {
-      emit("return;");
+      emit("{};", get_return_stmt());
     } else {
       emit("continue;");
     }
@@ -939,10 +1056,11 @@ void OpenglCodeGen::lower() {
   auto ir = kernel_->ir.get();
   auto &config = kernel_->program.config;
   config.demote_dense_struct_fors = true;
-  irpass::compile_to_offloads(ir, config,
-                              /*vectorize=*/false, kernel_->grad,
-                              /*ad_use_stack=*/false, config.print_ir,
-                              /*lower_global_access*/ true);
+  irpass::compile_to_executable(ir, config,
+                                /*vectorize=*/false, kernel_->grad,
+                                /*ad_use_stack=*/false, config.print_ir,
+                                /*lower_global_access=*/true,
+                                /*make_thread_local=*/config.make_thread_local);
 #ifdef _GLSL_DEBUG
   irpass::print(ir);
 #endif

@@ -51,9 +51,9 @@ void check_opengl_error(const std::string &msg = "OpenGL") {
 
 int opengl_get_threads_per_group() {
   int ret = 1000;
-  return ret;
   glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &ret);
   check_opengl_error("glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS)");
+  TI_TRACE("opengl_get_threads_per_group: {}", ret);
   return ret;
 }
 

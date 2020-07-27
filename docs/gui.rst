@@ -128,6 +128,17 @@ Paint on a window
     Draw a line.
 
 
+.. function:: gui.lines(begin, end, color = 0xFFFFFF, radius = 1)
+
+    :parameter gui: (GUI) the window object
+    :parameter begin: (np.array) the positions of the first end point of lines
+    :parameter end: (np.array) the positions of the second end point of lines
+    :parameter color: (optional, RGB hex or np.array of uint32) the color(s) of lines
+    :parameter radius: (optional, scalar or np.array of float32) the width(s) of the lines
+
+    Draw lines.
+
+
 .. function:: gui.triangle(a, b, c, color = 0xFFFFFF)
 
     :parameter gui: (GUI) the window object
@@ -137,6 +148,17 @@ Paint on a window
     :parameter color: (optional, RGB hex) the color to fill the triangle
 
     Draw a solid triangle.
+
+
+.. function:: gui.triangles(a, b, c, color = 0xFFFFFF)
+
+    :parameter gui: (GUI) the window object
+    :parameter a: (np.array) the positions of the first end point of triangles
+    :parameter b: (np.array) the positions of the second end point of triangles
+    :parameter c: (np.array) the positions of the third end point of triangles
+    :parameter color: (optional, RGB hex or np.array of uint32) the color(s) to fill the triangles
+
+    Draw solid triangles.
 
 
 .. function:: gui.rect(topleft, bottomright, radius = 1, color = 0xFFFFFF)

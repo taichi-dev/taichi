@@ -88,6 +88,7 @@ void export_visual(py::module &m) {
            static_cast<Line &(Canvas::*)(Vector2, Vector2)>(&Canvas::path),
            py::return_value_policy::reference)
       .def("path_single", &Canvas::path_single)
+      .def("paths_batched", &Canvas::paths_batched)
       .def("triangle_single", &Canvas::triangle_single)
       .def("triangles_batched", &Canvas::triangles_batched)
       .def("circles_batched", &Canvas::circles_batched)

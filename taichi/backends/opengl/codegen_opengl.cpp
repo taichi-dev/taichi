@@ -717,6 +717,7 @@ class KernelGen : public IRVisitor {
     ScopedGridStrideLoop(KernelGen *gen) : gen(gen) {
       size_t stride_size = gen->kernel->program.config.saturating_grid_dim;
       if (gen->used_tls && stride_size == 0) {
+        // automatically enable grid-stride-loop when TLS used:
         stride_size = 32;  // seems to be the most optimal number for fem99.py
       }
       if (stride_size != 0) {
@@ -726,6 +727,9 @@ class KernelGen : public IRVisitor {
         gen->emit("for (int _sid = _sid0; _sid < _sid0 + {}; _sid++) {{",
                   stride_size);
         s = std::make_unique<ScopedIndent>(gen->line_appender_);
+        TI_ASSERT(gen->ps);
+        gen->ps->strides_per_thread = stride_size;
+
       } else {  // zero regression
         gen->emit("int _sid = int(gl_GlobalInvocationID.x);");
       }

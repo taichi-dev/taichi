@@ -355,8 +355,8 @@ size_t ParallelSize_StructFor::get_num_strides(GLSLLauncher *launcher) const {
 
 size_t ParallelSize::get_num_threads(GLSLLauncher *launcher) const {
   size_t n = get_num_strides(launcher);
-  // TODO: size_t SPT = strides_per_thread;
-  return std::max(n, (size_t)1);
+  size_t SPT = strides_per_thread.value_or(1);
+  return std::max((n + SPT - 1) / SPT, (size_t)1);
 }
 
 size_t ParallelSize::get_num_blocks(GLSLLauncher *launcher) const {

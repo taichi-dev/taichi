@@ -98,3 +98,17 @@ def test_reduction_single():
     ground_truth = N * (N - 1) / 2
     assert tot_a[None] % 2**32 == ground_truth % 2**32
     assert tot_b[None] / 2 == approx(ground_truth, 1e-12)
+
+@ti.all_archs
+def test_reduction_different_scale():
+    @ti.kernel
+    def func(n: ti.template()) -> ti.i32:
+        x = 0
+        for i in range(n):
+            ti.atomic_add(x, 1)
+        return x
+
+    # 10 and 60 since OpenGL TLS stride size = 32
+    # 1024 and 100000 since OpenGL max threads per group ~= 1792
+    for n in [1, 10, 60, 1024, 100000]:
+        assert n == func(n)

@@ -3,7 +3,8 @@ Hello, world!
 
 We introduce the Taichi programming language through a very basic `fractal` example.
 
-Running the Taichi code below (``python3 fractal.py`` or ``ti example fractal``) will give you an animation of `Julia set <https://en.wikipedia.org/wiki/Julia_set>`_:
+Running the Taichi code below (``python3 fractal.py`` or ``ti example fractal``) will give you an animation of
+`Julia set <https://en.wikipedia.org/wiki/Julia_set>`_:
 
 .. image:: https://github.com/yuanming-hu/public_files/raw/master/graphics/taichi/fractal.gif
 
@@ -49,14 +50,16 @@ Let's dive into this simple Taichi program.
 import taichi as ti
 -------------------
 
-Taichi is a domain-specific language (DSL) embedded in Python. To make Taichi as easy to use as a Python package, we have done heavy engineering with this goal in mind - letting every Python programmer write Taichi programs with minimal learning effort. You can even use your favorite Python package management system, Python IDEs and other Python packages in conjunction with Taichi.
+Taichi is a domain-specific language (DSL) embedded in Python. To make Taichi as easy to use as a Python package,
+we have done heavy engineering with this goal in mind - letting every Python programmer write Taichi programs with
+minimal learning effort. You can even use your favorite Python package management system, Python IDEs and other
+Python packages in conjunction with Taichi.
 
 
 Portability
 -----------
 
-Taichi programs run on either CPUs or GPUs.
-Initialize Taichi according to your hardware platform as follows:
+Taichi programs run on either CPUs or GPUs. Initialize Taichi according to your hardware platform as follows:
 
 .. code-block:: python
 
@@ -65,7 +68,7 @@ Initialize Taichi according to your hardware platform as follows:
 
   # Run on GPU, with the NVIDIA CUDA backend
   ti.init(arch=ti.cuda)
-  # Run on GPU, with the OpenGL compute shader backend
+  # Run on GPU, with the OpenGL backend
   ti.init(arch=ti.opengl)
   # Run on GPU, with the Apple Metal backend, if you are on OS X
   ti.init(arch=ti.metal)
@@ -105,10 +108,12 @@ Initialize Taichi according to your hardware platform as follows:
 Tensors
 -------
 
-Taichi is a data-oriented programming language where **tensors** are the first-class citizens.
+Taichi is a data-oriented programming language where dense or spatially-sparse tensors are the first-class citizens.
+
+See :ref:`sparse` for more details on sparse tensors.
 
 In the code above, ``pixels = ti.var(dt=ti.f32, shape=(n * 2, n))`` allocates a 2D dense tensor named ``pixels`` of
-size ``(640, 320)`` with data type ``ti.f32`` (32-bit floating-point number).
+size ``(640, 320)`` and element data type ``ti.f32`` (i.e. ``float`` in C).
 
 
 Functions and kernels
@@ -116,7 +121,7 @@ Functions and kernels
 
 Computation resides in Taichi **kernels**, which is defined with the decorator ``@ti.kernel``.
 Kernel arguments must be type-hinted (if any).
-The language used in Taichi kernels and functions looks much like Python, yet the Taichi frontend compiler converts it
+The language used in Taichi kernels and functions looks exactly like Python, yet the Taichi frontend compiler converts it
 into a language that is **compiled, statically-typed, lexically-scoped, parallel and differentiable**.
 
 Taichi **functions** are defined with the decorator ``@ti.func``.

@@ -44,7 +44,6 @@ constexpr char kPrintAllocVarName[] = "print_alloc_";
 constexpr char kLinearLoopIndexName[] = "linear_loop_idx_";
 constexpr char kListgenElemVarName[] = "listgen_elem_";
 constexpr char kRandStateVarName[] = "rand_state_";
-constexpr char kSNodeMetaVarName[] = "sn_meta_";
 constexpr char kMemAllocVarName[] = "mem_alloc_";
 constexpr char kTlsBufferName[] = "tls_buffer_";
 
@@ -183,9 +182,10 @@ class KernelCodegen : public IRVisitor {
   }
 
   void visit(GetChStmt *stmt) override {
-    // E.g. `parent.get*()`
+    // E.g. `parent.get*(runtime, mem_alloc)`
     const auto get_call =
-        fmt::format("{}.get{}()", stmt->input_ptr->raw_name(), stmt->chid);
+        fmt::format("{}.get{}({}, {})", stmt->input_ptr->raw_name(), stmt->chid,
+                    kRuntimeVarName, kMemAllocVarName);
     if (stmt->output_snode->is_place()) {
       emit(R"(device {}* {} = {}.val;)",
            metal_data_type_name(stmt->output_snode->dt), stmt->raw_name(),
@@ -220,21 +220,15 @@ class KernelCodegen : public IRVisitor {
       parent = root_stmt_->raw_name();
     }
     const auto *sn = stmt->snode;
+    const auto snty = sn->type;
     const std::string index_name = stmt->input_index->raw_name();
+
+    if (stmt->activate) {
+      TI_ASSERT(is_supported_sparse_type(snty));
+      emit("{}.activate({});", parent, index_name);
+    }
     emit(R"({}_ch {} = {}.children({});)", sn->node_type_name, stmt->raw_name(),
          parent, index_name);
-    if (stmt->activate) {
-      TI_ASSERT(is_supported_sparse_type(sn->type));
-      emit("{{");
-      {
-        ScopedIndent s(current_appender());
-        current_appender().append_raw(
-            make_sparse_snode_meta(sn, kSNodeMetaVarName));
-        emit("activate({}.addr(), {}, {});", stmt->raw_name(),
-             kSNodeMetaVarName, index_name);
-      }
-      emit("}}");
-    }
   }
 
   void visit(SNodeOpStmt *stmt) override {
@@ -247,8 +241,7 @@ class KernelCodegen : public IRVisitor {
     emit("{{");
     {
       ScopedIndent s(current_appender());
-      current_appender().append_raw(
-          make_sparse_snode_meta(stmt->snode, kSNodeMetaVarName));
+      const auto &parent = stmt->ptr->raw_name();
       const bool is_dynamic = (stmt->snode->type == SNodeType::dynamic);
       std::string ch_id;
       if (is_dynamic &&
@@ -264,24 +257,23 @@ class KernelCodegen : public IRVisitor {
       const std::string ch_addr =
           fmt::format("{}.children({}).addr()", stmt->ptr->raw_name(), ch_id);
       if (opty == SNodeOpType::is_active) {
-        // is_active(device byte *addr, SNodeMeta meta, int i);
-        emit("{} = is_active({}, {}, {});", result_var, ch_addr,
-             kSNodeMetaVarName, ch_id);
+        emit("{} = {}.is_active({});", result_var, parent,
+             stmt->val->raw_name());
       } else if (opty == SNodeOpType::activate) {
-        // activate(device byte *addr, SNodeMeta meta, int i);
-        emit("activate({}, {}, {});", ch_addr, kSNodeMetaVarName, ch_id);
+        emit("{}.activate({});", parent, stmt->val->raw_name());
       } else if (opty == SNodeOpType::deactivate) {
-        // deactivate(device byte *addr, SNodeMeta meta, int i);
-        emit("deactivate({}, {}, {});", ch_addr, kSNodeMetaVarName, ch_id);
+        if (is_dynamic) {
+          emit("{}.deactivate();", parent);
+        } else {
+          emit("{}.deactivate({});", parent, stmt->val->raw_name());
+        }
       } else if (opty == SNodeOpType::append) {
         TI_ASSERT(is_dynamic);
         TI_ASSERT(stmt->ret_type.data_type == DataType::i32);
-        emit("{} = dynamic_append({}, {}, {});", result_var, ch_addr,
-             kSNodeMetaVarName, stmt->val->raw_name());
+        emit("{} = {}.append({});", result_var, parent, stmt->val->raw_name());
       } else if (opty == SNodeOpType::length) {
         TI_ASSERT(is_dynamic);
-        emit("{} = dynamic_length({}, {});", result_var, ch_addr,
-             kSNodeMetaVarName);
+        emit("{} = {}.length();", result_var, parent);
       } else {
         TI_NOT_IMPLEMENTED
       }
@@ -960,17 +952,15 @@ class KernelCodegen : public IRVisitor {
       emit(
           "const auto parent_elem_ = "
           "parent_list.get<ListgenElement>(parent_idx_);");
-
+      emit("device auto *parent_addr_ = {} + parent_elem_.root_mem_offset;",
+           kRootBufferName);
+      emit("if (!is_active(parent_addr_, parent_meta, child_idx_)) continue;");
       emit("ListgenElement {};", kListgenElemVarName);
       // No need to add mem_offset_in_parent, because place() always starts at 0
       emit(
           "{}.root_mem_offset = parent_elem_.root_mem_offset + child_idx_ * "
           "child_stride;",
           kListgenElemVarName);
-      emit(
-          "if (!is_active({} + {}.root_mem_offset, parent_meta, child_idx_)) "
-          "continue;",
-          kRootBufferName, kListgenElemVarName);
       emit(
           "refine_coordinates(parent_elem_, {}->snode_extractors[{}], "
           "child_idx_, &{});",
@@ -1143,27 +1133,6 @@ class KernelCodegen : public IRVisitor {
          kKernelThreadIdName);
   }
 
-  std::string make_sparse_snode_meta(const SNode *sn,
-                                     const std::string &var_name) const {
-    const auto &desc =
-        compiled_structs_->snode_descriptors.find(sn->id)->second;
-    LineAppender la = current_appender();
-    // Keep the indentation settings only
-    la.clear_lines();
-
-    la.append("SNodeMeta {};", var_name);
-    la.append("{}.element_stride = {};", var_name, desc.element_stride);
-    la.append("{}.num_slots = {};", var_name, desc.num_slots);
-    if (sn->type == SNodeType::bitmasked) {
-      la.append("{}.type = {};", var_name, (int)shaders::SNodeMeta::Bitmasked);
-    } else if (sn->type == SNodeType::dynamic) {
-      la.append("{}.type = {};", var_name, (int)shaders::SNodeMeta::Dynamic);
-    } else {
-      TI_NOT_IMPLEMENTED;
-    }
-    return la.lines();
-  }
-
   void emit_runtime_and_memalloc_def() {
     emit("device auto *{} = reinterpret_cast<device Runtime *>({});",
          kRuntimeVarName, kRuntimeBufferName);
@@ -1259,11 +1228,11 @@ CodeGen::CodeGen(Kernel *kernel,
 FunctionType CodeGen::compile() {
   auto &config = kernel_->program.config;
   config.demote_dense_struct_fors = true;
-  irpass::compile_to_offloads(kernel_->ir.get(), config,
-                              /*vectorize=*/false, kernel_->grad,
-                              /*ad_use_stack=*/true, config.print_ir,
-                              /*lower_global_access=*/true,
-                              /*make_thread_local=*/true);
+  irpass::compile_to_executable(kernel_->ir.get(), config,
+                                /*vectorize=*/false, kernel_->grad,
+                                /*ad_use_stack=*/true, config.print_ir,
+                                /*lower_global_access=*/true,
+                                /*make_thread_local=*/config.make_thread_local);
 
   KernelCodegen codegen(
       taichi_kernel_name_, kernel_->program.snode_root->node_type_name, kernel_,

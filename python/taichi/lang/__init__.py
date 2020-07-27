@@ -60,21 +60,7 @@ kernel_profiler_print = lambda: core.get_current_program(
 kernel_profiler_clear = lambda: core.get_current_program(
 ).kernel_profiler_clear()
 
-
-class _Extension(object):
-    def __init__(self):
-        try:
-            self.sparse = core.sparse
-            self.data64 = core.data64
-            self.adstack = core.adstack
-            self.assertion = core.assertion
-            self.bls = core.bls
-        except:
-            # In case of adding an extension crashes the format server
-            core.warn("Extension list loading failed.")
-
-
-extension = _Extension()
+extension = core.Extension
 is_extension_supported = core.is_extension_supported
 
 
@@ -105,7 +91,7 @@ class _EnvironmentConfigurator:
             self[key] = cast(value)
             if key in self.kwargs:
                 core.warn(
-                    f'ti.init argument "{key}" overridden by environment variable "{name}"={value}'
+                    f'ti.init argument "{key}" overridden by environment variable {name}={value}'
                 )
                 del self.kwargs[key]  # mark as recognized
         elif key in self.kwargs:
@@ -221,6 +207,11 @@ def init(arch=None,
 
     # create a new program:
     ti.get_runtime().create_program()
+
+
+def no_activate(*args):
+    for v in args:
+        taichi_lang_core.no_activate(v.ptr)
 
 
 def cache_shared(*args):

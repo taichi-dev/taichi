@@ -35,6 +35,7 @@ CompileConfig::CompileConfig() {
   fast_math = true;
   async_mode = false;
   flatten_if = false;
+  make_thread_local = true;
 
 #if defined(TI_PLATFORM_WINDOWS) or defined(TI_ARCH_ARM)
   use_unified_memory = false;

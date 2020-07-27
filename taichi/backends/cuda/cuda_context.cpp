@@ -37,6 +37,7 @@ CUDAContext::CUDAContext()
   TI_TRACE("Total memory {:.2f} GB; free memory {:.2f} GB",
            get_total_memory() / GB, get_free_memory() / GB);
 
+  compute_capability = cc_major * 10 + cc_minor;
   mcpu = fmt::format("sm_{}{}", cc_major, cc_minor);
 }
 

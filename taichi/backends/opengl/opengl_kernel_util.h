@@ -13,15 +13,29 @@ class SNode;
 namespace opengl {
 
 struct UsedFeature {
-  bool random{false};
-  bool argument{false};
-  bool extra_arg{false};
-  bool external_ptr{false};
+  // types:
   bool simulated_atomic_float{false};
   bool int64{false};
-  bool global_temp{false};
+  bool float64{false};
+
+  // sparse:
+  bool listman{false};
+
+  // buffers:
+  bool buf_args{false};
+  bool buf_earg{false};
+  bool buf_extr{false};
+  bool buf_gtmp{false};
+
+  // utilties:
   bool fast_pow{false};
+  bool random{false};
   bool print{false};
+
+  // extensions:
+#define PER_OPENGL_EXTENSION(x) bool extension_##x{false};
+#include "taichi/inc/opengl_extension.inc.h"
+#undef PER_OPENGL_EXTENSION
 };
 
 using SNodeId = std::string;
@@ -38,6 +52,16 @@ struct StructCompiledResult {
   std::unordered_map<SNodeId, SNodeInfo> snode_map;
   // Root buffer size in bytes.
   size_t root_size;
+};
+
+enum class GLBufId {
+  Root = 0,
+  Runtime = 6,
+  Listman = 7,
+  Gtmp = 1,
+  Args = 2,
+  Earg = 3,
+  Extr = 4,
 };
 
 struct IOV {

@@ -96,6 +96,9 @@ void __assertfail(const char *message,
 template <typename T>
 void locked_task(void *lock, const T &func);
 
+template <typename T, typename G>
+void locked_task(void *lock, const T &func, const G &test);
+
 template <typename T>
 T ifloordiv(T a, T b) {
   auto r = a / b;
@@ -364,14 +367,14 @@ void ___stubs___() {
 }
 }
 
-/*
-A simple list data structure
-Data are organized in chunks, where each chunk is a piece of virtual memory
-*/
-
 bool is_power_of_two(uint32 x) {
   return x != 0 && (x & (x - 1)) == 0;
 }
+
+/*
+A simple list data structure that is infinitely long.
+Data are organized in chunks, where each chunk is allocated on demand.
+*/
 
 struct ListManager {
   static constexpr std::size_t max_num_chunks = 1024;
@@ -540,6 +543,7 @@ struct LLVMRuntime {
   }
 };
 
+// TODO: are these necessary?
 STRUCT_FIELD_ARRAY(LLVMRuntime, element_lists);
 STRUCT_FIELD_ARRAY(LLVMRuntime, node_allocators);
 STRUCT_FIELD(LLVMRuntime, root);
@@ -553,6 +557,7 @@ STRUCT_FIELD(LLVMRuntime, profiler_start);
 STRUCT_FIELD(LLVMRuntime, profiler_stop);
 
 // NodeManager of node S (hash, pointer) managers the memory allocation of S_ch
+// It makes use of three ListManagers.
 struct NodeManager {
   LLVMRuntime *runtime;
   i32 lock;
@@ -648,8 +653,9 @@ Ptr get_temporary_pointer(LLVMRuntime *runtime, u64 offset) {
   return runtime->temporaries + offset;
 }
 
-void runtime_retrieve_error_code(LLVMRuntime *runtime) {
+void runtime_retrieve_and_reset_error_code(LLVMRuntime *runtime) {
   runtime->set_result(taichi_result_buffer_error_id, runtime->error_code);
+  runtime->error_code = 0;
 }
 
 void runtime_retrieve_error_message(LLVMRuntime *runtime, int i) {
@@ -833,6 +839,7 @@ void runtime_initialize2(LLVMRuntime *runtime, int root_id, int num_snodes) {
 
   // initialize the root node element list
   for (int i = 0; i < num_snodes; i++) {
+    // TODO: some SNodes do not actually need an element list.
     runtime->element_lists[i] =
         runtime->create<ListManager>(runtime, sizeof(Element), 1024 * 64);
   }
@@ -861,9 +868,13 @@ void runtime_NodeAllocator_initialize(LLVMRuntime *runtime,
       runtime->create<NodeManager>(runtime, node_size, 1024 * 16);
 }
 
-void runtime_allocate_ambient(LLVMRuntime *runtime, int snode_id) {
+void runtime_allocate_ambient(LLVMRuntime *runtime,
+                              int snode_id,
+                              std::size_t size) {
+  // Do not use NodeManager for the ambient node since it will never be garbage
+  // collected.
   runtime->ambient_elements[snode_id] =
-      runtime->node_allocators[snode_id]->allocate();
+      runtime->request_allocate_aligned(size, 128);
 }
 
 void mutex_lock_i32(Ptr mutex) {
@@ -903,12 +914,40 @@ int32 cttz_i32(i32 val) {
   return 0;
 }
 
+int32 cuda_compute_capability() {
+  return 0;
+}
+
 int32 cuda_ballot(bool bit) {
+  return 0;
+}
+
+i32 cuda_shfl_down_sync_i32(u32 mask, i32 delta, i32 val, int width) {
+  return 0;
+}
+
+i32 cuda_shfl_down_i32(i32 delta, i32 val, int width) {
   return 0;
 }
 
 int32 cuda_ballot_sync(int32 mask, bool bit) {
   return 0;
+}
+
+i32 cuda_match_any_sync_i32(i32 mask, i32 value) {
+  return 0;
+}
+
+i32 cuda_match_any_sync_i64(i32 mask, i64 value) {
+#if ARCH_cuda
+  u32 ret;
+  asm volatile("match.any.sync.b64  %0, %1, %2;"
+               : "=r"(ret)
+               : "l"(value), "r"(mask));
+  return ret;
+#else
+  return 0;
+#endif
 }
 
 #if ARCH_cuda
@@ -950,9 +989,63 @@ void clear_list(LLVMRuntime *runtime, StructMeta *parent, StructMeta *child) {
  * The element list of a SNode, maintains pointers to its instances, and
  * instances' parents' coordinates
  */
-void element_listgen(LLVMRuntime *runtime,
-                     StructMeta *parent,
-                     StructMeta *child) {
+
+// For the root node there is only one container,
+// therefore we use a special kernel for more parallelism.
+void element_listgen_root(LLVMRuntime *runtime,
+                          StructMeta *parent,
+                          StructMeta *child) {
+  // If there's just one element in the parent list, we need to use the blocks
+  // (instead of threads) to split the parent container
+  auto parent_list = runtime->element_lists[parent->snode_id];
+  auto child_list = runtime->element_lists[child->snode_id];
+  // Cache the func pointers here for better compiler optimization
+  auto parent_refine_coordinates = parent->refine_coordinates;
+  auto parent_lookup_element = parent->lookup_element;
+  auto child_get_num_elements = child->get_num_elements;
+  auto child_from_parent_element = child->from_parent_element;
+#if ARCH_cuda
+  // All blocks share the only root container, which has only one child
+  // container.
+  // Each thread processes a subset of the child container for more parallelism.
+  int c_start = block_dim() * block_idx() + thread_idx();
+  int c_step = grid_dim() * block_dim();
+#else
+  int c_start = 0;
+  int c_step = 1;
+#endif
+  // Note that the root node has only one container, and the `element`
+  // representing that single container has only one 'child':
+  // element.loop_bounds[0] = 0 and element.loop_bounds[1] = 1
+  // Therefore, compared with element_listgen_nonroot,
+  // we need neither `i` to loop over the `elements`, nor `j` to
+  // loop over the children.
+
+  auto element = parent_list->get<Element>(0);
+
+  PhysicalCoordinates refined_coord;
+  parent_refine_coordinates(&element.pcoord, &refined_coord, 0);
+
+  auto ch_element = parent_lookup_element((Ptr)parent, element.element, 0);
+  ch_element = child_from_parent_element((Ptr)ch_element);
+  auto ch_num_elements = child_get_num_elements((Ptr)child, ch_element);
+  auto ch_element_size =
+      std::min(ch_num_elements, taichi_listgen_max_element_size);
+
+  // Here is a grid-stride loop.
+  for (int c = c_start; c * ch_element_size < ch_num_elements; c += c_step) {
+    Element elem;
+    elem.element = ch_element;
+    elem.loop_bounds[0] = c * ch_element_size;
+    elem.loop_bounds[1] = std::min((c + 1) * ch_element_size, ch_num_elements);
+    elem.pcoord = refined_coord;
+    child_list->append(&elem);
+  }
+}
+
+void element_listgen_nonroot(LLVMRuntime *runtime,
+                             StructMeta *parent,
+                             StructMeta *child) {
   auto parent_list = runtime->element_lists[parent->snode_id];
   int num_parent_elements = parent_list->size();
   auto child_list = runtime->element_lists[child->snode_id];
@@ -963,8 +1056,10 @@ void element_listgen(LLVMRuntime *runtime,
   auto child_get_num_elements = child->get_num_elements;
   auto child_from_parent_element = child->from_parent_element;
 #if ARCH_cuda
+  // Each block processes a slice of a parent container
   int i_start = block_idx();
   int i_step = grid_dim();
+  // Each thread processes an element of the parent container
   int j_start = thread_idx();
   int j_step = block_dim();
 #else
@@ -973,16 +1068,10 @@ void element_listgen(LLVMRuntime *runtime,
   int j_start = 0;
   int j_step = 1;
 #endif
-  int parent_split =
-      std::max(parent->max_num_elements / taichi_listgen_max_element_size, 1);
-  // Note: if we split children, then parent doesn't need an extra loop (size
-  // always <= taichi_listgen_max_element_size)
-  int range = (parent->max_num_elements + parent_split - 1) / parent_split;
-  for (int i = i_start; i < num_parent_elements * parent_split; i += i_step) {
-    auto element = parent_list->get<Element>(i / parent_split);
-    int split_id = i % parent_split;
-    int j_lower = element.loop_bounds[0] + split_id * range + j_start;
-    int j_higher = std::min(element.loop_bounds[1], j_lower + range);
+  for (int i = i_start; i < num_parent_elements; i += i_step) {
+    auto element = parent_list->get<Element>(i);
+    int j_lower = element.loop_bounds[0] + j_start;
+    int j_higher = element.loop_bounds[1];
     for (int j = j_lower; j < j_higher; j += j_step) {
       PhysicalCoordinates refined_coord;
       parent_refine_coordinates(&element.pcoord, &refined_coord, j);
@@ -1050,6 +1139,8 @@ void parallel_struct_for(Context *context,
   auto list_tail = list->size();
 #if ARCH_cuda
   int i = block_idx();
+  // TODO: refactor element_split more systematically.
+  element_split = 1;
   const auto part_size = element_size / element_split;
   while (true) {
     int element_id = i / element_split;
@@ -1188,7 +1279,6 @@ void ListManager::touch_chunk(int chunk_id) {
     locked_task(&lock, [&] {
       // may have been allocated during lock contention
       if (!chunks[chunk_id]) {
-        // Printf("Allocating chunk %d\n", chunk_id);
         grid_memfence();
         auto chunk_ptr = runtime->request_allocate_aligned(
             max_num_elements_per_chunk * element_size, 4096);
@@ -1219,6 +1309,7 @@ void gc_parallel_0(LLVMRuntime *runtime, int snode_id) {
   auto free_list_used = allocator->free_list_used;
   using T = NodeManager::list_data_type;
 
+  // Move unused elements to the beginning of the free_list
   int i = linear_thread_idx();
   if (free_list_used * 2 > free_list_size) {
     // Directly copy. Dst and src does not overlap
@@ -1241,7 +1332,11 @@ void gc_parallel_0(LLVMRuntime *runtime, int snode_id) {
 void gc_parallel_1(LLVMRuntime *runtime, int snode_id) {
   auto allocator = runtime->node_allocators[snode_id];
   auto free_list = allocator->free_list;
-  free_list->clear();
+
+  const i32 num_unused =
+      max_i32(free_list->size() - allocator->free_list_used, 0);
+  free_list->resize(num_unused);
+
   allocator->free_list_used = 0;
   allocator->recycle_list_size_backup = allocator->recycled_list->size();
   allocator->recycled_list->clear();

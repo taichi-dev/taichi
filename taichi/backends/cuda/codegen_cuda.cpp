@@ -449,7 +449,6 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     if (stmt->task_type == Type::gc) {
       // gc has 3 kernels, so we treat it specially
       emit_cuda_gc(stmt);
-      return;
     } else {
       init_offloaded_task_function(stmt);
       if (stmt->task_type == Type::serial) {

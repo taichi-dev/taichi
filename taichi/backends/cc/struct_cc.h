@@ -8,11 +8,12 @@ TLANG_NAMESPACE_BEGIN
 namespace cccp {
 
 class CCLayout;
+class CCProgram;
 
 class CCLayoutGen {
   // Generate corresponding C Source Code for Taichi Structures
  public:
-  CCLayoutGen(SNode *root) : root(root) {
+  CCLayoutGen(CCProgram *program, SNode *root) : program(program), root(root) {
   }
 
   std::unique_ptr<CCLayout> compile();
@@ -25,6 +26,8 @@ class CCLayoutGen {
   void emit(std::string f, Args &&... args) {
     line_appender.append(std::move(f), std::move(args)...);
   }
+
+  CCProgram *program;
 
   SNode *root;
   std::vector<SNode *> snodes;

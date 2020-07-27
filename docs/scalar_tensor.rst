@@ -125,7 +125,7 @@ Meta data
         z.shape  # ()
 
 
-.. function:: a.dtype
+.. attribute:: a.dtype
 
     :parameter a: (ti.field) the field
     :return: (DataType) the data type of ``a``

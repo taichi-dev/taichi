@@ -14,6 +14,7 @@ class Kernel {
   Program &program;
   FunctionType compiled;
   std::string name;
+  std::vector<SNode *> no_activate;
   Arch arch;
   bool lowered;  // lower inital AST all the way down to a bunch of
                  // OffloadedStmt for async execution
@@ -50,7 +51,7 @@ class Kernel {
 
   void compile();
 
-  void lower(bool lower_access = true);
+  void lower(bool to_executable = true);
 
   void operator()();
 

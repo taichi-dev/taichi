@@ -7,31 +7,33 @@
 TLANG_NAMESPACE_BEGIN
 
 namespace irpass {
+namespace {
 
-// TODO: Rename this to compile_to_executable, since it does two things:
-// 1. compile to offloads
-// 2. offloads to executable (with further optimization)
+std::function<void(const std::string &)> make_pass_printer(bool verbose,
+                                                           IRNode *ir) {
+  if (!verbose) {
+    return [](const std::string &) {};
+  }
+  return [ir, kn = ir->get_kernel()->name](const std::string &pass) {
+    TI_INFO("[{}] {}:", kn, pass);
+    std::cout << std::flush;
+    irpass::re_id(ir);
+    irpass::print(ir);
+    std::cout << std::flush;
+  };
+}
+
+}  // namespace
+
 void compile_to_offloads(IRNode *ir,
                          const CompileConfig &config,
+                         bool verbose,
                          bool vectorize,
                          bool grad,
-                         bool ad_use_stack,
-                         bool verbose,
-                         bool lower_global_access,
-                         bool make_thread_local,
-                         bool make_block_local) {
+                         bool ad_use_stack) {
   TI_AUTO_PROF;
 
-  auto print = [&](const std::string &name) {
-    if (verbose) {
-      TI_INFO("[{}] {}:", ir->get_kernel()->name, name);
-      std::cout << std::flush;
-      irpass::re_id(ir);
-      irpass::print(ir);
-      std::cout << std::flush;
-    }
-  };
-
+  auto print = make_pass_printer(verbose, ir);
   print("Initial IR");
 
   if (grad) {
@@ -104,6 +106,22 @@ void compile_to_offloads(IRNode *ir,
 
   print("Access flagged II");
   irpass::analysis::verify(ir);
+}
+
+void compile_to_executable(IRNode *ir,
+                           const CompileConfig &config,
+                           bool vectorize,
+                           bool grad,
+                           bool ad_use_stack,
+                           bool verbose,
+                           bool lower_global_access,
+                           bool make_thread_local,
+                           bool make_block_local) {
+  TI_AUTO_PROF;
+
+  auto print = make_pass_printer(verbose, ir);
+
+  compile_to_offloads(ir, config, verbose, vectorize, grad, ad_use_stack);
 
   // TODO: This is just a proof that we can demote struct-fors after offloading.
   // Eventually we might want the order to be TLS/BLS -> demote struct-for.

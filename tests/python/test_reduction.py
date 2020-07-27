@@ -99,6 +99,7 @@ def test_reduction_single():
     assert tot_a[None] % 2**32 == ground_truth % 2**32
     assert tot_b[None] / 2 == approx(ground_truth, 1e-12)
 
+
 @ti.all_archs
 def test_reduction_different_scale():
     @ti.kernel

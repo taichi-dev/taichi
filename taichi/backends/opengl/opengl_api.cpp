@@ -328,7 +328,8 @@ size_t ParallelSize_ConstRange::get_threads_per_block() const {
   return std::max(std::min(n, TPG), (size_t)1);
 }
 
-size_t ParallelSize_DynamicRange::get_num_strides(GLSLLauncher *launcher) const {
+size_t ParallelSize_DynamicRange::get_num_strides(
+    GLSLLauncher *launcher) const {
   size_t n;
   auto gtmp = launcher->impl->core_bufs.get(GLBufId::Gtmp);
   void *gtmp_now = gtmp->map();  // TODO: RAII map/unmap
@@ -731,7 +732,8 @@ size_t ParallelSize_ConstRange::get_num_strides(GLSLLauncher *launcher) const {
   TI_NOT_IMPLEMENTED;
 }
 
-size_t ParallelSize_DynamicRange::get_num_strides(GLSLLauncher *launcher) const {
+size_t ParallelSize_DynamicRange::get_num_strides(
+    GLSLLauncher *launcher) const {
   TI_NOT_IMPLEMENTED;
 }
 
@@ -740,7 +742,7 @@ size_t ParallelSize_StructFor::get_num_strides(GLSLLauncher *launcher) const {
 }
 
 ParallelSize_ConstRange::ParallelSize_ConstRange(size_t num_strides)
-  : num_strides(num_strides) {
+    : num_strides(num_strides) {
 }
 
 #endif  // TI_WITH_OPENGL

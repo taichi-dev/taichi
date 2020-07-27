@@ -64,8 +64,8 @@ void Kernel::compile() {
   compiled = program.compile(*this);
 }
 
-void Kernel::lower(bool lower_access) {  // TODO: is a "Lowerer" class necessary
-                                         // for each backend?
+void Kernel::lower(bool to_executable) {  // TODO: is a "Lowerer" class
+                                          // necessary for each backend?
   TI_ASSERT(!lowered);
   if (arch_is_cpu(arch) || arch == Arch::cuda) {
     CurrentKernelGuard _(program, this);
@@ -76,10 +76,16 @@ void Kernel::lower(bool lower_access) {  // TODO: is a "Lowerer" class necessary
         (is_evaluator && !config.print_evaluator_ir))
       verbose = false;
 
-    irpass::compile_to_offloads(
-        ir.get(), config, /*vectorize*/ arch_is_cpu(arch), grad,
-        /*ad_use_stack*/ true, verbose, /*lower_global_access*/ lower_access,
-        /*make_thread_local*/ true, /*make_block_local*/ arch == Arch::cuda);
+    if (to_executable) {
+      irpass::compile_to_executable(
+          ir.get(), config, /*vectorize*/ arch_is_cpu(arch), grad,
+          /*ad_use_stack*/ true, verbose, /*lower_global_access*/ to_executable,
+          /*make_thread_local*/ true, /*make_block_local*/ arch == Arch::cuda);
+    } else {
+      irpass::compile_to_offloads(ir.get(), config, verbose,
+                                  /*vectorize=*/arch_is_cpu(arch), grad,
+                                  /*ad_use_stack=*/true);
+    }
   } else {
     TI_NOT_IMPLEMENTED
   }

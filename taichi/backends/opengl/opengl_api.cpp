@@ -51,6 +51,7 @@ void check_opengl_error(const std::string &msg = "OpenGL") {
 
 int opengl_get_threads_per_group() {
   int ret = 1000;
+  return ret;
   glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &ret);
   check_opengl_error("glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS)");
   return ret;
@@ -311,7 +312,9 @@ ParallelSize::~ParallelSize() {
 }
 
 size_t ParallelSize::get_threads_per_block() const {
-  return opengl_get_threads_per_group();
+  size_t limit = opengl_get_threads_per_group();
+  size_t n = threads_per_block.value_or(0);
+  return n == 0 ? limit : std::min(n, limit);
 }
 
 ParallelSize_ConstRange::ParallelSize_ConstRange(size_t num_strides)
@@ -324,7 +327,7 @@ size_t ParallelSize_ConstRange::get_num_strides(GLSLLauncher *launcher) const {
 
 size_t ParallelSize_ConstRange::get_threads_per_block() const {
   size_t n = get_num_threads(nullptr);
-  size_t TPG = opengl_get_threads_per_group();
+  size_t TPG = ParallelSize::get_threads_per_block();
   return std::max(std::min(n, TPG), (size_t)1);
 }
 
@@ -362,7 +365,7 @@ size_t ParallelSize::get_num_threads(GLSLLauncher *launcher) const {
 
 size_t ParallelSize::get_num_blocks(GLSLLauncher *launcher) const {
   size_t n = get_num_threads(launcher);
-  size_t TPG = opengl_get_threads_per_group();
+  size_t TPG = get_threads_per_block();
   return std::max((n + TPG - 1) / TPG, (size_t)1);
 }
 

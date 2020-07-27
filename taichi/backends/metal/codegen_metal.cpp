@@ -1232,7 +1232,7 @@ FunctionType CodeGen::compile() {
                                 /*vectorize=*/false, kernel_->grad,
                                 /*ad_use_stack=*/true, config.print_ir,
                                 /*lower_global_access=*/true,
-                                /*make_thread_local=*/config.make_thread_local));
+                                /*make_thread_local=*/config.make_thread_local);
 
   KernelCodegen codegen(
       taichi_kernel_name_, kernel_->program.snode_root->node_type_name, kernel_,

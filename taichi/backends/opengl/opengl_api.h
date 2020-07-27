@@ -33,21 +33,25 @@ bool is_opengl_api_available();
   })()
 
 class ParallelSize {
+  // GLSL: stride < invocation < local work group < 'dispatch'
+  // CUDA: stride < thread < block < grid
  public:
-  virtual size_t get_num_groups(GLSLLauncher *launcher) const = 0;
-  virtual size_t get_threads_per_group() const;
+  std::optional<size_t> strides_per_thread;
+
+  virtual size_t get_num_strides(GLSLLauncher *launcher) const = 0;
+  size_t get_num_threads(GLSLLauncher *launcher) const;
+  size_t get_num_blocks(GLSLLauncher *launcher) const;
+  virtual size_t get_threads_per_block() const;
   virtual ~ParallelSize();
 };
 
 class ParallelSize_ConstRange : public ParallelSize {
-  int num_groups{1};
-  int num_threads{1};
-  int threads_per_group{1};
+  size_t num_strides{1};
 
  public:
-  ParallelSize_ConstRange(int num_threads_);
-  virtual size_t get_num_groups(GLSLLauncher *launcher) const override;
-  virtual size_t get_threads_per_group() const override;
+  ParallelSize_ConstRange(size_t num_strides);
+  virtual size_t get_num_strides(GLSLLauncher *launcher) const override;
+  virtual size_t get_threads_per_block() const override;
   virtual ~ParallelSize_ConstRange() override = default;
 };
 
@@ -59,14 +63,14 @@ class ParallelSize_DynamicRange : public ParallelSize {
 
  public:
   ParallelSize_DynamicRange(OffloadedStmt *stmt);
-  virtual size_t get_num_groups(GLSLLauncher *launcher) const override;
+  virtual size_t get_num_strides(GLSLLauncher *launcher) const override;
   virtual ~ParallelSize_DynamicRange() override = default;
 };
 
 class ParallelSize_StructFor : public ParallelSize {
  public:
   ParallelSize_StructFor(OffloadedStmt *stmt);
-  virtual size_t get_num_groups(GLSLLauncher *launcher) const override;
+  virtual size_t get_num_strides(GLSLLauncher *launcher) const override;
   virtual ~ParallelSize_StructFor() override = default;
 };
 

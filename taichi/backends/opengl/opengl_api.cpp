@@ -310,35 +310,25 @@ struct GLSLLauncherImpl {
 ParallelSize::~ParallelSize() {
 }
 
-size_t ParallelSize::get_threads_per_group() const {
+size_t ParallelSize::get_threads_per_block() const {
   return opengl_get_threads_per_group();
 }
 
-size_t ParallelSize_ConstRange::get_threads_per_group() const {
-  return threads_per_group;
+ParallelSize_ConstRange::ParallelSize_ConstRange(size_t num_strides)
+    : num_strides(num_strides) {
 }
 
-ParallelSize_ConstRange::ParallelSize_ConstRange(int num_threads_)
-    : num_threads(num_threads_) {
-  const size_t TPG = opengl_get_threads_per_group();
-  threads_per_group = TPG;
-  if (num_threads <= 0)
-    num_threads = 1;
-  if (num_threads <= threads_per_group) {
-    threads_per_group = num_threads;
-    num_groups = 1;
-  } else {
-    num_groups = (num_threads + TPG - 1) / TPG;
-  }
+size_t ParallelSize_ConstRange::get_num_strides(GLSLLauncher *launcher) const {
+  return num_strides;
 }
 
-size_t ParallelSize_ConstRange::get_num_groups(GLSLLauncher *launcher) const {
-  return num_groups;
+size_t ParallelSize_ConstRange::get_threads_per_block() const {
+  size_t n = get_num_threads(nullptr);
+  size_t TPG = opengl_get_threads_per_group();
+  return std::max(std::min(n, TPG), (size_t)1);
 }
 
-size_t ParallelSize_DynamicRange::get_num_groups(GLSLLauncher *launcher) const {
-  const size_t TPG = opengl_get_threads_per_group();
-
+size_t ParallelSize_DynamicRange::get_num_strides(GLSLLauncher *launcher) const {
   size_t n;
   auto gtmp = launcher->impl->core_bufs.get(GLBufId::Gtmp);
   void *gtmp_now = gtmp->map();  // TODO: RAII map/unmap
@@ -349,19 +339,29 @@ size_t ParallelSize_DynamicRange::get_num_groups(GLSLLauncher *launcher) const {
     e = *(const int *)((const char *)gtmp_now + e);
   gtmp->unmap();
   if (e <= b)
-    n = 0;
+    n = 1;
   else
     n = e - b;
-  return std::max((n + TPG - 1) / TPG, (size_t)1);
+  return n;
 }
 
-size_t ParallelSize_StructFor::get_num_groups(GLSLLauncher *launcher) const {
-  const size_t TPG = opengl_get_threads_per_group();
-
+size_t ParallelSize_StructFor::get_num_strides(GLSLLauncher *launcher) const {
   auto listman = launcher->impl->core_bufs.get(GLBufId::Listman);
   auto lm_buf = (GLSLListman *)listman->map();
   auto n = lm_buf->list_len;
   listman->unmap();
+  return n;
+}
+
+size_t ParallelSize::get_num_threads(GLSLLauncher *launcher) const {
+  size_t n = get_num_strides(launcher);
+  // TODO: size_t SPT = strides_per_thread;
+  return std::max(n, (size_t)1);
+}
+
+size_t ParallelSize::get_num_blocks(GLSLLauncher *launcher) const {
+  size_t n = get_num_threads(launcher);
+  size_t TPG = opengl_get_threads_per_group();
   return std::max((n + TPG - 1) / TPG, (size_t)1);
 }
 
@@ -468,14 +468,14 @@ struct CompiledKernel {
         kernel_source_code +
         fmt::format(
             "layout(local_size_x = {}, local_size_y = 1, local_size_z = 1) in;",
-            ps->get_threads_per_group());
+            ps->get_threads_per_block());
     display_kernel_info(kernel_name_, source);
     glsl = std::make_unique<GLProgram>(GLShader(source));
     glsl->link();
   }
 
   void dispatch_compute(GLSLLauncher *launcher) const {
-    int num_groups = ps->get_num_groups(launcher);
+    int num_blocks = ps->get_num_blocks(launcher);
 
     glsl->use();
 
@@ -486,8 +486,8 @@ struct CompiledKernel {
     // `glDispatchCompute(X, Y, Z)`   - the X*Y*Z  == `Blocks`   in CUDA
     // `layout(local_size_x = X) in;` - the X      == `Threads`  in CUDA
     //
-    glDispatchCompute(num_groups, 1, 1);
-    check_opengl_error(fmt::format("glDispatchCompute({})", num_groups));
+    glDispatchCompute(num_blocks, 1, 1);
+    check_opengl_error(fmt::format("glDispatchCompute({})", num_blocks));
 
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
     check_opengl_error("glMemoryBarrier");

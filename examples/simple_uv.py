@@ -1,22 +1,21 @@
 import taichi as ti
-import numpy as np
 
-ti.init()
-
-res = 1280, 720
-pixels = ti.Vector(3, dt=ti.f32, shape=res)
+# declare a 512x512 field whose elements are 3D vectors (RGB channels)
+rgb_image = ti.Vector.field(3, dtype=ti.f32, shape=(512, 512))
 
 
-@ti.kernel
-def paint():
-    for i, j in pixels:
-        u = i / res[0]
-        v = j / res[1]
-        pixels[i, j] = [u, v, 0]
+@ti.kernel  # functions decorated by @ti.kernel will be compiled by Taichi
+def render():
+    for i, j in rgb_image:  # iterate over each pixels in the 512x512 field
+        r = i / 512
+        g = j / 512
+        b = 0.0
+        # set the vector value at [i, j] in the field:
+        rgb_image[i, j] = ti.Vector([r, g, b])
 
 
-gui = ti.GUI('UV', res)
-while not gui.get_event(ti.GUI.ESCAPE):
-    paint()
-    gui.set_image(pixels)
+gui = ti.GUI('UV', (512, 512))  # create a 512x512 window
+while gui.running:
+    render()
+    gui.set_image(rgb_image)  # display the rendered image
     gui.show()

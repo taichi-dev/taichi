@@ -711,27 +711,36 @@ bool initialize_opengl(bool error_tolerance) {
 ParallelSize::~ParallelSize() {
 }
 
-size_t ParallelSize::get_threads_per_group() const {
+size_t ParallelSize::get_num_threads(GLSLLauncher *launcher) const {
   TI_NOT_IMPLEMENTED;
 }
 
-size_t ParallelSize_ConstRange::get_threads_per_group() const {
+size_t ParallelSize::get_num_blocks(GLSLLauncher *launcher) const {
   TI_NOT_IMPLEMENTED;
 }
 
-size_t ParallelSize_ConstRange::get_num_groups(GLSLLauncher *launcher) const {
+size_t ParallelSize::get_threads_per_block() const {
   TI_NOT_IMPLEMENTED;
 }
 
-size_t ParallelSize_DynamicRange::get_num_groups(GLSLLauncher *launcher) const {
+size_t ParallelSize_ConstRange::get_threads_per_block() const {
   TI_NOT_IMPLEMENTED;
 }
 
-size_t ParallelSize_StructFor::get_num_groups(GLSLLauncher *launcher) const {
+size_t ParallelSize_ConstRange::get_num_strides(GLSLLauncher *launcher) const {
   TI_NOT_IMPLEMENTED;
 }
 
-ParallelSize_ConstRange::ParallelSize_ConstRange(int num_threads_) {
+size_t ParallelSize_DynamicRange::get_num_strides(GLSLLauncher *launcher) const {
+  TI_NOT_IMPLEMENTED;
+}
+
+size_t ParallelSize_StructFor::get_num_strides(GLSLLauncher *launcher) const {
+  TI_NOT_IMPLEMENTED;
+}
+
+ParallelSize_ConstRange::ParallelSize_ConstRange(size_t num_strides)
+  : num_strides(num_strides) {
 }
 
 #endif  // TI_WITH_OPENGL

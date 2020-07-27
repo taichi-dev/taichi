@@ -45,8 +45,8 @@ void Canvas::paths_batched(int n,
       clr = color_arr[i];
     }
     // FIXME: path_single seems not displaying correct without the 1e-6 term:
-    path_single(a[i * 2], a[i * 2 + 1],
-        b[i * 2] + 1e-6 * (i % 18 + 6), b[i * 2 + 1], clr, r);
+    path_single(a[i * 2], a[i * 2 + 1], b[i * 2] + 1e-6 * (i % 18 + 6),
+                b[i * 2 + 1], clr, r);
   }
 }
 

@@ -371,8 +371,8 @@ void ExternalFuncCallExpression::flatten(FlattenContext *ctx) {
   for (auto &s : outputs) {
     output_statements.push_back(s.cast<IdExpression>()->flatten_noload(ctx));
   }
-  ctx->push_back(std::make_unique<ExternalFuncCallStmt>(func, arg_statements,
-                                                        output_statements));
+  ctx->push_back(std::make_unique<ExternalFuncCallStmt>(
+      func, source, arg_statements, output_statements));
   stmt = ctx->back_stmt();
 }
 

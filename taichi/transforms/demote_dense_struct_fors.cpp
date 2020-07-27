@@ -29,7 +29,9 @@ void convert_to_range_for(OffloadedStmt *offloaded) {
 
   ////// Begin core transformation
   auto body = std::move(offloaded->body);
-  const int num_loop_vars = snodes.back()->num_active_indices;
+  const int num_loop_vars =
+      snodes.empty() ? 0 : snodes.back()->num_active_indices;
+
   std::vector<Stmt *> new_loop_vars;
 
   VecStatement body_header;
@@ -103,6 +105,7 @@ void convert_to_range_for(OffloadedStmt *offloaded) {
     // Create an If statement
     auto if_stmt = Stmt::make_typed<IfStmt>(test);
     if_stmt->true_statements = std::move(body);
+    // Note that this could silently change the body block of |offloaded|.
     body = std::make_unique<Block>();
     body->insert(std::move(if_stmt));
   }
@@ -115,19 +118,28 @@ void convert_to_range_for(OffloadedStmt *offloaded) {
   offloaded->task_type = TaskType::range_for;
 }
 
+void maybe_convert(OffloadedStmt *stmt) {
+  if ((stmt->task_type == TaskType::struct_for) &&
+      stmt->snode->is_path_all_dense) {
+    convert_to_range_for(stmt);
+    // This sets the kernel for the top-level blocks within |stmt|.
+    irpass::fix_root_block_kernel(stmt, stmt->get_kernel());
+  }
+}
+
 }  // namespace
 
 namespace irpass {
 
 void demote_dense_struct_fors(IRNode *root) {
-  auto *block = dynamic_cast<Block *>(root);
-  for (auto &s_ : block->statements) {
-    if (auto *s = s_->cast<OffloadedStmt>()) {
-      if ((s->task_type == TaskType::struct_for) &&
-          s->snode->is_path_all_dense) {
-        convert_to_range_for(s);
+  if (auto *block = root->cast<Block>()) {
+    for (auto &s_ : block->statements) {
+      if (auto *s = s_->cast<OffloadedStmt>()) {
+        maybe_convert(s);
       }
     }
+  } else if (auto *s = root->cast<OffloadedStmt>()) {
+    maybe_convert(s);
   }
   re_id(root);
   fix_block_parents(root);

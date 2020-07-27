@@ -64,6 +64,10 @@ void ExecutionQueue::enqueue(KernelLaunchRecord &&ker) {
         // Final lowering
         using namespace irpass;
 
+        demote_dense_struct_fors(stmt);
+        // TODO: due to the assumption that root is a Block, we cannot call the
+        // second half: offloaded tasks -> executable yet. Make sure TLS/BLS
+        // are applied eventually.
         flag_access(stmt);
         lower_access(stmt, true);
         flag_access(stmt);
@@ -123,7 +127,7 @@ ExecutionQueue::ExecutionQueue()
 
 void AsyncEngine::launch(Kernel *kernel) {
   if (!kernel->lowered)
-    kernel->lower(false);
+    kernel->lower(/*to_executable=*/false);
   auto block = dynamic_cast<Block *>(kernel->ir.get());
   TI_ASSERT(block);
   auto &offloads = block->statements;
@@ -257,12 +261,20 @@ bool AsyncEngine::fuse() {
   }
 
   for (int i = 0; i < (int)task_queue.size() - 1; i++) {
-    auto task_a = task_queue[i].stmt;
-    auto task_b = task_queue[i + 1].stmt;
+    auto &rec_a = task_queue[i];
+    auto &rec_b = task_queue[i + 1];
+    auto task_a = rec_a.stmt;
+    auto task_b = rec_b.stmt;
     bool is_same_struct_for = task_a->task_type == OffloadedStmt::struct_for &&
                               task_b->task_type == OffloadedStmt::struct_for &&
                               task_a->snode == task_b->snode &&
                               task_a->block_dim == task_b->block_dim;
+    // TODO: a few problems with the range-for test condition:
+    // 1. This could incorrectly fuse two range-for kernels that have different
+    // sizes, but then the loop ranges get padded to the same power-of-two (E.g.
+    // maybe a side effect when a struct-for is demoted to range-for).
+    // 2. It has also fused range-fors that have the same linear range, but are
+    // of different dimensions of loop indices, e.g. (16, ) and (4, 4).
     bool is_same_range_for = task_a->task_type == OffloadedStmt::range_for &&
                              task_b->task_type == OffloadedStmt::range_for &&
                              task_a->const_begin && task_b->const_begin &&
@@ -273,8 +285,20 @@ bool AsyncEngine::fuse() {
     // We do not fuse serial kernels for now since they can be SNode accessors
     bool are_both_serial = task_a->task_type == OffloadedStmt::serial &&
                            task_b->task_type == OffloadedStmt::serial;
-    bool same_kernel = task_queue[i].kernel == task_queue[i + 1].kernel;
-    if (is_same_range_for || is_same_struct_for) {
+    const bool same_kernel = (rec_a.kernel == rec_b.kernel);
+    bool kernel_args_match = true;
+    if (!same_kernel) {
+      // Merging kernels with different signatures will break invariants. E.g.
+      // https://github.com/taichi-dev/taichi/blob/a6575fb97557267e2f550591f43b183076b72ac2/taichi/transforms/type_check.cpp#L326
+      //
+      // TODO: we could merge different kernels if their args are the same. But
+      // we have no way to check that for now.
+      auto check = [](const Kernel *k) {
+        return (k->args.empty() && k->rets.empty());
+      };
+      kernel_args_match = (check(rec_a.kernel) && check(rec_b.kernel));
+    }
+    if (kernel_args_match && (is_same_range_for || is_same_struct_for)) {
       // TODO: in certain cases this optimization can be wrong!
       // Fuse task b into task_a
       for (int j = 0; j < (int)task_b->body->size(); j++) {

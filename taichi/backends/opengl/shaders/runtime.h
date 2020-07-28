@@ -1,5 +1,4 @@
 #define MAX_MESSAGES (1024 * 4)  // * 4 * 32 = 512 KB
-#define MAX_LIST (1024 * 256)    // * 4 = 1 MB
 #define MSG_SIZE 32
 // 2 left for the `type` bitmap, 1 left for the contents-count
 #define MAX_CONTENTS_PER_MSG (MSG_SIZE - 3)
@@ -18,11 +17,9 @@ struct _msg_entry_t {
 
 layout(std430, binding = 6) buffer runtime {
   int _rand_state_;
-  int _list_len_;
   int _msg_count_;
   // TODO: move msg buf to gtmp
-  _msg_entry_t _msg_buf_[1024 * 4];
-  int _list_[];
+  _msg_entry_t _msg_buf_[];
 };
 )"\n"
 
@@ -50,10 +47,8 @@ struct GLSLMsgEntry {
 
 struct GLSLRuntime {
   int rand_state;
-  int list_len;
   int msg_count;
   GLSLMsgEntry msg_buf[MAX_MESSAGES];
-  int list[MAX_LIST];
 };
 
 TLANG_NAMESPACE_END

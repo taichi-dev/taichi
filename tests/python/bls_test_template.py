@@ -168,11 +168,11 @@ def bls_particle_grid(N,
     def insert():
         ti.block_dim(256)
         for i in x:
-            # Note that since we manually subtract grid offset from base, its values are always positive.
-            # So no ti.floor is needed here and int() suffices.
+            # It is important to ensure insert and p2g uses the exact same way to compute the base
+            # coordinates. Otherwise there might be coordinate mismatch due to float-point errors.
             base = ti.Vector([
-                int(x[i][0] * N - grid_offset[0]),
-                int(x[i][1] * N - grid_offset[1])
+                int(ti.floor(x[i][0] * N) - grid_offset[0]),
+                int(ti.floor(x[i][1] * N) - grid_offset[1])
             ])
             ti.append(pid.parent(), base, i)
 

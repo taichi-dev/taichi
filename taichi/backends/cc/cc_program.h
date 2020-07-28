@@ -46,7 +46,7 @@ class CCProgram {
   }
 
   void *get_gtmp_buffer() {
-    return root_buf.data();
+    return gtmp_buf.data();
   }
 
  private:

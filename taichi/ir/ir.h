@@ -423,15 +423,29 @@ class StmtField {
 template <typename T>
 class StmtFieldNumeric final : public StmtField {
  private:
-  T value;
+  std::variant<T *, T> value;
 
  public:
+  explicit StmtFieldNumeric(T *value) : value(value) {
+  }
+
   explicit StmtFieldNumeric(T value) : value(value) {
   }
 
   bool equal(const StmtField *other_generic) const override {
     if (auto other = dynamic_cast<const StmtFieldNumeric *>(other_generic)) {
-      return other->value == value;
+      if (std::holds_alternative<T *>(other->value) &&
+          std::holds_alternative<T *>(value)) {
+        return *(std::get<T *>(other->value)) == *(std::get<T *>(value));
+      } else if (std::holds_alternative<T *>(other->value) ||
+                 std::holds_alternative<T *>(value)) {
+        TI_ERROR(
+            "Inconsistent StmtField value types: a pointer value is compared "
+            "to a non-pointer value.");
+        return false;
+      } else {
+        return std::get<T>(other->value) == std::get<T>(value);
+      }
     } else {
       // Different types
       return false;
@@ -973,14 +987,18 @@ class AssertStmt : public Stmt {
 class ExternalFuncCallStmt : public Stmt {
  public:
   void *func;
+  std::string source;
   std::vector<Stmt *> arg_stmts;
   std::vector<Stmt *> output_stmts;
 
   ExternalFuncCallStmt(void *func,
+                       std::string const &source,
                        const std::vector<Stmt *> &arg_stmts,
                        const std::vector<Stmt *> &output_stmts)
-      : func(func), arg_stmts(arg_stmts), output_stmts(output_stmts) {
-    TI_ASSERT(func);
+      : func(func),
+        source(source),
+        arg_stmts(arg_stmts),
+        output_stmts(output_stmts) {
     TI_STMT_REG_FIELDS;
   }
 
@@ -1400,7 +1418,7 @@ inline void StmtFieldManager::operator()(const char *key, T &&value) {
         std::make_unique<StmtFieldSNode>(value));
   } else {
     stmt->field_manager.fields.emplace_back(
-        std::make_unique<StmtFieldNumeric<T>>(value));
+        std::make_unique<StmtFieldNumeric<std::remove_reference_t<T>>>(&value));
   }
 }
 

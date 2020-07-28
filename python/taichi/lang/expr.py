@@ -125,7 +125,7 @@ class Expr(TaichiOperations):
         return Expr(ti.core.global_var_expr_from_snode(p.ptr))
 
     def is_global(self):
-        return self.ptr.is_global_var()
+        return self.ptr.is_global_var() or self.ptr.is_external_var()
 
     def snode(self):
         from .snode import SNode

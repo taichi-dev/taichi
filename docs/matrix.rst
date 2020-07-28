@@ -6,7 +6,7 @@ Matrices
 - ``ti.Matrix`` is for small matrices (e.g. `3x3`) only. If you have `64x64` matrices, you should consider using a 2D sclar field.
 - ``ti.Vector`` is the same as ``ti.Matrix``, except that it has only one column.
 - Differentiate element-wise product ``*`` and matrix product ``@``.
-- ``ti.Vector.field(n, dtype=ti.f32)`` or ``ti.Matrix.field(n, m, dtype=ti.f32)`` to create vector/matrice fields.
+- ``ti.Vector.field(n, dtype=ti.f32)`` or ``ti.Matrix.field(n, m, dtype=ti.f32)`` to create vector/matrix fields.
 - ``A.transpose()``
 - ``R, S = ti.polar_decompose(A, ti.f32)``
 - ``U, sigma, V = ti.svd(A, ti.f32)`` (Note that ``sigma`` is a ``3x3`` diagonal matrix)
@@ -34,7 +34,7 @@ As global matrix fields
     :parameter shape: (optional, scalar or tuple) shape the vector fields, see :ref:`tensor`
     :parameter offset: (optional, scalar or tuple) see :ref:`offset`
 
-    For example, this creates a 5x4 matrix field which has 3x3 matrix on each entry:
+    For example, this creates a 5x4 matrix field which has a 3x3 matrix on each entry:
     ::
 
         # Python-scope

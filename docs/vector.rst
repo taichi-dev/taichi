@@ -14,7 +14,7 @@ Declaration
 -----------
 
 As global vector fields
-++++++++++++++++++++++++
++++++++++++++++++++++++
 
 .. function:: ti.Vector.field(n, dtype, shape = None, offset = None)
 
@@ -53,7 +53,7 @@ Accessing components
 --------------------
 
 As global vector fields
-+++++++++++++++++++++++++++
++++++++++++++++++++++++
 .. attribute:: a[p, q, ...][i]
 
     :parameter a: (ti.Vector.field) the vector

@@ -1,7 +1,7 @@
 .. _scalar_tensor:
 
-Fields of scalars
-=================
+Scalar fields
+=============
 
 
 Declaration
@@ -80,7 +80,7 @@ You can access an element of the Taichi field by an index or indices.
 
 .. attribute:: a[p, q, ...]
 
-    :parameter a: (ti.field) the field of scalars
+    :parameter a: (ti.field) the sclar field
     :parameter p: (scalar) index of the first field dimension
     :parameter q: (scalar) index of the second field dimension
     :return: (scalar) the element at ``[p, q, ...]``
@@ -101,7 +101,7 @@ You can access an element of the Taichi field by an index or indices.
 
     .. note ::
 
-        The returned value can also be ``Vector`` / ``Matrix`` if ``a`` is a field of vector / matrix, see :ref:`vector` for more details.
+        The returned value can also be ``Vector`` / ``Matrix`` if ``a`` is a vector/matrix field, see :ref:`vector` for more details.
 
 
 Meta data

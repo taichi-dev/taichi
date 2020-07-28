@@ -774,6 +774,7 @@ class KernelGen : public IRVisitor {
       if (end_value < begin_value)
         end_value = begin_value;
       ps = std::make_unique<ParallelSize_ConstRange>(end_value - begin_value);
+      ps->threads_per_block = stmt->block_dim;
       ScopedGridStrideLoop _gsl(this);
       emit("if (_sid >= {}) {};", end_value - begin_value, get_return_stmt());
       emit("int _itv = {} + _sid * {};", begin_value, 1 /* stmt->step? */);
@@ -788,6 +789,7 @@ class KernelGen : public IRVisitor {
                                       : fmt::format("_gtmp_i32_[{} >> 2]",
                                                     stmt->end_offset);
       ps = std::make_unique<ParallelSize_DynamicRange>(stmt);
+      ps->threads_per_block = stmt->block_dim;
       ScopedGridStrideLoop _gsl(this);
       emit("int _beg = {}, _end = {};", begin_expr, end_expr);
       emit("int _itv = _beg + _sid;");
@@ -813,8 +815,9 @@ class KernelGen : public IRVisitor {
     this->glsl_kernel_name_ = glsl_kernel_name;
     emit("{{ // struct for {}", stmt->snode->node_type_name);
     {
-      ps = std::make_unique<ParallelSize_StructFor>(stmt);
       ScopedIndent _s(line_appender_);
+      ps = std::make_unique<ParallelSize_StructFor>(stmt);
+      ps->threads_per_block = stmt->block_dim;
       ScopedGridStrideLoop _gsl(this);
       emit("if (_sid >= _end) {};", get_return_stmt());
       emit("int _itv = _list_[_sid];");

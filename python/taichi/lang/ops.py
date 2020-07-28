@@ -156,6 +156,7 @@ def cast(obj, dtype):
 
 def bit_cast(obj, dtype):
     _taichi_skip_traceback = 1
+    dtype = cook_dtype(dtype)
     if is_taichi_class(obj):
         raise ValueError('Cannot apply bit_cast on Taichi classes')
     else:

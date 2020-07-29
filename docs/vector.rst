@@ -213,7 +213,7 @@ Methods
 
         # Taichi-scope
         a = ti.Vector([1.6, 2.3])
-        a.cast(ti.i32) # [2, 3]
+        a.cast(ti.i32) # [1, 2]
 
 .. note::
     Vectors are special matrices with only 1 column. In fact, ``ti.Vector`` is just an alias of ``ti.Matrix``.

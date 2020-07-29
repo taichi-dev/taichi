@@ -23,7 +23,7 @@ As global vector fields
     :parameter shape: (optional, scalar or tuple) shape of the vector field, see :ref:`tensor`
     :parameter offset: (optional, scalar or tuple) see :ref:`offset`
 
-    For example, this creates a ``5x4`` vector field which has a 3 component vector on each entry:
+    For example, this creates a 3-d vector field of the shape of ``5x4``:
     ::
 
         # Python-scope
@@ -106,7 +106,7 @@ Methods
 
 .. function:: a.norm(eps = 0)
 
-    :parameter a: (ti.Vector or ti.Vector.field)
+    :parameter a: (ti.Vector)
     :parameter eps: (optional, scalar) a safe-guard value for ``sqrt``, usually 0. See the note below.
     :return: (scalar) the magnitude / length / norm of vector
 
@@ -124,7 +124,7 @@ Methods
 
 .. function:: a.norm_sqr()
 
-    :parameter a: (ti.Vector or ti.Vector.field)
+    :parameter a: (ti.Vector)
     :return: (scalar) the square of the magnitude / length / norm of vector
 
     For example,
@@ -138,8 +138,8 @@ Methods
 
 .. function:: a.normalized()
 
-    :parameter a: (ti.Vector or ti.Vector.field)
-    :return: (ti.Vector or ti.Vector.field) the normalized / unit vector of ``a``
+    :parameter a: (ti.Vector)
+    :return: (ti.Vector) the normalized / unit vector of ``a``
 
     For example,
     ::
@@ -152,8 +152,8 @@ Methods
 
 .. function:: a.dot(b)
 
-    :parameter a: (ti.Vector or ti.Vector.field)
-    :parameter b: (ti.Vector or ti.Vector.field)
+    :parameter a: (ti.Vector)
+    :parameter b: (ti.Vector)
     :return: (scalar) the dot (inner) product of ``a`` and ``b``
 
     E.g.,
@@ -166,8 +166,8 @@ Methods
 
 .. function:: a.cross(b)
 
-    :parameter a: (ti.Vector or ti.Vector.field, 2 or 3 components)
-    :parameter b: (ti.Vector or ti.Vector.field of the same size as a)
+    :parameter a: (ti.Vector, 2 or 3 components)
+    :parameter b: (ti.Vector of the same size as a)
     :return: (scalar (for 2D inputs), or 3D Vector (for 3D inputs)) the cross product of ``a`` and ``b``
 
     We use a right-handed coordinate system. E.g.,
@@ -186,9 +186,9 @@ Methods
 
 .. function:: a.outer_product(b)
 
-    :parameter a: (ti.Vector or ti.Vector.field)
-    :parameter b: (ti.Vector or ti.Vector.field)
-    :return: (ti.Matrix or ti.Matrix.field) the outer product of ``a`` and ``b``
+    :parameter a: (ti.Vector)
+    :parameter b: (ti.Vector)
+    :return: (ti.Matrix) the outer product of ``a`` and ``b``
 
     E.g.,
     ::
@@ -204,9 +204,9 @@ Methods
 
 .. function:: a.cast(dt)
 
-    :parameter a: (ti.Vector or ti.Vector.field)
+    :parameter a: (ti.Vector)
     :parameter dt: (DataType)
-    :return: (ti.Vector or ti.Vector.field) vector with all components of ``a`` casted into type ``dt``
+    :return: (ti.Vector) vector with all components of ``a`` casted into type ``dt``
 
     E.g.,
     ::
@@ -224,7 +224,7 @@ Metadata
 
 .. attribute:: a.n
 
-   :parameter a: (Vector or Vector field)
+   :parameter a: (Vector)
    :return: (scalar) return the dimensionality of vector ``a``
 
     E.g.,

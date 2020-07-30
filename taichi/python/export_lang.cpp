@@ -219,6 +219,8 @@ void export_lang(py::module &m) {
       .def("snode", &Expr::snode, py::return_value_policy::reference)
       .def("is_global_var",
            [](Expr *expr) { return expr->is<GlobalVariableExpression>(); })
+      .def("is_external_var",
+           [](Expr *expr) { return expr->is<ExternalTensorExpression>(); })
       .def("set_tb", &Expr::set_tb)
       .def("set_is_primal",
            [&](Expr *expr, bool v) {

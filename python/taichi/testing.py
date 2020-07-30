@@ -31,7 +31,7 @@ def allclose(x, y, **kwargs):
 
 
 def make_temp_file(*args, **kwargs):
-    '''Create a temporary file name'''
+    '''Create a temporary file'''
     import os
     from tempfile import mkstemp
     fd, name = mkstemp(*args, **kwargs)

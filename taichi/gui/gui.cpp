@@ -24,6 +24,32 @@ void Canvas::triangles_batched(int n,
   }
 }
 
+void Canvas::paths_batched(int n,
+                           std::size_t a_,
+                           std::size_t b_,
+                           uint32 color_single,
+                           std::size_t color_array,
+                           real radius_single,
+                           std::size_t radius_array) {
+  auto a = (real *)a_;
+  auto b = (real *)b_;
+  auto color_arr = (uint32 *)color_array;
+  auto radius_arr = (real *)radius_array;
+  for (int i = 0; i < n; i++) {
+    auto r = radius_single;
+    if (radius_arr) {
+      r = radius_arr[i];
+    }
+    auto clr = color_single;
+    if (color_arr) {
+      clr = color_arr[i];
+    }
+    // FIXME: path_single seems not displaying correct without the 1e-6 term:
+    path_single(a[i * 2], a[i * 2 + 1], b[i * 2] + 1e-6 * (i % 18 + 6),
+                b[i * 2 + 1], clr, r);
+  }
+}
+
 void Canvas::circles_batched(int n,
                              std::size_t x_,
                              uint32 color_single,

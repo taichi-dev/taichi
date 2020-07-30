@@ -1,4 +1,4 @@
-#define MAX_LIST (1024 * 256)    // * 4 = 1 MB
+#define MAX_LIST (1024 * 256)  // * 4 = 1 MB
 
 #ifdef __GLSL__
 // clang-format off

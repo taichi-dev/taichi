@@ -119,7 +119,8 @@ void export_lang(py::module &m) {
                      &CompileConfig::advanced_optimization)
       .def_readwrite("ad_stack_size", &CompileConfig::ad_stack_size)
       .def_readwrite("async_mode", &CompileConfig::async_mode)
-      .def_readwrite("flatten_if", &CompileConfig::flatten_if);
+      .def_readwrite("flatten_if", &CompileConfig::flatten_if)
+      .def_readwrite("make_thread_local", &CompileConfig::make_thread_local);
 
   m.def("reset_default_compile_config",
         [&]() { default_compile_config = CompileConfig(); });
@@ -218,6 +219,8 @@ void export_lang(py::module &m) {
       .def("snode", &Expr::snode, py::return_value_policy::reference)
       .def("is_global_var",
            [](Expr *expr) { return expr->is<GlobalVariableExpression>(); })
+      .def("is_external_var",
+           [](Expr *expr) { return expr->is<ExternalTensorExpression>(); })
       .def("set_tb", &Expr::set_tb)
       .def("set_is_primal",
            [&](Expr *expr, bool v) {

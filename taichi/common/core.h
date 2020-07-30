@@ -141,7 +141,7 @@ static_assert(__cplusplus >= 201402L, "C++14 required.");
 #endif
 
 #define TI_STATIC_ASSERT(x) static_assert((x), #x);
-#define TI_ASSERT(x) TI_ASSERT_INFO((x), #x)
+#define TI_ASSERT(x) TI_ASSERT_INFO((x), "Assertion failure: " #x)
 #define TI_ASSERT_INFO(x, ...)             \
   {                                        \
     bool ___ret___ = static_cast<bool>(x); \

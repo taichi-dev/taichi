@@ -53,6 +53,7 @@ int opengl_get_threads_per_group() {
   int ret = 1000;
   glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &ret);
   check_opengl_error("glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS)");
+  TI_TRACE("opengl_get_threads_per_group: {}", ret);
   return ret;
 }
 
@@ -255,8 +256,7 @@ struct GLBuffer : GLSSBO {
     bind_index((int)index);
   }
 
-  GLBuffer(GLBufId index)
-      : index(index), base(nullptr), size(0) {
+  GLBuffer(GLBufId index) : index(index), base(nullptr), size(0) {
     bind_index((int)index);
   }
 
@@ -311,35 +311,28 @@ struct GLSLLauncherImpl {
 ParallelSize::~ParallelSize() {
 }
 
-size_t ParallelSize::get_threads_per_group() const {
-  return opengl_get_threads_per_group();
+size_t ParallelSize::get_threads_per_block() const {
+  size_t limit = opengl_get_threads_per_group();
+  size_t n = threads_per_block.value_or(0);
+  return n == 0 ? limit : std::min(n, limit);
 }
 
-size_t ParallelSize_ConstRange::get_threads_per_group() const {
-  return threads_per_group;
+ParallelSize_ConstRange::ParallelSize_ConstRange(size_t num_strides)
+    : num_strides(num_strides) {
 }
 
-ParallelSize_ConstRange::ParallelSize_ConstRange(int num_threads_)
-    : num_threads(num_threads_) {
-  const size_t TPG = opengl_get_threads_per_group();
-  threads_per_group = TPG;
-  if (num_threads <= 0)
-    num_threads = 1;
-  if (num_threads <= threads_per_group) {
-    threads_per_group = num_threads;
-    num_groups = 1;
-  } else {
-    num_groups = (num_threads + TPG - 1) / TPG;
-  }
+size_t ParallelSize_ConstRange::get_num_strides(GLSLLauncher *launcher) const {
+  return num_strides;
 }
 
-size_t ParallelSize_ConstRange::get_num_groups(GLSLLauncher *launcher) const {
-  return num_groups;
+size_t ParallelSize_ConstRange::get_threads_per_block() const {
+  size_t n = get_num_threads(nullptr);
+  size_t TPG = ParallelSize::get_threads_per_block();
+  return std::max(std::min(n, TPG), (size_t)1);
 }
 
-size_t ParallelSize_DynamicRange::get_num_groups(GLSLLauncher *launcher) const {
-  const size_t TPG = opengl_get_threads_per_group();
-
+size_t ParallelSize_DynamicRange::get_num_strides(
+    GLSLLauncher *launcher) const {
   size_t n;
   auto gtmp = launcher->impl->core_bufs.get(GLBufId::Gtmp);
   void *gtmp_now = gtmp->map();  // TODO: RAII map/unmap
@@ -350,19 +343,29 @@ size_t ParallelSize_DynamicRange::get_num_groups(GLSLLauncher *launcher) const {
     e = *(const int *)((const char *)gtmp_now + e);
   gtmp->unmap();
   if (e <= b)
-    n = 0;
+    n = 1;
   else
     n = e - b;
-  return std::max((n + TPG - 1) / TPG, (size_t)1);
+  return n;
 }
 
-size_t ParallelSize_StructFor::get_num_groups(GLSLLauncher *launcher) const {
-  const size_t TPG = opengl_get_threads_per_group();
-
+size_t ParallelSize_StructFor::get_num_strides(GLSLLauncher *launcher) const {
   auto listman = launcher->impl->core_bufs.get(GLBufId::Listman);
   auto lm_buf = (GLSLListman *)listman->map();
   auto n = lm_buf->list_len;
   listman->unmap();
+  return n;
+}
+
+size_t ParallelSize::get_num_threads(GLSLLauncher *launcher) const {
+  size_t n = get_num_strides(launcher);
+  size_t SPT = strides_per_thread.value_or(1);
+  return std::max((n + SPT - 1) / SPT, (size_t)1);
+}
+
+size_t ParallelSize::get_num_blocks(GLSLLauncher *launcher) const {
+  size_t n = get_num_threads(launcher);
+  size_t TPG = get_threads_per_block();
   return std::max((n + TPG - 1) / TPG, (size_t)1);
 }
 
@@ -436,7 +439,9 @@ bool initialize_opengl(bool error_tolerance) {
 void display_kernel_info(std::string const &kernel_name,
                          std::string const &kernel_source_code) {
   bool is_accessor = taichi::starts_with(kernel_name, "snode_") ||
-                     taichi::starts_with(kernel_name, "tensor_") ||
+                     taichi::starts_with(kernel_name, "tensor_to_") ||
+                     taichi::starts_with(kernel_name, "matrix_to_") ||
+                     taichi::starts_with(kernel_name, "ext_arr_to_") ||
                      taichi::starts_with(kernel_name, "jit_evaluator_");
   if (!is_accessor)
     TI_DEBUG("source of kernel [{}]:\n{}", kernel_name, kernel_source_code);
@@ -467,14 +472,14 @@ struct CompiledKernel {
         kernel_source_code +
         fmt::format(
             "layout(local_size_x = {}, local_size_y = 1, local_size_z = 1) in;",
-            ps->get_threads_per_group());
+            ps->get_threads_per_block());
     display_kernel_info(kernel_name_, source);
     glsl = std::make_unique<GLProgram>(GLShader(source));
     glsl->link();
   }
 
   void dispatch_compute(GLSLLauncher *launcher) const {
-    int num_groups = ps->get_num_groups(launcher);
+    int num_blocks = ps->get_num_blocks(launcher);
 
     glsl->use();
 
@@ -485,8 +490,8 @@ struct CompiledKernel {
     // `glDispatchCompute(X, Y, Z)`   - the X*Y*Z  == `Blocks`   in CUDA
     // `layout(local_size_x = X) in;` - the X      == `Threads`  in CUDA
     //
-    glDispatchCompute(num_groups, 1, 1);
-    check_opengl_error(fmt::format("glDispatchCompute({})", num_groups));
+    glDispatchCompute(num_blocks, 1, 1);
+    check_opengl_error(fmt::format("glDispatchCompute({})", num_blocks));
 
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
     check_opengl_error("glMemoryBarrier");
@@ -710,27 +715,37 @@ bool initialize_opengl(bool error_tolerance) {
 ParallelSize::~ParallelSize() {
 }
 
-size_t ParallelSize::get_threads_per_group() const {
+size_t ParallelSize::get_num_threads(GLSLLauncher *launcher) const {
   TI_NOT_IMPLEMENTED;
 }
 
-size_t ParallelSize_ConstRange::get_threads_per_group() const {
+size_t ParallelSize::get_num_blocks(GLSLLauncher *launcher) const {
   TI_NOT_IMPLEMENTED;
 }
 
-size_t ParallelSize_ConstRange::get_num_groups(GLSLLauncher *launcher) const {
+size_t ParallelSize::get_threads_per_block() const {
   TI_NOT_IMPLEMENTED;
 }
 
-size_t ParallelSize_DynamicRange::get_num_groups(GLSLLauncher *launcher) const {
+size_t ParallelSize_ConstRange::get_threads_per_block() const {
   TI_NOT_IMPLEMENTED;
 }
 
-size_t ParallelSize_StructFor::get_num_groups(GLSLLauncher *launcher) const {
+size_t ParallelSize_ConstRange::get_num_strides(GLSLLauncher *launcher) const {
   TI_NOT_IMPLEMENTED;
 }
 
-ParallelSize_ConstRange::ParallelSize_ConstRange(int num_threads_) {
+size_t ParallelSize_DynamicRange::get_num_strides(
+    GLSLLauncher *launcher) const {
+  TI_NOT_IMPLEMENTED;
+}
+
+size_t ParallelSize_StructFor::get_num_strides(GLSLLauncher *launcher) const {
+  TI_NOT_IMPLEMENTED;
+}
+
+ParallelSize_ConstRange::ParallelSize_ConstRange(size_t num_strides)
+    : num_strides(num_strides) {
 }
 
 #endif  // TI_WITH_OPENGL

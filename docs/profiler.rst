@@ -2,7 +2,7 @@
 Profiler
 ========
 
-Taichi's profiler can help you analyze the run-time cost of your program, i.e. performance.
+Taichi's profilers can help analyze the performance of your program.
 
 Currently there are three profiling systems in Taichi:
 

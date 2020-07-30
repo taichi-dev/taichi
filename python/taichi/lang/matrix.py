@@ -787,7 +787,7 @@ class Matrix(TaichiOperations):
               n,
               m,
               dtype,
-              shape=None,
+              shape,
               offset=None,
               needs_grad=False,
               layout=None):  # TODO(archibate): deprecate layout
@@ -798,7 +798,7 @@ class Matrix(TaichiOperations):
         self.m = m
         self.dt = dtype
         for i in range(n * m):
-            self.entries.append(impl.field(dtype))
+            self.entries.append(impl.field(dtype, None))
         self.grad = self.make_grad()
 
         if layout is not None:
@@ -843,23 +843,23 @@ class Matrix(TaichiOperations):
     @classmethod
     @python_scope
     #@deprecated('ti.Matrix.var', 'ti.Matrix.field')
-    def var(cls, n, m, dt, *args, **kwargs):
+    def var(cls, n, m, dt, shape, *args, **kwargs):
         '''ti.Matrix.var'''
         _taichi_skip_traceback = 1
-        return cls.field(n, m, dt, *args, **kwargs)
+        return cls.field(n, m, dt, shape, *args, **kwargs)
 
     @classmethod
-    def _Vector_field(cls, n, dtype, *args, **kwargs):
+    def _Vector_field(cls, n, dtype, shape, *args, **kwargs):
         '''ti.Vector.field'''
         _taichi_skip_traceback = 1
-        return cls.field(n, 1, dtype, *args, **kwargs)
+        return cls.field(n, 1, dtype, shape, *args, **kwargs)
 
     @classmethod
     #@deprecated('ti.Vector.var', 'ti.Vector.field')
-    def _Vector_var(cls, n, dt, *args, **kwargs):
+    def _Vector_var(cls, n, dt, shape, *args, **kwargs):
         '''ti.Vector.var'''
         _taichi_skip_traceback = 1
-        return cls._Vector_field(n, dt, *args, **kwargs)
+        return cls._Vector_field(n, dt, shape, *args, **kwargs)
 
     @staticmethod
     def rows(rows):

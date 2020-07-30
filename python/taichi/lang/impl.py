@@ -213,8 +213,11 @@ class PyTaichi:
         taichi_lang_core.layout(layout)
         self.materialized = True
         for var in self.global_vars:
-            assert var.ptr.snode(
-            ) is not None, 'Some variable(s) are not placed'
+            if var.ptr.snode() is None:
+                raise RuntimeError(
+                    'Some variable(s) are not placed.'
+                    ' Did you forget to specify shape for a field? e.g.:\n'
+                    '  ti.field(ti.f32, shape=(3, 4))')
 
     def clear(self):
         if self.prog:
@@ -316,7 +319,7 @@ def var(dt, shape=None, offset=None, needs_grad=False):
 
 
 @python_scope
-def field(dtype, shape=None, offset=None, needs_grad=False):
+def field(dtype, shape, offset=None, needs_grad=False):
     _taichi_skip_traceback = 1
     if isinstance(shape, numbers.Number):
         shape = (shape, )

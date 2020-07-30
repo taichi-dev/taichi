@@ -326,6 +326,14 @@ class Canvas {
 
   void circle_single(real x, real y, uint32 color, real radius);
 
+  void paths_batched(int n,
+                     std::size_t a_,
+                     std::size_t b_,
+                     uint32 color_single,
+                     std::size_t color_array,
+                     real radius_single,
+                     std::size_t radius_array);
+
   void path_single(real x0,
                    real y0,
                    real x1,

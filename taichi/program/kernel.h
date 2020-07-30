@@ -51,7 +51,7 @@ class Kernel {
 
   void compile();
 
-  void lower(bool lower_access = true);
+  void lower(bool to_executable = true);
 
   void operator()();
 

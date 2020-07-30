@@ -543,6 +543,7 @@ struct LLVMRuntime {
   }
 };
 
+// TODO: are these necessary?
 STRUCT_FIELD_ARRAY(LLVMRuntime, element_lists);
 STRUCT_FIELD_ARRAY(LLVMRuntime, node_allocators);
 STRUCT_FIELD(LLVMRuntime, root);
@@ -838,6 +839,7 @@ void runtime_initialize2(LLVMRuntime *runtime, int root_id, int num_snodes) {
 
   // initialize the root node element list
   for (int i = 0; i < num_snodes; i++) {
+    // TODO: some SNodes do not actually need an element list.
     runtime->element_lists[i] =
         runtime->create<ListManager>(runtime, sizeof(Element), 1024 * 64);
   }
@@ -866,9 +868,13 @@ void runtime_NodeAllocator_initialize(LLVMRuntime *runtime,
       runtime->create<NodeManager>(runtime, node_size, 1024 * 16);
 }
 
-void runtime_allocate_ambient(LLVMRuntime *runtime, int snode_id) {
+void runtime_allocate_ambient(LLVMRuntime *runtime,
+                              int snode_id,
+                              std::size_t size) {
+  // Do not use NodeManager for the ambient node since it will never be garbage
+  // collected.
   runtime->ambient_elements[snode_id] =
-      runtime->node_allocators[snode_id]->allocate();
+      runtime->request_allocate_aligned(size, 128);
 }
 
 void mutex_lock_i32(Ptr mutex) {
@@ -1303,6 +1309,7 @@ void gc_parallel_0(LLVMRuntime *runtime, int snode_id) {
   auto free_list_used = allocator->free_list_used;
   using T = NodeManager::list_data_type;
 
+  // Move unused elements to the beginning of the free_list
   int i = linear_thread_idx();
   if (free_list_used * 2 > free_list_size) {
     // Directly copy. Dst and src does not overlap
@@ -1325,7 +1332,11 @@ void gc_parallel_0(LLVMRuntime *runtime, int snode_id) {
 void gc_parallel_1(LLVMRuntime *runtime, int snode_id) {
   auto allocator = runtime->node_allocators[snode_id];
   auto free_list = allocator->free_list;
-  free_list->clear();
+
+  const i32 num_unused =
+      max_i32(free_list->size() - allocator->free_list_used, 0);
+  free_list->resize(num_unused);
+
   allocator->free_list_used = 0;
   allocator->recycle_list_size_backup = allocator->recycled_list->size();
   allocator->recycled_list->clear();

@@ -80,7 +80,7 @@ def init():
 
 init()
 gui = ti.GUI('MPM88')
-while gui.running and not gui.get_event(gui.PRESS):
+while gui.running and not gui.get_event(gui.ESCAPE):
     for s in range(50):
         substep()
     gui.clear(0x112F41)

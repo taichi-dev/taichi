@@ -53,15 +53,28 @@ void replace_statements_with(IRNode *root,
 void demote_dense_struct_fors(IRNode *root);
 bool demote_atomics(IRNode *root);
 void reverse_segments(IRNode *root);  // for autograd
+
+// compile_to_offloads does the basic compilation to create all the offloaded
+// tasks of a Taichi kernel. It's worth pointing out that this doesn't demote
+// dense struct fors. This is a necessary workaround to prevent the async engine
+// from fusing incompatible offloaded tasks.
 void compile_to_offloads(IRNode *ir,
                          const CompileConfig &config,
+                         bool verbose,
                          bool vectorize,
                          bool grad,
-                         bool ad_use_stack,
-                         bool verbose,
-                         bool lower_global_access = true,
-                         bool make_thread_local = false,
-                         bool make_block_local = false);
+                         bool ad_use_stack);
+// compile_to_executable fully covers compile_to_offloads, but also does
+// additional optimizations so that |ir| can be directly fed into codegen.
+void compile_to_executable(IRNode *ir,
+                           const CompileConfig &config,
+                           bool vectorize,
+                           bool grad,
+                           bool ad_use_stack,
+                           bool verbose,
+                           bool lower_global_access = true,
+                           bool make_thread_local = false,
+                           bool make_block_local = false);
 
 }  // namespace irpass
 

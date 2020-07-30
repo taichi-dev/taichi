@@ -117,7 +117,7 @@ class Matrix(TaichiOperations):
         results = [False for _ in self.entries]
         for i, e in enumerate(self.entries):
             if isinstance(e, expr.Expr):
-                if e.ptr.is_global_var():
+                if e.is_global():
                     results[i] = True
             assert results[i] == results[0], \
                 "Matrices with mixed global/local entries are not allowed"

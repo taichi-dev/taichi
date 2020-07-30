@@ -53,6 +53,7 @@ void Dynamic_deactivate(Ptr meta_, Ptr node_) {
         alloc->recycle(*p_chunk_ptr);
         p_chunk_ptr = (Ptr *)*p_chunk_ptr;
       }
+      node->ptr = nullptr;
     });
   }
 }

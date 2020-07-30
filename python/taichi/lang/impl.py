@@ -61,7 +61,7 @@ def expr_init_func(rhs):  # temporary solution to allow passing in tensors as
 
 def begin_frontend_struct_for(group, loop_range):
     if not isinstance(loop_range, Expr) or not loop_range.is_global():
-        raise TypeError('can only iterate through global variables/fields')
+        raise TypeError('Can only iterate through global variables/fields')
     if group.size() != len(loop_range.shape):
         raise IndexError(
             'Number of struct-for indices does not match loop variable dimensionality '

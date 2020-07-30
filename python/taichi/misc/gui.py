@@ -240,6 +240,49 @@ class GUI:
     def triangle(self, a, b, c, color=0xFFFFFF):
         self.canvas.triangle_single(a[0], a[1], b[0], b[1], c[0], c[1], color)
 
+    def lines(self, begin, end, radius=1, color=0xFFFFFF):
+        assert begin.shape == end.shape
+        n = begin.shape[0]
+        if len(begin.shape) == 3:
+            assert begin.shape[2] == 1
+            begin = begin[:, :, 0]
+            end = end[:, :, 0]
+
+        assert begin.shape == (n, 2)
+        begin = np.ascontiguousarray(begin.astype(np.float32))
+        end = np.ascontiguousarray(end.astype(np.float32))
+        # Note: do not use "begin = int(begin.ctypes.data)" here
+        # Otherwise begin will get garbage collected by Python
+        # and the pointer to its data becomes invalid
+        begin_ptr = int(begin.ctypes.data)
+        end_ptr = int(end.ctypes.data)
+
+        if isinstance(color, np.ndarray):
+            assert color.shape == (n, )
+            color = np.ascontiguousarray(color.astype(np.uint32))
+            color_array = int(color.ctypes.data)
+            color_single = 0
+        elif isinstance(color, int):
+            color_array = 0
+            color_single = color
+        else:
+            raise ValueError(
+                'Color must be an ndarray or int (e.g., 0x956333)')
+
+        if isinstance(radius, np.ndarray):
+            assert radius.shape == (n, )
+            radius = np.ascontiguousarray(radius.astype(np.float32))
+            radius_array = int(radius.ctypes.data)
+            radius_single = 0
+        elif isinstance(radius, numbers.Number):
+            radius_array = 0
+            radius_single = radius
+        else:
+            raise ValueError('Radius must be an ndarray or float (e.g., 0.4)')
+
+        self.canvas.paths_batched(n, begin_ptr, end_ptr, color_single,
+                                  color_array, radius_single, radius_array)
+
     def line(self, begin, end, radius=1, color=0xFFFFFF):
         self.canvas.path_single(begin[0], begin[1], end[0], end[1], color,
                                 radius)

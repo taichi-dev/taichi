@@ -216,9 +216,10 @@ class PyTaichi:
         self.materialized = True
         for var in self.global_vars:
             if var.ptr.snode() is None:
-                raise RuntimeError('Some variable(s) are not placed.'
-                        ' Did you forget to specify shape for a field? e.g.:\n'
-                        '  ti.field(ti.f32, shape=(3, 4))')
+                raise RuntimeError(
+                    'Some variable(s) are not placed.'
+                    ' Did you forget to specify shape for a field? e.g.:\n'
+                    '  ti.field(ti.f32, shape=(3, 4))')
 
     def clear(self):
         if self.prog:

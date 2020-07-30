@@ -6,6 +6,8 @@ print('[Taichi] loading test module')
 ## Helper functions
 def approx(expected, **kwargs):
     '''Tweaked pytest.approx for OpenGL low percisions'''
+    import pytest
+
     class boolean_integer:
         def __init__(self, value):
             self.value = value
@@ -40,7 +42,7 @@ def make_temp_file(*args, **kwargs):
 
 
 ## Pytest options
-def get_conftest(_glbs):
+def get_conftest(globals):
     import pytest
 
     @pytest.fixture(params=ti.supported_archs(), ids=ti.core.arch_name)
@@ -78,10 +80,7 @@ def get_conftest(_glbs):
         ti_init(*marker.args, **marker.kwargs)
         yield
 
-    _lcls = dict(locals())
-    for _k, _v in _lcls.items():
-        if not _k.startswith('_'):
-            _glbs[_k] = _v
+    globals['taichi_archs'] = taichi_archs
 
 
 def test(*args, **kwargs):

@@ -67,13 +67,13 @@ def get_conftest(globals):
                 arch = ti.supported_archs()
 
             if (req_arch not in arch) or (req_arch in exclude):
-                raise pytest.skip(f'Arch={req_arch} not included in test')
+                raise pytest.skip(f'Arch={req_arch} not included in this test')
 
             if not all(
                     ti.core.is_extension_supported(req_arch, e)
                     for e in require):
                 raise pytest.skip(
-                    f'Arch={req_arch} some extension not satisfied')
+                    f'Arch={req_arch} some extension(s) not satisfied')
 
             ti.init(arch=req_arch, **options)
 

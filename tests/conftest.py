@@ -1,4 +1,4 @@
-# let pytest see our fixtures & configuators
-from taichi.testing import get_conftest
+# let pytest see the fixtures
+import taichi.testing
 
-get_conftest(globals())
+taichi_archs = taichi.testing._get_taichi_archs_fixture()

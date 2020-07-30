@@ -42,7 +42,7 @@ def make_temp_file(*args, **kwargs):
 
 
 ## Pytest options
-def get_conftest(globals):
+def _get_taichi_archs_fixture():
     import pytest
 
     @pytest.fixture(params=ti.supported_archs(), ids=ti.core.arch_name)
@@ -80,7 +80,7 @@ def get_conftest(globals):
         ti_init(*marker.args, **marker.kwargs)
         yield
 
-    globals['taichi_archs'] = taichi_archs
+    return taichi_archs
 
 
 def test(*args, **kwargs):

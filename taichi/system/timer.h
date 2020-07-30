@@ -34,8 +34,8 @@ TI_NAMESPACE_BEGIN
 class Time {
  public:
   static double get_time();
-
   static uint64 get_cycles();
+  static void wait_until(double t);
 
   static void usleep(double us);
   static void sleep(double s);

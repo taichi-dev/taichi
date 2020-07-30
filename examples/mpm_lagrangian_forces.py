@@ -176,10 +176,8 @@ def main():
         gui.circle((0.5, 0.5), radius=45, color=0x068587)
         # TODO: why is visualization so slow?
         particle_pos = x.to_numpy()
-        a = vertices_[:, :]
-        b = np.concatenate([vertices_[:, 1:], vertices_[:, 2:]], axis=1)
-        a = a.reshape(n_elements * 3)
-        b = b.reshape(n_elements * 3)
+        a = vertices_.reshape(n_elements * 3)
+        b = np.roll(vertices_, shift=1, axis=1).reshape(n_elements * 3)
         gui.lines(particle_pos[a], particle_pos[b], radius=1, color=0x4FB99F)
         gui.circles(particle_pos, radius=1.5, color=0xF2B134)
         gui.line((0.00, 0.03), (1.0, 0.03), color=0xFFFFFF, radius=3)

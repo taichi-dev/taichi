@@ -133,11 +133,14 @@ class Func:
                     annotation = template()
             else:
                 if id(annotation) in type_ids:
-                    warning('Data type annotations are unnecessary for Taichi'
-                            f' functions, consider remove it', stacklevel=4)
+                    warning(
+                        'Data type annotations are unnecessary for Taichi'
+                        f' functions, consider remove it',
+                        stacklevel=4)
                 elif not isinstance(annotation, template):
                     raise KernelDefError(
-                        f'Invalid {i}-th type annotation for Taichi functions: {annotation}')
+                        f'Invalid {i}-th type annotation for Taichi functions: {annotation}'
+                    )
             self.arguments.append(annotation)
             self.argument_names.append(param.name)
 
@@ -289,7 +292,8 @@ class Kernel:
                 else:
                     _taichi_skip_traceback = 1
                     raise KernelDefError(
-                        f'Invalid {i}-th type annotation for Taichi kernels: {annotation}')
+                        f'Invalid {i}-th type annotation for Taichi kernels: {annotation}'
+                    )
             self.arguments.append(annotation)
             self.argument_names.append(param.name)
 

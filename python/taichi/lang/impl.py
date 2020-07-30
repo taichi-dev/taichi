@@ -202,6 +202,8 @@ class PyTaichi:
     def materialize(self):
         if self.materialized:
             return
+
+        print('[Taichi] materializing...')
         self.create_program()
 
         def layout():
@@ -209,12 +211,14 @@ class PyTaichi:
                 func()
 
         import taichi as ti
-        ti.trace("Materializing layout...".format())
+        ti.trace('Materializing layout...')
         taichi_lang_core.layout(layout)
         self.materialized = True
         for var in self.global_vars:
-            assert var.ptr.snode(
-            ) is not None, 'Some variable(s) are not placed'
+            if var.ptr.snode() is None:
+                raise RuntimeError('Some variable(s) are not placed.'
+                        ' Did you forget to specify shape for a field? e.g.:\n'
+                        '  ti.field(ti.f32, shape=(3, 4))')
 
     def clear(self):
         if self.prog:

@@ -1,7 +1,6 @@
 from .util import *
 from .gui import *
 from .image import *
-from .test import *
 from .error import *
 from .task import Task
 

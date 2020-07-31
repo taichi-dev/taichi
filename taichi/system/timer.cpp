@@ -75,19 +75,19 @@ void Time::wait_until(double t) {
     return;
   }
   do {  // use system-provided sleep for large scale sleeping:
-    dt = (t - Time::get_time()) * 0.5;
+    dt = t - Time::get_time();
     if (dt <= 0) {
       return;
     }
-    Time::sleep(dt * 1e-3);
+    Time::sleep(dt * 0.1);
 #ifndef _WIN64
   } while (dt > 1e-4_f64);  // until dt <= 100us
 #else
-  } while (dt > 1e-3_f64);  // until dt <= 1ms
+  } while (dt > 1e-2_f64);  // until dt <= 10ms
 #endif
 
   // use an EBFE loop for small scale waiting:
-  while (Time::get_time() < t - 1e-6_f64)
+  while (Time::get_time() < t - 1e-5_f64)
     ;  // until dt <= 1us
 }
 

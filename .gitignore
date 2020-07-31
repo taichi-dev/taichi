@@ -54,9 +54,9 @@ __pycache__
 *.ppm
 *.png
 *.jpg
-*.ini
 *.egg-info
 .tlang_cache
+.tidle_*
 /taichi/common/version.h
 /taichi/common/commit_hash.h
 /python/test_env

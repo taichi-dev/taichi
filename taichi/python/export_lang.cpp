@@ -100,6 +100,7 @@ void export_lang(py::module &m) {
                      &CompileConfig::default_cpu_block_dim)
       .def_readwrite("default_gpu_block_dim",
                      &CompileConfig::default_gpu_block_dim)
+      .def_readwrite("saturating_grid_dim", &CompileConfig::saturating_grid_dim)
       .def_readwrite("max_block_dim", &CompileConfig::max_block_dim)
       .def_readwrite("verbose_kernel_launches",
                      &CompileConfig::verbose_kernel_launches)
@@ -118,7 +119,8 @@ void export_lang(py::module &m) {
                      &CompileConfig::advanced_optimization)
       .def_readwrite("ad_stack_size", &CompileConfig::ad_stack_size)
       .def_readwrite("async_mode", &CompileConfig::async_mode)
-      .def_readwrite("flatten_if", &CompileConfig::flatten_if);
+      .def_readwrite("flatten_if", &CompileConfig::flatten_if)
+      .def_readwrite("make_thread_local", &CompileConfig::make_thread_local);
 
   m.def("reset_default_compile_config",
         [&]() { default_compile_config = CompileConfig(); });
@@ -217,6 +219,8 @@ void export_lang(py::module &m) {
       .def("snode", &Expr::snode, py::return_value_policy::reference)
       .def("is_global_var",
            [](Expr *expr) { return expr->is<GlobalVariableExpression>(); })
+      .def("is_external_var",
+           [](Expr *expr) { return expr->is<ExternalTensorExpression>(); })
       .def("set_tb", &Expr::set_tb)
       .def("set_is_primal",
            [&](Expr *expr, bool v) {
@@ -257,10 +261,10 @@ void export_lang(py::module &m) {
         });
 
   m.def("insert_external_func_call",
-        [](std::size_t func_addr, const ExprGroup &args,
+        [](std::size_t func_addr, std::string source, const ExprGroup &args,
            const ExprGroup &outputs) {
           auto expr = Expr::make<ExternalFuncCallExpression>(
-              (void *)func_addr, args.exprs, outputs.exprs);
+              (void *)func_addr, source, args.exprs, outputs.exprs);
 
           current_ast_builder().insert(Stmt::make<FrontendEvalStmt>(expr));
         });

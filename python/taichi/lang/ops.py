@@ -511,11 +511,18 @@ def append(l, indices, val):
     return a
 
 
-def external_func_call(func, args, outputs):
+def external_func_call(func, args=[], outputs=[]):
     import taichi as ti
     import ctypes
     func_addr = ctypes.cast(func, ctypes.c_void_p).value
-    ti_core.insert_external_func_call(func_addr, make_expr_group(args),
+    ti_core.insert_external_func_call(func_addr, '', make_expr_group(args),
+                                      make_expr_group(outputs))
+
+
+def asm(source, inputs=[], outputs=[]):
+    import taichi as ti
+    import ctypes
+    ti_core.insert_external_func_call(0, source, make_expr_group(inputs),
                                       make_expr_group(outputs))
 
 

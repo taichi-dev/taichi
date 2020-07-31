@@ -42,12 +42,13 @@ std::unique_ptr<IRNode> clone_offloaded_task(OffloadedStmt *from,
 
 KernelLaunchRecord::KernelLaunchRecord(Context context,
                                        Kernel *kernel,
-                                       std::unique_ptr<IRNode> &&stmt_)
+                                       std::unique_ptr<IRNode> &&stmt_,
+                                       uint64 h)
     : context(context),
       kernel(kernel),
       stmt(dynamic_cast<OffloadedStmt *>(stmt_.get())),
-      stmt_holder(std::move(stmt_)),
-      h(hash(stmt)) {
+      h(h),
+      stmt_holder_(std::move(stmt_)) {
   TI_ASSERT(stmt != nullptr);
   TI_ASSERT(stmt->get_kernel() != nullptr);
 }
@@ -64,6 +65,10 @@ void ExecutionQueue::enqueue(KernelLaunchRecord &&ker) {
         // Final lowering
         using namespace irpass;
 
+        demote_dense_struct_fors(stmt);
+        // TODO: due to the assumption that root is a Block, we cannot call the
+        // second half: offloaded tasks -> executable yet. Make sure TLS/BLS
+        // are applied eventually.
         flag_access(stmt);
         lower_access(stmt, true);
         flag_access(stmt);
@@ -123,20 +128,30 @@ ExecutionQueue::ExecutionQueue()
 
 void AsyncEngine::launch(Kernel *kernel) {
   if (!kernel->lowered)
-    kernel->lower(false);
+    kernel->lower(/*to_executable=*/false);
   auto block = dynamic_cast<Block *>(kernel->ir.get());
   TI_ASSERT(block);
+
   auto &offloads = block->statements;
-  auto &dummy_root = kernel_to_dummy_roots_[kernel];
-  if (dummy_root == nullptr) {
-    dummy_root = std::make_unique<Block>();
-    dummy_root->kernel = kernel;
+  auto &kmeta = kernel_metas_[kernel];
+  const bool kmeta_inited = kmeta.initialized();
+  if (!kmeta_inited) {
+    kmeta.dummy_root = std::make_unique<Block>();
+    kmeta.dummy_root->kernel = kernel;
   }
   for (std::size_t i = 0; i < offloads.size(); i++) {
     auto offload = offloads[i]->as<OffloadedStmt>();
-    KernelLaunchRecord rec(
-        kernel->program.get_context(), kernel,
-        clone_offloaded_task(offload, kernel, dummy_root.get()));
+    auto cloned = clone_offloaded_task(offload, kernel, kmeta.dummy_root.get());
+    uint64 h;
+    if (kmeta_inited) {
+      h = kmeta.offloaded_hashes[i];
+    } else {
+      h = hash(cloned.get());
+      TI_ASSERT(kmeta.offloaded_hashes.size() == i);
+      kmeta.offloaded_hashes.push_back(h);
+    }
+    KernelLaunchRecord rec(kernel->program.get_context(), kernel,
+                           std::move(cloned), h);
     enqueue(std::move(rec));
   }
 }
@@ -144,7 +159,7 @@ void AsyncEngine::launch(Kernel *kernel) {
 void AsyncEngine::enqueue(KernelLaunchRecord &&t) {
   using namespace irpass::analysis;
 
-  auto &meta = metas[t.h];
+  auto &meta = offloaded_metas_[t.h];
   // TODO: this is an abuse since it gathers nothing...
   auto root_stmt = t.stmt;
   gather_statements(root_stmt, [&](Stmt *stmt) {
@@ -209,7 +224,7 @@ bool AsyncEngine::optimize_listgen() {
   for (int i = 0; i < task_queue.size(); i++) {
     // Try to eliminate unused listgens
     auto &t = task_queue[i];
-    auto meta = metas[t.h];
+    auto meta = offloaded_metas_[t.h];
     auto offload = t.stmt;
     bool keep = true;
     if (offload->task_type == OffloadedStmt::TaskType::listgen) {

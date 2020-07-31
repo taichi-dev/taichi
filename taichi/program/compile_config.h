@@ -35,6 +35,7 @@ struct CompileConfig {
   bool use_unified_memory;
   bool async_mode;
   bool flatten_if;
+  bool make_thread_local;
   DataType default_fp;
   DataType default_ip;
   std::string extra_flags;

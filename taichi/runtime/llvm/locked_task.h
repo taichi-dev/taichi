@@ -6,7 +6,8 @@ class lock_guard {
   lock_guard(Ptr lock, const T &func, const G &test) {
 #if ARCH_x64 || ARCH_arm64
     mutex_lock_i32(lock);
-    func();
+    if (test())
+      func();
     mutex_unlock_i32(lock);
 #else
     // CUDA

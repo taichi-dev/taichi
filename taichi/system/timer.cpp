@@ -80,7 +80,11 @@ void Time::wait_until(double t) {
       return;
     }
     Time::sleep(dt * 1e-3);
+#ifndef _WIN64
   } while (dt > 1e-4_f64);  // until dt <= 100us
+#else
+  } while (dt > 1e-3_f64);  // until dt <= 1ms
+#endif
 
   // use an EBFE loop for small scale waiting:
   while (Time::get_time() < t - 1e-6_f64)

@@ -166,7 +166,7 @@ Paint on a window
     :parameter rgb: (tuple of 3 floats) The (R, G, B) float values, in range [0, 1]
     :return: (RGB hex or np.array of uint32) The converted hex value
 
-    Convert a (R, G, B) tuple of float into a single hex value, e.g.:
+    Convert a (R, G, B) tuple of floats into a single integer value. E.g.,
 
     .. code-block:: python
 

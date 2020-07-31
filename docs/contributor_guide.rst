@@ -282,10 +282,10 @@ Command line tools
 - Use ``ti test -v`` for verbose outputs.
 - Use ``ti test -C`` to run tests and record code coverage, see :ref:`coverage` for more infomations.
 
-- Use ``ti test -a <arch(s)>`` for test against specified backend(s).
+- Use ``ti test -a <arch(s)>`` for testing against specified backend(s).
   e.g. ``ti test -a cuda,metal``.
 
-- Use ``ti test -na <arch(s)>`` for test all architectures excluding some of them.
+- Use ``ti test -na <arch(s)>`` for testing all architectures excluding some of them.
   e.g. ``ti test -na opengl,x64``.
 
 - Use ``ti test <filename(s)>`` to run specific tests in filenames.

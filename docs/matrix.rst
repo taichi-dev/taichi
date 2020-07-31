@@ -3,10 +3,10 @@
 Matrices
 ========
 
-- ``ti.Matrix`` is for small matrices (e.g. `3x3`) only. If you have `64x64` matrices, you should consider using a 2D tensor of scalars.
+- ``ti.Matrix`` is for small matrices (e.g. `3x3`) only. If you have `64x64` matrices, you should consider using a 2D field of scalars.
 - ``ti.Vector`` is the same as ``ti.Matrix``, except that it has only one column.
 - Differentiate element-wise product ``*`` and matrix product ``@``.
-- ``ti.Vector.field(n, dtype=ti.f32)`` or ``ti.Matrix.field(n, m, dtype=ti.f32)`` to create tensors of vectors/matrices.
+- ``ti.Vector.field(n, dtype=ti.f32)`` or ``ti.Matrix.field(n, m, dtype=ti.f32)`` to create fields of vectors/matrices.
 - ``A.transpose()``
 - ``R, S = ti.polar_decompose(A, ti.f32)``
 - ``U, sigma, V = ti.svd(A, ti.f32)`` (Note that ``sigma`` is a ``3x3`` diagonal matrix)
@@ -18,23 +18,23 @@ TODO: doc here better like Vector. WIP
 A matrix in Taichi can have two forms:
 
   - as a temporary local variable. An ``n by m`` matrix consists of ``n * m`` scalar values.
-  - as a an element of a global tensor. In this case, the tensor is an N-dimensional array of ``n by m`` matrices.
+  - as a an element of a global field. In this case, the field is an N-dimensional array of ``n by m`` matrices.
 
 Declaration
 -----------
 
-As global tensors of matrices
-+++++++++++++++++++++++++++++
+As global fields of matrices
+++++++++++++++++++++++++++++
 
 .. function:: ti.Matrix.field(n, m, dtype, shape = None, offset = None)
 
     :parameter n: (scalar) the number of rows in the matrix
     :parameter m: (scalar) the number of columns in the matrix
     :parameter dtype: (DataType) data type of the components
-    :parameter shape: (optional, scalar or tuple) shape the tensor of vectors, see :ref:`tensor`
+    :parameter shape: (optional, scalar or tuple) shape the field of vectors, see :ref:`tensor`
     :parameter offset: (optional, scalar or tuple) see :ref:`offset`
 
-    For example, this creates a 5x4 tensor of 3x3 matrices:
+    For example, this creates a 5x4 field of 3x3 matrices:
     ::
 
         # Python-scope
@@ -42,7 +42,7 @@ As global tensors of matrices
 
 .. note::
 
-    In Python-scope, ``ti.field`` declares :ref:`scalar_tensor`, while ``ti.Matrix.field`` declares tensors of matrices.
+    In Python-scope, ``ti.field`` declares :ref:`scalar_tensor`, while ``ti.Matrix.field`` declares fields of matrices.
 
 
 As a temporary local variable
@@ -90,13 +90,13 @@ As a temporary local variable
 Accessing components
 --------------------
 
-As global tensors of vectors
-++++++++++++++++++++++++++++
+As global fields of vectors
++++++++++++++++++++++++++++
 .. attribute:: a[p, q, ...][i, j]
 
-    :parameter a: (tensor of matrices) the tensor of matrices
-    :parameter p: (scalar) index of the first tensor dimension
-    :parameter q: (scalar) index of the second tensor dimension
+    :parameter a: (field of matrices) the field of matrices
+    :parameter p: (scalar) index of the first field dimension
+    :parameter q: (scalar) index of the second field dimension
     :parameter i: (scalar) row index of the matrix
     :parameter j: (scalar) column index of the matrix
 
@@ -111,12 +111,12 @@ As global tensors of vectors
 
 .. note::
 
-    **Always** use two pair of square brackets to access scalar elements from tensors of matrices.
+    **Always** use two pair of square brackets to access scalar elements from fields of matrices.
 
-     - The indices in the first pair of brackets locate the matrix inside the tensor of matrices;
+     - The indices in the first pair of brackets locate the matrix inside the field of matrices;
      - The indices in the second pair of brackets locate the scalar element inside the matrix.
 
-    For 0-D tensors of matrices, indices in the first pair of brackets should be ``[None]``.
+    For 0-D fields of matrices, indices in the first pair of brackets should be ``[None]``.
 
 
 

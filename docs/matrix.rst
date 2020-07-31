@@ -144,8 +144,8 @@ Methods
 
 .. function:: a.transpose()
 
-    :parameter a: (ti.Matrix or ti.Matrix.field) the matrix
-    :return: (ti.Matrix or ti.Matrix.field) the transposed matrix of ``a``.
+    :parameter a: (ti.Matrix) the matrix
+    :return: (ti.Matrix) the transposed matrix of ``a``.
 
     For example::
 
@@ -160,7 +160,7 @@ Methods
 
 .. function:: a.trace()
 
-    :parameter a: (ti.Matrix or ti.Matrix.field) the matrix
+    :parameter a: (ti.Matrix) the matrix
     :return: (scalar) the trace of matrix ``a``.
 
     The return value can be computed as ``a[0, 0] + a[1, 1] + ...``.
@@ -168,7 +168,7 @@ Methods
 
 .. function:: a.determinant()
 
-    :parameter a: (ti.Matrix or ti.Matrix.field) the matrix
+    :parameter a: (ti.Matrix) the matrix
     :return: (scalar) the determinant of matrix ``a``.
 
     .. note::
@@ -180,8 +180,8 @@ Methods
 
 .. function:: a.inverse()
 
-    :parameter a: (ti.Matrix or ti.Matrix.field) the matrix
-    :return: (ti.Matrix or ti.Matrix.field) the inverse of matrix ``a``.
+    :parameter a: (ti.Matrix) the matrix
+    :return: (ti.Matrix) the inverse of matrix ``a``.
 
     .. note::
 

@@ -56,7 +56,7 @@ Kernel arguments must be type-hinted:
 .. code-block:: python
 
     @ti.kernel
-    def my_kernel(x: ti.i32, y: ti.f64):
+    def my_kernel(x: ti.i32, y: ti.f32):
         print(x + y)
 
     my_kernel(2, 3.3)  # prints: 5.3

@@ -46,15 +46,12 @@ Running the Taichi code below (``python3 fractal.py`` or ``ti example fractal``)
 
 Let's dive into this simple Taichi program.
 
-
 import taichi as ti
 -------------------
-
 Taichi is a domain-specific language (DSL) embedded in Python. To make Taichi as easy to use as a Python package,
 we have done heavy engineering with this goal in mind - letting every Python programmer write Taichi programs with
 minimal learning effort. You can even use your favorite Python package management system, Python IDEs and other
 Python packages in conjunction with Taichi.
-
 
 Portability
 -----------
@@ -109,27 +106,30 @@ Tensors
 -------
 
 Taichi is a data-oriented programming language where dense or spatially-sparse tensors are the first-class citizens.
-
-See :ref:`sparse` for more details on sparse tensors.
+See :ref:`scalar_tensor` for more details on tensors.
 
 In the code above, ``pixels = ti.var(dt=ti.f32, shape=(n * 2, n))`` allocates a 2D dense tensor named ``pixels`` of
 size ``(640, 320)`` and element data type ``ti.f32`` (i.e. ``float`` in C).
 
-
 Functions and kernels
 ---------------------
 
-Computation resides in Taichi **kernels**, which is defined with the decorator ``@ti.kernel``.
+Computation resides in Taichi **kernels** and Taichi **functions**.
+
+Taichi **kernels** are defined with the decorator ``@ti.kernel``.
 Kernel arguments must be type-hinted (if any).
-The language used in Taichi kernels and functions looks exactly like Python, yet the Taichi frontend compiler converts it
-into a language that is **compiled, statically-typed, lexically-scoped, parallel and differentiable**.
 
 Taichi **functions** are defined with the decorator ``@ti.func``.
-They can be called by Taichi kernels and other Taichi functions.
+They can be called by Taichi kernels or other Taichi functions.
+
+The language used in Taichi kernels and functions looks exactly like Python, yet the Taichi frontend compiler converts it into a language that is **compiled, statically-typed, lexically-scoped, parallel and differentiable**.
 
 .. note::
 
-  **Taichi-scopes v.s. Python-scopes**: everything decorated with ``@ti.kernel`` and ``@ti.func`` is in Taichi-scope and hence will be compiled by the Taichi compiler.
+  **Taichi-scopes v.s. Python-scopes**:
+  
+  Everything decorated with ``@ti.kernel`` and ``@ti.func`` is in Taichi-scope
+  and hence will be compiled by the Taichi compiler.
 
   Everything else is in Python-scopes. They are simply Python native code.
 

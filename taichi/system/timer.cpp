@@ -74,7 +74,7 @@ void Time::wait_until(double t) {
   if (t < Time::get_time()) {
     return;
   }
-  do { // use system-provided sleep for large scale sleeping:
+  do {  // use system-provided sleep for large scale sleeping:
     dt = (t - Time::get_time()) * 0.5;
     if (dt <= 0) {
       return;
@@ -83,7 +83,8 @@ void Time::wait_until(double t) {
   } while (dt > 1e-4_f64);  // until dt <= 100us
 
   // use an EBFE loop for small scale waiting:
-  while (Time::get_time() < t - 1e-6_f64); // until dt <= 1us
+  while (Time::get_time() < t - 1e-6_f64)
+    ;  // until dt <= 1us
 }
 
 double Time::Timer::get_time() {

@@ -93,18 +93,40 @@ Basically it will try to choose the more precise type to contain the result valu
 Default precisions
 ------------------
 
-By default, numerical literals have 32-bit precisions.
+By default, all numerical literals have 32-bit precisions.
 For example, ``42`` has type ``ti.i32`` and ``3.14`` has type ``ti.f32``.
 
 Default integer and float-point precisions (``default_ip`` and ``default_fp``) can be specified when initializing Taichi:
 
 .. code-block:: python
 
-    ti.init(..., default_fp=ti.f32)
-    ti.init(..., default_fp=ti.f64)
+    ti.init(default_fp=ti.f32)
+    ti.init(default_fp=ti.f64)
 
-    ti.init(..., default_ip=ti.i32)
-    ti.init(..., default_ip=ti.i64)
+    ti.init(default_ip=ti.i32)
+    ti.init(default_ip=ti.i64)
+
+
+Also note that you may use ``float`` or ``int`` in type definitions as aliases
+for default precisions, e.g.:
+
+.. code-block:: python
+
+    ti.init(default_ip=ti.i64, default_fp=ti.f32)
+
+    x = ti.var(float, 5)
+    y = ti.var(int, 5)
+    # is equivalent to:
+    x = ti.var(ti.f32, 5)
+    y = ti.var(ti.i64, 5)
+
+    def func(a: float) -> int:
+        ...
+
+    # is equivalent to:
+    def func(a: ti.f32) -> ti.i64:
+        ...
+
 
 
 Type casts
@@ -144,7 +166,8 @@ You may use ``ti.cast`` to explicitly cast scalar values between different types
     b = ti.cast(a, ti.i32)  # 1
     c = ti.cast(b, ti.f32)  # 1.0
 
-Equivalently, use ``int()`` and ``float()`` to convert values to default float-point/integer types:
+Equivalently, use ``int()`` and ``float()`` to convert values to float-point or
+integer types of default precisions:
 
 .. code-block:: python
 
@@ -160,7 +183,7 @@ Type casts applied to vectors/matrices are element-wise:
 .. code-block:: python
 
     u = ti.Vector([2.3, 4.7])
-    v = int(u)  # ti.Vector([2, 4])
+    v = int(u)              # ti.Vector([2, 4])
     # equivalent to:
     v = ti.cast(u, ti.i32)  # ti.Vector([2, 4])
 

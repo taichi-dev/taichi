@@ -163,8 +163,8 @@ Paint on a window
 
 .. function:: ti.rgb_to_hex(rgb):
 
-    :parameter rgb: (tuple of 3 floats) The (R, G, B) float values, in range [0, 1)
-    :return: (RGB hex or np.array of uint32) The translated hex value
+    :parameter rgb: (tuple of 3 floats) The (R, G, B) float values, in range [0, 1]
+    :return: (RGB hex or np.array of uint32) The converted hex value
 
     Convert a (R, G, B) tuple of float into a single hex value, e.g.:
 
@@ -176,7 +176,7 @@ Paint on a window
          rgb = np.array([[0.4, 0.8, 1.0], [0.0, 0.5, 1.0]])
          hex = ti.rgb_to_hex(rgb)  # np.array([0x66ccff, 0x007fff])
 
-    This is helpful since the return value could be used in other paint APIs.
+    The return values can be used in GUI drawing APIs.
 
 
 .. _gui_event:

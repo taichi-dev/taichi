@@ -168,7 +168,7 @@ When to use for loops with ``ti.static``
 There are several reasons why ``ti.static`` for loops should be used.
 
  - Loop unrolling for performance.
- - Loop over vector/matrix elements. Indices into Taichi matrices must be a compile-time constant. Indexing into taichi fields can be run-time variables. For example, if ``x`` is a 1-D vector field which has 3-D vector on each entry, accessed as ``x[field_index][matrix_index]``. The first index can be variable, yet the second must be a constant.
+ - Loop over vector/matrix elements. Indices into Taichi matrices must be a compile-time constant. Indexing into taichi fields can be run-time variables. For example, if you want to access a vector field ``x``, accessed as ``x[field_index][vector_component_index]``. The first index can be variable, yet the second must be a constant.
 
 For example, code for resetting this vector fields should be
 

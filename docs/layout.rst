@@ -6,10 +6,10 @@ Advanced dense layouts
 Tensors (:ref:`scalar_tensor`) can be *placed* in a specific shape and *layout*.
 Defining a proper layout can be critical to performance, especially for memory-bound applications. A carefully designed data layout can significantly improve cache/TLB-hit rates and cacheline utilization. Although when performance is not the first priority, you probably don't have to worry about it.
 
+Taichi decouples algorithms from data layouts, and the Taichi compiler automatically optimizes data accesses on a specific data layout. These Taichi features allow programmers to quickly experiment with different data layouts and figure out the most efficient one on a specific task and computer architecture.
+
 In Taichi, the layout is defined in a recursive manner. See :ref:`snode` for more details about how this works. We suggest starting with the default layout specification (simply by specifying ``shape`` when creating tensors using ``ti.var/Vector/Matrix``),
 and then migrate to more advanced layouts using the ``ti.root.X`` syntax if necessary.
-
-Taichi decouples algorithms from data layouts, and the Taichi compiler automatically optimizes data accesses on a specific data layout. These Taichi features allow programmers to quickly experiment with different data layouts and figure out the most efficient one on a specific task and computer architecture.
 
 
 From ``shape`` to ``ti.root.X``

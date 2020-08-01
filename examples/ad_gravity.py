@@ -4,9 +4,9 @@ ti.init()
 N = 8
 dt = 1e-5
 
-x = ti.Vector.var(2, float, N, needs_grad=True)  # position of particles
-v = ti.Vector.var(2, float, N)  # velocity of particles
-U = ti.var(float, (), needs_grad=True)  # potential energy
+x = ti.Vector.var(2, ti.f32, N, needs_grad=True)  # position of particles
+v = ti.Vector.var(2, ti.f32, N)  # velocity of particles
+U = ti.var(ti.f32, (), needs_grad=True)  # potential energy
 
 
 @ti.kernel

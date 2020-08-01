@@ -14,13 +14,13 @@ gravity = 9.8
 bound = 3
 E = 400
 
-x = ti.Vector.field(2, float, n_particles)
-v = ti.Vector.field(2, float, n_particles)
-C = ti.Matrix.field(2, 2, float, n_particles)
-J = ti.field(float, n_particles)
+x = ti.Vector.field(2, ti.f32, n_particles)
+v = ti.Vector.field(2, ti.f32, n_particles)
+C = ti.Matrix.field(2, 2, ti.f32, n_particles)
+J = ti.field(ti.f32, n_particles)
 
-grid_v = ti.Vector.field(2, float, (n_grid, n_grid))
-grid_m = ti.field(float, (n_grid, n_grid))
+grid_v = ti.Vector.field(2, ti.f32, (n_grid, n_grid))
+grid_m = ti.field(ti.f32, (n_grid, n_grid))
 
 @ti.kernel
 def substep():
@@ -57,8 +57,8 @@ def substep():
         base = int(Xp - 0.5)
         fx = Xp - base
         w = [0.5 * (1.5 - fx)**2, 0.75 - (fx - 1)**2, 0.5 * (fx - 0.5)**2]
-        new_v = ti.Vector.zero(float, 2)
-        new_C = ti.Matrix.zero(float, 2, 2)
+        new_v = ti.Vector.zero(ti.f32, 2)
+        new_C = ti.Matrix.zero(ti.f32, 2, 2)
         for i, j in ti.static(ti.ndrange(3, 3)):
             offset = ti.Vector([i, j])
             dpos = (offset - fx) * dx

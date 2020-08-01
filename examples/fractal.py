@@ -3,12 +3,12 @@ import taichi as ti
 ti.init(arch=ti.gpu)
 
 n = 320
-pixels = ti.field(float, (n * 2, n))
+pixels = ti.var(dt=ti.f32, shape=(n * 2, n))
 
 
 @ti.func
 def complex_sqr(z):
-    return ti.Vector([z.x**2 - z.y**2, z.y * z.x * 2])
+    return ti.Vector([z[0]**2 - z[1]**2, z[1] * z[0] * 2])
 
 
 @ti.kernel
@@ -23,7 +23,7 @@ def paint(t: ti.f32):
         pixels[i, j] = 1 - iterations * 0.02
 
 
-gui = ti.GUI('Julia Set', (n * 2, n))
+gui = ti.GUI("Julia Set", res=(n * 2, n))
 
 for i in range(1000000):
     paint(i * 0.03)

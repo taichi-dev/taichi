@@ -12,18 +12,18 @@ mu, lam = E / 2 / (1 + nu), E * nu / (1 + nu) / (1 - 2 * nu) # Lame parameters
 ball_pos, ball_radius = ti.Vector([0.5, 0.0]), 0.31
 damping = 14.5
 
-pos = ti.Vector.field(2, float, NV, needs_grad=True)
-vel = ti.Vector.field(2, float, NV)
-f2v = ti.Vector.field(3, int, NF) # ids of three vertices of each face
-B = ti.Matrix.field(2, 2, float, NF)
-F = ti.Matrix.field(2, 2, float, NF, needs_grad=True)
-V = ti.field(float, NF)
-phi = ti.field(float, NF)  # potential energy of each face (Neo-Hookean)
-U = ti.field(float, (), needs_grad=True)  # total potential energy
+pos = ti.Vector.var(2, ti.f32, NV, needs_grad=True)
+vel = ti.Vector.var(2, ti.f32, NV)
+f2v = ti.Vector.var(3, ti.i32, NF) # ids of three vertices of each face
+B = ti.Matrix.var(2, 2, ti.f32, NF)
+F = ti.Matrix.var(2, 2, ti.f32, NF, needs_grad=True)
+V = ti.var(ti.f32, NF)
+phi = ti.var(ti.f32, NF)  # potential energy of each face (Neo-Hookean)
+U = ti.var(ti.f32, (), needs_grad=True)  # total potential energy
 
-gravity = ti.Vector.field(2, float, ())
-attractor_pos = ti.Vector.field(2, float, ())
-attractor_strength = ti.field(float, ())
+gravity = ti.Vector.var(2, ti.f32, ())
+attractor_pos = ti.Vector.var(2, ti.f32, ())
+attractor_strength = ti.var(ti.f32, ())
 
 @ti.kernel
 def update_U():

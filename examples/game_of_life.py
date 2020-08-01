@@ -9,9 +9,9 @@ ti.init()
 n = 64
 cell_size = 8
 img_size = n * cell_size
-alive = ti.field(int, shape=(n, n))  # alive = 1, dead = 0
-count = ti.field(int, shape=(n, n))  # count of neighbours
-img = ti.field(float, shape=(img_size, img_size))  # image to be displayed
+alive = ti.var(ti.i32, shape=(n, n))  # alive = 1, dead = 0
+count = ti.var(ti.i32, shape=(n, n))  # count of neighbours
+img = ti.var(ti.f32, shape=(img_size, img_size))  # image to be displayed
 
 
 @ti.func

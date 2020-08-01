@@ -582,9 +582,6 @@ class Matrix(TaichiOperations):
     def data_type(self):
         return self.dtype
 
-    def snode(self):
-        return self.loop_range().snode()
-
     def make_grad(self):
         ret = self.empty_copy()
         for i in range(len(ret.entries)):
@@ -676,7 +673,7 @@ class Matrix(TaichiOperations):
         if not self.is_global():
             return np.array(self.entries).reshape(shape_ext)
 
-        ret = np.zeros(self.shape + shape_ext, dtype=to_numpy_type(self.dtype))
+        ret = np.empty(self.shape + shape_ext, dtype=to_numpy_type(self.dtype))
         from .meta import matrix_to_ext_arr
         matrix_to_ext_arr(self, ret, as_vector)
         import taichi as ti

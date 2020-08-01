@@ -1,5 +1,5 @@
 Objective data-oriented programming
-===================================
+====================================================
 
 Taichi is a `data-oriented <https://en.wikipedia.org/wiki/Data-oriented_design>`_ programming (DOP) language. However, simple DOP makes modularization hard.
 

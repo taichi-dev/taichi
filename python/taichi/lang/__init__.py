@@ -139,33 +139,33 @@ def init(arch=None,
 
     # configure default_fp/ip:
     # TODO: move these stuff to _SpecialConfig too:
-    dfl_fp = os.environ.get("TI_DEFAULT_FP")
-    if dfl_fp:
+    env_default_fp = os.environ.get("TI_DEFAULT_FP")
+    if env_default_fp:
         if default_fp is not None:
             core.warn(
-                f'ti.init argument "default_fp" overridden by environment variable TI_DEFAULT_FP={dfl_fp}'
+                f'ti.init argument "default_fp" overridden by environment variable TI_DEFAULT_FP={env_default_fp}'
             )
-        if dfl_fp == '32':
+        if env_default_fp == '32':
             default_fp = f32
-        elif dfl_fp == '64':
+        elif env_default_fp == '64':
             default_fp = f64
-        elif dfl_fp is not None:
+        elif env_default_fp is not None:
             raise ValueError(
-                f'Invalid TI_DEFAULT_FP={dfl_fp}, should be 32 or 64')
+                f'Invalid TI_DEFAULT_FP={env_default_fp}, should be 32 or 64')
 
-    dfl_ip = os.environ.get("TI_DEFAULT_IP")
-    if dfl_ip:
+    env_default_ip = os.environ.get("TI_DEFAULT_IP")
+    if env_default_ip:
         if default_ip is not None:
             core.warn(
-                f'ti.init argument "default_ip" overridden by environment variable TI_DEFAULT_IP={dfl_ip}'
+                f'ti.init argument "default_ip" overridden by environment variable TI_DEFAULT_IP={env_default_ip}'
             )
-        if dfl_ip == '32':
+        if env_default_ip == '32':
             default_ip = i32
-        elif dfl_ip == '64':
+        elif env_default_ip == '64':
             default_ip = i64
-        elif dfl_ip is not None:
+        elif env_default_ip is not None:
             raise ValueError(
-                f'Invalid TI_DEFAULT_IP={dfl_ip}, should be 32 or 64')
+                f'Invalid TI_DEFAULT_IP={env_default_ip}, should be 32 or 64')
 
     if default_fp is not None:
         ti.get_runtime().set_default_fp(default_fp)

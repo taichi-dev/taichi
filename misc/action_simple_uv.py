@@ -13,3 +13,4 @@ def render():
 
 
 render()
+x.to_numpy()

@@ -57,8 +57,7 @@ Paint on a window
 
     Set an image to display on the window.
 
-    The image pixels are set from the values of ``img[i, j]``, where ``i`` indicates the horizontal
-    coordinates (from left to right) and ``j`` the vertical coordinates (from bottom to top).
+    The image pixels are set from the values of ``img[i, j]``, where ``i`` indicates the horizontal coordinates (from left to right) and ``j`` the vertical coordinates (from bottom to top).
 
 
     If the window size is ``(x, y)``, then ``img`` must be one of:
@@ -67,11 +66,17 @@ Paint on a window
 
     * ``ti.var(shape=(x, y, 3))``, where `3` is for ``(r, g, b)`` channels
 
-    * ``ti.Vector(3, shape=(x, y))`` (see :ref:`vector`)
+    * ``ti.var(shape=(x, y, 2))``, where `2` is for ``(r, g)`` channels
+
+    * ``ti.Vector(3, shape=(x, y))`` ``(r, g, b)`` channels on each component (see :ref:`vector`)
+
+    * ``ti.Vector(2, shape=(x, y))`` ``(r, g)`` channels on each component
 
     * ``np.ndarray(shape=(x, y))``
 
     * ``np.ndarray(shape=(x, y, 3))``
+
+    * ``np.ndarray(shape=(x, y, 2))``
 
 
     The data type of ``img`` must be one of:
@@ -90,6 +95,13 @@ Paint on a window
 
         When using ``float32`` or ``float64`` as the data type,
         ``img`` entries will be clipped into range ``[0, 1]`` for display.
+
+
+.. function:: gui.get_image()
+
+    :return: (np.array) the current image shown on the GUI
+
+    Get the RGBA shown image from the current GUI system which has four channels.
 
 
 .. function:: gui.circle(pos, color = 0xFFFFFF, radius = 1)
@@ -415,12 +427,6 @@ could make variable control more intuitive:
 
 Image I/O
 ---------
-
-.. function:: gui.get_image()
-
-    :return: a ``np.ndarray`` which is the current image shown on the GUI.
-
-    Get the RGBA shown image from the current GUI system which has four channels.
 
 .. function:: ti.imwrite(img, filename)
 

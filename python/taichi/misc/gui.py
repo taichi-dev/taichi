@@ -107,6 +107,11 @@ class GUI:
         if img.shape[2] == 3:
             zeros = np.zeros((img.shape[0], img.shape[1], 1), np.float32)
             img = np.concatenate([img, zeros], axis=2)
+        if img.shape[2] == 2:
+            zeros = np.zeros((img.shape[0], img.shape[1], 2), np.float32)
+            img = np.concatenate([img, zeros], axis=2)
+
+        assert img.shape[2] == 4, "Image must be grayscale, RG, RGB or RGBA"
 
         res = img.shape[:2]
         assert res == self.res, "Image resolution does not match GUI resolution"
@@ -138,12 +143,10 @@ class GUI:
                 self.img = self.cook_image(img.to_numpy())
             else:
                 # Type matched! We can use an optimized copy kernel.
-                assert img.shape \
-                 == self.res, "Image resolution does not match GUI resolution"
-                assert img.n in [
-                    3, 4
-                ], "Only greyscale, RGB or RGBA images are supported in GUI.set_image"
-                assert img.m == 1
+                assert img.shape  == self.res, \
+                        "Image resolution does not match GUI resolution"
+                assert img.n in [2, 3, 4] and img.m == 1, \
+                        "Only greyscale, RG, RGB or RGBA images are supported in GUI.set_image"
                 from taichi.lang.meta import vector_to_image
                 vector_to_image(img, self.img)
                 ti.sync()

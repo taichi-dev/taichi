@@ -54,7 +54,6 @@ __pycache__
 *.ppm
 *.png
 *.jpg
-*.ini
 *.egg-info
 .tlang_cache
 .tidle_*

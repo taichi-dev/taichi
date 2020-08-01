@@ -1,4 +1,4 @@
-import sys, os, atexit
+import sys, os, atexit, functools
 
 
 class ShellType:
@@ -116,4 +116,34 @@ class IPythonInspectorWrapper:
 
 
 oinspect = ShellInspectorWrapper()
-# TODO: also detect print according to shell type
+
+
+
+pybuf_enabled = False
+_env_enable_pybuf = os.environ.get('TI_ENABLE_PYBUF', '1')
+if not _env_enable_pybuf or int(_env_enable_pybuf):
+    # When using in Jupyter / IDLE, the sys.stdout will be their wrapped ones.
+    pybuf_enabled = type(sys.stdout).__name__ != 'TextIOWrapper'
+
+from .core import taichi_lang_core
+taichi_lang_core.toggle_python_print_buffer(pybuf_enabled)
+
+
+def _shell_pop_print(old_call):
+    if not pybuf_enabled:
+        # zero-overhead!
+        return old_call
+
+    import taichi as ti
+    ti.info('Graphical python shell detected, using wrapped sys.stdout')
+
+    @functools.wraps(old_call)
+    def new_call(*args, **kwargs):
+        _taichi_skip_traceback = 1
+        ret = old_call(*args, **kwargs)
+        # print's in kernel won't take effect until ti.sync(), discussion:
+        # https://github.com/taichi-dev/taichi/pull/1303#discussion_r444897102
+        print(taichi_lang_core.pop_python_print_buffer(), end='')
+        return ret
+
+    return new_call

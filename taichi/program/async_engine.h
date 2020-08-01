@@ -110,12 +110,15 @@ class KernelLaunchRecord {
   Context context;
   Kernel *kernel;  // TODO: remove this
   OffloadedStmt *stmt;
-  std::unique_ptr<IRNode> stmt_holder;
-  uint64 h;
+  uint64 h;  // hash of |stmt|
 
-  KernelLaunchRecord(Context contxet,
+  KernelLaunchRecord(Context context,
                      Kernel *kernel,
-                     std::unique_ptr<IRNode> &&stmt);
+                     std::unique_ptr<IRNode> &&stmt,
+                     uint64 h);
+
+ private:
+  std::unique_ptr<IRNode> stmt_holder_;
 };
 
 // In charge of (parallel) compilation to binary and (serial) kernel launching
@@ -154,13 +157,6 @@ class AsyncEngine {
  public:
   // TODO: state machine
 
-  struct TaskMeta {
-    std::unordered_set<SNode *> input_snodes, output_snodes;
-    std::unordered_set<SNode *> activation_snodes;
-  };
-
-  std::unordered_map<std::uint64_t, TaskMeta> metas;
-
   ExecutionQueue queue;
 
   std::deque<KernelLaunchRecord> task_queue;
@@ -183,11 +179,26 @@ class AsyncEngine {
   void synchronize();
 
  private:
+  struct KernelMeta {
+    std::unique_ptr<Block> dummy_root;
+    std::vector<uint64> offloaded_hashes;
+
+    inline bool initialized() const {
+      return dummy_root != nullptr;
+    }
+  };
+
+  struct TaskMeta {
+    std::unordered_set<SNode *> input_snodes, output_snodes;
+    std::unordered_set<SNode *> activation_snodes;
+  };
+
   // In async mode, the root of an AST is an OffloadedStmt instead of a Block.
   // This map provides a dummy Block root for these OffloadedStmt, so that
   // get_kernel() could still work correctly.
-  std::unordered_map<const Kernel *, std::unique_ptr<Block>>
-      kernel_to_dummy_roots_;
+  std::unordered_map<const Kernel *, KernelMeta> kernel_metas_;
+
+  std::unordered_map<std::uint64_t, TaskMeta> offloaded_metas_;
 };
 
 TLANG_NAMESPACE_END

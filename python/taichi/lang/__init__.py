@@ -219,7 +219,7 @@ def init(arch=None,
 
 def no_activate(*args):
     for v in args:
-        taichi_lang_core.no_activate(v.ptr)
+        taichi_lang_core.no_activate(v.snode().ptr)
 
 
 def cache_shared(*args):

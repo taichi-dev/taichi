@@ -11,7 +11,7 @@ class Composer:
         self.launches = []
 
     def emit(self, line):
-        print(line, out=self.fout)
+        print(line, file=self.fout)
 
     def run(self):
         if self.emscripten:
@@ -117,11 +117,11 @@ class Composer:
 
 
 def main(fin_name, fout_name, emscripten=False):
-    with open(fin_name) as fin:
+    with open(fin_name, 'r') as fin:
         warnings.filterwarnings('ignore')
         obj = yaml.load(fin)
 
-    with open(fout_name) as fout:
+    with open(fout_name, 'w') as fout:
         comp = Composer(fout, obj, emscripten)
         comp.run()
 

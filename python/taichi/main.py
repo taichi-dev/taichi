@@ -1010,11 +1010,9 @@ class TaichiMain:
                                          description=f"{self.cc_compose.__doc__}")
         parser.add_argument(
             'fin_name',
-            required=True,
             help='Action record YAML file name from C backend, e.g. program.yml')
         parser.add_argument(
             'fout_name',
-            required=True,
             help='The output C source file name, e.g. program.c')
         parser.add_argument(
             '-e',

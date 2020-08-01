@@ -1,10 +1,10 @@
 Type system
 ===========
 
-Taichi supports many data types. The type name is recognized as
-a *prefix character* + a *digital number*.
+Taichi supports common numerical data types. Each type is denoted as
+a character indicating its *category* and a number of *precision bits*, e.g., ``i32`` and ``f64``.
 
-The *prefix character* can be one of:
+The *category* can be one of:
 
 - ``i`` for signed integers, e.g. 233, -666
 - ``u`` for unsigned integers, e.g. 233, 666
@@ -137,7 +137,7 @@ Implicit casts
 
 WARNING: The type of a variable is **determinated on it's initialization**.
 
-When a *wide* variable is assigned with a *narrow* type, it will be
+When a *low-precision* variable is assigned to a *high-precision* variable, it will be
 implicitly promoted to the *wide* type and no warning will be raised:
 
 .. code-block:: python
@@ -146,8 +146,8 @@ implicitly promoted to the *wide* type and no warning will be raised:
     a = 1
     print(a)  # 1.0
 
-When a *narrow* variable is assigned with a *wide* type, it will be
-implicitly casted into the *narrow* type and Taichi will raise a warning:
+When a *high-precision* variable is assigned to a *low-precision* type, it will be
+implicitly down-cast into the *low-precision* type and Taichi will raise a warning:
 
 .. code-block:: python
 
@@ -175,8 +175,8 @@ integer types of default precisions:
     b = int(a)    # 1
     c = float(a)  # 1.0
 
-Casting vector / matrix elements
-********************************
+Casting vectors and matrices
+****************************
 
 Type casts applied to vectors/matrices are element-wise:
 
@@ -184,7 +184,7 @@ Type casts applied to vectors/matrices are element-wise:
 
     u = ti.Vector([2.3, 4.7])
     v = int(u)              # ti.Vector([2, 4])
-    # equivalent to:
+    # If you are using ti.i32 as default_ip, this is equivalent to:
     v = ti.cast(u, ti.i32)  # ti.Vector([2, 4])
 
 Bit casting
@@ -192,6 +192,7 @@ Bit casting
 
 Use ``ti.bit_cast`` to bit-cast a value into another data type. The underlying bits will be preserved in this cast.
 The new type must have the same width as the the old type.
+or example, bit-casting ``i32`` to ``f64`` is not allowed. Use this operation with caution.
 
 .. code-block::
 

@@ -7,14 +7,57 @@
 TLANG_NAMESPACE_BEGIN
 
 DiffRange operator+(const DiffRange &a, const DiffRange &b) {
-  return DiffRange(a.related_() && b.related_(), a.coeff + b.coeff,
-                   a.low + b.low, a.high + b.high - 1);
+  return DiffRange(a.related() && b.related(), a.coeff + b.coeff, a.low + b.low,
+                   a.high + b.high - 1);
 }
 
 DiffRange operator-(const DiffRange &a, const DiffRange &b) {
-  return DiffRange(a.related_() && b.related_(), a.coeff - b.coeff,
+  return DiffRange(a.related() && b.related(), a.coeff - b.coeff,
                    a.low - b.high + 1, a.high - b.low);
 }
+
+DiffRange operator*(const DiffRange &a, int k) {
+  if (k >= 0)
+    return DiffRange(a.related(), a.coeff * k, a.low * k, (a.high - 1) * k + 1);
+  else
+    return DiffRange(a.related(), a.coeff * k, (a.high - 1) * k, a.low * k + 1);
+}
+
+DiffRange operator*(const DiffRange &a, const DiffRange &b) {
+  // Consider each DiffRange f as a function f(x).
+  // This operator returns a(b(x)).
+  // if (!a.related() || !b.related())
+  //   return DiffRange();
+  TI_ASSERT(a.related() && b.related());
+  return b * a.coeff + DiffRange(true, 1, a.low, a.high);
+}
+
+class ComputeValueDiff : public IRVisitor {
+ public:
+  class DisjointSet {
+   public:
+    struct Set {
+      int parent{};
+      int rank{};
+      DiffRange diff_from_parent;
+    };
+
+    int find_set(int id) {
+      int parent = set_[id].parent;
+      if (parent == id)
+        return id;
+      int result = find_set(parent);
+      set_[id].parent = result;
+      set_[id].diff_from_parent =
+          set_[id].diff_from_parent * set_[parent].diff_from_parent;
+      return result;
+    }
+
+   private:
+    std::unordered_map<int, Set> set_;
+  };
+  DisjointSet disjoint_set;
+};
 
 class ValueDiffLoopIndex : public IRVisitor {
  public:
@@ -75,7 +118,7 @@ class ValueDiffLoopIndex : public IRVisitor {
       stmt->rhs->accept(this);
       auto ret1 = results[stmt->lhs->instance_id];
       auto ret2 = results[stmt->rhs->instance_id];
-      if (ret1.related_() && ret2.related_()) {
+      if (ret1.related() && ret2.related()) {
         if (stmt->op_type == BinaryOpType::add) {
           results[stmt->instance_id] = ret1 + ret2;
         } else {

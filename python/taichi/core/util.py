@@ -251,17 +251,19 @@ def check_exists(src):
         )
 
 
-def prepare_sandbox(src):
+def prepare_sandbox(src=None):
     global g_tmp_dir
-    check_exists(src)
+    if src is not None:
+        check_exists(src)
     import atexit
     import shutil
     from tempfile import mkdtemp
     tmp_dir = mkdtemp(prefix='taichi-')
     atexit.register(shutil.rmtree, tmp_dir)
     print(f'[Taichi] preparing sandbox at {tmp_dir}')
-    dest = os.path.join(tmp_dir, 'taichi_core.so')
-    shutil.copy(src, dest)
+    if src is not None:
+        dest = os.path.join(tmp_dir, 'taichi_core.so')
+        shutil.copy(src, dest)
     os.mkdir(os.path.join(tmp_dir, 'runtime/'))
     return tmp_dir
 
@@ -285,6 +287,7 @@ if is_release():
     import_ti_core()
     if get_os_name() != 'win':
         dll = ctypes.CDLL(get_core_shared_object(), mode=ctypes.RTLD_LOCAL)
+        ti_core.set_tmp_dir(prepare_sandbox())
 
     ti_core.set_python_package_dir(package_root())
     os.makedirs(ti_core.get_repo_dir(), exist_ok=True)

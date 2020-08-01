@@ -195,7 +195,6 @@ Bit casting
 Use ``ti.bit_cast`` to bit-cast a value into another data type. The underlying bits will be preserved in this cast.
 The new type must have the same width as the the old type.
 For example, bit-casting ``i32`` to ``f64`` is not allowed. Use this operation with caution.
-or example, bit-casting ``i32`` to ``f64`` is not allowed. Use this operation with caution.
 
 .. code-block::
 

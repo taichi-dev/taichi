@@ -48,6 +48,10 @@ def test_cast_default_ip(dtype):
 
     # make sure that int(4.6) == 4:
     assert func(23.3, 4.6) == 23 * 4
+    if dtype == ti.i64:
+        large = 1000000000
+        assert func(large, 233) == large * 233
+        assert func(233, large) == 233 * large
 
 
 @ti.all_archs

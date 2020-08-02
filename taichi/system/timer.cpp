@@ -70,7 +70,7 @@ void Time::sleep(double s) {
 }
 
 void Time::wait_until(double t) {
-                // microsecond (us) sleep on Windows... sadly.
+  // microsecond (us) sleep on Windows... sadly.
   double dt;
   if (t < Time::get_time()) {
     return;

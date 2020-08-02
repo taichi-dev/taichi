@@ -251,19 +251,17 @@ def check_exists(src):
         )
 
 
-def prepare_sandbox(src=None):
-    global g_tmp_dir
-    if src is not None:
-        check_exists(src)
+def prepare_sandbox():
+    '''
+    return a runtime temporary directory name, which will be automatically
+    deleted on exit.
+    '''
     import atexit
     import shutil
     from tempfile import mkdtemp
     tmp_dir = mkdtemp(prefix='taichi-')
     atexit.register(shutil.rmtree, tmp_dir)
     print(f'[Taichi] preparing sandbox at {tmp_dir}')
-    if src is not None:
-        dest = os.path.join(tmp_dir, 'taichi_core.so')
-        shutil.copy(src, dest)
     os.mkdir(os.path.join(tmp_dir, 'runtime/'))
     return tmp_dir
 
@@ -287,6 +285,7 @@ if is_release():
     import_ti_core()
     if get_os_name() != 'win':
         dll = ctypes.CDLL(get_core_shared_object(), mode=ctypes.RTLD_LOCAL)
+        # TODO: add tmp dir for win too, so that C backend can be functional:
         ti_core.set_tmp_dir(prepare_sandbox())
 
     ti_core.set_python_package_dir(package_root())
@@ -298,12 +297,15 @@ else:
         os.environ['DYLD_FALLBACK_LIBRARY_PATH'] = get_runtime_directory()
         lib_path = os.path.join(bin_dir, 'libtaichi_core.dylib')
         tmp_cwd = os.getcwd()
-        tmp_dir = prepare_sandbox(lib_path)
+        tmp_dir = prepare_sandbox()
+        check_exists(lib_path)
+        shutil.copy(lib_path, os.path.join(tmp_dir, 'taichi_core.so'))
         os.chdir(tmp_dir)
         sys.path.append(tmp_dir)
         import taichi_core as ti_core
         os.chdir(tmp_cwd)
 
+    # TODO: unify importing infrastructure:
     elif get_os_name() == 'linux':
         bin_dir = get_bin_directory()
         if 'LD_LIBRARY_PATH' in os.environ:
@@ -313,7 +315,9 @@ else:
         lib_path = os.path.join(bin_dir, 'libtaichi_core.so')
         check_exists(lib_path)
         tmp_cwd = os.getcwd()
-        tmp_dir = prepare_sandbox(lib_path)
+        tmp_dir = prepare_sandbox()
+        check_exists(lib_path)
+        shutil.copy(lib_path, os.path.join(tmp_dir, 'taichi_core.so'))
         os.chdir(tmp_dir)
         sys.path.append(tmp_dir)
         try:

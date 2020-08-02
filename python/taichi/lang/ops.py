@@ -274,7 +274,8 @@ def random(dt=None):
     if dt is None:
         import taichi
         dt = taichi.get_runtime().default_fp
-    return Expr(ti_core.make_rand_expr(dt))
+    x = Expr(ti_core.make_rand_expr(dt))
+    return expr_init(x)
 
 
 # NEXT: add matpow(self, power)

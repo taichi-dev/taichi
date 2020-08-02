@@ -183,6 +183,24 @@ Paint on a window
     Draw a line of text on screen.
 
 
+.. function:: ti.rgb_to_hex(rgb):
+
+    :parameter rgb: (tuple of 3 floats) The (R, G, B) float values, in range [0, 1]
+    :return: (RGB hex or np.array of uint32) The converted hex value
+
+    Convert a (R, G, B) tuple of floats into a single integer value. E.g.,
+
+    .. code-block:: python
+
+         rgb = (0.4, 0.8, 1.0)
+         hex = ti.rgb_to_hex(rgb)  # 0x66ccff
+
+         rgb = np.array([[0.4, 0.8, 1.0], [0.0, 0.5, 1.0]])
+         hex = ti.rgb_to_hex(rgb)  # np.array([0x66ccff, 0x007fff])
+
+    The return values can be used in GUI drawing APIs.
+
+
 .. _gui_event:
 
 Event processing

@@ -4,7 +4,7 @@ from .transformer import ASTTransformer
 import ast
 from .kernel_arguments import *
 from .util import *
-from .shell import oinspect
+from .shell import oinspect, _shell_pop_print
 from . import impl
 import functools
 
@@ -152,7 +152,6 @@ def classfunc(foo):
     @functools.wraps(foo)
     def decorated(*args):
         return func.__call__(*args)
-
     return decorated
 
 
@@ -487,6 +486,7 @@ class Kernel:
 
     # For small kernels (< 3us), the performance can be pretty sensitive to overhead in __call__
     # Thus this part needs to be fast. (i.e. < 3us on a 4 GHz x64 CPU)
+    @_shell_pop_print
     def __call__(self, *args, **kwargs):
         _taichi_skip_traceback = 1
         assert len(kwargs) == 0, 'kwargs not supported for Taichi kernels'

@@ -419,7 +419,7 @@ def rgb_to_hex(c):
     return 65536 * to255(c[0]) + 256 * to255(c[1]) + to255(c[2])
 
 
-def hex_to_rgb(c):
+def hex_to_rgb(color):
     r, g, b = (color >> 16) & 0xff, (color >> 8) & 0xff, color & 0xff
     return r / 255, g / 255, b / 255
 

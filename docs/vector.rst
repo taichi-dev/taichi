@@ -224,7 +224,7 @@ Metadata
 
 .. attribute:: a.n
 
-   :parameter a: (ti.Vector)
+   :parameter a: (ti.Vector or ti.Vector.field)
    :return: (scalar) return the dimensionality of vector ``a``
 
     E.g.,

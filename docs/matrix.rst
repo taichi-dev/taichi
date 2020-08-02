@@ -90,7 +90,7 @@ As a temporary local variable
 Accessing components
 --------------------
 
-As global vector fields
+As global matrix fields
 +++++++++++++++++++++++
 .. attribute:: a[p, q, ...][i, j]
 

@@ -218,8 +218,8 @@ class PyTaichi:
             if var.ptr.snode() is None:
                 raise RuntimeError(
                     'Some variable(s) are not placed.'
-                    ' Did you forget to specify shape for a field? e.g.:\n'
-                    '  ti.field(ti.f32, shape=(3, 4))')
+                    ' Did you forget to specify the shape of any field? E.g., the "shape" argument in'
+                    ' ti.field(dtype=ti.f32, shape=(3, 4))')
 
     def clear(self):
         if self.prog:

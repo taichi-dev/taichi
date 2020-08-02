@@ -421,18 +421,11 @@ class Matrix(TaichiOperations):
         return ret
 
     @taichi_scope
-    def cast(self, dt):
+    def cast(self, dtype):
         _taichi_skip_traceback = 1
         ret = self.copy()
-        if type(dt) is type and issubclass(dt, numbers.Number):
-            if dt is float:
-                dt = impl.get_runtime().default_fp
-            elif dt is int:
-                dt = impl.get_runtime().default_ip
-            else:
-                assert False
         for i in range(len(self.entries)):
-            ret.entries[i] = impl.cast(ret.entries[i], dt)
+            ret.entries[i] = impl.cast(ret.entries[i], dtype)
         return ret
 
     def trace(self):
@@ -767,7 +760,7 @@ class Matrix(TaichiOperations):
     def unit(n, i, dt=None):
         import taichi as ti
         if dt is None:
-            dt = ti.get_runtime().default_ip
+            dt = int
         assert 0 <= i < n
         return Matrix([ti.cast(int(j == i), dt) for j in range(n)])
 

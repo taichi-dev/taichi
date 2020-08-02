@@ -139,25 +139,33 @@ def init(arch=None,
 
     # configure default_fp/ip:
     # TODO: move these stuff to _SpecialConfig too:
-    if default_fp is None:
-        dfl_fp = os.environ.get("TI_DEFAULT_FP")
-        if dfl_fp == 32:
-            default_fp = core.DataType.f32
-        elif dfl_fp == 64:
-            default_fp = core.DataType.f64
-        elif dfl_fp is not None:
+    env_default_fp = os.environ.get("TI_DEFAULT_FP")
+    if env_default_fp:
+        if default_fp is not None:
+            core.warn(
+                f'ti.init argument "default_fp" overridden by environment variable TI_DEFAULT_FP={env_default_fp}'
+            )
+        if env_default_fp == '32':
+            default_fp = f32
+        elif env_default_fp == '64':
+            default_fp = f64
+        elif env_default_fp is not None:
             raise ValueError(
-                f'Unrecognized TI_DEFAULT_FP: {dfl_fp}, should be 32 or 64')
+                f'Invalid TI_DEFAULT_FP={env_default_fp}, should be 32 or 64')
 
-    if default_ip is None:
-        dfl_ip = os.environ.get("TI_DEFAULT_IP")
-        if dfl_ip == 32:
-            default_ip = core.DataType.i32
-        elif dfl_ip == 64:
-            default_ip = core.DataType.i64
-        elif dfl_ip is not None:
+    env_default_ip = os.environ.get("TI_DEFAULT_IP")
+    if env_default_ip:
+        if default_ip is not None:
+            core.warn(
+                f'ti.init argument "default_ip" overridden by environment variable TI_DEFAULT_IP={env_default_ip}'
+            )
+        if env_default_ip == '32':
+            default_ip = i32
+        elif env_default_ip == '64':
+            default_ip = i64
+        elif env_default_ip is not None:
             raise ValueError(
-                f'Unrecognized TI_DEFAULT_IP: {dfl_ip}, should be 32 or 64')
+                f'Invalid TI_DEFAULT_IP={env_default_ip}, should be 32 or 64')
 
     if default_fp is not None:
         ti.get_runtime().set_default_fp(default_fp)
@@ -262,7 +270,7 @@ def Tape(loss, clear_gradients=True):
     get_runtime().materialize()
     if len(loss.shape) != 0:
         raise RuntimeError(
-            'The loss of `Tape` must be a 0D tensor, i.e. scalar')
+            'The loss of `Tape` must be a 0-D tensor, i.e. scalar')
     if not loss.snode().ptr.has_grad():
         raise RuntimeError(
             'Gradients of loss are not allocated, please use ti.var(..., needs_grad=True)'

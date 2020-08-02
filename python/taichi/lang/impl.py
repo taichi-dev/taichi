@@ -318,6 +318,9 @@ def var(dt, shape=None, offset=None, needs_grad=False):
 @python_scope
 def field(dtype, shape=None, offset=None, needs_grad=False):
     _taichi_skip_traceback = 1
+
+    dtype = cook_dtype(dtype)
+
     if isinstance(shape, numbers.Number):
         shape = (shape, )
 

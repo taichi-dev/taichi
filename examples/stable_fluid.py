@@ -2,7 +2,7 @@
 # http://developer.download.nvidia.com/books/HTML/gpugems/gpugems_ch38.html
 # https://github.com/PavelDoGreat/WebGL-Fluid-Simulation
 # https://www.bilibili.com/video/BV1ZK411H7Hc?p=4
-# https://github.com/ShaneFX/GAMES201/tree/master/HW1
+# https://github.com/ShaneFX/GAMES201/tree/master/HW01
 
 import taichi as ti
 import numpy as np

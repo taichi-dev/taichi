@@ -253,8 +253,8 @@ def check_exists(src):
 
 def prepare_sandbox():
     '''
-    return a runtime temporary directory name, which will be automatically
-    deleted on exit.
+    Returns a temporary directory, which will be automatically deleted on exit.
+    It may contain the taichi_core shared object or some misc. files.
     '''
     import atexit
     import shutil

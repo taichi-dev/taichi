@@ -70,7 +70,6 @@ void Time::sleep(double s) {
 }
 
 void Time::wait_until(double t) {
-#ifndef _WIN64  // we can't release CPU slice due to the lack of
                 // microsecond (us) sleep on Windows... sadly.
   double dt;
   if (t < Time::get_time()) {
@@ -83,7 +82,6 @@ void Time::wait_until(double t) {
     }
     Time::sleep(dt * (dt < 4e-2_f64 ? 0.02 : 0.4));
   } while (dt > 2e-4_f64);  // until dt <= 200us
-#endif
 
   // use an EBFE loop for small scale waiting:
   while (Time::get_time() < t - 1e-6_f64)

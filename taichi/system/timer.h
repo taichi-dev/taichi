@@ -38,6 +38,7 @@ class Time {
   static void wait_until(double t);
 
   static void usleep(double us);
+  static void msleep(double ms);
   static void sleep(double s);
 
   class Timer {

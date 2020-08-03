@@ -57,16 +57,52 @@ double Time::get_time() {
 }
 #endif
 
+#ifdef _WIN64
+#include <Windows.h>
+#pragma comment(lib, "Winmm.lib")
+
+void win_usleep(double us) {
+  using us_t = chrono::duration<double, std::micro>;
+  auto start = chrono::high_resolution_clock::now();
+  while ((us_t(chrono::high_resolution_clock::now() - start).count()) < us);
+}
+
+void win_msleep(DWORD ms) {
+  if (ms == 0)
+    Sleep(0);
+  else {
+    HANDLE hEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
+    timeSetEvent(ms, 1, (LPTIMECALLBACK)hEvent, 0,
+                 TIME_ONESHOT | TIME_CALLBACK_EVENT_SET);
+    WaitForSingleObject(hEvent, INFINITE);
+    CloseHandle(hEvent);
+  }
+}
+#endif
+
 void Time::usleep(double us) {
 #ifdef _WIN64
-  Sleep(DWORD(us * 1e-3));
+  // use win_usleep for accuracy 
+  if (us < 999) 
+    win_usleep(us);
+  // use win_msleep to release time slice , precision < 1ms
+  else
+    win_msleep(DWORD(us * 1e-3));
 #else
   ::usleep(us);
 #endif
 }
 
+void Time::msleep(double ms) {
+#ifdef _WIN64
+  win_msleep(DWORD(ms));
+#else
+  ::usleep(ms * 1e3_f64);
+#endif
+}
+
 void Time::sleep(double s) {
-  Time::usleep(s * 1e6_f64);
+  Time::msleep(s * 1e3_f64);
 }
 
 void Time::wait_until(double t) {
@@ -80,7 +116,11 @@ void Time::wait_until(double t) {
     if (dt <= 0) {
       return;
     }
+#ifdef _WIN64
+    Time::sleep(dt * 0.5);
+#else
     Time::sleep(dt * (dt < 4e-2_f64 ? 0.02 : 0.4));
+#endif  
   } while (dt > 2e-4_f64);  // until dt <= 200us
 
   // use an EBFE loop for small scale waiting:

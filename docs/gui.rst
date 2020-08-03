@@ -101,7 +101,7 @@ Paint on a window
 
     :return: (np.array) the current image shown on the GUI
 
-    Get the RGBA shown image from the current GUI system which has four channels.
+    Get the 4-channel (RGBA) image shown in the current GUI system.
 
 
 .. function:: gui.circle(pos, color = 0xFFFFFF, radius = 1)

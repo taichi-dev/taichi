@@ -17,7 +17,7 @@ Running the Taichi code below (``python3 fractal.py`` or ``ti example fractal``)
     ti.init(arch=ti.gpu)
 
     n = 320
-    pixels = ti.field(dt=ti.f32, shape=(n * 2, n))
+    pixels = ti.field(dtype=ti.f32, shape=(n * 2, n))
 
 
     @ti.func
@@ -107,7 +107,7 @@ Taichi programs run on either CPUs or GPUs. Initialize Taichi according to your 
 Taichi is a data-oriented programming language where dense or spatially-sparse fields are the first-class citizens.
 See :ref:`sparse` for more details on sparse fields.
 
-In the code above, ``pixels = ti.field(dt=ti.f32, shape=(n * 2, n))`` allocates a 2D dense field named ``pixels`` of
+In the code above, ``pixels = ti.field(dtype=ti.f32, shape=(n * 2, n))`` allocates a 2D dense field named ``pixels`` of
 size ``(640, 320)`` and element data type ``ti.f32`` (i.e. ``float`` in C).
 
 Functions and kernels

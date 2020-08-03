@@ -27,8 +27,8 @@ See :ref:`layout` for more details. ``ti.root`` is the root node of the data str
 
     ::
 
-        x = ti.field(dt=ti.i32)
-        y = ti.field(dt=ti.f32)
+        x = ti.field(dtype=ti.i32)
+        y = ti.field(dtype=ti.f32)
         ti.root.place(x, y)
         assert x.snode() == y.snode()
 
@@ -55,8 +55,8 @@ See :ref:`layout` for more details. ``ti.root`` is the root node of the data str
 
     ::
 
-        x = ti.field(dt=ti.i32)
-        y = ti.field(dt=ti.f32)
+        x = ti.field(dtype=ti.i32)
+        y = ti.field(dtype=ti.f32)
         ti.root.place(x, y)
         x.snode()
 
@@ -113,14 +113,14 @@ Node types
 
     ::
 
-        x = ti.field(dt=ti.i32)
+        x = ti.field(dtype=ti.i32)
         ti.root.dense(ti.i, 3).place(x)
 
     The following code places a 2-D field of shape ``(3, 4)``:
 
     ::
 
-        x = ti.field(dt=ti.i32)
+        x = ti.field(dtype=ti.i32)
         ti.root.dense(ti.ij, (3, 4)).place(x)
 
     .. note::

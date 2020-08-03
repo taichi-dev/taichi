@@ -30,8 +30,8 @@ We allocate two 1D fields to simplify discussion:
 
 .. code-block:: python
 
-  x = ti.field(dt=ti.f32, shape=128)
-  y = ti.field(dt=ti.f32, shape=16)
+  x = ti.field(dtype=ti.f32, shape=128)
+  y = ti.field(dtype=ti.f32, shape=16)
 
 
 Kernel registration

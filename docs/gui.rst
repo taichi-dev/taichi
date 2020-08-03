@@ -401,7 +401,7 @@ Image I/O
 
         shape = (512, 512)
         type = ti.u8
-        pixels = ti.field(dt=type, shape=shape)
+        pixels = ti.field(dtype=type, shape=shape)
 
         @ti.kernel
         def draw():

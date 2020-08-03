@@ -385,14 +385,14 @@ too hard. This includes runtime errors such as:
 
 ```RuntimeError: [verify.cpp:basic_verify@40] stmt 8 cannot have operand 7.```
 
-You may use ``ti.init(advance_optimization=False)`` to turn off advanced
+You may use ``ti.init(advanced_optimization=False)`` to turn off advanced
 optimization and see if the issue still exists:
 
 .. code-block:: python
 
     import taichi as ti
 
-    ti.init(advance_optimization=False)
+    ti.init(advanced_optimization=False)
 
     ...
 

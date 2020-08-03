@@ -1,7 +1,7 @@
 import numbers
 import numpy as np
 from taichi.core import ti_core
-from .util import deprecated
+from .util import deprecated, core_veci
 
 
 class GUI:
@@ -35,14 +35,13 @@ class GUI:
     RELEASE = ti_core.KeyEvent.EType.Release
 
     def __init__(self, name, res=512, background_color=0x0):
-        import taichi as ti
         self.name = name
         if isinstance(res, numbers.Number):
             res = (res, res)
         self.res = res
         # The GUI canvas uses RGBA for storage, therefore we need NxMx4 for an image.
         self.img = np.ascontiguousarray(np.zeros(self.res + (4, ), np.float32))
-        self.core = ti.core.GUI(name, ti.veci(*res))
+        self.core = ti_core.GUI(name, core_veci(*res))
         self.canvas = self.core.get_canvas()
         self.background_color = background_color
         self.key_pressed = set()
@@ -301,9 +300,9 @@ class GUI:
         import taichi as ti
         # TODO: refactor Canvas::text
         font_size = float(font_size)
-        pos = ti.vec(*pos)
-        r, g, b = (color >> 16) & 0xff, (color >> 8) & 0xff, color & 0xff
-        color = ti.vec(r / 255, g / 255, b / 255, 1)
+        pos = ti.core_vec(*pos)
+        r, g, b = hex_to_rgb(color)
+        color = ti.core_vec(r, g, b, 1)
         self.canvas.text(content, pos, font_size, color)
 
     def show(self, file=None):
@@ -420,7 +419,13 @@ def rgb_to_hex(c):
     return 65536 * to255(c[0]) + 256 * to255(c[1]) + to255(c[2])
 
 
+def hex_to_rgb(color):
+    r, g, b = (color >> 16) & 0xff, (color >> 8) & 0xff, color & 0xff
+    return r / 255, g / 255, b / 255
+
+
 __all__ = [
     'GUI',
     'rgb_to_hex',
+    'hex_to_rgb',
 ]

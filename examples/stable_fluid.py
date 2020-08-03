@@ -8,11 +8,11 @@ import taichi as ti
 import numpy as np
 import time
 
-res = 600
+res = 512 #600
 dt = 0.03
-p_jacobi_iters = 30
+p_jacobi_iters = 100 #30
 f_strength = 10000.0
-curl_strength = 0
+curl_strength = 0 #3
 dye_decay = 0.99
 force_radius = res / 3.0
 debug = False
@@ -317,7 +317,7 @@ while gui.running:
         step(mouse_data)
 
     gui.set_image(dyes_pair.cur)
-    #gui.set_image(np.concatenate(
-    #        [np.abs(velocities_pair.cur.to_numpy() * 0.01 + 0.5),
-    #            np.zeros((res, res, 1))], axis=2))
+    #gui.set_image(velocities_pair.cur.to_numpy() * 0.01 + 0.5)
+    #divergence(velocities_pair.cur); gui.set_image(velocity_divs.to_numpy() * 0.1 + 0.5)
+    #vorticity(velocities_pair.cur); gui.set_image(velocity_curls.to_numpy() * 0.03 + 0.5)
     gui.show()

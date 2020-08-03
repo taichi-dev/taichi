@@ -42,14 +42,11 @@ For now, Taichi-scope ``print`` supports string, scalar, vector, and matrix expr
 
 .. warning::
 
-    For the **CPU, CUDA, and Metal backend**, ``print`` will not work in Graphical Python Shells
-    including IDLE and Jupyter notebook. This is because these backends print the outputs to the console instead of the GUI.
-    Taichi developers are trying to solve this now. Use the **OpenGL backend** if you wish to
-    use ``print`` in IDLE / Jupyter.
+    For the **CPU and CUDA backend**, ``print`` will not work in Graphical Python Shells including IDLE and Jupyter notebook. This is because these backends print the outputs to the console instead of the GUI. Use the **OpenGL or Metal backend** if you wish to use ``print`` in IDLE / Jupyter.
 
 .. warning::
 
-    For the **OpenGL and CUDA backend**, the printed result will not show up until ``ti.sync()`` is called:
+    For the **CUDA backend**, the printed result will not show up until ``ti.sync()`` is called:
 
     .. code-block:: python
 
@@ -73,9 +70,9 @@ For now, Taichi-scope ``print`` supports string, scalar, vector, and matrix expr
         before kernel
         after kernel
         inside kernel
-        after
+        after sync
 
-    Please note that host access or program end will also implicitly invoke ``ti.sync()``.
+    Note that host access or program end will also implicitly invoke ``ti.sync()``.
 
 .. note::
 
@@ -388,14 +385,14 @@ too hard. This includes runtime errors such as:
 
 ```RuntimeError: [verify.cpp:basic_verify@40] stmt 8 cannot have operand 7.```
 
-You may use ``ti.init(advance_optimization=False)`` to turn off advanced
+You may use ``ti.init(advanced_optimization=False)`` to turn off advanced
 optimization and see if the issue still exists:
 
 .. code-block:: python
 
     import taichi as ti
 
-    ti.init(advance_optimization=False)
+    ti.init(advanced_optimization=False)
 
     ...
 

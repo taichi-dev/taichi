@@ -135,6 +135,9 @@ class UnreachableCodeEliminator : public BasicStmtVisitor {
         break;
       }
     }
+    if (modified) {
+      irpass::fix_block_parents(node);
+    }
     return modified;
   }
 };

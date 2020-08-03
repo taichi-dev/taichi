@@ -60,6 +60,8 @@ def expr_init_func(rhs):  # temporary solution to allow passing in tensors as
 
 
 def begin_frontend_struct_for(group, loop_range):
+    if not isinstance(loop_range, Expr) or not loop_range.is_global():
+        raise TypeError('Can only iterate through global variables/fields')
     if group.size() != len(loop_range.shape):
         raise IndexError(
             'Number of struct-for indices does not match loop variable dimensionality '
@@ -95,9 +97,12 @@ def subscript(value, *indices):
             ind = [indices[i]]
         flattened_indices += ind
     indices = tuple(flattened_indices)
+
     if is_taichi_class(value):
         return value.subscript(*indices)
-    else:
+    elif isinstance(value, Expr):
+        if not value.is_global():
+            raise TypeError('Cannot subscript a scalar expression')
         if isinstance(indices,
                       tuple) and len(indices) == 1 and indices[0] is None:
             indices = []
@@ -109,6 +114,8 @@ def subscript(value, *indices):
                 f'Tensor with dim {tensor_dim} accessed with indices of dim {index_dim}'
             )
         return Expr(taichi_lang_core.subscript(value.ptr, indices_expr_group))
+    else:
+        return value[indices]
 
 
 @taichi_scope
@@ -222,9 +229,6 @@ class PyTaichi:
     def sync(self):
         self.materialize()
         self.prog.synchronize()
-        # print's in kernel won't take effect until ti.sync(), discussion:
-        # https://github.com/taichi-dev/taichi/pull/1303#discussion_r444897102
-        print(taichi_lang_core.pop_python_print_buffer(), end='')
 
 
 pytaichi = PyTaichi()
@@ -314,6 +318,9 @@ def var(dt, shape=None, offset=None, needs_grad=False):
 @python_scope
 def field(dtype, shape=None, offset=None, needs_grad=False):
     _taichi_skip_traceback = 1
+
+    dtype = cook_dtype(dtype)
+
     if isinstance(shape, numbers.Number):
         shape = (shape, )
 

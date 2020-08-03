@@ -72,13 +72,15 @@ Expr &Expr::operator=(const Expr &o) {
 }
 
 Expr Expr::parent() const {
-  TI_ASSERT(is<GlobalVariableExpression>());
+  TI_ASSERT_INFO(is<GlobalVariableExpression>(),
+                 "Cannot get snode parent of non-global variables.");
   return Expr::make<GlobalVariableExpression>(
       cast<GlobalVariableExpression>()->snode->parent);
 }
 
 SNode *Expr::snode() const {
-  TI_ASSERT(is<GlobalVariableExpression>());
+  TI_ASSERT_INFO(is<GlobalVariableExpression>(),
+                 "Cannot get snode of non-global variables.");
   return cast<GlobalVariableExpression>()->snode;
 }
 

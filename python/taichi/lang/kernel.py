@@ -4,7 +4,7 @@ from .transformer import ASTTransformer
 import ast
 from .kernel_arguments import *
 from .util import *
-from .shell import oinspect
+from .shell import oinspect, _shell_pop_print
 from . import impl
 import functools
 
@@ -139,7 +139,6 @@ def classfunc(foo):
     @functools.wraps(foo)
     def decorated(*args):
         return func.__call__(*args)
-
     return decorated
 
 
@@ -422,7 +421,8 @@ class Kernel:
                     for i, s in enumerate(shape):
                         t_kernel.set_extra_arg_int(actual_argument_slot, i, s)
                 else:
-                    assert False
+                    raise ValueError(
+                        f'Argument type mismatch. Expecting {needed}, got {type(v)}.')
                 actual_argument_slot += 1
             # Both the class kernels and the plain-function kernels are unified now.
             # In both cases, |self.grad| is another Kernel instance that computes the
@@ -435,7 +435,7 @@ class Kernel:
             ret = None
             ret_dt = self.return_type
             if ret_dt is not None:
-                if taichi_lang_core.is_integral(ret_dt):
+                if id(ret_dt) in integer_type_ids:
                     ret = t_kernel.get_ret_int(0)
                 else:
                     ret = t_kernel.get_ret_float(0)
@@ -461,6 +461,7 @@ class Kernel:
 
     # For small kernels (< 3us), the performance can be pretty sensitive to overhead in __call__
     # Thus this part needs to be fast. (i.e. < 3us on a 4 GHz x64 CPU)
+    @_shell_pop_print
     def __call__(self, *args, **kwargs):
         _taichi_skip_traceback = 1
         assert len(kwargs) == 0, 'kwargs not supported for Taichi kernels'

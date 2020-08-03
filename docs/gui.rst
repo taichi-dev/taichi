@@ -10,10 +10,10 @@ Create a window
 ---------------
 
 
-.. function:: ti.GUI(title, res, bgcolor = 0x000000)
+.. function:: ti.GUI(title = 'Taichi', res = (512, 512), bgcolor = 0x000000)
 
-    :parameter title: (string) the window title
-    :parameter res: (scalar or tuple) resolution / size of the window
+    :parameter title: (optional, string) the window title
+    :parameter res: (optional, scalar or tuple) resolution / size of the window
     :parameter bgcolor: (optional, RGB hex) background color of the window
     :return: (GUI) an object represents the window
 

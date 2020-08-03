@@ -66,9 +66,7 @@ void reverse_segments(IRNode *root) {
   if (has_for && has_non_for)
     TI_ERROR(
         "Invalid program input for autodiff. Please check the documentation "
-        "for the \"Kernel Simplicity Rule\":\n"
-        "https://taichi.readthedocs.io/en/stable/"
-        "autodiff.html#simplicity_rule");
+        "for the \"Kernel Simplicity Rule\".");
   for (auto &sblock : statement_blocks) {
     for (auto &&s : sblock) {
       block->statements.push_back(std::move(s));

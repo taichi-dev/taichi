@@ -34,7 +34,7 @@ class GUI:
     PRESS = ti_core.KeyEvent.EType.Press
     RELEASE = ti_core.KeyEvent.EType.Release
 
-    def __init__(self, name, res=512, background_color=0x0):
+    def __init__(self, name='Taichi', res=512, background_color=0x0):
         self.name = name
         if isinstance(res, numbers.Number):
             res = (res, res)
@@ -289,6 +289,30 @@ class GUI:
         self.canvas.path_single(begin[0], begin[1], end[0], end[1], color,
                                 radius)
 
+    @staticmethod
+    def _arrow_to_lines(orig, major, tip_scale=0.2, angle=45):
+        import math
+        angle = math.radians(180 - angle)
+        c, s = math.cos(angle), math.sin(angle)
+        minor1 = np.array([major[:, 0] * c - major[:, 1] * s,
+                           major[:, 0] * s + major[:, 1] * c]).swapaxes(0, 1)
+        minor2 = np.array([major[:, 0] * c + major[:, 1] * s,
+                          -major[:, 0] * s + major[:, 1] * c]).swapaxes(0, 1)
+        end = orig + major
+        return [(orig, end),
+                (end, end + minor1 * tip_scale),
+                (end, end + minor2 * tip_scale)]
+
+    def arrows(self, orig, dir, radius=1, color=0xffffff, **kwargs):
+        for begin, end in self._arrow_to_lines(orig, dir, **kwargs):
+            self.lines(begin, end, radius, color)
+
+    def arrow(self, orig, dir, radius=1, color=0xffffff, **kwargs):
+        orig = np.array([orig])
+        dir = np.array([dir])
+        for begin, end in self._arrow_to_lines(orig, dir, **kwargs):
+            self.line(begin[0], end[0], radius, color)
+
     def rect(self, topleft, bottomright, radius=1, color=0xFFFFFF):
         a = topleft[0], topleft[1]
         b = bottomright[0], topleft[1]
@@ -422,7 +446,7 @@ def rgb_to_hex(c):
     return 65536 * to255(c[0]) + 256 * to255(c[1]) + to255(c[2])
 
 
-def hex_to_rgb(c):
+def hex_to_rgb(color):
     r, g, b = (color >> 16) & 0xff, (color >> 8) & 0xff, color & 0xff
     return r / 255, g / 255, b / 255
 

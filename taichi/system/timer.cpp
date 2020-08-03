@@ -64,7 +64,8 @@ double Time::get_time() {
 void win_usleep(double us) {
   using us_t = chrono::duration<double, std::micro>;
   auto start = chrono::high_resolution_clock::now();
-  while ((us_t(chrono::high_resolution_clock::now() - start).count()) < us);
+  while ((us_t(chrono::high_resolution_clock::now() - start).count()) < us)
+    ;
 }
 
 void win_msleep(DWORD ms) {
@@ -82,8 +83,8 @@ void win_msleep(DWORD ms) {
 
 void Time::usleep(double us) {
 #ifdef _WIN64
-  // use win_usleep for accuracy 
-  if (us < 999) 
+  // use win_usleep for accuracy
+  if (us < 999)
     win_usleep(us);
   // use win_msleep to release time slice , precision < 1ms
   else
@@ -120,7 +121,7 @@ void Time::wait_until(double t) {
     Time::sleep(dt * 0.5);
 #else
     Time::sleep(dt * (dt < 4e-2_f64 ? 0.02 : 0.4));
-#endif  
+#endif
   } while (dt > 2e-4_f64);  // until dt <= 200us
 
   // use an EBFE loop for small scale waiting:

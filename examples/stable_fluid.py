@@ -109,7 +109,7 @@ def backtrace_rk3(vf: ti.template(), p, dt: ti.template()):
     return p
 
 
-backtrace = backtrace_rk1
+backtrace = backtrace_rk3
 
 
 @ti.kernel

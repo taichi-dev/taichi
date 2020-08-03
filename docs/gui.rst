@@ -424,7 +424,7 @@ Image I/O
 
 .. function:: ti.imwrite(img, filename)
 
-    :parameter img: (ti.Matrix.field or Expr) the image you want to export
+    :parameter img: (ti.Vector.field or ti.field) the image you want to export
     :parameter filename: (string) the location you want to save to
 
     Export a ``np.ndarray`` or Taichi field (``ti.Matrix.field``, ``ti.Vector.field``, or ``ti.field``) to a specified location ``filename``.
@@ -497,7 +497,7 @@ Image I/O
 
 .. function:: ti.imshow(img, windname)
 
-    :parameter img: (ti.Matrix.field or Expr) the image to show in the GUI
+    :parameter img: (ti.Vector.field or ti.field) the image to show in the GUI
     :parameter windname: (string) the name of the GUI window
 
     This function will create an instance of ``ti.GUI`` and show the input image on the screen.

@@ -30,7 +30,7 @@ Frequently asked questions
 
 **Q:** Shall we add some handy functions like ``ti.smoothstep`` or ``ti.vec3``?
 
-**A:** No, but we provide them in an extension library `Taichi GLSL <https://taichi-glsl.readthedocs.io>`, install it using:
+**A:** No, but we provide them in an extension library `Taichi GLSL <https://taichi-glsl.readthedocs.io>`_ , install it using:
 
 .. code-block:: bash
 
@@ -39,7 +39,7 @@ Frequently asked questions
 **Q:** How can I **render 3D results** without writing a ray tracer myself?
 
 **A:** You may export it with :ref:`export_ply_files` so that you could view it in Houdini or Blender.
-       Or make use the extension library `Taichi THREE <https://github.com/taichi-dev/taichi_glsl>` to render images and update to GUI in real-time.
+       Or make use the extension library `Taichi THREE <https://github.com/taichi-dev/taichi_glsl>`_ to render images and update to GUI in real-time.
 
 **Q:** How do I declare a tensor with **dynamic length**?
 

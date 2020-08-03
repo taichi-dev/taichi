@@ -20,7 +20,7 @@ Frequently asked questions
         for i in range(100):  # This loop will not be parallelized
             ...
 
-**Q:** What's the most convinent way to load images / textures into Taichi tensors?
+**Q:** What's the most convenient way to load images / textures into Taichi tensors?
 
 **A:** Simply use ``tensor.from_numpy(ti.imread('filename.png'))``.
 

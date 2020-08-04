@@ -1,5 +1,6 @@
 import taichi as ti
 
+print('[Taichi] loading test module')
 
 ## Helper functions
 def approx(expected, **kwargs):

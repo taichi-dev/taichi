@@ -61,28 +61,30 @@ double Time::get_time() {
 #include <Windows.h>
 #pragma comment(lib, "Winmm.lib")
 
-void win_usleep(double us) {
-  using us_t = chrono::duration<double, std::micro>;
-  auto start = chrono::high_resolution_clock::now();
-  do {
-    // still little possible to release cpu.
-    // Note:
-    // https://docs.microsoft.com/zh-cn/windows/win32/api/synchapi/nf-synchapi-sleep
-    Sleep(0);
-  } while ((us_t(chrono::high_resolution_clock::now() - start).count()) < us);
-}
-
-void win_msleep(DWORD ms) {
-  if (ms == 0)
-    Sleep(0);
-  else {
-    HANDLE hEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
-    timeSetEvent(ms, 1, (LPTIMECALLBACK)hEvent, 0,
-                 TIME_ONESHOT | TIME_CALLBACK_EVENT_SET);
-    WaitForSingleObject(hEvent, INFINITE);
-    CloseHandle(hEvent);
+namespace {
+  void win_usleep(double us) {
+    using us_t = chrono::duration<double, std::micro>;
+    auto start = chrono::high_resolution_clock::now();
+    do {
+      // still little possible to release cpu.
+      // Note:
+      // https://docs.microsoft.com/zh-cn/windows/win32/api/synchapi/nf-synchapi-sleep
+      Sleep(0);
+    } while ((us_t(chrono::high_resolution_clock::now() - start).count()) < us);
   }
-}
+
+  void win_msleep(DWORD ms) {
+    if (ms == 0)
+      Sleep(0);
+    else {
+      HANDLE hEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
+      timeSetEvent(ms, 1, (LPTIMECALLBACK)hEvent, 0,
+                   TIME_ONESHOT | TIME_CALLBACK_EVENT_SET);
+      WaitForSingleObject(hEvent, INFINITE);
+      CloseHandle(hEvent);
+    }
+  }
+}  // namespace
 #endif
 
 void Time::usleep(double us) {

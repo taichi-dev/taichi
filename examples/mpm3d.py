@@ -6,7 +6,7 @@ dim = 3
 n_grid = 32
 n_particles = n_grid ** dim // 2 ** (dim - 1)
 dx = 1 / n_grid
-dt = 2e-4
+dt = 5e-4
 
 p_rho = 1
 p_vol = (dx * 0.5)**2

@@ -630,14 +630,15 @@ class KernelGen : public IRVisitor {
   }
 
   void visit(AllocaStmt *alloca) override {
-    emit("{} {} = 0;", opengl_data_type_name(alloca->element_type()),
-         alloca->short_name());
+    auto dt_name = opengl_data_type_name(alloca->element_type());
+    emit("{} {} = {}(0);", dt_name, alloca->short_name(), dt_name);
   }
 
   void visit(ConstStmt *const_stmt) override {
     TI_ASSERT(const_stmt->width() == 1);
-    emit("{} {} = {};", opengl_data_type_name(const_stmt->element_type()),
-         const_stmt->short_name(), const_stmt->val[0].stringify());
+    auto dt_name = opengl_data_type_name(const_stmt->element_type());
+    emit("{} {} = {}({});", dt_name, const_stmt->short_name(),
+        dt_name, const_stmt->val[0].stringify());
   }
 
   void visit(KernelReturnStmt *stmt) override {

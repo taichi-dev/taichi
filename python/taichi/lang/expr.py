@@ -66,6 +66,9 @@ class Expr(TaichiOperations):
     def loop_range(self):
         return self
 
+    def get_tensor_members(self):
+        return [self]
+
     @python_scope
     def initialize_accessor(self):
         if self.getter:

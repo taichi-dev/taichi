@@ -1,6 +1,7 @@
 import taichi as ti
+from renderer_utils import inside_taichi, Vector2
 
-ti.init(arch=ti.cuda)
+ti.init(arch=ti.cpu)
 
 n = 512
 x = ti.var(ti.f32)
@@ -13,52 +14,11 @@ block3 = block2.pointer(ti.ij, 4)
 block3.dense(ti.ij, 4).place(x)
 
 
-@ti.func
-def Vector2(x, y):
-    return ti.Vector([x, y])
-
-
-@ti.func
-def inside(p, c, r):
-    return (p - c).norm_sqr() <= r * r
-
-
-@ti.func
-def inside_taichi(p):
-    p = p * 1.11 + Vector2(0.5, 0.5)
-    ret = -1
-    if not inside(p, Vector2(0.50, 0.50), 0.55):
-        if ret == -1:
-            ret = 0
-    if not inside(p, Vector2(0.50, 0.50), 0.50):
-        if ret == -1:
-            ret = 1
-    if inside(p, Vector2(0.50, 0.25), 0.09):
-        if ret == -1:
-            ret = 1
-    if inside(p, Vector2(0.50, 0.75), 0.09):
-        if ret == -1:
-            ret = 0
-    if inside(p, Vector2(0.50, 0.25), 0.25):
-        if ret == -1:
-            ret = 0
-    if inside(p, Vector2(0.50, 0.75), 0.25):
-        if ret == -1:
-            ret = 1
-    if p[0] < 0.5:
-        if ret == -1:
-            ret = 1
-    else:
-        if ret == -1:
-            ret = 0
-    return ret
-
-
 @ti.kernel
 def activate(t: ti.f32):
     for i, j in ti.ndrange(n, n):
-        p = Vector2(i / n, j / n) - Vector2(0.5, 0.5)
-        p = ti.Matrix.rotation2d(ti.sin(t)) @ p
+        p = Vector2(i / n, j / n)
+        p = ti.Matrix.rotation2d(ti.sin(t)) @ (p - 0.5) + 0.5
 
         if inside_taichi(p):
             x[i, j] = 1

@@ -179,7 +179,7 @@ def Vector2(x, y):
 
 @ti.func
 def inside_taichi(p_):
-    p = p_
+    p = (p_ - 0.5) * 1.11 + 0.5
     ret = -1
     if not inside(p, Vector2(0.50, 0.50), 0.52):
         if ret == -1:

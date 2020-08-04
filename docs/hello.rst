@@ -17,7 +17,7 @@ Running the Taichi code below (``python3 fractal.py`` or ``ti example fractal``)
     ti.init(arch=ti.gpu)
 
     n = 320
-    pixels = ti.var(dt=ti.f32, shape=(n * 2, n))
+    pixels = ti.field(dtype=ti.f32, shape=(n * 2, n))
 
 
     @ti.func
@@ -95,19 +95,19 @@ Taichi programs run on either CPUs or GPUs. Initialize Taichi according to your 
 .. note::
 
   When used with the CUDA backend on Windows or ARM devices (e.g. NVIDIA Jetson),
-  Taichi by default allocates 1 GB GPU memory for tensor storage. You can override this behavior by initializing with
+  Taichi by default allocates 1 GB GPU memory for field storage. You can override this behavior by initializing with
   ``ti.init(arch=ti.cuda, device_memory_GB=3.4)`` to allocate ``3.4`` GB GPU memory, or
   ``ti.init(arch=ti.cuda, device_memory_fraction=0.3)`` to allocate ``30%`` of the total GPU memory.
 
   On other platforms, Taichi will make use of its on-demand memory allocator to adaptively allocate memory.
 
-(Sparse) tensors
-----------------
+(Sparse) fields
+---------------
 
-Taichi is a data-oriented programming language where dense or spatially-sparse tensors are the first-class citizens.
-See :ref:`sparse` for more details on sparse tensors.
+Taichi is a data-oriented programming language where dense or spatially-sparse fields are the first-class citizens.
+See :ref:`sparse` for more details on sparse fields.
 
-In the code above, ``pixels = ti.var(dt=ti.f32, shape=(n * 2, n))`` allocates a 2D dense tensor named ``pixels`` of
+In the code above, ``pixels = ti.field(dtype=ti.f32, shape=(n * 2, n))`` allocates a 2D dense field named ``pixels`` of
 size ``(640, 320)`` and element data type ``ti.f32`` (i.e. ``float`` in C).
 
 Functions and kernels
@@ -178,12 +178,12 @@ when used at the outermost scope. Range-for loops can be nested.
                 for i in range(10): # Serial :-(
                     ...
 
-**Struct-for loops** are particularly useful when iterating over (sparse) tensor elements.
+**Struct-for loops** are particularly useful when iterating over (sparse) field elements.
 In the code above, ``for i, j in pixels`` loops over all the pixel coordinates, i.e. ``(0, 0), (0, 1), (0, 2), ... , (0, 319), (1, 0), ..., (639, 319)``.
 
 .. note::
 
-    Struct-for is the key to :ref:`sparse` in Taichi, as it will only loop over active elements in a sparse tensor. In dense tensors, all elements are active.
+    Struct-for is the key to :ref:`sparse` in Taichi, as it will only loop over active elements in a sparse field. In dense fields, all elements are active.
 
 .. warning::
 
@@ -241,13 +241,13 @@ Python-scope data access
 ++++++++++++++++++++++++
 
 Everything outside Taichi-scopes (``ti.func`` and ``ti.kernel``) is simply Python code.
-In Python-scopes, you can access Taichi tensor elements using plain indexing syntax.
+In Python-scopes, you can access Taichi field elements using plain indexing syntax.
 For example, to access a single pixel of the rendered image in Python-scope, simply use:
 
 .. code-block:: python
 
   import taichi as ti
-  pixels = ti.var(ti.f32, (1024, 512))
+  pixels = ti.field(ti.f32, (1024, 512))
 
   pixels[42, 11] = 0.7  # store data into pixels
   print(pixels[42, 11]) # prints 0.7
@@ -256,17 +256,17 @@ For example, to access a single pixel of the rendered image in Python-scope, sim
 Sharing data with other packages
 ++++++++++++++++++++++++++++++++
 
-Taichi provides helper functions such as ``from_numpy`` and ``to_numpy`` for transfer data between Taichi tensors and NumPy arrays,
+Taichi provides helper functions such as ``from_numpy`` and ``to_numpy`` for transfer data between Taichi fields and NumPy arrays,
 So that you can also use your favorite Python packages (e.g. ``numpy``, ``pytorch``, ``matplotlib``) together with Taichi. e.g.:
 
 .. code-block:: python
 
     import taichi as ti
-    pixels = ti.var(ti.f32, (1024, 512))
+    pixels = ti.field(ti.f32, (1024, 512))
 
     import numpy as np
     arr = np.random.rand(1024, 512)
-    pixels.from_numpy(arr)   # load numpy data into taichi tensors
+    pixels.from_numpy(arr)   # load numpy data into taichi fields
 
     import matplotlib.pyplot as plt
     arr = pixels.to_numpy()  # store taichi data into numpy arrays

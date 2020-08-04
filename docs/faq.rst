@@ -20,9 +20,9 @@ Frequently asked questions
         for i in range(100):  # This loop will not be parallelized
             ...
 
-**Q:** What's the most convenient way to load images / textures into Taichi tensors?
+**Q:** What's the most convenient way to load images / textures into Taichi fields?
 
-**A:** Simply use ``tensor.from_numpy(ti.imread('filename.png'))``.
+**A:** Simply use ``field.from_numpy(ti.imread('filename.png'))``.
 
 **Q:** Can Taichi co-operate with **other Python packages** like ``matplotlib``?
 
@@ -41,10 +41,10 @@ Frequently asked questions
 **A:** You may export it with :ref:`export_ply_files` so that you could view it in Houdini or Blender.
        Or make use the extension library `Taichi THREE <https://github.com/taichi-dev/taichi_glsl>`_ to render images and update to GUI in real-time.
 
-**Q:** How do I declare a tensor with **dynamic length**?
+**Q:** How do I declare a field with **dynamic length**?
 
-**A:** What you want may be the ``dynamic`` SNode, a kind of sparse tensor, see :ref:`dynamic`.
-       Or simply allocate a dense tensor large enough, and another 0-D tensor ``tensor_len[None]`` for length record.
+**A:** What you want may be the ``dynamic`` SNode, a kind of sparse field, see :ref:`dynamic`.
+       Or simply allocate a dense field large enough, and another 0-D field ``field_len[None]`` for length record.
        But in fact, the ``dynamic`` SNode could be slower than the latter solution, due to the cost of maintaining the sparsity information.
 
 **Q:** Can a user iterate over irregular topologies (e.g., graphs or tetrahedral meshes) instead of regular grids?

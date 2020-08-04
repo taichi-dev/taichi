@@ -106,6 +106,9 @@ void compile_to_offloads(IRNode *ir,
 
   print("Access flagged II");
   irpass::analysis::verify(ir);
+
+  irpass::full_simplify(ir, /*after_lower_access=*/false);
+  print("Simplified III");
 }
 
 void compile_to_executable(IRNode *ir,
@@ -166,7 +169,7 @@ void compile_to_executable(IRNode *ir,
   irpass::analysis::verify(ir);
 
   irpass::full_simplify(ir, lower_global_access);
-  print("Simplified III");
+  print("Simplified IV");
 
   // Final field registration correctness & type checking
   irpass::typecheck(ir);

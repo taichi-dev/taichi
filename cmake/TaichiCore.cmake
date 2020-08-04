@@ -156,6 +156,9 @@ if (NOT WIN32)
         target_link_libraries(${CORE_LIBRARY_NAME} -Wl,--version-script,${CMAKE_CURRENT_SOURCE_DIR}/misc/linker.map)
         target_link_libraries(${CORE_LIBRARY_NAME} -Wl,--wrap=log2f) # Avoid glibc dependencies
     endif()
+else()
+    # windows
+    target_link_libraries(${CORE_LIBRARY_NAME} Winmm )
 endif ()
 message("PYTHON_LIBRARIES: " ${PYTHON_LIBRARIES})
 

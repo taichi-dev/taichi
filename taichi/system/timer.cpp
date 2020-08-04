@@ -59,7 +59,6 @@ double Time::get_time() {
 
 #ifdef _WIN64
 #include <Windows.h>
-#pragma comment(lib, "Winmm.lib")
 
 namespace {
   void win_usleep(double us) {

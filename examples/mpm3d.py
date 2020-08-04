@@ -1,10 +1,10 @@
 import taichi as ti
-ti.init(arch=ti.cuda, kernel_profiler=True)
+ti.init(arch=ti.opengl)
+export_file = '' # 'mpm3d.ply' for exporting result to PLY files
 
 dim = 3
-n_grid = 64
+n_grid = 32
 n_particles = n_grid ** dim // 2 ** (dim - 1)
-block_size = 0
 dx = 1 / n_grid
 dt = 2e-4
 
@@ -20,22 +20,16 @@ v = ti.Vector.field(dim, ti.f32, n_particles)
 C = ti.Matrix.field(dim, dim, ti.f32, n_particles)
 J = ti.field(ti.f32, n_particles)
 
-grid_v = ti.Vector.field(dim, ti.f32)
-grid_m = ti.field(ti.f32)
+grid_v = ti.Vector.field(dim, ti.f32, (n_grid,) * dim)
+grid_m = ti.field(ti.f32, (n_grid,) * dim)
 
-indices = ti.indices(*(i for i in range(dim)))
 neighbour = (3,) * dim
-
-if block_size == 0:
-    ti.root.dense(indices, n_grid).place(grid_v)
-    ti.root.dense(indices, n_grid).place(grid_m)
-else:
-    block0 = ti.root.pointer(indices, n_grid // block_size)
-    block1 = block0.dense(indices, block_size)
-    block1.place(grid_v, grid_m)
 
 @ti.kernel
 def substep():
+    for I in ti.grouped(grid_m):
+        grid_v[I] = grid_v[I] * 0
+        grid_m[I] = 0
     for p in x:
         Xp = x[p] / dx
         base = int(Xp - 0.5)
@@ -80,20 +74,17 @@ def substep():
 def init():
     for i in range(n_particles):
         x[i] = ti.Vector([ti.random() for i in range(dim)]) * 0.4 + 0.2
-        v[i][1] = -1
         J[i] = 1
 
 init()
-gui = ti.GUI('MPM88 3D', background_color=0x112F41)
+gui = ti.GUI('MPM3D', background_color=0x112F41)
 while gui.running and not gui.get_event(gui.ESCAPE):
-    for s in range(15):
-        if block_size == 0:
-            grid_v.fill(0)
-            grid_m.fill(0)
-        else:
-            block0.deactivate_all()
+    for s in range(25):
         substep()
-    gui.circles(x.to_numpy()[:, :2], radius=1.5, color=0x068587)
+    pos = x.to_numpy()
+    if export_file:
+        writer = ti.PLYWriter(num_vertices=pos.shape[0])
+        writer.add_vertex_pos(pos[:, 0], pos[:, 1], pos[:, 2])
+        writer.export_frame(gui.frame, export_file)
+    gui.circles(pos[:, :2], radius=1.5, color=0x068587)
     gui.show()
-
-ti.kernel_profiler_print()

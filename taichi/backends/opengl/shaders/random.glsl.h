@@ -5,11 +5,11 @@ STR(
 uvec4 _rand_;
 
 void _init_rand() {
-  uint i = (54321 + gl_GlobalInvocationID.x) * (12345 + _rand_state_);
-  _rand_.x = 123456789 * i * 1000000007;
-  _rand_.y = 362436069;
-  _rand_.z = 521288629;
-  _rand_.w = 88675123;
+  uint i = (54321u + gl_GlobalInvocationID.x) * (12345u + uint(_rand_state_));
+  _rand_.x = 123456789u * i * 1000000007u;
+  _rand_.y = 362436069u;
+  _rand_.z = 521288629u;
+  _rand_.w = 88675123u;
 
   // Yes, this is not an atomic operation, but just fine since no matter
   // how `_rand_state_` changes, `gl_GlobalInvocationID.x` can still help
@@ -22,7 +22,7 @@ uint _rand_u32() {
   uint t = _rand_.x ^ (_rand_.x << 11);
   _rand_.xyz = _rand_.yzw;
   _rand_.w = (_rand_.w ^ (_rand_.w >> 19)) ^ (t ^ (t >> 8));
-  return _rand_.w * 1000000007;
+  return _rand_.w * 1000000007u;
 }
 
 float _rand_f32() {

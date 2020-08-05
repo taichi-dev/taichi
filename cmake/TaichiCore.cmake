@@ -158,7 +158,7 @@ if (NOT WIN32)
     endif()
 else()
     # windows
-    target_link_libraries(${CORE_LIBRARY_NAME} Winmm )
+    target_link_libraries(${CORE_LIBRARY_NAME} Winmm)
 endif ()
 message("PYTHON_LIBRARIES: " ${PYTHON_LIBRARIES})
 

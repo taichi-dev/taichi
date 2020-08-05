@@ -23,7 +23,7 @@ class Composer:
             func(e)
 
     def do_unknown(self, e):
-        pass
+        self.emit(f"Unknown action type: {e['action']}")
 
     def do_compile_runtime(self, e):
         header = e['runtime_header']

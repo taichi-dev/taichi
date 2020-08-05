@@ -27,7 +27,7 @@
 #include "taichi/backends/cc/struct_cc.h"
 #include "taichi/backends/cc/cc_layout.h"
 #include "taichi/backends/cc/codegen_cc.h"
-#include "taichi/backends/cc/cc_configuation.h"
+#include "taichi/backends/cc/cc_config.h"
 #else
 #endif
 

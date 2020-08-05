@@ -38,14 +38,6 @@ TI_NAMESPACE_END
 
 TLANG_NAMESPACE_BEGIN
 
-#ifndef TI_WITH_CC
-namespace cccp {
-bool is_c_backend_available() {
-  return false;
-}
-}  // namespace cccp
-#endif
-
 void assert_failed_host(const char *msg) {
   TI_ERROR("Assertion failure: {}", msg);
 }
@@ -95,7 +87,7 @@ Program::Program(Arch desired_arch) {
 
   if (arch == Arch::cc) {
 #ifdef TI_WITH_CC
-    cc_program = std::make_unique<cccp::CCProgram>();
+    cc_program = std::make_unique<cccp::CCProgram>(this);
 #else
     TI_WARN("No C backend detected.");
     arch = host_arch();

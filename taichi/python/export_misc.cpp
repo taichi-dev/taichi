@@ -21,7 +21,7 @@
 
 #ifdef TI_WITH_CC
 namespace taichi::lang::cccp {
-  extern void is_c_backend_available();
+  extern bool is_c_backend_available();
 }
 #endif
 

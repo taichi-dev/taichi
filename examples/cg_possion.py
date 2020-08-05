@@ -1,6 +1,6 @@
 import taichi as ti
 import math
-ti.init(ti.cuda)
+ti.init(arch=ti.cuda)
 
 n = 512
 steps = 32
@@ -26,24 +26,24 @@ def A(x: ti.template(), I):
 
 @ti.kernel
 def init():
-    for i in ti.grouped(x):
-        d[i] = b[i] - A(x, i)
-        r[i] = d[i]
+    for I in ti.grouped(x):
+        d[I] = b[I] - A(x, I)
+        r[I] = d[I]
 
 
 @ti.kernel
 def substep():
-    alpha, beta, dAd = eps, eps, eps
-    for i in ti.grouped(x):
-        dAd += d[i] * A(d, i)
-    for i in ti.grouped(x):
-        alpha += r[i]**2 / dAd
-    for i in ti.grouped(x):
-        x[i] = x[i] + alpha * d[i]
-        r[i] = r[i] - alpha * A(d, i)
-        beta += r[i]**2 / (alpha * dAd)
-    for i in ti.grouped(x):
-        d[i] = r[i] + beta * d[i]
+    alpha, beta, dAd = 0.0, 0.0, eps
+    for I in ti.grouped(x):
+        dAd += d[I] * A(d, I)
+    for I in ti.grouped(x):
+        alpha += r[I]**2 / dAd
+    for I in ti.grouped(x):
+        x[I] = x[I] + alpha * d[I]
+        r[I] = r[I] - alpha * A(d, I)
+        beta += r[I]**2 / ((alpha + eps) * dAd)
+    for I in ti.grouped(x):
+        d[I] = r[I] + beta * d[I]
 
 
 gui = ti.GUI('Possion Solver', (n, n))

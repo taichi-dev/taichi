@@ -340,17 +340,30 @@ def stat_write(avg):
 
 def is_arch_supported(arch):
     if arch == cuda:
-        return core.with_cuda()
+        try:
+            return core.with_cuda()
+        except Exception as e:
+            core.warn(f"{e.__class__.__name__}: '{e}' occurred when detecting CUDA API, giving up")
+            return False
     elif arch == metal:
-        return core.with_metal()
+        try:
+            return core.with_metal()
+        except Exception as e:
+            core.warn(f"{e.__class__.__name__}: '{e}' occurred when detecting Metal API, giving up")
+            return False
     elif arch == opengl:
-        return core.with_opengl()
+        try:
+            return core.with_opengl()
+        except Exception as e:
+            core.warn(f"{e.__class__.__name__}: '{e} 'occurred when detecting OpenGL API, giving up")
+            return False
     elif arch == cc:
-        return core.with_cc()
-    elif arch == cpu:
-        return True
-    else:
-        return False
+        try:
+            return core.with_cc()
+        except Exception as e:
+            core.warn(f"{e.__class__.__name__}: '{e} 'occurred when detecting C backend, giving up")
+            return False
+    return arch == cpu
 
 
 def supported_archs():

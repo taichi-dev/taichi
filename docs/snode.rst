@@ -106,7 +106,7 @@ Node types
 
     :parameter snode: (SNode) parent node where the child is derived from
     :parameter indices: (Index or Indices) indices used for this node
-    :parameter shape: (scalar or tuple) shape the field of vectors
+    :parameter shape: (scalar or tuple) shape of the field
     :return: (SNode) the derived child node
 
     The following code places a 1-D field of size ``3``:

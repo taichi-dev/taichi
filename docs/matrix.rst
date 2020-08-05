@@ -3,10 +3,10 @@
 Matrices
 ========
 
-- ``ti.Matrix`` is for small matrices (e.g. `3x3`) only. If you have `64x64` matrices, you should consider using a 2D field of scalars.
+- ``ti.Matrix`` is for small matrices (e.g. `3x3`) only. If you have `64x64` matrices, you should consider using a 2D scalar field.
 - ``ti.Vector`` is the same as ``ti.Matrix``, except that it has only one column.
 - Differentiate element-wise product ``*`` and matrix product ``@``.
-- ``ti.Vector.field(n, dtype=ti.f32)`` or ``ti.Matrix.field(n, m, dtype=ti.f32)`` to create fields of vectors/matrices.
+- ``ti.Vector.field(n, dtype=ti.f32)`` or ``ti.Matrix.field(n, m, dtype=ti.f32)`` to create vector/matrix fields.
 - ``A.transpose()``
 - ``R, S = ti.polar_decompose(A, ti.f32)``
 - ``U, sigma, V = ti.svd(A, ti.f32)`` (Note that ``sigma`` is a ``3x3`` diagonal matrix)
@@ -23,18 +23,18 @@ A matrix in Taichi can have two forms:
 Declaration
 -----------
 
-As global fields of matrices
-++++++++++++++++++++++++++++
+As global matrix fields
++++++++++++++++++++++++
 
 .. function:: ti.Matrix.field(n, m, dtype, shape = None, offset = None)
 
     :parameter n: (scalar) the number of rows in the matrix
     :parameter m: (scalar) the number of columns in the matrix
     :parameter dtype: (DataType) data type of the components
-    :parameter shape: (optional, scalar or tuple) shape the field of vectors, see :ref:`tensor`
+    :parameter shape: (optional, scalar or tuple) shape of the matrix field, see :ref:`tensor`
     :parameter offset: (optional, scalar or tuple) see :ref:`offset`
 
-    For example, this creates a 5x4 field of 3x3 matrices:
+    For example, this creates a 5x4 matrix field with each entry being a 3x3 matrix:
     ::
 
         # Python-scope
@@ -42,7 +42,7 @@ As global fields of matrices
 
 .. note::
 
-    In Python-scope, ``ti.field`` declares :ref:`scalar_tensor`, while ``ti.Matrix.field`` declares fields of matrices.
+    In Python-scope, ``ti.field`` declares a :ref:`scalar_tensor`, while ``ti.Matrix.field`` declares a matrix field.
 
 
 As a temporary local variable
@@ -90,11 +90,11 @@ As a temporary local variable
 Accessing components
 --------------------
 
-As global fields of vectors
-+++++++++++++++++++++++++++
+As global matrix fields
++++++++++++++++++++++++
 .. attribute:: a[p, q, ...][i, j]
 
-    :parameter a: (field of matrices) the field of matrices
+    :parameter a: (ti.Matrix.field) the matrix field
     :parameter p: (scalar) index of the first field dimension
     :parameter q: (scalar) index of the second field dimension
     :parameter i: (scalar) row index of the matrix
@@ -111,12 +111,12 @@ As global fields of vectors
 
 .. note::
 
-    **Always** use two pair of square brackets to access scalar elements from fields of matrices.
+    **Always** use two pair of square brackets to access scalar elements from matrix fields.
 
-     - The indices in the first pair of brackets locate the matrix inside the field of matrices;
+     - The indices in the first pair of brackets locate the matrix inside the matrix fields;
      - The indices in the second pair of brackets locate the scalar element inside the matrix.
 
-    For 0-D fields of matrices, indices in the first pair of brackets should be ``[None]``.
+    For 0-D matrix fields, indices in the first pair of brackets should be ``[None]``.
 
 
 
@@ -144,8 +144,8 @@ Methods
 
 .. function:: a.transpose()
 
-    :parameter a: (Matrix) the matrix
-    :return: (Matrix) the transposed matrix of ``a``.
+    :parameter a: (ti.Matrix) the matrix
+    :return: (ti.Matrix) the transposed matrix of ``a``.
 
     For example::
 
@@ -160,7 +160,7 @@ Methods
 
 .. function:: a.trace()
 
-    :parameter a: (Matrix) the matrix
+    :parameter a: (ti.Matrix) the matrix
     :return: (scalar) the trace of matrix ``a``.
 
     The return value can be computed as ``a[0, 0] + a[1, 1] + ...``.
@@ -168,7 +168,7 @@ Methods
 
 .. function:: a.determinant()
 
-    :parameter a: (Matrix) the matrix
+    :parameter a: (ti.Matrix) the matrix
     :return: (scalar) the determinant of matrix ``a``.
 
     .. note::
@@ -180,8 +180,8 @@ Methods
 
 .. function:: a.inverse()
 
-    :parameter a: (Matrix) the matrix
-    :return: (Matrix) the inverse of matrix ``a``.
+    :parameter a: (ti.Matrix) the matrix
+    :return: (ti.Matrix) the inverse of matrix ``a``.
 
     .. note::
 

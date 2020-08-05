@@ -80,8 +80,6 @@ void stop_duplicating_stdout_to_file(const std::string &fn) {
 }
 
 bool is_cuda_api_available() {
-  //*(int*)1=1;
-  TI_ERROR("some cuda runtime error");
 #if defined(TI_WITH_CUDA)
   return lang::CUDADriver::get_instance_without_context().detected();
 #else

@@ -5,7 +5,6 @@
 #include "taichi/util/action_recorder.h"
 #include "struct_cc.h"
 #include "cc_program.h"
-#include "cc_config.h"
 #include "cc_runtime.h"
 #include "cc_kernel.h"
 #include "cc_layout.h"
@@ -14,8 +13,6 @@
 
 TLANG_NAMESPACE_BEGIN
 namespace cccp {
-
-CCConfiguation cfg;
 
 void CCKernel::compile() {
   if (!kernel->is_evaluator)

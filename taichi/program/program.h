@@ -243,6 +243,8 @@ class Program {
 
   template <typename T, typename... Args>
   T runtime_query(const std::string &key, Args... args) {
+    TI_ASSERT(arch_uses_llvm(config.arch));
+
     auto tlctx = llvm_context_host.get();
     if (llvm_context_device) {
       tlctx = llvm_context_device.get();

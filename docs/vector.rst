@@ -23,7 +23,7 @@ As global vector fields
     :parameter shape: (optional, scalar or tuple) shape of the vector field, see :ref:`tensor`
     :parameter offset: (optional, scalar or tuple) see :ref:`offset`
 
-    For example, this creates a 3-d vector field of the shape of ``5x4``:
+    For example, this creates a 3-D vector field of the shape of ``5x4``:
     ::
 
         # Python-scope

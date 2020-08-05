@@ -330,40 +330,30 @@ def stat_write(avg):
     name = os.environ.get('TI_CURRENT_BENCHMARK')
     if name is None:
         return
-    import taichi as ti
-    arch_name = ti.core.arch_name(ti.cfg.arch)
+    arch_name = core.arch_name(ti.cfg.arch)
     output_dir = os.environ.get('TI_BENCHMARK_OUTPUT_DIR', '.')
     filename = f'{output_dir}/{name}__arch_{arch_name}.dat'
     with open(filename, 'w') as f:
         f.write(f'time_avg: {avg:.4f}')
 
-
 def is_arch_supported(arch):
-    if arch == cuda:
-        try:
-            return core.with_cuda()
-        except Exception as e:
-            core.warn(f"{e.__class__.__name__}: '{e}' occurred when detecting CUDA API, giving up")
-            return False
-    elif arch == metal:
-        try:
-            return core.with_metal()
-        except Exception as e:
-            core.warn(f"{e.__class__.__name__}: '{e}' occurred when detecting Metal API, giving up")
-            return False
-    elif arch == opengl:
-        try:
-            return core.with_opengl()
-        except Exception as e:
-            core.warn(f"{e.__class__.__name__}: '{e} 'occurred when detecting OpenGL API, giving up")
-            return False
-    elif arch == cc:
-        try:
-            return core.with_cc()
-        except Exception as e:
-            core.warn(f"{e.__class__.__name__}: '{e} 'occurred when detecting C backend, giving up")
-            return False
-    return arch == cpu
+    arch_table = {
+            cuda: core.with_cuda,
+            metal: core.with_metal,
+            opengl: core.with_opengl,
+            cc: core.with_cc,
+            cpu: lambda: True
+    }
+    with_arch = arch_table.get(arch, lambda: False)
+    try:
+        return with_arch()
+    except Exception as e:
+        arch = core.arch_name(arch)
+        core.warn(
+                f"{e.__class__.__name__}: '{e}' occurred when detecting "
+                f"{arch}, consider add `export TI_WITH_{arch.upper()}=0` "
+                f" to environment variables to depress this warning message.")
+        return False
 
 
 def supported_archs():

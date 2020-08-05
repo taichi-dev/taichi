@@ -35,7 +35,7 @@ struct ActionArg {
   int64 val_int64;
   float64 val_float64;
 
-  enum argument_type { str, int64, float64 };
+  enum class argument_type { str, int64, float64 };
   argument_type type;
 };
 

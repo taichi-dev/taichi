@@ -23,6 +23,7 @@ union Ti_BitCast {
   Ti_u8 *ptr_u8;
   Ti_f32 *ptr_f32;
   Ti_f64 *ptr_f64;
+  void *ptr_void;
 };
 
 struct Ti_Context {

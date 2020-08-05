@@ -4,13 +4,7 @@ from .lang import *  # TODO(archibate): It's `taichi.lang.core` overriding `taic
 from .tools import *
 from .main import main
 from .torch_io import from_torch, to_torch
-
-
-def test():
-    import taichi as ti
-    task = ti.Task('test')
-    return task.run([])
-
+from .testing import *
 
 __all__ = ['core', 'misc', 'lang', 'tools', 'main', 'torch_io']
 

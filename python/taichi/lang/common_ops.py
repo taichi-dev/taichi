@@ -250,9 +250,9 @@ class TaichiOperations:
     def __ti_int__(self):
         import taichi as ti
         _taichi_skip_traceback = 1
-        return ti.cast(self, ti.get_runtime().default_ip)
+        return ti.cast(self, int)
 
     def __ti_float__(self):
         import taichi as ti
         _taichi_skip_traceback = 1
-        return ti.cast(self, ti.get_runtime().default_fp)
+        return ti.cast(self, float)

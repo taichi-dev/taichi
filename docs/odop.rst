@@ -22,8 +22,8 @@ A brief example:
     def __init__(self, n, m, increment):
       self.n = n
       self.m = m
-      self.val = ti.var(ti.f32)
-      self.total = ti.var(ti.f32)
+      self.val = ti.field(ti.f32)
+      self.total = ti.field(ti.f32)
       self.increment = increment
       ti.root.dense(ti.ij, (self.n, self.m)).place(self.val)
       ti.root.place(self.total)
@@ -50,7 +50,7 @@ A brief example:
 
   arr = Array2D(128, 128, 3)
 
-  double_total = ti.var(ti.f32, shape=())
+  double_total = ti.field(ti.f32, shape=())
 
   ti.root.lazy_grad()
 

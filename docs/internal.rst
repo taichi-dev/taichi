@@ -31,7 +31,7 @@ For example,
 
     ti.init(print_ir=True)
 
-    x = ti.var(ti.i32)
+    x = ti.field(ti.i32)
     ti.root.dense(ti.i, 4).bitmasked(ti.i, 4).place(x)
 
     @ti.kernel
@@ -130,15 +130,15 @@ However, this design has drawbacks as well:
 
 * Taichi kernels must parse-able by Python parsers. This means Taichi syntax cannot go beyond Python syntax.
 
-  * For example, indexing is always needed when accessing elements in Taichi tensors, even if the tensor is 0D. Use ``x[None] = 123`` to set the value in ``x`` if ``x`` is 0D. This is because ``x = 123`` will set ``x`` itself (instead of its containing value) to be the constant ``123`` in python syntax, and, unfortunately, we cannot modify this behavior.
+  * For example, indexing is always needed when accessing elements in Taichi fields, even if the fields is 0D. Use ``x[None] = 123`` to set the value in ``x`` if ``x`` is 0D. This is because ``x = 123`` will set ``x`` itself (instead of its containing value) to be the constant ``123`` in python syntax, and, unfortunately, we cannot modify this behavior.
 
-* Python has relatively low performance. This can cause a performance issue when initializing large Taichi tensors with pure python scripts. A Taichi kernel should be used to initialize a huge tensor.
+* Python has relatively low performance. This can cause a performance issue when initializing large Taichi fields with pure python scripts. A Taichi kernel should be used to initialize a huge fields.
 
 
 Virtual indices v.s. physical indices
 -------------------------------------
 
-In Taichi, *virtual indices* are used to locate elements in tensors, and *physical indices*
+In Taichi, *virtual indices* are used to locate elements in fields, and *physical indices*
 are used to specify data layouts in memory.
 
 For example,
@@ -156,17 +156,17 @@ correspond to?
 Each ``SNode`` can have a different virtual-to-physical mapping. ``physical_index_position[i] == -1``
 means the ``i``-th virtual index does not corrspond to any physical index in this ``SNode``.
 
-``SNode`` s in handy dense tensors (i.e., ``a = ti.var(ti.i32, shape=(128, 256, 512))``)
+``SNode`` s in handy dense fields (i.e., ``a = ti.field(ti.i32, shape=(128, 256, 512))``)
 have **trivial** virtual-to-physical mapping, e.g. ``physical_index_position[i] = i``.
 
-However, more complex data layouts, such as column-major 2D tensors can lead to ``SNodes`` with
+However, more complex data layouts, such as column-major 2D fields can lead to ``SNodes`` with
 ``physical_index_position[0] = 1`` and ``physical_index_position[1] = 0``.
 
 .. code-block:: python
 
-    a = ti.var(ti.f32, shape=(128, 32, 8))
+    a = ti.field(ti.f32, shape=(128, 32, 8))
 
-    b = ti.var(ti.f32)
+    b = ti.field(ti.f32)
     ti.root.dense(ti.j, 32).dense(ti.i, 16).place(b)
 
     ti.get_runtime().materialize()

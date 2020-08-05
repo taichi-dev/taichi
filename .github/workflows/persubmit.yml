@@ -22,10 +22,10 @@ jobs:
 
       - name: Download Pre-Built LLVM 10.0.0
         run: |
+          python misc/ci_download.py
           mkdir taichi-llvm
           cd taichi-llvm
-          python misc/ci_download.py
-          unzip llvm.zip
+          unzip ../taichi-llvm.zip
         env:
           CI_PLATFORM: ${{ matrix.os }}
 

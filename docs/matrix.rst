@@ -3,7 +3,7 @@
 Matrices
 ========
 
-- ``ti.Matrix`` is for small matrices (e.g. `3x3`) only. If you have `64x64` matrices, you should consider using a 2D sclar field.
+- ``ti.Matrix`` is for small matrices (e.g. `3x3`) only. If you have `64x64` matrices, you should consider using a 2D scalar field.
 - ``ti.Vector`` is the same as ``ti.Matrix``, except that it has only one column.
 - Differentiate element-wise product ``*`` and matrix product ``@``.
 - ``ti.Vector.field(n, dtype=ti.f32)`` or ``ti.Matrix.field(n, m, dtype=ti.f32)`` to create vector/matrix fields.
@@ -31,10 +31,10 @@ As global matrix fields
     :parameter n: (scalar) the number of rows in the matrix
     :parameter m: (scalar) the number of columns in the matrix
     :parameter dtype: (DataType) data type of the components
-    :parameter shape: (optional, scalar or tuple) shape the vector fields, see :ref:`tensor`
+    :parameter shape: (optional, scalar or tuple) shape of the vector fields, see :ref:`tensor`
     :parameter offset: (optional, scalar or tuple) see :ref:`offset`
 
-    For example, this creates a 5x4 matrix field which has a 3x3 matrix on each entry:
+    For example, this creates a 5x4 matrix field with each entry being a 3x3 matrix:
     ::
 
         # Python-scope
@@ -42,7 +42,7 @@ As global matrix fields
 
 .. note::
 
-    In Python-scope, ``ti.field`` declares :ref:`scalar_tensor`, while ``ti.Matrix.field`` declares matrix fields.
+    In Python-scope, ``ti.field`` declares a :ref:`scalar_tensor`, while ``ti.Matrix.field`` declares a matrix field.
 
 
 As a temporary local variable

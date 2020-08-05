@@ -759,8 +759,8 @@ void Program::print_memory_profiler_info() {
           auto recycled_list_len = runtime_query<int32>(
               "element_list_retrieve_num_elements", recycled_list);
 
-          auto allocated_elements = runtime_query<int32>(
-              "NodeManager_get_allocated_elements", node_allocator);
+          auto free_list_used = runtime_query<int32>(
+              "NodeManager_get_free_list_used", node_allocator);
 
           auto data_list = runtime_query<void *>("NodeManager_get_data_list",
                                                  node_allocator);
@@ -770,7 +770,7 @@ void Program::print_memory_profiler_info() {
           fmt::print(
               "  Allocated elements={:n}; free list length={:n}; recycled list "
               "length={:n}\n",
-              allocated_elements, free_list_len, recycled_list_len);
+              free_list_used, free_list_len, recycled_list_len);
         }
       }
     }

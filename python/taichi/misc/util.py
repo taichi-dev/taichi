@@ -200,12 +200,12 @@ def print_profile_info():
     taichi.ti_core.print_profile_info()
 
 
-@deprecated('ti.vec(x, y)', 'a tuple (x, y) for GUI system')
+@deprecated('ti.vec(x, y)', 'ti.core_vec(x, y)')
 def vec(*args, **kwargs):
     return core_vec(*args, **kwargs)
 
 
-@deprecated('ti.veci(x, y)', 'a tuple (x, y) for GUI system')
+@deprecated('ti.veci(x, y)', 'ti.core_veci(x, y)')
 def veci(*args, **kwargs):
     return core_veci(*args, **kwargs)
 

@@ -21,8 +21,8 @@ For example, you have the following kernel:
         y[None] = ti.sin(x[None])
 
 
-Now you want to get the derivative of y corresponding to x, i.e. dy/dx.
-You may want to write the derivatived kernel by hand:
+Now if you want to get the derivative of y corresponding to x, i.e., dy/dx.
+You may want to implement the derivative kernel by yourself:
 
 .. code-block:: python
 
@@ -37,9 +37,9 @@ You may want to write the derivatived kernel by hand:
 
 But wait, what if I changed the original ``compute_y``? We will have to
 recalculate the derivative by hand and rewrite ``compute_dy_dx`` again, which
-is very error-prone and not convienent at all.
+is very error-prone and not convenient at all.
 
-If you meet this situation, don't worry! Taichi provides a handy autodiff
+If this situation occurs, don't worry! Taichi provides a handy autodiff
 system that can help you obtain the derivative of a kernel without any pain!
 
 
@@ -51,7 +51,7 @@ What's the most convienent way to obtain a kernel that computes x to dy/dx?
 
 1. Use the ``needs_grad=True`` option when declaring tensors involved in the
    derivative chain.
-2. Use ``with ti.Tape(y):`` to enbrace the invocation into kernel(s) you want
+2. Use ``with ti.Tape(y):`` to embrace the invocation into kernel(s) you want
    to compute derivative.
 3. Now ``x.grad[None]`` is the dy/dx value at current x.
 
@@ -98,8 +98,8 @@ hard to compute the force on each particles.
 But recall that we can differentiate (negative) potential energy to get forces.
 a.k.a.: ``F_i = -dU / dx_i``.
 So once you've write a kernel that is able to compute the potential energy,
-then you may use Taichi's autodiff system to obtain the derivative of it and
-therefore obtain the force on each particles.
+you may use Taichi's autodiff system to obtain the derivative of it and
+then the force on each particles.
 
 Take `examples/ad_gravity.py <https://github.com/taichi-dev/taichi/blob/master/examples/ad_gravity.py>`_ as an example:
 

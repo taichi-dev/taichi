@@ -440,6 +440,20 @@ class GUI:
         elif not self.core.should_close:
             self.core.should_close = 1
 
+    @property
+    def fps_limit(self):
+        if self.core.frame_delta_limit == 0:
+            return None
+        else:
+            return 1 / self.core.frame_delta_limit
+
+    @fps_limit.setter
+    def fps_limit(self, value):
+        if value is None:
+            self.core.frame_delta_limit = 0
+        else:
+            self.core.frame_delta_limit = 1 / value
+
 
 def rgb_to_hex(c):
     to255 = lambda x: np.clip(np.int32(x * 255), 0, 255)

@@ -369,6 +369,19 @@ A *event filter* is a list combined of *key*, *type* and *(type, key)* tuple, e.
         mouse_x, mouse_y = gui.get_cursor_pos()
 
 
+.. attribute:: gui.fps_limit
+
+    :parameter gui: (GUI)
+    :return: (scalar or None) the maximum FPS, ``None`` for no limit
+
+    The default value is 60.
+
+    For example, to restrict FPS to be below 24, simply ``gui.fps_limit = 24``.
+    This helps reduce the overload on your hardware especially when you're
+    using OpenGL on your intergrated GPU which could make desktop slow to
+    response.
+
+
 GUI Widgets
 -----------
 

@@ -215,7 +215,7 @@ class PyTaichi:
         taichi_lang_core.layout(layout)
         self.materialized = True
         for var in self.global_vars:
-            if var.ptr.snode is None:
+            if var.ptr.snode() is None:
                 raise RuntimeError(
                     'Some variable(s) are not placed.'
                     ' Did you forget to specify the shape of any field? E.g., the "shape" argument in'

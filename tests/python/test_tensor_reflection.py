@@ -111,6 +111,8 @@ def test_deprecated():
     assert mat.shape() == (n, m, p)
     assert blk3.dim() == 3
     assert blk3.shape() == (n, m, p)
+    assert val.snode().parent() == blk3
+    assert mat.snode().parent() == blk3
 
 
 @ti.all_archs

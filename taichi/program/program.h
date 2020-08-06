@@ -239,6 +239,8 @@ class Program {
 
   int default_block_dim() const;
 
+  void print_list_memory_profile_info(void *list);
+
   void print_memory_profiler_info();
 
   template <typename T, typename... Args>

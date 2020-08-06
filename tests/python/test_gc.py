@@ -7,11 +7,11 @@ def test_block():
     dx = 1 / 128
     inv_dx = 1.0 / dx
 
-    x = ti.Vector(2, dt=ti.f32)
+    x = ti.Vector.field(2, dtype=ti.f32)
 
     indices = ti.ij
 
-    grid_m = ti.var(dt=ti.i32)
+    grid_m = ti.field(dtype=ti.i32)
 
     grid = ti.root.pointer(indices, 64)
     grid.pointer(indices, 32).dense(indices, 8).place(grid_m)
@@ -51,7 +51,7 @@ def test_block():
 
 @ti.test(require=ti.extension.sparse)
 def test_dynamic_gc():
-    x = ti.field(ti.i32)
+    x = ti.field(dtype=ti.i32)
 
     L = ti.root.dynamic(ti.i, 1024 * 1024, chunk_size=1024)
     L.place(x)
@@ -65,7 +65,7 @@ def test_dynamic_gc():
 
 @ti.test(require=ti.extension.sparse)
 def test_pointer_gc():
-    x = ti.field(ti.i32)
+    x = ti.field(dtype=ti.i32)
 
     L = ti.root.pointer(ti.ij, 32)
     L.pointer(ti.ij, 32).dense(ti.ij, 8).place(x)
@@ -76,5 +76,6 @@ def test_pointer_gc():
         x[i * 8, i * 8] = 1
         assert L.num_dynamically_allocated == 1
         L.deactivate_all()
+        
         # Note that being inactive doesn't mean it's not allocated.
         assert L.num_dynamically_allocated == 1

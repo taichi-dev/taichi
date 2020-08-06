@@ -700,8 +700,8 @@ int Program::default_block_dim() const {
   }
 }
 
-void Program::print_list_memory_profile_info(void *list_manager) {
-  auto element_list_len =
+void Program::print_list_manager_info(void *list_manager) {
+  auto list_manager_len =
       runtime_query<int32>("ListManager_get_num_elements", list_manager);
 
   auto element_size =
@@ -717,7 +717,7 @@ void Program::print_list_memory_profile_info(void *list_manager) {
 
   fmt::print(
       " length={:n}     {:n} chunks x [{:n} x {:n} B]  total={:.4f} MB\n",
-      element_list_len, num_active_chunks, elements_per_chunk, element_size,
+      list_manager_len, num_active_chunks, elements_per_chunk, element_size,
       size_MB);
 }
 
@@ -727,10 +727,8 @@ void Program::print_memory_profiler_info() {
   fmt::print("\n[Memory Profiler]\n");
 
   std::locale::global(std::locale("en_US.UTF-8"));
-
   // So that thousand separators are added to "{:n}" slots in fmtlib.
   // E.g., 10000 is printed as "10,000".
-
   // TODO: is there a way to set locale only locally in this function?
 
   std::function<void(SNode *, int)> visit = [&](SNode *snode, int depth) {
@@ -742,7 +740,7 @@ void Program::print_memory_profiler_info() {
 
       if (element_list) {
         fmt::print("  active element list:");
-        print_list_memory_profile_info(element_list);
+        print_list_manager_info(element_list);
       }
 
       if (element_list) {
@@ -767,7 +765,7 @@ void Program::print_memory_profiler_info() {
           auto data_list = runtime_query<void *>("NodeManager_get_data_list",
                                                  node_allocator);
           fmt::print("  data list:          ");
-          print_list_memory_profile_info(data_list);
+          print_list_manager_info(data_list);
 
           fmt::print(
               "  Allocated elements={:n}; free list length={:n}; recycled list "

@@ -239,7 +239,7 @@ class Program {
 
   int default_block_dim() const;
 
-  void print_list_memory_profile_info(void *list_manager);
+  void print_list_manager_info(void *list_manager);
 
   void print_memory_profiler_info();
 
@@ -255,7 +255,6 @@ class Program {
     }
 
     auto runtime = tlctx->runtime_jit_module;
-
     runtime->call<void *, Args...>("runtime_" + key, llvm_runtime,
                                    std::forward<Args>(args)...);
     return fetch_result<T>(taichi_result_buffer_runtime_query_id);

@@ -47,7 +47,7 @@ class JITModuleCUDA : public JITModule {
     auto err = CUDADriver::get_instance().module_get_function.call_with_warning(
         &func, module, name.c_str());
     if (err) {
-      TI_ERROR("Cannot look up function {} ", name);
+      TI_ERROR("Cannot look up function {}", name);
     }
     t = Time::get_time() - t;
     TI_TRACE("CUDA module_get_function {} costs {} ms", name, t * 1000);

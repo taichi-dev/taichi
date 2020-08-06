@@ -107,6 +107,12 @@ class SNode:
             children.append(SNode(self.ptr.get_ch(i)))
         return children
 
+    @property
+    def num_dynamically_allocated(self):
+        runtime = impl.get_runtime()
+        runtime.materialize()
+        return runtime.prog.get_snode_num_dynamically_allocated(self.ptr)
+
     def deactivate_all(self):
         ch = self.get_children()
         for c in ch:

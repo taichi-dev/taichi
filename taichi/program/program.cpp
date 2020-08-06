@@ -797,7 +797,7 @@ std::size_t Program::get_snode_num_dynamically_allocated(SNode *snode) {
   auto data_list =
       runtime_query<void *>("NodeManager_get_data_list", node_allocator);
 
-  return (std::size_t)runtime_query<int32>("ListManager_retrieve_num_elements",
+  return (std::size_t)runtime_query<int32>("ListManager_get_num_elements",
                                            data_list);
 }
 

@@ -58,7 +58,7 @@ __asm__(".symver expf,expf@GLIBC_2.2.5");
     s->F[i] = f;                                                             \
   };
 
-// For fetching struct field from device to host
+// For fetching struct fields from device to host
 #define RUNTIME_STRUCT_FIELD(S, F)                                    \
   extern "C" void runtime_##S##_get_##F(LLVMRuntime *runtime, S *s) { \
     runtime->set_result(taichi_result_buffer_runtime_query_id, s->F); \
@@ -477,10 +477,6 @@ struct ListManager {
   }
 };
 
-STRUCT_FIELD(ListManager, element_size);
-STRUCT_FIELD(ListManager, max_num_elements_per_chunk);
-STRUCT_FIELD(ListManager, num_elements);
-
 extern "C" {
 
 struct Element {
@@ -706,6 +702,7 @@ void runtime_ListManager_get_num_active_chunks(LLVMRuntime *runtime,
 RUNTIME_STRUCT_FIELD_ARRAY(LLVMRuntime, node_allocators);
 RUNTIME_STRUCT_FIELD_ARRAY(LLVMRuntime, element_lists);
 RUNTIME_STRUCT_FIELD(LLVMRuntime, total_requested_memory);
+
 RUNTIME_STRUCT_FIELD(NodeManager, free_list);
 RUNTIME_STRUCT_FIELD(NodeManager, recycled_list);
 RUNTIME_STRUCT_FIELD(NodeManager, data_list);

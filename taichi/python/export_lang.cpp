@@ -143,6 +143,8 @@ void export_lang(py::module &m) {
            py::return_value_policy::reference)
       .def("get_total_compilation_time", &Program::get_total_compilation_time)
       .def("print_snode_tree", &Program::print_snode_tree)
+      .def("get_snode_num_dynamically_allocated",
+           &Program::get_snode_num_dynamically_allocated)
       .def("synchronize", &Program::synchronize);
 
   m.def("get_current_program", get_current_program,

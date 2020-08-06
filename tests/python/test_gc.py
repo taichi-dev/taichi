@@ -62,3 +62,19 @@ def test_dynamic_gc():
         x[1024] = 1
         L.deactivate_all()
         assert L.num_dynamically_allocated <= 2
+
+@ti.test(require=ti.extension.sparse)
+def test_pointer_gc():
+    x = ti.field(ti.i32)
+
+    L = ti.root.pointer(ti.ij, 32)
+    L.pointer(ti.ij, 32).dense(ti.ij, 8).place(x)
+
+    assert L.num_dynamically_allocated == 0
+
+    for i in range(1024):
+        x[i * 8, i * 8] = 1
+        assert L.num_dynamically_allocated == 1
+        L.deactivate_all()
+        # Note that being inactive doesn't mean it's not allocated.
+        assert L.num_dynamically_allocated == 1

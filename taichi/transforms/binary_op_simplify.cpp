@@ -42,8 +42,11 @@ class BinaryOpSimp : public BasicStmtVisitor {
     }
     auto op1 = binary_lhs->op_type;
     auto op2 = stmt->op_type;
+    // Disables (a / b) * c -> a / (b / c), (a * b) / c -> a * (b / c)
+    // when the data type is integral.
     if (is_integral(stmt->ret_type.data_type) &&
-        (op1 == BinaryOpType::div || op2 == BinaryOpType::div)) {
+        ((op1 == BinaryOpType::div && op2 == BinaryOpType::mul) ||
+         (op1 == BinaryOpType::mul && op2 == BinaryOpType::div))) {
       return;
     }
     BinaryOpType new_op2;

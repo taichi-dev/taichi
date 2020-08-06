@@ -1,5 +1,6 @@
 import taichi as ti
 
+
 @ti.test(require=ti.extension.sparse)
 def test_block():
     N = 100000
@@ -31,12 +32,10 @@ def test_block():
             base = int(ti.floor(x[p] * inv_dx - 0.5))
             grid_m[base] += 1
 
-
     @ti.kernel
     def move():
         for p in x:
             x[p] += ti.Vector([0.0, 0.1])
-
 
     assert grid.num_dynamically_allocated == 0
     for i in range(100):
@@ -55,13 +54,14 @@ def test_dynamic_gc():
 
     L = ti.root.dynamic(ti.i, 1024 * 1024, chunk_size=1024)
     L.place(x)
-    
+
     assert L.num_dynamically_allocated == 0
 
     for i in range(100):
         x[1024] = 1
         L.deactivate_all()
         assert L.num_dynamically_allocated <= 2
+
 
 @ti.test(require=ti.extension.sparse)
 def test_pointer_gc():
@@ -76,6 +76,6 @@ def test_pointer_gc():
         x[i * 8, i * 8] = 1
         assert L.num_dynamically_allocated == 1
         L.deactivate_all()
-        
+
         # Note that being inactive doesn't mean it's not allocated.
         assert L.num_dynamically_allocated == 1

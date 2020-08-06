@@ -60,9 +60,11 @@ kernel_profiler_print = lambda: core.get_current_program(
 kernel_profiler_clear = lambda: core.get_current_program(
 ).kernel_profiler_clear()
 
+
 def memory_profiler_print():
     get_runtime().materialize()
     get_runtime().prog.print_memory_profiler_info()
+
 
 extension = core.Extension
 is_extension_supported = core.is_extension_supported
@@ -238,7 +240,8 @@ def cache_read_only(*args):
 
 def assume_in_range(val, base, low, high):
     return taichi_lang_core.expr_assume_in_range(
-        Expr(val).ptr, Expr(base).ptr, low, high)
+        Expr(val).ptr,
+        Expr(base).ptr, low, high)
 
 
 parallelize = core.parallelize

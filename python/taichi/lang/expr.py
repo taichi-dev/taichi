@@ -121,22 +121,23 @@ class Expr(TaichiOperations):
     #@deprecated('tensor.parent()', 'tensor.snode().parent()')
     def parent(self, n=1):
         import taichi as ti
-        p = self.snode().parent(n)
+        p = self.snode.parent(n)
         return Expr(ti.core.global_var_expr_from_snode(p.ptr))
 
     def is_global(self):
         return self.ptr.is_global_var() or self.ptr.is_external_var()
 
+    @property
     def snode(self):
         from .snode import SNode
-        return SNode(self.ptr.snode())
+        return SNode(self.ptr.snode)
 
     def __hash__(self):
         return self.ptr.get_raw_address()
 
     @property
     def shape(self):
-        return self.snode().shape
+        return self.snode.shape
 
     @deprecated('x.dim()', 'len(x.shape)')
     def dim(self):
@@ -144,11 +145,11 @@ class Expr(TaichiOperations):
 
     @property
     def dtype(self):
-        return self.snode().dtype
+        return self.snode.dtype
 
     @deprecated('x.data_type()', 'x.dtype')
     def data_type(self):
-        return self.snode().dtype
+        return self.snode.dtype
 
     @python_scope
     def to_numpy(self):

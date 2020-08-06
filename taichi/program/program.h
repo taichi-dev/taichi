@@ -239,7 +239,7 @@ class Program {
 
   int default_block_dim() const;
 
-  void print_list_memory_profile_info(void *list);
+  void print_list_memory_profile_info(void *list_manager);
 
   void print_memory_profiler_info();
 

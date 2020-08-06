@@ -700,18 +700,18 @@ int Program::default_block_dim() const {
   }
 }
 
-void Program::print_list_memory_profile_info(void *element_list) {
+void Program::print_list_memory_profile_info(void *list_manager) {
   auto element_list_len =
-      runtime_query<int32>("element_list_retrieve_num_elements", element_list);
+      runtime_query<int32>("ListManager_get_num_elements", list_manager);
 
   auto element_size =
-      runtime_query<int32>("element_list_retrieve_element_size", element_list);
+      runtime_query<int32>("ListManager_get_element_size", list_manager);
 
   auto elements_per_chunk = runtime_query<int32>(
-      "element_list_retrieve_max_num_elements_per_chunk", element_list);
+      "ListManager_get_max_num_elements_per_chunk", list_manager);
 
   auto num_active_chunks =
-      runtime_query<int32>("listmanager_get_num_active_chunks", element_list);
+      runtime_query<int32>("ListManager_get_num_active_chunks", list_manager);
 
   auto size_MB = 1e-6f * num_active_chunks * elements_per_chunk * element_size;
 
@@ -734,8 +734,8 @@ void Program::print_memory_profiler_info() {
   // TODO: is there a way to set locale only locally in this function?
 
   std::function<void(SNode *, int)> visit = [&](SNode *snode, int depth) {
-    auto element_list =
-        runtime_query<void *>("retrieve_element_list", snode->id);
+    auto element_list = runtime_query<void *>("LLVMRuntime_get_element_lists",
+                                              llvm_runtime, snode->id);
 
     if (snode->type != SNodeType::place) {
       fmt::print("SNode {:10}\n", snode->get_node_type_name_hinted());
@@ -755,11 +755,11 @@ void Program::print_memory_profiler_info() {
           auto recycled_list = runtime_query<void *>(
               "NodeManager_get_recycled_list", node_allocator);
 
-          auto free_list_len = runtime_query<int32>(
-              "element_list_retrieve_num_elements", free_list);
+          auto free_list_len =
+              runtime_query<int32>("ListManager_get_num_elements", free_list);
 
           auto recycled_list_len = runtime_query<int32>(
-              "element_list_retrieve_num_elements", recycled_list);
+              "ListManager_get_num_elements", recycled_list);
 
           auto free_list_used = runtime_query<int32>(
               "NodeManager_get_free_list_used", node_allocator);
@@ -797,7 +797,7 @@ std::size_t Program::get_snode_num_dynamically_allocated(SNode *snode) {
   auto data_list =
       runtime_query<void *>("NodeManager_get_data_list", node_allocator);
 
-  return (std::size_t)runtime_query<int32>("element_list_retrieve_num_elements",
+  return (std::size_t)runtime_query<int32>("ListManager_retrieve_num_elements",
                                            data_list);
 }
 

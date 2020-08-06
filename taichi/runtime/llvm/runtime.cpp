@@ -36,6 +36,7 @@ __asm__(".symver powf,powf@GLIBC_2.2.5");
 __asm__(".symver expf,expf@GLIBC_2.2.5");
 #endif
 
+// For accessing struct fields
 #define STRUCT_FIELD(S, F)                              \
   extern "C" decltype(S::F) S##_get_##F(S *s) {         \
     return s->F;                                        \
@@ -56,6 +57,17 @@ __asm__(".symver expf,expf@GLIBC_2.2.5");
                               std::remove_all_extents_t<decltype(S::F)> f) { \
     s->F[i] = f;                                                             \
   };
+
+// For fetching struct field from device to host
+#define RUNTIME_STRUCT_FIELD(S, F)                                    \
+  extern "C" void runtime_##S##_get_##F(LLVMRuntime *runtime, S *s) { \
+    runtime->set_result(taichi_result_buffer_runtime_query_id, s->F); \
+  }
+
+#define RUNTIME_STRUCT_FIELD_ARRAY(S, F)                                     \
+  extern "C" void runtime_##S##_get_##F(LLVMRuntime *runtime, S *s, int i) { \
+    runtime->set_result(taichi_result_buffer_runtime_query_id, s->F[i]);     \
+  }
 
 using int8 = int8_t;
 using int16 = int16_t;
@@ -685,52 +697,23 @@ void runtime_retrieve_error_message_argument(LLVMRuntime *runtime,
                       runtime->error_message_arguments[argument_id]);
 }
 
-void runtime_retrieve_element_list(LLVMRuntime *runtime, int snode_id) {
-  runtime->set_result(taichi_result_buffer_runtime_query_id,
-                      runtime->element_lists[snode_id]);
-}
-
-void runtime_element_list_retrieve_num_elements(LLVMRuntime *runtime,
-                                                ListManager *list) {
-  runtime->set_result(taichi_result_buffer_runtime_query_id,
-                      list->num_elements);
-}
-
-void runtime_element_list_retrieve_element_size(LLVMRuntime *runtime,
-                                                ListManager *list) {
-  runtime->set_result(taichi_result_buffer_runtime_query_id,
-                      list->element_size);
-}
-
-void runtime_element_list_retrieve_max_num_elements_per_chunk(
-    LLVMRuntime *runtime,
-    ListManager *list) {
-  runtime->set_result(taichi_result_buffer_runtime_query_id,
-                      list->max_num_elements_per_chunk);
-}
-
-void runtime_listmanager_get_num_active_chunks(LLVMRuntime *runtime,
+void runtime_ListManager_get_num_active_chunks(LLVMRuntime *runtime,
                                                ListManager *list_manager) {
   runtime->set_result(taichi_result_buffer_runtime_query_id,
                       list_manager->get_num_active_chunks());
 }
 
-#define RUNTIME_STRUCT_FIELD(S, F)                                    \
-  extern "C" void runtime_##S##_get_##F(LLVMRuntime *runtime, S *s) { \
-    runtime->set_result(taichi_result_buffer_runtime_query_id, s->F); \
-  }
-
-#define RUNTIME_STRUCT_FIELD_ARRAY(S, F)                                     \
-  extern "C" void runtime_##S##_get_##F(LLVMRuntime *runtime, S *s, int i) { \
-    runtime->set_result(taichi_result_buffer_runtime_query_id, s->F[i]);     \
-  }
-
 RUNTIME_STRUCT_FIELD_ARRAY(LLVMRuntime, node_allocators);
+RUNTIME_STRUCT_FIELD_ARRAY(LLVMRuntime, element_lists);
 RUNTIME_STRUCT_FIELD(LLVMRuntime, total_requested_memory);
 RUNTIME_STRUCT_FIELD(NodeManager, free_list);
 RUNTIME_STRUCT_FIELD(NodeManager, recycled_list);
 RUNTIME_STRUCT_FIELD(NodeManager, data_list);
 RUNTIME_STRUCT_FIELD(NodeManager, free_list_used);
+
+RUNTIME_STRUCT_FIELD(ListManager, num_elements);
+RUNTIME_STRUCT_FIELD(ListManager, max_num_elements_per_chunk);
+RUNTIME_STRUCT_FIELD(ListManager, element_size);
 
 void taichi_assert(Context *context, i32 test, const char *msg) {
   taichi_assert_runtime(context->runtime, test, msg);

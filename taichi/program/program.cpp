@@ -741,9 +741,7 @@ void Program::print_memory_profiler_info() {
       if (element_list) {
         fmt::print("  active element list:");
         print_list_manager_info(element_list);
-      }
 
-      if (element_list) {
         auto node_allocator = runtime_query<void *>(
             "LLVMRuntime_get_node_allocators", llvm_runtime, snode->id);
 

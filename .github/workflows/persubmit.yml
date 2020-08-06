@@ -12,7 +12,12 @@ jobs:
         os: [ubuntu-latest]
         python: [3.6, 3.7, 3.8]
         with_cc: [OFF]
+        include:
+          - os: ubuntu-latest
+            python: 3.8
+            with_cc: ON
     runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.with_cc == 'ON' }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2

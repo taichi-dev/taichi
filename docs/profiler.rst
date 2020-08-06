@@ -16,7 +16,7 @@ ScopedProfiler
     import taichi as ti
 
     ti.init(arch=ti.cpu)
-    var = ti.var(ti.f32, shape=1)
+    var = ti.field(ti.f32, shape=1)
 
 
     @ti.kernel
@@ -48,7 +48,7 @@ KernelProfiler
     import taichi as ti
 
     ti.init(ti.cpu, kernel_profiler=True)
-    var = ti.var(ti.f32, shape=1)
+    var = ti.field(ti.f32, shape=1)
 
 
     @ti.kernel

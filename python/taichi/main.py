@@ -1003,6 +1003,30 @@ class TaichiMain:
         sys.argv.append(args.mode)
         runpy.run_path('build.py')
 
+    @register
+    def cc_compose(self, arguments: list = sys.argv[2:]):
+        """Compose C backend action record into a complete C file"""
+        parser = argparse.ArgumentParser(prog='ti cc_compose',
+                                         description=f"{self.cc_compose.__doc__}")
+        parser.add_argument(
+            'fin_name',
+            help='Action record YAML file name from C backend, e.g. program.yml')
+        parser.add_argument(
+            'fout_name',
+            help='The output C source file name, e.g. program.c')
+        parser.add_argument(
+            '-e',
+            '--emscripten',
+            required=False,
+            default=False,
+            dest='emscripten',
+            action='store_true',
+            help='Generate output C file for Emscripten instead of raw C')
+        args = parser.parse_args(arguments)
+
+        from .cc_compose import main
+        main(args.fin_name, args.fout_name, args.emscripten)
+
 
 def main():
     cli = TaichiMain()

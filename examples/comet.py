@@ -38,7 +38,7 @@ def substep():
         color[i] *= ti.exp(-dt * colordeg)
 
         if not all(-0.1 <= x[i] <= 1.1):
-            ti.deactivate(x.snode().parent(), [i])
+            ti.deactivate(x.snode.parent(), [i])
 
 
 @ti.kernel

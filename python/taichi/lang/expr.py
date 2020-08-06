@@ -70,7 +70,7 @@ class Expr(TaichiOperations):
     def initialize_accessor(self):
         if self.getter:
             return
-        snode = self.ptr.snode()
+        snode = self.ptr.snode
 
         if self.dtype == f32 or self.dtype == f64:
 
@@ -108,7 +108,7 @@ class Expr(TaichiOperations):
     @python_scope
     def clear(self, deactivate=False):
         assert not deactivate
-        node = self.ptr.snode().parent
+        node = self.ptr.snode.parent
         assert node
         node.clear_data()
 
@@ -118,7 +118,7 @@ class Expr(TaichiOperations):
         from .meta import fill_tensor
         fill_tensor(self, val)
 
-    #@deprecated('tensor.parent()', 'tensor.snode().parent()')
+    #@deprecated('tensor.parent()', 'tensor.snode.parent()')
     def parent(self, n=1):
         import taichi as ti
         p = self.snode.parent(n)

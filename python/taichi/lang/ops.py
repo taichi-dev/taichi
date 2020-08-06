@@ -508,7 +508,7 @@ def ti_all(a):
 def append(l, indices, val):
     import taichi as ti
     a = ti.expr_init(
-        ti_core.insert_append(l.snode().ptr, make_expr_group(indices),
+        ti_core.insert_append(l.snode.ptr, make_expr_group(indices),
                               Expr(val).ptr))
     return a
 
@@ -530,16 +530,16 @@ def asm(source, inputs=[], outputs=[]):
 
 def is_active(l, indices):
     return Expr(
-        ti_core.insert_is_active(l.snode().ptr, make_expr_group(indices)))
+        ti_core.insert_is_active(l.snode.ptr, make_expr_group(indices)))
 
 
 def activate(l, indices):
-    ti_core.insert_activate(l.snode().ptr, make_expr_group(indices))
+    ti_core.insert_activate(l.snode.ptr, make_expr_group(indices))
 
 
 def deactivate(l, indices):
-    ti_core.insert_deactivate(l.snode().ptr, make_expr_group(indices))
+    ti_core.insert_deactivate(l.snode.ptr, make_expr_group(indices))
 
 
 def length(l, indices):
-    return Expr(ti_core.insert_len(l.snode().ptr, make_expr_group(indices)))
+    return Expr(ti_core.insert_len(l.snode.ptr, make_expr_group(indices)))

@@ -3,6 +3,33 @@
 Scalar fields
 =============
 
+**Taichi fields** are used to store data.
+
+Field **elements** could be either scalar, vector or matrix (see :ref:`matrix`).
+We'll only talk about **scalar fields** in this chapter.
+
+Field **dimensions** could be either 0D, 1D, 2D, 3D, ...
+
+- 0D fields are simply scalars, it only contains one scalar value.
+- 1D fields are simply 1D arrays for people from C/C++.
+- 2D fields are simply 2D arrays, images, or matrices for people from Matlab.
+- 3D fields can save the properties of a space volume, e.g., temperature field.
+
+Fields can have different shape:
+
+- The shape of a 0D field is always a **empty tuple**, e.g. ``shape=()``.
+- The shape of a 1D field is **the length of array**, e.g. ``shape=512``.
+- The shape of a 2D field is **resultion of a image**, e.g. ``shape=(1024, 768)``.
+
+Fields could be either dense or sparse, see ref:`sparse` for details on sparse
+fields. We'll only talk about **dense fields** in this chapter.
+
+.. note::
+
+   We once used the term **tensor** instead of **field**, please caution about
+   these old documentations using *tensor*. We will soon deprecate the term
+   *tensor* in the future for clarity.
+
 
 Declaration
 -----------

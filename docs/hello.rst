@@ -101,11 +101,11 @@ Taichi programs run on either CPUs or GPUs. Initialize Taichi according to your 
 
   On other platforms, Taichi will make use of its on-demand memory allocator to adaptively allocate memory.
 
-(Sparse) fields
----------------
+Fields
+------
 
 Taichi is a data-oriented programming language where dense or spatially-sparse fields are the first-class citizens.
-See :ref:`sparse` for more details on sparse fields.
+See :ref:`scalar_tensor` for more details on fields.
 
 In the code above, ``pixels = ti.field(dtype=ti.f32, shape=(n * 2, n))`` allocates a 2D dense field named ``pixels`` of
 size ``(640, 320)`` and element data type ``ti.f32`` (i.e. ``float`` in C).

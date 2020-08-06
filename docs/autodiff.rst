@@ -49,7 +49,7 @@ Using ``ti.Tape()``
 Let's still take the ``compute_y`` in above example for explaination.
 What's the most convienent way to obtain a kernel that computes x to dy/dx?
 
-1. Use the ``needs_grad=True`` option when declaring tensors involved in the
+1. Use the ``needs_grad=True`` option when declaring fields involved in the
    derivative chain.
 2. Use ``with ti.Tape(y):`` to embrace the invocation into kernel(s) you want
    to compute derivative.
@@ -160,7 +160,7 @@ Take `examples/ad_gravity.py <https://github.com/taichi-dev/taichi/blob/master/e
 
 .. note::
 
-   The argument ``U`` to ``ti.Tape(U)`` must be a 0D tensor.
+   The argument ``U`` to ``ti.Tape(U)`` must be a 0D field.
 
    For using autodiff with multiple output variables, please see the
    ``kernel.grad()`` usage below.
@@ -184,14 +184,14 @@ TODO: Documentation WIP.
 Kernel Simplicity Rule
 ----------------------
 
-Unlike tools such as TensorFlow where **immutable** output buffers are generated, the **imperative** programming paradigm adopted in Taichi allows programmers to freely modify global tensors.
+Unlike tools such as TensorFlow where **immutable** output buffers are generated, the **imperative** programming paradigm adopted in Taichi allows programmers to freely modify global fields.
 
 To make automatic differentiation well-defined under this setting, we make the following assumption on Taichi programs for differentiable programming:
 
 **Global Data Access Rules:**
 
-  - If a global tensor element is written more than once, then starting from the second write, the write **must** come in the form of an atomic add (“accumulation", using ``ti.atomic_add`` or simply ``+=``).
-  - No read accesses happen to a global tensor element, until its accumulation is done.
+  - If a global field element is written more than once, then starting from the second write, the write **must** come in the form of an atomic add (“accumulation", using ``ti.atomic_add`` or simply ``+=``).
+  - No read accesses happen to a global field element, until its accumulation is done.
 
 **Kernel Simplicity Rule:** Kernel body consists of multiple `simply nested` for-loops.
 I.e., each for-loop can either contain exactly one (nested) for-loop (and no other statements), or a group of statements without loops.

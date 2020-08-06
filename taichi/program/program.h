@@ -247,9 +247,11 @@ class Program {
   T runtime_query(const std::string &key, Args... args) {
     TI_ASSERT(arch_uses_llvm(config.arch));
 
-    auto tlctx = llvm_context_host.get();
+    TaichiLLVMContext *tlctx = nullptr;
     if (llvm_context_device) {
       tlctx = llvm_context_device.get();
+    } else {
+      tlctx = llvm_context_host.get();
     }
 
     auto runtime = tlctx->runtime_jit_module;
@@ -258,6 +260,9 @@ class Program {
                                    std::forward<Args>(args)...);
     return fetch_result<T>(taichi_result_buffer_runtime_query_id);
   }
+
+  // Returns zero if the SNode is statically allocated
+  std::size_t get_snode_num_dynamically_allocated(SNode *snode);
 
   ~Program();
 

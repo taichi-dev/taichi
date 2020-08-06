@@ -716,7 +716,7 @@ void Program::print_list_memory_profile_info(void *element_list) {
   auto size_MB = 1e-6f * num_active_chunks * elements_per_chunk * element_size;
 
   fmt::print(
-      "    length={:n}     {:n} chunks x [{:n} x {:n} B]  total={:.4f} MB\n",
+      " length={:n}     {:n} chunks x [{:n} x {:n} B]  total={:.4f} MB\n",
       element_list_len, num_active_chunks, elements_per_chunk, element_size,
       size_MB);
 }
@@ -741,7 +741,7 @@ void Program::print_memory_profiler_info() {
       fmt::print("SNode {:10}\n", snode->get_node_type_name_hinted());
 
       if (element_list) {
-        fmt::print("  element list:");
+        fmt::print("  active element list:");
         print_list_memory_profile_info(element_list);
       }
 
@@ -766,7 +766,7 @@ void Program::print_memory_profiler_info() {
 
           auto data_list = runtime_query<void *>("NodeManager_get_data_list",
                                                  node_allocator);
-          fmt::print("  data    list:");
+          fmt::print("  data list:          ");
           print_list_memory_profile_info(data_list);
 
           fmt::print(
@@ -789,6 +789,16 @@ void Program::print_memory_profiler_info() {
   fmt::print(
       "Total requested dynamic memory (excluding alignment padding): {:n} B\n",
       total_requested_memory);
+}
+
+std::size_t Program::get_snode_num_dynamically_allocated(SNode *snode) {
+  auto node_allocator = runtime_query<void *>("LLVMRuntime_get_node_allocators",
+                                              llvm_runtime, snode->id);
+  auto data_list =
+      runtime_query<void *>("NodeManager_get_data_list", node_allocator);
+
+  return (std::size_t)runtime_query<int32>("element_list_retrieve_num_elements",
+                                           data_list);
 }
 
 Program::~Program() {

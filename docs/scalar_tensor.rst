@@ -15,7 +15,7 @@ Field **dimensions** could be arbitrary, including but not limited to 0D, 1D, 2D
 - 2D fields are used to save images, or matrices for people from Matlab.
 - 3D fields can save the properties of a space volume, e.g., temperature field.
 
-Fields can have different shape:
+Fields can have different shapes:
 
 - The shape of a 0D field is always a **empty tuple**, e.g. ``shape=()``.
 - The shape of a 1D field is **the length of array**, e.g. ``shape=512``.

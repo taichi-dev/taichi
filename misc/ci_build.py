@@ -6,6 +6,7 @@ def system(x):
     print(f'[ci] executing: {x}')
     ret = os.system(x)
     if ret != 0:
+        print(f'[ci] process exited with {ret}')
         exit(1)
 
 def add_path(x):
@@ -19,5 +20,5 @@ if not platform.startswith('windows'):
 system('python misc/ci_setup.py ci')
 os.mkdir('build')
 os.chdir('build')
-system(f'cmake .. -G"Visual Studio 16 2019" -A x64 -DLLVM_DIR="{os.getcwd()}\\taichi_llvm\\lib\\cmake\\llvm" -DCMAKE_PREFIX_PATH="{os.getcwd()}\\taichi_llvm\\lib\\cmake\\llvm"')
+system(f'cmake .. -G"Visual Studio 16 2019" -A x64 -DLLVM_DIR="{os.getcwd()}\\taichi_llvm\\lib\\cmake\\llvm"')
 system('msbuild /p:Configuration=RelWithDebInfo /p:Platform=x64 /m taichi.sln')

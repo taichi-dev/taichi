@@ -7,6 +7,7 @@ def system(x):
     print(f'[ci] executing: {x}')
     ret = os.system(x)
     if ret != 0:
+        print(f'[ci] process exited with {ret}')
         exit(1)
 
 def add_path(x):

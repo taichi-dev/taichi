@@ -124,16 +124,14 @@ def warning(msg, type=UserWarning, stacklevel=1):
         warnings.warn(msg, type, stacklevel=stacklevel + 1)
 
 
-'''
-Announce a pending deprecation with an API wrapper, usage:
-
-@deprecated('ti.sqr(x)', 'x**2')
-def sqr(x):
-    return x**2
-'''
-
-
 def deprecated(old, new, type=DeprecationWarning):
+    '''
+    Announce a pending deprecation with an API wrapper, usage:
+
+    @deprecated('ti.sqr(x)', 'x**2')
+    def sqr(x):
+        return x**2
+    '''
     import functools
 
     def decorator(foo):
@@ -149,14 +147,12 @@ def deprecated(old, new, type=DeprecationWarning):
     return decorator
 
 
-'''
-Announce a full deprecateion, with no API wrapper, usage:
-
-sqr = fully_deprecated('ti.sqr(x)', 'x**2')
-'''
-
-
 def fully_deprecated(old, new):
+    '''
+    Announce a full deprecateion, with no API wrapper, usage:
+
+    sqr = fully_deprecated('ti.sqr(x)', 'x**2')
+    '''
     def wrapped(*args, **kwargs):
         _taichi_skip_traceback = 1
         msg = f'{old} is fully deprecated, please use {new} instead'

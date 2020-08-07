@@ -1,6 +1,12 @@
 import os
 
 platform = os.environ['CI_PLATFORM']
+
+def system(x):
+    ret = os.system(x)
+    if ret != 0:
+        exit(ret >> 8)
+
 if platform.startswith('macos'):
     suffix = 'macos'
 elif platform.startswith('ubuntu'):
@@ -9,11 +15,6 @@ elif platform.startswith('windows'):
     suffix = 'msvc2019'
 else:
     raise Exception(f'Bad CI_PLATFORM={platform}')
-
-def system(x):
-    ret = os.system(x)
-    if ret != 0:
-        exit(ret >> 8)
 
 llvm_url = f'https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-{suffix}.zip'
 print(f'Downloading LLVM from {llvm_url}...')

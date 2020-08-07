@@ -35,9 +35,6 @@ jobs:
 
       - name: Functionallity Test
         run: |
-          export TAICHI_REPO_DIR=`pwd`
-          export PATH=$TAICHI_REPO_DIR/bin:$PATH
-          export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
-          export PYTHONPATH=$TAICHI_REPO_DIR/python
-          python examples/laplace.py
-          ti test -vr2 -t2
+          python misc/ci_test.py
+        env:
+          CI_PLATFORM: ${{ matrix.os }}

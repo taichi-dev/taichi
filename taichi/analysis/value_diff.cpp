@@ -93,6 +93,49 @@ class ValueDiffLoopIndex : public IRVisitor {
   }
 };
 
+class ValueDiffPtrIndex : public IRVisitor {
+ public:
+  // If <first> is true,
+  // the input statement has value equal to <second> + <third>.
+  using ret_type = std::tuple<bool, Stmt *, int>;
+  ret_type result;
+  ValueDiffPtrIndex() : result(false, nullptr, 0) {
+    allow_undefined_visitor = true;
+    invoke_default_visitor = true;
+  }
+
+  void visit(Stmt *stmt) override {
+    result = std::make_tuple(false, nullptr, 0);
+  }
+
+  void visit(ConstStmt *stmt) override {
+    TI_ASSERT(stmt->width() == 1);
+    if (stmt->val[0].dt == DataType::i32) {
+      result = std::make_tuple(true, nullptr, stmt->val[0].val_i32);
+    }
+  }
+
+  void visit(BinaryOpStmt *stmt) override {
+    if (stmt->rhs->is<ConstStmt>())
+      stmt->rhs->accept(this);
+    if (!std::get<0>(result) || std::get<1>(result) != nullptr ||
+        (stmt->op_type != BinaryOpType::add &&
+         stmt->op_type != BinaryOpType::sub)) {
+      result = std::make_tuple(false, nullptr, 0);
+      return;
+    }
+    if (stmt->op_type == BinaryOpType::sub)
+      std::get<2>(result) = -std::get<2>(result);
+    std::get<1>(result) = stmt->lhs;
+  }
+
+  static ret_type run(Stmt *val) {
+    ValueDiffPtrIndex instance;
+    val->accept(&instance);
+    return instance.result;
+  }
+};
+
 namespace irpass::analysis {
 
 DiffRange value_diff_loop_index(Stmt *stmt, Stmt *loop, int index_id) {
@@ -109,6 +152,21 @@ DiffRange value_diff_loop_index(Stmt *stmt, Stmt *loop, int index_id) {
   TI_ASSERT(stmt->width() == 1);
   auto diff = ValueDiffLoopIndex(stmt, 0, loop, index_id);
   return diff.run();
+}
+
+int value_diff_ptr_index(Stmt *val1, Stmt *val2) {
+  // Return the *absolute* difference of the value of two statements.
+  // Return -1 if the relationship is uncertain.
+  if (val1 == val2)
+    return 0;
+  auto v1 = ValueDiffPtrIndex::run(val1);
+  auto v2 = ValueDiffPtrIndex::run(val2);
+  if (!std::get<0>(v1) || !std::get<0>(v2) ||
+      std::get<1>(v1) != std::get<1>(v2)) {
+    // uncertain
+    return -1;
+  }
+  return std::abs(std::get<2>(v1) - std::get<2>(v2));
 }
 
 }  // namespace irpass::analysis

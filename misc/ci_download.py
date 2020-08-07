@@ -17,6 +17,6 @@ print(f'Unzipping LLVM pre-built binary...')
 os.mkdir('taichi-llvm')
 os.chdir('taichi-llvm')
 if platform.startswith('windows'):
-    os.system('7z x ../taichi-llvm.zip')
+    exit(os.system('7z x ../taichi-llvm.zip') >> 8)
 else:
-    os.system('unzip ../taichi-llvm.zip')
+    exit(os.system('unzip ../taichi-llvm.zip') >> 8)

@@ -529,8 +529,8 @@ def asm(source, inputs=[], outputs=[]):
 
 
 def is_active(l, indices):
-    return Expr(
-        ti_core.insert_is_active(l.snode.ptr, make_expr_group(indices)))
+    return Expr(ti_core.insert_is_active(l.snode.ptr,
+                                         make_expr_group(indices)))
 
 
 def activate(l, indices):

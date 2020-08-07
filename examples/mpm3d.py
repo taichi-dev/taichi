@@ -5,10 +5,10 @@ import numba
 ti.init(arch=ti.opengl)
 
 dim = 3
-n_grid = 64
+n_grid = 32
 n_particles = n_grid ** dim // 2 ** (dim - 1)
 dx = 1 / n_grid
-dt = 1e-4
+dt = 4e-4
 
 p_rho = 1
 p_vol = (dx * 0.5)**2
@@ -190,24 +190,26 @@ while gui.running and not gui.get_event(gui.ESCAPE):
     for s in range(15):
         substep()
     pos = x.to_numpy()
-    mass = grid_m.to_numpy() * 1e5
-    if dim == 2:
-        begin, end = field_edges(mass)
-        gui.lines(begin, end)
 
-    elif 1:
-        A, B, C, D = field_edges3(mass)
-        num = A.shape[0]
+    if 0:
+        mass = grid_m.to_numpy() * 1e5
+        if dim == 2:
+            begin, end = field_edges(mass)
+            gui.lines(begin, end)
 
-        writer = ti.PLYWriter(num_vertices=num * 4,
-                num_faces=A.shape[0], face_type='quad')
-        V = np.concatenate([A, B, C, D], axis=0)
-        writer.add_vertex_pos(V[:, 0], V[:, 1], V[:, 2])
+        else:
+            A, B, C, D = field_edges3(mass)
+            num = A.shape[0]
 
-        F = [[j * num + i for j in range(4)] for i in range(num)]
-        writer.add_faces(np.array(F).reshape(num * 4))
+            writer = ti.PLYWriter(num_vertices=num * 4,
+                    num_faces=A.shape[0], face_type='quad')
+            V = np.concatenate([A, B, C, D], axis=0)
+            writer.add_vertex_pos(V[:, 0], V[:, 1], V[:, 2])
 
-        writer.export_frame(gui.frame, '/tmp/mpm3d.ply')
+            F = [[j * num + i for j in range(4)] for i in range(num)]
+            writer.add_faces(np.array(F).reshape(num * 4))
 
-    gui.circles(T(pos), radius=1, color=0x66ccff)
+            writer.export_frame(gui.frame, '/tmp/mpm3d.ply')
+
+    gui.circles(T(pos), radius=2, color=0x66ccff)
     gui.show()

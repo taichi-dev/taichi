@@ -13,13 +13,13 @@ Field **dimensions** could be arbitrary, including but not limited to 0D, 1D, 2D
 - 0D fields are simply scalars, they only contain one scalar value.
 - 1D fields are simply 1D arrays for people from C/C++.
 - 2D fields are used to save images, or matrices for people from Matlab.
-- 3D fields can save the properties of a space volume, e.g., temperature field.
+- 3D fields can save the properties of a space volume, e.g., a temperature field.
 
 Fields can have different shapes:
 
 - The shape of a 0D field is always a **empty tuple**, e.g. ``shape=()``.
 - The shape of a 1D field is **the length of array**, e.g. ``shape=512``.
-- The shape of a 2D field is **resultion of a image**, e.g. ``shape=(1024, 768)``.
+- The shape of a 2D field is **the resolution of a image**, e.g. ``shape=(1024, 768)``.
 
 Fields could be either dense or sparse, see ref:`sparse` for details on sparse
 fields. We'll only talk about **dense fields** in this chapter.

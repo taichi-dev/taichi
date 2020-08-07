@@ -48,10 +48,10 @@ def show_error():
 
   It's detected that you are using Python IDLE in **interactive mode**.
   However, Taichi could not be fully functional due to IDLE limitation, sorry :(
-  Either run Taichi in IDLE file mode, or use IPython / Jupyter instead.
+  You could either run Taichi in IDLE file mode, or use IPython / Jupyter instead.
   But we do care about your experience, no matter which shell you prefer to use.
   So, in order to play Taichi with your favorite IDLE, we may do a dirty hack:
-  Open "{path}" and append the following line to the buttom of this file:
+  Open "{path}" and append the following line to the bottom of this file:
 
 '''
           f'    {our_code}'

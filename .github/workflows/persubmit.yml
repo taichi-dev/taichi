@@ -9,16 +9,9 @@ jobs:
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip ci') && github.event.sender.login != 'taichi-gardener' }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
-        python: [3.6, 3.8]
+        os: [windows-latest]
+        python: [3.8]
         with_cc: [OFF]
-        include:
-          - os: macos-latest
-            python: 3.7
-            with_cc: OFF
-          - os: ubuntu-latest
-            python: 3.8
-            with_cc: ON
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.with_cc == 'ON' }}
     steps:
@@ -30,19 +23,14 @@ jobs:
       - name: Download Pre-Built LLVM 10.0.0
         run: |
           python misc/ci_download.py
-          mkdir taichi-llvm
-          cd taichi-llvm
-          unzip ../taichi-llvm.zip
         env:
           CI_PLATFORM: ${{ matrix.os }}
 
       - name: Build Project
         run: |
-          export TAICHI_REPO_DIR=`pwd`
-          export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
-          export CXX=clang++
-          python misc/ci_setup.py ci
+          python misc/ci_build.py
         env:
+          CI_PLATFORM: ${{ matrix.os }}
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }}
 
       - name: Functionallity Test

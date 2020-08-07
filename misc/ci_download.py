@@ -2,14 +2,21 @@ import os
 
 platform = os.environ['CI_PLATFORM']
 if platform.startswith('macos'):
-    platform = 'macos'
+    suffix = 'macos'
 elif platform.startswith('ubuntu'):
-    platform = 'linux'
+    suffix = 'linux'
 elif platform.startswith('windows'):
-    platform = 'msvc2019'
+    suffix = 'msvc2019'
 else:
     raise Exception(f'Bad CI_PLATFORM={platform}')
 
-llvm_url = f'https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-{platform}.zip'
+llvm_url = f'https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-{suffix}.zip'
 print(f'Downloading LLVM from {llvm_url}...')
 os.system(f'wget {llvm_url} --waitretry=3 --tries=5 -O taichi-llvm.zip')
+print(f'Unzipping LLVM pre-built binary...')
+os.mkdir('taichi-llvm')
+os.chdir('taichi-llvm')
+if platform.startswith('windows'):
+    os.system('7z x ../taichi-llvm.zip')
+else:
+    os.system('unzip ../taichi-llvm.zip')

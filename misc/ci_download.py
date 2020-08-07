@@ -26,8 +26,8 @@ else:
     system(f'wget {llvm_url} --waitretry=3 --tries=5 -O taichi-llvm.zip')
 print(f'Unzipping LLVM pre-built binary...')
 os.mkdir('taichi-llvm')
-os.chdir('taichi-llvm')
 if platform.startswith('windows'):
-    system('7z x ../taichi-llvm.zip')
+    system('7z x taichi-llvm.zip -otaichi-llvm')
 else:
+    os.chdir('taichi-llvm')
     system('unzip ../taichi-llvm.zip')

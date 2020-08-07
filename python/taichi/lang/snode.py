@@ -98,6 +98,11 @@ class SNode:
         import taichi as ti
         return ti.Expr(ti.core.global_var_expr_from_snode(self.ptr))
 
+    @deprecated('x.snode()', 'x.snode')
+    def __call__(self):  # TODO: remove this after v0.7.0
+        return self
+
+    @property
     def snode(self):
         return self
 

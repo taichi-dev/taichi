@@ -219,7 +219,7 @@ def init(arch=None,
 
 def no_activate(*args):
     for v in args:
-        taichi_lang_core.no_activate(v.snode().ptr)
+        taichi_lang_core.no_activate(v.snode.ptr)
 
 
 def cache_shared(*args):
@@ -234,7 +234,8 @@ def cache_read_only(*args):
 
 def assume_in_range(val, base, low, high):
     return taichi_lang_core.expr_assume_in_range(
-        Expr(val).ptr, Expr(base).ptr, low, high)
+        Expr(val).ptr,
+        Expr(base).ptr, low, high)
 
 
 parallelize = core.parallelize
@@ -271,9 +272,9 @@ def Tape(loss, clear_gradients=True):
     if len(loss.shape) != 0:
         raise RuntimeError(
             'The loss of `Tape` must be a 0-D tensor, i.e. scalar')
-    if not loss.snode().ptr.has_grad():
+    if not loss.snode.ptr.has_grad():
         raise RuntimeError(
-            'Gradients of loss are not allocated, please use ti.var(..., needs_grad=True)'
+            'Gradients of loss are not allocated, please use ti.field(..., needs_grad=True)'
             ' for all tensors that are required by autodiff.')
     if clear_gradients:
         clear_all_gradients()

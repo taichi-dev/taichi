@@ -575,8 +575,9 @@ class Matrix(TaichiOperations):
     def data_type(self):
         return self.dtype
 
+    @property
     def snode(self):
-        return self.loop_range().snode()
+        return self.loop_range().snode
 
     def make_grad(self):
         ret = self.empty_copy()

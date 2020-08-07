@@ -27,7 +27,7 @@
 #include "taichi/backends/cc/struct_cc.h"
 #include "taichi/backends/cc/cc_layout.h"
 #include "taichi/backends/cc/codegen_cc.h"
-#include "taichi/backends/cc/cc_configuation.h"
+#include "taichi/backends/cc/cc_config.h"
 #else
 #endif
 
@@ -664,6 +664,12 @@ void Program::finalize() {
       auto first_space_pos = file_name.find_first_of(' ');
       TI_ASSERT(first_space_pos != std::string::npos);
       file_name = file_name.substr(0, first_space_pos);
+      if (auto lt_pos = file_name.find('<'); lt_pos != std::string::npos) {
+        file_name[lt_pos] = '_';
+      }
+      if (auto gt_pos = file_name.find('>'); gt_pos != std::string::npos) {
+        file_name[gt_pos] = '_';
+      }
       file_name += ".dat";
       file_name = std::string(output_dir) + "/" + file_name;
       TI_INFO("Saving benchmark result to {}", file_name);

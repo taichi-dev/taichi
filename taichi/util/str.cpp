@@ -17,7 +17,6 @@ std::string c_quoted(std::string const &str) {
       REG_ESC('\n', "n");
       REG_ESC('\a', "a");
       REG_ESC('\b', "b");
-      REG_ESC('\?', "?");
       REG_ESC('\v', "v");
       REG_ESC('\t', "t");
       REG_ESC('\f', "f");

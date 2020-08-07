@@ -1,12 +1,14 @@
 import taichi as ti
-ti.init(arch=ti.opengl)
-export_file = '' # 'mpm3d.ply' for exporting result to PLY files
+import numpy as np
+import numba
 
-dim = 3
-n_grid = 32
+ti.init(arch=ti.opengl)
+
+dim = 2
+n_grid = 128
 n_particles = n_grid ** dim // 2 ** (dim - 1)
 dx = 1 / n_grid
-dt = 5e-4
+dt = 2e-4
 
 p_rho = 1
 p_vol = (dx * 0.5)**2
@@ -76,15 +78,43 @@ def init():
         x[i] = ti.Vector([ti.random() for i in range(dim)]) * 0.4 + 0.2
         J[i] = 1
 
+
+@numba.njit
+def field_edges(mass):
+    begin, end = [], []
+
+    def f(i, j):
+        return mass[i, j] >= 1e-2
+
+    n, m = mass.shape
+    d, e = 1 / n, 1 / n
+    for i in range(1, n - 1):
+        for j in range(1, m - 1):
+            u, v = i * d, j * e
+            if f(i, j) and not f(i, j + 1):
+                begin.append((u, v + e))
+                end.append((u + d, v + e))
+            if f(i, j) and not f(i, j - 1):
+                begin.append((u, v))
+                end.append((u + d, v))
+            if f(i, j) and not f(i - 1, j):
+                begin.append((u, v))
+                end.append((u, v + e))
+            if f(i, j) and not f(i + 1, j):
+                begin.append((u + d, v))
+                end.append((u + d, v + e))
+
+    return np.array(begin), np.array(end)
+
+
 init()
 gui = ti.GUI('MPM3D', background_color=0x112F41)
 while gui.running and not gui.get_event(gui.ESCAPE):
-    for s in range(25):
+    for s in range(10):
         substep()
     pos = x.to_numpy()
-    if export_file:
-        writer = ti.PLYWriter(num_vertices=pos.shape[0])
-        writer.add_vertex_pos(pos[:, 0], pos[:, 1], pos[:, 2])
-        writer.export_frame(gui.frame, export_file)
+    mass = grid_m.to_numpy() * 1e5
+    begin, end = field_edges(mass)
+    gui.lines(begin, end)
     gui.circles(pos[:, :2], radius=1.5, color=0x068587)
     gui.show()

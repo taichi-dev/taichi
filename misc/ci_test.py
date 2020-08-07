@@ -4,9 +4,10 @@ platform = os.environ['CI_PLATFORM']
 path_sep = ';' if platform.startswith('windows') else ':'
 
 def system(x):
+    print(f'[ci] executing: {x}')
     ret = os.system(x)
     if ret != 0:
-        exit(ret >> 8)
+        exit(1)
 
 def add_path(x):
     path_sep = ';' if platform.startswith('windows') else ':'

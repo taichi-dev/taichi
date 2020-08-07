@@ -10,7 +10,7 @@ We'll only talk about **scalar fields** in this chapter.
 
 Field **dimensions** could be either 0D, 1D, 2D, 3D, ...
 
-- 0D fields are simply scalars, it only contains one scalar value.
+- 0D fields are simply scalars, they only contain one scalar value.
 - 1D fields are simply 1D arrays for people from C/C++.
 - 2D fields are be used to save images, or matrices for people from Matlab.
 - 3D fields can save the properties of a space volume, e.g., temperature field.

@@ -637,8 +637,8 @@ class KernelGen : public IRVisitor {
   void visit(ConstStmt *const_stmt) override {
     TI_ASSERT(const_stmt->width() == 1);
     auto dt_name = opengl_data_type_name(const_stmt->element_type());
-    emit("{} {} = {}({});", dt_name, const_stmt->short_name(),
-        dt_name, const_stmt->val[0].stringify());
+    emit("{} {} = {}({});", dt_name, const_stmt->short_name(), dt_name,
+         const_stmt->val[0].stringify());
   }
 
   void visit(KernelReturnStmt *stmt) override {

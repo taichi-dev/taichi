@@ -236,7 +236,8 @@ def cache_read_only(*args):
 
 def assume_in_range(val, base, low, high):
     return taichi_lang_core.expr_assume_in_range(
-        Expr(val).ptr, Expr(base).ptr, low, high)
+        Expr(val).ptr,
+        Expr(base).ptr, low, high)
 
 
 parallelize = core.parallelize

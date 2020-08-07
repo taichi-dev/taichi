@@ -131,6 +131,8 @@ Announce a pending deprecation with an API wrapper, usage:
 def sqr(x):
     return x**2
 '''
+
+
 def deprecated(old, new, type=DeprecationWarning):
     import functools
 
@@ -146,11 +148,14 @@ def deprecated(old, new, type=DeprecationWarning):
 
     return decorator
 
+
 '''
 Announce a full deprecateion, with no API wrapper, usage:
 
 sqr = fully_deprecated('ti.sqr(x)', 'x**2')
 '''
+
+
 def fully_deprecated(old, new):
     def wrapped(*args, **kwargs):
         _taichi_skip_traceback = 1

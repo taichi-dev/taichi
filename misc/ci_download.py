@@ -10,13 +10,19 @@ elif platform.startswith('windows'):
 else:
     raise Exception(f'Bad CI_PLATFORM={platform}')
 
+def system(x):
+    ret = os.system(x)
+    if ret != 0:
+        exit(ret >> 8)
+
 llvm_url = f'https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-{suffix}.zip'
 print(f'Downloading LLVM from {llvm_url}...')
-os.system(f'wget {llvm_url} --waitretry=3 --tries=5 -O taichi-llvm.zip')
+system(f'wget {llvm_url} --waitretry=3 --tries=5 -O taichi-llvm.zip')
+system(f'curl --retry 10 --retry-delay 5 ${url} -LO -o taichi-llvm.zip')
 print(f'Unzipping LLVM pre-built binary...')
 os.mkdir('taichi-llvm')
 os.chdir('taichi-llvm')
 if platform.startswith('windows'):
-    exit(os.system('7z x ../taichi-llvm.zip') >> 8)
+    system('7z x ../taichi-llvm.zip')
 else:
-    exit(os.system('unzip ../taichi-llvm.zip') >> 8)
+    system('unzip ../taichi-llvm.zip')

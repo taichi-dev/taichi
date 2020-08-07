@@ -124,7 +124,14 @@ def warning(msg, type=UserWarning, stacklevel=1):
         warnings.warn(msg, type, stacklevel=stacklevel + 1)
 
 
-def deprecated(old, new):
+'''
+Announce a pending deprecation with an API wrapper, usage:
+
+@deprecated('ti.sqr(x)', 'x**2')
+def sqr(x):
+    return x**2
+'''
+def deprecated(old, new, type=DeprecationWarning):
     import functools
 
     def decorator(foo):
@@ -132,12 +139,31 @@ def deprecated(old, new):
         def wrapped(*args, **kwargs):
             _taichi_skip_traceback = 1
             msg = f'{old} is deprecated, please use {new} instead'
-            warning(msg, DeprecationWarning, stacklevel=2)
+            warning(msg, type, stacklevel=2)
             return foo(*args, **kwargs)
 
         return wrapped
 
     return decorator
+
+'''
+Announce a full deprecateion, with no API wrapper, usage:
+
+sqr = fully_deprecated('ti.sqr(x)', 'x**2')
+'''
+def fully_deprecated(old, new):
+    def wrapped(*args, **kwargs):
+        _taichi_skip_traceback = 1
+        msg = f'{old} is fully deprecated, please use {new} instead'
+        try:
+            import locale
+            if 'zh' in locale.getdefaultlocale()[0]:
+                msg += f'\n{old} 已经被彻底移除，请使用 {new} 来替换'
+        except:
+            pass
+        raise SyntaxError(msg)
+
+    return wrapped
 
 
 def get_logging(name):
@@ -215,6 +241,8 @@ __all__ = [
     'veci',
     'core_vec',
     'core_veci',
+    'deprecated',
+    'fully_deprecated',
     'set_gdb_trigger',
     'print_profile_info',
     'set_logging_level',

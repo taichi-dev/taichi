@@ -4,8 +4,8 @@ import numba
 
 ti.init(arch=ti.opengl)
 
-dim = 2
-n_grid = 128
+dim = 3
+n_grid = 32
 n_particles = n_grid ** dim // 2 ** (dim - 1)
 dx = 1 / n_grid
 dt = 2e-4
@@ -83,7 +83,7 @@ def init():
 def field_edges(mass):
     begin, end = [], []
 
-    def f(i, j):
+    def a(i, j):
         return mass[i, j] >= 1e-2
 
     n, m = mass.shape
@@ -91,20 +91,92 @@ def field_edges(mass):
     for i in range(1, n - 1):
         for j in range(1, m - 1):
             u, v = i * d, j * e
-            if f(i, j) and not f(i, j + 1):
+            if a(i, j) and not a(i, j + 1):
                 begin.append((u, v + e))
                 end.append((u + d, v + e))
-            if f(i, j) and not f(i, j - 1):
+            if a(i, j) and not a(i, j - 1):
                 begin.append((u, v))
                 end.append((u + d, v))
-            if f(i, j) and not f(i - 1, j):
+            if a(i, j) and not a(i - 1, j):
                 begin.append((u, v))
                 end.append((u, v + e))
-            if f(i, j) and not f(i + 1, j):
+            if a(i, j) and not a(i + 1, j):
                 begin.append((u + d, v))
                 end.append((u + d, v + e))
 
     return np.array(begin), np.array(end)
+
+
+@numba.njit
+def field_edges3(mass):
+    A, B = [(0.0, 0.0, 0.0)], [(0.0, 0.0, 0.0)]
+    C, D = [(0.0, 0.0, 0.0)], [(0.0, 0.0, 0.0)]
+
+    def a(i, j, k):
+        return mass[i, j, k] >= 1e-2
+
+    n, m, o = mass.shape
+    d, e, f = 1 / n, 1 / m, 1 / o
+    for i in range(1, n - 1):
+        for j in range(1, m - 1):
+            for k in range(1, o - 1):
+                if not a(i, j, k):
+                    continue
+
+                u, v, w = i * d, j * e, k * f
+                if not a(i, j + 1, k):
+                    A.append((u, v + e, w))
+                    B.append((u, v + e, w + f))
+                    C.append((u + d, v + e, w + f))
+                    D.append((u + d, v + e, w))
+                if not a(i, j - 1, k):
+                    A.append((u, v, w))
+                    B.append((u, v, w + f))
+                    C.append((u + d, v, w + f))
+                    D.append((u + d, v, w))
+                if not a(i - 1, j, k):
+                    A.append((u, v, w))
+                    B.append((u, v + e, w))
+                    C.append((u, v + e, w + f))
+                    D.append((u, v, w + f))
+                if not a(i + 1, j, k):
+                    A.append((u + d, v, w))
+                    B.append((u + d, v + e, w))
+                    C.append((u + d, v + e, w + f))
+                    D.append((u + d, v, w + f))
+                if not a(i, j, k - 1):
+                    A.append((u, v, w))
+                    B.append((u, v + e, w))
+                    C.append((u + d, v + e, w))
+                    D.append((u + d, v, w))
+                if not a(i, j, k + 1):
+                    A.append((u, v, w + f))
+                    B.append((u, v + e, w + f))
+                    C.append((u + d, v + e, w + f))
+                    D.append((u + d, v, w + f))
+
+    return np.array(A), np.array(B), np.array(C), np.array(D)
+
+
+def T(a):
+    if dim == 2:
+        return a
+
+    #return a[:, :2]
+
+    a = a - 0.5
+    x, y, z = a[:, 0], a[:, 1], a[:, 2]
+
+    phi = np.radians(28)
+    theta = np.radians(32)
+
+    c, s = np.cos(phi), np.sin(phi)
+    C, S = np.cos(theta), np.sin(theta)
+
+    x, z = x * c + z * s, z * c - x * s
+    u, v = x, y * C + z * S
+
+    return np.array([u, v]).swapaxes(0, 1) + 0.5
 
 
 init()
@@ -114,7 +186,17 @@ while gui.running and not gui.get_event(gui.ESCAPE):
         substep()
     pos = x.to_numpy()
     mass = grid_m.to_numpy() * 1e5
-    begin, end = field_edges(mass)
-    gui.lines(begin, end)
-    gui.circles(pos[:, :2], radius=1.5, color=0x068587)
+    if dim == 2:
+        begin, end = field_edges(mass)
+        gui.lines(begin, end)
+    elif 0:
+        A, B, C, D = field_edges3(mass)
+        A, B, C, D = T(A), T(B), T(C), T(D)
+        #gui.triangles(A, B, C, color=0x068587)
+        #gui.triangles(C, A, D, color=0x068587)
+        #gui.lines(A, B, color=0x068587)
+        #gui.lines(B, C, color=0x068587)
+        #gui.lines(C, D, color=0x068587)
+        #gui.lines(D, A, color=0x068587)
+    gui.circles(T(pos), radius=2, color=0x66ccff)
     gui.show()

@@ -5,10 +5,10 @@ import numba
 ti.init(arch=ti.opengl)
 
 dim = 3
-n_grid = 32
+n_grid = 64
 n_particles = n_grid ** dim // 2 ** (dim - 1)
 dx = 1 / n_grid
-dt = 2e-4
+dt = 1e-4
 
 p_rho = 1
 p_vol = (dx * 0.5)**2
@@ -117,9 +117,9 @@ def field_edges3(mass):
 
     n, m, o = mass.shape
     d, e, f = 1 / n, 1 / m, 1 / o
-    for i in range(1, n - 1):
-        for j in range(1, m - 1):
-            for k in range(1, o - 1):
+    for i in range(1, n):
+        for j in range(1, m):
+            for k in range(1, o):
                 if not a(i, j, k):
                     continue
 
@@ -158,13 +158,10 @@ def field_edges3(mass):
     return np.array(A), np.array(B), np.array(C), np.array(D)
 
 
-def T(a):
-    if dim == 2:
-        return a
-
-    #return a[:, :2]
-
+@numba.njit
+def Tker(a):
     a = a - 0.5
+
     x, y, z = a[:, 0], a[:, 1], a[:, 2]
 
     phi = np.radians(28)
@@ -176,27 +173,41 @@ def T(a):
     x, z = x * c + z * s, z * c - x * s
     u, v = x, y * C + z * S
 
-    return np.array([u, v]).swapaxes(0, 1) + 0.5
+    return u + 0.5, v + 0.5
+
+
+def T(a):
+    if dim == 2:
+        return a
+
+    u, v = Tker(a)
+    return np.array([u, v]).swapaxes(0, 1)
 
 
 init()
 gui = ti.GUI('MPM3D', background_color=0x112F41)
 while gui.running and not gui.get_event(gui.ESCAPE):
-    for s in range(10):
+    for s in range(15):
         substep()
     pos = x.to_numpy()
     mass = grid_m.to_numpy() * 1e5
     if dim == 2:
         begin, end = field_edges(mass)
         gui.lines(begin, end)
-    elif 0:
+
+    elif 1:
         A, B, C, D = field_edges3(mass)
-        A, B, C, D = T(A), T(B), T(C), T(D)
-        #gui.triangles(A, B, C, color=0x068587)
-        #gui.triangles(C, A, D, color=0x068587)
-        #gui.lines(A, B, color=0x068587)
-        #gui.lines(B, C, color=0x068587)
-        #gui.lines(C, D, color=0x068587)
-        #gui.lines(D, A, color=0x068587)
-    gui.circles(T(pos), radius=2, color=0x66ccff)
+        num = A.shape[0]
+
+        writer = ti.PLYWriter(num_vertices=num * 4,
+                num_faces=A.shape[0], face_type='quad')
+        V = np.concatenate([A, B, C, D], axis=0)
+        writer.add_vertex_pos(V[:, 0], V[:, 1], V[:, 2])
+
+        F = [[j * num + i for j in range(4)] for i in range(num)]
+        writer.add_faces(np.array(F).reshape(num * 4))
+
+        writer.export_frame(gui.frame, '/tmp/mpm3d.ply')
+
+    gui.circles(T(pos), radius=1, color=0x66ccff)
     gui.show()

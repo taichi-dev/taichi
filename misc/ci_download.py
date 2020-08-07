@@ -18,7 +18,7 @@ def system(x):
 llvm_url = f'https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-{suffix}.zip'
 print(f'Downloading LLVM from {llvm_url}...')
 if platform.startswith('windows'):
-    system(f'curl --retry 10 --retry-delay 5 ${url} -LO -o taichi-llvm.zip')
+    system(f'curl --retry 10 --retry-delay 5 ${llvm_url} -LO -o taichi-llvm.zip')
 else:
     system(f'wget {llvm_url} --waitretry=3 --tries=5 -O taichi-llvm.zip')
 print(f'Unzipping LLVM pre-built binary...')

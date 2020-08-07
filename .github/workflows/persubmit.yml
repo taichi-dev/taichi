@@ -10,9 +10,12 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python: [3.6, 3.7, 3.8]
+        python: [3.6, 3.8]
         with_cc: [OFF]
         include:
+          - os: macos-latest
+            python: 3.7
+            with_cc: OFF
           - os: ubuntu-latest
             python: 3.8
             with_cc: ON
@@ -26,20 +29,18 @@ jobs:
 
       - name: Download Pre-Built LLVM 10.0.0
         run: |
+          python misc/ci_download.py
           mkdir taichi-llvm
           cd taichi-llvm
-          wget https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-linux.zip --waitretry=3 --tries=5
-          unzip taichi-llvm-10.0.0-linux.zip
+          unzip ../taichi-llvm.zip
+        env:
+          CI_PLATFORM: ${{ matrix.os }}
 
       - name: Build Project
         run: |
           export TAICHI_REPO_DIR=`pwd`
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
           export CXX=clang++
-          # GLFW dependencies:
-          #export CI_SETUP_CMAKE_ARGS=-DTI_WITH_OPENGL:BOOL=ON
-          #sudo apt-get install libx11-dev libxcursor-dev libxi-dev
-          #sudo apt-get install libxrandr-dev libxinerama-dev libglvnd-dev
           python misc/ci_setup.py ci
         env:
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }}
@@ -89,6 +90,6 @@ jobs:
       - name: Run PR Title Checker
         run: |
           pip install semver GitPython
-          python misc/check_pr_title.py "$PR_TITLE"
+          python misc/ci_check_pr_title.py "$PR_TITLE"
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}

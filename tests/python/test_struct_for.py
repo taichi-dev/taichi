@@ -238,3 +238,25 @@ def test_struct_for_branching():
     func1()
     func2()
     func3()
+
+
+@ti.test(require=ti.extension.sparse)
+def test_struct_for_pointer_block():
+    n = 16
+    block_size = 8
+
+    f = ti.field(dtype=ti.f32)
+
+    block = ti.root.pointer(ti.ijk, n // block_size)
+    block.dense(ti.ijk, block_size).place(f)
+
+    f[0, 2, 3] = 1
+
+    @ti.kernel
+    def count() -> int:
+        tot = 0
+        for I in ti.grouped(block):
+            tot += 1
+        return tot
+
+    assert count() == 1

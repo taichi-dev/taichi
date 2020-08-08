@@ -1390,7 +1390,8 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
       }
     }
 
-    if (snode->type == SNodeType::bitmasked) {
+    if (snode->type == SNodeType::bitmasked ||
+        snode->type == SNodeType::pointer) {
       // test if current voxel is active or not
       auto is_active = call(snode, element.get("element"), "is_active",
                             {builder->CreateLoad(loop_index)});

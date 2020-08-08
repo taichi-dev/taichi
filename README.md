@@ -19,6 +19,9 @@
 
 Advanced features of Taichi include [spatially sparse computing](https://taichi.readthedocs.io/en/latest/sparse.html) and [differentiable programming](https://taichi.readthedocs.io/en/latest/differentiable_programming.html) [[examples]](https://github.com/yuanming-hu/difftaichi).
 
+For the convenience of Chinese contributors, clone from the mirror repo hosted
+on Gitee (码云): https://gitee.com/mirrors/Taichi.
+
 ## Gallery
 
 <a href="https://github.com/taichi-dev/taichi/blob/master/examples/mpm128.py"><img src="https://github.com/taichi-dev/public_files/blob/6bd234694270c83baf97ba32e0c6278b8cf37e6e/taichi/mpm128.gif" height="192px"></a> <a href="https://github.com/taichi-dev/taichi/blob/master/examples/stable_fluid.py"> <img src="https://github.com/taichi-dev/public_files/blob/6bd234694270c83baf97ba32e0c6278b8cf37e6e/taichi/stable_fluids.gif" height="192px"></a> <a href="https://github.com/taichi-dev/taichi/blob/master/examples/sdf_renderer.py"><img src="https://github.com/taichi-dev/public_files/blob/6bd234694270c83baf97ba32e0c6278b8cf37e6e/taichi/sdf_renderer.jpg" height="192px"></a> <a href="https://github.com/taichi-dev/taichi/blob/master/examples/taichi_sparse.py"><img src="https://github.com/taichi-dev/public_files/blob/6bd234694270c83baf97ba32e0c6278b8cf37e6e/taichi/sparse_grids.gif" height="192px"></a>
@@ -33,7 +36,7 @@ python3 -m pip install taichi
 
 **Supported OS**: Windows, Linux, Mac OS X; **Python**: 3.6/3.7/3.8 (64-bit only); **Backends**: x64 CPUs, CUDA, Apple Metal, OpenGL Compute Shaders.
 
-Please build from source for other configurations (e.g., your CPU is ARM).
+Please build from source for other configurations (e.g., your CPU is ARM, or you want to try out our experimental C backend).
 
 **Note:**
  - Starting April 13 2020 (v0.5.12), we release the Python package [`taichi`](https://pypi.org/project/taichi/) instead of [`taichi-nightly`](https://pypi.org/project/taichi-nightly/). Now this PyPI package includes CPU, CUDA 10/11, Metal and OpenGL support.
@@ -54,8 +57,9 @@ Please build from source for other configurations (e.g., your CPU is ARM).
 ---
 
 - [Taichi GLSL](https://github.com/taichi-dev/taichi_glsl): A Taichi extension library that provides a set of GLSL-style helper functions.
-- [Taichi THREE](https://github.com/taichi-dev/taichi_three): A 3D rendering library based on Taichi (work in progress).
+- [Taichi THREE](https://github.com/taichi-dev/taichi_three): A 3D rendering library based on Taichi.
 - [Taichi Elements](https://github.com/taichi-dev/taichi_elements): A high-performance multi-material continuum physics engine based on Taichi (work in progress).
+- [Taichi.js](https://github.com/taichi-dev/taichi.js): Run compiled Taichi programs in Javascript and WASM (work in progress).
 
 ---
 

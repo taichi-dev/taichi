@@ -22,6 +22,8 @@ llvm_url = f'https://github.com/taichi-dev/taichi_assets/releases/download/llvm1
 print(f'Downloading LLVM from {llvm_url}...')
 if platform.startswith('windows'):
     system(f'curl --retry 10 --retry-delay 5 {llvm_url} -LO -o taichi-llvm.zip')
+    clang_url = 'https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/clang-10.0.0-win.zip'
+    system(f'curl --retry 10 --retry-delay 5 {clang_url} -LO -o taichi-clang.zip')
     system('dir')
 else:
     system(f'wget {llvm_url} --waitretry=3 --tries=5 -O taichi-llvm.zip')
@@ -29,6 +31,7 @@ print(f'Unzipping LLVM pre-built binary...')
 os.mkdir('taichi-llvm')
 if platform.startswith('windows'):
     system('7z x taichi-llvm.zip -otaichi-llvm || 7z x taichi-llvm-10.0.0-msvc2019.zip -otaichi-llvm')
+    system('7z x taichi-clang.zip -otaichi-clang || 7z x clang-10.0.0-win.zip -otaichi-clang')
 else:
     os.chdir('taichi-llvm')
     system('unzip ../taichi-llvm.zip')

@@ -249,7 +249,7 @@ def test_struct_for_pointer_block():
     f = ti.field(dtype=ti.f32)
 
     block = ti.root.pointer(ti.ijk, n // block_size)
-    block.dense(ti.ijk, 8).place(f)
+    block.dense(ti.ijk, block_size).place(f)
 
     f[0, 2, 3] = 1
 

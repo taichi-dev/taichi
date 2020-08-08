@@ -294,13 +294,16 @@ class GUI:
         import math
         angle = math.radians(180 - angle)
         c, s = math.cos(angle), math.sin(angle)
-        minor1 = np.array([major[:, 0] * c - major[:, 1] * s,
-                           major[:, 0] * s + major[:, 1] * c]).swapaxes(0, 1)
-        minor2 = np.array([major[:, 0] * c + major[:, 1] * s,
-                          -major[:, 0] * s + major[:, 1] * c]).swapaxes(0, 1)
+        minor1 = np.array([
+            major[:, 0] * c - major[:, 1] * s,
+            major[:, 0] * s + major[:, 1] * c
+        ]).swapaxes(0, 1)
+        minor2 = np.array([
+            major[:, 0] * c + major[:, 1] * s,
+            -major[:, 0] * s + major[:, 1] * c
+        ]).swapaxes(0, 1)
         end = orig + major
-        return [(orig, end),
-                (end, end + minor1 * tip_scale),
+        return [(orig, end), (end, end + minor1 * tip_scale),
                 (end, end + minor2 * tip_scale)]
 
     def arrows(self, orig, dir, radius=1, color=0xffffff, **kwargs):

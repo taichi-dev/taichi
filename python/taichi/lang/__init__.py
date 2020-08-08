@@ -337,13 +337,14 @@ def stat_write(avg):
     with open(filename, 'w') as f:
         f.write(f'time_avg: {avg:.4f}')
 
+
 def is_arch_supported(arch):
     arch_table = {
-            cuda: core.with_cuda,
-            metal: core.with_metal,
-            opengl: core.with_opengl,
-            cc: core.with_cc,
-            cpu: lambda: True
+        cuda: core.with_cuda,
+        metal: core.with_metal,
+        opengl: core.with_opengl,
+        cc: core.with_cc,
+        cpu: lambda: True
     }
     with_arch = arch_table.get(arch, lambda: False)
     try:
@@ -351,9 +352,9 @@ def is_arch_supported(arch):
     except Exception as e:
         arch = core.arch_name(arch)
         core.warn(
-                f"{e.__class__.__name__}: '{e}' occurred when detecting "
-                f"{arch}, consider add `export TI_WITH_{arch.upper()}=0` "
-                f" to environment variables to depress this warning message.")
+            f"{e.__class__.__name__}: '{e}' occurred when detecting "
+            f"{arch}, consider add `export TI_WITH_{arch.upper()}=0` "
+            f" to environment variables to depress this warning message.")
         return False
 
 

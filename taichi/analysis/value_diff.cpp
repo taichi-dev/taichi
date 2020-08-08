@@ -93,13 +93,14 @@ class ValueDiffLoopIndex : public IRVisitor {
   }
 };
 
-class ValueDiffPtrIndex : public IRVisitor {
+class FindDirectValueBaseAndOffset : public IRVisitor {
  public:
-  // If <first> is true,
-  // the input statement has value equal to <second> + <third>.
+  // In the return value, <first> is true if this class finds that the input
+  // statement has value equal to <second> + <third> (base + offset), or
+  // <first> is false if this class can't find the decomposition.
   using ret_type = std::tuple<bool, Stmt *, int>;
   ret_type result;
-  ValueDiffPtrIndex() : result(false, nullptr, 0) {
+  FindDirectValueBaseAndOffset() : result(false, nullptr, 0) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
   }
@@ -130,7 +131,7 @@ class ValueDiffPtrIndex : public IRVisitor {
   }
 
   static ret_type run(Stmt *val) {
-    ValueDiffPtrIndex instance;
+    FindDirectValueBaseAndOffset instance;
     val->accept(&instance);
     return instance.result;
   }
@@ -154,19 +155,20 @@ DiffRange value_diff_loop_index(Stmt *stmt, Stmt *loop, int index_id) {
   return diff.run();
 }
 
-int value_diff_ptr_index(Stmt *val1, Stmt *val2) {
-  // Return the *absolute* difference of the value of two statements.
-  // Return -1 if the relationship is uncertain.
+std::pair<bool, int> value_diff_ptr_index(Stmt *val1, Stmt *val2) {
+  // <first>: whether the difference of the value of two statements is certain.
+  // <second>: the difference of the value of two statements (i.e. val1 - val2)
+  // if <first> is true.
   if (val1 == val2)
-    return 0;
-  auto v1 = ValueDiffPtrIndex::run(val1);
-  auto v2 = ValueDiffPtrIndex::run(val2);
+    return std::make_pair(true, 0);
+  auto v1 = FindDirectValueBaseAndOffset::run(val1);
+  auto v2 = FindDirectValueBaseAndOffset::run(val2);
   if (!std::get<0>(v1) || !std::get<0>(v2) ||
       std::get<1>(v1) != std::get<1>(v2)) {
     // uncertain
-    return -1;
+    return std::make_pair(false, 0);
   }
-  return std::abs(std::get<2>(v1) - std::get<2>(v2));
+  return std::make_pair(true, std::get<2>(v1) - std::get<2>(v2));
 }
 
 }  // namespace irpass::analysis

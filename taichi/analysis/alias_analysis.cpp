@@ -73,13 +73,18 @@ AliasResult alias_analysis(Stmt *var1, Stmt *var2) {
   if (var1->is<GlobalPtrStmt>() && var2->is<GlobalPtrStmt>()) {
     auto ptr1 = var1->as<GlobalPtrStmt>();
     auto ptr2 = var2->as<GlobalPtrStmt>();
+    auto snode = ptr1->snodes[0];
+    TI_ASSERT(snode == ptr2->snodes[0]);
     bool uncertain = false;
     for (int i = 0; i < (int)ptr1->indices.size(); i++) {
-      int diff = value_diff_ptr_index(ptr1->indices[i], ptr2->indices[i]);
-      if (diff >= (1 << 0))
-        return AliasResult::different;
-      else if (diff != 0)
+      auto diff = value_diff_ptr_index(ptr1->indices[i], ptr2->indices[i]);
+      if (!diff.first) {
         uncertain = true;
+      } else if (diff.second >=
+                 (1 << snode->extractors[snode->physical_index_position[i]]
+                           .trailing_bits)) {
+        return AliasResult::different;
+      }
     }
     return uncertain ? AliasResult::uncertain : AliasResult::same;
   }

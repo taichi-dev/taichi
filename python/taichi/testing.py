@@ -1,6 +1,5 @@
 import taichi as ti
 
-
 ## Helper functions
 def approx(expected, **kwargs):
     '''Tweaked pytest.approx for OpenGL low percisions'''

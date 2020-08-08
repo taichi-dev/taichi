@@ -10,7 +10,6 @@
   "opengl"          : "OpenGL backend",
   "misc"            : "Miscellaneous",
   "std"             : "Standard library",
-  "sparse"          : "Sparse computation",
   "opt"             : "IR optimization passes",
   "example"         : "Examples",
   "pypi"            : "PyPI package",

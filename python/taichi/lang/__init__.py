@@ -180,6 +180,8 @@ def init(arch=None,
 
     # compiler configurations (ti.cfg):
     for key in dir(ti.cfg):
+        if key in ['arch', 'default_fp', 'default_ip']:
+            continue
         cast = type(getattr(ti.cfg, key))
         if cast is bool:
             cast = None

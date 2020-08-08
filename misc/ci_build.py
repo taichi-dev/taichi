@@ -17,8 +17,7 @@ add_path(os.path.join(os.getcwd(), 'taichi-llvm', 'bin'))
 os.environ['TAICHI_REPO_DIR'] = os.getcwd()
 if platform.startswith('windows'):
     add_path(os.path.join(os.getcwd(), 'taichi-clang', 'bin'))
-else:
-    os.environ['CXX'] = 'clang++'
+os.environ['CXX'] = 'clang++'
 system('python misc/ci_setup.py ci')
 if platform.startswith('windows'):
     os.mkdir('build')

@@ -35,3 +35,7 @@ if platform.startswith('windows'):
 else:
     os.chdir('taichi-llvm')
     system('unzip ../taichi-llvm.zip')
+    os.chdir('..')
+    os.mkdir('taichi-clang')
+    os.chdir('taichi-clang')
+    system('unzip ../taichi-clang.zip')

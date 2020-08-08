@@ -35,6 +35,7 @@ if platform.startswith('windows'):
     print(f'Unzipping Clang pre-built binary...')
     os.mkdir('taichi-clang')
     system('7z x clang-10.0.0-win.zip -otaichi-clang')
+    system('dir')
 else:
     os.chdir('taichi-llvm')
     system('unzip ../taichi-llvm.zip')

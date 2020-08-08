@@ -8,11 +8,11 @@ import taichi as ti
 import numpy as np
 import time
 
-res = 512             # 600 for a larger resoultion
+res = 512  # 600 for a larger resoultion
 dt = 0.03
 p_jacobi_iters = 160  # 40 for quicker but not-so-accurate result
 f_strength = 10000.0
-curl_strength = 0     # 7 for unrealistic visual enhancement
+curl_strength = 0  # 7 for unrealistic visual enhancement
 dye_decay = 0.99
 force_radius = res / 3.0
 debug = False
@@ -105,7 +105,7 @@ def backtrace_rk3(vf: ti.template(), p, dt: ti.template()):
     v2 = bilerp(vf, p1)
     p2 = p - 0.75 * dt * v2
     v3 = bilerp(vf, p2)
-    p -= dt * ((2/9) * v1 + (1/3) * v2 + (4/9) * v3)
+    p -= dt * ((2 / 9) * v1 + (1 / 3) * v2 + (4 / 9) * v3)
     return p
 
 
@@ -113,8 +113,8 @@ backtrace = backtrace_rk3
 
 
 @ti.kernel
-def advect_semilag(vf: ti.template(),
-        qf: ti.template(), new_qf: ti.template()):
+def advect_semilag(vf: ti.template(), qf: ti.template(),
+                   new_qf: ti.template()):
     ti.cache_read_only(qf, vf)
     for i, j in vf:
         p = ti.Vector([i, j]) + 0.5
@@ -123,8 +123,7 @@ def advect_semilag(vf: ti.template(),
 
 
 @ti.kernel
-def advect_bfecc(vf: ti.template(),
-        qf: ti.template(), new_qf: ti.template()):
+def advect_bfecc(vf: ti.template(), qf: ti.template(), new_qf: ti.template()):
     ti.cache_read_only(qf, vf)
     for i, j in vf:
         p = ti.Vector([i, j]) + 0.5
@@ -231,7 +230,8 @@ def enhance_vorticity(vf: ti.template(), cf: ti.template()):
         cb = sample(cf, i, j - 1)
         ct = sample(cf, i, j + 1)
         cc = sample(cf, i, j)
-        force = ti.Vector([abs(ct) - abs(cb), abs(cl) - abs(cr)]).normalized(1e-3)
+        force = ti.Vector([abs(ct) - abs(cb),
+                           abs(cl) - abs(cr)]).normalized(1e-3)
         force *= curl_strength * cc
         vf[i, j] = min(max(vf[i, j] + force * dt, -1e3), 1e3)
 

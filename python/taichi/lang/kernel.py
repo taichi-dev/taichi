@@ -152,6 +152,7 @@ def classfunc(foo):
     @functools.wraps(foo)
     def decorated(*args):
         return func.__call__(*args)
+
     return decorated
 
 
@@ -448,7 +449,8 @@ class Kernel:
                         t_kernel.set_extra_arg_int(actual_argument_slot, i, s)
                 else:
                     raise ValueError(
-                        f'Argument type mismatch. Expecting {needed}, got {type(v)}.')
+                        f'Argument type mismatch. Expecting {needed}, got {type(v)}.'
+                    )
                 actual_argument_slot += 1
             # Both the class kernels and the plain-function kernels are unified now.
             # In both cases, |self.grad| is another Kernel instance that computes the

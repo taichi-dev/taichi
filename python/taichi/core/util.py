@@ -286,7 +286,8 @@ if is_release():
     if get_os_name() != 'win':
         dll = ctypes.CDLL(get_core_shared_object(), mode=ctypes.RTLD_LOCAL)
         # The C backend needs a temporary directory for the generated .c and compiled .so files:
-        ti_core.set_tmp_dir(prepare_sandbox())  # TODO: always allocate a tmp_dir for all situations
+        ti_core.set_tmp_dir(prepare_sandbox(
+        ))  # TODO: always allocate a tmp_dir for all situations
 
     ti_core.set_python_package_dir(package_root())
     os.makedirs(ti_core.get_repo_dir(), exist_ok=True)

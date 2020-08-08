@@ -491,7 +491,7 @@ class GUI : public GUIBase {
   std::string window_name;
   int width, height;
   int frame_id = 0;
-  const int fps = 60;
+  real frame_delta_limit = 1.0 / 60;
   float64 start_time;
   Array2D<Vector4> buffer;
   std::vector<real> last_frame_interval;
@@ -806,12 +806,12 @@ class GUI : public GUIBase {
   void update() {
     frame_id++;
     redraw_widgets();
-    while (taichi::Time::get_time() < last_frame_time + 1 / (real)fps)
-      ;
+    taichi::Time::wait_until(last_frame_time + frame_delta_limit);
+    auto this_frame_time = taichi::Time::get_time();
     if (last_frame_time != 0) {
-      last_frame_interval.push_back(taichi::Time::get_time() - last_frame_time);
+      last_frame_interval.push_back(this_frame_time - last_frame_time);
     }
-    last_frame_time = taichi::Time::get_time();
+    last_frame_time = this_frame_time;
     redraw();
     // Some old examples / users don't even provide a `break` statement for us
     // to terminate loop. So we have to terminate the program with RuntimeError

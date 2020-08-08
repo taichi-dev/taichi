@@ -35,6 +35,8 @@ def vector_to_image(mat: ti.template(), arr: ti.ext_arr()):
     for I in ti.grouped(mat):
         for p in ti.static(range(mat.n)):
             arr[I, p] = cook_image_type(mat[I][p])
+            if ti.static(mat.n <= 2):
+                arr[I, 2] = 0
 
 
 @ti.kernel

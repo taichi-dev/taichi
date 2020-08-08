@@ -75,11 +75,11 @@ def bls_test_template(dim,
 
     if benchmark:
         for i in range(benchmark):
-            x.snode().parent().deactivate_all()
+            x.snode.parent().deactivate_all()
             if not scatter:
                 populate()
-            y.snode().parent().deactivate_all()
-            y2.snode().parent().deactivate_all()
+            y.snode.parent().deactivate_all()
+            y2.snode.parent().deactivate_all()
             apply(False, y2)
             apply(True, y)
     else:
@@ -246,7 +246,7 @@ def bls_particle_grid(N,
     insert()
 
     for i in range(benchmark):
-        pid.parent(2).snode().deactivate_all()
+        pid.parent(2).snode.deactivate_all()
         insert()
 
     @ti.kernel

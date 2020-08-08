@@ -139,25 +139,33 @@ def init(arch=None,
 
     # configure default_fp/ip:
     # TODO: move these stuff to _SpecialConfig too:
-    if default_fp is None:
-        dfl_fp = os.environ.get("TI_DEFAULT_FP")
-        if dfl_fp == 32:
-            default_fp = core.DataType.f32
-        elif dfl_fp == 64:
-            default_fp = core.DataType.f64
-        elif dfl_fp is not None:
+    env_default_fp = os.environ.get("TI_DEFAULT_FP")
+    if env_default_fp:
+        if default_fp is not None:
+            core.warn(
+                f'ti.init argument "default_fp" overridden by environment variable TI_DEFAULT_FP={env_default_fp}'
+            )
+        if env_default_fp == '32':
+            default_fp = f32
+        elif env_default_fp == '64':
+            default_fp = f64
+        elif env_default_fp is not None:
             raise ValueError(
-                f'Unrecognized TI_DEFAULT_FP: {dfl_fp}, should be 32 or 64')
+                f'Invalid TI_DEFAULT_FP={env_default_fp}, should be 32 or 64')
 
-    if default_ip is None:
-        dfl_ip = os.environ.get("TI_DEFAULT_IP")
-        if dfl_ip == 32:
-            default_ip = core.DataType.i32
-        elif dfl_ip == 64:
-            default_ip = core.DataType.i64
-        elif dfl_ip is not None:
+    env_default_ip = os.environ.get("TI_DEFAULT_IP")
+    if env_default_ip:
+        if default_ip is not None:
+            core.warn(
+                f'ti.init argument "default_ip" overridden by environment variable TI_DEFAULT_IP={env_default_ip}'
+            )
+        if env_default_ip == '32':
+            default_ip = i32
+        elif env_default_ip == '64':
+            default_ip = i64
+        elif env_default_ip is not None:
             raise ValueError(
-                f'Unrecognized TI_DEFAULT_IP: {dfl_ip}, should be 32 or 64')
+                f'Invalid TI_DEFAULT_IP={env_default_ip}, should be 32 or 64')
 
     if default_fp is not None:
         ti.get_runtime().set_default_fp(default_fp)
@@ -211,16 +219,17 @@ def init(arch=None,
 
 def no_activate(*args):
     for v in args:
-        taichi_lang_core.no_activate(v.snode().ptr)
+        taichi_lang_core.no_activate(v.snode.ptr)
 
 
 def cache_shared(*args):
     for v in args:
-        taichi_lang_core.cache(0, v.ptr)
+        taichi_lang_core.cache(0, v.loop_range().ptr)
 
 
-def cache_read_only(v):
-    taichi_lang_core.cache(1, v.ptr)
+def cache_read_only(*args):
+    for v in args:
+        taichi_lang_core.cache(1, v.loop_range().ptr)
 
 
 def assume_in_range(val, base, low, high):
@@ -262,10 +271,10 @@ def Tape(loss, clear_gradients=True):
     get_runtime().materialize()
     if len(loss.shape) != 0:
         raise RuntimeError(
-            'The loss of `Tape` must be a 0D tensor, i.e. scalar')
-    if not loss.snode().ptr.has_grad():
+            'The loss of `Tape` must be a 0-D tensor, i.e. scalar')
+    if not loss.snode.ptr.has_grad():
         raise RuntimeError(
-            'Gradients of loss are not allocated, please use ti.var(..., needs_grad=True)'
+            'Gradients of loss are not allocated, please use ti.field(..., needs_grad=True)'
             ' for all tensors that are required by autodiff.')
     if clear_gradients:
         clear_all_gradients()
@@ -322,26 +331,29 @@ def stat_write(avg):
     name = os.environ.get('TI_CURRENT_BENCHMARK')
     if name is None:
         return
-    import taichi as ti
-    arch_name = ti.core.arch_name(ti.cfg.arch)
+    arch_name = core.arch_name(ti.cfg.arch)
     output_dir = os.environ.get('TI_BENCHMARK_OUTPUT_DIR', '.')
     filename = f'{output_dir}/{name}__arch_{arch_name}.dat'
     with open(filename, 'w') as f:
         f.write(f'time_avg: {avg:.4f}')
 
-
 def is_arch_supported(arch):
-    if arch == cuda:
-        return core.with_cuda()
-    elif arch == metal:
-        return core.with_metal()
-    elif arch == opengl:
-        return core.with_opengl()
-    elif arch == cc:
-        return core.with_cc()
-    elif arch == cpu:
-        return True
-    else:
+    arch_table = {
+            cuda: core.with_cuda,
+            metal: core.with_metal,
+            opengl: core.with_opengl,
+            cc: core.with_cc,
+            cpu: lambda: True
+    }
+    with_arch = arch_table.get(arch, lambda: False)
+    try:
+        return with_arch()
+    except Exception as e:
+        arch = core.arch_name(arch)
+        core.warn(
+                f"{e.__class__.__name__}: '{e}' occurred when detecting "
+                f"{arch}, consider add `export TI_WITH_{arch.upper()}=0` "
+                f" to environment variables to depress this warning message.")
         return False
 
 

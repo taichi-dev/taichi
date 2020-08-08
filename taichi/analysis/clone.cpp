@@ -123,9 +123,9 @@ class IRCloner : public IRVisitor {
     root->accept(&cloner);
 
     using namespace irpass;
-    typecheck(new_root.get());
     fix_block_parents(new_root.get());
     fix_root_block_kernel(new_root.get(), kernel);
+    typecheck(new_root.get());
     return new_root;
   }
 };

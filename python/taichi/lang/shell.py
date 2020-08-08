@@ -10,7 +10,6 @@ except ImportError:
     ti.warn('Please run `python3 -m pip install sourceinspect` to install.')
     import inspect as oinspect
 
-
 pybuf_enabled = False
 _env_enable_pybuf = os.environ.get('TI_ENABLE_PYBUF', '1')
 if not _env_enable_pybuf or int(_env_enable_pybuf):

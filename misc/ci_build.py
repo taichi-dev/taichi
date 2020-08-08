@@ -21,7 +21,7 @@ system('python misc/ci_setup.py ci')
 if platform.startswith('windows'):
     os.mkdir('build')
     os.chdir('build')
-    system(f'cmake .. -A x64 -DLLVM_DIR="{os.getcwd()}\\taichi_llvm\\lib\\cmake\\llvm"')
+    system(f'cmake .. -G "MinGW Makefiles" -A x64 -DLLVM_DIR="{os.getcwd()}\\taichi_llvm\\lib\\cmake\\llvm"')
     system('make -j4')
     #system(f'cmake .. -G"Visual Studio 16 2019" -A x64 -DLLVM_DIR="{os.getcwd()}\\taichi_llvm\\lib\\cmake\\llvm"')
     #system('msbuild /p:Configuration=RelWithDebInfo /p:Platform=x64 /m taichi.sln')

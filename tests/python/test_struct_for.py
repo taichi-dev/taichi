@@ -240,7 +240,6 @@ def test_struct_for_branching():
     func3()
 
 
-
 @ti.test(require=ti.extension.sparse)
 def test_struct_for_pointer_block():
     n = 16
@@ -259,6 +258,5 @@ def test_struct_for_pointer_block():
         for I in ti.grouped(block):
             tot += 1
         return tot
-    
-    assert count() == 1
 
+    assert count() == 1

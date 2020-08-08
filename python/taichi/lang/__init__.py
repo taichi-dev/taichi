@@ -180,8 +180,6 @@ def init(arch=None,
 
     # compiler configurations (ti.cfg):
     for key in dir(ti.cfg):
-        if key in ['arch', 'default_fp', 'default_ip']:
-            continue
         cast = type(getattr(ti.cfg, key))
         if cast is bool:
             cast = None
@@ -386,13 +384,11 @@ def adaptive_arch_select(arch):
     if arch is None:
         return cpu
     import taichi as ti
-    supported = supported_archs()
-    if isinstance(arch, list):
-        for a in arch:
-            if is_arch_supported(a):
-                return a
-    elif arch in supported:
-        return arch
+    if not isinstance(arch, (list, tuple)):
+        arch = [arch]
+    for a in arch:
+        if is_arch_supported(a):
+            return a
     ti.warn(f'Arch={arch} is not supported, falling back to CPU')
     return cpu
 

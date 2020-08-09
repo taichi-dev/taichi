@@ -1,9 +1,9 @@
 import taichi as ti
 
-ti.init(arch=ti.gpu)
+ti.init(arch=ti.opengl)
 
 n = 320
-pixels = ti.var(dt=ti.f32, shape=(n * 2, n))
+pixels = ti.field(dtype=float, shape=(n * 2, n))
 
 
 @ti.func

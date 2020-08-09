@@ -460,9 +460,9 @@ index = indices
 
 def static(x, *xs):
     _taichi_skip_traceback = 1
-    if len(xs):  # for python-ish pointer assign: x, y = ti.static(y, x)
-        return [static(x)] + [static(x) for x in xs]
-    return x
+    if len(xs) == 0:
+        return list(x)
+    return [x] + list(xs)
 
 
 @taichi_scope

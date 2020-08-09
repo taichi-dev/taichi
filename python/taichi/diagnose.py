@@ -1,5 +1,5 @@
 def main():
-    print('Welcome to the Taichi system diagnose program!')
+    print('Taichi system diagnose:')
     print('')
 
     import os
@@ -119,7 +119,7 @@ def main():
         print(f'{ti_laplace.decode()}')
 
     print(
-        'Consider attach this log when maintainers asked about system informations.'
+        'Consider attaching this log when maintainers ask about system information.'
     )
 
 

@@ -462,21 +462,7 @@ def static(x, *xs):
     _taichi_skip_traceback = 1
     if len(xs):  # for python-ish pointer assign: x, y = ti.static(y, x)
         return [static(x)] + [static(x) for x in xs]
-    import types
-    import taichi as ti
-    if isinstance(x, (bool, int, float, range, list, tuple, enumerate,
-                      ti.ndrange, ti.GroupedNDRange)) or x is None:
-        return x
-    elif isinstance(x, ti.lang.expr.Expr) and x.ptr.is_global_var():
-        return x
-    elif isinstance(x, ti.Matrix) and x.is_global():
-        return x
-    elif isinstance(x, (types.FunctionType, types.MethodType)):
-        return x
-    else:
-        raise ValueError(
-            f'Input to ti.static must be compile-time constants or global pointers, instead of {type(x)}'
-        )
+    return x
 
 
 @taichi_scope

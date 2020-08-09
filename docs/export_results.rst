@@ -69,7 +69,7 @@ To save images without invoking ``ti.GUI.show(filename)``, use ``ti.imwrite(file
         ti.imwrite(pixels.to_numpy(), filename)
         print(f'The image has been saved to {filename}')
 
-- ``ti.imwrite`` can export Taichi fields (``ti.Matrix.field``, ``ti.Vector.field``, ``ti.field``) and numpy tensors ``np.ndarray``.
+- ``ti.imwrite`` can export Taichi fields (``ti.Matrix.field``, ``ti.Vector.field``, ``ti.field``) and numpy arrays ``np.ndarray``.
 - Same as above ``ti.GUI.show(filename)``, the image format (``png``, ``jpg`` and ``bmp``) is also controlled by the suffix of ``filename`` in ``ti.imwrite(filename)``.
 - Meanwhile, the resulted image type (grayscale, RGB, or RGBA) is determined by **the number of channels in the input field**, i.e., the length of the third dimension (``field.shape[2]``).
 - In other words, a field that has shape ``(w, h)`` or ``(w, h, 1)`` will be exported as a grayscale image.

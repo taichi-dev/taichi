@@ -165,8 +165,7 @@ CCFuncEntryType *CCProgram::load_kernel(std::string const &name) {
   return reinterpret_cast<CCFuncEntryType *>(dll->load_function("Tk_" + name));
 }
 
-CCProgram::CCProgram(Program *program)
-  : program(program) {
+CCProgram::CCProgram(Program *program) : program(program) {
   init_runtime();
 }
 

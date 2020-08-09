@@ -50,6 +50,7 @@ class CCProgram {
   }
 
   Program *const program;
+
  private:
   std::vector<char> root_buf;
   std::vector<char> gtmp_buf;

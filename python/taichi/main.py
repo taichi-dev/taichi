@@ -1006,8 +1006,8 @@ class TaichiMain:
     @register
     def diagnose(self, arguments: list = sys.argv[2:]):
         """Diagnose system information"""
-        parser = argparse.ArgumentParser(prog='ti diagnose',
-                                         description=f"{self.diagnose.__doc__}")
+        parser = argparse.ArgumentParser(
+            prog='ti diagnose', description=f"{self.diagnose.__doc__}")
         args = parser.parse_args(arguments)
 
         from .diagnose import main

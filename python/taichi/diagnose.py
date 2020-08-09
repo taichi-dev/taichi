@@ -1,5 +1,5 @@
 def main():
-    print('Welcome to the Taichi system diagnose program!')
+    print('Taichi system diagnose:')
     print('')
 
     import os
@@ -7,7 +7,6 @@ def main():
     import locale
     import platform
     import subprocess
-
 
     print(f'python: {sys.version}')
     print(f'system: {sys.platform}')
@@ -64,14 +63,13 @@ def main():
                 print(line)
                 continue
 
-            exts = ['GL_ARB_compute_shader',
-                    'GL_ARB_gpu_shader_int64',
-                    'GL_NV_shader_atomic_float',
-                    'GL_NV_shader_atomic_float64',
-                    'GL_NV_shader_atomic_int64']
+            exts = [
+                'GL_ARB_compute_shader', 'GL_ARB_gpu_shader_int64',
+                'GL_NV_shader_atomic_float', 'GL_NV_shader_atomic_float64',
+                'GL_NV_shader_atomic_int64'
+            ]
             if line.split(':')[0] in exts:
                 print(line)
-
 
     print('')
     try:
@@ -89,38 +87,41 @@ def main():
         print(f'{ti_header.decode()}')
 
     try:
-        ti_init_test = subprocess.check_output(['python', '-c',
-            'import taichi as ti; ti.init()'])
+        ti_init_test = subprocess.check_output(
+            ['python', '-c', 'import taichi as ti; ti.init()'])
     except Exception as e:
         print(f'`ti.init()` failed: {e}')
     else:
         print(f'{ti_init_test.decode()}')
 
     try:
-        ti_opengl_test = subprocess.check_output(['python', '-c',
-            'import taichi as ti; ti.init(arch=ti.opengl)'])
+        ti_opengl_test = subprocess.check_output(
+            ['python', '-c', 'import taichi as ti; ti.init(arch=ti.opengl)'])
     except Exception as e:
         print(f'Taichi OpenGL test failed: {e}')
     else:
         print(f'{ti_opengl_test.decode()}')
 
     try:
-        ti_cuda_test = subprocess.check_output(['python', '-c',
-            'import taichi as ti; ti.init(arch=ti.cuda)'])
+        ti_cuda_test = subprocess.check_output(
+            ['python', '-c', 'import taichi as ti; ti.init(arch=ti.cuda)'])
     except Exception as e:
         print(f'Taichi CUDA test failed: {e}')
     else:
         print(f'{ti_cuda_test.decode()}')
 
     try:
-        ti_laplace = subprocess.check_output([
-            'python', '-m', 'taichi', 'example', 'minimal'])
+        ti_laplace = subprocess.check_output(
+            ['python', '-m', 'taichi', 'example', 'minimal'])
     except Exception as e:
         print(f'`examples/laplace.py` failed: {e}')
     else:
         print(f'{ti_laplace.decode()}')
 
-    print('Consider attach this log when maintainers asked about system informations.')
+    print(
+        'Consider attaching this log when maintainers ask about system information.'
+    )
+
 
 if __name__ == '__main__':
     main()

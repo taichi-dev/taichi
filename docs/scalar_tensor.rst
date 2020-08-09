@@ -5,30 +5,22 @@ Scalar fields
 
 **Taichi fields** are used to store data.
 
-Field **elements** could be either scalar, vector or matrix (see :ref:`matrix`).
-We'll only talk about **scalar fields** in this chapter.
+Field **elements** could be either a scalar, a vector, or a matrix (see :ref:`matrix`).
+In this paragraph, we will only talk about **scalar fields**, whose elements are simply scalars.
 
-Field **dimensions** could be arbitrary, including but not limited to 0D, 1D, 2D...
+Fields can have up to eight **dimensions**.
 
-- 0D fields are simply scalars, they only contain one scalar value.
-- 1D fields are simply 1D arrays for people from C/C++.
-- 2D fields are used to save images, or matrices for people from Matlab.
-- 3D fields can save the properties of a space volume, e.g., a temperature field.
-
-Fields can have different shapes:
-
-- The shape of a 0D field is always a **empty tuple**, e.g. ``shape=()``.
-- The shape of a 1D field is **the length of array**, e.g. ``shape=512``.
-- The shape of a 2D field is **the resolution of a image**, e.g. ``shape=(1024, 768)``.
+- A 0D scalar field is simply a single scalar.
+- A 1D scalar field is a 1D linear array.
+- A 2D scalar field can be used to represent a 2D regular grid of values. For example, a gray-scale image.
+- A 3D scalar field can be used for volumetric data.
 
 Fields could be either dense or sparse, see ref:`sparse` for details on sparse
-fields. We'll only talk about **dense fields** in this chapter.
+fields. We will only talk about **dense fields** in this paragraph.
 
 .. note::
 
-   We once used the term **tensor** instead of **field**, please caution about
-   these old documentations using *tensor*. We will soon deprecate the term
-   *tensor* in the future for clarity.
+   We once used the term **tensor** instead of **field**. **Tensor** will no longer be used.
 
 
 Declaration

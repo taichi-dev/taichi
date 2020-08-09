@@ -461,7 +461,7 @@ index = indices
 def static(x, *xs):
     _taichi_skip_traceback = 1
     if len(xs) == 0:
-        return list(x)
+        return x
     return [x] + list(xs)
 
 

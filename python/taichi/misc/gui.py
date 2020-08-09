@@ -107,6 +107,11 @@ class GUI:
         if img.shape[2] == 3:
             zeros = np.zeros((img.shape[0], img.shape[1], 1), np.float32)
             img = np.concatenate([img, zeros], axis=2)
+        if img.shape[2] == 2:
+            zeros = np.zeros((img.shape[0], img.shape[1], 2), np.float32)
+            img = np.concatenate([img, zeros], axis=2)
+
+        assert img.shape[2] == 4, "Image must be grayscale, RG, RGB or RGBA"
 
         res = img.shape[:2]
         assert res == self.res, "Image resolution does not match GUI resolution"
@@ -138,12 +143,10 @@ class GUI:
                 self.img = self.cook_image(img.to_numpy())
             else:
                 # Type matched! We can use an optimized copy kernel.
-                assert img.shape \
-                 == self.res, "Image resolution does not match GUI resolution"
-                assert img.n in [
-                    3, 4
-                ], "Only greyscale, RGB or RGBA images are supported in GUI.set_image"
-                assert img.m == 1
+                assert img.shape  == self.res, \
+                        "Image resolution does not match GUI resolution"
+                assert img.n in [2, 3, 4] and img.m == 1, \
+                        "Only greyscale, RG, RGB or RGBA images are supported in GUI.set_image"
                 from taichi.lang.meta import vector_to_image
                 vector_to_image(img, self.img)
                 ti.sync()
@@ -291,13 +294,16 @@ class GUI:
         import math
         angle = math.radians(180 - angle)
         c, s = math.cos(angle), math.sin(angle)
-        minor1 = np.array([major[:, 0] * c - major[:, 1] * s,
-                           major[:, 0] * s + major[:, 1] * c]).swapaxes(0, 1)
-        minor2 = np.array([major[:, 0] * c + major[:, 1] * s,
-                          -major[:, 0] * s + major[:, 1] * c]).swapaxes(0, 1)
+        minor1 = np.array([
+            major[:, 0] * c - major[:, 1] * s,
+            major[:, 0] * s + major[:, 1] * c
+        ]).swapaxes(0, 1)
+        minor2 = np.array([
+            major[:, 0] * c + major[:, 1] * s,
+            -major[:, 0] * s + major[:, 1] * c
+        ]).swapaxes(0, 1)
         end = orig + major
-        return [(orig, end),
-                (end, end + minor1 * tip_scale),
+        return [(orig, end), (end, end + minor1 * tip_scale),
                 (end, end + minor2 * tip_scale)]
 
     def arrows(self, orig, dir, radius=1, color=0xffffff, **kwargs):
@@ -436,6 +442,20 @@ class GUI:
             self.core.should_close = 0
         elif not self.core.should_close:
             self.core.should_close = 1
+
+    @property
+    def fps_limit(self):
+        if self.core.frame_delta_limit == 0:
+            return None
+        else:
+            return 1 / self.core.frame_delta_limit
+
+    @fps_limit.setter
+    def fps_limit(self, value):
+        if value is None:
+            self.core.frame_delta_limit = 0
+        else:
+            self.core.frame_delta_limit = 1 / value
 
 
 def rgb_to_hex(c):

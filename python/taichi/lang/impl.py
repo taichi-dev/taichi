@@ -489,7 +489,7 @@ def grouped(x):
 
 
 def stop_grad(x):
-    taichi_lang_core.stop_grad(x.snode().ptr)
+    taichi_lang_core.stop_grad(x.snode.ptr)
 
 
 def current_cfg():

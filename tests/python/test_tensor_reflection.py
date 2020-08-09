@@ -48,21 +48,21 @@ def test_unordered():
 
     assert val.dtype == ti.i32
     assert val.shape == (n, m, p)
-    assert val.snode().parent(0) == val.snode()
-    assert val.snode().parent() == blk3
-    assert val.snode().parent(1) == blk3
-    assert val.snode().parent(2) == blk2
-    assert val.snode().parent(3) == blk1
-    assert val.snode().parent(4) == ti.root
+    assert val.snode.parent(0) == val.snode
+    assert val.snode.parent() == blk3
+    assert val.snode.parent(1) == blk3
+    assert val.snode.parent(2) == blk2
+    assert val.snode.parent(3) == blk1
+    assert val.snode.parent(4) == ti.root
 
-    assert val.snode() in blk3.get_children()
+    assert val.snode in blk3.get_children()
     assert blk3 in blk2.get_children()
     assert blk2 in blk1.get_children()
     assert blk1 in ti.root.get_children()
 
     expected_repr = f'ti.root => dense {[n]} => dense {[n, m]}' \
         f' => dense {[n, m, p]} => place {[n, m, p]}'
-    assert repr(val.snode()) == expected_repr
+    assert repr(val.snode) == expected_repr
 
 
 @ti.all_archs
@@ -80,12 +80,12 @@ def test_unordered_matrix():
 
     assert val.shape == (n, m, p)
     assert val.dtype == ti.i32
-    assert val.loop_range().snode().parent(0) == val.loop_range().snode()
-    assert val.loop_range().snode().parent() == blk3
-    assert val.loop_range().snode().parent(1) == blk3
-    assert val.loop_range().snode().parent(2) == blk2
-    assert val.loop_range().snode().parent(3) == blk1
-    assert val.loop_range().snode().parent(4) == ti.root
+    assert val.loop_range().snode.parent(0) == val.loop_range().snode
+    assert val.loop_range().snode.parent() == blk3
+    assert val.loop_range().snode.parent(1) == blk3
+    assert val.loop_range().snode.parent(2) == blk2
+    assert val.loop_range().snode.parent(3) == blk1
+    assert val.loop_range().snode.parent(4) == ti.root
 
 
 @pytest.mark.filterwarnings('ignore')
@@ -111,6 +111,8 @@ def test_deprecated():
     assert mat.shape() == (n, m, p)
     assert blk3.dim() == 3
     assert blk3.shape() == (n, m, p)
+    assert val.snode().parent() == blk3
+    assert mat.snode().parent() == blk3
 
 
 @ti.all_archs
@@ -124,10 +126,10 @@ def test_parent_exceeded():
     blk2 = blk1.dense(ti.j, n)
     blk2.place(val)
 
-    assert val.snode().parent() == blk2
-    assert val.snode().parent(2) == blk1
-    assert val.snode().parent(3) == ti.root
-    assert val.snode().parent(4) == None
-    assert val.snode().parent(42) == None
+    assert val.snode.parent() == blk2
+    assert val.snode.parent(2) == blk1
+    assert val.snode.parent(3) == ti.root
+    assert val.snode.parent(4) == None
+    assert val.snode.parent(42) == None
 
     assert ti.root.parent() == None

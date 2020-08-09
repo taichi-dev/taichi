@@ -2,44 +2,50 @@ import taichi as ti
 ti.init()
 
 N = 8
-dt = 5e-5
+dt = 1e-5
 
-pos = ti.Vector.var(2, ti.f32, N, needs_grad=True)
-vel = ti.Vector.var(2, ti.f32, N)
-potential = ti.var(ti.f32, (), needs_grad=True)
+x = ti.Vector.var(2, ti.f32, N, needs_grad=True)  # position of particles
+v = ti.Vector.var(2, ti.f32, N)  # velocity of particles
+U = ti.var(ti.f32, (), needs_grad=True)  # potential energy
 
 
 @ti.kernel
-def calc_potential():
+def compute_U():
     for i, j in ti.ndrange(N, N):
-        disp = pos[i] - pos[j]
-        potential[None] += 1 / disp.norm(1e-3)
-
-
-@ti.kernel
-def init():
-    for i in pos:
-        pos[i] = [ti.random(), ti.random()]
+        r = x[i] - x[j]
+        # r.norm(1e-3) is equivalent to ti.sqrt(r.norm()**2 + 1e-3)
+        # This is to prevent 1/0 error which can cause wrong derivative
+        U[None] += -1 / r.norm(1e-3)  # U += -1 / |r|
 
 
 @ti.kernel
 def advance():
-    for i in pos:
-        vel[i] += dt * pos.grad[i]
-    for i in pos:
-        pos[i] += dt * vel[i]
+    for i in x:
+        v[i] += dt * -x.grad[i]  # dv/dt = -dU/dx
+    for i in x:
+        x[i] += dt * v[i]  # dx/dt = v
 
 
 def substep():
-    with ti.Tape(potential):
-        calc_potential()
+    with ti.Tape(U):
+        # every kernel invocation within this indent scope
+        # will also be accounted into the partial derivate of U
+        # with corresponding input variables like x.
+        compute_U()  # will also computes dU/dx and save in x.grad
     advance()
+
+
+@ti.kernel
+def init():
+    for i in x:
+        x[i] = [ti.random(), ti.random()]
 
 
 init()
 gui = ti.GUI('Autodiff gravity')
-while gui.running and not gui.get_event(gui.ESCAPE):
-    for i in range(16):
+while gui.running:
+    for i in range(50):
         substep()
-    gui.circles(pos.to_numpy(), radius=3)
+    print('U = ', U[None])
+    gui.circles(x.to_numpy(), radius=3)
     gui.show()

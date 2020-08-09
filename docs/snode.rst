@@ -30,7 +30,7 @@ See :ref:`layout` for more details. ``ti.root`` is the root node of the data str
         x = ti.field(dtype=ti.i32)
         y = ti.field(dtype=ti.f32)
         ti.root.place(x, y)
-        assert x.snode() == y.snode()
+        assert x.snode == y.snode
 
 
 .. function:: field.shape
@@ -38,17 +38,17 @@ See :ref:`layout` for more details. ``ti.root`` is the root node of the data str
     :parameter a: (ti.field)
     :return: (tuple of integers) the shape of field
 
-    Equivalent to ``field.snode().shape``.
+    Equivalent to ``field.snode.shape``.
 
     For example,
 
     ::
 
         ti.root.dense(ti.ijk, (3, 5, 4)).place(x)
-        x.shape # returns (3, 5, 4)
+        x.shape  # returns (3, 5, 4)
 
 
-.. function:: field.snode()
+.. function:: field.snode
 
     :parameter a: (ti.field)
     :return: (SNode) the structual node where ``field`` is placed
@@ -57,8 +57,9 @@ See :ref:`layout` for more details. ``ti.root`` is the root node of the data str
 
         x = ti.field(dtype=ti.i32)
         y = ti.field(dtype=ti.f32)
-        ti.root.place(x, y)
-        x.snode()
+        blk1 = ti.root.dense(ti.i, 4)
+        blk1.place(x, y)
+        assert x.snode == blk1
 
 
 .. function:: snode.shape

@@ -1006,14 +1006,14 @@ class TaichiMain:
     @register
     def cc_compose(self, arguments: list = sys.argv[2:]):
         """Compose C backend action record into a complete C file"""
-        parser = argparse.ArgumentParser(prog='ti cc_compose',
-                                         description=f"{self.cc_compose.__doc__}")
+        parser = argparse.ArgumentParser(
+            prog='ti cc_compose', description=f"{self.cc_compose.__doc__}")
         parser.add_argument(
             'fin_name',
-            help='Action record YAML file name from C backend, e.g. program.yml')
+            help='Action record YAML file name from C backend, e.g. program.yml'
+        )
         parser.add_argument(
-            'fout_name',
-            help='The output C source file name, e.g. program.c')
+            'fout_name', help='The output C source file name, e.g. program.c')
         parser.add_argument(
             '-e',
             '--emscripten',

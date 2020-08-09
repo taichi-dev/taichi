@@ -5,7 +5,7 @@ coverage:
       lang:
         paths:
           - python/taichi/lang
-        target: 50%
+        target: 0%
     project:
       default: false
       lang:

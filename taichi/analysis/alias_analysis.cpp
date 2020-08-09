@@ -73,22 +73,20 @@ AliasResult alias_analysis(Stmt *var1, Stmt *var2) {
   if (var1->is<GlobalPtrStmt>() && var2->is<GlobalPtrStmt>()) {
     auto ptr1 = var1->as<GlobalPtrStmt>();
     auto ptr2 = var2->as<GlobalPtrStmt>();
-    bool same = true;
+    auto snode = ptr1->snodes[0];
+    TI_ASSERT(snode == ptr2->snodes[0]);
+    bool uncertain = false;
     for (int i = 0; i < (int)ptr1->indices.size(); i++) {
-      if (!irpass::analysis::same_statements(ptr1->indices[i],
-                                             ptr2->indices[i])) {
-        same = false;
-        if (ptr1->indices[i]->is<ConstStmt>() &&
-            ptr2->indices[i]->is<ConstStmt>()) {
-          // different constants
-          return AliasResult::different;
-        }
-      }
-      if (ptr1->indices[i] != ptr2->indices[i]) {
-        same = false;  // TODO: Replace this hotfix with value_diff
+      auto diff = value_diff_ptr_index(ptr1->indices[i], ptr2->indices[i]);
+      if (!diff.first) {
+        uncertain = true;
+      } else if (std::abs(diff.second) >=
+                 (1 << snode->extractors[snode->physical_index_position[i]]
+                           .trailing_bits)) {
+        return AliasResult::different;
       }
     }
-    return same ? AliasResult::same : AliasResult::uncertain;
+    return uncertain ? AliasResult::uncertain : AliasResult::same;
   }
 
   // In other cases (probably after lower_access), we don't know if the two

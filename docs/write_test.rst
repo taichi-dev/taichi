@@ -1,3 +1,5 @@
+.. _write_test:
+
 Workflow for writing a Python test
 ----------------------------------
 

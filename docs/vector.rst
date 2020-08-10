@@ -31,7 +31,7 @@ As global vector fields
 
 .. note::
 
-    In Python-scope, ``ti.field`` declares :ref:`scalar_tensor`, while ``ti.Vector.field`` declares vector fields.
+    In Python-scope, ``ti.field`` declares a scalar field (:ref:`scalar_tensor`), while ``ti.Vector.field`` declares a vector field.
 
 
 As a temporary local variable

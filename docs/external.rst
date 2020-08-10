@@ -1,68 +1,140 @@
 .. _external:
 
-Interacting with external arrays
-================================
+Exporting and importing data
+============================
 
-**External arrays** refer to ``numpy.ndarray`` or ``torch.Tensor``.
+Introduction
+------------
 
-Conversion between Taichi fields and external arrays
-----------------------------------------------------
+Taichi fields are aimed to be used in Taichi-scope.
+Despite we may also access Taichi fields elements in Python-scope too,
+that's not very efficient when accessing a lot of elements in a Taichi field.
 
-Use ``to_numpy``/``from_numpy``/``to_torch``/``from_torch``:
+So we provide a way to export and import data in Taichi fields via NumPy arrays.
+This allows you to interact with the data in Python-scope with other packages.
+
+**Export data in Taichi fields to a NumPy array** via ``to_numpy()``.
+This allows us to export the computation result and pass it to other
+Python packages that supports numpy, e.g. matplotlib.
 
 .. code-block:: python
 
-  import taichi as ti
-  import numpy as np
+   @ti.kernel
+   def my_kernel():
+      for i in x:
+         x[i] = i * 2
 
-  ti.init()
-
-  n = 4
-  m = 7
-
-  # Taichi fields
-  val = ti.field(ti.i32, shape=(n, m))
-  vec = ti.Vector.field(3, dtype=ti.i32, shape=(n, m))
-  mat = ti.Matrix.field(3, 4, dtype=ti.i32, shape=(n, m))
-
-  # Scalar
-  arr = np.ones(shape=(n, m), dtype=np.int32)
-
-  val.from_numpy(arr)
-
-  arr = val.to_numpy()
-
-  # Vector
-  arr = np.ones(shape=(n, m, 3), dtype=np.int32)
-
-  vec.from_numpy(arr)
-
-  arr = np.ones(shape=(n, m, 3, 1), dtype=np.int32)
-  vec.from_numpy(arr)
-
-  arr = vec.to_numpy()
-  assert arr.shape == (n, m, 3)
-
-  arr = vec.to_numpy(keep_dims=True)
-  assert arr.shape == (n, m, 3, 1)
-
-  # Matrix
-  arr = np.ones(shape=(n, m, 3, 4), dtype=np.int32)
-
-  mat.from_numpy(arr)
-
-  arr = mat.to_numpy()
-  assert arr.shape == (n, m, 3, 4)
+   x = ti.field(ti.f32, 4)
+   my_kernel()
+   x_np = x.to_numpy()
+   print(x_np)  # np.array([0, 2, 4, 6])
 
 
-TODO: add API reference
+**Import data from NumPy array to Taichi fields** via ``from_numpy()``.
+This allow people to initialize Taichi fields via numpy array, e.g.:
+
+.. code-block:: python
+
+   x = ti.field(ti.f32, 4)
+   x_np = np.array([1, 7, 3, 5])
+   x.from_numpy(x_np)
+   print(x[0])  # 1
+   print(x[1])  # 7
+   print(x[2])  # 3
+   print(x[3])  # 5
 
 
-Using external arrays as Taichi kernel parameters
--------------------------------------------------
+API reference
+-------------
 
-The type hint for external array parameters is ``ti.ext_arr()``. Please see the example below.
-Note that struct-for's on external arrays are not supported.
+We provide interface sharing data with both NumPy and PyTorch.
+
+Interacting with NumPy
+**********************
+
+.. function:: field.to_numpy()
+
+   :parameter field: (ti.field, ti.Vector.field or ti.Matrix.field) The field
+
+   :return: (np.array) The numpy array containing the currrent data in ``x``.
+
+.. function:: field.from_numpy(array)
+
+   :parameter field: (ti.field, ti.Vector.field or ti.Matrix.field) The field
+
+   :parameter array: (np.array) The numpy array containing data to initialize the field
+
+
+Interacting with PyTorch
+************************
+
+.. function:: field.to_torch(device = None)
+
+   :parameter field: (ti.field, ti.Vector.field or ti.Matrix.field) The field
+   :parameter device: (torch.device) the device where torch tensor is created
+
+   :return: (torch.Tensor) The torch tensor containing the currrent data in ``x``.
+
+.. function:: field.from_torch(tensor)
+
+   :parameter field: (ti.field, ti.Vector.field or ti.Matrix.field) The field
+
+   :parameter tensor: (torch.Tensor) The torch tensor containing data to initialize the field
+
+
+The shape of external array to interact with Taichi fields
+----------------------------------------------------------
+
+Taichi fields have shapes (see :ref:`scalar_tensor`). NumPy array also have shapes.
+So what's the relationship between them when using the ``to_numpy()`` and ``from_numpy()``?
+
+- For scalar fields, **the shape of NumPy array should be exactly the same with the Taichi field**:
+
+.. code-block:: python
+
+   field = ti.field(ti.i32, shape=(233, 666))
+   field.shape  # (233, 666)
+
+   array = field.to_numpy()
+   array.shape  # (233, 666)
+
+   field.from_numpy(array)  # the input array must be of shape (233, 666)
+
+
+- For vector fields, if the vector is ``n``-D, then **the shape of NumPy array should be** ``(*field_shape, vector_n)``:
+
+.. code-block:: python
+
+   field = ti.Vector.field(3, ti.i32, shape=(233, 666))
+   field.shape  # (233, 666)
+   field.n      # 3
+
+   array = field.to_numpy()
+   array.shape  # (233, 666, 3)
+
+   field.from_numpy(array)  # the input array must be of shape (233, 666, 3)
+
+
+- For matrix fields, if the matrix is ``n*m``, then **the shape of NumPy array should be** ``(*field_shape, matrix_n, matrix_m)``:
+
+.. code-block:: python
+
+   field = ti.Matrix.field(3, 4, ti.i32, shape=(233, 666))
+   field.shape  # (233, 666)
+   field.n      # 3
+   field.m      # 4
+
+   array = field.to_numpy()
+   array.shape  # (233, 666, 3, 4)
+
+   field.from_numpy(array)  # the input array must be of shape (233, 666, 3, 4)
+
+
+Using external arrays as Taichi kernel arguments
+------------------------------------------------
+
+Use the type hint ``ti.ext_arr()`` for passing external arrays as kernel
+arguments, for example:
 
 .. code-block:: python
 
@@ -93,3 +165,7 @@ Note that struct-for's on external arrays are not supported.
   for i in range(n):
     for j in range(m):
       assert a[i, j] == i * j + i + j
+
+.. note::
+
+   Struct-for's on external arrays are not supported.

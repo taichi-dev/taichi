@@ -3,6 +3,25 @@
 Scalar fields
 =============
 
+**Taichi fields** are used to store data.
+
+Field **elements** could be either a scalar, a vector, or a matrix (see :ref:`matrix`).
+In this paragraph, we will only talk about **scalar fields**, whose elements are simply scalars.
+
+Fields can have up to eight **dimensions**.
+
+- A 0D scalar field is simply a single scalar.
+- A 1D scalar field is a 1D linear array.
+- A 2D scalar field can be used to represent a 2D regular grid of values. For example, a gray-scale image.
+- A 3D scalar field can be used for volumetric data.
+
+Fields could be either dense or sparse, see ref:`sparse` for details on sparse
+fields. We will only talk about **dense fields** in this paragraph.
+
+.. note::
+
+   We once used the term **tensor** instead of **field**. **Tensor** will no longer be used.
+
 
 Declaration
 -----------

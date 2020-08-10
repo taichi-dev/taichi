@@ -475,6 +475,9 @@ def assign(a, b):
     return a
 
 
+sqr = fully_deprecated('ti.sqr(x)', 'x**2')
+
+
 def ti_max(*args):
     num_args = len(args)
     assert num_args >= 1

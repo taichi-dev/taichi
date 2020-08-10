@@ -33,7 +33,7 @@ python3 -m pip install taichi
 
 **Supported OS**: Windows, Linux, Mac OS X; **Python**: 3.6/3.7/3.8 (64-bit only); **Backends**: x64 CPUs, CUDA, Apple Metal, OpenGL Compute Shaders.
 
-Please build from source for other configurations (e.g., your CPU is ARM).
+Please build from source for other configurations (e.g., your CPU is ARM, or you want to try out our experimental C backend).
 
 **Note:**
  - Starting April 13 2020 (v0.5.12), we release the Python package [`taichi`](https://pypi.org/project/taichi/) instead of [`taichi-nightly`](https://pypi.org/project/taichi-nightly/). Now this PyPI package includes CPU, CUDA 10/11, Metal and OpenGL support.
@@ -50,12 +50,14 @@ Please build from source for other configurations (e.g., your CPU is ARM).
 
 - [Taichi Conference](https://github.com/taichi-dev/taichicon): Taichi developer conferences.
 - [GAMES 201 Lectures](https://github.com/taichi-dev/games201): (Chinese) A hands-on tutorial on building advanced physics engines, based on Taichi.
+- [Gitee mirror of Taichi](https://gitee.com/mirrors/Taichi): For the convenience of Chinese contributors, clone from the mirror repo hosted on Gitee (码云).
 
 ---
 
 - [Taichi GLSL](https://github.com/taichi-dev/taichi_glsl): A Taichi extension library that provides a set of GLSL-style helper functions.
-- [Taichi THREE](https://github.com/taichi-dev/taichi_three): A 3D rendering library based on Taichi (work in progress).
+- [Taichi THREE](https://github.com/taichi-dev/taichi_three): A 3D rendering library based on Taichi.
 - [Taichi Elements](https://github.com/taichi-dev/taichi_elements): A high-performance multi-material continuum physics engine based on Taichi (work in progress).
+- [Taichi.js](https://github.com/taichi-dev/taichi.js): Run compiled Taichi programs in Javascript and WASM (work in progress).
 
 ---
 

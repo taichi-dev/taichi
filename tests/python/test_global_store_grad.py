@@ -9,8 +9,8 @@ def test_global_store_branching():
 
     N = 16
     ti.runtime.print_preprocessed = True
-    x = ti.var(ti.f32)
-    y = ti.var(ti.f32)
+    x = ti.field(ti.f32)
+    y = ti.field(ti.f32)
 
     ti.root.dense(ti.i, N).place(x)
     ti.root.dense(ti.i, N).place(y)

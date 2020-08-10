@@ -1,11 +1,10 @@
 import taichi as ti
 import numpy as np
-import numba
 
 ti.init(arch=ti.opengl)
 
-dim = 3
-n_grid = 32
+dim = 2
+n_grid = 64
 n_particles = n_grid ** dim // 2 ** (dim - 1)
 dx = 1 / n_grid
 dt = 4e-4
@@ -17,13 +16,13 @@ gravity = 9.8
 bound = 3
 E = 400
 
-x = ti.Vector.field(dim, ti.f32, n_particles)
-v = ti.Vector.field(dim, ti.f32, n_particles)
-C = ti.Matrix.field(dim, dim, ti.f32, n_particles)
-J = ti.field(ti.f32, n_particles)
+x = ti.Vector.field(dim, float, n_particles)
+v = ti.Vector.field(dim, float, n_particles)
+C = ti.Matrix.field(dim, dim, float, n_particles)
+J = ti.field(float, n_particles)
 
-grid_v = ti.Vector.field(dim, ti.f32, (n_grid,) * dim)
-grid_m = ti.field(ti.f32, (n_grid,) * dim)
+grid_v = ti.Vector.field(dim, float, (n_grid,) * dim)
+grid_m = ti.field(float, (n_grid,) * dim)
 
 neighbour = (3,) * dim
 
@@ -38,7 +37,7 @@ def substep():
         fx = Xp - base
         w = [0.5 * (1.5 - fx)**2, 0.75 - (fx - 1)**2, 0.5 * (fx - 0.5)**2]
         stress = -dt * 4 * E * p_vol * (J[p] - 1) / dx**2
-        affine = ti.Matrix.identity(ti.f32, dim) * stress + p_mass * C[p]
+        affine = ti.Matrix.identity(float, dim) * stress + p_mass * C[p]
         for offset in ti.static(ti.grouped(ti.ndrange(*neighbour))):
             dpos = (offset - fx) * dx
             weight = 1.0
@@ -79,109 +78,19 @@ def init():
         J[i] = 1
 
 
-@numba.njit
-def field_edges(mass):
-    begin, end = [], []
-
-    def a(i, j):
-        return mass[i, j] >= 1e-2
-
-    n, m = mass.shape
-    d, e = 1 / n, 1 / n
-    for i in range(1, n - 1):
-        for j in range(1, m - 1):
-            u, v = i * d, j * e
-            if a(i, j) and not a(i, j + 1):
-                begin.append((u, v + e))
-                end.append((u + d, v + e))
-            if a(i, j) and not a(i, j - 1):
-                begin.append((u, v))
-                end.append((u + d, v))
-            if a(i, j) and not a(i - 1, j):
-                begin.append((u, v))
-                end.append((u, v + e))
-            if a(i, j) and not a(i + 1, j):
-                begin.append((u + d, v))
-                end.append((u + d, v + e))
-
-    return np.array(begin), np.array(end)
-
-
-@numba.njit
-def field_edges3(mass):
-    A, B = [(0.0, 0.0, 0.0)], [(0.0, 0.0, 0.0)]
-    C, D = [(0.0, 0.0, 0.0)], [(0.0, 0.0, 0.0)]
-
-    def a(i, j, k):
-        return mass[i, j, k] >= 1e-2
-
-    n, m, o = mass.shape
-    d, e, f = 1 / n, 1 / m, 1 / o
-    for i in range(1, n):
-        for j in range(1, m):
-            for k in range(1, o):
-                if not a(i, j, k):
-                    continue
-
-                u, v, w = i * d, j * e, k * f
-                if not a(i, j + 1, k):
-                    A.append((u, v + e, w))
-                    B.append((u, v + e, w + f))
-                    C.append((u + d, v + e, w + f))
-                    D.append((u + d, v + e, w))
-                if not a(i, j - 1, k):
-                    A.append((u, v, w))
-                    B.append((u, v, w + f))
-                    C.append((u + d, v, w + f))
-                    D.append((u + d, v, w))
-                if not a(i - 1, j, k):
-                    A.append((u, v, w))
-                    B.append((u, v + e, w))
-                    C.append((u, v + e, w + f))
-                    D.append((u, v, w + f))
-                if not a(i + 1, j, k):
-                    A.append((u + d, v, w))
-                    B.append((u + d, v + e, w))
-                    C.append((u + d, v + e, w + f))
-                    D.append((u + d, v, w + f))
-                if not a(i, j, k - 1):
-                    A.append((u, v, w))
-                    B.append((u, v + e, w))
-                    C.append((u + d, v + e, w))
-                    D.append((u + d, v, w))
-                if not a(i, j, k + 1):
-                    A.append((u, v, w + f))
-                    B.append((u, v + e, w + f))
-                    C.append((u + d, v + e, w + f))
-                    D.append((u + d, v, w + f))
-
-    return np.array(A), np.array(B), np.array(C), np.array(D)
-
-
-@numba.njit
-def Tker(a):
-    a = a - 0.5
-
-    x, y, z = a[:, 0], a[:, 1], a[:, 2]
-
-    phi = np.radians(28)
-    theta = np.radians(32)
-
-    c, s = np.cos(phi), np.sin(phi)
-    C, S = np.cos(theta), np.sin(theta)
-
-    x, z = x * c + z * s, z * c - x * s
-    u, v = x, y * C + z * S
-
-    return u + 0.5, v + 0.5
-
-
 def T(a):
     if dim == 2:
         return a
 
-    u, v = Tker(a)
-    return np.array([u, v]).swapaxes(0, 1)
+    phi, theta = np.radians(28), np.radians(32)
+
+    a = a - 0.5
+    x, y, z = a[:, 0], a[:, 1], a[:, 2]
+    c, s = np.cos(phi), np.sin(phi)
+    C, S = np.cos(theta), np.sin(theta)
+    x, z = x * c + z * s, z * c - x * s
+    u, v = x, y * C + z * S
+    return np.array([u, v]).swapaxes(0, 1) + 0.5
 
 
 init()
@@ -190,26 +99,5 @@ while gui.running and not gui.get_event(gui.ESCAPE):
     for s in range(15):
         substep()
     pos = x.to_numpy()
-
-    if 0:
-        mass = grid_m.to_numpy() * 1e5
-        if dim == 2:
-            begin, end = field_edges(mass)
-            gui.lines(begin, end)
-
-        else:
-            A, B, C, D = field_edges3(mass)
-            num = A.shape[0]
-
-            writer = ti.PLYWriter(num_vertices=num * 4,
-                    num_faces=A.shape[0], face_type='quad')
-            V = np.concatenate([A, B, C, D], axis=0)
-            writer.add_vertex_pos(V[:, 0], V[:, 1], V[:, 2])
-
-            F = [[j * num + i for j in range(4)] for i in range(num)]
-            writer.add_faces(np.array(F).reshape(num * 4))
-
-            writer.export_frame(gui.frame, '/tmp/mpm3d.ply')
-
     gui.circles(T(pos), radius=2, color=0x66ccff)
     gui.show()

@@ -48,7 +48,7 @@ void DecoratorRecorder::reset() {
   uniform = false;
   scratch_opt.clear();
   block_dim = 0;
-  stride_size = 1;
+  stride_size = 0;
   strictly_serialized = false;
 }
 

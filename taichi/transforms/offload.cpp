@@ -61,6 +61,7 @@ class Offloader {
         } else {
           offloaded->block_dim = s->block_dim;
         }
+        offloaded->stride_size = s->stride_size;
         offloaded->body = std::make_unique<Block>();
         if (auto val = s->begin->cast<ConstStmt>()) {
           offloaded->const_begin = true;
@@ -157,6 +158,12 @@ class Offloader {
       } else {
         offloaded_struct_for->block_dim = for_stmt->block_dim;
       }
+    }
+    if (for_stmt->stride_size == 0) {
+      // adaptive
+      offloaded_struct_for->stride_size = 0;
+    } else {
+      offloaded_struct_for->stride_size = for_stmt->stride_size;
     }
 
     replace_all_usages_with(for_stmt, for_stmt, offloaded_struct_for.get());

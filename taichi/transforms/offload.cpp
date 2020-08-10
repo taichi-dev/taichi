@@ -159,12 +159,7 @@ class Offloader {
         offloaded_struct_for->block_dim = for_stmt->block_dim;
       }
     }
-    if (for_stmt->stride_size == 0) {
-      // adaptive
-      offloaded_struct_for->stride_size = 0;
-    } else {
-      offloaded_struct_for->stride_size = for_stmt->stride_size;
-    }
+    offloaded_struct_for->stride_size = for_stmt->stride_size;
 
     replace_all_usages_with(for_stmt, for_stmt, offloaded_struct_for.get());
 

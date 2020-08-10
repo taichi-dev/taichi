@@ -107,8 +107,7 @@ Taichi programs run on either CPUs or GPUs. Initialize Taichi according to your 
 Taichi is a data-oriented programming language where dense or spatially-sparse fields are the first-class citizens.
 See :ref:`sparse` for more details on sparse fields.
 
-In the code above, ``pixels = ti.field(dtype=ti.f32, shape=(n * 2, n))`` allocates a 2D dense field named ``pixels`` of
-size ``(640, 320)`` and element data type ``ti.f32`` (i.e. ``float`` in C).
+In the code above, ``pixels = ti.field(dtype=float, shape=(n * 2, n))`` allocates a 2D dense field named ``pixels`` of size ``(640, 320)`` and element data type ``float``.
 
 Functions and kernels
 ---------------------

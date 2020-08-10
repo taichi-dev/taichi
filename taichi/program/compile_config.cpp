@@ -11,10 +11,6 @@ CompileConfig::CompileConfig() {
   print_evaluator_ir = false;
   print_benchmark_stat = false;
   use_llvm = true;
-  print_struct_llvm_ir = false;
-  print_kernel_llvm_ir = false;
-  print_kernel_nvptx = false;
-  print_kernel_llvm_ir_optimized = false;
   demote_dense_struct_fors = true;
   advanced_optimization = true;
   max_vector_width = 8;
@@ -37,19 +33,29 @@ CompileConfig::CompileConfig() {
   flatten_if = false;
   make_thread_local = true;
 
+  saturating_grid_dim = 0;
+  max_block_dim = 0;
+
+  ad_stack_size = 16;
+
+  // LLVM backend options:
+  print_struct_llvm_ir = false;
+  print_kernel_llvm_ir = false;
+  print_kernel_nvptx = false;
+  print_kernel_llvm_ir_optimized = false;
+
+  // CUDA backend options:
 #if defined(TI_PLATFORM_WINDOWS) or defined(TI_ARCH_ARM)
   use_unified_memory = false;
 #else
   use_unified_memory = true;
 #endif
-
-  saturating_grid_dim = 0;
-  max_block_dim = 0;
-
   device_memory_GB = 1;  // by default, preallocate 1 GB GPU memory
   device_memory_fraction = 0.0;
 
-  ad_stack_size = 16;
+  // C backend options:
+  cc_compile_cmd = "gcc -Wc99-c11-compat -c -o '{}' '{}' -O3";
+  cc_link_cmd = "gcc -shared -fPIC -o '{}' '{}'";
 }
 
 TLANG_NAMESPACE_END

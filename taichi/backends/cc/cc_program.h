@@ -24,7 +24,7 @@ using CCFuncEntryType = void(CCContext *);
 class CCProgram {
   // Launch C compiler to compile generated source code, and run them
  public:
-  CCProgram();
+  CCProgram(Program *program);
   ~CCProgram();
 
   void add_kernel(std::unique_ptr<CCKernel> kernel);
@@ -48,6 +48,8 @@ class CCProgram {
   void *get_gtmp_buffer() {
     return gtmp_buf.data();
   }
+
+  Program *const program;
 
  private:
   std::vector<char> root_buf;

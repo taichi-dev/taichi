@@ -24,15 +24,10 @@ struct CompileConfig {
   bool demote_dense_struct_fors;
   bool advanced_optimization;
   bool use_llvm;
-  bool print_struct_llvm_ir;
-  bool print_kernel_llvm_ir;
-  bool print_kernel_llvm_ir_optimized;
-  bool print_kernel_nvptx;
   bool verbose_kernel_launches;
   bool kernel_profiler;
   bool verbose;
   bool fast_math;
-  bool use_unified_memory;
   bool async_mode;
   bool flatten_if;
   bool make_thread_local;
@@ -46,8 +41,20 @@ struct CompileConfig {
   int saturating_grid_dim;
   int max_block_dim;
 
+  // LLVM backend options:
+  bool print_struct_llvm_ir;
+  bool print_kernel_llvm_ir;
+  bool print_kernel_llvm_ir_optimized;
+  bool print_kernel_nvptx;
+
+  // CUDA backend options:
+  bool use_unified_memory;
   float64 device_memory_GB;
   float64 device_memory_fraction;
+
+  // C backend options:
+  std::string cc_compile_cmd;
+  std::string cc_link_cmd;
 
   CompileConfig();
 };

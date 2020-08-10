@@ -275,7 +275,7 @@ reference:
 Scalar arithmetics
 ------------------
 
-Currently supported scalar functions:
+Supported scalar functions:
 
 .. function:: ti.sin(x)
 .. function:: ti.cos(x)

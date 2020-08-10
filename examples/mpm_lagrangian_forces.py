@@ -1,4 +1,5 @@
 import taichi as ti
+import numpy as np
 
 ti.init(arch=ti.gpu)
 
@@ -158,7 +159,7 @@ def main():
 
     vertices_ = vertices.to_numpy()
 
-    for f in range(600):
+    while gui.running and not gui.get_event(gui.ESCAPE):
         for s in range(50):
             grid_m.fill(0)
             grid_v.fill(0)
@@ -175,13 +176,9 @@ def main():
         gui.circle((0.5, 0.5), radius=45, color=0x068587)
         # TODO: why is visualization so slow?
         particle_pos = x.to_numpy()
-        for i in range(n_elements):
-            for j in range(3):
-                a, b = vertices_[i, j], vertices_[i, (j + 1) % 3]
-                gui.line((particle_pos[a][0], particle_pos[a][1]),
-                         (particle_pos[b][0], particle_pos[b][1]),
-                         radius=1,
-                         color=0x4FB99F)
+        a = vertices_.reshape(n_elements * 3)
+        b = np.roll(vertices_, shift=1, axis=1).reshape(n_elements * 3)
+        gui.lines(particle_pos[a], particle_pos[b], radius=1, color=0x4FB99F)
         gui.circles(particle_pos, radius=1.5, color=0xF2B134)
         gui.line((0.00, 0.03), (1.0, 0.03), color=0xFFFFFF, radius=3)
         gui.show()

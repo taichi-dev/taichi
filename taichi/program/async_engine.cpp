@@ -27,38 +27,51 @@ uint64 hash(IRNode *stmt) {
   return ret;
 }
 
-std::unique_ptr<IRNode> clone_offloaded_task(OffloadedStmt *from,
-                                             Kernel *kernel,
-                                             Block *dummy_root) {
+std::unique_ptr<OffloadedStmt> clone_offloaded_task(OffloadedStmt *from,
+                                                    Kernel *kernel,
+                                                    Block *dummy_root) {
   auto new_ir = irpass::analysis::clone(from, kernel);
   // This is not the ideal fix, because |new_ir|'s children blocks are NOT
   // linked to |dummy_root|. However, if I manually do the linking, I got error
   // during LLVM codegen.
   new_ir->as<OffloadedStmt>()->parent = dummy_root;
-  return new_ir;
+  return std::unique_ptr<OffloadedStmt>((OffloadedStmt *)(new_ir.release()));
 }
 
 }  // namespace
 
 KernelLaunchRecord::KernelLaunchRecord(Context context,
                                        Kernel *kernel,
-                                       std::unique_ptr<IRNode> &&stmt_)
+                                       OffloadedStmt *stmt,
+                                       uint64 h,
+                                       Block *dummy_root)
     : context(context),
       kernel(kernel),
-      stmt(dynamic_cast<OffloadedStmt *>(stmt_.get())),
-      stmt_holder(std::move(stmt_)),
-      h(hash(stmt)) {
-  TI_ASSERT(stmt != nullptr);
-  TI_ASSERT(stmt->get_kernel() != nullptr);
+      h(h),
+      stmt_(stmt),
+      dummy_root_(dummy_root),
+      cloned_stmt_holder_(nullptr) {
+  TI_ASSERT(stmt_ != nullptr);
+  TI_ASSERT(stmt_->get_kernel() != nullptr);
+}
+
+OffloadedStmt *KernelLaunchRecord::clone_stmt_on_write() {
+  if (cloned_stmt_holder_ == nullptr) {
+    cloned_stmt_holder_ = clone_offloaded_task(stmt_, kernel, dummy_root_);
+    stmt_ = cloned_stmt_holder_.get();
+  }
+  return stmt_;
 }
 
 void ExecutionQueue::enqueue(KernelLaunchRecord &&ker) {
   auto h = ker.h;
-  auto stmt = ker.stmt;
+  auto *stmt = ker.stmt();
   auto kernel = ker.kernel;
   if (compiled_func.find(h) == compiled_func.end() &&
       to_be_compiled.find(h) == to_be_compiled.end()) {
     to_be_compiled.insert(h);
+    // Later the IR passes will change |stmt|, so we must clone it.
+    stmt = ker.clone_stmt_on_write();
     compilation_workers.enqueue([&, stmt, kernel, h, this]() {
       {
         // Final lowering
@@ -81,7 +94,7 @@ void ExecutionQueue::enqueue(KernelLaunchRecord &&ker) {
   }
 
   auto context = ker.context;
-  launch_worker.enqueue([&, h, stmt, context, this] {
+  launch_worker.enqueue([&, h, task_type = stmt->task_type, context, this] {
     FunctionType func;
     while (true) {
       std::unique_lock<std::mutex> lock(mut);
@@ -94,7 +107,6 @@ void ExecutionQueue::enqueue(KernelLaunchRecord &&ker) {
       break;
     }
     stat.add("launched_kernels", 1.0);
-    auto task_type = stmt->task_type;
     if (task_type == OffloadedStmt::TaskType::listgen) {
       stat.add("launched_kernels_list_op", 1.0);
       stat.add("launched_kernels_list_gen", 1.0);
@@ -130,17 +142,32 @@ void AsyncEngine::launch(Kernel *kernel) {
     kernel->lower(/*to_executable=*/false);
   auto block = dynamic_cast<Block *>(kernel->ir.get());
   TI_ASSERT(block);
+
   auto &offloads = block->statements;
-  auto &dummy_root = kernel_to_dummy_roots_[kernel];
-  if (dummy_root == nullptr) {
-    dummy_root = std::make_unique<Block>();
-    dummy_root->kernel = kernel;
+  auto &kmeta = kernel_metas_[kernel];
+  const bool kmeta_inited = kmeta.initialized();
+  if (!kmeta_inited) {
+    kmeta.dummy_root = std::make_unique<Block>();
+    kmeta.dummy_root->kernel = kernel;
   }
   for (std::size_t i = 0; i < offloads.size(); i++) {
-    auto offload = offloads[i]->as<OffloadedStmt>();
-    KernelLaunchRecord rec(
-        kernel->program.get_context(), kernel,
-        clone_offloaded_task(offload, kernel, dummy_root.get()));
+    auto *offload = offloads[i]->as<OffloadedStmt>();
+    uint64 h;
+    OffloadedStmt *offl_template = nullptr;
+    if (kmeta_inited) {
+      auto &oc = kmeta.offloaded_cached[i];
+      h = oc.get_hash();
+      offl_template = oc.get_template();
+    } else {
+      auto cloned_offs =
+          clone_offloaded_task(offload, kernel, kmeta.dummy_root.get());
+      offl_template = cloned_offs.get();
+      h = hash(offl_template);
+      TI_ASSERT(kmeta.offloaded_cached.size() == i);
+      kmeta.offloaded_cached.emplace_back(std::move(cloned_offs), h);
+    }
+    KernelLaunchRecord rec(kernel->program.get_context(), kernel, offl_template,
+                           h, kmeta.dummy_root.get());
     enqueue(std::move(rec));
   }
 }
@@ -148,9 +175,9 @@ void AsyncEngine::launch(Kernel *kernel) {
 void AsyncEngine::enqueue(KernelLaunchRecord &&t) {
   using namespace irpass::analysis;
 
-  auto &meta = metas[t.h];
+  auto &meta = offloaded_metas_[t.h];
   // TODO: this is an abuse since it gathers nothing...
-  auto root_stmt = t.stmt;
+  auto *root_stmt = t.stmt();
   gather_statements(root_stmt, [&](Stmt *stmt) {
     if (auto global_ptr = stmt->cast<GlobalPtrStmt>()) {
       for (auto &snode : global_ptr->snodes.data) {
@@ -213,13 +240,13 @@ bool AsyncEngine::optimize_listgen() {
   for (int i = 0; i < task_queue.size(); i++) {
     // Try to eliminate unused listgens
     auto &t = task_queue[i];
-    auto meta = metas[t.h];
-    auto offload = t.stmt;
+    auto meta = offloaded_metas_[t.h];
+    const auto *offload = t.stmt();
     bool keep = true;
     if (offload->task_type == OffloadedStmt::TaskType::listgen) {
       // keep
     } else if (offload->task_type == OffloadedStmt::TaskType::clear_list) {
-      TI_ASSERT(task_queue[i + 1].stmt->task_type ==
+      TI_ASSERT(task_queue[i + 1].stmt()->task_type ==
                 OffloadedStmt::TaskType::listgen);
       auto snode = offload->snode;
       if (list_dirty.find(snode) != list_dirty.end() && !list_dirty[snode]) {
@@ -255,16 +282,16 @@ bool AsyncEngine::fuse() {
   if (false) {
     // (experimental) print tasks
     for (int i = 0; i < (int)task_queue.size(); i++) {
-      fmt::print("{}: {}\n", i, task_queue[i].stmt->task_name());
-      irpass::print(task_queue[i].stmt);
+      fmt::print("{}: {}\n", i, task_queue[i].stmt()->task_name());
+      irpass::print(task_queue[i].stmt());
     }
   }
 
   for (int i = 0; i < (int)task_queue.size() - 1; i++) {
     auto &rec_a = task_queue[i];
     auto &rec_b = task_queue[i + 1];
-    auto task_a = rec_a.stmt;
-    auto task_b = rec_b.stmt;
+    auto *task_a = rec_a.stmt();
+    auto *task_b = rec_b.stmt();
     bool is_same_struct_for = task_a->task_type == OffloadedStmt::struct_for &&
                               task_b->task_type == OffloadedStmt::struct_for &&
                               task_a->snode == task_b->snode &&
@@ -299,6 +326,9 @@ bool AsyncEngine::fuse() {
       kernel_args_match = (check(rec_a.kernel) && check(rec_b.kernel));
     }
     if (kernel_args_match && (is_same_range_for || is_same_struct_for)) {
+      // We are about to change both |task_a| and |task_b|. Clone them first.
+      task_a = rec_a.clone_stmt_on_write();
+      task_b = rec_b.clone_stmt_on_write();
       // TODO: in certain cases this optimization can be wrong!
       // Fuse task b into task_a
       for (int j = 0; j < (int)task_b->body->size(); j++) {
@@ -323,7 +353,7 @@ bool AsyncEngine::fuse() {
 
   // Eliminate empty tasks
   for (int i = 0; i < (int)task_queue.size(); i++) {
-    auto task = task_queue[i].stmt;
+    auto *task = task_queue[i].stmt();
     bool keep = true;
     if (task->task_type == OffloadedStmt::struct_for ||
         task->task_type == OffloadedStmt::range_for ||

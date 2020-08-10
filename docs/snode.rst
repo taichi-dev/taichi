@@ -20,45 +20,46 @@ See :ref:`layout` for more details. ``ti.root`` is the root node of the data str
 .. function:: snode.place(x, ...)
 
     :parameter snode: (SNode) where to place
-    :parameter x: (tensor) tensor(s) to be placed
+    :parameter a: (ti.field) field(s) to be placed
     :return: (SNode) the ``snode`` itself
 
-    The following code places two 0-D tensors named ``x`` and ``y``:
+    The following code places two 0-D fields named ``x`` and ``y``:
 
     ::
 
-        x = ti.var(dt=ti.i32)
-        y = ti.var(dt=ti.f32)
+        x = ti.field(dtype=ti.i32)
+        y = ti.field(dtype=ti.f32)
         ti.root.place(x, y)
-        assert x.snode() == y.snode()
+        assert x.snode == y.snode
 
 
-.. function:: tensor.shape
+.. function:: field.shape
 
-    :parameter tensor: (Tensor)
-    :return: (tuple of integers) the shape of tensor
+    :parameter a: (ti.field)
+    :return: (tuple of integers) the shape of field
 
-    Equivalent to ``tensor.snode().shape``.
+    Equivalent to ``field.snode.shape``.
 
     For example,
 
     ::
 
         ti.root.dense(ti.ijk, (3, 5, 4)).place(x)
-        x.shape # returns (3, 5, 4)
+        x.shape  # returns (3, 5, 4)
 
 
-.. function:: tensor.snode()
+.. function:: field.snode
 
-    :parameter tensor: (Tensor)
-    :return: (SNode) the structual node where ``tensor`` is placed
+    :parameter a: (ti.field)
+    :return: (SNode) the structual node where ``field`` is placed
 
     ::
 
-        x = ti.var(dt=ti.i32)
-        y = ti.var(dt=ti.f32)
-        ti.root.place(x, y)
-        x.snode()
+        x = ti.field(dtype=ti.i32)
+        y = ti.field(dtype=ti.f32)
+        blk1 = ti.root.dense(ti.i, 4)
+        blk1.place(x, y)
+        assert x.snode == blk1
 
 
 .. function:: snode.shape
@@ -106,21 +107,21 @@ Node types
 
     :parameter snode: (SNode) parent node where the child is derived from
     :parameter indices: (Index or Indices) indices used for this node
-    :parameter shape: (scalar or tuple) shape the tensor of vectors
+    :parameter shape: (scalar or tuple) shape of the field
     :return: (SNode) the derived child node
 
-    The following code places a 1-D tensor of size ``3``:
+    The following code places a 1-D field of size ``3``:
 
     ::
 
-        x = ti.var(dt=ti.i32)
+        x = ti.field(dtype=ti.i32)
         ti.root.dense(ti.i, 3).place(x)
 
-    The following code places a 2-D tensor of shape ``(3, 4)``:
+    The following code places a 2-D field of shape ``(3, 4)``:
 
     ::
 
-        x = ti.var(dt=ti.i32)
+        x = ti.field(dtype=ti.i32)
         ti.root.dense(ti.ij, (3, 4)).place(x)
 
     .. note::
@@ -150,7 +151,7 @@ Node types
     ``dynamic`` nodes acts like ``std::vector`` in C++ or ``list`` in Python.
     Taichi's dynamic memory allocation system allocates its memory on the fly.
 
-    The following places a 1-D dynamic tensor of maximum size ``16``:
+    The following places a 1-D dynamic field of maximum size ``16``:
 
     ::
 
@@ -186,11 +187,11 @@ Working with ``dynamic`` SNodes
     Inserts ``val`` into the ``dynamic`` node with indices ``indices``.
 
 
-Taichi tensors like powers of two
----------------------------------
+Taichi fields like powers of two
+--------------------------------
 
-Non-power-of-two tensor dimensions are promoted into powers of two and thus these tensors will occupy more virtual address space.
-For example, a (dense) tensor of size ``(18, 65)`` will be materialized as ``(32, 128)``.
+Non-power-of-two field dimensions are promoted into powers of two and thus these fields will occupy more virtual address space.
+For example, a (dense) field of size ``(18, 65)`` will be materialized as ``(32, 128)``.
 
 
 Indices

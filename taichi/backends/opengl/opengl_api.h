@@ -37,6 +37,7 @@ class ParallelSize {
   // CUDA: stride < thread < block < grid
  public:
   std::optional<size_t> strides_per_thread;
+  std::optional<size_t> threads_per_block;
 
   virtual size_t get_num_strides(GLSLLauncher *launcher) const = 0;
   size_t get_num_threads(GLSLLauncher *launcher) const;

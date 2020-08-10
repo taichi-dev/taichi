@@ -18,7 +18,7 @@ B.place(qt)
 
 img = ti.Vector(3, dt=ti.f32, shape=(RES, RES))
 
-print('The quad tree layout is:\n', qt.snode())
+print('The quad tree layout is:\n', qt.snode)
 
 
 @ti.kernel

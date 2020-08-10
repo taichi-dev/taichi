@@ -76,6 +76,7 @@ bool maybe_same_address(Stmt *var1, Stmt *var2);
 bool same_statements(IRNode *root1, IRNode *root2);
 DiffRange value_diff(Stmt *stmt, int lane, Stmt *alloca);
 DiffRange value_diff_loop_index(Stmt *stmt, Stmt *loop, int index_id);
+std::pair<bool, int> value_diff_ptr_index(Stmt *val1, Stmt *val2);
 void verify(IRNode *root);
 
 }  // namespace irpass::analysis

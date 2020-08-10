@@ -71,7 +71,7 @@ def imread(filename, channels=0):
     return img.swapaxes(0, 1)[:, ::-1, :]
 
 
-def imshow(img, window_name='Taichi'):
+def imshow(img, window_name='imshow'):
     """
     Show image in a Taichi GUI.
     """

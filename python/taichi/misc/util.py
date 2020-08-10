@@ -15,7 +15,7 @@ def config_from_dict(args):
     return ti_core.config_from_dict(d)
 
 
-def veci(*args):
+def core_veci(*args):
     from taichi.core import ti_core
     if isinstance(args[0], ti_core.Vector2i):
         return args[0]
@@ -34,7 +34,7 @@ def veci(*args):
         assert False, type(args[0])
 
 
-def vec(*args):
+def core_vec(*args):
     from taichi.core import ti_core
     if isinstance(args[0], ti_core.Vector2f):
         return args[0]
@@ -200,9 +200,21 @@ def print_profile_info():
     taichi.ti_core.print_profile_info()
 
 
+@deprecated('ti.vec(x, y)', 'ti.core_vec(x, y)')
+def vec(*args, **kwargs):
+    return core_vec(*args, **kwargs)
+
+
+@deprecated('ti.veci(x, y)', 'ti.core_veci(x, y)')
+def veci(*args, **kwargs):
+    return core_veci(*args, **kwargs)
+
+
 __all__ = [
     'vec',
     'veci',
+    'core_vec',
+    'core_veci',
     'set_gdb_trigger',
     'print_profile_info',
     'set_logging_level',

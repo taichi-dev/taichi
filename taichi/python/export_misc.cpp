@@ -15,7 +15,7 @@
 #include "taichi/system/dynamic_loader.h"
 #include "taichi/backends/metal/api.h"
 #include "taichi/backends/opengl/opengl_api.h"
-#include "taichi/backends/cc/cc_configuation.h"
+#include "taichi/backends/cc/cc_config.h"
 #if defined(TI_WITH_CUDA)
 #include "taichi/backends/cuda/cuda_driver.h"
 #endif
@@ -158,6 +158,7 @@ void export_misc(py::module &m) {
     printf("test was successful.\n");
   });
   m.def("pop_python_print_buffer", []() { return py_cout.pop_content(); });
+  m.def("toggle_python_print_buffer", [](bool opt) { py_cout.enabled = opt; });
   m.def("with_cuda", is_cuda_api_available);
   m.def("with_metal", taichi::lang::metal::is_metal_api_available);
   m.def("with_opengl", taichi::lang::opengl::is_opengl_api_available);

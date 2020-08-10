@@ -1,7 +1,7 @@
 import numbers
 import numpy as np
 from taichi.core import ti_core
-from .util import deprecated
+from .util import deprecated, core_veci
 
 
 class GUI:
@@ -34,15 +34,14 @@ class GUI:
     PRESS = ti_core.KeyEvent.EType.Press
     RELEASE = ti_core.KeyEvent.EType.Release
 
-    def __init__(self, name, res=512, background_color=0x0):
-        import taichi as ti
+    def __init__(self, name='Taichi', res=512, background_color=0x0):
         self.name = name
         if isinstance(res, numbers.Number):
             res = (res, res)
         self.res = res
         # The GUI canvas uses RGBA for storage, therefore we need NxMx4 for an image.
         self.img = np.ascontiguousarray(np.zeros(self.res + (4, ), np.float32))
-        self.core = ti.core.GUI(name, ti.veci(*res))
+        self.core = ti_core.GUI(name, core_veci(*res))
         self.canvas = self.core.get_canvas()
         self.background_color = background_color
         self.key_pressed = set()
@@ -108,6 +107,11 @@ class GUI:
         if img.shape[2] == 3:
             zeros = np.zeros((img.shape[0], img.shape[1], 1), np.float32)
             img = np.concatenate([img, zeros], axis=2)
+        if img.shape[2] == 2:
+            zeros = np.zeros((img.shape[0], img.shape[1], 2), np.float32)
+            img = np.concatenate([img, zeros], axis=2)
+
+        assert img.shape[2] == 4, "Image must be grayscale, RG, RGB or RGBA"
 
         res = img.shape[:2]
         assert res == self.res, "Image resolution does not match GUI resolution"
@@ -139,12 +143,10 @@ class GUI:
                 self.img = self.cook_image(img.to_numpy())
             else:
                 # Type matched! We can use an optimized copy kernel.
-                assert img.shape \
-                 == self.res, "Image resolution does not match GUI resolution"
-                assert img.n in [
-                    3, 4
-                ], "Only greyscale, RGB or RGBA images are supported in GUI.set_image"
-                assert img.m == 1
+                assert img.shape  == self.res, \
+                        "Image resolution does not match GUI resolution"
+                assert img.n in [2, 3, 4] and img.m == 1, \
+                        "Only greyscale, RG, RGB or RGBA images are supported in GUI.set_image"
                 from taichi.lang.meta import vector_to_image
                 vector_to_image(img, self.img)
                 ti.sync()
@@ -240,9 +242,79 @@ class GUI:
     def triangle(self, a, b, c, color=0xFFFFFF):
         self.canvas.triangle_single(a[0], a[1], b[0], b[1], c[0], c[1], color)
 
+    def lines(self, begin, end, radius=1, color=0xFFFFFF):
+        assert begin.shape == end.shape
+        n = begin.shape[0]
+        if len(begin.shape) == 3:
+            assert begin.shape[2] == 1
+            begin = begin[:, :, 0]
+            end = end[:, :, 0]
+
+        assert begin.shape == (n, 2)
+        begin = np.ascontiguousarray(begin.astype(np.float32))
+        end = np.ascontiguousarray(end.astype(np.float32))
+        # Note: do not use "begin = int(begin.ctypes.data)" here
+        # Otherwise begin will get garbage collected by Python
+        # and the pointer to its data becomes invalid
+        begin_ptr = int(begin.ctypes.data)
+        end_ptr = int(end.ctypes.data)
+
+        if isinstance(color, np.ndarray):
+            assert color.shape == (n, )
+            color = np.ascontiguousarray(color.astype(np.uint32))
+            color_array = int(color.ctypes.data)
+            color_single = 0
+        elif isinstance(color, int):
+            color_array = 0
+            color_single = color
+        else:
+            raise ValueError(
+                'Color must be an ndarray or int (e.g., 0x956333)')
+
+        if isinstance(radius, np.ndarray):
+            assert radius.shape == (n, )
+            radius = np.ascontiguousarray(radius.astype(np.float32))
+            radius_array = int(radius.ctypes.data)
+            radius_single = 0
+        elif isinstance(radius, numbers.Number):
+            radius_array = 0
+            radius_single = radius
+        else:
+            raise ValueError('Radius must be an ndarray or float (e.g., 0.4)')
+
+        self.canvas.paths_batched(n, begin_ptr, end_ptr, color_single,
+                                  color_array, radius_single, radius_array)
+
     def line(self, begin, end, radius=1, color=0xFFFFFF):
         self.canvas.path_single(begin[0], begin[1], end[0], end[1], color,
                                 radius)
+
+    @staticmethod
+    def _arrow_to_lines(orig, major, tip_scale=0.2, angle=45):
+        import math
+        angle = math.radians(180 - angle)
+        c, s = math.cos(angle), math.sin(angle)
+        minor1 = np.array([
+            major[:, 0] * c - major[:, 1] * s,
+            major[:, 0] * s + major[:, 1] * c
+        ]).swapaxes(0, 1)
+        minor2 = np.array([
+            major[:, 0] * c + major[:, 1] * s,
+            -major[:, 0] * s + major[:, 1] * c
+        ]).swapaxes(0, 1)
+        end = orig + major
+        return [(orig, end), (end, end + minor1 * tip_scale),
+                (end, end + minor2 * tip_scale)]
+
+    def arrows(self, orig, dir, radius=1, color=0xffffff, **kwargs):
+        for begin, end in self._arrow_to_lines(orig, dir, **kwargs):
+            self.lines(begin, end, radius, color)
+
+    def arrow(self, orig, dir, radius=1, color=0xffffff, **kwargs):
+        orig = np.array([orig])
+        dir = np.array([dir])
+        for begin, end in self._arrow_to_lines(orig, dir, **kwargs):
+            self.line(begin[0], end[0], radius, color)
 
     def rect(self, topleft, bottomright, radius=1, color=0xFFFFFF):
         a = topleft[0], topleft[1]
@@ -258,9 +330,9 @@ class GUI:
         import taichi as ti
         # TODO: refactor Canvas::text
         font_size = float(font_size)
-        pos = ti.vec(*pos)
-        r, g, b = (color >> 16) & 0xff, (color >> 8) & 0xff, color & 0xff
-        color = ti.vec(r / 255, g / 255, b / 255, 1)
+        pos = ti.core_vec(*pos)
+        r, g, b = hex_to_rgb(color)
+        color = ti.core_vec(r, g, b, 1)
         self.canvas.text(content, pos, font_size, color)
 
     def show(self, file=None):
@@ -371,13 +443,33 @@ class GUI:
         elif not self.core.should_close:
             self.core.should_close = 1
 
+    @property
+    def fps_limit(self):
+        if self.core.frame_delta_limit == 0:
+            return None
+        else:
+            return 1 / self.core.frame_delta_limit
+
+    @fps_limit.setter
+    def fps_limit(self, value):
+        if value is None:
+            self.core.frame_delta_limit = 0
+        else:
+            self.core.frame_delta_limit = 1 / value
+
 
 def rgb_to_hex(c):
     to255 = lambda x: np.clip(np.int32(x * 255), 0, 255)
     return 65536 * to255(c[0]) + 256 * to255(c[1]) + to255(c[2])
 
 
+def hex_to_rgb(color):
+    r, g, b = (color >> 16) & 0xff, (color >> 8) & 0xff, color & 0xff
+    return r / 255, g / 255, b / 255
+
+
 __all__ = [
     'GUI',
     'rgb_to_hex',
+    'hex_to_rgb',
 ]

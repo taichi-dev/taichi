@@ -6,32 +6,32 @@ Vectors
 A vector in Taichi can have two forms:
 
   - as a temporary local variable. An ``n`` component vector consists of ``n`` scalar values.
-  - as an element of a global tensor. In this case, the tensor is an N-dimensional array of ``n`` component vectors.
+  - as an element of a global field. In this case, the field is an N-dimensional array of ``n`` component vectors.
 
 In fact, ``Vector`` is simply an alias of ``Matrix``, just with ``m = 1``. See :ref:`matrix` and :ref:`tensor` for more details.
 
 Declaration
 -----------
 
-As global tensors of vectors
-++++++++++++++++++++++++++++
+As global vector fields
++++++++++++++++++++++++
 
-.. function:: ti.Vector.var(n, dt, shape = None, offset = None)
+.. function:: ti.Vector.field(n, dtype, shape = None, offset = None)
 
     :parameter n: (scalar) the number of components in the vector
-    :parameter dt: (DataType) data type of the components
-    :parameter shape: (optional, scalar or tuple) shape the tensor of vectors, see :ref:`tensor`
+    :parameter dtype: (DataType) data type of the components
+    :parameter shape: (optional, scalar or tuple) shape of the vector field, see :ref:`tensor`
     :parameter offset: (optional, scalar or tuple) see :ref:`offset`
 
-    For example, this creates a 5x4 tensor of 3 component vectors:
+    For example, this creates a 3-D vector field of the shape of ``5x4``:
     ::
 
         # Python-scope
-        a = ti.Vector.var(3, dt=ti.f32, shape=(5, 4))
+        a = ti.Vector.field(3, dtype=ti.f32, shape=(5, 4))
 
 .. note::
 
-    In Python-scope, ``ti.var`` declares :ref:`scalar_tensor`, while ``ti.Vector`` declares tensors of vectors.
+    In Python-scope, ``ti.field`` declares :ref:`scalar_tensor`, while ``ti.Vector.field`` declares vector fields.
 
 
 As a temporary local variable
@@ -52,13 +52,13 @@ As a temporary local variable
 Accessing components
 --------------------
 
-As global tensors of vectors
-++++++++++++++++++++++++++++
+As global vector fields
++++++++++++++++++++++++
 .. attribute:: a[p, q, ...][i]
 
-    :parameter a: (tensor of Vector) the vector
-    :parameter p: (scalar) index of the first tensor dimension
-    :parameter q: (scalar) index of the second tensor dimension
+    :parameter a: (ti.Vector.field) the vector
+    :parameter p: (scalar) index of the first field dimension
+    :parameter q: (scalar) index of the second field dimension
     :parameter i: (scalar) index of the vector component
 
     This extracts the first component of vector ``a[6, 3]``:
@@ -72,12 +72,12 @@ As global tensors of vectors
 
 .. note::
 
-    **Always** use two pairs of square brackets to access scalar elements from tensors of vectors.
+    **Always** use two pairs of square brackets to access scalar elements from vector fields.
 
-     - The indices in the first pair of brackets locate the vector inside the tensor of vectors;
+     - The indices in the first pair of brackets locate the vector inside the vector fields;
      - The indices in the second pair of brackets locate the scalar element inside the vector.
 
-    For 0-D tensors of vectors, indices in the first pair of brackets should be ``[None]``.
+    For 0-D vector fields, indices in the first pair of brackets should be ``[None]``.
 
 
 
@@ -106,7 +106,7 @@ Methods
 
 .. function:: a.norm(eps = 0)
 
-    :parameter a: (Vector)
+    :parameter a: (ti.Vector)
     :parameter eps: (optional, scalar) a safe-guard value for ``sqrt``, usually 0. See the note below.
     :return: (scalar) the magnitude / length / norm of vector
 
@@ -124,7 +124,7 @@ Methods
 
 .. function:: a.norm_sqr()
 
-    :parameter a: (Vector)
+    :parameter a: (ti.Vector)
     :return: (scalar) the square of the magnitude / length / norm of vector
 
     For example,
@@ -138,8 +138,8 @@ Methods
 
 .. function:: a.normalized()
 
-    :parameter a: (Vector)
-    :return: (Vector) the normalized / unit vector of ``a``
+    :parameter a: (ti.Vector)
+    :return: (ti.Vector) the normalized / unit vector of ``a``
 
     For example,
     ::
@@ -152,8 +152,8 @@ Methods
 
 .. function:: a.dot(b)
 
-    :parameter a: (Vector)
-    :parameter b: (Vector)
+    :parameter a: (ti.Vector)
+    :parameter b: (ti.Vector)
     :return: (scalar) the dot (inner) product of ``a`` and ``b``
 
     E.g.,
@@ -166,8 +166,8 @@ Methods
 
 .. function:: a.cross(b)
 
-    :parameter a: (Vector, 2 or 3 components)
-    :parameter b: (Vector of the same size as a)
+    :parameter a: (ti.Vector, 2 or 3 components)
+    :parameter b: (ti.Vector of the same size as a)
     :return: (scalar (for 2D inputs), or 3D Vector (for 3D inputs)) the cross product of ``a`` and ``b``
 
     We use a right-handed coordinate system. E.g.,
@@ -186,9 +186,9 @@ Methods
 
 .. function:: a.outer_product(b)
 
-    :parameter a: (Vector)
-    :parameter b: (Vector)
-    :return: (Matrix) the outer product of ``a`` and ``b``
+    :parameter a: (ti.Vector)
+    :parameter b: (ti.Vector)
+    :return: (ti.Matrix) the outer product of ``a`` and ``b``
 
     E.g.,
     ::
@@ -204,9 +204,9 @@ Methods
 
 .. function:: a.cast(dt)
 
-    :parameter a: (Vector)
+    :parameter a: (ti.Vector)
     :parameter dt: (DataType)
-    :return: (Vector) vector with all components of ``a`` casted into type ``dt``
+    :return: (ti.Vector) vector with all components of ``a`` casted into type ``dt``
 
     E.g.,
     ::
@@ -224,7 +224,7 @@ Metadata
 
 .. attribute:: a.n
 
-   :parameter a: (Vector or tensor of Vector)
+   :parameter a: (ti.Vector or ti.Vector.field)
    :return: (scalar) return the dimensionality of vector ``a``
 
     E.g.,
@@ -235,8 +235,9 @@ Metadata
         a.n  # 3
 
     ::
+
         # Python-scope
-        a = ti.Vector.var(3, dt=ti.f32, shape=())
+        a = ti.Vector.field(3, dtype=ti.f32, shape=())
         a.n  # 3
 
 TODO: add element wise operations docs

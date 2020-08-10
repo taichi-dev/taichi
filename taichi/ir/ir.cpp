@@ -48,6 +48,7 @@ void DecoratorRecorder::reset() {
   uniform = false;
   scratch_opt.clear();
   block_dim = 0;
+  stride_size = 1;
   strictly_serialized = false;
 }
 
@@ -454,6 +455,9 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
   parallelize = dec.parallelize;
   strictly_serialized = dec.strictly_serialized;
   block_dim = dec.block_dim;
+  stride_size = dec.stride_size;
+  // TODO(archibate): more systematic solution for copying dec?
+  stride_size = dec.stride_size;
   auto cfg = get_current_program().config;
   if (cfg.arch == Arch::cuda) {
     vectorize = 1;
@@ -477,6 +481,7 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
   parallelize = dec.parallelize;
   strictly_serialized = dec.strictly_serialized;
   block_dim = dec.block_dim;
+  stride_size = dec.stride_size;
   auto cfg = get_current_program().config;
   if (cfg.arch == Arch::cuda) {
     vectorize = 1;
@@ -982,6 +987,7 @@ RangeForStmt::RangeForStmt(Stmt *begin,
                            int vectorize,
                            int parallelize,
                            int block_dim,
+                           int stride_size,
                            bool strictly_serialized)
     : begin(begin),
       end(end),
@@ -989,6 +995,7 @@ RangeForStmt::RangeForStmt(Stmt *begin,
       vectorize(vectorize),
       parallelize(parallelize),
       block_dim(block_dim),
+      stride_size(stride_size),
       strictly_serialized(strictly_serialized) {
   reversed = false;
   TI_STMT_REG_FIELDS;
@@ -997,7 +1004,7 @@ RangeForStmt::RangeForStmt(Stmt *begin,
 std::unique_ptr<Stmt> RangeForStmt::clone() const {
   auto new_stmt = std::make_unique<RangeForStmt>(
       begin, end, body->clone(), vectorize, parallelize, block_dim,
-      strictly_serialized);
+      stride_size, strictly_serialized);
   new_stmt->reversed = reversed;
   return new_stmt;
 }
@@ -1006,18 +1013,20 @@ StructForStmt::StructForStmt(SNode *snode,
                              std::unique_ptr<Block> &&body,
                              int vectorize,
                              int parallelize,
-                             int block_dim)
+                             int block_dim,
+                             int stride_size)
     : snode(snode),
       body(std::move(body)),
       vectorize(vectorize),
       parallelize(parallelize),
-      block_dim(block_dim) {
+      block_dim(block_dim),
+      stride_size(stride_size) {
   TI_STMT_REG_FIELDS;
 }
 
 std::unique_ptr<Stmt> StructForStmt::clone() const {
   auto new_stmt = std::make_unique<StructForStmt>(
-      snode, body->clone(), vectorize, parallelize, block_dim);
+      snode, body->clone(), vectorize, parallelize, block_dim, stride_size);
   new_stmt->scratch_opt = scratch_opt;
   return new_stmt;
 }

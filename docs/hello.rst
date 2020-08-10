@@ -127,7 +127,7 @@ The language used in Taichi kernels and functions looks exactly like Python, yet
 .. note::
 
   **Taichi-scopes v.s. Python-scopes**:
-  
+
   Everything decorated with ``@ti.kernel`` and ``@ti.func`` is in Taichi-scope
   and hence will be compiled by the Taichi compiler.
 

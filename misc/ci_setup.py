@@ -187,7 +187,7 @@ class Installer:
             "distro",
             "autograd",
             "astor",
-            "dill",
+            "sourceinspect",
             "pytest",
             "pytest-xdist",
             "pytest-rerunfailures",

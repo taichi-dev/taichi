@@ -144,20 +144,23 @@ def writeback_binary(foo):
     return wrapped
 
 
-def cast(obj, type):
+def cast(obj, dtype):
     _taichi_skip_traceback = 1
+    dtype = cook_dtype(dtype)
     if is_taichi_class(obj):
-        return obj.cast(type)
+        # TODO: unify with element_wise_unary
+        return obj.cast(dtype)
     else:
-        return Expr(ti_core.value_cast(Expr(obj).ptr, type))
+        return Expr(ti_core.value_cast(Expr(obj).ptr, dtype))
 
 
-def bit_cast(obj, type):
+def bit_cast(obj, dtype):
     _taichi_skip_traceback = 1
+    dtype = cook_dtype(dtype)
     if is_taichi_class(obj):
         raise ValueError('Cannot apply bit_cast on Taichi classes')
     else:
-        return Expr(ti_core.bits_cast(Expr(obj).ptr, type))
+        return Expr(ti_core.bits_cast(Expr(obj).ptr, dtype))
 
 
 def _unary_operation(taichi_op, python_op, a):
@@ -274,7 +277,8 @@ def random(dt=None):
     if dt is None:
         import taichi
         dt = taichi.get_runtime().default_fp
-    return Expr(ti_core.make_rand_expr(dt))
+    x = Expr(ti_core.make_rand_expr(dt))
+    return expr_init(x)
 
 
 # NEXT: add matpow(self, power)
@@ -471,6 +475,9 @@ def assign(a, b):
     return a
 
 
+sqr = fully_deprecated('ti.sqr(x)', 'x**2')
+
+
 def ti_max(*args):
     num_args = len(args)
     assert num_args >= 1
@@ -504,7 +511,7 @@ def ti_all(a):
 def append(l, indices, val):
     import taichi as ti
     a = ti.expr_init(
-        ti_core.insert_append(l.snode().ptr, make_expr_group(indices),
+        ti_core.insert_append(l.snode.ptr, make_expr_group(indices),
                               Expr(val).ptr))
     return a
 
@@ -525,17 +532,17 @@ def asm(source, inputs=[], outputs=[]):
 
 
 def is_active(l, indices):
-    return Expr(
-        ti_core.insert_is_active(l.snode().ptr, make_expr_group(indices)))
+    return Expr(ti_core.insert_is_active(l.snode.ptr,
+                                         make_expr_group(indices)))
 
 
 def activate(l, indices):
-    ti_core.insert_activate(l.snode().ptr, make_expr_group(indices))
+    ti_core.insert_activate(l.snode.ptr, make_expr_group(indices))
 
 
 def deactivate(l, indices):
-    ti_core.insert_deactivate(l.snode().ptr, make_expr_group(indices))
+    ti_core.insert_deactivate(l.snode.ptr, make_expr_group(indices))
 
 
 def length(l, indices):
-    return Expr(ti_core.insert_len(l.snode().ptr, make_expr_group(indices)))
+    return Expr(ti_core.insert_len(l.snode.ptr, make_expr_group(indices)))

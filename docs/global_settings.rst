@@ -22,7 +22,7 @@ Compilation
 Runtime
 *******
 
-- Restart the entire Taichi system (destroy all tensors and kernels): ``ti.reset()``.
+- Restart the entire Taichi system (destroy all fields and kernels): ``ti.reset()``.
 - To start program in debug mode: ``ti.init(debug=True)`` or ``ti debug your_script.py``.
 - To disable importing torch on start up: ``export TI_ENABLE_TORCH=0``.
 

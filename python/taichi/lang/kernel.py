@@ -31,6 +31,8 @@ def remove_indent(lines):
 # The ti.func decorator
 def func(foo):
     is_classfunc = _inside_class(level_of_class_stackframe=3)
+
+    _taichi_skip_traceback = 1
     fun = Func(foo, classfunc=is_classfunc)
 
     @functools.wraps(foo)
@@ -67,6 +69,7 @@ class Func:
         self.pyfunc = pyfunc
         self.arguments = []
         self.argument_names = []
+        _taichi_skip_traceback = 1
         self.extract_arguments()
 
     def __call__(self, *args):
@@ -111,23 +114,33 @@ class Func:
             param = params[arg_name]
             if param.kind == inspect.Parameter.VAR_KEYWORD:
                 raise KernelDefError(
-                    'Taichi funcs do not support variable keyword parameters (i.e., **kwargs)'
+                    'Taichi functions do not support variable keyword parameters (i.e., **kwargs)'
                 )
             if param.kind == inspect.Parameter.VAR_POSITIONAL:
                 raise KernelDefError(
-                    'Taichi funcs do not support variable positional parameters (i.e., *args)'
+                    'Taichi functions do not support variable positional parameters (i.e., *args)'
                 )
             if param.kind == inspect.Parameter.KEYWORD_ONLY:
                 raise KernelDefError(
-                    'Taichi funcs do not support keyword parameters')
+                    'Taichi functions do not support keyword parameters')
             if param.kind != inspect.Parameter.POSITIONAL_OR_KEYWORD:
                 raise KernelDefError(
-                    'Taichi funcs only support "positional or keyword" parameters'
+                    'Taichi functions only support "positional or keyword" parameters'
                 )
             annotation = param.annotation
-            if param.annotation is inspect.Parameter.empty:
+            if annotation is inspect.Parameter.empty:
                 if i == 0 and self.classfunc:
                     annotation = template()
+            else:
+                if id(annotation) in type_ids:
+                    warning(
+                        'Data type annotations are unnecessary for Taichi'
+                        ' functions, consider removing it',
+                        stacklevel=4)
+                elif not isinstance(annotation, template):
+                    raise KernelDefError(
+                        f'Invalid type annotation (argument {i}) of Taichi function: {annotation}'
+                    )
             self.arguments.append(annotation)
             self.argument_names.append(param.name)
 
@@ -139,6 +152,7 @@ def classfunc(foo):
     @functools.wraps(foo)
     def decorated(*args):
         return func.__call__(*args)
+
     return decorated
 
 
@@ -216,7 +230,9 @@ class Kernel:
         self.argument_names = []
         self.return_type = None
         self.classkernel = classkernel
+        _taichi_skip_traceback = 1
         self.extract_arguments()
+        del _taichi_skip_traceback
         self.template_slot_locations = []
         for i in range(len(self.arguments)):
             if isinstance(self.arguments[i], template):
@@ -265,8 +281,19 @@ class Kernel:
                 if i == 0 and self.classkernel:
                     annotation = template()
                 else:
+                    _taichi_skip_traceback = 1
                     raise KernelDefError(
                         'Taichi kernels parameters must be type annotated')
+            else:
+                if isinstance(annotation, (template, ext_arr)):
+                    pass
+                elif id(annotation) in type_ids:
+                    pass
+                else:
+                    _taichi_skip_traceback = 1
+                    raise KernelDefError(
+                        f'Invalid type annotation (argument {i}) of Taichi kernel: {annotation}'
+                    )
             self.arguments.append(annotation)
             self.argument_names.append(param.name)
 
@@ -421,7 +448,9 @@ class Kernel:
                     for i, s in enumerate(shape):
                         t_kernel.set_extra_arg_int(actual_argument_slot, i, s)
                 else:
-                    assert False
+                    raise ValueError(
+                        f'Argument type mismatch. Expecting {needed}, got {type(v)}.'
+                    )
                 actual_argument_slot += 1
             # Both the class kernels and the plain-function kernels are unified now.
             # In both cases, |self.grad| is another Kernel instance that computes the
@@ -434,7 +463,7 @@ class Kernel:
             ret = None
             ret_dt = self.return_type
             if ret_dt is not None:
-                if taichi_lang_core.is_integral(ret_dt):
+                if id(ret_dt) in integer_type_ids:
                     ret = t_kernel.get_ret_int(0)
                 else:
                     ret = t_kernel.get_ret_float(0)
@@ -508,6 +537,7 @@ def _kernel_impl(func, level_of_class_stackframe, verbose=False):
     # Can decorators determine if a function is being defined inside a class?
     # https://stackoverflow.com/a/8793684/12003165
     is_classkernel = _inside_class(level_of_class_stackframe + 1)
+    _taichi_skip_traceback = 1
 
     if verbose:
         print(f'kernel={func.__name__} is_classkernel={is_classkernel}')

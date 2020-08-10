@@ -1,5 +1,5 @@
 from .core import taichi_lang_core
-from taichi.misc.util import warning, deprecated
+from taichi.misc.util import warning, deprecated, fully_deprecated
 import numpy as np
 import os
 
@@ -35,7 +35,7 @@ f32 = float32
 float64 = taichi_lang_core.DataType.float64
 f64 = float64
 
-real_types = [f32, f64]
+real_types = [f32, f64, float]
 real_type_ids = [id(t) for t in real_types]
 
 # Integer types
@@ -58,7 +58,7 @@ u32 = uint32
 uint64 = taichi_lang_core.DataType.uint64
 u64 = uint64
 
-integer_types = [i8, i16, i32, i64, u8, u16, u32, u64]
+integer_types = [i8, i16, i32, i64, u8, u16, u32, u64, int]
 integer_type_ids = [id(t) for t in integer_types]
 
 types = real_types + integer_types
@@ -164,6 +164,19 @@ def to_taichi_type(dt):
             return u64
 
     raise AssertionError("Unknown type {}".format(dt))
+
+
+def cook_dtype(dtype):
+    from .impl import get_runtime
+    _taichi_skip_traceback = 1
+    if isinstance(dtype, taichi_lang_core.DataType):
+        return dtype
+    elif dtype is float:
+        return get_runtime().default_fp
+    elif dtype is int:
+        return get_runtime().default_ip
+    else:
+        raise ValueError(f'Bad data type {dtype}')
 
 
 def in_taichi_scope():

@@ -10,11 +10,11 @@ def test_indices():
 
     ti.get_runtime().materialize()
 
-    mapping_a = a.snode().physical_index_position()
+    mapping_a = a.snode.physical_index_position()
 
     assert mapping_a == {0: 0, 1: 1, 2: 2}
 
-    mapping_b = b.snode().physical_index_position()
+    mapping_b = b.snode.physical_index_position()
 
     assert mapping_b == {0: 1, 1: 0}
     # Note that b is column-major:

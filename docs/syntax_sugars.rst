@@ -12,16 +12,16 @@ For example, consider the simple kernel:
 
   @ti.kernel
   def my_kernel():
-    for i, j in tensor_a:
-      tensor_b[i, j] = some_function(tensor_a[i, j])
+    for i, j in field_a:
+      field_b[i, j] = some_function(field_a[i, j])
 
-The tensors and function be aliased to new names with ``ti.static``:
+The fields and function be aliased to new names with ``ti.static``:
 
 .. code-block:: python
 
   @ti.kernel
   def my_kernel():
-    a, b, fun = ti.static(tensor_a, tensor_b, some_function)
+    a, b, fun = ti.static(field_a, field_b, some_function)
     for i,j in a:
       b[i,j] = fun(a[i,j])
 
@@ -29,7 +29,7 @@ The tensors and function be aliased to new names with ``ti.static``:
 
 Aliases can also be created for class members and methods, which can help prevent cluttering objective data-oriented programming code with ``self``.
 
-For example, consider class kernel to compute the 2-D laplacian of some tensor:
+For example, consider class kernel to compute the 2-D laplacian of some field:
 
 .. code-block:: python
 
@@ -54,4 +54,4 @@ Using ``ti.static()``, it can be simplified to:
 
   ``ti.static`` can also be used in combination with ``if`` (compile-time branching) and ``for`` (compile-time unrolling). See :ref:`meta` for more details.
 
-  Here, we are using it for *compile-time const values*, i.e. the **tensor/function handles** are constants at compile time.
+  Here, we are using it for *compile-time const values*, i.e. the **field/function handles** are constants at compile time.

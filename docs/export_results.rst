@@ -26,7 +26,7 @@ Export images using ``ti.GUI.show``
 
     ti.init()
 
-    pixels = ti.var(ti.u8, shape=(512, 512, 3))
+    pixels = ti.field(ti.u8, shape=(512, 512, 3))
 
     @ti.kernel
     def paint():
@@ -57,7 +57,7 @@ To save images without invoking ``ti.GUI.show(filename)``, use ``ti.imwrite(file
 
         ti.init()
 
-        pixels = ti.var(ti.u8, shape=(512, 512, 3))
+        pixels = ti.field(ti.u8, shape=(512, 512, 3))
 
         @ti.kernel
         def set_pixels():
@@ -69,15 +69,15 @@ To save images without invoking ``ti.GUI.show(filename)``, use ``ti.imwrite(file
         ti.imwrite(pixels.to_numpy(), filename)
         print(f'The image has been saved to {filename}')
 
-- ``ti.imwrite`` can export Taichi tensors (``ti.Matrix``, ``ti.Vector``, ``ti.var``) and numpy tensors ``np.ndarray``.
+- ``ti.imwrite`` can export Taichi fields (``ti.Matrix.field``, ``ti.Vector.field``, ``ti.field``) and numpy arrays ``np.ndarray``.
 - Same as above ``ti.GUI.show(filename)``, the image format (``png``, ``jpg`` and ``bmp``) is also controlled by the suffix of ``filename`` in ``ti.imwrite(filename)``.
-- Meanwhile, the resulted image type (grayscale, RGB, or RGBA) is determined by **the number of channels in the input tensor**, i.e., the length of the third dimension (``tensor.shape[2]``).
-- In other words, a tensor that has shape ``(w, h)`` or ``(w, h, 1)`` will be exported as a grayscale image.
-- If you want to export ``RGB`` or ``RGBA`` images instead, the input tensor should have a shape ``(w, h, 3)`` or ``(w, h, 4)`` respectively.
+- Meanwhile, the resulted image type (grayscale, RGB, or RGBA) is determined by **the number of channels in the input field**, i.e., the length of the third dimension (``field.shape[2]``).
+- In other words, a field that has shape ``(w, h)`` or ``(w, h, 1)`` will be exported as a grayscale image.
+- If you want to export ``RGB`` or ``RGBA`` images instead, the input field should have a shape ``(w, h, 3)`` or ``(w, h, 4)`` respectively.
 
 .. note::
 
-    All Taichi tensors have their own data types, such as ``ti.u8`` and ``ti.f32``. Different data types can lead to different behaviors of ``ti.imwrite``. Please check out :ref:`gui` for more details.
+    All Taichi fields have their own data types, such as ``ti.u8`` and ``ti.f32``. Different data types can lead to different behaviors of ``ti.imwrite``. Please check out :ref:`gui` for more details.
 
 - Taichi offers other helper functions that read and show images in addition to ``ti.imwrite``. They are also demonstrated in :ref:`gui`.
 
@@ -96,7 +96,7 @@ Export videos
 
     ti.init()
 
-    pixels = ti.var(ti.u8, shape=(512, 512, 3))
+    pixels = ti.field(ti.u8, shape=(512, 512, 3))
 
     @ti.kernel
     def paint():
@@ -190,8 +190,8 @@ Export PLY files
     ti.init(arch=ti.cpu)
 
     num_vertices = 1000
-    pos = ti.Vector(3, dt=ti.f32, shape=(10, 10, 10))
-    rgba = ti.Vector(4, dt=ti.f32, shape=(10, 10, 10))
+    pos = ti.Vector.field(3, dtype=ti.f32, shape=(10, 10, 10))
+    rgba = ti.Vector.field(4, dtype=ti.f32, shape=(10, 10, 10))
 
 
     @ti.kernel
@@ -363,4 +363,4 @@ Import ``ply`` files into Houdini and Blender
 +++++++++++++++++++++++++++++++++++++++++++++
 Houdini supports importing a series of ``ply`` files sharing the same prefix/post-fix. Our ``export_frame`` can achieve the requirement for you. In Houdini, click ``File->Import->Geometry`` and navigate to the folder containing your frame results, who should be collapsed into one single entry like ``example_$F6.ply (0-9)``. Double-click this entry to finish the importing process.
 
-Blender requires an add-on called `Stop-motion-OBJ <https://github.com/neverhood311/Stop-motion-OBJ>`_ to load the result sequences. A very detailed explanation `video <https://www.youtube.com/watch?v=Ja7F7WHD39Q>`_ is provided by the author on how to install, enable, and use the add-on. Just keep in mind that significant changes in the workflow were made in their most recent test releases. To follow their instruction readme and video, please use ``v2.0.2``.
+Blender requires an add-on called `Stop-motion-OBJ <https://github.com/neverhood311/Stop-motion-OBJ>`_ to load the result sequences. `Detailed documentation <https://github.com/neverhood311/Stop-motion-OBJ/wiki>`_ is provided by the author on how to install and use the add-on. If you're using the latest version of Blender (2.80+), download and install the `latest release <https://github.com/neverhood311/Stop-motion-OBJ/releases/latest>`_ of Stop-motion-OBJ. For Blender 2.79 and older, use version ``v1.1.1`` of the add-on.

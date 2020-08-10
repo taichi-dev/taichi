@@ -18,7 +18,7 @@ Template metaprogramming
 ------------------------
 
 You may use ``ti.template()``
-as a type hint to pass a tensor as an argument. For example:
+as a type hint to pass a field as an argument. For example:
 
 .. code-block:: python
 
@@ -27,10 +27,10 @@ as a type hint to pass a tensor as an argument. For example:
         for i in x:
             y[i] = x[i]
 
-    a = ti.var(ti.f32, 4)
-    b = ti.var(ti.f32, 4)
-    c = ti.var(ti.f32, 12)
-    d = ti.var(ti.f32, 12)
+    a = ti.field(ti.f32, 4)
+    b = ti.field(ti.f32, 4)
+    c = ti.field(ti.f32, 12)
+    d = ti.field(ti.f32, 12)
     copy(a, b)
     copy(c, d)
 
@@ -43,7 +43,7 @@ Dimensionality-independent programming using grouped indices
 ------------------------------------------------------------
 
 However, the ``copy`` template shown above is not perfect. For example, it can only be
-used to copy 1D tensors. What if we want to copy 2D tensors? Do we have to write
+used to copy 1D fields. What if we want to copy 2D fields? Do we have to write
 another kernel?
 
 .. code-block:: python
@@ -72,7 +72,7 @@ For example:
 
     @ti.kernel
     def array_op(x: ti.template(), y: ti.template()):
-        # if tensor x is 2D:
+        # if field x is 2D:
         for I in ti.grouped(x): # I is simply a 2D vector with data type i32
             y[I + ti.Vector([0, 1])] = I[0] + I[1]
 
@@ -81,26 +81,26 @@ For example:
             y[i, j + 1] = i + j
 
 
-Tensor metadata
----------------
+Field metadata
+--------------
 
-Sometimes it is useful to get the data type (``tensor.dtype``) and shape (``tensor.shape``) of tensors.
+Sometimes it is useful to get the data type (``field.dtype``) and shape (``field.shape``) of fields.
 These attributes can be accessed in both Taichi- and Python-scopes.
 
 .. code-block:: python
 
   @ti.func
-  def print_tensor_info(x: ti.template()):
-    print('Tensor dimensionality is', len(x.shape))
+  def print_field_info(x: ti.template()):
+    print('Field dimensionality is', len(x.shape))
     for i in ti.static(range(len(x.shape))):
       print('Size alone dimension', i, 'is', x.shape[i])
-    ti.static_print('Tensor data type is', x.dtype)
+    ti.static_print('Field data type is', x.dtype)
 
 See :ref:`scalar_tensor` for more details.
 
 .. note::
 
-    For sparse tensors, the full domain shape will be returned.
+    For sparse fields, the full domain shape will be returned.
 
 
 Matrix & vector metadata
@@ -168,9 +168,9 @@ When to use for loops with ``ti.static``
 There are several reasons why ``ti.static`` for loops should be used.
 
  - Loop unrolling for performance.
- - Loop over vector/matrix elements. Indices into Taichi matrices must be a compile-time constant. Indexing into taichi tensors can be run-time variables. For example, if ``x`` is a 1-D tensor of 3D vector, accessed as ``x[tensor_index][matrix index]``. The first index can be variable, yet the second must be a constant.
+ - Loop over vector/matrix elements. Indices into Taichi matrices must be a compile-time constant. Indexing into taichi fields can be run-time variables. For example, if you want to access a vector field ``x``, accessed as ``x[field_index][vector_component_index]``. The first index can be variable, yet the second must be a constant.
 
-For example, code for resetting this tensor of vectors should be
+For example, code for resetting this vector fields should be
 
 .. code-block:: python
 
@@ -179,5 +179,5 @@ For example, code for resetting this tensor of vectors should be
      for i in x:
        for j in ti.static(range(x.n)):
          # The inner loop must be unrolled since j is a vector index instead
-         # of a global tensor index.
+         # of a global field index.
          x[i][j] = 0

@@ -119,7 +119,7 @@ def bls_particle_grid(N,
 
     max_num_particles_per_block = block_size**2 * 4096
 
-    x = ti.Vector(2, dtype=ti.f32)
+    x = ti.Vector(2, dt=ti.f32)
 
     s1 = ti.field(dtype=ti.f32)
     s2 = ti.field(dtype=ti.f32)

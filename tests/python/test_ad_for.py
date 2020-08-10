@@ -5,9 +5,9 @@ import taichi as ti
 @ti.all_archs
 def test_ad_sum():
     N = 10
-    a = ti.var(ti.f32, shape=N, needs_grad=True)
-    b = ti.var(ti.i32, shape=N)
-    p = ti.var(ti.f32, shape=N, needs_grad=True)
+    a = ti.field(ti.f32, shape=N, needs_grad=True)
+    b = ti.field(ti.i32, shape=N)
+    p = ti.field(ti.f32, shape=N, needs_grad=True)
 
     @ti.kernel
     def compute_sum():
@@ -38,9 +38,9 @@ def test_ad_sum():
 def test_ad_sum_local_atomic():
     ti.init(print_ir=True)
     N = 10
-    a = ti.var(ti.f32, shape=N, needs_grad=True)
-    b = ti.var(ti.i32, shape=N)
-    p = ti.var(ti.f32, shape=N, needs_grad=True)
+    a = ti.field(ti.f32, shape=N, needs_grad=True)
+    b = ti.field(ti.i32, shape=N)
+    p = ti.field(ti.f32, shape=N, needs_grad=True)
 
     @ti.kernel
     def compute_sum():
@@ -70,9 +70,9 @@ def test_ad_sum_local_atomic():
 @ti.all_archs
 def test_ad_power():
     N = 10
-    a = ti.var(ti.f32, shape=N, needs_grad=True)
-    b = ti.var(ti.i32, shape=N)
-    p = ti.var(ti.f32, shape=N, needs_grad=True)
+    a = ti.field(ti.f32, shape=N, needs_grad=True)
+    b = ti.field(ti.i32, shape=N)
+    p = ti.field(ti.f32, shape=N, needs_grad=True)
 
     @ti.kernel
     def power():
@@ -102,10 +102,10 @@ def test_ad_power():
 @ti.all_archs
 def test_ad_fibonacci():
     N = 15
-    a = ti.var(ti.f32, shape=N, needs_grad=True)
-    b = ti.var(ti.f32, shape=N, needs_grad=True)
-    c = ti.var(ti.i32, shape=N)
-    f = ti.var(ti.f32, shape=N, needs_grad=True)
+    a = ti.field(ti.f32, shape=N, needs_grad=True)
+    b = ti.field(ti.f32, shape=N, needs_grad=True)
+    c = ti.field(ti.i32, shape=N)
+    f = ti.field(ti.f32, shape=N, needs_grad=True)
 
     @ti.kernel
     def fib():
@@ -142,9 +142,9 @@ def test_ad_fibonacci():
 def test_ad_fibonacci_index():
     N = 5
     M = 10
-    a = ti.var(ti.f32, shape=M, needs_grad=True)
-    b = ti.var(ti.f32, shape=M, needs_grad=True)
-    f = ti.var(ti.f32, shape=(), needs_grad=True)
+    a = ti.field(ti.f32, shape=M, needs_grad=True)
+    b = ti.field(ti.f32, shape=M, needs_grad=True)
+    f = ti.field(ti.f32, shape=(), needs_grad=True)
 
     @ti.kernel
     def fib():
@@ -174,9 +174,9 @@ def test_ad_fibonacci_index():
 @ti.all_archs
 def test_ad_global_ptr():
     N = 5
-    a = ti.var(ti.f32, shape=N, needs_grad=True)
-    b = ti.var(ti.f32, shape=N, needs_grad=True)
-    f = ti.var(ti.f32, shape=(), needs_grad=True)
+    a = ti.field(ti.f32, shape=N, needs_grad=True)
+    b = ti.field(ti.f32, shape=N, needs_grad=True)
+    f = ti.field(ti.f32, shape=(), needs_grad=True)
 
     @ti.kernel
     def task():
@@ -205,10 +205,10 @@ def test_ad_global_ptr():
 @ti.all_archs
 def test_integer_stack():
     N = 5
-    a = ti.var(ti.f32, shape=N, needs_grad=True)
-    b = ti.var(ti.f32, shape=N, needs_grad=True)
-    c = ti.var(ti.i32, shape=N)
-    f = ti.var(ti.f32, shape=N, needs_grad=True)
+    a = ti.field(ti.f32, shape=N, needs_grad=True)
+    b = ti.field(ti.f32, shape=N, needs_grad=True)
+    c = ti.field(ti.i32, shape=N)
+    f = ti.field(ti.f32, shape=N, needs_grad=True)
 
     @ti.kernel
     def int_stack():
@@ -245,10 +245,10 @@ def test_integer_stack():
 @ti.all_archs
 def test_double_for_loops():
     N = 5
-    a = ti.var(ti.f32, shape=N, needs_grad=True)
-    b = ti.var(ti.f32, shape=N, needs_grad=True)
-    c = ti.var(ti.i32, shape=N)
-    f = ti.var(ti.f32, shape=N, needs_grad=True)
+    a = ti.field(ti.f32, shape=N, needs_grad=True)
+    b = ti.field(ti.f32, shape=N, needs_grad=True)
+    c = ti.field(ti.i32, shape=N)
+    f = ti.field(ti.f32, shape=N, needs_grad=True)
 
     @ti.kernel
     def double_for():
@@ -284,10 +284,10 @@ def test_double_for_loops():
 @ti.all_archs
 def test_double_for_loops_more_nests():
     N = 6
-    a = ti.var(ti.f32, shape=N, needs_grad=True)
-    b = ti.var(ti.f32, shape=N, needs_grad=True)
-    c = ti.var(ti.i32, shape=(N, N // 2))
-    f = ti.var(ti.f32, shape=(N, N // 2), needs_grad=True)
+    a = ti.field(ti.f32, shape=N, needs_grad=True)
+    b = ti.field(ti.f32, shape=N, needs_grad=True)
+    c = ti.field(ti.i32, shape=(N, N // 2))
+    f = ti.field(ti.f32, shape=(N, N // 2), needs_grad=True)
 
     @ti.kernel
     def double_for():
@@ -331,11 +331,11 @@ def test_double_for_loops_more_nests():
 @ti.all_archs
 def test_complex_body():
     N = 5
-    a = ti.var(ti.f32, shape=N, needs_grad=True)
-    b = ti.var(ti.f32, shape=N, needs_grad=True)
-    c = ti.var(ti.i32, shape=N)
-    f = ti.var(ti.f32, shape=N, needs_grad=True)
-    g = ti.var(ti.f32, shape=N, needs_grad=False)
+    a = ti.field(ti.f32, shape=N, needs_grad=True)
+    b = ti.field(ti.f32, shape=N, needs_grad=True)
+    c = ti.field(ti.i32, shape=N)
+    f = ti.field(ti.f32, shape=N, needs_grad=True)
+    g = ti.field(ti.f32, shape=N, needs_grad=False)
 
     @ti.kernel
     def complex():

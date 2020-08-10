@@ -4,7 +4,7 @@ import pytest
 
 @ti.all_archs
 def test_cast_f32():
-    z = ti.var(ti.i32, shape=())
+    z = ti.field(ti.i32, shape=())
 
     @ti.kernel
     def func():
@@ -17,7 +17,7 @@ def test_cast_f32():
 @ti.require(ti.extension.data64)
 @ti.all_archs
 def test_cast_f64():
-    z = ti.var(ti.i32, shape=())
+    z = ti.field(ti.i32, shape=())
 
     @ti.kernel
     def func():
@@ -56,7 +56,7 @@ def test_cast_default_ip(dtype):
 
 @ti.all_archs
 def test_cast_within_while():
-    ret = ti.var(ti.i32, shape=())
+    ret = ti.field(ti.i32, shape=())
 
     @ti.kernel
     def func():
@@ -71,9 +71,9 @@ def test_cast_within_while():
 
 @ti.all_archs
 def test_bit_cast():
-    x = ti.var(ti.i32, shape=())
-    y = ti.var(ti.f32, shape=())
-    z = ti.var(ti.i32, shape=())
+    x = ti.field(ti.i32, shape=())
+    y = ti.field(ti.f32, shape=())
+    z = ti.field(ti.i32, shape=())
 
     @ti.kernel
     def func1():

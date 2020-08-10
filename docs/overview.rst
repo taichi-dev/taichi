@@ -131,7 +131,7 @@ Here we showcase an example on how to render a classical UV image via Taichi:
     import taichi as ti  # make sure you've 'pip3 install taichi' already
 
     # declare a 512x512x3 field whose elements are 32-bit floating-point numbers
-    rgb_image = ti.field(dtype=ti.f32, shape=(512, 512, 3))
+    rgb_image = ti.field(dtype=float, shape=(512, 512, 3))
 
 
     @ti.kernel  # functions decorated by @ti.kernel will be compiled by Taichi

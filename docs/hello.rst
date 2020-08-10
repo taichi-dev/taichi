@@ -67,7 +67,7 @@ Taichi programs run on either CPUs or GPUs. Initialize Taichi according to your 
 
   # Run on GPU, with the NVIDIA CUDA backend
   ti.init(arch=ti.cuda)
-  # Run on GPU, with the OpenGL compute shader backend
+  # Run on GPU, with the OpenGL backend
   ti.init(arch=ti.opengl)
   # Run on GPU, with the Apple Metal backend, if you are on OS X
   ti.init(arch=ti.metal)
@@ -76,7 +76,6 @@ Taichi programs run on either CPUs or GPUs. Initialize Taichi according to your 
   ti.init(arch=ti.cpu)
 
 .. note::
-
     Supported backends on different platforms:
 
     +----------+------+------+--------+-------+

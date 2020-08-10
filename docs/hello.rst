@@ -134,7 +134,7 @@ The language used in Taichi kernels and functions looks exactly like Python, yet
   Everything decorated with ``@ti.kernel`` and ``@ti.func`` is in Taichi-scope
   and hence will be compiled by the Taichi compiler.
 
-  Everything else is in Python-scopes. They are simply Python native code.
+  Everything else is in Python-scope. They are simply Python native code.
 
 .. warning::
 
@@ -148,7 +148,7 @@ The language used in Taichi kernels and functions looks exactly like Python, yet
 .. warning::
 
   **Nested kernels are not supported**.
-  **Nested functions are allowed**.
+  **Nested functions are supported**.
   **Recursive functions are not supported for now**.
 
 

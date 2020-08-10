@@ -188,7 +188,7 @@ Unlike kernels, arguments in functions don't need to be type-hinted:
         ...
 
 
-Function arguments are passed by value, changes made inside function scope
+Function arguments are passed by value. So changes made inside function scope
 won't affect the outside value in the caller:
 
 .. code-block:: python

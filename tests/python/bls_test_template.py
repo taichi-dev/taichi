@@ -121,7 +121,6 @@ def bls_particle_grid(N,
 
     x = ti.Vector(2, dt=ti.f32)
 
-
     s1 = ti.field(dtype=ti.f32)
     s2 = ti.field(dtype=ti.f32)
     s3 = ti.field(dtype=ti.f32)

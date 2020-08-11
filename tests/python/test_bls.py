@@ -110,8 +110,8 @@ def test_scatter_2d():
 @ti.require(ti.extension.bls)
 @ti.all_archs
 def test_multiple_inputs():
-    x, y, z, w, w2 = ti.field(ti.i32), ti.field(ti.i32), ti.field(ti.i32), ti.field(
-        ti.i32), ti.field(ti.i32)
+    x, y, z, w, w2 = ti.field(ti.i32), ti.field(ti.i32), ti.field(
+        ti.i32), ti.field(ti.i32), ti.field(ti.i32)
 
     N = 128
     bs = 8

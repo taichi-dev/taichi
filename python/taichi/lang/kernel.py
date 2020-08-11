@@ -5,6 +5,7 @@ import ast
 from .kernel_arguments import *
 from .util import *
 from .shell import oinspect, _shell_pop_print
+from .exception import TaichiSyntaxError
 from . import impl
 import functools
 
@@ -75,8 +76,11 @@ class Func:
     def __call__(self, *args):
         _taichi_skip_traceback = 1
         if not impl.inside_kernel():
-            assert self.pyfunc, "Use @ti.pyfunc if you wish to call " \
-                                "Taichi functions from Python-scope"
+            if not self.pyfunc:
+                raise TaichiSyntaxError(
+                    "Taichi functions cannot be called from Python-scope."
+                    " Use @ti.pyfunc if you wish to call Taichi functions "
+                    "from both Python-scope and Taichi-scope.")
             return self.func(*args)
         if self.compiled is None:
             self.do_compile()
@@ -364,7 +368,7 @@ class Kernel:
             _taichi_skip_traceback = 1
             if self.runtime.inside_kernel:
                 import taichi as ti
-                raise ti.TaichiSyntaxError(
+                raise TaichiSyntaxError(
                     "Kernels cannot call other kernels. I.e., nested kernels are not allowed. Please check if you have direct/indirect invocation of kernels within kernels. Note that some methods provided by the Taichi standard library may invoke kernels, and please move their invocations to Python-scope."
                 )
             self.runtime.inside_kernel = True

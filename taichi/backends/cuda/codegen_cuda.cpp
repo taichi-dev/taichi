@@ -229,29 +229,13 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
               llvm_val[stmt->val],
               llvm::AtomicOrdering::SequentiallyConsistent);
         } else if (stmt->val->ret_type.data_type == DataType::f32) {
-#if LLVM_VERSION_MAJOR >= 10
           old_value = builder->CreateAtomicRMW(
               llvm::AtomicRMWInst::FAdd, llvm_val[stmt->dest],
               llvm_val[stmt->val], AtomicOrdering::SequentiallyConsistent);
-#else
-          auto dt = tlctx->get_data_type(DataType::f32);
-          old_value = builder->CreateIntrinsic(
-              Intrinsic::nvvm_atomic_load_add_f32,
-              {llvm::PointerType::get(dt, 0)},
-              {llvm_val[stmt->dest], llvm_val[stmt->val]});
-#endif
         } else if (stmt->val->ret_type.data_type == DataType::f64) {
-#if LLVM_VERSION_MAJOR >= 10
           old_value = builder->CreateAtomicRMW(
               llvm::AtomicRMWInst::FAdd, llvm_val[stmt->dest],
               llvm_val[stmt->val], AtomicOrdering::SequentiallyConsistent);
-#else
-          auto dt = tlctx->get_data_type(DataType::f64);
-          old_value = builder->CreateIntrinsic(
-              Intrinsic::nvvm_atomic_load_add_f64,
-              {llvm::PointerType::get(dt, 0)},
-              {llvm_val[stmt->dest], llvm_val[stmt->val]});
-#endif
         } else {
           TI_NOT_IMPLEMENTED
         }
@@ -432,11 +416,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         *module, type, false, llvm::GlobalValue::ExternalLinkage, nullptr,
         "bls_buffer", nullptr, llvm::GlobalVariable::NotThreadLocal,
         3 /*addrspace=shared*/);
-#if LLVM_VERSION_MAJOR >= 10
     bls_buffer->setAlignment(llvm::MaybeAlign(8));
-#else
-    bls_buffer->setAlignment(8);
-#endif
   }
 
   void visit(OffloadedStmt *stmt) override {

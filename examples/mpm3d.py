@@ -1,10 +1,12 @@
+export_file = '/tmp/mpm3d.ply'
+
 import taichi as ti
 import numpy as np
 
 ti.init(arch=ti.opengl)
 
-dim = 2
-n_grid = 64
+dim = 3
+n_grid = 32
 n_particles = n_grid ** dim // 2 ** (dim - 1)
 dx = 1 / n_grid
 dt = 4e-4
@@ -99,5 +101,9 @@ while gui.running and not gui.get_event(gui.ESCAPE):
     for s in range(15):
         substep()
     pos = x.to_numpy()
+    if export_file:
+        writer = ti.PLYWriter(num_vertices=n_particles)
+        writer.add_vertex_pos(pos[:, 0], pos[:, 1], pos[:, 2])
+        writer.export_frame(gui.frame, export_file)
     gui.circles(T(pos), radius=2, color=0x66ccff)
     gui.show()

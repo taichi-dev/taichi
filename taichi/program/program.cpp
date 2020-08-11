@@ -137,7 +137,7 @@ Program::Program(Arch desired_arch) {
 
   if (config.async_mode) {
     TI_WARN("Running in async mode. This is experimental.");
-    TI_ASSERT(arch_is_cpu(config.arch));
+    TI_ASSERT(arch_is_cpu(config.arch) || config.arch == Arch::cuda);
     async_engine = std::make_unique<AsyncEngine>();
   }
 
@@ -448,6 +448,9 @@ void Program::check_runtime_error() {
 
 void Program::synchronize() {
   if (!sync) {
+    if (config.async_mode) {
+      async_engine->synchronize();
+    }
     if (config.arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
       CUDADriver::get_instance().stream_synchronize(nullptr);
@@ -456,8 +459,6 @@ void Program::synchronize() {
 #endif
     } else if (config.arch == Arch::metal) {
       metal_kernel_mgr_->synchronize();
-    } else if (config.async_mode) {
-      async_engine->synchronize();
     }
     sync = true;
   }

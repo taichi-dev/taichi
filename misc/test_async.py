@@ -1,10 +1,11 @@
 import taichi as ti
 
-ti.init()
+# ti.init(arch=ti.cpu, async_mode=True)
+ti.init(arch=ti.cuda, async_mode=True)
 
 n = 8
 
-x = ti.var(dt=ti.i32, shape=n)
+x = ti.field(dtype=ti.i32, shape=n)
 
 
 @ti.kernel
@@ -18,5 +19,7 @@ def fill():
 
 fill()
 fill()
+
+ti.sync()
 
 ti.core.print_stat()

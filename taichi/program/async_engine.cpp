@@ -73,9 +73,11 @@ void ExecutionQueue::enqueue(KernelLaunchRecord &&ker) {
     // Later the IR passes will change |stmt|, so we must clone it.
     stmt = ker.clone_stmt_on_write();
     compilation_workers.enqueue([&, stmt, kernel, h, this]() {
+      TI_INFO("Compiling offload to executable {}", kernel->name);
       {
         // Final lowering
         using namespace irpass;
+        irpass::print(stmt);
 
         demote_dense_struct_fors(stmt);
         // TODO: due to the assumption that root is a Block, we cannot call the
@@ -85,11 +87,16 @@ void ExecutionQueue::enqueue(KernelLaunchRecord &&ker) {
         lower_access(stmt, true);
         flag_access(stmt);
         full_simplify(stmt, true, kernel);
+        irpass::print(stmt);
+        // TODO: make "verify" here work. May need an IR structure refactoring.
         // analysis::verify(stmt);
       }
-      auto func = CodeGenCPU(kernel, stmt).codegen();
+      auto codegen =
+          KernelCodeGen::create(kernel->arch, kernel, stmt);
+      auto func = codegen->codegen();
       std::lock_guard<std::mutex> _(mut);
       compiled_func[h] = func;
+      TI_INFO("Compiled {}", kernel->name);
     });
   }
 
@@ -123,7 +130,9 @@ void ExecutionQueue::enqueue(KernelLaunchRecord &&ker) {
       stat.add("launched_kernels_garbage_collect", 1.0);
     }
     auto c = context;
+    TI_INFO("Launching {}", kernel->name);
     func(c);
+    TI_INFO("Launched {}", kernel->name);
   });
   trashbin.push_back(std::move(ker));
 }
@@ -140,6 +149,7 @@ ExecutionQueue::ExecutionQueue()
 void AsyncEngine::launch(Kernel *kernel) {
   if (!kernel->lowered)
     kernel->lower(/*to_executable=*/false);
+
   auto block = dynamic_cast<Block *>(kernel->ir.get());
   TI_ASSERT(block);
 
@@ -174,6 +184,8 @@ void AsyncEngine::launch(Kernel *kernel) {
 
 void AsyncEngine::enqueue(KernelLaunchRecord &&t) {
   using namespace irpass::analysis;
+
+  TI_TRACE("Enqueuing {}", t.kernel->name);
 
   auto &meta = offloaded_metas_[t.h];
   // TODO: this is an abuse since it gathers nothing...

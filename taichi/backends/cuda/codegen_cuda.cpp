@@ -461,8 +461,8 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 };
 
 FunctionType CodeGenCUDA::codegen() {
-  TI_PROFILER("cuda codegen");
-  return CodeGenLLVMCUDA(kernel).gen();
+  TI_AUTO_PROF
+  return CodeGenLLVMCUDA(kernel, ir).gen();
 }
 
 TLANG_NAMESPACE_END

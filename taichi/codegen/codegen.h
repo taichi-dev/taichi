@@ -1,4 +1,4 @@
-// Driver class for source2source kernel codegen. This file is OBSOLETE
+// Driver class for kernel code generators.
 
 #pragma once
 
@@ -12,16 +12,18 @@ class KernelCodeGen {
   Kernel *kernel;
   IRNode *ir;
 
-  virtual FunctionType codegen() = 0;
-
  public:
   KernelCodeGen(Kernel *kernel, IRNode *ir);
 
+  virtual ~KernelCodeGen() = default;
+
+  static std::unique_ptr<KernelCodeGen> create(Arch arch,
+                                               Kernel *kernel,
+                                               Stmt *stmt = nullptr);
+
   virtual FunctionType compile();
 
-  static std::unique_ptr<KernelCodeGen> create(Arch arch, Kernel *kernel);
-
-  virtual ~KernelCodeGen() = default;
+  virtual FunctionType codegen() = 0;
 };
 
 TLANG_NAMESPACE_END

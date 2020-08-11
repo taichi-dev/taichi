@@ -98,14 +98,10 @@ def run_mpm88_test():
         0.10224003,
         0.07810827,
     ]
+    print(pos)
     for i in range(4):
         assert (pos**(i + 1)).mean() == approx(regression[i], rel=1e-2)
-    '''
-  canvas.clear(0x112F41)
-  for i in range(n_particles):
-    canvas.circle(ti.vec(pos[i, 0], pos[i, 1])).radius(1.5).color(0x068587).finish()
-  gui.update()
-  '''
+    print('pass')
 
 
 @ti.all_archs
@@ -119,10 +115,13 @@ def _is_appveyor():
     return os.getenv('APPVEYOR', '').lower() == 'true'
 
 
-@pytest.mark.skipif(_is_appveyor(), reason='Stuck on Appveyor.')
-@ti.archs_with([ti.cpu], async_mode=True)
+# @pytest.mark.skipif(_is_appveyor(), reason='Stuck on Appveyor.')
+# @ti.archs_with([ti.cpu], async_mode=True)
 def test_mpm88_async():
     # It seems that all async tests on Appveyor run super slow. For example,
     # on Appveyor, 10+ tests have passed during the execution of
     # test_fuse_dense_x2y2z. Maybe thread synchronizations are expensive?
     run_mpm88_test()
+    
+ti.init(arch=ti.cuda, async_mode=True, print_kernel_nvptx=True)
+test_mpm88_async()

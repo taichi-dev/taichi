@@ -7,15 +7,15 @@ Introduction
 ------------
 
 Taichi fields are aimed to be used in Taichi-scope.
-Despite we may also access Taichi fields elements in Python-scope too,
-that's not very efficient when accessing a lot of elements in a Taichi field.
+However, sometimes we may need to access Taichi field elements in Python-scope, 
+which is not very efficient when a lot of elements within the field are required.
 
 So we provide a way to export and import data in Taichi fields via NumPy arrays.
 This allows you to interact with the data in Python-scope with other packages.
 
 **Export data in Taichi fields to a NumPy array** via ``to_numpy()``.
 This allows us to export the computation result and pass it to other
-Python packages that supports numpy, e.g. matplotlib.
+Python packages that support numpy, e.g. matplotlib.
 
 .. code-block:: python
 
@@ -47,7 +47,7 @@ This allow people to initialize Taichi fields via numpy array, e.g.:
 API reference
 -------------
 
-We provide interface sharing data with both NumPy and PyTorch.
+We provide interface to share data with both NumPy and PyTorch.
 
 Interacting with NumPy
 **********************

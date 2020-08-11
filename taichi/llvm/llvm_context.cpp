@@ -12,10 +12,8 @@
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/ExecutionEngine/Orc/ThreadSafeModule.h"
-#if LLVM_VERSION_MAJOR >= 10
 #include "llvm/IR/Intrinsics.h"
 #include "llvm/IR/IntrinsicsNVPTX.h"
-#endif
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Type.h"
@@ -450,19 +448,9 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
 
       patch_atomic_add("atomic_add_i64", llvm::AtomicRMWInst::Add);
 
-#if LLVM_VERSION_MAJOR >= 10
       patch_atomic_add("atomic_add_f32", llvm::AtomicRMWInst::FAdd);
 
       patch_atomic_add("atomic_add_f64", llvm::AtomicRMWInst::FAdd);
-#else
-      patch_intrinsic(
-          "atomic_add_f32", Intrinsic::nvvm_atomic_load_add_f32, true,
-          {llvm::PointerType::get(get_data_type(DataType::f32), 0)});
-
-      patch_intrinsic(
-          "atomic_add_f64", Intrinsic::nvvm_atomic_load_add_f64, true,
-          {llvm::PointerType::get(get_data_type(DataType::f64), 0)});
-#endif
 
       patch_intrinsic("block_memfence", Intrinsic::nvvm_membar_cta, false);
 

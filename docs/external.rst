@@ -7,7 +7,7 @@ Introduction
 ------------
 
 Taichi fields are aimed to be used in Taichi-scope.
-However, sometimes we may need to access Taichi field elements in Python-scope, 
+However, sometimes we may need to access Taichi field elements in Python-scope,
 which is not very efficient when a lot of elements within the field are required.
 
 So we provide a way to export and import data in Taichi fields via NumPy arrays.

@@ -4,7 +4,6 @@ import taichi as ti
 @ti.all_archs
 def test_fill_scalar():
     val = ti.field(ti.i32)
-    
     n = 4
     m = 7
 

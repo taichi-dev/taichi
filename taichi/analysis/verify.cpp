@@ -55,7 +55,6 @@ class IRVerifier : public BasicStmtVisitor {
   }
 
   void preprocess_container_stmt(Stmt *stmt) override {
-    irpass::print(stmt);
     basic_verify(stmt);
   }
 
@@ -110,7 +109,12 @@ class IRVerifier : public BasicStmtVisitor {
 namespace irpass::analysis {
 void verify(IRNode *root) {
   TI_AUTO_PROF;
-  IRVerifier::run(root);
+  if (!root->is<Block>()) {
+    TI_WARN("IR root is not a Block. Skipping verification.");
+    // TODO: support this case
+  } else {
+    IRVerifier::run(root);
+  }
 }
 }  // namespace irpass::analysis
 

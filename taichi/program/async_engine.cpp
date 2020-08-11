@@ -74,24 +74,57 @@ void ExecutionQueue::enqueue(KernelLaunchRecord &&ker) {
     stmt = ker.clone_stmt_on_write();
 
     compilation_workers.enqueue([&, stmt, kernel, h, this]() {
-      TI_INFO("Compiling offload to executable {}", kernel->name);
+      TI_TRACE("Compiling offload to executable {}", kernel->name);
       {
         // Final lowering
         using namespace irpass;
-        irpass::print(stmt);
+        // irpass::print(stmt);
 
-        demote_dense_struct_fors(stmt);
-        // TODO: due to the assumption that root is a Block, we cannot call the
-        // second half: offloaded tasks -> executable yet. Make sure TLS/BLS
-        // are applied eventually.
-        flag_access(stmt);
-        lower_access(stmt, true);
-        flag_access(stmt);
-        full_simplify(stmt, true, kernel);
-        demote_atomics(stmt);
-        irpass::print(stmt);
-        // TODO: make "verify" here work. May need an IR structure refactoring.
-        // analysis::verify(stmt);
+        auto config = kernel->program.config;
+        auto ir = stmt;
+
+        if (config.demote_dense_struct_fors) {
+          irpass::demote_dense_struct_fors(ir);
+          irpass::typecheck(ir);
+          irpass::analysis::verify(ir);
+        }
+
+        if (true) {
+          irpass::make_thread_local(ir);
+        }
+
+        if (true) {
+          irpass::make_block_local(ir);
+          // print("Make block local");
+        }
+
+        irpass::remove_range_assumption(ir);
+        // print("Remove range assumption");
+
+        if (true) {
+          irpass::lower_access(ir, true);
+          // print("Access lowered");
+          irpass::analysis::verify(ir);
+
+          irpass::die(ir);
+          //print("DIE");
+          irpass::analysis::verify(ir);
+
+          irpass::flag_access(ir);
+          //print("Access flagged III");
+          irpass::analysis::verify(ir);
+        }
+
+        irpass::demote_atomics(ir);
+        //print("Atomics demoted");
+        irpass::analysis::verify(ir);
+
+        irpass::full_simplify(ir, true);
+        //print("Simplified IV");
+
+        // Final field registration correctness & type checking
+        irpass::typecheck(ir);
+        irpass::analysis::verify(ir);
       }
       auto codegen =
           KernelCodeGen::create(kernel->arch, kernel, stmt);
@@ -132,9 +165,9 @@ void ExecutionQueue::enqueue(KernelLaunchRecord &&ker) {
       stat.add("launched_kernels_garbage_collect", 1.0);
     }
     auto c = context;
-    TI_INFO("Launching {}", kernel->name);
+    TI_TRACE("Launching {}", kernel->name);
     func(c);
-    TI_INFO("Launched {}", kernel->name);
+    TI_TRACE("Launched {}", kernel->name);
   });
   trashbin.push_back(std::move(ker));
 }

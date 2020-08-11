@@ -123,5 +123,5 @@ def test_mpm88_async():
     # test_fuse_dense_x2y2z. Maybe thread synchronizations are expensive?
     run_mpm88_test()
     
-ti.init(arch=ti.cuda, async_mode=True, print_kernel_nvptx=True)
+ti.init(arch=ti.cuda, async_mode=True, print_kernel_nvptx=True, debug=True)
 test_mpm88_async()

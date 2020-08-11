@@ -106,7 +106,7 @@ void Kernel::operator()() {
     }
   } else {
     program.sync = false;
-    TI_INFO("Launching at Kernel {}", name);
+    TI_TRACE("Launching at Kernel {}", name);
     program.async_engine->launch(this);
     // Note that Kernel::arch may be different from program.config.arch
     if (program.config.debug && arch_is_cpu(arch) &&

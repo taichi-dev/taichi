@@ -64,10 +64,6 @@ void CUDAContext::launch(void *func,
     profiler->start(task_name);
   auto context_guard = CUDAContext::get_instance().get_guard();
 
-  void *context;
-  CUDADriver::get_instance().context_get_current(&context);
-  TI_P(context)
-
   // TODO: remove usages of get_current_program here.
   // Make sure there are not too many threads for the device.
   // Note that the CUDA random number generator does not allow more than

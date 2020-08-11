@@ -38,7 +38,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       tlctx->mark_function_as_cuda_kernel(func, task.block_dim);
     }
 
-    auto jit = get_current_program().llvm_context_device->jit.get();
+    auto jit = kernel->program.llvm_context_device->jit.get();
     auto cuda_module = jit->add_module(std::move(module));
 
     return [offloaded_local, cuda_module,

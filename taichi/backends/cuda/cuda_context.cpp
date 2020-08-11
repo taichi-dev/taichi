@@ -64,6 +64,10 @@ void CUDAContext::launch(void *func,
     profiler->start(task_name);
   auto context_guard = CUDAContext::get_instance().get_guard();
 
+  void *context;
+  CUDADriver::get_instance().context_get_current(&context);
+  TI_P(context)
+
   // TODO: remove usages of get_current_program here.
   // Make sure there are not too many threads for the device.
   // Note that the CUDA random number generator does not allow more than
@@ -96,20 +100,8 @@ CUDAContext::~CUDAContext() {
 }
 
 CUDAContext &CUDAContext::get_instance() {
-  static std::unordered_map<std::thread::id, CUDAContext *> instances;
-  static std::mutex mut;
-  {
-    // critical section
-    auto _ = std::lock_guard<std::mutex>(mut);
-
-    auto tid = std::this_thread::get_id();
-    if (instances.find(tid) == instances.end()) {
-      instances[tid] = new CUDAContext();
-      // We expect CUDAContext to live until the process ends, thus the raw
-      // pointers and `new`s.
-    }
-    return *instances[tid];
-  }
+  static CUDAContext context;
+  return context;
 }
 
 TLANG_NAMESPACE_END

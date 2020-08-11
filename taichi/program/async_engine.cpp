@@ -72,6 +72,7 @@ void ExecutionQueue::enqueue(KernelLaunchRecord &&ker) {
     to_be_compiled.insert(h);
     // Later the IR passes will change |stmt|, so we must clone it.
     stmt = ker.clone_stmt_on_write();
+
     compilation_workers.enqueue([&, stmt, kernel, h, this]() {
       TI_INFO("Compiling offload to executable {}", kernel->name);
       {
@@ -87,6 +88,7 @@ void ExecutionQueue::enqueue(KernelLaunchRecord &&ker) {
         lower_access(stmt, true);
         flag_access(stmt);
         full_simplify(stmt, true, kernel);
+        demote_atomics(stmt);
         irpass::print(stmt);
         // TODO: make "verify" here work. May need an IR structure refactoring.
         // analysis::verify(stmt);

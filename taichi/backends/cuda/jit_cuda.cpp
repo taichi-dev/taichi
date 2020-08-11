@@ -42,11 +42,15 @@ class JITModuleCUDA : public JITModule {
     // TODO: figure out why using the guard leads to wrong tests results
     // auto context_guard = CUDAContext::get_instance().get_guard();
     CUDAContext::get_instance().make_current();
-    void *func;
+    void *context;
+    CUDADriver::get_instance().context_get_current(&context);
+    TI_P(context)
+    void *func = nullptr;
     auto t = Time::get_time();
     CUDADriver::get_instance().module_get_function(&func, module, name.c_str());
     t = Time::get_time() - t;
     TI_TRACE("CUDA module_get_function {} costs {} ms", name, t * 1000);
+    TI_ASSERT(func != nullptr);
     return func;
   }
 
@@ -95,6 +99,9 @@ class JITSessionCUDA : public JITSession {
     TI_TRACE("Loading module...");
     [[maybe_unused]] auto &&_ =
         std::move(CUDAContext::get_instance().get_lock_guard());
+    void *context;
+    CUDADriver::get_instance().context_get_current(&context);
+    TI_P(context)
     CUDADriver::get_instance().module_load_data_ex(&cuda_module, ptx.c_str(), 0,
                                                    nullptr, nullptr);
     TI_TRACE("CUDA module load time : {}ms", (Time::get_time() - t) * 1000);

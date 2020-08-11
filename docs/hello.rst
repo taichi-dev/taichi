@@ -147,9 +147,11 @@ The language used in Taichi kernels and functions looks exactly like Python, yet
 
 .. warning::
 
-  **Nested kernels are not supported**.
-  **Nested functions are supported**.
-  **Recursive functions are not supported for now**.
+  Nested kernels are **not supported**.
+
+  Nested functions are **supported**.
+
+  Recursive functions are **not supported for now**.
 
 
 Parallel for-loops

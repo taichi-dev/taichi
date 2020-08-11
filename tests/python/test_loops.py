@@ -3,8 +3,8 @@ import taichi as ti
 
 @ti.all_archs
 def test_loops():
-    x = ti.var(ti.f32)
-    y = ti.var(ti.f32)
+    x = ti.field(ti.f32)
+    y = ti.field(ti.f32)
 
     N = 512
 
@@ -31,8 +31,8 @@ def test_loops():
 
 @ti.all_archs
 def test_numpy_loops():
-    x = ti.var(ti.f32)
-    y = ti.var(ti.f32)
+    x = ti.field(ti.f32)
+    y = ti.field(ti.f32)
 
     N = 512
 
@@ -64,7 +64,7 @@ def test_numpy_loops():
 @ti.all_archs
 def test_nested_loops():
     # this may crash if any LLVM allocas are called in the loop body
-    x = ti.var(ti.i32)
+    x = ti.field(ti.i32)
 
     n = 2048
 
@@ -81,7 +81,7 @@ def test_nested_loops():
 
 @ti.all_archs
 def test_zero_outer_loop():
-    x = ti.var(ti.i32, shape=())
+    x = ti.field(ti.i32, shape=())
 
     @ti.kernel
     def test():
@@ -95,7 +95,7 @@ def test_zero_outer_loop():
 
 @ti.all_archs
 def test_zero_inner_loop():
-    x = ti.var(ti.i32, shape=())
+    x = ti.field(ti.i32, shape=())
 
     @ti.kernel
     def test():
@@ -110,8 +110,8 @@ def test_zero_inner_loop():
 
 @ti.all_archs
 def test_dynamic_loop_range():
-    x = ti.var(ti.i32)
-    c = ti.var(ti.i32)
+    x = ti.field(ti.i32)
+    c = ti.field(ti.i32)
     n = 2000
 
     ti.root.dense(ti.i, n).place(x)
@@ -132,7 +132,7 @@ def test_dynamic_loop_range():
 @ti.all_archs
 def test_loop_arg_as_range():
     # Dynamic range loops are intended to make sure global tmps work
-    x = ti.var(ti.i32)
+    x = ti.field(ti.i32)
     n = 1000
 
     ti.root.dense(ti.i, n).place(x)
@@ -156,8 +156,8 @@ def test_loop_arg_as_range():
 @ti.all_archs
 def test_assignment_in_nested_loops():
     # https://github.com/taichi-dev/taichi/issues/1109
-    m = ti.var(ti.f32, 3)
-    x = ti.var(ti.f32, ())
+    m = ti.field(ti.f32, 3)
+    x = ti.field(ti.f32, ())
 
     @ti.kernel
     def func():

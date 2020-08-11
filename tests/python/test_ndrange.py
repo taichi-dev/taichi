@@ -3,7 +3,7 @@ import taichi as ti
 
 @ti.all_archs
 def test_1d():
-    x = ti.var(ti.f32, shape=(16))
+    x = ti.field(ti.f32, shape=(16))
 
     @ti.kernel
     def func():
@@ -21,7 +21,7 @@ def test_1d():
 
 @ti.all_archs
 def test_2d():
-    x = ti.var(ti.f32, shape=(16, 32))
+    x = ti.field(ti.f32, shape=(16, 32))
 
     t = 8
 
@@ -42,7 +42,7 @@ def test_2d():
 
 @ti.all_archs
 def test_3d():
-    x = ti.var(ti.f32, shape=(16, 32, 64))
+    x = ti.field(ti.f32, shape=(16, 32, 64))
 
     @ti.kernel
     def func():
@@ -61,7 +61,7 @@ def test_3d():
 
 @ti.all_archs
 def test_static_grouped():
-    x = ti.var(ti.f32, shape=(16, 32, 64))
+    x = ti.field(ti.f32, shape=(16, 32, 64))
 
     @ti.kernel
     def func():

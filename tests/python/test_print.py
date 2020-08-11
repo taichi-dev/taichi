@@ -81,7 +81,7 @@ def test_print_sep_end():
 
 @ti.all_archs
 def test_print_multiple_threads():
-    x = ti.var(dt=ti.f32, shape=(128, ))
+    x = ti.field(dtype=ti.f32, shape=(128, ))
 
     @ti.kernel
     def func(k: ti.f32):

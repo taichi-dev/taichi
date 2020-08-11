@@ -3,7 +3,7 @@ import taichi as ti
 
 @ti.all_archs
 def test_cse():
-    A = ti.var(ti.f32, shape=())
+    A = ti.field(ti.f32, shape=())
 
     @ti.kernel
     def func():
@@ -18,7 +18,7 @@ def test_cse():
 
 @ti.all_archs
 def test_store_forward():
-    A = ti.var(ti.f32, shape=())
+    A = ti.field(ti.f32, shape=())
 
     @ti.kernel
     def func():

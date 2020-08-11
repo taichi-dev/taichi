@@ -2,7 +2,7 @@ import taichi as ti
 
 
 def _test_pow_f(dt):
-    z = ti.var(dt, shape=())
+    z = ti.field(dt, shape=())
 
     @ti.kernel
     def func(x: dt, y: dt):
@@ -15,7 +15,7 @@ def _test_pow_f(dt):
 
 
 def _test_pow_i(dt):
-    z = ti.var(dt, shape=())
+    z = ti.field(dt, shape=())
 
     @ti.kernel
     def func(x: dt, y: ti.template()):

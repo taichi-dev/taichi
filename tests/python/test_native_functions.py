@@ -4,7 +4,7 @@ import numpy as np
 
 @ti.all_archs
 def test_abs():
-    x = ti.var(ti.f32)
+    x = ti.field(ti.f32)
 
     N = 16
 
@@ -25,7 +25,7 @@ def test_abs():
 
 @ti.all_archs
 def test_int():
-    x = ti.var(ti.f32)
+    x = ti.field(ti.f32)
 
     N = 16
 
@@ -48,11 +48,11 @@ def test_int():
 
 @ti.all_archs
 def test_minmax():
-    x = ti.var(ti.f32)
-    y = ti.var(ti.f32)
-    z = ti.var(ti.f32)
-    minimum = ti.var(ti.f32)
-    maximum = ti.var(ti.f32)
+    x = ti.field(ti.f32)
+    y = ti.field(ti.f32)
+    z = ti.field(ti.f32)
+    minimum = ti.field(ti.f32)
+    maximum = ti.field(ti.f32)
 
     N = 16
 

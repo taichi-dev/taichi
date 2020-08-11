@@ -32,9 +32,9 @@ def test_basic_utils():
     abT = ti.Matrix(3, 2, dt=ti.f32)
     aNormalized = ti.Vector(3, dt=ti.f32)
 
-    normA = ti.var(ti.f32)
-    normSqrA = ti.var(ti.f32)
-    normInvA = ti.var(ti.f32)
+    normA = ti.field(ti.f32)
+    normSqrA = ti.field(ti.f32)
+    normInvA = ti.field(ti.f32)
 
     ti.root.place(a, b, abT, aNormalized, normA, normSqrA, normInvA)
 
@@ -74,7 +74,7 @@ def test_cross():
 
     a2 = ti.Vector(2, dt=ti.f32)
     b2 = ti.Vector(2, dt=ti.f32)
-    c2 = ti.var(dt=ti.f32)
+    c2 = ti.field(dtype=ti.f32)
 
     ti.root.place(a, b, c, a2, b2, c2)
 
@@ -99,11 +99,11 @@ def test_cross():
 def test_dot():
     a = ti.Vector(3, dt=ti.f32)
     b = ti.Vector(3, dt=ti.f32)
-    c = ti.var(dt=ti.f32)
+    c = ti.field(dtype=ti.f32)
 
     a2 = ti.Vector(2, dt=ti.f32)
     b2 = ti.Vector(2, dt=ti.f32)
-    c2 = ti.var(dt=ti.f32)
+    c2 = ti.field(dtype=ti.f32)
 
     ti.root.place(a, b, c, a2, b2, c2)
 
@@ -349,8 +349,8 @@ def test_to_numpy_as_vector_deprecated():
 @ti.all_archs
 def test_any_all():
     a = ti.Matrix(2, 2, dt=ti.i32, shape=())
-    b = ti.var(dt=ti.i32, shape=())
-    c = ti.var(dt=ti.i32, shape=())
+    b = ti.field(dtype=ti.i32, shape=())
+    c = ti.field(dtype=ti.i32, shape=())
 
     @ti.kernel
     def func():
@@ -379,8 +379,8 @@ def test_any_all():
 @ti.all_archs
 def test_min_max():
     a = ti.Matrix(2, 2, dt=ti.i32, shape=())
-    b = ti.var(dt=ti.i32, shape=())
-    c = ti.var(dt=ti.i32, shape=())
+    b = ti.field(dtype=ti.i32, shape=())
+    c = ti.field(dtype=ti.i32, shape=())
 
     @ti.kernel
     def func():

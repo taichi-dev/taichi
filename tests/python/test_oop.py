@@ -8,7 +8,7 @@ def test_classfunc():
         def __init__(self, n, m):
             self.n = n
             self.m = m
-            self.val = ti.var(ti.f32, shape=(n, m))
+            self.val = ti.field(ti.f32, shape=(n, m))
 
         @ti.func
         def inc(self, i, j):
@@ -40,8 +40,8 @@ def test_oop():
         def __init__(self, n, m, increment):
             self.n = n
             self.m = m
-            self.val = ti.var(ti.f32)
-            self.total = ti.var(ti.f32)
+            self.val = ti.field(ti.f32)
+            self.total = ti.field(ti.f32)
             self.increment = increment
 
             ti.root.dense(ti.ij, (self.n, self.m)).place(self.val)
@@ -64,7 +64,7 @@ def test_oop():
 
     arr = Array2D(128, 128, 3)
 
-    double_total = ti.var(ti.f32)
+    double_total = ti.field(ti.f32)
 
     ti.root.place(double_total)
     ti.root.lazy_grad()
@@ -102,8 +102,8 @@ def test_oop_two_items():
         def __init__(self, n, m, increment, multiplier):
             self.n = n
             self.m = m
-            self.val = ti.var(ti.f32)
-            self.total = ti.var(ti.f32)
+            self.val = ti.field(ti.f32)
+            self.total = ti.field(ti.f32)
             self.increment = increment
             self.multiplier = multiplier
             ti.root.dense(ti.ij, (self.n, self.m)).place(self.val)
@@ -153,8 +153,8 @@ def test_oop_inherit_ok():
     class Array1D(object):
         def __init__(self, n, mul):
             self.n = n
-            self.val = ti.var(ti.f32)
-            self.total = ti.var(ti.f32)
+            self.val = ti.field(ti.f32)
+            self.total = ti.field(ti.f32)
             self.mul = mul
             ti.root.dense(ti.ij, (self.n, )).place(self.val)
             ti.root.place(self.total)
@@ -180,8 +180,8 @@ def test_oop_class_must_be_data_oriented():
     class Array1D(object):
         def __init__(self, n, mul):
             self.n = n
-            self.val = ti.var(ti.f32)
-            self.total = ti.var(ti.f32)
+            self.val = ti.field(ti.f32)
+            self.total = ti.field(ti.f32)
             self.mul = mul
             ti.root.dense(ti.ij, (self.n, )).place(self.val)
             ti.root.place(self.total)
@@ -204,7 +204,7 @@ def test_hook():
     @ti.data_oriented
     class Solver:
         def __init__(self, n, m, hook):
-            self.val = ti.var(ti.f32, shape=(n, m))
+            self.val = ti.field(ti.f32, shape=(n, m))
             self.hook = hook
 
         def run_hook(self):

@@ -3,7 +3,7 @@ import taichi as ti
 
 @ti.all_archs
 def test_explicit_local_atomic_add():
-    A = ti.var(ti.f32, shape=())
+    A = ti.field(ti.f32, shape=())
 
     @ti.kernel
     def func():
@@ -18,7 +18,7 @@ def test_explicit_local_atomic_add():
 
 @ti.all_archs
 def test_implicit_local_atomic_add():
-    A = ti.var(ti.f32, shape=())
+    A = ti.field(ti.f32, shape=())
 
     @ti.kernel
     def func():
@@ -33,7 +33,7 @@ def test_implicit_local_atomic_add():
 
 @ti.all_archs
 def test_explicit_local_atomic_sub():
-    A = ti.var(ti.f32, shape=())
+    A = ti.field(ti.f32, shape=())
 
     @ti.kernel
     def func():
@@ -48,7 +48,7 @@ def test_explicit_local_atomic_sub():
 
 @ti.all_archs
 def test_implicit_local_atomic_sub():
-    A = ti.var(ti.f32, shape=())
+    A = ti.field(ti.f32, shape=())
 
     @ti.kernel
     def func():
@@ -63,7 +63,7 @@ def test_implicit_local_atomic_sub():
 
 @ti.all_archs
 def test_explicit_local_atomic_min():
-    A = ti.var(ti.f32, shape=())
+    A = ti.field(ti.f32, shape=())
 
     @ti.kernel
     def func():
@@ -78,7 +78,7 @@ def test_explicit_local_atomic_min():
 
 @ti.all_archs
 def test_explicit_local_atomic_max():
-    A = ti.var(ti.f32, shape=())
+    A = ti.field(ti.f32, shape=())
 
     @ti.kernel
     def func():
@@ -93,7 +93,7 @@ def test_explicit_local_atomic_max():
 
 @ti.all_archs
 def test_explicit_local_atomic_and():
-    A = ti.var(ti.i32, shape=())
+    A = ti.field(ti.i32, shape=())
     max_int = 2147483647
 
     @ti.kernel
@@ -109,7 +109,7 @@ def test_explicit_local_atomic_and():
 
 @ti.all_archs
 def test_implicit_local_atomic_and():
-    A = ti.var(ti.i32, shape=())
+    A = ti.field(ti.i32, shape=())
     max_int = 2147483647
 
     @ti.kernel
@@ -125,7 +125,7 @@ def test_implicit_local_atomic_and():
 
 @ti.all_archs
 def test_explicit_local_atomic_or():
-    A = ti.var(ti.i32, shape=())
+    A = ti.field(ti.i32, shape=())
 
     @ti.kernel
     def func():
@@ -140,7 +140,7 @@ def test_explicit_local_atomic_or():
 
 @ti.all_archs
 def test_implicit_local_atomic_or():
-    A = ti.var(ti.i32, shape=())
+    A = ti.field(ti.i32, shape=())
 
     @ti.kernel
     def func():
@@ -155,7 +155,7 @@ def test_implicit_local_atomic_or():
 
 @ti.all_archs
 def test_explicit_local_atomic_xor():
-    A = ti.var(ti.i32, shape=())
+    A = ti.field(ti.i32, shape=())
 
     @ti.kernel
     def func():
@@ -170,7 +170,7 @@ def test_explicit_local_atomic_xor():
 
 @ti.all_archs
 def test_implicit_local_atomic_xor():
-    A = ti.var(ti.i32, shape=())
+    A = ti.field(ti.i32, shape=())
 
     @ti.kernel
     def func():

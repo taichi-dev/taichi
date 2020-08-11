@@ -24,8 +24,8 @@ def test_fibonacci():
 
 @ti.host_arch_only
 def test_assign2():
-    a = ti.var(ti.f32, ())
-    b = ti.var(ti.f32, ())
+    a = ti.field(ti.f32, ())
+    b = ti.field(ti.f32, ())
 
     @ti.kernel
     def func():
@@ -41,8 +41,8 @@ def test_assign2():
 def test_assign2_mismatch3():
     ti.init(print_preprocessed=True)
 
-    a = ti.var(ti.f32, ())
-    b = ti.var(ti.f32, ())
+    a = ti.field(ti.f32, ())
+    b = ti.field(ti.f32, ())
 
     @ti.kernel
     def func():
@@ -56,8 +56,8 @@ def test_assign2_mismatch3():
 def test_assign2_mismatch1():
     ti.init(print_preprocessed=True)
 
-    a = ti.var(ti.f32, ())
-    b = ti.var(ti.f32, ())
+    a = ti.field(ti.f32, ())
+    b = ti.field(ti.f32, ())
 
     @ti.kernel
     def func():
@@ -68,8 +68,8 @@ def test_assign2_mismatch1():
 
 @ti.host_arch_only
 def test_swap2():
-    a = ti.var(ti.f32, ())
-    b = ti.var(ti.f32, ())
+    a = ti.field(ti.f32, ())
+    b = ti.field(ti.f32, ())
 
     @ti.kernel
     def func():
@@ -84,8 +84,8 @@ def test_swap2():
 
 @ti.host_arch_only
 def test_assign2_static():
-    a = ti.var(ti.f32, ())
-    b = ti.var(ti.f32, ())
+    a = ti.field(ti.f32, ())
+    b = ti.field(ti.f32, ())
 
     @ti.kernel
     def func():
@@ -100,9 +100,9 @@ def test_assign2_static():
 
 @ti.host_arch_only
 def test_swap3():
-    a = ti.var(ti.f32, ())
-    b = ti.var(ti.f32, ())
-    c = ti.var(ti.f32, ())
+    a = ti.field(ti.f32, ())
+    b = ti.field(ti.f32, ())
+    c = ti.field(ti.f32, ())
 
     @ti.kernel
     def func():
@@ -119,9 +119,9 @@ def test_swap3():
 
 @ti.host_arch_only
 def test_unpack_from_tuple():
-    a = ti.var(ti.f32, ())
-    b = ti.var(ti.f32, ())
-    c = ti.var(ti.f32, ())
+    a = ti.field(ti.f32, ())
+    b = ti.field(ti.f32, ())
+    c = ti.field(ti.f32, ())
 
     list = [2, 3, 4]
 
@@ -139,8 +139,8 @@ def test_unpack_from_tuple():
 @ti.must_throw(ValueError)
 def test_unpack_mismatch_tuple():
     ti.init(print_preprocessed=True)
-    a = ti.var(ti.f32, ())
-    b = ti.var(ti.f32, ())
+    a = ti.field(ti.f32, ())
+    b = ti.field(ti.f32, ())
 
     list = [2, 3, 4]
 
@@ -153,9 +153,9 @@ def test_unpack_mismatch_tuple():
 
 @ti.host_arch_only
 def test_unpack_from_vector():
-    a = ti.var(ti.f32, ())
-    b = ti.var(ti.f32, ())
-    c = ti.var(ti.f32, ())
+    a = ti.field(ti.f32, ())
+    b = ti.field(ti.f32, ())
+    c = ti.field(ti.f32, ())
 
     @ti.kernel
     def func():
@@ -172,8 +172,8 @@ def test_unpack_from_vector():
 @ti.must_throw(ValueError)
 def test_unpack_mismatch_vector():
     ti.init(print_preprocessed=True)
-    a = ti.var(ti.f32, ())
-    b = ti.var(ti.f32, ())
+    a = ti.field(ti.f32, ())
+    b = ti.field(ti.f32, ())
 
     @ti.kernel
     def func():
@@ -187,8 +187,8 @@ def test_unpack_mismatch_vector():
 @ti.must_throw(TypeError)
 def test_unpack_mismatch_type():
     ti.init(print_preprocessed=True)
-    a = ti.var(ti.f32, ())
-    b = ti.var(ti.f32, ())
+    a = ti.field(ti.f32, ())
+    b = ti.field(ti.f32, ())
 
     bad = 12
 
@@ -203,10 +203,10 @@ def test_unpack_mismatch_type():
 @ti.must_throw(ValueError)
 def test_unpack_mismatch_matrix():
     ti.init(print_preprocessed=True)
-    a = ti.var(ti.f32, ())
-    b = ti.var(ti.f32, ())
-    c = ti.var(ti.f32, ())
-    d = ti.var(ti.f32, ())
+    a = ti.field(ti.f32, ())
+    b = ti.field(ti.f32, ())
+    c = ti.field(ti.f32, ())
+    d = ti.field(ti.f32, ())
 
     @ti.kernel
     def func():
@@ -218,10 +218,10 @@ def test_unpack_mismatch_matrix():
 
 @ti.host_arch_only
 def test_unpack_from_shape():
-    a = ti.var(ti.f32, ())
-    b = ti.var(ti.f32, ())
-    c = ti.var(ti.f32, ())
-    d = ti.var(ti.f32, (2, 3, 4))
+    a = ti.field(ti.f32, ())
+    b = ti.field(ti.f32, ())
+    c = ti.field(ti.f32, ())
+    d = ti.field(ti.f32, (2, 3, 4))
 
     @ti.kernel
     def func():

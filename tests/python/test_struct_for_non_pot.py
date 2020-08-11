@@ -3,8 +3,8 @@ import taichi as ti
 
 @ti.all_archs
 def test_1d():
-    x = ti.var(ti.i32)
-    sum = ti.var(ti.i32)
+    x = ti.field(ti.i32)
+    sum = ti.field(ti.i32)
 
     n = 100
 
@@ -24,8 +24,8 @@ def test_1d():
 
 @ti.all_archs
 def test_2d():
-    x = ti.var(ti.i32)
-    sum = ti.var(ti.i32)
+    x = ti.field(ti.i32)
+    sum = ti.field(ti.i32)
 
     n = 100
     m = 19

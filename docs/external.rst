@@ -50,11 +50,13 @@ We provide interface to share data with both NumPy and PyTorch.
 Interacting with NumPy
 **********************
 
+We provide interfaces to copy data between Taichi fields and NumPy arrays.
+
 .. function:: field.to_numpy()
 
    :parameter field: (ti.field, ti.Vector.field or ti.Matrix.field) The field
 
-   :return: (np.array) The numpy array containing the currrent data in ``x``.
+   :return: (np.array) The numpy array containing the current data in ``x``.
 
 .. function:: field.from_numpy(array)
 
@@ -66,12 +68,15 @@ Interacting with NumPy
 Interacting with PyTorch
 ************************
 
+We also provide interfaces to copy data directly between Taichi fields and PyTorch tensors with less overhead.
+These functions allows you to copy from GPU -> GPU with **less overhead** than GPU -> CPU -> GPU.
+
 .. function:: field.to_torch(device = None)
 
    :parameter field: (ti.field, ti.Vector.field or ti.Matrix.field) The field
    :parameter device: (torch.device) the device where torch tensor is created
 
-   :return: (torch.Tensor) The torch tensor containing the currrent data in ``x``.
+   :return: (torch.Tensor) The torch tensor containing the current data in ``x``.
 
 .. function:: field.from_torch(tensor)
 

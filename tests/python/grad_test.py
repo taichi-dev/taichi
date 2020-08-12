@@ -7,8 +7,8 @@ def grad_test(tifunc, npfunc=None):
     if npfunc is None:
         npfunc = tifunc
 
-    x = ti.var(ti.f32)
-    y = ti.var(ti.f32)
+    x = ti.field(ti.f32)
+    y = ti.field(ti.f32)
 
     ti.root.dense(ti.i, 1).place(x, x.grad, y, y.grad)
 

@@ -4,9 +4,9 @@ import taichi as ti
 @ti.all_archs
 def test_offload_order():
     n = 128
-    x = ti.var(ti.f32, shape=n, needs_grad=True)
-    y = ti.var(ti.f32, shape=n, needs_grad=True)
-    z = ti.var(ti.f32, shape=(), needs_grad=True)
+    x = ti.field(ti.f32, shape=n, needs_grad=True)
+    y = ti.field(ti.f32, shape=n, needs_grad=True)
+    z = ti.field(ti.f32, shape=(), needs_grad=True)
 
     @ti.kernel
     def forward():

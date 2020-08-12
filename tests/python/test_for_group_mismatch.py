@@ -4,7 +4,7 @@ import taichi as ti
 @ti.must_throw(IndexError)
 @ti.host_arch_only
 def test_struct_for_mismatch():
-    x = ti.var(ti.f32, (3, 4))
+    x = ti.field(ti.f32, (3, 4))
 
     @ti.kernel
     def func():
@@ -17,7 +17,7 @@ def test_struct_for_mismatch():
 @ti.must_throw(IndexError)
 @ti.host_arch_only
 def test_struct_for_mismatch2():
-    x = ti.var(ti.f32, (3, 4))
+    x = ti.field(ti.f32, (3, 4))
 
     @ti.kernel
     def func():
@@ -34,7 +34,7 @@ def _test_grouped_struct_for_mismatch():
     # need grouped refactor
     # for now, it just throw a unfriendly message:
     # AssertionError: __getitem__ cannot be called in Python-scope
-    x = ti.var(ti.f32, (3, 4))
+    x = ti.field(ti.f32, (3, 4))
 
     @ti.kernel
     def func():

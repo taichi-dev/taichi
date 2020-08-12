@@ -5,9 +5,9 @@ import pytest
 
 def benchmark_fuse_dense_x2y2z(size=1024**3, repeat=10, first_n=100):
     # TODO: this can also be made as a benchmark or a regression test
-    x = ti.var(ti.i32, shape=(size, ))
-    y = ti.var(ti.i32, shape=(size, ))
-    z = ti.var(ti.i32, shape=(size, ))
+    x = ti.field(ti.i32, shape=(size, ))
+    y = ti.field(ti.i32, shape=(size, ))
+    z = ti.field(ti.i32, shape=(size, ))
     first_n = min(first_n, size)
 
     @ti.kernel
@@ -50,7 +50,7 @@ def benchmark_fuse_dense_x2y2z(size=1024**3, repeat=10, first_n=100):
 
 def benchmark_fuse_reduction(size=1024**3, repeat=10, first_n=100):
     # TODO: this can also be made as a benchmark or a regression test
-    x = ti.var(ti.i32, shape=(size, ))
+    x = ti.field(ti.i32, shape=(size, ))
     first_n = min(first_n, size)
 
     @ti.kernel

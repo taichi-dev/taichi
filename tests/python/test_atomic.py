@@ -5,9 +5,9 @@ n = 128
 
 
 def run_atomic_add_global_case(vartype, step, valproc=lambda x: x):
-    x = ti.var(vartype)
-    y = ti.var(vartype)
-    c = ti.var(vartype)
+    x = ti.field(vartype)
+    y = ti.field(vartype)
+    c = ti.field(vartype)
 
     ti.root.dense(ti.i, n).place(x, y)
     ti.root.place(c)
@@ -53,7 +53,7 @@ def test_atomic_add_global_f32():
 
 @ti.all_archs
 def test_atomic_add_expr_evaled():
-    c = ti.var(ti.i32)
+    c = ti.field(ti.i32)
     step = 42
 
     ti.root.place(c)
@@ -72,8 +72,8 @@ def test_atomic_add_expr_evaled():
 @ti.all_archs
 def test_atomic_add_demoted():
     # Ensure demoted atomics do not crash the program.
-    x = ti.var(ti.i32)
-    y = ti.var(ti.i32)
+    x = ti.field(ti.i32)
+    y = ti.field(ti.i32)
     step = 42
 
     ti.root.dense(ti.i, n).place(x, y)
@@ -103,8 +103,8 @@ def test_atomic_add_with_local_store_simplify1():
     #
     # Specifically, the second store should not suppress the first one, because
     # atomic_add can return value.
-    x = ti.var(ti.i32)
-    y = ti.var(ti.i32)
+    x = ti.field(ti.i32)
+    y = ti.field(ti.i32)
     step = 42
 
     ti.root.dense(ti.i, n).place(x, y)
@@ -135,7 +135,7 @@ def test_atomic_add_with_local_store_simplify2():
     #
     # Specifically, the local store should not be removed, because
     # atomic_add can return its value.
-    x = ti.var(ti.i32)
+    x = ti.field(ti.i32)
     step = 42
 
     ti.root.dense(ti.i, n).place(x)
@@ -156,7 +156,7 @@ def test_atomic_add_with_local_store_simplify2():
 def test_atomic_add_with_if_simplify():
     # Make sure IfStmt simplification doesn't move stmts depending on the result
     # of atomic_add()
-    x = ti.var(ti.i32)
+    x = ti.field(ti.i32)
     step = 42
 
     ti.root.dense(ti.i, n).place(x)
@@ -188,7 +188,7 @@ def test_atomic_add_with_if_simplify():
 
 @ti.all_archs
 def test_local_atomic_with_if():
-    ret = ti.var(dt=ti.i32, shape=())
+    ret = ti.field(dtype=ti.i32, shape=())
 
     @ti.kernel
     def test():
@@ -203,7 +203,7 @@ def test_local_atomic_with_if():
 
 @ti.all_archs
 def test_atomic_sub_expr_evaled():
-    c = ti.var(ti.i32)
+    c = ti.field(ti.i32)
     step = 42
 
     ti.root.place(c)
@@ -221,7 +221,7 @@ def test_atomic_sub_expr_evaled():
 
 @ti.all_archs
 def test_atomic_max_expr_evaled():
-    c = ti.var(ti.i32)
+    c = ti.field(ti.i32)
     step = 42
 
     ti.root.place(c)
@@ -239,7 +239,7 @@ def test_atomic_max_expr_evaled():
 
 @ti.all_archs
 def test_atomic_min_expr_evaled():
-    c = ti.var(ti.i32)
+    c = ti.field(ti.i32)
     step = 42
 
     ti.root.place(c)
@@ -258,7 +258,7 @@ def test_atomic_min_expr_evaled():
 
 @ti.all_archs
 def test_atomic_and_expr_evaled():
-    c = ti.var(ti.i32)
+    c = ti.field(ti.i32)
     step = 42
 
     ti.root.place(c)
@@ -279,7 +279,7 @@ def test_atomic_and_expr_evaled():
 
 @ti.all_archs
 def test_atomic_or_expr_evaled():
-    c = ti.var(ti.i32)
+    c = ti.field(ti.i32)
     step = 42
 
     ti.root.place(c)
@@ -298,7 +298,7 @@ def test_atomic_or_expr_evaled():
 
 @ti.all_archs
 def test_atomic_xor_expr_evaled():
-    c = ti.var(ti.i32)
+    c = ti.field(ti.i32)
     step = 42
 
     ti.root.place(c)

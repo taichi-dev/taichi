@@ -4,8 +4,8 @@ import taichi as ti
 @ti.require(ti.extension.adstack)
 @ti.all_archs
 def test_ad_if_simple():
-    x = ti.var(ti.f32, shape=())
-    y = ti.var(ti.f32, shape=())
+    x = ti.field(ti.f32, shape=())
+    y = ti.field(ti.f32, shape=())
 
     ti.root.lazy_grad()
 
@@ -26,8 +26,8 @@ def test_ad_if_simple():
 @ti.require(ti.extension.adstack)
 @ti.all_archs
 def test_ad_if():
-    x = ti.var(ti.f32, shape=2)
-    y = ti.var(ti.f32, shape=2)
+    x = ti.field(ti.f32, shape=2)
+    y = ti.field(ti.f32, shape=2)
 
     ti.root.lazy_grad()
 
@@ -56,9 +56,9 @@ def test_ad_if():
 @ti.all_archs
 def test_ad_if_nested():
     n = 20
-    x = ti.var(ti.f32, shape=n)
-    y = ti.var(ti.f32, shape=n)
-    z = ti.var(ti.f32, shape=n)
+    x = ti.field(ti.f32, shape=n)
+    y = ti.field(ti.f32, shape=n)
+    z = ti.field(ti.f32, shape=n)
 
     ti.root.lazy_grad()
 
@@ -94,8 +94,8 @@ def test_ad_if_nested():
 @ti.require(ti.extension.adstack)
 @ti.all_archs
 def test_ad_if_mutable():
-    x = ti.var(ti.f32, shape=2)
-    y = ti.var(ti.f32, shape=2)
+    x = ti.field(ti.f32, shape=2)
+    y = ti.field(ti.f32, shape=2)
 
     ti.root.lazy_grad()
 
@@ -124,8 +124,8 @@ def test_ad_if_mutable():
 @ti.require(ti.extension.adstack)
 @ti.all_archs
 def test_ad_if_parallel():
-    x = ti.var(ti.f32, shape=2)
-    y = ti.var(ti.f32, shape=2)
+    x = ti.field(ti.f32, shape=2)
+    y = ti.field(ti.f32, shape=2)
 
     ti.root.lazy_grad()
 
@@ -153,8 +153,8 @@ def test_ad_if_parallel():
 @ti.require(ti.extension.adstack, ti.extension.data64)
 @ti.all_archs_with(default_fp=ti.f64)
 def test_ad_if_parallel_f64():
-    x = ti.var(ti.f64, shape=2)
-    y = ti.var(ti.f64, shape=2)
+    x = ti.field(ti.f64, shape=2)
+    y = ti.field(ti.f64, shape=2)
 
     ti.root.lazy_grad()
 
@@ -182,8 +182,8 @@ def test_ad_if_parallel_f64():
 @ti.require(ti.extension.adstack)
 @ti.all_archs
 def test_ad_if_parallel_complex():
-    x = ti.var(ti.f32, shape=2)
-    y = ti.var(ti.f32, shape=2)
+    x = ti.field(ti.f32, shape=2)
+    y = ti.field(ti.f32, shape=2)
 
     ti.root.lazy_grad()
 
@@ -211,8 +211,8 @@ def test_ad_if_parallel_complex():
 @ti.require(ti.extension.adstack, ti.extension.data64)
 @ti.all_archs_with(default_fp=ti.f64)
 def test_ad_if_parallel_complex_f64():
-    x = ti.var(ti.f64, shape=2)
-    y = ti.var(ti.f64, shape=2)
+    x = ti.field(ti.f64, shape=2)
+    y = ti.field(ti.f64, shape=2)
 
     ti.root.lazy_grad()
 

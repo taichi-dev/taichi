@@ -383,6 +383,8 @@ class Kernel:
     def get_function_body(self, t_kernel):
         # The actual function body
         def func__(*args):
+            import taichi as ti
+            ti.sync()
             assert len(args) == len(
                 self.arguments), '{} arguments needed but {} provided'.format(
                     len(self.arguments), len(args))
@@ -396,7 +398,7 @@ class Kernel:
                 if isinstance(needed, template):
                     continue
                 provided = type(v)
-                # Note: do not use sth like needed == f32. That would be slow.
+                # Note: do not use sth like "needed == f32". That would be slow.
                 if id(needed) in real_type_ids:
                     if not isinstance(v, (float, int)):
                         raise KernelArgError(i, needed, provided)
@@ -458,7 +460,7 @@ class Kernel:
                 actual_argument_slot += 1
             # Both the class kernels and the plain-function kernels are unified now.
             # In both cases, |self.grad| is another Kernel instance that computes the
-            # gradient. For class kerenls, args[0] is always the kernel owner.
+            # gradient. For class kernels, args[0] is always the kernel owner.
             if not self.is_grad and self.runtime.target_tape and not self.runtime.inside_complex_kernel:
                 self.runtime.target_tape.insert(self, args)
 

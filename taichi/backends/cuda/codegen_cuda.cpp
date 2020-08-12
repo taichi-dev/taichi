@@ -44,6 +44,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     return [offloaded_local, cuda_module,
             kernel = this->kernel](Context &context) {
       // copy data to GRAM
+      CUDAContext::get_instance().make_current();
       auto args = kernel->args;
       std::vector<void *> host_buffers(args.size(), nullptr);
       std::vector<void *> device_buffers(args.size(), nullptr);
@@ -52,7 +53,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         if (args[i].is_nparray) {
           has_buffer = true;
           // replace host buffer with device buffer
-          host_buffers[i] = get_current_program().context.get_arg<void *>(i);
+          host_buffers[i] = kernel->program.context.get_arg<void *>(i);
           if (args[i].size > 0) {
             // Note: both numpy and PyTorch support arrays/tensors with zeros
             // in shapes, e.g., shape=(0) or shape=(100, 0, 200). This makes
@@ -66,18 +67,24 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       }
       if (has_buffer) {
         CUDADriver::get_instance().stream_synchronize(nullptr);
+        // kernel->program.synchronize();
       }
 
       for (auto task : offloaded_local) {
         TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
                  task.block_dim);
 
+        TI_TAG;
         cuda_module->launch(task.name, task.grid_dim, task.block_dim,
                             task.shmem_bytes, {&context});
+        TI_TAG;
       }
       // copy data back to host
       if (has_buffer) {
+        // kernel->program.synchronize();
+        TI_TAG;
         CUDADriver::get_instance().stream_synchronize(nullptr);
+        TI_TAG;
       }
       for (int i = 0; i < (int)args.size(); i++) {
         if (args[i].is_nparray && args[i].size > 0) {

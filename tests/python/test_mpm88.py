@@ -89,8 +89,10 @@ def run_mpm88_test():
             grid_v.fill([0, 0])
             grid_m.fill(0)
             substep()
+            
 
     pos = x.to_numpy()
+    exit(0)
     pos[:, 1] *= 2
     regression = [
         0.31722742,
@@ -123,5 +125,5 @@ def test_mpm88_async():
     # test_fuse_dense_x2y2z. Maybe thread synchronizations are expensive?
     run_mpm88_test()
     
-ti.init(arch=ti.cuda, async_mode=True, print_kernel_nvptx=True, debug=True)
+ti.init(arch=ti.cuda, async_mode=True)
 test_mpm88_async()

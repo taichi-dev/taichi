@@ -657,6 +657,7 @@ class Matrix(TaichiOperations):
 
     @python_scope
     def to_numpy(self, keep_dims=False, as_vector=None):
+        import taichi as ti
         # Discussion: https://github.com/taichi-dev/taichi/pull/1046#issuecomment-633548858
         if as_vector is not None:
             warning(
@@ -673,8 +674,6 @@ class Matrix(TaichiOperations):
         ret = np.zeros(self.shape + shape_ext, dtype=to_numpy_type(self.dtype))
         from .meta import matrix_to_ext_arr
         matrix_to_ext_arr(self, ret, as_vector)
-        import taichi as ti
-        ti.sync()
         return ret
 
     @python_scope

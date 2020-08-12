@@ -78,7 +78,6 @@ void ExecutionQueue::enqueue(KernelLaunchRecord &&ker) {
       {
         // Final lowering
         using namespace irpass;
-        // irpass::print(stmt);
 
         auto config = kernel->program.config;
         auto ir = stmt;
@@ -95,7 +94,6 @@ void ExecutionQueue::enqueue(KernelLaunchRecord &&ker) {
 
         if (true) {
           irpass::make_block_local(ir);
-          // print("Make block local");
         }
 
         irpass::remove_range_assumption(ir);
@@ -107,27 +105,26 @@ void ExecutionQueue::enqueue(KernelLaunchRecord &&ker) {
           irpass::analysis::verify(ir);
 
           irpass::die(ir);
-          //print("DIE");
+          // print("DIE");
           irpass::analysis::verify(ir);
 
           irpass::flag_access(ir);
-          //print("Access flagged III");
+          // print("Access flagged III");
           irpass::analysis::verify(ir);
         }
 
         irpass::demote_atomics(ir);
-        //print("Atomics demoted");
+        // print("Atomics demoted");
         irpass::analysis::verify(ir);
 
         irpass::full_simplify(ir, true);
-        //print("Simplified IV");
+        // print("Simplified IV");
 
         // Final field registration correctness & type checking
         irpass::typecheck(ir);
         irpass::analysis::verify(ir);
       }
-      auto codegen =
-          KernelCodeGen::create(kernel->arch, kernel, stmt);
+      auto codegen = KernelCodeGen::create(kernel->arch, kernel, stmt);
       auto func = codegen->codegen();
       std::lock_guard<std::mutex> _(mut);
       compiled_func[h] = func;
@@ -169,6 +166,7 @@ void ExecutionQueue::enqueue(KernelLaunchRecord &&ker) {
     func(c);
     TI_TRACE("Launched {}", kernel->name);
   });
+  // }
   trashbin.push_back(std::move(ker));
 }
 

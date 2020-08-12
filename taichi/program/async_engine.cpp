@@ -9,6 +9,7 @@
 #include "taichi/util/statistics.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
+#include "taichi/program/extension.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -80,48 +81,11 @@ void ExecutionQueue::enqueue(KernelLaunchRecord &&ker) {
 
         auto config = kernel->program.config;
         auto ir = stmt;
-
-        if (config.demote_dense_struct_fors) {
-          irpass::demote_dense_struct_fors(ir);
-          irpass::typecheck(ir);
-          irpass::analysis::verify(ir);
-        }
-
-        if (true) {
-          irpass::make_thread_local(ir);
-        }
-
-        if (true) {
-          irpass::make_block_local(ir);
-        }
-
-        irpass::remove_range_assumption(ir);
-        // print("Remove range assumption");
-
-        if (true) {
-          irpass::lower_access(ir, true);
-          // print("Access lowered");
-          irpass::analysis::verify(ir);
-
-          irpass::die(ir);
-          // print("DIE");
-          irpass::analysis::verify(ir);
-
-          irpass::flag_access(ir);
-          // print("Access flagged III");
-          irpass::analysis::verify(ir);
-        }
-
-        irpass::demote_atomics(ir);
-        // print("Atomics demoted");
-        irpass::analysis::verify(ir);
-
-        irpass::full_simplify(ir, true);
-        // print("Simplified IV");
-
-        // Final field registration correctness & type checking
-        irpass::typecheck(ir);
-        irpass::analysis::verify(ir);
+        offload_to_executable(
+            ir, config, false, /*lower_global_access=*/true,
+            /*make_thread_local=*/true,
+            /*make_block_local=*/
+            is_extension_supported(config.arch, Extension::bls));
       }
       auto codegen = KernelCodeGen::create(kernel->arch, kernel, stmt);
       auto func = codegen->codegen();

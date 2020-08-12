@@ -111,25 +111,19 @@ void compile_to_offloads(IRNode *ir,
   print("Simplified III");
 }
 
-void compile_to_executable(IRNode *ir,
+void offload_to_executable(IRNode *ir,
                            const CompileConfig &config,
-                           bool vectorize,
-                           bool grad,
-                           bool ad_use_stack,
                            bool verbose,
                            bool lower_global_access,
                            bool make_thread_local,
                            bool make_block_local) {
-  TI_AUTO_PROF;
-
-  auto print = make_pass_printer(verbose, ir);
-
-  compile_to_offloads(ir, config, verbose, vectorize, grad, ad_use_stack);
-
   // TODO: This is just a proof that we can demote struct-fors after offloading.
   // Eventually we might want the order to be TLS/BLS -> demote struct-for.
   // For now, putting this after TLS will disable TLS, because it can only
   // handle range-fors at this point.
+
+  auto print = make_pass_printer(verbose, ir);
+
   if (config.demote_dense_struct_fors) {
     irpass::demote_dense_struct_fors(ir);
     irpass::typecheck(ir);
@@ -174,6 +168,23 @@ void compile_to_executable(IRNode *ir,
   // Final field registration correctness & type checking
   irpass::typecheck(ir);
   irpass::analysis::verify(ir);
+}
+
+void compile_to_executable(IRNode *ir,
+                           const CompileConfig &config,
+                           bool vectorize,
+                           bool grad,
+                           bool ad_use_stack,
+                           bool verbose,
+                           bool lower_global_access,
+                           bool make_thread_local,
+                           bool make_block_local) {
+  TI_AUTO_PROF;
+
+  compile_to_offloads(ir, config, verbose, vectorize, grad, ad_use_stack);
+
+  offload_to_executable(ir, config, verbose, lower_global_access,
+                        make_thread_local, make_block_local);
 }
 
 }  // namespace irpass

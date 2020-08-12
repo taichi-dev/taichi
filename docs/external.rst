@@ -1,21 +1,19 @@
 .. _external:
 
-Exporting and importing data
-============================
+Interacting with external arrays
+================================
 
 Introduction
 ------------
 
-Taichi fields are aimed to be used in Taichi-scope.
-However, sometimes we may need to access Taichi field elements in Python-scope,
-which is not very efficient when a lot of elements within the field are required.
+Although Taichi fields are mainly used in Taichi-scope, in some cases efficiently manipulating Taichi field data in Python-scope can be helpful.
 
 So we provide a way to export and import data in Taichi fields via NumPy arrays.
 This allows you to interact with the data in Python-scope with other packages.
 
 **Export data in Taichi fields to a NumPy array** via ``to_numpy()``.
-This allows us to export the computation result and pass it to other
-Python packages that support numpy, e.g. matplotlib.
+This allows us to export computation results to other
+Python packages that support NumPy, e.g. ``matplotlib``.
 
 .. code-block:: python
 
@@ -31,7 +29,7 @@ Python packages that support numpy, e.g. matplotlib.
 
 
 **Import data from NumPy array to Taichi fields** via ``from_numpy()``.
-This allow people to initialize Taichi fields via numpy array, e.g.:
+This allows people to initialize Taichi fields via NumPy arrays. E.g.,
 
 .. code-block:: python
 
@@ -82,13 +80,12 @@ Interacting with PyTorch
    :parameter tensor: (torch.Tensor) The torch tensor containing data to initialize the field
 
 
-The shape of external array to interact with Taichi fields
-----------------------------------------------------------
+External array shapes
+---------------------
 
-Taichi fields have shapes (see :ref:`scalar_tensor`). NumPy array also have shapes.
-So what's the relationship between them when using the ``to_numpy()`` and ``from_numpy()``?
+Shapes of Taichi fields (see :ref:`scalar_tensor`) and those of corresponding NumPy arrays are closely connected via the following rules:
 
-- For scalar fields, **the shape of NumPy array should be exactly the same with the Taichi field**:
+- For scalar fields, **the shape of NumPy array is exactly the same as the Taichi field**:
 
 .. code-block:: python
 
@@ -134,7 +131,7 @@ Using external arrays as Taichi kernel arguments
 ------------------------------------------------
 
 Use the type hint ``ti.ext_arr()`` for passing external arrays as kernel
-arguments, for example:
+arguments. For example:
 
 .. code-block:: python
 

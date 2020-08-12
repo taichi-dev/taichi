@@ -139,8 +139,8 @@ float64 SNode::read_float(const std::vector<int> &I) {
   if (reader_kernel == nullptr) {
     reader_kernel = &get_current_program().get_snode_reader(this);
   }
-  set_kernel_args(reader_kernel, I);
   get_current_program().synchronize();
+  set_kernel_args(reader_kernel, I);
   (*reader_kernel)();
   get_current_program().synchronize();
   auto ret = reader_kernel->get_ret_float(0);
@@ -162,8 +162,8 @@ int64 SNode::read_int(const std::vector<int> &I) {
   if (reader_kernel == nullptr) {
     reader_kernel = &get_current_program().get_snode_reader(this);
   }
-  set_kernel_args(reader_kernel, I);
   get_current_program().synchronize();
+  set_kernel_args(reader_kernel, I);
   (*reader_kernel)();
   get_current_program().synchronize();
   auto ret = reader_kernel->get_ret_int(0);

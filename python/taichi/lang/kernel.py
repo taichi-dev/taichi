@@ -383,8 +383,6 @@ class Kernel:
     def get_function_body(self, t_kernel):
         # The actual function body
         def func__(*args):
-            import taichi as ti
-            ti.sync()
             assert len(args) == len(
                 self.arguments), '{} arguments needed but {} provided'.format(
                     len(self.arguments), len(args))

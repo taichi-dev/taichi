@@ -23,8 +23,7 @@ class IRVerifier : public BasicStmtVisitor {
     if (!root->is<Block>()) {
       visible_stmts.emplace_back();
       current_block = root->as<Stmt>()->parent;
-    }
-    else
+    } else
       current_block = nullptr;
   }
 

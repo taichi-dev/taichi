@@ -89,7 +89,6 @@ def run_mpm88_test():
             grid_v.fill([0, 0])
             grid_m.fill(0)
             substep()
-            
 
     pos = x.to_numpy()
     pos[:, 1] *= 2
@@ -99,10 +98,8 @@ def run_mpm88_test():
         0.10224003,
         0.07810827,
     ]
-    print(pos)
     for i in range(4):
         assert (pos**(i + 1)).mean() == approx(regression[i], rel=1e-2)
-    print('pass')
 
 
 @ti.all_archs

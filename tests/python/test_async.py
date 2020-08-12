@@ -1,19 +1,20 @@
 import taichi as ti
 import numpy as np
 
+
 @ti.test(require=ti.extension.async, async_mode=True)
 def test_simple():
     n = 32
-    
+
     x = ti.field(dtype=ti.i32, shape=n)
-    
+
     @ti.kernel
     def double():
         for i in x:
             x[i] = i * 2
 
     double()
-    
+
     for i in range(n):
         assert x[i] == i * 2
 
@@ -30,6 +31,6 @@ def test_numpy():
     x = np.zeros(dtype=np.int32, shape=n)
     for i in range(10):
         inc(x)
-        
+
     for i in range(n):
         assert x[i] == i * 10

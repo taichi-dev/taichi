@@ -33,7 +33,8 @@ FunctionType KernelCodeGen::compile() {
 }
 
 std::unique_ptr<KernelCodeGen> KernelCodeGen::create(Arch arch,
-                                                     Kernel *kernel, Stmt *stmt) {
+                                                     Kernel *kernel,
+                                                     Stmt *stmt) {
   if (arch_is_cpu(arch)) {
     return std::make_unique<CodeGenCPU>(kernel, stmt);
   } else if (arch == Arch::cuda) {

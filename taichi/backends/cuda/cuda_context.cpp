@@ -96,20 +96,8 @@ CUDAContext::~CUDAContext() {
 }
 
 CUDAContext &CUDAContext::get_instance() {
-  static std::unordered_map<std::thread::id, CUDAContext *> instances;
-  static std::mutex mut;
-  {
-    // critical section
-    auto _ = std::lock_guard<std::mutex>(mut);
-
-    auto tid = std::this_thread::get_id();
-    if (instances.find(tid) == instances.end()) {
-      instances[tid] = new CUDAContext();
-      // We expect CUDAContext to live until the process ends, thus the raw
-      // pointers and `new`s.
-    }
-    return *instances[tid];
-  }
+  static auto context = new CUDAContext();
+  return *context;
 }
 
 TLANG_NAMESPACE_END

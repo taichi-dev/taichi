@@ -33,12 +33,13 @@ FunctionType KernelCodeGen::compile() {
 }
 
 std::unique_ptr<KernelCodeGen> KernelCodeGen::create(Arch arch,
-                                                     Kernel *kernel) {
+                                                     Kernel *kernel,
+                                                     Stmt *stmt) {
   if (arch_is_cpu(arch)) {
-    return std::make_unique<CodeGenCPU>(kernel);
+    return std::make_unique<CodeGenCPU>(kernel, stmt);
   } else if (arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
-    return std::make_unique<CodeGenCUDA>(kernel);
+    return std::make_unique<CodeGenCUDA>(kernel, stmt);
 #else
     TI_NOT_IMPLEMENTED
 #endif

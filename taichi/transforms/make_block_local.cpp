@@ -305,12 +305,13 @@ namespace irpass {
 // This pass should happen after offloading but before lower_access
 void make_block_local(IRNode *root) {
   TI_AUTO_PROF;
-  auto root_block = root->cast<Block>();
-  TI_ASSERT(root_block);
-  for (auto &stmt : root_block->statements) {
-    auto offload = stmt->cast<OffloadedStmt>();
-    TI_ASSERT(offload);
-    make_block_local_offload(offload);
+
+  if (auto root_block = root->cast<Block>()) {
+    for (auto &offload : root_block->statements) {
+      make_block_local_offload(offload->cast<OffloadedStmt>());
+    }
+  } else {
+    make_block_local_offload(root->as<OffloadedStmt>());
   }
   typecheck(root);
   fix_block_parents(root);

@@ -27,9 +27,6 @@ class CUDAContext {
   KernelProfilerBase *profiler;
   CUDADriver &driver;
 
-  static std::unordered_map<std::thread::id, std::unique_ptr<CUDAContext>>
-      instances;
-
  public:
   CUDAContext();
 

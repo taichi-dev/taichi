@@ -673,8 +673,6 @@ class Matrix(TaichiOperations):
         ret = np.zeros(self.shape + shape_ext, dtype=to_numpy_type(self.dtype))
         from .meta import matrix_to_ext_arr
         matrix_to_ext_arr(self, ret, as_vector)
-        import taichi as ti
-        ti.sync()
         return ret
 
     @python_scope

@@ -47,7 +47,7 @@ RUN cd taichi && \
     git submodule update --init --recursive --depth=1 && \
     mkdir build
 WORKDIR /taichi-dev/taichi/build
-RUN cmake .. -DPYTHON_EXECUTABLE=python3 -DTI_WITH_CUDA:BOOL=True
+RUN cmake .. -DPYTHON_EXECUTABLE=python3 -DTI_WITH_CUDA:BOOL=True -DTI_WITH_CC:BOOL=ON
 RUN make -j 8
 
 # Link Taichi source repo to Python Path

@@ -73,7 +73,8 @@ void ExecutionQueue::enqueue(KernelLaunchRecord &&ker) {
     // Later the IR passes will change |stmt|, so we must clone it.
     stmt = ker.clone_stmt_on_write();
 
-    compilation_workers.enqueue([&, stmt, kernel, h, this]() {
+    //compilation_workers.enqueue([&, stmt, kernel, h, this]() {
+    {
       TI_TRACE("Compiling offload to executable {}", kernel->name);
       {
         // Final lowering
@@ -129,11 +130,14 @@ void ExecutionQueue::enqueue(KernelLaunchRecord &&ker) {
       std::lock_guard<std::mutex> _(mut);
       compiled_func[h] = func;
       TI_INFO("Compiled {}", kernel->name);
-    });
+      //});
+    }
   }
 
   auto context = ker.context;
-  launch_worker.enqueue([&, h, task_type = stmt->task_type, context, this] {
+  //launch_worker.enqueue([&, h, task_type = stmt->task_type, context, this] {
+  {
+    auto task_type = stmt->task_type;
     FunctionType func;
     while (true) {
       std::unique_lock<std::mutex> lock(mut);
@@ -165,8 +169,8 @@ void ExecutionQueue::enqueue(KernelLaunchRecord &&ker) {
     TI_TRACE("Launching {}", kernel->name);
     func(c);
     TI_TRACE("Launched {}", kernel->name);
-  });
-  // }
+  // });
+  }
   trashbin.push_back(std::move(ker));
 }
 

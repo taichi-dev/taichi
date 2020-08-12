@@ -408,7 +408,6 @@ class Kernel:
                         raise KernelArgError(i, needed, provided)
                     t_kernel.set_arg_int(actual_argument_slot, int(v))
                 elif self.match_ext_arr(v, needed):
-                    dt = to_taichi_type(v.dtype)
                     has_torch = has_pytorch()
                     is_numpy = isinstance(v, np.ndarray)
                     if is_numpy:

@@ -391,6 +391,7 @@ class Kernel:
 
             tmps = []
             callbacks = []
+            has_external_arrays = False
 
             actual_argument_slot = 0
             for i, v in enumerate(args):
@@ -408,6 +409,7 @@ class Kernel:
                         raise KernelArgError(i, needed, provided)
                     t_kernel.set_arg_int(actual_argument_slot, int(v))
                 elif self.match_ext_arr(v, needed):
+                    has_external_arrays = True
                     has_torch = has_pytorch()
                     is_numpy = isinstance(v, np.ndarray)
                     if is_numpy:
@@ -473,9 +475,10 @@ class Kernel:
                 else:
                     ret = t_kernel.get_ret_float(0)
 
-            if callbacks:
+            if has_external_arrays:
                 import taichi as ti
                 ti.sync()
+            if callbacks:
                 for c in callbacks:
                     c()
 

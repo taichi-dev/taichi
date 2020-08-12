@@ -638,6 +638,9 @@ uint64 Program::fetch_result_uint64(int i) {
 
 void Program::finalize() {
   synchronize();
+  if (async_engine)
+    async_engine = nullptr;  // Finalize the async engine threads before
+                             // anything else gets destoried.
   TI_TRACE("Program finalizing...");
   if (config.print_benchmark_stat) {
     const char *current_test = std::getenv("PYTEST_CURRENT_TEST");

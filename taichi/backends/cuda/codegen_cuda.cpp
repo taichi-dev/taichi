@@ -69,6 +69,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       if (has_buffer) {
         CUDADriver::get_instance().stream_synchronize(nullptr);
       }
+      CUDADriver::get_instance().stream_synchronize(nullptr);
 
       for (auto task : offloaded_local) {
         TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,

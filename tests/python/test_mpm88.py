@@ -92,7 +92,6 @@ def run_mpm88_test():
             
 
     pos = x.to_numpy()
-    exit(0)
     pos[:, 1] *= 2
     regression = [
         0.31722742,

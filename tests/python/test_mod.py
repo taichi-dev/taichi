@@ -3,7 +3,7 @@ import taichi as ti
 
 @ti.all_archs
 def _test_py_style_mod(arg1, a, arg2, b, arg3, c):
-    z = ti.var(arg3, shape=())
+    z = ti.field(arg3, shape=())
 
     @ti.kernel
     def func(x: arg1, y: arg2):
@@ -15,7 +15,7 @@ def _test_py_style_mod(arg1, a, arg2, b, arg3, c):
 
 @ti.all_archs
 def _test_c_style_mod(arg1, a, arg2, b, arg3, c):
-    z = ti.var(arg3, shape=())
+    z = ti.field(arg3, shape=())
 
     @ti.kernel
     def func(x: arg1, y: arg2):
@@ -51,8 +51,8 @@ def test_c_style_mod():
 
 @ti.all_archs
 def test_mod_scan():
-    z = ti.var(ti.i32, shape=())
-    w = ti.var(ti.i32, shape=())
+    z = ti.field(ti.i32, shape=())
+    w = ti.field(ti.i32, shape=())
 
     @ti.kernel
     def func(x: ti.i32, y: ti.i32):

@@ -3,7 +3,7 @@ import taichi as ti
 
 @ti.all_archs
 def test_ptr_scalar():
-    a = ti.var(dt=ti.f32, shape=())
+    a = ti.field(dtype=ti.f32, shape=())
 
     @ti.kernel
     def func(t: ti.f32):
@@ -35,7 +35,7 @@ def test_ptr_matrix():
 
 @ti.all_archs
 def test_ptr_tensor():
-    a = ti.var(dt=ti.f32, shape=(3, 4))
+    a = ti.field(dtype=ti.f32, shape=(3, 4))
 
     @ti.kernel
     def func(t: ti.f32):
@@ -53,8 +53,8 @@ def test_ptr_tensor():
 
 @ti.all_archs
 def test_pythonish_tuple_assign():
-    a = ti.var(dt=ti.f32, shape=())
-    b = ti.var(dt=ti.f32, shape=())
+    a = ti.field(dtype=ti.f32, shape=())
+    b = ti.field(dtype=ti.f32, shape=())
 
     @ti.kernel
     def func(x: ti.f32, y: ti.f32):
@@ -70,7 +70,7 @@ def test_pythonish_tuple_assign():
 
 @ti.all_archs
 def test_ptr_func():
-    a = ti.var(dt=ti.f32, shape=())
+    a = ti.field(dtype=ti.f32, shape=())
 
     @ti.func
     def add2numbers(x, y):
@@ -90,7 +90,7 @@ def test_ptr_class_func():
     @ti.data_oriented
     class MyClass:
         def __init__(self):
-            self.a = ti.var(dt=ti.f32, shape=())
+            self.a = ti.field(dtype=ti.f32, shape=())
 
         @ti.func
         def add2numbers(self, x, y):

@@ -4,7 +4,7 @@ import numpy as np
 
 @ti.all_archs
 def test_to_numpy_2d():
-    val = ti.var(ti.i32)
+    val = ti.field(ti.i32)
 
     n = 4
     m = 7
@@ -25,7 +25,7 @@ def test_to_numpy_2d():
 
 @ti.all_archs
 def test_from_numpy_2d():
-    val = ti.var(ti.i32)
+    val = ti.field(ti.i32)
 
     n = 4
     m = 7
@@ -48,7 +48,7 @@ def test_from_numpy_2d():
 @ti.require(ti.extension.data64)
 @ti.all_archs
 def test_f64():
-    val = ti.var(ti.f64)
+    val = ti.field(ti.f64)
 
     n = 4
     m = 7
@@ -90,7 +90,7 @@ def test_numpy_io_example():
     m = 7
 
     # Taichi tensors
-    val = ti.var(ti.i32, shape=(n, m))
+    val = ti.field(ti.i32, shape=(n, m))
     vec = ti.Vector(3, dt=ti.i32, shape=(n, m))
     mat = ti.Matrix(3, 4, dt=ti.i32, shape=(n, m))
 

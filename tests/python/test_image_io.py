@@ -18,7 +18,7 @@ def test_image_io(resx, resy, comp, ext, is_tensor, dt):
     else:
         shape = (resx, resy)
     if is_tensor:
-        pixel_t = ti.var(dt, shape)
+        pixel_t = ti.field(dt, shape)
     pixel = np.random.randint(256, size=shape, dtype=ti.to_numpy_type(dt))
     if is_tensor:
         pixel_t.from_numpy(pixel)

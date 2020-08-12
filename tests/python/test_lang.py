@@ -3,8 +3,8 @@ import taichi as ti
 
 @ti.all_archs
 def test_nested_subscript():
-    x = ti.var(ti.i32)
-    y = ti.var(ti.i32)
+    x = ti.field(ti.i32)
+    y = ti.field(ti.i32)
 
     ti.root.dense(ti.i, 1).place(x)
     ti.root.dense(ti.i, 1).place(y)
@@ -23,8 +23,8 @@ def test_nested_subscript():
 
 @ti.all_archs
 def test_norm():
-    val = ti.var(ti.i32)
-    f = ti.var(ti.f32)
+    val = ti.field(ti.i32)
+    f = ti.field(ti.f32)
 
     n = 1024
 
@@ -54,8 +54,8 @@ def test_norm():
 
 @ti.all_archs
 def test_simple2():
-    val = ti.var(ti.i32)
-    f = ti.var(ti.f32)
+    val = ti.field(ti.i32)
+    f = ti.field(ti.f32)
 
     n = 16
 
@@ -92,7 +92,7 @@ def test_recreate():
 @ti.all_archs
 def test_local_atomics():
     n = 32
-    val = ti.var(ti.i32, shape=n)
+    val = ti.field(ti.i32, shape=n)
 
     @ti.kernel
     def test():

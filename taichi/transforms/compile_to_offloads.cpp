@@ -117,12 +117,14 @@ void offload_to_executable(IRNode *ir,
                            bool lower_global_access,
                            bool make_thread_local,
                            bool make_block_local) {
+  TI_AUTO_PROF;
+
+  auto print = make_pass_printer(verbose, ir);
+
   // TODO: This is just a proof that we can demote struct-fors after offloading.
   // Eventually we might want the order to be TLS/BLS -> demote struct-for.
   // For now, putting this after TLS will disable TLS, because it can only
   // handle range-fors at this point.
-
-  auto print = make_pass_printer(verbose, ir);
 
   if (config.demote_dense_struct_fors) {
     irpass::demote_dense_struct_fors(ir);

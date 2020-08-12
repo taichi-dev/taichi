@@ -51,13 +51,14 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       bool has_buffer = false;
 
       // TODO: A refactoring is needed.
-      // We have a not-so-good design where Context is always tied with Program
+      // We have a not-so-good design where Context is always tied with Program.
+      // Context's should be tied to kernel launches instead.
       kernel->program.context = context;
       for (int i = 0; i < (int)args.size(); i++) {
         if (args[i].is_nparray) {
           has_buffer = true;
           // replace host buffer with device buffer
-          host_buffers[i] = context.get_arg<void *>(i);
+          host_buffers[i] = get_current_program().context.get_arg<void *>(i);
           if (args[i].size > 0) {
             // Note: both numpy and PyTorch support arrays/tensors with zeros
             // in shapes, e.g., shape=(0) or shape=(100, 0, 200). This makes

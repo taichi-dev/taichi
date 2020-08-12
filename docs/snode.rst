@@ -30,7 +30,7 @@ See :ref:`layout` for more details. ``ti.root`` is the root node of the data str
         x = ti.field(dtype=ti.i32)
         y = ti.field(dtype=ti.f32)
         ti.root.place(x, y)
-        assert x.snode == y.snode
+        assert x.snode.parent == y.snode.parent
 
 
 .. function:: field.shape

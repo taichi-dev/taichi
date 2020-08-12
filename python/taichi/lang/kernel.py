@@ -476,6 +476,7 @@ class Kernel:
             if has_external_arrays:
                 import taichi as ti
                 ti.sync()
+                
             if callbacks:
                 for c in callbacks:
                     c()

@@ -657,7 +657,6 @@ class Matrix(TaichiOperations):
 
     @python_scope
     def to_numpy(self, keep_dims=False, as_vector=None):
-        import taichi as ti
         # Discussion: https://github.com/taichi-dev/taichi/pull/1046#issuecomment-633548858
         if as_vector is not None:
             warning(

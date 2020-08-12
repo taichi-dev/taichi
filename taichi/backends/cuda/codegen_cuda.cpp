@@ -49,6 +49,9 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       std::vector<void *> host_buffers(args.size(), nullptr);
       std::vector<void *> device_buffers(args.size(), nullptr);
       bool has_buffer = false;
+
+      // TODO: A refactoring is needed.
+      // We have a not-so-good design where Context is always tied with Program
       kernel->program.context = context;
       for (int i = 0; i < (int)args.size(); i++) {
         if (args[i].is_nparray) {
@@ -69,7 +72,6 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       if (has_buffer) {
         CUDADriver::get_instance().stream_synchronize(nullptr);
       }
-      CUDADriver::get_instance().stream_synchronize(nullptr);
 
       for (auto task : offloaded_local) {
         TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,

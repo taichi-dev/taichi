@@ -1050,7 +1050,6 @@ void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(GlobalPtrStmt *stmt) {
-  irpass::print(stmt);
   TI_ERROR("Global Ptrs should have been lowered.");
 }
 

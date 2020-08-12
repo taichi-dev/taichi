@@ -1,10 +1,10 @@
+#include <vector>
+#include <unordered_set>
+
 #include "taichi/ir/ir.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/visitors.h"
-
-#include <vector>
-#include <unordered_set>
-#include <taichi/ir/transforms.h>
+#include "taichi/ir/transforms.h"
 
 TLANG_NAMESPACE_BEGIN
 

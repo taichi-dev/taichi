@@ -73,9 +73,7 @@ void ExecutionQueue::enqueue(KernelLaunchRecord &&ker) {
     // Later the IR passes will change |stmt|, so we must clone it.
     stmt = ker.clone_stmt_on_write();
 
-    //compilation_workers.enqueue([&, stmt, kernel, h, this]() {
-    {
-      TI_TRACE("Compiling offload to executable {}", kernel->name);
+    compilation_workers.enqueue([&, stmt, kernel, h, this]() {
       {
         // Final lowering
         using namespace irpass;
@@ -129,15 +127,11 @@ void ExecutionQueue::enqueue(KernelLaunchRecord &&ker) {
       auto func = codegen->codegen();
       std::lock_guard<std::mutex> _(mut);
       compiled_func[h] = func;
-      TI_INFO("Compiled {}", kernel->name);
-      //});
-    }
+    });
   }
 
   auto context = ker.context;
-  //launch_worker.enqueue([&, h, task_type = stmt->task_type, context, this] {
-  {
-    auto task_type = stmt->task_type;
+  launch_worker.enqueue([&, h, task_type = stmt->task_type, context, this] {
     FunctionType func;
     while (true) {
       std::unique_lock<std::mutex> lock(mut);
@@ -166,11 +160,8 @@ void ExecutionQueue::enqueue(KernelLaunchRecord &&ker) {
       stat.add("launched_kernels_garbage_collect", 1.0);
     }
     auto c = context;
-    TI_TRACE("Launching {}", kernel->name);
     func(c);
-    TI_TRACE("Launched {}", kernel->name);
-  // });
-  }
+  });
   trashbin.push_back(std::move(ker));
 }
 
@@ -221,8 +212,6 @@ void AsyncEngine::launch(Kernel *kernel) {
 
 void AsyncEngine::enqueue(KernelLaunchRecord &&t) {
   using namespace irpass::analysis;
-
-  TI_TRACE("Enqueuing {}", t.kernel->name);
 
   auto &meta = offloaded_metas_[t.h];
   // TODO: this is an abuse since it gathers nothing...

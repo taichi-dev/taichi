@@ -96,8 +96,8 @@ CUDAContext::~CUDAContext() {
 }
 
 CUDAContext &CUDAContext::get_instance() {
-  static CUDAContext context;
-  return context;
+  static auto context = new CUDAContext();
+  return *context;
 }
 
 TLANG_NAMESPACE_END

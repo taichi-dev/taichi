@@ -2,7 +2,7 @@ import taichi as ti
 import numpy as np
 
 
-@ti.test(require=ti.extension.async, async_mode=True)
+@ti.test(require=ti.extension.async_mode, async_mode=True)
 def test_simple():
     n = 32
 
@@ -19,7 +19,7 @@ def test_simple():
         assert x[i] == i * 2
 
 
-@ti.test(require=ti.extension.async, async_mode=True)
+@ti.test(require=ti.extension.async_mode, async_mode=True)
 def test_numpy():
     n = 10000
 

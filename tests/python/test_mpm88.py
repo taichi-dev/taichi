@@ -114,7 +114,7 @@ def _is_appveyor():
 
 
 @pytest.mark.skipif(_is_appveyor(), reason='Stuck on Appveyor.')
-@ti.test(require=ti.extension.async, async_mode=True)
+@ti.test(require=ti.extension.async_mode, async_mode=True)
 def test_mpm88_async():
     # It seems that all async tests on Appveyor run super slow. For example,
     # on Appveyor, 10+ tests have passed during the execution of

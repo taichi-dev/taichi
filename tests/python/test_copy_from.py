@@ -5,8 +5,8 @@ import taichi as ti
 def test_scalar():
     n = 16
 
-    x = ti.var(ti.i32, shape=n)
-    y = ti.var(ti.i32, shape=n)
+    x = ti.field(ti.i32, shape=n)
+    y = ti.field(ti.i32, shape=n)
 
     x[1] = 2
 

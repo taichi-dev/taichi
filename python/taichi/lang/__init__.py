@@ -219,7 +219,7 @@ def init(arch=None,
 
 def no_activate(*args):
     for v in args:
-        taichi_lang_core.no_activate(v.snode().ptr)
+        taichi_lang_core.no_activate(v.snode.ptr)
 
 
 def cache_shared(*args):
@@ -274,9 +274,9 @@ def Tape(loss, clear_gradients=True):
     if len(loss.shape) != 0:
         raise RuntimeError(
             'The loss of `Tape` must be a 0-D tensor, i.e. scalar')
-    if not loss.snode().ptr.has_grad():
+    if not loss.snode.ptr.has_grad():
         raise RuntimeError(
-            'Gradients of loss are not allocated, please use ti.var(..., needs_grad=True)'
+            'Gradients of loss are not allocated, please use ti.field(..., needs_grad=True)'
             ' for all tensors that are required by autodiff.')
     if clear_gradients:
         clear_all_gradients()
@@ -333,8 +333,7 @@ def stat_write(avg):
     name = os.environ.get('TI_CURRENT_BENCHMARK')
     if name is None:
         return
-    import taichi as ti
-    arch_name = ti.core.arch_name(ti.cfg.arch)
+    arch_name = core.arch_name(ti.cfg.arch)
     output_dir = os.environ.get('TI_BENCHMARK_OUTPUT_DIR', '.')
     filename = f'{output_dir}/{name}__arch_{arch_name}.dat'
     with open(filename, 'w') as f:
@@ -342,17 +341,22 @@ def stat_write(avg):
 
 
 def is_arch_supported(arch):
-    if arch == cuda:
-        return core.with_cuda()
-    elif arch == metal:
-        return core.with_metal()
-    elif arch == opengl:
-        return core.with_opengl()
-    elif arch == cc:
-        return core.with_cc()
-    elif arch == cpu:
-        return True
-    else:
+    arch_table = {
+        cuda: core.with_cuda,
+        metal: core.with_metal,
+        opengl: core.with_opengl,
+        cc: core.with_cc,
+        cpu: lambda: True
+    }
+    with_arch = arch_table.get(arch, lambda: False)
+    try:
+        return with_arch()
+    except Exception as e:
+        arch = core.arch_name(arch)
+        core.warn(
+            f"{e.__class__.__name__}: '{e}' occurred when detecting "
+            f"{arch}, consider add `export TI_WITH_{arch.upper()}=0` "
+            f" to environment variables to depress this warning message.")
         return False
 
 
@@ -384,13 +388,11 @@ def adaptive_arch_select(arch):
     if arch is None:
         return cpu
     import taichi as ti
-    supported = supported_archs()
-    if isinstance(arch, list):
-        for a in arch:
-            if is_arch_supported(a):
-                return a
-    elif arch in supported:
-        return arch
+    if not isinstance(arch, (list, tuple)):
+        arch = [arch]
+    for a in arch:
+        if is_arch_supported(a):
+            return a
     ti.warn(f'Arch={arch} is not supported, falling back to CPU')
     return cpu
 

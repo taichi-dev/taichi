@@ -66,6 +66,7 @@ def render():
 
 
 gui = ti.GUI('Game of Life', (img_size, img_size))
+gui.fps_limit = 15
 
 print('[Hint] Press `r` to reset')
 print('[Hint] Press SPACE to pause')
@@ -87,7 +88,7 @@ while gui.running:
         alive[int(mx * n), int(my * n)] = gui.is_pressed(gui.LMB)
         paused = True
 
-    if not paused and gui.frame % 4 == 0:
+    if not paused:
         run()
 
     render()

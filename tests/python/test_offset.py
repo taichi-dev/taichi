@@ -3,7 +3,7 @@ import taichi as ti
 
 @ti.all_archs
 def test_accessor():
-    a = ti.var(dt=ti.i32)
+    a = ti.field(dtype=ti.i32)
 
     ti.root.dense(ti.ijk, 128).place(a, offset=(1024, 2048, 2100))
 
@@ -13,7 +13,7 @@ def test_accessor():
 
 @ti.all_archs
 def test_struct_for_huge_offsets():
-    a = ti.var(dt=ti.i32)
+    a = ti.field(dtype=ti.i32)
 
     offset = 1024, 2048, 2100, 2200
     ti.root.dense(ti.ijkl, 4).place(a, offset=offset)
@@ -34,7 +34,7 @@ def test_struct_for_huge_offsets():
 
 @ti.all_archs
 def test_struct_for_negative():
-    a = ti.var(dt=ti.i32)
+    a = ti.field(dtype=ti.i32)
 
     offset = 16, -16
     ti.root.dense(ti.ij, 32).place(a, offset=offset)
@@ -53,14 +53,14 @@ def test_struct_for_negative():
 
 @ti.all_archs
 def test_offset_for_var():
-    a = ti.var(dt=ti.i32, shape=16, offset=-48)
-    b = ti.var(dt=ti.i32, shape=(16, ), offset=(16, ))
-    c = ti.var(dt=ti.i32, shape=(16, 64), offset=(-16, -64))
-    d = ti.var(dt=ti.i32, shape=(16, 64), offset=None)
+    a = ti.field(dtype=ti.i32, shape=16, offset=-48)
+    b = ti.field(dtype=ti.i32, shape=(16, ), offset=(16, ))
+    c = ti.field(dtype=ti.i32, shape=(16, 64), offset=(-16, -64))
+    d = ti.field(dtype=ti.i32, shape=(16, 64), offset=None)
 
     offset = 4, -4
     shape = 16, 16
-    e = ti.var(dt=ti.i32, shape=shape, offset=offset)
+    e = ti.field(dtype=ti.i32, shape=shape, offset=offset)
 
     @ti.kernel
     def test():
@@ -75,8 +75,8 @@ def test_offset_for_var():
 
 @ti.all_archs
 def test_offset_for_vector():
-    a = ti.var(dt=ti.i32, shape=16, offset=-48)
-    b = ti.var(dt=ti.i32, shape=16, offset=None)
+    a = ti.field(dtype=ti.i32, shape=16, offset=-48)
+    b = ti.field(dtype=ti.i32, shape=16, offset=None)
 
     offset = 16
     shape = 16
@@ -111,8 +111,8 @@ def test_offset_for_matrix():
 
 @ti.must_throw(AssertionError)
 def test_offset_must_throw_var():
-    a = ti.var(dt=ti.float32, shape=3, offset=(3, 4))
-    b = ti.var(dt=ti.float32, shape=None, offset=(3, 4))
+    a = ti.field(dtype=ti.float32, shape=3, offset=(3, 4))
+    b = ti.field(dtype=ti.float32, shape=None, offset=(3, 4))
 
 
 @ti.must_throw(AssertionError)

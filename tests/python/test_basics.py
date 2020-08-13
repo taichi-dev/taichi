@@ -4,7 +4,7 @@ import taichi as ti
 @ti.all_archs
 def test_simple():
     n = 128
-    x = ti.var(ti.i32, shape=n)
+    x = ti.field(ti.i32, shape=n)
 
     @ti.kernel
     def func():
@@ -22,7 +22,7 @@ def test_simple():
 @ti.all_archs
 def test_range_loops():
     n = 128
-    x = ti.var(ti.i32, shape=n)
+    x = ti.field(ti.i32, shape=n)
 
     @ti.kernel
     def func():
@@ -38,7 +38,7 @@ def test_range_loops():
 @ti.all_archs
 def test_python_access():
     n = 128
-    x = ti.var(ti.i32, shape=n)
+    x = ti.field(ti.i32, shape=n)
 
     x[3] = 123
     x[4] = 456
@@ -48,7 +48,7 @@ def test_python_access():
 
 @ti.all_archs
 def test_if():
-    x = ti.var(ti.f32, shape=16)
+    x = ti.field(ti.f32, shape=16)
 
     @ti.kernel
     def if_test():
@@ -79,7 +79,7 @@ def test_if():
 
 @ti.all_archs
 def test_if_global_load():
-    x = ti.var(ti.i32, shape=16)
+    x = ti.field(ti.i32, shape=16)
 
     @ti.kernel
     def fill():
@@ -101,8 +101,8 @@ def test_if_global_load():
 
 @ti.all_archs
 def test_while_global_load():
-    x = ti.var(ti.i32, shape=16)
-    y = ti.var(ti.i32, shape=())
+    x = ti.field(ti.i32, shape=16)
+    y = ti.field(ti.i32, shape=())
 
     @ti.kernel
     def run():

@@ -6,9 +6,9 @@ def test_running_loss():
     return
     steps = 16
 
-    total_loss = ti.var(ti.f32)
-    running_loss = ti.var(ti.f32)
-    additional_loss = ti.var(ti.f32)
+    total_loss = ti.field(ti.f32)
+    running_loss = ti.field(ti.f32)
+    additional_loss = ti.field(ti.f32)
 
     ti.root.place(total_loss)
     ti.root.dense(ti.i, steps).place(running_loss)
@@ -32,9 +32,9 @@ def test_running_loss():
 
 @ti.all_archs
 def test_reduce_separate():
-    a = ti.var(ti.f32, shape=(16))
-    b = ti.var(ti.f32, shape=(4))
-    c = ti.var(ti.f32, shape=())
+    a = ti.field(ti.f32, shape=(16))
+    b = ti.field(ti.f32, shape=(4))
+    c = ti.field(ti.f32, shape=())
 
     ti.root.lazy_grad()
 
@@ -60,9 +60,9 @@ def test_reduce_separate():
 
 @ti.all_archs
 def test_reduce_merged():
-    a = ti.var(ti.f32, shape=(16))
-    b = ti.var(ti.f32, shape=(4))
-    c = ti.var(ti.f32, shape=())
+    a = ti.field(ti.f32, shape=(16))
+    b = ti.field(ti.f32, shape=(4))
+    c = ti.field(ti.f32, shape=())
 
     ti.root.lazy_grad()
 

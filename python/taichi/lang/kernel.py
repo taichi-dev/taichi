@@ -5,6 +5,7 @@ import ast
 from .kernel_arguments import *
 from .util import *
 from .shell import oinspect, _shell_pop_print
+from .exception import TaichiSyntaxError
 from . import impl
 import functools
 
@@ -31,6 +32,8 @@ def remove_indent(lines):
 # The ti.func decorator
 def func(foo):
     is_classfunc = _inside_class(level_of_class_stackframe=3)
+
+    _taichi_skip_traceback = 1
     fun = Func(foo, classfunc=is_classfunc)
 
     @functools.wraps(foo)
@@ -67,13 +70,17 @@ class Func:
         self.pyfunc = pyfunc
         self.arguments = []
         self.argument_names = []
+        _taichi_skip_traceback = 1
         self.extract_arguments()
 
     def __call__(self, *args):
         _taichi_skip_traceback = 1
         if not impl.inside_kernel():
-            assert self.pyfunc, "Use @ti.pyfunc if you wish to call " \
-                                "Taichi functions from Python-scope"
+            if not self.pyfunc:
+                raise TaichiSyntaxError(
+                    "Taichi functions cannot be called from Python-scope."
+                    " Use @ti.pyfunc if you wish to call Taichi functions "
+                    "from both Python-scope and Taichi-scope.")
             return self.func(*args)
         if self.compiled is None:
             self.do_compile()
@@ -111,23 +118,33 @@ class Func:
             param = params[arg_name]
             if param.kind == inspect.Parameter.VAR_KEYWORD:
                 raise KernelDefError(
-                    'Taichi funcs do not support variable keyword parameters (i.e., **kwargs)'
+                    'Taichi functions do not support variable keyword parameters (i.e., **kwargs)'
                 )
             if param.kind == inspect.Parameter.VAR_POSITIONAL:
                 raise KernelDefError(
-                    'Taichi funcs do not support variable positional parameters (i.e., *args)'
+                    'Taichi functions do not support variable positional parameters (i.e., *args)'
                 )
             if param.kind == inspect.Parameter.KEYWORD_ONLY:
                 raise KernelDefError(
-                    'Taichi funcs do not support keyword parameters')
+                    'Taichi functions do not support keyword parameters')
             if param.kind != inspect.Parameter.POSITIONAL_OR_KEYWORD:
                 raise KernelDefError(
-                    'Taichi funcs only support "positional or keyword" parameters'
+                    'Taichi functions only support "positional or keyword" parameters'
                 )
             annotation = param.annotation
-            if param.annotation is inspect.Parameter.empty:
+            if annotation is inspect.Parameter.empty:
                 if i == 0 and self.classfunc:
                     annotation = template()
+            else:
+                if id(annotation) in type_ids:
+                    warning(
+                        'Data type annotations are unnecessary for Taichi'
+                        ' functions, consider removing it',
+                        stacklevel=4)
+                elif not isinstance(annotation, template):
+                    raise KernelDefError(
+                        f'Invalid type annotation (argument {i}) of Taichi function: {annotation}'
+                    )
             self.arguments.append(annotation)
             self.argument_names.append(param.name)
 
@@ -139,6 +156,7 @@ def classfunc(foo):
     @functools.wraps(foo)
     def decorated(*args):
         return func.__call__(*args)
+
     return decorated
 
 
@@ -216,7 +234,9 @@ class Kernel:
         self.argument_names = []
         self.return_type = None
         self.classkernel = classkernel
+        _taichi_skip_traceback = 1
         self.extract_arguments()
+        del _taichi_skip_traceback
         self.template_slot_locations = []
         for i in range(len(self.arguments)):
             if isinstance(self.arguments[i], template):
@@ -265,8 +285,19 @@ class Kernel:
                 if i == 0 and self.classkernel:
                     annotation = template()
                 else:
+                    _taichi_skip_traceback = 1
                     raise KernelDefError(
                         'Taichi kernels parameters must be type annotated')
+            else:
+                if isinstance(annotation, (template, ext_arr)):
+                    pass
+                elif id(annotation) in type_ids:
+                    pass
+                else:
+                    _taichi_skip_traceback = 1
+                    raise KernelDefError(
+                        f'Invalid type annotation (argument {i}) of Taichi kernel: {annotation}'
+                    )
             self.arguments.append(annotation)
             self.argument_names.append(param.name)
 
@@ -337,7 +368,7 @@ class Kernel:
             _taichi_skip_traceback = 1
             if self.runtime.inside_kernel:
                 import taichi as ti
-                raise ti.TaichiSyntaxError(
+                raise TaichiSyntaxError(
                     "Kernels cannot call other kernels. I.e., nested kernels are not allowed. Please check if you have direct/indirect invocation of kernels within kernels. Note that some methods provided by the Taichi standard library may invoke kernels, and please move their invocations to Python-scope."
                 )
             self.runtime.inside_kernel = True
@@ -422,7 +453,8 @@ class Kernel:
                         t_kernel.set_extra_arg_int(actual_argument_slot, i, s)
                 else:
                     raise ValueError(
-                        f'Argument type mismatch. Expecting {needed}, got {type(v)}.')
+                        f'Argument type mismatch. Expecting {needed}, got {type(v)}.'
+                    )
                 actual_argument_slot += 1
             # Both the class kernels and the plain-function kernels are unified now.
             # In both cases, |self.grad| is another Kernel instance that computes the
@@ -509,6 +541,7 @@ def _kernel_impl(func, level_of_class_stackframe, verbose=False):
     # Can decorators determine if a function is being defined inside a class?
     # https://stackoverflow.com/a/8793684/12003165
     is_classkernel = _inside_class(level_of_class_stackframe + 1)
+    _taichi_skip_traceback = 1
 
     if verbose:
         print(f'kernel={func.__name__} is_classkernel={is_classkernel}')

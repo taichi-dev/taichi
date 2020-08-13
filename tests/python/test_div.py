@@ -3,7 +3,7 @@ import taichi as ti
 
 @ti.all_archs
 def _test_floor_div(arg1, a, arg2, b, arg3, c):
-    z = ti.var(arg3, shape=())
+    z = ti.field(arg3, shape=())
 
     @ti.kernel
     def func(x: arg1, y: arg2):
@@ -15,7 +15,7 @@ def _test_floor_div(arg1, a, arg2, b, arg3, c):
 
 @ti.all_archs
 def _test_true_div(arg1, a, arg2, b, arg3, c):
-    z = ti.var(arg3, shape=())
+    z = ti.field(arg3, shape=())
 
     @ti.kernel
     def func(x: arg1, y: arg2):
@@ -59,7 +59,7 @@ def test_true_div():
 @ti.all_archs
 def test_div_default_ip():
     ti.get_runtime().set_default_ip(ti.i64)
-    z = ti.var(ti.f32, shape=())
+    z = ti.field(ti.f32, shape=())
 
     @ti.kernel
     def func():
@@ -72,7 +72,7 @@ def test_div_default_ip():
 
 @ti.all_archs
 def test_floor_div_pythonic():
-    z = ti.var(ti.i32, shape=())
+    z = ti.field(ti.i32, shape=())
 
     @ti.kernel
     def func(x: ti.i32, y: ti.i32):

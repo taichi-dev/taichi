@@ -22,7 +22,7 @@ Compilation
 Runtime
 *******
 
-- Restart the entire Taichi system (destroy all tensors and kernels): ``ti.reset()``.
+- Restart the entire Taichi system (destroy all fields and kernels): ``ti.reset()``.
 - To start program in debug mode: ``ti.init(debug=True)`` or ``ti debug your_script.py``.
 - To disable importing torch on start up: ``export TI_ENABLE_TORCH=0``.
 
@@ -46,7 +46,7 @@ Specifying ``ti.init`` arguments from environment variables
 Arguments for ``ti.init`` may also be specified from environment variables. For example:
 
 - ``ti.init(arch=ti.cuda)`` is equivalent to ``export TI_ARCH=cuda``.
-- ``ti.init(log_level=ti.TRACE)`` is equivalent to ``export TI_ARCH=trace``.
+- ``ti.init(log_level=ti.TRACE)`` is equivalent to ``export TI_LOG_LEVEL=trace``.
 - ``ti.init(debug=True)`` is equivalent to ``export TI_DEBUG=1``.
 - ``ti.init(use_unified_memory=False)`` is equivalent to ``export TI_USE_UNIFIED_MEMORY=0``.
 

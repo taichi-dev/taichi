@@ -10,11 +10,11 @@ Create a window
 ---------------
 
 
-.. function:: ti.GUI(title = 'Taichi', res = (512, 512), bgcolor = 0x000000)
+.. function:: ti.GUI(title = 'Taichi', res = (512, 512), background_color = 0x000000)
 
     :parameter title: (optional, string) the window title
     :parameter res: (optional, scalar or tuple) resolution / size of the window
-    :parameter bgcolor: (optional, RGB hex) background color of the window
+    :parameter background_color: (optional, RGB hex) background color of the window
     :return: (GUI) an object represents the window
 
     Create a window.
@@ -53,25 +53,30 @@ Paint on a window
 .. function:: gui.set_image(img)
 
     :parameter gui: (GUI) the window object
-    :parameter img: (np.array or Tensor) tensor containing the image, see notes below
+    :parameter img: (np.array or ti.field) field containing the image, see notes below
 
     Set an image to display on the window.
 
-    The image pixels are set from the values of ``img[i, j]``, where ``i`` indicates the horizontal
-    coordinates (from left to right) and ``j`` the vertical coordinates (from bottom to top).
+    The image pixels are set from the values of ``img[i, j]``, where ``i`` indicates the horizontal coordinates (from left to right) and ``j`` the vertical coordinates (from bottom to top).
 
 
     If the window size is ``(x, y)``, then ``img`` must be one of:
 
-    * ``ti.var(shape=(x, y))``, a grey-scale image
+    * ``ti.field(shape=(x, y))``, a grey-scale image
 
-    * ``ti.var(shape=(x, y, 3))``, where `3` is for ``(r, g, b)`` channels
+    * ``ti.field(shape=(x, y, 3))``, where `3` is for ``(r, g, b)`` channels
 
-    * ``ti.Vector(3, shape=(x, y))`` (see :ref:`vector`)
+    * ``ti.field(shape=(x, y, 2))``, where `2` is for ``(r, g)`` channels
+
+    * ``ti.Vector.field(3, shape=(x, y))`` ``(r, g, b)`` channels on each component (see :ref:`vector`)
+
+    * ``ti.Vector.field(2, shape=(x, y))`` ``(r, g)`` channels on each component
 
     * ``np.ndarray(shape=(x, y))``
 
     * ``np.ndarray(shape=(x, y, 3))``
+
+    * ``np.ndarray(shape=(x, y, 2))``
 
 
     The data type of ``img`` must be one of:
@@ -90,6 +95,13 @@ Paint on a window
 
         When using ``float32`` or ``float64`` as the data type,
         ``img`` entries will be clipped into range ``[0, 1]`` for display.
+
+
+.. function:: gui.get_image()
+
+    :return: (np.array) the current image shown on the GUI
+
+    Get the 4-channel (RGBA) image shown in the current GUI system.
 
 
 .. function:: gui.circle(pos, color = 0xFFFFFF, radius = 1)
@@ -357,6 +369,19 @@ A *event filter* is a list combined of *key*, *type* and *(type, key)* tuple, e.
         mouse_x, mouse_y = gui.get_cursor_pos()
 
 
+.. attribute:: gui.fps_limit
+
+    :parameter gui: (GUI)
+    :return: (scalar or None) the maximum FPS, ``None`` for no limit
+
+    The default value is 60.
+
+    For example, to restrict FPS to be below 24, simply ``gui.fps_limit = 24``.
+    This helps reduce the overload on your hardware especially when you're
+    using OpenGL on your intergrated GPU which could make desktop slow to
+    response.
+
+
 GUI Widgets
 -----------
 
@@ -416,22 +441,16 @@ could make variable control more intuitive:
 Image I/O
 ---------
 
-.. function:: gui.get_image()
-
-    :return: a ``np.ndarray`` which is the current image shown on the GUI.
-
-    Get the RGBA shown image from the current GUI system which has four channels.
-
 .. function:: ti.imwrite(img, filename)
 
-    :parameter img: (Matrix or Expr) the image you want to export
+    :parameter img: (ti.Vector.field or ti.field) the image you want to export
     :parameter filename: (string) the location you want to save to
 
-    Export a ``np.ndarray`` or Taichi tensor (``ti.Matrix``, ``ti.Vector``, or ``ti.var``) to a specified location ``filename``.
+    Export a ``np.ndarray`` or Taichi field (``ti.Matrix.field``, ``ti.Vector.field``, or ``ti.field``) to a specified location ``filename``.
 
     Same as ``ti.GUI.show(filename)``, the format of the exported image is determined by **the suffix of** ``filename`` as well. Now ``ti.imwrite`` supports exporting images to ``png``, ``img`` and ``jpg`` and we recommend using ``png``.
 
-    Please make sure that the input image has **a valid shape**. If you want to export a grayscale image, the input shape of tensor should be ``(height, weight)`` or ``(height, weight, 1)``. For example:
+    Please make sure that the input image has **a valid shape**. If you want to export a grayscale image, the input shape of field should be ``(height, weight)`` or ``(height, weight, 1)``. For example:
 
     .. code-block:: python
 
@@ -441,7 +460,7 @@ Image I/O
 
         shape = (512, 512)
         type = ti.u8
-        pixels = ti.var(dt=type, shape=shape)
+        pixels = ti.field(dtype=type, shape=shape)
 
         @ti.kernel
         def draw():
@@ -452,13 +471,13 @@ Image I/O
 
         ti.imwrite(pixels, f"export_u8.png")
 
-    Besides, for RGB or RGBA images, ``ti.imwrite`` needs to receive a tensor which has shape ``(height, width, 3)`` and ``(height, width, 4)`` individually.
+    Besides, for RGB or RGBA images, ``ti.imwrite`` needs to receive a field which has shape ``(height, width, 3)`` and ``(height, width, 4)`` individually.
 
-    Generally the value of the pixels on each channel of a ``png`` image is an integar in [0, 255]. For this reason, ``ti.imwrite`` will **cast tensors** which has different datatypes all **into integars between [0, 255]**. As a result, ``ti.imwrite`` has the following requirements for different datatypes of input tensors:
+    Generally the value of the pixels on each channel of a ``png`` image is an integar in [0, 255]. For this reason, ``ti.imwrite`` will **cast fields** which has different datatypes all **into integars between [0, 255]**. As a result, ``ti.imwrite`` has the following requirements for different datatypes of input fields:
 
-    - For float-type (``ti.f16``, ``ti.f32``, etc) input tensors, **the value of each pixel should be float between [0.0, 1.0]**. Otherwise ``ti.imwrite`` will first clip them into [0.0, 1.0]. Then they are multiplied by 256 and casted to integaters ranging from [0, 255].
+    - For float-type (``ti.f16``, ``ti.f32``, etc) input fields, **the value of each pixel should be float between [0.0, 1.0]**. Otherwise ``ti.imwrite`` will first clip them into [0.0, 1.0]. Then they are multiplied by 256 and casted to integaters ranging from [0, 255].
 
-    - For int-type (``ti.u8``, ``ti.u16``, etc) input tensors, **the value of each pixel can be any valid integer in its own bounds**. These integers in this tensor will be scaled to [0, 255] by being divided over the upper bound of its basic type accordingly.
+    - For int-type (``ti.u8``, ``ti.u16``, etc) input fields, **the value of each pixel can be any valid integer in its own bounds**. These integers in this field will be scaled to [0, 255] by being divided over the upper bound of its basic type accordingly.
 
     Here is another example:
 
@@ -471,7 +490,7 @@ Image I/O
         shape = (512, 512)
         channels = 3
         type = ti.f32
-        pixels = ti.Matrix(channels, dt=type, shape=shape)
+        pixels = ti.Matrix.field(channels, dtype=type, shape=shape)
 
         @ti.kernel
         def draw():
@@ -493,11 +512,11 @@ Image I/O
 
     This function loads an image from the target filename and returns it as a ``np.ndarray(dtype=np.uint8)``.
 
-    Each value in this returned tensor is an integer in [0, 255].
+    Each value in this returned field is an integer in [0, 255].
 
 .. function:: ti.imshow(img, windname)
 
-    :parameter img: (Matrix or Expr) the image to show in the GUI
+    :parameter img: (ti.Vector.field or ti.field) the image to show in the GUI
     :parameter windname: (string) the name of the GUI window
 
     This function will create an instance of ``ti.GUI`` and show the input image on the screen.

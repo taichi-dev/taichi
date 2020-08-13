@@ -3,7 +3,7 @@ import taichi as ti
 
 @ti.all_archs
 def test_offload_with_cross_block_locals():
-    ret = ti.var(ti.f32)
+    ret = ti.field(ti.f32)
 
     ti.root.place(ret)
 
@@ -21,7 +21,7 @@ def test_offload_with_cross_block_locals():
 
 @ti.all_archs
 def test_offload_with_cross_block_locals2():
-    ret = ti.var(ti.f32)
+    ret = ti.field(ti.f32)
 
     ti.root.place(ret)
 
@@ -42,7 +42,7 @@ def test_offload_with_cross_block_locals2():
 
 @ti.all_archs
 def test_offload_with_cross_block_locals3():
-    ret = ti.var(ti.f32, shape=())
+    ret = ti.field(ti.f32, shape=())
 
     @ti.kernel
     def ker():
@@ -59,7 +59,7 @@ def test_offload_with_cross_block_locals3():
 
 @ti.all_archs
 def test_offload_with_cross_block_locals4():
-    ret = ti.var(ti.f32, shape=())
+    ret = ti.field(ti.f32, shape=())
 
     @ti.kernel
     def ker():
@@ -76,9 +76,9 @@ def test_offload_with_cross_block_locals4():
 
 @ti.all_archs
 def test_offload_with_flexible_bounds():
-    s = ti.var(ti.i32, shape=())
-    lower = ti.var(ti.i32, shape=())
-    upper = ti.var(ti.i32, shape=())
+    s = ti.field(ti.i32, shape=())
+    lower = ti.field(ti.i32, shape=())
+    upper = ti.field(ti.i32, shape=())
 
     @ti.kernel
     def ker():
@@ -94,7 +94,7 @@ def test_offload_with_flexible_bounds():
 
 @ti.all_archs
 def test_offload_with_cross_block_globals():
-    ret = ti.var(ti.f32)
+    ret = ti.field(ti.f32)
 
     ti.root.place(ret)
 

@@ -103,8 +103,8 @@ endif()
 # http://llvm.org/docs/CMake.html#embedding-llvm-in-your-project
 find_package(LLVM REQUIRED CONFIG)
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
-if(${LLVM_PACKAGE_VERSION} VERSION_LESS "8.0")
-    message(FATAL_ERROR "LLVM less than 8.0 is not supported")
+if(${LLVM_PACKAGE_VERSION} VERSION_LESS "10.0")
+    message(FATAL_ERROR "LLVM version < 10 is not supported")
 endif()
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 include_directories(${LLVM_INCLUDE_DIRS})
@@ -156,6 +156,9 @@ if (NOT WIN32)
         target_link_libraries(${CORE_LIBRARY_NAME} -Wl,--version-script,${CMAKE_CURRENT_SOURCE_DIR}/misc/linker.map)
         target_link_libraries(${CORE_LIBRARY_NAME} -Wl,--wrap=log2f) # Avoid glibc dependencies
     endif()
+else()
+    # windows
+    target_link_libraries(${CORE_LIBRARY_NAME} Winmm)
 endif ()
 message("PYTHON_LIBRARIES: " ${PYTHON_LIBRARIES})
 

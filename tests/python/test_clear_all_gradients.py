@@ -3,10 +3,10 @@ import taichi as ti
 
 @ti.all_archs
 def test_clear_all_gradients():
-    x = ti.var(ti.f32)
-    y = ti.var(ti.f32)
-    z = ti.var(ti.f32)
-    w = ti.var(ti.f32)
+    x = ti.field(ti.f32)
+    y = ti.field(ti.f32)
+    z = ti.field(ti.f32)
+    w = ti.field(ti.f32)
 
     n = 128
 

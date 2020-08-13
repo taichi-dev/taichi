@@ -20,9 +20,9 @@ def run_mpm88_test():
     x = ti.Vector(dim, dt=ti.f32, shape=n_particles)
     v = ti.Vector(dim, dt=ti.f32, shape=n_particles)
     C = ti.Matrix(dim, dim, dt=ti.f32, shape=n_particles)
-    J = ti.var(dt=ti.f32, shape=n_particles)
+    J = ti.field(dtype=ti.f32, shape=n_particles)
     grid_v = ti.Vector(dim, dt=ti.f32, shape=(n_grid, n_grid))
-    grid_m = ti.var(dt=ti.f32, shape=(n_grid, n_grid))
+    grid_m = ti.field(dtype=ti.f32, shape=(n_grid, n_grid))
 
     @ti.kernel
     def substep():

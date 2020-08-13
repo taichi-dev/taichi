@@ -27,7 +27,6 @@
 #include "taichi/backends/cc/struct_cc.h"
 #include "taichi/backends/cc/cc_layout.h"
 #include "taichi/backends/cc/codegen_cc.h"
-#include "taichi/backends/cc/cc_configuation.h"
 #else
 #endif
 
@@ -38,14 +37,6 @@ bool is_cuda_api_available();
 TI_NAMESPACE_END
 
 TLANG_NAMESPACE_BEGIN
-
-#ifndef TI_WITH_CC
-namespace cccp {
-bool is_c_backend_available() {
-  return false;
-}
-}  // namespace cccp
-#endif
 
 void assert_failed_host(const char *msg) {
   TI_ERROR("Assertion failure: {}", msg);
@@ -96,7 +87,7 @@ Program::Program(Arch desired_arch) {
 
   if (arch == Arch::cc) {
 #ifdef TI_WITH_CC
-    cc_program = std::make_unique<cccp::CCProgram>();
+    cc_program = std::make_unique<cccp::CCProgram>(this);
 #else
     TI_WARN("No C backend detected.");
     arch = host_arch();
@@ -664,6 +655,12 @@ void Program::finalize() {
       auto first_space_pos = file_name.find_first_of(' ');
       TI_ASSERT(first_space_pos != std::string::npos);
       file_name = file_name.substr(0, first_space_pos);
+      if (auto lt_pos = file_name.find('<'); lt_pos != std::string::npos) {
+        file_name[lt_pos] = '_';
+      }
+      if (auto gt_pos = file_name.find('>'); gt_pos != std::string::npos) {
+        file_name[gt_pos] = '_';
+      }
       file_name += ".dat";
       file_name = std::string(output_dir) + "/" + file_name;
       TI_INFO("Saving benchmark result to {}", file_name);

@@ -93,6 +93,50 @@ class ValueDiffLoopIndex : public IRVisitor {
   }
 };
 
+class FindDirectValueBaseAndOffset : public IRVisitor {
+ public:
+  // In the return value, <first> is true if this class finds that the input
+  // statement has value equal to <second> + <third> (base + offset), or
+  // <first> is false if this class can't find the decomposition.
+  using ret_type = std::tuple<bool, Stmt *, int>;
+  ret_type result;
+  FindDirectValueBaseAndOffset() : result(false, nullptr, 0) {
+    allow_undefined_visitor = true;
+    invoke_default_visitor = true;
+  }
+
+  void visit(Stmt *stmt) override {
+    result = std::make_tuple(false, nullptr, 0);
+  }
+
+  void visit(ConstStmt *stmt) override {
+    TI_ASSERT(stmt->width() == 1);
+    if (stmt->val[0].dt == DataType::i32) {
+      result = std::make_tuple(true, nullptr, stmt->val[0].val_i32);
+    }
+  }
+
+  void visit(BinaryOpStmt *stmt) override {
+    if (stmt->rhs->is<ConstStmt>())
+      stmt->rhs->accept(this);
+    if (!std::get<0>(result) || std::get<1>(result) != nullptr ||
+        (stmt->op_type != BinaryOpType::add &&
+         stmt->op_type != BinaryOpType::sub)) {
+      result = std::make_tuple(false, nullptr, 0);
+      return;
+    }
+    if (stmt->op_type == BinaryOpType::sub)
+      std::get<2>(result) = -std::get<2>(result);
+    std::get<1>(result) = stmt->lhs;
+  }
+
+  static ret_type run(Stmt *val) {
+    FindDirectValueBaseAndOffset instance;
+    val->accept(&instance);
+    return instance.result;
+  }
+};
+
 namespace irpass::analysis {
 
 DiffRange value_diff_loop_index(Stmt *stmt, Stmt *loop, int index_id) {
@@ -109,6 +153,22 @@ DiffRange value_diff_loop_index(Stmt *stmt, Stmt *loop, int index_id) {
   TI_ASSERT(stmt->width() == 1);
   auto diff = ValueDiffLoopIndex(stmt, 0, loop, index_id);
   return diff.run();
+}
+
+std::pair<bool, int> value_diff_ptr_index(Stmt *val1, Stmt *val2) {
+  // <first>: whether the difference of the value of two statements is certain.
+  // <second>: the difference of the value of two statements (i.e. val1 - val2)
+  // if <first> is true.
+  if (val1 == val2)
+    return std::make_pair(true, 0);
+  auto v1 = FindDirectValueBaseAndOffset::run(val1);
+  auto v2 = FindDirectValueBaseAndOffset::run(val2);
+  if (!std::get<0>(v1) || !std::get<0>(v2) ||
+      std::get<1>(v1) != std::get<1>(v2)) {
+    // uncertain
+    return std::make_pair(false, 0);
+  }
+  return std::make_pair(true, std::get<2>(v1) - std::get<2>(v2));
 }
 
 }  // namespace irpass::analysis

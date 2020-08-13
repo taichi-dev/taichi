@@ -6,9 +6,9 @@ from taichi import approx
 @ti.require(ti.extension.data64)
 @ti.all_archs_with(fast_math=False)
 def test_precision():
-    u = ti.var(ti.f64, shape=())
-    v = ti.var(ti.f64, shape=())
-    w = ti.var(ti.f64, shape=())
+    u = ti.field(ti.f64, shape=())
+    v = ti.field(ti.f64, shape=())
+    w = ti.field(ti.f64, shape=())
 
     @ti.kernel
     def forward():

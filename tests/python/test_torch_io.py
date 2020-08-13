@@ -8,7 +8,7 @@ if ti.has_pytorch():
 @ti.torch_test
 def test_io_devices():
     n = 32
-    x = ti.var(dt=ti.i32, shape=n)
+    x = ti.field(dtype=ti.i32, shape=n)
 
     @ti.kernel
     def load(y: ti.ext_arr()):
@@ -132,7 +132,7 @@ def test_io_3d():
 def test_io_simple():
     n = 32
 
-    x1 = ti.var(ti.f32, shape=(n, n))
+    x1 = ti.field(ti.f32, shape=(n, n))
     t1 = torch.tensor(2 * np.ones((n, n), dtype=np.float32))
 
     x2 = ti.Matrix(2, 3, ti.f32, shape=(n, n))

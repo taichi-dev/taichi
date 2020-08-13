@@ -3,7 +3,7 @@ import taichi as ti
 
 @ti.all_archs
 def test_singleton():
-    x = ti.var(ti.i32, shape=())
+    x = ti.field(ti.i32, shape=())
 
     @ti.kernel
     def fill():
@@ -17,7 +17,7 @@ def test_singleton():
 
 @ti.all_archs
 def test_singleton2():
-    x = ti.var(ti.i32)
+    x = ti.field(ti.i32)
 
     ti.root.place(x)
 
@@ -33,8 +33,8 @@ def test_singleton2():
 
 @ti.all_archs
 def test_linear():
-    x = ti.var(ti.i32)
-    y = ti.var(ti.i32)
+    x = ti.field(ti.i32)
+    y = ti.field(ti.i32)
 
     n = 128
 
@@ -56,8 +56,8 @@ def test_linear():
 
 @ti.all_archs
 def test_nested():
-    x = ti.var(ti.i32)
-    y = ti.var(ti.i32)
+    x = ti.field(ti.i32)
+    y = ti.field(ti.i32)
 
     n = 128
 
@@ -79,8 +79,8 @@ def test_nested():
 
 @ti.all_archs
 def test_nested2():
-    x = ti.var(ti.i32)
-    y = ti.var(ti.i32)
+    x = ti.field(ti.i32)
+    y = ti.field(ti.i32)
 
     n = 2048
 
@@ -104,8 +104,8 @@ def test_nested2():
 
 @ti.all_archs
 def test_2d():
-    x = ti.var(ti.i32)
-    y = ti.var(ti.i32)
+    x = ti.field(ti.i32)
+    y = ti.field(ti.i32)
 
     n, m = 32, 16
 
@@ -125,8 +125,8 @@ def test_2d():
 
 @ti.all_archs
 def test_2d_non_POT():
-    x = ti.var(ti.i32)
-    y = ti.var(ti.i32, shape=())
+    x = ti.field(ti.i32)
+    y = ti.field(ti.i32, shape=())
 
     n, m = 13, 17
 
@@ -148,8 +148,8 @@ def test_2d_non_POT():
 
 @ti.all_archs
 def test_nested_2d():
-    x = ti.var(ti.i32)
-    y = ti.var(ti.i32)
+    x = ti.field(ti.i32)
+    y = ti.field(ti.i32)
 
     n = 32
 
@@ -169,8 +169,8 @@ def test_nested_2d():
 
 @ti.all_archs
 def test_nested_2d_more_nests():
-    x = ti.var(ti.i32)
-    y = ti.var(ti.i32)
+    x = ti.field(ti.i32)
+    y = ti.field(ti.i32)
 
     n = 64
 
@@ -193,7 +193,7 @@ def test_nested_2d_more_nests():
 
 @ti.all_archs
 def test_linear_k():
-    x = ti.var(ti.i32)
+    x = ti.field(ti.i32)
 
     n = 128
 
@@ -213,8 +213,8 @@ def test_linear_k():
 @ti.archs_support_sparse
 def test_struct_for_branching():
     # Related issue: https://github.com/taichi-dev/taichi/issues/704
-    x = ti.var(dt=ti.i32)
-    y = ti.var(dt=ti.i32)
+    x = ti.field(dtype=ti.i32)
+    y = ti.field(dtype=ti.i32)
     ti.root.pointer(ti.ij, 128 // 4).dense(ti.ij, 4).place(x, y)
 
     @ti.kernel

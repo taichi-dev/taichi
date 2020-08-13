@@ -3,7 +3,7 @@ import taichi as ti
 
 @ti.all_archs
 def test_while():
-    x = ti.var(ti.f32)
+    x = ti.field(ti.f32)
 
     N = 1
 
@@ -24,7 +24,7 @@ def test_while():
 
 @ti.all_archs
 def test_break():
-    ret = ti.var(ti.i32, shape=())
+    ret = ti.field(ti.i32, shape=())
 
     @ti.kernel
     def func():

@@ -6,7 +6,7 @@ import numpy as np
 def test_static_if():
     for val in [0, 1]:
         ti.init()
-        x = ti.var(ti.i32)
+        x = ti.field(ti.i32)
 
         ti.root.dense(ti.i, 1).place(x)
 
@@ -23,7 +23,7 @@ def test_static_if():
 
 @ti.must_throw(AssertionError)
 def test_static_if_error():
-    x = ti.var(ti.i32)
+    x = ti.field(ti.i32)
 
     ti.root.dense(ti.i, 1).place(x)
 
@@ -56,7 +56,7 @@ def test_static_ndrange():
 
 @ti.host_arch_only
 def test_static_break():
-    x = ti.var(ti.i32, 5)
+    x = ti.field(ti.i32, 5)
 
     @ti.kernel
     def func():
@@ -72,7 +72,7 @@ def test_static_break():
 
 @ti.host_arch_only
 def test_static_continue():
-    x = ti.var(ti.i32, 5)
+    x = ti.field(ti.i32, 5)
 
     @ti.kernel
     def func():

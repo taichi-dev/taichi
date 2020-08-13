@@ -3,7 +3,7 @@ import taichi as ti
 
 @ti.must_throw(UnboundLocalError)
 def test_if():
-    x = ti.var(ti.f32)
+    x = ti.field(ti.f32)
 
     ti.root.dense(ti.i, 1).place(x)
 
@@ -20,7 +20,7 @@ def test_if():
 
 @ti.must_throw(UnboundLocalError)
 def test_for():
-    x = ti.var(ti.f32)
+    x = ti.field(ti.f32)
 
     ti.root.dense(ti.i, 1).place(x)
 
@@ -35,7 +35,7 @@ def test_for():
 
 @ti.must_throw(UnboundLocalError)
 def test_while():
-    x = ti.var(ti.f32)
+    x = ti.field(ti.f32)
 
     ti.root.dense(ti.i, 1).place(x)
 

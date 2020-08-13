@@ -9,8 +9,8 @@ if ti.has_pytorch():
 def test_torch_ad():
     n = 32
 
-    x = ti.var(ti.f32, shape=n, needs_grad=True)
-    y = ti.var(ti.f32, shape=n, needs_grad=True)
+    x = ti.field(ti.f32, shape=n, needs_grad=True)
+    y = ti.field(ti.f32, shape=n, needs_grad=True)
 
     @ti.kernel
     def torch_kernel():
@@ -52,8 +52,8 @@ def test_torch_ad_gpu():
     device = torch.device('cuda:0')
     n = 32
 
-    x = ti.var(ti.f32, shape=n, needs_grad=True)
-    y = ti.var(ti.f32, shape=n, needs_grad=True)
+    x = ti.field(ti.f32, shape=n, needs_grad=True)
+    y = ti.field(ti.f32, shape=n, needs_grad=True)
 
     @ti.kernel
     def torch_kernel():

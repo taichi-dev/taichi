@@ -1,4 +1,5 @@
 import taichi as ti
+from taichi import inside_taichi
 import math
 
 eps = 1e-4

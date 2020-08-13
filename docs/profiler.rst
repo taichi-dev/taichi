@@ -1,3 +1,4 @@
+.. _profiler:
 
 Profiler
 ========
@@ -67,3 +68,8 @@ The outputs would be:
     [ 22.73%] jit_evaluator_0_kernel_0_serial             min   0.001 ms   avg   0.001 ms   max   0.001 ms   total   0.000 s [      1x]
     [  0.00%] jit_evaluator_1_kernel_1_serial             min   0.000 ms   avg   0.000 ms   max   0.000 ms   total   0.000 s [      1x]
     [ 77.27%] compute_c4_0_kernel_2_serial                min   0.004 ms   avg   0.004 ms   max   0.004 ms   total   0.000 s [      1x]
+
+.. note::
+
+   Currently the result of KernelProfiler could be incorrect on OpenGL backend
+   due to its lack of support for ``ti.sync()``.

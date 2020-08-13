@@ -43,7 +43,7 @@ def substep():
     for i, j in grid_m:
         if grid_m[i, j] > 0:
             grid_v[i, j] /= grid_m[i, j]
-        grid_v[i, j][1] -= dt * gravity
+        grid_v[i, j].y -= dt * gravity
         if i < bound and grid_v[i, j].x < 0:
             grid_v[i, j].x = 0
         if i > n_grid - bound and grid_v[i, j].x > 0:

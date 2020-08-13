@@ -3,8 +3,8 @@ import taichi as ti
 
 @ti.all_archs
 def test_kernel_template_mapper():
-    x = ti.var(ti.i32)
-    y = ti.var(ti.f32)
+    x = ti.field(ti.i32)
+    y = ti.field(ti.f32)
 
     ti.root.place(x, y)
 
@@ -32,8 +32,8 @@ def test_kernel_template_mapper():
 
 @ti.all_archs
 def test_kernel_template_mapper_numpy():
-    x = ti.var(ti.i32)
-    y = ti.var(ti.f32)
+    x = ti.field(ti.i32)
+    y = ti.field(ti.f32)
 
     ti.root.place(x, y)
 

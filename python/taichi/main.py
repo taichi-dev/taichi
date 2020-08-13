@@ -1004,6 +1004,16 @@ class TaichiMain:
         runpy.run_path('build.py')
 
     @register
+    def diagnose(self, arguments: list = sys.argv[2:]):
+        """System diagnose information"""
+        parser = argparse.ArgumentParser(
+            prog='ti diagnose', description=f"{self.diagnose.__doc__}")
+        args = parser.parse_args(arguments)
+
+        from .diagnose import main
+        main()
+
+    @register
     def cc_compose(self, arguments: list = sys.argv[2:]):
         """Compose C backend action record into a complete C file"""
         parser = argparse.ArgumentParser(

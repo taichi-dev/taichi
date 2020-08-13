@@ -4,10 +4,10 @@ import taichi as ti
 @ti.require(ti.extension.sparse)
 @ti.all_archs
 def test_compare_basics():
-    a = ti.var(ti.i32)
+    a = ti.field(ti.i32)
     ti.root.dynamic(ti.i, 256).place(a)
-    b = ti.var(ti.i32, shape=())
-    c = ti.var(ti.i32, shape=())
+    b = ti.field(ti.i32, shape=())
+    c = ti.field(ti.i32, shape=())
 
     @ti.kernel
     def func():
@@ -44,10 +44,10 @@ def test_compare_basics():
 @ti.require(ti.extension.sparse)
 @ti.all_archs
 def test_compare_equality():
-    a = ti.var(ti.i32)
+    a = ti.field(ti.i32)
     ti.root.dynamic(ti.i, 256).place(a)
-    b = ti.var(ti.i32, shape=())
-    c = ti.var(ti.i32, shape=())
+    b = ti.field(ti.i32, shape=())
+    c = ti.field(ti.i32, shape=())
 
     @ti.kernel
     def func():
@@ -84,7 +84,7 @@ def test_compare_equality():
 @ti.require(ti.extension.sparse)
 @ti.all_archs
 def test_no_duplicate_eval():
-    a = ti.var(ti.i32)
+    a = ti.field(ti.i32)
     ti.root.dynamic(ti.i, 256).place(a)
 
     @ti.kernel
@@ -99,8 +99,8 @@ def test_no_duplicate_eval():
 
 @ti.all_archs
 def test_no_duplicate_eval_func():
-    a = ti.var(ti.i32, ())
-    b = ti.var(ti.i32, ())
+    a = ti.field(ti.i32, ())
+    b = ti.field(ti.i32, ())
 
     @ti.func
     def why_this_foo_fail(n):
@@ -121,11 +121,11 @@ def test_no_duplicate_eval_func():
 @ti.require(ti.extension.sparse)
 @ti.all_archs
 def test_chain_compare():
-    a = ti.var(ti.i32)
+    a = ti.field(ti.i32)
     ti.root.dynamic(ti.i, 256).place(a)
-    b = ti.var(ti.i32, shape=())
-    c = ti.var(ti.i32, shape=())
-    d = ti.var(ti.i32, shape=())
+    b = ti.field(ti.i32, shape=())
+    c = ti.field(ti.i32, shape=())
+    d = ti.field(ti.i32, shape=())
 
     @ti.kernel
     def func():

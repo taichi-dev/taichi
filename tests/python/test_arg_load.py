@@ -3,8 +3,8 @@ import taichi as ti
 
 @ti.all_archs
 def test_arg_load():
-    x = ti.var(ti.i32)
-    y = ti.var(ti.f32)
+    x = ti.field(ti.i32)
+    y = ti.field(ti.f32)
 
     ti.root.place(x, y)
 
@@ -32,8 +32,8 @@ def test_arg_load():
 @ti.require(ti.extension.data64)
 @ti.all_archs
 def test_arg_load_f64():
-    x = ti.var(ti.i32)
-    y = ti.var(ti.f32)
+    x = ti.field(ti.i32)
+    y = ti.field(ti.f32)
 
     ti.root.place(x, y)
 
@@ -55,7 +55,7 @@ def test_arg_load_f64():
 @ti.all_archs
 def test_ext_arr():
     N = 128
-    x = ti.var(ti.f32)
+    x = ti.field(ti.f32)
 
     ti.root.dense(ti.i, N).place(x)
 

@@ -85,7 +85,7 @@ def test_static_assert_vector_n_ok():
 
 @ti.host_arch_only
 def test_static_assert_data_type_ok():
-    x = ti.var(ti.f32, ())
+    x = ti.field(ti.f32, ())
 
     @ti.kernel
     def func():

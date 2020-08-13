@@ -3,7 +3,7 @@ import taichi as ti
 
 @ti.all_archs
 def test_loop_grad():
-    x = ti.var(ti.f32)
+    x = ti.field(ti.f32)
 
     n = 16
     m = 8
@@ -34,7 +34,7 @@ def test_loop_grad():
 @ti.all_archs
 def test_loop_grad_complex():
     return  # This case is not supported yet
-    x = ti.var(ti.f32)
+    x = ti.field(ti.f32)
 
     n = 16
     m = 8

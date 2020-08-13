@@ -3,8 +3,8 @@ import taichi as ti
 
 @ti.all_archs
 def test_kernel_template_basic():
-    x = ti.var(ti.i32)
-    y = ti.var(ti.f32)
+    x = ti.field(ti.i32)
+    y = ti.field(ti.f32)
 
     n = 16
 
@@ -34,10 +34,10 @@ def test_kernel_template_basic():
 
 @ti.all_archs
 def test_kernel_template_gradient():
-    x = ti.var(ti.f32)
-    y = ti.var(ti.f32)
-    z = ti.var(ti.f32)
-    loss = ti.var(ti.f32)
+    x = ti.field(ti.f32)
+    y = ti.field(ti.f32)
+    z = ti.field(ti.f32)
+    loss = ti.field(ti.f32)
 
     ti.root.dense(ti.i, 16).place(x, y, z)
     ti.root.place(loss)
@@ -68,8 +68,8 @@ def test_kernel_template_gradient():
 
 @ti.all_archs
 def test_func_template():
-    a = [ti.var(dt=ti.f32) for _ in range(2)]
-    b = [ti.var(dt=ti.f32) for _ in range(2)]
+    a = [ti.field(dtype=ti.f32) for _ in range(2)]
+    b = [ti.field(dtype=ti.f32) for _ in range(2)]
 
     for l in range(2):
         ti.root.dense(ti.ij, 16).place(a[l], b[l])
@@ -100,8 +100,8 @@ def test_func_template():
 
 @ti.all_archs
 def test_func_template2():
-    a = ti.var(dt=ti.f32)
-    b = ti.var(dt=ti.f32)
+    a = ti.field(dtype=ti.f32)
+    b = ti.field(dtype=ti.f32)
 
     ti.root.dense(ti.ij, 16).place(a, b)
 

@@ -5,7 +5,6 @@
 #include "taichi/util/action_recorder.h"
 #include "struct_cc.h"
 #include "cc_program.h"
-#include "cc_config.h"
 #include "cc_runtime.h"
 #include "cc_kernel.h"
 #include "cc_layout.h"
@@ -14,8 +13,6 @@
 
 TLANG_NAMESPACE_BEGIN
 namespace cccp {
-
-CCConfiguation cfg;
 
 void CCKernel::compile() {
   if (!kernel->is_evaluator)
@@ -32,7 +29,7 @@ void CCKernel::compile() {
                           << program->get_layout()->source << "\n"
                           << source;
   TI_DEBUG("[cc] compiling [{}] -> [{}]:\n{}\n", name, obj_path, source);
-  execute(cfg.compile_cmd, obj_path, src_path);
+  execute(program->program->config.cc_compile_cmd, obj_path, src_path);
 }
 
 CCContext::CCContext(CCProgram *program, Context *ctx)
@@ -74,10 +71,10 @@ size_t CCLayout::compile() {
                           << "}\n";
 
   TI_DEBUG("[cc] compiling root struct -> [{}]:\n{}\n", obj_path, source);
-  execute(cfg.compile_cmd, obj_path, src_path);
+  execute(program->program->config.cc_compile_cmd, obj_path, src_path);
 
   TI_DEBUG("[cc] linking root struct object [{}] -> [{}]", obj_path, dll_path);
-  execute(cfg.link_cmd, dll_path, obj_path);
+  execute(program->program->config.cc_link_cmd, dll_path, obj_path);
 
   TI_DEBUG("[cc] loading root struct object: {}", dll_path);
   DynamicLoader dll(dll_path);
@@ -103,7 +100,7 @@ void CCRuntime::compile() {
 
   std::ofstream(src_path) << header << "\n" << source;
   TI_DEBUG("[cc] compiling runtime -> [{}]:\n{}\n", obj_path, source);
-  execute(cfg.compile_cmd, obj_path, src_path);
+  execute(program->program->config.cc_compile_cmd, obj_path, src_path);
 }
 
 void CCProgram::relink() {
@@ -120,7 +117,7 @@ void CCProgram::relink() {
 
   TI_DEBUG("[cc] linking shared object [{}] with [{}]", dll_path,
            fmt::join(objects, "] ["));
-  execute(cfg.link_cmd, dll_path, fmt::join(objects, "' '"));
+  execute(program->config.cc_link_cmd, dll_path, fmt::join(objects, "' '"));
 
   dll = nullptr;
   TI_DEBUG("[cc] loading shared object: {}", dll_path);
@@ -168,7 +165,7 @@ CCFuncEntryType *CCProgram::load_kernel(std::string const &name) {
   return reinterpret_cast<CCFuncEntryType *>(dll->load_function("Tk_" + name));
 }
 
-CCProgram::CCProgram() {
+CCProgram::CCProgram(Program *program) : program(program) {
   init_runtime();
 }
 

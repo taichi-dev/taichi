@@ -7,7 +7,7 @@ def test_pass_by_value():
     def set_val(x, i):
         x = i
 
-    ret = ti.var(ti.i32, shape=())
+    ret = ti.field(ti.i32, shape=())
 
     @ti.kernel
     def task():

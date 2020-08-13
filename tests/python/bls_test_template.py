@@ -11,10 +11,10 @@ def bls_test_template(dim,
                       scatter=False,
                       benchmark=0,
                       dense=False):
-    x, y, y2 = ti.var(ti.i32), ti.var(ti.i32), ti.var(ti.i32)
+    x, y, y2 = ti.field(ti.i32), ti.field(ti.i32), ti.field(ti.i32)
 
     index = ti.indices(*range(dim))
-    mismatch = ti.var(ti.i32, shape=())
+    mismatch = ti.field(ti.i32, shape=())
 
     if not isinstance(bs, (tuple, list)):
         bs = [bs for _ in range(dim)]
@@ -111,19 +111,19 @@ def bls_particle_grid(N,
                       use_offset=True):
     M = N * N * ppc
 
-    m1 = ti.var(ti.f32)
-    m2 = ti.var(ti.f32)
-    m3 = ti.var(ti.f32)
-    pid = ti.var(ti.i32)
-    err = ti.var(ti.i32, shape=())
+    m1 = ti.field(ti.f32)
+    m2 = ti.field(ti.f32)
+    m3 = ti.field(ti.f32)
+    pid = ti.field(ti.i32)
+    err = ti.field(ti.i32, shape=())
 
     max_num_particles_per_block = block_size**2 * 4096
 
     x = ti.Vector(2, dt=ti.f32)
 
-    s1 = ti.var(dt=ti.f32)
-    s2 = ti.var(dt=ti.f32)
-    s3 = ti.var(dt=ti.f32)
+    s1 = ti.field(dtype=ti.f32)
+    s2 = ti.field(dtype=ti.f32)
+    s3 = ti.field(dtype=ti.f32)
 
     ti.root.dense(ti.i, M).place(x)
     ti.root.dense(ti.i, M).place(s1, s2, s3)

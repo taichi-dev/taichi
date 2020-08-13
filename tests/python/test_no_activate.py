@@ -4,7 +4,7 @@ import taichi as ti
 @ti.require(ti.extension.sparse)
 @ti.all_archs
 def test_no_activate():
-    x = ti.var(ti.f32)
+    x = ti.field(ti.f32)
 
     n = 1024
 

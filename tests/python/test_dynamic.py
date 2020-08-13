@@ -11,7 +11,7 @@ def ti_support_non_top_dynamic(test):
 
 @ti_support_dynamic
 def test_dynamic():
-    x = ti.var(ti.f32)
+    x = ti.field(ti.f32)
     n = 128
 
     ti.root.dynamic(ti.i, n, 32).place(x)
@@ -29,7 +29,7 @@ def test_dynamic():
 
 @ti_support_dynamic
 def test_dynamic2():
-    x = ti.var(ti.f32)
+    x = ti.field(ti.f32)
     n = 128
 
     ti.root.dynamic(ti.i, n, 32).place(x)
@@ -70,7 +70,7 @@ def test_dynamic_matrix():
 
 @ti_support_dynamic
 def test_append():
-    x = ti.var(ti.i32)
+    x = ti.field(ti.i32)
     n = 128
 
     ti.root.dynamic(ti.i, n, 32).place(x)
@@ -92,8 +92,8 @@ def test_append():
 
 @ti_support_dynamic
 def test_length():
-    x = ti.var(ti.i32)
-    y = ti.var(ti.f32, shape=())
+    x = ti.field(ti.i32)
+    y = ti.field(ti.f32, shape=())
     n = 128
 
     ti.root.dynamic(ti.i, n, 32).place(x)
@@ -116,9 +116,9 @@ def test_length():
 
 @ti_support_dynamic
 def test_append_ret_value():
-    x = ti.var(ti.i32)
-    y = ti.var(ti.i32)
-    z = ti.var(ti.i32)
+    x = ti.field(ti.i32)
+    y = ti.field(ti.i32)
+    z = ti.field(ti.i32)
     n = 128
 
     ti.root.dynamic(ti.i, n, 32).place(x)
@@ -142,8 +142,8 @@ def test_append_ret_value():
 @ti_support_non_top_dynamic
 def test_dense_dynamic():
     n = 128
-    x = ti.var(ti.i32)
-    l = ti.var(ti.i32, shape=n)
+    x = ti.field(ti.i32)
+    l = ti.field(ti.i32, shape=n)
 
     ti.root.dense(ti.i, n).dynamic(ti.j, n, 8).place(x)
 
@@ -166,8 +166,8 @@ def test_dense_dynamic():
 @ti_support_non_top_dynamic
 def test_dense_dynamic_len():
     n = 128
-    x = ti.var(ti.i32)
-    l = ti.var(ti.i32, shape=n)
+    x = ti.field(ti.i32)
+    l = ti.field(ti.i32, shape=n)
 
     ti.root.dense(ti.i, n).dynamic(ti.j, n, 32).place(x)
 
@@ -186,8 +186,8 @@ def test_dense_dynamic_len():
 def test_dynamic_activate():
     ti.init(arch=ti.metal)
     # record the lengths
-    l = ti.var(ti.i32, 3)
-    x = ti.var(ti.i32)
+    l = ti.field(ti.i32, 3)
+    x = ti.field(ti.i32)
     xp = ti.root.dynamic(ti.i, 32, 32)
     xp.place(x)
 

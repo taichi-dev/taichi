@@ -66,7 +66,7 @@ class Expr(TaichiOperations):
     def loop_range(self):
         return self
 
-    def get_tensor_members(self):
+    def get_field_members(self):
         return [self]
 
     @python_scope

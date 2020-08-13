@@ -1380,7 +1380,7 @@ inline void BlockDim(int v) {
 }
 
 // TODO(archibate): actually ThreadDim?
-inline void StrideSize(int v) {
+inline void ThreadDim(int v) {
   dec.thread_dim = v;
 }
 

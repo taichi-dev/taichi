@@ -548,11 +548,10 @@ void export_lang(py::module &m) {
     }
   });
   // Schedules
-  m.def("cache", Cache);
   m.def("parallelize", Parallelize);
   m.def("vectorize", Vectorize);
   m.def("block_dim", BlockDim);
-  m.def("thread_dim", ThreadDim);
+  m.def("cache", Cache);
   m.def("no_activate", [](SNode *snode) {
     get_current_program().get_current_kernel().no_activate.push_back(snode);
   });

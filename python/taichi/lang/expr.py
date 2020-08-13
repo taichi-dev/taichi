@@ -69,6 +69,10 @@ class Expr(TaichiOperations):
     def get_field_members(self):
         return [self]
 
+    @deprecated('x.get_tensor_members()', 'x.get_field_members()')
+    def get_tensor_members(self):
+        return self.get_field_members()
+
     @python_scope
     def initialize_accessor(self):
         if self.getter:

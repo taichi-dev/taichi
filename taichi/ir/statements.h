@@ -174,7 +174,7 @@ class OffloadedStmt : public Stmt {
   int step;
   int grid_dim{1};
   int block_dim{1};
-  int stride_size{1};
+  int thread_dim{1};
   bool reversed;
   int num_cpu_threads;
   Arch device;
@@ -222,7 +222,7 @@ class OffloadedStmt : public Stmt {
                      end_value,
                      step /*unused?*/,
                      block_dim,
-                     stride_size,
+                     thread_dim,
                      reversed,
                      num_cpu_threads,
                      device,

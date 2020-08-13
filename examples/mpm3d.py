@@ -7,7 +7,7 @@ ti.init(arch=ti.opengl)
 
 dim = 3
 n_grid = 32
-n_particles = n_grid ** dim // 2 ** (dim - 1)
+n_particles = n_grid**dim // 2**(dim - 1)
 dx = 1 / n_grid
 dt = 4e-4
 
@@ -23,10 +23,11 @@ v = ti.Vector.field(dim, float, n_particles)
 C = ti.Matrix.field(dim, dim, float, n_particles)
 J = ti.field(float, n_particles)
 
-grid_v = ti.Vector.field(dim, float, (n_grid,) * dim)
-grid_m = ti.field(float, (n_grid,) * dim)
+grid_v = ti.Vector.field(dim, float, (n_grid, ) * dim)
+grid_m = ti.field(float, (n_grid, ) * dim)
 
-neighbour = (3,) * dim
+neighbour = (3, ) * dim
+
 
 @ti.kernel
 def substep():
@@ -51,7 +52,8 @@ def substep():
         if grid_m[I] > 0:
             grid_v[I] /= grid_m[I]
         grid_v[I][1] -= dt * gravity
-        cond = I < bound and grid_v[I] < 0 or I > n_grid - bound and grid_v[I] > 0
+        cond = I < bound and grid_v[I] < 0 or I > n_grid - bound and grid_v[
+            I] > 0
         grid_v[I] = 0 if cond else grid_v[I]
     for p in x:
         Xp = x[p] / dx
@@ -72,6 +74,7 @@ def substep():
         x[p] += dt * v[p]
         J[p] *= 1 + dt * new_C.trace()
         C[p] = new_C
+
 
 @ti.kernel
 def init():

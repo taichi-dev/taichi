@@ -94,7 +94,7 @@ def test_offset_for_vector():
 
 @ti.all_archs
 def test_offset_for_matrix():
-    a = ti.Matrix(3, 3, shape=(16, 16), offset=(-16, 16), dt=ti.float32)
+    a = ti.Matrix.field(3, 3, shape=(16, 16), offset=(-16, 16), dtype=ti.float32)
 
     @ti.kernel
     def test():
@@ -123,5 +123,5 @@ def test_offset_must_throw_vector():
 
 @ti.must_throw(AssertionError)
 def test_offset_must_throw_matrix():
-    c = ti.Matrix(3, 3, dt=ti.i32, shape=(32, 16, 8), offset=(32, 16))
-    d = ti.Matrix(3, 3, dt=ti.i32, shape=None, offset=(32, 16))
+    c = ti.Matrix.field(3, 3, dtype=ti.i32, shape=(32, 16, 8), offset=(32, 16))
+    d = ti.Matrix.field(3, 3, dtype=ti.i32, shape=None, offset=(32, 16))

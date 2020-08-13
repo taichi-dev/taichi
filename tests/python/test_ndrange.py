@@ -80,7 +80,7 @@ def test_static_grouped():
 
 @ti.all_archs
 def test_static_grouped_static():
-    x = ti.Matrix(2, 3, dt=ti.f32, shape=(16, 4))
+    x = ti.Matrix.field(2, 3, dtype=ti.f32, shape=(16, 4))
 
     @ti.kernel
     def func():

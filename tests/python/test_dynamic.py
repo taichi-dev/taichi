@@ -47,7 +47,7 @@ def test_dynamic2():
 
 @ti_support_dynamic
 def test_dynamic_matrix():
-    x = ti.Matrix(2, 1, dt=ti.i32)
+    x = ti.Matrix.field(2, 1, dtype=ti.i32)
     n = 8192
 
     ti.root.dynamic(ti.i, n, chunk_size=128).place(x)

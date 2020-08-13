@@ -199,7 +199,7 @@ Methods
         # c = [[1*4, 1*5, 1*6], [2*4, 2*5, 2*6]]
 
 .. note::
-    This have no common with ``ti.cross``. ``a`` and ``b`` do not have to be 3 or 2 component vectors.
+    This has nothing in common with ``ti.cross``. ``a`` and ``b`` do not have to be 3 or 2 component vectors.
 
 
 .. function:: a.cast(dt)

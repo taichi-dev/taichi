@@ -248,6 +248,7 @@ parallelize = core.parallelize
 serialize = lambda: parallelize(1)
 vectorize = core.vectorize
 block_dim = core.block_dim
+thread_dim = core.thread_dim
 cache = core.cache
 
 inversed = deprecated('ti.inversed(a)', 'a.inverse()')(Matrix.inversed)

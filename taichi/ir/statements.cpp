@@ -69,6 +69,7 @@ std::unique_ptr<Stmt> OffloadedStmt::clone() const {
   new_stmt->end_value = end_value;
   new_stmt->step = step;
   new_stmt->block_dim = block_dim;
+  new_stmt->thread_dim = thread_dim;
   new_stmt->reversed = reversed;
   new_stmt->num_cpu_threads = num_cpu_threads;
   new_stmt->device = device;

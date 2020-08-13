@@ -76,7 +76,6 @@ class DecoratorRecorder {
   bool strictly_serialized;
   ScratchPadOptions scratch_opt;
   int block_dim;
-  int thread_dim;
   bool uniform;
 
   DecoratorRecorder() {
@@ -1226,7 +1225,6 @@ class RangeForStmt : public Stmt {
   int vectorize;
   int parallelize;
   int block_dim;
-  int thread_dim;
   bool strictly_serialized;
 
   RangeForStmt(Stmt *begin,
@@ -1235,7 +1233,6 @@ class RangeForStmt : public Stmt {
                int vectorize,
                int parallelize,
                int block_dim,
-               int thread_dim,
                bool strictly_serialized);
 
   bool is_container_statement() const override {
@@ -1254,7 +1251,6 @@ class RangeForStmt : public Stmt {
                      vectorize,
                      parallelize,
                      block_dim,
-                     thread_dim,
                      strictly_serialized);
   TI_DEFINE_ACCEPT
 };
@@ -1270,15 +1266,13 @@ class StructForStmt : public Stmt {
   int vectorize;
   int parallelize;
   int block_dim;
-  int thread_dim;
   ScratchPadOptions scratch_opt;
 
   StructForStmt(SNode *snode,
                 std::unique_ptr<Block> &&body,
                 int vectorize,
                 int parallelize,
-                int block_dim,
-                int thread_dim);
+                int block_dim);
 
   bool is_container_statement() const override {
     return true;
@@ -1291,7 +1285,6 @@ class StructForStmt : public Stmt {
                      vectorize,
                      parallelize,
                      block_dim,
-                     thread_dim,
                      scratch_opt);
   TI_DEFINE_ACCEPT
 };
@@ -1377,11 +1370,6 @@ inline void StrictlySerialize() {
 inline void BlockDim(int v) {
   TI_ASSERT(bit::is_power_of_two(v));
   dec.block_dim = v;
-}
-
-// TODO(archibate): actually ThreadDim?
-inline void ThreadDim(int v) {
-  dec.thread_dim = v;
 }
 
 class VectorElement {

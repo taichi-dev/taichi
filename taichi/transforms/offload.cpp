@@ -61,7 +61,6 @@ class Offloader {
         } else {
           offloaded->block_dim = s->block_dim;
         }
-        offloaded->thread_dim = s->thread_dim;
         offloaded->body = std::make_unique<Block>();
         if (auto val = s->begin->cast<ConstStmt>()) {
           offloaded->const_begin = true;
@@ -159,7 +158,6 @@ class Offloader {
         offloaded_struct_for->block_dim = for_stmt->block_dim;
       }
     }
-    offloaded_struct_for->thread_dim = for_stmt->thread_dim;
 
     replace_all_usages_with(for_stmt, for_stmt, offloaded_struct_for.get());
 

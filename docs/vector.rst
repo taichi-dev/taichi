@@ -119,7 +119,7 @@ Methods
     ``a.norm(eps)`` is equivalent to ``ti.sqrt(a.dot(a) + eps)``
 
 .. note::
-    Set ``eps = 1e-5`` for example, to safe guard the operator's gradient on zero vectors during differentiable programming.
+    To safeguard the operator's gradient on zero vectors during differentiable programming, set ``eps`` to a small, positive value such as ``1e-5``.
 
 
 .. function:: a.norm_sqr()
@@ -199,7 +199,7 @@ Methods
         # c = [[1*4, 1*5, 1*6], [2*4, 2*5, 2*6]]
 
 .. note::
-    This have no common with ``ti.cross``. ``a`` and ``b`` do not have to be 3 or 2 component vectors.
+    The outer product should not be confused with the cross product (``ti.cross``). For example, ``a`` and ``b`` do not have to be 2- or 3-component vectors for this function.
 
 
 .. function:: a.cast(dt)

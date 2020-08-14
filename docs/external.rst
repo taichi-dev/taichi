@@ -6,10 +6,11 @@ Interacting with external arrays
 Introduction
 ------------
 
-Although Taichi fields are mainly used in Taichi-scope, in some cases efficiently manipulating Taichi field data in Python-scope can be helpful.
+Although Taichi fields are mainly used in Taichi-scope, in some cases efficiently manipulating Taichi field data in Python-scope could also be helpful.
 
 So we provide a way to export and import data in Taichi fields via NumPy arrays.
-This allows you to interact with the data in Python-scope with other packages.
+This allows you to interact with the data in Python-scope with other packages
+that supports NumPy.
 
 **Export data in Taichi fields to a NumPy array** via ``to_numpy()``.
 This allows us to export computation results to other
@@ -45,7 +46,13 @@ This allows people to initialize Taichi fields via NumPy arrays. E.g.,
 API reference
 -------------
 
-We provide interface to share data with both NumPy and PyTorch.
+We provide interface to share data with **external arrays**.
+External arrays refers to NumPy arrays or PyTorch tensors.
+
+We suggest common users to start with NumPy arrays.
+
+The interface for PyTorch tensors is designed for Machine Learning (ML) people
+so that they could do GPU2GPU copy with less overhead.
 
 Interacting with NumPy
 **********************
@@ -68,8 +75,8 @@ We provide interfaces to copy data between Taichi fields and NumPy arrays.
 Interacting with PyTorch
 ************************
 
-We also provide interfaces to copy data directly between Taichi fields and PyTorch tensors with less overhead.
-These functions allows you to copy from GPU -> GPU with **less overhead** than GPU -> CPU -> GPU.
+We also provide interfaces to copy data directly between Taichi fields and PyTorch tensors.
+These functions allows you to directly copy from ``GPU -> GPU`` with **less memory overhead** than ``GPU -> CPU -> GPU``.
 
 .. function:: field.to_torch(device = None)
 
@@ -170,4 +177,4 @@ arguments. For example:
 
 .. note::
 
-   Struct-for's on external arrays are not supported.
+   Struct-for's are not supported on external arrays.

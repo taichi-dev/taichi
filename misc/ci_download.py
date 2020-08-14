@@ -2,12 +2,14 @@ import os
 
 platform = os.environ['CI_PLATFORM']
 
+
 def system(x):
     print(f'[ci] executing: {x}')
     ret = os.system(x)
     if ret != 0:
         print(f'[ci] process exited with {ret}')
         exit(1)
+
 
 if platform.startswith('macos'):
     suffix = 'macos'

@@ -145,7 +145,7 @@ def test_taichi_scope_matrix_operations_with_global_matrices(ops):
     m1, m2 = ti.Matrix(a), ti.Matrix(b)
     r1 = ti.Matrix.field(2, 2, dtype=ti.i32, shape=())
     r2 = ti.Matrix.field(2, 2, dtype=ti.i32, shape=())
-    m3 = ti.Matrix(2, 2, dt=ti.i32, shape=())
+    m3 = ti.Matrix.field(2, 2, dtype=ti.i32, shape=())
     m3.from_numpy(c)
 
     @ti.kernel

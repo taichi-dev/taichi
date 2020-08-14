@@ -8,7 +8,7 @@ import math
 @ti.all_archs
 def test_const_init():
     a = ti.Matrix.field(2, 3, dtype=ti.i32, shape=())
-    b = ti.Vector(3, dt=ti.i32, shape=())
+    b = ti.Vector.field(3, dtype=ti.i32, shape=())
 
     @ti.kernel
     def init():
@@ -27,10 +27,10 @@ def test_const_init():
 
 @ti.all_archs
 def test_basic_utils():
-    a = ti.Vector(3, dt=ti.f32)
-    b = ti.Vector(2, dt=ti.f32)
+    a = ti.Vector.field(3, dtype=ti.f32)
+    b = ti.Vector.field(2, dtype=ti.f32)
     abT = ti.Matrix.field(3, 2, dtype=ti.f32)
-    aNormalized = ti.Vector(3, dt=ti.f32)
+    aNormalized = ti.Vector.field(3, dtype=ti.f32)
 
     normA = ti.field(ti.f32)
     normSqrA = ti.field(ti.f32)
@@ -68,12 +68,12 @@ def test_basic_utils():
 
 @ti.all_archs
 def test_cross():
-    a = ti.Vector(3, dt=ti.f32)
-    b = ti.Vector(3, dt=ti.f32)
-    c = ti.Vector(3, dt=ti.f32)
+    a = ti.Vector.field(3, dtype=ti.f32)
+    b = ti.Vector.field(3, dtype=ti.f32)
+    c = ti.Vector.field(3, dtype=ti.f32)
 
-    a2 = ti.Vector(2, dt=ti.f32)
-    b2 = ti.Vector(2, dt=ti.f32)
+    a2 = ti.Vector.field(2, dtype=ti.f32)
+    b2 = ti.Vector.field(2, dtype=ti.f32)
     c2 = ti.field(dtype=ti.f32)
 
     ti.root.place(a, b, c, a2, b2, c2)
@@ -97,12 +97,12 @@ def test_cross():
 
 @ti.all_archs
 def test_dot():
-    a = ti.Vector(3, dt=ti.f32)
-    b = ti.Vector(3, dt=ti.f32)
+    a = ti.Vector.field(3, dtype=ti.f32)
+    b = ti.Vector.field(3, dtype=ti.f32)
     c = ti.field(dtype=ti.f32)
 
-    a2 = ti.Vector(2, dt=ti.f32)
-    b2 = ti.Vector(2, dt=ti.f32)
+    a2 = ti.Vector.field(2, dtype=ti.f32)
+    b2 = ti.Vector.field(2, dtype=ti.f32)
     c2 = ti.field(dtype=ti.f32)
 
     ti.root.place(a, b, c, a2, b2, c2)
@@ -244,7 +244,7 @@ def test_mat_inverse():
 
 @ti.all_archs
 def test_matrix_factories():
-    a = ti.Vector.var(3, dt=ti.i32, shape=3)
+    a = ti.Vector.field(3, dtype=ti.i32, shape=3)
     b = ti.Matrix.field(2, 2, dtype=ti.f32, shape=2)
     c = ti.Matrix.field(2, 3, dtype=ti.f32, shape=2)
 
@@ -339,7 +339,7 @@ def test_init_matrix_from_vectors_deprecated():
 @pytest.mark.filterwarnings('ignore')
 @ti.host_arch_only
 def test_to_numpy_as_vector_deprecated():
-    v = ti.Vector(3, dt=ti.f32, shape=(2))
+    v = ti.Vector.field(3, dtype=ti.f32, shape=(2))
     u = np.array([[2, 3, 4], [5, 6, 7]])
     v.from_numpy(u)
     assert v.to_numpy(as_vector=True) == approx(u)
@@ -404,7 +404,7 @@ def test_min_max():
 def test_matrix_list_assign():
 
     m = ti.Matrix.field(2, 2, dtype=ti.i32, shape=(2, 2, 1))
-    v = ti.Vector(2, dt=ti.i32, shape=(2, 2, 1))
+    v = ti.Vector.field(2, dtype=ti.i32, shape=(2, 2, 1))
 
     m[1, 0, 0] = [[4, 3], [6, 7]]
     v[1, 0, 0] = [8, 4]
@@ -426,8 +426,8 @@ def test_matrix_list_assign():
 
 @ti.host_arch_only
 def test_vector_xyzw_accessor():
-    u = ti.Vector(2, dt=ti.i32, shape=(2, 2, 1))
-    v = ti.Vector(4, dt=ti.i32, shape=(2, 2, 1))
+    u = ti.Vector.field(2, dtype=ti.i32, shape=(2, 2, 1))
+    v = ti.Vector.field(4, dtype=ti.i32, shape=(2, 2, 1))
 
     u[1, 0, 0].y = 3
     v[1, 0, 0].z = 0

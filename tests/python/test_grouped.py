@@ -163,7 +163,7 @@ def test_static_grouped_func():
     K = 3
     dim = 2
 
-    v = ti.Vector(K, dt=ti.i32, shape=((K, ) * dim))
+    v = ti.Vector.field(K, dtype=ti.i32, shape=((K, ) * dim))
 
     def stencil_range():
         return ti.ndrange(*((K, ) * (dim + 1)))

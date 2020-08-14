@@ -42,7 +42,7 @@ def test_image_io(resx, resy, comp, ext, is_tensor, dt):
 def test_image_io_vector(resx, resy, comp, ext, dt):
     shape = (resx, resy)
     pixel = np.random.rand(*shape, comp).astype(ti.to_numpy_type(dt))
-    pixel_t = ti.Vector(comp, dt, shape)
+    pixel_t = ti.Vector.field(comp, dt, shape)
     pixel_t.from_numpy(pixel)
     fn = make_temp_file(suffix='.' + ext)
     ti.imwrite(pixel_t, fn)
@@ -62,7 +62,7 @@ def test_image_io_uint(resx, resy, comp, ext, dt):
     # Be careful here if you want lossless saving.
     np_max = np.iinfo(np_type).max // 256
     pixel = np.random.randint(256, size=(*shape, comp), dtype=np_type) * np_max
-    pixel_t = ti.Vector(comp, dt, shape)
+    pixel_t = ti.Vector.field(comp, dt, shape)
     pixel_t.from_numpy(pixel)
     fn = make_temp_file(suffix='.' + ext)
     ti.imwrite(pixel_t, fn)

@@ -156,7 +156,7 @@ def test_io_simple():
 
 @ti.torch_test
 def test_io_simple():
-    mat = ti.Matrix.field(2, 6, dt=ti.f32, shape=(), needs_grad=True)
+    mat = ti.Matrix.field(2, 6, dtype=ti.f32, shape=(), needs_grad=True)
     zeros = torch.zeros((2, 6))
     zeros[1, 2] = 3
     mat.from_torch(zeros + 1)

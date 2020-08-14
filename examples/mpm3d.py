@@ -7,8 +7,8 @@ ti.init(arch=ti.opengl)
 
 #dim, n_grid, steps, dt = 2, 128, 20, 2e-4
 #dim, n_grid, steps, dt = 2, 256, 32, 1e-4
-#dim, n_grid, steps, dt = 3, 32, 25, 4e-4
-dim, n_grid, steps, dt = 3, 64, 25, 2e-4
+dim, n_grid, steps, dt = 3, 32, 25, 4e-4
+#dim, n_grid, steps, dt = 3, 64, 25, 2e-4
 #dim, n_grid, steps, dt = 3, 128, 25, 8e-5
 
 n_particles = n_grid ** dim // 2 ** (dim - 1)
@@ -82,7 +82,7 @@ def substep():
 @ti.kernel
 def init():
     for i in range(n_particles):
-        x[i] = ti.Vector([ti.random() for i in range(dim)]) * 0.4 + 0.2
+        x[i] = ti.Vector([ti.random() for i in range(dim)]) * 0.4 + 0.15
         J[i] = 1
 
 

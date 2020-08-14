@@ -46,7 +46,7 @@ This allows people to initialize Taichi fields via NumPy arrays. E.g.,
 API reference
 -------------
 
-We provide interface to share data with **external arrays**.
+We provide interfaces to copy data between Taichi field and  **external arrays**.
 External arrays refers to NumPy arrays or PyTorch tensors.
 
 We suggest common users to start with NumPy arrays.

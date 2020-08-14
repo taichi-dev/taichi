@@ -76,10 +76,13 @@ nsobj_unique_ptr<MTLLibrary> new_library_with_source(MTLDevice *device,
     call(options, "setLanguageVersion:", msl_version);
   }
 
+  id error_return = nullptr;
   auto *lib = cast_call<MTLLibrary *>(
       device, "newLibraryWithSource:options:error:", source_str.get(), options,
-      nullptr);
-
+      &error_return);
+  if (lib == nullptr) {
+    mac::ns_log_object(error_return);
+  }
   return wrap_as_nsobj_unique_ptr(lib);
 }
 
@@ -94,8 +97,13 @@ nsobj_unique_ptr<MTLFunction> new_function_with_name(MTLLibrary *library,
 nsobj_unique_ptr<MTLComputePipelineState>
 new_compute_pipeline_state_with_function(MTLDevice *device,
                                          MTLFunction *function) {
+  id error_return = nullptr;
   auto *pipeline_state = cast_call<MTLComputePipelineState *>(
-      device, "newComputePipelineStateWithFunction:error:", function, nullptr);
+      device, "newComputePipelineStateWithFunction:error:", function,
+      &error_return);
+  if (pipeline_state == nullptr) {
+    mac::ns_log_object(error_return);
+  }
   return wrap_as_nsobj_unique_ptr(pipeline_state);
 }
 

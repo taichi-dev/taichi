@@ -94,7 +94,11 @@ def test_offset_for_vector():
 
 @ti.all_archs
 def test_offset_for_matrix():
-    a = ti.Matrix.field(3, 3, shape=(16, 16), offset=(-16, 16), dtype=ti.float32)
+    a = ti.Matrix.field(3,
+                        3,
+                        shape=(16, 16),
+                        offset=(-16, 16),
+                        dtype=ti.float32)
 
     @ti.kernel
     def test():

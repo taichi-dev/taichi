@@ -5,6 +5,7 @@ import ast
 from .kernel_arguments import *
 from .util import *
 from .shell import oinspect, _shell_pop_print
+from .exception import TaichiSyntaxError
 from . import impl
 import functools
 
@@ -75,8 +76,11 @@ class Func:
     def __call__(self, *args):
         _taichi_skip_traceback = 1
         if not impl.inside_kernel():
-            assert self.pyfunc, "Use @ti.pyfunc if you wish to call " \
-                                "Taichi functions from Python-scope"
+            if not self.pyfunc:
+                raise TaichiSyntaxError(
+                    "Taichi functions cannot be called from Python-scope."
+                    " Use @ti.pyfunc if you wish to call Taichi functions "
+                    "from both Python-scope and Taichi-scope.")
             return self.func(*args)
         if self.compiled is None:
             self.do_compile()
@@ -364,7 +368,7 @@ class Kernel:
             _taichi_skip_traceback = 1
             if self.runtime.inside_kernel:
                 import taichi as ti
-                raise ti.TaichiSyntaxError(
+                raise TaichiSyntaxError(
                     "Kernels cannot call other kernels. I.e., nested kernels are not allowed. Please check if you have direct/indirect invocation of kernels within kernels. Note that some methods provided by the Taichi standard library may invoke kernels, and please move their invocations to Python-scope."
                 )
             self.runtime.inside_kernel = True
@@ -385,6 +389,7 @@ class Kernel:
 
             tmps = []
             callbacks = []
+            has_external_arrays = False
 
             actual_argument_slot = 0
             for i, v in enumerate(args):
@@ -392,7 +397,7 @@ class Kernel:
                 if isinstance(needed, template):
                     continue
                 provided = type(v)
-                # Note: do not use sth like needed == f32. That would be slow.
+                # Note: do not use sth like "needed == f32". That would be slow.
                 if id(needed) in real_type_ids:
                     if not isinstance(v, (float, int)):
                         raise KernelArgError(i, needed, provided)
@@ -402,7 +407,7 @@ class Kernel:
                         raise KernelArgError(i, needed, provided)
                     t_kernel.set_arg_int(actual_argument_slot, int(v))
                 elif self.match_ext_arr(v, needed):
-                    dt = to_taichi_type(v.dtype)
+                    has_external_arrays = True
                     has_torch = has_pytorch()
                     is_numpy = isinstance(v, np.ndarray)
                     if is_numpy:
@@ -454,7 +459,7 @@ class Kernel:
                 actual_argument_slot += 1
             # Both the class kernels and the plain-function kernels are unified now.
             # In both cases, |self.grad| is another Kernel instance that computes the
-            # gradient. For class kerenls, args[0] is always the kernel owner.
+            # gradient. For class kernels, args[0] is always the kernel owner.
             if not self.is_grad and self.runtime.target_tape and not self.runtime.inside_complex_kernel:
                 self.runtime.target_tape.insert(self, args)
 
@@ -468,9 +473,11 @@ class Kernel:
                 else:
                     ret = t_kernel.get_ret_float(0)
 
-            if callbacks:
+            if has_external_arrays:
                 import taichi as ti
                 ti.sync()
+
+            if callbacks:
                 for c in callbacks:
                     c()
 

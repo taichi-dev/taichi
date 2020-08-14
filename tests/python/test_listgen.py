@@ -4,7 +4,7 @@ from random import randrange
 
 @ti.all_archs
 def test_listgen():
-    x = ti.var(ti.i32)
+    x = ti.field(ti.i32)
     n = 1024
 
     ti.root.dense(ti.ij, 4).dense(ti.ij, 4).dense(ti.ij,
@@ -34,7 +34,7 @@ def test_listgen():
 
 @ti.all_archs
 def test_nested_3d():
-    x = ti.var(ti.i32)
+    x = ti.field(ti.i32)
     n = 128
 
     ti.root.dense(ti.ijk, 4).dense(ti.ijk, 4).dense(ti.ijk,

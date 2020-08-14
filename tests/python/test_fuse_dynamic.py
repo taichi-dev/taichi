@@ -4,9 +4,9 @@ import pytest
 
 
 def benchmark_fuse_dynamic_x2y2z(size=1024**2, repeat=10, first_n=100):
-    x = ti.var(ti.i32)
-    y = ti.var(ti.i32)
-    z = ti.var(ti.i32)
+    x = ti.field(ti.i32)
+    y = ti.field(ti.i32)
+    z = ti.field(ti.i32)
 
     ti.root.dynamic(ti.i, size, chunk_size=2048).place(x, y, z)
 

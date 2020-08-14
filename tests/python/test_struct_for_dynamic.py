@@ -7,8 +7,8 @@ def ti_support_dynamic(test):
 
 @ti_support_dynamic
 def test_dynamic():
-    x = ti.var(ti.i32)
-    y = ti.var(ti.i32, shape=())
+    x = ti.field(ti.i32)
+    y = ti.field(ti.i32, shape=())
 
     n = 128
 
@@ -30,7 +30,7 @@ def test_dynamic():
 def test_dense_dynamic():
     n = 128
 
-    x = ti.var(ti.i32)
+    x = ti.field(ti.i32)
 
     ti.root.dense(ti.i, n).dynamic(ti.j, n, 128).place(x)
 

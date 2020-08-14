@@ -9,6 +9,7 @@
 #include "taichi/util/statistics.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
+#include "taichi/program/extension.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -72,22 +73,22 @@ void ExecutionQueue::enqueue(KernelLaunchRecord &&ker) {
     to_be_compiled.insert(h);
     // Later the IR passes will change |stmt|, so we must clone it.
     stmt = ker.clone_stmt_on_write();
+
     compilation_workers.enqueue([&, stmt, kernel, h, this]() {
       {
         // Final lowering
         using namespace irpass;
 
-        demote_dense_struct_fors(stmt);
-        // TODO: due to the assumption that root is a Block, we cannot call the
-        // second half: offloaded tasks -> executable yet. Make sure TLS/BLS
-        // are applied eventually.
-        flag_access(stmt);
-        lower_access(stmt, true);
-        flag_access(stmt);
-        full_simplify(stmt, true, kernel);
-        // analysis::verify(stmt);
+        auto config = kernel->program.config;
+        auto ir = stmt;
+        offload_to_executable(
+            ir, config, false, /*lower_global_access=*/true,
+            /*make_thread_local=*/true,
+            /*make_block_local=*/
+            is_extension_supported(config.arch, Extension::bls));
       }
-      auto func = CodeGenCPU(kernel, stmt).codegen();
+      auto codegen = KernelCodeGen::create(kernel->arch, kernel, stmt);
+      auto func = codegen->codegen();
       std::lock_guard<std::mutex> _(mut);
       compiled_func[h] = func;
     });
@@ -140,6 +141,7 @@ ExecutionQueue::ExecutionQueue()
 void AsyncEngine::launch(Kernel *kernel) {
   if (!kernel->lowered)
     kernel->lower(/*to_executable=*/false);
+
   auto block = dynamic_cast<Block *>(kernel->ir.get());
   TI_ASSERT(block);
 

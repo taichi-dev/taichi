@@ -60,6 +60,12 @@ kernel_profiler_print = lambda: core.get_current_program(
 kernel_profiler_clear = lambda: core.get_current_program(
 ).kernel_profiler_clear()
 
+
+def memory_profiler_print():
+    get_runtime().materialize()
+    get_runtime().prog.print_memory_profiler_info()
+
+
 extension = core.Extension
 is_extension_supported = core.is_extension_supported
 
@@ -242,6 +248,7 @@ parallelize = core.parallelize
 serialize = lambda: parallelize(1)
 vectorize = core.vectorize
 block_dim = core.block_dim
+thread_dim = core.thread_dim
 cache = core.cache
 
 inversed = deprecated('ti.inversed(a)', 'a.inverse()')(Matrix.inversed)
@@ -386,13 +393,11 @@ def adaptive_arch_select(arch):
     if arch is None:
         return cpu
     import taichi as ti
-    supported = supported_archs()
-    if isinstance(arch, list):
-        for a in arch:
-            if is_arch_supported(a):
-                return a
-    elif arch in supported:
-        return arch
+    if not isinstance(arch, (list, tuple)):
+        arch = [arch]
+    for a in arch:
+        if is_arch_supported(a):
+            return a
     ti.warn(f'Arch={arch} is not supported, falling back to CPU')
     return cpu
 

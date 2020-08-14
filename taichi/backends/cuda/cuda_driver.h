@@ -1,5 +1,7 @@
 #pragma once
 
+#include <mutex>
+
 #include "taichi/system/dynamic_loader.h"
 
 #if (0)
@@ -47,6 +49,8 @@ class CUDADriverFunction {
 
   uint32 call(Args... args) {
     TI_ASSERT(function != nullptr);
+    TI_ASSERT(driver_lock != nullptr);
+    std::lock_guard<std::mutex> _(*driver_lock);
     return (uint32)function(args...);
   }
 
@@ -55,14 +59,19 @@ class CUDADriverFunction {
     this->symbol_name = symbol_name;
   }
 
+  void set_lock(std::mutex *lock) {
+    driver_lock = lock;
+  }
+
   std::string get_error_message(uint32 err) {
     return get_cuda_error_message(err) +
            fmt::format(" while calling {} ({})", name, symbol_name);
   }
 
-  void call_with_warning(Args... args) {
+  uint32 call_with_warning(Args... args) {
     auto err = call(args...);
-    TI_WARN_IF(err, get_error_message(err));
+    TI_WARN_IF(err, "{}", get_error_message(err));
+    return err;
   }
 
   // Note: CUDA driver API passes everything as value
@@ -73,8 +82,10 @@ class CUDADriverFunction {
 
  private:
   using func_type = uint32_t(Args...);
-  func_type *function;
+
+  func_type *function{nullptr};
   std::string name, symbol_name;
+  std::mutex *driver_lock{nullptr};
 };
 
 class CUDADriver {
@@ -100,6 +111,8 @@ class CUDADriver {
   CUDADriver();
 
   std::unique_ptr<DynamicLoader> loader;
+
+  std::mutex lock;
 };
 
 TLANG_NAMESPACE_END

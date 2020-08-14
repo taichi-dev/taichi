@@ -20,9 +20,9 @@ def run_mpm88_test():
     x = ti.Vector(dim, dt=ti.f32, shape=n_particles)
     v = ti.Vector(dim, dt=ti.f32, shape=n_particles)
     C = ti.Matrix(dim, dim, dt=ti.f32, shape=n_particles)
-    J = ti.var(dt=ti.f32, shape=n_particles)
+    J = ti.field(dtype=ti.f32, shape=n_particles)
     grid_v = ti.Vector(dim, dt=ti.f32, shape=(n_grid, n_grid))
-    grid_m = ti.var(dt=ti.f32, shape=(n_grid, n_grid))
+    grid_m = ti.field(dtype=ti.f32, shape=(n_grid, n_grid))
 
     @ti.kernel
     def substep():
@@ -100,12 +100,6 @@ def run_mpm88_test():
     ]
     for i in range(4):
         assert (pos**(i + 1)).mean() == approx(regression[i], rel=1e-2)
-    '''
-  canvas.clear(0x112F41)
-  for i in range(n_particles):
-    canvas.circle(ti.vec(pos[i, 0], pos[i, 1])).radius(1.5).color(0x068587).finish()
-  gui.update()
-  '''
 
 
 @ti.all_archs
@@ -120,7 +114,7 @@ def _is_appveyor():
 
 
 @pytest.mark.skipif(_is_appveyor(), reason='Stuck on Appveyor.')
-@ti.archs_with([ti.cpu], async_mode=True)
+@ti.test(require=ti.extension.async_mode, async_mode=True)
 def test_mpm88_async():
     # It seems that all async tests on Appveyor run super slow. For example,
     # on Appveyor, 10+ tests have passed during the execution of

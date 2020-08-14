@@ -3,8 +3,8 @@ import taichi as ti
 
 @ti.all_archs
 def test_complex_kernels():
-    x = ti.var(ti.f32)
-    total = ti.var(ti.f32)
+    x = ti.field(ti.f32)
+    total = ti.field(ti.f32)
 
     n = 128
 
@@ -34,8 +34,8 @@ def test_complex_kernels():
 
 @ti.all_archs
 def test_complex_kernels_indirect():
-    x = ti.var(ti.f32)
-    total = ti.var(ti.f32)
+    x = ti.field(ti.f32)
+    total = ti.field(ti.f32)
 
     n = 128
 
@@ -71,8 +71,8 @@ def test_complex_kernels_oop():
     @ti.data_oriented
     class A:
         def __init__(self):
-            self.x = ti.var(ti.f32)
-            self.total = ti.var(ti.f32)
+            self.x = ti.field(ti.f32)
+            self.total = ti.field(ti.f32)
             self.n = 128
 
             ti.root.dense(ti.i, self.n).place(self.x)
@@ -107,8 +107,8 @@ def test_complex_kernels_oop2():
     @ti.data_oriented
     class A:
         def __init__(self):
-            self.x = ti.var(ti.f32)
-            self.total = ti.var(ti.f32)
+            self.x = ti.field(ti.f32)
+            self.total = ti.field(ti.f32)
             self.n = 128
 
             ti.root.dense(ti.i, self.n).place(self.x)

@@ -4,8 +4,8 @@ import taichi as ti
 @ti.all_archs
 def test_kernel_sync():
     n = 128
-    x = ti.var(ti.i32, shape=(3, ))
-    y = ti.var(ti.i32, shape=(n, ))
+    x = ti.field(ti.i32, shape=(3, ))
+    y = ti.field(ti.i32, shape=(n, ))
     # These [] calls are all on CPU, so no synchronization needed
     x[0] = 42
     assert x[0] == 42

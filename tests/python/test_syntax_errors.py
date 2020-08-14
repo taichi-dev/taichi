@@ -4,7 +4,7 @@ import pytest
 
 @ti.must_throw(ti.TaichiSyntaxError)
 def test_try():
-    x = ti.var(ti.f32)
+    x = ti.field(ti.f32)
 
     ti.root.dense(ti.i, 1).place(x)
 
@@ -20,7 +20,7 @@ def test_try():
 
 @ti.must_throw(ti.TaichiSyntaxError)
 def test_for_else():
-    x = ti.var(ti.f32)
+    x = ti.field(ti.f32)
 
     ti.root.dense(ti.i, 1).place(x)
 
@@ -36,7 +36,7 @@ def test_for_else():
 
 @ti.must_throw(ti.TaichiSyntaxError)
 def test_while_else():
-    x = ti.var(ti.f32)
+    x = ti.field(ti.f32)
 
     ti.root.dense(ti.i, 1).place(x)
 
@@ -52,7 +52,7 @@ def test_while_else():
 
 @ti.must_throw(ti.TaichiSyntaxError)
 def test_loop_var_range():
-    x = ti.var(ti.f32)
+    x = ti.field(ti.f32)
 
     ti.root.dense(ti.i, 1).place(x)
 
@@ -67,7 +67,7 @@ def test_loop_var_range():
 
 @ti.must_throw(ti.TaichiSyntaxError)
 def test_loop_var_struct():
-    x = ti.var(ti.f32)
+    x = ti.field(ti.f32)
 
     ti.root.dense(ti.i, 1).place(x)
 
@@ -82,7 +82,7 @@ def test_loop_var_struct():
 
 @ti.must_throw(ti.TaichiSyntaxError)
 def test_loop_var_struct():
-    x = ti.var(ti.f32)
+    x = ti.field(ti.f32)
 
     ti.root.dense(ti.i, 1).place(x)
 
@@ -175,7 +175,7 @@ def test_nested_ndrange():
 
 @ti.must_throw(ti.TaichiSyntaxError)
 def test_static_grouped_struct_for():
-    val = ti.var(ti.i32)
+    val = ti.field(ti.i32)
 
     ti.root.dense(ti.ij, (1, 1)).place(val)
 
@@ -189,8 +189,8 @@ def test_static_grouped_struct_for():
 
 @ti.must_throw(ti.TaichiSyntaxError)
 def test_is():
-    b = ti.var(ti.i32, shape=())
-    c = ti.var(ti.i32, shape=())
+    b = ti.field(ti.i32, shape=())
+    c = ti.field(ti.i32, shape=())
 
     @ti.kernel
     def func():
@@ -201,8 +201,8 @@ def test_is():
 
 @ti.must_throw(ti.TaichiSyntaxError)
 def test_is_not():
-    b = ti.var(ti.i32, shape=())
-    c = ti.var(ti.i32, shape=())
+    b = ti.field(ti.i32, shape=())
+    c = ti.field(ti.i32, shape=())
 
     @ti.kernel
     def func():
@@ -213,8 +213,8 @@ def test_is_not():
 
 @ti.must_throw(ti.TaichiSyntaxError)
 def test_in():
-    b = ti.var(ti.i32, shape=())
-    c = ti.var(ti.i32, shape=())
+    b = ti.field(ti.i32, shape=())
+    c = ti.field(ti.i32, shape=())
 
     @ti.kernel
     def func():
@@ -225,8 +225,8 @@ def test_in():
 
 @ti.must_throw(ti.TaichiSyntaxError)
 def test_not_in():
-    b = ti.var(ti.i32, shape=())
-    c = ti.var(ti.i32, shape=())
+    b = ti.field(ti.i32, shape=())
+    c = ti.field(ti.i32, shape=())
 
     @ti.kernel
     def func():

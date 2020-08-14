@@ -3,8 +3,8 @@ import taichi as ti
 
 @ti.all_archs
 def test_normal_grad():
-    x = ti.var(ti.f32)
-    loss = ti.var(ti.f32)
+    x = ti.field(ti.f32)
+    loss = ti.field(ti.f32)
 
     n = 128
 
@@ -29,8 +29,8 @@ def test_normal_grad():
 
 @ti.all_archs
 def test_stop_grad():
-    x = ti.var(ti.f32)
-    loss = ti.var(ti.f32)
+    x = ti.field(ti.f32)
+    loss = ti.field(ti.f32)
 
     n = 128
 
@@ -56,8 +56,8 @@ def test_stop_grad():
 
 @ti.all_archs
 def test_stop_grad2():
-    x = ti.var(ti.f32)
-    loss = ti.var(ti.f32)
+    x = ti.field(ti.f32)
+    loss = ti.field(ti.f32)
 
     n = 128
 

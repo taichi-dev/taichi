@@ -1,9 +1,10 @@
+#include <vector>
+#include <unordered_set>
+
 #include "taichi/ir/ir.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/visitors.h"
-
-#include <vector>
-#include <unordered_set>
+#include "taichi/ir/transforms.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -19,7 +20,11 @@ class IRVerifier : public BasicStmtVisitor {
   explicit IRVerifier(IRNode *root) : current_block(nullptr) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
-    TI_ASSERT(root->is<Block>() && root->as<Block>()->parent == nullptr);
+    if (!root->is<Block>()) {
+      visible_stmts.emplace_back();
+      current_block = root->as<Stmt>()->parent;
+    } else
+      current_block = nullptr;
   }
 
   void basic_verify(Stmt *stmt) {
@@ -39,10 +44,10 @@ class IRVerifier : public BasicStmtVisitor {
       TI_ASSERT_INFO(
           found,
           "IR broken: stmt {} cannot have operand {}."
-          " Consider adding `ti.core.toggle_advance_optimization(False)`?"
+          " Consider adding `ti.core.toggle_advanced_optimization(False)`."
           " If that fixes the problem, please report this bug by opening an"
-          " issue at https://github.com/taichi-dev/taichi to help us improve,"
-          " many thanks!",
+          " issue at https://github.com/taichi-dev/taichi to help us improve."
+          " Thanks!",
           stmt->id, op->id);
     }
     visible_stmts.back().insert(stmt);
@@ -56,12 +61,12 @@ class IRVerifier : public BasicStmtVisitor {
     basic_verify(stmt);
   }
 
-  void visit(Block *stmt_list) override {
-    TI_ASSERT(stmt_list->parent == current_block);
+  void visit(Block *block) override {
+    TI_ASSERT(block->parent == current_block);
     auto backup_block = current_block;
-    current_block = stmt_list;
+    current_block = block;
     visible_stmts.emplace_back();
-    for (auto &stmt : stmt_list->statements) {
+    for (auto &stmt : block->statements) {
       stmt->accept(this);
     }
     current_block = backup_block;
@@ -103,7 +108,12 @@ class IRVerifier : public BasicStmtVisitor {
 namespace irpass::analysis {
 void verify(IRNode *root) {
   TI_AUTO_PROF;
-  IRVerifier::run(root);
+  if (!root->is<Block>()) {
+    TI_WARN("IR root is not a Block. Skipping verification.");
+    // TODO: support this case
+  } else {
+    IRVerifier::run(root);
+  }
 }
 }  // namespace irpass::analysis
 

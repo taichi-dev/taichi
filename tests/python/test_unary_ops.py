@@ -5,7 +5,7 @@ import numpy as np
 def _test_op(dt, taichi_op, np_op):
     print('arch={} default_fp={}'.format(ti.cfg.arch, ti.cfg.default_fp))
     n = 4
-    val = ti.var(dt, shape=n)
+    val = ti.field(dt, shape=n)
 
     def f(i):
         return i * 0.1 + 0.4

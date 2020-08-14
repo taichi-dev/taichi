@@ -9,14 +9,14 @@ p_vol, p_rho = (dx * 0.5)**2, 1
 p_mass = p_vol * p_rho
 E, nu = 0.1e4, 0.2 # Young's modulus and Poisson's ratio
 mu_0, lambda_0 = E / (2 * (1 + nu)), E * nu / ((1+nu) * (1 - 2 * nu)) # Lame parameters
-x = ti.Vector(2, dt=ti.f32, shape=n_particles) # position
-v = ti.Vector(2, dt=ti.f32, shape=n_particles) # velocity
-C = ti.Matrix(2, 2, dt=ti.f32, shape=n_particles) # affine velocity field
-F = ti.Matrix(2, 2, dt=ti.f32, shape=n_particles) # deformation gradient
-material = ti.var(dt=ti.i32, shape=n_particles) # material id
-Jp = ti.var(dt=ti.f32, shape=n_particles) # plastic deformation
-grid_v = ti.Vector(2, dt=ti.f32, shape=(n_grid, n_grid)) # grid node momentum/velocity
-grid_m = ti.var(dt=ti.f32, shape=(n_grid, n_grid)) # grid node mass
+x = ti.Vector.field(2, dtype=float, shape=n_particles) # position
+v = ti.Vector.field(2, dtype=float, shape=n_particles) # velocity
+C = ti.Matrix.field(2, 2, dtype=float, shape=n_particles) # affine velocity field
+F = ti.Matrix.field(2, 2, dtype=float, shape=n_particles) # deformation gradient
+material = ti.field(dtype=int, shape=n_particles) # material id
+Jp = ti.field(dtype=float, shape=n_particles) # plastic deformation
+grid_v = ti.Vector.field(2, dtype=float, shape=(n_grid, n_grid)) # grid node momentum/velocity
+grid_m = ti.field(dtype=float, shape=(n_grid, n_grid)) # grid node mass
 
 @ti.kernel
 def substep():
@@ -28,7 +28,7 @@ def substep():
     fx = x[p] * inv_dx - base.cast(float)
     # Quadratic kernels  [http://mpm.graphics   Eqn. 123, with x=fx, fx-1,fx-2]
     w = [0.5 * (1.5 - fx) ** 2, 0.75 - (fx - 1) ** 2, 0.5 * (fx - 0.5) ** 2]
-    F[p] = (ti.Matrix.identity(ti.f32, 2) + dt * C[p]) @ F[p] # deformation gradient update
+    F[p] = (ti.Matrix.identity(float, 2) + dt * C[p]) @ F[p] # deformation gradient update
     h = ti.exp(10 * (1.0 - Jp[p])) # Hardening coefficient: snow gets harder when compressed
     if material[p] == 1: # jelly, make it softer
       h = 0.3
@@ -45,10 +45,10 @@ def substep():
       sig[d, d] = new_sig
       J *= new_sig
     if material[p] == 0:  # Reset deformation gradient to avoid numerical instability
-      F[p] = ti.Matrix.identity(ti.f32, 2) * ti.sqrt(J)
+      F[p] = ti.Matrix.identity(float, 2) * ti.sqrt(J)
     elif material[p] == 2:
       F[p] = U @ sig @ V.transpose() # Reconstruct elastic deformation gradient after plasticity
-    stress = 2 * mu * (F[p] - U @ V.transpose()) @ F[p].transpose() + ti.Matrix.identity(ti.f32, 2) * la * J * (J - 1)
+    stress = 2 * mu * (F[p] - U @ V.transpose()) @ F[p].transpose() + ti.Matrix.identity(float, 2) * la * J * (J - 1)
     stress = (-dt * p_vol * 4 * inv_dx * inv_dx) * stress
     affine = stress + p_mass * C[p]
     for i, j in ti.static(ti.ndrange(3, 3)): # Loop over 3x3 grid node neighborhood
@@ -69,8 +69,8 @@ def substep():
     base = (x[p] * inv_dx - 0.5).cast(int)
     fx = x[p] * inv_dx - base.cast(float)
     w = [0.5 * (1.5 - fx) ** 2, 0.75 - (fx - 1.0) ** 2, 0.5 * (fx - 0.5) ** 2]
-    new_v = ti.Vector.zero(ti.f32, 2)
-    new_C = ti.Matrix.zero(ti.f32, 2, 2)
+    new_v = ti.Vector.zero(float, 2)
+    new_C = ti.Matrix.zero(float, 2, 2)
     for i, j in ti.static(ti.ndrange(3, 3)): # loop over 3x3 grid node neighborhood
       dpos = ti.Vector([i, j]).cast(float) - fx
       g_v = grid_v[base + ti.Vector([i, j])]

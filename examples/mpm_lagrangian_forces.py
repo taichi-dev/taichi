@@ -3,7 +3,6 @@ import numpy as np
 
 ti.init(arch=ti.gpu)
 
-real = ti.f32
 dim = 2
 n_particle_x = 100
 n_particle_y = 8
@@ -18,17 +17,17 @@ p_vol = 1
 mu = 1
 la = 1
 
-x = ti.Vector.field(dim, dtype=ti.f32, shape=n_particles, needs_grad=True)
-v = ti.Vector.field(dim, dtype=ti.f32, shape=n_particles)
-C = ti.Matrix.field(dim, dim, dtype=ti.f32, shape=n_particles)
-grid_v = ti.Vector.field(dim, dtype=ti.f32, shape=(n_grid, n_grid))
-grid_m = ti.field(dtype=ti.f32, shape=(n_grid, n_grid))
+x = ti.Vector.field(dim, dtype=float, shape=n_particles, needs_grad=True)
+v = ti.Vector.field(dim, dtype=float, shape=n_particles)
+C = ti.Matrix.field(dim, dim, dtype=float, shape=n_particles)
+grid_v = ti.Vector.field(dim, dtype=float, shape=(n_grid, n_grid))
+grid_m = ti.field(dtype=float, shape=(n_grid, n_grid))
 restT = ti.Matrix.field(dim,
                         dim,
-                        dtype=ti.f32,
+                        dtype=float,
                         shape=n_particles,
                         needs_grad=True)
-total_energy = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
+total_energy = ti.field(dtype=float, shape=(), needs_grad=True)
 vertices = ti.field(dtype=ti.i32, shape=(n_elements, 3))
 
 
@@ -65,7 +64,7 @@ def compute_total_energy():
 def p2g():
     for p in x:
         base = ti.cast(x[p] * inv_dx - 0.5, ti.i32)
-        fx = x[p] * inv_dx - ti.cast(base, ti.f32)
+        fx = x[p] * inv_dx - ti.cast(base, float)
         w = [0.5 * (1.5 - fx)**2, 0.75 - (fx - 1)**2, 0.5 * (fx - 0.5)**2]
         affine = p_mass * C[p]
         for i in ti.static(range(3)):
@@ -110,7 +109,7 @@ def grid_op():
 def g2p():
     for p in x:
         base = ti.cast(x[p] * inv_dx - 0.5, ti.i32)
-        fx = x[p] * inv_dx - ti.cast(base, ti.f32)
+        fx = x[p] * inv_dx - float(base)
         w = [0.5 * (1.5 - fx)**2, 0.75 - (fx - 1.0)**2, 0.5 * (fx - 0.5)**2]
         new_v = ti.Vector([0.0, 0.0])
         new_C = ti.Matrix([[0.0, 0.0], [0.0, 0.0]])
@@ -174,7 +173,6 @@ def main():
             g2p()
 
         gui.circle((0.5, 0.5), radius=45, color=0x068587)
-        # TODO: why is visualization so slow?
         particle_pos = x.to_numpy()
         a = vertices_.reshape(n_elements * 3)
         b = np.roll(vertices_, shift=1, axis=1).reshape(n_elements * 3)

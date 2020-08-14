@@ -42,6 +42,14 @@ bool arch_is_cpu(Arch arch) {
   }
 }
 
+bool arch_uses_llvm(Arch arch) {
+  if (arch == Arch::x64 || arch == Arch::arm64 || arch == Arch::cuda) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 bool arch_is_gpu(Arch arch) {
   return !arch_is_cpu(arch);
 }

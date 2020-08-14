@@ -341,7 +341,6 @@ class GUI:
             self.core.screenshot(file)
         self.frame += 1
         self.clear()
-        self.frame += 1
 
     ## Event system
 

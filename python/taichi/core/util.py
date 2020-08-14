@@ -496,6 +496,8 @@ def _print_taichi_header():
     commit_hash = commit_hash[:8]
     header += f'commit {commit_hash}, '
 
+    header += f'{get_os_name()}, '
+
     py_ver = '.'.join(str(x) for x in sys.version_info[:3])
     header += f'python {py_ver}'
 

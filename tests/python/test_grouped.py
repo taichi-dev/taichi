@@ -3,7 +3,7 @@ import taichi as ti
 
 @ti.all_archs
 def test_vector_index():
-    val = ti.var(ti.i32)
+    val = ti.field(ti.i32)
 
     n = 4
     m = 7
@@ -29,7 +29,7 @@ def test_vector_index():
 
 @ti.all_archs
 def test_grouped():
-    val = ti.var(ti.i32)
+    val = ti.field(ti.i32)
 
     n = 4
     m = 8
@@ -52,7 +52,7 @@ def test_grouped():
 
 @ti.all_archs
 def test_grouped_ndrange():
-    val = ti.var(ti.i32)
+    val = ti.field(ti.i32)
 
     n = 4
     m = 8
@@ -79,7 +79,7 @@ def test_grouped_ndrange():
 
 @ti.all_archs
 def test_static_grouped_ndrange():
-    val = ti.var(ti.i32)
+    val = ti.field(ti.i32)
 
     n = 4
     m = 8
@@ -106,7 +106,7 @@ def test_static_grouped_ndrange():
 
 @ti.all_archs
 def test_grouped_ndrange_starred():
-    val = ti.var(ti.i32)
+    val = ti.field(ti.i32)
 
     n = 4
     m = 8
@@ -131,7 +131,7 @@ def test_grouped_ndrange_starred():
 
 @ti.all_archs
 def test_grouped_ndrange_0d():
-    val = ti.var(ti.i32, shape=())
+    val = ti.field(ti.i32, shape=())
 
     @ti.kernel
     def test():
@@ -145,7 +145,7 @@ def test_grouped_ndrange_0d():
 
 @ti.all_archs
 def test_static_grouped_ndrange_0d():
-    val = ti.var(ti.i32, shape=())
+    val = ti.field(ti.i32, shape=())
 
     @ti.kernel
     def test():

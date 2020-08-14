@@ -36,6 +36,7 @@ __asm__(".symver powf,powf@GLIBC_2.2.5");
 __asm__(".symver expf,expf@GLIBC_2.2.5");
 #endif
 
+// For accessing struct fields
 #define STRUCT_FIELD(S, F)                              \
   extern "C" decltype(S::F) S##_get_##F(S *s) {         \
     return s->F;                                        \
@@ -56,6 +57,17 @@ __asm__(".symver expf,expf@GLIBC_2.2.5");
                               std::remove_all_extents_t<decltype(S::F)> f) { \
     s->F[i] = f;                                                             \
   };
+
+// For fetching struct fields from device to host
+#define RUNTIME_STRUCT_FIELD(S, F)                                    \
+  extern "C" void runtime_##S##_get_##F(LLVMRuntime *runtime, S *s) { \
+    runtime->set_result(taichi_result_buffer_runtime_query_id, s->F); \
+  }
+
+#define RUNTIME_STRUCT_FIELD_ARRAY(S, F)                                     \
+  extern "C" void runtime_##S##_get_##F(LLVMRuntime *runtime, S *s, int i) { \
+    runtime->set_result(taichi_result_buffer_runtime_query_id, s->F[i]);     \
+  }
 
 using int8 = int8_t;
 using int16 = int16_t;
@@ -379,7 +391,7 @@ Data are organized in chunks, where each chunk is allocated on demand.
 struct ListManager {
   static constexpr std::size_t max_num_chunks = 1024;
   Ptr chunks[max_num_chunks];
-  std::size_t element_size;
+  std::size_t element_size{0};
   std::size_t max_num_elements_per_chunk;
   i32 log2chunk_num_elements;
   i32 lock;
@@ -416,6 +428,14 @@ struct ListManager {
   Ptr allocate();
 
   void touch_chunk(int chunk_id);
+
+  i32 get_num_active_chunks() {
+    i32 counter = 0;
+    for (int i = 0; i < max_num_chunks; i++) {
+      counter += (chunks[i] != nullptr);
+    }
+    return counter;
+  }
 
   void clear() {
     num_elements = 0;
@@ -528,6 +548,8 @@ struct LLVMRuntime {
 
   i32 num_rand_states;
 
+  i64 total_requested_memory;
+
   template <typename T>
   void set_result(std::size_t i, T t) {
     static_assert(sizeof(T) <= sizeof(uint64));
@@ -561,9 +583,11 @@ STRUCT_FIELD(LLVMRuntime, profiler_stop);
 struct NodeManager {
   LLVMRuntime *runtime;
   i32 lock;
+
   i32 element_size;
   i32 chunk_num_elements;
   i32 free_list_used;
+
   ListManager *free_list, *recycled_list, *data_list;
   i32 recycle_list_size_backup;
 
@@ -669,6 +693,25 @@ void runtime_retrieve_error_message_argument(LLVMRuntime *runtime,
                       runtime->error_message_arguments[argument_id]);
 }
 
+void runtime_ListManager_get_num_active_chunks(LLVMRuntime *runtime,
+                                               ListManager *list_manager) {
+  runtime->set_result(taichi_result_buffer_runtime_query_id,
+                      list_manager->get_num_active_chunks());
+}
+
+RUNTIME_STRUCT_FIELD_ARRAY(LLVMRuntime, node_allocators);
+RUNTIME_STRUCT_FIELD_ARRAY(LLVMRuntime, element_lists);
+RUNTIME_STRUCT_FIELD(LLVMRuntime, total_requested_memory);
+
+RUNTIME_STRUCT_FIELD(NodeManager, free_list);
+RUNTIME_STRUCT_FIELD(NodeManager, recycled_list);
+RUNTIME_STRUCT_FIELD(NodeManager, data_list);
+RUNTIME_STRUCT_FIELD(NodeManager, free_list_used);
+
+RUNTIME_STRUCT_FIELD(ListManager, num_elements);
+RUNTIME_STRUCT_FIELD(ListManager, max_num_elements_per_chunk);
+RUNTIME_STRUCT_FIELD(ListManager, element_size);
+
 void taichi_assert(Context *context, i32 test, const char *msg) {
   taichi_assert_runtime(context->runtime, test, msg);
 }
@@ -749,6 +792,7 @@ Ptr LLVMRuntime::allocate(std::size_t size) {
 
 Ptr LLVMRuntime::request_allocate_aligned(std::size_t size,
                                           std::size_t alignment) {
+  atomic_add_i64(&total_requested_memory, size);
   if (preallocated)
     return allocate_from_buffer(size, alignment);
   else {
@@ -812,6 +856,8 @@ void runtime_initialize(
   runtime->host_printf = host_printf;
   runtime->host_vsnprintf = host_vsnprintf;
   runtime->prog = prog;
+
+  runtime->total_requested_memory = 0;
 
   // runtime->allocate ready to use
   runtime->mem_req_queue = (MemRequestQueue *)runtime->allocate_aligned(

@@ -28,7 +28,7 @@ Add a function, the function name **must** be started with ``test_`` so that ``p
         pass
 
 Add some simple code make use of our ``ti.log10`` to make sure it works well.
-Hint: You may pass/return values to/from Taichi-scope using 0-D tensors, i.e. ``r[None]``.
+Hint: You may pass/return values to/from Taichi-scope using 0-D fields, i.e. ``r[None]``.
 
 .. code-block:: python
 
@@ -232,7 +232,7 @@ Sometimes some backends are not capable of specific tests, we have to exclude th
 
     # Run this test on all backends except for OpenGL
     @ti.test(excludes=[ti.opengl])
-    def test_sparse_tensor():
+    def test_sparse_field():
         # ... (some tests that requires sparse feature which is not supported by OpenGL)
 
 You may also use the ``extensions`` keyword to exclude backends without specific feature:
@@ -241,5 +241,5 @@ You may also use the ``extensions`` keyword to exclude backends without specific
 
     # Run this test on all backends except for OpenGL
     @ti.test(extensions=[ti.extension.sparse])
-    def test_sparse_tensor():
+    def test_sparse_field():
         # ... (some tests that requires sparse feature which is not supported by OpenGL)

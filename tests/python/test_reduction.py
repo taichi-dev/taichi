@@ -8,8 +8,8 @@ def _test_reduction_single(dtype, criterion):
         # OpenGL is not capable of such large number in its float32...
         N = 1024 * 16
 
-    a = ti.var(dtype, shape=N)
-    tot = ti.var(dtype, shape=())
+    a = ti.field(dtype, shape=N)
+    tot = ti.field(dtype, shape=())
 
     @ti.kernel
     def fill():
@@ -75,10 +75,10 @@ def test_reduction_single_f64():
 def test_reduction_single():
     N = 1024 * 1024
 
-    a = ti.var(ti.i32, shape=N)
-    b = ti.var(ti.f64, shape=N)
-    tot_a = ti.var(ti.i32, shape=())
-    tot_b = ti.var(ti.f64, shape=())
+    a = ti.field(ti.i32, shape=N)
+    b = ti.field(ti.f64, shape=N)
+    tot_a = ti.field(ti.i32, shape=())
+    tot_b = ti.field(ti.f64, shape=())
 
     @ti.kernel
     def fill():

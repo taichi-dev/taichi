@@ -4,7 +4,7 @@ from taichi import approx
 
 @ti.must_throw(ti.TaichiSyntaxError)
 def _test_return_not_last_stmt():  # TODO: make this work
-    x = ti.var(ti.i32, ())
+    x = ti.field(ti.i32, ())
 
     @ti.kernel
     def kernel() -> ti.i32:

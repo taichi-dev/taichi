@@ -5,7 +5,7 @@ n = 1000
 
 @ti.all_archs
 def test_for_continue():
-    x = ti.var(ti.i32, shape=n)
+    x = ti.field(ti.i32, shape=n)
 
     @ti.kernel
     def run():
@@ -25,7 +25,7 @@ def test_for_continue():
 
 @ti.all_archs
 def test_while_continue():
-    x = ti.var(ti.i32, shape=n)
+    x = ti.field(ti.i32, shape=n)
 
     @ti.kernel
     def run():
@@ -48,7 +48,7 @@ def test_while_continue():
 
 @ti.all_archs
 def test_kernel_continue():
-    x = ti.var(ti.i32, shape=n)
+    x = ti.field(ti.i32, shape=n)
 
     @ti.kernel
     def run():
@@ -67,7 +67,7 @@ def test_kernel_continue():
 
 @ti.all_archs
 def test_unconditional_continue():
-    x = ti.var(ti.i32, shape=n)
+    x = ti.field(ti.i32, shape=n)
 
     @ti.kernel
     def run():
@@ -86,7 +86,7 @@ def test_unconditional_continue():
 
 @ti.all_archs
 def test_kernel_continue_in_nested_if():
-    x = ti.var(ti.i32, shape=n)
+    x = ti.field(ti.i32, shape=n)
 
     @ti.kernel
     def run(a: ti.i32):
@@ -108,7 +108,7 @@ def test_kernel_continue_in_nested_if():
 
 @ti.all_archs
 def test_kernel_continue_in_nested_if_2():
-    x = ti.var(ti.i32, shape=n)
+    x = ti.field(ti.i32, shape=n)
 
     @ti.kernel
     def run(a: ti.i32):
@@ -129,7 +129,7 @@ def test_kernel_continue_in_nested_if_2():
 
 @ti.all_archs
 def test_kernel_continue_in_nested_if_3():
-    x = ti.var(ti.i32, shape=n)
+    x = ti.field(ti.i32, shape=n)
 
     @ti.kernel
     def run(a: ti.i32):

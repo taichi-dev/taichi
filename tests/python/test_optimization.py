@@ -3,7 +3,7 @@ import taichi as ti
 
 @ti.all_archs
 def test_advanced_store_forwarding_nested_loops():
-    val = ti.var(ti.i32)
+    val = ti.field(ti.i32)
     ti.root.place(val)
 
     @ti.kernel
@@ -24,7 +24,7 @@ def test_advanced_store_forwarding_nested_loops():
 
 @ti.all_archs
 def test_advanced_unused_store_elimination_if():
-    val = ti.var(ti.i32)
+    val = ti.field(ti.i32)
     ti.root.place(val)
 
     @ti.kernel
@@ -50,7 +50,7 @@ def test_advanced_unused_store_elimination_if():
 @ti.all_archs
 def test_local_store_in_nested_for_and_if():
     # See https://github.com/taichi-dev/taichi/pull/862.
-    val = ti.var(ti.i32, shape=(3, 3, 3))
+    val = ti.field(ti.i32, shape=(3, 3, 3))
 
     @ti.kernel
     def func():
@@ -76,7 +76,7 @@ def test_local_store_in_nested_for_and_if():
 
 @ti.all_archs
 def test_advanced_store_forwarding_continue_in_if():
-    val = ti.var(ti.i32)
+    val = ti.field(ti.i32)
     ti.root.place(val)
 
     @ti.kernel
@@ -106,7 +106,7 @@ def test_advanced_store_forwarding_continue_in_if():
 
 @ti.all_archs
 def test_advanced_store_elimination_in_loop():
-    val = ti.var(ti.i32)
+    val = ti.field(ti.i32)
     ti.root.place(val)
 
     @ti.kernel
@@ -129,7 +129,7 @@ def test_advanced_store_elimination_in_loop():
 
 @ti.all_archs
 def test_parallel_assignment():
-    mat = ti.var(ti.i32, shape=(3, 4))
+    mat = ti.field(ti.i32, shape=(3, 4))
 
     @ti.kernel
     def func():

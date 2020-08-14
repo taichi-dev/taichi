@@ -3,7 +3,7 @@ import taichi as ti
 
 @ti.all_archs
 def test_for_break():
-    x = ti.var(ti.i32)
+    x = ti.field(ti.i32)
     N, M = 4, 4
     ti.root.dense(ti.ij, (N, M)).place(x)
 
@@ -26,7 +26,7 @@ def test_for_break():
 
 @ti.all_archs
 def test_for_break2():
-    x = ti.var(ti.i32)
+    x = ti.field(ti.i32)
     N, M = 8, 8
     ti.root.dense(ti.ij, (N, M)).place(x)
 
@@ -49,7 +49,7 @@ def test_for_break2():
 
 @ti.all_archs
 def test_for_break3():
-    x = ti.var(ti.i32)
+    x = ti.field(ti.i32)
     N, M = 8, 8
     ti.root.dense(ti.ij, (N, M)).place(x)
 
@@ -72,7 +72,7 @@ def test_for_break3():
 
 @ti.all_archs
 def test_for_break_complex():
-    x = ti.var(ti.i32)
+    x = ti.field(ti.i32)
     N, M = 16, 32
     ti.root.dense(ti.ij, (N, M)).place(x)
 

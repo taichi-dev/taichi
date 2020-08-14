@@ -1,14 +1,13 @@
 .. _tensor:
 
-Matrix fields
-=============
+Fields and matrices
+===================
 
 Fields are global variables provided by Taichi. Fields can be either sparse or dense.
 An element of a field can be either a scalar or a vector/matrix.
 
 .. note::
 
-    Although mathematically matrices are treated as 2D fields, in Taichi, **field** and **matrix** are two completely different concepts.
     Matrices can be used as field elements, so you can have fields with each element being a matrix.
 
 Scalar fields

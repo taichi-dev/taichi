@@ -115,6 +115,7 @@ class FrontendForStmt : public Stmt {
   bool strictly_serialized;
   ScratchPadOptions scratch_opt;
   int block_dim;
+  int thread_dim;
 
   bool is_ranged() const {
     if (global_var.expr == nullptr) {

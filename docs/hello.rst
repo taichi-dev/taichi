@@ -17,7 +17,7 @@ Running the Taichi code below (``python3 fractal.py`` or ``ti example fractal``)
     ti.init(arch=ti.gpu)
 
     n = 320
-    pixels = ti.field(dtype=ti.f32, shape=(n * 2, n))
+    pixels = ti.field(dtype=float, shape=(n * 2, n))
 
 
     @ti.func
@@ -26,7 +26,7 @@ Running the Taichi code below (``python3 fractal.py`` or ``ti example fractal``)
 
 
     @ti.kernel
-    def paint(t: ti.f32):
+    def paint(t: float):
         for i, j in pixels:  # Parallized over all pixels
             c = ti.Vector([-0.8, ti.cos(t) * 0.2])
             z = ti.Vector([i / n - 1, j / n - 0.5]) * 2
@@ -74,6 +74,7 @@ Taichi programs run on either CPUs or GPUs. Initialize Taichi according to your 
   ti.init(arch=ti.cpu)
 
 .. note::
+
     Supported backends on different platforms:
 
     +----------+------+------+--------+-------+
@@ -101,37 +102,55 @@ Taichi programs run on either CPUs or GPUs. Initialize Taichi according to your 
 
   On other platforms, Taichi will make use of its on-demand memory allocator to adaptively allocate memory.
 
-(Sparse) fields
----------------
+Fields
+------
 
 Taichi is a data-oriented programming language where dense or spatially-sparse fields are the first-class citizens.
-See :ref:`sparse` for more details on sparse fields.
+See :ref:`scalar_tensor` for more details on fields.
 
-In the code above, ``pixels = ti.field(dtype=ti.f32, shape=(n * 2, n))`` allocates a 2D dense field named ``pixels`` of
-size ``(640, 320)`` and element data type ``ti.f32`` (i.e. ``float`` in C).
+In the code above, ``pixels = ti.field(dtype=float, shape=(n * 2, n))`` allocates a 2D dense field named ``pixels`` of size ``(640, 320)`` and element data type ``float``.
 
 Functions and kernels
 ---------------------
 
-Computation resides in Taichi **kernels**. Kernel arguments must be type-hinted.
-The language used in Taichi kernels and functions looks exactly like Python, yet the Taichi frontend compiler converts it
-into a language that is **compiled, statically-typed, lexically-scoped, parallel and differentiable**.
+Computation resides in Taichi **kernels** and Taichi **functions**.
 
-Taichi **functions**, which can be called by Taichi kernels and other Taichi functions, should be defined with the keyword ``ti.func``.
+Taichi **kernels** are defined with the decorator ``@ti.kernel``.
+They can be called from Python to perform computation.
+Kernel arguments must be type-hinted (if any).
+
+Taichi **functions** are defined with the decorator ``@ti.func``.
+They can be called by Taichi kernels or other Taichi functions.
+
+See :ref:`syntax` for more details about Taichi kernels and functions.
+
+The language used in Taichi kernels and functions looks exactly like Python, yet the Taichi frontend compiler converts it into a language that is **compiled, statically-typed, lexically-scoped, parallel and differentiable**.
 
 .. note::
 
-  **Taichi-scopes v.s. Python-scopes**: everything decorated with ``ti.kernel`` and ``ti.func`` is in Taichi-scope, which will be compiled by the Taichi compiler.
-  Everything else is in Python-scopes. They are simply Python code.
+  **Taichi-scopes v.s. Python-scopes**:
+
+  Everything decorated with ``@ti.kernel`` and ``@ti.func`` is in Taichi-scope
+  and hence will be compiled by the Taichi compiler.
+
+  Everything else is in Python-scope. They are simply Python native code.
 
 .. warning::
 
-  Taichi kernels must be called in the Python-scope. I.e., **nested kernels are not supported**.
-  Nested functions are allowed. **Recursive functions are not supported for now**.
+  Taichi kernels must be called from the Python-scope.
+  Taichi functions must be called from the Taichi-scope.
 
-  Taichi functions can only be called in Taichi-scope.
+.. note::
 
-For those who come from the world of CUDA, ``ti.func`` corresponds to ``__device__`` while ``ti.kernel`` corresponds to ``__global__``.
+    For those who come from the world of CUDA, ``ti.func`` corresponds to ``__device__`` while ``ti.kernel`` corresponds to ``__global__``.
+
+.. warning::
+
+  Nested kernels are **not supported**.
+
+  Nested functions are **supported**.
+
+  Recursive functions are **not supported for now**.
 
 
 Parallel for-loops

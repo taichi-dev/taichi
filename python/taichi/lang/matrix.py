@@ -228,7 +228,7 @@ class Matrix(TaichiOperations):
         assert kwargs == {}
         return self.entries[self.linearize_entry_id(*args)]
 
-    def get_tensor_members(self):
+    def get_field_members(self):
         return self.entries
 
     def get_entry(self, *args, **kwargs):

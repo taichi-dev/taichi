@@ -20,14 +20,14 @@ paused = False
 
 ti.init(arch=ti.gpu)
 
-_velocities = ti.Vector.field(2, ti.f32, shape=(res, res))
-_new_velocities = ti.Vector.field(2, ti.f32, shape=(res, res))
-velocity_divs = ti.field(ti.f32, shape=(res, res))
-velocity_curls = ti.field(ti.f32, shape=(res, res))
-_pressures = ti.field(ti.f32, shape=(res, res))
-_new_pressures = ti.field(ti.f32, shape=(res, res))
-_dye_buffer = ti.Vector.field(3, ti.f32, shape=(res, res))
-_new_dye_buffer = ti.Vector.field(3, ti.f32, shape=(res, res))
+_velocities = ti.Vector.field(2, float, shape=(res, res))
+_new_velocities = ti.Vector.field(2, float, shape=(res, res))
+velocity_divs = ti.field(float, shape=(res, res))
+velocity_curls = ti.field(float, shape=(res, res))
+_pressures = ti.field(float, shape=(res, res))
+_new_pressures = ti.field(float, shape=(res, res))
+_dye_buffer = ti.Vector.field(3, float, shape=(res, res))
+_new_dye_buffer = ti.Vector.field(3, float, shape=(res, res))
 
 
 class TexPair:

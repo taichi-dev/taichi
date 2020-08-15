@@ -6,10 +6,10 @@ n = 512
 steps = 32
 eps = 1e-5
 
-b = ti.field(ti.f32, (n, n))
-x = ti.field(ti.f32, (n, n))
-d = ti.field(ti.f32, (n, n))
-r = ti.field(ti.f32, (n, n))
+b = ti.field(float, (n, n))
+x = ti.field(float, (n, n))
+d = ti.field(float, (n, n))
+r = ti.field(float, (n, n))
 
 
 @ti.func

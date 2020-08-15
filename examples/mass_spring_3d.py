@@ -24,10 +24,8 @@ dt = 5e-4
 
 ### Physics
 
-x = ti.Vector(3, ti.f32, NN)
-v = ti.Vector(3, ti.f32, NN)
-b = ti.Vector(3, ti.f32, NN)
-F = ti.Vector(3, ti.f32, NN)
+x = ti.Vector.field(3, float, NN)
+v = ti.Vector.field(3, float, NN)
 
 
 @ti.kernel
@@ -36,11 +34,8 @@ def init():
         x[i] = tl.vec((i + 0.5) * L - 0.5, 0.8).xzy
 
 
-links = [
-    tl.vec(*_)
-    for _ in [(-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (1, -1), (-1,
-                                                                    1), (1, 1)]
-]
+links = [(-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (1, -1), (-1, 1), (1, 1)]
+links = [tl.vec(*_) for _ in links]
 
 
 @ti.func

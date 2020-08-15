@@ -5,8 +5,8 @@ import pytest
 def test_trailing_bits():
     ti.init(arch=ti.cpu, debug=True, print_ir=True)
 
-    x = ti.var(ti.f32)
-    y = ti.var(ti.f32)
+    x = ti.field(ti.f32)
+    y = ti.field(ti.f32)
 
     block = ti.root.pointer(ti.i, 8)
     block.dense(ti.i, 32).place(x)
@@ -38,9 +38,9 @@ def test_trailing_bits():
 def test_inconsistent_trailing_bits():
     ti.init(arch=ti.cpu, debug=True, print_ir=True)
 
-    x = ti.var(ti.f32)
-    y = ti.var(ti.f32)
-    z = ti.var(ti.f32)
+    x = ti.field(ti.f32)
+    y = ti.field(ti.f32)
+    z = ti.field(ti.f32)
 
     block = ti.root.pointer(ti.i, 8)
 

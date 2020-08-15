@@ -11,7 +11,7 @@ def test_random_float():
     for precision in [ti.f32, ti.f64]:
         ti.init()
         n = 1024
-        x = ti.var(ti.f32, shape=(n, n))
+        x = ti.field(ti.f32, shape=(n, n))
 
         @ti.kernel
         def fill():
@@ -30,7 +30,7 @@ def test_random_int():
     for precision in [ti.i32, ti.i64]:
         ti.init()
         n = 1024
-        x = ti.var(ti.f32, shape=(n, n))
+        x = ti.field(ti.f32, shape=(n, n))
 
         @ti.kernel
         def fill():
@@ -51,7 +51,7 @@ def test_random_int():
 @archs_support_random
 def test_random_independent_product():
     n = 1024
-    x = ti.var(ti.f32, shape=n * n)
+    x = ti.field(ti.f32, shape=n * n)
 
     @ti.kernel
     def fill():
@@ -92,7 +92,7 @@ def test_random_2d_dist():
 @archs_support_random
 def test_random_seed_per_launch():
     n = 10
-    x = ti.var(ti.f32, shape=n)
+    x = ti.field(ti.f32, shape=n)
 
     @ti.kernel
     def gen(i: ti.i32):

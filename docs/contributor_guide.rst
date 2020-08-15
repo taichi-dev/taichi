@@ -152,6 +152,7 @@ Frequently used tags:
 - ``[LLVM]``: the LLVM backend shared by CPUs and CUDA;
 - ``[Lang]``: frontend language features, including syntax sugars;
 - ``[Std]``: standard library, e.g. ``ti.Matrix`` and ``ti.Vector``;
+- ``[Sparse]``: sparse computation;
 - ``[IR]``: intermediate representation;
 - ``[Opt]``: IR optimization passes;
 - ``[GUI]``: the built-in GUI system;

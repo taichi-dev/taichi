@@ -60,6 +60,12 @@ kernel_profiler_print = lambda: core.get_current_program(
 kernel_profiler_clear = lambda: core.get_current_program(
 ).kernel_profiler_clear()
 
+
+def memory_profiler_print():
+    get_runtime().materialize()
+    get_runtime().prog.print_memory_profiler_info()
+
+
 extension = core.Extension
 is_extension_supported = core.is_extension_supported
 
@@ -244,6 +250,7 @@ parallelize = core.parallelize
 serialize = lambda: parallelize(1)
 vectorize = core.vectorize
 block_dim = core.block_dim
+thread_dim = core.thread_dim
 cache = core.cache
 
 inversed = deprecated('ti.inversed(a)', 'a.inverse()')(Matrix.inversed)

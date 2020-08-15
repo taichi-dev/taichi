@@ -38,16 +38,22 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       tlctx->mark_function_as_cuda_kernel(func, task.block_dim);
     }
 
-    auto jit = get_current_program().llvm_context_device->jit.get();
+    auto jit = kernel->program.llvm_context_device->jit.get();
     auto cuda_module = jit->add_module(std::move(module));
 
     return [offloaded_local, cuda_module,
             kernel = this->kernel](Context &context) {
       // copy data to GRAM
+      CUDAContext::get_instance().make_current();
       auto args = kernel->args;
       std::vector<void *> host_buffers(args.size(), nullptr);
       std::vector<void *> device_buffers(args.size(), nullptr);
       bool has_buffer = false;
+
+      // TODO: A refactoring is needed.
+      // We have a not-so-good design where Context is always tied with Program.
+      // Context's should be tied to kernel launches instead.
+      kernel->program.context = context;
       for (int i = 0; i < (int)args.size(); i++) {
         if (args[i].is_nparray) {
           has_buffer = true;
@@ -73,7 +79,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
                  task.block_dim);
 
         cuda_module->launch(task.name, task.grid_dim, task.block_dim,
-                            task.shmem_bytes, {&context});
+                            task.shmem_bytes, {&kernel->program.context});
       }
       // copy data back to host
       if (has_buffer) {
@@ -461,8 +467,8 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 };
 
 FunctionType CodeGenCUDA::codegen() {
-  TI_PROFILER("cuda codegen");
-  return CodeGenLLVMCUDA(kernel).gen();
+  TI_AUTO_PROF
+  return CodeGenLLVMCUDA(kernel, ir).gen();
 }
 
 TLANG_NAMESPACE_END

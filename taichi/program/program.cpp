@@ -137,7 +137,7 @@ Program::Program(Arch desired_arch) {
 
   if (config.async_mode) {
     TI_WARN("Running in async mode. This is experimental.");
-    TI_ASSERT(arch_is_cpu(config.arch));
+    TI_ASSERT(arch_is_cpu(config.arch) || config.arch == Arch::cuda);
     async_engine = std::make_unique<AsyncEngine>();
   }
 
@@ -448,6 +448,9 @@ void Program::check_runtime_error() {
 
 void Program::synchronize() {
   if (!sync) {
+    if (config.async_mode) {
+      async_engine->synchronize();
+    }
     if (config.arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
       CUDADriver::get_instance().stream_synchronize(nullptr);
@@ -456,8 +459,6 @@ void Program::synchronize() {
 #endif
     } else if (config.arch == Arch::metal) {
       metal_kernel_mgr_->synchronize();
-    } else if (config.async_mode) {
-      async_engine->synchronize();
     }
     sync = true;
   }
@@ -637,6 +638,9 @@ uint64 Program::fetch_result_uint64(int i) {
 
 void Program::finalize() {
   synchronize();
+  if (async_engine)
+    async_engine = nullptr;  // Finalize the async engine threads before
+                             // anything else gets destoried.
   TI_TRACE("Program finalizing...");
   if (config.print_benchmark_stat) {
     const char *current_test = std::getenv("PYTEST_CURRENT_TEST");
@@ -695,6 +699,103 @@ int Program::default_block_dim() const {
   } else {
     return config.default_gpu_block_dim;
   }
+}
+
+void Program::print_list_manager_info(void *list_manager) {
+  auto list_manager_len =
+      runtime_query<int32>("ListManager_get_num_elements", list_manager);
+
+  auto element_size =
+      runtime_query<int32>("ListManager_get_element_size", list_manager);
+
+  auto elements_per_chunk = runtime_query<int32>(
+      "ListManager_get_max_num_elements_per_chunk", list_manager);
+
+  auto num_active_chunks =
+      runtime_query<int32>("ListManager_get_num_active_chunks", list_manager);
+
+  auto size_MB = 1e-6f * num_active_chunks * elements_per_chunk * element_size;
+
+  fmt::print(
+      " length={:n}     {:n} chunks x [{:n} x {:n} B]  total={:.4f} MB\n",
+      list_manager_len, num_active_chunks, elements_per_chunk, element_size,
+      size_MB);
+}
+
+void Program::print_memory_profiler_info() {
+  TI_ASSERT(arch_uses_llvm(config.arch));
+
+  fmt::print("\n[Memory Profiler]\n");
+
+  std::locale::global(std::locale("en_US.UTF-8"));
+  // So that thousand separators are added to "{:n}" slots in fmtlib.
+  // E.g., 10000 is printed as "10,000".
+  // TODO: is there a way to set locale only locally in this function?
+
+  std::function<void(SNode *, int)> visit = [&](SNode *snode, int depth) {
+    auto element_list = runtime_query<void *>("LLVMRuntime_get_element_lists",
+                                              llvm_runtime, snode->id);
+
+    if (snode->type != SNodeType::place) {
+      fmt::print("SNode {:10}\n", snode->get_node_type_name_hinted());
+
+      if (element_list) {
+        fmt::print("  active element list:");
+        print_list_manager_info(element_list);
+
+        auto node_allocator = runtime_query<void *>(
+            "LLVMRuntime_get_node_allocators", llvm_runtime, snode->id);
+
+        if (node_allocator) {
+          auto free_list = runtime_query<void *>("NodeManager_get_free_list",
+                                                 node_allocator);
+          auto recycled_list = runtime_query<void *>(
+              "NodeManager_get_recycled_list", node_allocator);
+
+          auto free_list_len =
+              runtime_query<int32>("ListManager_get_num_elements", free_list);
+
+          auto recycled_list_len = runtime_query<int32>(
+              "ListManager_get_num_elements", recycled_list);
+
+          auto free_list_used = runtime_query<int32>(
+              "NodeManager_get_free_list_used", node_allocator);
+
+          auto data_list = runtime_query<void *>("NodeManager_get_data_list",
+                                                 node_allocator);
+          fmt::print("  data list:          ");
+          print_list_manager_info(data_list);
+
+          fmt::print(
+              "  Allocated elements={:n}; free list length={:n}; recycled list "
+              "length={:n}\n",
+              free_list_used, free_list_len, recycled_list_len);
+        }
+      }
+    }
+    for (const auto &ch : snode->ch) {
+      visit(ch.get(), depth + 1);
+    }
+  };
+
+  visit(snode_root.get(), 0);
+
+  auto total_requested_memory = runtime_query<std::size_t>(
+      "LLVMRuntime_get_total_requested_memory", llvm_runtime);
+
+  fmt::print(
+      "Total requested dynamic memory (excluding alignment padding): {:n} B\n",
+      total_requested_memory);
+}
+
+std::size_t Program::get_snode_num_dynamically_allocated(SNode *snode) {
+  auto node_allocator = runtime_query<void *>("LLVMRuntime_get_node_allocators",
+                                              llvm_runtime, snode->id);
+  auto data_list =
+      runtime_query<void *>("NodeManager_get_data_list", node_allocator);
+
+  return (std::size_t)runtime_query<int32>("ListManager_get_num_elements",
+                                           data_list);
 }
 
 Program::~Program() {

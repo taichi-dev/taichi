@@ -4,7 +4,7 @@ import pytest
 
 @ti.all_archs
 def test_POT():
-    val = ti.var(ti.i32)
+    val = ti.field(ti.i32)
 
     n = 4
     m = 8
@@ -18,7 +18,7 @@ def test_POT():
 
 @ti.all_archs
 def test_non_POT():
-    val = ti.var(ti.i32)
+    val = ti.field(ti.i32)
 
     n = 3
     m = 7
@@ -35,7 +35,7 @@ def test_non_POT():
 
 @ti.all_archs
 def test_unordered():
-    val = ti.var(ti.i32)
+    val = ti.field(ti.i32)
 
     n = 3
     m = 7
@@ -91,7 +91,7 @@ def test_unordered_matrix():
 @pytest.mark.filterwarnings('ignore')
 @ti.host_arch_only
 def test_deprecated():
-    val = ti.var(ti.f32)
+    val = ti.field(ti.f32)
     mat = ti.Matrix(3, 2, ti.i32)
 
     n = 3
@@ -117,7 +117,7 @@ def test_deprecated():
 
 @ti.all_archs
 def test_parent_exceeded():
-    val = ti.var(ti.f32)
+    val = ti.field(ti.f32)
 
     m = 7
     n = 3

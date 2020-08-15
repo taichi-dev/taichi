@@ -6,7 +6,7 @@ _TI_64_TYPES = [ti.i64, ti.u64, ti.f64]
 
 
 def _test_type_assign_argument(dt):
-    x = ti.var(dt, shape=())
+    x = ti.field(dt, shape=())
 
     @ti.kernel
     def func(value: dt):
@@ -30,10 +30,10 @@ def test_type_assign_argument64(dt):
 
 
 def _test_type_operator(dt):
-    x = ti.var(dt, shape=())
-    y = ti.var(dt, shape=())
-    add = ti.var(dt, shape=())
-    mul = ti.var(dt, shape=())
+    x = ti.field(dt, shape=())
+    y = ti.field(dt, shape=())
+    add = ti.field(dt, shape=())
+    mul = ti.field(dt, shape=())
 
     @ti.kernel
     def func():
@@ -63,7 +63,7 @@ def test_type_operator64(dt):
 
 
 def _test_type_tensor(dt):
-    x = ti.var(dt, shape=(3, 2))
+    x = ti.field(dt, shape=(3, 2))
 
     @ti.kernel
     def func(i: ti.i32, j: ti.i32):
@@ -89,9 +89,9 @@ def test_type_tensor64(dt):
 
 
 def _test_overflow(dt, n):
-    a = ti.var(dt, shape=())
-    b = ti.var(dt, shape=())
-    c = ti.var(dt, shape=())
+    a = ti.field(dt, shape=())
+    b = ti.field(dt, shape=())
+    c = ti.field(dt, shape=())
 
     @ti.kernel
     def func():

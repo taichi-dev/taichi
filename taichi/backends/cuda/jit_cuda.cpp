@@ -42,11 +42,16 @@ class JITModuleCUDA : public JITModule {
     // TODO: figure out why using the guard leads to wrong tests results
     // auto context_guard = CUDAContext::get_instance().get_guard();
     CUDAContext::get_instance().make_current();
-    void *func;
+    void *func = nullptr;
     auto t = Time::get_time();
-    CUDADriver::get_instance().module_get_function(&func, module, name.c_str());
+    auto err = CUDADriver::get_instance().module_get_function.call_with_warning(
+        &func, module, name.c_str());
+    if (err) {
+      TI_ERROR("Cannot look up function {}", name);
+    }
     t = Time::get_time() - t;
     TI_TRACE("CUDA module_get_function {} costs {} ms", name, t * 1000);
+    TI_ASSERT(func != nullptr);
     return func;
   }
 

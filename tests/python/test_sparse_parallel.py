@@ -3,8 +3,8 @@ import taichi as ti
 
 @ti.archs_support_sparse
 def test_pointer():
-    x = ti.var(ti.f32)
-    s = ti.var(ti.i32)
+    x = ti.field(ti.f32)
+    s = ti.field(ti.i32)
 
     n = 128
 
@@ -28,8 +28,8 @@ def test_pointer():
 
 @ti.archs_support_sparse
 def test_pointer2():
-    x = ti.var(ti.f32)
-    s = ti.var(ti.i32)
+    x = ti.field(ti.f32)
+    s = ti.field(ti.i32)
 
     n = 128
 
@@ -54,7 +54,7 @@ def test_pointer2():
 
 @ti.archs_support_sparse
 def test_nested_struct_fill_and_clear():
-    a = ti.var(dt=ti.f32)
+    a = ti.field(dtype=ti.f32)
     N = 512
 
     ti.root.pointer(ti.ij, [N, N]).dense(ti.ij, [8, 8]).place(a)

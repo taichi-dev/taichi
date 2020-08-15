@@ -3,8 +3,8 @@ import taichi as ti
 
 @ti.all_archs
 def test_linear():
-    x = ti.var(ti.i32)
-    y = ti.var(ti.i32)
+    x = ti.field(ti.i32)
+    y = ti.field(ti.i32)
 
     n = 128
 
@@ -27,8 +27,8 @@ def test_linear_repeated():
 
 @ti.all_archs
 def test_linear_nested():
-    x = ti.var(ti.i32)
-    y = ti.var(ti.i32)
+    x = ti.field(ti.i32)
+    y = ti.field(ti.i32)
 
     n = 128
 
@@ -46,8 +46,8 @@ def test_linear_nested():
 
 @ti.all_archs
 def test_linear_nested_aos():
-    x = ti.var(ti.i32)
-    y = ti.var(ti.i32)
+    x = ti.field(ti.i32)
+    y = ti.field(ti.i32)
 
     n = 128
 
@@ -64,7 +64,7 @@ def test_linear_nested_aos():
 
 @ti.all_archs
 def test_2d_nested():
-    x = ti.var(ti.i32)
+    x = ti.field(ti.i32)
 
     n = 128
 

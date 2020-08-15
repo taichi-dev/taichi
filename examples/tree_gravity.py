@@ -8,7 +8,7 @@ if not hasattr(ti, 'jkl'):
 
 kUseTree = True
 #kDisplay = 'tree mouse pixels cmap save_result'
-kDisplay = 'pixels cmap'
+kDisplay = 'pixels'
 kResolution = 512
 kShapeFactor = 1
 kMaxParticles = 8192
@@ -269,7 +269,7 @@ def render_pixels():
     for i in range(particle_table_len[None]):
         position = particle_pos[i].xy
         pix = int(position * kResolution)
-        display_image[tl.clamp(pix, 0, kResolution - 1)] += 0.25
+        display_image[tl.clamp(pix, 0, kResolution - 1)] += 0.3
 
 
 def render_tree(gui,

@@ -8,9 +8,8 @@ Introduction
 
 Although Taichi fields are mainly used in Taichi-scope, in some cases efficiently manipulating Taichi field data in Python-scope could also be helpful.
 
-So we provide a way to export and import data in Taichi fields via NumPy arrays.
-This allows you to interact with the data in Python-scope with other packages
-that supports NumPy.
+We provide various interfaces to copy the data between Taichi fields and external arrays.
+The most typical case maybe copying between Tachi fields and Numpy arrays. So, let's take a look at the 2 examples below.
 
 **Export data in Taichi fields to a NumPy array** via ``to_numpy()``.
 This allows us to export computation results to other

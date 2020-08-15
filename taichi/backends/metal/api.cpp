@@ -20,8 +20,8 @@ using mac::call;
 using mac::cast_call;
 using mac::clscall;
 using mac::nsobj_unique_ptr;
-using mac::wrap_as_nsobj_unique_ptr;
 using mac::retain_and_wrap_as_nsobj_unique_ptr;
+using mac::wrap_as_nsobj_unique_ptr;
 
 }  // namespace
 

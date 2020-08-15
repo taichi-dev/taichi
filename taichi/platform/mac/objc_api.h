@@ -69,7 +69,8 @@ nsobj_unique_ptr<O> retain_and_wrap_as_nsobj_unique_ptr(O *nsobj) {
   // 2. autoreleasepool releases all the tracked objects upon thread exit.
   //
   // * https://stackoverflow.com/a/51080781/12003165
-  // * https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/MemoryMgmt/Articles/mmRules.html#//apple_ref/doc/uid/20000994-SW1
+  // *
+  // https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/MemoryMgmt/Articles/mmRules.html#//apple_ref/doc/uid/20000994-SW1
   call(nsobj, "retain");
   return wrap_as_nsobj_unique_ptr(nsobj);
 }
@@ -96,9 +97,9 @@ void ns_log_object(id obj);
 
 struct TI_NSAutoreleasePool;
 
-TI_NSAutoreleasePool* create_autorelease_pool();
+TI_NSAutoreleasePool *create_autorelease_pool();
 
-void drain_autorelease_pool(TI_NSAutoreleasePool* pool);
+void drain_autorelease_pool(TI_NSAutoreleasePool *pool);
 
 class ScopedAutoreleasePool {
  public:

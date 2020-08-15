@@ -231,6 +231,10 @@ class Matrix(TaichiOperations):
     def get_field_members(self):
         return self.entries
 
+    @deprecated('x.get_tensor_members()', 'x.get_field_members()')
+    def get_tensor_members(self):
+        return self.get_field_members()
+
     def get_entry(self, *args, **kwargs):
         assert kwargs == {}
         return self.entries[self.linearize_entry_id(*args)]

@@ -13,8 +13,8 @@ For example, you have the following kernel:
 
 .. code-block:: python
 
-    x = ti.var(ti.f32, ())
-    y = ti.var(ti.f32, ())
+    x = ti.field(float, ())
+    y = ti.field(float, ())
 
     @ti.kernel
     def compute_y():
@@ -26,9 +26,9 @@ You may want to implement the derivative kernel by yourself:
 
 .. code-block:: python
 
-    x = ti.var(ti.f32, ())
-    y = ti.var(ti.f32, ())
-    dy_dx = ti.var(ti.f32, ())
+    x = ti.field(float, ())
+    y = ti.field(float, ())
+    dy_dx = ti.field(float, ())
 
     @ti.kernel
     def compute_dy_dx():
@@ -57,8 +57,8 @@ What's the most convienent way to obtain a kernel that computes x to dy/dx?
 
 .. code-block:: python
 
-    x = ti.var(ti.f32, (), needs_grad=True)
-    y = ti.var(ti.f32, (), needs_grad=True)
+    x = ti.field(float, (), needs_grad=True)
+    y = ti.field(float, (), needs_grad=True)
 
     @ti.kernel
     def compute_y():
@@ -75,9 +75,9 @@ It's equivalant to:
 
 .. code-block:: python
 
-    x = ti.var(ti.f32, ())
-    y = ti.var(ti.f32, ())
-    dy_dx = ti.var(ti.f32, ())
+    x = ti.field(float, ())
+    y = ti.field(float, ())
+    dy_dx = ti.field(float, ())
 
     @ti.kernel
     def compute_dy_dx():
@@ -111,9 +111,9 @@ Take `examples/ad_gravity.py <https://github.com/taichi-dev/taichi/blob/master/e
     N = 8
     dt = 1e-5
 
-    x = ti.Vector.var(2, ti.f32, N, needs_grad=True)  # position of particles
-    v = ti.Vector.var(2, ti.f32, N)                   # velocity of particles
-    U = ti.var(ti.f32, (), needs_grad=True)           # potential energy
+    x = ti.Vector.field(2, float, N, needs_grad=True)  # position of particles
+    v = ti.Vector.field(2, float, N)  # velocity of particles
+    U = ti.field(float, (), needs_grad=True)  # potential energy
 
 
     @ti.kernel
@@ -130,7 +130,7 @@ Take `examples/ad_gravity.py <https://github.com/taichi-dev/taichi/blob/master/e
         for i in x:
             v[i] += dt * -x.grad[i]  # dv/dt = -dU/dx
         for i in x:
-            x[i] += dt * v[i]        # dx/dt = v
+            x[i] += dt * v[i]  # dx/dt = v
 
 
     def substep():
@@ -138,7 +138,7 @@ Take `examples/ad_gravity.py <https://github.com/taichi-dev/taichi/blob/master/e
             # every kernel invocation within this indent scope
             # will also be accounted into the partial derivate of U
             # with corresponding input variables like x.
-            compute_U()   # will also computes dU/dx and save in x.grad
+            compute_U()  # will also computes dU/dx and save in x.grad
         advance()
 
 

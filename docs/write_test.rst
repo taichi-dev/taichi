@@ -35,7 +35,7 @@ Hint: You may pass/return values to/from Taichi-scope using 0-D fields, i.e. ``r
     def test_log10():
         ti.init(arch=ti.cpu)
 
-        r = ti.var(ti.f32, ())
+        r = ti.field(ti.f32, ())
 
         @ti.kernel
         def foo():
@@ -61,7 +61,7 @@ we provide a useful decorator ``@ti.test``:
     # will test against both CPU and CUDA backends
     @ti.test(ti.cpu, ti.cuda)
     def test_log10():
-        r = ti.var(ti.f32, ())
+        r = ti.field(ti.f32, ())
 
         @ti.kernel
         def foo():
@@ -80,7 +80,7 @@ And you may test against **all backends** by simply not specifying the argument:
     # will test against all backends available on your end
     @ti.test()
     def test_log10():
-        r = ti.var(ti.f32, ())
+        r = ti.field(ti.f32, ())
 
         @ti.kernel
         def foo():
@@ -108,7 +108,7 @@ backends, for example ``2.001 == ti.approx(2)`` will return ``True`` on the Open
     # will test against all backends available on your end
     @ti.test()
     def test_log10():
-        r = ti.var(ti.f32, ())
+        r = ti.field(ti.f32, ())
 
         @ti.kernel
         def foo():
@@ -144,7 +144,7 @@ We may test against different input values using the ``@pytest.mark.parametrize`
     @pytest.mark.parametrize('x', [1, 10, 100])
     @ti.test()
     def test_log10(x):
-        r = ti.var(ti.f32, ())
+        r = ti.field(ti.f32, ())
 
         @ti.kernel
         def foo():
@@ -165,8 +165,8 @@ Use a comma-separated list for multiple input values:
     @pytest.mark.parametrize('x,y', [(1, 2), (1, 3), (2, 1)])
     @ti.test()
     def test_atan2(x, y):
-        r = ti.var(ti.f32, ())
-        s = ti.var(ti.f32, ())
+        r = ti.field(ti.f32, ())
+        s = ti.field(ti.f32, ())
 
         @ti.kernel
         def foo():
@@ -190,8 +190,8 @@ Use two separate ``parametrize`` to test **all combinations** of input arguments
     # same as:  .parametrize('x,y', [(1, 1), (1, 2), (2, 1), (2, 2)])
     @ti.test()
     def test_atan2(x, y):
-        r = ti.var(ti.f32, ())
-        s = ti.var(ti.f32, ())
+        r = ti.field(ti.f32, ())
+        s = ti.field(ti.f32, ())
 
         @ti.kernel
         def foo():

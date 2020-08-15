@@ -1,5 +1,6 @@
 import taichi as ti
 import math
+ti.init()
 
 
 @ti.data_oriented
@@ -8,9 +9,9 @@ class SolarSystem:
         # initializer of the solar system simulator
         self.n = n
         self.dt = dt
-        self.x = ti.Vector(2, dt=ti.f32, shape=n)
-        self.v = ti.Vector(2, dt=ti.f32, shape=n)
-        self.center = ti.Vector(2, dt=ti.f32, shape=())
+        self.x = ti.Vector.field(2, dtype=float, shape=n)
+        self.v = ti.Vector.field(2, dtype=float, shape=n)
+        self.center = ti.Vector.field(2, dtype=float, shape=())
 
     @staticmethod
     @ti.func

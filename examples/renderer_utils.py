@@ -177,33 +177,4 @@ def Vector2(x, y):
     return ti.Vector([x, y])
 
 
-@ti.func
-def inside_taichi(p_):
-    p = p_
-    ret = -1
-    if not inside(p, Vector2(0.50, 0.50), 0.52):
-        if ret == -1:
-            ret = 0
-    if not inside(p, Vector2(0.50, 0.50), 0.495):
-        if ret == -1:
-            ret = 1
-    p = Vector2(0.5, 0.5) + (p - Vector2(0.5, 0.5))
-    if inside(p, Vector2(0.50, 0.25), 0.08):
-        if ret == -1:
-            ret = 1
-    if inside(p, Vector2(0.50, 0.75), 0.08):
-        if ret == -1:
-            ret = 0
-    if inside(p, Vector2(0.50, 0.25), 0.25):
-        if ret == -1:
-            ret = 0
-    if inside(p, Vector2(0.50, 0.75), 0.25):
-        if ret == -1:
-            ret = 1
-    if p[0] < 0.5:
-        if ret == -1:
-            ret = 1
-    else:
-        if ret == -1:
-            ret = 0
-    return ret
+inside_taichi = ti.taichi_logo

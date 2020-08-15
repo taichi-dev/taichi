@@ -44,7 +44,7 @@ class SNode:
                 for x in arg:
                     self.place(x, offset=offset)
             elif is_taichi_class(arg):
-                self.place(arg.get_tensor_members(), offset=offset)
+                self.place(arg.get_field_members(), offset=offset)
             else:
                 raise ValueError(f'{arg} cannot be placed')
         return self

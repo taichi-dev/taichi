@@ -7,7 +7,7 @@ from colorama import Fore, Back, Style
 from yapf.yapflib.yapf_api import FormatFile
 from git import Repo
 
-repo_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+repo_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 
 
 def has_suffix(f, suffixes):
@@ -33,7 +33,12 @@ def format_plain_text(fn):
         f.write(formatted)
 
 
-def _find_clang_format_bin():
+def find_clang_format_bin():
+    try:
+        return find_clang_format_bin.clang_format_bin
+    except AttributeError:
+        pass
+
     candidates = ['clang-format-6.0', 'clang-format']
     result = None
 
@@ -52,6 +57,7 @@ def _find_clang_format_bin():
     else:
         print('C++ formatter: {}{}'.format(Fore.GREEN, result))
     print(Style.RESET_ALL)
+    find_clang_format_bin.clang_format_bin = result
     return result
 
 
@@ -91,7 +97,6 @@ def main(all=False, diff=None):
         files = list(map(lambda x: os.path.join(repo_dir, x.a_path), files))
 
     files = sorted(set(map(str, files)))
-    clang_format_bin = _find_clang_format_bin()
     print('Code formatting ...')
     for fn in files:
         if not os.path.exists(fn):
@@ -103,29 +108,30 @@ def main(all=False, diff=None):
         if fn.find('docs/build/') != -1:
             continue
         if re.match(r'.*examples\/[a-z_]+\d\d+\.py$', fn):
-            print(f'Skipping example file {fn}...')
+            print(f'Skipping example file "{fn}"...')
             continue
-        if fn.endswith('.py'):
-            print('Formatting "{}"'.format(fn))
-            FormatFile(fn,
-                       in_place=True,
-                       style_config=os.path.join(repo_dir, 'misc',
-                                                 '.style.yapf'))
-        elif clang_format_bin and has_suffix(fn, ['cpp', 'h', 'cu', 'cuh']):
-            print('Formatting "{}"'.format(fn))
-            os.system('{} -i -style=file {}'.format(clang_format_bin, fn))
-        elif has_suffix(fn, ['txt', 'md', 'rst', 'cfg', 'll', 'ptx']):
-            print('Formatting "{}"'.format(fn))
-            format_plain_text(fn)
-        elif has_suffix(fn, [
-                'pyc', 'png', 'jpg', 'bmp', 'gif', 'gitignore', 'whl', 'mp4',
-                'html'
-        ]):
-            pass
-        else:
-            print(f'Skipping {fn}...')
+        if not do_format(fn):
+            print(f'Skipping "{fn}"...')
 
     print('Formatting done!')
+
+
+def do_format(fn):
+    clang_format_bin = find_clang_format_bin()
+    if fn.endswith('.py'):
+        print('Formatting "{}"'.format(fn))
+        FormatFile(fn,
+                   in_place=True,
+                   style_config=os.path.join(repo_dir, 'misc', '.style.yapf'))
+    elif clang_format_bin and has_suffix(fn, ['cpp', 'h', 'cu', 'cuh']):
+        print('Formatting "{}"'.format(fn))
+        os.system('{} -i -style=file {}'.format(clang_format_bin, fn))
+    elif has_suffix(fn, ['txt', 'md', 'rst', 'cfg', 'll', 'ptx']):
+        print('Formatting "{}"'.format(fn))
+    else:
+        return False
+    format_plain_text(fn)
+    return True
 
 
 if __name__ == '__main__':

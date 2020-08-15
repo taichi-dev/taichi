@@ -712,6 +712,13 @@ class Matrix(TaichiOperations):
     def from_torch(self, torch_tensor):
         return self.from_numpy(torch_tensor.contiguous())
 
+    @python_scope
+    def copy_from(self, other):
+        assert isinstance(other, Matrix)
+        from .meta import tensor_to_tensor
+        assert len(self.shape) == len(other.shape)
+        tensor_to_tensor(self, other)
+
     @taichi_scope
     def __ti_repr__(self):
         yield '['

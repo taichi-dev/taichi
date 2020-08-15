@@ -21,6 +21,8 @@ namespace opengl {
 #include "taichi/inc/opengl_extension.inc.h"
 #undef PER_OPENGL_EXTENSION
 
+int opengl_threads_per_block = 1024;
+
 #ifdef TI_WITH_OPENGL
 
 std::string get_opengl_error_string(GLenum err) {
@@ -50,11 +52,6 @@ void check_opengl_error(const std::string &msg = "OpenGL") {
 }
 
 int opengl_get_threads_per_group() {
-  int ret = 1000;
-  glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &ret);
-  check_opengl_error("glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS)");
-  TI_TRACE("opengl_get_threads_per_group: {}", ret);
-  return ret;
 }
 
 static std::string add_line_markers(std::string x) {
@@ -312,7 +309,7 @@ ParallelSize::~ParallelSize() {
 }
 
 size_t ParallelSize::get_threads_per_block() const {
-  size_t limit = opengl_get_threads_per_group();
+  size_t limit = opengl_threads_per_block;
   size_t n = threads_per_block.value_or(0);
   return n == 0 ? limit : std::min(n, limit);
 }
@@ -431,6 +428,11 @@ bool initialize_opengl(bool error_tolerance) {
     }
     TI_ERROR("Your OpenGL does not support GL_ARB_compute_shader extension");
   }
+
+  glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &opengl_threads_per_block);
+  check_opengl_error("glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS)");
+  TI_TRACE("GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS: {}", opengl_threads_per_block);
+  return ret;
 
   supported = std::make_optional<bool>(true);
   return true;

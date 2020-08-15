@@ -135,7 +135,7 @@ def test_io_simple():
     x1 = ti.field(ti.f32, shape=(n, n))
     t1 = torch.tensor(2 * np.ones((n, n), dtype=np.float32))
 
-    x2 = ti.Matrix(2, 3, ti.f32, shape=(n, n))
+    x2 = ti.Matrix.field(2, 3, ti.f32, shape=(n, n))
     t2 = torch.tensor(2 * np.ones((n, n, 2, 3), dtype=np.float32))
 
     x1.from_torch(t1)
@@ -156,7 +156,7 @@ def test_io_simple():
 
 @ti.torch_test
 def test_io_simple():
-    mat = ti.Matrix(2, 6, dt=ti.f32, shape=(), needs_grad=True)
+    mat = ti.Matrix.field(2, 6, dtype=ti.f32, shape=(), needs_grad=True)
     zeros = torch.zeros((2, 6))
     zeros[1, 2] = 3
     mat.from_torch(zeros + 1)
@@ -170,7 +170,7 @@ def test_io_simple():
 @ti.torch_test
 def test_fused_kernels():
     n = 12
-    X = ti.Matrix(3, 2, ti.f32, shape=(n, n, n))
+    X = ti.Matrix.field(3, 2, ti.f32, shape=(n, n, n))
     s = ti.get_runtime().get_num_compiled_functions()
     t = X.to_torch()
     assert ti.get_runtime().get_num_compiled_functions() == s + 1
@@ -181,7 +181,7 @@ def test_fused_kernels():
 @ti.torch_test
 def test_device():
     n = 12
-    X = ti.Matrix(3, 2, ti.f32, shape=(n, n, n))
+    X = ti.Matrix.field(3, 2, ti.f32, shape=(n, n, n))
     assert X.to_torch(device='cpu').device == torch.device('cpu')
 
     if torch.cuda.is_available():
@@ -191,7 +191,7 @@ def test_device():
 @ti.torch_test
 def test_shape_matrix():
     n = 12
-    x = ti.Matrix(3, 2, ti.f32, shape=(n, n))
+    x = ti.Matrix.field(3, 2, ti.f32, shape=(n, n))
     X = x.to_torch()
     for i in range(n):
         for j in range(n):

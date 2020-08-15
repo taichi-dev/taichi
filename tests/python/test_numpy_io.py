@@ -70,7 +70,7 @@ def test_f64():
 def test_matrix():
     n = 4
     m = 7
-    val = ti.Matrix(2, 3, ti.f32, shape=(n, m))
+    val = ti.Matrix.field(2, 3, ti.f32, shape=(n, m))
 
     nparr = np.empty(shape=(n, m, 2, 3), dtype=np.float32)
     for i in range(n):
@@ -92,7 +92,7 @@ def test_numpy_io_example():
     # Taichi tensors
     val = ti.field(ti.i32, shape=(n, m))
     vec = ti.Vector(3, dt=ti.i32, shape=(n, m))
-    mat = ti.Matrix(3, 4, dt=ti.i32, shape=(n, m))
+    mat = ti.Matrix.field(3, 4, dtype=ti.i32, shape=(n, m))
 
     # Scalar
     arr = np.ones(shape=(n, m), dtype=np.int32)

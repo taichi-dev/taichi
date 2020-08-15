@@ -12,7 +12,7 @@ import math
 @ti.all_archs
 def test_matrix_self_assign():
     a = ti.Vector(2, ti.f32, ())
-    b = ti.Matrix(2, 2, ti.f32, ())
+    b = ti.Matrix.field(2, 2, ti.f32, ())
     c = ti.Vector(2, ti.f32, ())
 
     @ti.kernel

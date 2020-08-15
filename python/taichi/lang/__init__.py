@@ -229,13 +229,15 @@ def no_activate(*args):
 
 
 def cache_shared(*args):
-    for v in args:
-        taichi_lang_core.cache(0, v.loop_range().ptr)
+    for a in args:
+        for v in a.get_field_members():
+            taichi_lang_core.cache(0, v.ptr)
 
 
 def cache_read_only(*args):
-    for v in args:
-        taichi_lang_core.cache(1, v.loop_range().ptr)
+    for a in args:
+        for v in a.get_field_members():
+            taichi_lang_core.cache(0, v.ptr)
 
 
 def assume_in_range(val, base, low, high):

@@ -28,13 +28,13 @@ def _test_svd(dt, n):
     print(
         f'arch={ti.cfg.arch} default_fp={ti.cfg.default_fp} fast_math={ti.cfg.fast_math} dim={n}'
     )
-    A = ti.Matrix(n, n, dt=dt, shape=())
-    A_reconstructed = ti.Matrix(n, n, dt=dt, shape=())
-    U = ti.Matrix(n, n, dt=dt, shape=())
-    UtU = ti.Matrix(n, n, dt=dt, shape=())
-    sigma = ti.Matrix(n, n, dt=dt, shape=())
-    V = ti.Matrix(n, n, dt=dt, shape=())
-    VtV = ti.Matrix(n, n, dt=dt, shape=())
+    A = ti.Matrix.field(n, n, dtype=dt, shape=())
+    A_reconstructed = ti.Matrix.field(n, n, dtype=dt, shape=())
+    U = ti.Matrix.field(n, n, dtype=dt, shape=())
+    UtU = ti.Matrix.field(n, n, dtype=dt, shape=())
+    sigma = ti.Matrix.field(n, n, dtype=dt, shape=())
+    V = ti.Matrix.field(n, n, dtype=dt, shape=())
+    VtV = ti.Matrix.field(n, n, dtype=dt, shape=())
 
     @ti.kernel
     def run():
@@ -74,10 +74,10 @@ def test_svd():
 
 @ti.all_archs
 def test_transpose_no_loop():
-    A = ti.Matrix(3, 3, dt=ti.f32, shape=())
-    U = ti.Matrix(3, 3, dt=ti.f32, shape=())
-    sigma = ti.Matrix(3, 3, dt=ti.f32, shape=())
-    V = ti.Matrix(3, 3, dt=ti.f32, shape=())
+    A = ti.Matrix.field(3, 3, dtype=ti.f32, shape=())
+    U = ti.Matrix.field(3, 3, dtype=ti.f32, shape=())
+    sigma = ti.Matrix.field(3, 3, dtype=ti.f32, shape=())
+    V = ti.Matrix.field(3, 3, dtype=ti.f32, shape=())
 
     @ti.kernel
     def run():

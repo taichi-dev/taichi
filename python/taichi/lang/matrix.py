@@ -228,8 +228,12 @@ class Matrix(TaichiOperations):
         assert kwargs == {}
         return self.entries[self.linearize_entry_id(*args)]
 
-    def get_tensor_members(self):
+    def get_field_members(self):
         return self.entries
+
+    @deprecated('x.get_tensor_members()', 'x.get_field_members()')
+    def get_tensor_members(self):
+        return self.get_field_members()
 
     def get_entry(self, *args, **kwargs):
         assert kwargs == {}
@@ -707,6 +711,13 @@ class Matrix(TaichiOperations):
     @python_scope
     def from_torch(self, torch_tensor):
         return self.from_numpy(torch_tensor.contiguous())
+
+    @python_scope
+    def copy_from(self, other):
+        assert isinstance(other, Matrix)
+        from .meta import tensor_to_tensor
+        assert len(self.shape) == len(other.shape)
+        tensor_to_tensor(self, other)
 
     @taichi_scope
     def __ti_repr__(self):

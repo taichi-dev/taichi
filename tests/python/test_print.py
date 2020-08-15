@@ -46,7 +46,7 @@ def test_print_string():
 @ti.all_archs
 def test_print_matrix():
     x = ti.Matrix.field(2, 3, dtype=ti.f32, shape=())
-    y = ti.Vector(3, dt=ti.f32, shape=3)
+    y = ti.Vector.field(3, dtype=ti.f32, shape=3)
 
     @ti.kernel
     def func(k: ti.f32):

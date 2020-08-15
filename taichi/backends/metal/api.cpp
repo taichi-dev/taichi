@@ -21,6 +21,7 @@ using mac::cast_call;
 using mac::clscall;
 using mac::nsobj_unique_ptr;
 using mac::wrap_as_nsobj_unique_ptr;
+using mac::retain_and_wrap_as_nsobj_unique_ptr;
 
 }  // namespace
 
@@ -45,21 +46,21 @@ nsobj_unique_ptr<MTLCommandQueue> new_command_queue(MTLDevice *dev) {
 
 nsobj_unique_ptr<MTLCommandBuffer> new_command_buffer(MTLCommandQueue *queue) {
   auto *buffer = cast_call<MTLCommandBuffer *>(queue, "commandBuffer");
-  return wrap_as_nsobj_unique_ptr(buffer);
+  return retain_and_wrap_as_nsobj_unique_ptr(buffer);
 }
 
 nsobj_unique_ptr<MTLComputeCommandEncoder> new_compute_command_encoder(
     MTLCommandBuffer *buffer) {
   auto *encoder =
       cast_call<MTLComputeCommandEncoder *>(buffer, "computeCommandEncoder");
-  return wrap_as_nsobj_unique_ptr(encoder);
+  return retain_and_wrap_as_nsobj_unique_ptr(encoder);
 }
 
 nsobj_unique_ptr<MTLBlitCommandEncoder> new_blit_command_encoder(
     MTLCommandBuffer *buffer) {
   auto *encoder =
       cast_call<MTLBlitCommandEncoder *>(buffer, "blitCommandEncoder");
-  return wrap_as_nsobj_unique_ptr(encoder);
+  return retain_and_wrap_as_nsobj_unique_ptr(encoder);
 }
 
 nsobj_unique_ptr<MTLLibrary> new_library_with_source(MTLDevice *device,

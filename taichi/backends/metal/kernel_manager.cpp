@@ -606,6 +606,7 @@ class KernelManager::Impl {
 
   void launch_taichi_kernel(const std::string &taichi_kernel_name,
                             Context *ctx) {
+    mac::ScopedAutoreleasePool pool;
     auto &ctk = *compiled_taichi_kernels_.find(taichi_kernel_name)->second;
     auto ctx_blitter =
         HostMetalCtxBlitter::maybe_make(ctk, ctx, taichi_kernel_name);
@@ -651,6 +652,7 @@ class KernelManager::Impl {
   }
 
   void synchronize() {
+    mac::ScopedAutoreleasePool pool;
     blit_buffers_and_sync();
   }
 

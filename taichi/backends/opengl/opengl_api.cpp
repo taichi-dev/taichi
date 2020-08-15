@@ -432,7 +432,6 @@ bool initialize_opengl(bool error_tolerance) {
   glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &opengl_threads_per_block);
   check_opengl_error("glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS)");
   TI_TRACE("GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS: {}", opengl_threads_per_block);
-  return ret;
 
   supported = std::make_optional<bool>(true);
   return true;

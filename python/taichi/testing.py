@@ -82,6 +82,15 @@ def _get_taichi_archs_fixture():
 
 
 def test(*args, **kwargs):
+    '''
+.. function:: ti.test(arch=[], exclude=[], require=[], **options)
+
+    :parameter arch: backends to be included in test
+    :parameter exclude: backends to be excluded in test
+    :parameter require: extensions required for this test
+    :parameter options: other options to be passed into ``ti.init``
+    '''
+
     def decorator(foo):
         import functools
         import pytest

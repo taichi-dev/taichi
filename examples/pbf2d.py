@@ -254,7 +254,8 @@ def render(gui):
             pos[j] *= screen_to_world_ratio / screen_res[j]
     gui.circles(pos_np, radius=particle_radius, color=particle_color)
     gui.rect((0, 0), (board_states[None][0] / boundary[0], 1),
-             radius=1.5, color=boundary_color)
+             radius=1.5,
+             color=boundary_color)
     gui.show()
 
 
@@ -263,9 +264,9 @@ def init_particles():
     for i in range(num_particles):
         delta = h * 0.8
         offs = ti.Vector([(boundary[0] - delta * num_particles_x) * 0.5,
-                         boundary[1] * 0.02])
-        positions[i] = ti.Vector([i % num_particles_x,
-            i // num_particles_x]) * delta + offs
+                          boundary[1] * 0.02])
+        positions[i] = ti.Vector([i % num_particles_x, i // num_particles_x
+                                  ]) * delta + offs
         for c in ti.static(range(dim)):
             velocities[i][c] = (ti.random() - 0.5) * 4
     board_states[None] = ti.Vector([boundary[0] - epsilon, -0.0])

@@ -11,11 +11,11 @@ depth = 4
 dx = 0.02
 dt = 0.01
 shape = 512, 512
-pixels = ti.var(dt=ti.f32, shape=shape)
-background = ti.var(dt=ti.f32, shape=shape)
-height = ti.var(dt=ti.f32, shape=shape)
-velocity = ti.var(dt=ti.f32, shape=shape)
-acceleration = ti.var(dt=ti.f32, shape=shape)
+pixels = ti.field(dtype=ti.f32, shape=shape)
+background = ti.field(dtype=ti.f32, shape=shape)
+height = ti.field(dtype=ti.f32, shape=shape)
+velocity = ti.field(dtype=ti.f32, shape=shape)
+acceleration = ti.field(dtype=ti.f32, shape=shape)
 
 
 @ti.kernel

@@ -6,7 +6,7 @@ input_file_name = input('Enter the input image file name: ')
 input_image = ti.imread(input_file_name)
 
 ## Process the image:
-image = ti.var(ti.u8, input_image.shape)
+image = ti.field(ti.u8, input_image.shape)
 image.from_numpy(input_image)
 
 

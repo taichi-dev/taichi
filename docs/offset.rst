@@ -8,7 +8,7 @@ Coordinate offsets
 
 .. code-block:: python
 
-    a = ti.Matrix(2, 2, dtype=ti.f32, shape=(32, 64), offset=(-16, 8))
+    a = ti.Matrix.field(2, 2, dtype=ti.f32, shape=(32, 64), offset=(-16, 8))
 
 In this way, the field's indices are from ``(-16, 8)`` to ``(16, 72)`` (exclusive).
 

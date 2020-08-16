@@ -106,8 +106,8 @@ class Matrix(TaichiOperations):
                 f'Taichi matrices/vectors with {self.n}x{self.m} > 32 entries are not suggested.'
                 ' Matrices/vectors will be automatically unrolled at compile-time for performance.'
                 ' So the compilation time could be extremely long if the matrix size is too big.'
-                ' You may use a tensor to store a large matrix like this, e.g.:\n'
-                f'    x = ti.var(ti.f32, ({self.n}, {self.m})).\n'
+                ' You may use a field to store a large matrix like this, e.g.:\n'
+                f'    x = ti.field(ti.f32, ({self.n}, {self.m})).\n'
                 ' See https://taichi.readthedocs.io/en/stable/tensor_matrix.html#matrix-size'
                 ' for more details.',
                 UserWarning,

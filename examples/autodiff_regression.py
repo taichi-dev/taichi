@@ -11,8 +11,8 @@ learning_rate = 1e-4
 
 N = 32
 x, y = ti.field(ti.f32, shape=N, needs_grad=True), ti.field(ti.f32,
-                                                        shape=N,
-                                                        needs_grad=True)
+                                                            shape=N,
+                                                            needs_grad=True)
 coeffs = ti.field(ti.f32, shape=number_coeffs, needs_grad=True)
 loss = ti.field(ti.f32, shape=(), needs_grad=True)
 

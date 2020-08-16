@@ -356,10 +356,12 @@ class HostMetalCtxBlitter {
  public:
   HostMetalCtxBlitter(const CompiledTaichiKernel &kernel,
                       Context *host_ctx,
+                      uint64_t *host_result_buffer,
                       const std::string &kernel_name)
       : ti_kernel_attribs_(&kernel.ti_kernel_attribs),
         ctx_attribs_(&kernel.ctx_attribs),
         host_ctx_(host_ctx),
+        host_result_buffer_(host_result_buffer),
         kernel_ctx_mem_(kernel.ctx_mem.get()),
         kernel_ctx_buffer_(kernel.ctx_buffer.get()),
         kernel_name_(kernel_name) {
@@ -421,7 +423,7 @@ class HostMetalCtxBlitter {
   void metal_to_host() {
 #define TO_HOST(type)                                   \
   const type d = *reinterpret_cast<type *>(device_ptr); \
-  host_ctx_->set_arg<type>(i, d)
+  host_result_buffer_[i] = taichi_union_cast_with_different_sizes<uint64>(d);
 
     if (ctx_attribs_->empty()) {
       return;
@@ -485,17 +487,20 @@ class HostMetalCtxBlitter {
   static std::unique_ptr<HostMetalCtxBlitter> maybe_make(
       const CompiledTaichiKernel &kernel,
       Context *ctx,
-      std::string name = "") {
+      uint64_t *host_result_buffer,
+      std::string name) {
     if (kernel.ctx_attribs.empty()) {
       return nullptr;
     }
-    return std::make_unique<HostMetalCtxBlitter>(kernel, ctx, name);
+    return std::make_unique<HostMetalCtxBlitter>(kernel, ctx,
+                                                 host_result_buffer, name);
   }
 
  private:
   const TaichiKernelAttributes *const ti_kernel_attribs_;
   const KernelContextAttributes *const ctx_attribs_;
   Context *const host_ctx_;
+  uint64_t *const host_result_buffer_;
   BufferMemoryView *const kernel_ctx_mem_;
   MTLBuffer *const kernel_ctx_buffer_;
   std::string kernel_name_;
@@ -509,6 +514,7 @@ class KernelManager::Impl {
       : config_(params.config),
         compiled_structs_(params.compiled_structs),
         mem_pool_(params.mem_pool),
+        host_result_buffer_(params.host_result_buffer),
         profiler_(params.profiler),
         command_buffer_id_(0) {
     if (config_->debug) {
@@ -608,8 +614,8 @@ class KernelManager::Impl {
                             Context *ctx) {
     mac::ScopedAutoreleasePool pool;
     auto &ctk = *compiled_taichi_kernels_.find(taichi_kernel_name)->second;
-    auto ctx_blitter =
-        HostMetalCtxBlitter::maybe_make(ctk, ctx, taichi_kernel_name);
+    auto ctx_blitter = HostMetalCtxBlitter::maybe_make(
+        ctk, ctx, host_result_buffer_, taichi_kernel_name);
     if (config_->verbose_kernel_launches) {
       TI_INFO("Launching Taichi kernel <{}>", taichi_kernel_name);
     }
@@ -878,6 +884,7 @@ class KernelManager::Impl {
   CompileConfig *const config_;
   const CompiledStructs compiled_structs_;
   MemoryPool *const mem_pool_;
+  uint64_t *const host_result_buffer_;
   KernelProfilerBase *const profiler_;
   nsobj_unique_ptr<MTLDevice> device_;
   nsobj_unique_ptr<MTLCommandQueue> command_queue_;

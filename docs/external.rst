@@ -73,7 +73,7 @@ We also provide interfaces to copy data directly between Taichi fields and PyTor
 .. function:: field.to_torch(device = None)
 
    :parameter field: (ti.field, ti.Vector.field or ti.Matrix.field) The field
-   :parameter device: (torch.device) the device where torch tensor is created
+   :parameter device: (torch.device) the device where the PyTorch tensor is stored
 
    :return: (torch.Tensor) The PyTorch tensor containing data in ``x``.
 

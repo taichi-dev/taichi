@@ -51,9 +51,6 @@ void check_opengl_error(const std::string &msg = "OpenGL") {
   }
 }
 
-int opengl_get_threads_per_group() {
-}
-
 static std::string add_line_markers(std::string x) {
   std::string marker;
   size_t pos = 0, npos;

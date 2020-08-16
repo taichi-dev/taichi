@@ -53,6 +53,8 @@ we have done heavy engineering with this goal in mind - letting every Python pro
 minimal learning effort. You can even use your favorite Python package management system, Python IDEs and other
 Python packages in conjunction with Taichi.
 
+.. _backends:
+
 Portability
 -----------
 

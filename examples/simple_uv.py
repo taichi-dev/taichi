@@ -1,22 +1,21 @@
-import taichi as ti
-import numpy as np
+import taichi as ti  # make sure you've 'pip3 install taichi' already
 
-ti.init()
-
-res = 1280, 720
-pixels = ti.Vector(3, dt=ti.f32, shape=res)
+# declare a 512x512x3 field whose elements are 32-bit floating-point numbers
+rgb_image = ti.field(dtype=float, shape=(512, 512, 3))
 
 
-@ti.kernel
-def paint():
-    for i, j in pixels:
-        u = i / res[0]
-        v = j / res[1]
-        pixels[i, j] = [u, v, 0]
+@ti.kernel  # functions decorated by @ti.kernel will be compiled by Taichi
+def render():
+    # iterate through 512x512 pixels in parallel
+    for i, j in ti.ndrange(512, 512):
+        r = i / 512
+        g = j / 512
+        rgb_image[i, j, 0] = r  # red channel, from 0.0 to 1.0
+        rgb_image[i, j, 1] = g  # green channel, from 0.0 to 1.0
 
 
-gui = ti.GUI('UV', res)
-while not gui.get_event(ti.GUI.ESCAPE):
-    paint()
-    gui.set_image(pixels)
+gui = ti.GUI('UV', (512, 512))  # create a 512x512 window
+while gui.running:
+    render()
+    gui.set_image(rgb_image)  # display the field as an image
     gui.show()

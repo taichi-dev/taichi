@@ -110,13 +110,13 @@ def main(all=False, diff=None):
         if re.match(r'.*examples\/[a-z_]+\d\d+\.py$', fn):
             print(f'Skipping example file "{fn}"...')
             continue
-        if not do_format(fn):
+        if not format_file(fn):
             print(f'Skipping "{fn}"...')
 
     print('Formatting done!')
 
 
-def do_format(fn):
+def format_file(fn):
     clang_format_bin = find_clang_format_bin()
     if fn.endswith('.py'):
         print('Formatting "{}"'.format(fn))

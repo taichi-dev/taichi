@@ -21,7 +21,7 @@ use_fixed_caxis = 0  # 1: use fixed caxis limits, 0: automatic caxis limits
 fixed_caxis = [0.0, 5.0]  # fixed caxis limits
 
 Q = ti.Vector.field(4, dtype=real,
-              shape=(N, N))  # [rho, rho*u, rho*v, rho*e] consv vars
+                    shape=(N, N))  # [rho, rho*u, rho*v, rho*e] consv vars
 Q_old = ti.Vector.field(4, dtype=real, shape=(N, N))
 W = ti.Vector.field(4, dtype=real, shape=(N, N))  # [rho, u, v, p] cell avg
 W_xl = ti.Vector.field(4, dtype=real, shape=(N, N, 3))  # left side of x-face

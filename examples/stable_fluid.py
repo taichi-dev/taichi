@@ -227,10 +227,9 @@ def pressure_jacobi_dual(pf: ti.template(), new_pf: ti.template()):
         divr = sample(velocity_divs, i + 1, j)
         divb = sample(velocity_divs, i, j - 1)
         divt = sample(velocity_divs, i, j + 1)
-        new_pf[i, j] = (pll + prr + pbb + ptt
-                - divl - divr - divb - divt - div
-                + (plt + prt + prb + plb) * 2
-                + pcc * 4) * 0.0625
+        new_pf[i,
+               j] = (pll + prr + pbb + ptt - divl - divr - divb - divt - div +
+                     (plt + prt + prb + plb) * 2 + pcc * 4) * 0.0625
 
 
 pressure_jacobi = pressure_jacobi_dual

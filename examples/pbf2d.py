@@ -49,18 +49,18 @@ neighbor_radius = h * 1.05
 poly6_factor = 315.0 / 64.0 / np.pi
 spiky_grad_factor = -45.0 / np.pi
 
-old_positions = ti.Vector(dim, dt=ti.f32)
-positions = ti.Vector(dim, dt=ti.f32)
-velocities = ti.Vector(dim, dt=ti.f32)
+old_positions = ti.Vector.field(dim, dtype=ti.f32)
+positions = ti.Vector.field(dim, dtype=ti.f32)
+velocities = ti.Vector.field(dim, dtype=ti.f32)
 # Once taichi supports clear(), we can get rid of grid_num_particles
 grid_num_particles = ti.field(ti.i32)
 grid2particles = ti.field(ti.i32)
 particle_num_neighbors = ti.field(ti.i32)
 particle_neighbors = ti.field(ti.i32)
 lambdas = ti.field(ti.f32)
-position_deltas = ti.Vector(dim, dt=ti.f32)
+position_deltas = ti.Vector.field(dim, dtype=ti.f32)
 # 0: x-pos, 1: timestep in sin()
-board_states = ti.Vector(2, dt=ti.f32)
+board_states = ti.Vector.field(2, dtype=ti.f32)
 
 ti.root.dense(ti.i, num_particles).place(old_positions, positions, velocities)
 grid_snode = ti.root.dense(ti.ij, grid_size)

@@ -198,7 +198,7 @@ def vorticity(vf: ti.template()):
 
 
 @ti.kernel
-def pressure_jacobi(pf: ti.template(), new_pf: ti.template()):
+def pressure_jacobi_single(pf: ti.template(), new_pf: ti.template()):
     ti.cache_read_only(pf)
     for i, j in pf:
         pl = sample(pf, i - 1, j)
@@ -207,6 +207,36 @@ def pressure_jacobi(pf: ti.template(), new_pf: ti.template()):
         pt = sample(pf, i, j + 1)
         div = velocity_divs[i, j]
         new_pf[i, j] = (pl + pr + pb + pt - div) * 0.25
+
+
+@ti.kernel
+def pressure_jacobi_dual(pf: ti.template(), new_pf: ti.template()):
+    ti.cache_read_only(pf)
+    for i, j in pf:
+        pcc = sample(pf, i, j)
+        pll = sample(pf, i - 2, j)
+        prr = sample(pf, i + 2, j)
+        pbb = sample(pf, i, j - 2)
+        ptt = sample(pf, i, j + 2)
+        plb = sample(pf, i - 1, j - 1)
+        prb = sample(pf, i + 1, j - 1)
+        plt = sample(pf, i - 1, j + 1)
+        prt = sample(pf, i + 1, j + 1)
+        div = sample(velocity_divs, i, j)
+        divl = sample(velocity_divs, i - 1, j)
+        divr = sample(velocity_divs, i + 1, j)
+        divb = sample(velocity_divs, i, j - 1)
+        divt = sample(velocity_divs, i, j + 1)
+        new_pf[i, j] = (pll + prr + pbb + ptt
+                - divl - divr - divb - divt - div
+                + (plt + prt + prb + plb) * 2
+                + pcc * 4) * 0.0625
+
+
+pressure_jacobi = pressure_jacobi_dual
+
+if pressure_jacobi == pressure_jacobi_dual:
+    p_jacobi_iters //= 2
 
 
 @ti.kernel

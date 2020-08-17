@@ -4,7 +4,7 @@ import math
 ti.init(arch=ti.gpu)
 
 n = 256
-x = ti.var(ti.f32)
+x = ti.field(ti.f32)
 # `bitmasked` is a tensor that supports sparsity, in that each element can be
 # activated individually. (It can be viewed as `dense`, with an extra bit for each
 # element to mark its activation). Assigning to an element will activate it

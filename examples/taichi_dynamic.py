@@ -1,7 +1,7 @@
 import taichi as ti
 
-x = ti.var(ti.i32)
-l = ti.var(ti.i32)
+x = ti.field(ti.i32)
+l = ti.field(ti.i32)
 n = 16
 
 ti.init()

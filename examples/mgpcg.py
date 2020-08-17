@@ -18,15 +18,15 @@ N_ext = N // 2  # number of ext cells set so that that total grid size is still 
 N_tot = 2 * N
 
 # setup sparse simulation data arrays
-r = [ti.var(dt=real) for _ in range(n_mg_levels)]  # residual
-z = [ti.var(dt=real) for _ in range(n_mg_levels)]  # M^-1 r
-x = ti.var(dt=real)  # solution
-p = ti.var(dt=real)  # conjugate gradient
-Ap = ti.var(dt=real)  # matrix-vector product
-alpha = ti.var(dt=real)  # step size
-beta = ti.var(dt=real)  # step size
-sum = ti.var(dt=real)  # storage for reductions
-pixels = ti.var(dt=real, shape=(N_gui, N_gui))  # image buffer
+r = [ti.field(dtype=real) for _ in range(n_mg_levels)]  # residual
+z = [ti.field(dtype=real) for _ in range(n_mg_levels)]  # M^-1 r
+x = ti.field(dtype=real)  # solution
+p = ti.field(dtype=real)  # conjugate gradient
+Ap = ti.field(dtype=real)  # matrix-vector product
+alpha = ti.field(dtype=real)  # step size
+beta = ti.field(dtype=real)  # step size
+sum = ti.field(dtype=real)  # storage for reductions
+pixels = ti.field(dtype=real, shape=(N_gui, N_gui))  # image buffer
 
 grid = ti.root.pointer(ti.ijk, [N_tot // 4]).dense(ti.ijk, 4).place(x, p, Ap)
 

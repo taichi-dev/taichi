@@ -30,8 +30,8 @@ W_yl = ti.Vector(4, dt=real, shape=(N, N, 3))  # left side of y-face
 W_yr = ti.Vector(4, dt=real, shape=(N, N, 3))  # right side of y-face
 F_x = ti.Vector(4, dt=real, shape=(N, N))  # x-face flux
 F_y = ti.Vector(4, dt=real, shape=(N, N))  # y-face flux
-dt = ti.var(dt=real, shape=())
-img = ti.var(dt=ti.f32, shape=(res, res))
+dt = ti.field(dtype=real, shape=())
+img = ti.field(dtype=ti.f32, shape=(res, res))
 
 beta_smooth = 1.2
 beta_sharp = 2.0

@@ -13,7 +13,7 @@ B = ti.root
 for r in range(R):
     B = B.bitmasked(ti.ij, (K, K))
 
-qt = ti.var(ti.f32)
+qt = ti.field(ti.f32)
 B.place(qt)
 
 img = ti.Vector(3, dt=ti.f32, shape=(RES, RES))

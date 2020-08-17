@@ -27,8 +27,8 @@ def grad_test(tifunc, npfunc=None, default_fp=ti.f32):
     @ti.all_archs_with(default_fp=default_fp)
     def impl():
         print(f'arch={ti.cfg.arch} default_fp={ti.cfg.default_fp}')
-        x = ti.var(default_fp)
-        y = ti.var(default_fp)
+        x = ti.field(default_fp)
+        y = ti.field(default_fp)
 
         ti.root.dense(ti.i, 1).place(x, x.grad, y, y.grad)
 
@@ -53,7 +53,7 @@ def grad_test(tifunc, npfunc=None, default_fp=ti.f32):
 @if_has_autograd
 @ti.all_archs
 def test_size1():
-    x = ti.var(ti.i32)
+    x = ti.field(ti.i32)
 
     ti.root.dense(ti.i, 1).place(x)
 
@@ -113,8 +113,8 @@ def test_minmax():
 @if_has_autograd
 @ti.all_archs
 def test_mod():
-    x = ti.var(ti.i32)
-    y = ti.var(ti.i32)
+    x = ti.field(ti.i32)
+    y = ti.field(ti.i32)
 
     ti.root.dense(ti.i, 1).place(x, y)
     ti.root.lazy_grad()
@@ -164,8 +164,8 @@ def test_pow_f64():
 
 @ti.all_archs
 def test_obey_kernel_simplicity():
-    x = ti.var(ti.f32)
-    y = ti.var(ti.f32)
+    x = ti.field(ti.f32)
+    y = ti.field(ti.f32)
 
     ti.root.dense(ti.i, 1).place(x, y)
     ti.root.lazy_grad()
@@ -189,8 +189,8 @@ def test_obey_kernel_simplicity():
 
 @ti.all_archs
 def test_violate_kernel_simplicity1():
-    x = ti.var(ti.f32)
-    y = ti.var(ti.f32)
+    x = ti.field(ti.f32)
+    y = ti.field(ti.f32)
 
     ti.root.dense(ti.i, 1).place(x, y)
     ti.root.lazy_grad()
@@ -208,8 +208,8 @@ def test_violate_kernel_simplicity1():
 
 @ti.all_archs
 def test_violate_kernel_simplicity2():
-    x = ti.var(ti.f32)
-    y = ti.var(ti.f32)
+    x = ti.field(ti.f32)
+    y = ti.field(ti.f32)
 
     ti.root.dense(ti.i, 1).place(x, y)
     ti.root.lazy_grad()
@@ -238,8 +238,8 @@ def test_cast():
 @ti.require(ti.extension.data64)
 @ti.all_archs
 def test_ad_precision_1():
-    loss = ti.var(ti.f32, shape=())
-    x = ti.var(ti.f64, shape=())
+    loss = ti.field(ti.f32, shape=())
+    x = ti.field(ti.f64, shape=())
 
     ti.root.lazy_grad()
 
@@ -256,8 +256,8 @@ def test_ad_precision_1():
 @ti.require(ti.extension.data64)
 @ti.all_archs
 def test_ad_precision_2():
-    loss = ti.var(ti.f64, shape=())
-    x = ti.var(ti.f32, shape=())
+    loss = ti.field(ti.f64, shape=())
+    x = ti.field(ti.f32, shape=())
 
     ti.root.lazy_grad()
 

@@ -168,6 +168,9 @@ def fully_deprecated(old, new):
 
 
 def cached_return(foo):
+    import functools
+
+    @functools.wraps(foo)
     def wrapped(*args, **kwargs):
         if wrapped._cache is not None:
             return wrapped._cache

@@ -38,8 +38,8 @@ class Expr(TaichiOperations):
         self.grad = None
         self.val = self
 
-    @python_scope
     def __setitem__(self, key, value):
+        assert not impl.inside_kernel()
         self.initialize_accessor()
         if key is None:
             key = ()
@@ -49,8 +49,8 @@ class Expr(TaichiOperations):
         key = key + (0, ) * (taichi_lang_core.get_max_num_indices() - len(key))
         self.setter(value, key)
 
-    @python_scope
     def __getitem__(self, key):
+        assert not impl.inside_kernel()
         self.initialize_accessor()
         if key is None:
             key = ()

@@ -121,6 +121,7 @@ void export_lang(py::module &m) {
       .def_readwrite("async_mode", &CompileConfig::async_mode)
       .def_readwrite("flatten_if", &CompileConfig::flatten_if)
       .def_readwrite("make_thread_local", &CompileConfig::make_thread_local)
+      .def_readwrite("make_block_local", &CompileConfig::make_block_local)
       .def_readwrite("cc_compile_cmd", &CompileConfig::cc_compile_cmd)
       .def_readwrite("cc_link_cmd", &CompileConfig::cc_link_cmd);
 

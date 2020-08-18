@@ -508,7 +508,7 @@ class IRPrinter : public IRVisitor {
       print("{} = offloaded garbage collect {}", stmt->name(),
             stmt->snode->get_node_type_name_hinted());
     } else {
-      print("{} = offloaded {} ", stmt->name(), details);
+      print("{} = offloaded serial {} ", stmt->name(), details);
       if (stmt->tls_prologue) {
         print("tls prologue {{");
         stmt->tls_prologue->accept(this);

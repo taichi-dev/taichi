@@ -45,9 +45,9 @@ class Expr(TaichiOperations):
             key = ()
         elif not isinstance(key, (tuple, list)):
             key = (key, )
-        assert len(key) == len(self.shape)
+        assert len(key) == len(self.shape), f"Field of dim {len(self.shape)} accessed with indices of dim {len(key)}"
         key = key + (0, ) * (taichi_lang_core.get_max_num_indices() - len(key))
-        self.setter(value, key)
+        self.setter(key, value)
 
     def __getitem__(self, key):
         assert not impl.inside_kernel()
@@ -56,6 +56,7 @@ class Expr(TaichiOperations):
             key = ()
         elif not isinstance(key, (tuple, list)):
             key = (key, )
+        assert len(key) == len(self.shape), f"Field of dim {len(self.shape)} accessed with indices of dim {len(key)}"
         key = key + (0, ) * (taichi_lang_core.get_max_num_indices() - len(key))
         return self.getter(key)
 
@@ -72,31 +73,18 @@ class Expr(TaichiOperations):
     @python_scope
     def initialize_accessor(self):
         impl.get_runtime().materialize()
-        snode = self.ptr.snode()
+        snode = self.snode.ptr
 
         if not taichi_lang_core.is_integral(self.dtype):
-
-            def getter(key):
-                return snode.read_float(key)
-
-            def setter(value, key):
-                snode.write_float(key, value)
+            self.getter = snode.read_float
+            self.setter = snode.write_float
 
         else:
             if taichi_lang_core.is_signed(self.dtype):
-
-                def getter(key):
-                    return snode.read_int(key)
+                self.getter = snode.read_int
             else:
-
-                def getter(key):
-                    return snode.read_uint(key)
-
-            def setter(value, key):
-                snode.write_int(key, value)
-
-        self.getter = getter
-        self.setter = setter
+                self.getter = snode.read_uint
+            self.setter = snode.write_int
 
         self.initialize_accessor = lambda: None
 

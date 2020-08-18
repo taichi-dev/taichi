@@ -5,9 +5,9 @@ import ctypes
 ti.init()
 
 N = 1024
-x = ti.var(ti.i32, shape=N)
-y = ti.var(ti.i32, shape=N)
-z = ti.var(ti.i32, shape=N)
+x = ti.field(int, shape=N)
+y = ti.field(int, shape=N)
+z = ti.field(int, shape=N)
 
 source = '''
 extern "C" {
@@ -34,7 +34,7 @@ so = ctypes.CDLL("./a.so")
 
 
 @ti.kernel
-def call_ext() -> ti.i32:
+def call_ext() -> int:
     a = 2.0
     b = 3.0
     c = 0.0

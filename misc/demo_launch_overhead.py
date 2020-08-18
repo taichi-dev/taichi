@@ -5,7 +5,7 @@ ti.init()
 
 
 @ti.kernel
-def compute_div(a: ti.i32):
+def compute_div(a: int):
     pass
 
 

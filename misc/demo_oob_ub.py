@@ -5,7 +5,7 @@ ti.init(arch=ti.cpu)
 
 N = 3
 
-x = ti.var(ti.i32, N)
+x = ti.field(int, N)
 
 
 @ti.kernel

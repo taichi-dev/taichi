@@ -5,15 +5,15 @@ from autograd import grad
 
 
 # Note: test happens at v = 0.2
-def grad_test(tifunc, npfunc=None, default_fp=ti.f32):
+def grad_test(tifunc, npfunc=None, default_fp=float):
     if npfunc is None:
         npfunc = tifunc
 
     @ti.all_archs_with(default_fp=default_fp)
     def impl():
         print(f'arch={ti.cfg.arch} default_fp={ti.cfg.default_fp}')
-        x = ti.var(default_fp)
-        y = ti.var(default_fp)
+        x = ti.field(default_fp)
+        y = ti.field(default_fp)
 
         ti.root.dense(ti.i, 1).place(x, x.grad, y, y.grad)
 

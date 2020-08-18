@@ -5,7 +5,7 @@ ti.init(print_ir=True)
 
 
 @ti.kernel
-def calc_pi() -> ti.f32:
+def calc_pi() -> float:
     term = 1.0
     sum = 0.0
     divisor = 1

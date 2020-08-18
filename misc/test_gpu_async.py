@@ -3,11 +3,11 @@ import time
 
 ti.init(arch=ti.cuda)
 
-a = ti.var(dt=ti.f32, shape=(1024 * 1024 * 1024))
+a = ti.field(dtype=float, shape=(1024 * 1024 * 1024))
 
 
 @ti.kernel
-def fill(x: ti.f32):
+def fill(x: float):
     for i in a:
         a[i] = x
 

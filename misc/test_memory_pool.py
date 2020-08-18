@@ -6,8 +6,8 @@ ti.init(arch=ti.cuda, debug=True)
 
 res = 512
 
-mask = ti.var(ti.i32)
-val = ti.var(ti.f32)
+mask = ti.field(int)
+val = ti.field(float)
 
 ti.root.dense(ti.ijk, 512).place(mask)
 block = ti.root.pointer(ti.ijk, 128).dense(ti.ijk, 4)

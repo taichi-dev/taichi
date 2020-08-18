@@ -182,7 +182,7 @@ void make_thread_local(IRNode *root) {
   } else {
     make_thread_local_offload(root->as<OffloadedStmt>());
   }
-  typecheck(root);
+  type_check(root);
   fix_block_parents(root);
 }
 

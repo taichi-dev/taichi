@@ -44,7 +44,7 @@ void compile_to_offloads(IRNode *ir,
   irpass::lower(ir);
   print("Lowered");
 
-  irpass::typecheck(ir);
+  irpass::type_check(ir);
   print("Typechecked");
   irpass::analysis::verify(ir);
 
@@ -128,7 +128,7 @@ void offload_to_executable(IRNode *ir,
 
   if (config.demote_dense_struct_fors) {
     irpass::demote_dense_struct_fors(ir);
-    irpass::typecheck(ir);
+    irpass::type_check(ir);
     print("Dense struct-for demoted");
     irpass::analysis::verify(ir);
   }
@@ -168,7 +168,7 @@ void offload_to_executable(IRNode *ir,
   print("Simplified IV");
 
   // Final field registration correctness & type checking
-  irpass::typecheck(ir);
+  irpass::type_check(ir);
   irpass::analysis::verify(ir);
 }
 

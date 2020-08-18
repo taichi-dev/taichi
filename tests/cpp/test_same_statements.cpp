@@ -33,7 +33,7 @@ TI_TEST("same_statements") {
         false_clause->push_back<GlobalStoreStmt>(global_store_addr, false_add);
     if_stmt->false_statements = std::move(false_clause);
 
-    irpass::typecheck(block.get());
+    irpass::type_check(block.get());
     TI_CHECK(block->size() == 5);
 
     TI_CHECK(irpass::analysis::same_statements(true_one, false_one));
@@ -70,7 +70,7 @@ TI_TEST("same_statements") {
     auto assert_one_a_zero =
         block->push_back<AssertStmt>(one, "a", std::vector<Stmt *>(1, zero));
 
-    irpass::typecheck(block.get());
+    irpass::type_check(block.get());
     TI_CHECK(block->size() == 10);
     TI_CHECK(irpass::analysis::same_statements(assert_zero_a, assert_zero_a2));
     TI_CHECK(!irpass::analysis::same_statements(assert_zero_a, assert_zero_b));
@@ -102,7 +102,7 @@ TI_TEST("same_statements") {
     auto lookup_child =
         block->push_back<SNodeLookupStmt>(&child, get_child, zero, false);
 
-    irpass::typecheck(block.get());
+    irpass::type_check(block.get());
     TI_CHECK(block->size() == 7);
     TI_CHECK(irpass::analysis::same_statements(lookup1, lookup2));
     TI_CHECK(!irpass::analysis::same_statements(lookup1, lookup_activate));

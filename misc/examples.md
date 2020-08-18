@@ -9,4 +9,3 @@
 <a href="https://github.com/taichi-dev/taichi/blob/master/examples/mass_spring_3d.py"><img src="https://user-images.githubusercontent.com/20640597/86505395-93f2f880-bdf6-11ea-955b-b9120ba8f10c.gif" height="192px"></a>
 <a href="https://github.com/taichi-dev/taichi/blob/master/examples/mass_spring_3d.py"><img src="https://user-images.githubusercontent.com/20640597/86887569-55797880-c12b-11ea-8b73-22b659864032.gif" height="192px"></a>
 <a href="https://github.com/taichi-dev/taichi/blob/master/examples/mpm3d.py"><img src="yuanming-could-you-do-me-a-favor-by-uploading-these-images?" height="192px"></a>
-

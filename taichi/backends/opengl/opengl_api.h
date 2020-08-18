@@ -23,8 +23,6 @@ bool is_opengl_api_available();
 #include "taichi/inc/opengl_extension.inc.h"
 #undef PER_OPENGL_EXTENSION
 
-extern int opengl_threads_per_block;
-
 #define TI_OPENGL_REQUIRE(used, x) \
   ([&]() {                         \
     if (opengl_extension_##x) {    \

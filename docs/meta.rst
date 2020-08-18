@@ -120,8 +120,8 @@ the dimensionality of the vector.
   @ti.kernel
   def foo():
     matrix = ti.Matrix([[1, 2], [3, 4], [5, 6]])
-    print(matrix.n)  # 2
-    print(matrix.m)  # 3
+    print(matrix.n)  # 3
+    print(matrix.m)  # 2
     vector = ti.Vector([7, 8, 9])
     print(vector.n)  # 3
     print(vector.m)  # 1

@@ -40,7 +40,7 @@ class ASTTransformer(object):
         if title is not None:
             print(f'{title}:')
         import astor
-        print(astor.to_source(tree.body[0], indent_with='  '))
+        print(astor.to_source(tree.body[0], indent_with='    '))
 
     def visit(self, tree):
         self.print_ast(tree, 'Initial AST')

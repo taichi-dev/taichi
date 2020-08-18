@@ -47,8 +47,7 @@ class Expr(TaichiOperations):
         if not isinstance(key, (tuple, list)):
             key = (key, )
         assert len(key) == len(self.shape)
-        key = key + ((0, ) *
-                     (taichi_lang_core.get_max_num_indices() - len(key)))
+        key = key + (0, ) * (taichi_lang_core.get_max_num_indices() - len(key))
         self.setter(value, *key)
 
     @python_scope
@@ -59,8 +58,7 @@ class Expr(TaichiOperations):
             key = ()
         if not isinstance(key, (tuple, list)):
             key = (key, )
-        key = key + ((0, ) *
-                     (taichi_lang_core.get_max_num_indices() - len(key)))
+        key = key + (0, ) * (taichi_lang_core.get_max_num_indices() - len(key))
         return self.getter(*key)
 
     def loop_range(self):
@@ -79,7 +77,7 @@ class Expr(TaichiOperations):
             return
         snode = self.ptr.snode()
 
-        if self.dtype == f32 or self.dtype == f64:
+        if not taichi_lang_core.is_integral(self.dtype):
 
             def getter(*key):
                 assert len(key) == taichi_lang_core.get_max_num_indices()
@@ -88,6 +86,7 @@ class Expr(TaichiOperations):
             def setter(value, *key):
                 assert len(key) == taichi_lang_core.get_max_num_indices()
                 snode.write_float(key, value)
+
         else:
             if taichi_lang_core.is_signed(self.dtype):
 

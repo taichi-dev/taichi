@@ -668,7 +668,7 @@ if 1:
 
             for i, arg in enumerate(args.args):
                 # Directly pass in template arguments,
-                # such as class instances ("self"), tensors, SNodes, etc.
+                # such as class instances ("self"), fields, SNodes, etc.
                 if isinstance(self.func.arguments[i], ti.template):
                     continue
                 import taichi as ti
@@ -707,7 +707,7 @@ if 1:
             arg_decls = []
             for i, arg in enumerate(args.args):
                 # Directly pass in template arguments,
-                # such as class instances ("self"), tensors, SNodes, etc.
+                # such as class instances ("self"), fields, SNodes, etc.
                 if isinstance(self.func.arguments[i], ti.template):
                     continue
                 # Create a copy for non-template arguments,

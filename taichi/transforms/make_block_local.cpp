@@ -184,7 +184,7 @@ void make_block_local_offload(OffloadedStmt *offload) {
     }
 
     // Step 2:
-    // Make loop body load from BLS instead of global tensors
+    // Make loop body load from BLS instead of global fields
     {
       std::vector<GlobalPtrStmt *> global_ptrs;
 

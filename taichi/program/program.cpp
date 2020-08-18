@@ -459,6 +459,7 @@ void Program::check_runtime_error() {
 }
 
 void Program::synchronize() {
+  TI_TRACE("Program::synchronize() called");
   if (!sync) {
     if (config.async_mode) {
       async_engine->synchronize();

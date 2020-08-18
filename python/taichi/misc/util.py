@@ -167,6 +167,17 @@ def fully_deprecated(old, new):
     return wrapped
 
 
+def cached_return(foo):
+    def wrapped(*args, **kwargs):
+        if wrapped._cache is not None:
+            return wrapped._cache
+        wrapped._cache = foo(*args, **kwargs)
+        return wrapped._cache
+
+    wrapped._cache = None
+    return wrapped
+
+
 def get_logging(name):
     def logger(msg, *args, **kwargs):
         # Python inspection takes time (~0.1ms) so avoid it as much as possible
@@ -244,6 +255,7 @@ __all__ = [
     'core_veci',
     'deprecated',
     'fully_deprecated',
+    'cached_return',
     'set_gdb_trigger',
     'print_profile_info',
     'set_logging_level',

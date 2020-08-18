@@ -3,15 +3,17 @@ import time
 
 ti.init()
 
-
-@ti.kernel
-def compute_div(a: int):
-    pass
+c = ti.field(float, ())
 
 
-compute_div(0)
+#@ti.kernel
+def set_c(x: float):
+    c[None] = x
+
+
+set_c(1)
 print("starting...")
 t = time.time()
 for i in range(100000):
-    compute_div(0)
+    set_c(1)
 print((time.time() - t) * 10, 'us')

@@ -2,19 +2,21 @@ import numpy as np
 import taichi as ti
 import time
 
+
 @ti.data_oriented
 class MGPCG:
-    def __init__(self):
+    def __init__(self, dim=3, N=128, n_mg_levels=4, eps=0):
         # grid parameters
         self.use_multigrid = True
 
-        self.N = 128
-        self.N_gui = 512  # gui resolution
+        self.eps = eps
 
-        self.n_mg_levels = 4
+        self.N = N
+
+        self.n_mg_levels = n_mg_levels
         self.pre_and_post_smoothing = 2
         self.bottom_smoothing = 50
-        self.dim = 3
+        self.dim = dim
 
         self.N_ext = self.N // 2  # number of ext cells set so that that total grid size is still power of 2
         self.N_tot = 2 * self.N
@@ -30,8 +32,6 @@ class MGPCG:
         self.alpha = ti.field(dtype=float)  # step size
         self.beta = ti.field(dtype=float)  # step size
         self.sum = ti.field(dtype=float)  # storage for reductions
-        self.pixels = ti.field(dtype=float,
-                               shape=(self.N_gui, self.N_gui))  # image buffer
 
         indices = ti.ijk if self.dim == 3 else ti.ij
         self.grid = ti.root.pointer(indices, [self.N_tot // 4]).dense(
@@ -56,6 +56,11 @@ class MGPCG:
         self.p[I] = 0
         self.x[I] = 0
 
+    @ti.kernel
+    def init(self, r: ti.template(), k: ti.template()):
+        for I in ti.grouped(ti.ndrange(*[self.N] * self.dim)):
+            self.init_r(I, r[I] * k)
+
     @ti.func
     def neighbor_sum(self, x, I):
         ret = x[I] * 0
@@ -67,7 +72,7 @@ class MGPCG:
     @ti.kernel
     def compute_Ap(self):
         for I in ti.grouped(self.Ap):
-            self.Ap[I] = (2 * self.dim) * self.p[I] - self.neighbor_sum(
+            self.Ap[I] = 2 * self.dim * self.p[I] - self.neighbor_sum(
                 self.p, I)
 
     @ti.kernel
@@ -131,15 +136,6 @@ class MGPCG:
                 self.smooth(l, 1)
                 self.smooth(l, 0)
 
-    @ti.kernel
-    def paint(self):
-        if ti.static(self.dim == 3):
-            kk = self.N_tot * 3 // 8
-            for i, j in self.pixels:
-                ii = int(i * self.N / self.N_gui) + self.N_ext
-                jj = int(j * self.N / self.N_gui) + self.N_ext
-                self.pixels[i, j] = self.x[ii, jj, kk] / self.N_tot
-
     def solve(self, steps=400):
         self.reduce(self.r[0], self.r[0])
         initial_rTr = self.sum[None]
@@ -157,12 +153,12 @@ class MGPCG:
         old_zTr = self.sum[None]
 
         # CG
-        for i in range(400):
+        for i in range(steps):
             # self.alpha = rTr / pTAp
             self.compute_Ap()
             self.reduce(self.p, self.Ap)
             pAp = self.sum[None]
-            self.alpha[None] = old_zTr / pAp
+            self.alpha[None] = old_zTr / (pAp + self.eps)
 
             # self.x = self.x + self.alpha self.p
             self.update_x()
@@ -185,7 +181,7 @@ class MGPCG:
             # self.beta = new_rTr / old_rTr
             self.reduce(self.z[0], self.r[0])
             new_zTr = self.sum[None]
-            self.beta[None] = new_zTr / old_zTr
+            self.beta[None] = new_zTr / (old_zTr + self.eps)
 
             # self.p = self.z + self.beta self.p
             self.update_p()
@@ -195,6 +191,14 @@ class MGPCG:
 
 
 class MGPCG_Example(MGPCG):
+    def __init__(self):
+        super().__init__()
+
+        self.N_gui = 512  # gui resolution
+
+        self.pixels = ti.field(dtype=float,
+                               shape=(self.N_gui, self.N_gui))  # image buffer
+
     @ti.kernel
     def init(self):
         for I in ti.grouped(ti.ndrange(*[self.N] * self.dim)):
@@ -202,6 +206,15 @@ class MGPCG_Example(MGPCG):
             for k in ti.static(range(self.dim)):
                 r_I *= ti.cos(5 * np.pi * (I[k]) / self.N)
             self.init_r(I, r_I)
+
+    @ti.kernel
+    def paint(self):
+        if ti.static(self.dim == 3):
+            kk = self.N_tot * 3 // 8
+            for i, j in self.pixels:
+                ii = int(i * self.N / self.N_gui) + self.N_ext
+                jj = int(j * self.N / self.N_gui) + self.N_ext
+                self.pixels[i, j] = self.x[ii, jj, kk] / self.N_tot
 
     def run(self):
         gui = ti.GUI("Multigrid Preconditioned Conjugate Gradients",
@@ -217,8 +230,9 @@ class MGPCG_Example(MGPCG):
         ti.kernel_profiler_print()
 
 
-ti.init(kernel_profiler=True)
-solver = MGPCG_Example()
-t = time.time()
-solver.run()
-print(f'Solver time: {time.time() - t:.3f} s')
+if __name__ == '__main__':
+    ti.init(kernel_profiler=True)
+    solver = MGPCG_Example()
+    t = time.time()
+    solver.run()
+    print(f'Solver time: {time.time() - t:.3f} s')

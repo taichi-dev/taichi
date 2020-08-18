@@ -45,7 +45,9 @@ class Expr(TaichiOperations):
             key = ()
         elif not isinstance(key, (tuple, list)):
             key = (key, )
-        assert len(key) == len(self.shape), f"Field of dim {len(self.shape)} accessed with indices of dim {len(key)}"
+        assert len(key) == len(
+            self.shape
+        ), f"Field of dim {len(self.shape)} accessed with indices of dim {len(key)}"
         key = key + (0, ) * (taichi_lang_core.get_max_num_indices() - len(key))
         self.setter(key, value)
 
@@ -56,7 +58,9 @@ class Expr(TaichiOperations):
             key = ()
         elif not isinstance(key, (tuple, list)):
             key = (key, )
-        assert len(key) == len(self.shape), f"Field of dim {len(self.shape)} accessed with indices of dim {len(key)}"
+        assert len(key) == len(
+            self.shape
+        ), f"Field of dim {len(self.shape)} accessed with indices of dim {len(key)}"
         key = key + (0, ) * (taichi_lang_core.get_max_num_indices() - len(key))
         return self.getter(key)
 

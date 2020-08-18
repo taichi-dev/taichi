@@ -426,9 +426,11 @@ bool initialize_opengl(bool error_tolerance) {
     TI_ERROR("Your OpenGL does not support GL_ARB_compute_shader extension");
   }
 
-  glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &opengl_threads_per_block);
+  glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS,
+                &opengl_threads_per_block);
   check_opengl_error("glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS)");
-  TI_TRACE("GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS: {}", opengl_threads_per_block);
+  TI_TRACE("GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS: {}",
+           opengl_threads_per_block);
 
   supported = std::make_optional<bool>(true);
   return true;

@@ -5,8 +5,9 @@ try:
 except ImportError:
     import taichi as ti
     ti.warn('`sourceinspect` not installed!')
-    ti.warn('Without this package Taichi may not function well in Python IDLE interactive shell, '
-            'Blender scripting module and Python native shell.')
+    ti.warn(
+        'Without this package Taichi may not function well in Python IDLE interactive shell, '
+        'Blender scripting module and Python native shell.')
     ti.warn('Please run `python3 -m pip install sourceinspect` to install.')
     import inspect as oinspect
 

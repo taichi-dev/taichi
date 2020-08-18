@@ -171,7 +171,7 @@ def test_oop_inherit_ok():
     with ti.Tape(loss=arr.total):
         arr.reduce()
     for i in range(arr.n):
-        assert arr.val.grad[i] == 42
+        assert arr.val.grad[i, 0] == 42
 
 
 @ti.must_throw(ti.KernelDefError)

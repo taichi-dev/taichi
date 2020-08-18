@@ -196,8 +196,8 @@ void Kernel::LaunchContextBuilder::set_extra_arg_int(int i, int j, int32 d) {
 }
 
 void Kernel::LaunchContextBuilder::set_arg_nparray(int i,
-                                                 uint64 ptr,
-                                                 uint64 size) {
+                                                   uint64 ptr,
+                                                   uint64 size) {
   TI_ASSERT_INFO(kernel_->args[i].is_nparray,
                  "Assigning numpy array to scalar argument is not allowed");
 
@@ -215,6 +215,10 @@ void Kernel::LaunchContextBuilder::set_arg_raw(int i, uint64 d) {
   TI_ASSERT_INFO(
       !kernel_->args[i].is_nparray,
       "Assigning scalar value to numpy array argument is not allowed");
+
+  ActionRecorder::get_instance().record(
+      "set_arg_raw", {ActionArg("kernel_name", kernel_->name),
+                      ActionArg("arg_id", i), ActionArg("val", (int64)d)});
   kernel_->program.context.set_arg<uint64>(i, d);
 }
 

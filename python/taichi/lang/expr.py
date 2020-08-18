@@ -200,7 +200,7 @@ class Expr(TaichiOperations):
     def __repr__(self):
         """Python scope field print support."""
         if impl.inside_kernel():
-            return f'<Taichi Expr>'  # make pybind11 happy, see Matrix.__repr__
+            return '<Taichi Expr>'  # make pybind11 happy, see Matrix.__repr__
         else:
             return str(self.to_numpy())
 

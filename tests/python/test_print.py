@@ -104,4 +104,3 @@ def test_python_scope_print_field():
     print(x)
     print(y)
     print(z)
-    ti.sync()  # TODO: move ti.sync() to @ti.test fixture

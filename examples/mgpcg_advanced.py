@@ -56,14 +56,6 @@ class MGPCG:
         self.p[I] = 0
         self.x[I] = 0
 
-    @ti.kernel
-    def init(self):
-        for I in ti.grouped(ti.ndrange(*[self.N] * self.dim)):
-            r_I = 5.0
-            for k in ti.static(range(self.dim)):
-                r_I *= ti.cos(5 * np.pi * (I[k]) / self.N)
-            self.init_r(I, r_I)
-
     @ti.func
     def neighbor_sum(self, x, I):
         ret = x[I] * 0
@@ -148,12 +140,7 @@ class MGPCG:
                 jj = int(j * self.N / self.N_gui) + self.N_ext
                 self.pixels[i, j] = self.x[ii, jj, kk] / self.N_tot
 
-    def run(self):
-        gui = ti.GUI("Multigrid Preconditioned Conjugate Gradients",
-                     res=(self.N_gui, self.N_gui))
-
-        self.init()
-
+    def solve(self, steps=400):
         self.reduce(self.r[0], self.r[0])
         initial_rTr = self.sum[None]
 
@@ -204,6 +191,24 @@ class MGPCG:
             self.update_p()
             old_zTr = new_zTr
 
+            yield i, rTr
+
+
+class MGPCG_Example(MGPCG):
+    @ti.kernel
+    def init(self):
+        for I in ti.grouped(ti.ndrange(*[self.N] * self.dim)):
+            r_I = 5.0
+            for k in ti.static(range(self.dim)):
+                r_I *= ti.cos(5 * np.pi * (I[k]) / self.N)
+            self.init_r(I, r_I)
+
+    def run(self):
+        gui = ti.GUI("Multigrid Preconditioned Conjugate Gradients",
+                     res=(self.N_gui, self.N_gui))
+
+        self.init()
+        for i, rTr in self.solve():
             print(f'iter {i}, residual={rTr}')
             self.paint()
             gui.set_image(self.pixels)
@@ -213,7 +218,7 @@ class MGPCG:
 
 
 ti.init(kernel_profiler=True)
-solver = MGPCG()
+solver = MGPCG_Example()
 t = time.time()
 solver.run()
 print(f'Solver time: {time.time() - t:.3f} s')

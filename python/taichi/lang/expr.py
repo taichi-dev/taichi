@@ -139,6 +139,7 @@ class Expr(TaichiOperations):
     # The invocation into snode.shape is relatively slow.
     # We need to cache it for better performance in SNode accessors, where
     # `assert len(key) == len(self.shape)` is used.
+    # Discussion: https://github.com/taichi-dev/taichi/pull/1719#issuecomment-675284385
     @cached_return
     def shape(self):
         return self.snode.shape

@@ -1,10 +1,6 @@
 import numpy as np
-import time
 import taichi as ti
-
-real = ti.f32
-ti.init(default_fp=real, arch=ti.x64, kernel_profiler=True)
-
+import time
 
 @ti.data_oriented
 class MGPCG:
@@ -24,17 +20,17 @@ class MGPCG:
         self.N_tot = 2 * self.N
 
         # setup sparse simulation data arrays
-        self.r = [ti.field(dtype=real)
+        self.r = [ti.field(dtype=float)
                   for _ in range(self.n_mg_levels)]  # residual
-        self.z = [ti.field(dtype=real)
+        self.z = [ti.field(dtype=float)
                   for _ in range(self.n_mg_levels)]  # M^-1 self.r
-        self.x = ti.field(dtype=real)  # solution
-        self.p = ti.field(dtype=real)  # conjugate gradient
-        self.Ap = ti.field(dtype=real)  # matrix-vector product
-        self.alpha = ti.field(dtype=real)  # step size
-        self.beta = ti.field(dtype=real)  # step size
-        self.sum = ti.field(dtype=real)  # storage for reductions
-        self.pixels = ti.field(dtype=real,
+        self.x = ti.field(dtype=float)  # solution
+        self.p = ti.field(dtype=float)  # conjugate gradient
+        self.Ap = ti.field(dtype=float)  # matrix-vector product
+        self.alpha = ti.field(dtype=float)  # step size
+        self.beta = ti.field(dtype=float)  # step size
+        self.sum = ti.field(dtype=float)  # storage for reductions
+        self.pixels = ti.field(dtype=float,
                                shape=(self.N_gui, self.N_gui))  # image buffer
 
         indices = ti.ijk if self.dim == 3 else ti.ij
@@ -54,18 +50,18 @@ class MGPCG:
         for I in ti.grouped(
                 ti.ndrange(*(
                     (self.N_ext, self.N_tot - self.N_ext), ) * self.dim)):
-            self.r[0][I] = 1.0
+            self.r[0][I] = 1
             for k in ti.static(range(self.dim)):
-                self.r[0][I] *= ti.sin(2.0 * np.pi * (I[k] - self.N_ext) *
-                                       2.0 / self.N_tot)
-            self.z[0][I] = 0.0
-            self.Ap[I] = 0.0
-            self.p[I] = 0.0
-            self.x[I] = 0.0
+                self.r[0][I] *= ti.sin(2 * np.pi * (I[k] - self.N_ext) *
+                                       2 / self.N_tot)
+            self.z[0][I] = 0
+            self.Ap[I] = 0
+            self.p[I] = 0
+            self.x[I] = 0
 
     @ti.func
     def neighbor_sum(self, x, I):
-        ret = 0.0
+        ret = x[I] * 0
         for i in ti.static(range(self.dim)):
             offset = ti.Vector.unit(self.dim, i)
             ret += x[I + offset] + x[I - offset]
@@ -101,7 +97,7 @@ class MGPCG:
     @ti.kernel
     def restrict(self, l: ti.template()):
         for I in ti.grouped(self.r[l]):
-            res = self.r[l][I] - (2.0 * self.dim * self.z[l][I] -
+            res = self.r[l][I] - (2 * self.dim * self.z[l][I] -
                                   self.neighbor_sum(self.z[l], I))
             self.r[l + 1][I // 2] += res * 0.5
 
@@ -116,7 +112,7 @@ class MGPCG:
         for I in ti.grouped(self.r[l]):
             if (I.sum()) & 1 == phase:
                 self.z[l][I] = (self.r[l][I] + self.neighbor_sum(
-                    self.z[l], I)) / (2.0 * self.dim)
+                    self.z[l], I)) / (2 * self.dim)
 
     def apply_preconditioner(self):
         self.z[0].fill(0)
@@ -185,7 +181,7 @@ class MGPCG:
             # check for convergence
             self.reduce(self.r[0], self.r[0])
             rTr = self.sum[None]
-            if rTr < initial_rTr * 1.0e-12:
+            if rTr < initial_rTr * 1e-12:
                 break
 
             # self.z = M^-1 self.r
@@ -211,9 +207,8 @@ class MGPCG:
         ti.kernel_profiler_print()
 
 
+ti.init(kernel_profiler=True)
 solver = MGPCG()
 t = time.time()
 solver.run()
 print(f'Solver time: {time.time() - t:.3f} s')
-ti.core.print_profile_info()
-ti.core.print_stat()

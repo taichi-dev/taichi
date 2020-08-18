@@ -15,8 +15,9 @@ struct GLSLLauncher {
   std::unique_ptr<GLSLLauncherImpl> impl;
   GLSLLauncher(size_t size);
   ~GLSLLauncher();
-
   void keep(std::unique_ptr<CompiledProgram> program);
+
+  void *result_buffer;
 };
 
 }  // namespace opengl

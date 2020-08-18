@@ -382,12 +382,15 @@ void Program::materialize_layout() {
           std::make_unique<metal::KernelManager>(std::move(params));
     }
   } else if (config.arch == Arch::opengl) {
+    TI_ASSERT(result_buffer == nullptr);
+    result_buffer = allocate_result_buffer_default(this);
     opengl::OpenglStructCompiler scomp;
     opengl_struct_compiled_ = scomp.run(*snode_root);
     TI_TRACE("OpenGL root buffer size: {} B",
              opengl_struct_compiled_->root_size);
     opengl_kernel_launcher_ = std::make_unique<opengl::GLSLLauncher>(
         opengl_struct_compiled_->root_size);
+    opengl_kernel_launcher_->result_buffer = result_buffer;
 #ifdef TI_WITH_CC
   } else if (config.arch == Arch::cc) {
     cc_program->compile_layout(snode_root.get());
@@ -640,9 +643,10 @@ uint64 Program::fetch_result_uint64(int i) {
 #else
     TI_NOT_IMPLEMENTED;
 #endif
-  } else if (arch_is_cpu(arch) || arch == Arch::metal) {
+  } else if (arch_is_cpu(arch) || arch == Arch::metal || arch == Arch::opengl) {
     ret = result_buffer[i];
   } else {
+    // TODO(archibate): no more ret via Context for C backend:
     ret = context.get_arg_as_uint64(i);
   }
   return ret;

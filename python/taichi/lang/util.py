@@ -1,5 +1,5 @@
 from .core import taichi_lang_core
-from taichi.misc.util import warning, deprecated, fully_deprecated, cached_return
+from taichi.misc.util import warning, deprecated, fully_deprecated, cached_property
 import numpy as np
 import os
 

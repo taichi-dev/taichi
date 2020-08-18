@@ -167,15 +167,19 @@ def fully_deprecated(old, new):
     return wrapped
 
 
-def cached_return(foo):
+def cached_property(foo):
     import functools
 
+    cache_name = '_cached_' + foo.__name__
+
     @functools.wraps(foo)
-    def wrapped(*args, **kwargs):
-        if wrapped._cache is not None:
-            return wrapped._cache
-        wrapped._cache = foo(*args, **kwargs)
-        return wrapped._cache
+    def wrapped(self):
+        value = getattr(self, cache_name, None)
+        if value is not None:
+            return value
+        value = foo(self)
+        setattr(self, cache_name, value)
+        return value
 
     wrapped._cache = None
     return wrapped
@@ -258,7 +262,7 @@ __all__ = [
     'core_veci',
     'deprecated',
     'fully_deprecated',
-    'cached_return',
+    'cached_property',
     'set_gdb_trigger',
     'print_profile_info',
     'set_logging_level',

@@ -83,9 +83,10 @@ void ExecutionQueue::enqueue(KernelLaunchRecord &&ker) {
         auto ir = stmt;
         offload_to_executable(
             ir, config, false, /*lower_global_access=*/true,
-            /*make_thread_local=*/true,
+            /*make_thread_local=*/config.make_thread_local,
             /*make_block_local=*/
-            is_extension_supported(config.arch, Extension::bls));
+            is_extension_supported(config.arch, Extension::bls) &&
+                config.make_block_local);
       }
       auto codegen = KernelCodeGen::create(kernel->arch, kernel, stmt);
       auto func = codegen->codegen();

@@ -39,12 +39,12 @@ def test_python_scope_matrix_operations():
 
 # TODO: Loops inside the function will cause AssertionError:
 # No new variables can be declared after kernel invocations
-# or Python-scope tensor accesses.
+# or Python-scope field accesses.
 # ideally we should use pytest.fixture to parameterize the tests
 # over explicit loops
 @pytest.mark.parametrize('ops', vector_operation_types)
 @ti.host_arch_only
-def test_python_scope_vector_tensor(ops):
+def test_python_scope_vector_field(ops):
     t1 = ti.Vector.field(2, dtype=ti.i32, shape=())
     t2 = ti.Vector.field(2, dtype=ti.i32, shape=())
     a, b = test_vector_arrays[:2]
@@ -56,7 +56,7 @@ def test_python_scope_vector_tensor(ops):
 
 @pytest.mark.parametrize('ops', vector_operation_types)
 @ti.host_arch_only
-def test_python_scope_matrix_tensor(ops):
+def test_python_scope_matrix_field(ops):
     t1 = ti.Matrix.field(2, 2, dtype=ti.i32, shape=())
     t2 = ti.Matrix.field(2, 2, dtype=ti.i32, shape=())
     a, b = test_matrix_arrays[:2]

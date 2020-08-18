@@ -150,7 +150,7 @@ def test_materialization_after_access():
     print(x[2, 3])
 
     y = ti.field(ti.f32, (2, 3))
-    # ERROR: No new variable should be declared after Python-scope tensor access!
+    # ERROR: No new variable should be declared after Python-scope field access!
 
 
 @ti.all_archs
@@ -161,4 +161,4 @@ def test_materialization_after_get_shape():
     print(x.shape)
 
     y = ti.field(ti.f32, (2, 3))
-    # ERROR: No new variable should be declared after Python-scope tensor access!
+    # ERROR: No new variable should be declared after Python-scope field access!

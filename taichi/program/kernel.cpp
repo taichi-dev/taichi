@@ -83,7 +83,7 @@ void Kernel::lower(bool to_executable) {  // TODO: is a "Lowerer" class
           /*ad_use_stack*/ true, verbose, /*lower_global_access*/ to_executable,
           /*make_thread_local*/ config.make_thread_local,
           /*make_block_local*/
-              is_extension_supported(config.arch, Extension::bls) &&
+          is_extension_supported(config.arch, Extension::bls) &&
               config.make_block_local);
     } else {
       irpass::compile_to_offloads(ir.get(), config, verbose,

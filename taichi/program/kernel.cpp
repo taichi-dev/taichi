@@ -92,12 +92,12 @@ void Kernel::lower(bool to_executable) {  // TODO: is a "Lowerer" class
   lowered = true;
 }
 
-void Kernel::operator()() {
+void Kernel::operator()(LaunchContextBuilder &launch_ctx) {
   if (!program.config.async_mode) {
     if (!compiled) {
       compile();
     }
-    compiled(program.get_context());
+    compiled(launch_ctx.get_context());
     program.sync = (program.sync && arch_is_cpu(arch));
     // Note that Kernel::arch may be different from program.config.arch
     if (program.config.debug && (arch_is_cpu(program.config.arch) ||
@@ -115,16 +115,21 @@ void Kernel::operator()() {
   }
 }
 
-void Kernel::set_arg_float(int i, float64 d) {
+Kernel::LaunchContextBuilder Kernel::make_launch_context() {
+  return LaunchContextBuilder(this);
+}
+
+void Kernel::LaunchContextBuilder::set_arg_float(int i, float64 d) {
   TI_ASSERT_INFO(
-      !args[i].is_nparray,
+      !kernel_->args[i].is_nparray,
       "Assigning a scalar value to a numpy array argument is not allowed");
 
   ActionRecorder::get_instance().record(
-      "set_kernel_arg_float64", {ActionArg("kernel_name", name),
+      "set_kernel_arg_float64", {ActionArg("kernel_name", kernel_->name),
                                  ActionArg("arg_id", i), ActionArg("val", d)});
 
-  auto dt = args[i].dt;
+  auto dt = kernel_->args[i].dt;
+  auto &program = kernel_->program;
   if (dt == DataType::f32) {
     program.context.set_arg(i, (float32)d);
   } else if (dt == DataType::f64) {
@@ -150,16 +155,17 @@ void Kernel::set_arg_float(int i, float64 d) {
   }
 }
 
-void Kernel::set_arg_int(int i, int64 d) {
+void Kernel::LaunchContextBuilder::set_arg_int(int i, int64 d) {
   TI_ASSERT_INFO(
-      !args[i].is_nparray,
+      !kernel_->args[i].is_nparray,
       "Assigning scalar value to numpy array argument is not allowed");
 
   ActionRecorder::get_instance().record(
-      "set_kernel_arg_int64", {ActionArg("kernel_name", name),
+      "set_kernel_arg_int64", {ActionArg("kernel_name", kernel_->name),
                                ActionArg("arg_id", i), ActionArg("val", d)});
 
-  auto dt = args[i].dt;
+  auto dt = kernel_->args[i].dt;
+  auto &program = kernel_->program;
   if (dt == DataType::i32) {
     program.context.set_arg(i, (int32)d);
   } else if (dt == DataType::i64) {
@@ -183,6 +189,37 @@ void Kernel::set_arg_int(int i, int64 d) {
   } else {
     TI_NOT_IMPLEMENTED
   }
+}
+
+void Kernel::LaunchContextBuilder::set_extra_arg_int(int i, int j, int32 d) {
+  kernel_->program.context.extra_args[i][j] = d;
+}
+
+void Kernel::LaunchContextBuilder::set_arg_nparray(int i,
+                                                 uint64 ptr,
+                                                 uint64 size) {
+  TI_ASSERT_INFO(kernel_->args[i].is_nparray,
+                 "Assigning numpy array to scalar argument is not allowed");
+
+  ActionRecorder::get_instance().record(
+      "set_kernel_arg_ext_ptr",
+      {ActionArg("kernel_name", kernel_->name), ActionArg("arg_id", i),
+       ActionArg("address", fmt::format("0x{:x}", ptr)),
+       ActionArg("array_size_in_bytes", (int64)size)});
+
+  kernel_->args[i].size = size;
+  kernel_->program.context.set_arg(i, ptr);
+}
+
+void Kernel::LaunchContextBuilder::set_arg_raw(int i, uint64 d) {
+  TI_ASSERT_INFO(
+      !kernel_->args[i].is_nparray,
+      "Assigning scalar value to numpy array argument is not allowed");
+  kernel_->program.context.set_arg<uint64>(i, d);
+}
+
+Context &Kernel::LaunchContextBuilder::get_context() {
+  return kernel_->program.get_context();
 }
 
 float64 Kernel::get_ret_float(int i) {
@@ -237,24 +274,6 @@ int64 Kernel::get_ret_int(int i) {
   } else {
     TI_NOT_IMPLEMENTED
   }
-}
-
-void Kernel::set_extra_arg_int(int i, int j, int32 d) {
-  program.context.extra_args[i][j] = d;
-}
-
-void Kernel::set_arg_nparray(int i, uint64 ptr, uint64 size) {
-  TI_ASSERT_INFO(args[i].is_nparray,
-                 "Assigning numpy array to scalar argument is not allowed");
-
-  ActionRecorder::get_instance().record(
-      "set_kernel_arg_ext_ptr",
-      {ActionArg("kernel_name", name), ActionArg("arg_id", i),
-       ActionArg("address", fmt::format("0x{:x}", ptr)),
-       ActionArg("array_size_in_bytes", (int64)size)});
-
-  args[i].size = size;
-  program.context.set_arg(i, ptr);
 }
 
 void Kernel::set_arch(Arch arch) {

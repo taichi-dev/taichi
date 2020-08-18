@@ -44,6 +44,31 @@ class Kernel {
   bool is_evaluator;
   bool grad;
 
+  // TODO: Give "context" a more specific name.
+  class LaunchContextBuilder {
+   public:
+    void set_arg_float(int i, float64 d);
+
+    void set_arg_int(int i, int64 d);
+
+    void set_extra_arg_int(int i, int j, int32 d);
+
+    void set_arg_nparray(int i, uint64 ptr, uint64 size);
+
+    // Sets the i-th arg in the context to the bits stored in |d|. This ignores
+    // the underlying kernel's i-th arg type.
+    void set_arg_raw(int i, uint64 d);
+
+    Context &get_context();
+
+   private:
+    explicit LaunchContextBuilder(Kernel *kernel) : kernel_(kernel) {
+    }
+
+    friend class Kernel;  // So that Kernel can construct us.
+    Kernel *const kernel_;
+  };
+
   Kernel(Program &program,
          std::function<void()> func,
          std::string name = "",
@@ -53,27 +78,17 @@ class Kernel {
 
   void lower(bool to_executable = true);
 
-  void operator()();
+  void operator()(LaunchContextBuilder &launch_ctx);
 
-  std::function<void()> func() {
-    return std::function<void()>([&] { (*this)(); });
-  }
+  LaunchContextBuilder make_launch_context();
 
   int insert_arg(DataType dt, bool is_nparray);
 
   int insert_ret(DataType dt);
 
-  void set_arg_float(int i, float64 d);
-
-  void set_arg_int(int i, int64 d);
-
   float64 get_ret_float(int i);
 
   int64 get_ret_int(int i);
-
-  void set_extra_arg_int(int i, int j, int32 d);
-
-  void set_arg_nparray(int i, uint64 ptr, uint64 size);
 
   void set_arch(Arch arch);
 };

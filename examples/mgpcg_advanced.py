@@ -45,19 +45,24 @@ class MGPCG:
 
         ti.root.place(self.alpha, self.beta, self.sum)
 
+        self.r_range = [(self.N_ext, self.N_tot - self.N_ext)] * self.dim
+
+    @ti.func
+    def init_r(self, I, r_I):
+        I = I + self.N_ext
+        self.r[0][I] = r_I
+        self.z[0][I] = 0
+        self.Ap[I] = 0
+        self.p[I] = 0
+        self.x[I] = 0
+
     @ti.kernel
     def init(self):
-        for I in ti.grouped(
-                ti.ndrange(*(
-                    (self.N_ext, self.N_tot - self.N_ext), ) * self.dim)):
-            self.r[0][I] = 1
+        for I in ti.grouped(ti.ndrange(*[self.N] * self.dim)):
+            r_I = 5.0
             for k in ti.static(range(self.dim)):
-                self.r[0][I] *= ti.sin(2 * np.pi * (I[k] - self.N_ext) *
-                                       2 / self.N_tot)
-            self.z[0][I] = 0
-            self.Ap[I] = 0
-            self.p[I] = 0
-            self.x[I] = 0
+                r_I *= ti.cos(5 * np.pi * (I[k]) / self.N)
+            self.init_r(I, r_I)
 
     @ti.func
     def neighbor_sum(self, x, I):

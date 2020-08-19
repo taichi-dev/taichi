@@ -9,7 +9,7 @@ import numpy as np
 from mgpcg_advanced import MGPCG
 import time
 
-res = 256  # 600 for a larger resoultion
+res = 512  # 600 for a larger resoultion
 dt = 0.03
 p_jacobi_iters = 160  # 40 for quicker but not-so-accurate result
 f_strength = 10000.0
@@ -282,11 +282,12 @@ def step(mouse_data):
         vorticity(velocities_pair.cur)
         enhance_vorticity(velocities_pair.cur, velocity_curls)
 
-    mgpcg.init(velocity_divs, 1)
+    mgpcg.init(velocity_divs, -1)
     for i, rTr in mgpcg.solve(20):
         print(f'iter {i}, residual={rTr}')
+    mgpcg.get_result(pressures_pair.cur)
 
-    subtract_gradient(velocities_pair.cur, mgpcg.x)
+    subtract_gradient(velocities_pair.cur, pressures_pair.cur)
 
     if debug:
         divergence(velocities_pair.cur)
@@ -329,7 +330,7 @@ def reset():
     dyes_pair.cur.fill(0)
 
 
-gui = ti.GUI('Stable Fluid', (res, res))
+gui = ti.GUI('MGPCG Fluid', (res, res))
 md_gen = MouseDataGen()
 while gui.running:
     if gui.get_event(ti.GUI.PRESS):

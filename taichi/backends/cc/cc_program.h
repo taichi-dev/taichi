@@ -11,6 +11,7 @@ TI_NAMESPACE_END
 TLANG_NAMESPACE_BEGIN
 
 class SNode;
+struct Context;
 
 namespace cccp {
 
@@ -30,7 +31,6 @@ class CCProgram {
   void add_kernel(std::unique_ptr<CCKernel> kernel);
   CCFuncEntryType *load_kernel(std::string const &name);
   void compile_layout(SNode *root);
-  void init_runtime();
   void relink();
 
   CCLayout *get_layout() {
@@ -41,20 +41,17 @@ class CCProgram {
     return runtime.get();
   }
 
-  void *get_root_buffer() {
-    return root_buf.data();
-  }
-
-  void *get_gtmp_buffer() {
-    return gtmp_buf.data();
-  }
+  CCContext *update_context(Context *ctx);
+  void context_to_result_buffer();
 
   Program *const program;
 
  private:
+  std::vector<char> args_buf;
   std::vector<char> root_buf;
   std::vector<char> gtmp_buf;
   std::vector<std::unique_ptr<CCKernel>> kernels;
+  std::unique_ptr<CCContext> context;
   std::unique_ptr<CCRuntime> runtime;
   std::unique_ptr<CCLayout> layout;
   std::unique_ptr<DynamicLoader> dll;

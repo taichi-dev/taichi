@@ -54,6 +54,11 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       // We have a not-so-good design where Context is always tied with Program.
       // Context's should be tied to kernel launches instead.
       kernel->program.context = context;
+      // We could also use kernel->make_launch_context() to create
+      // |ctx_builder|, but that implies the usage of Program's context. For the
+      // sake of decoupling, let's not do that and explicitly set the context we
+      // want to modify.
+      Kernel::LaunchContextBuilder ctx_builder(kernel, &context);
       for (int i = 0; i < (int)args.size(); i++) {
         if (args[i].is_nparray) {
           has_buffer = true;
@@ -67,7 +72,8 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
             CUDADriver::get_instance().memcpy_host_to_device(
                 (void *)device_buffers[i], host_buffers[i], args[i].size);
           }
-          kernel->set_arg_nparray(i, (uint64)device_buffers[i], args[i].size);
+          ctx_builder.set_arg_nparray(i, (uint64)device_buffers[i],
+                                      args[i].size);
         }
       }
       if (has_buffer) {
@@ -77,7 +83,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       for (auto task : offloaded_local) {
         TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
                  task.block_dim);
-
+        // TODO: Is it safe to use the Context owned
         cuda_module->launch(task.name, task.grid_dim, task.block_dim,
                             task.shmem_bytes, {&kernel->program.context});
       }

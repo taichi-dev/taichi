@@ -44,9 +44,13 @@ class Kernel {
   bool is_evaluator;
   bool grad;
 
-  // TODO: Give "context" a more specific name.
+  // TODO: Give "Context" a more specific name.
   class LaunchContextBuilder {
    public:
+    LaunchContextBuilder(Kernel *kernel, Context *ctx)
+        : kernel_(kernel), ctx_(ctx) {
+    }
+
     void set_arg_float(int i, float64 d);
 
     void set_arg_int(int i, int64 d);
@@ -62,11 +66,12 @@ class Kernel {
     Context &get_context();
 
    private:
-    explicit LaunchContextBuilder(Kernel *kernel) : kernel_(kernel) {
-    }
-
-    friend class Kernel;  // So that Kernel can construct us.
     Kernel *const kernel_;
+    // TODO: Right now |ctx_| is borrowed from other places: either the
+    // program's context, or the one in the CUDA launch function. In the future,
+    // this could *own* a Context (possibly through a std::unique_ptr, since we
+    // don't always need to own the Context.)
+    Context *const ctx_;
   };
 
   Kernel(Program &program,

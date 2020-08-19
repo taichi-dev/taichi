@@ -97,7 +97,10 @@ void Kernel::operator()(LaunchContextBuilder &launch_ctx) {
     if (!compiled) {
       compile();
     }
-    compiled(launch_ctx.get_context());
+    auto &ctx = launch_ctx.get_context();
+    TI_INFO("Able to get_context");
+    compiled(ctx);
+    TI_INFO("Able to run compiled(ctx)");
     program.sync = (program.sync && arch_is_cpu(arch));
     // Note that Kernel::arch may be different from program.config.arch
     if (program.config.debug && (arch_is_cpu(program.config.arch) ||
@@ -116,7 +119,7 @@ void Kernel::operator()(LaunchContextBuilder &launch_ctx) {
 }
 
 Kernel::LaunchContextBuilder Kernel::make_launch_context() {
-  return LaunchContextBuilder(this);
+  return LaunchContextBuilder(this, &(program.context));
 }
 
 void Kernel::LaunchContextBuilder::set_arg_float(int i, float64 d) {
@@ -129,27 +132,26 @@ void Kernel::LaunchContextBuilder::set_arg_float(int i, float64 d) {
                                  ActionArg("arg_id", i), ActionArg("val", d)});
 
   auto dt = kernel_->args[i].dt;
-  auto &program = kernel_->program;
   if (dt == DataType::f32) {
-    program.context.set_arg(i, (float32)d);
+    ctx_->set_arg(i, (float32)d);
   } else if (dt == DataType::f64) {
-    program.context.set_arg(i, (float64)d);
+    ctx_->set_arg(i, (float64)d);
   } else if (dt == DataType::i32) {
-    program.context.set_arg(i, (int32)d);
+    ctx_->set_arg(i, (int32)d);
   } else if (dt == DataType::i64) {
-    program.context.set_arg(i, (int64)d);
+    ctx_->set_arg(i, (int64)d);
   } else if (dt == DataType::i8) {
-    program.context.set_arg(i, (int8)d);
+    ctx_->set_arg(i, (int8)d);
   } else if (dt == DataType::i16) {
-    program.context.set_arg(i, (int16)d);
+    ctx_->set_arg(i, (int16)d);
   } else if (dt == DataType::u8) {
-    program.context.set_arg(i, (uint8)d);
+    ctx_->set_arg(i, (uint8)d);
   } else if (dt == DataType::u16) {
-    program.context.set_arg(i, (uint16)d);
+    ctx_->set_arg(i, (uint16)d);
   } else if (dt == DataType::u32) {
-    program.context.set_arg(i, (uint32)d);
+    ctx_->set_arg(i, (uint32)d);
   } else if (dt == DataType::u64) {
-    program.context.set_arg(i, (uint64)d);
+    ctx_->set_arg(i, (uint64)d);
   } else {
     TI_NOT_IMPLEMENTED
   }
@@ -165,34 +167,33 @@ void Kernel::LaunchContextBuilder::set_arg_int(int i, int64 d) {
                                ActionArg("arg_id", i), ActionArg("val", d)});
 
   auto dt = kernel_->args[i].dt;
-  auto &program = kernel_->program;
   if (dt == DataType::i32) {
-    program.context.set_arg(i, (int32)d);
+    ctx_->set_arg(i, (int32)d);
   } else if (dt == DataType::i64) {
-    program.context.set_arg(i, (int64)d);
+    ctx_->set_arg(i, (int64)d);
   } else if (dt == DataType::i8) {
-    program.context.set_arg(i, (int8)d);
+    ctx_->set_arg(i, (int8)d);
   } else if (dt == DataType::i16) {
-    program.context.set_arg(i, (int16)d);
+    ctx_->set_arg(i, (int16)d);
   } else if (dt == DataType::u8) {
-    program.context.set_arg(i, (uint8)d);
+    ctx_->set_arg(i, (uint8)d);
   } else if (dt == DataType::u16) {
-    program.context.set_arg(i, (uint16)d);
+    ctx_->set_arg(i, (uint16)d);
   } else if (dt == DataType::u32) {
-    program.context.set_arg(i, (uint32)d);
+    ctx_->set_arg(i, (uint32)d);
   } else if (dt == DataType::u64) {
-    program.context.set_arg(i, (uint64)d);
+    ctx_->set_arg(i, (uint64)d);
   } else if (dt == DataType::f32) {
-    program.context.set_arg(i, (float32)d);
+    ctx_->set_arg(i, (float32)d);
   } else if (dt == DataType::f64) {
-    program.context.set_arg(i, (float64)d);
+    ctx_->set_arg(i, (float64)d);
   } else {
     TI_NOT_IMPLEMENTED
   }
 }
 
 void Kernel::LaunchContextBuilder::set_extra_arg_int(int i, int j, int32 d) {
-  kernel_->program.context.extra_args[i][j] = d;
+  ctx_->extra_args[i][j] = d;
 }
 
 void Kernel::LaunchContextBuilder::set_arg_nparray(int i,
@@ -208,7 +209,7 @@ void Kernel::LaunchContextBuilder::set_arg_nparray(int i,
        ActionArg("array_size_in_bytes", (int64)size)});
 
   kernel_->args[i].size = size;
-  kernel_->program.context.set_arg(i, ptr);
+  ctx_->set_arg(i, ptr);
 }
 
 void Kernel::LaunchContextBuilder::set_arg_raw(int i, uint64 d) {
@@ -219,11 +220,13 @@ void Kernel::LaunchContextBuilder::set_arg_raw(int i, uint64 d) {
   ActionRecorder::get_instance().record(
       "set_arg_raw", {ActionArg("kernel_name", kernel_->name),
                       ActionArg("arg_id", i), ActionArg("val", (int64)d)});
-  kernel_->program.context.set_arg<uint64>(i, d);
+  ctx_->set_arg<uint64>(i, d);
 }
 
 Context &Kernel::LaunchContextBuilder::get_context() {
-  return kernel_->program.get_context();
+  // See Program::get_context()
+  ctx_->runtime = static_cast<LLVMRuntime *>(kernel_->program.llvm_runtime);
+  return *ctx_;
 }
 
 float64 Kernel::get_ret_float(int i) {

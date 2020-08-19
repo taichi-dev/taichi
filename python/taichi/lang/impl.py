@@ -224,11 +224,10 @@ class PyTaichi:
         if len(not_placed):
             bar = '=' * 44 + '\n'
             raise RuntimeError(
-                    f'These field(s) are not placed:\n{bar}' +
-                    f'{bar}'.join(not_placed) +
-                    f'{bar}Consider specify a shape for them, e.g.:' +
-                    '\n\n  x = ti.field(float, shape=(2, 3))'
-                    )
+                f'These field(s) are not placed:\n{bar}' +
+                f'{bar}'.join(not_placed) +
+                f'{bar}Consider specify a shape for them, e.g.:' +
+                '\n\n  x = ti.field(float, shape=(2, 3))')
 
     def clear(self):
         if self.prog:

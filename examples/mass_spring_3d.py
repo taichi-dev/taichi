@@ -1,4 +1,5 @@
 import taichi as ti
+import numpy as np
 try:
     import taichi_glsl as tl
     import taichi_three as t3
@@ -6,9 +7,7 @@ except ImportError:
     print('This example needs the extension library Taichi THREE to work.'
           'Please run `pip install --user taichi_three` to install it.')
 
-import numpy as np
-import math
-ti.init(ti.gpu)
+ti.init(arch=ti.gpu)
 
 ### Parameters
 
@@ -38,18 +37,6 @@ links = [(-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (1, -1), (-1, 1), (1, 1)]
 links = [tl.vec(*_) for _ in links]
 
 
-@ti.func
-def ballBoundReflect(pos, vel, center, radius):
-    ret = vel
-    above = tl.distance(pos, center) - radius
-    if above <= 0:
-        normal = tl.normalize(pos - center)
-        NoV = tl.dot(vel, normal) - 6 * tl.smoothstep(above, 0, -0.1)
-        if NoV < 0:
-            ret -= NoV * normal
-    return ret
-
-
 @ti.kernel
 def substep():
     for i in ti.grouped(x):
@@ -61,22 +48,22 @@ def substep():
         v[i] += stiffness * acc * dt
     for i in ti.grouped(x):
         v[i].y -= gravity * dt
-        v[i] = ballBoundReflect(x[i], v[i], tl.vec(+0.0, +0.2, -0.0), 0.4)
+        v[i] = tl.ballBoundReflect(x[i], v[i], tl.vec(+0.0, +0.2, -0.0), 0.4, 6)
     for i in ti.grouped(x):
-        v[i] *= math.exp(-damping * dt)
+        v[i] *= ti.exp(-damping * dt)
         x[i] += dt * v[i]
 
 
 ### Rendering GUI
 
 scene = t3.Scene()
-model = t3.Model()
+model = t3.Model(f_n=(N - 1)**2 * 4, vi_n=N**2, vt_n=N**2, f_m=1,
+                 tex=ti.imread('assets/cloth.jpg'))
 scene.add_model(model)
-
-faces = t3.Face.var(N**2 * 2)
-vertices = t3.Vertex.var(N**2)
-model.set_vertices(vertices)
-model.add_geometry(faces)
+camera = t3.Camera(fov=24, pos=[0, 1.1, -1.5], target=[0, 0.25, 0])
+scene.add_camera(camera)
+light = t3.Light([0.4, -1.5, 1.8])
+scene.add_light(light)
 
 
 @ti.kernel
@@ -91,33 +78,34 @@ def init_display():
         i.x -= 1
         d = i.dot(tl.vec(N, 1))
         i.y -= 1
-        faces[a * 2 + 0].idx = tl.vec(a, c, b)
-        faces[a * 2 + 1].idx = tl.vec(a, d, c)
+        model.faces[a * 4 + 0] = [a, c, b]
+        model.faces[a * 4 + 1] = [a, d, c]
+        model.faces[a * 4 + 2] = [a, b, c]
+        model.faces[a * 4 + 3] = [a, c, d]
+    for i in ti.grouped(x):
+        j = i.dot(tl.vec(N, 1))
+        model.vt[j] = tl.D.yx + i.xY / N
 
 
 @ti.kernel
 def update_display():
     for i in ti.grouped(x):
-        vertices[i.dot(tl.vec(N, 1))].pos = x[i]
+        j = i.dot(tl.vec(N, 1))
+        model.vi[j] = x[i]
 
 
 init()
 init_display()
-scene.set_light_dir([0.4, -1.5, -1.8])
 
-print('[Hint] mouse drag to orbit camera')
 with ti.GUI('Mass Spring') as gui:
     while gui.running and not gui.get_event(gui.ESCAPE):
         if not gui.is_pressed(gui.SPACE):
             for i in range(steps):
                 substep()
             update_display()
-        if gui.is_pressed(gui.LMB):
-            scene.camera.from_mouse(gui)
-        else:
-            scene.camera.from_mouse([0.5, 0.4])
+
+        camera.from_mouse(gui)
 
         scene.render()
-        gui.set_image(scene.img)
-        #gui.show(f'/tmp/{gui.frame:06d}.png')
+        gui.set_image(camera.img)
         gui.show()

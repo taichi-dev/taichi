@@ -54,7 +54,7 @@ class MGPCG:
         self.z[0][I] = 0
         self.Ap[I] = 0
         self.p[I] = 0
-        self.x[I] = 0
+        #self.x[I] = 0
 
     @ti.kernel
     def init(self, r: ti.template(), k: ti.template()):

@@ -6,9 +6,10 @@
 
 import taichi as ti
 import numpy as np
+from mgpcg_advanced import MGPCG
 import time
 
-res = 512  # 600 for a larger resoultion
+res = 256  # 600 for a larger resoultion
 dt = 0.03
 p_jacobi_iters = 160  # 40 for quicker but not-so-accurate result
 f_strength = 10000.0
@@ -19,6 +20,8 @@ debug = False
 paused = False
 
 ti.init(arch=ti.gpu)
+
+mgpcg = MGPCG(dim=2, N=res, n_mg_levels=5, eps=1e-6)
 
 _velocities = ti.Vector.field(2, float, shape=(res, res))
 _new_velocities = ti.Vector.field(2, float, shape=(res, res))
@@ -211,7 +214,7 @@ def pressure_jacobi_single(pf: ti.template(), new_pf: ti.template()):
 
 @ti.kernel
 def pressure_jacobi_dual(pf: ti.template(), new_pf: ti.template()):
-    ti.cache_read_only(pf)
+    ti.cache_read_only(pf, velocity_divs)
     for i, j in pf:
         pcc = sample(pf, i, j)
         pll = sample(pf, i - 2, j)
@@ -227,9 +230,9 @@ def pressure_jacobi_dual(pf: ti.template(), new_pf: ti.template()):
         divr = sample(velocity_divs, i + 1, j)
         divb = sample(velocity_divs, i, j - 1)
         divt = sample(velocity_divs, i, j + 1)
-        new_pf[i,
-               j] = (pll + prr + pbb + ptt - divl - divr - divb - divt - div +
-                     (plt + prt + prb + plb) * 2 + pcc * 4) * 0.0625
+        new_pf[i, j] = (pll + prr + pbb + ptt
+                - divl - divr - divb - divt - div
+                     + (plt + prt + prb + plb) * 2 + pcc * 4) * 0.0625
 
 
 pressure_jacobi = pressure_jacobi_dual
@@ -279,11 +282,11 @@ def step(mouse_data):
         vorticity(velocities_pair.cur)
         enhance_vorticity(velocities_pair.cur, velocity_curls)
 
-    for _ in range(p_jacobi_iters):
-        pressure_jacobi(pressures_pair.cur, pressures_pair.nxt)
-        pressures_pair.swap()
+    mgpcg.init(velocity_divs, 1)
+    for i, rTr in mgpcg.solve(20):
+        print(f'iter {i}, residual={rTr}')
 
-    subtract_gradient(velocities_pair.cur, pressures_pair.cur)
+    subtract_gradient(velocities_pair.cur, mgpcg.x)
 
     if debug:
         divergence(velocities_pair.cur)

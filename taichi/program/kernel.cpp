@@ -97,10 +97,7 @@ void Kernel::operator()(LaunchContextBuilder &launch_ctx) {
     if (!compiled) {
       compile();
     }
-    auto &ctx = launch_ctx.get_context();
-    TI_INFO("Able to get_context");
-    compiled(ctx);
-    TI_INFO("Able to run compiled(ctx)");
+    compiled(launch_ctx.get_context());
     program.sync = (program.sync && arch_is_cpu(arch));
     // Note that Kernel::arch may be different from program.config.arch
     if (program.config.debug && (arch_is_cpu(program.config.arch) ||

@@ -52,7 +52,6 @@ spiky_grad_factor = -45.0 / math.pi
 old_positions = ti.Vector.field(dim, float)
 positions = ti.Vector.field(dim, float)
 velocities = ti.Vector.field(dim, float)
-# Once taichi supports clear(), we can get rid of grid_num_particles
 grid_num_particles = ti.field(int)
 grid2particles = ti.field(int)
 particle_num_neighbors = ti.field(int)

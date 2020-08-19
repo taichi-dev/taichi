@@ -16,7 +16,9 @@ See `examples/stable_fluid.py <https://github.com/taichi-dev/taichi/blob/master/
 
 .. note::
 
-    This solver only runs on CPU and CUDA backend since it requires the ``pointer`` SNode. Consider replace ``pointer`` by ``bitmasked`` on Metal, by ``dense`` on OpenGL.
+    This solver only runs on CPU and CUDA backend since it requires the
+    ``pointer`` SNode. Consider replace ``pointer`` by ``bitmasked`` on Metal,
+    by ``dense`` on OpenGL.
     '''
 
     def __init__(self, dim=2, N=512, n_mg_levels=6):

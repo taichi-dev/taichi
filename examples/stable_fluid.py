@@ -22,7 +22,7 @@ paused = False
 ti.init(arch=ti.gpu)
 
 if use_mgpcg:
-    from mgpcg_advanced import MGPCG
+    from mgpcg_advanced import MGPCG  # examples/mgpcg_advanced.py
     mgpcg = MGPCG(dim=2, N=res, n_mg_levels=6)
 
 _velocities = ti.Vector.field(2, float, shape=(res, res))

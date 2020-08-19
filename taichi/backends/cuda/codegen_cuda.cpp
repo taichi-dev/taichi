@@ -50,10 +50,6 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       std::vector<void *> device_buffers(args.size(), nullptr);
       bool has_buffer = false;
 
-      // TODO: A refactoring is needed.
-      // We have a not-so-good design where Context is always tied with Program.
-      // Context's should be tied to kernel launches instead.
-      kernel->program.context = context;
       // We could also use kernel->make_launch_context() to create
       // |ctx_builder|, but that implies the usage of Program's context. For the
       // sake of decoupling, let's not do that and explicitly set the context we
@@ -63,7 +59,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         if (args[i].is_nparray) {
           has_buffer = true;
           // replace host buffer with device buffer
-          host_buffers[i] = get_current_program().context.get_arg<void *>(i);
+          host_buffers[i] = context.get_arg<void *>(i);
           if (args[i].size > 0) {
             // Note: both numpy and PyTorch support arrays/tensors with zeros
             // in shapes, e.g., shape=(0) or shape=(100, 0, 200). This makes
@@ -83,9 +79,8 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       for (auto task : offloaded_local) {
         TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
                  task.block_dim);
-        // TODO: It seems safe to get the Context pointer from |ctx_builder|?
         cuda_module->launch(task.name, task.grid_dim, task.block_dim,
-                            task.shmem_bytes, {&kernel->program.context});
+                            task.shmem_bytes, {&context});
       }
       // copy data back to host
       if (has_buffer) {

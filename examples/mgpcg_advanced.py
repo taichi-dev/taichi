@@ -45,8 +45,6 @@ class MGPCG:
 
         ti.root.place(self.alpha, self.beta, self.sum)
 
-        self.r_range = [(self.N_ext, self.N_tot - self.N_ext)] * self.dim
-
     @ti.func
     def init_r(self, I, r_I):
         I = I + self.N_ext
@@ -54,12 +52,22 @@ class MGPCG:
         self.z[0][I] = 0
         self.Ap[I] = 0
         self.p[I] = 0
-        #self.x[I] = 0
+        self.x[I] = 0
+
+    @ti.func
+    def get_x(self, I):
+        I = I + self.N_ext
+        return self.x[I]
 
     @ti.kernel
     def init(self, r: ti.template(), k: ti.template()):
         for I in ti.grouped(ti.ndrange(*[self.N] * self.dim)):
             self.init_r(I, r[I] * k)
+
+    @ti.kernel
+    def get_result(self, x: ti.template()):
+        for I in ti.grouped(ti.ndrange(*[self.N] * self.dim)):
+            x[I] = self.get_x(I)
 
     @ti.func
     def neighbor_sum(self, x, I):
@@ -204,7 +212,7 @@ class MGPCG_Example(MGPCG):
         for I in ti.grouped(ti.ndrange(*[self.N] * self.dim)):
             r_I = 5.0
             for k in ti.static(range(self.dim)):
-                r_I *= ti.cos(5 * np.pi * (I[k]) / self.N)
+                r_I *= ti.cos(5 * np.pi * I[k] / self.N)
             self.init_r(I, r_I)
 
     @ti.kernel

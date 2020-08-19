@@ -52,7 +52,7 @@ while gui.running:
         if e.key == gui.ESCAPE:
             gui.running = False
         elif e.key == gui.LMB:
-            b[int(e.pos[0] * 512), int(e.pos[1] * 512)] += 0.75
+            b[int(e.pos[0] * n), int(e.pos[1] * n)] += 0.75
             init()
     for i in range(steps):
         substep()

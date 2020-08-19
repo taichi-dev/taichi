@@ -6,12 +6,13 @@ try:
 except ImportError:
     print('This example needs the extension library Taichi THREE to work.'
           'Please run `pip install --user taichi_three` to install it.')
+assert t3.__version__ == (0, 0, 3)
 
 ti.init(arch=ti.gpu)
 
 ### Parameters
 
-N = 128
+N = 256
 NN = N, N
 W = 1
 L = W / N
@@ -57,8 +58,7 @@ def substep():
 ### Rendering GUI
 
 scene = t3.Scene()
-model = t3.Model(f_n=(N - 1)**2 * 4, vi_n=N**2, vt_n=N**2, f_m=1,
-                 tex=ti.imread('assets/cloth.jpg'))
+model = t3.Model(f_n=(N - 1)**2 * 4, vi_n=N**2, vt_n=N**2, f_m=1)
 scene.add_model(model)
 camera = t3.Camera(fov=24, pos=[0, 1.1, -1.5], target=[0, 0.25, 0])
 scene.add_camera(camera)

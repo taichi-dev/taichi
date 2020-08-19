@@ -147,11 +147,11 @@ def deprecated(old, new, type=DeprecationWarning):
     return decorator
 
 
-def obsolete(old, new):
+def obsoleted(old, new):
     '''
-    Mark API as obsolete, with no API wrapper. E.g.,
+    Mark API as obsoleted, with no API wrapper. E.g.,
 
-    sqr = obsolete('ti.sqr(x)', 'x**2')
+    sqr = obsoleted('ti.sqr(x)', 'x**2')
     '''
     def wrapped(*args, **kwargs):
         _taichi_skip_traceback = 1
@@ -165,6 +165,12 @@ def obsolete(old, new):
         raise SyntaxError(msg)
 
     return wrapped
+
+
+def get_traceback(stacklevel=1):
+    import traceback
+    s = traceback.extract_stack()[:-1 - stacklevel]
+    return ''.join(traceback.format_list(s))
 
 
 def get_logging(name):
@@ -243,7 +249,7 @@ __all__ = [
     'core_vec',
     'core_veci',
     'deprecated',
-    'obsolete',
+    'obsoleted',
     'set_gdb_trigger',
     'print_profile_info',
     'set_logging_level',

@@ -475,7 +475,7 @@ def assign(a, b):
     return a
 
 
-sqr = obsolete('ti.sqr(x)', 'x**2')
+sqr = obsoleted('ti.sqr(x)', 'x**2')
 
 
 def ti_max(*args):

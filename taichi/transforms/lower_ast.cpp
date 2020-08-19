@@ -426,7 +426,7 @@ class LowerAST : public IRVisitor {
 
 namespace irpass {
 
-void lower(IRNode *root) {
+void lower_ast(IRNode *root) {
   TI_AUTO_PROF;
   LowerAST::run(root);
 }

@@ -204,6 +204,13 @@ class Expr(TaichiOperations):
         assert len(self.shape) == len(other.shape)
         tensor_to_tensor(self, other)
 
+    def __repr__(self):
+        """Python scope field print support."""
+        if impl.inside_kernel():
+            return '<Taichi Expr>'  # make pybind11 happy, see Matrix.__repr__
+        else:
+            return str(self.to_numpy())
+
 
 def make_var_vector(size):
     import taichi as ti

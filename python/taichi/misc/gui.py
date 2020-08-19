@@ -156,7 +156,7 @@ class GUI:
 
         else:
             raise ValueError(
-                f"GUI.set_image only takes a Taichi tensor or NumPy array, not {type(img)}"
+                f"GUI.set_image only takes a Taichi field or NumPy array, not {type(img)}"
             )
 
         self.core.set_img(self.img.ctypes.data)

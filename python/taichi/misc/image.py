@@ -4,7 +4,7 @@ import taichi as ti
 
 def cook_image_to_bytes(img):
     """
-    Takes a NumPy array or Taichi tensor of any type.
+    Takes a NumPy array or Taichi field of any type.
     Returns a NumPy array of uint8.
     This is used by ti.imwrite and ti.imdisplay.
     """

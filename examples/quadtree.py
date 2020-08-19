@@ -16,7 +16,7 @@ for r in range(R):
 qt = ti.field(ti.f32)
 B.place(qt)
 
-img = ti.Vector(3, dt=ti.f32, shape=(RES, RES))
+img = ti.Vector.field(3, dtype=ti.f32, shape=(RES, RES))
 
 print('The quad tree layout is:\n', qt.snode)
 

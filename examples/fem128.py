@@ -14,7 +14,7 @@ damping = 14.5
 
 pos = ti.Vector.field(2, float, NV, needs_grad=True)
 vel = ti.Vector.field(2, float, NV)
-f2v = ti.Vector.field(3, ti.i32, NF) # ids of three vertices of each face
+f2v = ti.Vector.field(3, int, NF)  # ids of three vertices of each face
 B = ti.Matrix.field(2, 2, float, NF)
 F = ti.Matrix.field(2, 2, float, NF, needs_grad=True)
 V = ti.field(float, NF)

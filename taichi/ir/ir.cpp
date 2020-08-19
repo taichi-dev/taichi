@@ -1043,7 +1043,7 @@ bool ContinueStmt::as_return() const {
 }
 
 void Stmt::infer_type() {
-  irpass::typecheck(this);
+  irpass::type_check(this);
 }
 
 TLANG_NAMESPACE_END

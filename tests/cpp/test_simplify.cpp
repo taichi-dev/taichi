@@ -31,7 +31,7 @@ TI_TEST("simplify") {
     auto lookup2 = block->push_back<SNodeLookupStmt>(
         root.ch[0].get(), get_child, linearized_zero, true);
 
-    irpass::typecheck(block.get());
+    irpass::type_check(block.get());
     TI_CHECK(block->size() == 7);
 
     irpass::simplify(block.get());  // should lower linearized

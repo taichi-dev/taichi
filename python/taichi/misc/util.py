@@ -250,6 +250,7 @@ __all__ = [
     'core_veci',
     'deprecated',
     'obsoleted',
+    'get_traceback',
     'set_gdb_trigger',
     'print_profile_info',
     'set_logging_level',

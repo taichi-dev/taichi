@@ -32,12 +32,6 @@ void CCKernel::compile() {
   execute(program->program->config.cc_compile_cmd, obj_path, src_path);
 }
 
-CCContext::CCContext(CCProgram *program, Context *ctx)
-    : args(ctx->args), earg((int *)ctx->extra_args) {
-  root = program->get_root_buffer();
-  gtmp = program->get_gtmp_buffer();
-}
-
 void CCKernel::launch(Context *ctx) {
   if (!kernel->is_evaluator)
     ActionRecorder::get_instance().record("launch_kernel",
@@ -49,8 +43,8 @@ void CCKernel::launch(Context *ctx) {
   TI_TRACE("[cc] entering kernel [{}]", name);
   auto entry = program->load_kernel(name);
   TI_ASSERT(entry);
-  program->update_context(ctx);
-  (*entry)(&program->context);
+  auto *context = program->update_context(ctx);
+  (*entry)(context);
   program->context_to_result_buffer();
   TI_TRACE("[cc] leaving kernel [{}]", name);
 }
@@ -154,32 +148,36 @@ void CCProgram::add_kernel(std::unique_ptr<CCKernel> kernel) {
   need_relink = true;
 }
 
-CCFuncEntryType *CCProgram::load_kernel(std::string const &name) {
-  return reinterpret_cast<CCFuncEntryType *>(dll->load_function("Tk_" + name));
-}
-
-CCProgram::CCProgram(Program *program) : program(program) {
+void CCProgram::init_runtime() {
   runtime = std::make_unique<CCRuntime>(this,
 #include "runtime/base.h"
                                         "\n",
 #include "runtime/base.c"
                                         "\n");
   runtime->compile();
+}
+
+CCFuncEntryType *CCProgram::load_kernel(std::string const &name) {
+  return reinterpret_cast<CCFuncEntryType *>(dll->load_function("Tk_" + name));
+}
+
+CCProgram::CCProgram(Program *program) : program(program) {
+  init_runtime();
 
   context->root = root_buf.data();
   context->gtmp = gtmp_buf.data();
-  context->args = args_buf.data();
+  context->args = (uint64 *)args_buf.data();
   context->earg = nullptr;
 }
 
 CCContext *CCProgram::update_context(Context *ctx) {
   std::memcpy(context->args, ctx->args, sizeof(ctx->args));
-  context->earg = ctx->extra_args;  // zero-copy since no @k-ye's insist here
-  return context;
+  context->earg = (int *)ctx->extra_args;  // zero-copy since no @k-ye's insist here
+  return context.get();
 }
 
 void CCProgram::context_to_result_buffer() {
-  std::memcpy(result_buffer, context->args, sizeof(uint64));  // XXX: assumed 1 return
+  std::memcpy(program->result_buffer, context->args, sizeof(uint64));  // XXX: assumed 1 return
   context->earg = nullptr;
 }
 

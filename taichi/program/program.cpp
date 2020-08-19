@@ -645,7 +645,7 @@ uint64 Program::fetch_result_uint64(int i) {
 #else
     TI_NOT_IMPLEMENTED;
 #endif
-  } else if (arch_is_cpu(arch) || arch == Arch::metal || arch == Arch::opengl) {
+  } else {
     ret = result_buffer[i];
   }
   return ret;

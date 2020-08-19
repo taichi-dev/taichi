@@ -31,6 +31,7 @@ class CCProgram {
   void add_kernel(std::unique_ptr<CCKernel> kernel);
   CCFuncEntryType *load_kernel(std::string const &name);
   void compile_layout(SNode *root);
+  void init_runtime();
   void relink();
 
   CCLayout *get_layout() {

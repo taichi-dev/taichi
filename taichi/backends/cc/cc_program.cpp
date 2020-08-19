@@ -140,7 +140,12 @@ void CCProgram::compile_layout(SNode *root) {
 
   root_buf.resize(root_size, 0);
   gtmp_buf.resize(gtmp_size, 0);
-  gtmp_buf.resize(args_size, 0);
+  args_buf.resize(args_size, 0);
+
+  context->root = root_buf.data();
+  context->gtmp = gtmp_buf.data();
+  context->args = (uint64 *)args_buf.data();
+  context->earg = nullptr;
 }
 
 void CCProgram::add_kernel(std::unique_ptr<CCKernel> kernel) {
@@ -164,19 +169,17 @@ CCFuncEntryType *CCProgram::load_kernel(std::string const &name) {
 CCProgram::CCProgram(Program *program) : program(program) {
   init_runtime();
 
-  context->root = root_buf.data();
-  context->gtmp = gtmp_buf.data();
-  context->args = (uint64 *)args_buf.data();
-  context->earg = nullptr;
+  context = std::make_unique<CCContext>();
 }
 
 CCContext *CCProgram::update_context(Context *ctx) {
-  std::memcpy(context->args, ctx->args, sizeof(ctx->args));
-  context->earg = (int *)ctx->extra_args;  // zero-copy since no @k-ye's insist here
+  std::memcpy(context->args, ctx->args, sizeof(ctx->args));  // make @k-ye happy
+  context->earg = (int *)ctx->extra_args;
   return context.get();
 }
 
 void CCProgram::context_to_result_buffer() {
+  TI_ASSERT(program->result_buffer);  // make @k-ye happy x2
   std::memcpy(program->result_buffer, context->args, sizeof(uint64));  // XXX: assumed 1 return
   context->earg = nullptr;
 }

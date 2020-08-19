@@ -1,5 +1,4 @@
 import taichi as ti
-ti.init()
 
 N = 8
 dt = 1e-5

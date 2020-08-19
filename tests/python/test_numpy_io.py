@@ -91,7 +91,7 @@ def test_numpy_io_example():
 
     # Taichi tensors
     val = ti.field(ti.i32, shape=(n, m))
-    vec = ti.Vector(3, dt=ti.i32, shape=(n, m))
+    vec = ti.Vector.field(3, dtype=ti.i32, shape=(n, m))
     mat = ti.Matrix.field(3, 4, dtype=ti.i32, shape=(n, m))
 
     # Scalar

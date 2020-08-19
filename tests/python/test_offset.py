@@ -80,7 +80,7 @@ def test_offset_for_vector():
 
     offset = 16
     shape = 16
-    c = ti.Vector(n=1, dt=ti.i32, shape=shape, offset=offset)
+    c = ti.Vector.field(n=1, dtype=ti.i32, shape=shape, offset=offset)
 
     @ti.kernel
     def test():
@@ -121,8 +121,8 @@ def test_offset_must_throw_var():
 
 @ti.must_throw(AssertionError)
 def test_offset_must_throw_vector():
-    a = ti.Vector(3, dt=ti.float32, shape=3, offset=(3, 4))
-    b = ti.Vector(3, dt=ti.float32, shape=None, offset=(3, ))
+    a = ti.Vector.field(3, dtype=ti.float32, shape=3, offset=(3, 4))
+    b = ti.Vector.field(3, dtype=ti.float32, shape=None, offset=(3, ))
 
 
 @ti.must_throw(AssertionError)

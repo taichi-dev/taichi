@@ -9,7 +9,7 @@ class MPMSolver:
         self.dx = 1 / res[0]
         self.inv_dx = 1.0 / self.dx
         self.pid = ti.field(ti.i32)
-        self.x = ti.Vector(dim, dt=ti.f32)
+        self.x = ti.Vector.field(dim, dtype=ti.f32)
         self.grid_m = ti.field(dtype=ti.f32)
 
         indices = ti.ij

@@ -94,7 +94,7 @@ void make_thread_local_offload(OffloadedStmt *offload) {
     auto valid_global_ptrs = find_global_reduction_destinations<GlobalPtrStmt>(
         offload, [](auto *dest) {
           // We can only optimized reductions to global ptrs with form like
-          // loss[None] (0-D tensors) for now
+          // loss[None] (0-D fields) for now
           return (dest->snodes[0]->type == SNodeType::place) &&
                  dest->indices.empty();
         });
@@ -182,7 +182,7 @@ void make_thread_local(IRNode *root) {
   } else {
     make_thread_local_offload(root->as<OffloadedStmt>());
   }
-  typecheck(root);
+  type_check(root);
   fix_block_parents(root);
 }
 

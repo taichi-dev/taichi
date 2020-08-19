@@ -29,6 +29,25 @@ void ns_log_object(id obj) {
   NSLog(reinterpret_cast<id>(ns_str.get()), obj);
 }
 
+TI_NSAutoreleasePool *create_autorelease_pool() {
+  return cast_call<TI_NSAutoreleasePool *>(
+      clscall("NSAutoreleasePool", "alloc"), "init");
+}
+
+void drain_autorelease_pool(TI_NSAutoreleasePool *pool) {
+  // "drain" is same as "release", so we don't need to release |pool| itself.
+  // https://developer.apple.com/documentation/foundation/nsautoreleasepool
+  call(pool, "drain");
+}
+
+ScopedAutoreleasePool::ScopedAutoreleasePool() {
+  pool_ = create_autorelease_pool();
+}
+
+ScopedAutoreleasePool::~ScopedAutoreleasePool() {
+  drain_autorelease_pool(pool_);
+}
+
 }  // namespace mac
 }  // namespace taichi
 

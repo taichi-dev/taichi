@@ -5,7 +5,7 @@ import numpy as np
 
 ti.init(arch=ti.gpu)
 res = 1280, 720
-color_buffer = ti.Vector(3, dt=ti.f32, shape=res)
+color_buffer = ti.Vector.field(3, dtype=ti.f32, shape=res)
 max_ray_depth = 6
 eps = 1e-4
 inf = 1e10

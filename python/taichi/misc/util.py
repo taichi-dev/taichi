@@ -147,15 +147,15 @@ def deprecated(old, new, type=DeprecationWarning):
     return decorator
 
 
-def fully_deprecated(old, new):
+def obsolete(old, new):
     '''
-    Announce a full deprecateion, with no API wrapper, usage:
+    Mark API as obsolete, with no API wrapper. E.g.,
 
-    sqr = fully_deprecated('ti.sqr(x)', 'x**2')
+    sqr = obsolete('ti.sqr(x)', 'x**2')
     '''
     def wrapped(*args, **kwargs):
         _taichi_skip_traceback = 1
-        msg = f'{old} is fully deprecated, please use {new} instead'
+        msg = f'{old} is obsolete. Please use {new} instead'
         try:
             import locale
             if 'zh' in locale.getdefaultlocale()[0]:
@@ -243,7 +243,7 @@ __all__ = [
     'core_vec',
     'core_veci',
     'deprecated',
-    'fully_deprecated',
+    'obsolete',
     'set_gdb_trigger',
     'print_profile_info',
     'set_logging_level',

@@ -155,7 +155,7 @@ def test_io_simple():
 
 
 @ti.torch_test
-def test_io_simple():
+def test_io_zeros():
     mat = ti.Matrix.field(2, 6, dtype=ti.f32, shape=(), needs_grad=True)
     zeros = torch.zeros((2, 6))
     zeros[1, 2] = 3
@@ -210,7 +210,7 @@ def test_shape_matrix():
 @ti.torch_test
 def test_shape_vector():
     n = 12
-    x = ti.Vector(3, ti.f32, shape=(n, n))
+    x = ti.Vector.field(3, ti.f32, shape=(n, n))
     X = x.to_torch()
     for i in range(n):
         for j in range(n):

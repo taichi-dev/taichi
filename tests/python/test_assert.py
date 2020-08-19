@@ -74,7 +74,7 @@ def test_static_assert_message():
 
 @ti.host_arch_only
 def test_static_assert_vector_n_ok():
-    x = ti.Vector(4, ti.f32, ())
+    x = ti.Vector.field(4, ti.f32, ())
 
     @ti.kernel
     def func():

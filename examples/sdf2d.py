@@ -4,8 +4,8 @@ from renderer_utils import reflect, refract
 ti.init(arch=ti.opengl)
 
 N = 512
-img = ti.var(dt=ti.f32, shape=(N, N))
-light_pos = ti.Vector(2, dt=ti.f32, shape=())
+img = ti.field(dtype=ti.f32, shape=(N, N))
+light_pos = ti.Vector.field(2, dtype=ti.f32, shape=())
 
 
 @ti.func

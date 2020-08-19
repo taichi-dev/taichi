@@ -17,8 +17,8 @@ The Taichi Programming Language
    syntax
    type
    tensor_matrix
-   atomic
    external
+   atomic
 
 
 .. toctree::

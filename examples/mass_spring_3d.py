@@ -49,7 +49,8 @@ def substep():
         v[i] += stiffness * acc * dt
     for i in ti.grouped(x):
         v[i].y -= gravity * dt
-        v[i] = tl.ballBoundReflect(x[i], v[i], tl.vec(+0.0, +0.2, -0.0), 0.4, 6)
+        v[i] = tl.ballBoundReflect(x[i], v[i], tl.vec(+0.0, +0.2, -0.0), 0.4,
+                                   6)
     for i in ti.grouped(x):
         v[i] *= ti.exp(-damping * dt)
         x[i] += dt * v[i]

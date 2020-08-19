@@ -5,11 +5,19 @@ import time
 
 @ti.data_oriented
 class MGPCG:
-    def __init__(self, dim=3, N=128, n_mg_levels=4, eps=0):
+    '''
+Grid-based MGPCG solver for the possion equation:
+
+    $\\nabla^2 x = k r$
+
+Credits by `@KLozes <https://github.com/KLozes>`_.
+
+See `examples/stable_fluid.py <https://github.com/taichi-dev/taichi/blob/master/examples/stable_fluid.py>`_ for usage example.
+    '''
+
+    def __init__(self, dim=2, N=512, n_mg_levels=6):
         # grid parameters
         self.use_multigrid = True
-
-        self.eps = eps
 
         self.N = N
 
@@ -61,11 +69,26 @@ class MGPCG:
 
     @ti.kernel
     def init(self, r: ti.template(), k: ti.template()):
+        '''
+        Specify quantity field before each solve step.
+
+        :parameter r: (ti.field) Specify the quantity field
+        :parameter k: (scalar) Specify the scale multiply to the quantity field
+
+        $\\nabla^2 x = k r$
+        '''
         for I in ti.grouped(ti.ndrange(*[self.N] * self.dim)):
             self.init_r(I, r[I] * k)
 
     @ti.kernel
     def get_result(self, x: ti.template()):
+        '''
+        Get the solution field after each solve step.
+
+        :parameter x: (ti.field) Specify where to store the solution field
+
+        $\\nabla^2 x = k r$
+        '''
         for I in ti.grouped(ti.ndrange(*[self.N] * self.dim)):
             x[I] = self.get_x(I)
 
@@ -144,9 +167,23 @@ class MGPCG:
                 self.smooth(l, 1)
                 self.smooth(l, 0)
 
-    def solve(self, steps=400):
+    def solve(self, steps=-1, eps=1e-12, tol=1e-12, rel=1e-12):
+        '''
+        Solve the possion equation.
+        Always use a ``for`` loop to iterate through me.
+
+        :parameter steps: Specify the maximal steps, -1 for no limit.
+        :parameter eps: Specify a non-zero value to prevent ZeroDivisionError.
+        :parameter tol: Specify the absolute tolerance of loss.
+        :parameter rel: Specify the tolerance of loss relative to initial loss.
+
+        :return: (generator) A sequence generator of the loss of each step.
+        '''
+
         self.reduce(self.r[0], self.r[0])
         initial_rTr = self.sum[None]
+
+        tol = max(tol, initial_rTr * rel)
 
         # self.r = b - Ax = b    since self.x = 0
         # self.p = self.r = self.r + 0 self.p
@@ -161,12 +198,12 @@ class MGPCG:
         old_zTr = self.sum[None]
 
         # CG
-        for i in range(steps):
+        while steps != 0:
             # self.alpha = rTr / pTAp
             self.compute_Ap()
             self.reduce(self.p, self.Ap)
             pAp = self.sum[None]
-            self.alpha[None] = old_zTr / (pAp + self.eps)
+            self.alpha[None] = old_zTr / (pAp + eps)
 
             # self.x = self.x + self.alpha self.p
             self.update_x()
@@ -177,7 +214,7 @@ class MGPCG:
             # check for convergence
             self.reduce(self.r[0], self.r[0])
             rTr = self.sum[None]
-            if rTr < initial_rTr * 1e-12:
+            if rTr < tol:
                 break
 
             # self.z = M^-1 self.r
@@ -189,18 +226,19 @@ class MGPCG:
             # self.beta = new_rTr / old_rTr
             self.reduce(self.z[0], self.r[0])
             new_zTr = self.sum[None]
-            self.beta[None] = new_zTr / (old_zTr + self.eps)
+            self.beta[None] = new_zTr / (old_zTr + eps)
 
             # self.p = self.z + self.beta self.p
             self.update_p()
             old_zTr = new_zTr
 
-            yield i, rTr
+            yield rTr
+            steps -= 1
 
 
 class MGPCG_Example(MGPCG):
     def __init__(self):
-        super().__init__()
+        super().__init__(dim=3, N=128, n_mg_levels=4)
 
         self.N_gui = 512  # gui resolution
 
@@ -229,7 +267,7 @@ class MGPCG_Example(MGPCG):
                      res=(self.N_gui, self.N_gui))
 
         self.init()
-        for i, rTr in self.solve():
+        for i, rTr in enumerate(self.solve(steps=400)):
             print(f'iter {i}, residual={rTr}')
             self.paint()
             gui.set_image(self.pixels)

@@ -34,7 +34,11 @@ def imdisplay(img):
     """
     Try to display image in interactive shell.
     """
-    if ti.lang.shell.oinspect.name == ti.lang.shell.ShellType.JUPYTER:
+    try:
+        get_ipython()
+    except:
+        ti.imshow(img)
+    else:
         import PIL.Image
         from io import BytesIO
         import IPython.display
@@ -43,8 +47,20 @@ def imdisplay(img):
         with BytesIO() as f:
             PIL.Image.fromarray(img).save(f, 'png')
             IPython.display.display(IPython.display.Image(data=f.getvalue()))
-    else:
-        ti.imshow(img)
+
+
+def imscale(img, w=512, h=None):
+    """
+    Scale a image into specific size.
+    """
+    if not isinstance(img, np.ndarray):
+        img = img.to_numpy()
+    if h is None:
+        h = w
+    u, v = (img.shape[0] - 1) / (w - 1), (img.shape[1] - 1) / (h - 1)
+    x = np.clip(np.arange(w) * u, 0, img.shape[0] - 1).astype(np.int32)
+    y = np.clip(np.arange(h) * v, 0, img.shape[1] - 1).astype(np.int32)
+    return img[np.meshgrid(x, y)].swapaxes(0, 1)
 
 
 def imwrite(img, filename):
@@ -94,5 +110,6 @@ __all__ = [
     'imshow',
     'imread',
     'imwrite',
+    'imscale',
     'imdisplay',
 ]

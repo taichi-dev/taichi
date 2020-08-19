@@ -522,3 +522,14 @@ Image I/O
     This function will create an instance of ``ti.GUI`` and show the input image on the screen.
 
     It has the same logic as ``ti.imwrite`` for different datatypes.
+
+.. function:: ti.imscale(img, w=512, h=None):
+
+    :parameter img: (np.array or ti.field) the input image.
+    :parameter w: (optional, scalar) the width after scale.
+    :parameter h: (optional, scalar) the height after scale.
+    :return: (np.array) the output image after scale.
+
+    If ``h`` is not specified, then it will be equal to ``w`` by default.
+
+    The output image shape is: ``(w, h, *img.shape[2:])``.

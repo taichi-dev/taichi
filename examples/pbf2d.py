@@ -143,8 +143,10 @@ def move_board():
 
 @ti.kernel
 def prologue():
+    # save old positions
     for i in positions:
         old_positions[i] = positions[i]
+    # apply gravity within boundary
     for i in positions:
         g = ti.Vector([0.0, -9.8])
         pos, vel = positions[i], velocities[i]
@@ -152,17 +154,20 @@ def prologue():
         pos += vel * time_delta
         positions[i] = confine_position_to_boundary(pos)
 
+    # clear neighbor lookup table
     for I in ti.grouped(grid_num_particles):
         grid_num_particles[I] = 0
     for I in ti.grouped(particle_neighbors):
         particle_neighbors[I] = -1
 
+    # update grid
     for p_i in positions:
         cell = get_cell(positions[p_i])
         # ti.Vector doesn't seem to support unpacking yet
         # but we can directly use int Vectors as indices
         offs = ti.atomic_add(grid_num_particles[cell], 1)
         grid2particles[cell, offs] = p_i
+    # find particle neighbors
     for p_i in positions:
         pos_i = positions[p_i]
         cell = get_cell(pos_i)
@@ -181,6 +186,7 @@ def prologue():
 
 @ti.kernel
 def substep():
+    # compute lambdas
     # Eq (8) ~ (11)
     for p_i in positions:
         pos_i = positions[p_i]
@@ -206,6 +212,7 @@ def substep():
         sum_gradient_sqr += grad_i.dot(grad_i)
         lambdas[p_i] = (-density_constraint) / (sum_gradient_sqr +
                                                 lambda_epsilon)
+    # compute position deltas
     # Eq(12), (14)
     for p_i in positions:
         pos_i = positions[p_i]
@@ -224,15 +231,18 @@ def substep():
 
         pos_delta_i /= rho0
         position_deltas[p_i] = pos_delta_i
+    # apply position deltas
     for i in positions:
         positions[i] += position_deltas[i]
 
 
 @ti.kernel
 def epilogue():
+    # confine to boundary
     for i in positions:
         pos = positions[i]
         positions[i] = confine_position_to_boundary(pos)
+    # update velocities
     for i in positions:
         velocities[i] = (positions[i] - old_positions[i]) / time_delta
     # no vorticity/xsph because we cannot do cross product in 2D...

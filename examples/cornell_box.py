@@ -6,7 +6,7 @@ from renderer_utils import ray_aabb_intersection, intersect_sphere, ray_plane_in
 
 ti.init(arch=ti.gpu)
 res = (800, 800)
-color_buffer = ti.Vector(3, dt=ti.f32, shape=res)
+color_buffer = ti.Vector.field(3, dtype=ti.f32, shape=res)
 count_var = ti.field(ti.i32, shape=(1, ))
 
 max_ray_depth = 10

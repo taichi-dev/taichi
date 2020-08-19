@@ -21,8 +21,8 @@ LEAF = -1
 TREE = -2
 
 particle_mass = ti.field(ti.f32)
-particle_pos = ti.Vector(kDim, ti.f32)
-particle_vel = ti.Vector(kDim, ti.f32)
+particle_pos = ti.Vector.field(kDim, ti.f32)
+particle_vel = ti.Vector.field(kDim, ti.f32)
 particle_table = ti.root.dense(ti.i, kMaxParticles)
 particle_table.place(particle_pos).place(particle_vel).place(particle_mass)
 particle_table_len = ti.field(ti.i32, ())
@@ -30,7 +30,7 @@ particle_table_len = ti.field(ti.i32, ())
 if kUseTree:
     trash_particle_id = ti.field(ti.i32)
     trash_base_parent = ti.field(ti.i32)
-    trash_base_geo_center = ti.Vector(kDim, ti.f32)
+    trash_base_geo_center = ti.Vector.field(kDim, ti.f32)
     trash_base_geo_size = ti.field(ti.f32)
     trash_table = ti.root.dense(ti.i, kMaxDepth)
     trash_table.place(trash_particle_id)
@@ -39,7 +39,7 @@ if kUseTree:
     trash_table_len = ti.field(ti.i32, ())
 
     node_mass = ti.field(ti.f32)
-    node_weighted_pos = ti.Vector(kDim, ti.f32)
+    node_weighted_pos = ti.Vector.field(kDim, ti.f32)
     node_particle_id = ti.field(ti.i32)
     node_children = ti.field(ti.i32)
     node_table = ti.root.dense(ti.i, kMaxNodes)
@@ -48,7 +48,7 @@ if kUseTree:
     node_table_len = ti.field(ti.i32, ())
 
 if 'mouse' in kDisplay:
-    display_image = ti.Vector(3, ti.f32, (kResolution, kResolution))
+    display_image = ti.Vector.field(3, ti.f32, (kResolution, kResolution))
 elif len(kDisplay):
     display_image = ti.field(ti.f32, (kResolution, kResolution))
 

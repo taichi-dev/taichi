@@ -823,9 +823,9 @@ void auto_diff(IRNode *root, bool use_stack) {
       PromoteSSA2LocalVar::run(ib);
       ReplaceLocalVarWithStacks replace;
       ib->accept(&replace);
-      typecheck(root);
+      type_check(root);
       MakeAdjoint::run(ib);
-      typecheck(root);
+      type_check(root);
       fix_block_parents(root);
       BackupSSA::run(ib);
       fix_block_parents(root);
@@ -835,13 +835,13 @@ void auto_diff(IRNode *root, bool use_stack) {
     auto IB = IdentifyIndependentBlocks::run(root);
     ReverseOuterLoops::run(root, IB);
     fix_block_parents(root);
-    typecheck(root);
+    type_check(root);
     for (auto ib : IB) {
       MakeAdjoint::run(ib);
     }
   }
   fix_block_parents(root);
-  typecheck(root);
+  type_check(root);
   irpass::analysis::verify(root);
 }
 

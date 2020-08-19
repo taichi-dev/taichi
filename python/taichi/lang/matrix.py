@@ -736,7 +736,7 @@ class Matrix(TaichiOperations):
         yield ']'
 
     def __repr__(self):
-        """Python scope object print support."""
+        """Python scope matrix print support."""
         if impl.inside_kernel():
             '''
             It seems that when pybind11 got an type mismatch, it will try

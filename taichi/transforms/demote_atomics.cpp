@@ -106,7 +106,7 @@ namespace irpass {
 bool demote_atomics(IRNode *root) {
   TI_AUTO_PROF;
   bool modified = DemoteAtomics::run(root);
-  typecheck(root);
+  type_check(root);
   return modified;
 }
 

@@ -30,8 +30,8 @@ void full_simplify(IRNode *root,
                    bool after_lower_access,
                    Kernel *kernel = nullptr);
 void print(IRNode *root, std::string *output = nullptr);
-void lower(IRNode *root);
-void typecheck(IRNode *root);
+void lower_ast(IRNode *root);
+void type_check(IRNode *root);
 void loop_vectorize(IRNode *root);
 void slp_vectorize(IRNode *root);
 void vector_split(IRNode *root, int max_width, bool serial_schedule);

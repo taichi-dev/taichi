@@ -13,9 +13,19 @@ Grid-based MGPCG solver for the possion equation:
 Credits by `@KLozes <https://github.com/KLozes>`_.
 
 See `examples/stable_fluid.py <https://github.com/taichi-dev/taichi/blob/master/examples/stable_fluid.py>`_ for usage example.
+
+.. note::
+
+    This solver only runs on CPU and CUDA backend since it requires the ``pointer`` SNode. Consider replace ``pointer`` by ``bitmasked`` on Metal, by ``dense`` on OpenGL.
     '''
 
     def __init__(self, dim=2, N=512, n_mg_levels=6):
+        '''
+        :parameter dim: Dimension of the fields.
+        :parameter N: Resolution of the fields.
+        :parameter n_mg_levels: Multigrid levels.
+        '''
+
         # grid parameters
         self.use_multigrid = True
 
@@ -177,7 +187,7 @@ See `examples/stable_fluid.py <https://github.com/taichi-dev/taichi/blob/master/
         :parameter tol: Specify the absolute tolerance of loss.
         :parameter rel: Specify the tolerance of loss relative to initial loss.
 
-        :return: (generator) A sequence generator of the loss of each step.
+        :return: (generator) A sequence generator for the loss of each step.
         '''
 
         self.reduce(self.r[0], self.r[0])

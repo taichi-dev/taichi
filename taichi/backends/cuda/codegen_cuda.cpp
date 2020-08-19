@@ -83,7 +83,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       for (auto task : offloaded_local) {
         TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
                  task.block_dim);
-        // TODO: Is it safe to use the Context owned
+        // TODO: It seems safe to get the Context pointer from |ctx_builder|?
         cuda_module->launch(task.name, task.grid_dim, task.block_dim,
                             task.shmem_bytes, {&kernel->program.context});
       }

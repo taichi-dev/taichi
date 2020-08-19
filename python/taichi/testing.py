@@ -85,9 +85,9 @@ def test(*args, **kwargs):
     '''
 .. function:: ti.test(arch=[], exclude=[], require=[], **options)
 
-    :parameter arch: backends to be included in test
-    :parameter exclude: backends to be excluded in test
-    :parameter require: extensions required for this test
+    :parameter arch: backends to include
+    :parameter exclude: backends to exclude
+    :parameter require: extensions required
     :parameter options: other options to be passed into ``ti.init``
     '''
 

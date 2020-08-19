@@ -60,7 +60,7 @@ def imscale(img, w=512, h=None):
     u, v = (img.shape[0] - 1) / (w - 1), (img.shape[1] - 1) / (h - 1)
     x = np.clip(np.arange(w) * u, 0, img.shape[0] - 1).astype(np.int32)
     y = np.clip(np.arange(h) * v, 0, img.shape[1] - 1).astype(np.int32)
-    return img[np.meshgrid(x, y)].swapaxes(0, 1)
+    return img[tuple(np.meshgrid(x, y))].swapaxes(0, 1)
 
 
 def imwrite(img, filename):

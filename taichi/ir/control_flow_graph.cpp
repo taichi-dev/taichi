@@ -167,7 +167,7 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
         block->statements[last_def_position].get());
     if (!var->is<AllocaStmt>()) {
       for (int i = last_def_position + 1; i < position; i++) {
-        if (!irpass::analysis::same_statements(
+        if (!irpass::analysis::same_value(
                 result,
                 irpass::analysis::get_store_data(block->statements[i].get()))) {
           if (may_contain_address(block->statements[i].get(), var)) {
@@ -199,7 +199,7 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
       result_visible = visible(data);
       return true;  // continue the following loops
     }
-    if (!irpass::analysis::same_statements(result, data)) {
+    if (!irpass::analysis::same_value(result, data)) {
       // check the special case of alloca (initialized to 0)
       if (!(result->is<AllocaStmt>() && data->is<ConstStmt>() &&
             data->width() == 1 &&
@@ -300,7 +300,7 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access) {
           }
         } else {
           // not alloca
-          if (irpass::analysis::same_statements(result, local_store->data)) {
+          if (irpass::analysis::same_value(result, local_store->data)) {
             erase(i);  // This causes end_location--
             i--;       // to cancel i++ in the for loop
             modified = true;
@@ -310,7 +310,7 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access) {
     } else if (auto global_store = stmt->cast<GlobalStoreStmt>()) {
       if (!after_lower_access) {
         result = get_store_forwarding_data(global_store->ptr, i);
-        if (irpass::analysis::same_statements(result, global_store->data)) {
+        if (irpass::analysis::same_value(result, global_store->data)) {
           erase(i);  // This causes end_location--
           i--;       // to cancel i++ in the for loop
           modified = true;

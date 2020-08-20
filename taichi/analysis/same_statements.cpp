@@ -205,6 +205,17 @@ bool same_statements(IRNode *root1, IRNode *root2) {
     return false;
   return IRNodeComparator::run(root1, root2);
 }
+bool same_value(Stmt *stmt1, Stmt *stmt2) {
+  // Test if two statements must have the same value.
+  if (stmt1 == stmt2)
+    return true;
+  if (!stmt1 || !stmt2)
+    return false;
+  // If two same statements can have different values, return false.
+  if (!stmt1->common_statement_eliminable())
+    return false;
+  return same_statements(stmt1, stmt2);
+}
 }  // namespace irpass::analysis
 
 TLANG_NAMESPACE_END

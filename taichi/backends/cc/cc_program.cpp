@@ -181,7 +181,8 @@ CCContext *CCProgram::update_context(Context *ctx) {
 
 void CCProgram::context_to_result_buffer() {
   TI_ASSERT(program->result_buffer);
-  std::memcpy(program->result_buffer, context->args, sizeof(uint64));  // XXX: assumed 1 return
+  std::memcpy(program->result_buffer, context->args,
+              sizeof(uint64));  // XXX: assumed 1 return
   context->earg = nullptr;
 }
 

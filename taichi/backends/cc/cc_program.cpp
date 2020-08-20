@@ -173,7 +173,8 @@ CCProgram::CCProgram(Program *program) : program(program) {
 }
 
 CCContext *CCProgram::update_context(Context *ctx) {
-  std::memcpy(context->args, ctx->args, sizeof(ctx->args));  // make @k-ye happy
+  // FIXME(yuanming-hu): snode_writer needs 9 arguments actually..
+  std::memcpy(context->args, ctx->args, (taichi_max_num_args + 1) * sizeof(uint64));
   context->earg = (int *)ctx->extra_args;
   return context.get();
 }

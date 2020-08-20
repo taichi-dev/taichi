@@ -179,18 +179,29 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
     return result;
   }
   Stmt *result = nullptr;
+  bool result_visible = false;
   auto visible = [&](Stmt *stmt) {
-    // Do we need to check if `stmt` is before `position` here?
+    // Check if `stmt` is before `position` here.
+    if (stmt->parent == block) {
+      return stmt->parent->locate(stmt) < position;
+    }
+    // TODO: What if `stmt` appears in an ancestor of `block` but after
+    //  `position`?
     return parent_blocks.find(stmt->parent) != parent_blocks.end();
   };
   auto update_result = [&](Stmt *stmt) {
+    std::cout << "update result " << stmt->id << " for " << var->id
+              << std::endl;
     auto data = irpass::analysis::get_store_data(stmt);
     if (!data) {     // not forwardable
       return false;  // return nullptr
     }
     if (!result) {
       result = data;
-    } else if (!irpass::analysis::same_statements(result, data)) {
+      result_visible = visible(data);
+      return true;  // continue the following loops
+    }
+    if (!irpass::analysis::same_statements(result, data)) {
       // check the special case of alloca (initialized to 0)
       if (!(result->is<AllocaStmt>() && data->is<ConstStmt>() &&
             data->width() == 1 &&
@@ -198,8 +209,11 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
         return false;  // return nullptr
       }
     }
-    if (visible(data))
+    if (!result_visible && visible(data)) {
+      // pick the visible one for store-to-load forwarding
       result = data;
+      result_visible = true;
+    }
     return true;  // continue the following loops
   };
   for (auto stmt : reach_in) {
@@ -223,7 +237,7 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
             block->statements[position]->id);
     return nullptr;
   }
-  if (!visible(result)) {
+  if (!result_visible) {
     return nullptr;
   }
   return result;
@@ -263,6 +277,51 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access) {
         erase(i);  // This causes end_location--
         i--;       // to cancel i++ in the for loop
         modified = true;
+      }
+      continue;
+    }
+    // Identical store elimination
+    if (auto local_store = stmt->cast<LocalStoreStmt>()) {
+      result = get_store_forwarding_data(local_store->ptr, i);
+      if (result) {
+        if (result->is<AllocaStmt>()) {
+          // special case of alloca (initialized to 0)
+          if (auto stored_data = local_store->data->cast<ConstStmt>()) {
+            bool all_zero = true;
+            for (auto &val : stored_data->val.data) {
+              if (!val.equal_value(0)) {
+                all_zero = false;
+                break;
+              }
+            }
+            if (all_zero) {
+              std::cout << "erase " << stmt->id << "by " << result->id
+                        << std::endl;
+              erase(i);  // This causes end_location--
+              i--;       // to cancel i++ in the for loop
+              modified = true;
+            }
+          }
+        } else {
+          // not alloca
+          if (irpass::analysis::same_statements(result, local_store->data)) {
+            std::cout << "erase " << stmt->id << "by " << result->id
+                      << std::endl;
+            erase(i);  // This causes end_location--
+            i--;       // to cancel i++ in the for loop
+            modified = true;
+          }
+        }
+      }
+    } else if (auto global_store = stmt->cast<GlobalStoreStmt>()) {
+      if (!after_lower_access) {
+        result = get_store_forwarding_data(global_store->ptr, i);
+        if (irpass::analysis::same_statements(result, global_store->data)) {
+          std::cout << "erase " << stmt->id << "by " << result->id << std::endl;
+          erase(i);  // This causes end_location--
+          i--;       // to cancel i++ in the for loop
+          modified = true;
+        }
       }
     }
   }
@@ -342,6 +401,7 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
               replace_with(i, std::move(local_load), true);
               // Notice that we have a load here.
               live_in_this_node.insert(atomic->dest);
+              killed_in_this_node.erase(atomic->dest);
               modified = true;
               continue;
             } else if (!is_parallel_executed) {
@@ -354,6 +414,11 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
               replace_with(i, std::move(global_load), true);
               // Notice that we have a load here.
               live_in_this_node.insert(atomic->dest);
+              // Note: It's possible that a global pointer is not erased from
+              // killed_in_this_node although it should be. This may harm the
+              // performance of identical load elimination but it's faster than
+              // checking the contents one by one.
+              killed_in_this_node.erase(atomic->dest);
               modified = true;
               continue;
             }
@@ -375,11 +440,57 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
       }
     }
     auto load_ptrs = irpass::analysis::get_load_pointers(stmt);
+    if (load_ptrs.size() == 1 && store_ptrs.empty() && stmt->width() == 1) {
+      // Identical load elimination
+      auto load_ptr = load_ptrs.front();
+      if (!after_lower_access ||
+          (load_ptr->is<AllocaStmt>() || load_ptr->is<StackAllocaStmt>())) {
+        // After lower_access, we only analyze local variables and stacks.
+        if (!may_contain_variable(killed_in_this_node, load_ptr) &&
+            contain_variable(live_in_this_node, load_ptr)) {
+          // Only perform identical load elimination within a CFGNode.
+          for (int j = i + 1; j < end_location; j++) {
+            auto next_load_ptrs =
+                irpass::analysis::get_load_pointers(block->statements[j].get());
+            bool found = false;
+            for (auto &next_load_ptr : next_load_ptrs) {
+              if (irpass::analysis::maybe_same_address(load_ptr,
+                                                       next_load_ptr)) {
+                found = true;
+                break;
+              }
+            }
+            if (found) {
+              if (irpass::analysis::same_statements(
+                      stmt, block->statements[j].get())) {
+                std::cout << "erase " << block->statements[j]->id << "by "
+                          << stmt->id << std::endl;
+                block->statements[j]->replace_with(stmt);
+                erase(j);
+                modified = true;
+                break;
+              } else {
+                TI_ERROR("Identical load elimination failed.");
+              }
+            }
+          }
+        }
+      }
+    }
     for (auto &load_ptr : load_ptrs) {
       if (!after_lower_access ||
           (load_ptr->is<AllocaStmt>() || load_ptr->is<StackAllocaStmt>())) {
         // After lower_access, we only analyze local variables and stacks.
         live_in_this_node.insert(load_ptr);
+        if (store_ptrs.empty()) {
+          // Only allow identical load elimination (i.e. allow this statement
+          // to be eliminated) if this statement doesn't store any data.
+          // Note: It's possible that a global pointer is not erased from
+          // killed_in_this_node although it should be. This may harm the
+          // performance of identical load elimination but it's faster than
+          // checking the contents one by one.
+          killed_in_this_node.erase(load_ptr);
+        }
       }
     }
   }
@@ -484,12 +595,14 @@ void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
   if (!after_lower_access) {
     for (int i = 0; i < num_nodes; i++) {
       for (int j = nodes[i]->begin_location; j < nodes[i]->end_location; j++) {
-        if (auto global_load =
-                nodes[i]->block->statements[j]->cast<GlobalLoadStmt>()) {
-          nodes[start_node]->reach_gen.insert(global_load->ptr);
+        auto stmt = nodes[i]->block->statements[j].get();
+        for (auto store_ptr : irpass::analysis::get_store_destination(stmt)) {
+          if (!store_ptr->is<AllocaStmt>() &&
+              !store_ptr->is<StackAllocaStmt>()) {
+            // A global pointer that may contain some data before this kernel.
+            nodes[start_node]->reach_gen.insert(store_ptr);
+          }
         }
-        // Since we only do store-to-load forwarding, we don't need to mark
-        // other global pointers' data source at the start node.
       }
     }
   }
@@ -664,6 +777,7 @@ bool ControlFlowGraph::unreachable_code_elimination() {
 bool ControlFlowGraph::store_to_load_forwarding(bool after_lower_access) {
   TI_AUTO_PROF;
   reaching_definition_analysis(after_lower_access);
+  print_graph_structure();
   const int num_nodes = size();
   bool modified = false;
   for (int i = 0; i < num_nodes; i++) {

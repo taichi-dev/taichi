@@ -32,7 +32,6 @@ grid_m = ti.field(float, (n_grid, ) * dim)
 neighbour = (3, ) * dim
 
 
-
 @ti.kernel
 def substep():
     for I in ti.grouped(grid_m):

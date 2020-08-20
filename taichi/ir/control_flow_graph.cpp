@@ -596,12 +596,12 @@ void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
     for (int i = 0; i < num_nodes; i++) {
       for (int j = nodes[i]->begin_location; j < nodes[i]->end_location; j++) {
         auto stmt = nodes[i]->block->statements[j].get();
-        for (auto store_ptr : irpass::analysis::get_store_destination(stmt)) {
-          if (!store_ptr->is<AllocaStmt>() &&
-              !store_ptr->is<StackAllocaStmt>()) {
-            // A global pointer that may contain some data before this kernel.
-            nodes[start_node]->reach_gen.insert(store_ptr);
-          }
+        if (stmt->is<GlobalPtrStmt>() || stmt->is<ExternalPtrStmt>() ||
+            stmt->is<BlockLocalPtrStmt>() || stmt->is<ThreadLocalPtrStmt>() ||
+            stmt->is<GlobalTemporaryStmt>()) {
+          // TODO: unify them
+          // A global pointer that may contain some data before this kernel.
+          nodes[start_node]->reach_gen.insert(stmt);
         }
       }
     }

@@ -526,9 +526,9 @@ Image I/O
 .. function:: ti.imscale(img, w=512, h=None):
 
     :parameter img: (np.array or ti.field) the input image.
-    :parameter w: (optional, scalar) the width after scale.
-    :parameter h: (optional, scalar) the height after scale.
-    :return: (np.array) the output image after scale.
+    :parameter w: (optional, int) the width after scaling.
+    :parameter h: (optional, int) the height after scaling.
+    :return: (np.array) the output image after scaling.
 
     If ``h`` is not specified, then it will be equal to ``w`` by default.
 

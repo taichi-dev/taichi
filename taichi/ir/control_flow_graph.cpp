@@ -190,8 +190,6 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
     return parent_blocks.find(stmt->parent) != parent_blocks.end();
   };
   auto update_result = [&](Stmt *stmt) {
-    std::cout << "update result " << stmt->id << " for " << var->id
-              << std::endl;
     auto data = irpass::analysis::get_store_data(stmt);
     if (!data) {     // not forwardable
       return false;  // return nullptr
@@ -295,8 +293,6 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access) {
               }
             }
             if (all_zero) {
-              std::cout << "erase " << stmt->id << "by " << result->id
-                        << std::endl;
               erase(i);  // This causes end_location--
               i--;       // to cancel i++ in the for loop
               modified = true;
@@ -305,8 +301,6 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access) {
         } else {
           // not alloca
           if (irpass::analysis::same_statements(result, local_store->data)) {
-            std::cout << "erase " << stmt->id << "by " << result->id
-                      << std::endl;
             erase(i);  // This causes end_location--
             i--;       // to cancel i++ in the for loop
             modified = true;
@@ -317,7 +311,6 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access) {
       if (!after_lower_access) {
         result = get_store_forwarding_data(global_store->ptr, i);
         if (irpass::analysis::same_statements(result, global_store->data)) {
-          std::cout << "erase " << stmt->id << "by " << result->id << std::endl;
           erase(i);  // This causes end_location--
           i--;       // to cancel i++ in the for loop
           modified = true;
@@ -463,14 +456,12 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
             if (found) {
               if (irpass::analysis::same_statements(
                       stmt, block->statements[j].get())) {
-                std::cout << "erase " << block->statements[j]->id << "by "
-                          << stmt->id << std::endl;
                 block->statements[j]->replace_with(stmt);
                 erase(j);
                 modified = true;
                 break;
               } else {
-                TI_ERROR("Identical load elimination failed.");
+                TI_WARN("Identical load elimination failed.");
               }
             }
           }
@@ -777,7 +768,6 @@ bool ControlFlowGraph::unreachable_code_elimination() {
 bool ControlFlowGraph::store_to_load_forwarding(bool after_lower_access) {
   TI_AUTO_PROF;
   reaching_definition_analysis(after_lower_access);
-  print_graph_structure();
   const int num_nodes = size();
   bool modified = false;
   for (int i = 0; i < num_nodes; i++) {

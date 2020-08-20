@@ -6,7 +6,7 @@ def test_classfunc():
     @ti.data_oriented
     class Foo:
         def __init__(self):
-            self.val = ti.Matrix(n=3, m=3, dt=ti.f32, shape=3)
+            self.val = ti.Matrix.field(n=3, m=3, dtype=ti.f32, shape=3)
 
         @ti.func
         def add_mat(self, a, b):

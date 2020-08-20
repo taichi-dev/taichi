@@ -27,7 +27,7 @@ TI_TEST("alg_simp") {
     auto global_store =
         block->push_back<GlobalStoreStmt>(global_store_addr, add);
 
-    irpass::typecheck(block.get());
+    irpass::type_check(block.get());
     TI_CHECK(block->size() == 6);
 
     // irpass::print(block.get());
@@ -66,7 +66,7 @@ TI_TEST("alg_simp") {
     auto global_store =
         block->push_back<GlobalStoreStmt>(global_store_addr, sub);
 
-    irpass::typecheck(block.get());
+    irpass::type_check(block.get());
     TI_CHECK(block->size() == 10);
 
     // irpass::print(block.get());
@@ -102,7 +102,7 @@ TI_TEST("alg_simp") {
     auto global_store =
         block->push_back<GlobalStoreStmt>(global_store_addr, add);
 
-    irpass::typecheck(block.get());
+    irpass::type_check(block.get());
     TI_CHECK(block->size() == 8);
 
     CompileConfig config_without_fast_math;
@@ -128,7 +128,7 @@ TI_TEST("alg_simp") {
         block->push_back<GlobalTemporaryStmt>(12, VectorType(1, DataType::f32));
     global_store = block->push_back<GlobalStoreStmt>(global_store_addr, add);
 
-    irpass::typecheck(block.get());  // insert 2 casts
+    irpass::type_check(block.get());  // insert 2 casts
     TI_CHECK(block->size() == 10);
 
     irpass::constant_fold(block.get());  // should change 2 casts into const
@@ -166,7 +166,7 @@ TI_TEST("alg_simp") {
     auto kernel =
         std::make_unique<Kernel>(get_current_program(), func, "fake_kernel");
     block->kernel = kernel.get();
-    irpass::typecheck(block.get());
+    irpass::type_check(block.get());
     TI_CHECK(block->size() == 6);
 
     irpass::alg_simp(block.get());  // should eliminate and

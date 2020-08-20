@@ -17,11 +17,11 @@ def run_mpm88_test():
     p_mass = p_vol * p_rho
     E = 400
 
-    x = ti.Vector(dim, dt=ti.f32, shape=n_particles)
-    v = ti.Vector(dim, dt=ti.f32, shape=n_particles)
-    C = ti.Matrix(dim, dim, dt=ti.f32, shape=n_particles)
+    x = ti.Vector.field(dim, dtype=ti.f32, shape=n_particles)
+    v = ti.Vector.field(dim, dtype=ti.f32, shape=n_particles)
+    C = ti.Matrix.field(dim, dim, dtype=ti.f32, shape=n_particles)
     J = ti.field(dtype=ti.f32, shape=n_particles)
-    grid_v = ti.Vector(dim, dt=ti.f32, shape=(n_grid, n_grid))
+    grid_v = ti.Vector.field(dim, dtype=ti.f32, shape=(n_grid, n_grid))
     grid_m = ti.field(dtype=ti.f32, shape=(n_grid, n_grid))
 
     @ti.kernel

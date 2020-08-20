@@ -67,7 +67,7 @@ def test_unordered():
 
 @ti.all_archs
 def test_unordered_matrix():
-    val = ti.Matrix(3, 2, ti.i32)
+    val = ti.Matrix.field(3, 2, ti.i32)
 
     n = 3
     m = 7
@@ -92,7 +92,7 @@ def test_unordered_matrix():
 @ti.host_arch_only
 def test_deprecated():
     val = ti.field(ti.f32)
-    mat = ti.Matrix(3, 2, ti.i32)
+    mat = ti.Matrix.field(3, 2, ti.i32)
 
     n = 3
     m = 7

@@ -76,7 +76,7 @@ class PLYWriter:
         self.add_vertex_channel("z", "float", z)
 
     # TODO active and refactor later if user feedback indicates the necessity for a compact the input list
-    # pass ti vector/matrix tensor directly
+    # pass ti vector/matrix field directly
     # def add_vertex_pos(self, pos):
     #     assert isinstance(pos, (np.ndarray, ti.Matrix))
     #     if not isinstance(pos, np.ndarray):
@@ -99,7 +99,7 @@ class PLYWriter:
         self.add_vertex_channel("nz", "float", nz)
 
     # TODO active and refactor later if user feedback indicates the necessity for a compact the input list
-    # pass ti vector/matrix tensor directly
+    # pass ti vector/matrix field directly
     # def add_vertex_normal(self, normal):
     #     assert isinstance(normal, (np.ndarray, ti.Matrix))
     #     if not isinstance(normal, np.ndarray):
@@ -129,7 +129,7 @@ class PLYWriter:
         self.add_vertex_channel("Alpha", "float", a)
 
     # TODO active and refactor later if user feedback indicates the necessity for a compact the input list
-    # pass ti vector/matrix tensor directly
+    # pass ti vector/matrix field directly
     # def add_vertex_color(self, color):
     #     assert isinstance(color, (np.ndarray, ti.Matrix))
     #     if not isinstance(color, np.ndarray):

@@ -61,7 +61,6 @@ class Offloader {
         } else {
           offloaded->block_dim = s->block_dim;
         }
-        offloaded->thread_dim = s->thread_dim;
         offloaded->body = std::make_unique<Block>();
         if (auto val = s->begin->cast<ConstStmt>()) {
           offloaded->const_begin = true;
@@ -159,7 +158,6 @@ class Offloader {
         offloaded_struct_for->block_dim = for_stmt->block_dim;
       }
     }
-    offloaded_struct_for->thread_dim = for_stmt->thread_dim;
 
     replace_all_usages_with(for_stmt, for_stmt, offloaded_struct_for.get());
 
@@ -653,7 +651,7 @@ class AssociateContinueScope : public BasicStmtVisitor {
 void offload(IRNode *root) {
   TI_AUTO_PROF;
   auto offloaded_ranges = Offloader::run(root);
-  typecheck(root);
+  type_check(root);
   fix_block_parents(root);
   {
     auto stmt_to_offloaded = StmtToOffloaded::run(root);
@@ -669,7 +667,7 @@ void offload(IRNode *root) {
   // TODO(k-ye): Move this into its own pass. However, we need to wait for all
   // backends to integrate with https://github.com/taichi-dev/taichi/pull/700
   AssociateContinueScope::run(root);
-  typecheck(root);
+  type_check(root);
   re_id(root);
   fix_block_parents(root);
 }

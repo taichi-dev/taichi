@@ -70,7 +70,7 @@ def test_random_independent_product():
 def test_random_2d_dist():
     n = 8192
 
-    x = ti.Vector(2, dt=ti.f32, shape=n)
+    x = ti.Vector.field(2, dtype=ti.f32, shape=n)
 
     @ti.kernel
     def gen():

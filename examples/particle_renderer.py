@@ -9,18 +9,18 @@ ti.init(arch=ti.cuda, device_memory_GB=4)
 
 res = 1280, 720
 num_spheres = 1024
-color_buffer = ti.Vector(3, dt=ti.f32)
-bbox = ti.Vector(3, dt=ti.f32, shape=2)
-grid_density = ti.var(dt=ti.i32)
-voxel_has_particle = ti.var(dt=ti.i32)
+color_buffer = ti.Vector.field(3, dtype=ti.f32)
+bbox = ti.Vector.field(3, dtype=ti.f32, shape=2)
+grid_density = ti.field(dtype=ti.i32)
+voxel_has_particle = ti.field(dtype=ti.i32)
 max_ray_depth = 4
 use_directional_light = True
 
-particle_x = ti.Vector(3, dt=ti.f32)
-particle_v = ti.Vector(3, dt=ti.f32)
-particle_color = ti.Vector(3, dt=ti.f32)
-pid = ti.var(ti.i32)
-num_particles = ti.var(ti.i32, shape=())
+particle_x = ti.Vector.field(3, dtype=ti.f32)
+particle_v = ti.Vector.field(3, dtype=ti.f32)
+particle_color = ti.Vector.field(3, dtype=ti.f32)
+pid = ti.field(ti.i32)
+num_particles = ti.field(ti.i32, shape=())
 
 fov = 0.23
 dist_limit = 100

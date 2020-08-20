@@ -20,18 +20,18 @@ cmap_name = 'magma_r'  # python colormap
 use_fixed_caxis = 0  # 1: use fixed caxis limits, 0: automatic caxis limits
 fixed_caxis = [0.0, 5.0]  # fixed caxis limits
 
-Q = ti.Vector(4, dt=real,
-              shape=(N, N))  # [rho, rho*u, rho*v, rho*e] consv vars
-Q_old = ti.Vector(4, dt=real, shape=(N, N))
-W = ti.Vector(4, dt=real, shape=(N, N))  # [rho, u, v, p] cell avg
-W_xl = ti.Vector(4, dt=real, shape=(N, N, 3))  # left side of x-face
-W_xr = ti.Vector(4, dt=real, shape=(N, N, 3))  # right side of x-face
-W_yl = ti.Vector(4, dt=real, shape=(N, N, 3))  # left side of y-face
-W_yr = ti.Vector(4, dt=real, shape=(N, N, 3))  # right side of y-face
-F_x = ti.Vector(4, dt=real, shape=(N, N))  # x-face flux
-F_y = ti.Vector(4, dt=real, shape=(N, N))  # y-face flux
-dt = ti.var(dt=real, shape=())
-img = ti.var(dt=ti.f32, shape=(res, res))
+Q = ti.Vector.field(4, dtype=real,
+                    shape=(N, N))  # [rho, rho*u, rho*v, rho*e] consv vars
+Q_old = ti.Vector.field(4, dtype=real, shape=(N, N))
+W = ti.Vector.field(4, dtype=real, shape=(N, N))  # [rho, u, v, p] cell avg
+W_xl = ti.Vector.field(4, dtype=real, shape=(N, N, 3))  # left side of x-face
+W_xr = ti.Vector.field(4, dtype=real, shape=(N, N, 3))  # right side of x-face
+W_yl = ti.Vector.field(4, dtype=real, shape=(N, N, 3))  # left side of y-face
+W_yr = ti.Vector.field(4, dtype=real, shape=(N, N, 3))  # right side of y-face
+F_x = ti.Vector.field(4, dtype=real, shape=(N, N))  # x-face flux
+F_y = ti.Vector.field(4, dtype=real, shape=(N, N))  # y-face flux
+dt = ti.field(dtype=real, shape=())
+img = ti.field(dtype=ti.f32, shape=(res, res))
 
 beta_smooth = 1.2
 beta_sharp = 2.0

@@ -3,7 +3,7 @@ import taichi as ti
 
 @ti.all_archs
 def _test_dimensionality(d):
-    x = ti.Vector(2, dt=ti.i32, shape=(2, ) * d)
+    x = ti.Vector.field(2, dtype=ti.i32, shape=(2, ) * d)
 
     @ti.kernel
     def fill():

@@ -27,6 +27,7 @@ class KernelManager {
     CompiledStructs compiled_structs;
     CompileConfig *config;
     MemoryPool *mem_pool;
+    uint64_t *host_result_buffer;
     KernelProfilerBase *profiler;
     int root_id;
   };

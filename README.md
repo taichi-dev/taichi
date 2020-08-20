@@ -14,16 +14,27 @@
 
 **Taichi** (太极) is a programming language designed for *high-performance computer graphics*. It is deeply embedded in **Python**, and its **just-in-time compiler** offloads compute-intensive tasks to multi-core CPUs and massively parallel GPUs.
 
-<a href="https://github.com/taichi-dev/taichi/blob/master/examples/fractal.py#L1-L31"> <img src="https://github.com/yuanming-hu/public_files/raw/master/graphics/taichi/fractal_code.png" height="270px"></a>  <img src="https://raw.githubusercontent.com/yuanming-hu/public_files/master/graphics/taichi/fractal_small.gif" height="270px">
+<a href="https://github.com/taichi-dev/taichi/blob/master/examples/fractal.py#L1-L31"> <img src="https://github.com/taichi-dev/public_files/raw/master/taichi/fractal_code.png" height="270px"></a>  <img src="https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/fractal_small.gif" height="270px">
 
 
 Advanced features of Taichi include [spatially sparse computing](https://taichi.readthedocs.io/en/latest/sparse.html) and [differentiable programming](https://taichi.readthedocs.io/en/latest/differentiable_programming.html) [[examples]](https://github.com/yuanming-hu/difftaichi).
 
 ## Gallery
 
-<a href="https://github.com/taichi-dev/taichi/blob/master/examples/mpm128.py"><img src="https://github.com/taichi-dev/public_files/blob/6bd234694270c83baf97ba32e0c6278b8cf37e6e/taichi/mpm128.gif" height="192px"></a> <a href="https://github.com/taichi-dev/taichi/blob/master/examples/stable_fluid.py"> <img src="https://github.com/taichi-dev/public_files/blob/6bd234694270c83baf97ba32e0c6278b8cf37e6e/taichi/stable_fluids.gif" height="192px"></a> <a href="https://github.com/taichi-dev/taichi/blob/master/examples/sdf_renderer.py"><img src="https://github.com/taichi-dev/public_files/blob/6bd234694270c83baf97ba32e0c6278b8cf37e6e/taichi/sdf_renderer.jpg" height="192px"></a> <a href="https://github.com/taichi-dev/taichi/blob/master/examples/taichi_sparse.py"><img src="https://github.com/taichi-dev/public_files/blob/6bd234694270c83baf97ba32e0c6278b8cf37e6e/taichi/sparse_grids.gif" height="192px"></a>
+<a href="https://github.com/taichi-dev/taichi/blob/master/examples/mpm128.py"><img src="https://github.com/taichi-dev/public_files/blob/6bd234694270c83baf97ba32e0c6278b8cf37e6e/taichi/mpm128.gif" height="192px"></a>
+<a href="https://github.com/taichi-dev/taichi/blob/master/examples/stable_fluid.py"> <img src="https://github.com/taichi-dev/public_files/blob/6bd234694270c83baf97ba32e0c6278b8cf37e6e/taichi/stable_fluids.gif" height="192px"></a>
+<a href="https://github.com/taichi-dev/taichi/blob/master/examples/sdf_renderer.py"><img src="https://github.com/taichi-dev/public_files/blob/6bd234694270c83baf97ba32e0c6278b8cf37e6e/taichi/sdf_renderer.jpg" height="192px"></a>
+<a href="https://github.com/taichi-dev/taichi/blob/master/examples/taichi_sparse.py"><img src="https://github.com/taichi-dev/public_files/blob/6bd234694270c83baf97ba32e0c6278b8cf37e6e/taichi/sparse_grids.gif" height="192px"></a>
 
-<a href="https://github.com/taichi-dev/taichi/blob/master/examples/mpm_lagrangian_forces.py"><img src="https://github.com/taichi-dev/public_files/blob/6bd234694270c83baf97ba32e0c6278b8cf37e6e/taichi/lagrangian.gif" height="192px"></a> <a href="https://github.com/taichi-dev/taichi/blob/master/examples/pbf2d.py"><img src="https://github.com/taichi-dev/public_files/blob/6bd234694270c83baf97ba32e0c6278b8cf37e6e/taichi/pbf.gif" height="192px"></a> <a href="https://github.com/taichi-dev/taichi/blob/master/examples/game_of_life.py"><img src="https://github.com/taichi-dev/public_files/blob/6bd234694270c83baf97ba32e0c6278b8cf37e6e/taichi/game_of_life.gif" height="192px"></a> <a href="https://github.com/taichi-dev/taichi/blob/master/examples/euler.py"><img src="https://github.com/taichi-dev/public_files/blob/6bd234694270c83baf97ba32e0c6278b8cf37e6e/taichi/euler.gif" height="192px"></a>
+<a href="https://github.com/taichi-dev/taichi/blob/master/examples/mpm_lagrangian_forces.py"><img src="https://github.com/taichi-dev/public_files/blob/6bd234694270c83baf97ba32e0c6278b8cf37e6e/taichi/lagrangian.gif" height="192px"></a>
+<a href="https://github.com/taichi-dev/taichi/blob/master/examples/pbf2d.py"><img src="https://github.com/taichi-dev/public_files/blob/6bd234694270c83baf97ba32e0c6278b8cf37e6e/taichi/pbf.gif" height="192px"></a>
+<a href="https://github.com/taichi-dev/taichi/blob/master/examples/game_of_life.py"><img src="https://github.com/taichi-dev/public_files/blob/6bd234694270c83baf97ba32e0c6278b8cf37e6e/taichi/game_of_life.gif" height="192px"></a>
+<a href="https://github.com/taichi-dev/taichi/blob/master/examples/euler.py"><img src="https://github.com/taichi-dev/public_files/blob/6bd234694270c83baf97ba32e0c6278b8cf37e6e/taichi/euler.gif" height="192px"></a>
+
+<a href="https://github.com/taichi-dev/taichi/blob/master/examples/fem128.py"><img src="https://user-images.githubusercontent.com/20640597/87796122-8704e900-c87b-11ea-92ba-ff318e44736d.gif" height="192px"></a>
+<a href="https://github.com/taichi-dev/taichi/blob/master/examples/mass_spring_3d.py"><img src="https://user-images.githubusercontent.com/20640597/86505395-93f2f880-bdf6-11ea-955b-b9120ba8f10c.gif" height="192px"></a>
+<a href="https://github.com/taichi-dev/taichi/blob/master/examples/mass_spring_3d.py"><img src="https://user-images.githubusercontent.com/20640597/86887569-55797880-c12b-11ea-8b73-22b659864032.gif" height="192px"></a>
+<a href="https://github.com/taichi-dev/taichi/blob/master/examples/mpm3d.py"><img src="yuanming-could-you-do-me-a-favor-by-uploading-these-images?" height="192px"></a>
 
 ## Installation [![Downloads](https://pepy.tech/badge/taichi/month)](https://pepy.tech/project/taichi/month)
 
@@ -36,7 +47,7 @@ python3 -m pip install taichi
 Please build from source for other configurations (e.g., your CPU is ARM, or you want to try out our experimental C backend).
 
 **Note:**
- - Starting April 13 2020 (v0.5.12), we release the Python package [`taichi`](https://pypi.org/project/taichi/) instead of [`taichi-nightly`](https://pypi.org/project/taichi-nightly/). Now this PyPI package includes CPU, CUDA 10/11, Metal and OpenGL support.
+ - Starting April 13 2020 (v0.5.12), we release the Python package [`taichi`](https://pypi.org/project/taichi/) instead of [`taichi-nightly`](https://pypi.org/project/taichi-nightly/). Now this PyPI package includes CPU, CUDA 10/11, Metal, and OpenGL support.
  - On Ubuntu 19.04+, please `sudo apt install libtinfo5`.
  - On Windows, please install [Microsoft Visual C++ Redistributable](https://aka.ms/vs/16/release/vc_redist.x64.exe) if you haven't.
  - [[All releases]](https://github.com/taichi-dev/taichi/releases)

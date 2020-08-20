@@ -6,6 +6,18 @@
 
 TLANG_NAMESPACE_BEGIN
 
+namespace {
+
+void set_kernel_args(const std::vector<int> &I,
+                     int num_active_indices,
+                     Kernel::LaunchContextBuilder *launch_ctx) {
+  for (int i = 0; i < num_active_indices; i++) {
+    launch_ctx->set_arg_int(i, I[i]);
+  }
+}
+
+}  // namespace
+
 std::atomic<int> SNode::counter = 0;
 
 SNode &SNode::insert_children(SNodeType t) {
@@ -126,13 +138,14 @@ void SNode::write_float(const std::vector<int> &I, float64 val) {
   if (writer_kernel == nullptr) {
     writer_kernel = &get_current_program().get_snode_writer(this);
   }
-  set_kernel_args(writer_kernel, I);
+  auto launch_ctx = writer_kernel->make_launch_context();
+  set_kernel_args(I, num_active_indices, &launch_ctx);
   for (int i = 0; i < num_active_indices; i++) {
-    writer_kernel->set_arg_int(i, I[i]);
+    launch_ctx.set_arg_int(i, I[i]);
   }
-  writer_kernel->set_arg_float(num_active_indices, val);
+  launch_ctx.set_arg_float(num_active_indices, val);
   get_current_program().synchronize();
-  (*writer_kernel)();
+  (*writer_kernel)(launch_ctx);
 }
 
 float64 SNode::read_float(const std::vector<int> &I) {
@@ -140,8 +153,9 @@ float64 SNode::read_float(const std::vector<int> &I) {
     reader_kernel = &get_current_program().get_snode_reader(this);
   }
   get_current_program().synchronize();
-  set_kernel_args(reader_kernel, I);
-  (*reader_kernel)();
+  auto launch_ctx = reader_kernel->make_launch_context();
+  set_kernel_args(I, num_active_indices, &launch_ctx);
+  (*reader_kernel)(launch_ctx);
   get_current_program().synchronize();
   auto ret = reader_kernel->get_ret_float(0);
   return ret;
@@ -152,10 +166,11 @@ void SNode::write_int(const std::vector<int> &I, int64 val) {
   if (writer_kernel == nullptr) {
     writer_kernel = &get_current_program().get_snode_writer(this);
   }
-  set_kernel_args(writer_kernel, I);
-  writer_kernel->set_arg_int(num_active_indices, val);
+  auto launch_ctx = writer_kernel->make_launch_context();
+  set_kernel_args(I, num_active_indices, &launch_ctx);
+  launch_ctx.set_arg_int(num_active_indices, val);
   get_current_program().synchronize();
-  (*writer_kernel)();
+  (*writer_kernel)(launch_ctx);
 }
 
 int64 SNode::read_int(const std::vector<int> &I) {
@@ -163,8 +178,9 @@ int64 SNode::read_int(const std::vector<int> &I) {
     reader_kernel = &get_current_program().get_snode_reader(this);
   }
   get_current_program().synchronize();
-  set_kernel_args(reader_kernel, I);
-  (*reader_kernel)();
+  auto launch_ctx = reader_kernel->make_launch_context();
+  set_kernel_args(I, num_active_indices, &launch_ctx);
+  (*reader_kernel)(launch_ctx);
   get_current_program().synchronize();
   auto ret = reader_kernel->get_ret_int(0);
   return ret;
@@ -177,12 +193,6 @@ uint64 SNode::read_uint(const std::vector<int> &I) {
 int SNode::shape_along_axis(int i) const {
   const auto &extractor = extractors[physical_index_position[i]];
   return extractor.num_elements * (1 << extractor.trailing_bits);
-}
-
-void SNode::set_kernel_args(Kernel *kernel, const std::vector<int> &I) {
-  for (int i = 0; i < num_active_indices; i++) {
-    kernel->set_arg_int(i, I[i]);
-  }
 }
 
 SNode::SNode() : SNode(0, SNodeType::undefined) {

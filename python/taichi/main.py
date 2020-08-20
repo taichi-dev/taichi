@@ -511,9 +511,11 @@ class TaichiMain:
             help="A commit hash that git can use to compare diff with")
         args = parser.parse_args(arguments)
 
+        from .code_format import main
+
         # Short circuit for testing
         if self.test_mode: return args
-        ti.core.format(diff=args.diff)
+        main(diff=args.diff)
 
     @register
     def format_all(self, arguments: list = sys.argv[2:]):
@@ -522,9 +524,11 @@ class TaichiMain:
             prog='ti format_all', description=f"{self.format_all.__doc__}")
         args = parser.parse_args(arguments)
 
+        from .code_format import main
+
         # Short circuit for testing
         if self.test_mode: return args
-        ti.core.format(all=True)
+        main(all=True)
 
     @register
     def build(self, arguments: list = sys.argv[2:]):

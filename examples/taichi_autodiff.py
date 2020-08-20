@@ -2,7 +2,7 @@ import taichi as ti
 import matplotlib.pyplot as plt
 
 N = 2048
-x, y = ti.var(ti.f32), ti.var(ti.f32)
+x, y = ti.field(ti.f32), ti.field(ti.f32)
 
 ti.root.dense(ti.i, N).place(x, x.grad, y, y.grad)
 

@@ -20,7 +20,7 @@ def test_ptr_scalar():
 
 @ti.all_archs
 def test_ptr_matrix():
-    a = ti.Matrix(2, 2, dt=ti.f32, shape=())
+    a = ti.Matrix.field(2, 2, dtype=ti.f32, shape=())
 
     @ti.kernel
     def func(t: ti.f32):
@@ -34,7 +34,7 @@ def test_ptr_matrix():
 
 
 @ti.all_archs
-def test_ptr_tensor():
+def test_ptr_field():
     a = ti.field(dtype=ti.f32, shape=(3, 4))
 
     @ti.kernel

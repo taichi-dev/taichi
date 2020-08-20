@@ -229,13 +229,15 @@ def no_activate(*args):
 
 
 def cache_shared(*args):
-    for v in args:
-        taichi_lang_core.cache(0, v.loop_range().ptr)
+    for a in args:
+        for v in a.get_field_members():
+            taichi_lang_core.cache(0, v.ptr)
 
 
 def cache_read_only(*args):
-    for v in args:
-        taichi_lang_core.cache(1, v.loop_range().ptr)
+    for a in args:
+        for v in a.get_field_members():
+            taichi_lang_core.cache(0, v.ptr)
 
 
 def assume_in_range(val, base, low, high):
@@ -248,7 +250,6 @@ parallelize = core.parallelize
 serialize = lambda: parallelize(1)
 vectorize = core.vectorize
 block_dim = core.block_dim
-thread_dim = core.thread_dim
 cache = core.cache
 
 inversed = deprecated('ti.inversed(a)', 'a.inverse()')(Matrix.inversed)
@@ -278,11 +279,11 @@ def Tape(loss, clear_gradients=True):
     get_runtime().materialize()
     if len(loss.shape) != 0:
         raise RuntimeError(
-            'The loss of `Tape` must be a 0-D tensor, i.e. scalar')
+            'The loss of `Tape` must be a 0-D field, i.e. scalar')
     if not loss.snode.ptr.has_grad():
         raise RuntimeError(
             'Gradients of loss are not allocated, please use ti.field(..., needs_grad=True)'
-            ' for all tensors that are required by autodiff.')
+            ' for all fields that are required by autodiff.')
     if clear_gradients:
         clear_all_gradients()
     loss[None] = 0

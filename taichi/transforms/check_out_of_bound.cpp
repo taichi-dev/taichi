@@ -45,7 +45,7 @@ class CheckOutOfBound : public BasicStmtVisitor {
     Stmt *result =
         new_stmts.push_back<ConstStmt>(LaneAttribute<TypedConstant>(true));
 
-    std::string msg = fmt::format("(kernel={}) Accessing tensor ({}) of size (",
+    std::string msg = fmt::format("(kernel={}) Accessing field ({}) of size (",
                                   stmt->get_kernel()->name,
                                   snode->get_node_type_name_hinted());
     std::string offset_msg = "offset (";

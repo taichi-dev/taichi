@@ -11,9 +11,9 @@ import math
 
 @ti.all_archs
 def test_matrix_self_assign():
-    a = ti.Vector(2, ti.f32, ())
-    b = ti.Matrix(2, 2, ti.f32, ())
-    c = ti.Vector(2, ti.f32, ())
+    a = ti.Vector.field(2, ti.f32, ())
+    b = ti.Matrix.field(2, 2, ti.f32, ())
+    c = ti.Vector.field(2, ti.f32, ())
 
     @ti.kernel
     def func():
@@ -34,7 +34,7 @@ def test_matrix_self_assign():
 
 @ti.all_archs
 def test_random_vector_dup_eval():
-    a = ti.Vector(2, ti.f32, ())
+    a = ti.Vector.field(2, ti.f32, ())
 
     @ti.kernel
     def func():

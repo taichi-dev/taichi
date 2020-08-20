@@ -50,7 +50,8 @@ def expr_init_list(xs, expected):
 
 
 @taichi_scope
-def expr_init_func(rhs):  # temporary solution to allow passing in tensors as
+def expr_init_func(
+    rhs):  # temporary solution to allow passing in fields as arguments
     import taichi as ti
     if isinstance(rhs, Expr) and rhs.ptr.is_global_var():
         return rhs
@@ -107,11 +108,11 @@ def subscript(value, *indices):
                       tuple) and len(indices) == 1 and indices[0] is None:
             indices = []
         indices_expr_group = make_expr_group(*indices)
-        tensor_dim = int(value.ptr.get_attribute("dim"))
+        field_dim = int(value.ptr.get_attribute("dim"))
         index_dim = indices_expr_group.size()
-        if tensor_dim != index_dim:
+        if field_dim != index_dim:
             raise IndexError(
-                f'Tensor with dim {tensor_dim} accessed with indices of dim {index_dim}'
+                f'Field with dim {field_dim} accessed with indices of dim {index_dim}'
             )
         return Expr(taichi_lang_core.subscript(value.ptr, indices_expr_group))
     else:
@@ -343,7 +344,7 @@ def field(dtype, shape=None, offset=None, needs_grad=False):
     if get_runtime().materialized:
         raise RuntimeError(
             "No new variables can be declared after materialization, i.e. kernel invocations "
-            "or Python-scope tensor accesses. I.e., data layouts must be specified before "
+            "or Python-scope field accesses. I.e., data layouts must be specified before "
             "any computation. Try appending ti.init() or ti.reset() "
             "right after 'import taichi as ti' if you are using Jupyter notebook."
         )

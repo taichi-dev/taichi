@@ -8,6 +8,10 @@
 #include <objc/objc.h>
 #include <objc/runtime.h>
 
+extern "C" {
+void NSLog(/* NSString */ id format, ...);
+}
+
 namespace taichi {
 namespace mac {
 
@@ -46,6 +50,31 @@ nsobj_unique_ptr<O> wrap_as_nsobj_unique_ptr(O *nsobj) {
   return nsobj_unique_ptr<O>(nsobj);
 }
 
+template <typename O>
+nsobj_unique_ptr<O> retain_and_wrap_as_nsobj_unique_ptr(O *nsobj) {
+  // On creating an object, it could be either the caller or the callee's
+  // responsibility to take the ownership of the object. By convention, method
+  // names with "alloc", "new", "create" imply that the caller owns the object.
+  // Otherwise, the object is tracked by an autoreleasepool before the callee
+  // returns it.
+  //
+  // For an object that is owned by the callee (released by autoreleasepool), if
+  // we want to *own* a reference to it, we must call [retain] to increment the
+  // reference counting.
+  //
+  // In pratice, we find that each pthread (non main-thread) creates its own
+  // autoreleasepool. Without retaining the object, it has caused double-free
+  // on thread exit:
+  // 1. nsobj_unique_ptr calls [release] in its destructor.
+  // 2. autoreleasepool releases all the tracked objects upon thread exit.
+  //
+  // * https://stackoverflow.com/a/51080781/12003165
+  // *
+  // https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/MemoryMgmt/Articles/mmRules.html#//apple_ref/doc/uid/20000994-SW1
+  call(nsobj, "retain");
+  return wrap_as_nsobj_unique_ptr(nsobj);
+}
+
 // Prepend "TI_" to native ObjC type names, otherwise clang-format thinks this
 // is an ObjC file and is not happy formatting it.
 struct TI_NSString;
@@ -63,6 +92,23 @@ template <typename R>
 R ns_array_object_at_index(TI_NSArray *na, int i) {
   return cast_call<R>(na, "objectAtIndex:", i);
 }
+
+void ns_log_object(id obj);
+
+struct TI_NSAutoreleasePool;
+
+TI_NSAutoreleasePool *create_autorelease_pool();
+
+void drain_autorelease_pool(TI_NSAutoreleasePool *pool);
+
+class ScopedAutoreleasePool {
+ public:
+  ScopedAutoreleasePool();
+  ~ScopedAutoreleasePool();
+
+ private:
+  TI_NSAutoreleasePool *pool_;
+};
 
 }  // namespace mac
 }  // namespace taichi

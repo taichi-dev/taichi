@@ -114,11 +114,11 @@ for default precisions, e.g.:
 
     ti.init(default_ip=ti.i64, default_fp=ti.f32)
 
-    x = ti.var(float, 5)
-    y = ti.var(int, 5)
+    x = ti.field(float, 5)
+    y = ti.field(int, 5)
     # is equivalent to:
-    x = ti.var(ti.f32, 5)
-    y = ti.var(ti.i64, 5)
+    x = ti.field(ti.f32, 5)
+    y = ti.field(ti.i64, 5)
 
     def func(a: float) -> int:
         ...

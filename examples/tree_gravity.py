@@ -8,7 +8,7 @@ if not hasattr(ti, 'jkl'):
 
 kUseTree = True
 #kDisplay = 'tree mouse pixels cmap save_result'
-kDisplay = 'pixels cmap'
+kDisplay = 'pixels'
 kResolution = 512
 kShapeFactor = 1
 kMaxParticles = 8192
@@ -20,37 +20,37 @@ dt = 0.00005
 LEAF = -1
 TREE = -2
 
-particle_mass = ti.var(ti.f32)
-particle_pos = ti.Vector(kDim, ti.f32)
-particle_vel = ti.Vector(kDim, ti.f32)
+particle_mass = ti.field(ti.f32)
+particle_pos = ti.Vector.field(kDim, ti.f32)
+particle_vel = ti.Vector.field(kDim, ti.f32)
 particle_table = ti.root.dense(ti.i, kMaxParticles)
 particle_table.place(particle_pos).place(particle_vel).place(particle_mass)
-particle_table_len = ti.var(ti.i32, ())
+particle_table_len = ti.field(ti.i32, ())
 
 if kUseTree:
-    trash_particle_id = ti.var(ti.i32)
-    trash_base_parent = ti.var(ti.i32)
-    trash_base_geo_center = ti.Vector(kDim, ti.f32)
-    trash_base_geo_size = ti.var(ti.f32)
+    trash_particle_id = ti.field(ti.i32)
+    trash_base_parent = ti.field(ti.i32)
+    trash_base_geo_center = ti.Vector.field(kDim, ti.f32)
+    trash_base_geo_size = ti.field(ti.f32)
     trash_table = ti.root.dense(ti.i, kMaxDepth)
     trash_table.place(trash_particle_id)
     trash_table.place(trash_base_parent, trash_base_geo_size)
     trash_table.place(trash_base_geo_center)
-    trash_table_len = ti.var(ti.i32, ())
+    trash_table_len = ti.field(ti.i32, ())
 
-    node_mass = ti.var(ti.f32)
-    node_weighted_pos = ti.Vector(kDim, ti.f32)
-    node_particle_id = ti.var(ti.i32)
-    node_children = ti.var(ti.i32)
+    node_mass = ti.field(ti.f32)
+    node_weighted_pos = ti.Vector.field(kDim, ti.f32)
+    node_particle_id = ti.field(ti.i32)
+    node_children = ti.field(ti.i32)
     node_table = ti.root.dense(ti.i, kMaxNodes)
     node_table.place(node_mass, node_particle_id, node_weighted_pos)
     node_table.dense({2: ti.jk, 3: ti.jkl}[kDim], 2).place(node_children)
-    node_table_len = ti.var(ti.i32, ())
+    node_table_len = ti.field(ti.i32, ())
 
 if 'mouse' in kDisplay:
-    display_image = ti.Vector(3, ti.f32, (kResolution, kResolution))
+    display_image = ti.Vector.field(3, ti.f32, (kResolution, kResolution))
 elif len(kDisplay):
-    display_image = ti.var(ti.f32, (kResolution, kResolution))
+    display_image = ti.field(ti.f32, (kResolution, kResolution))
 
 
 @ti.func
@@ -269,7 +269,7 @@ def render_pixels():
     for i in range(particle_table_len[None]):
         position = particle_pos[i].xy
         pix = int(position * kResolution)
-        display_image[tl.clamp(pix, 0, kResolution - 1)] += 0.25
+        display_image[tl.clamp(pix, 0, kResolution - 1)] += 0.3
 
 
 def render_tree(gui,

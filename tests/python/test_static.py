@@ -40,7 +40,7 @@ def test_static_if_error():
 @ti.all_archs
 def test_static_ndrange():
     n = 3
-    x = ti.Matrix(n, n, dt=ti.f32, shape=(n, n))
+    x = ti.Matrix.field(n, n, dtype=ti.f32, shape=(n, n))
 
     @ti.kernel
     def fill():

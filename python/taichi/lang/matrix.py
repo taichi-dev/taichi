@@ -106,8 +106,8 @@ class Matrix(TaichiOperations):
                 f'Taichi matrices/vectors with {self.n}x{self.m} > 32 entries are not suggested.'
                 ' Matrices/vectors will be automatically unrolled at compile-time for performance.'
                 ' So the compilation time could be extremely long if the matrix size is too big.'
-                ' You may use a tensor to store a large matrix like this, e.g.:\n'
-                f'    x = ti.var(ti.f32, ({self.n}, {self.m})).\n'
+                ' You may use a field to store a large matrix like this, e.g.:\n'
+                f'    x = ti.field(ti.f32, ({self.n}, {self.m})).\n'
                 ' See https://taichi.readthedocs.io/en/stable/tensor_matrix.html#matrix-size'
                 ' for more details.',
                 UserWarning,
@@ -228,8 +228,12 @@ class Matrix(TaichiOperations):
         assert kwargs == {}
         return self.entries[self.linearize_entry_id(*args)]
 
-    def get_tensor_members(self):
+    def get_field_members(self):
         return self.entries
+
+    @deprecated('x.get_tensor_members()', 'x.get_field_members()')
+    def get_tensor_members(self):
+        return self.get_field_members()
 
     def get_entry(self, *args, **kwargs):
         assert kwargs == {}
@@ -708,6 +712,13 @@ class Matrix(TaichiOperations):
     def from_torch(self, torch_tensor):
         return self.from_numpy(torch_tensor.contiguous())
 
+    @python_scope
+    def copy_from(self, other):
+        assert isinstance(other, Matrix)
+        from .meta import tensor_to_tensor
+        assert len(self.shape) == len(other.shape)
+        tensor_to_tensor(self, other)
+
     @taichi_scope
     def __ti_repr__(self):
         yield '['
@@ -725,7 +736,7 @@ class Matrix(TaichiOperations):
         yield ']'
 
     def __repr__(self):
-        """Python scope object print support."""
+        """Python scope matrix print support."""
         if impl.inside_kernel():
             '''
             It seems that when pybind11 got an type mismatch, it will try

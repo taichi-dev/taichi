@@ -40,7 +40,7 @@ class ASTTransformer(object):
         if title is not None:
             print(f'{title}:')
         import astor
-        print(astor.to_source(tree.body[0], indent_with='  '))
+        print(astor.to_source(tree.body[0], indent_with='    '))
 
     def visit(self, tree):
         self.print_ast(tree, 'Initial AST')
@@ -668,7 +668,7 @@ if 1:
 
             for i, arg in enumerate(args.args):
                 # Directly pass in template arguments,
-                # such as class instances ("self"), tensors, SNodes, etc.
+                # such as class instances ("self"), fields, SNodes, etc.
                 if isinstance(self.func.arguments[i], ti.template):
                     continue
                 import taichi as ti
@@ -707,7 +707,7 @@ if 1:
             arg_decls = []
             for i, arg in enumerate(args.args):
                 # Directly pass in template arguments,
-                # such as class instances ("self"), tensors, SNodes, etc.
+                # such as class instances ("self"), fields, SNodes, etc.
                 if isinstance(self.func.arguments[i], ti.template):
                     continue
                 # Create a copy for non-template arguments,

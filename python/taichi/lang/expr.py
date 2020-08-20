@@ -66,6 +66,13 @@ class Expr(TaichiOperations):
     def loop_range(self):
         return self
 
+    def get_field_members(self):
+        return [self]
+
+    @deprecated('x.get_tensor_members()', 'x.get_field_members()')
+    def get_tensor_members(self):
+        return self.get_field_members()
+
     @python_scope
     def initialize_accessor(self):
         if self.getter:
@@ -196,6 +203,13 @@ class Expr(TaichiOperations):
         from .meta import tensor_to_tensor
         assert len(self.shape) == len(other.shape)
         tensor_to_tensor(self, other)
+
+    def __repr__(self):
+        """Python scope field print support."""
+        if impl.inside_kernel():
+            return '<Taichi Expr>'  # make pybind11 happy, see Matrix.__repr__
+        else:
+            return str(self.to_numpy())
 
 
 def make_var_vector(size):

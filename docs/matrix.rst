@@ -42,7 +42,7 @@ As global matrix fields
 
 .. note::
 
-    In Python-scope, ``ti.field`` declares a :ref:`scalar_tensor`, while ``ti.Matrix.field`` declares a matrix field.
+    In Python-scope, ``ti.field`` declares a scalar field (:ref:`scalar_tensor`), while ``ti.Matrix.field`` declares a matrix field.
 
 
 As a temporary local variable

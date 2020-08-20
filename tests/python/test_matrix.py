@@ -39,14 +39,14 @@ def test_python_scope_matrix_operations():
 
 # TODO: Loops inside the function will cause AssertionError:
 # No new variables can be declared after kernel invocations
-# or Python-scope tensor accesses.
+# or Python-scope field accesses.
 # ideally we should use pytest.fixture to parameterize the tests
 # over explicit loops
 @pytest.mark.parametrize('ops', vector_operation_types)
 @ti.host_arch_only
-def test_python_scope_vector_tensor(ops):
-    t1 = ti.Vector(2, dt=ti.i32, shape=())
-    t2 = ti.Vector(2, dt=ti.i32, shape=())
+def test_python_scope_vector_field(ops):
+    t1 = ti.Vector.field(2, dtype=ti.i32, shape=())
+    t2 = ti.Vector.field(2, dtype=ti.i32, shape=())
     a, b = test_vector_arrays[:2]
     t1[None], t2[None] = a.tolist(), b.tolist()
 
@@ -56,9 +56,9 @@ def test_python_scope_vector_tensor(ops):
 
 @pytest.mark.parametrize('ops', vector_operation_types)
 @ti.host_arch_only
-def test_python_scope_matrix_tensor(ops):
-    t1 = ti.Matrix(2, 2, dt=ti.i32, shape=())
-    t2 = ti.Matrix(2, 2, dt=ti.i32, shape=())
+def test_python_scope_matrix_field(ops):
+    t1 = ti.Matrix.field(2, 2, dtype=ti.i32, shape=())
+    t2 = ti.Matrix.field(2, 2, dtype=ti.i32, shape=())
     a, b = test_matrix_arrays[:2]
     # ndarray not supported here
     t1[None], t2[None] = a.tolist(), b.tolist()
@@ -122,9 +122,9 @@ def test_constant_matrices():
 def test_taichi_scope_vector_operations_with_global_vectors(ops):
     a, b, c = test_vector_arrays[:3]
     m1, m2 = ti.Vector(a), ti.Vector(b)
-    r1 = ti.Vector(2, dt=ti.i32, shape=())
-    r2 = ti.Vector(2, dt=ti.i32, shape=())
-    m3 = ti.Vector(2, dt=ti.i32, shape=())
+    r1 = ti.Vector.field(2, dtype=ti.i32, shape=())
+    r2 = ti.Vector.field(2, dtype=ti.i32, shape=())
+    m3 = ti.Vector.field(2, dtype=ti.i32, shape=())
     m3.from_numpy(c)
 
     @ti.kernel
@@ -143,9 +143,9 @@ def test_taichi_scope_vector_operations_with_global_vectors(ops):
 def test_taichi_scope_matrix_operations_with_global_matrices(ops):
     a, b, c = test_matrix_arrays[:3]
     m1, m2 = ti.Matrix(a), ti.Matrix(b)
-    r1 = ti.Matrix(2, 2, dt=ti.i32, shape=())
-    r2 = ti.Matrix(2, 2, dt=ti.i32, shape=())
-    m3 = ti.Matrix(2, 2, dt=ti.i32, shape=())
+    r1 = ti.Matrix.field(2, 2, dtype=ti.i32, shape=())
+    r2 = ti.Matrix.field(2, 2, dtype=ti.i32, shape=())
+    m3 = ti.Matrix.field(2, 2, dtype=ti.i32, shape=())
     m3.from_numpy(c)
 
     @ti.kernel
@@ -162,7 +162,7 @@ def test_taichi_scope_matrix_operations_with_global_matrices(ops):
 @ti.host_arch_only
 @ti.must_throw(ti.TaichiSyntaxError)
 def test_matrix_non_constant_index():
-    m = ti.Matrix(2, 2, ti.i32, 5)
+    m = ti.Matrix.field(2, 2, ti.i32, 5)
 
     @ti.kernel
     def func():
@@ -175,7 +175,7 @@ def test_matrix_non_constant_index():
 
 @ti.host_arch_only
 def test_matrix_constant_index():
-    m = ti.Matrix(2, 2, ti.i32, 5)
+    m = ti.Matrix.field(2, 2, ti.i32, 5)
 
     @ti.kernel
     def func():

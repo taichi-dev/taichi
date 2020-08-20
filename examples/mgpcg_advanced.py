@@ -24,17 +24,18 @@ class MGPCG:
         self.N_tot = 2 * self.N
 
         # setup sparse simulation data arrays
-        self.r = [ti.var(dt=real) for _ in range(self.n_mg_levels)]  # residual
-        self.z = [ti.var(dt=real)
+        self.r = [ti.field(dtype=real)
+                  for _ in range(self.n_mg_levels)]  # residual
+        self.z = [ti.field(dtype=real)
                   for _ in range(self.n_mg_levels)]  # M^-1 self.r
-        self.x = ti.var(dt=real)  # solution
-        self.p = ti.var(dt=real)  # conjugate gradient
-        self.Ap = ti.var(dt=real)  # matrix-vector product
-        self.alpha = ti.var(dt=real)  # step size
-        self.beta = ti.var(dt=real)  # step size
-        self.sum = ti.var(dt=real)  # storage for reductions
-        self.pixels = ti.var(dt=real,
-                             shape=(self.N_gui, self.N_gui))  # image buffer
+        self.x = ti.field(dtype=real)  # solution
+        self.p = ti.field(dtype=real)  # conjugate gradient
+        self.Ap = ti.field(dtype=real)  # matrix-vector product
+        self.alpha = ti.field(dtype=real)  # step size
+        self.beta = ti.field(dtype=real)  # step size
+        self.sum = ti.field(dtype=real)  # storage for reductions
+        self.pixels = ti.field(dtype=real,
+                               shape=(self.N_gui, self.N_gui))  # image buffer
 
         indices = ti.ijk if self.dim == 3 else ti.ij
         self.grid = ti.root.pointer(indices, [self.N_tot // 4]).dense(

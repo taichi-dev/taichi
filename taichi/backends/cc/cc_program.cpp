@@ -173,14 +173,14 @@ CCProgram::CCProgram(Program *program) : program(program) {
 }
 
 CCContext *CCProgram::update_context(Context *ctx) {
-  // FIXME(yuanming-hu): snode_writer needs 9 arguments actually..
-  std::memcpy(context->args, ctx->args, (taichi_max_num_args + 1) * sizeof(uint64));
+  // TODO(k-ye): Do you have other zero-copy ideas for arg buf?
+  std::memcpy(context->args, ctx->args, taichi_max_num_args * sizeof(uint64));
   context->earg = (int *)ctx->extra_args;
   return context.get();
 }
 
 void CCProgram::context_to_result_buffer() {
-  TI_ASSERT(program->result_buffer);  // make @k-ye happy x2
+  TI_ASSERT(program->result_buffer);
   std::memcpy(program->result_buffer, context->args, sizeof(uint64));  // XXX: assumed 1 return
   context->earg = nullptr;
 }

@@ -3,7 +3,7 @@ import taichi as ti
 
 @ti.all_archs
 def benchmark_fill_scalar():
-    a = ti.field(dtype=float, shape=())
+    a = ti.field(dtype=ti.f32, shape=())
 
     @ti.kernel
     def fill():

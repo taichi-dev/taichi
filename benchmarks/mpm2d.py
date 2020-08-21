@@ -22,11 +22,11 @@ def benchmark_range():
     F = ti.Matrix.field(2, 2, dtype=ti.f32,
                         shape=n_particles)  # deformation gradient
     material = ti.field(dtype=int, shape=n_particles)  # material id
-    Jp = ti.field(dtype=float, shape=n_particles)  # plastic deformation
+    Jp = ti.field(dtype=ti.f32, shape=n_particles)  # plastic deformation
     grid_v = ti.Vector.field(2, dtype=ti.f32,
                              shape=(n_grid,
                                     n_grid))  # grid node momemtum/velocity
-    grid_m = ti.field(dtype=float, shape=(n_grid, n_grid))  # grid node mass
+    grid_m = ti.field(dtype=ti.f32, shape=(n_grid, n_grid))  # grid node mass
 
     @ti.kernel
     def substep():
@@ -151,11 +151,11 @@ def benchmark_struct():
     F = ti.Matrix.field(2, 2, dtype=ti.f32,
                         shape=n_particles)  # deformation gradient
     material = ti.field(dtype=int, shape=n_particles)  # material id
-    Jp = ti.field(dtype=float, shape=n_particles)  # plastic deformation
+    Jp = ti.field(dtype=ti.f32, shape=n_particles)  # plastic deformation
     grid_v = ti.Vector.field(2, dtype=ti.f32,
                              shape=(n_grid,
                                     n_grid))  # grid node momemtum/velocity
-    grid_m = ti.field(dtype=float, shape=(n_grid, n_grid))  # grid node mass
+    grid_m = ti.field(dtype=ti.f32, shape=(n_grid, n_grid))  # grid node mass
 
     @ti.kernel
     def substep():

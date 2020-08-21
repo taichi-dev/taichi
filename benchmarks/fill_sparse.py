@@ -3,7 +3,7 @@ import taichi as ti
 
 @ti.archs_support_sparse
 def benchmark_nested_struct():
-    a = ti.field(dtype=float)
+    a = ti.field(dtype=ti.f32)
     N = 512
 
     ti.root.pointer(ti.ij, [N, N]).dense(ti.ij, [8, 8]).place(a)
@@ -20,7 +20,7 @@ def benchmark_nested_struct():
 
 @ti.archs_support_sparse
 def benchmark_nested_struct_fill_and_clear():
-    a = ti.field(dtype=float)
+    a = ti.field(dtype=ti.f32)
     N = 512
 
     ti.root.pointer(ti.ij, [N, N]).dense(ti.ij, [8, 8]).place(a)

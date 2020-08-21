@@ -83,5 +83,5 @@ while gui.running:
     if not paused:
         run()
 
-    gui.set_image(ti.imscale(alive, img_size).astype(np.uint8) * 255)
+    gui.set_image(ti.imresize(alive, img_size).astype(np.uint8) * 255)
     gui.show()

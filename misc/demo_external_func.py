@@ -34,7 +34,7 @@ so = ctypes.CDLL("./a.so")
 
 
 @ti.kernel
-def call_ext() -> int:
+def call_ext() -> ti.i32:
     a = 2.0
     b = 3.0
     c = 0.0

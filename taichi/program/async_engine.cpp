@@ -82,7 +82,8 @@ void ExecutionQueue::enqueue(KernelLaunchRecord &&ker) {
         auto config = kernel->program.config;
         auto ir = stmt;
         offload_to_executable(
-            ir, config, false, /*lower_global_access=*/true,
+            ir, config, false, ///*verbose=*/ker.kernel->program.config.print_ir,
+            /*lower_global_access=*/true,
             /*make_thread_local=*/true,
             /*make_block_local=*/
             is_extension_supported(config.arch, Extension::bls));
@@ -277,7 +278,6 @@ bool AsyncEngine::optimize_listgen() {
 }
 
 bool AsyncEngine::fuse() {
-  return false;
   // TODO: improve...
   bool modified = false;
   std::unordered_map<SNode *, bool> list_dirty;

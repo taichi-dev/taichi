@@ -188,7 +188,6 @@ class OffloadedStmt : public Stmt {
   std::size_t tls_size{1};  // avoid allocating dynamic memory with 0 byte
   std::size_t bls_size{0};
   ScratchPadOptions scratch_opt;
-  std::unique_ptr<ScratchPads> scratch_pads;
 
   OffloadedStmt(TaskType task_type);
 
@@ -220,12 +219,19 @@ class OffloadedStmt : public Stmt {
                      begin_value,
                      end_value,
                      step /*unused?*/,
+                     grid_dim,
                      block_dim,
                      reversed,
                      num_cpu_threads,
                      device,
-                     index_offsets);
+                     index_offsets,
+                     scratch_opt);
   TI_DEFINE_ACCEPT
+  TI_DEFINE_CLONE_WITH_SIMPLE_FIELDS
+
+  // For cloning only
+  OffloadedStmt() {
+  }
 };
 
 class LoopIndexStmt : public Stmt {

@@ -1,6 +1,6 @@
 import taichi as ti
 import numpy as np
-ti.init(arch=ti.gpu, async_mode=True, kernel_profiler=True) # Try to run on GPU
+ti.init(arch=ti.gpu, async_mode=False, kernel_profiler=True, print_ir=True) # Try to run on GPU
 quality = 4 # Use a larger value for higher-res simulations
 n_particles, n_grid = 9000 * quality ** 2, 128 * quality
 dx, inv_dx = 1 / n_grid, float(n_grid)
@@ -91,7 +91,7 @@ def initialize():
     Jp[i] = 1
 initialize()
 gui = ti.GUI("Taichi MLS-MPM-99", res=512, background_color=0x112F41)
-for i in range(10):
+for i in range(100):
   for s in range(int(2e-3 // dt)):
     substep()
   colors = np.array([0x068587, 0xED553B, 0xEEEEF0], dtype=np.uint32)

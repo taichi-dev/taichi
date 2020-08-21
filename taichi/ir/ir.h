@@ -280,12 +280,20 @@ class IRNode {
   }
 
 #define TI_DEFINE_CLONE                                             \
-  std::unique_ptr<Stmt> clone() const override {                    \
+  std ::unique_ptr<Stmt> clone() const override {                   \
     auto new_stmt =                                                 \
         std::make_unique<std::decay<decltype(*this)>::type>(*this); \
     new_stmt->mark_fields_registered();                             \
     new_stmt->io(new_stmt->field_manager);                          \
     return new_stmt;                                                \
+  }
+
+#define TI_DEFINE_CLONE_WITH_SIMPLE_FIELDS                                 \
+  std::unique_ptr<Stmt> clone_with_simple_fields() const {                 \
+    auto new_stmt = std::make_unique<std::decay<decltype(*this)>::type>(); \
+    new_stmt->mark_fields_registered();                                    \
+    new_stmt->io(new_stmt->field_manager);                                 \
+    return new_stmt;                                                       \
   }
 
 #define TI_DEFINE_ACCEPT_AND_CLONE \

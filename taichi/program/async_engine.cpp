@@ -277,6 +277,7 @@ bool AsyncEngine::optimize_listgen() {
 }
 
 bool AsyncEngine::fuse() {
+  return false;
   // TODO: improve...
   bool modified = false;
   std::unordered_map<SNode *, bool> list_dirty;

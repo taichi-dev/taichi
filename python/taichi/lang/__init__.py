@@ -359,7 +359,7 @@ def stat_write_yaml(key, value):
         return
     arch_name = core.arch_name(ti.cfg.arch)
     output_dir = os.environ.get('TI_BENCHMARK_OUTPUT_DIR', '.')
-    filename = f'{output_dir}/benchmark.dat'
+    filename = f'{output_dir}/benchmark.yml'
     try:
         with open(filename, 'r') as f:
             data = yaml.load(f, Loader=yaml.SafeLoader)

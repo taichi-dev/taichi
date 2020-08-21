@@ -226,7 +226,7 @@ class PyTaichi:
             raise RuntimeError(
                 f'These field(s) are not placed:\n{bar}' +
                 f'{bar}'.join(not_placed) +
-                f'{bar}Consider specify a shape for them, e.g.:' +
+                f'{bar}Please consider specifying a shape for them. E.g.,' +
                 '\n\n  x = ti.field(float, shape=(2, 3))')
 
     def clear(self):

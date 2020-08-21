@@ -51,6 +51,13 @@ class TaichiBenchmark:
                 self.suites.append(Suite(f))
 
     def run(self):
+        output_dir = os.environ.get('TI_BENCHMARK_OUTPUT_DIR', '.')
+        filename = f'{output_dir}/benchmark.yml'
+        try:
+            with open(filename, 'r+') as f:
+                f.truncate()  # clear the previous result
+        except FileNotFoundError:
+            pass
         print("Running...")
         for s in self.suites:
             s.run()

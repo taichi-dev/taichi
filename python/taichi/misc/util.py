@@ -149,7 +149,7 @@ def deprecated(old, new, type=DeprecationWarning):
 
 def obsolete(old, new):
     '''
-    Mark API as obsoleted, with no API wrapper. E.g.,
+    Mark API as obsolete, with no API wrapper. E.g.,
 
     sqr = obsolete('ti.sqr(x)', 'x**2')
     '''

@@ -342,26 +342,24 @@ def benchmark(func, repeat=300, args=()):
 def stat_write_yaml(key, value):
     import taichi as ti
     import yaml
-    import threading
     case_name = os.environ.get('TI_CURRENT_BENCHMARK')
     if case_name is None:
         return
+    if case_name.startswith('benchmark_'):
+        case_name = case_name[10:]
     arch_name = core.arch_name(ti.cfg.arch)
     output_dir = os.environ.get('TI_BENCHMARK_OUTPUT_DIR', '.')
     filename = f'{output_dir}/benchmark.yml'
-    lock = threading.Lock()
-    if lock.acquire():
-        try:
-            with open(filename, 'r') as f:
-                data = yaml.load(f, Loader=yaml.SafeLoader)
-        except FileNotFoundError:
-            data = {}
-        data.setdefault(key, {})
-        data[key].setdefault(case_name, {})
-        data[key][case_name][arch_name] = value
-        with open(filename, 'w') as f:
-            yaml.dump(data, f, Dumper=yaml.SafeDumper)
-        lock.release()
+    try:
+        with open(filename, 'r') as f:
+            data = yaml.load(f, Loader=yaml.SafeLoader)
+    except FileNotFoundError:
+        data = {}
+    data.setdefault(key, {})
+    data[key].setdefault(case_name, {})
+    data[key][case_name][arch_name] = value
+    with open(filename, 'w') as f:
+        yaml.dump(data, f, Dumper=yaml.SafeDumper)
 
 
 def is_arch_supported(arch):

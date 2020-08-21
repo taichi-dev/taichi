@@ -49,9 +49,9 @@ def imdisplay(img):
             IPython.display.display(IPython.display.Image(data=f.getvalue()))
 
 
-def imscale(img, w=512, h=None):
+def imresize(img, w, h=None):
     """
-    Scale a image into specific size.
+    Resize an image to a specific size.
     """
     if not isinstance(img, np.ndarray):
         img = img.to_numpy()

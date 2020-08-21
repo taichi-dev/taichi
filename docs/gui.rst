@@ -528,10 +528,10 @@ Image I/O
 .. function:: ti.imresize(img, w, h=None):
 
     :parameter img: (np.array or ti.field) the input image.
-    :parameter w: (int) the width after scaling.
-    :parameter h: (optional, int) the height after scaling.
-    :return: (np.array) the output image after scaling.
+    :parameter w: (int) the width after resizing.
+    :parameter h: (optional, int) the height after resizing.
+    :return: (np.array) the resized image.
 
-    If ``h`` is not specified, then it will be equal to ``w`` by default.
+    If ``h`` is not specified, it will be equal to ``w`` by default.
 
     The output image shape is: ``(w, h, *img.shape[2:])``.

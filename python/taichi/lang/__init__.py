@@ -324,7 +324,7 @@ def benchmark(func, repeat=300, args=()):
     compile_time = time.time()
     func(*args)
     compile_time = time.time() - compile_time
-    ti.stat_write_yaml('compilation_time', compile_time)
+    ti.stat_write_yaml('compilation_time(s)', compile_time)
     # The reason why we run 4 times is to warm up instruction/data caches.
     # Discussion: https://github.com/taichi-dev/taichi/pull/1002#discussion_r426312136
     for i in range(4):
@@ -339,37 +339,29 @@ def benchmark(func, repeat=300, args=()):
     ti.stat_write_yaml('running_time(ms)', avg)
 
 
-def stat_write(avg):
-    import taichi as ti
-    name = os.environ.get('TI_CURRENT_BENCHMARK')
-    if name is None:
-        return
-    arch_name = core.arch_name(ti.cfg.arch)
-    output_dir = os.environ.get('TI_BENCHMARK_OUTPUT_DIR', '.')
-    filename = f'{output_dir}/{name}__arch_{arch_name}.dat'
-    with open(filename, 'w') as f:
-        f.write(f'time_avg: {avg:.4f}')
-
-
 def stat_write_yaml(key, value):
     import taichi as ti
     import yaml
+    import threading
     case_name = os.environ.get('TI_CURRENT_BENCHMARK')
     if case_name is None:
         return
     arch_name = core.arch_name(ti.cfg.arch)
     output_dir = os.environ.get('TI_BENCHMARK_OUTPUT_DIR', '.')
     filename = f'{output_dir}/benchmark.yml'
-    try:
-        with open(filename, 'r') as f:
-            data = yaml.load(f, Loader=yaml.SafeLoader)
-    except FileNotFoundError:
-        data = {}
-    data.setdefault(key, {})
-    data[key].setdefault(case_name, {})
-    data[key][case_name][arch_name] = value
-    with open(filename, 'w') as f:
-        yaml.dump(data, f, Dumper=yaml.SafeDumper)
+    lock = threading.Lock()
+    if lock.acquire():
+        try:
+            with open(filename, 'r') as f:
+                data = yaml.load(f, Loader=yaml.SafeLoader)
+        except FileNotFoundError:
+            data = {}
+        data.setdefault(key, {})
+        data[key].setdefault(case_name, {})
+        data[key][case_name][arch_name] = value
+        with open(filename, 'w') as f:
+            yaml.dump(data, f, Dumper=yaml.SafeDumper)
+        lock.release()
 
 
 def is_arch_supported(arch):

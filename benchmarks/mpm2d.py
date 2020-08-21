@@ -114,8 +114,10 @@ def benchmark_range():
         F[i] = [[1, 0], [0, 1]]
         Jp[i] = 1
 
-    gui = ti.GUI("Taichi MLS-MPM-99", res=512, background_color=0x112F41)
+    compile_time = time.time()
     substep()
+    compile_time = time.time() - compile_time
+    ti.stat_write_yaml('compilation_time(s)', compile_time)
     ti.get_runtime().sync()
     t = time.time()
     for frame in range(200):
@@ -126,7 +128,7 @@ def benchmark_range():
         # gui.show() # Change to gui.show(f'{frame:06d}.png') to write images to disk
     ti.get_runtime().sync()
     avg = (time.time() - t) / 4000 * 1000  # miliseconds
-    ti.stat_write(avg)
+    ti.stat_write_yaml('running_time(ms)', avg)
 
 
 @ti.archs_excluding(ti.opengl)
@@ -242,8 +244,10 @@ def benchmark_struct():
         F[i] = [[1, 0], [0, 1]]
         Jp[i] = 1
 
-    gui = ti.GUI("Taichi MLS-MPM-99", res=512, background_color=0x112F41)
+    compile_time = time.time()
     substep()
+    compile_time = time.time() - compile_time
+    ti.stat_write_yaml('compilation_time(s)', compile_time)
     ti.get_runtime().sync()
     t = time.time()
     for frame in range(200):
@@ -254,4 +258,4 @@ def benchmark_struct():
         # gui.show() # Change to gui.show(f'{frame:06d}.png') to write images to disk
     ti.get_runtime().sync()
     avg = (time.time() - t) / 4000 * 1000  # miliseconds
-    ti.stat_write(avg)
+    ti.stat_write_yaml('running_time(ms)', avg)

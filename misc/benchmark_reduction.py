@@ -12,8 +12,8 @@ ti.init(arch=ti.gpu,
 
 N = 1024 * 1024 * 1024
 
-a = ti.field(int, shape=N)
-tot = ti.field(int, shape=())
+a = ti.field(ti.i32, shape=N)
+tot = ti.field(ti.i32, shape=())
 
 
 @ti.kernel

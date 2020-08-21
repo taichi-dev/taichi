@@ -5,7 +5,7 @@ import math
 
 libm = ctypes.CDLL('libm.so.6')
 
-x, y = ti.field(float), ti.field(float)
+x, y = ti.field(ti.f32), ti.field(ti.f32)
 
 
 @ti.kernel

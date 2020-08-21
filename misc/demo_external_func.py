@@ -5,9 +5,9 @@ import ctypes
 ti.init()
 
 N = 1024
-x = ti.field(int, shape=N)
-y = ti.field(int, shape=N)
-z = ti.field(int, shape=N)
+x = ti.field(ti.i32, shape=N)
+y = ti.field(ti.i32, shape=N)
+z = ti.field(ti.i32, shape=N)
 
 source = '''
 extern "C" {

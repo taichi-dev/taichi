@@ -9,7 +9,7 @@ def test_without_init():
     # So we have to create a new Taichi instance, i.e. test in a sandbox.
     assert ti.cfg.arch == ti.cpu
 
-    x = ti.field(int, (2, 3))
+    x = ti.field(ti.i32, (2, 3))
     assert x.shape == (2, 3)
 
     x[1, 2] = 4

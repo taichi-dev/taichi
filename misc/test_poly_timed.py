@@ -5,7 +5,7 @@ from autograd import grad
 
 
 # Note: test happens at v = 0.2
-def grad_test(tifunc, npfunc=None, default_fp=float):
+def grad_test(tifunc, npfunc=None, default_fp=ti.f32):
     if npfunc is None:
         npfunc = tifunc
 

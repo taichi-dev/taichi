@@ -12,7 +12,7 @@ ti.init(arch=ti.gpu,
 
 N = 1024 * 1024 * 128
 
-a = ti.field(float, shape=N)
+a = ti.field(ti.f32, shape=N)
 
 
 @ti.kernel
@@ -23,7 +23,7 @@ def fill():
 
 
 @ti.kernel
-def reduce() -> float:
+def reduce() -> ti.f32:
     s = 0.0
     ti.block_dim(1024)
     for i in a:

@@ -75,7 +75,7 @@ def test_image_io_uint(resx, resy, comp, ext, dt):
 @pytest.mark.parametrize('resx,resy', [(91, 81)])
 @pytest.mark.parametrize('scale', [1, 2, 3])
 @ti.host_arch_only
-def test_image_resize(resx, resy, comp, scale):
+def test_image_resize_sum(resx, resy, comp, scale):
     shape = (resx, resy)
     if comp != 1:
         shape = shape + (comp, )
@@ -84,4 +84,12 @@ def test_image_resize(resx, resy, comp, scale):
         new_img = ti.imresize(old_img, resx * scale)
     else:
         new_img = ti.imresize(old_img, resx * scale, resy * scale)
-    assert np.sum(old_img) * scale**2 == ti.approx(np.sum(new_img), rel=1e-2)
+    assert np.sum(old_img) * scale**2 == ti.approx(np.sum(new_img))
+
+
+@pytest.mark.parametrize('input,output,args',
+        [np.array(
+        )
+@ti.host_arch_only
+def test_image_resize_hard_coded(input, output, args):
+    assert ti.imresize(input, *args) == ti.approx(output)

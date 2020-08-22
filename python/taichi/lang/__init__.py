@@ -321,25 +321,47 @@ lang_core = core
 def benchmark(func, repeat=300, args=()):
     import taichi as ti
     import time
-    compile_time = time.time()
-    func(*args)
-    compile_time = time.time() - compile_time
-    ti.stat_write_yaml('compilation_time(s)', compile_time)
-    # The reason why we run 4 times is to warm up instruction/data caches.
-    # Discussion: https://github.com/taichi-dev/taichi/pull/1002#discussion_r426312136
-    for i in range(4):
-        func(*args)  # compile the kernel first
-    ti.sync()
-    t = time.time()
-    for n in range(repeat):
+
+    def run_benchmark():
+        compile_time = time.time()
         func(*args)
-    ti.get_runtime().sync()
-    elapsed = time.time() - t
-    avg = elapsed / repeat * 1000  # miliseconds
-    ti.stat_write_yaml('running_time(ms)', avg)
+        compile_time = time.time() - compile_time
+        ti.stat_write('compilation_time', compile_time)
+        codegen_stat = ti.core.stat()
+        for line in codegen_stat.split('\n'):
+            try:
+                a, b = line.strip().split(':')
+            except:
+                continue
+            a = a.strip()
+            b = int(float(b))
+            if a == 'codegen_kernel_statements':
+                ti.stat_write('instructions', b)
+            if a == 'codegen_offloaded_tasks':
+                ti.stat_write('offloaded_tasks', b)
+            elif a == 'launched_kernels':
+                ti.stat_write('launched_kernels', b)
+        # The reason why we run 4 times is to warm up instruction/data caches.
+        # Discussion: https://github.com/taichi-dev/taichi/pull/1002#discussion_r426312136
+        for i in range(4):
+            func(*args)  # compile the kernel first
+        ti.sync()
+        t = time.time()
+        for n in range(repeat):
+            func(*args)
+        ti.get_runtime().sync()
+        elapsed = time.time() - t
+        avg = elapsed / repeat
+        ti.stat_write('running_time', avg)
+
+    ti.cfg.async_mode = False
+    run_benchmark()
+    if ti.is_extension_supported(ti.cfg.arch, ti.extension.async_mode):
+        ti.cfg.async_mode = True
+        run_benchmark()
 
 
-def stat_write_yaml(key, value):
+def stat_write(key, value):
     import taichi as ti
     import yaml
     case_name = os.environ.get('TI_CURRENT_BENCHMARK')
@@ -348,6 +370,7 @@ def stat_write_yaml(key, value):
     if case_name.startswith('benchmark_'):
         case_name = case_name[10:]
     arch_name = core.arch_name(ti.cfg.arch)
+    async_mode = 'async' if ti.cfg.async_mode else 'sync'
     output_dir = os.environ.get('TI_BENCHMARK_OUTPUT_DIR', '.')
     filename = f'{output_dir}/benchmark.yml'
     try:
@@ -357,7 +380,8 @@ def stat_write_yaml(key, value):
         data = {}
     data.setdefault(key, {})
     data[key].setdefault(case_name, {})
-    data[key][case_name][arch_name] = value
+    data[key][case_name].setdefault(async_mode, {})
+    data[key][case_name][async_mode][arch_name] = value
     with open(filename, 'w') as f:
         yaml.dump(data, f, Dumper=yaml.SafeDumper)
 

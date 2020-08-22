@@ -117,21 +117,7 @@ def benchmark_range():
         F[i] = [[1, 0], [0, 1]]
         Jp[i] = 1
 
-    compile_time = time.time()
-    substep()
-    compile_time = time.time() - compile_time
-    ti.stat_write('compilation_time', compile_time)
-    ti.get_runtime().sync()
-    t = time.time()
-    for frame in range(200):
-        for s in range(20):
-            substep()
-        # colors = np.array([0x068587, 0xED553B, 0xEEEEF0], dtype=np.uint32)
-        # gui.circles(x.to_numpy(), radius=1.5, color=colors[material.to_numpy()])
-        # gui.show() # Change to gui.show(f'{frame:06d}.png') to write images to disk
-    ti.get_runtime().sync()
-    avg = (time.time() - t) / 4000
-    ti.stat_write('running_time', avg)
+    ti.benchmark(substep, repeat=4000)
 
 
 @ti.archs_excluding(ti.opengl)
@@ -250,18 +236,4 @@ def benchmark_struct():
         F[i] = [[1, 0], [0, 1]]
         Jp[i] = 1
 
-    compile_time = time.time()
-    substep()
-    compile_time = time.time() - compile_time
-    ti.stat_write('compilation_time', compile_time)
-    ti.get_runtime().sync()
-    t = time.time()
-    for frame in range(200):
-        for s in range(20):
-            substep()
-        # colors = np.array([0x068587, 0xED553B, 0xEEEEF0], dtype=np.uint32)
-        # gui.circles(x.to_numpy(), radius=1.5, color=colors[material.to_numpy()])
-        # gui.show() # Change to gui.show(f'{frame:06d}.png') to write images to disk
-    ti.get_runtime().sync()
-    avg = (time.time() - t) / 4000
-    ti.stat_write('running_time', avg)
+    ti.benchmark(substep, repeat=4000)

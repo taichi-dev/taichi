@@ -595,6 +595,11 @@ void export_lang(py::module &m) {
   m.def("is_extension_supported", is_extension_supported);
 
   m.def("print_stat", [] { stat.print(); });
+  m.def("stat", [] {
+    std::string result;
+    stat.print(&result);
+    return result;
+  });
 
   m.def("record_action_hint", [](std::string content) {
     ActionRecorder::get_instance().record("hint",

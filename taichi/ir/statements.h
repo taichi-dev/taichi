@@ -227,11 +227,6 @@ class OffloadedStmt : public Stmt {
                      index_offsets,
                      scratch_opt);
   TI_DEFINE_ACCEPT
-  TI_DEFINE_CLONE_WITH_SIMPLE_FIELDS
-
-  // For cloning only
-  OffloadedStmt() {
-  }
 };
 
 class LoopIndexStmt : public Stmt {

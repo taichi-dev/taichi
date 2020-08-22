@@ -59,6 +59,25 @@ std::string OffloadedStmt::task_type_name(TaskType tt) {
   return m.find(tt)->second;
 }
 
+std::unique_ptr<Stmt> OffloadedStmt::clone() const {
+  auto new_stmt = std::make_unique<OffloadedStmt>(task_type, snode);
+  new_stmt->begin_offset = begin_offset;
+  new_stmt->end_offset = end_offset;
+  new_stmt->const_begin = const_begin;
+  new_stmt->const_end = const_end;
+  new_stmt->begin_value = begin_value;
+  new_stmt->end_value = end_value;
+  new_stmt->step = step;
+  new_stmt->grid_dim = grid_dim;
+  new_stmt->block_dim = block_dim;
+  new_stmt->reversed = reversed;
+  new_stmt->num_cpu_threads = num_cpu_threads;
+  new_stmt->device = device;
+  if (body)
+    new_stmt->body = body->clone();
+  return new_stmt;
+}
+
 void OffloadedStmt::all_blocks_accept(IRVisitor *visitor) {
   if (tls_prologue)
     tls_prologue->accept(visitor);
@@ -70,13 +89,6 @@ void OffloadedStmt::all_blocks_accept(IRVisitor *visitor) {
     bls_epilogue->accept(visitor);
   if (tls_epilogue)
     tls_epilogue->accept(visitor);
-}
-
-std::unique_ptr<Stmt> OffloadedStmt::clone() const {
-  std::unique_ptr<OffloadedStmt> cloned(
-      static_cast<OffloadedStmt *>(clone_with_simple_fields().release()));
-  cloned->body = body->clone();
-  return cloned;
 }
 
 int LoopIndexStmt::max_num_bits() const {

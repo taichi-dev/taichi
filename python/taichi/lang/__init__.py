@@ -321,6 +321,7 @@ lang_core = core
 def benchmark(func, repeat=300, args=()):
     import taichi as ti
     import time
+
     def run_benchmark():
         compile_time = time.time()
         func(*args)
@@ -352,6 +353,7 @@ def benchmark(func, repeat=300, args=()):
         elapsed = time.time() - t
         avg = elapsed / repeat
         ti.stat_write('running_time', avg)
+
     ti.cfg.async_mode = False
     run_benchmark()
     if ti.is_extension_supported(ti.cfg.arch, ti.extension.async_mode):

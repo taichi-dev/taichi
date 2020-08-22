@@ -90,7 +90,6 @@ def test(*args, **kwargs):
     :parameter require: extensions required
     :parameter options: other options to be passed into ``ti.init``
     '''
-
     def decorator(foo):
         import functools
         import pytest

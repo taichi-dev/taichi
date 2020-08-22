@@ -58,9 +58,9 @@ def imresize(img, w, h=None):
     if h is None:
         h = w
     assert isinstance(w, int) and isinstance(h, int) and w > 1 and h > 1
-    u, v = (img.shape[0] - 1) / (w - 1), (img.shape[1] - 1) / (h - 1)
-    x = np.clip(np.arange(w) * u + 1, 0, img.shape[0] - 1).astype(np.int32)
-    y = np.clip(np.arange(h) * v + 1, 0, img.shape[1] - 1).astype(np.int32)
+    u, v = (img.shape[0]) / (w), (img.shape[1]) / (h)
+    x = np.clip(np.arange(w) * u, 0, img.shape[0] - 1).astype(np.int32)
+    y = np.clip(np.arange(h) * v, 0, img.shape[1] - 1).astype(np.int32)
     return img[tuple(np.meshgrid(x, y))].swapaxes(0, 1)
 
 

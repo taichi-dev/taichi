@@ -85,11 +85,3 @@ def test_image_resize_sum(resx, resy, comp, scale):
     else:
         new_img = ti.imresize(old_img, resx * scale, resy * scale)
     assert np.sum(old_img) * scale**2 == ti.approx(np.sum(new_img))
-
-
-@pytest.mark.parametrize('input,output,args',
-        [np.array(
-        )
-@ti.host_arch_only
-def test_image_resize_hard_coded(input, output, args):
-    assert ti.imresize(input, *args) == ti.approx(output)

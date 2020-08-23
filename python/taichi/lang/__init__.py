@@ -393,7 +393,7 @@ def benchmark_plot(fn=None,
     normalize_to_lowest = lambda x: True
     figure, subfigures = plt.subplots(len(cases), len(columns))
     if title is None:
-        title = 'Taichi Performance Benchmarks'
+        title = 'Taichi Performance Benchmarks (Higher means more)'
     for col_id in range(len(columns)):
         subfigures[0][col_id].set_title(columns[col_id])
     figure.suptitle(title)
@@ -415,7 +415,6 @@ def benchmark_plot(fn=None,
             else:
                 current_archs = archs & data[case][col].keys()
             if bars == 'sync_vs_async':
-                print(data)
                 print(data[case][col])
                 y_left = [
                     data[case][col][arch]['sync'] for arch in current_archs
@@ -449,9 +448,9 @@ def benchmark_plot(fn=None,
                 raise RuntimeError('Unknown bars type')
             if normalize_to_lowest(col):
                 for i in range(len(current_archs)):
-                    lowest = min(y_left[i], y_right[i])
-                    y_left[i] = lowest / y_left[i] if y_left[i] != 0 else 1
-                    y_right[i] = lowest / y_right[i] if y_right[i] != 0 else 1
+                    maximum = max(y_left[i], y_right[i])
+                    y_left[i] = y_left[i] / maximum if y_left[i] != 0 else 1
+                    y_right[i] = y_right[i] / maximum if y_right[i] != 0 else 1
             ax = subfigures[case_id][col_id]
             bar_left = ax.bar(x=[
                 i - bar_width / 2 - bar_distance / 2

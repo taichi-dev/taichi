@@ -112,12 +112,17 @@ std::string data_type_format(DataType dt) {
 
 int data_type_size(DataType t) {
   switch (t) {
+    case DataType::f16: 
+      return 2;
+    case DataType::gen:
+      return 0;
+    case DataType::unknown:
+      return -1;
   
 #define REGISTER_DATA_TYPE(i, j) \
   case DataType::i:              \
     return sizeof(j);
 
-    REGISTER_DATA_TYPE(DataType::f16, 2);
     REGISTER_DATA_TYPE(f32, float32);
     REGISTER_DATA_TYPE(f64, float64);
     REGISTER_DATA_TYPE(i8, bool);
@@ -129,9 +134,7 @@ int data_type_size(DataType t) {
     REGISTER_DATA_TYPE(u16, uint16);
     REGISTER_DATA_TYPE(u32, uint32);
     REGISTER_DATA_TYPE(u64, uint64);
-    REGISTER_DATA_TYPE(DataType::gen, 0);
-    REGISTER_DATA_TYPE(DataType::unknown, -1);
-
+    
 #undef REGISTER_DATA_TYPE
     default:
       TI_NOT_IMPLEMENTED

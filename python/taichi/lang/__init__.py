@@ -362,9 +362,11 @@ def benchmark(func, repeat=300, args=()):
         run_benchmark()
 
 
-def benchmark_plot(cases=None,
+def benchmark_plot(fn=None,
+                   cases=None,
                    columns=None,
                    archs=None,
+                   title=None,
                    bars='sync_vs_async',
                    bar_width=0.4,
                    bar_distance=0,
@@ -372,9 +374,11 @@ def benchmark_plot(cases=None,
     import taichi as ti
     import yaml
     import matplotlib.pyplot as plt
-    output_dir = os.path.join(ti.core.get_repo_dir(), 'benchmarks', 'output')
-    output_file = f'{output_dir}/benchmark.yml'
-    with open(output_file, 'r') as f:
+    if fn is None:
+        fn = os.path.join(ti.core.get_repo_dir(), 'benchmarks', 'output',
+                          'benchmark.yml')
+
+    with open(fn, 'r') as f:
         data = yaml.load(f, Loader=yaml.SafeLoader)
     if bars != 'sync_vs_async':  # need baseline
         baseline_dir = os.path.join(ti.core.get_repo_dir(), 'benchmarks',
@@ -388,8 +392,11 @@ def benchmark_plot(cases=None,
         columns = list(data[cases[0]].keys())
     normalize_to_lowest = lambda x: True
     figure, subfigures = plt.subplots(len(cases), len(columns))
+    if title is None:
+        title = 'Taichi Performance Benchmarks'
     for col_id in range(len(columns)):
         subfigures[0][col_id].set_title(columns[col_id])
+    figure.suptitle(title)
     for case_id in range(len(cases)):
         case = cases[case_id]
         subfigures[case_id][0].annotate(
@@ -465,6 +472,10 @@ def benchmark_plot(cases=None,
             figure.legend((bar_left, bar_right), (label_left, label_right),
                           loc='lower center')
     figure.subplots_adjust(left=left_margin)
+
+    fig = plt.gcf()
+    fig.set_size_inches(13, 8)
+
     plt.show()
 
 

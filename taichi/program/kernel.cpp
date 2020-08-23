@@ -1,5 +1,6 @@
 #include "kernel.h"
 
+#include "taichi/util/statistics.h"
 #include "taichi/common/task.h"
 #include "taichi/program/program.h"
 #include "taichi/program/async_engine.h"
@@ -98,6 +99,9 @@ void Kernel::operator()(LaunchContextBuilder &launch_ctx) {
       compile();
     }
     compiled(launch_ctx.get_context());
+    stat.add(
+        "launched_kernels",
+        ir->as<Block>()->statements.size() /*number of offloaded statements*/);
     program.sync = (program.sync && arch_is_cpu(arch));
     // Note that Kernel::arch may be different from program.config.arch
     if (program.config.debug && (arch_is_cpu(program.config.arch) ||

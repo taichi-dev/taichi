@@ -329,6 +329,7 @@ def benchmark(func, repeat=300, args=()):
         compile_time = time.time() - compile_time
         ti.stat_write('compilation_time', compile_time)
         codegen_stat = ti.core.stat()
+        print(codegen_stat)
         for line in codegen_stat.split('\n'):
             try:
                 a, b = line.strip().split(':')
@@ -355,11 +356,7 @@ def benchmark(func, repeat=300, args=()):
         avg = elapsed / repeat
         ti.stat_write('running_time', avg)
 
-    ti.cfg.async_mode = False
     run_benchmark()
-    if ti.is_extension_supported(ti.cfg.arch, ti.extension.async_mode):
-        ti.cfg.async_mode = True
-        run_benchmark()
 
 
 def benchmark_plot(fn=None,
@@ -418,6 +415,8 @@ def benchmark_plot(fn=None,
             else:
                 current_archs = archs & data[case][col].keys()
             if bars == 'sync_vs_async':
+                print(data)
+                print(data[case][col])
                 y_left = [
                     data[case][col][arch]['sync'] for arch in current_archs
                 ]
@@ -502,7 +501,6 @@ def stat_write(key, value):
     data.setdefault(case_name, {})
     data[case_name].setdefault(key, {})
     data[case_name][key].setdefault(arch_name, {})
-    print(f'!!! {async_mode}')
     data[case_name][key][arch_name][async_mode] = value
     with open(filename, 'w') as f:
         yaml.dump(data, f, Dumper=yaml.SafeDumper)

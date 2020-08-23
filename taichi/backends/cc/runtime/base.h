@@ -97,7 +97,8 @@ static inline Ti_AdStackPtr Ti_ad_stack_data(Ti_AdStackPtr stack) {
 static inline void Ti_ad_stack_init(Ti_AdStackPtr stack) {
   Ti_u32 *n = Ti_ad_stack_n(stack);
   Ti_i32 *data = (Ti_i32 *)Ti_ad_stack_data(stack);
-  *data = 0;
+  data[0] = 0;
+  data[1] = 0;
   *n = 1;
 }
 

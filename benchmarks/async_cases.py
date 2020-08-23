@@ -20,15 +20,36 @@ def benchmark_async(func):
 
 @benchmark_async
 def fuse_dense_x2y2z():
-    template_fuse_dense_x2y2z(size=10 * 1024**2,
+    template_fuse_dense_x2y2z(size=100 * 1024**2,
                               repeat=10,
-                              benchmark_repeat=50,
+                              benchmark_repeat=10,
                               benchmark=True)
 
 
 @benchmark_async
 def fuse_reduction():
-    template_fuse_reduction(size=10 * 1024**2,
+    template_fuse_reduction(size=100 * 1024**2,
                             repeat=10,
-                            benchmark_repeat=50,
+                            benchmark_repeat=10,
                             benchmark=True)
+    
+@benchmark_async
+def fill_1d():
+    a = ti.field(dtype=ti.f32, shape=100 * 1024**2)
+    
+    @ti.kernel
+    def fill():
+        for i in a:
+            a[i] = 1.0
+    
+    return ti.benchmark(fill, repeat=100)
+
+@benchmark_async
+def fill_scalar():
+    a = ti.field(dtype=ti.f32, shape=())
+    
+    @ti.kernel
+    def fill():
+        a[None] = 1.0
+    
+    return ti.benchmark(fill, repeat=1000)

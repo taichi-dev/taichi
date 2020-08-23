@@ -415,7 +415,6 @@ def benchmark_plot(fn=None,
             else:
                 current_archs = archs & data[case][col].keys()
             if bars == 'sync_vs_async':
-                print(col, data[case][col])
                 y_left = [
                     data[case][col][arch]['sync'] for arch in current_archs
                 ]
@@ -459,7 +458,7 @@ def benchmark_plot(fn=None,
                               height=y_left,
                               width=bar_width,
                               label=label_left,
-                              color='lawngreen')
+                              color=(0.3, 0.7, 0.9, 1.0))
             bar_right = ax.bar(x=[
                 i + bar_width / 2 + bar_distance / 2
                 for i in range(len(current_archs))
@@ -467,7 +466,7 @@ def benchmark_plot(fn=None,
                                height=y_right,
                                width=bar_width,
                                label=label_right,
-                               color='aqua')
+                               color=(0.8, 0.2, 0.3, 1.0))
             ax.set_xticks(range(len(current_archs)))
             ax.set_xticklabels(current_archs)
             figure.legend((bar_left, bar_right), (label_left, label_right),

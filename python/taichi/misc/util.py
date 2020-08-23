@@ -185,6 +185,12 @@ def cached_property(foo):
     return wrapped
 
 
+def get_traceback(stacklevel=1):
+    import traceback
+    s = traceback.extract_stack()[:-1 - stacklevel]
+    return ''.join(traceback.format_list(s))
+
+
 def get_logging(name):
     def logger(msg, *args, **kwargs):
         # Python inspection takes time (~0.1ms) so avoid it as much as possible
@@ -263,6 +269,7 @@ __all__ = [
     'deprecated',
     'obsolete',
     'cached_property',
+    'get_traceback',
     'set_gdb_trigger',
     'print_profile_info',
     'set_logging_level',

@@ -115,12 +115,12 @@ class ConstantFold : public BasicStmtVisitor {
                       true};
     auto *ker = get_jit_evaluator_kernel(id);
     auto &current_program = stmt->get_kernel()->program;
-    auto &ctx = current_program.get_context();
-    ContextArgSaveGuard _(
-        ctx);  // save input args, prevent override current kernel
-    ctx.set_arg<int64_t>(0, lhs.val_i64);
-    ctx.set_arg<int64_t>(1, rhs.val_i64);
-    (*ker)();
+    // save input args to prevent the current kernel from being overridden.
+    ContextArgSaveGuard _(current_program.get_context());
+    auto launch_ctx = ker->make_launch_context();
+    launch_ctx.set_arg_raw(0, lhs.val_u64);
+    launch_ctx.set_arg_raw(1, rhs.val_u64);
+    (*ker)(launch_ctx);
     ret.val_i64 = current_program.fetch_result<int64_t>(0);
     return true;
   }
@@ -138,11 +138,11 @@ class ConstantFold : public BasicStmtVisitor {
                       false};
     auto *ker = get_jit_evaluator_kernel(id);
     auto &current_program = stmt->get_kernel()->program;
-    auto &ctx = current_program.get_context();
-    ContextArgSaveGuard _(
-        ctx);  // save input args, prevent override current kernel
-    ctx.set_arg<int64_t>(0, operand.val_i64);
-    (*ker)();
+    // save input args to prevent the current kernel from being overridden.
+    ContextArgSaveGuard _(current_program.get_context());
+    auto launch_ctx = ker->make_launch_context();
+    launch_ctx.set_arg_raw(0, operand.val_u64);
+    (*ker)(launch_ctx);
     ret.val_i64 = current_program.fetch_result<int64_t>(0);
     return true;
   }

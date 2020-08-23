@@ -74,7 +74,7 @@ bool has_store_or_atomic(IRNode *root, const std::vector<Stmt *> &vars);
 std::pair<bool, Stmt *> last_store_or_atomic(IRNode *root, Stmt *var);
 bool maybe_same_address(Stmt *var1, Stmt *var2);
 bool same_statements(IRNode *root1, IRNode *root2);
-DiffRange value_diff(Stmt *stmt, int lane, Stmt *alloca);
+bool same_value(Stmt *stmt1, Stmt *stmt2);
 DiffRange value_diff_loop_index(Stmt *stmt, Stmt *loop, int index_id);
 std::pair<bool, int> value_diff_ptr_index(Stmt *val1, Stmt *val2);
 void verify(IRNode *root);

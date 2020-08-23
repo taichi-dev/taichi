@@ -265,11 +265,15 @@ struct GLBuffer : GLSSBO {
   }
 
   void copy_back() {
+    copy_back(base);
+  }
+
+  void copy_back(void *ptr) {
     if (!size)
       return;
     void *mapped = this->map();
     TI_ASSERT(mapped);
-    std::memcpy(base, mapped, size);
+    std::memcpy(ptr, mapped, size);
     this->unmap();
   }
 };
@@ -609,6 +613,7 @@ struct CompiledProgram::Impl {
     bufs.add_buffer(GLBufId::Args, ctx.args,
                     std::max(arg_count, ret_count) * sizeof(uint64_t));
     if (used.print) {
+      // TODO(archibate): use result_buffer for print results
       auto runtime_buf = launcher->impl->core_bufs.get(GLBufId::Runtime);
       auto mapped = (GLSLRuntime *)runtime_buf->map();
       mapped->msg_count = 0;
@@ -618,7 +623,10 @@ struct CompiledProgram::Impl {
       ker->dispatch_compute(launcher);
     }
     for (auto &[idx, buf] : launcher->impl->user_bufs.bufs) {
-      buf->copy_back();
+      if (buf->index == GLBufId::Args)
+        buf->copy_back(launcher->result_buffer);
+      else
+        buf->copy_back();
     }
     launcher->impl->user_bufs.clear();
     if (used.print) {

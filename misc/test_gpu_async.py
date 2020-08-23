@@ -3,7 +3,7 @@ import time
 
 ti.init(arch=ti.cuda)
 
-a = ti.var(dt=ti.f32, shape=(1024 * 1024 * 1024))
+a = ti.field(ti.f32, shape=(1024 * 1024 * 1024))
 
 
 @ti.kernel

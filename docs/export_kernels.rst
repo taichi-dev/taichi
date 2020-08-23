@@ -182,9 +182,15 @@ To pass external arrays as arguments for kernels:
 Taichi.js (WIP)
 ---------------
 
-See `Taichi.js <https://github.com/taichi-dev/taichi.js>`_ for the workflow.
+Once you have C source generated, you can compile the C source into Javascript
+or WASM via Emscripten.
 
-Check `this page <https://taichi-dev.github.com/taichi.js>`_ for online demo.
+We provide `Taichi.js <https://github.com/taichi-dev/taichi.js>`_ as an
+infrastructure for wrapping Taichi kernels for Javascript.
+
+See `its README.md <https://github.com/taichi-dev/taichi.js/blob/master/README.md>`_ for the complete workflow.
+
+Check `this page <https://taichi-dev.github.io/taichi.js>`_ for online demo.
 
 Calling Taichi from Julia (WIP)
 -------------------------------

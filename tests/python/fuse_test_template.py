@@ -2,11 +2,14 @@ import taichi as ti
 import time
 
 
-def template_fuse_dense_x2y2z(size=1024 ** 3, repeat=10, first_n=100,
-                              benchmark=0, benchmark_repeat=50):
-    x = ti.field(ti.i32, shape=(size,))
-    y = ti.field(ti.i32, shape=(size,))
-    z = ti.field(ti.i32, shape=(size,))
+def template_fuse_dense_x2y2z(size=1024**3,
+                              repeat=10,
+                              first_n=100,
+                              benchmark=0,
+                              benchmark_repeat=50):
+    x = ti.field(ti.i32, shape=(size, ))
+    y = ti.field(ti.i32, shape=(size, ))
+    z = ti.field(ti.i32, shape=(size, ))
     first_n = min(first_n, size)
 
     @ti.kernel
@@ -54,9 +57,12 @@ def template_fuse_dense_x2y2z(size=1024 ** 3, repeat=10, first_n=100,
             assert z[i] == x[i] + 5
 
 
-def template_fuse_reduction(size=1024 ** 3, repeat=10, first_n=100,
-                            benchmark=0, benchmark_repeat=50):
-    x = ti.field(ti.i32, shape=(size,))
+def template_fuse_reduction(size=1024**3,
+                            repeat=10,
+                            first_n=100,
+                            benchmark=0,
+                            benchmark_repeat=50):
+    x = ti.field(ti.i32, shape=(size, ))
     first_n = min(first_n, size)
 
     @ti.kernel
@@ -70,9 +76,11 @@ def template_fuse_reduction(size=1024 ** 3, repeat=10, first_n=100,
             x[i] = x[i] + 1
 
     if benchmark:
+
         def repeated_inc():
             for _ in range(repeat):
                 inc()
+
         ti.benchmark(repeated_inc, repeat=benchmark_repeat)
     else:
         # Simply test
@@ -92,7 +100,8 @@ def template_fuse_reduction(size=1024 ** 3, repeat=10, first_n=100,
         ti.sync()
         duration = time.time() - t
         print(
-            f'fused {repeat} inc: total={duration} average={duration / repeat}')
+            f'fused {repeat} inc: total={duration} average={duration / repeat}'
+        )
 
         for i in range(first_n):
             assert x[i] == i * 10 + repeat

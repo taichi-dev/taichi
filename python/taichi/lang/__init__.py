@@ -362,8 +362,13 @@ def benchmark(func, repeat=300, args=()):
         run_benchmark()
 
 
-def benchmark_plot(cases=None, columns=None, archs=None, bars='sync_vs_async',
-                   bar_width=0.4, bar_distance=0, left_margin=0):
+def benchmark_plot(cases=None,
+                   columns=None,
+                   archs=None,
+                   bars='sync_vs_async',
+                   bar_width=0.4,
+                   bar_distance=0,
+                   left_margin=0):
     import taichi as ti
     import yaml
     import matplotlib.pyplot as plt
@@ -387,12 +392,15 @@ def benchmark_plot(cases=None, columns=None, archs=None, bars='sync_vs_async',
         subfigures[0][col_id].set_title(columns[col_id])
     for case_id in range(len(cases)):
         case = cases[case_id]
-        subfigures[case_id][0].annotate(case, xy=(0, 0.5), xytext=(
-        -subfigures[case_id][0].yaxis.labelpad - 5, 0),
-                                        xycoords=subfigures[case_id][
-                                            0].yaxis.label,
-                                        textcoords='offset points',
-                                        size='large', ha='right', va='center')
+        subfigures[case_id][0].annotate(
+            case,
+            xy=(0, 0.5),
+            xytext=(-subfigures[case_id][0].yaxis.labelpad - 5, 0),
+            xycoords=subfigures[case_id][0].yaxis.label,
+            textcoords='offset points',
+            size='large',
+            ha='right',
+            va='center')
         for col_id in range(len(columns)):
             col = columns[col_id]
             if archs is None:
@@ -400,25 +408,33 @@ def benchmark_plot(cases=None, columns=None, archs=None, bars='sync_vs_async',
             else:
                 current_archs = archs & data[case][col].keys()
             if bars == 'sync_vs_async':
-                y_left = [data[case][col][arch]['sync'] for arch in
-                          current_archs]
+                y_left = [
+                    data[case][col][arch]['sync'] for arch in current_archs
+                ]
                 label_left = 'sync'
-                y_right = [data[case][col][arch]['async'] for arch in
-                           current_archs]
+                y_right = [
+                    data[case][col][arch]['async'] for arch in current_archs
+                ]
                 label_right = 'async'
             elif bars == 'sync_regression':
-                y_left = [baseline_data[case][col][arch]['sync'] for arch in
-                          current_archs]
+                y_left = [
+                    baseline_data[case][col][arch]['sync']
+                    for arch in current_archs
+                ]
                 label_left = 'before'
-                y_right = [data[case][col][arch]['sync'] for arch in
-                           current_archs]
+                y_right = [
+                    data[case][col][arch]['sync'] for arch in current_archs
+                ]
                 label_right = 'after'
             elif bars == 'async_regression':
-                y_left = [baseline_data[case][col][arch]['async'] for arch in
-                          current_archs]
+                y_left = [
+                    baseline_data[case][col][arch]['async']
+                    for arch in current_archs
+                ]
                 label_left = 'before'
-                y_right = [data[case][col][arch]['async'] for arch in
-                           current_archs]
+                y_right = [
+                    data[case][col][arch]['async'] for arch in current_archs
+                ]
                 label_right = 'after'
             else:
                 raise RuntimeError('Unknown bars type')
@@ -428,22 +444,22 @@ def benchmark_plot(cases=None, columns=None, archs=None, bars='sync_vs_async',
                     y_left[i] = lowest / y_left[i] if y_left[i] != 0 else 1
                     y_right[i] = lowest / y_right[i] if y_right[i] != 0 else 1
             ax = subfigures[case_id][col_id]
-            bar_left = ax.bar(
-                x=[i - bar_width / 2 - bar_distance / 2 for i in
-                   range(len(current_archs))],
-                height=y_left,
-                width=bar_width,
-                label=label_left,
-                color='lawngreen'
-            )
-            bar_right = ax.bar(
-                x=[i + bar_width / 2 + bar_distance / 2 for i in
-                   range(len(current_archs))],
-                height=y_right,
-                width=bar_width,
-                label=label_right,
-                color='aqua'
-            )
+            bar_left = ax.bar(x=[
+                i - bar_width / 2 - bar_distance / 2
+                for i in range(len(current_archs))
+            ],
+                              height=y_left,
+                              width=bar_width,
+                              label=label_left,
+                              color='lawngreen')
+            bar_right = ax.bar(x=[
+                i + bar_width / 2 + bar_distance / 2
+                for i in range(len(current_archs))
+            ],
+                               height=y_right,
+                               width=bar_width,
+                               label=label_right,
+                               color='aqua')
             ax.set_xticks(range(len(current_archs)))
             ax.set_xticklabels(current_archs)
             figure.legend((bar_left, bar_right), (label_left, label_right),

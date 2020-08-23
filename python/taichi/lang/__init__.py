@@ -386,7 +386,7 @@ def benchmark_plot(cases=None,
         cases = list(data.keys())
     if columns is None:
         columns = list(data[cases[0]].keys())
-    normalize_to_lowest = lambda x: x in ['running_time', 'compilation_time']
+    normalize_to_lowest = lambda x: True
     figure, subfigures = plt.subplots(len(cases), len(columns))
     for col_id in range(len(columns)):
         subfigures[0][col_id].set_title(columns[col_id])

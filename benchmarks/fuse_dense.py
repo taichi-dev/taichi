@@ -10,9 +10,11 @@ from fuse_test_template import template_fuse_dense_x2y2z, \
 
 @ti.all_archs
 def benchmark_fuse_dense_x2y2z():
-    template_fuse_dense_x2y2z(size=100 * 1024**2, benchmark=True)
+    template_fuse_dense_x2y2z(size=100 * 1024**2, repeat=10,
+                              benchmark_repeat=50, benchmark=True)
 
 
 @ti.all_archs
 def benchmark_fuse_reduction():
-    template_fuse_reduction(size=10 * 1024**2, benchmark=True)
+    template_fuse_reduction(size=10 * 1024**2, repeat=10, benchmark_repeat=50,
+                            benchmark=True)

@@ -8,9 +8,9 @@ from fuse_test_template import template_fuse_dense_x2y2z, \
     template_fuse_reduction
 
 
-@ti.all_archs
+@ti.archs_excluding(ti.opengl, ti.cuda)
 def benchmark_fuse_dense_x2y2z():
-    template_fuse_dense_x2y2z(size=100 * 1024**2,
+    template_fuse_dense_x2y2z(size=10 * 1024**2,
                               repeat=10,
                               benchmark_repeat=50,
                               benchmark=True)

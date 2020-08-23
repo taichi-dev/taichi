@@ -7,6 +7,7 @@ def template_fuse_dense_x2y2z(size=1024**3,
                               first_n=100,
                               benchmark=0,
                               benchmark_repeat=50):
+    print('AAA here')
     x = ti.field(ti.i32, shape=(size, ))
     y = ti.field(ti.i32, shape=(size, ))
     z = ti.field(ti.i32, shape=(size, ))

@@ -371,6 +371,9 @@ def benchmark_plot(fn=None,
                    bar_width=0.4,
                    bar_distance=0,
                    left_margin=0):
+    assert len(cases) >= 2, 'benchmark_plot does not support plotting with only one case'
+    # TODO: fix above
+    
     import taichi as ti
     import yaml
     import matplotlib.pyplot as plt
@@ -499,6 +502,7 @@ def stat_write(key, value):
     data.setdefault(case_name, {})
     data[case_name].setdefault(key, {})
     data[case_name][key].setdefault(arch_name, {})
+    print(f'!!! {async_mode}')
     data[case_name][key][arch_name][async_mode] = value
     with open(filename, 'w') as f:
         yaml.dump(data, f, Dumper=yaml.SafeDumper)

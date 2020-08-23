@@ -461,15 +461,17 @@ class Kernel:
 
             ret = None
             ret_dt = self.return_type
-            if ret_dt is not None:
+            has_ret = ret_dt is not None
+
+            if has_external_arrays or has_ret:
+                import taichi as ti
+                ti.sync()
+
+            if has_ret:
                 if id(ret_dt) in integer_type_ids:
                     ret = t_kernel.get_ret_int(0)
                 else:
                     ret = t_kernel.get_ret_float(0)
-
-            if has_external_arrays:
-                import taichi as ti
-                ti.sync()
 
             if callbacks:
                 for c in callbacks:

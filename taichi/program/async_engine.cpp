@@ -175,7 +175,7 @@ void ExecutionQueue::enqueue(KernelLaunchRecord &&ker) {
         auto config = kernel->program.config;
         auto ir = stmt;
         offload_to_executable(
-            ir, config, /*verbose=*/false,
+            ir, config, /*verbose=*/config.print_ir,
             /*lower_global_access=*/true,
             /*make_thread_local=*/true,
             /*make_block_local=*/

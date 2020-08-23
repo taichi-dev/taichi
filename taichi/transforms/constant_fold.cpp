@@ -121,6 +121,9 @@ class ConstantFold : public BasicStmtVisitor {
     launch_ctx.set_arg_raw(0, lhs.val_u64);
     launch_ctx.set_arg_raw(1, rhs.val_u64);
     (*ker)(launch_ctx);
+    // Constant folding kernel is always run in sync mode, therefore we call
+    // device_synchronize().
+    current_program.device_synchronize();
     ret.val_i64 = current_program.fetch_result<int64_t>(0);
     return true;
   }
@@ -143,6 +146,9 @@ class ConstantFold : public BasicStmtVisitor {
     auto launch_ctx = ker->make_launch_context();
     launch_ctx.set_arg_raw(0, operand.val_u64);
     (*ker)(launch_ctx);
+    // Constant folding kernel is always run in sync mode, therefore we call
+    // device_synchronize().
+    current_program.device_synchronize();
     ret.val_i64 = current_program.fetch_result<int64_t>(0);
     return true;
   }
@@ -240,7 +246,7 @@ bool constant_fold(IRNode *root) {
     TI_TRACE("config.debug enabled, ignoring constant fold");
     return false;
   }
-  if (!cfg.advanced_optimization || cfg.async_mode)
+  if (!cfg.advanced_optimization)
     return false;
   return ConstantFold::run(root);
 }

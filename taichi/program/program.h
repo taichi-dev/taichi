@@ -138,6 +138,7 @@ class Program {
   void initialize_device_llvm_context();
 
   void synchronize();
+  void device_synchronize();
 
   void layout(std::function<void()> func) {
     func();

@@ -13,12 +13,13 @@ def benchmark_async(func):
     def body():
         for arch in [ti.cpu, ti.cuda]:
             for async_mode in [True, False]:
+                os.environ['TI_CURRENT_BENCHMARK'] = func.__name__
                 ti.init(arch=arch, async_mode=async_mode)
                 func()
     return body
 
 @benchmark_async
-def async_benchmark_fuse_dense_x2y2z():
+def fuse_dense_x2y2z():
     template_fuse_dense_x2y2z(size=10 * 1024**2,
                               repeat=10,
                               benchmark_repeat=50,
@@ -26,7 +27,7 @@ def async_benchmark_fuse_dense_x2y2z():
 
 
 @benchmark_async
-def async_benchmark_fuse_reduction():
+def fuse_reduction():
     template_fuse_reduction(size=10 * 1024**2,
                             repeat=10,
                             benchmark_repeat=50,

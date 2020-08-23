@@ -48,7 +48,7 @@ class CCTransformer : public IRVisitor {
     config.demote_dense_struct_fors = true;
     irpass::compile_to_executable(ir, config,
                                   /*vectorize=*/false, kernel->grad,
-                                  /*ad_use_stack=*/false, config.print_ir,
+                                  /*ad_use_stack=*/true, config.print_ir,
                                   /*lower_global_access*/ true);
   }
 
@@ -518,6 +518,64 @@ class CCTransformer : public IRVisitor {
                           stmt->raw_name());
     emit("{} = Ti_rand_{}();", var,
          data_type_short_name(stmt->ret_type.data_type));
+  }
+
+  void visit(StackAllocaStmt *stmt) override {
+    TI_ASSERT(stmt->width() == 1);
+
+    const auto &var_name = stmt->raw_name();
+    emit("Ti_u8 {}[{}];", var_name, stmt->size_in_bytes() + sizeof(uint32_t));
+    emit("Ti_ad_stack_init({});", var_name);
+  }
+
+  void visit(StackPopStmt *stmt) override {
+    emit("Ti_ad_stack_pop({});", stmt->stack->raw_name());
+  }
+
+  void visit(StackPushStmt *stmt) override {
+    auto *stack = stmt->stack->as<StackAllocaStmt>();
+    const auto &stack_name = stack->raw_name();
+    auto elem_size = stack->element_size_in_bytes();
+    emit("Ti_ad_stack_push({}, {});", stack_name, elem_size);
+    auto primal_name = stmt->raw_name() + "_primal_";
+    auto dt_name = cc_data_type_name(stmt->element_type());
+    auto var = define_var(dt_name + " *", primal_name);
+    emit("{} = ({} *) Ti_ad_stack_top_primal({}, {});",
+        var, dt_name, stack_name, elem_size);
+    emit("*{} = {};", primal_name, stmt->v->raw_name());
+  }
+
+  void visit(StackLoadTopStmt *stmt) override {
+    auto *stack = stmt->stack->as<StackAllocaStmt>();
+    const auto primal_name = stmt->raw_name() + "_primal_";
+    auto dt_name = cc_data_type_name(stmt->element_type());
+    auto var = define_var(dt_name + " *", primal_name);
+    emit("{} = ({} *)Ti_ad_stack_top_primal({}, {});",
+        var, dt_name, stack->raw_name(), stack->element_size_in_bytes());
+    emit("{} = *{};", define_var(dt_name, stmt->raw_name()), primal_name);
+  }
+
+  void visit(StackLoadTopAdjStmt *stmt) override {
+    auto *stack = stmt->stack->as<StackAllocaStmt>();
+    const auto adjoint_name = stmt->raw_name() + "_adjoint_";
+    auto dt_name = cc_data_type_name(stmt->element_type());
+    auto var = define_var(dt_name + " *", adjoint_name);
+    emit("{} = ({} *)Ti_ad_stack_top_adjoint({}, {});",
+        var, dt_name, stack->raw_name(), stack->element_size_in_bytes());
+    emit("{} = *{};", define_var(dt_name, stmt->raw_name()), adjoint_name);
+  }
+
+  void visit(StackAccAdjointStmt *stmt) override {
+    auto *stack = stmt->stack->as<StackAllocaStmt>();
+    const auto adjoint_name = stmt->raw_name() + "_adjoint_";
+    auto dt_name = cc_data_type_name(stmt->element_type());
+    auto var = define_var(dt_name + " *", adjoint_name);
+    emit("{} = ({} *)Ti_ad_stack_top_adjoint({}, {});",
+        var, dt_name, stack->raw_name(), stack->element_size_in_bytes());
+    emit("printf(\"%d\\n\", *Ti_ad_stack_n({}));", stack->raw_name());
+    emit("printf(\"%p\\n\", {});", stack->raw_name());
+    emit("printf(\"%p\\n\", {});", adjoint_name);
+    emit("*{} += {};", adjoint_name, stmt->v->raw_name());
   }
 
   template <typename... Args>

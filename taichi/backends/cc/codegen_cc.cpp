@@ -540,8 +540,8 @@ class CCTransformer : public IRVisitor {
     auto primal_name = stmt->raw_name() + "_primal_";
     auto dt_name = cc_data_type_name(stmt->element_type());
     auto var = define_var(dt_name + " *", primal_name);
-    emit("{} = ({} *) Ti_ad_stack_top_primal({}, {});",
-        var, dt_name, stack_name, elem_size);
+    emit("{} = ({} *) Ti_ad_stack_top_primal({}, {});", var, dt_name,
+         stack_name, elem_size);
     emit("*{} = {};", primal_name, stmt->v->raw_name());
   }
 
@@ -550,8 +550,8 @@ class CCTransformer : public IRVisitor {
     const auto primal_name = stmt->raw_name() + "_primal_";
     auto dt_name = cc_data_type_name(stmt->element_type());
     auto var = define_var(dt_name + " *", primal_name);
-    emit("{} = ({} *)Ti_ad_stack_top_primal({}, {});",
-        var, dt_name, stack->raw_name(), stack->element_size_in_bytes());
+    emit("{} = ({} *)Ti_ad_stack_top_primal({}, {});", var, dt_name,
+         stack->raw_name(), stack->element_size_in_bytes());
     emit("{} = *{};", define_var(dt_name, stmt->raw_name()), primal_name);
   }
 
@@ -560,8 +560,8 @@ class CCTransformer : public IRVisitor {
     const auto adjoint_name = stmt->raw_name() + "_adjoint_";
     auto dt_name = cc_data_type_name(stmt->element_type());
     auto var = define_var(dt_name + " *", adjoint_name);
-    emit("{} = ({} *)Ti_ad_stack_top_adjoint({}, {});",
-        var, dt_name, stack->raw_name(), stack->element_size_in_bytes());
+    emit("{} = ({} *)Ti_ad_stack_top_adjoint({}, {});", var, dt_name,
+         stack->raw_name(), stack->element_size_in_bytes());
     emit("{} = *{};", define_var(dt_name, stmt->raw_name()), adjoint_name);
   }
 
@@ -570,8 +570,8 @@ class CCTransformer : public IRVisitor {
     const auto adjoint_name = stmt->raw_name() + "_adjoint_";
     auto dt_name = cc_data_type_name(stmt->element_type());
     auto var = define_var(dt_name + " *", adjoint_name);
-    emit("{} = ({} *)Ti_ad_stack_top_adjoint({}, {});",
-        var, dt_name, stack->raw_name(), stack->element_size_in_bytes());
+    emit("{} = ({} *)Ti_ad_stack_top_adjoint({}, {});", var, dt_name,
+         stack->raw_name(), stack->element_size_in_bytes());
     emit("printf(\"%d\\n\", *Ti_ad_stack_n({}));", stack->raw_name());
     emit("printf(\"%p\\n\", {});", stack->raw_name());
     emit("printf(\"%p\\n\", {});", adjoint_name);

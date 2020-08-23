@@ -1,16 +1,24 @@
-Export Taichi kernels for distrubution (WIP)
-============================================
+Export Taichi kernels for distribution
+======================================
 
-Taichi allows you to export compiled Taichi kernels to disk for future use.
+The C backend of Taichi allows you to **export Taichi kernels to C source**.
 
-The **exported Taichi kernels** does not necessary to be launched from Python.
-Instead, you may call them directly from C/C++, or even Javascript via
-Empscripten, Julia via ``ccall``.
+The exported Taichi program, which are simply C99 compatible source,
+does not necessary to be launched from Python. Instead, you may use them in
+your C/C++ project. Or even calling them in Javascript via Empscripten.
+
+Each C function corresponds to a Taichi kernel.
+For example, ``Tk_init_c6_0()`` may corresponds to ``init()`` in ``mpm88.py``.
+
+Only the source is need when copying, all the required Taichi runtimes are
+included in that single C source file.
+
+This also allows commercial people to distribute their Taichi program in
+binary format by linking this file with their project.
 
 .. note::
 
     Currently this feature is only officially supported on the C backend.
-
     Also note that the C backend is only released on **Linux** platform for now.
 
 
@@ -170,3 +178,13 @@ To pass external arrays as arguments for kernels:
     Tk_matrix_to_ext_arr_c12_0(&Ti_ctx);
 
     some_how_show_the_image(img);
+
+Taichi.js (WIP)
+---------------
+
+See `Taichi.js <https://github.com/taichi-dev/taichi.js>`_ for the workflow.
+
+Check `this page <https://taichi-dev.github.com/taichi.js>`_ for online demo.
+
+Calling Taichi from Julia (WIP)
+-------------------------------

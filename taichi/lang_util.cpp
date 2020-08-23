@@ -65,9 +65,12 @@ real measure_cpe(std::function<void()> target,
 }
 
 std::string data_type_name(DataType t) {
-  static std::map<DataType, std::string> type_names;
-  if (type_names.empty()) {
-#define REGISTER_DATA_TYPE(i, j) type_names[DataType::i] = #j;
+  switch (t) {
+
+#define REGISTER_DATA_TYPE(i, j)  \
+    case DataType::i:             \
+      return j;
+
     REGISTER_DATA_TYPE(f16, float16);
     REGISTER_DATA_TYPE(f32, float32);
     REGISTER_DATA_TYPE(f64, float64);
@@ -82,9 +85,11 @@ std::string data_type_name(DataType t) {
     REGISTER_DATA_TYPE(u64, uint64);
     REGISTER_DATA_TYPE(gen, generic);
     REGISTER_DATA_TYPE(unknown, unknown);
+
 #undef REGISTER_DATA_TYPE
+    default:
+      TI_NOT_IMPLEMENTED
   }
-  return type_names[t];
 }
 
 std::string data_type_format(DataType dt) {
@@ -106,10 +111,13 @@ std::string data_type_format(DataType dt) {
 }
 
 int data_type_size(DataType t) {
-  static std::map<DataType, int> type_sizes;
-  if (type_sizes.empty()) {
-#define REGISTER_DATA_TYPE(i, j) type_sizes[DataType::i] = sizeof(j);
-    type_sizes[DataType::f16] = 2;
+  switch (t) {
+  
+#define REGISTER_DATA_TYPE(i, j)   \
+    case DataType::i:              \
+      return sizeof(j);
+
+    REGISTER_DATA_TYPE(DataType::f16, 2);
     REGISTER_DATA_TYPE(f32, float32);
     REGISTER_DATA_TYPE(f64, float64);
     REGISTER_DATA_TYPE(i8, bool);
@@ -121,11 +129,12 @@ int data_type_size(DataType t) {
     REGISTER_DATA_TYPE(u16, uint16);
     REGISTER_DATA_TYPE(u32, uint32);
     REGISTER_DATA_TYPE(u64, uint64);
-    type_sizes[DataType::gen] = 0;
-    type_sizes[DataType::unknown] = -1;
+    REGISTER_DATA_TYPE(DataType::gen, 0);
+
 #undef REGISTER_DATA_TYPE
+    default: //unknown
+      return -1;
   }
-  return type_sizes[t];
 }
 
 std::string data_type_short_name(DataType t) {

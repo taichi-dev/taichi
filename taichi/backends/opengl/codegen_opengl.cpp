@@ -499,6 +499,7 @@ class KernelGen : public IRVisitor {
     if (bin->op_type == BinaryOpType::floordiv) {
       if (is_integral(bin->lhs->element_type()) &&
           is_integral(bin->rhs->element_type())) {
+        TI_WARN("Integer floordiv called! It should be taken care by alg_simp");
         emit(
             "{} {} = {}(sign({}) * {} >= 0 ? abs({}) / abs({}) : sign({}) * "
             "(abs({}) + abs({}) - 1) / {});",

@@ -1037,8 +1037,8 @@ class TaichiMain:
     @register
     def repl(self, arguments: list = sys.argv[2:]):
         """Start Taichi REPL / Python shell with 'import taichi as ti'"""
-        parser = argparse.ArgumentParser(
-            prog='ti repl', description=f"{self.repl.__doc__}")
+        parser = argparse.ArgumentParser(prog='ti repl',
+                                         description=f"{self.repl.__doc__}")
         args = parser.parse_args(arguments)
 
         def local_scope():

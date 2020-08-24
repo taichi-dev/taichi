@@ -368,9 +368,11 @@ def benchmark_plot(fn=None,
                    bar_width=0.4,
                    bar_distance=0,
                    left_margin=0):
-    assert len(cases) >= 2, 'benchmark_plot does not support plotting with only one case'
+    assert len(
+        cases
+    ) >= 2, 'benchmark_plot does not support plotting with only one case'
     # TODO: fix above
-    
+
     import taichi as ti
     import yaml
     import matplotlib.pyplot as plt
@@ -394,9 +396,9 @@ def benchmark_plot(fn=None,
     figure, subfigures = plt.subplots(len(cases), len(columns))
     if title is None:
         title = 'Taichi Performance Benchmarks (Higher means more)'
+    figure.suptitle(title, fontweight="bold")
     for col_id in range(len(columns)):
         subfigures[0][col_id].set_title(columns[col_id])
-    figure.suptitle(title)
     for case_id in range(len(cases)):
         case = cases[case_id]
         subfigures[case_id][0].annotate(

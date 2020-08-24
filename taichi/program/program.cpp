@@ -144,8 +144,6 @@ Program::Program(Arch desired_arch) {
   snode_root = std::make_unique<SNode>(0, SNodeType::root);
   snode_root->is_path_all_dense = true;
 
-  TI_P(config.async_mode);
-
   if (config.async_mode) {
     TI_WARN("Running in async mode. This is experimental.");
     TI_ASSERT(arch_is_cpu(config.arch) || config.arch == Arch::cuda);

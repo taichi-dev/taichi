@@ -47,6 +47,7 @@ Arithmetic operators
 Logic operators
 ***************
 
+- ``~a``
 - ``a == b``
 - ``a != b``
 - ``a > b``

@@ -393,6 +393,8 @@ void Program::materialize_layout() {
     opengl_kernel_launcher_->result_buffer = result_buffer;
 #ifdef TI_WITH_CC
   } else if (config.arch == Arch::cc) {
+    TI_ASSERT(result_buffer == nullptr);
+    result_buffer = allocate_result_buffer_default(this);
     cc_program->compile_layout(snode_root.get());
 #endif
   }
@@ -643,11 +645,8 @@ uint64 Program::fetch_result_uint64(int i) {
 #else
     TI_NOT_IMPLEMENTED;
 #endif
-  } else if (arch_is_cpu(arch) || arch == Arch::metal || arch == Arch::opengl) {
-    ret = result_buffer[i];
   } else {
-    // TODO(archibate): no more ret via Context for C backend:
-    ret = context.get_arg_as_uint64(i);
+    ret = result_buffer[i];
   }
   return ret;
 }

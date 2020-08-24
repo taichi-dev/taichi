@@ -1,5 +1,5 @@
-Export Taichi kernels for distribution
-======================================
+Export Taichi kernels to C source
+=================================
 
 The C backend of Taichi allows you to **export Taichi kernels to C source**.
 
@@ -22,8 +22,8 @@ binary format by linking this file with their project.
     Also note that the C backend is only released on **Linux** platform for now.
 
 
-The workflow for export
------------------------
+The workflow of export
+----------------------
 
 Use ``ti.core.start_recording`` in the Taichi program you want to export.
 
@@ -201,5 +201,17 @@ See `its README.md <https://github.com/taichi-dev/taichi.js/blob/master/README.m
 
 Check `this page <https://taichi-dev.github.io/taichi.js>`_ for online demo.
 
-Calling Taichi from Julia (WIP)
--------------------------------
+Calling Taichi kernels from Julia (WIP)
+---------------------------------------
+
+Once you have C source generated, you can then compile the C source into a
+shared object. Then it can be called from other langurages that provides a C
+interface, including but not limited to Julia, Matlab, Mathematica, Java, etc.
+
+TODO: WIP.
+
+The export workflow for Metal shaders (WIP)
+-------------------------------------------
+
+Actually we also support exporting / dumping Metal shaders for the Apple Metal
+backend via the shared API as C backend does. Documentation WIP.

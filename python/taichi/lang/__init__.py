@@ -324,7 +324,8 @@ def benchmark(func, repeat=300, args=()):
 
     def run_benchmark():
         compile_time = time.time()
-        func(*args)
+        func(*args)  # compile the kernel first
+        ti.sync()
         compile_time = time.time() - compile_time
         ti.stat_write('compilation_time', compile_time)
         codegen_stat = ti.core.stat()
@@ -344,21 +345,142 @@ def benchmark(func, repeat=300, args=()):
         # The reason why we run 4 times is to warm up instruction/data caches.
         # Discussion: https://github.com/taichi-dev/taichi/pull/1002#discussion_r426312136
         for i in range(4):
-            func(*args)  # compile the kernel first
+            func(*args)
         ti.sync()
         t = time.time()
         for n in range(repeat):
             func(*args)
-        ti.get_runtime().sync()
+        ti.sync()
         elapsed = time.time() - t
         avg = elapsed / repeat
         ti.stat_write('running_time', avg)
 
-    ti.cfg.async_mode = False
     run_benchmark()
-    if ti.is_extension_supported(ti.cfg.arch, ti.extension.async_mode):
-        ti.cfg.async_mode = True
-        run_benchmark()
+
+
+def benchmark_plot(fn=None,
+                   cases=None,
+                   columns=None,
+                   archs=None,
+                   title=None,
+                   bars='sync_vs_async',
+                   bar_width=0.4,
+                   bar_distance=0,
+                   left_margin=0):
+    import taichi as ti
+    import yaml
+    import matplotlib.pyplot as plt
+    if fn is None:
+        fn = os.path.join(ti.core.get_repo_dir(), 'benchmarks', 'output',
+                          'benchmark.yml')
+
+    with open(fn, 'r') as f:
+        data = yaml.load(f, Loader=yaml.SafeLoader)
+    if bars != 'sync_vs_async':  # need baseline
+        baseline_dir = os.path.join(ti.core.get_repo_dir(), 'benchmarks',
+                                    'baseline')
+        baseline_file = f'{baseline_dir}/benchmark.yml'
+        with open(baseline_file, 'r') as f:
+            baseline_data = yaml.load(f, Loader=yaml.SafeLoader)
+    if cases is None:
+        cases = list(data.keys())
+
+    assert len(cases) >= 1
+    if len(cases) == 1:
+        cases = [cases[0], cases[0]]
+        ti.warning(
+            'Function benchmark_plot does not support plotting with only one case for now. Duplicating the item to move on.'
+        )
+
+    if columns is None:
+        columns = list(data[cases[0]].keys())
+    normalize_to_lowest = lambda x: True
+    figure, subfigures = plt.subplots(len(cases), len(columns))
+    if title is None:
+        title = 'Taichi Performance Benchmarks (Higher means more)'
+    figure.suptitle(title, fontweight="bold")
+    for col_id in range(len(columns)):
+        subfigures[0][col_id].set_title(columns[col_id])
+    for case_id in range(len(cases)):
+        case = cases[case_id]
+        subfigures[case_id][0].annotate(
+            case,
+            xy=(0, 0.5),
+            xytext=(-subfigures[case_id][0].yaxis.labelpad - 5, 0),
+            xycoords=subfigures[case_id][0].yaxis.label,
+            textcoords='offset points',
+            size='large',
+            ha='right',
+            va='center')
+        for col_id in range(len(columns)):
+            col = columns[col_id]
+            if archs is None:
+                current_archs = data[case][col].keys()
+            else:
+                current_archs = archs & data[case][col].keys()
+            if bars == 'sync_vs_async':
+                y_left = [
+                    data[case][col][arch]['sync'] for arch in current_archs
+                ]
+                label_left = 'sync'
+                y_right = [
+                    data[case][col][arch]['async'] for arch in current_archs
+                ]
+                label_right = 'async'
+            elif bars == 'sync_regression':
+                y_left = [
+                    baseline_data[case][col][arch]['sync']
+                    for arch in current_archs
+                ]
+                label_left = 'before'
+                y_right = [
+                    data[case][col][arch]['sync'] for arch in current_archs
+                ]
+                label_right = 'after'
+            elif bars == 'async_regression':
+                y_left = [
+                    baseline_data[case][col][arch]['async']
+                    for arch in current_archs
+                ]
+                label_left = 'before'
+                y_right = [
+                    data[case][col][arch]['async'] for arch in current_archs
+                ]
+                label_right = 'after'
+            else:
+                raise RuntimeError('Unknown bars type')
+            if normalize_to_lowest(col):
+                for i in range(len(current_archs)):
+                    maximum = max(y_left[i], y_right[i])
+                    y_left[i] = y_left[i] / maximum if y_left[i] != 0 else 1
+                    y_right[i] = y_right[i] / maximum if y_right[i] != 0 else 1
+            ax = subfigures[case_id][col_id]
+            bar_left = ax.bar(x=[
+                i - bar_width / 2 - bar_distance / 2
+                for i in range(len(current_archs))
+            ],
+                              height=y_left,
+                              width=bar_width,
+                              label=label_left,
+                              color=(0.3, 0.7, 0.9, 1.0))
+            bar_right = ax.bar(x=[
+                i + bar_width / 2 + bar_distance / 2
+                for i in range(len(current_archs))
+            ],
+                               height=y_right,
+                               width=bar_width,
+                               label=label_right,
+                               color=(0.8, 0.2, 0.3, 1.0))
+            ax.set_xticks(range(len(current_archs)))
+            ax.set_xticklabels(current_archs)
+            figure.legend((bar_left, bar_right), (label_left, label_right),
+                          loc='lower center')
+    figure.subplots_adjust(left=left_margin)
+
+    fig = plt.gcf()
+    fig.set_size_inches(13, 8)
+
+    plt.show()
 
 
 def stat_write(key, value):
@@ -378,10 +500,10 @@ def stat_write(key, value):
             data = yaml.load(f, Loader=yaml.SafeLoader)
     except FileNotFoundError:
         data = {}
-    data.setdefault(key, {})
-    data[key].setdefault(case_name, {})
-    data[key][case_name].setdefault(async_mode, {})
-    data[key][case_name][async_mode][arch_name] = value
+    data.setdefault(case_name, {})
+    data[case_name].setdefault(key, {})
+    data[case_name][key].setdefault(arch_name, {})
+    data[case_name][key][arch_name][async_mode] = value
     with open(filename, 'w') as f:
         yaml.dump(data, f, Dumper=yaml.SafeDumper)
 

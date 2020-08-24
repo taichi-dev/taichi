@@ -84,11 +84,11 @@ class Matrix(TaichiOperations):
                 self.m = m
             else:
                 # construct global matrix (deprecated)
-                #warning(  # TODO(archibate): uncomment this when #1500 is complete
-                #    "Declaring global matrices using `ti.Matrix(n, m, dt, shape)` is deprecated, "
-                #    "use `ti.Matrix.field(n, m, dtype, shape)` instead",
-                #    DeprecationWarning,
-                #    stacklevel=2)
+                warning(
+                    "Declaring global matrices using `ti.Matrix(n, m, dt, shape)` is deprecated, "
+                    "use `ti.Matrix.field(n, m, dtype, shape)` instead",
+                    DeprecationWarning,
+                    stacklevel=2)
                 mat = Matrix.field(n=n,
                                    m=m,
                                    dtype=dt,
@@ -848,7 +848,7 @@ class Matrix(TaichiOperations):
 
     @classmethod
     @python_scope
-    #@deprecated('ti.Matrix.var', 'ti.Matrix.field')
+    @deprecated('ti.Matrix.var', 'ti.Matrix.field')
     def var(cls, n, m, dt, *args, **kwargs):
         '''ti.Matrix.var'''
         _taichi_skip_traceback = 1
@@ -861,7 +861,7 @@ class Matrix(TaichiOperations):
         return cls.field(n, 1, dtype, *args, **kwargs)
 
     @classmethod
-    #@deprecated('ti.Vector.var', 'ti.Vector.field')
+    @deprecated('ti.Vector.var', 'ti.Vector.field')
     def _Vector_var(cls, n, dt, *args, **kwargs):
         '''ti.Vector.var'''
         _taichi_skip_traceback = 1

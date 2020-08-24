@@ -51,7 +51,7 @@ def expr_init_list(xs, expected):
 
 @taichi_scope
 def expr_init_func(
-    rhs):  # temporary solution to allow passing in fields as arguments
+        rhs):  # temporary solution to allow passing in fields as arguments
     import taichi as ti
     if isinstance(rhs, Expr) and rhs.ptr.is_global_var():
         return rhs
@@ -322,7 +322,7 @@ class Root:
 root = Root()
 
 
-#@deprecated('ti.var', 'ti.field')
+@deprecated('ti.var', 'ti.field')
 def var(dt, shape=None, offset=None, needs_grad=False):
     _taichi_skip_traceback = 1
     return field(dt, shape, offset, needs_grad)

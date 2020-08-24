@@ -329,7 +329,6 @@ def benchmark(func, repeat=300, args=()):
         compile_time = time.time() - compile_time
         ti.stat_write('compilation_time', compile_time)
         codegen_stat = ti.core.stat()
-        print(codegen_stat)
         for line in codegen_stat.split('\n'):
             try:
                 a, b = line.strip().split(':')

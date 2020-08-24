@@ -389,8 +389,10 @@ def benchmark_plot(fn=None,
     assert len(cases) >= 1
     if len(cases) == 1:
         cases = [cases[0], cases[0]]
-        ti.warning('Function benchmark_plot does not support plotting with only one case for now. Duplicating the item to move on.')
-    
+        ti.warning(
+            'Function benchmark_plot does not support plotting with only one case for now. Duplicating the item to move on.'
+        )
+
     if columns is None:
         columns = list(data[cases[0]].keys())
     normalize_to_lowest = lambda x: True

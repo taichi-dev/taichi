@@ -94,34 +94,36 @@ def sparse_numpy():
     ti.benchmark(task, repeat=100)
 
 
-@benchmark_async
-def autodiff():
+with_autodiff = False  # For some reason autodiff crashes with async.
+if with_autodiff:
 
-    n = 1024**2 * 10
+    @benchmark_async
+    def autodiff():
 
-    a = ti.field(dtype=ti.f32, shape=n, needs_grad=True)
-    b = ti.field(dtype=ti.f32, shape=n)
-    loss = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
+        n = 1024**2 * 10
 
-    @ti.kernel
-    def compute_loss():
-        for i in a:
-            loss[None] += a[i]
+        a = ti.field(dtype=ti.f32, shape=n, needs_grad=True)
+        b = ti.field(dtype=ti.f32, shape=n)
+        loss = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
 
-    @ti.kernel
-    def accumulate_grad():
-        for i in a:
-            b[i] += a.grad[i]
+        @ti.kernel
+        def compute_loss():
+            for i in a:
+                loss[None] += a[i]
 
-    def task():
-        with ti.Tape(loss=loss):
-            # The forward kernel of compute_loss should be completely eliminated (except for the last one)
-            compute_loss()
-            # pass
+        @ti.kernel
+        def accumulate_grad():
+            for i in a:
+                b[i] += a.grad[i]
 
-        # accumulate_grad()
+        def task():
+            with ti.Tape(loss=loss):
+                # The forward kernel of compute_loss should be completely eliminated (except for the last one)
+                compute_loss()
 
-    ti.benchmark(task, repeat=100)
+            accumulate_grad()
+
+        ti.benchmark(task, repeat=100)
 
 
 @benchmark_async
@@ -159,6 +161,4 @@ def stencil_reduction():
     ti.benchmark(task, repeat=100)
 
 
-# @benchmark_async
-# def mpm_breakdown():
-#     pass
+# TODO: add mpm_breakdown

@@ -6,8 +6,8 @@ rerun = True
 
 cases = [
     # fuse_dense_x2y2z, fuse_reduction, fill_1d, fill_scalar
-    sparse_numpy,
-    # autodiff,
+    # sparse_numpy,
+    autodiff,
     # stencil_reduction,
     # stencil_reduction
 ]

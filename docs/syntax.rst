@@ -1,5 +1,3 @@
-.. _syntax:
-
 Syntax
 ======
 

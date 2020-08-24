@@ -73,7 +73,6 @@ def main(all=False, diff=None):
         for d in directories:
             files += list(Path(os.path.join(repo_dir, d)).rglob('*'))
         print('\n'.join(map(lambda x: x.name, files)))
-        exit()
     else:
         if diff is None:
 

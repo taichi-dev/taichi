@@ -1,3 +1,5 @@
+.. _cli_utilities:
+
 Command line utilities
 ======================
 
@@ -7,13 +9,45 @@ run ``ti`` or ``python3 -m taichi``.
 
 Examples
 --------
-Taichi provides a set of bundled examples. You could run ``ti example -h`` to print the help
-message and get a list of available example names. For instance, to run the basic `fractal`
-example, try: ``ti example fractal`` from your shell. (``ti example fractal.py`` should also
-work)
-
+Taichi provides a set of bundled examples. You could run ``ti example -h`` to print the help message and get a list of available example names. For instance, to run the basic ``fractal`` example, try: ``ti example fractal`` from your shell. (``ti example fractal.py`` should also work)
 
 Changelog
 ---------
-Sometimes it's convenient to view the changelog of the current version of Taichi, to do so from
-your shell, you could run ``ti changelog``.
+Sometimes it's convenient to view the changelog of the current version of Taichi.
+To do so from your shell, you could run ``ti changelog``.
+
+REPL Shell
+----------
+Sometimes it's convenient to start a Python shell with ``import taichi as ti``
+as pre-loaded module for fast testing and confirmation.
+To do so from your shell, you could run ``ti repl``.
+
+System information
+------------------
+When reporting bugs, consider run ``ti diagnose`` and attach its output,
+this helps maintainers to see more about your system information so that
+they could hopefully resolve the issue quicker.
+
+.. _cli_video_tools:
+
+Converting PNGs to video
+------------------------
+Sometimes it's convenient to convert a series of ``png`` files into a single
+video when showing your result to others.
+
+For example, you have ``000000.png``, ``000001.png``, ... generated according
+to :ref:`export_results` in **current working directory**.
+
+Then you could run ``ti video`` to create a file ``video.mp4`` containing all
+these images as frames (sorted by file name).
+
+Use ``ti video -f40`` for creating a video with 40 FPS.
+
+Converting video to GIF
+-----------------------
+Sometimes we need ``gif`` images in order to post the result on forums.
+
+To do so, you could run ``ti gif -i video.mp4``, where ``video.mp4`` is the
+``mp4`` video (generated with instructions above).
+
+Use ``ti gif -i video.mp4 -f40`` for creating a GIF with 40 FPS.

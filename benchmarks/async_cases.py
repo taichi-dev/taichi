@@ -84,6 +84,7 @@ def sparse_numpy():
             y[i, j] = alpha * x[i, j] + y[i, j]
 
     def task():
+        initialize()
         saxpy(a, b, 2)
         saxpy(b, a, 1.1)
         saxpy(b, a, 1.1)

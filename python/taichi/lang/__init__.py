@@ -368,11 +368,6 @@ def benchmark_plot(fn=None,
                    bar_width=0.4,
                    bar_distance=0,
                    left_margin=0):
-    assert len(
-        cases
-    ) >= 2, 'benchmark_plot does not support plotting with only one case'
-    # TODO: fix above
-
     import taichi as ti
     import yaml
     import matplotlib.pyplot as plt
@@ -390,6 +385,12 @@ def benchmark_plot(fn=None,
             baseline_data = yaml.load(f, Loader=yaml.SafeLoader)
     if cases is None:
         cases = list(data.keys())
+
+    assert len(cases) >= 1
+    if len(cases) == 1:
+        cases = [cases[0], cases[0]]
+        ti.warning('Function benchmark_plot does not support plotting with only one case for now. Duplicating the item to move on.')
+    
     if columns is None:
         columns = list(data[cases[0]].keys())
     normalize_to_lowest = lambda x: True

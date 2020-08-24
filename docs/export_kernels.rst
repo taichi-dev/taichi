@@ -117,21 +117,29 @@ And a C header file ``mpm88.h`` for declarations of data structures, functions
 Calling the exported kernels
 ----------------------------
 
-Then, link this file together with your C/C++ project.
+Then, link this file (``mpm88.c``) together with your C/C++ project.
+Include the header (``mpm88.h``) to where kernels are to be called.
 
 To call the kernel ``init_c6_0``, for example:
 
 .. code-block:: cpp
 
-    extern struct Ti_Context Ti_ctx;
-    extern void Tk_init_c6_0(struct Ti_Context *ti_ctx);
-    ...
-    Tk_init_c6_0(&Ti_ctx);
+    #include "mpm88.h"
+
+    int main(void) {
+        ...
+        Tk_init_c6_0(&Ti_ctx);
+        ...
+    }
 
 
 Or, if you need multiple Taichi context within one program:
 
 .. code-block:: cpp
+
+    extern "C" {  // if you use mpm88.c instead of renaming it to mpm88.cpp
+    #include "mpm88.h"
+    }
 
     class MyRenderer {
       ...
@@ -148,15 +156,12 @@ Or, if you need multiple Taichi context within one program:
 
 
 Specifying scalar arguments
-***************************
++++++++++++++++++++++++++++
 
 To specify scalar arguments for kernels:
 
 .. code-block:: cpp
 
-    extern struct Ti_Context Ti_ctx;
-    extern void Tk_my_kernel_c8_0(struct Ti_Context *ti_ctx);
-    ...
     Ti_ctx.args[0].val_f64 = 3.14;  // first argument, float64
     Ti_ctx.args[1].val_i32 = 233;  // second argument, int32
     Tk_my_kernel_c8_0(&Ti_ctx);
@@ -165,21 +170,20 @@ To specify scalar arguments for kernels:
     printf("my_kernel(3.14, 233) = %lf\n", ret);
 
 Passing external arrays
-***********************
++++++++++++++++++++++++
 
 To pass external arrays as arguments for kernels:
 
 .. code-block:: cpp
 
-    extern struct Ti_Context Ti_ctx;
-    extern void Tk_matrix_to_ext_arr_c12_0(struct Ti_Context *ti_ctx);
-    ...
     float img[640 * 480 * 3];
 
     Ti_ctx.args[0].ptr_f32 = img;  // first argument, float32 pointer to array
+
+    // specify the shape of that array:
     Ti_ctx.earg[0 * 8 + 0] = 640;  // img.shape[0]
-    Ti_ctx.earg[0 * 8 + 0] = 480;  // img.shape[1]
-    Ti_ctx.earg[0 * 8 + 0] = 3;    // img.shape[2]
+    Ti_ctx.earg[0 * 8 + 1] = 480;  // img.shape[1]
+    Ti_ctx.earg[0 * 8 + 2] = 3;    // img.shape[2]
     Tk_matrix_to_ext_arr_c12_0(&Ti_ctx);
 
     // note that the array used in Taichi is row-major:
@@ -193,7 +197,6 @@ or WASM via Emscripten.
 
 We provide `Taichi.js <https://github.com/taichi-dev/taichi.js>`_ as an
 infrastructure for wrapping Taichi kernels for Javascript.
-
 See `its README.md <https://github.com/taichi-dev/taichi.js/blob/master/README.md>`_ for the complete workflow.
 
 Check `this page <https://taichi-dev.github.io/taichi.js>`_ for online demo.

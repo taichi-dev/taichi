@@ -14,23 +14,24 @@ You could run ``ti example -h`` to print the help message and get a list of avai
 For instance, to run the basic ``fractal`` example, try: ``ti example fractal`` from your shell. (``ti example fractal.py`` should also work)
 
 You may print the source code of example by running ``ti example -p fractal``, or ``ti example -P fractal`` for print with syntax highlight.
+
 You may also save the example to current work directory by running ``ti example -s fractal``.
 
 Changelog
 ---------
 Sometimes it's convenient to view the changelog of the current version of Taichi.
-To do so from your shell, you could run ``ti changelog``.
+To do so, you could run ``ti changelog`` in your shell.
 
 REPL Shell
 ----------
 Sometimes it's convenient to start a Python shell with ``import taichi as ti``
-as pre-loaded module for fast testing and confirmation.
+as a pre-loaded module for fast testing and confirmation.
 To do so from your shell, you could run ``ti repl``.
 
 System information
 ------------------
-When reporting bugs, consider run ``ti diagnose`` and attach its output,
-this helps maintainers to see more about your system information so that
+When you try to report potential bugs in an issue, please consider running ``ti diagnose`` and offer its output as an attachment.
+This can help maintainers to see more about your system information so that
 they could hopefully resolve the issue easier.
 
 .. _cli_video_tools:

@@ -21,12 +21,14 @@ paused = False
 ti.init(arch=ti.gpu)
 
 _velocities = ti.Vector.field(2, float, shape=(res, res))
+_intermedia_velocities = ti.Vector.field(2, float, shape=(res, res))
 _new_velocities = ti.Vector.field(2, float, shape=(res, res))
 velocity_divs = ti.field(float, shape=(res, res))
 velocity_curls = ti.field(float, shape=(res, res))
 _pressures = ti.field(float, shape=(res, res))
 _new_pressures = ti.field(float, shape=(res, res))
 _dye_buffer = ti.Vector.field(3, float, shape=(res, res))
+_intermedia_dye_buffer = ti.Vector.field(3, float, shape=(res, res))
 _new_dye_buffer = ti.Vector.field(3, float, shape=(res, res))
 
 
@@ -114,7 +116,7 @@ backtrace = backtrace_rk3
 
 @ti.kernel
 def advect_semilag(vf: ti.template(), qf: ti.template(),
-                   new_qf: ti.template()):
+                   new_qf: ti.template(), intermedia_qf: ti.template()):
     ti.cache_read_only(qf, vf)
     for i, j in vf:
         p = ti.Vector([i, j]) + 0.5
@@ -123,21 +125,27 @@ def advect_semilag(vf: ti.template(), qf: ti.template(),
 
 
 @ti.kernel
-def advect_bfecc(vf: ti.template(), qf: ti.template(), new_qf: ti.template()):
+def advect_bfecc(vf: ti.template(), qf: ti.template(), new_qf: ti.template(), intermedia_qf: ti.template()):
+    # 1st loop: get the estimated intermedia qf using semilag
     ti.cache_read_only(qf, vf)
     for i, j in vf:
         p = ti.Vector([i, j]) + 0.5
-        p_mid = backtrace(vf, p, dt)
-        q_mid = bilerp(qf, p_mid)
-        p_fin = backtrace(vf, p_mid, -dt)
-        q_fin = bilerp(qf, p_fin)
-        new_qf[i, j] = q_mid + 0.5 * (q_fin - qf[i, j])
+        p_star = backtrace(vf, p, dt)
+        intermedia_qf[i, j] = bilerp(qf, p_star)
+    # 2nd loop: use the intermedia qf to forward trace and get q_two_star, the value at the old time point assumping no error
+    #           then, fixe by adding the half of the existing diff between original and q_two_star
+    for i, j in vf:
+        p = ti.Vector([i, j]) + 0.5
+        p_star = backtrace(vf, p, dt)
+        p_two_star = backtrace(vf, p_star, -dt)
+        q_two_star = bilerp(intermedia_qf, p_two_star)
+        new_qf[i, j] = intermedia_qf[i, j] + 0.5 * (qf[i, j] - q_two_star)
 
-        min_val, max_val = sample_minmax(qf, p_mid)
+        min_val, max_val = sample_minmax(qf, p_star)
         cond = min_val < new_qf[i, j] < max_val
         for k in ti.static(range(cond.n)):
             if not cond[k]:
-                new_qf[i, j][k] = q_mid[k]
+                new_qf[i, j][k] = intermedia_qf[i, j][k]
 
 
 advect = advect_bfecc
@@ -232,7 +240,7 @@ def pressure_jacobi_dual(pf: ti.template(), new_pf: ti.template()):
                      (plt + prt + prb + plb) * 2 + pcc * 4) * 0.0625
 
 
-pressure_jacobi = pressure_jacobi_dual
+pressure_jacobi = pressure_jacobi_single
 
 if pressure_jacobi == pressure_jacobi_dual:
     p_jacobi_iters //= 2
@@ -266,8 +274,10 @@ def enhance_vorticity(vf: ti.template(), cf: ti.template()):
 
 
 def step(mouse_data):
-    advect(velocities_pair.cur, velocities_pair.cur, velocities_pair.nxt)
-    advect(velocities_pair.cur, dyes_pair.cur, dyes_pair.nxt)
+    advect(velocities_pair.cur, velocities_pair.cur,
+           velocities_pair.nxt, _intermedia_velocities)
+    advect(velocities_pair.cur, dyes_pair.cur,
+           dyes_pair.nxt, _intermedia_dye_buffer)
     velocities_pair.swap()
     dyes_pair.swap()
 

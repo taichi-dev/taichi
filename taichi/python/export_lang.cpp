@@ -423,6 +423,7 @@ void export_lang(py::module &m) {
   m.def("expr_bit_or", expr_bit_or);
   m.def("expr_bit_xor", expr_bit_xor);
   m.def("expr_bit_not", expr_bit_not);
+  m.def("expr_bit_sar", expr_bit_sar);
   m.def("expr_logic_not", expr_logic_not);
 
   m.def("expr_cmp_le", expr_cmp_le);

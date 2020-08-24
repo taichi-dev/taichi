@@ -412,7 +412,11 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
   } else if (op == BinaryOpType::bit_xor) {
     llvm_val[stmt] =
         builder->CreateXor(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
-  } else if (op == BinaryOpType::max) {
+  } else if (op == BinaryOpType::bit_sar) {
+    llvm_val[stmt] =
+        builder->CreateAShr(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
+  }
+  else if (op == BinaryOpType::max) {
     if (is_real(ret_type)) {
       llvm_val[stmt] =
           builder->CreateMaxNum(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);

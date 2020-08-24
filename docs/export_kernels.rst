@@ -3,26 +3,25 @@ Export Taichi kernels to C source
 
 The C backend of Taichi allows you to **export Taichi kernels to C source**.
 
-The exported Taichi program, which are simply C99 compatible source,
+The exported Taichi program which is simply consist of C99 compatible sources
 does not necessary to be launched from Python. Instead, you may use them in
 your C/C++ project. Or even calling them in Javascript via Empscripten.
 
 Each C function corresponds to a Taichi kernel.
 For example, ``Tk_init_c6_0()`` may corresponds to ``init()`` in ``mpm88.py``.
 
-Only the source is need when copying, all the required Taichi runtimes are
+Only the source is needed when copying, all the required Taichi runtimes are
 included in that single C source file.
 
 This also allows commercial people to distribute their Taichi program in
 binary format by linking this file with their project.
 
-.. note::
+.. warning::
 
-    Currently this feature is only officially supported on the C backend.
-    Also note that the C backend is only released on **Linux** platform for now.
+    Currently, this feature is only officially supported on the C backend which is only released on **Linux** platform at this moment.
 
 
-The workflow of export
+The workflow of exporting
 ----------------------
 
 Use ``ti.core.start_recording`` in the Taichi program you want to export.
@@ -32,7 +31,7 @@ Suppose you want to export the `examples/mpm88.py <https://github.com/taichi-dev
 Export YAML
 +++++++++++
 
-First, modify the ``mpm88.py`` a little bit:
+First, modifying the ``mpm88.py`` as shown below:
 
 .. code-block:: python
 
@@ -59,21 +58,19 @@ This will save all the kernels in ``mpm88.py`` to ``mpm88.yml``:
 .. note::
 
     Equivalently, you may also specify these two arguments from environment
-    variables if you are on Unix-alike system:
+    variables on Unix-like system:
 
     .. code-block:: bash
 
         TI_ARCH=cc TI_ACTION_RECORD=mpm88.yml python mpm88.py
 
-Compose YAML into single C file
+Compose YAML into a single C file
 +++++++++++++++++++++++++++++++
 
-Now all necessary information are saved in ``mpm88.yml``.
-However the ``kernel_source``'s are separated one-by-one.
-So you may want to **compose** the separate kernels into **one single file**
-to make distribution easier.
+Now all necessary information is saved in ``mpm88.yml``. However, the ``kernel_source``s are separated one-by-one.
+You may want to **compose** the separate kernels into **one single file** in order to distribute it easier.
 
-We provide a useful tool to compose them, type these commands to your console:
+We provide a useful tool to do this, type these commands to your console:
 
 .. code-block:: bash
 

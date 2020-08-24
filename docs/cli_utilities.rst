@@ -9,7 +9,12 @@ run ``ti`` or ``python3 -m taichi``.
 
 Examples
 --------
-Taichi provides a set of bundled examples. You could run ``ti example -h`` to print the help message and get a list of available example names. For instance, to run the basic ``fractal`` example, try: ``ti example fractal`` from your shell. (``ti example fractal.py`` should also work)
+Taichi provides a set of bundled examples.
+You could run ``ti example -h`` to print the help message and get a list of available example names.
+For instance, to run the basic ``fractal`` example, try: ``ti example fractal`` from your shell. (``ti example fractal.py`` should also work)
+
+You may print the source code of example by running ``ti example -p fractal``, or ``ti example -P fractal`` for print with syntax highlight.
+You may also save the example to current work directory by running ``ti example -s fractal``.
 
 Changelog
 ---------
@@ -26,7 +31,7 @@ System information
 ------------------
 When reporting bugs, consider run ``ti diagnose`` and attach its output,
 this helps maintainers to see more about your system information so that
-they could hopefully resolve the issue quicker.
+they could hopefully resolve the issue easier.
 
 .. _cli_video_tools:
 

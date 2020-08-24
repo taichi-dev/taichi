@@ -735,7 +735,7 @@ class Matrix(TaichiOperations):
                 yield ']'
         yield ']'
 
-    def __str__(self):
+    def __repr__(self):
         """Python scope matrix print support."""
         if impl.inside_kernel():
             '''
@@ -749,14 +749,7 @@ class Matrix(TaichiOperations):
 
             So we have to make it happy with a dummy string...
             '''
-            return f'<{self.n}x{self.m} ti.Matrix>'
-        else:
-            return str(self.to_numpy())
-
-    def __repr__(self):
-        if self.is_global():
-            # make interactive shell happy, prevent materialization
-            return f'<{self.n}x{self.m} ti.Matrix.field>'
+            return f'<Taichi {self.n}x{self.m} Matrix>'
         else:
             return str(self.to_numpy())
 

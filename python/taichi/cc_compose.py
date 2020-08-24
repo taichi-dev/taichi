@@ -99,8 +99,8 @@ def main(fin_name, fout_name, hdrout_name, emscripten=False):
 
     with open(hdrout_name, 'w') as hdrout:
         with open(fout_name, 'w') as fout:
-                comp = Composer(obj, fout, hdrout, emscripten)
-                comp.run()
+            comp = Composer(obj, fout, hdrout, emscripten)
+            comp.run()
 
 
 if __name__ == '__main__':

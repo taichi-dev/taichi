@@ -1029,7 +1029,8 @@ class TaichiMain:
         parser.add_argument(
             'fout_name', help='The output C source file name, e.g. program.c')
         parser.add_argument(
-            'hdrout_name', help='The output C header file name, e.g. program.h')
+            'hdrout_name',
+            help='The output C header file name, e.g. program.h')
         parser.add_argument(
             '-e',
             '--emscripten',

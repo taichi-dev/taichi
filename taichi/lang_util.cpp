@@ -69,7 +69,7 @@ std::string data_type_name(DataType t) {
 
 #define REGISTER_DATA_TYPE(i, j) \
   case DataType::i:              \
-    return j;
+    return #j;
 
     REGISTER_DATA_TYPE(f16, float16);
     REGISTER_DATA_TYPE(f32, float32);

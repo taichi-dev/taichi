@@ -8,6 +8,7 @@ func_table = [
     (ops.lshift, ) * 2,
 ]
 
+
 @pytest.mark.parametrize('ti_func,np_func', func_table)
 def test_python_scope_vector_binary_bit_operations(ti_func, np_func):
     x = ti.Vector([2, 3])

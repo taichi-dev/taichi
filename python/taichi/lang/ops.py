@@ -410,6 +410,7 @@ def bit_and(a, b):
 def bit_xor(a, b):
     return _binary_operation(ti_core.expr_bit_xor, ops.xor, a, b)
 
+
 @binary
 def bit_shl(a, b):
     return _binary_operation(ti_core.expr_bit_shl, ops.lshift, a, b)

@@ -77,7 +77,7 @@ We provide a useful tool to compose them, type these commands to your console:
 
 .. code-block:: bash
 
-   python3 -m taichi cc_compose mpm88.yml mpm88.c
+   python3 -m taichi cc_compose mpm88.yml mpm88.c mpm88.h
 
 This composes all the kernels and runtimes in ``mpm88.yml`` into a single C
 source file ``mpm88.c``:
@@ -104,9 +104,12 @@ source file ``mpm88.c``:
 
         ...
 
+And a C header file ``mpm88.h`` for declarations of data structures, functions
+(kernels) for this file.
+
 .. note::
 
-   The generated C source are promised to be C99 compatible.
+   The generated C source is promised to be C99 compatible.
 
    It should be functional when being compiled as C++ as well.
 
@@ -121,7 +124,7 @@ To call the kernel ``init_c6_0``, for example:
 .. code-block:: cpp
 
     extern struct Ti_Context Ti_ctx;
-    extern "C" void Tk_init_c6_0(struct Ti_Context *ti_ctx);
+    extern void Tk_init_c6_0(struct Ti_Context *ti_ctx);
     ...
     Tk_init_c6_0(&Ti_ctx);
 
@@ -137,6 +140,7 @@ Or, if you need multiple Taichi context within one program:
     };
 
     MyRenderer::MyRenderer() {
+      // allocate buffers on your own:
       per_renderer_taichi_context.root = malloc(...);
       ...
       Tk_init_c6_0(&per_renderer_taichi_context);
@@ -151,7 +155,7 @@ To specify scalar arguments for kernels:
 .. code-block:: cpp
 
     extern struct Ti_Context Ti_ctx;
-    extern "C" void Tk_my_kernel_c8_0(struct Ti_Context *ti_ctx);
+    extern void Tk_my_kernel_c8_0(struct Ti_Context *ti_ctx);
     ...
     Ti_ctx.args[0].val_f64 = 3.14;  // first argument, float64
     Ti_ctx.args[1].val_i32 = 233;  // second argument, int32
@@ -168,16 +172,18 @@ To pass external arrays as arguments for kernels:
 .. code-block:: cpp
 
     extern struct Ti_Context Ti_ctx;
-    extern "C" void Tk_matrix_to_ext_arr_c12_0(struct Ti_Context *ti_ctx);
+    extern void Tk_matrix_to_ext_arr_c12_0(struct Ti_Context *ti_ctx);
     ...
-    float img[512 * 512 * 3];
+    float img[640 * 480 * 3];
+
     Ti_ctx.args[0].ptr_f32 = img;  // first argument, float32 pointer to array
-    Ti_ctx.earg[0 * 8 + 0] = 512;  // img.shape[0]
-    Ti_ctx.earg[0 * 8 + 0] = 512;  // img.shape[1]
+    Ti_ctx.earg[0 * 8 + 0] = 640;  // img.shape[0]
+    Ti_ctx.earg[0 * 8 + 0] = 480;  // img.shape[1]
     Ti_ctx.earg[0 * 8 + 0] = 3;    // img.shape[2]
     Tk_matrix_to_ext_arr_c12_0(&Ti_ctx);
 
-    some_how_show_the_image(img);
+    // note that the array used in Taichi is row-major:
+    printf("img[3, 2, 1] = %f\n", img[(3 * 480 + 2) * 3 + 1]);
 
 Taichi.js (WIP)
 ---------------

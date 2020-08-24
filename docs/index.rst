@@ -64,13 +64,13 @@ The Taichi Programming Language
    :caption: Miscellaneous
    :maxdepth: 3
 
+   faq
    gui
    debugging
    export_results
    cli_utilities
-   export_kernels
-   faq
    global_settings
+   export_kernels
    extension_libraries
    acknowledgments
 

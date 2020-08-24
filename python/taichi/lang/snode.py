@@ -134,11 +134,15 @@ class SNode:
             snode_deactivate_dynamic(self)
 
     def __repr__(self):
+        type = str(self.ptr.type)[len('SNodeType.'):]
+        return f'<ti.SNode of type {type}>'
+
+    def __str__(self):
         # ti.root.dense(ti.i, 3).dense(ti.jk, (4, 5)).place(x)
         # ti.root => dense [3] => dense [3, 4, 5] => place [3, 4, 5]
-        type = repr(self.ptr.type)[len('SNodeType.'):]
-        shape = repr(list(self.shape))
-        parent = repr(self.parent())
+        type = str(self.ptr.type)[len('SNodeType.'):]
+        shape = str(list(self.shape))
+        parent = str(self.parent())
         return f'{parent} => {type} {shape}'
 
     def __eq__(self, other):

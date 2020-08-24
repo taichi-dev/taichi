@@ -60,9 +60,9 @@ def test_unordered():
     assert blk2 in blk1.get_children()
     assert blk1 in ti.root.get_children()
 
-    expected_repr = f'ti.root => dense {[n]} => dense {[n, m]}' \
+    expected_str = f'ti.root => dense {[n]} => dense {[n, m]}' \
         f' => dense {[n, m, p]} => place {[n, m, p]}'
-    assert repr(val.snode) == expected_repr
+    assert str(val.snode) == expected_str
 
 
 @ti.all_archs

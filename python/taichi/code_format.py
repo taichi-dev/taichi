@@ -67,11 +67,13 @@ def main(all=False, diff=None):
     if all:
         directories = [
             'taichi', 'tests', 'examples', 'misc', 'python', 'benchmarks',
-            'docs', 'misc'
+            'docs', 'cmake',
         ]
-        files = []
+        files = list(Path(repo_dir).glob('*'))
         for d in directories:
             files += list(Path(os.path.join(repo_dir, d)).rglob('*'))
+        print('\n'.join(map(lambda x: x.name, files)))
+        exit()
     else:
         if diff is None:
 
@@ -130,8 +132,9 @@ def format_file(fn):
         os.system('{} -i -style=file {}'.format(clang_format_bin, fn))
         format_plain_text(fn)
         return True
-    elif has_suffix(fn, ['txt', 'md', 'rst', 'cfg', 'yml', 'ini', 'map', 'cmake']
-            ) or (fn[0].isupper() and fn.endswith('file')):
+    elif has_suffix(fn,
+                    ['txt', 'md', 'rst', 'cfg', 'yml', 'ini', 'map', 'cmake'
+                     ]) or (fn[0].isupper() and fn.endswith('file')):
         print('Formatting "{}"'.format(fn))
         format_plain_text(fn)
         return True

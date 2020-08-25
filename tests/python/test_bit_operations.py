@@ -27,5 +27,5 @@ def test_bit_sar():
     for i in range(n):
         assert sar(test_num, i) == 2**(n - i)
     # for negative number
-    for i in range(8):
+    for i in range(n):
         assert sar(neg_test_num, i) == -2**(n - i)

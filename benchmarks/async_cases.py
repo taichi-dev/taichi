@@ -13,7 +13,8 @@ from fuse_test_template import template_fuse_dense_x2y2z, \
 def benchmark_async(func):
     @functools.wraps(func)
     def body():
-        for arch in [ti.cpu, ti.cuda]:
+        # for arch in [ti.cpu, ti.cuda]:
+        for arch in [ti.cuda]:
             for async_mode in [True, False]:
                 os.environ['TI_CURRENT_BENCHMARK'] = func.__name__
                 ti.init(arch=arch, async_mode=async_mode)
@@ -24,7 +25,7 @@ def benchmark_async(func):
 
 @benchmark_async
 def fuse_dense_x2y2z():
-    template_fuse_dense_x2y2z(size=100 * 1024**2,
+    template_fuse_dense_x2y2z(size=500 * 1024**2,
                               repeat=10,
                               benchmark_repeat=10,
                               benchmark=True)
@@ -32,7 +33,7 @@ def fuse_dense_x2y2z():
 
 @benchmark_async
 def fuse_reduction():
-    template_fuse_reduction(size=100 * 1024**2,
+    template_fuse_reduction(size=500 * 1024**2,
                             repeat=10,
                             benchmark_repeat=10,
                             benchmark=True)
@@ -40,7 +41,7 @@ def fuse_reduction():
 
 @benchmark_async
 def fill_1d():
-    a = ti.field(dtype=ti.f32, shape=100 * 1024**2)
+    a = ti.field(dtype=ti.f32, shape=500 * 1024**2)
 
     @ti.kernel
     def fill():
@@ -66,7 +67,7 @@ def sparse_numpy():
     a = ti.field(dtype=ti.f32)
     b = ti.field(dtype=ti.f32)
 
-    block_count = 64
+    block_count = 512
     block_size = 32
     # a, b always share the same sparsity
     ti.root.pointer(ti.ij, block_count).dense(ti.ij, block_size).place(a, b)
@@ -92,7 +93,7 @@ def sparse_numpy():
         saxpy(a, b, 1.1)
         saxpy(a, b, 1.1)
 
-    ti.benchmark(task, repeat=100)
+    ti.benchmark(task, repeat=10)
 
 
 with_autodiff = False  # For some reason autodiff crashes with async.
@@ -133,7 +134,7 @@ def stencil_reduction():
     b = ti.field(dtype=ti.f32)
     total = ti.field(dtype=ti.f32, shape=())
 
-    block_count = 1024
+    block_count = 1024 * 32
     block_size = 1024
     # a, b always share the same sparsity
     ti.root.pointer(ti.i, block_count).dense(ti.i, block_size).place(a, b)
@@ -152,14 +153,20 @@ def stencil_reduction():
     def reduce():
         for i in a:
             total[None] += b[i]
+            
+    @ti.kernel
+    def clear_b():
+        for i in a:
+            b[i] = 0
 
     def task():
-        for i in range(2):
-            initialize()
+        initialize()
+        for i in range(3):
             stencil()
             reduce()
+            clear_b()
 
-    ti.benchmark(task, repeat=100)
+    ti.benchmark(task, repeat=10)
 
 
 # TODO: add mpm_breakdown

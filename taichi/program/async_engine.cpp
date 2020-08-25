@@ -424,7 +424,7 @@ bool AsyncEngine::fuse() {
       irpass::fix_block_parents(task_a);
 
       auto kernel = task_queue[i].kernel;
-      irpass::full_simplify(task_a, true, kernel);
+      irpass::full_simplify(task_a, /*after_lower_access=*/false, kernel);
       task_queue[i].h = hash(task_a);
 
       modified = true;

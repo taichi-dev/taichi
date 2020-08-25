@@ -22,4 +22,4 @@ def test_bit_sar():
         return a >> b
 
     for i in range(8):
-        assert sar(2**8, i) == 2 ** (8 - i)
+        assert sar(2**8, i) == 2**(8 - i)

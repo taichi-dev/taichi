@@ -1051,6 +1051,7 @@ class TaichiMain:
                 IPython.embed()
             except ImportError:
                 import code
+                __name__ = '__console__'
                 code.interact(local=locals())
 
         local_scope()

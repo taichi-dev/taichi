@@ -48,6 +48,9 @@ void compile_to_offloads(IRNode *ir,
   print("Typechecked");
   irpass::analysis::verify(ir);
 
+  irpass::demote_operations(ir);
+  print("Operations Demoted");
+
   if (ir->get_kernel()->is_evaluator) {
     TI_ASSERT(!grad);
     irpass::offload(ir);

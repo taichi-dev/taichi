@@ -22,9 +22,9 @@ def format_plain_text(fn):
     with open(fn, 'r') as f:
         for l in f:
             l = l.rstrip()
-            if l.find('\t') != -1:
-                print(f'Warning: found tab in {fn}. Skipping...')
-                return
+            #if l.find('\t') != -1:
+            #    print(f'Warning: found tab in {fn}. Skipping...')
+            #    return
             formatted += l + '\n'
     while len(formatted) and formatted[-1] == '\n':
         formatted = formatted[:-1]

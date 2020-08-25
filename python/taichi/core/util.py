@@ -44,18 +44,18 @@ def import_ti_core(tmp_dir=None):
     if get_os_name() != 'win':
         sys.setdlopenflags(old_flags)
     lib_dir = os.path.join(package_root(), 'lib')
+    tmp_dir = '彭于斌'
     core.set_lib_dir(locale_encode(lib_dir))
     if tmp_dir is not None:
         core.set_tmp_dir(locale_encode(tmp_dir))
 
 
-def locale_encode(s):
+def locale_encode(path):
+    import sys
     try:
-        import sys
-        import locale
-        return s.encode(sys.getfilesystemencoding())
+        return path.encode(sys.getfilesystemencoding())
     except:
-        return s.encode()
+        return path.encode()
 
 
 def is_ci():
@@ -201,6 +201,9 @@ else:
             from colorama import Fore, Back, Style
             print_red_bold("Taichi core import failed: ", end='')
             print(e)
+            print(Fore.YELLOW + "check this page for possible solutions:\n"
+                "https://taichi.readthedocs.io/en/stable/install.html#troubleshooting"
+                + Fore.RESET)
             exit(-1)
         os.chdir(tmp_cwd)
 

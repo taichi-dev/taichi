@@ -31,8 +31,7 @@ To do so from your shell, you could run ``ti repl``.
 System information
 ------------------
 When you try to report potential bugs in an issue, please consider running ``ti diagnose`` and offer its output as an attachment.
-This can help maintainers to see more about your system information so that
-they could hopefully resolve the issue easier.
+This could help maintainers to learn more about the context and the system information of your environment to make the debugging process more efficient and solve your issue more easily. **Before posting it, please review and make sure there's no sensitive information about your data or yourself gets carried in.**
 
 .. _cli_video_tools:
 
@@ -41,8 +40,8 @@ Converting PNGs to video
 Sometimes it's convenient to convert a series of ``png`` files into a single
 video when showing your result to others.
 
-For example, you have ``000000.png``, ``000001.png``, ... generated according
-to :ref:`export_results` in **current working directory**.
+For example, suppose you have ``000000.png``, ``000001.png``, ... generated according
+to :ref:`export_results` in the **current working directory**.
 
 Then you could run ``ti video`` to create a file ``video.mp4`` containing all
 these images as frames (sorted by file name).

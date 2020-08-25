@@ -10,6 +10,7 @@ cases = [
     fill_1d,
     sparse_numpy,
     stencil_reduction,
+    # mpm_splitted,
 ]
 
 if rerun:

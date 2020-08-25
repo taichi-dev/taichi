@@ -8,7 +8,7 @@ import taichi as ti
 import numpy as np
 import time
 
-use_mgpcg = True  # True for zero divergence fluid simulation
+use_mgpcg = False  # True for zero divergence fluid simulation
 res = 512  # 600 for a larger resoultion
 dt = 0.03
 p_jacobi_iters = 160  # 40 for quicker but not-so-accurate result

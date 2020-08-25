@@ -21,5 +21,11 @@ def test_bit_sar():
     def sar(a: ti.i32, b: ti.i32) -> ti.i32:
         return a >> b
 
+    n = 8
+    test_num = 2 ** n
+    neg_test_num = -test_num
+    for i in range(n):
+        assert sar(test_num, i) == 2**(n - i)
+    # for negative number
     for i in range(8):
-        assert sar(2**8, i) == 2**(8 - i)
+        assert sar(neg_test_num, i) == -2**(n - i)

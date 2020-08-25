@@ -51,10 +51,11 @@ def import_ti_core(tmp_dir=None):
 
 def locale_encode(s):
     try:
+        import sys
         import locale
-        return s.encode(locale.getdefaultlocale()[1])
-    except TypeError:
-        return s.encode('utf8')
+        return s.encode(sys.getfilesystemencoding())
+    except:
+        return s.encode()
 
 
 def is_ci():

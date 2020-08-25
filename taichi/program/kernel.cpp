@@ -303,6 +303,8 @@ int Kernel::insert_ret(DataType dt) {
 }
 
 void Kernel::account_for_offloaded(OffloadedStmt *stmt) {
+  if (is_evaluator || is_accessor)
+    return;
   auto task_type = stmt->task_type;
   stat.add("launched_kernels", 1.0);
   if (task_type == OffloadedStmt::TaskType::listgen) {

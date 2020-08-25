@@ -67,10 +67,10 @@ def bilerp(vf, p):
     iu, iv = int(s), int(t)
     # fract
     fu, fv = s - iu, t - iv
-    a = sample(vf, iu + 0.5, iv + 0.5)
-    b = sample(vf, iu + 1.5, iv + 0.5)
-    c = sample(vf, iu + 0.5, iv + 1.5)
-    d = sample(vf, iu + 1.5, iv + 1.5)
+    a = sample(vf, iu, iv)
+    b = sample(vf, iu+1, iv)
+    c = sample(vf, iu, iv+1)
+    d = sample(vf, iu+1, iv+1)
     return lerp(lerp(a, b, fu), lerp(c, d, fu), fv)
 
 
@@ -80,10 +80,10 @@ def sample_minmax(vf, p):
     s, t = u - 0.5, v - 0.5
     # floor
     iu, iv = int(s), int(t)
-    a = sample(vf, iu + 0.5, iv + 0.5)
-    b = sample(vf, iu + 1.5, iv + 0.5)
-    c = sample(vf, iu + 0.5, iv + 1.5)
-    d = sample(vf, iu + 1.5, iv + 1.5)
+    a = sample(vf, iu, iv)
+    b = sample(vf, iu+1, iv)
+    c = sample(vf, iu, iv+1)
+    d = sample(vf, iu+1, iv+1)
     return min(a, b, c, d), max(a, b, c, d)
 
 
@@ -185,13 +185,13 @@ def divergence(vf: ti.template()):
         vt = sample(vf, i, j + 1).y
         vc = sample(vf, i, j)
         if i == 0:
-            vl = -vc.x
+            vl = 0
         if i == res - 1:
-            vr = -vc.x
+            vr = 0
         if j == 0:
-            vb = -vc.y
+            vb = 0
         if j == res - 1:
-            vt = -vc.y
+            vt = 0
         velocity_divs[i, j] = (vr - vl + vt - vb) * 0.5
 
 
@@ -362,7 +362,7 @@ while gui.running:
 
     frame += 1
 
-    if frame > 450:
+    if frame > 4500:
         break
 
     if not paused:

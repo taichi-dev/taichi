@@ -31,8 +31,8 @@ def benchmark_async(func):
 @benchmark_async
 def fuse_dense_x2y2z(scale):
     template_fuse_dense_x2y2z(size=scale * 10 * 1024**2,
-                              repeat=10,
-                              benchmark_repeat=10,
+                              repeat=1,
+                              benchmark_repeat=100,
                               benchmark=True)
 
 
@@ -53,7 +53,11 @@ def fill_1d(scale):
         for i in a:
             a[i] = 1.0
 
-    ti.benchmark(fill, repeat=10)
+    def repeated_fill():
+        for _ in range(10):
+            fill()
+
+    ti.benchmark(repeated_fill, repeat=10)
 
 
 @benchmark_async
@@ -64,7 +68,11 @@ def fill_scalar(scale):
     def fill():
         a[None] = 1.0
 
-    ti.benchmark(fill, repeat=1000)
+    def repeated_fill():
+        for _ in range(1000):
+            fill()
+
+    ti.benchmark(repeated_fill, repeat=5)
 
 
 @benchmark_async

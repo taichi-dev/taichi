@@ -208,7 +208,12 @@ class AlgSimp : public BasicStmtVisitor {
         stmt->replace_with(stmt->rhs);
         modifier.erase(stmt);
       }
-    } else if (rhs && stmt->op_type == BinaryOpType::floordiv) {
+
+    ////////////////////////////////////////////////////
+    // TODO(archibate): place this to some place better:
+    } else if (stmt->op_type == BinaryOpType::floordiv) {
+      auto lhs = stmt->lhs;
+      auto rhs = stmt->rhs;
       if (is_integral(rhs->element_type()) && is_integral(lhs->element_type())) {
         // @ti.func
         // def ifloordiv(a, b):
@@ -255,8 +260,15 @@ class AlgSimp : public BasicStmtVisitor {
         // def ffloordiv(a, b):
         //     r = ti.raw_div(a, b)
         //     return ti.floor(r)
-        // TODO
+        auto ret = Stmt::make<BinaryOpStmt>(
+            BinaryOpType::div, lhs, rhs);
+        auto floor = Stmt::make<UnaryOpStmt>(
+            UnaryOpType::floor, ret.get());
+        modifier.insert_before(stmt, std::move(ret));
+        modifier.insert_before(stmt, std::move(floor));
+        modifier.erase(stmt);
       }
+    ////////////////////////////////////////////////////
     }
   }
 

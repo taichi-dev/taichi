@@ -8,7 +8,6 @@ cases = [
     fuse_dense_x2y2z,
     fuse_reduction,
     fill_1d,
-    # fill_scalar,
     sparse_numpy,
     stencil_reduction,
 ]

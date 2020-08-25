@@ -13,46 +13,51 @@ from fuse_test_template import template_fuse_dense_x2y2z, \
 def benchmark_async(func):
     @functools.wraps(func)
     def body():
-        # for arch in [ti.cpu, ti.cuda]:
-        for arch in [ti.cuda]:
+        for arch in [ti.cpu, ti.cuda]:
             for async_mode in [True, False]:
                 os.environ['TI_CURRENT_BENCHMARK'] = func.__name__
                 ti.init(arch=arch, async_mode=async_mode)
-                func()
+                if arch == ti.cpu:
+                    scale = 2
+                else:
+                    # Use more data to hide compilation overhead
+                    # (since CUDA runs much faster than CPUs)
+                    scale = 64
+                func(scale)
 
     return body
 
 
 @benchmark_async
-def fuse_dense_x2y2z():
-    template_fuse_dense_x2y2z(size=500 * 1024**2,
+def fuse_dense_x2y2z(scale):
+    template_fuse_dense_x2y2z(size=scale * 10 * 1024**2,
                               repeat=10,
                               benchmark_repeat=10,
                               benchmark=True)
 
 
 @benchmark_async
-def fuse_reduction():
-    template_fuse_reduction(size=500 * 1024**2,
+def fuse_reduction(scale):
+    template_fuse_reduction(size=scale * 10 * 1024**2,
                             repeat=10,
                             benchmark_repeat=10,
                             benchmark=True)
 
 
 @benchmark_async
-def fill_1d():
-    a = ti.field(dtype=ti.f32, shape=500 * 1024**2)
+def fill_1d(scale):
+    a = ti.field(dtype=ti.f32, shape=scale * 10 * 1024**2)
 
     @ti.kernel
     def fill():
         for i in a:
             a[i] = 1.0
 
-    ti.benchmark(fill, repeat=100)
+    ti.benchmark(fill, repeat=10)
 
 
 @benchmark_async
-def fill_scalar():
+def fill_scalar(scale):
     a = ti.field(dtype=ti.f32, shape=())
 
     @ti.kernel
@@ -63,11 +68,12 @@ def fill_scalar():
 
 
 @benchmark_async
-def sparse_numpy():
+def sparse_numpy(scale):
+    import math
     a = ti.field(dtype=ti.f32)
     b = ti.field(dtype=ti.f32)
 
-    block_count = 512
+    block_count = 2 ** int((math.log(scale, 2)) // 2) * 64
     block_size = 32
     # a, b always share the same sparsity
     ti.root.pointer(ti.ij, block_count).dense(ti.ij, block_size).place(a, b)
@@ -100,9 +106,9 @@ with_autodiff = False  # For some reason autodiff crashes with async.
 if with_autodiff:
 
     @benchmark_async
-    def autodiff():
+    def autodiff(scale):
 
-        n = 1024**2 * 10
+        n = 1024**2 * scale
 
         a = ti.field(dtype=ti.f32, shape=n, needs_grad=True)
         b = ti.field(dtype=ti.f32, shape=n)
@@ -129,12 +135,12 @@ if with_autodiff:
 
 
 @benchmark_async
-def stencil_reduction():
+def stencil_reduction(scale):
     a = ti.field(dtype=ti.f32)
     b = ti.field(dtype=ti.f32)
     total = ti.field(dtype=ti.f32, shape=())
 
-    block_count = 1024 * 32
+    block_count = scale * 512
     block_size = 1024
     # a, b always share the same sparsity
     ti.root.pointer(ti.i, block_count).dense(ti.i, block_size).place(a, b)
@@ -166,7 +172,7 @@ def stencil_reduction():
             reduce()
             clear_b()
 
-    ti.benchmark(task, repeat=10)
+    ti.benchmark(task, repeat=5)
 
 
 # TODO: add mpm_breakdown

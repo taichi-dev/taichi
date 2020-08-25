@@ -126,26 +126,28 @@ def advect_semilag(vf: ti.template(), qf: ti.template(),
 
 @ti.kernel
 def advect_bfecc(vf: ti.template(), qf: ti.template(), new_qf: ti.template(), intermedia_qf: ti.template()):
-    # 1st loop: get the estimated intermedia qf using semilag
     ti.cache_read_only(qf, vf)
     for i, j in vf:
         p = ti.Vector([i, j]) + 0.5
-        p_star = backtrace(vf, p, dt)
-        intermedia_qf[i, j] = bilerp(qf, p_star)
-    # 2nd loop: use the intermedia qf to forward trace and get q_two_star, the value at the old time point assumping no error
-    #           then, fixe by adding the half of the existing diff between original and q_two_star
+        p = backtrace(vf, p, dt)
+        intermedia_qf[i, j] = bilerp(qf, p)
+
+    ti.cache_read_only(intermedia_qf, qf, vf)
     for i, j in vf:
         p = ti.Vector([i, j]) + 0.5
+        p_two_star = backtrace(vf, p, -dt)
         p_star = backtrace(vf, p, dt)
-        p_two_star = backtrace(vf, p_star, -dt)
-        q_two_star = bilerp(intermedia_qf, p_two_star)
-        new_qf[i, j] = intermedia_qf[i, j] + 0.5 * (qf[i, j] - q_two_star)
+        q_star = intermedia_qf[i, j]
+        new_qf[i, j] = bilerp(intermedia_qf, p_two_star)
+
+        # new
+        new_qf[i, j] = q_star + 0.5 * (qf[i, j]-new_qf[i, j])
 
         min_val, max_val = sample_minmax(qf, p_star)
         cond = min_val < new_qf[i, j] < max_val
         for k in ti.static(range(cond.n)):
             if not cond[k]:
-                new_qf[i, j][k] = intermedia_qf[i, j][k]
+                new_qf[i, j][k] = q_star[k]
 
 
 advect = advect_bfecc
@@ -306,17 +308,23 @@ class MouseDataGen(object):
         self.prev_mouse = None
         self.prev_color = None
 
-    def __call__(self, gui):
+    def __call__(self, gui, frame):
         # [0:2]: normalized delta direction
         # [2:4]: current mouse xy
         # [4:7]: color
         mouse_data = np.zeros(8, dtype=np.float32)
-        if gui.is_pressed(ti.GUI.LMB):
-            mxy = np.array(gui.get_cursor_pos(), dtype=np.float32) * res
+        if gui.is_pressed(ti.GUI.LMB) or frame < 20:
+            if frame < 20:
+                # print(frame)
+                mxy = np.array([0 + frame*0.01, 0 + frame*0.01],
+                               dtype=np.float32) * res
+            else:
+                mxy = np.array(gui.get_cursor_pos(), dtype=np.float32) * res
             if self.prev_mouse is None:
                 self.prev_mouse = mxy
                 # Set lower bound to 0.3 to prevent too dark colors
-                self.prev_color = (np.random.rand(3) * 0.7) + 0.3
+                # self.prev_color = (np.random.rand(3) * 0.7) + 0.3
+                self.prev_color = np.array([1, 1, 1], dtype=np.float32)
             else:
                 mdir = mxy - self.prev_mouse
                 mdir = mdir / (np.linalg.norm(mdir) + 1e-5)
@@ -338,6 +346,7 @@ def reset():
 
 gui = ti.GUI('Stable Fluid', (res, res))
 md_gen = MouseDataGen()
+frame = 0
 while gui.running:
     if gui.get_event(ti.GUI.PRESS):
         e = gui.event
@@ -351,8 +360,15 @@ while gui.running:
         elif e.key == 'd':
             debug = not debug
 
+    frame += 1
+
+    if frame > 450:
+        break
+
     if not paused:
-        mouse_data = md_gen(gui)
+        mouse_data = md_gen(gui, frame)
+        # if frame < 40:
+        #     print(mouse_data)
         step(mouse_data)
 
     gui.set_image(dyes_pair.cur)

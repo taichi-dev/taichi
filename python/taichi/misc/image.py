@@ -4,7 +4,7 @@ import taichi as ti
 
 def cook_image_to_bytes(img):
     """
-    Takes a NumPy array or Taichi tensor of any type.
+    Takes a NumPy array or Taichi field of any type.
     Returns a NumPy array of uint8.
     This is used by ti.imwrite and ti.imdisplay.
     """
@@ -34,7 +34,11 @@ def imdisplay(img):
     """
     Try to display image in interactive shell.
     """
-    if ti.lang.shell.oinspect.name == ti.lang.shell.ShellType.JUPYTER:
+    try:
+        get_ipython()
+    except:
+        ti.imshow(img)
+    else:
         import PIL.Image
         from io import BytesIO
         import IPython.display
@@ -43,8 +47,21 @@ def imdisplay(img):
         with BytesIO() as f:
             PIL.Image.fromarray(img).save(f, 'png')
             IPython.display.display(IPython.display.Image(data=f.getvalue()))
-    else:
-        ti.imshow(img)
+
+
+def imresize(img, w, h=None):
+    """
+    Resize an image to a specific size.
+    """
+    if not isinstance(img, np.ndarray):
+        img = img.to_numpy()
+    if h is None:
+        h = w
+    assert isinstance(w, int) and isinstance(h, int) and w > 1 and h > 1
+    u, v = (img.shape[0]) / (w), (img.shape[1]) / (h)
+    x = np.clip(np.arange(w) * u, 0, img.shape[0] - 1).astype(np.int32)
+    y = np.clip(np.arange(h) * v, 0, img.shape[1] - 1).astype(np.int32)
+    return img[tuple(np.meshgrid(x, y))].swapaxes(0, 1)
 
 
 def imwrite(img, filename):
@@ -94,5 +111,6 @@ __all__ = [
     'imshow',
     'imread',
     'imwrite',
+    'imresize',
     'imdisplay',
 ]

@@ -271,7 +271,7 @@ namespace irpass {
 
 bool lower_access(IRNode *root, bool lower_atomic) {
   bool modified = LowerAccess::run(root, lower_atomic);
-  typecheck(root);
+  type_check(root);
   return modified;
 }
 

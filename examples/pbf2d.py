@@ -46,21 +46,20 @@ corrK = 0.001
 # corrN = 4.0
 neighbor_radius = h * 1.05
 
-poly6_factor = 315.0 / 64.0 / np.pi
-spiky_grad_factor = -45.0 / np.pi
+poly6_factor = 315.0 / 64.0 / math.pi
+spiky_grad_factor = -45.0 / math.pi
 
-old_positions = ti.Vector(dim, dt=ti.f32)
-positions = ti.Vector(dim, dt=ti.f32)
-velocities = ti.Vector(dim, dt=ti.f32)
-# Once taichi supports clear(), we can get rid of grid_num_particles
-grid_num_particles = ti.var(ti.i32)
-grid2particles = ti.var(ti.i32)
-particle_num_neighbors = ti.var(ti.i32)
-particle_neighbors = ti.var(ti.i32)
-lambdas = ti.var(ti.f32)
-position_deltas = ti.Vector(dim, dt=ti.f32)
+old_positions = ti.Vector.field(dim, float)
+positions = ti.Vector.field(dim, float)
+velocities = ti.Vector.field(dim, float)
+grid_num_particles = ti.field(int)
+grid2particles = ti.field(int)
+particle_num_neighbors = ti.field(int)
+particle_neighbors = ti.field(int)
+lambdas = ti.field(float)
+position_deltas = ti.Vector.field(dim, float)
 # 0: x-pos, 1: timestep in sin()
-board_states = ti.Vector(2, dt=ti.f32)
+board_states = ti.Vector.field(2, float)
 
 ti.root.dense(ti.i, num_particles).place(old_positions, positions, velocities)
 grid_snode = ti.root.dense(ti.ij, grid_size)
@@ -105,7 +104,7 @@ def compute_scorr(pos_ji):
 
 @ti.func
 def get_cell(pos):
-    return (pos * cell_recpr).cast(int)
+    return int(pos * cell_recpr)
 
 
 @ti.func
@@ -130,12 +129,6 @@ def confine_position_to_boundary(p):
 
 
 @ti.kernel
-def blit_buffers(f: ti.template(), t: ti.template()):
-    for i in f:
-        t[i] = f[i]
-
-
-@ti.kernel
 def move_board():
     # probably more accurate to exert force on particles according to hooke's law.
     b = board_states[None]
@@ -149,7 +142,11 @@ def move_board():
 
 
 @ti.kernel
-def apply_gravity_within_boundary():
+def prologue():
+    # save old positions
+    for i in positions:
+        old_positions[i] = positions[i]
+    # apply gravity within boundary
     for i in positions:
         g = ti.Vector([0.0, -9.8])
         pos, vel = positions[i], velocities[i]
@@ -157,26 +154,20 @@ def apply_gravity_within_boundary():
         pos += vel * time_delta
         positions[i] = confine_position_to_boundary(pos)
 
+    # clear neighbor lookup table
+    for I in ti.grouped(grid_num_particles):
+        grid_num_particles[I] = 0
+    for I in ti.grouped(particle_neighbors):
+        particle_neighbors[I] = -1
 
-@ti.kernel
-def confine_to_boundary():
-    for i in positions:
-        pos = positions[i]
-        positions[i] = confine_position_to_boundary(pos)
-
-
-@ti.kernel
-def update_grid():
+    # update grid
     for p_i in positions:
         cell = get_cell(positions[p_i])
         # ti.Vector doesn't seem to support unpacking yet
         # but we can directly use int Vectors as indices
-        offs = grid_num_particles[cell].atomic_add(1)
+        offs = ti.atomic_add(grid_num_particles[cell], 1)
         grid2particles[cell, offs] = p_i
-
-
-@ti.kernel
-def find_particle_neighbors():
+    # find particle neighbors
     for p_i in positions:
         pos_i = positions[p_i]
         cell = get_cell(pos_i)
@@ -194,7 +185,8 @@ def find_particle_neighbors():
 
 
 @ti.kernel
-def compute_lambdas():
+def substep():
+    # compute lambdas
     # Eq (8) ~ (11)
     for p_i in positions:
         pos_i = positions[p_i]
@@ -205,14 +197,14 @@ def compute_lambdas():
 
         for j in range(particle_num_neighbors[p_i]):
             p_j = particle_neighbors[p_i, j]
-            # TODO: does taichi supports break?
-            if p_j >= 0:
-                pos_ji = pos_i - positions[p_j]
-                grad_j = spiky_gradient(pos_ji, h)
-                grad_i += grad_j
-                sum_gradient_sqr += grad_j.dot(grad_j)
-                # Eq(2)
-                density_constraint += poly6_value(pos_ji.norm(), h)
+            if p_j < 0:
+                break
+            pos_ji = pos_i - positions[p_j]
+            grad_j = spiky_gradient(pos_ji, h)
+            grad_i += grad_j
+            sum_gradient_sqr += grad_j.dot(grad_j)
+            # Eq(2)
+            density_constraint += poly6_value(pos_ji.norm(), h)
 
         # Eq(1)
         density_constraint = (mass * density_constraint / rho0) - 1.0
@@ -220,10 +212,7 @@ def compute_lambdas():
         sum_gradient_sqr += grad_i.dot(grad_i)
         lambdas[p_i] = (-density_constraint) / (sum_gradient_sqr +
                                                 lambda_epsilon)
-
-
-@ti.kernel
-def compute_position_deltas():
+    # compute position deltas
     # Eq(12), (14)
     for p_i in positions:
         pos_i = positions[p_i]
@@ -232,90 +221,64 @@ def compute_position_deltas():
         pos_delta_i = ti.Vector([0.0, 0.0])
         for j in range(particle_num_neighbors[p_i]):
             p_j = particle_neighbors[p_i, j]
-            # TODO: does taichi supports break?
-            if p_j >= 0:
-                lambda_j = lambdas[p_j]
-                pos_ji = pos_i - positions[p_j]
-                scorr_ij = compute_scorr(pos_ji)
-                pos_delta_i += (lambda_i + lambda_j + scorr_ij) * \
-                    spiky_gradient(pos_ji, h)
+            if p_j < 0:
+                break
+            lambda_j = lambdas[p_j]
+            pos_ji = pos_i - positions[p_j]
+            scorr_ij = compute_scorr(pos_ji)
+            pos_delta_i += (lambda_i + lambda_j + scorr_ij) * \
+                spiky_gradient(pos_ji, h)
 
         pos_delta_i /= rho0
         position_deltas[p_i] = pos_delta_i
-
-
-@ti.kernel
-def apply_position_deltas():
+    # apply position deltas
     for i in positions:
         positions[i] += position_deltas[i]
 
 
 @ti.kernel
-def update_velocities():
+def epilogue():
+    # confine to boundary
+    for i in positions:
+        pos = positions[i]
+        positions[i] = confine_position_to_boundary(pos)
+    # update velocities
     for i in positions:
         velocities[i] = (positions[i] - old_positions[i]) / time_delta
-
-
-def run_pbf():
-    blit_buffers(positions, old_positions)
-    apply_gravity_within_boundary()
-
-    grid_num_particles.fill(0)
-    particle_neighbors.fill(-1)
-    update_grid()
-    find_particle_neighbors()
-    for _ in range(pbf_num_iters):
-        compute_lambdas()
-        compute_position_deltas()
-        apply_position_deltas()
-
-    confine_to_boundary()
-    update_velocities()
     # no vorticity/xsph because we cannot do cross product in 2D...
 
 
+def run_pbf():
+    prologue()
+    for _ in range(pbf_num_iters):
+        substep()
+    epilogue()
+
+
 def render(gui):
-    canvas = gui.canvas
-    canvas.clear(bg_color)
+    gui.clear(bg_color)
     pos_np = positions.to_numpy()
     for pos in pos_np:
         for j in range(dim):
             pos[j] *= screen_to_world_ratio / screen_res[j]
     gui.circles(pos_np, radius=particle_radius, color=particle_color)
-    gui.rect((0, 0), (board_states[None][0] / boundary[0], 1.0),
+    gui.rect((0, 0), (board_states[None][0] / boundary[0], 1),
              radius=1.5,
              color=boundary_color)
     gui.show()
 
 
+@ti.kernel
 def init_particles():
-    np_positions = np.zeros((num_particles, dim), dtype=np.float32)
-    delta = h * 0.8
-    num_x = num_particles_x
-    num_y = num_particles // num_x
-    assert num_x * num_y == num_particles
-    offs = np.array([(boundary[0] - delta * num_x) * 0.5,
-                     (boundary[1] * 0.02)],
-                    dtype=np.float32)
-
     for i in range(num_particles):
-        np_positions[i] = np.array([i % num_x, i // num_x]) * delta + offs
-    np_velocities = (np.random.rand(num_particles, dim).astype(np.float32) -
-                     0.5) * 4.0
-
-    @ti.kernel
-    def init(p: ti.ext_arr(), v: ti.ext_arr()):
-        for i in range(num_particles):
-            for c in ti.static(range(dim)):
-                positions[i][c] = p[i, c]
-                velocities[i][c] = v[i, c]
-
-    @ti.kernel
-    def init2():
-        board_states[None] = ti.Vector([boundary[0] - epsilon, -0.0])
-
-    init(np_positions, np_velocities)
-    init2()
+        delta = h * 0.8
+        offs = ti.Vector([(boundary[0] - delta * num_particles_x) * 0.5,
+                          boundary[1] * 0.02])
+        positions[i] = ti.Vector([i % num_particles_x, i // num_particles_x
+                                  ]) * delta + offs
+        for c in ti.static(range(dim)):
+            velocities[i][c] = (ti.random() - 0.5) * 4
+    board_states[None] = ti.Vector([boundary[0] - epsilon, -0.0])
 
 
 def print_stats():
@@ -332,14 +295,11 @@ def main():
     init_particles()
     print(f'boundary={boundary} grid={grid_size} cell_size={cell_size}')
     gui = ti.GUI('PBF2D', screen_res)
-    print_counter = 0
-    while gui.running:
+    while gui.running and not gui.get_event(gui.ESCAPE):
         move_board()
         run_pbf()
-        print_counter += 1
-        if print_counter == 20:
+        if gui.frame % 20 == 1:
             print_stats()
-            print_counter = 0
         render(gui)
 
 

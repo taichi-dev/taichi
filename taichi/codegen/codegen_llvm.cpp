@@ -412,6 +412,12 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
   } else if (op == BinaryOpType::bit_xor) {
     llvm_val[stmt] =
         builder->CreateXor(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
+  } else if (op == BinaryOpType::bit_shl) {
+    llvm_val[stmt] =
+        builder->CreateShl(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
+  } else if (op == BinaryOpType::bit_sar) {
+    llvm_val[stmt] =
+        builder->CreateAShr(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
   } else if (op == BinaryOpType::max) {
     if (is_real(ret_type)) {
       llvm_val[stmt] =
@@ -1370,7 +1376,7 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     current_coordinates = new_coordinates;
 
     // exec_cond: safe-guard the execution of loop body:
-    //  - if non-POT tensor dim exists, make sure we don't go out of bounds
+    //  - if non-POT field dim exists, make sure we don't go out of bounds
     //  - if leaf block is bitmasked, make sure we only loop over active
     //    voxels
     auto exec_cond = tlctx->get_constant(true);

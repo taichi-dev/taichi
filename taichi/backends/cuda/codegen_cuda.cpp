@@ -5,6 +5,7 @@
 
 #include "taichi/common/core.h"
 #include "taichi/util/io.h"
+#include "taichi/util/statistics.h"
 #include "taichi/ir/ir.h"
 #include "taichi/program/program.h"
 #include "taichi/lang_util.h"
@@ -50,15 +51,16 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       std::vector<void *> device_buffers(args.size(), nullptr);
       bool has_buffer = false;
 
-      // TODO: A refactoring is needed.
-      // We have a not-so-good design where Context is always tied with Program.
-      // Context's should be tied to kernel launches instead.
-      kernel->program.context = context;
+      // We could also use kernel->make_launch_context() to create
+      // |ctx_builder|, but that implies the usage of Program's context. For the
+      // sake of decoupling, let's not do that and explicitly set the context we
+      // want to modify.
+      Kernel::LaunchContextBuilder ctx_builder(kernel, &context);
       for (int i = 0; i < (int)args.size(); i++) {
         if (args[i].is_nparray) {
           has_buffer = true;
           // replace host buffer with device buffer
-          host_buffers[i] = get_current_program().context.get_arg<void *>(i);
+          host_buffers[i] = context.get_arg<void *>(i);
           if (args[i].size > 0) {
             // Note: both numpy and PyTorch support arrays/tensors with zeros
             // in shapes, e.g., shape=(0) or shape=(100, 0, 200). This makes
@@ -67,7 +69,8 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
             CUDADriver::get_instance().memcpy_host_to_device(
                 (void *)device_buffers[i], host_buffers[i], args[i].size);
           }
-          kernel->set_arg_nparray(i, (uint64)device_buffers[i], args[i].size);
+          ctx_builder.set_arg_nparray(i, (uint64)device_buffers[i],
+                                      args[i].size);
         }
       }
       if (has_buffer) {
@@ -77,9 +80,8 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       for (auto task : offloaded_local) {
         TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
                  task.block_dim);
-
         cuda_module->launch(task.name, task.grid_dim, task.block_dim,
-                            task.shmem_bytes, {&kernel->program.context});
+                            task.shmem_bytes, {&context});
       }
       // copy data back to host
       if (has_buffer) {
@@ -426,6 +428,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   }
 
   void visit(OffloadedStmt *stmt) override {
+    stat.add("codegen_offloaded_tasks");
     if (stmt->bls_size > 0)
       create_bls_buffer(stmt);
 #if defined(TI_WITH_CUDA)

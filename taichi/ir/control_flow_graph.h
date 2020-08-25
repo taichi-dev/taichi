@@ -88,9 +88,14 @@ class ControlFlowGraph {
   void live_variable_analysis(bool after_lower_access);
 
   void simplify_graph();
+
   // This pass cannot eliminate container statements properly for now.
   bool unreachable_code_elimination();
+
+  // Also performs identical store elimination.
   bool store_to_load_forwarding(bool after_lower_access);
+
+  // Also performs identical load elimination.
   bool dead_store_elimination(bool after_lower_access);
 };
 

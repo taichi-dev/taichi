@@ -52,8 +52,6 @@ struct CCContext {
 
   uint64_t *args;
   int *earg;
-
-  CCContext(CCProgram *program, Context *ctx);
 };
 
 };  // namespace cccp

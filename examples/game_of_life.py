@@ -9,9 +9,8 @@ ti.init()
 n = 64
 cell_size = 8
 img_size = n * cell_size
-alive = ti.var(int, shape=(n, n))  # alive = 1, dead = 0
-count = ti.var(int, shape=(n, n))  # count of neighbours
-img = ti.var(float, shape=(img_size, img_size))  # image to be displayed
+alive = ti.field(int, shape=(n, n))  # alive = 1, dead = 0
+count = ti.field(int, shape=(n, n))  # count of neighbours
 
 
 @ti.func
@@ -58,13 +57,6 @@ def init():
             alive[i, j] = 0
 
 
-@ti.kernel
-def render():
-    for i, j in alive:
-        for u, v in ti.static(ti.ndrange(cell_size, cell_size)):
-            img[i * cell_size + u, j * cell_size + v] = alive[i, j]
-
-
 gui = ti.GUI('Game of Life', (img_size, img_size))
 gui.fps_limit = 15
 
@@ -91,7 +83,5 @@ while gui.running:
     if not paused:
         run()
 
-    render()
-
-    gui.set_image(img)
+    gui.set_image(ti.imresize(alive, img_size).astype(np.uint8) * 255)
     gui.show()

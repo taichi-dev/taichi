@@ -2,7 +2,7 @@ import taichi as ti
 
 ti.init()
 
-pixels = ti.var(ti.u8, shape=(512, 512, 3))
+pixels = ti.field(ti.u8, shape=(512, 512, 3))
 
 
 @ti.kernel

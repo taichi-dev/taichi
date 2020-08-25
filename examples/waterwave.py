@@ -11,11 +11,11 @@ depth = 4
 dx = 0.02
 dt = 0.01
 shape = 512, 512
-pixels = ti.var(dt=ti.f32, shape=shape)
-background = ti.var(dt=ti.f32, shape=shape)
-height = ti.var(dt=ti.f32, shape=shape)
-velocity = ti.var(dt=ti.f32, shape=shape)
-acceleration = ti.var(dt=ti.f32, shape=shape)
+pixels = ti.field(dtype=float, shape=shape)
+background = ti.field(dtype=float, shape=shape)
+height = ti.field(dtype=float, shape=shape)
+velocity = ti.field(dtype=float, shape=shape)
+acceleration = ti.field(dtype=float, shape=shape)
 
 
 @ti.kernel
@@ -90,11 +90,11 @@ def paint():
 print("[Hint] click on the window to create wavelet")
 
 reset()
-gui = ti.GUI("Water Wave", shape)
-for frame in range(100000):
+gui = ti.GUI('Water Wave', shape)
+while gui.running:
     for e in gui.get_events(ti.GUI.PRESS):
         if e.key in [ti.GUI.ESCAPE, ti.GUI.EXIT]:
-            exit()
+            gui.running = False
         elif e.key == 'r':
             reset()
         elif e.key == ti.GUI.LMB:

@@ -38,6 +38,8 @@ TI_NAMESPACE_END
 
 TLANG_NAMESPACE_BEGIN
 
+namespace {
+
 void assert_failed_host(const char *msg) {
   TI_ERROR("Assertion failure: {}", msg);
 }
@@ -47,6 +49,13 @@ void *taichi_allocate_aligned(Program *prog,
                               std::size_t alignment) {
   return prog->memory_pool->allocate(size, alignment);
 }
+
+inline uint64 *allocate_result_buffer_default(Program *prog) {
+  return (uint64 *)taichi_allocate_aligned(
+      prog, sizeof(uint64) * taichi_result_buffer_entries, 8);
+}
+
+}  // namespace
 
 Program *current_program = nullptr;
 std::atomic<int> Program::num_instances;
@@ -246,8 +255,7 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
     TI_NOT_IMPLEMENTED
 #endif
   } else {
-    result_buffer = (uint64 *)taichi_allocate_aligned(
-        this, sizeof(uint64) * taichi_result_buffer_entries, 8);
+    result_buffer = allocate_result_buffer_default(this);
     tlctx = llvm_context_host.get();
   }
   auto runtime = tlctx->runtime_jit_module;
@@ -360,24 +368,33 @@ void Program::materialize_layout() {
                    "Metal arch requires that LLVM being enabled");
     metal_compiled_structs_ = metal::compile_structs(*snode_root);
     if (metal_kernel_mgr_ == nullptr) {
+      TI_ASSERT(result_buffer == nullptr);
+      result_buffer = allocate_result_buffer_default(this);
+
       metal::KernelManager::Params params;
       params.compiled_structs = metal_compiled_structs_.value();
       params.config = &config;
       params.mem_pool = memory_pool.get();
+      params.host_result_buffer = result_buffer;
       params.profiler = profiler.get();
       params.root_id = snode_root->id;
       metal_kernel_mgr_ =
           std::make_unique<metal::KernelManager>(std::move(params));
     }
   } else if (config.arch == Arch::opengl) {
+    TI_ASSERT(result_buffer == nullptr);
+    result_buffer = allocate_result_buffer_default(this);
     opengl::OpenglStructCompiler scomp;
     opengl_struct_compiled_ = scomp.run(*snode_root);
     TI_TRACE("OpenGL root buffer size: {} B",
              opengl_struct_compiled_->root_size);
     opengl_kernel_launcher_ = std::make_unique<opengl::GLSLLauncher>(
         opengl_struct_compiled_->root_size);
+    opengl_kernel_launcher_->result_buffer = result_buffer;
 #ifdef TI_WITH_CC
   } else if (config.arch == Arch::cc) {
+    TI_ASSERT(result_buffer == nullptr);
+    result_buffer = allocate_result_buffer_default(this);
     cc_program->compile_layout(snode_root.get());
 #endif
   }
@@ -628,10 +645,8 @@ uint64 Program::fetch_result_uint64(int i) {
 #else
     TI_NOT_IMPLEMENTED;
 #endif
-  } else if (arch_is_cpu(arch)) {
-    ret = result_buffer[i];
   } else {
-    ret = context.get_arg_as_uint64(i);
+    ret = result_buffer[i];
   }
   return ret;
 }

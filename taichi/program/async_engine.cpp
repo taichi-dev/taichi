@@ -41,6 +41,99 @@ std::unique_ptr<OffloadedStmt> clone_offloaded_task(OffloadedStmt *from,
 
 }  // namespace
 
+ParallelExecutor::ParallelExecutor(int num_threads)
+    : num_threads(num_threads),
+      status(ExecutorStatus::uninitialized),
+      running_threads(0) {
+  {
+    auto _ = std::lock_guard<std::mutex>(mut);
+
+    for (int i = 0; i < num_threads; i++) {
+      threads.emplace_back([this]() { this->worker_loop(); });
+    }
+
+    status = ExecutorStatus::initialized;
+  }
+  init_cv_.notify_all();
+}
+
+ParallelExecutor::~ParallelExecutor() {
+  // TODO: We should have a new ExecutorStatus, e.g. shutting_down, to prevent
+  // new tasks from being enqueued during shut down.
+  flush();
+  {
+    auto _ = std::lock_guard<std::mutex>(mut);
+    status = ExecutorStatus::finalized;
+  }
+  // Signal the workers that they need to shutdown.
+  worker_cv_.notify_all();
+  for (auto &th : threads) {
+    th.join();
+  }
+}
+
+void ParallelExecutor::enqueue(const TaskType &func) {
+  {
+    std::lock_guard<std::mutex> _(mut);
+    task_queue.push_back(func);
+  }
+  worker_cv_.notify_all();
+}
+
+void ParallelExecutor::flush() {
+  std::unique_lock<std::mutex> lock(mut);
+  while (!flush_cv_cond()) {
+    flush_cv_.wait(lock);
+  }
+}
+
+bool ParallelExecutor::flush_cv_cond() {
+  return (task_queue.empty() && running_threads == 0);
+}
+
+void ParallelExecutor::worker_loop() {
+  TI_DEBUG("Starting worker thread.");
+  {
+    std::unique_lock<std::mutex> lock(mut);
+    while (status == ExecutorStatus::uninitialized) {
+      init_cv_.wait(lock);
+    }
+  }
+
+  TI_DEBUG("Worker thread initialized and running.");
+  bool done = false;
+  while (!done) {
+    bool notify_flush_cv = false;
+    {
+      std::unique_lock<std::mutex> lock(mut);
+      while (task_queue.empty() && status == ExecutorStatus::initialized) {
+        worker_cv_.wait(lock);
+      }
+      // So long as |task_queue| is not empty, we keep running.
+      if (!task_queue.empty()) {
+        auto task = task_queue.front();
+        running_threads++;
+        task_queue.pop_front();
+        lock.unlock();
+
+        // Run the task
+        task();
+
+        lock.lock();
+        running_threads--;
+      }
+      notify_flush_cv = flush_cv_cond();
+      if (status == ExecutorStatus::finalized && task_queue.empty()) {
+        done = true;
+      }
+    }
+    if (notify_flush_cv) {
+      // It is fine to notify |flush_cv_| while nobody is waiting on it.
+      flush_cv_.notify_one();
+    }
+  }
+}
+
 KernelLaunchRecord::KernelLaunchRecord(Context context,
                                        Kernel *kernel,
                                        OffloadedStmt *stmt,
@@ -82,8 +175,9 @@ void ExecutionQueue::enqueue(KernelLaunchRecord &&ker) {
         auto config = kernel->program.config;
         auto ir = stmt;
         offload_to_executable(
-            ir, config, false, /*lower_global_access=*/true,
-            /*make_thread_local=*/config.make_thread_local,
+            ir, config, /*verbose=*/false,
+            /*lower_global_access=*/true,
+            /*make_thread_local=*/true,
             /*make_block_local=*/
             is_extension_supported(config.arch, Extension::bls) &&
                 config.make_block_local);
@@ -95,8 +189,10 @@ void ExecutionQueue::enqueue(KernelLaunchRecord &&ker) {
     });
   }
 
+  kernel->account_for_offloaded(ker.stmt());
+
   auto context = ker.context;
-  launch_worker.enqueue([&, h, task_type = stmt->task_type, context, this] {
+  launch_worker.enqueue([&, h, context, this] {
     FunctionType func;
     while (true) {
       std::unique_lock<std::mutex> lock(mut);
@@ -107,22 +203,6 @@ void ExecutionQueue::enqueue(KernelLaunchRecord &&ker) {
       }
       func = compiled_func[h];
       break;
-    }
-    stat.add("launched_kernels", 1.0);
-    if (task_type == OffloadedStmt::TaskType::listgen) {
-      stat.add("launched_kernels_list_op", 1.0);
-      stat.add("launched_kernels_list_gen", 1.0);
-    } else if (task_type == OffloadedStmt::TaskType::clear_list) {
-      stat.add("launched_kernels_list_op", 1.0);
-      stat.add("launched_kernels_list_clear", 1.0);
-    } else if (task_type == OffloadedStmt::TaskType::range_for) {
-      stat.add("launched_kernels_compute", 1.0);
-      stat.add("launched_kernels_range_for", 1.0);
-    } else if (task_type == OffloadedStmt::TaskType::struct_for) {
-      stat.add("launched_kernels_compute", 1.0);
-      stat.add("launched_kernels_struct_for", 1.0);
-    } else if (task_type == OffloadedStmt::TaskType::gc) {
-      stat.add("launched_kernels_garbage_collect", 1.0);
     }
     auto c = context;
     func(c);
@@ -345,7 +425,7 @@ bool AsyncEngine::fuse() {
       irpass::fix_block_parents(task_a);
 
       auto kernel = task_queue[i].kernel;
-      irpass::full_simplify(task_a, true, kernel);
+      irpass::full_simplify(task_a, /*after_lower_access=*/false, kernel);
       task_queue[i].h = hash(task_a);
 
       modified = true;

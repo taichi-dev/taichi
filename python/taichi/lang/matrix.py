@@ -84,11 +84,11 @@ class Matrix(TaichiOperations):
                 self.m = m
             else:
                 # construct global matrix (deprecated)
-                #warning(  # TODO(archibate): uncomment this when #1500 is complete
-                #    "Declaring global matrices using `ti.Matrix(n, m, dt, shape)` is deprecated, "
-                #    "use `ti.Matrix.field(n, m, dtype, shape)` instead",
-                #    DeprecationWarning,
-                #    stacklevel=2)
+                warning(
+                    "Declaring global matrices using `ti.Matrix(n, m, dt, shape)` is deprecated, "
+                    "use `ti.Matrix.field(n, m, dtype, shape)` instead",
+                    DeprecationWarning,
+                    stacklevel=2)
                 mat = Matrix.field(n=n,
                                    m=m,
                                    dtype=dt,
@@ -106,8 +106,8 @@ class Matrix(TaichiOperations):
                 f'Taichi matrices/vectors with {self.n}x{self.m} > 32 entries are not suggested.'
                 ' Matrices/vectors will be automatically unrolled at compile-time for performance.'
                 ' So the compilation time could be extremely long if the matrix size is too big.'
-                ' You may use a tensor to store a large matrix like this, e.g.:\n'
-                f'    x = ti.var(ti.f32, ({self.n}, {self.m})).\n'
+                ' You may use a field to store a large matrix like this, e.g.:\n'
+                f'    x = ti.field(ti.f32, ({self.n}, {self.m})).\n'
                 ' See https://taichi.readthedocs.io/en/stable/tensor_matrix.html#matrix-size'
                 ' for more details.',
                 UserWarning,
@@ -736,7 +736,7 @@ class Matrix(TaichiOperations):
         yield ']'
 
     def __repr__(self):
-        """Python scope object print support."""
+        """Python scope matrix print support."""
         if impl.inside_kernel():
             '''
             It seems that when pybind11 got an type mismatch, it will try
@@ -848,7 +848,7 @@ class Matrix(TaichiOperations):
 
     @classmethod
     @python_scope
-    #@deprecated('ti.Matrix.var', 'ti.Matrix.field')
+    @deprecated('ti.Matrix.var', 'ti.Matrix.field')
     def var(cls, n, m, dt, *args, **kwargs):
         '''ti.Matrix.var'''
         _taichi_skip_traceback = 1
@@ -861,7 +861,7 @@ class Matrix(TaichiOperations):
         return cls.field(n, 1, dtype, *args, **kwargs)
 
     @classmethod
-    #@deprecated('ti.Vector.var', 'ti.Vector.field')
+    @deprecated('ti.Vector.var', 'ti.Vector.field')
     def _Vector_var(cls, n, dt, *args, **kwargs):
         '''ti.Vector.var'''
         _taichi_skip_traceback = 1

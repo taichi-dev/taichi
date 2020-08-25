@@ -73,7 +73,7 @@ jobs:
           git checkout -b _enforced_format
           git reset FETCH_HEAD
           python3 -m pip install --user yapf gitpython
-          python3 misc/format.py
+          python3 python/taichi/code_format.py
           git add .
           git commit -m "enforce code format" || true
           # exit with 1 if there were differences:

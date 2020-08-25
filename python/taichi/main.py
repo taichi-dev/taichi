@@ -56,13 +56,6 @@ class TaichiMain:
 
         print(self._get_friend_links())
 
-        if 'TI_DEBUG' in os.environ:
-            val = os.environ['TI_DEBUG']
-            if val not in ['0', '1']:
-                raise ValueError(
-                    "Environment variable TI_DEBUG can only have value 0 or 1."
-                )
-
         parser = argparse.ArgumentParser(description="Taichi CLI",
                                          usage=self._usage())
         parser.add_argument('command',
@@ -511,9 +504,11 @@ class TaichiMain:
             help="A commit hash that git can use to compare diff with")
         args = parser.parse_args(arguments)
 
+        from .code_format import main
+
         # Short circuit for testing
         if self.test_mode: return args
-        ti.core.format(diff=args.diff)
+        main(diff=args.diff)
 
     @register
     def format_all(self, arguments: list = sys.argv[2:]):
@@ -522,9 +517,11 @@ class TaichiMain:
             prog='ti format_all', description=f"{self.format_all.__doc__}")
         args = parser.parse_args(arguments)
 
+        from .code_format import main
+
         # Short circuit for testing
         if self.test_mode: return args
-        ti.core.format(all=True)
+        main(all=True)
 
     @register
     def build(self, arguments: list = sys.argv[2:]):
@@ -1036,6 +1033,28 @@ class TaichiMain:
 
         from .cc_compose import main
         main(args.fin_name, args.fout_name, args.emscripten)
+
+    @register
+    def repl(self, arguments: list = sys.argv[2:]):
+        """Start Taichi REPL / Python shell with 'import taichi as ti'"""
+        parser = argparse.ArgumentParser(prog='ti repl',
+                                         description=f"{self.repl.__doc__}")
+        args = parser.parse_args(arguments)
+
+        def local_scope():
+            import taichi as ti
+            import numpy as np
+            import math
+            import time
+            try:
+                import IPython
+                IPython.embed()
+            except ImportError:
+                import code
+                __name__ = '__console__'
+                code.interact(local=locals())
+
+        local_scope()
 
 
 def main():

@@ -9,21 +9,21 @@ import os
 @pytest.mark.parametrize('comp,ext', [(3, 'bmp'), (1, 'png'), (3, 'png'),
                                       (4, 'png')])
 @pytest.mark.parametrize('resx,resy', [(201, 173)])
-@pytest.mark.parametrize('is_tensor', [False, True])
+@pytest.mark.parametrize('is_field', [False, True])
 @pytest.mark.parametrize('dt', [ti.u8])
 @ti.host_arch_only
-def test_image_io(resx, resy, comp, ext, is_tensor, dt):
+def test_image_io(resx, resy, comp, ext, is_field, dt):
     if comp != 1:
         shape = (resx, resy, comp)
     else:
         shape = (resx, resy)
-    if is_tensor:
+    if is_field:
         pixel_t = ti.field(dt, shape)
     pixel = np.random.randint(256, size=shape, dtype=ti.to_numpy_type(dt))
-    if is_tensor:
+    if is_field:
         pixel_t.from_numpy(pixel)
     fn = make_temp_file(suffix='.' + ext)
-    if is_tensor:
+    if is_field:
         ti.imwrite(pixel_t, fn)
     else:
         ti.imwrite(pixel, fn)
@@ -69,3 +69,19 @@ def test_image_io_uint(resx, resy, comp, ext, dt):
     pixel_r = ti.imread(fn).astype(np_type) * np_max
     assert (pixel_r == pixel).all()
     os.remove(fn)
+
+
+@pytest.mark.parametrize('comp', [1, 3])
+@pytest.mark.parametrize('resx,resy', [(91, 81)])
+@pytest.mark.parametrize('scale', [1, 2, 3])
+@ti.host_arch_only
+def test_image_resize_sum(resx, resy, comp, scale):
+    shape = (resx, resy)
+    if comp != 1:
+        shape = shape + (comp, )
+    old_img = np.random.rand(*shape).astype(np.float32)
+    if resx == resy:
+        new_img = ti.imresize(old_img, resx * scale)
+    else:
+        new_img = ti.imresize(old_img, resx * scale, resy * scale)
+    assert np.sum(old_img) * scale**2 == ti.approx(np.sum(new_img))

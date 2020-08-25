@@ -651,7 +651,7 @@ class AssociateContinueScope : public BasicStmtVisitor {
 void offload(IRNode *root) {
   TI_AUTO_PROF;
   auto offloaded_ranges = Offloader::run(root);
-  typecheck(root);
+  type_check(root);
   fix_block_parents(root);
   {
     auto stmt_to_offloaded = StmtToOffloaded::run(root);
@@ -667,7 +667,7 @@ void offload(IRNode *root) {
   // TODO(k-ye): Move this into its own pass. However, we need to wait for all
   // backends to integrate with https://github.com/taichi-dev/taichi/pull/700
   AssociateContinueScope::run(root);
-  typecheck(root);
+  type_check(root);
   re_id(root);
   fix_block_parents(root);
 }

@@ -1,5 +1,6 @@
 #include "kernel.h"
 
+#include "taichi/util/statistics.h"
 #include "taichi/common/task.h"
 #include "taichi/program/program.h"
 #include "taichi/program/async_engine.h"
@@ -96,12 +97,18 @@ void Kernel::lower(bool to_executable) {  // TODO: is a "Lowerer" class
   lowered = true;
 }
 
-void Kernel::operator()() {
+void Kernel::operator()(LaunchContextBuilder &launch_ctx) {
   if (!program.config.async_mode) {
     if (!compiled) {
       compile();
     }
-    compiled(program.get_context());
+
+    for (auto &offloaded : ir->as<Block>()->statements) {
+      account_for_offloaded(offloaded->as<OffloadedStmt>());
+    }
+
+    compiled(launch_ctx.get_context());
+
     program.sync = (program.sync && arch_is_cpu(arch));
     // Note that Kernel::arch may be different from program.config.arch
     if (program.config.debug && (arch_is_cpu(program.config.arch) ||
@@ -119,74 +126,115 @@ void Kernel::operator()() {
   }
 }
 
-void Kernel::set_arg_float(int i, float64 d) {
+Kernel::LaunchContextBuilder Kernel::make_launch_context() {
+  return LaunchContextBuilder(this, &(program.context));
+}
+
+void Kernel::LaunchContextBuilder::set_arg_float(int i, float64 d) {
   TI_ASSERT_INFO(
-      !args[i].is_nparray,
+      !kernel_->args[i].is_nparray,
       "Assigning a scalar value to a numpy array argument is not allowed");
 
   ActionRecorder::get_instance().record(
-      "set_kernel_arg_float64", {ActionArg("kernel_name", name),
+      "set_kernel_arg_float64", {ActionArg("kernel_name", kernel_->name),
                                  ActionArg("arg_id", i), ActionArg("val", d)});
 
-  auto dt = args[i].dt;
+  auto dt = kernel_->args[i].dt;
   if (dt == DataType::f32) {
-    program.context.set_arg(i, (float32)d);
+    ctx_->set_arg(i, (float32)d);
   } else if (dt == DataType::f64) {
-    program.context.set_arg(i, (float64)d);
+    ctx_->set_arg(i, (float64)d);
   } else if (dt == DataType::i32) {
-    program.context.set_arg(i, (int32)d);
+    ctx_->set_arg(i, (int32)d);
   } else if (dt == DataType::i64) {
-    program.context.set_arg(i, (int64)d);
+    ctx_->set_arg(i, (int64)d);
   } else if (dt == DataType::i8) {
-    program.context.set_arg(i, (int8)d);
+    ctx_->set_arg(i, (int8)d);
   } else if (dt == DataType::i16) {
-    program.context.set_arg(i, (int16)d);
+    ctx_->set_arg(i, (int16)d);
   } else if (dt == DataType::u8) {
-    program.context.set_arg(i, (uint8)d);
+    ctx_->set_arg(i, (uint8)d);
   } else if (dt == DataType::u16) {
-    program.context.set_arg(i, (uint16)d);
+    ctx_->set_arg(i, (uint16)d);
   } else if (dt == DataType::u32) {
-    program.context.set_arg(i, (uint32)d);
+    ctx_->set_arg(i, (uint32)d);
   } else if (dt == DataType::u64) {
-    program.context.set_arg(i, (uint64)d);
+    ctx_->set_arg(i, (uint64)d);
   } else {
     TI_NOT_IMPLEMENTED
   }
 }
 
-void Kernel::set_arg_int(int i, int64 d) {
+void Kernel::LaunchContextBuilder::set_arg_int(int i, int64 d) {
   TI_ASSERT_INFO(
-      !args[i].is_nparray,
+      !kernel_->args[i].is_nparray,
       "Assigning scalar value to numpy array argument is not allowed");
 
   ActionRecorder::get_instance().record(
-      "set_kernel_arg_int64", {ActionArg("kernel_name", name),
+      "set_kernel_arg_int64", {ActionArg("kernel_name", kernel_->name),
                                ActionArg("arg_id", i), ActionArg("val", d)});
 
-  auto dt = args[i].dt;
+  auto dt = kernel_->args[i].dt;
   if (dt == DataType::i32) {
-    program.context.set_arg(i, (int32)d);
+    ctx_->set_arg(i, (int32)d);
   } else if (dt == DataType::i64) {
-    program.context.set_arg(i, (int64)d);
+    ctx_->set_arg(i, (int64)d);
   } else if (dt == DataType::i8) {
-    program.context.set_arg(i, (int8)d);
+    ctx_->set_arg(i, (int8)d);
   } else if (dt == DataType::i16) {
-    program.context.set_arg(i, (int16)d);
+    ctx_->set_arg(i, (int16)d);
   } else if (dt == DataType::u8) {
-    program.context.set_arg(i, (uint8)d);
+    ctx_->set_arg(i, (uint8)d);
   } else if (dt == DataType::u16) {
-    program.context.set_arg(i, (uint16)d);
+    ctx_->set_arg(i, (uint16)d);
   } else if (dt == DataType::u32) {
-    program.context.set_arg(i, (uint32)d);
+    ctx_->set_arg(i, (uint32)d);
   } else if (dt == DataType::u64) {
-    program.context.set_arg(i, (uint64)d);
+    ctx_->set_arg(i, (uint64)d);
   } else if (dt == DataType::f32) {
-    program.context.set_arg(i, (float32)d);
+    ctx_->set_arg(i, (float32)d);
   } else if (dt == DataType::f64) {
-    program.context.set_arg(i, (float64)d);
+    ctx_->set_arg(i, (float64)d);
   } else {
     TI_NOT_IMPLEMENTED
   }
+}
+
+void Kernel::LaunchContextBuilder::set_extra_arg_int(int i, int j, int32 d) {
+  ctx_->extra_args[i][j] = d;
+}
+
+void Kernel::LaunchContextBuilder::set_arg_nparray(int i,
+                                                   uint64 ptr,
+                                                   uint64 size) {
+  TI_ASSERT_INFO(kernel_->args[i].is_nparray,
+                 "Assigning numpy array to scalar argument is not allowed");
+
+  ActionRecorder::get_instance().record(
+      "set_kernel_arg_ext_ptr",
+      {ActionArg("kernel_name", kernel_->name), ActionArg("arg_id", i),
+       ActionArg("address", fmt::format("0x{:x}", ptr)),
+       ActionArg("array_size_in_bytes", (int64)size)});
+
+  kernel_->args[i].size = size;
+  ctx_->set_arg(i, ptr);
+}
+
+void Kernel::LaunchContextBuilder::set_arg_raw(int i, uint64 d) {
+  TI_ASSERT_INFO(
+      !kernel_->args[i].is_nparray,
+      "Assigning scalar value to numpy array argument is not allowed");
+
+  ActionRecorder::get_instance().record(
+      "set_arg_raw", {ActionArg("kernel_name", kernel_->name),
+                      ActionArg("arg_id", i), ActionArg("val", (int64)d)});
+  ctx_->set_arg<uint64>(i, d);
+}
+
+Context &Kernel::LaunchContextBuilder::get_context() {
+  // See Program::get_context()
+  ctx_->runtime = static_cast<LLVMRuntime *>(kernel_->program.llvm_runtime);
+  return *ctx_;
 }
 
 float64 Kernel::get_ret_float(int i) {
@@ -243,24 +291,6 @@ int64 Kernel::get_ret_int(int i) {
   }
 }
 
-void Kernel::set_extra_arg_int(int i, int j, int32 d) {
-  program.context.extra_args[i][j] = d;
-}
-
-void Kernel::set_arg_nparray(int i, uint64 ptr, uint64 size) {
-  TI_ASSERT_INFO(args[i].is_nparray,
-                 "Assigning numpy array to scalar argument is not allowed");
-
-  ActionRecorder::get_instance().record(
-      "set_kernel_arg_ext_ptr",
-      {ActionArg("kernel_name", name), ActionArg("arg_id", i),
-       ActionArg("address", fmt::format("0x{:x}", ptr)),
-       ActionArg("array_size_in_bytes", (int64)size)});
-
-  args[i].size = size;
-  program.context.set_arg(i, ptr);
-}
-
 void Kernel::set_arch(Arch arch) {
   TI_ASSERT(!compiled);
   this->arch = arch;
@@ -274,6 +304,28 @@ int Kernel::insert_arg(DataType dt, bool is_nparray) {
 int Kernel::insert_ret(DataType dt) {
   rets.push_back(Ret{dt});
   return rets.size() - 1;
+}
+
+void Kernel::account_for_offloaded(OffloadedStmt *stmt) {
+  if (is_evaluator || is_accessor)
+    return;
+  auto task_type = stmt->task_type;
+  stat.add("launched_kernels", 1.0);
+  if (task_type == OffloadedStmt::TaskType::listgen) {
+    stat.add("launched_kernels_list_op", 1.0);
+    stat.add("launched_kernels_list_gen", 1.0);
+  } else if (task_type == OffloadedStmt::TaskType::clear_list) {
+    stat.add("launched_kernels_list_op", 1.0);
+    stat.add("launched_kernels_list_clear", 1.0);
+  } else if (task_type == OffloadedStmt::TaskType::range_for) {
+    stat.add("launched_kernels_compute", 1.0);
+    stat.add("launched_kernels_range_for", 1.0);
+  } else if (task_type == OffloadedStmt::TaskType::struct_for) {
+    stat.add("launched_kernels_compute", 1.0);
+    stat.add("launched_kernels_struct_for", 1.0);
+  } else if (task_type == OffloadedStmt::TaskType::gc) {
+    stat.add("launched_kernels_garbage_collect", 1.0);
+  }
 }
 
 TLANG_NAMESPACE_END

@@ -2,9 +2,9 @@ import taichi as ti
 import random
 
 n = 8
-x = ti.var(dt=ti.f32, shape=n, needs_grad=True)
-y = ti.var(dt=ti.f32, shape=n)
-L = ti.var(dt=ti.f32, shape=(), needs_grad=True)
+x = ti.field(dtype=ti.f32, shape=n, needs_grad=True)
+y = ti.field(dtype=ti.f32, shape=n)
+L = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
 
 
 @ti.kernel

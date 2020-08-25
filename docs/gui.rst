@@ -514,6 +514,7 @@ Image I/O
 
     Each value in this returned field is an integer in [0, 255].
 
+
 .. function:: ti.imshow(img, windname)
 
     :parameter img: (ti.Vector.field or ti.field) the image to show in the GUI
@@ -522,3 +523,15 @@ Image I/O
     This function will create an instance of ``ti.GUI`` and show the input image on the screen.
 
     It has the same logic as ``ti.imwrite`` for different datatypes.
+
+
+.. function:: ti.imresize(img, w, h=None):
+
+    :parameter img: (np.array or ti.field) the input image.
+    :parameter w: (int) the width after resizing.
+    :parameter h: (optional, int) the height after resizing.
+    :return: (np.array) the resized image.
+
+    If ``h`` is not specified, it will be equal to ``w`` by default.
+
+    The output image shape is: ``(w, h, *img.shape[2:])``.

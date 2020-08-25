@@ -156,7 +156,7 @@ class GUI:
 
         else:
             raise ValueError(
-                f"GUI.set_image only takes a Taichi tensor or NumPy array, not {type(img)}"
+                f"GUI.set_image only takes a Taichi field or NumPy array, not {type(img)}"
             )
 
         self.core.set_img(self.img.ctypes.data)
@@ -334,6 +334,26 @@ class GUI:
         r, g, b = hex_to_rgb(color)
         color = ti.core_vec(r, g, b, 1)
         self.canvas.text(content, pos, font_size, color)
+
+    def _make_field_base(gui, w, h, bound):
+        x = np.linspace(bound / w, 1 - bound / w, w)
+        y = np.linspace(bound / h, 1 - bound / h, h)
+        base = np.array(np.meshgrid(x, y))
+        base = base.swapaxes(0, 1).swapaxes(1, 2).swapaxes(0, 1)
+        return base.reshape(w * h, 2)
+
+    def point_field(self, radius, color=0xffffff, bound=0.5):
+        assert len(radius.shape) == 2
+        base = self._make_field_base(radius.shape[0], radius.shape[1], bound)
+        radius = radius.reshape(radius.shape[0] * radius.shape[1])
+        self.circles(base, radius=radius, color=color)
+
+    def arrow_field(self, dir, radius=1, color=0xffffff, bound=0.5, **kwargs):
+        assert len(dir.shape) == 3
+        assert dir.shape[2] == 2
+        base = self._make_field_base(dir.shape[0], dir.shape[1], bound)
+        dir = dir.reshape(dir.shape[0] * dir.shape[1], 2)
+        self.arrows(base, dir, radius=radius, color=color, **kwargs)
 
     def show(self, file=None):
         self.core.update()

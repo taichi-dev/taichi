@@ -6,20 +6,20 @@ import pickle
 # ti.runtime.print_preprocessed = True
 # ti.cfg.print_ir = True
 
-input = ti.var(ti.f32)
+input = ti.field(ti.f32)
 
-weight1 = ti.var(ti.f32)
-output1 = ti.var(ti.f32)
-output1_nonlinear = ti.var(ti.f32)
+weight1 = ti.field(ti.f32)
+output1 = ti.field(ti.f32)
+output1_nonlinear = ti.field(ti.f32)
 
-weight2 = ti.var(ti.f32)
-output = ti.var(ti.f32)
-output_exp = ti.var(ti.f32)
-output_softmax = ti.var(ti.f32)
-softmax_sum = ti.var(ti.f32)
-gt = ti.var(ti.f32)
-loss = ti.var(ti.f32)
-learning_rate = ti.var(ti.f32)
+weight2 = ti.field(ti.f32)
+output = ti.field(ti.f32)
+output_exp = ti.field(ti.f32)
+output_softmax = ti.field(ti.f32)
+softmax_sum = ti.field(ti.f32)
+gt = ti.field(ti.f32)
+loss = ti.field(ti.f32)
+learning_rate = ti.field(ti.f32)
 
 n_input = 28**2
 n_hidden = 500

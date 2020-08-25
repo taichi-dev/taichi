@@ -411,6 +411,16 @@ def bit_xor(a, b):
     return _binary_operation(ti_core.expr_bit_xor, ops.xor, a, b)
 
 
+@binary
+def bit_shl(a, b):
+    return _binary_operation(ti_core.expr_bit_shl, ops.lshift, a, b)
+
+
+@binary
+def bit_sar(a, b):
+    return _binary_operation(ti_core.expr_bit_sar, ops.rshift, a, b)
+
+
 # We don't have logic_and/or instructions yet:
 logical_or = bit_or
 logical_and = bit_and
@@ -475,7 +485,7 @@ def assign(a, b):
     return a
 
 
-sqr = fully_deprecated('ti.sqr(x)', 'x**2')
+sqr = obsolete('ti.sqr(x)', 'x**2')
 
 
 def ti_max(*args):

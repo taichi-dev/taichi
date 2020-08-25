@@ -3,8 +3,8 @@ import numpy as np
 
 ti.init()
 
-res = 1280, 720
-pixels = ti.Vector(3, dt=ti.f32, shape=res)
+res = (512, 512)
+pixels = ti.Vector.field(3, dtype=float, shape=res)
 
 
 @ti.kernel

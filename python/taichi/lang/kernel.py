@@ -149,15 +149,7 @@ class Func:
             self.argument_names.append(param.name)
 
 
-@deprecated('@ti.classfunc', '@ti.func directly')
-def classfunc(foo):
-    func = Func(foo, classfunc=True)
-
-    @functools.wraps(foo)
-    def decorated(*args):
-        return func.__call__(*args)
-
-    return decorated
+classfunc = obsolete('@ti.classfunc', '@ti.func directly')
 
 
 class KernelTemplateMapper:
@@ -392,6 +384,7 @@ class Kernel:
             has_external_arrays = False
 
             actual_argument_slot = 0
+            launch_ctx = t_kernel.make_launch_context()
             for i, v in enumerate(args):
                 needed = self.arguments[i]
                 if isinstance(needed, template):
@@ -401,11 +394,11 @@ class Kernel:
                 if id(needed) in real_type_ids:
                     if not isinstance(v, (float, int)):
                         raise KernelArgError(i, needed, provided)
-                    t_kernel.set_arg_float(actual_argument_slot, float(v))
+                    launch_ctx.set_arg_float(actual_argument_slot, float(v))
                 elif id(needed) in integer_type_ids:
                     if not isinstance(v, int):
                         raise KernelArgError(i, needed, provided)
-                    t_kernel.set_arg_int(actual_argument_slot, int(v))
+                    launch_ctx.set_arg_int(actual_argument_slot, int(v))
                 elif self.match_ext_arr(v, needed):
                     has_external_arrays = True
                     has_torch = has_pytorch()
@@ -413,9 +406,9 @@ class Kernel:
                     if is_numpy:
                         tmp = np.ascontiguousarray(v)
                         tmps.append(tmp)  # Purpose: do not GC tmp!
-                        t_kernel.set_arg_nparray(actual_argument_slot,
-                                                 int(tmp.ctypes.data),
-                                                 tmp.nbytes)
+                        launch_ctx.set_arg_nparray(actual_argument_slot,
+                                                   int(tmp.ctypes.data),
+                                                   tmp.nbytes)
                     else:
 
                         def get_call_back(u, v):
@@ -441,7 +434,7 @@ class Kernel:
                                 gpu_v = v.cuda()
                                 tmp = gpu_v
                                 callbacks.append(get_call_back(v, gpu_v))
-                        t_kernel.set_arg_nparray(
+                        launch_ctx.set_arg_nparray(
                             actual_argument_slot, int(tmp.data_ptr()),
                             tmp.element_size() * tmp.nelement())
                     shape = v.shape
@@ -451,7 +444,8 @@ class Kernel:
                     ) <= max_num_indices, "External array cannot have > {} indices".format(
                         max_num_indices)
                     for i, s in enumerate(shape):
-                        t_kernel.set_extra_arg_int(actual_argument_slot, i, s)
+                        launch_ctx.set_extra_arg_int(actual_argument_slot, i,
+                                                     s)
                 else:
                     raise ValueError(
                         f'Argument type mismatch. Expecting {needed}, got {type(v)}.'
@@ -463,7 +457,7 @@ class Kernel:
             if not self.is_grad and self.runtime.target_tape and not self.runtime.inside_complex_kernel:
                 self.runtime.target_tape.insert(self, args)
 
-            t_kernel()
+            t_kernel(launch_ctx)
 
             ret = None
             ret_dt = self.return_type
@@ -591,9 +585,7 @@ def kernel(func):
     return _kernel_impl(func, level_of_class_stackframe=3)
 
 
-@deprecated('@ti.classkernel', '@ti.kernel directly')
-def classkernel(func):
-    return _kernel_impl(func, level_of_class_stackframe=3)
+classkernel = obsolete('@ti.classkernel', '@ti.kernel directly')
 
 
 class BoundedDifferentiableMethod:

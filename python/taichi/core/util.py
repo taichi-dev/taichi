@@ -201,7 +201,8 @@ else:
             from colorama import Fore, Back, Style
             print_red_bold("Taichi core import failed: ", end='')
             print(e)
-            print(Fore.YELLOW + "check this page for possible solutions:\n"
+            print(
+                Fore.YELLOW + "check this page for possible solutions:\n"
                 "https://taichi.readthedocs.io/en/stable/install.html#troubleshooting"
                 + Fore.RESET)
             exit(-1)

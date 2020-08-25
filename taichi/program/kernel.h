@@ -96,6 +96,8 @@ class Kernel {
   int64 get_ret_int(int i);
 
   void set_arch(Arch arch);
+
+  void account_for_offloaded(OffloadedStmt *stmt);
 };
 
 TLANG_NAMESPACE_END

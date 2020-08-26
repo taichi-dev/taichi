@@ -68,9 +68,9 @@ def bilerp(vf, p):
     # fract
     fu, fv = s - iu, t - iv
     a = sample(vf, iu, iv)
-    b = sample(vf, iu+1, iv)
-    c = sample(vf, iu, iv+1)
-    d = sample(vf, iu+1, iv+1)
+    b = sample(vf, iu + 1, iv)
+    c = sample(vf, iu, iv + 1)
+    d = sample(vf, iu + 1, iv + 1)
     return lerp(lerp(a, b, fu), lerp(c, d, fu), fv)
 
 
@@ -81,9 +81,9 @@ def sample_minmax(vf, p):
     # floor
     iu, iv = ti.floor(s), ti.floor(t)
     a = sample(vf, iu, iv)
-    b = sample(vf, iu+1, iv)
-    c = sample(vf, iu, iv+1)
-    d = sample(vf, iu+1, iv+1)
+    b = sample(vf, iu + 1, iv)
+    c = sample(vf, iu, iv + 1)
+    d = sample(vf, iu + 1, iv + 1)
     return min(a, b, c, d), max(a, b, c, d)
 
 
@@ -115,8 +115,8 @@ backtrace = backtrace_rk3
 
 
 @ti.kernel
-def advect_semilag(vf: ti.template(), qf: ti.template(),
-                   new_qf: ti.template(), intermedia_qf: ti.template()):
+def advect_semilag(vf: ti.template(), qf: ti.template(), new_qf: ti.template(),
+                   intermedia_qf: ti.template()):
     ti.cache_read_only(qf, vf)
     for i, j in vf:
         p = ti.Vector([i, j]) + 0.5
@@ -125,7 +125,8 @@ def advect_semilag(vf: ti.template(), qf: ti.template(),
 
 
 @ti.kernel
-def advect_bfecc(vf: ti.template(), qf: ti.template(), new_qf: ti.template(), intermedia_qf: ti.template()):
+def advect_bfecc(vf: ti.template(), qf: ti.template(), new_qf: ti.template(),
+                 intermedia_qf: ti.template()):
     ti.cache_read_only(qf, vf)
     for i, j in vf:
         p = ti.Vector([i, j]) + 0.5
@@ -142,7 +143,7 @@ def advect_bfecc(vf: ti.template(), qf: ti.template(), new_qf: ti.template(), in
         q_star = intermedia_qf[i, j]
         new_qf[i, j] = bilerp(intermedia_qf, p_two_star)
 
-        new_qf[i, j] = q_star + 0.5 * (qf[i, j]-new_qf[i, j])
+        new_qf[i, j] = q_star + 0.5 * (qf[i, j] - new_qf[i, j])
 
         min_val, max_val = sample_minmax(qf, p_star)
         cond = min_val < new_qf[i, j] < max_val
@@ -277,10 +278,10 @@ def enhance_vorticity(vf: ti.template(), cf: ti.template()):
 
 
 def step(mouse_data):
-    advect(velocities_pair.cur, velocities_pair.cur,
-           velocities_pair.nxt, _intermedia_velocities)
-    advect(velocities_pair.cur, dyes_pair.cur,
-           dyes_pair.nxt, _intermedia_dye_buffer)
+    advect(velocities_pair.cur, velocities_pair.cur, velocities_pair.nxt,
+           _intermedia_velocities)
+    advect(velocities_pair.cur, dyes_pair.cur, dyes_pair.nxt,
+           _intermedia_dye_buffer)
     velocities_pair.swap()
     dyes_pair.swap()
 

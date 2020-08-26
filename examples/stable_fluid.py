@@ -308,23 +308,17 @@ class MouseDataGen(object):
         self.prev_mouse = None
         self.prev_color = None
 
-    def __call__(self, gui, frame):
+    def __call__(self, gui):
         # [0:2]: normalized delta direction
         # [2:4]: current mouse xy
         # [4:7]: color
         mouse_data = np.zeros(8, dtype=np.float32)
-        if gui.is_pressed(ti.GUI.LMB) or frame < 20:
-            if gui.frame < 20:
-                # print(frame)
-                mxy = np.array([0 + frame*0.01, 0 + frame*0.01],
-                               dtype=np.float32) * res
-            else:
-                mxy = np.array(gui.get_cursor_pos(), dtype=np.float32) * res
+        if gui.is_pressed(ti.GUI.LMB):
+            mxy = np.array(gui.get_cursor_pos(), dtype=np.float32) * res
             if self.prev_mouse is None:
                 self.prev_mouse = mxy
                 # Set lower bound to 0.3 to prevent too dark colors
-                # self.prev_color = (np.random.rand(3) * 0.7) + 0.3
-                self.prev_color = np.array([1, 1, 1], dtype=np.float32)
+                self.prev_color = (np.random.rand(3) * 0.7) + 0.3
             else:
                 mdir = mxy - self.prev_mouse
                 mdir = mdir / (np.linalg.norm(mdir) + 1e-5)
@@ -361,23 +355,16 @@ while gui.running:
             paused = not paused
         elif e.key == 'd':
             debug = not debug
-        elif e.key == 'o':
-            v_mngr.make_video(mp4=False, gif=True)
-
-    if gui.frame > 4500:
-        v_mngr.make_video(mp4=False, gif=True)
-        break
 
     if not paused:
-        mouse_data = md_gen(gui, gui.frame)
+        mouse_data = md_gen(gui)
         step(mouse_data)
 
     gui.set_image(dyes_pair.cur)
     # To visualize velocity field:
-    #gui.set_image(velocities_pair.cur.to_numpy() * 0.01 + 0.5)
+    # gui.set_image(velocities_pair.cur.to_numpy() * 0.01 + 0.5)
     # To visualize velocity divergence:
-    #divergence(velocities_pair.cur); gui.set_image(velocity_divs.to_numpy() * 0.1 + 0.5)
+    # divergence(velocities_pair.cur); gui.set_image(velocity_divs.to_numpy() * 0.1 + 0.5)
     # To visualize velocity vorticity:
-    #vorticity(velocities_pair.cur); gui.set_image(velocity_curls.to_numpy() * 0.03 + 0.5)
-    v_mngr.write_frame(dyes_pair.cur)
+    # vorticity(velocities_pair.cur); gui.set_image(velocity_curls.to_numpy() * 0.03 + 0.5)
     gui.show()

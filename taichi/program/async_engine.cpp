@@ -41,6 +41,10 @@ std::unique_ptr<OffloadedStmt> clone_offloaded_task(OffloadedStmt *from,
 
 }  // namespace
 
+std::unique_ptr<IRNode> IRHandle::clone() const {
+  return irpass::analysis::clone(const_cast<IRNode *>(ir_));
+}
+
 ParallelExecutor::ParallelExecutor(int num_threads)
     : num_threads(num_threads),
       status(ExecutorStatus::uninitialized),

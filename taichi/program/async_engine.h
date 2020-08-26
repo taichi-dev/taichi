@@ -14,6 +14,27 @@
 TLANG_NAMESPACE_BEGIN
 
 // TODO(yuanming-hu): split into multiple files
+
+class IRHandle {
+ public:
+  IRHandle(IRNode const *ir, uint64 hash) : ir_(ir), hash_(hash) {
+  }
+
+  std::unique_ptr<IRNode> clone() const;
+
+  IRNode const *ir() {
+    return ir_;
+  }
+
+  uint64 hash() const {
+    return hash_;
+  }
+
+ private:
+  IRNode const *ir_;  // not owned
+  uint64 hash_;
+};
+
 class ParallelExecutor {
  public:
   using TaskType = std::function<void()>;
@@ -38,7 +59,7 @@ class ParallelExecutor {
 
   void worker_loop();
 
-  // Must be called whil holding |mut|.
+  // Must be called while holding |mut|.
   bool flush_cv_cond();
 
   int num_threads;
@@ -128,7 +149,6 @@ class ExecutionQueue {
 };
 
 // An engine for asynchronous execution and optimization
-
 class AsyncEngine {
  public:
   // TODO: state machine

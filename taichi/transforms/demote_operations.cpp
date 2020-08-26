@@ -40,7 +40,7 @@ class DemoteOperations : public BasicStmtVisitor {
         auto ret = Stmt::make<BinaryOpStmt>(
             BinaryOpType::div, ternary.get(), rhs);
 
-        stmt->replace_with(std::move(ret));
+        stmt->replace_with(ret.get());
         modifier.insert_before(stmt, std::move(zero));
         modifier.insert_before(stmt, std::move(one));
         modifier.insert_before(stmt, std::move(lhs_ltz));
@@ -49,6 +49,7 @@ class DemoteOperations : public BasicStmtVisitor {
         modifier.insert_before(stmt, std::move(lhs_sub_rhs));
         modifier.insert_before(stmt, std::move(lhs_sub_rhs_add_one));
         modifier.insert_before(stmt, std::move(ternary));
+        modifier.insert_before(stmt, std::move(ret));
         modifier.erase(stmt);
       } else {
         // @ti.func
@@ -59,8 +60,9 @@ class DemoteOperations : public BasicStmtVisitor {
             BinaryOpType::div, lhs, rhs);
         auto floor = Stmt::make<UnaryOpStmt>(
             UnaryOpType::floor, div.get());
-        stmt->replace_with(std::move(floor));
+        stmt->replace_with(floor.get());
         modifier.insert_before(stmt, std::move(div));
+        modifier.insert_before(stmt, std::move(floor));
         modifier.erase(stmt);
       }
     }

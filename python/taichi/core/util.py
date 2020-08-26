@@ -50,11 +50,18 @@ def import_ti_core(tmp_dir=None):
 
 
 def locale_encode(path):
-    import sys
     try:
-        return path.encode(sys.getfilesystemencoding())
+        import locale
+        return path.encode(locale.getdefaultlocale()[1])
     except:
-        return path.encode()
+        try:
+            import sys
+            return path.encode(sys.getfilesystemencoding())
+        except:
+            try:
+                return path.encode()
+            except:
+                return path
 
 
 def is_ci():

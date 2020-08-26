@@ -169,7 +169,7 @@ void offload_to_executable(IRNode *ir,
   irpass::analysis::verify(ir);
 
   irpass::demote_operations(ir);
-  print("Operations Demoted");
+  print("Operations demoted");
 
   irpass::full_simplify(ir, lower_global_access);
   print("Simplified IV");

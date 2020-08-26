@@ -43,7 +43,9 @@ class IRVerifier : public BasicStmtVisitor {
       }
       TI_ASSERT_INFO(found,
                      "IR broken: stmt {} cannot have operand {}."
-                     " Please report this bug by opening an issue at"
+                     " If you are using autodiff, please check"
+                     " https://taichi.readthedocs.io/en/stable/differentiable_programming.html#kernel-simplicity-rule."
+                     " If it doesn't help, please report this bug by opening an issue at"
                      " https://github.com/taichi-dev/taichi to help us improve."
                      " Thanks in advance!",
                      stmt->id, op->id);

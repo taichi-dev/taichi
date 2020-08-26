@@ -321,29 +321,192 @@ lang_core = core
 def benchmark(func, repeat=300, args=()):
     import taichi as ti
     import time
-    # The reason why we run 4 times is to warm up instruction/data caches.
-    # Discussion: https://github.com/taichi-dev/taichi/pull/1002#discussion_r426312136
-    for i in range(4):
+
+    def run_benchmark():
+        compile_time = time.time()
         func(*args)  # compile the kernel first
-    ti.sync()
-    t = time.time()
-    for n in range(repeat):
-        func(*args)
-    ti.get_runtime().sync()
-    elapsed = time.time() - t
-    avg = elapsed / repeat * 1000  # miliseconds
-    ti.stat_write(avg)
+        ti.sync()
+        compile_time = time.time() - compile_time
+        ti.stat_write('compilation_time', compile_time)
+        codegen_stat = ti.core.stat()
+        for line in codegen_stat.split('\n'):
+            try:
+                a, b = line.strip().split(':')
+            except:
+                continue
+            a = a.strip()
+            b = int(float(b))
+            if a == 'codegen_kernel_statements':
+                ti.stat_write('instructions', b)
+            if a == 'codegen_offloaded_tasks':
+                ti.stat_write('offloaded_tasks', b)
+            elif a == 'launched_kernels':
+                ti.stat_write('launched_kernels', b)
+        # The reason why we run 3 more times is to warm up
+        # instruction/data caches. Discussion:
+        # https://github.com/taichi-dev/taichi/pull/1002#discussion_r426312136
+        for i in range(3):
+            func(*args)
+            ti.sync()
+        t = time.time()
+        for n in range(repeat):
+            func(*args)
+            ti.sync()
+        elapsed = time.time() - t
+        avg = elapsed / repeat
+        ti.stat_write('running_time', avg)
+
+    run_benchmark()
 
 
-def stat_write(avg):
-    name = os.environ.get('TI_CURRENT_BENCHMARK')
-    if name is None:
+def benchmark_plot(fn=None,
+                   cases=None,
+                   columns=None,
+                   archs=None,
+                   title=None,
+                   bars='sync_vs_async',
+                   bar_width=0.4,
+                   bar_distance=0,
+                   left_margin=0):
+    import taichi as ti
+    import yaml
+    import matplotlib.pyplot as plt
+    if fn is None:
+        fn = os.path.join(ti.core.get_repo_dir(), 'benchmarks', 'output',
+                          'benchmark.yml')
+
+    with open(fn, 'r') as f:
+        data = yaml.load(f, Loader=yaml.SafeLoader)
+    if bars != 'sync_vs_async':  # need baseline
+        baseline_dir = os.path.join(ti.core.get_repo_dir(), 'benchmarks',
+                                    'baseline')
+        baseline_file = f'{baseline_dir}/benchmark.yml'
+        with open(baseline_file, 'r') as f:
+            baseline_data = yaml.load(f, Loader=yaml.SafeLoader)
+    if cases is None:
+        cases = list(data.keys())
+
+    assert len(cases) >= 1
+    if len(cases) == 1:
+        cases = [cases[0], cases[0]]
+        ti.warning(
+            'Function benchmark_plot does not support plotting with only one case for now. Duplicating the item to move on.'
+        )
+
+    if columns is None:
+        columns = list(data[cases[0]].keys())
+    normalize_to_lowest = lambda x: True
+    figure, subfigures = plt.subplots(len(cases), len(columns))
+    if title is None:
+        title = 'Taichi Performance Benchmarks (Higher means more)'
+    figure.suptitle(title, fontweight="bold")
+    for col_id in range(len(columns)):
+        subfigures[0][col_id].set_title(columns[col_id])
+    for case_id in range(len(cases)):
+        case = cases[case_id]
+        subfigures[case_id][0].annotate(
+            case,
+            xy=(0, 0.5),
+            xytext=(-subfigures[case_id][0].yaxis.labelpad - 5, 0),
+            xycoords=subfigures[case_id][0].yaxis.label,
+            textcoords='offset points',
+            size='large',
+            ha='right',
+            va='center')
+        for col_id in range(len(columns)):
+            col = columns[col_id]
+            if archs is None:
+                current_archs = data[case][col].keys()
+            else:
+                current_archs = archs & data[case][col].keys()
+            if bars == 'sync_vs_async':
+                y_left = [
+                    data[case][col][arch]['sync'] for arch in current_archs
+                ]
+                label_left = 'sync'
+                y_right = [
+                    data[case][col][arch]['async'] for arch in current_archs
+                ]
+                label_right = 'async'
+            elif bars == 'sync_regression':
+                y_left = [
+                    baseline_data[case][col][arch]['sync']
+                    for arch in current_archs
+                ]
+                label_left = 'before'
+                y_right = [
+                    data[case][col][arch]['sync'] for arch in current_archs
+                ]
+                label_right = 'after'
+            elif bars == 'async_regression':
+                y_left = [
+                    baseline_data[case][col][arch]['async']
+                    for arch in current_archs
+                ]
+                label_left = 'before'
+                y_right = [
+                    data[case][col][arch]['async'] for arch in current_archs
+                ]
+                label_right = 'after'
+            else:
+                raise RuntimeError('Unknown bars type')
+            if normalize_to_lowest(col):
+                for i in range(len(current_archs)):
+                    maximum = max(y_left[i], y_right[i])
+                    y_left[i] = y_left[i] / maximum if y_left[i] != 0 else 1
+                    y_right[i] = y_right[i] / maximum if y_right[i] != 0 else 1
+            ax = subfigures[case_id][col_id]
+            bar_left = ax.bar(x=[
+                i - bar_width / 2 - bar_distance / 2
+                for i in range(len(current_archs))
+            ],
+                              height=y_left,
+                              width=bar_width,
+                              label=label_left,
+                              color=(0.3, 0.7, 0.9, 1.0))
+            bar_right = ax.bar(x=[
+                i + bar_width / 2 + bar_distance / 2
+                for i in range(len(current_archs))
+            ],
+                               height=y_right,
+                               width=bar_width,
+                               label=label_right,
+                               color=(0.8, 0.2, 0.3, 1.0))
+            ax.set_xticks(range(len(current_archs)))
+            ax.set_xticklabels(current_archs)
+            figure.legend((bar_left, bar_right), (label_left, label_right),
+                          loc='lower center')
+    figure.subplots_adjust(left=left_margin)
+
+    fig = plt.gcf()
+    fig.set_size_inches(13, 8)
+
+    plt.show()
+
+
+def stat_write(key, value):
+    import taichi as ti
+    import yaml
+    case_name = os.environ.get('TI_CURRENT_BENCHMARK')
+    if case_name is None:
         return
+    if case_name.startswith('benchmark_'):
+        case_name = case_name[10:]
     arch_name = core.arch_name(ti.cfg.arch)
+    async_mode = 'async' if ti.cfg.async_mode else 'sync'
     output_dir = os.environ.get('TI_BENCHMARK_OUTPUT_DIR', '.')
-    filename = f'{output_dir}/{name}__arch_{arch_name}.dat'
+    filename = f'{output_dir}/benchmark.yml'
+    try:
+        with open(filename, 'r') as f:
+            data = yaml.load(f, Loader=yaml.SafeLoader)
+    except FileNotFoundError:
+        data = {}
+    data.setdefault(case_name, {})
+    data[case_name].setdefault(key, {})
+    data[case_name][key].setdefault(arch_name, {})
+    data[case_name][key][arch_name][async_mode] = value
     with open(filename, 'w') as f:
-        f.write(f'time_avg: {avg:.4f}')
+        yaml.dump(data, f, Dumper=yaml.SafeDumper)
 
 
 def is_arch_supported(arch):

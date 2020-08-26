@@ -121,6 +121,7 @@ void export_lang(py::module &m) {
       .def_readwrite("async_mode", &CompileConfig::async_mode)
       .def_readwrite("flatten_if", &CompileConfig::flatten_if)
       .def_readwrite("make_thread_local", &CompileConfig::make_thread_local)
+      .def_readwrite("make_block_local", &CompileConfig::make_block_local)
       .def_readwrite("cc_compile_cmd", &CompileConfig::cc_compile_cmd)
       .def_readwrite("cc_link_cmd", &CompileConfig::cc_link_cmd);
 
@@ -422,6 +423,8 @@ void export_lang(py::module &m) {
   m.def("expr_bit_and", expr_bit_and);
   m.def("expr_bit_or", expr_bit_or);
   m.def("expr_bit_xor", expr_bit_xor);
+  m.def("expr_bit_shl", expr_bit_shl);
+  m.def("expr_bit_sar", expr_bit_sar);
   m.def("expr_bit_not", expr_bit_not);
   m.def("expr_logic_not", expr_logic_not);
 
@@ -595,6 +598,11 @@ void export_lang(py::module &m) {
   m.def("is_extension_supported", is_extension_supported);
 
   m.def("print_stat", [] { stat.print(); });
+  m.def("stat", [] {
+    std::string result;
+    stat.print(&result);
+    return result;
+  });
 
   m.def("record_action_hint", [](std::string content) {
     ActionRecorder::get_instance().record("hint",

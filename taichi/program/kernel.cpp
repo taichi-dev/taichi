@@ -1,5 +1,6 @@
 #include "kernel.h"
 
+#include "taichi/util/statistics.h"
 #include "taichi/common/task.h"
 #include "taichi/program/program.h"
 #include "taichi/program/async_engine.h"
@@ -7,6 +8,7 @@
 #include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/util/action_recorder.h"
+#include "taichi/program/extension.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -80,7 +82,10 @@ void Kernel::lower(bool to_executable) {  // TODO: is a "Lowerer" class
       irpass::compile_to_executable(
           ir.get(), config, /*vectorize*/ arch_is_cpu(arch), grad,
           /*ad_use_stack*/ true, verbose, /*lower_global_access*/ to_executable,
-          /*make_thread_local*/ true, /*make_block_local*/ arch == Arch::cuda);
+          /*make_thread_local*/ config.make_thread_local,
+          /*make_block_local*/
+          is_extension_supported(config.arch, Extension::bls) &&
+              config.make_block_local);
     } else {
       irpass::compile_to_offloads(ir.get(), config, verbose,
                                   /*vectorize=*/arch_is_cpu(arch), grad,
@@ -97,7 +102,13 @@ void Kernel::operator()(LaunchContextBuilder &launch_ctx) {
     if (!compiled) {
       compile();
     }
+
+    for (auto &offloaded : ir->as<Block>()->statements) {
+      account_for_offloaded(offloaded->as<OffloadedStmt>());
+    }
+
     compiled(launch_ctx.get_context());
+
     program.sync = (program.sync && arch_is_cpu(arch));
     // Note that Kernel::arch may be different from program.config.arch
     if (program.config.debug && (arch_is_cpu(program.config.arch) ||
@@ -293,6 +304,28 @@ int Kernel::insert_arg(DataType dt, bool is_nparray) {
 int Kernel::insert_ret(DataType dt) {
   rets.push_back(Ret{dt});
   return rets.size() - 1;
+}
+
+void Kernel::account_for_offloaded(OffloadedStmt *stmt) {
+  if (is_evaluator || is_accessor)
+    return;
+  auto task_type = stmt->task_type;
+  stat.add("launched_kernels", 1.0);
+  if (task_type == OffloadedStmt::TaskType::listgen) {
+    stat.add("launched_kernels_list_op", 1.0);
+    stat.add("launched_kernels_list_gen", 1.0);
+  } else if (task_type == OffloadedStmt::TaskType::clear_list) {
+    stat.add("launched_kernels_list_op", 1.0);
+    stat.add("launched_kernels_list_clear", 1.0);
+  } else if (task_type == OffloadedStmt::TaskType::range_for) {
+    stat.add("launched_kernels_compute", 1.0);
+    stat.add("launched_kernels_range_for", 1.0);
+  } else if (task_type == OffloadedStmt::TaskType::struct_for) {
+    stat.add("launched_kernels_compute", 1.0);
+    stat.add("launched_kernels_struct_for", 1.0);
+  } else if (task_type == OffloadedStmt::TaskType::gc) {
+    stat.add("launched_kernels_garbage_collect", 1.0);
+  }
 }
 
 TLANG_NAMESPACE_END

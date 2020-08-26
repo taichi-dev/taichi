@@ -32,12 +32,6 @@ void CCKernel::compile() {
   execute(program->program->config.cc_compile_cmd, obj_path, src_path);
 }
 
-CCContext::CCContext(CCProgram *program, Context *ctx)
-    : args(ctx->args), earg((int *)ctx->extra_args) {
-  root = program->get_root_buffer();
-  gtmp = program->get_gtmp_buffer();
-}
-
 void CCKernel::launch(Context *ctx) {
   if (!kernel->is_evaluator)
     ActionRecorder::get_instance().record("launch_kernel",
@@ -49,8 +43,9 @@ void CCKernel::launch(Context *ctx) {
   TI_TRACE("[cc] entering kernel [{}]", name);
   auto entry = program->load_kernel(name);
   TI_ASSERT(entry);
-  CCContext cc_ctx(program, ctx);
-  (*entry)(&cc_ctx);
+  auto *context = program->update_context(ctx);
+  (*entry)(context);
+  program->context_to_result_buffer();
   TI_TRACE("[cc] leaving kernel [{}]", name);
 }
 
@@ -133,6 +128,7 @@ void CCProgram::compile_layout(SNode *root) {
   layout = gen.compile();
   size_t root_size = layout->compile();
   size_t gtmp_size = taichi_global_tmp_buffer_size;
+  size_t args_size = taichi_max_num_args * sizeof(uint64);
 
   TI_INFO("[cc] C backend root buffer size: {} B", root_size);
 
@@ -144,6 +140,12 @@ void CCProgram::compile_layout(SNode *root) {
 
   root_buf.resize(root_size, 0);
   gtmp_buf.resize(gtmp_size, 0);
+  args_buf.resize(args_size, 0);
+
+  context->root = root_buf.data();
+  context->gtmp = gtmp_buf.data();
+  context->args = (uint64 *)args_buf.data();
+  context->earg = nullptr;
 }
 
 void CCProgram::add_kernel(std::unique_ptr<CCKernel> kernel) {
@@ -151,7 +153,6 @@ void CCProgram::add_kernel(std::unique_ptr<CCKernel> kernel) {
   need_relink = true;
 }
 
-// TODO: move this to cc_runtime.cpp:
 void CCProgram::init_runtime() {
   runtime = std::make_unique<CCRuntime>(this,
 #include "runtime/base.h"
@@ -167,6 +168,22 @@ CCFuncEntryType *CCProgram::load_kernel(std::string const &name) {
 
 CCProgram::CCProgram(Program *program) : program(program) {
   init_runtime();
+
+  context = std::make_unique<CCContext>();
+}
+
+CCContext *CCProgram::update_context(Context *ctx) {
+  // TODO(k-ye): Do you have other zero-copy ideas for arg buf?
+  std::memcpy(context->args, ctx->args, taichi_max_num_args * sizeof(uint64));
+  context->earg = (int *)ctx->extra_args;
+  return context.get();
+}
+
+void CCProgram::context_to_result_buffer() {
+  TI_ASSERT(program->result_buffer);
+  std::memcpy(program->result_buffer, context->args,
+              sizeof(uint64));  // XXX: assumed 1 return
+  context->earg = nullptr;
 }
 
 CCProgram::~CCProgram() {

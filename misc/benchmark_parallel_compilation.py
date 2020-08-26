@@ -11,15 +11,17 @@ p_mass = p_vol * p_rho
 E, nu = 0.1e4, 0.2  # Young's modulus and Poisson's ratio
 mu_0, lambda_0 = E / (2 * (1 + nu)), E * nu / (
     (1 + nu) * (1 - 2 * nu))  # Lame parameters
-x = ti.Vector(2, dt=ti.f32, shape=n_particles)  # position
-v = ti.Vector(2, dt=ti.f32, shape=n_particles)  # velocity
-C = ti.Matrix(2, 2, dt=ti.f32, shape=n_particles)  # affine velocity field
-F = ti.Matrix(2, 2, dt=ti.f32, shape=n_particles)  # deformation gradient
-material = ti.var(dt=ti.i32, shape=n_particles)  # material id
-Jp = ti.var(dt=ti.f32, shape=n_particles)  # plastic deformation
-grid_v = ti.Vector(2, dt=ti.f32,
-                   shape=(n_grid, n_grid))  # grid node momentum/velocity
-grid_m = ti.var(dt=ti.f32, shape=(n_grid, n_grid))  # grid node mass
+x = ti.Vector.field(2, ti.f32, shape=n_particles)  # position
+v = ti.Vector.field(2, ti.f32, shape=n_particles)  # velocity
+# affine velocity field
+C = ti.Matrix.field(2, 2, ti.f32, shape=n_particles)
+# deformation gradient
+F = ti.Matrix.field(2, 2, ti.f32, shape=n_particles)
+material = ti.field(dtype=int, shape=n_particles)  # material id
+Jp = ti.field(ti.f32, shape=n_particles)  # plastic deformation
+grid_v = ti.Vector.field(2, ti.f32,
+                         shape=(n_grid, n_grid))  # grid node momentum/velocity
+grid_m = ti.field(ti.f32, shape=(n_grid, n_grid))  # grid node mass
 
 
 @ti.kernel

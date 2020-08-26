@@ -6,7 +6,7 @@ import taichi as ti
 @ti.all_archs
 def benchmark_flat_struct():
     N = 4096
-    a = ti.var(dt=ti.f32, shape=(N, N))
+    a = ti.field(dtype=ti.f32, shape=(N, N))
 
     @ti.kernel
     def fill():
@@ -19,7 +19,7 @@ def benchmark_flat_struct():
 @ti.all_archs
 def benchmark_flat_range():
     N = 4096
-    a = ti.var(dt=ti.f32, shape=(N, N))
+    a = ti.field(dtype=ti.f32, shape=(N, N))
 
     @ti.kernel
     def fill():
@@ -31,7 +31,7 @@ def benchmark_flat_range():
 
 @ti.all_archs
 def benchmark_nested_struct():
-    a = ti.var(dt=ti.f32)
+    a = ti.field(dtype=ti.f32)
     N = 512
 
     ti.root.dense(ti.ij, [N, N]).dense(ti.ij, [8, 8]).place(a)
@@ -46,7 +46,7 @@ def benchmark_nested_struct():
 
 @ti.all_archs
 def benchmark_nested_struct_listgen_8x8():
-    a = ti.var(dt=ti.f32)
+    a = ti.field(dtype=ti.f32)
     ti.cfg.demote_dense_struct_fors = False
     N = 512
 
@@ -62,7 +62,7 @@ def benchmark_nested_struct_listgen_8x8():
 
 @ti.all_archs
 def benchmark_nested_struct_listgen_16x16():
-    a = ti.var(dt=ti.f32)
+    a = ti.field(dtype=ti.f32)
     ti.cfg.demote_dense_struct_fors = False
     N = 256
 
@@ -78,7 +78,7 @@ def benchmark_nested_struct_listgen_16x16():
 
 @ti.all_archs
 def benchmark_nested_range_blocked():
-    a = ti.var(dt=ti.f32)
+    a = ti.field(dtype=ti.f32)
     N = 512
 
     ti.root.dense(ti.ij, [N, N]).dense(ti.ij, [8, 8]).place(a)
@@ -94,7 +94,7 @@ def benchmark_nested_range_blocked():
 
 @ti.all_archs
 def benchmark_nested_range():
-    a = ti.var(dt=ti.f32)
+    a = ti.field(dtype=ti.f32)
     N = 512
 
     ti.root.dense(ti.ij, [N, N]).dense(ti.ij, [8, 8]).place(a)
@@ -110,7 +110,7 @@ def benchmark_nested_range():
 
 @ti.all_archs
 def benchmark_root_listgen():
-    a = ti.var(dt=ti.f32)
+    a = ti.field(dtype=ti.f32)
     ti.cfg.demote_dense_struct_fors = False
     N = 512
 
@@ -122,15 +122,3 @@ def benchmark_root_listgen():
             a[i, j] = 2.0
 
     return ti.benchmark(fill, repeat=800)
-
-
-'''
-# ti.cfg.arch = ti.cuda
-# ti.cfg.print_kernel_llvm_ir_optimized = True
-# ti.cfg.print_kernel_llvm_ir = True
-ti.cfg.kernel_profiler = True
-# ti.cfg.verbose_kernel_launches = True
-print(benchmark_nested_struct_listgen_8x8())
-# print(benchmark_root_listgen())
-ti.kernel_profiler_print()
-'''

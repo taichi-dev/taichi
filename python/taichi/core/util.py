@@ -44,7 +44,6 @@ def import_ti_core(tmp_dir=None):
     if get_os_name() != 'win':
         sys.setdlopenflags(old_flags)
     lib_dir = os.path.join(package_root(), 'lib')
-    tmp_dir = '彭于斌'
     core.set_lib_dir(locale_encode(lib_dir))
     if tmp_dir is not None:
         core.set_tmp_dir(locale_encode(tmp_dir))
@@ -160,8 +159,8 @@ if is_release():
     if get_os_name() != 'win':
         dll = ctypes.CDLL(get_core_shared_object(), mode=ctypes.RTLD_LOCAL)
         # The C backend needs a temporary directory for the generated .c and compiled .so files:
-        ti_core.set_tmp_dir(prepare_sandbox(
-        ))  # TODO: always allocate a tmp_dir for all situations
+        ti_core.set_tmp_dir(locale_encode(prepare_sandbox(
+        )))  # TODO: always allocate a tmp_dir for all situations
 
     ti_core.set_python_package_dir(package_root())
     os.makedirs(ti_core.get_repo_dir(), exist_ok=True)

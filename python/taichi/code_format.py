@@ -76,7 +76,6 @@ def main(all=False, diff=None):
             '*'))  # Include all files under the root folder
         for d in directories:
             files += list(Path(os.path.join(repo_dir, d)).rglob('*'))
-        print('\n'.join(map(lambda x: x.name, files)))
     else:
         if diff is None:
 

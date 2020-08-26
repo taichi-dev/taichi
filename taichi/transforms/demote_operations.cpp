@@ -11,8 +11,7 @@ class DemoteOperations : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
   DelayedIRModifier modifier;
 
-  explicit AlgSimp(bool fast_math_)
-      : BasicStmtVisitor(), fast_math(fast_math_) {
+  DemoteOperations() : BasicStmtVisitor() {
   }
 
   void visit(BinaryOpStmt *stmt) override {
@@ -22,58 +21,60 @@ class DemoteOperations : public BasicStmtVisitor {
       if (is_integral(rhs->element_type()) && is_integral(lhs->element_type())) {
         // @ti.func
         // def ifloordiv(a, b):
-        //     r = ti.raw_div(a, b)
-        //     if (a < 0) != (b < 0) and a and b * r != a:
-        //         r = r - 1
-        //     return r
-        auto ret = Stmt::make<BinaryOpStmt>(
-            BinaryOpType::div, lhs, rhs);
+        //     return (a if (a < 0) == (b < 0) else (a - b + 1)) / b
         auto zero = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(0));
+        auto one = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(1));
         auto lhs_ltz = Stmt::make<BinaryOpStmt>(
             BinaryOpType::cmp_lt, lhs, zero.get());
         auto rhs_ltz = Stmt::make<BinaryOpStmt>(
             BinaryOpType::cmp_lt, rhs, zero.get());
-        auto rhs_mul_ret = Stmt::make<BinaryOpStmt>(
-            BinaryOpType::mul, rhs, ret.get());
-        auto cond1 = Stmt::make<BinaryOpStmt>(
-            BinaryOpType::cmp_ne, lhs_ltz.get(), rhs_ltz.get());
-        auto cond2 = Stmt::make<BinaryOpStmt>(
-            BinaryOpType::cmp_eq, lhs, zero.get());
-        auto cond3 = Stmt::make<BinaryOpStmt>(
-            BinaryOpType::cmp_eq, rhs_mul_ret.get(), lhs);
-        auto cond12 = Stmt::make<BinaryOpStmt>(
-            BinaryOpType::bit_and, cond1.get(), cond2.get());
-        auto cond = Stmt::make<BinaryOpStmt>(
-            BinaryOpType::bit_and, cond12.get(), cond3.get());
-        auto real_ret = Stmt::make<BinaryOpStmt>(
-            BinaryOpType::add, ret.get(), cond.get());
+        auto lhs_ltz_eq_rhs_ltz = Stmt::make<BinaryOpStmt>(
+            BinaryOpType::cmp_eq, lhs_ltz.get(), rhs_ltz.get());
+        auto lhs_sub_rhs = Stmt::make<BinaryOpStmt>(
+            BinaryOpType::sub, lhs, rhs);
+        auto lhs_sub_rhs_add_one = Stmt::make<BinaryOpStmt>(
+            BinaryOpType::add, lhs_sub_rhs.get(), one.get());
+        auto ternary = Stmt::make<TernaryOpStmt>(
+            TernaryOpType::select, lhs_ltz_eq_rhs_ltz.get(),
+            lhs, lhs_sub_rhs_add_one.get());
+        auto ret = Stmt::make<BinaryOpStmt>(
+            BinaryOpType::div, ternary.get(), rhs);
 
-        modifier.insert_before(stmt, std::move(ret));
         modifier.insert_before(stmt, std::move(zero));
+        modifier.insert_before(stmt, std::move(one));
         modifier.insert_before(stmt, std::move(lhs_ltz));
         modifier.insert_before(stmt, std::move(rhs_ltz));
-        modifier.insert_before(stmt, std::move(rhs_mul_ret));
-        modifier.insert_before(stmt, std::move(cond1));
-        modifier.insert_before(stmt, std::move(cond2));
-        modifier.insert_before(stmt, std::move(cond3));
-        modifier.insert_before(stmt, std::move(cond12));
-        modifier.insert_before(stmt, std::move(cond));
-        modifier.insert_before(stmt, std::move(real_ret));
-        modifier.erase(stmt);
+        modifier.insert_before(stmt, std::move(lhs_ltz_eq_rhs_ltz));
+        modifier.insert_before(stmt, std::move(lhs_sub_rhs));
+        modifier.insert_before(stmt, std::move(lhs_sub_rhs_add_one));
+        modifier.insert_before(stmt, std::move(ternary));
+        stmt->replace_with(std::move(ret));
       } else {
         // @ti.func
         // def ffloordiv(a, b):
         //     r = ti.raw_div(a, b)
         //     return ti.floor(r)
-        auto ret = Stmt::make<BinaryOpStmt>(
+        auto div = Stmt::make<BinaryOpStmt>(
             BinaryOpType::div, lhs, rhs);
         auto floor = Stmt::make<UnaryOpStmt>(
-            UnaryOpType::floor, ret.get());
-        modifier.insert_before(stmt, std::move(ret));
-        modifier.insert_before(stmt, std::move(floor));
-        modifier.erase(stmt);
+            UnaryOpType::floor, div.get());
+        modifier.insert_before(stmt, std::move(div));
+        stmt->replace_with(std::move(floor));
       }
     }
+  }
+
+  static bool run(IRNode *node) {
+    DemoteOperations demoter;
+    bool modified = false;
+    while (true) {
+      node->accept(&demoter);
+      if (demoter.modifier.modify_ir())
+        modified = true;
+      else
+        break;
+    }
+    return modified;
   }
 };
 
@@ -85,3 +86,5 @@ bool demote_operations(IRNode *root) {
 }
 
 }  // namespace irpass
+
+TLANG_NAMESPACE_END

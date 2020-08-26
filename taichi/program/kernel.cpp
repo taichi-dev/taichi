@@ -98,7 +98,7 @@ void Kernel::lower(bool to_executable) {  // TODO: is a "Lowerer" class
 }
 
 void Kernel::operator()(LaunchContextBuilder &launch_ctx) {
-  if (!program.config.async_mode) {
+  if (!program.config.async_mode || this->is_evaluator) {
     if (!compiled) {
       compile();
     }

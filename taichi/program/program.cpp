@@ -630,6 +630,8 @@ Kernel &Program::get_snode_writer(SNode *snode) {
 }
 
 uint64 Program::fetch_result_uint64(int i) {
+  // TODO: We are likely doing more synchronization than necessary. Simplify the
+  // sync logic when we fetch the result.
   device_synchronize();
   uint64 ret;
   auto arch = config.arch;

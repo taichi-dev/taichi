@@ -105,7 +105,7 @@ class KernelGen : public IRVisitor {
   // data type, but also **records** the usage of `i64` and `f64`.
   std::string opengl_data_type_short_name(DataType dt) {
     if (dt == DataType::i64) {
-      if (!TI_OPENGL_REQUIRE(ARB_gpu_shader_int64)) {
+      if (!TI_OPENGL_REQUIRE(used, GL_ARB_gpu_shader_int64)) {
         TI_ERROR("Extension GL_ARB_gpu_shader_int64 not supported on your OpenGL");
       }
       used.int64 = true;

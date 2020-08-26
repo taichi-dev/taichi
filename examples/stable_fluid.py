@@ -63,7 +63,6 @@ def bilerp(vf, p):
     s, t = u - 0.5, v - 0.5
     # floor
     iu, iv = ti.floor(s), ti.floor(t)
-    iu, iv = int(s + 1) - 1, int(t + 1) - 1
     # fract
     fu, fv = s - iu, t - iv
     a = sample(vf, iu + 0.5, iv + 0.5)

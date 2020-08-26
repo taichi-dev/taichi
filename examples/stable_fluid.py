@@ -64,7 +64,7 @@ def bilerp(vf, p):
     u, v = p
     s, t = u - 0.5, v - 0.5
     # floor
-    iu, iv = int(s), int(t)
+    iu, iv = ti.floor(s), ti.floor(t)
     # fract
     fu, fv = s - iu, t - iv
     a = sample(vf, iu, iv)
@@ -79,7 +79,7 @@ def sample_minmax(vf, p):
     u, v = p
     s, t = u - 0.5, v - 0.5
     # floor
-    iu, iv = int(s), int(t)
+    iu, iv = ti.floor(s), ti.floor(t)
     a = sample(vf, iu, iv)
     b = sample(vf, iu+1, iv)
     c = sample(vf, iu, iv+1)
@@ -344,6 +344,9 @@ def reset():
     dyes_pair.cur.fill(0)
 
 
+v_mngr = ti.VideoManager('./', framerate=24, automatic_build=False)
+
+
 gui = ti.GUI('Stable Fluid', (res, res))
 md_gen = MouseDataGen()
 while gui.running:
@@ -358,15 +361,15 @@ while gui.running:
             paused = not paused
         elif e.key == 'd':
             debug = not debug
-
+        elif e.key == 'o':
+            v_mngr.make_video(mp4=False, gif=True)
 
     if gui.frame > 4500:
+        v_mngr.make_video(mp4=False, gif=True)
         break
 
     if not paused:
         mouse_data = md_gen(gui, gui.frame)
-        # if frame < 40:
-        #     print(mouse_data)
         step(mouse_data)
 
     gui.set_image(dyes_pair.cur)
@@ -376,4 +379,5 @@ while gui.running:
     #divergence(velocities_pair.cur); gui.set_image(velocity_divs.to_numpy() * 0.1 + 0.5)
     # To visualize velocity vorticity:
     #vorticity(velocities_pair.cur); gui.set_image(velocity_curls.to_numpy() * 0.03 + 0.5)
+    v_mngr.write_frame(dyes_pair.cur)
     gui.show()

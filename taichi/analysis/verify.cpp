@@ -41,13 +41,12 @@ class IRVerifier : public BasicStmtVisitor {
           break;
         }
       }
-      TI_ASSERT_INFO(
-          found,
-          "IR broken: stmt {} cannot have operand {}."
-          " Please report this bug by opening an issue at"
-          " https://github.com/taichi-dev/taichi to help us improve."
-          " Thanks in advance!",
-          stmt->id, op->id);
+      TI_ASSERT_INFO(found,
+                     "IR broken: stmt {} cannot have operand {}."
+                     " Please report this bug by opening an issue at"
+                     " https://github.com/taichi-dev/taichi to help us improve."
+                     " Thanks in advance!",
+                     stmt->id, op->id);
     }
     visible_stmts.back().insert(stmt);
   }

@@ -18,7 +18,8 @@ class DemoteOperations : public BasicStmtVisitor {
     auto lhs = stmt->lhs;
     auto rhs = stmt->rhs;
     if (stmt->op_type == BinaryOpType::floordiv) {
-      if (is_integral(rhs->element_type()) && is_integral(lhs->element_type())) {
+      if (is_integral(rhs->element_type()) &&
+          is_integral(lhs->element_type())) {
         // @ti.func
         // def ifloordiv(a, b):
         //     r = ti.raw_div(a, b)
@@ -43,8 +44,8 @@ class DemoteOperations : public BasicStmtVisitor {
                                                cond1.get(), cond2.get());
         auto cond = Stmt::make<BinaryOpStmt>(BinaryOpType::bit_and,
                                              cond12.get(), cond3.get());
-        auto real_ret = Stmt::make<BinaryOpStmt>(BinaryOpType::add,
-            ret.get(), cond.get());
+        auto real_ret =
+            Stmt::make<BinaryOpStmt>(BinaryOpType::add, ret.get(), cond.get());
 
         stmt->replace_with(real_ret.get());
         modifier.insert_before(stmt, std::move(ret));
@@ -65,10 +66,8 @@ class DemoteOperations : public BasicStmtVisitor {
         // def ffloordiv(a, b):
         //     r = ti.raw_div(a, b)
         //     return ti.floor(r)
-        auto div = Stmt::make<BinaryOpStmt>(
-            BinaryOpType::div, lhs, rhs);
-        auto floor = Stmt::make<UnaryOpStmt>(
-            UnaryOpType::floor, div.get());
+        auto div = Stmt::make<BinaryOpStmt>(BinaryOpType::div, lhs, rhs);
+        auto floor = Stmt::make<UnaryOpStmt>(UnaryOpType::floor, div.get());
         stmt->replace_with(floor.get());
         modifier.insert_before(stmt, std::move(div));
         modifier.insert_before(stmt, std::move(floor));

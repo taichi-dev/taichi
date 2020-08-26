@@ -4,9 +4,9 @@ Profiler
 
 Taichi's profiler can help you analyze the run-time cost of your program. There are two profiling systems in Taichi: ``KernelProfiler`` and ``ScopedProfiler``.
 
-``KernelProfiler`` is used to analysis the performance of user kernels.
+``KernelProfiler`` is used to analyze the performance of user kernels.
 
-While ``ScopedProfiler`` is used for Taichi developers for analysis the
+While ``ScopedProfiler`` is used by Taichi developers to analyze the
 performance of the compiler itself.
 
 KernelProfiler

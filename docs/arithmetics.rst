@@ -18,7 +18,7 @@ Arithmetic operators
 
 .. note::
 
-  The ``%`` operator in Taichi follows the Python-style instead of C-style, e.g.:
+  The ``%`` operator in Taichi follows the Python style instead of C style, e.g.:
 
   .. code-block:: python
 

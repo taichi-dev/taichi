@@ -36,7 +36,7 @@ Arithmetic operators
 .. note::
 
   Python 3 distinguishes ``/`` (true division) and ``//`` (floor division). For example, ``1.0 / 2.0 = 0.5``,
-  ``1 / 2 = 0.5``, ``1 // 2 = 0``, ``4.2 // 2 = 2``. Taichi follows this design:
+  ``1 / 2 = 0.5``, ``1 // 2 = 0``, ``4.2 // 2 = 2``. And Taichi follows the same design:
 
      - **true divisions** on integral types will first cast their operands to the default float point type.
      - **floor divisions** on float-point types will first cast their operands to the default integer type.

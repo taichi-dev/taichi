@@ -8,6 +8,7 @@
 #include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/util/action_recorder.h"
+#include "taichi/program/extension.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -81,7 +82,10 @@ void Kernel::lower(bool to_executable) {  // TODO: is a "Lowerer" class
       irpass::compile_to_executable(
           ir.get(), config, /*vectorize*/ arch_is_cpu(arch), grad,
           /*ad_use_stack*/ true, verbose, /*lower_global_access*/ to_executable,
-          /*make_thread_local*/ true, /*make_block_local*/ arch == Arch::cuda);
+          /*make_thread_local*/ config.make_thread_local,
+          /*make_block_local*/
+          is_extension_supported(config.arch, Extension::bls) &&
+              config.make_block_local);
     } else {
       irpass::compile_to_offloads(ir.get(), config, verbose,
                                   /*vectorize=*/arch_is_cpu(arch), grad,

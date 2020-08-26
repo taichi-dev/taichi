@@ -135,9 +135,11 @@ class Program {
     context.runtime = (LLVMRuntime *)llvm_runtime;
     return context;
   }
+
   void initialize_device_llvm_context();
 
   void synchronize();
+
   void device_synchronize();
 
   void layout(std::function<void()> func) {
@@ -258,7 +260,6 @@ class Program {
     auto runtime = tlctx->runtime_jit_module;
     runtime->call<void *, Args...>("runtime_" + key, llvm_runtime,
                                    std::forward<Args>(args)...);
-    device_synchronize();
     return fetch_result<T>(taichi_result_buffer_runtime_query_id);
   }
 

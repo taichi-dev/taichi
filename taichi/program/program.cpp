@@ -630,7 +630,7 @@ Kernel &Program::get_snode_writer(SNode *snode) {
 }
 
 uint64 Program::fetch_result_uint64(int i) {
-  // Precondition: caller must have already done a program synchronization.
+  device_synchronize();
   uint64 ret;
   auto arch = config.arch;
   if (arch == Arch::cuda) {

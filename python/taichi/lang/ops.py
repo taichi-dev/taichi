@@ -273,11 +273,9 @@ def logical_not(a):
     return _unary_operation(ti_core.expr_logic_not, lambda x: int(not x), a)
 
 
-def random(dt=None):
-    if dt is None:
-        import taichi
-        dt = taichi.get_runtime().default_fp
-    x = Expr(ti_core.make_rand_expr(dt))
+def random(dtype=float):
+    dtype = cook_dtype(dtype)
+    x = Expr(ti_core.make_rand_expr(dtype))
     return expr_init(x)
 
 

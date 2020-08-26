@@ -707,6 +707,10 @@ class KernelGen : public IRVisitor {
     emit("}}\n");
   }
 
+  void generate_grid_stride_loop_header() {
+    ScopedIdent _s(line_appender_);
+  }
+
   struct ScopedGridStrideLoop {
     KernelGen *gen;
     std::unique_ptr<ScopedIndent> s;

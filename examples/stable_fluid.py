@@ -135,12 +135,13 @@ def advect_bfecc(vf: ti.template(), qf: ti.template(), new_qf: ti.template(), in
     ti.cache_read_only(intermedia_qf, qf, vf)
     for i, j in vf:
         p = ti.Vector([i, j]) + 0.5
+        # star means the temp value after a back tracing (forward advection)
+        # two star means the temp value after a forward tracing (reverse advection)
         p_two_star = backtrace(vf, p, -dt)
         p_star = backtrace(vf, p, dt)
         q_star = intermedia_qf[i, j]
         new_qf[i, j] = bilerp(intermedia_qf, p_two_star)
 
-        # new
         new_qf[i, j] = q_star + 0.5 * (qf[i, j]-new_qf[i, j])
 
         min_val, max_val = sample_minmax(qf, p_star)
@@ -336,9 +337,6 @@ def reset():
     velocities_pair.cur.fill(0)
     pressures_pair.cur.fill(0)
     dyes_pair.cur.fill(0)
-
-
-v_mngr = ti.VideoManager('./', framerate=24, automatic_build=False)
 
 
 gui = ti.GUI('Stable Fluid', (res, res))

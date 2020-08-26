@@ -314,7 +314,7 @@ class MouseDataGen(object):
         # [4:7]: color
         mouse_data = np.zeros(8, dtype=np.float32)
         if gui.is_pressed(ti.GUI.LMB) or frame < 20:
-            if frame < 20:
+            if gui.frame < 20:
                 # print(frame)
                 mxy = np.array([0 + frame*0.01, 0 + frame*0.01],
                                dtype=np.float32) * res
@@ -346,7 +346,6 @@ def reset():
 
 gui = ti.GUI('Stable Fluid', (res, res))
 md_gen = MouseDataGen()
-frame = 0
 while gui.running:
     if gui.get_event(ti.GUI.PRESS):
         e = gui.event
@@ -360,13 +359,12 @@ while gui.running:
         elif e.key == 'd':
             debug = not debug
 
-    frame += 1
 
-    if frame > 4500:
+    if gui.frame > 4500:
         break
 
     if not paused:
-        mouse_data = md_gen(gui, frame)
+        mouse_data = md_gen(gui, gui.frame)
         # if frame < 40:
         #     print(mouse_data)
         step(mouse_data)

@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-## Helper functions
+# Helper functions
 def approx(expected, **kwargs):
     '''Tweaked pytest.approx for OpenGL low percisions'''
     import pytest
@@ -22,6 +22,9 @@ def approx(expected, **kwargs):
     if ti.cfg.arch == ti.opengl:
         kwargs['rel'] = max(kwargs.get('rel', 1e-6), 1e-3)
 
+    if ti.cfg.arch == ti.metal:
+        kwargs['rel'] = max(kwargs.get('rel', 1e-6), 1e-4)
+
     return pytest.approx(expected, **kwargs)
 
 
@@ -39,7 +42,7 @@ def make_temp_file(*args, **kwargs):
     return name
 
 
-## Pytest options
+# Pytest options
 def _get_taichi_archs_fixture():
     import pytest
 

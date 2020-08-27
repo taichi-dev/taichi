@@ -200,9 +200,18 @@ class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
                          })
                          .empty();
     if (!load_only) {
-      alloc->replace_with(Stmt::make<StackAllocaStmt>(
-          alloc->ret_type.data_type,
-          get_current_program().config.ad_stack_size));
+      auto dtype = alloc->ret_type.data_type;
+      auto stack_alloca = Stmt::make<StackAllocaStmt>(
+          dtype, alloc->get_kernel()->program.config.ad_stack_size);
+      auto stack_alloca_ptr = stack_alloca.get();
+
+      alloc->replace_with(std::move(stack_alloca));
+
+      // Note that unlike AllocStmt, StackAllocaStmt does NOT have an 0 as
+      // initial value. Therefore here we push an initial 0 value.
+      auto zero = stack_alloca_ptr->insert_after_me(
+          Stmt::make<ConstStmt>(TypedConstant(dtype, 0)));
+      zero->insert_after_me(Stmt::make<StackPushStmt>(stack_alloca_ptr, zero));
     }
   }
 

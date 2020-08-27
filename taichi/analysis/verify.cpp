@@ -108,9 +108,10 @@ class IRVerifier : public BasicStmtVisitor {
 namespace irpass::analysis {
 void verify(IRNode *root) {
   TI_AUTO_PROF;
-  if (!root->is<Block>()) {
-    TI_WARN("IR root is not a Block. Skipping verification.");
-    // TODO: support this case
+  if (!root->is<Block>() && !root->is<OffloadedStmt>()) {
+    TI_WARN(
+        "IR root is neither a Block nor an OffloadedStmt."
+        " Skipping verification.");
   } else {
     IRVerifier::run(root);
   }

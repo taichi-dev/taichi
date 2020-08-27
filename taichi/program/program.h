@@ -17,7 +17,7 @@
 #include "taichi/backends/cc/cc_program.h"
 #include "taichi/program/kernel.h"
 #include "taichi/program/kernel_profiler.h"
-#include "taichi/runtime/llvm/context.h"
+#include "taichi/program/context.h"
 #include "taichi/runtime/runtime.h"
 #include "taichi/backends/metal/struct_metal.h"
 #include "taichi/system/memory_pool.h"

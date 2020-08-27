@@ -20,8 +20,8 @@
 
 #include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/backends/cuda/cuda_context.h"
+#include "taichi/program/context.h"
 #include "taichi/program/program.h"
-#include "taichi/runtime/llvm/context.h"
 #include "taichi/system/timer.h"
 #include "taichi/lang_util.h"
 #include "taichi/jit/jit_session.h"

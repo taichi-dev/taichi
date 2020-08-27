@@ -179,7 +179,8 @@ void ExecutionQueue::enqueue(KernelLaunchRecord &&ker) {
             /*lower_global_access=*/true,
             /*make_thread_local=*/true,
             /*make_block_local=*/
-            is_extension_supported(config.arch, Extension::bls));
+            is_extension_supported(config.arch, Extension::bls) &&
+                config.make_block_local);
       }
       auto codegen = KernelCodeGen::create(kernel->arch, kernel, stmt);
       auto func = codegen->codegen();
@@ -424,7 +425,7 @@ bool AsyncEngine::fuse() {
       irpass::fix_block_parents(task_a);
 
       auto kernel = task_queue[i].kernel;
-      irpass::full_simplify(task_a, true, kernel);
+      irpass::full_simplify(task_a, /*after_lower_access=*/false, kernel);
       task_queue[i].h = hash(task_a);
 
       modified = true;

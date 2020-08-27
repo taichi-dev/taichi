@@ -1,12 +1,12 @@
-#include "taichi/ir/ir.h"
-#include "taichi/ir/transforms.h"
-#include "taichi/ir/visitors.h"
-#include "taichi/program/program.h"
 #include <deque>
 #include <set>
 #include <cmath>
 #include <thread>
 
+#include "taichi/ir/ir.h"
+#include "taichi/ir/transforms.h"
+#include "taichi/ir/visitors.h"
+#include "taichi/program/program.h"
 #include "taichi/ir/ir.h"
 #include "taichi/program/program.h"
 #include "taichi/ir/snode.h"
@@ -240,7 +240,7 @@ bool constant_fold(IRNode *root) {
     TI_TRACE("config.debug enabled, ignoring constant fold");
     return false;
   }
-  if (!cfg.advanced_optimization || cfg.async_mode)
+  if (!cfg.advanced_optimization)
     return false;
   return ConstantFold::run(root);
 }

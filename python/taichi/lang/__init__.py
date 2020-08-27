@@ -342,15 +342,16 @@ def benchmark(func, repeat=300, args=()):
                 ti.stat_write('offloaded_tasks', b)
             elif a == 'launched_kernels':
                 ti.stat_write('launched_kernels', b)
-        # The reason why we run 4 times is to warm up instruction/data caches.
-        # Discussion: https://github.com/taichi-dev/taichi/pull/1002#discussion_r426312136
-        for i in range(4):
+        # The reason why we run 3 more times is to warm up
+        # instruction/data caches. Discussion:
+        # https://github.com/taichi-dev/taichi/pull/1002#discussion_r426312136
+        for i in range(3):
             func(*args)
-        ti.sync()
+            ti.sync()
         t = time.time()
         for n in range(repeat):
             func(*args)
-        ti.sync()
+            ti.sync()
         elapsed = time.time() - t
         avg = elapsed / repeat
         ti.stat_write('running_time', avg)

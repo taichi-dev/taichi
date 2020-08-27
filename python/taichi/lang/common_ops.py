@@ -129,6 +129,11 @@ class TaichiOperations:
         _taichi_skip_traceback = 1
         return ti.bit_shl(self, other)
 
+    def __rshift__(self, other):
+        import taichi as ti
+        _taichi_skip_traceback = 1
+        return ti.bit_sar(self, other)
+
     def logical_and(self, other):
         import taichi as ti
         _taichi_skip_traceback = 1

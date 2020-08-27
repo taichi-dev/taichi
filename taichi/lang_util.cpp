@@ -251,7 +251,7 @@ std::string ternary_type_name(TernaryOpType type) {
 std::string atomic_op_type_name(AtomicOpType type) {
   switch(type) {
 #define REGISTER_TYPE(i) \
-  case AtomicOpType::i:  \ 
+  case AtomicOpType::i:\
     return #i;
 
     REGISTER_TYPE(add);
@@ -263,7 +263,7 @@ std::string atomic_op_type_name(AtomicOpType type) {
 
 #undef REGISTER_TYPE
   default:
-    return TI_NOT_IMPLEMENTED
+    TI_NOT_IMPLEMENTED
   }
 }
 
@@ -283,7 +283,7 @@ std::string snode_op_type_name(SNodeOpType type) {
 
 #undef REGISTER_TYPE
   default:
-    return TI_NOT_IMPLEMENTED
+    TI_NOT_IMPLEMENTED
   }
 }
 

@@ -14,6 +14,24 @@ Taichi provides *Structural Nodes (SNodes)* to compose the hierarchy and particu
 
 * dynamic: Variable-length array, with a predefined maximum length. It serves the role of ``std::vector`` in C++ or ``list`` in Python, and can be used to maintain objects (e.g. particles) contained in a block.
 
+.. note::
+
+    Supported SNode types on each backends:
+
+    +-----------+----------+--------+-------+----------+
+    | SNode     | CPU/CUDA | OpenGL | Metal | C source |
+    +===========+==========+========+=======+==========+
+    | dense     | OK       | OK     | OK    | OK       |
+    +-----------+----------+--------+-------+----------+
+    | bitmasked | OK       | N/A    | OK    | N/A      |
+    +-----------+----------+--------+-------+----------+
+    | pointer   | OK       | N/A    | N/A   | N/A      |
+    +-----------+----------+--------+-------+----------+
+    | dynamic   | OK       | PAR    | N/A   | N/A      |
+    +-----------+----------+--------+-------+----------+
+
+    (OK: supported; PAR: partial support; N/A: not available)
+
 
 See :ref:`layout` for more details. ``ti.root`` is the root node of the data structure.
 

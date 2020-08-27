@@ -18,10 +18,6 @@
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h"
 
-#define TI_RUNTIME_HOST
-#include "taichi/program/context.h"
-#undef TI_RUNTIME_HOST
-
 #include "taichi/backends/cuda/cuda_context.h"
 #include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/jit/jit_session.h"
@@ -29,6 +25,10 @@
 #include "taichi/program/program.h"
 #include "taichi/system/timer.h"
 #include "taichi/util/file_sequence_writer.h"
+
+#define TI_RUNTIME_HOST
+#include "taichi/program/context.h"
+#undef TI_RUNTIME_HOST
 
 TLANG_NAMESPACE_BEGIN
 

@@ -149,15 +149,7 @@ class Func:
             self.argument_names.append(param.name)
 
 
-@deprecated('@ti.classfunc', '@ti.func directly')
-def classfunc(foo):
-    func = Func(foo, classfunc=True)
-
-    @functools.wraps(foo)
-    def decorated(*args):
-        return func.__call__(*args)
-
-    return decorated
+classfunc = obsolete('@ti.classfunc', '@ti.func directly')
 
 
 class KernelTemplateMapper:
@@ -593,9 +585,7 @@ def kernel(func):
     return _kernel_impl(func, level_of_class_stackframe=3)
 
 
-@deprecated('@ti.classkernel', '@ti.kernel directly')
-def classkernel(func):
-    return _kernel_impl(func, level_of_class_stackframe=3)
+classkernel = obsolete('@ti.classkernel', '@ti.kernel directly')
 
 
 class BoundedDifferentiableMethod:

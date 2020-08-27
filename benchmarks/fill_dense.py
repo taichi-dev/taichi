@@ -122,15 +122,3 @@ def benchmark_root_listgen():
             a[i, j] = 2.0
 
     return ti.benchmark(fill, repeat=800)
-
-
-'''
-# ti.cfg.arch = ti.cuda
-# ti.cfg.print_kernel_llvm_ir_optimized = True
-# ti.cfg.print_kernel_llvm_ir = True
-ti.cfg.kernel_profiler = True
-# ti.cfg.verbose_kernel_launches = True
-print(benchmark_nested_struct_listgen_8x8())
-# print(benchmark_root_listgen())
-ti.kernel_profiler_print()
-'''

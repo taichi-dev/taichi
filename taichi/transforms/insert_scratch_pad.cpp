@@ -6,7 +6,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-// Figure out accessed snodes, and their ranges in this for stmt
+// Figure out accessed SNodes, and their ranges in this for stmt
 class AccessAnalysis : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
 
@@ -59,14 +59,6 @@ class AccessAnalysis : public BasicStmtVisitor {
     auto ptr = stmt->as<GlobalPtrStmt>();
     for (int l = 0; l < stmt->width(); l++) {
       auto snode = ptr->snodes[l];
-      // std::vector<SNode *> snodes;
-      /*
-      for (auto it: pads->pads) {
-        //snodes.push_back(it.first);
-        TI_P(it.first->node_type_name);
-      }
-      TI_P(snode->node_type_name);
-      */
       if (!pads->has(snode)) {
         continue;
       }
@@ -80,27 +72,11 @@ class AccessAnalysis : public BasicStmtVisitor {
         if (diff.linear_related()) {
           offsets[i].first = diff.low;
           offsets[i].second = diff.high;
-          /*
-          TI_P(ptr->name());
-          TI_P(diff.low);
-          TI_P(diff.high);
-          */
         } else {
-          /*
-          TI_P(i);
-          TI_P(for_stmt->loop_vars[i]->raw_name());
-          TI_P(ptr->indices[i]->raw_name());
-          */
           matching_indices = false;
         }
       }
       if (matching_indices) {
-        /*
-        TI_INFO("Detected regular access");
-        for (int i = 0; i < num_indices; i++) {
-          TI_P(offsets[i]);
-        }
-        */
         for (const auto &bind : block_indices) {
           std::function<void(std::vector<int>, int)> visit =
               [&](std::vector<int> ind, int depth) {

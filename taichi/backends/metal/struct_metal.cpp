@@ -227,10 +227,11 @@ class StructCompiler {
       emit("  SNodeRep_{} rep_;", snty_name);
       emit("}};");
     } else {
-      TI_ERROR("SNodeType={} not supported on OpenGL\n"
-               "Consider use ti.init(ti.cpu) or ti.init(ti.cuda) if you "
-               "want to use sparse data structures",
-               snode_type_name(snode.type));
+      TI_ERROR(
+          "SNodeType={} not supported on OpenGL\n"
+          "Consider use ti.init(ti.cpu) or ti.init(ti.cuda) if you "
+          "want to use sparse data structures",
+          snode_type_name(snode.type));
     }
     emit("");
   }

@@ -72,10 +72,11 @@ void OpenglStructCompiler::generate_types(const SNode &snode) {
     snode_info.stride = snode_child_info.stride * n + extension;  // my stride
     snode_info.elem_stride = snode_child_info.stride;  // my child stride
   } else {
-    TI_ERROR("SNodeType={} not supported on OpenGL\n"
-             "Consider use ti.init(ti.cpu) or ti.init(ti.cuda) if you "
-             "want to use sparse data structures",
-             snode_type_name(snode.type));
+    TI_ERROR(
+        "SNodeType={} not supported on OpenGL\n"
+        "Consider use ti.init(ti.cpu) or ti.init(ti.cuda) if you "
+        "want to use sparse data structures",
+        snode_type_name(snode.type));
     TI_NOT_IMPLEMENTED;
   }
 }

@@ -815,6 +815,7 @@ class KernelGen : public IRVisitor {
 
   void generate_struct_for_kernel(OffloadedStmt *stmt) {
     TI_ASSERT(stmt->task_type == OffloadedStmt::TaskType::struct_for);
+    used.listman = true;
     const std::string glsl_kernel_name = make_kernel_name();
     emit("void {}()", glsl_kernel_name);
     this->glsl_kernel_name_ = glsl_kernel_name;
@@ -833,6 +834,7 @@ class KernelGen : public IRVisitor {
 
   void generate_clear_list_kernel(OffloadedStmt *stmt) {
     TI_ASSERT(stmt->task_type == OffloadedStmt::TaskType::clear_list);
+    used.listman = true;
     const std::string glsl_kernel_name = make_kernel_name();
     emit("void {}()", glsl_kernel_name);
     this->glsl_kernel_name_ = glsl_kernel_name;

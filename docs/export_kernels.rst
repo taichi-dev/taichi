@@ -3,9 +3,7 @@ Export Taichi kernels to C source
 
 The C backend of Taichi allows you to **export Taichi kernels to C source**.
 
-The exported Taichi program which is simply consist of C99 compatible sources
-does not necessary to be launched from Python. Instead, you may use them in
-your C/C++ project. Or even calling them in Javascript via Empscripten.
+The exported Taichi program consists purely of C99 compatible sources and does not require Python. Instead, you can use the exported sources in a C/C++ project, or even by calling them in Javascript via Empscripten.
 
 Each C function corresponds to a Taichi kernel.
 For example, ``Tk_init_c6_0()`` may corresponds to ``init()`` in ``mpm88.py``.
@@ -13,12 +11,12 @@ For example, ``Tk_init_c6_0()`` may corresponds to ``init()`` in ``mpm88.py``.
 Only the source is needed when copying, all the required Taichi runtimes are
 included in that single C source file.
 
-This also allows commercial people to distribute their Taichi program in
+For example, this also allows commercial users to distribute their Taichi program in
 binary format by linking this file with their project.
 
 .. warning::
 
-    Currently, this feature is only officially supported on the C backend which is only released on **Linux** platform at this moment.
+    Currently, this feature is only officially supported on the C backend which is only released on **Linux** at this moment.
 
 
 The workflow of exporting

@@ -84,7 +84,6 @@ class Program {
   std::unique_ptr<SNode> snode_root;  // pointer to the data structure.
   void *llvm_runtime;
   CompileConfig config;
-  Context context;
   std::unique_ptr<TaichiLLVMContext> llvm_context_host, llvm_context_device;
   bool sync;  // device/host synchronized?
   bool finalized;
@@ -129,11 +128,6 @@ class Program {
 
   KernelProfilerBase *get_profiler() {
     return profiler.get();
-  }
-
-  Context &get_context() {
-    context.runtime = (LLVMRuntime *)llvm_runtime;
-    return context;
   }
 
   void initialize_device_llvm_context();
@@ -239,8 +233,6 @@ class Program {
   void print_snode_tree() {
     snode_root->print();
   }
-
-  void launch_async(Kernel *kernel);
 
   int default_block_dim() const;
 

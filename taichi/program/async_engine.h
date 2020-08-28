@@ -148,7 +148,7 @@ class AsyncEngine {
     queue.clear_cache();
   }
 
-  void launch(Kernel *kernel);
+  void launch(Kernel *kernel, Context &context);
 
   void enqueue(KernelLaunchRecord &&t);
 

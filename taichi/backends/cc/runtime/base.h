@@ -127,6 +127,7 @@ static inline void Ti_ad_stack_push(Ti_AdStackPtr stack, Ti_u32 element_size) {
   }
 }
 
+) "\n" STR(
 )
 
 #define _CC_INSIDE_KERNEL

@@ -103,7 +103,7 @@ def test_print_list():
     @ti.kernel
     def func(k: ti.f32):
         w = [k, x.shape]
-        print(w + [y.n])  # [233.3, 3]
+        print(w + [y.n])  # [233.3, [2, 3], 3]
         print(x.shape)  # [2, 3]
         print(y.shape)  # []
         z = (1, )

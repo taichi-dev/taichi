@@ -2,7 +2,8 @@ import taichi as ti
 
 
 # Helper functions
-def default_epsilon_of_arch(arch):
+def get_rel_eps():
+    arch = ti.cfg.arch
     if arch == ti.opengl:
         return 1e-3
     elif arch == ti.metal:
@@ -30,8 +31,7 @@ def approx(expected, **kwargs):
     if isinstance(expected, bool):
         return boolean_integer(expected)
 
-    default_eps = default_epsilon_of_arch(ti.cfg.arch)
-    kwargs['rel'] = max(kwargs.get('rel', 1e-6), default_eps)
+    kwargs['rel'] = max(kwargs.get('rel', 1e-6), get_rel_eps())
 
     return pytest.approx(expected, **kwargs)
 
@@ -117,7 +117,7 @@ def test(*args, **kwargs):
 
 
 __all__ = [
-    'default_epsilon_of_arch',
+    'get_rel_eps',
     'approx',
     'allclose',
     'make_temp_file',

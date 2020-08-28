@@ -116,16 +116,7 @@ Setting up Taichi for development
 
     Then execute ``source ~/.bashrc`` to reload shell config.
 
-    If you're using fish. Use ``set -x`` to set environment variables. Execute following commands
-    or add them to ``~/.config/fish/config.fish`` (create if it doesn't exist).
-
-    .. code-block:: fish
-
-      set -x TAICHI_REPO_DIR /path/to/taichi
-      set -x PYTHONPATH $TAICHI_REPO_DIR/python $PYTHONPATH
-      set -x PATH $TAICHI_REPO_DIR/bin $PATH
-      # set -x CXX /path/to/clang # Uncomment if you encounter issue about compiler in the next step.
-      # set -x PATH /opt/llvm/bin $PATH # Uncomment if your llvm or clang is at somewhere else.
+    If you're using fish, use ``set -x NAME VALUES``, otherwise it won't be loaded by child processes.
 
   * On Windows, please add these variables by accessing your system settings:
 

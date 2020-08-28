@@ -460,6 +460,16 @@ def ti_float(var):
         return float(var)
 
 
+@taichi_scope
+def get_external_tensor_dim(var):
+    return taichi_lang_core.get_external_tensor_dim(var)
+
+
+@taichi_scope
+def get_external_tensor_shape_along_axis(var, i):
+    return taichi_lang_core.get_external_tensor_shape_along_axis(var, i)
+
+
 def indices(*x):
     return [taichi_lang_core.Index(i) for i in x]
 

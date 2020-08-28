@@ -1046,4 +1046,17 @@ void Stmt::infer_type() {
   irpass::type_check(this);
 }
 
+ExternalTensorShapeAlongAxisStmt::ExternalTensorShapeAlongAxisStmt(int axis,
+                                                                   int arg_id)
+    : axis(axis), arg_id(arg_id) {
+  TI_STMT_REG_FIELDS;
+}
+
+void ExternalTensorShapeAlongAxisExpression::flatten(FlattenContext *ctx) {
+  auto temp = ptr.cast<ExternalTensorExpression>();
+  TI_ASSERT(0 <= axis && axis < temp->dim);
+  ctx->push_back<ExternalTensorShapeAlongAxisStmt>(axis, temp->arg_id);
+  stmt = ctx->back_stmt();
+}
+
 TLANG_NAMESPACE_END

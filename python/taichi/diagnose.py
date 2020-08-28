@@ -8,8 +8,11 @@ def main():
     import platform
     import subprocess
 
+    executable = sys.executable
+
     print(f'python: {sys.version}')
     print(f'system: {sys.platform}')
+    print(f'executable: {executable}')
     print(f'platform: {platform.platform()}')
     print(f'architecture: {" ".join(platform.architecture())}')
     try:
@@ -40,7 +43,7 @@ def main():
     def try_print(tag, expr):
         try:
             cmd = f'import taichi as ti; print("===="); print({expr}, end="")'
-            ret = subprocess.check_output(['python', '-c', cmd]).decode()
+            ret = subprocess.check_output([executable, '-c', cmd]).decode()
             ret = ret.split('====\n', maxsplit=1)[1]
             print(f'{tag}: {ret}')
         except Exception as e:
@@ -80,7 +83,7 @@ def main():
         print(f'{nvidia_smi.decode()}')
 
     try:
-        ti_header = subprocess.check_output(['python', '-c', 'import taichi'])
+        ti_header = subprocess.check_output([executable, '-c', 'import taichi'])
     except Exception as e:
         print(f'`import taichi` failed: {e}')
     else:
@@ -88,7 +91,7 @@ def main():
 
     try:
         ti_init_test = subprocess.check_output(
-            ['python', '-c', 'import taichi as ti; ti.init()'])
+            [executable, '-c', 'import taichi as ti; ti.init()'])
     except Exception as e:
         print(f'`ti.init()` failed: {e}')
     else:
@@ -96,7 +99,7 @@ def main():
 
     try:
         ti_opengl_test = subprocess.check_output(
-            ['python', '-c', 'import taichi as ti; ti.init(arch=ti.opengl)'])
+            [executable, '-c', 'import taichi as ti; ti.init(arch=ti.opengl)'])
     except Exception as e:
         print(f'Taichi OpenGL test failed: {e}')
     else:
@@ -104,7 +107,7 @@ def main():
 
     try:
         ti_cuda_test = subprocess.check_output(
-            ['python', '-c', 'import taichi as ti; ti.init(arch=ti.cuda)'])
+            [executable, '-c', 'import taichi as ti; ti.init(arch=ti.cuda)'])
     except Exception as e:
         print(f'Taichi CUDA test failed: {e}')
     else:
@@ -112,7 +115,7 @@ def main():
 
     try:
         ti_laplace = subprocess.check_output(
-            ['python', '-m', 'taichi', 'example', 'minimal'])
+            [executable, '-m', 'taichi', 'example', 'minimal'])
     except Exception as e:
         print(f'`examples/laplace.py` failed: {e}')
     else:

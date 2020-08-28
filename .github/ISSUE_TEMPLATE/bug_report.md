@@ -31,6 +31,6 @@ $ python my_sample_code.py
 ```
 
 **Additional comments**
-If possible, please also consider attach the output of command `ti diagnose` for obtaining detailed environment informations to help us diagnose.
+If possible, please also consider attaching the output of command `ti diagnose`. This produces the detailed environment information and hopefully helps us diagnose faster.
 
 If you have local commits (e.g. compile fixes before you reproduce the bug), please make sure you first make a PR to fix the build errors and then report the bug.

@@ -13,7 +13,7 @@ A clear and concise description of what you want. For example:
 I would like to add an Apple Metal backend to the compiler so that my Macbook GPU can be utilized.
 
 **Think about the advantages and disadvantages of the proposed feature**
-All coins have its two side, we encourage people to thinking critically. For example:
+All coins have its two side, we encourage people to think critically. For example:
 
 Advantages:
 1. So that Apple users could utilize their GPU resources.

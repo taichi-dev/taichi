@@ -502,6 +502,7 @@ class KernelGen : public IRVisitor {
     const auto rhs_name = bin->rhs->short_name();
     const auto bin_name = bin->short_name();
     if (bin->op_type == BinaryOpType::floordiv) {
+      TI_WARN("floordiv called! It should be taken care by demote_operations");
       if (is_integral(bin->lhs->element_type()) &&
           is_integral(bin->rhs->element_type())) {
         emit(

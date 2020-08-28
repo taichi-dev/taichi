@@ -56,7 +56,7 @@ def test_true_div():
     _test_true_div(ti.f32, -3, ti.i32, 2, ti.i32, -1)
 
 
-@ti.all_archs
+@ti.test()
 def test_div_default_ip():
     ti.get_runtime().set_default_ip(ti.i64)
     z = ti.field(ti.f32, shape=())
@@ -70,7 +70,7 @@ def test_div_default_ip():
     assert z[None] == 100000
 
 
-@ti.all_archs
+@ti.test()
 def test_floor_div_pythonic():
     z = ti.field(ti.i32, shape=())
 

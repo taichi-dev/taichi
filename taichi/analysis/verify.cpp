@@ -44,10 +44,12 @@ class IRVerifier : public BasicStmtVisitor {
       TI_ASSERT_INFO(
           found,
           "IR broken: stmt {} cannot have operand {}."
-          " Consider adding `ti.core.toggle_advanced_optimization(False)`."
-          " If that fixes the problem, please report this bug by opening an"
-          " issue at https://github.com/taichi-dev/taichi to help us improve."
-          " Thanks!",
+          " If you are using autodiff, please check"
+          " https://taichi.readthedocs.io/en/stable/"
+          "differentiable_programming.html#kernel-simplicity-rule."
+          " If it doesn't help, please report this bug by opening an issue at"
+          " https://github.com/taichi-dev/taichi to help us improve."
+          " Thanks in advance!",
           stmt->id, op->id);
     }
     visible_stmts.back().insert(stmt);

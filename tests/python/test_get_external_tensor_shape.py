@@ -16,7 +16,7 @@ def test_get_external_tensor_shape_access_numpy(size):
     x_hat = np.ones(size, dtype=np.int32)
     for idx, y_ref in enumerate(size):
         y_hat = func(x_hat, idx)
-        assert y_hat == y_ref, "Size of axis {} should equal {} and not {}.".format(
+        assert y_ref == y_hat, "Size of axis {} should equal {} and not {}.".format(
             idx, y_ref, y_hat)
 
 
@@ -50,5 +50,5 @@ def test_get_external_tensor_shape_access_torch(size):
     x_hat = torch.ones(size, dtype=torch.int32, device='cpu')
     for idx, y_ref in enumerate(size):
         y_hat = func(x_hat, idx)
-        assert y_hat == y_ref, "Size of axis {} should equal {} and not {}.".format(
+        assert y_ref == y_hat, "Size of axis {} should equal {} and not {}.".format(
             idx, y_ref, y_hat)

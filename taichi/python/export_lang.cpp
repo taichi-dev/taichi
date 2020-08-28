@@ -575,9 +575,11 @@ void export_lang(py::module &m) {
   m.def("host_arch", host_arch);
 
   m.def("set_lib_dir", [&](const std::string &dir) {
+    TI_INFO("set_lib_dir: [{}]", dir);
     compiled_lib_dir = dir;
   });
   m.def("set_tmp_dir", [&](const std::string &dir) {
+    TI_INFO("set_tmp_dir: [{}]", dir);
     runtime_tmp_dir = dir;
   });
   m.def("get_runtime_dir", get_runtime_dir);

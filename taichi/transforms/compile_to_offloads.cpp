@@ -171,7 +171,6 @@ void offload_to_executable(IRNode *ir,
   irpass::demote_operations(ir);
   print("Operations demoted");
 
-  irpass::type_check(ir);
   irpass::full_simplify(ir, lower_global_access);
   print("Simplified IV");
 

@@ -124,7 +124,9 @@ namespace irpass {
 
 bool demote_operations(IRNode *root) {
   TI_AUTO_PROF;
-  return DemoteOperations::run(root);
+  bool modified = DemoteOperations::run(root);
+  irpass::type_check(ir);
+  return modified;
 }
 
 }  // namespace irpass

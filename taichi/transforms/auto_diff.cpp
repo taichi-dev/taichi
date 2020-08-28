@@ -207,7 +207,7 @@ class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
 
       alloc->replace_with(std::move(stack_alloca));
 
-      // Note that unlike AllocStmt, StackAllocaStmt does NOT have an 0 as
+      // Note that unlike AllocaStmt, StackAllocaStmt does NOT have an 0 as
       // initial value. Therefore here we push an initial 0 value.
       auto zero = stack_alloca_ptr->insert_after_me(
           Stmt::make<ConstStmt>(TypedConstant(dtype, 0)));

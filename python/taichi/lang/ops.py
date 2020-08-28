@@ -300,6 +300,7 @@ def mul(a, b):
 @binary
 def mod(a, b):
     def expr_python_mod(a, b):
+        # a % b = (a // b) * b - a
         quotient = Expr(ti_core.expr_floordiv(a, b))
         multiply = Expr(ti_core.expr_mul(b, quotient.ptr))
         return ti_core.expr_sub(a, multiply.ptr)

@@ -40,7 +40,9 @@ class TypeCheck : public IRVisitor {
 
   void visit(IfStmt *if_stmt) {
     // TODO: use DataType::u1 when it's supported
-    TI_ASSERT(if_stmt->cond->ret_type.data_type == DataType::i32);
+    TI_ASSERT_INFO(if_stmt->cond->ret_type.data_type == DataType::i32,
+        "`if` conditions must be of type int32, consider use `if x != 0:` "
+        "instead of `if x:` for float values.");
     if (if_stmt->true_statements)
       if_stmt->true_statements->accept(this);
     if (if_stmt->false_statements) {
@@ -274,7 +276,9 @@ class TypeCheck : public IRVisitor {
       error();
     }
     if (binary_is_bitwise(stmt->op_type)) {
-      if (!is_integral(stmt->lhs->ret_type.data_type)) {
+      auto lhs_dt = stmt->lhs->ret_type.data_type;
+      auto rhs_dt = stmt->rhs->ret_type.data_type;
+      if (!is_integral(lhs_dt) || !is_integral(rhs_dt)) {
         error("Error: bitwise operations can only apply to integral types.");
       }
     }

@@ -14,6 +14,36 @@ class DemoteOperations : public BasicStmtVisitor {
   DemoteOperations() : BasicStmtVisitor() {
   }
 
+  void visit(BitExtractStmt *stmt) override {
+    // @ti.func
+    // def bit_extract(input, begin, end):
+    //   return (input >> begin) & ((1 << (end - begin)) - 1)
+
+    auto one = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(1));
+    auto begin = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(
+          stmt->bit_begin));
+    auto esbeg = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(
+          stmt->bit_end - stmt->bit_begin));
+    auto input_sar_begin = Stmt::make<BinaryOpStmt>(BinaryOpType::bit_sar,
+      stmt->input, begin.get());
+    auto one_shl_esbeg = Stmt::make<BinaryOpStmt>(BinaryOpType::bit_shl,
+      one.get(), esbeg.get());
+    auto one_shl_esbeg_sub_one = Stmt::make<BinaryOpStmt>(BinaryOpType::sub,
+      one_shl_esbeg.get(), one.get());
+    auto ret = Stmt::make<BinaryOpStmt>(BinaryOpType::bit_and,
+      input_sar_begin.get(), one_shl_esbeg_sub_one.get());
+
+    stmt->replace_with(ret.get());
+    modifier.insert_before(stmt, std::move(one));
+    modifier.insert_before(stmt, std::move(begin));
+    modifier.insert_before(stmt, std::move(esbeg));
+    modifier.insert_before(stmt, std::move(input_sar_begin));
+    modifier.insert_before(stmt, std::move(one_shl_esbeg));
+    modifier.insert_before(stmt, std::move(one_shl_esbeg_sub_one));
+    modifier.insert_before(stmt, std::move(ret));
+    modifier.erase(stmt);
+  }
+
   void visit(BinaryOpStmt *stmt) override {
     auto lhs = stmt->lhs;
     auto rhs = stmt->rhs;
@@ -44,8 +74,8 @@ class DemoteOperations : public BasicStmtVisitor {
                                                cond1.get(), cond2.get());
         auto cond = Stmt::make<BinaryOpStmt>(BinaryOpType::bit_and,
                                              cond12.get(), cond3.get());
-        auto real_ret =
-            Stmt::make<BinaryOpStmt>(BinaryOpType::add, ret.get(), cond.get());
+        auto real_ret = Stmt::make<BinaryOpStmt>(BinaryOpType::add,
+            ret.get(), cond.get());
 
         stmt->replace_with(real_ret.get());
         modifier.insert_before(stmt, std::move(ret));

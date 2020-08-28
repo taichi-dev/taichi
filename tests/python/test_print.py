@@ -110,7 +110,7 @@ def test_print_list():
         print([1, k**2, k + 1])  # [1, 233.3, 234.3]
         print(z)  # [1]
         print([y[0], z])  # [[0, 0, 0], [1]]
-        print([]) # []
+        print([])  # []
 
     func(233.3)
     ti.sync()

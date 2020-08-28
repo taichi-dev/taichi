@@ -23,28 +23,23 @@ class DemoteOperations : public BasicStmtVisitor {
     if (stmt->get_kernel()->program.config.async_mode)
       return;
 
-    auto one = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(1));
-    auto begin = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(
+    VecStatement statements;
+    auto one = statements.push_back<ConstStmt>(LaneAttribute<TypedConstant>(1));
+    auto begin = statements.push_back<ConstStmt>(LaneAttribute<TypedConstant>(
           stmt->bit_begin));
-    auto esbeg = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(
+    auto esbeg = statements.push_back<ConstStmt>(LaneAttribute<TypedConstant>(
           stmt->bit_end - stmt->bit_begin));
-    auto input_sar_begin = Stmt::make<BinaryOpStmt>(BinaryOpType::bit_sar,
-      stmt->input, begin.get());
-    auto one_shl_esbeg = Stmt::make<BinaryOpStmt>(BinaryOpType::bit_shl,
-      one.get(), esbeg.get());
-    auto one_shl_esbeg_sub_one = Stmt::make<BinaryOpStmt>(BinaryOpType::sub,
-      one_shl_esbeg.get(), one.get());
-    auto ret = Stmt::make<BinaryOpStmt>(BinaryOpType::bit_and,
-      input_sar_begin.get(), one_shl_esbeg_sub_one.get());
+    auto input_sar_begin = statements.push_back<BinaryOpStmt>(
+        BinaryOpType::bit_sar, stmt->input, begin);
+    auto one_shl_esbeg = statements.push_back<BinaryOpStmt>(
+        BinaryOpType::bit_shl, one, esbeg);
+    auto one_shl_esbeg_sub_one = statements.push_back<BinaryOpStmt>(
+        BinaryOpType::sub, one_shl_esbeg, one);
+    auto ret = statements.push_back<BinaryOpStmt>(
+        BinaryOpType::bit_and, input_sar_begin, one_shl_esbeg_sub_one);
 
-    stmt->replace_with(ret.get());
-    modifier.insert_before(stmt, std::move(one));
-    modifier.insert_before(stmt, std::move(begin));
-    modifier.insert_before(stmt, std::move(esbeg));
-    modifier.insert_before(stmt, std::move(input_sar_begin));
-    modifier.insert_before(stmt, std::move(one_shl_esbeg));
-    modifier.insert_before(stmt, std::move(one_shl_esbeg_sub_one));
-    modifier.insert_before(stmt, std::move(ret));
+    stmt->replace_with(ret);
+    modifier.insert_before(stmt, std::move(statements));
     modifier.erase(stmt);
   }
 

@@ -109,6 +109,7 @@ def test_print_list():
         z = (1, )
         print([1, k**2, k + 1])  # [1, 233.3, 234.3]
         print(z)  # [1]
+        print([y[0], z])  # [[0, 0, 0], [1]]
         print([]) # []
 
     func(233.3)

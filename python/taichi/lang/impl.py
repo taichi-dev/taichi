@@ -407,14 +407,26 @@ def ti_print(*vars, sep=' ', end='\n'):
         else:
             return Expr(var).ptr
 
+    def list_ti_repr(var):
+        yield '['  # distinguishing tuple & list will increase maintainance cost
+        for i, v in enumerate(var):
+            if i:
+                yield ', '
+            yield v
+        yield ']'
+
     def vars2entries(vars):
         for var in vars:
             if hasattr(var, '__ti_repr__'):
-                repr = var.__ti_repr__()
-                for v in vars2entries(repr):
-                    yield v
+                res = var.__ti_repr__()
+            elif isinstance(var, (list, tuple)):
+                res = list_ti_repr(var)
             else:
                 yield var
+                continue
+
+            for v in vars2entries(res):
+                yield v
 
     def add_separators(vars):
         for i, var in enumerate(vars):

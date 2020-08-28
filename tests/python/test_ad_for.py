@@ -33,10 +33,8 @@ def test_ad_sum():
         assert a.grad[i] == b[i]
 
 
-@ti.require(ti.extension.adstack)
-@ti.all_archs
+@ti.test(require=ti.extension.adstack)
 def test_ad_sum_local_atomic():
-    ti.init(print_ir=True)
     N = 10
     a = ti.field(ti.f32, shape=N, needs_grad=True)
     b = ti.field(ti.i32, shape=N)

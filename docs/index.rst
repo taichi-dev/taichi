@@ -18,7 +18,6 @@ The Taichi Programming Language
    type
    tensor_matrix
    external
-   atomic
 
 
 .. toctree::
@@ -28,6 +27,8 @@ The Taichi Programming Language
    scalar_tensor
    vector
    matrix
+   arithmetics
+   atomic
    snode
 
 

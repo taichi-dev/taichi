@@ -273,11 +273,9 @@ def logical_not(a):
     return _unary_operation(ti_core.expr_logic_not, lambda x: int(not x), a)
 
 
-def random(dt=None):
-    if dt is None:
-        import taichi
-        dt = taichi.get_runtime().default_fp
-    x = Expr(ti_core.make_rand_expr(dt))
+def random(dtype=float):
+    dtype = cook_dtype(dtype)
+    x = Expr(ti_core.make_rand_expr(dtype))
     return expr_init(x)
 
 
@@ -409,6 +407,16 @@ def bit_and(a, b):
 @binary
 def bit_xor(a, b):
     return _binary_operation(ti_core.expr_bit_xor, ops.xor, a, b)
+
+
+@binary
+def bit_shl(a, b):
+    return _binary_operation(ti_core.expr_bit_shl, ops.lshift, a, b)
+
+
+@binary
+def bit_sar(a, b):
+    return _binary_operation(ti_core.expr_bit_sar, ops.rshift, a, b)
 
 
 # We don't have logic_and/or instructions yet:

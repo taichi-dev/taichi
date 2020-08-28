@@ -1227,6 +1227,14 @@ void CodeGenLLVM::visit(ExternalPtrStmt *stmt) {
   llvm_val[stmt] = builder->CreateGEP(base, linear_index);
 }
 
+void CodeGenLLVM::visit(ExternalTensorShapeAlongAxisStmt *stmt) {
+  const auto arg_id = stmt->arg_id;
+  const auto axis = stmt->axis;
+  llvm_val[stmt] = builder->CreateCall(
+      get_runtime_function("Context_get_extra_args"),
+      {get_context(), tlctx->get_constant(arg_id), tlctx->get_constant(axis)});
+}
+
 std::string CodeGenLLVM::init_offloaded_task_function(OffloadedStmt *stmt,
                                                       std::string suffix) {
   current_loop_reentry = nullptr;

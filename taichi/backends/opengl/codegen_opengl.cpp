@@ -693,6 +693,15 @@ class KernelGen : public IRVisitor {
     emit("{};", source);
   }
 
+  void visit(ExternalTensorShapeAlongAxisStmt *stmt) override {
+    const auto name = stmt->short_name();
+    const auto arg_id = stmt->arg_id;
+    const auto axis = stmt->axis;
+    used.buf_earg = true;
+    emit("int {} = _earg_i32_[{} * {} + {}];", name, arg_id,
+         taichi_max_num_indices, axis);
+  }
+
   std::string make_kernel_name() {
     return fmt::format("{}{}", glsl_kernel_prefix_, glsl_kernel_count_++);
   }

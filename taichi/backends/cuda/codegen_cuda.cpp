@@ -465,6 +465,15 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     TI_NOT_IMPLEMENTED
 #endif
   }
+
+  void visit(ExternalTensorShapeAlongAxisStmt *stmt) override {
+    const auto arg_id = stmt->arg_id;
+    const auto axis = stmt->axis;
+    llvm_val[stmt] =
+        builder->CreateCall(get_runtime_function("Context_get_extra_args"),
+                            {get_context(), tlctx->get_constant(arg_id),
+                             tlctx->get_constant(axis)});
+  }
 };
 
 FunctionType CodeGenCUDA::codegen() {

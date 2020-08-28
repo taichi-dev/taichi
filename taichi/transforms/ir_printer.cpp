@@ -603,6 +603,11 @@ class IRPrinter : public IRVisitor {
     print("{}{} : stack acc adj {}, val = {}", stmt->type_hint(), stmt->name(),
           stmt->stack->name(), stmt->v->name());
   }
+
+  void visit(ExternalTensorShapeAlongAxisStmt *stmt) override {
+    print("external_tensor_shape_along_axis {}, arg_id {}", stmt->axis,
+          stmt->arg_id);
+  }
 };
 
 namespace irpass {

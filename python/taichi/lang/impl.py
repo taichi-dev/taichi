@@ -51,7 +51,7 @@ def expr_init_list(xs, expected):
 
 @taichi_scope
 def expr_init_func(
-    rhs):  # temporary solution to allow passing in fields as arguments
+        rhs):  # temporary solution to allow passing in fields as arguments
     import taichi as ti
     if isinstance(rhs, Expr) and rhs.ptr.is_global_var():
         return rhs
@@ -458,6 +458,16 @@ def ti_float(var):
         return var.__ti_float__()
     else:
         return float(var)
+
+
+@taichi_scope
+def get_external_tensor_dim(var):
+    return taichi_lang_core.get_external_tensor_dim(var)
+
+
+@taichi_scope
+def get_external_tensor_shape_along_axis(var, i):
+    return taichi_lang_core.get_external_tensor_shape_along_axis(var, i)
 
 
 def indices(*x):

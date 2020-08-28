@@ -144,6 +144,14 @@ class Expr(TaichiOperations):
 
     @property
     def shape(self):
+        if self.ptr.is_external_var():
+            import taichi as ti
+            dim = ti.get_external_tensor_dim(self.ptr)
+            ret = [
+                ti.get_external_tensor_shape_along_axis(self.ptr, i)
+                for i in range(dim)
+            ]
+            return ret
         return self.snode.shape
 
     @deprecated('x.dim()', 'len(x.shape)')

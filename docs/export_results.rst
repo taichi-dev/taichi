@@ -47,6 +47,8 @@ Export images using ``ti.GUI.show``
 
 - After running the code above, you will get a series of images in the current folder.
 
+- To compose these images into a single ``mp4`` or ``gif`` file, see :ref:`cli_video_tools`.
+
 Export images using ``ti.imwrite``
 ++++++++++++++++++++++++++++++++++
 To save images without invoking ``ti.GUI.show(filename)``, use ``ti.imwrite(filename)``. For example:

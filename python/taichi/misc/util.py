@@ -139,6 +139,12 @@ def deprecated(old, new, type=DeprecationWarning):
         def wrapped(*args, **kwargs):
             _taichi_skip_traceback = 1
             msg = f'{old} is deprecated, please use {new} instead'
+            try:
+                import locale
+                if 'zh' in locale.getdefaultlocale()[0]:
+                    msg += f'\n{old} 已被废除，请使用 {new} 来替换'
+            except:
+                pass
             warning(msg, type, stacklevel=2)
             return foo(*args, **kwargs)
 
@@ -159,12 +165,18 @@ def obsolete(old, new):
         try:
             import locale
             if 'zh' in locale.getdefaultlocale()[0]:
-                msg += f'\n{old} 已经被彻底移除，请使用 {new} 来替换'
+                msg += f'\n{old} 已被彻底废除，请使用 {new} 来替换'
         except:
             pass
         raise SyntaxError(msg)
 
     return wrapped
+
+
+def get_traceback(stacklevel=1):
+    import traceback
+    s = traceback.extract_stack()[:-1 - stacklevel]
+    return ''.join(traceback.format_list(s))
 
 
 def get_logging(name):
@@ -244,6 +256,7 @@ __all__ = [
     'core_veci',
     'deprecated',
     'obsolete',
+    'get_traceback',
     'set_gdb_trigger',
     'print_profile_info',
     'set_logging_level',

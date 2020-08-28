@@ -34,7 +34,7 @@ ENV CC=/usr/bin/clang-8
 ENV CXX=/usr/bin/clang++-8
 RUN wget https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.0/llvm-10.0.0.src.tar.xz
 RUN tar xvJf llvm-10.0.0.src.tar.xz
-RUN cd llvm-10.0.0.src && mkdir build 
+RUN cd llvm-10.0.0.src && mkdir build
 WORKDIR /llvm-10.0.0.src/build
 RUN cmake .. -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON
 RUN make -j 8

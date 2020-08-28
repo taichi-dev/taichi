@@ -22,9 +22,6 @@ def format_plain_text(fn):
     with open(fn, 'r') as f:
         for l in f:
             l = l.rstrip()
-            if l.find('\t') != -1:
-                print(f'Warning: found tab in {fn}. Skipping...')
-                return
             formatted += l + '\n'
     while len(formatted) and formatted[-1] == '\n':
         formatted = formatted[:-1]
@@ -66,10 +63,17 @@ def main(all=False, diff=None):
 
     if all:
         directories = [
-            'taichi', 'tests', 'examples', 'misc', 'python', 'benchmarks',
-            'docs', 'misc'
+            'taichi',
+            'tests',
+            'examples',
+            'misc',
+            'python',
+            'benchmarks',
+            'docs',
+            'cmake',
         ]
-        files = []
+        files = list(Path(repo_dir).glob(
+            '*'))  # Include all files under the root folder
         for d in directories:
             files += list(Path(os.path.join(repo_dir, d)).rglob('*'))
     else:
@@ -125,12 +129,15 @@ def format_file(fn):
                    style_config=os.path.join(repo_dir, 'misc', '.style.yapf'))
         format_plain_text(fn)
         return True
-    elif clang_format_bin and has_suffix(fn, ['cpp', 'h', 'cu', 'cuh']):
+    elif clang_format_bin and has_suffix(fn, ['cpp', 'h', 'c', 'cu', 'cuh']):
         print('Formatting "{}"'.format(fn))
         os.system('{} -i -style=file {}'.format(clang_format_bin, fn))
         format_plain_text(fn)
         return True
-    elif has_suffix(fn, ['txt', 'md', 'rst', 'cfg', 'll', 'ptx']):
+    elif has_suffix(fn, [
+            'txt', 'md', 'rst', 'cfg', 'yml', 'ini', 'map', 'cmake'
+    ]) or (os.path.basename(fn)[0].isupper()
+           and fn.endswith('file')):  # E.g., Dockerfile and Jenkinsfile
         print('Formatting "{}"'.format(fn))
         format_plain_text(fn)
         return True

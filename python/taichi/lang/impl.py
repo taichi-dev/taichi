@@ -51,7 +51,7 @@ def expr_init_list(xs, expected):
 
 @taichi_scope
 def expr_init_func(
-    rhs):  # temporary solution to allow passing in fields as arguments
+        rhs):  # temporary solution to allow passing in fields as arguments
     import taichi as ti
     if isinstance(rhs, Expr) and rhs.ptr.is_global_var():
         return rhs
@@ -215,12 +215,19 @@ class PyTaichi:
         ti.trace('Materializing layout...')
         taichi_lang_core.layout(layout)
         self.materialized = True
+        not_placed = []
         for var in self.global_vars:
             if var.ptr.snode() is None:
-                raise RuntimeError(
-                    'Some variable(s) are not placed.'
-                    ' Did you forget to specify the shape of any field? E.g., the "shape" argument in'
-                    ' ti.field(dtype=ti.f32, shape=(3, 4))')
+                tb = getattr(var, 'declaration_tb', str(var.ptr))
+                not_placed.append(tb)
+
+        if len(not_placed):
+            bar = '=' * 44 + '\n'
+            raise RuntimeError(
+                f'These field(s) are not placed:\n{bar}' +
+                f'{bar}'.join(not_placed) +
+                f'{bar}Please consider specifying a shape for them. E.g.,' +
+                '\n\n  x = ti.field(float, shape=(2, 3))')
 
     def clear(self):
         if self.prog:
@@ -315,7 +322,7 @@ class Root:
 root = Root()
 
 
-#@deprecated('ti.var', 'ti.field')
+@deprecated('ti.var', 'ti.field')
 def var(dt, shape=None, offset=None, needs_grad=False):
     _taichi_skip_traceback = 1
     return field(dt, shape, offset, needs_grad)
@@ -346,13 +353,14 @@ def field(dtype, shape=None, offset=None, needs_grad=False):
             "No new variables can be declared after materialization, i.e. kernel invocations "
             "or Python-scope field accesses. I.e., data layouts must be specified before "
             "any computation. Try appending ti.init() or ti.reset() "
-            "right after 'import taichi as ti' if you are using Jupyter notebook."
+            "right after 'import taichi as ti' if you are using Jupyter notebook or Blender."
         )
 
     del _taichi_skip_traceback
 
     # primal
     x = Expr(taichi_lang_core.make_id_expr(""))
+    x.declaration_tb = get_traceback(stacklevel=2)
     x.ptr = taichi_lang_core.global_new(x.ptr, dtype)
     x.ptr.set_is_primal(True)
     pytaichi.global_vars.append(x)

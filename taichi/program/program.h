@@ -135,9 +135,14 @@ class Program {
     context.runtime = (LLVMRuntime *)llvm_runtime;
     return context;
   }
+
   void initialize_device_llvm_context();
 
   void synchronize();
+
+  // This is more primitive than synchronize(). It directly calls to the
+  // targeted GPU backend's synchronization (or commit in Metal's terminology).
+  void device_synchronize();
 
   void layout(std::function<void()> func) {
     func();

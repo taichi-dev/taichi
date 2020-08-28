@@ -15,15 +15,18 @@ def benchmark_range():
     mu_0, lambda_0 = E / (2 * (1 + nu)), E * nu / (
         (1 + nu) * (1 - 2 * nu))  # Lame parameters
 
-    x = ti.Vector(2, dt=ti.f32, shape=n_particles)  # position
-    v = ti.Vector(2, dt=ti.f32, shape=n_particles)  # velocity
-    C = ti.Matrix(2, 2, dt=ti.f32, shape=n_particles)  # affine velocity field
-    F = ti.Matrix(2, 2, dt=ti.f32, shape=n_particles)  # deformation gradient
-    material = ti.var(dt=ti.i32, shape=n_particles)  # material id
-    Jp = ti.var(dt=ti.f32, shape=n_particles)  # plastic deformation
-    grid_v = ti.Vector(2, dt=ti.f32,
-                       shape=(n_grid, n_grid))  # grid node momemtum/velocity
-    grid_m = ti.var(dt=ti.f32, shape=(n_grid, n_grid))  # grid node mass
+    x = ti.Vector.field(2, dtype=ti.f32, shape=n_particles)  # position
+    v = ti.Vector.field(2, dtype=ti.f32, shape=n_particles)  # velocity
+    C = ti.Matrix.field(2, 2, dtype=ti.f32,
+                        shape=n_particles)  # affine velocity field
+    F = ti.Matrix.field(2, 2, dtype=ti.f32,
+                        shape=n_particles)  # deformation gradient
+    material = ti.field(dtype=int, shape=n_particles)  # material id
+    Jp = ti.field(dtype=ti.f32, shape=n_particles)  # plastic deformation
+    grid_v = ti.Vector.field(2, dtype=ti.f32,
+                             shape=(n_grid,
+                                    n_grid))  # grid node momemtum/velocity
+    grid_m = ti.field(dtype=ti.f32, shape=(n_grid, n_grid))  # grid node mass
 
     @ti.kernel
     def substep():
@@ -114,19 +117,7 @@ def benchmark_range():
         F[i] = [[1, 0], [0, 1]]
         Jp[i] = 1
 
-    gui = ti.GUI("Taichi MLS-MPM-99", res=512, background_color=0x112F41)
-    substep()
-    ti.get_runtime().sync()
-    t = time.time()
-    for frame in range(200):
-        for s in range(20):
-            substep()
-        # colors = np.array([0x068587, 0xED553B, 0xEEEEF0], dtype=np.uint32)
-        # gui.circles(x.to_numpy(), radius=1.5, color=colors[material.to_numpy()])
-        # gui.show() # Change to gui.show(f'{frame:06d}.png') to write images to disk
-    ti.get_runtime().sync()
-    avg = (time.time() - t) / 4000 * 1000  # miliseconds
-    ti.stat_write(avg)
+    ti.benchmark(substep, repeat=4000)
 
 
 @ti.archs_excluding(ti.opengl)
@@ -141,15 +132,18 @@ def benchmark_struct():
     mu_0, lambda_0 = E / (2 * (1 + nu)), E * nu / (
         (1 + nu) * (1 - 2 * nu))  # Lame parameters
 
-    x = ti.Vector(2, dt=ti.f32, shape=n_particles)  # position
-    v = ti.Vector(2, dt=ti.f32, shape=n_particles)  # velocity
-    C = ti.Matrix(2, 2, dt=ti.f32, shape=n_particles)  # affine velocity field
-    F = ti.Matrix(2, 2, dt=ti.f32, shape=n_particles)  # deformation gradient
-    material = ti.var(dt=ti.i32, shape=n_particles)  # material id
-    Jp = ti.var(dt=ti.f32, shape=n_particles)  # plastic deformation
-    grid_v = ti.Vector(2, dt=ti.f32,
-                       shape=(n_grid, n_grid))  # grid node momemtum/velocity
-    grid_m = ti.var(dt=ti.f32, shape=(n_grid, n_grid))  # grid node mass
+    x = ti.Vector.field(2, dtype=ti.f32, shape=n_particles)  # position
+    v = ti.Vector.field(2, dtype=ti.f32, shape=n_particles)  # velocity
+    C = ti.Matrix.field(2, 2, dtype=ti.f32,
+                        shape=n_particles)  # affine velocity field
+    F = ti.Matrix.field(2, 2, dtype=ti.f32,
+                        shape=n_particles)  # deformation gradient
+    material = ti.field(dtype=int, shape=n_particles)  # material id
+    Jp = ti.field(dtype=ti.f32, shape=n_particles)  # plastic deformation
+    grid_v = ti.Vector.field(2, dtype=ti.f32,
+                             shape=(n_grid,
+                                    n_grid))  # grid node momemtum/velocity
+    grid_m = ti.field(dtype=ti.f32, shape=(n_grid, n_grid))  # grid node mass
 
     @ti.kernel
     def substep():
@@ -242,16 +236,4 @@ def benchmark_struct():
         F[i] = [[1, 0], [0, 1]]
         Jp[i] = 1
 
-    gui = ti.GUI("Taichi MLS-MPM-99", res=512, background_color=0x112F41)
-    substep()
-    ti.get_runtime().sync()
-    t = time.time()
-    for frame in range(200):
-        for s in range(20):
-            substep()
-        # colors = np.array([0x068587, 0xED553B, 0xEEEEF0], dtype=np.uint32)
-        # gui.circles(x.to_numpy(), radius=1.5, color=colors[material.to_numpy()])
-        # gui.show() # Change to gui.show(f'{frame:06d}.png') to write images to disk
-    ti.get_runtime().sync()
-    avg = (time.time() - t) / 4000 * 1000  # miliseconds
-    ti.stat_write(avg)
+    ti.benchmark(substep, repeat=4000)

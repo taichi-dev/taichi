@@ -69,3 +69,19 @@ def test_image_io_uint(resx, resy, comp, ext, dt):
     pixel_r = ti.imread(fn).astype(np_type) * np_max
     assert (pixel_r == pixel).all()
     os.remove(fn)
+
+
+@pytest.mark.parametrize('comp', [1, 3])
+@pytest.mark.parametrize('resx,resy', [(91, 81)])
+@pytest.mark.parametrize('scale', [1, 2, 3])
+@ti.host_arch_only
+def test_image_resize_sum(resx, resy, comp, scale):
+    shape = (resx, resy)
+    if comp != 1:
+        shape = shape + (comp, )
+    old_img = np.random.rand(*shape).astype(np.float32)
+    if resx == resy:
+        new_img = ti.imresize(old_img, resx * scale)
+    else:
+        new_img = ti.imresize(old_img, resx * scale, resy * scale)
+    assert np.sum(old_img) * scale**2 == ti.approx(np.sum(new_img))

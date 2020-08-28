@@ -360,6 +360,8 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
   bool modified = false;
   std::unordered_set<Stmt *> live_in_this_node;
   std::unordered_set<Stmt *> killed_in_this_node;
+  // map a variable to its nearest load
+  std::unordered_map<Stmt *, Stmt *> live_load_in_this_node;
   for (int i = end_location - 1; i >= begin_location; i--) {
     auto stmt = block->statements[i].get();
     auto store_ptrs = irpass::analysis::get_store_destination(stmt);
@@ -391,10 +393,11 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
               auto local_load =
                   Stmt::make<LocalLoadStmt>(LocalAddress(atomic->dest, 0));
               local_load->ret_type = atomic->ret_type;
-              replace_with(i, std::move(local_load), true);
               // Notice that we have a load here.
               live_in_this_node.insert(atomic->dest);
+              live_load_in_this_node[atomic->dest] = local_load.get();
               killed_in_this_node.erase(atomic->dest);
+              replace_with(i, std::move(local_load), true);
               modified = true;
               continue;
             } else if (!is_parallel_executed) {
@@ -404,14 +407,11 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
               //  accessed by other threads).
               auto global_load = Stmt::make<GlobalLoadStmt>(atomic->dest);
               global_load->ret_type = atomic->ret_type;
-              replace_with(i, std::move(global_load), true);
               // Notice that we have a load here.
               live_in_this_node.insert(atomic->dest);
-              // Note: It's possible that a global pointer is not erased from
-              // killed_in_this_node although it should be. This may harm the
-              // performance of identical load elimination but it's faster than
-              // checking the contents one by one.
+              live_load_in_this_node[atomic->dest] = global_load.get();
               killed_in_this_node.erase(atomic->dest);
+              replace_with(i, std::move(global_load), true);
               modified = true;
               continue;
             }
@@ -439,33 +439,18 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
       if (!after_lower_access ||
           (load_ptr->is<AllocaStmt>() || load_ptr->is<StackAllocaStmt>())) {
         // After lower_access, we only analyze local variables and stacks.
-        if (!may_contain_variable(killed_in_this_node, load_ptr) &&
-            contain_variable(live_in_this_node, load_ptr)) {
+        if (live_load_in_this_node.find(load_ptr) !=
+                live_load_in_this_node.end() &&
+            !may_contain_variable(killed_in_this_node, load_ptr)) {
           // Only perform identical load elimination within a CFGNode.
-          for (int j = i + 1; j < end_location; j++) {
-            auto next_load_ptrs =
-                irpass::analysis::get_load_pointers(block->statements[j].get());
-            bool found = false;
-            for (auto &next_load_ptr : next_load_ptrs) {
-              if (irpass::analysis::maybe_same_address(load_ptr,
-                                                       next_load_ptr)) {
-                found = true;
-                break;
-              }
-            }
-            if (found) {
-              if (irpass::analysis::same_statements(
-                      stmt, block->statements[j].get())) {
-                block->statements[j]->replace_with(stmt);
-                erase(j);
-                modified = true;
-                break;
-              } else {
-                TI_WARN("Identical load elimination failed.");
-              }
-            }
-          }
+          auto next_load_stmt = live_load_in_this_node[load_ptr];
+          TI_ASSERT(irpass::analysis::same_statements(stmt, next_load_stmt));
+          next_load_stmt->replace_with(stmt);
+          erase(block->locate(next_load_stmt));
+          modified = true;
         }
+        live_load_in_this_node[load_ptr] = stmt;
+        killed_in_this_node.erase(load_ptr);
       }
     }
     for (auto &load_ptr : load_ptrs) {
@@ -473,15 +458,6 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
           (load_ptr->is<AllocaStmt>() || load_ptr->is<StackAllocaStmt>())) {
         // After lower_access, we only analyze local variables and stacks.
         live_in_this_node.insert(load_ptr);
-        if (store_ptrs.empty()) {
-          // Only allow identical load elimination (i.e. allow this statement
-          // to be eliminated) if this statement doesn't store any data.
-          // Note: It's possible that a global pointer is not erased from
-          // killed_in_this_node although it should be. This may harm the
-          // performance of identical load elimination but it's faster than
-          // checking the contents one by one.
-          killed_in_this_node.erase(load_ptr);
-        }
       }
     }
   }

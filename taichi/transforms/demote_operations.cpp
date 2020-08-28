@@ -25,14 +25,14 @@ class DemoteOperations : public BasicStmtVisitor {
 
     VecStatement statements;
     auto one = statements.push_back<ConstStmt>(LaneAttribute<TypedConstant>(1));
-    auto begin = statements.push_back<ConstStmt>(LaneAttribute<TypedConstant>(
-          stmt->bit_begin));
-    auto esbeg = statements.push_back<ConstStmt>(LaneAttribute<TypedConstant>(
-          stmt->bit_end - stmt->bit_begin));
+    auto begin = statements.push_back<ConstStmt>(
+        LaneAttribute<TypedConstant>(stmt->bit_begin));
+    auto esbeg = statements.push_back<ConstStmt>(
+        LaneAttribute<TypedConstant>(stmt->bit_end - stmt->bit_begin));
     auto input_sar_begin = statements.push_back<BinaryOpStmt>(
         BinaryOpType::bit_sar, stmt->input, begin);
-    auto one_shl_esbeg = statements.push_back<BinaryOpStmt>(
-        BinaryOpType::bit_shl, one, esbeg);
+    auto one_shl_esbeg =
+        statements.push_back<BinaryOpStmt>(BinaryOpType::bit_shl, one, esbeg);
     auto one_shl_esbeg_sub_one = statements.push_back<BinaryOpStmt>(
         BinaryOpType::sub, one_shl_esbeg, one);
     auto ret = statements.push_back<BinaryOpStmt>(
@@ -73,8 +73,8 @@ class DemoteOperations : public BasicStmtVisitor {
                                                cond1.get(), cond2.get());
         auto cond = Stmt::make<BinaryOpStmt>(BinaryOpType::bit_and,
                                              cond12.get(), cond3.get());
-        auto real_ret = Stmt::make<BinaryOpStmt>(BinaryOpType::add,
-            ret.get(), cond.get());
+        auto real_ret =
+            Stmt::make<BinaryOpStmt>(BinaryOpType::add, ret.get(), cond.get());
 
         stmt->replace_with(real_ret.get());
         modifier.insert_before(stmt, std::move(ret));

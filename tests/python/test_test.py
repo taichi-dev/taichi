@@ -75,7 +75,7 @@ def test_require_extensions_2():
 @pytest.mark.parametrize('allclose',
                          [ti.allclose, lambda x, y: x == ti.approx(y)])
 def test_allclose_rel(x, allclose):
-    rel = 1e-3 if ti.cfg.arch == ti.opengl else 1e-6
+    rel = ti.default_epsilon_of_arch(ti.cfg.arch)
     assert not allclose(x + x * rel * 3.0, x)
     assert not allclose(x + x * rel * 1.2, x)
     assert allclose(x + x * rel * 0.9, x)
@@ -92,7 +92,7 @@ def test_allclose_rel(x, allclose):
 @pytest.mark.parametrize('allclose',
                          [ti.allclose, lambda x, y: x == ti.approx(y)])
 def test_allclose_rel_reordered1(x, allclose):
-    rel = 1e-3 if ti.cfg.arch == ti.opengl else 1e-6
+    rel = ti.default_epsilon_of_arch(ti.cfg.arch)
     assert not allclose(x + x * rel * 3.0, x)
     assert not allclose(x + x * rel * 1.2, x)
     assert allclose(x + x * rel * 0.9, x)
@@ -109,7 +109,7 @@ def test_allclose_rel_reordered1(x, allclose):
                          [ti.allclose, lambda x, y: x == ti.approx(y)])
 @ti.test()
 def test_allclose_rel_reordered2(x, allclose):
-    rel = 1e-3 if ti.cfg.arch == ti.opengl else 1e-6
+    rel = ti.default_epsilon_of_arch(ti.cfg.arch)
     assert not allclose(x + x * rel * 3.0, x)
     assert not allclose(x + x * rel * 1.2, x)
     assert allclose(x + x * rel * 0.9, x)

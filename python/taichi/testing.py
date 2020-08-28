@@ -2,6 +2,17 @@ import taichi as ti
 
 
 # Helper functions
+def default_epsilon_of_arch(arch):
+    if arch == ti.opengl:
+        return 1e-3
+    elif arch == ti.metal:
+        # Debatable, different hardware could yield different precisions
+        # On AMD Radeon Pro 5500M, 1e-6 works fine...
+        # https://github.com/taichi-dev/taichi/pull/1779
+        return 1e-4
+    return 1e-6
+
+
 def approx(expected, **kwargs):
     '''Tweaked pytest.approx for OpenGL low percisions'''
     import pytest
@@ -19,11 +30,8 @@ def approx(expected, **kwargs):
     if isinstance(expected, bool):
         return boolean_integer(expected)
 
-    if ti.cfg.arch == ti.opengl:
-        kwargs['rel'] = max(kwargs.get('rel', 1e-6), 1e-3)
-
-    if ti.cfg.arch == ti.metal:
-        kwargs['rel'] = max(kwargs.get('rel', 1e-6), 1e-4)
+    default_eps = default_epsilon_of_arch(ti.cfg.arch)
+    kwargs['rel'] = max(kwargs.get('rel', 1e-6), default_eps)
 
     return pytest.approx(expected, **kwargs)
 
@@ -109,6 +117,7 @@ def test(*args, **kwargs):
 
 
 __all__ = [
+    'default_epsilon_of_arch',
     'approx',
     'allclose',
     'make_temp_file',

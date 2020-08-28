@@ -22,15 +22,18 @@ class IRVerifier : public BasicStmtVisitor {
     invoke_default_visitor = true;
     if (!root->is<Block>()) {
       visible_stmts.emplace_back();
-      current_block = root->as<Stmt>()->parent;
+      current_block = nullptr;
     } else
       current_block = nullptr;
   }
 
   void basic_verify(Stmt *stmt) {
-    TI_ASSERT_INFO(stmt->parent == current_block,
-                   "stmt({})->parent({}) != current_block({})", stmt->id,
-                   fmt::ptr(stmt->parent), fmt::ptr(current_block));
+    if (current_block != nullptr) {
+      // Temporary fix for root being OffloadedStmt
+      TI_ASSERT_INFO(stmt->parent == current_block,
+                     "stmt({})->parent({}) != current_block({})", stmt->id,
+                     fmt::ptr(stmt->parent), fmt::ptr(current_block));
+    }
     for (auto &op : stmt->get_operands()) {
       if (op == nullptr)
         continue;
@@ -110,9 +113,10 @@ class IRVerifier : public BasicStmtVisitor {
 namespace irpass::analysis {
 void verify(IRNode *root) {
   TI_AUTO_PROF;
-  if (!root->is<Block>()) {
-    TI_WARN("IR root is not a Block. Skipping verification.");
-    // TODO: support this case
+  if (!root->is<Block>() && !root->is<OffloadedStmt>()) {
+    TI_WARN(
+        "IR root is neither a Block nor an OffloadedStmt."
+        " Skipping verification.");
   } else {
     IRVerifier::run(root);
   }

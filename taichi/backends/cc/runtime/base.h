@@ -83,6 +83,7 @@ static inline Ti_f32 Ti_rand_f32(void) {
   return (Ti_f32) drand48();  // [0.0, 1.0)
 }
 
+) "\n" STR(
 )
 
 #define _CC_INSIDE_KERNEL

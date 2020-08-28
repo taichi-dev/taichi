@@ -87,20 +87,6 @@ class ConstantFold : public BasicStmtVisitor {
     }
   }
 
-  class ContextArgSaveGuard {
-    Context &ctx;
-    uint64 old_args[taichi_max_num_args];
-
-   public:
-    explicit ContextArgSaveGuard(Context &ctx_) : ctx(ctx_) {
-      std::memcpy(old_args, ctx.args, sizeof(old_args));
-    }
-
-    ~ContextArgSaveGuard() {
-      std::memcpy(ctx.args, old_args, sizeof(old_args));
-    }
-  };
-
   static bool jit_evaluate_binary_op(TypedConstant &ret,
                                      BinaryOpStmt *stmt,
                                      const TypedConstant &lhs,

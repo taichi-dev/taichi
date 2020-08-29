@@ -122,17 +122,17 @@ int data_type_size(DataType t) {
   case DataType::i:              \
     return sizeof(j);
 
-    REGISTER_DATA_TYPE(f32, float32);
-    REGISTER_DATA_TYPE(f64, float64);
-    REGISTER_DATA_TYPE(i8, int8);
-    REGISTER_DATA_TYPE(i16, int16);
-    REGISTER_DATA_TYPE(i32, int32);
-    REGISTER_DATA_TYPE(i64, int64);
-    REGISTER_DATA_TYPE(u8, uint8);
-    REGISTER_DATA_TYPE(u16, uint16);
-    REGISTER_DATA_TYPE(u32, uint32);
-    REGISTER_DATA_TYPE(u64, uint64);
-    
+      REGISTER_DATA_TYPE(f32, float32);
+      REGISTER_DATA_TYPE(f64, float64);
+      REGISTER_DATA_TYPE(i8, int8);
+      REGISTER_DATA_TYPE(i16, int16);
+      REGISTER_DATA_TYPE(i32, int32);
+      REGISTER_DATA_TYPE(i64, int64);
+      REGISTER_DATA_TYPE(u8, uint8);
+      REGISTER_DATA_TYPE(u16, uint16);
+      REGISTER_DATA_TYPE(u32, uint32);
+      REGISTER_DATA_TYPE(u64, uint64);
+
 #undef REGISTER_DATA_TYPE
     default:
       TI_NOT_IMPLEMENTED
@@ -202,31 +202,31 @@ std::string binary_op_type_name(BinaryOpType type) {
 std::string binary_op_type_symbol(BinaryOpType type) {
   switch (type) {
 #define REGISTER_TYPE(i, s) \
- case BinaryOpType::i:      \
-  return #s;
+  case BinaryOpType::i:     \
+    return #s;
 
-  REGISTER_TYPE(mul, *);
-  REGISTER_TYPE(add, +);
-  REGISTER_TYPE(sub, -);
-  REGISTER_TYPE(div, /);
-  REGISTER_TYPE(truediv, /);
-  REGISTER_TYPE(floordiv, /);
-  REGISTER_TYPE(mod, %);
-  REGISTER_TYPE(max, max);
-  REGISTER_TYPE(min, min);
-  REGISTER_TYPE(atan2, atan2);
-  REGISTER_TYPE(cmp_lt, <);
-  REGISTER_TYPE(cmp_le, <=);
-  REGISTER_TYPE(cmp_gt, >);
-  REGISTER_TYPE(cmp_ge, >=);
-  REGISTER_TYPE(cmp_ne, !=);
-  REGISTER_TYPE(cmp_eq, ==);
-  REGISTER_TYPE(bit_and, &);
-  REGISTER_TYPE(bit_or, |);
-  REGISTER_TYPE(bit_xor, ^);
-  REGISTER_TYPE(pow, pow);
-  REGISTER_TYPE(bit_shl, <<);
-  REGISTER_TYPE(bit_sar, >>);
+    REGISTER_TYPE(mul, *);
+    REGISTER_TYPE(add, +);
+    REGISTER_TYPE(sub, -);
+    REGISTER_TYPE(div, /);
+    REGISTER_TYPE(truediv, /);
+    REGISTER_TYPE(floordiv, /);
+    REGISTER_TYPE(mod, %);
+    REGISTER_TYPE(max, max);
+    REGISTER_TYPE(min, min);
+    REGISTER_TYPE(atan2, atan2);
+    REGISTER_TYPE(cmp_lt, <);
+    REGISTER_TYPE(cmp_le, <=);
+    REGISTER_TYPE(cmp_gt, >);
+    REGISTER_TYPE(cmp_ge, >=);
+    REGISTER_TYPE(cmp_ne, !=);
+    REGISTER_TYPE(cmp_eq, ==);
+    REGISTER_TYPE(bit_and, &);
+    REGISTER_TYPE(bit_or, |);
+    REGISTER_TYPE(bit_xor, ^);
+    REGISTER_TYPE(pow, pow);
+    REGISTER_TYPE(bit_shl, <<);
+    REGISTER_TYPE(bit_sar, >>);
 
 #undef REGISTER_TYPE
     default:

@@ -16,7 +16,7 @@ Taichi provides *Structural Nodes (SNodes)* to compose the hierarchy and particu
 
 .. note::
 
-    Supported SNode types on each backends:
+    Supported SNode types on each backend:
 
     +-----------+----------+--------+-------+----------+
     | SNode     | CPU/CUDA | OpenGL | Metal | C source |

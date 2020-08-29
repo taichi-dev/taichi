@@ -3,12 +3,12 @@ Export Taichi kernels to C source
 
 The C backend of Taichi allows you to **export Taichi kernels to C source**.
 
-The exported Taichi program consists purely of C99 compatible sources and does not require Python. Instead, you can use the exported sources in a C/C++ project, or even by calling them in Javascript via Empscripten.
+The exported Taichi program consists purely of C99 compatible sources and does not require Python. This allows you use the exported sources in a C/C++ project, or even call them from Javascript via Emscripten.
 
 Each C function corresponds to a Taichi kernel.
-For example, ``Tk_init_c6_0()`` may corresponds to ``init()`` in ``mpm88.py``.
+For example, ``Tk_init_c6_0()`` may correspond to ``init()`` in ``mpm88.py``.
 
-Only the source is needed when copying, all the required Taichi runtimes are
+Only the exported source is needed when copying or moving around the code, all of the required Taichi runtimes are
 included in that single C source file.
 
 For example, this also allows commercial users to distribute their Taichi program in
@@ -20,16 +20,16 @@ binary format by linking this file with their project.
 
 
 The workflow of exporting
-----------------------
+-------------------------
 
 Use ``ti.core.start_recording`` in the Taichi program you want to export.
 
-Suppose you want to export the `examples/mpm88.py <https://github.com/taichi-dev/taichi/blob/master/examples/mpm88.py>`_, here are the workflow:
+Suppose you want to export `examples/mpm88.py <https://github.com/taichi-dev/taichi/blob/master/examples/mpm88.py>`_, here is the workflow:
 
 Export YAML
 +++++++++++
 
-First, modifying the ``mpm88.py`` as shown below:
+First, modify ``mpm88.py`` as shown below:
 
 .. code-block:: python
 
@@ -63,12 +63,12 @@ This will save all the kernels in ``mpm88.py`` to ``mpm88.yml``:
         TI_ARCH=cc TI_ACTION_RECORD=mpm88.yml python mpm88.py
 
 Compose YAML into a single C file
-+++++++++++++++++++++++++++++++
++++++++++++++++++++++++++++++++++
 
-Now all necessary information is saved in ``mpm88.yml``. However, the ``kernel_source``s are separated one-by-one.
-You may want to **compose** the separate kernels into **one single file** in order to distribute it easier.
+Now all necessary information is saved in ``mpm88.yml``. However, the ``kernel_source``'s are separated one-by-one.
+You may want to **compose** the separate kernels into **one single file** in order to distribute it more easily.
 
-We provide a useful tool to do this, type these commands to your console:
+We provide a useful tool to do this, type these commands in your console:
 
 .. code-block:: bash
 
@@ -106,7 +106,7 @@ And a C header file ``mpm88.h`` for declarations of data structures, functions
 
    The generated C source is promised to be C99 compatible.
 
-   It should be functional when being compiled as C++ as well.
+   It should also be functional when being compiled as C++.
 
 
 Calling the exported kernels
@@ -128,7 +128,7 @@ To call the kernel ``init_c6_0``, for example:
     }
 
 
-Or, if you need multiple Taichi context within one program:
+Alternatively, if you need multiple Taichi contexts within one program:
 
 .. code-block:: cpp
 

@@ -9,7 +9,7 @@
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
 #include "taichi/lang_util.h"
-#include "taichi/runtime/llvm/context.h"
+#include "taichi/program/context.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -148,7 +148,7 @@ class AsyncEngine {
     queue.clear_cache();
   }
 
-  void launch(Kernel *kernel);
+  void launch(Kernel *kernel, Context &context);
 
   void enqueue(KernelLaunchRecord &&t);
 

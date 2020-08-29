@@ -219,7 +219,7 @@ ExecutionQueue::ExecutionQueue()
     : compilation_workers(4), launch_worker(1) {  // TODO: remove 4
 }
 
-void AsyncEngine::launch(Kernel *kernel) {
+void AsyncEngine::launch(Kernel *kernel, Context &context) {
   if (!kernel->lowered)
     kernel->lower(/*to_executable=*/false);
 
@@ -249,8 +249,8 @@ void AsyncEngine::launch(Kernel *kernel) {
       TI_ASSERT(kmeta.offloaded_cached.size() == i);
       kmeta.offloaded_cached.emplace_back(std::move(cloned_offs), h);
     }
-    KernelLaunchRecord rec(kernel->program.get_context(), kernel, offl_template,
-                           h, kmeta.dummy_root.get());
+    KernelLaunchRecord rec(context, kernel, offl_template, h,
+                           kmeta.dummy_root.get());
     enqueue(std::move(rec));
   }
 }

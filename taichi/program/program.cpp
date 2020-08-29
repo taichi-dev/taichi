@@ -706,10 +706,6 @@ void Program::finalize() {
   TI_TRACE("Program ({}) finalized.", fmt::ptr(this));
 }
 
-void Program::launch_async(Kernel *kernel) {
-  async_engine->launch(kernel);
-}
-
 int Program::default_block_dim() const {
   if (arch_is_cpu(config.arch)) {
     return config.default_cpu_block_dim;

@@ -83,6 +83,51 @@ static inline Ti_f32 Ti_rand_f32(void) {
   return (Ti_f32) drand48();  // [0.0, 1.0)
 }
 
+// Copied from Metal:
+typedef Ti_u8 *Ti_AdStackPtr;
+
+static inline Ti_u32 *Ti_ad_stack_n(Ti_AdStackPtr stack) {
+  return (Ti_u32 *)stack;
+}
+
+static inline Ti_AdStackPtr Ti_ad_stack_data(Ti_AdStackPtr stack) {
+  return stack + sizeof(Ti_u32);
+}
+
+static inline void Ti_ad_stack_init(Ti_AdStackPtr stack) {
+  Ti_u32 *n = Ti_ad_stack_n(stack);
+  Ti_i32 *data = (Ti_i32 *)Ti_ad_stack_data(stack);
+  *n = 0;
+}
+
+static inline Ti_AdStackPtr Ti_ad_stack_top_primal(Ti_AdStackPtr stack,
+                                          Ti_u32 element_size) {
+  Ti_u32 *n = Ti_ad_stack_n(stack);
+  return Ti_ad_stack_data(stack) + (*n - 1) * 2 * element_size;
+}
+
+static inline Ti_AdStackPtr Ti_ad_stack_top_adjoint(Ti_AdStackPtr stack,
+                                           Ti_u32 element_size) {
+  return Ti_ad_stack_top_primal(stack, element_size) + element_size;
+}
+
+static inline void Ti_ad_stack_pop(Ti_AdStackPtr stack) {
+  Ti_u32 *n = Ti_ad_stack_n(stack);
+  --(*n);
+}
+
+static inline void Ti_ad_stack_push(Ti_AdStackPtr stack, Ti_u32 element_size) {
+  Ti_u32 i;
+  Ti_u32 *n = Ti_ad_stack_n(stack);
+  ++(*n);
+
+  Ti_AdStackPtr data = Ti_ad_stack_top_primal(stack, element_size);
+  for (i = 0; i < element_size * 2; ++i) {
+    data[i] = 0;
+  }
+}
+
+) "\n" STR(
 )
 
 #define _CC_INSIDE_KERNEL

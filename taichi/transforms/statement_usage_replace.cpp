@@ -56,30 +56,24 @@ class StatementUsageReplace : public IRVisitor {
   }
 
   static void run(IRNode *root, Stmt *old_stmt, Stmt *new_stmt) {
-    // statements inside old_stmt->parent
     StatementUsageReplace replacer(old_stmt, new_stmt);
-    // During offload, old_stmt->parent can be wrong.
-    if (old_stmt->parent != nullptr && !old_stmt->is_container_statement()) {
-      old_stmt->parent->accept(&replacer);
-    } else {
-      old_stmt->accept(&replacer);
+    if (root != nullptr) {
+      // If root is specified, simply traverse the root.
+      root->accept(&replacer);
+      return;
     }
-    auto current_block = old_stmt->parent;
-    auto root_block = root;
-    if (root != nullptr && root->is<Stmt>()) {
-      root_block = root->as<Stmt>()->parent;
-    }
+
+    // statements inside old_stmt->parent
+    TI_ASSERT(old_stmt->parent != nullptr);
+    old_stmt->parent->accept(&replacer);
+    auto current_block = old_stmt->parent->parent;
+
     // statements outside old_stmt->parent: bottom-up
-    while (current_block != root_block) {
-      current_block = current_block->parent;
-      if (current_block == nullptr) {
-        break;
-      }
-      // If root_block is nullptr, stop before replacing operands in root_block.
+    while (current_block != nullptr) {
       for (auto &stmt : current_block->statements) {
         stmt->replace_operand_with(old_stmt, new_stmt);
       }
-      // Otherwise, stop after replacing operands in root_block.
+      current_block = current_block->parent;
     }
   }
 };

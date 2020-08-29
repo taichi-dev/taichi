@@ -63,6 +63,13 @@ class IRPrinter : public IRVisitor {
   }
 
   static void run(IRNode *node, std::string *output) {
+    if (node == nullptr) {
+      TI_WARN("IRPrinter: Printing nullptr.");
+      if (output) {
+        *output = std::string();
+      }
+      return;
+    }
     auto p = IRPrinter(output);
     p.print("kernel {{");
     node->accept(&p);

@@ -215,7 +215,10 @@ Methods
         a = ti.Vector([1.6, 2.3])
         a.cast(ti.i32) # [2, 3]
 
+    See :ref:`type` for more details.
+
 .. note::
+
     Vectors are special matrices with only 1 column. In fact, ``ti.Vector`` is just an alias of ``ti.Matrix``.
 
 
@@ -239,5 +242,7 @@ Metadata
         # Python-scope
         a = ti.Vector.field(3, dtype=ti.f32, shape=())
         a.n  # 3
+
+    See :ref:`meta` for more details.
 
 TODO: add element wise operations docs

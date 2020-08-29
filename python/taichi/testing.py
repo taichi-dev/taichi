@@ -1,7 +1,19 @@
 import taichi as ti
 
 
-## Helper functions
+# Helper functions
+def get_rel_eps():
+    arch = ti.cfg.arch
+    if arch == ti.opengl:
+        return 1e-3
+    elif arch == ti.metal:
+        # Debatable, different hardware could yield different precisions
+        # On AMD Radeon Pro 5500M, 1e-6 works fine...
+        # https://github.com/taichi-dev/taichi/pull/1779
+        return 1e-4
+    return 1e-6
+
+
 def approx(expected, **kwargs):
     '''Tweaked pytest.approx for OpenGL low percisions'''
     import pytest
@@ -19,8 +31,7 @@ def approx(expected, **kwargs):
     if isinstance(expected, bool):
         return boolean_integer(expected)
 
-    if ti.cfg.arch == ti.opengl:
-        kwargs['rel'] = max(kwargs.get('rel', 1e-6), 1e-3)
+    kwargs['rel'] = max(kwargs.get('rel', 1e-6), get_rel_eps())
 
     return pytest.approx(expected, **kwargs)
 
@@ -39,7 +50,7 @@ def make_temp_file(*args, **kwargs):
     return name
 
 
-## Pytest options
+# Pytest options
 def _get_taichi_archs_fixture():
     import pytest
 
@@ -106,6 +117,7 @@ def test(*args, **kwargs):
 
 
 __all__ = [
+    'get_rel_eps',
     'approx',
     'allclose',
     'make_temp_file',

@@ -4,15 +4,20 @@ language: cpp
 
 matrix:
   include:
-  - os: osx
+  - name: "OS X + Python 3.6"
+    os: osx
     osx_image: xcode10.3
     env:
       - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON_VERSION=3.6.1 && PYTHON=python3"
-  - os: osx
+  - name: "OS X + Python 3.7"
+    if: commit_message =~ /^\[release\]/
+    os: osx
     osx_image: xcode10.3
     env:
       - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON_VERSION=3.7.1 && PYTHON=python3"
-  - os: osx
+  - name: "OS X + Python 3.8"
+    if: commit_message =~ /^\[release\]/
+    os: osx
     osx_image: xcode10.3
     env:
       - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON_VERSION=3.8.1 && PYTHON=python3"

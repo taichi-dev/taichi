@@ -315,7 +315,8 @@ struct PhysicalCoordinates {
 
 STRUCT_FIELD_ARRAY(PhysicalCoordinates, val);
 
-#include "context.h"
+#include "taichi/program/context.h"
+#include "taichi/runtime/llvm/mem_request.h"
 
 STRUCT_FIELD_ARRAY(Context, args);
 STRUCT_FIELD(Context, runtime);
@@ -324,7 +325,7 @@ int32 Context_get_extra_args(Context *ctx, int32 i, int32 j) {
   return ctx->extra_args[i][j];
 }
 
-#include "atomic.h"
+#include "taichi/runtime/llvm/atomic.h"
 
 // These structures are accessible by both the LLVM backend and this C++ runtime
 // file here (for building complex runtime functions in C++)

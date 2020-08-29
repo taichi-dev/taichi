@@ -111,6 +111,10 @@ class TypeCheck : public IRVisitor {
     stmt->ret_type = VectorType(1, DataType::i32);
   }
 
+  void visit(ExternalTensorShapeAlongAxisStmt *stmt) {
+    stmt->ret_type = VectorType(1, DataType::i32);
+  }
+
   void visit(GlobalPtrStmt *stmt) {
     stmt->ret_type.set_is_pointer(true);
     if (stmt->snodes)

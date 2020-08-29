@@ -245,6 +245,17 @@ class CCTransformer : public IRVisitor {
     emit("{};", source);
   }
 
+  void visit(ExternalTensorShapeAlongAxisStmt *stmt) override {
+    const auto type = cc_data_type_name(stmt->element_type());
+    const auto name = stmt->raw_name();
+    const auto var = define_var(type, name);
+    const auto arg_id = stmt->arg_id;
+    const auto axis = stmt->axis;
+    const auto axis_size = fmt::format("ti_ctx->earg[{} * {} + {}]", arg_id,
+                                       taichi_max_num_indices, axis);
+    emit("{} = {};", var, axis_size);
+  }
+
   static std::string _get_libc_function_name(std::string name, DataType dt) {
     switch (dt) {
       case DataType::i32:

@@ -1,15 +1,18 @@
-export_file = '/tmp/mpm3d.ply'
+export_file = ''  # use '/tmp/mpm3d.ply' for exporting result to disk
 
 import taichi as ti
 import numpy as np
 
-ti.init(arch=ti.opengl)
+ti.init(arch=ti.gpu)
 
-dim = 3
-n_grid = 32
+#dim, n_grid, steps, dt = 2, 128, 20, 2e-4
+#dim, n_grid, steps, dt = 2, 256, 32, 1e-4
+dim, n_grid, steps, dt = 3, 32, 25, 4e-4
+#dim, n_grid, steps, dt = 3, 64, 25, 2e-4
+#dim, n_grid, steps, dt = 3, 128, 25, 8e-5
+
 n_particles = n_grid**dim // 2**(dim - 1)
 dx = 1 / n_grid
-dt = 4e-4
 
 p_rho = 1
 p_vol = (dx * 0.5)**2
@@ -34,6 +37,7 @@ def substep():
     for I in ti.grouped(grid_m):
         grid_v[I] = grid_v[I] * 0
         grid_m[I] = 0
+    ti.block_dim(n_grid)
     for p in x:
         Xp = x[p] / dx
         base = int(Xp - 0.5)
@@ -55,6 +59,7 @@ def substep():
         cond = I < bound and grid_v[I] < 0 or I > n_grid - bound and grid_v[
             I] > 0
         grid_v[I] = 0 if cond else grid_v[I]
+    ti.block_dim(n_grid)
     for p in x:
         Xp = x[p] / dx
         base = int(Xp - 0.5)
@@ -79,7 +84,7 @@ def substep():
 @ti.kernel
 def init():
     for i in range(n_particles):
-        x[i] = ti.Vector([ti.random() for i in range(dim)]) * 0.4 + 0.2
+        x[i] = ti.Vector([ti.random() for i in range(dim)]) * 0.4 + 0.15
         J[i] = 1
 
 
@@ -101,12 +106,12 @@ def T(a):
 init()
 gui = ti.GUI('MPM3D', background_color=0x112F41)
 while gui.running and not gui.get_event(gui.ESCAPE):
-    for s in range(15):
+    for s in range(steps):
         substep()
     pos = x.to_numpy()
     if export_file:
         writer = ti.PLYWriter(num_vertices=n_particles)
         writer.add_vertex_pos(pos[:, 0], pos[:, 1], pos[:, 2])
         writer.export_frame(gui.frame, export_file)
-    gui.circles(T(pos), radius=2, color=0x66ccff)
+    gui.circles(T(pos), radius=1.5, color=0x66ccff)
     gui.show()

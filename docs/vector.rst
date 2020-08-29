@@ -125,7 +125,7 @@ We also provide four handy accessors for the first four vector components:
 
 .. note::
 
-   XYZW accessors can be used both read and write::
+   XYZW accessors can be used for both read and write::
 
       v = ti.Vector([2, 3, 4])
       print(v.x)  # 2
@@ -136,9 +136,9 @@ We also provide four handy accessors for the first four vector components:
 
    XYZW accessors can be used in both Taichi-scope and Python-scope.
 
-   XYZW accessors doesn't work for ``ti.Matrix``.
+   XYZW accessors don't work for ``ti.Matrix``.
 
-   For GLSL-alike shuffling accessors, consider use `taichi_glsl <https://taichi-glsl.readthedocs.io>`_::
+   For GLSL-alike shuffling accessors, consider using `taichi_glsl <https://taichi-glsl.readthedocs.io>`_::
 
         import taichi_glsl as tl
 
@@ -287,8 +287,8 @@ Metadata
 
 .. note::
 
-   When used as global vector fields, it will additionally have all the
-   metadata as a scalar field would have, E.g.::
+   When used as a global vector field, it will additionally contain all the
+   metadata that a scalar field would have, E.g.::
 
         # Python-scope
         a = ti.Vector.field(3, dtype=ti.f32, shape=(4, 5))

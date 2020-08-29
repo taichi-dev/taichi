@@ -11,8 +11,13 @@ def test_assert_minimal():
     def func():
         assert 0
 
+    @ti.kernel
+    def func2():
+        assert False
+
     with pytest.raises(RuntimeError):
         func()
+        func2()
 
 
 @ti.require(ti.extension.assertion)
@@ -37,6 +42,28 @@ def test_assert_message():
 
     with pytest.raises(RuntimeError, match='Foo bar'):
         func()
+
+
+@ti.require(ti.extension.assertion)
+@ti.all_archs_with(debug=True, gdb_trigger=False)
+def test_assert_message_formatted():
+    x = ti.field(dtype=int, shape=16)
+    x[10] = 42
+
+    @ti.kernel
+    def assert_formatted():
+        for i in x:
+            assert x[i] == 0, 'x[%d] expect=%d got=%d' % (i, 0, x[i])
+
+    @ti.kernel
+    def assert_float():
+        y = 0.5
+        assert y < 0, 'y = %f' % y
+
+    with pytest.raises(RuntimeError, match=r'x\[10\] expect=0 got=42'):
+        assert_formatted()
+    with pytest.raises(RuntimeError, match=r'y = 0.5'):
+        assert_float()
 
 
 @ti.require(ti.extension.assertion)

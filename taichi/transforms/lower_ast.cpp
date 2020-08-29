@@ -404,7 +404,14 @@ class LowerAST : public IRVisitor {
       expr->flatten(&fctx);
       val_stmt = expr->stmt;
     }
-    fctx.push_back<AssertStmt>(stmt->text, val_stmt);
+
+    auto &fargs = stmt->args;  // frontend stmt args
+    std::vector<Stmt *> args_stmts(fargs.size());
+    for (int i = 0; i < (int)fargs.size(); ++i) {
+      fargs[i]->flatten(&fctx);
+      args_stmts[i] = fargs[i]->stmt;
+    }
+    fctx.push_back<AssertStmt>(val_stmt, stmt->text, args_stmts);
     stmt->parent->replace_with(stmt, std::move(fctx.stmts));
     throw IRModified();
   }

@@ -288,8 +288,9 @@ void export_lang(py::module &m) {
     return Length(snode, indices);
   });
 
-  m.def("create_assert_stmt", [&](const Expr &cond, const std::string &msg) {
-    auto stmt_unique = std::make_unique<FrontendAssertStmt>(msg, cond);
+  m.def("create_assert_stmt", [&](const Expr &cond, const std::string &msg,
+                                  const std::vector<Expr> &args) {
+    auto stmt_unique = std::make_unique<FrontendAssertStmt>(msg, cond, args);
     current_ast_builder().insert(std::move(stmt_unique));
   });
 

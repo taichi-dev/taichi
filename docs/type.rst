@@ -1,3 +1,5 @@
+.. _type:
+
 Type system
 ===========
 
@@ -140,7 +142,7 @@ Implicit casts
   The type of a variable is **determinated on it's initialization**.
 
 When a *low-precision* variable is assigned to a *high-precision* variable, it will be
-implicitly promoted to the *wide* type and no warning will be raised:
+implicitly promoted to the *high-precision* type and no warning will be raised:
 
 .. code-block:: python
 

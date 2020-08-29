@@ -528,6 +528,14 @@ void export_lang(py::module &m) {
     return expr[expr_group];
   });
 
+  m.def("get_external_tensor_dim", [](const Expr &expr) {
+    TI_ASSERT(expr.is<ExternalTensorExpression>());
+    return expr.cast<ExternalTensorExpression>()->dim;
+  });
+
+  m.def("get_external_tensor_shape_along_axis",
+        Expr::make<ExternalTensorShapeAlongAxisExpression, const Expr &, int>);
+
   m.def("create_kernel",
         [&](std::string name, bool grad) -> Program::KernelProxy {
           return get_current_program().kernel(name, grad);

@@ -22,15 +22,18 @@ class IRVerifier : public BasicStmtVisitor {
     invoke_default_visitor = true;
     if (!root->is<Block>()) {
       visible_stmts.emplace_back();
-      current_block = root->as<Stmt>()->parent;
+      current_block = nullptr;
     } else
       current_block = nullptr;
   }
 
   void basic_verify(Stmt *stmt) {
-    TI_ASSERT_INFO(stmt->parent == current_block,
-                   "stmt({})->parent({}) != current_block({})", stmt->id,
-                   fmt::ptr(stmt->parent), fmt::ptr(current_block));
+    if (current_block != nullptr) {
+      // Temporary fix for root being OffloadedStmt
+      TI_ASSERT_INFO(stmt->parent == current_block,
+                     "stmt({})->parent({}) != current_block({})", stmt->id,
+                     fmt::ptr(stmt->parent), fmt::ptr(current_block));
+    }
     for (auto &op : stmt->get_operands()) {
       if (op == nullptr)
         continue;
@@ -44,10 +47,12 @@ class IRVerifier : public BasicStmtVisitor {
       TI_ASSERT_INFO(
           found,
           "IR broken: stmt {} cannot have operand {}."
-          " Consider adding `ti.core.toggle_advanced_optimization(False)`."
-          " If that fixes the problem, please report this bug by opening an"
-          " issue at https://github.com/taichi-dev/taichi to help us improve."
-          " Thanks!",
+          " If you are using autodiff, please check"
+          " https://taichi.readthedocs.io/en/stable/"
+          "differentiable_programming.html#kernel-simplicity-rule."
+          " If it doesn't help, please report this bug by opening an issue at"
+          " https://github.com/taichi-dev/taichi to help us improve."
+          " Thanks in advance!",
           stmt->id, op->id);
     }
     visible_stmts.back().insert(stmt);
@@ -108,9 +113,10 @@ class IRVerifier : public BasicStmtVisitor {
 namespace irpass::analysis {
 void verify(IRNode *root) {
   TI_AUTO_PROF;
-  if (!root->is<Block>()) {
-    TI_WARN("IR root is not a Block. Skipping verification.");
-    // TODO: support this case
+  if (!root->is<Block>() && !root->is<OffloadedStmt>()) {
+    TI_WARN(
+        "IR root is neither a Block nor an OffloadedStmt."
+        " Skipping verification.");
   } else {
     IRVerifier::run(root);
   }

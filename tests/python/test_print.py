@@ -95,6 +95,27 @@ def test_print_multiple_threads():
     ti.sync()
 
 
+@ti.test()
+def test_print_list():
+    x = ti.Matrix.field(2, 3, dtype=ti.f32, shape=(2, 3))
+    y = ti.Vector.field(3, dtype=ti.f32, shape=())
+
+    @ti.kernel
+    def func(k: ti.f32):
+        w = [k, x.shape]
+        print(w + [y.n])  # [233.3, [2, 3], 3]
+        print(x.shape)  # [2, 3]
+        print(y.shape)  # []
+        z = (1, )
+        print([1, k**2, k + 1])  # [1, 233.3, 234.3]
+        print(z)  # [1]
+        print([y[None], z])  # [[0, 0, 0], [1]]
+        print([])  # []
+
+    func(233.3)
+    ti.sync()
+
+
 @ti.test(arch=ti.cpu)
 def test_python_scope_print_field():
     x = ti.Matrix.field(2, 3, dtype=ti.f32, shape=())

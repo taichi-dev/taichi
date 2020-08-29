@@ -63,6 +63,13 @@ class IRPrinter : public IRVisitor {
   }
 
   static void run(IRNode *node, std::string *output) {
+    if (node == nullptr) {
+      TI_WARN("IRPrinter: Printing nullptr.");
+      if (output) {
+        *output = std::string();
+      }
+      return;
+    }
     auto p = IRPrinter(output);
     p.print("kernel {{");
     node->accept(&p);
@@ -602,6 +609,11 @@ class IRPrinter : public IRVisitor {
   void visit(StackAccAdjointStmt *stmt) override {
     print("{}{} : stack acc adj {}, val = {}", stmt->type_hint(), stmt->name(),
           stmt->stack->name(), stmt->v->name());
+  }
+
+  void visit(ExternalTensorShapeAlongAxisStmt *stmt) override {
+    print("external_tensor_shape_along_axis {}, arg_id {}", stmt->axis,
+          stmt->arg_id);
   }
 };
 

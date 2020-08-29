@@ -961,6 +961,17 @@ class SNodeOpStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+class ExternalTensorShapeAlongAxisStmt : public Stmt {
+ public:
+  int axis;
+  int arg_id;
+
+  ExternalTensorShapeAlongAxisStmt(int axis, int arg_id);
+
+  TI_STMT_DEF_FIELDS(ret_type, axis, arg_id);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
 class AssertStmt : public Stmt {
  public:
   Stmt *cond;

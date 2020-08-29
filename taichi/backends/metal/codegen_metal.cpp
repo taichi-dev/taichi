@@ -682,6 +682,14 @@ class KernelCodegen : public IRVisitor {
     emit("*{} += {};", adjoint_name, stmt->v->raw_name());
   }
 
+  void visit(ExternalTensorShapeAlongAxisStmt *stmt) override {
+    const auto name = stmt->raw_name();
+    const auto arg_id = stmt->arg_id;
+    const auto axis = stmt->axis;
+    emit("const int {} = {}.extra_arg({}, {});", name, kContextVarName, arg_id,
+         axis);
+  }
+
  private:
   void emit_headers() {
     SectionGuard sg(this, Section::Headers);

@@ -215,6 +215,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(ExternalPtrStmt *stmt) override;
 
+  void visit(ExternalTensorShapeAlongAxisStmt *stmt) override;
+
   virtual bool kernel_argument_by_val() const {
     return false;  // on CPU devices just pass in a pointer
   }

@@ -21,6 +21,7 @@ bool die(IRNode *root);
 bool simplify(IRNode *root, Kernel *kernel = nullptr);
 bool cfg_optimization(IRNode *root, bool after_lower_access);
 bool alg_simp(IRNode *root);
+bool demote_operations(IRNode *root);
 bool binary_op_simplify(IRNode *root);
 bool whole_kernel_cse(IRNode *root);
 void variable_optimization(IRNode *root, bool after_lower_access);

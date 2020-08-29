@@ -87,20 +87,6 @@ class ConstantFold : public BasicStmtVisitor {
     }
   }
 
-  class ContextArgSaveGuard {
-    Context &ctx;
-    uint64 old_args[taichi_max_num_args];
-
-   public:
-    explicit ContextArgSaveGuard(Context &ctx_) : ctx(ctx_) {
-      std::memcpy(old_args, ctx.args, sizeof(old_args));
-    }
-
-    ~ContextArgSaveGuard() {
-      std::memcpy(ctx.args, old_args, sizeof(old_args));
-    }
-  };
-
   static bool jit_evaluate_binary_op(TypedConstant &ret,
                                      BinaryOpStmt *stmt,
                                      const TypedConstant &lhs,
@@ -114,13 +100,11 @@ class ConstantFold : public BasicStmtVisitor {
                       rhs.dt,
                       true};
     auto *ker = get_jit_evaluator_kernel(id);
-    auto &current_program = stmt->get_kernel()->program;
-    // save input args to prevent the current kernel from being overridden.
-    ContextArgSaveGuard _(current_program.get_context());
     auto launch_ctx = ker->make_launch_context();
     launch_ctx.set_arg_raw(0, lhs.val_u64);
     launch_ctx.set_arg_raw(1, rhs.val_u64);
     (*ker)(launch_ctx);
+    auto &current_program = stmt->get_kernel()->program;
     ret.val_i64 = current_program.fetch_result<int64_t>(0);
     return true;
   }
@@ -137,12 +121,10 @@ class ConstantFold : public BasicStmtVisitor {
                       stmt->cast_type,
                       false};
     auto *ker = get_jit_evaluator_kernel(id);
-    auto &current_program = stmt->get_kernel()->program;
-    // save input args to prevent the current kernel from being overridden.
-    ContextArgSaveGuard _(current_program.get_context());
     auto launch_ctx = ker->make_launch_context();
     launch_ctx.set_arg_raw(0, operand.val_u64);
     (*ker)(launch_ctx);
+    auto &current_program = stmt->get_kernel()->program;
     ret.val_i64 = current_program.fetch_result<int64_t>(0);
     return true;
   }

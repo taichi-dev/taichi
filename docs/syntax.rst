@@ -1,5 +1,7 @@
-Syntax
-======
+.. _syntax:
+
+Kernels and functions
+=====================
 
 Taichi-scope vs Python-scope
 ----------------------------
@@ -270,82 +272,3 @@ reference:
         else:
           ret = 0.0
         return ret
-
-
-Scalar arithmetics
-------------------
-
-Supported scalar functions:
-
-.. function:: ti.sin(x)
-.. function:: ti.cos(x)
-.. function:: ti.asin(x)
-.. function:: ti.acos(x)
-.. function:: ti.atan2(x, y)
-.. function:: ti.cast(x, data_type)
-.. function:: ti.sqrt(x)
-.. function:: ti.rsqrt(x)
-.. function:: ti.floor(x)
-.. function:: ti.ceil(x)
-.. function:: ti.tan(x)
-.. function:: ti.tanh(x)
-.. function:: ti.exp(x)
-.. function:: ti.log(x)
-.. function:: ti.random(data_type)
-.. function:: abs(x)
-.. function:: int(x)
-.. function:: float(x)
-.. function:: max(x, y)
-.. function:: min(x, y)
-.. function:: pow(x, y)
-
-.. note::
-
-  Python 3 distinguishes ``/`` (true division) and ``//`` (floor division). For example, ``1.0 / 2.0 = 0.5``,
-  ``1 / 2 = 0.5``, ``1 // 2 = 0``, ``4.2 // 2 = 2``. Taichi follows this design:
-
-     - **true divisions** on integral types will first cast their operands to the default float point type.
-     - **floor divisions** on float-point types will first cast their operands to the default integer type.
-
-  To avoid such implicit casting, you can manually cast your operands to desired types, using ``ti.cast``.
-  See :ref:`default_precisions` for more details on default numerical types.
-
-.. note::
-
-    When these scalar functions are applied on :ref:`matrix` and :ref:`vector`, they are applied in an element-wise manner.
-    For example:
-
-    .. code-block:: python
-
-        B = ti.Matrix([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
-        C = ti.Matrix([[3.0, 4.0, 5.0], [6.0, 7.0, 8.0]])
-
-        A = ti.sin(B)
-        # is equivalent to
-        for i in ti.static(range(2)):
-            for j in ti.static(range(3)):
-                A[i, j] = ti.sin(B[i, j])
-
-        A = ti.pow(B, 2)
-        # is equivalent to
-        for i in ti.static(range(2)):
-            for j in ti.static(range(3)):
-                A[i, j] = ti.pow(B[i, j], 2)
-
-        A = ti.pow(B, C)
-        # is equivalent to
-        for i in ti.static(range(2)):
-            for j in ti.static(range(3)):
-                A[i, j] = ti.pow(B[i, j], C[i, j])
-
-        A += 2
-        # is equivalent to
-        for i in ti.static(range(2)):
-            for j in ti.static(range(3)):
-                A[i, j] += 2
-
-        A += B
-        # is equivalent to
-        for i in ti.static(range(2)):
-            for j in ti.static(range(3)):
-                A[i, j] += B[i, j]

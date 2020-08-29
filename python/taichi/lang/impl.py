@@ -407,14 +407,26 @@ def ti_print(*vars, sep=' ', end='\n'):
         else:
             return Expr(var).ptr
 
+    def list_ti_repr(var):
+        yield '['  # distinguishing tuple & list will increase maintainance cost
+        for i, v in enumerate(var):
+            if i:
+                yield ', '
+            yield v
+        yield ']'
+
     def vars2entries(vars):
         for var in vars:
             if hasattr(var, '__ti_repr__'):
-                repr = var.__ti_repr__()
-                for v in vars2entries(repr):
-                    yield v
+                res = var.__ti_repr__()
+            elif isinstance(var, (list, tuple)):
+                res = list_ti_repr(var)
             else:
                 yield var
+                continue
+
+            for v in vars2entries(res):
+                yield v
 
     def add_separators(vars):
         for i, var in enumerate(vars):
@@ -458,6 +470,16 @@ def ti_float(var):
         return var.__ti_float__()
     else:
         return float(var)
+
+
+@taichi_scope
+def get_external_tensor_dim(var):
+    return taichi_lang_core.get_external_tensor_dim(var)
+
+
+@taichi_scope
+def get_external_tensor_shape_along_axis(var, i):
+    return taichi_lang_core.get_external_tensor_shape_along_axis(var, i)
 
 
 def indices(*x):

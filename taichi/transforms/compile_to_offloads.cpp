@@ -50,6 +50,10 @@ void compile_to_offloads(IRNode *ir,
 
   if (ir->get_kernel()->is_evaluator) {
     TI_ASSERT(!grad);
+
+    irpass::demote_operations(ir);
+    print("Operations Demoted");
+
     irpass::offload(ir);
     print("Offloaded");
     irpass::analysis::verify(ir);
@@ -163,6 +167,9 @@ void offload_to_executable(IRNode *ir,
   irpass::demote_atomics(ir);
   print("Atomics demoted");
   irpass::analysis::verify(ir);
+
+  irpass::demote_operations(ir);
+  print("Operations demoted");
 
   irpass::full_simplify(ir, lower_global_access);
   print("Simplified IV");

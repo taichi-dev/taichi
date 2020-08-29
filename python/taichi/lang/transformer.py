@@ -324,7 +324,7 @@ if 1:
         template = '''
 if 1:
   __cond = 0
-  ti.begin_frontend_if(__cond)
+  ti.core.begin_frontend_if(ti.Expr(__cond).ptr)
   ti.core.begin_frontend_if_true()
   ti.core.pop_scope()
   ti.core.begin_frontend_if_false()

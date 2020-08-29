@@ -26,7 +26,7 @@ Arithmetic operators
     print(2 % 3)   # 2
     print(-2 % 3)  # 1
 
-  For C style mod, please use ``ti.raw_mod``:
+  For C-style mod, please use ``ti.raw_mod``:
 
   .. code-block:: python
 

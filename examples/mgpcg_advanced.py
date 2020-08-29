@@ -12,19 +12,18 @@ Grid-based MGPCG solver for the possion equation:
 
 Credits by `@KLozes <https://github.com/KLozes>`_.
 
-See `examples/stable_fluid.py <https://github.com/taichi-dev/taichi/blob/master/examples/stable_fluid.py>`_ for usage example.
+See `examples/stable_fluid.py <https://github.com/taichi-dev/taichi/blob/master/examples/stable_fluid.py>`_ for a usage example.
 
 .. note::
 
-    This solver only runs on CPU and CUDA backend since it requires the
-    ``pointer`` SNode. Consider replace ``pointer`` by ``bitmasked`` on Metal,
-    by ``dense`` on OpenGL.
+    This solver only runs on CPU and CUDA backends since it requires the
+    ``pointer`` SNode.
     '''
     def __init__(self, dim=2, N=512, n_mg_levels=6):
         '''
-        :parameter dim: Dimension of the fields.
-        :parameter N: Resolution of the fields.
-        :parameter n_mg_levels: Multigrid levels.
+        :parameter dim: Dimensionality of the fields.
+        :parameter N: Grid resolution.
+        :parameter n_mg_levels: Number of multigrid levels.
         '''
 
         # grid parameters
@@ -96,7 +95,7 @@ See `examples/stable_fluid.py <https://github.com/taichi-dev/taichi/blob/master/
         '''
         Get the solution field after each solve step.
 
-        :parameter x: (ti.field) Specify where to store the solution field
+        :parameter x: (ti.field) The field to store the solution
 
         $\\nabla^2 x = k r$
         '''
@@ -180,7 +179,7 @@ See `examples/stable_fluid.py <https://github.com/taichi-dev/taichi/blob/master/
 
     def solve(self, steps=-1, eps=1e-12, tol=1e-12, rel=1e-12):
         '''
-        Solve the possion equation.
+        Solve a Poisson problem.
         Always use a ``for`` loop to iterate through me.
 
         :parameter steps: Specify the maximal steps, -1 for no limit.

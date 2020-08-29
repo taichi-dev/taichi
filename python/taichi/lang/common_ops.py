@@ -4,11 +4,6 @@ class TaichiOperations:
         _taichi_skip_traceback = 1
         return ti.neg(self)
 
-    def __abs__(self):
-        import taichi as ti
-        _taichi_skip_traceback = 1
-        return ti.abs(self)
-
     def __add__(self, other):
         import taichi as ti
         _taichi_skip_traceback = 1

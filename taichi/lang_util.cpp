@@ -304,11 +304,11 @@ bool command_exist(const std::string &command) {
 }
 
 DataType promoted_type(DataType a, DataType b) {
-  std::pair<DataType, DataType> p = std::make_pair(a, b);
-  switch(p) {
-#define TRY_SECOND(x, y)                                        \
-  case std::make_pair(get_data_type<x>(), get_data_type<y>()):  \
-    return (get_data_type<decltype(std::declval<x>() + std::declval<y>())>());
+  std::map<std::pair<DataType, DataType>, DataType> mapping;
+  if (mapping.empty()) {
+#define TRY_SECOND(x, y)                                            \
+  mapping[std::make_pair(get_data_type<x>(), get_data_type<y>())] = \
+      get_data_type<decltype(std::declval<x>() + std::declval<y>())>();
 #define TRY_FIRST(x)      \
   TRY_SECOND(x, float32); \
   TRY_SECOND(x, float64); \
@@ -321,22 +321,18 @@ DataType promoted_type(DataType a, DataType b) {
   TRY_SECOND(x, uint32);  \
   TRY_SECOND(x, uint64);
 
-  TRY_FIRST(float32);
-  TRY_FIRST(float64);
-  TRY_FIRST(int8);
-  TRY_FIRST(int16);
-  TRY_FIRST(int32);
-  TRY_FIRST(int64);
-  TRY_FIRST(uint8);
-  TRY_FIRST(uint16);
-  TRY_FIRST(uint32);
-  TRY_FIRST(uint64);
-
-#undef TRY_FIRST
-#undef TRY_SECOND
-  default:
-    TI_NOT_IMPLEMENTED
+    TRY_FIRST(float32);
+    TRY_FIRST(float64);
+    TRY_FIRST(int8);
+    TRY_FIRST(int16);
+    TRY_FIRST(int32);
+    TRY_FIRST(int64);
+    TRY_FIRST(uint8);
+    TRY_FIRST(uint16);
+    TRY_FIRST(uint32);
+    TRY_FIRST(uint64);
   }
+  return mapping[std::make_pair(a, b)];
 }
 
 std::string TypedConstant::stringify() const {

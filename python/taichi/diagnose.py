@@ -83,7 +83,8 @@ def main():
         print(f'{nvidia_smi.decode()}')
 
     try:
-        ti_header = subprocess.check_output([executable, '-c', 'import taichi'])
+        ti_header = subprocess.check_output(
+            [executable, '-c', 'import taichi'])
     except Exception as e:
         print(f'`import taichi` failed: {e}')
     else:

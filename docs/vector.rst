@@ -125,7 +125,7 @@ We also provide four handy accessors for the first four vector components:
 
 .. note::
 
-   XYZW accessors can be used for both read and write::
+   XYZW accessors can be used for both reading and writing::
 
       v = ti.Vector([2, 3, 4])
       print(v.x)  # 2

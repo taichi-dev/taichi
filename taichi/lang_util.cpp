@@ -66,7 +66,6 @@ real measure_cpe(std::function<void()> target,
 
 std::string data_type_name(DataType t) {
   switch (t) {
-
 #define REGISTER_DATA_TYPE(i, j) \
   case DataType::i:              \
     return #j;
@@ -89,7 +88,7 @@ std::string data_type_name(DataType t) {
 #undef REGISTER_DATA_TYPE
     default:
       TI_NOT_IMPLEMENTED
-    }
+  }
 }
 
 std::string data_type_format(DataType dt) {
@@ -112,13 +111,13 @@ std::string data_type_format(DataType dt) {
 
 int data_type_size(DataType t) {
   switch (t) {
-    case DataType::f16: 
+    case DataType::f16:
       return 2;
     case DataType::gen:
       return 0;
     case DataType::unknown:
       return -1;
-  
+
 #define REGISTER_DATA_TYPE(i, j) \
   case DataType::i:              \
     return sizeof(j);
@@ -137,11 +136,11 @@ int data_type_size(DataType t) {
 #undef REGISTER_DATA_TYPE
     default:
       TI_NOT_IMPLEMENTED
-    }
+  }
 }
 
 std::string data_type_short_name(DataType t) {
-  switch(t) {       
+  switch (t) {
 #define PER_TYPE(i) \
   case DataType::i: \
     return #i;
@@ -149,13 +148,13 @@ std::string data_type_short_name(DataType t) {
 #include "taichi/inc/data_type.inc.h"
 
 #undef PER_TYPE
-  default:
-    TI_NOT_IMPLEMENTED
+    default:
+      TI_NOT_IMPLEMENTED
   }
 }
 
 std::string snode_type_name(SNodeType t) {
-  switch(t) {
+  switch (t) {
 #define PER_SNODE(i) \
   case SNodeType::i: \
     return #i;
@@ -163,8 +162,8 @@ std::string snode_type_name(SNodeType t) {
 #include "inc/snodes.inc.h"
 
 #undef PER_SNODE
-  default:
-    TI_NOT_IMPLEMENTED
+    default:
+      TI_NOT_IMPLEMENTED
   }
 }
 
@@ -173,7 +172,7 @@ bool is_gc_able(SNodeType t) {
 }
 
 std::string unary_op_type_name(UnaryOpType type) {
-  switch(type) {
+  switch (type) {
 #define PER_UNARY_OP(i) \
   case UnaryOpType::i:  \
     return #i;
@@ -181,13 +180,13 @@ std::string unary_op_type_name(UnaryOpType type) {
 #include "taichi/inc/unary_op.inc.h"
 
 #undef PER_UNARY_OP
-  default:
-    TI_NOT_IMPLEMENTED
+    default:
+      TI_NOT_IMPLEMENTED
   }
 }
 
 std::string binary_op_type_name(BinaryOpType type) {
-  switch(type) {
+  switch (type) {
 #define PER_BINARY_OP(x) \
   case BinaryOpType::x:  \
     return #x;
@@ -195,8 +194,8 @@ std::string binary_op_type_name(BinaryOpType type) {
 #include "inc/binary_op.inc.h"
 
 #undef PER_BINARY_OP
-  default:
-    TI_NOT_IMPLEMENTED
+    default:
+      TI_NOT_IMPLEMENTED
   }
 }
 
@@ -230,13 +229,13 @@ std::string binary_op_type_symbol(BinaryOpType type) {
   REGISTER_TYPE(bit_sar, >>);
 
 #undef REGISTER_TYPE
-  default:
+    default:
       TI_NOT_IMPLEMENTED
   }
 }
 
 std::string ternary_type_name(TernaryOpType type) {
-  switch(type) {
+  switch (type) {
 #define REGISTER_TYPE(i) \
   case TernaryOpType::i: \
     return #i;
@@ -244,15 +243,15 @@ std::string ternary_type_name(TernaryOpType type) {
     REGISTER_TYPE(select);
 
 #undef REGISTER_TYPE
-  default:
-    TI_NOT_IMPLEMENTED
+    default:
+      TI_NOT_IMPLEMENTED
   }
 }
 
 std::string atomic_op_type_name(AtomicOpType type) {
-  switch(type) {
+  switch (type) {
 #define REGISTER_TYPE(i) \
-  case AtomicOpType::i:\
+  case AtomicOpType::i:  \
     return #i;
 
     REGISTER_TYPE(add);
@@ -263,13 +262,13 @@ std::string atomic_op_type_name(AtomicOpType type) {
     REGISTER_TYPE(bit_xor);
 
 #undef REGISTER_TYPE
-  default:
-    TI_NOT_IMPLEMENTED
+    default:
+      TI_NOT_IMPLEMENTED
   }
 }
 
 std::string snode_op_type_name(SNodeOpType type) {
-  switch(type) {
+  switch (type) {
 #define REGISTER_TYPE(i) \
   case SNodeOpType::i:   \
     return #i;
@@ -283,8 +282,8 @@ std::string snode_op_type_name(SNodeOpType type) {
     REGISTER_TYPE(undefined);
 
 #undef REGISTER_TYPE
-  default:
-    TI_NOT_IMPLEMENTED
+    default:
+      TI_NOT_IMPLEMENTED
   }
 }
 

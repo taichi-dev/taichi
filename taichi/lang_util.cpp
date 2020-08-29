@@ -125,7 +125,6 @@ int data_type_size(DataType t) {
 
     REGISTER_DATA_TYPE(f32, float32);
     REGISTER_DATA_TYPE(f64, float64);
-    //REGISTER_DATA_TYPE(i8, bool); // duplicate value
     REGISTER_DATA_TYPE(i8, int8);
     REGISTER_DATA_TYPE(i16, int16);
     REGISTER_DATA_TYPE(i32, int32);

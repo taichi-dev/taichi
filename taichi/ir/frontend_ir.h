@@ -517,9 +517,15 @@ class AtomicOpExpression : public Expression {
  public:
   AtomicOpType op_type;
   Expr dest, val;
+  std::optional<Expr> comp{std::nullopt};
 
   AtomicOpExpression(AtomicOpType op_type, const Expr &dest, const Expr &val)
       : op_type(op_type), dest(dest), val(val) {
+  }
+
+  AtomicOpExpression(AtomicOpType op_type, const Expr &dest, const Expr &val,
+      const Expr &comp)
+      : op_type(op_type), dest(dest), val(val), comp(comp) {
   }
 
   std::string serialize() override;

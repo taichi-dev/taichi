@@ -798,13 +798,15 @@ class AtomicOpStmt : public Stmt {
  public:
   AtomicOpType op_type;
   Stmt *dest, *val;
+  Stmt *comp;
 
-  AtomicOpStmt(AtomicOpType op_type, Stmt *dest, Stmt *val)
-      : op_type(op_type), dest(dest), val(val) {
+  AtomicOpStmt(AtomicOpType op_type, Stmt *dest, Stmt *val,
+      Stmt *comp = nullptr)
+      : op_type(op_type), dest(dest), val(val), comp(comp) {
     TI_STMT_REG_FIELDS;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, op_type, dest, val);
+  TI_STMT_DEF_FIELDS(ret_type, op_type, dest, val, comp);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

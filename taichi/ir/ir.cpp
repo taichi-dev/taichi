@@ -901,6 +901,10 @@ std::string AtomicOpExpression::serialize() {
   } else if (op_type == AtomicOpType::bit_xor) {
     return fmt::format("atomic_bit_xor({}, {})", dest.serialize(),
                        val.serialize());
+  } else if (op_type == AtomicOpType::compswap) {
+    TI_ASSERT(comp.has_value());
+    return fmt::format("atomic_compswap({}, {}, {})", dest.serialize(),
+                       val.serialize(), comp->serialize());
   } else {
     // min/max not supported in the LLVM backend yet.
     TI_NOT_IMPLEMENTED;
@@ -916,6 +920,10 @@ void AtomicOpExpression::flatten(FlattenContext *ctx) {
   // expand rhs
   auto expr = val;
   expr->flatten(ctx);
+  if (comp.has_value()) {
+    TI_ASSERT(op_type == AtomicOpType::compswap);
+    (*comp)->flatten(ctx);
+  }
   if (dest.is<IdExpression>()) {  // local variable
     // emit local store stmt
     auto alloca = ctx->current_block->lookup_var(dest.cast<IdExpression>()->id);
@@ -924,7 +932,8 @@ void AtomicOpExpression::flatten(FlattenContext *ctx) {
     TI_ASSERT(dest.is<GlobalPtrExpression>());
     auto global_ptr = dest.cast<GlobalPtrExpression>();
     global_ptr->flatten(ctx);
-    ctx->push_back<AtomicOpStmt>(op_type, ctx->back_stmt(), expr->stmt);
+    ctx->push_back<AtomicOpStmt>(op_type, ctx->back_stmt(), expr->stmt,
+        comp.has_value() ? (*comp)->stmt : nullptr);
   }
   stmt = ctx->back_stmt();
 }

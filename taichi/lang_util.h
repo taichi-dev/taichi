@@ -145,7 +145,16 @@ enum class TernaryOpType : int { select, undefined };
 
 std::string ternary_type_name(TernaryOpType type);
 
-enum class AtomicOpType : int { add, sub, max, min, bit_and, bit_or, bit_xor };
+enum class AtomicOpType : int {
+  add,
+  sub,
+  max,
+  min,
+  bit_and,
+  bit_or,
+  bit_xor,
+  compswap,
+};
 
 std::string atomic_op_type_name(AtomicOpType type);
 

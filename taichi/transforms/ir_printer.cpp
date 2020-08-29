@@ -196,9 +196,15 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(AtomicOpStmt *stmt) override {
-    print("{}{} = atomic {}({}, {})", stmt->type_hint(), stmt->name(),
-          atomic_op_type_name(stmt->op_type), stmt->dest->name(),
-          stmt->val->name());
+    if (stmt->comp) {
+      print("{}{} = atomic {}({}, {}, {})", stmt->type_hint(), stmt->name(),
+            atomic_op_type_name(stmt->op_type), stmt->dest->name(),
+            stmt->val->name(), stmt->comp->name());
+    } else {
+      print("{}{} = atomic {}({}, {})", stmt->type_hint(), stmt->name(),
+            atomic_op_type_name(stmt->op_type), stmt->dest->name(),
+            stmt->val->name());
+    }
   }
 
   void visit(IfStmt *if_stmt) override {

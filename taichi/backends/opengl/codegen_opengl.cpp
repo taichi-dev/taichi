@@ -48,6 +48,7 @@ std::string opengl_atomic_op_type_cap_name(AtomicOpType type) {
     REGISTER_TYPE(bit_and, And);
     REGISTER_TYPE(bit_or, Or);
     REGISTER_TYPE(bit_xor, Xor);
+    REGISTER_TYPE(compswap, CompSwap);
 #undef REGISTER_TYPE
   }
   return type_names[type];
@@ -582,12 +583,20 @@ class KernelGen : public IRVisitor {
            dt == DataType::f32) ||
           (TI_OPENGL_REQUIRE(used, GL_NV_shader_atomic_float64) &&
            dt == DataType::f64)))) {
+      std::string rhs_str;
+      if (stmt->comp) {
+        TI_ASSERT(stmt->op_type == AtomicOpType::compswap);
+        rhs_str = fmt::format("{}, {}", stmt->val->short_name(),
+            stmt->comp->short_name());
+      } else {
+        rhs_str = fmt::format("{}", stmt->val->short_name());
+      }
       emit("{} {} = {}(_{}_{}_[{} >> {}], {});",
            opengl_data_type_name(stmt->val->element_type()), stmt->short_name(),
            opengl_atomic_op_type_cap_name(stmt->op_type),
            ptr_signats.at(stmt->dest->id), opengl_data_type_short_name(dt),
            stmt->dest->short_name(), opengl_data_address_shifter(dt),
-           stmt->val->short_name());
+           rhs_str);
     } else {
       if (dt != DataType::f32) {
         TI_ERROR(

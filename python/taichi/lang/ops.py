@@ -436,6 +436,14 @@ def select(cond, a, b):
     return _ternary_operation(ti_core.expr_select, py_select, cond, a, b)
 
 
+def atomic_compswap(dest, val, comp):
+    assert isinstance(dest, Expr), "ti.atomic_compswap is only supported on scalars for now"
+    val = Expr(val)
+    comp = Expr(comp)
+    return expr_init(
+        Expr(ti_core.expr_atomic_compswap(dest.ptr, val.ptr, comp.ptr), tb=stack_info()))
+
+
 @writeback_binary
 def atomic_add(a, b):
     return expr_init(

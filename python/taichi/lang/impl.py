@@ -72,6 +72,17 @@ def begin_frontend_struct_for(group, loop_range):
     taichi_lang_core.begin_frontend_struct_for(group, loop_range.ptr)
 
 
+def begin_frontend_if(cond):
+    if is_taichi_class(cond):
+        raise ValueError(
+            'The truth value of vectors / matrices is ambiguous.\n'
+            'Consider using `any` or `all` when comparing vectors:\n'
+            '    if all(x == y):\n'
+            'or\n'
+            '    if any(x != y):\n')
+    taichi_lang_core.begin_frontend_if(Expr(cond).ptr)
+
+
 def wrap_scalar(x):
     if type(x) in [int, float]:
         return Expr(x)
@@ -407,14 +418,26 @@ def ti_print(*vars, sep=' ', end='\n'):
         else:
             return Expr(var).ptr
 
+    def list_ti_repr(var):
+        yield '['  # distinguishing tuple & list will increase maintainance cost
+        for i, v in enumerate(var):
+            if i:
+                yield ', '
+            yield v
+        yield ']'
+
     def vars2entries(vars):
         for var in vars:
             if hasattr(var, '__ti_repr__'):
-                repr = var.__ti_repr__()
-                for v in vars2entries(repr):
-                    yield v
+                res = var.__ti_repr__()
+            elif isinstance(var, (list, tuple)):
+                res = list_ti_repr(var)
             else:
                 yield var
+                continue
+
+            for v in vars2entries(res):
+                yield v
 
     def add_separators(vars):
         for i, var in enumerate(vars):

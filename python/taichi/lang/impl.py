@@ -455,6 +455,15 @@ def ti_print(*vars, sep=' ', end='\n'):
 
 
 @taichi_scope
+def ti_assert(cond, msg, extra_args):
+    # Mostly a wrapper to help us convert from ti.Expr (defined in Python) to
+    # taichi_lang_core.Expr (defined in C++)
+    import taichi as ti
+    taichi_lang_core.create_assert_stmt(
+        ti.Expr(cond).ptr, msg, [ti.Expr(x).ptr for x in extra_args])
+
+
+@taichi_scope
 def ti_int(var):
     _taichi_skip_traceback = 1
     if hasattr(var, '__ti_int__'):

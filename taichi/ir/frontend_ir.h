@@ -41,9 +41,19 @@ class FrontendAssertStmt : public Stmt {
  public:
   std::string text;
   Expr val;
+  std::vector<Expr> args;
 
   FrontendAssertStmt(const std::string &text, const Expr &val)
       : text(text), val(val) {
+  }
+
+  FrontendAssertStmt(const std::string &text,
+                     const Expr &val,
+                     const std::vector<Expr> &args_)
+      : text(text), val(val) {
+    for (auto &a : args_) {
+      args.push_back(load_if_ptr(a));
+    }
   }
 
   TI_DEFINE_ACCEPT

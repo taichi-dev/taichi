@@ -805,12 +805,35 @@ if 1:
 
         return new_node
 
+    def _is_string_mod_args(self, msg):
+        # 1. str % (a, b, c, ...)
+        # 2. str % single_item
+        # Note that |msg.right| may not be a tuple.
+        return isinstance(msg, ast.BinOp) and isinstance(
+            msg.left, ast.Str) and isinstance(msg.op, ast.Mod)
+
+    def _handle_string_mod_args(self, msg):
+        assert self._is_string_mod_args(msg)
+        s = msg.left.s
+        t = None
+        if isinstance(msg.right, ast.Tuple):
+            t = msg.right
+        else:
+            # assuming the format is `str % single_item`
+            t = ast.Tuple(elts=[msg.right], ctx=ast.Load())
+        self.generic_visit(t)
+        return s, t
+
     def visit_Assert(self, node):
+        is_str_mod = False
         if node.msg is not None:
             if isinstance(node.msg, ast.Constant):
                 msg = node.msg.value
             elif isinstance(node.msg, ast.Str):
                 msg = node.msg.s
+            elif self._is_string_mod_args(node.msg):
+                # Delay the handling until we call generic_visit() on |node|.
+                is_str_mod = True
             else:
                 raise ValueError(
                     f"assert info must be constant, not {ast.dump(node.msg)}")
@@ -818,10 +841,16 @@ if 1:
             import astor
             msg = astor.to_source(node.test)
         self.generic_visit(node)
-        new_node = self.parse_stmt(
-            'ti.core.create_assert_stmt(ti.Expr(0).ptr, 0)')
-        new_node.value.args[0].value.args[0] = node.test
+
+        extra_args = ast.List(elts=[], ctx=ast.Load())
+        if is_str_mod:
+            msg, extra_args = self._handle_string_mod_args(node.msg)
+
+        new_node = self.parse_stmt('ti.ti_assert(0, 0, [])')
+        new_node.value.args[0] = node.test
         new_node.value.args[1] = self.parse_expr("'{}'".format(msg.strip()))
+        new_node.value.args[2] = extra_args
+        new_node = ast.copy_location(new_node, node)
         return new_node
 
     def visit_Return(self, node):

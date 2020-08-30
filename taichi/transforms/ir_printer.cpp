@@ -206,7 +206,7 @@ class IRPrinter : public IRVisitor {
     if (stmt->comp) {
       print("{}{} = atomic {}({}, {}, {})", stmt->type_hint(), stmt->name(),
             atomic_op_type_name(stmt->op_type), stmt->dest->name(),
-            stmt->comp->name(), stmt->val->name());
+            stmt->val->name(), stmt->comp->name());
     } else {
       print("{}{} = atomic {}({}, {})", stmt->type_hint(), stmt->name(),
             atomic_op_type_name(stmt->op_type), stmt->dest->name(),

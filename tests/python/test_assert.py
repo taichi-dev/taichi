@@ -66,6 +66,10 @@ def test_assert_message_formatted():
     with pytest.raises(RuntimeError, match=r'y = 0.5'):
         assert_float()
 
+    # success case
+    x[10] = 0
+    assert_formatted()
+
 
 @ti.require(ti.extension.assertion)
 @ti.all_archs_with(debug=True, gdb_trigger=False)

@@ -408,9 +408,9 @@ void export_lang(py::module &m) {
                                           ptr_if_global(a), load_if_ptr(b));
   });
 
-  m.def("expr_atomic_compswap", [&](const Expr &a, const Expr &b,
+  m.def("expr_atomic_cas", [&](const Expr &a, const Expr &b,
         const Expr &c) {
-    return Expr::make<AtomicOpExpression>(AtomicOpType::compswap,
+    return Expr::make<AtomicOpExpression>(AtomicOpType::cas,
                                           ptr_if_global(a), load_if_ptr(b),
                                           load_if_ptr(c));
   });

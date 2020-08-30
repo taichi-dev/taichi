@@ -153,7 +153,7 @@ enum class AtomicOpType : int {
   bit_and,
   bit_or,
   bit_xor,
-  compswap,
+  cas,
 };
 
 std::string atomic_op_type_name(AtomicOpType type);

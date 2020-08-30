@@ -48,7 +48,7 @@ std::string opengl_atomic_op_type_cap_name(AtomicOpType type) {
     REGISTER_TYPE(bit_and, And);
     REGISTER_TYPE(bit_or, Or);
     REGISTER_TYPE(bit_xor, Xor);
-    REGISTER_TYPE(compswap, CompSwap);
+    REGISTER_TYPE(cas, CompSwap);
 #undef REGISTER_TYPE
   }
   return type_names[type];
@@ -576,7 +576,7 @@ class KernelGen : public IRVisitor {
     auto dt = stmt->dest->element_type();
     std::string rhs_str;
     if (stmt->comp) {
-      TI_ASSERT(stmt->op_type == AtomicOpType::compswap);
+      TI_ASSERT(stmt->op_type == AtomicOpType::cas);
       rhs_str = fmt::format("{}, {}", stmt->val->short_name(),
           stmt->comp->short_name());
     } else {

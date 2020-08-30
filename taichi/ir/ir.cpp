@@ -901,12 +901,11 @@ std::string AtomicOpExpression::serialize() {
   } else if (op_type == AtomicOpType::bit_xor) {
     return fmt::format("atomic_bit_xor({}, {})", dest.serialize(),
                        val.serialize());
-  } else if (op_type == AtomicOpType::compswap) {
+  } else if (op_type == AtomicOpType::cas) {
     TI_ASSERT(comp.has_value());
-    return fmt::format("atomic_compswap({}, {}, {})", dest.serialize(),
+    return fmt::format("atomic_cas({}, {}, {})", dest.serialize(),
                        val.serialize(), comp->serialize());
   } else {
-    // min/max not supported in the LLVM backend yet.
     TI_NOT_IMPLEMENTED;
   }
 }
@@ -921,7 +920,7 @@ void AtomicOpExpression::flatten(FlattenContext *ctx) {
   auto expr = val;
   expr->flatten(ctx);
   if (comp.has_value()) {
-    TI_ASSERT(op_type == AtomicOpType::compswap);
+    TI_ASSERT(op_type == AtomicOpType::cas);
     (*comp)->flatten(ctx);
   }
   if (dest.is<IdExpression>()) {  // local variable

@@ -71,55 +71,7 @@ class BasicBlockSimplify : public IRVisitor {
       }
     }
 
-    // weaken indexing
-    // TODO: StructForStmt::loop_vars is deprecated
-    /*if (current_struct_for && stmt->width() == 1) {
-      auto &loop_vars = current_struct_for->loop_vars;
-      for (int k = 0; k < (int)loop_vars.size(); k++) {
-        auto diff = irpass::analysis::value_diff(
-            stmt->elements[0].stmt, stmt->elements[0].index,
-            current_struct_for->loop_vars[k]);
-        if (diff.linear_related() && diff.certain()) {
-          auto load = stmt->insert_before_me(
-              Stmt::make<LocalLoadStmt>(LocalAddress(loop_vars[k], 0)));
-          load->ret_type.data_type = DataType::i32;
-          auto constant = stmt->insert_before_me(
-              Stmt::make<ConstStmt>(TypedConstant(diff.low)));
-          constant->ret_type.data_type = DataType::i32;
-          auto add = stmt->insert_before_me(
-              Stmt::make<BinaryOpStmt>(BinaryOpType::add, load, constant));
-          add->ret_type.data_type = DataType::i32;
-          stmt->replace_with(add);
-          stmt->parent->erase(stmt);
-          throw IRModified();
-        }
-      }
-    }*/
-
     set_done(stmt);
-  }
-
-  // Local variable operation optimizations:
-  // 1. Store forwarding
-  //
-
-  bool modifies_local(Stmt *stmt, std::vector<Stmt *> vars) {
-    if (stmt->is<LocalStoreStmt>()) {
-      auto st = stmt->as<LocalStoreStmt>();
-      for (auto var : vars) {
-        if (st->ptr == var) {
-          return true;
-        }
-      }
-    } else if (stmt->is<AtomicOpStmt>()) {
-      auto st = stmt->as<AtomicOpStmt>();
-      for (auto var : vars) {
-        if (st->dest == var) {
-          return true;
-        }
-      }
-    }
-    return false;
   }
 
   void visit(GlobalLoadStmt *stmt) override {

@@ -30,6 +30,8 @@ inline std::string cc_atomic_op_type_symbol(AtomicOpType op) {
       return "max";
     case AtomicOpType::min:
       return "min";
+    case AtomicOpType::cas:
+      return "cas";
     default:
       TI_ERROR("Unsupported AtomicOpType={} on C backend",
                atomic_op_type_name(op));

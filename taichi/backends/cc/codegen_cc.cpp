@@ -381,7 +381,10 @@ class CCTransformer : public IRVisitor {
     const auto type = stmt->element_type();
     auto var = define_var(cc_data_type_name(type), stmt->raw_name());
     emit("{} = *{};", var, dest_ptr);
-    if (stmt->op_type == AtomicOpType::max ||
+    if (stmt->op_type == AtomicOpType::cas) {
+      emit("if ({} == {})", stmt->raw_name(), src_name);
+      emit("  *{} = {};", dest_ptr, src_name);
+    } else if (stmt->op_type == AtomicOpType::max ||
         stmt->op_type == AtomicOpType::min) {
       emit("*{} = {};", dest_ptr,
            invoke_libc(op, type, "*{}, {}", dest_ptr, src_name));

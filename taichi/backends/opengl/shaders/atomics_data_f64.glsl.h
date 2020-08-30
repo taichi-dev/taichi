@@ -2,9 +2,9 @@
 // clang-format off
 #include "taichi/util/macros.h"
 STR(
-double atomicCompSwap_data_f64(int addr, double val, double comp) {
+double atomicCompSwap_data_f64(int addr, double comp, double val) {
   return intBitsToFloat(atomicCompSwap(_data_i32_[addr],
-        floatBitsToInt(val), floatBitsToInt(comp)));
+        floatBitsToInt(comp), floatBitsToInt(val)));
 }
 double atomicAdd_data_f64(int addr, double rhs) {
   int old, new, ret;

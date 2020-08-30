@@ -101,13 +101,27 @@ class IRCloner : public IRVisitor {
   void visit(OffloadedStmt *stmt) override {
     generic_visit(stmt);
     auto other = other_node->as<OffloadedStmt>();
-    if (stmt->has_body()) {
-      TI_ASSERT(stmt->body);
-      TI_ASSERT(other->body);
+
+#define CLONE_BLOCK(B)                    \
+  if (stmt->B) {                          \
+    other->B = std::make_unique<Block>(); \
+    other_node = other->B.get();          \
+    stmt->B->accept(this);                \
+  }
+
+    CLONE_BLOCK(tls_prologue)
+    CLONE_BLOCK(bls_prologue)
+
+    if (stmt->body) {
       other_node = other->body.get();
       stmt->body->accept(this);
-      other_node = other;
     }
+
+    CLONE_BLOCK(bls_epilogue)
+    CLONE_BLOCK(tls_epilogue)
+#undef CLONE_BLOCK
+
+    other_node = other;
   }
 
   static std::unique_ptr<IRNode> run(IRNode *root, Kernel *kernel) {

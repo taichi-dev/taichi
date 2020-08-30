@@ -155,8 +155,8 @@ inline Expr Append(const Expr &expr,
   return Append(expr.snode(), indices, val);
 }
 
-inline void InsertAssert(const std::string &text, const Expr &expr) {
-  current_ast_builder().insert(Stmt::make<FrontendAssertStmt>(text, expr));
+inline void InsertAssert(const std::string &text, const Expr &cond) {
+  current_ast_builder().insert(Stmt::make<FrontendAssertStmt>(cond, text));
 }
 
 inline void Clear(SNode *snode, const ExprGroup &indices) {

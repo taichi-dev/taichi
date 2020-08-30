@@ -399,8 +399,8 @@ class LowerAST : public IRVisitor {
     // expand rhs
     Stmt *val_stmt = nullptr;
     auto fctx = make_flatten_ctx();
-    if (stmt->val.expr) {
-      auto expr = stmt->val;
+    if (stmt->cond.expr) {
+      auto expr = stmt->cond;
       expr->flatten(&fctx);
       val_stmt = expr->stmt;
     }

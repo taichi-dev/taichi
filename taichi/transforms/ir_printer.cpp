@@ -104,7 +104,7 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(FrontendAssertStmt *assert) override {
-    print("{} : assert {}", assert->id, assert->val->serialize());
+    print("{} : assert {}", assert->id, assert->cond->serialize());
   }
 
   void visit(AssertStmt *assert) override {

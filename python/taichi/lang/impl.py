@@ -75,8 +75,8 @@ def begin_frontend_struct_for(group, loop_range):
 def begin_frontend_if(cond):
     if is_taichi_class(cond):
         raise ValueError(
-            'The truth value of vectors / matrices is ambiguous.\n'
-            'Consider using `any` or `all` when comparing vectors:\n'
+            'The truth value of vectors/matrices is ambiguous.\n'
+            'Consider using `any` or `all` when comparing vectors/matrices:\n'
             '    if all(x == y):\n'
             'or\n'
             '    if any(x != y):\n')

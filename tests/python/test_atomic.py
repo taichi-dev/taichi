@@ -1,10 +1,11 @@
 import taichi as ti
 from taichi import approx
+import pytest
 
 n = 128
 
 
-def run_atomic_add_global_case(vartype, step, valproc=lambda x: x):
+def run_atomic_add_global_case(atomic_add, vartype, step, valproc=lambda x: x):
     x = ti.field(vartype)
     y = ti.field(vartype)
     c = ti.field(vartype)
@@ -20,8 +21,8 @@ def run_atomic_add_global_case(vartype, step, valproc=lambda x: x):
     def func():
         ck = init_ck
         for i in range(n):
-            x[i] = ti.atomic_add(c[None], step)
-            y[i] = ti.atomic_add(ck, step)
+            x[i] = atomic_add(c[None], step)
+            y[i] = atomic_add(ck, step)
 
     func()
 
@@ -35,20 +36,29 @@ def run_atomic_add_global_case(vartype, step, valproc=lambda x: x):
         assert valproc(ya) == e
 
 
-ti.init(ti.cc, log_level=ti.DEBUG)
-run_atomic_add_global_case(ti.i32, 42)
+@ti.func
+def cas_atomic_add(dest: ti.template(), val):
+    old = dest
+    while True:
+        if ti.atomic_cas(dest, old, old + val) == old:
+            break
+        old = dest
+    return old
 
 
-@ti.all_archs
-def test_atomic_add_global_i32():
-    run_atomic_add_global_case(ti.i32, 42)
+@pytest.mark.parametrize('atomic_add',
+        [ti.atomic_add, cas_atomic_add])
+@ti.test([ti.opengl, ti.cc])
+def test_atomic_add_global_i32(atomic_add):
+    run_atomic_add_global_case(atomic_add, ti.i32, 42)
 
 
-@ti.all_archs
-def test_atomic_add_global_f32():
-    run_atomic_add_global_case(ti.f32,
-                               4.2,
-                               valproc=lambda x: approx(x, rel=1e-5))
+@pytest.mark.parametrize('atomic_add',
+        [ti.atomic_add, cas_atomic_add])
+@ti.test(arch=[ti.opengl, ti.cc])
+def test_atomic_add_global_f32(atomic_add):
+    run_atomic_add_global_case(atomic_add,
+            ti.f32, 4.2, valproc=lambda x: approx(x, rel=1e-5))
 
 
 @ti.all_archs

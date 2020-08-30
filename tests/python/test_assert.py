@@ -17,6 +17,7 @@ def test_assert_minimal():
 
     with pytest.raises(RuntimeError):
         func()
+    with pytest.raises(RuntimeError):
         func2()
 
 

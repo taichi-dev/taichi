@@ -65,9 +65,11 @@ real measure_cpe(std::function<void()> target,
 }
 
 std::string data_type_name(DataType t) {
-  static std::map<DataType, std::string> type_names;
-  if (type_names.empty()) {
-#define REGISTER_DATA_TYPE(i, j) type_names[DataType::i] = #j;
+  switch (t) {
+#define REGISTER_DATA_TYPE(i, j) \
+  case DataType::i:              \
+    return #j;
+
     REGISTER_DATA_TYPE(f16, float16);
     REGISTER_DATA_TYPE(f32, float32);
     REGISTER_DATA_TYPE(f64, float64);
@@ -82,9 +84,11 @@ std::string data_type_name(DataType t) {
     REGISTER_DATA_TYPE(u64, uint64);
     REGISTER_DATA_TYPE(gen, generic);
     REGISTER_DATA_TYPE(unknown, unknown);
+
 #undef REGISTER_DATA_TYPE
+    default:
+      TI_NOT_IMPLEMENTED
   }
-  return type_names[t];
 }
 
 std::string data_type_format(DataType dt) {
@@ -106,46 +110,61 @@ std::string data_type_format(DataType dt) {
 }
 
 int data_type_size(DataType t) {
-  static std::map<DataType, int> type_sizes;
-  if (type_sizes.empty()) {
-#define REGISTER_DATA_TYPE(i, j) type_sizes[DataType::i] = sizeof(j);
-    type_sizes[DataType::f16] = 2;
-    REGISTER_DATA_TYPE(f32, float32);
-    REGISTER_DATA_TYPE(f64, float64);
-    REGISTER_DATA_TYPE(i8, bool);
-    REGISTER_DATA_TYPE(i8, int8);
-    REGISTER_DATA_TYPE(i16, int16);
-    REGISTER_DATA_TYPE(i32, int32);
-    REGISTER_DATA_TYPE(i64, int64);
-    REGISTER_DATA_TYPE(u8, uint8);
-    REGISTER_DATA_TYPE(u16, uint16);
-    REGISTER_DATA_TYPE(u32, uint32);
-    REGISTER_DATA_TYPE(u64, uint64);
-    type_sizes[DataType::gen] = 0;
-    type_sizes[DataType::unknown] = -1;
+  switch (t) {
+    case DataType::f16:
+      return 2;
+    case DataType::gen:
+      return 0;
+    case DataType::unknown:
+      return -1;
+
+#define REGISTER_DATA_TYPE(i, j) \
+  case DataType::i:              \
+    return sizeof(j);
+
+      REGISTER_DATA_TYPE(f32, float32);
+      REGISTER_DATA_TYPE(f64, float64);
+      REGISTER_DATA_TYPE(i8, int8);
+      REGISTER_DATA_TYPE(i16, int16);
+      REGISTER_DATA_TYPE(i32, int32);
+      REGISTER_DATA_TYPE(i64, int64);
+      REGISTER_DATA_TYPE(u8, uint8);
+      REGISTER_DATA_TYPE(u16, uint16);
+      REGISTER_DATA_TYPE(u32, uint32);
+      REGISTER_DATA_TYPE(u64, uint64);
+
 #undef REGISTER_DATA_TYPE
+    default:
+      TI_NOT_IMPLEMENTED
   }
-  return type_sizes[t];
 }
 
 std::string data_type_short_name(DataType t) {
-  static std::map<DataType, std::string> type_names;
-  if (type_names.empty()) {
-#define PER_TYPE(i) type_names[DataType::i] = #i;
+  switch (t) {
+#define PER_TYPE(i) \
+  case DataType::i: \
+    return #i;
+
 #include "taichi/inc/data_type.inc.h"
+
 #undef PER_TYPE
+    default:
+      TI_NOT_IMPLEMENTED
   }
-  return type_names[t];
 }
 
 std::string snode_type_name(SNodeType t) {
-  static std::map<SNodeType, std::string> type_names;
-  if (type_names.empty()) {
-#define PER_SNODE(i) type_names[SNodeType::i] = #i;
+  switch (t) {
+#define PER_SNODE(i) \
+  case SNodeType::i: \
+    return #i;
+
 #include "inc/snodes.inc.h"
+
 #undef PER_SNODE
+    default:
+      TI_NOT_IMPLEMENTED
   }
-  return type_names[t];
 }
 
 bool is_gc_able(SNodeType t) {
@@ -153,30 +172,39 @@ bool is_gc_able(SNodeType t) {
 }
 
 std::string unary_op_type_name(UnaryOpType type) {
-  static std::map<UnaryOpType, std::string> type_names;
-  if (type_names.empty()) {
-#define PER_UNARY_OP(i) type_names[UnaryOpType::i] = #i;
+  switch (type) {
+#define PER_UNARY_OP(i) \
+  case UnaryOpType::i:  \
+    return #i;
+
 #include "taichi/inc/unary_op.inc.h"
 
 #undef PER_UNARY_OP
+    default:
+      TI_NOT_IMPLEMENTED
   }
-  return type_names[type];
 }
 
 std::string binary_op_type_name(BinaryOpType type) {
-  static std::map<BinaryOpType, std::string> type_names;
-  if (type_names.empty()) {
-#define PER_BINARY_OP(x) type_names[BinaryOpType::x] = #x;
+  switch (type) {
+#define PER_BINARY_OP(x) \
+  case BinaryOpType::x:  \
+    return #x;
+
 #include "inc/binary_op.inc.h"
+
 #undef PER_BINARY_OP
+    default:
+      TI_NOT_IMPLEMENTED
   }
-  return type_names[type];
 }
 
 std::string binary_op_type_symbol(BinaryOpType type) {
-  static std::map<BinaryOpType, std::string> type_names;
-  if (type_names.empty()) {
-#define REGISTER_TYPE(i, s) type_names[BinaryOpType::i] = #s;
+  switch (type) {
+#define REGISTER_TYPE(i, s) \
+  case BinaryOpType::i:     \
+    return #s;
+
     REGISTER_TYPE(mul, *);
     REGISTER_TYPE(add, +);
     REGISTER_TYPE(sub, -);
@@ -196,28 +224,36 @@ std::string binary_op_type_symbol(BinaryOpType type) {
     REGISTER_TYPE(bit_and, &);
     REGISTER_TYPE(bit_or, |);
     REGISTER_TYPE(bit_xor, ^);
+    REGISTER_TYPE(pow, pow);
     REGISTER_TYPE(bit_shl, <<);
     REGISTER_TYPE(bit_sar, >>);
-    REGISTER_TYPE(pow, pow);
+
 #undef REGISTER_TYPE
+    default:
+      TI_NOT_IMPLEMENTED
   }
-  return type_names[type];
 }
 
 std::string ternary_type_name(TernaryOpType type) {
-  static std::map<TernaryOpType, std::string> type_names;
-  if (type_names.empty()) {
-#define REGISTER_TYPE(i) type_names[TernaryOpType::i] = #i;
+  switch (type) {
+#define REGISTER_TYPE(i) \
+  case TernaryOpType::i: \
+    return #i;
+
     REGISTER_TYPE(select);
+
 #undef REGISTER_TYPE
+    default:
+      TI_NOT_IMPLEMENTED
   }
-  return type_names[type];
 }
 
 std::string atomic_op_type_name(AtomicOpType type) {
-  static std::map<AtomicOpType, std::string> type_names;
-  if (type_names.empty()) {
-#define REGISTER_TYPE(i) type_names[AtomicOpType::i] = #i;
+  switch (type) {
+#define REGISTER_TYPE(i) \
+  case AtomicOpType::i:  \
+    return #i;
+
     REGISTER_TYPE(add);
     REGISTER_TYPE(max);
     REGISTER_TYPE(min);
@@ -225,15 +261,19 @@ std::string atomic_op_type_name(AtomicOpType type) {
     REGISTER_TYPE(bit_or);
     REGISTER_TYPE(bit_xor);
     REGISTER_TYPE(cas);
+
 #undef REGISTER_TYPE
+    default:
+      TI_NOT_IMPLEMENTED
   }
-  return type_names[type];
 }
 
 std::string snode_op_type_name(SNodeOpType type) {
-  static std::map<SNodeOpType, std::string> type_names;
-  if (type_names.empty()) {
-#define REGISTER_TYPE(i) type_names[SNodeOpType::i] = #i;
+  switch (type) {
+#define REGISTER_TYPE(i) \
+  case SNodeOpType::i:   \
+    return #i;
+
     REGISTER_TYPE(is_active);
     REGISTER_TYPE(length);
     REGISTER_TYPE(activate);
@@ -241,9 +281,11 @@ std::string snode_op_type_name(SNodeOpType type) {
     REGISTER_TYPE(append);
     REGISTER_TYPE(clear);
     REGISTER_TYPE(undefined);
+
 #undef REGISTER_TYPE
+    default:
+      TI_NOT_IMPLEMENTED
   }
-  return type_names[type];
 }
 
 bool command_exist(const std::string &command) {

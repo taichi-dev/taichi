@@ -8,27 +8,22 @@ jobs:
     name: Download and Test
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest, ubuntu-16.04, windows-latest]
-        python: [3.6]
-        taichi: [0.6.28]
+        os: [macos-latest, ubuntu-latest, windows-latest]
+        python: [3.6, 3.7, 3.8]
       fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
+      - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python }}
 
       - name: Download Taichi
         run: |
-          pip install taichi==${{ matrix.taichi }}
+          python misc/ci_install_latest.py
 
       - name: Simple CLI Test
         run: |
           ti changelog
           ti diagnose
           ti example laplace.py
-
-      - name: Functionallity Test
-        run: |
-          pip install pytest pytest-rerunfailures pytest-xdist autograd
-          ti test -vr3 -t2

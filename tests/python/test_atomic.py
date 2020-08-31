@@ -53,6 +53,10 @@ def test_atomic_add_global_i32(atomic_add):
     run_atomic_add_global_case(atomic_add, ti.i32, 42)
 
 
+ti.init(ti.opengl)
+test_atomic_add_global_i32(cas_atomic_add)
+
+
 @pytest.mark.parametrize('atomic_add',
         [ti.atomic_add, cas_atomic_add])
 @ti.test(arch=[ti.opengl, ti.cc])

@@ -236,7 +236,8 @@ class BasicBlockVectorSplit : public IRVisitor {
   void visit(AtomicOpStmt *stmt) override {
     for (int i = 0; i < current_split_factor; i++) {
       current_split[i] = Stmt::make<AtomicOpStmt>(
-          stmt->op_type, lookup(stmt->dest, i), lookup(stmt->val, i));
+          stmt->op_type, lookup(stmt->dest, i), lookup(stmt->val, i),
+          stmt->comp ? lookup(stmt->comp, i) : nullptr);
     }
   }
 

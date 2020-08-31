@@ -577,8 +577,8 @@ class KernelGen : public IRVisitor {
     std::string rhs_str;
     if (stmt->comp) {
       TI_ASSERT(stmt->op_type == AtomicOpType::cas);
-      rhs_str = fmt::format("{}, {}", stmt->val->short_name(),
-          stmt->comp->short_name());
+      rhs_str = fmt::format("{}, {}", stmt->comp->short_name(),
+          stmt->val->short_name());
     } else {
       rhs_str = fmt::format("{}", stmt->val->short_name());
     }

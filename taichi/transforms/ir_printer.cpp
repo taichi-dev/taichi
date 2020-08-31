@@ -204,7 +204,7 @@ class IRPrinter : public IRVisitor {
 
   void visit(AtomicOpStmt *stmt) override {
     if (stmt->comp) {
-      print("{}{} = atomic {}({}, {}, {})", stmt->type_hint(), stmt->name(),
+      print("{}{} = atomic {}({}, {}, comp={})", stmt->type_hint(), stmt->name(),
             atomic_op_type_name(stmt->op_type), stmt->dest->name(),
             stmt->val->name(), stmt->comp->name());
     } else {

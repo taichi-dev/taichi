@@ -902,7 +902,7 @@ std::string AtomicOpExpression::serialize() {
                        val.serialize());
   } else if (op_type == AtomicOpType::cas) {
     TI_ASSERT(comp.has_value());
-    return fmt::format("atomic_cas({}, {}, {})", dest.serialize(),
+    return fmt::format("atomic_cas({}, {}, comp={})", dest.serialize(),
                        val.serialize(), comp->serialize());
   } else {
     TI_NOT_IMPLEMENTED;

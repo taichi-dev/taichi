@@ -436,7 +436,7 @@ def select(cond, a, b):
     return _ternary_operation(ti_core.expr_select, py_select, cond, a, b)
 
 
-def atomic_cas(dest, val, comp):
+def atomic_cas(dest, comp, val):
     assert isinstance(dest, Expr), "ti.atomic_cas is only supported on scalars for now"
     val = Expr(val)
     comp = Expr(comp)

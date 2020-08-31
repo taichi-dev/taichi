@@ -1,0 +1,12 @@
+name: Taichi Gardener
+on:
+  pull_request:
+    types: [review_requested, synchronize]
+
+jobs:
+  format:
+    name: Trigger Format Server
+    runs-on: ubuntu-latest
+    if: ${{ contains(github.event.pull_request.requested_reviewers.*.login, 'taichi-gardener') && github.event.sender.login != 'taichi-gardener' }}
+    steps:
+      - run: curl http://kun.csail.mit.edu:31415/${{ github.event.pull_request.number }} -LO

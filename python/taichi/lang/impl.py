@@ -72,6 +72,17 @@ def begin_frontend_struct_for(group, loop_range):
     taichi_lang_core.begin_frontend_struct_for(group, loop_range.ptr)
 
 
+def begin_frontend_if(cond):
+    if is_taichi_class(cond):
+        raise ValueError(
+            'The truth value of vectors/matrices is ambiguous.\n'
+            'Consider using `any` or `all` when comparing vectors/matrices:\n'
+            '    if all(x == y):\n'
+            'or\n'
+            '    if any(x != y):\n')
+    taichi_lang_core.begin_frontend_if(Expr(cond).ptr)
+
+
 def wrap_scalar(x):
     if type(x) in [int, float]:
         return Expr(x)

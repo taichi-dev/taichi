@@ -8,7 +8,7 @@ jobs:
     name: Download and Test
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
+        os: [macos-latest, ubuntu-16.04, ubuntu-latest, windows-latest]
         python: [3.6, 3.7, 3.8]
       fail-fast: false
     runs-on: ${{ matrix.os }}
@@ -27,3 +27,8 @@ jobs:
           ti changelog
           ti diagnose
           ti example laplace.py
+
+      - name: Functionality Test
+        run: |
+          pip install pytest pytest-rerunfailures pytest-xdist autograd
+          ti test -vr3 -t2 -k 'not gc'  # exclude test_gc.py for now

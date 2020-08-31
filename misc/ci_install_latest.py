@@ -1,7 +1,6 @@
 import subprocess
 import sys
 
-
 with open('docs/version') as f:
     version = f.read().strip()
 

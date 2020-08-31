@@ -55,6 +55,7 @@ class Offloader {
         assemble_serial_statements();
         auto offloaded =
             Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::range_for);
+        // offloaded->body is an empty block now.
         offloaded->grid_dim =
             root->get_kernel()->program.config.saturating_grid_dim;
         if (s->block_dim == 0) {
@@ -62,7 +63,6 @@ class Offloader {
         } else {
           offloaded->block_dim = s->block_dim;
         }
-        offloaded->body = std::make_unique<Block>();
         if (auto val = s->begin->cast<ConstStmt>()) {
           offloaded->const_begin = true;
           offloaded->begin_value = val->val[0].val_int32();

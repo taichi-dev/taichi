@@ -191,6 +191,8 @@ class LowerAST : public IRVisitor {
   }
 
   void visit(FrontendForStmt *stmt) override {
+    std::cout << "visit for" << std::endl;
+    irpass::print(stmt->get_ir_root());
     auto fctx = make_flatten_ctx();
     if (stmt->is_ranged()) {
       TI_ASSERT(stmt->loop_var_id.size() == 1);
@@ -339,6 +341,8 @@ class LowerAST : public IRVisitor {
   }
 
   void visit(FrontendAssignStmt *assign) override {
+    std::cout << "visit assign" << std::endl;
+    irpass::print(assign->get_ir_root());
     // expand rhs
     auto expr = assign->rhs;
     auto fctx = make_flatten_ctx();
@@ -434,6 +438,7 @@ class LowerAST : public IRVisitor {
 namespace irpass {
 
 void lower_ast(IRNode *root) {
+  print(root);
   TI_AUTO_PROF;
   LowerAST::run(root);
 }

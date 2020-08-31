@@ -19,8 +19,9 @@ OffloadedStmt::OffloadedStmt(OffloadedStmt::TaskType task_type, SNode *snode)
   step = 0;
   reversed = false;
   device = get_current_program().config.arch;
-  if (task_type != TaskType::listgen) {
+  if (has_body()) {
     body = std::make_unique<Block>();
+    body->parent_stmt = this;
   }
   TI_STMT_REG_FIELDS;
 }

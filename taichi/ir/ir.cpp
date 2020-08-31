@@ -59,6 +59,7 @@ Block *IRBuilder::current_block() {
 }
 
 Stmt *IRBuilder::get_last_stmt() {
+  TI_ASSERT(!stack.empty());
   return stack.back()->back();
 }
 
@@ -77,7 +78,7 @@ std::unique_ptr<IRBuilder::ScopeGuard> IRBuilder::create_scope(
   TI_ASSERT(list == nullptr);
   list = std::make_unique<Block>();
   if (!stack.empty()) {
-    list->parent_block() = stack.back();
+    list->parent_stmt = get_last_stmt();
   }
   return std::make_unique<ScopeGuard>(this, list.get());
 }
@@ -235,8 +236,10 @@ std::string Stmt::type() {
 
 IRNode *Stmt::get_ir_root() {
   auto block = parent;
+  std::cout << "parent " << parent << std::endl;
   while (block->parent_block())
     block = block->parent_block();
+  std::cout << "block " << block << std::endl;
   return dynamic_cast<IRNode *>(block);
 }
 
@@ -747,10 +750,8 @@ void Block::replace_with(Stmt *old_statement,
 }
 
 Block *Block::parent_block() const {
-  return parent_stmt->parent;
-}
-
-Block *&Block::parent_block() {
+  if (parent_stmt == nullptr)
+    return nullptr;
   return parent_stmt->parent;
 }
 
@@ -998,6 +999,7 @@ RangeForStmt::RangeForStmt(Stmt *begin,
       block_dim(block_dim),
       strictly_serialized(strictly_serialized) {
   reversed = false;
+  this->body->parent_stmt = this;
   TI_STMT_REG_FIELDS;
 }
 
@@ -1019,6 +1021,7 @@ StructForStmt::StructForStmt(SNode *snode,
       vectorize(vectorize),
       parallelize(parallelize),
       block_dim(block_dim) {
+  this->body->parent_stmt = this;
   TI_STMT_REG_FIELDS;
 }
 
@@ -1031,6 +1034,12 @@ std::unique_ptr<Stmt> StructForStmt::clone() const {
 
 std::unique_ptr<Stmt> FuncBodyStmt::clone() const {
   return std::make_unique<FuncBodyStmt>(funcid, body->clone());
+}
+
+WhileStmt::WhileStmt(std::unique_ptr<Block> &&body)
+    : mask(nullptr), body(std::move(body)) {
+  this->body->parent_stmt = this;
+  TI_STMT_REG_FIELDS;
 }
 
 std::unique_ptr<Stmt> WhileStmt::clone() const {

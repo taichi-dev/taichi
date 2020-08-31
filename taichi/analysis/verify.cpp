@@ -11,29 +11,25 @@ TLANG_NAMESPACE_BEGIN
 class IRVerifier : public BasicStmtVisitor {
  private:
   Block *current_block;
+  Stmt *current_container_stmt;
   // each scope corresponds to an unordered_set
   std::vector<std::unordered_set<Stmt *>> visible_stmts;
 
  public:
   using BasicStmtVisitor::visit;
 
-  explicit IRVerifier(IRNode *root) : current_block(nullptr) {
+  explicit IRVerifier(IRNode *root)
+      : current_block(nullptr), current_container_stmt(nullptr) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
-    if (!root->is<Block>()) {
+    if (!root->is<Block>())
       visible_stmts.emplace_back();
-      current_block = nullptr;
-    } else
-      current_block = nullptr;
   }
 
   void basic_verify(Stmt *stmt) {
-    if (current_block != nullptr) {
-      // Temporary fix for root being OffloadedStmt
-      TI_ASSERT_INFO(stmt->parent == current_block,
-                     "stmt({})->parent({}) != current_block({})", stmt->id,
-                     fmt::ptr(stmt->parent), fmt::ptr(current_block));
-    }
+    TI_ASSERT_INFO(stmt->parent == current_block,
+                   "stmt({})->parent({}) != current_block({})", stmt->id,
+                   fmt::ptr(stmt->parent), fmt::ptr(current_block));
     for (auto &op : stmt->get_operands()) {
       if (op == nullptr)
         continue;
@@ -60,6 +56,7 @@ class IRVerifier : public BasicStmtVisitor {
 
   void preprocess_container_stmt(Stmt *stmt) override {
     basic_verify(stmt);
+    current_container_stmt = stmt;
   }
 
   void visit(Stmt *stmt) override {
@@ -67,7 +64,11 @@ class IRVerifier : public BasicStmtVisitor {
   }
 
   void visit(Block *block) override {
-    TI_ASSERT(block->parent_block() == current_block);
+    TI_ASSERT_INFO(
+        block->parent_stmt == current_container_stmt,
+        "block({})->parent({}) != current_container_stmt({})", fmt::ptr(block),
+        block->parent_stmt ? block->parent_stmt->name() : "nullptr",
+        current_container_stmt ? current_container_stmt->name() : "nullptr");
     auto backup_block = current_block;
     current_block = block;
     visible_stmts.emplace_back();
@@ -113,6 +114,8 @@ class IRVerifier : public BasicStmtVisitor {
 namespace irpass::analysis {
 void verify(IRNode *root) {
   TI_AUTO_PROF;
+  std::cout << "verify" << std::endl;
+  print(root);
   if (!root->is<Block>() && !root->is<OffloadedStmt>()) {
     TI_WARN(
         "IR root is neither a Block nor an OffloadedStmt."

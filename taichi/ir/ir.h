@@ -865,7 +865,6 @@ class Block : public IRNode {
   }
 
   Block *parent_block() const;
-  Block *&parent_block();
 
   bool has_container_statements();
   int locate(Stmt *stmt);
@@ -1352,10 +1351,7 @@ class WhileStmt : public Stmt {
   Stmt *mask;
   std::unique_ptr<Block> body;
 
-  WhileStmt(std::unique_ptr<Block> &&body)
-      : mask(nullptr), body(std::move(body)) {
-    TI_STMT_REG_FIELDS;
-  }
+  WhileStmt(std::unique_ptr<Block> &&body);
 
   bool is_container_statement() const override {
     return true;

@@ -1,0 +1,28 @@
+name: Release Test
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  download_and_test:
+    name: Download and Test
+    strategy:
+      matrix:
+        os: [macos-latest]
+        python: [3.6]
+        taichi: [0.6.30]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Download Taichi
+        run: |
+          pip install taichi==${{ matrix.taichi }}
+
+      - name: Functionallity Test
+        run: |
+          ti diagnose
+          ti example laplace.py
+          ti test -vr3 -t2

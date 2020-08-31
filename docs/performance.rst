@@ -83,4 +83,3 @@ Here is a list of available decorators:
     .. note::
 
         The argument ``n`` must be a power-of-two for now.
-

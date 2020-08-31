@@ -8,9 +8,9 @@ jobs:
     name: Download and Test
     strategy:
       matrix:
-        os: [macos-latest]
+        os: [macos-latest, ubuntu-latest, ubuntu-16.04, windows-latest]
         python: [3.6]
-        taichi: [0.6.30]
+        taichi: [0.6.28]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/setup-python@v2
@@ -21,8 +21,14 @@ jobs:
         run: |
           pip install taichi==${{ matrix.taichi }}
 
-      - name: Functionallity Test
+      - name: Simple Test
         run: |
+          ti
+          ti changelog
           ti diagnose
           ti example laplace.py
+
+      - name: Functionallity Test
+        run: |
+          pip install pytest pytest-rerunfailures pytest-xdist autograd
           ti test -vr3 -t2

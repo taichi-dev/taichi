@@ -67,7 +67,7 @@ class IRVerifier : public BasicStmtVisitor {
   }
 
   void visit(Block *block) override {
-    TI_ASSERT(block->parent == current_block);
+    TI_ASSERT(block->parent_block() == current_block);
     auto backup_block = current_block;
     current_block = block;
     visible_stmts.emplace_back();

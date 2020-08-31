@@ -77,7 +77,7 @@ std::unique_ptr<IRBuilder::ScopeGuard> IRBuilder::create_scope(
   TI_ASSERT(list == nullptr);
   list = std::make_unique<Block>();
   if (!stack.empty()) {
-    list->parent = stack.back();
+    list->parent_block() = stack.back();
   }
   return std::make_unique<ScopeGuard>(this, list.get());
 }
@@ -235,8 +235,8 @@ std::string Stmt::type() {
 
 IRNode *Stmt::get_ir_root() {
   auto block = parent;
-  while (block->parent)
-    block = block->parent;
+  while (block->parent_block())
+    block = block->parent_block();
   return dynamic_cast<IRNode *>(block);
 }
 
@@ -656,8 +656,8 @@ Stmt *Block::lookup_var(const Identifier &ident) const {
   if (ptr != local_var_to_stmt.end()) {
     return ptr->second;
   } else {
-    if (parent) {
-      return parent->lookup_var(ident);
+    if (parent_block()) {
+      return parent_block()->lookup_var(ident);
     } else {
       return nullptr;
     }
@@ -667,20 +667,20 @@ Stmt *Block::lookup_var(const Identifier &ident) const {
 Stmt *Block::mask() {
   if (mask_var)
     return mask_var;
-  else if (parent == nullptr) {
+  else if (parent_block() == nullptr) {
     return nullptr;
   } else {
-    return parent->mask();
+    return parent_block()->mask();
   }
 }
 
 Kernel *Block::get_kernel() const {
-  Block *parent = this->parent;
+  Block *parent = this->parent_block();
   if (parent == nullptr) {
     return kernel;
   }
-  while (parent->parent) {
-    parent = parent->parent;
+  while (parent->parent_block()) {
+    parent = parent->parent_block();
   }
   return parent->kernel;
 }
@@ -746,6 +746,14 @@ void Block::replace_with(Stmt *old_statement,
   }
 }
 
+Block *Block::parent_block() const {
+  return parent_stmt->parent;
+}
+
+Block *&Block::parent_block() {
+  return parent_stmt->parent;
+}
+
 bool Block::has_container_statements() {
   for (auto &s : statements) {
     if (s->is_container_statement())
@@ -765,7 +773,7 @@ int Block::locate(Stmt *stmt) {
 
 std::unique_ptr<Block> Block::clone() const {
   auto new_block = std::make_unique<Block>();
-  new_block->parent = parent;
+  new_block->parent_stmt = parent_stmt;
   new_block->mask_var = mask_var;
   new_block->stop_gradients = stop_gradients;
   new_block->statements.reserve(size());

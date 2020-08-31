@@ -17,14 +17,14 @@ class FixBlockParents : public IRVisitor {
   }
 
   void visit(Block *stmt_list) override {
-    stmt_list->parent = current_block;
+    stmt_list->parent_block() = current_block;
 
     current_block = stmt_list;
     for (auto &stmt : stmt_list->statements) {
       stmt->accept(this);
     }
 
-    current_block = stmt_list->parent;
+    current_block = stmt_list->parent_block();
   }
 
   void visit(IfStmt *if_stmt) override {

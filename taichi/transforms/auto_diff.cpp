@@ -58,7 +58,7 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
     for (auto alloca : touched_allocas) {
       // Test if the alloca belongs to the current block
       bool belong_to_this_block = false;
-      for (auto b = alloca->parent; b; b = b->parent) {
+      for (auto b = alloca->parent; b; b = b->parent_block()) {
         if (b == block) {
           belong_to_this_block = true;
         }
@@ -635,7 +635,7 @@ class MakeAdjoint : public IRVisitor {
   }
 
   bool gradients_stopped(GlobalLoadStmt *stmt, SNode *snode) {
-    for (auto block = stmt->parent; block; block = block->parent) {
+    for (auto block = stmt->parent; block; block = block->parent_block()) {
       for (auto s : block->stop_gradients) {
         if (s == snode) {
           return true;
@@ -754,7 +754,7 @@ class BackupSSA : public BasicStmtVisitor {
     auto t = stmt->parent;
     while (t != nullptr) {
       leaf_to_root.push_back(t);
-      t = t->parent;
+      t = t->parent_block();
     }
     int num_operands = stmt->get_operands().size();
     for (int i = 0; i < num_operands; i++) {

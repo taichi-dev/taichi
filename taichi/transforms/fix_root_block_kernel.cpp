@@ -16,7 +16,7 @@ class FixRootBlockKernel : public BasicStmtVisitor {
   }
 
   void visit(Block *stmt_list) override {
-    if (stmt_list->parent == nullptr) {
+    if (stmt_list->parent_block() == nullptr) {
       stmt_list->kernel = kernel_;
     }
     // No need to visit leaves because we have found the root

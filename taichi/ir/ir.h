@@ -848,7 +848,7 @@ class GlobalPtrStmt : public Stmt {
 
 class Block : public IRNode {
  public:
-  Block *parent;
+  Stmt *parent_stmt;
   std::vector<std::unique_ptr<Stmt>> statements, trash_bin;
   Stmt *mask_var;
   std::vector<SNode *> stop_gradients;
@@ -860,9 +860,12 @@ class Block : public IRNode {
 
   Block() {
     mask_var = nullptr;
-    parent = nullptr;
+    parent_stmt = nullptr;
     kernel = nullptr;
   }
+
+  Block *parent_block() const;
+  Block *&parent_block();
 
   bool has_container_statements();
   int locate(Stmt *stmt);

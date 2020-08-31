@@ -1,7 +1,10 @@
 name: Release Test
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
+  push:
+    branches: [stable]
+  # For test:
+  #pull_request:
+  #  types: [opened, synchronize, reopened]
 
 jobs:
   download_and_test:
@@ -24,6 +27,7 @@ jobs:
 
       - name: Simple CLI Test
         run: |
+          pip show taichi
           ti changelog
           ti diagnose
           ti example laplace.py

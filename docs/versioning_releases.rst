@@ -13,9 +13,9 @@ and patch version bumps (e.g., ``0.6.9->0.6.10``) for backward-compatible change
 Workflow: releasing a new version
 ---------------------------------
 
- - Trigger a Linux build on `Jenkins <http://f11.csail.mit.edu:8080/job/taichi/>`_ to see if CUDA passes all tests.
-   Note that Jenkins is the only build bot we have that tests CUDA. (This may take half an hour.)
- - Create a branch for the release PR, forking from the latest commit of the ``master`` branch.
+- Trigger a Linux build on `Jenkins <http://f11.csail.mit.edu:8080/job/taichi/>`_ to see if CUDA passes all tests.
+  Note that Jenkins is the only build bot we have that tests CUDA. (This may take half an hour.)
+- Create a branch for the release PR, forking from the latest commit of the ``master`` branch.
 
     * Update Taichi version number at the beginning of ``CMakeLists.txt``. For example, change ``SET(TI_VERSION_PATCH 9)`` to ``SET(TI_VERSION_PATCH 10)``.
     * Rerun cmake so that ``docs/version`` gets updated.
@@ -40,6 +40,11 @@ Workflow: releasing a new version
     * Target should be "recent commit" -> the release commit.
     * The release description should be copy-pasted from the release PR description.
     * Click the "Publish release" button.
+
+.. note::
+
+   We should update the ``stable`` branch and draft a new release **only after**
+   all build bots are finished, i.e. all PyPI packages are uploaded.
 
 Release cycle
 -------------

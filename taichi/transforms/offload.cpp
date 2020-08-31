@@ -472,7 +472,7 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
     auto ptr = replacement.push_back<GlobalTemporaryStmt>(
         local_to_global_offset[alloca], ret_type);
     replacement.push_back<AtomicOpStmt>(stmt->op_type, ptr, stmt->val,
-        stmt->comp);
+                                        stmt->comp);
 
     stmt->parent->replace_with(stmt, std::move(replacement));
     throw IRModified();

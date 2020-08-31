@@ -933,7 +933,7 @@ void AtomicOpExpression::flatten(FlattenContext *ctx) {
     dest_stmt = ctx->back_stmt();
   }
   ctx->push_back<AtomicOpStmt>(op_type, dest_stmt, expr->stmt,
-      comp.has_value() ? (*comp)->stmt : nullptr);
+                               comp.has_value() ? (*comp)->stmt : nullptr);
   stmt = ctx->back_stmt();
 }
 

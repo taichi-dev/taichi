@@ -44,19 +44,19 @@ def cas_atomic_add(dest: ti.template(), val):
     return old
 
 
-@pytest.mark.parametrize('atomic_add',
-        [ti.atomic_add, cas_atomic_add])
+@pytest.mark.parametrize('atomic_add', [ti.atomic_add, cas_atomic_add])
 @ti.test([ti.cc])
 def test_atomic_add_global_i32(atomic_add):
     run_atomic_add_global_case(atomic_add, ti.i32, 42)
 
 
-@pytest.mark.parametrize('atomic_add',
-        [ti.atomic_add, cas_atomic_add])
+@pytest.mark.parametrize('atomic_add', [ti.atomic_add, cas_atomic_add])
 @ti.test(arch=[ti.cc])
 def test_atomic_add_global_f32(atomic_add):
     run_atomic_add_global_case(atomic_add,
-            ti.f32, 4.2, valproc=lambda x: approx(x, rel=1e-5))
+                               ti.f32,
+                               4.2,
+                               valproc=lambda x: approx(x, rel=1e-5))
 
 
 @ti.all_archs

@@ -2,10 +2,6 @@
 // clang-format off
 #include "taichi/util/macros.h"
 STR(
-double atomicCompSwap_gtmp_f64(int addr, double comp, double val) {
-  return intBitsToFloat(atomicCompSwap(_gtmp_i32_[addr],
-        floatBitsToInt(comp), floatBitsToInt(val)));
-}
 double atomicAdd_gtmp_f64(int addr, double rhs) {
   int old, new, ret;
   do {

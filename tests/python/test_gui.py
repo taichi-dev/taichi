@@ -4,6 +4,7 @@ import numpy as np
 from PIL import Image
 import pytest
 
+
 @ti.host_arch_only
 @pytest.mark.parametrize('dtype', [ti.u8, ti.f32])
 def test_save_image_without_window(dtype):
@@ -20,10 +21,11 @@ def test_save_image_without_window(dtype):
         if dtype is ti.u8:
             paint(i)
         else:
-            paint(i*1.0/n)
+            paint(i * 1.0 / n)
         gui.set_image(pixels)
         image_path = make_temp_file(suffix='.jpg')
         gui.show(image_path)
         image = np.array(Image.open(image_path))
         delta = (image - i).sum()
-        assert delta == 0, "Expected image difference to be 0 but got {} instead.".format(delta)
+        assert delta == 0, "Expected image difference to be 0 but got {} instead.".format(
+            delta)

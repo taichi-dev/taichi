@@ -34,7 +34,11 @@ class GUI:
     PRESS = ti_core.KeyEvent.EType.Press
     RELEASE = ti_core.KeyEvent.EType.Release
 
-    def __init__(self, name='Taichi', show_GUI=True, res=512, background_color=0x0):
+    def __init__(self,
+                 name='Taichi',
+                 show_GUI=True,
+                 res=512,
+                 background_color=0x0):
         self.name = name
         if isinstance(res, numbers.Number):
             res = (res, res)

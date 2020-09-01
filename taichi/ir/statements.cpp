@@ -74,8 +74,10 @@ std::unique_ptr<Stmt> OffloadedStmt::clone() const {
   new_stmt->reversed = reversed;
   new_stmt->num_cpu_threads = num_cpu_threads;
   new_stmt->device = device;
-  if (body)
+  if (body) {
     new_stmt->body = body->clone();
+    new_stmt->body->parent_stmt = new_stmt.get();
+  }
   return new_stmt;
 }
 

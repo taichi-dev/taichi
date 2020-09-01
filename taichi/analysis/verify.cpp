@@ -56,7 +56,6 @@ class IRVerifier : public BasicStmtVisitor {
 
   void preprocess_container_stmt(Stmt *stmt) override {
     basic_verify(stmt);
-    current_container_stmt = stmt;
   }
 
   void visit(Stmt *stmt) override {
@@ -71,9 +70,14 @@ class IRVerifier : public BasicStmtVisitor {
         current_container_stmt ? current_container_stmt->name() : "nullptr");
     auto backup_block = current_block;
     current_block = block;
+    auto backup_container_stmt = current_container_stmt;
     visible_stmts.emplace_back();
     for (auto &stmt : block->statements) {
+      if (stmt->is_container_statement())
+        current_container_stmt = stmt.get();
       stmt->accept(this);
+      if (stmt->is_container_statement())
+        current_container_stmt = backup_container_stmt;
     }
     current_block = backup_block;
     visible_stmts.pop_back();

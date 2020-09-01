@@ -64,6 +64,7 @@ void make_block_local_offload(OffloadedStmt *offload) {
                 Stmt * bls_element_offset_bytes)> &operation) {
           if (block == nullptr) {
             block = std::make_unique<Block>();
+            block->parent_stmt = offload;
           }
           Stmt *block_linear_index =
               block->push_back<LoopLinearIndexStmt>(offload);

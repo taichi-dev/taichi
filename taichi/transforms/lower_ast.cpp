@@ -103,6 +103,12 @@ class LowerAST : public IRVisitor {
   }
 
   void visit(IfStmt *if_stmt) override {
+    if (if_stmt->true_statements && if_stmt->true_statements->parent_stmt != if_stmt) {
+      std::cout << "true block " << if_stmt->true_statements.get() << std::endl;
+    }
+    if (if_stmt->false_statements && if_stmt->false_statements->parent_stmt != if_stmt) {
+      std::cout << "block " << if_stmt->false_statements.get() << std::endl;
+    }
     if (if_stmt->true_statements)
       if_stmt->true_statements->accept(this);
     if (if_stmt->false_statements) {

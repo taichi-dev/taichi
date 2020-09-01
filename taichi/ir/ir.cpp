@@ -584,10 +584,10 @@ std::unique_ptr<Stmt> IfStmt::clone() const {
   auto new_stmt = std::make_unique<IfStmt>(cond);
   new_stmt->true_mask = true_mask;
   new_stmt->false_mask = false_mask;
-  new_stmt->set_true_statements(true_statements ? true_statements->clone()
-                                                : nullptr);
-  new_stmt->set_false_statements(false_statements ? false_statements->clone()
-                                                  : nullptr);
+  if (true_statements)
+    new_stmt->set_true_statements(true_statements->clone());
+  if (false_statements)
+    new_stmt->set_false_statements(false_statements->clone());
   return new_stmt;
 }
 
@@ -1044,6 +1044,14 @@ std::unique_ptr<Stmt> StructForStmt::clone() const {
       snode, body->clone(), vectorize, parallelize, block_dim);
   new_stmt->scratch_opt = scratch_opt;
   return new_stmt;
+}
+
+FuncBodyStmt::FuncBodyStmt(const std::string &funcid,
+                           std::unique_ptr<Block> &&body)
+    : funcid(funcid), body(std::move(body)) {
+  if (this->body)
+    this->body->parent_stmt = this;
+  TI_STMT_REG_FIELDS;
 }
 
 std::unique_ptr<Stmt> FuncBodyStmt::clone() const {

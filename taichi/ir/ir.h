@@ -1309,10 +1309,7 @@ class FuncBodyStmt : public Stmt {
   std::string funcid;
   std::unique_ptr<Block> body;
 
-  FuncBodyStmt(const std::string &funcid, std::unique_ptr<Block> &&body)
-      : funcid(funcid), body(std::move(body)) {
-    TI_STMT_REG_FIELDS;
-  }
+  FuncBodyStmt(const std::string &funcid, std::unique_ptr<Block> &&body);
 
   bool is_container_statement() const override {
     return true;

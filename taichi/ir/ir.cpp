@@ -562,18 +562,32 @@ bool LocalLoadStmt::has_source(Stmt *alloca) const {
   return false;
 }
 
+IfStmt::IfStmt(Stmt *cond)
+    : cond(cond), true_mask(nullptr), false_mask(nullptr) {
+  TI_STMT_REG_FIELDS;
+}
+
+void IfStmt::set_true_statements(std::unique_ptr<Block> &&new_true_statements) {
+  true_statements = std::move(new_true_statements);
+  if (true_statements)
+    true_statements->parent_stmt = this;
+}
+
+void IfStmt::set_false_statements(
+    std::unique_ptr<Block> &&new_false_statements) {
+  false_statements = std::move(new_false_statements);
+  if (false_statements)
+    false_statements->parent_stmt = this;
+}
+
 std::unique_ptr<Stmt> IfStmt::clone() const {
   auto new_stmt = std::make_unique<IfStmt>(cond);
   new_stmt->true_mask = true_mask;
   new_stmt->false_mask = false_mask;
-  if (true_statements)
-    new_stmt->true_statements = true_statements->clone();
-  else
-    new_stmt->true_statements = nullptr;
-  if (false_statements)
-    new_stmt->false_statements = false_statements->clone();
-  else
-    new_stmt->false_statements = nullptr;
+  new_stmt->set_true_statements(true_statements ? true_statements->clone()
+                                                : nullptr);
+  new_stmt->set_false_statements(false_statements ? false_statements->clone()
+                                                  : nullptr);
   return new_stmt;
 }
 

@@ -531,7 +531,7 @@ class MakeAdjoint : public IRVisitor {
   void visit(IfStmt *if_stmt) override {
     auto new_if = Stmt::make_typed<IfStmt>(if_stmt->cond);
     if (if_stmt->true_statements) {
-      new_if->true_statements = std::make_unique<Block>();
+      new_if->set_true_statements(std::make_unique<Block>());
       auto old_current_block = current_block;
 
       current_block = new_if->true_statements.get();
@@ -543,7 +543,7 @@ class MakeAdjoint : public IRVisitor {
       current_block = old_current_block;
     }
     if (if_stmt->false_statements) {
-      new_if->false_statements = std::make_unique<Block>();
+      new_if->set_false_statements(std::make_unique<Block>());
       auto old_current_block = current_block;
       current_block = new_if->false_statements.get();
       for (int i = if_stmt->false_statements->statements.size() - 1; i >= 0;

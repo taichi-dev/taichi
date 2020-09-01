@@ -499,14 +499,14 @@ class BasicBlockSimplify : public IRVisitor {
 
     if (if_stmt->true_statements) {
       if (if_stmt->true_statements->statements.empty()) {
-        if_stmt->true_statements = nullptr;
+        if_stmt->set_true_statements(nullptr);
         throw IRModified();
       }
     }
 
     if (if_stmt->false_statements) {
       if (if_stmt->false_statements->statements.empty()) {
-        if_stmt->false_statements = nullptr;
+        if_stmt->set_false_statements(nullptr);
         throw IRModified();
       }
     }

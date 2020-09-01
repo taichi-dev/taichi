@@ -1143,9 +1143,11 @@ class IfStmt : public Stmt {
   Stmt *true_mask, *false_mask;
   std::unique_ptr<Block> true_statements, false_statements;
 
-  IfStmt(Stmt *cond) : cond(cond), true_mask(nullptr), false_mask(nullptr) {
-    TI_STMT_REG_FIELDS;
-  }
+  IfStmt(Stmt *cond);
+
+  // Use these setters to set Block::parent_stmt at the same time.
+  void set_true_statements(std::unique_ptr<Block> &&new_true_statements);
+  void set_false_statements(std::unique_ptr<Block> &&new_false_statements);
 
   bool is_container_statement() const override {
     return true;

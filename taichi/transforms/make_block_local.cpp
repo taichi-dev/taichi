@@ -114,7 +114,7 @@ void make_block_local_offload(OffloadedStmt *offload) {
                   block->push_back<ConstStmt>(TypedConstant(bls_num_elements)));
               auto if_stmt =
                   dynamic_cast<IfStmt *>(block->push_back<IfStmt>(cond));
-              if_stmt->true_statements = std::make_unique<Block>();
+              if_stmt->set_true_statements(std::make_unique<Block>());
               element_block = if_stmt->true_statements.get();
             } else {
               // No need to create an if since every thread is within

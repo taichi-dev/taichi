@@ -104,7 +104,7 @@ void convert_to_range_for(OffloadedStmt *offloaded) {
   if (has_test) {
     // Create an If statement
     auto if_stmt = Stmt::make_typed<IfStmt>(test);
-    if_stmt->true_statements = std::move(body);
+    if_stmt->set_true_statements(std::move(body));
     // Note that this could silently change the body block of |offloaded|.
     body = std::make_unique<Block>();
     body->insert(std::move(if_stmt));

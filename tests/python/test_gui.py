@@ -1,7 +1,6 @@
 from taichi import make_temp_file
 import taichi as ti
 import numpy as np
-from PIL import Image
 import pytest
 
 

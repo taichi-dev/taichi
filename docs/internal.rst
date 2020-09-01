@@ -6,15 +6,17 @@ Intermediate representation
 Use ``ti.init(print_ir=True)`` to print IR on the console.
 
 
-Data Structure Node Organization
---------------------------------
+Data structure organization
+---------------------------
 
-The internal organization of data structure nodes can be confusing.
-It is important to distinguish the concept of **containers**, **cells** and **components**.
+The internal organization of Taichi's data structure can be confusing.
+It is important to distinguish the concept of **containers**, **cells**, and **components**.
 
 - A **container** can have multiple **cells**. The numbers of **cells** are recommended to be powers of two.
 - A **cell** can have multiple **components**.
 - Each **component** is a **container** of a lower-level SNode.
+
+Note that containers of ``place`` SNodes do have cells. Instead, they directly contain numerical values.
 
 Consider the following example:
 
@@ -22,50 +24,79 @@ Consider the following example:
 
     # misc/listgen_demo.py
 
-    x = ti.var(ti.i32)
-    y = ti.var(ti.i32)
-    z = ti.var(ti.i32)
+    x = ti.field(ti.i32)
+    y = ti.field(ti.i32)
+    z = ti.field(ti.i32)
 
     S0 = ti.root
     S1 = S0.pointer(ti.i, 4)
 
-    S2 = S1.dense(ti.i, 8)
-    S2.place(x, y) # S3: y; S4: z
+    S2 = S1.dense(ti.i, 2)
+    S2.place(x, y) # S3: x; S4: y
 
-    S5 = S1.dense(ti.i, 8)
+    S5 = S1.dense(ti.i, 2)
     S5.place(z) # S6: z
 
 
-- The whole data structure is a ``S0root`` **container**, containing
+- The whole data structure is an ``S0root`` **container**, containing
 
-  - ``1x`` ``S0root`` **cell**, each has only one **component**, which is
+  - ``1x`` ``S0root`` **cell**, which has only one **component**, which is
 
-    - A ``S1pointer`` **container**, containing
+    - An ``S1pointer`` **container**, containing
 
       - 4x ``S1pointer`` **cells**, each with two **components**, which are
 
-        - A ``S2dense`` **container**, containing
+        - An ``S2dense`` **container**, containing
 
-          - 8x ``S2dense`` **cells**, each with two **components**, which are
+          - 2x ``S2dense`` **cells**, each with two **components**, which are
 
-            - ``x: ti.i32``
-            - ``y: ti.i32``
+            - An ``S3place_x`` container which directly contains a ``x: ti.i32`` value
+            - An ``S4place_y`` container which directly contains a ``y: ti.i32`` value
 
-        - A ``S5dense`` **container**, containing
+        - An ``S5dense`` **container**, containing
 
-          - 8x ``S5dense`` **cells**, each with one **component**, which is
+          - 2x ``S5dense`` **cells**, each with one **component**, which is
 
-            - ``z: ti.i32``
+            - An ``S6place`` container which directly contains a ``z: ti.i32`` value
 
 
-Each SNode has two types (as implemented in struct compilers): ``container`` type and ``cell`` type.
+The following figure shows the hierarchy of the data structure. The numbers are ``indices`` of the containers and cells.
+
+.. image:: https://raw.githubusercontent.com/taichi-dev/public_files/fa03e63ca4e161318c8aa9a5db7f4a825604df88/taichi/data_structure_organization.png
+
+Note that the ``S0root`` container and cell do not have an ``index``.
+
+In summary, we will have the following containers:
+
+  - ``1 S0root`` container
+  - ``1 S1pointer`` container
+  - ``4 S2dense`` containers
+  - ``4 S5dense`` containers
+  - ``8 S3place_x`` containers, each directly contains an ``i32`` value
+  - ``8 S4place_y`` containers, each directly contains an ``i32`` value
+  - ``8 S6place_z`` containers, each directly contains an ``i32`` value
+
+... and the following cells:
+
+  - ``1 S0root`` cell
+  - ``4 S1pointer`` cells
+  - ``8 S2dense`` cells
+  - ``8 S5dense`` cells
+
+Again, note that ``S3place_x, S4place_x, S6place_x`` SNodes do **not** have corresponding cells.
+
+
+In struct compilers, each SNode has two types: ``container`` type and ``cell`` type.
+**Components** of a higher level SNode **cell** are **containers** of a lower level SNode.
+
 Note that **cells** are never exposed to end-users.
-**Components** of a higher level SNode **cells** are **containers** of a lower level SNode.
-
-We are on our way to remove usages of **children**, **instances** and **elements** in Taichi.
-These are very ambiguous terms.
 
 **List generation** generates lists of SNode **containers** (instead of SNode **cells**).
+
+.. note::
+
+    We are on our way to remove usages of **children**, **instances**, and **elements** in Taichi.
+    These are very ambiguous terms.
 
 
 List generation (WIP)

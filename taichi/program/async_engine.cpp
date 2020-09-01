@@ -35,7 +35,7 @@ std::unique_ptr<OffloadedStmt> clone_offloaded_task(OffloadedStmt *from,
   // This is not the ideal fix, because |new_ir|'s children blocks are NOT
   // linked to |dummy_root|. However, if I manually do the linking, I got error
   // during LLVM codegen.
-  new_ir->as<OffloadedStmt>()->parent = dummy_root;
+  // TODO: remove dummy_root
   return std::unique_ptr<OffloadedStmt>((OffloadedStmt *)(new_ir.release()));
 }
 

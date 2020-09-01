@@ -24,6 +24,9 @@ class IRVerifier : public BasicStmtVisitor {
     invoke_default_visitor = true;
     if (!root->is<Block>())
       visible_stmts.emplace_back();
+    if (root->is<Stmt>() && root->as<Stmt>()->is_container_statement()) {
+      current_container_stmt = root->as<Stmt>();
+    }
   }
 
   void basic_verify(Stmt *stmt) {

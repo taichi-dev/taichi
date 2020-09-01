@@ -21,6 +21,18 @@ IRBuilder &current_ast_builder() {
   return context->builder();
 }
 
+IRNode *IRNode::get_ir_root() {
+  auto node = this;
+  while (node->get_parent()) {
+    node = node->get_parent();
+  }
+  return node;
+}
+
+Kernel *IRNode::get_kernel() const {
+  return const_cast<IRNode *>(this)->get_ir_root()->kernel;
+}
+
 CompileConfig &IRNode::get_config() const {
   return get_kernel()->program.config;
 }
@@ -234,21 +246,8 @@ std::string Stmt::type() {
   return v.type_name;
 }
 
-IRNode *Stmt::get_ir_root() {
-  auto block = parent;
-  std::cout << "parent " << parent << std::endl;
-  while (block->parent_block())
-    block = block->parent_block();
-  std::cout << "block " << block << std::endl;
-  return dynamic_cast<IRNode *>(block);
-}
-
-Kernel *Stmt::get_kernel() const {
-  if (parent) {
-    return parent->get_kernel();
-  } else {
-    return nullptr;
-  }
+IRNode *Stmt::get_parent() const {
+  return parent;
 }
 
 std::vector<Stmt *> Stmt::get_operands() const {
@@ -691,17 +690,6 @@ Stmt *Block::mask() {
   }
 }
 
-Kernel *Block::get_kernel() const {
-  Block *parent = this->parent_block();
-  if (parent == nullptr) {
-    return kernel;
-  }
-  while (parent->parent_block()) {
-    parent = parent->parent_block();
-  }
-  return parent->kernel;
-}
-
 void Block::set_statements(VecStatement &&stmts) {
   statements.clear();
   for (int i = 0; i < (int)stmts.size(); i++) {
@@ -767,6 +755,10 @@ Block *Block::parent_block() const {
   if (parent_stmt == nullptr)
     return nullptr;
   return parent_stmt->parent;
+}
+
+IRNode *Block::get_parent() const {
+  return parent_stmt;
 }
 
 bool Block::has_container_statements() {

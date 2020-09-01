@@ -245,12 +245,19 @@ struct CompileConfig;
 
 class IRNode {
  public:
+  Kernel *kernel;
+
   virtual void accept(IRVisitor *visitor) {
     TI_NOT_IMPLEMENTED
   }
-  virtual Kernel *get_kernel() const {
-    return nullptr;
+
+  virtual IRNode *get_parent() const {
+    TI_NOT_IMPLEMENTED
   }
+
+  IRNode *get_ir_root();
+  Kernel *get_kernel() const;
+
   virtual ~IRNode() = default;
 
   CompileConfig &get_config() const;
@@ -573,9 +580,7 @@ class Stmt : public IRNode {
   void replace_with(VecStatement &&new_statements, bool replace_usages = true);
   virtual void replace_operand_with(Stmt *old_stmt, Stmt *new_stmt);
 
-  IRNode *get_ir_root();
-
-  Kernel *get_kernel() const override;
+  IRNode *get_parent() const override;
 
   virtual void repeat(int factor) {
     ret_type.width *= factor;
@@ -852,7 +857,6 @@ class Block : public IRNode {
   std::vector<std::unique_ptr<Stmt>> statements, trash_bin;
   Stmt *mask_var;
   std::vector<SNode *> stop_gradients;
-  Kernel *kernel;
 
   // Only used in frontend. Stores LoopIndexStmt or BinaryOpStmt for loop
   // variables, and AllocaStmt for other variables.
@@ -891,7 +895,7 @@ class Block : public IRNode {
                     bool replace_usages = true);
   Stmt *lookup_var(const Identifier &ident) const;
   Stmt *mask();
-  Kernel *get_kernel() const override;
+  IRNode *get_parent() const override;
 
   Stmt *back() const {
     return statements.back().get();

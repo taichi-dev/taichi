@@ -4,35 +4,11 @@
 
 TLANG_NAMESPACE_BEGIN
 
-namespace {
-
-class FixRootBlockKernel : public BasicStmtVisitor {
- public:
-  using BasicStmtVisitor::visit;
-
-  explicit FixRootBlockKernel(Kernel *kernel) : kernel_(kernel) {
-    allow_undefined_visitor = true;
-    invoke_default_visitor = true;
-  }
-
-  void visit(Block *stmt_list) override {
-    if (stmt_list->parent_block() == nullptr) {
-      stmt_list->kernel = kernel_;
-    }
-    // No need to visit leaves because we have found the root
-  }
-
- private:
-  Kernel *const kernel_;
-};
-
-}  // namespace
-
 namespace irpass {
 
 void fix_root_block_kernel(IRNode *root, Kernel *kernel) {
-  FixRootBlockKernel f(kernel);
-  root->accept(&f);
+  TI_ASSERT(root->get_parent() == nullptr);
+  root->kernel = kernel;
 }
 
 }  // namespace irpass

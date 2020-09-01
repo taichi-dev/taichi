@@ -36,7 +36,7 @@ class GUI:
 
     def __init__(self,
                  name='Taichi',
-                 show_GUI=True,
+                 show_gui=True,
                  res=512,
                  background_color=0x0):
         self.name = name
@@ -45,10 +45,10 @@ class GUI:
         self.res = res
         # The GUI canvas uses RGBA for storage, therefore we need NxMx4 for an image.
         self.img = np.ascontiguousarray(np.zeros(self.res + (4, ), np.float32))
-        self.show_GUI = show_GUI
+        self.show_gui = show_gui
         self.core = ti_core.GUI(name, core_veci(*res))
-        if self.show_GUI:
-            self.core.initialise_window()
+        if self.show_gui:
+            self.core.initialize_window()
         self.canvas = self.core.get_canvas()
         self.background_color = background_color
         self.key_pressed = set()
@@ -363,7 +363,7 @@ class GUI:
         self.arrows(base, dir, radius=radius, color=color, **kwargs)
 
     def show(self, file=None):
-        if self.show_GUI:
+        if self.show_gui:
             self.core.update()
         if file:
             self.core.screenshot(file)

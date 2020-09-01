@@ -16,7 +16,7 @@ def test_save_image_without_window(dtype):
         for i, j, k in pixels:
             pixels[i, j, k] = c
 
-    gui = ti.GUI("Test", show_GUI=False, res=(n, n))
+    gui = ti.GUI("Test", show_gui=False, res=(n, n))
     for i in [0, 32, 64, 128, 255]:
         if dtype is ti.u8:
             paint(i)
@@ -25,7 +25,7 @@ def test_save_image_without_window(dtype):
         gui.set_image(pixels)
         image_path = make_temp_file(suffix='.jpg')
         gui.show(image_path)
-        image = np.array(Image.open(image_path))
+        image = ti.imread(image_path)
         delta = (image - i).sum()
         assert delta == 0, "Expected image difference to be 0 but got {} instead.".format(
             delta)

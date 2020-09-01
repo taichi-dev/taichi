@@ -783,7 +783,7 @@ class GUI : public GUIBase {
 
   void create_window();
 
-  void initialise_window() {
+  void initialize_window() {
     create_window();
     set_title(window_name);
   }

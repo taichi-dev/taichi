@@ -431,7 +431,7 @@ class Canvas {
   ~Canvas() {
   }
 
-  void set_idendity_transform_matrix() {
+  void set_identity_transform_matrix() {
     transform_matrix = Matrix3(1);
   }
 };
@@ -772,7 +772,7 @@ class GUI : public GUIBase {
     create_window();
     set_title(window_name);
     if (!normalized_coord) {
-      canvas->set_idendity_transform_matrix();
+      canvas->set_identity_transform_matrix();
     }
     widget_height = 0;
   }
@@ -795,7 +795,7 @@ class GUI : public GUIBase {
 
   void redraw_widgets() {
     auto old_transform_matrix = canvas->transform_matrix;
-    canvas->set_idendity_transform_matrix();
+    canvas->set_identity_transform_matrix();
     for (auto &w : widgets) {
       w->set_hover(w->inside(cursor_pos));
       w->redraw(*canvas);

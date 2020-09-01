@@ -21,22 +21,6 @@ IRBuilder &current_ast_builder() {
   return context->builder();
 }
 
-IRNode *IRNode::get_ir_root() {
-  auto node = this;
-  while (node->get_parent()) {
-    node = node->get_parent();
-  }
-  return node;
-}
-
-Kernel *IRNode::get_kernel() const {
-  return const_cast<IRNode *>(this)->get_ir_root()->kernel;
-}
-
-CompileConfig &IRNode::get_config() const {
-  return get_kernel()->program.config;
-}
-
 std::string VectorType::pointer_suffix() const {
   if (is_pointer()) {
     return "*";
@@ -109,14 +93,33 @@ Stmt *VecStatement::push_back(pStmt &&stmt) {
   return ret;
 }
 
+IRNode *IRNode::get_ir_root() {
+  auto node = this;
+  while (node->get_parent()) {
+    node = node->get_parent();
+  }
+  return node;
+}
+
+Kernel *IRNode::get_kernel() const {
+  return const_cast<IRNode *>(this)->get_ir_root()->kernel;
+}
+
+CompileConfig &IRNode::get_config() const {
+  return get_kernel()->program.config;
+}
+
 std::unique_ptr<IRNode> IRNode::clone() {
+  std::unique_ptr<IRNode> new_irnode;
   if (is<Block>())
-    return as<Block>()->clone();
+    new_irnode = as<Block>()->clone();
   else if (is<Stmt>())
-    return as<Stmt>()->clone();
+    new_irnode = as<Stmt>()->clone();
   else {
     TI_NOT_IMPLEMENTED
   }
+  new_irnode->kernel = kernel;
+  return new_irnode;
 }
 
 class StatementTypeNameVisitor : public IRVisitor {

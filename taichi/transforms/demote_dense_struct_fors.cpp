@@ -123,8 +123,6 @@ void maybe_convert(OffloadedStmt *stmt) {
   if ((stmt->task_type == TaskType::struct_for) &&
       stmt->snode->is_path_all_dense) {
     convert_to_range_for(stmt);
-    // This sets the kernel for the top-level blocks within |stmt|.
-    irpass::fix_root_block_kernel(stmt, stmt->get_kernel());
   }
 }
 

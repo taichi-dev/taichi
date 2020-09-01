@@ -29,6 +29,7 @@ void export_visual(py::module &m) {
       .def_readwrite("frame_delta_limit", &GUI::frame_delta_limit)
       .def_readwrite("should_close", &GUI::should_close)
       .def("get_canvas", &GUI::get_canvas, py::return_value_policy::reference)
+      .def("initialise_window", [](GUI *gui) { gui->initialise_window(); })
       .def("set_img",
            [&](GUI *gui, std::size_t ptr) {
              auto &img = gui->canvas->img;

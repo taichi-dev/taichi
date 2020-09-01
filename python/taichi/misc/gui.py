@@ -34,14 +34,17 @@ class GUI:
     PRESS = ti_core.KeyEvent.EType.Press
     RELEASE = ti_core.KeyEvent.EType.Release
 
-    def __init__(self, name='Taichi', res=512, background_color=0x0):
+    def __init__(self, name='Taichi', show_GUI=True, res=512, background_color=0x0):
         self.name = name
         if isinstance(res, numbers.Number):
             res = (res, res)
         self.res = res
         # The GUI canvas uses RGBA for storage, therefore we need NxMx4 for an image.
         self.img = np.ascontiguousarray(np.zeros(self.res + (4, ), np.float32))
+        self.show_GUI = show_GUI
         self.core = ti_core.GUI(name, core_veci(*res))
+        if self.show_GUI:
+            self.core.initialise_window()
         self.canvas = self.core.get_canvas()
         self.background_color = background_color
         self.key_pressed = set()
@@ -356,7 +359,8 @@ class GUI:
         self.arrows(base, dir, radius=radius, color=color, **kwargs)
 
     def show(self, file=None):
-        self.core.update()
+        if self.show_GUI:
+            self.core.update()
         if file:
             self.core.screenshot(file)
         self.frame += 1

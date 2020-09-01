@@ -769,8 +769,6 @@ class GUI : public GUIBase {
     buffer.initialize(Vector2i(width, height));
     canvas = std::make_unique<Canvas>(buffer);
     last_frame_time = taichi::Time::get_time();
-    create_window();
-    set_title(window_name);
     if (!normalized_coord) {
       canvas->set_identity_transform_matrix();
     }
@@ -784,6 +782,11 @@ class GUI : public GUIBase {
   }
 
   void create_window();
+
+  void initialise_window() {
+    create_window();
+    set_title(window_name);
+  }
 
   Canvas &get_canvas() {
     return *canvas;

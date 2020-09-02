@@ -45,10 +45,7 @@ class GUI:
         self.res = res
         # The GUI canvas uses RGBA for storage, therefore we need NxMx4 for an image.
         self.img = np.ascontiguousarray(np.zeros(self.res + (4, ), np.float32))
-        self.show_gui = show_gui
-        self.core = ti_core.GUI(name, core_veci(*res))
-        if self.show_gui:
-            self.core.initialize_window()
+        self.core = ti_core.GUI(name, core_veci(*res), show_gui)
         self.canvas = self.core.get_canvas()
         self.background_color = background_color
         self.key_pressed = set()
@@ -363,8 +360,7 @@ class GUI:
         self.arrows(base, dir, radius=radius, color=color, **kwargs)
 
     def show(self, file=None):
-        if self.show_gui:
-            self.core.update()
+        self.core.update()
         if file:
             self.core.screenshot(file)
         self.frame += 1

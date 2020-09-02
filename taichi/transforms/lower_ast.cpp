@@ -89,11 +89,11 @@ class LowerAST : public IRVisitor {
     fctx.push_back<LocalStoreStmt>(new_if->false_mask, lnot_stmt_ptr);
 
     if (stmt->true_statements) {
-      new_if->true_statements = std::move(stmt->true_statements);
+      new_if->set_true_statements(std::move(stmt->true_statements));
       new_if->true_statements->mask_var = new_if->true_mask;
     }
     if (stmt->false_statements) {
-      new_if->false_statements = std::move(stmt->false_statements);
+      new_if->set_false_statements(std::move(stmt->false_statements));
       new_if->false_statements->mask_var = new_if->false_mask;
     }
 

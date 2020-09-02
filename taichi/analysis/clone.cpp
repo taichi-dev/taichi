@@ -125,10 +125,6 @@ class IRCloner : public IRVisitor {
   }
 
   static std::unique_ptr<IRNode> run(IRNode *root, Kernel *kernel) {
-    if (kernel == nullptr) {
-      kernel = root->get_kernel();
-    }
-    TI_ASSERT(kernel != nullptr);
     std::unique_ptr<IRNode> new_root = root->clone();
     IRCloner cloner(new_root.get());
     cloner.phase = IRCloner::register_operand_map;
@@ -136,10 +132,10 @@ class IRCloner : public IRVisitor {
     cloner.phase = IRCloner::replace_operand;
     root->accept(&cloner);
 
-    using namespace irpass;
-    fix_block_parents(new_root.get());
-    fix_root_block_kernel(new_root.get(), kernel);
-    type_check(new_root.get());
+    if (kernel != nullptr) {
+      new_root->kernel = kernel;
+    }
+    irpass::type_check(new_root.get());  // probably unnecessary
     return new_root;
   }
 };

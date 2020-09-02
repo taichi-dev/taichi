@@ -66,14 +66,14 @@ class StatementUsageReplace : public IRVisitor {
     // statements inside old_stmt->parent
     TI_ASSERT(old_stmt->parent != nullptr);
     old_stmt->parent->accept(&replacer);
-    auto current_block = old_stmt->parent->parent;
+    auto current_block = old_stmt->parent->parent_block();
 
     // statements outside old_stmt->parent: bottom-up
     while (current_block != nullptr) {
       for (auto &stmt : current_block->statements) {
         stmt->replace_operand_with(old_stmt, new_stmt);
       }
-      current_block = current_block->parent;
+      current_block = current_block->parent_block();
     }
   }
 };

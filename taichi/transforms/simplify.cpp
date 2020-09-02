@@ -451,14 +451,14 @@ class BasicBlockSimplify : public IRVisitor {
 
     if (if_stmt->true_statements) {
       if (if_stmt->true_statements->statements.empty()) {
-        if_stmt->true_statements = nullptr;
+        if_stmt->set_true_statements(nullptr);
         throw IRModified();
       }
     }
 
     if (if_stmt->false_statements) {
       if (if_stmt->false_statements->statements.empty()) {
-        if_stmt->false_statements = nullptr;
+        if_stmt->set_false_statements(nullptr);
         throw IRModified();
       }
     }
@@ -582,8 +582,6 @@ bool simplify(IRNode *root, Kernel *kernel) {
     else
       break;
   }
-  if (modified)
-    fix_block_parents(root);
   return modified;
 }
 
@@ -627,7 +625,6 @@ void full_simplify(IRNode *root, bool after_lower_access, Kernel *kernel) {
   die(root);
   simplify(root, kernel);
   die(root);
-  fix_block_parents(root);
 }
 
 }  // namespace irpass

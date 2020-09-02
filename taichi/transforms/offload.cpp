@@ -55,6 +55,7 @@ class Offloader {
         assemble_serial_statements();
         auto offloaded =
             Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::range_for);
+        // offloaded->body is an empty block now.
         offloaded->grid_dim =
             root->get_kernel()->program.config.saturating_grid_dim;
         if (s->block_dim == 0) {
@@ -62,7 +63,6 @@ class Offloader {
         } else {
           offloaded->block_dim = s->block_dim;
         }
-        offloaded->body = std::make_unique<Block>();
         if (auto val = s->begin->cast<ConstStmt>()) {
           offloaded->const_begin = true;
           offloaded->begin_value = val->val[0].val_int32();
@@ -653,7 +653,6 @@ void offload(IRNode *root) {
   TI_AUTO_PROF;
   auto offloaded_ranges = Offloader::run(root);
   type_check(root);
-  fix_block_parents(root);
   {
     auto stmt_to_offloaded = StmtToOffloaded::run(root);
     const auto local_to_global_offset = IdentifyValuesUsedInOtherOffloads::run(
@@ -662,7 +661,6 @@ void offload(IRNode *root) {
     stmt_to_offloaded = StmtToOffloaded::run(root);
     FixCrossOffloadReferences::run(root, local_to_global_offset,
                                    stmt_to_offloaded, &offloaded_ranges);
-    fix_block_parents(root);
   }
   insert_gc(root);
   // TODO(k-ye): Move this into its own pass. However, we need to wait for all
@@ -670,7 +668,6 @@ void offload(IRNode *root) {
   AssociateContinueScope::run(root);
   type_check(root);
   re_id(root);
-  fix_block_parents(root);
 }
 
 }  // namespace irpass

@@ -21,10 +21,6 @@ IRBuilder &current_ast_builder() {
   return context->builder();
 }
 
-CompileConfig &IRNode::get_config() const {
-  return get_kernel()->program.config;
-}
-
 std::string VectorType::pointer_suffix() const {
   if (is_pointer()) {
     return "*";
@@ -59,6 +55,7 @@ Block *IRBuilder::current_block() {
 }
 
 Stmt *IRBuilder::get_last_stmt() {
+  TI_ASSERT(!stack.empty());
   return stack.back()->back();
 }
 
@@ -77,7 +74,7 @@ std::unique_ptr<IRBuilder::ScopeGuard> IRBuilder::create_scope(
   TI_ASSERT(list == nullptr);
   list = std::make_unique<Block>();
   if (!stack.empty()) {
-    list->parent = stack.back();
+    list->parent_stmt = get_last_stmt();
   }
   return std::make_unique<ScopeGuard>(this, list.get());
 }
@@ -96,14 +93,33 @@ Stmt *VecStatement::push_back(pStmt &&stmt) {
   return ret;
 }
 
+IRNode *IRNode::get_ir_root() {
+  auto node = this;
+  while (node->get_parent()) {
+    node = node->get_parent();
+  }
+  return node;
+}
+
+Kernel *IRNode::get_kernel() const {
+  return const_cast<IRNode *>(this)->get_ir_root()->kernel;
+}
+
+CompileConfig &IRNode::get_config() const {
+  return get_kernel()->program.config;
+}
+
 std::unique_ptr<IRNode> IRNode::clone() {
+  std::unique_ptr<IRNode> new_irnode;
   if (is<Block>())
-    return as<Block>()->clone();
+    new_irnode = as<Block>()->clone();
   else if (is<Stmt>())
-    return as<Stmt>()->clone();
+    new_irnode = as<Stmt>()->clone();
   else {
     TI_NOT_IMPLEMENTED
   }
+  new_irnode->kernel = kernel;
+  return new_irnode;
 }
 
 class StatementTypeNameVisitor : public IRVisitor {
@@ -233,19 +249,8 @@ std::string Stmt::type() {
   return v.type_name;
 }
 
-IRNode *Stmt::get_ir_root() {
-  auto block = parent;
-  while (block->parent)
-    block = block->parent;
-  return dynamic_cast<IRNode *>(block);
-}
-
-Kernel *Stmt::get_kernel() const {
-  if (parent) {
-    return parent->get_kernel();
-  } else {
-    return nullptr;
-  }
+IRNode *Stmt::get_parent() const {
+  return parent;
 }
 
 std::vector<Stmt *> Stmt::get_operands() const {
@@ -559,18 +564,32 @@ bool LocalLoadStmt::has_source(Stmt *alloca) const {
   return false;
 }
 
+IfStmt::IfStmt(Stmt *cond)
+    : cond(cond), true_mask(nullptr), false_mask(nullptr) {
+  TI_STMT_REG_FIELDS;
+}
+
+void IfStmt::set_true_statements(std::unique_ptr<Block> &&new_true_statements) {
+  true_statements = std::move(new_true_statements);
+  if (true_statements)
+    true_statements->parent_stmt = this;
+}
+
+void IfStmt::set_false_statements(
+    std::unique_ptr<Block> &&new_false_statements) {
+  false_statements = std::move(new_false_statements);
+  if (false_statements)
+    false_statements->parent_stmt = this;
+}
+
 std::unique_ptr<Stmt> IfStmt::clone() const {
   auto new_stmt = std::make_unique<IfStmt>(cond);
   new_stmt->true_mask = true_mask;
   new_stmt->false_mask = false_mask;
   if (true_statements)
-    new_stmt->true_statements = true_statements->clone();
-  else
-    new_stmt->true_statements = nullptr;
+    new_stmt->set_true_statements(true_statements->clone());
   if (false_statements)
-    new_stmt->false_statements = false_statements->clone();
-  else
-    new_stmt->false_statements = nullptr;
+    new_stmt->set_false_statements(false_statements->clone());
   return new_stmt;
 }
 
@@ -656,8 +675,8 @@ Stmt *Block::lookup_var(const Identifier &ident) const {
   if (ptr != local_var_to_stmt.end()) {
     return ptr->second;
   } else {
-    if (parent) {
-      return parent->lookup_var(ident);
+    if (parent_block()) {
+      return parent_block()->lookup_var(ident);
     } else {
       return nullptr;
     }
@@ -667,22 +686,11 @@ Stmt *Block::lookup_var(const Identifier &ident) const {
 Stmt *Block::mask() {
   if (mask_var)
     return mask_var;
-  else if (parent == nullptr) {
+  else if (parent_block() == nullptr) {
     return nullptr;
   } else {
-    return parent->mask();
+    return parent_block()->mask();
   }
-}
-
-Kernel *Block::get_kernel() const {
-  Block *parent = this->parent;
-  if (parent == nullptr) {
-    return kernel;
-  }
-  while (parent->parent) {
-    parent = parent->parent;
-  }
-  return parent->kernel;
 }
 
 void Block::set_statements(VecStatement &&stmts) {
@@ -746,6 +754,16 @@ void Block::replace_with(Stmt *old_statement,
   }
 }
 
+Block *Block::parent_block() const {
+  if (parent_stmt == nullptr)
+    return nullptr;
+  return parent_stmt->parent;
+}
+
+IRNode *Block::get_parent() const {
+  return parent_stmt;
+}
+
 bool Block::has_container_statements() {
   for (auto &s : statements) {
     if (s->is_container_statement())
@@ -765,7 +783,7 @@ int Block::locate(Stmt *stmt) {
 
 std::unique_ptr<Block> Block::clone() const {
   auto new_block = std::make_unique<Block>();
-  new_block->parent = parent;
+  new_block->parent_stmt = parent_stmt;
   new_block->mask_var = mask_var;
   new_block->stop_gradients = stop_gradients;
   new_block->statements.reserve(size());
@@ -990,6 +1008,7 @@ RangeForStmt::RangeForStmt(Stmt *begin,
       block_dim(block_dim),
       strictly_serialized(strictly_serialized) {
   reversed = false;
+  this->body->parent_stmt = this;
   TI_STMT_REG_FIELDS;
 }
 
@@ -1011,6 +1030,7 @@ StructForStmt::StructForStmt(SNode *snode,
       vectorize(vectorize),
       parallelize(parallelize),
       block_dim(block_dim) {
+  this->body->parent_stmt = this;
   TI_STMT_REG_FIELDS;
 }
 
@@ -1021,8 +1041,22 @@ std::unique_ptr<Stmt> StructForStmt::clone() const {
   return new_stmt;
 }
 
+FuncBodyStmt::FuncBodyStmt(const std::string &funcid,
+                           std::unique_ptr<Block> &&body)
+    : funcid(funcid), body(std::move(body)) {
+  if (this->body)
+    this->body->parent_stmt = this;
+  TI_STMT_REG_FIELDS;
+}
+
 std::unique_ptr<Stmt> FuncBodyStmt::clone() const {
   return std::make_unique<FuncBodyStmt>(funcid, body->clone());
+}
+
+WhileStmt::WhileStmt(std::unique_ptr<Block> &&body)
+    : mask(nullptr), body(std::move(body)) {
+  this->body->parent_stmt = this;
+  TI_STMT_REG_FIELDS;
 }
 
 std::unique_ptr<Stmt> WhileStmt::clone() const {

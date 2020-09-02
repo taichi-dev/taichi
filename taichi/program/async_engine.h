@@ -73,8 +73,7 @@ class KernelLaunchRecord {
   KernelLaunchRecord(Context context,
                      Kernel *kernel,
                      OffloadedStmt *stmt,
-                     uint64 h,
-                     Block *dummy_root);
+                     uint64 h);
 
   inline OffloadedStmt *stmt() {
     return stmt_;
@@ -92,8 +91,7 @@ class KernelLaunchRecord {
   // by |cloned_stmt_holder_|.
   OffloadedStmt *stmt_;
 
-  // These are for cloning |stmt_|.
-  Block *dummy_root_;  // Not owned
+  // This is for cloning |stmt_|.
   std::unique_ptr<OffloadedStmt> cloned_stmt_holder_;
 };
 
@@ -156,8 +154,6 @@ class AsyncEngine {
 
  private:
   struct KernelMeta {
-    std::unique_ptr<Block> dummy_root;
-
     // OffloadedCachedData holds some data that needs to be computed once for
     // each offloaded task of a kernel. Especially, it holds a cloned offloaded
     // task, but uses it as a READ-ONLY template. That is, code that later finds
@@ -192,9 +188,7 @@ class AsyncEngine {
 
     std::vector<OffloadedCachedData> offloaded_cached;
 
-    inline bool initialized() const {
-      return dummy_root != nullptr;
-    }
+    bool initialized{false};
   };
 
   struct TaskMeta {

@@ -154,13 +154,22 @@ void ExecutionQueue::enqueue(TaskLaunchRecord &&ker) {
   auto h = ker.h;
   auto *stmt = ker.stmt();
   auto kernel = ker.kernel;
-  if (compiled_func.find(h) == compiled_func.end() &&
-      to_be_compiled.find(h) == to_be_compiled.end()) {
-    to_be_compiled.insert(h);
+
+  bool needs_compile = false;
+  AsyncCompiledFunc *async_func = nullptr;
+  {
+    std::lock_guard<std::mutex> _(mut);
+    needs_compile = (compiled_funcs_.find(h) == compiled_funcs_.end());
+    if (needs_compile) {
+      compiled_funcs_.emplace(h, AsyncCompiledFunc());
+    }
+    async_func = &(compiled_funcs_.at(h));
+  }
+  if (needs_compile) {
     // Later the IR passes will change |stmt|, so we must clone it.
     stmt = ker.clone_stmt_on_write();
 
-    compilation_workers.enqueue([&, stmt, kernel, h, this]() {
+    compilation_workers.enqueue([async_func, stmt, kernel]() {
       {
         // Final lowering
         using namespace irpass;
@@ -177,28 +186,15 @@ void ExecutionQueue::enqueue(TaskLaunchRecord &&ker) {
       }
       auto codegen = KernelCodeGen::create(kernel->arch, kernel, stmt);
       auto func = codegen->codegen();
-      std::lock_guard<std::mutex> _(mut);
-      compiled_func[h] = func;
+      async_func->set(func);
     });
   }
 
   kernel->account_for_offloaded(ker.stmt());
 
-  auto context = ker.context;
-  launch_worker.enqueue([&, h, context, this] {
-    FunctionType func;
-    while (true) {
-      std::unique_lock<std::mutex> lock(mut);
-      if (compiled_func.find(h) == compiled_func.end()) {
-        lock.unlock();
-        Time::sleep(1e-6);
-        continue;
-      }
-      func = compiled_func[h];
-      break;
-    }
-    auto c = context;
-    func(c);
+  launch_worker.enqueue([async_func, context = ker.context]() mutable {
+    auto func = async_func->get();
+    func(context);
   });
   trashbin.push_back(std::move(ker));
 }

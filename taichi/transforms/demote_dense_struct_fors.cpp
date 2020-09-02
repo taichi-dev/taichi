@@ -141,7 +141,6 @@ void demote_dense_struct_fors(IRNode *root) {
     maybe_convert(s);
   }
   re_id(root);
-  fix_block_parents(root);
 }
 
 }  // namespace irpass

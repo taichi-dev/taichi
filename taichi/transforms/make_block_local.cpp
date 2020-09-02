@@ -315,7 +315,6 @@ void make_block_local(IRNode *root) {
     make_block_local_offload(root->as<OffloadedStmt>());
   }
   type_check(root);
-  fix_block_parents(root);
 }
 
 }  // namespace irpass

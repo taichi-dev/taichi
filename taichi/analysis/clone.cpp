@@ -118,12 +118,10 @@ class IRCloner : public IRVisitor {
     cloner.phase = IRCloner::replace_operand;
     root->accept(&cloner);
 
-    using namespace irpass;
-    fix_block_parents(new_root.get());
     if (kernel != nullptr) {
       new_root->kernel = kernel;
     }
-    type_check(new_root.get());
+    irpass::type_check(new_root.get());  // probably unnecessary
     return new_root;
   }
 };

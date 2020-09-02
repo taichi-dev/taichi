@@ -412,7 +412,6 @@ bool AsyncEngine::fuse() {
       // replace all reference to the offloaded statement B to A
       irpass::replace_all_usages_with(task_a, task_b, task_a);
       irpass::re_id(task_a);
-      irpass::fix_block_parents(task_a);
 
       auto kernel = task_queue[i].kernel;
       irpass::full_simplify(task_a, /*after_lower_access=*/false, kernel);

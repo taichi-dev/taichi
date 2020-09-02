@@ -46,7 +46,6 @@ bool lower_access(IRNode *root, bool lower_atomic);
 void auto_diff(IRNode *root, bool use_stack = false);
 bool constant_fold(IRNode *root);
 void offload(IRNode *root);
-void fix_block_parents(IRNode *root);
 void replace_statements_with(IRNode *root,
                              std::function<bool(Stmt *)> filter,
                              std::function<std::unique_ptr<Stmt>()> generator);

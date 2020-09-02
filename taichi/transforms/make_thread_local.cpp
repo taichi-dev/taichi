@@ -185,7 +185,6 @@ void make_thread_local(IRNode *root) {
     make_thread_local_offload(root->as<OffloadedStmt>());
   }
   type_check(root);
-  fix_block_parents(root);
 }
 
 }  // namespace irpass

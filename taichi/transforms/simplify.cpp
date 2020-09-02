@@ -630,8 +630,6 @@ bool simplify(IRNode *root, Kernel *kernel) {
     else
       break;
   }
-  if (modified)
-    fix_block_parents(root);
   return modified;
 }
 
@@ -675,7 +673,6 @@ void full_simplify(IRNode *root, bool after_lower_access, Kernel *kernel) {
   die(root);
   simplify(root, kernel);
   die(root);
-  fix_block_parents(root);
 }
 
 }  // namespace irpass

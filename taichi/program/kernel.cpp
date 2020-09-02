@@ -319,21 +319,21 @@ void Kernel::account_for_offloaded(OffloadedStmt *stmt) {
   if (is_evaluator || is_accessor)
     return;
   auto task_type = stmt->task_type;
-  stat.add("launched_kernels", 1.0);
+  stat.add("launched_tasks", 1.0);
   if (task_type == OffloadedStmt::TaskType::listgen) {
-    stat.add("launched_kernels_list_op", 1.0);
-    stat.add("launched_kernels_list_gen", 1.0);
+    stat.add("launched_tasks_list_op", 1.0);
+    stat.add("launched_tasks_list_gen", 1.0);
   } else if (task_type == OffloadedStmt::TaskType::clear_list) {
-    stat.add("launched_kernels_list_op", 1.0);
-    stat.add("launched_kernels_list_clear", 1.0);
+    stat.add("launched_tasks_list_op", 1.0);
+    stat.add("launched_tasks_list_clear", 1.0);
   } else if (task_type == OffloadedStmt::TaskType::range_for) {
-    stat.add("launched_kernels_compute", 1.0);
-    stat.add("launched_kernels_range_for", 1.0);
+    stat.add("launched_tasks_compute", 1.0);
+    stat.add("launched_tasks_range_for", 1.0);
   } else if (task_type == OffloadedStmt::TaskType::struct_for) {
-    stat.add("launched_kernels_compute", 1.0);
-    stat.add("launched_kernels_struct_for", 1.0);
+    stat.add("launched_tasks_compute", 1.0);
+    stat.add("launched_tasks_struct_for", 1.0);
   } else if (task_type == OffloadedStmt::TaskType::gc) {
-    stat.add("launched_kernels_garbage_collect", 1.0);
+    stat.add("launched_tasks_garbage_collect", 1.0);
   }
 }
 

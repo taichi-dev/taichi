@@ -251,6 +251,8 @@ class IRNode {
     TI_NOT_IMPLEMENTED
   }
 
+  // * For a Stmt, this returns its enclosing Block
+  // * For a Block, this returns its enclosing Stmt
   virtual IRNode *get_parent() const = 0;
 
   IRNode *get_ir_root();

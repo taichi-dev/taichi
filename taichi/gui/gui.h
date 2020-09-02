@@ -833,13 +833,13 @@ class GUI : public GUIBase {
             "to exit gracefully)");
       }
     }
-    while (last_frame_interval.size() > 30) {
-      last_frame_interval.erase(last_frame_interval.begin());
-    }
-    auto real_fps = last_frame_interval.size() /
-                    (std::accumulate(last_frame_interval.begin(),
-                                     last_frame_interval.end(), 0.0_f));
     if (show_gui) {
+      while (last_frame_interval.size() > 30) {
+        last_frame_interval.erase(last_frame_interval.begin());
+      }
+      auto real_fps = last_frame_interval.size() /
+                      (std::accumulate(last_frame_interval.begin(),
+                                       last_frame_interval.end(), 0.0_f));
       update_gui(real_fps);
     }
   }

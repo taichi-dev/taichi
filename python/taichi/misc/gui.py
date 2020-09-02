@@ -36,9 +36,9 @@ class GUI:
 
     def __init__(self,
                  name='Taichi',
-                 show_gui=True,
                  res=512,
-                 background_color=0x0):
+                 background_color=0x0,
+                 show_gui=True):
         self.name = name
         if isinstance(res, numbers.Number):
             res = (res, res)

@@ -220,8 +220,8 @@ void GUI::set_title(std::string title) {
 }
 
 GUI::~GUI() {
-  std::free(data);
   if (show_gui) {
+    std::free(data);
     DeleteDC(src);
     gui_from_hwnd.erase(hwnd);
   }

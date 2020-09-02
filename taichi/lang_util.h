@@ -148,6 +148,7 @@ std::string ternary_type_name(TernaryOpType type);
 enum class AtomicOpType : int { add, sub, max, min, bit_and, bit_or, bit_xor };
 
 std::string atomic_op_type_name(AtomicOpType type);
+BinaryOpType atomic_to_binary_op_type(AtomicOpType type);
 
 enum class SNodeOpType : int {
   is_active,

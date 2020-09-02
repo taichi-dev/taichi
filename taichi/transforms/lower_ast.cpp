@@ -103,12 +103,6 @@ class LowerAST : public IRVisitor {
   }
 
   void visit(IfStmt *if_stmt) override {
-    if (if_stmt->true_statements && if_stmt->true_statements->parent_stmt != if_stmt) {
-      std::cout << "true block " << if_stmt->true_statements.get() << std::endl;
-    }
-    if (if_stmt->false_statements && if_stmt->false_statements->parent_stmt != if_stmt) {
-      std::cout << "block " << if_stmt->false_statements.get() << std::endl;
-    }
     if (if_stmt->true_statements)
       if_stmt->true_statements->accept(this);
     if (if_stmt->false_statements) {
@@ -197,8 +191,6 @@ class LowerAST : public IRVisitor {
   }
 
   void visit(FrontendForStmt *stmt) override {
-    std::cout << "visit for" << std::endl;
-    irpass::print(stmt->get_ir_root());
     auto fctx = make_flatten_ctx();
     if (stmt->is_ranged()) {
       TI_ASSERT(stmt->loop_var_id.size() == 1);
@@ -347,8 +339,6 @@ class LowerAST : public IRVisitor {
   }
 
   void visit(FrontendAssignStmt *assign) override {
-    std::cout << "visit assign" << std::endl;
-    irpass::print(assign->get_ir_root());
     // expand rhs
     auto expr = assign->rhs;
     auto fctx = make_flatten_ctx();

@@ -251,9 +251,7 @@ class IRNode {
     TI_NOT_IMPLEMENTED
   }
 
-  virtual IRNode *get_parent() const {
-    TI_NOT_IMPLEMENTED
-  }
+  virtual IRNode *get_parent() const {TI_NOT_IMPLEMENTED}
 
   IRNode *get_ir_root();
   Kernel *get_kernel() const;

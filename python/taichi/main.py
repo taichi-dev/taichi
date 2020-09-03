@@ -1022,6 +1022,9 @@ class TaichiMain:
         parser.add_argument(
             'fout_name', help='The output C source file name, e.g. program.c')
         parser.add_argument(
+            'hdrout_name',
+            help='The output C header file name, e.g. program.h')
+        parser.add_argument(
             '-e',
             '--emscripten',
             required=False,
@@ -1032,7 +1035,7 @@ class TaichiMain:
         args = parser.parse_args(arguments)
 
         from .cc_compose import main
-        main(args.fin_name, args.fout_name, args.emscripten)
+        main(args.fin_name, args.fout_name, args.hdrout_name, args.emscripten)
 
     @register
     def repl(self, arguments: list = sys.argv[2:]):

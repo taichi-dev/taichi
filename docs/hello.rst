@@ -77,15 +77,15 @@ Taichi programs run on either CPUs or GPUs. Initialize Taichi according to your 
 
     Supported backends on different platforms:
 
-    +----------+------+------+--------+-------+
-    | platform | CPU  | CUDA | OpenGL | Metal |
-    +==========+======+======+========+=======+
-    | Windows  | OK   | OK   | OK     | N/A   |
-    +----------+------+------+--------+-------+
-    | Linux    | OK   | OK   | OK     | N/A   |
-    +----------+------+------+--------+-------+
-    | Mac OS X | OK   | N/A  | N/A    | OK    |
-    +----------+------+------+--------+-------+
+    +----------+------+------+--------+-------+----------+
+    | platform | CPU  | CUDA | OpenGL | Metal | C source |
+    +==========+======+======+========+=======+==========+
+    | Windows  | OK   | OK   | OK     | N/A   | N/A      |
+    +----------+------+------+--------+-------+----------+
+    | Linux    | OK   | OK   | OK     | N/A   | OK       |
+    +----------+------+------+--------+-------+----------+
+    | Mac OS X | OK   | N/A  | N/A    | OK    | N/A      |
+    +----------+------+------+--------+-------+----------+
 
     (OK: supported; N/A: not available)
 

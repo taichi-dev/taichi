@@ -72,6 +72,17 @@ def begin_frontend_struct_for(group, loop_range):
     taichi_lang_core.begin_frontend_struct_for(group, loop_range.ptr)
 
 
+def begin_frontend_if(cond):
+    if is_taichi_class(cond):
+        raise ValueError(
+            'The truth value of vectors/matrices is ambiguous.\n'
+            'Consider using `any` or `all` when comparing vectors/matrices:\n'
+            '    if all(x == y):\n'
+            'or\n'
+            '    if any(x != y):\n')
+    taichi_lang_core.begin_frontend_if(Expr(cond).ptr)
+
+
 def wrap_scalar(x):
     if type(x) in [int, float]:
         return Expr(x)
@@ -407,14 +418,26 @@ def ti_print(*vars, sep=' ', end='\n'):
         else:
             return Expr(var).ptr
 
+    def list_ti_repr(var):
+        yield '['  # distinguishing tuple & list will increase maintainance cost
+        for i, v in enumerate(var):
+            if i:
+                yield ', '
+            yield v
+        yield ']'
+
     def vars2entries(vars):
         for var in vars:
             if hasattr(var, '__ti_repr__'):
-                repr = var.__ti_repr__()
-                for v in vars2entries(repr):
-                    yield v
+                res = var.__ti_repr__()
+            elif isinstance(var, (list, tuple)):
+                res = list_ti_repr(var)
             else:
                 yield var
+                continue
+
+            for v in vars2entries(res):
+                yield v
 
     def add_separators(vars):
         for i, var in enumerate(vars):
@@ -443,6 +466,15 @@ def ti_print(*vars, sep=' ', end='\n'):
 
 
 @taichi_scope
+def ti_assert(cond, msg, extra_args):
+    # Mostly a wrapper to help us convert from ti.Expr (defined in Python) to
+    # taichi_lang_core.Expr (defined in C++)
+    import taichi as ti
+    taichi_lang_core.create_assert_stmt(
+        ti.Expr(cond).ptr, msg, [ti.Expr(x).ptr for x in extra_args])
+
+
+@taichi_scope
 def ti_int(var):
     _taichi_skip_traceback = 1
     if hasattr(var, '__ti_int__'):
@@ -458,6 +490,16 @@ def ti_float(var):
         return var.__ti_float__()
     else:
         return float(var)
+
+
+@taichi_scope
+def get_external_tensor_dim(var):
+    return taichi_lang_core.get_external_tensor_dim(var)
+
+
+@taichi_scope
+def get_external_tensor_shape_along_axis(var, i):
+    return taichi_lang_core.get_external_tensor_shape_along_axis(var, i)
 
 
 def indices(*x):

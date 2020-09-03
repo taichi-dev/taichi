@@ -40,7 +40,10 @@ class TypeCheck : public IRVisitor {
 
   void visit(IfStmt *if_stmt) {
     // TODO: use DataType::u1 when it's supported
-    TI_ASSERT(if_stmt->cond->ret_type.data_type == DataType::i32);
+    TI_ASSERT_INFO(
+        if_stmt->cond->ret_type.data_type == DataType::i32,
+        "`if` conditions must be of type int32, consider using `if x != 0:` "
+        "instead of `if x:` for float values.");
     if (if_stmt->true_statements)
       if_stmt->true_statements->accept(this);
     if (if_stmt->false_statements) {
@@ -108,6 +111,10 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(SNodeOpStmt *stmt) {
+    stmt->ret_type = VectorType(1, DataType::i32);
+  }
+
+  void visit(ExternalTensorShapeAlongAxisStmt *stmt) {
     stmt->ret_type = VectorType(1, DataType::i32);
   }
 

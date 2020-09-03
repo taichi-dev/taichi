@@ -4,6 +4,10 @@
 #include "taichi/ir/snode.h"
 #include "taichi/ir/ir.h"
 
+#define TI_RUNTIME_HOST
+#include "taichi/program/context.h"
+#undef TI_RUNTIME_HOST
+
 TLANG_NAMESPACE_BEGIN
 
 class Program;
@@ -47,9 +51,13 @@ class Kernel {
   // TODO: Give "Context" a more specific name.
   class LaunchContextBuilder {
    public:
-    LaunchContextBuilder(Kernel *kernel, Context *ctx)
-        : kernel_(kernel), ctx_(ctx) {
-    }
+    LaunchContextBuilder(Kernel *kernel, Context *ctx);
+    explicit LaunchContextBuilder(Kernel *kernel);
+
+    LaunchContextBuilder(LaunchContextBuilder &&) = default;
+    LaunchContextBuilder &operator=(LaunchContextBuilder &&) = default;
+    LaunchContextBuilder(const LaunchContextBuilder &) = delete;
+    LaunchContextBuilder &operator=(const LaunchContextBuilder &) = delete;
 
     void set_arg_float(int i, float64 d);
 
@@ -66,12 +74,13 @@ class Kernel {
     Context &get_context();
 
    private:
-    Kernel *const kernel_;
-    // TODO: Right now |ctx_| is borrowed from other places: either the
-    // program's context, or the one in the CUDA launch function. In the future,
-    // this could *own* a Context (possibly through a std::unique_ptr, since we
-    // don't always need to own the Context.)
-    Context *const ctx_;
+    Kernel *kernel_;
+    std::unique_ptr<Context> owned_ctx_;
+    // |ctx_| *almost* always points to |owned_ctx_|. However, it is possible
+    // that the caller passes a Context pointer externally. In that case,
+    // |owned_ctx_| will be nullptr.
+    // Invariant: |ctx_| will never be nullptr.
+    Context *ctx_;
   };
 
   Kernel(Program &program,
@@ -83,7 +92,7 @@ class Kernel {
 
   void lower(bool to_executable = true);
 
-  void operator()(LaunchContextBuilder &launch_ctx);
+  void operator()(LaunchContextBuilder &ctx_builder);
 
   LaunchContextBuilder make_launch_context();
 

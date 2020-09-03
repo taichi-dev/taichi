@@ -19,8 +19,9 @@ OffloadedStmt::OffloadedStmt(OffloadedStmt::TaskType task_type, SNode *snode)
   step = 0;
   reversed = false;
   device = get_current_program().config.arch;
-  if (task_type != TaskType::listgen) {
+  if (has_body()) {
     body = std::make_unique<Block>();
+    body->parent_stmt = this;
   }
   TI_STMT_REG_FIELDS;
 }
@@ -73,8 +74,10 @@ std::unique_ptr<Stmt> OffloadedStmt::clone() const {
   new_stmt->reversed = reversed;
   new_stmt->num_cpu_threads = num_cpu_threads;
   new_stmt->device = device;
-  if (body)
+  if (body) {
     new_stmt->body = body->clone();
+    new_stmt->body->parent_stmt = new_stmt.get();
+  }
   return new_stmt;
 }
 

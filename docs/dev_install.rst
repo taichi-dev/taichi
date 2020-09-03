@@ -116,6 +116,10 @@ Setting up Taichi for development
 
     Then execute ``source ~/.bashrc`` to reload shell config.
 
+    .. note::
+
+        If you're using fish, use ``set -x NAME VALUES``, otherwise it won't be loaded by child processes.
+
   * On Windows, please add these variables by accessing your system settings:
 
     1. Add ``TAICHI_REPO_DIR`` whose value is the path to your taichi repository so that Taichi knows you're a developer.

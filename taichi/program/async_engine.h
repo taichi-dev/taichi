@@ -64,16 +64,17 @@ class ParallelExecutor {
   std::condition_variable flush_cv_;
 };
 
-class KernelLaunchRecord {
+// Records the necessary data for launching an offloaed task.
+class TaskLaunchRecord {
  public:
   Context context;
   Kernel *kernel;  // TODO: remove this
   uint64 h;        // hash of |stmt|
 
-  KernelLaunchRecord(Context context,
-                     Kernel *kernel,
-                     OffloadedStmt *stmt,
-                     uint64 h);
+  TaskLaunchRecord(Context context,
+                   Kernel *kernel,
+                   OffloadedStmt *stmt,
+                   uint64 h);
 
   inline OffloadedStmt *stmt() {
     return stmt_;
@@ -99,8 +100,8 @@ class KernelLaunchRecord {
 class ExecutionQueue {
  public:
   std::mutex mut;
-  std::deque<KernelLaunchRecord> task_queue;
-  std::vector<KernelLaunchRecord> trashbin;  // prevent IR from being deleted
+  std::deque<TaskLaunchRecord> task_queue;
+  std::vector<TaskLaunchRecord> trashbin;  // prevent IR from being deleted
   std::unordered_set<uint64> to_be_compiled;
 
   ParallelExecutor compilation_workers;  // parallel compilation
@@ -110,7 +111,7 @@ class ExecutionQueue {
 
   ExecutionQueue();
 
-  void enqueue(KernelLaunchRecord &&ker);
+  void enqueue(TaskLaunchRecord &&ker);
 
   void compile_task() {
   }
@@ -133,7 +134,7 @@ class AsyncEngine {
 
   ExecutionQueue queue;
 
-  std::deque<KernelLaunchRecord> task_queue;
+  std::deque<TaskLaunchRecord> task_queue;
 
   AsyncEngine() {
   }
@@ -148,7 +149,7 @@ class AsyncEngine {
 
   void launch(Kernel *kernel, Context &context);
 
-  void enqueue(KernelLaunchRecord &&t);
+  void enqueue(TaskLaunchRecord &&t);
 
   void synchronize();
 

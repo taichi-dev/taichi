@@ -129,10 +129,10 @@ void ParallelExecutor::worker_loop() {
   }
 }
 
-KernelLaunchRecord::KernelLaunchRecord(Context context,
-                                       Kernel *kernel,
-                                       OffloadedStmt *stmt,
-                                       uint64 h)
+TaskLaunchRecord::TaskLaunchRecord(Context context,
+                                   Kernel *kernel,
+                                   OffloadedStmt *stmt,
+                                   uint64 h)
     : context(context),
       kernel(kernel),
       h(h),
@@ -142,7 +142,7 @@ KernelLaunchRecord::KernelLaunchRecord(Context context,
   TI_ASSERT(stmt_->get_kernel() != nullptr);
 }
 
-OffloadedStmt *KernelLaunchRecord::clone_stmt_on_write() {
+OffloadedStmt *TaskLaunchRecord::clone_stmt_on_write() {
   if (cloned_stmt_holder_ == nullptr) {
     cloned_stmt_holder_ = clone_offloaded_task(stmt_, kernel);
     stmt_ = cloned_stmt_holder_.get();
@@ -150,7 +150,7 @@ OffloadedStmt *KernelLaunchRecord::clone_stmt_on_write() {
   return stmt_;
 }
 
-void ExecutionQueue::enqueue(KernelLaunchRecord &&ker) {
+void ExecutionQueue::enqueue(TaskLaunchRecord &&ker) {
   auto h = ker.h;
   auto *stmt = ker.stmt();
   auto kernel = ker.kernel;
@@ -237,7 +237,7 @@ void AsyncEngine::launch(Kernel *kernel, Context &context) {
       TI_ASSERT(kmeta.offloaded_cached.size() == i);
       kmeta.offloaded_cached.emplace_back(std::move(cloned_offs), h);
     }
-    KernelLaunchRecord rec(context, kernel, offl_template, h);
+    TaskLaunchRecord rec(context, kernel, offl_template, h);
     enqueue(std::move(rec));
   }
   if (!kmeta_inited) {
@@ -245,7 +245,7 @@ void AsyncEngine::launch(Kernel *kernel, Context &context) {
   }
 }
 
-void AsyncEngine::enqueue(KernelLaunchRecord &&t) {
+void AsyncEngine::enqueue(TaskLaunchRecord &&t) {
   using namespace irpass::analysis;
 
   auto &meta = offloaded_metas_[t.h];
@@ -309,7 +309,7 @@ bool AsyncEngine::optimize_listgen() {
   // TODO: improve...
   bool modified = false;
   std::unordered_map<SNode *, bool> list_dirty;
-  auto new_task_queue = std::deque<KernelLaunchRecord>();
+  auto new_task_queue = std::deque<TaskLaunchRecord>();
   for (int i = 0; i < task_queue.size(); i++) {
     // Try to eliminate unused listgens
     auto &t = task_queue[i];
@@ -421,7 +421,7 @@ bool AsyncEngine::fuse() {
     }
   }
 
-  auto new_task_queue = std::deque<KernelLaunchRecord>();
+  auto new_task_queue = std::deque<TaskLaunchRecord>();
 
   // Eliminate empty tasks
   for (int i = 0; i < (int)task_queue.size(); i++) {

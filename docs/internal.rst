@@ -1,6 +1,7 @@
 Internal designs (WIP)
 ======================
 
+
 Intermediate representation
 ---------------------------
 Use ``ti.init(print_ir=True)`` to print IR on the console.
@@ -174,38 +175,6 @@ The list of ``root`` node always has exactly one element (instance), so we never
 
     In the example above, although we have ``16`` instances of ``x``,
     we only generate a list of ``4`` ``bitmasked`` nodes (and ``1`` ``dense`` node).
-
-
-Code generation
----------------
-
-
-Statistics
-----------
-
-In some cases, it is helpful to gather certain quantitative information about internal events during
-Taichi program execution. The ``Statistics`` class is designed for this purpose.
-
-Usage:
-
-.. code-block:: C++
-
-    #include "taichi/util/statistics.h"
-
-    // add 1.0 to counter "codegen_offloaded_tasks"
-    taichi::stat.add("codegen_offloaded_tasks");
-
-    // add the number of statements in "ir" to counter "codegen_statements"
-    taichi::stat.add("codegen_statements", irpass::analysis::count_statements(this->ir));
-
-
-Note the keys are ``std::string`` and values are ``double``.
-
-To print out all statistics in Python:
-
-.. code-block:: Python
-
-    ti.core.print_stat()
 
 
 Why Python frontend

@@ -7,13 +7,12 @@ For-loop decorators
 
 In Taichi kernels, for-loops in the outermost scope is automatically parallelized.
 
-However, there're some implementation details about **how it is parallelized**.
+However, there are some implementation details about **how it is parallelized**.
 
-Taichi provides some API to modify these parameters which is usually invisible
-from end-users.
-This allows advanced users to manually fine tune the performance to be better.
+Taichi provides some API to modify these parameters.
+This allows advanced users to manually fine-tune the performance.
 
-For example, specifying a suitable ``ti.block_dim`` could yield almost 3x performance boost in `examples/mpm3d.py <https://github.com/taichi-dev/taichi/blob/master/examples/mpm3d.py>`_!
+For example, specifying a suitable ``ti.block_dim`` could yield an almost 3x performance boost in `examples/mpm3d.py <https://github.com/taichi-dev/taichi/blob/master/examples/mpm3d.py>`_.
 
 .. note::
 
@@ -53,7 +52,7 @@ For more details, please see `the CUDA C programming guide <https://docs.nvidia.
 API reference
 *************
 
-We may **prepend** some decorator(s) to tweak the property of a for-loop, e.g.:
+Programmers may **prepend** some decorator(s) to tweak the property of a for-loop, e.g.:
 
 .. code-block:: python
 
@@ -77,7 +76,7 @@ Here is a list of available decorators:
 
     :parameter n: (int) threads per block / block dimension
 
-    Specify the **threads per block** of next parallelized for-loop.
+    Specify the **threads per block** of the next parallel for-loop.
 
 
     .. note::

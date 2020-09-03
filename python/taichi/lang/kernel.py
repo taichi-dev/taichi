@@ -266,9 +266,7 @@ class Kernel:
                 )
             annotation = param.annotation
             if param.annotation is inspect.Parameter.empty:
-                _taichi_skip_traceback = 1
-                raise KernelDefError(
-                    'Taichi kernels parameters must be type annotated')
+                annotation = template()
             elif isinstance(annotation, (template, ext_arr)):
                 pass
             elif id(annotation) in type_ids:
@@ -512,6 +510,7 @@ def kernel(func):
 
 
 def data_oriented(cls):
+    cls._data_oriented = True
     return cls
 
 

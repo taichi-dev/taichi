@@ -24,19 +24,14 @@ class DemoteOperations : public BasicStmtVisitor {
       return;
 
     VecStatement statements;
-    auto one = statements.push_back<ConstStmt>(LaneAttribute<TypedConstant>(1));
     auto begin = statements.push_back<ConstStmt>(
         LaneAttribute<TypedConstant>(stmt->bit_begin));
-    auto esbeg = statements.push_back<ConstStmt>(
-        LaneAttribute<TypedConstant>(stmt->bit_end - stmt->bit_begin));
     auto input_sar_begin = statements.push_back<BinaryOpStmt>(
         BinaryOpType::bit_sar, stmt->input, begin);
-    auto one_shl_esbeg =
-        statements.push_back<BinaryOpStmt>(BinaryOpType::bit_shl, one, esbeg);
-    auto one_shl_esbeg_sub_one = statements.push_back<BinaryOpStmt>(
-        BinaryOpType::sub, one_shl_esbeg, one);
+    auto mask = statements.push_back<ConstStmt>(LaneAttribute<TypedConstant>(
+          ((1LL << (stmt->bit_end - stmt->bit_begin)) - 1);
     auto ret = statements.push_back<BinaryOpStmt>(
-        BinaryOpType::bit_and, input_sar_begin, one_shl_esbeg_sub_one);
+        BinaryOpType::bit_and, input_sar_begin, mask);
 
     stmt->replace_with(ret);
     modifier.insert_before(stmt, std::move(statements));

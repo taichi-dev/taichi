@@ -6,6 +6,30 @@ C++ style
 
 We generally follow `Google C++ Style Guide <https://google.github.io/styleguide/cppguide.html>`_.
 
+For example:
+
+.. code-block:: cpp
+
+    namespace mynamespace {
+
+        class MyClass {
+            ...
+        };
+
+        void my_function(MyClass *mc, int value) {
+            mc->some_value = value;
+            if (mc->some_ptr != nullptr) {
+                mc->some_method();  // some comments
+            } else if (mc->some_other_ptr != nullptr) {
+                // TODO: some todo notes
+                mc->some_other_method();
+            } else {
+                TI_NOT_IMPLEMENTED
+            }
+        }
+
+    }  // namespace mynamespace
+
 Naming
 ******
 - Variable and function names should consist of lowercase words connected by underscores, e.g. ``llvm_context`` and ``get_current_kernel``.
@@ -24,9 +48,9 @@ Don'ts
 ******
 - C language legacies:
 
-   -  ``printf`` (Use ``fmtlib::print`` instead).
-   -  ``new`` and ``free``. (Use smart pointers ``std::unique_ptr, std::shared_ptr`` instead for ownership management).
-   -  ``#include <math.h>`` (Use ``#include <cmath>`` instead).
+   *  ``printf`` (Use ``fmtlib::print`` instead).
+   *  ``new`` and ``free``. (Use smart pointers ``std::unique_ptr, std::shared_ptr`` instead for ownership management).
+   *  ``#include <math.h>`` (Use ``#include <cmath>`` instead).
 
 - Exceptions (We are on our way to **remove** all C++ exception usages in Taichi).
 - Prefix member functions with ``m_`` or ``_``.
@@ -34,12 +58,37 @@ Don'ts
 - ``NULL`` (Use ``nullptr`` instead).
 - ``using namespace std;`` in the global scope.
 - ``typedef`` (Use ``using`` instead).
+- Misuse of ``&`` (references).
 
 
 Python style
 ------------
 
 We generally follow `PEP8 <https://pep8.org>`_ for Python style.
+
+For example:
+
+.. code-block:: python
+
+    import numpy as np
+    from .lang import my_decorator
+
+    class MyClass:
+        ...
+
+    @my_decorator
+    def my_function(mc, value=None):
+        if value is None:
+            value = np.array([2, 3])
+
+        mc.some_value = value
+        if mc.some_obj is not None:
+            mc.some_method()  # some comments
+        elif mc.some_other_obj is not None:
+            # TODO: some todo notes
+            mc.some_other_method()
+        else:
+            raise NotImplementedError('Some error messages')
 
 Identation
 **********
@@ -60,6 +109,7 @@ Dos
 ***
 - Make good use of default arguments for simplicity.
 - Use Python decorators for functions when appropriate.
+- Use relative import, e.g. ``from .lang import Matrix`` instead of ``from taichi.lang import Matrix``.
 - The operators tend to get scattered across different columns on the screen, and each operator is moved away from its operand and onto the previous line, e.g.:
 
 .. code-block:: python
@@ -75,6 +125,7 @@ Don'ts
 - Mixed tabs and spaces. (Please always use 4 spaces for indent)
 - Too long lines. (Please make use of local variables to break it down)
 - Return ``None`` on failure. (Please raise an exception loudly when failure)
+- Use ``from xxx import *``` without specifying ``__all__`` in module ``xxx``.
 - Use a non-trivial value as inline default arguments:
 
 .. code-block:: python
@@ -89,13 +140,3 @@ Don'ts
       if y is None:
         y = sys.stdout
       ...
-
-
-Automatic code formatting
--------------------------
-
-There are three ways to format your code.
-
-1. Run ``ti format`` locally.
-2. Click the link to format server in PR description.
-2. Request `@taichi-gardener <https://github.com/taichi-gardener>`_ (a bot account) for review in your PR.

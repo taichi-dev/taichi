@@ -29,9 +29,9 @@ class DemoteOperations : public BasicStmtVisitor {
     auto input_sar_begin = statements.push_back<BinaryOpStmt>(
         BinaryOpType::bit_sar, stmt->input, begin);
     auto mask = statements.push_back<ConstStmt>(LaneAttribute<TypedConstant>(
-          ((1 << (stmt->bit_end - stmt->bit_begin)) - 1)));
-    auto ret = statements.push_back<BinaryOpStmt>(
-        BinaryOpType::bit_and, input_sar_begin, mask);
+        ((1 << (stmt->bit_end - stmt->bit_begin)) - 1)));
+    auto ret = statements.push_back<BinaryOpStmt>(BinaryOpType::bit_and,
+                                                  input_sar_begin, mask);
 
     stmt->replace_with(ret);
     modifier.insert_before(stmt, std::move(statements));

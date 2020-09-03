@@ -1,6 +1,6 @@
-import taichi as ti  # make sure you've 'pip3 install taichi' already
+import taichi as ti  # make sure you have done "pip3 install taichi"
 
-# declare a 512x512x3 field whose elements are 32-bit floating-point numbers
+# declare a 512x512x3 field whose elements are 32-bit float-point numbers
 rgb_image = ti.field(dtype=float, shape=(512, 512, 3))
 
 

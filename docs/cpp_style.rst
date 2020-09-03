@@ -96,14 +96,14 @@ We always use **4 spaces** for indent. No tabs.
 
 Naming
 ******
-- Variable and function names should consist of lowercase words connected by underscores, e.g. ``num_args`` and ``adaptive_arch_select``.
+- Variable and function names should follow snake_case, e.g. ``num_args`` and ``adaptive_arch_select``.
   * Non-public APIs should additionally start with ``_``, e.g. ``_kernel_impl``. So that end-users won't get confused.
-  * Ideally public APIs should be short and easy-to-memorize, unless it's harming readability, e.g. ``ti.activate`` instead of ``ti.activate_sparse_snode_at_index``.
-  * Variable names like ``i`` or ``a`` should only occur in trivial places, otherwise is inacceptable.
-  * Constant variables should be consisit of words with all latters capitalize, e.g. ``ti.GUI.PRESS``, ``N``.
-- Class and struct names should consist of words with first letters capitalized, e.g. ``KernelTemplateMapper``.
+  * Ideally public APIs should be short and easy-to-memorize, as long as it does no harm to readability, e.g. ``ti.activate`` instead of ``ti.activate_sparse_snode_at_index``.
+  * Single-character variable names like ``i`` or ``a`` should only occur in trivial places, otherwise they are inacceptable.
+  * Constant variables should consist of words with all-uppercase letters, e.g. ``ti.GUI.PRESS``, ``N``.
+- Class and struct names should follow PascalCase, e.g. ``KernelTemplateMapper``.
   * When using abbreviations in CapWords, capitalize all the letters of the abbreviation, e.g. ``ASTTransformer`` instead of ``AstTransformer``.
-- Filenames should consist of lowercase words connected by underscores, e.g. ``ast_checker.py``.
+- Module names should consist of lowercase words connected by underscores (snake_case), e.g. ``ast_checker.py``.
 
 Dos
 ***
@@ -123,9 +123,9 @@ Dos
 Don'ts
 ******
 - Mixed tabs and spaces. (Please always use 4 spaces for indent)
-- Too long lines. (Please make use of local variables to break it down)
+- Lines longer than 88 characters. (Please make use of local variables to break it down)
 - Return ``None`` on failure. (Please raise an exception loudly when failure)
-- Use ``from xxx import *``` without specifying ``__all__`` in module ``xxx``.
+- Use ``from xxx import *`` without specifying ``__all__`` in module ``xxx``.
 - Use a non-trivial value as inline default arguments:
 
 .. code-block:: python

@@ -496,17 +496,42 @@ def kernel(func):
     # Having |primal| contains |grad| makes the tape work.
     primal.grad = adjoint
 
-    @functools.wraps(func)
-    def wrapped(*args, **kwargs):
-        _taichi_skip_traceback = 1
-        return primal(*args, **kwargs)
+    @functools.wraps(foo)
+    def wrapped(*_, **__):
+        return primal(*_, **__)
 
-    wrapped.grad = adjoint
+    @functools.wraps(foo)
+    def wrapped_grad(*_, **__):
+        return adjoint(*_, **__)
 
-    wrapped._is_wrapped_kernel = True
-    wrapped._primal = primal
-    wrapped._adjoint = adjoint
-    return wrapped
+    if not _inside_class(3):
+        wrapped.grad = wrapped_grad
+        return wrapped
+
+    class BoundKernelProperty(property):
+        @functools.wraps(foo)
+        def __call__(self, *_, **__):
+            return primal(*_, **__)
+
+        @functools.wraps(foo)
+        def grad(self, *_, **__):
+            return adjoint(*_, **__)
+
+    @functools.wraps(foo)
+    @BoundKernelProperty
+    def prop_kernel(this):
+        @functools.wraps(foo)
+        def wrapped(*_, **__):
+            return primal(this, *_, **__)
+
+        @functools.wraps(foo)
+        def wrapped_grad(*_, **__):
+            return adjoint(this, *_, **__)
+
+        wrapped.grad = wrapped_grad
+        return wrapped
+
+    return prop_kernel
 
 
 def data_oriented(cls):

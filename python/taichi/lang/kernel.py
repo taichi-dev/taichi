@@ -496,11 +496,11 @@ def kernel(func):
     # Having |primal| contains |grad| makes the tape work.
     primal.grad = adjoint
 
-    @functools.wraps(foo)
+    @functools.wraps(func)
     def wrapped(*_, **__):
         return primal(*_, **__)
 
-    @functools.wraps(foo)
+    @functools.wraps(func)
     def wrapped_grad(*_, **__):
         return adjoint(*_, **__)
 
@@ -509,22 +509,22 @@ def kernel(func):
         return wrapped
 
     class BoundKernelProperty(property):
-        @functools.wraps(foo)
+        @functools.wraps(func)
         def __call__(self, *_, **__):
             return primal(*_, **__)
 
-        @functools.wraps(foo)
+        @functools.wraps(func)
         def grad(self, *_, **__):
             return adjoint(*_, **__)
 
-    @functools.wraps(foo)
+    @functools.wraps(func)
     @BoundKernelProperty
     def prop_kernel(this):
-        @functools.wraps(foo)
+        @functools.wraps(func)
         def wrapped(*_, **__):
             return primal(this, *_, **__)
 
-        @functools.wraps(foo)
+        @functools.wraps(func)
         def wrapped_grad(*_, **__):
             return adjoint(this, *_, **__)
 

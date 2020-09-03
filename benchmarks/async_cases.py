@@ -110,7 +110,7 @@ def sparse_numpy(scale):
     ti.benchmark(task, repeat=10)
 
 
-with_autodiff = True  # For some reason autodiff crashes with async.
+with_autodiff = False  # For some reason autodiff crashes with async.
 if with_autodiff:
 
     @benchmark_async

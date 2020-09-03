@@ -531,36 +531,42 @@ def kernel(func):
     primal.grad = adjoint
 
     @functools.wraps(func)
-    def wrapped(*_, **__):
-        return primal(*_, **__)
+    def wrapped(*args, **kwargs):
+        _taichi_skip_traceback = 1
+        return primal(*args, **kwargs)
 
     @functools.wraps(func)
-    def wrapped_grad(*_, **__):
-        return adjoint(*_, **__)
+    def wrapped_grad(*args, **kwargs):
+        _taichi_skip_traceback = 1
+        return adjoint(*args, **kwargs)
 
-    if not _inside_class(3):
+    if not _inside_class(level_of_class_stackframe=3):
         wrapped.grad = wrapped_grad
         return wrapped
 
     class BoundKernelProperty(property):
         @functools.wraps(func)
-        def __call__(self, *_, **__):
-            return primal(*_, **__)
+        def __call__(self, *args, **kwargs):
+            _taichi_skip_traceback = 1
+            return primal(*args, **kwargs)
 
         @functools.wraps(func)
-        def grad(self, *_, **__):
-            return adjoint(*_, **__)
+        def grad(self, *args, **kwargs):
+            _taichi_skip_traceback = 1
+            return adjoint(*args, **kwargs)
 
     @functools.wraps(func)
     @BoundKernelProperty
-    def prop_kernel(this):
+    def prop_kernel(self):
         @functools.wraps(func)
-        def wrapped(*_, **__):
-            return primal(this, *_, **__)
+        def wrapped(*args, **kwargs):
+            _taichi_skip_traceback = 1
+            return primal(self, *args, **kwargs)
 
         @functools.wraps(func)
-        def wrapped_grad(*_, **__):
-            return adjoint(this, *_, **__)
+        def wrapped_grad(*args, **kwargs):
+            _taichi_skip_traceback = 1
+            return adjoint(self, *args, **kwargs)
 
         wrapped.grad = wrapped_grad
         return wrapped

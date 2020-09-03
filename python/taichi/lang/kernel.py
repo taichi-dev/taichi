@@ -31,10 +31,8 @@ def remove_indent(lines):
 
 # The ti.func decorator
 def func(foo):
-    is_classfunc = _inside_class(level_of_class_stackframe=3)
-
     _taichi_skip_traceback = 1
-    fun = Func(foo, classfunc=is_classfunc)
+    fun = Func(foo)
 
     @functools.wraps(foo)
     def decorated(*args):
@@ -51,8 +49,7 @@ def pyfunc(foo):
     The function should be simple, and not contains Taichi-scope specifc syntax
     including struct-for.
     '''
-    is_classfunc = _inside_class(level_of_class_stackframe=3)
-    fun = Func(foo, classfunc=is_classfunc, pyfunc=True)
+    fun = Func(foo, pyfunc=True)
 
     @functools.wraps(foo)
     def decorated(*args):
@@ -63,10 +60,9 @@ def pyfunc(foo):
 
 
 class Func:
-    def __init__(self, func, classfunc=False, pyfunc=False):
+    def __init__(self, func, pyfunc=False):
         self.func = func
         self.compiled = None
-        self.classfunc = classfunc
         self.pyfunc = pyfunc
         self.arguments = []
         self.argument_names = []
@@ -132,10 +128,7 @@ class Func:
                     'Taichi functions only support "positional or keyword" parameters'
                 )
             annotation = param.annotation
-            if annotation is inspect.Parameter.empty:
-                if i == 0 and self.classfunc:
-                    annotation = template()
-            else:
+            if annotation is not inspect.Parameter.empty:
                 if id(annotation) in type_ids:
                     warning(
                         'Data type annotations are unnecessary for Taichi'
@@ -217,7 +210,7 @@ def _get_global_vars(func):
 class Kernel:
     counter = 0
 
-    def __init__(self, func, is_grad, classkernel=False):
+    def __init__(self, func, is_grad):
         self.func = func
         self.kernel_counter = Kernel.counter
         Kernel.counter += 1
@@ -225,7 +218,6 @@ class Kernel:
         self.arguments = []
         self.argument_names = []
         self.return_type = None
-        self.classkernel = classkernel
         _taichi_skip_traceback = 1
         self.extract_arguments()
         del _taichi_skip_traceback
@@ -274,22 +266,18 @@ class Kernel:
                 )
             annotation = param.annotation
             if param.annotation is inspect.Parameter.empty:
-                if i == 0 and self.classkernel:
-                    annotation = template()
-                else:
-                    _taichi_skip_traceback = 1
-                    raise KernelDefError(
-                        'Taichi kernels parameters must be type annotated')
+                _taichi_skip_traceback = 1
+                raise KernelDefError(
+                    'Taichi kernels parameters must be type annotated')
+            elif isinstance(annotation, (template, ext_arr)):
+                pass
+            elif id(annotation) in type_ids:
+                pass
             else:
-                if isinstance(annotation, (template, ext_arr)):
-                    pass
-                elif id(annotation) in type_ids:
-                    pass
-                else:
-                    _taichi_skip_traceback = 1
-                    raise KernelDefError(
-                        f'Invalid type annotation (argument {i}) of Taichi kernel: {annotation}'
-                    )
+                _taichi_skip_traceback = 1
+                raise KernelDefError(
+                    f'Invalid type annotation (argument {i}) of Taichi kernel: {annotation}'
+                )
             self.arguments.append(annotation)
             self.argument_names.append(param.name)
 
@@ -502,127 +490,29 @@ class Kernel:
         return self.compiled_functions[key](*args)
 
 
-# For a Taichi class definition like below:
-#
-# @ti.data_oriented
-# class X:
-#   @ti.kernel
-#   def foo(self):
-#     ...
-#
-# When ti.kernel runs, the stackframe's |code_context| of Python 3.8(+) is
-# different from that of Python 3.7 and below. In 3.8+, it is 'class X:',
-# whereas in <=3.7, it is '@ti.data_oriented'. More interestingly, if the class
-# inherits, i.e. class X(object):, then in both versions, |code_context| is
-# 'class X(object):'...
-_KERNEL_CLASS_STACKFRAME_STMT_RES = [
-    re.compile(r'@(\w+\.)?data_oriented'),
-    re.compile(r'class '),
-]
-
-
-def _inside_class(level_of_class_stackframe):
-    import inspect
-    frames = inspect.stack()
-    try:
-        maybe_class_frame = frames[level_of_class_stackframe]
-        statement_list = maybe_class_frame[4]
-        first_statment = statement_list[0].strip()
-        for pat in _KERNEL_CLASS_STACKFRAME_STMT_RES:
-            if pat.match(first_statment):
-                return True
-    except:
-        pass
-    return False
-
-
-def _kernel_impl(func, level_of_class_stackframe, verbose=False):
-    # Can decorators determine if a function is being defined inside a class?
-    # https://stackoverflow.com/a/8793684/12003165
-    is_classkernel = _inside_class(level_of_class_stackframe + 1)
+def kernel(func):
     _taichi_skip_traceback = 1
 
-    if verbose:
-        print(f'kernel={func.__name__} is_classkernel={is_classkernel}')
-    primal = Kernel(func, is_grad=False, classkernel=is_classkernel)
-    adjoint = Kernel(func, is_grad=True, classkernel=is_classkernel)
+    primal = Kernel(func, is_grad=False)
+    adjoint = Kernel(func, is_grad=True)
     # Having |primal| contains |grad| makes the tape work.
     primal.grad = adjoint
 
-    if is_classkernel:
-        # For class kernels, their primal/adjoint callables are constructed when the
-        # kernel is accessed via the instance inside BoundedDifferentiableMethod.
-        # This is because we need to bind the kernel or |grad| to the instance
-        # owning the kernel, which is not known until the kernel is accessed.
-        #
-        # See also: BoundedDifferentiableMethod, data_oriented.
-        @functools.wraps(func)
-        def wrapped(*args, **kwargs):
-            _taichi_skip_traceback = 1
-            # If we reach here (we should never), it means the class is not decorated
-            # with @ti.data_oriented, otherwise getattr would have intercepted the call.
-            clsobj = type(args[0])
-            assert not hasattr(clsobj, '_data_oriented')
-            raise KernelDefError(
-                f'Please decorate class {clsobj.__name__} with @ti.data_oriented'
-            )
-    else:
+    @functools.wraps(func)
+    def wrapped(*args, **kwargs):
+        _taichi_skip_traceback = 1
+        return primal(*args, **kwargs)
 
-        @functools.wraps(func)
-        def wrapped(*args, **kwargs):
-            _taichi_skip_traceback = 1
-            return primal(*args, **kwargs)
-
-        wrapped.grad = adjoint
+    wrapped.grad = adjoint
 
     wrapped._is_wrapped_kernel = True
-    wrapped._is_classkernel = is_classkernel
     wrapped._primal = primal
     wrapped._adjoint = adjoint
     return wrapped
 
 
-def kernel(func):
-    _taichi_skip_traceback = 1
-    return _kernel_impl(func, level_of_class_stackframe=3)
+def data_oriented(cls):
+    return cls
 
 
 classkernel = obsolete('@ti.classkernel', '@ti.kernel directly')
-
-
-class BoundedDifferentiableMethod:
-    def __init__(self, kernel_owner, wrapped_kernel_func):
-        clsobj = type(kernel_owner)
-        if not getattr(clsobj, '_data_oriented', False):
-            raise KernelDefError(
-                f'Please decorate class {clsobj.__name__} with @ti.data_oriented'
-            )
-        self._kernel_owner = kernel_owner
-        self._primal = wrapped_kernel_func._primal
-        self._adjoint = wrapped_kernel_func._adjoint
-
-    def __call__(self, *args, **kwargs):
-        return self._primal(self._kernel_owner, *args, **kwargs)
-
-    def grad(self, *args, **kwargs):
-        return self._adjoint(self._kernel_owner, *args, **kwargs)
-
-
-def data_oriented(cls):
-    def getattr(self, item):
-        x = super(cls, self).__getattribute__(item)
-        if hasattr(x, '_is_wrapped_kernel'):
-            import inspect
-            if inspect.ismethod(x):
-                wrapped = x.__func__
-            else:
-                wrapped = x
-            assert inspect.isfunction(wrapped)
-            if wrapped._is_classkernel:
-                return BoundedDifferentiableMethod(self, wrapped)
-        return x
-
-    cls.__getattribute__ = getattr
-    cls._data_oriented = True
-
-    return cls

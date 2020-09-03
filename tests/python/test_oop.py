@@ -2,7 +2,6 @@ import taichi as ti
 import pytest
 
 
-@pytest.mark.xfail(reason='Dropped ODOP support')
 @ti.host_arch_only
 def test_classfunc():
     @ti.data_oriented
@@ -35,7 +34,6 @@ def test_classfunc():
             assert arr.val[i, j] == i * j * 2
 
 
-@pytest.mark.xfail(reason='Dropped ODOP support')
 @ti.host_arch_only
 def test_oop():
     @ti.data_oriented
@@ -98,7 +96,6 @@ def test_oop():
             assert arr.val.grad[i, j] == 8
 
 
-@pytest.mark.xfail(reason='Dropped ODOP support')
 @ti.host_arch_only
 def test_oop_two_items():
     @ti.data_oriented
@@ -149,7 +146,6 @@ def test_oop_two_items():
             assert arr2.val.grad[i, j] == arr2_mult
 
 
-@pytest.mark.xfail(reason='Dropped ODOP support')
 @ti.host_arch_only
 def test_oop_inherit_ok():
     # Array1D inherits from object, which makes the callstack being 'class Array2D(object)'
@@ -205,7 +201,6 @@ def test_oop_class_must_be_data_oriented():
     arr.reduce()
 
 
-@pytest.mark.xfail(reason='Dropped ODOP support')
 @ti.host_arch_only
 def test_hook():
     @ti.data_oriented

@@ -86,7 +86,6 @@ def test_ptr_func():
     assert a[None] == 5.0
 
 
-@pytest.mark.xfail(reason='Dropped ODOP support')
 @ti.all_archs
 def test_ptr_class_func():
     @ti.data_oriented

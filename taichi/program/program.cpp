@@ -468,16 +468,20 @@ void Program::synchronize() {
     if (config.async_mode) {
       async_engine->synchronize();
     }
-    if (config.arch == Arch::cuda) {
-#if defined(TI_WITH_CUDA)
-      CUDADriver::get_instance().stream_synchronize(nullptr);
-#else
-      TI_ERROR("No CUDA support");
-#endif
-    } else if (config.arch == Arch::metal) {
-      metal_kernel_mgr_->synchronize();
-    }
+    device_synchronize();
     sync = true;
+  }
+}
+
+void Program::device_synchronize() {
+  if (config.arch == Arch::cuda) {
+#if defined(TI_WITH_CUDA)
+    CUDADriver::get_instance().stream_synchronize(nullptr);
+#else
+    TI_ERROR("No CUDA support");
+#endif
+  } else if (config.arch == Arch::metal) {
+    metal_kernel_mgr_->synchronize();
   }
 }
 
@@ -626,13 +630,11 @@ Kernel &Program::get_snode_writer(SNode *snode) {
 }
 
 uint64 Program::fetch_result_uint64(int i) {
+  // TODO: We are likely doing more synchronization than necessary. Simplify the
+  // sync logic when we fetch the result.
+  device_synchronize();
   uint64 ret;
   auto arch = config.arch;
-  sync = false;
-  // Runtime calls that set result buffer don't execute sync=false, so we have
-  // to set it here otherwise synchronize() does nothing.
-  // TODO: systematically fix this.
-  synchronize();
   if (arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
     if (config.use_unified_memory) {
@@ -702,10 +704,6 @@ void Program::finalize() {
   finalized = true;
   num_instances -= 1;
   TI_TRACE("Program ({}) finalized.", fmt::ptr(this));
-}
-
-void Program::launch_async(Kernel *kernel) {
-  async_engine->launch(kernel);
 }
 
 int Program::default_block_dim() const {

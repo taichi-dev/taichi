@@ -11,20 +11,22 @@ TLANG_NAMESPACE_BEGIN
 class IRVerifier : public BasicStmtVisitor {
  private:
   Block *current_block;
+  Stmt *current_container_stmt;
   // each scope corresponds to an unordered_set
   std::vector<std::unordered_set<Stmt *>> visible_stmts;
 
  public:
   using BasicStmtVisitor::visit;
 
-  explicit IRVerifier(IRNode *root) : current_block(nullptr) {
+  explicit IRVerifier(IRNode *root)
+      : current_block(nullptr), current_container_stmt(nullptr) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
-    if (!root->is<Block>()) {
+    if (!root->is<Block>())
       visible_stmts.emplace_back();
-      current_block = root->as<Stmt>()->parent;
-    } else
-      current_block = nullptr;
+    if (root->is<Stmt>() && root->as<Stmt>()->is_container_statement()) {
+      current_container_stmt = root->as<Stmt>();
+    }
   }
 
   void basic_verify(Stmt *stmt) {
@@ -44,10 +46,12 @@ class IRVerifier : public BasicStmtVisitor {
       TI_ASSERT_INFO(
           found,
           "IR broken: stmt {} cannot have operand {}."
-          " Consider adding `ti.core.toggle_advanced_optimization(False)`."
-          " If that fixes the problem, please report this bug by opening an"
-          " issue at https://github.com/taichi-dev/taichi to help us improve."
-          " Thanks!",
+          " If you are using autodiff, please check"
+          " https://taichi.readthedocs.io/en/stable/"
+          "differentiable_programming.html#kernel-simplicity-rule."
+          " If it doesn't help, please report this bug by opening an issue at"
+          " https://github.com/taichi-dev/taichi to help us improve."
+          " Thanks in advance!",
           stmt->id, op->id);
     }
     visible_stmts.back().insert(stmt);
@@ -62,12 +66,21 @@ class IRVerifier : public BasicStmtVisitor {
   }
 
   void visit(Block *block) override {
-    TI_ASSERT(block->parent == current_block);
+    TI_ASSERT_INFO(
+        block->parent_stmt == current_container_stmt,
+        "block({})->parent({}) != current_container_stmt({})", fmt::ptr(block),
+        block->parent_stmt ? block->parent_stmt->name() : "nullptr",
+        current_container_stmt ? current_container_stmt->name() : "nullptr");
     auto backup_block = current_block;
     current_block = block;
+    auto backup_container_stmt = current_container_stmt;
     visible_stmts.emplace_back();
     for (auto &stmt : block->statements) {
+      if (stmt->is_container_statement())
+        current_container_stmt = stmt.get();
       stmt->accept(this);
+      if (stmt->is_container_statement())
+        current_container_stmt = backup_container_stmt;
     }
     current_block = backup_block;
     visible_stmts.pop_back();
@@ -108,9 +121,10 @@ class IRVerifier : public BasicStmtVisitor {
 namespace irpass::analysis {
 void verify(IRNode *root) {
   TI_AUTO_PROF;
-  if (!root->is<Block>()) {
-    TI_WARN("IR root is not a Block. Skipping verification.");
-    // TODO: support this case
+  if (!root->is<Block>() && !root->is<OffloadedStmt>()) {
+    TI_WARN(
+        "IR root is neither a Block nor an OffloadedStmt."
+        " Skipping verification.");
   } else {
     IRVerifier::run(root);
   }

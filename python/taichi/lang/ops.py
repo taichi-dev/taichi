@@ -273,11 +273,9 @@ def logical_not(a):
     return _unary_operation(ti_core.expr_logic_not, lambda x: int(not x), a)
 
 
-def random(dt=None):
-    if dt is None:
-        import taichi
-        dt = taichi.get_runtime().default_fp
-    x = Expr(ti_core.make_rand_expr(dt))
+def random(dtype=float):
+    dtype = cook_dtype(dtype)
+    x = Expr(ti_core.make_rand_expr(dtype))
     return expr_init(x)
 
 
@@ -302,6 +300,7 @@ def mul(a, b):
 @binary
 def mod(a, b):
     def expr_python_mod(a, b):
+        # a % b = (a // b) * b - a
         quotient = Expr(ti_core.expr_floordiv(a, b))
         multiply = Expr(ti_core.expr_mul(b, quotient.ptr))
         return ti_core.expr_sub(a, multiply.ptr)

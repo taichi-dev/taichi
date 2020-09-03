@@ -245,12 +245,19 @@ struct CompileConfig;
 
 class IRNode {
  public:
+  Kernel *kernel;
+
   virtual void accept(IRVisitor *visitor) {
     TI_NOT_IMPLEMENTED
   }
-  virtual Kernel *get_kernel() const {
-    return nullptr;
-  }
+
+  // * For a Stmt, this returns its enclosing Block
+  // * For a Block, this returns its enclosing Stmt
+  virtual IRNode *get_parent() const = 0;
+
+  IRNode *get_ir_root();
+  Kernel *get_kernel() const;
+
   virtual ~IRNode() = default;
 
   CompileConfig &get_config() const;
@@ -573,9 +580,7 @@ class Stmt : public IRNode {
   void replace_with(VecStatement &&new_statements, bool replace_usages = true);
   virtual void replace_operand_with(Stmt *old_stmt, Stmt *new_stmt);
 
-  IRNode *get_ir_root();
-
-  Kernel *get_kernel() const override;
+  IRNode *get_parent() const override;
 
   virtual void repeat(int factor) {
     ret_type.width *= factor;
@@ -848,11 +853,10 @@ class GlobalPtrStmt : public Stmt {
 
 class Block : public IRNode {
  public:
-  Block *parent;
+  Stmt *parent_stmt;
   std::vector<std::unique_ptr<Stmt>> statements, trash_bin;
   Stmt *mask_var;
   std::vector<SNode *> stop_gradients;
-  Kernel *kernel;
 
   // Only used in frontend. Stores LoopIndexStmt or BinaryOpStmt for loop
   // variables, and AllocaStmt for other variables.
@@ -860,9 +864,11 @@ class Block : public IRNode {
 
   Block() {
     mask_var = nullptr;
-    parent = nullptr;
+    parent_stmt = nullptr;
     kernel = nullptr;
   }
+
+  Block *parent_block() const;
 
   bool has_container_statements();
   int locate(Stmt *stmt);
@@ -889,7 +895,7 @@ class Block : public IRNode {
                     bool replace_usages = true);
   Stmt *lookup_var(const Identifier &ident) const;
   Stmt *mask();
-  Kernel *get_kernel() const override;
+  IRNode *get_parent() const override;
 
   Stmt *back() const {
     return statements.back().get();
@@ -961,16 +967,22 @@ class SNodeOpStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+class ExternalTensorShapeAlongAxisStmt : public Stmt {
+ public:
+  int axis;
+  int arg_id;
+
+  ExternalTensorShapeAlongAxisStmt(int axis, int arg_id);
+
+  TI_STMT_DEF_FIELDS(ret_type, axis, arg_id);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
 class AssertStmt : public Stmt {
  public:
   Stmt *cond;
   std::string text;
   std::vector<Stmt *> args;
-
-  AssertStmt(const std::string &text, Stmt *cond) : cond(cond), text(text) {
-    TI_ASSERT(cond);
-    TI_STMT_REG_FIELDS;
-  }
 
   AssertStmt(Stmt *cond,
              const std::string &text,
@@ -1130,9 +1142,11 @@ class IfStmt : public Stmt {
   Stmt *true_mask, *false_mask;
   std::unique_ptr<Block> true_statements, false_statements;
 
-  IfStmt(Stmt *cond) : cond(cond), true_mask(nullptr), false_mask(nullptr) {
-    TI_STMT_REG_FIELDS;
-  }
+  IfStmt(Stmt *cond);
+
+  // Use these setters to set Block::parent_stmt at the same time.
+  void set_true_statements(std::unique_ptr<Block> &&new_true_statements);
+  void set_false_statements(std::unique_ptr<Block> &&new_false_statements);
 
   bool is_container_statement() const override {
     return true;
@@ -1294,10 +1308,7 @@ class FuncBodyStmt : public Stmt {
   std::string funcid;
   std::unique_ptr<Block> body;
 
-  FuncBodyStmt(const std::string &funcid, std::unique_ptr<Block> &&body)
-      : funcid(funcid), body(std::move(body)) {
-    TI_STMT_REG_FIELDS;
-  }
+  FuncBodyStmt(const std::string &funcid, std::unique_ptr<Block> &&body);
 
   bool is_container_statement() const override {
     return true;
@@ -1338,10 +1349,7 @@ class WhileStmt : public Stmt {
   Stmt *mask;
   std::unique_ptr<Block> body;
 
-  WhileStmt(std::unique_ptr<Block> &&body)
-      : mask(nullptr), body(std::move(body)) {
-    TI_STMT_REG_FIELDS;
-  }
+  WhileStmt(std::unique_ptr<Block> &&body);
 
   bool is_container_statement() const override {
     return true;

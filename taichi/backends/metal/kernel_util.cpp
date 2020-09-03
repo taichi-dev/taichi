@@ -4,7 +4,7 @@
 
 #include "taichi/program/kernel.h"
 #define TI_RUNTIME_HOST
-#include "taichi/runtime/llvm/context.h"
+#include "taichi/program/context.h"
 #undef TI_RUNTIME_HOST
 
 TLANG_NAMESPACE_BEGIN

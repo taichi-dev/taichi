@@ -2,7 +2,7 @@
 #include "taichi/common/core.h"
 #include "taichi/system/unified_allocator.h"
 #define TI_RUNTIME_HOST
-#include "taichi/runtime/llvm/context.h"
+#include "taichi/runtime/llvm/mem_request.h"
 
 #include <mutex>
 #include <vector>

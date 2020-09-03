@@ -1,7 +1,7 @@
 .. _compilation:
 
 Life of a Taichi kernel
-===============================================
+=======================
 
 Sometimes it is helpful to understand the life cycle of a Taichi kernel.
 In short, compilation will only happen on the first invocation of an instance of a kernel.
@@ -14,7 +14,7 @@ The life cycle of a Taichi kernel has the following stages:
  - Taichi IR compilation, optimization, and executable generation
  - Launching
 
-.. image:: https://raw.githubusercontent.com/taichi-dev/public_files/6bd234694270c83baf97ba32e0c6278b8cf37e6e/taichi/life_of_kernel.jpg
+.. image:: https://raw.githubusercontent.com/taichi-dev/public_files/fa03e63ca4e161318c8aa9a5db7f4a825604df88/taichi/life_of_kernel.png
 
 Let's consider the following simple kernel:
 
@@ -35,14 +35,14 @@ We allocate two 1D fields to simplify discussion:
 
 
 Kernel registration
----------------------------------------
+-------------------
 When the ``ti.kernel`` decorator is executed, a kernel named ``add`` is registered. Specifically, the
 Python Abstract Syntax Tree (AST) of the ``add`` function will be memorized.
 No compilation will happen until the first invocation of ``add``.
 
 
 Template instantiation and caching
----------------------------------------
+----------------------------------
 
 .. code-block:: python
 
@@ -82,7 +82,7 @@ will lead to a new instantiation of **add**.
   As mentioned before, the second time you call the same operation, the cached compiled kernel will be reused and no further compilation is needed.
 
 Code transformation and optimizations
----------------------------------------
+-------------------------------------
 
 When a new instantiation happens, the Taichi frontend compiler (i.e., the ``ASTTransformer`` Python class) will transform the kernel body AST
 into a Python script, which, when executed, emits a Taichi frontend AST.

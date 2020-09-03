@@ -53,6 +53,9 @@ class GUI:
         return self
 
     def __exit__(self, type, val, tb):
+        self.close()
+
+    def close(self):
         self.core = None  # dereference to call GUI::~GUI()
 
     ## Widget system

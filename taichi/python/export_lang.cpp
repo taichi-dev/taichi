@@ -288,8 +288,9 @@ void export_lang(py::module &m) {
     return Length(snode, indices);
   });
 
-  m.def("create_assert_stmt", [&](const Expr &cond, const std::string &msg) {
-    auto stmt_unique = std::make_unique<FrontendAssertStmt>(msg, cond);
+  m.def("create_assert_stmt", [&](const Expr &cond, const std::string &msg,
+                                  const std::vector<Expr> &args) {
+    auto stmt_unique = std::make_unique<FrontendAssertStmt>(cond, msg, args);
     current_ast_builder().insert(std::move(stmt_unique));
   });
 
@@ -527,6 +528,14 @@ void export_lang(py::module &m) {
   m.def("subscript", [](const Expr &expr, const ExprGroup &expr_group) {
     return expr[expr_group];
   });
+
+  m.def("get_external_tensor_dim", [](const Expr &expr) {
+    TI_ASSERT(expr.is<ExternalTensorExpression>());
+    return expr.cast<ExternalTensorExpression>()->dim;
+  });
+
+  m.def("get_external_tensor_shape_along_axis",
+        Expr::make<ExternalTensorShapeAlongAxisExpression, const Expr &, int>);
 
   m.def("create_kernel",
         [&](std::string name, bool grad) -> Program::KernelProxy {

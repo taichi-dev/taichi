@@ -50,6 +50,10 @@ void compile_to_offloads(IRNode *ir,
 
   if (ir->get_kernel()->is_evaluator) {
     TI_ASSERT(!grad);
+
+    irpass::demote_operations(ir);
+    print("Operations Demoted");
+
     irpass::offload(ir);
     print("Offloaded");
     irpass::analysis::verify(ir);
@@ -103,12 +107,11 @@ void compile_to_offloads(IRNode *ir,
   irpass::analysis::verify(ir);
 
   irpass::flag_access(ir);
-
   print("Access flagged II");
-  irpass::analysis::verify(ir);
 
   irpass::full_simplify(ir, /*after_lower_access=*/false);
   print("Simplified III");
+  irpass::analysis::verify(ir);
 }
 
 void offload_to_executable(IRNode *ir,
@@ -125,6 +128,9 @@ void offload_to_executable(IRNode *ir,
   // Eventually we might want the order to be TLS/BLS -> demote struct-for.
   // For now, putting this after TLS will disable TLS, because it can only
   // handle range-fors at this point.
+
+  print("Start offload_to_executable");
+  irpass::analysis::verify(ir);
 
   if (config.demote_dense_struct_fors) {
     irpass::demote_dense_struct_fors(ir);
@@ -163,6 +169,9 @@ void offload_to_executable(IRNode *ir,
   irpass::demote_atomics(ir);
   print("Atomics demoted");
   irpass::analysis::verify(ir);
+
+  irpass::demote_operations(ir);
+  print("Operations demoted");
 
   irpass::full_simplify(ir, lower_global_access);
   print("Simplified IV");

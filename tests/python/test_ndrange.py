@@ -98,8 +98,8 @@ def test_static_grouped_static():
 
 
 @ti.all_archs
-def test_field_init_edge_case():
-    # See https://github.com/taichi-dev/taichi/issues/1824
+def test_field_init_eye():
+    # https://github.com/taichi-dev/taichi/issues/1824
 
     n = 32
 
@@ -113,3 +113,26 @@ def test_field_init_edge_case():
 
     init()
     assert np.allclose(A.to_numpy(), np.eye(n, dtype=np.float32))
+
+
+@ti.all_archs
+def test_ndrange_index_floordiv():
+    # https://github.com/taichi-dev/taichi/issues/1829
+
+    n = 10
+
+    A = ti.field(ti.f32, (n, n))
+
+    @ti.kernel
+    def init():
+        for i, j in ti.ndrange(n, n):
+            if i // 2 == 0:
+                A[i, j] = i
+
+    init()
+    for i in range(n):
+        for j in range(n):
+            if i // 2 == 0:
+                assert A[i, j] == i
+            else:
+                assert A[i, j] == 0

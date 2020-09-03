@@ -40,10 +40,20 @@ class FrontendSNodeOpStmt : public Stmt {
 class FrontendAssertStmt : public Stmt {
  public:
   std::string text;
-  Expr val;
+  Expr cond;
+  std::vector<Expr> args;
 
-  FrontendAssertStmt(const std::string &text, const Expr &val)
-      : text(text), val(val) {
+  FrontendAssertStmt(const Expr &cond, const std::string &text)
+      : text(text), cond(cond) {
+  }
+
+  FrontendAssertStmt(const Expr &cond,
+                     const std::string &text,
+                     const std::vector<Expr> &args_)
+      : text(text), cond(cond) {
+    for (auto &a : args_) {
+      args.push_back(load_if_ptr(a));
+    }
   }
 
   TI_DEFINE_ACCEPT
@@ -583,6 +593,23 @@ class ConstExpression : public Expression {
     ctx->push_back(Stmt::make<ConstStmt>(val));
     stmt = ctx->back_stmt();
   }
+};
+
+class ExternalTensorShapeAlongAxisExpression : public Expression {
+ public:
+  Expr ptr;
+  int axis;
+
+  std::string serialize() override {
+    return fmt::format("external_tensor_shape_along_axis({}, {})",
+                       ptr->serialize(), axis);
+  }
+
+  ExternalTensorShapeAlongAxisExpression(const Expr &ptr, int axis)
+      : ptr(ptr), axis(axis) {
+  }
+
+  void flatten(FlattenContext *ctx) override;
 };
 
 TLANG_NAMESPACE_END

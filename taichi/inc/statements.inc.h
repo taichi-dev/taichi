@@ -43,6 +43,7 @@ PER_STATEMENT(SNodeOpStmt)
 PER_STATEMENT(RangeAssumptionStmt)
 PER_STATEMENT(AssertStmt)
 PER_STATEMENT(ExternalFuncCallStmt)
+PER_STATEMENT(ExternalTensorShapeAlongAxisStmt)
 
 // Locals with reverse-mode autodiff
 PER_STATEMENT(StackAllocaStmt)

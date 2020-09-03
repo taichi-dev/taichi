@@ -17,7 +17,7 @@
 #include "taichi/backends/cc/cc_program.h"
 #include "taichi/program/kernel.h"
 #include "taichi/program/kernel_profiler.h"
-#include "taichi/runtime/llvm/context.h"
+#include "taichi/program/context.h"
 #include "taichi/runtime/runtime.h"
 #include "taichi/backends/metal/struct_metal.h"
 #include "taichi/system/memory_pool.h"
@@ -84,7 +84,6 @@ class Program {
   std::unique_ptr<SNode> snode_root;  // pointer to the data structure.
   void *llvm_runtime;
   CompileConfig config;
-  Context context;
   std::unique_ptr<TaichiLLVMContext> llvm_context_host, llvm_context_device;
   bool sync;  // device/host synchronized?
   bool finalized;
@@ -131,13 +130,13 @@ class Program {
     return profiler.get();
   }
 
-  Context &get_context() {
-    context.runtime = (LLVMRuntime *)llvm_runtime;
-    return context;
-  }
   void initialize_device_llvm_context();
 
   void synchronize();
+
+  // This is more primitive than synchronize(). It directly calls to the
+  // targeted GPU backend's synchronization (or commit in Metal's terminology).
+  void device_synchronize();
 
   void layout(std::function<void()> func) {
     func();
@@ -234,8 +233,6 @@ class Program {
   void print_snode_tree() {
     snode_root->print();
   }
-
-  void launch_async(Kernel *kernel);
 
   int default_block_dim() const;
 

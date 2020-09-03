@@ -97,8 +97,8 @@ void Kernel::lower(bool to_executable) {  // TODO: is a "Lowerer" class
   lowered = true;
 }
 
-void Kernel::operator()(LaunchContextBuilder &launch_ctx) {
-  if (!program.config.async_mode) {
+void Kernel::operator()(LaunchContextBuilder &ctx_builder) {
+  if (!program.config.async_mode || this->is_evaluator) {
     if (!compiled) {
       compile();
     }
@@ -107,7 +107,7 @@ void Kernel::operator()(LaunchContextBuilder &launch_ctx) {
       account_for_offloaded(offloaded->as<OffloadedStmt>());
     }
 
-    compiled(launch_ctx.get_context());
+    compiled(ctx_builder.get_context());
 
     program.sync = (program.sync && arch_is_cpu(arch));
     // Note that Kernel::arch may be different from program.config.arch
@@ -117,7 +117,7 @@ void Kernel::operator()(LaunchContextBuilder &launch_ctx) {
     }
   } else {
     program.sync = false;
-    program.async_engine->launch(this);
+    program.async_engine->launch(this, ctx_builder.get_context());
     // Note that Kernel::arch may be different from program.config.arch
     if (program.config.debug && arch_is_cpu(arch) &&
         arch_is_cpu(program.config.arch)) {
@@ -127,7 +127,17 @@ void Kernel::operator()(LaunchContextBuilder &launch_ctx) {
 }
 
 Kernel::LaunchContextBuilder Kernel::make_launch_context() {
-  return LaunchContextBuilder(this, &(program.context));
+  return LaunchContextBuilder(this);
+}
+
+Kernel::LaunchContextBuilder::LaunchContextBuilder(Kernel *kernel, Context *ctx)
+    : kernel_(kernel), owned_ctx_(nullptr), ctx_(ctx) {
+}
+
+Kernel::LaunchContextBuilder::LaunchContextBuilder(Kernel *kernel)
+    : kernel_(kernel),
+      owned_ctx_(std::make_unique<Context>()),
+      ctx_(owned_ctx_.get()) {
 }
 
 void Kernel::LaunchContextBuilder::set_arg_float(int i, float64 d) {
@@ -232,7 +242,6 @@ void Kernel::LaunchContextBuilder::set_arg_raw(int i, uint64 d) {
 }
 
 Context &Kernel::LaunchContextBuilder::get_context() {
-  // See Program::get_context()
   ctx_->runtime = static_cast<LLVMRuntime *>(kernel_->program.llvm_runtime);
   return *ctx_;
 }
@@ -310,21 +319,21 @@ void Kernel::account_for_offloaded(OffloadedStmt *stmt) {
   if (is_evaluator || is_accessor)
     return;
   auto task_type = stmt->task_type;
-  stat.add("launched_kernels", 1.0);
+  stat.add("launched_tasks", 1.0);
   if (task_type == OffloadedStmt::TaskType::listgen) {
-    stat.add("launched_kernels_list_op", 1.0);
-    stat.add("launched_kernels_list_gen", 1.0);
+    stat.add("launched_tasks_list_op", 1.0);
+    stat.add("launched_tasks_list_gen", 1.0);
   } else if (task_type == OffloadedStmt::TaskType::clear_list) {
-    stat.add("launched_kernels_list_op", 1.0);
-    stat.add("launched_kernels_list_clear", 1.0);
+    stat.add("launched_tasks_list_op", 1.0);
+    stat.add("launched_tasks_list_clear", 1.0);
   } else if (task_type == OffloadedStmt::TaskType::range_for) {
-    stat.add("launched_kernels_compute", 1.0);
-    stat.add("launched_kernels_range_for", 1.0);
+    stat.add("launched_tasks_compute", 1.0);
+    stat.add("launched_tasks_range_for", 1.0);
   } else if (task_type == OffloadedStmt::TaskType::struct_for) {
-    stat.add("launched_kernels_compute", 1.0);
-    stat.add("launched_kernels_struct_for", 1.0);
+    stat.add("launched_tasks_compute", 1.0);
+    stat.add("launched_tasks_struct_for", 1.0);
   } else if (task_type == OffloadedStmt::TaskType::gc) {
-    stat.add("launched_kernels_garbage_collect", 1.0);
+    stat.add("launched_tasks_garbage_collect", 1.0);
   }
 }
 

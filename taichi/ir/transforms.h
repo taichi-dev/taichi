@@ -21,6 +21,7 @@ bool die(IRNode *root);
 bool simplify(IRNode *root, Kernel *kernel = nullptr);
 bool cfg_optimization(IRNode *root, bool after_lower_access);
 bool alg_simp(IRNode *root);
+bool demote_operations(IRNode *root);
 bool binary_op_simplify(IRNode *root);
 bool whole_kernel_cse(IRNode *root);
 void variable_optimization(IRNode *root, bool after_lower_access);
@@ -45,8 +46,6 @@ bool lower_access(IRNode *root, bool lower_atomic);
 void auto_diff(IRNode *root, bool use_stack = false);
 bool constant_fold(IRNode *root);
 void offload(IRNode *root);
-void fix_block_parents(IRNode *root);
-void fix_root_block_kernel(IRNode *root, Kernel *kernel);
 void replace_statements_with(IRNode *root,
                              std::function<bool(Stmt *)> filter,
                              std::function<std::unique_ptr<Stmt>()> generator);

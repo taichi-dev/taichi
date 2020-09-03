@@ -104,7 +104,7 @@ void convert_to_range_for(OffloadedStmt *offloaded) {
   if (has_test) {
     // Create an If statement
     auto if_stmt = Stmt::make_typed<IfStmt>(test);
-    if_stmt->true_statements = std::move(body);
+    if_stmt->set_true_statements(std::move(body));
     // Note that this could silently change the body block of |offloaded|.
     body = std::make_unique<Block>();
     body->insert(std::move(if_stmt));
@@ -112,6 +112,7 @@ void convert_to_range_for(OffloadedStmt *offloaded) {
   body->insert(std::move(body_header), 0);
 
   offloaded->body = std::move(body);
+  offloaded->body->parent_stmt = offloaded;
   main_loop_var->loop = offloaded;
   ////// End core transformation
 
@@ -122,8 +123,6 @@ void maybe_convert(OffloadedStmt *stmt) {
   if ((stmt->task_type == TaskType::struct_for) &&
       stmt->snode->is_path_all_dense) {
     convert_to_range_for(stmt);
-    // This sets the kernel for the top-level blocks within |stmt|.
-    irpass::fix_root_block_kernel(stmt, stmt->get_kernel());
   }
 }
 
@@ -142,7 +141,6 @@ void demote_dense_struct_fors(IRNode *root) {
     maybe_convert(s);
   }
   re_id(root);
-  fix_block_parents(root);
 }
 
 }  // namespace irpass

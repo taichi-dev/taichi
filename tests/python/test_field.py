@@ -3,6 +3,7 @@ To test our new `ti.field` API is functional (#1500)
 '''
 
 import taichi as ti
+import numpy as np
 import pytest
 
 data_types = [ti.i32, ti.f32, ti.i64, ti.f64]

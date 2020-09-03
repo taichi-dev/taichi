@@ -3,20 +3,19 @@ Export Taichi kernels to C source
 
 The C backend of Taichi allows you to **export Taichi kernels to C source**.
 
-The exported Taichi program consists purely of C99 compatible sources and does not require Python. This allows you use the exported sources in a C/C++ project, or even call them from Javascript via Emscripten.
+The exported Taichi program consists purely of C99-compatible code and does not require Python. This allows you to use the exported code in a C/C++ project, or even to further compile it to Javascript/Web Assembly via Emscripten.
 
-Each C function corresponds to a Taichi kernel.
+Each C function corresponds to one Taichi kernel.
 For example, ``Tk_init_c6_0()`` may correspond to ``init()`` in ``mpm88.py``.
 
-Only the exported source is needed when copying or moving around the code, all of the required Taichi runtimes are
-included in that single C source file.
+The exported C code is self-contained for portability. Required Taichi runtime functions are included in the code.
 
-For example, this also allows commercial users to distribute their Taichi program in
-binary format by linking this file with their project.
+For example, this allows programmers to distribute Taichi programs in
+a binary format, by compiling and linking exported C code to their project.
 
 .. warning::
 
-    Currently, this feature is only officially supported on the C backend which is only released on **Linux** at this moment.
+    Currently, this feature is only officially supported on the C backend on Linux. In the future, we will support OS X and Windows.
 
 
 The workflow of exporting
@@ -40,7 +39,7 @@ First, modify ``mpm88.py`` as shown below:
 
     ... # your program
 
-And run it. Close the GUI window once particles are shown up correctly.
+Then please execute ``mpm88.py``. Close the GUI window once particles are shown up correctly.
 
 This will save all the kernels in ``mpm88.py`` to ``mpm88.yml``:
 
@@ -65,10 +64,10 @@ This will save all the kernels in ``mpm88.py`` to ``mpm88.yml``:
 Compose YAML into a single C file
 +++++++++++++++++++++++++++++++++
 
-Now all necessary information is saved in ``mpm88.yml``. However, the ``kernel_source``'s are separated one-by-one.
-You may want to **compose** the separate kernels into **one single file** in order to distribute it more easily.
+Now, all necessary information is saved in ``mpm88.yml``, in the form of multiple separate records.
+You may want to **compose** the separate kernels into **one single file** for more portability.
 
-We provide a useful tool to do this, type these commands in your console:
+We provide a useful CLI tool to do this:
 
 .. code-block:: bash
 
@@ -99,23 +98,23 @@ source file ``mpm88.c``:
 
         ...
 
-And a C header file ``mpm88.h`` for declarations of data structures, functions
-(kernels) for this file.
+... and a C header file ``mpm88.h`` for declarations of data structures, functions
+(Taichi kernels) for this file.
 
 .. note::
 
    The generated C source is promised to be C99 compatible.
 
-   It should also be functional when being compiled as C++.
+   It should also be functional when compiled using a C++ compiler.
 
 
 Calling the exported kernels
 ----------------------------
 
-Then, link this file (``mpm88.c``) together with your C/C++ project.
-Include the header (``mpm88.h``) to where kernels are to be called.
+Then, link the C file (``mpm88.c``) against your C/C++ project.
+Include the header file (``mpm88.h``) when Taichi kernels are called.
 
-To call the kernel ``init_c6_0``, for example:
+For example, calling kernel ``init_c6_0`` can be implemented as follows:
 
 .. code-block:: cpp
 
@@ -187,14 +186,14 @@ To pass external arrays as arguments for kernels:
 Taichi.js (WIP)
 ---------------
 
-Once you have C source generated, you can compile the C source into Javascript
+Once you have C source file generated, you can compile them into Javascript
 or WASM via Emscripten.
 
 We provide `Taichi.js <https://github.com/taichi-dev/taichi.js>`_ as an
 infrastructure for wrapping Taichi kernels for Javascript.
 See `its README.md <https://github.com/taichi-dev/taichi.js/blob/master/README.md>`_ for the complete workflow.
 
-Check `this page <https://taichi-dev.github.io/taichi.js>`_ for online demo.
+Check out `this page <https://taichi-dev.github.io/taichi.js>`_ for online demos.
 
 Calling Taichi kernels from Julia (WIP)
 ---------------------------------------
@@ -204,9 +203,3 @@ shared object. Then it can be called from other langurages that provides a C
 interface, including but not limited to Julia, Matlab, Mathematica, Java, etc.
 
 TODO: WIP.
-
-The export workflow for Metal shaders (WIP)
--------------------------------------------
-
-Actually we also support exporting / dumping Metal shaders for the Apple Metal
-backend via the shared API as C backend does. Documentation WIP.

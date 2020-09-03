@@ -3,7 +3,7 @@ import taichi as ti
 # A set of helper (meta)functions
 
 
-@ti.kernel
+@ti.kernelfunc
 def fill_tensor(tensor: ti.template(), val: ti.template()):
     for I in ti.grouped(tensor):
         tensor[I] = val
@@ -39,7 +39,7 @@ def vector_to_image(mat: ti.template(), arr: ti.ext_arr()):
                 arr[I, 2] = 0
 
 
-@ti.kernel
+@ti.kernelfunc
 def tensor_to_tensor(tensor: ti.template(), other: ti.template()):
     for I in ti.grouped(tensor):
         tensor[I] = other[I]
@@ -82,7 +82,7 @@ def clear_gradients(vars: ti.template()):
             ti.Expr(s)[I] = 0
 
 
-@ti.kernel
+@ti.kernelfunc
 def fill_matrix(mat: ti.template(), vals: ti.template()):
     for I in ti.grouped(mat):
         for p in ti.static(range(mat.n)):
@@ -90,13 +90,13 @@ def fill_matrix(mat: ti.template(), vals: ti.template()):
                 mat[I][p, q] = vals[p][q]
 
 
-@ti.kernel
+@ti.kernelfunc
 def snode_deactivate(b: ti.template()):
     for I in ti.grouped(b):
         ti.deactivate(b, I)
 
 
-@ti.kernel
+@ti.kernelfunc
 def snode_deactivate_dynamic(b: ti.template()):
     for I in ti.grouped(b.parent()):
         ti.deactivate(b, I)

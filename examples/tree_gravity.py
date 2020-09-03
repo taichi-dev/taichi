@@ -2,7 +2,7 @@
 # Author: archibate <1931127624@qq.com>, all left reserved
 import taichi as ti
 import taichi_glsl as tl
-ti.init()
+ti.init(ti.cpu)
 if not hasattr(ti, 'jkl'):
     ti.jkl = ti.indices(1, 2, 3)
 
@@ -266,6 +266,7 @@ def render_arrows(mx: ti.f32, my: ti.f32):
 
 @ti.kernel
 def render_pixels():
+    display_image.fill(0)
     for i in range(particle_table_len[None]):
         position = particle_pos[i].xy
         pix = int(position * kResolution)
@@ -320,8 +321,6 @@ while gui.running:
         substep_tree()
     else:
         substep_raw()
-    if len(kDisplay) and 'trace' not in kDisplay:
-        display_image.fill(0)
     if 'mouse' in kDisplay:
         render_arrows(*gui.get_cursor_pos())
     if 'pixels' in kDisplay:

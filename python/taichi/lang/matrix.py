@@ -630,7 +630,7 @@ class Matrix(TaichiOperations):
         return -ti.cmp_eq(ret, -len(self.entries))
 
     def fill(self, val):
-        if impl.inside_kernel():
+        if impl.inside_kernel() and not self.is_global():
 
             def assign_renamed(x, y):
                 import taichi as ti
@@ -712,7 +712,6 @@ class Matrix(TaichiOperations):
     def from_torch(self, torch_tensor):
         return self.from_numpy(torch_tensor.contiguous())
 
-    @python_scope
     def copy_from(self, other):
         assert isinstance(other, Matrix)
         from .meta import tensor_to_tensor

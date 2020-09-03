@@ -87,5 +87,6 @@ def test_fill_taichi_scope():
         y.fill(2)
 
     func()
-    assert ti.approx(x.to_numpy()) == np.ones((5, 7), np.int32) * 2.3 - np.eye(5, 7, dtype=np.int32) * 0.6
+    assert ti.approx(x.to_numpy()) == np.ones(
+        (5, 7), np.int32) * 2.3 - np.eye(5, 7, dtype=np.int32) * 0.6
     assert ti.approx(y.to_numpy()) == np.ones((7, 3, 2, 3), np.float32) * 2

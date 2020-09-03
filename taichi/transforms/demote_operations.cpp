@@ -86,6 +86,9 @@ class DemoteOperations : public BasicStmtVisitor {
       else
         break;
     }
+    if (modified) {
+      irpass::type_check(node);
+    }
     return modified;
   }
 };

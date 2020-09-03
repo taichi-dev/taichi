@@ -255,6 +255,27 @@ std::string atomic_op_type_name(AtomicOpType type) {
     return #i;
 
     REGISTER_TYPE(add);
+    REGISTER_TYPE(sub);
+    REGISTER_TYPE(max);
+    REGISTER_TYPE(min);
+    REGISTER_TYPE(bit_and);
+    REGISTER_TYPE(bit_or);
+    REGISTER_TYPE(bit_xor);
+
+#undef REGISTER_TYPE
+    default:
+      TI_NOT_IMPLEMENTED
+  }
+}
+
+BinaryOpType atomic_to_binary_op_type(AtomicOpType type) {
+  switch (type) {
+#define REGISTER_TYPE(i) \
+  case AtomicOpType::i:  \
+    return BinaryOpType::i;
+
+    REGISTER_TYPE(add);
+    REGISTER_TYPE(sub);
     REGISTER_TYPE(max);
     REGISTER_TYPE(min);
     REGISTER_TYPE(bit_and);

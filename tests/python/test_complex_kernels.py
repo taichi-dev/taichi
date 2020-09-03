@@ -1,4 +1,5 @@
 import taichi as ti
+import pytest
 
 
 @ti.all_archs
@@ -66,6 +67,7 @@ def test_complex_kernels_indirect():
         assert x.grad[0] == 4
 
 
+@pytest.mark.xfail(reason='Dropped ODOP support')
 @ti.all_archs
 def test_complex_kernels_oop():
     @ti.data_oriented
@@ -102,6 +104,7 @@ def test_complex_kernels_oop():
         assert a.x.grad[0] == 4
 
 
+@pytest.mark.xfail(reason='Dropped ODOP support')
 @ti.all_archs
 def test_complex_kernels_oop2():
     @ti.data_oriented

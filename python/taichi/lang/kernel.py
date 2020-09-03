@@ -488,6 +488,40 @@ class Kernel:
         return self.compiled_functions[key](*args)
 
 
+# For a Taichi class definition like below:
+#
+# @ti.data_oriented
+# class X:
+#   @ti.kernel
+#   def foo(self):
+#     ...
+#
+# When ti.kernel runs, the stackframe's |code_context| of Python 3.8(+) is
+# different from that of Python 3.7 and below. In 3.8+, it is 'class X:',
+# whereas in <=3.7, it is '@ti.data_oriented'. More interestingly, if the class
+# inherits, i.e. class X(object):, then in both versions, |code_context| is
+# 'class X(object):'...
+_KERNEL_CLASS_STACKFRAME_STMT_RES = [
+    re.compile(r'@(\w+\.)?data_oriented'),
+    re.compile(r'class '),
+]
+
+
+def _inside_class(level_of_class_stackframe):
+    import inspect
+    frames = inspect.stack()
+    try:
+        maybe_class_frame = frames[level_of_class_stackframe]
+        statement_list = maybe_class_frame[4]
+        first_statment = statement_list[0].strip()
+        for pat in _KERNEL_CLASS_STACKFRAME_STMT_RES:
+            if pat.match(first_statment):
+                return True
+    except:
+        pass
+    return False
+
+
 def kernel(func):
     _taichi_skip_traceback = 1
 

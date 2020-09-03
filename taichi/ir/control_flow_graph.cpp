@@ -23,8 +23,8 @@ CFGNode::CFGNode(Block *block,
     TI_ASSERT(block);
     auto parent_block = block;
     parent_blocks.insert(parent_block);
-    while (parent_block->parent) {
-      parent_block = parent_block->parent;
+    while (parent_block->parent_block()) {
+      parent_block = parent_block->parent_block();
       parent_blocks.insert(parent_block);
     }
   }

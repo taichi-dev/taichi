@@ -89,11 +89,11 @@ class LowerAST : public IRVisitor {
     fctx.push_back<LocalStoreStmt>(new_if->false_mask, lnot_stmt_ptr);
 
     if (stmt->true_statements) {
-      new_if->true_statements = std::move(stmt->true_statements);
+      new_if->set_true_statements(std::move(stmt->true_statements));
       new_if->true_statements->mask_var = new_if->true_mask;
     }
     if (stmt->false_statements) {
-      new_if->false_statements = std::move(stmt->false_statements);
+      new_if->set_false_statements(std::move(stmt->false_statements));
       new_if->false_statements->mask_var = new_if->false_mask;
     }
 
@@ -399,12 +399,19 @@ class LowerAST : public IRVisitor {
     // expand rhs
     Stmt *val_stmt = nullptr;
     auto fctx = make_flatten_ctx();
-    if (stmt->val.expr) {
-      auto expr = stmt->val;
+    if (stmt->cond.expr) {
+      auto expr = stmt->cond;
       expr->flatten(&fctx);
       val_stmt = expr->stmt;
     }
-    fctx.push_back<AssertStmt>(stmt->text, val_stmt);
+
+    auto &fargs = stmt->args;  // frontend stmt args
+    std::vector<Stmt *> args_stmts(fargs.size());
+    for (int i = 0; i < (int)fargs.size(); ++i) {
+      fargs[i]->flatten(&fctx);
+      args_stmts[i] = fargs[i]->stmt;
+    }
+    fctx.push_back<AssertStmt>(val_stmt, stmt->text, args_stmts);
     stmt->parent->replace_with(stmt, std::move(fctx.stmts));
     throw IRModified();
   }

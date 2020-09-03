@@ -29,13 +29,8 @@ uint64 hash(IRNode *stmt) {
 }
 
 std::unique_ptr<OffloadedStmt> clone_offloaded_task(OffloadedStmt *from,
-                                                    Kernel *kernel,
-                                                    Block *dummy_root) {
+                                                    Kernel *kernel) {
   auto new_ir = irpass::analysis::clone(from, kernel);
-  // This is not the ideal fix, because |new_ir|'s children blocks are NOT
-  // linked to |dummy_root|. However, if I manually do the linking, I got error
-  // during LLVM codegen.
-  new_ir->as<OffloadedStmt>()->parent = dummy_root;
   return std::unique_ptr<OffloadedStmt>((OffloadedStmt *)(new_ir.release()));
 }
 
@@ -137,13 +132,11 @@ void ParallelExecutor::worker_loop() {
 KernelLaunchRecord::KernelLaunchRecord(Context context,
                                        Kernel *kernel,
                                        OffloadedStmt *stmt,
-                                       uint64 h,
-                                       Block *dummy_root)
+                                       uint64 h)
     : context(context),
       kernel(kernel),
       h(h),
       stmt_(stmt),
-      dummy_root_(dummy_root),
       cloned_stmt_holder_(nullptr) {
   TI_ASSERT(stmt_ != nullptr);
   TI_ASSERT(stmt_->get_kernel() != nullptr);
@@ -151,7 +144,7 @@ KernelLaunchRecord::KernelLaunchRecord(Context context,
 
 OffloadedStmt *KernelLaunchRecord::clone_stmt_on_write() {
   if (cloned_stmt_holder_ == nullptr) {
-    cloned_stmt_holder_ = clone_offloaded_task(stmt_, kernel, dummy_root_);
+    cloned_stmt_holder_ = clone_offloaded_task(stmt_, kernel);
     stmt_ = cloned_stmt_holder_.get();
   }
   return stmt_;
@@ -219,7 +212,7 @@ ExecutionQueue::ExecutionQueue()
     : compilation_workers(4), launch_worker(1) {  // TODO: remove 4
 }
 
-void AsyncEngine::launch(Kernel *kernel) {
+void AsyncEngine::launch(Kernel *kernel, Context &context) {
   if (!kernel->lowered)
     kernel->lower(/*to_executable=*/false);
 
@@ -228,11 +221,7 @@ void AsyncEngine::launch(Kernel *kernel) {
 
   auto &offloads = block->statements;
   auto &kmeta = kernel_metas_[kernel];
-  const bool kmeta_inited = kmeta.initialized();
-  if (!kmeta_inited) {
-    kmeta.dummy_root = std::make_unique<Block>();
-    kmeta.dummy_root->kernel = kernel;
-  }
+  const bool kmeta_inited = kmeta.initialized;
   for (std::size_t i = 0; i < offloads.size(); i++) {
     auto *offload = offloads[i]->as<OffloadedStmt>();
     uint64 h;
@@ -242,16 +231,17 @@ void AsyncEngine::launch(Kernel *kernel) {
       h = oc.get_hash();
       offl_template = oc.get_template();
     } else {
-      auto cloned_offs =
-          clone_offloaded_task(offload, kernel, kmeta.dummy_root.get());
+      auto cloned_offs = clone_offloaded_task(offload, kernel);
       offl_template = cloned_offs.get();
       h = hash(offl_template);
       TI_ASSERT(kmeta.offloaded_cached.size() == i);
       kmeta.offloaded_cached.emplace_back(std::move(cloned_offs), h);
     }
-    KernelLaunchRecord rec(kernel->program.get_context(), kernel, offl_template,
-                           h, kmeta.dummy_root.get());
+    KernelLaunchRecord rec(context, kernel, offl_template, h);
     enqueue(std::move(rec));
+  }
+  if (!kmeta_inited) {
+    kmeta.initialized = true;
   }
 }
 
@@ -422,7 +412,6 @@ bool AsyncEngine::fuse() {
       // replace all reference to the offloaded statement B to A
       irpass::replace_all_usages_with(task_a, task_b, task_a);
       irpass::re_id(task_a);
-      irpass::fix_block_parents(task_a);
 
       auto kernel = task_queue[i].kernel;
       irpass::full_simplify(task_a, /*after_lower_access=*/false, kernel);

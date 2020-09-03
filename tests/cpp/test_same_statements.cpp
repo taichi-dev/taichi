@@ -23,7 +23,7 @@ TI_TEST("same_statements") {
                                                          global_load, true_one);
     auto true_store =
         true_clause->push_back<GlobalStoreStmt>(global_store_addr, true_add);
-    if_stmt->true_statements = std::move(true_clause);
+    if_stmt->set_true_statements(std::move(true_clause));
 
     auto false_clause = std::make_unique<Block>();
     auto false_one = false_clause->push_back<ConstStmt>(TypedConstant(1));
@@ -31,7 +31,7 @@ TI_TEST("same_statements") {
         BinaryOpType::add, global_load, false_one);
     auto false_store =
         false_clause->push_back<GlobalStoreStmt>(global_store_addr, false_add);
-    if_stmt->false_statements = std::move(false_clause);
+    if_stmt->set_false_statements(std::move(false_clause));
 
     irpass::type_check(block.get());
     TI_CHECK(block->size() == 5);

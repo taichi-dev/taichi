@@ -29,7 +29,7 @@ class DemoteOperations : public BasicStmtVisitor {
     auto input_sar_begin = statements.push_back<BinaryOpStmt>(
         BinaryOpType::bit_sar, stmt->input, begin);
     auto mask = statements.push_back<ConstStmt>(LaneAttribute<TypedConstant>(
-          ((1LL << (stmt->bit_end - stmt->bit_begin)) - 1);
+          ((1LL << (stmt->bit_end - stmt->bit_begin)) - 1));
     auto ret = statements.push_back<BinaryOpStmt>(
         BinaryOpType::bit_and, input_sar_begin, mask);
 

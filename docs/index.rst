@@ -69,10 +69,11 @@ The Taichi Programming Language
    faq
    gui
    debugging
-   extension_libraries
    export_results
    cli_utilities
    global_settings
+   export_kernels
+   extension_libraries
    acknowledgments
 
 

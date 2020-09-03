@@ -2,7 +2,6 @@ import taichi as ti
 import pytest
 
 
-@pytest.mark.xfail(reason='Dropped ODOP support')
 @ti.host_arch_only
 def test_classfunc():
     @ti.data_oriented

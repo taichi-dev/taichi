@@ -220,9 +220,11 @@ void GUI::set_title(std::string title) {
 }
 
 GUI::~GUI() {
-  std::free(data);
-  DeleteDC(src);
-  gui_from_hwnd.erase(hwnd);
+  if (show_gui) {
+    std::free(data);
+    DeleteDC(src);
+    gui_from_hwnd.erase(hwnd);
+  }
 }
 
 TI_NAMESPACE_END

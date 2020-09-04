@@ -57,7 +57,7 @@ def imresize(img, w, h=None):
         img = img.to_numpy()
     if h is None:
         h = w
-    if (w, h) == img.shape:
+    if (w, h) == img.shape[:2]:
         return img
     assert isinstance(w, int) and isinstance(h, int) and w > 1 and h > 1
     u, v = (img.shape[0]) / (w), (img.shape[1]) / (h)

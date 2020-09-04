@@ -22,7 +22,7 @@ def test_save_image_without_window(dtype):
         else:
             paint(i * 1.0 / n)
         gui.set_image(pixels)
-        image_path = make_temp_file(suffix='.jpg')
+        image_path = make_temp_file(suffix='.png')
         gui.show(image_path)
         image = ti.imread(image_path)
         delta = (image - i).sum()

@@ -1,4 +1,5 @@
 import taichi as ti
+import numpy as np
 
 
 @ti.all_archs
@@ -94,3 +95,44 @@ def test_static_grouped_static():
             for k in range(2):
                 for l in range(3):
                     assert x[i, j][k, l] == k + l * 10 + i + j * 4
+
+
+@ti.all_archs
+def test_field_init_eye():
+    # https://github.com/taichi-dev/taichi/issues/1824
+
+    n = 32
+
+    A = ti.field(ti.f32, (n, n))
+
+    @ti.kernel
+    def init():
+        for i, j in ti.ndrange(n, n):
+            if i == j:
+                A[i, j] = 1
+
+    init()
+    assert np.allclose(A.to_numpy(), np.eye(n, dtype=np.float32))
+
+
+@ti.all_archs
+def test_ndrange_index_floordiv():
+    # https://github.com/taichi-dev/taichi/issues/1829
+
+    n = 10
+
+    A = ti.field(ti.f32, (n, n))
+
+    @ti.kernel
+    def init():
+        for i, j in ti.ndrange(n, n):
+            if i // 2 == 0:
+                A[i, j] = i
+
+    init()
+    for i in range(n):
+        for j in range(n):
+            if i // 2 == 0:
+                assert A[i, j] == i
+            else:
+                assert A[i, j] == 0

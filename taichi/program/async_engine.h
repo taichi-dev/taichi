@@ -1,6 +1,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <deque>
+#include <future>
 #include <mutex>
 #include <thread>
 #include <unordered_map>
@@ -102,12 +103,9 @@ class ExecutionQueue {
   std::mutex mut;
   std::deque<TaskLaunchRecord> task_queue;
   std::vector<TaskLaunchRecord> trashbin;  // prevent IR from being deleted
-  std::unordered_set<uint64> to_be_compiled;
 
   ParallelExecutor compilation_workers;  // parallel compilation
   ParallelExecutor launch_worker;        // serial launching
-
-  std::unordered_map<uint64, FunctionType> compiled_func;
 
   ExecutionQueue();
 
@@ -120,10 +118,32 @@ class ExecutionQueue {
   }
 
   void clear_cache() {
-    compiled_func.clear();
+    compiled_funcs_.clear();
   }
 
   void synchronize();
+
+ private:
+  // Wraps an executable function that is compiled from a task asynchronously.
+  class AsyncCompiledFunc {
+   public:
+    AsyncCompiledFunc() : f_(p_.get_future()) {
+    }
+
+    inline void set(const FunctionType &func) {
+      p_.set_value(func);
+    }
+
+    inline FunctionType get() {
+      return f_.get();
+    }
+
+   private:
+    std::promise<FunctionType> p_;
+    // https://stackoverflow.com/questions/38160960/calling-stdfutureget-repeatedly
+    std::shared_future<FunctionType> f_;
+  };
+  std::unordered_map<uint64, AsyncCompiledFunc> compiled_funcs_;
 };
 
 // An engine for asynchronous execution and optimization

@@ -806,7 +806,8 @@ class KernelCodegen : public IRVisitor {
     ka.name = mtl_kernel_name;
     ka.task_type = stmt->task_type;
     ka.buffers = get_common_buffers();
-    ka.num_threads = 1;
+    ka.advisory_num_threads = 1;
+    ka.advisory_num_threads_per_group = 1;
 
     emit_mtl_kernel_sig(mtl_kernel_name, ka.buffers);
     {
@@ -867,7 +868,7 @@ class KernelCodegen : public IRVisitor {
       // sdf_renderer.py benchmark for setting |num_threads|
       // - num_elemnts: ~20 samples/s
       // - kMaxNumThreadsGridStrideLoop: ~12 samples/s
-      ka.num_threads = num_elems;
+      ka.advisory_num_threads = num_elems;
     } else {
       emit("// range_for, range known at runtime");
       begin_expr = stmt->const_begin
@@ -877,8 +878,9 @@ class KernelCodegen : public IRVisitor {
                                 ? std::to_string(stmt->end_value)
                                 : inject_load_global_tmp(stmt->end_offset);
       emit("const int {} = {} - {};", total_elems_name, end_expr, begin_expr);
-      ka.num_threads = kMaxNumThreadsGridStrideLoop;
+      ka.advisory_num_threads = kMaxNumThreadsGridStrideLoop;
     }
+    ka.advisory_num_threads_per_group = stmt->block_dim;
     // begin_ = thread_id   + begin_expr
     emit("const int begin_ = {} + {};", kKernelThreadIdName, begin_expr);
     // end_   = total_elems + begin_expr
@@ -949,8 +951,9 @@ class KernelCodegen : public IRVisitor {
     const int total_num_elems_from_root =
         compiled_structs_->snode_descriptors.find(sn_id)
             ->second.total_num_elems_from_root;
-    ka.num_threads =
+    ka.advisory_num_threads =
         std::min(total_num_elems_from_root, kMaxNumThreadsGridStrideLoop);
+    ka.advisory_num_threads_per_group = stmt->block_dim;
 
     current_appender().push_indent();
     emit("// struct_for");
@@ -1020,9 +1023,10 @@ class KernelCodegen : public IRVisitor {
     if (type == Type::listgen) {
       // listgen kernels use grid-stride loops
       const auto &sn_descs = compiled_structs_->snode_descriptors;
-      ka.num_threads = std::min(
+      ka.advisory_num_threads = std::min(
           sn_descs.find(sn->id)->second.total_num_self_from_root(sn_descs),
           kMaxNumThreadsGridStrideLoop);
+      ka.advisory_num_threads_per_group = stmt->block_dim;
       ka.buffers = {BuffersEnum::Runtime, BuffersEnum::Root,
                     BuffersEnum::Context};
     } else {

@@ -110,36 +110,33 @@ def sparse_numpy(scale):
     ti.benchmark(task, repeat=10)
 
 
-with_autodiff = False  # For some reason autodiff crashes with async.
-if with_autodiff:
+@benchmark_async
+def autodiff(scale):
 
-    @benchmark_async
-    def autodiff(scale):
+    n = 1024**2 * scale
 
-        n = 1024**2 * scale
+    a = ti.field(dtype=ti.f32, shape=n, needs_grad=True)
+    b = ti.field(dtype=ti.f32, shape=n)
+    loss = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
 
-        a = ti.field(dtype=ti.f32, shape=n, needs_grad=True)
-        b = ti.field(dtype=ti.f32, shape=n)
-        loss = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
+    @ti.kernel
+    def compute_loss():
+        for i in a:
+            loss[None] += a[i]
 
-        @ti.kernel
-        def compute_loss():
-            for i in a:
-                loss[None] += a[i]
+    @ti.kernel
+    def accumulate_grad():
+        for i in a:
+            b[i] += a.grad[i]
 
-        @ti.kernel
-        def accumulate_grad():
-            for i in a:
-                b[i] += a.grad[i]
+    def task():
+        with ti.Tape(loss=loss):
+            # The forward kernel of compute_loss should be completely eliminated (except for the last one)
+            compute_loss()
 
-        def task():
-            with ti.Tape(loss=loss):
-                # The forward kernel of compute_loss should be completely eliminated (except for the last one)
-                compute_loss()
+        accumulate_grad()
 
-            accumulate_grad()
-
-        ti.benchmark(task, repeat=100)
+    ti.benchmark(task, repeat=100)
 
 
 @benchmark_async

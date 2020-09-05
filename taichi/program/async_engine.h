@@ -69,7 +69,7 @@ class ParallelExecutor {
   std::condition_variable flush_cv_;
 };
 
-// Records the necessary data for launching an offloaed task.
+// Records the necessary data for launching an offloaded task.
 class TaskLaunchRecord {
  public:
   Context context;
@@ -162,8 +162,8 @@ class AsyncEngine {
   std::unique_ptr<StateFlowGraph> sfg;
   std::deque<TaskLaunchRecord> task_queue;
 
-  AsyncEngine(Program *program) : program(program) {
-    sfg = std::make_unique<StateFlowGraph>();
+  AsyncEngine(Program *program)
+      : program(program), sfg(std::make_unique<StateFlowGraph>()) {
   }
 
   bool optimize_listgen();  // return true when modified

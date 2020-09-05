@@ -46,7 +46,7 @@ class StateFlowGraph {
     // TODO: export the graph to Dot format for GraphViz
   }
 
-  void insert_task(TaskMeta task_meta);
+  void insert_task(const TaskMeta &task_meta);
 
   void insert_state_flow(Node *from, Node *to, AsyncState state);
 };

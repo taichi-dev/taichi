@@ -2,7 +2,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-void StateFlowGraph::insert_task(TaskMeta task_meta) {
+void StateFlowGraph::insert_task(const TaskMeta &task_meta) {
   auto node = std::make_unique<Node>();
   node->kernel_name = task_meta.kernel_name;
   for (auto input_state : task_meta.input_states) {

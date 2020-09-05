@@ -329,10 +329,10 @@ TaskMeta AsyncEngine::create_task_meta(
 }
 
 void AsyncEngine::enqueue(TaskLaunchRecord &&t) {
-  if (offloaded_metas_.find(t.h) == offloaded_metas_.end()) {
-    offloaded_metas_[t.h] = create_task_meta(t);
+  if (offloaded_metas_.find(t.ir_handle) == offloaded_metas_.end()) {
+    offloaded_metas_[t.ir_handle] = create_task_meta(t);
   }
-  sfg->insert_task(offloaded_metas_[t.h]);
+  sfg->insert_task(offloaded_metas_[t.ir_handle]);
   task_queue.push_back(std::move(t));
 }
 

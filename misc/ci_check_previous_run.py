@@ -48,7 +48,7 @@ def locate_workflow_run_id(sha):
     done = False
     page_id = 0
     while not done:
-        # Note that the REST  API to get runs paginates the results.
+        # Note that the REST API to get runs paginates the results.
         runs = get_workflow_runs(page_id)['workflow_runs']
         for r in runs:
             if r['head_sha'] == sha:

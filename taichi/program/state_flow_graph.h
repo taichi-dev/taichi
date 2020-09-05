@@ -38,25 +38,9 @@ class StateFlowGraph {
     initial_node->kernel_name = "initial_state";
   }
 
-  void print_edges(const StateToNodeMappnig &edges) {
-    for (auto &edge : edges) {
-      auto input_node = edge.second;
-      fmt::print("    {}: node {} @ {}", edge.first.name(),
-                 input_node->kernel_name, (void *)input_node);
-    }
-  }
+  void print_edges(const StateToNodeMappnig &edges);
 
-  void print() {
-    fmt::print("=== State Flow Graph ===");
-    for (auto &node : nodes) {
-      fmt::print("Node {} {}", node->kernel_name, (void *)node.get());
-      fmt::print("  Inputs:", node->kernel_name, (void *)node.get());
-      print_edges(node->input_edges);
-      fmt::print("  Outputs:", node->kernel_name, (void *)node.get());
-      print_edges(node->output_edges);
-    }
-    fmt::print("=======================");
-  }
+  void print();
 
   void dump_dot(const std::string &fn) {
     // TODO: export the graph to Dot format for GraphViz

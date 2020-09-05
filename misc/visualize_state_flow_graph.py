@@ -1,5 +1,7 @@
 import taichi as ti
 
+ti.init(arch=ti.cpu, async_mode=True)
+
 x = ti.field(ti.i32)
 y = ti.field(ti.i32)
 

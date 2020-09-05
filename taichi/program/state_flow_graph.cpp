@@ -24,4 +24,30 @@ void StateFlowGraph::insert_state_flow(Node *from, Node *to, AsyncState state) {
   to->input_edges.insert(std::make_pair(state, from));
 }
 
+void StateFlowGraph::print_edges(
+    const std::unordered_map<AsyncState, StateFlowGraph::Node *, AsyncStateHash>
+        &edges) {
+  for (auto &edge : edges) {
+    auto input_node = edge.second;
+    fmt::print("    {}: node {} @ {}\n", edge.first.name(),
+               input_node->kernel_name, (void *)input_node);
+  }
+}
+
+void StateFlowGraph::print() {
+  fmt::print("=== State Flow Graph ===\n");
+  for (auto &node : nodes) {
+    fmt::print("Node {} {}\n", node->kernel_name, (void *)node.get());
+    if (!node->input_edges.empty()) {
+      fmt::print("  Inputs:\n", node->kernel_name, (void *)node.get());
+      print_edges(node->input_edges);
+    }
+    if (!node->output_edges.empty()) {
+      fmt::print("  Outputs:\n", node->kernel_name, (void *)node.get());
+      print_edges(node->output_edges);
+    }
+  }
+  fmt::print("=======================\n");
+}
+
 TLANG_NAMESPACE_END

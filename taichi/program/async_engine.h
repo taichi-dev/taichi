@@ -23,11 +23,14 @@ class IRHandle {
 
   std::unique_ptr<IRNode> clone() const;
 
+  // Set this->ir_ to the cloned one.
+  std::unique_ptr<IRNode> clone_on_write();
+
   IRNode const *ir() {
     return ir_;
   }
 
-  uint64 get_hash() const {
+  uint64 hash() const {
     return hash_;
   }
 
@@ -48,7 +51,7 @@ template <>
 struct hash<taichi::lang::IRHandle> {
   std::size_t operator()(taichi::lang::IRHandle const &ir_handle) const
       noexcept {
-    return ir_handle.get_hash();
+    return ir_handle.hash();
   }
 };
 }  // namespace std
@@ -57,13 +60,17 @@ TLANG_NAMESPACE_BEGIN
 
 class IRBank {
  public:
+  std::vector<std::unique_ptr<IRNode>> trash_bin;
+
   uint64 get_hash(IRNode *ir);
   void insert(std::unique_ptr<IRNode> &&ir, uint64 hash);
-  void insert(std::unique_ptr<IRNode> &&ir);
+//  void insert(std::unique_ptr<IRNode> &&ir);
   IRNode *find(IRHandle ir_handle);
+
  private:
   std::unordered_map<IRNode *, uint64> hash_bank_;
   std::unordered_map<IRHandle, std::unique_ptr<IRNode>> ir_bank_;
+  //  std::unordered_map<std::pair<IRHandle, IRHandle>, IRHandle> fuse_bank_;
 };
 
 class ParallelExecutor {
@@ -123,28 +130,11 @@ class TaskLaunchRecord {
   Kernel *kernel;  // TODO: remove this
   IRHandle ir_handle;
 
-  TaskLaunchRecord(Context context,
-                   Kernel *kernel,
-                   IRHandle ir_handle);
+  TaskLaunchRecord(Context context, Kernel *kernel, IRHandle ir_handle);
 
   inline OffloadedStmt *stmt() {
-    return stmt_;
+    return const_cast<IRNode *>(ir_handle.ir())->as<OffloadedStmt>();
   }
-
-  // When we need to make changes to |stmt|, call this method so that the |stmt|
-  // is cloned from the template, so that the template itself remains untouched.
-  //
-  // Cloning will only happen on the first call.
-  OffloadedStmt *clone_stmt_on_write();
-
- private:
-  // This begins as the template in OffloadedCachedData. If
-  // clone_stmt_on_write() is invoked, it points to the underlying pointer owned
-  // by |cloned_stmt_holder_|.
-  OffloadedStmt *stmt_;
-
-  // This is for cloning |stmt_|.
-  std::unique_ptr<OffloadedStmt> cloned_stmt_holder_;
 };
 
 // In charge of (parallel) compilation to binary and (serial) kernel launching
@@ -152,7 +142,9 @@ class ExecutionQueue {
  public:
   std::mutex mut;
   std::deque<TaskLaunchRecord> task_queue;
-  std::vector<TaskLaunchRecord> trashbin;  // prevent IR from being deleted
+
+  // prevent IR from being deleted
+  std::vector<std::unique_ptr<IRNode>> trash_bin;
 
   ParallelExecutor compilation_workers;  // parallel compilation
   ParallelExecutor launch_worker;        // serial launching
@@ -224,6 +216,7 @@ class AsyncEngine {
 
  private:
   IRBank ir_bank_;
+  // KernelMeta is unused now.
   struct KernelMeta {
     // OffloadedCachedData holds some data that needs to be computed once for
     // each offloaded task of a kernel. Especially, it holds a cloned offloaded

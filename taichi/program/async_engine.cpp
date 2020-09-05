@@ -30,9 +30,9 @@ uint64 hash(IRNode *stmt) {
   return ret;
 }
 
-std::unique_ptr<OffloadedStmt> clone_offloaded_task(OffloadedStmt *from,
+std::unique_ptr<OffloadedStmt> clone_offloaded_task(IRNode const *from,
                                                     Kernel *kernel) {
-  auto new_ir = irpass::analysis::clone(from, kernel);
+  auto new_ir = irpass::analysis::clone(const_cast<IRNode *>(from), kernel);
   return std::unique_ptr<OffloadedStmt>((OffloadedStmt *)(new_ir.release()));
 }
 
@@ -40,6 +40,12 @@ std::unique_ptr<OffloadedStmt> clone_offloaded_task(OffloadedStmt *from,
 
 std::unique_ptr<IRNode> IRHandle::clone() const {
   return irpass::analysis::clone(const_cast<IRNode *>(ir_));
+}
+
+std::unique_ptr<IRNode> IRHandle::clone_on_write() {
+  auto cloned = clone();
+  ir_ = cloned.get();
+  return cloned;
 }
 
 uint64 IRBank::get_hash(IRNode *ir) {
@@ -57,10 +63,10 @@ void IRBank::insert(std::unique_ptr<IRNode> &&ir, uint64 hash) {
   ir_bank_[handle] = std::move(ir);
 }
 
-void IRBank::insert(std::unique_ptr<IRNode> &&ir) {
-  IRHandle handle(ir.get(), get_hash(ir.get()));
-  ir_bank_[handle] = std::move(ir);
-}
+//void IRBank::insert(std::unique_ptr<IRNode> &&ir) {
+//  IRHandle handle(ir.get(), get_hash(ir.get()));
+//  ir_bank_[handle] = std::move(ir);
+//}
 
 IRNode *IRBank::find(IRHandle ir_handle) {
   auto result = ir_bank_.find(ir_handle);
@@ -167,25 +173,16 @@ TaskLaunchRecord::TaskLaunchRecord(Context context,
                                    IRHandle ir_handle)
     : context(context),
       kernel(kernel),
-      ir_handle(ir_handle),
-      cloned_stmt_holder_(nullptr) {
-  stmt_ = const_cast<IRNode *>(ir_handle.ir())->cast<OffloadedStmt>();
-  TI_ASSERT(stmt_ != nullptr);
-  TI_ASSERT(stmt_->get_kernel() != nullptr);
-}
-
-OffloadedStmt *TaskLaunchRecord::clone_stmt_on_write() {
-  if (cloned_stmt_holder_ == nullptr) {
-    cloned_stmt_holder_ = clone_offloaded_task(stmt_, kernel);
-    stmt_ = cloned_stmt_holder_.get();
-  }
-  return stmt_;
+      ir_handle(ir_handle) {
+  TI_ASSERT(ir_handle.ir()->get_kernel() != nullptr);
 }
 
 void ExecutionQueue::enqueue(TaskLaunchRecord &&ker) {
-  auto h = ker.ir_handle.get_hash();
+  auto h = ker.ir_handle.hash();
   auto *stmt = ker.stmt();
   auto kernel = ker.kernel;
+
+  kernel->account_for_offloaded(stmt);
 
   bool needs_compile = false;
   AsyncCompiledFunc *async_func = nullptr;
@@ -199,7 +196,8 @@ void ExecutionQueue::enqueue(TaskLaunchRecord &&ker) {
   }
   if (needs_compile) {
     // Later the IR passes will change |stmt|, so we must clone it.
-    stmt = ker.clone_stmt_on_write();
+    auto cloned_stmt = ker.ir_handle.clone();
+    stmt = cloned_stmt->as<OffloadedStmt>();
 
     compilation_workers.enqueue([async_func, stmt, kernel]() {
       {
@@ -220,15 +218,13 @@ void ExecutionQueue::enqueue(TaskLaunchRecord &&ker) {
       auto func = codegen->codegen();
       async_func->set(func);
     });
+    trash_bin.push_back(std::move(cloned_stmt));
   }
-
-  kernel->account_for_offloaded(ker.stmt());
 
   launch_worker.enqueue([async_func, context = ker.context]() mutable {
     auto func = async_func->get();
     func(context);
   });
-  trashbin.push_back(std::move(ker));
 }
 
 void ExecutionQueue::synchronize() {
@@ -248,7 +244,7 @@ void AsyncEngine::launch(Kernel *kernel, Context &context) {
   TI_ASSERT(block);
 
   auto &offloads = block->statements;
-  auto &kmeta = kernel_metas_[kernel];
+//  auto &kmeta = kernel_metas_[kernel];
 //  const bool kmeta_inited = kmeta.initialized;
   for (std::size_t i = 0; i < offloads.size(); i++) {
     auto *offload = offloads[i]->as<OffloadedStmt>();
@@ -342,7 +338,7 @@ void AsyncEngine::synchronize() {
     ;
   while (!task_queue.empty()) {
     queue.enqueue(std::move(task_queue.front()));
-    task_queue.pop_front();
+    task_queue.pop_front();  // delete TaskLaunchRecord here
   }
   queue.synchronize();
 }
@@ -442,8 +438,10 @@ bool AsyncEngine::fuse() {
     }
     if (kernel_args_match && (is_same_range_for || is_same_struct_for)) {
       // We are about to change both |task_a| and |task_b|. Clone them first.
-      task_a = rec_a.clone_stmt_on_write();
-      task_b = rec_b.clone_stmt_on_write();
+      auto cloned_task_a = rec_a.ir_handle.clone();
+      auto cloned_task_b = rec_b.ir_handle.clone();
+      task_a = cloned_task_a->as<OffloadedStmt>();
+      task_b = cloned_task_b->as<OffloadedStmt>();
       // TODO: in certain cases this optimization can be wrong!
       // Fuse task b into task_a
       for (int j = 0; j < (int)task_b->body->size(); j++) {
@@ -457,7 +455,11 @@ bool AsyncEngine::fuse() {
 
       auto kernel = task_queue[i].kernel;
       irpass::full_simplify(task_a, /*after_lower_access=*/false, kernel);
-      task_queue[i].ir_handle = IRHandle(task_a, ir_bank_.get_hash(task_a));
+      auto h = ir_bank_.get_hash(task_a);
+      task_queue[i].ir_handle = IRHandle(task_a, h);
+      ir_bank_.insert(std::move(cloned_task_a), h);
+      task_queue[i + 1].ir_handle = IRHandle(nullptr, 0);
+      ir_bank_.trash_bin.push_back(std::move(cloned_task_b));
 
       modified = true;
     }

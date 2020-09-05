@@ -1,6 +1,6 @@
 import taichi as ti
 import numpy as np
-ti.init(print_preprocessed=True)
+ti.init()
 
 N = 128
 

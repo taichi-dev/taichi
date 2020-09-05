@@ -398,7 +398,7 @@ class MCISO_Example(MCISO):
             ret_len = self.march()
             ret = self.r.to_numpy()[:ret_len] / self.N
             if self.dim == 2:
-                gui.set_image(ti.imresize(m, *gui.res))
+                gui.set_image(ti.imresize(self.m, *gui.res))
                 gui.lines(ret[:, 0], ret[:, 1], color=0xff66cc, radius=1.5)
             else:
                 gui.triangles(ret[:, 0, 0:2], ret[:, 1, 0:2], ret[:, 2, 0:2], color=0xffcc66)
@@ -417,7 +417,7 @@ class MCISO_Example(MCISO):
 
 
 if __name__ == '__main__':
-    ti.init(arch=ti.cuda)
+    ti.init(arch=ti.gpu)
     main = MCISO_Example()
     main.main()
     #main.main(export_result='/tmp/marching_cube.ply')

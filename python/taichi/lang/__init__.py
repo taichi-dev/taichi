@@ -340,8 +340,8 @@ def benchmark(func, repeat=300, args=()):
                 ti.stat_write('instructions', b)
             if a == 'codegen_offloaded_tasks':
                 ti.stat_write('offloaded_tasks', b)
-            elif a == 'launched_kernels':
-                ti.stat_write('launched_kernels', b)
+            elif a == 'launched_tasks':
+                ti.stat_write('launched_tasks', b)
         # The reason why we run 3 more times is to warm up
         # instruction/data caches. Discussion:
         # https://github.com/taichi-dev/taichi/pull/1002#discussion_r426312136

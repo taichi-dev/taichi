@@ -1,6 +1,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <deque>
+#include <future>
 #include <mutex>
 #include <thread>
 #include <unordered_map>
@@ -85,17 +86,17 @@ class ParallelExecutor {
   std::condition_variable flush_cv_;
 };
 
-class KernelLaunchRecord {
+// Records the necessary data for launching an offloaed task.
+class TaskLaunchRecord {
  public:
   Context context;
   Kernel *kernel;  // TODO: remove this
   uint64 h;        // hash of |stmt|
 
-  KernelLaunchRecord(Context context,
-                     Kernel *kernel,
-                     OffloadedStmt *stmt,
-                     uint64 h,
-                     Block *dummy_root);
+  TaskLaunchRecord(Context context,
+                   Kernel *kernel,
+                   OffloadedStmt *stmt,
+                   uint64 h);
 
   inline OffloadedStmt *stmt() {
     return stmt_;
@@ -113,8 +114,7 @@ class KernelLaunchRecord {
   // by |cloned_stmt_holder_|.
   OffloadedStmt *stmt_;
 
-  // These are for cloning |stmt_|.
-  Block *dummy_root_;  // Not owned
+  // This is for cloning |stmt_|.
   std::unique_ptr<OffloadedStmt> cloned_stmt_holder_;
 };
 
@@ -122,18 +122,15 @@ class KernelLaunchRecord {
 class ExecutionQueue {
  public:
   std::mutex mut;
-  std::deque<KernelLaunchRecord> task_queue;
-  std::vector<KernelLaunchRecord> trashbin;  // prevent IR from being deleted
-  std::unordered_set<uint64> to_be_compiled;
+  std::deque<TaskLaunchRecord> task_queue;
+  std::vector<TaskLaunchRecord> trashbin;  // prevent IR from being deleted
 
   ParallelExecutor compilation_workers;  // parallel compilation
   ParallelExecutor launch_worker;        // serial launching
 
-  std::unordered_map<uint64, FunctionType> compiled_func;
-
   ExecutionQueue();
 
-  void enqueue(KernelLaunchRecord &&ker);
+  void enqueue(TaskLaunchRecord &&ker);
 
   void compile_task() {
   }
@@ -142,10 +139,32 @@ class ExecutionQueue {
   }
 
   void clear_cache() {
-    compiled_func.clear();
+    compiled_funcs_.clear();
   }
 
   void synchronize();
+
+ private:
+  // Wraps an executable function that is compiled from a task asynchronously.
+  class AsyncCompiledFunc {
+   public:
+    AsyncCompiledFunc() : f_(p_.get_future()) {
+    }
+
+    inline void set(const FunctionType &func) {
+      p_.set_value(func);
+    }
+
+    inline FunctionType get() {
+      return f_.get();
+    }
+
+   private:
+    std::promise<FunctionType> p_;
+    // https://stackoverflow.com/questions/38160960/calling-stdfutureget-repeatedly
+    std::shared_future<FunctionType> f_;
+  };
+  std::unordered_map<uint64, AsyncCompiledFunc> compiled_funcs_;
 };
 
 // An engine for asynchronous execution and optimization
@@ -155,7 +174,7 @@ class AsyncEngine {
 
   ExecutionQueue queue;
 
-  std::deque<KernelLaunchRecord> task_queue;
+  std::deque<TaskLaunchRecord> task_queue;
 
   AsyncEngine() {
   }
@@ -170,14 +189,12 @@ class AsyncEngine {
 
   void launch(Kernel *kernel, Context &context);
 
-  void enqueue(KernelLaunchRecord &&t);
+  void enqueue(TaskLaunchRecord &&t);
 
   void synchronize();
 
  private:
   struct KernelMeta {
-    std::unique_ptr<Block> dummy_root;
-
     // OffloadedCachedData holds some data that needs to be computed once for
     // each offloaded task of a kernel. Especially, it holds a cloned offloaded
     // task, but uses it as a READ-ONLY template. That is, code that later finds
@@ -212,9 +229,7 @@ class AsyncEngine {
 
     std::vector<OffloadedCachedData> offloaded_cached;
 
-    inline bool initialized() const {
-      return dummy_root != nullptr;
-    }
+    bool initialized{false};
   };
 
   struct TaskMeta {

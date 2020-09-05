@@ -58,7 +58,7 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
     for (auto alloca : touched_allocas) {
       // Test if the alloca belongs to the current block
       bool belong_to_this_block = false;
-      for (auto b = alloca->parent; b; b = b->parent) {
+      for (auto b = alloca->parent; b; b = b->parent_block()) {
         if (b == block) {
           belong_to_this_block = true;
         }
@@ -531,7 +531,7 @@ class MakeAdjoint : public IRVisitor {
   void visit(IfStmt *if_stmt) override {
     auto new_if = Stmt::make_typed<IfStmt>(if_stmt->cond);
     if (if_stmt->true_statements) {
-      new_if->true_statements = std::make_unique<Block>();
+      new_if->set_true_statements(std::make_unique<Block>());
       auto old_current_block = current_block;
 
       current_block = new_if->true_statements.get();
@@ -543,7 +543,7 @@ class MakeAdjoint : public IRVisitor {
       current_block = old_current_block;
     }
     if (if_stmt->false_statements) {
-      new_if->false_statements = std::make_unique<Block>();
+      new_if->set_false_statements(std::make_unique<Block>());
       auto old_current_block = current_block;
       current_block = new_if->false_statements.get();
       for (int i = if_stmt->false_statements->statements.size() - 1; i >= 0;
@@ -635,7 +635,7 @@ class MakeAdjoint : public IRVisitor {
   }
 
   bool gradients_stopped(GlobalLoadStmt *stmt, SNode *snode) {
-    for (auto block = stmt->parent; block; block = block->parent) {
+    for (auto block = stmt->parent; block; block = block->parent_block()) {
       for (auto s : block->stop_gradients) {
         if (s == snode) {
           return true;
@@ -754,7 +754,7 @@ class BackupSSA : public BasicStmtVisitor {
     auto t = stmt->parent;
     while (t != nullptr) {
       leaf_to_root.push_back(t);
-      t = t->parent;
+      t = t->parent_block();
     }
     int num_operands = stmt->get_operands().size();
     for (int i = 0; i < num_operands; i++) {
@@ -827,7 +827,6 @@ void auto_diff(IRNode *root, bool use_stack) {
     auto IB = IdentifyIndependentBlocks::run(root);
     ReverseOuterLoops::run(root, IB);
 
-    fix_block_parents(root);
     for (auto ib : IB) {
       PromoteSSA2LocalVar::run(ib);
       ReplaceLocalVarWithStacks replace;
@@ -835,21 +834,17 @@ void auto_diff(IRNode *root, bool use_stack) {
       type_check(root);
       MakeAdjoint::run(ib);
       type_check(root);
-      fix_block_parents(root);
       BackupSSA::run(ib);
-      fix_block_parents(root);
       irpass::analysis::verify(root);
     }
   } else {
     auto IB = IdentifyIndependentBlocks::run(root);
     ReverseOuterLoops::run(root, IB);
-    fix_block_parents(root);
     type_check(root);
     for (auto ib : IB) {
       MakeAdjoint::run(ib);
     }
   }
-  fix_block_parents(root);
   type_check(root);
   irpass::analysis::verify(root);
 }

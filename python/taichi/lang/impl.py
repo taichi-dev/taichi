@@ -72,6 +72,17 @@ def begin_frontend_struct_for(group, loop_range):
     taichi_lang_core.begin_frontend_struct_for(group, loop_range.ptr)
 
 
+def begin_frontend_if(cond):
+    if is_taichi_class(cond):
+        raise ValueError(
+            'The truth value of vectors/matrices is ambiguous.\n'
+            'Consider using `any` or `all` when comparing vectors/matrices:\n'
+            '    if all(x == y):\n'
+            'or\n'
+            '    if any(x != y):\n')
+    taichi_lang_core.begin_frontend_if(Expr(cond).ptr)
+
+
 def wrap_scalar(x):
     if type(x) in [int, float]:
         return Expr(x)
@@ -452,6 +463,15 @@ def ti_print(*vars, sep=' ', end='\n'):
     entries = fused_string(entries)
     contentries = [entry2content(entry) for entry in entries]
     taichi_lang_core.create_print(contentries)
+
+
+@taichi_scope
+def ti_assert(cond, msg, extra_args):
+    # Mostly a wrapper to help us convert from ti.Expr (defined in Python) to
+    # taichi_lang_core.Expr (defined in C++)
+    import taichi as ti
+    taichi_lang_core.create_assert_stmt(
+        ti.Expr(cond).ptr, msg, [ti.Expr(x).ptr for x in extra_args])
 
 
 @taichi_scope

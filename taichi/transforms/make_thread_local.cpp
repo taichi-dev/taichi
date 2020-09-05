@@ -119,6 +119,7 @@ void make_thread_local_offload(OffloadedStmt *offload) {
     {
       if (offload->tls_prologue == nullptr) {
         offload->tls_prologue = std::make_unique<Block>();
+        offload->tls_prologue->parent_stmt = offload;
       }
 
       // ensure alignment
@@ -148,6 +149,7 @@ void make_thread_local_offload(OffloadedStmt *offload) {
     {
       if (offload->tls_epilogue == nullptr) {
         offload->tls_epilogue = std::make_unique<Block>();
+        offload->tls_epilogue->parent_stmt = offload;
       }
       auto tls_ptr = offload->tls_epilogue->push_back<ThreadLocalPtrStmt>(
           tls_offset, VectorType(1, data_type));
@@ -183,7 +185,6 @@ void make_thread_local(IRNode *root) {
     make_thread_local_offload(root->as<OffloadedStmt>());
   }
   type_check(root);
-  fix_block_parents(root);
 }
 
 }  // namespace irpass

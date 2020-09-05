@@ -166,8 +166,10 @@ void GUI::set_title(std::string title) {
 }
 
 GUI::~GUI() {
-  XCloseDisplay((Display *)display);
-  delete img;
+  if (show_gui) {
+    XCloseDisplay((Display *)display);
+    delete img;
+  }
 }
 
 TI_NAMESPACE_END

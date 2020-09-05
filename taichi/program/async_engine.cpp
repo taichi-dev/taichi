@@ -29,13 +29,8 @@ uint64 hash(IRNode *stmt) {
 }
 
 std::unique_ptr<OffloadedStmt> clone_offloaded_task(OffloadedStmt *from,
-                                                    Kernel *kernel,
-                                                    Block *dummy_root) {
+                                                    Kernel *kernel) {
   auto new_ir = irpass::analysis::clone(from, kernel);
-  // This is not the ideal fix, because |new_ir|'s children blocks are NOT
-  // linked to |dummy_root|. However, if I manually do the linking, I got error
-  // during LLVM codegen.
-  new_ir->as<OffloadedStmt>()->parent = dummy_root;
   return std::unique_ptr<OffloadedStmt>((OffloadedStmt *)(new_ir.release()));
 }
 
@@ -138,40 +133,47 @@ void ParallelExecutor::worker_loop() {
   }
 }
 
-KernelLaunchRecord::KernelLaunchRecord(Context context,
-                                       Kernel *kernel,
-                                       OffloadedStmt *stmt,
-                                       uint64 h,
-                                       Block *dummy_root)
+TaskLaunchRecord::TaskLaunchRecord(Context context,
+                                   Kernel *kernel,
+                                   OffloadedStmt *stmt,
+                                   uint64 h)
     : context(context),
       kernel(kernel),
       h(h),
       stmt_(stmt),
-      dummy_root_(dummy_root),
       cloned_stmt_holder_(nullptr) {
   TI_ASSERT(stmt_ != nullptr);
   TI_ASSERT(stmt_->get_kernel() != nullptr);
 }
 
-OffloadedStmt *KernelLaunchRecord::clone_stmt_on_write() {
+OffloadedStmt *TaskLaunchRecord::clone_stmt_on_write() {
   if (cloned_stmt_holder_ == nullptr) {
-    cloned_stmt_holder_ = clone_offloaded_task(stmt_, kernel, dummy_root_);
+    cloned_stmt_holder_ = clone_offloaded_task(stmt_, kernel);
     stmt_ = cloned_stmt_holder_.get();
   }
   return stmt_;
 }
 
-void ExecutionQueue::enqueue(KernelLaunchRecord &&ker) {
+void ExecutionQueue::enqueue(TaskLaunchRecord &&ker) {
   auto h = ker.h;
   auto *stmt = ker.stmt();
   auto kernel = ker.kernel;
-  if (compiled_func.find(h) == compiled_func.end() &&
-      to_be_compiled.find(h) == to_be_compiled.end()) {
-    to_be_compiled.insert(h);
+
+  bool needs_compile = false;
+  AsyncCompiledFunc *async_func = nullptr;
+  {
+    std::lock_guard<std::mutex> _(mut);
+    needs_compile = (compiled_funcs_.find(h) == compiled_funcs_.end());
+    if (needs_compile) {
+      compiled_funcs_.emplace(h, AsyncCompiledFunc());
+    }
+    async_func = &(compiled_funcs_.at(h));
+  }
+  if (needs_compile) {
     // Later the IR passes will change |stmt|, so we must clone it.
     stmt = ker.clone_stmt_on_write();
 
-    compilation_workers.enqueue([&, stmt, kernel, h, this]() {
+    compilation_workers.enqueue([async_func, stmt, kernel]() {
       {
         // Final lowering
         using namespace irpass;
@@ -188,28 +190,15 @@ void ExecutionQueue::enqueue(KernelLaunchRecord &&ker) {
       }
       auto codegen = KernelCodeGen::create(kernel->arch, kernel, stmt);
       auto func = codegen->codegen();
-      std::lock_guard<std::mutex> _(mut);
-      compiled_func[h] = func;
+      async_func->set(func);
     });
   }
 
   kernel->account_for_offloaded(ker.stmt());
 
-  auto context = ker.context;
-  launch_worker.enqueue([&, h, context, this] {
-    FunctionType func;
-    while (true) {
-      std::unique_lock<std::mutex> lock(mut);
-      if (compiled_func.find(h) == compiled_func.end()) {
-        lock.unlock();
-        Time::sleep(1e-6);
-        continue;
-      }
-      func = compiled_func[h];
-      break;
-    }
-    auto c = context;
-    func(c);
+  launch_worker.enqueue([async_func, context = ker.context]() mutable {
+    auto func = async_func->get();
+    func(context);
   });
   trashbin.push_back(std::move(ker));
 }
@@ -232,11 +221,7 @@ void AsyncEngine::launch(Kernel *kernel, Context &context) {
 
   auto &offloads = block->statements;
   auto &kmeta = kernel_metas_[kernel];
-  const bool kmeta_inited = kmeta.initialized();
-  if (!kmeta_inited) {
-    kmeta.dummy_root = std::make_unique<Block>();
-    kmeta.dummy_root->kernel = kernel;
-  }
+  const bool kmeta_inited = kmeta.initialized;
   for (std::size_t i = 0; i < offloads.size(); i++) {
     auto *offload = offloads[i]->as<OffloadedStmt>();
     uint64 h;
@@ -246,20 +231,21 @@ void AsyncEngine::launch(Kernel *kernel, Context &context) {
       h = oc.get_hash();
       offl_template = oc.get_template();
     } else {
-      auto cloned_offs =
-          clone_offloaded_task(offload, kernel, kmeta.dummy_root.get());
+      auto cloned_offs = clone_offloaded_task(offload, kernel);
       offl_template = cloned_offs.get();
       h = hash(offl_template);
       TI_ASSERT(kmeta.offloaded_cached.size() == i);
       kmeta.offloaded_cached.emplace_back(std::move(cloned_offs), h);
     }
-    KernelLaunchRecord rec(context, kernel, offl_template, h,
-                           kmeta.dummy_root.get());
+    TaskLaunchRecord rec(context, kernel, offl_template, h);
     enqueue(std::move(rec));
+  }
+  if (!kmeta_inited) {
+    kmeta.initialized = true;
   }
 }
 
-void AsyncEngine::enqueue(KernelLaunchRecord &&t) {
+void AsyncEngine::enqueue(TaskLaunchRecord &&t) {
   using namespace irpass::analysis;
 
   auto &meta = offloaded_metas_[t.h];
@@ -323,7 +309,7 @@ bool AsyncEngine::optimize_listgen() {
   // TODO: improve...
   bool modified = false;
   std::unordered_map<SNode *, bool> list_dirty;
-  auto new_task_queue = std::deque<KernelLaunchRecord>();
+  auto new_task_queue = std::deque<TaskLaunchRecord>();
   for (int i = 0; i < task_queue.size(); i++) {
     // Try to eliminate unused listgens
     auto &t = task_queue[i];
@@ -426,7 +412,6 @@ bool AsyncEngine::fuse() {
       // replace all reference to the offloaded statement B to A
       irpass::replace_all_usages_with(task_a, task_b, task_a);
       irpass::re_id(task_a);
-      irpass::fix_block_parents(task_a);
 
       auto kernel = task_queue[i].kernel;
       irpass::full_simplify(task_a, /*after_lower_access=*/false, kernel);
@@ -436,7 +421,7 @@ bool AsyncEngine::fuse() {
     }
   }
 
-  auto new_task_queue = std::deque<KernelLaunchRecord>();
+  auto new_task_queue = std::deque<TaskLaunchRecord>();
 
   // Eliminate empty tasks
   for (int i = 0; i < (int)task_queue.size(); i++) {

@@ -242,7 +242,6 @@ See `examples/stable_fluid.py <https://github.com/taichi-dev/taichi/blob/master/
             self.update_p()
             old_zTr = new_zTr
 
-            yield rTr
             steps -= 1
 
 
@@ -277,12 +276,9 @@ class MGPCG_Example(MGPCG):
                      res=(self.N_gui, self.N_gui))
 
         self.init()
-        for i, rTr in enumerate(self.solve(steps=400)):
-            print(f'iter {i}, residual={rTr}')
-            self.paint()
-            gui.set_image(self.pixels)
-            gui.show()
-
+        self.solve(steps=400)
+        self.paint()
+        ti.imshow(self.pixels)
         ti.kernel_profiler_print()
 
 

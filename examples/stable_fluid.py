@@ -286,8 +286,7 @@ def step(mouse_data):
 
     if use_mgpcg:
         mgpcg.init(velocity_divs, -1)
-        for _ in mgpcg.solve(steps=10):
-            pass
+        mgpcg.solve(steps=10)
         mgpcg.get_result(pressures_pair.cur)
 
     else:

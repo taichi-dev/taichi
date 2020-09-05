@@ -18,10 +18,7 @@ def send_request(url):
     return ur.urlopen(url)
 
 
-def get_commits(pr):
-    """
-    Gets the commits of |pr|.
-    """
+def get_commits(pr):  
     url = make_api_url(f'pulls/{pr}/commits')
     f = send_request(url)
     return json.loads(f.read())

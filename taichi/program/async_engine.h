@@ -13,6 +13,7 @@
 #include "taichi/program/context.h"
 #undef TI_RUNTIME_HOST
 #include "taichi/program/async_utils.h"
+#include "taichi/program/state_flow_graph.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -156,10 +157,13 @@ class AsyncEngine {
   // TODO: state machine
 
   ExecutionQueue queue;
+  Program *program;
 
+  std::unique_ptr<StateFlowGraph> sfg;
   std::deque<TaskLaunchRecord> task_queue;
 
-  AsyncEngine() {
+  AsyncEngine(Program *program) : program(program) {
+    sfg = std::make_unique<StateFlowGraph>();
   }
 
   bool optimize_listgen();  // return true when modified

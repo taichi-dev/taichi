@@ -247,26 +247,27 @@ TaskMeta AsyncEngine::create_task_meta(
   TaskMeta meta;
   // TODO: this is an abuse since it gathers nothing...
   auto *root_stmt = t.stmt();
+  meta.kernel_name = t.kernel->name;
   gather_statements(root_stmt, [&](Stmt *stmt) {
     if (auto global_load = stmt->cast<GlobalLoadStmt>()) {
       if (auto ptr = global_load->ptr->cast<GlobalPtrStmt>()) {
         for (auto &snode : ptr->snodes.data) {
-          meta.input_states.push_back({snode, AsyncState::Type::value});
+          meta.input_states.emplace_back(snode, AsyncState::Type::value);
         }
       }
     }
     if (auto global_store = stmt->cast<GlobalStoreStmt>()) {
       if (auto ptr = global_store->ptr->cast<GlobalPtrStmt>()) {
         for (auto &snode : ptr->snodes.data) {
-          meta.output_states.push_back({snode, AsyncState::Type::value});
+          meta.output_states.emplace_back(snode, AsyncState::Type::value);
         }
       }
     }
     if (auto global_atomic = stmt->cast<AtomicOpStmt>()) {
       if (auto ptr = global_atomic->dest->cast<GlobalPtrStmt>()) {
         for (auto &snode : ptr->snodes.data) {
-          meta.input_states.push_back({snode, AsyncState::Type::value});
-          meta.output_states.push_back({snode, AsyncState::Type::value});
+          meta.input_states.emplace_back(snode, AsyncState::Type::value);
+          meta.output_states.emplace_back(snode, AsyncState::Type::value);
         }
       }
     }
@@ -274,7 +275,7 @@ TaskMeta AsyncEngine::create_task_meta(
     if (auto ptr = stmt->cast<GlobalPtrStmt>()) {
       if (ptr->activate) {
         for (auto &snode : ptr->snodes.data) {
-          meta.output_states.push_back({snode, AsyncState::Type::mask});
+          meta.output_states.emplace_back(snode, AsyncState::Type::mask);
         }
       }
     }
@@ -286,7 +287,10 @@ TaskMeta AsyncEngine::create_task_meta(
 }
 
 void AsyncEngine::enqueue(TaskLaunchRecord &&t) {
-  offloaded_metas_[t.h] = create_task_meta(t);
+  if (offloaded_metas_.find(t.h) == offloaded_metas_.end()) {
+    offloaded_metas_[t.h] = create_task_meta(t);
+  }
+  sfg->insert_task(offloaded_metas_[t.h]);
   task_queue.push_back(std::move(t));
 }
 

@@ -18,10 +18,22 @@ struct AsyncState {
   bool operator<(const AsyncState &other) const {
     return snode < other.snode || (snode == other.snode && type < other.type);
   }
+
+  bool operator==(const AsyncState &other) const {
+    return snode == other.snode && type == other.type;
+  }
+};
+
+class AsyncStateHash {
+ public:
+  size_t operator()(const AsyncState &s) const {
+    return (uint64)s.snode ^ (uint64)s.type;
+  }
 };
 
 struct TaskMeta {
-  SNode *loop_snode{nullptr};
+  std::string kernel_name;
+  SNode *loop_snode{nullptr}; // struct-for only
   std::vector<AsyncState> input_states;
   std::vector<AsyncState> output_states;
 };

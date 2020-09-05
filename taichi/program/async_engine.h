@@ -6,11 +6,14 @@
 #include <thread>
 #include <unordered_map>
 
-#define TI_RUNTIME_HOST
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
 #include "taichi/lang_util.h"
+#define TI_RUNTIME_HOST
 #include "taichi/program/context.h"
+#undef TI_RUNTIME_HOST
+#include "taichi/program/async_utils.h"
+#include "taichi/program/state_flow_graph.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -26,7 +29,7 @@ class IRHandle {
   // Set this->ir_ to the cloned one.
   std::unique_ptr<IRNode> clone_on_write();
 
-  IRNode const *ir() {
+  IRNode const *ir() const {
     return ir_;
   }
 
@@ -132,7 +135,7 @@ class TaskLaunchRecord {
 
   TaskLaunchRecord(Context context, Kernel *kernel, IRHandle ir_handle);
 
-  inline OffloadedStmt *stmt() {
+  inline OffloadedStmt *stmt() const {
     return const_cast<IRNode *>(ir_handle.ir())->as<OffloadedStmt>();
   }
 };
@@ -194,10 +197,13 @@ class AsyncEngine {
   // TODO: state machine
 
   ExecutionQueue queue;
+  Program *program;
 
+  std::unique_ptr<StateFlowGraph> sfg;
   std::deque<TaskLaunchRecord> task_queue;
 
-  AsyncEngine() {
+  AsyncEngine(Program *program)
+      : program(program), sfg(std::make_unique<StateFlowGraph>()) {
   }
 
   bool optimize_listgen();  // return true when modified
@@ -255,10 +261,7 @@ class AsyncEngine {
     bool initialized{false};
   };
 
-  struct TaskMeta {
-    std::unordered_set<SNode *> input_snodes, output_snodes;
-    std::unordered_set<SNode *> activation_snodes;
-  };
+  TaskMeta create_task_meta(const TaskLaunchRecord &t);
 
   // In async mode, the root of an AST is an OffloadedStmt instead of a Block.
   // This map provides a dummy Block root for these OffloadedStmt, so that

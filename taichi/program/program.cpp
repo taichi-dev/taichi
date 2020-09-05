@@ -147,7 +147,7 @@ Program::Program(Arch desired_arch) {
   if (config.async_mode) {
     TI_WARN("Running in async mode. This is experimental.");
     TI_ASSERT(arch_is_cpu(config.arch) || config.arch == Arch::cuda);
-    async_engine = std::make_unique<AsyncEngine>();
+    async_engine = std::make_unique<AsyncEngine>(this);
   }
 
   // TODO: allow users to run in debug mode without out-of-bound checks

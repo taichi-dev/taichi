@@ -4,26 +4,26 @@ ti.init(print_preprocessed=True)
 
 N = 128
 
-
-_et = np.array([
-        [[-1, -1], [-1, -1]],#
-        [[0, 1], [-1, -1]],#a
-        [[0, 2], [-1, -1]],#b
-        [[1, 2], [-1, -1]],#ab
-        [[1, 3], [-1, -1]],#c
-        [[0, 3], [-1, -1]],#ca
-        [[2, 3], [0, 1]],#cb
-        [[2, 3], [-1, -1]],#cab
-        [[2, 3], [-1, -1]],#d
-        [[2, 3], [0, 1]],#da
-        [[0, 3], [-1, -1]],#db
-        [[1, 3], [-1, -1]],#dab
-        [[1, 2], [-1, -1]],#dc
-        [[0, 2], [-1, -1]],#dca
-        [[0, 1], [-1, -1]],#dcb
-        [[-1, -1], [-1, -1]],#dcab
-        ], np.int32)
-
+_et = np.array(
+    [
+        [[-1, -1], [-1, -1]],  #
+        [[0, 1], [-1, -1]],  #a
+        [[0, 2], [-1, -1]],  #b
+        [[1, 2], [-1, -1]],  #ab
+        [[1, 3], [-1, -1]],  #c
+        [[0, 3], [-1, -1]],  #ca
+        [[2, 3], [0, 1]],  #cb
+        [[2, 3], [-1, -1]],  #cab
+        [[2, 3], [-1, -1]],  #d
+        [[2, 3], [0, 1]],  #da
+        [[0, 3], [-1, -1]],  #db
+        [[1, 3], [-1, -1]],  #dab
+        [[1, 2], [-1, -1]],  #dc
+        [[0, 2], [-1, -1]],  #dca
+        [[0, 1], [-1, -1]],  #dcb
+        [[-1, -1], [-1, -1]],  #dcab
+    ],
+    np.int32)
 
 m = ti.field(float, (N, N))  # field value of voxels
 
@@ -49,7 +49,8 @@ def touch(mx: float, my: float):
 
 
 @ti.func
-def list_subscript(a, i):  # magic method to subscript a list with dynamic index
+def list_subscript(a,
+                   i):  # magic method to subscript a list with dynamic index
     ret = sum(a) * 0
     for j in ti.static(range(len(a))):
         if i == j:

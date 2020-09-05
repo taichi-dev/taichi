@@ -195,6 +195,7 @@ def test_vector_to_list():
     data = [2, 3]
     b = ti.Vector(data)
     assert list(b) == data
+    assert len(b) == len(data)
 
     a[None] = b
     assert all(a[None].value == ti.Vector(data))
@@ -207,6 +208,7 @@ def test_matrix_to_list():
     data = [[2, 3, 4], [5, 6, 7]]
     b = ti.Matrix(data)
     assert list(b) == data
+    assert len(b) == len(data)
 
     a[None] = b
     assert all(a[None].value == ti.Matrix(data))

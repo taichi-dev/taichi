@@ -241,37 +241,32 @@ void AsyncEngine::launch(Kernel *kernel, Context &context) {
   }
 }
 
-void AsyncEngine::enqueue(TaskLaunchRecord &&t) {
+TaskMeta AsyncEngine::create_task_meta(
+    const taichi::lang::TaskLaunchRecord &t) {
   using namespace irpass::analysis;
-
-  auto &meta = offloaded_metas_[t.h];
+  TaskMeta meta;
   // TODO: this is an abuse since it gathers nothing...
   auto *root_stmt = t.stmt();
   gather_statements(root_stmt, [&](Stmt *stmt) {
-    if (auto global_ptr = stmt->cast<GlobalPtrStmt>()) {
-      for (auto &snode : global_ptr->snodes.data) {
-        meta.input_snodes.insert(snode);
-      }
-    }
     if (auto global_load = stmt->cast<GlobalLoadStmt>()) {
       if (auto ptr = global_load->ptr->cast<GlobalPtrStmt>()) {
         for (auto &snode : ptr->snodes.data) {
-          meta.input_snodes.insert(snode);
+          meta.input_states.push_back({snode, AsyncState::Type::value});
         }
       }
     }
     if (auto global_store = stmt->cast<GlobalStoreStmt>()) {
       if (auto ptr = global_store->ptr->cast<GlobalPtrStmt>()) {
         for (auto &snode : ptr->snodes.data) {
-          meta.output_snodes.insert(snode);
+          meta.output_states.push_back({snode, AsyncState::Type::value});
         }
       }
     }
     if (auto global_atomic = stmt->cast<AtomicOpStmt>()) {
       if (auto ptr = global_atomic->dest->cast<GlobalPtrStmt>()) {
         for (auto &snode : ptr->snodes.data) {
-          meta.input_snodes.insert(snode);
-          meta.output_snodes.insert(snode);
+          meta.input_states.push_back({snode, AsyncState::Type::value});
+          meta.output_states.push_back({snode, AsyncState::Type::value});
         }
       }
     }
@@ -279,14 +274,19 @@ void AsyncEngine::enqueue(TaskLaunchRecord &&t) {
     if (auto ptr = stmt->cast<GlobalPtrStmt>()) {
       if (ptr->activate) {
         for (auto &snode : ptr->snodes.data) {
-          meta.activation_snodes.insert(snode);
-          // fmt::print(" **** act {}\n", snode->get_node_type_name_hinted());
+          meta.output_states.push_back({snode, AsyncState::Type::mask});
         }
       }
     }
     return false;
   });
+  // TODO: this is probably not fully done. Hopefully after SFG Graphviz is
+  // done we can easily spot what's left.
+  return meta;
+}
 
+void AsyncEngine::enqueue(TaskLaunchRecord &&t) {
+  offloaded_metas_[t.h] = create_task_meta(t);
   task_queue.push_back(std::move(t));
 }
 
@@ -326,7 +326,10 @@ bool AsyncEngine::optimize_listgen() {
       }
       list_dirty[snode] = false;
     } else {
-      for (auto snode : meta.activation_snodes) {
+      for (auto output_state : meta.output_states) {
+        auto snode = output_state.snode;
+        if (output_state.type != AsyncState::Type::mask)
+          continue;
         while (snode && snode->type != SNodeType::root) {
           list_dirty[snode] = true;
           snode = snode->parent;

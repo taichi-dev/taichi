@@ -6,15 +6,18 @@
 #include <thread>
 #include <unordered_map>
 
-#define TI_RUNTIME_HOST
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
 #include "taichi/lang_util.h"
+#define TI_RUNTIME_HOST
 #include "taichi/program/context.h"
+#undef TI_RUNTIME_HOST
+#include "taichi/program/async_utils.h"
 
 TLANG_NAMESPACE_BEGIN
 
 // TODO(yuanming-hu): split into multiple files
+
 class ParallelExecutor {
  public:
   using TaskType = std::function<void()>;
@@ -77,7 +80,7 @@ class TaskLaunchRecord {
                    OffloadedStmt *stmt,
                    uint64 h);
 
-  inline OffloadedStmt *stmt() {
+  inline OffloadedStmt *stmt() const {
     return stmt_;
   }
 
@@ -212,10 +215,7 @@ class AsyncEngine {
     bool initialized{false};
   };
 
-  struct TaskMeta {
-    std::unordered_set<SNode *> input_snodes, output_snodes;
-    std::unordered_set<SNode *> activation_snodes;
-  };
+  TaskMeta create_task_meta(const TaskLaunchRecord &t);
 
   // In async mode, the root of an AST is an OffloadedStmt instead of a Block.
   // This map provides a dummy Block root for these OffloadedStmt, so that

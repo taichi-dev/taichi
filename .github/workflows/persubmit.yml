@@ -58,9 +58,9 @@ jobs:
           ti test -vr2 -t2
 
   check_previous_run:
-    name: Checks the Workflow Run Conclusion of the Previous Commit
-    if: ${{ contains(github.event.pull_request.labels.*.name, 'skip ci') || github.event.sender.login == 'taichi-gardener' }}
+    name: Checks the Workflow Run of the Previous Commit
     runs-on: ubuntu-latest
+    if: ${{ contains(github.event.pull_request.labels.*.name, 'skip ci') || github.event.sender.login == 'taichi-gardener' }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2

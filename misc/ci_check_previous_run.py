@@ -37,6 +37,15 @@ def locate_previous_commit_sha(commits, head_sha):
     return commits[-2][SHA]
 
 
+def is_desired_workflow(wf_url):
+    f = send_request(wf_url)
+    j = json.loads(f.read())
+    p = j['path']
+    logging.debug(f'workflow_url={wf_url} path={p}')
+    # TODO: s/persubmit/presubmit...?
+    return p.endswith('persubmit.yml')
+
+
 def get_workflow_runs(page_id):
     # https://docs.github.com/en/rest/reference/actions#list-workflow-runs-for-a-repository
     url = make_api_url(f'actions/runs?page={page_id}')
@@ -51,7 +60,7 @@ def locate_workflow_run_id(sha):
         # Note that the REST API to get runs paginates the results.
         runs = get_workflow_runs(page_id)['workflow_runs']
         for r in runs:
-            if r['head_sha'] == sha:
+            if r['head_sha'] == sha and is_desired_workflow(r['workflow_url']):
                 return r['id']
         page_id += 1
     return ''

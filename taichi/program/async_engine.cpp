@@ -22,7 +22,7 @@ uint64 hash(IRNode *stmt) {
   irpass::re_id(stmt);
   irpass::print(stmt, &serialized);
   // TODO: separate kernel from IR template
-  serialized += stmt->kernel->name;
+  serialized += stmt->get_kernel()->name;
   uint64 ret = 0;
   for (uint64 i = 0; i < serialized.size(); i++) {
     ret = ret * 100000007UL + (uint64)serialized[i];
@@ -31,7 +31,7 @@ uint64 hash(IRNode *stmt) {
 }
 
 std::unique_ptr<OffloadedStmt> clone_offloaded_task(OffloadedStmt *from,
-                                                    Kernel *kernel = nullptr) {
+                                                    Kernel *kernel) {
   auto new_ir = irpass::analysis::clone(from, kernel);
   return std::unique_ptr<OffloadedStmt>((OffloadedStmt *)(new_ir.release()));
 }
@@ -256,7 +256,9 @@ void AsyncEngine::launch(Kernel *kernel, Context &context) {
     IRHandle ir_handle(offload, h);
     auto cached = ir_bank_.find(ir_handle);
     if (cached == nullptr) {
-      auto cloned_offs = clone_offloaded_task(offload);
+      // Note that |offload| may not be the root, so it's necessary to specify
+      // |kernel|.
+      auto cloned_offs = clone_offloaded_task(offload, kernel);
       ir_handle = IRHandle(cloned_offs.get(), h);
       ir_bank_.insert(std::move(cloned_offs), h);
       // TODO: also set ir_bank_.hash_bank_[cloned_offs.get()] here for

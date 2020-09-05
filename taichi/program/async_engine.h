@@ -27,13 +27,43 @@ class IRHandle {
     return ir_;
   }
 
-  uint64 hash() const {
+  uint64 get_hash() const {
     return hash_;
+  }
+
+  // Two IRHandles are considered the same if their hash values are the same.
+  bool operator==(const IRHandle &other_ir_handle) const {
+    return hash_ == other_ir_handle.hash_;
   }
 
  private:
   IRNode const *ir_;  // not owned
   uint64 hash_;
+};
+
+TLANG_NAMESPACE_END
+
+namespace std {
+template <>
+struct hash<taichi::lang::IRHandle> {
+  std::size_t operator()(taichi::lang::IRHandle const &ir_handle) const
+      noexcept {
+    return ir_handle.get_hash();
+  }
+};
+}  // namespace std
+
+TLANG_NAMESPACE_BEGIN
+
+class IRBank {
+ public:
+  uint64 get_hash(IRNode *ir);
+  void insert(std::unique_ptr<IRNode> &&ir, uint64 hash);
+  void insert(std::unique_ptr<IRNode> &&ir);
+  IRNode *find(IRHandle ir_handle);
+ private:
+  std::unordered_map<IRNode *, uint64> hash_bank_;
+  std::unordered_map<IRHandle, std::unique_ptr<IRNode>> ir_bank_;
 };
 
 class ParallelExecutor {
@@ -86,17 +116,16 @@ class ParallelExecutor {
   std::condition_variable flush_cv_;
 };
 
-// Records the necessary data for launching an offloaed task.
+// Records the necessary data for launching an offloaded task.
 class TaskLaunchRecord {
  public:
   Context context;
   Kernel *kernel;  // TODO: remove this
-  uint64 h;        // hash of |stmt|
+  IRHandle ir_handle;
 
   TaskLaunchRecord(Context context,
                    Kernel *kernel,
-                   OffloadedStmt *stmt,
-                   uint64 h);
+                   IRHandle ir_handle);
 
   inline OffloadedStmt *stmt() {
     return stmt_;
@@ -194,6 +223,7 @@ class AsyncEngine {
   void synchronize();
 
  private:
+  IRBank ir_bank_;
   struct KernelMeta {
     // OffloadedCachedData holds some data that needs to be computed once for
     // each offloaded task of a kernel. Especially, it holds a cloned offloaded
@@ -241,7 +271,7 @@ class AsyncEngine {
   // This map provides a dummy Block root for these OffloadedStmt, so that
   // get_kernel() could still work correctly.
   std::unordered_map<const Kernel *, KernelMeta> kernel_metas_;
-  std::unordered_map<std::uint64_t, TaskMeta> offloaded_metas_;
+  std::unordered_map<IRHandle, TaskMeta> offloaded_metas_;
 };
 
 TLANG_NAMESPACE_END

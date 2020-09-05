@@ -21,6 +21,8 @@ uint64 hash(IRNode *stmt) {
   std::string serialized;
   irpass::re_id(stmt);
   irpass::print(stmt, &serialized);
+  // TODO: separate kernel from IR template
+  serialized += stmt->kernel->name;
   uint64 ret = 0;
   for (uint64 i = 0; i < serialized.size(); i++) {
     ret = ret * 100000007UL + (uint64)serialized[i];
@@ -29,7 +31,7 @@ uint64 hash(IRNode *stmt) {
 }
 
 std::unique_ptr<OffloadedStmt> clone_offloaded_task(OffloadedStmt *from,
-                                                    Kernel *kernel) {
+                                                    Kernel *kernel = nullptr) {
   auto new_ir = irpass::analysis::clone(from, kernel);
   return std::unique_ptr<OffloadedStmt>((OffloadedStmt *)(new_ir.release()));
 }
@@ -38,6 +40,33 @@ std::unique_ptr<OffloadedStmt> clone_offloaded_task(OffloadedStmt *from,
 
 std::unique_ptr<IRNode> IRHandle::clone() const {
   return irpass::analysis::clone(const_cast<IRNode *>(ir_));
+}
+
+uint64 IRBank::get_hash(IRNode *ir) {
+  auto result_iterator = hash_bank_.find(ir);
+  if (result_iterator == hash_bank_.end()) {
+    auto result = hash(ir);
+    hash_bank_.insert(hash_bank_.end(), std::make_pair(ir, result));
+    return result;
+  }
+  return result_iterator->second;
+}
+
+void IRBank::insert(std::unique_ptr<IRNode> &&ir, uint64 hash) {
+  IRHandle handle(ir.get(), hash);
+  ir_bank_[handle] = std::move(ir);
+}
+
+void IRBank::insert(std::unique_ptr<IRNode> &&ir) {
+  IRHandle handle(ir.get(), get_hash(ir.get()));
+  ir_bank_[handle] = std::move(ir);
+}
+
+IRNode *IRBank::find(IRHandle ir_handle) {
+  auto result = ir_bank_.find(ir_handle);
+  if (result == ir_bank_.end())
+    return nullptr;
+  return result->second.get();
 }
 
 ParallelExecutor::ParallelExecutor(int num_threads)
@@ -135,13 +164,12 @@ void ParallelExecutor::worker_loop() {
 
 TaskLaunchRecord::TaskLaunchRecord(Context context,
                                    Kernel *kernel,
-                                   OffloadedStmt *stmt,
-                                   uint64 h)
+                                   IRHandle ir_handle)
     : context(context),
       kernel(kernel),
-      h(h),
-      stmt_(stmt),
+      ir_handle(ir_handle),
       cloned_stmt_holder_(nullptr) {
+  stmt_ = const_cast<IRNode *>(ir_handle.ir())->cast<OffloadedStmt>();
   TI_ASSERT(stmt_ != nullptr);
   TI_ASSERT(stmt_->get_kernel() != nullptr);
 }
@@ -155,7 +183,7 @@ OffloadedStmt *TaskLaunchRecord::clone_stmt_on_write() {
 }
 
 void ExecutionQueue::enqueue(TaskLaunchRecord &&ker) {
-  auto h = ker.h;
+  auto h = ker.ir_handle.get_hash();
   auto *stmt = ker.stmt();
   auto kernel = ker.kernel;
 
@@ -221,34 +249,46 @@ void AsyncEngine::launch(Kernel *kernel, Context &context) {
 
   auto &offloads = block->statements;
   auto &kmeta = kernel_metas_[kernel];
-  const bool kmeta_inited = kmeta.initialized;
+//  const bool kmeta_inited = kmeta.initialized;
   for (std::size_t i = 0; i < offloads.size(); i++) {
     auto *offload = offloads[i]->as<OffloadedStmt>();
-    uint64 h;
-    OffloadedStmt *offl_template = nullptr;
-    if (kmeta_inited) {
-      auto &oc = kmeta.offloaded_cached[i];
-      h = oc.get_hash();
-      offl_template = oc.get_template();
+    uint64 h = ir_bank_.get_hash(offload);
+    IRHandle ir_handle(offload, h);
+    auto cached = ir_bank_.find(ir_handle);
+    if (cached == nullptr) {
+      auto cloned_offs = clone_offloaded_task(offload);
+      ir_handle = IRHandle(cloned_offs.get(), h);
+      ir_bank_.insert(std::move(cloned_offs), h);
+      // TODO: also set ir_bank_.hash_bank_[cloned_offs.get()] here for
+      // optimization?
     } else {
-      auto cloned_offs = clone_offloaded_task(offload, kernel);
-      offl_template = cloned_offs.get();
-      h = hash(offl_template);
-      TI_ASSERT(kmeta.offloaded_cached.size() == i);
-      kmeta.offloaded_cached.emplace_back(std::move(cloned_offs), h);
+      ir_handle = IRHandle(cached, h);
     }
-    TaskLaunchRecord rec(context, kernel, offl_template, h);
+//
+//    OffloadedStmt *offl_template = nullptr;
+//    if (kmeta_inited) {
+//      auto &oc = kmeta.offloaded_cached[i];
+//      h = oc.get_hash();
+//      offl_template = oc.get_template();
+//    } else {
+//      auto cloned_offs = clone_offloaded_task(offload, kernel);
+//      offl_template = cloned_offs.get();
+//      h = hash(offl_template);
+//      TI_ASSERT(kmeta.offloaded_cached.size() == i);
+//      kmeta.offloaded_cached.emplace_back(std::move(cloned_offs), h);
+//    }
+    TaskLaunchRecord rec(context, kernel, ir_handle);
     enqueue(std::move(rec));
   }
-  if (!kmeta_inited) {
-    kmeta.initialized = true;
-  }
+//  if (!kmeta_inited) {
+//    kmeta.initialized = true;
+//  }
 }
 
 void AsyncEngine::enqueue(TaskLaunchRecord &&t) {
   using namespace irpass::analysis;
 
-  auto &meta = offloaded_metas_[t.h];
+  auto &meta = offloaded_metas_[t.ir_handle];
   // TODO: this is an abuse since it gathers nothing...
   auto *root_stmt = t.stmt();
   gather_statements(root_stmt, [&](Stmt *stmt) {
@@ -313,7 +353,7 @@ bool AsyncEngine::optimize_listgen() {
   for (int i = 0; i < task_queue.size(); i++) {
     // Try to eliminate unused listgens
     auto &t = task_queue[i];
-    auto meta = offloaded_metas_[t.h];
+    auto meta = offloaded_metas_[t.ir_handle];
     const auto *offload = t.stmt();
     bool keep = true;
     if (offload->task_type == OffloadedStmt::TaskType::listgen) {
@@ -415,7 +455,7 @@ bool AsyncEngine::fuse() {
 
       auto kernel = task_queue[i].kernel;
       irpass::full_simplify(task_a, /*after_lower_access=*/false, kernel);
-      task_queue[i].h = hash(task_a);
+      task_queue[i].ir_handle = IRHandle(task_a, ir_bank_.get_hash(task_a));
 
       modified = true;
     }

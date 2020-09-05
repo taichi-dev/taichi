@@ -25,8 +25,7 @@ void StateFlowGraph::insert_state_flow(Node *from, Node *to, AsyncState state) {
 }
 
 void StateFlowGraph::print_edges(
-    const std::unordered_map<AsyncState, StateFlowGraph::Node *, AsyncStateHash>
-        &edges) {
+    const StateFlowGraph::StateToNodeMapping &edges) {
   for (auto &edge : edges) {
     auto input_node = edge.second;
     fmt::print("    {}: node {} @ {}\n", edge.first.name(),

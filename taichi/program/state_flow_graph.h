@@ -11,7 +11,7 @@ TLANG_NAMESPACE_BEGIN
 class StateFlowGraph {
  public:
   struct Node;
-  using StateToNodeMappnig =
+  using StateToNodeMapping =
       std::unordered_map<AsyncState, Node *, AsyncStateHash>;
   // Each node is a task
   // Note: after SFG is done, each node here should hold a TaskLaunchRecord.
@@ -23,10 +23,10 @@ class StateFlowGraph {
     //  TODO: make use of IRHandle here
     IRNode *root;
     std::string kernel_name;
-    StateToNodeMappnig input_edges, output_edges;
+    StateToNodeMapping input_edges, output_edges;
   };
 
-  StateToNodeMappnig latest_state_owner;
+  StateToNodeMapping latest_state_owner;
 
   std::vector<std::unique_ptr<Node>> nodes;
 
@@ -38,7 +38,7 @@ class StateFlowGraph {
     initial_node->kernel_name = "initial_state";
   }
 
-  void print_edges(const StateToNodeMappnig &edges);
+  void print_edges(const StateToNodeMapping &edges);
 
   void print();
 

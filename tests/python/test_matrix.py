@@ -159,8 +159,7 @@ def test_taichi_scope_matrix_operations_with_global_matrices(ops):
     assert np.allclose(r2[None].value.to_numpy(), ops(a, c))
 
 
-@ti.host_arch_only
-@ti.must_throw(ti.TaichiSyntaxError)
+@ti.test(arch=ti.cpu)
 def test_matrix_non_constant_index():
     m = ti.Matrix.field(2, 2, ti.i32, 5)
 
@@ -170,10 +169,11 @@ def test_matrix_non_constant_index():
             for j, k in ti.ndrange(2, 2):
                 m[i][j, k] = 12
 
-    func()
+    with pytest.raises(ti.TaichiSyntaxError):
+        func()
 
 
-@ti.host_arch_only
+@ti.test(arch=ti.cpu)
 def test_matrix_constant_index():
     m = ti.Matrix.field(2, 2, ti.i32, 5)
 
@@ -188,7 +188,31 @@ def test_matrix_constant_index():
     assert np.allclose(m.to_numpy(), np.ones((5, 2, 2), np.int32) * 12)
 
 
-@ti.all_archs
+@ti.test(arch=ti.cpu)
+def test_vector_to_list():
+    a = ti.Vector.field(2, float, ())
+
+    data = [2, 3]
+    b = ti.Vector(data)
+    assert list(b) == data
+
+    a[None] = b
+    assert all(a[None].value == ti.Vector(data))
+
+
+@ti.test(arch=ti.cpu)
+def test_matrix_to_list():
+    a = ti.Matrix.field(2, 3, float, ())
+
+    data = [[2, 3, 4], [5, 6, 7]]
+    b = ti.Matrix(data)
+    assert list(b) == data
+
+    a[None] = b
+    assert all(a[None].value == ti.Matrix(data))
+
+
+@ti.test()
 def test_matrix_needs_grad():
     # Just make sure the usage doesn't crash, see https://github.com/taichi-dev/taichi/pull/1545
     n = 8

@@ -396,6 +396,8 @@ class Matrix(TaichiOperations):
     @python_scope
     def __setitem__(self, indices, item):
         if self.is_global():
+            if not isinstance(item, (list, tuple)):
+                item = list(item)
             if not isinstance(item[0], (list, tuple)):
                 item = [[i] for i in item]
             for i in range(self.n):
@@ -409,6 +411,15 @@ class Matrix(TaichiOperations):
         i = indices[0]
         j = 0 if len(indices) == 1 else indices[1]
         self.set_entry(i, j, item)
+
+    def __len__(self):
+        return self.n
+
+    def __iter__(self):
+        if self.m == 1:
+            return (self(i) for i in range(self.n))
+        else:
+            return ([self(i, j) for j in range(self.m)] for i in range(self.n))
 
     def empty_copy(self):
         return Matrix.empty(self.n, self.m)

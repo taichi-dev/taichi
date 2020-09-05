@@ -22,6 +22,22 @@ struct AsyncState {
   bool operator==(const AsyncState &other) const {
     return snode == other.snode && type == other.type;
   }
+
+  std::string name() const {
+    std::string type_name;
+    switch (type) {
+      case Type::mask:
+        type_name = "mask";
+        break;
+      case Type::value:
+        type_name = "value";
+        break;
+      case Type::list:
+        type_name = "list";
+        break;
+    }
+    return snode->get_node_type_name_hinted() + "_" + type_name;
+  }
 };
 
 class AsyncStateHash {
@@ -33,7 +49,7 @@ class AsyncStateHash {
 
 struct TaskMeta {
   std::string kernel_name;
-  SNode *loop_snode{nullptr}; // struct-for only
+  SNode *loop_snode{nullptr};  // struct-for only
   std::vector<AsyncState> input_states;
   std::vector<AsyncState> output_states;
 };

@@ -10,6 +10,9 @@ TLANG_NAMESPACE_BEGIN
 
 class StateFlowGraph {
  public:
+  struct Node;
+  using StateToNodeMappnig =
+      std::unordered_map<AsyncState, Node *, AsyncStateHash>;
   // Each node is a task
   // Note: after SFG is done, each node here should hold a TaskLaunchRecord.
   // Optimization should happen fully on the SFG, instead of the queue in
@@ -20,11 +23,10 @@ class StateFlowGraph {
     //  TODO: make use of IRHandle here
     IRNode *root;
     std::string kernel_name;
-    std::unordered_map<AsyncState, Node *, AsyncStateHash> input_edges,
-        output_edges;
+    StateToNodeMappnig input_edges, output_edges;
   };
 
-  std::unordered_map<AsyncState, Node *, AsyncStateHash> latest_state_owner;
+  StateToNodeMappnig latest_state_owner;
 
   std::vector<std::unique_ptr<Node>> nodes;
 
@@ -34,6 +36,26 @@ class StateFlowGraph {
     nodes.push_back(std::make_unique<Node>());
     initial_node = nodes.back().get();
     initial_node->kernel_name = "initial_state";
+  }
+
+  void print_edges(const StateToNodeMappnig &edges) {
+    for (auto &edge : edges) {
+      auto input_node = edge.second;
+      fmt::print("    {}: node {} @ {}", edge.first.name(),
+                 input_node->kernel_name, (void *)input_node);
+    }
+  }
+
+  void print() {
+    fmt::print("=== State Flow Graph ===");
+    for (auto &node : nodes) {
+      fmt::print("Node {} {}", node->kernel_name, (void *)node.get());
+      fmt::print("  Inputs:", node->kernel_name, (void *)node.get());
+      print_edges(node->input_edges);
+      fmt::print("  Outputs:", node->kernel_name, (void *)node.get());
+      print_edges(node->output_edges);
+    }
+    fmt::print("=======================");
   }
 
   void dump_dot(const std::string &fn) {

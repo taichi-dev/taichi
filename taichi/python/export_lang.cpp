@@ -6,6 +6,7 @@
 #include "taichi/ir/frontend.h"
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/program/extension.h"
+#include "taichi/program/async_engine.h"
 #include "taichi/common/interface.h"
 #include "taichi/python/export.h"
 #include "taichi/gui/gui.h"
@@ -644,6 +645,8 @@ void export_lang(py::module &m) {
       TI_ERROR("Key {} not supported in query_int64", key);
     }
   });
+
+  m.def("print_sfg", [] { get_current_program().async_engine->sfg->print(); });
 }
 
 TI_NAMESPACE_END

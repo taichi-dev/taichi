@@ -72,11 +72,6 @@ See `examples/stable_fluid.py <https://github.com/taichi-dev/taichi/blob/master/
         self.p[I] = 0
         self.x[I] = 0
 
-    @ti.func
-    def get_x(self, I):
-        I = I + self.N_ext
-        return self.x[I]
-
     @ti.kernel
     def init(self, r: ti.template(), k: ti.template()):
         '''
@@ -89,6 +84,11 @@ See `examples/stable_fluid.py <https://github.com/taichi-dev/taichi/blob/master/
         '''
         for I in ti.grouped(ti.ndrange(*[self.N] * self.dim)):
             self.init_r(I, r[I] * k)
+
+    @ti.func
+    def get_x(self, I):
+        I = I + self.N_ext
+        return self.x[I]
 
     @ti.kernel
     def get_result(self, x: ti.template()):
@@ -104,7 +104,7 @@ See `examples/stable_fluid.py <https://github.com/taichi-dev/taichi/blob/master/
 
     @ti.func
     def neighbor_sum(self, x, I):
-        ret = x[I] * 0
+        ret = 0.0
         for i in ti.static(range(self.dim)):
             offset = ti.Vector.unit(self.dim, i)
             ret += x[I + offset] + x[I - offset]

@@ -58,8 +58,12 @@ bool IRBank::insert(std::unique_ptr<IRNode> &&ir, uint64 hash) {
     ir_bank_.emplace(handle, std::move(ir));
     return true;
   }
-  trash_bin.push_back(std::move(ir));
+  insert_to_trash_bin(std::move(ir));
   return false;
+}
+
+void IRBank::insert_to_trash_bin(std::unique_ptr<IRNode> &&ir) {
+  trash_bin.push_back(std::move(ir));
 }
 
 IRNode *IRBank::find(IRHandle ir_handle) {
@@ -210,7 +214,7 @@ void ExecutionQueue::enqueue(const TaskLaunchRecord &ker) {
       auto func = codegen->codegen();
       async_func->set(func);
     });
-    ir_bank_->trash_bin.push_back(std::move(cloned_stmt));
+    ir_bank_->insert_to_trash_bin(std::move(cloned_stmt));
   }
 
   launch_worker.enqueue([async_func, context = ker.context]() mutable {
@@ -449,7 +453,10 @@ bool AsyncEngine::fuse() {
       task_queue[i].ir_handle = IRHandle(task_a, h);
       ir_bank_.insert(std::move(cloned_task_a), h);
       task_queue[i + 1].ir_handle = IRHandle(nullptr, 0);
-      ir_bank_.trash_bin.push_back(std::move(cloned_task_b));
+
+      // TODO: since cloned_task_b->body is empty, can we remove this (i.e.,
+      //  simply delete cloned_task_b here)?
+      ir_bank_.insert_to_trash_bin(std::move(cloned_task_b));
 
       modified = true;
       i++;  // skip fusing task_queue[i + 1] and task_queue[i + 2]

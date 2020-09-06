@@ -60,17 +60,18 @@ TLANG_NAMESPACE_BEGIN
 
 class IRBank {
  public:
-  std::vector<std::unique_ptr<IRNode>> trash_bin;
 
   uint64 get_hash(IRNode *ir);
   void set_hash(IRNode *ir, uint64 hash);
 
   bool insert(std::unique_ptr<IRNode> &&ir, uint64 hash);
+  void insert_to_trash_bin(std::unique_ptr<IRNode> &&ir);
   IRNode *find(IRHandle ir_handle);
 
  private:
   std::unordered_map<IRNode *, uint64> hash_bank_;
   std::unordered_map<IRHandle, std::unique_ptr<IRNode>> ir_bank_;
+  std::vector<std::unique_ptr<IRNode>> trash_bin;  // prevent IR from deleted
   // TODO:
   //  std::unordered_map<std::pair<IRHandle, IRHandle>, IRHandle> fuse_bank_;
 };

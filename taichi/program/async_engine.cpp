@@ -168,7 +168,7 @@ TaskLaunchRecord::TaskLaunchRecord(Context context,
   TI_ASSERT(ir_handle.ir()->get_kernel() != nullptr);
 }
 
-void ExecutionQueue::enqueue(TaskLaunchRecord &&ker) {
+void ExecutionQueue::enqueue(const TaskLaunchRecord &ker) {
   auto h = ker.ir_handle.hash();
   auto *stmt = ker.stmt();
   auto kernel = ker.kernel;
@@ -251,7 +251,7 @@ void AsyncEngine::launch(Kernel *kernel, Context &context) {
       ir_handle = IRHandle(cached, h);
     }
     TaskLaunchRecord rec(context, kernel, ir_handle);
-    enqueue(std::move(rec));
+    enqueue(rec);
   }
 }
 
@@ -300,12 +300,12 @@ TaskMeta AsyncEngine::create_task_meta(
   return meta;
 }
 
-void AsyncEngine::enqueue(TaskLaunchRecord &&t) {
+void AsyncEngine::enqueue(const TaskLaunchRecord &t) {
   if (offloaded_metas_.find(t.ir_handle) == offloaded_metas_.end()) {
     offloaded_metas_[t.ir_handle] = create_task_meta(t);
   }
   sfg->insert_task(offloaded_metas_[t.ir_handle]);
-  task_queue.push_back(std::move(t));
+  task_queue.push_back(t);
 }
 
 void AsyncEngine::synchronize() {
@@ -313,8 +313,8 @@ void AsyncEngine::synchronize() {
   while (fuse())
     ;
   while (!task_queue.empty()) {
-    queue.enqueue(std::move(task_queue.front()));
-    task_queue.pop_front();  // delete TaskLaunchRecord here
+    queue.enqueue(task_queue.front());
+    task_queue.pop_front();
   }
   queue.synchronize();
 }
@@ -355,7 +355,7 @@ bool AsyncEngine::optimize_listgen() {
       }
     }
     if (keep) {
-      new_task_queue.push_back(std::move(t));
+      new_task_queue.push_back(t);
     } else {
       modified = true;
     }
@@ -457,7 +457,7 @@ bool AsyncEngine::fuse() {
         keep = false;
     }
     if (keep) {
-      new_task_queue.push_back(std::move(task_queue[i]));
+      new_task_queue.push_back(task_queue[i]);
     }
   }
 

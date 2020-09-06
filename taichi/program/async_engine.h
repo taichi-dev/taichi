@@ -34,7 +34,7 @@ class IRHandle {
     return hash_;
   }
 
-  // Two IRHandles are considered the same if their hash values are the same.
+  // Two IRHandles are considered the same iff their hash values are the same.
   bool operator==(const IRHandle &other_ir_handle) const {
     return hash_ == other_ir_handle.hash_;
   }
@@ -153,7 +153,7 @@ class ExecutionQueue {
 
   ExecutionQueue();
 
-  void enqueue(TaskLaunchRecord &&ker);
+  void enqueue(const TaskLaunchRecord &ker);
 
   void compile_task() {
   }
@@ -215,7 +215,7 @@ class AsyncEngine {
 
   void launch(Kernel *kernel, Context &context);
 
-  void enqueue(TaskLaunchRecord &&t);
+  void enqueue(const TaskLaunchRecord &t);
 
   void synchronize();
 

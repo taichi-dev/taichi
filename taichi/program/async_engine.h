@@ -60,7 +60,6 @@ TLANG_NAMESPACE_BEGIN
 
 class IRBank {
  public:
-
   uint64 get_hash(IRNode *ir);
   void set_hash(IRNode *ir, uint64 hash);
 

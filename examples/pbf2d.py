@@ -258,9 +258,8 @@ def run_pbf():
 def render(gui):
     gui.clear(bg_color)
     pos_np = positions.to_numpy()
-    for pos in pos_np:
-        for j in range(dim):
-            pos[j] *= screen_to_world_ratio / screen_res[j]
+    for j in range(dim):
+        pos_np[:, j] *= screen_to_world_ratio / screen_res[j]
     gui.circles(pos_np, radius=particle_radius, color=particle_color)
     gui.rect((0, 0), (board_states[None][0] / boundary[0], 1),
              radius=1.5,

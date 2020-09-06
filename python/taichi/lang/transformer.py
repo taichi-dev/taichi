@@ -877,9 +877,56 @@ if 1:
 class ASTTransformerChecks(ASTTransformerBase):
     def __init__(self, func):
         super().__init__(func)
+        self.had_return = False
+        self.in_static_if = False
 
     def visit_Call(self, node):
         if isinstance(node.func, ast.Name):
             node.args = [node.func] + node.args
             node.func = self.parse_expr('ti.func_call_with_check')
+        return node
+
+    @staticmethod
+    def get_taichi_decorator(node):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and isinstance(node.func.value, ast.Name) and node.func.value.id == 'ti':
+            attr = node.func.attr
+            if attr in ['static', 'grouped']:
+                return attr
+
+        return None
+
+    def visit_If(self, node):
+        node.test = self.visit(node.test)
+
+        old_in_static_if = self.in_static_if
+        self.in_static_if = self.get_taichi_decorator(node.test) == 'static'
+
+        node.body = list(map(self.visit, node.body))
+        if node.orelse is not None:
+            node.orelse = list(map(self.visit, node.orelse))
+
+        self.in_static_if = old_in_static_if
+
+        return node
+
+    def visit_Return(self, node):
+        if self.in_static_if:  # we can have multiple return in static-if branches
+            return node
+
+        if not self.had_return:
+            self.had_return = True
+        else:
+            raise TaichiSyntaxError(
+                    'Taichi functions/kernels cannot have multiple returns!'
+                    ' Consider use a local variable to walk around:\n'
+'''
+  def safe_sqrt(x):
+    ret = 0.0
+    if x >= 0:
+      ret = ti.sqrt(x)
+    else:
+      ret = 0.0
+    return ret
+''')
+
         return node

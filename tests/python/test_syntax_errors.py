@@ -233,3 +233,36 @@ def test_not_in():
         a = b not in c
 
     func()
+
+
+@ti.test(arch=ti.cpu)
+def test_func_multiple_return():
+    @ti.func
+    def safe_sqrt(a):
+        if a > 0:
+            return ti.sqrt(a)
+        else:
+            return 0.0
+
+    @ti.kernel
+    def kern(a: float):
+        print(safe_sqrt(a))
+
+    with pytest.raises(ti.TaichiSyntaxError, match='cannot have multiple returns'):
+        kern(-233)
+
+
+@ti.test(arch=ti.cpu)
+def test_func_multiple_return_in_static_if():
+    @ti.func
+    def safe_static_sqrt(a: ti.template()):
+        if ti.static(a > 0):
+            return ti.sqrt(a)
+        else:
+            return 0.0
+
+    @ti.kernel
+    def kern():
+        print(safe_static_sqrt(-233))
+
+    kern()

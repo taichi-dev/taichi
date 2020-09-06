@@ -42,7 +42,6 @@ The Taichi Programming Language
    differentiable_programming
    performance
    odop
-   compilation
    syntax_sugars
    offset
 
@@ -57,6 +56,7 @@ The Taichi Programming Language
    utilities
    profiler
    cpp_style
+   compilation
    internal
    taichicon
    versioning_releases

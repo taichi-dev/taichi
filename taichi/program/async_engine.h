@@ -221,51 +221,9 @@ class AsyncEngine {
 
  private:
   IRBank ir_bank_;
-  // KernelMeta is unused now.
-  struct KernelMeta {
-    // OffloadedCachedData holds some data that needs to be computed once for
-    // each offloaded task of a kernel. Especially, it holds a cloned offloaded
-    // task, but uses it as a READ-ONLY template. That is, code that later finds
-    // it necessary to mutate this task (e.g. kernel fusion) should do another
-    // clone, so that the template in this class stays untouched.
-    //
-    // This design allows us to do task cloning lazily. It turned out that doing
-    // clone on every kernel launch is too expensive.
-    struct OffloadedCachedData {
-     public:
-      explicit OffloadedCachedData(std::unique_ptr<OffloadedStmt> &&tmpl,
-                                   uint64 hash)
-          : tmpl_(std::move(tmpl)), hash_(hash) {
-      }
-
-      // Get the read-only offloaded task template. Ideally this should be a
-      // const pointer, but the IR passes won't work...
-      inline OffloadedStmt *get_template() {
-        return tmpl_.get();
-      }
-
-      inline uint64 get_hash() const {
-        return hash_;
-      }
-
-     private:
-      // Hide the unique pointer so that the ownership cannot be accidentally
-      // transferred.
-      std::unique_ptr<OffloadedStmt> tmpl_;
-      uint64 hash_;
-    };
-
-    std::vector<OffloadedCachedData> offloaded_cached;
-
-    bool initialized{false};
-  };
 
   TaskMeta create_task_meta(const TaskLaunchRecord &t);
 
-  // In async mode, the root of an AST is an OffloadedStmt instead of a Block.
-  // This map provides a dummy Block root for these OffloadedStmt, so that
-  // get_kernel() could still work correctly.
-  std::unordered_map<const Kernel *, KernelMeta> kernel_metas_;
   std::unordered_map<IRHandle, TaskMeta> offloaded_metas_;
 };
 

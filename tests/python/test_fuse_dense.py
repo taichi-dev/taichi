@@ -3,7 +3,7 @@ from .fuse_test_template import template_fuse_dense_x2y2z, \
     template_fuse_reduction
 
 
-@ti.archs_with([ti.cpu], async_mode=True, print_ir=True)
+@ti.archs_with([ti.cpu], async_mode=True)
 def test_fuse_dense_x2y2z():
     template_fuse_dense_x2y2z(size=100 * 1024**2)
 

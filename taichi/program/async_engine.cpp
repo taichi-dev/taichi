@@ -30,12 +30,6 @@ uint64 hash(IRNode *stmt) {
   return ret;
 }
 
-std::unique_ptr<OffloadedStmt> clone_offloaded_task(IRNode const *from,
-                                                    Kernel *kernel) {
-  auto new_ir = irpass::analysis::clone(const_cast<IRNode *>(from), kernel);
-  return std::unique_ptr<OffloadedStmt>((OffloadedStmt *)(new_ir.release()));
-}
-
 }  // namespace
 
 std::unique_ptr<IRNode> IRHandle::clone() const {
@@ -248,13 +242,11 @@ void AsyncEngine::launch(Kernel *kernel, Context &context) {
     IRHandle ir_handle(offload, h);
     auto cached = ir_bank_.find(ir_handle);
     if (cached == nullptr) {
-      // Note that |offload| may not be the root, so it's necessary to specify
-      // |kernel|.
-      auto cloned_offs = clone_offloaded_task(offload, kernel);
+      auto cloned_offs = ir_handle.clone();
+      irpass::re_id(cloned_offs.get());
       ir_handle = IRHandle(cloned_offs.get(), h);
-      // The content of cloned_offs may change later, so we can't cache the hash
-      // here.
-      // ir_bank_.set_hash(cloned_offs.get(), h);
+      // cache the hash for optimization
+      ir_bank_.set_hash(cloned_offs.get(), h);
       ir_bank_.insert(std::move(cloned_offs), h);
     } else {
       ir_handle = IRHandle(cached, h);

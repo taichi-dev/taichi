@@ -143,15 +143,11 @@ class TaskLaunchRecord {
 class ExecutionQueue {
  public:
   std::mutex mut;
-  std::deque<TaskLaunchRecord> task_queue;
-
-  // prevent IR from being deleted
-  std::vector<std::unique_ptr<IRNode>> trash_bin;
 
   ParallelExecutor compilation_workers;  // parallel compilation
   ParallelExecutor launch_worker;        // serial launching
 
-  ExecutionQueue();
+  explicit ExecutionQueue(IRBank *ir_bank);
 
   void enqueue(const TaskLaunchRecord &ker);
 
@@ -188,6 +184,8 @@ class ExecutionQueue {
     std::shared_future<FunctionType> f_;
   };
   std::unordered_map<uint64, AsyncCompiledFunc> compiled_funcs_;
+
+  IRBank *ir_bank_;  // not owned
 };
 
 // An engine for asynchronous execution and optimization
@@ -201,9 +199,7 @@ class AsyncEngine {
   std::unique_ptr<StateFlowGraph> sfg;
   std::deque<TaskLaunchRecord> task_queue;
 
-  AsyncEngine(Program *program)
-      : program(program), sfg(std::make_unique<StateFlowGraph>()) {
-  }
+  explicit AsyncEngine(Program *program);
 
   bool optimize_listgen();  // return true when modified
 

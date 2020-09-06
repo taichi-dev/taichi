@@ -210,7 +210,7 @@ void ExecutionQueue::enqueue(const TaskLaunchRecord &ker) {
       auto func = codegen->codegen();
       async_func->set(func);
     });
-    trash_bin.push_back(std::move(cloned_stmt));
+    ir_bank_->trash_bin.push_back(std::move(cloned_stmt));
   }
 
   launch_worker.enqueue([async_func, context = ker.context]() mutable {
@@ -224,8 +224,16 @@ void ExecutionQueue::synchronize() {
   launch_worker.flush();
 }
 
-ExecutionQueue::ExecutionQueue()
-    : compilation_workers(4), launch_worker(1) {  // TODO: remove 4
+ExecutionQueue::ExecutionQueue(IRBank *ir_bank)
+    : compilation_workers(4),  // TODO: remove 4
+      launch_worker(1),
+      ir_bank_(ir_bank) {
+}
+
+AsyncEngine::AsyncEngine(Program *program)
+    : queue(&ir_bank_),
+      program(program),
+      sfg(std::make_unique<StateFlowGraph>()) {
 }
 
 void AsyncEngine::launch(Kernel *kernel, Context &context) {

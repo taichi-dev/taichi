@@ -247,7 +247,8 @@ TaskMeta AsyncEngine::create_task_meta(
   TaskMeta meta;
   // TODO: this is an abuse since it gathers nothing...
   auto *root_stmt = t.stmt();
-  meta.kernel_name = t.kernel->name;
+  meta.kernel_name = t.kernel->name + "_" +
+                     OffloadedStmt::task_type_name(root_stmt->task_type);
   gather_statements(root_stmt, [&](Stmt *stmt) {
     if (auto global_load = stmt->cast<GlobalLoadStmt>()) {
       if (auto ptr = global_load->ptr->cast<GlobalPtrStmt>()) {
@@ -260,6 +261,8 @@ TaskMeta AsyncEngine::create_task_meta(
       if (auto ptr = global_store->ptr->cast<GlobalPtrStmt>()) {
         for (auto &snode : ptr->snodes.data) {
           meta.output_states.emplace_back(snode, AsyncState::Type::value);
+          if (ptr->activate)
+            meta.output_states.emplace_back(snode, AsyncState::Type::mask);
         }
       }
     }
@@ -268,6 +271,8 @@ TaskMeta AsyncEngine::create_task_meta(
         for (auto &snode : ptr->snodes.data) {
           meta.input_states.emplace_back(snode, AsyncState::Type::value);
           meta.output_states.emplace_back(snode, AsyncState::Type::value);
+          if (ptr->activate)
+            meta.output_states.emplace_back(snode, AsyncState::Type::mask);
         }
       }
     }
@@ -281,6 +286,16 @@ TaskMeta AsyncEngine::create_task_meta(
     }
     return false;
   });
+  if (root_stmt->task_type == OffloadedStmt::listgen) {
+    meta.input_states.emplace_back(root_stmt->snode, AsyncState::Type::list);
+    meta.input_states.emplace_back(root_stmt->snode, AsyncState::Type::mask);
+    meta.output_states.emplace_back(root_stmt->snode, AsyncState::Type::list);
+  } else if (root_stmt->task_type == OffloadedStmt::struct_for) {
+    meta.input_states.emplace_back(root_stmt->snode, AsyncState::Type::list);
+  } else if (root_stmt->task_type == OffloadedStmt::clear_list) {
+    meta.input_states.emplace_back(root_stmt->snode, AsyncState::Type::list);
+    meta.output_states.emplace_back(root_stmt->snode, AsyncState::Type::list);
+  }
   // TODO: this is probably not fully done. Hopefully after SFG Graphviz is
   // done we can easily spot what's left.
   return meta;

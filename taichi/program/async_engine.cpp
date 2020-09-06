@@ -444,7 +444,7 @@ bool AsyncEngine::fuse() {
       ir_bank_.trash_bin.push_back(std::move(cloned_task_b));
 
       modified = true;
-      i++; // skip fusing task_queue[i + 1] and task_queue[i + 2]
+      i++;  // skip fusing task_queue[i + 1] and task_queue[i + 2]
     }
   }
 

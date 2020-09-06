@@ -15,10 +15,9 @@ template <typename T>
 std::vector<T *> make_raw_pointer_list(
     const std::vector<std::unique_ptr<T>> &unique_pointers) {
   std::vector<T *> raw_pointers;
-  for (auto &ptr : unique_pointers) {
+  for (auto &ptr : unique_pointers)
     raw_pointers.push_back(ptr.get());
-  }
-  return raw_pointers
+  return raw_pointers;
 }
 
 }  // namespace

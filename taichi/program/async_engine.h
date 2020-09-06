@@ -65,7 +65,7 @@ class IRBank {
   uint64 get_hash(IRNode *ir);
   void set_hash(IRNode *ir, uint64 hash);
 
-  void insert(std::unique_ptr<IRNode> &&ir, uint64 hash);
+  bool insert(std::unique_ptr<IRNode> &&ir, uint64 hash);
   IRNode *find(IRHandle ir_handle);
 
  private:

@@ -39,6 +39,7 @@ std::unique_ptr<OffloadedStmt> clone_offloaded_task(IRNode const *from,
 }  // namespace
 
 std::unique_ptr<IRNode> IRHandle::clone() const {
+  // TODO: remove get_kernel() here
   return irpass::analysis::clone(const_cast<IRNode *>(ir_), ir_->get_kernel());
 }
 
@@ -56,9 +57,15 @@ void IRBank::set_hash(IRNode *ir, uint64 hash) {
   hash_bank_[ir] = hash;
 }
 
-void IRBank::insert(std::unique_ptr<IRNode> &&ir, uint64 hash) {
+bool IRBank::insert(std::unique_ptr<IRNode> &&ir, uint64 hash) {
   IRHandle handle(ir.get(), hash);
-  ir_bank_[handle] = std::move(ir);
+  auto insert_place = ir_bank_.find(handle);
+  if (insert_place == ir_bank_.end()) {
+    ir_bank_.insert(ir_bank_.end(), std::make_pair(handle, std::move(ir)));
+    return true;
+  }
+  trash_bin.push_back(std::move(ir));
+  return false;
 }
 
 IRNode *IRBank::find(IRHandle ir_handle) {
@@ -245,7 +252,9 @@ void AsyncEngine::launch(Kernel *kernel, Context &context) {
       // |kernel|.
       auto cloned_offs = clone_offloaded_task(offload, kernel);
       ir_handle = IRHandle(cloned_offs.get(), h);
-      ir_bank_.set_hash(cloned_offs.get(), h);
+      // The content of cloned_offs may change later, so we can't cache the hash
+      // here.
+      // ir_bank_.set_hash(cloned_offs.get(), h);
       ir_bank_.insert(std::move(cloned_offs), h);
     } else {
       ir_handle = IRHandle(cached, h);
@@ -430,10 +439,12 @@ bool AsyncEngine::fuse() {
 
       // replace all reference to the offloaded statement B to A
       irpass::replace_all_usages_with(task_a, task_b, task_a);
-      irpass::re_id(task_a);
 
       auto kernel = task_queue[i].kernel;
       irpass::full_simplify(task_a, /*after_lower_access=*/false, kernel);
+      // For now, re_id is necessary for the hash to be correct.
+      irpass::re_id(task_a);
+
       auto h = ir_bank_.get_hash(task_a);
       task_queue[i].ir_handle = IRHandle(task_a, h);
       ir_bank_.insert(std::move(cloned_task_a), h);
@@ -448,15 +459,7 @@ bool AsyncEngine::fuse() {
 
   // Eliminate empty tasks
   for (int i = 0; i < (int)task_queue.size(); i++) {
-    auto *task = task_queue[i].stmt();
-    bool keep = true;
-    if (task->task_type == OffloadedStmt::struct_for ||
-        task->task_type == OffloadedStmt::range_for ||
-        task->task_type == OffloadedStmt::serial) {
-      if (task->body->statements.empty())
-        keep = false;
-    }
-    if (keep) {
+    if (task_queue[i].ir_handle.ir() != nullptr) {
       new_task_queue.push_back(task_queue[i]);
     }
   }

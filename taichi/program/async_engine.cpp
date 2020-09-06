@@ -261,6 +261,8 @@ TaskMeta AsyncEngine::create_task_meta(
       if (auto ptr = global_store->ptr->cast<GlobalPtrStmt>()) {
         for (auto &snode : ptr->snodes.data) {
           meta.output_states.emplace_back(snode, AsyncState::Type::value);
+          if (ptr->activate)
+            meta.output_states.emplace_back(snode, AsyncState::Type::mask);
         }
       }
     }
@@ -269,6 +271,8 @@ TaskMeta AsyncEngine::create_task_meta(
         for (auto &snode : ptr->snodes.data) {
           meta.input_states.emplace_back(snode, AsyncState::Type::value);
           meta.output_states.emplace_back(snode, AsyncState::Type::value);
+          if (ptr->activate)
+            meta.output_states.emplace_back(snode, AsyncState::Type::mask);
         }
       }
     }

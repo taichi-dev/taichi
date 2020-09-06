@@ -233,7 +233,7 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
   if (config.arch == Arch::cuda && !config.use_unified_memory) {
 #if defined(TI_WITH_CUDA)
     CUDADriver::get_instance().malloc(
-        &result_buffer, sizeof(uint64) * taichi_result_buffer_entries);
+        (void **)&result_buffer, sizeof(uint64) * taichi_result_buffer_entries);
     auto total_mem = runtime->get_total_memory();
     if (config.device_memory_fraction == 0) {
       TI_ASSERT(config.device_memory_GB > 0);

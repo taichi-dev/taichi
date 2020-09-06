@@ -25,7 +25,7 @@ RUN apt-get update && \
                        libtinfo5
 
 # Install Taichi's Python dependencies
-RUN python3 -m pip install --user setuptools astpretty astor pybind11 Pillow dill
+RUN python3 -m pip install --user setuptools astor pybind11 pylint sourceinspect
 RUN python3 -m pip install --user pytest pytest-rerunfailures pytest-xdist yapf
 RUN python3 -m pip install --user numpy GitPython coverage colorama autograd
 

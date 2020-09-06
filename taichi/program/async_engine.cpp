@@ -41,7 +41,7 @@ uint64 IRBank::get_hash(IRNode *ir) {
   auto result_iterator = hash_bank_.find(ir);
   if (result_iterator == hash_bank_.end()) {
     auto result = hash(ir);
-    hash_bank_.insert(hash_bank_.end(), std::make_pair(ir, result));
+    set_hash(ir, result);
     return result;
   }
   return result_iterator->second;
@@ -55,7 +55,7 @@ bool IRBank::insert(std::unique_ptr<IRNode> &&ir, uint64 hash) {
   IRHandle handle(ir.get(), hash);
   auto insert_place = ir_bank_.find(handle);
   if (insert_place == ir_bank_.end()) {
-    ir_bank_.insert(ir_bank_.end(), std::make_pair(handle, std::move(ir)));
+    ir_bank_.emplace(handle, std::move(ir));
     return true;
   }
   trash_bin.push_back(std::move(ir));

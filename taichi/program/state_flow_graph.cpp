@@ -24,11 +24,10 @@ void StateFlowGraph::insert_state_flow(Node *from, Node *to, AsyncState state) {
   to->input_edges.insert(std::make_pair(state, from));
 }
 
-void StateFlowGraph::print_edges(
-    const StateFlowGraph::StateToNodeMapping &edges) {
+void StateFlowGraph::print_edges(const StateFlowGraph::Edges &edges) {
   for (auto &edge : edges) {
     auto input_node = edge.second;
-    fmt::print("    {}: node {} @ {}\n", edge.first.name(),
+    fmt::print("    {} -> node {} @ {}\n", edge.first.name(),
                input_node->kernel_name, (void *)input_node);
   }
 }

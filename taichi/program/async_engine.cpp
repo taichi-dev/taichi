@@ -248,22 +248,19 @@ void AsyncEngine::launch(Kernel *kernel, Context &context) {
   TI_ASSERT(block);
 
   auto &offloads = block->statements;
+  auto &kmeta = kernel_metas_[kernel];
+  const bool kmeta_inited = !kmeta.ir_handle_cached.empty();
   for (std::size_t i = 0; i < offloads.size(); i++) {
-    auto *offload = offloads[i]->as<OffloadedStmt>();
-    uint64 h = ir_bank_.get_hash(offload);
-    IRHandle ir_handle(offload, h);
-    auto cached = ir_bank_.find(ir_handle);
-    if (cached == nullptr) {
-      auto cloned_offs = ir_handle.clone();
+    if (!kmeta_inited) {
+      TI_ASSERT(kmeta.ir_handle_cached.size() == i);
+      IRHandle tmp_ir_handle(offloads[i].get(), 0);
+      auto cloned_offs = tmp_ir_handle.clone();
       irpass::re_id(cloned_offs.get());
-      ir_handle = IRHandle(cloned_offs.get(), h);
-      // cache the hash for optimization
-      ir_bank_.set_hash(cloned_offs.get(), h);
+      auto h = ir_bank_.get_hash(cloned_offs.get());
+      kmeta.ir_handle_cached.emplace_back(cloned_offs.get(), h);
       ir_bank_.insert(std::move(cloned_offs), h);
-    } else {
-      ir_handle = IRHandle(cached, h);
     }
-    TaskLaunchRecord rec(context, kernel, ir_handle);
+    TaskLaunchRecord rec(context, kernel, kmeta.ir_handle_cached[i]);
     enqueue(rec);
   }
 }

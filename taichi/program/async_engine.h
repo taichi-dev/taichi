@@ -218,8 +218,20 @@ class AsyncEngine {
  private:
   IRBank ir_bank_;
 
-  TaskMeta create_task_meta(const TaskLaunchRecord &t);
+  struct KernelMeta {
+    // OffloadedCachedData holds some data that needs to be computed once for
+    // each offloaded task of a kernel. Especially, it holds a cloned offloaded
+    // task, but uses it as a READ-ONLY template. That is, code that later finds
+    // it necessary to mutate this task (e.g. kernel fusion) should do another
+    // clone, so that the template in this class stays untouched.
+    //
+    // This design allows us to do task cloning lazily. It turned out that doing
+    // clone on every kernel launch is too expensive.
+    std::vector<IRHandle> ir_handle_cached;
+  };
 
+  TaskMeta create_task_meta(const TaskLaunchRecord &t);
+  std::unordered_map<const Kernel *, KernelMeta> kernel_metas_;
   std::unordered_map<IRHandle, TaskMeta> offloaded_metas_;
 };
 

@@ -346,7 +346,7 @@ void export_lang(py::module &m) {
     current_ast_builder().insert(Stmt::make<FrontendBreakStmt>());
   });
 
-  m.def("create_kernel_return", [&](const Expr &value, DataType dt) {
+  m.def("create_kernel_return", [&](const Expr &value, const DataType &dt) {
     current_ast_builder().insert(
         Stmt::make<FrontendKernelReturnStmt>(value, dt));
   });

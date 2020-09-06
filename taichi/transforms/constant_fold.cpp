@@ -1,15 +1,13 @@
+#include <cmath>
 #include <deque>
 #include <set>
-#include <cmath>
 #include <thread>
 
 #include "taichi/ir/ir.h"
+#include "taichi/ir/snode.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
 #include "taichi/program/program.h"
-#include "taichi/ir/ir.h"
-#include "taichi/program/program.h"
-#include "taichi/ir/snode.h"
 
 TLANG_NAMESPACE_BEGIN
 

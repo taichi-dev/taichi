@@ -89,9 +89,8 @@ class ASTTransformerBase(ast.NodeTransformer):
     @staticmethod
     def get_decorator(node):
         if not (isinstance(node, ast.Call)
-                and isinstance(node.func, ast.Attribute)
-                and isinstance(node.func.value, ast.Name)
-                and node.func.value.id == 'ti'
+                and isinstance(node.func, ast.Attribute) and isinstance(
+                    node.func.value, ast.Name) and node.func.value.id == 'ti'
                 and node.func.attr in ['static', 'grouped', 'ndrange']):
             return ''
         return node.func.attr
@@ -907,7 +906,7 @@ class ASTTransformerChecks(ASTTransformerBase):
             self.has_return = True
         else:
             raise TaichiSyntaxError(
-                    'Taichi functions/kernels cannot have multiple returns!'
-                    ' Consider use a local variable to walk around')
+                'Taichi functions/kernels cannot have multiple returns!'
+                ' Consider use a local variable to walk around')
 
         return node

@@ -39,13 +39,7 @@ std::unique_ptr<OffloadedStmt> clone_offloaded_task(IRNode const *from,
 }  // namespace
 
 std::unique_ptr<IRNode> IRHandle::clone() const {
-  return irpass::analysis::clone(const_cast<IRNode *>(ir_));
-}
-
-std::unique_ptr<IRNode> IRHandle::clone_on_write() {
-  auto cloned = clone();
-  ir_ = cloned.get();
-  return cloned;
+  return irpass::analysis::clone(const_cast<IRNode *>(ir_), ir_->get_kernel());
 }
 
 uint64 IRBank::get_hash(IRNode *ir) {
@@ -58,15 +52,14 @@ uint64 IRBank::get_hash(IRNode *ir) {
   return result_iterator->second;
 }
 
+void IRBank::set_hash(IRNode *ir, uint64 hash) {
+  hash_bank_[ir] = hash;
+}
+
 void IRBank::insert(std::unique_ptr<IRNode> &&ir, uint64 hash) {
   IRHandle handle(ir.get(), hash);
   ir_bank_[handle] = std::move(ir);
 }
-
-//void IRBank::insert(std::unique_ptr<IRNode> &&ir) {
-//  IRHandle handle(ir.get(), get_hash(ir.get()));
-//  ir_bank_[handle] = std::move(ir);
-//}
 
 IRNode *IRBank::find(IRHandle ir_handle) {
   auto result = ir_bank_.find(ir_handle);
@@ -171,9 +164,7 @@ void ParallelExecutor::worker_loop() {
 TaskLaunchRecord::TaskLaunchRecord(Context context,
                                    Kernel *kernel,
                                    IRHandle ir_handle)
-    : context(context),
-      kernel(kernel),
-      ir_handle(ir_handle) {
+    : context(context), kernel(kernel), ir_handle(ir_handle) {
   TI_ASSERT(ir_handle.ir()->get_kernel() != nullptr);
 }
 
@@ -244,8 +235,6 @@ void AsyncEngine::launch(Kernel *kernel, Context &context) {
   TI_ASSERT(block);
 
   auto &offloads = block->statements;
-//  auto &kmeta = kernel_metas_[kernel];
-//  const bool kmeta_inited = kmeta.initialized;
   for (std::size_t i = 0; i < offloads.size(); i++) {
     auto *offload = offloads[i]->as<OffloadedStmt>();
     uint64 h = ir_bank_.get_hash(offload);
@@ -256,31 +245,14 @@ void AsyncEngine::launch(Kernel *kernel, Context &context) {
       // |kernel|.
       auto cloned_offs = clone_offloaded_task(offload, kernel);
       ir_handle = IRHandle(cloned_offs.get(), h);
+      ir_bank_.set_hash(cloned_offs.get(), h);
       ir_bank_.insert(std::move(cloned_offs), h);
-      // TODO: also set ir_bank_.hash_bank_[cloned_offs.get()] here for
-      // optimization?
     } else {
       ir_handle = IRHandle(cached, h);
     }
-//
-//    OffloadedStmt *offl_template = nullptr;
-//    if (kmeta_inited) {
-//      auto &oc = kmeta.offloaded_cached[i];
-//      h = oc.get_hash();
-//      offl_template = oc.get_template();
-//    } else {
-//      auto cloned_offs = clone_offloaded_task(offload, kernel);
-//      offl_template = cloned_offs.get();
-//      h = hash(offl_template);
-//      TI_ASSERT(kmeta.offloaded_cached.size() == i);
-//      kmeta.offloaded_cached.emplace_back(std::move(cloned_offs), h);
-//    }
     TaskLaunchRecord rec(context, kernel, ir_handle);
     enqueue(std::move(rec));
   }
-//  if (!kmeta_inited) {
-//    kmeta.initialized = true;
-//  }
 }
 
 TaskMeta AsyncEngine::create_task_meta(

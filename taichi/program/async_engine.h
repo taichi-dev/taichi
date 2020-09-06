@@ -26,9 +26,6 @@ class IRHandle {
 
   std::unique_ptr<IRNode> clone() const;
 
-  // Set this->ir_ to the cloned one.
-  std::unique_ptr<IRNode> clone_on_write();
-
   IRNode const *ir() const {
     return ir_;
   }
@@ -66,13 +63,15 @@ class IRBank {
   std::vector<std::unique_ptr<IRNode>> trash_bin;
 
   uint64 get_hash(IRNode *ir);
+  void set_hash(IRNode *ir, uint64 hash);
+
   void insert(std::unique_ptr<IRNode> &&ir, uint64 hash);
-//  void insert(std::unique_ptr<IRNode> &&ir);
   IRNode *find(IRHandle ir_handle);
 
  private:
   std::unordered_map<IRNode *, uint64> hash_bank_;
   std::unordered_map<IRHandle, std::unique_ptr<IRNode>> ir_bank_;
+  // TODO:
   //  std::unordered_map<std::pair<IRHandle, IRHandle>, IRHandle> fuse_bank_;
 };
 

@@ -346,8 +346,9 @@ void export_lang(py::module &m) {
     current_ast_builder().insert(Stmt::make<FrontendBreakStmt>());
   });
 
-  m.def("create_kernel_return", [&](const Expr &value) {
-    current_ast_builder().insert(Stmt::make<FrontendKernelReturnStmt>(value));
+  m.def("create_kernel_return", [&](const Expr &value, const DataType &dt) {
+    current_ast_builder().insert(
+        Stmt::make<FrontendKernelReturnStmt>(value, dt));
   });
 
   m.def("insert_continue_stmt", [&]() {
@@ -477,7 +478,8 @@ void export_lang(py::module &m) {
   m.def("make_frontend_assign_stmt",
         Stmt::make<FrontendAssignStmt, const Expr &, const Expr &>);
 
-  m.def("make_arg_load_expr", Expr::make<ArgLoadExpression, int>);
+  m.def("make_arg_load_expr",
+        Expr::make<ArgLoadExpression, int, const DataType &>);
 
   m.def("make_external_tensor_expr",
         Expr::make<ExternalTensorExpression, const DataType &, int, int>);

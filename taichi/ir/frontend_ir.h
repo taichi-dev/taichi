@@ -202,7 +202,8 @@ class FrontendKernelReturnStmt : public Stmt {
  public:
   Expr value;
 
-  FrontendKernelReturnStmt(const Expr &value) : value(value) {
+  FrontendKernelReturnStmt(const Expr &value, DataType dt) : value(value) {
+    ret_type = VectorType(1, dt);
   }
 
   bool is_container_statement() const override {
@@ -217,17 +218,18 @@ class FrontendKernelReturnStmt : public Stmt {
 class ArgLoadExpression : public Expression {
  public:
   int arg_id;
+  DataType dt;
 
-  ArgLoadExpression(int arg_id) : arg_id(arg_id) {
+  ArgLoadExpression(int arg_id, DataType dt) : arg_id(arg_id), dt(dt) {
   }
 
   std::string serialize() override {
-    return fmt::format("arg[{}]", arg_id);
+    return fmt::format("arg[{}] (dt={})", arg_id, data_type_name(dt));
   }
 
   void flatten(FlattenContext *ctx) override {
-    auto ran = std::make_unique<ArgLoadStmt>(arg_id);
-    ctx->push_back(std::move(ran));
+    auto argl = std::make_unique<ArgLoadStmt>(arg_id, dt);
+    ctx->push_back(std::move(argl));
     stmt = ctx->back_stmt();
   }
 };
@@ -380,7 +382,7 @@ class ExternalTensorExpression : public Expression {
   }
 
   void flatten(FlattenContext *ctx) override {
-    auto ptr = Stmt::make<ArgLoadStmt>(arg_id, true);
+    auto ptr = Stmt::make<ArgLoadStmt>(arg_id, dt, /*is_ptr=*/true);
     ctx->push_back(std::move(ptr));
     stmt = ctx->back_stmt();
   }

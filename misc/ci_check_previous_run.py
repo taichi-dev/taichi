@@ -99,7 +99,7 @@ def get_status_of_run(run_id):
         logging.info(
             f'Waiting to get the status of run={run_id} (url={url}). retries={retries}'
         )
-        time.sleep(15)
+        time.sleep(60)
     return False
 
 

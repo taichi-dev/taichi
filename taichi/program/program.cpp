@@ -813,7 +813,7 @@ std::size_t Program::get_snode_num_dynamically_allocated(SNode *snode) {
 
 Program::~Program() {
   if (!finalized)
-    finalize();
-}
+    finalize();   
+}  
 
 TLANG_NAMESPACE_END

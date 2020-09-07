@@ -251,11 +251,11 @@ def veci(*args, **kwargs):
 
 def dump_dot(filepath=None):
     from taichi.core import ti_core
-    dot = ti_core.dump_dot()
+    d = ti_core.dump_dot()
     if filepath is not None:
         with open(filepath, 'w') as fh:
-            fh.write(dot)
-    return dot
+            fh.write(d)
+    return d
 
 
 def dot_to_pdf(dot, filepath):

@@ -19,6 +19,62 @@ TLANG_NAMESPACE_BEGIN
 
 // TODO(yuanming-hu): split into multiple files
 
+class IRHandle {
+ public:
+  IRHandle(const IRNode *ir, uint64 hash) : ir_(ir), hash_(hash) {
+  }
+
+  std::unique_ptr<IRNode> clone() const;
+
+  const IRNode *ir() const {
+    return ir_;
+  }
+
+  uint64 hash() const {
+    return hash_;
+  }
+
+  // Two IRHandles are considered the same iff their hash values are the same.
+  bool operator==(const IRHandle &other_ir_handle) const {
+    return hash_ == other_ir_handle.hash_;
+  }
+
+ private:
+  const IRNode *ir_;  // not owned
+  uint64 hash_;
+};
+
+TLANG_NAMESPACE_END
+
+namespace std {
+template <>
+struct hash<taichi::lang::IRHandle> {
+  std::size_t operator()(const taichi::lang::IRHandle &ir_handle) const
+      noexcept {
+    return ir_handle.hash();
+  }
+};
+}  // namespace std
+
+TLANG_NAMESPACE_BEGIN
+
+class IRBank {
+ public:
+  uint64 get_hash(IRNode *ir);
+  void set_hash(IRNode *ir, uint64 hash);
+
+  bool insert(std::unique_ptr<IRNode> &&ir, uint64 hash);
+  void insert_to_trash_bin(std::unique_ptr<IRNode> &&ir);
+  IRNode *find(IRHandle ir_handle);
+
+ private:
+  std::unordered_map<IRNode *, uint64> hash_bank_;
+  std::unordered_map<IRHandle, std::unique_ptr<IRNode>> ir_bank_;
+  std::vector<std::unique_ptr<IRNode>> trash_bin;  // prevent IR from deleted
+  // TODO:
+  //  std::unordered_map<std::pair<IRHandle, IRHandle>, IRHandle> fuse_bank_;
+};
+
 class ParallelExecutor {
  public:
   using TaskType = std::function<void()>;
@@ -43,7 +99,7 @@ class ParallelExecutor {
 
   void worker_loop();
 
-  // Must be called whil holding |mut|.
+  // Must be called while holding |mut|.
   bool flush_cv_cond();
 
   int num_threads;
@@ -74,46 +130,26 @@ class TaskLaunchRecord {
  public:
   Context context;
   Kernel *kernel;  // TODO: remove this
-  uint64 h;        // hash of |stmt|
+  IRHandle ir_handle;
 
-  TaskLaunchRecord(Context context,
-                   Kernel *kernel,
-                   OffloadedStmt *stmt,
-                   uint64 h);
+  TaskLaunchRecord(Context context, Kernel *kernel, IRHandle ir_handle);
 
   inline OffloadedStmt *stmt() const {
-    return stmt_;
+    return const_cast<IRNode *>(ir_handle.ir())->as<OffloadedStmt>();
   }
-
-  // When we need to make changes to |stmt|, call this method so that the |stmt|
-  // is cloned from the template, so that the template itself remains untouched.
-  //
-  // Cloning will only happen on the first call.
-  OffloadedStmt *clone_stmt_on_write();
-
- private:
-  // This begins as the template in OffloadedCachedData. If
-  // clone_stmt_on_write() is invoked, it points to the underlying pointer owned
-  // by |cloned_stmt_holder_|.
-  OffloadedStmt *stmt_;
-
-  // This is for cloning |stmt_|.
-  std::unique_ptr<OffloadedStmt> cloned_stmt_holder_;
 };
 
 // In charge of (parallel) compilation to binary and (serial) kernel launching
 class ExecutionQueue {
  public:
   std::mutex mut;
-  std::deque<TaskLaunchRecord> task_queue;
-  std::vector<TaskLaunchRecord> trashbin;  // prevent IR from being deleted
 
   ParallelExecutor compilation_workers;  // parallel compilation
   ParallelExecutor launch_worker;        // serial launching
 
-  ExecutionQueue();
+  explicit ExecutionQueue(IRBank *ir_bank);
 
-  void enqueue(TaskLaunchRecord &&ker);
+  void enqueue(const TaskLaunchRecord &ker);
 
   void compile_task() {
   }
@@ -148,10 +184,11 @@ class ExecutionQueue {
     std::shared_future<FunctionType> f_;
   };
   std::unordered_map<uint64, AsyncCompiledFunc> compiled_funcs_;
+
+  IRBank *ir_bank_;  // not owned
 };
 
 // An engine for asynchronous execution and optimization
-
 class AsyncEngine {
  public:
   // TODO: state machine
@@ -162,9 +199,7 @@ class AsyncEngine {
   std::unique_ptr<StateFlowGraph> sfg;
   std::deque<TaskLaunchRecord> task_queue;
 
-  AsyncEngine(Program *program)
-      : program(program), sfg(std::make_unique<StateFlowGraph>()) {
-  }
+  explicit AsyncEngine(Program *program);
 
   bool optimize_listgen();  // return true when modified
 
@@ -176,11 +211,13 @@ class AsyncEngine {
 
   void launch(Kernel *kernel, Context &context);
 
-  void enqueue(TaskLaunchRecord &&t);
+  void enqueue(const TaskLaunchRecord &t);
 
   void synchronize();
 
  private:
+  IRBank ir_bank_;
+
   struct KernelMeta {
     // OffloadedCachedData holds some data that needs to be computed once for
     // each offloaded task of a kernel. Especially, it holds a cloned offloaded
@@ -190,42 +227,12 @@ class AsyncEngine {
     //
     // This design allows us to do task cloning lazily. It turned out that doing
     // clone on every kernel launch is too expensive.
-    struct OffloadedCachedData {
-     public:
-      explicit OffloadedCachedData(std::unique_ptr<OffloadedStmt> &&tmpl,
-                                   uint64 hash)
-          : tmpl_(std::move(tmpl)), hash_(hash) {
-      }
-
-      // Get the read-only offloaded task template. Ideally this should be a
-      // const pointer, but the IR passes won't work...
-      inline OffloadedStmt *get_template() {
-        return tmpl_.get();
-      }
-
-      inline uint64 get_hash() const {
-        return hash_;
-      }
-
-     private:
-      // Hide the unique pointer so that the ownership cannot be accidentally
-      // transferred.
-      std::unique_ptr<OffloadedStmt> tmpl_;
-      uint64 hash_;
-    };
-
-    std::vector<OffloadedCachedData> offloaded_cached;
-
-    bool initialized{false};
+    std::vector<IRHandle> ir_handle_cached;
   };
 
   TaskMeta create_task_meta(const TaskLaunchRecord &t);
-
-  // In async mode, the root of an AST is an OffloadedStmt instead of a Block.
-  // This map provides a dummy Block root for these OffloadedStmt, so that
-  // get_kernel() could still work correctly.
   std::unordered_map<const Kernel *, KernelMeta> kernel_metas_;
-  std::unordered_map<std::uint64_t, TaskMeta> offloaded_metas_;
+  std::unordered_map<IRHandle, TaskMeta> offloaded_metas_;
 };
 
 TLANG_NAMESPACE_END

@@ -13,9 +13,24 @@ assignees: ''
 A clear and concise description of what the bug is, ideally within 20 words.
 
 **To Reproduce**
-Please post a sample code to reproduce the bug. The developer team will put a higher priority on bugs that can be reproduced within 20 lines of code. If you want a prompt reply, please keep the code short.
+Please post a **minimal sample code** to reproduce the bug.
+The developer team will put a higher priority on bugs that can be reproduced within 20 lines of code. If you want a prompt reply, please keep the sample code **short** and **representative**.
+
+```py
+# sample code here
+```
 
 **Log/Screenshots**
-Please post the full log of the program (instead of just a few lines around the error message, unless the log is > 1000 lines). This will help us diagnose what's happening.
+Please post the **full log** of the program (instead of just a few lines around the error message, unless the log is > 1000 lines). This will help us diagnose what's happening. For example:
 
-**If you have local commits (e.g. compile fixes before you reproduce the bug), please make sure you first make a PR to fix the build errors and then report the bug.**
+```
+$ python my_sample_code.py
+[Taichi] mode=release
+[Taichi] version 0.6.29, llvm 10.0.0, commit b63f6663, linux, python 3.8.3
+...
+```
+
+**Additional comments**
+If possible, please also consider attaching the output of command `ti diagnose`. This produces the detailed environment information and hopefully helps us diagnose faster.
+
+If you have local commits (e.g. compile fixes before you reproduce the bug), please make sure you first make a PR to fix the build errors and then report the bug.

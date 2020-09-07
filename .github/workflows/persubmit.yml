@@ -67,10 +67,15 @@ jobs:
         with:
           python-version: 3.8
       - name: Check the previous run
+        env:
+          PR: ${{ github.event.pull_request.number }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+          # https://docs.github.com/en/actions/configuring-and-managing-workflows/authenticating-with-the-github_token
+          # https://docs.github.com/en/actions/configuring-and-managing-workflows/creating-and-storing-encrypted-secrets
+          # Do not leak the secret
+          OAUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          PR=${{ github.event.pull_request.number }}
-          SHA=${{ github.event.pull_request.head.sha }}
-          python misc/ci_check_previous_run.py --pr ${PR} --sha ${SHA}
+          python misc/ci_check_previous_run.py --pr "${PR}" --sha "${SHA}" --token "${OAUTH_TOKEN}"
 
   code_format:
     name: Code Format

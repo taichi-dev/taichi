@@ -7,6 +7,7 @@ import sys
 
 API_PREFIX = 'https://api.github.com/repos/taichi-dev/taichi'
 SHA = 'sha'
+OAUTH_TOKEN = None
 
 
 def make_api_url(p):
@@ -14,8 +15,18 @@ def make_api_url(p):
 
 
 def send_request(url):
-    logging.debug(f'request={url}')
-    return ur.urlopen(url)
+    # https://docs.github.com/en/actions/configuring-and-managing-workflows/authenticating-with-the-github_token#example-calling-the-rest-api
+    hdrs = {'Authorization': f'Bearer {OAUTH_TOKEN}'}
+    # https://stackoverflow.com/a/47029281/12003165
+    req = ur.Request(url, headers=hdrs)
+    res = ur.urlopen(req)
+    # Headers are defined in https://developer.github.com/v3/rate_limit/
+    # https://docs.github.com/en/actions/getting-started-with-github-actions/about-github-actions#usage-limits
+    rl = res.getheader('X-Ratelimit-Limit', None)
+    rl_remain = res.getheader('X-Ratelimit-Remaining', None)
+    logging.debug(
+        f'request={url} rate_limit={rl} rate_limit_remaining={rl_remain}')
+    return res
 
 
 def get_commits(pr):
@@ -88,7 +99,7 @@ def get_status_of_run(run_id):
         logging.info(
             f'Waiting to get the status of run={run_id} (url={url}). retries={retries}'
         )
-        time.sleep(15)
+        time.sleep(60)
     return False
 
 
@@ -96,6 +107,7 @@ def get_cmd_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--pr', help='PR number')
     parser.add_argument('--sha', help='Head commit SHA in the PR')
+    parser.add_argument('--token', help='OAuth token')
     return parser.parse_args()
 
 
@@ -104,6 +116,8 @@ def main():
                         level=logging.DEBUG,
                         datefmt='%Y-%m-%d %H:%M:%S')
     args = get_cmd_args()
+    global OAUTH_TOKEN
+    OAUTH_TOKEN = args.token
 
     pr = args.pr
     commits = get_commits(pr)

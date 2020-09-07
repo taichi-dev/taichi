@@ -502,6 +502,7 @@ class KernelGen : public IRVisitor {
     const auto rhs_name = bin->rhs->short_name();
     const auto bin_name = bin->short_name();
     if (bin->op_type == BinaryOpType::floordiv) {
+      TI_WARN("floordiv called! It should be taken care by demote_operations");
       if (is_integral(bin->lhs->element_type()) &&
           is_integral(bin->rhs->element_type())) {
         emit(
@@ -696,6 +697,15 @@ class KernelGen : public IRVisitor {
     }
 
     emit("{};", source);
+  }
+
+  void visit(ExternalTensorShapeAlongAxisStmt *stmt) override {
+    const auto name = stmt->short_name();
+    const auto arg_id = stmt->arg_id;
+    const auto axis = stmt->axis;
+    used.buf_earg = true;
+    emit("int {} = _earg_i32_[{} * {} + {}];", name, arg_id,
+         taichi_max_num_indices, axis);
   }
 
   std::string make_kernel_name() {

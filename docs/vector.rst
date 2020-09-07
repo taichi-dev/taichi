@@ -101,6 +101,51 @@ As a temporary local variable
 
     TODO: add descriptions about ``a(i, j)``
 
+
+XYZW vector component accessors
++++++++++++++++++++++++++++++++
+
+We also provide four handy accessors for the first four vector components:
+
+.. attribute:: a.x
+
+   Same as ``a[0]``.
+
+.. attribute:: a.y
+
+   Same as ``a[1]``.
+
+.. attribute:: a.z
+
+   Same as ``a[2]``.
+
+.. attribute:: a.w
+
+   Same as ``a[3]``.
+
+.. note::
+
+   XYZW accessors can be used for both reading and writing::
+
+      v = ti.Vector([2, 3, 4])
+      print(v.x)  # 2
+      print(v.y)  # 3
+      print(v.z)  # 4
+      v.y = 8
+      print(v.y)  # 8
+
+   XYZW accessors can be used in both Taichi-scope and Python-scope.
+
+   XYZW accessors don't work for ``ti.Matrix``.
+
+   For GLSL-alike shuffling accessors, consider using `taichi_glsl <https://taichi-glsl.readthedocs.io>`_::
+
+        import taichi_glsl as tl
+
+        v = tl.vec(2, 3, 4)
+        print(v.xy)  # [2 3]
+        print(v._xYzX_z)  # [0 2 -3 4 -2 0 4]
+
 Methods
 -------
 
@@ -215,7 +260,10 @@ Methods
         a = ti.Vector([1.6, 2.3])
         a.cast(ti.i32) # [2, 3]
 
+    See :ref:`type` for more details.
+
 .. note::
+
     Vectors are special matrices with only 1 column. In fact, ``ti.Vector`` is just an alias of ``ti.Matrix``.
 
 
@@ -227,17 +275,33 @@ Metadata
    :parameter a: (ti.Vector or ti.Vector.field)
    :return: (scalar) return the dimensionality of vector ``a``
 
-    E.g.,
-    ::
+   E.g.,
+   ::
 
         # Taichi-scope
         a = ti.Vector([1, 2, 3])
         a.n  # 3
 
-    ::
+   ::
 
         # Python-scope
-        a = ti.Vector.field(3, dtype=ti.f32, shape=())
+        a = ti.Vector.field(3, dtype=ti.f32, shape=(4, 5))
         a.n  # 3
+
+    See :ref:`meta` for more details.
+
+.. note::
+
+   When used as a global vector field, it will additionally contain all the
+   metadata that a scalar field would have, E.g.::
+
+        # Python-scope
+        a = ti.Vector.field(3, dtype=ti.f32, shape=(4, 5))
+        a.shape  # (4, 5)
+        a.dtype  # ti.f32
+
+
+Element-wise operations (WIP)
+-----------------------------
 
 TODO: add element wise operations docs

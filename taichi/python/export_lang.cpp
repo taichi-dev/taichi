@@ -288,8 +288,9 @@ void export_lang(py::module &m) {
     return Length(snode, indices);
   });
 
-  m.def("create_assert_stmt", [&](const Expr &cond, const std::string &msg) {
-    auto stmt_unique = std::make_unique<FrontendAssertStmt>(msg, cond);
+  m.def("create_assert_stmt", [&](const Expr &cond, const std::string &msg,
+                                  const std::vector<Expr> &args) {
+    auto stmt_unique = std::make_unique<FrontendAssertStmt>(cond, msg, args);
     current_ast_builder().insert(std::move(stmt_unique));
   });
 
@@ -528,6 +529,14 @@ void export_lang(py::module &m) {
     return expr[expr_group];
   });
 
+  m.def("get_external_tensor_dim", [](const Expr &expr) {
+    TI_ASSERT(expr.is<ExternalTensorExpression>());
+    return expr.cast<ExternalTensorExpression>()->dim;
+  });
+
+  m.def("get_external_tensor_shape_along_axis",
+        Expr::make<ExternalTensorShapeAlongAxisExpression, const Expr &, int>);
+
   m.def("create_kernel",
         [&](std::string name, bool grad) -> Program::KernelProxy {
           return get_current_program().kernel(name, grad);
@@ -574,14 +583,8 @@ void export_lang(py::module &m) {
 
   m.def("host_arch", host_arch);
 
-  m.def("set_lib_dir", [&](const std::string &dir) {
-    TI_INFO("set_lib_dir: [{}]", dir);
-    compiled_lib_dir = dir;
-  });
-  m.def("set_tmp_dir", [&](const std::string &dir) {
-    TI_INFO("set_tmp_dir: [{}]", dir);
-    runtime_tmp_dir = dir;
-  });
+  m.def("set_lib_dir", [&](const std::string &dir) { compiled_lib_dir = dir; });
+  m.def("set_tmp_dir", [&](const std::string &dir) { runtime_tmp_dir = dir; });
   m.def("get_runtime_dir", get_runtime_dir);
 
   m.def("get_commit_hash", get_commit_hash);

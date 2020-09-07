@@ -649,6 +649,8 @@ void export_lang(py::module &m) {
   });
 
   m.def("print_sfg", [] { get_current_program().async_engine->sfg->print(); });
+  m.def("dump_dot",
+        [] { return get_current_program().async_engine->sfg->dump_dot(); });
 }
 
 TI_NAMESPACE_END

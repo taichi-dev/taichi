@@ -249,12 +249,22 @@ def veci(*args, **kwargs):
     return core_veci(*args, **kwargs)
 
 
+def dump_dot(filepath=None):
+    from taichi.core import ti_core
+    d = ti_core.dump_dot()
+    if filepath is not None:
+        with open(filepath, 'w') as fh:
+            fh.write(d)
+    return d
+
+
 __all__ = [
     'vec',
     'veci',
     'core_vec',
     'core_veci',
     'deprecated',
+    'dump_dot',
     'obsolete',
     'get_traceback',
     'set_gdb_trigger',

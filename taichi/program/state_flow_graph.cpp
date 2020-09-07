@@ -80,6 +80,7 @@ std::string StateFlowGraph::dump_dot() {
   for (const auto &p : latest_state_owner_) {
     latest_state_nodes.insert(p.second);
   }
+  std::vector<const SFGNode *> nodes_with_no_inputs;
   for (const auto &nd : nodes_) {
     const auto *n = nd.get();
     ss << "  " << fmt::format("{} [label=\"{}\"", node_id(n), n->string());
@@ -89,13 +90,14 @@ std::string StateFlowGraph::dump_dot() {
       ss << ",peripheries=2";
     }
     ss << "]\n";
+    if (nd->input_edges.empty())
+      nodes_with_no_inputs.push_back(n);
   }
   ss << "\n";
   {
     // DFS
     std::unordered_set<const SFGNode *> visited;
-    std::vector<const SFGNode *> stack;
-    stack.push_back(initial_node_);
+    std::vector<const SFGNode *> stack(nodes_with_no_inputs);
     while (!stack.empty()) {
       auto *from = stack.back();
       stack.pop_back();

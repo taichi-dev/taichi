@@ -251,11 +251,22 @@ def veci(*args, **kwargs):
 
 def dump_dot(filepath=None):
     from taichi.core import ti_core
-    d = ti_core.dump_dot()
+    dot = ti_core.dump_dot()
     if filepath is not None:
         with open(filepath, 'w') as fh:
-            fh.write(d)
-    return d
+            fh.write(dot)
+    return dot
+
+
+def dot_to_pdf(dot, filepath):
+    assert filepath.endswith('.pdf')
+    import subprocess
+    p = subprocess.Popen(['dot', '-Tpdf'],
+                         stdin=subprocess.PIPE,
+                         stdout=subprocess.PIPE)
+    pdf_contents = p.communicate(input=dot.encode())[0]
+    with open(filepath, 'wb') as fh:
+        fh.write(pdf_contents)
 
 
 __all__ = [
@@ -265,6 +276,7 @@ __all__ = [
     'core_veci',
     'deprecated',
     'dump_dot',
+    'dot_to_pdf',
     'obsolete',
     'get_traceback',
     'set_gdb_trigger',

@@ -311,13 +311,15 @@ TaskMeta AsyncEngine::create_task_meta(
     return false;
   });
   if (root_stmt->task_type == OffloadedStmt::listgen) {
+    TI_ASSERT(root_stmt->snode->parent);
+    meta.input_states.emplace_back(root_stmt->snode->parent,
+                                   AsyncState::Type::list);
     meta.input_states.emplace_back(root_stmt->snode, AsyncState::Type::list);
     meta.input_states.emplace_back(root_stmt->snode, AsyncState::Type::mask);
     meta.output_states.emplace_back(root_stmt->snode, AsyncState::Type::list);
   } else if (root_stmt->task_type == OffloadedStmt::struct_for) {
     meta.input_states.emplace_back(root_stmt->snode, AsyncState::Type::list);
   } else if (root_stmt->task_type == OffloadedStmt::clear_list) {
-    meta.input_states.emplace_back(root_stmt->snode, AsyncState::Type::list);
     meta.output_states.emplace_back(root_stmt->snode, AsyncState::Type::list);
   }
   // TODO: this is probably not fully done. Hopefully after SFG Graphviz is

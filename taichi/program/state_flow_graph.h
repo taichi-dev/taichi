@@ -13,6 +13,8 @@ class StateFlowGraph {
   struct Node;
   using StateToNodeMapping =
       std::unordered_map<AsyncState, Node *, AsyncStateHash>;
+  using Edges = std::unordered_multimap<AsyncState, Node *, AsyncStateHash>;
+
   // Each node is a task
   // Note: after SFG is done, each node here should hold a TaskLaunchRecord.
   // Optimization should happen fully on the SFG, instead of the queue in
@@ -23,7 +25,7 @@ class StateFlowGraph {
     //  TODO: make use of IRHandle here
     IRNode *root;
     std::string kernel_name;
-    StateToNodeMapping input_edges, output_edges;
+    Edges input_edges, output_edges;
   };
 
   StateToNodeMapping latest_state_owner;
@@ -38,7 +40,7 @@ class StateFlowGraph {
     initial_node->kernel_name = "initial_state";
   }
 
-  void print_edges(const StateToNodeMapping &edges);
+  void print_edges(const Edges &edges);
 
   void print();
 

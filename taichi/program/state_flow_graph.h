@@ -24,33 +24,33 @@ class StateFlowGraph {
   struct Node {
     //  TODO: make use of IRHandle here
     IRNode *root;
-    std::string kernel_name;
+    std::string task_name;
+    // Incremental ID to identify the i-th launch of the task.
+    int launch_id;
+    // For |input_edges|, each state could map to exactly one node.
+    // For |output_edges|, each state could map to at least one node.
     Edges input_edges, output_edges;
+
+    std::string string() const;
   };
 
-  StateToNodeMapping latest_state_owner;
-
-  std::vector<std::unique_ptr<Node>> nodes;
-
-  Node *initial_node;  // The initial node holds all the initial states.
-
-  StateFlowGraph() {
-    nodes.push_back(std::make_unique<Node>());
-    initial_node = nodes.back().get();
-    initial_node->kernel_name = "initial_state";
-  }
+  StateFlowGraph();
 
   void print_edges(const Edges &edges);
 
   void print();
 
-  void dump_dot(const std::string &fn) {
-    // TODO: export the graph to Dot format for GraphViz
-  }
+  std::string dump_dot();
 
   void insert_task(const TaskMeta &task_meta);
 
   void insert_state_flow(Node *from, Node *to, AsyncState state);
+
+ private:
+  std::vector<std::unique_ptr<Node>> nodes_;
+  Node *initial_node_;  // The initial node holds all the initial states.
+  StateToNodeMapping latest_state_owner_;
+  std::unordered_map<std::string, int> task_name_to_launch_ids_;
 };
 
 TLANG_NAMESPACE_END

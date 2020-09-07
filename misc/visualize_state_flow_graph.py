@@ -25,3 +25,4 @@ foo()
 bar()
 
 ti.core.print_sfg()
+print(ti.dump_dot())

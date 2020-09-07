@@ -21,12 +21,12 @@ TLANG_NAMESPACE_BEGIN
 
 class IRHandle {
  public:
-  IRHandle(IRNode const *ir, uint64 hash) : ir_(ir), hash_(hash) {
+  IRHandle(const IRNode *ir, uint64 hash) : ir_(ir), hash_(hash) {
   }
 
   std::unique_ptr<IRNode> clone() const;
 
-  IRNode const *ir() const {
+  const IRNode *ir() const {
     return ir_;
   }
 
@@ -40,7 +40,7 @@ class IRHandle {
   }
 
  private:
-  IRNode const *ir_;  // not owned
+  const IRNode *ir_;  // not owned
   uint64 hash_;
 };
 
@@ -49,7 +49,7 @@ TLANG_NAMESPACE_END
 namespace std {
 template <>
 struct hash<taichi::lang::IRHandle> {
-  std::size_t operator()(taichi::lang::IRHandle const &ir_handle) const
+  std::size_t operator()(const taichi::lang::IRHandle &ir_handle) const
       noexcept {
     return ir_handle.hash();
   }

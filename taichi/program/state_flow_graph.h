@@ -1,5 +1,8 @@
 #pragma once
 
+#include <unordered_map>
+#include <unordered_set>
+
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
 #include "taichi/lang_util.h"
@@ -13,7 +16,6 @@ class StateFlowGraph {
   struct Node;
   using StateToNodeMapping =
       std::unordered_map<AsyncState, Node *, AsyncStateHash>;
-  using Edges = std::unordered_multimap<AsyncState, Node *, AsyncStateHash>;
 
   // Each node is a task
   // Note: after SFG is done, each node here should hold a TaskLaunchRecord.
@@ -27,16 +29,17 @@ class StateFlowGraph {
     std::string task_name;
     // Incremental ID to identify the i-th launch of the task.
     int launch_id;
-    // For |input_edges|, each state could map to exactly one node.
-    // For |output_edges|, each state could map to at least one node.
-    Edges input_edges, output_edges;
+
+    StateToNodeMapping input_edges;
+    // Profiling showed horrible performance using std::unordered_multimap (at
+    // least on Mac with clang-1103.0.32.62)...
+    std::unordered_map<AsyncState, std::unordered_set<Node *>, AsyncStateHash>
+        output_edges;
 
     std::string string() const;
   };
 
   StateFlowGraph();
-
-  void print_edges(const Edges &edges);
 
   void print();
 

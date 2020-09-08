@@ -258,6 +258,17 @@ def dump_dot(filepath=None):
     return d
 
 
+def dot_to_pdf(dot, filepath):
+    assert filepath.endswith('.pdf')
+    import subprocess
+    p = subprocess.Popen(['dot', '-Tpdf'],
+                         stdin=subprocess.PIPE,
+                         stdout=subprocess.PIPE)
+    pdf_contents = p.communicate(input=dot.encode())[0]
+    with open(filepath, 'wb') as fh:
+        fh.write(pdf_contents)
+
+
 __all__ = [
     'vec',
     'veci',
@@ -265,6 +276,7 @@ __all__ = [
     'core_veci',
     'deprecated',
     'dump_dot',
+    'dot_to_pdf',
     'obsolete',
     'get_traceback',
     'set_gdb_trigger',

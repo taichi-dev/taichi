@@ -25,4 +25,6 @@ foo()
 bar()
 
 ti.core.print_sfg()
-print(ti.dump_dot())
+dot = ti.dump_dot("sfg.dot")
+print(dot)
+ti.dot_to_pdf(dot, "sfg.pdf")

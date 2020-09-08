@@ -19,45 +19,6 @@ TLANG_NAMESPACE_BEGIN
 
 // TODO(yuanming-hu): split into multiple files
 
-class IRHandle {
- public:
-  IRHandle(const IRNode *ir, uint64 hash) : ir_(ir), hash_(hash) {
-  }
-
-  std::unique_ptr<IRNode> clone() const;
-
-  const IRNode *ir() const {
-    return ir_;
-  }
-
-  uint64 hash() const {
-    return hash_;
-  }
-
-  // Two IRHandles are considered the same iff their hash values are the same.
-  bool operator==(const IRHandle &other_ir_handle) const {
-    return hash_ == other_ir_handle.hash_;
-  }
-
- private:
-  const IRNode *ir_;  // not owned
-  uint64 hash_;
-};
-
-TLANG_NAMESPACE_END
-
-namespace std {
-template <>
-struct hash<taichi::lang::IRHandle> {
-  std::size_t operator()(const taichi::lang::IRHandle &ir_handle) const
-      noexcept {
-    return ir_handle.hash();
-  }
-};
-}  // namespace std
-
-TLANG_NAMESPACE_BEGIN
-
 class IRBank {
  public:
   uint64 get_hash(IRNode *ir);
@@ -123,20 +84,6 @@ class ParallelExecutor {
   // callback upon flush(). The flush() will then block waiting for that
   // callback to be executed?
   std::condition_variable flush_cv_;
-};
-
-// Records the necessary data for launching an offloaded task.
-class TaskLaunchRecord {
- public:
-  Context context;
-  Kernel *kernel;  // TODO: remove this
-  IRHandle ir_handle;
-
-  TaskLaunchRecord(Context context, Kernel *kernel, IRHandle ir_handle);
-
-  inline OffloadedStmt *stmt() const {
-    return const_cast<IRNode *>(ir_handle.ir())->as<OffloadedStmt>();
-  }
 };
 
 // In charge of (parallel) compilation to binary and (serial) kernel launching

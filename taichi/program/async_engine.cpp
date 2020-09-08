@@ -32,11 +32,6 @@ uint64 hash(IRNode *stmt) {
 
 }  // namespace
 
-std::unique_ptr<IRNode> IRHandle::clone() const {
-  // TODO: remove get_kernel() here
-  return irpass::analysis::clone(const_cast<IRNode *>(ir_), ir_->get_kernel());
-}
-
 uint64 IRBank::get_hash(IRNode *ir) {
   auto result_iterator = hash_bank_.find(ir);
   if (result_iterator == hash_bank_.end()) {
@@ -166,13 +161,6 @@ void ParallelExecutor::worker_loop() {
   }
 }
 
-TaskLaunchRecord::TaskLaunchRecord(Context context,
-                                   Kernel *kernel,
-                                   IRHandle ir_handle)
-    : context(context), kernel(kernel), ir_handle(ir_handle) {
-  TI_ASSERT(ir_handle.ir()->get_kernel() != nullptr);
-}
-
 void ExecutionQueue::enqueue(const TaskLaunchRecord &ker) {
   auto h = ker.ir_handle.hash();
   auto *stmt = ker.stmt();
@@ -265,8 +253,7 @@ void AsyncEngine::launch(Kernel *kernel, Context &context) {
   }
 }
 
-TaskMeta AsyncEngine::create_task_meta(
-    const taichi::lang::TaskLaunchRecord &t) {
+TaskMeta AsyncEngine::create_task_meta(const TaskLaunchRecord &t) {
   using namespace irpass::analysis;
   TaskMeta meta;
   // TODO: this is an abuse since it gathers nothing...
@@ -331,7 +318,7 @@ void AsyncEngine::enqueue(const TaskLaunchRecord &t) {
   if (offloaded_metas_.find(t.ir_handle) == offloaded_metas_.end()) {
     offloaded_metas_[t.ir_handle] = create_task_meta(t);
   }
-  sfg->insert_task(offloaded_metas_[t.ir_handle]);
+  sfg->insert_task(t, offloaded_metas_[t.ir_handle]);
   task_queue.push_back(t);
 }
 

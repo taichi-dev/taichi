@@ -23,7 +23,7 @@ def _test_reduction_single(dtype, criterion):
 
     @ti.kernel
     def reduce_tmp() -> dtype:
-        s = tot[None] * 0  # Hack to get |s| to the correct type...
+        s = ti.zero(tot[None])
         for i in a:
             s += a[i]
         return s

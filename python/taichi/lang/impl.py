@@ -493,6 +493,17 @@ def ti_float(var):
 
 
 @taichi_scope
+def zero(x):
+    # TODO: get dtype from Expr and Matrix:
+    return x * 0
+
+
+@taichi_scope
+def one(x):
+    return zero(x) + 1
+
+
+@taichi_scope
 def get_external_tensor_dim(var):
     return taichi_lang_core.get_external_tensor_dim(var)
 

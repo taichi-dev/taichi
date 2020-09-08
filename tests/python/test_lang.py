@@ -1,4 +1,5 @@
 import taichi as ti
+import pytest
 
 
 @ti.all_archs
@@ -131,3 +132,29 @@ def test_loop_var_life_double_iters():
         print(i)
 
     test()
+
+
+@ti.test(require=ti.extension.data64)
+@pytest.mark.parametrize('dt', [ti.i32, ti.f32, ti.i64, ti.f64])
+def test_meta_zero(dt):
+    @ti.kernel
+    def func(x: dt) -> dt:
+        return ti.zero(x)
+
+    for x in [-1, -2.3, 1.2, 2, 3]:
+        if ti.core.is_integral(dt):
+            x = int(x)
+        assert func(x) == 0  # intentionally not using ti.approx here
+
+
+@ti.test(require=ti.extension.data64)
+@pytest.mark.parametrize('dt', [ti.i32, ti.f32, ti.i64, ti.f64])
+def test_meta_one(dt):
+    @ti.kernel
+    def func(x: dt) -> dt:
+        return ti.one(x)
+
+    for x in [-1, -2.3, 1.2, 2, 3]:
+        if ti.core.is_integral(dt):
+            x = int(x)
+        assert func(x) == 1

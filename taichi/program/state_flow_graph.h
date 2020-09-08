@@ -22,8 +22,7 @@ class StateFlowGraph {
   // Before we migrate, the SFG is only used for visualization. Therefore we
   // only store a kernel_name, which is used as the label of the GraphViz node.
   struct Node {
-    //  TODO: make use of IRHandle here
-    IRNode *root;
+    TaskLaunchRecord rec;
     std::string task_name;
     // Incremental ID to identify the i-th launch of the task.
     int launch_id;
@@ -42,7 +41,7 @@ class StateFlowGraph {
 
   std::string dump_dot();
 
-  void insert_task(const TaskMeta &task_meta);
+  void insert_task(const TaskLaunchRecord &rec, const TaskMeta &task_meta);
 
   void insert_state_flow(Node *from, Node *to, AsyncState state);
 

@@ -16,7 +16,8 @@ StateFlowGraph::StateFlowGraph() {
   initial_node_->launch_id = 0;
 }
 
-void StateFlowGraph::insert_task(const TaskLaunchRecord &rec, const TaskMeta &task_meta) {
+void StateFlowGraph::insert_task(const TaskLaunchRecord &rec,
+                                 const TaskMeta &task_meta) {
   auto node = std::make_unique<Node>();
   node->rec = rec;
   node->task_name = task_meta.kernel_name;

@@ -907,6 +907,6 @@ class ASTTransformerChecks(ASTTransformerBase):
         else:
             raise TaichiSyntaxError(
                 'Taichi functions/kernels cannot have multiple returns!'
-                ' Consider use a local variable to walk around')
+                ' Consider using a local variable to walk around.')
 
         return node

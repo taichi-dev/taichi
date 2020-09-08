@@ -10,11 +10,12 @@ Create a window
 ---------------
 
 
-.. function:: ti.GUI(title = 'Taichi', res = (512, 512), background_color = 0x000000)
+.. function:: ti.GUI(title = 'Taichi', res = (512, 512), background_color = 0x000000, show_gui = True)
 
     :parameter title: (optional, string) the window title
     :parameter res: (optional, scalar or tuple) resolution / size of the window
     :parameter background_color: (optional, RGB hex) background color of the window
+    :parameter show_gui: (optional, bool) see the note below
     :return: (GUI) an object represents the window
 
     Create a window.
@@ -22,9 +23,22 @@ Create a window
 
     The following code creates a window of resolution ``640x360``:
 
-    ::
+    .. code-block:: python
 
         gui = ti.GUI('Window Title', (640, 360))
+
+    .. note::
+
+        If you're running Taichi on a machine without GUI environment, consider
+        setting ``show_gui`` to ``False``:
+
+        .. code-block:: python
+
+            gui = ti.GUI('Window Title', (640, 360), show_gui=False)
+
+            while gui.running:
+                ...
+                gui.show(f'{gui.frame:06d}.png')  # save a series of screenshot
 
 
 .. function:: gui.show(filename = None)

@@ -42,7 +42,7 @@ void StateFlowGraph::insert_task(const TaskLaunchRecord &rec,
 void StateFlowGraph::insert_state_flow(Node *from, Node *to, AsyncState state) {
   TI_ASSERT(from != nullptr);
   TI_ASSERT(to != nullptr);
-  from->output_edges.insert(std::make_pair(state, to));
+  from->output_edges[state].insert(to);
   to->input_edges.insert(std::make_pair(state, from));
 }
 
@@ -55,24 +55,23 @@ std::vector<TaskLaunchRecord> StateFlowGraph::extract() {
   return tasks;
 }
 
-void StateFlowGraph::print_edges(const StateFlowGraph::Edges &edges) {
-  for (auto &edge : edges) {
-    auto input_node = edge.second;
-    fmt::print("    {} -> {}\n", edge.first.name(), input_node->string());
-  }
-}
-
 void StateFlowGraph::print() {
   fmt::print("=== State Flow Graph ===\n");
   for (auto &node : nodes_) {
     fmt::print("{}\n", node->string());
     if (!node->input_edges.empty()) {
       fmt::print("  Inputs:\n");
-      print_edges(node->input_edges);
+      for (const auto &p : node->input_edges) {
+        fmt::print("    {} <- {}\n", p.first.name(), p.second->string());
+      }
     }
     if (!node->output_edges.empty()) {
       fmt::print("  Outputs:\n");
-      print_edges(node->output_edges);
+      for (const auto &p : node->output_edges) {
+        for (const auto *to : p.second) {
+          fmt::print("    {} -> {}\n", p.first.name(), to->string());
+        }
+      }
     }
   }
   fmt::print("=======================\n");
@@ -115,13 +114,14 @@ std::string StateFlowGraph::dump_dot() {
       if (visited.find(from) == visited.end()) {
         visited.insert(from);
         for (const auto &p : from->output_edges) {
-          auto *to = p.second;
-          stack.push_back(to);
+          for (const auto *to : p.second) {
+            stack.push_back(to);
 
-          ss << "  "
-             << fmt::format("{} -> {} [label=\"{}\"]", node_id(from),
-                            node_id(to), p.first.name())
-             << '\n';
+            ss << "  "
+               << fmt::format("{} -> {} [label=\"{}\"]", node_id(from),
+                              node_id(to), p.first.name())
+               << '\n';
+          }
         }
       }
     }

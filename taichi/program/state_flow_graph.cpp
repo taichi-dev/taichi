@@ -46,6 +46,15 @@ void StateFlowGraph::insert_state_flow(Node *from, Node *to, AsyncState state) {
   to->input_edges.insert(std::make_pair(state, from));
 }
 
+bool StateFlowGraph::fuse() {
+  return false;
+}
+
+std::vector<TaskLaunchRecord> StateFlowGraph::extract() {
+  std::vector<TaskLaunchRecord> tasks;
+  return tasks;
+}
+
 void StateFlowGraph::print_edges(const StateFlowGraph::Edges &edges) {
   for (auto &edge : edges) {
     auto input_node = edge.second;

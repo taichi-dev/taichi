@@ -45,6 +45,11 @@ class StateFlowGraph {
 
   void insert_state_flow(Node *from, Node *to, AsyncState state);
 
+  bool fuse();
+
+  // Extract all tasks to execute.
+  std::vector<TaskLaunchRecord> extract();
+
  private:
   std::vector<std::unique_ptr<Node>> nodes_;
   Node *initial_node_;  // The initial node holds all the initial states.

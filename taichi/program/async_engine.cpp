@@ -324,11 +324,11 @@ void AsyncEngine::enqueue(const TaskLaunchRecord &t) {
 
 void AsyncEngine::synchronize() {
   optimize_listgen();
-  while (fuse())
+  while (sfg->fuse())
     ;
-  while (!task_queue.empty()) {
-    queue.enqueue(task_queue.front());
-    task_queue.pop_front();
+  auto tasks = sfg->extract();
+  for (auto &task : tasks) {
+    queue.enqueue(task);
   }
   queue.synchronize();
 }
@@ -379,7 +379,7 @@ bool AsyncEngine::optimize_listgen() {
 }
 
 bool AsyncEngine::fuse() {
-  // TODO: improve...
+  // TODO: migrated to SFG...
   bool modified = false;
   std::unordered_map<SNode *, bool> list_dirty;
 

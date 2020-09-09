@@ -1,4 +1,5 @@
 import taichi as ti
+import numpy as np
 import pytest
 
 
@@ -134,27 +135,25 @@ def test_loop_var_life_double_iters():
     test()
 
 
-@ti.test(require=ti.extension.data64)
-@pytest.mark.parametrize('dt', [ti.i32, ti.f32, ti.i64, ti.f64])
-def test_meta_zero(dt):
+@ti.test(arch=ti.cpu)
+@pytest.mark.parametrize('dtype', [ti.i32, ti.f32, ti.i64, ti.f64])
+@pytest.mark.parametrize('ti_zero,zero', [(ti.zero, 0), (ti.one, 1)])
+@pytest.mark.parametrize('is_mat', [False, True])
+def test_meta_zero_one(dtype, ti_zero, zero, is_mat):
+    if is_mat:
+        x = ti.Matrix.field(2, 3, dtype, ())
+        y = ti.Matrix.field(2, 3, dtype, ())
+    else:
+        x = ti.field(dtype, ())
+        y = ti.field(dtype, ())
+
     @ti.kernel
-    def func(x: dt) -> dt:
-        return ti.zero(x)
+    def func():
+        y[None] = ti_zero(x[None])
 
-    for x in [-1, -2.3, 1.2, 2, 3]:
-        if ti.core.is_integral(dt):
-            x = int(x)
-        assert func(x) == 0  # intentionally not using ti.approx here
-
-
-@ti.test(require=ti.extension.data64)
-@pytest.mark.parametrize('dt', [ti.i32, ti.f32, ti.i64, ti.f64])
-def test_meta_one(dt):
-    @ti.kernel
-    def func(x: dt) -> dt:
-        return ti.one(x)
-
-    for x in [-1, -2.3, 1.2, 2, 3]:
-        if ti.core.is_integral(dt):
-            x = int(x)
-        assert func(x) == 1
+    for a in [-1, -2.3, -1, -0.3, 0, 1, 1.9, 2, 3]:
+        if ti.core.is_integral(dtype):
+            a = int(a)
+        x.fill(a)
+        func()
+        assert np.all(y.to_numpy() == zero)

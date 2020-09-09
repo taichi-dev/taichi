@@ -177,23 +177,22 @@ See `examples/stable_fluid.py <https://github.com/taichi-dev/taichi/blob/master/
                 self.smooth(l, 1)
                 self.smooth(l, 0)
 
-    def solve(self, steps=-1, eps=1e-12, tol=1e-12, rel=1e-12):
+    def solve(self, max_iters=-1, eps=1e-12,
+            abs_tol=1e-12, rel_tol=1e-12):
         '''
         Solve a Poisson problem.
         Always use a ``for`` loop to iterate through me.
 
-        :parameter steps: Specify the maximal steps, -1 for no limit.
+        :parameter max_iters: Specify the maximal iterations, -1 for no limit.
         :parameter eps: Specify a non-zero value to prevent ZeroDivisionError.
-        :parameter tol: Specify the absolute tolerance of loss.
-        :parameter rel: Specify the tolerance of loss relative to initial loss.
-
-        :return: (generator) A sequence generator for the loss of each step.
+        :parameter abs_tol: Specify the absolute tolerance of loss.
+        :parameter rel_tol: Specify the tolerance of loss relative to initial loss.
         '''
 
         self.reduce(self.r[0], self.r[0])
         initial_rTr = self.sum[None]
 
-        tol = max(tol, initial_rTr * rel)
+        tol = max(abs_tol, initial_rTr * rel_tol)
 
         # self.r = b - Ax = b    since self.x = 0
         # self.p = self.r = self.r + 0 self.p
@@ -208,7 +207,7 @@ See `examples/stable_fluid.py <https://github.com/taichi-dev/taichi/blob/master/
         old_zTr = self.sum[None]
 
         # CG
-        while steps != 0:
+        while max_iters != 0:
             # self.alpha = rTr / pTAp
             self.compute_Ap()
             self.reduce(self.p, self.Ap)
@@ -242,7 +241,7 @@ See `examples/stable_fluid.py <https://github.com/taichi-dev/taichi/blob/master/
             self.update_p()
             old_zTr = new_zTr
 
-            steps -= 1
+            max_iters -= 1
 
 
 class MGPCG_Example(MGPCG):
@@ -276,7 +275,7 @@ class MGPCG_Example(MGPCG):
                      res=(self.N_gui, self.N_gui))
 
         self.init()
-        self.solve(steps=400)
+        self.solve(max_iters=400)
         self.paint()
         ti.imshow(self.pixels)
         ti.kernel_profiler_print()

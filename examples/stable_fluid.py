@@ -8,7 +8,7 @@ import taichi as ti
 import numpy as np
 import time
 
-use_mgpcg = False  # True for zero divergence fluid simulation
+use_mgpcg = False  # True to use multigrid-preconditioned conjugate gradients
 res = 512  # 600 for a larger resoultion
 dt = 0.03
 p_jacobi_iters = 160  # 40 for quicker but not-so-accurate result
@@ -286,7 +286,7 @@ def step(mouse_data):
 
     if use_mgpcg:
         mgpcg.init(velocity_divs, -1)
-        mgpcg.solve(steps=10)
+        mgpcg.solve(max_iters=10)
         mgpcg.get_result(pressures_pair.cur)
 
     else:

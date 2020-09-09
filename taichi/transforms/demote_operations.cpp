@@ -18,11 +18,6 @@ class DemoteOperations : public BasicStmtVisitor {
     // @ti.func
     // def bit_extract(input, begin, end):
     //   return (input >> begin) & ((1 << (end - begin)) - 1)
-
-    // https://github.com/taichi-dev/taichi/pull/1795#issuecomment-682367083
-    if (stmt->get_kernel()->program.config.async_mode)
-      return;
-
     VecStatement statements;
     auto begin = statements.push_back<ConstStmt>(
         LaneAttribute<TypedConstant>(stmt->bit_begin));

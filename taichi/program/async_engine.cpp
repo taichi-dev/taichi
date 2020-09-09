@@ -21,6 +21,8 @@ uint64 hash(IRNode *stmt) {
   std::string serialized;
   irpass::re_id(stmt);
   irpass::print(stmt, &serialized);
+  // TODO: separate kernel from IR template
+  serialized += stmt->get_kernel()->name;
   uint64 ret = 0;
   for (uint64 i = 0; i < serialized.size(); i++) {
     ret = ret * 100000007UL + (uint64)serialized[i];
@@ -28,13 +30,43 @@ uint64 hash(IRNode *stmt) {
   return ret;
 }
 
-std::unique_ptr<OffloadedStmt> clone_offloaded_task(OffloadedStmt *from,
-                                                    Kernel *kernel) {
-  auto new_ir = irpass::analysis::clone(from, kernel);
-  return std::unique_ptr<OffloadedStmt>((OffloadedStmt *)(new_ir.release()));
+}  // namespace
+
+uint64 IRBank::get_hash(IRNode *ir) {
+  auto result_iterator = hash_bank_.find(ir);
+  if (result_iterator == hash_bank_.end()) {
+    auto result = hash(ir);
+    set_hash(ir, result);
+    return result;
+  }
+  return result_iterator->second;
 }
 
-}  // namespace
+void IRBank::set_hash(IRNode *ir, uint64 hash) {
+  hash_bank_[ir] = hash;
+}
+
+bool IRBank::insert(std::unique_ptr<IRNode> &&ir, uint64 hash) {
+  IRHandle handle(ir.get(), hash);
+  auto insert_place = ir_bank_.find(handle);
+  if (insert_place == ir_bank_.end()) {
+    ir_bank_.emplace(handle, std::move(ir));
+    return true;
+  }
+  insert_to_trash_bin(std::move(ir));
+  return false;
+}
+
+void IRBank::insert_to_trash_bin(std::unique_ptr<IRNode> &&ir) {
+  trash_bin.push_back(std::move(ir));
+}
+
+IRNode *IRBank::find(IRHandle ir_handle) {
+  auto result = ir_bank_.find(ir_handle);
+  if (result == ir_bank_.end())
+    return nullptr;
+  return result->second.get();
+}
 
 ParallelExecutor::ParallelExecutor(int num_threads)
     : num_threads(num_threads),
@@ -129,38 +161,29 @@ void ParallelExecutor::worker_loop() {
   }
 }
 
-KernelLaunchRecord::KernelLaunchRecord(Context context,
-                                       Kernel *kernel,
-                                       OffloadedStmt *stmt,
-                                       uint64 h)
-    : context(context),
-      kernel(kernel),
-      h(h),
-      stmt_(stmt),
-      cloned_stmt_holder_(nullptr) {
-  TI_ASSERT(stmt_ != nullptr);
-  TI_ASSERT(stmt_->get_kernel() != nullptr);
-}
-
-OffloadedStmt *KernelLaunchRecord::clone_stmt_on_write() {
-  if (cloned_stmt_holder_ == nullptr) {
-    cloned_stmt_holder_ = clone_offloaded_task(stmt_, kernel);
-    stmt_ = cloned_stmt_holder_.get();
-  }
-  return stmt_;
-}
-
-void ExecutionQueue::enqueue(KernelLaunchRecord &&ker) {
-  auto h = ker.h;
+void ExecutionQueue::enqueue(const TaskLaunchRecord &ker) {
+  auto h = ker.ir_handle.hash();
   auto *stmt = ker.stmt();
   auto kernel = ker.kernel;
-  if (compiled_func.find(h) == compiled_func.end() &&
-      to_be_compiled.find(h) == to_be_compiled.end()) {
-    to_be_compiled.insert(h);
-    // Later the IR passes will change |stmt|, so we must clone it.
-    stmt = ker.clone_stmt_on_write();
 
-    compilation_workers.enqueue([&, stmt, kernel, h, this]() {
+  kernel->account_for_offloaded(stmt);
+
+  bool needs_compile = false;
+  AsyncCompiledFunc *async_func = nullptr;
+  {
+    std::lock_guard<std::mutex> _(mut);
+    needs_compile = (compiled_funcs_.find(h) == compiled_funcs_.end());
+    if (needs_compile) {
+      compiled_funcs_.emplace(h, AsyncCompiledFunc());
+    }
+    async_func = &(compiled_funcs_.at(h));
+  }
+  if (needs_compile) {
+    // Later the IR passes will change |stmt|, so we must clone it.
+    auto cloned_stmt = ker.ir_handle.clone();
+    stmt = cloned_stmt->as<OffloadedStmt>();
+
+    compilation_workers.enqueue([async_func, stmt, kernel]() {
       {
         // Final lowering
         using namespace irpass;
@@ -177,30 +200,15 @@ void ExecutionQueue::enqueue(KernelLaunchRecord &&ker) {
       }
       auto codegen = KernelCodeGen::create(kernel->arch, kernel, stmt);
       auto func = codegen->codegen();
-      std::lock_guard<std::mutex> _(mut);
-      compiled_func[h] = func;
+      async_func->set(func);
     });
+    ir_bank_->insert_to_trash_bin(std::move(cloned_stmt));
   }
 
-  kernel->account_for_offloaded(ker.stmt());
-
-  auto context = ker.context;
-  launch_worker.enqueue([&, h, context, this] {
-    FunctionType func;
-    while (true) {
-      std::unique_lock<std::mutex> lock(mut);
-      if (compiled_func.find(h) == compiled_func.end()) {
-        lock.unlock();
-        Time::sleep(1e-6);
-        continue;
-      }
-      func = compiled_func[h];
-      break;
-    }
-    auto c = context;
-    func(c);
+  launch_worker.enqueue([async_func, context = ker.context]() mutable {
+    auto func = async_func->get();
+    func(context);
   });
-  trashbin.push_back(std::move(ker));
 }
 
 void ExecutionQueue::synchronize() {
@@ -208,8 +216,16 @@ void ExecutionQueue::synchronize() {
   launch_worker.flush();
 }
 
-ExecutionQueue::ExecutionQueue()
-    : compilation_workers(4), launch_worker(1) {  // TODO: remove 4
+ExecutionQueue::ExecutionQueue(IRBank *ir_bank)
+    : compilation_workers(4),  // TODO: remove 4
+      launch_worker(1),
+      ir_bank_(ir_bank) {
+}
+
+AsyncEngine::AsyncEngine(Program *program)
+    : queue(&ir_bank_),
+      program(program),
+      sfg(std::make_unique<StateFlowGraph>()) {
 }
 
 void AsyncEngine::launch(Kernel *kernel, Context &context) {
@@ -221,61 +237,53 @@ void AsyncEngine::launch(Kernel *kernel, Context &context) {
 
   auto &offloads = block->statements;
   auto &kmeta = kernel_metas_[kernel];
-  const bool kmeta_inited = kmeta.initialized;
+  const bool kmeta_inited = !kmeta.ir_handle_cached.empty();
   for (std::size_t i = 0; i < offloads.size(); i++) {
-    auto *offload = offloads[i]->as<OffloadedStmt>();
-    uint64 h;
-    OffloadedStmt *offl_template = nullptr;
-    if (kmeta_inited) {
-      auto &oc = kmeta.offloaded_cached[i];
-      h = oc.get_hash();
-      offl_template = oc.get_template();
-    } else {
-      auto cloned_offs = clone_offloaded_task(offload, kernel);
-      offl_template = cloned_offs.get();
-      h = hash(offl_template);
-      TI_ASSERT(kmeta.offloaded_cached.size() == i);
-      kmeta.offloaded_cached.emplace_back(std::move(cloned_offs), h);
+    if (!kmeta_inited) {
+      TI_ASSERT(kmeta.ir_handle_cached.size() == i);
+      IRHandle tmp_ir_handle(offloads[i].get(), 0);
+      auto cloned_offs = tmp_ir_handle.clone();
+      irpass::re_id(cloned_offs.get());
+      auto h = ir_bank_.get_hash(cloned_offs.get());
+      kmeta.ir_handle_cached.emplace_back(cloned_offs.get(), h);
+      ir_bank_.insert(std::move(cloned_offs), h);
     }
-    KernelLaunchRecord rec(context, kernel, offl_template, h);
-    enqueue(std::move(rec));
-  }
-  if (!kmeta_inited) {
-    kmeta.initialized = true;
+    TaskLaunchRecord rec(context, kernel, kmeta.ir_handle_cached[i]);
+    enqueue(rec);
   }
 }
 
-void AsyncEngine::enqueue(KernelLaunchRecord &&t) {
+TaskMeta AsyncEngine::create_task_meta(const TaskLaunchRecord &t) {
   using namespace irpass::analysis;
-
-  auto &meta = offloaded_metas_[t.h];
+  TaskMeta meta;
   // TODO: this is an abuse since it gathers nothing...
   auto *root_stmt = t.stmt();
+  meta.kernel_name = t.kernel->name + "_" +
+                     OffloadedStmt::task_type_name(root_stmt->task_type);
   gather_statements(root_stmt, [&](Stmt *stmt) {
-    if (auto global_ptr = stmt->cast<GlobalPtrStmt>()) {
-      for (auto &snode : global_ptr->snodes.data) {
-        meta.input_snodes.insert(snode);
-      }
-    }
     if (auto global_load = stmt->cast<GlobalLoadStmt>()) {
       if (auto ptr = global_load->ptr->cast<GlobalPtrStmt>()) {
         for (auto &snode : ptr->snodes.data) {
-          meta.input_snodes.insert(snode);
+          meta.input_states.emplace_back(snode, AsyncState::Type::value);
         }
       }
     }
     if (auto global_store = stmt->cast<GlobalStoreStmt>()) {
       if (auto ptr = global_store->ptr->cast<GlobalPtrStmt>()) {
         for (auto &snode : ptr->snodes.data) {
-          meta.output_snodes.insert(snode);
+          meta.output_states.emplace_back(snode, AsyncState::Type::value);
+          if (ptr->activate)
+            meta.output_states.emplace_back(snode, AsyncState::Type::mask);
         }
       }
     }
     if (auto global_atomic = stmt->cast<AtomicOpStmt>()) {
       if (auto ptr = global_atomic->dest->cast<GlobalPtrStmt>()) {
         for (auto &snode : ptr->snodes.data) {
-          meta.input_snodes.insert(snode);
-          meta.output_snodes.insert(snode);
+          meta.input_states.emplace_back(snode, AsyncState::Type::value);
+          meta.output_states.emplace_back(snode, AsyncState::Type::value);
+          if (ptr->activate)
+            meta.output_states.emplace_back(snode, AsyncState::Type::mask);
         }
       }
     }
@@ -283,15 +291,35 @@ void AsyncEngine::enqueue(KernelLaunchRecord &&t) {
     if (auto ptr = stmt->cast<GlobalPtrStmt>()) {
       if (ptr->activate) {
         for (auto &snode : ptr->snodes.data) {
-          meta.activation_snodes.insert(snode);
-          // fmt::print(" **** act {}\n", snode->get_node_type_name_hinted());
+          meta.output_states.emplace_back(snode, AsyncState::Type::mask);
         }
       }
     }
     return false;
   });
+  if (root_stmt->task_type == OffloadedStmt::listgen) {
+    TI_ASSERT(root_stmt->snode->parent);
+    meta.input_states.emplace_back(root_stmt->snode->parent,
+                                   AsyncState::Type::list);
+    meta.input_states.emplace_back(root_stmt->snode, AsyncState::Type::list);
+    meta.input_states.emplace_back(root_stmt->snode, AsyncState::Type::mask);
+    meta.output_states.emplace_back(root_stmt->snode, AsyncState::Type::list);
+  } else if (root_stmt->task_type == OffloadedStmt::struct_for) {
+    meta.input_states.emplace_back(root_stmt->snode, AsyncState::Type::list);
+  } else if (root_stmt->task_type == OffloadedStmt::clear_list) {
+    meta.output_states.emplace_back(root_stmt->snode, AsyncState::Type::list);
+  }
+  // TODO: this is probably not fully done. Hopefully after SFG Graphviz is
+  // done we can easily spot what's left.
+  return meta;
+}
 
-  task_queue.push_back(std::move(t));
+void AsyncEngine::enqueue(const TaskLaunchRecord &t) {
+  if (offloaded_metas_.find(t.ir_handle) == offloaded_metas_.end()) {
+    offloaded_metas_[t.ir_handle] = create_task_meta(t);
+  }
+  sfg->insert_task(t, offloaded_metas_[t.ir_handle]);
+  task_queue.push_back(t);
 }
 
 void AsyncEngine::synchronize() {
@@ -299,7 +327,7 @@ void AsyncEngine::synchronize() {
   while (fuse())
     ;
   while (!task_queue.empty()) {
-    queue.enqueue(std::move(task_queue.front()));
+    queue.enqueue(task_queue.front());
     task_queue.pop_front();
   }
   queue.synchronize();
@@ -309,11 +337,11 @@ bool AsyncEngine::optimize_listgen() {
   // TODO: improve...
   bool modified = false;
   std::unordered_map<SNode *, bool> list_dirty;
-  auto new_task_queue = std::deque<KernelLaunchRecord>();
+  auto new_task_queue = std::deque<TaskLaunchRecord>();
   for (int i = 0; i < task_queue.size(); i++) {
     // Try to eliminate unused listgens
     auto &t = task_queue[i];
-    auto meta = offloaded_metas_[t.h];
+    auto meta = offloaded_metas_[t.ir_handle];
     const auto *offload = t.stmt();
     bool keep = true;
     if (offload->task_type == OffloadedStmt::TaskType::listgen) {
@@ -330,7 +358,10 @@ bool AsyncEngine::optimize_listgen() {
       }
       list_dirty[snode] = false;
     } else {
-      for (auto snode : meta.activation_snodes) {
+      for (auto output_state : meta.output_states) {
+        auto snode = output_state.snode;
+        if (output_state.type != AsyncState::Type::mask)
+          continue;
         while (snode && snode->type != SNodeType::root) {
           list_dirty[snode] = true;
           snode = snode->parent;
@@ -338,7 +369,7 @@ bool AsyncEngine::optimize_listgen() {
       }
     }
     if (keep) {
-      new_task_queue.push_back(std::move(t));
+      new_task_queue.push_back(t);
     } else {
       modified = true;
     }
@@ -400,8 +431,10 @@ bool AsyncEngine::fuse() {
     }
     if (kernel_args_match && (is_same_range_for || is_same_struct_for)) {
       // We are about to change both |task_a| and |task_b|. Clone them first.
-      task_a = rec_a.clone_stmt_on_write();
-      task_b = rec_b.clone_stmt_on_write();
+      auto cloned_task_a = rec_a.ir_handle.clone();
+      auto cloned_task_b = rec_b.ir_handle.clone();
+      task_a = cloned_task_a->as<OffloadedStmt>();
+      task_b = cloned_task_b->as<OffloadedStmt>();
       // TODO: in certain cases this optimization can be wrong!
       // Fuse task b into task_a
       for (int j = 0; j < (int)task_b->body->size(); j++) {
@@ -411,30 +444,32 @@ bool AsyncEngine::fuse() {
 
       // replace all reference to the offloaded statement B to A
       irpass::replace_all_usages_with(task_a, task_b, task_a);
-      irpass::re_id(task_a);
 
       auto kernel = task_queue[i].kernel;
       irpass::full_simplify(task_a, /*after_lower_access=*/false, kernel);
-      task_queue[i].h = hash(task_a);
+      // For now, re_id is necessary for the hash to be correct.
+      irpass::re_id(task_a);
+
+      auto h = ir_bank_.get_hash(task_a);
+      task_queue[i].ir_handle = IRHandle(task_a, h);
+      ir_bank_.insert(std::move(cloned_task_a), h);
+      task_queue[i + 1].ir_handle = IRHandle(nullptr, 0);
+
+      // TODO: since cloned_task_b->body is empty, can we remove this (i.e.,
+      //  simply delete cloned_task_b here)?
+      ir_bank_.insert_to_trash_bin(std::move(cloned_task_b));
 
       modified = true;
+      i++;  // skip fusing task_queue[i + 1] and task_queue[i + 2]
     }
   }
 
-  auto new_task_queue = std::deque<KernelLaunchRecord>();
+  auto new_task_queue = std::deque<TaskLaunchRecord>();
 
   // Eliminate empty tasks
   for (int i = 0; i < (int)task_queue.size(); i++) {
-    auto *task = task_queue[i].stmt();
-    bool keep = true;
-    if (task->task_type == OffloadedStmt::struct_for ||
-        task->task_type == OffloadedStmt::range_for ||
-        task->task_type == OffloadedStmt::serial) {
-      if (task->body->statements.empty())
-        keep = false;
-    }
-    if (keep) {
-      new_task_queue.push_back(std::move(task_queue[i]));
+    if (task_queue[i].ir_handle.ir() != nullptr) {
+      new_task_queue.push_back(task_queue[i]);
     }
   }
 

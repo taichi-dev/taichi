@@ -3,7 +3,10 @@ Internal designs (WIP)
 
 Intermediate representation
 ---------------------------
+
 Use ``ti.init(print_ir=True)`` to print IR on the console.
+
+See :ref:`compilation` for more details about the JIT system of Taichi.
 
 
 Data structure organization
@@ -174,10 +177,6 @@ The list of ``root`` node always has exactly one element (instance), so we never
 
     In the example above, although we have ``16`` instances of ``x``,
     we only generate a list of ``4`` ``bitmasked`` nodes (and ``1`` ``dense`` node).
-
-
-Code generation
----------------
 
 
 Statistics

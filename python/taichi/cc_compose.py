@@ -4,14 +4,18 @@ import sys
 
 
 class Composer:
-    def __init__(self, fout, entries, emscripten=False):
+    def __init__(self, entries, fout, hdrout, emscripten=False):
         self.fout = fout
+        self.hdrout = hdrout
         self.entries = entries
         self.emscripten = emscripten
         self.launches = []
 
     def emit(self, line):
         print(line, file=self.fout)
+
+    def emit_header(self, line):
+        print(line, file=self.hdrout)
 
     def run(self):
         if self.emscripten:
@@ -23,13 +27,14 @@ class Composer:
             func(e)
 
     def do_unknown(self, e):
-        print(f"// Unknown action type: {e['action']}")
+        pass
 
     def do_compile_runtime(self, e):
         header = e['runtime_header']
         source = e['runtime_source']
 
         self.emit(header)
+        self.emit_header(header)
         self.emit(source)
         self.emit('')
 
@@ -37,6 +42,7 @@ class Composer:
         source = e['layout_source']
 
         self.emit(source)
+        self.emit_header(source)
         if self.emscripten:
             self.emit('EMSCRIPTEN_KEEPALIVE')
         self.emit('struct Ti_S0root Ti_root;')
@@ -64,6 +70,8 @@ class Composer:
 
         if self.emscripten:
             self.emit('EMSCRIPTEN_KEEPALIVE')
+        self.emit_header('extern struct Ti_Context Ti_ctx;')
+        self.emit_header('')
         self.emit('struct Ti_Context Ti_ctx = {')
         self.emit('  &Ti_root, Ti_gtmp, Ti_args, Ti_earg,')
         self.emit('};')
@@ -77,20 +85,23 @@ class Composer:
             self.emit('EMSCRIPTEN_KEEPALIVE')
         self.emit(source)
         self.emit('')
+        declaration = source.split('{', 1)[0].strip()
+        self.emit_header(f'extern {declaration};')
 
     def do_launch_kernel(self, e):
         self.launches.append(e)
 
 
-def main(fin_name, fout_name, emscripten=False):
+def main(fin_name, fout_name, hdrout_name, emscripten=False):
     with open(fin_name, 'r') as fin:
         warnings.filterwarnings('ignore')
         obj = yaml.load(fin)
 
-    with open(fout_name, 'w') as fout:
-        comp = Composer(fout, obj, emscripten)
-        comp.run()
+    with open(hdrout_name, 'w') as hdrout:
+        with open(fout_name, 'w') as fout:
+            comp = Composer(obj, fout, hdrout, emscripten)
+            comp.run()
 
 
 if __name__ == '__main__':
-    main(sys.argv[1], sys.argv[2], len(sys.argv) > 3)
+    main(sys.argv[1], sys.argv[2], sys.argv[3], len(sys.argv) > 4)

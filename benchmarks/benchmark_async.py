@@ -9,6 +9,7 @@ cases = [
     fuse_reduction,
     fill_1d,
     sparse_numpy,
+    autodiff,
     stencil_reduction,
     # mpm_splitted,
 ]

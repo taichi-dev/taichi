@@ -39,11 +39,11 @@ The Taichi Programming Language
    meta
    layout
    sparse
-   offset
    differentiable_programming
+   performance
    odop
-   compilation
    syntax_sugars
+   offset
 
 
 .. toctree::
@@ -56,6 +56,7 @@ The Taichi Programming Language
    utilities
    profiler
    cpp_style
+   compilation
    internal
    taichicon
    versioning_releases
@@ -68,10 +69,11 @@ The Taichi Programming Language
    faq
    gui
    debugging
-   extension_libraries
    export_results
    cli_utilities
    global_settings
+   export_kernels
+   extension_libraries
    acknowledgments
 
 

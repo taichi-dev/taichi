@@ -85,7 +85,7 @@ class DemoteOperations : public BasicStmtVisitor {
         modifier.insert_before(stmt, std::move(real_ret));
         modifier.erase(stmt);
 
-      } else {
+      } else if (is_real(rhs->element_type()) || is_real(lhs->element_type())) {
         // @ti.func
         // def ffloordiv(a, b):
         //     r = ti.raw_div(a, b)
@@ -109,6 +109,10 @@ class DemoteOperations : public BasicStmtVisitor {
         modified = true;
       else
         break;
+      irpass::type_check(node);
+    }
+    if (modified) {
+      irpass::type_check(node);
     }
     return modified;
   }

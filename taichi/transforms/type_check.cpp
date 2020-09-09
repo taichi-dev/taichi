@@ -13,12 +13,11 @@ TLANG_NAMESPACE_BEGIN
 // Var lookup and Type inference
 class TypeCheck : public IRVisitor {
  private:
-  Kernel *kernel;
   CompileConfig config;
 
  public:
   TypeCheck(IRNode *root) {
-    kernel = root->get_kernel();
+    auto *kernel = root->get_kernel();
     if (kernel != nullptr) {
       config = kernel->program.config;
     }
@@ -324,27 +323,19 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(ArgLoadStmt *stmt) {
-    Kernel *current_kernel = kernel;
-    if (current_kernel == nullptr) {
-      current_kernel = stmt->get_kernel();
-    }
-    TI_ASSERT(current_kernel != nullptr);
-    auto &args = current_kernel->args;
-    TI_ASSERT(0 <= stmt->arg_id && stmt->arg_id < args.size());
-    stmt->ret_type = VectorType(1, args[stmt->arg_id].dt);
+    const auto &rt = stmt->ret_type;
+    // TODO: Maybe have a type_inference() pass, which takes in the args/rets
+    // defined by the kernel. After that, type_check() pass will purely do
+    // verification, without modifying any types.
+    TI_ASSERT(rt.data_type != DataType::unknown);
+    TI_ASSERT(rt.width == 1);
   }
 
   void visit(KernelReturnStmt *stmt) {
-    Kernel *current_kernel = kernel;
-    if (current_kernel == nullptr) {
-      current_kernel = stmt->get_kernel();
-    }
-    auto &rets = current_kernel->rets;
-    TI_ASSERT(rets.size() >= 1);
-    auto ret = rets[0];  // TODO: stmt->ret_id?
-    auto ret_type = ret.dt;
-    TI_ASSERT(stmt->value->ret_type.data_type == ret_type);
-    stmt->ret_type = VectorType(1, ret_type);
+    // TODO: Support stmt->ret_id?
+    const auto &rt = stmt->ret_type;
+    TI_ASSERT(stmt->value->element_type() == rt.data_type);
+    TI_ASSERT(rt.width == 1);
   }
 
   void visit(ExternalPtrStmt *stmt) {

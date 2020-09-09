@@ -147,7 +147,7 @@ Program::Program(Arch desired_arch) {
   if (config.async_mode) {
     TI_WARN("Running in async mode. This is experimental.");
     TI_ASSERT(arch_is_cpu(config.arch) || config.arch == Arch::cuda);
-    async_engine = std::make_unique<AsyncEngine>();
+    async_engine = std::make_unique<AsyncEngine>(this);
   }
 
   // TODO: allow users to run in debug mode without out-of-bound checks
@@ -233,7 +233,7 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
   if (config.arch == Arch::cuda && !config.use_unified_memory) {
 #if defined(TI_WITH_CUDA)
     CUDADriver::get_instance().malloc(
-        &result_buffer, sizeof(uint64) * taichi_result_buffer_entries);
+        (void **)&result_buffer, sizeof(uint64) * taichi_result_buffer_entries);
     auto total_mem = runtime->get_total_memory();
     if (config.device_memory_fraction == 0) {
       TI_ASSERT(config.device_memory_GB > 0);
@@ -591,13 +591,13 @@ Arch Program::get_snode_accessor_arch() {
 Kernel &Program::get_snode_reader(SNode *snode) {
   TI_ASSERT(snode->type == SNodeType::place);
   auto kernel_name = fmt::format("snode_reader_{}", snode->id);
-  auto &ker = kernel([&] {
+  auto &ker = kernel([snode] {
     ExprGroup indices;
     for (int i = 0; i < snode->num_active_indices; i++) {
-      indices.push_back(Expr::make<ArgLoadExpression>(i));
+      indices.push_back(Expr::make<ArgLoadExpression>(i, DataType::i32));
     }
     auto ret = Stmt::make<FrontendKernelReturnStmt>(
-        load_if_ptr((snode->expr)[indices]));
+        load_if_ptr((snode->expr)[indices]), snode->dt);
     current_ast_builder().insert(std::move(ret));
   });
   ker.set_arch(get_snode_accessor_arch());
@@ -615,10 +615,10 @@ Kernel &Program::get_snode_writer(SNode *snode) {
   auto &ker = kernel([&] {
     ExprGroup indices;
     for (int i = 0; i < snode->num_active_indices; i++) {
-      indices.push_back(Expr::make<ArgLoadExpression>(i));
+      indices.push_back(Expr::make<ArgLoadExpression>(i, DataType::i32));
     }
     (snode->expr)[indices] =
-        Expr::make<ArgLoadExpression>(snode->num_active_indices);
+        Expr::make<ArgLoadExpression>(snode->num_active_indices, snode->dt);
   });
   ker.set_arch(get_snode_accessor_arch());
   ker.name = kernel_name;

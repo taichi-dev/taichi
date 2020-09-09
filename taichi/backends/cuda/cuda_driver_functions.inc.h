@@ -24,8 +24,8 @@ PER_CUDA_FUNCTION(memcpy_host_to_device, cuMemcpyHtoD_v2, void *, void *, std::s
 PER_CUDA_FUNCTION(memcpy_device_to_host, cuMemcpyDtoH_v2, void *, void *, std::size_t);
 PER_CUDA_FUNCTION(memcpy_host_to_device_async, cuMemcpyHtoDAsync_v2, void *, void *, std::size_t, void *);
 PER_CUDA_FUNCTION(memcpy_device_to_host_async, cuMemcpyDtoHAsync_v2, void *, void *, std::size_t, void*);
-PER_CUDA_FUNCTION(malloc, cuMemAlloc_v2, void *, std::size_t);
-PER_CUDA_FUNCTION(malloc_managed, cuMemAllocManaged, void *, std::size_t, uint32);
+PER_CUDA_FUNCTION(malloc, cuMemAlloc_v2, void **, std::size_t);
+PER_CUDA_FUNCTION(malloc_managed, cuMemAllocManaged, void **, std::size_t, uint32);
 PER_CUDA_FUNCTION(memset, cuMemsetD8_v2, void *, uint8, std::size_t);
 PER_CUDA_FUNCTION(mem_free, cuMemFree_v2, void *);
 PER_CUDA_FUNCTION(mem_advise, cuMemAdvise, void *, std::size_t, uint32, uint32);
@@ -43,7 +43,7 @@ PER_CUDA_FUNCTION(stream_synchronize, cuStreamSynchronize, void *);
 
 // Event management
 PER_CUDA_FUNCTION(event_create, cuEventCreate, void **, uint32)
-PER_CUDA_FUNCTION(event_record, cuEventRecord, void *, uint32)
+PER_CUDA_FUNCTION(event_record, cuEventRecord, void *, void *)
 PER_CUDA_FUNCTION(event_elapsed_time, cuEventElapsedTime, float *, void *, void *);
 
 // clang-format on

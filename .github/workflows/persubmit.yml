@@ -57,6 +57,26 @@ jobs:
           ti diagnose
           ti test -vr2 -t2
 
+  check_previous_run:
+    name: Checks the Workflow Run of the Previous Commit
+    runs-on: ubuntu-latest
+    if: ${{ contains(github.event.pull_request.labels.*.name, 'skip ci') || github.event.sender.login == 'taichi-gardener' }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Check the previous run
+        env:
+          PR: ${{ github.event.pull_request.number }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+          # https://docs.github.com/en/actions/configuring-and-managing-workflows/authenticating-with-the-github_token
+          # https://docs.github.com/en/actions/configuring-and-managing-workflows/creating-and-storing-encrypted-secrets
+          # Do not leak the secret
+          OAUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python misc/ci_check_previous_run.py --pr "${PR}" --sha "${SHA}" --token "${OAUTH_TOKEN}"
+
   code_format:
     name: Code Format
     runs-on: ubuntu-latest

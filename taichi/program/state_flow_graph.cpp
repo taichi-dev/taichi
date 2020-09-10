@@ -1,4 +1,5 @@
 #include "taichi/program/state_flow_graph.h"
+#include "taichi/util/bit.h"
 
 #include <sstream>
 #include <unordered_set>
@@ -55,6 +56,38 @@ void StateFlowGraph::insert_state_flow(Node *from, Node *to, AsyncState state) {
 }
 
 bool StateFlowGraph::fuse() {
+  using SFGNode = StateFlowGraph::Node;
+  using bit::Bitset;
+  const int n = nodes_.size();
+  for (int i = 0; i < n; i++) {
+    nodes_[i]->node_id = i;
+  }
+
+  // Compute the transitive closure.
+  Bitset has_path[n], has_path_reverse[n];
+  // has_path[i][j] denotes if there is a path from i to j.
+  // has_path_reverse[i][j] denotes if there is a path from j to i.
+  for (int i = 0; i < n; i++) {
+    has_path[i] = Bitset(n);
+    has_path[i][i] = true;
+    has_path_reverse[i] = Bitset(n);
+    has_path_reverse[i][i] = true;
+  }
+  for (int i = 0; i < n; i++) {
+    for (auto &edges : nodes_[i]->output_edges) {
+      for (auto &edge : edges.second) {
+        // Assume nodes are sorted in topological order.
+        TI_ASSERT(edge->node_id > i);
+        has_path[edge->node_id] |= has_path[i];
+      }
+    }
+  }
+  for (int i = n - 1; i >= 0; i--) {
+    for (auto &edge : nodes_[i]->input_edges) {
+      has_path_reverse[edge.second->node_id] |= has_path_reverse[i];
+    }
+  }
+
   return false;
 }
 

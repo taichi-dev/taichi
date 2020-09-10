@@ -166,6 +166,7 @@ class Bitset {
     value_t digit_;
   };
 
+  Bitset();
   explicit Bitset(int n);
   std::size_t size() const;
   void reset();

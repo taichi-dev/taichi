@@ -10,6 +10,9 @@ TI_NAMESPACE_BEGIN
 
 namespace bit {
 
+Bitset::Bitset() {
+}
+
 Bitset::Bitset(int n) {
   if (n % kBits != 0) {
     n += kBits - n % kBits;

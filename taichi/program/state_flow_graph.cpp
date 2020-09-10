@@ -20,6 +20,7 @@ StateFlowGraph::StateFlowGraph() {
 void StateFlowGraph::clear() {
   // TODO: GC here
   nodes_.resize(1);  // Erase all nodes except the initial one
+  initial_node_->output_edges.clear();
   latest_state_owner_.clear();
 
   // Do not clear task_name_to_launch_ids_.

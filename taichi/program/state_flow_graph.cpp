@@ -16,6 +16,14 @@ StateFlowGraph::StateFlowGraph() {
   initial_node_->launch_id = 0;
 }
 
+void StateFlowGraph::clear() {
+  // TODO: GC here
+  nodes_.resize(1);  // Erase all nodes except the initial one
+  latest_state_owner_.clear();
+
+  // Do not clear task_name_to_launch_ids_.
+}
+
 void StateFlowGraph::insert_task(const TaskLaunchRecord &rec,
                                  const TaskMeta &task_meta) {
   auto node = std::make_unique<Node>();
@@ -52,6 +60,11 @@ bool StateFlowGraph::fuse() {
 
 std::vector<TaskLaunchRecord> StateFlowGraph::extract() {
   std::vector<TaskLaunchRecord> tasks;
+  tasks.reserve(nodes_.size());
+  for (int i = 1; i < (int)nodes_.size(); i++) {
+    tasks.push_back(nodes_[i]->rec);
+  }
+  clear();
   return tasks;
 }
 

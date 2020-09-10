@@ -40,6 +40,8 @@ class StateFlowGraph {
 
   StateFlowGraph();
 
+  void clear();
+
   void print();
 
   std::string dump_dot();

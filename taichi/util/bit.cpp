@@ -70,10 +70,10 @@ std::vector<int> Bitset::or_eq_get_update_list(const Bitset &other) {
     auto update = other.vec_[i] & ~vec_[i];
     if (update) {
       vec_[i] |= update;
-      while (update) {
-        const auto current_bit = lowbit(update);
-        result.push_back((i * kBits) | log2int(current_bit));
-        update ^= current_bit;
+      for (int j = 0; j < kBits; j++) {
+        if ((update >> j) & 1) {
+          result.push_back((i * kBits) | j);
+        }
       }
     }
   }

@@ -126,10 +126,6 @@ TI_FORCE_INLINE constexpr uint32 ceil_log2int(uint64 value) {
   return log2int(value) + ((value & (value - 1)) != 0);
 }
 
-TI_FORCE_INLINE constexpr uint64 lowbit(uint64 x) {
-  return x & (-x);
-}
-
 template <typename G, typename T>
 constexpr TI_FORCE_INLINE copy_refcv_t<T, G> &&reinterpret_bits(T &&t) {
   TI_STATIC_ASSERT(sizeof(G) == sizeof(T));

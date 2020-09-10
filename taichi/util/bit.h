@@ -152,7 +152,9 @@ class Bitset {
  public:
   using value_t = uint64;
   static constexpr std::size_t kBits = sizeof(value_t) * 8;
-  static_assert(is_power_of_two(kBits));
+  // kBits should be a power of two. However, the function is_power_of_two is
+  // ambiguous and can't be called here.
+  static_assert((kBits & (kBits - 1)) == 0);
   static constexpr std::size_t kLogBits = log2int(kBits);
   static constexpr value_t kMask = ((value_t)-1);
   class reference {

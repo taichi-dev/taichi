@@ -64,7 +64,8 @@ bool StateFlowGraph::fuse() {
   }
 
   // Compute the transitive closure.
-  Bitset has_path[n], has_path_reverse[n];
+  auto has_path = std::make_unique<Bitset[]>(n);
+  auto has_path_reverse = std::make_unique<Bitset[]>(n);
   // has_path[i][j] denotes if there is a path from i to j.
   // has_path_reverse[i][j] denotes if there is a path from j to i.
   for (int i = 0; i < n; i++) {

@@ -126,6 +126,10 @@ TI_FORCE_INLINE constexpr uint32 ceil_log2int(uint64 value) {
   return log2int(value) + ((value & (value - 1)) != 0);
 }
 
+TI_FORCE_INLINE constexpr uint64 lowbit(uint64 x) {
+  return x & (-x);
+}
+
 template <typename G, typename T>
 constexpr TI_FORCE_INLINE copy_refcv_t<T, G> &&reinterpret_bits(T &&t) {
   TI_STATIC_ASSERT(sizeof(G) == sizeof(T));
@@ -143,6 +147,42 @@ TI_FORCE_INLINE constexpr std::tuple<float32, float32> extract(float64 x) {
   return std::make_tuple(reinterpret_bits<float32>((uint32)(data >> 32)),
                          reinterpret_bits<float32>((uint32)(data & (-1))));
 }
+
+class Bitset
+{
+ public:
+  using value_t = uint64;
+  static constexpr std::size_t kBits = sizeof(value_t) * 8;
+  static_assert(is_power_of_two(kBits));
+  static constexpr std::size_t kLogBits = log2int(kBits);
+  static constexpr value_t kMask = ((value_t)-1);
+  class reference
+  {
+   public:
+    reference(std::vector<value_t> &vec, int x);
+    operator bool() const;
+    bool operator~() const;
+    reference &operator=(bool x);
+    reference &flip();
+   private:
+    value_t *pos_;
+    value_t digit_;
+  };
+
+  explicit Bitset(int n);
+  std::size_t size() const;
+  void reset();
+  void flip(int x);
+  reference operator[](int x);
+  Bitset &operator&=(const Bitset &other);
+  Bitset &operator|=(const Bitset &other);
+  Bitset &operator^=(const Bitset &other);
+
+  std::vector<int> or_eq_get_update_list(const Bitset &other);
+
+ private:
+  std::vector<value_t> vec_;
+};
 
 }  // namespace bit
 

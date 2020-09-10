@@ -148,22 +148,21 @@ TI_FORCE_INLINE constexpr std::tuple<float32, float32> extract(float64 x) {
                          reinterpret_bits<float32>((uint32)(data & (-1))));
 }
 
-class Bitset
-{
+class Bitset {
  public:
   using value_t = uint64;
   static constexpr std::size_t kBits = sizeof(value_t) * 8;
   static_assert(is_power_of_two(kBits));
   static constexpr std::size_t kLogBits = log2int(kBits);
   static constexpr value_t kMask = ((value_t)-1);
-  class reference
-  {
+  class reference {
    public:
     reference(std::vector<value_t> &vec, int x);
     operator bool() const;
     bool operator~() const;
     reference &operator=(bool x);
     reference &flip();
+
    private:
     value_t *pos_;
     value_t digit_;

@@ -35,7 +35,7 @@ neighbour = (3, ) * dim
 @ti.kernel
 def substep():
     for I in ti.grouped(grid_m):
-        grid_v[I] = grid_v[I] * 0
+        grid_v[I] = ti.zero(grid_v[I])
         grid_m[I] = 0
     ti.block_dim(n_grid)
     for p in x:
@@ -65,8 +65,8 @@ def substep():
         base = int(Xp - 0.5)
         fx = Xp - base
         w = [0.5 * (1.5 - fx)**2, 0.75 - (fx - 1)**2, 0.5 * (fx - 0.5)**2]
-        new_v = v[p] * 0
-        new_C = C[p] * 0
+        new_v = ti.zero(v[p])
+        new_C = ti.zero(C[p])
         for offset in ti.static(ti.grouped(ti.ndrange(*neighbour))):
             dpos = (offset - fx) * dx
             weight = 1.0

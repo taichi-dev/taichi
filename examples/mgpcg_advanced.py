@@ -75,12 +75,9 @@ See `examples/stable_fluid.py <https://github.com/taichi-dev/taichi/blob/master/
     @ti.kernel
     def init(self, r: ti.template(), k: ti.template()):
         '''
-        Specify quantity field before each solve step.
-
-        :parameter r: (ti.field) Specify the quantity field
-        :parameter k: (scalar) Specify the scale multiply to the quantity field
-
-        $\\nabla^2 x = k r$
+        Set up the solver for $\nabla^2 x = k r$, a scaled Poisson problem.
+        :parameter k: (scalar) A scaling factor of the right-hand side.
+        :parameter r: (ti.field) Unscaled right-hand side.
         '''
         for I in ti.grouped(ti.ndrange(*[self.N] * self.dim)):
             self.init_r(I, r[I] * k)
@@ -93,11 +90,9 @@ See `examples/stable_fluid.py <https://github.com/taichi-dev/taichi/blob/master/
     @ti.kernel
     def get_result(self, x: ti.template()):
         '''
-        Get the solution field after each solve step.
+        Get the solution field.
 
         :parameter x: (ti.field) The field to store the solution
-
-        $\\nabla^2 x = k r$
         '''
         for I in ti.grouped(ti.ndrange(*[self.N] * self.dim)):
             x[I] = self.get_x(I)
@@ -181,9 +176,8 @@ See `examples/stable_fluid.py <https://github.com/taichi-dev/taichi/blob/master/
             abs_tol=1e-12, rel_tol=1e-12):
         '''
         Solve a Poisson problem.
-        Always use a ``for`` loop to iterate through me.
 
-        :parameter max_iters: Specify the maximal iterations, -1 for no limit.
+        :parameter max_iters: Specify the maximal iterations. -1 for no limit.
         :parameter eps: Specify a non-zero value to prevent ZeroDivisionError.
         :parameter abs_tol: Specify the absolute tolerance of loss.
         :parameter rel_tol: Specify the tolerance of loss relative to initial loss.

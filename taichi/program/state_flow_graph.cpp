@@ -17,7 +17,6 @@ StateFlowGraph::StateFlowGraph() {
   initial_node_ = nodes_.back().get();
   initial_node_->task_name = "initial_state";
   initial_node_->launch_id = 0;
-  initial_node_->is_initial_state = true;
 }
 
 void StateFlowGraph::insert_task(const TaskLaunchRecord &rec,

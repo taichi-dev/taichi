@@ -27,7 +27,6 @@ class StateFlowGraph {
     TaskLaunchRecord rec;
     std::string task_name;
     // Incremental ID to identify the i-th launch of the task.
-    bool is_initial_state{false};
     int launch_id;
 
     std::unordered_set<AsyncState, AsyncStateHash> input_states, output_states;
@@ -45,7 +44,7 @@ class StateFlowGraph {
 
       // false: (dependency edge) the destination node does not
       // use the generated state, but its execution must happen after this case.
-      // This usually means a write-after-read (WAR) dependency.
+      // This usually means a write-after-read (WAR) dependency on state.
 
       // Note:
       // Read-after-write leads to data flow edges

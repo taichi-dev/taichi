@@ -6,11 +6,7 @@ import time
 @ti.data_oriented
 class MGPCG:
     '''
-Grid-based MGPCG solver for the possion equation:
-
-    $\\nabla^2 x = k r$
-
-Credits by `@KLozes <https://github.com/KLozes>`_.
+Grid-based MGPCG solver for the possion equation.
 
 See `examples/stable_fluid.py <https://github.com/taichi-dev/taichi/blob/master/examples/stable_fluid.py>`_ for a usage example.
 
@@ -19,7 +15,7 @@ See `examples/stable_fluid.py <https://github.com/taichi-dev/taichi/blob/master/
     This solver only runs on CPU and CUDA backends since it requires the
     ``pointer`` SNode.
     '''
-    def __init__(self, dim=2, N=512, n_mg_levels=6):
+    def __init__(self, dim=2, N=512, n_mg_levels=6, real=float):
         '''
         :parameter dim: Dimensionality of the fields.
         :parameter N: Grid resolution.
@@ -30,26 +26,26 @@ See `examples/stable_fluid.py <https://github.com/taichi-dev/taichi/blob/master/
         self.use_multigrid = True
 
         self.N = N
-
         self.n_mg_levels = n_mg_levels
         self.pre_and_post_smoothing = 2
         self.bottom_smoothing = 50
         self.dim = dim
+        self.real = real
 
         self.N_ext = self.N // 2  # number of ext cells set so that that total grid size is still power of 2
         self.N_tot = 2 * self.N
 
         # setup sparse simulation data arrays
-        self.r = [ti.field(dtype=float)
+        self.r = [ti.field(dtype=self.real)
                   for _ in range(self.n_mg_levels)]  # residual
-        self.z = [ti.field(dtype=float)
+        self.z = [ti.field(dtype=self.real)
                   for _ in range(self.n_mg_levels)]  # M^-1 self.r
-        self.x = ti.field(dtype=float)  # solution
-        self.p = ti.field(dtype=float)  # conjugate gradient
-        self.Ap = ti.field(dtype=float)  # matrix-vector product
-        self.alpha = ti.field(dtype=float)  # step size
-        self.beta = ti.field(dtype=float)  # step size
-        self.sum = ti.field(dtype=float)  # storage for reductions
+        self.x = ti.field(dtype=self.real)  # solution
+        self.p = ti.field(dtype=self.real)  # conjugate gradient
+        self.Ap = ti.field(dtype=self.real)  # matrix-vector product
+        self.alpha = ti.field(dtype=self.real)  # step size
+        self.beta = ti.field(dtype=self.real)  # step size
+        self.sum = ti.field(dtype=self.real)  # storage for reductions
 
         indices = ti.ijk if self.dim == 3 else ti.ij
         self.grid = ti.root.pointer(indices, [self.N_tot // 4]).dense(
@@ -99,7 +95,7 @@ See `examples/stable_fluid.py <https://github.com/taichi-dev/taichi/blob/master/
 
     @ti.func
     def neighbor_sum(self, x, I):
-        ret = 0.0
+        ret = ti.cast(0.0, self.real)
         for i in ti.static(range(self.dim)):
             offset = ti.Vector.unit(self.dim, i)
             ret += x[I + offset] + x[I - offset]

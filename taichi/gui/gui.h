@@ -431,7 +431,7 @@ class Canvas {
   ~Canvas() {
   }
 
-  void set_idendity_transform_matrix() {
+  void set_identity_transform_matrix() {
     transform_matrix = Matrix3(1);
   }
 };
@@ -504,6 +504,7 @@ class GUI : public GUIBase {
   bool button_status[3];
   int widget_height;
   std::vector<std::unique_ptr<float>> widget_values;
+  bool show_gui;
 
   void set_mouse_pos(int x, int y) {
     cursor_pos = Vector2i(x, y);
@@ -759,31 +760,40 @@ class GUI : public GUIBase {
   explicit GUI(const std::string &window_name,
                int width = 800,
                int height = 800,
+               bool show_gui = true,
                bool normalized_coord = true)
       : window_name(window_name),
         width(width),
         height(height),
-        key_pressed(false) {
+        key_pressed(false),
+        show_gui(show_gui) {
     memset(button_status, 0, sizeof(button_status));
     start_time = taichi::Time::get_time();
     buffer.initialize(Vector2i(width, height));
     canvas = std::make_unique<Canvas>(buffer);
     last_frame_time = taichi::Time::get_time();
-    create_window();
-    set_title(window_name);
     if (!normalized_coord) {
-      canvas->set_idendity_transform_matrix();
+      canvas->set_identity_transform_matrix();
     }
     widget_height = 0;
+    if (show_gui) {
+      initialize_window();
+    }
   }
 
   explicit GUI(const std::string &window_name,
                Vector2i res,
+               bool show_gui,
                bool normalized_coord = true)
-      : GUI(window_name, res[0], res[1], normalized_coord) {
+      : GUI(window_name, res[0], res[1], show_gui, normalized_coord) {
   }
 
   void create_window();
+
+  void initialize_window() {
+    create_window();
+    set_title(window_name);
+  }
 
   Canvas &get_canvas() {
     return *canvas;
@@ -795,7 +805,7 @@ class GUI : public GUIBase {
 
   void redraw_widgets() {
     auto old_transform_matrix = canvas->transform_matrix;
-    canvas->set_idendity_transform_matrix();
+    canvas->set_identity_transform_matrix();
     for (auto &w : widgets) {
       w->set_hover(w->inside(cursor_pos));
       w->redraw(*canvas);
@@ -805,14 +815,12 @@ class GUI : public GUIBase {
 
   void update() {
     frame_id++;
-    redraw_widgets();
     taichi::Time::wait_until(last_frame_time + frame_delta_limit);
     auto this_frame_time = taichi::Time::get_time();
     if (last_frame_time != 0) {
       last_frame_interval.push_back(this_frame_time - last_frame_time);
     }
     last_frame_time = this_frame_time;
-    redraw();
     // Some old examples / users don't even provide a `break` statement for us
     // to terminate loop. So we have to terminate the program with RuntimeError
     // if ti.GUI.EXIT event is not processed. Pretty like SIGTERM, you can hook
@@ -825,13 +833,21 @@ class GUI : public GUIBase {
             "to exit gracefully)");
       }
     }
-    process_event();
-    while (last_frame_interval.size() > 30) {
-      last_frame_interval.erase(last_frame_interval.begin());
+    if (show_gui) {
+      while (last_frame_interval.size() > 30) {
+        last_frame_interval.erase(last_frame_interval.begin());
+      }
+      auto real_fps = last_frame_interval.size() /
+                      (std::accumulate(last_frame_interval.begin(),
+                                       last_frame_interval.end(), 0.0_f));
+      update_gui(real_fps);
     }
-    auto real_fps = last_frame_interval.size() /
-                    (std::accumulate(last_frame_interval.begin(),
-                                     last_frame_interval.end(), 0.0_f));
+  }
+
+  void update_gui(float real_fps) {
+    redraw_widgets();
+    redraw();
+    process_event();
     if (frame_id % 10 == 0)
       set_title(fmt::format("{} ({:.2f} FPS)", window_name, real_fps));
   }

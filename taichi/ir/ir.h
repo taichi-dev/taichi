@@ -726,7 +726,8 @@ class ArgLoadStmt : public Stmt {
  public:
   int arg_id;
 
-  ArgLoadStmt(int arg_id, bool is_ptr = false) : arg_id(arg_id) {
+  ArgLoadStmt(int arg_id, DataType dt, bool is_ptr = false) : arg_id(arg_id) {
+    this->ret_type = VectorType(1, dt);
     this->is_ptr = is_ptr;
     TI_STMT_REG_FIELDS;
   }
@@ -1336,7 +1337,8 @@ class KernelReturnStmt : public Stmt {
  public:
   Stmt *value;
 
-  KernelReturnStmt(Stmt *value) : value(value) {
+  KernelReturnStmt(Stmt *value, DataType dt) : value(value) {
+    this->ret_type = VectorType(1, dt);
     TI_STMT_REG_FIELDS;
   }
 

@@ -1,3 +1,5 @@
+Related issue = #
+
 <!--
 Thanks for your PR!
 If it's your first time contributing to Taichi, please make sure you have read our Contributor Guideline:
@@ -16,7 +18,6 @@ If it's your first time contributing to Taichi, please make sure you have read o
 - So that when the PR gets merged, GitHub will **automatically** close the issue #2345 for you.
 - If the PR doesn't belong to any existing issue, and it's a trivial change, feel free to leave it blank :)
   -->
-Related issue = #
 
 [[Click here for the format server]](http://kun.csail.mit.edu:31415/)
 

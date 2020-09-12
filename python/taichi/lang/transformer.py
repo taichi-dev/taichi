@@ -86,6 +86,15 @@ class ASTTransformerBase(ast.NodeTransformer):
             assert isinstance(node.target, ast.Tuple)
             return [name.id for name in node.target.elts]
 
+    @staticmethod
+    def get_decorator(node):
+        if not (isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Attribute) and isinstance(
+                    node.func.value, ast.Name) and node.func.value.id == 'ti'
+                and node.func.attr in ['static', 'grouped', 'ndrange']):
+            return ''
+        return node.func.attr
+
 
 # First-pass transform
 class ASTTransformerPreprocess(ASTTransformerBase):
@@ -342,17 +351,6 @@ if 1:
             raise TaichiSyntaxError(
                 "Variable '{}' is already declared in the outer scope and cannot be used as loop variable"
                 .format(loop_var))
-
-    @staticmethod
-    def get_decorator(iter):
-        if not (isinstance(iter, ast.Call)
-                and isinstance(iter.func, ast.Attribute)
-                and isinstance(iter.func.value, ast.Name)
-                and iter.func.value.id == 'ti' and
-                (iter.func.attr == 'static' or iter.func.attr == 'grouped'
-                 or iter.func.attr == 'ndrange')):
-            return ''
-        return iter.func.attr
 
     def visit_static_for(self, node, is_grouped):
         # for i in ti.static(range(n))
@@ -866,9 +864,15 @@ if 1:
                 ret_expr = self.parse_expr('ti.cast(ti.Expr(0), 0)')
                 ret_expr.args[0].args[0] = node.value
                 ret_expr.args[1] = self.returns
+                dt_expr = self.parse_expr('ti.cook_dtype(0)')
+                dt_expr.args[0] = self.returns
                 ret_stmt = self.parse_stmt(
-                    'ti.core.create_kernel_return(ret.ptr)')
+                    'ti.core.create_kernel_return(ret.ptr, 0)')
+                # For args[0], it is an ast.Attribute, because it loads the
+                # attribute, |ptr|, of the expression |ret_expr|. Therefore we
+                # only need to replace the object part, i.e. args[0].value
                 ret_stmt.value.args[0].value = ret_expr
+                ret_stmt.value.args[1] = dt_expr
                 return ret_stmt
         return node
 
@@ -877,9 +881,38 @@ if 1:
 class ASTTransformerChecks(ASTTransformerBase):
     def __init__(self, func):
         super().__init__(func)
+        self.has_return = False
+        self.in_static_if = False
 
     def visit_Call(self, node):
         if isinstance(node.func, ast.Name):
             node.args = [node.func] + node.args
             node.func = self.parse_expr('ti.func_call_with_check')
+        return node
+
+    def visit_If(self, node):
+        node.test = self.visit(node.test)
+
+        old_in_static_if = self.in_static_if
+        self.in_static_if = self.get_decorator(node.test) == 'static'
+
+        node.body = list(map(self.visit, node.body))
+        if node.orelse is not None:
+            node.orelse = list(map(self.visit, node.orelse))
+
+        self.in_static_if = old_in_static_if
+
+        return node
+
+    def visit_Return(self, node):
+        if self.in_static_if:  # we can have multiple return in static-if branches
+            return node
+
+        if not self.has_return:
+            self.has_return = True
+        else:
+            raise TaichiSyntaxError(
+                'Taichi functions/kernels cannot have multiple returns!'
+                ' Consider using a local variable to walk around.')
+
         return node

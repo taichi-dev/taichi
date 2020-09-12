@@ -1,0 +1,9 @@
+# Ref: https://github.com/pypa/pypi-support/blob/master/.github/ISSUE_TEMPLATE/config.yml
+blank_issues_enabled: true
+contact_links:
+  - name: Contributor Guideline
+    url: https://taichi.readthedocs.io/en/latest/contributor_guide.html
+    about: Please check this out if you'd like to contribute by opening a PR :)
+  - name: Taichi Forum
+    url: https://forum.taichi.graphics
+    about: GitHub issues too formal? Questions about Taichi? Feel free to chat on our forum!

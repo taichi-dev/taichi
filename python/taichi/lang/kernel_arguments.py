@@ -35,7 +35,7 @@ template = Template
 def decl_scalar_arg(dtype):
     dtype = cook_dtype(dtype)
     id = taichi_lang_core.decl_arg(dtype, False)
-    return Expr(taichi_lang_core.make_arg_load_expr(id))
+    return Expr(taichi_lang_core.make_arg_load_expr(id, dtype))
 
 
 def decl_ext_arr_arg(dtype, dim):

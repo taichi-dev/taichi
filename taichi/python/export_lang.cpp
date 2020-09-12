@@ -6,6 +6,7 @@
 #include "taichi/ir/frontend.h"
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/program/extension.h"
+#include "taichi/program/async_engine.h"
 #include "taichi/common/interface.h"
 #include "taichi/python/export.h"
 #include "taichi/gui/gui.h"
@@ -345,8 +346,9 @@ void export_lang(py::module &m) {
     current_ast_builder().insert(Stmt::make<FrontendBreakStmt>());
   });
 
-  m.def("create_kernel_return", [&](const Expr &value) {
-    current_ast_builder().insert(Stmt::make<FrontendKernelReturnStmt>(value));
+  m.def("create_kernel_return", [&](const Expr &value, const DataType &dt) {
+    current_ast_builder().insert(
+        Stmt::make<FrontendKernelReturnStmt>(value, dt));
   });
 
   m.def("insert_continue_stmt", [&]() {
@@ -476,7 +478,8 @@ void export_lang(py::module &m) {
   m.def("make_frontend_assign_stmt",
         Stmt::make<FrontendAssignStmt, const Expr &, const Expr &>);
 
-  m.def("make_arg_load_expr", Expr::make<ArgLoadExpression, int>);
+  m.def("make_arg_load_expr",
+        Expr::make<ArgLoadExpression, int, const DataType &>);
 
   m.def("make_external_tensor_expr",
         Expr::make<ExternalTensorExpression, const DataType &, int, int>);
@@ -644,6 +647,10 @@ void export_lang(py::module &m) {
       TI_ERROR("Key {} not supported in query_int64", key);
     }
   });
+
+  m.def("print_sfg", [] { get_current_program().async_engine->sfg->print(); });
+  m.def("dump_dot",
+        [] { return get_current_program().async_engine->sfg->dump_dot(); });
 }
 
 TI_NAMESPACE_END

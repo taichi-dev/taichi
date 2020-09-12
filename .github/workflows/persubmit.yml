@@ -70,7 +70,8 @@ jobs:
           export TAICHI_REPO_DIR=`pwd`
           export PATH=/home/github/taichi-llvm/bin/:$PATH
           export CXX=clang++-8
-          python3 misc/ci_setup.py ci
+          export PYTHON=/usr/bin/python3.7
+          $PYTHON misc/ci_setup.py ci
         env:
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }}
 
@@ -79,8 +80,8 @@ jobs:
           export TAICHI_REPO_DIR=`pwd`
           export PATH=$TAICHI_REPO_DIR/bin:$PATH
           export PATH=/home/github/taichi-llvm/bin/:$PATH
-          export PYTHONPATH=/usr/bin/python3.7
-          python3 examples/laplace.py
+          export PYTHONPATH=$TAICHI_REPO_DIR/python
+          $PYTHON examples/laplace.py
           ti diagnose
           ti test -vr2 -t2
 

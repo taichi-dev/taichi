@@ -1,5 +1,6 @@
 import taichi as ti
 
+
 def test_fusion():
     ti.init(arch=ti.cpu, async_mode=True)
 
@@ -14,21 +15,20 @@ def test_fusion():
         block = block.dense(ti.i, 2)
     block.place(x, y, z)
 
-
     @ti.kernel
     def foo():
         for i in x:
             y[i] = x[i] + 1
-
 
     @ti.kernel
     def bar():
         for i in y:
             z[i] = y[i] + 1
 
-
     foo()
     bar()
+
+    ti.sync()
 
     ti.core.print_sfg()
     dot = ti.dump_dot("fusion.dot")
@@ -38,18 +38,17 @@ def test_fusion():
 
 def test_write_after_read():
     ti.init(arch=ti.cpu, async_mode=True)
-    
+
     x = ti.field(ti.i32, shape=16)
-    
+
     @ti.kernel
     def p():
-        x[4] = 1
-    
-    
+        print(x[ti.random(ti.i32) % 16])
+
     @ti.kernel
     def s():
-        x[4] = 3
-    
+        x[ti.random(ti.i32) % 16] = 3
+
     p()
     p()
     p()
@@ -57,11 +56,16 @@ def test_write_after_read():
     p()
     p()
     s()
-    
+    s()
+    s()
+
+    ti.sync()
+
     ti.core.print_sfg()
     dot = ti.dump_dot("war.dot")
     print(dot)
     ti.dot_to_pdf(dot, "war.pdf")
-    
+
+
 test_fusion()
 test_write_after_read()

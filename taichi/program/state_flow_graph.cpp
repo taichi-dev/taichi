@@ -17,6 +17,7 @@ StateFlowGraph::StateFlowGraph() {
   initial_node_ = nodes_.back().get();
   initial_node_->task_name = "initial_state";
   initial_node_->launch_id = 0;
+  initial_node_->is_initial_node = true;
 }
 
 void StateFlowGraph::insert_task(const TaskLaunchRecord &rec,
@@ -71,7 +72,7 @@ void StateFlowGraph::print() {
     fmt::print("{}\n", node->string());
     if (!node->input_edges.empty()) {
       fmt::print("  Inputs:\n");
-      for (const auto &p : node->output_edges) {
+      for (const auto &p : node->input_edges) {
         for (const auto *to : p.second) {
           fmt::print("    {} <- {}\n", p.first.name(), to->string());
         }

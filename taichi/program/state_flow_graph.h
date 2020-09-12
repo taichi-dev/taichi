@@ -28,6 +28,7 @@ class StateFlowGraph {
     std::string task_name;
     // Incremental ID to identify the i-th launch of the task.
     int launch_id;
+    bool is_initial_node{false};
 
     std::unordered_set<AsyncState, AsyncStateHash> input_states, output_states;
 
@@ -50,9 +51,18 @@ class StateFlowGraph {
       // Read-after-write leads to data flow edges
       // Write-after-write leads to data flow edges
       // Write-after-read leads to dependency edges
+      //
+      // So an edge is a data flow edge iff the starting node writes to the
+      // state.
+      //
 
-      return destination->input_states.find(state) !=
-             destination->input_states.end();
+      if (is_initial_node) {
+        // The initial node is special.
+        return destination->input_states.find(state) !=
+               destination->input_states.end();
+      } else {
+        return output_states.find(state) != output_states.end();
+      }
     }
   };
 

@@ -114,10 +114,8 @@ class AsyncStateHash {
 struct TaskMeta {
   std::string kernel_name;
   SNode *loop_snode{nullptr};  // struct-for only
-  std::vector<AsyncState> input_states;
-  std::vector<AsyncState> output_states;
-
-  void remove_duplication();
+  std::unordered_set<AsyncState, AsyncStateHash> input_states;
+  std::unordered_set<AsyncState, AsyncStateHash> output_states;
 };
 
 TLANG_NAMESPACE_END

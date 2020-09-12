@@ -264,26 +264,26 @@ TaskMeta AsyncEngine::create_task_meta(const TaskLaunchRecord &t) {
     if (auto global_load = stmt->cast<GlobalLoadStmt>()) {
       if (auto ptr = global_load->ptr->cast<GlobalPtrStmt>()) {
         for (auto &snode : ptr->snodes.data) {
-          meta.input_states.emplace_back(snode, AsyncState::Type::value);
+          meta.input_states.insert({snode, AsyncState::Type::value});
         }
       }
     }
     if (auto global_store = stmt->cast<GlobalStoreStmt>()) {
       if (auto ptr = global_store->ptr->cast<GlobalPtrStmt>()) {
         for (auto &snode : ptr->snodes.data) {
-          meta.output_states.emplace_back(snode, AsyncState::Type::value);
+          meta.output_states.emplace(snode, AsyncState::Type::value);
           if (ptr->activate)
-            meta.output_states.emplace_back(snode, AsyncState::Type::mask);
+            meta.output_states.emplace(snode, AsyncState::Type::mask);
         }
       }
     }
     if (auto global_atomic = stmt->cast<AtomicOpStmt>()) {
       if (auto ptr = global_atomic->dest->cast<GlobalPtrStmt>()) {
         for (auto &snode : ptr->snodes.data) {
-          meta.input_states.emplace_back(snode, AsyncState::Type::value);
-          meta.output_states.emplace_back(snode, AsyncState::Type::value);
+          meta.input_states.emplace(snode, AsyncState::Type::value);
+          meta.output_states.emplace(snode, AsyncState::Type::value);
           if (ptr->activate)
-            meta.output_states.emplace_back(snode, AsyncState::Type::mask);
+            meta.output_states.emplace(snode, AsyncState::Type::mask);
         }
       }
     }
@@ -291,7 +291,7 @@ TaskMeta AsyncEngine::create_task_meta(const TaskLaunchRecord &t) {
     if (auto ptr = stmt->cast<GlobalPtrStmt>()) {
       if (ptr->activate) {
         for (auto &snode : ptr->snodes.data) {
-          meta.output_states.emplace_back(snode, AsyncState::Type::mask);
+          meta.output_states.emplace(snode, AsyncState::Type::mask);
         }
       }
     }
@@ -299,17 +299,15 @@ TaskMeta AsyncEngine::create_task_meta(const TaskLaunchRecord &t) {
   });
   if (root_stmt->task_type == OffloadedStmt::listgen) {
     TI_ASSERT(root_stmt->snode->parent);
-    meta.input_states.emplace_back(root_stmt->snode->parent,
-                                   AsyncState::Type::list);
-    meta.input_states.emplace_back(root_stmt->snode, AsyncState::Type::list);
-    meta.input_states.emplace_back(root_stmt->snode, AsyncState::Type::mask);
-    meta.output_states.emplace_back(root_stmt->snode, AsyncState::Type::list);
+    meta.input_states.emplace(root_stmt->snode->parent, AsyncState::Type::list);
+    meta.input_states.emplace(root_stmt->snode, AsyncState::Type::list);
+    meta.input_states.emplace(root_stmt->snode, AsyncState::Type::mask);
+    meta.output_states.emplace(root_stmt->snode, AsyncState::Type::list);
   } else if (root_stmt->task_type == OffloadedStmt::struct_for) {
-    meta.input_states.emplace_back(root_stmt->snode, AsyncState::Type::list);
+    meta.input_states.emplace(root_stmt->snode, AsyncState::Type::list);
   } else if (root_stmt->task_type == OffloadedStmt::clear_list) {
-    meta.output_states.emplace_back(root_stmt->snode, AsyncState::Type::list);
+    meta.output_states.emplace(root_stmt->snode, AsyncState::Type::list);
   }
-  meta.remove_duplication();
   // TODO: this is probably not fully done. Hopefully after SFG Graphviz is
   // done we can easily spot what's left.
   return meta;

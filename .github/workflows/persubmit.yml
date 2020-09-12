@@ -71,7 +71,7 @@ jobs:
         run: |
           git --version
           export TAICHI_REPO_DIR=`pwd`
-          export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
+          export PATH=/home/github/taichi-llvm/bin/:$PATH
           export CXX=clang++-8
           python misc/ci_setup.py ci
         env:
@@ -81,7 +81,7 @@ jobs:
         run: |
           export TAICHI_REPO_DIR=`pwd`
           export PATH=$TAICHI_REPO_DIR/bin:$PATH
-          export PATH=/home/zhen/taichi-llvm/bin/:$PATH
+          export PATH=/home/github/taichi-llvm/bin/:$PATH
           export PYTHONPATH=$TAICHI_REPO_DIR/python
           python examples/laplace.py
           ti diagnose

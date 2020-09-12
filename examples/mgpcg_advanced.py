@@ -196,6 +196,7 @@ See `examples/stable_fluid.py <https://github.com/taichi-dev/taichi/blob/master/
         old_zTr = self.sum[None]
 
         # CG
+        # We use a while loop here since max_iter = -1 means no limit on the number of iterations
         while max_iters != 0:
             # self.alpha = rTr / pTAp
             self.compute_Ap()

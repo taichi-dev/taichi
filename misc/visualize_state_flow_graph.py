@@ -6,7 +6,12 @@ x = ti.field(ti.i32)
 y = ti.field(ti.i32)
 z = ti.field(ti.i32)
 
-ti.root.pointer(ti.i, 128).dense(ti.i, 16).place(x, y, z)
+num_dense_layers = 1
+
+block = ti.root.pointer(ti.i, 128)
+for i in range(num_dense_layers):
+    block = block.dense(ti.i, 2)
+block.place(x, y, z)
 
 
 @ti.kernel

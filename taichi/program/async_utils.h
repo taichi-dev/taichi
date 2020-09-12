@@ -70,6 +70,9 @@ class TaskLaunchRecord {
 struct AsyncState {
   enum class Type { mask, value, list };
 
+  AsyncState() : snode(nullptr), type(Type::value) {
+  }
+
   AsyncState(SNode *snode, Type type) : snode(snode), type(type) {
   }
 
@@ -113,6 +116,8 @@ struct TaskMeta {
   SNode *loop_snode{nullptr};  // struct-for only
   std::vector<AsyncState> input_states;
   std::vector<AsyncState> output_states;
+
+  void remove_duplication();
 };
 
 TLANG_NAMESPACE_END

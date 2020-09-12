@@ -29,6 +29,8 @@ class StateFlowGraph {
     // Incremental ID to identify the i-th launch of the task.
     int launch_id;
 
+
+    StateToNodeMapping dependency_edges;
     StateToNodeMapping input_edges;
     // Profiling showed horrible performance using std::unordered_multimap (at
     // least on Mac with clang-1103.0.32.62)...
@@ -52,6 +54,8 @@ class StateFlowGraph {
   std::vector<std::unique_ptr<Node>> nodes_;
   Node *initial_node_;  // The initial node holds all the initial states.
   StateToNodeMapping latest_state_owner_;
+  std::unordered_map<AsyncState, std::unordered_set<Node *>, AsyncStateHash>
+      latest_state_readers_;
   std::unordered_map<std::string, int> task_name_to_launch_ids_;
 };
 

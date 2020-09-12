@@ -309,6 +309,7 @@ TaskMeta AsyncEngine::create_task_meta(const TaskLaunchRecord &t) {
   } else if (root_stmt->task_type == OffloadedStmt::clear_list) {
     meta.output_states.emplace_back(root_stmt->snode, AsyncState::Type::list);
   }
+  meta.remove_duplication();
   // TODO: this is probably not fully done. Hopefully after SFG Graphviz is
   // done we can easily spot what's left.
   return meta;

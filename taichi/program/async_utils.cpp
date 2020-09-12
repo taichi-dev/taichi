@@ -6,6 +6,17 @@
 
 TLANG_NAMESPACE_BEGIN
 
+void TaskMeta::remove_duplication() {
+  std::sort(input_states.begin(), input_states.end());
+  input_states.resize(
+      std::size_t(std::unique(input_states.begin(), input_states.end()) -
+                  input_states.begin()));
+  std::sort(output_states.begin(), output_states.end());
+  output_states.resize(
+      std::size_t(std::unique(output_states.begin(), output_states.end()) -
+                  output_states.begin()));
+}
+
 std::unique_ptr<IRNode> IRHandle::clone() const {
   // TODO: remove get_kernel() here
   return irpass::analysis::clone(const_cast<IRNode *>(ir_), ir_->get_kernel());

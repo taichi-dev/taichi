@@ -35,6 +35,17 @@ void StateFlowGraph::insert_task(const TaskLaunchRecord &rec,
   }
   for (auto output_state : task_meta.output_states) {
     latest_state_owner_[output_state] = node.get();
+    if (latest_state_readers_.find(output_state) == latest_state_readers_.end()) {
+      latest_state_readers_[output_state].insert(initial_node_);
+    }
+    for (auto &d : latest_state_readers_[output_state])
+      node->dependency_edges.insert(std::make_pair(output_state, d));
+    latest_state_readers_[output_state].clear();
+  }
+
+  // Note that this loop must happen AFTER the previous one
+  for (auto input_state : task_meta.input_states) {
+    latest_state_readers_[input_state].insert(node.get());
   }
   nodes_.push_back(std::move(node));
 }
@@ -104,6 +115,12 @@ std::string StateFlowGraph::dump_dot() {
       stack.pop_back();
       if (visited.find(from) == visited.end()) {
         visited.insert(from);
+        for (const auto &p : from->dependency_edges) {
+          ss << "  "
+             << fmt::format("{} -> {} [label=\"{}\", style=dotted]", node_id(p.second),
+                            node_id(from), p.first.name())
+             << '\n';
+        }
         for (const auto &p : from->output_edges) {
           for (const auto *to : p.second) {
             stack.push_back(to);

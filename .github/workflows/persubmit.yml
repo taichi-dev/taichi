@@ -77,6 +77,7 @@ jobs:
 
       - name: Test
         run: |
+          export PYTHON=/usr/bin/python3.7
           export TAICHI_REPO_DIR=`pwd`
           export PATH=$TAICHI_REPO_DIR/bin:$PATH
           export PATH=/home/github/taichi-llvm/bin/:$PATH

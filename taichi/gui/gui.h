@@ -823,16 +823,14 @@ class GUI : public GUIBase {
       }
       last_frame_time = this_frame_time;
       // Some old examples / users don't even provide a `break` statement for us
-      // to terminate loop. So we have to terminate the program with
-      // RuntimeError if ti.GUI.EXIT event is not processed. Pretty like
-      // SIGTERM, you can hook it, but you have to terminate after your handler
-      // is done.
+      // to terminate loop. So we have to terminate the program with RuntimeError
+      // if ti.GUI.EXIT event is not processed. Pretty like SIGTERM, you can hook
+      // it, but you have to terminate after your handler is done.
       if (should_close) {
         if (++should_close > 5) {
           // if the event is not processed in 5 frames, raise RuntimeError
           throw std::string(
-              "Window close button clicked, exiting... (use `while "
-              "gui.running` "
+              "Window close button clicked, exiting... (use `while gui.running` "
               "to exit gracefully)");
         }
       }
@@ -849,6 +847,7 @@ class GUI : public GUIBase {
         set_title(fmt::format("{} ({:.2f} FPS)", window_name, real_fps));
     }
   }
+
 
   bool has_key_event() {
     return !!key_events.size();

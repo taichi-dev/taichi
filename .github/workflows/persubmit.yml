@@ -63,9 +63,6 @@ jobs:
     runs-on: [zhen]
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
-        with:
-          python-version: 3.7
 
       - name: Build
         run: |
@@ -82,7 +79,7 @@ jobs:
           export TAICHI_REPO_DIR=`pwd`
           export PATH=$TAICHI_REPO_DIR/bin:$PATH
           export PATH=/home/github/taichi-llvm/bin/:$PATH
-          export PYTHONPATH=$TAICHI_REPO_DIR/python
+          export PYTHONPATH=/usr/bin/python3.7
           python examples/laplace.py
           ti diagnose
           ti test -vr2 -t2

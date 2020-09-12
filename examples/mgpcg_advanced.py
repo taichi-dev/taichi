@@ -168,8 +168,7 @@ See `examples/stable_fluid.py <https://github.com/taichi-dev/taichi/blob/master/
                 self.smooth(l, 1)
                 self.smooth(l, 0)
 
-    def solve(self, max_iters=-1, eps=1e-12,
-            abs_tol=1e-12, rel_tol=1e-12):
+    def solve(self, max_iters=-1, eps=1e-12, abs_tol=1e-12, rel_tol=1e-12):
         '''
         Solve a Poisson problem.
 

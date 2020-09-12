@@ -70,9 +70,6 @@ class TaskLaunchRecord {
 struct AsyncState {
   enum class Type { mask, value, list };
 
-  AsyncState() : snode(nullptr), type(Type::value) {
-  }
-
   AsyncState(SNode *snode, Type type) : snode(snode), type(type) {
   }
 

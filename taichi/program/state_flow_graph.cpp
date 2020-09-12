@@ -5,6 +5,9 @@
 
 TLANG_NAMESPACE_BEGIN
 
+// TODO: rename state to edge since we have not only state flow edges but also
+// dependency edges.
+
 std::string StateFlowGraph::Node::string() const {
   return fmt::format("[node: {}:{}]", task_name, launch_id);
 }
@@ -14,6 +17,7 @@ StateFlowGraph::StateFlowGraph() {
   initial_node_ = nodes_.back().get();
   initial_node_->task_name = "initial_state";
   initial_node_->launch_id = 0;
+  initial_node_->is_initial_state = true;
 }
 
 void StateFlowGraph::insert_task(const TaskLaunchRecord &rec,
@@ -21,6 +25,8 @@ void StateFlowGraph::insert_task(const TaskLaunchRecord &rec,
   auto node = std::make_unique<Node>();
   node->rec = rec;
   node->task_name = task_meta.kernel_name;
+  node->input_states = task_meta.input_states;
+  node->output_states = task_meta.output_states;
   {
     int &id = task_name_to_launch_ids_[node->task_name];
     node->launch_id = id;
@@ -35,11 +41,14 @@ void StateFlowGraph::insert_task(const TaskLaunchRecord &rec,
   }
   for (auto output_state : task_meta.output_states) {
     latest_state_owner_[output_state] = node.get();
-    if (latest_state_readers_.find(output_state) == latest_state_readers_.end()) {
+    if (latest_state_readers_.find(output_state) ==
+        latest_state_readers_.end()) {
       latest_state_readers_[output_state].insert(initial_node_);
     }
-    for (auto &d : latest_state_readers_[output_state])
-      node->dependency_edges.insert(std::make_pair(output_state, d));
+    for (auto &d : latest_state_readers_[output_state]) {
+      // insert a dependency edge
+      insert_state_flow(d, node.get(), output_state);
+    }
     latest_state_readers_[output_state].clear();
   }
 
@@ -54,7 +63,7 @@ void StateFlowGraph::insert_state_flow(Node *from, Node *to, AsyncState state) {
   TI_ASSERT(from != nullptr);
   TI_ASSERT(to != nullptr);
   from->output_edges[state].insert(to);
-  to->input_edges.insert(std::make_pair(state, from));
+  to->input_edges[state].insert(from);
 }
 
 void StateFlowGraph::print() {
@@ -63,8 +72,10 @@ void StateFlowGraph::print() {
     fmt::print("{}\n", node->string());
     if (!node->input_edges.empty()) {
       fmt::print("  Inputs:\n");
-      for (const auto &p : node->input_edges) {
-        fmt::print("    {} <- {}\n", p.first.name(), p.second->string());
+      for (const auto &p : node->output_edges) {
+        for (const auto *to : p.second) {
+          fmt::print("    {} <- {}\n", p.first.name(), to->string());
+        }
       }
     }
     if (!node->output_edges.empty()) {
@@ -115,19 +126,18 @@ std::string StateFlowGraph::dump_dot() {
       stack.pop_back();
       if (visited.find(from) == visited.end()) {
         visited.insert(from);
-        for (const auto &p : from->dependency_edges) {
-          ss << "  "
-             << fmt::format("{} -> {} [label=\"{}\", style=dotted]", node_id(p.second),
-                            node_id(from), p.first.name())
-             << '\n';
-        }
         for (const auto &p : from->output_edges) {
           for (const auto *to : p.second) {
             stack.push_back(to);
+            std::string style;
+
+            if (!from->has_state_flow(p.first, to)) {
+              style = "style=dotted";
+            }
 
             ss << "  "
-               << fmt::format("{} -> {} [label=\"{}\"]", node_id(from),
-                              node_id(to), p.first.name())
+               << fmt::format("{} -> {} [label=\"{}\" {}]", node_id(from),
+                              node_id(to), p.first.name(), style)
                << '\n';
           }
         }

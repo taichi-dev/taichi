@@ -171,8 +171,11 @@ class Bitset {
   std::size_t size() const;
   void reset();
   void flip(int x);
+  bool any() const;
+  bool none() const;
   reference operator[](int x);
   Bitset &operator&=(const Bitset &other);
+  Bitset operator&(const Bitset &other) const;
   Bitset &operator|=(const Bitset &other);
   Bitset &operator^=(const Bitset &other);
 

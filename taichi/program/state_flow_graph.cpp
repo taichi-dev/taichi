@@ -201,6 +201,21 @@ bool StateFlowGraph::fuse() {
     // TODO: since cloned_task_b->body is empty, can we remove this (i.e.,
     //  simply delete cloned_task_b here)?
     ir_bank_->insert_to_trash_bin(std::move(cloned_task_b));
+
+    // replace all edges to the node B to A
+    for (auto &edges : b->output_edges) {
+      for (auto &edge : edges.second) {
+        edge->input_edges[edges.first].erase(b);
+        edge->input_edges[edges.first].insert(a);
+      }
+    }
+    for (auto &edges : b->input_edges) {
+      for (auto &edge : edges.second) {
+        edge->output_edges[edges.first].erase(b);
+        if (edge != a)
+          edge->output_edges[edges.first].insert(a);
+      }
+    }
   };
 
   auto fused = std::make_unique<bool[]>(n);
@@ -218,9 +233,11 @@ bool StateFlowGraph::fuse() {
             // TODO: for each pair of edge (i, j), we can only fuse if they are
             //  serial or both element-wise.
             if (!fused[i] && !fused[j] && task_type_fusable[i][j]) {
-              do_fuse(nodes_[i].get(), nodes_[j].get());
-              fused[i] = fused[j] = true;
-              updated = true;
+              if ((has_path[i] & has_path_reverse[j]).none()) {
+                do_fuse(nodes_[i].get(), nodes_[j].get());
+                fused[i] = fused[j] = true;
+                updated = true;
+              }
             }
           }
         }

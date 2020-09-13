@@ -34,6 +34,18 @@ void Bitset::flip(int x) {
   vec_[x / kBits] ^= ((value_t)1) << (x % kBits);
 }
 
+bool Bitset::any() const {
+  for (auto &i : vec_) {
+    if (i)
+      return true;
+  }
+  return false;
+}
+
+bool Bitset::none() const {
+  return !any();
+}
+
 Bitset::reference Bitset::operator[](int x) {
   return reference(vec_, x);
 }
@@ -45,6 +57,12 @@ Bitset &Bitset::operator&=(const Bitset &other) {
     vec_[i] &= other.vec_[i];
   }
   return *this;
+}
+
+Bitset Bitset::operator&(const Bitset &other) const {
+  Bitset result = *this;
+  result &= other;
+  return result;
 }
 
 Bitset &Bitset::operator|=(const Bitset &other) {

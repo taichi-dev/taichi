@@ -127,8 +127,6 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
                             std::string dest_ty_name,
                             int addr_space = 0);
 
-  void emit_clear_list(OffloadedStmt *listgen);
-
   void emit_list_gen(OffloadedStmt *listgen);
 
   void emit_gc(OffloadedStmt *stmt);
@@ -249,6 +247,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   void visit(ThreadLocalPtrStmt *stmt) override;
 
   void visit(BlockLocalPtrStmt *stmt) override;
+
+  void visit(ClearListStmt *stmt) override;
 
   void visit(InternalFuncStmt *stmt) override;
 

@@ -508,9 +508,6 @@ class IRPrinter : public IRVisitor {
       print("{} = offloaded listgen {}->{}", stmt->name(),
             stmt->snode->parent->get_node_type_name_hinted(),
             stmt->snode->get_node_type_name_hinted());
-    } else if (stmt->task_type == OffloadedStmt::TaskType::clear_list) {
-      print("{} = offloaded clear_list {}", stmt->name(),
-            stmt->snode->get_node_type_name_hinted());
     } else if (stmt->task_type == OffloadedStmt::TaskType::gc) {
       print("{} = offloaded garbage collect {}", stmt->name(),
             stmt->snode->get_node_type_name_hinted());
@@ -541,6 +538,11 @@ class IRPrinter : public IRVisitor {
         print("}}");
       }
     }
+  }
+
+  void visit(ClearListStmt *stmt) override {
+    print("{} = clear_list {}", stmt->name(),
+          stmt->snode->get_node_type_name_hinted());
   }
 
   void visit(LoopIndexStmt *stmt) override {

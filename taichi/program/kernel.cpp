@@ -323,9 +323,11 @@ void Kernel::account_for_offloaded(OffloadedStmt *stmt) {
   if (task_type == OffloadedStmt::TaskType::listgen) {
     stat.add("launched_tasks_list_op", 1.0);
     stat.add("launched_tasks_list_gen", 1.0);
-  } else if (task_type == OffloadedStmt::TaskType::clear_list) {
-    stat.add("launched_tasks_list_op", 1.0);
-    stat.add("launched_tasks_list_clear", 1.0);
+  } else if (task_type == OffloadedStmt::TaskType::serial) {
+    // TODO: Do we need to distinguish serial tasks that contain clear lists vs
+    // those who don't?
+    stat.add("launched_tasks_compute", 1.0);
+    stat.add("launched_tasks_serial", 1.0);
   } else if (task_type == OffloadedStmt::TaskType::range_for) {
     stat.add("launched_tasks_compute", 1.0);
     stat.add("launched_tasks_range_for", 1.0);

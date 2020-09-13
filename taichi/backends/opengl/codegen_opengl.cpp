@@ -843,20 +843,6 @@ class KernelGen : public IRVisitor {
     emit("}}\n");
   }
 
-  void generate_clear_list_kernel(OffloadedStmt *stmt) {
-    TI_ASSERT(stmt->task_type == OffloadedStmt::TaskType::clear_list);
-    used.listman = true;
-    const std::string glsl_kernel_name = make_kernel_name();
-    emit("void {}()", glsl_kernel_name);
-    this->glsl_kernel_name_ = glsl_kernel_name;
-    emit("{{ // clear list {}", stmt->snode->node_type_name);
-    {
-      ScopedIndent _s(line_appender_);
-      emit("_list_len_ = 0;");
-    }
-    emit("}}\n");
-  }
-
   size_t get_snode_base_address(const SNode *snode) {
     if (snode->type == SNodeType::root)
       return 0;
@@ -1010,8 +996,6 @@ class KernelGen : public IRVisitor {
       generate_struct_for_kernel(stmt);
     } else if (stmt->task_type == Type::listgen) {
       generate_listgen_kernel(stmt);
-    } else if (stmt->task_type == Type::clear_list) {
-      generate_clear_list_kernel(stmt);
     } else {
       // struct_for is automatically lowered to ranged_for for dense snodes
       // (#378). So we only need to support serial and range_for tasks.
@@ -1024,6 +1008,12 @@ class KernelGen : public IRVisitor {
 
   void visit(StructForStmt *) override {
     TI_ERROR("[glsl] Struct for cannot be nested under OpenGL for now");
+  }
+
+  void visit(ClearListStmt *stmt) override {
+    used.listman = true;
+    emit("// clear list {}", stmt->snode->node_type_name);
+    emit("_list_len_ = 0;");
   }
 
   void visit(IfStmt *if_stmt) override {

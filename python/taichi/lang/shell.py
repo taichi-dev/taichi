@@ -15,7 +15,8 @@ pybuf_enabled = False
 _env_enable_pybuf = os.environ.get('TI_ENABLE_PYBUF', '1')
 if not _env_enable_pybuf or int(_env_enable_pybuf):
     # When using in Jupyter / IDLE, the sys.stdout will be their wrapped ones.
-    pybuf_enabled = type(sys.stdout).__name__ != 'TextIOWrapper'
+    # While sys.__stdout__ should always be the raw console stdout.
+    pybuf_enabled = sys.stdout != sys.__stdout__
 
 from .core import taichi_lang_core
 taichi_lang_core.toggle_python_print_buffer(pybuf_enabled)

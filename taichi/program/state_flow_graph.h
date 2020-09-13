@@ -13,6 +13,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
+class IRBank;
 class StateFlowGraph {
  public:
   struct Node;
@@ -82,7 +83,7 @@ class StateFlowGraph {
     }
   };
 
-  StateFlowGraph();
+  StateFlowGraph(IRBank *ir_bank);
 
   void clear();
 
@@ -108,6 +109,7 @@ class StateFlowGraph {
   std::unordered_map<AsyncState, std::unordered_set<Node *>, AsyncStateHash>
       latest_state_readers_;
   std::unordered_map<std::string, int> task_name_to_launch_ids_;
+  IRBank *ir_bank_;
 };
 
 TLANG_NAMESPACE_END

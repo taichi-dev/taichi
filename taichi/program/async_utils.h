@@ -62,6 +62,8 @@ class TaskLaunchRecord {
   TaskLaunchRecord(Context context, Kernel *kernel, IRHandle ir_handle);
 
   OffloadedStmt *stmt() const;
+
+  bool empty() const;
 };
 
 struct AsyncState {

@@ -225,7 +225,7 @@ ExecutionQueue::ExecutionQueue(IRBank *ir_bank)
 AsyncEngine::AsyncEngine(Program *program)
     : queue(&ir_bank_),
       program(program),
-      sfg(std::make_unique<StateFlowGraph>()) {
+      sfg(std::make_unique<StateFlowGraph>(&ir_bank_)) {
 }
 
 void AsyncEngine::launch(Kernel *kernel, Context &context) {

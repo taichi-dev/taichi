@@ -1,5 +1,7 @@
 #include "compile_config.h"
 
+#include <thread>
+
 TLANG_NAMESPACE_BEGIN
 
 CompileConfig::CompileConfig() {
@@ -36,6 +38,7 @@ CompileConfig::CompileConfig() {
 
   saturating_grid_dim = 0;
   max_block_dim = 0;
+  cpu_max_num_threads = std::thread::hardware_concurrency();
 
   ad_stack_size = 16;
 

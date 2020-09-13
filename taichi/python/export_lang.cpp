@@ -1,5 +1,8 @@
 // Bindings for the python frontend
 
+#include <optional>
+#include <string>
+
 #include "pybind11/functional.h"
 #include "pybind11/pybind11.h"
 
@@ -650,7 +653,11 @@ void export_lang(py::module &m) {
 
   m.def("print_sfg", [] { get_current_program().async_engine->sfg->print(); });
   m.def("dump_dot",
-        [] { return get_current_program().async_engine->sfg->dump_dot(); });
+        [](std::optional<std::string> rankdir) -> std::string {
+          // https://pybind11.readthedocs.io/en/stable/advanced/functions.html#allow-prohibiting-none-arguments
+          return get_current_program().async_engine->sfg->dump_dot(rankdir);
+        },
+        py::arg("rankdir").none(true));
 }
 
 TI_NAMESPACE_END

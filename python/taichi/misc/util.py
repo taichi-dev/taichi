@@ -249,9 +249,9 @@ def veci(*args, **kwargs):
     return core_veci(*args, **kwargs)
 
 
-def dump_dot(filepath=None):
+def dump_dot(filepath=None, rankdir=None):
     from taichi.core import ti_core
-    d = ti_core.dump_dot()
+    d = ti_core.dump_dot(rankdir)
     if filepath is not None:
         with open(filepath, 'w') as fh:
             fh.write(d)

@@ -27,6 +27,7 @@ void StateFlowGraph::insert_task(const TaskLaunchRecord &rec,
   node->task_name = task_meta.kernel_name;
   node->input_states = task_meta.input_states;
   node->output_states = task_meta.output_states;
+  node->task_type = task_meta.type;
   {
     int &id = task_name_to_launch_ids_[node->task_name];
     node->launch_id = id;
@@ -90,14 +91,21 @@ void StateFlowGraph::print() {
   fmt::print("=======================\n");
 }
 
-std::string StateFlowGraph::dump_dot() {
+std::string StateFlowGraph::dump_dot(
+    const std::optional<std::string> &rankdir) {
   using SFGNode = StateFlowGraph::Node;
+  using TaskType = OffloadedStmt::TaskType;
   std::stringstream ss;
   ss << "digraph {\n";
   auto node_id = [](const SFGNode *n) {
     // https://graphviz.org/doc/info/lang.html ID naming
     return fmt::format("n_{}_{}", n->task_name, n->launch_id);
   };
+  // Graph level configuration.
+  if (rankdir) {
+    ss << "  rankdir=" << *rankdir << "\n";
+  }
+  ss << "\n";
   // Specify the node styles
   std::unordered_set<const SFGNode *> latest_state_nodes;
   for (const auto &p : latest_state_owner_) {
@@ -107,10 +115,17 @@ std::string StateFlowGraph::dump_dot() {
   for (const auto &nd : nodes_) {
     const auto *n = nd.get();
     ss << "  " << fmt::format("{} [label=\"{}\"", node_id(n), n->string());
-    if (n == initial_node_) {
+    if (nd->is_initial_node) {
       ss << ",shape=box";
     } else if (latest_state_nodes.find(n) != latest_state_nodes.end()) {
       ss << ",peripheries=2";
+    }
+    // Highlight user-defined tasks
+    const auto tt = nd->task_type;
+    if (!nd->is_initial_node &&
+        (tt == TaskType::range_for || tt == TaskType::struct_for ||
+         tt == TaskType::serial)) {
+      ss << ",style=filled,fillcolor=lightgray";
     }
     ss << "]\n";
     if (nd->input_edges.empty())

@@ -4,13 +4,12 @@
 #include <unordered_set>
 
 #include "taichi/ir/snode.h"
+#include "taichi/ir/statements.h"
 #define TI_RUNTIME_HOST
 #include "taichi/program/context.h"
 #undef TI_RUNTIME_HOST
 
 TLANG_NAMESPACE_BEGIN
-
-class IRNode;
 
 class IRHandle {
  public:
@@ -50,8 +49,6 @@ struct hash<taichi::lang::IRHandle> {
 }  // namespace std
 
 TLANG_NAMESPACE_BEGIN
-
-class OffloadedStmt;
 
 // Records the necessary data for launching an offloaded task.
 class TaskLaunchRecord {
@@ -110,6 +107,7 @@ class AsyncStateHash {
 
 struct TaskMeta {
   std::string kernel_name;
+  OffloadedStmt::TaskType type;
   SNode *loop_snode{nullptr};  // struct-for only
   std::unordered_set<AsyncState, AsyncStateHash> input_states;
   std::unordered_set<AsyncState, AsyncStateHash> output_states;

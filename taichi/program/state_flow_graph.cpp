@@ -1,6 +1,7 @@
 #include "taichi/program/state_flow_graph.h"
 
 #include "taichi/ir/transforms.h"
+#include "taichi/program/async_engine.h"
 #include "taichi/util/bit.h"
 
 #include <sstream>
@@ -169,7 +170,7 @@ bool StateFlowGraph::fuse() {
     }
   }
 
-  auto do_fuse = [](SFGNode *a, SFGNode *b) {
+  auto do_fuse = [this](SFGNode *a, SFGNode *b) {
     auto &rec_a = a->rec;
     auto &rec_b = b->rec;
     // We are about to change both |task_a| and |task_b|. Clone them first.
@@ -192,14 +193,14 @@ bool StateFlowGraph::fuse() {
     // For now, re_id is necessary for the hash to be correct.
     irpass::re_id(task_a);
 
-    auto h = ir_bank_.get_hash(task_a);
+    auto h = ir_bank_->get_hash(task_a);
     rec_a.ir_handle = IRHandle(task_a, h);
-    ir_bank_.insert(std::move(cloned_task_a), h);
+    ir_bank_->insert(std::move(cloned_task_a), h);
     rec_b.ir_handle = IRHandle(nullptr, 0);
 
     // TODO: since cloned_task_b->body is empty, can we remove this (i.e.,
     //  simply delete cloned_task_b here)?
-    ir_bank_.insert_to_trash_bin(std::move(cloned_task_b));
+    ir_bank_->insert_to_trash_bin(std::move(cloned_task_b));
   };
 
   auto fused = std::make_unique<bool[]>(n);

@@ -10,7 +10,7 @@ jobs:
       matrix:
         include:
           - python: 3.7
-            with_opengl: OFF
+            with_opengl: ON
     name: Build and Test (GPU)
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip ci') && github.event.sender.login != 'taichi-gardener' }}
     runs-on: [zhen]

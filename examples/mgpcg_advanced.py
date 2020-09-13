@@ -1,41 +1,51 @@
 import numpy as np
-import time
 import taichi as ti
-
-real = ti.f32
-ti.init(default_fp=real, arch=ti.x64, kernel_profiler=True)
+import time
 
 
 @ti.data_oriented
 class MGPCG:
-    def __init__(self):
+    '''
+Grid-based MGPCG solver for the possion equation.
+
+See `examples/stable_fluid.py <https://github.com/taichi-dev/taichi/blob/master/examples/stable_fluid.py>`_ for a usage example.
+
+.. note::
+
+    This solver only runs on CPU and CUDA backends since it requires the
+    ``pointer`` SNode.
+    '''
+    def __init__(self, dim=2, N=512, n_mg_levels=6, real=float):
+        '''
+        :parameter dim: Dimensionality of the fields.
+        :parameter N: Grid resolution.
+        :parameter n_mg_levels: Number of multigrid levels.
+        '''
+
         # grid parameters
         self.use_multigrid = True
 
-        self.N = 128
-        self.N_gui = 512  # gui resolution
-
-        self.n_mg_levels = 4
+        self.N = N
+        self.n_mg_levels = n_mg_levels
         self.pre_and_post_smoothing = 2
         self.bottom_smoothing = 50
-        self.dim = 3
+        self.dim = dim
+        self.real = real
 
         self.N_ext = self.N // 2  # number of ext cells set so that that total grid size is still power of 2
         self.N_tot = 2 * self.N
 
         # setup sparse simulation data arrays
-        self.r = [ti.field(dtype=real)
+        self.r = [ti.field(dtype=self.real)
                   for _ in range(self.n_mg_levels)]  # residual
-        self.z = [ti.field(dtype=real)
+        self.z = [ti.field(dtype=self.real)
                   for _ in range(self.n_mg_levels)]  # M^-1 self.r
-        self.x = ti.field(dtype=real)  # solution
-        self.p = ti.field(dtype=real)  # conjugate gradient
-        self.Ap = ti.field(dtype=real)  # matrix-vector product
-        self.alpha = ti.field(dtype=real)  # step size
-        self.beta = ti.field(dtype=real)  # step size
-        self.sum = ti.field(dtype=real)  # storage for reductions
-        self.pixels = ti.field(dtype=real,
-                               shape=(self.N_gui, self.N_gui))  # image buffer
+        self.x = ti.field(dtype=self.real)  # solution
+        self.p = ti.field(dtype=self.real)  # conjugate gradient
+        self.Ap = ti.field(dtype=self.real)  # matrix-vector product
+        self.alpha = ti.field(dtype=self.real)  # step size
+        self.beta = ti.field(dtype=self.real)  # step size
+        self.sum = ti.field(dtype=self.real)  # storage for reductions
 
         indices = ti.ijk if self.dim == 3 else ti.ij
         self.grid = ti.root.pointer(indices, [self.N_tot // 4]).dense(
@@ -49,23 +59,43 @@ class MGPCG:
 
         ti.root.place(self.alpha, self.beta, self.sum)
 
+    @ti.func
+    def init_r(self, I, r_I):
+        I = I + self.N_ext
+        self.r[0][I] = r_I
+        self.z[0][I] = 0
+        self.Ap[I] = 0
+        self.p[I] = 0
+        self.x[I] = 0
+
     @ti.kernel
-    def init(self):
-        for I in ti.grouped(
-                ti.ndrange(*(
-                    (self.N_ext, self.N_tot - self.N_ext), ) * self.dim)):
-            self.r[0][I] = 1.0
-            for k in ti.static(range(self.dim)):
-                self.r[0][I] *= ti.sin(2.0 * np.pi * (I[k] - self.N_ext) *
-                                       2.0 / self.N_tot)
-            self.z[0][I] = 0.0
-            self.Ap[I] = 0.0
-            self.p[I] = 0.0
-            self.x[I] = 0.0
+    def init(self, r: ti.template(), k: ti.template()):
+        '''
+        Set up the solver for $\nabla^2 x = k r$, a scaled Poisson problem.
+        :parameter k: (scalar) A scaling factor of the right-hand side.
+        :parameter r: (ti.field) Unscaled right-hand side.
+        '''
+        for I in ti.grouped(ti.ndrange(*[self.N] * self.dim)):
+            self.init_r(I, r[I] * k)
+
+    @ti.func
+    def get_x(self, I):
+        I = I + self.N_ext
+        return self.x[I]
+
+    @ti.kernel
+    def get_result(self, x: ti.template()):
+        '''
+        Get the solution field.
+
+        :parameter x: (ti.field) The field to store the solution
+        '''
+        for I in ti.grouped(ti.ndrange(*[self.N] * self.dim)):
+            x[I] = self.get_x(I)
 
     @ti.func
     def neighbor_sum(self, x, I):
-        ret = 0.0
+        ret = ti.cast(0.0, self.real)
         for i in ti.static(range(self.dim)):
             offset = ti.Vector.unit(self.dim, i)
             ret += x[I + offset] + x[I - offset]
@@ -74,7 +104,7 @@ class MGPCG:
     @ti.kernel
     def compute_Ap(self):
         for I in ti.grouped(self.Ap):
-            self.Ap[I] = (2 * self.dim) * self.p[I] - self.neighbor_sum(
+            self.Ap[I] = 2 * self.dim * self.p[I] - self.neighbor_sum(
                 self.p, I)
 
     @ti.kernel
@@ -101,7 +131,7 @@ class MGPCG:
     @ti.kernel
     def restrict(self, l: ti.template()):
         for I in ti.grouped(self.r[l]):
-            res = self.r[l][I] - (2.0 * self.dim * self.z[l][I] -
+            res = self.r[l][I] - (2 * self.dim * self.z[l][I] -
                                   self.neighbor_sum(self.z[l], I))
             self.r[l + 1][I // 2] += res * 0.5
 
@@ -116,7 +146,7 @@ class MGPCG:
         for I in ti.grouped(self.r[l]):
             if (I.sum()) & 1 == phase:
                 self.z[l][I] = (self.r[l][I] + self.neighbor_sum(
-                    self.z[l], I)) / (2.0 * self.dim)
+                    self.z[l], I)) / (2 * self.dim)
 
     def apply_preconditioner(self):
         self.z[0].fill(0)
@@ -138,23 +168,20 @@ class MGPCG:
                 self.smooth(l, 1)
                 self.smooth(l, 0)
 
-    @ti.kernel
-    def paint(self):
-        if ti.static(self.dim == 3):
-            kk = self.N_tot * 3 // 8
-            for i, j in self.pixels:
-                ii = int(i * self.N / self.N_gui) + self.N_ext
-                jj = int(j * self.N / self.N_gui) + self.N_ext
-                self.pixels[i, j] = self.x[ii, jj, kk] / self.N_tot
+    def solve(self, max_iters=-1, eps=1e-12, abs_tol=1e-12, rel_tol=1e-12):
+        '''
+        Solve a Poisson problem.
 
-    def run(self):
-        gui = ti.GUI("Multigrid Preconditioned Conjugate Gradients",
-                     res=(self.N_gui, self.N_gui))
-
-        self.init()
+        :parameter max_iters: Specify the maximal iterations. -1 for no limit.
+        :parameter eps: Specify a non-zero value to prevent ZeroDivisionError.
+        :parameter abs_tol: Specify the absolute tolerance of loss.
+        :parameter rel_tol: Specify the tolerance of loss relative to initial loss.
+        '''
 
         self.reduce(self.r[0], self.r[0])
         initial_rTr = self.sum[None]
+
+        tol = max(abs_tol, initial_rTr * rel_tol)
 
         # self.r = b - Ax = b    since self.x = 0
         # self.p = self.r = self.r + 0 self.p
@@ -169,12 +196,13 @@ class MGPCG:
         old_zTr = self.sum[None]
 
         # CG
-        for i in range(400):
+        # We use a while loop here since max_iter = -1 means no limit on the number of iterations
+        while max_iters != 0:
             # self.alpha = rTr / pTAp
             self.compute_Ap()
             self.reduce(self.p, self.Ap)
             pAp = self.sum[None]
-            self.alpha[None] = old_zTr / pAp
+            self.alpha[None] = old_zTr / (pAp + eps)
 
             # self.x = self.x + self.alpha self.p
             self.update_x()
@@ -185,7 +213,7 @@ class MGPCG:
             # check for convergence
             self.reduce(self.r[0], self.r[0])
             rTr = self.sum[None]
-            if rTr < initial_rTr * 1.0e-12:
+            if rTr < tol:
                 break
 
             # self.z = M^-1 self.r
@@ -197,23 +225,55 @@ class MGPCG:
             # self.beta = new_rTr / old_rTr
             self.reduce(self.z[0], self.r[0])
             new_zTr = self.sum[None]
-            self.beta[None] = new_zTr / old_zTr
+            self.beta[None] = new_zTr / (old_zTr + eps)
 
             # self.p = self.z + self.beta self.p
             self.update_p()
             old_zTr = new_zTr
 
-            print(f'iter {i}, residual={rTr}')
-            self.paint()
-            gui.set_image(self.pixels)
-            gui.show()
+            max_iters -= 1
 
+
+class MGPCG_Example(MGPCG):
+    def __init__(self):
+        super().__init__(dim=3, N=128, n_mg_levels=4)
+
+        self.N_gui = 512  # gui resolution
+
+        self.pixels = ti.field(dtype=float,
+                               shape=(self.N_gui, self.N_gui))  # image buffer
+
+    @ti.kernel
+    def init(self):
+        for I in ti.grouped(ti.ndrange(*[self.N] * self.dim)):
+            r_I = 5.0
+            for k in ti.static(range(self.dim)):
+                r_I *= ti.cos(5 * np.pi * I[k] / self.N)
+            self.init_r(I, r_I)
+
+    @ti.kernel
+    def paint(self):
+        if ti.static(self.dim == 3):
+            kk = self.N_tot * 3 // 8
+            for i, j in self.pixels:
+                ii = int(i * self.N / self.N_gui) + self.N_ext
+                jj = int(j * self.N / self.N_gui) + self.N_ext
+                self.pixels[i, j] = self.x[ii, jj, kk] / self.N_tot
+
+    def run(self):
+        gui = ti.GUI("Multigrid Preconditioned Conjugate Gradients",
+                     res=(self.N_gui, self.N_gui))
+
+        self.init()
+        self.solve(max_iters=400)
+        self.paint()
+        ti.imshow(self.pixels)
         ti.kernel_profiler_print()
 
 
-solver = MGPCG()
-t = time.time()
-solver.run()
-print(f'Solver time: {time.time() - t:.3f} s')
-ti.core.print_profile_info()
-ti.core.print_stat()
+if __name__ == '__main__':
+    ti.init(kernel_profiler=True)
+    solver = MGPCG_Example()
+    t = time.time()
+    solver.run()
+    print(f'Solver time: {time.time() - t:.3f} s')

@@ -8,6 +8,7 @@ import taichi as ti
 import numpy as np
 import time
 
+use_mgpcg = False  # True to use multigrid-preconditioned conjugate gradients
 res = 512  # 600 for a larger resoultion
 dt = 0.03
 p_jacobi_iters = 160  # 40 for quicker but not-so-accurate result
@@ -19,6 +20,10 @@ debug = False
 paused = False
 
 ti.init(arch=ti.gpu)
+
+if use_mgpcg:
+    from mgpcg_advanced import MGPCG  # examples/mgpcg_advanced.py
+    mgpcg = MGPCG(dim=2, N=res, n_mg_levels=6)
 
 _velocities = ti.Vector.field(2, float, shape=(res, res))
 _new_velocities = ti.Vector.field(2, float, shape=(res, res))
@@ -279,9 +284,15 @@ def step(mouse_data):
         vorticity(velocities_pair.cur)
         enhance_vorticity(velocities_pair.cur, velocity_curls)
 
-    for _ in range(p_jacobi_iters):
-        pressure_jacobi(pressures_pair.cur, pressures_pair.nxt)
-        pressures_pair.swap()
+    if use_mgpcg:
+        mgpcg.init(velocity_divs, -1)
+        mgpcg.solve(max_iters=10)
+        mgpcg.get_result(pressures_pair.cur)
+
+    else:
+        for _ in range(p_jacobi_iters):
+            pressure_jacobi(pressures_pair.cur, pressures_pair.nxt)
+            pressures_pair.swap()
 
     subtract_gradient(velocities_pair.cur, pressures_pair.cur)
 

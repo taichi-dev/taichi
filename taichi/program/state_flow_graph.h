@@ -1,13 +1,15 @@
 #pragma once
 
+#include <optional>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
 #include "taichi/lang_util.h"
-#include "taichi/program/program.h"
 #include "taichi/program/async_utils.h"
+#include "taichi/program/program.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -26,6 +28,7 @@ class StateFlowGraph {
   struct Node {
     TaskLaunchRecord rec;
     std::string task_name;
+    OffloadedStmt::TaskType task_type;
     // Incremental ID to identify the i-th launch of the task.
     int launch_id;
     bool is_initial_node{false};
@@ -86,7 +89,9 @@ class StateFlowGraph {
 
   void print();
 
-  std::string dump_dot();
+  // Returns a string representing a DOT graph
+  // TODO: In case we add more and more DOT configs, create a struct?
+  std::string dump_dot(const std::optional<std::string> &rankdir);
 
   void insert_task(const TaskLaunchRecord &rec, const TaskMeta &task_meta);
 

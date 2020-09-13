@@ -260,6 +260,7 @@ TaskMeta AsyncEngine::create_task_meta(const TaskLaunchRecord &t) {
   auto *root_stmt = t.stmt();
   meta.kernel_name = t.kernel->name + "_" +
                      OffloadedStmt::task_type_name(root_stmt->task_type);
+  meta.type = root_stmt->task_type;
   gather_statements(root_stmt, [&](Stmt *stmt) {
     if (auto global_load = stmt->cast<GlobalLoadStmt>()) {
       if (auto ptr = global_load->ptr->cast<GlobalPtrStmt>()) {

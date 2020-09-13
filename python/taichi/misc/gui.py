@@ -59,6 +59,9 @@ class GUI:
     def __exit__(self, type, val, tb):
         self.close()
 
+    def __del__(self):
+        self.close()
+
     def close(self):
         self.core = None  # dereference to call GUI::~GUI()
 

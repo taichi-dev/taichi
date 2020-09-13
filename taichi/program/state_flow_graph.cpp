@@ -16,7 +16,7 @@ std::string StateFlowGraph::Node::string() const {
   return fmt::format("[node: {}:{}]", task_name, launch_id);
 }
 
-StateFlowGraph::StateFlowGraph(IRBank *ir_bank): ir_bank_(ir_bank) {
+StateFlowGraph::StateFlowGraph(IRBank *ir_bank) : ir_bank_(ir_bank) {
   nodes_.push_back(std::make_unique<Node>());
   initial_node_ = nodes_.back().get();
   initial_node_->task_name = "initial_state";
@@ -82,8 +82,8 @@ void StateFlowGraph::insert_state_flow(Node *from, Node *to, AsyncState state) {
 }
 
 bool StateFlowGraph::fuse() {
-  std::cout << "fuse begin" << std::endl;
-  print();
+  // std::cout << "fuse begin" << std::endl;
+  // print();
   using SFGNode = StateFlowGraph::Node;
   using bit::Bitset;
   const int n = nodes_.size();
@@ -119,7 +119,7 @@ bool StateFlowGraph::fuse() {
       }
     }
   }
-  std::cout << "a" << std::endl;
+  // std::cout << "a" << std::endl;
 
   // Cache the result that if each pair is fusable by task types.
   // TODO: improve this
@@ -176,11 +176,10 @@ bool StateFlowGraph::fuse() {
       task_type_fusable[i][j] = fusable;
     }
   }
-  std::cout << "b" << std::endl;
+  // std::cout << "b" << std::endl;
 
   auto do_fuse = [this](SFGNode *a, SFGNode *b) {
     // TODO: remove debug cout
-    std::cout << "fu" << a << " " << b << std::endl;
     std::cout << "fuse: " << a->string() << " <- " << b->string() << std::endl;
     auto &rec_a = a->rec;
     auto &rec_b = b->rec;
@@ -261,7 +260,7 @@ bool StateFlowGraph::fuse() {
     }
   }
 
-  std::cout << "fuse return: " << modified << std::endl;
+  // std::cout << "fuse return: " << modified << std::endl;
   return modified;
 }
 

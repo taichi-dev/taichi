@@ -81,6 +81,8 @@ void StateFlowGraph::insert_state_flow(Node *from, Node *to, AsyncState state) {
 }
 
 bool StateFlowGraph::fuse() {
+  std::cout << "fuse begin" << std::endl;
+  print();
   using SFGNode = StateFlowGraph::Node;
   using bit::Bitset;
   const int n = nodes_.size();
@@ -116,10 +118,14 @@ bool StateFlowGraph::fuse() {
       }
     }
   }
+  std::cout << "a" << std::endl;
 
   // Cache the result that if each pair is fusable by task types.
   // TODO: improve this
   auto task_type_fusable = std::make_unique<Bitset[]>(n);
+  for (int i = 0; i < n; i++) {
+    task_type_fusable[i] = Bitset(n);
+  }
   // nodes_[0] is the initial node.
   for (int i = 1; i < n; i++) {
     auto &rec_i = nodes_[i]->rec;
@@ -169,8 +175,12 @@ bool StateFlowGraph::fuse() {
       task_type_fusable[i][j] = fusable;
     }
   }
+  std::cout << "b" << std::endl;
 
   auto do_fuse = [this](SFGNode *a, SFGNode *b) {
+    // TODO: remove debug cout
+    std::cout << "fu" << a << " " << b << std::endl;
+    std::cout << "fuse: " << a->string() << " <- " << b->string() << std::endl;
     auto &rec_a = a->rec;
     auto &rec_b = b->rec;
     // We are about to change both |task_a| and |task_b|. Clone them first.
@@ -231,7 +241,7 @@ bool StateFlowGraph::fuse() {
           for (auto &edge : edges.second) {
             const int j = edge->node_id;
             // TODO: for each pair of edge (i, j), we can only fuse if they are
-            //  serial or both element-wise.
+            //  both serial or both element-wise.
             if (!fused[i] && !fused[j] && task_type_fusable[i][j]) {
               if ((has_path[i] & has_path_reverse[j]).none()) {
                 do_fuse(nodes_[i].get(), nodes_[j].get());
@@ -250,6 +260,7 @@ bool StateFlowGraph::fuse() {
     }
   }
 
+  std::cout << "fuse return: " << modified << std::endl;
   return modified;
 }
 

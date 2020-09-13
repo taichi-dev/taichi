@@ -4,58 +4,6 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  build_and_test_cpu:
-    name: Build and Test (CPU)
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip ci') && github.event.sender.login != 'taichi-gardener' }}
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            python: 3.6
-            with_cc: OFF
-          - os: macos-latest
-            python: 3.7
-            with_cc: OFF
-          - os: ubuntu-16.04  # TODO(archibate): windows-latest
-            python: 3.8
-            with_cc: OFF
-          - os: ubuntu-latest
-            python: 3.8
-            with_cc: ON
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python }}
-
-      - name: Download Pre-Built LLVM 10.0.0
-        run: |
-          python misc/ci_download.py
-          mkdir taichi-llvm
-          cd taichi-llvm
-          unzip ../taichi-llvm.zip
-        env:
-          CI_PLATFORM: ${{ matrix.os }}
-
-      - name: Build
-        run: |
-          export TAICHI_REPO_DIR=`pwd`
-          export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
-          export CXX=clang++
-          python misc/ci_setup.py ci
-        env:
-          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }}
-
-      - name: Test
-        run: |
-          export TAICHI_REPO_DIR=`pwd`
-          export PATH=$TAICHI_REPO_DIR/bin:$PATH
-          export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
-          export PYTHONPATH=$TAICHI_REPO_DIR/python
-          python examples/laplace.py
-          ti diagnose
-          ti test -vr2 -t2
 
   build_and_test_gpu:
     strategy:

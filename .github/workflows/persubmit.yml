@@ -17,6 +17,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Install Dependencies
+        run: |
+          sudo apt-get install libx11-dev libxcursor-dev libxi-dev
+          sudo apt-get install libxrandr-dev libxinerama-dev libglvnd-dev
+
       - name: Build
         run: |
           git --version

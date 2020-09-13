@@ -39,7 +39,6 @@ class StateFlowGraph {
     // Returns the position in nodes_. Only used in fuse().
     int node_id;
 
-    StateToNodeMapping input_edges;
     // Profiling showed horrible performance using std::unordered_multimap (at
     // least on Mac with clang-1103.0.32.62)...
     std::unordered_map<AsyncState, std::unordered_set<Node *>, AsyncStateHash>

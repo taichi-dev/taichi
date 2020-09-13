@@ -264,26 +264,37 @@ TaskMeta AsyncEngine::create_task_meta(const TaskLaunchRecord &t) {
     if (auto global_load = stmt->cast<GlobalLoadStmt>()) {
       if (auto ptr = global_load->ptr->cast<GlobalPtrStmt>()) {
         for (auto &snode : ptr->snodes.data) {
-          meta.input_states.emplace_back(snode, AsyncState::Type::value);
+          meta.input_states.emplace(snode, AsyncState::Type::value);
         }
       }
     }
+
+    // Note: since global store may only partially modify a value state, the
+    // result (which contains the modified and unmodified part) actually needs a
+    // read from the previous version of the value state.
+    //
+    // I.e.,
+    // output_value_state = merge(input_value_state, written_part)
+    //
+    // Therefore we include the value state in input_states.
+    //
+    // The only exception is that the task may completely overwrite the value
+    // state (e.g., for i in x: x[i] = 0). However, for now we are not yet
+    // able to detect that case, so we are being conservative here.
+
     if (auto global_store = stmt->cast<GlobalStoreStmt>()) {
       if (auto ptr = global_store->ptr->cast<GlobalPtrStmt>()) {
         for (auto &snode : ptr->snodes.data) {
-          meta.output_states.emplace_back(snode, AsyncState::Type::value);
-          if (ptr->activate)
-            meta.output_states.emplace_back(snode, AsyncState::Type::mask);
+          meta.input_states.emplace(snode, AsyncState::Type::value);
+          meta.output_states.emplace(snode, AsyncState::Type::value);
         }
       }
     }
     if (auto global_atomic = stmt->cast<AtomicOpStmt>()) {
       if (auto ptr = global_atomic->dest->cast<GlobalPtrStmt>()) {
         for (auto &snode : ptr->snodes.data) {
-          meta.input_states.emplace_back(snode, AsyncState::Type::value);
-          meta.output_states.emplace_back(snode, AsyncState::Type::value);
-          if (ptr->activate)
-            meta.output_states.emplace_back(snode, AsyncState::Type::mask);
+          meta.input_states.emplace(snode, AsyncState::Type::value);
+          meta.output_states.emplace(snode, AsyncState::Type::value);
         }
       }
     }
@@ -291,7 +302,8 @@ TaskMeta AsyncEngine::create_task_meta(const TaskLaunchRecord &t) {
     if (auto ptr = stmt->cast<GlobalPtrStmt>()) {
       if (ptr->activate) {
         for (auto &snode : ptr->snodes.data) {
-          meta.output_states.emplace_back(snode, AsyncState::Type::mask);
+          meta.input_states.emplace(snode, AsyncState::Type::mask);
+          meta.output_states.emplace(snode, AsyncState::Type::mask);
         }
       }
     }
@@ -299,15 +311,20 @@ TaskMeta AsyncEngine::create_task_meta(const TaskLaunchRecord &t) {
   });
   if (root_stmt->task_type == OffloadedStmt::listgen) {
     TI_ASSERT(root_stmt->snode->parent);
-    meta.input_states.emplace_back(root_stmt->snode->parent,
-                                   AsyncState::Type::list);
-    meta.input_states.emplace_back(root_stmt->snode, AsyncState::Type::list);
-    meta.input_states.emplace_back(root_stmt->snode, AsyncState::Type::mask);
-    meta.output_states.emplace_back(root_stmt->snode, AsyncState::Type::list);
+    meta.input_states.emplace(root_stmt->snode->parent, AsyncState::Type::list);
+    meta.input_states.emplace(root_stmt->snode, AsyncState::Type::list);
+    meta.input_states.emplace(root_stmt->snode, AsyncState::Type::mask);
+    meta.output_states.emplace(root_stmt->snode, AsyncState::Type::list);
   } else if (root_stmt->task_type == OffloadedStmt::struct_for) {
-    meta.input_states.emplace_back(root_stmt->snode, AsyncState::Type::list);
+    meta.input_states.emplace(root_stmt->snode, AsyncState::Type::list);
   } else if (root_stmt->task_type == OffloadedStmt::clear_list) {
-    meta.output_states.emplace_back(root_stmt->snode, AsyncState::Type::list);
+    // ClearList completely erases the element list, so its output list state
+    // does NOT lead to a input state flow on the previous version of the list
+    // state. However, a dependency edge (instead of flow edge) will still be
+    // inserted since this is probably a WAR dependency.
+    // TODO: or might be WAW? Do we even need to distinguish WAW and WAR?
+
+    meta.output_states.emplace(root_stmt->snode, AsyncState::Type::list);
   }
   // TODO: this is probably not fully done. Hopefully after SFG Graphviz is
   // done we can easily spot what's left.

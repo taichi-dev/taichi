@@ -4,8 +4,8 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  build_and_test:
-    name: Build and Test
+  build_and_test_cpu:
+    name: Build and Test (CPU)
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip ci') && github.event.sender.login != 'taichi-gardener' }}
     strategy:
       matrix:
@@ -38,7 +38,7 @@ jobs:
         env:
           CI_PLATFORM: ${{ matrix.os }}
 
-      - name: Build Project
+      - name: Build
         run: |
           export TAICHI_REPO_DIR=`pwd`
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
@@ -47,13 +47,42 @@ jobs:
         env:
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }}
 
-      - name: Functionallity Test
+      - name: Test
         run: |
           export TAICHI_REPO_DIR=`pwd`
           export PATH=$TAICHI_REPO_DIR/bin:$PATH
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
           export PYTHONPATH=$TAICHI_REPO_DIR/python
           python examples/laplace.py
+          ti diagnose
+          ti test -vr2 -t2
+
+  build_and_test_cuda:
+    name: Build and Test (CUDA)
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip ci') && github.event.sender.login != 'taichi-gardener' }}
+    runs-on: [zhen]
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Build
+        run: |
+          git --version
+          export TAICHI_REPO_DIR=`pwd`
+          export PATH=/home/github/taichi-llvm/bin/:$PATH
+          export CXX=clang++-8
+          export PYTHON=/usr/bin/python3.7
+          $PYTHON misc/ci_setup.py ci
+        env:
+          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }}
+
+      - name: Test
+        run: |
+          export PYTHON=/usr/bin/python3.7
+          export TAICHI_REPO_DIR=`pwd`
+          export PATH=$TAICHI_REPO_DIR/bin:$PATH
+          export PATH=/home/github/taichi-llvm/bin/:$PATH
+          export PYTHONPATH=$TAICHI_REPO_DIR/python
+          $PYTHON examples/laplace.py
           ti diagnose
           ti test -vr2 -t2
 

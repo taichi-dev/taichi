@@ -119,6 +119,12 @@ bool StateFlowGraph::fuse() {
       }
     }
   }
+  for (int i = 0; i < n; i++) {
+    // This is for: if has_path[i][j] && has_path[j][k], there is a path of
+    // length >= 2 from i to k.
+    has_path[i][i] = false;
+    has_path_reverse[i][i] = false;
+  }
   // std::cout << "a" << std::endl;
 
   // Cache the result that if each pair is fusable by task types.

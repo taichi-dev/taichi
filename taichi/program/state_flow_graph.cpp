@@ -82,16 +82,14 @@ void StateFlowGraph::insert_state_flow(Node *from, Node *to, AsyncState state) {
 }
 
 bool StateFlowGraph::fuse() {
-  return false;
   using SFGNode = StateFlowGraph::Node;
   using bit::Bitset;
   const int n = nodes_.size();
+  if (n <= 2) {
+    return false;
+  }
   for (int i = 0; i < n; i++) {
     nodes_[i]->node_id = i;
-  }
-  if (n >= 3) {
-    std::cout << "fuse begin" << std::endl;
-    print();
   }
 
   // Compute the transitive closure.
@@ -105,32 +103,23 @@ bool StateFlowGraph::fuse() {
     has_path_reverse[i] = Bitset(n);
     has_path_reverse[i][i] = true;
   }
+  for (int i = n - 1; i >= 0; i--) {
+    for (auto &edges : nodes_[i]->input_edges) {
+      for (auto &edge : edges.second) {
+        TI_ASSERT(edge->node_id < i);
+        has_path[edge->node_id] |= has_path[i];
+      }
+    }
+  }
   for (int i = 0; i < n; i++) {
     for (auto &edges : nodes_[i]->output_edges) {
       for (auto &edge : edges.second) {
         // Assume nodes are sorted in topological order.
         TI_ASSERT(edge->node_id > i);
-        has_path[edge->node_id] |= has_path[i];
-      }
-    }
-  }
-  for (int i = n - 1; i >= 0; i--) {
-    for (auto &edges : nodes_[i]->input_edges) {
-      for (auto &edge : edges.second) {
-        TI_ASSERT(edge->node_id < i);
         has_path_reverse[edge->node_id] |= has_path_reverse[i];
       }
     }
   }
-  if (n >= 3) {
-    for (int i = 0; i < n; i++)
-      std::cout << has_path[i] << std::endl;
-    std::cout << std::endl;
-    for (int i = 0; i < n; i++)
-      std::cout << has_path_reverse[i] << std::endl;
-    std::cout << std::endl;
-  }
-  // std::cout << "a" << std::endl;
 
   // Cache the result that if each pair is fusable by task types.
   // TODO: improve this
@@ -141,9 +130,15 @@ bool StateFlowGraph::fuse() {
   // nodes_[0] is the initial node.
   for (int i = 1; i < n; i++) {
     auto &rec_i = nodes_[i]->rec;
+    if (rec_i.empty()) {
+      continue;
+    }
     auto *task_i = rec_i.stmt();
     for (int j = i + 1; j < n; j++) {
       auto &rec_j = nodes_[j]->rec;
+      if (rec_j.empty()) {
+        continue;
+      }
       auto *task_j = rec_j.stmt();
       bool is_same_struct_for =
           task_i->task_type == OffloadedStmt::struct_for &&
@@ -187,7 +182,6 @@ bool StateFlowGraph::fuse() {
       task_type_fusable[i][j] = fusable;
     }
   }
-  // std::cout << "b" << std::endl;
 
   auto insert_edge_for_transitive_closure = [&](int a, int b) {
     // insert edge a -> b
@@ -257,6 +251,9 @@ bool StateFlowGraph::fuse() {
     }
 
     // update the transitive closure
+    insert_edge_for_transitive_closure(b, a);
+    if (!already_had_a_to_b_edge)
+      insert_edge_for_transitive_closure(a, b);
   };
 
   auto fused = std::make_unique<bool[]>(n);
@@ -264,26 +261,32 @@ bool StateFlowGraph::fuse() {
   bool modified = false;
   while (true) {
     bool updated = false;
-    for (int i = 1; i < n; i++)
-      fused[i] = !nodes_[i]->rec.empty();
+    for (int i = 1; i < n; i++) {
+      fused[i] = nodes_[i]->rec.empty();
+    }
     for (int i = 1; i < n; i++) {
       if (!fused[i]) {
+        bool i_updated = false;
         for (auto &edges : nodes_[i]->output_edges) {
           for (auto &edge : edges.second) {
             const int j = edge->node_id;
             // TODO: for each pair of edge (i, j), we can only fuse if they are
             //  both serial or both element-wise.
-            if (!fused[i] && !fused[j] && task_type_fusable[i][j]) {
+            if (!fused[j] && task_type_fusable[i][j]) {
               auto i_has_path_to_j = has_path[i] & has_path_reverse[j];
               i_has_path_to_j[i] = i_has_path_to_j[j] = false;
               // check if i doesn't have a path to j of length >= 2
               if (i_has_path_to_j.none()) {
                 do_fuse(i, j);
                 fused[i] = fused[j] = true;
+                i_updated = true;
                 updated = true;
+                break;
               }
             }
           }
+          if (i_updated)
+            break;
         }
       }
     }
@@ -294,7 +297,19 @@ bool StateFlowGraph::fuse() {
     }
   }
 
-  std::cout << "fuse return: " << modified << std::endl;
+  // Remove empty tasks
+  if (modified) {
+    std::vector<std::unique_ptr<Node>> new_nodes;
+    new_nodes.reserve(n);
+    new_nodes.push_back(std::move(nodes_[0]));
+    for (int i = 1; i < n; i++) {
+      if (!nodes_[i]->rec.empty()) {
+        new_nodes.push_back(std::move(nodes_[i]));
+      }
+    }
+    nodes_ = std::move(new_nodes);
+  }
+
   return modified;
 }
 

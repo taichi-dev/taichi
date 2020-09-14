@@ -159,6 +159,7 @@ class Bitset {
     operator bool() const;
     bool operator~() const;
     reference &operator=(bool x);
+    reference &operator=(const reference &other);
     reference &flip();
 
    private:

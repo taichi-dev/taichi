@@ -121,6 +121,12 @@ Bitset::reference &Bitset::reference::operator=(bool x) {
   return *this;
 }
 
+Bitset::reference &Bitset::reference::operator=(
+    const Bitset::reference &other) {
+  *this = bool(other);
+  return *this;
+}
+
 Bitset::reference &Bitset::reference::flip() {
   *pos_ ^= digit_;
   return *this;

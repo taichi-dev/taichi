@@ -35,8 +35,8 @@ void Bitset::flip(int x) {
 }
 
 bool Bitset::any() const {
-  for (auto &i : vec_) {
-    if (i)
+  for (auto &val : vec_) {
+    if (val)
       return true;
   }
   return false;
@@ -124,6 +124,13 @@ Bitset::reference &Bitset::reference::operator=(bool x) {
 Bitset::reference &Bitset::reference::flip() {
   *pos_ ^= digit_;
   return *this;
+}
+
+std::ostream &operator<<(std::ostream &os, const Bitset &b) {
+  for (auto &val : b.vec_)
+    for (int j = 0; j < Bitset::kBits; j++)
+      os << '0' + ((val >> j) & 1);
+  return os;
 }
 
 }  // namespace bit

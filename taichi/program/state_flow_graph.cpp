@@ -82,13 +82,16 @@ void StateFlowGraph::insert_state_flow(Node *from, Node *to, AsyncState state) {
 }
 
 bool StateFlowGraph::fuse() {
-  // std::cout << "fuse begin" << std::endl;
-  // print();
+  return false;  // TODO: debug fuse()
   using SFGNode = StateFlowGraph::Node;
   using bit::Bitset;
   const int n = nodes_.size();
   for (int i = 0; i < n; i++) {
     nodes_[i]->node_id = i;
+  }
+  if (n >= 3) {
+    std::cout << "fuse begin" << std::endl;
+    print();
   }
 
   // Compute the transitive closure.
@@ -118,6 +121,14 @@ bool StateFlowGraph::fuse() {
         has_path_reverse[edge->node_id] |= has_path_reverse[i];
       }
     }
+  }
+  if (n >= 3) {
+    for (int i = 0; i < n; i++)
+      std::cout << has_path[i] << std::endl;
+    std::cout << std::endl;
+    for (int i = 0; i < n; i++)
+      std::cout << has_path_reverse[i] << std::endl;
+    std::cout << std::endl;
   }
   // std::cout << "a" << std::endl;
 
@@ -283,7 +294,7 @@ bool StateFlowGraph::fuse() {
     }
   }
 
-  // std::cout << "fuse return: " << modified << std::endl;
+   std::cout << "fuse return: " << modified << std::endl;
   return modified;
 }
 

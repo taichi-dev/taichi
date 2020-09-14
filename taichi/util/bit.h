@@ -181,6 +181,9 @@ class Bitset {
 
   std::vector<int> or_eq_get_update_list(const Bitset &other);
 
+  // output from the lowest bit to the highest bit
+  friend std::ostream &operator<<(std::ostream &os, const Bitset &b);
+
  private:
   std::vector<value_t> vec_;
 };

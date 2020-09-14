@@ -294,7 +294,7 @@ bool StateFlowGraph::fuse() {
     }
   }
 
-   std::cout << "fuse return: " << modified << std::endl;
+  std::cout << "fuse return: " << modified << std::endl;
   return modified;
 }
 

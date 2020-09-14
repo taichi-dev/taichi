@@ -357,12 +357,10 @@ class ClearListStmt : public Stmt {
  public:
   explicit ClearListStmt(SNode *snode);
 
-  std::unique_ptr<Stmt> clone() const override;
-
   SNode *snode;
 
   TI_STMT_DEF_FIELDS(ret_type, snode);
-  TI_DEFINE_ACCEPT
+  TI_DEFINE_ACCEPT_AND_CLONE
 };
 
 // Checks if the task represented by |stmt| contains a single ClearListStmt.

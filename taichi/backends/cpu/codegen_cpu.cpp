@@ -74,8 +74,6 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
       stmt->block_dim =
           std::min(stmt->snode->parent->max_num_elements(), stmt->block_dim);
       create_offload_struct_for(stmt);
-    } else if (stmt->task_type == Type::clear_list) {
-      emit_clear_list(stmt);
     } else if (stmt->task_type == Type::listgen) {
       emit_list_gen(stmt);
     } else if (stmt->task_type == Type::gc) {

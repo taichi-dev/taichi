@@ -160,7 +160,6 @@ class OffloadedStmt : public Stmt {
     serial,
     range_for,
     struct_for,
-    clear_list,
     listgen,
     gc,
   };
@@ -198,7 +197,7 @@ class OffloadedStmt : public Stmt {
   static std::string task_type_name(TaskType tt);
 
   bool has_body() const {
-    return task_type != clear_list && task_type != listgen && task_type != gc;
+    return task_type != listgen && task_type != gc;
   }
 
   bool is_container_statement() const override {
@@ -353,6 +352,19 @@ class BlockLocalPtrStmt : public Stmt {
   TI_STMT_DEF_FIELDS(ret_type, offset);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
+
+class ClearListStmt : public Stmt {
+ public:
+  explicit ClearListStmt(SNode *snode);
+
+  SNode *snode;
+
+  TI_STMT_DEF_FIELDS(ret_type, snode);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
+// Checks if the task represented by |stmt| contains a single ClearListStmt.
+bool is_clear_list_task(const OffloadedStmt *stmt);
 
 class InternalFuncStmt : public Stmt {
  public:

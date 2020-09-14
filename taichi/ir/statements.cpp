@@ -33,9 +33,6 @@ std::string OffloadedStmt::task_name() const {
     return "range_for";
   } else if (task_type == TaskType::struct_for) {
     return "struct_for";
-  } else if (task_type == TaskType::clear_list) {
-    TI_ASSERT(snode);
-    return fmt::format("clear_list_{}", snode->get_node_type_name_hinted());
   } else if (task_type == TaskType::listgen) {
     TI_ASSERT(snode);
     return fmt::format("listgen_{}", snode->get_node_type_name_hinted());
@@ -53,8 +50,8 @@ std::string OffloadedStmt::task_type_name(TaskType tt) {
   { TaskType::x, #x }
   const static std::unordered_map<TaskType, std::string> m = {
       REGISTER_NAME(serial),     REGISTER_NAME(range_for),
-      REGISTER_NAME(struct_for), REGISTER_NAME(clear_list),
-      REGISTER_NAME(listgen),    REGISTER_NAME(gc),
+      REGISTER_NAME(struct_for), REGISTER_NAME(listgen),
+      REGISTER_NAME(gc),
   };
 #undef REGISTER_NAME
   return m.find(tt)->second;
@@ -92,6 +89,15 @@ void OffloadedStmt::all_blocks_accept(IRVisitor *visitor) {
     bls_epilogue->accept(visitor);
   if (tls_epilogue)
     tls_epilogue->accept(visitor);
+}
+
+bool is_clear_list_task(const OffloadedStmt *stmt) {
+  return (stmt->task_type == OffloadedStmt::TaskType::serial) &&
+         (stmt->body->size() == 1) && stmt->body->back()->is<ClearListStmt>();
+}
+
+ClearListStmt::ClearListStmt(SNode *snode) : snode(snode) {
+  TI_STMT_REG_FIELDS;
 }
 
 int LoopIndexStmt::max_num_bits() const {

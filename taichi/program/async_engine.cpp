@@ -356,10 +356,17 @@ void AsyncEngine::enqueue(const TaskLaunchRecord &t) {
 }
 
 void AsyncEngine::synchronize() {
-  while (sfg->optimize_listgen())
-    ;
-  while (sfg->fuse())
-    ;
+  bool modified = true;
+  while (modified) {
+    if (program->config.async_opt_listgen)
+      while (sfg->optimize_listgen())
+        modified = true;
+    if (program->config.async_opt_fusion)
+      while (sfg->fuse())
+        modified = true;
+
+    modified = false;
+  }
   auto tasks = sfg->extract();
   for (auto &task : tasks) {
     queue.enqueue(task);

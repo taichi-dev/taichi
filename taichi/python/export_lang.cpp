@@ -127,7 +127,12 @@ void export_lang(py::module &m) {
       .def_readwrite("make_thread_local", &CompileConfig::make_thread_local)
       .def_readwrite("make_block_local", &CompileConfig::make_block_local)
       .def_readwrite("cc_compile_cmd", &CompileConfig::cc_compile_cmd)
-      .def_readwrite("cc_link_cmd", &CompileConfig::cc_link_cmd);
+      .def_readwrite("cc_link_cmd", &CompileConfig::cc_link_cmd)
+      .def_readwrite("async_opt_fusion", &CompileConfig::async_opt_fusion)
+      .def_readwrite("async_opt_listgen", &CompileConfig::async_opt_listgen)
+      .def_readwrite("async_opt_activation_demotion",
+                     &CompileConfig::async_opt_activation_demotion)
+      .def_readwrite("async_opt_dse", &CompileConfig::async_opt_dse);
 
   m.def("reset_default_compile_config",
         [&]() { default_compile_config = CompileConfig(); });

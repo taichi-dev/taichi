@@ -742,14 +742,6 @@ llvm::Value *CodeGenLLVM::cast_pointer(llvm::Value *val,
       val, llvm::PointerType::get(get_runtime_type(dest_ty_name), addr_space));
 }
 
-void CodeGenLLVM::emit_clear_list(OffloadedStmt *listgen) {
-  auto snode_child = listgen->snode;
-  auto snode_parent = listgen->snode->parent;
-  auto meta_child = cast_pointer(emit_struct_meta(snode_child), "StructMeta");
-  auto meta_parent = cast_pointer(emit_struct_meta(snode_parent), "StructMeta");
-  call("clear_list", get_runtime(), meta_parent, meta_child);
-}
-
 void CodeGenLLVM::emit_list_gen(OffloadedStmt *listgen) {
   auto snode_child = listgen->snode;
   auto snode_parent = listgen->snode->parent;
@@ -1531,6 +1523,14 @@ void CodeGenLLVM::visit(BlockLocalPtrStmt *stmt) {
   auto ptr_type =
       llvm::PointerType::get(tlctx->get_data_type(stmt->ret_type.data_type), 0);
   llvm_val[stmt] = builder->CreatePointerCast(ptr, ptr_type);
+}
+
+void CodeGenLLVM::visit(ClearListStmt *stmt) {
+  auto snode_child = stmt->snode;
+  auto snode_parent = stmt->snode->parent;
+  auto meta_child = cast_pointer(emit_struct_meta(snode_child), "StructMeta");
+  auto meta_parent = cast_pointer(emit_struct_meta(snode_parent), "StructMeta");
+  call("clear_list", get_runtime(), meta_parent, meta_child);
 }
 
 void CodeGenLLVM::visit(InternalFuncStmt *stmt) {

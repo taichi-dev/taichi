@@ -303,11 +303,10 @@ class CompiledTaichiKernel {
       // Note that CompiledMtlKernel doesn't own |kernel_func|.
       std::unique_ptr<CompiledMtlKernelBase> kernel = nullptr;
       const auto ktype = ka.task_type;
-      if (ktype == KernelTaskType::clear_list ||
-          ktype == KernelTaskType::listgen) {
+      if (ktype == KernelTaskType::listgen) {
         RuntimeListOpsMtlKernel::Params kparams;
         kparams.kernel_attribs = &ka;
-        kparams.is_jit_evaluator = ti_kernel_attribs.is_jit_evaluator;
+        kparams.is_jit_evaluator = false;
         kparams.config = params.compile_config;
         kparams.device = device;
         kparams.mtl_func = mtl_func.get();

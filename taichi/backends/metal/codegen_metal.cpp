@@ -554,8 +554,6 @@ class KernelCodegen : public IRVisitor {
       generate_range_for_kernel(stmt);
     } else if (stmt->task_type == Type::struct_for) {
       generate_struct_for_kernel(stmt);
-    } else if (stmt->task_type == Type::clear_list) {
-      add_runtime_list_op_kernel(stmt, "clear_list");
     } else if (stmt->task_type == Type::listgen) {
       add_runtime_list_op_kernel(stmt, "element_listgen");
     } else if (stmt->task_type == Type::gc) {
@@ -566,6 +564,16 @@ class KernelCodegen : public IRVisitor {
       TI_ERROR("Unsupported offload type={} on Metal arch", stmt->task_name());
     }
     is_top_level_ = true;
+  }
+
+  void visit(ClearListStmt *stmt) override {
+    // TODO: Try to move this into shaders/runtime_utils.metal.h
+    const std::string listmgr("listmgr");
+    emit("ListManager {};", listmgr);
+    emit("{}.lm_data = ({}->snode_lists + {});", listmgr, kRuntimeVarName,
+         stmt->snode->id);
+    emit("{}.clear();", listmgr);
+    used_features()->sparse = true;
   }
 
   void visit(WhileControlStmt *stmt) override {
@@ -1002,10 +1010,7 @@ class KernelCodegen : public IRVisitor {
     KernelAttributes ka;
     ka.name = kernel_name;
     ka.task_type = stmt->task_type;
-    if (type == Type::clear_list) {
-      ka.num_threads = 1;
-      ka.buffers = {BuffersEnum::Runtime, BuffersEnum::Context};
-    } else if (type == Type::listgen) {
+    if (type == Type::listgen) {
       // listgen kernels use grid-stride loops
       const auto &sn_descs = compiled_structs_->snode_descriptors;
       ka.num_threads = std::min(

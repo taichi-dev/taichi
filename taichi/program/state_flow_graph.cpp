@@ -198,9 +198,8 @@ bool StateFlowGraph::fuse() {
   auto do_fuse = [&](int a, int b) {
     auto *node_a = nodes_[a].get();
     auto *node_b = nodes_[b].get();
-    // TODO: remove debug cout
-    std::cout << "fuse: " << node_a->string() << " <- " << node_b->string()
-              << std::endl;
+    // TODO: remove debug output
+    TI_INFO("Fuse: {} <- {}", node_a->string(), node_b->string());
     auto &rec_a = node_a->rec;
     auto &rec_b = node_b->rec;
     // We are about to change both |task_a| and |task_b|. Clone them first.
@@ -290,6 +289,20 @@ bool StateFlowGraph::fuse() {
         }
       }
     }
+    // TODO: accelerate this
+    for (int i = 1; i < n; i++) {
+      if (!fused[i]) {
+        for (int j = i + 1; j < n; j++) {
+          if (!fused[j] && task_type_fusable[i][j] && !has_path[i][j] &&
+              !has_path[j][i]) {
+            do_fuse(i, j);
+            fused[i] = fused[j] = true;
+            updated = true;
+            break;
+          }
+        }
+      }
+    }
     if (updated) {
       modified = true;
     } else {
@@ -297,7 +310,7 @@ bool StateFlowGraph::fuse() {
     }
   }
 
-  // Remove empty tasks
+  // Delete empty tasks. TODO: Do we need a trash bin here?
   if (modified) {
     std::vector<std::unique_ptr<Node>> new_nodes;
     new_nodes.reserve(n);

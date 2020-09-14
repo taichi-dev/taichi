@@ -129,7 +129,7 @@ Bitset::reference &Bitset::reference::flip() {
 std::ostream &operator<<(std::ostream &os, const Bitset &b) {
   for (auto &val : b.vec_)
     for (int j = 0; j < Bitset::kBits; j++)
-      os << '0' + ((val >> j) & 1);
+      os << ((val >> j) & 1 ? '1' : '0');
   return os;
 }
 

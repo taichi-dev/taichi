@@ -82,7 +82,7 @@ void StateFlowGraph::insert_state_flow(Node *from, Node *to, AsyncState state) {
 }
 
 bool StateFlowGraph::fuse() {
-  return false;  // TODO: debug fuse()
+  return false;
   using SFGNode = StateFlowGraph::Node;
   using bit::Bitset;
   const int n = nodes_.size();

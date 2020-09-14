@@ -29,7 +29,7 @@ Create a window
 
     .. note::
 
-        If you're running Taichi on a machine without GUI environment, consider
+        If you are running Taichi on a machine without a GUI environment, consider
         setting ``show_gui`` to ``False``:
 
         .. code-block:: python

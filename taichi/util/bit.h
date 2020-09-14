@@ -144,6 +144,51 @@ TI_FORCE_INLINE constexpr std::tuple<float32, float32> extract(float64 x) {
                          reinterpret_bits<float32>((uint32)(data & (-1))));
 }
 
+class Bitset {
+ public:
+  using value_t = uint64;
+  static constexpr std::size_t kBits = sizeof(value_t) * 8;
+  // kBits should be a power of two. However, the function is_power_of_two is
+  // ambiguous and can't be called here.
+  static_assert((kBits & (kBits - 1)) == 0);
+  static constexpr std::size_t kLogBits = log2int(kBits);
+  static constexpr value_t kMask = ((value_t)-1);
+  class reference {
+   public:
+    reference(std::vector<value_t> &vec, int x);
+    operator bool() const;
+    bool operator~() const;
+    reference &operator=(bool x);
+    reference &operator=(const reference &other);
+    reference &flip();
+
+   private:
+    value_t *pos_;
+    value_t digit_;
+  };
+
+  Bitset();
+  explicit Bitset(int n);
+  std::size_t size() const;
+  void reset();
+  void flip(int x);
+  bool any() const;
+  bool none() const;
+  reference operator[](int x);
+  Bitset &operator&=(const Bitset &other);
+  Bitset operator&(const Bitset &other) const;
+  Bitset &operator|=(const Bitset &other);
+  Bitset &operator^=(const Bitset &other);
+
+  std::vector<int> or_eq_get_update_list(const Bitset &other);
+
+  // output from the lowest bit to the highest bit
+  friend std::ostream &operator<<(std::ostream &os, const Bitset &b);
+
+ private:
+  std::vector<value_t> vec_;
+};
+
 }  // namespace bit
 
 TI_NAMESPACE_END

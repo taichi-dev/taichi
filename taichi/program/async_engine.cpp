@@ -237,7 +237,7 @@ ExecutionQueue::ExecutionQueue(IRBank *ir_bank)
 AsyncEngine::AsyncEngine(Program *program)
     : queue(&ir_bank_),
       program(program),
-      sfg(std::make_unique<StateFlowGraph>()) {
+      sfg(std::make_unique<StateFlowGraph>(&ir_bank_)) {
 }
 
 void AsyncEngine::launch(Kernel *kernel, Context &context) {
@@ -357,11 +357,11 @@ void AsyncEngine::enqueue(const TaskLaunchRecord &t) {
 
 void AsyncEngine::synchronize() {
   optimize_listgen();
-  while (fuse())
+  while (sfg->fuse())
     ;
-  while (!task_queue.empty()) {
-    queue.enqueue(task_queue.front());
-    task_queue.pop_front();
+  auto tasks = sfg->extract();
+  for (auto &task : tasks) {
+    queue.enqueue(task);
   }
   queue.synchronize();
 }
@@ -414,7 +414,7 @@ bool AsyncEngine::optimize_listgen() {
 }
 
 bool AsyncEngine::fuse() {
-  // TODO: improve...
+  // TODO: migrated to SFG...
   bool modified = false;
   std::unordered_map<SNode *, bool> list_dirty;
 

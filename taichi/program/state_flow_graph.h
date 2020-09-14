@@ -13,6 +13,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
+class IRBank;
 class StateFlowGraph {
  public:
   struct Node;
@@ -35,6 +36,9 @@ class StateFlowGraph {
 
     // TODO: use a reference to the corresponding TaskMeta
     std::unordered_set<AsyncState, AsyncStateHash> input_states, output_states;
+
+    // Returns the position in nodes_. Only used in fuse().
+    int node_id;
 
     // Profiling showed horrible performance using std::unordered_multimap (at
     // least on Mac with clang-1103.0.32.62)...
@@ -79,7 +83,9 @@ class StateFlowGraph {
     }
   };
 
-  StateFlowGraph();
+  StateFlowGraph(IRBank *ir_bank);
+
+  void clear();
 
   void print();
 
@@ -91,6 +97,11 @@ class StateFlowGraph {
 
   void insert_state_flow(Node *from, Node *to, AsyncState state);
 
+  bool fuse();
+
+  // Extract all tasks to execute.
+  std::vector<TaskLaunchRecord> extract();
+
  private:
   std::vector<std::unique_ptr<Node>> nodes_;
   Node *initial_node_;  // The initial node holds all the initial states.
@@ -98,6 +109,7 @@ class StateFlowGraph {
   std::unordered_map<AsyncState, std::unordered_set<Node *>, AsyncStateHash>
       latest_state_readers_;
   std::unordered_map<std::string, int> task_name_to_launch_ids_;
+  IRBank *ir_bank_;
 };
 
 TLANG_NAMESPACE_END

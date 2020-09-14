@@ -26,4 +26,8 @@ OffloadedStmt *TaskLaunchRecord::stmt() const {
   return const_cast<IRNode *>(ir_handle.ir())->as<OffloadedStmt>();
 }
 
+bool TaskLaunchRecord::empty() const {
+  return ir_handle.ir() == nullptr;
+}
+
 TLANG_NAMESPACE_END

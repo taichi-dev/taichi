@@ -30,6 +30,18 @@ uint64 hash(IRNode *stmt) {
   return ret;
 }
 
+inline const SNode *get_snode_in_clear_list_task(const OffloadedStmt *task) {
+  TI_ASSERT(is_clear_list_task(task));
+  return task->body->back()->as<ClearListStmt>()->snode;
+}
+
+inline SNode *get_snode_in_clear_list_task(OffloadedStmt *task) {
+  // Avoid duplication: https://stackoverflow.com/a/123995/12003165
+  const auto *sn =
+      get_snode_in_clear_list_task(static_cast<const OffloadedStmt *>(task));
+  return const_cast<SNode *>(sn);
+}
+
 }  // namespace
 
 uint64 IRBank::get_hash(IRNode *ir) {
@@ -327,7 +339,8 @@ TaskMeta AsyncEngine::create_task_meta(const TaskLaunchRecord &t) {
     // inserted since this is probably a WAR dependency.
     // TODO: or might be WAW? Do we even need to distinguish WAW and WAR?
 
-    meta.output_states.emplace(root_stmt->snode, AsyncState::Type::list);
+    meta.output_states.emplace(get_snode_in_clear_list_task(root_stmt),
+                               AsyncState::Type::list);
   }
   // TODO: this is probably not fully done. Hopefully after SFG Graphviz is
   // done we can easily spot what's left.
@@ -356,7 +369,7 @@ void AsyncEngine::synchronize() {
 bool AsyncEngine::optimize_listgen() {
   // TODO: improve...
   bool modified = false;
-  std::unordered_map<SNode *, bool> list_dirty;
+  std::unordered_map<const SNode *, bool> list_dirty;
   auto new_task_queue = std::deque<TaskLaunchRecord>();
   for (int i = 0; i < task_queue.size(); i++) {
     // Try to eliminate unused listgens
@@ -371,7 +384,7 @@ bool AsyncEngine::optimize_listgen() {
       // one ClearListStmt. Shall we also handle fused cases?
       TI_ASSERT(task_queue[i + 1].stmt()->task_type ==
                 OffloadedStmt::TaskType::listgen);
-      auto snode = offload->snode;
+      const auto *snode = get_snode_in_clear_list_task(offload);
       if (list_dirty.find(snode) != list_dirty.end() && !list_dirty[snode]) {
         keep = false;  // safe to remove
         modified = true;

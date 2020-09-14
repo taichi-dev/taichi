@@ -11,6 +11,8 @@
 
 TLANG_NAMESPACE_BEGIN
 
+struct TaskMeta;
+
 class IRHandle {
  public:
   IRHandle(const IRNode *ir, uint64 hash) : ir_(ir), hash_(hash) {
@@ -108,11 +110,15 @@ class AsyncStateHash {
 };
 
 struct TaskMeta {
-  std::string kernel_name;
-  OffloadedStmt::TaskType type;
-  SNode *loop_snode{nullptr};  // struct-for only
+  std::string name;
+  OffloadedStmt::TaskType type{OffloadedStmt::TaskType::serial};
+  SNode *snode{nullptr};  // struct-for and listgen only
   std::unordered_set<AsyncState, AsyncStateHash> input_states;
   std::unordered_set<AsyncState, AsyncStateHash> output_states;
 };
+
+class IRBank;
+
+TaskMeta *get_task_meta(IRBank *bank, const TaskLaunchRecord &t);
 
 TLANG_NAMESPACE_END

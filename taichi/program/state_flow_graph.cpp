@@ -14,13 +14,14 @@ TLANG_NAMESPACE_BEGIN
 // dependency edges.
 
 std::string StateFlowGraph::Node::string() const {
-  return fmt::format("[node: {}:{}]", task_name, launch_id);
+  return fmt::format("[node: {}:{}]", meta->name, launch_id);
 }
 
 StateFlowGraph::StateFlowGraph(IRBank *ir_bank) : ir_bank_(ir_bank) {
   nodes_.push_back(std::make_unique<Node>());
   initial_node_ = nodes_.back().get();
-  initial_node_->task_name = "initial_state";
+  initial_meta_.name = "initial_state";
+  initial_node_->meta = &initial_meta_;
   initial_node_->launch_id = 0;
   initial_node_->is_initial_node = true;
 }
@@ -35,27 +36,23 @@ void StateFlowGraph::clear() {
   // Do not clear task_name_to_launch_ids_.
 }
 
-void StateFlowGraph::insert_task(const TaskLaunchRecord &rec,
-                                 const TaskMeta &task_meta) {
+void StateFlowGraph::insert_task(const TaskLaunchRecord &rec) {
   auto node = std::make_unique<Node>();
   node->rec = rec;
-  node->task_name = task_meta.kernel_name;
-  node->input_states = task_meta.input_states;
-  node->output_states = task_meta.output_states;
-  node->task_type = task_meta.type;
+  node->meta = get_task_meta(ir_bank_, rec);
   {
-    int &id = task_name_to_launch_ids_[node->task_name];
+    int &id = task_name_to_launch_ids_[node->meta->name];
     node->launch_id = id;
     ++id;
   }
-  for (auto input_state : task_meta.input_states) {
+  for (auto input_state : node->meta->input_states) {
     if (latest_state_owner_.find(input_state) == latest_state_owner_.end()) {
       latest_state_owner_[input_state] = initial_node_;
     }
     insert_state_flow(latest_state_owner_[input_state], node.get(),
                       input_state);
   }
-  for (auto output_state : task_meta.output_states) {
+  for (auto output_state : node->meta->output_states) {
     latest_state_owner_[output_state] = node.get();
     if (latest_state_readers_.find(output_state) ==
         latest_state_readers_.end()) {
@@ -69,7 +66,7 @@ void StateFlowGraph::insert_task(const TaskLaunchRecord &rec,
   }
 
   // Note that this loop must happen AFTER the previous one
-  for (auto input_state : task_meta.input_states) {
+  for (auto input_state : node->meta->input_states) {
     latest_state_readers_[input_state].insert(node.get());
   }
   nodes_.push_back(std::move(node));
@@ -85,14 +82,38 @@ void StateFlowGraph::insert_state_flow(Node *from, Node *to, AsyncState state) {
 bool StateFlowGraph::optimize_listgen() {
   bool modified = false;
 
+  using bit::Bitset;
+  const int n = nodes_.size();
+
+  // Compute the transitive closure.
+  auto has_path = std::make_unique<Bitset[]>(n);
+  auto has_path_reverse = std::make_unique<Bitset[]>(n);
+  // has_path[i][j] denotes if there is a path from i to j.
+  // has_path_reverse[i][j] denotes if there is a path from j to i.
+  for (int i = 0; i < n; i++) {
+    has_path[i] = Bitset(n);
+    has_path[i][i] = true;
+    has_path_reverse[i] = Bitset(n);
+    has_path_reverse[i][i] = true;
+  }
+  for (int i = n - 1; i >= 0; i--) {
+    for (auto &edges : nodes_[i]->input_edges) {
+      for (auto &edge : edges.second) {
+        TI_ASSERT(edge->node_id < i);
+        has_path[edge->node_id] |= has_path[i];
+      }
+    }
+  }
+
   for (int i = 0; i < nodes_.size(); i++) {
     auto node_a = nodes_[i].get();
-    if (node_a->task_type != OffloadedStmt::TaskType::listgen)
+    if (node_a->meta->type != OffloadedStmt::TaskType::listgen)
       continue;
     for (int j = i + 1; j < nodes_.size(); j++) {
       auto node_b = nodes_[i].get();
-      if (node_b->task_type != OffloadedStmt::TaskType::listgen)
+      if (node_b->meta->type != OffloadedStmt::TaskType::listgen)
         continue;
+      // if (node_a.snode != node_b->snode)
     }
   }
 
@@ -387,7 +408,7 @@ std::string StateFlowGraph::dump_dot(
   ss << "digraph {\n";
   auto node_id = [](const SFGNode *n) {
     // https://graphviz.org/doc/info/lang.html ID naming
-    return fmt::format("n_{}_{}", n->task_name, n->launch_id);
+    return fmt::format("n_{}_{}", n->meta->name, n->launch_id);
   };
   // Graph level configuration.
   if (rankdir) {
@@ -409,7 +430,7 @@ std::string StateFlowGraph::dump_dot(
       ss << ",peripheries=2";
     }
     // Highlight user-defined tasks
-    const auto tt = nd->task_type;
+    const auto tt = nd->meta->type;
     if (!nd->is_initial_node &&
         (tt == TaskType::range_for || tt == TaskType::struct_for ||
          tt == TaskType::serial)) {

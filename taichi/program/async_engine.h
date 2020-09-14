@@ -28,6 +28,8 @@ class IRBank {
   void insert_to_trash_bin(std::unique_ptr<IRNode> &&ir);
   IRNode *find(IRHandle ir_handle);
 
+  std::unordered_map<IRHandle, TaskMeta> meta_bank_;
+
  private:
   std::unordered_map<IRNode *, uint64> hash_bank_;
   std::unordered_map<IRHandle, std::unique_ptr<IRNode>> ir_bank_;
@@ -177,7 +179,6 @@ class AsyncEngine {
 
   TaskMeta create_task_meta(const TaskLaunchRecord &t);
   std::unordered_map<const Kernel *, KernelMeta> kernel_metas_;
-  std::unordered_map<IRHandle, TaskMeta> offloaded_metas_;
 };
 
 TLANG_NAMESPACE_END

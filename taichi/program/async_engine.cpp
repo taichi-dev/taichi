@@ -265,12 +265,23 @@ void AsyncEngine::launch(Kernel *kernel, Context &context) {
   }
 }
 
-TaskMeta AsyncEngine::create_task_meta(const TaskLaunchRecord &t) {
+TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
+  // TODO: this function should ideally take only a IRNode
+  static std::mutex mut;
+
+  std::lock_guard<std::mutex> guard(mut);
+
+  auto &meta_bank = ir_bank->meta_bank_;
+
+  if (meta_bank.find(t.ir_handle) != meta_bank.end()) {
+    return &meta_bank[t.ir_handle];
+  }
+
   using namespace irpass::analysis;
   TaskMeta meta;
   // TODO: this is an abuse since it gathers nothing...
   auto *root_stmt = t.stmt();
-  meta.kernel_name = t.kernel->name + "_" +
+  meta.name = t.kernel->name + "_" +
                      OffloadedStmt::task_type_name(root_stmt->task_type);
   meta.type = root_stmt->task_type;
   gather_statements(root_stmt, [&](Stmt *stmt) {
@@ -342,30 +353,25 @@ TaskMeta AsyncEngine::create_task_meta(const TaskLaunchRecord &t) {
     meta.output_states.emplace(get_snode_in_clear_list_task(root_stmt),
                                AsyncState::Type::list);
   }
-  // TODO: this is probably not fully done. Hopefully after SFG Graphviz is
-  // done we can easily spot what's left.
-  return meta;
+  meta_bank[t.ir_handle] = meta;
+  return &meta_bank[t.ir_handle];
 }
 
 void AsyncEngine::enqueue(const TaskLaunchRecord &t) {
-  if (offloaded_metas_.find(t.ir_handle) == offloaded_metas_.end()) {
-    offloaded_metas_[t.ir_handle] = create_task_meta(t);
-  }
-  sfg->insert_task(t, offloaded_metas_[t.ir_handle]);
+  sfg->insert_task(t);
   task_queue.push_back(t);
 }
 
 void AsyncEngine::synchronize() {
   bool modified = true;
   while (modified) {
+    modified = false;
     if (program->config.async_opt_listgen)
       while (sfg->optimize_listgen())
         modified = true;
     if (program->config.async_opt_fusion)
       while (sfg->fuse())
         modified = true;
-
-    modified = false;
   }
   auto tasks = sfg->extract();
   for (auto &task : tasks) {

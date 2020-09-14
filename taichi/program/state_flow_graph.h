@@ -28,17 +28,14 @@ class StateFlowGraph {
   // only store a kernel_name, which is used as the label of the GraphViz node.
   struct Node {
     TaskLaunchRecord rec;
-    std::string task_name;
-    OffloadedStmt::TaskType task_type;
+    TaskMeta *meta{nullptr};
     // Incremental ID to identify the i-th launch of the task.
-    int launch_id;
+    int launch_id{0};
     bool is_initial_node{false};
 
-    // TODO: use a reference to the corresponding TaskMeta
-    std::unordered_set<AsyncState, AsyncStateHash> input_states, output_states;
-
-    // Returns the position in nodes_. Invoke StateFlowGraph::reid_nodes() to keep it up-to-date.
-    int node_id;
+    // Returns the position in nodes_. Invoke StateFlowGraph::reid_nodes() to
+    // keep it up-to-date.
+    int node_id{0};
 
     // Profiling showed horrible performance using std::unordered_multimap (at
     // least on Mac with clang-1103.0.32.62)...
@@ -75,10 +72,10 @@ class StateFlowGraph {
 
       if (is_initial_node) {
         // The initial node is special.
-        return destination->input_states.find(state) !=
-               destination->input_states.end();
+        return destination->meta->input_states.find(state) !=
+               destination->meta->input_states.end();
       } else {
-        return output_states.find(state) != output_states.end();
+        return meta->output_states.find(state) != meta->output_states.end();
       }
     }
   };
@@ -93,7 +90,7 @@ class StateFlowGraph {
   // TODO: In case we add more and more DOT configs, create a struct?
   std::string dump_dot(const std::optional<std::string> &rankdir);
 
-  void insert_task(const TaskLaunchRecord &rec, const TaskMeta &task_meta);
+  void insert_task(const TaskLaunchRecord &rec);
 
   void insert_state_flow(Node *from, Node *to, AsyncState state);
 
@@ -111,6 +108,7 @@ class StateFlowGraph {
  private:
   std::vector<std::unique_ptr<Node>> nodes_;
   Node *initial_node_;  // The initial node holds all the initial states.
+  TaskMeta initial_meta_;
   StateToNodeMapping latest_state_owner_;
   std::unordered_map<AsyncState, std::unordered_set<Node *>, AsyncStateHash>
       latest_state_readers_;

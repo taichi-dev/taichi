@@ -80,6 +80,7 @@ void StateFlowGraph::insert_state_flow(Node *from, Node *to, AsyncState state) {
 }
 
 bool StateFlowGraph::optimize_listgen() {
+  TI_INFO("Begin optimize listgen");
   bool modified = false;
 
   using bit::Bitset;
@@ -110,10 +111,33 @@ bool StateFlowGraph::optimize_listgen() {
     if (node_a->meta->type != OffloadedStmt::TaskType::listgen)
       continue;
     for (int j = i + 1; j < nodes_.size(); j++) {
-      auto node_b = nodes_[i].get();
+      auto node_b = nodes_[j].get();
       if (node_b->meta->type != OffloadedStmt::TaskType::listgen)
         continue;
-      // if (node_a.snode != node_b->snode)
+      if (node_a->meta->snode != node_b->meta->snode)
+        continue;
+
+      // Test if two list generations share the same mask and parent list
+      auto snode = node_a->meta->snode;
+
+      auto mask_state = AsyncState{snode, AsyncState::Type::mask};
+      auto parent_list_state =
+          AsyncState{snode->parent, AsyncState::Type::list};
+
+      TI_ASSERT(node_a->input_edges[mask_state].size() == 1);
+      TI_ASSERT(node_b->input_edges[mask_state].size() == 1);
+
+      if (*node_a->input_edges[mask_state].begin() !=
+          *node_b->input_edges[mask_state].begin())
+        continue;
+
+      TI_ASSERT(node_a->input_edges[parent_list_state].size() == 1);
+      TI_ASSERT(node_b->input_edges[parent_list_state].size() == 1);
+      if (*node_a->input_edges[parent_list_state].begin() !=
+          *node_b->input_edges[parent_list_state].begin())
+        continue;
+      TI_INFO("Common list generation {} and {}", node_a->string(),
+              node_b->string());
     }
   }
 
@@ -520,6 +544,15 @@ void StateFlowGraph::reid_nodes() {
     nodes_[i]->node_id = i;
   }
   TI_ASSERT(initial_node_->node_id == 0);
+}
+
+void async_print_sfg() {
+  get_current_program().async_engine->sfg->print();
+}
+
+std::string async_dump_dot(std::optional<std::string> rankdir) {
+  // https://pybind11.readthedocs.io/en/stable/advanced/functions.html#allow-prohibiting-none-arguments
+  return get_current_program().async_engine->sfg->dump_dot(rankdir);
 }
 
 TLANG_NAMESPACE_END

@@ -29,6 +29,10 @@ TI_NAMESPACE_END
 
 TLANG_NAMESPACE_BEGIN
 
+void async_print_sfg();
+
+std::string async_dump_dot(std::optional<std::string> rankdir);
+
 std::string compiled_lib_dir;
 std::string runtime_tmp_dir;
 
@@ -656,13 +660,8 @@ void export_lang(py::module &m) {
     }
   });
 
-  m.def("print_sfg", [] { get_current_program().async_engine->sfg->print(); });
-  m.def("dump_dot",
-        [](std::optional<std::string> rankdir) -> std::string {
-          // https://pybind11.readthedocs.io/en/stable/advanced/functions.html#allow-prohibiting-none-arguments
-          return get_current_program().async_engine->sfg->dump_dot(rankdir);
-        },
-        py::arg("rankdir").none(true));
+  m.def("print_sfg", async_print_sfg);
+  m.def("dump_dot", async_dump_dot, py::arg("rankdir").none(true));
 }
 
 TI_NAMESPACE_END

@@ -30,7 +30,7 @@ def test_fusion_range():
     dot = ti.dump_dot("fusion_range.dot")
     print(dot)
     ti.dot_to_pdf(dot, "fusion_range.pdf")
-    
+
     ti.sync()
 
 
@@ -97,9 +97,8 @@ def test_write_after_read():
     dot = ti.dump_dot("war.dot")
     print(dot)
     ti.dot_to_pdf(dot, "war.pdf")
-    
-    ti.sync()
 
+    ti.sync()
 
 
 test_fusion()

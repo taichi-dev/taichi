@@ -282,7 +282,7 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
   // TODO: this is an abuse since it gathers nothing...
   auto *root_stmt = t.stmt();
   meta.name = t.kernel->name + "_" +
-                     OffloadedStmt::task_type_name(root_stmt->task_type);
+              OffloadedStmt::task_type_name(root_stmt->task_type);
   meta.type = root_stmt->task_type;
   gather_statements(root_stmt, [&](Stmt *stmt) {
     if (auto global_load = stmt->cast<GlobalLoadStmt>()) {
@@ -335,11 +335,13 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
   });
   if (root_stmt->task_type == OffloadedStmt::listgen) {
     TI_ASSERT(root_stmt->snode->parent);
+    meta.snode = root_stmt->snode;
     meta.input_states.emplace(root_stmt->snode->parent, AsyncState::Type::list);
     meta.input_states.emplace(root_stmt->snode, AsyncState::Type::list);
     meta.input_states.emplace(root_stmt->snode, AsyncState::Type::mask);
     meta.output_states.emplace(root_stmt->snode, AsyncState::Type::list);
   } else if (root_stmt->task_type == OffloadedStmt::struct_for) {
+    meta.snode = root_stmt->snode;
     meta.input_states.emplace(root_stmt->snode, AsyncState::Type::list);
   }
 

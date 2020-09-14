@@ -1,6 +1,39 @@
 import taichi as ti
 
 
+def test_fusion_range():
+    ti.init(arch=ti.cpu, async_mode=True)
+
+    x = ti.field(ti.i32)
+    y = ti.field(ti.i32)
+    z = ti.field(ti.i32)
+
+    n = 128
+
+    block = ti.root.dense(ti.i, n)
+    block.place(x, y, z)
+
+    @ti.kernel
+    def foo():
+        for i in range(n):
+            y[i] = x[i] + 1
+
+    @ti.kernel
+    def bar():
+        for i in range(n):
+            z[i] = y[i] + 1
+
+    foo()
+    bar()
+
+    ti.core.print_sfg()
+    dot = ti.dump_dot("fusion_range.dot")
+    print(dot)
+    ti.dot_to_pdf(dot, "fusion_range.pdf")
+    
+    ti.sync()
+
+
 def test_fusion():
     ti.init(arch=ti.cpu, async_mode=True)
 
@@ -28,12 +61,12 @@ def test_fusion():
     foo()
     bar()
 
-    ti.sync()
-
     ti.core.print_sfg()
     dot = ti.dump_dot("fusion.dot")
     print(dot)
     ti.dot_to_pdf(dot, "fusion.pdf")
+
+    ti.sync()
 
 
 def test_write_after_read():
@@ -59,13 +92,14 @@ def test_write_after_read():
     s()
     s()
 
-    ti.sync()
-
     ti.core.print_sfg()
     dot = ti.dump_dot("war.dot")
     print(dot)
     ti.dot_to_pdf(dot, "war.pdf")
+    
+    ti.sync()
+
 
 
 test_fusion()
-test_write_after_read()
+# test_write_after_read()

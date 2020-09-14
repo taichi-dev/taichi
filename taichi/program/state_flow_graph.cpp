@@ -3,6 +3,7 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/program/async_engine.h"
 #include "taichi/util/bit.h"
+#include "state_flow_graph.h"
 
 #include <sstream>
 #include <unordered_set>
@@ -81,16 +82,31 @@ void StateFlowGraph::insert_state_flow(Node *from, Node *to, AsyncState state) {
   to->input_edges[state].insert(from);
 }
 
+bool StateFlowGraph::optimize_listgen() {
+  bool modified = false;
+
+  for (int i = 0; i < nodes_.size(); i++) {
+    auto node_a = nodes_[i].get();
+    if (node_a->task_type != OffloadedStmt::TaskType::listgen)
+      continue;
+    for (int j = i + 1; j < nodes_.size(); j++) {
+      auto node_b = nodes_[i].get();
+      if (node_b->task_type != OffloadedStmt::TaskType::listgen)
+        continue;
+    }
+  }
+
+  return modified;
+}
+
 bool StateFlowGraph::fuse() {
-  using SFGNode = StateFlowGraph::Node;
   using bit::Bitset;
   const int n = nodes_.size();
   if (n <= 2) {
     return false;
   }
-  for (int i = 0; i < n; i++) {
-    nodes_[i]->node_id = i;
-  }
+
+  reid_nodes();
 
   // Compute the transitive closure.
   auto has_path = std::make_unique<Bitset[]>(n);
@@ -323,6 +339,9 @@ bool StateFlowGraph::fuse() {
     nodes_ = std::move(new_nodes);
   }
 
+  // TODO: topo sorting after fusion crashes for some reason
+  // topo_sort_nodes();
+
   return modified;
 }
 
@@ -430,6 +449,56 @@ std::string StateFlowGraph::dump_dot(
   }
   ss << "}\n";  // closes "dirgraph {"
   return ss.str();
+}
+
+void StateFlowGraph::topo_sort_nodes() {
+  std::deque<std::unique_ptr<Node>> queue;
+  std::vector<std::unique_ptr<Node>> new_nodes;
+  std::vector<int> degrees_in(nodes_.size());
+
+  reid_nodes();
+
+  for (auto &node : nodes_) {
+    int degree_in = 0;
+    for (auto &inputs : node->input_edges) {
+      degree_in += (int)inputs.second.size();
+    }
+    degrees_in[node->node_id] = degree_in;
+  }
+
+  queue.emplace_back(std::move(nodes_[0]));
+
+  while (!queue.empty()) {
+    TI_P(queue.size());
+    auto head = std::move(queue.front());
+    queue.pop_front();
+
+    // Delete the node and update degrees_in
+    for (auto &output_edge : head->output_edges) {
+      for (auto &e : output_edge.second) {
+        auto dest = e->node_id;
+        degrees_in[dest]--;
+        TI_P(degrees_in[dest]);
+        TI_ASSERT(degrees_in[dest] >= 0);
+        if (degrees_in[dest] == 0) {
+          queue.push_back(std::move(nodes_[dest]));
+        }
+      }
+    }
+
+    new_nodes.emplace_back(std::move(head));
+  }
+
+  TI_ASSERT(new_nodes.size() == nodes_.size());
+  nodes_ = std::move(new_nodes);
+  reid_nodes();
+}
+
+void StateFlowGraph::reid_nodes() {
+  for (int i = 0; i < nodes_.size(); i++) {
+    nodes_[i]->node_id = i;
+  }
+  TI_ASSERT(initial_node_->node_id == 0);
 }
 
 TLANG_NAMESPACE_END

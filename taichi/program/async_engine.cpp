@@ -356,7 +356,8 @@ void AsyncEngine::enqueue(const TaskLaunchRecord &t) {
 }
 
 void AsyncEngine::synchronize() {
-  optimize_listgen();
+  while (sfg->optimize_listgen())
+    ;
   while (sfg->fuse())
     ;
   auto tasks = sfg->extract();
@@ -364,53 +365,6 @@ void AsyncEngine::synchronize() {
     queue.enqueue(task);
   }
   queue.synchronize();
-}
-
-bool AsyncEngine::optimize_listgen() {
-  // TODO: improve...
-  bool modified = false;
-  std::unordered_map<const SNode *, bool> list_dirty;
-  auto new_task_queue = std::deque<TaskLaunchRecord>();
-  for (int i = 0; i < task_queue.size(); i++) {
-    // Try to eliminate unused listgens
-    auto &t = task_queue[i];
-    auto meta = offloaded_metas_[t.ir_handle];
-    const auto *offload = t.stmt();
-    bool keep = true;
-    if (offload->task_type == OffloadedStmt::TaskType::listgen) {
-      // keep
-    } else if (is_clear_list_task(offload)) {
-      // TODO: this only handles the case where the serial task contains exactly
-      // one ClearListStmt. Shall we also handle fused cases?
-      TI_ASSERT(task_queue[i + 1].stmt()->task_type ==
-                OffloadedStmt::TaskType::listgen);
-      const auto *snode = get_snode_in_clear_list_task(offload);
-      if (list_dirty.find(snode) != list_dirty.end() && !list_dirty[snode]) {
-        keep = false;  // safe to remove
-        modified = true;
-        i++;  // skip the following list gen as well
-        continue;
-      }
-      list_dirty[snode] = false;
-    } else {
-      for (auto output_state : meta.output_states) {
-        auto snode = output_state.snode;
-        if (output_state.type != AsyncState::Type::mask)
-          continue;
-        while (snode && snode->type != SNodeType::root) {
-          list_dirty[snode] = true;
-          snode = snode->parent;
-        }
-      }
-    }
-    if (keep) {
-      new_task_queue.push_back(t);
-    } else {
-      modified = true;
-    }
-  }
-  task_queue = std::move(new_task_queue);
-  return modified;
 }
 
 bool AsyncEngine::fuse() {

@@ -148,8 +148,6 @@ class AsyncEngine {
 
   explicit AsyncEngine(Program *program);
 
-  bool optimize_listgen();  // return true when modified
-
   bool fuse();  // return true when modified
 
   void clear_cache() {

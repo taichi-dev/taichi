@@ -37,7 +37,7 @@ class StateFlowGraph {
     // TODO: use a reference to the corresponding TaskMeta
     std::unordered_set<AsyncState, AsyncStateHash> input_states, output_states;
 
-    // Returns the position in nodes_. Only used in fuse().
+    // Returns the position in nodes_. Invoke StateFlowGraph::reid_nodes() to keep it up-to-date.
     int node_id;
 
     // Profiling showed horrible performance using std::unordered_multimap (at
@@ -98,6 +98,12 @@ class StateFlowGraph {
   void insert_state_flow(Node *from, Node *to, AsyncState state);
 
   bool fuse();
+
+  bool optimize_listgen();
+
+  void reid_nodes();
+
+  void topo_sort_nodes();
 
   // Extract all tasks to execute.
   std::vector<TaskLaunchRecord> extract();

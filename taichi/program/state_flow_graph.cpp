@@ -119,12 +119,6 @@ bool StateFlowGraph::fuse() {
       }
     }
   }
-  for (int i = 0; i < n; i++) {
-    // This is for: if has_path[i][j] && has_path[j][k], there is a path of
-    // length >= 2 from i to k.
-    has_path[i][i] = false;
-    has_path_reverse[i][i] = false;
-  }
   // std::cout << "a" << std::endl;
 
   // Cache the result that if each pair is fusable by task types.
@@ -184,11 +178,26 @@ bool StateFlowGraph::fuse() {
   }
   // std::cout << "b" << std::endl;
 
-  auto do_fuse = [this](SFGNode *a, SFGNode *b) {
+  auto insert_edge_for_transitive_closure = [&](int a, int b) {
+    // insert edge a -> b
+    auto update_list = has_path[a].or_eq_get_update_list(has_path[b]);
+    for (auto i : update_list) {
+      auto update_list_i =
+          has_path_reverse[i].or_eq_get_update_list(has_path_reverse[a]);
+      for (auto j : update_list_i) {
+        has_path[i][j] = true;
+      }
+    }
+  };
+
+  auto do_fuse = [&](int a, int b) {
+    auto *node_a = nodes_[a].get();
+    auto *node_b = nodes_[b].get();
     // TODO: remove debug cout
-    std::cout << "fuse: " << a->string() << " <- " << b->string() << std::endl;
-    auto &rec_a = a->rec;
-    auto &rec_b = b->rec;
+    std::cout << "fuse: " << node_a->string() << " <- " << node_b->string()
+              << std::endl;
+    auto &rec_a = node_a->rec;
+    auto &rec_b = node_b->rec;
     // We are about to change both |task_a| and |task_b|. Clone them first.
     auto cloned_task_a = rec_a.ir_handle.clone();
     auto cloned_task_b = rec_b.ir_handle.clone();
@@ -219,19 +228,24 @@ bool StateFlowGraph::fuse() {
     ir_bank_->insert_to_trash_bin(std::move(cloned_task_b));
 
     // replace all edges to the node B to A
-    for (auto &edges : b->output_edges) {
+    for (auto &edges : node_b->output_edges) {
       for (auto &edge : edges.second) {
-        edge->input_edges[edges.first].erase(b);
-        edge->input_edges[edges.first].insert(a);
+        edge->input_edges[edges.first].erase(node_b);
+        edge->input_edges[edges.first].insert(node_a);
       }
     }
-    for (auto &edges : b->input_edges) {
+    bool already_had_a_to_b_edge = false;
+    for (auto &edges : node_b->input_edges) {
       for (auto &edge : edges.second) {
-        edge->output_edges[edges.first].erase(b);
-        if (edge != a)
-          edge->output_edges[edges.first].insert(a);
+        edge->output_edges[edges.first].erase(node_b);
+        if (edge == node_a)
+          already_had_a_to_b_edge = true;
+        else
+          edge->output_edges[edges.first].insert(node_a);
       }
     }
+
+    // update the transitive closure
   };
 
   auto fused = std::make_unique<bool[]>(n);
@@ -249,8 +263,11 @@ bool StateFlowGraph::fuse() {
             // TODO: for each pair of edge (i, j), we can only fuse if they are
             //  both serial or both element-wise.
             if (!fused[i] && !fused[j] && task_type_fusable[i][j]) {
-              if ((has_path[i] & has_path_reverse[j]).none()) {
-                do_fuse(nodes_[i].get(), nodes_[j].get());
+              auto i_has_path_to_j = has_path[i] & has_path_reverse[j];
+              i_has_path_to_j[i] = i_has_path_to_j[j] = false;
+              // check if i doesn't have a path to j of length >= 2
+              if (i_has_path_to_j.none()) {
+                do_fuse(i, j);
                 fused[i] = fused[j] = true;
                 updated = true;
               }

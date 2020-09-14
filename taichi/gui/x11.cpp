@@ -136,7 +136,8 @@ void GUI::create_window() {
   TI_ASSERT_INFO(display,
                  "Taichi fails to create a window."
                  " This is probably due to the lack of an X11 GUI environment."
-                 " If you are using ssh, try ssh -XY.");
+                 " Consider using the `ti.GUI(show_gui=False)` option, see"
+                 " https://taichi.readthedocs.io/en/stable/gui.html");
   visual = DefaultVisual(display, 0);
   window =
       XCreateSimpleWindow((Display *)display, RootWindow((Display *)display, 0),

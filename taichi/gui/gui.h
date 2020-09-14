@@ -815,41 +815,39 @@ class GUI : public GUIBase {
 
   void update() {
     frame_id++;
-    taichi::Time::wait_until(last_frame_time + frame_delta_limit);
-    auto this_frame_time = taichi::Time::get_time();
-    if (last_frame_time != 0) {
-      last_frame_interval.push_back(this_frame_time - last_frame_time);
-    }
-    last_frame_time = this_frame_time;
-    // Some old examples / users don't even provide a `break` statement for us
-    // to terminate loop. So we have to terminate the program with RuntimeError
-    // if ti.GUI.EXIT event is not processed. Pretty like SIGTERM, you can hook
-    // it, but you have to terminate after your handler is done.
-    if (should_close) {
-      if (++should_close > 5) {
-        // if the event is not processed in 5 frames, raise RuntimeError
-        throw std::string(
-            "Window close button clicked, exiting... (use `while gui.running` "
-            "to exit gracefully)");
-      }
-    }
     if (show_gui) {
+      taichi::Time::wait_until(last_frame_time + frame_delta_limit);
+      auto this_frame_time = taichi::Time::get_time();
+      if (last_frame_time != 0) {
+        last_frame_interval.push_back(this_frame_time - last_frame_time);
+      }
+      last_frame_time = this_frame_time;
+      // Some old examples / users don't even provide a `break` statement for us
+      // to terminate loop. So we have to terminate the program with
+      // RuntimeError if ti.GUI.EXIT event is not processed. Pretty like
+      // SIGTERM, you can hook it, but you have to terminate after your handler
+      // is done.
+      if (should_close) {
+        if (++should_close > 5) {
+          // if the event is not processed in 5 frames, raise RuntimeError
+          throw std::string(
+              "Window close button clicked, exiting... (use `while "
+              "gui.running` "
+              "to exit gracefully)");
+        }
+      }
       while (last_frame_interval.size() > 30) {
         last_frame_interval.erase(last_frame_interval.begin());
       }
       auto real_fps = last_frame_interval.size() /
                       (std::accumulate(last_frame_interval.begin(),
                                        last_frame_interval.end(), 0.0_f));
-      update_gui(real_fps);
+      redraw_widgets();
+      redraw();
+      process_event();
+      if (frame_id % 10 == 0)
+        set_title(fmt::format("{} ({:.2f} FPS)", window_name, real_fps));
     }
-  }
-
-  void update_gui(float real_fps) {
-    redraw_widgets();
-    redraw();
-    process_event();
-    if (frame_id % 10 == 0)
-      set_title(fmt::format("{} ({:.2f} FPS)", window_name, real_fps));
   }
 
   bool has_key_event() {

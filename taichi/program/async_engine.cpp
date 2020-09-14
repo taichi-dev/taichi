@@ -366,15 +366,21 @@ void AsyncEngine::enqueue(const TaskLaunchRecord &t) {
 
 void AsyncEngine::synchronize() {
   bool modified = true;
+  debug_sfg("initial");
   while (modified) {
     modified = false;
     if (program->config.async_opt_listgen)
-      while (sfg->optimize_listgen())
+      while (sfg->optimize_listgen()) {
+        debug_sfg("listgen");
         modified = true;
+      }
     if (program->config.async_opt_fusion)
-      while (sfg->fuse())
+      while (sfg->fuse()) {
+        debug_sfg("fuse");
         modified = true;
+      }
   }
+  debug_sfg("final");
   auto tasks = sfg->extract();
   for (auto &task : tasks) {
     queue.enqueue(task);
@@ -480,6 +486,19 @@ bool AsyncEngine::fuse() {
   task_queue = std::move(new_task_queue);
 
   return modified;
+}
+
+void AsyncEngine::debug_sfg(const std::string &suffix) {
+  auto prefix = program->config.async_opt_intermediate_file;
+  auto dot = sfg->dump_dot(std::optional<std::string>());
+  auto dot_fn =
+      fmt::format("{}_{:04d}_{}", prefix, debug_sfg_counter++, suffix);
+  {
+    std::ofstream dot_file(dot_fn + ".dot");
+    dot_file << dot;
+  }
+  std::system(
+      fmt::format("dot -Tpdf -o {}.pdf {}.dot", dot_fn, dot_fn).c_str());
 }
 
 TLANG_NAMESPACE_END

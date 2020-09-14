@@ -36,7 +36,7 @@ def test_fusion_range():
 
 def test_fusion():
     # TODO: fix fusion here
-    ti.init(arch=ti.cpu, async_mode=True, async_opt_fusion=False)
+    ti.init(arch=ti.cpu, async_mode=True, async_opt_fusion=False, async_opt_intermediate_file="fusion")
 
     x = ti.field(ti.i32)
     y = ti.field(ti.i32)
@@ -61,11 +61,6 @@ def test_fusion():
 
     foo()
     bar()
-
-    ti.core.print_sfg()
-    dot = ti.dump_dot("fusion.dot")
-    print(dot)
-    ti.dot_to_pdf(dot, "fusion.pdf")
 
     ti.sync()
 

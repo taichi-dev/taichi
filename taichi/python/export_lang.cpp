@@ -136,7 +136,9 @@ void export_lang(py::module &m) {
       .def_readwrite("async_opt_listgen", &CompileConfig::async_opt_listgen)
       .def_readwrite("async_opt_activation_demotion",
                      &CompileConfig::async_opt_activation_demotion)
-      .def_readwrite("async_opt_dse", &CompileConfig::async_opt_dse);
+      .def_readwrite("async_opt_dse", &CompileConfig::async_opt_dse)
+      .def_readwrite("async_opt_intermediate_file",
+                     &CompileConfig::async_opt_intermediate_file);
 
   m.def("reset_default_compile_config",
         [&]() { default_compile_config = CompileConfig(); });

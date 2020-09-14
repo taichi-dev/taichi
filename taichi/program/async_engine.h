@@ -147,6 +147,7 @@ class AsyncEngine {
 
   std::unique_ptr<StateFlowGraph> sfg;
   std::deque<TaskLaunchRecord> task_queue;
+  int debug_sfg_counter{0};
 
   explicit AsyncEngine(Program *program);
 
@@ -161,6 +162,8 @@ class AsyncEngine {
   void enqueue(const TaskLaunchRecord &t);
 
   void synchronize();
+
+  void debug_sfg(const std::string &suffix);
 
  private:
   IRBank ir_bank_;

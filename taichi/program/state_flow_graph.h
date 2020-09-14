@@ -78,6 +78,10 @@ class StateFlowGraph {
         return meta->output_states.find(state) != meta->output_states.end();
       }
     }
+
+    void disconnect_all();
+
+    void disconnect_with(Node *other);
   };
 
   StateFlowGraph(IRBank *ir_bank);
@@ -98,7 +102,11 @@ class StateFlowGraph {
 
   bool optimize_listgen();
 
+  void delete_nodes(const std::unordered_set<int> &to_delete);
+
   void reid_nodes();
+
+  void replace_reference(Node *node_a, Node *node_b);
 
   void topo_sort_nodes();
 

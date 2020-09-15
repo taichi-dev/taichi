@@ -374,16 +374,19 @@ void AsyncEngine::synchronize() {
         debug_sfg("listgen");
         modified = true;
       }
+    sfg->verify();
     if (program->config.async_opt_dse)
       while (sfg->optimize_dead_store()) {
         debug_sfg("dse");
         modified = true;
       }
+    sfg->verify();
     if (program->config.async_opt_fusion)
       while (sfg->fuse()) {
         debug_sfg("fuse");
         modified = true;
       }
+    sfg->verify();
   }
   debug_sfg("final");
   auto tasks = sfg->extract();

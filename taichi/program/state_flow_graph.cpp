@@ -3,7 +3,6 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/program/async_engine.h"
-#include "taichi/util/bit.h"
 
 #include <sstream>
 #include <unordered_set>
@@ -107,6 +106,9 @@ bool StateFlowGraph::optimize_listgen() {
 
   std::vector<std::pair<int, int>> common_pairs;
 
+  // std::vector<Bitset> has_path, has_path_reverse;
+  // std::tie(has_path, has_path_reverse) = compute_transitive_closure();
+
   for (int i = 0; i < nodes_.size(); i++) {
     auto node_a = nodes_[i].get();
     if (node_a->meta->type != OffloadedStmt::TaskType::listgen)
@@ -138,8 +140,16 @@ bool StateFlowGraph::optimize_listgen() {
           *node_b->input_edges[parent_list_state].begin())
         continue;
 
+      /*
       // TODO: Use reachability to test if there is node_c between node_a
-      // and node_b that writes the list
+      // and node_b that writes the list (the following might be too
+      // conservative)
+      auto a_has_path_to_b = has_path[i] & has_path_reverse[j];
+      a_has_path_to_b[i] = a_has_path_to_b[j] = false;
+      // Test if there is a path node_a->node_c->node_b here
+      if (a_has_path_to_b.any())
+        continue;
+      */
 
       TI_INFO("Common list generation {} and {}", node_a->string(),
               node_b->string());
@@ -154,7 +164,8 @@ bool StateFlowGraph::optimize_listgen() {
     auto i = p.first;
     auto j = p.second;
     TI_INFO("Eliminating {}", nodes_[j]->string());
-    replace_reference(nodes_[j].get(), nodes_[i].get());
+    replace_reference(nodes_[j].get(), nodes_[i].get(),
+                      /*only_output_edges=*/true);
     modified = true;
     nodes_to_delete.insert(j);
   }
@@ -164,18 +175,13 @@ bool StateFlowGraph::optimize_listgen() {
   return modified;
 }
 
-bool StateFlowGraph::fuse() {
+std::pair<std::vector<bit::Bitset>, std::vector<bit::Bitset>>
+StateFlowGraph::compute_transitive_closure() {
   using bit::Bitset;
   const int n = nodes_.size();
-  if (n <= 2) {
-    return false;
-  }
-
   reid_nodes();
-
-  // Compute the transitive closure.
-  auto has_path = std::make_unique<Bitset[]>(n);
-  auto has_path_reverse = std::make_unique<Bitset[]>(n);
+  auto has_path = std::vector<Bitset>(n);
+  auto has_path_reverse = std::vector<Bitset>(n);
   // has_path[i][j] denotes if there is a path from i to j.
   // has_path_reverse[i][j] denotes if there is a path from j to i.
   for (int i = 0; i < n; i++) {
@@ -201,6 +207,18 @@ bool StateFlowGraph::fuse() {
       }
     }
   }
+  return std::make_pair(std::move(has_path), std::move(has_path_reverse));
+}
+
+bool StateFlowGraph::fuse() {
+  using bit::Bitset;
+  const int n = nodes_.size();
+  if (n <= 2) {
+    return false;
+  }
+
+  std::vector<Bitset> has_path, has_path_reverse;
+  std::tie(has_path, has_path_reverse) = compute_transitive_closure();
 
   // Cache the result that if each pair is fusable by task types.
   // TODO: improve this
@@ -266,6 +284,8 @@ bool StateFlowGraph::fuse() {
     }
   }
 
+  std::unordered_set<int> indices_to_delete;
+
   auto insert_edge_for_transitive_closure = [&](int a, int b) {
     // insert edge a -> b
     auto update_list = has_path[a].or_eq_get_update_list(has_path[b]);
@@ -309,28 +329,22 @@ bool StateFlowGraph::fuse() {
     rec_a.ir_handle = IRHandle(task_a, h);
     ir_bank_->insert(std::move(cloned_task_a), h);
     rec_b.ir_handle = IRHandle(nullptr, 0);
+    indices_to_delete.insert(b);
 
     // TODO: since cloned_task_b->body is empty, can we remove this (i.e.,
     //  simply delete cloned_task_b here)?
     ir_bank_->insert_to_trash_bin(std::move(cloned_task_b));
 
-    // replace all edges to node B with new ones to node A
-    for (auto &edges : node_b->output_edges) {
-      for (auto &edge : edges.second) {
-        edge->input_edges[edges.first].erase(node_b);
-        edge->input_edges[edges.first].insert(node_a);
+    const bool already_had_a_to_b_edge = has_path[a][b];
+    if (already_had_a_to_b_edge) {
+      for (auto &edges : node_a->output_edges) {
+        edges.second.erase(node_b);
+      }
+      for (auto &edges : node_b->input_edges) {
+        edges.second.erase(node_a);
       }
     }
-    bool already_had_a_to_b_edge = false;
-    for (auto &edges : node_b->input_edges) {
-      for (auto &edge : edges.second) {
-        edge->output_edges[edges.first].erase(node_b);
-        if (edge == node_a)
-          already_had_a_to_b_edge = true;
-        else
-          edge->output_edges[edges.first].insert(node_a);
-      }
-    }
+    replace_reference(node_b, node_a);
 
     // update the transitive closure
     insert_edge_for_transitive_closure(b, a);
@@ -353,8 +367,7 @@ bool StateFlowGraph::fuse() {
           for (auto &edge : edges.second) {
             const int j = edge->node_id;
             // TODO: for each pair of edge (i, j), we can only fuse if they
-            // are
-            //  both serial or both element-wise.
+            // are both serial or both element-wise.
             if (!fused[j] && task_type_fusable[i][j]) {
               auto i_has_path_to_j = has_path[i] & has_path_reverse[j];
               i_has_path_to_j[i] = i_has_path_to_j[j] = false;
@@ -394,21 +407,16 @@ bool StateFlowGraph::fuse() {
     }
   }
 
-  // Delete empty tasks. TODO: Do we need a trash bin here?
+  // TODO: Do we need a trash bin here?
   if (modified) {
-    std::vector<std::unique_ptr<Node>> new_nodes;
-    new_nodes.reserve(n);
-    new_nodes.push_back(std::move(nodes_[0]));
-    for (int i = 1; i < n; i++) {
-      if (!nodes_[i]->rec.empty()) {
-        new_nodes.push_back(std::move(nodes_[i]));
-      }
+    // rebuild the graph in topological order
+    delete_nodes(indices_to_delete);
+    topo_sort_nodes();
+    auto tasks = extract();
+    for (auto &task : tasks) {
+      insert_task(task);
     }
-    nodes_ = std::move(new_nodes);
   }
-
-  // TODO: topo sorting after fusion crashes for some reason. Need to fix.
-  // topo_sort_nodes();
 
   return modified;
 }
@@ -417,7 +425,9 @@ std::vector<TaskLaunchRecord> StateFlowGraph::extract() {
   std::vector<TaskLaunchRecord> tasks;
   tasks.reserve(nodes_.size());
   for (int i = 1; i < (int)nodes_.size(); i++) {
-    tasks.push_back(nodes_[i]->rec);
+    if (!nodes_[i]->rec.empty()) {
+      tasks.push_back(nodes_[i]->rec);
+    }
   }
   clear();
   return tasks;
@@ -538,7 +548,11 @@ void StateFlowGraph::topo_sort_nodes() {
     degrees_in[node->node_id] = degree_in;
   }
 
-  queue.emplace_back(std::move(nodes_[0]));
+  for (auto &node : nodes_) {
+    if (degrees_in[node->node_id] == 0) {
+      queue.emplace_back(std::move(node));
+    }
+  }
 
   while (!queue.empty()) {
     auto head = std::move(queue.front());
@@ -572,7 +586,8 @@ void StateFlowGraph::reid_nodes() {
 }
 
 void StateFlowGraph::replace_reference(StateFlowGraph::Node *node_a,
-                                       StateFlowGraph::Node *node_b) {
+                                       StateFlowGraph::Node *node_b,
+                                       bool only_output_edges) {
   // replace all edges to node A with new ones to node B
   for (auto &edges : node_a->output_edges) {
     // Find all nodes C that points to A
@@ -588,6 +603,23 @@ void StateFlowGraph::replace_reference(StateFlowGraph::Node *node_a,
     }
   }
   node_a->output_edges.clear();
+  if (only_output_edges) {
+    return;
+  }
+  for (auto &edges : node_a->input_edges) {
+    // Find all nodes C that points to A
+    for (auto &node_c : edges.second) {
+      // Replace reference to A with B
+      if (node_c->output_edges[edges.first].find(node_a) !=
+          node_c->output_edges[edges.first].end()) {
+        node_c->output_edges[edges.first].erase(node_a);
+
+        node_c->output_edges[edges.first].insert(node_b);
+        node_b->input_edges[edges.first].insert(node_c);
+      }
+    }
+  }
+  node_a->input_edges.clear();
 }
 
 void StateFlowGraph::delete_nodes(
@@ -711,6 +743,61 @@ bool StateFlowGraph::optimize_dead_store() {
   delete_nodes(to_delete);
 
   return modified;
+}
+
+void StateFlowGraph::verify() {
+  const int n = nodes_.size();
+  reid_nodes();
+  for (int i = 0; i < n; i++) {
+    for (auto &edges : nodes_[i]->output_edges) {
+      for (auto &edge : edges.second) {
+        TI_ASSERT_INFO(edge, "nodes_[{}]({}) has an empty output edge", i,
+                       nodes_[i]->string());
+        auto dest = edge->node_id;
+        TI_ASSERT_INFO(dest >= 0 && dest < n,
+                       "nodes_[{}]({}) has an output edge to nodes_[{}]", i,
+                       nodes_[i]->string(), dest);
+        TI_ASSERT_INFO(nodes_[dest].get() == edge,
+                       "nodes_[{}]({}) has an output edge to {}, "
+                       "which is outside nodes_",
+                       i, nodes_[i]->string(), edge->string());
+        TI_ASSERT_INFO(dest != i, "nodes_[{}]({}) has an output edge to itself",
+                       i, nodes_[i]->string());
+        auto &corresponding_edges = nodes_[dest]->input_edges[edges.first];
+        TI_ASSERT_INFO(corresponding_edges.find(nodes_[i].get()) !=
+                           corresponding_edges.end(),
+                       "nodes_[{}]({}) has an output edge to nodes_[{}]({}), "
+                       "which doesn't corresponds to an input edge",
+                       i, nodes_[i]->string(), dest, nodes_[dest]->string());
+      }
+    }
+  }
+  for (int i = 0; i < n; i++) {
+    for (auto &edges : nodes_[i]->input_edges) {
+      for (auto &edge : edges.second) {
+        TI_ASSERT_INFO(edge, "nodes_[{}]({}) has an empty input edge", i,
+                       nodes_[i]->string());
+        auto dest = edge->node_id;
+        TI_ASSERT_INFO(dest >= 0 && dest < n,
+                       "nodes_[{}]({}) has an input edge to nodes_[{}]", i,
+                       nodes_[i]->string(), dest);
+        TI_ASSERT_INFO(nodes_[dest].get() == edge,
+                       "nodes_[{}]({}) has an input edge to {}, "
+                       "which is outside nodes_",
+                       i, nodes_[i]->string(), edge->string());
+        TI_ASSERT_INFO(dest != i, "nodes_[{}]({}) has an input edge to itself",
+                       i, nodes_[i]->string());
+        auto &corresponding_edges = nodes_[dest]->output_edges[edges.first];
+        TI_ASSERT_INFO(corresponding_edges.find(nodes_[i].get()) !=
+                           corresponding_edges.end(),
+                       "nodes_[{}]({}) has an input edge to nodes_[{}]({}), "
+                       "which doesn't corresponds to an output edge",
+                       i, nodes_[i]->string(), dest, nodes_[dest]->string());
+      }
+    }
+  }
+  // Call topological sort to check cycles.
+  topo_sort_nodes();
 }
 
 void async_print_sfg() {

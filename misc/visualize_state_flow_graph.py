@@ -65,13 +65,7 @@ def test_fusion():
 
 
 def test_write_after_read():
-    # TODO: @xumingkuan fusion on this case fails
-    ti.init(arch=ti.cpu,
-            async_mode=True,
-            async_opt_dse=False,
-            async_opt_listgen=False,
-            async_opt_fusion=False,
-            async_opt_intermediate_file="war")
+    ti.init(arch=ti.cpu, async_mode=True, async_opt_intermediate_file="war")
 
     x = ti.field(ti.i32, shape=16)
 

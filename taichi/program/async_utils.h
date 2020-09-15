@@ -15,6 +15,9 @@ struct TaskMeta;
 
 class IRHandle {
  public:
+  IRHandle() : ir_(nullptr), hash_(0) {
+  }
+
   IRHandle(const IRNode *ir, uint64 hash) : ir_(ir), hash_(hash) {
   }
 
@@ -26,6 +29,10 @@ class IRHandle {
 
   uint64 hash() const {
     return hash_;
+  }
+
+  bool empty() const {
+    return ir_ == nullptr;
   }
 
   // Two IRHandles are considered the same iff their hash values are the same.
@@ -46,6 +53,15 @@ struct hash<taichi::lang::IRHandle> {
   std::size_t operator()(const taichi::lang::IRHandle &ir_handle) const
       noexcept {
     return ir_handle.hash();
+  }
+};
+
+template <>
+struct hash<std::pair<taichi::lang::IRHandle, taichi::lang::IRHandle>> {
+  std::size_t operator()(
+      const std::pair<taichi::lang::IRHandle, taichi::lang::IRHandle>
+          &ir_handles) const noexcept {
+    return ir_handles.first.hash() * 100000007UL + ir_handles.second.hash();
   }
 };
 }  // namespace std

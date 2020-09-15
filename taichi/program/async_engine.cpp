@@ -80,6 +80,44 @@ IRNode *IRBank::find(IRHandle ir_handle) {
   return result->second.get();
 }
 
+IRHandle IRBank::fuse(IRHandle handle_a, IRHandle handle_b, Kernel *kernel) {
+  auto &result = fuse_bank_[std::make_pair(handle_a, handle_b)];
+  if (!result.empty()) {
+    // assume the kernel is always the same when the ir handles are the same
+    return result;
+  }
+
+  TI_INFO("Begin uncached fusion");
+  // We are about to change both |task_a| and |task_b|. Clone them first.
+  auto cloned_task_a = handle_a.clone();
+  auto cloned_task_b = handle_b.clone();
+  auto task_a = cloned_task_a->as<OffloadedStmt>();
+  auto task_b = cloned_task_b->as<OffloadedStmt>();
+  // TODO: in certain cases this optimization can be wrong!
+  // Fuse task b into task_a
+  for (int j = 0; j < (int)task_b->body->size(); j++) {
+    task_a->body->insert(std::move(task_b->body->statements[j]));
+  }
+  task_b->body->statements.clear();
+
+  // replace all reference to the offloaded statement B to A
+  irpass::replace_all_usages_with(task_a, task_b, task_a);
+
+  irpass::full_simplify(task_a, /*after_lower_access=*/false, kernel);
+  // For now, re_id is necessary for the hash to be correct.
+  irpass::re_id(task_a);
+
+  auto h = get_hash(task_a);
+  result = IRHandle(task_a, h);
+  insert(std::move(cloned_task_a), h);
+
+  // TODO: since cloned_task_b->body is empty, can we remove this (i.e.,
+  //  simply delete cloned_task_b here)?
+  insert_to_trash_bin(std::move(cloned_task_b));
+
+  return result;
+}
+
 ParallelExecutor::ParallelExecutor(int num_threads)
     : num_threads(num_threads),
       status(ExecutorStatus::uninitialized),

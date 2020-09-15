@@ -302,38 +302,14 @@ bool StateFlowGraph::fuse() {
     auto *node_a = nodes_[a].get();
     auto *node_b = nodes_[b].get();
     // TODO: remove debug output
-    TI_INFO("Fuse: {} <- {}", node_a->string(), node_b->string());
+    TI_TRACE("Fuse: {} <- {}", node_a->string(), node_b->string());
     auto &rec_a = node_a->rec;
     auto &rec_b = node_b->rec;
-    // We are about to change both |task_a| and |task_b|. Clone them first.
-    auto cloned_task_a = rec_a.ir_handle.clone();
-    auto cloned_task_b = rec_b.ir_handle.clone();
-    auto task_a = cloned_task_a->as<OffloadedStmt>();
-    auto task_b = cloned_task_b->as<OffloadedStmt>();
-    // TODO: in certain cases this optimization can be wrong!
-    // Fuse task b into task_a
-    for (int j = 0; j < (int)task_b->body->size(); j++) {
-      task_a->body->insert(std::move(task_b->body->statements[j]));
-    }
-    task_b->body->statements.clear();
+    rec_a.ir_handle =
+        ir_bank_->fuse(rec_a.ir_handle, rec_b.ir_handle, rec_a.kernel);
+    rec_b.ir_handle = IRHandle();
 
-    // replace all reference to the offloaded statement B to A
-    irpass::replace_all_usages_with(task_a, task_b, task_a);
-
-    auto kernel = rec_a.kernel;
-    irpass::full_simplify(task_a, /*after_lower_access=*/false, kernel);
-    // For now, re_id is necessary for the hash to be correct.
-    irpass::re_id(task_a);
-
-    auto h = ir_bank_->get_hash(task_a);
-    rec_a.ir_handle = IRHandle(task_a, h);
-    ir_bank_->insert(std::move(cloned_task_a), h);
-    rec_b.ir_handle = IRHandle(nullptr, 0);
     indices_to_delete.insert(b);
-
-    // TODO: since cloned_task_b->body is empty, can we remove this (i.e.,
-    //  simply delete cloned_task_b here)?
-    ir_bank_->insert_to_trash_bin(std::move(cloned_task_b));
 
     const bool already_had_a_to_b_edge = has_path[a][b];
     if (already_had_a_to_b_edge) {

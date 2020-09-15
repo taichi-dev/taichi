@@ -266,6 +266,8 @@ bool StateFlowGraph::fuse() {
     }
   }
 
+  std::unordered_set<int> indices_to_delete;
+
   auto insert_edge_for_transitive_closure = [&](int a, int b) {
     // insert edge a -> b
     auto update_list = has_path[a].or_eq_get_update_list(has_path[b]);
@@ -309,6 +311,7 @@ bool StateFlowGraph::fuse() {
     rec_a.ir_handle = IRHandle(task_a, h);
     ir_bank_->insert(std::move(cloned_task_a), h);
     rec_b.ir_handle = IRHandle(nullptr, 0);
+    indices_to_delete.insert(b);
 
     // TODO: since cloned_task_b->body is empty, can we remove this (i.e.,
     //  simply delete cloned_task_b here)?
@@ -386,20 +389,16 @@ bool StateFlowGraph::fuse() {
     }
   }
 
-  // Delete empty tasks. TODO: Do we need a trash bin here?
+  // TODO: Do we need a trash bin here?
   if (modified) {
-    std::vector<std::unique_ptr<Node>> new_nodes;
-    new_nodes.reserve(n);
-    new_nodes.push_back(std::move(nodes_[0]));
-    for (int i = 1; i < n; i++) {
-      if (!nodes_[i]->rec.empty()) {
-        new_nodes.push_back(std::move(nodes_[i]));
-      }
+    // rebuild the graph in topological order
+    delete_nodes(indices_to_delete);
+    topo_sort_nodes();
+    auto tasks = extract();
+    for (auto &task : tasks) {
+      insert_task(task);
     }
-    nodes_ = std::move(new_nodes);
   }
-
-  topo_sort_nodes();
 
   return modified;
 }
@@ -408,7 +407,9 @@ std::vector<TaskLaunchRecord> StateFlowGraph::extract() {
   std::vector<TaskLaunchRecord> tasks;
   tasks.reserve(nodes_.size());
   for (int i = 1; i < (int)nodes_.size(); i++) {
-    tasks.push_back(nodes_[i]->rec);
+    if (!nodes_[i]->rec.empty()) {
+      tasks.push_back(nodes_[i]->rec);
+    }
   }
   clear();
   return tasks;
@@ -529,7 +530,11 @@ void StateFlowGraph::topo_sort_nodes() {
     degrees_in[node->node_id] = degree_in;
   }
 
-  queue.emplace_back(std::move(nodes_[0]));
+  for (auto &node : nodes_) {
+    if (degrees_in[node->node_id] == 0) {
+      queue.emplace_back(std::move(node));
+    }
+  }
 
   while (!queue.empty()) {
     auto head = std::move(queue.front());
@@ -592,6 +597,7 @@ void StateFlowGraph::replace_reference(StateFlowGraph::Node *node_a,
       }
     }
   }
+  node_a->input_edges.clear();
 }
 
 void StateFlowGraph::delete_nodes(

@@ -266,7 +266,7 @@ void AsyncEngine::launch(Kernel *kernel, Context &context) {
 }
 
 TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
-  // TODO: this function should ideally take only a IRNode
+  // TODO: this function should ideally take only an IRNode
   static std::mutex mut;
 
   std::lock_guard<std::mutex> guard(mut);
@@ -499,7 +499,7 @@ void AsyncEngine::debug_sfg(const std::string &suffix) {
     return;
   auto dot = sfg->dump_dot(std::optional<std::string>());
   auto debug_limit = 100;
-  if (debug_sfg_counter >= 100) {
+  if (debug_sfg_counter >= debug_limit) {
     TI_WARN("Too many (> {}) debug outputs. debug_sfg invocation Ignored.",
             debug_limit);
     return;

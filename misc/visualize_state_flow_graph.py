@@ -2,7 +2,9 @@ import taichi as ti
 
 
 def test_fusion_range():
-    ti.init(arch=ti.cpu, async_mode=True, async_opt_intermediate_file="fusion_range")
+    ti.init(arch=ti.cpu,
+            async_mode=True,
+            async_opt_intermediate_file="fusion_range")
 
     x = ti.field(ti.i32)
     y = ti.field(ti.i32)
@@ -30,9 +32,9 @@ def test_fusion_range():
 
 
 def test_fusion():
-    # TODO: fix fusion here
     ti.init(arch=ti.cpu,
             async_mode=True,
+            async_opt_listgen=False,
             async_opt_intermediate_file="fusion")
 
     x = ti.field(ti.i32)
@@ -64,7 +66,12 @@ def test_fusion():
 
 def test_write_after_read():
     # TODO: @xumingkuan fusion on this case fails
-    ti.init(arch=ti.cpu, async_mode=True, async_opt_fusion=False)
+    ti.init(arch=ti.cpu,
+            async_mode=True,
+            async_opt_dse=False,
+            async_opt_listgen=False,
+            async_opt_fusion=False,
+            async_opt_intermediate_file="war")
 
     x = ti.field(ti.i32, shape=16)
 

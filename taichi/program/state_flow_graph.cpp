@@ -149,7 +149,7 @@ bool StateFlowGraph::optimize_listgen() {
 
   std::unordered_set<int> nodes_to_delete;
   // Erase node j
-  // Note: the corresponding ClearListStmt should be removed in DSE passes
+  // Note: the corresponding ClearListStmt should be removed in later DSE passes
   for (auto p : common_pairs) {
     auto i = p.first;
     auto j = p.second;

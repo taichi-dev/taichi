@@ -1,9 +1,9 @@
 #include "taichi/program/state_flow_graph.h"
 
 #include "taichi/ir/transforms.h"
+#include "taichi/ir/analysis.h"
 #include "taichi/program/async_engine.h"
 #include "taichi/util/bit.h"
-#include "state_flow_graph.h"
 
 #include <sstream>
 #include <unordered_set>
@@ -514,8 +514,8 @@ std::string StateFlowGraph::dump_dot(
         }
       }
     }
-    TI_ASSERT_INFO(
-        visited.size() <= nodes_.size(),
+    TI_WARN_IF(
+        visited.size() > nodes_.size(),
         "Visited more nodes than what we actually have. The graph may be "
         "malformed.");
   }
@@ -541,7 +541,6 @@ void StateFlowGraph::topo_sort_nodes() {
   queue.emplace_back(std::move(nodes_[0]));
 
   while (!queue.empty()) {
-    TI_P(queue.size());
     auto head = std::move(queue.front());
     queue.pop_front();
 
@@ -550,7 +549,6 @@ void StateFlowGraph::topo_sort_nodes() {
       for (auto &e : output_edge.second) {
         auto dest = e->node_id;
         degrees_in[dest]--;
-        TI_P(degrees_in[dest]);
         TI_ASSERT(degrees_in[dest] >= 0);
         if (degrees_in[dest] == 0) {
           queue.push_back(std::move(nodes_[dest]));
@@ -610,6 +608,74 @@ void StateFlowGraph::delete_nodes(const std::unordered_set<int> &to_delete) {
   nodes_ = std::move(new_nodes_);
   TI_P(nodes_.size());
   reid_nodes();
+}
+
+bool StateFlowGraph::optimize_dead_store() {
+  bool modified = true;
+
+  for (int i = 1; i < nodes_.size(); i++) {
+    // Start from 1 to skip the initial node
+
+    // Dive into this task and erase dead stores
+    auto &task = nodes_[i];
+    // Try to find unnecessary output state
+    for (auto &s : task->meta->output_states) {
+      bool used = false;
+      for (auto other : task->output_edges[s]) {
+        if (task->has_state_flow(s, other)) {
+          used = true;
+        } else {
+          // Note that a dependency edge does not count as an data usage
+        }
+      }
+      // This state is used by some other node, so it cannot be erased
+      if (used)
+        continue;
+
+      if (s.type != AsyncState::Type::list &&
+          latest_state_owner_[s] == task.get())
+        // Note that list state is special. Since a future list generation always comes
+        // with ClearList, we can erase the list state even if it is latest.
+        continue;
+
+      // *****************************
+      // Erase the state s output.
+      if (s.type == AsyncState::Type::list &&
+          task->meta->type == OffloadedStmt::TaskType::serial) {
+        // Try to erase list gen
+        DelayedIRModifier mod;
+
+        auto new_ir = task->rec.ir_handle.clone();
+        irpass::analysis::gather_statements(new_ir.get(), [&](Stmt *stmt) {
+          if (auto clear_list = stmt->cast<ClearListStmt>()) {
+            if (clear_list->snode == s.snode) {
+              mod.erase(clear_list);
+            }
+          }
+          return false;
+        });
+        if (mod.modify_ir()) {
+          // IR modified. Node should be updated.
+          auto handle =
+              IRHandle(new_ir.get(), ir_bank_->get_hash(new_ir.get()));
+          ir_bank_->insert(std::move(new_ir), handle.hash());
+          task->rec.ir_handle = handle;
+          task->meta->print();
+          task->meta = get_task_meta(ir_bank_, task->rec);
+          TI_TAG;
+          task->meta->print();
+          exit(0);
+        }
+        for (auto other : task->output_edges[s]) {
+          other->input_edges[s].erase(task.get());
+        }
+        task->output_edges.erase(s);
+        modified = true;
+      }
+    }
+  }
+
+  return modified;
 }
 
 void async_print_sfg() {

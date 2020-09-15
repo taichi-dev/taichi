@@ -374,6 +374,11 @@ void AsyncEngine::synchronize() {
         debug_sfg("listgen");
         modified = true;
       }
+    if (program->config.async_opt_dse)
+      while (sfg->optimize_dead_store()) {
+        debug_sfg("dse");
+        modified = true;
+      }
     if (program->config.async_opt_fusion)
       while (sfg->fuse()) {
         debug_sfg("fuse");
@@ -491,6 +496,10 @@ bool AsyncEngine::fuse() {
 void AsyncEngine::debug_sfg(const std::string &suffix) {
   auto prefix = program->config.async_opt_intermediate_file;
   auto dot = sfg->dump_dot(std::optional<std::string>());
+  if (debug_sfg_counter >= 500) {
+    TI_WARN("Too many (> 500) debug outputs. debug_sfg invocation Ignored.");
+    return;
+  }
   auto dot_fn =
       fmt::format("{}_{:04d}_{}", prefix, debug_sfg_counter++, suffix);
   {

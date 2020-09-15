@@ -115,6 +115,8 @@ struct TaskMeta {
   SNode *snode{nullptr};  // struct-for and listgen only
   std::unordered_set<AsyncState, AsyncStateHash> input_states;
   std::unordered_set<AsyncState, AsyncStateHash> output_states;
+
+  void print() const;
 };
 
 class IRBank;

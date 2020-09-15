@@ -123,6 +123,17 @@ It is similar to Python-scope ``print``.
 Unlike ``print``, ``ti.static_print`` will only print the expression once at compile-time, and
 therefore it has no runtime cost.
 
+Serial execution
+----------------
+
+The automatic parallelization feature of Taichi may lead to undeterministic behaviors.
+For debugging purposes, it may be useful to serialize program execution to get repeatable results and to diagnose data races.
+When running your Taichi program on CPUs,
+you can initialize Taichi to use a single thread using ``cpu_max_num_threads=1``, so that the whole program becomes serial and deterministic. For example,
+
+``ti.init(arch=ti.cpu, cpu_max_num_threads=1)``
+
+If you program works well in serial but not in parallel, check parallelization-related issues such as data races.
 
 Runtime ``assert`` in kernel
 ----------------------------

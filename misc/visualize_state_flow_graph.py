@@ -34,7 +34,6 @@ def test_fusion_range():
 def test_fusion():
     ti.init(arch=ti.cpu,
             async_mode=True,
-            async_opt_listgen=False,
             async_opt_intermediate_file="fusion")
 
     x = ti.field(ti.i32)

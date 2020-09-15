@@ -331,6 +331,9 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
         }
       }
     }
+    if (auto clear_list = stmt->cast<ClearListStmt>()) {
+      meta.output_states.emplace(clear_list->snode, AsyncState::Type::list);
+    }
     return false;
   });
   if (root_stmt->task_type == OffloadedStmt::listgen) {
@@ -345,16 +348,6 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
     meta.input_states.emplace(root_stmt->snode, AsyncState::Type::list);
   }
 
-  if (is_clear_list_task(root_stmt)) {
-    // ClearList completely erases the element list, so its output list state
-    // does NOT lead to a input state flow on the previous version of the list
-    // state. However, a dependency edge (instead of flow edge) will still be
-    // inserted since this is probably a WAR dependency.
-    // TODO: or might be WAW? Do we even need to distinguish WAW and WAR?
-
-    meta.output_states.emplace(get_snode_in_clear_list_task(root_stmt),
-                               AsyncState::Type::list);
-  }
   meta_bank[t.ir_handle] = meta;
   return &meta_bank[t.ir_handle];
 }

@@ -249,7 +249,7 @@ def main(args):
     # 0. Initialize release metadata
     logger.info("=> 0. Initialize release metadata")
     repo = git.Repo(".")
-    author = committer = git.Actor(args. author, args.email)
+    author = committer = git.Actor(args.author, args.email)
 
     # TODO: CONVERT TO USE OAUTH TOKEN
     authentication = HTTPBasicAuth("PERSON", "PERSONAL TOKEN")

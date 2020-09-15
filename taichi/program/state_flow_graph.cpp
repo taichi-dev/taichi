@@ -314,23 +314,16 @@ bool StateFlowGraph::fuse() {
     //  simply delete cloned_task_b here)?
     ir_bank_->insert_to_trash_bin(std::move(cloned_task_b));
 
-    // replace all edges to node B with new ones to node A
-    for (auto &edges : node_b->output_edges) {
-      for (auto &edge : edges.second) {
-        edge->input_edges[edges.first].erase(node_b);
-        edge->input_edges[edges.first].insert(node_a);
+    const bool already_had_a_to_b_edge = has_path[a][b];
+    if (already_had_a_to_b_edge) {
+      for (auto &edges : node_a->output_edges) {
+        edges.second.erase(node_b);
+      }
+      for (auto &edges : node_b->input_edges) {
+        edges.second.erase(node_a);
       }
     }
-    bool already_had_a_to_b_edge = false;
-    for (auto &edges : node_b->input_edges) {
-      for (auto &edge : edges.second) {
-        edge->output_edges[edges.first].erase(node_b);
-        if (edge == node_a)
-          already_had_a_to_b_edge = true;
-        else
-          edge->output_edges[edges.first].insert(node_a);
-      }
-    }
+    replace_reference(node_b, node_a);
 
     // update the transitive closure
     insert_edge_for_transitive_closure(b, a);
@@ -353,8 +346,7 @@ bool StateFlowGraph::fuse() {
           for (auto &edge : edges.second) {
             const int j = edge->node_id;
             // TODO: for each pair of edge (i, j), we can only fuse if they
-            // are
-            //  both serial or both element-wise.
+            // are both serial or both element-wise.
             if (!fused[j] && task_type_fusable[i][j]) {
               auto i_has_path_to_j = has_path[i] & has_path_reverse[j];
               i_has_path_to_j[i] = i_has_path_to_j[j] = false;
@@ -407,8 +399,7 @@ bool StateFlowGraph::fuse() {
     nodes_ = std::move(new_nodes);
   }
 
-  // TODO: topo sorting after fusion crashes for some reason. Need to fix.
-  // topo_sort_nodes();
+  topo_sort_nodes();
 
   return modified;
 }
@@ -588,6 +579,19 @@ void StateFlowGraph::replace_reference(StateFlowGraph::Node *node_a,
     }
   }
   node_a->output_edges.clear();
+  for (auto &edges : node_a->input_edges) {
+    // Find all nodes C that points to A
+    for (auto &node_c : edges.second) {
+      // Replace reference to A with B
+      if (node_c->output_edges[edges.first].find(node_a) !=
+          node_c->output_edges[edges.first].end()) {
+        node_c->output_edges[edges.first].erase(node_a);
+
+        node_c->output_edges[edges.first].insert(node_b);
+        node_b->input_edges[edges.first].insert(node_c);
+      }
+    }
+  }
 }
 
 void StateFlowGraph::delete_nodes(

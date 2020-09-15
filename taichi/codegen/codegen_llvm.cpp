@@ -415,6 +415,9 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
   } else if (op == BinaryOpType::bit_shl) {
     llvm_val[stmt] =
         builder->CreateShl(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
+  } else if (op == BinaryOpType::bit_shr) {
+    llvm_val[stmt] =
+        builder->CreateLShr(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
   } else if (op == BinaryOpType::bit_sar) {
     llvm_val[stmt] =
         builder->CreateAShr(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);

@@ -99,7 +99,7 @@ class StateFlowGraph {
 
   void insert_state_flow(Node *from, Node *to, AsyncState state);
 
-  std::pair<std::unique_ptr<bit::Bitset[]>, std::unique_ptr<bit::Bitset[]>>
+  std::pair<std::vector<bit::Bitset>, std::vector<bit::Bitset>>
   compute_transitive_closure();
 
   bool fuse();

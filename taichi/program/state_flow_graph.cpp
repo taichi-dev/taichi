@@ -106,7 +106,7 @@ bool StateFlowGraph::optimize_listgen() {
 
   std::vector<std::pair<int, int>> common_pairs;
 
-  // std::unique_ptr<bit::Bitset[]> has_path, has_path_reverse;
+  // std::vector<Bitset> has_path, has_path_reverse;
   // std::tie(has_path, has_path_reverse) = compute_transitive_closure();
 
   for (int i = 0; i < nodes_.size(); i++) {
@@ -175,13 +175,13 @@ bool StateFlowGraph::optimize_listgen() {
   return modified;
 }
 
-std::pair<std::unique_ptr<bit::Bitset[]>, std::unique_ptr<bit::Bitset[]>>
+std::pair<std::vector<bit::Bitset>, std::vector<bit::Bitset>>
 StateFlowGraph::compute_transitive_closure() {
   using bit::Bitset;
   const int n = nodes_.size();
   reid_nodes();
-  auto has_path = std::make_unique<Bitset[]>(n);
-  auto has_path_reverse = std::make_unique<Bitset[]>(n);
+  auto has_path = std::vector<Bitset>(n);
+  auto has_path_reverse = std::vector<Bitset>(n);
   // has_path[i][j] denotes if there is a path from i to j.
   // has_path_reverse[i][j] denotes if there is a path from j to i.
   for (int i = 0; i < n; i++) {
@@ -217,7 +217,7 @@ bool StateFlowGraph::fuse() {
     return false;
   }
 
-  std::unique_ptr<bit::Bitset[]> has_path, has_path_reverse;
+  std::vector<Bitset> has_path, has_path_reverse;
   std::tie(has_path, has_path_reverse) = compute_transitive_closure();
 
   // Cache the result that if each pair is fusable by task types.

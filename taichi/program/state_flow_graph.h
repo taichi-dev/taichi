@@ -118,6 +118,8 @@ class StateFlowGraph {
 
   void topo_sort_nodes();
 
+  void verify();
+
   // Extract all tasks to execute.
   std::vector<TaskLaunchRecord> extract();
 

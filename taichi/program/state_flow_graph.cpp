@@ -745,6 +745,61 @@ bool StateFlowGraph::optimize_dead_store() {
   return modified;
 }
 
+void StateFlowGraph::verify() {
+  const int n = nodes_.size();
+  reid_nodes();
+  for (int i = 0; i < n; i++) {
+    for (auto &edges : nodes_[i]->output_edges) {
+      for (auto &edge : edges.second) {
+        TI_ASSERT_INFO(edge, "nodes_[{}]({}) has an empty output edge", i,
+                       nodes_[i]->string());
+        auto dest = edge->node_id;
+        TI_ASSERT_INFO(dest >= 0 && dest < n,
+                       "nodes_[{}]({}) has an output edge to nodes_[{}]", i,
+                       nodes_[i]->string(), dest);
+        TI_ASSERT_INFO(nodes_[dest].get() == edge,
+                       "nodes_[{}]({}) has an output edge to {}, "
+                       "which is outside nodes_",
+                       i, nodes_[i]->string(), edge->string());
+        TI_ASSERT_INFO(dest != i, "nodes_[{}]({}) has an output edge to itself",
+                       i, nodes_[i]->string());
+        auto &corresponding_edges = nodes_[dest]->input_edges[edges.first];
+        TI_ASSERT_INFO(corresponding_edges.find(nodes_[i].get()) !=
+                           corresponding_edges.end(),
+                       "nodes_[{}]({}) has an output edge to nodes_[{}]({}), "
+                       "which doesn't corresponds to an input edge",
+                       i, nodes_[i]->string(), dest, nodes_[dest]->string());
+      }
+    }
+  }
+  for (int i = 0; i < n; i++) {
+    for (auto &edges : nodes_[i]->input_edges) {
+      for (auto &edge : edges.second) {
+        TI_ASSERT_INFO(edge, "nodes_[{}]({}) has an empty input edge", i,
+                       nodes_[i]->string());
+        auto dest = edge->node_id;
+        TI_ASSERT_INFO(dest >= 0 && dest < n,
+                       "nodes_[{}]({}) has an input edge to nodes_[{}]", i,
+                       nodes_[i]->string(), dest);
+        TI_ASSERT_INFO(nodes_[dest].get() == edge,
+                       "nodes_[{}]({}) has an input edge to {}, "
+                       "which is outside nodes_",
+                       i, nodes_[i]->string(), edge->string());
+        TI_ASSERT_INFO(dest != i, "nodes_[{}]({}) has an input edge to itself",
+                       i, nodes_[i]->string());
+        auto &corresponding_edges = nodes_[dest]->output_edges[edges.first];
+        TI_ASSERT_INFO(corresponding_edges.find(nodes_[i].get()) !=
+                           corresponding_edges.end(),
+                       "nodes_[{}]({}) has an input edge to nodes_[{}]({}), "
+                       "which doesn't corresponds to an output edge",
+                       i, nodes_[i]->string(), dest, nodes_[dest]->string());
+      }
+    }
+  }
+  // Call topological sort to check cycles.
+  topo_sort_nodes();
+}
+
 void async_print_sfg() {
   get_current_program().async_engine->sfg->print();
 }

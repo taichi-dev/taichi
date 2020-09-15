@@ -104,7 +104,7 @@ class StateFlowGraph {
 
   bool optimize_dead_store();
 
-  void delete_nodes(const std::unordered_set<int> &to_delete);
+  void delete_nodes(const std::unordered_set<int> &indices_to_delete);
 
   void reid_nodes();
 

@@ -496,8 +496,10 @@ bool AsyncEngine::fuse() {
 void AsyncEngine::debug_sfg(const std::string &suffix) {
   auto prefix = program->config.async_opt_intermediate_file;
   auto dot = sfg->dump_dot(std::optional<std::string>());
-  if (debug_sfg_counter >= 500) {
-    TI_WARN("Too many (> 500) debug outputs. debug_sfg invocation Ignored.");
+  auto debug_limit = 100;
+  if (debug_sfg_counter >= 100) {
+    TI_WARN("Too many (> {}) debug outputs. debug_sfg invocation Ignored.",
+            debug_limit);
     return;
   }
   auto dot_fn =

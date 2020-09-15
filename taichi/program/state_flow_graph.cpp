@@ -590,28 +590,42 @@ void StateFlowGraph::replace_reference(StateFlowGraph::Node *node_a,
   node_a->output_edges.clear();
 }
 
-void StateFlowGraph::delete_nodes(const std::unordered_set<int> &to_delete) {
+void StateFlowGraph::delete_nodes(
+    const std::unordered_set<int> &indices_to_delete) {
   std::vector<std::unique_ptr<Node>> new_nodes_;
+  std::unordered_set<Node *> nodes_to_delete;
 
-  for (auto &i : to_delete) {
+  for (auto &i : indices_to_delete) {
     nodes_[i]->disconnect_all();
+    nodes_to_delete.insert(nodes_[i].get());
   }
 
   for (int i = 0; i < (int)nodes_.size(); i++) {
-    if (to_delete.find(i) == to_delete.end()) {
+    if (indices_to_delete.find(i) == indices_to_delete.end()) {
       new_nodes_.push_back(std::move(nodes_[i]));
     } else {
       TI_INFO("Deleting node {}", i);
     }
   }
 
+  for (auto &s : latest_state_owner_) {
+    if (nodes_to_delete.find(s.second) != nodes_to_delete.end()) {
+      s.second = initial_node_;
+    }
+  }
+
+  for (auto &s : latest_state_readers_) {
+    for (auto n : nodes_to_delete) {
+      s.second.erase(n);
+    }
+  }
+
   nodes_ = std::move(new_nodes_);
-  TI_P(nodes_.size());
   reid_nodes();
 }
 
 bool StateFlowGraph::optimize_dead_store() {
-  bool modified = true;
+  bool modified = false;
 
   for (int i = 1; i < nodes_.size(); i++) {
     // Start from 1 to skip the initial node
@@ -634,8 +648,9 @@ bool StateFlowGraph::optimize_dead_store() {
 
       if (s.type != AsyncState::Type::list &&
           latest_state_owner_[s] == task.get())
-        // Note that list state is special. Since a future list generation always comes
-        // with ClearList, we can erase the list state even if it is latest.
+        // Note that list state is special. Since a future list generation
+        // always comes with ClearList, we can erase the list state even if it
+        // is latest.
         continue;
 
       // *****************************
@@ -662,18 +677,39 @@ bool StateFlowGraph::optimize_dead_store() {
           task->rec.ir_handle = handle;
           task->meta->print();
           task->meta = get_task_meta(ir_bank_, task->rec);
-          TI_TAG;
           task->meta->print();
-          exit(0);
+
+          for (auto other : task->output_edges[s])
+            other->input_edges[s].erase(task.get());
+
+          task->output_edges.erase(s);
+          modified = true;
         }
-        for (auto other : task->output_edges[s]) {
-          other->input_edges[s].erase(task.get());
-        }
-        task->output_edges.erase(s);
-        modified = true;
       }
     }
   }
+
+  std::unordered_set<int> to_delete;
+  // erase empty blocks
+  for (int i = 1; i < (int)nodes_.size(); i++) {
+    auto &meta = *nodes_[i]->meta;
+    auto ir = nodes_[i]->rec.ir_handle.ir()->cast<OffloadedStmt>();
+    if (meta.type == OffloadedStmt::serial && ir->body->statements.empty()) {
+      TI_TAG;
+      to_delete.insert(i);
+    } else if (meta.type == OffloadedStmt::struct_for &&
+               ir->body->statements.empty()) {
+      to_delete.insert(i);
+    } else if (meta.type == OffloadedStmt::range_for &&
+               ir->body->statements.empty()) {
+      to_delete.insert(i);
+    }
+  }
+
+  if (!to_delete.empty())
+    modified = true;
+
+  delete_nodes(to_delete);
 
   return modified;
 }

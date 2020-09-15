@@ -695,7 +695,6 @@ bool StateFlowGraph::optimize_dead_store() {
     auto &meta = *nodes_[i]->meta;
     auto ir = nodes_[i]->rec.ir_handle.ir()->cast<OffloadedStmt>();
     if (meta.type == OffloadedStmt::serial && ir->body->statements.empty()) {
-      TI_TAG;
       to_delete.insert(i);
     } else if (meta.type == OffloadedStmt::struct_for &&
                ir->body->statements.empty()) {

@@ -495,6 +495,8 @@ bool AsyncEngine::fuse() {
 
 void AsyncEngine::debug_sfg(const std::string &suffix) {
   auto prefix = program->config.async_opt_intermediate_file;
+  if (prefix.empty())
+    return;
   auto dot = sfg->dump_dot(std::optional<std::string>());
   auto debug_limit = 100;
   if (debug_sfg_counter >= 100) {

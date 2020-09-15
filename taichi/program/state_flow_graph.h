@@ -10,6 +10,7 @@
 #include "taichi/lang_util.h"
 #include "taichi/program/async_utils.h"
 #include "taichi/program/program.h"
+#include "taichi/util/bit.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -98,6 +99,9 @@ class StateFlowGraph {
 
   void insert_state_flow(Node *from, Node *to, AsyncState state);
 
+  std::pair<std::unique_ptr<bit::Bitset[]>, std::unique_ptr<bit::Bitset[]>>
+  compute_transitive_closure();
+
   bool fuse();
 
   bool optimize_listgen();
@@ -108,7 +112,9 @@ class StateFlowGraph {
 
   void reid_nodes();
 
-  void replace_reference(Node *node_a, Node *node_b);
+  void replace_reference(Node *node_a,
+                         Node *node_b,
+                         bool only_output_edges = false);
 
   void topo_sort_nodes();
 

@@ -3,7 +3,6 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/program/async_engine.h"
-#include "taichi/util/bit.h"
 
 #include <sstream>
 #include <unordered_set>
@@ -107,6 +106,9 @@ bool StateFlowGraph::optimize_listgen() {
 
   std::vector<std::pair<int, int>> common_pairs;
 
+  // std::unique_ptr<bit::Bitset[]> has_path, has_path_reverse;
+  // std::tie(has_path, has_path_reverse) = compute_transitive_closure();
+
   for (int i = 0; i < nodes_.size(); i++) {
     auto node_a = nodes_[i].get();
     if (node_a->meta->type != OffloadedStmt::TaskType::listgen)
@@ -138,8 +140,16 @@ bool StateFlowGraph::optimize_listgen() {
           *node_b->input_edges[parent_list_state].begin())
         continue;
 
+      /*
       // TODO: Use reachability to test if there is node_c between node_a
-      // and node_b that writes the list
+      // and node_b that writes the list (the following might be too
+      // conservative)
+      auto a_has_path_to_b = has_path[i] & has_path_reverse[j];
+      a_has_path_to_b[i] = a_has_path_to_b[j] = false;
+      // Test if there is a path node_a->node_c->node_b here
+      if (a_has_path_to_b.any())
+        continue;
+      */
 
       TI_INFO("Common list generation {} and {}", node_a->string(),
               node_b->string());
@@ -154,7 +164,8 @@ bool StateFlowGraph::optimize_listgen() {
     auto i = p.first;
     auto j = p.second;
     TI_INFO("Eliminating {}", nodes_[j]->string());
-    replace_reference(nodes_[j].get(), nodes_[i].get());
+    replace_reference(nodes_[j].get(), nodes_[i].get(),
+                      /*only_output_edges=*/true);
     modified = true;
     nodes_to_delete.insert(j);
   }
@@ -164,16 +175,11 @@ bool StateFlowGraph::optimize_listgen() {
   return modified;
 }
 
-bool StateFlowGraph::fuse() {
+std::pair<std::unique_ptr<bit::Bitset[]>, std::unique_ptr<bit::Bitset[]>>
+StateFlowGraph::compute_transitive_closure() {
   using bit::Bitset;
   const int n = nodes_.size();
-  if (n <= 2) {
-    return false;
-  }
-
   reid_nodes();
-
-  // Compute the transitive closure.
   auto has_path = std::make_unique<Bitset[]>(n);
   auto has_path_reverse = std::make_unique<Bitset[]>(n);
   // has_path[i][j] denotes if there is a path from i to j.
@@ -201,6 +207,18 @@ bool StateFlowGraph::fuse() {
       }
     }
   }
+  return std::make_pair(std::move(has_path), std::move(has_path_reverse));
+}
+
+bool StateFlowGraph::fuse() {
+  using bit::Bitset;
+  const int n = nodes_.size();
+  if (n <= 2) {
+    return false;
+  }
+
+  std::unique_ptr<bit::Bitset[]> has_path, has_path_reverse;
+  std::tie(has_path, has_path_reverse) = compute_transitive_closure();
 
   // Cache the result that if each pair is fusable by task types.
   // TODO: improve this
@@ -568,7 +586,8 @@ void StateFlowGraph::reid_nodes() {
 }
 
 void StateFlowGraph::replace_reference(StateFlowGraph::Node *node_a,
-                                       StateFlowGraph::Node *node_b) {
+                                       StateFlowGraph::Node *node_b,
+                                       bool only_output_edges) {
   // replace all edges to node A with new ones to node B
   for (auto &edges : node_a->output_edges) {
     // Find all nodes C that points to A
@@ -584,6 +603,9 @@ void StateFlowGraph::replace_reference(StateFlowGraph::Node *node_a,
     }
   }
   node_a->output_edges.clear();
+  if (only_output_edges) {
+    return;
+  }
   for (auto &edges : node_a->input_edges) {
     // Find all nodes C that points to A
     for (auto &node_c : edges.second) {

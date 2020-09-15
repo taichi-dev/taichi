@@ -1,6 +1,7 @@
 #include "taichi/program/state_flow_graph.h"
 
 #include "taichi/ir/transforms.h"
+#include "taichi/ir/analysis.h"
 #include "taichi/program/async_engine.h"
 #include "taichi/util/bit.h"
 
@@ -13,13 +14,36 @@ TLANG_NAMESPACE_BEGIN
 // dependency edges.
 
 std::string StateFlowGraph::Node::string() const {
-  return fmt::format("[node: {}:{}]", task_name, launch_id);
+  return fmt::format("[node: {}:{}]", meta->name, launch_id);
+}
+
+void StateFlowGraph::Node::disconnect_all() {
+  for (auto &edges : output_edges) {
+    for (auto &other : edges.second) {
+      other->disconnect_with(this);
+    }
+  }
+  for (auto &edges : input_edges) {
+    for (auto &other : edges.second) {
+      other->disconnect_with(this);
+    }
+  }
+}
+
+void StateFlowGraph::Node::disconnect_with(StateFlowGraph::Node *other) {
+  for (auto &edges : output_edges) {
+    edges.second.erase(other);
+  }
+  for (auto &edges : input_edges) {
+    edges.second.erase(other);
+  }
 }
 
 StateFlowGraph::StateFlowGraph(IRBank *ir_bank) : ir_bank_(ir_bank) {
   nodes_.push_back(std::make_unique<Node>());
   initial_node_ = nodes_.back().get();
-  initial_node_->task_name = "initial_state";
+  initial_meta_.name = "initial_state";
+  initial_node_->meta = &initial_meta_;
   initial_node_->launch_id = 0;
   initial_node_->is_initial_node = true;
 }
@@ -34,27 +58,23 @@ void StateFlowGraph::clear() {
   // Do not clear task_name_to_launch_ids_.
 }
 
-void StateFlowGraph::insert_task(const TaskLaunchRecord &rec,
-                                 const TaskMeta &task_meta) {
+void StateFlowGraph::insert_task(const TaskLaunchRecord &rec) {
   auto node = std::make_unique<Node>();
   node->rec = rec;
-  node->task_name = task_meta.kernel_name;
-  node->input_states = task_meta.input_states;
-  node->output_states = task_meta.output_states;
-  node->task_type = task_meta.type;
+  node->meta = get_task_meta(ir_bank_, rec);
   {
-    int &id = task_name_to_launch_ids_[node->task_name];
+    int &id = task_name_to_launch_ids_[node->meta->name];
     node->launch_id = id;
     ++id;
   }
-  for (auto input_state : task_meta.input_states) {
+  for (auto input_state : node->meta->input_states) {
     if (latest_state_owner_.find(input_state) == latest_state_owner_.end()) {
       latest_state_owner_[input_state] = initial_node_;
     }
     insert_state_flow(latest_state_owner_[input_state], node.get(),
                       input_state);
   }
-  for (auto output_state : task_meta.output_states) {
+  for (auto output_state : node->meta->output_states) {
     latest_state_owner_[output_state] = node.get();
     if (latest_state_readers_.find(output_state) ==
         latest_state_readers_.end()) {
@@ -68,7 +88,7 @@ void StateFlowGraph::insert_task(const TaskLaunchRecord &rec,
   }
 
   // Note that this loop must happen AFTER the previous one
-  for (auto input_state : task_meta.input_states) {
+  for (auto input_state : node->meta->input_states) {
     latest_state_readers_[input_state].insert(node.get());
   }
   nodes_.push_back(std::move(node));
@@ -81,16 +101,77 @@ void StateFlowGraph::insert_state_flow(Node *from, Node *to, AsyncState state) {
   to->input_edges[state].insert(from);
 }
 
+bool StateFlowGraph::optimize_listgen() {
+  TI_INFO("Begin optimize listgen");
+  bool modified = false;
+
+  std::vector<std::pair<int, int>> common_pairs;
+
+  for (int i = 0; i < nodes_.size(); i++) {
+    auto node_a = nodes_[i].get();
+    if (node_a->meta->type != OffloadedStmt::TaskType::listgen)
+      continue;
+    for (int j = i + 1; j < nodes_.size(); j++) {
+      auto node_b = nodes_[j].get();
+      if (node_b->meta->type != OffloadedStmt::TaskType::listgen)
+        continue;
+      if (node_a->meta->snode != node_b->meta->snode)
+        continue;
+
+      // Test if two list generations share the same mask and parent list
+      auto snode = node_a->meta->snode;
+
+      auto mask_state = AsyncState{snode, AsyncState::Type::mask};
+      auto parent_list_state =
+          AsyncState{snode->parent, AsyncState::Type::list};
+
+      TI_ASSERT(node_a->input_edges[mask_state].size() == 1);
+      TI_ASSERT(node_b->input_edges[mask_state].size() == 1);
+
+      if (*node_a->input_edges[mask_state].begin() !=
+          *node_b->input_edges[mask_state].begin())
+        continue;
+
+      TI_ASSERT(node_a->input_edges[parent_list_state].size() == 1);
+      TI_ASSERT(node_b->input_edges[parent_list_state].size() == 1);
+      if (*node_a->input_edges[parent_list_state].begin() !=
+          *node_b->input_edges[parent_list_state].begin())
+        continue;
+
+      // TODO: Use reachability to test if there is node_c between node_a
+      // and node_b that writes the list
+
+      TI_INFO("Common list generation {} and {}", node_a->string(),
+              node_b->string());
+      common_pairs.emplace_back(std::make_pair(i, j));
+    }
+  }
+
+  std::unordered_set<int> nodes_to_delete;
+  // Erase node j
+  // Note: the corresponding ClearListStmt should be removed in later DSE passes
+  for (auto p : common_pairs) {
+    auto i = p.first;
+    auto j = p.second;
+    TI_INFO("Eliminating {}", nodes_[j]->string());
+    replace_reference(nodes_[j].get(), nodes_[i].get());
+    modified = true;
+    nodes_to_delete.insert(j);
+  }
+
+  delete_nodes(nodes_to_delete);
+
+  return modified;
+}
+
 bool StateFlowGraph::fuse() {
-  using SFGNode = StateFlowGraph::Node;
   using bit::Bitset;
   const int n = nodes_.size();
   if (n <= 2) {
     return false;
   }
-  for (int i = 0; i < n; i++) {
-    nodes_[i]->node_id = i;
-  }
+
+  reid_nodes();
 
   // Compute the transitive closure.
   auto has_path = std::make_unique<Bitset[]>(n);
@@ -148,10 +229,11 @@ bool StateFlowGraph::fuse() {
       // TODO: a few problems with the range-for test condition:
       // 1. This could incorrectly fuse two range-for kernels that have
       // different sizes, but then the loop ranges get padded to the same
-      // power-of-two (E.g. maybe a side effect when a struct-for is demoted to
-      // range-for).
-      // 2. It has also fused range-fors that have the same linear range, but
-      // are of different dimensions of loop indices, e.g. (16, ) and (4, 4).
+      // power-of-two (E.g. maybe a side effect when a struct-for is demoted
+      // to range-for).
+      // 2. It has also fused range-fors that have the same linear range,
+      // but are of different dimensions of loop indices, e.g. (16, ) and
+      // (4, 4).
       bool is_same_range_for = task_i->task_type == OffloadedStmt::range_for &&
                                task_j->task_type == OffloadedStmt::range_for &&
                                task_i->const_begin && task_j->const_begin &&
@@ -163,11 +245,12 @@ bool StateFlowGraph::fuse() {
       const bool same_kernel = (rec_i.kernel == rec_j.kernel);
       bool kernel_args_match = true;
       if (!same_kernel) {
-        // Merging kernels with different signatures will break invariants. E.g.
+        // Merging kernels with different signatures will break invariants.
+        // E.g.
         // https://github.com/taichi-dev/taichi/blob/a6575fb97557267e2f550591f43b183076b72ac2/taichi/transforms/type_check.cpp#L326
         //
-        // TODO: we could merge different kernels if their args are the same.
-        // But we have no way to check that for now.
+        // TODO: we could merge different kernels if their args are the
+        // same. But we have no way to check that for now.
         auto check = [](const Kernel *k) {
           return (k->args.empty() && k->rets.empty());
         };
@@ -231,7 +314,7 @@ bool StateFlowGraph::fuse() {
     //  simply delete cloned_task_b here)?
     ir_bank_->insert_to_trash_bin(std::move(cloned_task_b));
 
-    // replace all edges to the node B to A
+    // replace all edges to node B with new ones to node A
     for (auto &edges : node_b->output_edges) {
       for (auto &edge : edges.second) {
         edge->input_edges[edges.first].erase(node_b);
@@ -269,7 +352,8 @@ bool StateFlowGraph::fuse() {
         for (auto &edges : nodes_[i]->output_edges) {
           for (auto &edge : edges.second) {
             const int j = edge->node_id;
-            // TODO: for each pair of edge (i, j), we can only fuse if they are
+            // TODO: for each pair of edge (i, j), we can only fuse if they
+            // are
             //  both serial or both element-wise.
             if (!fused[j] && task_type_fusable[i][j]) {
               auto i_has_path_to_j = has_path[i] & has_path_reverse[j];
@@ -323,6 +407,9 @@ bool StateFlowGraph::fuse() {
     nodes_ = std::move(new_nodes);
   }
 
+  // TODO: topo sorting after fusion crashes for some reason. Need to fix.
+  // topo_sort_nodes();
+
   return modified;
 }
 
@@ -368,7 +455,7 @@ std::string StateFlowGraph::dump_dot(
   ss << "digraph {\n";
   auto node_id = [](const SFGNode *n) {
     // https://graphviz.org/doc/info/lang.html ID naming
-    return fmt::format("n_{}_{}", n->task_name, n->launch_id);
+    return fmt::format("n_{}_{}", n->meta->name, n->launch_id);
   };
   // Graph level configuration.
   if (rankdir) {
@@ -390,7 +477,7 @@ std::string StateFlowGraph::dump_dot(
       ss << ",peripheries=2";
     }
     // Highlight user-defined tasks
-    const auto tt = nd->task_type;
+    const auto tt = nd->meta->type;
     if (!nd->is_initial_node &&
         (tt == TaskType::range_for || tt == TaskType::struct_for ||
          tt == TaskType::serial)) {
@@ -427,9 +514,212 @@ std::string StateFlowGraph::dump_dot(
         }
       }
     }
+    TI_WARN_IF(
+        visited.size() > nodes_.size(),
+        "Visited more nodes than what we actually have. The graph may be "
+        "malformed.");
   }
   ss << "}\n";  // closes "dirgraph {"
   return ss.str();
+}
+
+void StateFlowGraph::topo_sort_nodes() {
+  std::deque<std::unique_ptr<Node>> queue;
+  std::vector<std::unique_ptr<Node>> new_nodes;
+  std::vector<int> degrees_in(nodes_.size());
+
+  reid_nodes();
+
+  for (auto &node : nodes_) {
+    int degree_in = 0;
+    for (auto &inputs : node->input_edges) {
+      degree_in += (int)inputs.second.size();
+    }
+    degrees_in[node->node_id] = degree_in;
+  }
+
+  queue.emplace_back(std::move(nodes_[0]));
+
+  while (!queue.empty()) {
+    auto head = std::move(queue.front());
+    queue.pop_front();
+
+    // Delete the node and update degrees_in
+    for (auto &output_edge : head->output_edges) {
+      for (auto &e : output_edge.second) {
+        auto dest = e->node_id;
+        degrees_in[dest]--;
+        TI_ASSERT(degrees_in[dest] >= 0);
+        if (degrees_in[dest] == 0) {
+          queue.push_back(std::move(nodes_[dest]));
+        }
+      }
+    }
+
+    new_nodes.emplace_back(std::move(head));
+  }
+
+  TI_ASSERT(new_nodes.size() == nodes_.size());
+  nodes_ = std::move(new_nodes);
+  reid_nodes();
+}
+
+void StateFlowGraph::reid_nodes() {
+  for (int i = 0; i < nodes_.size(); i++) {
+    nodes_[i]->node_id = i;
+  }
+  TI_ASSERT(initial_node_->node_id == 0);
+}
+
+void StateFlowGraph::replace_reference(StateFlowGraph::Node *node_a,
+                                       StateFlowGraph::Node *node_b) {
+  // replace all edges to node A with new ones to node B
+  for (auto &edges : node_a->output_edges) {
+    // Find all nodes C that points to A
+    for (auto &node_c : edges.second) {
+      // Replace reference to A with B
+      if (node_c->input_edges[edges.first].find(node_a) !=
+          node_c->input_edges[edges.first].end()) {
+        node_c->input_edges[edges.first].erase(node_a);
+
+        node_c->input_edges[edges.first].insert(node_b);
+        node_b->output_edges[edges.first].insert(node_c);
+      }
+    }
+  }
+  node_a->output_edges.clear();
+}
+
+void StateFlowGraph::delete_nodes(
+    const std::unordered_set<int> &indices_to_delete) {
+  std::vector<std::unique_ptr<Node>> new_nodes_;
+  std::unordered_set<Node *> nodes_to_delete;
+
+  for (auto &i : indices_to_delete) {
+    nodes_[i]->disconnect_all();
+    nodes_to_delete.insert(nodes_[i].get());
+  }
+
+  for (int i = 0; i < (int)nodes_.size(); i++) {
+    if (indices_to_delete.find(i) == indices_to_delete.end()) {
+      new_nodes_.push_back(std::move(nodes_[i]));
+    } else {
+      TI_INFO("Deleting node {}", i);
+    }
+  }
+
+  for (auto &s : latest_state_owner_) {
+    if (nodes_to_delete.find(s.second) != nodes_to_delete.end()) {
+      s.second = initial_node_;
+    }
+  }
+
+  for (auto &s : latest_state_readers_) {
+    for (auto n : nodes_to_delete) {
+      s.second.erase(n);
+    }
+  }
+
+  nodes_ = std::move(new_nodes_);
+  reid_nodes();
+}
+
+bool StateFlowGraph::optimize_dead_store() {
+  bool modified = false;
+
+  for (int i = 1; i < nodes_.size(); i++) {
+    // Start from 1 to skip the initial node
+
+    // Dive into this task and erase dead stores
+    auto &task = nodes_[i];
+    // Try to find unnecessary output state
+    for (auto &s : task->meta->output_states) {
+      bool used = false;
+      for (auto other : task->output_edges[s]) {
+        if (task->has_state_flow(s, other)) {
+          used = true;
+        } else {
+          // Note that a dependency edge does not count as an data usage
+        }
+      }
+      // This state is used by some other node, so it cannot be erased
+      if (used)
+        continue;
+
+      if (s.type != AsyncState::Type::list &&
+          latest_state_owner_[s] == task.get())
+        // Note that list state is special. Since a future list generation
+        // always comes with ClearList, we can erase the list state even if it
+        // is latest.
+        continue;
+
+      // *****************************
+      // Erase the state s output.
+      if (s.type == AsyncState::Type::list &&
+          task->meta->type == OffloadedStmt::TaskType::serial) {
+        // Try to erase list gen
+        DelayedIRModifier mod;
+
+        auto new_ir = task->rec.ir_handle.clone();
+        irpass::analysis::gather_statements(new_ir.get(), [&](Stmt *stmt) {
+          if (auto clear_list = stmt->cast<ClearListStmt>()) {
+            if (clear_list->snode == s.snode) {
+              mod.erase(clear_list);
+            }
+          }
+          return false;
+        });
+        if (mod.modify_ir()) {
+          // IR modified. Node should be updated.
+          auto handle =
+              IRHandle(new_ir.get(), ir_bank_->get_hash(new_ir.get()));
+          ir_bank_->insert(std::move(new_ir), handle.hash());
+          task->rec.ir_handle = handle;
+          task->meta->print();
+          task->meta = get_task_meta(ir_bank_, task->rec);
+          task->meta->print();
+
+          for (auto other : task->output_edges[s])
+            other->input_edges[s].erase(task.get());
+
+          task->output_edges.erase(s);
+          modified = true;
+        }
+      }
+    }
+  }
+
+  std::unordered_set<int> to_delete;
+  // erase empty blocks
+  for (int i = 1; i < (int)nodes_.size(); i++) {
+    auto &meta = *nodes_[i]->meta;
+    auto ir = nodes_[i]->rec.ir_handle.ir()->cast<OffloadedStmt>();
+    if (meta.type == OffloadedStmt::serial && ir->body->statements.empty()) {
+      to_delete.insert(i);
+    } else if (meta.type == OffloadedStmt::struct_for &&
+               ir->body->statements.empty()) {
+      to_delete.insert(i);
+    } else if (meta.type == OffloadedStmt::range_for &&
+               ir->body->statements.empty()) {
+      to_delete.insert(i);
+    }
+  }
+
+  if (!to_delete.empty())
+    modified = true;
+
+  delete_nodes(to_delete);
+
+  return modified;
+}
+
+void async_print_sfg() {
+  get_current_program().async_engine->sfg->print();
+}
+
+std::string async_dump_dot(std::optional<std::string> rankdir) {
+  // https://pybind11.readthedocs.io/en/stable/advanced/functions.html#allow-prohibiting-none-arguments
+  return get_current_program().async_engine->sfg->dump_dot(rankdir);
 }
 
 TLANG_NAMESPACE_END

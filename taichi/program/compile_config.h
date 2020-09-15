@@ -57,6 +57,12 @@ struct CompileConfig {
   std::string cc_compile_cmd;
   std::string cc_link_cmd;
 
+  bool async_opt_fusion{true};
+  bool async_opt_listgen{true};
+  bool async_opt_activation_demotion{true};
+  bool async_opt_dse{true};
+  std::string async_opt_intermediate_file;
+
   CompileConfig();
 };
 

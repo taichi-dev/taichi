@@ -29,6 +29,10 @@ TI_NAMESPACE_END
 
 TLANG_NAMESPACE_BEGIN
 
+void async_print_sfg();
+
+std::string async_dump_dot(std::optional<std::string> rankdir);
+
 std::string compiled_lib_dir;
 std::string runtime_tmp_dir;
 
@@ -127,7 +131,14 @@ void export_lang(py::module &m) {
       .def_readwrite("make_thread_local", &CompileConfig::make_thread_local)
       .def_readwrite("make_block_local", &CompileConfig::make_block_local)
       .def_readwrite("cc_compile_cmd", &CompileConfig::cc_compile_cmd)
-      .def_readwrite("cc_link_cmd", &CompileConfig::cc_link_cmd);
+      .def_readwrite("cc_link_cmd", &CompileConfig::cc_link_cmd)
+      .def_readwrite("async_opt_fusion", &CompileConfig::async_opt_fusion)
+      .def_readwrite("async_opt_listgen", &CompileConfig::async_opt_listgen)
+      .def_readwrite("async_opt_activation_demotion",
+                     &CompileConfig::async_opt_activation_demotion)
+      .def_readwrite("async_opt_dse", &CompileConfig::async_opt_dse)
+      .def_readwrite("async_opt_intermediate_file",
+                     &CompileConfig::async_opt_intermediate_file);
 
   m.def("reset_default_compile_config",
         [&]() { default_compile_config = CompileConfig(); });
@@ -651,13 +662,8 @@ void export_lang(py::module &m) {
     }
   });
 
-  m.def("print_sfg", [] { get_current_program().async_engine->sfg->print(); });
-  m.def("dump_dot",
-        [](std::optional<std::string> rankdir) -> std::string {
-          // https://pybind11.readthedocs.io/en/stable/advanced/functions.html#allow-prohibiting-none-arguments
-          return get_current_program().async_engine->sfg->dump_dot(rankdir);
-        },
-        py::arg("rankdir").none(true));
+  m.def("print_sfg", async_print_sfg);
+  m.def("dump_dot", async_dump_dot, py::arg("rankdir").none(true));
 }
 
 TI_NAMESPACE_END

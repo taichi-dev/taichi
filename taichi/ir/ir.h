@@ -274,8 +274,19 @@ class IRNode {
   }
 
   template <typename T>
+  const T *as() const {
+    TI_ASSERT(is<T>());
+    return dynamic_cast<const T *>(this);
+  }
+
+  template <typename T>
   T *cast() {
     return dynamic_cast<T *>(this);
+  }
+
+  template <typename T>
+  const T *cast() const {
+    return dynamic_cast<const T *>(this);
   }
 
   std::unique_ptr<IRNode> clone();

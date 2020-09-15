@@ -30,4 +30,28 @@ bool TaskLaunchRecord::empty() const {
   return ir_handle.ir() == nullptr;
 }
 
+void TaskMeta::print() const {
+  fmt::print("TaskMeta\n  name {}\n", name);
+  fmt::print("  type {}\n", OffloadedStmt::task_type_name(type));
+  if (snode != nullptr) {
+    fmt::print("  snode {}\n", snode->get_node_type_name_hinted());
+  } else {
+    fmt::print("  snode nullptr\n");
+  }
+  if (!input_states.empty()) {
+    fmt::print("  input states:\n    ");
+    for (auto s : input_states) {
+      fmt::print("{} ", s.name());
+    }
+    fmt::print("\n");
+  }
+  if (!output_states.empty()) {
+    fmt::print("  output states:\n    ");
+    for (auto s : output_states) {
+      fmt::print("{} ", s.name());
+    }
+    fmt::print("\n");
+  }
+}
+
 TLANG_NAMESPACE_END

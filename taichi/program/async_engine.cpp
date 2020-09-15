@@ -265,13 +265,24 @@ void AsyncEngine::launch(Kernel *kernel, Context &context) {
   }
 }
 
-TaskMeta AsyncEngine::create_task_meta(const TaskLaunchRecord &t) {
+TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
+  // TODO: this function should ideally take only an IRNode
+  static std::mutex mut;
+
+  std::lock_guard<std::mutex> guard(mut);
+
+  auto &meta_bank = ir_bank->meta_bank_;
+
+  if (meta_bank.find(t.ir_handle) != meta_bank.end()) {
+    return &meta_bank[t.ir_handle];
+  }
+
   using namespace irpass::analysis;
   TaskMeta meta;
   // TODO: this is an abuse since it gathers nothing...
   auto *root_stmt = t.stmt();
-  meta.kernel_name = t.kernel->name + "_" +
-                     OffloadedStmt::task_type_name(root_stmt->task_type);
+  meta.name = t.kernel->name + "_" +
+              OffloadedStmt::task_type_name(root_stmt->task_type);
   meta.type = root_stmt->task_type;
   gather_statements(root_stmt, [&](Stmt *stmt) {
     if (auto global_load = stmt->cast<GlobalLoadStmt>()) {
@@ -324,11 +335,13 @@ TaskMeta AsyncEngine::create_task_meta(const TaskLaunchRecord &t) {
   });
   if (root_stmt->task_type == OffloadedStmt::listgen) {
     TI_ASSERT(root_stmt->snode->parent);
+    meta.snode = root_stmt->snode;
     meta.input_states.emplace(root_stmt->snode->parent, AsyncState::Type::list);
     meta.input_states.emplace(root_stmt->snode, AsyncState::Type::list);
     meta.input_states.emplace(root_stmt->snode, AsyncState::Type::mask);
     meta.output_states.emplace(root_stmt->snode, AsyncState::Type::list);
   } else if (root_stmt->task_type == OffloadedStmt::struct_for) {
+    meta.snode = root_stmt->snode;
     meta.input_states.emplace(root_stmt->snode, AsyncState::Type::list);
   }
 
@@ -342,75 +355,42 @@ TaskMeta AsyncEngine::create_task_meta(const TaskLaunchRecord &t) {
     meta.output_states.emplace(get_snode_in_clear_list_task(root_stmt),
                                AsyncState::Type::list);
   }
-  // TODO: this is probably not fully done. Hopefully after SFG Graphviz is
-  // done we can easily spot what's left.
-  return meta;
+  meta_bank[t.ir_handle] = meta;
+  return &meta_bank[t.ir_handle];
 }
 
 void AsyncEngine::enqueue(const TaskLaunchRecord &t) {
-  if (offloaded_metas_.find(t.ir_handle) == offloaded_metas_.end()) {
-    offloaded_metas_[t.ir_handle] = create_task_meta(t);
-  }
-  sfg->insert_task(t, offloaded_metas_[t.ir_handle]);
+  sfg->insert_task(t);
   task_queue.push_back(t);
 }
 
 void AsyncEngine::synchronize() {
-  optimize_listgen();
-  while (sfg->fuse())
-    ;
+  bool modified = true;
+  debug_sfg("initial");
+  while (modified) {
+    modified = false;
+    if (program->config.async_opt_listgen)
+      while (sfg->optimize_listgen()) {
+        debug_sfg("listgen");
+        modified = true;
+      }
+    if (program->config.async_opt_dse)
+      while (sfg->optimize_dead_store()) {
+        debug_sfg("dse");
+        modified = true;
+      }
+    if (program->config.async_opt_fusion)
+      while (sfg->fuse()) {
+        debug_sfg("fuse");
+        modified = true;
+      }
+  }
+  debug_sfg("final");
   auto tasks = sfg->extract();
   for (auto &task : tasks) {
     queue.enqueue(task);
   }
   queue.synchronize();
-}
-
-bool AsyncEngine::optimize_listgen() {
-  // TODO: improve...
-  bool modified = false;
-  std::unordered_map<const SNode *, bool> list_dirty;
-  auto new_task_queue = std::deque<TaskLaunchRecord>();
-  for (int i = 0; i < task_queue.size(); i++) {
-    // Try to eliminate unused listgens
-    auto &t = task_queue[i];
-    auto meta = offloaded_metas_[t.ir_handle];
-    const auto *offload = t.stmt();
-    bool keep = true;
-    if (offload->task_type == OffloadedStmt::TaskType::listgen) {
-      // keep
-    } else if (is_clear_list_task(offload)) {
-      // TODO: this only handles the case where the serial task contains exactly
-      // one ClearListStmt. Shall we also handle fused cases?
-      TI_ASSERT(task_queue[i + 1].stmt()->task_type ==
-                OffloadedStmt::TaskType::listgen);
-      const auto *snode = get_snode_in_clear_list_task(offload);
-      if (list_dirty.find(snode) != list_dirty.end() && !list_dirty[snode]) {
-        keep = false;  // safe to remove
-        modified = true;
-        i++;  // skip the following list gen as well
-        continue;
-      }
-      list_dirty[snode] = false;
-    } else {
-      for (auto output_state : meta.output_states) {
-        auto snode = output_state.snode;
-        if (output_state.type != AsyncState::Type::mask)
-          continue;
-        while (snode && snode->type != SNodeType::root) {
-          list_dirty[snode] = true;
-          snode = snode->parent;
-        }
-      }
-    }
-    if (keep) {
-      new_task_queue.push_back(t);
-    } else {
-      modified = true;
-    }
-  }
-  task_queue = std::move(new_task_queue);
-  return modified;
 }
 
 bool AsyncEngine::fuse() {
@@ -511,6 +491,27 @@ bool AsyncEngine::fuse() {
   task_queue = std::move(new_task_queue);
 
   return modified;
+}
+
+void AsyncEngine::debug_sfg(const std::string &suffix) {
+  auto prefix = program->config.async_opt_intermediate_file;
+  if (prefix.empty())
+    return;
+  auto dot = sfg->dump_dot(std::optional<std::string>());
+  auto debug_limit = 100;
+  if (debug_sfg_counter >= debug_limit) {
+    TI_WARN("Too many (> {}) debug outputs. debug_sfg invocation Ignored.",
+            debug_limit);
+    return;
+  }
+  auto dot_fn =
+      fmt::format("{}_{:04d}_{}", prefix, debug_sfg_counter++, suffix);
+  {
+    std::ofstream dot_file(dot_fn + ".dot");
+    dot_file << dot;
+  }
+  std::system(
+      fmt::format("dot -Tpdf -o {}.pdf {}.dot", dot_fn, dot_fn).c_str());
 }
 
 TLANG_NAMESPACE_END

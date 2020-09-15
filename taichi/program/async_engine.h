@@ -28,6 +28,8 @@ class IRBank {
   void insert_to_trash_bin(std::unique_ptr<IRNode> &&ir);
   IRNode *find(IRHandle ir_handle);
 
+  std::unordered_map<IRHandle, TaskMeta> meta_bank_;
+
  private:
   std::unordered_map<IRNode *, uint64> hash_bank_;
   std::unordered_map<IRHandle, std::unique_ptr<IRNode>> ir_bank_;
@@ -145,10 +147,9 @@ class AsyncEngine {
 
   std::unique_ptr<StateFlowGraph> sfg;
   std::deque<TaskLaunchRecord> task_queue;
+  int debug_sfg_counter{0};
 
   explicit AsyncEngine(Program *program);
-
-  bool optimize_listgen();  // return true when modified
 
   bool fuse();  // return true when modified
 
@@ -161,6 +162,8 @@ class AsyncEngine {
   void enqueue(const TaskLaunchRecord &t);
 
   void synchronize();
+
+  void debug_sfg(const std::string &suffix);
 
  private:
   IRBank ir_bank_;
@@ -179,7 +182,6 @@ class AsyncEngine {
 
   TaskMeta create_task_meta(const TaskLaunchRecord &t);
   std::unordered_map<const Kernel *, KernelMeta> kernel_metas_;
-  std::unordered_map<IRHandle, TaskMeta> offloaded_metas_;
 };
 
 TLANG_NAMESPACE_END

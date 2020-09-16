@@ -355,13 +355,14 @@ class TypePromotionMapping {
     TRY_FIRST(uint64);
   }
   DataType query(DataType x, DataType y) {
-    return mapping[std::make_pair(x,y)];
+    return mapping[std::make_pair(x, y)];
   }
+
  private:
   std::map<std::pair<DataType, DataType>, DataType> mapping;
 };
 TypePromotionMapping type_promotion_mapping;
-}
+}  // namespace
 
 DataType promoted_type(DataType a, DataType b) {
   return type_promotion_mapping.query(a, b);

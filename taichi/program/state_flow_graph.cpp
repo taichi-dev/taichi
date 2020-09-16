@@ -108,9 +108,13 @@ bool StateFlowGraph::optimize_listgen() {
 
   auto [has_path, has_path_reverse] = compute_transitive_closure();
 
+  std::unordered_set<int> nodes_to_delete;
+
   for (int i = 0; i < nodes_.size(); i++) {
     auto node_a = nodes_[i].get();
     if (node_a->meta->type != OffloadedStmt::TaskType::listgen)
+      continue;
+    if (nodes_to_delete.find(i) != nodes_to_delete.end())
       continue;
     for (int j = i + 1; j < nodes_.size(); j++) {
       auto node_b = nodes_[j].get();
@@ -157,10 +161,10 @@ bool StateFlowGraph::optimize_listgen() {
       TI_INFO("Common list generation {} and {}", node_a->string(),
               node_b->string());
       common_pairs.emplace_back(std::make_pair(i, j));
+      nodes_to_delete.insert(j);
     }
   }
 
-  std::unordered_set<int> nodes_to_delete;
   // Erase node j
   // Note: the corresponding ClearListStmt should be removed in later DSE passes
   for (auto p : common_pairs) {
@@ -169,7 +173,6 @@ bool StateFlowGraph::optimize_listgen() {
     replace_reference(nodes_[j].get(), nodes_[i].get(),
                       /*only_output_edges=*/true);
     modified = true;
-    nodes_to_delete.insert(j);
   }
 
   delete_nodes(nodes_to_delete);

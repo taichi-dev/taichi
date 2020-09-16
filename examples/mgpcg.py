@@ -2,7 +2,7 @@ import numpy as np
 import taichi as ti
 
 real = ti.f32
-ti.init(default_fp=real, arch=ti.x64, async_mode=False, async_opt_listgen=True, async_opt_dse=True, async_opt_fusion=False, kernel_profiler=False
+ti.init(default_fp=real, arch=ti.x64, async_mode=True, async_opt_listgen=True, async_opt_dse=True, async_opt_fusion=False, kernel_profiler=False
 #, async_opt_intermediate_file="mgpcg"
 )
 
@@ -169,13 +169,27 @@ sum[None] = 0.0
 reduce(z[0], r[0], old_zTr)
 print('old_zTr', old_zTr)
 
+@ti.kernel
+def print_rTr():
+    print('rTr', rTr[None])
+
+@ti.kernel
+def update_alpha():
+    alpha[None] = old_zTr[None] / pAp[None]
+
+@ti.kernel
+def update_beta():
+    beta[None] = new_zTr[None] / old_zTr[None]
+    old_zTr[None] = new_zTr[None]
+    
 # CG
 for i in range(3):
     # alpha = rTr / pTAp
     compute_Ap()
     reduce(p, Ap, pAp)
-    alpha[None] = old_zTr[None] / pAp[None]
+    update_alpha()
 
+    ti.sync()
     # x = x + alpha p
     update_x()
 
@@ -184,9 +198,7 @@ for i in range(3):
 
     # check for convergence
     reduce(r[0], r[0], rTr)
-    print('rTr', rTr[None])
-    if rTr[None] < initial_rTr * 1.0e-12:
-        break
+    print_rTr()
 
     # z = M^-1 r
     if use_multigrid:
@@ -196,19 +208,14 @@ for i in range(3):
 
     # beta = new_rTr / old_rTr
     reduce(z[0], r[0], new_zTr)
-    print('new_zTr', new_zTr[None])
-    beta[None] = new_zTr[None] / old_zTr[None]
+    update_beta()
 
     # p = z + beta p
     update_p()
-    old_zTr[None] = new_zTr[None]
 
-    print(' ')
-    print(i)
-    print(rTr)
-    paint()
-    gui.set_image(pixels)
-    gui.show()
+paint()
+gui.set_image(pixels)
+gui.show()
 
 ti.kernel_profiler_print()
 ti.core.print_stat()

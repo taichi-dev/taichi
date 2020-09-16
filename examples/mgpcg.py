@@ -2,9 +2,15 @@ import numpy as np
 import taichi as ti
 
 real = ti.f32
-ti.init(default_fp=real, arch=ti.x64, async_mode=True, async_opt_listgen=True, async_opt_dse=True, async_opt_fusion=False, kernel_profiler=False
-#, async_opt_intermediate_file="mgpcg"
-)
+ti.init(default_fp=real,
+        arch=ti.x64,
+        async_mode=True,
+        async_opt_listgen=True,
+        async_opt_dse=True,
+        async_opt_fusion=False,
+        kernel_profiler=False
+        #, async_opt_intermediate_file="mgpcg"
+        )
 
 # grid parameters
 N = 128
@@ -169,19 +175,23 @@ sum[None] = 0.0
 reduce(z[0], r[0], old_zTr)
 print('old_zTr', old_zTr)
 
+
 @ti.kernel
 def print_rTr():
     print('rTr', rTr[None])
+
 
 @ti.kernel
 def update_alpha():
     alpha[None] = old_zTr[None] / pAp[None]
 
+
 @ti.kernel
 def update_beta():
     beta[None] = new_zTr[None] / old_zTr[None]
     old_zTr[None] = new_zTr[None]
-    
+
+
 # CG
 for i in range(3):
     # alpha = rTr / pTAp

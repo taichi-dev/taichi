@@ -127,7 +127,7 @@ class StateFlowGraph {
   void verify();
 
   // Extract all tasks to execute.
-  std::vector<TaskLaunchRecord> extract(bool sort=true);
+  std::vector<TaskLaunchRecord> extract(bool sort = true);
 
   std::size_t size() {
     return nodes_.size();

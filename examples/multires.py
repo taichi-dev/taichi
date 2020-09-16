@@ -2,9 +2,14 @@ import numpy as np
 import taichi as ti
 
 real = ti.f32
-ti.init(default_fp=real, arch=ti.x64, async_mode=True, async_opt_listgen=True, async_opt_dse=False, async_opt_fusion=False, kernel_profiler=False
-, async_opt_intermediate_file="multires"
-)
+ti.init(default_fp=real,
+        arch=ti.x64,
+        async_mode=True,
+        async_opt_listgen=True,
+        async_opt_dse=False,
+        async_opt_fusion=False,
+        kernel_profiler=False,
+        async_opt_intermediate_file="multires")
 
 # grid parameters
 N = 128
@@ -54,7 +59,6 @@ def prolongate(l: ti.template()):
         z[l][I] = z[l + 1][I // 2]
 
 
-
 def apply_preconditioner():
     for l in range(n_mg_levels - 1):
         z[l + 1].fill(0)
@@ -64,6 +68,7 @@ def apply_preconditioner():
     for l in reversed(range(n_mg_levels - 1)):
         prolongate(l)
 
+
 init()
 
 apply_preconditioner()
@@ -72,7 +77,6 @@ ti.sync()
 # CG
 for i in range(2):
     apply_preconditioner()
-
 
 ti.sync()
 

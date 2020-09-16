@@ -352,7 +352,7 @@ void Program::materialize_layout() {
       StructCompiler::make(this, host_arch());
   scomp->run(*snode_root, true);
 
-  for (auto snode: scomp->snodes) {
+  for (auto snode : scomp->snodes) {
     snodes[snode->id] = snode;
   }
 
@@ -402,8 +402,6 @@ void Program::materialize_layout() {
     cc_program->compile_layout(snode_root.get());
 #endif
   }
-
-
 }
 
 void Program::check_runtime_error() {

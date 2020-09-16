@@ -1184,7 +1184,6 @@ void parallel_struct_for(Context *context,
                          int num_threads) {
   auto list = (context->runtime)->element_lists[snode_id];
   auto list_tail = list->size();
-  taichi_printf(context->runtime, "list length %d\n", (int)list_tail);
 #if ARCH_cuda
   int i = block_idx();
   // TODO: refactor element_split more systematically.

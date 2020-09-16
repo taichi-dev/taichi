@@ -161,11 +161,10 @@ bool StateFlowGraph::optimize_listgen() {
         // erase the serial task containing ClearListStmt
         nodes_to_delete.insert(clear_node->node_id);
 
-        TI_INFO("Common list generation {} and (to erase) {}", node_a->string(),
-                node_b->string());
-        common_pairs.emplace_back(
-            std::make_pair(node_a->node_id, node_b->node_id));
+        TI_DEBUG("Common list generation {} and (to erase) {}",
+                 node_a->string(), node_b->string());
 
+        nodes_to_delete.insert(node_b->node_id);
         erasing = true;
       }
 
@@ -174,19 +173,10 @@ bool StateFlowGraph::optimize_listgen() {
     }
   }
 
-  // Erase node j
-  // Note: the corresponding ClearListStmt should be removed in later DSE passes
-  for (auto p : common_pairs) {
-    auto i = p.first;
-    auto j = p.second;
-    nodes_to_delete.insert(j);
-    modified = true;
-  }
-
   TI_ASSERT(nodes_to_delete.size() % 2 == 0);
-  TI_P(nodes_to_delete.size());
 
-  if (modified) {
+  if (!nodes_to_delete.empty()) {
+    modified = true;
     delete_nodes(nodes_to_delete);
     // Note: DO NOT topo sort the nodes here. Node deletion destroys order
     // independency.

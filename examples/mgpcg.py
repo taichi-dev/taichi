@@ -11,7 +11,7 @@ N = 128
 N_gui = 512  # gui resolution
 
 n_mg_levels = 3
-pre_and_post_smoothing = 1
+pre_and_post_smoothing = 0
 bottom_smoothing = 0
 
 use_multigrid = True
@@ -152,23 +152,6 @@ gui = ti.GUI("mgpcg", res=(N_gui, N_gui))
 
 init()
 
-sum[None] = 0.0
-reduce(r[0], r[0], rTr)
-initial_rTr = rTr[None]
-
-# r = b - Ax = b    since x = 0
-# p = r = r + 0 p
-if use_multigrid:
-    apply_preconditioner()
-else:
-    z[0].copy_from(r[0])
-
-update_p()
-
-sum[None] = 0.0
-reduce(z[0], r[0], old_zTr)
-print('old_zTr', old_zTr)
-
 @ti.kernel
 def print_rTr():
     print('rTr', rTr[None])
@@ -183,7 +166,7 @@ def update_beta():
     old_zTr[None] = new_zTr[None]
     
 # CG
-for i in range(3):
+for i in range(2):
     # alpha = rTr / pTAp
     compute_Ap()
     reduce(p, Ap, pAp)

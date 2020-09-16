@@ -324,7 +324,44 @@ bool command_exist(const std::string &command) {
 #endif
 }
 
+namespace {
+class TypePromotionMapping {
+ public:
+  TypePromotionMapping() {
+#define TRY_SECOND(x, y)                                            \
+  mapping[std::make_pair(get_data_type<x>(), get_data_type<y>())] = \
+      get_data_type<decltype(std::declval<x>() + std::declval<y>())>();
+#define TRY_FIRST(x)      \
+  TRY_SECOND(x, float32); \
+  TRY_SECOND(x, float64); \
+  TRY_SECOND(x, int8);    \
+  TRY_SECOND(x, int16);   \
+  TRY_SECOND(x, int32);   \
+  TRY_SECOND(x, int64);   \
+  TRY_SECOND(x, uint8);   \
+  TRY_SECOND(x, uint16);  \
+  TRY_SECOND(x, uint32);  \
+  TRY_SECOND(x, uint64);
+
+    TRY_FIRST(float32);
+    TRY_FIRST(float64);
+    TRY_FIRST(int8);
+    TRY_FIRST(int16);
+    TRY_FIRST(int32);
+    TRY_FIRST(int64);
+    TRY_FIRST(uint8);
+    TRY_FIRST(uint16);
+    TRY_FIRST(uint32);
+    TRY_FIRST(uint64);
+  }
+  DataType query(DataType x, DataType y) {
+    return mapping[std::make_pair(x,y)];
+  }
+ private:
+  std::map<std::pair<DataType, DataType>, DataType> mapping;
+};
 TypePromotionMapping type_promotion_mapping;
+}
 
 DataType promoted_type(DataType a, DataType b) {
   return type_promotion_mapping.query(a, b);

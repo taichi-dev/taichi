@@ -9,7 +9,7 @@ ti.init(default_fp=real, arch=ti.x64, async_mode=True, async_opt_listgen=False, 
 # grid parameters
 N = 128
 
-n_mg_levels = 5
+n_mg_levels = 4
 
 use_multigrid = True
 

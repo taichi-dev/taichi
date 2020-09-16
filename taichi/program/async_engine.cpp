@@ -353,8 +353,6 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
       if (ptr->activate) {
         for (auto &snode : ptr->snodes.data) {
           auto s = snode;
-          if (s->type == SNodeType::place)
-            s = s->parent;
           if (!s->is_path_all_dense) {
             while (s) {
               meta.input_states.emplace(s, AsyncState::Type::mask);

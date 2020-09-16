@@ -3,6 +3,7 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/program/async_engine.h"
+#include "state_flow_graph.h"
 
 #include <sstream>
 #include <unordered_set>
@@ -900,6 +901,135 @@ void StateFlowGraph::verify() {
   }
   // Call topological sort to check cycles.
   topo_sort_nodes();
+}
+
+// TODO: make this an IR pass
+class ConstExprPropagation {
+ public:
+  static std::unordered_set<Stmt *> run(
+      Block *block,
+      const std::function<bool(Stmt *)> &is_const_seed) {
+    std::unordered_set<Stmt *> const_stmts;
+
+    auto is_const = [&](Stmt *stmt) {
+      if (is_const_seed(stmt)) {
+        return true;
+      } else {
+        return const_stmts.find(stmt) != const_stmts.end();
+      }
+    };
+
+    for (auto &s : block->statements) {
+      if (is_const(s.get())) {
+        const_stmts.insert(s.get());
+      } else if (auto binary = s->cast<BinaryOpStmt>()) {
+        if (is_const(binary->lhs) && is_const(binary->rhs)) {
+          const_stmts.insert(s.get());
+        }
+      } else if (auto unary = s->cast<UnaryOpStmt>()) {
+        if (is_const(unary->operand)) {
+          const_stmts.insert(s.get());
+        }
+      } else {
+        // TODO: ...
+      }
+    }
+
+    return const_stmts;
+  }
+};
+
+bool StateFlowGraph::activation_demotion() {
+  bool modified = false;
+
+  topo_sort_nodes();
+
+  std::unordered_map<IRHandle, std::vector<Node *>> tasks;
+
+  for (int i = 1; i < (int)nodes_.size(); i++) {
+    Node *node = nodes_[i].get();
+    // TODO: handle serial and range for
+    if (node->meta->type == OffloadedStmt::struct_for) {
+      tasks[node->rec.ir_handle].push_back(node);
+    }
+  }
+
+  for (auto &task : tasks) {
+    auto &nodes = task.second;
+    TI_ASSERT(nodes.size() > 0);
+    auto snode = nodes[0]->meta->snode;
+    auto list_state = AsyncState(snode, AsyncState::Type::list);
+    TI_ASSERT(snode != nullptr);
+
+    // TODO: speed it up
+    for (int i = 0; i < (int)nodes.size(); i++) {
+      bool demoted = false;
+      for (int j = i + 1; j < (int)nodes.size(); j++) {
+        // Two nodes must use the same list state
+        // TODO: for bitmasked we also need to deal with masks
+        if (nodes[i]->input_edges[list_state].size() != 1)
+          continue;
+        if (nodes[j]->input_edges[list_state].size() != 1)
+          continue;
+        if (*nodes[i]->input_edges[list_state].begin() !=
+            *nodes[j]->input_edges[list_state].begin())
+          continue;
+
+        auto new_ir = nodes[j]->rec.ir_handle.clone();
+        OffloadedStmt *offload = new_ir->as<OffloadedStmt>();
+        Block *body = offload->body.get();
+
+        // TODO: for now we only deal with the top level. Extend.
+        auto consts = ConstExprPropagation::run(body, [](Stmt *stmt) {
+          if (stmt->is<ConstStmt>()) {
+            return true;
+          } else if (stmt->is<LoopIndexStmt>())
+            return true;
+          return false;
+        });
+
+        for (int k = 0; k < body->statements.size(); k++) {
+          Stmt *stmt = body->statements[k].get();
+          if (auto ptr = stmt->cast<GlobalPtrStmt>(); ptr->activate) {
+            bool can_deactivate = true;
+            for (auto i : ptr->indices) {
+              if (consts.find(i) == consts.end()) {
+                // non-constant index
+                can_deactivate = false;
+              }
+            }
+            if (can_deactivate) {
+              modified = true;
+              TI_TAG;
+              ptr->activate = false;
+              demoted = true;
+            }
+          }
+        }
+        if (demoted) {
+          TI_TAG;
+          auto handle =
+              IRHandle(new_ir.get(), ir_bank_->get_hash(new_ir.get()));
+          ir_bank_->insert(std::move(new_ir), handle.hash());
+          nodes[j]->rec.ir_handle = handle;
+          // task->meta->print();
+          nodes[j]->meta = get_task_meta(ir_bank_, nodes[j]->rec);
+          break;
+        }
+      }
+      if (demoted)
+        break;
+    }
+  }
+
+  if (modified) {
+    auto tasks = extract(/*sort=*/false);
+    for (auto &task : tasks) {
+      insert_task(task);
+    }
+  }
+
+  return modified;
 }
 
 void async_print_sfg() {

@@ -950,17 +950,24 @@ bool StateFlowGraph::activation_demotion() {
 
   topo_sort_nodes();
 
-  std::unordered_map<IRHandle, std::vector<Node *>> tasks;
+  // TODO: use unordered map
+  std::map<std::pair<IRHandle, Node *>, std::vector<Node *>> tasks;
 
   for (int i = 1; i < (int)nodes_.size(); i++) {
     Node *node = nodes_[i].get();
-    // TODO: handle serial and range for
-    if (node->meta->type == OffloadedStmt::struct_for) {
-      tasks[node->rec.ir_handle].push_back(node);
-    }
-  }
+    auto snode = node->meta->snode;
+    auto list_state = AsyncState(snode, AsyncState::Type::list);
 
-  TI_TAG;
+    // TODO: handle serial and range for
+    if (node->meta->type != OffloadedStmt::struct_for)
+      continue;
+
+    if (node->input_edges[list_state].size() != 1)
+      continue;
+
+    auto list_node = *node->input_edges[list_state].begin();
+    tasks[std::make_pair(node->rec.ir_handle, list_node)].push_back(node);
+  }
 
   for (auto &task : tasks) {
     auto &nodes = task.second;
@@ -978,15 +985,8 @@ bool StateFlowGraph::activation_demotion() {
       for (int j = i + 1; j < (int)nodes.size(); j++) {
         // Two nodes must use the same list state
         // TODO: for bitmasked we also need to deal with masks
-        if (nodes[i]->input_edges[list_state].size() != 1)
-          continue;
-        if (nodes[j]->input_edges[list_state].size() != 1)
-          continue;
-        if (*nodes[i]->input_edges[list_state].begin() !=
-            *nodes[j]->input_edges[list_state].begin())
-          continue;
 
-        auto new_ir = nodes[j]->rec.ir_handle.clone();
+        std::unique_ptr<IRNode> new_ir = nodes[j]->rec.ir_handle.clone();
         OffloadedStmt *offload = new_ir->as<OffloadedStmt>();
         Block *body = offload->body.get();
 

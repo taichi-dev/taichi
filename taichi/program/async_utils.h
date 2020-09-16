@@ -41,6 +41,10 @@ class IRHandle {
     return hash_ == other_ir_handle.hash_;
   }
 
+  bool operator<(const IRHandle &other_ir_handle) const {
+    return hash_ < other_ir_handle.hash_;
+  }
+
  private:
   const IRNode *ir_;  // not owned
   uint64 hash_;

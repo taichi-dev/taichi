@@ -7,6 +7,7 @@ ti.init(default_fp=real,
         async_mode=True,
         async_opt_listgen=True,
         async_opt_dse=True,
+        async_opt_activation_demotion=False,
         async_opt_fusion=False,
         kernel_profiler=False
         #, async_opt_intermediate_file="mgpcg"

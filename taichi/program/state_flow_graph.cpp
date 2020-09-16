@@ -57,14 +57,16 @@ void StateFlowGraph::clear() {
   // Do not clear task_name_to_launch_ids_.
 }
 
-void StateFlowGraph::insert_task(const TaskLaunchRecord &rec) {
+void StateFlowGraph::insert_task(const TaskLaunchRecord &rec, int launch_id) {
   auto node = std::make_unique<Node>();
   node->rec = rec;
   node->meta = get_task_meta(ir_bank_, rec);
-  {
+  if (launch_id == -1) {
     int &id = task_name_to_launch_ids_[node->meta->name];
     node->launch_id = id;
     ++id;
+  } else {
+    node->launch_id = launch_id;
   }
   for (auto input_state : node->meta->input_states) {
     if (latest_state_owner_.find(input_state) == latest_state_owner_.end()) {
@@ -117,8 +119,11 @@ bool StateFlowGraph::optimize_listgen() {
       listgen_nodes[node->meta->snode].push_back(node);
   }
 
+  std::unordered_set<int> nodes_to_delete;
+
   for (auto &record : listgen_nodes) {
     auto &listgens = record.second;
+
     // Thanks to the dependency edges, the order of nodes in listgens seems to
     // be UNIQUE
     // TODO: prove
@@ -136,6 +141,7 @@ bool StateFlowGraph::optimize_listgen() {
         auto snode = node_a->meta->snode;
 
         auto mask_state = AsyncState{snode, AsyncState::Type::mask};
+        auto list_state = AsyncState{snode, AsyncState::Type::list};
         auto parent_list_state =
             AsyncState{snode->parent, AsyncState::Type::list};
 
@@ -152,6 +158,17 @@ bool StateFlowGraph::optimize_listgen() {
             *node_b->input_edges[parent_list_state].begin())
           break;
 
+        TI_ASSERT(node_b->input_edges[list_state].size() == 1);
+        Node *clear_node = *node_b->input_edges[list_state].begin();
+
+        const OffloadedStmt *clear_node_offload =
+            clear_node->rec.ir_handle.ir()->as<OffloadedStmt>();
+        TI_ASSERT(clear_node_offload->body->statements.size() == 1);
+        TI_ASSERT(clear_node_offload->body->statements[0]->is<ClearListStmt>());
+
+        // erase the serial task containing ClearListStmt
+        nodes_to_delete.insert(clear_node->node_id);
+
         TI_INFO("Common list generation {} and (to erase) {}", node_a->string(),
                 node_b->string());
         common_pairs.emplace_back(
@@ -165,7 +182,6 @@ bool StateFlowGraph::optimize_listgen() {
     }
   }
 
-  std::unordered_set<int> nodes_to_delete;
   // Erase node j
   // Note: the corresponding ClearListStmt should be removed in later DSE passes
   for (auto p : common_pairs) {
@@ -177,7 +193,17 @@ bool StateFlowGraph::optimize_listgen() {
     modified = true;
   }
 
-  delete_nodes(nodes_to_delete);
+  TI_ASSERT(nodes_to_delete.size() % 2 == 0);
+  TI_P(nodes_to_delete.size());
+
+  if (modified) {
+    delete_nodes(nodes_to_delete);
+    topo_sort_nodes();
+    auto tasks = extract();
+    for (auto &task : tasks) {
+      insert_task(task);
+    }
+  }
 
   return modified;
 }
@@ -413,7 +439,7 @@ std::vector<TaskLaunchRecord> StateFlowGraph::extract() {
       tasks.push_back(nodes_[i]->rec);
 
       TI_INFO("task {}:{}", nodes_[i]->meta->name, nodes_[i]->launch_id);
-      nodes_[i]->meta->print();
+      // nodes_[i]->meta->print();
       irpass::print(const_cast<IRNode *>(nodes_[i]->rec.ir_handle.ir()));
     }
   }
@@ -450,6 +476,11 @@ std::string StateFlowGraph::dump_dot(const std::optional<std::string> &rankdir,
   using SFGNode = StateFlowGraph::Node;
   using TaskType = OffloadedStmt::TaskType;
   std::stringstream ss;
+
+  // Highlight S9dense_list
+  AsyncState highlight_state{get_current_program().snodes[9],
+                             AsyncState::Type::list};
+
   ss << "digraph {\n";
   auto node_id = [](const SFGNode *n) {
     // https://graphviz.org/doc/info/lang.html ID naming
@@ -480,6 +511,16 @@ std::string StateFlowGraph::dump_dot(const std::optional<std::string> &rankdir,
   for (const auto &p : latest_state_owner_) {
     latest_state_nodes.insert(p.second);
   }
+
+  std::unordered_set<const SFGNode *> selected_nodes;
+  selected_nodes.insert(initial_node_);
+  for (const auto &nd : nodes_) {
+    if (nd->input_edges.find(highlight_state) != nd->input_edges.end() ||
+        nd->output_edges.find(highlight_state) != nd->output_edges.end()) {
+      selected_nodes.insert(nd.get());
+    }
+  }
+
   std::vector<const SFGNode *> nodes_with_no_inputs;
   for (const auto &nd : nodes_) {
     const auto *n = nd.get();
@@ -515,26 +556,32 @@ std::string StateFlowGraph::dump_dot(const std::optional<std::string> &rankdir,
       // No states embedded.
       labels << escaped_label(n->string());
     }
-    ss << "  "
-       << fmt::format("{} [label=\"{}\" shape=record", node_id(n),
-                      labels.str());
-    if (latest_state_nodes.find(n) != latest_state_nodes.end()) {
-      ss << " peripheries=2";
+
+    if (selected_nodes.find(nd.get()) != selected_nodes.end()) {
+      std::string color;
+      color = " style=filled fillcolor=red ";
+
+      ss << "  "
+         << fmt::format("{} [label=\"{}\" shape=record {}", node_id(n),
+                        labels.str(), color);
+      if (latest_state_nodes.find(n) != latest_state_nodes.end()) {
+        ss << " peripheries=2";
+      }
+      // Highlight user-defined tasks
+      const auto tt = nd->meta->type;
+      if (!nd->is_initial_node &&
+          (tt == TaskType::range_for || tt == TaskType::struct_for ||
+           tt == TaskType::serial)) {
+        // ss << " style=filled fillcolor=lightgray";
+      }
+      ss << "]\n";
     }
-    // Highlight user-defined tasks
-    const auto tt = nd->meta->type;
-    if (!nd->is_initial_node &&
-        (tt == TaskType::range_for || tt == TaskType::struct_for ||
-         tt == TaskType::serial)) {
-      ss << " style=filled fillcolor=lightgray";
-    }
-    ss << "]\n";
     if (nd->input_edges.empty())
       nodes_with_no_inputs.push_back(n);
   }
   ss << "\n";
   {
-    // DFS
+    // DFS to draw edges
     std::unordered_set<const SFGNode *> visited;
     std::vector<const SFGNode *> stack(nodes_with_no_inputs);
     while (!stack.empty()) {
@@ -565,10 +612,19 @@ std::string StateFlowGraph::dump_dot(const std::optional<std::string> &rankdir,
               attribs << " style=dotted";
             }
 
-            ss << "  "
-               << fmt::format("{} -> {} [{}]", from_node_port, node_id(to),
-                              attribs.str())
-               << '\n';
+            if (p.first == highlight_state) {
+              attribs << " penwidth=5 color=red";
+            } else {
+              attribs << " color=lightgrey";
+            }
+
+            if (selected_nodes.find(from) != selected_nodes.end() &&
+                selected_nodes.find(to) != selected_nodes.end()) {
+              ss << "  "
+                 << fmt::format("{} -> {} [{}]", from_node_port, node_id(to),
+                                attribs.str())
+                 << '\n';
+            }
           }
         }
       }

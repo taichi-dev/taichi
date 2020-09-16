@@ -102,7 +102,7 @@ class StateFlowGraph {
   std::string dump_dot(const std::optional<std::string> &rankdir,
                        int embed_states_threshold = 0);
 
-  void insert_task(const TaskLaunchRecord &rec);
+  void insert_task(const TaskLaunchRecord &rec, int launch_id = -1);
 
   void insert_state_flow(Node *from, Node *to, AsyncState state);
 

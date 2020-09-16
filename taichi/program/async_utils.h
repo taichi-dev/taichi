@@ -2,6 +2,7 @@
 
 #include <unordered_map>
 #include <unordered_set>
+#include <atomic>
 
 #include "taichi/ir/snode.h"
 #include "taichi/ir/statements.h"
@@ -74,6 +75,7 @@ class TaskLaunchRecord {
   Context context;
   Kernel *kernel;  // TODO: remove this
   IRHandle ir_handle;
+  int id;
 
   TaskLaunchRecord();
 
@@ -82,6 +84,9 @@ class TaskLaunchRecord {
   OffloadedStmt *stmt() const;
 
   bool empty() const;
+
+ private:
+  static std::atomic<int> task_counter;
 };
 
 struct AsyncState {

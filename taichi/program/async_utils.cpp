@@ -14,10 +14,13 @@ std::unique_ptr<IRNode> IRHandle::clone() const {
 TaskLaunchRecord::TaskLaunchRecord() : kernel(nullptr), ir_handle(nullptr, 0) {
 }
 
+std::atomic<int> TaskLaunchRecord::task_counter = 0;
+
 TaskLaunchRecord::TaskLaunchRecord(Context context,
                                    Kernel *kernel,
                                    IRHandle ir_handle)
     : context(context), kernel(kernel), ir_handle(ir_handle) {
+  id = task_counter++;
   TI_ASSERT(ir_handle.ir()->get_kernel() != nullptr);
 }
 

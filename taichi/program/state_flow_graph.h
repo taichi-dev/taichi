@@ -31,7 +31,6 @@ class StateFlowGraph {
     TaskLaunchRecord rec;
     TaskMeta *meta{nullptr};
     // Incremental ID to identify the i-th launch of the task.
-    int launch_id{0};
     bool is_initial_node{false};
 
     // Returns the position in nodes_. Invoke StateFlowGraph::reid_nodes() to
@@ -102,7 +101,7 @@ class StateFlowGraph {
   std::string dump_dot(const std::optional<std::string> &rankdir,
                        int embed_states_threshold = 0);
 
-  void insert_task(const TaskLaunchRecord &rec, int launch_id = -1);
+  void insert_task(const TaskLaunchRecord &rec);
 
   void insert_state_flow(Node *from, Node *to, AsyncState state);
 

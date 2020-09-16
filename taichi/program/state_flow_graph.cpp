@@ -13,7 +13,7 @@ TLANG_NAMESPACE_BEGIN
 // dependency edges.
 
 std::string StateFlowGraph::Node::string() const {
-  return fmt::format("[node: {}:{}]", meta->name, launch_id);
+  return fmt::format("[node: {}:{}]", meta->name, rec.id);
 }
 
 void StateFlowGraph::Node::disconnect_all() {
@@ -43,7 +43,6 @@ StateFlowGraph::StateFlowGraph(IRBank *ir_bank) : ir_bank_(ir_bank) {
   initial_node_ = nodes_.back().get();
   initial_meta_.name = "initial_state";
   initial_node_->meta = &initial_meta_;
-  initial_node_->launch_id = 0;
   initial_node_->is_initial_node = true;
 }
 
@@ -57,17 +56,10 @@ void StateFlowGraph::clear() {
   // Do not clear task_name_to_launch_ids_.
 }
 
-void StateFlowGraph::insert_task(const TaskLaunchRecord &rec, int launch_id) {
+void StateFlowGraph::insert_task(const TaskLaunchRecord &rec) {
   auto node = std::make_unique<Node>();
   node->rec = rec;
   node->meta = get_task_meta(ir_bank_, rec);
-  if (launch_id == -1) {
-    int &id = task_name_to_launch_ids_[node->meta->name];
-    node->launch_id = id;
-    ++id;
-  } else {
-    node->launch_id = launch_id;
-  }
   for (auto input_state : node->meta->input_states) {
     if (latest_state_owner_.find(input_state) == latest_state_owner_.end()) {
       latest_state_owner_[input_state] = initial_node_;
@@ -438,7 +430,7 @@ std::vector<TaskLaunchRecord> StateFlowGraph::extract() {
     if (!nodes_[i]->rec.empty()) {
       tasks.push_back(nodes_[i]->rec);
 
-      TI_INFO("task {}:{}", nodes_[i]->meta->name, nodes_[i]->launch_id);
+      TI_INFO("task {}:{}", nodes_[i]->meta->name, nodes_[i]->rec.id);
       // nodes_[i]->meta->print();
       irpass::print(const_cast<IRNode *>(nodes_[i]->rec.ir_handle.ir()));
     }
@@ -484,7 +476,7 @@ std::string StateFlowGraph::dump_dot(const std::optional<std::string> &rankdir,
   ss << "digraph {\n";
   auto node_id = [](const SFGNode *n) {
     // https://graphviz.org/doc/info/lang.html ID naming
-    return fmt::format("n_{}_{}", n->meta->name, n->launch_id);
+    return fmt::format("n_{}_{}", n->meta->name, n->rec.id);
   };
 
   auto escaped_label = [](const std::string &s) {

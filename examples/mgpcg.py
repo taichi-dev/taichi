@@ -2,7 +2,7 @@ import numpy as np
 import taichi as ti
 
 real = ti.f32
-ti.init(default_fp=real, arch=ti.x64, async_mode=False, async_opt_listgen=False, async_opt_dse=True, async_opt_fusion=False, kernel_profiler=False
+ti.init(default_fp=real, arch=ti.x64, async_mode=True, async_opt_listgen=True, async_opt_dse=True, async_opt_fusion=False, kernel_profiler=False
 #, async_opt_intermediate_file="mgpcg"
 )
 
@@ -12,7 +12,7 @@ N_gui = 512  # gui resolution
 
 n_mg_levels = 5
 pre_and_post_smoothing = 2
-bottom_smoothing = 1
+bottom_smoothing = 150
 
 use_multigrid = True
 
@@ -121,12 +121,22 @@ def smooth(l: ti.template(), phase: ti.template()):
 def apply_preconditioner():
     z[0].fill(0)
     for l in range(n_mg_levels - 1):
+        for i in range(pre_and_post_smoothing << l):
+            smooth(l, 0)
+            smooth(l, 1)
         z[l + 1].fill(0)
         r[l + 1].fill(0)
         restrict(l)
 
+    for i in range(bottom_smoothing):
+        smooth(n_mg_levels - 1, 0)
+        smooth(n_mg_levels - 1, 1)
+
     for l in reversed(range(n_mg_levels - 1)):
         prolongate(l)
+        for i in range(pre_and_post_smoothing << l):
+            smooth(l, 1)
+            smooth(l, 0)
 
 
 @ti.kernel
@@ -173,7 +183,7 @@ def update_beta():
     old_zTr[None] = new_zTr[None]
     
 # CG
-for i in range(5):
+for i in range(3):
     # alpha = rTr / pTAp
     compute_Ap()
     reduce(p, Ap, pAp)

@@ -179,8 +179,6 @@ bool StateFlowGraph::optimize_listgen() {
   for (auto p : common_pairs) {
     auto i = p.first;
     auto j = p.second;
-    replace_reference(nodes_[j].get(), nodes_[i].get(),
-                      /*only_output_edges=*/true);
     nodes_to_delete.insert(j);
     modified = true;
   }
@@ -190,8 +188,9 @@ bool StateFlowGraph::optimize_listgen() {
 
   if (modified) {
     delete_nodes(nodes_to_delete);
-    topo_sort_nodes();
-    auto tasks = extract();
+    // Note: DO NOT topo sort the nodes here. Node deletion destroys order
+    // independency.
+    auto tasks = extract(/*sort=*/false);
     for (auto &task : tasks) {
       insert_task(task);
     }
@@ -412,6 +411,8 @@ bool StateFlowGraph::fuse() {
   if (modified) {
     // rebuild the graph in topological order
     delete_nodes(indices_to_delete);
+    // TODO: we may want to preserve the original node order. Maybe
+    // topo_sort_nodes() here leads to wrong results.
     topo_sort_nodes();
     auto tasks = extract();
     for (auto &task : tasks) {
@@ -422,17 +423,18 @@ bool StateFlowGraph::fuse() {
   return modified;
 }
 
-std::vector<TaskLaunchRecord> StateFlowGraph::extract() {
-  topo_sort_nodes();
+std::vector<TaskLaunchRecord> StateFlowGraph::extract(bool sort) {
+  if (sort)
+    topo_sort_nodes();
   std::vector<TaskLaunchRecord> tasks;
   tasks.reserve(nodes_.size());
   for (int i = 1; i < (int)nodes_.size(); i++) {
     if (!nodes_[i]->rec.empty()) {
       tasks.push_back(nodes_[i]->rec);
 
-      TI_INFO("task {}:{}", nodes_[i]->meta->name, nodes_[i]->rec.id);
+      // TI_INFO("task {}:{}", nodes_[i]->meta->name, nodes_[i]->rec.id);
       // nodes_[i]->meta->print();
-      irpass::print(const_cast<IRNode *>(nodes_[i]->rec.ir_handle.ir()));
+      // irpass::print(const_cast<IRNode *>(nodes_[i]->rec.ir_handle.ir()));
     }
   }
   clear();

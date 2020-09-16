@@ -27,12 +27,13 @@ def test_fusion_range():
 
     foo()
     bar()
+    foo()
 
     ti.sync()
 
 
 def test_fusion():
-    ti.init(arch=ti.cpu, async_mode=True, async_opt_intermediate_file="fusion")
+    ti.init(arch=ti.cpu, async_mode=True, async_opt_intermediate_file="fusion", async_opt_fusion=False)
 
     x = ti.field(ti.i32)
     y = ti.field(ti.i32)
@@ -53,10 +54,11 @@ def test_fusion():
     @ti.kernel
     def bar():
         for i in y:
-            z[i] = y[i] + 1
+            z[i+1] = y[i] + 1
 
     foo()
     bar()
+    foo()
 
     ti.sync()
 
@@ -123,16 +125,14 @@ def test_multiple_listgens():
         x[0] = 10
     
     fill()
-    
-    foo()
-    bar()
-    bar()
-    bar()
-    hello()
+    for i in range(10):
+        foo()
+        bar()
+        hello()
     
     ti.sync()
 
-# test_fusion()
+test_fusion()
 # test_fusion_range()
 # test_write_after_read()
-test_multiple_listgens()
+# test_multiple_listgens()

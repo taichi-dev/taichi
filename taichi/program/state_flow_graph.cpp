@@ -109,7 +109,6 @@ bool StateFlowGraph::optimize_listgen() {
   topo_sort_nodes();
   reid_nodes();
 
-  std::unordered_set<int> nodes_to_delete;
   std::unordered_map<SNode *, std::vector<Node *>> listgen_nodes;
 
   for (int i = 1; i < nodes_.size(); i++) {
@@ -120,7 +119,8 @@ bool StateFlowGraph::optimize_listgen() {
 
   for (auto &record : listgen_nodes) {
     auto &listgens = record.second;
-    // Thanks to the dependency edges, the order of nodes in listgens seems to be UNIQUE
+    // Thanks to the dependency edges, the order of nodes in listgens seems to
+    // be UNIQUE
     // TODO: prove
 
     // We can only replace a bunch continuous entries of listgens
@@ -152,10 +152,10 @@ bool StateFlowGraph::optimize_listgen() {
             *node_b->input_edges[parent_list_state].begin())
           break;
 
-        TI_INFO("Common list generation {} and {}", node_a->string(),
+        TI_INFO("Common list generation {} and (to erase) {}", node_a->string(),
                 node_b->string());
-        common_pairs.emplace_back(std::make_pair(node_a->node_id, node_b->node_id));
-        nodes_to_delete.insert(node_b->node_id);
+        common_pairs.emplace_back(
+            std::make_pair(node_a->node_id, node_b->node_id));
 
         erasing = true;
       }
@@ -165,6 +165,7 @@ bool StateFlowGraph::optimize_listgen() {
     }
   }
 
+  std::unordered_set<int> nodes_to_delete;
   // Erase node j
   // Note: the corresponding ClearListStmt should be removed in later DSE passes
   for (auto p : common_pairs) {
@@ -172,6 +173,7 @@ bool StateFlowGraph::optimize_listgen() {
     auto j = p.second;
     replace_reference(nodes_[j].get(), nodes_[i].get(),
                       /*only_output_edges=*/true);
+    nodes_to_delete.insert(j);
     modified = true;
   }
 

@@ -408,6 +408,12 @@ void AsyncEngine::synchronize() {
         modified = true;
       }
     sfg->verify();
+    if (program->config.async_opt_activation_demotion)
+      while (sfg->activation_demotion()) {
+        debug_sfg("dse");
+        modified = true;
+      }
+    sfg->verify();
     if (program->config.async_opt_fusion)
       while (sfg->fuse()) {
         debug_sfg("fuse");

@@ -422,9 +422,9 @@ std::vector<TaskLaunchRecord> StateFlowGraph::extract(bool sort) {
     if (!nodes_[i]->rec.empty()) {
       tasks.push_back(nodes_[i]->rec);
 
-      // TI_INFO("task {}:{}", nodes_[i]->meta->name, nodes_[i]->rec.id);
-      // nodes_[i]->meta->print();
-      // irpass::print(const_cast<IRNode *>(nodes_[i]->rec.ir_handle.ir()));
+      TI_INFO("task {}:{}", nodes_[i]->meta->name, nodes_[i]->rec.id);
+      nodes_[i]->meta->print();
+      irpass::print(const_cast<IRNode *>(nodes_[i]->rec.ir_handle.ir()));
     }
   }
   clear();
@@ -954,11 +954,16 @@ bool StateFlowGraph::activation_demotion() {
     }
   }
 
+  TI_TAG;
+
   for (auto &task : tasks) {
     auto &nodes = task.second;
     TI_ASSERT(nodes.size() > 0);
+
     auto snode = nodes[0]->meta->snode;
+
     auto list_state = AsyncState(snode, AsyncState::Type::list);
+
     TI_ASSERT(snode != nullptr);
 
     // TODO: speed it up
@@ -988,19 +993,22 @@ bool StateFlowGraph::activation_demotion() {
           return false;
         });
 
-        for (int k = 0; k < body->statements.size(); k++) {
+        irpass::print(offload);
+
+        TI_P(consts.size());
+
+        for (int k = 0; k < (int)body->statements.size(); k++) {
           Stmt *stmt = body->statements[k].get();
-          if (auto ptr = stmt->cast<GlobalPtrStmt>(); ptr->activate) {
+          if (auto ptr = stmt->cast<GlobalPtrStmt>(); ptr && ptr->activate) {
             bool can_deactivate = true;
-            for (auto i : ptr->indices) {
-              if (consts.find(i) == consts.end()) {
+            for (auto ind : ptr->indices) {
+              if (consts.find(ind) == consts.end()) {
                 // non-constant index
                 can_deactivate = false;
               }
             }
             if (can_deactivate) {
               modified = true;
-              TI_TAG;
               ptr->activate = false;
               demoted = true;
             }

@@ -152,7 +152,7 @@ def test_activation_demotion():
     @ti.kernel
     def restrict():
         for i in x:
-            y[i // 2] = x[i] + 1
+            y[i // 2] = 1
 
     restrict()
     restrict()

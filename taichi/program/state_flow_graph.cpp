@@ -140,6 +140,12 @@ bool StateFlowGraph::optimize_listgen() {
           *node_b->input_edges[parent_list_state].begin())
         continue;
 
+
+      auto [has_path, has_path_reverse] = compute_transitive_closure();
+
+      if (!has_path[i][j])
+        continue;
+
       /*
       // TODO: Use reachability to test if there is node_c between node_a
       // and node_b that writes the list (the following might be too
@@ -398,6 +404,7 @@ bool StateFlowGraph::fuse() {
 }
 
 std::vector<TaskLaunchRecord> StateFlowGraph::extract() {
+  topo_sort_nodes();
   std::vector<TaskLaunchRecord> tasks;
   tasks.reserve(nodes_.size());
   for (int i = 1; i < (int)nodes_.size(); i++) {

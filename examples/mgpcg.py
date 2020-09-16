@@ -2,15 +2,17 @@ import numpy as np
 import taichi as ti
 
 real = ti.f32
-ti.init(default_fp=real, arch=ti.x64, async_mode=True, async_opt_listgen=True, async_opt_fusion=False, kernel_profiler=False, async_opt_intermediate_file="mgpcg")
+ti.init(default_fp=real, arch=ti.x64, async_mode=True, async_opt_listgen=True, async_opt_dse=True, async_opt_fusion=False, kernel_profiler=False
+#, async_opt_intermediate_file="mgpcg"
+)
 
 # grid parameters
 N = 128
 N_gui = 512  # gui resolution
 
-n_mg_levels = 1
-pre_and_post_smoothing = 1
-bottom_smoothing = 1
+n_mg_levels = 2
+pre_and_post_smoothing = 2
+bottom_smoothing = 20
 
 use_multigrid = True
 

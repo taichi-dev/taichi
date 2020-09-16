@@ -31,7 +31,8 @@ TLANG_NAMESPACE_BEGIN
 
 void async_print_sfg();
 
-std::string async_dump_dot(std::optional<std::string> rankdir);
+std::string async_dump_dot(std::optional<std::string> rankdir,
+                           int embed_states_threshold);
 
 std::string compiled_lib_dir;
 std::string runtime_tmp_dir;
@@ -664,7 +665,8 @@ void export_lang(py::module &m) {
   });
 
   m.def("print_sfg", async_print_sfg);
-  m.def("dump_dot", async_dump_dot, py::arg("rankdir").none(true));
+  m.def("dump_dot", async_dump_dot, py::arg("rankdir").none(true),
+        py::arg("embed_states_threshold"));
 }
 
 TI_NAMESPACE_END

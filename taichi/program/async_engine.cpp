@@ -30,18 +30,6 @@ uint64 hash(IRNode *stmt) {
   return ret;
 }
 
-inline const SNode *get_snode_in_clear_list_task(const OffloadedStmt *task) {
-  TI_ASSERT(is_clear_list_task(task));
-  return task->body->back()->as<ClearListStmt>()->snode;
-}
-
-inline SNode *get_snode_in_clear_list_task(OffloadedStmt *task) {
-  // Avoid duplication: https://stackoverflow.com/a/123995/12003165
-  const auto *sn =
-      get_snode_in_clear_list_task(static_cast<const OffloadedStmt *>(task));
-  return const_cast<SNode *>(sn);
-}
-
 }  // namespace
 
 uint64 IRBank::get_hash(IRNode *ir) {

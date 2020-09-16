@@ -433,8 +433,8 @@ void StateFlowGraph::print() {
   fmt::print("=======================\n");
 }
 
-std::string StateFlowGraph::dump_dot(
-    const std::optional<std::string> &rankdir) {
+std::string StateFlowGraph::dump_dot(const std::optional<std::string> &rankdir,
+                                     int embed_states_threshold) {
   using SFGNode = StateFlowGraph::Node;
   using TaskType = OffloadedStmt::TaskType;
   std::stringstream ss;
@@ -443,6 +443,19 @@ std::string StateFlowGraph::dump_dot(
     // https://graphviz.org/doc/info/lang.html ID naming
     return fmt::format("n_{}_{}", n->meta->name, n->launch_id);
   };
+
+  auto escaped_label = [](const std::string &s) {
+    std::stringstream ss;
+    for (char c : s) {
+      // Braces, vertical bars ,angle brackets and spaces needs to be escaped.
+      // Just escape whitespaces for now...
+      if (c == ' ') {
+        ss << '\\';
+      }
+      ss << c;
+    }
+    return ss.str();
+  };
   // Graph level configuration.
   if (rankdir) {
     ss << "  rankdir=" << *rankdir << "\n";
@@ -450,24 +463,58 @@ std::string StateFlowGraph::dump_dot(
   ss << "\n";
   // Specify the node styles
   std::unordered_set<const SFGNode *> latest_state_nodes;
+  std::unordered_set<const SFGNode *> nodes_with_embedded_states;
+  // TODO: make this configurable
   for (const auto &p : latest_state_owner_) {
     latest_state_nodes.insert(p.second);
   }
   std::vector<const SFGNode *> nodes_with_no_inputs;
   for (const auto &nd : nodes_) {
     const auto *n = nd.get();
-    ss << "  " << fmt::format("{} [label=\"{}\"", node_id(n), n->string());
-    if (nd->is_initial_node) {
-      ss << ",shape=box";
-    } else if (latest_state_nodes.find(n) != latest_state_nodes.end()) {
-      ss << ",peripheries=2";
+
+    std::stringstream labels;
+    if (!n->is_initial_node && !n->output_edges.empty() &&
+        (n->output_edges.size() < embed_states_threshold)) {
+      // Example:
+      //
+      // |-----------------------|
+      // |        node foo       |
+      // |-----------------------|
+      // |   X_mask  |  X_value  |
+      // |-----------------------|
+      //
+      // label={ node\ foo | { <X_mask> X_mask | <X_value> X_value } }
+      // See DOT node port...
+      labels << "{ " << escaped_label(n->string()) << " | { ";
+      const auto &edges = n->output_edges;
+      for (auto it = edges.begin(); it != edges.end(); ++it) {
+        if (it != edges.begin()) {
+          labels << " | ";
+        }
+        const auto name = it->first.name();
+        // Each state corresponds to one port
+        // "<port> displayed\ text"
+        labels << "<" << name << "> " << escaped_label(name);
+      }
+      labels << " } }";
+
+      nodes_with_embedded_states.insert(n);
+    } else {
+      // No states embedded.
+      labels << escaped_label(n->string());
+    }
+    ss << "  "
+       << fmt::format("{} [label=\"{}\" shape=record", node_id(n),
+                      labels.str());
+    if (latest_state_nodes.find(n) != latest_state_nodes.end()) {
+      ss << " peripheries=2";
     }
     // Highlight user-defined tasks
     const auto tt = nd->meta->type;
     if (!nd->is_initial_node &&
         (tt == TaskType::range_for || tt == TaskType::struct_for ||
          tt == TaskType::serial)) {
-      ss << ",style=filled,fillcolor=lightgray";
+      ss << " style=filled fillcolor=lightgray";
     }
     ss << "]\n";
     if (nd->input_edges.empty())
@@ -486,15 +533,29 @@ std::string StateFlowGraph::dump_dot(
         for (const auto &p : from->output_edges) {
           for (const auto *to : p.second) {
             stack.push_back(to);
-            std::string style;
+
+            const bool states_embedded =
+                (nodes_with_embedded_states.find(from) !=
+                 nodes_with_embedded_states.end());
+            std::string from_node_port = node_id(from);
+            std::stringstream attribs;
+            if (states_embedded) {
+              // The state is embedded inside the node. We draw the edge from
+              // the port corresponding to this state.
+              // Format is "{node}:{port}"
+              from_node_port += fmt::format(":{}", p.first.name());
+            } else {
+              // Show the state on the edge label
+              attribs << fmt::format("label=\"{}\"", p.first.name());
+            }
 
             if (!from->has_state_flow(p.first, to)) {
-              style = "style=dotted";
+              attribs << " style=dotted";
             }
 
             ss << "  "
-               << fmt::format("{} -> {} [label=\"{}\" {}]", node_id(from),
-                              node_id(to), p.first.name(), style)
+               << fmt::format("{} -> {} [{}]", from_node_port, node_id(to),
+                              attribs.str())
                << '\n';
           }
         }
@@ -780,9 +841,11 @@ void async_print_sfg() {
   get_current_program().async_engine->sfg->print();
 }
 
-std::string async_dump_dot(std::optional<std::string> rankdir) {
+std::string async_dump_dot(std::optional<std::string> rankdir,
+                           int embed_states_threshold) {
   // https://pybind11.readthedocs.io/en/stable/advanced/functions.html#allow-prohibiting-none-arguments
-  return get_current_program().async_engine->sfg->dump_dot(rankdir);
+  return get_current_program().async_engine->sfg->dump_dot(
+      rankdir, embed_states_threshold);
 }
 
 TLANG_NAMESPACE_END

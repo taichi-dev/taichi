@@ -91,9 +91,16 @@ class StateFlowGraph {
 
   void print();
 
-  // Returns a string representing a DOT graph
+  // Returns a string representing a DOT graph.
+  //
+  // |embed_states_threshold|: We can choose to embed the states into the task
+  // node itself, if there aren't too many output states. This defines the
+  // maximum number of output states a task can have for the states to be
+  // embedded in the node.
+  //
   // TODO: In case we add more and more DOT configs, create a struct?
-  std::string dump_dot(const std::optional<std::string> &rankdir);
+  std::string dump_dot(const std::optional<std::string> &rankdir,
+                       int embed_states_threshold = 0);
 
   void insert_task(const TaskLaunchRecord &rec);
 

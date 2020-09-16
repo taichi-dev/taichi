@@ -411,6 +411,8 @@ std::vector<TaskLaunchRecord> StateFlowGraph::extract() {
   for (int i = 1; i < (int)nodes_.size(); i++) {
     if (!nodes_[i]->rec.empty()) {
       tasks.push_back(nodes_[i]->rec);
+
+      TI_INFO("task {}", nodes_[i]->meta->name);
     }
   }
   clear();

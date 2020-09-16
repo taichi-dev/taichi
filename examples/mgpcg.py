@@ -193,7 +193,7 @@ def update_beta():
 
 
 # CG
-for i in range(3):
+for i in range(10):
     # alpha = rTr / pTAp
     compute_Ap()
     reduce(p, Ap, pAp)

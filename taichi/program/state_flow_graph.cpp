@@ -95,7 +95,6 @@ void StateFlowGraph::insert_state_flow(Node *from, Node *to, AsyncState state) {
 }
 
 bool StateFlowGraph::optimize_listgen() {
-  TI_INFO("Begin optimize listgen");
   bool modified = false;
 
   std::vector<std::pair<int, int>> common_pairs;

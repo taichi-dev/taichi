@@ -189,7 +189,7 @@ for i in range(3):
     reduce(p, Ap, pAp)
     update_alpha()
 
-    ti.sync()
+    # ti.sync()
     # x = x + alpha p
     update_x()
 

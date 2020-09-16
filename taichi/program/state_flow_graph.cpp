@@ -123,10 +123,15 @@ bool StateFlowGraph::optimize_listgen() {
 
   for (auto &record : listgen_nodes) {
     auto &listgens = record.second;
+    // Thanks to the dependency edges, the order of nodes in listgens seems to be UNIQUE
+    // TODO: prove
+
+    // We can only replace a continuous entries of lsitgens
     for (int i = 0; i < listgens.size(); i++) {
       auto node_a = listgens[i];
-      if (nodes_to_delete.find(node_a->node_id) != nodes_to_delete.end())
-        continue;
+
+      bool erasing = false;
+
       for (int j = i + 1; j < listgens.size(); j++) {
         auto node_b = listgens[j];
 
@@ -142,33 +147,27 @@ bool StateFlowGraph::optimize_listgen() {
 
         if (*node_a->input_edges[mask_state].begin() !=
             *node_b->input_edges[mask_state].begin())
-          continue;
+          break;
 
         TI_ASSERT(node_a->input_edges[parent_list_state].size() == 1);
         TI_ASSERT(node_b->input_edges[parent_list_state].size() == 1);
         if (*node_a->input_edges[parent_list_state].begin() !=
             *node_b->input_edges[parent_list_state].begin())
-          continue;
+          break;
 
         if (!has_path[node_a->node_id][node_b->node_id])
-          continue;
-
-        /*
-        // TODO: Use reachability to test if there is node_c between node_a
-        // and node_b that writes the list (the following might be too
-        // conservative)
-        auto a_has_path_to_b = has_path[i] & has_path_reverse[j];
-        a_has_path_to_b[i] = a_has_path_to_b[j] = false;
-        // Test if there is a path node_a->node_c->node_b here
-        if (a_has_path_to_b.any())
-          continue;
-        */
+          break;
 
         TI_INFO("Common list generation {} and {}", node_a->string(),
                 node_b->string());
         common_pairs.emplace_back(std::make_pair(node_a->node_id, node_b->node_id));
         nodes_to_delete.insert(node_b->node_id);
+
+        erasing = true;
       }
+
+      if (erasing)
+        break;
     }
   }
 

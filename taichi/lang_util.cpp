@@ -324,9 +324,10 @@ bool command_exist(const std::string &command) {
 #endif
 }
 
-DataType promoted_type(DataType a, DataType b) {
-  std::map<std::pair<DataType, DataType>, DataType> mapping;
-  if (mapping.empty()) {
+namespace {
+class TypePromotionMapping {
+ public:
+  TypePromotionMapping() {
 #define TRY_SECOND(x, y)                                            \
   mapping[std::make_pair(get_data_type<x>(), get_data_type<y>())] = \
       get_data_type<decltype(std::declval<x>() + std::declval<y>())>();
@@ -353,7 +354,18 @@ DataType promoted_type(DataType a, DataType b) {
     TRY_FIRST(uint32);
     TRY_FIRST(uint64);
   }
-  return mapping[std::make_pair(a, b)];
+  DataType query(DataType x, DataType y) {
+    return mapping[std::make_pair(x, y)];
+  }
+
+ private:
+  std::map<std::pair<DataType, DataType>, DataType> mapping;
+};
+TypePromotionMapping type_promotion_mapping;
+}  // namespace
+
+DataType promoted_type(DataType a, DataType b) {
+  return type_promotion_mapping.query(a, b);
 }
 
 std::string TypedConstant::stringify() const {

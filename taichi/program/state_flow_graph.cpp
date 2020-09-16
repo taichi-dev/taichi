@@ -412,7 +412,9 @@ std::vector<TaskLaunchRecord> StateFlowGraph::extract() {
     if (!nodes_[i]->rec.empty()) {
       tasks.push_back(nodes_[i]->rec);
 
-      TI_INFO("task {}", nodes_[i]->meta->name);
+      TI_INFO("task {}:{}", nodes_[i]->meta->name, nodes_[i]->launch_id);
+      nodes_[i]->meta->print();
+      irpass::print(const_cast<IRNode *>(nodes_[i]->rec.ir_handle.ir()));
     }
   }
   clear();

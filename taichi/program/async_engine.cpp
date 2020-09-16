@@ -353,12 +353,14 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
       if (ptr->activate) {
         for (auto &snode : ptr->snodes.data) {
           auto s = snode;
-          while (s){
-            if (s->need_activation()) {
+          if (s->type == SNodeType::place)
+            s = s->parent;
+          if (!s->is_path_all_dense) {
+            while (s) {
               meta.input_states.emplace(s, AsyncState::Type::mask);
               meta.output_states.emplace(s, AsyncState::Type::mask);
+              s = s->parent;
             }
-            s = s->parent;
           }
         }
       }

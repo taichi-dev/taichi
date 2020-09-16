@@ -44,10 +44,7 @@ def init():
 @ti.kernel
 def restrict(l: ti.template()):
     for i, j, k in r[l]:
-        res = r[l][i, j, k] - (6.0 * z[l][i, j, k] - z[l][i + 1, j, k] -
-                               z[l][i - 1, j, k] - z[l][i, j + 1, k] -
-                               z[l][i, j - 1, k] - z[l][i, j, k + 1] -
-                               z[l][i, j, k - 1])
+        res = r[l][i, j, k] - z[l][i, j, k]
         r[l + 1][i // 2, j // 2, k // 2] += res * 0.5
 
 
@@ -78,3 +75,10 @@ for i in range(2):
 
 
 ti.sync()
+
+# Has indirect edges before 0008, no edge after 0009
+
+# restrict_c6_1_serial:5
+# fill_tensor_c10_0_struct_for:2
+
+# because  fill_tensor_c10_1_listgen:5 is deleted?

@@ -2,7 +2,7 @@ import numpy as np
 import taichi as ti
 
 real = ti.f32
-ti.init(default_fp=real, arch=ti.x64, async_mode=False, async_opt_listgen=True, async_opt_dse=True, async_opt_fusion=False, kernel_profiler=False
+ti.init(default_fp=real, arch=ti.x64, async_mode=False, async_opt_listgen=False, async_opt_dse=True, async_opt_fusion=False, kernel_profiler=False
 #, async_opt_intermediate_file="mgpcg"
 )
 

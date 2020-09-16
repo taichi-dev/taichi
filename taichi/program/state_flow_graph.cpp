@@ -106,8 +106,7 @@ bool StateFlowGraph::optimize_listgen() {
 
   std::vector<std::pair<int, int>> common_pairs;
 
-  // std::vector<Bitset> has_path, has_path_reverse;
-  // std::tie(has_path, has_path_reverse) = compute_transitive_closure();
+  auto [has_path, has_path_reverse] = compute_transitive_closure();
 
   for (int i = 0; i < nodes_.size(); i++) {
     auto node_a = nodes_[i].get();
@@ -141,8 +140,6 @@ bool StateFlowGraph::optimize_listgen() {
         continue;
 
 
-      auto [has_path, has_path_reverse] = compute_transitive_closure();
-
       if (!has_path[i][j])
         continue;
 
@@ -169,7 +166,6 @@ bool StateFlowGraph::optimize_listgen() {
   for (auto p : common_pairs) {
     auto i = p.first;
     auto j = p.second;
-    TI_INFO("Eliminating {}", nodes_[j]->string());
     replace_reference(nodes_[j].get(), nodes_[i].get(),
                       /*only_output_edges=*/true);
     modified = true;

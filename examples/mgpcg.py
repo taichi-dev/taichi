@@ -12,7 +12,7 @@ N_gui = 512  # gui resolution
 
 n_mg_levels = 2
 pre_and_post_smoothing = 2
-bottom_smoothing = 20
+bottom_smoothing = 10
 
 use_multigrid = True
 
@@ -166,7 +166,7 @@ old_zTr = sum[None]
 print('old_zTr', old_zTr)
 
 # CG
-for i in range(1):
+for i in range(10):
     # alpha = rTr / pTAp
     compute_Ap()
     sum[None] = 0.0

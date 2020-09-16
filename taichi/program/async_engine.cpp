@@ -410,7 +410,7 @@ void AsyncEngine::synchronize() {
     sfg->verify();
     if (program->config.async_opt_activation_demotion)
       while (sfg->activation_demotion()) {
-        debug_sfg("dse");
+        debug_sfg("act");
         modified = true;
       }
     sfg->verify();

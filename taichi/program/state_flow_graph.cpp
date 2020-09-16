@@ -422,9 +422,12 @@ std::vector<TaskLaunchRecord> StateFlowGraph::extract(bool sort) {
     if (!nodes_[i]->rec.empty()) {
       tasks.push_back(nodes_[i]->rec);
 
-      TI_INFO("task {}:{}", nodes_[i]->meta->name, nodes_[i]->rec.id);
-      nodes_[i]->meta->print();
-      irpass::print(const_cast<IRNode *>(nodes_[i]->rec.ir_handle.ir()));
+      if (false) {
+        // debug
+        TI_INFO("task {}:{}", nodes_[i]->meta->name, nodes_[i]->rec.id);
+        nodes_[i]->meta->print();
+        irpass::print(const_cast<IRNode *>(nodes_[i]->rec.ir_handle.ir()));
+      }
     }
   }
   clear();
@@ -551,6 +554,9 @@ std::string StateFlowGraph::dump_dot(const std::optional<std::string> &rankdir,
     } else {
       // No states embedded.
       labels << escaped_label(n->string());
+      if (!n->is_initial_node) {
+        labels << fmt::format("\\nhash: 0x{:08x}", n->rec.ir_handle.hash());
+      }
     }
 
     if (node_selected(nd.get())) {
@@ -993,9 +999,9 @@ bool StateFlowGraph::activation_demotion() {
           return false;
         });
 
-        irpass::print(offload);
+        // irpass::print(offload);
 
-        TI_P(consts.size());
+        // TI_P(consts.size());
 
         for (int k = 0; k < (int)body->statements.size(); k++) {
           Stmt *stmt = body->statements[k].get();

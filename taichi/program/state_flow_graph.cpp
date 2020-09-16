@@ -109,10 +109,7 @@ bool StateFlowGraph::optimize_listgen() {
   topo_sort_nodes();
   reid_nodes();
 
-  auto [has_path, has_path_reverse] = compute_transitive_closure();
-
   std::unordered_set<int> nodes_to_delete;
-
   std::unordered_map<SNode *, std::vector<Node *>> listgen_nodes;
 
   for (int i = 1; i < nodes_.size(); i++) {
@@ -126,7 +123,7 @@ bool StateFlowGraph::optimize_listgen() {
     // Thanks to the dependency edges, the order of nodes in listgens seems to be UNIQUE
     // TODO: prove
 
-    // We can only replace a continuous entries of lsitgens
+    // We can only replace a bunch continuous entries of listgens
     for (int i = 0; i < listgens.size(); i++) {
       auto node_a = listgens[i];
 
@@ -153,9 +150,6 @@ bool StateFlowGraph::optimize_listgen() {
         TI_ASSERT(node_b->input_edges[parent_list_state].size() == 1);
         if (*node_a->input_edges[parent_list_state].begin() !=
             *node_b->input_edges[parent_list_state].begin())
-          break;
-
-        if (!has_path[node_a->node_id][node_b->node_id])
           break;
 
         TI_INFO("Common list generation {} and {}", node_a->string(),

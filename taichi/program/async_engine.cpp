@@ -366,6 +366,7 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
     if (auto clear_list = stmt->cast<ClearListStmt>()) {
       meta.output_states.emplace(clear_list->snode, AsyncState::Type::list);
     }
+    // TODO: handle SNodeOpStmt etc.
     return false;
   });
   if (root_stmt->task_type == OffloadedStmt::listgen) {

@@ -1621,7 +1621,9 @@ FunctionType CodeGenLLVM::compile_module_to_executable() {
     task.compile();
   }
   auto offloaded_tasks_local = offloaded_tasks;
+  auto kernel_name_ = kernel_name;
   return [=](Context &context) {
+    TI_TRACE("Launching kernel {}", kernel_name_);
     for (auto task : offloaded_tasks_local) {
       task(&context);
     }

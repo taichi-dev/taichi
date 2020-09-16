@@ -136,7 +136,32 @@ def test_multiple_listgens():
     ti.sync()
 
 
-test_fusion()
+def test_activation_demotion():
+    ti.init(arch=ti.cpu,
+            async_mode=True,
+            async_opt_listgen=True,
+            async_opt_fusion=False,
+            async_opt_intermediate_file="act")
+
+    x = ti.field(ti.i32)
+    y = ti.field(ti.i32)
+
+    ti.root.pointer(ti.i, 32).dense(ti.i, 2).place(x)
+    ti.root.pointer(ti.i, 32).dense(ti.i, 2).place(y)
+
+    @ti.kernel
+    def restrict():
+        for i in x:
+            y[i // 2] = x[i] + 1
+
+    restrict()
+    restrict()
+
+    ti.sync()
+
+
+# test_fusion()
 # test_fusion_range()
 # test_write_after_read()
 # test_multiple_listgens()
+test_activation_demotion()

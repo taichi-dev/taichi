@@ -495,14 +495,26 @@ std::string StateFlowGraph::dump_dot(const std::optional<std::string> &rankdir,
     latest_state_nodes.insert(p.second);
   }
 
-  std::unordered_set<const SFGNode *> selected_nodes;
-  selected_nodes.insert(initial_node_);
-  for (const auto &nd : nodes_) {
-    if (nd->input_edges.find(highlight_state) != nd->input_edges.end() ||
-        nd->output_edges.find(highlight_state) != nd->output_edges.end()) {
-      selected_nodes.insert(nd.get());
+  bool highlight_single_state = false;
+
+  auto node_selected = [&](const SFGNode *node) {
+    if (highlight_single_state) {
+      return node->input_edges.find(highlight_state) !=
+                 node->input_edges.end() ||
+             node->output_edges.find(highlight_state) !=
+                 node->output_edges.end();
+    } else {
+      return true;
     }
-  }
+  };
+
+  auto state_selected = [&](AsyncState state) {
+    if (highlight_single_state) {
+      return state == highlight_state;
+    } else {
+      return true;
+    }
+  };
 
   std::vector<const SFGNode *> nodes_with_no_inputs;
   for (const auto &nd : nodes_) {
@@ -540,9 +552,10 @@ std::string StateFlowGraph::dump_dot(const std::optional<std::string> &rankdir,
       labels << escaped_label(n->string());
     }
 
-    if (selected_nodes.find(nd.get()) != selected_nodes.end()) {
+    if (node_selected(nd.get())) {
       std::string color;
-      color = " style=filled fillcolor=red ";
+      if (highlight_single_state)
+        color = " style=filled fillcolor=red ";
 
       ss << "  "
          << fmt::format("{} [label=\"{}\" shape=record {}", node_id(n),
@@ -595,14 +608,15 @@ std::string StateFlowGraph::dump_dot(const std::optional<std::string> &rankdir,
               attribs << " style=dotted";
             }
 
-            if (p.first == highlight_state) {
-              attribs << " penwidth=5 color=red";
-            } else {
-              attribs << " color=lightgrey";
+            if (highlight_single_state) {
+              if (state_selected(p.first)) {
+                attribs << " penwidth=5 color=red";
+              } else {
+                attribs << " color=lightgrey";
+              }
             }
 
-            if (selected_nodes.find(from) != selected_nodes.end() &&
-                selected_nodes.find(to) != selected_nodes.end()) {
+            if (node_selected(from) && node_selected(to)) {
               ss << "  "
                  << fmt::format("{} -> {} [{}]", from_node_port, node_id(to),
                                 attribs.str())

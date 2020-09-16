@@ -385,6 +385,7 @@ void AsyncEngine::enqueue(const TaskLaunchRecord &t) {
 
 void AsyncEngine::synchronize() {
   bool modified = true;
+  TI_INFO("Synchronizing SFG of {} nodes", sfg->size());
   debug_sfg("initial");
   while (modified) {
     modified = false;
@@ -409,6 +410,7 @@ void AsyncEngine::synchronize() {
   }
   debug_sfg("final");
   auto tasks = sfg->extract();
+  TI_INFO("Ended up with {} nodes", tasks.size());
   for (auto &task : tasks) {
     queue.enqueue(task);
   }

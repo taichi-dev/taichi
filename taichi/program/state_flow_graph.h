@@ -130,6 +130,10 @@ class StateFlowGraph {
   // Extract all tasks to execute.
   std::vector<TaskLaunchRecord> extract();
 
+  std::size_t size() {
+    return nodes_.size();
+  }
+
  private:
   std::vector<std::unique_ptr<Node>> nodes_;
   Node *initial_node_;  // The initial node holds all the initial states.

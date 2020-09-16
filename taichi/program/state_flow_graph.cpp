@@ -673,7 +673,7 @@ void StateFlowGraph::delete_nodes(
     if (indices_to_delete.find(i) == indices_to_delete.end()) {
       new_nodes_.push_back(std::move(nodes_[i]));
     } else {
-      TI_INFO("Deleting node {}", i);
+      TI_DEBUG("Deleting node {}", i);
     }
   }
 
@@ -744,9 +744,9 @@ bool StateFlowGraph::optimize_dead_store() {
               IRHandle(new_ir.get(), ir_bank_->get_hash(new_ir.get()));
           ir_bank_->insert(std::move(new_ir), handle.hash());
           task->rec.ir_handle = handle;
-          task->meta->print();
+          // task->meta->print();
           task->meta = get_task_meta(ir_bank_, task->rec);
-          task->meta->print();
+          // task->meta->print();
 
           for (auto other : task->output_edges[s])
             other->input_edges[s].erase(task.get());

@@ -2,15 +2,15 @@ import numpy as np
 import taichi as ti
 
 real = ti.f32
-ti.init(default_fp=real, arch=ti.x64, kernel_profiler=True)
+ti.init(default_fp=real, arch=ti.x64, async_mode=True, async_opt_listgen=True, async_opt_fusion=False, kernel_profiler=False, async_opt_intermediate_file="mgpcg")
 
 # grid parameters
 N = 128
 N_gui = 512  # gui resolution
 
-n_mg_levels = 4
-pre_and_post_smoothing = 2
-bottom_smoothing = 50
+n_mg_levels = 1
+pre_and_post_smoothing = 1
+bottom_smoothing = 1
 
 use_multigrid = True
 
@@ -161,9 +161,10 @@ update_p()
 sum[None] = 0.0
 reduce(z[0], r[0])
 old_zTr = sum[None]
+print('old_zTr', old_zTr)
 
 # CG
-for i in range(400):
+for i in range(1):
     # alpha = rTr / pTAp
     compute_Ap()
     sum[None] = 0.0
@@ -181,6 +182,7 @@ for i in range(400):
     sum[None] = 0.0
     reduce(r[0], r[0])
     rTr = sum[None]
+    print('rTr', rTr)
     if rTr < initial_rTr * 1.0e-12:
         break
 
@@ -194,6 +196,7 @@ for i in range(400):
     sum[None] = 0.0
     reduce(z[0], r[0])
     new_zTr = sum[None]
+    print('new_zTr', new_zTr)
     beta[None] = new_zTr / old_zTr
 
     # p = z + beta p
@@ -208,3 +211,4 @@ for i in range(400):
     gui.show()
 
 ti.kernel_profiler_print()
+ti.core.print_stat()

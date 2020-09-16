@@ -106,62 +106,69 @@ bool StateFlowGraph::optimize_listgen() {
 
   std::vector<std::pair<int, int>> common_pairs;
 
+  topo_sort_nodes();
+  reid_nodes();
+
   auto [has_path, has_path_reverse] = compute_transitive_closure();
 
   std::unordered_set<int> nodes_to_delete;
 
-  for (int i = 0; i < nodes_.size(); i++) {
-    auto node_a = nodes_[i].get();
-    if (node_a->meta->type != OffloadedStmt::TaskType::listgen)
-      continue;
-    if (nodes_to_delete.find(i) != nodes_to_delete.end())
-      continue;
-    for (int j = i + 1; j < nodes_.size(); j++) {
-      auto node_b = nodes_[j].get();
-      if (node_b->meta->type != OffloadedStmt::TaskType::listgen)
+  std::unordered_map<SNode *, std::vector<Node *>> listgen_nodes;
+
+  for (int i = 1; i < nodes_.size(); i++) {
+    auto node = nodes_[i].get();
+    if (node->meta->type == OffloadedStmt::TaskType::listgen)
+      listgen_nodes[node->meta->snode].push_back(node);
+  }
+
+  for (auto &record : listgen_nodes) {
+    auto &listgens = record.second;
+    for (int i = 0; i < listgens.size(); i++) {
+      auto node_a = listgens[i];
+      if (nodes_to_delete.find(node_a->node_id) != nodes_to_delete.end())
         continue;
-      if (node_a->meta->snode != node_b->meta->snode)
-        continue;
+      for (int j = i + 1; j < listgens.size(); j++) {
+        auto node_b = listgens[j];
 
-      // Test if two list generations share the same mask and parent list
-      auto snode = node_a->meta->snode;
+        // Test if two list generations share the same mask and parent list
+        auto snode = node_a->meta->snode;
 
-      auto mask_state = AsyncState{snode, AsyncState::Type::mask};
-      auto parent_list_state =
-          AsyncState{snode->parent, AsyncState::Type::list};
+        auto mask_state = AsyncState{snode, AsyncState::Type::mask};
+        auto parent_list_state =
+            AsyncState{snode->parent, AsyncState::Type::list};
 
-      TI_ASSERT(node_a->input_edges[mask_state].size() == 1);
-      TI_ASSERT(node_b->input_edges[mask_state].size() == 1);
+        TI_ASSERT(node_a->input_edges[mask_state].size() == 1);
+        TI_ASSERT(node_b->input_edges[mask_state].size() == 1);
 
-      if (*node_a->input_edges[mask_state].begin() !=
-          *node_b->input_edges[mask_state].begin())
-        continue;
+        if (*node_a->input_edges[mask_state].begin() !=
+            *node_b->input_edges[mask_state].begin())
+          continue;
 
-      TI_ASSERT(node_a->input_edges[parent_list_state].size() == 1);
-      TI_ASSERT(node_b->input_edges[parent_list_state].size() == 1);
-      if (*node_a->input_edges[parent_list_state].begin() !=
-          *node_b->input_edges[parent_list_state].begin())
-        continue;
+        TI_ASSERT(node_a->input_edges[parent_list_state].size() == 1);
+        TI_ASSERT(node_b->input_edges[parent_list_state].size() == 1);
+        if (*node_a->input_edges[parent_list_state].begin() !=
+            *node_b->input_edges[parent_list_state].begin())
+          continue;
 
+        if (!has_path[node_a->node_id][node_b->node_id])
+          continue;
 
-      if (!has_path[i][j])
-        continue;
+        /*
+        // TODO: Use reachability to test if there is node_c between node_a
+        // and node_b that writes the list (the following might be too
+        // conservative)
+        auto a_has_path_to_b = has_path[i] & has_path_reverse[j];
+        a_has_path_to_b[i] = a_has_path_to_b[j] = false;
+        // Test if there is a path node_a->node_c->node_b here
+        if (a_has_path_to_b.any())
+          continue;
+        */
 
-      /*
-      // TODO: Use reachability to test if there is node_c between node_a
-      // and node_b that writes the list (the following might be too
-      // conservative)
-      auto a_has_path_to_b = has_path[i] & has_path_reverse[j];
-      a_has_path_to_b[i] = a_has_path_to_b[j] = false;
-      // Test if there is a path node_a->node_c->node_b here
-      if (a_has_path_to_b.any())
-        continue;
-      */
-
-      TI_INFO("Common list generation {} and {}", node_a->string(),
-              node_b->string());
-      common_pairs.emplace_back(std::make_pair(i, j));
-      nodes_to_delete.insert(j);
+        TI_INFO("Common list generation {} and {}", node_a->string(),
+                node_b->string());
+        common_pairs.emplace_back(std::make_pair(node_a->node_id, node_b->node_id));
+        nodes_to_delete.insert(node_b->node_id);
+      }
     }
   }
 

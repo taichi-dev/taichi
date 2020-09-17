@@ -397,25 +397,28 @@ void AsyncEngine::synchronize() {
   // while (modified) {
   if (true) {
     // TODO: make iterative optimization work
-    modified = false;
-    if (program->config.async_opt_listgen)
-      while (sfg->optimize_listgen()) {
-        debug_sfg("listgen");
-        modified = true;
-      }
-    sfg->verify();
-    if (program->config.async_opt_dse)
-      while (sfg->optimize_dead_store()) {
-        debug_sfg("dse");
-        modified = true;
-      }
-    sfg->verify();
-    if (program->config.async_opt_activation_demotion)
-      while (sfg->activation_demotion()) {
-        debug_sfg("act");
-        modified = true;
-      }
-    sfg->verify();
+    modified = true;
+    while (modified) {
+      modified = false;
+      if (program->config.async_opt_listgen)
+        while (sfg->optimize_listgen()) {
+          debug_sfg("listgen");
+          modified = true;
+        }
+      sfg->verify();
+      if (program->config.async_opt_dse)
+        while (sfg->optimize_dead_store()) {
+          debug_sfg("dse");
+          modified = true;
+        }
+      sfg->verify();
+      if (program->config.async_opt_activation_demotion)
+        while (sfg->demote_activation()) {
+          debug_sfg("act");
+          modified = true;
+        }
+      sfg->verify();
+    }
     if (program->config.async_opt_fusion)
       while (sfg->fuse()) {
         debug_sfg("fuse");

@@ -112,7 +112,7 @@ class StateFlowGraph {
 
   bool optimize_listgen();
 
-  bool activation_demotion();
+  bool demote_activation();
 
   bool optimize_dead_store();
 

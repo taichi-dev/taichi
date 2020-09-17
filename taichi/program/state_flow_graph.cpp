@@ -945,7 +945,7 @@ class ConstExprPropagation {
   }
 };
 
-bool StateFlowGraph::activation_demotion() {
+bool StateFlowGraph::demote_activation() {
   bool modified = false;
 
   topo_sort_nodes();
@@ -1002,6 +1002,7 @@ bool StateFlowGraph::activation_demotion() {
       Stmt *stmt = body->statements[k].get();
       if (auto ptr = stmt->cast<GlobalPtrStmt>(); ptr && ptr->activate) {
         bool can_deactivate = true;
+        // TODO: test input mask?
         for (auto ind : ptr->indices) {
           if (consts.find(ind) == consts.end()) {
             // non-constant index

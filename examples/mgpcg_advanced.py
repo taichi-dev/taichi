@@ -201,7 +201,7 @@ See `examples/stable_fluid.py <https://github.com/taichi-dev/taichi/blob/master/
         self.reduce(self.z[0], self.r[0])
         old_zTr = self.sum[None]
 
-        # Conjugated gradients
+        # Conjugate gradients
         iter = 0
         while max_iters == -1 or iter < max_iters:
             # self.alpha = rTr / pTAp

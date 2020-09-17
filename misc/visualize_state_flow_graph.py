@@ -57,11 +57,10 @@ def test_fusion():
     @ti.kernel
     def bar():
         for i in y:
-            z[i + 1] = y[i] + 1
+            z[i] = y[i] + 1
 
     foo()
     bar()
-    foo()
 
     ti.sync()
 
@@ -160,8 +159,8 @@ def test_activation_demotion():
     ti.sync()
 
 
-# test_fusion()
-# test_fusion_range()
-# test_write_after_read()
-# test_multiple_listgens()
+test_fusion()
+test_fusion_range()
+test_write_after_read()
+test_multiple_listgens()
 test_activation_demotion()

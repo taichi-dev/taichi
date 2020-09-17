@@ -2,15 +2,24 @@ import numpy as np
 import taichi as ti
 
 real = ti.f32
-ti.init(default_fp=real, arch=ti.x64, kernel_profiler=True)
+ti.init(default_fp=real,
+        arch=ti.x64,
+        async_mode=False,
+        async_opt_listgen=True,
+        async_opt_dse=True,
+        async_opt_activation_demotion=True,
+        async_opt_fusion=False,
+        kernel_profiler=False
+        #, async_opt_intermediate_file="mgpcg"
+        )
 
 # grid parameters
 N = 128
 N_gui = 512  # gui resolution
 
-n_mg_levels = 4
+n_mg_levels = 5
 pre_and_post_smoothing = 2
-bottom_smoothing = 50
+bottom_smoothing = 150
 
 use_multigrid = True
 
@@ -27,6 +36,10 @@ alpha = ti.field(dtype=real)  # step size
 beta = ti.field(dtype=real)  # step size
 sum = ti.field(dtype=real)  # storage for reductions
 pixels = ti.field(dtype=real, shape=(N_gui, N_gui))  # image buffer
+rTr = ti.field(dtype=real, shape=())
+old_zTr = ti.field(dtype=real, shape=())
+new_zTr = ti.field(dtype=real, shape=())
+pAp = ti.field(dtype=real, shape=())
 
 grid = ti.root.pointer(ti.ijk, [N_tot // 4]).dense(ti.ijk, 4).place(x, p, Ap)
 
@@ -62,9 +75,10 @@ def compute_Ap():
 
 
 @ti.kernel
-def reduce(p: ti.template(), q: ti.template()):
+def reduce(p: ti.template(), q: ti.template(), s: ti.template()):
+    s[None] = 0
     for I in ti.grouped(p):
-        sum[None] += p[I] * q[I]
+        s[None] += p[I] * q[I]
 
 
 @ti.kernel
@@ -146,8 +160,8 @@ gui = ti.GUI("mgpcg", res=(N_gui, N_gui))
 init()
 
 sum[None] = 0.0
-reduce(r[0], r[0])
-initial_rTr = sum[None]
+reduce(r[0], r[0], rTr)
+initial_rTr = rTr[None]
 
 # r = b - Ax = b    since x = 0
 # p = r = r + 0 p
@@ -159,18 +173,34 @@ else:
 update_p()
 
 sum[None] = 0.0
-reduce(z[0], r[0])
-old_zTr = sum[None]
+reduce(z[0], r[0], old_zTr)
+print('old_zTr', old_zTr)
+
+
+@ti.kernel
+def print_rTr():
+    print('rTr', rTr[None])
+
+
+@ti.kernel
+def update_alpha():
+    alpha[None] = old_zTr[None] / pAp[None]
+
+
+@ti.kernel
+def update_beta():
+    beta[None] = new_zTr[None] / old_zTr[None]
+    old_zTr[None] = new_zTr[None]
+
 
 # CG
-for i in range(400):
+for i in range(10):
     # alpha = rTr / pTAp
     compute_Ap()
-    sum[None] = 0.0
-    reduce(p, Ap)
-    pAp = sum[None]
-    alpha[None] = old_zTr / pAp
+    reduce(p, Ap, pAp)
+    update_alpha()
 
+    # ti.sync()
     # x = x + alpha p
     update_x()
 
@@ -178,11 +208,8 @@ for i in range(400):
     update_r()
 
     # check for convergence
-    sum[None] = 0.0
-    reduce(r[0], r[0])
-    rTr = sum[None]
-    if rTr < initial_rTr * 1.0e-12:
-        break
+    reduce(r[0], r[0], rTr)
+    print_rTr()
 
     # z = M^-1 r
     if use_multigrid:
@@ -191,20 +218,15 @@ for i in range(400):
         z[0].copy_from(r[0])
 
     # beta = new_rTr / old_rTr
-    sum[None] = 0.0
-    reduce(z[0], r[0])
-    new_zTr = sum[None]
-    beta[None] = new_zTr / old_zTr
+    reduce(z[0], r[0], new_zTr)
+    update_beta()
 
     # p = z + beta p
     update_p()
-    old_zTr = new_zTr
 
-    print(' ')
-    print(i)
-    print(rTr)
-    paint()
-    gui.set_image(pixels)
-    gui.show()
+paint()
+gui.set_image(pixels)
+gui.show()
 
 ti.kernel_profiler_print()
+ti.core.print_stat()

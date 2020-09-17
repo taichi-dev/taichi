@@ -16,7 +16,7 @@ See `examples/stable_fluid.py <https://github.com/taichi-dev/taichi/blob/master/
     This solver only runs on CPU and CUDA backends since it requires the
     ``pointer`` SNode.
     '''
-    def __init__(self, dim=2, N=512, n_mg_levels=3, real=float):
+    def __init__(self, dim=2, N=512, n_mg_levels=6, real=float):
         '''
         :parameter dim: Dimensionality of the fields.
         :parameter N: Grid resolution.
@@ -29,7 +29,7 @@ See `examples/stable_fluid.py <https://github.com/taichi-dev/taichi/blob/master/
         self.N = N
         self.n_mg_levels = n_mg_levels
         self.pre_and_post_smoothing = 2
-        self.bottom_smoothing = 1
+        self.bottom_smoothing = 50
         self.dim = dim
         self.real = real
 
@@ -241,7 +241,6 @@ See `examples/stable_fluid.py <https://github.com/taichi-dev/taichi/blob/master/
             self.update_p()
             old_zTr = new_zTr
 
-            max_iters -= 1
             iter += 1
 
 

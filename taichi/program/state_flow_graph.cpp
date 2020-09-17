@@ -972,6 +972,8 @@ bool StateFlowGraph::activation_demotion() {
   for (auto &task : tasks) {
     auto &nodes = task.second;
     TI_ASSERT(nodes.size() > 0);
+    if (nodes.size() <= 1)
+      continue;
 
     auto snode = nodes[0]->meta->snode;
 
@@ -980,59 +982,48 @@ bool StateFlowGraph::activation_demotion() {
     TI_ASSERT(snode != nullptr);
 
     // TODO: speed it up
-    for (int i = 0; i < (int)nodes.size(); i++) {
-      bool demoted = false;
-      for (int j = i + 1; j < (int)nodes.size(); j++) {
-        // Two nodes must use the same list state
-        // TODO: for bitmasked we also need to deal with masks
 
-        std::unique_ptr<IRNode> new_ir = nodes[j]->rec.ir_handle.clone();
-        OffloadedStmt *offload = new_ir->as<OffloadedStmt>();
-        Block *body = offload->body.get();
+    std::unique_ptr<IRNode> new_ir = nodes[0]->rec.ir_handle.clone();
 
-        // TODO: for now we only deal with the top level. Extend.
-        auto consts = ConstExprPropagation::run(body, [](Stmt *stmt) {
-          if (stmt->is<ConstStmt>()) {
-            return true;
-          } else if (stmt->is<LoopIndexStmt>())
-            return true;
-          return false;
-        });
+    OffloadedStmt *offload = new_ir->as<OffloadedStmt>();
+    Block *body = offload->body.get();
 
-        // irpass::print(offload);
+    // TODO: for now we only deal with the top level. Extend.
+    auto consts = ConstExprPropagation::run(body, [](Stmt *stmt) {
+      if (stmt->is<ConstStmt>()) {
+        return true;
+      } else if (stmt->is<LoopIndexStmt>())
+        return true;
+      return false;
+    });
 
-        // TI_P(consts.size());
-
-        for (int k = 0; k < (int)body->statements.size(); k++) {
-          Stmt *stmt = body->statements[k].get();
-          if (auto ptr = stmt->cast<GlobalPtrStmt>(); ptr && ptr->activate) {
-            bool can_deactivate = true;
-            for (auto ind : ptr->indices) {
-              if (consts.find(ind) == consts.end()) {
-                // non-constant index
-                can_deactivate = false;
-              }
-            }
-            if (can_deactivate) {
-              modified = true;
-              ptr->activate = false;
-              demoted = true;
-            }
+    bool demoted = false;
+    for (int k = 0; k < (int)body->statements.size(); k++) {
+      Stmt *stmt = body->statements[k].get();
+      if (auto ptr = stmt->cast<GlobalPtrStmt>(); ptr && ptr->activate) {
+        bool can_deactivate = true;
+        for (auto ind : ptr->indices) {
+          if (consts.find(ind) == consts.end()) {
+            // non-constant index
+            can_deactivate = false;
           }
         }
-        if (demoted) {
-          TI_TAG;
-          auto handle =
-              IRHandle(new_ir.get(), ir_bank_->get_hash(new_ir.get()));
-          ir_bank_->insert(std::move(new_ir), handle.hash());
-          nodes[j]->rec.ir_handle = handle;
-          // task->meta->print();
-          nodes[j]->meta = get_task_meta(ir_bank_, nodes[j]->rec);
-          break;
+        if (can_deactivate) {
+          modified = true;
+          ptr->activate = false;
+          demoted = true;
         }
       }
-      if (demoted)
-        break;
+    }
+    auto new_handle = IRHandle(new_ir.get(), ir_bank_->get_hash(new_ir.get()));
+    ir_bank_->insert(std::move(new_ir), new_handle.hash());
+    auto new_meta = get_task_meta(ir_bank_, nodes[0]->rec);
+    if (demoted) {
+      for (int j = 1; j < (int)nodes.size(); j++) {
+        nodes[j]->rec.ir_handle = new_handle;
+        nodes[j]->meta = new_meta;
+      }
+      break;
     }
   }
 

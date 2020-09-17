@@ -4,7 +4,7 @@ import taichi as ti
 real = ti.f32
 ti.init(default_fp=real,
         arch=ti.x64,
-        async_mode=True,
+        async_mode=False,
         async_opt_listgen=True,
         async_opt_dse=True,
         async_opt_activation_demotion=True,

@@ -394,7 +394,9 @@ void AsyncEngine::synchronize() {
   bool modified = true;
   TI_INFO("Synchronizing SFG of {} nodes", sfg->size());
   debug_sfg("initial");
-  while (modified) {
+  // while (modified) {
+  if (true) {
+    // TODO: make iterative optimization work
     modified = false;
     if (program->config.async_opt_listgen)
       while (sfg->optimize_listgen()) {

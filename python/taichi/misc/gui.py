@@ -345,7 +345,7 @@ class GUI:
         color = ti.core_vec(r, g, b, 1)
         self.canvas.text(content, pos, font_size, color)
 
-    def _make_field_base(gui, w, h, bound):
+    def _make_field_base(self, w, h, bound):
         x = np.linspace(bound / w, 1 - bound / w, w)
         y = np.linspace(bound / h, 1 - bound / h, h)
         base = np.array(np.meshgrid(x, y))

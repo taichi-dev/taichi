@@ -38,30 +38,31 @@ class Expr(TaichiOperations):
         self.grad = None
         self.val = self
 
-    @python_scope
     def __setitem__(self, key, value):
-        impl.get_runtime().materialize()
+        assert not impl.inside_kernel()
         self.initialize_accessor()
         if key is None:
             key = ()
-        if not isinstance(key, (tuple, list)):
+        elif not isinstance(key, (tuple, list)):
             key = (key, )
-        assert len(key) == len(self.shape)
-        key = key + ((0, ) *
-                     (taichi_lang_core.get_max_num_indices() - len(key)))
-        self.setter(value, *key)
+        assert len(key) == len(
+            self.shape
+        ), f"Field of dim {len(self.shape)} accessed with indices of dim {len(key)}"
+        key = key + (0, ) * (taichi_lang_core.get_max_num_indices() - len(key))
+        self.setter(key, value)
 
-    @python_scope
     def __getitem__(self, key):
-        impl.get_runtime().materialize()
+        assert not impl.inside_kernel()
         self.initialize_accessor()
         if key is None:
             key = ()
-        if not isinstance(key, (tuple, list)):
+        elif not isinstance(key, (tuple, list)):
             key = (key, )
-        key = key + ((0, ) *
-                     (taichi_lang_core.get_max_num_indices() - len(key)))
-        return self.getter(*key)
+        assert len(key) == len(
+            self.shape
+        ), f"Field of dim {len(self.shape)} accessed with indices of dim {len(key)}"
+        key = key + (0, ) * (taichi_lang_core.get_max_num_indices() - len(key))
+        return self.getter(key)
 
     def loop_range(self):
         return self
@@ -75,37 +76,21 @@ class Expr(TaichiOperations):
 
     @python_scope
     def initialize_accessor(self):
-        if self.getter:
-            return
-        snode = self.ptr.snode()
+        impl.get_runtime().materialize()
+        snode = self.snode.ptr
 
-        if self.dtype == f32 or self.dtype == f64:
+        if not taichi_lang_core.is_integral(self.dtype):
+            self.getter = snode.read_float
+            self.setter = snode.write_float
 
-            def getter(*key):
-                assert len(key) == taichi_lang_core.get_max_num_indices()
-                return snode.read_float(key)
-
-            def setter(value, *key):
-                assert len(key) == taichi_lang_core.get_max_num_indices()
-                snode.write_float(key, value)
         else:
             if taichi_lang_core.is_signed(self.dtype):
-
-                def getter(*key):
-                    assert len(key) == taichi_lang_core.get_max_num_indices()
-                    return snode.read_int(key)
+                self.getter = snode.read_int
             else:
+                self.getter = snode.read_uint
+            self.setter = snode.write_int
 
-                def getter(*key):
-                    assert len(key) == taichi_lang_core.get_max_num_indices()
-                    return snode.read_uint(key)
-
-            def setter(value, *key):
-                assert len(key) == taichi_lang_core.get_max_num_indices()
-                snode.write_int(key, value)
-
-        self.getter = getter
-        self.setter = setter
+        self.initialize_accessor = lambda: None
 
     @python_scope
     def set_grad(self, grad):
@@ -143,6 +128,11 @@ class Expr(TaichiOperations):
         return self.ptr.get_raw_address()
 
     @property
+    # The invocation into snode.shape is relatively slow.
+    # We need to cache it for better performance in SNode accessors, where
+    # `assert len(key) == len(self.shape)` is used.
+    # Discussion: https://github.com/taichi-dev/taichi/pull/1719#issuecomment-675284385
+    @cached_property
     def shape(self):
         if self.ptr.is_external_var():
             import taichi as ti

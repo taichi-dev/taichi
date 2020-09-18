@@ -173,6 +173,24 @@ def obsolete(old, new):
     return wrapped
 
 
+def cached_property(foo):
+    import functools
+
+    cache_name = '_cached_' + foo.__name__
+
+    @functools.wraps(foo)
+    def wrapped(self):
+        value = getattr(self, cache_name, None)
+        if value is not None:
+            return value
+        value = foo(self)
+        setattr(self, cache_name, value)
+        return value
+
+    wrapped._cache = None
+    return wrapped
+
+
 def get_traceback(stacklevel=1):
     import traceback
     s = traceback.extract_stack()[:-1 - stacklevel]
@@ -278,6 +296,7 @@ __all__ = [
     'dump_dot',
     'dot_to_pdf',
     'obsolete',
+    'cached_property',
     'get_traceback',
     'set_gdb_trigger',
     'print_profile_info',

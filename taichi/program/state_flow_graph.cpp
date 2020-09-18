@@ -3,7 +3,6 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/program/async_engine.h"
-#include "state_flow_graph.h"
 
 #include <sstream>
 #include <unordered_set>

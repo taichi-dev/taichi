@@ -95,6 +95,8 @@ void StateFlowGraph::insert_state_flow(Node *from, Node *to, AsyncState state) {
 }
 
 bool StateFlowGraph::optimize_listgen() {
+  // TODO: support cases where a serial task contains more than one
+  // ClearListStmt
   bool modified = false;
 
   std::vector<std::pair<int, int>> common_pairs;
@@ -119,11 +121,11 @@ bool StateFlowGraph::optimize_listgen() {
     // be UNIQUE
     // TODO: prove
 
-    // We can only replace a bunch continuous entries of listgens
+    // We can only replace a continuous subset of listgens entries
     for (int i = 0; i < listgens.size(); i++) {
       auto node_a = listgens[i];
 
-      bool erasing = false;
+      bool erased_any = false;
 
       for (int j = i + 1; j < listgens.size(); j++) {
         auto node_b = listgens[j];
@@ -164,10 +166,10 @@ bool StateFlowGraph::optimize_listgen() {
                  node_a->string(), node_b->string());
 
         nodes_to_delete.insert(node_b->node_id);
-        erasing = true;
+        erased_any = true;
       }
 
-      if (erasing)
+      if (erased_any)
         break;
     }
   }
@@ -802,11 +804,7 @@ bool StateFlowGraph::optimize_dead_store() {
 
         auto new_ir = task->rec.ir_handle.clone();
         irpass::analysis::gather_statements(new_ir.get(), [&](Stmt *stmt) {
-          if (auto clear_list = stmt->cast<ClearListStmt>()) {
-            if (clear_list->snode == s.snode) {
-              mod.erase(clear_list);
-            }
-          }
+          // TODO: invoke mod.erase(stmt) when necessary;
           return false;
         });
         if (mod.modify_ir()) {
@@ -949,7 +947,7 @@ bool StateFlowGraph::demote_activation() {
 
   topo_sort_nodes();
 
-  // TODO: use unordered map
+  // TODO: use unordered_map
   std::map<std::pair<IRHandle, Node *>, std::vector<Node *>> tasks;
 
   for (int i = 1; i < (int)nodes_.size(); i++) {
@@ -980,14 +978,13 @@ bool StateFlowGraph::demote_activation() {
 
     TI_ASSERT(snode != nullptr);
 
-    // TODO: speed it up
-
     std::unique_ptr<IRNode> new_ir = nodes[0]->rec.ir_handle.clone();
 
     OffloadedStmt *offload = new_ir->as<OffloadedStmt>();
     Block *body = offload->body.get();
 
-    // TODO: for now we only deal with the top level. Extend.
+    // TODO: for now we only deal with the top level. Is there an easy way to
+    // extend this part?
     auto consts = ConstExprPropagation::run(body, [](Stmt *stmt) {
       if (stmt->is<ConstStmt>()) {
         return true;
@@ -1015,6 +1012,7 @@ bool StateFlowGraph::demote_activation() {
         }
       }
     }
+    // TODO: cache this part
     auto new_handle = IRHandle(new_ir.get(), ir_bank_->get_hash(new_ir.get()));
     ir_bank_->insert(std::move(new_ir), new_handle.hash());
     auto new_meta = get_task_meta(ir_bank_, nodes[0]->rec);

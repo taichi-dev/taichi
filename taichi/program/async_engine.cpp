@@ -352,14 +352,21 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
     if (auto ptr = stmt->cast<GlobalPtrStmt>()) {
       if (ptr->activate) {
         for (auto &snode : ptr->snodes.data) {
-          meta.input_states.emplace(snode, AsyncState::Type::mask);
-          meta.output_states.emplace(snode, AsyncState::Type::mask);
+          auto s = snode;
+          while (s) {
+            if (!s->is_path_all_dense) {
+              meta.input_states.emplace(s, AsyncState::Type::mask);
+              meta.output_states.emplace(s, AsyncState::Type::mask);
+            }
+            s = s->parent;
+          }
         }
       }
     }
     if (auto clear_list = stmt->cast<ClearListStmt>()) {
       meta.output_states.emplace(clear_list->snode, AsyncState::Type::list);
     }
+    // TODO: handle SNodeOpStmt etc.
     return false;
   });
   if (root_stmt->task_type == OffloadedStmt::listgen) {
@@ -385,21 +392,33 @@ void AsyncEngine::enqueue(const TaskLaunchRecord &t) {
 
 void AsyncEngine::synchronize() {
   bool modified = true;
+  TI_TRACE("Synchronizing SFG of {} nodes", sfg->size());
   debug_sfg("initial");
-  while (modified) {
-    modified = false;
-    if (program->config.async_opt_listgen)
-      while (sfg->optimize_listgen()) {
-        debug_sfg("listgen");
-        modified = true;
-      }
-    sfg->verify();
-    if (program->config.async_opt_dse)
-      while (sfg->optimize_dead_store()) {
-        debug_sfg("dse");
-        modified = true;
-      }
-    sfg->verify();
+  // while (modified) {
+  if (true) {
+    // TODO: make iterative optimization work
+    modified = true;
+    while (modified) {
+      modified = false;
+      if (program->config.async_opt_listgen)
+        while (sfg->optimize_listgen()) {
+          debug_sfg("listgen");
+          modified = true;
+        }
+      sfg->verify();
+      if (program->config.async_opt_dse)
+        while (sfg->optimize_dead_store()) {
+          debug_sfg("dse");
+          modified = true;
+        }
+      sfg->verify();
+      if (program->config.async_opt_activation_demotion)
+        while (sfg->demote_activation()) {
+          debug_sfg("act");
+          modified = true;
+        }
+      sfg->verify();
+    }
     if (program->config.async_opt_fusion)
       while (sfg->fuse()) {
         debug_sfg("fuse");
@@ -409,6 +428,7 @@ void AsyncEngine::synchronize() {
   }
   debug_sfg("final");
   auto tasks = sfg->extract();
+  TI_TRACE("Ended up with {} nodes", tasks.size());
   for (auto &task : tasks) {
     queue.enqueue(task);
   }

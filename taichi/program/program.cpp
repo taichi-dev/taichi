@@ -352,6 +352,10 @@ void Program::materialize_layout() {
       StructCompiler::make(this, host_arch());
   scomp->run(*snode_root, true);
 
+  for (auto snode : scomp->snodes) {
+    snodes[snode->id] = snode;
+  }
+
   if (arch_is_cpu(config.arch)) {
     initialize_runtime_system(scomp.get());
   }

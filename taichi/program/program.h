@@ -93,6 +93,7 @@ class Program {
   std::unique_ptr<MemoryPool> memory_pool;
   uint64 *result_buffer;             // TODO: move this
   void *preallocated_device_buffer;  // TODO: move this to memory allocator
+  std::unordered_map<int, SNode *> snodes;
 
   std::unique_ptr<Runtime> runtime;
   std::unique_ptr<AsyncEngine> async_engine;

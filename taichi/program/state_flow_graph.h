@@ -31,7 +31,6 @@ class StateFlowGraph {
     TaskLaunchRecord rec;
     TaskMeta *meta{nullptr};
     // Incremental ID to identify the i-th launch of the task.
-    int launch_id{0};
     bool is_initial_node{false};
 
     // Returns the position in nodes_. Invoke StateFlowGraph::reid_nodes() to
@@ -113,6 +112,8 @@ class StateFlowGraph {
 
   bool optimize_listgen();
 
+  bool demote_activation();
+
   bool optimize_dead_store();
 
   void delete_nodes(const std::unordered_set<int> &indices_to_delete);
@@ -128,7 +129,11 @@ class StateFlowGraph {
   void verify();
 
   // Extract all tasks to execute.
-  std::vector<TaskLaunchRecord> extract();
+  std::vector<TaskLaunchRecord> extract(bool sort = true);
+
+  std::size_t size() {
+    return nodes_.size();
+  }
 
  private:
   std::vector<std::unique_ptr<Node>> nodes_;

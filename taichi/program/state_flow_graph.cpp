@@ -13,7 +13,7 @@ TLANG_NAMESPACE_BEGIN
 // dependency edges.
 
 std::string StateFlowGraph::Node::string() const {
-  return fmt::format("[node: {}:{}]", meta->name, launch_id);
+  return fmt::format("[node: {}:{}]", meta->name, rec.id);
 }
 
 void StateFlowGraph::Node::disconnect_all() {
@@ -43,7 +43,6 @@ StateFlowGraph::StateFlowGraph(IRBank *ir_bank) : ir_bank_(ir_bank) {
   initial_node_ = nodes_.back().get();
   initial_meta_.name = "initial_state";
   initial_node_->meta = &initial_meta_;
-  initial_node_->launch_id = 0;
   initial_node_->is_initial_node = true;
 }
 
@@ -61,11 +60,6 @@ void StateFlowGraph::insert_task(const TaskLaunchRecord &rec) {
   auto node = std::make_unique<Node>();
   node->rec = rec;
   node->meta = get_task_meta(ir_bank_, rec);
-  {
-    int &id = task_name_to_launch_ids_[node->meta->name];
-    node->launch_id = id;
-    ++id;
-  }
   for (auto input_state : node->meta->input_states) {
     if (latest_state_owner_.find(input_state) == latest_state_owner_.end()) {
       latest_state_owner_[input_state] = initial_node_;
@@ -101,76 +95,97 @@ void StateFlowGraph::insert_state_flow(Node *from, Node *to, AsyncState state) {
 }
 
 bool StateFlowGraph::optimize_listgen() {
-  TI_INFO("Begin optimize listgen");
+  // TODO: support cases where a serial task contains more than one
+  // ClearListStmt
   bool modified = false;
 
   std::vector<std::pair<int, int>> common_pairs;
 
-  // std::vector<Bitset> has_path, has_path_reverse;
-  // std::tie(has_path, has_path_reverse) = compute_transitive_closure();
+  topo_sort_nodes();
+  reid_nodes();
 
-  for (int i = 0; i < nodes_.size(); i++) {
-    auto node_a = nodes_[i].get();
-    if (node_a->meta->type != OffloadedStmt::TaskType::listgen)
-      continue;
-    for (int j = i + 1; j < nodes_.size(); j++) {
-      auto node_b = nodes_[j].get();
-      if (node_b->meta->type != OffloadedStmt::TaskType::listgen)
-        continue;
-      if (node_a->meta->snode != node_b->meta->snode)
-        continue;
+  std::unordered_map<SNode *, std::vector<Node *>> listgen_nodes;
 
-      // Test if two list generations share the same mask and parent list
-      auto snode = node_a->meta->snode;
-
-      auto mask_state = AsyncState{snode, AsyncState::Type::mask};
-      auto parent_list_state =
-          AsyncState{snode->parent, AsyncState::Type::list};
-
-      TI_ASSERT(node_a->input_edges[mask_state].size() == 1);
-      TI_ASSERT(node_b->input_edges[mask_state].size() == 1);
-
-      if (*node_a->input_edges[mask_state].begin() !=
-          *node_b->input_edges[mask_state].begin())
-        continue;
-
-      TI_ASSERT(node_a->input_edges[parent_list_state].size() == 1);
-      TI_ASSERT(node_b->input_edges[parent_list_state].size() == 1);
-      if (*node_a->input_edges[parent_list_state].begin() !=
-          *node_b->input_edges[parent_list_state].begin())
-        continue;
-
-      /*
-      // TODO: Use reachability to test if there is node_c between node_a
-      // and node_b that writes the list (the following might be too
-      // conservative)
-      auto a_has_path_to_b = has_path[i] & has_path_reverse[j];
-      a_has_path_to_b[i] = a_has_path_to_b[j] = false;
-      // Test if there is a path node_a->node_c->node_b here
-      if (a_has_path_to_b.any())
-        continue;
-      */
-
-      TI_INFO("Common list generation {} and {}", node_a->string(),
-              node_b->string());
-      common_pairs.emplace_back(std::make_pair(i, j));
-    }
+  for (int i = 1; i < nodes_.size(); i++) {
+    auto node = nodes_[i].get();
+    if (node->meta->type == OffloadedStmt::TaskType::listgen)
+      listgen_nodes[node->meta->snode].push_back(node);
   }
 
   std::unordered_set<int> nodes_to_delete;
-  // Erase node j
-  // Note: the corresponding ClearListStmt should be removed in later DSE passes
-  for (auto p : common_pairs) {
-    auto i = p.first;
-    auto j = p.second;
-    TI_INFO("Eliminating {}", nodes_[j]->string());
-    replace_reference(nodes_[j].get(), nodes_[i].get(),
-                      /*only_output_edges=*/true);
-    modified = true;
-    nodes_to_delete.insert(j);
+
+  for (auto &record : listgen_nodes) {
+    auto &listgens = record.second;
+
+    // Thanks to the dependency edges, the order of nodes in listgens seems to
+    // be UNIQUE
+    // TODO: prove
+
+    // We can only replace a continuous subset of listgens entries
+    for (int i = 0; i < listgens.size(); i++) {
+      auto node_a = listgens[i];
+
+      bool erased_any = false;
+
+      for (int j = i + 1; j < listgens.size(); j++) {
+        auto node_b = listgens[j];
+
+        // Test if two list generations share the same mask and parent list
+        auto snode = node_a->meta->snode;
+
+        auto mask_state = AsyncState{snode, AsyncState::Type::mask};
+        auto list_state = AsyncState{snode, AsyncState::Type::list};
+        auto parent_list_state =
+            AsyncState{snode->parent, AsyncState::Type::list};
+
+        TI_ASSERT(node_a->input_edges[mask_state].size() == 1);
+        TI_ASSERT(node_b->input_edges[mask_state].size() == 1);
+
+        if (*node_a->input_edges[mask_state].begin() !=
+            *node_b->input_edges[mask_state].begin())
+          break;
+
+        TI_ASSERT(node_a->input_edges[parent_list_state].size() == 1);
+        TI_ASSERT(node_b->input_edges[parent_list_state].size() == 1);
+        if (*node_a->input_edges[parent_list_state].begin() !=
+            *node_b->input_edges[parent_list_state].begin())
+          break;
+
+        TI_ASSERT(node_b->input_edges[list_state].size() == 1);
+        Node *clear_node = *node_b->input_edges[list_state].begin();
+
+        const OffloadedStmt *clear_node_offload =
+            clear_node->rec.ir_handle.ir()->as<OffloadedStmt>();
+        TI_ASSERT(clear_node_offload->body->statements.size() == 1);
+        TI_ASSERT(clear_node_offload->body->statements[0]->is<ClearListStmt>());
+
+        // erase the serial task containing ClearListStmt
+        nodes_to_delete.insert(clear_node->node_id);
+
+        TI_DEBUG("Common list generation {} and (to erase) {}",
+                 node_a->string(), node_b->string());
+
+        nodes_to_delete.insert(node_b->node_id);
+        erased_any = true;
+      }
+
+      if (erased_any)
+        break;
+    }
   }
 
-  delete_nodes(nodes_to_delete);
+  TI_ASSERT(nodes_to_delete.size() % 2 == 0);
+
+  if (!nodes_to_delete.empty()) {
+    modified = true;
+    delete_nodes(nodes_to_delete);
+    // Note: DO NOT topo sort the nodes here. Node deletion destroys order
+    // independency.
+    auto tasks = extract(/*sort=*/false);
+    for (auto &task : tasks) {
+      insert_task(task);
+    }
+  }
 
   return modified;
 }
@@ -387,6 +402,8 @@ bool StateFlowGraph::fuse() {
   if (modified) {
     // rebuild the graph in topological order
     delete_nodes(indices_to_delete);
+    // TODO: we may want to preserve the original node order. Maybe
+    // topo_sort_nodes() here leads to wrong results.
     topo_sort_nodes();
     auto tasks = extract();
     for (auto &task : tasks) {
@@ -397,12 +414,21 @@ bool StateFlowGraph::fuse() {
   return modified;
 }
 
-std::vector<TaskLaunchRecord> StateFlowGraph::extract() {
+std::vector<TaskLaunchRecord> StateFlowGraph::extract(bool sort) {
+  if (sort)
+    topo_sort_nodes();
   std::vector<TaskLaunchRecord> tasks;
   tasks.reserve(nodes_.size());
   for (int i = 1; i < (int)nodes_.size(); i++) {
     if (!nodes_[i]->rec.empty()) {
       tasks.push_back(nodes_[i]->rec);
+
+      if (false) {
+        // debug
+        TI_INFO("task {}:{}", nodes_[i]->meta->name, nodes_[i]->rec.id);
+        nodes_[i]->meta->print();
+        irpass::print(const_cast<IRNode *>(nodes_[i]->rec.ir_handle.ir()));
+      }
     }
   }
   clear();
@@ -438,10 +464,14 @@ std::string StateFlowGraph::dump_dot(const std::optional<std::string> &rankdir,
   using SFGNode = StateFlowGraph::Node;
   using TaskType = OffloadedStmt::TaskType;
   std::stringstream ss;
+
+  // TODO: expose an API that allows users to highlight a single state
+  AsyncState highlight_state{nullptr, AsyncState::Type::value};
+
   ss << "digraph {\n";
   auto node_id = [](const SFGNode *n) {
     // https://graphviz.org/doc/info/lang.html ID naming
-    return fmt::format("n_{}_{}", n->meta->name, n->launch_id);
+    return fmt::format("n_{}_{}", n->meta->name, n->rec.id);
   };
 
   auto escaped_label = [](const std::string &s) {
@@ -468,6 +498,28 @@ std::string StateFlowGraph::dump_dot(const std::optional<std::string> &rankdir,
   for (const auto &p : latest_state_owner_) {
     latest_state_nodes.insert(p.second);
   }
+
+  bool highlight_single_state = false;
+
+  auto node_selected = [&](const SFGNode *node) {
+    if (highlight_single_state) {
+      return node->input_edges.find(highlight_state) !=
+                 node->input_edges.end() ||
+             node->output_edges.find(highlight_state) !=
+                 node->output_edges.end();
+    } else {
+      return true;
+    }
+  };
+
+  auto state_selected = [&](AsyncState state) {
+    if (highlight_single_state) {
+      return state == highlight_state;
+    } else {
+      return true;
+    }
+  };
+
   std::vector<const SFGNode *> nodes_with_no_inputs;
   for (const auto &nd : nodes_) {
     const auto *n = nd.get();
@@ -502,27 +554,37 @@ std::string StateFlowGraph::dump_dot(const std::optional<std::string> &rankdir,
     } else {
       // No states embedded.
       labels << escaped_label(n->string());
+      if (!n->is_initial_node) {
+        labels << fmt::format("\\nhash: 0x{:08x}", n->rec.ir_handle.hash());
+      }
     }
-    ss << "  "
-       << fmt::format("{} [label=\"{}\" shape=record", node_id(n),
-                      labels.str());
-    if (latest_state_nodes.find(n) != latest_state_nodes.end()) {
-      ss << " peripheries=2";
+
+    if (node_selected(nd.get())) {
+      std::string color;
+      if (highlight_single_state)
+        color = " style=filled fillcolor=red ";
+
+      ss << "  "
+         << fmt::format("{} [label=\"{}\" shape=record {}", node_id(n),
+                        labels.str(), color);
+      if (latest_state_nodes.find(n) != latest_state_nodes.end()) {
+        ss << " peripheries=2";
+      }
+      // Highlight user-defined tasks
+      const auto tt = nd->meta->type;
+      if (!nd->is_initial_node &&
+          (tt == TaskType::range_for || tt == TaskType::struct_for ||
+           tt == TaskType::serial)) {
+        // ss << " style=filled fillcolor=lightgray";
+      }
+      ss << "]\n";
     }
-    // Highlight user-defined tasks
-    const auto tt = nd->meta->type;
-    if (!nd->is_initial_node &&
-        (tt == TaskType::range_for || tt == TaskType::struct_for ||
-         tt == TaskType::serial)) {
-      ss << " style=filled fillcolor=lightgray";
-    }
-    ss << "]\n";
     if (nd->input_edges.empty())
       nodes_with_no_inputs.push_back(n);
   }
   ss << "\n";
   {
-    // DFS
+    // DFS to draw edges
     std::unordered_set<const SFGNode *> visited;
     std::vector<const SFGNode *> stack(nodes_with_no_inputs);
     while (!stack.empty()) {
@@ -553,10 +615,20 @@ std::string StateFlowGraph::dump_dot(const std::optional<std::string> &rankdir,
               attribs << " style=dotted";
             }
 
-            ss << "  "
-               << fmt::format("{} -> {} [{}]", from_node_port, node_id(to),
-                              attribs.str())
-               << '\n';
+            if (highlight_single_state) {
+              if (state_selected(p.first)) {
+                attribs << " penwidth=5 color=red";
+              } else {
+                attribs << " color=lightgrey";
+              }
+            }
+
+            if (node_selected(from) && node_selected(to)) {
+              ss << "  "
+                 << fmt::format("{} -> {} [{}]", from_node_port, node_id(to),
+                                attribs.str())
+                 << '\n';
+            }
           }
         }
       }
@@ -673,7 +745,7 @@ void StateFlowGraph::delete_nodes(
     if (indices_to_delete.find(i) == indices_to_delete.end()) {
       new_nodes_.push_back(std::move(nodes_[i]));
     } else {
-      TI_INFO("Deleting node {}", i);
+      TI_DEBUG("Deleting node {}", i);
     }
   }
 
@@ -731,11 +803,7 @@ bool StateFlowGraph::optimize_dead_store() {
 
         auto new_ir = task->rec.ir_handle.clone();
         irpass::analysis::gather_statements(new_ir.get(), [&](Stmt *stmt) {
-          if (auto clear_list = stmt->cast<ClearListStmt>()) {
-            if (clear_list->snode == s.snode) {
-              mod.erase(clear_list);
-            }
-          }
+          // TODO: invoke mod.erase(stmt) when necessary;
           return false;
         });
         if (mod.modify_ir()) {
@@ -744,9 +812,9 @@ bool StateFlowGraph::optimize_dead_store() {
               IRHandle(new_ir.get(), ir_bank_->get_hash(new_ir.get()));
           ir_bank_->insert(std::move(new_ir), handle.hash());
           task->rec.ir_handle = handle;
-          task->meta->print();
+          // task->meta->print();
           task->meta = get_task_meta(ir_bank_, task->rec);
-          task->meta->print();
+          // task->meta->print();
 
           for (auto other : task->output_edges[s])
             other->input_edges[s].erase(task.get());
@@ -835,6 +903,135 @@ void StateFlowGraph::verify() {
   }
   // Call topological sort to check cycles.
   topo_sort_nodes();
+}
+
+// TODO: make this an IR pass
+class ConstExprPropagation {
+ public:
+  static std::unordered_set<Stmt *> run(
+      Block *block,
+      const std::function<bool(Stmt *)> &is_const_seed) {
+    std::unordered_set<Stmt *> const_stmts;
+
+    auto is_const = [&](Stmt *stmt) {
+      if (is_const_seed(stmt)) {
+        return true;
+      } else {
+        return const_stmts.find(stmt) != const_stmts.end();
+      }
+    };
+
+    for (auto &s : block->statements) {
+      if (is_const(s.get())) {
+        const_stmts.insert(s.get());
+      } else if (auto binary = s->cast<BinaryOpStmt>()) {
+        if (is_const(binary->lhs) && is_const(binary->rhs)) {
+          const_stmts.insert(s.get());
+        }
+      } else if (auto unary = s->cast<UnaryOpStmt>()) {
+        if (is_const(unary->operand)) {
+          const_stmts.insert(s.get());
+        }
+      } else {
+        // TODO: ...
+      }
+    }
+
+    return const_stmts;
+  }
+};
+
+bool StateFlowGraph::demote_activation() {
+  bool modified = false;
+
+  topo_sort_nodes();
+
+  // TODO: use unordered_map
+  std::map<std::pair<IRHandle, Node *>, std::vector<Node *>> tasks;
+
+  for (int i = 1; i < (int)nodes_.size(); i++) {
+    Node *node = nodes_[i].get();
+    auto snode = node->meta->snode;
+    auto list_state = AsyncState(snode, AsyncState::Type::list);
+
+    // TODO: handle serial and range for
+    if (node->meta->type != OffloadedStmt::struct_for)
+      continue;
+
+    if (node->input_edges[list_state].size() != 1)
+      continue;
+
+    auto list_node = *node->input_edges[list_state].begin();
+    tasks[std::make_pair(node->rec.ir_handle, list_node)].push_back(node);
+  }
+
+  for (auto &task : tasks) {
+    auto &nodes = task.second;
+    TI_ASSERT(nodes.size() > 0);
+    if (nodes.size() <= 1)
+      continue;
+
+    auto snode = nodes[0]->meta->snode;
+
+    auto list_state = AsyncState(snode, AsyncState::Type::list);
+
+    TI_ASSERT(snode != nullptr);
+
+    std::unique_ptr<IRNode> new_ir = nodes[0]->rec.ir_handle.clone();
+
+    OffloadedStmt *offload = new_ir->as<OffloadedStmt>();
+    Block *body = offload->body.get();
+
+    // TODO: for now we only deal with the top level. Is there an easy way to
+    // extend this part?
+    auto consts = ConstExprPropagation::run(body, [](Stmt *stmt) {
+      if (stmt->is<ConstStmt>()) {
+        return true;
+      } else if (stmt->is<LoopIndexStmt>())
+        return true;
+      return false;
+    });
+
+    bool demoted = false;
+    for (int k = 0; k < (int)body->statements.size(); k++) {
+      Stmt *stmt = body->statements[k].get();
+      if (auto ptr = stmt->cast<GlobalPtrStmt>(); ptr && ptr->activate) {
+        bool can_demote = true;
+        // TODO: test input mask?
+        for (auto ind : ptr->indices) {
+          if (consts.find(ind) == consts.end()) {
+            // non-constant index
+            can_demote = false;
+          }
+        }
+        if (can_demote) {
+          modified = true;
+          ptr->activate = false;
+          demoted = true;
+        }
+      }
+    }
+    // TODO: cache this part
+    auto new_handle = IRHandle(new_ir.get(), ir_bank_->get_hash(new_ir.get()));
+    ir_bank_->insert(std::move(new_ir), new_handle.hash());
+    auto new_meta = get_task_meta(ir_bank_, nodes[0]->rec);
+    if (demoted) {
+      for (int j = 1; j < (int)nodes.size(); j++) {
+        nodes[j]->rec.ir_handle = new_handle;
+        nodes[j]->meta = new_meta;
+      }
+      break;
+    }
+  }
+
+  if (modified) {
+    auto tasks = extract(/*sort=*/false);
+    for (auto &task : tasks) {
+      insert_task(task);
+    }
+  }
+
+  return modified;
 }
 
 void async_print_sfg() {

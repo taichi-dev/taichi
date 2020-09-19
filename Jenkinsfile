@@ -81,7 +81,9 @@ void build_taichi() {
     $CC --version
     $CXX --version
     echo $WORKSPACE
-    $PYTHON_EXECUTABLE -m pip install twine numpy Pillow scipy pybind11 colorama setuptools astor matplotlib pytest autograd GitPython dill --user
+    $PYTHON_EXECUTABLE -m pip install --user setuptools astor pybind11 pylint sourceinspect
+    $PYTHON_EXECUTABLE -m pip install --user pytest pytest-rerunfailures pytest-xdist yapf
+    $PYTHON_EXECUTABLE -m pip install --user numpy GitPython coverage colorama autograd
     export TAICHI_REPO_DIR=$WORKSPACE/
     echo $TAICHI_REPO_DIR
     export PYTHONPATH=$TAICHI_REPO_DIR/python

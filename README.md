@@ -23,10 +23,10 @@ Advanced features of Taichi include [spatially sparse computing](https://taichi.
 
 ## Examples ([More...](misc/examples.md))
 
-<a href="https://github.com/taichi-dev/taichi/blob/master/examples/mpm128.py"><img src="https://github.com/taichi-dev/public_files/blob/6bd234694270c83baf97ba32e0c6278b8cf37e6e/taichi/mpm128.gif" height="192px"></a>
-<a href="https://github.com/taichi-dev/taichi/blob/master/examples/stable_fluid.py"> <img src="https://github.com/taichi-dev/public_files/blob/6bd234694270c83baf97ba32e0c6278b8cf37e6e/taichi/stable_fluids.gif" height="192px"></a>
-<a href="https://github.com/taichi-dev/taichi/blob/master/examples/sdf_renderer.py"><img src="https://github.com/taichi-dev/public_files/blob/6bd234694270c83baf97ba32e0c6278b8cf37e6e/taichi/sdf_renderer.jpg" height="192px"></a>
-<a href="https://github.com/taichi-dev/taichi/blob/master/examples/euler.py"><img src="https://github.com/taichi-dev/public_files/blob/6bd234694270c83baf97ba32e0c6278b8cf37e6e/taichi/euler.gif" height="192px"></a>
+<a href="https://github.com/taichi-dev/taichi/blob/master/examples/mpm128.py"><img src="https://github.com/taichi-dev/public_files/raw/master/taichi/mpm128.gif" height="192px"></a>
+<a href="https://github.com/taichi-dev/taichi/blob/master/examples/stable_fluid.py"> <img src="https://github.com/taichi-dev/public_files/raw/master/taichi/stable_fluids.gif" height="192px"></a>
+<a href="https://github.com/taichi-dev/taichi/blob/master/examples/sdf_renderer.py"><img src="https://github.com/taichi-dev/public_files/raw/master/taichi/sdf_renderer.jpg" height="192px"></a>
+<a href="https://github.com/taichi-dev/taichi/blob/master/examples/euler.py"><img src="https://github.com/taichi-dev/public_files/raw/master/taichi/euler.gif" height="192px"></a>
 
 ## Installation [![Downloads](https://pepy.tech/badge/taichi/month)](https://pepy.tech/project/taichi/month)
 

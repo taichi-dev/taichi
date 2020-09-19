@@ -32,5 +32,6 @@
   "cc"              : "C source backend",
   "error"           : "Error messages",
   "blender"         : "Blender intergration",
+  "export"          : "Exporting kernels",
   "release"         : "Release"
 }

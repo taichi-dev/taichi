@@ -21,7 +21,7 @@ a binary format, by compiling and linking exported C code to their project.
 The workflow of exporting
 -------------------------
 
-Use ``ti.core.start_recording`` in the Taichi program you want to export.
+Use ``ti.start_recording`` in the Taichi program you want to export.
 
 Suppose you want to export `examples/mpm88.py <https://github.com/taichi-dev/taichi/blob/master/examples/mpm88.py>`_, here is the workflow:
 
@@ -34,7 +34,7 @@ First, modify ``mpm88.py`` as shown below:
 
     import taichi as ti
 
-    ti.core.start_recording('mpm88.yml')
+    ti.start_recording('mpm88.yml')
     ti.init(arch=ti.cc)
 
     ... # your program
@@ -106,6 +106,8 @@ source file ``mpm88.c``:
    The generated C source is promised to be C99 compatible.
 
    It should also be functional when compiled using a C++ compiler.
+
+
 
 
 Calling the exported kernels
@@ -203,3 +205,68 @@ shared object. Then it can be called from other langurages that provides a C
 interface, including but not limited to Julia, Matlab, Mathematica, Java, etc.
 
 TODO: WIP.
+
+Record kernel group hints
++++++++++++++++++++++++++
+
+Suppose you have a program with lots of kernel.
+
+To run this program in C or Javascript, you have to rewrite their names in
+the exact same order as they were in Python.
+
+Not to say implicitly generated meta kernels like ``fill_tensor`` and
+``clear_gradients`` which is invisible to end-users.
+
+So you may find it hard and error-prone to figure out the correct launch order
+and mangled names.
+
+No worry, we provide a handy tool for such situation, for example:
+
+.. code-block:: python
+
+    import taichi as ti
+
+    ti.start_recording('record.yml')
+    ti.init(arch=ti.cc)
+
+    loss = ti.field(float, (), needs_grad=True)
+    x = ti.field(float, 233, needs_grad=True)
+
+
+    @ti.kernel
+    def compute_loss():
+        for i in x:
+            loss[None] += x[i]**2
+
+
+    @ti.kernel
+    def do_some_works():
+        for i in x:
+            x[i] -= x.grad[i]
+
+
+    with ti.RecordGroupHint('my_substep'):
+        x.fill(0)
+        with ti.Tape(loss):
+            compute_loss()
+        do_some_works()
+
+
+Then the ``ti cc_compose`` command will add a comment at the end of ``record.c``
+as a hint of launch order:
+
+.. code-block:: python
+
+    // group my_substep: ['fill_tensor_c8_0', 'clear_gradients_c24_0', 'clear_gradients_c24_1', 'snode_writer_2', 'snode_writer_4', 'compute_loss_c4_0', 'compute_loss_c5_0_grad_grad', 'do_some_works_c6_0']
+
+
+This is the name of all the kernels launched within the ``ti.RecordGroupHint`` scope,
+sorted by launch order. Copy the list and somehow iterate them in C or Javascript
+and the launch order is exactly same as we had in Python, e.g.:
+
+.. code-block:: c
+
+    Tk_fill_tensor_c8_0(&Ti_ctx);
+    Tk_clear_gradients_c24_0(&Ti_ctx);
+    Tk_clear_gradients_c24_1(&Ti_ctx);
+    ...

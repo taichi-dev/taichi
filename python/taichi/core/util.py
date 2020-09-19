@@ -315,10 +315,6 @@ def at_startup():
 
     ti_core.set_core_state_python_imported(True)
 
-    record_file = os.environ.get('TI_ACTION_RECORD')
-    if record_file:
-        ti_core.start_recording(record_file)
-
 
 def start_memory_monitoring(output_fn, pid=-1, interval=1):
     # removing dependency on psutil

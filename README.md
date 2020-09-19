@@ -18,7 +18,7 @@
 
 Advanced features of Taichi include [spatially sparse computing](https://taichi.readthedocs.io/en/latest/sparse.html) and [differentiable programming](https://taichi.readthedocs.io/en/latest/differentiable_programming.html) [[examples]](https://github.com/yuanming-hu/difftaichi).
 
-**Please check out our SIGGRAPH 2020 course for Taichi basics:** [YouTube](https://youtu.be/Y0-76n3aZFA), [Bilibili](https://www.bilibili.com/video/BV1kA411n7jk/), [slides (pdf)](http://taichi.graphics/wp-content/uploads/2020/07/taichi_course_siggraph2020.pdf).
+**Please check out our SIGGRAPH 2020 course on Taichi basics:** [YouTube](https://youtu.be/Y0-76n3aZFA), [Bilibili](https://www.bilibili.com/video/BV1kA411n7jk/), [slides (pdf)](http://taichi.graphics/wp-content/uploads/2020/07/taichi_course_siggraph2020.pdf).
 
 
 ## Examples ([More...](misc/examples.md))

@@ -4,6 +4,7 @@ import taichi as ti
 def test_fusion_range():
     ti.init(arch=ti.cpu,
             async_mode=True,
+            async_opt_fusion=False,
             async_opt_intermediate_file="fusion_range")
 
     x = ti.field(ti.i32)
@@ -127,10 +128,9 @@ def test_multiple_listgens():
         x[0] = 10
 
     fill()
-    for i in range(10):
-        foo()
-        bar()
-        hello()
+    foo()
+    bar()
+    hello()
 
     ti.sync()
 
@@ -138,7 +138,6 @@ def test_multiple_listgens():
 def test_activation_demotion():
     ti.init(arch=ti.cpu,
             async_mode=True,
-            async_opt_listgen=True,
             async_opt_fusion=False,
             async_opt_intermediate_file="act")
 

@@ -357,8 +357,8 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
             if (!s->is_path_all_dense) {
               meta.input_states.emplace(s, AsyncState::Type::mask);
               meta.output_states.emplace(s, AsyncState::Type::mask);
-              s = s->parent;
             }
+            s = s->parent;
           }
         }
       }

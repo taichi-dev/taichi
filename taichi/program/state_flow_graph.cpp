@@ -465,9 +465,8 @@ std::string StateFlowGraph::dump_dot(const std::optional<std::string> &rankdir,
   using TaskType = OffloadedStmt::TaskType;
   std::stringstream ss;
 
-  // Highlight S9dense_list
-  AsyncState highlight_state{get_current_program().snodes[9],
-                             AsyncState::Type::list};
+  // TODO: expose an API that allows users to highlight a single state
+  AsyncState highlight_state{nullptr, AsyncState::Type::value};
 
   ss << "digraph {\n";
   auto node_id = [](const SFGNode *n) {
@@ -997,15 +996,15 @@ bool StateFlowGraph::demote_activation() {
     for (int k = 0; k < (int)body->statements.size(); k++) {
       Stmt *stmt = body->statements[k].get();
       if (auto ptr = stmt->cast<GlobalPtrStmt>(); ptr && ptr->activate) {
-        bool can_deactivate = true;
+        bool can_demote = true;
         // TODO: test input mask?
         for (auto ind : ptr->indices) {
           if (consts.find(ind) == consts.end()) {
             // non-constant index
-            can_deactivate = false;
+            can_demote = false;
           }
         }
-        if (can_deactivate) {
+        if (can_demote) {
           modified = true;
           ptr->activate = false;
           demoted = true;

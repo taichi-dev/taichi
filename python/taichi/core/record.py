@@ -30,10 +30,10 @@ class RecordAction:
 
 class RecordKernelGroup:
     def __init__(self, name):
-        if name in recorded:
+        if name in RecordKernelGroup.recorded:
             self.name = None
         else:
-            recorded.add(name)
+            RecordKernelGroup.recorded.add(name)
             self.name = name
 
     def __enter__(self):
@@ -45,7 +45,7 @@ class RecordKernelGroup:
         if self.name is not None:
             record_action_hint('group_end', self.name)
 
-    recorded = {}
+    recorded = set()
 
 
 record_file = os.environ.get('TI_ACTION_RECORD')

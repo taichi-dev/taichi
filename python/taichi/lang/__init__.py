@@ -9,7 +9,6 @@ import os
 
 core = taichi_lang_core
 
-
 runtime = get_runtime()
 
 i = indices(0)

@@ -30,14 +30,22 @@ class RecordAction:
 
 class RecordGroupHint:
     def __init__(self, name):
-        self.name = name
+        if name in recorded:
+            self.name = None
+        else:
+            recorded.add(name)
+            self.name = name
 
     def __enter__(self):
-        record_action_hint('group_begin', self.name)
+        if self.name is not None:
+            record_action_hint('group_begin', self.name)
         return self
 
     def __exit__(self, *args):
-        record_action_hint('group_end', self.name)
+        if self.name is not None:
+            record_action_hint('group_end', self.name)
+
+    recorded = {}
 
 
 record_file = os.environ.get('TI_ACTION_RECORD')

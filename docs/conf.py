@@ -22,8 +22,6 @@ from typing import Callable, Match, Tuple, Union
 
 
 # -- Version forge -----------------------------------------------------------
-# Note this section has some duplicate code which
-# is directly copied from /misc.
 def _semver_matcher() -> Callable:
     """Return a func performs regex matching for semantic versions.
        The regex uses word_boundry and is sensitive to the changes
@@ -55,6 +53,7 @@ def parse_semver(
     if return_match_groups:
         return major, minor, patch
     return tuple(map(_intify_version, (major, minor, patch)))
+
 
 # CMakeLists.txt is the only source of the truth when forging
 # the version, this script always reads from it, parses the version

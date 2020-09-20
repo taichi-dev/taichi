@@ -235,11 +235,11 @@ bool StateFlowGraph::fuse() {
   std::vector<Bitset> has_path, has_path_reverse;
   std::tie(has_path, has_path_reverse) = compute_transitive_closure();
 
-  // Cache the result that if each pair is fusable by task types.
+  // Cache the result that if each pair is fusible by task types.
   // TODO: improve this
-  auto task_type_fusable = std::make_unique<Bitset[]>(n);
+  auto task_type_fusible = std::make_unique<Bitset[]>(n);
   for (int i = 0; i < n; i++) {
-    task_type_fusable[i] = Bitset(n);
+    task_type_fusible[i] = Bitset(n);
   }
   // nodes_[0] is the initial node.
   for (int i = 1; i < n; i++) {
@@ -292,10 +292,10 @@ bool StateFlowGraph::fuse() {
       // TODO: avoid snode accessors going into async engine
       const bool is_snode_accessor =
           (rec_i.kernel->is_accessor || rec_j.kernel->is_accessor);
-      bool fusable =
+      bool fusible =
           (is_same_range_for || is_same_struct_for || are_both_serial) &&
           kernel_args_match && !is_snode_accessor;
-      task_type_fusable[i][j] = fusable;
+      task_type_fusible[i][j] = fusible;
     }
   }
 
@@ -345,6 +345,26 @@ bool StateFlowGraph::fuse() {
 
   auto fused = std::make_unique<bool[]>(n);
 
+  auto edge_fusible = [&](int a, int b) {
+    // Check if a and b are fusible if there is an edge (a, b).
+    if (fused[a] || fused[b] || !task_type_fusible[a][b]) {
+      return false;
+    }
+    for (auto &state : nodes_[a]->output_edges) {
+      if (state.first.type != AsyncState::Type::value) {
+        // TODO: What checks do we need for edges of mask/list states?
+        continue;
+      }
+      if (state.second.find(nodes_[b].get()) != state.second.end()) {
+        if (!nodes_[a]->meta->element_wise[state.first.snode] ||
+            !nodes_[b]->meta->element_wise[state.first.snode]) {
+          return false;
+        }
+      }
+    }
+    return true;
+  };
+
   bool modified = false;
   while (true) {
     bool updated = false;
@@ -357,9 +377,7 @@ bool StateFlowGraph::fuse() {
         for (auto &edges : nodes_[i]->output_edges) {
           for (auto &edge : edges.second) {
             const int j = edge->node_id;
-            // TODO: for each pair of edge (i, j), we can only fuse if they
-            // are both serial or both element-wise.
-            if (!fused[j] && task_type_fusable[i][j]) {
+            if (edge_fusible(i, j)) {
               auto i_has_path_to_j = has_path[i] & has_path_reverse[j];
               i_has_path_to_j[i] = i_has_path_to_j[j] = false;
               // check if i doesn't have a path to j of length >= 2
@@ -381,7 +399,7 @@ bool StateFlowGraph::fuse() {
     for (int i = 1; i < n; i++) {
       if (!fused[i]) {
         for (int j = i + 1; j < n; j++) {
-          if (!fused[j] && task_type_fusable[i][j] && !has_path[i][j] &&
+          if (!fused[j] && task_type_fusible[i][j] && !has_path[i][j] &&
               !has_path[j][i]) {
             do_fuse(i, j);
             fused[i] = fused[j] = true;

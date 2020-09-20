@@ -11,7 +11,6 @@ import git
 import requests
 from requests.auth import HTTPBasicAuth
 
-
 API_PREFIX = 'https://api.github.com/repos/taichi-dev/taichi'
 logger = logging.getLogger(__name__)
 
@@ -30,15 +29,6 @@ def generate_changelog() -> str:
     with open("CHANGELOG.md", "r") as fp:
         changelog = fp.read()
     return changelog
-
-
-def regenerate_docs():
-    # redirect both stdout and stderr to DEVNULL to make it less noisy
-    subprocess.run(["cmake ."],
-                   shell=True,
-                   check=True,
-                   stdout=subprocess.DEVNULL,
-                   stderr=subprocess.DEVNULL)
 
 
 def _semver_matcher() -> Callable:
@@ -259,16 +249,15 @@ def main(args):
     major_, minor_, patch_ = parse_semver(cmakelist_path="./CMakeLists.txt",
                                           return_match_groups=False)
 
-    # 1. Dispatch on release types, bump the version and regenerate docs
+    # 1. Dispatch on release types, bump the version
     logger.info(
-        f"=> 1. Bump the {args.release_type} version and regenerate docs")
+        f"=> 1. Bump the {args.release_type} version")
     if args.release_type == "major":
         major, minor, patch = bump_major(cmakelist_path="./CMakeLists.txt")
     elif args.release_type == "minor":
         major, minor, patch = bump_minor(cmakelist_path="./CMakeLists.txt")
     else:
         major, minor, patch = bump_patch(cmakelist_path="./CMakeLists.txt")
-    regenerate_docs()
     logger.info(
         f"=>\tThe version is bumped from {major_}.{minor_}.{patch_} to {major}.{minor}.{patch}"
     )

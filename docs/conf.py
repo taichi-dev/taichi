@@ -56,6 +56,7 @@ def parse_semver(
         return major, minor, patch
     return tuple(map(_intify_version, (major, minor, patch)))
 
+
 # CMakeLists.txt is the only source of the truth when forging
 # the version, this script always reads from it, parses the version
 # and dump the version string to `version` file.

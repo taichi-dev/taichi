@@ -350,6 +350,9 @@ bool StateFlowGraph::fuse() {
     if (fused[a] || fused[b] || !task_type_fusible[a][b]) {
       return false;
     }
+    if (nodes_[a]->meta->type == OffloadedStmt::TaskType::serial) {
+      return true;
+    }
     for (auto &state : nodes_[a]->output_edges) {
       if (state.first.type != AsyncState::Type::value) {
         // TODO: What checks do we need for edges of mask/list states?

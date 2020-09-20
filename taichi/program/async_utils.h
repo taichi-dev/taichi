@@ -141,6 +141,7 @@ struct TaskMeta {
   SNode *snode{nullptr};  // struct-for and listgen only
   std::unordered_set<AsyncState> input_states;
   std::unordered_set<AsyncState> output_states;
+  std::unordered_map<SNode *, bool> element_wise;
 
   void print() const;
 };

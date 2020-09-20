@@ -406,6 +406,27 @@ GlobalPtrStmt::GlobalPtrStmt(const LaneAttribute<SNode *> &snodes,
   TI_STMT_REG_FIELDS;
 }
 
+bool GlobalPtrStmt::is_element_wise(SNode *snode) const {
+  if (snode == nullptr) {
+    // check all snodes
+    for (const auto &snode_i : snodes.data) {
+      if (!is_element_wise(snode_i)) {
+        return false;
+      }
+    }
+    return true;
+  }
+  // check if this statement is element-wise on snode
+  for (int i = 0; i < (int)indices.size(); i++) {
+    if (auto loop_index_i = indices[i]->cast<LoopIndexStmt>();
+        !(loop_index_i && loop_index_i->loop->is<OffloadedStmt>() &&
+          loop_index_i->index == snode->physical_index_position[i])) {
+      return false;
+    }
+  }
+  return true;
+}
+
 std::string GlobalPtrExpression::serialize() {
   std::string s = fmt::format("{}[", var.serialize());
   for (int i = 0; i < (int)indices.size(); i++) {

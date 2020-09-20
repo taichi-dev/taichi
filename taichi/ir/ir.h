@@ -851,6 +851,8 @@ class GlobalPtrStmt : public Stmt {
                 const std::vector<Stmt *> &indices,
                 bool activate = true);
 
+  bool is_element_wise(SNode *snode) const;
+
   bool has_global_side_effect() const override {
     return activate;
   }

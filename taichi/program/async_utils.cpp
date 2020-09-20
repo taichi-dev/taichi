@@ -55,6 +55,28 @@ void TaskMeta::print() const {
     }
     fmt::print("\n");
   }
+  std::vector<SNode *> element_wise_snodes, non_element_wise_snodes;
+  for (auto s : element_wise) {
+    if (s.second) {
+      element_wise_snodes.push_back(s.first);
+    } else {
+      non_element_wise_snodes.push_back(s.first);
+    }
+  }
+  if (!element_wise_snodes.empty()) {
+    fmt::print("  element-wise snodes:\n    ");
+    for (auto s : element_wise_snodes) {
+      fmt::print("{} ", s->get_node_type_name_hinted());
+    }
+    fmt::print("\n");
+  }
+  if (!non_element_wise_snodes.empty()) {
+    fmt::print("  non-element-wise snodes:\n    ");
+    for (auto s : non_element_wise_snodes) {
+      fmt::print("{} ", s->get_node_type_name_hinted());
+    }
+    fmt::print("\n");
+  }
 }
 
 TLANG_NAMESPACE_END

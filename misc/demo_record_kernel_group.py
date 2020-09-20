@@ -19,7 +19,7 @@ def do_some_works():
         x[i] -= x.grad[i]
 
 
-with ti.RecordGroupHint('my_substep'):
+with ti.RecordKernelGroup('my_substep'):
     x.fill(0)
     with ti.Tape(loss):
         compute_loss()

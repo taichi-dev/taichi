@@ -28,7 +28,7 @@ class RecordAction:
         stop_recording()
 
 
-class RecordGroupHint:
+class RecordKernelGroup:
     def __init__(self, name):
         if name in recorded:
             self.name = None
@@ -58,5 +58,5 @@ __all__ = [
     'stop_recording',
     'record_action_hint',
     'RecordAction',
-    'RecordGroupHint',
+    'RecordKernelGroup',
 ]

@@ -220,7 +220,8 @@ Not to say implicitly generated meta kernels like ``fill_tensor`` and
 So you may find it hard and error-prone to figure out the correct launch order
 and mangled names.
 
-No worry, we provide a handy tool for such situation, for example:
+No worry, we provide a handy tool for such situation: you may guard the desired
+kernels with ``ti.RecordKernelGroup``. For example:
 
 .. code-block:: python
 
@@ -245,7 +246,7 @@ No worry, we provide a handy tool for such situation, for example:
             x[i] -= x.grad[i]
 
 
-    with ti.RecordGroupHint('my_substep'):
+    with ti.RecordKernelGroup('my_substep'):  # HERE!
         x.fill(0)
         with ti.Tape(loss):
             compute_loss()

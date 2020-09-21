@@ -416,7 +416,8 @@ bool GlobalPtrStmt::is_element_wise(SNode *snode) const {
     }
     return true;
   }
-  // check if this statement is element-wise on a specific SNode, i.e., argument "snode"
+  // check if this statement is element-wise on a specific SNode, i.e., argument
+  // "snode"
   for (int i = 0; i < (int)indices.size(); i++) {
     if (auto loop_index_i = indices[i]->cast<LoopIndexStmt>();
         !(loop_index_i && loop_index_i->loop->is<OffloadedStmt>() &&

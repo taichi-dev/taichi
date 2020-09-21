@@ -32,6 +32,7 @@ class IRBank {
   IRHandle fuse(IRHandle handle_a, IRHandle handle_b, Kernel *kernel);
 
   std::unordered_map<IRHandle, TaskMeta> meta_bank_;
+  std::unordered_map<IRHandle, TaskFusionMeta> fusion_meta_bank_;
 
  private:
   std::unordered_map<IRNode *, uint64> hash_bank_;

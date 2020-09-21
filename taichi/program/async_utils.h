@@ -146,8 +146,33 @@ struct TaskMeta {
   void print() const;
 };
 
+struct TaskFusionMeta {
+  // meta for task fusion
+  OffloadedStmt::TaskType type{OffloadedStmt::TaskType::serial};
+  SNode *snode{nullptr};  // struct-for only
+  int block_dim{0};       // struct-for only
+  int32 begin_value{0};   // range-for only
+  int32 end_value{0};     // range-for only
+
+  // Merging kernels with different signatures will break invariants.
+  // E.g.
+  // https://github.com/taichi-dev/taichi/blob/a6575fb97557267e2f550591f43b183076b72ac2/taichi/transforms/type_check.cpp#L326
+  //
+  // TODO: we could merge different kernels if their args are the
+  // same. But we have no way to check that for now.
+
+  // We use nullptr for kernels without arguments or return value.
+  // Otherwise, we only fuse tasks with the same kernel.
+  Kernel *kernel{nullptr};
+
+  // If fusible is false, this task can't be fused with any other tasks.
+  bool fusible{false};
+};
+
 class IRBank;
 
 TaskMeta *get_task_meta(IRBank *bank, const TaskLaunchRecord &t);
+
+TaskFusionMeta get_task_fusion_meta(IRBank *bank, const TaskLaunchRecord &t);
 
 TLANG_NAMESPACE_END

@@ -18,8 +18,7 @@ class IRBank;
 class StateFlowGraph {
  public:
   struct Node;
-  using StateToNodeMapping =
-      std::unordered_map<AsyncState, Node *, AsyncStateHash>;
+  using StateToNodeMapping = std::unordered_map<AsyncState, Node *>;
 
   // Each node is a task
   // Note: after SFG is done, each node here should hold a TaskLaunchRecord.
@@ -39,8 +38,8 @@ class StateFlowGraph {
 
     // Profiling showed horrible performance using std::unordered_multimap (at
     // least on Mac with clang-1103.0.32.62)...
-    std::unordered_map<AsyncState, std::unordered_set<Node *>, AsyncStateHash>
-        output_edges, input_edges;
+    std::unordered_map<AsyncState, std::unordered_set<Node *>> output_edges,
+        input_edges;
 
     std::string string() const;
 
@@ -140,7 +139,7 @@ class StateFlowGraph {
   Node *initial_node_;  // The initial node holds all the initial states.
   TaskMeta initial_meta_;
   StateToNodeMapping latest_state_owner_;
-  std::unordered_map<AsyncState, std::unordered_set<Node *>, AsyncStateHash>
+  std::unordered_map<AsyncState, std::unordered_set<Node *>>
       latest_state_readers_;
   std::unordered_map<std::string, int> task_name_to_launch_ids_;
   IRBank *ir_bank_;

@@ -362,6 +362,15 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
           }
         }
       }
+      for (auto &snode : ptr->snodes.data) {
+        if (ptr->is_element_wise(snode)) {
+          if (meta.element_wise.find(snode) == meta.element_wise.end()) {
+            meta.element_wise[snode] = true;
+          }
+        } else {
+          meta.element_wise[snode] = false;
+        }
+      }
     }
     if (auto clear_list = stmt->cast<ClearListStmt>()) {
       meta.output_states.emplace(clear_list->snode, AsyncState::Type::list);

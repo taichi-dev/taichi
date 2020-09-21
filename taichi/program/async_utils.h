@@ -50,29 +50,6 @@ class IRHandle {
   uint64 hash_;
 };
 
-TLANG_NAMESPACE_END
-
-namespace std {
-template <>
-struct hash<taichi::lang::IRHandle> {
-  std::size_t operator()(const taichi::lang::IRHandle &ir_handle) const
-      noexcept {
-    return ir_handle.hash();
-  }
-};
-
-template <>
-struct hash<std::pair<taichi::lang::IRHandle, taichi::lang::IRHandle>> {
-  std::size_t operator()(
-      const std::pair<taichi::lang::IRHandle, taichi::lang::IRHandle>
-          &ir_handles) const noexcept {
-    return ir_handles.first.hash() * 100000007UL + ir_handles.second.hash();
-  }
-};
-}  // namespace std
-
-TLANG_NAMESPACE_BEGIN
-
 // Records the necessary data for launching an offloaded task.
 class TaskLaunchRecord {
  public:
@@ -127,19 +104,44 @@ struct AsyncState {
   }
 };
 
-class AsyncStateHash {
- public:
-  size_t operator()(const AsyncState &s) const {
-    return (uint64)s.snode ^ (uint64)s.type;
+TLANG_NAMESPACE_END
+
+namespace std {
+template <>
+struct hash<taichi::lang::IRHandle> {
+  std::size_t operator()(const taichi::lang::IRHandle &ir_handle) const
+      noexcept {
+    return ir_handle.hash();
   }
 };
+
+template <>
+struct hash<std::pair<taichi::lang::IRHandle, taichi::lang::IRHandle>> {
+  std::size_t operator()(
+      const std::pair<taichi::lang::IRHandle, taichi::lang::IRHandle>
+          &ir_handles) const noexcept {
+    return ir_handles.first.hash() * 100000007UL + ir_handles.second.hash();
+  }
+};
+
+template <>
+struct hash<taichi::lang::AsyncState> {
+  std::size_t operator()(const taichi::lang::AsyncState &s) const noexcept {
+    return (std::size_t)s.snode ^ (std::size_t)s.type;
+  }
+};
+
+}  // namespace std
+
+TLANG_NAMESPACE_BEGIN
 
 struct TaskMeta {
   std::string name;
   OffloadedStmt::TaskType type{OffloadedStmt::TaskType::serial};
   SNode *snode{nullptr};  // struct-for and listgen only
-  std::unordered_set<AsyncState, AsyncStateHash> input_states;
-  std::unordered_set<AsyncState, AsyncStateHash> output_states;
+  std::unordered_set<AsyncState> input_states;
+  std::unordered_set<AsyncState> output_states;
+  std::unordered_map<SNode *, bool> element_wise;
 
   void print() const;
 };

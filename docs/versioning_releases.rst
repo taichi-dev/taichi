@@ -17,8 +17,7 @@ Workflow: releasing a new version
    Note that Jenkins is the only build bot we have that tests CUDA. (This may take half an hour.)
  - Create a branch for the release PR, forking from the latest commit of the ``master`` branch.
 
-    * Update Taichi version number at the beginning of ``CMakeLists.txt``. For example, change ``SET(TI_VERSION_PATCH 9)`` to ``SET(TI_VERSION_PATCH 10)``.
-    * Rerun cmake so that ``docs/version`` gets updated.
+    * Update Taichi version number at the beginning of ``CMakeLists.txt``. For example, change ``SET(TI_VERSION_PATCH 9)`` to ``SET(TI_VERSION_PATCH 10)`` for a patch release.
     * commit with message "[release] vX.Y.Z", e.g. "[release] v0.6.10".
     * You should see two changes in this commit: one line in ``CMakeLists.txt`` and one line in ``docs/version``.
     * Execute ``ti changelog`` and save its outputs. You will need this later.

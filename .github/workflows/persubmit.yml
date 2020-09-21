@@ -109,9 +109,16 @@ jobs:
   code_format:
     name: Code Format
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.6, 3.7, 3.8]
     if: ${{ !contains(github.event.pull_request.requested_reviewers.*.login, 'taichi-gardener') }}
     steps:
       - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
       - name: Check code format
         run: |
           git fetch https://github.com/taichi-dev/taichi.git refs/heads/master

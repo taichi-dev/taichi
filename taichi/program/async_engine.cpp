@@ -404,6 +404,7 @@ TaskFusionMeta get_task_fusion_meta(IRBank *bank, const TaskLaunchRecord &t) {
   TaskFusionMeta meta{};
   if (t.kernel->is_accessor) {
     // SNode accessors can't be fused.
+    // TODO: just avoid snode accessors going into the async engine
     return fusion_meta_bank[t.ir_handle] = TaskFusionMeta();
   }
   meta.kernel = t.kernel;

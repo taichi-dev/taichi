@@ -126,6 +126,10 @@ TI_FORCE_INLINE constexpr uint32 ceil_log2int(uint64 value) {
   return log2int(value) + ((value & (value - 1)) != 0);
 }
 
+TI_FORCE_INLINE constexpr uint64 lowbit(uint64 x) {
+  return x & (-x);
+}
+
 template <typename G, typename T>
 constexpr TI_FORCE_INLINE copy_refcv_t<T, G> &&reinterpret_bits(T &&t) {
   TI_STATIC_ASSERT(sizeof(G) == sizeof(T));
@@ -179,6 +183,12 @@ class Bitset {
   Bitset operator&(const Bitset &other) const;
   Bitset &operator|=(const Bitset &other);
   Bitset &operator^=(const Bitset &other);
+
+  // Find the place of the first bit, or return -1 if it doesn't exist.
+  int find_first_bit() const;
+  // Find the place of the first bit which is not before x, or return -1 if
+  // it doesn't exist.
+  int lower_bound(int x) const;
 
   std::vector<int> or_eq_get_update_list(const Bitset &other);
 

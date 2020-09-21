@@ -52,7 +52,6 @@ record_file = os.environ.get('TI_ACTION_RECORD')
 if record_file:
     start_recording(record_file)
 
-
 __all__ = [
     'start_recording',
     'stop_recording',

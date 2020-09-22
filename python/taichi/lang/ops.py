@@ -419,6 +419,7 @@ def bit_shl(a, b):
 def bit_sar(a, b):
     return _binary_operation(ti_core.expr_bit_sar, ops.rshift, a, b)
 
+@taichi_scope
 @binary
 def bit_shr(a, b):
     return _binary_operation(ti_core.expr_bit_shr, ops.rshift, a, b)

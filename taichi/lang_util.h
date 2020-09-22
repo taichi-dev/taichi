@@ -109,6 +109,22 @@ inline bool constexpr is_unsigned(DataType dt) {
   return !is_signed(dt);
 }
 
+inline DataType to_unsigned(DataType dt) {
+  TI_ASSERT(is_signed(dt));
+  switch (dt) {
+    case DataType::i8:
+      return DataType::u8;
+    case DataType::i16:
+      return DataType::u16;
+    case DataType::i32:
+      return DataType::u32;
+    case DataType::i64:
+      return DataType::u32;
+    default:
+      return DataType::unknown;
+  }
+}
+
 inline bool needs_grad(DataType dt) {
   return is_real(dt);
 }

@@ -19,7 +19,7 @@ Workflow: releasing a new version
 
     * Update Taichi version number at the beginning of ``CMakeLists.txt``. For example, change ``SET(TI_VERSION_PATCH 9)`` to ``SET(TI_VERSION_PATCH 10)`` for a patch release.
     * commit with message "[release] vX.Y.Z", e.g. "[release] v0.6.10".
-    * You should see two changes in this commit: one line in ``CMakeLists.txt`` and one line in ``docs/version``.
+    * You should see one change in this commit: one line in ``CMakeLists.txt``.
     * Execute ``ti changelog`` and save its outputs. You will need this later.
 
 - Open a PR titled "[release] vX.Y.Z" with the branch and commit you just now created.

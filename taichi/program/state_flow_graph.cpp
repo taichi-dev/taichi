@@ -329,80 +329,69 @@ bool StateFlowGraph::fuse() {
     return a_has_path_to_b.none();
   };
 
-  bool modified = false;
-  while (true) {
-    bool updated = false;
-    for (int i = 1; i < n; i++) {
-      fused[i] = nodes_[i]->rec.empty();
-    }
-    // The case with an edge: O(nm / 64)
-    for (int i = 1; i < n; i++) {
-      if (!fused[i]) {
-        bool i_updated = false;
-        for (auto &edges : nodes_[i]->output_edges) {
-          for (auto &edge : edges.second) {
-            const int j = edge->node_id;
-            if (edge_fusible(i, j)) {
-              do_fuse(i, j);
-              i_updated = true;
-              updated = true;
+  for (int i = 1; i < n; i++) {
+    fused[i] = nodes_[i]->rec.empty();
+  }
+  // The case without an edge: O(sum(size * min(size, n / 64))) = O(n^2 / 64)
+  for (auto &fusion_map : task_fusion_map) {
+    std::vector<int> indices(fusion_map.second.begin(),
+                             fusion_map.second.end());
+    TI_ASSERT(std::is_sorted(indices.begin(), indices.end()));
+    if (fusion_map.second.size() >= kLargeFusionSetThreshold) {
+      // O(size * n / 64)
+      Bitset mask(n);
+      for (int a : indices) {
+        mask[a] = true;
+      }
+      for (int a : indices) {
+        if (!fused[a]) {
+          int b =
+              (mask & ~(has_path[a] | has_path_reverse[a])).lower_bound(a + 1);
+          if (b == -1) {
+            mask[a] = false;  // a can't be fused in this iteration
+          } else {
+            do_fuse(a, b);
+            mask[a] = false;
+            mask[b] = false;
+          }
+        }
+      }
+    } else {
+      // O(size^2)
+      for (int i = 0; i < (int)indices.size(); i++) {
+        const int a = indices[i];
+        if (!fused[a]) {
+          for (int j = i + 1; j < (int)indices.size(); j++) {
+            const int b = indices[j];
+            if (!fused[b] && !has_path[a][b] && !has_path[b][a]) {
+              do_fuse(a, b);
               break;
             }
           }
-          if (i_updated)
+        }
+      }
+    }
+  }
+  // The case with an edge: O(nm / 64)
+  for (int i = 1; i < n; i++) {
+    if (!fused[i]) {
+      bool i_updated = false;
+      for (auto &edges : nodes_[i]->output_edges) {
+        for (auto &edge : edges.second) {
+          const int j = edge->node_id;
+          if (edge_fusible(i, j)) {
+            do_fuse(i, j);
+            i_updated = true;
             break;
-        }
-      }
-    }
-    // The case without an edge: O(sum(size * min(size, n / 64))) = O(n^2 / 64)
-    for (auto &fusion_map : task_fusion_map) {
-      std::vector<int> indices(fusion_map.second.begin(),
-                               fusion_map.second.end());
-      TI_ASSERT(std::is_sorted(indices.begin(), indices.end()));
-      if (fusion_map.second.size() >= kLargeFusionSetThreshold) {
-        // O(size * n / 64)
-        Bitset mask(n);
-        for (int a : indices) {
-          mask[a] = true;
-        }
-        for (int a : indices) {
-          if (!fused[a]) {
-            int b = (mask & ~(has_path[a] | has_path_reverse[a]))
-                        .lower_bound(a + 1);
-            if (b == -1) {
-              mask[a] = false;  // a can't be fused in this iteration
-            } else {
-              do_fuse(a, b);
-              mask[a] = false;
-              mask[b] = false;
-              updated = true;
-            }
           }
         }
-      } else {
-        // O(size^2)
-        for (int i = 0; i < (int)indices.size(); i++) {
-          const int a = indices[i];
-          if (!fused[a]) {
-            for (int j = i + 1; j < (int)indices.size(); j++) {
-              const int b = indices[j];
-              if (!fused[b] && !has_path[a][b] && !has_path[b][a]) {
-                do_fuse(a, b);
-                updated = true;
-                break;
-              }
-            }
-          }
-        }
+        if (i_updated)
+          break;
       }
-    }
-    if (updated) {
-      modified = true;
-    } else {
-      break;
     }
   }
 
+  bool modified = !indices_to_delete.empty();
   // TODO: Do we need a trash bin here?
   if (modified) {
     // rebuild the graph in topological order

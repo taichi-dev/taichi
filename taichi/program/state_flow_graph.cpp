@@ -298,7 +298,7 @@ bool StateFlowGraph::fuse() {
     if (!already_had_a_to_b_edge)
       insert_edge_for_transitive_closure(a, b);
 
-    fused[a] = fused[b] = true;
+    fused[b] = true;
     task_fusion_map[fusion_meta[a]].erase(a);
     task_fusion_map[fusion_meta[b]].erase(b);
   };
@@ -345,6 +345,7 @@ bool StateFlowGraph::fuse() {
       }
       for (int a : indices) {
         if (!fused[a]) {
+          // Task a can only be fused with one task here
           int b =
               (mask & ~(has_path[a] | has_path_reverse[a])).lower_bound(a + 1);
           if (b == -1) {
@@ -360,12 +361,12 @@ bool StateFlowGraph::fuse() {
       // O(size^2)
       for (int i = 0; i < (int)indices.size(); i++) {
         const int a = indices[i];
+        // Task a can be fused with many tasks here
         if (!fused[a]) {
           for (int j = i + 1; j < (int)indices.size(); j++) {
             const int b = indices[j];
             if (!fused[b] && !has_path[a][b] && !has_path[b][a]) {
               do_fuse(a, b);
-              break;
             }
           }
         }
@@ -375,18 +376,14 @@ bool StateFlowGraph::fuse() {
   // The case with an edge: O(nm / 64)
   for (int i = 1; i < n; i++) {
     if (!fused[i]) {
-      bool i_updated = false;
+      // Task i can be fused with many tasks here
       for (auto &edges : nodes_[i]->output_edges) {
         for (auto &edge : edges.second) {
           const int j = edge->node_id;
           if (edge_fusible(i, j)) {
             do_fuse(i, j);
-            i_updated = true;
-            break;
           }
         }
-        if (i_updated)
-          break;
       }
     }
   }

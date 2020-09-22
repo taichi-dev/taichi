@@ -229,5 +229,4 @@ gui.set_image(pixels)
 gui.show()
 
 ti.kernel_profiler_print()
-ti.core.print_profile_info()
 ti.core.print_stat()

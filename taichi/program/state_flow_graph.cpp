@@ -250,7 +250,6 @@ bool StateFlowGraph::fuse() {
       fusion_set.insert(fusion_set.end(), i);
     }
   }
-  const int kLargeFusionSetThreshold = std::max(n / 32, 4);
 
   std::unordered_set<int> indices_to_delete;
 
@@ -333,6 +332,7 @@ bool StateFlowGraph::fuse() {
     fused[i] = nodes_[i]->rec.empty();
   }
   // The case without an edge: O(sum(size * min(size, n / 64))) = O(n^2 / 64)
+  const int kLargeFusionSetThreshold = std::max(n / 16, 16);
   for (auto &fusion_map : task_fusion_map) {
     std::vector<int> indices(fusion_map.second.begin(),
                              fusion_map.second.end());

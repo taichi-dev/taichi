@@ -112,6 +112,10 @@ jobs:
     if: ${{ !contains(github.event.pull_request.requested_reviewers.*.login, 'taichi-gardener') }}
     steps:
       - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
       - name: Check code format
         run: |
           git fetch https://github.com/taichi-dev/taichi.git refs/heads/master
@@ -123,7 +127,7 @@ jobs:
           git checkout -b _last_squash
           git checkout -b _enforced_format
           git reset FETCH_HEAD
-          python3 -m pip install --user yapf gitpython
+          python3 -m pip install --user yapf gitpython colorama
           python3 python/taichi/code_format.py
           git add .
           git commit -m "enforce code format" || true

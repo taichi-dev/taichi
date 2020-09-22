@@ -8,7 +8,7 @@ ti.init(default_fp=real,
         async_opt_listgen=True,
         async_opt_dse=True,
         async_opt_activation_demotion=True,
-        async_opt_fusion=False,
+        async_opt_fusion=True,
         kernel_profiler=False
         #, async_opt_intermediate_file="mgpcg"
         )
@@ -229,4 +229,5 @@ gui.set_image(pixels)
 gui.show()
 
 ti.kernel_profiler_print()
+ti.core.print_profile_info()
 ti.core.print_stat()

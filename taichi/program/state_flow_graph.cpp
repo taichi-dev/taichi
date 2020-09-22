@@ -272,7 +272,6 @@ bool StateFlowGraph::fuse() {
     TI_AUTO_PROF;
     auto *node_a = nodes_[a].get();
     auto *node_b = nodes_[b].get();
-    // TODO: remove debug output
     TI_TRACE("Fuse: nodes_[{}]({}) <- nodes_[{}]({})", a, node_a->string(), b,
              node_b->string());
     auto &rec_a = node_a->rec;

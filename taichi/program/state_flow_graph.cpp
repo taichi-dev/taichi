@@ -273,7 +273,8 @@ bool StateFlowGraph::fuse() {
     auto *node_a = nodes_[a].get();
     auto *node_b = nodes_[b].get();
     // TODO: remove debug output
-    TI_TRACE("Fuse: {} <- {}", node_a->string(), node_b->string());
+    TI_TRACE("Fuse: nodes_[{}]({}) <- nodes_[{}]({})", a, node_a->string(), b,
+             node_b->string());
     auto &rec_a = node_a->rec;
     auto &rec_b = node_b->rec;
     rec_a.ir_handle =
@@ -341,13 +342,14 @@ bool StateFlowGraph::fuse() {
       // O(size * n / 64)
       Bitset mask(n);
       for (int a : indices) {
-        mask[a] = true;
+        mask[a] = !fused[a];
       }
       for (int a : indices) {
         if (!fused[a]) {
-          // Task a can only be fused with one task here
-          int b =
-              (mask & ~(has_path[a] | has_path_reverse[a])).lower_bound(a + 1);
+          // Fuse no more than one task into task a,
+          // otherwise do_fuse may be very slow
+          Bitset current_mask = (mask & ~(has_path[a] | has_path_reverse[a]));
+          int b = current_mask.lower_bound(a + 1);
           if (b == -1) {
             mask[a] = false;  // a can't be fused in this iteration
           } else {
@@ -359,16 +361,34 @@ bool StateFlowGraph::fuse() {
       }
     } else {
       // O(size^2)
+      std::vector<int> start_index(indices.size());
       for (int i = 0; i < (int)indices.size(); i++) {
-        const int a = indices[i];
-        // Task a can be fused with many tasks here
-        if (!fused[a]) {
-          for (int j = i + 1; j < (int)indices.size(); j++) {
+        if (fused[indices[i]]) {
+          start_index[i] = indices.size();  // do not fuse the task indices[i]
+        } else {
+          start_index[i] = i + 1;
+        }
+      }
+      while (true) {
+        bool done = true;
+        for (int i = 0; i < (int)indices.size(); i++) {
+          const int a = indices[i];
+          // Fuse no more than one task into task a in this iteration
+          for (int &j = start_index[i]; j < (int)indices.size(); j++) {
             const int b = indices[j];
             if (!fused[b] && !has_path[a][b] && !has_path[b][a]) {
               do_fuse(a, b);
+              start_index[j] = indices.size();  // task indices[j] is fused
+              j++;
+              break;
             }
           }
+          if (start_index[i] != indices.size()) {
+            done = false;
+          }
+        }
+        if (done) {
+          break;
         }
       }
     }
@@ -376,13 +396,20 @@ bool StateFlowGraph::fuse() {
   // The case with an edge: O(nm / 64)
   for (int i = 1; i < n; i++) {
     if (!fused[i]) {
-      // Task i can be fused with many tasks here
+      // Fuse no more than one task into task i
+      bool i_updated = false;
       for (auto &edges : nodes_[i]->output_edges) {
         for (auto &edge : edges.second) {
           const int j = edge->node_id;
           if (edge_fusible(i, j)) {
             do_fuse(i, j);
+            // Iterators of nodes_[i]->output_edges may be invalidated
+            i_updated = true;
+            break;
           }
+        }
+        if (i_updated) {
+          break;
         }
       }
     }

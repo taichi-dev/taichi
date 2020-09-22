@@ -632,8 +632,8 @@ void export_lang(py::module &m) {
     return result;
   });
 
-  m.def("record_action_hint", [](std::string content) {
-    ActionRecorder::get_instance().record("hint",
+  m.def("record_action_hint", [](std::string name, std::string content) {
+    ActionRecorder::get_instance().record(name,
                                           {ActionArg("content", content)});
   });
 

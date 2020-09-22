@@ -30,6 +30,7 @@ def test_bit_sar():
     for i in range(n):
         assert sar(neg_test_num, i) == -2**(n - i)
 
+
 @ti.test()
 def test_bit_shr():
     @ti.kernel

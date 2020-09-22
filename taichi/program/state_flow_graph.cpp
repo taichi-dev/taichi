@@ -338,7 +338,7 @@ bool StateFlowGraph::fuse() {
     std::vector<int> indices(fusion_map.second.begin(),
                              fusion_map.second.end());
     TI_ASSERT(std::is_sorted(indices.begin(), indices.end()));
-    if (fusion_map.second.size() >= kLargeFusionSetThreshold) {
+    if (indices.size() >= kLargeFusionSetThreshold) {
       // O(size * n / 64)
       Bitset mask(n);
       for (int a : indices) {
@@ -359,32 +359,29 @@ bool StateFlowGraph::fuse() {
           }
         }
       }
-    } else {
+    } else if (indices.size() >= 2) {
       // O(size^2)
       std::vector<int> start_index(indices.size());
       for (int i = 0; i < (int)indices.size(); i++) {
-        if (fused[indices[i]]) {
-          start_index[i] = indices.size();  // do not fuse the task indices[i]
-        } else {
-          start_index[i] = i + 1;
-        }
+        start_index[i] = i + 1;
       }
       while (true) {
         bool done = true;
         for (int i = 0; i < (int)indices.size(); i++) {
           const int a = indices[i];
-          // Fuse no more than one task into task a in this iteration
-          for (int &j = start_index[i]; j < (int)indices.size(); j++) {
-            const int b = indices[j];
-            if (!fused[b] && !has_path[a][b] && !has_path[b][a]) {
-              do_fuse(a, b);
-              start_index[j] = indices.size();  // task indices[j] is fused
-              j++;
-              break;
+          if (!fused[a]) {
+            // Fuse no more than one task into task a in this iteration
+            for (int &j = start_index[i]; j < (int)indices.size(); j++) {
+              const int b = indices[j];
+              if (!fused[b] && !has_path[a][b] && !has_path[b][a]) {
+                do_fuse(a, b);
+                j++;
+                break;
+              }
             }
-          }
-          if (start_index[i] != indices.size()) {
-            done = false;
+            if (start_index[i] != indices.size()) {
+              done = false;
+            }
           }
         }
         if (done) {

@@ -182,7 +182,9 @@ class Bitset {
   Bitset &operator&=(const Bitset &other);
   Bitset operator&(const Bitset &other) const;
   Bitset &operator|=(const Bitset &other);
+  Bitset operator|(const Bitset &other) const;
   Bitset &operator^=(const Bitset &other);
+  Bitset operator~() const;
 
   // Find the place of the first bit, or return -1 if it doesn't exist.
   int find_first_bit() const;

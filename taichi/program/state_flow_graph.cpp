@@ -250,6 +250,7 @@ bool StateFlowGraph::fuse() {
       fusion_set.insert(fusion_set.end(), i);
     }
   }
+  const int kLargeFusionSetThreshold = std::max(n / 32, 4);
 
   std::unordered_set<int> indices_to_delete;
 
@@ -353,21 +354,43 @@ bool StateFlowGraph::fuse() {
         }
       }
     }
-    // The case without an edge: O(sum(size^2)) = O(n^2)
+    // The case without an edge: O(sum(size * min(size, n / 64))) = O(n^2 / 64)
     for (auto &fusion_map : task_fusion_map) {
-      // TODO: optimize from O(size^2) to O(size * n / 64) when
-      //  fusion_map.second.size() is large
       std::vector<int> indices(fusion_map.second.begin(),
                                fusion_map.second.end());
-      for (int i = 0; i < (int)indices.size(); i++) {
-        const int a = indices[i];
-        if (!fused[a]) {
-          for (int j = i + 1; j < (int)indices.size(); j++) {
-            const int b = indices[j];
-            if (!fused[b] && !has_path[a][b] && !has_path[b][a]) {
-              do_fuse(std::min(a, b), std::max(a, b));
+      TI_ASSERT(std::is_sorted(indices.begin(), indices.end()));
+      if (fusion_map.second.size() >= kLargeFusionSetThreshold) {
+        // O(size * n / 64)
+        Bitset mask(n);
+        for (int a : indices) {
+          mask[a] = true;
+        }
+        for (int a : indices) {
+          if (!fused[a]) {
+            int b = (mask & ~(has_path[a] | has_path_reverse[a]))
+                        .lower_bound(a + 1);
+            if (b == -1) {
+              mask[a] = false;  // a can't be fused in this iteration
+            } else {
+              do_fuse(a, b);
+              mask[a] = false;
+              mask[b] = false;
               updated = true;
-              break;
+            }
+          }
+        }
+      } else {
+        // O(size^2)
+        for (int i = 0; i < (int)indices.size(); i++) {
+          const int a = indices[i];
+          if (!fused[a]) {
+            for (int j = i + 1; j < (int)indices.size(); j++) {
+              const int b = indices[j];
+              if (!fused[b] && !has_path[a][b] && !has_path[b][a]) {
+                do_fuse(a, b);
+                updated = true;
+                break;
+              }
             }
           }
         }

@@ -54,15 +54,12 @@ def parse_semver(
 
 
 # CMakeLists.txt is the only source of the truth when forging
-# the version, this script always reads from it, parses the version
-# and dump the version string to `version` file.
+# the version, this script always reads from it and parses the version
 cmake_file = Path(__file__).resolve().parents[1].joinpath('CMakeLists.txt')
 major, minor, patch = parse_semver(cmakelist_path=str(cmake_file))
 version_file = Path(__file__).resolve().parent.joinpath("version")
 taichi_version = f"{major}.{minor}.{patch}"
-with version_file.open('w') as f:
-    f.write(f"{taichi_version}\n")
-    print('Building doc version', taichi_version)
+print('Building doc version', taichi_version)
 
 # -- Project information -----------------------------------------------------
 

@@ -26,10 +26,6 @@ string(STRIP ${TI_COMMIT_SHORT_HASH} TI_COMMIT_SHORT_HASH)
 message("Taichi Version ${TI_VERSION_MAJOR}.${TI_VERSION_MINOR}.${TI_VERSION_PATCH}")
 message("       Commit ${TI_COMMIT_HASH}")
 
-FILE(WRITE ${CMAKE_CURRENT_LIST_DIR}/docs/version
-        "${TI_VERSION_MAJOR}.${TI_VERSION_MINOR}.${TI_VERSION_PATCH}\n"
-        )
-
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING
             "Choose the type of build, options are: Debug Release

@@ -119,7 +119,7 @@ inline DataType to_unsigned(DataType dt) {
     case DataType::i32:
       return DataType::u32;
     case DataType::i64:
-      return DataType::u32;
+      return DataType::u64;
     default:
       return DataType::unknown;
   }

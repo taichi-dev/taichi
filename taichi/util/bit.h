@@ -186,9 +186,9 @@ class Bitset {
   Bitset &operator^=(const Bitset &other);
   Bitset operator~() const;
 
-  // Find the place of the first bit, or return -1 if it doesn't exist.
-  int find_first_bit() const;
-  // Find the place of the first bit which is not before x, or return -1 if
+  // Find the place of the first "1", or return -1 if it doesn't exist.
+  int find_first_one() const;
+  // Find the place of the first "1" which is not before x, or return -1 if
   // it doesn't exist.
   int lower_bound(int x) const;
 

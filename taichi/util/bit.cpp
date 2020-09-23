@@ -98,7 +98,7 @@ Bitset Bitset::operator~() const {
   return result;
 }
 
-int Bitset::find_first_bit() const {
+int Bitset::find_first_one() const {
   return lower_bound(0);
 }
 

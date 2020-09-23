@@ -4,7 +4,6 @@ import pytest
 
 @ti.test(require=ti.extension.async_mode, async_mode=True)
 def test_remove_clear_list_from_fused_serial():
-    # ti.init(ti.cpu, async_mode=True, async_opt_intermediate_file='tmp/remove_clear_list')
     x = ti.field(ti.i32)
     y = ti.field(ti.i32)
     z = ti.field(ti.i32, shape=())

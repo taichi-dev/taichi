@@ -80,8 +80,8 @@ class DemoteOperations : public BasicStmtVisitor {
       // @ti.func
       // def bit_shr(a, b):
       //     signed_a = ti.cast(a, ti.uXX)
-      //     shifted = ti.bit_sar(a, b)
-      //     ret = ti.cast(a, ti.iXX)
+      //     shifted = ti.bit_sar(signed_a, b)
+      //     ret = ti.cast(shifted, ti.iXX)
       //     return ret
       auto unsigned_cast = Stmt::make<UnaryOpStmt>(UnaryOpType::cast_bits, lhs);
       unsigned_cast->as<UnaryOpStmt>()->cast_type =

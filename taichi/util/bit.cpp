@@ -74,6 +74,12 @@ Bitset &Bitset::operator|=(const Bitset &other) {
   return *this;
 }
 
+Bitset Bitset::operator|(const Bitset &other) const {
+  Bitset result = *this;
+  result |= other;
+  return result;
+}
+
 Bitset &Bitset::operator^=(const Bitset &other) {
   const int len = vec_.size();
   TI_ASSERT(len == other.vec_.size());
@@ -81,6 +87,42 @@ Bitset &Bitset::operator^=(const Bitset &other) {
     vec_[i] ^= other.vec_[i];
   }
   return *this;
+}
+
+Bitset Bitset::operator~() const {
+  Bitset result(size());
+  const int len = vec_.size();
+  for (int i = 0; i < len; i++) {
+    result.vec_[i] = ~vec_[i];
+  }
+  return result;
+}
+
+int Bitset::find_first_one() const {
+  return lower_bound(0);
+}
+
+int Bitset::lower_bound(int x) const {
+  const int len = vec_.size();
+  if (x >= len * kBits) {
+    return -1;
+  }
+  if (x < 0) {
+    x = 0;
+  }
+  int i = x / kBits;
+  if (x % kBits != 0) {
+    if (auto test = vec_[i] & (kMask ^ ((1ULL << (x % kBits)) - 1))) {
+      return i * kBits + log2int(lowbit(test));
+    }
+    i++;
+  }
+  for (; i < len; i++) {
+    if (vec_[i]) {
+      return i * kBits + log2int(lowbit(vec_[i]));
+    }
+  }
+  return -1;
 }
 
 std::vector<int> Bitset::or_eq_get_update_list(const Bitset &other) {

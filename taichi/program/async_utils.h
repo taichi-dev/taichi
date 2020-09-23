@@ -104,6 +104,40 @@ struct AsyncState {
   }
 };
 
+struct TaskFusionMeta {
+  // meta for task fusion
+  OffloadedStmt::TaskType type{OffloadedStmt::TaskType::serial};
+  SNode *snode{nullptr};  // struct-for only
+  int block_dim{0};       // struct-for only
+  int32 begin_value{0};   // range-for only
+  int32 end_value{0};     // range-for only
+
+  // Merging kernels with different signatures will break invariants.
+  // E.g.
+  // https://github.com/taichi-dev/taichi/blob/a6575fb97557267e2f550591f43b183076b72ac2/taichi/transforms/type_check.cpp#L326
+  //
+  // TODO: we could merge different kernels if their args are the
+  // same. But we have no way to check that for now.
+
+  // We use nullptr for kernels without arguments or return value.
+  // Otherwise, we only fuse tasks with the same kernel.
+  Kernel *kernel{nullptr};
+
+  // If fusible is false, this task can't be fused with any other tasks.
+  bool fusible{false};
+
+  bool operator==(const TaskFusionMeta &other) const {
+    return type == other.type && snode == other.snode &&
+           block_dim == other.block_dim && begin_value == other.begin_value &&
+           end_value == other.end_value && kernel == other.kernel &&
+           fusible == other.fusible;
+  }
+
+  bool operator!=(const TaskFusionMeta &other) const {
+    return !(*this == other);
+  }
+};
+
 TLANG_NAMESPACE_END
 
 namespace std {
@@ -131,6 +165,16 @@ struct hash<taichi::lang::AsyncState> {
   }
 };
 
+template <>
+struct hash<taichi::lang::TaskFusionMeta> {
+  std::size_t operator()(const taichi::lang::TaskFusionMeta &t) const noexcept {
+    std::size_t result = (t.type << 1) ^ t.fusible ^ (std::size_t)t.kernel;
+    result ^= (std::size_t)t.block_dim * 100000007UL + (std::size_t)t.snode;
+    result ^= ((std::size_t)t.begin_value << 32) ^ t.end_value;
+    return result;
+  }
+};
+
 }  // namespace std
 
 TLANG_NAMESPACE_BEGIN
@@ -149,5 +193,7 @@ struct TaskMeta {
 class IRBank;
 
 TaskMeta *get_task_meta(IRBank *bank, const TaskLaunchRecord &t);
+
+TaskFusionMeta get_task_fusion_meta(IRBank *bank, const TaskLaunchRecord &t);
 
 TLANG_NAMESPACE_END

@@ -4,6 +4,7 @@
 #include "taichi/ir/analysis.h"
 #include "taichi/program/async_engine.h"
 
+#include <set>
 #include <sstream>
 #include <unordered_set>
 
@@ -192,6 +193,7 @@ bool StateFlowGraph::optimize_listgen() {
 
 std::pair<std::vector<bit::Bitset>, std::vector<bit::Bitset>>
 StateFlowGraph::compute_transitive_closure() {
+  TI_AUTO_PROF;
   using bit::Bitset;
   const int n = nodes_.size();
   reid_nodes();
@@ -226,6 +228,7 @@ StateFlowGraph::compute_transitive_closure() {
 }
 
 bool StateFlowGraph::fuse() {
+  TI_AUTO_PROF;
   using bit::Bitset;
   const int n = nodes_.size();
   if (n <= 2) {
@@ -235,67 +238,16 @@ bool StateFlowGraph::fuse() {
   std::vector<Bitset> has_path, has_path_reverse;
   std::tie(has_path, has_path_reverse) = compute_transitive_closure();
 
-  // Cache the result that if each pair is fusible by task types.
-  // TODO: improve this
-  auto task_type_fusible = std::make_unique<Bitset[]>(n);
-  for (int i = 0; i < n; i++) {
-    task_type_fusible[i] = Bitset(n);
-  }
+  // Classify tasks by TaskFusionMeta.
+  std::vector<TaskFusionMeta> fusion_meta(n);
+  // It seems that std::set is slightly faster than std::unordered_set here.
+  std::unordered_map<TaskFusionMeta, std::set<int>> task_fusion_map;
   // nodes_[0] is the initial node.
   for (int i = 1; i < n; i++) {
-    auto &rec_i = nodes_[i]->rec;
-    if (rec_i.empty()) {
-      continue;
-    }
-    auto *task_i = rec_i.stmt();
-    for (int j = i + 1; j < n; j++) {
-      auto &rec_j = nodes_[j]->rec;
-      if (rec_j.empty()) {
-        continue;
-      }
-      auto *task_j = rec_j.stmt();
-      bool is_same_struct_for =
-          task_i->task_type == OffloadedStmt::struct_for &&
-          task_j->task_type == OffloadedStmt::struct_for &&
-          task_i->snode == task_j->snode &&
-          task_i->block_dim == task_j->block_dim;
-      // TODO: a few problems with the range-for test condition:
-      // 1. This could incorrectly fuse two range-for kernels that have
-      // different sizes, but then the loop ranges get padded to the same
-      // power-of-two (E.g. maybe a side effect when a struct-for is demoted
-      // to range-for).
-      // 2. It has also fused range-fors that have the same linear range,
-      // but are of different dimensions of loop indices, e.g. (16, ) and
-      // (4, 4).
-      bool is_same_range_for = task_i->task_type == OffloadedStmt::range_for &&
-                               task_j->task_type == OffloadedStmt::range_for &&
-                               task_i->const_begin && task_j->const_begin &&
-                               task_i->const_end && task_j->const_end &&
-                               task_i->begin_value == task_j->begin_value &&
-                               task_i->end_value == task_j->end_value;
-      bool are_both_serial = task_i->task_type == OffloadedStmt::serial &&
-                             task_j->task_type == OffloadedStmt::serial;
-      const bool same_kernel = (rec_i.kernel == rec_j.kernel);
-      bool kernel_args_match = true;
-      if (!same_kernel) {
-        // Merging kernels with different signatures will break invariants.
-        // E.g.
-        // https://github.com/taichi-dev/taichi/blob/a6575fb97557267e2f550591f43b183076b72ac2/taichi/transforms/type_check.cpp#L326
-        //
-        // TODO: we could merge different kernels if their args are the
-        // same. But we have no way to check that for now.
-        auto check = [](const Kernel *k) {
-          return (k->args.empty() && k->rets.empty());
-        };
-        kernel_args_match = (check(rec_i.kernel) && check(rec_j.kernel));
-      }
-      // TODO: avoid snode accessors going into async engine
-      const bool is_snode_accessor =
-          (rec_i.kernel->is_accessor || rec_j.kernel->is_accessor);
-      bool fusible =
-          (is_same_range_for || is_same_struct_for || are_both_serial) &&
-          kernel_args_match && !is_snode_accessor;
-      task_type_fusible[i][j] = fusible;
+    fusion_meta[i] = get_task_fusion_meta(ir_bank_, nodes_[i]->rec);
+    if (fusion_meta[i].fusible) {
+      auto &fusion_set = task_fusion_map[fusion_meta[i]];
+      fusion_set.insert(fusion_set.end(), i);
     }
   }
 
@@ -313,11 +265,14 @@ bool StateFlowGraph::fuse() {
     }
   };
 
+  auto fused = std::vector<bool>(n);
+
   auto do_fuse = [&](int a, int b) {
+    TI_AUTO_PROF;
     auto *node_a = nodes_[a].get();
     auto *node_b = nodes_[b].get();
-    // TODO: remove debug output
-    TI_TRACE("Fuse: {} <- {}", node_a->string(), node_b->string());
+    TI_TRACE("Fuse: nodes_[{}]({}) <- nodes_[{}]({})", a, node_a->string(), b,
+             node_b->string());
     auto &rec_a = node_a->rec;
     auto &rec_b = node_b->rec;
     rec_a.ir_handle =
@@ -341,90 +296,126 @@ bool StateFlowGraph::fuse() {
     insert_edge_for_transitive_closure(b, a);
     if (!already_had_a_to_b_edge)
       insert_edge_for_transitive_closure(a, b);
-  };
 
-  auto fused = std::make_unique<bool[]>(n);
+    fused[b] = true;
+    task_fusion_map[fusion_meta[a]].erase(a);
+    task_fusion_map[fusion_meta[b]].erase(b);
+  };
 
   auto edge_fusible = [&](int a, int b) {
     // Check if a and b are fusible if there is an edge (a, b).
-    if (fused[a] || fused[b] || !task_type_fusible[a][b]) {
+    if (fused[a] || fused[b] || !fusion_meta[a].fusible ||
+        fusion_meta[a] != fusion_meta[b]) {
       return false;
     }
-    if (nodes_[a]->meta->type == OffloadedStmt::TaskType::serial) {
-      return true;
-    }
-    for (auto &state : nodes_[a]->output_edges) {
-      if (state.first.type != AsyncState::Type::value) {
-        // TODO: What checks do we need for edges of mask/list states?
-        continue;
-      }
-      if (state.second.find(nodes_[b].get()) != state.second.end()) {
-        if (!nodes_[a]->meta->element_wise[state.first.snode] ||
-            !nodes_[b]->meta->element_wise[state.first.snode]) {
-          return false;
+    if (nodes_[a]->meta->type != OffloadedStmt::TaskType::serial) {
+      for (auto &state : nodes_[a]->output_edges) {
+        if (state.first.type != AsyncState::Type::value) {
+          // No need to check mask/list states as there must be value states.
+          continue;
+        }
+        if (state.second.find(nodes_[b].get()) != state.second.end()) {
+          if (!nodes_[a]->meta->element_wise[state.first.snode] ||
+              !nodes_[b]->meta->element_wise[state.first.snode]) {
+            return false;
+          }
         }
       }
     }
-    return true;
+    // check if a doesn't have a path to b of length >= 2
+    auto a_has_path_to_b = has_path[a] & has_path_reverse[b];
+    a_has_path_to_b[a] = a_has_path_to_b[b] = false;
+    return a_has_path_to_b.none();
   };
 
-  bool modified = false;
-  while (true) {
-    bool updated = false;
-    for (int i = 1; i < n; i++) {
-      fused[i] = nodes_[i]->rec.empty();
-    }
-    for (int i = 1; i < n; i++) {
-      if (!fused[i]) {
-        bool i_updated = false;
-        for (auto &edges : nodes_[i]->output_edges) {
-          for (auto &edge : edges.second) {
-            const int j = edge->node_id;
-            if (edge_fusible(i, j)) {
-              auto i_has_path_to_j = has_path[i] & has_path_reverse[j];
-              i_has_path_to_j[i] = i_has_path_to_j[j] = false;
-              // check if i doesn't have a path to j of length >= 2
-              if (i_has_path_to_j.none()) {
-                do_fuse(i, j);
-                fused[i] = fused[j] = true;
-                i_updated = true;
-                updated = true;
+  for (int i = 1; i < n; i++) {
+    fused[i] = nodes_[i]->rec.empty();
+  }
+  // The case without an edge: O(sum(size * min(size, n / 64))) = O(n^2 / 64)
+  const int kLargeFusionSetThreshold = std::max(n / 16, 16);
+  for (auto &fusion_map : task_fusion_map) {
+    std::vector<int> indices(fusion_map.second.begin(),
+                             fusion_map.second.end());
+    TI_ASSERT(std::is_sorted(indices.begin(), indices.end()));
+    if (indices.size() >= kLargeFusionSetThreshold) {
+      // O(size * n / 64)
+      Bitset mask(n);
+      for (int a : indices) {
+        mask[a] = !fused[a];
+      }
+      for (int a : indices) {
+        if (!fused[a]) {
+          // Fuse no more than one task into task a,
+          // otherwise do_fuse may be very slow
+          Bitset current_mask = (mask & ~(has_path[a] | has_path_reverse[a]));
+          int b = current_mask.lower_bound(a + 1);
+          if (b == -1) {
+            mask[a] = false;  // a can't be fused in this iteration
+          } else {
+            do_fuse(a, b);
+            mask[a] = false;
+            mask[b] = false;
+          }
+        }
+      }
+    } else if (indices.size() >= 2) {
+      // O(size^2)
+      std::vector<int> start_index(indices.size());
+      for (int i = 0; i < (int)indices.size(); i++) {
+        start_index[i] = i + 1;
+      }
+      while (true) {
+        bool done = true;
+        for (int i = 0; i < (int)indices.size(); i++) {
+          const int a = indices[i];
+          if (!fused[a]) {
+            // Fuse no more than one task into task a in this iteration
+            for (int &j = start_index[i]; j < (int)indices.size(); j++) {
+              const int b = indices[j];
+              if (!fused[b] && !has_path[a][b] && !has_path[b][a]) {
+                do_fuse(a, b);
+                j++;
                 break;
               }
             }
+            if (start_index[i] != indices.size()) {
+              done = false;
+            }
           }
-          if (i_updated)
-            break;
+        }
+        if (done) {
+          break;
         }
       }
     }
-    // TODO: accelerate this
-    for (int i = 1; i < n; i++) {
-      if (!fused[i]) {
-        for (int j = i + 1; j < n; j++) {
-          if (!fused[j] && task_type_fusible[i][j] && !has_path[i][j] &&
-              !has_path[j][i]) {
+  }
+  // The case with an edge: O(nm / 64)
+  for (int i = 1; i < n; i++) {
+    if (!fused[i]) {
+      // Fuse no more than one task into task i
+      bool i_updated = false;
+      for (auto &edges : nodes_[i]->output_edges) {
+        for (auto &edge : edges.second) {
+          const int j = edge->node_id;
+          if (edge_fusible(i, j)) {
             do_fuse(i, j);
-            fused[i] = fused[j] = true;
-            updated = true;
+            // Iterators of nodes_[i]->output_edges may be invalidated
+            i_updated = true;
             break;
           }
         }
+        if (i_updated) {
+          break;
+        }
       }
-    }
-    if (updated) {
-      modified = true;
-    } else {
-      break;
     }
   }
 
+  bool modified = !indices_to_delete.empty();
   // TODO: Do we need a trash bin here?
   if (modified) {
     // rebuild the graph in topological order
     delete_nodes(indices_to_delete);
-    // TODO: we may want to preserve the original node order. Maybe
-    // topo_sort_nodes() here leads to wrong results.
     topo_sort_nodes();
     auto tasks = extract();
     for (auto &task : tasks) {

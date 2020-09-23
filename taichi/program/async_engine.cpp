@@ -394,6 +394,52 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
   return &meta_bank[t.ir_handle];
 }
 
+TaskFusionMeta get_task_fusion_meta(IRBank *bank, const TaskLaunchRecord &t) {
+  // TODO: this function should ideally take only an IRNode
+  auto &fusion_meta_bank = bank->fusion_meta_bank_;
+  if (fusion_meta_bank.find(t.ir_handle) != fusion_meta_bank.end()) {
+    return fusion_meta_bank[t.ir_handle];
+  }
+
+  TaskFusionMeta meta{};
+  if (t.kernel->is_accessor) {
+    // SNode accessors can't be fused.
+    // TODO: just avoid snode accessors going into the async engine
+    return fusion_meta_bank[t.ir_handle] = TaskFusionMeta();
+  }
+  meta.kernel = t.kernel;
+  if (t.kernel->args.empty() && t.kernel->rets.empty()) {
+    meta.kernel = nullptr;
+  }
+
+  auto *task = t.stmt();
+  meta.type = task->task_type;
+  if (task->task_type == OffloadedStmt::struct_for) {
+    meta.snode = task->snode;
+    meta.block_dim = task->block_dim;
+  } else if (task->task_type == OffloadedStmt::range_for) {
+    // TODO: a few problems with the range-for test condition:
+    // 1. This could incorrectly fuse two range-for kernels that have
+    // different sizes, but then the loop ranges get padded to the same
+    // power-of-two (E.g. maybe a side effect when a struct-for is demoted
+    // to range-for).
+    // 2. It has also fused range-fors that have the same linear range,
+    // but are of different dimensions of loop indices, e.g. (16, ) and
+    // (4, 4).
+    if (!task->const_begin || !task->const_end) {
+      // Do not fuse range-for tasks with variable ranges for now.
+      return fusion_meta_bank[t.ir_handle] = TaskFusionMeta();
+    }
+    meta.begin_value = task->begin_value;
+    meta.end_value = task->end_value;
+  } else if (task->task_type != OffloadedStmt::serial) {
+    // Do not fuse gc/listgen tasks.
+    return fusion_meta_bank[t.ir_handle] = TaskFusionMeta();
+  }
+  meta.fusible = true;
+  return fusion_meta_bank[t.ir_handle] = meta;
+}
+
 void AsyncEngine::enqueue(const TaskLaunchRecord &t) {
   sfg->insert_task(t);
   task_queue.push_back(t);

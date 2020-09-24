@@ -62,6 +62,30 @@ def pyfunc(foo):
     return decorated
 
 
+# The ti.kernelfunc decorator
+def kernelfunc(foo):
+    '''
+    Creates a function that are callable both in Taichi-scope and Python-scope.
+    When called from Taichi-scope, it acts like a @ti.func.
+    When called from Python-scope, it acts like a @ti.kernel.
+    Therefore it must be type-hinted to be called from Python-scope.
+    @ti.kernelfunc does not support ODOP for now.
+    '''
+    is_classfunc = _inside_class(level_of_class_stackframe=4)
+    fun = Func(foo, classfunc=is_classfunc, pyfunc=True)
+    ker = _kernel_impl(foo, level_of_class_stackframe=4)
+
+    @functools.wraps(foo)
+    def decorated(*args):
+        _taichi_skip_traceback = 1
+        if impl.inside_kernel():
+            return fun.__call__(*args)
+        else:
+            return ker.__call__(*args)
+
+    return decorated
+
+
 class Func:
     def __init__(self, func, classfunc=False, pyfunc=False):
         self.func = func

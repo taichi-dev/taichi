@@ -119,7 +119,6 @@ class Expr(TaichiOperations):
         assert node
         node.clear_data()
 
-    @python_scope
     def fill(self, val):
         # TODO: avoid too many template instantiations
         from .meta import fill_tensor
@@ -205,7 +204,6 @@ class Expr(TaichiOperations):
     def from_torch(self, arr):
         self.from_numpy(arr.contiguous())
 
-    @python_scope
     def copy_from(self, other):
         assert isinstance(other, Expr)
         from .meta import tensor_to_tensor

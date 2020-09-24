@@ -31,6 +31,8 @@ class IRBank {
   // Fuse handle_b into handle_a
   IRHandle fuse(IRHandle handle_a, IRHandle handle_b, Kernel *kernel);
 
+  IRHandle demote_activation(IRHandle handle);
+
   std::unordered_map<IRHandle, TaskMeta> meta_bank_;
   std::unordered_map<IRHandle, TaskFusionMeta> fusion_meta_bank_;
 
@@ -39,6 +41,7 @@ class IRBank {
   std::unordered_map<IRHandle, std::unique_ptr<IRNode>> ir_bank_;
   std::vector<std::unique_ptr<IRNode>> trash_bin;  // prevent IR from deleted
   std::unordered_map<std::pair<IRHandle, IRHandle>, IRHandle> fuse_bank_;
+  std::unordered_map<IRHandle, IRHandle> demote_activation_bank_;
 };
 
 class ParallelExecutor {

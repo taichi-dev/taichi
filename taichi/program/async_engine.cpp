@@ -106,6 +106,96 @@ IRHandle IRBank::fuse(IRHandle handle_a, IRHandle handle_b, Kernel *kernel) {
   return result;
 }
 
+// TODO: make this an IR pass
+class ConstExprPropagation {
+ public:
+  static std::unordered_set<Stmt *> run(
+      Block *block,
+      const std::function<bool(Stmt *)> &is_const_seed) {
+    std::unordered_set<Stmt *> const_stmts;
+
+    auto is_const = [&](Stmt *stmt) {
+      if (is_const_seed(stmt)) {
+        return true;
+      } else {
+        return const_stmts.find(stmt) != const_stmts.end();
+      }
+    };
+
+    for (auto &s : block->statements) {
+      if (is_const(s.get())) {
+        const_stmts.insert(s.get());
+      } else if (auto binary = s->cast<BinaryOpStmt>()) {
+        if (is_const(binary->lhs) && is_const(binary->rhs)) {
+          const_stmts.insert(s.get());
+        }
+      } else if (auto unary = s->cast<UnaryOpStmt>()) {
+        if (is_const(unary->operand)) {
+          const_stmts.insert(s.get());
+        }
+      } else {
+        // TODO: ...
+      }
+    }
+
+    return const_stmts;
+  }
+};
+
+IRHandle IRBank::demote_activation(IRHandle handle) {
+  auto &result = demote_activation_bank_[handle];
+  if (!result.empty()) {
+    return result;
+  }
+
+  std::unique_ptr<IRNode> new_ir = handle.clone();
+
+  OffloadedStmt *offload = new_ir->as<OffloadedStmt>();
+  Block *body = offload->body.get();
+
+  auto snode = offload->snode;
+  TI_ASSERT(snode != nullptr);
+
+  // TODO: for now we only deal with the top level. Is there an easy way to
+  // extend this part?
+  auto consts = ConstExprPropagation::run(body, [](Stmt *stmt) {
+    if (stmt->is<ConstStmt>()) {
+      return true;
+    } else if (stmt->is<LoopIndexStmt>())
+      return true;
+    return false;
+  });
+
+  bool demoted = false;
+  for (int k = 0; k < (int)body->statements.size(); k++) {
+    Stmt *stmt = body->statements[k].get();
+    if (auto ptr = stmt->cast<GlobalPtrStmt>(); ptr && ptr->activate) {
+      bool can_demote = true;
+      // TODO: test input mask?
+      for (auto ind : ptr->indices) {
+        if (consts.find(ind) == consts.end()) {
+          // non-constant index
+          can_demote = false;
+        }
+      }
+      if (can_demote) {
+        ptr->activate = false;
+        demoted = true;
+      }
+    }
+  }
+
+  if (!demoted) {
+    // Nothing demoted. Simply delete new_ir when this function returns.
+    result = handle;
+    return result;
+  }
+
+  result = IRHandle(new_ir.get(), get_hash(new_ir.get()));
+  insert(std::move(new_ir), result.hash());
+  return result;
+}
+
 ParallelExecutor::ParallelExecutor(int num_threads)
     : num_threads(num_threads),
       status(ExecutorStatus::uninitialized),

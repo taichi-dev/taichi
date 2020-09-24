@@ -150,7 +150,6 @@ class AsyncEngine {
 
   std::unique_ptr<StateFlowGraph> sfg;
   std::deque<TaskLaunchRecord> task_queue;
-  int debug_sfg_counter{0};
 
   explicit AsyncEngine(Program *program);
 
@@ -185,6 +184,10 @@ class AsyncEngine {
 
   TaskMeta create_task_meta(const TaskLaunchRecord &t);
   std::unordered_map<const Kernel *, KernelMeta> kernel_metas_;
+  // How many times we have synchronized
+  int sync_counter_{0};
+  int cur_sync_sfg_debug_counter_{0};
+  std::unordered_map<std::string, int> cur_sync_sfg_debug_per_stage_counts_;
 };
 
 TLANG_NAMESPACE_END

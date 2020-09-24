@@ -449,36 +449,35 @@ void AsyncEngine::synchronize() {
   bool modified = true;
   TI_TRACE("Synchronizing SFG of {} nodes", sfg->size());
   debug_sfg("initial");
-  // while (modified) {
-  if (true) {
-    // TODO: make iterative optimization work
-    modified = true;
-    while (modified) {
-      modified = false;
-      if (program->config.async_opt_listgen)
-        while (sfg->optimize_listgen()) {
-          debug_sfg("listgen");
-          modified = true;
-        }
-      sfg->verify();
-      if (program->config.async_opt_dse)
-        while (sfg->optimize_dead_store()) {
-          debug_sfg("dse");
-          modified = true;
-        }
-      sfg->verify();
-      if (program->config.async_opt_activation_demotion)
-        while (sfg->demote_activation()) {
-          debug_sfg("act");
-          modified = true;
-        }
-      sfg->verify();
+  while (modified) {
+    modified = false;
+    if (program->config.async_opt_listgen) {
+      while (sfg->optimize_listgen()) {
+        debug_sfg("listgen");
+        modified = true;
+      }
     }
-    if (program->config.async_opt_fusion)
+    sfg->verify();
+    if (program->config.async_opt_dse) {
+      while (sfg->optimize_dead_store()) {
+        debug_sfg("dse");
+        modified = true;
+      }
+    }
+    sfg->verify();
+    if (program->config.async_opt_activation_demotion) {
+      while (sfg->demote_activation()) {
+        debug_sfg("act");
+        modified = true;
+      }
+    }
+    sfg->verify();
+    if (program->config.async_opt_fusion) {
       while (sfg->fuse()) {
         debug_sfg("fuse");
         modified = true;
       }
+    }
     sfg->verify();
   }
   debug_sfg("final");
@@ -488,6 +487,11 @@ void AsyncEngine::synchronize() {
     queue.enqueue(task);
   }
   queue.synchronize();
+
+  sync_counter_++;
+  // Clear SFG debug stats
+  cur_sync_sfg_debug_counter_ = 0;
+  cur_sync_sfg_debug_per_stage_counts_.clear();
 }
 
 bool AsyncEngine::fuse() {
@@ -590,19 +594,23 @@ bool AsyncEngine::fuse() {
   return modified;
 }
 
-void AsyncEngine::debug_sfg(const std::string &suffix) {
+void AsyncEngine::debug_sfg(const std::string &stage) {
   auto prefix = program->config.async_opt_intermediate_file;
   if (prefix.empty())
     return;
-  auto dot = sfg->dump_dot(std::optional<std::string>());
-  auto debug_limit = 100;
-  if (debug_sfg_counter >= debug_limit) {
+  auto dot = sfg->dump_dot(/*rankdir=*/std::nullopt);
+  constexpr int debug_limit = 100;
+  if (cur_sync_sfg_debug_counter_ >= debug_limit) {
     TI_WARN("Too many (> {}) debug outputs. debug_sfg invocation Ignored.",
             debug_limit);
     return;
   }
-  auto dot_fn =
-      fmt::format("{}_{:04d}_{}", prefix, debug_sfg_counter++, suffix);
+  auto dot_fn = fmt::format("{}_sync{:04d}_{:04d}_{}", prefix, sync_counter_,
+                            cur_sync_sfg_debug_counter_++, stage);
+  auto stage_count = cur_sync_sfg_debug_per_stage_counts_[stage]++;
+  if (stage_count) {
+    dot_fn += std::to_string(stage_count);
+  }
   {
     std::ofstream dot_file(dot_fn + ".dot");
     dot_file << dot;

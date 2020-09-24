@@ -9,8 +9,8 @@ def test_remove_clear_list_from_fused_serial():
     z = ti.field(ti.i32, shape=())
 
     n = 32
-    ti.root.bitmasked(ti.i, n).place(x)
-    ti.root.bitmasked(ti.i, n).place(y)
+    ti.root.pointer(ti.i, n).place(x)
+    ti.root.pointer(ti.i, n).place(y)
 
     @ti.kernel
     def init_xy():

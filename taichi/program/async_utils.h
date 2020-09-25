@@ -41,6 +41,10 @@ class IRHandle {
     return hash_ == other_ir_handle.hash_;
   }
 
+  bool operator!=(const IRHandle &other_ir_handle) const {
+    return !(*this == other_ir_handle);
+  }
+
   bool operator<(const IRHandle &other_ir_handle) const {
     return hash_ < other_ir_handle.hash_;
   }

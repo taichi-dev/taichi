@@ -935,42 +935,6 @@ void StateFlowGraph::verify() {
   topo_sort_nodes();
 }
 
-// TODO: make this an IR pass
-class ConstExprPropagation {
- public:
-  static std::unordered_set<Stmt *> run(
-      Block *block,
-      const std::function<bool(Stmt *)> &is_const_seed) {
-    std::unordered_set<Stmt *> const_stmts;
-
-    auto is_const = [&](Stmt *stmt) {
-      if (is_const_seed(stmt)) {
-        return true;
-      } else {
-        return const_stmts.find(stmt) != const_stmts.end();
-      }
-    };
-
-    for (auto &s : block->statements) {
-      if (is_const(s.get())) {
-        const_stmts.insert(s.get());
-      } else if (auto binary = s->cast<BinaryOpStmt>()) {
-        if (is_const(binary->lhs) && is_const(binary->rhs)) {
-          const_stmts.insert(s.get());
-        }
-      } else if (auto unary = s->cast<UnaryOpStmt>()) {
-        if (is_const(unary->operand)) {
-          const_stmts.insert(s.get());
-        }
-      } else {
-        // TODO: ...
-      }
-    }
-
-    return const_stmts;
-  }
-};
-
 bool StateFlowGraph::demote_activation() {
   bool modified = false;
 
@@ -1001,55 +965,19 @@ bool StateFlowGraph::demote_activation() {
     if (nodes.size() <= 1)
       continue;
 
-    auto snode = nodes[0]->meta->snode;
-
-    auto list_state = AsyncState(snode, AsyncState::Type::list);
-
-    TI_ASSERT(snode != nullptr);
-
-    std::unique_ptr<IRNode> new_ir = nodes[0]->rec.ir_handle.clone();
-
-    OffloadedStmt *offload = new_ir->as<OffloadedStmt>();
-    Block *body = offload->body.get();
-
-    // TODO: for now we only deal with the top level. Is there an easy way to
-    // extend this part?
-    auto consts = ConstExprPropagation::run(body, [](Stmt *stmt) {
-      if (stmt->is<ConstStmt>()) {
-        return true;
-      } else if (stmt->is<LoopIndexStmt>())
-        return true;
-      return false;
-    });
-
-    bool demoted = false;
-    for (int k = 0; k < (int)body->statements.size(); k++) {
-      Stmt *stmt = body->statements[k].get();
-      if (auto ptr = stmt->cast<GlobalPtrStmt>(); ptr && ptr->activate) {
-        bool can_demote = true;
-        // TODO: test input mask?
-        for (auto ind : ptr->indices) {
-          if (consts.find(ind) == consts.end()) {
-            // non-constant index
-            can_demote = false;
-          }
-        }
-        if (can_demote) {
-          modified = true;
-          ptr->activate = false;
-          demoted = true;
-        }
-      }
-    }
-    // TODO: cache this part
-    auto new_handle = IRHandle(new_ir.get(), ir_bank_->get_hash(new_ir.get()));
-    ir_bank_->insert(std::move(new_ir), new_handle.hash());
-    auto new_meta = get_task_meta(ir_bank_, nodes[0]->rec);
-    if (demoted) {
-      for (int j = 1; j < (int)nodes.size(); j++) {
+    auto new_handle = ir_bank_->demote_activation(nodes[0]->rec.ir_handle);
+    if (new_handle != nodes[0]->rec.ir_handle) {
+      modified = true;
+      nodes[1]->rec.ir_handle = new_handle;
+      nodes[1]->meta = get_task_meta(ir_bank_, nodes[1]->rec);
+      for (int j = 2; j < (int)nodes.size(); j++) {
         nodes[j]->rec.ir_handle = new_handle;
-        nodes[j]->meta = new_meta;
+        nodes[j]->meta = nodes[1]->meta;
       }
+      // For every "demote_activation" call, we only optimize for a single key
+      // in std::map<std::pair<IRHandle, Node *>, std::vector<Node *>> tasks
+      // since the graph probably needs to be rebuild after demoting
+      // part of the tasks.
       break;
     }
   }

@@ -956,9 +956,10 @@ bool StateFlowGraph::demote_activation() {
         nodes[j]->rec.ir_handle = new_handle;
         nodes[j]->meta = nodes[1]->meta;
       }
-      // For every "demote_activation" call, we only optimize for 
-      // a single key in std::map<std::pair<IRHandle, Node *>, std::vector<Node *>> tasks
-      // since the graph probably needs to be rebuild after demoting part of the tasks.
+      // For every "demote_activation" call, we only optimize for
+      // a single key in std::map<std::pair<IRHandle, Node *>, std::vector<Node
+      // *>> tasks since the graph probably needs to be rebuild after demoting
+      // part of the tasks.
       break;
     }
   }

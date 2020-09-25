@@ -9,8 +9,8 @@ def test_remove_clear_list_from_fused_serial():
     z = ti.field(ti.i32, shape=())
 
     n = 32
-    ti.root.pointer(ti.i, n).place(x)
-    ti.root.pointer(ti.i, n).place(y)
+    ti.root.pointer(ti.i, n).dense(ti.i, 1).place(x)
+    ti.root.pointer(ti.i, n).dense(ti.i, 1).place(y)
 
     @ti.kernel
     def init_xy():
@@ -22,6 +22,9 @@ def test_remove_clear_list_from_fused_serial():
 
     init_xy()
     ti.sync()
+
+    stats = ti.get_kernel_stats()
+    stats.clear()
 
     @ti.kernel
     def inc(f: ti.template()):
@@ -39,6 +42,12 @@ def test_remove_clear_list_from_fused_serial():
     inc(x)
     inc(y)
     ti.sync()
+
+    counters = stats.get_counters()
+    # each of x and y has two listgens: root -> pointer -> dense
+    assert int(counters['launched_tasks_list_gen']) == 4
+    # clear list tasks have been fused into serial_z
+    assert int(counters['launched_tasks_serial']) == 1
 
     xs = x.to_numpy()
     ys = y.to_numpy()

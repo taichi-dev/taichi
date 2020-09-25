@@ -193,8 +193,6 @@ bool StateFlowGraph::optimize_listgen() {
     }
   }
 
-  TI_ASSERT(nodes_to_delete.size() % 2 == 0);
-
   if (!nodes_to_delete.empty()) {
     modified = true;
     delete_nodes(nodes_to_delete);

@@ -75,7 +75,7 @@ IRHandle IRBank::fuse(IRHandle handle_a, IRHandle handle_b, Kernel *kernel) {
     return result;
   }
 
-  TI_INFO("Begin uncached fusion");
+  TI_TRACE("Begin uncached fusion");
   // We are about to change both |task_a| and |task_b|. Clone them first.
   auto cloned_task_a = handle_a.clone();
   auto cloned_task_b = handle_b.clone();

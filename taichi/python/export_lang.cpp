@@ -633,9 +633,18 @@ void export_lang(py::module &m) {
     return result;
   });
 
-  m.def("record_action_hint", [](std::string name, std::string content) {
-    ActionRecorder::get_instance().record(name,
-                                          {ActionArg("content", content)});
+  m.def("record_action_entry", [](std::string name, std::vector<std::pair<std::string, std::variant<std::string, int, float>>> args) {
+    std::vector<ActionArg> acts;
+    for (auto const &[k, v]: args) {
+      if (std::holds_alternative<int>(v)) {
+        acts.push_back(ActionArg(k, std::get<int>(v)));
+      if (std::holds_alternative<float>(v)) {
+        acts.push_back(ActionArg(k, std::get<float>(v)));
+      } else {
+        acts.push_back(ActionArg(k, std::get<std::string>(v)));
+      }
+    }
+    ActionRecorder::get_instance().record(name, acts);
   });
 
   m.def("start_recording", [](const std::string &fn) {

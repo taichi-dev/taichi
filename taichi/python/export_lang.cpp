@@ -638,7 +638,7 @@ void export_lang(py::module &m) {
     for (auto const &[k, v]: args) {
       if (std::holds_alternative<int>(v)) {
         acts.push_back(ActionArg(k, std::get<int>(v)));
-      if (std::holds_alternative<float>(v)) {
+      } else if (std::holds_alternative<float>(v)) {
         acts.push_back(ActionArg(k, std::get<float>(v)));
       } else {
         acts.push_back(ActionArg(k, std::get<std::string>(v)));

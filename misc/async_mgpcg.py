@@ -1,5 +1,6 @@
 import numpy as np
 import taichi as ti
+import time
 
 real = ti.f32
 ti.init(default_fp=real,
@@ -9,13 +10,12 @@ ti.init(default_fp=real,
         async_opt_dse=True,
         async_opt_activation_demotion=True,
         async_opt_fusion=True,
-        kernel_profiler=False
+        kernel_profiler=True
         #, async_opt_intermediate_file="mgpcg"
         )
 
 # grid parameters
 N = 128
-N_gui = 512  # gui resolution
 
 n_mg_levels = 5
 pre_and_post_smoothing = 2
@@ -35,7 +35,6 @@ Ap = ti.field(dtype=real)  # matrix-vector product
 alpha = ti.field(dtype=real)  # step size
 beta = ti.field(dtype=real)  # step size
 sum = ti.field(dtype=real)  # storage for reductions
-pixels = ti.field(dtype=real, shape=(N_gui, N_gui))  # image buffer
 rTr = ti.field(dtype=real, shape=())
 old_zTr = ti.field(dtype=real, shape=())
 new_zTr = ti.field(dtype=real, shape=())
@@ -146,17 +145,6 @@ def apply_preconditioner():
             smooth(l, 0)
 
 
-@ti.kernel
-def paint():
-    kk = N_tot * 3 // 8
-    for i, j in pixels:
-        ii = int(i * N / N_gui) + N_ext
-        jj = int(j * N / N_gui) + N_ext
-        pixels[i, j] = x[ii, jj, kk] / N_tot
-
-
-gui = ti.GUI("mgpcg", res=(N_gui, N_gui))
-
 init()
 
 sum[None] = 0.0
@@ -193,8 +181,7 @@ def update_beta():
     old_zTr[None] = new_zTr[None]
 
 
-# CG
-for i in range(10):
+def iterate():
     # alpha = rTr / pTAp
     compute_Ap()
     reduce(p, Ap, pAp)
@@ -224,9 +211,19 @@ for i in range(10):
     # p = z + beta p
     update_p()
 
-paint()
-gui.set_image(pixels)
-gui.show()
+
+def loud_sync():
+    t = time.time()
+    ti.sync()
+    print(f'{time.time() - t:.3f} s (compilation + execution)')
+
+
+ti.sync()
+for _ in range(3):
+    for i in range(10):
+        iterate()
+    loud_sync()
 
 ti.kernel_profiler_print()
 ti.core.print_stat()
+ti.print_profile_info()

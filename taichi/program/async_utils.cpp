@@ -7,6 +7,7 @@
 TLANG_NAMESPACE_BEGIN
 
 std::unique_ptr<IRNode> IRHandle::clone() const {
+  TI_AUTO_PROF
   // TODO: remove get_kernel() here
   return irpass::analysis::clone(const_cast<IRNode *>(ir_), ir_->get_kernel());
 }

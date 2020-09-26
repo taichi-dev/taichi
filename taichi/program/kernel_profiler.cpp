@@ -103,30 +103,29 @@ class DefaultProfiler : public KernelProfilerBase {
 class KernelProfilerCUDA : public KernelProfilerBase {
  public:
 #if defined(TI_WITH_CUDA)
-  void *current_stop;
 
   std::map<std::string, std::vector<std::pair<void *, void *>>>
       outstanding_events;
 #endif
 
-  void start(const std::string &kernel_name) override {
+  TaskHandle start_with_handle(const std::string &kernel_name) override {
 #if defined(TI_WITH_CUDA)
     void *start, *stop;
     CUDADriver::get_instance().event_create(&start, CU_EVENT_DEFAULT);
     CUDADriver::get_instance().event_create(&stop, CU_EVENT_DEFAULT);
     CUDADriver::get_instance().event_record(start, 0);
     outstanding_events[kernel_name].push_back(std::make_pair(start, stop));
-    current_stop = stop;
+    return stop;
 #else
-    printf("CUDA Profiler not implemented;\n");
+    TI_NOT_IMPLEMENTED;
 #endif
   }
 
-  virtual void stop() override {
+  virtual void stop(TaskHandle handle) override {
 #if defined(TI_WITH_CUDA)
-    CUDADriver::get_instance().event_record(current_stop, 0);
+    CUDADriver::get_instance().event_record(handle, 0);
 #else
-    printf("CUDA Profiler not implemented;\n");
+    TI_NOT_IMPLEMENTED;
 #endif
   }
 

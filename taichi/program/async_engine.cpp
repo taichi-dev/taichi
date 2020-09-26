@@ -75,7 +75,7 @@ IRHandle IRBank::fuse(IRHandle handle_a, IRHandle handle_b, Kernel *kernel) {
     return result;
   }
 
-  TI_INFO("Begin uncached fusion");
+  TI_TRACE("Begin uncached fusion");
   // We are about to change both |task_a| and |task_b|. Clone them first.
   auto cloned_task_a = handle_a.clone();
   auto cloned_task_b = handle_b.clone();
@@ -382,6 +382,7 @@ void AsyncEngine::launch(Kernel *kernel, Context &context) {
 }
 
 TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
+  TI_AUTO_PROF
   // TODO: this function should ideally take only an IRNode
   static std::mutex mut;
 
@@ -485,6 +486,7 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
 }
 
 TaskFusionMeta get_task_fusion_meta(IRBank *bank, const TaskLaunchRecord &t) {
+  TI_AUTO_PROF
   // TODO: this function should ideally take only an IRNode
   auto &fusion_meta_bank = bank->fusion_meta_bank_;
   if (fusion_meta_bank.find(t.ir_handle) != fusion_meta_bank.end()) {
@@ -536,6 +538,7 @@ void AsyncEngine::enqueue(const TaskLaunchRecord &t) {
 }
 
 void AsyncEngine::synchronize() {
+  TI_AUTO_PROF
   bool modified = true;
   TI_TRACE("Synchronizing SFG of {} nodes", sfg->size());
   debug_sfg("initial");

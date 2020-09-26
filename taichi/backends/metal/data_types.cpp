@@ -12,7 +12,7 @@ MetalDataType to_metal_type(DataType dt) {
     METAL_CASE(f32);
     METAL_CASE(f64);
     METAL_CASE(i8);
-    METAL_CASE(i16);
+    METAL_CASE(i16);   
     METAL_CASE(i32);
     METAL_CASE(i64);
     METAL_CASE(u8);

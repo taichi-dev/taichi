@@ -96,6 +96,7 @@ void StateFlowGraph::insert_state_flow(Node *from, Node *to, AsyncState state) {
 }
 
 bool StateFlowGraph::optimize_listgen() {
+  TI_AUTO_PROF
   bool modified = false;
 
   std::vector<std::pair<int, int>> common_pairs;
@@ -116,15 +117,16 @@ bool StateFlowGraph::optimize_listgen() {
   for (auto &record : listgen_nodes) {
     auto &listgens = record.second;
 
-    // Thanks to the dependency edges, the order of nodes in listgens seems to
-    // be UNIQUE
-    // TODO: prove
+    // Thanks to the dependency edges, the order of nodes in listgens is
+    // UNIQUE. (Consider the list state of the SNode.)
 
-    // We can only replace a continuous subset of listgens entries
+    // We can only replace a continuous subset of listgen entries
     for (int i = 0; i < listgens.size(); i++) {
       auto node_a = listgens[i];
 
       bool erased_any = false;
+
+      auto new_i = i;
 
       for (int j = i + 1; j < listgens.size(); j++) {
         auto node_b = listgens[j];
@@ -186,10 +188,9 @@ bool StateFlowGraph::optimize_listgen() {
 
         nodes_to_delete.insert(node_b->node_id);
         erased_any = true;
+        new_i = j;
       }
-
-      if (erased_any)
-        break;
+      i = new_i;
     }
   }
 
@@ -443,6 +444,7 @@ bool StateFlowGraph::fuse() {
 }
 
 std::vector<TaskLaunchRecord> StateFlowGraph::extract(bool sort) {
+  TI_AUTO_PROF
   if (sort)
     topo_sort_nodes();
   std::vector<TaskLaunchRecord> tasks;
@@ -671,6 +673,7 @@ std::string StateFlowGraph::dump_dot(const std::optional<std::string> &rankdir,
 }
 
 void StateFlowGraph::topo_sort_nodes() {
+  TI_AUTO_PROF
   std::deque<std::unique_ptr<Node>> queue;
   std::vector<std::unique_ptr<Node>> new_nodes;
   std::vector<int> degrees_in(nodes_.size());
@@ -716,6 +719,7 @@ void StateFlowGraph::topo_sort_nodes() {
 }
 
 void StateFlowGraph::reid_nodes() {
+  TI_AUTO_PROF
   for (int i = 0; i < nodes_.size(); i++) {
     nodes_[i]->node_id = i;
   }
@@ -725,6 +729,7 @@ void StateFlowGraph::reid_nodes() {
 void StateFlowGraph::replace_reference(StateFlowGraph::Node *node_a,
                                        StateFlowGraph::Node *node_b,
                                        bool only_output_edges) {
+  TI_AUTO_PROF
   // replace all edges to node A with new ones to node B
   for (auto &edges : node_a->output_edges) {
     // Find all nodes C that points to A
@@ -761,6 +766,7 @@ void StateFlowGraph::replace_reference(StateFlowGraph::Node *node_a,
 
 void StateFlowGraph::delete_nodes(
     const std::unordered_set<int> &indices_to_delete) {
+  TI_AUTO_PROF
   std::vector<std::unique_ptr<Node>> new_nodes_;
   std::unordered_set<Node *> nodes_to_delete;
 
@@ -794,6 +800,7 @@ void StateFlowGraph::delete_nodes(
 }
 
 bool StateFlowGraph::optimize_dead_store() {
+  TI_AUTO_PROF
   bool modified = false;
 
   for (int i = 1; i < nodes_.size(); i++) {
@@ -879,6 +886,7 @@ bool StateFlowGraph::optimize_dead_store() {
 }
 
 void StateFlowGraph::verify() {
+  TI_AUTO_PROF
   const int n = nodes_.size();
   reid_nodes();
   for (int i = 0; i < n; i++) {
@@ -934,6 +942,7 @@ void StateFlowGraph::verify() {
 }
 
 bool StateFlowGraph::demote_activation() {
+  TI_AUTO_PROF
   bool modified = false;
 
   topo_sort_nodes();

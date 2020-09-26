@@ -233,4 +233,4 @@ loud_sync()
 
 ti.kernel_profiler_print()
 ti.core.print_stat()
-# ti.print_profile_info()
+ti.print_profile_info()

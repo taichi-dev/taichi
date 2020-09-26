@@ -223,6 +223,7 @@ GUI::~GUI() {
   if (show_gui) {
     std::free(data);
     DeleteDC(src);
+    DestroyWindow(hwnd);
     gui_from_hwnd.erase(hwnd);
   }
 }

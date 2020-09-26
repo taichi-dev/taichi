@@ -3,6 +3,8 @@
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
+#include "taichi/program/ir_bank.h"
+#include "taichi/program/kernel.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -78,6 +80,157 @@ void TaskMeta::print() const {
     }
     fmt::print("\n");
   }
+}
+
+TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
+  TI_AUTO_PROF
+  // TODO: this function should ideally take only an IRNode
+  static std::mutex mut;
+
+  std::lock_guard<std::mutex> guard(mut);
+
+  auto &meta_bank = ir_bank->meta_bank_;
+
+  if (meta_bank.find(t.ir_handle) != meta_bank.end()) {
+    return &meta_bank[t.ir_handle];
+  }
+
+  using namespace irpass::analysis;
+  TaskMeta meta;
+  // TODO: this is an abuse since it gathers nothing...
+  auto *root_stmt = t.stmt();
+  meta.name = t.kernel->name + "_" +
+              OffloadedStmt::task_type_name(root_stmt->task_type);
+  meta.type = root_stmt->task_type;
+  gather_statements(root_stmt, [&](Stmt *stmt) {
+    if (auto global_load = stmt->cast<GlobalLoadStmt>()) {
+      if (auto ptr = global_load->ptr->cast<GlobalPtrStmt>()) {
+        for (auto &snode : ptr->snodes.data) {
+          meta.input_states.emplace(snode, AsyncState::Type::value);
+        }
+      }
+    }
+
+    // Note: since global store may only partially modify a value state, the
+    // result (which contains the modified and unmodified part) actually needs a
+    // read from the previous version of the value state.
+    //
+    // I.e.,
+    // output_value_state = merge(input_value_state, written_part)
+    //
+    // Therefore we include the value state in input_states.
+    //
+    // The only exception is that the task may completely overwrite the value
+    // state (e.g., for i in x: x[i] = 0). However, for now we are not yet
+    // able to detect that case, so we are being conservative here.
+
+    if (auto global_store = stmt->cast<GlobalStoreStmt>()) {
+      if (auto ptr = global_store->ptr->cast<GlobalPtrStmt>()) {
+        for (auto &snode : ptr->snodes.data) {
+          meta.input_states.emplace(snode, AsyncState::Type::value);
+          meta.output_states.emplace(snode, AsyncState::Type::value);
+        }
+      }
+    }
+    if (auto global_atomic = stmt->cast<AtomicOpStmt>()) {
+      if (auto ptr = global_atomic->dest->cast<GlobalPtrStmt>()) {
+        for (auto &snode : ptr->snodes.data) {
+          meta.input_states.emplace(snode, AsyncState::Type::value);
+          meta.output_states.emplace(snode, AsyncState::Type::value);
+        }
+      }
+    }
+
+    if (auto ptr = stmt->cast<GlobalPtrStmt>()) {
+      if (ptr->activate) {
+        for (auto &snode : ptr->snodes.data) {
+          auto s = snode;
+          while (s) {
+            if (!s->is_path_all_dense) {
+              meta.input_states.emplace(s, AsyncState::Type::mask);
+              meta.output_states.emplace(s, AsyncState::Type::mask);
+            }
+            s = s->parent;
+          }
+        }
+      }
+      for (auto &snode : ptr->snodes.data) {
+        if (ptr->is_element_wise(snode)) {
+          if (meta.element_wise.find(snode) == meta.element_wise.end()) {
+            meta.element_wise[snode] = true;
+          }
+        } else {
+          meta.element_wise[snode] = false;
+        }
+      }
+    }
+    if (auto clear_list = stmt->cast<ClearListStmt>()) {
+      meta.output_states.emplace(clear_list->snode, AsyncState::Type::list);
+    }
+    // TODO: handle SNodeOpStmt etc.
+    return false;
+  });
+  if (root_stmt->task_type == OffloadedStmt::listgen) {
+    TI_ASSERT(root_stmt->snode->parent);
+    meta.snode = root_stmt->snode;
+    meta.input_states.emplace(root_stmt->snode->parent, AsyncState::Type::list);
+    meta.input_states.emplace(root_stmt->snode, AsyncState::Type::list);
+    meta.input_states.emplace(root_stmt->snode, AsyncState::Type::mask);
+    meta.output_states.emplace(root_stmt->snode, AsyncState::Type::list);
+  } else if (root_stmt->task_type == OffloadedStmt::struct_for) {
+    meta.snode = root_stmt->snode;
+    meta.input_states.emplace(root_stmt->snode, AsyncState::Type::list);
+  }
+
+  meta_bank[t.ir_handle] = meta;
+  return &meta_bank[t.ir_handle];
+}
+
+TaskFusionMeta get_task_fusion_meta(IRBank *bank, const TaskLaunchRecord &t) {
+  TI_AUTO_PROF
+  // TODO: this function should ideally take only an IRNode
+  auto &fusion_meta_bank = bank->fusion_meta_bank_;
+  if (fusion_meta_bank.find(t.ir_handle) != fusion_meta_bank.end()) {
+    return fusion_meta_bank[t.ir_handle];
+  }
+
+  TaskFusionMeta meta{};
+  if (t.kernel->is_accessor) {
+    // SNode accessors can't be fused.
+    // TODO: just avoid snode accessors going into the async engine
+    return fusion_meta_bank[t.ir_handle] = TaskFusionMeta();
+  }
+  meta.kernel = t.kernel;
+  if (t.kernel->args.empty() && t.kernel->rets.empty()) {
+    meta.kernel = nullptr;
+  }
+
+  auto *task = t.stmt();
+  meta.type = task->task_type;
+  if (task->task_type == OffloadedStmt::struct_for) {
+    meta.snode = task->snode;
+    meta.block_dim = task->block_dim;
+  } else if (task->task_type == OffloadedStmt::range_for) {
+    // TODO: a few problems with the range-for test condition:
+    // 1. This could incorrectly fuse two range-for kernels that have
+    // different sizes, but then the loop ranges get padded to the same
+    // power-of-two (E.g. maybe a side effect when a struct-for is demoted
+    // to range-for).
+    // 2. It has also fused range-fors that have the same linear range,
+    // but are of different dimensions of loop indices, e.g. (16, ) and
+    // (4, 4).
+    if (!task->const_begin || !task->const_end) {
+      // Do not fuse range-for tasks with variable ranges for now.
+      return fusion_meta_bank[t.ir_handle] = TaskFusionMeta();
+    }
+    meta.begin_value = task->begin_value;
+    meta.end_value = task->end_value;
+  } else if (task->task_type != OffloadedStmt::serial) {
+    // Do not fuse gc/listgen tasks.
+    return fusion_meta_bank[t.ir_handle] = TaskFusionMeta();
+  }
+  meta.fusible = true;
+  return fusion_meta_bank[t.ir_handle] = meta;
 }
 
 TLANG_NAMESPACE_END

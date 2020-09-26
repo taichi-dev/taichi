@@ -109,7 +109,8 @@ jobs:
   code_format:
     name: Code Format
     runs-on: ubuntu-latest
-    if: ${{ !contains(github.event.pull_request.requested_reviewers.*.login, 'taichi-gardener') }}
+    # Run this job unconditionally -- it is a required check for merging.
+    # if: ${{ !contains(github.event.pull_request.requested_reviewers.*.login, 'taichi-gardener') }}
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}

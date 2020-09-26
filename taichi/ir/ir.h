@@ -741,35 +741,6 @@ struct LocalAddress {
 template <typename T>
 std::string to_string(const T &);
 
-class AllocaStmt;
-class WhileControlStmt;
-class ContinueStmt;
-class UnaryOpStmt;
-class ArgLoadStmt;
-class RandStmt;
-class BinaryOpStmt;
-class TernaryOpStmt;
-class AtomicOpStmt;
-class ExternalPtrStmt;
-class GlobalPtrStmt;
-class SNodeOpStmt;
-class ExternalTensorShapeAlongAxisStmt;
-class AssertStmt;
-class ExternalFuncCallStmt;
-class RangeAssumptionStmt;
-class GlobalLoadStmt;
-class GlobalStoreStmt;
-class LocalLoadStmt;
-class LocalStoreStmt;
-class IfStmt;
-class PrintStmt;
-class RangeForStmt;
-class StructForStmt;
-class FuncBodyStmt;
-class FuncCallStmt;
-class KernelReturnStmt;
-class WhileStmt;
-
 extern DecoratorRecorder dec;
 
 inline void Vectorize(int v) {

@@ -117,6 +117,22 @@ class ComposerCC(ComposerBase):
         declaration = source.split('{', 1)[0].strip()
         self.emit_header(f'extern {declaration};')
 
+    def do_config(self, e):
+        key = e['key']
+        value = e['value']
+        variable = f'Ti_cfg_{key}'
+        if isinstance(value, str):
+            declaration = f'const char {variable}[]'
+            value = repr(value)
+            value = '\"' + value[1:-1] + '\"'
+        elif isinstance(value, int):
+            declaration = f'const int {variable}'
+        else:
+            declaration = f'const float {variable}'
+        self.emit(f'{declaration} = {value};')
+        self.emit('')
+        self.emit_header(f'extern {declaration};')
+
 
 def main(fin_name, fout_name, hdrout_name, emscripten=False):
     with open(fin_name, 'r') as fin:

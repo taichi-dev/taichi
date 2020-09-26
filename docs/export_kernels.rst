@@ -206,8 +206,11 @@ interface, including but not limited to Julia, Matlab, Mathematica, Java, etc.
 
 TODO: WIP.
 
+Advanced features
+-----------------
+
 Record kernel group hints
-+++++++++++++++++++++++++
+*************************
 
 Suppose you have a program with lots of kernel.
 
@@ -271,3 +274,27 @@ and the launch order is exactly same as we had in Python, e.g.:
     Tk_clear_gradients_c24_0(&Ti_ctx);
     Tk_clear_gradients_c24_1(&Ti_ctx);
     ...
+
+Record custom configuration
+***************************
+
+You may use ``ti.record_action_config`` to add some custom configuration
+variables:
+
+.. code-block:: python
+
+   ti.record_action_config('num_particles', 8192)
+   ti.record_action_config('window_title', 'Hello')
+   ti.record_action_config('delta_time', 0.01)
+
+They will result in several global constant variables in the output C program:
+
+.. code-block:: c
+
+   const int Ti_cfg_num_particles = 8192;
+   const char Ti_cfg_window_title[] = "Hello";
+   const float Ti_cfg_delta_time = 0.01;
+
+They will also be declared in the output C header.
+
+Use them to pass configurations from Python directly to the C side.

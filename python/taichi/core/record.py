@@ -2,10 +2,18 @@ from .util import ti_core
 import os
 
 
+def record_action_entry(name, contents):
+    ti_core.record_action_entry(name, list(contents.items()))
+
+
 def record_action_hint(name, content=None):
     if content is None:
         name, content = 'hint', name
-    ti_core.record_action_hint(name, content)
+    record_action_entry(name, {'content': content})
+
+
+def record_action_config(key, value):
+    record_action_entry('config', {'key': key, 'value': value})
 
 
 def start_recording(filename):
@@ -14,18 +22,6 @@ def start_recording(filename):
 
 def stop_recording():
     ti_core.stop_recording()
-
-
-class RecordAction:
-    def __init__(self, filename):
-        self.filename = filename
-
-    def __enter__(self):
-        start_recording(self.filename)
-        return self
-
-    def __exit__(self, *args):
-        stop_recording()
 
 
 class RecordKernelGroup:
@@ -56,6 +52,7 @@ __all__ = [
     'start_recording',
     'stop_recording',
     'record_action_hint',
-    'RecordAction',
+    'record_action_entry',
+    'record_action_config',
     'RecordKernelGroup',
 ]

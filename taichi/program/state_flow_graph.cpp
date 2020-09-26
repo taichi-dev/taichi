@@ -120,7 +120,8 @@ bool StateFlowGraph::optimize_listgen() {
     // Thanks to the dependency edges, the order of nodes in listgens is
     // UNIQUE. (Consider the list state of the SNode.)
 
-    // We can only replace a continuous subset of listgen entries
+    // We can only replace a continuous subset of listgen entries.
+    // So the nested loop below is actually O(n).
     for (int i = 0; i < listgens.size(); i++) {
       auto node_a = listgens[i];
 

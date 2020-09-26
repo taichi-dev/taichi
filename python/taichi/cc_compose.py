@@ -124,8 +124,7 @@ class ComposerCC(ComposerBase):
         if isinstance(value, str):
             declaration = f'const char {variable}[]'
             value = repr(value)
-            value[0] = '"'
-            value[-1] = '"'
+            value = '\"' + value[1:-1] + '\"'
         elif isinstance(value, int):
             declaration = f'const int {variable}'
         else:

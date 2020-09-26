@@ -188,7 +188,7 @@ class Installer:
             "autograd",
             "astor",
             "sourceinspect",
-            "pytest",
+            "pytest==6.0.2",
             "pytest-xdist",
             "pytest-rerunfailures",
             "pytest-cov",

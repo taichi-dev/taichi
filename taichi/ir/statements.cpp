@@ -1,5 +1,5 @@
 // TODO: gradually cppize statements.h
-#include "statements.h"
+#include "taichi/ir/statements.h"
 #include "taichi/program/program.h"
 #include "taichi/util/bit.h"
 
@@ -9,7 +9,7 @@ bool ContinueStmt::as_return() const {
   TI_ASSERT(scope != nullptr);
   if (auto *offl = scope->cast<OffloadedStmt>(); offl) {
     TI_ASSERT(offl->task_type == OffloadedStmt::TaskType::range_for ||
-        offl->task_type == OffloadedStmt::TaskType::struct_for);
+              offl->task_type == OffloadedStmt::TaskType::struct_for);
     return true;
   }
   return false;
@@ -78,7 +78,7 @@ bool GlobalPtrStmt::is_element_wise(SNode *snode) const {
   for (int i = 0; i < (int)indices.size(); i++) {
     if (auto loop_index_i = indices[i]->cast<LoopIndexStmt>();
         !(loop_index_i && loop_index_i->loop->is<OffloadedStmt>() &&
-            loop_index_i->index == snode->physical_index_position[i])) {
+          loop_index_i->index == snode->physical_index_position[i])) {
       return false;
     }
   }
@@ -102,8 +102,8 @@ SNodeOpStmt::SNodeOpStmt(SNodeOpType op_type,
   ptr = nullptr;
   val = nullptr;
   TI_ASSERT(op_type == SNodeOpType::is_active ||
-      op_type == SNodeOpType::deactivate ||
-      op_type == SNodeOpType::activate);
+            op_type == SNodeOpType::deactivate ||
+            op_type == SNodeOpType::activate);
   width() = 1;
   element_type() = DataType::i32;
   TI_STMT_REG_FIELDS;
@@ -111,7 +111,7 @@ SNodeOpStmt::SNodeOpStmt(SNodeOpType op_type,
 
 bool SNodeOpStmt::activation_related(SNodeOpType op) {
   return op == SNodeOpType::activate || op == SNodeOpType::deactivate ||
-      op == SNodeOpType::is_active;
+         op == SNodeOpType::is_active;
 }
 
 bool SNodeOpStmt::need_activation(SNodeOpType op) {

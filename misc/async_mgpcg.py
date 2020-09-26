@@ -219,17 +219,10 @@ def loud_sync():
 
 
 ti.sync()
-for i in range(10):
-    iterate()
-loud_sync()
-
-for i in range(10):
-    iterate()
-loud_sync()
-
-for i in range(10):
-    iterate()
-loud_sync()
+for _ in range(3):
+    for i in range(10):
+        iterate()
+    loud_sync()
 
 ti.kernel_profiler_print()
 ti.core.print_stat()

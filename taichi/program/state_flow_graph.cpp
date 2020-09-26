@@ -613,60 +613,44 @@ std::string StateFlowGraph::dump_dot(const std::optional<std::string> &rankdir,
       nodes_with_no_inputs.push_back(n);
   }
   ss << "\n";
-  {
-    // DFS to draw edges
-    std::unordered_set<const SFGNode *> visited;
-    std::vector<const SFGNode *> stack(nodes_with_no_inputs);
-    while (!stack.empty()) {
-      auto *from = stack.back();
-      stack.pop_back();
-      if (visited.find(from) == visited.end()) {
-        visited.insert(from);
-        for (const auto &p : from->output_edges) {
-          for (const auto *to : p.second) {
-            stack.push_back(to);
+  for (const auto &n : nodes_) {
+    auto *from = n.get();
+    for (const auto &p : from->output_edges) {
+      for (const auto *to : p.second) {
+        const bool states_embedded = (nodes_with_embedded_states.find(from) !=
+                                      nodes_with_embedded_states.end());
+        std::string from_node_port = node_id(from);
+        std::stringstream attribs;
+        if (states_embedded) {
+          // The state is embedded inside the node. We draw the edge from
+          // the port corresponding to this state.
+          // Format is "{node}:{port}"
+          from_node_port += fmt::format(":{}", p.first.name());
+        } else {
+          // Show the state on the edge label
+          attribs << fmt::format("label=\"{}\"", p.first.name());
+        }
 
-            const bool states_embedded =
-                (nodes_with_embedded_states.find(from) !=
-                 nodes_with_embedded_states.end());
-            std::string from_node_port = node_id(from);
-            std::stringstream attribs;
-            if (states_embedded) {
-              // The state is embedded inside the node. We draw the edge from
-              // the port corresponding to this state.
-              // Format is "{node}:{port}"
-              from_node_port += fmt::format(":{}", p.first.name());
-            } else {
-              // Show the state on the edge label
-              attribs << fmt::format("label=\"{}\"", p.first.name());
-            }
+        if (!from->has_state_flow(p.first, to)) {
+          attribs << " style=dotted";
+        }
 
-            if (!from->has_state_flow(p.first, to)) {
-              attribs << " style=dotted";
-            }
-
-            if (highlight_single_state) {
-              if (state_selected(p.first)) {
-                attribs << " penwidth=5 color=red";
-              } else {
-                attribs << " color=lightgrey";
-              }
-            }
-
-            if (node_selected(from) && node_selected(to)) {
-              ss << "  "
-                 << fmt::format("{} -> {} [{}]", from_node_port, node_id(to),
-                                attribs.str())
-                 << '\n';
-            }
+        if (highlight_single_state) {
+          if (state_selected(p.first)) {
+            attribs << " penwidth=5 color=red";
+          } else {
+            attribs << " color=lightgrey";
           }
+        }
+
+        if (node_selected(from) && node_selected(to)) {
+          ss << "  "
+             << fmt::format("{} -> {} [{}]", from_node_port, node_id(to),
+                            attribs.str())
+             << '\n';
         }
       }
     }
-    TI_WARN_IF(
-        visited.size() > nodes_.size(),
-        "Visited more nodes than what we actually have. The graph may be "
-        "malformed.");
   }
   ss << "}\n";  // closes "dirgraph {"
   return ss.str();

@@ -80,6 +80,7 @@ CHECK_STILL_RUNNING = 1
 CHECK_FOUND_FAILED_JOB = 2
 CHECK_ALL_JOBS_SUCCEEDED = 3
 
+
 def check_all_jobs(jobs):
     # Denotes if there is still any job that has not completed yet.
     still_running = False
@@ -116,7 +117,7 @@ def get_status_of_run(run_id):
     format failed, the entire workflow run will be marked as failed, yet
     @taichi-gardener will automatically make another commit to format the code.
     However, if this check relies on the previous workflow's result, it will be
-    marked as failed again... 
+    marked as failed again...
     """
     url = make_api_url(f'actions/runs/{run_id}/jobs')
     start = time.time()

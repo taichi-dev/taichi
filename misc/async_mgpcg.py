@@ -144,6 +144,7 @@ def apply_preconditioner():
             smooth(l, 1)
             smooth(l, 0)
 
+
 init()
 
 sum[None] = 0.0
@@ -209,13 +210,14 @@ def iterate():
 
     # p = z + beta p
     update_p()
-    
+
+
 def loud_sync():
     t = time.time()
     ti.sync()
     print(f'{time.time() - t:.3f} s (compilation + execution)')
-    
-    
+
+
 ti.sync()
 for i in range(10):
     iterate()

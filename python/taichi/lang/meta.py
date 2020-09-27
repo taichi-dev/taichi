@@ -83,6 +83,14 @@ def clear_gradients(vars: ti.template()):
 
 
 @ti.kernel
+def clear_loss(l: ti.template()):
+    # Using SNode writers would result in a forced sync, therefore we wrap these
+    # writes into a kernel.
+    l[None] = 0
+    l.grad[None] = 1
+
+
+@ti.kernel
 def fill_matrix(mat: ti.template(), vals: ti.template()):
     for I in ti.grouped(mat):
         for p in ti.static(range(mat.n)):

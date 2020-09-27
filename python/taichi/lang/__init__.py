@@ -273,8 +273,10 @@ def Tape(loss, clear_gradients=True):
             ' for all fields that are required by autodiff.')
     if clear_gradients:
         clear_all_gradients()
-    loss[None] = 0
-    loss.grad[None] = 1
+
+    from .meta import clear_loss
+    clear_loss(loss)
+
     return runtime.get_tape(loss)
 
 

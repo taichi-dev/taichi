@@ -164,7 +164,7 @@ Use a comma-separated list for multiple input values:
     import pytest
     import math
 
-    @pytest.mark.parametrize('x,y', [(1, 2), (1, 3), (2, 1)])
+    @pytest.mark.parametrize('y,x', [(1, 2), (1, 3), (2, 1)])
     @ti.test()
     def test_atan2(y, x):
         r = ti.field(ti.f32, ())
@@ -189,7 +189,7 @@ Use two separate ``parametrize`` to test **all combinations** of input arguments
 
     @pytest.mark.parametrize('x', [1, 2])
     @pytest.mark.parametrize('y', [1, 2])
-    # same as:  .parametrize('x,y', [(1, 1), (1, 2), (2, 1), (2, 2)])
+    # same as:  .parametrize('y,x', [(1, 1), (1, 2), (2, 1), (2, 2)])
     @ti.test()
     def test_atan2(y, x):
         r = ti.field(ti.f32, ())
@@ -199,8 +199,8 @@ Use two separate ``parametrize`` to test **all combinations** of input arguments
         def foo():
             r[None] = ti.atan2(r[None])
 
-        r[None] = x
-        s[None] = y
+        r[None] = y
+        s[None] = x
         foo()
         assert r[None] == math.atan2(y, x)
 

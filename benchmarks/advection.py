@@ -1,7 +1,7 @@
 import taichi as ti
 import time
 
-ti.init(arch=ti.gpu, async_mode=False, async_opt_fusion=True, kernel_profiler=True)
+ti.init(arch=ti.cpu, async_mode=True, async_opt_fusion=True, kernel_profiler=True)
 
 use_mc = True
 mc_clipping = False
@@ -133,5 +133,6 @@ for i in range(100):
     ti.sync()
     ti.kernel_profiler_print()
     print(f'{(time.time() - t) * 1000:.3f} ms')
+    print(f'total kernel time: {ti.kernel_profiler_total_time():.5f} s')
     gui.set_image(x.to_numpy())
     gui.show()

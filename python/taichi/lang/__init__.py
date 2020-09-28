@@ -42,10 +42,12 @@ opengl = core.opengl
 cc = core.cc
 gpu = [cuda, metal, opengl]
 cpu = core.host_arch()
-kernel_profiler_print = lambda: core.get_current_program(
-).kernel_profiler_print()
-kernel_profiler_clear = lambda: core.get_current_program(
-).kernel_profiler_clear()
+kernel_profiler_print = lambda: get_runtime(
+).prog.kernel_profiler_print()
+kernel_profiler_clear = lambda: get_runtime(
+).prog.kernel_profiler_clear()
+kernel_profiler_total_time = lambda: get_runtime(
+).prog.kernel_profiler_total_time()
 
 
 def memory_profiler_print():

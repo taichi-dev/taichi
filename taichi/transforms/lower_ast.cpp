@@ -81,8 +81,8 @@ class LowerAST : public IRVisitor {
 
     auto new_if = std::make_unique<IfStmt>(stmt->condition->stmt);
 
-    new_if->true_mask = fctx.push_back<AllocaStmt>(DataType::i32);
-    new_if->false_mask = fctx.push_back<AllocaStmt>(DataType::i32);
+    new_if->true_mask = fctx.push_back<AllocaStmt>(DataTypeNode::i32);
+    new_if->false_mask = fctx.push_back<AllocaStmt>(DataTypeNode::i32);
 
     fctx.push_back<LocalStoreStmt>(new_if->true_mask, stmt->condition->stmt);
     auto lnot_stmt_ptr = fctx.push_back<UnaryOpStmt>(UnaryOpType::logic_not,
@@ -154,7 +154,7 @@ class LowerAST : public IRVisitor {
     auto cond_stmt = fctx.back_stmt();
 
     auto &&new_while = std::make_unique<WhileStmt>(std::move(stmt->body));
-    auto mask = std::make_unique<AllocaStmt>(DataType::i32);
+    auto mask = std::make_unique<AllocaStmt>(DataTypeNode::i32);
     new_while->mask = mask.get();
     auto &stmts = new_while->body;
     stmts->insert(std::move(fctx.stmts), /*location=*/0);
@@ -162,7 +162,7 @@ class LowerAST : public IRVisitor {
     stmts->insert(
         std::make_unique<WhileControlStmt>(new_while->mask, cond_stmt),
         fctx.stmts.size());
-    stmt->insert_before_me(std::make_unique<AllocaStmt>(DataType::i32));
+    stmt->insert_before_me(std::make_unique<AllocaStmt>(DataTypeNode::i32));
     auto &&const_stmt =
         std::make_unique<ConstStmt>(TypedConstant((int32)0xFFFFFFFF));
     auto const_stmt_ptr = const_stmt.get();
@@ -216,7 +216,7 @@ class LowerAST : public IRVisitor {
       } else {
         // transform into a structure as
         // i = begin; while (1) { if (i >= end) break; original body; i += 1; }
-        fctx.push_back<AllocaStmt>(DataType::i32);
+        fctx.push_back<AllocaStmt>(DataTypeNode::i32);
         auto loop_var = fctx.back_stmt();
         stmt->parent->local_var_to_stmt[stmt->loop_var_id[0]] = loop_var;
         fctx.push_back<LocalStoreStmt>(loop_var, begin->stmt);
@@ -229,7 +229,7 @@ class LowerAST : public IRVisitor {
             BinaryOpType::cmp_lt, loop_var_load_stmt, end->stmt);
 
         auto &&new_while = std::make_unique<WhileStmt>(std::move(stmt->body));
-        auto mask = std::make_unique<AllocaStmt>(DataType::i32);
+        auto mask = std::make_unique<AllocaStmt>(DataTypeNode::i32);
         new_while->mask = mask.get();
         auto &stmts = new_while->body;
         for (int i = 0; i < (int)load_and_compare.size(); i++) {
@@ -251,7 +251,7 @@ class LowerAST : public IRVisitor {
             std::make_unique<WhileControlStmt>(new_while->mask, cond_stmt),
             load_and_compare.size());
 
-        stmt->insert_before_me(std::make_unique<AllocaStmt>(DataType::i32));
+        stmt->insert_before_me(std::make_unique<AllocaStmt>(DataTypeNode::i32));
         auto &&const_stmt =
             std::make_unique<ConstStmt>(TypedConstant((int32)0xFFFFFFFF));
         auto const_stmt_ptr = const_stmt.get();
@@ -323,7 +323,7 @@ class LowerAST : public IRVisitor {
     auto fctx = make_flatten_ctx();
     expr->flatten(&fctx);
     const auto dt = stmt->element_type();
-    TI_ASSERT(dt != DataType::unknown);
+    TI_ASSERT(dt != DataTypeNode::unknown);
     fctx.push_back<KernelReturnStmt>(fctx.back_stmt(), dt);
     stmt->parent->replace_with(stmt, std::move(fctx.stmts));
     throw IRModified();

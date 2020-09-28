@@ -106,10 +106,10 @@ class AlgSimp : public BasicStmtVisitor {
           // a / const -> a * (1 / const)
           auto reciprocal = Stmt::make_typed<ConstStmt>(
               LaneAttribute<TypedConstant>(rhs->ret_type.data_type));
-          if (rhs->ret_type.data_type == DataType::f64) {
+          if (rhs->ret_type.data_type == DataTypeNode::f64) {
             reciprocal->val[0].val_float64() =
                 (float64)1.0 / rhs->val[0].val_float64();
-          } else if (rhs->ret_type.data_type == DataType::f32) {
+          } else if (rhs->ret_type.data_type == DataTypeNode::f32) {
             reciprocal->val[0].val_float32() =
                 (float32)1.0 / rhs->val[0].val_float32();
           } else {

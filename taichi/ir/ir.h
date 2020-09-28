@@ -45,7 +45,7 @@ struct VectorType {
       : _is_pointer(is_pointer), width(width), data_type(data_type) {
   }
 
-  VectorType() : _is_pointer(false), width(1), data_type(DataType::unknown) {
+  VectorType() : _is_pointer(false), width(1), data_type(DataTypeNode::unknown) {
   }
 
   bool operator==(const VectorType &o) const {

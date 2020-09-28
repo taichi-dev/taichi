@@ -28,7 +28,7 @@ class Kernel {
     bool is_nparray;
     std::size_t size;
 
-    Arg(DataType dt = DataType::unknown,
+    Arg(DataType dt = DataTypeNode::unknown,
         bool is_nparray = false,
         std::size_t size = 0)
         : dt(dt), is_nparray(is_nparray), size(size) {
@@ -38,7 +38,7 @@ class Kernel {
   struct Ret {
     DataType dt;
 
-    explicit Ret(DataType dt = DataType::unknown) : dt(dt) {
+    explicit Ret(DataType dt = DataTypeNode::unknown) : dt(dt) {
     }
   };
 

@@ -257,19 +257,17 @@ class CCTransformer : public IRVisitor {
   }
 
   static std::string _get_libc_function_name(std::string name, DataType dt) {
-    switch (dt) {
-      case DataType::i32:
-        return name;
-      case DataType::i64:
-        return "ll" + name;
-      case DataType::f32:
-        return name + "f";
-      case DataType::f64:
-        return name;
-      default:
-        TI_ERROR("Unsupported function \"{}\" for DataType={} on C backend",
-                 name, data_type_name(dt));
-    }
+    if (dt == DataTypeNode::i32)
+      return name;
+    else if (dt == DataTypeNode::i64)
+      return "ll" + name;
+    else if (dt == DataTypeNode::f32)
+      return name + "f";
+    else if (dt == DataTypeNode::f64)
+      return name;
+    else
+      TI_ERROR("Unsupported function \"{}\" for DataType={} on C backend", name,
+               data_type_name(dt));
   }
 
   static std::string get_libc_function_name(std::string name, DataType dt) {
@@ -598,7 +596,7 @@ class CCTransformer : public IRVisitor {
   void emit_header(std::string f, Args &&... args) {
     line_appender_header.append(std::move(f), std::move(args)...);
   }
-};
+};  // namespace cccp
 
 std::unique_ptr<CCKernel> CCKernelGen::compile() {
   auto program = kernel->program.cc_program.get();

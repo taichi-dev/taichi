@@ -87,7 +87,7 @@ void convert_to_range_for(OffloadedStmt *offloaded) {
   }
 
   for (int i = 0; i < num_loop_vars; i++) {
-    auto alloca = body_header.push_back<AllocaStmt>(DataType::i32);
+    auto alloca = body_header.push_back<AllocaStmt>(DataTypeNode::i32);
     body_header.push_back<LocalStoreStmt>(alloca, new_loop_vars[i]);
     irpass::replace_statements_with(
         body.get(),

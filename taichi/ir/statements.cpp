@@ -18,7 +18,7 @@ bool ContinueStmt::as_return() const {
 UnaryOpStmt::UnaryOpStmt(UnaryOpType op_type, Stmt *operand)
     : op_type(op_type), operand(operand) {
   TI_ASSERT(!operand->is<AllocaStmt>());
-  cast_type = DataType::unknown;
+  cast_type = DataTypeNode::unknown;
   TI_STMT_REG_FIELDS;
 }
 
@@ -40,7 +40,7 @@ bool UnaryOpStmt::same_operation(UnaryOpStmt *o) const {
 ExternalPtrStmt::ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
                                  const std::vector<Stmt *> &indices)
     : base_ptrs(base_ptrs), indices(indices) {
-  DataType dt = DataType::f32;
+  DataType dt = DataTypeNode::f32;
   for (int i = 0; i < (int)base_ptrs.size(); i++) {
     TI_ASSERT(base_ptrs[i] != nullptr);
     TI_ASSERT(base_ptrs[i]->is<ArgLoadStmt>());
@@ -91,7 +91,7 @@ SNodeOpStmt::SNodeOpStmt(SNodeOpType op_type,
                          Stmt *val)
     : op_type(op_type), snode(snode), ptr(ptr), val(val) {
   width() = 1;
-  element_type() = DataType::i32;
+  element_type() = DataTypeNode::i32;
   TI_STMT_REG_FIELDS;
 }
 
@@ -105,7 +105,7 @@ SNodeOpStmt::SNodeOpStmt(SNodeOpType op_type,
             op_type == SNodeOpType::deactivate ||
             op_type == SNodeOpType::activate);
   width() = 1;
-  element_type() = DataType::i32;
+  element_type() = DataTypeNode::i32;
   TI_STMT_REG_FIELDS;
 }
 

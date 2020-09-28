@@ -183,7 +183,7 @@ class BasicBlockSimplify : public IRVisitor {
           if (k == num_loop_vars - 1) {
             auto load = stmt->insert_before_me(
                 Stmt::make<LoopIndexStmt>(current_struct_for, k));
-            load->ret_type.data_type = DataType::i32;
+            load->ret_type.data_type = DataTypeNode::i32;
             stmt->input = load;
             int64 bound = 1LL << stmt->bit_end;
             auto offset = (((int64)diff.low % bound + bound) % bound) &
@@ -204,7 +204,7 @@ class BasicBlockSimplify : public IRVisitor {
               if (offset != 0) {
                 auto offset_const = stmt->insert_before_me(
                     Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(
-                        TypedConstant(DataType::i32, offset))));
+                        TypedConstant(DataTypeNode::i32, offset))));
                 auto sum = stmt->insert_before_me(Stmt::make<BinaryOpStmt>(
                     BinaryOpType::add, load, offset_const));
                 stmt->input = sum;
@@ -214,12 +214,12 @@ class BasicBlockSimplify : public IRVisitor {
             // insert constant
             auto load = stmt->insert_before_me(
                 Stmt::make<LoopIndexStmt>(current_struct_for, k));
-            load->ret_type.data_type = DataType::i32;
+            load->ret_type.data_type = DataTypeNode::i32;
             auto constant = stmt->insert_before_me(
                 Stmt::make<ConstStmt>(TypedConstant(diff.low)));
             auto add = stmt->insert_before_me(
                 Stmt::make<BinaryOpStmt>(BinaryOpType::add, load, constant));
-            add->ret_type.data_type = DataType::i32;
+            add->ret_type.data_type = DataTypeNode::i32;
             stmt->input = add;
           }
           stmt->simplified = true;
@@ -294,8 +294,8 @@ class BasicBlockSimplify : public IRVisitor {
       // compute offset...
       for (int i = 0; i < (int)snode->ch.size(); i++) {
         TI_ASSERT(snode->ch[i]->type == SNodeType::place);
-        TI_ASSERT(snode->ch[i]->dt == DataType::i32 ||
-                  snode->ch[i]->dt == DataType::f32);
+        TI_ASSERT(snode->ch[i]->dt == DataTypeNode::i32 ||
+                  snode->ch[i]->dt == DataTypeNode::f32);
       }
 
       auto offset_stmt = stmt->insert_after_me(Stmt::make<IntegerOffsetStmt>(

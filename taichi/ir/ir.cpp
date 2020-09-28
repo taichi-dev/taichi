@@ -237,7 +237,7 @@ void Stmt::replace_operand_with(Stmt *old_stmt, Stmt *new_stmt) {
 }
 
 std::string Stmt::type_hint() const {
-  if (ret_type.data_type == DataType::unknown)
+  if (ret_type.data_type == DataTypeNode::unknown)
     return "";
   else
     return fmt::format("<{}>{}", ret_type.str(), is_ptr ? "ptr " : " ");

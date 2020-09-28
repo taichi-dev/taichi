@@ -1004,7 +1004,7 @@ class InternalFuncStmt : public Stmt {
   std::string func_name;
 
   InternalFuncStmt(const std::string &func_name) : func_name(func_name) {
-    this->ret_type = VectorType(1, DataType::i32);
+    this->ret_type = VectorType(1, DataTypeNode::i32);
     TI_STMT_REG_FIELDS;
   }
 

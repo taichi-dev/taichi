@@ -82,6 +82,8 @@ void export_lang(py::module &m) {
 #undef PER_EXTENSION
       .export_values();
 
+  py::class_<DataTypeNode>(m, "DataTypeNode");
+
   py::class_<CompileConfig>(m, "CompileConfig")
       .def(py::init<>())
       .def_readwrite("arch", &CompileConfig::arch)
@@ -485,7 +487,7 @@ void export_lang(py::module &m) {
     auto var = Expr(std::make_shared<IdExpression>());
     current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
         std::static_pointer_cast<IdExpression>(var.expr)->id,
-        DataType::unknown));
+        DataTypeNode::unknown));
     return var;
   });
   m.def("expr_assign", expr_assign);
@@ -528,10 +530,11 @@ void export_lang(py::module &m) {
   m.def("make_unary_op_expr",
         Expr::make<UnaryOpExpression, const UnaryOpType &, const Expr &>);
 
-  auto &&data_type = py::enum_<DataType>(m, "DataType", py::arithmetic());
-  for (int t = 0; t <= (int)DataType::unknown; t++)
-    data_type.value(data_type_name(DataType(t)).c_str(), DataType(t));
-  data_type.export_values();
+#define PER_TYPE(x)                                                 \
+  m.attr(("DataType_" + data_type_name(DataTypeNode::x)).c_str()) = \
+      DataTypeNode::x;
+#include "taichi/inc/data_type.inc.h"
+#undef PER_TYPE
 
   m.def("is_integral", is_integral);
   m.def("is_signed", is_signed);

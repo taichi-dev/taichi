@@ -37,7 +37,7 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
            llvm::Type::getInt8PtrTy(*llvm_context),
            tlctx->get_data_type<int>()});
 
-      auto loop_var = create_entry_block_alloca(DataType::i32);
+      auto loop_var = create_entry_block_alloca(DataTypeNode::i32);
       loop_vars_llvm[stmt].push_back(loop_var);
       builder->CreateStore(get_arg(2), loop_var);
       stmt->body->accept(this);

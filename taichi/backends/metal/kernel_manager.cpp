@@ -392,19 +392,19 @@ class HostMetalCtxBlitter {
       if (arg.is_array) {
         const void *host_ptr = host_ctx_->get_arg<void *>(i);
         std::memcpy(device_ptr, host_ptr, arg.stride);
-      } else if (dt == MetalDataType::i32) {
+      } else if (dt == MetalDataTypeNode::i32) {
         TO_METAL(int32);
-      } else if (dt == MetalDataType::u32) {
+      } else if (dt == MetalDataTypeNode::u32) {
         TO_METAL(uint32);
-      } else if (dt == MetalDataType::f32) {
+      } else if (dt == MetalDataTypeNode::f32) {
         TO_METAL(float32);
-      } else if (dt == MetalDataType::i8) {
+      } else if (dt == MetalDataTypeNode::i8) {
         TO_METAL(int8);
-      } else if (dt == MetalDataType::i16) {
+      } else if (dt == MetalDataTypeNode::i16) {
         TO_METAL(int16);
-      } else if (dt == MetalDataType::u8) {
+      } else if (dt == MetalDataTypeNode::u8) {
         TO_METAL(uint8);
-      } else if (dt == MetalDataType::u16) {
+      } else if (dt == MetalDataTypeNode::u16) {
         TO_METAL(uint16);
       } else {
         TI_ERROR("Metal does not support arg type={}",
@@ -460,19 +460,19 @@ class HostMetalCtxBlitter {
         std::memcpy(host_ptr, device_ptr, ret.stride);
       } else {
         const auto dt = ret.dt;
-        if (dt == MetalDataType::i32) {
+        if (dt == MetalDataTypeNode::i32) {
           TO_HOST(int32);
-        } else if (dt == MetalDataType::u32) {
+        } else if (dt == MetalDataTypeNode::u32) {
           TO_HOST(uint32);
-        } else if (dt == MetalDataType::f32) {
+        } else if (dt == MetalDataTypeNode::f32) {
           TO_HOST(float32);
-        } else if (dt == MetalDataType::i8) {
+        } else if (dt == MetalDataTypeNode::i8) {
           TO_HOST(int8);
-        } else if (dt == MetalDataType::i16) {
+        } else if (dt == MetalDataTypeNode::i16) {
           TO_HOST(int16);
-        } else if (dt == MetalDataType::u8) {
+        } else if (dt == MetalDataTypeNode::u8) {
           TO_HOST(uint8);
-        } else if (dt == MetalDataType::u16) {
+        } else if (dt == MetalDataTypeNode::u16) {
           TO_HOST(uint16);
         } else {
           TI_ERROR("Metal does not support return value type={}",

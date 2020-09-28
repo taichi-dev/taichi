@@ -38,9 +38,9 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(IfStmt *if_stmt) {
-    // TODO: use DataType::u1 when it's supported
+    // TODO: use DataTypeNode::u1 when it's supported
     TI_ASSERT_INFO(
-        if_stmt->cond->ret_type.data_type == DataType::i32,
+        if_stmt->cond->ret_type.data_type == DataTypeNode::i32,
         "`if` conditions must be of type int32, consider using `if x != 0:` "
         "instead of `if x:` for float values.");
     if (if_stmt->true_statements)
@@ -69,7 +69,7 @@ class TypeCheck : public IRVisitor {
       stmt->val = insert_type_cast_before(stmt, stmt->val,
                                           stmt->dest->ret_type.data_type);
     }
-    if (stmt->element_type() == DataType::unknown) {
+    if (stmt->element_type() == DataTypeNode::unknown) {
       stmt->ret_type = stmt->dest->ret_type;
     }
     stmt->ret_type.set_is_pointer(false);
@@ -82,7 +82,7 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(LocalStoreStmt *stmt) {
-    if (stmt->ptr->ret_type.data_type == DataType::unknown) {
+    if (stmt->ptr->ret_type.data_type == DataTypeNode::unknown) {
       // Infer data type for alloca
       stmt->ptr->ret_type = stmt->data->ret_type;
     }
@@ -110,11 +110,11 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(SNodeOpStmt *stmt) {
-    stmt->ret_type = VectorType(1, DataType::i32);
+    stmt->ret_type = VectorType(1, DataTypeNode::i32);
   }
 
   void visit(ExternalTensorShapeAlongAxisStmt *stmt) {
-    stmt->ret_type = VectorType(1, DataType::i32);
+    stmt->ret_type = VectorType(1, DataTypeNode::i32);
   }
 
   void visit(GlobalPtrStmt *stmt) {
@@ -138,7 +138,7 @@ class TypeCheck : public IRVisitor {
             "[{}] Field index {} not integral, casting into int32 implicitly",
             stmt->name(), i);
         stmt->indices[i] =
-            insert_type_cast_before(stmt, stmt->indices[i], DataType::i32);
+            insert_type_cast_before(stmt, stmt->indices[i], DataTypeNode::i32);
       }
       TI_ASSERT(stmt->indices[i]->ret_type.width == stmt->snodes.size());
     }
@@ -161,8 +161,8 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(RangeForStmt *stmt) {
-    mark_as_if_const(stmt->begin, VectorType(1, DataType::i32));
-    mark_as_if_const(stmt->end, VectorType(1, DataType::i32));
+    mark_as_if_const(stmt->begin, VectorType(1, DataTypeNode::i32));
+    mark_as_if_const(stmt->end, VectorType(1, DataTypeNode::i32));
     stmt->body->accept(this);
   }
 
@@ -239,8 +239,8 @@ class TypeCheck : public IRVisitor {
       TI_WARN("Compilation stopped due to type mismatch.");
       throw std::runtime_error("Binary operator type mismatch");
     };
-    if (stmt->lhs->ret_type.data_type == DataType::unknown &&
-        stmt->rhs->ret_type.data_type == DataType::unknown)
+    if (stmt->lhs->ret_type.data_type == DataTypeNode::unknown &&
+        stmt->rhs->ret_type.data_type == DataTypeNode::unknown)
       error();
 
     // lower truediv into div
@@ -273,8 +273,8 @@ class TypeCheck : public IRVisitor {
     bool matching = true;
     matching =
         matching && (stmt->lhs->ret_type.width == stmt->rhs->ret_type.width);
-    matching = matching && (stmt->lhs->ret_type.data_type != DataType::unknown);
-    matching = matching && (stmt->rhs->ret_type.data_type != DataType::unknown);
+    matching = matching && (stmt->lhs->ret_type.data_type != DataTypeNode::unknown);
+    matching = matching && (stmt->rhs->ret_type.data_type != DataTypeNode::unknown);
     matching = matching && (stmt->lhs->ret_type == stmt->rhs->ret_type);
     if (!matching) {
       error();
@@ -285,7 +285,7 @@ class TypeCheck : public IRVisitor {
       }
     }
     if (is_comparison(stmt->op_type)) {
-      stmt->ret_type = VectorType(stmt->lhs->ret_type.width, DataType::i32);
+      stmt->ret_type = VectorType(stmt->lhs->ret_type.width, DataTypeNode::i32);
     } else {
       stmt->ret_type = stmt->lhs->ret_type;
     }
@@ -295,7 +295,7 @@ class TypeCheck : public IRVisitor {
     if (stmt->op_type == TernaryOpType::select) {
       auto ret_type = promoted_type(stmt->op2->ret_type.data_type,
                                     stmt->op3->ret_type.data_type);
-      TI_ASSERT(stmt->op1->ret_type.data_type == DataType::i32)
+      TI_ASSERT(stmt->op1->ret_type.data_type == DataTypeNode::i32)
       TI_ASSERT(stmt->op1->ret_type.width == stmt->op2->ret_type.width);
       TI_ASSERT(stmt->op2->ret_type.width == stmt->op3->ret_type.width);
       if (ret_type != stmt->op2->ret_type.data_type) {
@@ -327,7 +327,7 @@ class TypeCheck : public IRVisitor {
     // TODO: Maybe have a type_inference() pass, which takes in the args/rets
     // defined by the kernel. After that, type_check() pass will purely do
     // verification, without modifying any types.
-    TI_ASSERT(rt.data_type != DataType::unknown);
+    TI_ASSERT(rt.data_type != DataTypeNode::unknown);
     TI_ASSERT(rt.width == 1);
   }
 
@@ -345,27 +345,27 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(LoopIndexStmt *stmt) {
-    stmt->ret_type = VectorType(1, DataType::i32);
+    stmt->ret_type = VectorType(1, DataTypeNode::i32);
   }
 
   void visit(LoopLinearIndexStmt *stmt) {
-    stmt->ret_type = VectorType(1, DataType::i32);
+    stmt->ret_type = VectorType(1, DataTypeNode::i32);
   }
 
   void visit(BlockCornerIndexStmt *stmt) {
-    stmt->ret_type = VectorType(1, DataType::i32);
+    stmt->ret_type = VectorType(1, DataTypeNode::i32);
   }
 
   void visit(BlockDimStmt *stmt) {
-    stmt->ret_type = VectorType(1, DataType::i32);
+    stmt->ret_type = VectorType(1, DataTypeNode::i32);
   }
 
   void visit(GetRootStmt *stmt) {
-    stmt->ret_type = VectorType(1, DataType::gen, true);
+    stmt->ret_type = VectorType(1, DataTypeNode::gen, true);
   }
 
   void visit(SNodeLookupStmt *stmt) {
-    stmt->ret_type = VectorType(1, DataType::gen, true);
+    stmt->ret_type = VectorType(1, DataTypeNode::gen, true);
   }
 
   void visit(GetChStmt *stmt) {
@@ -382,11 +382,11 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(LinearizeStmt *stmt) {
-    stmt->ret_type.data_type = DataType::i32;
+    stmt->ret_type.data_type = DataTypeNode::i32;
   }
 
   void visit(IntegerOffsetStmt *stmt) {
-    stmt->ret_type.data_type = DataType::i32;
+    stmt->ret_type.data_type = DataTypeNode::i32;
   }
 
   void visit(StackAllocaStmt *stmt) {

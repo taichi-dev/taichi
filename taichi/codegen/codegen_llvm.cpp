@@ -149,13 +149,13 @@ void CodeGenLLVM::emit_extra_unary(UnaryOpStmt *stmt) {
 
 #define UNARY_STD(x)                                                   \
   else if (op == UnaryOpType::x) {                                     \
-    if (input_taichi_type == DataType::f32) {                          \
+    if (input_taichi_type == DataTypeNode::f32) {                          \
       llvm_val[stmt] =                                                 \
           builder->CreateCall(get_runtime_function(#x "_f32"), input); \
-    } else if (input_taichi_type == DataType::f64) {                   \
+    } else if (input_taichi_type == DataTypeNode::f64) {                   \
       llvm_val[stmt] =                                                 \
           builder->CreateCall(get_runtime_function(#x "_f64"), input); \
-    } else if (input_taichi_type == DataType::i32) {                   \
+    } else if (input_taichi_type == DataTypeNode::i32) {                   \
       llvm_val[stmt] =                                                 \
           builder->CreateCall(get_runtime_function(#x "_i32"), input); \
     } else {                                                           \
@@ -427,7 +427,7 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
     if (is_real(ret_type)) {
       llvm_val[stmt] =
           builder->CreateMaxNum(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
-    } else if (ret_type == DataType::i32) {
+    } else if (ret_type == DataTypeNode::i32) {
       llvm_val[stmt] =
           create_call("max_i32", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
     } else {
@@ -436,10 +436,10 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
     }
   } else if (op == BinaryOpType::atan2) {
     if (arch_is_cpu(current_arch())) {
-      if (ret_type == DataType::f32) {
+      if (ret_type == DataTypeNode::f32) {
         llvm_val[stmt] = create_call(
             "atan2_f32", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-      } else if (ret_type == DataType::f64) {
+      } else if (ret_type == DataTypeNode::f64) {
         llvm_val[stmt] = create_call(
             "atan2_f64", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
       } else {
@@ -447,10 +447,10 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
         TI_NOT_IMPLEMENTED
       }
     } else if (current_arch() == Arch::cuda) {
-      if (ret_type == DataType::f32) {
+      if (ret_type == DataTypeNode::f32) {
         llvm_val[stmt] = create_call(
             "__nv_atan2f", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-      } else if (ret_type == DataType::f64) {
+      } else if (ret_type == DataTypeNode::f64) {
         llvm_val[stmt] = create_call(
             "__nv_atan2", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
       } else {
@@ -462,16 +462,16 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
     }
   } else if (op == BinaryOpType::pow) {
     if (arch_is_cpu(current_arch())) {
-      if (ret_type == DataType::f32) {
+      if (ret_type == DataTypeNode::f32) {
         llvm_val[stmt] =
             create_call("pow_f32", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-      } else if (ret_type == DataType::f64) {
+      } else if (ret_type == DataTypeNode::f64) {
         llvm_val[stmt] =
             create_call("pow_f64", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-      } else if (ret_type == DataType::i32) {
+      } else if (ret_type == DataTypeNode::i32) {
         llvm_val[stmt] =
             create_call("pow_i32", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-      } else if (ret_type == DataType::i64) {
+      } else if (ret_type == DataTypeNode::i64) {
         llvm_val[stmt] =
             create_call("pow_i64", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
       } else {
@@ -479,16 +479,16 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
         TI_NOT_IMPLEMENTED
       }
     } else if (current_arch() == Arch::cuda) {
-      if (ret_type == DataType::f32) {
+      if (ret_type == DataTypeNode::f32) {
         llvm_val[stmt] = create_call(
             "__nv_powf", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-      } else if (ret_type == DataType::f64) {
+      } else if (ret_type == DataTypeNode::f64) {
         llvm_val[stmt] =
             create_call("__nv_pow", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-      } else if (ret_type == DataType::i32) {
+      } else if (ret_type == DataTypeNode::i32) {
         llvm_val[stmt] =
             create_call("pow_i32", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-      } else if (ret_type == DataType::i64) {
+      } else if (ret_type == DataTypeNode::i64) {
         llvm_val[stmt] =
             create_call("pow_i64", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
       } else {
@@ -502,7 +502,7 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
     if (is_real(ret_type)) {
       llvm_val[stmt] =
           builder->CreateMinNum(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
-    } else if (ret_type == DataType::i32) {
+    } else if (ret_type == DataTypeNode::i32) {
       llvm_val[stmt] =
           create_call("min_i32", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
     } else {
@@ -575,7 +575,7 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
     } else {
       TI_NOT_IMPLEMENTED
     }
-    llvm_val[stmt] = builder->CreateSExt(cmp, llvm_type(DataType::i32));
+    llvm_val[stmt] = builder->CreateSExt(cmp, llvm_type(DataTypeNode::i32));
   } else {
     TI_P(binary_op_type_name(op));
     TI_NOT_IMPLEMENTED
@@ -583,13 +583,13 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
 }
 
 llvm::Type *CodeGenLLVM::llvm_type(DataType dt) {
-  if (dt == DataType::i32) {
+  if (dt == DataTypeNode::i32) {
     return llvm::Type::getInt32Ty(*llvm_context);
-  } else if (dt == DataType::u1) {
+  } else if (dt == DataTypeNode::u1) {
     return llvm::Type::getInt1Ty(*llvm_context);
-  } else if (dt == DataType::f32) {
+  } else if (dt == DataTypeNode::f32) {
     return llvm::Type::getFloatTy(*llvm_context);
-  } else if (dt == DataType::f64) {
+  } else if (dt == DataTypeNode::f64) {
     return llvm::Type::getDoubleTy(*llvm_context);
   } else {
     TI_NOT_IMPLEMENTED;
@@ -600,7 +600,7 @@ llvm::Type *CodeGenLLVM::llvm_type(DataType dt) {
 void CodeGenLLVM::visit(TernaryOpStmt *stmt) {
   TI_ASSERT(stmt->op_type == TernaryOpType::select);
   llvm_val[stmt] = builder->CreateSelect(
-      builder->CreateTrunc(llvm_val[stmt->op1], llvm_type(DataType::u1)),
+      builder->CreateTrunc(llvm_val[stmt->op1], llvm_type(DataTypeNode::u1)),
       llvm_val[stmt->op2], llvm_val[stmt->op3]);
 }
 
@@ -637,8 +637,8 @@ llvm::Value *CodeGenLLVM::create_print(std::string tag,
   args.push_back(builder->CreateGlobalStringPtr(
       ("[llvm codegen debug] " + tag + " = " + format + "\n").c_str(),
       "format_string"));
-  if (dt == DataType::f32)
-    value = builder->CreateFPExt(value, tlctx->get_data_type(DataType::f64));
+  if (dt == DataTypeNode::f32)
+    value = builder->CreateFPExt(value, tlctx->get_data_type(DataTypeNode::f64));
   args.push_back(value);
   return builder->CreateCall(runtime_printf, args);
 }
@@ -651,9 +651,9 @@ void CodeGenLLVM::visit(PrintStmt *stmt) {
     if (std::holds_alternative<Stmt *>(content)) {
       auto arg_stmt = std::get<Stmt *>(content);
       auto value = llvm_val[arg_stmt];
-      if (arg_stmt->ret_type.data_type == DataType::f32)
+      if (arg_stmt->ret_type.data_type == DataTypeNode::f32)
         value =
-            builder->CreateFPExt(value, tlctx->get_data_type(DataType::f64));
+            builder->CreateFPExt(value, tlctx->get_data_type(DataTypeNode::f64));
       args.push_back(value);
       formats += data_type_format(arg_stmt->ret_type.data_type);
     } else {
@@ -673,22 +673,22 @@ void CodeGenLLVM::visit(PrintStmt *stmt) {
 void CodeGenLLVM::visit(ConstStmt *stmt) {
   TI_ASSERT(stmt->width() == 1);
   auto val = stmt->val[0];
-  if (val.dt == DataType::f32) {
+  if (val.dt == DataTypeNode::f32) {
     llvm_val[stmt] =
         llvm::ConstantFP::get(*llvm_context, llvm::APFloat(val.val_float32()));
-  } else if (val.dt == DataType::f64) {
+  } else if (val.dt == DataTypeNode::f64) {
     llvm_val[stmt] =
         llvm::ConstantFP::get(*llvm_context, llvm::APFloat(val.val_float64()));
-  } else if (val.dt == DataType::i32) {
+  } else if (val.dt == DataTypeNode::i32) {
     llvm_val[stmt] = llvm::ConstantInt::get(
         *llvm_context, llvm::APInt(32, (uint64)val.val_int32(), true));
-  } else if (val.dt == DataType::u32) {
+  } else if (val.dt == DataTypeNode::u32) {
     llvm_val[stmt] = llvm::ConstantInt::get(
         *llvm_context, llvm::APInt(32, (uint64)val.val_uint32(), false));
-  } else if (val.dt == DataType::i64) {
+  } else if (val.dt == DataTypeNode::i64) {
     llvm_val[stmt] = llvm::ConstantInt::get(
         *llvm_context, llvm::APInt(64, (uint64)val.val_int64(), true));
-  } else if (val.dt == DataType::u64) {
+  } else if (val.dt == DataTypeNode::u64) {
     llvm_val[stmt] = llvm::ConstantInt::get(
         *llvm_context, llvm::APInt(64, val.val_uint64(), false));
   } else {
@@ -790,7 +790,7 @@ void CodeGenLLVM::create_naive_range_for(RangeForStmt *for_stmt) {
   BasicBlock *loop_test =
       BasicBlock::Create(*llvm_context, "for_loop_test", func);
 
-  auto loop_var = create_entry_block_alloca(DataType::i32);
+  auto loop_var = create_entry_block_alloca(DataTypeNode::i32);
   loop_vars_llvm[for_stmt].push_back(loop_var);
 
   if (!for_stmt->reversed) {
@@ -854,7 +854,7 @@ void CodeGenLLVM::visit(ArgLoadStmt *stmt) {
 
   llvm::Type *dest_ty = nullptr;
   if (stmt->is_ptr) {
-    dest_ty = PointerType::get(tlctx->get_data_type(DataType::i32), 0);
+    dest_ty = PointerType::get(tlctx->get_data_type(DataTypeNode::i32), 0);
     llvm_val[stmt] = builder->CreateIntToPtr(raw_arg, dest_ty);
   } else {
     dest_ty = tlctx->get_data_type(stmt->ret_type.data_type);
@@ -942,7 +942,7 @@ void CodeGenLLVM::visit(SNodeOpStmt *stmt) {
   auto snode = stmt->snode;
   if (stmt->op_type == SNodeOpType::append) {
     TI_ASSERT(snode->type == SNodeType::dynamic);
-    TI_ASSERT(stmt->ret_type.data_type == DataType::i32);
+    TI_ASSERT(stmt->ret_type.data_type == DataTypeNode::i32);
     llvm_val[stmt] =
         call(snode, llvm_val[stmt->ptr], "append", {llvm_val[stmt->val]});
   } else if (stmt->op_type == SNodeOpType::length) {
@@ -978,11 +978,11 @@ void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
         old_value = builder->CreateAtomicRMW(
             llvm::AtomicRMWInst::BinOp::Add, llvm_val[stmt->dest],
             llvm_val[stmt->val], llvm::AtomicOrdering::SequentiallyConsistent);
-      } else if (stmt->val->ret_type.data_type == DataType::f32) {
+      } else if (stmt->val->ret_type.data_type == DataTypeNode::f32) {
         old_value =
             builder->CreateCall(get_runtime_function("atomic_add_f32"),
                                 {llvm_val[stmt->dest], llvm_val[stmt->val]});
-      } else if (stmt->val->ret_type.data_type == DataType::f64) {
+      } else if (stmt->val->ret_type.data_type == DataTypeNode::f64) {
         old_value =
             builder->CreateCall(get_runtime_function("atomic_add_f64"),
                                 {llvm_val[stmt->dest], llvm_val[stmt->val]});
@@ -994,11 +994,11 @@ void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
         old_value = builder->CreateAtomicRMW(
             llvm::AtomicRMWInst::BinOp::Min, llvm_val[stmt->dest],
             llvm_val[stmt->val], llvm::AtomicOrdering::SequentiallyConsistent);
-      } else if (stmt->val->ret_type.data_type == DataType::f32) {
+      } else if (stmt->val->ret_type.data_type == DataTypeNode::f32) {
         old_value =
             builder->CreateCall(get_runtime_function("atomic_min_f32"),
                                 {llvm_val[stmt->dest], llvm_val[stmt->val]});
-      } else if (stmt->val->ret_type.data_type == DataType::f64) {
+      } else if (stmt->val->ret_type.data_type == DataTypeNode::f64) {
         old_value =
             builder->CreateCall(get_runtime_function("atomic_min_f64"),
                                 {llvm_val[stmt->dest], llvm_val[stmt->val]});
@@ -1010,11 +1010,11 @@ void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
         old_value = builder->CreateAtomicRMW(
             llvm::AtomicRMWInst::BinOp::Max, llvm_val[stmt->dest],
             llvm_val[stmt->val], llvm::AtomicOrdering::SequentiallyConsistent);
-      } else if (stmt->val->ret_type.data_type == DataType::f32) {
+      } else if (stmt->val->ret_type.data_type == DataTypeNode::f32) {
         old_value =
             builder->CreateCall(get_runtime_function("atomic_max_f32"),
                                 {llvm_val[stmt->dest], llvm_val[stmt->val]});
-      } else if (stmt->val->ret_type.data_type == DataType::f64) {
+      } else if (stmt->val->ret_type.data_type == DataTypeNode::f64) {
         old_value =
             builder->CreateCall(get_runtime_function("atomic_max_f64"),
                                 {llvm_val[stmt->dest], llvm_val[stmt->val]});
@@ -1296,7 +1296,7 @@ std::tuple<llvm::Value *, llvm::Value *> CodeGenLLVM::get_range_for_bounds(
     begin = tlctx->get_constant(stmt->begin_value);
   } else {
     auto begin_stmt = Stmt::make<GlobalTemporaryStmt>(
-        stmt->begin_offset, VectorType(1, DataType::i32));
+        stmt->begin_offset, VectorType(1, DataTypeNode::i32));
     begin_stmt->accept(this);
     begin = builder->CreateLoad(llvm_val[begin_stmt.get()]);
   }
@@ -1304,7 +1304,7 @@ std::tuple<llvm::Value *, llvm::Value *> CodeGenLLVM::get_range_for_bounds(
     end = tlctx->get_constant(stmt->end_value);
   } else {
     auto end_stmt = Stmt::make<GlobalTemporaryStmt>(
-        stmt->end_offset, VectorType(1, DataType::i32));
+        stmt->end_offset, VectorType(1, DataTypeNode::i32));
     end_stmt->accept(this);
     end = builder->CreateLoad(llvm_val[end_stmt.get()]);
   }

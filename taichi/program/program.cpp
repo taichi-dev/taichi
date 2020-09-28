@@ -598,7 +598,7 @@ Kernel &Program::get_snode_reader(SNode *snode) {
   auto &ker = kernel([snode] {
     ExprGroup indices;
     for (int i = 0; i < snode->num_active_indices; i++) {
-      indices.push_back(Expr::make<ArgLoadExpression>(i, DataType::i32));
+      indices.push_back(Expr::make<ArgLoadExpression>(i, DataTypeNode::i32));
     }
     auto ret = Stmt::make<FrontendKernelReturnStmt>(
         load_if_ptr((snode->expr)[indices]), snode->dt);
@@ -608,7 +608,7 @@ Kernel &Program::get_snode_reader(SNode *snode) {
   ker.name = kernel_name;
   ker.is_accessor = true;
   for (int i = 0; i < snode->num_active_indices; i++)
-    ker.insert_arg(DataType::i32, false);
+    ker.insert_arg(DataTypeNode::i32, false);
   ker.insert_ret(snode->dt);
   return ker;
 }
@@ -619,7 +619,7 @@ Kernel &Program::get_snode_writer(SNode *snode) {
   auto &ker = kernel([&] {
     ExprGroup indices;
     for (int i = 0; i < snode->num_active_indices; i++) {
-      indices.push_back(Expr::make<ArgLoadExpression>(i, DataType::i32));
+      indices.push_back(Expr::make<ArgLoadExpression>(i, DataTypeNode::i32));
     }
     (snode->expr)[indices] =
         Expr::make<ArgLoadExpression>(snode->num_active_indices, snode->dt);
@@ -628,7 +628,7 @@ Kernel &Program::get_snode_writer(SNode *snode) {
   ker.name = kernel_name;
   ker.is_accessor = true;
   for (int i = 0; i < snode->num_active_indices; i++)
-    ker.insert_arg(DataType::i32, false);
+    ker.insert_arg(DataTypeNode::i32, false);
   ker.insert_arg(snode->dt, false);
   return ker;
 }

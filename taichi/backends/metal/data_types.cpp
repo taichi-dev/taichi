@@ -4,28 +4,24 @@ TLANG_NAMESPACE_BEGIN
 namespace metal {
 
 MetalDataType to_metal_type(DataType dt) {
-  switch (dt) {
-#define METAL_CASE(x) \
-  case DataType::x:   \
-    return MetalDataType::x
-
-    METAL_CASE(f32);
-    METAL_CASE(f64);
-    METAL_CASE(i8);
-    METAL_CASE(i16);
-    METAL_CASE(i32);
-    METAL_CASE(i64);
-    METAL_CASE(u8);
-    METAL_CASE(u16);
-    METAL_CASE(u32);
-    METAL_CASE(u64);
-    METAL_CASE(unknown);
-#undef METAL_CASE
-
-    default:
-      TI_NOT_IMPLEMENTED;
-      break;
+#define METAL_CASE(x) else if (dt == DataTypeNode::x) return MetalDataType::x
+  if (false) {
   }
+  METAL_CASE(f32);
+  METAL_CASE(f64);
+  METAL_CASE(i8);
+  METAL_CASE(i16);
+  METAL_CASE(i32);
+  METAL_CASE(i64);
+  METAL_CASE(u8);
+  METAL_CASE(u16);
+  METAL_CASE(u32);
+  METAL_CASE(u64);
+  METAL_CASE(unknown);
+  else {
+    TI_NOT_IMPLEMENTED;
+  }
+#undef METAL_CASE
   return MetalDataType::unknown;
 }
 

@@ -194,7 +194,7 @@ Expr ptr_if_global(const Expr &var) {
 Expr Var(const Expr &x) {
   auto var = Expr(std::make_shared<IdExpression>());
   current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
-      std::static_pointer_cast<IdExpression>(var.expr)->id, DataType::unknown));
+      std::static_pointer_cast<IdExpression>(var.expr)->id, DataTypeNode::unknown));
   var = x;
   return var;
 }

@@ -13,6 +13,10 @@ namespace lang {
 
 CompileConfig default_compile_config;
 
+#define PER_TYPE(x) static DataTypeNode *x;
+#include "taichi/inc/data_type.inc.h"
+#undef PER_TYPE
+
 real get_cpu_frequency() {
   static real cpu_frequency = 0;
   if (cpu_frequency == 0) {
@@ -28,6 +32,12 @@ real get_cpu_frequency() {
 }
 
 real default_measurement_time = 1;
+
+#define PER_TYPE(x)          \
+  DataType DataTypeNode::x = \
+      new PrimitiveTypeNode(PrimitiveTypeNode::primitive_type::x);
+#include "taichi/inc/data_type.inc.h"
+#undef PER_TYPE
 
 real measure_cpe(std::function<void()> target,
                  int64 elements_per_call,
@@ -65,44 +75,40 @@ real measure_cpe(std::function<void()> target,
 }
 
 std::string data_type_name(DataType t) {
-  switch (t) {
-#define REGISTER_DATA_TYPE(i, j) \
-  case DataType::i:              \
-    return #j;
-
-    REGISTER_DATA_TYPE(f16, float16);
-    REGISTER_DATA_TYPE(f32, float32);
-    REGISTER_DATA_TYPE(f64, float64);
-    REGISTER_DATA_TYPE(u1, int1);
-    REGISTER_DATA_TYPE(i8, int8);
-    REGISTER_DATA_TYPE(i16, int16);
-    REGISTER_DATA_TYPE(i32, int32);
-    REGISTER_DATA_TYPE(i64, int64);
-    REGISTER_DATA_TYPE(u8, uint8);
-    REGISTER_DATA_TYPE(u16, uint16);
-    REGISTER_DATA_TYPE(u32, uint32);
-    REGISTER_DATA_TYPE(u64, uint64);
-    REGISTER_DATA_TYPE(gen, generic);
-    REGISTER_DATA_TYPE(unknown, unknown);
+#define REGISTER_DATA_TYPE(i, j) else if (t == DataTypeNode::i) return #j
+  if (false) {
+  }
+  REGISTER_DATA_TYPE(f16, float16);
+  REGISTER_DATA_TYPE(f32, float32);
+  REGISTER_DATA_TYPE(f64, float64);
+  REGISTER_DATA_TYPE(u1, int1);
+  REGISTER_DATA_TYPE(i8, int8);
+  REGISTER_DATA_TYPE(i16, int16);
+  REGISTER_DATA_TYPE(i32, int32);
+  REGISTER_DATA_TYPE(i64, int64);
+  REGISTER_DATA_TYPE(u8, uint8);
+  REGISTER_DATA_TYPE(u16, uint16);
+  REGISTER_DATA_TYPE(u32, uint32);
+  REGISTER_DATA_TYPE(u64, uint64);
+  REGISTER_DATA_TYPE(gen, generic);
+  REGISTER_DATA_TYPE(unknown, unknown);
 
 #undef REGISTER_DATA_TYPE
-    default:
-      TI_NOT_IMPLEMENTED
-  }
+  else TI_NOT_IMPLEMENTED
 }
 
 std::string data_type_format(DataType dt) {
-  if (dt == DataType::i32) {
+  if (dt == DataTypeNode::i32) {
     return "%d";
-  } else if (dt == DataType::i64) {
+  } else if (dt == DataTypeNode::i64) {
 #if defined(TI_PLATFORM_UNIX)
     return "%lld";
 #else
     return "%I64d";
 #endif
-  } else if (dt == DataType::f32) {
+  } else if (dt == DataTypeNode::f32) {
     return "%f";
-  } else if (dt == DataType::f64) {
+  } else if (dt == DataTypeNode::f64) {
     return "%.12f";
   } else {
     TI_NOT_IMPLEMENTED
@@ -110,48 +116,42 @@ std::string data_type_format(DataType dt) {
 }
 
 int data_type_size(DataType t) {
-  switch (t) {
-    case DataType::f16:
-      return 2;
-    case DataType::gen:
-      return 0;
-    case DataType::unknown:
-      return -1;
+  if (false) {
+  } else if (t == DataTypeNode::f16)
+    return 2;
+  else if (t == DataTypeNode::gen)
+    return 0;
+  else if (t == DataTypeNode::unknown)
+    return -1;
 
-#define REGISTER_DATA_TYPE(i, j) \
-  case DataType::i:              \
-    return sizeof(j);
+#define REGISTER_DATA_TYPE(i, j) else if (t == DataTypeNode::i) return sizeof(j)
 
-      REGISTER_DATA_TYPE(f32, float32);
-      REGISTER_DATA_TYPE(f64, float64);
-      REGISTER_DATA_TYPE(i8, int8);
-      REGISTER_DATA_TYPE(i16, int16);
-      REGISTER_DATA_TYPE(i32, int32);
-      REGISTER_DATA_TYPE(i64, int64);
-      REGISTER_DATA_TYPE(u8, uint8);
-      REGISTER_DATA_TYPE(u16, uint16);
-      REGISTER_DATA_TYPE(u32, uint32);
-      REGISTER_DATA_TYPE(u64, uint64);
+  REGISTER_DATA_TYPE(f32, float32);
+  REGISTER_DATA_TYPE(f64, float64);
+  REGISTER_DATA_TYPE(i8, int8);
+  REGISTER_DATA_TYPE(i16, int16);
+  REGISTER_DATA_TYPE(i32, int32);
+  REGISTER_DATA_TYPE(i64, int64);
+  REGISTER_DATA_TYPE(u8, uint8);
+  REGISTER_DATA_TYPE(u16, uint16);
+  REGISTER_DATA_TYPE(u32, uint32);
+  REGISTER_DATA_TYPE(u64, uint64);
 
 #undef REGISTER_DATA_TYPE
-    default:
-      TI_NOT_IMPLEMENTED
+  else {
+    TI_NOT_IMPLEMENTED
   }
 }
 
 std::string data_type_short_name(DataType t) {
-  switch (t) {
-#define PER_TYPE(i) \
-  case DataType::i: \
-    return #i;
-
-#include "taichi/inc/data_type.inc.h"
-
-#undef PER_TYPE
-    default:
-      TI_NOT_IMPLEMENTED
+  if (false) {
   }
-}
+#define PER_TYPE(i) else if (t == DataTypeNode::i) return #i;
+#include "taichi/inc/data_type.inc.h"
+#undef PER_TYPE
+  else
+    TI_NOT_IMPLEMENTED
+}  // namespace lang
 
 std::string snode_type_name(SNodeType t) {
   switch (t) {
@@ -369,25 +369,25 @@ DataType promoted_type(DataType a, DataType b) {
 }
 
 std::string TypedConstant::stringify() const {
-  if (dt == DataType::f32) {
+  if (dt == DataTypeNode::f32) {
     return fmt::format("{}", val_f32);
-  } else if (dt == DataType::i32) {
+  } else if (dt == DataTypeNode::i32) {
     return fmt::format("{}", val_i32);
-  } else if (dt == DataType::i64) {
+  } else if (dt == DataTypeNode::i64) {
     return fmt::format("{}", val_i64);
-  } else if (dt == DataType::f64) {
+  } else if (dt == DataTypeNode::f64) {
     return fmt::format("{}", val_f64);
-  } else if (dt == DataType::i8) {
+  } else if (dt == DataTypeNode::i8) {
     return fmt::format("{}", val_i8);
-  } else if (dt == DataType::i16) {
+  } else if (dt == DataTypeNode::i16) {
     return fmt::format("{}", val_i16);
-  } else if (dt == DataType::u8) {
+  } else if (dt == DataTypeNode::u8) {
     return fmt::format("{}", val_u8);
-  } else if (dt == DataType::u16) {
+  } else if (dt == DataTypeNode::u16) {
     return fmt::format("{}", val_u16);
-  } else if (dt == DataType::u32) {
+  } else if (dt == DataTypeNode::u32) {
     return fmt::format("{}", val_u32);
-  } else if (dt == DataType::u64) {
+  } else if (dt == DataTypeNode::u64) {
     return fmt::format("{}", val_u64);
   } else {
     TI_P(data_type_name(dt));
@@ -399,25 +399,25 @@ std::string TypedConstant::stringify() const {
 bool TypedConstant::equal_type_and_value(const TypedConstant &o) const {
   if (dt != o.dt)
     return false;
-  if (dt == DataType::f32) {
+  if (dt == DataTypeNode::f32) {
     return val_f32 == o.val_f32;
-  } else if (dt == DataType::i32) {
+  } else if (dt == DataTypeNode::i32) {
     return val_i32 == o.val_i32;
-  } else if (dt == DataType::i64) {
+  } else if (dt == DataTypeNode::i64) {
     return val_i64 == o.val_i64;
-  } else if (dt == DataType::f64) {
+  } else if (dt == DataTypeNode::f64) {
     return val_f64 == o.val_f64;
-  } else if (dt == DataType::i8) {
+  } else if (dt == DataTypeNode::i8) {
     return val_i8 == o.val_i8;
-  } else if (dt == DataType::i16) {
+  } else if (dt == DataTypeNode::i16) {
     return val_i16 == o.val_i16;
-  } else if (dt == DataType::u8) {
+  } else if (dt == DataTypeNode::u8) {
     return val_u8 == o.val_u8;
-  } else if (dt == DataType::u16) {
+  } else if (dt == DataTypeNode::u16) {
     return val_u16 == o.val_u16;
-  } else if (dt == DataType::u32) {
+  } else if (dt == DataTypeNode::u32) {
     return val_u32 == o.val_u32;
-  } else if (dt == DataType::u64) {
+  } else if (dt == DataTypeNode::u64) {
     return val_u64 == o.val_u64;
   } else {
     TI_NOT_IMPLEMENTED
@@ -477,13 +477,13 @@ uint64 &TypedConstant::val_uint64() {
 
 int64 TypedConstant::val_int() const {
   TI_ASSERT(is_signed(dt));
-  if (dt == DataType::i32) {
+  if (dt == DataTypeNode::i32) {
     return val_i32;
-  } else if (dt == DataType::i64) {
+  } else if (dt == DataTypeNode::i64) {
     return val_i64;
-  } else if (dt == DataType::i8) {
+  } else if (dt == DataTypeNode::i8) {
     return val_i8;
-  } else if (dt == DataType::i16) {
+  } else if (dt == DataTypeNode::i16) {
     return val_i16;
   } else {
     TI_NOT_IMPLEMENTED
@@ -492,13 +492,13 @@ int64 TypedConstant::val_int() const {
 
 uint64 TypedConstant::val_uint() const {
   TI_ASSERT(is_unsigned(dt));
-  if (dt == DataType::u32) {
+  if (dt == DataTypeNode::u32) {
     return val_u32;
-  } else if (dt == DataType::u64) {
+  } else if (dt == DataTypeNode::u64) {
     return val_u64;
-  } else if (dt == DataType::u8) {
+  } else if (dt == DataTypeNode::u8) {
     return val_u8;
-  } else if (dt == DataType::u16) {
+  } else if (dt == DataTypeNode::u16) {
     return val_u16;
   } else {
     TI_NOT_IMPLEMENTED
@@ -507,9 +507,9 @@ uint64 TypedConstant::val_uint() const {
 
 float64 TypedConstant::val_float() const {
   TI_ASSERT(is_real(dt));
-  if (dt == DataType::f32) {
+  if (dt == DataTypeNode::f32) {
     return val_f32;
-  } else if (dt == DataType::f64) {
+  } else if (dt == DataTypeNode::f64) {
     return val_f64;
   } else {
     TI_NOT_IMPLEMENTED

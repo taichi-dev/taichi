@@ -3,8 +3,8 @@ import time
 
 from utils import benchmark_async
 
-
 # TODO: staggerred grid
+
 
 @benchmark_async
 def advection_2d(scale):
@@ -18,7 +18,6 @@ def advection_2d(scale):
 
     stagger = ti.Vector([0.5, 0.5])
 
-
     @ti.func
     def Vector2(x, y):
         return ti.Vector([x, y])
@@ -27,13 +26,12 @@ def advection_2d(scale):
     def init():
         for i, j in v:
             v[i, j] = ti.Vector([j / n - 0.5, 0.5 - i / n])
-        
+
         for i, j in ti.ndrange(n * 4, n * 4):
             ret = ti.taichi_logo(ti.Vector([i, j]) / (n * 4))
             x[i // 4, j // 4][0] += ret / 16
             x[i // 4, j // 4][1] += ret / 16
             x[i // 4, j // 4][2] += ret / 16
-
 
     @ti.func
     def vec(x, y):
@@ -42,22 +40,22 @@ def advection_2d(scale):
     @ti.func
     def clamp(p):
         for d in ti.static(range(p.n)):
-            p[d] = min(1 - 1e-4 - dx + stagger[d] * dx, max(p[d], stagger[d] * dx))
+            p[d] = min(1 - 1e-4 - dx + stagger[d] * dx,
+                       max(p[d], stagger[d] * dx))
         return p
 
     @ti.func
     def sample_bilinear(x, p):
         p = clamp(p)
-        
+
         p_grid = p * inv_dx - stagger
-        
+
         I = ti.cast(ti.floor(p_grid), ti.i32)
         f = p_grid - I
         g = 1 - f
-        
-        return x[I] * (g[0] * g[1]) + x[I + vec(1, 0)] * (
-                f[0] * g[1]) + x[I + vec(0, 1)] * (
-                       g[0] * f[1]) + x[I + vec(1, 1)] * (f[0] * f[1])
+
+        return x[I] * (g[0] * g[1]) + x[I + vec(1, 0)] * (f[0] * g[1]) + x[
+            I + vec(0, 1)] * (g[0] * f[1]) + x[I + vec(1, 1)] * (f[0] * f[1])
 
     @ti.func
     def velocity(p):
@@ -68,19 +66,19 @@ def advection_2d(scale):
         p = clamp(p)
         p_grid = p * inv_dx - stagger
         I = ti.cast(ti.floor(p_grid), ti.i32)
-        
-        return min(x[I],  x[I + vec(1, 0)], x[I + vec(0, 1)], x[I + vec(1, 1)])
+
+        return min(x[I], x[I + vec(1, 0)], x[I + vec(0, 1)], x[I + vec(1, 1)])
 
     @ti.func
     def sample_max(x, p):
         p = clamp(p)
         p_grid = p * inv_dx - stagger
         I = ti.cast(ti.floor(p_grid), ti.i32)
-        
-        return max(x[I],  x[I + vec(1, 0)], x[I + vec(0, 1)], x[I + vec(1, 1)])
+
+        return max(x[I], x[I + vec(1, 0)], x[I + vec(0, 1)], x[I + vec(1, 1)])
 
     @ti.func
-    def backtrace(I, dt): # RK3
+    def backtrace(I, dt):  # RK3
         p = (I + stagger) * dx
         v1 = velocity(p)
         p1 = p - 0.5 * dt * v1
@@ -100,18 +98,18 @@ def advection_2d(scale):
         semi_lagrangian(x(0), new_x(0), dt)
         semi_lagrangian(x(1), new_x(1), dt)
         semi_lagrangian(x(2), new_x(2), dt)
-        
+
         for I in ti.grouped(x):
             x[I] = new_x[I]
 
     init()
 
     gui = ti.GUI('Advection schemes', (512, 512))
-    
+
     def task():
         for i in range(10):
             advect()
-            
+
     ti.benchmark(task, repeat=100)
 
     for i in range(10):
@@ -119,8 +117,7 @@ def advection_2d(scale):
             advect()
         gui.set_image(x.to_numpy())
         gui.show()
-        
-        
+
+
 if __name__ == '__main__':
     advection_2d(0)
-

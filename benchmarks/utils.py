@@ -2,6 +2,7 @@ import taichi as ti
 import functools
 import os
 
+
 # Note: this is a short-term solution. In the long run we need to think about how to reuse pytest
 def benchmark_async(func):
     @functools.wraps(func)
@@ -17,6 +18,5 @@ def benchmark_async(func):
                     # (since CUDA runs much faster than CPUs)
                     scale = 64
                 func(scale)
-    
-    return body
 
+    return body

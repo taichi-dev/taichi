@@ -172,7 +172,7 @@ Use a comma-separated list for multiple input values:
 
         @ti.kernel
         def foo():
-            r[None] = ti.atan2(r[None])
+            r[None] = ti.atan2(r[None], s[None])
 
         r[None] = x
         s[None] = y
@@ -197,7 +197,7 @@ Use two separate ``parametrize`` to test **all combinations** of input arguments
 
         @ti.kernel
         def foo():
-            r[None] = ti.atan2(r[None])
+            r[None] = ti.atan2(r[None], s[None])
 
         r[None] = y
         s[None] = x

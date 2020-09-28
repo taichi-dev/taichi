@@ -112,17 +112,11 @@ def advection_2d(scale):
         for i in range(10):
             advect()
             
-    ti.benchmark(task, repeat=10)
+    ti.benchmark(task, repeat=100)
 
     for i in range(10):
-        ti.sync()
-        t = time.time()
-        for i in range(10):
+        for _ in range(10):
             advect()
-        ti.sync()
-        ti.kernel_profiler_print()
-        print(f'{(time.time() - t) * 1000:.3f} ms')
-        print(f'total kernel time: {ti.kernel_profiler_total_time():.5f} s')
         gui.set_image(x.to_numpy())
         gui.show()
         

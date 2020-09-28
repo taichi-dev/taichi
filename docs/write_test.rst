@@ -166,7 +166,7 @@ Use a comma-separated list for multiple input values:
 
     @pytest.mark.parametrize('x,y', [(1, 2), (1, 3), (2, 1)])
     @ti.test()
-    def test_atan2(x, y):
+    def test_atan2(y, x):
         r = ti.field(ti.f32, ())
         s = ti.field(ti.f32, ())
 
@@ -177,7 +177,7 @@ Use a comma-separated list for multiple input values:
         r[None] = x
         s[None] = y
         foo()
-        assert r[None] == math.atan2(x, y)
+        assert r[None] == math.atan2(y, x)
 
 Use two separate ``parametrize`` to test **all combinations** of input arguments:
 
@@ -191,7 +191,7 @@ Use two separate ``parametrize`` to test **all combinations** of input arguments
     @pytest.mark.parametrize('y', [1, 2])
     # same as:  .parametrize('x,y', [(1, 1), (1, 2), (2, 1), (2, 2)])
     @ti.test()
-    def test_atan2(x, y):
+    def test_atan2(y, x):
         r = ti.field(ti.f32, ())
         s = ti.field(ti.f32, ())
 
@@ -202,7 +202,7 @@ Use two separate ``parametrize`` to test **all combinations** of input arguments
         r[None] = x
         s[None] = y
         foo()
-        assert r[None] == math.atan2(x, y)
+        assert r[None] == math.atan2(y, x)
 
 Specifying ``ti.init`` configurations
 *************************************

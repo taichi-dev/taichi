@@ -1,6 +1,7 @@
 import taichi as ti
+import time
 
-ti.init(arch=ti.gpu)
+ti.init(arch=ti.gpu, async_mode=False, async_opt_fusion=True, kernel_profiler=True)
 
 use_mc = True
 mc_clipping = False
@@ -10,9 +11,8 @@ pause = False
 rk = 3
 
 n = 512
-x = ti.field(ti.f32, shape=(n, n))
-new_x = ti.field(ti.f32, shape=(n, n))
-new_x_aux = ti.field(ti.f32, shape=(n, n))
+x = ti.Vector.field(3, dtype=ti.f32, shape=(n, n))
+new_x = ti.Vector.field(3, dtype=ti.f32, shape=(n, n))
 v = ti.Vector.field(2, dtype=ti.f32, shape=(n, n))
 dx = 1 / n
 inv_dx = 1 / dx
@@ -30,7 +30,9 @@ def Vector2(x, y):
 def paint():
     for i, j in ti.ndrange(n * 4, n * 4):
         ret = ti.taichi_logo(ti.Vector([i, j]) / (n * 4))
-        x[i // 4, j // 4] += ret / 16
+        x[i // 4, j // 4][0] += ret / 16
+        x[i // 4, j // 4][1] += ret / 16
+        x[i // 4, j // 4][2] += ret / 16
 
 
 @ti.kernel
@@ -105,13 +107,14 @@ def backtrace(I, dt):
 
 @ti.func
 def semi_lagrangian(x, new_x, dt):
-    # Note: this loop is parallelized
     for I in ti.grouped(x):
         new_x[I] = sample_bilinear(x, backtrace(I, dt))
 
 @ti.kernel
 def advect():
-    semi_lagrangian(x, new_x, dt)
+    semi_lagrangian(x(0), new_x(0), dt)
+    semi_lagrangian(x(1), new_x(1), dt)
+    semi_lagrangian(x(2), new_x(2), dt)
     
     for I in ti.grouped(x):
         x[I] = new_x[I]
@@ -122,8 +125,13 @@ paint()
 
 gui = ti.GUI('Advection schemes', (512, 512))
 
-while True:
-    for i in range(1):
+for i in range(100):
+    ti.sync()
+    t = time.time()
+    for i in range(10):
         advect()
+    ti.sync()
+    ti.kernel_profiler_print()
+    print(f'{(time.time() - t) * 1000:.3f} ms')
     gui.set_image(x.to_numpy())
     gui.show()

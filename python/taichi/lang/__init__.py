@@ -339,13 +339,15 @@ def benchmark(func, repeat=300, args=()):
         for i in range(3):
             func(*args)
             ti.sync()
+        ti.kernel_profiler_clear()
         t = time.time()
         for n in range(repeat):
             func(*args)
             ti.sync()
         elapsed = time.time() - t
         avg = elapsed / repeat
-        ti.stat_write('running_time', avg)
+        ti.stat_write('clock_time', avg)
+        ti.stat_write('device_time', ti.kernel_profiler_total_time())
 
     run_benchmark()
 

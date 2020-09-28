@@ -9,7 +9,7 @@ def benchmark_async(func):
         for arch in [ti.cpu, ti.cuda]:
             for async_mode in [True, False]:
                 os.environ['TI_CURRENT_BENCHMARK'] = func.__name__
-                ti.init(arch=arch, async_mode=async_mode)
+                ti.init(arch=arch, async_mode=async_mode, kernel_profiler=True)
                 if arch == ti.cpu:
                     scale = 2
                 else:

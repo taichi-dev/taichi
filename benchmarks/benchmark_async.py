@@ -1,6 +1,7 @@
 import taichi as ti
 
 from async_cases import *
+from async_advection import *
 
 rerun = True
 
@@ -12,6 +13,7 @@ cases = [
     # autodiff,
     # stencil_reduction,
     # mpm_splitted,
+    advection_2d
 ]
 
 if rerun:

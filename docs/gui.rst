@@ -202,7 +202,7 @@ Paint on a window
 
     :parameter gui: (GUI) the window object
     :parameter content: (str) the text to draw
-    :parameter pos: (tuple of 2) the top-left point position of the fonts / texts
+    :parameter pos: (tuple of 2, range [0,1] ) the relative position of the top-left point of the fonts / texts
     :parameter font_size: (optional, scalar) the size of font (in height)
     :parameter color: (optional, RGB hex) the foreground color of text
 

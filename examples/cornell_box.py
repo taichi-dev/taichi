@@ -347,7 +347,7 @@ def sample_direct_light(hit_pos, hit_normal, hit_color):
                 nl = dot_or_zero(to_light_dir, hit_normal)
                 direct_li += fl * w * nl / light_pdf
     '''
-    # indirect lighting should be Commented Out 
+    # indirect lighting should be Commented Out
     brdf_dir = sample_brdf(hit_normal)
     brdf_pdf = compute_brdf_pdf(hit_normal, brdf_dir)
     if brdf_pdf > 0:

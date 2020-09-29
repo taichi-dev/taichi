@@ -4,7 +4,7 @@ TLANG_NAMESPACE_BEGIN
 namespace metal {
 
 MetalDataType to_metal_type(DataType dt) {
-#define METAL_CASE(x) else if (dt == DataTypeNode::x) return MetalDataType::x
+#define METAL_CASE(x) else if (dt == DataType::x) return MetalDataType::x
   if (false) {
   }
   METAL_CASE(f32);

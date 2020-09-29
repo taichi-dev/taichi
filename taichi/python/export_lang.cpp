@@ -83,6 +83,7 @@ void export_lang(py::module &m) {
       .export_values();
 
   py::class_<DataTypeNode>(m, "DataTypeNode");
+  py::class_<DataType>(m, "DataType");
 
   py::class_<CompileConfig>(m, "CompileConfig")
       .def(py::init<>())
@@ -487,7 +488,7 @@ void export_lang(py::module &m) {
     auto var = Expr(std::make_shared<IdExpression>());
     current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
         std::static_pointer_cast<IdExpression>(var.expr)->id,
-        DataTypeNode::unknown));
+        DataType::unknown));
     return var;
   });
   m.def("expr_assign", expr_assign);
@@ -530,8 +531,8 @@ void export_lang(py::module &m) {
   m.def("make_unary_op_expr",
         Expr::make<UnaryOpExpression, const UnaryOpType &, const Expr &>);
 #define PER_TYPE(x)                                                 \
-  m.attr(("DataType_" + data_type_name(DataTypeNode::x)).c_str()) = \
-      DataTypeNode::x;
+  m.attr(("DataType_" + data_type_name(DataType::x)).c_str()) = \
+      DataType::x;
 #include "taichi/inc/data_type.inc.h"
 #undef PER_TYPE
 

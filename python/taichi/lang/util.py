@@ -169,7 +169,7 @@ def to_taichi_type(dt):
 def cook_dtype(dtype):
     from .impl import get_runtime
     _taichi_skip_traceback = 1
-    if isinstance(dtype, taichi_lang_core.DataTypeNode):
+    if isinstance(dtype, taichi_lang_core.DataType):
         return dtype
     elif dtype is float:
         return get_runtime().default_fp

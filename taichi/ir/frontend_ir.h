@@ -252,7 +252,7 @@ class UnaryOpExpression : public Expression {
 
   UnaryOpExpression(UnaryOpType type, const Expr &operand)
       : type(type), operand(smart_load(operand)) {
-    cast_type = DataTypeNode::unknown;
+    cast_type = DataType::unknown;
   }
 
   bool is_cast() const;

@@ -21,12 +21,35 @@ using FunctionType = std::function<void(Context &)>;
 
 class DataTypeNode {
  public:
-#define PER_TYPE(x) static DataTypeNode *x;
-#include "taichi/inc/data_type.inc.h"
-#undef PER_TYPE
+  virtual std::string serialize() const = 0;
+  virtual ~DataTypeNode() {
+  }
 };
 
-using DataType = DataTypeNode *;
+class DataType {
+ public:
+#define PER_TYPE(x) static DataType x;
+#include "taichi/inc/data_type.inc.h"
+#undef PER_TYPE
+  DataType() : ptr_(unknown.ptr_) {
+  }
+
+  DataType(const DataTypeNode *ptr) : ptr_(ptr) {
+  }
+
+  bool operator==(const DataType &o) const {
+    return ptr_ == o.ptr_;
+  }
+
+  bool operator!=(const DataType &o) const {
+    return !(*this == o);
+  }
+
+  operator std::size_t() const;
+
+ private:
+  const DataTypeNode *ptr_;
+};
 
 class PrimitiveTypeNode : public DataTypeNode {
  public:
@@ -41,33 +64,35 @@ class PrimitiveTypeNode : public DataTypeNode {
   PrimitiveTypeNode(primitive_type type) : type(type) {
   }
 
+  std::string serialize() const override;
+
   static DataType get(primitive_type type);
 };
 
 template <typename T>
 inline DataType get_data_type() {
   if (std::is_same<T, float32>()) {
-    return DataTypeNode::f32;
+    return DataType::f32;
   } else if (std::is_same<T, float64>()) {
-    return DataTypeNode::f64;
+    return DataType::f64;
   } else if (std::is_same<T, bool>()) {
-    return DataTypeNode::u1;
+    return DataType::u1;
   } else if (std::is_same<T, int8>()) {
-    return DataTypeNode::i8;
+    return DataType::i8;
   } else if (std::is_same<T, int16>()) {
-    return DataTypeNode::i16;
+    return DataType::i16;
   } else if (std::is_same<T, int32>()) {
-    return DataTypeNode::i32;
+    return DataType::i32;
   } else if (std::is_same<T, int64>()) {
-    return DataTypeNode::i64;
+    return DataType::i64;
   } else if (std::is_same<T, uint8>()) {
-    return DataTypeNode::u8;
+    return DataType::u8;
   } else if (std::is_same<T, uint16>()) {
-    return DataTypeNode::u16;
+    return DataType::u16;
   } else if (std::is_same<T, uint32>()) {
-    return DataTypeNode::u32;
+    return DataType::u32;
   } else if (std::is_same<T, uint64>()) {
-    return DataTypeNode::u64;
+    return DataType::u64;
   } else {
     TI_NOT_IMPLEMENTED;
   }
@@ -108,21 +133,19 @@ inline bool is_trigonometric(UnaryOpType op) {
 }
 
 inline bool is_real(DataType dt) {
-  return dt == DataTypeNode::f16 || dt == DataTypeNode::f32 ||
-         dt == DataTypeNode::f64;
+  return dt == DataType::f16 || dt == DataType::f32 || dt == DataType::f64;
 }
 
 inline bool is_integral(DataType dt) {
-  return dt == DataTypeNode::i8 || dt == DataTypeNode::i16 ||
-         dt == DataTypeNode::i32 || dt == DataTypeNode::i64 ||
-         dt == DataTypeNode::u8 || dt == DataTypeNode::u16 ||
-         dt == DataTypeNode::u32 || dt == DataTypeNode::u64;
+  return dt == DataType::i8 || dt == DataType::i16 || dt == DataType::i32 ||
+         dt == DataType::i64 || dt == DataType::u8 || dt == DataType::u16 ||
+         dt == DataType::u32 || dt == DataType::u64;
 }
 
 inline bool is_signed(DataType dt) {
   TI_ASSERT(is_integral(dt));
-  return dt == DataTypeNode::i8 || dt == DataTypeNode::i16 ||
-         dt == DataTypeNode::i32 || dt == DataTypeNode::i64;
+  return dt == DataType::i8 || dt == DataType::i16 || dt == DataType::i32 ||
+         dt == DataType::i64;
 }
 
 inline bool is_unsigned(DataType dt) {
@@ -132,16 +155,16 @@ inline bool is_unsigned(DataType dt) {
 
 inline DataType to_unsigned(DataType dt) {
   TI_ASSERT(is_signed(dt));
-  if (dt == DataTypeNode::i8)
-    return DataTypeNode::u8;
-  else if (dt == DataTypeNode::i16)
-    return DataTypeNode::u16;
-  else if (dt == DataTypeNode::i32)
-    return DataTypeNode::u32;
-  else if (dt == DataTypeNode::i64)
-    return DataTypeNode::u64;
+  if (dt == DataType::i8)
+    return DataType::u8;
+  else if (dt == DataType::i16)
+    return DataType::u16;
+  else if (dt == DataType::i32)
+    return DataType::u32;
+  else if (dt == DataType::i64)
+    return DataType::u64;
   else
-    return DataTypeNode::unknown;
+    return DataType::unknown;
 }
 
 inline bool needs_grad(DataType dt) {
@@ -217,46 +240,46 @@ class TypedConstant {
   };
 
  public:
-  TypedConstant() : dt(DataTypeNode::unknown) {
+  TypedConstant() : dt(DataType::unknown) {
   }
 
   TypedConstant(DataType dt) : dt(dt) {
     value_bits = 0;
   }
 
-  TypedConstant(int32 x) : dt(DataTypeNode::i32), val_i32(x) {
+  TypedConstant(int32 x) : dt(DataType::i32), val_i32(x) {
   }
 
-  TypedConstant(float32 x) : dt(DataTypeNode::f32), val_f32(x) {
+  TypedConstant(float32 x) : dt(DataType::f32), val_f32(x) {
   }
 
-  TypedConstant(int64 x) : dt(DataTypeNode::i64), val_i64(x) {
+  TypedConstant(int64 x) : dt(DataType::i64), val_i64(x) {
   }
 
-  TypedConstant(float64 x) : dt(DataTypeNode::f64), val_f64(x) {
+  TypedConstant(float64 x) : dt(DataType::f64), val_f64(x) {
   }
 
   template <typename T>
   TypedConstant(DataType dt, const T &value) : dt(dt) {
-    if (dt == DataTypeNode::f32) {
+    if (dt == DataType::f32) {
       val_f32 = value;
-    } else if (dt == DataTypeNode::i32) {
+    } else if (dt == DataType::i32) {
       val_i32 = value;
-    } else if (dt == DataTypeNode::i64) {
+    } else if (dt == DataType::i64) {
       val_i64 = value;
-    } else if (dt == DataTypeNode::f64) {
+    } else if (dt == DataType::f64) {
       val_f64 = value;
-    } else if (dt == DataTypeNode::i8) {
+    } else if (dt == DataType::i8) {
       val_i8 = value;
-    } else if (dt == DataTypeNode::i16) {
+    } else if (dt == DataType::i16) {
       val_i16 = value;
-    } else if (dt == DataTypeNode::u8) {
+    } else if (dt == DataType::u8) {
       val_u8 = value;
-    } else if (dt == DataTypeNode::u16) {
+    } else if (dt == DataType::u16) {
       val_u16 = value;
-    } else if (dt == DataTypeNode::u32) {
+    } else if (dt == DataType::u32) {
       val_u32 = value;
-    } else if (dt == DataTypeNode::u64) {
+    } else if (dt == DataType::u64) {
       val_u64 = value;
     } else {
       TI_NOT_IMPLEMENTED

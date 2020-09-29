@@ -1,3 +1,7 @@
+
+
+#include "lang_util.h"
+
 // Definitions of utility functions and enums
 
 #include "lang_util.h"
@@ -38,6 +42,17 @@ real default_measurement_time = 1;
       new PrimitiveTypeNode(PrimitiveTypeNode::primitive_type::x);
 #include "taichi/inc/data_type.inc.h"
 #undef PER_TYPE
+
+DataType PrimitiveTypeNode::get(primitive_type t) {
+  if (false) {
+  }
+#define PER_TYPE(x) else if (t == primitive_type::x) return DataTypeNode::x;
+#include "taichi/inc/data_type.inc.h"
+#undef PER_TYPE
+  else {
+    TI_NOT_IMPLEMENTED
+  }
+}
 
 real measure_cpe(std::function<void()> target,
                  int64 elements_per_call,

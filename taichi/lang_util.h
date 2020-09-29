@@ -37,8 +37,11 @@ class PrimitiveTypeNode : public DataTypeNode {
   };
 
   primitive_type type;
+
   PrimitiveTypeNode(primitive_type type) : type(type) {
   }
+
+  static DataType get(primitive_type type);
 };
 
 template <typename T>

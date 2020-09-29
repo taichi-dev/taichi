@@ -1,6 +1,5 @@
 import taichi as ti
 
-
 @ti.require(ti.extension.adstack)
 @ti.all_archs
 def test_ad_if_simple():
@@ -207,9 +206,7 @@ def test_ad_if_parallel_complex():
     assert x.grad[0] == 0
     assert x.grad[1] == -0.25
 
-
-@ti.require(ti.extension.adstack, ti.extension.data64)
-@ti.all_archs_with(default_fp=ti.f64)
+@ti.test(require=[ti.extension.adstack, ti.extension.data64], default_fp=ti.f64)
 def test_ad_if_parallel_complex_f64():
     x = ti.field(ti.f64, shape=2)
     y = ti.field(ti.f64, shape=2)

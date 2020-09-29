@@ -18,7 +18,7 @@ def expr_init(rhs):
             return [expr_init(e) for e in rhs]
         elif isinstance(rhs, tuple):
             return tuple(expr_init(e) for e in rhs)
-        elif isinstance(rhs, taichi_lang_core.DataType):
+        elif isinstance(rhs, taichi_lang_core.DataTypeNode):
             return rhs
         elif isinstance(rhs, ti.ndrange):
             return rhs

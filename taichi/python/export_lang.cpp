@@ -529,12 +529,13 @@ void export_lang(py::module &m) {
   unary.export_values();
   m.def("make_unary_op_expr",
         Expr::make<UnaryOpExpression, const UnaryOpType &, const Expr &>);
-
 #define PER_TYPE(x)                                                 \
   m.attr(("DataType_" + data_type_name(DataTypeNode::x)).c_str()) = \
       DataTypeNode::x;
 #include "taichi/inc/data_type.inc.h"
 #undef PER_TYPE
+
+  m.def("get_primitive_type_node", PrimitiveTypeNode::get);
 
   m.def("is_integral", is_integral);
   m.def("is_signed", is_signed);
@@ -673,7 +674,7 @@ void export_lang(py::module &m) {
 #if defined(TI_WITH_CUDA)
       return CUDAContext::get_instance().get_compute_capability();
 #else
-      TI_NOT_IMPLEMENTED
+    TI_NOT_IMPLEMENTED
 #endif
     } else {
       TI_ERROR("Key {} not supported in query_int64", key);

@@ -26,6 +26,7 @@ class Type {
   }
 };
 
+// A "Type" handle. This should be removed later.
 class DataType {
  public:
 #define PER_TYPE(x) static DataType x;
@@ -126,11 +127,11 @@ enum class UnaryOpType : int {
 
 std::string unary_op_type_name(UnaryOpType type);
 
-inline bool unary_op_is_cast(UnaryOpType op) {
+inline bool constexpr unary_op_is_cast(UnaryOpType op) {
   return op == UnaryOpType::cast_value || op == UnaryOpType::cast_bits;
 }
 
-inline bool is_trigonometric(UnaryOpType op) {
+inline bool constexpr is_trigonometric(UnaryOpType op) {
   return op == UnaryOpType::sin || op == UnaryOpType::asin ||
          op == UnaryOpType::cos || op == UnaryOpType::acos ||
          op == UnaryOpType::tan || op == UnaryOpType::tanh;

@@ -1,9 +1,6 @@
-
-#include "lang_util.h"
-
 // Definitions of utility functions and enums
 
-#include "lang_util.h"
+#include "taichi/lang_util.h"
 
 #include "taichi/math/linalg.h"
 #include "taichi/program/arch.h"
@@ -15,10 +12,6 @@ TI_NAMESPACE_BEGIN
 namespace lang {
 
 CompileConfig default_compile_config;
-
-#define PER_TYPE(x) static Type *x;
-#include "taichi/inc/data_type.inc.h"
-#undef PER_TYPE
 
 real get_cpu_frequency() {
   static real cpu_frequency = 0;
@@ -36,15 +29,15 @@ real get_cpu_frequency() {
 
 real default_measurement_time = 1;
 
-// Note: these Type primitives will never be freed. They are supposed to live
-// with the process.
+// Note: these primitive types should never be freed. They are supposed to live
+// together with the process.
 #define PER_TYPE(x)      \
   DataType DataType::x = \
       DataType(new PrimitiveType(PrimitiveType::primitive_type::x));
 #include "taichi/inc/data_type.inc.h"
 #undef PER_TYPE
 
-DataType PrimitiveType::get(primitive_type t) {
+DataType PrimitiveType::get(PrimitiveType::primitive_type t) {
   if (false) {
   }
 #define PER_TYPE(x) else if (t == primitive_type::x) return DataType::x;

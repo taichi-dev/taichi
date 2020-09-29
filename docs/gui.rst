@@ -63,6 +63,14 @@ Create a window
 Paint on a window
 -----------------
 
+Paint simple geometric objects on a window. Taichi has internal support for lines, triangles, rectangles, circles and texts.
+
+
+.. note::
+
+    The position parameter ``pos`` expects an input of a tuple of 2, whose values are the relative position of the object. 
+    ``(0.0, 0.0)`` stands for the lower left corner of the window, and ``(1.0, 1.0)`` stands for the upper right corner.
+
 
 .. function:: gui.set_image(img)
 
@@ -202,7 +210,7 @@ Paint on a window
 
     :parameter gui: (GUI) the window object
     :parameter content: (str) the text to draw
-    :parameter pos: (tuple of 2, range [0,1] ) the relative position of the top-left point of the fonts / texts
+    :parameter pos: (tuple of 2) the position of the top-left point of the fonts / texts
     :parameter font_size: (optional, scalar) the size of font (in height)
     :parameter color: (optional, RGB hex) the foreground color of text
 

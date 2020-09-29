@@ -83,7 +83,7 @@ void export_lang(py::module &m) {
       .export_values();
 
   py::class_<DataTypeNode>(m, "DataTypeNode");
-  py::class_<DataType>(m, "DataType");
+  py::class_<DataType>(m, "DataType").def(py::self == py::self);
 
   py::class_<CompileConfig>(m, "CompileConfig")
       .def(py::init<>())
@@ -530,9 +530,8 @@ void export_lang(py::module &m) {
   unary.export_values();
   m.def("make_unary_op_expr",
         Expr::make<UnaryOpExpression, const UnaryOpType &, const Expr &>);
-#define PER_TYPE(x)                                                 \
-  m.attr(("DataType_" + data_type_name(DataType::x)).c_str()) = \
-      DataType::x;
+#define PER_TYPE(x) \
+  m.attr(("DataType_" + data_type_name(DataType::x)).c_str()) = DataType::x;
 #include "taichi/inc/data_type.inc.h"
 #undef PER_TYPE
 

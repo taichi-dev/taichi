@@ -47,6 +47,10 @@ class DataType {
 
   operator std::size_t() const;
 
+  std::string serialize() const {
+    return ptr_->serialize();
+  };
+
  private:
   const DataTypeNode *ptr_;
 };
@@ -143,6 +147,7 @@ inline bool is_integral(DataType dt) {
 }
 
 inline bool is_signed(DataType dt) {
+  TI_P(dt.serialize());
   TI_ASSERT(is_integral(dt));
   return dt == DataType::i8 || dt == DataType::i16 || dt == DataType::i32 ||
          dt == DataType::i64;
@@ -154,6 +159,7 @@ inline bool is_unsigned(DataType dt) {
 }
 
 inline DataType to_unsigned(DataType dt) {
+  TI_P(dt.serialize());
   TI_ASSERT(is_signed(dt));
   if (dt == DataType::i8)
     return DataType::u8;

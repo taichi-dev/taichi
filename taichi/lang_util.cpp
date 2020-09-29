@@ -16,7 +16,7 @@ namespace lang {
 
 CompileConfig default_compile_config;
 
-#define PER_TYPE(x) static DataTypeNode *x;
+#define PER_TYPE(x) static Type *x;
 #include "taichi/inc/data_type.inc.h"
 #undef PER_TYPE
 
@@ -36,13 +36,15 @@ real get_cpu_frequency() {
 
 real default_measurement_time = 1;
 
+// Note: these Type primitives will never be freed. They are supposed to live
+// with the process.
 #define PER_TYPE(x)      \
   DataType DataType::x = \
-      DataType(new PrimitiveTypeNode(PrimitiveTypeNode::primitive_type::x));
+      DataType(new PrimitiveType(PrimitiveType::primitive_type::x));
 #include "taichi/inc/data_type.inc.h"
 #undef PER_TYPE
 
-DataType PrimitiveTypeNode::get(primitive_type t) {
+DataType PrimitiveType::get(primitive_type t) {
   if (false) {
   }
 #define PER_TYPE(x) else if (t == primitive_type::x) return DataType::x;
@@ -54,14 +56,14 @@ DataType PrimitiveTypeNode::get(primitive_type t) {
 }
 
 DataType::operator std::size_t() const {
-  if (auto primitive = dynamic_cast<const PrimitiveTypeNode *>(ptr_)) {
+  if (auto primitive = dynamic_cast<const PrimitiveType *>(ptr_)) {
     return (std::size_t)primitive->type;
   } else {
     TI_NOT_IMPLEMENTED
   }
 }
 
-std::string PrimitiveTypeNode::serialize() const {
+std::string PrimitiveType::serialize() const {
   return data_type_name(DataType(this));
 }
 

@@ -82,7 +82,6 @@ void export_lang(py::module &m) {
 #undef PER_EXTENSION
       .export_values();
 
-  py::class_<DataTypeNode>(m, "DataTypeNode");
   py::class_<DataType>(m, "DataType").def(py::self == py::self);
 
   py::class_<CompileConfig>(m, "CompileConfig")
@@ -535,7 +534,7 @@ void export_lang(py::module &m) {
 #include "taichi/inc/data_type.inc.h"
 #undef PER_TYPE
 
-  m.def("get_primitive_type_node", PrimitiveTypeNode::get);
+  m.def("get_primitive_type_node", PrimitiveType::get);
 
   m.def("is_integral", is_integral);
   m.def("is_signed", is_signed);

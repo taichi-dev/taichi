@@ -19,10 +19,10 @@ struct Context;
 
 using FunctionType = std::function<void(Context &)>;
 
-class DataTypeNode {
+class Type {
  public:
   virtual std::string serialize() const = 0;
-  virtual ~DataTypeNode() {
+  virtual ~Type() {
   }
 };
 
@@ -34,7 +34,7 @@ class DataType {
   DataType() : ptr_(unknown.ptr_) {
   }
 
-  DataType(const DataTypeNode *ptr) : ptr_(ptr) {
+  DataType(const Type *ptr) : ptr_(ptr) {
   }
 
   bool operator==(const DataType &o) const {
@@ -52,10 +52,10 @@ class DataType {
   };
 
  private:
-  const DataTypeNode *ptr_;
+  const Type *ptr_;
 };
 
-class PrimitiveTypeNode : public DataTypeNode {
+class PrimitiveType : public Type {
  public:
   enum class primitive_type : int {
 #define PER_TYPE(x) x,
@@ -65,7 +65,7 @@ class PrimitiveTypeNode : public DataTypeNode {
 
   primitive_type type;
 
-  PrimitiveTypeNode(primitive_type type) : type(type) {
+  PrimitiveType(primitive_type type) : type(type) {
   }
 
   std::string serialize() const override;
@@ -147,7 +147,6 @@ inline bool is_integral(DataType dt) {
 }
 
 inline bool is_signed(DataType dt) {
-  TI_P(dt.serialize());
   TI_ASSERT(is_integral(dt));
   return dt == DataType::i8 || dt == DataType::i16 || dt == DataType::i32 ||
          dt == DataType::i64;
@@ -159,7 +158,6 @@ inline bool is_unsigned(DataType dt) {
 }
 
 inline DataType to_unsigned(DataType dt) {
-  TI_P(dt.serialize());
   TI_ASSERT(is_signed(dt));
   if (dt == DataType::i8)
     return DataType::u8;

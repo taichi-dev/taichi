@@ -36,7 +36,6 @@ real get_cpu_frequency() {
 
 real default_measurement_time = 1;
 
-
 #define PER_TYPE(x)      \
   DataType DataType::x = \
       DataType(new PrimitiveTypeNode(PrimitiveTypeNode::primitive_type::x));

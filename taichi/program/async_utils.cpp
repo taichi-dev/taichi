@@ -127,7 +127,10 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
     if (auto global_store = stmt->cast<GlobalStoreStmt>()) {
       if (auto ptr = global_store->ptr->cast<GlobalPtrStmt>()) {
         for (auto &snode : ptr->snodes.data) {
-          meta.input_states.emplace(snode, AsyncState::Type::value);
+          if (!snode->is_scalar()) {
+            // TODO: This is ad-hoc, use value killing analysis
+            meta.input_states.emplace(snode, AsyncState::Type::value);
+          }
           meta.output_states.emplace(snode, AsyncState::Type::value);
         }
       }

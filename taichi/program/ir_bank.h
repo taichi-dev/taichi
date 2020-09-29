@@ -1,3 +1,7 @@
+#include <set>
+#include <unordered_map>
+#include <vector>
+
 #include "taichi/program/async_utils.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -16,6 +20,8 @@ class IRBank {
 
   IRHandle demote_activation(IRHandle handle);
 
+  IRHandle optimize_dse(IRHandle handle, const std::set<const SNode *> &snodes);
+
   std::unordered_map<IRHandle, TaskMeta> meta_bank_;
   std::unordered_map<IRHandle, TaskFusionMeta> fusion_meta_bank_;
 
@@ -25,6 +31,38 @@ class IRBank {
   std::vector<std::unique_ptr<IRNode>> trash_bin;  // prevent IR from deleted
   std::unordered_map<std::pair<IRHandle, IRHandle>, IRHandle> fuse_bank_;
   std::unordered_map<IRHandle, IRHandle> demote_activation_bank_;
+
+  struct OptimizeDseKey {
+    IRHandle task_ir;
+    // Intentionally use (ordered) set so that hash is deterministic.
+    std::set<const SNode *> eliminable_snodes;
+
+    OptimizeDseKey(const IRHandle task_ir,
+                   const std::set<const SNode *> &snodes)
+        : task_ir(task_ir), eliminable_snodes(snodes) {
+    }
+
+    bool operator==(const OptimizeDseKey &other) const {
+      return (task_ir == other.task_ir) &&
+             (eliminable_snodes == other.eliminable_snodes);
+    }
+
+    bool operator!=(const OptimizeDseKey &other) const {
+      return !(*this == other);
+    }
+
+    struct Hash {
+      std::size_t operator()(const OptimizeDseKey &k) const {
+        std::size_t ret = k.task_ir.hash();
+        for (const auto *s : k.eliminable_snodes) {
+          ret = ret * 100000007UL + reinterpret_cast<uintptr_t>(s);
+        }
+        return ret;
+      }
+    };
+  };
+  std::unordered_map<OptimizeDseKey, IRHandle, OptimizeDseKey::Hash>
+      optimize_dse_bank_;
 };
 
 TLANG_NAMESPACE_END

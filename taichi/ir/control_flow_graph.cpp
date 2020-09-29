@@ -400,7 +400,11 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
               replace_with(i, std::move(local_load), true);
               modified = true;
               continue;
-            } else if (!is_parallel_executed) {
+            } else if (!is_parallel_executed ||
+                       (atomic->dest->is<GlobalPtrStmt>() &&
+                        atomic->dest->as<GlobalPtrStmt>()
+                            ->snodes[0]
+                            ->is_scalar())) {
               // If this node is parallel executed, we can't weaken a global
               // atomic operation to a global load.
               // TODO: we can weaken it if it's element-wise (i.e. never
@@ -619,7 +623,9 @@ void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
   }
 }
 
-void ControlFlowGraph::live_variable_analysis(bool after_lower_access) {
+void ControlFlowGraph::live_variable_analysis(
+    bool after_lower_access,
+    const std::optional<LiveVarAnalysisConfig> &config_opt) {
   TI_AUTO_PROF;
   const int num_nodes = size();
   std::queue<CFGNode *> to_visit;
@@ -627,14 +633,27 @@ void ControlFlowGraph::live_variable_analysis(bool after_lower_access) {
   TI_ASSERT(nodes[final_node]->empty());
   nodes[final_node]->live_gen.clear();
   nodes[final_node]->live_kill.clear();
+
+  auto in_final_node_live_gen = [&config_opt](const Stmt *stmt) -> bool {
+    if (stmt->is<AllocaStmt>() || stmt->is<StackAllocaStmt>()) {
+      return false;
+    }
+    if (auto *gptr = stmt->cast<GlobalPtrStmt>();
+        gptr && config_opt.has_value()) {
+      TI_ASSERT(gptr->snodes.size() == 1);  // Correct assumption?
+      const bool res =
+          (config_opt->eliminable_snodes.count(gptr->snodes[0]) == 0);
+      return res;
+    }
+    // A global pointer that may be loaded after this kernel.
+    return true;
+  };
   if (!after_lower_access) {
     for (int i = 0; i < num_nodes; i++) {
       for (int j = nodes[i]->begin_location; j < nodes[i]->end_location; j++) {
         auto stmt = nodes[i]->block->statements[j].get();
         for (auto store_ptr : irpass::analysis::get_store_destination(stmt)) {
-          if (!store_ptr->is<AllocaStmt>() &&
-              !store_ptr->is<StackAllocaStmt>()) {
-            // A global pointer that may be loaded after this kernel.
+          if (in_final_node_live_gen(store_ptr)) {
             nodes[final_node]->live_gen.insert(store_ptr);
           }
         }
@@ -753,9 +772,11 @@ bool ControlFlowGraph::store_to_load_forwarding(bool after_lower_access) {
   return modified;
 }
 
-bool ControlFlowGraph::dead_store_elimination(bool after_lower_access) {
+bool ControlFlowGraph::dead_store_elimination(
+    bool after_lower_access,
+    const std::optional<LiveVarAnalysisConfig> &lva_config_opt) {
   TI_AUTO_PROF;
-  live_variable_analysis(after_lower_access);
+  live_variable_analysis(after_lower_access, lva_config_opt);
   const int num_nodes = size();
   bool modified = false;
   for (int i = 0; i < num_nodes; i++) {

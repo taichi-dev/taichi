@@ -793,55 +793,56 @@ bool StateFlowGraph::optimize_dead_store() {
 
     // Dive into this task and erase dead stores
     auto &task = nodes_[i];
+    std::set<const SNode *> store_eliminable_snodes;
     // Try to find unnecessary output state
     for (auto &s : task->meta->output_states) {
+      if (s.type != AsyncState::Type::value) {
+        // Listgen elimination has been handled in optimize_listgen, so we will
+        // only focus on "value" states.
+        continue;
+      }
+      if (latest_state_owner_[s] == task.get()) {
+        // Cannot eliminate the latest write, because it may form a state-flow
+        // with the later kernel launches.
+        //
+        // TODO: Add some sort of hints so that the compiler knows that some
+        // value will never be used?
+        continue;
+      }
+      auto *snode = s.snode;
+      if (!snode->is_scalar()) {
+        // TODO: handle non-scalar SNodes, i.e. num_active_indices > 0.
+        continue;
+      }
       bool used = false;
       for (auto other : task->output_edges[s]) {
-        if (task->has_state_flow(s, other)) {
+        if (task->has_state_flow(s, other) &&
+            (other->meta->input_states.count(s) > 0)) {
+          // TODO: This is a hack that only works for scalar SNodes. The proper
+          // handling would require value killing analysis.
           used = true;
         } else {
           // Note that a dependency edge does not count as an data usage
         }
       }
       // This state is used by some other node, so it cannot be erased
-      if (used)
+      if (used) {
         continue;
+      }
 
-      if (s.type != AsyncState::Type::list &&
-          latest_state_owner_[s] == task.get())
-        // Note that list state is special. Since a future list generation
-        // always comes with ClearList, we can erase the list state even if it
-        // is latest.
-        continue;
+      store_eliminable_snodes.insert(snode);
+    }
 
-      // *****************************
-      // Erase the state s output.
-      if (s.type == AsyncState::Type::list &&
-          task->meta->type == OffloadedStmt::TaskType::serial) {
-        // Try to erase list gen
-        DelayedIRModifier mod;
-
-        auto new_ir = task->rec.ir_handle.clone();
-        irpass::analysis::gather_statements(new_ir.get(), [&](Stmt *stmt) {
-          // TODO: invoke mod.erase(stmt) when necessary;
-          return false;
-        });
-        if (mod.modify_ir()) {
-          // IR modified. Node should be updated.
-          auto handle =
-              IRHandle(new_ir.get(), ir_bank_->get_hash(new_ir.get()));
-          ir_bank_->insert(std::move(new_ir), handle.hash());
-          task->rec.ir_handle = handle;
-          // task->meta->print();
-          task->meta = get_task_meta(ir_bank_, task->rec);
-          // task->meta->print();
-
-          for (auto other : task->output_edges[s])
-            other->input_edges[s].erase(task.get());
-
-          task->output_edges.erase(s);
-          modified = true;
-        }
+    // *****************************
+    // Erase the state s output.
+    if (!store_eliminable_snodes.empty()) {
+      auto new_handle =
+          ir_bank_->optimize_dse(task->rec.ir_handle, store_eliminable_snodes);
+      if (new_handle != task->rec.ir_handle) {
+        TI_DEBUG("SFG DSE, optimized task={}", task->string());
+        modified = true;
+        task->rec.ir_handle = new_handle;
+        task->meta = get_task_meta(ir_bank_, task->rec);
       }
     }
   }
@@ -851,19 +852,17 @@ bool StateFlowGraph::optimize_dead_store() {
   for (int i = 1; i < (int)nodes_.size(); i++) {
     auto &meta = *nodes_[i]->meta;
     auto ir = nodes_[i]->rec.ir_handle.ir()->cast<OffloadedStmt>();
-    if (meta.type == OffloadedStmt::serial && ir->body->statements.empty()) {
-      to_delete.insert(i);
-    } else if (meta.type == OffloadedStmt::struct_for &&
-               ir->body->statements.empty()) {
-      to_delete.insert(i);
-    } else if (meta.type == OffloadedStmt::range_for &&
-               ir->body->statements.empty()) {
+    const auto mt = meta.type;
+    if (ir->body->statements.empty() &&
+        (mt == OffloadedStmt::serial || mt == OffloadedStmt::struct_for ||
+         mt == OffloadedStmt::range_for)) {
       to_delete.insert(i);
     }
   }
 
-  if (!to_delete.empty())
+  if (!to_delete.empty()) {
     modified = true;
+  }
 
   delete_nodes(to_delete);
 

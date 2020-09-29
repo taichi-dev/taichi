@@ -217,6 +217,8 @@ class SNode {
 
   bool is_place() const;
 
+  bool is_scalar() const;
+
   const Expr &get_expr() const {
     return expr;
   }

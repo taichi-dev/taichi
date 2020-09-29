@@ -117,7 +117,7 @@ def to_pytorch_type(dt):
 
 
 def to_taichi_type(dt):
-    if type(dt) == taichi_lang_core.DataTypeNode:
+    if type(dt) == taichi_lang_core.DataType:
         return dt
 
     if dt == np.float32:

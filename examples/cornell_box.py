@@ -229,9 +229,9 @@ def intersect_scene(pos, ray_dir):
 
 @ti.func
 def visible_to_light(pos, ray_dir):
-    # eps*ray_dir is easy way to prevent rounding error
-    # here is best way to check the float precision:
-    # http://www.pbr-book.org/3ed-2018/Shapes/Managing_Rounding_Error.html
+    #eps*ray_dir is easy way to prevent rounding error
+    #here is best way to check the float precision:
+    #http://www.pbr-book.org/3ed-2018/Shapes/Managing_Rounding_Error.html
     a, b, c, mat = intersect_scene(pos + eps * ray_dir, ray_dir)
     return mat == mat_light
 

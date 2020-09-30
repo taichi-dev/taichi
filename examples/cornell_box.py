@@ -335,6 +335,7 @@ def sample_direct_light(hit_pos, hit_normal, hit_color):
     direct_li = ti.Vector([0.0, 0.0, 0.0])
     fl = lambertian_brdf * hit_color * light_color
     light_pdf, brdf_pdf = 0.0, 0.0
+    
     # sample area light
     to_light_dir = sample_area_light(hit_pos, hit_normal)
     if to_light_dir.dot(hit_normal) > 0:
@@ -346,6 +347,20 @@ def sample_direct_light(hit_pos, hit_normal, hit_color):
                 w = mis_power_heuristic(light_pdf, brdf_pdf)
                 nl = dot_or_zero(to_light_dir, hit_normal)
                 direct_li += fl * w * nl / light_pdf
+
+
+    # sample brdf
+    brdf_dir = sample_brdf(hit_normal)
+    brdf_pdf = compute_brdf_pdf(hit_normal, brdf_dir)
+    if brdf_pdf > 0:
+        light_pdf = compute_area_light_pdf(hit_pos, brdf_dir)
+        if light_pdf > 0:
+            l_visible = visible_to_light(hit_pos, brdf_dir)
+            if l_visible:
+                w = mis_power_heuristic(brdf_pdf, light_pdf)
+                nl = dot_or_zero(brdf_dir, hit_normal)
+                direct_li += fl * w * nl / brdf_pdf
+
     return direct_li
 
 

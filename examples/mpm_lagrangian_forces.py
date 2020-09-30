@@ -1,17 +1,19 @@
 import taichi as ti
 import numpy as np
 
-ti.init(arch=ti.gpu)
+ti.init(arch=ti.gpu, kernel_profiler=True, print_ir=True)
 
 dim = 2
-n_particle_x = 100
-n_particle_y = 8
+quality = 4
+n_particle_x = 100 * quality
+n_particle_y = 8 * quality
 n_particles = n_particle_x * n_particle_y
 n_elements = (n_particle_x - 1) * (n_particle_y - 1) * 2
-n_grid = 64
+n_grid = 64 * quality
 dx = 1 / n_grid
 inv_dx = 1 / dx
-dt = 1e-4
+dt = 1e-3 / quality
+E = 250
 p_mass = 1
 p_vol = 1
 mu = 1
@@ -30,6 +32,10 @@ restT = ti.Matrix.field(dim,
 total_energy = ti.field(dtype=float, shape=(), needs_grad=True)
 vertices = ti.field(dtype=ti.i32, shape=(n_elements, 3))
 
+@ti.func
+def mesh(i, j):
+    return i * n_particle_y + j
+
 
 @ti.func
 def compute_T(i):
@@ -42,13 +48,34 @@ def compute_T(i):
 
 
 @ti.kernel
-def compute_rest_T():
+def initialize():
+    for i in range(n_particle_x):
+        for j in range(n_particle_y):
+            t = mesh(i, j)
+            x[t] = [0.1 + i * dx * 0.5, 0.7 + j * dx * 0.5]
+            v[t] = [0, -1]
+    
+    # build mesh
+    for i in range(n_particle_x - 1):
+        for j in range(n_particle_y - 1):
+            # element id
+            eid = (i * (n_particle_y - 1) + j) * 2
+            vertices[eid, 0] = mesh(i, j)
+            vertices[eid, 1] = mesh(i + 1, j)
+            vertices[eid, 2] = mesh(i, j + 1)
+            
+            eid = (i * (n_particle_y - 1) + j) * 2 + 1
+            vertices[eid, 0] = mesh(i, j + 1)
+            vertices[eid, 1] = mesh(i + 1, j + 1)
+            vertices[eid, 2] = mesh(i + 1, j)
+
     for i in range(n_elements):
-        restT[i] = compute_T(i)
+        restT[i] = compute_T(i) # Compute rest T
 
 
 @ti.kernel
 def compute_total_energy():
+    ti.block_dim(32)
     for i in range(n_elements):
         currentT = compute_T(i)
         F = currentT @ restT[i].inverse()
@@ -57,11 +84,12 @@ def compute_total_energy():
         J = F.determinant()
         element_energy = 0.5 * mu * (
             I1 - 2) - mu * ti.log(J) + 0.5 * la * ti.log(J)**2
-        ti.atomic_add(total_energy[None], element_energy * 1e-3)
+        total_energy[None] += E * element_energy * dx * dx
 
 
 @ti.kernel
 def p2g():
+    ti.block_dim(32)
     for p in x:
         base = ti.cast(x[p] * inv_dx - 0.5, ti.i32)
         fx = x[p] * inv_dx - ti.cast(base, float)
@@ -130,36 +158,20 @@ def g2p():
 
 gui = ti.GUI("MPM", (640, 640), background_color=0x112F41)
 
-mesh = lambda i, j: i * n_particle_y + j
-
 
 def main():
-    for i in range(n_particle_x):
-        for j in range(n_particle_y):
-            t = mesh(i, j)
-            x[t] = [0.1 + i * dx * 0.5, 0.7 + j * dx * 0.5]
-            v[t] = [0, -1]
-
-    # build mesh
-    for i in range(n_particle_x - 1):
-        for j in range(n_particle_y - 1):
-            # element id
-            eid = (i * (n_particle_y - 1) + j) * 2
-            vertices[eid, 0] = mesh(i, j)
-            vertices[eid, 1] = mesh(i + 1, j)
-            vertices[eid, 2] = mesh(i, j + 1)
-
-            eid = (i * (n_particle_y - 1) + j) * 2 + 1
-            vertices[eid, 0] = mesh(i, j + 1)
-            vertices[eid, 1] = mesh(i + 1, j + 1)
-            vertices[eid, 2] = mesh(i + 1, j)
-
-    compute_rest_T()
+    initialize()
 
     vertices_ = vertices.to_numpy()
-
+    
+    
+    for i in range(100):
+        compute_total_energy()
+    ti.kernel_profiler_print()
+    # exit()
+    
     while gui.running and not gui.get_event(gui.ESCAPE):
-        for s in range(50):
+        for s in range(int(1e-2 // dt)):
             grid_m.fill(0)
             grid_v.fill(0)
             # Note that we are now differentiating the total energy w.r.t. the particle position.
@@ -178,8 +190,9 @@ def main():
         b = np.roll(vertices_, shift=1, axis=1).reshape(n_elements * 3)
         gui.lines(particle_pos[a], particle_pos[b], radius=1, color=0x4FB99F)
         gui.circles(particle_pos, radius=1.5, color=0xF2B134)
-        gui.line((0.00, 0.03), (1.0, 0.03), color=0xFFFFFF, radius=3)
+        gui.line((0.00, 0.03 / quality), (1.0, 0.03 / quality), color=0xFFFFFF, radius=3)
         gui.show()
+        ti.kernel_profiler_print()
 
 
 if __name__ == '__main__':

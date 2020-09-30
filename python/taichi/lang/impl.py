@@ -182,6 +182,7 @@ class PyTaichi:
         self.materialized = False
         self.prog = None
         self.layout_functions = []
+        self.materialize_callbacks = []
         self.compiled_functions = {}
         self.compiled_grad_functions = {}
         self.scope_stack = []
@@ -240,6 +241,9 @@ class PyTaichi:
                 f'{bar}Please consider specifying a shape for them. E.g.,' +
                 '\n\n  x = ti.field(float, shape=(2, 3))')
 
+        for func in self.materialize_callbacks:
+            func()
+
     def clear(self):
         if self.prog:
             self.prog.finalize()
@@ -260,6 +264,10 @@ pytaichi = PyTaichi()
 
 def get_runtime():
     return pytaichi
+
+
+def materialize_callback(foo):
+    get_runtime().materialize_callbacks.append(foo)
 
 
 @taichi_scope

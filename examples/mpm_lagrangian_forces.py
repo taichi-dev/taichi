@@ -1,10 +1,10 @@
 import taichi as ti
 import numpy as np
 
-ti.init(arch=ti.gpu, kernel_profiler=True, print_ir=True)
+ti.init(arch=ti.gpu)
 
 dim = 2
-quality = 4
+quality = 8  # Use a larger integral number for higher quality
 n_particle_x = 100 * quality
 n_particle_y = 8 * quality
 n_particles = n_particle_x * n_particle_y
@@ -32,6 +32,7 @@ restT = ti.Matrix.field(dim,
 total_energy = ti.field(dtype=float, shape=(), needs_grad=True)
 vertices = ti.field(dtype=ti.i32, shape=(n_elements, 3))
 
+
 @ti.func
 def mesh(i, j):
     return i * n_particle_y + j
@@ -54,7 +55,7 @@ def initialize():
             t = mesh(i, j)
             x[t] = [0.1 + i * dx * 0.5, 0.7 + j * dx * 0.5]
             v[t] = [0, -1]
-    
+
     # build mesh
     for i in range(n_particle_x - 1):
         for j in range(n_particle_y - 1):
@@ -63,19 +64,18 @@ def initialize():
             vertices[eid, 0] = mesh(i, j)
             vertices[eid, 1] = mesh(i + 1, j)
             vertices[eid, 2] = mesh(i, j + 1)
-            
+
             eid = (i * (n_particle_y - 1) + j) * 2 + 1
             vertices[eid, 0] = mesh(i, j + 1)
             vertices[eid, 1] = mesh(i + 1, j + 1)
             vertices[eid, 2] = mesh(i + 1, j)
 
     for i in range(n_elements):
-        restT[i] = compute_T(i) # Compute rest T
+        restT[i] = compute_T(i)  # Compute rest T
 
 
 @ti.kernel
 def compute_total_energy():
-    ti.block_dim(32)
     for i in range(n_elements):
         currentT = compute_T(i)
         F = currentT @ restT[i].inverse()
@@ -89,7 +89,6 @@ def compute_total_energy():
 
 @ti.kernel
 def p2g():
-    ti.block_dim(32)
     for p in x:
         base = ti.cast(x[p] * inv_dx - 0.5, ti.i32)
         fx = x[p] * inv_dx - ti.cast(base, float)
@@ -163,13 +162,7 @@ def main():
     initialize()
 
     vertices_ = vertices.to_numpy()
-    
-    
-    for i in range(100):
-        compute_total_energy()
-    ti.kernel_profiler_print()
-    # exit()
-    
+
     while gui.running and not gui.get_event(gui.ESCAPE):
         for s in range(int(1e-2 // dt)):
             grid_m.fill(0)
@@ -190,9 +183,10 @@ def main():
         b = np.roll(vertices_, shift=1, axis=1).reshape(n_elements * 3)
         gui.lines(particle_pos[a], particle_pos[b], radius=1, color=0x4FB99F)
         gui.circles(particle_pos, radius=1.5, color=0xF2B134)
-        gui.line((0.00, 0.03 / quality), (1.0, 0.03 / quality), color=0xFFFFFF, radius=3)
+        gui.line((0.00, 0.03 / quality), (1.0, 0.03 / quality),
+                 color=0xFFFFFF,
+                 radius=3)
         gui.show()
-        ti.kernel_profiler_print()
 
 
 if __name__ == '__main__':

@@ -92,9 +92,7 @@ def test_sfg_dead_store_elimination():
 
     for _ in range(5):
         with ti.Tape(total_energy):
-            # Do the forward computation of total energy and backward propagation for x.grad, which is later used in p2g
             gather()
-            # It's OK not to use the computed total_energy at all, since we only need x.grad
         scatter()
 
     ti.sync()

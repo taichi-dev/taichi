@@ -20,7 +20,15 @@ class IRBank {
 
   IRHandle demote_activation(IRHandle handle);
 
-  IRHandle optimize_dse(IRHandle handle, const std::set<const SNode *> &snodes);
+  // Try running DSE optimization on the IR identified by |handle|. |snodes|
+  // denotes the set of SNodes whose store are safe to eliminate.
+  //
+  // Returns:
+  // * IRHandle: the (possibly) DSE-optimized IRHandle
+  // * bool: whether the result is already cached.
+  std::pair<IRHandle, bool> optimize_dse(IRHandle handle,
+                                         const std::set<const SNode *> &snodes,
+                                         bool verbose);
 
   std::unordered_map<IRHandle, TaskMeta> meta_bank_;
   std::unordered_map<IRHandle, TaskFusionMeta> fusion_meta_bank_;
@@ -32,6 +40,9 @@ class IRBank {
   std::unordered_map<std::pair<IRHandle, IRHandle>, IRHandle> fuse_bank_;
   std::unordered_map<IRHandle, IRHandle> demote_activation_bank_;
 
+  // For DSE optimization, the input key is (IRHandle, [SNode*]). This is
+  // because it is possible that the same IRHandle may have different sets of
+  // SNode stores that are eliminable.
   struct OptimizeDseKey {
     IRHandle task_ir;
     // Intentionally use (ordered) set so that hash is deterministic.

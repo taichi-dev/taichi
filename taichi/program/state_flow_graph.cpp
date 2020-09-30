@@ -1,12 +1,13 @@
 #include "taichi/program/state_flow_graph.h"
 
-#include "taichi/ir/transforms.h"
-#include "taichi/ir/analysis.h"
-#include "taichi/program/async_engine.h"
-
 #include <set>
 #include <sstream>
 #include <unordered_set>
+
+#include "taichi/ir/analysis.h"
+#include "taichi/ir/transforms.h"
+#include "taichi/program/async_engine.h"
+#include "taichi/util/statistics.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -818,6 +819,9 @@ bool StateFlowGraph::optimize_dead_store() {
       for (auto other : task->output_edges[s]) {
         if (task->has_state_flow(s, other) &&
             (other->meta->input_states.count(s) > 0)) {
+          // Check if this is a RAW dependency. For scalar SNodes, a WAW flow
+          // edge decades to a dependency edge.
+          //
           // TODO: This is a hack that only works for scalar SNodes. The proper
           // handling would require value killing analysis.
           used = true;
@@ -836,13 +840,29 @@ bool StateFlowGraph::optimize_dead_store() {
     // *****************************
     // Erase the state s output.
     if (!store_eliminable_snodes.empty()) {
-      auto new_handle =
-          ir_bank_->optimize_dse(task->rec.ir_handle, store_eliminable_snodes);
+      const bool verbose = task->rec.kernel->program.config.verbose;
+
+      const auto dse_result = ir_bank_->optimize_dse(
+          task->rec.ir_handle, store_eliminable_snodes, verbose);
+      auto new_handle = dse_result.first;
       if (new_handle != task->rec.ir_handle) {
-        TI_DEBUG("SFG DSE, optimized task={}", task->string());
         modified = true;
         task->rec.ir_handle = new_handle;
         task->meta = get_task_meta(ir_bank_, task->rec);
+      }
+      bool first_compute = !dse_result.second;
+      if (first_compute && modified) {
+        stat.add("sfg_dse_tasks", 1.0);
+      }
+      if (first_compute && verbose) {
+        // Log only for the first time, otherwise we will be overwhelmed very
+        // quickly...
+        std::vector<std::string> snodes_strs;
+        for (const auto *sn : store_eliminable_snodes) {
+          snodes_strs.push_back(sn->get_node_type_name_hinted());
+        }
+        TI_INFO("SFG DSE: task={} snodes={} optimized?={}", task->string(),
+                fmt::join(snodes_strs, ", "), modified);
       }
     }
   }

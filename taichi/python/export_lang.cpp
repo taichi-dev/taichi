@@ -546,9 +546,6 @@ void export_lang(py::module &m) {
 #include "taichi/inc/data_type.inc.h"
 #undef PER_TYPE
 
-  // Maybe useful for Python-side pickling?
-  m.def("get_primitive_type_node", PrimitiveType::get);
-
   m.def("is_integral", is_integral);
   m.def("is_signed", is_signed);
   m.def("is_unsigned", is_unsigned);

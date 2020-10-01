@@ -6,14 +6,8 @@ from async_advection import *
 rerun = True
 
 cases = [
-    # fuse_dense_x2y2z,
-    # fuse_reduction,
-    # fill_1d,
-    # sparse_numpy,
-    # autodiff,
-    # stencil_reduction,
-    # mpm_splitted,
-    advection_2d
+    fuse_dense_x2y2z, fuse_reduction, fill_1d, sparse_numpy, autodiff,
+    stencil_reduction, mpm_splitted, advection_2d
 ]
 
 if rerun:

@@ -12,7 +12,7 @@ from utils import *
 
 @benchmark_async
 def fuse_dense_x2y2z(scale):
-    template_fuse_dense_x2y2z(size=scale * 10 * 1024**2,
+    template_fuse_dense_x2y2z(size=scale * 1024**2,
                               repeat=1,
                               benchmark_repeat=100,
                               benchmark=True)
@@ -20,7 +20,7 @@ def fuse_dense_x2y2z(scale):
 
 @benchmark_async
 def fuse_reduction(scale):
-    template_fuse_reduction(size=scale * 10 * 1024**2,
+    template_fuse_reduction(size=scale * 1024**2,
                             repeat=10,
                             benchmark_repeat=10,
                             benchmark=True)
@@ -28,7 +28,7 @@ def fuse_reduction(scale):
 
 @benchmark_async
 def fill_1d(scale):
-    a = ti.field(dtype=ti.f32, shape=scale * 10 * 1024**2)
+    a = ti.field(dtype=ti.f32, shape=scale * 1024**2)
 
     @ti.kernel
     def fill():
@@ -63,7 +63,7 @@ def sparse_numpy(scale):
     a = ti.field(dtype=ti.f32)
     b = ti.field(dtype=ti.f32)
 
-    block_count = 2**int((math.log(scale, 2)) // 2) * 64
+    block_count = 2**int((math.log(scale, 2)) // 2) * 4
     block_size = 32
     # a, b always share the same sparsity
     ti.root.pointer(ti.ij, block_count).dense(ti.ij, block_size).place(a, b)
@@ -127,7 +127,7 @@ def stencil_reduction(scale):
     b = ti.field(dtype=ti.f32)
     total = ti.field(dtype=ti.f32, shape=())
 
-    block_count = scale * 512
+    block_count = scale * 64
     block_size = 1024
     # a, b always share the same sparsity
     ti.root.pointer(ti.i, block_count).dense(ti.i, block_size).place(a, b)

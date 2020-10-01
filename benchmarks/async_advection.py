@@ -1,5 +1,5 @@
 import taichi as ti
-import time
+import math
 
 from utils import benchmark_async
 
@@ -8,7 +8,7 @@ from utils import benchmark_async
 
 @benchmark_async
 def advection_2d(scale):
-    n = 512
+    n = 128 * 2**int((math.log(scale, 2)) // 2)
     x = ti.Vector.field(3, dtype=ti.f32, shape=(n, n))
     new_x = ti.Vector.field(3, dtype=ti.f32, shape=(n, n))
     v = ti.Vector.field(2, dtype=ti.f32, shape=(n, n))
@@ -104,20 +104,22 @@ def advection_2d(scale):
 
     init()
 
-    gui = ti.GUI('Advection schemes', (512, 512))
-
     def task():
         for i in range(10):
             advect()
 
     ti.benchmark(task, repeat=100)
 
-    for i in range(10):
-        for _ in range(10):
-            advect()
-        gui.set_image(x.to_numpy())
-        gui.show()
+    visualize = False
+
+    if visualize:
+        gui = ti.GUI('Advection schemes', (n, n))
+        for i in range(10):
+            for _ in range(10):
+                advect()
+            gui.set_image(x.to_numpy())
+            gui.show()
 
 
 if __name__ == '__main__':
-    advection_2d(0)
+    advection_2d()

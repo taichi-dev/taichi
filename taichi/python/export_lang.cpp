@@ -82,7 +82,21 @@ void export_lang(py::module &m) {
 #undef PER_EXTENSION
       .export_values();
 
-  py::class_<DataType>(m, "DataType").def(py::self == py::self);
+  py::class_<DataType>(m, "DataType")
+      .def(py::self == py::self)
+      .def(py::pickle(
+        [](const DataType &dt) {
+            return py::make_tuple(_pickle_data_type_to_int(dt));
+        },
+        [](py::tuple t) {
+            if (t.size() != 1)
+                throw std::runtime_error("Invalid state!");
+
+            DataType dt = _pickle_int_to_data_type(t[0].cast<int>());
+
+            return dt;
+        }
+      ));
 
   py::class_<CompileConfig>(m, "CompileConfig")
       .def(py::init<>())

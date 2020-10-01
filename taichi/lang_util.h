@@ -172,6 +172,52 @@ inline DataType to_unsigned(DataType dt) {
     return DataType::unknown;
 }
 
+inline int _pickle_data_type_to_int(DataType dt) {
+#define REGISTER_DATA_TYPE(i, j) else if (dt == DataType::i) return j
+  if (false) {
+  }
+  REGISTER_DATA_TYPE(unknown, 0);
+  REGISTER_DATA_TYPE(gen, 1);
+  REGISTER_DATA_TYPE(f16, 2);
+  REGISTER_DATA_TYPE(f32, 3);
+  REGISTER_DATA_TYPE(f64, 4);
+  REGISTER_DATA_TYPE(u1, 5);
+  REGISTER_DATA_TYPE(i8, 6);
+  REGISTER_DATA_TYPE(i16, 7);
+  REGISTER_DATA_TYPE(i32, 8);
+  REGISTER_DATA_TYPE(i64, 9);
+  REGISTER_DATA_TYPE(u8, 10);
+  REGISTER_DATA_TYPE(u16, 11);
+  REGISTER_DATA_TYPE(u32, 12);
+  REGISTER_DATA_TYPE(u64, 13);
+
+#undef REGISTER_DATA_TYPE
+  else TI_NOT_IMPLEMENTED
+}
+
+inline DataType _pickle_int_to_data_type(int idx) {
+#define REGISTER_DATA_TYPE(i, j) else if (idx == j) return DataType::i
+  if (false) {
+  }
+  REGISTER_DATA_TYPE(unknown, 0);
+  REGISTER_DATA_TYPE(gen, 1);
+  REGISTER_DATA_TYPE(f16, 2);
+  REGISTER_DATA_TYPE(f32, 3);
+  REGISTER_DATA_TYPE(f64, 4);
+  REGISTER_DATA_TYPE(u1, 5);
+  REGISTER_DATA_TYPE(i8, 6);
+  REGISTER_DATA_TYPE(i16, 7);
+  REGISTER_DATA_TYPE(i32, 8);
+  REGISTER_DATA_TYPE(i64, 9);
+  REGISTER_DATA_TYPE(u8, 10);
+  REGISTER_DATA_TYPE(u16, 11);
+  REGISTER_DATA_TYPE(u32, 12);
+  REGISTER_DATA_TYPE(u64, 13);
+
+#undef REGISTER_DATA_TYPE
+  else TI_NOT_IMPLEMENTED
+}
+
 inline bool needs_grad(DataType dt) {
   return is_real(dt);
 }

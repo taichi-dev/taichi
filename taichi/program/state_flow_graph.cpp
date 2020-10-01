@@ -873,9 +873,11 @@ bool StateFlowGraph::optimize_dead_store() {
     auto &meta = *nodes_[i]->meta;
     auto ir = nodes_[i]->rec.ir_handle.ir()->cast<OffloadedStmt>();
     const auto mt = meta.type;
-    if (ir->body->statements.empty() &&
-        (mt == OffloadedStmt::serial || mt == OffloadedStmt::struct_for ||
-         mt == OffloadedStmt::range_for)) {
+    // Do NOT check ir->body->statements first! |ir->body| could be done when
+    // |mt| is not the desired type.
+    if ((mt == OffloadedStmt::serial || mt == OffloadedStmt::struct_for ||
+         mt == OffloadedStmt::range_for) &&
+        ir->body->statements.empty()) {
       to_delete.insert(i);
     }
   }

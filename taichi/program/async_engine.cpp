@@ -240,7 +240,7 @@ void AsyncEngine::synchronize() {
     sfg->verify();
   }
   debug_sfg("final");
-  auto tasks = sfg->extract();
+  auto tasks = sfg->extract_to_execute();
   TI_TRACE("Ended up with {} nodes", tasks.size());
   for (auto &task : tasks) {
     queue.enqueue(task);

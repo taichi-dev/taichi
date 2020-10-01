@@ -39,12 +39,23 @@ void StateFlowGraph::Node::disconnect_with(StateFlowGraph::Node *other) {
   }
 }
 
-StateFlowGraph::StateFlowGraph(IRBank *ir_bank) : ir_bank_(ir_bank) {
+StateFlowGraph::StateFlowGraph(IRBank *ir_bank)
+    : first_pending_task_index_(1 /*after initial node*/), ir_bank_(ir_bank) {
   nodes_.push_back(std::make_unique<Node>());
   initial_node_ = nodes_.back().get();
   initial_meta_.name = "initial_state";
   initial_node_->meta = &initial_meta_;
   initial_node_->is_initial_node = true;
+}
+
+std::vector<StateFlowGraph::Node *> StateFlowGraph::get_pending_tasks() {
+  std::vector<Node *> pending_tasks;
+  TI_ASSERT(nodes_.size() >= first_pending_task_index_);
+  pending_tasks.reserve(nodes_.size() - first_pending_task_index_);
+  for (int i = first_pending_task_index_; i < (int)nodes_.size(); i++) {
+    pending_tasks.push_back(nodes_[i].get());
+  }
+  return pending_tasks;
 }
 
 void StateFlowGraph::clear() {
@@ -55,6 +66,26 @@ void StateFlowGraph::clear() {
   latest_state_readers_.clear();
 
   // Do not clear task_name_to_launch_ids_.
+}
+
+void StateFlowGraph::mark_pending_tasks_as_executed() {
+  std::vector<std::unique_ptr<Node>> new_nodes;
+  std::unordered_set<Node *> state_owners;
+  std::unordered_set<Node *> state_readers;
+  for (auto &owner : latest_state_owner_) {
+    state_owners.insert(state_owners.end(), owner.second);
+  }
+  for (auto &reader : latest_state_readers_) {
+    state_readers.insert(reader.second.begin(), reader.second.end());
+  }
+  for (auto &node : nodes_) {
+    if (node->is_initial_node || state_owners.count(node.get()) > 0 ||
+        state_readers.count(node.get()) > 0) {
+      new_nodes.push_back(std::move(node));
+    }
+  }
+  nodes_ = std::move(new_nodes);
+  first_pending_task_index_ = nodes_.size();
 }
 
 void StateFlowGraph::insert_task(const TaskLaunchRecord &rec) {
@@ -200,10 +231,7 @@ bool StateFlowGraph::optimize_listgen() {
     delete_nodes(nodes_to_delete);
     // Note: DO NOT topo sort the nodes here. Node deletion destroys order
     // independency.
-    auto tasks = extract(/*sort=*/false);
-    for (auto &task : tasks) {
-      insert_task(task);
-    }
+    rebuild_graph(/*sort=*/false);
   }
 
   return modified;
@@ -432,20 +460,17 @@ bool StateFlowGraph::fuse() {
   bool modified = !indices_to_delete.empty();
   // TODO: Do we need a trash bin here?
   if (modified) {
-    // rebuild the graph in topological order
+    // Rebuild the graph in topological order.
+    // The original order may not be a topological order.
     delete_nodes(indices_to_delete);
-    topo_sort_nodes();
-    auto tasks = extract();
-    for (auto &task : tasks) {
-      insert_task(task);
-    }
+    rebuild_graph(/*sort=*/true);
   }
 
   return modified;
 }
 
-std::vector<TaskLaunchRecord> StateFlowGraph::extract(bool sort) {
-  TI_AUTO_PROF
+void StateFlowGraph::rebuild_graph(bool sort) {
+  TI_AUTO_PROF;
   if (sort)
     topo_sort_nodes();
   std::vector<TaskLaunchRecord> tasks;
@@ -453,16 +478,26 @@ std::vector<TaskLaunchRecord> StateFlowGraph::extract(bool sort) {
   for (int i = 1; i < (int)nodes_.size(); i++) {
     if (!nodes_[i]->rec.empty()) {
       tasks.push_back(nodes_[i]->rec);
-
-      if (false) {
-        // debug
-        TI_INFO("task {}:{}", nodes_[i]->meta->name, nodes_[i]->rec.id);
-        nodes_[i]->meta->print();
-        irpass::print(const_cast<IRNode *>(nodes_[i]->rec.ir_handle.ir()));
-      }
     }
   }
   clear();
+  for (auto &task : tasks) {
+    insert_task(task);
+  }
+}
+
+std::vector<TaskLaunchRecord> StateFlowGraph::extract_to_execute() {
+  TI_AUTO_PROF;
+  auto nodes = get_pending_tasks();
+  std::vector<TaskLaunchRecord> tasks;
+  tasks.reserve(nodes.size());
+  for (auto &node : nodes) {
+    if (!node->rec.empty()) {
+      tasks.push_back(node->rec);
+    }
+  }
+  mark_pending_tasks_as_executed();
+  rebuild_graph(/*sort=*/false);
   return tasks;
 }
 
@@ -975,10 +1010,7 @@ bool StateFlowGraph::demote_activation() {
   }
 
   if (modified) {
-    auto tasks = extract(/*sort=*/false);
-    for (auto &task : tasks) {
-      insert_task(task);
-    }
+    rebuild_graph(/*sort=*/false);
   }
 
   return modified;

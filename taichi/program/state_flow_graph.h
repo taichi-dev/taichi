@@ -85,7 +85,11 @@ class StateFlowGraph {
 
   StateFlowGraph(IRBank *ir_bank);
 
+  std::vector<Node *> get_pending_tasks();
+
   void clear();
+
+  void mark_pending_tasks_as_executed();
 
   void print();
 
@@ -127,8 +131,11 @@ class StateFlowGraph {
 
   void verify();
 
+  // Extract all pending tasks and insert them in topological/original order.
+  void rebuild_graph(bool sort);
+
   // Extract all tasks to execute.
-  std::vector<TaskLaunchRecord> extract(bool sort = true);
+  std::vector<TaskLaunchRecord> extract_to_execute();
 
   std::size_t size() {
     return nodes_.size();
@@ -137,6 +144,7 @@ class StateFlowGraph {
  private:
   std::vector<std::unique_ptr<Node>> nodes_;
   Node *initial_node_;  // The initial node holds all the initial states.
+  int first_pending_task_index_;
   TaskMeta initial_meta_;
   StateToNodeMapping latest_state_owner_;
   std::unordered_map<AsyncState, std::unordered_set<Node *>>

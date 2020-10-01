@@ -62,6 +62,7 @@ build_script:
   - '%PYTHON% -c "import taichi"'
   - "%PYTHON% examples/laplace.py"
   - "%PYTHON% bin/taichi diagnose"
+  - "%PYTHON% bin/taichi test test_sfg.py -v"
   - "%PYTHON% bin/taichi test -Cvr2 -t2"
   - "cd python && %PYTHON% build.py try_upload"
   - "cd %TAICHI_REPO_DIR% && bash <(curl -s https://codecov.io/bash)"

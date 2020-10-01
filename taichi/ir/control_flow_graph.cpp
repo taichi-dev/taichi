@@ -640,7 +640,7 @@ void ControlFlowGraph::live_variable_analysis(
     }
     if (auto *gptr = stmt->cast<GlobalPtrStmt>();
         gptr && config_opt.has_value()) {
-      TI_ASSERT(gptr->snodes.size() == 1);  // Correct assumption?
+      TI_ASSERT(gptr->snodes.size() == 1);
       const bool res =
           (config_opt->eliminable_snodes.count(gptr->snodes[0]) == 0);
       return res;

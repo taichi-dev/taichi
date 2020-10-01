@@ -21,7 +21,7 @@ class IRBank {
   IRHandle demote_activation(IRHandle handle);
 
   // Try running DSE optimization on the IR identified by |handle|. |snodes|
-  // denotes the set of SNodes whose store are safe to eliminate.
+  // denotes the set of SNodes whose stores are safe to eliminate.
   //
   // Returns:
   // * IRHandle: the (possibly) DSE-optimized IRHandle

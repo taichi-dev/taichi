@@ -111,6 +111,9 @@ class StateFlowGraph {
   std::pair<std::vector<bit::Bitset>, std::vector<bit::Bitset>>
   compute_transitive_closure();
 
+  // Fuse tasks in get_pending_tasks()[begin, end).
+  bool fuse_range(int begin, int end);
+
   bool fuse();
 
   bool optimize_listgen();
@@ -137,8 +140,12 @@ class StateFlowGraph {
   // Extract all tasks to execute.
   std::vector<TaskLaunchRecord> extract_to_execute();
 
-  std::size_t size() {
+  std::size_t size() const {
     return nodes_.size();
+  }
+
+  int num_pending_tasks() const {
+    return nodes_.size() - first_pending_task_index_;
   }
 
  private:

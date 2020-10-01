@@ -273,6 +273,11 @@ StateFlowGraph::compute_transitive_closure() {
   return std::make_pair(std::move(has_path), std::move(has_path_reverse));
 }
 
+bool StateFlowGraph::fuse_range(int begin, int end) {
+  // TODO: implement
+  return false;
+}
+
 bool StateFlowGraph::fuse() {
   TI_AUTO_PROF;
   using bit::Bitset;

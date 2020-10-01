@@ -472,6 +472,8 @@ void Program::synchronize() {
     if (config.async_mode) {
       async_engine->synchronize();
     }
+    if (profiler)
+      profiler->sync();
     device_synchronize();
     sync = true;
   }

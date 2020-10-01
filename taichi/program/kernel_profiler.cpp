@@ -53,7 +53,7 @@ void KernelProfilerBase::print() {
   fmt::print(
       "[100.00%] Total kernel execution time: {:7.3f} s   number of records: "
       "{}\n",
-      total_time_ms / 1000.0f, records.size());
+      get_total_time(), records.size());
   fmt::print(
       "========================================================================"
       "=\n");

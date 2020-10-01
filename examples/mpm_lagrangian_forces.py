@@ -1,7 +1,7 @@
 import taichi as ti
 import numpy as np
 
-ti.init(arch=ti.gpu)
+ti.init(arch=ti.gpu, kernel_profiler=True)
 
 dim = 2
 quality = 8  # Use a larger integral number for higher quality
@@ -187,6 +187,7 @@ def main():
                  color=0xFFFFFF,
                  radius=3)
         gui.show()
+        ti.kernel_profiler_print()
 
 
 if __name__ == '__main__':

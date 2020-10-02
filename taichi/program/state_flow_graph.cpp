@@ -64,6 +64,9 @@ std::vector<StateFlowGraph::Node *> StateFlowGraph::get_pending_tasks(int begin,
   TI_ASSERT(begin >= 0 && begin <= end);
   TI_ASSERT(nodes_.size() >= first_pending_task_index_ + end);
   pending_tasks.reserve(end - begin);
+  for (auto &node : nodes_) {
+    node->pending_node_id = -1;
+  }
   for (int i = first_pending_task_index_ + begin;
        i < first_pending_task_index_ + end; i++) {
     pending_tasks.push_back(nodes_[i].get());
@@ -285,19 +288,22 @@ StateFlowGraph::compute_transitive_closure(int begin, int end) {
     has_path_reverse[i][i] = true;
   }
   for (int i = n - 1; i >= 0; i--) {
-    for (auto &edges : nodes_[i]->input_edges) {
+    for (auto &edges : nodes[i]->input_edges) {
       for (auto &edge : edges.second) {
-        TI_ASSERT(edge->pending_node_id < i);
-        has_path[edge->pending_node_id] |= has_path[i];
+        if (edge->pending_node_id != -1) {
+          TI_ASSERT(edge->pending_node_id < i);
+          has_path[edge->pending_node_id] |= has_path[i];
+        }
       }
     }
   }
   for (int i = 0; i < n; i++) {
-    for (auto &edges : nodes_[i]->output_edges) {
+    for (auto &edges : nodes[i]->output_edges) {
       for (auto &edge : edges.second) {
-        // Assume nodes are sorted in topological order.
-        TI_ASSERT(edge->pending_node_id > i);
-        has_path_reverse[edge->pending_node_id] |= has_path_reverse[i];
+        if (edge->pending_node_id != -1) {
+          TI_ASSERT(edge->pending_node_id > i);
+          has_path_reverse[edge->pending_node_id] |= has_path_reverse[i];
+        }
       }
     }
   }
@@ -820,6 +826,9 @@ void StateFlowGraph::reid_nodes() {
 
 void StateFlowGraph::reid_pending_nodes() {
   TI_AUTO_PROF
+  for (int i = 0; i < first_pending_task_index_; i++) {
+    nodes_[i]->pending_node_id = -1;
+  }
   for (int i = first_pending_task_index_; i < nodes_.size(); i++) {
     nodes_[i]->pending_node_id = i - first_pending_task_index_;
   }

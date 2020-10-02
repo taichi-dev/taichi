@@ -128,8 +128,8 @@ class StateFlowGraph {
   compute_transitive_closure(int begin, int end);
 
   // Fuse tasks in get_pending_tasks()[begin, end),
-  // return the number of deleted tasks.
-  int fuse_range(int begin, int end);
+  // return the indices to delete.
+  std::unordered_set<int> fuse_range(int begin, int end);
 
   bool fuse();
 

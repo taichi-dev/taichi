@@ -319,12 +319,12 @@ StateFlowGraph::compute_transitive_closure(int begin, int end) {
   return std::make_pair(std::move(has_path), std::move(has_path_reverse));
 }
 
-int StateFlowGraph::fuse_range(int begin, int end) {
+std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
   TI_AUTO_PROF;
   using bit::Bitset;
   const int n = end - begin;
   if (n <= 1) {
-    return false;
+    return std::unordered_set<int>();
   }
 
   std::vector<Bitset> has_path, has_path_reverse;
@@ -506,16 +506,7 @@ int StateFlowGraph::fuse_range(int begin, int end) {
     }
   }
 
-  int num_deleted = indices_to_delete.size();
-  // TODO: Do we need a trash bin here?
-  if (num_deleted > 0) {
-    // Rebuild the graph in topological order.
-    // The original order may not be a topological order.
-    delete_nodes(indices_to_delete);
-    rebuild_graph(/*sort=*/true);
-  }
-
-  return num_deleted;
+  return indices_to_delete;
 }
 
 bool StateFlowGraph::fuse() {
@@ -527,34 +518,30 @@ bool StateFlowGraph::fuse() {
 
   // Invoke fuse_range() <= floor(num_pending_tasks() / kMaxFusionDistance)
   // times with (end - begin) <= 2 * kMaxFusionDistance.
-  bool modified = false;
-  int num_optimized_tasks = 0;
-  while (num_optimized_tasks < num_pending_tasks()) {
-    if (num_optimized_tasks + 2 * kMaxFusionDistance >= num_pending_tasks()) {
-      if (fuse_range(num_optimized_tasks, num_pending_tasks()))
-        modified = true;
-      break;
-    } else {
-      int num_deleted_tasks = fuse_range(
-          num_optimized_tasks, num_optimized_tasks + 2 * kMaxFusionDistance);
-      if (num_deleted_tasks)
-        modified = true;
-      num_optimized_tasks += 2 * kMaxFusionDistance - num_deleted_tasks;
+  std::unordered_set<int> indices_to_delete;
+  const int n = num_pending_tasks();
+  if (n <= kMaxFusionDistance * 2) {
+    indices_to_delete = fuse_range(0, n);
+  } else {
+    for (int i = 0; i < n; i += kMaxFusionDistance * 2) {
+      auto indices = fuse_range(i, std::min(n, i + kMaxFusionDistance * 2));
+      indices_to_delete.insert(indices.begin(), indices.end());
+    }
+    if (indices_to_delete.empty()) {
+      for (int i = kMaxFusionDistance; i < n; i += kMaxFusionDistance * 2) {
+        auto indices = fuse_range(i, std::min(n, i + kMaxFusionDistance * 2));
+        indices_to_delete.insert(indices.begin(), indices.end());
+      }
     }
   }
-  num_optimized_tasks = kMaxFusionDistance;
-  while (num_optimized_tasks < num_pending_tasks()) {
-    if (num_optimized_tasks + 2 * kMaxFusionDistance >= num_pending_tasks()) {
-      if (fuse_range(num_optimized_tasks, num_pending_tasks()))
-        modified = true;
-      break;
-    } else {
-      int num_deleted_tasks = fuse_range(
-          num_optimized_tasks, num_optimized_tasks + 2 * kMaxFusionDistance);
-      if (num_deleted_tasks)
-        modified = true;
-      num_optimized_tasks += 2 * kMaxFusionDistance - num_deleted_tasks;
-    }
+
+  bool modified = !indices_to_delete.empty();
+  // TODO: Do we need a trash bin here?
+  if (modified) {
+    // Rebuild the graph in topological order.
+    // The original order may not be a topological order.
+    delete_nodes(indices_to_delete);
+    rebuild_graph(/*sort=*/true);
   }
 
   return modified;

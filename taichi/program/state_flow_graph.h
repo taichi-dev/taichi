@@ -119,8 +119,9 @@ class StateFlowGraph {
 
   void insert_state_flow(Node *from, Node *to, AsyncState state);
 
+  // Compute transitive closure for tasks in get_pending_tasks()[begin, end).
   std::pair<std::vector<bit::Bitset>, std::vector<bit::Bitset>>
-  compute_transitive_closure();
+  compute_transitive_closure(int begin, int end);
 
   // Fuse tasks in get_pending_tasks()[begin, end).
   bool fuse_range(int begin, int end);

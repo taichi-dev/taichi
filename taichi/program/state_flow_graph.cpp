@@ -254,11 +254,17 @@ bool StateFlowGraph::optimize_listgen() {
 }
 
 std::pair<std::vector<bit::Bitset>, std::vector<bit::Bitset>>
-StateFlowGraph::compute_transitive_closure() {
+StateFlowGraph::compute_transitive_closure(int begin, int end) {
   TI_AUTO_PROF;
   using bit::Bitset;
-  const int n = nodes_.size();
-  reid_nodes();
+  const int n = end - begin;
+  auto pending_nodes = get_pending_tasks();
+  std::vector<Node *> nodes(pending_nodes.begin() + begin,
+                            pending_nodes.begin() + end);
+  for (int i = 0; i < n; i++) {
+    nodes[i]->pending_node_id = i;
+  }
+
   auto has_path = std::vector<Bitset>(n);
   auto has_path_reverse = std::vector<Bitset>(n);
   // has_path[i][j] denotes if there is a path from i to j.
@@ -272,8 +278,8 @@ StateFlowGraph::compute_transitive_closure() {
   for (int i = n - 1; i >= 0; i--) {
     for (auto &edges : nodes_[i]->input_edges) {
       for (auto &edge : edges.second) {
-        TI_ASSERT(edge->node_id < i);
-        has_path[edge->node_id] |= has_path[i];
+        TI_ASSERT(edge->pending_node_id < i);
+        has_path[edge->pending_node_id] |= has_path[i];
       }
     }
   }
@@ -281,8 +287,8 @@ StateFlowGraph::compute_transitive_closure() {
     for (auto &edges : nodes_[i]->output_edges) {
       for (auto &edge : edges.second) {
         // Assume nodes are sorted in topological order.
-        TI_ASSERT(edge->node_id > i);
-        has_path_reverse[edge->node_id] |= has_path_reverse[i];
+        TI_ASSERT(edge->pending_node_id > i);
+        has_path_reverse[edge->pending_node_id] |= has_path_reverse[i];
       }
     }
   }
@@ -303,7 +309,8 @@ bool StateFlowGraph::fuse() {
   }
 
   std::vector<Bitset> has_path, has_path_reverse;
-  std::tie(has_path, has_path_reverse) = compute_transitive_closure();
+  std::tie(has_path, has_path_reverse) =
+      compute_transitive_closure(0, num_pending_tasks());
 
   // Classify tasks by TaskFusionMeta.
   std::vector<TaskFusionMeta> fusion_meta(n);

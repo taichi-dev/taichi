@@ -319,10 +319,10 @@ int StateFlowGraph::fuse_range(int begin, int end) {
     return false;
   }
 
-  auto nodes = get_pending_tasks(begin, end);
-
   std::vector<Bitset> has_path, has_path_reverse;
   std::tie(has_path, has_path_reverse) = compute_transitive_closure(begin, end);
+
+  auto nodes = get_pending_tasks(begin, end);
 
   // Classify tasks by TaskFusionMeta.
   std::vector<TaskFusionMeta> fusion_meta(n);
@@ -354,6 +354,7 @@ int StateFlowGraph::fuse_range(int begin, int end) {
 
   auto do_fuse = [&](int a, int b) {
     TI_AUTO_PROF;
+    TI_ASSERT(0 <= a && a < b && b < n);
     auto *node_a = nodes[a];
     auto *node_b = nodes[b];
     TI_TRACE("Fuse: nodes[{}]({}) <- nodes[{}]({})", a, node_a->string(), b,
@@ -482,8 +483,8 @@ int StateFlowGraph::fuse_range(int begin, int end) {
       bool i_updated = false;
       for (auto &edges : nodes[i]->output_edges) {
         for (auto &edge : edges.second) {
-          const int j = edge->node_id;
-          if (edge_fusible(i, j)) {
+          const int j = edge->pending_node_id;
+          if (j != -1 && edge_fusible(i, j)) {
             do_fuse(i, j);
             // Iterators of nodes[i]->output_edges may be invalidated
             i_updated = true;

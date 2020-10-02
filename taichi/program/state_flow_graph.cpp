@@ -123,6 +123,7 @@ void StateFlowGraph::mark_pending_tasks_as_executed() {
 }
 
 void StateFlowGraph::insert_task(const TaskLaunchRecord &rec) {
+  TI_AUTO_PROF;
   auto node = std::make_unique<Node>();
   node->rec = rec;
   node->meta = get_task_meta(ir_bank_, rec);

@@ -228,9 +228,8 @@ class StructCompiler {
       emit("}};");
     } else {
       TI_ERROR(
-          "SNodeType={} not supported on OpenGL\n"
-          "Consider use ti.init(ti.cpu) or ti.init(ti.cuda) if you "
-          "want to use sparse data structures",
+          "SNodeType={} not supported on Metal.\nConsider use ti.init(ti.cpu) "
+          "if you want to use sparse data structures.",
           snode_type_name(snode.type));
     }
     emit("");

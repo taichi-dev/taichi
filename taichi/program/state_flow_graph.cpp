@@ -539,7 +539,8 @@ bool StateFlowGraph::fuse() {
           num_optimized_tasks, num_optimized_tasks + 2 * kMaxFusionDistance);
       if (num_deleted_tasks)
         modified = true;
-      num_optimized_tasks += std::min(kMaxFusionDistance, 2 * kMaxFusionDistance - num_deleted_tasks);
+      num_optimized_tasks += std::min(
+          kMaxFusionDistance, 2 * kMaxFusionDistance - num_deleted_tasks);
     }
   }
 

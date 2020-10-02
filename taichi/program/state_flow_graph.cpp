@@ -48,13 +48,25 @@ StateFlowGraph::StateFlowGraph(IRBank *ir_bank)
   initial_node_->is_initial_node = true;
 }
 
-std::vector<StateFlowGraph::Node *> StateFlowGraph::get_pending_tasks() {
+std::vector<StateFlowGraph::Node *> StateFlowGraph::get_pending_tasks() const {
   std::vector<Node *> pending_tasks;
   TI_ASSERT(nodes_.size() >= first_pending_task_index_);
   pending_tasks.reserve(nodes_.size() - first_pending_task_index_);
   for (int i = first_pending_task_index_; i < (int)nodes_.size(); i++) {
     pending_tasks.push_back(nodes_[i].get());
   }
+  return pending_tasks;
+}
+
+std::vector<std::unique_ptr<StateFlowGraph::Node>>
+StateFlowGraph::extract_pending_tasks() {
+  std::vector<std::unique_ptr<Node>> pending_tasks;
+  TI_ASSERT(nodes_.size() >= first_pending_task_index_);
+  pending_tasks.reserve(nodes_.size() - first_pending_task_index_);
+  for (int i = first_pending_task_index_; i < (int)nodes_.size(); i++) {
+    pending_tasks.emplace_back(std::move(nodes_[i]));
+  }
+  nodes_.resize(first_pending_task_index_);
   return pending_tasks;
 }
 
@@ -702,21 +714,27 @@ std::string StateFlowGraph::dump_dot(const std::optional<std::string> &rankdir,
 
 void StateFlowGraph::topo_sort_nodes() {
   TI_AUTO_PROF
+  // Only sort pending tasks.
+  const auto previous_size = nodes_.size();
   std::deque<std::unique_ptr<Node>> queue;
-  std::vector<std::unique_ptr<Node>> new_nodes;
   std::vector<int> degrees_in(nodes_.size());
 
   reid_nodes();
 
-  for (auto &node : nodes_) {
+  auto pending_tasks = extract_pending_tasks();
+  for (auto &node : pending_tasks) {
     int degree_in = 0;
     for (auto &inputs : node->input_edges) {
-      degree_in += (int)inputs.second.size();
+      for (auto &input_node : inputs.second) {
+        if (input_node->pending()) {
+          degree_in++;
+        }
+      }
     }
     degrees_in[node->node_id] = degree_in;
   }
 
-  for (auto &node : nodes_) {
+  for (auto &node : pending_tasks) {
     if (degrees_in[node->node_id] == 0) {
       queue.emplace_back(std::move(node));
     }
@@ -738,11 +756,10 @@ void StateFlowGraph::topo_sort_nodes() {
       }
     }
 
-    new_nodes.emplace_back(std::move(head));
+    nodes_.emplace_back(std::move(head));
   }
 
-  TI_ASSERT(new_nodes.size() == nodes_.size());
-  nodes_ = std::move(new_nodes);
+  TI_ASSERT(previous_size == nodes_.size());
   reid_nodes();
 }
 

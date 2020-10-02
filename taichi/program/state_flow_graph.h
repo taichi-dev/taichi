@@ -42,6 +42,10 @@ class StateFlowGraph {
     std::unordered_map<AsyncState, std::unordered_set<Node *>> output_edges,
         input_edges;
 
+    bool pending() const {
+      return !is_initial_node && !executed;
+    }
+
     std::string string() const;
 
     // Note: there are two types of edges A->B:
@@ -86,7 +90,9 @@ class StateFlowGraph {
 
   StateFlowGraph(IRBank *ir_bank);
 
-  std::vector<Node *> get_pending_tasks();
+  std::vector<Node *> get_pending_tasks() const;
+
+  std::vector<std::unique_ptr<Node>> extract_pending_tasks();
 
   void clear();
 

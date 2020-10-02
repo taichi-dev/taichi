@@ -58,6 +58,20 @@ std::vector<StateFlowGraph::Node *> StateFlowGraph::get_pending_tasks() const {
   return pending_tasks;
 }
 
+std::vector<StateFlowGraph::Node *> StateFlowGraph::get_pending_tasks(int begin,
+                                                                      int end) {
+  std::vector<Node *> pending_tasks;
+  TI_ASSERT(begin >= 0 && begin <= end);
+  TI_ASSERT(nodes_.size() >= first_pending_task_index_ + end);
+  pending_tasks.reserve(end - begin);
+  for (int i = first_pending_task_index_ + begin;
+       i < first_pending_task_index_ + end; i++) {
+    pending_tasks.push_back(nodes_[i].get());
+    nodes_[i]->pending_node_id = i - first_pending_task_index_ - begin;
+  }
+  return pending_tasks;
+}
+
 std::vector<std::unique_ptr<StateFlowGraph::Node>>
 StateFlowGraph::extract_pending_tasks() {
   std::vector<std::unique_ptr<Node>> pending_tasks;
@@ -258,12 +272,7 @@ StateFlowGraph::compute_transitive_closure(int begin, int end) {
   TI_AUTO_PROF;
   using bit::Bitset;
   const int n = end - begin;
-  auto pending_nodes = get_pending_tasks();
-  std::vector<Node *> nodes(pending_nodes.begin() + begin,
-                            pending_nodes.begin() + end);
-  for (int i = 0; i < n; i++) {
-    nodes[i]->pending_node_id = i;
-  }
+  auto nodes = get_pending_tasks(begin, end);
 
   auto has_path = std::vector<Bitset>(n);
   auto has_path_reverse = std::vector<Bitset>(n);
@@ -295,30 +304,25 @@ StateFlowGraph::compute_transitive_closure(int begin, int end) {
   return std::make_pair(std::move(has_path), std::move(has_path_reverse));
 }
 
-bool StateFlowGraph::fuse_range(int begin, int end) {
-  // TODO: implement
-  return false;
-}
-
-bool StateFlowGraph::fuse() {
+int StateFlowGraph::fuse_range(int begin, int end) {
   TI_AUTO_PROF;
   using bit::Bitset;
-  const int n = nodes_.size();
-  if (n <= 2) {
+  const int n = end - begin;
+  if (n <= 1) {
     return false;
   }
 
+  auto nodes = get_pending_tasks(begin, end);
+
   std::vector<Bitset> has_path, has_path_reverse;
-  std::tie(has_path, has_path_reverse) =
-      compute_transitive_closure(0, num_pending_tasks());
+  std::tie(has_path, has_path_reverse) = compute_transitive_closure(begin, end);
 
   // Classify tasks by TaskFusionMeta.
   std::vector<TaskFusionMeta> fusion_meta(n);
   // It seems that std::set is slightly faster than std::unordered_set here.
   std::unordered_map<TaskFusionMeta, std::set<int>> task_fusion_map;
-  // nodes_[0] is the initial node.
-  for (int i = 1; i < n; i++) {
-    fusion_meta[i] = get_task_fusion_meta(ir_bank_, nodes_[i]->rec);
+  for (int i = 0; i < n; i++) {
+    fusion_meta[i] = get_task_fusion_meta(ir_bank_, nodes[i]->rec);
     if (fusion_meta[i].fusible) {
       auto &fusion_set = task_fusion_map[fusion_meta[i]];
       fusion_set.insert(fusion_set.end(), i);
@@ -343,9 +347,9 @@ bool StateFlowGraph::fuse() {
 
   auto do_fuse = [&](int a, int b) {
     TI_AUTO_PROF;
-    auto *node_a = nodes_[a].get();
-    auto *node_b = nodes_[b].get();
-    TI_TRACE("Fuse: nodes_[{}]({}) <- nodes_[{}]({})", a, node_a->string(), b,
+    auto *node_a = nodes[a];
+    auto *node_b = nodes[b];
+    TI_TRACE("Fuse: nodes[{}]({}) <- nodes[{}]({})", a, node_a->string(), b,
              node_b->string());
     auto &rec_a = node_a->rec;
     auto &rec_b = node_b->rec;
@@ -353,7 +357,8 @@ bool StateFlowGraph::fuse() {
         ir_bank_->fuse(rec_a.ir_handle, rec_b.ir_handle, rec_a.kernel);
     rec_b.ir_handle = IRHandle();
 
-    indices_to_delete.insert(b);
+    // Convert to the index in nodes_.
+    indices_to_delete.insert(b + begin + first_pending_task_index_);
 
     const bool already_had_a_to_b_edge = has_path[a][b];
     if (already_had_a_to_b_edge) {
@@ -382,15 +387,15 @@ bool StateFlowGraph::fuse() {
         fusion_meta[a] != fusion_meta[b]) {
       return false;
     }
-    if (nodes_[a]->meta->type != OffloadedStmt::TaskType::serial) {
-      for (auto &state : nodes_[a]->output_edges) {
+    if (nodes[a]->meta->type != OffloadedStmt::TaskType::serial) {
+      for (auto &state : nodes[a]->output_edges) {
         if (state.first.type != AsyncState::Type::value) {
           // No need to check mask/list states as there must be value states.
           continue;
         }
-        if (state.second.find(nodes_[b].get()) != state.second.end()) {
-          if (!nodes_[a]->meta->element_wise[state.first.snode] ||
-              !nodes_[b]->meta->element_wise[state.first.snode]) {
+        if (state.second.find(nodes[b]) != state.second.end()) {
+          if (!nodes[a]->meta->element_wise[state.first.snode] ||
+              !nodes[b]->meta->element_wise[state.first.snode]) {
             return false;
           }
         }
@@ -402,8 +407,8 @@ bool StateFlowGraph::fuse() {
     return a_has_path_to_b.none();
   };
 
-  for (int i = 1; i < n; i++) {
-    fused[i] = nodes_[i]->rec.empty();
+  for (int i = 0; i < n; i++) {
+    fused[i] = nodes[i]->rec.empty();
   }
   // The case without an edge: O(sum(size * min(size, n / 64))) = O(n^2 / 64)
   const int kLargeFusionSetThreshold = std::max(n / 16, 16);
@@ -464,16 +469,16 @@ bool StateFlowGraph::fuse() {
     }
   }
   // The case with an edge: O(nm / 64)
-  for (int i = 1; i < n; i++) {
+  for (int i = 0; i < n; i++) {
     if (!fused[i]) {
       // Fuse no more than one task into task i
       bool i_updated = false;
-      for (auto &edges : nodes_[i]->output_edges) {
+      for (auto &edges : nodes[i]->output_edges) {
         for (auto &edge : edges.second) {
           const int j = edge->node_id;
           if (edge_fusible(i, j)) {
             do_fuse(i, j);
-            // Iterators of nodes_[i]->output_edges may be invalidated
+            // Iterators of nodes[i]->output_edges may be invalidated
             i_updated = true;
             break;
           }
@@ -485,13 +490,42 @@ bool StateFlowGraph::fuse() {
     }
   }
 
-  bool modified = !indices_to_delete.empty();
+  int num_deleted = indices_to_delete.size();
   // TODO: Do we need a trash bin here?
-  if (modified) {
+  if (num_deleted > 0) {
     // Rebuild the graph in topological order.
     // The original order may not be a topological order.
     delete_nodes(indices_to_delete);
     rebuild_graph(/*sort=*/true);
+  }
+
+  return num_deleted;
+}
+
+bool StateFlowGraph::fuse() {
+  TI_AUTO_PROF;
+  using bit::Bitset;
+  // Only guarantee to fuse tasks with indices in nodes_ differ by less than
+  // kMaxFusionDistance if there are too many tasks.
+  const int kMaxFusionDistance = 512;
+
+  // Invoke fuse_range() floor(num_pending_tasks() / kMaxFusionDistance)
+  // times with (end - begin) <= 2 * kMaxFusionDistance.
+  bool modified = false;
+  int num_optimized_tasks = 0;
+  while (num_optimized_tasks < num_pending_tasks()) {
+    if (num_optimized_tasks + 2 * kMaxFusionDistance >= num_pending_tasks()) {
+      if (fuse_range(num_optimized_tasks, num_pending_tasks()))
+        modified = true;
+      break;
+    } else {
+      int num_deleted_tasks = fuse_range(
+          num_optimized_tasks, num_optimized_tasks + 2 * kMaxFusionDistance);
+      if (num_deleted_tasks)
+        modified = true;
+      num_optimized_tasks +=
+          std::max(0, kMaxFusionDistance - num_deleted_tasks);
+    }
   }
 
   return modified;

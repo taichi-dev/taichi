@@ -96,6 +96,10 @@ class StateFlowGraph {
 
   std::vector<Node *> get_pending_tasks() const;
 
+  // Returns get_pending_tasks()[begin, end) and set their pending_node_id
+  // to [0, end - begin).
+  std::vector<Node *> get_pending_tasks(int begin, int end);
+
   std::vector<std::unique_ptr<Node>> extract_pending_tasks();
 
   void clear();
@@ -123,8 +127,9 @@ class StateFlowGraph {
   std::pair<std::vector<bit::Bitset>, std::vector<bit::Bitset>>
   compute_transitive_closure(int begin, int end);
 
-  // Fuse tasks in get_pending_tasks()[begin, end).
-  bool fuse_range(int begin, int end);
+  // Fuse tasks in get_pending_tasks()[begin, end),
+  // return the number of deleted tasks.
+  int fuse_range(int begin, int end);
 
   bool fuse();
 

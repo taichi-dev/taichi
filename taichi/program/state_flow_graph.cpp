@@ -938,7 +938,7 @@ bool StateFlowGraph::optimize_dead_store() {
         // only focus on "value" states.
         continue;
       }
-      if (latest_state_owner_[s] == task.get()) {
+      if (latest_state_owner_[s] == task) {
         // Cannot eliminate the latest write, because it may form a state-flow
         // with the later kernel launches.
         //

@@ -520,9 +520,10 @@ bool StateFlowGraph::fuse() {
   // times with (end - begin) <= 2 * kMaxFusionDistance.
   std::unordered_set<int> indices_to_delete;
   const int n = num_pending_tasks();
-  if (n <= kMaxFusionDistance * 2) {
+  if (true) {
     indices_to_delete = fuse_range(0, n);
   } else {
+    // TODO: fuse by range
     for (int i = 0; i < n; i += kMaxFusionDistance * 2) {
       auto indices = fuse_range(i, std::min(n, i + kMaxFusionDistance * 2));
       indices_to_delete.insert(indices.begin(), indices.end());
@@ -539,7 +540,7 @@ bool StateFlowGraph::fuse() {
   // TODO: Do we need a trash bin here?
   if (modified) {
     // Rebuild the graph in topological order.
-    // The original order may not be a topological order.
+    // The original order may not be a correct topological order.
     delete_nodes(indices_to_delete);
     rebuild_graph(/*sort=*/true);
   }

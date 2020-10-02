@@ -31,6 +31,7 @@ class StateFlowGraph {
     TaskMeta *meta{nullptr};
     // Incremental ID to identify the i-th launch of the task.
     bool is_initial_node{false};
+    bool executed{false};
 
     // Returns the position in nodes_. Invoke StateFlowGraph::reid_nodes() to
     // keep it up-to-date.

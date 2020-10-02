@@ -79,8 +79,11 @@ void StateFlowGraph::mark_pending_tasks_as_executed() {
     state_readers.insert(reader.second.begin(), reader.second.end());
   }
   for (auto &node : nodes_) {
-    if (node->is_initial_node || state_owners.count(node.get()) > 0 ||
-        state_readers.count(node.get()) > 0) {
+    if (node->is_initial_node) {
+      new_nodes.push_back(std::move(node));
+    } else if (state_owners.count(node.get()) > 0 ||
+               state_readers.count(node.get()) > 0) {
+      node->executed = true;
       new_nodes.push_back(std::move(node));
     }
   }
@@ -913,6 +916,24 @@ bool StateFlowGraph::optimize_dead_store() {
 void StateFlowGraph::verify() {
   TI_AUTO_PROF
   const int n = nodes_.size();
+  TI_ASSERT_INFO(n >= 1, "SFG is empty");
+  for (int i = 0; i < n; i++) {
+    TI_ASSERT_INFO(nodes_[i], "nodes_[{}] is nullptr", i);
+  }
+  TI_ASSERT_INFO(nodes_[0]->is_initial_node,
+                 "nodes_[0] is not the initial node");
+  TI_ASSERT_INFO(nodes_[0].get() == initial_node_,
+                 "initial_node_ is not nodes_[0]");
+  TI_ASSERT(first_pending_task_index_ <= n);
+  for (int i = 1; i < first_pending_task_index_; i++) {
+    TI_ASSERT_INFO(nodes_[i]->executed, "nodes_[{}]({})->executed is false", i,
+                   nodes_[i]->string());
+  }
+  for (int i = first_pending_task_index_; i < n; i++) {
+    TI_ASSERT_INFO(!nodes_[i]->executed, "nodes_[{}]({})->executed is true", i,
+                   nodes_[i]->string());
+  }
+
   reid_nodes();
   for (int i = 0; i < n; i++) {
     for (auto &edges : nodes_[i]->output_edges) {

@@ -37,6 +37,10 @@ class StateFlowGraph {
     // keep it up-to-date.
     int node_id{0};
 
+    // Returns the position in get_pending_tasks() or extract_pending_tasks().
+    // Invoke StateFlowGraph::reid_pending_nodes() to keep it up-to-date.
+    int pending_node_id{0};
+
     // Profiling showed horrible performance using std::unordered_multimap (at
     // least on Mac with clang-1103.0.32.62)...
     std::unordered_map<AsyncState, std::unordered_set<Node *>> output_edges,
@@ -132,6 +136,8 @@ class StateFlowGraph {
   void delete_nodes(const std::unordered_set<int> &indices_to_delete);
 
   void reid_nodes();
+
+  void reid_pending_nodes();
 
   void replace_reference(Node *node_a,
                          Node *node_b,

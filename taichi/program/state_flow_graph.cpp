@@ -76,6 +76,7 @@ void StateFlowGraph::clear() {
   initial_node_->output_edges.clear();
   latest_state_owner_.clear();
   latest_state_readers_.clear();
+  first_pending_task_index_ = 1;
 
   // Do not clear task_name_to_launch_ids_.
 }
@@ -500,9 +501,14 @@ void StateFlowGraph::rebuild_graph(bool sort) {
       tasks.push_back(nodes_[i]->rec);
     }
   }
+  int backup_first_pending_task_index = first_pending_task_index_;
   clear();
   for (auto &task : tasks) {
     insert_task(task);
+  }
+  first_pending_task_index_ = backup_first_pending_task_index;
+  for (int i = 1; i < first_pending_task_index_; i++) {
+    nodes_[i]->executed = true;
   }
 }
 
@@ -717,9 +723,9 @@ void StateFlowGraph::topo_sort_nodes() {
   // Only sort pending tasks.
   const auto previous_size = nodes_.size();
   std::deque<std::unique_ptr<Node>> queue;
-  std::vector<int> degrees_in(nodes_.size());
+  std::vector<int> degrees_in(num_pending_tasks());
 
-  reid_nodes();
+  reid_pending_nodes();
 
   auto pending_tasks = extract_pending_tasks();
   for (auto &node : pending_tasks) {
@@ -731,11 +737,11 @@ void StateFlowGraph::topo_sort_nodes() {
         }
       }
     }
-    degrees_in[node->node_id] = degree_in;
+    degrees_in[node->pending_node_id] = degree_in;
   }
 
   for (auto &node : pending_tasks) {
-    if (degrees_in[node->node_id] == 0) {
+    if (degrees_in[node->pending_node_id] == 0) {
       queue.emplace_back(std::move(node));
     }
   }
@@ -747,11 +753,11 @@ void StateFlowGraph::topo_sort_nodes() {
     // Delete the node and update degrees_in
     for (auto &output_edge : head->output_edges) {
       for (auto &e : output_edge.second) {
-        auto dest = e->node_id;
+        auto dest = e->pending_node_id;
         degrees_in[dest]--;
         TI_ASSERT(degrees_in[dest] >= 0);
         if (degrees_in[dest] == 0) {
-          queue.push_back(std::move(nodes_[dest]));
+          queue.push_back(std::move(pending_tasks[dest]));
         }
       }
     }
@@ -769,6 +775,13 @@ void StateFlowGraph::reid_nodes() {
     nodes_[i]->node_id = i;
   }
   TI_ASSERT(initial_node_->node_id == 0);
+}
+
+void StateFlowGraph::reid_pending_nodes() {
+  TI_AUTO_PROF
+  for (int i = first_pending_task_index_; i < nodes_.size(); i++) {
+    nodes_[i]->pending_node_id = i - first_pending_task_index_;
+  }
 }
 
 void StateFlowGraph::replace_reference(StateFlowGraph::Node *node_a,

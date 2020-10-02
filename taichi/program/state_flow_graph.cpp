@@ -184,9 +184,16 @@ bool StateFlowGraph::optimize_listgen() {
     // Thanks to the dependency edges, the order of nodes in listgens is
     // UNIQUE. (Consider the list state of the SNode.)
 
+    // Note that there can be > 1 executed listgens because they are
+    // latest state readers of other states.
+    int i_start = 0;
+    while (i_start + 1 < listgens.size() && listgens[i_start + 1]->executed) {
+      i_start++;
+    }
+
     // We can only replace a continuous subset of listgen entries.
     // So the nested loop below is actually O(n).
-    for (int i = 0; i < listgens.size(); i++) {
+    for (int i = i_start; i < listgens.size(); i++) {
       auto node_a = listgens[i];
 
       bool erased_any = false;
@@ -220,6 +227,7 @@ bool StateFlowGraph::optimize_listgen() {
 
         TI_ASSERT(node_b->input_edges[list_state].size() == 1);
         Node *clear_node = *node_b->input_edges[list_state].begin();
+        TI_ASSERT(!clear_node->executed);
         // TODO: This could be a bottleneck, avoid unnecessary IR clone.
         // However, the task most likely will only contain a single
         // ClearListStmt, so it's not a big deal...
@@ -517,7 +525,7 @@ bool StateFlowGraph::fuse() {
   // kMaxFusionDistance if there are too many tasks.
   const int kMaxFusionDistance = 512;
 
-  // Invoke fuse_range() floor(num_pending_tasks() / kMaxFusionDistance)
+  // Invoke fuse_range() <= floor(num_pending_tasks() / kMaxFusionDistance)
   // times with (end - begin) <= 2 * kMaxFusionDistance.
   bool modified = false;
   int num_optimized_tasks = 0;
@@ -531,8 +539,7 @@ bool StateFlowGraph::fuse() {
           num_optimized_tasks, num_optimized_tasks + 2 * kMaxFusionDistance);
       if (num_deleted_tasks)
         modified = true;
-      num_optimized_tasks +=
-          std::max(0, kMaxFusionDistance - num_deleted_tasks);
+      num_optimized_tasks += std::min(kMaxFusionDistance, 2 * kMaxFusionDistance - num_deleted_tasks);
     }
   }
 
@@ -545,20 +552,22 @@ void StateFlowGraph::rebuild_graph(bool sort) {
     topo_sort_nodes();
   std::vector<TaskLaunchRecord> tasks;
   tasks.reserve(nodes_.size());
+  int num_executed_tasks = 0;
   for (int i = 1; i < (int)nodes_.size(); i++) {
     if (!nodes_[i]->rec.empty()) {
       tasks.push_back(nodes_[i]->rec);
+      if (nodes_[i]->executed)
+        num_executed_tasks++;
     }
   }
-  int backup_first_pending_task_index = first_pending_task_index_;
   clear();
   for (auto &task : tasks) {
     insert_task(task);
   }
-  first_pending_task_index_ = backup_first_pending_task_index;
-  for (int i = 1; i < first_pending_task_index_; i++) {
+  for (int i = 1; i <= num_executed_tasks; i++) {
     nodes_[i]->executed = true;
   }
+  first_pending_task_index_ = num_executed_tasks + 1;
 }
 
 std::vector<TaskLaunchRecord> StateFlowGraph::extract_to_execute() {
@@ -578,6 +587,7 @@ std::vector<TaskLaunchRecord> StateFlowGraph::extract_to_execute() {
 
 void StateFlowGraph::print() {
   fmt::print("=== State Flow Graph ===\n");
+  fmt::print("{}\n", first_pending_task_index_);
   for (auto &node : nodes_) {
     fmt::print("{}\n", node->string());
     if (!node->input_edges.empty()) {
@@ -803,6 +813,7 @@ void StateFlowGraph::topo_sort_nodes() {
     for (auto &output_edge : head->output_edges) {
       for (auto &e : output_edge.second) {
         auto dest = e->pending_node_id;
+        TI_ASSERT(dest != -1);
         degrees_in[dest]--;
         TI_ASSERT(degrees_in[dest] >= 0);
         if (degrees_in[dest] == 0) {

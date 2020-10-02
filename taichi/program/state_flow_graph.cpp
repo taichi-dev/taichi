@@ -539,8 +539,21 @@ bool StateFlowGraph::fuse() {
           num_optimized_tasks, num_optimized_tasks + 2 * kMaxFusionDistance);
       if (num_deleted_tasks)
         modified = true;
-      num_optimized_tasks += std::min(
-          kMaxFusionDistance, 2 * kMaxFusionDistance - num_deleted_tasks);
+      num_optimized_tasks += 2 * kMaxFusionDistance - num_deleted_tasks;
+    }
+  }
+  num_optimized_tasks = kMaxFusionDistance;
+  while (num_optimized_tasks < num_pending_tasks()) {
+    if (num_optimized_tasks + 2 * kMaxFusionDistance >= num_pending_tasks()) {
+      if (fuse_range(num_optimized_tasks, num_pending_tasks()))
+        modified = true;
+      break;
+    } else {
+      int num_deleted_tasks = fuse_range(
+          num_optimized_tasks, num_optimized_tasks + 2 * kMaxFusionDistance);
+      if (num_deleted_tasks)
+        modified = true;
+      num_optimized_tasks += 2 * kMaxFusionDistance - num_deleted_tasks;
     }
   }
 

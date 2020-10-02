@@ -155,6 +155,7 @@ void StateFlowGraph::insert_task(const TaskLaunchRecord &rec) {
 }
 
 void StateFlowGraph::insert_state_flow(Node *from, Node *to, AsyncState state) {
+  TI_AUTO_PROF;
   TI_ASSERT(from != nullptr);
   TI_ASSERT(to != nullptr);
   from->output_edges[state].insert(to);

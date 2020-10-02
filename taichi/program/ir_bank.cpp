@@ -189,4 +189,41 @@ IRHandle IRBank::demote_activation(IRHandle handle) {
   return result;
 }
 
+std::pair<IRHandle, bool> IRBank::optimize_dse(
+    IRHandle handle,
+    const std::set<const SNode *> &snodes,
+    bool verbose) {
+  const OptimizeDseKey key(handle, snodes);
+  auto &ret_handle = optimize_dse_bank_[key];
+  if (!ret_handle.empty()) {
+    // Already cached
+    return std::make_pair(ret_handle, true);
+  }
+
+  std::unique_ptr<IRNode> new_ir = handle.clone();
+
+  if (verbose) {
+    TI_INFO("  DSE: before CFG");
+    irpass::print(new_ir.get());
+  }
+  ControlFlowGraph::LiveVarAnalysisConfig lva_config;
+  lva_config.eliminable_snodes = {snodes.begin(), snodes.end()};
+  const bool modified = irpass::cfg_optimization(
+      new_ir.get(), /*after_lower_access=*/false, lva_config);
+  if (verbose) {
+    TI_INFO("  DSE: after CFG, modified={}", modified);
+    irpass::print(new_ir.get());
+  }
+
+  if (!modified) {
+    // Nothing demoted. Simply delete new_ir when this function returns.
+    ret_handle = handle;
+    return std::make_pair(ret_handle, false);
+  }
+
+  ret_handle = IRHandle(new_ir.get(), get_hash(new_ir.get()));
+  insert(std::move(new_ir), ret_handle.hash());
+  return std::make_pair(ret_handle, false);
+}
+
 TLANG_NAMESPACE_END

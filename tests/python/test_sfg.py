@@ -1,4 +1,5 @@
 import taichi as ti
+import numpy as np
 import pytest
 
 
@@ -58,3 +59,46 @@ def test_remove_clear_list_from_fused_serial():
         else:
             assert ys[i] == i + 2
             assert xs[i] == 0
+
+
+@ti.test(require=ti.extension.async_mode, async_mode=True)
+def test_sfg_dead_store_elimination():
+    ti.init(arch=ti.cpu, async_mode=True)
+    n = 32
+
+    x = ti.field(dtype=float, shape=n, needs_grad=True)
+    total_energy = ti.field(dtype=float, shape=(), needs_grad=True)
+    unused = ti.field(dtype=float, shape=())
+
+    @ti.kernel
+    def gather():
+        for i in x:
+            e = x[i]**2
+            total_energy[None] += e
+
+    @ti.kernel
+    def scatter():
+        for i in x:
+            unused[None] += x[i]
+
+    xnp = np.arange(n, dtype=np.float32)
+    x.from_numpy(xnp)
+    ti.sync()
+
+    stats = ti.get_kernel_stats()
+    stats.clear()
+
+    for _ in range(5):
+        with ti.Tape(total_energy):
+            gather()
+        scatter()
+
+    ti.sync()
+    counters = stats.get_counters()
+
+    # gather() should be DSE'ed
+    assert counters['sfg_dse_tasks'] > 0
+
+    x_grad = x.grad.to_numpy()
+    for i in range(n):
+        assert ti.approx(x_grad[i]) == 2.0 * i

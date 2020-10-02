@@ -195,6 +195,7 @@ bool StateFlowGraph::optimize_listgen() {
 
       for (int j = i + 1; j < listgens.size(); j++) {
         auto node_b = listgens[j];
+        TI_ASSERT(!node_b->executed);
 
         // Test if two list generations share the same mask and parent list
         auto snode = node_a->meta->snode;
@@ -911,11 +912,9 @@ bool StateFlowGraph::optimize_dead_store() {
   TI_AUTO_PROF
   bool modified = false;
 
-  for (int i = 1; i < nodes_.size(); i++) {
-    // Start from 1 to skip the initial node
-
+  auto nodes = get_pending_tasks();
+  for (auto &task : nodes) {
     // Dive into this task and erase dead stores
-    auto &task = nodes_[i];
     // Try to find unnecessary output state
     for (auto &s : task->meta->output_states) {
       bool used = false;
@@ -930,8 +929,7 @@ bool StateFlowGraph::optimize_dead_store() {
       if (used)
         continue;
 
-      if (s.type != AsyncState::Type::list &&
-          latest_state_owner_[s] == task.get())
+      if (s.type != AsyncState::Type::list && latest_state_owner_[s] == task)
         // Note that list state is special. Since a future list generation
         // always comes with ClearList, we can erase the list state even if it
         // is latest.
@@ -960,7 +958,7 @@ bool StateFlowGraph::optimize_dead_store() {
           // task->meta->print();
 
           for (auto other : task->output_edges[s])
-            other->input_edges[s].erase(task.get());
+            other->input_edges[s].erase(task);
 
           task->output_edges.erase(s);
           modified = true;
@@ -971,7 +969,7 @@ bool StateFlowGraph::optimize_dead_store() {
 
   std::unordered_set<int> to_delete;
   // erase empty blocks
-  for (int i = 1; i < (int)nodes_.size(); i++) {
+  for (int i = first_pending_task_index_; i < (int)nodes_.size(); i++) {
     auto &meta = *nodes_[i]->meta;
     auto ir = nodes_[i]->rec.ir_handle.ir()->cast<OffloadedStmt>();
     if (meta.type == OffloadedStmt::serial && ir->body->statements.empty()) {
@@ -1101,9 +1099,11 @@ bool StateFlowGraph::demote_activation() {
     auto new_handle = ir_bank_->demote_activation(nodes[0]->rec.ir_handle);
     if (new_handle != nodes[0]->rec.ir_handle) {
       modified = true;
+      TI_ASSERT(!nodes[1]->executed);
       nodes[1]->rec.ir_handle = new_handle;
       nodes[1]->meta = get_task_meta(ir_bank_, nodes[1]->rec);
       for (int j = 2; j < (int)nodes.size(); j++) {
+        TI_ASSERT(!nodes[j]->executed);
         nodes[j]->rec.ir_handle = new_handle;
         nodes[j]->meta = nodes[1]->meta;
       }

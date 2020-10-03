@@ -96,9 +96,8 @@ class StateFlowGraph {
 
   std::vector<Node *> get_pending_tasks() const;
 
-  // Returns get_pending_tasks()[begin, end) and set their pending_node_id
-  // to [0, end - begin).
-  std::vector<Node *> get_pending_tasks(int begin, int end);
+  // Returns get_pending_tasks()[begin, end).
+  std::vector<Node *> get_pending_tasks(int begin, int end) const;
 
   std::vector<std::unique_ptr<Node>> extract_pending_tasks();
 

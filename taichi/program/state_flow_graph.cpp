@@ -50,28 +50,19 @@ StateFlowGraph::StateFlowGraph(IRBank *ir_bank)
 }
 
 std::vector<StateFlowGraph::Node *> StateFlowGraph::get_pending_tasks() const {
-  std::vector<Node *> pending_tasks;
-  TI_ASSERT(nodes_.size() >= first_pending_task_index_);
-  pending_tasks.reserve(nodes_.size() - first_pending_task_index_);
-  for (int i = first_pending_task_index_; i < (int)nodes_.size(); i++) {
-    pending_tasks.push_back(nodes_[i].get());
-  }
-  return pending_tasks;
+  return get_pending_tasks(/*begin=*/0, /*end=*/num_pending_tasks());
 }
 
-std::vector<StateFlowGraph::Node *> StateFlowGraph::get_pending_tasks(int begin,
-                                                                      int end) {
+std::vector<StateFlowGraph::Node *> StateFlowGraph::get_pending_tasks(
+    int begin,
+    int end) const {
   std::vector<Node *> pending_tasks;
-  TI_ASSERT(begin >= 0 && begin <= end);
-  TI_ASSERT(nodes_.size() >= first_pending_task_index_ + end);
+  TI_ASSERT(0 <= begin && begin <= end);
+  TI_ASSERT(end <= num_pending_tasks());
   pending_tasks.reserve(end - begin);
-  for (auto &node : nodes_) {
-    node->pending_node_id = -1;
-  }
   for (int i = first_pending_task_index_ + begin;
        i < first_pending_task_index_ + end; i++) {
     pending_tasks.push_back(nodes_[i].get());
-    nodes_[i]->pending_node_id = i - first_pending_task_index_ - begin;
   }
   return pending_tasks;
 }
@@ -115,11 +106,13 @@ void StateFlowGraph::mark_pending_tasks_as_executed() {
     } else if (state_owners.count(node.get()) > 0 ||
                state_readers.count(node.get()) > 0) {
       node->executed = true;
+      node->pending_node_id = -1;
       new_nodes.push_back(std::move(node));
     }
   }
   nodes_ = std::move(new_nodes);
   first_pending_task_index_ = nodes_.size();
+  reid_nodes();
 }
 
 void StateFlowGraph::insert_task(const TaskLaunchRecord &rec) {
@@ -302,9 +295,10 @@ StateFlowGraph::compute_transitive_closure(int begin, int end) {
   for (int i = n - 1; i >= 0; i--) {
     for (auto &edges : nodes[i]->input_edges) {
       for (auto &edge : edges.second) {
-        if (edge->pending_node_id != -1) {
-          TI_ASSERT(edge->pending_node_id < i);
-          has_path[edge->pending_node_id] |= has_path[i];
+        auto tmp_id = edge->pending_node_id - begin;
+        if (tmp_id >= 0 && tmp_id < n) {
+          TI_ASSERT(tmp_id < i);
+          has_path[tmp_id] |= has_path[i];
         }
       }
     }
@@ -312,9 +306,10 @@ StateFlowGraph::compute_transitive_closure(int begin, int end) {
   for (int i = 0; i < n; i++) {
     for (auto &edges : nodes[i]->output_edges) {
       for (auto &edge : edges.second) {
-        if (edge->pending_node_id != -1) {
-          TI_ASSERT(edge->pending_node_id > i);
-          has_path_reverse[edge->pending_node_id] |= has_path_reverse[i];
+        auto tmp_id = edge->pending_node_id - begin;
+        if (tmp_id >= 0 && tmp_id < n) {
+          TI_ASSERT(tmp_id > i);
+          has_path_reverse[tmp_id] |= has_path_reverse[i];
         }
       }
     }
@@ -330,10 +325,10 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
     return std::unordered_set<int>();
   }
 
+  auto nodes = get_pending_tasks(begin, end);
+
   std::vector<Bitset> has_path, has_path_reverse;
   std::tie(has_path, has_path_reverse) = compute_transitive_closure(begin, end);
-
-  auto nodes = get_pending_tasks(begin, end);
 
   // Classify tasks by TaskFusionMeta.
   std::vector<TaskFusionMeta> fusion_meta(n);
@@ -494,7 +489,7 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
       bool i_updated = false;
       for (auto &edges : nodes[i]->output_edges) {
         for (auto &edge : edges.second) {
-          const int j = edge->pending_node_id;
+          const int j = edge->pending_node_id - begin;
           if (j != -1 && edge_fusible(i, j)) {
             do_fuse(i, j);
             // Iterators of nodes[i]->output_edges may be invalidated
@@ -573,6 +568,8 @@ void StateFlowGraph::rebuild_graph(bool sort) {
     nodes_[i]->executed = true;
   }
   first_pending_task_index_ = num_executed_tasks + 1;
+  reid_nodes();
+  reid_pending_nodes();
 }
 
 std::vector<TaskLaunchRecord> StateFlowGraph::extract_to_execute() {
@@ -923,6 +920,7 @@ void StateFlowGraph::delete_nodes(
 
   nodes_ = std::move(new_nodes_);
   reid_nodes();
+  reid_pending_nodes();
 }
 
 bool StateFlowGraph::optimize_dead_store() {

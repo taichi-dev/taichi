@@ -1,9 +1,12 @@
 #pragma once
 
-#include "taichi/ir/ir.h"
 #include <atomic>
-#include <unordered_set>
+#include <optional>
 #include <unordered_map>
+#include <unordered_set>
+
+#include "taichi/ir/control_flow_graph.h"
+#include "taichi/ir/ir.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -19,7 +22,11 @@ void re_id(IRNode *root);
 void flag_access(IRNode *root);
 bool die(IRNode *root);
 bool simplify(IRNode *root, Kernel *kernel = nullptr);
-bool cfg_optimization(IRNode *root, bool after_lower_access);
+bool cfg_optimization(
+    IRNode *root,
+    bool after_lower_access,
+    const std::optional<ControlFlowGraph::LiveVarAnalysisConfig>
+        &lva_config_opt = std::nullopt);
 bool alg_simp(IRNode *root);
 bool demote_operations(IRNode *root);
 bool binary_op_simplify(IRNode *root);

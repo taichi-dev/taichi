@@ -1,5 +1,8 @@
 #pragma once
 
+#include <optional>
+#include <unordered_set>
+
 #include "taichi/ir/ir.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -70,6 +73,12 @@ class ControlFlowGraph {
   void erase(int node_id);
 
  public:
+  struct LiveVarAnalysisConfig {
+    // This is mostly useful for SFG task-level dead store elimination. SFG may
+    // detect certain cases where writes to one or more SNodes in a task are
+    // eliminable.
+    std::unordered_set<const SNode *> eliminable_snodes;
+  };
   std::vector<std::unique_ptr<CFGNode>> nodes;
   const int start_node = 0;
   int final_node{0};
@@ -85,7 +94,9 @@ class ControlFlowGraph {
 
   void print_graph_structure() const;
   void reaching_definition_analysis(bool after_lower_access);
-  void live_variable_analysis(bool after_lower_access);
+  void live_variable_analysis(
+      bool after_lower_access,
+      const std::optional<LiveVarAnalysisConfig> &config_opt);
 
   void simplify_graph();
 
@@ -96,7 +107,9 @@ class ControlFlowGraph {
   bool store_to_load_forwarding(bool after_lower_access);
 
   // Also performs identical load elimination.
-  bool dead_store_elimination(bool after_lower_access);
+  bool dead_store_elimination(
+      bool after_lower_access,
+      const std::optional<LiveVarAnalysisConfig> &lva_config_opt);
 };
 
 TLANG_NAMESPACE_END

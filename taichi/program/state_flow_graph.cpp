@@ -1,12 +1,13 @@
 #include "taichi/program/state_flow_graph.h"
 
-#include "taichi/ir/transforms.h"
-#include "taichi/ir/analysis.h"
-#include "taichi/program/async_engine.h"
-
 #include <set>
 #include <sstream>
 #include <unordered_set>
+
+#include "taichi/ir/analysis.h"
+#include "taichi/ir/transforms.h"
+#include "taichi/program/async_engine.h"
+#include "taichi/util/statistics.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -793,55 +794,75 @@ bool StateFlowGraph::optimize_dead_store() {
 
     // Dive into this task and erase dead stores
     auto &task = nodes_[i];
+    std::set<const SNode *> store_eliminable_snodes;
     // Try to find unnecessary output state
     for (auto &s : task->meta->output_states) {
+      if (s.type != AsyncState::Type::value) {
+        // Listgen elimination has been handled in optimize_listgen, so we will
+        // only focus on "value" states.
+        continue;
+      }
+      if (latest_state_owner_[s] == task.get()) {
+        // Cannot eliminate the latest write, because it may form a state-flow
+        // with the later kernel launches.
+        //
+        // TODO: Add some sort of hints so that the compiler knows that some
+        // value will never be used?
+        continue;
+      }
+      auto *snode = s.snode;
+      if (!snode->is_scalar()) {
+        // TODO: handle non-scalar SNodes, i.e. num_active_indices > 0.
+        continue;
+      }
       bool used = false;
       for (auto other : task->output_edges[s]) {
-        if (task->has_state_flow(s, other)) {
+        if (task->has_state_flow(s, other) &&
+            (other->meta->input_states.count(s) > 0)) {
+          // Check if this is a RAW dependency. For scalar SNodes, a WAW flow
+          // edge decades to a dependency edge.
+          //
+          // TODO: This is a hack that only works for scalar SNodes. The proper
+          // handling would require value killing analysis.
           used = true;
         } else {
           // Note that a dependency edge does not count as an data usage
         }
       }
       // This state is used by some other node, so it cannot be erased
-      if (used)
+      if (used) {
         continue;
+      }
 
-      if (s.type != AsyncState::Type::list &&
-          latest_state_owner_[s] == task.get())
-        // Note that list state is special. Since a future list generation
-        // always comes with ClearList, we can erase the list state even if it
-        // is latest.
-        continue;
+      store_eliminable_snodes.insert(snode);
+    }
 
-      // *****************************
-      // Erase the state s output.
-      if (s.type == AsyncState::Type::list &&
-          task->meta->type == OffloadedStmt::TaskType::serial) {
-        // Try to erase list gen
-        DelayedIRModifier mod;
+    // *****************************
+    // Erase the state s output.
+    if (!store_eliminable_snodes.empty()) {
+      const bool verbose = task->rec.kernel->program.config.verbose;
 
-        auto new_ir = task->rec.ir_handle.clone();
-        irpass::analysis::gather_statements(new_ir.get(), [&](Stmt *stmt) {
-          // TODO: invoke mod.erase(stmt) when necessary;
-          return false;
-        });
-        if (mod.modify_ir()) {
-          // IR modified. Node should be updated.
-          auto handle =
-              IRHandle(new_ir.get(), ir_bank_->get_hash(new_ir.get()));
-          ir_bank_->insert(std::move(new_ir), handle.hash());
-          task->rec.ir_handle = handle;
-          // task->meta->print();
-          task->meta = get_task_meta(ir_bank_, task->rec);
-          // task->meta->print();
-
-          for (auto other : task->output_edges[s])
-            other->input_edges[s].erase(task.get());
-
-          task->output_edges.erase(s);
-          modified = true;
+      const auto dse_result = ir_bank_->optimize_dse(
+          task->rec.ir_handle, store_eliminable_snodes, verbose);
+      auto new_handle = dse_result.first;
+      if (new_handle != task->rec.ir_handle) {
+        modified = true;
+        task->rec.ir_handle = new_handle;
+        task->meta = get_task_meta(ir_bank_, task->rec);
+      }
+      bool first_compute = !dse_result.second;
+      if (first_compute && modified) {
+        stat.add("sfg_dse_tasks", 1.0);
+      }
+      if (first_compute && verbose) {
+        // Log only for the first time, otherwise we will be overwhelmed very
+        // quickly...
+        std::vector<std::string> snodes_strs;
+        for (const auto *sn : store_eliminable_snodes) {
+          snodes_strs.push_back(sn->get_node_type_name_hinted());
         }
+        TI_INFO("SFG DSE: task={} snodes={} optimized?={}", task->string(),
+                fmt::join(snodes_strs, ", "), modified);
       }
     }
   }
@@ -851,19 +872,19 @@ bool StateFlowGraph::optimize_dead_store() {
   for (int i = 1; i < (int)nodes_.size(); i++) {
     auto &meta = *nodes_[i]->meta;
     auto ir = nodes_[i]->rec.ir_handle.ir()->cast<OffloadedStmt>();
-    if (meta.type == OffloadedStmt::serial && ir->body->statements.empty()) {
-      to_delete.insert(i);
-    } else if (meta.type == OffloadedStmt::struct_for &&
-               ir->body->statements.empty()) {
-      to_delete.insert(i);
-    } else if (meta.type == OffloadedStmt::range_for &&
-               ir->body->statements.empty()) {
+    const auto mt = meta.type;
+    // Do NOT check ir->body->statements first! |ir->body| could be done when
+    // |mt| is not the desired type.
+    if ((mt == OffloadedStmt::serial || mt == OffloadedStmt::struct_for ||
+         mt == OffloadedStmt::range_for) &&
+        ir->body->statements.empty()) {
       to_delete.insert(i);
     }
   }
 
-  if (!to_delete.empty())
+  if (!to_delete.empty()) {
     modified = true;
+  }
 
   delete_nodes(to_delete);
 

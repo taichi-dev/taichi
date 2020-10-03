@@ -161,7 +161,6 @@ bool StateFlowGraph::optimize_listgen() {
   std::vector<std::pair<int, int>> common_pairs;
 
   topo_sort_nodes();
-  reid_nodes();
 
   std::unordered_map<SNode *, std::vector<Node *>> listgen_nodes;
 
@@ -828,6 +827,7 @@ void StateFlowGraph::topo_sort_nodes() {
 
   TI_ASSERT(previous_size == nodes_.size());
   reid_nodes();
+  reid_pending_nodes();
 }
 
 void StateFlowGraph::reid_nodes() {
@@ -840,9 +840,6 @@ void StateFlowGraph::reid_nodes() {
 
 void StateFlowGraph::reid_pending_nodes() {
   TI_AUTO_PROF
-  for (int i = 0; i < first_pending_task_index_; i++) {
-    nodes_[i]->pending_node_id = -1;
-  }
   for (int i = first_pending_task_index_; i < nodes_.size(); i++) {
     nodes_[i]->pending_node_id = i - first_pending_task_index_;
   }

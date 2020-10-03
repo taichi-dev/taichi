@@ -31,14 +31,13 @@ class StateFlowGraph {
     TaskMeta *meta{nullptr};
     // Incremental ID to identify the i-th launch of the task.
     bool is_initial_node{false};
-    bool executed{false};
 
     // Returns the position in nodes_. Invoke StateFlowGraph::reid_nodes() to
     // keep it up-to-date.
     int node_id{0};
 
     // Returns the position in get_pending_tasks() or extract_pending_tasks().
-    // Invoke StateFlowGraph::reid_pending_nodes() to keep it up-to-date.
+    // For executed tasks (including the initial node), pending_node_id is -1.
     int pending_node_id{0};
 
     // Profiling showed horrible performance using std::unordered_multimap (at
@@ -47,7 +46,15 @@ class StateFlowGraph {
         input_edges;
 
     bool pending() const {
-      return !is_initial_node && !executed;
+      return pending_node_id >= 0;
+    }
+
+    bool executed() const {
+      return pending_node_id == -1;
+    }
+
+    void mark_executed() {
+      pending_node_id = -1;
     }
 
     std::string string() const;
@@ -150,7 +157,7 @@ class StateFlowGraph {
 
   void topo_sort_nodes();
 
-  void verify();
+  void verify() const;
 
   // Extract all pending tasks and insert them in topological/original order.
   void rebuild_graph(bool sort);

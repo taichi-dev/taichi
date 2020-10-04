@@ -69,9 +69,8 @@ void Kernel::compile() {
 void Kernel::lower(bool to_executable) {  // TODO: is a "Lowerer" class
                                           // necessary for each backend?
   TI_ASSERT(!lowered);
-  if (arch_is_cpu(arch) || arch == Arch::cuda) {
+  if (arch_is_cpu(arch) || arch == Arch::cuda || arch == Arch::metal) {
     CurrentKernelGuard _(program, this);
-    auto codegen = KernelCodeGen::create(arch, this);
     auto config = program.config;
     bool verbose = config.print_ir;
     if ((is_accessor && !config.print_accessor_ir) ||
@@ -81,9 +80,9 @@ void Kernel::lower(bool to_executable) {  // TODO: is a "Lowerer" class
     if (to_executable) {
       irpass::compile_to_executable(
           ir.get(), config, /*vectorize*/ arch_is_cpu(arch), grad,
-          /*ad_use_stack*/ true, verbose, /*lower_global_access*/ to_executable,
-          /*make_thread_local*/ config.make_thread_local,
-          /*make_block_local*/
+          /*ad_use_stack=*/true, verbose, /*lower_global_access=*/to_executable,
+          /*make_thread_local=*/config.make_thread_local,
+          /*make_block_local=*/
           is_extension_supported(config.arch, Extension::bls) &&
               config.make_block_local);
     } else {

@@ -3,7 +3,8 @@ import numpy as np
 import pytest
 
 
-@ti.test(require=ti.extension.async_mode, async_mode=True)
+@ti.test(require=[ti.extension.async_mode, ti.extension.sparse],
+         async_mode=True)
 def test_remove_clear_list_from_fused_serial():
     x = ti.field(ti.i32)
     y = ti.field(ti.i32)

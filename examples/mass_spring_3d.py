@@ -7,7 +7,8 @@ except ImportError:
     print('This example needs the extension library Taichi THREE to work.'
           'Please run `pip install taichi_three==0.0.5` to install it.')
 if t3.__version__ != (0, 0, 5):
-    print('WARNING: Taichi THREE v0.0.5 expected, got v' + '.'.join(map(str, t3.__version__)))
+    print('WARNING: Taichi THREE v0.0.5 expected, got v' +
+          '.'.join(map(str, t3.__version__)))
 
 ti.init(arch=ti.gpu)
 
@@ -50,7 +51,8 @@ def substep():
         v[i] += stiffness * acc * dt
     for i in ti.grouped(x):
         v[i].y -= gravity * dt
-        v[i] = tl.ballBoundReflect(x[i], v[i], tl.vec(+0.0, +0.2, -0.0), 0.4, 6)
+        v[i] = tl.ballBoundReflect(x[i], v[i], tl.vec(+0.0, +0.2, -0.0), 0.4,
+                                   6)
     for i in ti.grouped(x):
         v[i] *= ti.exp(-damping * dt)
         x[i] += dt * v[i]
@@ -59,7 +61,10 @@ def substep():
 ### Rendering GUI
 
 scene = t3.Scene()
-model = t3.Model(faces_n=(N - 1)**2 * 4, pos_n=N**2, tex_n=N**2, nrm_n=N**2 * 2)
+model = t3.Model(faces_n=(N - 1)**2 * 4,
+                 pos_n=N**2,
+                 tex_n=N**2,
+                 nrm_n=N**2 * 2)
 #model.load_texture(ti.imread('/path/to/your_texture.jpg'))
 scene.add_model(model)
 camera = t3.Camera(fov=24, pos=[0, 1.1, -1.5], target=[0, 0.25, 0])

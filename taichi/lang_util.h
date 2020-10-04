@@ -21,7 +21,7 @@ using FunctionType = std::function<void(Context &)>;
 
 class Type {
  public:
-  virtual std::string serialize() const = 0;
+  virtual std::string to_string() const = 0;
   virtual ~Type() {
   }
 };
@@ -46,11 +46,16 @@ class DataType {
     return !(*this == o);
   }
 
-  operator std::size_t() const;
+  std::size_t hash() const;
 
-  std::string serialize() const {
-    return ptr_->serialize();
+  std::string to_string() const {
+    return ptr_->to_string();
   };
+
+  // TODO: DataType itself should be a pointer in the future
+  const Type *get_ptr() const {
+    return ptr_;
+  }
 
  private:
   const Type *ptr_;
@@ -69,7 +74,7 @@ class PrimitiveType : public Type {
   PrimitiveType(primitive_type type) : type(type) {
   }
 
-  std::string serialize() const override;
+  std::string to_string() const override;
 
   static DataType get(primitive_type type);
 };

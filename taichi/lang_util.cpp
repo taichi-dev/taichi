@@ -48,7 +48,7 @@ DataType PrimitiveType::get(PrimitiveType::primitive_type t) {
   }
 }
 
-DataType::operator std::size_t() const {
+std::size_t DataType::hash() const {
   if (auto primitive = dynamic_cast<const PrimitiveType *>(ptr_)) {
     return (std::size_t)primitive->type;
   } else {
@@ -56,7 +56,7 @@ DataType::operator std::size_t() const {
   }
 }
 
-std::string PrimitiveType::serialize() const {
+std::string PrimitiveType::to_string() const {
   return data_type_name(DataType(this));
 }
 
@@ -349,8 +349,9 @@ namespace {
 class TypePromotionMapping {
  public:
   TypePromotionMapping() {
-#define TRY_SECOND(x, y)                                            \
-  mapping[std::make_pair(get_data_type<x>(), get_data_type<y>())] = \
+#define TRY_SECOND(x, y)                                           \
+  mapping[std::make_pair(to_primitive_type(get_data_type<x>()),    \
+                         to_primitive_type(get_data_type<y>()))] = \
       get_data_type<decltype(std::declval<x>() + std::declval<y>())>();
 #define TRY_FIRST(x)      \
   TRY_SECOND(x, float32); \
@@ -376,11 +377,19 @@ class TypePromotionMapping {
     TRY_FIRST(uint64);
   }
   DataType query(DataType x, DataType y) {
-    return mapping[std::make_pair(x, y)];
+    return mapping[std::make_pair(to_primitive_type(x), to_primitive_type(y))];
   }
 
  private:
-  std::map<std::pair<DataType, DataType>, DataType> mapping;
+  std::map<
+      std::pair<PrimitiveType::primitive_type, PrimitiveType::primitive_type>,
+      DataType>
+      mapping;
+  static PrimitiveType::primitive_type to_primitive_type(const DataType d) {
+    auto primitive = dynamic_cast<const PrimitiveType *>(d.get_ptr());
+    TI_ASSERT(primitive);
+    return primitive->type;
+  };
 };
 TypePromotionMapping type_promotion_mapping;
 }  // namespace

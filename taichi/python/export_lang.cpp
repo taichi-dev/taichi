@@ -85,7 +85,12 @@ void export_lang(py::module &m) {
   py::class_<DataType>(m, "DataType")
       .def(py::self == py::self)
       .def(py::pickle(
-          [](const DataType &dt) { return py::make_tuple((std::size_t)dt); },
+          [](const DataType &dt) {
+            // Note: this only works for primitive types, which is fine for now.
+            auto primitive = dynamic_cast<const PrimitiveType *>(dt.get_ptr());
+            TI_ASSERT(primitive);
+            return py::make_tuple((std::size_t)primitive->type);
+          },
           [](py::tuple t) {
             if (t.size() != 1)
               throw std::runtime_error("Invalid state!");

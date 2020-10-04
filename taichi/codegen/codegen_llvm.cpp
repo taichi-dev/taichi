@@ -860,7 +860,7 @@ void CodeGenLLVM::visit(ArgLoadStmt *stmt) {
     dest_ty = tlctx->get_data_type(stmt->ret_type.data_type);
     auto dest_bits = dest_ty->getPrimitiveSizeInBits();
     auto truncated = builder->CreateTrunc(
-        raw_arg, Type::getIntNTy(*llvm_context, dest_bits));
+        raw_arg, llvm::Type::getIntNTy(*llvm_context, dest_bits));
     llvm_val[stmt] = builder->CreateBitCast(truncated, dest_ty);
   }
 }
@@ -1327,7 +1327,7 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
 
     // per-leaf-block for loop
     auto loop_index =
-        create_entry_block_alloca(Type::getInt32Ty(*llvm_context));
+        create_entry_block_alloca(llvm::Type::getInt32Ty(*llvm_context));
 
     llvm::Value *thread_idx = nullptr, *block_dim = nullptr;
 

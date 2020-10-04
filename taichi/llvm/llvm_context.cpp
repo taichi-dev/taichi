@@ -373,7 +373,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
 
       auto patch_intrinsic = [&](std::string name, Intrinsic::ID intrin,
                                  bool ret = true,
-                                 std::vector<Type *> types = {},
+                                 std::vector<llvm::Type *> types = {},
                                  std::vector<llvm::Value *> extra_args = {}) {
         auto func = runtime_module->getFunction(name);
         TI_ERROR_UNLESS(func, "Function {} not found", name);

@@ -1,6 +1,6 @@
 // Definitions of utility functions and enums
 
-#include "lang_util.h"
+#include "taichi/lang_util.h"
 
 #include "taichi/math/linalg.h"
 #include "taichi/program/arch.h"
@@ -28,6 +28,37 @@ real get_cpu_frequency() {
 }
 
 real default_measurement_time = 1;
+
+// Note: these primitive types should never be freed. They are supposed to live
+// together with the process.
+#define PER_TYPE(x)      \
+  DataType DataType::x = \
+      DataType(new PrimitiveType(PrimitiveType::primitive_type::x));
+#include "taichi/inc/data_type.inc.h"
+#undef PER_TYPE
+
+DataType PrimitiveType::get(PrimitiveType::primitive_type t) {
+  if (false) {
+  }
+#define PER_TYPE(x) else if (t == primitive_type::x) return DataType::x;
+#include "taichi/inc/data_type.inc.h"
+#undef PER_TYPE
+  else {
+    TI_NOT_IMPLEMENTED
+  }
+}
+
+std::size_t DataType::hash() const {
+  if (auto primitive = dynamic_cast<const PrimitiveType *>(ptr_)) {
+    return (std::size_t)primitive->type;
+  } else {
+    TI_NOT_IMPLEMENTED
+  }
+}
+
+std::string PrimitiveType::to_string() const {
+  return data_type_name(DataType(this));
+}
 
 real measure_cpe(std::function<void()> target,
                  int64 elements_per_call,
@@ -65,30 +96,26 @@ real measure_cpe(std::function<void()> target,
 }
 
 std::string data_type_name(DataType t) {
-  switch (t) {
-#define REGISTER_DATA_TYPE(i, j) \
-  case DataType::i:              \
-    return #j;
-
-    REGISTER_DATA_TYPE(f16, float16);
-    REGISTER_DATA_TYPE(f32, float32);
-    REGISTER_DATA_TYPE(f64, float64);
-    REGISTER_DATA_TYPE(u1, int1);
-    REGISTER_DATA_TYPE(i8, int8);
-    REGISTER_DATA_TYPE(i16, int16);
-    REGISTER_DATA_TYPE(i32, int32);
-    REGISTER_DATA_TYPE(i64, int64);
-    REGISTER_DATA_TYPE(u8, uint8);
-    REGISTER_DATA_TYPE(u16, uint16);
-    REGISTER_DATA_TYPE(u32, uint32);
-    REGISTER_DATA_TYPE(u64, uint64);
-    REGISTER_DATA_TYPE(gen, generic);
-    REGISTER_DATA_TYPE(unknown, unknown);
+#define REGISTER_DATA_TYPE(i, j) else if (t == DataType::i) return #j
+  if (false) {
+  }
+  REGISTER_DATA_TYPE(f16, float16);
+  REGISTER_DATA_TYPE(f32, float32);
+  REGISTER_DATA_TYPE(f64, float64);
+  REGISTER_DATA_TYPE(u1, int1);
+  REGISTER_DATA_TYPE(i8, int8);
+  REGISTER_DATA_TYPE(i16, int16);
+  REGISTER_DATA_TYPE(i32, int32);
+  REGISTER_DATA_TYPE(i64, int64);
+  REGISTER_DATA_TYPE(u8, uint8);
+  REGISTER_DATA_TYPE(u16, uint16);
+  REGISTER_DATA_TYPE(u32, uint32);
+  REGISTER_DATA_TYPE(u64, uint64);
+  REGISTER_DATA_TYPE(gen, generic);
+  REGISTER_DATA_TYPE(unknown, unknown);
 
 #undef REGISTER_DATA_TYPE
-    default:
-      TI_NOT_IMPLEMENTED
-  }
+  else TI_NOT_IMPLEMENTED
 }
 
 std::string data_type_format(DataType dt) {
@@ -110,48 +137,42 @@ std::string data_type_format(DataType dt) {
 }
 
 int data_type_size(DataType t) {
-  switch (t) {
-    case DataType::f16:
-      return 2;
-    case DataType::gen:
-      return 0;
-    case DataType::unknown:
-      return -1;
+  if (false) {
+  } else if (t == DataType::f16)
+    return 2;
+  else if (t == DataType::gen)
+    return 0;
+  else if (t == DataType::unknown)
+    return -1;
 
-#define REGISTER_DATA_TYPE(i, j) \
-  case DataType::i:              \
-    return sizeof(j);
+#define REGISTER_DATA_TYPE(i, j) else if (t == DataType::i) return sizeof(j)
 
-      REGISTER_DATA_TYPE(f32, float32);
-      REGISTER_DATA_TYPE(f64, float64);
-      REGISTER_DATA_TYPE(i8, int8);
-      REGISTER_DATA_TYPE(i16, int16);
-      REGISTER_DATA_TYPE(i32, int32);
-      REGISTER_DATA_TYPE(i64, int64);
-      REGISTER_DATA_TYPE(u8, uint8);
-      REGISTER_DATA_TYPE(u16, uint16);
-      REGISTER_DATA_TYPE(u32, uint32);
-      REGISTER_DATA_TYPE(u64, uint64);
+  REGISTER_DATA_TYPE(f32, float32);
+  REGISTER_DATA_TYPE(f64, float64);
+  REGISTER_DATA_TYPE(i8, int8);
+  REGISTER_DATA_TYPE(i16, int16);
+  REGISTER_DATA_TYPE(i32, int32);
+  REGISTER_DATA_TYPE(i64, int64);
+  REGISTER_DATA_TYPE(u8, uint8);
+  REGISTER_DATA_TYPE(u16, uint16);
+  REGISTER_DATA_TYPE(u32, uint32);
+  REGISTER_DATA_TYPE(u64, uint64);
 
 #undef REGISTER_DATA_TYPE
-    default:
-      TI_NOT_IMPLEMENTED
+  else {
+    TI_NOT_IMPLEMENTED
   }
 }
 
 std::string data_type_short_name(DataType t) {
-  switch (t) {
-#define PER_TYPE(i) \
-  case DataType::i: \
-    return #i;
-
-#include "taichi/inc/data_type.inc.h"
-
-#undef PER_TYPE
-    default:
-      TI_NOT_IMPLEMENTED
+  if (false) {
   }
-}
+#define PER_TYPE(i) else if (t == DataType::i) return #i;
+#include "taichi/inc/data_type.inc.h"
+#undef PER_TYPE
+  else
+    TI_NOT_IMPLEMENTED
+}  // namespace lang
 
 std::string snode_type_name(SNodeType t) {
   switch (t) {
@@ -328,8 +349,9 @@ namespace {
 class TypePromotionMapping {
  public:
   TypePromotionMapping() {
-#define TRY_SECOND(x, y)                                            \
-  mapping[std::make_pair(get_data_type<x>(), get_data_type<y>())] = \
+#define TRY_SECOND(x, y)                                           \
+  mapping[std::make_pair(to_primitive_type(get_data_type<x>()),    \
+                         to_primitive_type(get_data_type<y>()))] = \
       get_data_type<decltype(std::declval<x>() + std::declval<y>())>();
 #define TRY_FIRST(x)      \
   TRY_SECOND(x, float32); \
@@ -355,11 +377,19 @@ class TypePromotionMapping {
     TRY_FIRST(uint64);
   }
   DataType query(DataType x, DataType y) {
-    return mapping[std::make_pair(x, y)];
+    return mapping[std::make_pair(to_primitive_type(x), to_primitive_type(y))];
   }
 
  private:
-  std::map<std::pair<DataType, DataType>, DataType> mapping;
+  std::map<
+      std::pair<PrimitiveType::primitive_type, PrimitiveType::primitive_type>,
+      DataType>
+      mapping;
+  static PrimitiveType::primitive_type to_primitive_type(const DataType d) {
+    auto primitive = dynamic_cast<const PrimitiveType *>(d.get_ptr());
+    TI_ASSERT(primitive);
+    return primitive->type;
+  };
 };
 TypePromotionMapping type_promotion_mapping;
 }  // namespace

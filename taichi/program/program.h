@@ -55,8 +55,8 @@ TLANG_NAMESPACE_END
 namespace std {
 template <>
 struct hash<taichi::lang::JITEvaluatorId> {
-  std::size_t operator()(taichi::lang::JITEvaluatorId const &id) const
-      noexcept {
+  std::size_t operator()(
+      taichi::lang::JITEvaluatorId const &id) const noexcept {
     return ((std::size_t)id.op | ((std::size_t)id.ret << 8) |
             ((std::size_t)id.lhs << 16) | ((std::size_t)id.rhs << 24) |
             ((std::size_t)id.is_binary << 31)) ^
@@ -181,7 +181,13 @@ class Program {
   void end_function_definition() {
   }
 
+  // TODO: This function is doing two things: 1) compiling CHI IR, and 2)
+  // offloading them to each backend. We should probably separate the logic?
   FunctionType compile(Kernel &kernel);
+
+  // Just does the per-backend executable compilation without kernel lowering.
+  FunctionType compile_to_backend_executable(Kernel &kernel,
+                                             OffloadedStmt *stmt);
 
   void initialize_runtime_system(StructCompiler *scomp);
 

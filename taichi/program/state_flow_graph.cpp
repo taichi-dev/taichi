@@ -40,12 +40,45 @@ void StateFlowGraph::Node::disconnect_with(StateFlowGraph::Node *other) {
   }
 }
 
-StateFlowGraph::StateFlowGraph(IRBank *ir_bank) : ir_bank_(ir_bank) {
+StateFlowGraph::StateFlowGraph(IRBank *ir_bank)
+    : first_pending_task_index_(1 /*after initial node*/), ir_bank_(ir_bank) {
   nodes_.push_back(std::make_unique<Node>());
   initial_node_ = nodes_.back().get();
   initial_meta_.name = "initial_state";
   initial_node_->meta = &initial_meta_;
   initial_node_->is_initial_node = true;
+  initial_node_->node_id = 0;
+  initial_node_->mark_executed();
+}
+
+std::vector<StateFlowGraph::Node *> StateFlowGraph::get_pending_tasks() const {
+  return get_pending_tasks(/*begin=*/0, /*end=*/num_pending_tasks());
+}
+
+std::vector<StateFlowGraph::Node *> StateFlowGraph::get_pending_tasks(
+    int begin,
+    int end) const {
+  std::vector<Node *> pending_tasks;
+  TI_ASSERT(0 <= begin && begin <= end);
+  TI_ASSERT(end <= num_pending_tasks());
+  pending_tasks.reserve(end - begin);
+  for (int i = first_pending_task_index_ + begin;
+       i < first_pending_task_index_ + end; i++) {
+    pending_tasks.push_back(nodes_[i].get());
+  }
+  return pending_tasks;
+}
+
+std::vector<std::unique_ptr<StateFlowGraph::Node>>
+StateFlowGraph::extract_pending_tasks() {
+  std::vector<std::unique_ptr<Node>> pending_tasks;
+  TI_ASSERT(nodes_.size() >= first_pending_task_index_);
+  pending_tasks.reserve(nodes_.size() - first_pending_task_index_);
+  for (int i = first_pending_task_index_; i < (int)nodes_.size(); i++) {
+    pending_tasks.emplace_back(std::move(nodes_[i]));
+  }
+  nodes_.resize(first_pending_task_index_);
+  return pending_tasks;
 }
 
 void StateFlowGraph::clear() {
@@ -54,11 +87,35 @@ void StateFlowGraph::clear() {
   initial_node_->output_edges.clear();
   latest_state_owner_.clear();
   latest_state_readers_.clear();
+  first_pending_task_index_ = 1;
 
   // Do not clear task_name_to_launch_ids_.
 }
 
+void StateFlowGraph::mark_pending_tasks_as_executed() {
+  std::vector<std::unique_ptr<Node>> new_nodes;
+  std::unordered_set<Node *> state_owners;
+  std::unordered_set<Node *> state_readers;
+  for (auto &owner : latest_state_owner_) {
+    state_owners.insert(state_owners.end(), owner.second);
+  }
+  for (auto &reader : latest_state_readers_) {
+    state_readers.insert(reader.second.begin(), reader.second.end());
+  }
+  for (auto &node : nodes_) {
+    if (node->is_initial_node || state_owners.count(node.get()) > 0 ||
+        state_readers.count(node.get()) > 0) {
+      node->mark_executed();
+      new_nodes.push_back(std::move(node));
+    }
+  }
+  nodes_ = std::move(new_nodes);
+  first_pending_task_index_ = nodes_.size();
+  reid_nodes();
+}
+
 void StateFlowGraph::insert_task(const TaskLaunchRecord &rec) {
+  TI_AUTO_PROF;
   auto node = std::make_unique<Node>();
   node->rec = rec;
   node->meta = get_task_meta(ir_bank_, rec);
@@ -90,6 +147,7 @@ void StateFlowGraph::insert_task(const TaskLaunchRecord &rec) {
 }
 
 void StateFlowGraph::insert_state_flow(Node *from, Node *to, AsyncState state) {
+  TI_AUTO_PROF;
   TI_ASSERT(from != nullptr);
   TI_ASSERT(to != nullptr);
   from->output_edges[state].insert(to);
@@ -103,7 +161,6 @@ bool StateFlowGraph::optimize_listgen() {
   std::vector<std::pair<int, int>> common_pairs;
 
   topo_sort_nodes();
-  reid_nodes();
 
   std::unordered_map<SNode *, std::vector<Node *>> listgen_nodes;
 
@@ -121,9 +178,16 @@ bool StateFlowGraph::optimize_listgen() {
     // Thanks to the dependency edges, the order of nodes in listgens is
     // UNIQUE. (Consider the list state of the SNode.)
 
+    // Note that there can be > 1 executed listgens because they are
+    // latest state readers of other states.
+    int i_start = 0;
+    while (i_start + 1 < listgens.size() && listgens[i_start + 1]->executed()) {
+      i_start++;
+    }
+
     // We can only replace a continuous subset of listgen entries.
     // So the nested loop below is actually O(n).
-    for (int i = 0; i < listgens.size(); i++) {
+    for (int i = i_start; i < listgens.size(); i++) {
       auto node_a = listgens[i];
 
       bool erased_any = false;
@@ -132,6 +196,7 @@ bool StateFlowGraph::optimize_listgen() {
 
       for (int j = i + 1; j < listgens.size(); j++) {
         auto node_b = listgens[j];
+        TI_ASSERT(!node_b->executed());
 
         // Test if two list generations share the same mask and parent list
         auto snode = node_a->meta->snode;
@@ -156,6 +221,7 @@ bool StateFlowGraph::optimize_listgen() {
 
         TI_ASSERT(node_b->input_edges[list_state].size() == 1);
         Node *clear_node = *node_b->input_edges[list_state].begin();
+        TI_ASSERT(!clear_node->executed());
         // TODO: This could be a bottleneck, avoid unnecessary IR clone.
         // However, the task most likely will only contain a single
         // ClearListStmt, so it's not a big deal...
@@ -201,21 +267,19 @@ bool StateFlowGraph::optimize_listgen() {
     delete_nodes(nodes_to_delete);
     // Note: DO NOT topo sort the nodes here. Node deletion destroys order
     // independency.
-    auto tasks = extract(/*sort=*/false);
-    for (auto &task : tasks) {
-      insert_task(task);
-    }
+    rebuild_graph(/*sort=*/false);
   }
 
   return modified;
 }
 
 std::pair<std::vector<bit::Bitset>, std::vector<bit::Bitset>>
-StateFlowGraph::compute_transitive_closure() {
+StateFlowGraph::compute_transitive_closure(int begin, int end) {
   TI_AUTO_PROF;
   using bit::Bitset;
-  const int n = nodes_.size();
-  reid_nodes();
+  const int n = end - begin;
+  auto nodes = get_pending_tasks(begin, end);
+
   auto has_path = std::vector<Bitset>(n);
   auto has_path_reverse = std::vector<Bitset>(n);
   // has_path[i][j] denotes if there is a path from i to j.
@@ -227,43 +291,49 @@ StateFlowGraph::compute_transitive_closure() {
     has_path_reverse[i][i] = true;
   }
   for (int i = n - 1; i >= 0; i--) {
-    for (auto &edges : nodes_[i]->input_edges) {
+    for (auto &edges : nodes[i]->input_edges) {
       for (auto &edge : edges.second) {
-        TI_ASSERT(edge->node_id < i);
-        has_path[edge->node_id] |= has_path[i];
+        auto tmp_id = edge->pending_node_id - begin;
+        if (tmp_id >= 0 && tmp_id < n) {
+          TI_ASSERT(tmp_id < i);
+          has_path[tmp_id] |= has_path[i];
+        }
       }
     }
   }
   for (int i = 0; i < n; i++) {
-    for (auto &edges : nodes_[i]->output_edges) {
+    for (auto &edges : nodes[i]->output_edges) {
       for (auto &edge : edges.second) {
-        // Assume nodes are sorted in topological order.
-        TI_ASSERT(edge->node_id > i);
-        has_path_reverse[edge->node_id] |= has_path_reverse[i];
+        auto tmp_id = edge->pending_node_id - begin;
+        if (tmp_id >= 0 && tmp_id < n) {
+          TI_ASSERT(tmp_id > i);
+          has_path_reverse[tmp_id] |= has_path_reverse[i];
+        }
       }
     }
   }
   return std::make_pair(std::move(has_path), std::move(has_path_reverse));
 }
 
-bool StateFlowGraph::fuse() {
+std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
   TI_AUTO_PROF;
   using bit::Bitset;
-  const int n = nodes_.size();
-  if (n <= 2) {
-    return false;
+  const int n = end - begin;
+  if (n <= 1) {
+    return std::unordered_set<int>();
   }
 
+  auto nodes = get_pending_tasks(begin, end);
+
   std::vector<Bitset> has_path, has_path_reverse;
-  std::tie(has_path, has_path_reverse) = compute_transitive_closure();
+  std::tie(has_path, has_path_reverse) = compute_transitive_closure(begin, end);
 
   // Classify tasks by TaskFusionMeta.
   std::vector<TaskFusionMeta> fusion_meta(n);
   // It seems that std::set is slightly faster than std::unordered_set here.
   std::unordered_map<TaskFusionMeta, std::set<int>> task_fusion_map;
-  // nodes_[0] is the initial node.
-  for (int i = 1; i < n; i++) {
-    fusion_meta[i] = get_task_fusion_meta(ir_bank_, nodes_[i]->rec);
+  for (int i = 0; i < n; i++) {
+    fusion_meta[i] = get_task_fusion_meta(ir_bank_, nodes[i]->rec);
     if (fusion_meta[i].fusible) {
       auto &fusion_set = task_fusion_map[fusion_meta[i]];
       fusion_set.insert(fusion_set.end(), i);
@@ -287,10 +357,11 @@ bool StateFlowGraph::fuse() {
   auto fused = std::vector<bool>(n);
 
   auto do_fuse = [&](int a, int b) {
-    TI_AUTO_PROF;
-    auto *node_a = nodes_[a].get();
-    auto *node_b = nodes_[b].get();
-    TI_TRACE("Fuse: nodes_[{}]({}) <- nodes_[{}]({})", a, node_a->string(), b,
+    TI_PROFILER("do_fuse");
+    TI_ASSERT(0 <= a && a < b && b < n);
+    auto *node_a = nodes[a];
+    auto *node_b = nodes[b];
+    TI_TRACE("Fuse: nodes[{}]({}) <- nodes[{}]({})", a, node_a->string(), b,
              node_b->string());
     auto &rec_a = node_a->rec;
     auto &rec_b = node_b->rec;
@@ -298,7 +369,8 @@ bool StateFlowGraph::fuse() {
         ir_bank_->fuse(rec_a.ir_handle, rec_b.ir_handle, rec_a.kernel);
     rec_b.ir_handle = IRHandle();
 
-    indices_to_delete.insert(b);
+    // Convert to the index in nodes_.
+    indices_to_delete.insert(b + begin + first_pending_task_index_);
 
     const bool already_had_a_to_b_edge = has_path[a][b];
     if (already_had_a_to_b_edge) {
@@ -322,20 +394,21 @@ bool StateFlowGraph::fuse() {
   };
 
   auto edge_fusible = [&](int a, int b) {
+    TI_PROFILER("edge_fusible");
     // Check if a and b are fusible if there is an edge (a, b).
     if (fused[a] || fused[b] || !fusion_meta[a].fusible ||
         fusion_meta[a] != fusion_meta[b]) {
       return false;
     }
-    if (nodes_[a]->meta->type != OffloadedStmt::TaskType::serial) {
-      for (auto &state : nodes_[a]->output_edges) {
+    if (nodes[a]->meta->type != OffloadedStmt::TaskType::serial) {
+      for (auto &state : nodes[a]->output_edges) {
         if (state.first.type != AsyncState::Type::value) {
           // No need to check mask/list states as there must be value states.
           continue;
         }
-        if (state.second.find(nodes_[b].get()) != state.second.end()) {
-          if (!nodes_[a]->meta->element_wise[state.first.snode] ||
-              !nodes_[b]->meta->element_wise[state.first.snode]) {
+        if (state.second.find(nodes[b]) != state.second.end()) {
+          if (!nodes[a]->meta->element_wise[state.first.snode] ||
+              !nodes[b]->meta->element_wise[state.first.snode]) {
             return false;
           }
         }
@@ -347,8 +420,8 @@ bool StateFlowGraph::fuse() {
     return a_has_path_to_b.none();
   };
 
-  for (int i = 1; i < n; i++) {
-    fused[i] = nodes_[i]->rec.empty();
+  for (int i = 0; i < n; i++) {
+    fused[i] = nodes[i]->rec.empty();
   }
   // The case without an edge: O(sum(size * min(size, n / 64))) = O(n^2 / 64)
   const int kLargeFusionSetThreshold = std::max(n / 16, 16);
@@ -409,16 +482,16 @@ bool StateFlowGraph::fuse() {
     }
   }
   // The case with an edge: O(nm / 64)
-  for (int i = 1; i < n; i++) {
+  for (int i = 0; i < n; i++) {
     if (!fused[i]) {
       // Fuse no more than one task into task i
       bool i_updated = false;
-      for (auto &edges : nodes_[i]->output_edges) {
+      for (auto &edges : nodes[i]->output_edges) {
         for (auto &edge : edges.second) {
-          const int j = edge->node_id;
-          if (edge_fusible(i, j)) {
+          const int j = edge->pending_node_id - begin;
+          if (j != -1 && edge_fusible(i, j)) {
             do_fuse(i, j);
-            // Iterators of nodes_[i]->output_edges may be invalidated
+            // Iterators of nodes[i]->output_edges may be invalidated
             i_updated = true;
             break;
           }
@@ -430,45 +503,92 @@ bool StateFlowGraph::fuse() {
     }
   }
 
+  return indices_to_delete;
+}
+
+bool StateFlowGraph::fuse() {
+  TI_AUTO_PROF;
+  using bit::Bitset;
+  // Only guarantee to fuse tasks with indices in nodes_ differ by less than
+  // kMaxFusionDistance if there are too many tasks.
+  const int kMaxFusionDistance = 512;
+
+  // Invoke fuse_range() <= floor(num_pending_tasks() / kMaxFusionDistance)
+  // times with (end - begin) <= 2 * kMaxFusionDistance.
+  std::unordered_set<int> indices_to_delete;
+  const int n = num_pending_tasks();
+  if (true) {
+    indices_to_delete = fuse_range(0, n);
+  } else {
+    // TODO: fuse by range
+    for (int i = 0; i < n; i += kMaxFusionDistance * 2) {
+      auto indices = fuse_range(i, std::min(n, i + kMaxFusionDistance * 2));
+      indices_to_delete.insert(indices.begin(), indices.end());
+    }
+    if (indices_to_delete.empty()) {
+      for (int i = kMaxFusionDistance; i < n; i += kMaxFusionDistance * 2) {
+        auto indices = fuse_range(i, std::min(n, i + kMaxFusionDistance * 2));
+        indices_to_delete.insert(indices.begin(), indices.end());
+      }
+    }
+  }
+
   bool modified = !indices_to_delete.empty();
   // TODO: Do we need a trash bin here?
   if (modified) {
-    // rebuild the graph in topological order
+    // Rebuild the graph in topological order.
+    // The original order may not be a correct topological order.
     delete_nodes(indices_to_delete);
-    topo_sort_nodes();
-    auto tasks = extract();
-    for (auto &task : tasks) {
-      insert_task(task);
-    }
+    rebuild_graph(/*sort=*/true);
   }
 
   return modified;
 }
 
-std::vector<TaskLaunchRecord> StateFlowGraph::extract(bool sort) {
-  TI_AUTO_PROF
+void StateFlowGraph::rebuild_graph(bool sort) {
+  TI_AUTO_PROF;
   if (sort)
     topo_sort_nodes();
   std::vector<TaskLaunchRecord> tasks;
   tasks.reserve(nodes_.size());
+  int num_executed_tasks = 0;
   for (int i = 1; i < (int)nodes_.size(); i++) {
     if (!nodes_[i]->rec.empty()) {
       tasks.push_back(nodes_[i]->rec);
-
-      if (false) {
-        // debug
-        TI_INFO("task {}:{}", nodes_[i]->meta->name, nodes_[i]->rec.id);
-        nodes_[i]->meta->print();
-        irpass::print(const_cast<IRNode *>(nodes_[i]->rec.ir_handle.ir()));
-      }
+      if (nodes_[i]->executed())
+        num_executed_tasks++;
     }
   }
   clear();
+  for (auto &task : tasks) {
+    insert_task(task);
+  }
+  for (int i = 1; i <= num_executed_tasks; i++) {
+    nodes_[i]->mark_executed();
+  }
+  first_pending_task_index_ = num_executed_tasks + 1;
+  reid_nodes();
+  reid_pending_nodes();
+}
+
+std::vector<TaskLaunchRecord> StateFlowGraph::extract_to_execute() {
+  TI_AUTO_PROF;
+  auto nodes = get_pending_tasks();
+  std::vector<TaskLaunchRecord> tasks;
+  tasks.reserve(nodes.size());
+  for (auto &node : nodes) {
+    if (!node->rec.empty()) {
+      tasks.push_back(node->rec);
+    }
+  }
+  mark_pending_tasks_as_executed();
+  rebuild_graph(/*sort=*/false);
   return tasks;
 }
 
 void StateFlowGraph::print() {
   fmt::print("=== State Flow Graph ===\n");
+  fmt::print("{}\n", first_pending_task_index_);
   for (auto &node : nodes_) {
     fmt::print("{}\n", node->string());
     if (!node->input_edges.empty()) {
@@ -660,22 +780,28 @@ std::string StateFlowGraph::dump_dot(const std::optional<std::string> &rankdir,
 
 void StateFlowGraph::topo_sort_nodes() {
   TI_AUTO_PROF
+  // Only sort pending tasks.
+  const auto previous_size = nodes_.size();
   std::deque<std::unique_ptr<Node>> queue;
-  std::vector<std::unique_ptr<Node>> new_nodes;
-  std::vector<int> degrees_in(nodes_.size());
+  std::vector<int> degrees_in(num_pending_tasks());
 
-  reid_nodes();
+  reid_pending_nodes();
 
-  for (auto &node : nodes_) {
+  auto pending_tasks = extract_pending_tasks();
+  for (auto &node : pending_tasks) {
     int degree_in = 0;
     for (auto &inputs : node->input_edges) {
-      degree_in += (int)inputs.second.size();
+      for (auto &input_node : inputs.second) {
+        if (input_node->pending()) {
+          degree_in++;
+        }
+      }
     }
-    degrees_in[node->node_id] = degree_in;
+    degrees_in[node->pending_node_id] = degree_in;
   }
 
-  for (auto &node : nodes_) {
-    if (degrees_in[node->node_id] == 0) {
+  for (auto &node : pending_tasks) {
+    if (degrees_in[node->pending_node_id] == 0) {
       queue.emplace_back(std::move(node));
     }
   }
@@ -687,21 +813,22 @@ void StateFlowGraph::topo_sort_nodes() {
     // Delete the node and update degrees_in
     for (auto &output_edge : head->output_edges) {
       for (auto &e : output_edge.second) {
-        auto dest = e->node_id;
+        auto dest = e->pending_node_id;
+        TI_ASSERT(dest != -1);
         degrees_in[dest]--;
         TI_ASSERT(degrees_in[dest] >= 0);
         if (degrees_in[dest] == 0) {
-          queue.push_back(std::move(nodes_[dest]));
+          queue.push_back(std::move(pending_tasks[dest]));
         }
       }
     }
 
-    new_nodes.emplace_back(std::move(head));
+    nodes_.emplace_back(std::move(head));
   }
 
-  TI_ASSERT(new_nodes.size() == nodes_.size());
-  nodes_ = std::move(new_nodes);
+  TI_ASSERT(previous_size == nodes_.size());
   reid_nodes();
+  reid_pending_nodes();
 }
 
 void StateFlowGraph::reid_nodes() {
@@ -710,6 +837,13 @@ void StateFlowGraph::reid_nodes() {
     nodes_[i]->node_id = i;
   }
   TI_ASSERT(initial_node_->node_id == 0);
+}
+
+void StateFlowGraph::reid_pending_nodes() {
+  TI_AUTO_PROF
+  for (int i = first_pending_task_index_; i < nodes_.size(); i++) {
+    nodes_[i]->pending_node_id = i - first_pending_task_index_;
+  }
 }
 
 void StateFlowGraph::replace_reference(StateFlowGraph::Node *node_a,
@@ -757,6 +891,7 @@ void StateFlowGraph::delete_nodes(
   std::unordered_set<Node *> nodes_to_delete;
 
   for (auto &i : indices_to_delete) {
+    TI_ASSERT(nodes_[i]->pending());
     nodes_[i]->disconnect_all();
     nodes_to_delete.insert(nodes_[i].get());
   }
@@ -783,17 +918,16 @@ void StateFlowGraph::delete_nodes(
 
   nodes_ = std::move(new_nodes_);
   reid_nodes();
+  reid_pending_nodes();
 }
 
 bool StateFlowGraph::optimize_dead_store() {
   TI_AUTO_PROF
   bool modified = false;
 
-  for (int i = 1; i < nodes_.size(); i++) {
-    // Start from 1 to skip the initial node
-
+  auto nodes = get_pending_tasks();
+  for (auto &task : nodes) {
     // Dive into this task and erase dead stores
-    auto &task = nodes_[i];
     std::set<const SNode *> store_eliminable_snodes;
     // Try to find unnecessary output state
     for (auto &s : task->meta->output_states) {
@@ -802,7 +936,7 @@ bool StateFlowGraph::optimize_dead_store() {
         // only focus on "value" states.
         continue;
       }
-      if (latest_state_owner_[s] == task.get()) {
+      if (latest_state_owner_[s] == task) {
         // Cannot eliminate the latest write, because it may form a state-flow
         // with the later kernel launches.
         //
@@ -869,32 +1003,58 @@ bool StateFlowGraph::optimize_dead_store() {
 
   std::unordered_set<int> to_delete;
   // erase empty blocks
-  for (int i = 1; i < (int)nodes_.size(); i++) {
-    auto &meta = *nodes_[i]->meta;
-    auto ir = nodes_[i]->rec.ir_handle.ir()->cast<OffloadedStmt>();
+  for (int i = 0; i < (int)nodes.size(); i++) {
+    auto &meta = *nodes[i]->meta;
+    auto ir = nodes[i]->rec.ir_handle.ir()->cast<OffloadedStmt>();
     const auto mt = meta.type;
     // Do NOT check ir->body->statements first! |ir->body| could be done when
     // |mt| is not the desired type.
     if ((mt == OffloadedStmt::serial || mt == OffloadedStmt::struct_for ||
          mt == OffloadedStmt::range_for) &&
         ir->body->statements.empty()) {
-      to_delete.insert(i);
+      to_delete.insert(i + first_pending_task_index_);
     }
   }
 
   if (!to_delete.empty()) {
     modified = true;
+    delete_nodes(to_delete);
+    rebuild_graph(/*sort=*/false);
   }
-
-  delete_nodes(to_delete);
 
   return modified;
 }
 
-void StateFlowGraph::verify() {
+void StateFlowGraph::verify() const {
   TI_AUTO_PROF
+  // Check nodes
   const int n = nodes_.size();
-  reid_nodes();
+  TI_ASSERT_INFO(n >= 1, "SFG is empty");
+  for (int i = 0; i < n; i++) {
+    TI_ASSERT_INFO(nodes_[i], "nodes_[{}] is nullptr", i);
+  }
+  TI_ASSERT_INFO(nodes_[0]->is_initial_node,
+                 "nodes_[0] is not the initial node");
+  TI_ASSERT_INFO(nodes_[0].get() == initial_node_,
+                 "initial_node_ is not nodes_[0]");
+  TI_ASSERT(first_pending_task_index_ <= n);
+  for (int i = 0; i < first_pending_task_index_; i++) {
+    TI_ASSERT_INFO(nodes_[i]->pending_node_id == -1,
+                   "nodes_[{}]({})->pending_node_id is {} (should be -1)", i,
+                   nodes_[i]->string(), nodes_[i]->pending_node_id);
+  }
+  for (int i = first_pending_task_index_; i < n; i++) {
+    TI_ASSERT_INFO(nodes_[i]->pending_node_id == i - first_pending_task_index_,
+                   "nodes_[{}]({})->pending_node_id is {} (should be {})", i,
+                   nodes_[i]->string(), nodes_[i]->pending_node_id,
+                   i - first_pending_task_index_);
+  }
+  for (int i = 0; i < n; i++) {
+    TI_ASSERT_INFO(nodes_[i]->node_id == i, "nodes_[{}]({})->node_id is {}", i,
+                   nodes_[i]->string(), nodes_[i]->node_id);
+  }
+
+  // Check edges
   for (int i = 0; i < n; i++) {
     for (auto &edges : nodes_[i]->output_edges) {
       for (auto &edge : edges.second) {
@@ -943,8 +1103,19 @@ void StateFlowGraph::verify() {
       }
     }
   }
-  // Call topological sort to check cycles.
-  topo_sort_nodes();
+
+  // Check topological order
+  for (int i = 0; i < n; i++) {
+    for (auto &edges : nodes_[i]->output_edges) {
+      for (auto &edge : edges.second) {
+        auto dest = edge->node_id;
+        TI_ASSERT_INFO(dest > i,
+                       "topological order violated: nodes_[{}]({}) "
+                       "has an output edge to nodes_[{}]({})",
+                       i, nodes_[i]->string(), dest, nodes_[dest]->string());
+      }
+    }
+  }
 }
 
 bool StateFlowGraph::demote_activation() {
@@ -981,9 +1152,11 @@ bool StateFlowGraph::demote_activation() {
     auto new_handle = ir_bank_->demote_activation(nodes[0]->rec.ir_handle);
     if (new_handle != nodes[0]->rec.ir_handle) {
       modified = true;
+      TI_ASSERT(!nodes[1]->executed());
       nodes[1]->rec.ir_handle = new_handle;
       nodes[1]->meta = get_task_meta(ir_bank_, nodes[1]->rec);
       for (int j = 2; j < (int)nodes.size(); j++) {
+        TI_ASSERT(!nodes[j]->executed());
         nodes[j]->rec.ir_handle = new_handle;
         nodes[j]->meta = nodes[1]->meta;
       }
@@ -996,10 +1169,7 @@ bool StateFlowGraph::demote_activation() {
   }
 
   if (modified) {
-    auto tasks = extract(/*sort=*/false);
-    for (auto &task : tasks) {
-      insert_task(task);
-    }
+    rebuild_graph(/*sort=*/false);
   }
 
   return modified;

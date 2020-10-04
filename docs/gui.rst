@@ -63,6 +63,14 @@ Create a window
 Paint on a window
 -----------------
 
+Taichi's GUI supports painting simple geometric objects, such as lines, triangles, rectangles, circles, and text.
+
+
+.. note::
+
+    The position parameter ``pos`` expects an input of a 2-element tuple, whose values are the relative position of the object. 
+    ``(0.0, 0.0)`` stands for the lower left corner of the window, and ``(1.0, 1.0)`` stands for the upper right corner.
+
 
 .. function:: gui.set_image(img)
 

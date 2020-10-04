@@ -890,6 +890,7 @@ void StateFlowGraph::delete_nodes(
   std::unordered_set<Node *> nodes_to_delete;
 
   for (auto &i : indices_to_delete) {
+    TI_ASSERT(nodes_[i]->pending());
     nodes_[i]->disconnect_all();
     nodes_to_delete.insert(nodes_[i].get());
   }
@@ -1016,9 +1017,9 @@ bool StateFlowGraph::optimize_dead_store() {
 
   if (!to_delete.empty()) {
     modified = true;
+    delete_nodes(to_delete);
+    rebuild_graph(/*sort=*/false);
   }
-
-  delete_nodes(to_delete);
 
   return modified;
 }

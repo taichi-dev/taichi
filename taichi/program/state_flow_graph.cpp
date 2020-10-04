@@ -357,7 +357,7 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
   auto fused = std::vector<bool>(n);
 
   auto do_fuse = [&](int a, int b) {
-    TI_AUTO_PROF;
+    TI_PROFILER("do_fuse");
     TI_ASSERT(0 <= a && a < b && b < n);
     auto *node_a = nodes[a];
     auto *node_b = nodes[b];
@@ -394,6 +394,7 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
   };
 
   auto edge_fusible = [&](int a, int b) {
+    TI_PROFILER("edge_fusible");
     // Check if a and b are fusible if there is an edge (a, b).
     if (fused[a] || fused[b] || !fusion_meta[a].fusible ||
         fusion_meta[a] != fusion_meta[b]) {

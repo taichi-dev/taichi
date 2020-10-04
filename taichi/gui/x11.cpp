@@ -145,6 +145,7 @@ void GUI::create_window() {
   TI_ASSERT_INFO(window, "failed to create X window");
 
   if (fullscreen) {
+    // https://stackoverflow.com/questions/9083273/x11-fullscreen-window-opengl
     Atom atoms[2] = { XInternAtom((Display *)display,
         "_NET_WM_STATE_FULLSCREEN", False), 0 };
     Atom wmstate = XInternAtom((Display *)display, "_NET_WM_STATE", False);

@@ -55,8 +55,8 @@ TLANG_NAMESPACE_END
 namespace std {
 template <>
 struct hash<taichi::lang::JITEvaluatorId> {
-  std::size_t operator()(
-      taichi::lang::JITEvaluatorId const &id) const noexcept {
+  std::size_t operator()(taichi::lang::JITEvaluatorId const &id) const
+      noexcept {
     return ((std::size_t)id.op | ((std::size_t)id.ret << 8) |
             ((std::size_t)id.lhs << 16) | ((std::size_t)id.rhs << 24) |
             ((std::size_t)id.is_binary << 31)) ^

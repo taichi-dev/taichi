@@ -63,7 +63,7 @@ Create a window
 Paint on a window
 -----------------
 
-Paint simple geometric objects on a window. Taichi has internal support for lines, triangles, rectangles, circles and texts.
+Taichi's GUI supports painting simple geometric objects, such as lines, triangles, rectangles, circles, and text.
 
 
 .. note::

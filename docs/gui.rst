@@ -68,7 +68,7 @@ Paint simple geometric objects on a window. Taichi has internal support for line
 
 .. note::
 
-    The position parameter ``pos`` expects an input of a tuple of 2, whose values are the relative position of the object. 
+    The position parameter ``pos`` expects an input of a 2-element tuple, whose values are the relative position of the object. 
     ``(0.0, 0.0)`` stands for the lower left corner of the window, and ``(1.0, 1.0)`` stands for the upper right corner.
 
 

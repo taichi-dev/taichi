@@ -85,21 +85,21 @@ def init_display():
         i.x -= 1
         d = i.dot(tl.vec(N, 1))
         i.y -= 1
-        for _ in ti.static(range(3)):
-            for __ in ti.static(range(3)):
-                model.faces[a * 4 + 0][_, __] = [a, c, b][_]
-                model.faces[a * 4 + 1][_, __] = [a, d, c][_]
-        for _ in ti.static(range(3)):
-            for __ in ti.static(range(2)):
-                model.faces[a * 4 + 2][_, __] = [a, b, c][_]
-                model.faces[a * 4 + 3][_, __] = [a, c, d][_]
+        for p in ti.static(range(3)):
+            for q in ti.static(range(3)):
+                model.faces[a * 4 + 0][p, q] = [a, c, b][p]
+                model.faces[a * 4 + 1][p, q] = [a, d, c][p]
+        for p in ti.static(range(3)):
+            for q in ti.static(range(2)):
+                model.faces[a * 4 + 2][p, q] = [a, b, c][p]
+                model.faces[a * 4 + 3][p, q] = [a, c, d][p]
         a += N**2
         b += N**2
         c += N**2
         d += N**2
-        for _ in ti.static(range(3)):
-            model.faces[a * 4 + 2][_, 2] = [a, b, c][_]
-            model.faces[a * 4 + 3][_, 2] = [a, c, d][_]
+        for p in ti.static(range(3)):
+            model.faces[a * 4 + 2][p, 2] = [a, b, c][p]
+            model.faces[a * 4 + 3][p, 2] = [a, c, d][p]
     for i in ti.grouped(x):
         j = i.dot(tl.vec(N, 1))
         model.tex[j] = tl.D._x + i.xY / N

@@ -787,8 +787,9 @@ class GUI : public GUIBase {
   explicit GUI(const std::string &window_name,
                Vector2i res,
                bool show_gui,
+               bool fullscreen = true,
                bool normalized_coord = true)
-      : GUI(window_name, res[0], res[1], show_gui, normalized_coord) {
+      : GUI(window_name, res[0], res[1], show_gui, fullscreen, normalized_coord) {
   }
 
   void create_window();

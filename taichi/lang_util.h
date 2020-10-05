@@ -19,10 +19,64 @@ struct Context;
 
 using FunctionType = std::function<void(Context &)>;
 
-enum class DataType : int {
+class Type {
+ public:
+  virtual std::string to_string() const = 0;
+  virtual ~Type() {
+  }
+};
+
+// A "Type" handle. This should be removed later.
+class DataType {
+ public:
+#define PER_TYPE(x) static DataType x;
+#include "taichi/inc/data_type.inc.h"
+#undef PER_TYPE
+  DataType() : ptr_(unknown.ptr_) {
+  }
+
+  DataType(const Type *ptr) : ptr_(ptr) {
+  }
+
+  bool operator==(const DataType &o) const {
+    return ptr_ == o.ptr_;
+  }
+
+  bool operator!=(const DataType &o) const {
+    return !(*this == o);
+  }
+
+  std::size_t hash() const;
+
+  std::string to_string() const {
+    return ptr_->to_string();
+  };
+
+  // TODO: DataType itself should be a pointer in the future
+  const Type *get_ptr() const {
+    return ptr_;
+  }
+
+ private:
+  const Type *ptr_;
+};
+
+class PrimitiveType : public Type {
+ public:
+  enum class primitive_type : int {
 #define PER_TYPE(x) x,
 #include "taichi/inc/data_type.inc.h"
 #undef PER_TYPE
+  };
+
+  primitive_type type;
+
+  PrimitiveType(primitive_type type) : type(type) {
+  }
+
+  std::string to_string() const override;
+
+  static DataType get(primitive_type type);
 };
 
 template <typename T>
@@ -78,7 +132,7 @@ enum class UnaryOpType : int {
 
 std::string unary_op_type_name(UnaryOpType type);
 
-inline bool unary_op_is_cast(UnaryOpType op) {
+inline bool constexpr unary_op_is_cast(UnaryOpType op) {
   return op == UnaryOpType::cast_value || op == UnaryOpType::cast_bits;
 }
 
@@ -88,41 +142,39 @@ inline bool constexpr is_trigonometric(UnaryOpType op) {
          op == UnaryOpType::tan || op == UnaryOpType::tanh;
 }
 
-inline bool constexpr is_real(DataType dt) {
+inline bool is_real(DataType dt) {
   return dt == DataType::f16 || dt == DataType::f32 || dt == DataType::f64;
 }
 
-inline bool constexpr is_integral(DataType dt) {
+inline bool is_integral(DataType dt) {
   return dt == DataType::i8 || dt == DataType::i16 || dt == DataType::i32 ||
          dt == DataType::i64 || dt == DataType::u8 || dt == DataType::u16 ||
          dt == DataType::u32 || dt == DataType::u64;
 }
 
-inline bool constexpr is_signed(DataType dt) {
+inline bool is_signed(DataType dt) {
   TI_ASSERT(is_integral(dt));
   return dt == DataType::i8 || dt == DataType::i16 || dt == DataType::i32 ||
          dt == DataType::i64;
 }
 
-inline bool constexpr is_unsigned(DataType dt) {
+inline bool is_unsigned(DataType dt) {
   TI_ASSERT(is_integral(dt));
   return !is_signed(dt);
 }
 
 inline DataType to_unsigned(DataType dt) {
   TI_ASSERT(is_signed(dt));
-  switch (dt) {
-    case DataType::i8:
-      return DataType::u8;
-    case DataType::i16:
-      return DataType::u16;
-    case DataType::i32:
-      return DataType::u32;
-    case DataType::i64:
-      return DataType::u64;
-    default:
-      return DataType::unknown;
-  }
+  if (dt == DataType::i8)
+    return DataType::u8;
+  else if (dt == DataType::i16)
+    return DataType::u16;
+  else if (dt == DataType::i32)
+    return DataType::u32;
+  else if (dt == DataType::i64)
+    return DataType::u64;
+  else
+    return DataType::unknown;
 }
 
 inline bool needs_grad(DataType dt) {
@@ -130,8 +182,8 @@ inline bool needs_grad(DataType dt) {
 }
 
 // Regular binary ops:
-// Operations that take two oprands, and returns a single operand with the same
-// type
+// Operations that take two oprands, and returns a single operand with the
+// same type
 
 enum class BinaryOpType : int {
 #define PER_BINARY_OP(x) x,

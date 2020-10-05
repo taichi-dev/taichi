@@ -1,6 +1,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <deque>
+#include <functional>
 #include <future>
 #include <mutex>
 #include <thread>
@@ -70,6 +71,10 @@ class ParallelExecutor {
   std::condition_variable flush_cv_;
 };
 
+// Compiles the offloaded and optimized IR to the target backend's executable.
+using BackendExecCompilationFunc =
+    std::function<FunctionType(Kernel &, OffloadedStmt *)>;
+
 // In charge of (parallel) compilation to binary and (serial) kernel launching
 class ExecutionQueue {
  public:
@@ -78,7 +83,8 @@ class ExecutionQueue {
   ParallelExecutor compilation_workers;  // parallel compilation
   ParallelExecutor launch_worker;        // serial launching
 
-  explicit ExecutionQueue(IRBank *ir_bank);
+  explicit ExecutionQueue(IRBank *ir_bank,
+                          const BackendExecCompilationFunc &compile_to_backend);
 
   void enqueue(const TaskLaunchRecord &ker);
 
@@ -117,6 +123,7 @@ class ExecutionQueue {
   std::unordered_map<uint64, AsyncCompiledFunc> compiled_funcs_;
 
   IRBank *ir_bank_;  // not owned
+  BackendExecCompilationFunc compile_to_backend_;
 };
 
 // An engine for asynchronous execution and optimization
@@ -130,7 +137,8 @@ class AsyncEngine {
   std::unique_ptr<StateFlowGraph> sfg;
   std::deque<TaskLaunchRecord> task_queue;
 
-  explicit AsyncEngine(Program *program);
+  explicit AsyncEngine(Program *program,
+                       const BackendExecCompilationFunc &compile_to_backend);
 
   bool fuse();  // return true when modified
 

@@ -76,15 +76,11 @@ class ConstantFold : public BasicStmtVisitor {
     // ConstStmt of `bad` types like `i8` is not supported by LLVM.
     // Discussion:
     // https://github.com/taichi-dev/taichi/pull/839#issuecomment-625902727
-    switch (dt) {
-      case DataType::i32:
-      case DataType::f32:
-      case DataType::i64:
-      case DataType::f64:
-        return true;
-      default:
-        return false;
-    }
+    if (dt == DataType::i32 || dt == DataType::f32 || dt == DataType::i64 ||
+        dt == DataType::f64)
+      return true;
+    else
+      return false;
   }
 
   static bool jit_evaluate_binary_op(TypedConstant &ret,

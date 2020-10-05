@@ -128,7 +128,7 @@ void ExecutionQueue::enqueue(const TaskLaunchRecord &ker) {
     auto cloned_stmt = ker.ir_handle.clone();
     stmt = cloned_stmt->as<OffloadedStmt>();
 
-    compilation_workers.enqueue([async_func, stmt, kernel]() {
+    compilation_workers.enqueue([async_func, stmt, kernel, this]() {
       {
         // Final lowering
         using namespace irpass;
@@ -143,8 +143,7 @@ void ExecutionQueue::enqueue(const TaskLaunchRecord &ker) {
             is_extension_supported(config.arch, Extension::bls) &&
                 config.make_block_local);
       }
-      auto codegen = KernelCodeGen::create(kernel->arch, kernel, stmt);
-      auto func = codegen->codegen();
+      auto func = this->compile_to_backend_(*kernel, stmt);
       async_func->set(func);
     });
     ir_bank_->insert_to_trash_bin(std::move(cloned_stmt));
@@ -161,14 +160,18 @@ void ExecutionQueue::synchronize() {
   launch_worker.flush();
 }
 
-ExecutionQueue::ExecutionQueue(IRBank *ir_bank)
+ExecutionQueue::ExecutionQueue(
+    IRBank *ir_bank,
+    const BackendExecCompilationFunc &compile_to_backend)
     : compilation_workers(4),  // TODO: remove 4
       launch_worker(1),
-      ir_bank_(ir_bank) {
+      ir_bank_(ir_bank),
+      compile_to_backend_(compile_to_backend) {
 }
 
-AsyncEngine::AsyncEngine(Program *program)
-    : queue(&ir_bank_),
+AsyncEngine::AsyncEngine(Program *program,
+                         const BackendExecCompilationFunc &compile_to_backend)
+    : queue(&ir_bank_, compile_to_backend),
       program(program),
       sfg(std::make_unique<StateFlowGraph>(&ir_bank_)) {
 }
@@ -240,7 +243,7 @@ void AsyncEngine::synchronize() {
     sfg->verify();
   }
   debug_sfg("final");
-  auto tasks = sfg->extract();
+  auto tasks = sfg->extract_to_execute();
   TI_TRACE("Ended up with {} nodes", tasks.size());
   for (auto &task : tasks) {
     queue.enqueue(task);

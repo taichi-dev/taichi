@@ -33,5 +33,6 @@
   "error"           : "Error messages",
   "blender"         : "Blender intergration",
   "export"          : "Exporting kernels",
+  "type"            : "Type system",
   "release"         : "Release"
 }

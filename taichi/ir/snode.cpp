@@ -120,6 +120,10 @@ bool SNode::is_place() const {
   return type == SNodeType::place;
 }
 
+bool SNode::is_scalar() const {
+  return is_place() && (num_active_indices == 0);
+}
+
 bool SNode::has_grad() const {
   auto adjoint = expr.cast<GlobalVariableExpression>()->adjoint;
   return is_primal() && adjoint.expr != nullptr &&

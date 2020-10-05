@@ -11,7 +11,6 @@
 #include "taichi/backends/cuda/cuda_context.h"
 #endif
 #include "taichi/backends/metal/codegen_metal.h"
-#include "taichi/backends/metal/env_config.h"
 #include "taichi/backends/opengl/codegen_opengl.h"
 #include "taichi/backends/cpu/codegen_cpu.h"
 #include "taichi/struct/struct.h"
@@ -146,8 +145,11 @@ Program::Program(Arch desired_arch) {
 
   if (config.async_mode) {
     TI_WARN("Running in async mode. This is experimental.");
-    TI_ASSERT(arch_is_cpu(config.arch) || config.arch == Arch::cuda);
-    async_engine = std::make_unique<AsyncEngine>(this);
+    TI_ASSERT(is_extension_supported(config.arch, Extension::async_mode));
+    async_engine = std::make_unique<AsyncEngine>(
+        this, [this](Kernel &kernel, OffloadedStmt *offloaded) {
+          return this->compile_to_backend_executable(kernel, offloaded);
+        });
   }
 
   // TODO: allow users to run in debug mode without out-of-bound checks
@@ -196,17 +198,10 @@ FunctionType Program::compile(Kernel &kernel) {
   auto start_t = Time::get_time();
   TI_AUTO_PROF;
   FunctionType ret = nullptr;
-  if (arch_is_cpu(kernel.arch) || kernel.arch == Arch::cuda) {
+  if (arch_is_cpu(kernel.arch) || kernel.arch == Arch::cuda ||
+      kernel.arch == Arch::metal) {
     kernel.lower();
-    auto codegen = KernelCodeGen::create(kernel.arch, &kernel);
-    ret = codegen->compile();
-  } else if (kernel.arch == Arch::metal) {
-    metal::CodeGen::Config cgen_config;
-    cgen_config.allow_simdgroup =
-        metal::EnvConfig::instance().is_simdgroup_enabled();
-    metal::CodeGen codegen(&kernel, metal_kernel_mgr_.get(),
-                           &metal_compiled_structs_.value(), cgen_config);
-    ret = codegen.compile();
+    ret = compile_to_backend_executable(kernel, /*offloaded=*/nullptr);
   } else if (kernel.arch == Arch::opengl) {
     opengl::OpenglCodeGen codegen(kernel.name, &opengl_struct_compiled_.value(),
                                   opengl_kernel_launcher_.get());
@@ -221,6 +216,20 @@ FunctionType Program::compile(Kernel &kernel) {
   TI_ASSERT(ret);
   total_compilation_time += Time::get_time() - start_t;
   return ret;
+}
+
+FunctionType Program::compile_to_backend_executable(Kernel &kernel,
+                                                    OffloadedStmt *offloaded) {
+  if (arch_is_cpu(kernel.arch) || kernel.arch == Arch::cuda) {
+    auto codegen = KernelCodeGen::create(kernel.arch, &kernel, offloaded);
+    return codegen->compile();
+  } else if (kernel.arch == Arch::metal) {
+    return metal::compile_to_metal_executable(&kernel, metal_kernel_mgr_.get(),
+                                              &metal_compiled_structs_.value(),
+                                              offloaded);
+  }
+  TI_NOT_IMPLEMENTED;
+  return nullptr;
 }
 
 // For CPU and CUDA archs only
@@ -472,6 +481,8 @@ void Program::synchronize() {
     if (config.async_mode) {
       async_engine->synchronize();
     }
+    if (profiler)
+      profiler->sync();
     device_synchronize();
     sync = true;
   }

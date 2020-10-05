@@ -154,7 +154,7 @@ We may test against different input values using the ``@pytest.mark.parametrize`
 
         r[None] = x
         foo()
-        assert r[None] == math.log10(x)
+        assert ti.approx(r[None]) == math.log10(x)
 
 Use a comma-separated list for multiple input values:
 
@@ -174,10 +174,10 @@ Use a comma-separated list for multiple input values:
         def foo():
             r[None] = ti.atan2(r[None], s[None])
 
-        r[None] = x
-        s[None] = y
+        r[None] = y
+        s[None] = x
         foo()
-        assert r[None] == math.atan2(y, x)
+        assert ti.approx(r[None]) == math.atan2(y, x)
 
 Use two separate ``parametrize`` to test **all combinations** of input arguments:
 
@@ -187,8 +187,8 @@ Use two separate ``parametrize`` to test **all combinations** of input arguments
     import pytest
     import math
 
-    @pytest.mark.parametrize('x', [1, 2])
     @pytest.mark.parametrize('y', [1, 2])
+    @pytest.mark.parametrize('x', [1, 2])
     # same as:  .parametrize('y,x', [(1, 1), (1, 2), (2, 1), (2, 2)])
     @ti.test()
     def test_atan2(y, x):
@@ -202,7 +202,7 @@ Use two separate ``parametrize`` to test **all combinations** of input arguments
         r[None] = y
         s[None] = x
         foo()
-        assert r[None] == math.atan2(y, x)
+        assert ti.approx(r[None]) == math.atan2(y, x)
 
 Specifying ``ti.init`` configurations
 *************************************

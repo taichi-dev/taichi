@@ -1,36 +1,18 @@
 import taichi as ti
 import os
 import sys
-import functools
 
 sys.path.append(os.path.join(ti.core.get_repo_dir(), 'tests', 'python'))
 
 from fuse_test_template import template_fuse_dense_x2y2z, \
     template_fuse_reduction
 
-
-# Note: this is a short-term solution. In the long run we need to think about how to reuse pytest
-def benchmark_async(func):
-    @functools.wraps(func)
-    def body():
-        for arch in [ti.cpu, ti.cuda]:
-            for async_mode in [True, False]:
-                os.environ['TI_CURRENT_BENCHMARK'] = func.__name__
-                ti.init(arch=arch, async_mode=async_mode)
-                if arch == ti.cpu:
-                    scale = 2
-                else:
-                    # Use more data to hide compilation overhead
-                    # (since CUDA runs much faster than CPUs)
-                    scale = 64
-                func(scale)
-
-    return body
+from utils import *
 
 
 @benchmark_async
 def fuse_dense_x2y2z(scale):
-    template_fuse_dense_x2y2z(size=scale * 10 * 1024**2,
+    template_fuse_dense_x2y2z(size=scale * 1024**2,
                               repeat=1,
                               benchmark_repeat=100,
                               benchmark=True)
@@ -38,7 +20,7 @@ def fuse_dense_x2y2z(scale):
 
 @benchmark_async
 def fuse_reduction(scale):
-    template_fuse_reduction(size=scale * 10 * 1024**2,
+    template_fuse_reduction(size=scale * 1024**2,
                             repeat=10,
                             benchmark_repeat=10,
                             benchmark=True)
@@ -46,7 +28,7 @@ def fuse_reduction(scale):
 
 @benchmark_async
 def fill_1d(scale):
-    a = ti.field(dtype=ti.f32, shape=scale * 10 * 1024**2)
+    a = ti.field(dtype=ti.f32, shape=scale * 1024**2)
 
     @ti.kernel
     def fill():
@@ -81,7 +63,7 @@ def sparse_numpy(scale):
     a = ti.field(dtype=ti.f32)
     b = ti.field(dtype=ti.f32)
 
-    block_count = 2**int((math.log(scale, 2)) // 2) * 64
+    block_count = 2**int((math.log(scale, 2)) // 2) * 4
     block_size = 32
     # a, b always share the same sparsity
     ti.root.pointer(ti.ij, block_count).dense(ti.ij, block_size).place(a, b)
@@ -145,7 +127,7 @@ def stencil_reduction(scale):
     b = ti.field(dtype=ti.f32)
     total = ti.field(dtype=ti.f32, shape=())
 
-    block_count = scale * 512
+    block_count = scale * 64
     block_size = 1024
     # a, b always share the same sparsity
     ti.root.pointer(ti.i, block_count).dense(ti.i, block_size).place(a, b)

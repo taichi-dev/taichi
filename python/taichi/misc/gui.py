@@ -54,8 +54,9 @@ class GUI:
         if isinstance(res, numbers.Number):
             res = (res, res)
         self.res = res
+        self.fast_gui = fast_gui
         if fast_gui:
-            self.img = np.ascontiguousarray(np.zeros(self.res[0] * self.res[1] * 4, dtype=np.uint8))
+            self.img = np.ascontiguousarray(np.zeros(self.res[0] * self.res[1], dtype=np.uint32))
             fast_buf = self.img.ctypes.data
         else:
             # The GUI canvas uses RGBA for storage, therefore we need NxMx4 for an image.
@@ -153,6 +154,16 @@ class GUI:
         import numpy as np
         import taichi as ti
 
+        if self.fast_gui:
+            assert img.shape == self.res, \
+                    "Image resolution does not match GUI resolution"
+            assert isinstance(img, ti.Matrix) and img.n in [3, 4] and img.m == 1, \
+                    "Only RGB or RGBA images are supported when fast_gui=True"
+
+            from taichi.lang.meta import vector_to_fast_image
+            vector_to_fast_image(img, self.img)
+            return
+
         if isinstance(img, ti.Expr):
             if ti.core.is_integral(img.dtype) or len(img.shape) != 2:
                 # Images of uint is not optimized by xxx_to_image
@@ -206,7 +217,7 @@ class GUI:
 
         if isinstance(color, np.ndarray):
             assert color.shape == (n, )
-            color = np.ascontiguousarray(color.astype(np.uint32))
+            color = np.ascontiguousarray(color.astype(np.int32))
             color_array = int(color.ctypes.data)
             color_single = 0
         elif isinstance(color, int):

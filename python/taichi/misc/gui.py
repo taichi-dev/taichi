@@ -49,21 +49,22 @@ class GUI:
         if 'TI_GUI_FAST' in os.environ:
             fast_gui = bool(int(os.environ['TI_GUI_FAST']))
 
-
         self.name = name
         if isinstance(res, numbers.Number):
             res = (res, res)
         self.res = res
         self.fast_gui = fast_gui
         if fast_gui:
-            self.img = np.ascontiguousarray(np.zeros(self.res[0] * self.res[1], dtype=np.uint32))
+            self.img = np.ascontiguousarray(
+                np.zeros(self.res[0] * self.res[1], dtype=np.uint32))
             fast_buf = self.img.ctypes.data
         else:
             # The GUI canvas uses RGBA for storage, therefore we need NxMx4 for an image.
-            self.img = np.ascontiguousarray(np.zeros(self.res + (4, ), np.float32))
+            self.img = np.ascontiguousarray(
+                np.zeros(self.res + (4, ), np.float32))
             fast_buf = 0
-        self.core = ti_core.GUI(name, core_veci(*res),
-                show_gui, fullscreen, fast_gui, fast_buf)
+        self.core = ti_core.GUI(name, core_veci(*res), show_gui, fullscreen,
+                                fast_gui, fast_buf)
         self.canvas = self.core.get_canvas()
         self.background_color = background_color
         self.key_pressed = set()

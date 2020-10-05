@@ -797,8 +797,14 @@ class GUI : public GUIBase {
                bool fast_gui = false,
                size_t fast_buf = 0,
                bool normalized_coord = true)
-      : GUI(window_name, res[0], res[1], show_gui, fullscreen,
-          fast_gui, fast_buf, normalized_coord) {
+      : GUI(window_name,
+            res[0],
+            res[1],
+            show_gui,
+            fullscreen,
+            fast_gui,
+            fast_buf,
+            normalized_coord) {
   }
 
   void create_window();

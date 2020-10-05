@@ -31,10 +31,14 @@ class CXImage {
     TI_ASSERT((void *)image->data == image_data.data());
   }
 
-  CXImage(Display *display, Visual *visual, void *fast_data, int width, int height)
+  CXImage(Display *display,
+          Visual *visual,
+          void *fast_data,
+          int width,
+          int height)
       : width(width), height(height) {
-    image = XCreateImage(display, visual, 24, ZPixmap, 0,
-                         (char *)fast_data, width, height, 32, 0);
+    image = XCreateImage(display, visual, 24, ZPixmap, 0, (char *)fast_data,
+                         width, height, 32, 0);
     TI_ASSERT((void *)image->data == fast_data);
   }
 
@@ -176,8 +180,8 @@ void GUI::create_window() {
   if (!fast_gui)
     img = new CXImage((Display *)display, (Visual *)visual, width, height);
   else
-    img = new CXImage((Display *)display, (Visual *)visual,
-        (void *)fast_buf, width, height);
+    img = new CXImage((Display *)display, (Visual *)visual, (void *)fast_buf,
+                      width, height);
 }
 
 void GUI::redraw() {

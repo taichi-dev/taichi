@@ -57,7 +57,8 @@ inline void declare_unnamed_var(Expr &a, DataType dt) {
 
 inline void declare_var(Expr &a) {
   current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
-      std::static_pointer_cast<IdExpression>(a.expr)->id, DataType::unknown));
+      std::static_pointer_cast<IdExpression>(a.expr)->id,
+      PrimitiveType::unknown));
 }
 
 #define Declare(x) auto x = Expr(std::make_shared<IdExpression>(#x));
@@ -66,15 +67,15 @@ inline void declare_var(Expr &a) {
 
 #define NamedScalar(x, name, dt)   \
   DeclareNamed(x##_global, #name); \
-  auto x = global_new(x##_global, DataType::dt);
+  auto x = global_new(x##_global, PrimitiveType::dt);
 
 #define Global(x, dt)  \
   Declare(x##_global); \
-  auto x = global_new(x##_global, DataType::dt);
+  auto x = global_new(x##_global, PrimitiveType::dt);
 
-#define AmbientGlobal(x, dt, ambient)            \
-  Declare(x##_global);                           \
-  auto x = global_new(x##_global, DataType::dt); \
+#define AmbientGlobal(x, dt, ambient)                 \
+  Declare(x##_global);                                \
+  auto x = global_new(x##_global, PrimitiveType::dt); \
   set_ambient(x, ambient);
 
 inline void set_ambient(Expr expr_, float32 val) {

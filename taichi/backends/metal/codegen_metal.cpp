@@ -275,7 +275,7 @@ class KernelCodegen : public IRVisitor {
         }
       } else if (opty == SNodeOpType::append) {
         TI_ASSERT(is_dynamic);
-        TI_ASSERT(stmt->ret_type.data_type == DataType::i32);
+        TI_ASSERT(stmt->ret_type.data_type == PrimitiveType::i32);
         emit("{} = {}.append({});", result_var, parent, stmt->val->raw_name());
       } else if (opty == SNodeOpType::length) {
         TI_ASSERT(is_dynamic);
@@ -485,19 +485,19 @@ class KernelCodegen : public IRVisitor {
       current_appender().push_indent();
     }
 
-    if (dt == DataType::i32) {
+    if (dt == PrimitiveType::i32) {
       emit(
           "const auto {} = atomic_fetch_{}_explicit((device atomic_int*){}, "
           "{}, "
           "metal::memory_order_relaxed);",
           stmt->raw_name(), op_name, stmt->dest->raw_name(), val_var);
-    } else if (dt == DataType::u32) {
+    } else if (dt == PrimitiveType::u32) {
       emit(
           "const auto {} = atomic_fetch_{}_explicit((device atomic_uint*){}, "
           "{}, "
           "metal::memory_order_relaxed);",
           stmt->raw_name(), op_name, stmt->dest->raw_name(), val_var);
-    } else if (dt == DataType::f32) {
+    } else if (dt == PrimitiveType::f32) {
       if (handle_float) {
         emit("const float {} = fatomic_fetch_{}({}, {});", stmt->raw_name(),
              op_name, stmt->dest->raw_name(), val_var);
@@ -624,7 +624,7 @@ class KernelCodegen : public IRVisitor {
         if (std::holds_alternative<Stmt *>(entry)) {
           auto *arg_stmt = std::get<Stmt *>(entry);
           const auto dt = arg_stmt->element_type();
-          TI_ASSERT_INFO(dt == DataType::i32 || dt == DataType::f32,
+          TI_ASSERT_INFO(dt == PrimitiveType::i32 || dt == PrimitiveType::f32,
                          "print() only supports i32 or f32 scalars for now.");
           emit("{}.pm_set_{}({}, {});", msg_var_name, data_type_short_name(dt),
                i, arg_stmt->raw_name());
@@ -1037,7 +1037,8 @@ class KernelCodegen : public IRVisitor {
     used_features()->sparse = true;
   }
 
-  std::string inject_load_global_tmp(int offset, DataType dt = DataType::i32) {
+  std::string inject_load_global_tmp(int offset,
+                                     DataType dt = PrimitiveType::i32) {
     const auto vt = VectorType(/*width=*/1, dt);
     auto gtmp = Stmt::make<GlobalTemporaryStmt>(offset, vt);
     gtmp->accept(this);

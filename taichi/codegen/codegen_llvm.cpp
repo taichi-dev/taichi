@@ -149,13 +149,13 @@ void CodeGenLLVM::emit_extra_unary(UnaryOpStmt *stmt) {
 
 #define UNARY_STD(x)                                                   \
   else if (op == UnaryOpType::x) {                                     \
-    if (input_taichi_type == PrimitiveType::f32) {                          \
+    if (input_taichi_type == PrimitiveType::f32) {                     \
       llvm_val[stmt] =                                                 \
           builder->CreateCall(get_runtime_function(#x "_f32"), input); \
-    } else if (input_taichi_type == PrimitiveType::f64) {                   \
+    } else if (input_taichi_type == PrimitiveType::f64) {              \
       llvm_val[stmt] =                                                 \
           builder->CreateCall(get_runtime_function(#x "_f64"), input); \
-    } else if (input_taichi_type == PrimitiveType::i32) {                   \
+    } else if (input_taichi_type == PrimitiveType::i32) {              \
       llvm_val[stmt] =                                                 \
           builder->CreateCall(get_runtime_function(#x "_i32"), input); \
     } else {                                                           \
@@ -638,7 +638,8 @@ llvm::Value *CodeGenLLVM::create_print(std::string tag,
       ("[llvm codegen debug] " + tag + " = " + format + "\n").c_str(),
       "format_string"));
   if (dt == PrimitiveType::f32)
-    value = builder->CreateFPExt(value, tlctx->get_data_type(PrimitiveType::f64));
+    value =
+        builder->CreateFPExt(value, tlctx->get_data_type(PrimitiveType::f64));
   args.push_back(value);
   return builder->CreateCall(runtime_printf, args);
 }
@@ -652,8 +653,8 @@ void CodeGenLLVM::visit(PrintStmt *stmt) {
       auto arg_stmt = std::get<Stmt *>(content);
       auto value = llvm_val[arg_stmt];
       if (arg_stmt->ret_type.data_type == PrimitiveType::f32)
-        value =
-            builder->CreateFPExt(value, tlctx->get_data_type(PrimitiveType::f64));
+        value = builder->CreateFPExt(value,
+                                     tlctx->get_data_type(PrimitiveType::f64));
       args.push_back(value);
       formats += data_type_format(arg_stmt->ret_type.data_type);
     } else {

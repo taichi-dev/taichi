@@ -1037,7 +1037,8 @@ class KernelCodegen : public IRVisitor {
     used_features()->sparse = true;
   }
 
-  std::string inject_load_global_tmp(int offset, DataType dt = PrimitiveType::i32) {
+  std::string inject_load_global_tmp(int offset,
+                                     DataType dt = PrimitiveType::i32) {
     const auto vt = VectorType(/*width=*/1, dt);
     auto gtmp = Stmt::make<GlobalTemporaryStmt>(offset, vt);
     gtmp->accept(this);

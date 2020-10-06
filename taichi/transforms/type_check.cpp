@@ -273,8 +273,10 @@ class TypeCheck : public IRVisitor {
     bool matching = true;
     matching =
         matching && (stmt->lhs->ret_type.width == stmt->rhs->ret_type.width);
-    matching = matching && (stmt->lhs->ret_type.data_type != PrimitiveType::unknown);
-    matching = matching && (stmt->rhs->ret_type.data_type != PrimitiveType::unknown);
+    matching =
+        matching && (stmt->lhs->ret_type.data_type != PrimitiveType::unknown);
+    matching =
+        matching && (stmt->rhs->ret_type.data_type != PrimitiveType::unknown);
     matching = matching && (stmt->lhs->ret_type == stmt->rhs->ret_type);
     if (!matching) {
       error();
@@ -285,7 +287,8 @@ class TypeCheck : public IRVisitor {
       }
     }
     if (is_comparison(stmt->op_type)) {
-      stmt->ret_type = VectorType(stmt->lhs->ret_type.width, PrimitiveType::i32);
+      stmt->ret_type =
+          VectorType(stmt->lhs->ret_type.width, PrimitiveType::i32);
     } else {
       stmt->ret_type = stmt->lhs->ret_type;
     }

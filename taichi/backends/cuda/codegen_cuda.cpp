@@ -162,13 +162,13 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 
 #define UNARY_STD(x)                                                         \
   else if (op == UnaryOpType::x) {                                           \
-    if (input_taichi_type == PrimitiveType::f32) {                                \
+    if (input_taichi_type == PrimitiveType::f32) {                           \
       llvm_val[stmt] =                                                       \
           builder->CreateCall(get_runtime_function("__nv_" #x "f"), input);  \
-    } else if (input_taichi_type == PrimitiveType::f64) {                         \
+    } else if (input_taichi_type == PrimitiveType::f64) {                    \
       llvm_val[stmt] =                                                       \
           builder->CreateCall(get_runtime_function("__nv_" #x), input);      \
-    } else if (input_taichi_type == PrimitiveType::i32) {                         \
+    } else if (input_taichi_type == PrimitiveType::i32) {                    \
       llvm_val[stmt] = builder->CreateCall(get_runtime_function(#x), input); \
     } else {                                                                 \
       TI_NOT_IMPLEMENTED                                                     \

@@ -548,8 +548,9 @@ void export_lang(py::module &m) {
   unary.export_values();
   m.def("make_unary_op_expr",
         Expr::make<UnaryOpExpression, const UnaryOpType &, const Expr &>);
-#define PER_TYPE(x) \
-  m.attr(("DataType_" + data_type_name(PrimitiveType::x)).c_str()) = PrimitiveType::x;
+#define PER_TYPE(x)                                                  \
+  m.attr(("DataType_" + data_type_name(PrimitiveType::x)).c_str()) = \
+      PrimitiveType::x;
 #include "taichi/inc/data_type.inc.h"
 #undef PER_TYPE
 

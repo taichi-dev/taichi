@@ -211,7 +211,7 @@ SNode::SNode(int depth, SNodeType t) : depth(depth), type(t) {
   std::memset(physical_index_position, -1, sizeof(physical_index_position));
   parent = nullptr;
   has_ambient = false;
-  dt = DataType::gen;
+  dt = PrimitiveType::gen;
   _morton = false;
 
   reader_kernel = nullptr;

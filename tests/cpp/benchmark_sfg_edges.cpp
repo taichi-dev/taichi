@@ -191,8 +191,10 @@ TI_TEST("benchmark_sfg") {
       {6, 3},                  // 6
       {7, 8},                  // 7
   };
-  unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
-  std::shuffle(data.begin(), data.end(), std::default_random_engine(seed));
+  const auto seed = std::chrono::system_clock::now().time_since_epoch().count();
+  std::default_random_engine rng(seed);
+  std::shuffle(data.begin(), data.end(), rng);
+  std::shuffle(non_exists.begin(), non_exists.end(), rng);
 
   SECTION("UnorderedMapSet") {
     run_test<UnorderedMapSet>(data, non_exists);

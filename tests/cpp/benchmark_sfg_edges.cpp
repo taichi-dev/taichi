@@ -44,7 +44,8 @@ void insert(const PairData &d, UnorderedMapSet *m) {
   (*m)[d.first].insert(d.second);
 }
 
-bool lookup(const PairData &d, const UnorderedMapSet &m,
+bool lookup(const PairData &d,
+            const UnorderedMapSet &m,
             const std::string &found) {
   TI_PROFILER("UnorderedMapSet lookup " + found);
   auto itr = m.find(d.first);
@@ -72,7 +73,9 @@ void insert_vecset(const PairData &d, VecSet *m) {
 }
 
 template <typename VecSet>
-bool lookup_vecset(const PairData &d, const VecSet &m, const std::string& found) {
+bool lookup_vecset(const PairData &d,
+                   const VecSet &m,
+                   const std::string &found) {
   auto pname = fmt::format("{} lookup {}", TypeNameTraits<VecSet>::name, found);
   TI_PROFILER(pname);
   int i1 = 0;
@@ -112,7 +115,9 @@ void insert_vecvec(const PairData &d, VecVec *m) {
 }
 
 template <typename VecVec>
-bool lookup_vecvec(const PairData &d, const VecVec &m, const std::string& found) {
+bool lookup_vecvec(const PairData &d,
+                   const VecVec &m,
+                   const std::string &found) {
   auto pname = fmt::format("{} lookup {}", TypeNameTraits<VecVec>::name, found);
   TI_PROFILER(pname);
   int i1 = 0;
@@ -144,7 +149,7 @@ void insert(const PairData &d, C *m) {
 }
 
 template <typename C>
-bool lookup(const PairData &d, const C &m, const std::string& found) {
+bool lookup(const PairData &d, const C &m, const std::string &found) {
   if constexpr (std::is_same_v<C, LLVMVecSet> || std::is_same_v<C, StlVecSet>) {
     return lookup_vecset(d, m, found);
   } else if constexpr (std::is_same_v<C, LLVMVecVec> ||

@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <chrono>  // std::chrono::system_clock
 #include <random>  // std::default_random_engine
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -43,8 +44,9 @@ void insert(const PairData &d, UnorderedMapSet *m) {
   (*m)[d.first].insert(d.second);
 }
 
-bool lookup(const PairData &d, const UnorderedMapSet &m) {
-  TI_PROFILER("UnorderedMapSet lookup");
+bool lookup(const PairData &d, const UnorderedMapSet &m,
+            const std::string &found) {
+  TI_PROFILER("UnorderedMapSet lookup " + found);
   auto itr = m.find(d.first);
   if (itr == m.end()) {
     return false;
@@ -70,8 +72,8 @@ void insert_vecset(const PairData &d, VecSet *m) {
 }
 
 template <typename VecSet>
-bool lookup_vecset(const PairData &d, const VecSet &m) {
-  auto pname = fmt::format("{} lookup", TypeNameTraits<VecSet>::name);
+bool lookup_vecset(const PairData &d, const VecSet &m, const std::string& found) {
+  auto pname = fmt::format("{} lookup {}", TypeNameTraits<VecSet>::name, found);
   TI_PROFILER(pname);
   int i1 = 0;
   for (; i1 < m.size(); ++i1) {
@@ -110,8 +112,8 @@ void insert_vecvec(const PairData &d, VecVec *m) {
 }
 
 template <typename VecVec>
-bool lookup_vecvec(const PairData &d, const VecVec &m) {
-  auto pname = fmt::format("{} lookup", TypeNameTraits<VecVec>::name);
+bool lookup_vecvec(const PairData &d, const VecVec &m, const std::string& found) {
+  auto pname = fmt::format("{} lookup {}", TypeNameTraits<VecVec>::name, found);
   TI_PROFILER(pname);
   int i1 = 0;
   for (; i1 < m.size(); ++i1) {
@@ -142,12 +144,12 @@ void insert(const PairData &d, C *m) {
 }
 
 template <typename C>
-bool lookup(const PairData &d, const C &m) {
+bool lookup(const PairData &d, const C &m, const std::string& found) {
   if constexpr (std::is_same_v<C, LLVMVecSet> || std::is_same_v<C, StlVecSet>) {
-    return lookup_vecset(d, m);
+    return lookup_vecset(d, m, found);
   } else if constexpr (std::is_same_v<C, LLVMVecVec> ||
                        std::is_same_v<C, StlVecVec>) {
-    return lookup_vecvec(d, m);
+    return lookup_vecvec(d, m, found);
   }
 }
 
@@ -161,12 +163,12 @@ void run_test(const std::vector<PairData> &data,
     }
 
     for (const auto &p : data) {
-      bool l = lookup(p, m);
+      bool l = lookup(p, m, "found");
       TI_CHECK(l);
     }
 
     for (const auto &p : non_exists) {
-      bool l = lookup(p, m);
+      bool l = lookup(p, m, "not found");
       TI_CHECK(!l);
     }
   }

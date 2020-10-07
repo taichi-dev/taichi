@@ -192,7 +192,7 @@ void GUI::create_window() {
     style &= ~WS_CAPTION & ~WS_SIZEBOX;
     SetWindowLong(hwnd, GWL_STYLE, style);
     SetWindowPos(hwnd, NULL, 0, 0, GetSystemMetrics(SM_CXSCREEN),
-        GetSystemMetrics(SM_CYSCREEN), SWP_NOZORDER);
+                 GetSystemMetrics(SM_CYSCREEN), SWP_NOZORDER);
   }
 
   ShowWindow(hwnd, SW_SHOWDEFAULT);

@@ -789,7 +789,12 @@ class GUI : public GUIBase {
                bool show_gui,
                bool fullscreen = true,
                bool normalized_coord = true)
-      : GUI(window_name, res[0], res[1], show_gui, fullscreen, normalized_coord) {
+      : GUI(window_name,
+            res[0],
+            res[1],
+            show_gui,
+            fullscreen,
+            normalized_coord) {
   }
 
   void create_window();

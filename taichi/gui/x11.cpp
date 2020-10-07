@@ -140,17 +140,18 @@ void GUI::create_window() {
                  " Consider using the `ti.GUI(show_gui=False)` option, see"
                  " https://taichi.readthedocs.io/en/stable/gui.html");
   visual = DefaultVisual(display, 0);
-  window = XCreateSimpleWindow((Display *)display,
-      RootWindow((Display *)display, 0), 0, 0, width, height, 1, 0, 0);
+  window =
+      XCreateSimpleWindow((Display *)display, RootWindow((Display *)display, 0),
+                          0, 0, width, height, 1, 0, 0);
   TI_ASSERT_INFO(window, "failed to create X window");
 
   if (fullscreen) {
     // https://stackoverflow.com/questions/9083273/x11-fullscreen-window-opengl
-    Atom atoms[2] = { XInternAtom((Display *)display,
-        "_NET_WM_STATE_FULLSCREEN", False), 0 };
+    Atom atoms[2] = {
+        XInternAtom((Display *)display, "_NET_WM_STATE_FULLSCREEN", False), 0};
     Atom wmstate = XInternAtom((Display *)display, "_NET_WM_STATE", False);
-    XChangeProperty((Display *)display, window, wmstate,
-        XA_ATOM, 32, PropModeReplace, (unsigned char *)atoms, 1);
+    XChangeProperty((Display *)display, window, wmstate, XA_ATOM, 32,
+                    PropModeReplace, (unsigned char *)atoms, 1);
   }
 
   XSelectInput((Display *)display, window,

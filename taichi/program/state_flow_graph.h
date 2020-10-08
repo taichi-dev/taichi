@@ -78,20 +78,15 @@ class StateFlowGraph {
 
       // Note:
       // Read-after-write leads to flow edges
-      // Write-after-write leads to flow edges
+      // Write-after-write leads to dependency edges
       // Write-after-read leads to dependency edges
       //
-      // So an edge is a data flow edge iff the starting node writes to the
+      // So an edge is a data flow edge iff the destination node reads the
       // state.
       //
 
-      if (is_initial_node) {
-        // The initial node is special.
-        return destination->meta->input_states.find(state) !=
-               destination->meta->input_states.end();
-      } else {
-        return meta->output_states.find(state) != meta->output_states.end();
-      }
+      return destination->meta->input_states.find(state) !=
+             destination->meta->input_states.end();
     }
 
     void disconnect_all();

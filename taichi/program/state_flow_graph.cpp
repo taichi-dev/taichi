@@ -127,13 +127,18 @@ void StateFlowGraph::insert_task(const TaskLaunchRecord &rec) {
                       input_state);
   }
   for (auto output_state : node->meta->output_states) {
-    latest_state_owner_[output_state] = node.get();
     if (latest_state_readers_.find(output_state) ==
         latest_state_readers_.end()) {
-      latest_state_readers_[output_state].insert(initial_node_);
+      if (latest_state_owner_.find(output_state) != latest_state_owner_.end()) {
+        // insert a WAW dependency edge
+        insert_state_flow(latest_state_owner_[output_state], node.get(), output_state);
+      } else {
+        latest_state_readers_[output_state].insert(initial_node_);
+      }
     }
+    latest_state_owner_[output_state] = node.get();
     for (auto &d : latest_state_readers_[output_state]) {
-      // insert a dependency edge
+      // insert a WAR dependency edge
       insert_state_flow(d, node.get(), output_state);
     }
     latest_state_readers_[output_state].clear();
@@ -951,13 +956,9 @@ bool StateFlowGraph::optimize_dead_store() {
       }
       bool used = false;
       for (auto other : task->output_edges[s]) {
-        if (task->has_state_flow(s, other) &&
-            (other->meta->input_states.count(s) > 0)) {
+        if (task->has_state_flow(s, other)) {
           // Check if this is a RAW dependency. For scalar SNodes, a WAW flow
           // edge decades to a dependency edge.
-          //
-          // TODO: This is a hack that only works for scalar SNodes. The proper
-          // handling would require value killing analysis.
           used = true;
         } else {
           // Note that a dependency edge does not count as an data usage

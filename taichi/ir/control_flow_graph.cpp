@@ -321,6 +321,45 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access) {
   return modified;
 }
 
+void CFGNode::gather_loaded_snodes(std::unordered_set<SNode *> &snodes) const {
+  // Gather the snodes which this CFGNode loads.
+  // Requires reaching definition analysis.
+  std::unordered_set<Stmt *> killed_in_this_node;
+  for (int i = begin_location; i < end_location; i++) {
+    auto stmt = block->statements[i].get();
+    auto load_ptrs = irpass::analysis::get_load_pointers(stmt);
+    for (auto &load_ptr : load_ptrs) {
+      if (auto global_ptr = load_ptr->cast<GlobalPtrStmt>()) {
+        // Avoid computing the UD-chain if every snode in this global ptr
+        // are already loaded.
+        bool already_loaded = true;
+        for (auto &snode : global_ptr->snodes.data) {
+          if (snodes.count(snode) == 0) {
+            already_loaded = false;
+            break;
+          }
+        }
+        if (already_loaded) {
+          continue;
+        }
+        if (reach_in.find(global_ptr) != reach_in.end() &&
+            !contain_variable(killed_in_this_node, global_ptr)) {
+          // The UD-chain contains the value before this offload.
+          for (auto &snode : global_ptr->snodes.data) {
+            snodes.insert(snode);
+          }
+        }
+      }
+    }
+    auto store_ptrs = irpass::analysis::get_store_destination(stmt);
+    for (auto &store_ptr : store_ptrs) {
+      if (store_ptr->is<GlobalPtrStmt>()) {
+        killed_in_this_node.insert(store_ptr);
+      }
+    }
+  }
+}
+
 void CFGNode::live_variable_analysis(bool after_lower_access) {
   live_gen.clear();
   live_kill.clear();
@@ -784,6 +823,36 @@ bool ControlFlowGraph::dead_store_elimination(
       modified = true;
   }
   return modified;
+}
+
+std::unordered_set<SNode *> ControlFlowGraph::gather_loaded_snodes() {
+  TI_AUTO_PROF;
+  reaching_definition_analysis(/*after_lower_access=*/false);
+  const int num_nodes = size();
+  std::unordered_set<SNode *> snodes;
+
+  // Note: since global store may only partially modify a value state, the
+  // result (which contains the modified and unmodified part) actually needs a
+  // read from the previous version of the value state.
+  //
+  // I.e.,
+  // output_value_state = merge(input_value_state, written_part)
+  //
+  // Therefore we include the nodes[final_node]->reach_in in snodes.
+  for (auto &stmt : nodes[final_node]->reach_in) {
+    if (auto global_ptr = stmt->cast<GlobalPtrStmt>()) {
+      for (auto &snode : global_ptr->snodes.data) {
+        snodes.insert(snode);
+      }
+    }
+  }
+
+  for (int i = 0; i < num_nodes; i++) {
+    if (i != final_node) {
+      nodes[i]->gather_loaded_snodes(snodes);
+    }
+  }
+  return snodes;
 }
 
 TLANG_NAMESPACE_END

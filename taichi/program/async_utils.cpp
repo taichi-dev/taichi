@@ -148,6 +148,18 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
     // TODO: handle SNodeOpStmt etc.
     return false;
   });
+
+  // We are being conservative here: if there are any non-element-wise
+  // accesses (e.g., a = x[i + 1]), we don't treat it as completely
+  // overwriting the value state (e.g., for i in x: x[i] = 0).
+  for (auto &state : meta.output_states) {
+    if (state.type == AsyncState::Type::value) {
+      if (meta.element_wise.find(state.snode) == meta.element_wise.end()) {
+        meta.input_states.insert(state);
+      }
+    }
+  }
+
   if (root_stmt->task_type == OffloadedStmt::listgen) {
     TI_ASSERT(root_stmt->snode->parent);
     meta.snode = root_stmt->snode;

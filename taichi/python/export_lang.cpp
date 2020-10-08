@@ -506,7 +506,7 @@ void export_lang(py::module &m) {
     auto var = Expr(std::make_shared<IdExpression>());
     current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
         std::static_pointer_cast<IdExpression>(var.expr)->id,
-        DataType::unknown));
+        PrimitiveType::unknown));
     return var;
   });
   m.def("expr_assign", expr_assign);
@@ -548,8 +548,9 @@ void export_lang(py::module &m) {
   unary.export_values();
   m.def("make_unary_op_expr",
         Expr::make<UnaryOpExpression, const UnaryOpType &, const Expr &>);
-#define PER_TYPE(x) \
-  m.attr(("DataType_" + data_type_name(DataType::x)).c_str()) = DataType::x;
+#define PER_TYPE(x)                                                  \
+  m.attr(("DataType_" + data_type_name(PrimitiveType::x)).c_str()) = \
+      PrimitiveType::x;
 #include "taichi/inc/data_type.inc.h"
 #undef PER_TYPE
 

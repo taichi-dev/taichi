@@ -8,13 +8,13 @@ namespace opengl {
 
 inline std::string opengl_data_type_name(DataType dt) {
   // https://www.khronos.org/opengl/wiki/Data_Type_(GLSL)
-  if (dt == DataType::f32)
+  if (dt == PrimitiveType::f32)
     return "float";
-  else if (dt == DataType::f64)
+  else if (dt == PrimitiveType::f64)
     return "double";
-  else if (dt == DataType::i32)
+  else if (dt == PrimitiveType::i32)
     return "int";
-  else if (dt == DataType::i64)
+  else if (dt == PrimitiveType::i64)
     return "int64_t";
   else
     TI_NOT_IMPLEMENTED;
@@ -32,9 +32,9 @@ inline bool is_opengl_binary_op_different_return_type(BinaryOpType type) {
 }
 
 inline int opengl_data_address_shifter(DataType type) {
-  if (type == DataType::f32 || type == DataType::i32)
+  if (type == PrimitiveType::f32 || type == PrimitiveType::i32)
     return 2;
-  else if (type == DataType::f64 || type == DataType::i64) {
+  else if (type == PrimitiveType::f64 || type == PrimitiveType::i64) {
     return 3;
   } else {
     TI_NOT_IMPLEMENTED

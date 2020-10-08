@@ -29,11 +29,7 @@ class Type {
 // A "Type" handle. This should be removed later.
 class DataType {
  public:
-#define PER_TYPE(x) static DataType x;
-#include "taichi/inc/data_type.inc.h"
-#undef PER_TYPE
-  DataType() : ptr_(unknown.ptr_) {
-  }
+  DataType();
 
   DataType(const Type *ptr) : ptr_(ptr) {
   }
@@ -69,6 +65,10 @@ class PrimitiveType : public Type {
 #undef PER_TYPE
   };
 
+#define PER_TYPE(x) static DataType x;
+#include "taichi/inc/data_type.inc.h"
+#undef PER_TYPE
+
   primitive_type type;
 
   PrimitiveType(primitive_type type) : type(type) {
@@ -82,27 +82,27 @@ class PrimitiveType : public Type {
 template <typename T>
 inline DataType get_data_type() {
   if (std::is_same<T, float32>()) {
-    return DataType::f32;
+    return PrimitiveType::f32;
   } else if (std::is_same<T, float64>()) {
-    return DataType::f64;
+    return PrimitiveType::f64;
   } else if (std::is_same<T, bool>()) {
-    return DataType::u1;
+    return PrimitiveType::u1;
   } else if (std::is_same<T, int8>()) {
-    return DataType::i8;
+    return PrimitiveType::i8;
   } else if (std::is_same<T, int16>()) {
-    return DataType::i16;
+    return PrimitiveType::i16;
   } else if (std::is_same<T, int32>()) {
-    return DataType::i32;
+    return PrimitiveType::i32;
   } else if (std::is_same<T, int64>()) {
-    return DataType::i64;
+    return PrimitiveType::i64;
   } else if (std::is_same<T, uint8>()) {
-    return DataType::u8;
+    return PrimitiveType::u8;
   } else if (std::is_same<T, uint16>()) {
-    return DataType::u16;
+    return PrimitiveType::u16;
   } else if (std::is_same<T, uint32>()) {
-    return DataType::u32;
+    return PrimitiveType::u32;
   } else if (std::is_same<T, uint64>()) {
-    return DataType::u64;
+    return PrimitiveType::u64;
   } else {
     TI_NOT_IMPLEMENTED;
   }
@@ -143,19 +143,21 @@ inline bool constexpr is_trigonometric(UnaryOpType op) {
 }
 
 inline bool is_real(DataType dt) {
-  return dt == DataType::f16 || dt == DataType::f32 || dt == DataType::f64;
+  return dt == PrimitiveType::f16 || dt == PrimitiveType::f32 ||
+         dt == PrimitiveType::f64;
 }
 
 inline bool is_integral(DataType dt) {
-  return dt == DataType::i8 || dt == DataType::i16 || dt == DataType::i32 ||
-         dt == DataType::i64 || dt == DataType::u8 || dt == DataType::u16 ||
-         dt == DataType::u32 || dt == DataType::u64;
+  return dt == PrimitiveType::i8 || dt == PrimitiveType::i16 ||
+         dt == PrimitiveType::i32 || dt == PrimitiveType::i64 ||
+         dt == PrimitiveType::u8 || dt == PrimitiveType::u16 ||
+         dt == PrimitiveType::u32 || dt == PrimitiveType::u64;
 }
 
 inline bool is_signed(DataType dt) {
   TI_ASSERT(is_integral(dt));
-  return dt == DataType::i8 || dt == DataType::i16 || dt == DataType::i32 ||
-         dt == DataType::i64;
+  return dt == PrimitiveType::i8 || dt == PrimitiveType::i16 ||
+         dt == PrimitiveType::i32 || dt == PrimitiveType::i64;
 }
 
 inline bool is_unsigned(DataType dt) {
@@ -165,16 +167,16 @@ inline bool is_unsigned(DataType dt) {
 
 inline DataType to_unsigned(DataType dt) {
   TI_ASSERT(is_signed(dt));
-  if (dt == DataType::i8)
-    return DataType::u8;
-  else if (dt == DataType::i16)
-    return DataType::u16;
-  else if (dt == DataType::i32)
-    return DataType::u32;
-  else if (dt == DataType::i64)
-    return DataType::u64;
+  if (dt == PrimitiveType::i8)
+    return PrimitiveType::u8;
+  else if (dt == PrimitiveType::i16)
+    return PrimitiveType::u16;
+  else if (dt == PrimitiveType::i32)
+    return PrimitiveType::u32;
+  else if (dt == PrimitiveType::i64)
+    return PrimitiveType::u64;
   else
-    return DataType::unknown;
+    return PrimitiveType::unknown;
 }
 
 inline bool needs_grad(DataType dt) {
@@ -182,7 +184,7 @@ inline bool needs_grad(DataType dt) {
 }
 
 // Regular binary ops:
-// Operations that take two oprands, and returns a single operand with the
+// Operations that take two operands, and returns a single operand with the
 // same type
 
 enum class BinaryOpType : int {
@@ -250,46 +252,46 @@ class TypedConstant {
   };
 
  public:
-  TypedConstant() : dt(DataType::unknown) {
+  TypedConstant() : dt(PrimitiveType::unknown) {
   }
 
   TypedConstant(DataType dt) : dt(dt) {
     value_bits = 0;
   }
 
-  TypedConstant(int32 x) : dt(DataType::i32), val_i32(x) {
+  TypedConstant(int32 x) : dt(PrimitiveType::i32), val_i32(x) {
   }
 
-  TypedConstant(float32 x) : dt(DataType::f32), val_f32(x) {
+  TypedConstant(float32 x) : dt(PrimitiveType::f32), val_f32(x) {
   }
 
-  TypedConstant(int64 x) : dt(DataType::i64), val_i64(x) {
+  TypedConstant(int64 x) : dt(PrimitiveType::i64), val_i64(x) {
   }
 
-  TypedConstant(float64 x) : dt(DataType::f64), val_f64(x) {
+  TypedConstant(float64 x) : dt(PrimitiveType::f64), val_f64(x) {
   }
 
   template <typename T>
   TypedConstant(DataType dt, const T &value) : dt(dt) {
-    if (dt == DataType::f32) {
+    if (dt == PrimitiveType::f32) {
       val_f32 = value;
-    } else if (dt == DataType::i32) {
+    } else if (dt == PrimitiveType::i32) {
       val_i32 = value;
-    } else if (dt == DataType::i64) {
+    } else if (dt == PrimitiveType::i64) {
       val_i64 = value;
-    } else if (dt == DataType::f64) {
+    } else if (dt == PrimitiveType::f64) {
       val_f64 = value;
-    } else if (dt == DataType::i8) {
+    } else if (dt == PrimitiveType::i8) {
       val_i8 = value;
-    } else if (dt == DataType::i16) {
+    } else if (dt == PrimitiveType::i16) {
       val_i16 = value;
-    } else if (dt == DataType::u8) {
+    } else if (dt == PrimitiveType::u8) {
       val_u8 = value;
-    } else if (dt == DataType::u16) {
+    } else if (dt == PrimitiveType::u16) {
       val_u16 = value;
-    } else if (dt == DataType::u32) {
+    } else if (dt == PrimitiveType::u32) {
       val_u32 = value;
-    } else if (dt == DataType::u64) {
+    } else if (dt == PrimitiveType::u64) {
       val_u64 = value;
     } else {
       TI_NOT_IMPLEMENTED

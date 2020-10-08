@@ -60,7 +60,7 @@ class ContinueStmt : public Stmt {
   // The reason is that, each thread may handle more than one element,
   // depending on the backend's implementation.
   //
-  // For example, CUDA uses gride-stride loops, the snippet below illustrates
+  // For example, CUDA uses grid-stride loops, the snippet below illustrates
   // the idea:
   //
   // __global__ foo_kernel(...) {
@@ -1004,7 +1004,7 @@ class InternalFuncStmt : public Stmt {
   std::string func_name;
 
   InternalFuncStmt(const std::string &func_name) : func_name(func_name) {
-    this->ret_type = VectorType(1, DataType::i32);
+    this->ret_type = VectorType(1, PrimitiveType::i32);
     TI_STMT_REG_FIELDS;
   }
 

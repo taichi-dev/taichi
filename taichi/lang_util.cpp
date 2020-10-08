@@ -253,6 +253,7 @@ std::string binary_op_type_symbol(BinaryOpType type) {
     REGISTER_TYPE(pow, pow);
     REGISTER_TYPE(bit_shl, <<);
     REGISTER_TYPE(bit_sar, >>);
+    REGISTER_TYPE(bit_shr, shr);
 
 #undef REGISTER_TYPE
     default:

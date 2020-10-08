@@ -505,6 +505,7 @@ class GUI : public GUIBase {
   int widget_height;
   std::vector<std::unique_ptr<float>> widget_values;
   bool show_gui;
+  bool fullscreen;
 
   void set_mouse_pos(int x, int y) {
     cursor_pos = Vector2i(x, y);
@@ -761,12 +762,14 @@ class GUI : public GUIBase {
                int width = 800,
                int height = 800,
                bool show_gui = true,
+               bool fullscreen = true,
                bool normalized_coord = true)
       : window_name(window_name),
         width(width),
         height(height),
         key_pressed(false),
-        show_gui(show_gui) {
+        show_gui(show_gui),
+        fullscreen(fullscreen) {
     memset(button_status, 0, sizeof(button_status));
     start_time = taichi::Time::get_time();
     buffer.initialize(Vector2i(width, height));
@@ -784,8 +787,14 @@ class GUI : public GUIBase {
   explicit GUI(const std::string &window_name,
                Vector2i res,
                bool show_gui,
+               bool fullscreen = true,
                bool normalized_coord = true)
-      : GUI(window_name, res[0], res[1], show_gui, normalized_coord) {
+      : GUI(window_name,
+            res[0],
+            res[1],
+            show_gui,
+            fullscreen,
+            normalized_coord) {
   }
 
   void create_window();

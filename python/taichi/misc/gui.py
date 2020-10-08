@@ -2,6 +2,7 @@ import numbers
 import numpy as np
 from taichi.core import ti_core
 from .util import deprecated, core_veci
+import os
 
 
 class GUI:
@@ -38,14 +39,20 @@ class GUI:
                  name='Taichi',
                  res=512,
                  background_color=0x0,
-                 show_gui=True):
+                 show_gui=True,
+                 fullscreen=False):
+        if 'TI_GUI_SHOW' in os.environ:
+            show_gui = bool(int(os.environ['TI_GUI_SHOW']))
+        if 'TI_GUI_FULLSCREEN' in os.environ:
+            fullscreen = bool(int(os.environ['TI_GUI_FULLSCREEN']))
+
         self.name = name
         if isinstance(res, numbers.Number):
             res = (res, res)
         self.res = res
         # The GUI canvas uses RGBA for storage, therefore we need NxMx4 for an image.
         self.img = np.ascontiguousarray(np.zeros(self.res + (4, ), np.float32))
-        self.core = ti_core.GUI(name, core_veci(*res), show_gui)
+        self.core = ti_core.GUI(name, core_veci(*res), show_gui, fullscreen)
         self.canvas = self.core.get_canvas()
         self.background_color = background_color
         self.key_pressed = set()

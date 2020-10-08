@@ -308,6 +308,9 @@ void GUI::create_window() {
   call(window, "becomeFirstResponder");
   call(window, "setAcceptsMouseMovedEvents:", YES);
   call(window, "makeKeyAndOrderFront:", window);
+  if (fullscreen) {
+    call(window, "toggleFullScreen:");
+  }
 }
 
 void GUI::process_event() {

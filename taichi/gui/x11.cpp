@@ -2,6 +2,7 @@
 
 #if defined(TI_GUI_X11)
 #include <X11/Xlib.h>
+#include <X11/Xatom.h>
 #include <X11/Xutil.h>
 #include <cstdlib>
 
@@ -143,6 +144,16 @@ void GUI::create_window() {
       XCreateSimpleWindow((Display *)display, RootWindow((Display *)display, 0),
                           0, 0, width, height, 1, 0, 0);
   TI_ASSERT_INFO(window, "failed to create X window");
+
+  if (fullscreen) {
+    // https://stackoverflow.com/questions/9083273/x11-fullscreen-window-opengl
+    Atom atoms[2] = {
+        XInternAtom((Display *)display, "_NET_WM_STATE_FULLSCREEN", False), 0};
+    Atom wmstate = XInternAtom((Display *)display, "_NET_WM_STATE", False);
+    XChangeProperty((Display *)display, window, wmstate, XA_ATOM, 32,
+                    PropModeReplace, (unsigned char *)atoms, 1);
+  }
+
   XSelectInput((Display *)display, window,
                ButtonPressMask | ExposureMask | KeyPressMask | KeyReleaseMask |
                    ButtonPress | ButtonReleaseMask | EnterWindowMask |

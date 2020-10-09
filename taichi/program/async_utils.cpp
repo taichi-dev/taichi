@@ -102,35 +102,11 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
   meta.name = t.kernel->name + "_" +
               OffloadedStmt::task_type_name(root_stmt->task_type);
   meta.type = root_stmt->task_type;
+  get_meta_input_value_states(root_stmt, &meta);
   gather_statements(root_stmt, [&](Stmt *stmt) {
-    if (auto global_load = stmt->cast<GlobalLoadStmt>()) {
-      if (auto ptr = global_load->ptr->cast<GlobalPtrStmt>()) {
-        for (auto &snode : ptr->snodes.data) {
-          meta.input_states.emplace(snode, AsyncState::Type::value);
-        }
-      }
-    }
-
-    // Note: since global store may only partially modify a value state, the
-    // result (which contains the modified and unmodified part) actually needs a
-    // read from the previous version of the value state.
-    //
-    // I.e.,
-    // output_value_state = merge(input_value_state, written_part)
-    //
-    // Therefore we include the value state in input_states.
-    //
-    // The only exception is that the task may completely overwrite the value
-    // state (e.g., for i in x: x[i] = 0). However, for now we are not yet
-    // able to detect that case, so we are being conservative here.
-
     if (auto global_store = stmt->cast<GlobalStoreStmt>()) {
       if (auto ptr = global_store->ptr->cast<GlobalPtrStmt>()) {
         for (auto &snode : ptr->snodes.data) {
-          if (!snode->is_scalar()) {
-            // TODO: This is ad-hoc, use value killing analysis
-            meta.input_states.emplace(snode, AsyncState::Type::value);
-          }
           meta.output_states.emplace(snode, AsyncState::Type::value);
         }
       }
@@ -138,7 +114,6 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
     if (auto global_atomic = stmt->cast<AtomicOpStmt>()) {
       if (auto ptr = global_atomic->dest->cast<GlobalPtrStmt>()) {
         for (auto &snode : ptr->snodes.data) {
-          meta.input_states.emplace(snode, AsyncState::Type::value);
           meta.output_states.emplace(snode, AsyncState::Type::value);
         }
       }
@@ -173,6 +148,18 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
     // TODO: handle SNodeOpStmt etc.
     return false;
   });
+
+  // We are being conservative here: if there are any non-element-wise
+  // accesses (e.g., a = x[i + 1]), we don't treat it as completely
+  // overwriting the value state (e.g., for i in x: x[i] = 0).
+  for (auto &state : meta.output_states) {
+    if (state.type == AsyncState::Type::value) {
+      if (meta.element_wise.find(state.snode) == meta.element_wise.end()) {
+        meta.input_states.insert(state);
+      }
+    }
+  }
+
   if (root_stmt->task_type == OffloadedStmt::listgen) {
     TI_ASSERT(root_stmt->snode->parent);
     meta.snode = root_stmt->snode;

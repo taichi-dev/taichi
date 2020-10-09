@@ -62,6 +62,7 @@ class CFGNode {
   bool reach_kill_variable(Stmt *var) const;
   Stmt *get_store_forwarding_data(Stmt *var, int position) const;
   bool store_to_load_forwarding(bool after_lower_access);
+  void gather_loaded_snodes(std::unordered_set<SNode *> &snodes) const;
 
   void live_variable_analysis(bool after_lower_access);
   bool dead_store_elimination(bool after_lower_access);
@@ -110,6 +111,9 @@ class ControlFlowGraph {
   bool dead_store_elimination(
       bool after_lower_access,
       const std::optional<LiveVarAnalysisConfig> &lva_config_opt);
+
+  // Gather the SNodes this offload reads.
+  std::unordered_set<SNode *> gather_loaded_snodes();
 };
 
 TLANG_NAMESPACE_END

@@ -64,7 +64,6 @@ def test_remove_clear_list_from_fused_serial():
 
 @ti.test(require=ti.extension.async_mode, async_mode=True)
 def test_sfg_dead_store_elimination():
-    ti.init(arch=ti.cpu, async_mode=True)
     n = 32
 
     x = ti.field(dtype=float, shape=n, needs_grad=True)

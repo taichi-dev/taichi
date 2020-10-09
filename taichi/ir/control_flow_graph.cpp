@@ -639,14 +639,19 @@ void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
     now->reach_out = now->reach_gen;
     for (auto stmt : now->reach_in) {
       auto store_ptrs = irpass::analysis::get_store_destination(stmt);
-      bool not_killed = store_ptrs.empty();  // for the case of a global pointer
-      for (auto store_ptr : store_ptrs) {
-        if (!now->reach_kill_variable(store_ptr)) {
-          not_killed = true;
-          break;
+      bool killed;
+      if (store_ptrs.empty()) {  // the case of a global pointer
+        killed = now->reach_kill_variable(stmt);
+      } else {
+        killed = true;
+        for (auto store_ptr : store_ptrs) {
+          if (!now->reach_kill_variable(store_ptr)) {
+            killed = false;
+            break;
+          }
         }
       }
-      if (not_killed) {
+      if (!killed) {
         now->reach_out.insert(stmt);
       }
     }

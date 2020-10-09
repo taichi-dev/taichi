@@ -51,7 +51,7 @@ enum AliasResult { same, uncertain, different };
 
 class ControlFlowGraph;
 
-class TaskMeta;
+struct TaskMeta;
 
 // IR Analysis
 namespace irpass::analysis {

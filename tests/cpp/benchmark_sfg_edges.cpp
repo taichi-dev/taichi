@@ -15,12 +15,16 @@ TLANG_NAMESPACE_BEGIN
 
 using PairData = std::pair<int, int>;
 
+struct Empty {};
 using UnorderedMapSet = std::unordered_map<int, std::unordered_set<int>>;
 using LLVMVecSet = llvm::SmallVector<std::pair<int, llvm::SmallSet<int, 4>>, 4>;
 using LLVMVecVec =
     llvm::SmallVector<std::pair<int, llvm::SmallVector<int, 4>>, 4>;
 using StlVecSet = std::vector<std::pair<int, std::unordered_set<int>>>;
 using StlVecVec = std::vector<std::pair<int, std::vector<int>>>;
+
+using FlattenSet = llvm::SmallSet<PairData, 16>;
+using FlattenVec = llvm::SmallVector<PairData, 16>;
 
 // https://stackoverflow.com/a/1055563/12003165
 // Over-engineering a bit. typeid().name() is mangled and hard to read...
@@ -38,6 +42,15 @@ REGISTER_TYPE_NAME(LLVMVecSet);
 REGISTER_TYPE_NAME(LLVMVecVec);
 REGISTER_TYPE_NAME(StlVecSet);
 REGISTER_TYPE_NAME(StlVecVec);
+
+void insert(const PairData &d, Empty *m) {
+  TI_PROFILER("Empty insert");
+}
+
+bool lookup(const PairData &d, const Empty &m, const std::string &found) {
+  TI_PROFILER("Empty lookup " + found);
+  return false;
+}
 
 void insert(const PairData &d, UnorderedMapSet *m) {
   TI_PROFILER("UnorderedMapSet insert");
@@ -158,6 +171,36 @@ bool lookup(const PairData &d, const C &m, const std::string &found) {
   }
 }
 
+void insert(const PairData &d, FlattenSet *m) {
+  TI_PROFILER("FlattenSet insert");
+  m->insert(d);
+}
+
+bool lookup(const PairData &d, const FlattenSet &m, const std::string &found) {
+  TI_PROFILER("FlattenSet lookup " + found);
+  return m.count(d) > 0;
+}
+
+bool lookup(const PairData &d, const FlattenVec &m, const std::string &found) {
+  TI_PROFILER("FlattenVec lookup " + found);
+
+  auto itr = std::lower_bound(m.begin(), m.end(), d);
+  return (itr != m.end()) && (*itr == d);
+}
+
+void insert(const PairData &d, FlattenVec *m) {
+  TI_PROFILER("FlattenVec insert");
+
+  auto itr = std::lower_bound(m->begin(), m->end(), d);
+  if ((itr != m->end()) && (*itr == d)) {
+    return;
+  }
+
+  m->insert(itr, d);
+  // m->push_back(d);
+  // std::sort(m->begin(), m->end());
+}
+
 template <typename M>
 void run_test(const std::vector<PairData> &data,
               const std::vector<PairData> &non_exists) {
@@ -169,7 +212,9 @@ void run_test(const std::vector<PairData> &data,
 
     for (const auto &p : data) {
       bool l = lookup(p, m, "found");
-      TI_CHECK(l);
+      if constexpr (!std::is_same_v<M, Empty>) {
+        TI_CHECK(l);
+      }
     }
 
     for (const auto &p : non_exists) {
@@ -203,6 +248,11 @@ TI_TEST("benchmark_sfg") {
   std::shuffle(data.begin(), data.end(), rng);
   std::shuffle(non_exists.begin(), non_exists.end(), rng);
 
+  SECTION("Empty") {
+    // Get an idea of the overhead of the profiler itself.
+    run_test<Empty>(data, non_exists);
+  }
+
   SECTION("UnorderedMapSet") {
     run_test<UnorderedMapSet>(data, non_exists);
   }
@@ -221,6 +271,14 @@ TI_TEST("benchmark_sfg") {
 
   SECTION("StlVecVec") {
     run_test<StlVecVec>(data, non_exists);
+  }
+
+  SECTION("FlattenSet") {
+    run_test<FlattenSet>(data, non_exists);
+  }
+
+  SECTION("FlattenVec") {
+    run_test<FlattenVec>(data, non_exists);
   }
   Profiling::get_instance().print_profile_info();
 }

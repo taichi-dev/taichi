@@ -123,16 +123,15 @@ void StateFlowGraph::insert_task(const TaskLaunchRecord &rec) {
     if (latest_state_owner_.find(input_state) == latest_state_owner_.end()) {
       latest_state_owner_[input_state] = initial_node_;
     }
-    insert_state_flow(latest_state_owner_[input_state], node.get(),
-                      input_state);
+    insert_edge(latest_state_owner_[input_state], node.get(), input_state);
   }
   for (auto output_state : node->meta->output_states) {
     if (latest_state_readers_.find(output_state) ==
         latest_state_readers_.end()) {
       if (latest_state_owner_.find(output_state) != latest_state_owner_.end()) {
         // insert a WAW dependency edge
-        insert_state_flow(latest_state_owner_[output_state], node.get(),
-                          output_state);
+        insert_edge(latest_state_owner_[output_state], node.get(),
+                    output_state);
       } else {
         latest_state_readers_[output_state].insert(initial_node_);
       }
@@ -140,7 +139,7 @@ void StateFlowGraph::insert_task(const TaskLaunchRecord &rec) {
     latest_state_owner_[output_state] = node.get();
     for (auto &d : latest_state_readers_[output_state]) {
       // insert a WAR dependency edge
-      insert_state_flow(d, node.get(), output_state);
+      insert_edge(d, node.get(), output_state);
     }
     latest_state_readers_[output_state].clear();
   }
@@ -152,7 +151,7 @@ void StateFlowGraph::insert_task(const TaskLaunchRecord &rec) {
   nodes_.push_back(std::move(node));
 }
 
-void StateFlowGraph::insert_state_flow(Node *from, Node *to, AsyncState state) {
+void StateFlowGraph::insert_edge(Node *from, Node *to, AsyncState state) {
   TI_AUTO_PROF;
   TI_ASSERT(from != nullptr);
   TI_ASSERT(to != nullptr);

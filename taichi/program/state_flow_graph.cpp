@@ -126,8 +126,7 @@ void StateFlowGraph::insert_task(const TaskLaunchRecord &rec) {
     insert_edge(latest_state_owner_[input_state], node.get(), input_state);
   }
   for (auto output_state : node->meta->output_states) {
-    if (latest_state_readers_.find(output_state) ==
-        latest_state_readers_.end()) {
+    if (latest_state_readers_[output_state].empty()) {
       if (latest_state_owner_.find(output_state) != latest_state_owner_.end()) {
         // insert a WAW dependency edge
         insert_edge(latest_state_owner_[output_state], node.get(),

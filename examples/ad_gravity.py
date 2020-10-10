@@ -29,9 +29,10 @@ def advance():
 
 def substep():
     with ti.Tape(U):
-        # Kernel invocations in this scope contribute to partial derivatives of 
+        # Kernel invocations in this scope contribute to partial derivatives of
         # U with respect to input variables such as x.
-        compute_U()  # The tape will automatically compute dU/dx and save the results in x.grad
+        compute_U(
+        )  # The tape will automatically compute dU/dx and save the results in x.grad
     advance()
 
 

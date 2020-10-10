@@ -1,7 +1,7 @@
 <div align="center">
   <img width="500px" src="https://github.com/taichi-dev/taichi/raw/master/misc/logo.png">
-  <h3> <a href="https://taichi.readthedocs.io/en/stable/hello.html"> Tutorial </a> | <a href="https://github.com/taichi-dev/taichi/tree/master/examples"> Examples </a> | <a href="https://forum.taichi.graphics/"> Forum </a> | <a href="https://taichi.readthedocs.io/en/stable/contributor_guide.html"> Contributor Guidelines </a> </h3>
-  <h3> <a href="https://taichi.readthedocs.io/en/stable/"> Documentation </a> | <a href="https://taichi.readthedocs.io/zh_CN/latest/"> 简体中文文档 </a> </h3>
+  <h3> <a href="https://taichi.readthedocs.io/en/stable/hello.html"> Tutorial </a> | <a href="https://github.com/taichi-dev/taichi/tree/master/examples"> Examples </a> | <a href="https://forum.taichi.graphics/"> Forum </a> | <a href="http://hub.taichi.graphics/"> Playground </a> </h3>
+  <h3> <a href="https://taichi.readthedocs.io/en/stable/"> Documentation </a> | <a href="https://taichi.readthedocs.io/zh_CN/latest/"> 简体中文文档 </a> | <a href="https://taichi.readthedocs.io/en/stable/contributor_guide.html"> Contributor Guidelines </a> </h3>
 </div>
 
 [![Travis CI Status](https://img.shields.io/travis/taichi-dev/taichi?logo=Travis&branch=master&label=Travis%20CI)](https://travis-ci.com/taichi-dev/taichi)
@@ -18,7 +18,7 @@
 
 Advanced features of Taichi include [spatially sparse computing](https://taichi.readthedocs.io/en/latest/sparse.html) and [differentiable programming](https://taichi.readthedocs.io/en/latest/differentiable_programming.html) [[examples]](https://github.com/yuanming-hu/difftaichi).
 
-**Please check out our SIGGRAPH 2020 course on Taichi basics:** [YouTube](https://youtu.be/Y0-76n3aZFA), [Bilibili](https://www.bilibili.com/video/BV1kA411n7jk/), [slides (pdf)](http://taichi.graphics/wp-content/uploads/2020/07/taichi_course_siggraph2020.pdf).
+**Please check out our SIGGRAPH 2020 course on Taichi basics:** [YouTube](https://youtu.be/Y0-76n3aZFA), [Bilibili](https://www.bilibili.com/video/BV1kA411n7jk/), [slides (pdf)](https://yuanming.taichi.graphics/publication/2020-taichi-tutorial/taichi-tutorial.pdf).
 
 
 ## Examples ([More...](misc/examples.md))
@@ -96,5 +96,5 @@ We welcome feedback and comments. If you would like to contribute to Taichi, ple
 
 If you use Taichi in your research, please cite our papers:
 
-- [**(SIGGRAPH Asia 2019) Taichi: High-Performance Computation on Sparse Data Structures**](http://taichi.graphics/wp-content/uploads/2019/09/taichi_lang.pdf) [[Video]](https://youtu.be/wKw8LMF3Djo) [[BibTex]](https://raw.githubusercontent.com/taichi-dev/taichi/master/misc/taichi_bibtex.txt) [[Code]](https://github.com/taichi-dev/taichi)
+- [**(SIGGRAPH Asia 2019) Taichi: High-Performance Computation on Sparse Data Structures**](https://yuanming.taichi.graphics/publication/2019-taichi/taichi-lang.pdf) [[Video]](https://youtu.be/wKw8LMF3Djo) [[BibTex]](https://raw.githubusercontent.com/taichi-dev/taichi/master/misc/taichi_bibtex.txt) [[Code]](https://github.com/taichi-dev/taichi)
 - [**(ICLR 2020) DiffTaichi: Differentiable Programming for Physical Simulation**](https://arxiv.org/abs/1910.00935) [[Video]](https://www.youtube.com/watch?v=Z1xvAZve9aE) [[BibTex]](https://raw.githubusercontent.com/taichi-dev/taichi/master/misc/difftaichi_bibtex.txt) [[Code]](https://github.com/yuanming-hu/difftaichi)

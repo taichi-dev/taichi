@@ -28,7 +28,7 @@ def vector_to_fast_image(img: ti.template(), out: ti.ext_arr()):
         u, v, w = min(255, max(0, int(img[i, img.shape[1] - 1 - j] * 255)))
         # We use i32 for |out| since OpenGL and Metal doesn't support u8 types
         # TODO: treat Cocoa and Big-endian machines, with XOR logic
-        out[j * 1920 + i] = w + (v << 8) + (u << 16)
+        out[j * img.shape[0] + i] = w + (v << 8) + (u << 16)
 
 
 @ti.kernel

@@ -1314,7 +1314,10 @@ std::tuple<llvm::Value *, llvm::Value *> CodeGenLLVM::get_range_for_bounds(
 }
 
 void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
-  llvm::Function *body;
+  // TODO: instead of constructing tons of LLVM IR, writing the logic in
+  // runtime.cpp may be a cleaner solution. See
+  // CodegenLLVMCPU::create_offload_range_for
+  llvm::Function *body = nullptr;
   auto leaf_block = stmt->snode;
   {
     // Create the loop body function
@@ -1327,16 +1330,18 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
 
     body = guard.body;
 
-    /*
-     * Function structure:
+    /* Function structure:
      *
      * function_body (entry):
      *   loop_index = lower_bound;
+     *   bls_prologue()
      *   goto loop_test
      *
      * loop_test:
-     *
-     *   if (exec_cond)
+     *   if (loop_index < upper_bound)
+     *     goto loop_body
+     *   else
+     *     goto func_exit
      *
      * loop_body:
      *   initialize_coordinates()
@@ -1345,17 +1350,18 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
      *   else
      *     goto loop body tail
      *
-     *
-     * struct_for_body_bb:
+     * struct_for_body:
      *   ... (Run codegen on the StructForStmt::body Taichi Block)
      *
      * loop_body_tail:
+     *   loop_index += block_dim
+     *   goto loop_test
      *
      * func_exit:
+     *   bls_epilogue()
      *   return
      */
 
-    // per-leaf-block for loop
     auto loop_index =
         create_entry_block_alloca(llvm::Type::getInt32Ty(*llvm_context));
 
@@ -1400,8 +1406,8 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
       // loop_test:
       //   if (loop_index < upper_bound)
       //     goto loop_body;
-      //   else goto
-      //     func_exit
+      //   else
+      //     goto func_exit
 
       builder->SetInsertPoint(loop_test_bb);
       auto cond =
@@ -1455,8 +1461,9 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
       exec_cond = builder->CreateAnd(exec_cond, is_active);
     }
 
+    builder->CreateCondBr(exec_cond, struct_for_body_bb, body_tail_bb);
+
     {
-      builder->CreateCondBr(exec_cond, struct_for_body_bb, body_tail_bb);
       builder->SetInsertPoint(struct_for_body_bb);
 
       // The real loop body of the StructForStmt

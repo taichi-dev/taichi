@@ -8,13 +8,15 @@ ti.root.pointer(ti.i, n // 32).dense(ti.i, 32).place(x)
 
 for i in range(n):
     x[i] = i
-    
+
+
 @ti.kernel
 def reduce() -> ti.i32:
     sum = 0
     for i in x:
         sum += x[i]
     return sum
+
 
 ret = reduce()
 print(ret)

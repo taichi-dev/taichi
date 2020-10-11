@@ -588,7 +588,7 @@ To do so, simply initialize your GUI with ``fast_gui=True``:
 
 .. note::
 
-   This option is recommended to be used together with ``fullscreen=True``.
+   If possible, consider enabling this option, especially when ``fullscreen=True``.
 
 
 .. warning::

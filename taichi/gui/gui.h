@@ -507,7 +507,7 @@ class GUI : public GUIBase {
   bool show_gui;
   bool fullscreen;
   bool fast_gui;
-  size_t fast_buf;
+  uintptr_t fast_buf;
 
   void set_mouse_pos(int x, int y) {
     cursor_pos = Vector2i(x, y);
@@ -766,7 +766,7 @@ class GUI : public GUIBase {
                bool show_gui = true,
                bool fullscreen = true,
                bool fast_gui = false,
-               size_t fast_buf = 0,
+               uintptr_t fast_buf = 0,
                bool normalized_coord = true)
       : window_name(window_name),
         width(width),
@@ -795,7 +795,7 @@ class GUI : public GUIBase {
                bool show_gui,
                bool fullscreen = true,
                bool fast_gui = false,
-               size_t fast_buf = 0,
+               uintptr_t fast_buf = 0,
                bool normalized_coord = true)
       : GUI(window_name,
             res[0],

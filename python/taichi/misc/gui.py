@@ -161,7 +161,7 @@ class GUI:
             assert img.shape == self.res, \
                     "Image resolution does not match GUI resolution"
             assert img.n in [3, 4] and img.m == 1, \
-                    "Only RGB or RGBA images are supported in GUI.set_image when fast_gui=True"
+                    "Only RGB images are supported in GUI.set_image when fast_gui=True"
 
             from taichi.lang.meta import vector_to_fast_image
             vector_to_fast_image(img, self.img)
@@ -220,7 +220,7 @@ class GUI:
 
         if isinstance(color, np.ndarray):
             assert color.shape == (n, )
-            color = np.ascontiguousarray(color.astype(np.int32))
+            color = np.ascontiguousarray(color.astype(np.uint32))
             color_array = int(color.ctypes.data)
             color_single = 0
         elif isinstance(color, int):

@@ -86,12 +86,8 @@ std::vector<T *> find_global_reduction_destinations(
 }
 
 void make_thread_local_offload(OffloadedStmt *offload) {
-  /*
   if (offload->task_type != OffloadedStmt::range_for &&
       offload->task_type != OffloadedStmt::struct_for)
-    return;
-    */
-  if (offload->task_type != OffloadedStmt::range_for)
     return;
 
   std::vector<Stmt *> valid_reduction_values;

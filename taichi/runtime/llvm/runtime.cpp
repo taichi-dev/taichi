@@ -1144,7 +1144,7 @@ void element_listgen_nonroot(LLVMRuntime *runtime,
   }
 }
 
-using BlockTask = void(Context *, Element *, int, int);
+using BlockTask = void(Context *, char *, Element *, int, int);
 
 struct cpu_block_task_helper_context {
   Context *context;
@@ -1170,8 +1170,9 @@ void block_helper(void *ctx_, int i) {
   int lower = e.loop_bounds[0] + part_id * part_size;
   int upper = e.loop_bounds[0] + (part_id + 1) * part_size;
   upper = std::min(upper, e.loop_bounds[1]);
+  // TODO: support TLS here.
   if (lower < upper) {
-    (*ctx->task)(ctx->context, &ctx->list->get<Element>(element_id), lower,
+    (*ctx->task)(ctx->context, nullptr, &ctx->list->get<Element>(element_id), lower,
                  upper);
   }
 }
@@ -1181,6 +1182,7 @@ void parallel_struct_for(Context *context,
                          int element_size,
                          int element_split,
                          BlockTask *task,
+                         std::size_t tls_buffer_size,
                          int num_threads) {
   auto list = (context->runtime)->element_lists[snode_id];
   auto list_tail = list->size();
@@ -1198,8 +1200,10 @@ void parallel_struct_for(Context *context,
     int lower = e.loop_bounds[0] + part_id * part_size;
     int upper = e.loop_bounds[0] + (part_id + 1) * part_size;
     upper = std::min(upper, e.loop_bounds[1]);
+    alignas(8) char tls_buffer[tls_buffer_size];
+    auto tls_ptr = &tls_buffer[0];
     if (lower < upper)
-      task(context, &list->get<Element>(element_id), lower, upper);
+      task(context, tls_buffer, &list->get<Element>(element_id), lower, upper);
     i += grid_dim();
   }
 #else
@@ -1209,8 +1213,6 @@ void parallel_struct_for(Context *context,
   ctx.list = list;
   ctx.element_size = element_size;
   ctx.element_split = element_split;
-  // printf("size %d spilt %d tail %d\n", ctx.element_size, ctx.element_split,
-  // list_tail);
   auto runtime = context->runtime;
   runtime->parallel_for(runtime->thread_pool, list_tail * element_split,
                         num_threads, &ctx, block_helper);

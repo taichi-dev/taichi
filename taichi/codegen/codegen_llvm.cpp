@@ -1317,12 +1317,14 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
   // TODO: instead of constructing tons of LLVM IR, writing the logic in
   // runtime.cpp may be a cleaner solution. See
   // CodegenLLVMCPU::create_offload_range_for
+
   llvm::Function *body = nullptr;
   auto leaf_block = stmt->snode;
   {
     // Create the loop body function
     auto guard = get_function_creation_guard({
         llvm::PointerType::get(get_runtime_type("Context"), 0),
+        get_tls_buffer_type(),
         llvm::PointerType::get(get_runtime_type("Element"), 0),
         tlctx->get_data_type<int>(),
         tlctx->get_data_type<int>(),
@@ -1365,13 +1367,17 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     auto loop_index =
         create_entry_block_alloca(llvm::Type::getInt32Ty(*llvm_context));
 
-    RuntimeObject element("Element", this, builder.get(), get_arg(1));
+    RuntimeObject element("Element", this, builder.get(), get_arg(2));
 
     // Loop ranges
-    auto lower_bound = get_arg(2);
-    auto upper_bound = get_arg(3);
+    auto lower_bound = get_arg(3);
+    auto upper_bound = get_arg(4);
 
     parent_coordinates = element.get_ptr("pcoord");
+
+    if (stmt->tls_prologue) {
+      stmt->tls_prologue->accept(this);
+    }
 
     if (stmt->bls_prologue) {
       call("block_barrier");  // "__syncthreads()"
@@ -1491,17 +1497,23 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
       stmt->bls_epilogue->accept(this);
       call("block_barrier");  // "__syncthreads()"
     }
+
+    if (stmt->tls_epilogue) {
+      stmt->tls_epilogue->accept(this);
+    }
   }
 
   int list_element_size =
       std::min(leaf_block->max_num_elements(), taichi_listgen_max_element_size);
   int num_splits = std::max(1, list_element_size / stmt->block_dim);
-  // traverse leaf node
+
+  // Loop over nodes in the element list, in parallel
   create_call(
       "parallel_struct_for",
       {get_context(), tlctx->get_constant(leaf_block->id),
        tlctx->get_constant(list_element_size), tlctx->get_constant(num_splits),
-       body, tlctx->get_constant(stmt->num_cpu_threads)});
+       body, tlctx->get_constant(stmt->tls_size),
+       tlctx->get_constant(stmt->num_cpu_threads)});
   // TODO: why do we need num_cpu_threads on GPUs?
 }
 

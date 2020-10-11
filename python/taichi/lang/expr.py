@@ -148,7 +148,7 @@ class Expr(TaichiOperations):
             import taichi as ti
             dim = ti.get_external_tensor_dim(self.ptr)
             ret = [
-                ti.get_external_tensor_shape_along_axis(self.ptr, i)
+                ti.Expr(ti.get_external_tensor_shape_along_axis(self.ptr, i))
                 for i in range(dim)
             ]
             return ret

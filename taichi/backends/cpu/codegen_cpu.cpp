@@ -30,6 +30,7 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
 
     auto *tls_prologue = create_xlogue(stmt->tls_prologue);
 
+    // The loop body
     llvm::Function *body;
     {
       auto guard = get_function_creation_guard(

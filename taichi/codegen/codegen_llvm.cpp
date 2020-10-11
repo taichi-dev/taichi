@@ -44,8 +44,8 @@ FunctionCreationGuard::FunctionCreationGuard(
       llvm::Type::getVoidTy(*mb->llvm_context), arguments, false);
 
   body = llvm::Function::Create(body_function_type,
-                                llvm::Function::InternalLinkage, "loop_body",
-                                mb->module.get());
+                                llvm::Function::InternalLinkage,
+                                "function_body", mb->module.get());
   old_func = mb->func;
   // emit into loop body function
   mb->func = body;
@@ -59,7 +59,8 @@ FunctionCreationGuard::FunctionCreationGuard(
   ip = mb->builder->saveIP();
   mb->builder->SetInsertPoint(entry);
 
-  auto body_bb = BasicBlock::Create(*mb->llvm_context, "loop_body", mb->func);
+  auto body_bb =
+      BasicBlock::Create(*mb->llvm_context, "function_body", mb->func);
   mb->builder->CreateBr(body_bb);
   mb->builder->SetInsertPoint(body_bb);
 }
@@ -1326,13 +1327,41 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
 
     body = guard.body;
 
+    /*
+     * Function structure:
+     *
+     * function_body (entry):
+     *   loop_index = lower_bound;
+     *   goto loop_test
+     *
+     * loop_test:
+     *
+     *   if (exec_cond)
+     *
+     * loop_body:
+     *   initialize_coordinates()
+     *   if (bitmasked voxel is active)
+     *     goto struct_for_body
+     *   else
+     *     goto loop body tail
+     *
+     *
+     * struct_for_body_bb:
+     *   ... (Run codegen on the StructForStmt::body Taichi Block)
+     *
+     * loop_body_tail:
+     *
+     * func_exit:
+     *   return
+     */
+
     // per-leaf-block for loop
     auto loop_index =
         create_entry_block_alloca(llvm::Type::getInt32Ty(*llvm_context));
 
-    llvm::Value *thread_idx = nullptr, *block_dim = nullptr;
-
     RuntimeObject element("Element", this, builder.get(), get_arg(1));
+
+    // Loop ranges
     auto lower_bound = get_arg(2);
     auto upper_bound = get_arg(3);
 
@@ -1343,6 +1372,8 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
       stmt->bls_prologue->accept(this);
       call("block_barrier");  // "__syncthreads()"
     }
+
+    llvm::Value *thread_idx = nullptr, *block_dim = nullptr;
 
     if (spmd) {
       thread_idx =
@@ -1355,21 +1386,33 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
       builder->CreateStore(lower_bound, loop_index);
     }
 
-    // test bb
-    auto test_bb = BasicBlock::Create(*llvm_context, "test", func);
-    auto body_bb = BasicBlock::Create(*llvm_context, "loop_body", func);
-    auto after_loop = BasicBlock::Create(*llvm_context, "after_loop", func);
+    auto loop_test_bb = BasicBlock::Create(*llvm_context, "loop_test", func);
+    auto loop_body_bb = BasicBlock::Create(*llvm_context, "loop_body", func);
+    auto body_tail_bb =
+        BasicBlock::Create(*llvm_context, "loop_body_tail", func);
+    auto func_exit = BasicBlock::Create(*llvm_context, "func_exit", func);
+    auto struct_for_body_bb =
+        BasicBlock::Create(*llvm_context, "struct_for_body_body", func);
 
-    builder->CreateBr(test_bb);
+    builder->CreateBr(loop_test_bb);
+
     {
-      builder->SetInsertPoint(test_bb);
+      // loop_test:
+      //   if (loop_index < upper_bound)
+      //     goto loop_body;
+      //   else goto
+      //     func_exit
+
+      builder->SetInsertPoint(loop_test_bb);
       auto cond =
           builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SLT,
                               builder->CreateLoad(loop_index), upper_bound);
-      builder->CreateCondBr(cond, body_bb, after_loop);
+      builder->CreateCondBr(cond, loop_body_bb, func_exit);
     }
 
-    builder->SetInsertPoint(body_bb);
+    // ***********************
+    // Begin loop_body_bb:
+    builder->SetInsertPoint(loop_body_bb);
 
     // initialize the coordinates
     auto refine =
@@ -1404,7 +1447,7 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
 
     if (snode->type == SNodeType::bitmasked ||
         snode->type == SNodeType::pointer) {
-      // test if current voxel is active or not
+      // test whether the current voxel is active or not
       auto is_active = call(snode, element.get("element"), "is_active",
                             {builder->CreateLoad(loop_index)});
       is_active =
@@ -1412,32 +1455,29 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
       exec_cond = builder->CreateAnd(exec_cond, is_active);
     }
 
-    auto body_bb_tail =
-        BasicBlock::Create(*llvm_context, "loop_body_tail", func);
     {
-      auto bounded_body_bb =
-          BasicBlock::Create(*llvm_context, "bound_guarded_loop_body", func);
-      builder->CreateCondBr(exec_cond, bounded_body_bb, body_bb_tail);
-      builder->SetInsertPoint(bounded_body_bb);
+      builder->CreateCondBr(exec_cond, struct_for_body_bb, body_tail_bb);
+      builder->SetInsertPoint(struct_for_body_bb);
 
-      // The real loop body
+      // The real loop body of the StructForStmt
       stmt->body->accept(this);
 
-      builder->CreateBr(body_bb_tail);
+      builder->CreateBr(body_tail_bb);
     }
 
-    // body cfg
+    {
+      // body tail: increment loop_index and jump to loop_test
+      builder->SetInsertPoint(body_tail_bb);
 
-    builder->SetInsertPoint(body_bb_tail);
+      if (spmd) {
+        create_increment(loop_index, block_dim);
+      } else {
+        create_increment(loop_index, tlctx->get_constant(1));
+      }
+      builder->CreateBr(loop_test_bb);
 
-    if (spmd) {
-      create_increment(loop_index, block_dim);
-    } else {
-      create_increment(loop_index, tlctx->get_constant(1));
+      builder->SetInsertPoint(func_exit);
     }
-    builder->CreateBr(test_bb);
-
-    builder->SetInsertPoint(after_loop);
 
     if (stmt->bls_epilogue) {
       call("block_barrier");  // "__syncthreads()"

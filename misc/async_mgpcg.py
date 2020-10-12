@@ -78,7 +78,6 @@ def compute_Ap():
 @ti.kernel
 def reduce(p: ti.template(), q: ti.template(), s: ti.template()):
     s[None] = 0
-    ti.block_dim(64)
     for I in ti.grouped(p):
         s[None] += p[I] * q[I]
 
@@ -229,4 +228,4 @@ for _ in range(3):
 
 ti.kernel_profiler_print()
 ti.core.print_stat()
-# ti.print_profile_info()
+ti.print_profile_info()

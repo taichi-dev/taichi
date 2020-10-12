@@ -1189,6 +1189,8 @@ void parallel_struct_for(Context *context,
   auto list_tail = list->size();
 #if ARCH_cuda
   int i = block_idx();
+  // Note: CUDA requires compile-time constant local array sizes.
+  // We use "1" here and modify it during codegen to tls_buffer_size.
   alignas(8) char tls_buffer[1];
   // TODO: refactor element_split more systematically.
   element_split = 1;

@@ -1522,6 +1522,8 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
 
     int replaced_alloca_types = 0;
 
+    // Find the "1" in "char tls_buffer[1]" and replace it with
+    // "tls_buffer_size"
     for (auto &bb : *patched_struct_for_func) {
       for (llvm::Instruction &inst : bb) {
         auto alloca = llvm::dyn_cast<AllocaInst>(&inst);
@@ -1529,6 +1531,7 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
           continue;
         auto alloca_type = alloca->getAllocatedType();
         auto char_type = llvm::Type::getInt8Ty(*llvm_context);
+        // Allocated type should be array [1 x i8]
         if (alloca_type->isArrayTy() &&
             alloca_type->getArrayNumElements() == 1 &&
             alloca_type->getArrayElementType() == char_type) {
@@ -1538,6 +1541,8 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
         }
       }
     }
+
+    TI_ASSERT(replaced_alloca_types == 1);
 
     struct_for_func = patched_struct_for_func;
   }

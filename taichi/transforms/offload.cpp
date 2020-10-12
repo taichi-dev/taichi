@@ -153,7 +153,7 @@ class Offloader {
     if (for_stmt->block_dim == 0) {
       // adaptive
       offloaded_struct_for->block_dim =
-          std::min(snode_num_elements, program->config.max_block_dim);
+          std::min(snode_num_elements, program->config.default_gpu_block_dim);
     } else {
       if (for_stmt->block_dim > snode_num_elements) {
         TI_WARN(

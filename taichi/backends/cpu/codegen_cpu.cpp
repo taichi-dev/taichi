@@ -1,4 +1,4 @@
-#include "codegen_cpu.h"
+#include "taichi/backends/cpu/codegen_cpu.h"
 
 #include "taichi/codegen/codegen_llvm.h"
 #include "taichi/common/core.h"
@@ -31,6 +31,7 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
 
     auto *tls_prologue = create_xlogue(stmt->tls_prologue);
 
+    // The loop body
     llvm::Function *body;
     {
       auto guard = get_function_creation_guard(

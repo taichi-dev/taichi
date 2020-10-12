@@ -9,12 +9,12 @@ TLANG_NAMESPACE_BEGIN
 class AllocaStmt : public Stmt {
  public:
   AllocaStmt(DataType type) {
-    ret_type = VectorType(1, type);
+    ret_type = LegacyVectorType(1, type);
     TI_STMT_REG_FIELDS;
   }
 
   AllocaStmt(int width, DataType type) {
-    ret_type = VectorType(width, type);
+    ret_type = LegacyVectorType(width, type);
     TI_STMT_REG_FIELDS;
   }
 
@@ -104,7 +104,7 @@ class ArgLoadStmt : public Stmt {
   int arg_id;
 
   ArgLoadStmt(int arg_id, DataType dt, bool is_ptr = false) : arg_id(arg_id) {
-    this->ret_type = VectorType(1, dt);
+    this->ret_type = LegacyVectorType(1, dt);
     this->is_ptr = is_ptr;
     TI_STMT_REG_FIELDS;
   }
@@ -614,7 +614,7 @@ class KernelReturnStmt : public Stmt {
   Stmt *value;
 
   KernelReturnStmt(Stmt *value, DataType dt) : value(value) {
-    this->ret_type = VectorType(1, dt);
+    this->ret_type = LegacyVectorType(1, dt);
     TI_STMT_REG_FIELDS;
   }
 
@@ -933,7 +933,7 @@ class GlobalTemporaryStmt : public Stmt {
  public:
   std::size_t offset;
 
-  GlobalTemporaryStmt(std::size_t offset, VectorType ret_type)
+  GlobalTemporaryStmt(std::size_t offset, LegacyVectorType ret_type)
       : offset(offset) {
     this->ret_type = ret_type;
     TI_STMT_REG_FIELDS;
@@ -951,7 +951,8 @@ class ThreadLocalPtrStmt : public Stmt {
  public:
   std::size_t offset;
 
-  ThreadLocalPtrStmt(std::size_t offset, VectorType ret_type) : offset(offset) {
+  ThreadLocalPtrStmt(std::size_t offset, LegacyVectorType ret_type)
+      : offset(offset) {
     this->ret_type = ret_type;
     TI_STMT_REG_FIELDS;
   }
@@ -968,7 +969,7 @@ class BlockLocalPtrStmt : public Stmt {
  public:
   Stmt *offset;
 
-  BlockLocalPtrStmt(Stmt *offset, VectorType ret_type) : offset(offset) {
+  BlockLocalPtrStmt(Stmt *offset, LegacyVectorType ret_type) : offset(offset) {
     this->ret_type = ret_type;
     TI_STMT_REG_FIELDS;
   }
@@ -999,7 +1000,7 @@ class InternalFuncStmt : public Stmt {
   std::string func_name;
 
   InternalFuncStmt(const std::string &func_name) : func_name(func_name) {
-    this->ret_type = VectorType(1, PrimitiveType::i32);
+    this->ret_type = LegacyVectorType(1, PrimitiveType::i32);
     TI_STMT_REG_FIELDS;
   }
 

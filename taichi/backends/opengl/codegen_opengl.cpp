@@ -732,6 +732,7 @@ class KernelGen : public IRVisitor {
     std::unique_ptr<ScopedIndent> s;
 
     ScopedGridStrideLoop(KernelGen *gen) : gen(gen) {
+      // TODO(archibate): what's grid dim actually?
       size_t stride_size = gen->kernel->program.config.saturating_grid_dim;
       if (gen->used_tls && stride_size == 0) {
         // automatically enable grid-stride-loop when TLS used:

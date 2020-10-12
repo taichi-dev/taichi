@@ -16,7 +16,7 @@ class FrontendAllocaStmt : public Stmt {
   Identifier ident;
 
   FrontendAllocaStmt(const Identifier &lhs, DataType type) : ident(lhs) {
-    ret_type = VectorType(1, type);
+    ret_type = LegacyVectorType(1, type);
   }
 
   TI_DEFINE_ACCEPT
@@ -203,7 +203,7 @@ class FrontendKernelReturnStmt : public Stmt {
   Expr value;
 
   FrontendKernelReturnStmt(const Expr &value, DataType dt) : value(value) {
-    ret_type = VectorType(1, dt);
+    ret_type = LegacyVectorType(1, dt);
   }
 
   bool is_container_statement() const override {

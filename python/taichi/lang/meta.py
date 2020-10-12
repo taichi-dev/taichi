@@ -22,6 +22,16 @@ def cook_image_type(x):
 
 
 @ti.kernel
+def vector_to_fast_image(img: ti.template(), out: ti.ext_arr()):
+    # FIXME: Why is ``for i, j in img:`` slower than:
+    for i, j in ti.ndrange(*img.shape):
+        u, v, w = min(255, max(0, int(img[i, img.shape[1] - 1 - j] * 255)))
+        # We use i32 for |out| since OpenGL and Metal doesn't support u8 types
+        # TODO: treat Cocoa and Big-endian machines, with XOR logic
+        out[j * img.shape[0] + i] = w + (v << 8) + (u << 16)
+
+
+@ti.kernel
 def tensor_to_image(tensor: ti.template(), arr: ti.ext_arr()):
     for I in ti.grouped(tensor):
         t = cook_image_type(tensor[I])

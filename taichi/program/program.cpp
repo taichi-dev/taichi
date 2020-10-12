@@ -195,6 +195,12 @@ Program::Program(Arch desired_arch) {
            arch_name(arch));
 }
 
+TypeFactory &Program::get_type_factory() {
+  // type_factory should never be destroyed, hence the raw new operator.
+  static TypeFactory *type_factory = new TypeFactory;
+  return *type_factory;
+}
+
 FunctionType Program::compile(Kernel &kernel) {
   auto start_t = Time::get_time();
   TI_AUTO_PROF;

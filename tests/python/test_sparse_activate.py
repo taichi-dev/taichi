@@ -27,4 +27,3 @@ def test_pointer():
     activate()
     func()
     assert s[None] == 32
-

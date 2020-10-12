@@ -42,12 +42,13 @@ pAp = ti.field(dtype=real, shape=())
 
 leaf_size = 8
 
-grid = ti.root.pointer(ti.ijk, [N_tot // leaf_size]).dense(ti.ijk, leaf_size).place(x, p, Ap)
+grid = ti.root.pointer(ti.ijk,
+                       [N_tot // leaf_size]).dense(ti.ijk,
+                                                   leaf_size).place(x, p, Ap)
 
 for l in range(n_mg_levels):
-    grid = ti.root.pointer(ti.ijk,
-                           [N_tot // (leaf_size * 2**l)]).dense(ti.ijk,
-                                                        leaf_size).place(r[l], z[l])
+    grid = ti.root.pointer(ti.ijk, [N_tot // (leaf_size * 2**l)]).dense(
+        ti.ijk, leaf_size).place(r[l], z[l])
 
 ti.root.place(alpha, beta, sum)
 

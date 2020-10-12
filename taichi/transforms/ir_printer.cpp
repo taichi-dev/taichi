@@ -502,10 +502,10 @@ class IRPrinter : public IRVisitor {
           fmt::format("range_for({}, {}) grid_dim={} block_dim={}", begin_str,
                       end_str, stmt->grid_dim, stmt->block_dim);
     } else if (stmt->task_type == stmt->struct_for) {
-      details = fmt::format(
-          "struct_for({}) grid_dim={} block_dim={} bls={}",
-          stmt->snode->get_node_type_name_hinted(), stmt->grid_dim,
-          stmt->block_dim, scratch_pad_info(stmt->scratch_opt));
+      details =
+          fmt::format("struct_for({}) grid_dim={} block_dim={} bls={}",
+                      stmt->snode->get_node_type_name_hinted(), stmt->grid_dim,
+                      stmt->block_dim, scratch_pad_info(stmt->scratch_opt));
     }
     if (stmt->task_type == OffloadedStmt::TaskType::listgen) {
       print("{} = offloaded listgen {}->{}", stmt->name(),

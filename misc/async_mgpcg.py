@@ -15,7 +15,7 @@ ti.init(default_fp=real,
         )
 
 # grid parameters
-N = 128
+N = 256
 
 n_mg_levels = 5
 pre_and_post_smoothing = 2
@@ -40,12 +40,15 @@ old_zTr = ti.field(dtype=real, shape=())
 new_zTr = ti.field(dtype=real, shape=())
 pAp = ti.field(dtype=real, shape=())
 
-grid = ti.root.pointer(ti.ijk, [N_tot // 4]).dense(ti.ijk, 4).place(x, p, Ap)
+leaf_size = 8
+
+grid = ti.root.pointer(ti.ijk,
+                       [N_tot // leaf_size]).dense(ti.ijk,
+                                                   leaf_size).place(x, p, Ap)
 
 for l in range(n_mg_levels):
-    grid = ti.root.pointer(ti.ijk,
-                           [N_tot // (4 * 2**l)]).dense(ti.ijk,
-                                                        4).place(r[l], z[l])
+    grid = ti.root.pointer(ti.ijk, [N_tot // (leaf_size * 2**l)]).dense(
+        ti.ijk, leaf_size).place(r[l], z[l])
 
 ti.root.place(alpha, beta, sum)
 

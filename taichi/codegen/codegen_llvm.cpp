@@ -868,7 +868,7 @@ void CodeGenLLVM::visit(ArgLoadStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(KernelReturnStmt *stmt) {
-  if (stmt->is_ptr) {
+  if (stmt->ret_type.is_pointer()) {
     TI_NOT_IMPLEMENTED
   } else {
     auto intermediate_bits =

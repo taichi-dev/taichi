@@ -530,7 +530,6 @@ class Stmt : public IRNode {
   bool erased;
   bool fields_registered;
   std::string tb;
-  bool is_ptr;
   LegacyVectorType ret_type;
 
   Stmt();

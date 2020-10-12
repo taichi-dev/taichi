@@ -1,6 +1,6 @@
 import taichi as ti
 
-ti.init(arch=ti.cuda, print_ir=True, print_kernel_llvm_ir=False, kernel_profiler=True, make_thread_local=True)
+ti.init(arch=ti.cpu, print_ir=True, print_kernel_llvm_ir=False, kernel_profiler=True, make_thread_local=True)
 
 dense = False
 

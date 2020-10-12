@@ -140,8 +140,6 @@ class AsyncEngine {
   explicit AsyncEngine(Program *program,
                        const BackendExecCompilationFunc &compile_to_backend);
 
-  bool fuse();  // return true when modified
-
   void clear_cache() {
     queue.clear_cache();
   }

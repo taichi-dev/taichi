@@ -77,7 +77,9 @@ class Offloader {
           offloaded_ranges.end_stmts.insert(
               std::make_pair(offloaded.get(), s->end));
         }
-        offloaded->num_cpu_threads = s->parallelize;
+        offloaded->num_cpu_threads =
+            std::min(s->parallelize,
+                     root->get_kernel()->program.config.cpu_max_num_threads);
         replace_all_usages_with(s, s, offloaded.get());
         for (int j = 0; j < (int)s->body->statements.size(); j++) {
           offloaded->body->insert(std::move(s->body->statements[j]));
@@ -118,11 +120,15 @@ class Offloader {
     if (!demotable) {
       for (int i = 1; i < path.size(); i++) {
         auto snode_child = path[i];
-        auto offloaded_clear_list = Stmt::make_typed<OffloadedStmt>(
-            OffloadedStmt::TaskType::clear_list);
+        auto offloaded_clear_list =
+            Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::serial);
+        offloaded_clear_list->body->insert(
+            Stmt::make<ClearListStmt>(snode_child));
         offloaded_clear_list->grid_dim = 1;
         offloaded_clear_list->block_dim = 1;
-        offloaded_clear_list->snode = snode_child;
+        // Intentionally do not set offloaded_clear_list->snode, so that there
+        // is nothing special about this task, which could otherwise cause
+        // problems when fused with other serial tasks.
         root_block->insert(std::move(offloaded_clear_list));
         auto offloaded_listgen =
             Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::listgen);
@@ -168,7 +174,8 @@ class Offloader {
     }
 
     offloaded_struct_for->snode = for_stmt->snode;
-    offloaded_struct_for->num_cpu_threads = for_stmt->parallelize;
+    offloaded_struct_for->num_cpu_threads =
+        std::min(for_stmt->parallelize, program->config.cpu_max_num_threads);
     offloaded_struct_for->scratch_opt = scratch_opt;
 
     root_block->insert(std::move(offloaded_struct_for));

@@ -249,9 +249,9 @@ def veci(*args, **kwargs):
     return core_veci(*args, **kwargs)
 
 
-def dump_dot(filepath=None):
+def dump_dot(filepath=None, rankdir=None, embed_states_threshold=0):
     from taichi.core import ti_core
-    d = ti_core.dump_dot()
+    d = ti_core.dump_dot(rankdir, embed_states_threshold)
     if filepath is not None:
         with open(filepath, 'w') as fh:
             fh.write(d)
@@ -269,6 +269,11 @@ def dot_to_pdf(dot, filepath):
         fh.write(pdf_contents)
 
 
+def get_kernel_stats():
+    from taichi.core import ti_core
+    return ti_core.get_kernel_stats()
+
+
 __all__ = [
     'vec',
     'veci',
@@ -278,6 +283,7 @@ __all__ = [
     'dump_dot',
     'dot_to_pdf',
     'obsolete',
+    'get_kernel_stats',
     'get_traceback',
     'set_gdb_trigger',
     'print_profile_info',

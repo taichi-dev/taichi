@@ -505,6 +505,7 @@ class GUI : public GUIBase {
   int widget_height;
   std::vector<std::unique_ptr<float>> widget_values;
   bool show_gui;
+  bool fullscreen;
 
   void set_mouse_pos(int x, int y) {
     cursor_pos = Vector2i(x, y);
@@ -761,12 +762,14 @@ class GUI : public GUIBase {
                int width = 800,
                int height = 800,
                bool show_gui = true,
+               bool fullscreen = true,
                bool normalized_coord = true)
       : window_name(window_name),
         width(width),
         height(height),
         key_pressed(false),
-        show_gui(show_gui) {
+        show_gui(show_gui),
+        fullscreen(fullscreen) {
     memset(button_status, 0, sizeof(button_status));
     start_time = taichi::Time::get_time();
     buffer.initialize(Vector2i(width, height));
@@ -784,8 +787,14 @@ class GUI : public GUIBase {
   explicit GUI(const std::string &window_name,
                Vector2i res,
                bool show_gui,
+               bool fullscreen = true,
                bool normalized_coord = true)
-      : GUI(window_name, res[0], res[1], show_gui, normalized_coord) {
+      : GUI(window_name,
+            res[0],
+            res[1],
+            show_gui,
+            fullscreen,
+            normalized_coord) {
   }
 
   void create_window();
@@ -815,41 +824,39 @@ class GUI : public GUIBase {
 
   void update() {
     frame_id++;
-    taichi::Time::wait_until(last_frame_time + frame_delta_limit);
-    auto this_frame_time = taichi::Time::get_time();
-    if (last_frame_time != 0) {
-      last_frame_interval.push_back(this_frame_time - last_frame_time);
-    }
-    last_frame_time = this_frame_time;
-    // Some old examples / users don't even provide a `break` statement for us
-    // to terminate loop. So we have to terminate the program with RuntimeError
-    // if ti.GUI.EXIT event is not processed. Pretty like SIGTERM, you can hook
-    // it, but you have to terminate after your handler is done.
-    if (should_close) {
-      if (++should_close > 5) {
-        // if the event is not processed in 5 frames, raise RuntimeError
-        throw std::string(
-            "Window close button clicked, exiting... (use `while gui.running` "
-            "to exit gracefully)");
-      }
-    }
     if (show_gui) {
+      taichi::Time::wait_until(last_frame_time + frame_delta_limit);
+      auto this_frame_time = taichi::Time::get_time();
+      if (last_frame_time != 0) {
+        last_frame_interval.push_back(this_frame_time - last_frame_time);
+      }
+      last_frame_time = this_frame_time;
+      // Some old examples / users don't even provide a `break` statement for us
+      // to terminate loop. So we have to terminate the program with
+      // RuntimeError if ti.GUI.EXIT event is not processed. Pretty like
+      // SIGTERM, you can hook it, but you have to terminate after your handler
+      // is done.
+      if (should_close) {
+        if (++should_close > 5) {
+          // if the event is not processed in 5 frames, raise RuntimeError
+          throw std::string(
+              "Window close button clicked, exiting... (use `while "
+              "gui.running` "
+              "to exit gracefully)");
+        }
+      }
       while (last_frame_interval.size() > 30) {
         last_frame_interval.erase(last_frame_interval.begin());
       }
       auto real_fps = last_frame_interval.size() /
                       (std::accumulate(last_frame_interval.begin(),
                                        last_frame_interval.end(), 0.0_f));
-      update_gui(real_fps);
+      redraw_widgets();
+      redraw();
+      process_event();
+      if (frame_id % 10 == 0)
+        set_title(fmt::format("{} ({:.2f} FPS)", window_name, real_fps));
     }
-  }
-
-  void update_gui(float real_fps) {
-    redraw_widgets();
-    redraw();
-    process_event();
-    if (frame_id % 10 == 0)
-      set_title(fmt::format("{} ({:.2f} FPS)", window_name, real_fps));
   }
 
   bool has_key_event() {

@@ -9,19 +9,6 @@ import os
 
 core = taichi_lang_core
 
-
-def record_action_hint(s):
-    core.record_action_hint(s)
-
-
-def begin_recording(fn):
-    core.begin_recording(fn)
-
-
-def stop_recording():
-    core.stop_recording()
-
-
 runtime = get_runtime()
 
 i = indices(0)
@@ -55,10 +42,10 @@ opengl = core.opengl
 cc = core.cc
 gpu = [cuda, metal, opengl]
 cpu = core.host_arch()
-kernel_profiler_print = lambda: core.get_current_program(
-).kernel_profiler_print()
-kernel_profiler_clear = lambda: core.get_current_program(
-).kernel_profiler_clear()
+kernel_profiler_print = lambda: get_runtime().prog.kernel_profiler_print()
+kernel_profiler_clear = lambda: get_runtime().prog.kernel_profiler_clear()
+kernel_profiler_total_time = lambda: get_runtime(
+).prog.kernel_profiler_total_time()
 
 
 def memory_profiler_print():
@@ -286,8 +273,10 @@ def Tape(loss, clear_gradients=True):
             ' for all fields that are required by autodiff.')
     if clear_gradients:
         clear_all_gradients()
-    loss[None] = 0
-    loss.grad[None] = 1
+
+    from .meta import clear_loss
+    clear_loss(loss)
+
     return runtime.get_tape(loss)
 
 
@@ -342,19 +331,23 @@ def benchmark(func, repeat=300, args=()):
                 ti.stat_write('offloaded_tasks', b)
             elif a == 'launched_tasks':
                 ti.stat_write('launched_tasks', b)
-        # The reason why we run 3 more times is to warm up
+
+        # Use 3 initial iterations to warm up
         # instruction/data caches. Discussion:
         # https://github.com/taichi-dev/taichi/pull/1002#discussion_r426312136
         for i in range(3):
             func(*args)
             ti.sync()
+        ti.kernel_profiler_clear()
         t = time.time()
         for n in range(repeat):
             func(*args)
             ti.sync()
         elapsed = time.time() - t
         avg = elapsed / repeat
-        ti.stat_write('running_time', avg)
+        ti.stat_write('clock_time', avg)
+        device_time = ti.kernel_profiler_total_time()
+        ti.stat_write('device_time', device_time)
 
     run_benchmark()
 

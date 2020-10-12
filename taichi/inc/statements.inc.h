@@ -73,6 +73,7 @@ PER_STATEMENT(LoopLinearIndexStmt)
 PER_STATEMENT(BlockCornerIndexStmt)
 PER_STATEMENT(BlockDimStmt)
 PER_STATEMENT(GlobalTemporaryStmt)
+PER_STATEMENT(ClearListStmt)
 
 // Local storage
 PER_STATEMENT(ThreadLocalPtrStmt)

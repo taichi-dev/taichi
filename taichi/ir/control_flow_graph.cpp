@@ -321,6 +321,45 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access) {
   return modified;
 }
 
+void CFGNode::gather_loaded_snodes(std::unordered_set<SNode *> &snodes) const {
+  // Gather the snodes which this CFGNode loads.
+  // Requires reaching definition analysis.
+  std::unordered_set<Stmt *> killed_in_this_node;
+  for (int i = begin_location; i < end_location; i++) {
+    auto stmt = block->statements[i].get();
+    auto load_ptrs = irpass::analysis::get_load_pointers(stmt);
+    for (auto &load_ptr : load_ptrs) {
+      if (auto global_ptr = load_ptr->cast<GlobalPtrStmt>()) {
+        // Avoid computing the UD-chain if every snode in this global ptr
+        // are already loaded.
+        bool already_loaded = true;
+        for (auto &snode : global_ptr->snodes.data) {
+          if (snodes.count(snode) == 0) {
+            already_loaded = false;
+            break;
+          }
+        }
+        if (already_loaded) {
+          continue;
+        }
+        if (reach_in.find(global_ptr) != reach_in.end() &&
+            !contain_variable(killed_in_this_node, global_ptr)) {
+          // The UD-chain contains the value before this offload.
+          for (auto &snode : global_ptr->snodes.data) {
+            snodes.insert(snode);
+          }
+        }
+      }
+    }
+    auto store_ptrs = irpass::analysis::get_store_destination(stmt);
+    for (auto &store_ptr : store_ptrs) {
+      if (store_ptr->is<GlobalPtrStmt>()) {
+        killed_in_this_node.insert(store_ptr);
+      }
+    }
+  }
+}
+
 void CFGNode::live_variable_analysis(bool after_lower_access) {
   live_gen.clear();
   live_kill.clear();
@@ -400,7 +439,11 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
               replace_with(i, std::move(local_load), true);
               modified = true;
               continue;
-            } else if (!is_parallel_executed) {
+            } else if (!is_parallel_executed ||
+                       (atomic->dest->is<GlobalPtrStmt>() &&
+                        atomic->dest->as<GlobalPtrStmt>()
+                            ->snodes[0]
+                            ->is_scalar())) {
               // If this node is parallel executed, we can't weaken a global
               // atomic operation to a global load.
               // TODO: we can weaken it if it's element-wise (i.e. never
@@ -596,14 +639,19 @@ void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
     now->reach_out = now->reach_gen;
     for (auto stmt : now->reach_in) {
       auto store_ptrs = irpass::analysis::get_store_destination(stmt);
-      bool not_killed = store_ptrs.empty();  // for the case of a global pointer
-      for (auto store_ptr : store_ptrs) {
-        if (!now->reach_kill_variable(store_ptr)) {
-          not_killed = true;
-          break;
+      bool killed;
+      if (store_ptrs.empty()) {  // the case of a global pointer
+        killed = now->reach_kill_variable(stmt);
+      } else {
+        killed = true;
+        for (auto store_ptr : store_ptrs) {
+          if (!now->reach_kill_variable(store_ptr)) {
+            killed = false;
+            break;
+          }
         }
       }
-      if (not_killed) {
+      if (!killed) {
         now->reach_out.insert(stmt);
       }
     }
@@ -619,7 +667,9 @@ void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
   }
 }
 
-void ControlFlowGraph::live_variable_analysis(bool after_lower_access) {
+void ControlFlowGraph::live_variable_analysis(
+    bool after_lower_access,
+    const std::optional<LiveVarAnalysisConfig> &config_opt) {
   TI_AUTO_PROF;
   const int num_nodes = size();
   std::queue<CFGNode *> to_visit;
@@ -627,14 +677,27 @@ void ControlFlowGraph::live_variable_analysis(bool after_lower_access) {
   TI_ASSERT(nodes[final_node]->empty());
   nodes[final_node]->live_gen.clear();
   nodes[final_node]->live_kill.clear();
+
+  auto in_final_node_live_gen = [&config_opt](const Stmt *stmt) -> bool {
+    if (stmt->is<AllocaStmt>() || stmt->is<StackAllocaStmt>()) {
+      return false;
+    }
+    if (auto *gptr = stmt->cast<GlobalPtrStmt>();
+        gptr && config_opt.has_value()) {
+      TI_ASSERT(gptr->snodes.size() == 1);
+      const bool res =
+          (config_opt->eliminable_snodes.count(gptr->snodes[0]) == 0);
+      return res;
+    }
+    // A global pointer that may be loaded after this kernel.
+    return true;
+  };
   if (!after_lower_access) {
     for (int i = 0; i < num_nodes; i++) {
       for (int j = nodes[i]->begin_location; j < nodes[i]->end_location; j++) {
         auto stmt = nodes[i]->block->statements[j].get();
         for (auto store_ptr : irpass::analysis::get_store_destination(stmt)) {
-          if (!store_ptr->is<AllocaStmt>() &&
-              !store_ptr->is<StackAllocaStmt>()) {
-            // A global pointer that may be loaded after this kernel.
+          if (in_final_node_live_gen(store_ptr)) {
             nodes[final_node]->live_gen.insert(store_ptr);
           }
         }
@@ -753,9 +816,11 @@ bool ControlFlowGraph::store_to_load_forwarding(bool after_lower_access) {
   return modified;
 }
 
-bool ControlFlowGraph::dead_store_elimination(bool after_lower_access) {
+bool ControlFlowGraph::dead_store_elimination(
+    bool after_lower_access,
+    const std::optional<LiveVarAnalysisConfig> &lva_config_opt) {
   TI_AUTO_PROF;
-  live_variable_analysis(after_lower_access);
+  live_variable_analysis(after_lower_access, lva_config_opt);
   const int num_nodes = size();
   bool modified = false;
   for (int i = 0; i < num_nodes; i++) {
@@ -763,6 +828,36 @@ bool ControlFlowGraph::dead_store_elimination(bool after_lower_access) {
       modified = true;
   }
   return modified;
+}
+
+std::unordered_set<SNode *> ControlFlowGraph::gather_loaded_snodes() {
+  TI_AUTO_PROF;
+  reaching_definition_analysis(/*after_lower_access=*/false);
+  const int num_nodes = size();
+  std::unordered_set<SNode *> snodes;
+
+  // Note: since global store may only partially modify a value state, the
+  // result (which contains the modified and unmodified part) actually needs a
+  // read from the previous version of the value state.
+  //
+  // I.e.,
+  // output_value_state = merge(input_value_state, written_part)
+  //
+  // Therefore we include the nodes[final_node]->reach_in in snodes.
+  for (auto &stmt : nodes[final_node]->reach_in) {
+    if (auto global_ptr = stmt->cast<GlobalPtrStmt>()) {
+      for (auto &snode : global_ptr->snodes.data) {
+        snodes.insert(snode);
+      }
+    }
+  }
+
+  for (int i = 0; i < num_nodes; i++) {
+    if (i != final_node) {
+      nodes[i]->gather_loaded_snodes(snodes);
+    }
+  }
+  return snodes;
 }
 
 TLANG_NAMESPACE_END

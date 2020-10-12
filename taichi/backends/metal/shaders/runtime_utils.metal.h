@@ -41,10 +41,10 @@ STR(
                                        metal::memory_order_relaxed);
     }
 
-    [[maybe_unused]] device char
-        *mtl_memalloc_to_ptr(device MemoryAllocator *ma, PtrOffset offs) {
-          return reinterpret_cast<device char *>(ma + 1) + offs;
-        }
+    [[maybe_unused]] device char *mtl_memalloc_to_ptr(
+        device MemoryAllocator *ma, PtrOffset offs) {
+      return reinterpret_cast<device char *>(ma + 1) + offs;
+    }
 
     struct ListManager {
       device ListManagerData *lm_data;
@@ -142,6 +142,51 @@ STR(
       }
     };
 
+    // NodeManager is a GPU-side memory allocator with GC support.
+    struct NodeManager {
+      using ElemIndex = NodeManagerData::ElemIndex;
+      device NodeManagerData *nm_data;
+      device MemoryAllocator *mem_alloc;
+
+      static inline bool is_valid(ElemIndex i) {
+        return i >= NodeManagerData::kIndexOffset;
+      }
+
+      ElemIndex allocate() {
+        ListManager free_list;
+        free_list.lm_data = &(nm_data->free_list);
+        free_list.mem_alloc = mem_alloc;
+        ListManager data_list;
+        data_list.lm_data = &(nm_data->data_list);
+        data_list.mem_alloc = mem_alloc;
+
+        const int cur_used = atomic_fetch_add_explicit(
+            &(nm_data->free_list_used), 1, metal::memory_order_relaxed);
+        if (cur_used < free_list.num_active()) {
+          return free_list.get<ElemIndex>(cur_used);
+        }
+        // Shift by |kIndexOffset| to skip special encoded values.
+        return data_list.reserve_new_elem().elem_idx +
+               NodeManagerData::kIndexOffset;
+      }
+
+      device byte *get(ElemIndex i) {
+        ListManager data_list;
+        data_list.lm_data = &(nm_data->data_list);
+        data_list.mem_alloc = mem_alloc;
+
+        return data_list.get_ptr(i - NodeManagerData::kIndexOffset);
+      }
+
+      void recycle(ElemIndex i) {
+        // Precondition: |i| is shifted by |kIndexOffset|.
+        ListManager recycled_list;
+        recycled_list.lm_data = &(nm_data->recycled_list);
+        recycled_list.mem_alloc = mem_alloc;
+        recycled_list.append(i);
+      }
+    };
+
     // To make codegen implementation easier, I've made these exceptions:
     // * The somewhat strange SNodeRep_* naming style.
     // * init(), instead of doing initiliaztion in the constructor.
@@ -155,15 +200,11 @@ STR(
         return addr_;
       }
 
-      inline bool is_active(int) {
-        return true;
-      }
+      inline bool is_active(int) { return true; }
 
-      inline void activate(int) {
-      }
+      inline void activate(int) {}
 
-      inline void deactivate(int) {
-      }
+      inline void deactivate(int) {}
 
      private:
       device byte *addr_ = nullptr;

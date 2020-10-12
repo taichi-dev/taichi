@@ -25,7 +25,7 @@ void export_visual(py::module &m) {
       .value("Press", Type::press)
       .value("Release", Type::release);
   py::class_<GUI>(m, "GUI")
-      .def(py::init<std::string, Vector2i, bool>())
+      .def(py::init<std::string, Vector2i, bool, bool>())
       .def_readwrite("frame_delta_limit", &GUI::frame_delta_limit)
       .def_readwrite("should_close", &GUI::should_close)
       .def("get_canvas", &GUI::get_canvas, py::return_value_policy::reference)

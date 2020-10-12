@@ -37,7 +37,7 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
            llvm::Type::getInt8PtrTy(*llvm_context),
            tlctx->get_data_type<int>()});
 
-      auto loop_var = create_entry_block_alloca(DataType::i32);
+      auto loop_var = create_entry_block_alloca(PrimitiveType::i32);
       loop_vars_llvm[stmt].push_back(loop_var);
       builder->CreateStore(get_arg(2), loop_var);
       stmt->body->accept(this);
@@ -74,8 +74,6 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
       stmt->block_dim =
           std::min(stmt->snode->parent->max_num_elements(), stmt->block_dim);
       create_offload_struct_for(stmt);
-    } else if (stmt->task_type == Type::clear_list) {
-      emit_clear_list(stmt);
     } else if (stmt->task_type == Type::listgen) {
       emit_list_gen(stmt);
     } else if (stmt->task_type == Type::gc) {

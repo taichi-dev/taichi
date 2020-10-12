@@ -1,5 +1,6 @@
 from .util import *
 from .settings import *
+from .record import *
 from .unit import unit
 
 ti_core.build = build

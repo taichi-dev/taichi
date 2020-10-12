@@ -1,5 +1,8 @@
 // Bindings for the python frontend
 
+#include <optional>
+#include <string>
+
 #include "pybind11/functional.h"
 #include "pybind11/pybind11.h"
 
@@ -25,6 +28,11 @@ bool test_threading();
 TI_NAMESPACE_END
 
 TLANG_NAMESPACE_BEGIN
+
+void async_print_sfg();
+
+std::string async_dump_dot(std::optional<std::string> rankdir,
+                           int embed_states_threshold);
 
 std::string compiled_lib_dir;
 std::string runtime_tmp_dir;
@@ -74,6 +82,25 @@ void export_lang(py::module &m) {
 #undef PER_EXTENSION
       .export_values();
 
+  py::class_<DataType>(m, "DataType")
+      .def(py::self == py::self)
+      .def(py::pickle(
+          [](const DataType &dt) {
+            // Note: this only works for primitive types, which is fine for now.
+            auto primitive = dynamic_cast<const PrimitiveType *>(dt.get_ptr());
+            TI_ASSERT(primitive);
+            return py::make_tuple((std::size_t)primitive->type);
+          },
+          [](py::tuple t) {
+            if (t.size() != 1)
+              throw std::runtime_error("Invalid state!");
+
+            DataType dt = PrimitiveType::get(
+                (PrimitiveType::primitive_type)(t[0].cast<std::size_t>()));
+
+            return dt;
+          }));
+
   py::class_<CompileConfig>(m, "CompileConfig")
       .def(py::init<>())
       .def_readwrite("arch", &CompileConfig::arch)
@@ -103,6 +130,7 @@ void export_lang(py::module &m) {
                      &CompileConfig::default_gpu_block_dim)
       .def_readwrite("saturating_grid_dim", &CompileConfig::saturating_grid_dim)
       .def_readwrite("max_block_dim", &CompileConfig::max_block_dim)
+      .def_readwrite("cpu_max_num_threads", &CompileConfig::cpu_max_num_threads)
       .def_readwrite("verbose_kernel_launches",
                      &CompileConfig::verbose_kernel_launches)
       .def_readwrite("verbose", &CompileConfig::verbose)
@@ -124,7 +152,14 @@ void export_lang(py::module &m) {
       .def_readwrite("make_thread_local", &CompileConfig::make_thread_local)
       .def_readwrite("make_block_local", &CompileConfig::make_block_local)
       .def_readwrite("cc_compile_cmd", &CompileConfig::cc_compile_cmd)
-      .def_readwrite("cc_link_cmd", &CompileConfig::cc_link_cmd);
+      .def_readwrite("cc_link_cmd", &CompileConfig::cc_link_cmd)
+      .def_readwrite("async_opt_fusion", &CompileConfig::async_opt_fusion)
+      .def_readwrite("async_opt_listgen", &CompileConfig::async_opt_listgen)
+      .def_readwrite("async_opt_activation_demotion",
+                     &CompileConfig::async_opt_activation_demotion)
+      .def_readwrite("async_opt_dse", &CompileConfig::async_opt_dse)
+      .def_readwrite("async_opt_intermediate_file",
+                     &CompileConfig::async_opt_intermediate_file);
 
   m.def("reset_default_compile_config",
         [&]() { default_compile_config = CompileConfig(); });
@@ -137,6 +172,8 @@ void export_lang(py::module &m) {
       .def(py::init<>())
       .def_readonly("config", &Program::config)
       .def("kernel_profiler_print", &Program::kernel_profiler_print)
+      .def("kernel_profiler_total_time",
+           [](Program *program) { return program->profiler->get_total_time(); })
       .def("kernel_profiler_clear", &Program::kernel_profiler_clear)
       .def("print_memory_profiler_info", &Program::print_memory_profiler_info)
       .def("finalize", &Program::finalize)
@@ -427,6 +464,7 @@ void export_lang(py::module &m) {
   m.def("expr_bit_or", expr_bit_or);
   m.def("expr_bit_xor", expr_bit_xor);
   m.def("expr_bit_shl", expr_bit_shl);
+  m.def("expr_bit_shr", expr_bit_shr);
   m.def("expr_bit_sar", expr_bit_sar);
   m.def("expr_bit_not", expr_bit_not);
   m.def("expr_logic_not", expr_logic_not);
@@ -468,7 +506,7 @@ void export_lang(py::module &m) {
     auto var = Expr(std::make_shared<IdExpression>());
     current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
         std::static_pointer_cast<IdExpression>(var.expr)->id,
-        DataType::unknown));
+        PrimitiveType::unknown));
     return var;
   });
   m.def("expr_assign", expr_assign);
@@ -510,11 +548,11 @@ void export_lang(py::module &m) {
   unary.export_values();
   m.def("make_unary_op_expr",
         Expr::make<UnaryOpExpression, const UnaryOpType &, const Expr &>);
-
-  auto &&data_type = py::enum_<DataType>(m, "DataType", py::arithmetic());
-  for (int t = 0; t <= (int)DataType::unknown; t++)
-    data_type.value(data_type_name(DataType(t)).c_str(), DataType(t));
-  data_type.export_values();
+#define PER_TYPE(x)                                                  \
+  m.attr(("DataType_" + data_type_name(PrimitiveType::x)).c_str()) = \
+      PrimitiveType::x;
+#include "taichi/inc/data_type.inc.h"
+#undef PER_TYPE
 
   m.def("is_integral", is_integral);
   m.def("is_signed", is_signed);
@@ -616,10 +654,22 @@ void export_lang(py::module &m) {
     return result;
   });
 
-  m.def("record_action_hint", [](std::string content) {
-    ActionRecorder::get_instance().record("hint",
-                                          {ActionArg("content", content)});
-  });
+  m.def("record_action_entry",
+        [](std::string name,
+           std::vector<std::pair<std::string,
+                                 std::variant<std::string, int, float>>> args) {
+          std::vector<ActionArg> acts;
+          for (auto const &[k, v] : args) {
+            if (std::holds_alternative<int>(v)) {
+              acts.push_back(ActionArg(k, std::get<int>(v)));
+            } else if (std::holds_alternative<float>(v)) {
+              acts.push_back(ActionArg(k, std::get<float>(v)));
+            } else {
+              acts.push_back(ActionArg(k, std::get<std::string>(v)));
+            }
+          }
+          ActionRecorder::get_instance().record(name, acts);
+        });
 
   m.def("start_recording", [](const std::string &fn) {
     ActionRecorder::get_instance().start_recording(fn);
@@ -641,16 +691,16 @@ void export_lang(py::module &m) {
 #if defined(TI_WITH_CUDA)
       return CUDAContext::get_instance().get_compute_capability();
 #else
-      TI_NOT_IMPLEMENTED
+    TI_NOT_IMPLEMENTED
 #endif
     } else {
       TI_ERROR("Key {} not supported in query_int64", key);
     }
   });
 
-  m.def("print_sfg", [] { get_current_program().async_engine->sfg->print(); });
-  m.def("dump_dot",
-        [] { return get_current_program().async_engine->sfg->dump_dot(); });
+  m.def("print_sfg", async_print_sfg);
+  m.def("dump_dot", async_dump_dot, py::arg("rankdir").none(true),
+        py::arg("embed_states_threshold"));
 }
 
 TI_NAMESPACE_END

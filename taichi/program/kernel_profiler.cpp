@@ -42,7 +42,7 @@ void KernelProfilerBase::print() {
       "name\n");
   std::sort(records.begin(), records.end());
   for (auto &rec : records) {
-    auto fraction = rec.total / total_time * 100.0f;
+    auto fraction = rec.total / total_time_ms * 100.0f;
     fmt::print("[{:6.2f}% {:7.3f} s {:6d}x |{:9.3f} {:9.3f} {:9.3f} ms] {}\n",
                fraction, rec.total / 1000.0f, rec.counter, rec.min,
                rec.total / rec.counter, rec.max, rec.name);
@@ -53,10 +53,15 @@ void KernelProfilerBase::print() {
   fmt::print(
       "[100.00%] Total kernel execution time: {:7.3f} s   number of records: "
       "{}\n",
-      total_time / 1000.0f, records.size());
+      get_total_time(), records.size());
+
   fmt::print(
       "========================================================================"
       "=\n");
+}
+
+double KernelProfilerBase::get_total_time() const {
+  return total_time_ms / 1000.0;
 }
 
 namespace {
@@ -90,7 +95,7 @@ class DefaultProfiler : public KernelProfilerBase {
       it = std::prev(records.end());
     }
     it->insert_sample(ms);
-    total_time += ms;
+    total_time_ms += ms;
   }
 
  private:
@@ -103,30 +108,29 @@ class DefaultProfiler : public KernelProfilerBase {
 class KernelProfilerCUDA : public KernelProfilerBase {
  public:
 #if defined(TI_WITH_CUDA)
-  void *current_stop;
 
   std::map<std::string, std::vector<std::pair<void *, void *>>>
       outstanding_events;
 #endif
 
-  void start(const std::string &kernel_name) override {
+  TaskHandle start_with_handle(const std::string &kernel_name) override {
 #if defined(TI_WITH_CUDA)
     void *start, *stop;
     CUDADriver::get_instance().event_create(&start, CU_EVENT_DEFAULT);
     CUDADriver::get_instance().event_create(&stop, CU_EVENT_DEFAULT);
     CUDADriver::get_instance().event_record(start, 0);
     outstanding_events[kernel_name].push_back(std::make_pair(start, stop));
-    current_stop = stop;
+    return stop;
 #else
-    printf("CUDA Profiler not implemented;\n");
+    TI_NOT_IMPLEMENTED;
 #endif
   }
 
-  virtual void stop() override {
+  virtual void stop(TaskHandle handle) override {
 #if defined(TI_WITH_CUDA)
-    CUDADriver::get_instance().event_record(current_stop, 0);
+    CUDADriver::get_instance().event_record(handle, 0);
 #else
-    printf("CUDA Profiler not implemented;\n");
+    TI_NOT_IMPLEMENTED;
 #endif
   }
 
@@ -151,7 +155,7 @@ class KernelProfilerCUDA : public KernelProfilerBase {
           it = std::prev(records.end());
         }
         it->insert_sample(ms);
-        total_time += ms;
+        total_time_ms += ms;
       }
     }
     outstanding_events.clear();

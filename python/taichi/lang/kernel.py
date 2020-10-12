@@ -602,14 +602,17 @@ class BoundedDifferentiableMethod:
         self._adjoint = wrapped_kernel_func._adjoint
 
     def __call__(self, *args, **kwargs):
+        _taichi_skip_traceback = 1
         return self._primal(self._kernel_owner, *args, **kwargs)
 
     def grad(self, *args, **kwargs):
+        _taichi_skip_traceback = 1
         return self._adjoint(self._kernel_owner, *args, **kwargs)
 
 
 def data_oriented(cls):
     def getattr(self, item):
+        _taichi_skip_traceback = 1
         x = super(cls, self).__getattribute__(item)
         if hasattr(x, '_is_wrapped_kernel'):
             import inspect

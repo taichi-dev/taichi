@@ -10,11 +10,13 @@ Create a window
 ---------------
 
 
-.. function:: ti.GUI(title = 'Taichi', res = (512, 512), background_color = 0x000000)
+.. function:: ti.GUI(title = 'Taichi', res = (512, 512), background_color = 0x000000, show_gui = True, fullscreen = False)
 
     :parameter title: (optional, string) the window title
     :parameter res: (optional, scalar or tuple) resolution / size of the window
     :parameter background_color: (optional, RGB hex) background color of the window
+    :parameter show_gui: (optional, bool) see the note below
+    :parameter fullscreen: (optional, bool) ``True`` for fullscreen window
     :return: (GUI) an object represents the window
 
     Create a window.
@@ -22,9 +24,22 @@ Create a window
 
     The following code creates a window of resolution ``640x360``:
 
-    ::
+    .. code-block:: python
 
         gui = ti.GUI('Window Title', (640, 360))
+
+    .. note::
+
+        If you are running Taichi on a machine without a GUI environment, consider
+        setting ``show_gui`` to ``False``:
+
+        .. code-block:: python
+
+            gui = ti.GUI('Window Title', (640, 360), show_gui=False)
+
+            while gui.running:
+                ...
+                gui.show(f'{gui.frame:06d}.png')  # save a series of screenshot
 
 
 .. function:: gui.show(filename = None)
@@ -48,6 +63,14 @@ Create a window
 
 Paint on a window
 -----------------
+
+Taichi's GUI supports painting simple geometric objects, such as lines, triangles, rectangles, circles, and text.
+
+
+.. note::
+
+    The position parameter ``pos`` expects an input of a 2-element tuple, whose values are the relative position of the object.
+    ``(0.0, 0.0)`` stands for the lower left corner of the window, and ``(1.0, 1.0)`` stands for the upper right corner.
 
 
 .. function:: gui.set_image(img)

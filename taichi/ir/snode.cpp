@@ -120,6 +120,10 @@ bool SNode::is_place() const {
   return type == SNodeType::place;
 }
 
+bool SNode::is_scalar() const {
+  return is_place() && (num_active_indices == 0);
+}
+
 bool SNode::has_grad() const {
   auto adjoint = expr.cast<GlobalVariableExpression>()->adjoint;
   return is_primal() && adjoint.expr != nullptr &&
@@ -207,7 +211,7 @@ SNode::SNode(int depth, SNodeType t) : depth(depth), type(t) {
   std::memset(physical_index_position, -1, sizeof(physical_index_position));
   parent = nullptr;
   has_ambient = false;
-  dt = DataType::gen;
+  dt = PrimitiveType::gen;
   _morton = false;
 
   reader_kernel = nullptr;

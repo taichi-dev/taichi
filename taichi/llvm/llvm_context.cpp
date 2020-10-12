@@ -87,25 +87,25 @@ TaichiLLVMContext::TaichiLLVMContext(Arch arch) : arch(arch) {
 
 llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {
   auto ctx = get_this_thread_context();
-  if (dt == DataType::i32) {
+  if (dt == PrimitiveType::i32) {
     return llvm::Type::getInt32Ty(*ctx);
-  } else if (dt == DataType::i8) {
+  } else if (dt == PrimitiveType::i8) {
     return llvm::Type::getInt8Ty(*ctx);
-  } else if (dt == DataType::i16) {
+  } else if (dt == PrimitiveType::i16) {
     return llvm::Type::getInt16Ty(*ctx);
-  } else if (dt == DataType::i64) {
+  } else if (dt == PrimitiveType::i64) {
     return llvm::Type::getInt64Ty(*ctx);
-  } else if (dt == DataType::f32) {
+  } else if (dt == PrimitiveType::f32) {
     return llvm::Type::getFloatTy(*ctx);
-  } else if (dt == DataType::f64) {
+  } else if (dt == PrimitiveType::f64) {
     return llvm::Type::getDoubleTy(*ctx);
-  } else if (dt == DataType::u8) {
+  } else if (dt == PrimitiveType::u8) {
     return llvm::Type::getInt8Ty(*ctx);
-  } else if (dt == DataType::u16) {
+  } else if (dt == PrimitiveType::u16) {
     return llvm::Type::getInt16Ty(*ctx);
-  } else if (dt == DataType::u32) {
+  } else if (dt == PrimitiveType::u32) {
     return llvm::Type::getInt32Ty(*ctx);
-  } else if (dt == DataType::u64) {
+  } else if (dt == PrimitiveType::u64) {
     return llvm::Type::getInt64Ty(*ctx);
   } else {
     TI_INFO(data_type_name(dt));
@@ -373,7 +373,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
 
       auto patch_intrinsic = [&](std::string name, Intrinsic::ID intrin,
                                  bool ret = true,
-                                 std::vector<Type *> types = {},
+                                 std::vector<llvm::Type *> types = {},
                                  std::vector<llvm::Value *> extra_args = {}) {
         auto func = runtime_module->getFunction(name);
         TI_ERROR_UNLESS(func, "Function {} not found", name);
@@ -560,17 +560,17 @@ void TaichiLLVMContext::set_struct_module(
 template <typename T>
 llvm::Value *TaichiLLVMContext::get_constant(DataType dt, T t) {
   auto ctx = get_this_thread_context();
-  if (dt == DataType::f32) {
+  if (dt == PrimitiveType::f32) {
     return llvm::ConstantFP::get(*ctx, llvm::APFloat((float32)t));
-  } else if (dt == DataType::f64) {
+  } else if (dt == PrimitiveType::f64) {
     return llvm::ConstantFP::get(*ctx, llvm::APFloat((float64)t));
-  } else if (dt == DataType::i32) {
+  } else if (dt == PrimitiveType::i32) {
     return llvm::ConstantInt::get(*ctx, llvm::APInt(32, t, true));
-  } else if (dt == DataType::u32) {
+  } else if (dt == PrimitiveType::u32) {
     return llvm::ConstantInt::get(*ctx, llvm::APInt(32, t, false));
-  } else if (dt == DataType::i64) {
+  } else if (dt == PrimitiveType::i64) {
     return llvm::ConstantInt::get(*ctx, llvm::APInt(64, t, true));
-  } else if (dt == DataType::u64) {
+  } else if (dt == PrimitiveType::u64) {
     return llvm::ConstantInt::get(*ctx, llvm::APInt(64, t, false));
   } else {
     TI_NOT_IMPLEMENTED

@@ -1,6 +1,7 @@
 import numpy as np
 import taichi as ti
 import time
+import math
 
 
 @ti.data_oriented
@@ -168,7 +169,12 @@ See `examples/stable_fluid.py <https://github.com/taichi-dev/taichi/blob/master/
                 self.smooth(l, 1)
                 self.smooth(l, 0)
 
-    def solve(self, max_iters=-1, eps=1e-12, abs_tol=1e-12, rel_tol=1e-12):
+    def solve(self,
+              max_iters=-1,
+              eps=1e-12,
+              abs_tol=1e-12,
+              rel_tol=1e-12,
+              verbose=False):
         '''
         Solve a Poisson problem.
 
@@ -195,9 +201,9 @@ See `examples/stable_fluid.py <https://github.com/taichi-dev/taichi/blob/master/
         self.reduce(self.z[0], self.r[0])
         old_zTr = self.sum[None]
 
-        # CG
-        # We use a while loop here since max_iter = -1 means no limit on the number of iterations
-        while max_iters != 0:
+        # Conjugate gradients
+        iter = 0
+        while max_iters == -1 or iter < max_iters:
             # self.alpha = rTr / pTAp
             self.compute_Ap()
             self.reduce(self.p, self.Ap)
@@ -213,6 +219,10 @@ See `examples/stable_fluid.py <https://github.com/taichi-dev/taichi/blob/master/
             # check for convergence
             self.reduce(self.r[0], self.r[0])
             rTr = self.sum[None]
+
+            if verbose:
+                print(f'iter {iter}, |residual|_2={math.sqrt(rTr)}')
+
             if rTr < tol:
                 break
 
@@ -231,7 +241,7 @@ See `examples/stable_fluid.py <https://github.com/taichi-dev/taichi/blob/master/
             self.update_p()
             old_zTr = new_zTr
 
-            max_iters -= 1
+            iter += 1
 
 
 class MGPCG_Example(MGPCG):
@@ -260,12 +270,9 @@ class MGPCG_Example(MGPCG):
                 jj = int(j * self.N / self.N_gui) + self.N_ext
                 self.pixels[i, j] = self.x[ii, jj, kk] / self.N_tot
 
-    def run(self):
-        gui = ti.GUI("Multigrid Preconditioned Conjugate Gradients",
-                     res=(self.N_gui, self.N_gui))
-
+    def run(self, verbose=False):
         self.init()
-        self.solve(max_iters=400)
+        self.solve(max_iters=400, verbose=verbose)
         self.paint()
         ti.imshow(self.pixels)
         ti.kernel_profiler_print()
@@ -275,5 +282,5 @@ if __name__ == '__main__':
     ti.init(kernel_profiler=True)
     solver = MGPCG_Example()
     t = time.time()
-    solver.run()
+    solver.run(verbose=True)
     print(f'Solver time: {time.time() - t:.3f} s')

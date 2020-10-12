@@ -3,13 +3,14 @@
 #include <functional>
 #include <string>
 
+#include "taichi/backends/metal/api.h"
 #include "taichi/backends/metal/constants.h"
+#include "taichi/backends/metal/env_config.h"
 #include "taichi/backends/metal/features.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/transforms.h"
-#include "taichi/util/line_appender.h"
 #include "taichi/math/arithmetic.h"
-#include "taichi/backends/metal/api.h"
+#include "taichi/util/line_appender.h"
 
 TLANG_NAMESPACE_BEGIN
 namespace metal {
@@ -83,13 +84,17 @@ class KernelCodegen : public IRVisitor {
   };
 
  public:
+  struct Config {
+    bool allow_simdgroup = true;
+  };
   // TODO(k-ye): Create a Params to hold these ctor params.
   KernelCodegen(const std::string &taichi_kernel_name,
                 const std::string &root_snode_type_name,
                 Kernel *kernel,
                 const CompiledStructs *compiled_structs,
                 PrintStringTable *print_strtab,
-                const CodeGen::Config &config)
+                const Config &config,
+                OffloadedStmt *offloaded)
       : mtl_kernel_prefix_(taichi_kernel_name),
         root_snode_type_name_(root_snode_type_name),
         kernel_(kernel),
@@ -97,7 +102,8 @@ class KernelCodegen : public IRVisitor {
         needs_root_buffer_(compiled_structs_->root_size > 0),
         ctx_attribs_(*kernel_),
         print_strtab_(print_strtab),
-        cgen_config_(config) {
+        cgen_config_(config),
+        offloaded_(offloaded) {
     ti_kernel_attribus_.name = taichi_kernel_name;
     ti_kernel_attribus_.is_jit_evaluator = kernel->is_evaluator;
     // allow_undefined_visitor = true;
@@ -269,7 +275,7 @@ class KernelCodegen : public IRVisitor {
         }
       } else if (opty == SNodeOpType::append) {
         TI_ASSERT(is_dynamic);
-        TI_ASSERT(stmt->ret_type.data_type == DataType::i32);
+        TI_ASSERT(stmt->ret_type.data_type == PrimitiveType::i32);
         emit("{} = {}.append({});", result_var, parent, stmt->val->raw_name());
       } else if (opty == SNodeOpType::length) {
         TI_ASSERT(is_dynamic);
@@ -479,19 +485,19 @@ class KernelCodegen : public IRVisitor {
       current_appender().push_indent();
     }
 
-    if (dt == DataType::i32) {
+    if (dt == PrimitiveType::i32) {
       emit(
           "const auto {} = atomic_fetch_{}_explicit((device atomic_int*){}, "
           "{}, "
           "metal::memory_order_relaxed);",
           stmt->raw_name(), op_name, stmt->dest->raw_name(), val_var);
-    } else if (dt == DataType::u32) {
+    } else if (dt == PrimitiveType::u32) {
       emit(
           "const auto {} = atomic_fetch_{}_explicit((device atomic_uint*){}, "
           "{}, "
           "metal::memory_order_relaxed);",
           stmt->raw_name(), op_name, stmt->dest->raw_name(), val_var);
-    } else if (dt == DataType::f32) {
+    } else if (dt == PrimitiveType::f32) {
       if (handle_float) {
         emit("const float {} = fatomic_fetch_{}({}, {});", stmt->raw_name(),
              op_name, stmt->dest->raw_name(), val_var);
@@ -554,8 +560,6 @@ class KernelCodegen : public IRVisitor {
       generate_range_for_kernel(stmt);
     } else if (stmt->task_type == Type::struct_for) {
       generate_struct_for_kernel(stmt);
-    } else if (stmt->task_type == Type::clear_list) {
-      add_runtime_list_op_kernel(stmt, "clear_list");
     } else if (stmt->task_type == Type::listgen) {
       add_runtime_list_op_kernel(stmt, "element_listgen");
     } else if (stmt->task_type == Type::gc) {
@@ -566,6 +570,16 @@ class KernelCodegen : public IRVisitor {
       TI_ERROR("Unsupported offload type={} on Metal arch", stmt->task_name());
     }
     is_top_level_ = true;
+  }
+
+  void visit(ClearListStmt *stmt) override {
+    // TODO: Try to move this into shaders/runtime_utils.metal.h
+    const std::string listmgr("listmgr");
+    emit("ListManager {};", listmgr);
+    emit("{}.lm_data = ({}->snode_lists + {});", listmgr, kRuntimeVarName,
+         stmt->snode->id);
+    emit("{}.clear();", listmgr);
+    used_features()->sparse = true;
   }
 
   void visit(WhileControlStmt *stmt) override {
@@ -610,7 +624,7 @@ class KernelCodegen : public IRVisitor {
         if (std::holds_alternative<Stmt *>(entry)) {
           auto *arg_stmt = std::get<Stmt *>(entry);
           const auto dt = arg_stmt->element_type();
-          TI_ASSERT_INFO(dt == DataType::i32 || dt == DataType::f32,
+          TI_ASSERT_INFO(dt == PrimitiveType::i32 || dt == PrimitiveType::f32,
                          "print() only supports i32 or f32 scalars for now.");
           emit("{}.pm_set_{}({}, {});", msg_var_name, data_type_short_name(dt),
                i, arg_stmt->raw_name());
@@ -761,7 +775,8 @@ class KernelCodegen : public IRVisitor {
 
   void generate_kernels() {
     SectionGuard sg(this, Section::Kernels);
-    kernel_->ir->accept(this);
+    IRNode *ast = offloaded_ ? offloaded_ : kernel_->ir.get();
+    ast->accept(this);
 
     if (used_features()->sparse) {
       emit("");
@@ -1002,10 +1017,7 @@ class KernelCodegen : public IRVisitor {
     KernelAttributes ka;
     ka.name = kernel_name;
     ka.task_type = stmt->task_type;
-    if (type == Type::clear_list) {
-      ka.num_threads = 1;
-      ka.buffers = {BuffersEnum::Runtime, BuffersEnum::Context};
-    } else if (type == Type::listgen) {
+    if (type == Type::listgen) {
       // listgen kernels use grid-stride loops
       const auto &sn_descs = compiled_structs_->snode_descriptors;
       ka.num_threads = std::min(
@@ -1025,7 +1037,8 @@ class KernelCodegen : public IRVisitor {
     used_features()->sparse = true;
   }
 
-  std::string inject_load_global_tmp(int offset, DataType dt = DataType::i32) {
+  std::string inject_load_global_tmp(int offset,
+                                     DataType dt = PrimitiveType::i32) {
     const auto vt = VectorType(/*width=*/1, dt);
     auto gtmp = Stmt::make<GlobalTemporaryStmt>(offset, vt);
     gtmp->accept(this);
@@ -1207,7 +1220,8 @@ class KernelCodegen : public IRVisitor {
   const bool needs_root_buffer_;
   const KernelContextAttributes ctx_attribs_;
   PrintStringTable *const print_strtab_;
-  const CodeGen::Config &cgen_config_;
+  const Config &cgen_config_;
+  OffloadedStmt *const offloaded_;
 
   bool is_top_level_{true};
   int mtl_kernel_count_{0};
@@ -1221,36 +1235,27 @@ class KernelCodegen : public IRVisitor {
 
 }  // namespace
 
-CodeGen::CodeGen(Kernel *kernel,
-                 KernelManager *kernel_mgr,
-                 const CompiledStructs *compiled_structs,
-                 const Config &config)
-    : kernel_(kernel),
-      kernel_mgr_(kernel_mgr),
-      compiled_structs_(compiled_structs),
-      id_(Program::get_kernel_id()),
-      taichi_kernel_name_(fmt::format("mtl_k{:04d}_{}", id_, kernel_->name)),
-      config_(config) {
-}
+FunctionType compile_to_metal_executable(
+    Kernel *kernel,
+    KernelManager *kernel_mgr,
+    const CompiledStructs *compiled_structs,
+    OffloadedStmt *offloaded) {
+  const auto id = Program::get_kernel_id();
+  const auto taichi_kernel_name(
+      fmt::format("mtl_k{:04d}_{}", id, kernel->name));
 
-FunctionType CodeGen::compile() {
-  auto &config = kernel_->program.config;
-  config.demote_dense_struct_fors = true;
-  irpass::compile_to_executable(kernel_->ir.get(), config,
-                                /*vectorize=*/false, kernel_->grad,
-                                /*ad_use_stack=*/true, config.print_ir,
-                                /*lower_global_access=*/true,
-                                /*make_thread_local=*/config.make_thread_local);
+  KernelCodegen::Config cgen_config;
+  cgen_config.allow_simdgroup = EnvConfig::instance().is_simdgroup_enabled();
 
   KernelCodegen codegen(
-      taichi_kernel_name_, kernel_->program.snode_root->node_type_name, kernel_,
-      compiled_structs_, kernel_mgr_->print_strtable(), config_);
+      taichi_kernel_name, kernel->program.snode_root->node_type_name, kernel,
+      compiled_structs, kernel_mgr->print_strtable(), cgen_config, offloaded);
+
   const auto source_code = codegen.run();
-  kernel_mgr_->register_taichi_kernel(taichi_kernel_name_, source_code,
-                                      codegen.ti_kernels_attribs(),
-                                      codegen.kernel_ctx_attribs());
-  return [kernel_mgr = kernel_mgr_,
-          kernel_name = taichi_kernel_name_](Context &ctx) {
+  kernel_mgr->register_taichi_kernel(taichi_kernel_name, source_code,
+                                     codegen.ti_kernels_attribs(),
+                                     codegen.kernel_ctx_attribs());
+  return [kernel_mgr, kernel_name = taichi_kernel_name](Context &ctx) {
     kernel_mgr->launch_taichi_kernel(kernel_name, &ctx);
   };
 }

@@ -17,7 +17,7 @@ bool is_extension_supported(Arch arch, Extension ext) {
       {Arch::cuda,
        {Extension::sparse, Extension::async_mode, Extension::data64,
         Extension::adstack, Extension::bls, Extension::assertion}},
-      {Arch::metal, {Extension::adstack}},
+      {Arch::metal, {Extension::adstack, Extension::async_mode}},
       {Arch::opengl, {Extension::extfunc}},
       {Arch::cc, {Extension::data64, Extension::extfunc, Extension::adstack}},
   };

@@ -127,7 +127,7 @@ void make_thread_local_offload(OffloadedStmt *offload) {
       tls_offset += (dtype_size - tls_offset % dtype_size) % dtype_size;
 
       auto tls_ptr = offload->tls_prologue->push_back<ThreadLocalPtrStmt>(
-          tls_offset, VectorType(1, data_type));
+          tls_offset, LegacyVectorType(1, data_type));
 
       auto zero = offload->tls_prologue->insert(
           std::make_unique<ConstStmt>(TypedConstant(data_type, 0)), -1);
@@ -139,9 +139,10 @@ void make_thread_local_offload(OffloadedStmt *offload) {
     // Step 2:
     // Make loop body accumulate to TLS ptr instead of global ptr
     {
-      auto tls_ptr = offload->body->insert(
-          Stmt::make<ThreadLocalPtrStmt>(tls_offset, VectorType(1, data_type)),
-          0);
+      auto tls_ptr =
+          offload->body->insert(Stmt::make<ThreadLocalPtrStmt>(
+                                    tls_offset, LegacyVectorType(1, data_type)),
+                                0);
       dest->replace_with(tls_ptr);
     }
 
@@ -153,7 +154,7 @@ void make_thread_local_offload(OffloadedStmt *offload) {
         offload->tls_epilogue->parent_stmt = offload;
       }
       auto tls_ptr = offload->tls_epilogue->push_back<ThreadLocalPtrStmt>(
-          tls_offset, VectorType(1, data_type));
+          tls_offset, LegacyVectorType(1, data_type));
       // TODO: do not use global load from TLS.
       auto tls_load = offload->tls_epilogue->push_back<GlobalLoadStmt>(tls_ptr);
       auto global_ptr = offload->tls_epilogue->insert(

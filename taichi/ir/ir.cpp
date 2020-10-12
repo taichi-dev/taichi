@@ -21,7 +21,7 @@ IRBuilder &current_ast_builder() {
   return context->builder();
 }
 
-std::string VectorType::pointer_suffix() const {
+std::string LegacyVectorType::pointer_suffix() const {
   if (is_pointer()) {
     return "*";
   } else {
@@ -29,11 +29,11 @@ std::string VectorType::pointer_suffix() const {
   }
 }
 
-std::string VectorType::element_type_name() const {
+std::string LegacyVectorType::element_type_name() const {
   return fmt::format("{}{}", data_type_short_name(data_type), pointer_suffix());
 }
 
-std::string VectorType::str() const {
+std::string LegacyVectorType::str() const {
   auto ename = element_type_name();
   return fmt::format("{:4}x{}", ename, width);
 }

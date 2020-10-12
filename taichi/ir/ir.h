@@ -33,7 +33,7 @@ using ScratchPadOptions = std::vector<std::pair<int, SNode *>>;
 
 IRBuilder &current_ast_builder();
 
-struct VectorType {
+struct LegacyVectorType {
  private:
   bool _is_pointer;
 
@@ -41,19 +41,19 @@ struct VectorType {
   int width;
   DataType data_type;
 
-  VectorType(int width, DataType data_type, bool is_pointer = false)
+  LegacyVectorType(int width, DataType data_type, bool is_pointer = false)
       : _is_pointer(is_pointer), width(width), data_type(data_type) {
   }
 
-  VectorType()
+  LegacyVectorType()
       : _is_pointer(false), width(1), data_type(PrimitiveType::unknown) {
   }
 
-  bool operator==(const VectorType &o) const {
+  bool operator==(const LegacyVectorType &o) const {
     return width == o.width && data_type == o.data_type;
   }
 
-  bool operator!=(const VectorType &o) const {
+  bool operator!=(const LegacyVectorType &o) const {
     return !(*this == o);
   }
 
@@ -531,7 +531,7 @@ class Stmt : public IRNode {
   bool fields_registered;
   std::string tb;
   bool is_ptr;
-  VectorType ret_type;
+  LegacyVectorType ret_type;
 
   Stmt();
   Stmt(const Stmt &stmt);

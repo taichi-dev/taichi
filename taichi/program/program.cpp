@@ -58,6 +58,7 @@ inline uint64 *allocate_result_buffer_default(Program *prog) {
 
 Program *current_program = nullptr;
 std::atomic<int> Program::num_instances;
+TypeFactory Program::type_factory;
 
 Program::Program(Arch desired_arch) {
   TI_TRACE("Program initializing...");

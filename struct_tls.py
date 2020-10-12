@@ -1,6 +1,6 @@
 import taichi as ti
 
-ti.init(arch=ti.cpu, print_ir=True, print_kernel_llvm_ir=False, kernel_profiler=True, make_thread_local=True)
+ti.init(arch=ti.cuda, print_ir=True, print_kernel_llvm_ir=False, kernel_profiler=True, make_thread_local=False)
 
 dense = False
 
@@ -21,7 +21,6 @@ fill()
 @ti.kernel
 def reduce() -> ti.i32:
     sum = 0
-    ti.block_dim(128)
     for i in x:
         sum += x[i]
     return sum
@@ -29,6 +28,6 @@ def reduce() -> ti.i32:
 
 for i in range(100):
     ret = reduce()
+
 print(ret)
 ti.kernel_profiler_print()
-assert ret == (n * (n - 1)) // 2

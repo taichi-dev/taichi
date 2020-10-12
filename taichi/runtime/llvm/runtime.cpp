@@ -1152,6 +1152,7 @@ struct cpu_block_task_helper_context {
   ListManager *list;
   int element_size;
   int element_split;
+  std::size_t tls_buffer_size;
 };
 
 // TODO: To enforce inlining, we need to create in LLVM a new function that
@@ -1170,9 +1171,9 @@ void block_helper(void *ctx_, int i) {
   int lower = e.loop_bounds[0] + part_id * part_size;
   int upper = e.loop_bounds[0] + (part_id + 1) * part_size;
   upper = std::min(upper, e.loop_bounds[1]);
-  // TODO: support TLS here.
+  alignas(8) char tls_buffer[ctx->tls_buffer_size];
   if (lower < upper) {
-    (*ctx->task)(ctx->context, nullptr, &ctx->list->get<Element>(element_id),
+    (*ctx->task)(ctx->context, tls_buffer, &ctx->list->get<Element>(element_id),
                  lower, upper);
   }
 }

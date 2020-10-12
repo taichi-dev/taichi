@@ -139,16 +139,11 @@ void StateFlowGraph::clear() {
 void StateFlowGraph::mark_pending_tasks_as_executed() {
   std::vector<std::unique_ptr<Node>> new_nodes;
   std::unordered_set<Node *> state_owners;
-  std::unordered_set<Node *> state_readers;
   for (auto &owner : latest_state_owner_) {
     state_owners.insert(state_owners.end(), owner.second);
   }
-  for (auto &reader : latest_state_readers_) {
-    state_readers.insert(reader.second.begin(), reader.second.end());
-  }
   for (auto &node : nodes_) {
-    if (node->is_initial_node || state_owners.count(node.get()) > 0 ||
-        state_readers.count(node.get()) > 0) {
+    if (node->is_initial_node || state_owners.count(node.get()) > 0) {
       node->mark_executed();
       new_nodes.push_back(std::move(node));
     }

@@ -344,7 +344,7 @@ class TypeCheck : public IRVisitor {
   void visit(ExternalPtrStmt *stmt) {
     stmt->ret_type.set_is_pointer(true);
     stmt->ret_type = LegacyVectorType(stmt->base_ptrs.size(),
-                                stmt->base_ptrs[0]->ret_type.data_type);
+                                      stmt->base_ptrs[0]->ret_type.data_type);
   }
 
   void visit(LoopIndexStmt *stmt) {

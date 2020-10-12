@@ -139,9 +139,10 @@ void make_thread_local_offload(OffloadedStmt *offload) {
     // Step 2:
     // Make loop body accumulate to TLS ptr instead of global ptr
     {
-      auto tls_ptr = offload->body->insert(
-          Stmt::make<ThreadLocalPtrStmt>(tls_offset, LegacyVectorType(1, data_type)),
-          0);
+      auto tls_ptr =
+          offload->body->insert(Stmt::make<ThreadLocalPtrStmt>(
+                                    tls_offset, LegacyVectorType(1, data_type)),
+                                0);
       dest->replace_with(tls_ptr);
     }
 

@@ -956,7 +956,8 @@ class ThreadLocalPtrStmt : public Stmt {
  public:
   std::size_t offset;
 
-  ThreadLocalPtrStmt(std::size_t offset, LegacyVectorType ret_type) : offset(offset) {
+  ThreadLocalPtrStmt(std::size_t offset, LegacyVectorType ret_type)
+      : offset(offset) {
     this->ret_type = ret_type;
     TI_STMT_REG_FIELDS;
   }

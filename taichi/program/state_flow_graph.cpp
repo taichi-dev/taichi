@@ -1186,7 +1186,7 @@ bool StateFlowGraph::demote_activation() {
     auto list_state = AsyncState(snode, AsyncState::Type::list);
 
     // TODO: handle serial and range for
-    if (node->meta->type != OffloadedStmt::struct_for)
+    if (node->meta->type != OffloadedTaskType::struct_for)
       continue;
 
     if (get_or_insert(node->input_edges, list_state).size() != 1)

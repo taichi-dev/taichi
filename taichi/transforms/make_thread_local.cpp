@@ -87,7 +87,7 @@ std::vector<T *> find_global_reduction_destinations(
 
 void make_thread_local_offload(OffloadedStmt *offload) {
   // TODO: deal with struct for
-  if (offload->task_type != offload->range_for)
+  if (offload->task_type != OffloadedTaskType::range_for)
     return;
 
   std::vector<Stmt *> valid_reduction_values;

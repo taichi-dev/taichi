@@ -398,7 +398,10 @@ class TypePromotionMapping {
       mapping;
   static PrimitiveType::primitive_type to_primitive_type(const DataType d) {
     auto primitive = dynamic_cast<const PrimitiveType *>(d.get_ptr());
-    TI_ASSERT(primitive);
+    TI_ASSERT_INFO(
+        primitive,
+        "Failed to get primitive type! "
+        "Consider adding `ti.init()` to the first line of your program.");
     return primitive->type;
   };
 };

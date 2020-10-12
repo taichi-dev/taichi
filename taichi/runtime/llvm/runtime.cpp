@@ -1213,6 +1213,7 @@ void parallel_struct_for(Context *context,
   ctx.list = list;
   ctx.element_size = element_size;
   ctx.element_split = element_split;
+  ctx.tls_buffer_size = tls_buffer_size;
   auto runtime = context->runtime;
   runtime->parallel_for(runtime->thread_pool, list_tail * element_split,
                         num_threads, &ctx, block_helper);

@@ -8,22 +8,19 @@ def test_pointer():
 
     n = 16
 
-    ti.root.pointer(ti.i, n).dense(ti.i, n).place(x)
+    ptr = ti.root.pointer(ti.i, n)
+    ptr.dense(ti.i, n).place(x)
 
     s[None] = 0
 
     @ti.kernel
     def func():
         for i in x:
-            print(i)
-            # s[None] += 1
+            s[None] += 1
 
     x[0] = 1
     x[19] = 1
-    print('here')
     func()
-    print('there')
-    return
     assert s[None] == 32
 
     @ti.kernel
@@ -38,7 +35,6 @@ def test_pointer():
 
 @ti.archs_support_sparse
 def test_pointer1():
-    return
     x = ti.field(ti.f32)
     s = ti.field(ti.i32)
 
@@ -74,7 +70,6 @@ def test_pointer1():
 
 @ti.archs_support_sparse
 def test_pointer2():
-    return
     x = ti.field(ti.f32)
 
     n = 16
@@ -113,7 +108,6 @@ def test_pointer2():
 
 @ti.archs_support_sparse
 def test_pointer3():
-    return
     x = ti.field(ti.f32)
     x_temp = ti.field(ti.f32)
 
@@ -176,7 +170,6 @@ def test_pointer3():
 
 @ti.archs_support_sparse
 def test_dynamic():
-    return
     x = ti.field(ti.i32)
     s = ti.field(ti.i32)
 

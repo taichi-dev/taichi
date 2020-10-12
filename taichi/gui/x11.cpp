@@ -20,13 +20,26 @@ class CXImage {
  public:
   XImage *image;
   std::vector<uint8> image_data;
+  void *fast_data{nullptr};
   int width, height;
+
   CXImage(Display *display, Visual *visual, int width, int height)
       : width(width), height(height) {
     image_data.resize(width * height * 4);
     image = XCreateImage(display, visual, 24, ZPixmap, 0,
                          (char *)image_data.data(), width, height, 32, 0);
     TI_ASSERT((void *)image->data == image_data.data());
+  }
+
+  CXImage(Display *display,
+          Visual *visual,
+          void *fast_data,
+          int width,
+          int height)
+      : width(width), height(height) {
+    image = XCreateImage(display, visual, 24, ZPixmap, 0, (char *)fast_data,
+                         width, height, 32, 0);
+    TI_ASSERT((void *)image->data == fast_data);
   }
 
   void set_data(const Array2D<Vector4> &color) {
@@ -164,11 +177,16 @@ void GUI::create_window() {
   XSetWMProtocols((Display *)display, window, (Atom *)wmDeleteMessage.data(),
                   1);
   XMapWindow((Display *)display, window);
-  img = new CXImage((Display *)display, (Visual *)visual, width, height);
+  if (!fast_gui)
+    img = new CXImage((Display *)display, (Visual *)visual, width, height);
+  else
+    img = new CXImage((Display *)display, (Visual *)visual, (void *)fast_buf,
+                      width, height);
 }
 
 void GUI::redraw() {
-  img->set_data(buffer);
+  if (!fast_gui)
+    img->set_data(buffer);
   XPutImage((Display *)display, window, DefaultGC(display, 0), img->image, 0, 0,
             0, 0, width, height);
 }

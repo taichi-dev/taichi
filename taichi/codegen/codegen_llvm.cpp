@@ -1316,7 +1316,7 @@ std::tuple<llvm::Value *, llvm::Value *> CodeGenLLVM::get_range_for_bounds(
 void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
   // TODO: instead of constructing tons of LLVM IR, writing the logic in
   // runtime.cpp may be a cleaner solution. See
-  // CodegenLLVMCPU::create_offload_range_for
+  // CodeGenLLVMCPU::create_offload_range_for as an example.
 
   llvm::Function *body = nullptr;
   auto leaf_block = stmt->snode;
@@ -1354,6 +1354,7 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
      *
      * struct_for_body:
      *   ... (Run codegen on the StructForStmt::body Taichi Block)
+     *   goto loop_body_tail
      *
      * loop_body_tail:
      *   loop_index += block_dim
@@ -1542,6 +1543,7 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
       }
     }
 
+    // There should be **exactly** one replacement.
     TI_ASSERT(replaced_alloca_types == 1);
 
     struct_for_func = patched_struct_for_func;

@@ -5,7 +5,7 @@
 #include <atomic>
 
 #include "taichi/ir/snode.h"
-#include "taichi/ir/statements.h"
+#include "taichi/ir/offloaded_task_type.h"
 #define TI_RUNTIME_HOST
 #include "taichi/program/context.h"
 #undef TI_RUNTIME_HOST
@@ -13,6 +13,9 @@
 TLANG_NAMESPACE_BEGIN
 
 struct TaskMeta;
+
+class IRNode;
+class OffloadedStmt;
 
 class IRHandle {
  public:
@@ -110,7 +113,7 @@ struct AsyncState {
 
 struct TaskFusionMeta {
   // meta for task fusion
-  OffloadedStmt::TaskType type{OffloadedStmt::TaskType::serial};
+  OffloadedTaskType type{OffloadedTaskType::serial};
   SNode *snode{nullptr};  // struct-for only
   int block_dim{0};       // struct-for only
   int32 begin_value{0};   // range-for only
@@ -185,7 +188,7 @@ TLANG_NAMESPACE_BEGIN
 
 struct TaskMeta {
   std::string name;
-  OffloadedStmt::TaskType type{OffloadedStmt::TaskType::serial};
+  OffloadedTaskType type{OffloadedTaskType::serial};
   SNode *snode{nullptr};  // struct-for and listgen only
   std::unordered_set<AsyncState> input_states;
   std::unordered_set<AsyncState> output_states;

@@ -1,7 +1,8 @@
 #include "taichi/program/ir_bank.h"
 
-#include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
+#include "taichi/ir/statements.h"
+#include "taichi/ir/transforms.h"
 #include "taichi/program/kernel.h"
 
 TLANG_NAMESPACE_BEGIN

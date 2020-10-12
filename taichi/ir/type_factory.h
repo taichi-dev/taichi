@@ -12,7 +12,7 @@ class TypeFactory {
   std::unordered_map<PrimitiveType::primitive_type, std::unique_ptr<Type>>
       primitive_types_;
 
-  std::mutex mut;
+  std::mutex mut_;
 };
 
 TLANG_NAMESPACE_END

@@ -58,7 +58,6 @@ inline uint64 *allocate_result_buffer_default(Program *prog) {
 
 Program *current_program = nullptr;
 std::atomic<int> Program::num_instances;
-TypeFactory Program::type_factory;
 
 Program::Program(Arch desired_arch) {
   TI_TRACE("Program initializing...");
@@ -193,6 +192,12 @@ Program::Program(Arch desired_arch) {
 
   TI_TRACE("Program ({}) arch={} initialized.", fmt::ptr(this),
            arch_name(arch));
+}
+
+TypeFactory &Program::get_type_factory() {
+  // type_factory should never be destroyed, hence the raw new operator.
+  static TypeFactory *type_factory = new TypeFactory;
+  return *type_factory;
 }
 
 FunctionType Program::compile(Kernel &kernel) {

@@ -35,10 +35,11 @@ real default_measurement_time = 1;
 // manage its ownership more systematically.
 
 // This part doesn't look good, but we will remove it soon anyway.
-#define PER_TYPE(x)                                      \
-  DataType PrimitiveType::x =                            \
-      DataType(Program::type_factory.get_primitive_type( \
+#define PER_TYPE(x)                                            \
+  DataType PrimitiveType::x =                                  \
+      DataType(Program::get_type_factory().get_primitive_type( \
           PrimitiveType::primitive_type::x));
+
 #include "taichi/inc/data_type.inc.h"
 #undef PER_TYPE
 
@@ -359,7 +360,6 @@ namespace {
 class TypePromotionMapping {
  public:
   TypePromotionMapping() {
-    TI_TAG;
 #define TRY_SECOND(x, y)                                           \
   mapping[std::make_pair(to_primitive_type(get_data_type<x>()),    \
                          to_primitive_type(get_data_type<y>()))] = \

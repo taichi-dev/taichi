@@ -175,7 +175,8 @@ struct hash<taichi::lang::AsyncState> {
 template <>
 struct hash<taichi::lang::TaskFusionMeta> {
   std::size_t operator()(const taichi::lang::TaskFusionMeta &t) const noexcept {
-    std::size_t result = (t.type << 1) ^ t.fusible ^ (std::size_t)t.kernel;
+    std::size_t result =
+        ((std::size_t)t.type << 1) ^ t.fusible ^ (std::size_t)t.kernel;
     result ^= (std::size_t)t.block_dim * 100000007UL + (std::size_t)t.snode;
     result ^= ((std::size_t)t.begin_value << 32) ^ t.end_value;
     return result;

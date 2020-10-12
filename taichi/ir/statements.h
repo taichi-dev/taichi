@@ -825,7 +825,7 @@ class OffloadedStmt : public Stmt {
   static std::string task_type_name(TaskType tt);
 
   bool has_body() const {
-    return task_type != listgen && task_type != gc;
+    return task_type != TaskType::listgen && task_type != TaskType::gc;
   }
 
   bool is_container_statement() const override {

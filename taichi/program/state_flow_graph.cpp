@@ -1059,8 +1059,9 @@ bool StateFlowGraph::optimize_dead_store() {
     const auto mt = meta.type;
     // Do NOT check ir->body->statements first! |ir->body| could be done when
     // |mt| is not the desired type.
-    if ((mt == OffloadedStmt::serial || mt == OffloadedStmt::struct_for ||
-         mt == OffloadedStmt::range_for) &&
+    if ((mt == OffloadedTaskType::serial ||
+         mt == OffloadedTaskType::struct_for ||
+         mt == OffloadedTaskType::range_for) &&
         ir->body->statements.empty()) {
       to_delete.insert(i + first_pending_task_index_);
     }

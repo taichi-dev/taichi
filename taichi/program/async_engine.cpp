@@ -274,26 +274,27 @@ bool AsyncEngine::fuse() {
     auto &rec_b = task_queue[i + 1];
     auto *task_a = rec_a.stmt();
     auto *task_b = rec_b.stmt();
-    bool is_same_struct_for = task_a->task_type == OffloadedStmt::struct_for &&
-                              task_b->task_type == OffloadedStmt::struct_for &&
-                              task_a->snode == task_b->snode &&
-                              task_a->block_dim == task_b->block_dim;
+    bool is_same_struct_for =
+        task_a->task_type == OffloadedTaskType::struct_for &&
+        task_b->task_type == OffloadedTaskType::struct_for &&
+        task_a->snode == task_b->snode &&
+        task_a->block_dim == task_b->block_dim;
     // TODO: a few problems with the range-for test condition:
     // 1. This could incorrectly fuse two range-for kernels that have different
     // sizes, but then the loop ranges get padded to the same power-of-two (E.g.
     // maybe a side effect when a struct-for is demoted to range-for).
     // 2. It has also fused range-fors that have the same linear range, but are
     // of different dimensions of loop indices, e.g. (16, ) and (4, 4).
-    bool is_same_range_for = task_a->task_type == OffloadedStmt::range_for &&
-                             task_b->task_type == OffloadedStmt::range_for &&
-                             task_a->const_begin && task_b->const_begin &&
-                             task_a->const_end && task_b->const_end &&
-                             task_a->begin_value == task_b->begin_value &&
-                             task_a->end_value == task_b->end_value;
+    bool is_same_range_for =
+        task_a->task_type == OffloadedTaskType::range_for &&
+        task_b->task_type == OffloadedTaskType::range_for &&
+        task_a->const_begin && task_b->const_begin && task_a->const_end &&
+        task_b->const_end && task_a->begin_value == task_b->begin_value &&
+        task_a->end_value == task_b->end_value;
 
     // We do not fuse serial kernels for now since they can be SNode accessors
-    bool are_both_serial = task_a->task_type == OffloadedStmt::serial &&
-                           task_b->task_type == OffloadedStmt::serial;
+    bool are_both_serial = task_a->task_type == OffloadedTaskType::serial &&
+                           task_b->task_type == OffloadedTaskType::serial;
     const bool same_kernel = (rec_a.kernel == rec_b.kernel);
     bool kernel_args_match = true;
     if (!same_kernel) {

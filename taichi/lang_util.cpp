@@ -4,6 +4,7 @@
 
 #include "taichi/math/linalg.h"
 #include "taichi/program/arch.h"
+#include "taichi/program/program.h"
 #include "taichi/program/compile_config.h"
 #include "taichi/system/timer.h"
 
@@ -31,10 +32,14 @@ real default_measurement_time = 1;
 
 // Note: these primitive types should never be freed. They are supposed to live
 // together with the process. This is a temporary solution. Later we should
-// manage its ownership more systematically
-#define PER_TYPE(x)           \
-  DataType PrimitiveType::x = \
-      DataType(new PrimitiveType(PrimitiveType::primitive_type::x));
+// manage its ownership more systematically.
+
+// This part doesn't look good, but we will remove it soon anyway.
+#define PER_TYPE(x)                                            \
+  DataType PrimitiveType::x =                                  \
+      DataType(Program::get_type_factory().get_primitive_type( \
+          PrimitiveType::primitive_type::x));
+
 #include "taichi/inc/data_type.inc.h"
 #undef PER_TYPE
 

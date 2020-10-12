@@ -1507,9 +1507,43 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
       std::min(leaf_block->max_num_elements(), taichi_listgen_max_element_size);
   int num_splits = std::max(1, list_element_size / stmt->block_dim);
 
+  auto struct_for_func = get_runtime_function("parallel_struct_for");
+
+  if (arch_is_gpu(current_arch())) {
+    // Note that on CUDA local array allocation must have a compile-time
+    // constant size. Therefore, instead of passing in the tls_buffer_size
+    // argument, we directly clone the "parallel_struct_for" function and
+    // replace the "alignas(8) char tls_buffer[1]" statement with "alignas(8)
+    // char tls_buffer[tls_buffer_size]" at compile time.
+
+    auto value_map = llvm::ValueToValueMapTy();
+    auto patched_struct_for_func =
+        llvm::CloneFunction(struct_for_func, value_map);
+
+    int replaced_alloca_types = 0;
+
+    for (auto &bb : *patched_struct_for_func) {
+      for (llvm::Instruction &inst : bb) {
+        auto alloca = llvm::dyn_cast<AllocaInst>(&inst);
+        if (!alloca || alloca->getAlignment() != 8)
+          continue;
+        auto alloca_type = alloca->getAllocatedType();
+        auto char_type = llvm::Type::getInt8Ty(*llvm_context);
+        if (alloca_type->isArrayTy() &&
+            alloca_type->getArrayNumElements() == 1 &&
+            alloca_type->getArrayElementType() == char_type) {
+          auto new_type = llvm::ArrayType::get(char_type, stmt->tls_size);
+          alloca->setAllocatedType(new_type);
+          replaced_alloca_types += 1;
+        }
+      }
+    }
+
+    struct_for_func = patched_struct_for_func;
+  }
   // Loop over nodes in the element list, in parallel
   create_call(
-      "parallel_struct_for",
+      struct_for_func,
       {get_context(), tlctx->get_constant(leaf_block->id),
        tlctx->get_constant(list_element_size), tlctx->get_constant(num_splits),
        body, tlctx->get_constant(stmt->tls_size),

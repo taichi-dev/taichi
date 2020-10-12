@@ -1188,7 +1188,7 @@ void parallel_struct_for(Context *context,
   auto list_tail = list->size();
 #if ARCH_cuda
   int i = block_idx();
-  alignas(8) char tls_buffer[137];
+  alignas(8) char tls_buffer[1];
   // TODO: refactor element_split more systematically.
   element_split = 1;
   const auto part_size = element_size / element_split;
@@ -1201,7 +1201,6 @@ void parallel_struct_for(Context *context,
     int lower = e.loop_bounds[0] + part_id * part_size;
     int upper = e.loop_bounds[0] + (part_id + 1) * part_size;
     upper = std::min(upper, e.loop_bounds[1]);
-    auto tls_ptr = &tls_buffer[0];
     if (lower < upper)
       task(context, tls_buffer, &list->get<Element>(element_id), lower, upper);
     i += grid_dim();

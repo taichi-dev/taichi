@@ -1,6 +1,6 @@
 import taichi as ti
 
-ti.init(arch=ti.cuda, print_ir=True)
+ti.init(arch=ti.cuda, print_ir=True, print_kernel_llvm_ir=True)
 
 n = 1024
 x = ti.field(dtype=ti.i32)

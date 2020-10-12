@@ -8,7 +8,9 @@
 
 #include "taichi/backends/opengl/opengl_kernel_util.h"
 #include "taichi/backends/opengl/opengl_kernel_launcher.h"
+#define TI_RUNTIME_HOST
 #include "taichi/program/context.h"
+#undef TI_RUNTIME_HOST
 
 TLANG_NAMESPACE_BEGIN
 

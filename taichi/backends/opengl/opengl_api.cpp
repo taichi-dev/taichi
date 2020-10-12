@@ -2,7 +2,6 @@
 #include "opengl_api.h"
 
 #include "taichi/backends/opengl/opengl_kernel_util.h"
-#include "taichi/program/context.h"
 #include "taichi/program/kernel.h"
 #include "taichi/program/program.h"
 #include "taichi/util/environ_config.h"

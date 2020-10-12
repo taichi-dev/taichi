@@ -1336,6 +1336,7 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
      *
      * function_body (entry):
      *   loop_index = lower_bound;
+     *   tls_prologue()
      *   bls_prologue()
      *   goto loop_test
      *
@@ -1350,7 +1351,7 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
      *   if (bitmasked voxel is active)
      *     goto struct_for_body
      *   else
-     *     goto loop body tail
+     *     goto loop_body_tail
      *
      * struct_for_body:
      *   ... (Run codegen on the StructForStmt::body Taichi Block)
@@ -1362,6 +1363,7 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
      *
      * func_exit:
      *   bls_epilogue()
+     *   tls_epilogue()
      *   return
      */
 

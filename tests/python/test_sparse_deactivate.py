@@ -1,27 +1,28 @@
 import taichi as ti
 
 
-@ti.test(require=ti.extension.sparse, print_ir=True)
+@ti.test(require=ti.extension.sparse, make_thread_local=False)
 def test_pointer():
     x = ti.field(ti.f32)
-    s = ti.field(ti.i32)
+    s = ti.field(ti.i32, shape=())
 
     n = 16
 
-    ptr = ti.root.pointer(ti.i, n)
-    ptr.dense(ti.i, n).place(x)
-    ti.root.place(s)
+    ti.root.pointer(ti.i, n).dense(ti.i, n).place(x)
 
     s[None] = 0
 
     @ti.kernel
     def func():
         for i in x:
-            s[None] += 1
+            print(i)
+            # s[None] += 1
 
     x[0] = 1
     x[19] = 1
+    print('here')
     func()
+    print('there')
     return
     assert s[None] == 32
 

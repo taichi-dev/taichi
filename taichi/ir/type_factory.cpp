@@ -2,8 +2,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-Type *TypeFactory::get_primitive_type(
-    taichi::lang::PrimitiveType::primitive_type id) {
+Type *TypeFactory::get_primitive_type(PrimitiveType::primitive_type id) {
   std::lock_guard<std::mutex> _(mut_);
 
   if (primitive_types_.find(id) == primitive_types_.end()) {

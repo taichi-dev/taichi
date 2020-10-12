@@ -2,7 +2,7 @@
 
 #include "taichi/ir/ir.h"
 #include "taichi/ir/frontend.h"
-#include "taichi/ir/statements.h" // ?
+#include "taichi/ir/statements.h"
 #include "taichi/backends/cuda/cuda_driver.h"
 
 TLANG_NAMESPACE_BEGIN

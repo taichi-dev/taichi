@@ -1,6 +1,6 @@
 import taichi as ti
 
-ti.init(arch=ti.cuda, print_ir=True, print_kernel_llvm_ir=False, kernel_profiler=True, make_thread_local=False)
+ti.init(arch=ti.cpu, print_ir=True, print_kernel_llvm_ir=False, kernel_profiler=True, make_thread_local=False)
 
 dense = False
 
@@ -22,7 +22,7 @@ fill()
 def reduce() -> ti.i32:
     sum = 0
     for i in x:
-        sum += x[i]
+        x[i] += 1
     return sum
 
 

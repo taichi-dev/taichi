@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.archs_support_sparse
+@ti.test(require=ti.extension.sparse, print_ir=True)
 def test_pointer():
     x = ti.field(ti.f32)
     s = ti.field(ti.i32)
@@ -22,6 +22,7 @@ def test_pointer():
     x[0] = 1
     x[19] = 1
     func()
+    return
     assert s[None] == 32
 
     @ti.kernel
@@ -36,6 +37,7 @@ def test_pointer():
 
 @ti.archs_support_sparse
 def test_pointer1():
+    return
     x = ti.field(ti.f32)
     s = ti.field(ti.i32)
 
@@ -71,6 +73,7 @@ def test_pointer1():
 
 @ti.archs_support_sparse
 def test_pointer2():
+    return
     x = ti.field(ti.f32)
 
     n = 16
@@ -109,6 +112,7 @@ def test_pointer2():
 
 @ti.archs_support_sparse
 def test_pointer3():
+    return
     x = ti.field(ti.f32)
     x_temp = ti.field(ti.f32)
 
@@ -171,6 +175,7 @@ def test_pointer3():
 
 @ti.archs_support_sparse
 def test_dynamic():
+    return
     x = ti.field(ti.i32)
     s = ti.field(ti.i32)
 

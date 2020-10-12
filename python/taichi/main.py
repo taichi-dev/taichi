@@ -740,8 +740,8 @@ class TaichiMain:
         env_threads = os.environ.get('TI_TEST_THREADS', '')
         threads = args.threads or env_threads or threads
         print(f'Starting {threads} testing thread(s)...')
-        if int(threads) > 1:
-            pytest_args += ['-n', str(threads)]
+        # if int(threads) > 1:
+        #     pytest_args += ['-n', str(threads)]
         return int(pytest.main(pytest_args))
 
     @staticmethod

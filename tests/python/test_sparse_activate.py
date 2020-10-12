@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.archs_support_sparse
+@ti.test(require=ti.extension.sparse)
 def test_pointer():
     x = ti.field(ti.f32)
     s = ti.field(ti.i32)
@@ -28,5 +28,3 @@ def test_pointer():
     func()
     assert s[None] == 32
 
-
-test_pointer()

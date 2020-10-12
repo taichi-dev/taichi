@@ -38,8 +38,8 @@ jobs:
           export PATH=/home/github/taichi-llvm/bin/:$PATH
           export PYTHONPATH=$TAICHI_REPO_DIR/python
           $PYTHON examples/laplace.py
-          ti diagnose
-          ti test -vr2 -t2
+          xvfb-run ti diagnose
+          xvfb-run ti test -vr2 -t2
 
   check_previous_run:
     name: Checks the Workflow Run of the Previous Commit

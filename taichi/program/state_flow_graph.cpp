@@ -6,6 +6,7 @@
 #include <unordered_set>
 
 #include "taichi/ir/analysis.h"
+#include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/program/async_engine.h"
 #include "taichi/util/statistics.h"

@@ -6,8 +6,9 @@
 #include <vector>
 #include <optional>
 
-#include "opengl_kernel_util.h"
-#include "opengl_kernel_launcher.h"
+#include "taichi/backends/opengl/opengl_kernel_util.h"
+#include "taichi/backends/opengl/opengl_kernel_launcher.h"
+#include "taichi/program/context.h"
 
 TLANG_NAMESPACE_BEGIN
 

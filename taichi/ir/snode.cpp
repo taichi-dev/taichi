@@ -2,6 +2,7 @@
 
 #include "taichi/ir/ir.h"
 #include "taichi/ir/frontend.h"
+#include "taichi/ir/statements.h" // ?
 #include "taichi/backends/cuda/cuda_driver.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -18,7 +19,7 @@ void set_kernel_args(const std::vector<int> &I,
 
 }  // namespace
 
-std::atomic<int> SNode::counter = 0;
+std::atomic<int> SNode::counter{0};
 
 SNode &SNode::insert_children(SNodeType t) {
   TI_ASSERT(t != SNodeType::root);

@@ -8,7 +8,6 @@
 #include "llvm/ADT/SmallSet.h"
 #include "llvm/ADT/SmallVector.h"
 #include "taichi/ir/ir.h"
-#include "taichi/ir/statements.h"
 #include "taichi/lang_util.h"
 #include "taichi/program/async_utils.h"
 #include "taichi/program/program.h"

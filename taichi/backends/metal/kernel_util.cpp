@@ -43,7 +43,7 @@ std::string KernelAttributes::debug_string() const {
   result += fmt::format(
       "<KernelAttributes name={} num_threads={} num_threads_per_group={} "
       "task_type={} buffers=[ ",
-      name, advisory_num_threads, advisory_num_threads_per_group,
+      name, advisory_total_num_threads, advisory_num_threads_per_group,
       OffloadedStmt::task_type_name(task_type));
   for (auto b : buffers) {
     result += buffers_name(b) + " ";

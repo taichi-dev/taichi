@@ -42,10 +42,10 @@ struct KernelAttributes {
     Print,
   };
   std::string name;
-  // Number of threasd to launch. Note that this is only advisory, because
-  // eventually the number of threads is also determined by the runtime config.
-  // This works because grid strided loop is supported.
-  int advisory_num_threads;
+  // Total number of threads to launch (i.e. threads per grid). Note that this
+  // is only advisory, because eventually this numb er is also determined by the
+  // runtime config. This works because grid strided loop is supported.
+  int advisory_total_num_threads;
   // Block size in CUDA's terminology. On Metal, it is called a threadgroup.
   int advisory_num_threads_per_group;
 

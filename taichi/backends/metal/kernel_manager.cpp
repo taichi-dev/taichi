@@ -116,7 +116,7 @@ class CompiledMtlKernelBase {
 
   void launch_if_not_empty(BindBuffers buffers,
                            MTLCommandBuffer *command_buffer) {
-    const int num_threads = kernel_attribs_.advisory_num_threads;
+    const int num_threads = kernel_attribs_.advisory_total_num_threads;
     if (num_threads == 0) {
       return;
     }
@@ -195,7 +195,7 @@ class UserMtlKernel : public CompiledMtlKernelBase {
   void launch(InputBuffersMap &input_buffers,
               MTLCommandBuffer *command_buffer) override {
     // 0 is valid for |num_threads|!
-    TI_ASSERT(kernel_attribs_.advisory_num_threads >= 0);
+    TI_ASSERT(kernel_attribs_.advisory_total_num_threads >= 0);
     BindBuffers buffers;
     for (const auto b : kernel_attribs_.buffers) {
       buffers.push_back({input_buffers.find(b)->second, b});
@@ -237,7 +237,7 @@ class RuntimeListOpsMtlKernel : public CompiledMtlKernelBase {
         "parent_snode={} "
         "child_snode={} max_num_elems={} ",
         params.kernel_attribs->name,
-        params.kernel_attribs->advisory_num_threads, mem[0], mem[1], mem[2]);
+        params.kernel_attribs->advisory_total_num_threads, mem[0], mem[1], mem[2]);
     did_modify_range(args_buffer_.get(), /*location=*/0, args_mem_->size());
   }
 

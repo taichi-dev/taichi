@@ -22,7 +22,7 @@ class TypeFactory {
   std::map<std::pair<int, Type *>, std::unique_ptr<Type>> vector_types_;
 
   // TODO: is_bit_ptr?
-  std::map<Type*, std::unique_ptr<Type>> pointer_types_;
+  std::map<Type *, std::unique_ptr<Type>> pointer_types_;
 
   std::mutex mut_;
 };

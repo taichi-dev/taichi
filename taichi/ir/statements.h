@@ -102,6 +102,7 @@ class UnaryOpStmt : public Stmt {
 class ArgLoadStmt : public Stmt {
  public:
   int arg_id;
+  bool is_ptr;
 
   ArgLoadStmt(int arg_id, DataType dt, bool is_ptr = false) : arg_id(arg_id) {
     this->ret_type = LegacyVectorType(1, dt);

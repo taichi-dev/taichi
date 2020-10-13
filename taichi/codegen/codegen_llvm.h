@@ -10,8 +10,6 @@
 
 TLANG_NAMESPACE_BEGIN
 
-using namespace llvm;
-
 class CodeGenLLVM;
 
 class OffloadedTask {
@@ -57,7 +55,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   IRNode *ir;
   Program *prog;
   std::string kernel_name;
-  std::vector<Value *> kernel_args;
+  std::vector<llvm::Value *> kernel_args;
   llvm::Type *context_ty;
   llvm::Type *physical_coordinate_ty;
   llvm::Value *current_coordinates;
@@ -73,7 +71,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   OffloadedStmt *current_offload{nullptr};
   std::unique_ptr<OffloadedTask> current_task;
   std::vector<OffloadedTask> offloaded_tasks;
-  BasicBlock *func_body_bb;
+  llvm::BasicBlock *func_body_bb;
 
   std::unordered_map<const Stmt *, std::vector<llvm::Value *>> loop_vars_llvm;
 
@@ -131,10 +129,11 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void emit_gc(OffloadedStmt *stmt);
 
-  llvm::Value *create_call(llvm::Value *func, std::vector<Value *> args = {});
+  llvm::Value *create_call(llvm::Value *func,
+                           std::vector<llvm::Value *> args = {});
 
   llvm::Value *create_call(std::string func_name,
-                           std::vector<Value *> args = {});
+                           std::vector<llvm::Value *> args = {});
   llvm::Value *call(SNode *snode,
                     llvm::Value *node_ptr,
                     const std::string &method,

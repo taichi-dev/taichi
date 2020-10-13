@@ -51,17 +51,17 @@ FunctionCreationGuard::FunctionCreationGuard(
   // emit into loop body function
   mb->func = body;
 
-  allocas = BasicBlock::Create(*mb->llvm_context, "allocs", body);
+  allocas = llvm::BasicBlock::Create(*mb->llvm_context, "allocs", body);
   old_entry = mb->entry_block;
   mb->entry_block = allocas;
 
-  entry = BasicBlock::Create(*mb->llvm_context, "entry", mb->func);
+  entry = llvm::BasicBlock::Create(*mb->llvm_context, "entry", mb->func);
 
   ip = mb->builder->saveIP();
   mb->builder->SetInsertPoint(entry);
 
   auto body_bb =
-      BasicBlock::Create(*mb->llvm_context, "function_body", mb->func);
+      llvm::BasicBlock::Create(*mb->llvm_context, "function_body", mb->func);
   mb->builder->CreateBr(body_bb);
   mb->builder->SetInsertPoint(body_bb);
 }
@@ -337,8 +337,8 @@ void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
     llvm_val[stmt] = builder->CreateBitCast(
         llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
   } else if (op == UnaryOpType::rsqrt) {
-    llvm::Function *sqrt_fn = Intrinsic::getDeclaration(
-        module.get(), Intrinsic::sqrt, input->getType());
+    llvm::Function *sqrt_fn = llvm::Intrinsic::getDeclaration(
+        module.get(), llvm::Intrinsic::sqrt, input->getType());
     auto intermediate = builder->CreateCall(sqrt_fn, input, "sqrt");
     llvm_val[stmt] = builder->CreateFDiv(
         tlctx->get_constant(stmt->ret_type.data_type, 1.0), intermediate);
@@ -608,11 +608,12 @@ void CodeGenLLVM::visit(TernaryOpStmt *stmt) {
 
 void CodeGenLLVM::visit(IfStmt *if_stmt) {
   // TODO: take care of vectorized cases
-  BasicBlock *true_block =
-      BasicBlock::Create(*llvm_context, "true_block", func);
-  BasicBlock *false_block =
-      BasicBlock::Create(*llvm_context, "false_block", func);
-  BasicBlock *after_if = BasicBlock::Create(*llvm_context, "after_if", func);
+  llvm::BasicBlock *true_block =
+      llvm::BasicBlock::Create(*llvm_context, "true_block", func);
+  llvm::BasicBlock *false_block =
+      llvm::BasicBlock::Create(*llvm_context, "false_block", func);
+  llvm::BasicBlock *after_if =
+      llvm::BasicBlock::Create(*llvm_context, "after_if", func);
   builder->CreateCondBr(
       builder->CreateICmpNE(llvm_val[if_stmt->cond], tlctx->get_constant(0)),
       true_block, false_block);
@@ -633,7 +634,7 @@ llvm::Value *CodeGenLLVM::create_print(std::string tag,
                                        DataType dt,
                                        llvm::Value *value) {
   TI_ASSERT(arch_use_host_memory(kernel->arch));
-  std::vector<Value *> args;
+  std::vector<llvm::Value *> args;
   std::string format = data_type_format(dt);
   auto runtime_printf = call("LLVMRuntime_get_host_printf", get_runtime());
   args.push_back(builder->CreateGlobalStringPtr(
@@ -648,7 +649,7 @@ llvm::Value *CodeGenLLVM::create_print(std::string tag,
 
 void CodeGenLLVM::visit(PrintStmt *stmt) {
   TI_ASSERT(stmt->width() == 1);
-  std::vector<Value *> args;
+  std::vector<llvm::Value *> args;
   std::string formats;
   for (auto const &content : stmt->contents) {
     if (std::holds_alternative<Stmt *>(content)) {
@@ -701,6 +702,8 @@ void CodeGenLLVM::visit(ConstStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(WhileControlStmt *stmt) {
+  using namespace llvm;
+
   BasicBlock *after_break =
       BasicBlock::Create(*llvm_context, "after_break", func);
   TI_ASSERT(current_while_after_loop);
@@ -711,6 +714,7 @@ void CodeGenLLVM::visit(WhileControlStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(ContinueStmt *stmt) {
+  using namespace llvm;
   if (stmt->as_return()) {
     builder->CreateRetVoid();
   } else {
@@ -725,6 +729,7 @@ void CodeGenLLVM::visit(ContinueStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(WhileStmt *stmt) {
+  using namespace llvm;
   BasicBlock *body = BasicBlock::Create(*llvm_context, "while_loop_body", func);
   builder->CreateBr(body);
   builder->SetInsertPoint(body);
@@ -786,6 +791,7 @@ void CodeGenLLVM::create_increment(llvm::Value *ptr, llvm::Value *value) {
 }
 
 void CodeGenLLVM::create_naive_range_for(RangeForStmt *for_stmt) {
+  using namespace llvm;
   BasicBlock *body = BasicBlock::Create(*llvm_context, "for_loop_body", func);
   BasicBlock *loop_inc =
       BasicBlock::Create(*llvm_context, "for_loop_inc", func);
@@ -857,7 +863,8 @@ void CodeGenLLVM::visit(ArgLoadStmt *stmt) {
 
   llvm::Type *dest_ty = nullptr;
   if (stmt->is_ptr) {
-    dest_ty = PointerType::get(tlctx->get_data_type(PrimitiveType::i32), 0);
+    dest_ty =
+        llvm::PointerType::get(tlctx->get_data_type(PrimitiveType::i32), 0);
     llvm_val[stmt] = builder->CreateIntToPtr(raw_arg, dest_ty);
   } else {
     dest_ty = tlctx->get_data_type(stmt->ret_type.data_type);
@@ -869,7 +876,7 @@ void CodeGenLLVM::visit(ArgLoadStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(KernelReturnStmt *stmt) {
-  if (stmt->is_ptr) {
+  if (stmt->ret_type.is_pointer()) {
     TI_NOT_IMPLEMENTED
   } else {
     auto intermediate_bits =
@@ -908,7 +915,7 @@ void CodeGenLLVM::visit(AssertStmt *stmt) {
   // TODO: maybe let all asserts in a single offload share a single buffer?
   auto arguments = create_entry_block_alloca(argument_buffer_size);
 
-  std::vector<Value *> args;
+  std::vector<llvm::Value *> args;
   args.emplace_back(get_runtime());
   args.emplace_back(llvm_val[stmt->cond]);
   args.emplace_back(builder->CreateGlobalStringPtr(stmt->text));
@@ -1132,9 +1139,10 @@ llvm::Value *CodeGenLLVM::call(SNode *snode,
 
 void CodeGenLLVM::visit(GetRootStmt *stmt) {
   llvm_val[stmt] = builder->CreateBitCast(
-      get_root(), PointerType::get(StructCompilerLLVM::get_llvm_node_type(
-                                       module.get(), prog->snode_root.get()),
-                                   0));
+      get_root(),
+      llvm::PointerType::get(StructCompilerLLVM::get_llvm_node_type(
+                                 module.get(), prog->snode_root.get()),
+                             0));
 }
 
 void CodeGenLLVM::visit(BitExtractStmt *stmt) {
@@ -1197,11 +1205,11 @@ void CodeGenLLVM::visit(GetChStmt *stmt) {
   auto ch = create_call(
       stmt->output_snode->get_ch_from_parent_func_name(),
       {builder->CreateBitCast(llvm_val[stmt->input_ptr],
-                              PointerType::getInt8PtrTy(*llvm_context))});
+                              llvm::PointerType::getInt8PtrTy(*llvm_context))});
   llvm_val[stmt] = builder->CreateBitCast(
-      ch, PointerType::get(StructCompilerLLVM::get_llvm_node_type(
-                               module.get(), stmt->output_snode),
-                           0));
+      ch, llvm::PointerType::get(StructCompilerLLVM::get_llvm_node_type(
+                                     module.get(), stmt->output_snode),
+                                 0));
 }
 
 void CodeGenLLVM::visit(ExternalPtrStmt *stmt) {
@@ -1248,13 +1256,14 @@ std::string CodeGenLLVM::init_offloaded_task_function(OffloadedStmt *stmt,
 
   task_function_type =
       llvm::FunctionType::get(llvm::Type::getVoidTy(*llvm_context),
-                              {PointerType::get(context_ty, 0)}, false);
+                              {llvm::PointerType::get(context_ty, 0)}, false);
 
   auto task_kernel_name = fmt::format("{}_{}_{}{}", kernel_name, task_counter,
                                       stmt->task_name(), suffix);
   task_counter += 1;
-  func = Function::Create(task_function_type, Function::ExternalLinkage,
-                          task_kernel_name, module.get());
+  func = llvm::Function::Create(task_function_type,
+                                llvm::Function::ExternalLinkage,
+                                task_kernel_name, module.get());
 
   current_task = std::make_unique<OffloadedTask>(this);
   current_task->begin(task_kernel_name);
@@ -1268,10 +1277,10 @@ std::string CodeGenLLVM::init_offloaded_task_function(OffloadedStmt *stmt,
     func->addParamAttr(0, llvm::Attribute::ByVal);
 
   // entry_block has all the allocas
-  this->entry_block = BasicBlock::Create(*llvm_context, "entry", func);
+  this->entry_block = llvm::BasicBlock::Create(*llvm_context, "entry", func);
 
   // The real function body
-  func_body_bb = BasicBlock::Create(*llvm_context, "body", func);
+  func_body_bb = llvm::BasicBlock::Create(*llvm_context, "body", func);
   builder->SetInsertPoint(func_body_bb);
   return task_kernel_name;
 }
@@ -1288,7 +1297,7 @@ void CodeGenLLVM::finalize_offloaded_task_function() {
                                      "unoptimized LLVM IR (generic)");
     writer.write(module.get());
   }
-  TI_ASSERT(!llvm::verifyFunction(*func, &errs()));
+  TI_ASSERT(!llvm::verifyFunction(*func, &llvm::errs()));
   // TI_INFO("Kernel function verified.");
 }
 
@@ -1315,6 +1324,7 @@ std::tuple<llvm::Value *, llvm::Value *> CodeGenLLVM::get_range_for_bounds(
 }
 
 void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
+  using namespace llvm;
   // TODO: instead of constructing tons of LLVM IR, writing the logic in
   // runtime.cpp may be a cleaner solution. See
   // CodeGenLLVMCPU::create_offload_range_for as an example.

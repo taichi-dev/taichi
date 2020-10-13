@@ -225,7 +225,7 @@ std::string Stmt::type_hint() const {
   if (ret_type.data_type == PrimitiveType::unknown)
     return "";
   else
-    return fmt::format("<{}>", ret_type.to_string());
+    return fmt::format("|{}| ", ret_type.to_string());
 }
 
 std::string Stmt::type() {

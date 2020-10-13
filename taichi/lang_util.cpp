@@ -66,26 +66,7 @@ real measure_cpe(std::function<void()> target,
 }
 
 std::string data_type_name(DataType t) {
-#define REGISTER_DATA_TYPE(i, j) else if (t == PrimitiveType::i) return #j
-  if (false) {
-  }
-  REGISTER_DATA_TYPE(f16, float16);
-  REGISTER_DATA_TYPE(f32, float32);
-  REGISTER_DATA_TYPE(f64, float64);
-  REGISTER_DATA_TYPE(u1, int1);
-  REGISTER_DATA_TYPE(i8, int8);
-  REGISTER_DATA_TYPE(i16, int16);
-  REGISTER_DATA_TYPE(i32, int32);
-  REGISTER_DATA_TYPE(i64, int64);
-  REGISTER_DATA_TYPE(u8, uint8);
-  REGISTER_DATA_TYPE(u16, uint16);
-  REGISTER_DATA_TYPE(u32, uint32);
-  REGISTER_DATA_TYPE(u64, uint64);
-  REGISTER_DATA_TYPE(gen, generic);
-  REGISTER_DATA_TYPE(unknown, unknown);
-
-#undef REGISTER_DATA_TYPE
-  else TI_NOT_IMPLEMENTED
+  return data_type_short_name(t);
 }
 
 std::string data_type_format(DataType dt) {
@@ -136,6 +117,12 @@ int data_type_size(DataType t) {
 }
 
 std::string data_type_short_name(DataType t) {
+  if (!t->is<PrimitiveType>()) {
+    return t->to_string();
+  }
+
+  // Handle primitive types below.
+
   if (false) {
   }
 #define PER_TYPE(i) else if (t == PrimitiveType::i) return #i;

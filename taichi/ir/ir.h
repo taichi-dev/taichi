@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <variant>
 #include <tuple>
+
 #include "taichi/common/core.h"
 #include "taichi/util/bit.h"
 #include "taichi/lang_util.h"

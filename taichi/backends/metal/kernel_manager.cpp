@@ -116,7 +116,7 @@ class CompiledMtlKernelBase {
 
   void launch_if_not_empty(BindBuffers buffers,
                            MTLCommandBuffer *command_buffer) {
-    const int num_threads = kernel_attribs_.num_threads;
+    const int num_threads = kernel_attribs_.advisory_total_num_threads;
     if (num_threads == 0) {
       return;
     }
@@ -133,7 +133,8 @@ class CompiledMtlKernelBase {
       set_mtl_buffer(encoder.get(), b.first, /*offset=*/0, bi);
     }
 
-    const auto tgs = get_thread_grid_settings(num_threads);
+    const auto tgs = get_thread_grid_settings(
+        num_threads, kernel_attribs_.advisory_num_threads_per_group);
     if (!is_jit_evalutor_) {
       ActionRecorder::get_instance().record(
           "launch_kernel",
@@ -152,7 +153,9 @@ class CompiledMtlKernelBase {
     int num_threadgroups;
   };
 
-  ThreadGridSettings get_thread_grid_settings(int num_threads) {
+  ThreadGridSettings get_thread_grid_settings(
+      int advisory_num_threads,
+      int advisory_num_threads_per_group) {
     int num_threads_per_group =
         get_max_total_threads_per_threadgroup(pipeline_state_.get());
     // Sometimes it is helpful to limit the maximum GPU block dim for the
@@ -162,17 +165,20 @@ class CompiledMtlKernelBase {
       num_threads_per_group =
           std::min(num_threads_per_group, prescribed_block_dim);
     }
+    if (advisory_num_threads_per_group > 0) {
+      num_threads_per_group =
+          std::min(num_threads_per_group, advisory_num_threads_per_group);
+    }
     // Cap by |num_threads| in case this is a very small kernel.
-    num_threads_per_group = std::min(num_threads_per_group, num_threads);
+    num_threads_per_group =
+        std::min(num_threads_per_group, advisory_num_threads);
 
-    int num_threadgroups =
-        ((num_threads + num_threads_per_group - 1) / num_threads_per_group);
-    // TODO(k-ye): Make sure |saturating_grid_dim| is configurable in ti.init()
-    // before enabling this.
-    // const int prescribed_grid_dim = config_->saturating_grid_dim;
-    // if (prescribed_grid_dim > 0) {
-    //   num_threadgroups = std::min(num_threadgroups, prescribed_grid_dim);
-    // }
+    int num_threadgroups = ((advisory_num_threads + num_threads_per_group - 1) /
+                            num_threads_per_group);
+    const int prescribed_grid_dim = config_->saturating_grid_dim;
+    if (prescribed_grid_dim > 0) {
+      num_threadgroups = std::min(num_threadgroups, prescribed_grid_dim);
+    }
     return {num_threads_per_group, num_threadgroups};
   }
 
@@ -189,7 +195,7 @@ class UserMtlKernel : public CompiledMtlKernelBase {
   void launch(InputBuffersMap &input_buffers,
               MTLCommandBuffer *command_buffer) override {
     // 0 is valid for |num_threads|!
-    TI_ASSERT(kernel_attribs_.num_threads >= 0);
+    TI_ASSERT(kernel_attribs_.advisory_total_num_threads >= 0);
     BindBuffers buffers;
     for (const auto b : kernel_attribs_.buffers) {
       buffers.push_back({input_buffers.find(b)->second, b});
@@ -230,8 +236,9 @@ class RuntimeListOpsMtlKernel : public CompiledMtlKernelBase {
         "Registered RuntimeListOpsMtlKernel: name={} num_threads={} "
         "parent_snode={} "
         "child_snode={} max_num_elems={} ",
-        params.kernel_attribs->name, params.kernel_attribs->num_threads, mem[0],
-        mem[1], mem[2]);
+        params.kernel_attribs->name,
+        params.kernel_attribs->advisory_total_num_threads, mem[0], mem[1],
+        mem[2]);
     did_modify_range(args_buffer_.get(), /*location=*/0, args_mem_->size());
   }
 

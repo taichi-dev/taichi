@@ -82,6 +82,10 @@ class PointerType : public Type {
     return is_bit_pointer_;
   }
 
+  std::string to_string() const override {
+    return fmt::format("*{}", pointee_->to_string());
+  };
+
  private:
   Type *pointee_{nullptr};
   int addr_space_{0};  // TODO: make this an enum
@@ -101,6 +105,10 @@ class VectorType : public Type {
   int get_num_elements() const {
     return num_elements_;
   }
+
+  std::string to_string() const override {
+    return fmt::format("[{} x {}]", num_elements_, element_->to_string());
+  };
 
  private:
   int num_elements_{0};

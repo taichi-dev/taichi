@@ -1,6 +1,7 @@
 #pragma once
 
 #include "taichi/ir/ir.h"
+#include "taichi/ir/offloaded_task_type.h"
 #include "taichi/ir/scratch_pad.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -789,13 +790,7 @@ class GetChStmt : public Stmt {
 
 class OffloadedStmt : public Stmt {
  public:
-  enum TaskType : int {
-    serial,
-    range_for,
-    struct_for,
-    listgen,
-    gc,
-  };
+  using TaskType = OffloadedTaskType;
 
   TaskType task_type;
   SNode *snode;
@@ -830,7 +825,7 @@ class OffloadedStmt : public Stmt {
   static std::string task_type_name(TaskType tt);
 
   bool has_body() const {
-    return task_type != listgen && task_type != gc;
+    return task_type != TaskType::listgen && task_type != TaskType::gc;
   }
 
   bool is_container_statement() const override {

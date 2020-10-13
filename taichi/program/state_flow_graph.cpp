@@ -6,6 +6,7 @@
 #include <unordered_set>
 
 #include "taichi/ir/analysis.h"
+#include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/program/async_engine.h"
 #include "taichi/util/statistics.h"
@@ -1054,8 +1055,9 @@ bool StateFlowGraph::optimize_dead_store() {
     const auto mt = meta.type;
     // Do NOT check ir->body->statements first! |ir->body| could be done when
     // |mt| is not the desired type.
-    if ((mt == OffloadedStmt::serial || mt == OffloadedStmt::struct_for ||
-         mt == OffloadedStmt::range_for) &&
+    if ((mt == OffloadedTaskType::serial ||
+         mt == OffloadedTaskType::struct_for ||
+         mt == OffloadedTaskType::range_for) &&
         ir->body->statements.empty()) {
       to_delete.insert(i + first_pending_task_index_);
     }
@@ -1180,7 +1182,7 @@ bool StateFlowGraph::demote_activation() {
     auto list_state = AsyncState(snode, AsyncState::Type::list);
 
     // TODO: handle serial and range for
-    if (node->meta->type != OffloadedStmt::struct_for)
+    if (node->meta->type != OffloadedTaskType::struct_for)
       continue;
 
     if (get_or_insert(node->input_edges, list_state).size() != 1)

@@ -8,6 +8,7 @@
 #include "taichi/backends/metal/env_config.h"
 #include "taichi/backends/metal/features.h"
 #include "taichi/ir/ir.h"
+#include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/math/arithmetic.h"
 #include "taichi/util/line_appender.h"

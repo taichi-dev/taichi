@@ -1,8 +1,9 @@
-#include "taichi/ir/ir.h"
-#include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
-#include "taichi/ir/visitors.h"
 #include "taichi/ir/frontend.h"
+#include "taichi/ir/ir.h"
+#include "taichi/ir/statements.h"
+#include "taichi/ir/transforms.h"
+#include "taichi/ir/visitors.h"
 
 #include <typeinfo>
 

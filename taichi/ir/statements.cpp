@@ -317,15 +317,7 @@ std::string OffloadedStmt::task_name() const {
 
 // static
 std::string OffloadedStmt::task_type_name(TaskType tt) {
-#define REGISTER_NAME(x) \
-  { TaskType::x, #x }
-  const static std::unordered_map<TaskType, std::string> m = {
-      REGISTER_NAME(serial),     REGISTER_NAME(range_for),
-      REGISTER_NAME(struct_for), REGISTER_NAME(listgen),
-      REGISTER_NAME(gc),
-  };
-#undef REGISTER_NAME
-  return m.find(tt)->second;
+  return offloaded_task_type_name(tt);
 }
 
 std::unique_ptr<Stmt> OffloadedStmt::clone() const {

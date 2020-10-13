@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "taichi/ir/statements.h"
+#include "taichi/ir/offloaded_task_type.h"
 #include "taichi/backends/metal/data_types.h"
 
 // Data structures defined in this file may overlap with some of the Taichi data
@@ -43,7 +43,7 @@ struct KernelAttributes {
   };
   std::string name;
   int num_threads;
-  OffloadedStmt::TaskType task_type;
+  OffloadedTaskType task_type;
 
   struct RangeForAttributes {
     // |begin| has differen meanings depending on |const_begin|:

@@ -6,6 +6,7 @@
 #include "taichi/lang_util.h"
 #include "taichi/program/program.h"
 #include "taichi/ir/ir.h"
+#include "taichi/ir/statements.h"
 #include "taichi/util/statistics.h"
 
 TLANG_NAMESPACE_BEGIN

@@ -1,5 +1,6 @@
 #include "taichi/codegen/codegen_llvm.h"
 
+#include "taichi/ir/statements.h"
 #include "taichi/struct/struct_llvm.h"
 #include "taichi/util/file_sequence_writer.h"
 

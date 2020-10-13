@@ -2,6 +2,7 @@
 
 #include "program.h"
 
+#include "taichi/ir/statements.h"
 #include "taichi/program/extension.h"
 #include "taichi/backends/metal/api.h"
 #include "taichi/backends/opengl/opengl_api.h"

@@ -8,6 +8,7 @@
 
 #define TI_RUNTIME_HOST
 #include "taichi/ir/ir.h"
+#include "taichi/ir/type_factory.h"
 #include "taichi/ir/snode.h"
 #include "taichi/lang_util.h"
 #include "taichi/llvm/llvm_context.h"
@@ -104,6 +105,10 @@ class Program {
   std::unordered_map<JITEvaluatorId, std::unique_ptr<Kernel>>
       jit_evaluator_cache;
   std::mutex jit_evaluator_cache_mut;
+
+  // Note: for now we let all Programs share a single TypeFactory for smooth
+  // migration. In the future each program should have its own copy.
+  static TypeFactory &get_type_factory();
 
   Program() : Program(default_compile_config.arch) {
   }

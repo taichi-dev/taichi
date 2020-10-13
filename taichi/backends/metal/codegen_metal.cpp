@@ -8,6 +8,7 @@
 #include "taichi/backends/metal/env_config.h"
 #include "taichi/backends/metal/features.h"
 #include "taichi/ir/ir.h"
+#include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/math/arithmetic.h"
 #include "taichi/util/line_appender.h"
@@ -1043,7 +1044,7 @@ class KernelCodegen : public IRVisitor {
 
   std::string inject_load_global_tmp(int offset,
                                      DataType dt = PrimitiveType::i32) {
-    const auto vt = VectorType(/*width=*/1, dt);
+    const auto vt = LegacyVectorType(/*width=*/1, dt);
     auto gtmp = Stmt::make<GlobalTemporaryStmt>(offset, vt);
     gtmp->accept(this);
     auto gload = Stmt::make<GlobalLoadStmt>(gtmp.get());

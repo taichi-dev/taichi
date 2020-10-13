@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "taichi/ir/statements.h"
+#include "taichi/ir/offloaded_task_type.h"
 #include "taichi/backends/metal/data_types.h"
 
 // Data structures defined in this file may overlap with some of the Taichi data
@@ -49,7 +49,7 @@ struct KernelAttributes {
   // Block size in CUDA's terminology. On Metal, it is called a threadgroup.
   int advisory_num_threads_per_group;
 
-  OffloadedStmt::TaskType task_type;
+  OffloadedTaskType task_type;
 
   struct RangeForAttributes {
     // |begin| has differen meanings depending on |const_begin|:

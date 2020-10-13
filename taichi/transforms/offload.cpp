@@ -1,4 +1,5 @@
 #include "taichi/ir/ir.h"
+#include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/visitors.h"
@@ -153,7 +154,7 @@ class Offloader {
     if (for_stmt->block_dim == 0) {
       // adaptive
       offloaded_struct_for->block_dim =
-          std::min(snode_num_elements, program->config.max_block_dim);
+          std::min(snode_num_elements, program->config.default_gpu_block_dim);
     } else {
       if (for_stmt->block_dim > snode_num_elements) {
         TI_WARN(
@@ -257,7 +258,7 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
     global_offset = 0;
   }
 
-  std::size_t allocate_global(VectorType type) {
+  std::size_t allocate_global(LegacyVectorType type) {
     TI_ASSERT(type.width == 1);
     auto ret = global_offset;
     global_offset += data_type_size(type.data_type);
@@ -563,7 +564,7 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
   StmtToOffsetMap local_to_global_offset;
   std::unordered_map<Stmt *, Stmt *> stmt_to_offloaded;
   OffloadedRanges *const offloaded_ranges_;
-  std::unordered_map<Stmt *, VectorType> local_to_global_vector_type;
+  std::unordered_map<Stmt *, LegacyVectorType> local_to_global_vector_type;
 };
 
 void insert_gc(IRNode *root) {

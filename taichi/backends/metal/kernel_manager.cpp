@@ -34,7 +34,7 @@ namespace shaders {
 #include "taichi/backends/metal/shaders/runtime_utils.metal.h"
 }  // namespace shaders
 
-using KernelTaskType = OffloadedStmt::TaskType;
+using KernelTaskType = OffloadedTaskType;
 using BufferEnum = KernelAttributes::Buffers;
 
 inline int infer_msl_version(const TaichiKernelAttributes::UsedFeatures &f) {

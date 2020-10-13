@@ -7,6 +7,7 @@
 #include "taichi/util/io.h"
 #include "taichi/util/statistics.h"
 #include "taichi/ir/ir.h"
+#include "taichi/ir/statements.h"
 #include "taichi/program/program.h"
 #include "taichi/lang_util.h"
 #include "taichi/backends/cuda/cuda_driver.h"

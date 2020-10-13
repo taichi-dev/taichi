@@ -64,4 +64,47 @@ class PrimitiveType : public Type {
   static DataType get(primitive_type type);
 };
 
+class PointerType : public Type {
+ public:
+  PointerType(Type *pointee, bool is_bit_pointer)
+      : pointee_(pointee), is_bit_pointer_(is_bit_pointer) {
+  }
+
+  Type *get_pointee_type() const {
+    return pointee_;
+  }
+
+  auto get_addr_space() const {
+    return addr_space_;
+  }
+
+  bool is_bit_pointer() const {
+    return is_bit_pointer_;
+  }
+
+ private:
+  Type *pointee_{nullptr};
+  int addr_space_{0};  // TODO: make this an enum
+  bool is_bit_pointer_{false};
+};
+
+class VectorType : public Type {
+ public:
+  VectorType(int num_elements, Type *element)
+      : num_elements_(num_elements), element_(element) {
+  }
+
+  Type *get_element_type() const {
+    return element_;
+  }
+
+  int get_num_elements() const {
+    return num_elements_;
+  }
+
+ private:
+  int num_elements_{0};
+  Type *element_{nullptr};
+};
+
 TLANG_NAMESPACE_END

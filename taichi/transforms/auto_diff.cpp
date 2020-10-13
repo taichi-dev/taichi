@@ -739,11 +739,15 @@ class BackupSSA : public BasicStmtVisitor {
     if (backup_alloca.find(stmt) == backup_alloca.end()) {
       auto alloca =
           Stmt::make<AllocaStmt>(stmt->width(), stmt->ret_type.data_type);
-      alloca->ret_type.set_is_pointer(stmt->ret_type.is_pointer());
+      // TODO: the line below was deleted during type system refactoring.
+      // Hopefully it's no longer needed.
+      // alloca->ret_type.set_is_pointer(stmt->ret_type.is_pointer());
       auto alloca_ptr = alloca.get();
       independent_block->insert(std::move(alloca), 0);
       auto local_store = Stmt::make<LocalStoreStmt>(alloca_ptr, stmt);
-      local_store->ret_type.set_is_pointer(stmt->ret_type.is_pointer());
+      // TODO: the line below was deleted during type system refactoring.
+      // Hopefully it's no longer needed.
+      // local_store->ret_type.set_is_pointer(stmt->ret_type.is_pointer());
       stmt->insert_after_me(std::move(local_store));
       backup_alloca[stmt] = alloca_ptr;
     }

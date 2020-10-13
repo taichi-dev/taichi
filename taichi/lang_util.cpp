@@ -321,10 +321,11 @@ namespace {
 class TypePromotionMapping {
  public:
   TypePromotionMapping() {
-#define TRY_SECOND(x, y)                                           \
-  mapping[std::make_pair(to_primitive_type(get_data_type<x>()),    \
-                         to_primitive_type(get_data_type<y>()))] = \
-      get_data_type<decltype(std::declval<x>() + std::declval<y>())>();
+#define TRY_SECOND(x, y)                                   \
+  mapping[std::make_pair(get_data_primitive_type<x>(),     \
+                         get_data_primitive_type<y>())] =  \
+      get_data_primitive_type<decltype(std::declval<x>() + \
+                                       std::declval<y>())>();
 #define TRY_FIRST(x)      \
   TRY_SECOND(x, float32); \
   TRY_SECOND(x, float64); \
@@ -349,16 +350,24 @@ class TypePromotionMapping {
     TRY_FIRST(uint64);
   }
   DataType query(DataType x, DataType y) {
-    return mapping[std::make_pair(to_primitive_type(x), to_primitive_type(y))];
+    auto primitive =
+        mapping[std::make_pair(to_primitive_type(x), to_primitive_type(y))];
+    return Program::get_type_factory().get_primitive_type(primitive);
   }
 
  private:
   std::map<
       std::pair<PrimitiveType::primitive_type, PrimitiveType::primitive_type>,
-      DataType>
+      PrimitiveType::primitive_type>
       mapping;
-  static PrimitiveType::primitive_type to_primitive_type(const DataType d) {
-    auto primitive = dynamic_cast<const PrimitiveType *>(d.get_ptr());
+  static PrimitiveType::primitive_type to_primitive_type(const DataType d_) {
+    Type *d = d_.get_ptr();
+    if (d->is<PointerType>()) {
+      d = d->as<PointerType>()->get_pointee_type();
+      TI_WARN("promoted_type got a pointer input.");
+    }
+
+    auto primitive = d->cast<PrimitiveType>();
     TI_ASSERT_INFO(
         primitive,
         "Failed to get primitive type! "

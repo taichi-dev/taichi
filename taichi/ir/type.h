@@ -60,7 +60,7 @@ class DataType {
   };
 
   // TODO: DataType itself should be a pointer in the future
-  const Type *get_ptr() const {
+  Type *get_ptr() const {
     return ptr_;
   }
 
@@ -78,6 +78,8 @@ class DataType {
   }
 
   bool is_pointer() const;
+
+  void set_is_pointer(bool ptr);
 
  private:
   Type *ptr_;

@@ -42,14 +42,26 @@ bool DataType::is_pointer() const {
   return ptr_->is<PointerType>();
 }
 
+void DataType::set_is_pointer(bool is_ptr) {
+  if (is_ptr && !ptr_->is<PointerType>()) {
+    ptr_ = Program::get_type_factory().get_pointer_type(ptr_);
+  }
+  if (!is_ptr && ptr_->is<PointerType>()) {
+    ptr_ = ptr_->cast<PointerType>()->get_pointee_type();
+  }
+}
+
 std::string PrimitiveType::to_string() const {
-  return data_type_name(DataType(this));
+  return data_type_name(DataType(const_cast<PrimitiveType *>(this)));
 }
 
 DataType LegacyVectorType(int width, DataType data_type, bool is_pointer) {
-  TI_ASSERT(!is_pointer);
+  if (is_pointer) {
+    return Program::get_type_factory().get_pointer_type(data_type.get_ptr());
+  } else {
+    return data_type;
+  }
   TI_ASSERT(width == 1);
-  return data_type;
 }
 
 TLANG_NAMESPACE_END

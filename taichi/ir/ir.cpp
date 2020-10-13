@@ -21,23 +21,6 @@ IRBuilder &current_ast_builder() {
   return context->builder();
 }
 
-std::string LegacyVectorType::pointer_suffix() const {
-  if (is_pointer()) {
-    return "*";
-  } else {
-    return "";
-  }
-}
-
-std::string LegacyVectorType::element_type_name() const {
-  return fmt::format("{}{}", data_type_short_name(data_type), pointer_suffix());
-}
-
-std::string LegacyVectorType::str() const {
-  auto ename = element_type_name();
-  return fmt::format("{:4}x{}", ename, width);
-}
-
 void DecoratorRecorder::reset() {
   vectorize = -1;
   parallelize = 0;
@@ -242,7 +225,7 @@ std::string Stmt::type_hint() const {
   if (ret_type.data_type == PrimitiveType::unknown)
     return "";
   else
-    return fmt::format("<{}>", ret_type.str());
+    return fmt::format("<{}>", ret_type.to_string());
 }
 
 std::string Stmt::type() {

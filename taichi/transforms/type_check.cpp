@@ -25,7 +25,7 @@ class TypeCheck : public IRVisitor {
     allow_undefined_visitor = true;
   }
 
-  static void mark_as_if_const(Stmt *stmt, LegacyVectorType t) {
+  static void mark_as_if_const(Stmt *stmt, DataType t) {
     if (stmt->is<ConstStmt>()) {
       stmt->ret_type = t;
     }

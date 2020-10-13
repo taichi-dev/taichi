@@ -237,7 +237,8 @@ class RuntimeListOpsMtlKernel : public CompiledMtlKernelBase {
         "parent_snode={} "
         "child_snode={} max_num_elems={} ",
         params.kernel_attribs->name,
-        params.kernel_attribs->advisory_total_num_threads, mem[0], mem[1], mem[2]);
+        params.kernel_attribs->advisory_total_num_threads, mem[0], mem[1],
+        mem[2]);
     did_modify_range(args_buffer_.get(), /*location=*/0, args_mem_->size());
   }
 

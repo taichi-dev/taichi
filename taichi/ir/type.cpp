@@ -16,7 +16,7 @@ TLANG_NAMESPACE_BEGIN
 #include "taichi/inc/data_type.inc.h"
 #undef PER_TYPE
 
-DataType::DataType() : ptr_(PrimitiveType::unknown.ptr_) {
+DataType::DataType() :  data_type(*this) ,ptr_(PrimitiveType::unknown.ptr_) {
 }
 
 DataType PrimitiveType::get(PrimitiveType::primitive_type t) {
@@ -40,6 +40,12 @@ std::size_t DataType::hash() const {
 
 std::string PrimitiveType::to_string() const {
   return data_type_name(DataType(this));
+}
+
+DataType LegacyVectorType(int width, DataType data_type, bool is_pointer) {
+  TI_ASSERT(!is_pointer);
+  TI_ASSERT(width == 1);
+  return data_type;
 }
 
 TLANG_NAMESPACE_END

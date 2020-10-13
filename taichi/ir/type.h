@@ -16,7 +16,10 @@ class DataType {
  public:
   DataType();
 
-  DataType(const Type *ptr) : ptr_(ptr) {
+  DataType(Type *ptr) : data_type(*this), ptr_(ptr) {
+  }
+
+  DataType(const DataType &o) : data_type(*this), ptr_(o.ptr_) {
   }
 
   bool operator==(const DataType &o) const {
@@ -38,8 +41,21 @@ class DataType {
     return ptr_;
   }
 
+  // To be compatible with LegacyVectorType
+  int width{1};
+  DataType &data_type;
+
+  Type *operator->() const {
+    return ptr_;
+  }
+
+  DataType &operator=(const DataType &o) {
+    ptr_ = o.ptr_;
+    return *this;
+  }
+
  private:
-  const Type *ptr_;
+  Type *ptr_;
 };
 
 class PrimitiveType : public Type {
@@ -114,5 +130,9 @@ class VectorType : public Type {
   int num_elements_{0};
   Type *element_{nullptr};
 };
+
+DataType LegacyVectorType(int width,
+                          DataType data_type,
+                          bool is_pointer = false);
 
 TLANG_NAMESPACE_END

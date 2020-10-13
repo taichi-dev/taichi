@@ -183,6 +183,10 @@ Stmt::Stmt(const Stmt &stmt) : field_manager(this), fields_registered(false) {
   ret_type = stmt.ret_type;
 }
 
+Stmt::Stmt(const DataType &data_type): Stmt() {
+
+}
+
 Stmt *Stmt::insert_before_me(std::unique_ptr<Stmt> &&new_stmt) {
   auto ret = new_stmt.get();
   TI_ASSERT(parent);

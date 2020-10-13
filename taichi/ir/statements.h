@@ -934,7 +934,7 @@ class GlobalTemporaryStmt : public Stmt {
  public:
   std::size_t offset;
 
-  GlobalTemporaryStmt(std::size_t offset, LegacyVectorType ret_type)
+  GlobalTemporaryStmt(std::size_t offset, DataType ret_type)
       : offset(offset) {
     this->ret_type = ret_type;
     TI_STMT_REG_FIELDS;
@@ -952,7 +952,7 @@ class ThreadLocalPtrStmt : public Stmt {
  public:
   std::size_t offset;
 
-  ThreadLocalPtrStmt(std::size_t offset, LegacyVectorType ret_type)
+  ThreadLocalPtrStmt(std::size_t offset, DataType ret_type)
       : offset(offset) {
     this->ret_type = ret_type;
     TI_STMT_REG_FIELDS;
@@ -970,7 +970,7 @@ class BlockLocalPtrStmt : public Stmt {
  public:
   Stmt *offset;
 
-  BlockLocalPtrStmt(Stmt *offset, LegacyVectorType ret_type) : offset(offset) {
+  BlockLocalPtrStmt(Stmt *offset, DataType ret_type) : offset(offset) {
     this->ret_type = ret_type;
     TI_STMT_REG_FIELDS;
   }

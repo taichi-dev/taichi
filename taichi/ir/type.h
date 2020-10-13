@@ -7,6 +7,29 @@ TLANG_NAMESPACE_BEGIN
 class Type {
  public:
   virtual std::string to_string() const = 0;
+
+  template <typename T>
+  bool is() const {
+    return cast<T>() != nullptr;
+  }
+
+  template <typename T>
+  const T *cast() const {
+    return dynamic_cast<const T *>(this);
+  }
+
+  template <typename T>
+  T *cast() {
+    return dynamic_cast<T *>(this);
+  }
+
+  template <typename T>
+  T *as() {
+    auto p = dynamic_cast<T *>(this);
+    TI_ASSERT(p != nullptr);
+    return p;
+  }
+
   virtual ~Type() {
   }
 };
@@ -53,6 +76,8 @@ class DataType {
     ptr_ = o.ptr_;
     return *this;
   }
+
+  bool is_pointer() const;
 
  private:
   Type *ptr_;

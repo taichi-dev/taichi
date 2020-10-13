@@ -132,6 +132,7 @@ void CodeGenLLVM::visit(AllocaStmt *stmt) {
   TI_ASSERT(stmt->width() == 1);
   llvm_val[stmt] = create_entry_block_alloca(stmt->ret_type.data_type,
                                              stmt->ret_type.is_pointer());
+  // TODO: upgrade to new type system
   // initialize as zero if element is not a pointer
   if (!stmt->ret_type.is_pointer())
     builder->CreateStore(tlctx->get_constant(stmt->ret_type.data_type, 0),

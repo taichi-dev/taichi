@@ -38,6 +38,10 @@ std::size_t DataType::hash() const {
   }
 }
 
+bool DataType::is_pointer() const {
+  return ptr_->is<PointerType>();
+}
+
 std::string PrimitiveType::to_string() const {
   return data_type_name(DataType(this));
 }

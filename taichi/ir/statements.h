@@ -934,8 +934,7 @@ class GlobalTemporaryStmt : public Stmt {
  public:
   std::size_t offset;
 
-  GlobalTemporaryStmt(std::size_t offset, DataType ret_type)
-      : offset(offset) {
+  GlobalTemporaryStmt(std::size_t offset, DataType ret_type) : offset(offset) {
     this->ret_type = ret_type;
     TI_STMT_REG_FIELDS;
   }
@@ -952,8 +951,7 @@ class ThreadLocalPtrStmt : public Stmt {
  public:
   std::size_t offset;
 
-  ThreadLocalPtrStmt(std::size_t offset, DataType ret_type)
-      : offset(offset) {
+  ThreadLocalPtrStmt(std::size_t offset, DataType ret_type) : offset(offset) {
     this->ret_type = ret_type;
     TI_STMT_REG_FIELDS;
   }

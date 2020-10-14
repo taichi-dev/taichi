@@ -34,6 +34,8 @@ inline bool is_opengl_binary_op_different_return_type(BinaryOpType type) {
 }
 
 inline int opengl_data_address_shifter(DataType type) {
+  // TODO: fail loudly when feeding a pointer type to this function after type
+  // system upgrade.
   type.set_is_pointer(false);
   if (type == PrimitiveType::f32 || type == PrimitiveType::i32)
     return 2;

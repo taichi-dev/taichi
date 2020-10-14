@@ -1,6 +1,6 @@
 import taichi as ti
 
-ti.init(arch=ti.cpu, print_ir=True, print_accessor_ir=True)
+ti.init(arch=ti.cpu)
 x, y = ti.field(ti.f32), ti.field(ti.f32)
 
 ti.root.dense(ti.ij, 16).place(x, y)

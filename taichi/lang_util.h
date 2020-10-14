@@ -50,7 +50,7 @@ inline DataType get_data_type() {
 }
 
 template <typename T>
-inline PrimitiveType::primitive_type get_data_primitive_type() {
+inline PrimitiveType::primitive_type get_primitive_data_type() {
   if (std::is_same<T, float32>()) {
     return PrimitiveType::primitive_type::f32;
   } else if (std::is_same<T, float64>()) {

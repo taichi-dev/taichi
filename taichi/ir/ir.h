@@ -499,9 +499,6 @@ class Stmt : public IRNode {
   Stmt();
   Stmt(const Stmt &stmt);
 
-  // TODO: remove this after type refactoring is done
-  Stmt(const DataType &data_type);
-
   int &width() {
     return ret_type.width;
   }

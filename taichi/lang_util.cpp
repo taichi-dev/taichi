@@ -65,6 +65,8 @@ real measure_cpe(std::function<void()> target,
   return elasped_cycles / float64(total_batches * elements_per_call);
 }
 
+// TODO: Remove data_type_short_name. Having two names for a data type is
+// confusing.
 std::string data_type_name(DataType t) {
   return data_type_short_name(t);
 }
@@ -314,9 +316,9 @@ class TypePromotionMapping {
  public:
   TypePromotionMapping() {
 #define TRY_SECOND(x, y)                                   \
-  mapping[std::make_pair(get_data_primitive_type<x>(),     \
-                         get_data_primitive_type<y>())] =  \
-      get_data_primitive_type<decltype(std::declval<x>() + \
+  mapping[std::make_pair(get_primitive_data_type<x>(),     \
+                         get_primitive_data_type<y>())] =  \
+      get_primitive_data_type<decltype(std::declval<x>() + \
                                        std::declval<y>())>();
 #define TRY_FIRST(x)      \
   TRY_SECOND(x, float32); \

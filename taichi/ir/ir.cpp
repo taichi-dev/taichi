@@ -166,9 +166,6 @@ Stmt::Stmt(const Stmt &stmt) : field_manager(this), fields_registered(false) {
   ret_type = stmt.ret_type;
 }
 
-Stmt::Stmt(const DataType &data_type) : Stmt() {
-}
-
 Stmt *Stmt::insert_before_me(std::unique_ptr<Stmt> &&new_stmt) {
   auto ret = new_stmt.get();
   TI_ASSERT(parent);
@@ -224,7 +221,7 @@ std::string Stmt::type_hint() const {
   if (ret_type.data_type == PrimitiveType::unknown)
     return "";
   else
-    return fmt::format("|{}| ", ret_type.to_string());
+    return fmt::format("<{}> ", ret_type.to_string());
 }
 
 std::string Stmt::type() {

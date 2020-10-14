@@ -335,6 +335,7 @@ class TypeCheck : public IRVisitor {
     // verification, without modifying any types.
     TI_ASSERT(rt.data_type != PrimitiveType::unknown);
     TI_ASSERT(rt.width == 1);
+    stmt->ret_type.set_is_pointer(stmt->is_ptr);
   }
 
   void visit(KernelReturnStmt *stmt) {

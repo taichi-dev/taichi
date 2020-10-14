@@ -1,6 +1,6 @@
 import taichi as ti
 
-ti.init(print_ir=True)
+ti.init(print_ir=True, print_accessor_ir=True)
 
 
 A = ti.field(ti.f32, shape=())

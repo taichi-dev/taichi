@@ -357,7 +357,8 @@ class KernelCodegen : public IRVisitor {
   void visit(ThreadLocalPtrStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     emit("thread auto* {} = reinterpret_cast<thread {}*>({} + {});",
-         stmt->raw_name(), metal_data_type_name(stmt->element_type()),
+         stmt->raw_name(),
+         metal_data_type_name(stmt->element_type().ptr_removed()),
          kTlsBufferName, stmt->offset);
   }
 

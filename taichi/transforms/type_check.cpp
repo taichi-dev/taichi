@@ -376,10 +376,7 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(GetChStmt *stmt) {
-    stmt->ret_type = LegacyVectorType(1, stmt->output_snode->dt);
-    if (stmt->output_snode->type != SNodeType::place) {
-      stmt->ret_type.set_is_pointer(true);
-    }  // for place SNodes GetCh directly yields a numerical value.
+    stmt->ret_type = LegacyVectorType(1, stmt->output_snode->dt, true);
   }
 
   void visit(OffloadedStmt *stmt) {

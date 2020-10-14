@@ -217,7 +217,7 @@ void GUI::redraw() {
     }
   }
   bitmap = CreateBitmap(width, height, 1, 32,
-      fast_gui ? (void *)fast_buf : (void *)data);
+                        fast_gui ? (void *)fast_buf : (void *)data);
   SelectObject(src, bitmap);
   BitBlt(hdc, 0, 0, width, height, src, 0, 0, SRCCOPY);
   DeleteObject(bitmap);

@@ -1229,7 +1229,7 @@ void CodeGenLLVM::visit(ExternalPtrStmt *stmt) {
     sizes[i] = raw_arg;
   }
 
-  auto dt = stmt->ret_type.data_type;
+  auto dt = stmt->ret_type.data_type.ptr_removed();
   auto base = builder->CreateBitCast(
       llvm_val[stmt->base_ptrs[0]],
       llvm::PointerType::get(tlctx->get_data_type(dt), 0));

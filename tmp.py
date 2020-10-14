@@ -1,16 +1,19 @@
 import taichi as ti
+import numpy as np
 
 ti.init(print_ir=True, print_accessor_ir=True)
 
-
-A = ti.field(ti.f32, shape=())
+n = 10000
 
 @ti.kernel
-def func():
-    a = 0
-    for i in range(10):
-        a -= i
-    A[None] = a
+def inc(a: ti.ext_arr()):
+    for i in range(n):
+        a[i] += i
 
-func()
-assert A[None] == -45
+x = np.zeros(dtype=np.int32, shape=n)
+for i in range(10):
+    inc(x)
+
+for i in range(n):
+    assert x[i] == i * 10
+

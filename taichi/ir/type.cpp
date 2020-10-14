@@ -68,12 +68,12 @@ std::string PrimitiveType::to_string() const {
 }
 
 DataType LegacyVectorType(int width, DataType data_type, bool is_pointer) {
+  TI_ASSERT(width == 1);
   if (is_pointer) {
     return Program::get_type_factory().get_pointer_type(data_type.get_ptr());
   } else {
     return data_type;
   }
-  TI_ASSERT(width == 1);
 }
 
 TLANG_NAMESPACE_END

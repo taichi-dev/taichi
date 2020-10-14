@@ -64,7 +64,8 @@ class DataType {
     return ptr_;
   }
 
-  // To be compatible with LegacyVectorType
+  // Temporary API and members
+  // for LegacyVectorType-compatibility
   int width{1};
   DataType &data_type;
 
@@ -81,7 +82,6 @@ class DataType {
 
   void set_is_pointer(bool ptr);
 
-  // Temporary API
   DataType ptr_removed() const;
 
  private:

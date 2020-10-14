@@ -91,9 +91,9 @@ std::string data_type_format(DataType dt) {
 
 int data_type_size(DataType t) {
   // TODO:
-  //  1. ensure in the old code, pointer attributes of t are correct (by setting
+  //  1. Ensure in the old code, pointer attributes of t are correct (by setting
   //  a loud failure on pointers);
-  //  2. support pointer here.
+  //  2. Support pointer types here.
   t.set_is_pointer(false);
   if (false) {
   } else if (t == PrimitiveType::f16)

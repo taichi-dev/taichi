@@ -21,5 +21,4 @@ jobs:
 
       - name: Build
         run: |
-          glewinfo
-          ls /usr/lib/*gnu
+          xvfb-run glewinfo

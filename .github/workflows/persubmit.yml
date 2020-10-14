@@ -21,6 +21,5 @@ jobs:
 
       - name: Build
         run: |
-          ls /usr/lib/libGL*
-          ls /usr/lib/*gnu/libGL*
           glewinfo
+          ls /usr/lib/*gnu

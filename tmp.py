@@ -7,7 +7,7 @@ n = 10000
 
 @ti.kernel
 def inc(a: ti.ext_arr()):
-    for i in range(n):
+    for i in ti.ndrange([0, n]):
         a[i] += i
 
 x = np.zeros(dtype=np.int32, shape=n)

@@ -81,6 +81,9 @@ class DataType {
 
   void set_is_pointer(bool ptr);
 
+  // Temporary API
+  DataType ptr_removed() const;
+
  private:
   Type *ptr_;
 };

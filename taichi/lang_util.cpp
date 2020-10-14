@@ -88,6 +88,11 @@ std::string data_type_format(DataType dt) {
 }
 
 int data_type_size(DataType t) {
+  // TODO:
+  //  1. ensure in the old code, pointer attributes of t are correct (by setting
+  //  a loud failure on pointers);
+  //  2. support pointer here.
+  t.set_is_pointer(false);
   if (false) {
   } else if (t == PrimitiveType::f16)
     return 2;
@@ -370,6 +375,8 @@ DataType promoted_type(DataType a, DataType b) {
 }
 
 std::string TypedConstant::stringify() const {
+  // TODO: remove the line below after type system upgrade.
+  auto dt = this->dt.ptr_removed();
   if (dt == PrimitiveType::f32) {
     return fmt::format("{}", val_f32);
   } else if (dt == PrimitiveType::i32) {

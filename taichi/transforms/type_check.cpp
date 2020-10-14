@@ -63,17 +63,18 @@ class TypeCheck : public IRVisitor {
 
   void visit(AtomicOpStmt *stmt) {
     TI_ASSERT(stmt->width() == 1);
-    if (stmt->val->ret_type.data_type != stmt->dest->ret_type.data_type) {
+    if (stmt->val->ret_type != stmt->dest->ret_type.ptr_removed()) {
+      // TODO: make sure the ptr_removed type is indeed a numerical type
       TI_WARN("[{}] Atomic add ({} to {}) may lose precision.", stmt->name(),
               data_type_name(stmt->val->ret_type.data_type),
-              data_type_name(stmt->dest->ret_type.data_type));
+              data_type_name(stmt->dest->ret_type.ptr_removed()));
       stmt->val = insert_type_cast_before(stmt, stmt->val,
-                                          stmt->dest->ret_type.data_type);
+                                          stmt->dest->ret_type.ptr_removed());
     }
     if (stmt->element_type() == PrimitiveType::unknown) {
-      stmt->ret_type = stmt->dest->ret_type;
+      stmt->ret_type = stmt->dest->ret_type.ptr_removed();
     }
-    stmt->ret_type.set_is_pointer(false);
+    TI_ASSERT(!stmt->ret_type->is<PointerType>());
   }
 
   void visit(LocalLoadStmt *stmt) {
@@ -146,19 +147,20 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(GlobalStoreStmt *stmt) {
-    auto promoted = promoted_type(stmt->ptr->ret_type.data_type,
+    auto promoted = promoted_type(stmt->ptr->ret_type.ptr_removed(),
                                   stmt->data->ret_type.data_type);
     auto input_type = stmt->data->ret_data_type_name();
-    if (stmt->ptr->ret_type.data_type != stmt->data->ret_type.data_type) {
+    if (stmt->ptr->ret_type.data_type.ptr_removed() !=
+        stmt->data->ret_type.data_type) {
       stmt->data = insert_type_cast_before(stmt, stmt->data,
-                                           stmt->ptr->ret_type.data_type);
+                                           stmt->ptr->ret_type.ptr_removed());
     }
-    if (stmt->ptr->ret_type.data_type != promoted) {
+    if (stmt->ptr->ret_type.ptr_removed() != promoted) {
       TI_WARN("[{}] Global store may lose precision: {} <- {}, at",
               stmt->name(), stmt->ptr->ret_data_type_name(), input_type);
       TI_WARN("\n{}", stmt->tb);
     }
-    stmt->ret_type = stmt->ptr->ret_type;
+    stmt->ret_type = stmt->ptr->ret_type.ptr_removed();
   }
 
   void visit(RangeForStmt *stmt) {
@@ -376,7 +378,7 @@ class TypeCheck : public IRVisitor {
     stmt->ret_type = LegacyVectorType(1, stmt->output_snode->dt);
     if (stmt->output_snode->type != SNodeType::place) {
       stmt->ret_type.set_is_pointer(true);
-    } // for place SNodes GetCh directly yields a numerical value.
+    }  // for place SNodes GetCh directly yields a numerical value.
   }
 
   void visit(OffloadedStmt *stmt) {

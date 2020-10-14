@@ -16,7 +16,7 @@ TLANG_NAMESPACE_BEGIN
 #include "taichi/inc/data_type.inc.h"
 #undef PER_TYPE
 
-DataType::DataType() :  data_type(*this) ,ptr_(PrimitiveType::unknown.ptr_) {
+DataType::DataType() : data_type(*this), ptr_(PrimitiveType::unknown.ptr_) {
 }
 
 DataType PrimitiveType::get(PrimitiveType::primitive_type t) {
@@ -31,8 +31,10 @@ DataType PrimitiveType::get(PrimitiveType::primitive_type t) {
 }
 
 std::size_t DataType::hash() const {
-  if (auto primitive = dynamic_cast<const PrimitiveType *>(ptr_)) {
+  if (auto primitive = ptr_->cast<PrimitiveType>()) {
     return (std::size_t)primitive->type;
+  } else if (auto pointer = ptr_->cast<PointerType>()) {
+    return 10007 + DataType(pointer->get_pointee_type()).hash();
   } else {
     TI_NOT_IMPLEMENTED
   }
@@ -48,6 +50,16 @@ void DataType::set_is_pointer(bool is_ptr) {
   }
   if (!is_ptr && ptr_->is<PointerType>()) {
     ptr_ = ptr_->cast<PointerType>()->get_pointee_type();
+  }
+}
+
+DataType DataType::ptr_removed() const {
+  auto t = ptr_;
+  auto ptr_type = t->cast<PointerType>();
+  if (ptr_type) {
+    return DataType(ptr_type->get_pointee_type());
+  } else {
+    return *this;
   }
 }
 

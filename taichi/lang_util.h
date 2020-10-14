@@ -243,6 +243,8 @@ class TypedConstant {
 
   template <typename T>
   TypedConstant(DataType dt, const T &value) : dt(dt) {
+    // TODO: loud failure on pointers
+    dt.set_is_pointer(false);
     if (dt == PrimitiveType::f32) {
       val_f32 = value;
     } else if (dt == PrimitiveType::i32) {

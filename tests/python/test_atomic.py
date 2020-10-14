@@ -35,10 +35,6 @@ def run_atomic_add_global_case(vartype, step, valproc=lambda x: x):
         assert valproc(ya) == e
 
 
-ti.init(ti.cc, log_level=ti.DEBUG)
-run_atomic_add_global_case(ti.i32, 42)
-
-
 @ti.all_archs
 def test_atomic_add_global_i32():
     run_atomic_add_global_case(ti.i32, 42)

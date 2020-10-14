@@ -23,7 +23,7 @@ void make_block_local_offload(OffloadedStmt *offload) {
 
   for (auto &pad : pads->pads) {
     auto snode = pad.first;
-    auto data_type = snode->dt;
+    auto data_type = snode->dt.ptr_removed();
     auto dtype_size = data_type_size(data_type);
 
     bool bls_has_read = pad.second.total_flags & AccessFlag::read;

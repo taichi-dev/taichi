@@ -168,27 +168,27 @@ void StateFlowGraph::insert_task(const TaskLaunchRecord &rec) {
   }
   for (auto output_state : node->meta->output_states) {
     TI_PROFILER("insert_task meta->output_states");
-    if (latest_state_readers_[output_state].empty()) {
+    if (get_or_insert(latest_state_readers_, output_state).empty()) {
       if (latest_state_owner_.find(output_state) != latest_state_owner_.end()) {
         // insert a WAW dependency edge
         insert_edge(latest_state_owner_[output_state], node.get(),
                     output_state);
       } else {
-        latest_state_readers_[output_state].insert(initial_node_);
+        insert(latest_state_readers_, output_state, initial_node_);
       }
     }
     latest_state_owner_[output_state] = node.get();
-    for (auto &d : latest_state_readers_[output_state]) {
+    for (auto *d : get_or_insert(latest_state_readers_, output_state)) {
       // insert a WAR dependency edge
       insert_edge(d, node.get(), output_state);
     }
-    latest_state_readers_[output_state].clear();
+    get_or_insert(latest_state_readers_, output_state).clear();
   }
 
   // Note that this loop must happen AFTER the previous one
   for (auto input_state : node->meta->input_states) {
     TI_PROFILER("insert_task latest_state_readers_");
-    latest_state_readers_[input_state].insert(node.get());
+    insert(latest_state_readers_, input_state, node.get());
   }
   nodes_.push_back(std::move(node));
 }

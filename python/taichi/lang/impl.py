@@ -535,8 +535,9 @@ def static(x, *xs):
         return [static(x)] + [static(x) for x in xs]
     import types
     import taichi as ti
-    if isinstance(x, (bool, int, float, range, list, tuple, enumerate,
-                      ti.ndrange, ti.GroupedNDRange, zip, filter, map)) or x is None:
+    if isinstance(x,
+                  (bool, int, float, range, list, tuple, enumerate, ti.ndrange,
+                   ti.GroupedNDRange, zip, filter, map)) or x is None:
         return x
     elif isinstance(x, (ti.Expr, ti.Matrix)) and x.is_global():
         return x

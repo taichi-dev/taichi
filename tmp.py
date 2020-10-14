@@ -1,7 +1,7 @@
 import taichi as ti
 import numpy as np
 
-ti.init(print_ir=True, print_accessor_ir=True)
+ti.init(arch=ti.opengl, print_ir=True, print_accessor_ir=True)
 
 n = 10000
 

@@ -428,6 +428,7 @@ class KernelGen : public IRVisitor {
   }
 
   void visit(ExternalPtrStmt *stmt) override {
+    TI_TAG;
     TI_ASSERT(stmt->width() == 1);
     const auto linear_index_name = fmt::format("_li_{}", stmt->short_name());
     emit("int {} = 0;", linear_index_name);
@@ -572,6 +573,7 @@ class KernelGen : public IRVisitor {
   }
 
   void visit(AtomicOpStmt *stmt) override {
+    TI_TAG;
     TI_ASSERT(stmt->width() == 1);
     auto dt = stmt->dest->element_type().ptr_removed();
     if (dt == PrimitiveType::i32 ||

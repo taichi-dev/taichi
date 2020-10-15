@@ -454,7 +454,8 @@ class LoopUniqueExpression : public Expression {
  public:
   Expr input;
 
-  LoopUniqueExpression(const Expr &input): input(input) {}
+  LoopUniqueExpression(const Expr &input) : input(input) {
+  }
 
   std::string serialize() override {
     return fmt::format("loop_unique({})", input.serialize());

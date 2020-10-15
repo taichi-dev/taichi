@@ -276,7 +276,7 @@ class KernelCodegen : public IRVisitor {
         }
       } else if (opty == SNodeOpType::append) {
         TI_ASSERT(is_dynamic);
-        TI_ASSERT(stmt->ret_type.data_type == PrimitiveType::i32);
+        TI_ASSERT(stmt->ret_type == PrimitiveType::i32);
         emit("{} = {}.append({});", result_var, parent, stmt->val->raw_name());
       } else if (opty == SNodeOpType::length) {
         TI_ASSERT(is_dynamic);
@@ -412,7 +412,7 @@ class KernelCodegen : public IRVisitor {
     const auto bin_name = bin->raw_name();
     const auto op_type = bin->op_type;
     if (op_type == BinaryOpType::floordiv) {
-      if (is_integral(bin->ret_type.data_type)) {
+      if (is_integral(bin->ret_type)) {
         emit("const {} {} = ifloordiv({}, {});", dt_name, bin_name, lhs_name,
              rhs_name);
       } else {
@@ -421,7 +421,7 @@ class KernelCodegen : public IRVisitor {
       }
       return;
     }
-    if (op_type == BinaryOpType::pow && is_integral(bin->ret_type.data_type)) {
+    if (op_type == BinaryOpType::pow && is_integral(bin->ret_type)) {
       // TODO(k-ye): Make sure the type is not i64?
       emit("const {} {} = pow_i32({}, {});", dt_name, bin_name, lhs_name,
            rhs_name);
@@ -604,7 +604,7 @@ class KernelCodegen : public IRVisitor {
 
   void visit(RandStmt *stmt) override {
     emit("const auto {} = metal_rand_{}({});", stmt->raw_name(),
-         data_type_short_name(stmt->ret_type.data_type), kRandStateVarName);
+         data_type_short_name(stmt->ret_type), kRandStateVarName);
   }
 
   void visit(PrintStmt *stmt) override {

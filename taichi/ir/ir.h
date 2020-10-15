@@ -512,7 +512,7 @@ class Stmt : public IRNode {
   }
 
   DataType &element_type() {
-    return ret_type.data_type;
+    return ret_type;
   }
 
   std::string ret_data_type_name() const {

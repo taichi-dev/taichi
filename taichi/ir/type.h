@@ -39,10 +39,10 @@ class DataType {
  public:
   DataType();
 
-  DataType(Type *ptr) : data_type(*this), ptr_(ptr) {
+  DataType(Type *ptr) : ptr_(ptr) {
   }
 
-  DataType(const DataType &o) : data_type(*this), ptr_(o.ptr_) {
+  DataType(const DataType &o) : ptr_(o.ptr_) {
   }
 
   bool operator==(const DataType &o) const {
@@ -67,7 +67,6 @@ class DataType {
   // Temporary API and members
   // for LegacyVectorType-compatibility
   int width{1};
-  DataType &data_type;
 
   Type *operator->() const {
     return ptr_;

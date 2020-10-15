@@ -121,7 +121,7 @@ class ArgLoadStmt : public Stmt {
 class RandStmt : public Stmt {
  public:
   RandStmt(DataType dt) {
-    ret_type.data_type = dt;
+    ret_type = dt;
     TI_STMT_REG_FIELDS;
   }
 
@@ -1018,7 +1018,7 @@ class StackAllocaStmt : public Stmt {
   }
 
   std::size_t element_size_in_bytes() const {
-    return data_type_size(ret_type.data_type);
+    return data_type_size(ret_type);
   }
 
   std::size_t entry_size_in_bytes() const {

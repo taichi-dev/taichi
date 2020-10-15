@@ -844,9 +844,7 @@ class KernelManager::Impl {
       return;
     }
     auto *msg_ptr = reinterpret_cast<int32_t *>(asst_rec + 1);
-    const int num_entries = *msg_ptr;
-    ++msg_ptr;
-    shaders::PrintMsg msg(msg_ptr, num_entries);
+    shaders::PrintMsg msg(msg_ptr, asst_rec->num_args);
     using MsgType = shaders::PrintMsg::Type;
     TI_ASSERT(msg.pm_get_type(0) == MsgType::Str);
     const auto fmt_str = print_strtable_.get(msg.pm_get_data(0));

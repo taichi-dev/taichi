@@ -114,7 +114,10 @@ STR(
 
     // This struct is stored in the Metal buffer.
     // The mem space immediately after this struct stores the actual PrintMsg.
-    struct AssertRecorderData { atomic_int flag; };
+    struct AssertRecorderData {
+      atomic_int flag;
+      int32_t num_args;
+    };
 
     // This is just a lightweight wrapper of AssertRecorderData in each Metal
     // thread. It adds assertion functionality around the wrapped data.
@@ -131,14 +134,11 @@ STR(
       }
 
       void set_num_args(int n) {
-        *reinterpret_cast<device int32_t *>(ac_ + 1) = n;
+        ac_->num_args = n;
       }
 
       device int32_t *msg_buf_addr() {
-        // +2 because:
-        // 0: stores the string ID of the assert message template
-        // 1: stores the number of args
-        return reinterpret_cast<device int32_t *>(ac_ + 2);
+        return reinterpret_cast<device int32_t *>(ac_ + 1);
       }
 
      private:

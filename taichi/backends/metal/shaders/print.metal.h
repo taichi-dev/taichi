@@ -27,8 +27,6 @@
 // clang-format off
 METAL_BEGIN_PRINT_DEF
 STR(
-    // clang-format on
-
     // Each type takes 4 bits to encode, which means we can support a maximum
     // of 16 types. For now, we actually only need 2 bits.
     constant constexpr int kMetalNumBitsPerPrintMsgType = 4;
@@ -37,21 +35,20 @@ STR(
     constant constexpr int kMetalPrintMsgTypeWidthMask =
         ((1 << kMetalNumBitsPerPrintMsgType) - 1);
 
-        [[maybe_unused]] inline int mtl_compute_num_print_msg_typemasks(
-            int num_entries) {
-          return (num_entries + kMetalNumPrintMsgTypePerI32 - 1) /
-                 kMetalNumPrintMsgTypePerI32;
-        }
+    [[maybe_unused]] constexpr inline int mtl_compute_num_print_msg_typemasks(
+        int num_entries) {
+      return (num_entries + kMetalNumPrintMsgTypePerI32 - 1) /
+             kMetalNumPrintMsgTypePerI32;
+    }
 
-            [[maybe_unused]] inline int mtl_compute_print_msg_bytes(
-                int num_entries) {
-              // See PrintMsg's layout for how this is computed.
-              const int sz =
-                  sizeof(int32_t) *
-                  (1 + mtl_compute_num_print_msg_typemasks(num_entries) +
-                   num_entries);
-              return sz;
-            }
+    [[maybe_unused]] constexpr inline int mtl_compute_print_msg_bytes(
+        int num_entries) {
+      // See PrintMsg's layout for how this is computed.
+      const int sz =
+          sizeof(int32_t) *
+          (1 + mtl_compute_num_print_msg_typemasks(num_entries) + num_entries);
+      return sz;
+    }
 
     class PrintMsg {
      public:
@@ -65,7 +62,7 @@ STR(
       // kernel only needs to store a I32 string ID.
       enum Type { I32 = 1, F32 = 2, Str = 3 };
 
-      PrintMsg(device int32_t * buf, int num_entries)
+      PrintMsg(device int32_t *buf, int num_entries)
           : mask_buf_(buf),
             data_buf_(buf + mtl_compute_num_print_msg_typemasks(num_entries)) {
       }
@@ -115,17 +112,82 @@ STR(
       device int32_t *data_buf_;
     };
 
+    // This struct is stored in the Metal buffer.
+    // The mem space immediately after this struct stores the actual PrintMsg.
+    struct AssertRecorderData { atomic_int flag; };
+
+    // This is just a lightweight wrapper of AssertRecorderData in each Metal
+    // thread. It adds assertion functionality around the wrapped data.
+    class AssertRecorder {
+     public:
+      explicit AssertRecorder(device byte * addr)
+          : ac_(reinterpret_cast<device AssertRecorderData *>(addr)) {
+      }
+
+      // Returns true if this is the first failure
+      bool mark_first_failure() {
+        return atomic_exchange_explicit(&(ac_->flag), 1,
+                                        metal::memory_order_relaxed) == 0;
+      }
+
+      void set_num_args(int n) {
+        *reinterpret_cast<device int32_t *>(ac_ + 1) = n;
+      }
+
+      device int32_t *msg_buf_addr() {
+        // +2 because:
+        // 0: stores the string ID of the assert message template
+        // 1: stores the number of args
+        return reinterpret_cast<device int32_t *>(ac_ + 2);
+      }
+
+     private:
+      device AssertRecorderData *ac_;
+    };
+
+    constant constexpr int kMetalMaxNumAssertArgs = 64;
+    // Buffer size of the AssertRecorderData + the actual PrintMsg size for
+    // supporting assert().
+    //
+    // assert() will produce at most one PrintMsg. The assert PrintMsg is
+    // assumed to have <= kMetalMaxNumAssertArgs args.
+    constant constexpr int kMetalAssertBufferSize =
+        sizeof(AssertRecorderData) +
+        mtl_compute_print_msg_bytes(kMetalMaxNumAssertArgs);
+
     struct PrintMsgAllocator { atomic_int next; };
 
-    constant constexpr int kMetalPrintBufferSize =
-        2 * 1024 * 1024 - sizeof(PrintMsgAllocator);  // 2MB
+    // 2MB, this stores PrintMsgs for both assert() and print(), as well as
+    // the tiny allocator/recorder objects.
+    //
+    // MetalPrintAssertBuffer memory view:
+    //
+    // +------------------------+ \
+    // | AssertRecorderData     | |
+    // +------------------------+ | -> for assert(), kMetalAssertBufferSize
+    // | PrintMsg for assert()  | |
+    // +------------------------+ /
+    // | PrintMsgAllocator      | \
+    // +------------------------+ |
+    // |                        | |
+    // |                        | |
+    // | a queue of PrintMsgs   | | -> for print()
+    // | for print()            | |
+    // | ... ...                | |
+    // |                        | |
+    // +------------------------+ /
+    constant constexpr int kMetalPrintAssertBufferSize = 2 * 1024 * 1024;
+    // Space to hold the PrintMsgs. These PrintMsgs are pushed into a queue.
+    constant constexpr int kMetalPrintMsgsMaxQueueSize =
+        kMetalPrintAssertBufferSize - sizeof(PrintMsgAllocator) -
+        kMetalAssertBufferSize;
 
     [[maybe_unused]] device int32_t *
-    mtl_print_alloc_buf(device PrintMsgAllocator * pa, int num_entries) {
+    mtl_print_alloc_buf(device PrintMsgAllocator *pa, int num_entries) {
       const int sz = mtl_compute_print_msg_bytes(num_entries);
       const int cur = atomic_fetch_add_explicit(&(pa->next), sz,
                                                 metal::memory_order_relaxed);
-      if (cur + sz >= kMetalPrintBufferSize) {
+      if (cur + sz >= kMetalPrintMsgsMaxQueueSize) {
         // Avoid buffer overflow
         return (device int32_t *)0;
       }
@@ -135,7 +197,6 @@ STR(
       *ptr = num_entries;
       return (ptr + 1);
     }
-    // clang-format off
 )
 METAL_END_PRINT_DEF
 // clang-format on

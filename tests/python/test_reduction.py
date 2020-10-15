@@ -42,7 +42,7 @@ def test_reduction_single_i32():
     _test_reduction_single(ti.i32, lambda x, y: x % 2**32 == y % 2**32)
 
 
-@ti.archs_excluding(ti.opengl)
+@ti.test(exclude=ti.opengl)
 def test_reduction_single_u32():
     _test_reduction_single(ti.u32, lambda x, y: x % 2**32 == y % 2**32)
 

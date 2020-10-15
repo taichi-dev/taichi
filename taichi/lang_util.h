@@ -49,6 +49,35 @@ inline DataType get_data_type() {
   }
 }
 
+template <typename T>
+inline PrimitiveType::primitive_type get_primitive_data_type() {
+  if (std::is_same<T, float32>()) {
+    return PrimitiveType::primitive_type::f32;
+  } else if (std::is_same<T, float64>()) {
+    return PrimitiveType::primitive_type::f64;
+  } else if (std::is_same<T, bool>()) {
+    return PrimitiveType::primitive_type::u1;
+  } else if (std::is_same<T, int8>()) {
+    return PrimitiveType::primitive_type::i8;
+  } else if (std::is_same<T, int16>()) {
+    return PrimitiveType::primitive_type::i16;
+  } else if (std::is_same<T, int32>()) {
+    return PrimitiveType::primitive_type::i32;
+  } else if (std::is_same<T, int64>()) {
+    return PrimitiveType::primitive_type::i64;
+  } else if (std::is_same<T, uint8>()) {
+    return PrimitiveType::primitive_type::u8;
+  } else if (std::is_same<T, uint16>()) {
+    return PrimitiveType::primitive_type::u16;
+  } else if (std::is_same<T, uint32>()) {
+    return PrimitiveType::primitive_type::u32;
+  } else if (std::is_same<T, uint64>()) {
+    return PrimitiveType::primitive_type::u64;
+  } else {
+    TI_NOT_IMPLEMENTED;
+  }
+}
+
 std::string data_type_name(DataType t);
 
 std::string data_type_format(DataType dt);
@@ -214,6 +243,8 @@ class TypedConstant {
 
   template <typename T>
   TypedConstant(DataType dt, const T &value) : dt(dt) {
+    // TODO: loud failure on pointers
+    dt.set_is_pointer(false);
     if (dt == PrimitiveType::f32) {
       val_f32 = value;
     } else if (dt == PrimitiveType::i32) {

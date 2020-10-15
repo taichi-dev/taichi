@@ -867,6 +867,7 @@ void CodeGenLLVM::visit(ArgLoadStmt *stmt) {
         llvm::PointerType::get(tlctx->get_data_type(PrimitiveType::i32), 0);
     llvm_val[stmt] = builder->CreateIntToPtr(raw_arg, dest_ty);
   } else {
+    TI_ASSERT(!stmt->ret_type.data_type->is<PointerType>());
     dest_ty = tlctx->get_data_type(stmt->ret_type.data_type);
     auto dest_bits = dest_ty->getPrimitiveSizeInBits();
     auto truncated = builder->CreateTrunc(
@@ -1227,7 +1228,7 @@ void CodeGenLLVM::visit(ExternalPtrStmt *stmt) {
     sizes[i] = raw_arg;
   }
 
-  auto dt = stmt->ret_type.data_type;
+  auto dt = stmt->ret_type.data_type.ptr_removed();
   auto base = builder->CreateBitCast(
       llvm_val[stmt->base_ptrs[0]],
       llvm::PointerType::get(tlctx->get_data_type(dt), 0));
@@ -1619,8 +1620,8 @@ void CodeGenLLVM::visit(GlobalTemporaryStmt *stmt) {
                      tlctx->get_constant((int64)stmt->offset));
 
   TI_ASSERT(stmt->width() == 1);
-  auto ptr_type =
-      llvm::PointerType::get(tlctx->get_data_type(stmt->ret_type.data_type), 0);
+  auto ptr_type = llvm::PointerType::get(
+      tlctx->get_data_type(stmt->ret_type.data_type.ptr_removed()), 0);
   llvm_val[stmt] = builder->CreatePointerCast(buffer, ptr_type);
 }
 
@@ -1628,8 +1629,8 @@ void CodeGenLLVM::visit(ThreadLocalPtrStmt *stmt) {
   auto base = get_tls_base_ptr();
   TI_ASSERT(stmt->width() == 1);
   auto ptr = builder->CreateGEP(base, tlctx->get_constant(stmt->offset));
-  auto ptr_type =
-      llvm::PointerType::get(tlctx->get_data_type(stmt->ret_type.data_type), 0);
+  auto ptr_type = llvm::PointerType::get(
+      tlctx->get_data_type(stmt->ret_type.data_type.ptr_removed()), 0);
   llvm_val[stmt] = builder->CreatePointerCast(ptr, ptr_type);
 }
 
@@ -1639,8 +1640,8 @@ void CodeGenLLVM::visit(BlockLocalPtrStmt *stmt) {
   TI_ASSERT(stmt->width() == 1);
   auto ptr = builder->CreateGEP(
       base, {tlctx->get_constant(0), llvm_val[stmt->offset]});
-  auto ptr_type =
-      llvm::PointerType::get(tlctx->get_data_type(stmt->ret_type.data_type), 0);
+  auto ptr_type = llvm::PointerType::get(
+      tlctx->get_data_type(stmt->ret_type.data_type.ptr_removed()), 0);
   llvm_val[stmt] = builder->CreatePointerCast(ptr, ptr_type);
 }
 

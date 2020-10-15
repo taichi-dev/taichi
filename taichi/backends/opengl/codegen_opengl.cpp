@@ -573,7 +573,7 @@ class KernelGen : public IRVisitor {
 
   void visit(AtomicOpStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    auto dt = stmt->dest->element_type();
+    auto dt = stmt->dest->element_type().ptr_removed();
     if (dt == PrimitiveType::i32 ||
         (TI_OPENGL_REQUIRE(used, GL_NV_shader_atomic_int64) &&
          dt == PrimitiveType::i64) ||

@@ -34,43 +34,6 @@ using ScratchPadOptions = std::vector<std::pair<int, SNode *>>;
 
 IRBuilder &current_ast_builder();
 
-struct LegacyVectorType {
- private:
-  bool _is_pointer;
-
- public:
-  int width;
-  DataType data_type;
-
-  LegacyVectorType(int width, DataType data_type, bool is_pointer = false)
-      : _is_pointer(is_pointer), width(width), data_type(data_type) {
-  }
-
-  LegacyVectorType()
-      : _is_pointer(false), width(1), data_type(PrimitiveType::unknown) {
-  }
-
-  bool operator==(const LegacyVectorType &o) const {
-    return width == o.width && data_type == o.data_type;
-  }
-
-  bool operator!=(const LegacyVectorType &o) const {
-    return !(*this == o);
-  }
-
-  std::string pointer_suffix() const;
-  std::string element_type_name() const;
-  std::string str() const;
-
-  bool is_pointer() const {
-    return _is_pointer;
-  }
-
-  void set_is_pointer(bool v) {
-    _is_pointer = v;
-  }
-};
-
 class DecoratorRecorder {
  public:
   int vectorize;
@@ -531,7 +494,7 @@ class Stmt : public IRNode {
   bool erased;
   bool fields_registered;
   std::string tb;
-  LegacyVectorType ret_type;
+  DataType ret_type;
 
   Stmt();
   Stmt(const Stmt &stmt);
@@ -553,7 +516,7 @@ class Stmt : public IRNode {
   }
 
   std::string ret_data_type_name() const {
-    return ret_type.str();
+    return ret_type->to_string();
   }
 
   std::string type_hint() const;

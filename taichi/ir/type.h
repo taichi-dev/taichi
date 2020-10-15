@@ -7,6 +7,29 @@ TLANG_NAMESPACE_BEGIN
 class Type {
  public:
   virtual std::string to_string() const = 0;
+
+  template <typename T>
+  bool is() const {
+    return cast<T>() != nullptr;
+  }
+
+  template <typename T>
+  const T *cast() const {
+    return dynamic_cast<const T *>(this);
+  }
+
+  template <typename T>
+  T *cast() {
+    return dynamic_cast<T *>(this);
+  }
+
+  template <typename T>
+  T *as() {
+    auto p = dynamic_cast<T *>(this);
+    TI_ASSERT(p != nullptr);
+    return p;
+  }
+
   virtual ~Type() {
   }
 };
@@ -16,7 +39,10 @@ class DataType {
  public:
   DataType();
 
-  DataType(const Type *ptr) : ptr_(ptr) {
+  DataType(Type *ptr) : data_type(*this), ptr_(ptr) {
+  }
+
+  DataType(const DataType &o) : data_type(*this), ptr_(o.ptr_) {
   }
 
   bool operator==(const DataType &o) const {
@@ -34,12 +60,32 @@ class DataType {
   };
 
   // TODO: DataType itself should be a pointer in the future
-  const Type *get_ptr() const {
+  Type *get_ptr() const {
     return ptr_;
   }
 
+  // Temporary API and members
+  // for LegacyVectorType-compatibility
+  int width{1};
+  DataType &data_type;
+
+  Type *operator->() const {
+    return ptr_;
+  }
+
+  DataType &operator=(const DataType &o) {
+    ptr_ = o.ptr_;
+    return *this;
+  }
+
+  bool is_pointer() const;
+
+  void set_is_pointer(bool ptr);
+
+  DataType ptr_removed() const;
+
  private:
-  const Type *ptr_;
+  Type *ptr_;
 };
 
 class PrimitiveType : public Type {
@@ -114,5 +160,9 @@ class VectorType : public Type {
   int num_elements_{0};
   Type *element_{nullptr};
 };
+
+DataType LegacyVectorType(int width,
+                          DataType data_type,
+                          bool is_pointer = false);
 
 TLANG_NAMESPACE_END

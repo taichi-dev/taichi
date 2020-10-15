@@ -184,7 +184,7 @@ class BasicBlockSimplify : public IRVisitor {
           if (k == num_loop_vars - 1) {
             auto load = stmt->insert_before_me(
                 Stmt::make<LoopIndexStmt>(current_struct_for, k));
-            load->ret_type.data_type = PrimitiveType::i32;
+            load->ret_type = PrimitiveType::i32;
             stmt->input = load;
             int64 bound = 1LL << stmt->bit_end;
             auto offset = (((int64)diff.low % bound + bound) % bound) &
@@ -215,12 +215,12 @@ class BasicBlockSimplify : public IRVisitor {
             // insert constant
             auto load = stmt->insert_before_me(
                 Stmt::make<LoopIndexStmt>(current_struct_for, k));
-            load->ret_type.data_type = PrimitiveType::i32;
+            load->ret_type = PrimitiveType::i32;
             auto constant = stmt->insert_before_me(
                 Stmt::make<ConstStmt>(TypedConstant(diff.low)));
             auto add = stmt->insert_before_me(
                 Stmt::make<BinaryOpStmt>(BinaryOpType::add, load, constant));
-            add->ret_type.data_type = PrimitiveType::i32;
+            add->ret_type = PrimitiveType::i32;
             stmt->input = add;
           }
           stmt->simplified = true;

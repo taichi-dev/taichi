@@ -29,7 +29,7 @@ class BinaryOpSimp : public BasicStmtVisitor {
     }
     // Disable other optimizations if fast_math=True and the data type is not
     // integral.
-    if (!fast_math && !is_integral(stmt->ret_type.data_type)) {
+    if (!fast_math && !is_integral(stmt->ret_type)) {
       return;
     }
     auto binary_lhs = stmt->lhs->cast<BinaryOpStmt>();
@@ -45,7 +45,7 @@ class BinaryOpSimp : public BasicStmtVisitor {
     auto op2 = stmt->op_type;
     // Disables (a / b) * c -> a / (b / c), (a * b) / c -> a * (b / c)
     // when the data type is integral.
-    if (is_integral(stmt->ret_type.data_type) &&
+    if (is_integral(stmt->ret_type) &&
         ((op1 == BinaryOpType::div && op2 == BinaryOpType::mul) ||
          (op1 == BinaryOpType::mul && op2 == BinaryOpType::div))) {
       return;
@@ -57,10 +57,10 @@ class BinaryOpSimp : public BasicStmtVisitor {
     // stmt = a op1 (b op2 c)
     if (can_rearrange_associative(op1, op2, new_op2)) {
       auto bin_op = Stmt::make<BinaryOpStmt>(new_op2, const_lhs_rhs, const_rhs);
-      bin_op->ret_type.data_type = stmt->ret_type.data_type;
+      bin_op->ret_type = stmt->ret_type;
       auto new_stmt =
           Stmt::make<BinaryOpStmt>(op1, binary_lhs->lhs, bin_op.get());
-      new_stmt->ret_type.data_type = stmt->ret_type.data_type;
+      new_stmt->ret_type = stmt->ret_type;
 
       modifier.insert_before(stmt, std::move(bin_op));
       stmt->replace_with(new_stmt.get());

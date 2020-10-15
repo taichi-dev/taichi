@@ -401,7 +401,7 @@ class CCTransformer : public IRVisitor {
 
       if (std::holds_alternative<Stmt *>(content)) {
         auto arg_stmt = std::get<Stmt *>(content);
-        format += data_type_format(arg_stmt->ret_type.data_type);
+        format += data_type_format(arg_stmt->ret_type);
         values.push_back(arg_stmt->raw_name());
 
       } else {
@@ -527,10 +527,10 @@ class CCTransformer : public IRVisitor {
   }
 
   void visit(RandStmt *stmt) override {
-    auto var = define_var(cc_data_type_name(stmt->ret_type.data_type),
+    auto var = define_var(cc_data_type_name(stmt->ret_type),
                           stmt->raw_name());
     emit("{} = Ti_rand_{}();", var,
-         data_type_short_name(stmt->ret_type.data_type));
+         data_type_short_name(stmt->ret_type));
   }
 
   void visit(StackAllocaStmt *stmt) override {

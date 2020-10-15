@@ -267,7 +267,7 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access) {
       if (result->is<AllocaStmt>()) {
         // special case of alloca (initialized to 0)
         auto zero =
-            Stmt::make<ConstStmt>(TypedConstant(result->ret_type.data_type, 0));
+            Stmt::make<ConstStmt>(TypedConstant(result->ret_type, 0));
         zero->repeat(result->width());
         replace_with(i, std::move(zero), true);
       } else {

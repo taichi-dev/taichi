@@ -16,7 +16,7 @@ TLANG_NAMESPACE_BEGIN
 #include "taichi/inc/data_type.inc.h"
 #undef PER_TYPE
 
-DataType::DataType() : data_type(*this), ptr_(PrimitiveType::unknown.ptr_) {
+DataType::DataType() : ptr_(PrimitiveType::unknown.ptr_) {
 }
 
 DataType PrimitiveType::get(PrimitiveType::primitive_type t) {

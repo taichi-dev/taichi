@@ -113,7 +113,7 @@ void make_thread_local_offload(OffloadedStmt *offload) {
   // TODO: sort thread local storage variables according to dtype_size to
   // reduce buffer fragmentation.
   for (auto dest : valid_reduction_values) {
-    auto data_type = dest->ret_type.data_type.ptr_removed();
+    auto data_type = dest->ret_type.ptr_removed();
     auto dtype_size = data_type_size(data_type);
     // Step 1:
     // Create thread local storage

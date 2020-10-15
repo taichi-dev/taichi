@@ -183,7 +183,7 @@ class LowerAccess : public IRVisitor {
       lanes.push_back(VectorElement(lowered_pointers[i], 0));
     }
     auto merge = Stmt::make<ElementShuffleStmt>(lanes, true);
-    merge->ret_type.data_type = ptr->snodes[0]->dt;
+    merge->ret_type = ptr->snodes[0]->dt;
     lowered.push_back(std::move(merge));
     return lowered;
   }

@@ -317,10 +317,9 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   }
 
   void visit(RandStmt *stmt) override {
-    llvm_val[stmt] =
-        create_call(fmt::format("cuda_rand_{}",
-                                data_type_short_name(stmt->ret_type)),
-                    {get_context()});
+    llvm_val[stmt] = create_call(
+        fmt::format("cuda_rand_{}", data_type_short_name(stmt->ret_type)),
+        {get_context()});
   }
   void visit(RangeForStmt *for_stmt) override {
     create_naive_range_for(for_stmt);

@@ -267,8 +267,8 @@ class KernelGen : public IRVisitor {
       if (std::holds_alternative<Stmt *>(content)) {
         auto arg_stmt = std::get<Stmt *>(content);
         emit("_msg_set_{}({}, {}, {});",
-             opengl_data_type_short_name(arg_stmt->ret_type),
-             msgid_name, i, arg_stmt->short_name());
+             opengl_data_type_short_name(arg_stmt->ret_type), msgid_name, i,
+             arg_stmt->short_name());
 
       } else {
         auto str = std::get<std::string>(content);
@@ -282,8 +282,7 @@ class KernelGen : public IRVisitor {
   void visit(RandStmt *stmt) override {
     used.random = true;
     emit("{} {} = _rand_{}();", opengl_data_type_name(stmt->ret_type),
-         stmt->short_name(),
-         opengl_data_type_short_name(stmt->ret_type));
+         stmt->short_name(), opengl_data_type_short_name(stmt->ret_type));
   }
 
   void visit(LinearizeStmt *stmt) override {

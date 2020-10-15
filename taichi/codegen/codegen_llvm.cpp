@@ -130,8 +130,8 @@ void CodeGenLLVM::visit(Block *stmt_list) {
 
 void CodeGenLLVM::visit(AllocaStmt *stmt) {
   TI_ASSERT(stmt->width() == 1);
-  llvm_val[stmt] = create_entry_block_alloca(stmt->ret_type,
-                                             stmt->ret_type.is_pointer());
+  llvm_val[stmt] =
+      create_entry_block_alloca(stmt->ret_type, stmt->ret_type.is_pointer());
   // initialize as zero if element is not a pointer
   if (!stmt->ret_type.is_pointer())
     builder->CreateStore(tlctx->get_constant(stmt->ret_type, 0),
@@ -139,8 +139,8 @@ void CodeGenLLVM::visit(AllocaStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(RandStmt *stmt) {
-  llvm_val[stmt] = create_call(
-      fmt::format("rand_{}", data_type_short_name(stmt->ret_type)));
+  llvm_val[stmt] =
+      create_call(fmt::format("rand_{}", data_type_short_name(stmt->ret_type)));
 }
 
 void CodeGenLLVM::emit_extra_unary(UnaryOpStmt *stmt) {
@@ -881,8 +881,7 @@ void CodeGenLLVM::visit(KernelReturnStmt *stmt) {
     TI_NOT_IMPLEMENTED
   } else {
     auto intermediate_bits =
-        tlctx->get_data_type(stmt->value->ret_type)
-            ->getPrimitiveSizeInBits();
+        tlctx->get_data_type(stmt->value->ret_type)->getPrimitiveSizeInBits();
     llvm::Type *intermediate_type =
         llvm::Type::getIntNTy(*llvm_context, intermediate_bits);
     llvm::Type *dest_ty = tlctx->get_data_type<int64>();
@@ -928,8 +927,7 @@ void CodeGenLLVM::visit(AssertStmt *stmt) {
     // First convert the argument to an integral type with the same number of
     // bits:
     auto cast_type = llvm::Type::getIntNTy(
-        *llvm_context,
-        8 * (std::size_t)data_type_size(arg->ret_type));
+        *llvm_context, 8 * (std::size_t)data_type_size(arg->ret_type));
     auto cast_int = builder->CreateBitCast(llvm_val[arg], cast_type);
 
     // Then zero-extend the conversion result into int64:
@@ -1077,8 +1075,8 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
 void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
   int width = stmt->width();
   TI_ASSERT(width == 1);
-  llvm_val[stmt] = builder->CreateLoad(
-      tlctx->get_data_type(stmt->ret_type), llvm_val[stmt->ptr]);
+  llvm_val[stmt] = builder->CreateLoad(tlctx->get_data_type(stmt->ret_type),
+                                       llvm_val[stmt->ptr]);
 }
 
 void CodeGenLLVM::visit(ElementShuffleStmt *stmt){
@@ -1678,8 +1676,8 @@ void CodeGenLLVM::visit(StackPushStmt *stmt) {
   auto primal_ptr = call("stack_top_primal", llvm_val[stack],
                          tlctx->get_constant(stack->element_size_in_bytes()));
   primal_ptr = builder->CreateBitCast(
-      primal_ptr, llvm::PointerType::get(
-                      tlctx->get_data_type(stmt->ret_type), 0));
+      primal_ptr,
+      llvm::PointerType::get(tlctx->get_data_type(stmt->ret_type), 0));
   builder->CreateStore(llvm_val[stmt->v], primal_ptr);
 }
 
@@ -1688,8 +1686,8 @@ void CodeGenLLVM::visit(StackLoadTopStmt *stmt) {
   auto primal_ptr = call("stack_top_primal", llvm_val[stack],
                          tlctx->get_constant(stack->element_size_in_bytes()));
   primal_ptr = builder->CreateBitCast(
-      primal_ptr, llvm::PointerType::get(
-                      tlctx->get_data_type(stmt->ret_type), 0));
+      primal_ptr,
+      llvm::PointerType::get(tlctx->get_data_type(stmt->ret_type), 0));
   llvm_val[stmt] = builder->CreateLoad(primal_ptr);
 }
 
@@ -1698,8 +1696,7 @@ void CodeGenLLVM::visit(StackLoadTopAdjStmt *stmt) {
   auto adjoint = call("stack_top_adjoint", llvm_val[stack],
                       tlctx->get_constant(stack->element_size_in_bytes()));
   adjoint = builder->CreateBitCast(
-      adjoint, llvm::PointerType::get(
-                   tlctx->get_data_type(stmt->ret_type), 0));
+      adjoint, llvm::PointerType::get(tlctx->get_data_type(stmt->ret_type), 0));
   llvm_val[stmt] = builder->CreateLoad(adjoint);
 }
 
@@ -1708,8 +1705,8 @@ void CodeGenLLVM::visit(StackAccAdjointStmt *stmt) {
   auto adjoint_ptr = call("stack_top_adjoint", llvm_val[stack],
                           tlctx->get_constant(stack->element_size_in_bytes()));
   adjoint_ptr = builder->CreateBitCast(
-      adjoint_ptr, llvm::PointerType::get(
-                       tlctx->get_data_type(stack->ret_type), 0));
+      adjoint_ptr,
+      llvm::PointerType::get(tlctx->get_data_type(stack->ret_type), 0));
   auto old_val = builder->CreateLoad(adjoint_ptr);
   TI_ASSERT(is_real(stmt->v->ret_type));
   auto new_val = builder->CreateFAdd(old_val, llvm_val[stmt->v]);

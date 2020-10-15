@@ -30,8 +30,7 @@ class AlgSimp : public BasicStmtVisitor {
   }
 
   void visit(UnaryOpStmt *stmt) override {
-    if (stmt->is_cast() &&
-        stmt->cast_type == stmt->operand->ret_type) {
+    if (stmt->is_cast() && stmt->cast_type == stmt->operand->ret_type) {
       stmt->replace_with(stmt->operand);
       modifier.erase(stmt);
     }
@@ -72,12 +71,10 @@ class AlgSimp : public BasicStmtVisitor {
                  stmt->op_type == BinaryOpType::mul &&
                  (alg_is_zero(lhs) || alg_is_zero(rhs))) {
         // fast_math or integral operands: 0 * a -> 0, a * 0 -> 0
-        if (alg_is_zero(lhs) &&
-            lhs->ret_type == stmt->ret_type) {
+        if (alg_is_zero(lhs) && lhs->ret_type == stmt->ret_type) {
           stmt->replace_with(stmt->lhs);
           modifier.erase(stmt);
-        } else if (alg_is_zero(rhs) &&
-                   rhs->ret_type == stmt->ret_type) {
+        } else if (alg_is_zero(rhs) && rhs->ret_type == stmt->ret_type) {
           stmt->replace_with(stmt->rhs);
           modifier.erase(stmt);
         } else {

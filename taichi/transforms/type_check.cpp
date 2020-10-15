@@ -88,13 +88,13 @@ class TypeCheck : public IRVisitor {
       // Infer data type for alloca
       stmt->ptr->ret_type = stmt->data->ret_type;
     }
-    auto common_container_type = promoted_type(stmt->ptr->ret_type,
-                                               stmt->data->ret_type);
+    auto common_container_type =
+        promoted_type(stmt->ptr->ret_type, stmt->data->ret_type);
 
     auto old_data = stmt->data;
     if (stmt->ptr->ret_type != stmt->data->ret_type) {
-      stmt->data = insert_type_cast_before(stmt, stmt->data,
-                                           stmt->ptr->ret_type);
+      stmt->data =
+          insert_type_cast_before(stmt, stmt->data, stmt->ptr->ret_type);
     }
     if (stmt->ptr->ret_type != common_container_type) {
       TI_WARN(
@@ -147,11 +147,10 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(GlobalStoreStmt *stmt) {
-    auto promoted = promoted_type(stmt->ptr->ret_type.ptr_removed(),
-                                  stmt->data->ret_type);
+    auto promoted =
+        promoted_type(stmt->ptr->ret_type.ptr_removed(), stmt->data->ret_type);
     auto input_type = stmt->data->ret_data_type_name();
-    if (stmt->ptr->ret_type.ptr_removed() !=
-        stmt->data->ret_type) {
+    if (stmt->ptr->ret_type.ptr_removed() != stmt->data->ret_type) {
       stmt->data = insert_type_cast_before(stmt, stmt->data,
                                            stmt->ptr->ret_type.ptr_removed());
     }
@@ -260,8 +259,7 @@ class TypeCheck : public IRVisitor {
     }
 
     if (stmt->lhs->ret_type != stmt->rhs->ret_type) {
-      auto ret_type = promoted_type(stmt->lhs->ret_type,
-                                    stmt->rhs->ret_type);
+      auto ret_type = promoted_type(stmt->lhs->ret_type, stmt->rhs->ret_type);
       if (ret_type != stmt->lhs->ret_type) {
         // promote rhs
         auto cast_stmt = insert_type_cast_before(stmt, stmt->lhs, ret_type);
@@ -276,10 +274,8 @@ class TypeCheck : public IRVisitor {
     bool matching = true;
     matching =
         matching && (stmt->lhs->ret_type.width == stmt->rhs->ret_type.width);
-    matching =
-        matching && (stmt->lhs->ret_type != PrimitiveType::unknown);
-    matching =
-        matching && (stmt->rhs->ret_type != PrimitiveType::unknown);
+    matching = matching && (stmt->lhs->ret_type != PrimitiveType::unknown);
+    matching = matching && (stmt->rhs->ret_type != PrimitiveType::unknown);
     matching = matching && (stmt->lhs->ret_type == stmt->rhs->ret_type);
     if (!matching) {
       error();
@@ -299,8 +295,7 @@ class TypeCheck : public IRVisitor {
 
   void visit(TernaryOpStmt *stmt) {
     if (stmt->op_type == TernaryOpType::select) {
-      auto ret_type = promoted_type(stmt->op2->ret_type,
-                                    stmt->op3->ret_type);
+      auto ret_type = promoted_type(stmt->op2->ret_type, stmt->op3->ret_type);
       TI_ASSERT(stmt->op1->ret_type == PrimitiveType::i32)
       TI_ASSERT(stmt->op1->ret_type.width == stmt->op2->ret_type.width);
       TI_ASSERT(stmt->op2->ret_type.width == stmt->op3->ret_type.width);
@@ -347,8 +342,8 @@ class TypeCheck : public IRVisitor {
 
   void visit(ExternalPtrStmt *stmt) {
     stmt->ret_type.set_is_pointer(true);
-    stmt->ret_type = LegacyVectorType(stmt->base_ptrs.size(),
-                                      stmt->base_ptrs[0]->ret_type);
+    stmt->ret_type =
+        LegacyVectorType(stmt->base_ptrs.size(), stmt->base_ptrs[0]->ret_type);
   }
 
   void visit(LoopIndexStmt *stmt) {

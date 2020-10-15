@@ -481,6 +481,8 @@ void export_lang(py::module &m) {
 
   m.def("expr_assume_in_range", AssumeInRange);
 
+  m.def("expr_loop_unique", Expr::make<const Expr &>);
+
   m.def("expr_select", expr_select);
 
 #define DEFINE_EXPRESSION_OP_UNARY(x) m.def("expr_" #x, expr_##x);

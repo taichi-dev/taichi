@@ -346,7 +346,7 @@ class TypePromotionMapping {
   DataType query(DataType x, DataType y) {
     auto primitive =
         mapping[std::make_pair(to_primitive_type(x), to_primitive_type(y))];
-      return TypeFactory::get_instance().get_primitive_type(primitive);
+    return TypeFactory::get_instance().get_primitive_type(primitive);
   }
 
  private:

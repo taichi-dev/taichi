@@ -8,7 +8,6 @@ TLANG_NAMESPACE_BEGIN
 
 class TypeFactory {
  public:
-
   static TypeFactory &get_instance();
 
   Type *get_primitive_type(PrimitiveType::primitive_type id);
@@ -18,7 +17,6 @@ class TypeFactory {
   Type *get_pointer_type(Type *element);
 
  private:
-
   TypeFactory();
 
   std::unordered_map<PrimitiveType::primitive_type, std::unique_ptr<Type>>

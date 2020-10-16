@@ -197,7 +197,9 @@ Program::Program(Arch desired_arch) {
 }
 
 TypeFactory &Program::get_type_factory() {
-  TI_WARN("Program::get_type_factory() will be deprecated, Please use TypeFactory::get_instance()");
+  TI_WARN(
+      "Program::get_type_factory() will be deprecated, Please use "
+      "TypeFactory::get_instance()");
   return TypeFactory::get_instance();
 }
 

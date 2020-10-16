@@ -2,7 +2,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-TypeFactory & TypeFactory::get_instance() {
+TypeFactory &TypeFactory::get_instance() {
   static TypeFactory type_factory;
   return type_factory;
 }
@@ -34,7 +34,6 @@ Type *TypeFactory::get_pointer_type(Type *element) {
 }
 
 TypeFactory::TypeFactory() {
-
 }
 
 TLANG_NAMESPACE_END

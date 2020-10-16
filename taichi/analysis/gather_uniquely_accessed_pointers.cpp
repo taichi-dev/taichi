@@ -2,15 +2,22 @@
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/visitors.h"
+#include <algorithm>
 
 TLANG_NAMESPACE_BEGIN
 
 class LoopUniqueStmtSearcher : public BasicStmtVisitor {
  private:
   std::unordered_set<Stmt *> loop_invariant_;
-  std::unordered_set<Stmt *> loop_unique_;
+
+  // If loop_unique_[stmt] is -1, the value of stmt is unique among the
+  // top-level loop.
+  // If loop_unique_[stmt] is x > 0, the value of stmt is unique to
+  // the x-th loop index.
+  std::unordered_map<Stmt *, int> loop_unique_;
 
  public:
+  int num_different_loop_indices{-1};
   using BasicStmtVisitor::visit;
 
   LoopUniqueStmtSearcher() {
@@ -20,11 +27,11 @@ class LoopUniqueStmtSearcher : public BasicStmtVisitor {
 
   void visit(LoopIndexStmt *stmt) override {
     if (stmt->loop->is<OffloadedStmt>())
-      loop_unique_.insert(stmt);
+      loop_unique_[stmt] = stmt->index;
   }
 
   void visit(LoopUniqueStmt *stmt) override {
-    loop_unique_.insert(stmt);
+    loop_unique_[stmt] = -1;
   }
 
   void visit(ConstStmt *stmt) override {
@@ -38,7 +45,7 @@ class LoopUniqueStmtSearcher : public BasicStmtVisitor {
     if (loop_unique_.count(stmt->operand) > 0 &&
         (stmt->op_type == UnaryOpType::neg)) {
       // TODO: Other injective unary operations
-      loop_unique_.insert(stmt);
+      loop_unique_[stmt] = loop_unique_[stmt->operand];
     }
   }
 
@@ -47,19 +54,46 @@ class LoopUniqueStmtSearcher : public BasicStmtVisitor {
         loop_invariant_.count(stmt->rhs) > 0) {
       loop_invariant_.insert(stmt);
     }
-    if (((loop_unique_.count(stmt->lhs) > 0 &&
-          loop_invariant_.count(stmt->rhs) > 0) ||
-         (loop_invariant_.count(stmt->lhs) > 0 &&
-          loop_unique_.count(stmt->rhs) > 0)) &&
+    if ((loop_unique_.count(stmt->lhs) > 0 &&
+         loop_invariant_.count(stmt->rhs) > 0) &&
         (stmt->op_type == BinaryOpType::add ||
          stmt->op_type == BinaryOpType::sub ||
          stmt->op_type == BinaryOpType::bit_xor)) {
-      loop_unique_.insert(stmt);
+      loop_unique_[stmt] = loop_unique_[stmt->lhs];
+    }
+    if ((loop_invariant_.count(stmt->lhs) > 0 &&
+         loop_unique_.count(stmt->rhs) > 0) &&
+        (stmt->op_type == BinaryOpType::add ||
+         stmt->op_type == BinaryOpType::sub ||
+         stmt->op_type == BinaryOpType::bit_xor)) {
+      loop_unique_[stmt] = loop_unique_[stmt->rhs];
     }
   }
 
-  bool is_loop_unique(Stmt *stmt) const {
-    return loop_unique_.count(stmt) > 0;
+  bool is_loop_unique(GlobalPtrStmt *stmt) const {
+    TI_ASSERT(num_different_loop_indices != -1);
+    std::vector<int> loop_indices;
+    loop_indices.reserve(stmt->indices.size());
+    for (auto &index : stmt->indices) {
+      auto loop_unique_index = loop_unique_.find(index);
+      if (loop_unique_index != loop_unique_.end()) {
+        if (loop_unique_index->second == -1) {
+          // LoopUniqueStmt
+          return true;
+        } else {
+          // LoopIndexStmt
+          loop_indices.push_back(loop_unique_index->second);
+        }
+      }
+    }
+    std::sort(loop_indices.begin(), loop_indices.end());
+    auto current_num_different_loop_indices =
+        std::unique(loop_indices.begin(), loop_indices.end()) -
+        loop_indices.begin();
+    // for i, j in x:
+    //     y[j, i] is loop-unique
+    //     a[i, i] is not loop-unique
+    return current_num_different_loop_indices == num_different_loop_indices;
   }
 };
 
@@ -80,12 +114,10 @@ class UniquelyAccessedSNodeSearcher : public BasicStmtVisitor {
     for (auto &snode : stmt->snodes.data) {
       auto accessed_ptr = accessed_pointer_.find(snode);
       if (accessed_ptr == accessed_pointer_.end()) {
-        accessed_pointer_[snode] = stmt;
-        for (auto &index : stmt->indices) {
-          if (!loop_unique_stmt_searcher_.is_loop_unique(index)) {
-            accessed_pointer_[snode] = nullptr;  // not loop-unique
-            break;
-          }
+        if (loop_unique_stmt_searcher_.is_loop_unique(stmt)) {
+          accessed_pointer_[snode] = stmt;
+        } else {
+          accessed_pointer_[snode] = nullptr;  // not loop-unique
         }
       } else {
         if (!irpass::analysis::definitely_same_address(accessed_ptr->second,
@@ -98,7 +130,17 @@ class UniquelyAccessedSNodeSearcher : public BasicStmtVisitor {
 
   static std::unordered_map<SNode *, GlobalPtrStmt *> run(IRNode *root) {
     TI_ASSERT(root->is<OffloadedStmt>());
+    auto offload = root->as<OffloadedStmt>();
     UniquelyAccessedSNodeSearcher searcher;
+    if (offload->task_type == OffloadedTaskType::range_for) {
+      searcher.loop_unique_stmt_searcher_.num_different_loop_indices = 1;
+    } else if (offload->task_type == OffloadedTaskType::struct_for) {
+      searcher.loop_unique_stmt_searcher_.num_different_loop_indices =
+          offload->snode->num_active_indices;
+    } else {
+      // serial
+      searcher.loop_unique_stmt_searcher_.num_different_loop_indices = 0;
+    }
     root->accept(&searcher.loop_unique_stmt_searcher_);
     root->accept(&searcher);
     return std::move(searcher.accessed_pointer_);

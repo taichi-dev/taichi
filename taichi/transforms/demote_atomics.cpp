@@ -43,7 +43,8 @@ class DemoteAtomics : public BasicStmtVisitor {
         demote = true;
         auto dest = stmt->dest->as<GlobalPtrStmt>();
         for (auto snode : dest->snodes.data) {
-          if (loop_unique_ptr_[snode] == nullptr) {
+          if (loop_unique_ptr_[snode] == nullptr ||
+              loop_unique_ptr_[snode]->indices.empty()) {
             // not uniquely accessed
             demote = false;
             break;

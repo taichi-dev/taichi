@@ -41,8 +41,9 @@ constexpr char kContextBufferName[] = "ctx_addr";
 constexpr char kContextVarName[] = "kernel_ctx_";
 constexpr char kRuntimeBufferName[] = "runtime_addr";
 constexpr char kRuntimeVarName[] = "runtime_";
-constexpr char kPrintBufferName[] = "print_addr";
+constexpr char kPrintAssertBufferName[] = "print_assert_addr";
 constexpr char kPrintAllocVarName[] = "print_alloc_";
+constexpr char kAssertRecorderVarName[] = "assert_rec_";
 constexpr char kLinearLoopIndexName[] = "linear_loop_idx_";
 constexpr char kListgenElemVarName[] = "listgen_elem_";
 constexpr char kRandStateVarName[] = "rand_state_";
@@ -60,7 +61,7 @@ std::string buffer_to_name(BuffersEnum b) {
     case BuffersEnum::Runtime:
       return kRuntimeBufferName;
     case BuffersEnum::Print:
-      return kPrintBufferName;
+      return kPrintAssertBufferName;
     default:
       TI_NOT_IMPLEMENTED;
       break;
@@ -639,6 +640,46 @@ class KernelCodegen : public IRVisitor {
     emit("}}");
   }
 
+  void visit(AssertStmt *stmt) override {
+    used_features()->assertion = true;
+
+    const auto &args = stmt->args;
+    // +1 because the assertion message template itself takes one slot
+    const auto num_args = args.size() + 1;
+    TI_ASSERT_INFO(num_args <= shaders::kMetalMaxNumAssertArgs,
+                   "[Metal] Too many args in assert()");
+    emit("if (!({})) {{", stmt->cond->raw_name());
+    {
+      ScopedIndent s(current_appender());
+      // Only record the message for the first-time assertion failure.
+      emit("if ({}.mark_first_failure()) {{", kAssertRecorderVarName);
+      {
+        ScopedIndent s2(current_appender());
+        emit("{}.set_num_args({});", kAssertRecorderVarName, num_args);
+        const std::string asst_var_name = stmt->raw_name() + "_msg_";
+        emit("PrintMsg {}({}.msg_buf_addr(), {});", asst_var_name,
+             kAssertRecorderVarName, num_args);
+        const int msg_str_id = print_strtab_->put(stmt->text);
+        emit("{}.pm_set_str(/*i=*/0, {});", asst_var_name, msg_str_id);
+        for (int i = 1; i < num_args; ++i) {
+          auto *arg = args[i - 1];
+          const auto ty = arg->element_type();
+          if (ty == PrimitiveType::i32 || ty == PrimitiveType::f32) {
+            emit("{}.pm_set_{}({}, {});", asst_var_name,
+                 data_type_short_name(ty), i, arg->raw_name());
+          } else {
+            TI_ERROR(
+                "[Metal] assert() only supports i32 or f32 scalars for now.");
+          }
+        }
+      }
+      emit("}}");
+      // This has failed, no point executing the rest of the kernel.
+      emit("return;");
+    }
+    emit("}}");
+  }
+
   void visit(StackAllocaStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
 
@@ -1125,9 +1166,17 @@ class KernelCodegen : public IRVisitor {
           fmt::arg("rtm", kRuntimeVarName),
           fmt::arg("lidx", kLinearLoopIndexName),
           fmt::arg("nums", kNumRandSeeds));
-      // Init PrintMsgAllocator
-      emit("device auto* {} = reinterpret_cast<device PrintMsgAllocator*>({});",
-           kPrintAllocVarName, kPrintBufferName);
+      // Init AssertRecorder.
+      emit("AssertRecorder {}({});", kAssertRecorderVarName,
+           kPrintAssertBufferName);
+      // Init PrintMsgAllocator.
+      // The print buffer comes after (AssertRecorder + assert message buffer),
+      // therefore we skip by +|kMetalAssertBufferSize|.
+      emit(
+          "device auto* {} = reinterpret_cast<device PrintMsgAllocator*>({} + "
+          "{});",
+          kPrintAllocVarName, kPrintAssertBufferName,
+          shaders::kMetalAssertBufferSize);
     }
     // We do not need additional indentation, because |func_ir| itself is a
     // block, which will be indented automatically.

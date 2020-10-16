@@ -7,6 +7,9 @@ TypeFactory &TypeFactory::get_instance() {
   return *type_factory;
 }
 
+TypeFactory::TypeFactory() {
+}
+
 Type *TypeFactory::get_primitive_type(PrimitiveTypeID id) {
   std::lock_guard<std::mutex> _(mut_);
 
@@ -33,7 +36,21 @@ Type *TypeFactory::get_pointer_type(Type *element) {
   return pointer_types_[key].get();
 }
 
-TypeFactory::TypeFactory() {
+Type *TypeFactory::get_custom_int_type(int num_bits, bool is_signed) {
+  auto key = std::make_pair(num_bits, is_signed);
+  if (custom_int_types_.find(key) == custom_int_types_.end()) {
+    custom_int_types_[key] =
+        std::make_unique<CustomIntType>(num_bits, is_signed);
+  }
+  return custom_int_types_[key].get();
+}
+
+Type *TypeFactory::get_bit_struct(int container_bits,
+                                  std::vector<Type *> member_types,
+                                  std::vector<int> member_bit_offsets) {
+  bit_struct_types_.push_back(std::make_unique<BitStructType>(
+      container_bits, member_types, member_bit_offsets));
+  return bit_struct_types_.back().get();
 }
 
 TLANG_NAMESPACE_END

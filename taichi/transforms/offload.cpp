@@ -259,7 +259,6 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
   }
 
   std::size_t allocate_global(DataType type) {
-    TI_ASSERT(type.width == 1);
     auto ret = global_offset;
     global_offset += data_type_size(type);
     TI_ASSERT(global_offset < taichi_global_tmp_buffer_size);

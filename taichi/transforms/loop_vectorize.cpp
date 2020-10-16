@@ -21,6 +21,8 @@ class LoopVectorize : public IRVisitor {
     vectorize = 1;
   }
 
+#if 0
+
   void visit(Stmt *stmt) override {
     stmt->ret_type.width *= vectorize;
   }
@@ -146,6 +148,8 @@ class LoopVectorize : public IRVisitor {
     stmt->body->accept(this);
   }
 
+#endif
+
   static void run(IRNode *node) {
     LoopVectorize inst;
     node->accept(&inst);
@@ -155,6 +159,7 @@ class LoopVectorize : public IRVisitor {
 namespace irpass {
 
 void loop_vectorize(IRNode *root) {
+  TI_NOT_IMPLEMENTED
   TI_AUTO_PROF;
   return LoopVectorize::run(root);
 }

@@ -25,7 +25,7 @@ class BasicBlockVectorSplit : public IRVisitor {
       : block(block), max_width(max_width), serial_schedule(serial_schedule) {
     // allow_undefined_visitor = true;
     // invoke_default_visitor = false;
-    run();
+    // run();
   }
 
   int lane_start(int split) {
@@ -46,6 +46,8 @@ class BasicBlockVectorSplit : public IRVisitor {
       return origin2split[old][index];
     }
   }
+
+#if 0
 
   void run() {
     std::vector<pStmt> statements = std::move(block->statements);
@@ -270,6 +272,7 @@ class BasicBlockVectorSplit : public IRVisitor {
                                                       lookup(stmt->cond, i));
     }
   }
+#endif
 };
 
 // Goal: eliminate vectors that are longer than physical vector width (e.g. 8
@@ -323,6 +326,7 @@ class VectorSplit : public IRVisitor {
 namespace irpass {
 
 void vector_split(IRNode *root, int max_width, bool serial_schedule) {
+  TI_NOT_IMPLEMENTED
   TI_AUTO_PROF;
   VectorSplit(root, max_width, serial_schedule);
 }

@@ -4,6 +4,8 @@
 #include "taichi/struct/struct_llvm.h"
 #include "taichi/util/file_sequence_writer.h"
 
+#include <llvm/IR/Instruction.h>
+
 TLANG_NAMESPACE_BEGIN
 
 // TODO: sort function definitions to match declaration order in header

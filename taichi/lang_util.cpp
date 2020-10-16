@@ -362,10 +362,7 @@ class TypePromotionMapping {
     }
 
     auto primitive = d->cast<PrimitiveType>();
-    TI_ASSERT_INFO(
-        primitive,
-        "Failed to get primitive type! "
-        "Consider adding `ti.init()` to the first line of your program.");
+    TI_ASSERT_INFO(primitive, "Failed to get primitive type!");
     return primitive->type;
   };
 };

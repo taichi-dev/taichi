@@ -361,11 +361,14 @@ class TypePromotionMapping {
       TI_WARN("promoted_type got a pointer input.");
     }
 
+    if (d->is<VectorType>()) {
+      d = d->as<VectorType>()->get_element_type();
+      TI_WARN("promoted_type got a vector input.");
+    }
+
     auto primitive = d->cast<PrimitiveType>();
-    TI_ASSERT_INFO(
-        primitive,
-        "Failed to get primitive type! "
-        "Consider adding `ti.init()` to the first line of your program.");
+    TI_ASSERT_INFO(primitive, "Failed to get primitive type from {}",
+                   d->to_string());
     return primitive->type;
   };
 };

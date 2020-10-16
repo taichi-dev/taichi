@@ -30,6 +30,8 @@ class Type {
     return p;
   }
 
+  int vector_width() const;
+
   virtual ~Type() {
   }
 };
@@ -66,7 +68,6 @@ class DataType {
 
   // Temporary API and members
   // for LegacyVectorType-compatibility
-  int width{1};
 
   Type *operator->() const {
     return ptr_;

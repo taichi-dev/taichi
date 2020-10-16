@@ -499,12 +499,8 @@ class Stmt : public IRNode {
   Stmt();
   Stmt(const Stmt &stmt);
 
-  int &width() {
-    return ret_type.width;
-  }
-
-  const int &width() const {
-    return ret_type.width;
+  int width() const {
+    return ret_type->vector_width();
   }
 
   virtual bool is_container_statement() const {
@@ -558,7 +554,8 @@ class Stmt : public IRNode {
   IRNode *get_parent() const override;
 
   virtual void repeat(int factor) {
-    ret_type.width *= factor;
+    TI_ASSERT(factor == 1);
+    // ret_type.width *= factor;
   }
 
   // returns the inserted stmt

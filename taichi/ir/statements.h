@@ -485,9 +485,9 @@ class ConstStmt : public Stmt {
   LaneAttribute<TypedConstant> val;
 
   ConstStmt(const LaneAttribute<TypedConstant> &val) : val(val) {
-    width() = val.size();
-    element_type() = val[0].dt;
-    for (int i = 0; i < ret_type.width; i++) {
+    TI_ASSERT(val.size() == 1);  // TODO: support vectorized case
+    ret_type = val[0].dt;
+    for (int i = 0; i < val.size(); i++) {
       TI_ASSERT(val[0].dt == val[i].dt);
     }
     TI_STMT_REG_FIELDS;
@@ -660,8 +660,8 @@ class ElementShuffleStmt : public Stmt {
   ElementShuffleStmt(const LaneAttribute<VectorElement> &elements,
                      bool pointer = false)
       : elements(elements), pointer(pointer) {
-    width() = elements.size();
-    element_type() = elements[0].stmt->element_type();
+    TI_ASSERT(elements.size() == 1);  // TODO: support vectorized cases
+    ret_type = elements[0].stmt->element_type();
     TI_STMT_REG_FIELDS;
   }
 

@@ -142,7 +142,7 @@ class TypeCheck : public IRVisitor {
         stmt->indices[i] =
             insert_type_cast_before(stmt, stmt->indices[i], PrimitiveType::i32);
       }
-      TI_ASSERT(stmt->indices[i]->ret_type.width == stmt->snodes.size());
+      TI_ASSERT(stmt->indices[i]->width() == stmt->snodes.size());
     }
   }
 
@@ -272,8 +272,7 @@ class TypeCheck : public IRVisitor {
       }
     }
     bool matching = true;
-    matching =
-        matching && (stmt->lhs->ret_type.width == stmt->rhs->ret_type.width);
+    matching = matching && (stmt->lhs->width() == stmt->rhs->width());
     matching = matching && (stmt->lhs->ret_type != PrimitiveType::unknown);
     matching = matching && (stmt->rhs->ret_type != PrimitiveType::unknown);
     matching = matching && (stmt->lhs->ret_type == stmt->rhs->ret_type);
@@ -286,8 +285,7 @@ class TypeCheck : public IRVisitor {
       }
     }
     if (is_comparison(stmt->op_type)) {
-      stmt->ret_type =
-          LegacyVectorType(stmt->lhs->ret_type.width, PrimitiveType::i32);
+      stmt->ret_type = LegacyVectorType(stmt->lhs->width(), PrimitiveType::i32);
     } else {
       stmt->ret_type = stmt->lhs->ret_type;
     }
@@ -297,8 +295,10 @@ class TypeCheck : public IRVisitor {
     if (stmt->op_type == TernaryOpType::select) {
       auto ret_type = promoted_type(stmt->op2->ret_type, stmt->op3->ret_type);
       TI_ASSERT(stmt->op1->ret_type == PrimitiveType::i32)
-      TI_ASSERT(stmt->op1->ret_type.width == stmt->op2->ret_type.width);
-      TI_ASSERT(stmt->op2->ret_type.width == stmt->op3->ret_type.width);
+      TI_ASSERT(stmt->op1->ret_type->vector_width() ==
+                stmt->op2->ret_type->vector_width());
+      TI_ASSERT(stmt->op2->ret_type->vector_width() ==
+                stmt->op3->ret_type->vector_width());
       if (ret_type != stmt->op2->ret_type) {
         auto cast_stmt = insert_type_cast_before(stmt, stmt->op2, ret_type);
         stmt->op2 = cast_stmt;
@@ -329,7 +329,7 @@ class TypeCheck : public IRVisitor {
     // defined by the kernel. After that, type_check() pass will purely do
     // verification, without modifying any types.
     TI_ASSERT(rt != PrimitiveType::unknown);
-    TI_ASSERT(rt.width == 1);
+    TI_ASSERT(rt->vector_width() == 1);
     stmt->ret_type.set_is_pointer(stmt->is_ptr);
   }
 
@@ -337,7 +337,7 @@ class TypeCheck : public IRVisitor {
     // TODO: Support stmt->ret_id?
     const auto &rt = stmt->ret_type;
     TI_ASSERT(stmt->value->element_type() == rt);
-    TI_ASSERT(rt.width == 1);
+    TI_ASSERT(rt->vector_width() == 1);
   }
 
   void visit(ExternalPtrStmt *stmt) {

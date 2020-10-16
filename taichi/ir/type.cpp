@@ -1,4 +1,5 @@
 #include "taichi/ir/type.h"
+
 #include "taichi/program/program.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -65,6 +66,14 @@ DataType DataType::ptr_removed() const {
 
 std::string PrimitiveType::to_string() const {
   return data_type_name(DataType(const_cast<PrimitiveType *>(this)));
+}
+
+int Type::vector_width() const {
+  if (auto vec = cast<VectorType>()) {
+    return vec->get_num_elements();
+  } else {
+    return 1;
+  }
 }
 
 DataType LegacyVectorType(int width, DataType data_type, bool is_pointer) {

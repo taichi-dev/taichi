@@ -4,6 +4,12 @@
 
 TLANG_NAMESPACE_BEGIN
 
+enum class PrimitiveTypeID : int {
+#define PER_TYPE(x) x,
+#include "taichi/inc/data_type.inc.h"
+#undef PER_TYPE
+};
+
 class Type {
  public:
   virtual std::string to_string() const = 0;
@@ -90,24 +96,18 @@ class DataType {
 
 class PrimitiveType : public Type {
  public:
-  enum class primitive_type : int {
-#define PER_TYPE(x) x,
-#include "taichi/inc/data_type.inc.h"
-#undef PER_TYPE
-  };
-
 #define PER_TYPE(x) static DataType x;
 #include "taichi/inc/data_type.inc.h"
 #undef PER_TYPE
 
-  primitive_type type;
+  PrimitiveTypeID type;
 
-  PrimitiveType(primitive_type type) : type(type) {
+  PrimitiveType(PrimitiveTypeID type) : type(type) {
   }
 
   std::string to_string() const override;
 
-  static DataType get(primitive_type type);
+  static DataType get(PrimitiveTypeID type);
 };
 
 class PointerType : public Type {

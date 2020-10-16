@@ -96,8 +96,8 @@ void export_lang(py::module &m) {
             if (t.size() != 1)
               throw std::runtime_error("Invalid state!");
 
-            DataType dt = PrimitiveType::get(
-                (PrimitiveType::primitive_type)(t[0].cast<std::size_t>()));
+            DataType dt =
+                PrimitiveType::get((PrimitiveTypeID)(t[0].cast<std::size_t>()));
 
             return dt;
           }));

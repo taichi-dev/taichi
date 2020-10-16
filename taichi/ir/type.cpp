@@ -9,10 +9,9 @@ TLANG_NAMESPACE_BEGIN
 // manage its ownership more systematically.
 
 // This part doesn't look good, but we will remove it soon anyway.
-#define PER_TYPE(x)                                            \
-  DataType PrimitiveType::x =                                  \
-      DataType(TypeFactory::get_instance().get_primitive_type( \
-          PrimitiveType::primitive_type::x));
+#define PER_TYPE(x)                     \
+  DataType PrimitiveType::x = DataType( \
+      TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::x));
 
 #include "taichi/inc/data_type.inc.h"
 #undef PER_TYPE
@@ -20,10 +19,10 @@ TLANG_NAMESPACE_BEGIN
 DataType::DataType() : ptr_(PrimitiveType::unknown.ptr_) {
 }
 
-DataType PrimitiveType::get(PrimitiveType::primitive_type t) {
+DataType PrimitiveType::get(PrimitiveTypeID t) {
   if (false) {
   }
-#define PER_TYPE(x) else if (t == primitive_type::x) return PrimitiveType::x;
+#define PER_TYPE(x) else if (t == PrimitiveTypeID::x) return PrimitiveType::x;
 #include "taichi/inc/data_type.inc.h"
 #undef PER_TYPE
   else {

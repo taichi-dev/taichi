@@ -350,11 +350,9 @@ class TypePromotionMapping {
   }
 
  private:
-  std::map<
-      std::pair<PrimitiveType::primitive_type, PrimitiveType::primitive_type>,
-      PrimitiveType::primitive_type>
+  std::map<std::pair<PrimitiveTypeID, PrimitiveTypeID>, PrimitiveTypeID>
       mapping;
-  static PrimitiveType::primitive_type to_primitive_type(const DataType d_) {
+  static PrimitiveTypeID to_primitive_type(const DataType d_) {
     Type *d = d_.get_ptr();
     if (d->is<PointerType>()) {
       d = d->as<PointerType>()->get_pointee_type();

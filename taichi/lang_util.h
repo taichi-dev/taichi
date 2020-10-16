@@ -50,29 +50,29 @@ inline DataType get_data_type() {
 }
 
 template <typename T>
-inline PrimitiveType::primitive_type get_primitive_data_type() {
+inline PrimitiveTypeID get_primitive_data_type() {
   if (std::is_same<T, float32>()) {
-    return PrimitiveType::primitive_type::f32;
+    return PrimitiveTypeID::f32;
   } else if (std::is_same<T, float64>()) {
-    return PrimitiveType::primitive_type::f64;
+    return PrimitiveTypeID::f64;
   } else if (std::is_same<T, bool>()) {
-    return PrimitiveType::primitive_type::u1;
+    return PrimitiveTypeID::u1;
   } else if (std::is_same<T, int8>()) {
-    return PrimitiveType::primitive_type::i8;
+    return PrimitiveTypeID::i8;
   } else if (std::is_same<T, int16>()) {
-    return PrimitiveType::primitive_type::i16;
+    return PrimitiveTypeID::i16;
   } else if (std::is_same<T, int32>()) {
-    return PrimitiveType::primitive_type::i32;
+    return PrimitiveTypeID::i32;
   } else if (std::is_same<T, int64>()) {
-    return PrimitiveType::primitive_type::i64;
+    return PrimitiveTypeID::i64;
   } else if (std::is_same<T, uint8>()) {
-    return PrimitiveType::primitive_type::u8;
+    return PrimitiveTypeID::u8;
   } else if (std::is_same<T, uint16>()) {
-    return PrimitiveType::primitive_type::u16;
+    return PrimitiveTypeID::u16;
   } else if (std::is_same<T, uint32>()) {
-    return PrimitiveType::primitive_type::u32;
+    return PrimitiveTypeID::u32;
   } else if (std::is_same<T, uint64>()) {
-    return PrimitiveType::primitive_type::u64;
+    return PrimitiveTypeID::u64;
   } else {
     TI_NOT_IMPLEMENTED;
   }

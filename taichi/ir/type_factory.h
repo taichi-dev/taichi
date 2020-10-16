@@ -10,7 +10,7 @@ class TypeFactory {
  public:
   static TypeFactory &get_instance();
 
-  Type *get_primitive_type(PrimitiveType::primitive_type id);
+  Type *get_primitive_type(PrimitiveTypeID id);
 
   Type *get_vector_type(int num_elements, Type *element);
 
@@ -19,8 +19,7 @@ class TypeFactory {
  private:
   TypeFactory();
 
-  std::unordered_map<PrimitiveType::primitive_type, std::unique_ptr<Type>>
-      primitive_types_;
+  std::unordered_map<PrimitiveTypeID, std::unique_ptr<Type>> primitive_types_;
 
   // TODO: use unordered map
   std::map<std::pair<int, Type *>, std::unique_ptr<Type>> vector_types_;

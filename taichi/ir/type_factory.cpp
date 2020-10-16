@@ -7,7 +7,7 @@ TypeFactory &TypeFactory::get_instance() {
   return *type_factory;
 }
 
-Type *TypeFactory::get_primitive_type(PrimitiveType::primitive_type id) {
+Type *TypeFactory::get_primitive_type(PrimitiveTypeID id) {
   std::lock_guard<std::mutex> _(mut_);
 
   if (primitive_types_.find(id) == primitive_types_.end()) {

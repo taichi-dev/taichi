@@ -2,6 +2,11 @@
 
 TLANG_NAMESPACE_BEGIN
 
+TypeFactory &TypeFactory::get_instance() {
+  static TypeFactory *type_factory = new TypeFactory;
+  return *type_factory;
+}
+
 Type *TypeFactory::get_primitive_type(PrimitiveType::primitive_type id) {
   std::lock_guard<std::mutex> _(mut_);
 
@@ -26,6 +31,9 @@ Type *TypeFactory::get_pointer_type(Type *element) {
     pointer_types_[key] = std::make_unique<PointerType>(element, false);
   }
   return pointer_types_[key].get();
+}
+
+TypeFactory::TypeFactory() {
 }
 
 TLANG_NAMESPACE_END

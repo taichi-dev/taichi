@@ -106,10 +106,6 @@ void compile_to_offloads(IRNode *ir,
   print("Optimized by CFG");
   irpass::analysis::verify(ir);
 
-  irpass::demote_atomics(ir);
-  print("Atomics demoted");
-  irpass::analysis::verify(ir);
-
   irpass::flag_access(ir);
   print("Access flagged II");
 
@@ -153,6 +149,10 @@ void offload_to_executable(IRNode *ir,
     print("Make block local");
   }
 
+  irpass::demote_atomics(ir);
+  print("Atomics demoted");
+  irpass::analysis::verify(ir);
+
   irpass::remove_range_assumption(ir);
   print("Remove range assumption");
 
@@ -173,10 +173,6 @@ void offload_to_executable(IRNode *ir,
     print("Access flagged III");
     irpass::analysis::verify(ir);
   }
-
-  irpass::demote_atomics(ir);
-  print("Atomics demoted");
-  irpass::analysis::verify(ir);
 
   irpass::demote_operations(ir);
   print("Operations demoted");

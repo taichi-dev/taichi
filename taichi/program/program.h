@@ -108,7 +108,6 @@ class Program {
 
   // Note: for now we let all Programs share a single TypeFactory for smooth
   // migration. In the future each program should have its own copy.
-
   static TypeFactory &get_type_factory();
 
   Program() : Program(default_compile_config.arch) {

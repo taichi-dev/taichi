@@ -3,8 +3,8 @@
 TLANG_NAMESPACE_BEGIN
 
 TypeFactory &TypeFactory::get_instance() {
-  static TypeFactory type_factory;
-  return type_factory;
+  static TypeFactory *type_factory = new TypeFactory;
+  return *type_factory;
 }
 
 Type *TypeFactory::get_primitive_type(PrimitiveType::primitive_type id) {

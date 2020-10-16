@@ -234,7 +234,7 @@ def assume_in_range(val, base, low, high):
 
 
 def loop_unique(val):
-    return taichi_lang_core.expr_loop_unique(val)
+    return taichi_lang_core.expr_loop_unique(Expr(val).ptr)
 
 
 parallelize = core.parallelize

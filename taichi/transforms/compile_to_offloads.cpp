@@ -152,6 +152,10 @@ void offload_to_executable(IRNode *ir,
   irpass::remove_range_assumption(ir);
   print("Remove range assumption");
 
+  irpass::remove_loop_unique(ir);
+  print("Remove loop_unique");
+  irpass::analysis::verify(ir);
+
   if (lower_global_access) {
     irpass::lower_access(ir, true);
     print("Access lowered");

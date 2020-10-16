@@ -481,7 +481,7 @@ void export_lang(py::module &m) {
 
   m.def("expr_assume_in_range", AssumeInRange);
 
-  m.def("expr_loop_unique", Expr::make<LoopUniqueExpression, const Expr &>);
+  m.def("expr_loop_unique", LoopUnique);
 
   m.def("expr_select", expr_select);
 

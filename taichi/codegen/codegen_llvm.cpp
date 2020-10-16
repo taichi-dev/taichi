@@ -1719,6 +1719,10 @@ void CodeGenLLVM::visit(RangeAssumptionStmt *stmt) {
   llvm_val[stmt] = llvm_val[stmt->input];
 }
 
+void CodeGenLLVM::visit(LoopUniqueStmt *stmt) {
+  llvm_val[stmt] = llvm_val[stmt->input];
+}
+
 void CodeGenLLVM::eliminate_unused_functions() {
   TaichiLLVMContext::eliminate_unused_functions(
       module.get(), [&](std::string func_name) {

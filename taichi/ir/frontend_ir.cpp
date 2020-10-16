@@ -213,7 +213,7 @@ void RangeAssumptionExpression::flatten(FlattenContext *ctx) {
 
 void LoopUniqueExpression::flatten(FlattenContext *ctx) {
   input->flatten(ctx);
-  // TODO: LoopUniqueStmt
+  ctx->push_back(Stmt::make<LoopUniqueStmt>(input->stmt));
   stmt = ctx->back_stmt();
 }
 

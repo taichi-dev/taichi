@@ -326,6 +326,10 @@ class TypeCheck : public IRVisitor {
     stmt->ret_type = stmt->input->ret_type;
   }
 
+  void visit(LoopUniqueStmt *stmt) {
+    stmt->ret_type = stmt->input->ret_type;
+  }
+
   void visit(ArgLoadStmt *stmt) {
     const auto &rt = stmt->ret_type;
     // TODO: Maybe have a type_inference() pass, which takes in the args/rets

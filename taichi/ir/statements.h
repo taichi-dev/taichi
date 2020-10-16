@@ -327,6 +327,23 @@ class RangeAssumptionStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+// A statement that has unique values among the top-level loop.
+class LoopUniqueStmt : public Stmt {
+ public:
+  Stmt *input;
+
+  explicit LoopUniqueStmt(Stmt *input) : input(input) {
+    TI_STMT_REG_FIELDS;
+  }
+
+  bool has_global_side_effect() const override {
+    return false;
+  }
+
+  TI_STMT_DEF_FIELDS(ret_type, input);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
 class GlobalLoadStmt : public Stmt {
  public:
   Stmt *ptr;

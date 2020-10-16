@@ -85,11 +85,11 @@ DataType LegacyVectorType(int width, DataType data_type, bool is_pointer) {
 }
 
 std::string CustomIntType::to_string() const {
-  return fmt::format("c{}{}", is_signed_ ? 's' : 'u', num_bits_);
+  return fmt::format("c{}{}", is_signed_ ? 'i' : 'u', num_bits_);
 }
 
 std::string BitStructType::to_string() const {
-  std::string str = "bs{";
+  std::string str = "bs(";
   int num_members = (int)member_bit_offsets_.size();
   for (int i = 0; i < num_members; i++) {
     str += fmt::format("{}<<{}", member_types_[i]->to_string(),
@@ -98,7 +98,7 @@ std::string BitStructType::to_string() const {
       str += ", ";
     }
   }
-  return str + "}";
+  return str + ")";
 }
 
 TLANG_NAMESPACE_END

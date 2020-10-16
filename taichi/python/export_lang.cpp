@@ -218,6 +218,7 @@ void export_lang(py::module &m) {
            (SNode & (SNode::*)(const std::vector<Index> &,
                                const std::vector<int> &))(&SNode::bitmasked),
            py::return_value_policy::reference)
+      .def("bit_struct", &SNode::bit_struct, py::return_value_policy::reference)
       .def("place",
            (void (SNode::*)(Expr &, const std::vector<int> &))(&SNode::place),
            py::return_value_policy::reference)

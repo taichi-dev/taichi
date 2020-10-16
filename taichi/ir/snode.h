@@ -76,6 +76,7 @@ class SNode {
   int64 n{};
   int total_num_bits{}, total_bit_start{};
   int chunk_size{};
+  int num_bits;  // for bit_struct and bit_array only
   DataType dt;
   bool has_ambient{};
   TypedConstant ambient_val;
@@ -168,6 +169,8 @@ class SNode {
   std::string type_name() {
     return snode_type_name(type);
   }
+
+  SNode &bit_struct(int bits);
 
   void print();
 

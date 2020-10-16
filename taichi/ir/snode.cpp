@@ -94,6 +94,12 @@ SNode &SNode::dynamic(const Index &expr, int n, int chunk_size) {
   return snode;
 }
 
+SNode &SNode::bit_struct(int num_bits) {
+  auto &snode = create_node({}, {}, SNodeType::bit_struct);
+  snode.num_bits = num_bits;
+  return snode;
+}
+
 void SNode::lazy_grad() {
   if (this->type == SNodeType::place)
     return;

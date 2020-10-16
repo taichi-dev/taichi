@@ -106,6 +106,10 @@ void compile_to_offloads(IRNode *ir,
   print("Optimized by CFG");
   irpass::analysis::verify(ir);
 
+  irpass::demote_atomics(ir);
+  print("Atomics demoted");
+  irpass::analysis::verify(ir);
+
   irpass::flag_access(ir);
   print("Access flagged II");
 

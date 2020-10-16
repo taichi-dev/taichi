@@ -194,8 +194,9 @@ struct TaskMeta {
   std::unordered_set<AsyncState> input_states;
   std::unordered_set<AsyncState> output_states;
   std::unordered_map<SNode *, bool> element_wise;
-  // TODO: refactor into std::unordered_map<SNode *, Stmt *> loop_unique
-  // and implement element_wise(SNode *) with it
+  // TODO: refactor into
+  //  std::unordered_map<SNode *, GlobalPtrStmt *> loop_unique_ptr
+  //  and implement element_wise(SNode *) with it
 
   void print() const;
 };

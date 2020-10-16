@@ -9,12 +9,12 @@ TLANG_NAMESPACE_BEGIN
 class AllocaStmt : public Stmt {
  public:
   AllocaStmt(DataType type) {
-    ret_type = LegacyVectorType(1, type);
+    ret_type = TypeFactory::create_vector_or_scalar_type(1, type);
     TI_STMT_REG_FIELDS;
   }
 
   AllocaStmt(int width, DataType type) {
-    ret_type = LegacyVectorType(width, type);
+    ret_type = TypeFactory::create_vector_or_scalar_type(width, type);
     TI_STMT_REG_FIELDS;
   }
 
@@ -105,7 +105,7 @@ class ArgLoadStmt : public Stmt {
   bool is_ptr;
 
   ArgLoadStmt(int arg_id, DataType dt, bool is_ptr = false) : arg_id(arg_id) {
-    this->ret_type = LegacyVectorType(1, dt);
+    this->ret_type = TypeFactory::create_vector_or_scalar_type(1, dt);
     this->is_ptr = is_ptr;
     TI_STMT_REG_FIELDS;
   }
@@ -615,7 +615,7 @@ class KernelReturnStmt : public Stmt {
   Stmt *value;
 
   KernelReturnStmt(Stmt *value, DataType dt) : value(value) {
-    this->ret_type = LegacyVectorType(1, dt);
+    this->ret_type = TypeFactory::create_vector_or_scalar_type(1, dt);
     TI_STMT_REG_FIELDS;
   }
 
@@ -999,7 +999,7 @@ class InternalFuncStmt : public Stmt {
   std::string func_name;
 
   InternalFuncStmt(const std::string &func_name) : func_name(func_name) {
-    this->ret_type = LegacyVectorType(1, PrimitiveType::i32);
+    this->ret_type = TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
     TI_STMT_REG_FIELDS;
   }
 

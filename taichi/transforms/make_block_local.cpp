@@ -180,7 +180,7 @@ void make_block_local_offload(OffloadedStmt *offload) {
                   TypedConstant(data_type, 0));
             }
             auto bls_ptr = element_block->push_back<BlockLocalPtrStmt>(
-                bls_element_offset_bytes, LegacyVectorType(1, data_type, true));
+                bls_element_offset_bytes, TypeFactory::create_vector_or_scalar_type(1, data_type, true));
             element_block->push_back<GlobalStoreStmt>(bls_ptr, value);
           });
     }
@@ -269,7 +269,7 @@ void make_block_local_offload(OffloadedStmt *offload) {
             bls.push_back<ConstStmt>(TypedConstant((int32)bls_offset)));
 
         bls.push_back<BlockLocalPtrStmt>(bls_element_offset,
-                                         LegacyVectorType(1, data_type, true));
+                                         TypeFactory::create_vector_or_scalar_type(1, data_type, true));
         global_ptr->replace_with(std::move(bls));
       }
     }
@@ -283,7 +283,7 @@ void make_block_local_offload(OffloadedStmt *offload) {
               Stmt *bls_element_offset_bytes) {
             // Store/accumulate from BLS to global
             auto bls_ptr = element_block->push_back<BlockLocalPtrStmt>(
-                bls_element_offset_bytes, LegacyVectorType(1, data_type, true));
+                bls_element_offset_bytes, TypeFactory::create_vector_or_scalar_type(1, data_type, true));
             auto bls_val = element_block->push_back<GlobalLoadStmt>(bls_ptr);
 
             auto global_pointer =

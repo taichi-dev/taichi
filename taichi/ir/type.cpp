@@ -75,13 +75,4 @@ int Type::vector_width() const {
   }
 }
 
-DataType LegacyVectorType(int width, DataType data_type, bool is_pointer) {
-  TI_ASSERT(width == 1);
-  if (is_pointer) {
-    return TypeFactory::get_instance().get_pointer_type(data_type.get_ptr());
-  } else {
-    return data_type;
-  }
-}
-
 TLANG_NAMESPACE_END

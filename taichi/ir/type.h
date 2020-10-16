@@ -162,8 +162,4 @@ class VectorType : public Type {
   Type *element_{nullptr};
 };
 
-DataType LegacyVectorType(int width,
-                          DataType data_type,
-                          bool is_pointer = false);
-
 TLANG_NAMESPACE_END

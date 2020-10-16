@@ -1307,7 +1307,7 @@ std::tuple<llvm::Value *, llvm::Value *> CodeGenLLVM::get_range_for_bounds(
     begin = tlctx->get_constant(stmt->begin_value);
   } else {
     auto begin_stmt = Stmt::make<GlobalTemporaryStmt>(
-        stmt->begin_offset, LegacyVectorType(1, PrimitiveType::i32));
+        stmt->begin_offset, TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32));
     begin_stmt->accept(this);
     begin = builder->CreateLoad(llvm_val[begin_stmt.get()]);
   }
@@ -1315,7 +1315,7 @@ std::tuple<llvm::Value *, llvm::Value *> CodeGenLLVM::get_range_for_bounds(
     end = tlctx->get_constant(stmt->end_value);
   } else {
     auto end_stmt = Stmt::make<GlobalTemporaryStmt>(
-        stmt->end_offset, LegacyVectorType(1, PrimitiveType::i32));
+        stmt->end_offset, TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32));
     end_stmt->accept(this);
     end = builder->CreateLoad(llvm_val[end_stmt.get()]);
   }

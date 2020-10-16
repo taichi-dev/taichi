@@ -10,7 +10,7 @@ TLANG_NAMESPACE_BEGIN
 // This part doesn't look good, but we will remove it soon anyway.
 #define PER_TYPE(x)                                            \
   DataType PrimitiveType::x =                                  \
-      DataType(Program::get_type_factory().get_primitive_type( \
+      DataType(TypeFactory::get_instance().get_primitive_type( \
           PrimitiveType::primitive_type::x));
 
 #include "taichi/inc/data_type.inc.h"
@@ -46,7 +46,7 @@ bool DataType::is_pointer() const {
 
 void DataType::set_is_pointer(bool is_ptr) {
   if (is_ptr && !ptr_->is<PointerType>()) {
-    ptr_ = Program::get_type_factory().get_pointer_type(ptr_);
+    ptr_ = TypeFactory::get_instance().get_pointer_type(ptr_);
   }
   if (!is_ptr && ptr_->is<PointerType>()) {
     ptr_ = ptr_->cast<PointerType>()->get_pointee_type();
@@ -70,7 +70,7 @@ std::string PrimitiveType::to_string() const {
 DataType LegacyVectorType(int width, DataType data_type, bool is_pointer) {
   TI_ASSERT(width == 1);
   if (is_pointer) {
-    return Program::get_type_factory().get_pointer_type(data_type.get_ptr());
+    return TypeFactory::get_instance().get_pointer_type(data_type.get_ptr());
   } else {
     return data_type;
   }

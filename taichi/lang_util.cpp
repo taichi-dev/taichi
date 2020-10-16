@@ -350,9 +350,7 @@ class TypePromotionMapping {
   }
 
  private:
-  std::map<
-      std::pair<PrimitiveTypeID, PrimitiveTypeID>,
-      PrimitiveTypeID>
+  std::map<std::pair<PrimitiveTypeID, PrimitiveTypeID>, PrimitiveTypeID>
       mapping;
   static PrimitiveTypeID to_primitive_type(const DataType d_) {
     Type *d = d_.get_ptr();

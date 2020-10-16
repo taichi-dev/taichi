@@ -2,8 +2,6 @@ message("Using C++ compiler: " ${CMAKE_CXX_COMPILER})
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_ISE_NONE")
 
-set(CMAKE_CXX_STANDARD 17)
-
 option(BUILD_WITH_ADDRESS_SANITIZER "Build with clang address sanitizer" OFF)
 
 if (BUILD_WITH_ADDRESS_SANITIZER)

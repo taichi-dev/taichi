@@ -16,7 +16,9 @@ class TypeFactory {
 
   Type *get_pointer_type(Type *element);
 
-  static DataType create_vector_or_scalar_type(int width, DataType element, bool element_is_pointer = false);
+  static DataType create_vector_or_scalar_type(int width,
+                                               DataType element,
+                                               bool element_is_pointer = false);
 
  private:
   TypeFactory();

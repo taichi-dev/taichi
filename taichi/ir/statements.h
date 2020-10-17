@@ -999,7 +999,8 @@ class InternalFuncStmt : public Stmt {
   std::string func_name;
 
   InternalFuncStmt(const std::string &func_name) : func_name(func_name) {
-    this->ret_type = TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
+    this->ret_type =
+        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
     TI_STMT_REG_FIELDS;
   }
 

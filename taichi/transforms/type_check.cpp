@@ -112,11 +112,13 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(SNodeOpStmt *stmt) {
-    stmt->ret_type = TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
+    stmt->ret_type =
+        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
   }
 
   void visit(ExternalTensorShapeAlongAxisStmt *stmt) {
-    stmt->ret_type = TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
+    stmt->ret_type =
+        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
   }
 
   void visit(GlobalPtrStmt *stmt) {
@@ -163,8 +165,10 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(RangeForStmt *stmt) {
-    mark_as_if_const(stmt->begin, TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32));
-    mark_as_if_const(stmt->end, TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32));
+    mark_as_if_const(stmt->begin, TypeFactory::create_vector_or_scalar_type(
+                                      1, PrimitiveType::i32));
+    mark_as_if_const(stmt->end, TypeFactory::create_vector_or_scalar_type(
+                                    1, PrimitiveType::i32));
     stmt->body->accept(this);
   }
 
@@ -285,7 +289,8 @@ class TypeCheck : public IRVisitor {
       }
     }
     if (is_comparison(stmt->op_type)) {
-      stmt->ret_type = TypeFactory::create_vector_or_scalar_type(stmt->lhs->width(), PrimitiveType::i32);
+      stmt->ret_type = TypeFactory::create_vector_or_scalar_type(
+          stmt->lhs->width(), PrimitiveType::i32);
     } else {
       stmt->ret_type = stmt->lhs->ret_type;
     }
@@ -307,7 +312,8 @@ class TypeCheck : public IRVisitor {
         auto cast_stmt = insert_type_cast_before(stmt, stmt->op3, ret_type);
         stmt->op3 = cast_stmt;
       }
-      stmt->ret_type = TypeFactory::create_vector_or_scalar_type(stmt->op1->width(), ret_type);
+      stmt->ret_type = TypeFactory::create_vector_or_scalar_type(
+          stmt->op1->width(), ret_type);
     } else {
       TI_NOT_IMPLEMENTED
     }
@@ -342,36 +348,43 @@ class TypeCheck : public IRVisitor {
 
   void visit(ExternalPtrStmt *stmt) {
     stmt->ret_type.set_is_pointer(true);
-    stmt->ret_type =
-        TypeFactory::create_vector_or_scalar_type(stmt->base_ptrs.size(), stmt->base_ptrs[0]->ret_type);
+    stmt->ret_type = TypeFactory::create_vector_or_scalar_type(
+        stmt->base_ptrs.size(), stmt->base_ptrs[0]->ret_type);
   }
 
   void visit(LoopIndexStmt *stmt) {
-    stmt->ret_type = TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
+    stmt->ret_type =
+        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
   }
 
   void visit(LoopLinearIndexStmt *stmt) {
-    stmt->ret_type = TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
+    stmt->ret_type =
+        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
   }
 
   void visit(BlockCornerIndexStmt *stmt) {
-    stmt->ret_type = TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
+    stmt->ret_type =
+        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
   }
 
   void visit(BlockDimStmt *stmt) {
-    stmt->ret_type = TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
+    stmt->ret_type =
+        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
   }
 
   void visit(GetRootStmt *stmt) {
-    stmt->ret_type = TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::gen, true);
+    stmt->ret_type =
+        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::gen, true);
   }
 
   void visit(SNodeLookupStmt *stmt) {
-    stmt->ret_type = TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::gen, true);
+    stmt->ret_type =
+        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::gen, true);
   }
 
   void visit(GetChStmt *stmt) {
-    stmt->ret_type = TypeFactory::create_vector_or_scalar_type(1, stmt->output_snode->dt, true);
+    stmt->ret_type = TypeFactory::create_vector_or_scalar_type(
+        1, stmt->output_snode->dt, true);
   }
 
   void visit(OffloadedStmt *stmt) {

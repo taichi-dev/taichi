@@ -103,7 +103,7 @@ class PrimitiveType : public Type {
 #include "taichi/inc/data_type.inc.h"
 #undef PER_TYPE
 
-  // TODO: make type private and add a const getter
+  // TODO(type): make 'type' private and add a const getter
   PrimitiveTypeID type;
 
   PrimitiveType(PrimitiveTypeID type) : type(type) {
@@ -186,8 +186,8 @@ class CustomIntType : public Type {
   }
 
  private:
-  // TODO(type): for now we uniformly use i32 as the "compute_type". It may be a
-  // good idea to make that part also customizable
+  // TODO(type): for now we can uniformly use i32 as the "compute_type". It may
+  // be a good idea to make "compute_type" also customizable.
   int num_bits_;
   bool is_signed_;
 };
@@ -200,8 +200,8 @@ class BitStructType : public Type {
       : container_bits_(container_bits),
         member_types_(member_types),
         member_bit_offsets_(member_bit_offsets) {
-    // TODO(type): maybe it makes sense to store a type instead of the number of
-    // bits?
+    // TODO(type): maybe it makes sense to store an real Type * as container
+    // instead of the number of container bits?
     TI_ASSERT(bit::is_power_of_two(container_bits_));
     TI_ASSERT(8 <= container_bits_ && container_bits <= 64);
     TI_ASSERT(member_types_.size() == member_bit_offsets_.size());

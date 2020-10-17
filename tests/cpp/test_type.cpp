@@ -12,7 +12,7 @@ TI_TEST("type") {
     auto bs =
         TypeFactory::get_instance().get_bit_struct(16, {ci5, cu11}, {0, 5});
 
-    TI_CHECK(bs->to_string() == "bs(ci5<<0, cu11<<5)");
+    TI_CHECK(bs->to_string() == "bs(ci5@0, cu11@5)");
   }
 }
 

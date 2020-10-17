@@ -8,7 +8,7 @@ TLANG_NAMESPACE_BEGIN
 
 class LoopUniqueStmtSearcher : public BasicStmtVisitor {
  private:
-  std::unordered_set<Stmt *> loop_invariant_;
+  std::unordered_set<Stmt *> loop_constants_;
 
   // If loop_unique_[stmt] is -1, the value of stmt is unique among the
   // top-level loop.
@@ -35,12 +35,12 @@ class LoopUniqueStmtSearcher : public BasicStmtVisitor {
   }
 
   void visit(ConstStmt *stmt) override {
-    loop_invariant_.insert(stmt);
+    loop_constants_.insert(stmt);
   }
 
   void visit(UnaryOpStmt *stmt) override {
-    if (loop_invariant_.count(stmt->operand) > 0) {
-      loop_invariant_.insert(stmt);
+    if (loop_constants_.count(stmt->operand) > 0) {
+      loop_constants_.insert(stmt);
     }
     if (loop_unique_.count(stmt->operand) > 0 &&
         (stmt->op_type == UnaryOpType::neg)) {
@@ -50,18 +50,18 @@ class LoopUniqueStmtSearcher : public BasicStmtVisitor {
   }
 
   void visit(BinaryOpStmt *stmt) override {
-    if (loop_invariant_.count(stmt->lhs) > 0 &&
-        loop_invariant_.count(stmt->rhs) > 0) {
-      loop_invariant_.insert(stmt);
+    if (loop_constants_.count(stmt->lhs) > 0 &&
+        loop_constants_.count(stmt->rhs) > 0) {
+      loop_constants_.insert(stmt);
     }
     if ((loop_unique_.count(stmt->lhs) > 0 &&
-         loop_invariant_.count(stmt->rhs) > 0) &&
+         loop_constants_.count(stmt->rhs) > 0) &&
         (stmt->op_type == BinaryOpType::add ||
          stmt->op_type == BinaryOpType::sub ||
          stmt->op_type == BinaryOpType::bit_xor)) {
       loop_unique_[stmt] = loop_unique_[stmt->lhs];
     }
-    if ((loop_invariant_.count(stmt->lhs) > 0 &&
+    if ((loop_constants_.count(stmt->lhs) > 0 &&
          loop_unique_.count(stmt->rhs) > 0) &&
         (stmt->op_type == BinaryOpType::add ||
          stmt->op_type == BinaryOpType::sub ||

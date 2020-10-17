@@ -186,6 +186,8 @@ class CustomIntType : public Type {
   }
 
  private:
+  // TODO(type): for now we uniformly use i32 as the "compute_type". It may be a
+  // good idea to make that part also customizable
   int num_bits_;
   bool is_signed_;
 };

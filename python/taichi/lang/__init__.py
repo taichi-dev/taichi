@@ -47,6 +47,9 @@ kernel_profiler_clear = lambda: get_runtime().prog.kernel_profiler_clear()
 kernel_profiler_total_time = lambda: get_runtime(
 ).prog.kernel_profiler_total_time()
 
+# Unstable API
+type_factory_ = core.get_type_factory_instance()
+
 
 def memory_profiler_print():
     get_runtime().materialize()

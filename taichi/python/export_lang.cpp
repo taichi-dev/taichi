@@ -83,7 +83,9 @@ void export_lang(py::module &m) {
 #undef PER_EXTENSION
       .export_values();
 
+  // TODO(type): This should be removed
   py::class_<DataType>(m, "DataType")
+      .def(py::init<Type *>())
       .def(py::self == py::self)
       .def(py::pickle(
           [](const DataType &dt) {
@@ -703,6 +705,16 @@ void export_lang(py::module &m) {
   m.def("print_sfg", async_print_sfg);
   m.def("dump_dot", async_dump_dot, py::arg("rankdir").none(true),
         py::arg("embed_states_threshold"));
+
+  // Type system
+
+  py::class_<Type>(m, "Type").def("to_string", &Type::to_string);
+
+  py::class_<TypeFactory>(m, "TypeFactory")
+      .def("get_custom_int_type", &TypeFactory::get_custom_int_type);
+
+  m.def("get_type_factory_instance", TypeFactory::get_instance,
+        py::return_value_policy::reference);
 }
 
 TI_NAMESPACE_END

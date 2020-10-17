@@ -110,18 +110,18 @@ def get_line_number(asc=0):
     return inspect.stack()[1 + asc][2]
 
 
+# The builtin `warnings` module is unreliable as it may be supressed
+# by other packages, e.g. IPython.
 def warning(msg, type=UserWarning, stacklevel=1):
-    import warnings
+    from colorama import Fore, Back, Style
     import traceback
     import taichi as ti
-    use_spdlog = False
-    if use_spdlog:
-        s = traceback.extract_stack()[:-stacklevel]
-        raw = ''.join(traceback.format_list(s))
-        ti.warn(f'{type.__name__}: {msg}')
-        ti.warn(f'\n{raw}')
-    else:
-        warnings.warn(msg, type, stacklevel=stacklevel + 1)
+    s = traceback.extract_stack()[:-stacklevel]
+    raw = ''.join(traceback.format_list(s))
+    print(Fore.YELLOW + Style.BRIGHT, end='')
+    print(f'{type.__name__}: {msg}')
+    print(f'\n{raw}')
+    print(Style.RESET_ALL, end='')
 
 
 def deprecated(old, new, type=DeprecationWarning):

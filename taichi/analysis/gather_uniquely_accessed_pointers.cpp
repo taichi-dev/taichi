@@ -70,7 +70,7 @@ class LoopUniqueStmtSearcher : public BasicStmtVisitor {
     }
   }
 
-  bool is_ptr_indices_unique(GlobalPtrStmt *stmt) const {
+  bool is_ptr_indices_loop_unique(GlobalPtrStmt *stmt) const {
     TI_ASSERT(num_different_loop_indices != -1);
     std::vector<int> loop_indices;
     loop_indices.reserve(stmt->indices.size());
@@ -114,7 +114,7 @@ class UniquelyAccessedSNodeSearcher : public BasicStmtVisitor {
     for (auto &snode : stmt->snodes.data) {
       auto accessed_ptr = accessed_pointer_.find(snode);
       if (accessed_ptr == accessed_pointer_.end()) {
-        if (loop_unique_stmt_searcher_.is_ptr_indices_unique(stmt)) {
+        if (loop_unique_stmt_searcher_.is_ptr_indices_loop_unique(stmt)) {
           accessed_pointer_[snode] = stmt;
         } else {
           accessed_pointer_[snode] = nullptr;  // not loop-unique

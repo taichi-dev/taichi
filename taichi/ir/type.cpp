@@ -92,7 +92,7 @@ std::string BitStructType::to_string() const {
   std::string str = "bs(";
   int num_members = (int)member_bit_offsets_.size();
   for (int i = 0; i < num_members; i++) {
-    str += fmt::format("{}<<{}", member_types_[i]->to_string(),
+    str += fmt::format("{}@{}", member_types_[i]->to_string(),
                        member_bit_offsets_[i]);
     if (i + 1 < num_members) {
       str += ", ";

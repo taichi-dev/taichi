@@ -244,7 +244,7 @@ class PyTaichi:
         for func in self.materialize_callbacks:
             func()
         self.materialize_callbacks = []
-        
+
     def print_snode_tree(self):
         self.prog.print_snode_tree()
 

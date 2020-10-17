@@ -96,7 +96,7 @@ SNode &SNode::dynamic(const Index &expr, int n, int chunk_size) {
 
 SNode &SNode::bit_struct(int num_bits) {
   auto &snode = create_node({}, {}, SNodeType::bit_struct);
-  snode.num_bits = num_bits;
+  snode.num_container_bits = num_bits;
   return snode;
 }
 
@@ -236,12 +236,11 @@ std::string SNode::get_node_type_name() const {
 
 std::string SNode::get_node_type_name_hinted() const {
   std::string suffix;
-  if (type == SNodeType::place)
-    suffix = fmt::format("_{}", dt->to_string());
-  else if (type == SNodeType::bit_struct)
-    suffix = fmt::format("_{}", dt->to_string());
+  if (type == SNodeType::place || type == SNodeType::bit_struct ||
+      type == SNodeType::bit_array)
+    suffix = fmt::format("<{}>", dt->to_string());
   if (is_bit_level)
-    suffix += "_bit";
+    suffix += "<bit>";
   return fmt::format("S{}{}{}", id, snode_type_name(type), suffix);
 }
 

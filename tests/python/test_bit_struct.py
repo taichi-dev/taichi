@@ -15,7 +15,9 @@ def test_simple():
     ti.root.dense(ti.i, N)._bit_struct(num_bits=32).place(x, y)
 
     ti.get_runtime().print_snode_tree()
-    
+    ti.get_runtime().materialize()
+    ti.get_runtime().print_snode_tree()
+
     @ti.kernel
     def foo():
         for i in range(N):
@@ -25,4 +27,4 @@ def test_simple():
     foo()
 
 
-# test_simple()
+test_simple()

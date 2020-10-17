@@ -177,7 +177,7 @@ class CustomIntType : public Type {
 
   std::string to_string() const override;
 
-  int num_num_bits() const {
+  int get_num_bits() const {
     return num_bits_;
   }
 

@@ -17,6 +17,7 @@ Create a window
     :parameter background_color: (optional, RGB hex) background color of the window
     :parameter show_gui: (optional, bool) see the note below
     :parameter fullscreen: (optional, bool) ``True`` for fullscreen window
+    :parameter fast_gui: (optional, bool) see :ref:`fast_gui`
     :return: (GUI) an object represents the window
 
     Create a window.
@@ -558,3 +559,44 @@ Image I/O
     If ``h`` is not specified, it will be equal to ``w`` by default.
 
     The output image shape is: ``(w, h, *img.shape[2:])``.
+
+
+.. _fast_gui:
+
+Zero-copying frame buffer
+-------------------------
+
+Sometimes when the GUI resolution (window size) is large, we find it impossible
+to reach 60 FPS even without any kernel invocations between each frame.
+
+This is mainly due to the copy overhead when Taichi GUI is copying image buffer
+from a place to another place, to make high-level painting APIs like
+``gui.circles`` functional. The larger the image, the larger the overhead.
+
+However, in some cases we only need ``gui.set_image`` alone. Then we may turn
+on the ``fast_gui`` mode for better performance.
+
+It will directly write the image specified in ``gui.set_image`` to frame buffer
+without hesitation, results in a much better FPS when resolution is huge.
+
+To do so, simply initialize your GUI with ``fast_gui=True``:
+
+.. code-block:: python
+
+   gui = ti.GUI(res, title, fast_gui=True)
+
+
+.. note::
+
+   If possible, consider enabling this option, especially when ``fullscreen=True``.
+
+
+.. warning::
+
+    Despite the performance boost, it has many limitations as trade off:
+
+    ``gui.set_image`` is the only available paint API in this mode. **All other
+    APIs like ``gui.circles``, ``gui.rect``, ``gui.triangles``, etc., won't work**.
+
+    ``gui.set_image`` will only takes Taichi 3D or 4D vector fields (RGB or RGBA)
+    as input.

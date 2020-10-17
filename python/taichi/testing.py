@@ -15,7 +15,7 @@ def get_rel_eps():
 
 
 def approx(expected, **kwargs):
-    '''Tweaked pytest.approx for OpenGL low percisions'''
+    '''Tweaked pytest.approx for OpenGL low precisions'''
     import pytest
 
     class boolean_integer:

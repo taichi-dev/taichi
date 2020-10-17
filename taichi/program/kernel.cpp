@@ -6,6 +6,7 @@
 #include "taichi/program/async_engine.h"
 #include "taichi/codegen/codegen.h"
 #include "taichi/backends/cuda/cuda_driver.h"
+#include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/util/action_recorder.h"
 #include "taichi/program/extension.h"

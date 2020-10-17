@@ -1,6 +1,7 @@
 #pragma once
 
 #include "taichi/ir/ir.h"
+#include "taichi/ir/offloaded_task_type.h"
 #include "taichi/ir/scratch_pad.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -8,12 +9,12 @@ TLANG_NAMESPACE_BEGIN
 class AllocaStmt : public Stmt {
  public:
   AllocaStmt(DataType type) {
-    ret_type = VectorType(1, type);
+    ret_type = LegacyVectorType(1, type);
     TI_STMT_REG_FIELDS;
   }
 
   AllocaStmt(int width, DataType type) {
-    ret_type = VectorType(width, type);
+    ret_type = LegacyVectorType(width, type);
     TI_STMT_REG_FIELDS;
   }
 
@@ -101,9 +102,10 @@ class UnaryOpStmt : public Stmt {
 class ArgLoadStmt : public Stmt {
  public:
   int arg_id;
+  bool is_ptr;
 
   ArgLoadStmt(int arg_id, DataType dt, bool is_ptr = false) : arg_id(arg_id) {
-    this->ret_type = VectorType(1, dt);
+    this->ret_type = LegacyVectorType(1, dt);
     this->is_ptr = is_ptr;
     TI_STMT_REG_FIELDS;
   }
@@ -613,7 +615,7 @@ class KernelReturnStmt : public Stmt {
   Stmt *value;
 
   KernelReturnStmt(Stmt *value, DataType dt) : value(value) {
-    this->ret_type = VectorType(1, dt);
+    this->ret_type = LegacyVectorType(1, dt);
     TI_STMT_REG_FIELDS;
   }
 
@@ -789,13 +791,7 @@ class GetChStmt : public Stmt {
 
 class OffloadedStmt : public Stmt {
  public:
-  enum TaskType : int {
-    serial,
-    range_for,
-    struct_for,
-    listgen,
-    gc,
-  };
+  using TaskType = OffloadedTaskType;
 
   TaskType task_type;
   SNode *snode;
@@ -830,7 +826,7 @@ class OffloadedStmt : public Stmt {
   static std::string task_type_name(TaskType tt);
 
   bool has_body() const {
-    return task_type != listgen && task_type != gc;
+    return task_type != TaskType::listgen && task_type != TaskType::gc;
   }
 
   bool is_container_statement() const override {
@@ -938,7 +934,7 @@ class GlobalTemporaryStmt : public Stmt {
  public:
   std::size_t offset;
 
-  GlobalTemporaryStmt(std::size_t offset, VectorType ret_type)
+  GlobalTemporaryStmt(std::size_t offset, LegacyVectorType ret_type)
       : offset(offset) {
     this->ret_type = ret_type;
     TI_STMT_REG_FIELDS;
@@ -956,7 +952,8 @@ class ThreadLocalPtrStmt : public Stmt {
  public:
   std::size_t offset;
 
-  ThreadLocalPtrStmt(std::size_t offset, VectorType ret_type) : offset(offset) {
+  ThreadLocalPtrStmt(std::size_t offset, LegacyVectorType ret_type)
+      : offset(offset) {
     this->ret_type = ret_type;
     TI_STMT_REG_FIELDS;
   }
@@ -973,7 +970,7 @@ class BlockLocalPtrStmt : public Stmt {
  public:
   Stmt *offset;
 
-  BlockLocalPtrStmt(Stmt *offset, VectorType ret_type) : offset(offset) {
+  BlockLocalPtrStmt(Stmt *offset, LegacyVectorType ret_type) : offset(offset) {
     this->ret_type = ret_type;
     TI_STMT_REG_FIELDS;
   }
@@ -1004,7 +1001,7 @@ class InternalFuncStmt : public Stmt {
   std::string func_name;
 
   InternalFuncStmt(const std::string &func_name) : func_name(func_name) {
-    this->ret_type = VectorType(1, PrimitiveType::i32);
+    this->ret_type = LegacyVectorType(1, PrimitiveType::i32);
     TI_STMT_REG_FIELDS;
   }
 

@@ -21,7 +21,7 @@ IRBuilder &current_ast_builder() {
   return context->builder();
 }
 
-std::string VectorType::pointer_suffix() const {
+std::string LegacyVectorType::pointer_suffix() const {
   if (is_pointer()) {
     return "*";
   } else {
@@ -29,11 +29,11 @@ std::string VectorType::pointer_suffix() const {
   }
 }
 
-std::string VectorType::element_type_name() const {
+std::string LegacyVectorType::element_type_name() const {
   return fmt::format("{}{}", data_type_short_name(data_type), pointer_suffix());
 }
 
-std::string VectorType::str() const {
+std::string LegacyVectorType::str() const {
   auto ename = element_type_name();
   return fmt::format("{:4}x{}", ename, width);
 }
@@ -172,7 +172,6 @@ Stmt::Stmt() : field_manager(this), fields_registered(false) {
   instance_id = instance_id_counter++;
   id = instance_id;
   erased = false;
-  is_ptr = false;
 }
 
 Stmt::Stmt(const Stmt &stmt) : field_manager(this), fields_registered(false) {
@@ -180,7 +179,6 @@ Stmt::Stmt(const Stmt &stmt) : field_manager(this), fields_registered(false) {
   instance_id = instance_id_counter++;
   id = instance_id;
   erased = stmt.erased;
-  is_ptr = stmt.is_ptr;
   tb = stmt.tb;
   ret_type = stmt.ret_type;
 }
@@ -240,7 +238,7 @@ std::string Stmt::type_hint() const {
   if (ret_type.data_type == PrimitiveType::unknown)
     return "";
   else
-    return fmt::format("<{}>{}", ret_type.str(), is_ptr ? "ptr " : " ");
+    return fmt::format("<{}>", ret_type.str());
 }
 
 std::string Stmt::type() {

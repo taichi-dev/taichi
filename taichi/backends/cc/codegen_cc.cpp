@@ -2,6 +2,7 @@
 #include "cc_kernel.h"
 #include "cc_layout.h"
 #include "taichi/ir/ir.h"
+#include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/util/line_appender.h"
 #include "taichi/util/str.h"

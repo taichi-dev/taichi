@@ -122,7 +122,7 @@ class AccessAnalysis : public BasicStmtVisitor {
 namespace irpass {
 
 std::unique_ptr<ScratchPads> initialize_scratch_pad(OffloadedStmt *offload) {
-  TI_ASSERT(offload->task_type == OffloadedStmt::struct_for);
+  TI_ASSERT(offload->task_type == OffloadedTaskType::struct_for);
   std::unique_ptr<ScratchPads> pads;
   pads = std::make_unique<ScratchPads>();
   if (!offload->scratch_opt.empty()) {

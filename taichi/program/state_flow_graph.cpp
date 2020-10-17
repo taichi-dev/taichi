@@ -1,16 +1,61 @@
 #include "taichi/program/state_flow_graph.h"
 
+#include <algorithm>
 #include <set>
 #include <sstream>
 #include <unordered_set>
 
 #include "taichi/ir/analysis.h"
+#include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/program/async_engine.h"
 #include "taichi/util/statistics.h"
 
 TLANG_NAMESPACE_BEGIN
 
+namespace {
+
+using SFGStateToNodes = StateFlowGraph::StateToNodesMap;
+
+SFGStateToNodes::const_iterator find(const SFGStateToNodes &m,
+                                     const AsyncState &s) {
+  return std::find_if(
+      m.begin(), m.end(),
+      [&s](const SFGStateToNodes::value_type &v) { return v.first == s; });
+}
+
+SFGStateToNodes::iterator find(SFGStateToNodes &m, const AsyncState &s) {
+  return std::find_if(
+      m.begin(), m.end(),
+      [&s](const SFGStateToNodes::value_type &v) { return v.first == s; });
+}
+
+std::pair<SFGStateToNodes::value_type::second_type *, bool> insert(
+    SFGStateToNodes &m,
+    const AsyncState &s) {
+  auto itr = find(m, s);
+  if (itr != m.end()) {
+    return std::make_pair(&(itr->second), true);
+  }
+  m.push_back(std::make_pair(s, SFGStateToNodes::value_type::second_type{}));
+  return std::make_pair(&(m.back().second), false);
+}
+
+SFGStateToNodes::value_type::second_type &get_or_insert(SFGStateToNodes &m,
+                                                        const AsyncState &s) {
+  // get_or_insert() implies that the user doesn't care whether |s| is already
+  // in |m|, so we just return the mapped value. This is functionally equivalent
+  // to a (unordered) map's operator[].
+  return *(insert(m, s).first);
+}
+
+bool insert(SFGStateToNodes &m, const AsyncState &s, StateFlowGraph::Node *n) {
+  auto p = insert(m, s);
+  const bool b = p.first->insert(n).second;
+  return p.second && b;
+}
+
+}  // namespace
 // TODO: rename state to edge since we have not only state flow edges but also
 // dependency edges.
 
@@ -20,12 +65,12 @@ std::string StateFlowGraph::Node::string() const {
 
 void StateFlowGraph::Node::disconnect_all() {
   for (auto &edges : output_edges) {
-    for (auto &other : edges.second) {
+    for (auto *other : edges.second) {
       other->disconnect_with(this);
     }
   }
   for (auto &edges : input_edges) {
-    for (auto &other : edges.second) {
+    for (auto *other : edges.second) {
       other->disconnect_with(this);
     }
   }
@@ -95,16 +140,11 @@ void StateFlowGraph::clear() {
 void StateFlowGraph::mark_pending_tasks_as_executed() {
   std::vector<std::unique_ptr<Node>> new_nodes;
   std::unordered_set<Node *> state_owners;
-  std::unordered_set<Node *> state_readers;
   for (auto &owner : latest_state_owner_) {
     state_owners.insert(state_owners.end(), owner.second);
   }
-  for (auto &reader : latest_state_readers_) {
-    state_readers.insert(reader.second.begin(), reader.second.end());
-  }
   for (auto &node : nodes_) {
-    if (node->is_initial_node || state_owners.count(node.get()) > 0 ||
-        state_readers.count(node.get()) > 0) {
+    if (node->is_initial_node || state_owners.count(node.get()) > 0) {
       node->mark_executed();
       new_nodes.push_back(std::move(node));
     }
@@ -120,12 +160,14 @@ void StateFlowGraph::insert_task(const TaskLaunchRecord &rec) {
   node->rec = rec;
   node->meta = get_task_meta(ir_bank_, rec);
   for (auto input_state : node->meta->input_states) {
+    TI_PROFILER("insert_task meta->input_states");
     if (latest_state_owner_.find(input_state) == latest_state_owner_.end()) {
       latest_state_owner_[input_state] = initial_node_;
     }
     insert_edge(latest_state_owner_[input_state], node.get(), input_state);
   }
   for (auto output_state : node->meta->output_states) {
+    TI_PROFILER("insert_task meta->output_states");
     if (latest_state_readers_[output_state].empty()) {
       if (latest_state_owner_.find(output_state) != latest_state_owner_.end()) {
         // insert a WAW dependency edge
@@ -145,6 +187,7 @@ void StateFlowGraph::insert_task(const TaskLaunchRecord &rec) {
 
   // Note that this loop must happen AFTER the previous one
   for (auto input_state : node->meta->input_states) {
+    TI_PROFILER("insert_task latest_state_readers_");
     latest_state_readers_[input_state].insert(node.get());
   }
   nodes_.push_back(std::move(node));
@@ -154,8 +197,8 @@ void StateFlowGraph::insert_edge(Node *from, Node *to, AsyncState state) {
   TI_AUTO_PROF;
   TI_ASSERT(from != nullptr);
   TI_ASSERT(to != nullptr);
-  from->output_edges[state].insert(to);
-  to->input_edges[state].insert(from);
+  insert(from->output_edges, state, to);
+  insert(to->input_edges, state, from);
 }
 
 bool StateFlowGraph::optimize_listgen() {
@@ -210,21 +253,24 @@ bool StateFlowGraph::optimize_listgen() {
         auto parent_list_state =
             AsyncState{snode->parent, AsyncState::Type::list};
 
-        TI_ASSERT(node_a->input_edges[mask_state].size() == 1);
-        TI_ASSERT(node_b->input_edges[mask_state].size() == 1);
+        TI_ASSERT(get_or_insert(node_a->input_edges, mask_state).size() == 1);
+        TI_ASSERT(get_or_insert(node_b->input_edges, mask_state).size() == 1);
 
-        if (*node_a->input_edges[mask_state].begin() !=
-            *node_b->input_edges[mask_state].begin())
+        if (*get_or_insert(node_a->input_edges, mask_state).begin() !=
+            *get_or_insert(node_b->input_edges, mask_state).begin())
           break;
 
-        TI_ASSERT(node_a->input_edges[parent_list_state].size() == 1);
-        TI_ASSERT(node_b->input_edges[parent_list_state].size() == 1);
-        if (*node_a->input_edges[parent_list_state].begin() !=
-            *node_b->input_edges[parent_list_state].begin())
+        TI_ASSERT(
+            get_or_insert(node_a->input_edges, parent_list_state).size() == 1);
+        TI_ASSERT(
+            get_or_insert(node_b->input_edges, parent_list_state).size() == 1);
+        if (*get_or_insert(node_a->input_edges, parent_list_state).begin() !=
+            *get_or_insert(node_b->input_edges, parent_list_state).begin())
           break;
 
-        TI_ASSERT(node_b->input_edges[list_state].size() == 1);
-        Node *clear_node = *node_b->input_edges[list_state].begin();
+        TI_ASSERT(get_or_insert(node_b->input_edges, list_state).size() == 1);
+        Node *clear_node =
+            *get_or_insert(node_b->input_edges, list_state).begin();
         TI_ASSERT(!clear_node->executed());
         // TODO: This could be a bottleneck, avoid unnecessary IR clone.
         // However, the task most likely will only contain a single
@@ -296,7 +342,7 @@ StateFlowGraph::compute_transitive_closure(int begin, int end) {
   }
   for (int i = n - 1; i >= 0; i--) {
     for (auto &edges : nodes[i]->input_edges) {
-      for (auto &edge : edges.second) {
+      for (auto *edge : edges.second) {
         auto tmp_id = edge->pending_node_id - begin;
         if (tmp_id >= 0 && tmp_id < n) {
           TI_ASSERT(tmp_id < i);
@@ -307,7 +353,7 @@ StateFlowGraph::compute_transitive_closure(int begin, int end) {
   }
   for (int i = 0; i < n; i++) {
     for (auto &edges : nodes[i]->output_edges) {
-      for (auto &edge : edges.second) {
+      for (auto *edge : edges.second) {
         auto tmp_id = edge->pending_node_id - begin;
         if (tmp_id >= 0 && tmp_id < n) {
           TI_ASSERT(tmp_id > i);
@@ -491,7 +537,7 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
       // Fuse no more than one task into task i
       bool i_updated = false;
       for (auto &edges : nodes[i]->output_edges) {
-        for (auto &edge : edges.second) {
+        for (auto *edge : edges.second) {
           const int j = edge->pending_node_id - begin;
           if (j != -1 && edge_fusible(i, j)) {
             do_fuse(i, j);
@@ -659,9 +705,9 @@ std::string StateFlowGraph::dump_dot(const std::optional<std::string> &rankdir,
 
   auto node_selected = [&](const SFGNode *node) {
     if (highlight_single_state) {
-      return node->input_edges.find(highlight_state) !=
+      return find(node->input_edges, highlight_state) !=
                  node->input_edges.end() ||
-             node->output_edges.find(highlight_state) !=
+             find(node->output_edges, highlight_state) !=
                  node->output_edges.end();
     } else {
       return true;
@@ -795,7 +841,7 @@ void StateFlowGraph::topo_sort_nodes() {
   for (auto &node : pending_tasks) {
     int degree_in = 0;
     for (auto &inputs : node->input_edges) {
-      for (auto &input_node : inputs.second) {
+      for (auto *input_node : inputs.second) {
         if (input_node->pending()) {
           degree_in++;
         }
@@ -816,7 +862,7 @@ void StateFlowGraph::topo_sort_nodes() {
 
     // Delete the node and update degrees_in
     for (auto &output_edge : head->output_edges) {
-      for (auto &e : output_edge.second) {
+      for (auto *e : output_edge.second) {
         auto dest = e->pending_node_id;
         TI_ASSERT(dest != -1);
         degrees_in[dest]--;
@@ -857,14 +903,14 @@ void StateFlowGraph::replace_reference(StateFlowGraph::Node *node_a,
   // replace all edges to node A with new ones to node B
   for (auto &edges : node_a->output_edges) {
     // Find all nodes C that points to A
-    for (auto &node_c : edges.second) {
+    for (auto *node_c : edges.second) {
       // Replace reference to A with B
-      if (node_c->input_edges[edges.first].find(node_a) !=
-          node_c->input_edges[edges.first].end()) {
-        node_c->input_edges[edges.first].erase(node_a);
-
-        node_c->input_edges[edges.first].insert(node_b);
-        node_b->output_edges[edges.first].insert(node_c);
+      const auto &ostate = edges.first;
+      auto &c_ins = get_or_insert(node_c->input_edges, ostate);
+      if (c_ins.find(node_a) != c_ins.end()) {
+        c_ins.erase(node_a);
+        c_ins.insert(node_b);
+        get_or_insert(node_b->output_edges, ostate).insert(node_c);
       }
     }
   }
@@ -874,14 +920,14 @@ void StateFlowGraph::replace_reference(StateFlowGraph::Node *node_a,
   }
   for (auto &edges : node_a->input_edges) {
     // Find all nodes C that points to A
-    for (auto &node_c : edges.second) {
+    for (auto *node_c : edges.second) {
       // Replace reference to A with B
-      if (node_c->output_edges[edges.first].find(node_a) !=
-          node_c->output_edges[edges.first].end()) {
-        node_c->output_edges[edges.first].erase(node_a);
-
-        node_c->output_edges[edges.first].insert(node_b);
-        node_b->input_edges[edges.first].insert(node_c);
+      const auto &istate = edges.first;
+      auto &c_outs = get_or_insert(node_c->output_edges, istate);
+      if (c_outs.find(node_a) != c_outs.end()) {
+        c_outs.erase(node_a);
+        c_outs.insert(node_b);
+        get_or_insert(node_b->input_edges, istate).insert(node_c);
       }
     }
   }
@@ -954,7 +1000,7 @@ bool StateFlowGraph::optimize_dead_store() {
         continue;
       }
       bool used = false;
-      for (auto other : task->output_edges[s]) {
+      for (auto other : get_or_insert(task->output_edges, s)) {
         if (task->has_state_flow(s, other)) {
           // Check if this is a RAW dependency. For scalar SNodes, a WAW flow
           // edge decades to a dependency edge.
@@ -1009,8 +1055,9 @@ bool StateFlowGraph::optimize_dead_store() {
     const auto mt = meta.type;
     // Do NOT check ir->body->statements first! |ir->body| could be done when
     // |mt| is not the desired type.
-    if ((mt == OffloadedStmt::serial || mt == OffloadedStmt::struct_for ||
-         mt == OffloadedStmt::range_for) &&
+    if ((mt == OffloadedTaskType::serial ||
+         mt == OffloadedTaskType::struct_for ||
+         mt == OffloadedTaskType::range_for) &&
         ir->body->statements.empty()) {
       to_delete.insert(i + first_pending_task_index_);
     }
@@ -1057,7 +1104,7 @@ void StateFlowGraph::verify() const {
   // Check edges
   for (int i = 0; i < n; i++) {
     for (auto &edges : nodes_[i]->output_edges) {
-      for (auto &edge : edges.second) {
+      for (auto *edge : edges.second) {
         TI_ASSERT_INFO(edge, "nodes_[{}]({}) has an empty output edge", i,
                        nodes_[i]->string());
         auto dest = edge->node_id;
@@ -1070,7 +1117,8 @@ void StateFlowGraph::verify() const {
                        i, nodes_[i]->string(), edge->string());
         TI_ASSERT_INFO(dest != i, "nodes_[{}]({}) has an output edge to itself",
                        i, nodes_[i]->string());
-        auto &corresponding_edges = nodes_[dest]->input_edges[edges.first];
+        auto &corresponding_edges =
+            get_or_insert(nodes_[dest]->input_edges, edges.first);
         TI_ASSERT_INFO(corresponding_edges.find(nodes_[i].get()) !=
                            corresponding_edges.end(),
                        "nodes_[{}]({}) has an output edge to nodes_[{}]({}), "
@@ -1081,7 +1129,7 @@ void StateFlowGraph::verify() const {
   }
   for (int i = 0; i < n; i++) {
     for (auto &edges : nodes_[i]->input_edges) {
-      for (auto &edge : edges.second) {
+      for (auto *edge : edges.second) {
         TI_ASSERT_INFO(edge, "nodes_[{}]({}) has an empty input edge", i,
                        nodes_[i]->string());
         auto dest = edge->node_id;
@@ -1094,7 +1142,8 @@ void StateFlowGraph::verify() const {
                        i, nodes_[i]->string(), edge->string());
         TI_ASSERT_INFO(dest != i, "nodes_[{}]({}) has an input edge to itself",
                        i, nodes_[i]->string());
-        auto &corresponding_edges = nodes_[dest]->output_edges[edges.first];
+        auto &corresponding_edges =
+            get_or_insert(nodes_[dest]->output_edges, edges.first);
         TI_ASSERT_INFO(corresponding_edges.find(nodes_[i].get()) !=
                            corresponding_edges.end(),
                        "nodes_[{}]({}) has an input edge to nodes_[{}]({}), "
@@ -1107,7 +1156,7 @@ void StateFlowGraph::verify() const {
   // Check topological order
   for (int i = 0; i < n; i++) {
     for (auto &edges : nodes_[i]->output_edges) {
-      for (auto &edge : edges.second) {
+      for (auto *edge : edges.second) {
         auto dest = edge->node_id;
         TI_ASSERT_INFO(dest > i,
                        "topological order violated: nodes_[{}]({}) "
@@ -1133,13 +1182,13 @@ bool StateFlowGraph::demote_activation() {
     auto list_state = AsyncState(snode, AsyncState::Type::list);
 
     // TODO: handle serial and range for
-    if (node->meta->type != OffloadedStmt::struct_for)
+    if (node->meta->type != OffloadedTaskType::struct_for)
       continue;
 
-    if (node->input_edges[list_state].size() != 1)
+    if (get_or_insert(node->input_edges, list_state).size() != 1)
       continue;
 
-    auto list_node = *node->input_edges[list_state].begin();
+    auto list_node = *get_or_insert(node->input_edges, list_state).begin();
     tasks[std::make_pair(node->rec.ir_handle, list_node)].push_back(node);
   }
 

@@ -5,8 +5,9 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include "llvm/ADT/SmallSet.h"
+#include "llvm/ADT/SmallVector.h"
 #include "taichi/ir/ir.h"
-#include "taichi/ir/statements.h"
 #include "taichi/lang_util.h"
 #include "taichi/program/async_utils.h"
 #include "taichi/program/program.h"
@@ -18,7 +19,8 @@ class IRBank;
 class StateFlowGraph {
  public:
   struct Node;
-  using StateToNodeMapping = std::unordered_map<AsyncState, Node *>;
+  using StateToNodesMap =
+      llvm::SmallVector<std::pair<AsyncState, llvm::SmallSet<Node *, 8>>, 4>;
 
   // Each node is a task
   // Note: after SFG is done, each node here should hold a TaskLaunchRecord.
@@ -40,10 +42,11 @@ class StateFlowGraph {
     // For executed tasks (including the initial node), pending_node_id is -1.
     int pending_node_id{0};
 
-    // Profiling showed horrible performance using std::unordered_multimap (at
-    // least on Mac with clang-1103.0.32.62)...
-    std::unordered_map<AsyncState, std::unordered_set<Node *>> output_edges,
-        input_edges;
+    // Performance hits
+    // * std::unordered_multimap: Slow on clang + libc++, see #1855
+    // * std::unordered_map<., std::unordered_set<.>>: slow due to frequent
+    //   allocation, see #1927.
+    StateToNodesMap input_edges, output_edges;
 
     bool pending() const {
       return pending_node_id >= 0;
@@ -173,7 +176,7 @@ class StateFlowGraph {
   Node *initial_node_;  // The initial node holds all the initial states.
   int first_pending_task_index_;
   TaskMeta initial_meta_;
-  StateToNodeMapping latest_state_owner_;
+  std::unordered_map<AsyncState, Node *> latest_state_owner_;
   std::unordered_map<AsyncState, std::unordered_set<Node *>>
       latest_state_readers_;
   std::unordered_map<std::string, int> task_name_to_launch_ids_;

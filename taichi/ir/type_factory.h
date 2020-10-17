@@ -20,9 +20,9 @@ class TypeFactory {
 
   Type *get_custom_int_type(int num_bits, bool is_signed);
 
-  Type *get_bit_struct(int container_bits,
-                       std::vector<Type *> member_types,
-                       std::vector<int> member_bit_offsets);
+  Type *get_bit_struct_type(int container_bits,
+                            std::vector<Type *> member_types,
+                            std::vector<int> member_bit_offsets);
 
  private:
   TypeFactory();

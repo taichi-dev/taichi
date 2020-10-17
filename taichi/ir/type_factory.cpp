@@ -45,9 +45,9 @@ Type *TypeFactory::get_custom_int_type(int num_bits, bool is_signed) {
   return custom_int_types_[key].get();
 }
 
-Type *TypeFactory::get_bit_struct(int container_bits,
-                                  std::vector<Type *> member_types,
-                                  std::vector<int> member_bit_offsets) {
+Type *TypeFactory::get_bit_struct_type(int container_bits,
+                                       std::vector<Type *> member_types,
+                                       std::vector<int> member_bit_offsets) {
   bit_struct_types_.push_back(std::make_unique<BitStructType>(
       container_bits, member_types, member_bit_offsets));
   return bit_struct_types_.back().get();

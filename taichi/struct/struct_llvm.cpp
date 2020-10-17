@@ -37,7 +37,7 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
   std::vector<llvm::Type *> ch_types;
   for (int i = 0; i < snode.ch.size(); i++) {
     if (!snode.ch[i]->is_bit_level) {
-      // Bit level SNodes do not really have a corresponding LLVM type
+      // Bit-level SNodes do not really have a corresponding LLVM type
       auto ch = get_llvm_node_type(module.get(), snode.ch[i].get());
       ch_types.push_back(ch);
     }
@@ -70,7 +70,7 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
       total_offset += ch->dt->as<CustomIntType>()->get_num_bits();
     }
 
-    snode.dt = TypeFactory::get_instance().get_bit_struct(
+    snode.dt = TypeFactory::get_instance().get_bit_struct_type(
         snode.num_container_bits, ch_types, ch_offsets);
 
     DataType container_primitive_type(

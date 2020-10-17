@@ -25,6 +25,8 @@ StructCompilerLLVM::StructCompilerLLVM(Program *prog, Arch arch)
 void StructCompilerLLVM::generate_types(SNode &snode) {
   TI_AUTO_PROF;
   auto type = snode.type;
+  if (snode.is_bit_level)
+    return;
   llvm::Type *node_type = nullptr;
 
   auto ctx = llvm_ctx;
@@ -53,6 +55,10 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
     body_type = ch_type;
   } else if (type == SNodeType::place) {
     body_type = tlctx->get_data_type(snode.dt);
+  } else if (type == SNodeType::bit_struct) {
+    DataType container_type(TypeFactory::get_instance().get_primitive_int_type(
+        snode.dt->cast<BitStructType>()->get_container_bits(), false));
+    body_type = tlctx->get_data_type(container_type);
   } else if (type == SNodeType::pointer) {
     // mutex
     aux_type = llvm::ArrayType::get(llvm::PointerType::getInt64Ty(*ctx),

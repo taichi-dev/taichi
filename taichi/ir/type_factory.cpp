@@ -53,4 +53,23 @@ Type *TypeFactory::get_bit_struct(int container_bits,
   return bit_struct_types_.back().get();
 }
 
+Type *TypeFactory::get_primitive_int_type(int bits, bool is_signed) {
+  Type *int_type;
+  if (bits == 8) {
+    int_type = get_primitive_type(PrimitiveTypeID::i8);
+  } else if (bits == 16) {
+    int_type = get_primitive_type(PrimitiveTypeID::i16);
+  } else if (bits == 32) {
+    int_type = get_primitive_type(PrimitiveTypeID::i32);
+  } else if (bits == 64) {
+    int_type = get_primitive_type(PrimitiveTypeID::i64);
+  } else {
+    TI_ERROR("No primitive int type has {} bits", bits);
+  }
+  if (!is_signed) {
+    int_type = to_unsigned(DataType(int_type)).get_ptr();
+  }
+  return int_type;
+}
+
 TLANG_NAMESPACE_END

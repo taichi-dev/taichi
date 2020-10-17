@@ -200,6 +200,8 @@ class BitStructType : public Type {
       : container_bits_(container_bits),
         member_types_(member_types),
         member_bit_offsets_(member_bit_offsets) {
+    // TODO(type): maybe it makes sense to store a type instead of the number of
+    // bits?
     TI_ASSERT(bit::is_power_of_two(container_bits_));
     TI_ASSERT(8 <= container_bits_ && container_bits <= 64);
     TI_ASSERT(member_types_.size() == member_bit_offsets_.size());

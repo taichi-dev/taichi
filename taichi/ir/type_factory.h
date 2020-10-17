@@ -12,6 +12,8 @@ class TypeFactory {
 
   Type *get_primitive_type(PrimitiveTypeID id);
 
+  Type *get_primitive_int_type(int bits, bool is_signed = true);
+
   Type *get_vector_type(int num_elements, Type *element);
 
   Type *get_pointer_type(Type *element);

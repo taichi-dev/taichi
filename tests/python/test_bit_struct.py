@@ -3,6 +3,7 @@ import taichi as ti
 
 # @ti.test()
 def test_simple():
+    ti.init(arch=ti.cpu)
     ci13 = ti.type_factory_.get_custom_int_type(13, True)
     cu19 = ti.type_factory_.get_custom_int_type(19, False)
 
@@ -13,6 +14,8 @@ def test_simple():
 
     ti.root.dense(ti.i, N)._bit_struct(num_bits=32).place(x, y)
 
+    ti.get_runtime().print_snode_tree()
+    
     @ti.kernel
     def foo():
         for i in range(N):
@@ -22,5 +25,4 @@ def test_simple():
     foo()
 
 
-ti.init()
-test_simple()
+# test_simple()

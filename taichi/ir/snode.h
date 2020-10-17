@@ -86,6 +86,11 @@ class SNode {
   Kernel *writer_kernel{};
   Expr expr;
 
+  // is_bit_level=false: the SNode is not bitpacked
+  // is_bit_level=true: the SNode is bitpacked (i.e., strictly inside bit_struct
+  // or bit_array)
+  bool is_bit_level{false};
+
   // Whether the path from root to |this| contains only `dense` SNodes.
   bool is_path_all_dense{false};
 

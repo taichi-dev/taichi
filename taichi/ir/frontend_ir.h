@@ -450,6 +450,20 @@ class RangeAssumptionExpression : public Expression {
   void flatten(FlattenContext *ctx) override;
 };
 
+class LoopUniqueExpression : public Expression {
+ public:
+  Expr input;
+
+  LoopUniqueExpression(const Expr &input) : input(input) {
+  }
+
+  std::string serialize() override {
+    return fmt::format("loop_unique({})", input.serialize());
+  }
+
+  void flatten(FlattenContext *ctx) override;
+};
+
 class IdExpression : public Expression {
  public:
   Identifier id;

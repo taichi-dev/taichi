@@ -211,6 +211,12 @@ void RangeAssumptionExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
+void LoopUniqueExpression::flatten(FlattenContext *ctx) {
+  input->flatten(ctx);
+  ctx->push_back(Stmt::make<LoopUniqueStmt>(input->stmt));
+  stmt = ctx->back_stmt();
+}
+
 void IdExpression::flatten(FlattenContext *ctx) {
   auto var_stmt = ctx->current_block->lookup_var(id);
   if (var_stmt->is<AllocaStmt>()) {

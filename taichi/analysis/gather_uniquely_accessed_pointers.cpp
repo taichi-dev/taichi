@@ -8,7 +8,8 @@ TLANG_NAMESPACE_BEGIN
 
 class LoopUniqueStmtSearcher : public BasicStmtVisitor {
  private:
-  std::unordered_set<Stmt *> loop_constants_;
+  // Constant values that don't change in the loop.
+  std::unordered_set<Stmt *> loop_invariant_;
 
   // If loop_unique_[stmt] is -1, the value of stmt is unique among the
   // top-level loop.
@@ -17,6 +18,8 @@ class LoopUniqueStmtSearcher : public BasicStmtVisitor {
   std::unordered_map<Stmt *, int> loop_unique_;
 
  public:
+  // The number of loop indices of the top-level loop.
+  // -1 means uninitialized.
   int num_different_loop_indices{-1};
   using BasicStmtVisitor::visit;
 
@@ -35,13 +38,15 @@ class LoopUniqueStmtSearcher : public BasicStmtVisitor {
   }
 
   void visit(ConstStmt *stmt) override {
-    loop_constants_.insert(stmt);
+    loop_invariant_.insert(stmt);
   }
 
   void visit(UnaryOpStmt *stmt) override {
-    if (loop_constants_.count(stmt->operand) > 0) {
-      loop_constants_.insert(stmt);
+    if (loop_invariant_.count(stmt->operand) > 0) {
+      loop_invariant_.insert(stmt);
     }
+
+    // op loop-unique -> loop-unique
     if (loop_unique_.count(stmt->operand) > 0 &&
         (stmt->op_type == UnaryOpType::neg)) {
       // TODO: Other injective unary operations
@@ -50,18 +55,23 @@ class LoopUniqueStmtSearcher : public BasicStmtVisitor {
   }
 
   void visit(BinaryOpStmt *stmt) override {
-    if (loop_constants_.count(stmt->lhs) > 0 &&
-        loop_constants_.count(stmt->rhs) > 0) {
-      loop_constants_.insert(stmt);
+    if (loop_invariant_.count(stmt->lhs) > 0 &&
+        loop_invariant_.count(stmt->rhs) > 0) {
+      loop_invariant_.insert(stmt);
     }
+
+    // loop-unique op loop-invariant -> loop-unique
     if ((loop_unique_.count(stmt->lhs) > 0 &&
-         loop_constants_.count(stmt->rhs) > 0) &&
+         loop_invariant_.count(stmt->rhs) > 0) &&
         (stmt->op_type == BinaryOpType::add ||
          stmt->op_type == BinaryOpType::sub ||
          stmt->op_type == BinaryOpType::bit_xor)) {
+      // TODO: Other operations
       loop_unique_[stmt] = loop_unique_[stmt->lhs];
     }
-    if ((loop_constants_.count(stmt->lhs) > 0 &&
+
+    // loop-invariant op loop-unique -> loop-unique
+    if ((loop_invariant_.count(stmt->lhs) > 0 &&
          loop_unique_.count(stmt->rhs) > 0) &&
         (stmt->op_type == BinaryOpType::add ||
          stmt->op_type == BinaryOpType::sub ||
@@ -71,6 +81,8 @@ class LoopUniqueStmtSearcher : public BasicStmtVisitor {
   }
 
   bool is_ptr_indices_loop_unique(GlobalPtrStmt *stmt) const {
+    // Check if the address is loop-unique, i.e., stmt contains
+    // either a loop-unique index or all top-level loop indices.
     TI_ASSERT(num_different_loop_indices != -1);
     std::vector<int> loop_indices;
     loop_indices.reserve(stmt->indices.size());
@@ -91,8 +103,8 @@ class LoopUniqueStmtSearcher : public BasicStmtVisitor {
         std::unique(loop_indices.begin(), loop_indices.end()) -
         loop_indices.begin();
     // for i, j in x:
-    //     y[j, i] is loop-unique
-    //     a[i, i] is not loop-unique
+    //     a[j, i] is loop-unique
+    //     b[i, i] is not loop-unique (because there's no j)
     return current_num_different_loop_indices == num_different_loop_indices;
   }
 };
@@ -100,6 +112,10 @@ class LoopUniqueStmtSearcher : public BasicStmtVisitor {
 class UniquelyAccessedSNodeSearcher : public BasicStmtVisitor {
  private:
   LoopUniqueStmtSearcher loop_unique_stmt_searcher_;
+
+  // Search SNodes that are uniquely accessed, i.e., accessed by
+  // one GlobalPtrStmt (or by definitely-same-address GlobalPtrStmts),
+  // and that GlobalPtrStmt's address is loop-unique.
   std::unordered_map<SNode *, GlobalPtrStmt *> accessed_pointer_;
 
  public:

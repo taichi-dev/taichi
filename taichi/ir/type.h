@@ -38,6 +38,8 @@ class Type {
 
   int vector_width() const;
 
+  bool is_primitive(PrimitiveTypeID type) const;
+
   virtual ~Type() {
   }
 };

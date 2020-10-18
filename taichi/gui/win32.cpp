@@ -203,18 +203,21 @@ void GUI::create_window() {
 
 void GUI::redraw() {
   UpdateWindow(hwnd);
-  // http:// www.cplusplus.com/reference/cstdlib/calloc/
-  for (int i = 0; i < width; i++) {
-    for (int j = 0; j < height; j++) {
-      auto c = reinterpret_cast<unsigned char *>(data + (j * width) + i);
-      auto d = canvas->img[i][height - j - 1];
-      c[0] = uint8(clamp(int(d[2] * 255.0_f), 0, 255));
-      c[1] = uint8(clamp(int(d[1] * 255.0_f), 0, 255));
-      c[2] = uint8(clamp(int(d[0] * 255.0_f), 0, 255));
-      c[3] = 0;
+  if (!fast_gui) {
+    // http://www.cplusplus.com/reference/cstdlib/calloc/
+    for (int i = 0; i < width; i++) {
+      for (int j = 0; j < height; j++) {
+        auto c = reinterpret_cast<unsigned char *>(data + (j * width) + i);
+        auto d = canvas->img[i][height - j - 1];
+        c[0] = uint8(clamp(int(d[2] * 255.0_f), 0, 255));
+        c[1] = uint8(clamp(int(d[1] * 255.0_f), 0, 255));
+        c[2] = uint8(clamp(int(d[0] * 255.0_f), 0, 255));
+        c[3] = 0;
+      }
     }
   }
-  bitmap = CreateBitmap(width, height, 1, 32, (void *)data);
+  bitmap = CreateBitmap(width, height, 1, 32,
+                        fast_gui ? (void *)fast_buf : (void *)data);
   SelectObject(src, bitmap);
   BitBlt(hdc, 0, 0, width, height, src, 0, 0, SRCCOPY);
   DeleteObject(bitmap);

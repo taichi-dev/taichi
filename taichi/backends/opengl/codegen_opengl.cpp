@@ -267,8 +267,8 @@ class KernelGen : public IRVisitor {
       if (std::holds_alternative<Stmt *>(content)) {
         auto arg_stmt = std::get<Stmt *>(content);
         emit("_msg_set_{}({}, {}, {});",
-             opengl_data_type_short_name(arg_stmt->ret_type.data_type),
-             msgid_name, i, arg_stmt->short_name());
+             opengl_data_type_short_name(arg_stmt->ret_type), msgid_name, i,
+             arg_stmt->short_name());
 
       } else {
         auto str = std::get<std::string>(content);
@@ -281,9 +281,8 @@ class KernelGen : public IRVisitor {
 
   void visit(RandStmt *stmt) override {
     used.random = true;
-    emit("{} {} = _rand_{}();", opengl_data_type_name(stmt->ret_type.data_type),
-         stmt->short_name(),
-         opengl_data_type_short_name(stmt->ret_type.data_type));
+    emit("{} {} = _rand_{}();", opengl_data_type_name(stmt->ret_type),
+         stmt->short_name(), opengl_data_type_short_name(stmt->ret_type));
   }
 
   void visit(LinearizeStmt *stmt) override {
@@ -361,7 +360,7 @@ class KernelGen : public IRVisitor {
       }
 
     } else if (stmt->op_type == SNodeOpType::is_active) {
-      TI_ASSERT(stmt->ret_type.data_type == PrimitiveType::i32);
+      TI_ASSERT(stmt->ret_type == PrimitiveType::i32);
       if (stmt->snode->type == SNodeType::dense ||
           stmt->snode->type == SNodeType::root) {
         emit("int {} = 1;", stmt->short_name());
@@ -374,7 +373,7 @@ class KernelGen : public IRVisitor {
 
     } else if (stmt->op_type == SNodeOpType::append) {
       TI_ASSERT(stmt->snode->type == SNodeType::dynamic);
-      TI_ASSERT(stmt->ret_type.data_type == PrimitiveType::i32);
+      TI_ASSERT(stmt->ret_type == PrimitiveType::i32);
       emit("int {} = atomicAdd(_data_i32_[{} >> 2], 1);", stmt->short_name(),
            get_snode_meta_address(stmt->snode));
       auto dt = stmt->val->element_type();
@@ -388,7 +387,7 @@ class KernelGen : public IRVisitor {
 
     } else if (stmt->op_type == SNodeOpType::length) {
       TI_ASSERT(stmt->snode->type == SNodeType::dynamic);
-      TI_ASSERT(stmt->ret_type.data_type == PrimitiveType::i32);
+      TI_ASSERT(stmt->ret_type == PrimitiveType::i32);
       emit("int {} = _data_i32_[{} >> 2];", stmt->short_name(),
            get_snode_meta_address(stmt->snode));
 
@@ -573,7 +572,7 @@ class KernelGen : public IRVisitor {
 
   void visit(AtomicOpStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    auto dt = stmt->dest->element_type();
+    auto dt = stmt->dest->element_type().ptr_removed();
     if (dt == PrimitiveType::i32 ||
         (TI_OPENGL_REQUIRE(used, GL_NV_shader_atomic_int64) &&
          dt == PrimitiveType::i64) ||

@@ -65,27 +65,10 @@ real measure_cpe(std::function<void()> target,
   return elasped_cycles / float64(total_batches * elements_per_call);
 }
 
+// TODO: Remove data_type_short_name. Having two names for a data type is
+// confusing.
 std::string data_type_name(DataType t) {
-#define REGISTER_DATA_TYPE(i, j) else if (t == PrimitiveType::i) return #j
-  if (false) {
-  }
-  REGISTER_DATA_TYPE(f16, float16);
-  REGISTER_DATA_TYPE(f32, float32);
-  REGISTER_DATA_TYPE(f64, float64);
-  REGISTER_DATA_TYPE(u1, int1);
-  REGISTER_DATA_TYPE(i8, int8);
-  REGISTER_DATA_TYPE(i16, int16);
-  REGISTER_DATA_TYPE(i32, int32);
-  REGISTER_DATA_TYPE(i64, int64);
-  REGISTER_DATA_TYPE(u8, uint8);
-  REGISTER_DATA_TYPE(u16, uint16);
-  REGISTER_DATA_TYPE(u32, uint32);
-  REGISTER_DATA_TYPE(u64, uint64);
-  REGISTER_DATA_TYPE(gen, generic);
-  REGISTER_DATA_TYPE(unknown, unknown);
-
-#undef REGISTER_DATA_TYPE
-  else TI_NOT_IMPLEMENTED
+  return data_type_short_name(t);
 }
 
 std::string data_type_format(DataType dt) {
@@ -107,6 +90,11 @@ std::string data_type_format(DataType dt) {
 }
 
 int data_type_size(DataType t) {
+  // TODO:
+  //  1. Ensure in the old code, pointer attributes of t are correct (by setting
+  //  a loud failure on pointers);
+  //  2. Support pointer types here.
+  t.set_is_pointer(false);
   if (false) {
   } else if (t == PrimitiveType::f16)
     return 2;
@@ -136,6 +124,12 @@ int data_type_size(DataType t) {
 }
 
 std::string data_type_short_name(DataType t) {
+  if (!t->is<PrimitiveType>()) {
+    return t->to_string();
+  }
+
+  // Handle primitive types below.
+
   if (false) {
   }
 #define PER_TYPE(i) else if (t == PrimitiveType::i) return #i;
@@ -321,10 +315,11 @@ namespace {
 class TypePromotionMapping {
  public:
   TypePromotionMapping() {
-#define TRY_SECOND(x, y)                                           \
-  mapping[std::make_pair(to_primitive_type(get_data_type<x>()),    \
-                         to_primitive_type(get_data_type<y>()))] = \
-      get_data_type<decltype(std::declval<x>() + std::declval<y>())>();
+#define TRY_SECOND(x, y)                                   \
+  mapping[std::make_pair(get_primitive_data_type<x>(),     \
+                         get_primitive_data_type<y>())] =  \
+      get_primitive_data_type<decltype(std::declval<x>() + \
+                                       std::declval<y>())>();
 #define TRY_FIRST(x)      \
   TRY_SECOND(x, float32); \
   TRY_SECOND(x, float64); \
@@ -349,20 +344,29 @@ class TypePromotionMapping {
     TRY_FIRST(uint64);
   }
   DataType query(DataType x, DataType y) {
-    return mapping[std::make_pair(to_primitive_type(x), to_primitive_type(y))];
+    auto primitive =
+        mapping[std::make_pair(to_primitive_type(x), to_primitive_type(y))];
+    return TypeFactory::get_instance().get_primitive_type(primitive);
   }
 
  private:
-  std::map<
-      std::pair<PrimitiveType::primitive_type, PrimitiveType::primitive_type>,
-      DataType>
+  std::map<std::pair<PrimitiveTypeID, PrimitiveTypeID>, PrimitiveTypeID>
       mapping;
-  static PrimitiveType::primitive_type to_primitive_type(const DataType d) {
-    auto primitive = dynamic_cast<const PrimitiveType *>(d.get_ptr());
-    TI_ASSERT_INFO(
-        primitive,
-        "Failed to get primitive type! "
-        "Consider adding `ti.init()` to the first line of your program.");
+  static PrimitiveTypeID to_primitive_type(const DataType d_) {
+    Type *d = d_.get_ptr();
+    if (d->is<PointerType>()) {
+      d = d->as<PointerType>()->get_pointee_type();
+      TI_WARN("promoted_type got a pointer input.");
+    }
+
+    if (d->is<VectorType>()) {
+      d = d->as<VectorType>()->get_element_type();
+      TI_WARN("promoted_type got a vector input.");
+    }
+
+    auto primitive = d->cast<PrimitiveType>();
+    TI_ASSERT_INFO(primitive, "Failed to get primitive type from {}",
+                   d->to_string());
     return primitive->type;
   };
 };
@@ -374,6 +378,8 @@ DataType promoted_type(DataType a, DataType b) {
 }
 
 std::string TypedConstant::stringify() const {
+  // TODO: remove the line below after type system upgrade.
+  auto dt = this->dt.ptr_removed();
   if (dt == PrimitiveType::f32) {
     return fmt::format("{}", val_f32);
   } else if (dt == PrimitiveType::i32) {

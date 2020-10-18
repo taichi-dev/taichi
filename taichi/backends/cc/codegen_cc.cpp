@@ -136,7 +136,8 @@ class CCTransformer : public IRVisitor {
 
   void visit(GlobalTemporaryStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    auto ptr_type = cc_data_type_name(stmt->element_type()) + " *";
+    auto ptr_type =
+        cc_data_type_name(stmt->element_type().ptr_removed()) + " *";
     auto var = define_var(ptr_type, stmt->raw_name());
     emit("{} = ({}) (ti_ctx->gtmp + {});", var, ptr_type, stmt->offset);
   }
@@ -161,17 +162,19 @@ class CCTransformer : public IRVisitor {
       offset = fmt::format("({} * {} + {})", offset, stride,
                            stmt->indices[i]->raw_name());
     }
-    auto var = define_var(cc_data_type_name(stmt->element_type()) + " *",
-                          stmt->raw_name());
+    auto var =
+        define_var(cc_data_type_name(stmt->element_type().ptr_removed()) + " *",
+                   stmt->raw_name());
     emit("{} = {} + {};", var, stmt->base_ptrs[0]->raw_name(), offset);
   }
 
   void visit(ArgLoadStmt *stmt) override {
     if (stmt->is_ptr) {
-      auto var = define_var(cc_data_type_name(stmt->element_type()) + " *",
-                            stmt->raw_name());
+      auto var = define_var(
+          cc_data_type_name(stmt->element_type().ptr_removed()) + " *",
+          stmt->raw_name());
       emit("{} = ti_ctx->args[{}].ptr_{};", var, stmt->arg_id,
-           data_type_short_name(stmt->element_type()));
+           data_type_short_name(stmt->element_type().ptr_removed()));
     } else {
       auto var =
           define_var(cc_data_type_name(stmt->element_type()), stmt->raw_name());
@@ -377,7 +380,7 @@ class CCTransformer : public IRVisitor {
     const auto dest_ptr = stmt->dest->raw_name();
     const auto src_name = stmt->val->raw_name();
     const auto op = cc_atomic_op_type_symbol(stmt->op_type);
-    const auto type = stmt->element_type();
+    const auto type = stmt->dest->element_type().ptr_removed();
     auto var = define_var(cc_data_type_name(type), stmt->raw_name());
     emit("{} = *{};", var, dest_ptr);
     if (stmt->op_type == AtomicOpType::max ||
@@ -398,7 +401,7 @@ class CCTransformer : public IRVisitor {
 
       if (std::holds_alternative<Stmt *>(content)) {
         auto arg_stmt = std::get<Stmt *>(content);
-        format += data_type_format(arg_stmt->ret_type.data_type);
+        format += data_type_format(arg_stmt->ret_type);
         values.push_back(arg_stmt->raw_name());
 
       } else {
@@ -524,10 +527,8 @@ class CCTransformer : public IRVisitor {
   }
 
   void visit(RandStmt *stmt) override {
-    auto var = define_var(cc_data_type_name(stmt->ret_type.data_type),
-                          stmt->raw_name());
-    emit("{} = Ti_rand_{}();", var,
-         data_type_short_name(stmt->ret_type.data_type));
+    auto var = define_var(cc_data_type_name(stmt->ret_type), stmt->raw_name());
+    emit("{} = Ti_rand_{}();", var, data_type_short_name(stmt->ret_type));
   }
 
   void visit(StackAllocaStmt *stmt) override {

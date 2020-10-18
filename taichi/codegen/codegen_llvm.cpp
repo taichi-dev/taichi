@@ -130,22 +130,22 @@ void CodeGenLLVM::visit(Block *stmt_list) {
 
 void CodeGenLLVM::visit(AllocaStmt *stmt) {
   TI_ASSERT(stmt->width() == 1);
-  llvm_val[stmt] = create_entry_block_alloca(stmt->ret_type.data_type,
-                                             stmt->ret_type.is_pointer());
+  llvm_val[stmt] =
+      create_entry_block_alloca(stmt->ret_type, stmt->ret_type.is_pointer());
   // initialize as zero if element is not a pointer
   if (!stmt->ret_type.is_pointer())
-    builder->CreateStore(tlctx->get_constant(stmt->ret_type.data_type, 0),
+    builder->CreateStore(tlctx->get_constant(stmt->ret_type, 0),
                          llvm_val[stmt]);
 }
 
 void CodeGenLLVM::visit(RandStmt *stmt) {
-  llvm_val[stmt] = create_call(
-      fmt::format("rand_{}", data_type_short_name(stmt->ret_type.data_type)));
+  llvm_val[stmt] =
+      create_call(fmt::format("rand_{}", data_type_short_name(stmt->ret_type)));
 }
 
 void CodeGenLLVM::emit_extra_unary(UnaryOpStmt *stmt) {
   auto input = llvm_val[stmt->operand];
-  auto input_taichi_type = stmt->operand->ret_type.data_type;
+  auto input_taichi_type = stmt->operand->ret_type;
   auto op = stmt->op_type;
   auto input_type = input->getType();
 
@@ -298,7 +298,7 @@ void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
   }
   if (stmt->op_type == UnaryOpType::cast_value) {
     llvm::CastInst::CastOps cast_op;
-    auto from = stmt->operand->ret_type.data_type;
+    auto from = stmt->operand->ret_type;
     auto to = stmt->cast_type;
     TI_ASSERT(from != to);
     if (is_real(from) != is_real(to)) {
@@ -332,7 +332,7 @@ void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
       }
     }
   } else if (stmt->op_type == UnaryOpType::cast_bits) {
-    TI_ASSERT(data_type_size(stmt->ret_type.data_type) ==
+    TI_ASSERT(data_type_size(stmt->ret_type) ==
               data_type_size(stmt->cast_type));
     llvm_val[stmt] = builder->CreateBitCast(
         llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
@@ -341,11 +341,11 @@ void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
         module.get(), llvm::Intrinsic::sqrt, input->getType());
     auto intermediate = builder->CreateCall(sqrt_fn, input, "sqrt");
     llvm_val[stmt] = builder->CreateFDiv(
-        tlctx->get_constant(stmt->ret_type.data_type, 1.0), intermediate);
+        tlctx->get_constant(stmt->ret_type, 1.0), intermediate);
   } else if (op == UnaryOpType::bit_not) {
     llvm_val[stmt] = builder->CreateNot(input);
   } else if (op == UnaryOpType::neg) {
-    if (is_real(stmt->operand->ret_type.data_type)) {
+    if (is_real(stmt->operand->ret_type)) {
       llvm_val[stmt] = builder->CreateFNeg(input, "neg");
     } else {
       llvm_val[stmt] = builder->CreateNeg(input, "neg");
@@ -359,9 +359,9 @@ void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
 
 void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
   auto op = stmt->op_type;
-  auto ret_type = stmt->ret_type.data_type;
+  auto ret_type = stmt->ret_type;
   if (op == BinaryOpType::add) {
-    if (is_real(stmt->ret_type.data_type)) {
+    if (is_real(stmt->ret_type)) {
       llvm_val[stmt] =
           builder->CreateFAdd(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
     } else {
@@ -369,7 +369,7 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
           builder->CreateAdd(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
     }
   } else if (op == BinaryOpType::sub) {
-    if (is_real(stmt->ret_type.data_type)) {
+    if (is_real(stmt->ret_type)) {
       llvm_val[stmt] =
           builder->CreateFSub(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
     } else {
@@ -377,7 +377,7 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
           builder->CreateSub(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
     }
   } else if (op == BinaryOpType::mul) {
-    if (is_real(stmt->ret_type.data_type)) {
+    if (is_real(stmt->ret_type)) {
       llvm_val[stmt] =
           builder->CreateFMul(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
     } else {
@@ -395,7 +395,7 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
           llvm::Intrinsic::floor, {tlctx->get_data_type(ret_type)}, {div});
     }
   } else if (op == BinaryOpType::div) {
-    if (is_real(stmt->ret_type.data_type)) {
+    if (is_real(stmt->ret_type)) {
       llvm_val[stmt] =
           builder->CreateFDiv(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
     } else {
@@ -513,7 +513,7 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
     }
   } else if (is_comparison(op)) {
     llvm::Value *cmp = nullptr;
-    auto input_type = stmt->lhs->ret_type.data_type;
+    auto input_type = stmt->lhs->ret_type;
     if (op == BinaryOpType::cmp_eq) {
       if (is_real(input_type)) {
         cmp = builder->CreateFCmpOEQ(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
@@ -655,11 +655,11 @@ void CodeGenLLVM::visit(PrintStmt *stmt) {
     if (std::holds_alternative<Stmt *>(content)) {
       auto arg_stmt = std::get<Stmt *>(content);
       auto value = llvm_val[arg_stmt];
-      if (arg_stmt->ret_type.data_type == PrimitiveType::f32)
+      if (arg_stmt->ret_type == PrimitiveType::f32)
         value = builder->CreateFPExt(value,
                                      tlctx->get_data_type(PrimitiveType::f64));
       args.push_back(value);
-      formats += data_type_format(arg_stmt->ret_type.data_type);
+      formats += data_type_format(arg_stmt->ret_type);
     } else {
       auto arg_str = std::get<std::string>(content);
       auto value = builder->CreateGlobalStringPtr(arg_str, "content_string");
@@ -867,7 +867,8 @@ void CodeGenLLVM::visit(ArgLoadStmt *stmt) {
         llvm::PointerType::get(tlctx->get_data_type(PrimitiveType::i32), 0);
     llvm_val[stmt] = builder->CreateIntToPtr(raw_arg, dest_ty);
   } else {
-    dest_ty = tlctx->get_data_type(stmt->ret_type.data_type);
+    TI_ASSERT(!stmt->ret_type->is<PointerType>());
+    dest_ty = tlctx->get_data_type(stmt->ret_type);
     auto dest_bits = dest_ty->getPrimitiveSizeInBits();
     auto truncated = builder->CreateTrunc(
         raw_arg, llvm::Type::getIntNTy(*llvm_context, dest_bits));
@@ -880,8 +881,7 @@ void CodeGenLLVM::visit(KernelReturnStmt *stmt) {
     TI_NOT_IMPLEMENTED
   } else {
     auto intermediate_bits =
-        tlctx->get_data_type(stmt->value->ret_type.data_type)
-            ->getPrimitiveSizeInBits();
+        tlctx->get_data_type(stmt->value->ret_type)->getPrimitiveSizeInBits();
     llvm::Type *intermediate_type =
         llvm::Type::getIntNTy(*llvm_context, intermediate_bits);
     llvm::Type *dest_ty = tlctx->get_data_type<int64>();
@@ -927,8 +927,7 @@ void CodeGenLLVM::visit(AssertStmt *stmt) {
     // First convert the argument to an integral type with the same number of
     // bits:
     auto cast_type = llvm::Type::getIntNTy(
-        *llvm_context,
-        8 * (std::size_t)data_type_size(arg->ret_type.data_type));
+        *llvm_context, 8 * (std::size_t)data_type_size(arg->ret_type));
     auto cast_int = builder->CreateBitCast(llvm_val[arg], cast_type);
 
     // Then zero-extend the conversion result into int64:
@@ -952,7 +951,7 @@ void CodeGenLLVM::visit(SNodeOpStmt *stmt) {
   auto snode = stmt->snode;
   if (stmt->op_type == SNodeOpType::append) {
     TI_ASSERT(snode->type == SNodeType::dynamic);
-    TI_ASSERT(stmt->ret_type.data_type == PrimitiveType::i32);
+    TI_ASSERT(stmt->ret_type == PrimitiveType::i32);
     llvm_val[stmt] =
         call(snode, llvm_val[stmt->ptr], "append", {llvm_val[stmt->val]});
   } else if (stmt->op_type == SNodeOpType::length) {
@@ -984,15 +983,15 @@ void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
   for (int l = 0; l < stmt->width(); l++) {
     llvm::Value *old_value;
     if (stmt->op_type == AtomicOpType::add) {
-      if (is_integral(stmt->val->ret_type.data_type)) {
+      if (is_integral(stmt->val->ret_type)) {
         old_value = builder->CreateAtomicRMW(
             llvm::AtomicRMWInst::BinOp::Add, llvm_val[stmt->dest],
             llvm_val[stmt->val], llvm::AtomicOrdering::SequentiallyConsistent);
-      } else if (stmt->val->ret_type.data_type == PrimitiveType::f32) {
+      } else if (stmt->val->ret_type == PrimitiveType::f32) {
         old_value =
             builder->CreateCall(get_runtime_function("atomic_add_f32"),
                                 {llvm_val[stmt->dest], llvm_val[stmt->val]});
-      } else if (stmt->val->ret_type.data_type == PrimitiveType::f64) {
+      } else if (stmt->val->ret_type == PrimitiveType::f64) {
         old_value =
             builder->CreateCall(get_runtime_function("atomic_add_f64"),
                                 {llvm_val[stmt->dest], llvm_val[stmt->val]});
@@ -1000,15 +999,15 @@ void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
         TI_NOT_IMPLEMENTED
       }
     } else if (stmt->op_type == AtomicOpType::min) {
-      if (is_integral(stmt->val->ret_type.data_type)) {
+      if (is_integral(stmt->val->ret_type)) {
         old_value = builder->CreateAtomicRMW(
             llvm::AtomicRMWInst::BinOp::Min, llvm_val[stmt->dest],
             llvm_val[stmt->val], llvm::AtomicOrdering::SequentiallyConsistent);
-      } else if (stmt->val->ret_type.data_type == PrimitiveType::f32) {
+      } else if (stmt->val->ret_type == PrimitiveType::f32) {
         old_value =
             builder->CreateCall(get_runtime_function("atomic_min_f32"),
                                 {llvm_val[stmt->dest], llvm_val[stmt->val]});
-      } else if (stmt->val->ret_type.data_type == PrimitiveType::f64) {
+      } else if (stmt->val->ret_type == PrimitiveType::f64) {
         old_value =
             builder->CreateCall(get_runtime_function("atomic_min_f64"),
                                 {llvm_val[stmt->dest], llvm_val[stmt->val]});
@@ -1016,15 +1015,15 @@ void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
         TI_NOT_IMPLEMENTED
       }
     } else if (stmt->op_type == AtomicOpType::max) {
-      if (is_integral(stmt->val->ret_type.data_type)) {
+      if (is_integral(stmt->val->ret_type)) {
         old_value = builder->CreateAtomicRMW(
             llvm::AtomicRMWInst::BinOp::Max, llvm_val[stmt->dest],
             llvm_val[stmt->val], llvm::AtomicOrdering::SequentiallyConsistent);
-      } else if (stmt->val->ret_type.data_type == PrimitiveType::f32) {
+      } else if (stmt->val->ret_type == PrimitiveType::f32) {
         old_value =
             builder->CreateCall(get_runtime_function("atomic_max_f32"),
                                 {llvm_val[stmt->dest], llvm_val[stmt->val]});
-      } else if (stmt->val->ret_type.data_type == PrimitiveType::f64) {
+      } else if (stmt->val->ret_type == PrimitiveType::f64) {
         old_value =
             builder->CreateCall(get_runtime_function("atomic_max_f64"),
                                 {llvm_val[stmt->dest], llvm_val[stmt->val]});
@@ -1032,7 +1031,7 @@ void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
         TI_NOT_IMPLEMENTED
       }
     } else if (stmt->op_type == AtomicOpType::bit_and) {
-      if (is_integral(stmt->val->ret_type.data_type)) {
+      if (is_integral(stmt->val->ret_type)) {
         old_value = builder->CreateAtomicRMW(
             llvm::AtomicRMWInst::BinOp::And, llvm_val[stmt->dest],
             llvm_val[stmt->val], llvm::AtomicOrdering::SequentiallyConsistent);
@@ -1040,7 +1039,7 @@ void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
         TI_NOT_IMPLEMENTED
       }
     } else if (stmt->op_type == AtomicOpType::bit_or) {
-      if (is_integral(stmt->val->ret_type.data_type)) {
+      if (is_integral(stmt->val->ret_type)) {
         old_value = builder->CreateAtomicRMW(
             llvm::AtomicRMWInst::BinOp::Or, llvm_val[stmt->dest],
             llvm_val[stmt->val], llvm::AtomicOrdering::SequentiallyConsistent);
@@ -1048,7 +1047,7 @@ void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
         TI_NOT_IMPLEMENTED
       }
     } else if (stmt->op_type == AtomicOpType::bit_xor) {
-      if (is_integral(stmt->val->ret_type.data_type)) {
+      if (is_integral(stmt->val->ret_type)) {
         old_value = builder->CreateAtomicRMW(
             llvm::AtomicRMWInst::BinOp::Xor, llvm_val[stmt->dest],
             llvm_val[stmt->val], llvm::AtomicOrdering::SequentiallyConsistent);
@@ -1076,8 +1075,8 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
 void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
   int width = stmt->width();
   TI_ASSERT(width == 1);
-  llvm_val[stmt] = builder->CreateLoad(
-      tlctx->get_data_type(stmt->ret_type.data_type), llvm_val[stmt->ptr]);
+  llvm_val[stmt] = builder->CreateLoad(tlctx->get_data_type(stmt->ret_type),
+                                       llvm_val[stmt->ptr]);
 }
 
 void CodeGenLLVM::visit(ElementShuffleStmt *stmt){
@@ -1089,7 +1088,7 @@ void CodeGenLLVM::visit(ElementShuffleStmt *stmt){
         },
         "{");
     if (stmt->pointer) {
-      emit("{} * const {} [{}] {};", data_type_name(stmt->ret_type.data_type),
+      emit("{} * const {} [{}] {};", data_type_name(stmt->ret_type),
            stmt->raw_name(), stmt->width(), init);
     } else {
       emit("const {} {} ({});", stmt->ret_data_type_name(), stmt->raw_name(),
@@ -1227,7 +1226,7 @@ void CodeGenLLVM::visit(ExternalPtrStmt *stmt) {
     sizes[i] = raw_arg;
   }
 
-  auto dt = stmt->ret_type.data_type;
+  auto dt = stmt->ret_type.ptr_removed();
   auto base = builder->CreateBitCast(
       llvm_val[stmt->base_ptrs[0]],
       llvm::PointerType::get(tlctx->get_data_type(dt), 0));
@@ -1308,7 +1307,8 @@ std::tuple<llvm::Value *, llvm::Value *> CodeGenLLVM::get_range_for_bounds(
     begin = tlctx->get_constant(stmt->begin_value);
   } else {
     auto begin_stmt = Stmt::make<GlobalTemporaryStmt>(
-        stmt->begin_offset, LegacyVectorType(1, PrimitiveType::i32));
+        stmt->begin_offset,
+        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32));
     begin_stmt->accept(this);
     begin = builder->CreateLoad(llvm_val[begin_stmt.get()]);
   }
@@ -1316,7 +1316,8 @@ std::tuple<llvm::Value *, llvm::Value *> CodeGenLLVM::get_range_for_bounds(
     end = tlctx->get_constant(stmt->end_value);
   } else {
     auto end_stmt = Stmt::make<GlobalTemporaryStmt>(
-        stmt->end_offset, LegacyVectorType(1, PrimitiveType::i32));
+        stmt->end_offset,
+        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32));
     end_stmt->accept(this);
     end = builder->CreateLoad(llvm_val[end_stmt.get()]);
   }
@@ -1619,8 +1620,8 @@ void CodeGenLLVM::visit(GlobalTemporaryStmt *stmt) {
                      tlctx->get_constant((int64)stmt->offset));
 
   TI_ASSERT(stmt->width() == 1);
-  auto ptr_type =
-      llvm::PointerType::get(tlctx->get_data_type(stmt->ret_type.data_type), 0);
+  auto ptr_type = llvm::PointerType::get(
+      tlctx->get_data_type(stmt->ret_type.ptr_removed()), 0);
   llvm_val[stmt] = builder->CreatePointerCast(buffer, ptr_type);
 }
 
@@ -1628,8 +1629,8 @@ void CodeGenLLVM::visit(ThreadLocalPtrStmt *stmt) {
   auto base = get_tls_base_ptr();
   TI_ASSERT(stmt->width() == 1);
   auto ptr = builder->CreateGEP(base, tlctx->get_constant(stmt->offset));
-  auto ptr_type =
-      llvm::PointerType::get(tlctx->get_data_type(stmt->ret_type.data_type), 0);
+  auto ptr_type = llvm::PointerType::get(
+      tlctx->get_data_type(stmt->ret_type.ptr_removed()), 0);
   llvm_val[stmt] = builder->CreatePointerCast(ptr, ptr_type);
 }
 
@@ -1639,8 +1640,8 @@ void CodeGenLLVM::visit(BlockLocalPtrStmt *stmt) {
   TI_ASSERT(stmt->width() == 1);
   auto ptr = builder->CreateGEP(
       base, {tlctx->get_constant(0), llvm_val[stmt->offset]});
-  auto ptr_type =
-      llvm::PointerType::get(tlctx->get_data_type(stmt->ret_type.data_type), 0);
+  auto ptr_type = llvm::PointerType::get(
+      tlctx->get_data_type(stmt->ret_type.ptr_removed()), 0);
   llvm_val[stmt] = builder->CreatePointerCast(ptr, ptr_type);
 }
 
@@ -1677,8 +1678,8 @@ void CodeGenLLVM::visit(StackPushStmt *stmt) {
   auto primal_ptr = call("stack_top_primal", llvm_val[stack],
                          tlctx->get_constant(stack->element_size_in_bytes()));
   primal_ptr = builder->CreateBitCast(
-      primal_ptr, llvm::PointerType::get(
-                      tlctx->get_data_type(stmt->ret_type.data_type), 0));
+      primal_ptr,
+      llvm::PointerType::get(tlctx->get_data_type(stmt->ret_type), 0));
   builder->CreateStore(llvm_val[stmt->v], primal_ptr);
 }
 
@@ -1687,8 +1688,8 @@ void CodeGenLLVM::visit(StackLoadTopStmt *stmt) {
   auto primal_ptr = call("stack_top_primal", llvm_val[stack],
                          tlctx->get_constant(stack->element_size_in_bytes()));
   primal_ptr = builder->CreateBitCast(
-      primal_ptr, llvm::PointerType::get(
-                      tlctx->get_data_type(stmt->ret_type.data_type), 0));
+      primal_ptr,
+      llvm::PointerType::get(tlctx->get_data_type(stmt->ret_type), 0));
   llvm_val[stmt] = builder->CreateLoad(primal_ptr);
 }
 
@@ -1697,8 +1698,7 @@ void CodeGenLLVM::visit(StackLoadTopAdjStmt *stmt) {
   auto adjoint = call("stack_top_adjoint", llvm_val[stack],
                       tlctx->get_constant(stack->element_size_in_bytes()));
   adjoint = builder->CreateBitCast(
-      adjoint, llvm::PointerType::get(
-                   tlctx->get_data_type(stmt->ret_type.data_type), 0));
+      adjoint, llvm::PointerType::get(tlctx->get_data_type(stmt->ret_type), 0));
   llvm_val[stmt] = builder->CreateLoad(adjoint);
 }
 
@@ -1707,10 +1707,10 @@ void CodeGenLLVM::visit(StackAccAdjointStmt *stmt) {
   auto adjoint_ptr = call("stack_top_adjoint", llvm_val[stack],
                           tlctx->get_constant(stack->element_size_in_bytes()));
   adjoint_ptr = builder->CreateBitCast(
-      adjoint_ptr, llvm::PointerType::get(
-                       tlctx->get_data_type(stack->ret_type.data_type), 0));
+      adjoint_ptr,
+      llvm::PointerType::get(tlctx->get_data_type(stack->ret_type), 0));
   auto old_val = builder->CreateLoad(adjoint_ptr);
-  TI_ASSERT(is_real(stmt->v->ret_type.data_type));
+  TI_ASSERT(is_real(stmt->v->ret_type));
   auto new_val = builder->CreateFAdd(old_val, llvm_val[stmt->v]);
   builder->CreateStore(new_val, adjoint_ptr);
 }

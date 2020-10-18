@@ -25,7 +25,7 @@ class TypeCheck : public IRVisitor {
     allow_undefined_visitor = true;
   }
 
-  static void mark_as_if_const(Stmt *stmt, LegacyVectorType t) {
+  static void mark_as_if_const(Stmt *stmt, DataType t) {
     if (stmt->is<ConstStmt>()) {
       stmt->ret_type = t;
     }
@@ -41,7 +41,7 @@ class TypeCheck : public IRVisitor {
   void visit(IfStmt *if_stmt) {
     // TODO: use PrimitiveType::u1 when it's supported
     TI_ASSERT_INFO(
-        if_stmt->cond->ret_type.data_type == PrimitiveType::i32,
+        if_stmt->cond->ret_type == PrimitiveType::i32,
         "`if` conditions must be of type int32, consider using `if x != 0:` "
         "instead of `if x:` for float values.");
     if (if_stmt->true_statements)
@@ -63,17 +63,18 @@ class TypeCheck : public IRVisitor {
 
   void visit(AtomicOpStmt *stmt) {
     TI_ASSERT(stmt->width() == 1);
-    if (stmt->val->ret_type.data_type != stmt->dest->ret_type.data_type) {
+    if (stmt->val->ret_type != stmt->dest->ret_type.ptr_removed()) {
+      // TODO: make sure the ptr_removed type is indeed a numerical type
       TI_WARN("[{}] Atomic add ({} to {}) may lose precision.", stmt->name(),
-              data_type_name(stmt->val->ret_type.data_type),
-              data_type_name(stmt->dest->ret_type.data_type));
+              data_type_name(stmt->val->ret_type),
+              data_type_name(stmt->dest->ret_type.ptr_removed()));
       stmt->val = insert_type_cast_before(stmt, stmt->val,
-                                          stmt->dest->ret_type.data_type);
+                                          stmt->dest->ret_type.ptr_removed());
     }
     if (stmt->element_type() == PrimitiveType::unknown) {
-      stmt->ret_type = stmt->dest->ret_type;
+      stmt->ret_type = stmt->dest->ret_type.ptr_removed();
     }
-    stmt->ret_type.set_is_pointer(false);
+    TI_ASSERT(!stmt->ret_type->is<PointerType>());
   }
 
   void visit(LocalLoadStmt *stmt) {
@@ -83,19 +84,19 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(LocalStoreStmt *stmt) {
-    if (stmt->ptr->ret_type.data_type == PrimitiveType::unknown) {
+    if (stmt->ptr->ret_type == PrimitiveType::unknown) {
       // Infer data type for alloca
       stmt->ptr->ret_type = stmt->data->ret_type;
     }
-    auto common_container_type = promoted_type(stmt->ptr->ret_type.data_type,
-                                               stmt->data->ret_type.data_type);
+    auto common_container_type =
+        promoted_type(stmt->ptr->ret_type, stmt->data->ret_type);
 
     auto old_data = stmt->data;
-    if (stmt->ptr->ret_type.data_type != stmt->data->ret_type.data_type) {
-      stmt->data = insert_type_cast_before(stmt, stmt->data,
-                                           stmt->ptr->ret_type.data_type);
+    if (stmt->ptr->ret_type != stmt->data->ret_type) {
+      stmt->data =
+          insert_type_cast_before(stmt, stmt->data, stmt->ptr->ret_type);
     }
-    if (stmt->ptr->ret_type.data_type != common_container_type) {
+    if (stmt->ptr->ret_type != common_container_type) {
       TI_WARN(
           "[{}] Local store may lose precision (target = {}, value = {}) at",
           stmt->name(), stmt->ptr->ret_data_type_name(),
@@ -111,17 +112,19 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(SNodeOpStmt *stmt) {
-    stmt->ret_type = LegacyVectorType(1, PrimitiveType::i32);
+    stmt->ret_type =
+        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
   }
 
   void visit(ExternalTensorShapeAlongAxisStmt *stmt) {
-    stmt->ret_type = LegacyVectorType(1, PrimitiveType::i32);
+    stmt->ret_type =
+        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
   }
 
   void visit(GlobalPtrStmt *stmt) {
     stmt->ret_type.set_is_pointer(true);
     if (stmt->snodes)
-      stmt->ret_type.data_type = stmt->snodes[0]->dt;
+      stmt->ret_type = stmt->snodes[0]->dt;
     else
       TI_WARN("[{}] Type inference failed: snode is nullptr.", stmt->name());
     for (int l = 0; l < stmt->snodes.size(); l++) {
@@ -134,36 +137,38 @@ class TypeCheck : public IRVisitor {
       }
     }
     for (int i = 0; i < stmt->indices.size(); i++) {
-      if (!is_integral(stmt->indices[i]->ret_type.data_type)) {
+      if (!is_integral(stmt->indices[i]->ret_type)) {
         TI_WARN(
             "[{}] Field index {} not integral, casting into int32 implicitly",
             stmt->name(), i);
         stmt->indices[i] =
             insert_type_cast_before(stmt, stmt->indices[i], PrimitiveType::i32);
       }
-      TI_ASSERT(stmt->indices[i]->ret_type.width == stmt->snodes.size());
+      TI_ASSERT(stmt->indices[i]->width() == stmt->snodes.size());
     }
   }
 
   void visit(GlobalStoreStmt *stmt) {
-    auto promoted = promoted_type(stmt->ptr->ret_type.data_type,
-                                  stmt->data->ret_type.data_type);
+    auto promoted =
+        promoted_type(stmt->ptr->ret_type.ptr_removed(), stmt->data->ret_type);
     auto input_type = stmt->data->ret_data_type_name();
-    if (stmt->ptr->ret_type.data_type != stmt->data->ret_type.data_type) {
+    if (stmt->ptr->ret_type.ptr_removed() != stmt->data->ret_type) {
       stmt->data = insert_type_cast_before(stmt, stmt->data,
-                                           stmt->ptr->ret_type.data_type);
+                                           stmt->ptr->ret_type.ptr_removed());
     }
-    if (stmt->ptr->ret_type.data_type != promoted) {
+    if (stmt->ptr->ret_type.ptr_removed() != promoted) {
       TI_WARN("[{}] Global store may lose precision: {} <- {}, at",
               stmt->name(), stmt->ptr->ret_data_type_name(), input_type);
       TI_WARN("\n{}", stmt->tb);
     }
-    stmt->ret_type = stmt->ptr->ret_type;
+    stmt->ret_type = stmt->ptr->ret_type.ptr_removed();
   }
 
   void visit(RangeForStmt *stmt) {
-    mark_as_if_const(stmt->begin, LegacyVectorType(1, PrimitiveType::i32));
-    mark_as_if_const(stmt->end, LegacyVectorType(1, PrimitiveType::i32));
+    mark_as_if_const(stmt->begin, TypeFactory::create_vector_or_scalar_type(
+                                      1, PrimitiveType::i32));
+    mark_as_if_const(stmt->end, TypeFactory::create_vector_or_scalar_type(
+                                    1, PrimitiveType::i32));
     stmt->body->accept(this);
   }
 
@@ -178,9 +183,9 @@ class TypeCheck : public IRVisitor {
   void visit(UnaryOpStmt *stmt) {
     stmt->ret_type = stmt->operand->ret_type;
     if (stmt->is_cast()) {
-      stmt->ret_type.data_type = stmt->cast_type;
+      stmt->ret_type = stmt->cast_type;
     }
-    if (!is_real(stmt->operand->ret_type.data_type)) {
+    if (!is_real(stmt->operand->ret_type)) {
       if (is_trigonometric(stmt->op_type)) {
         TI_ERROR("[{}] Trigonometric operator takes real inputs only. At {}",
                  stmt->name(), stmt->tb);
@@ -240,56 +245,52 @@ class TypeCheck : public IRVisitor {
       TI_WARN("Compilation stopped due to type mismatch.");
       throw std::runtime_error("Binary operator type mismatch");
     };
-    if (stmt->lhs->ret_type.data_type == PrimitiveType::unknown &&
-        stmt->rhs->ret_type.data_type == PrimitiveType::unknown)
+    if (stmt->lhs->ret_type == PrimitiveType::unknown &&
+        stmt->rhs->ret_type == PrimitiveType::unknown)
       error();
 
     // lower truediv into div
 
     if (stmt->op_type == BinaryOpType::truediv) {
       auto default_fp = config.default_fp;
-      if (!is_real(stmt->lhs->ret_type.data_type)) {
+      if (!is_real(stmt->lhs->ret_type)) {
         cast(stmt->lhs, default_fp);
       }
-      if (!is_real(stmt->rhs->ret_type.data_type)) {
+      if (!is_real(stmt->rhs->ret_type)) {
         cast(stmt->rhs, default_fp);
       }
       stmt->op_type = BinaryOpType::div;
     }
 
-    if (stmt->lhs->ret_type.data_type != stmt->rhs->ret_type.data_type) {
-      auto ret_type = promoted_type(stmt->lhs->ret_type.data_type,
-                                    stmt->rhs->ret_type.data_type);
-      if (ret_type != stmt->lhs->ret_type.data_type) {
+    if (stmt->lhs->ret_type != stmt->rhs->ret_type) {
+      auto ret_type = promoted_type(stmt->lhs->ret_type, stmt->rhs->ret_type);
+      if (ret_type != stmt->lhs->ret_type) {
         // promote rhs
         auto cast_stmt = insert_type_cast_before(stmt, stmt->lhs, ret_type);
         stmt->lhs = cast_stmt;
       }
-      if (ret_type != stmt->rhs->ret_type.data_type) {
+      if (ret_type != stmt->rhs->ret_type) {
         // promote rhs
         auto cast_stmt = insert_type_cast_before(stmt, stmt->rhs, ret_type);
         stmt->rhs = cast_stmt;
       }
     }
     bool matching = true;
-    matching =
-        matching && (stmt->lhs->ret_type.width == stmt->rhs->ret_type.width);
-    matching =
-        matching && (stmt->lhs->ret_type.data_type != PrimitiveType::unknown);
-    matching =
-        matching && (stmt->rhs->ret_type.data_type != PrimitiveType::unknown);
+    matching = matching && (stmt->lhs->width() == stmt->rhs->width());
+    matching = matching && (stmt->lhs->ret_type != PrimitiveType::unknown);
+    matching = matching && (stmt->rhs->ret_type != PrimitiveType::unknown);
     matching = matching && (stmt->lhs->ret_type == stmt->rhs->ret_type);
     if (!matching) {
       error();
     }
     if (binary_is_bitwise(stmt->op_type)) {
-      if (!is_integral(stmt->lhs->ret_type.data_type)) {
+      if (!is_integral(stmt->lhs->ret_type)) {
         error("Error: bitwise operations can only apply to integral types.");
       }
     }
     if (is_comparison(stmt->op_type)) {
-      stmt->ret_type =
-          LegacyVectorType(stmt->lhs->ret_type.width, PrimitiveType::i32);
+      stmt->ret_type = TypeFactory::create_vector_or_scalar_type(
+          stmt->lhs->width(), PrimitiveType::i32);
     } else {
       stmt->ret_type = stmt->lhs->ret_type;
     }
@@ -297,20 +298,22 @@ class TypeCheck : public IRVisitor {
 
   void visit(TernaryOpStmt *stmt) {
     if (stmt->op_type == TernaryOpType::select) {
-      auto ret_type = promoted_type(stmt->op2->ret_type.data_type,
-                                    stmt->op3->ret_type.data_type);
-      TI_ASSERT(stmt->op1->ret_type.data_type == PrimitiveType::i32)
-      TI_ASSERT(stmt->op1->ret_type.width == stmt->op2->ret_type.width);
-      TI_ASSERT(stmt->op2->ret_type.width == stmt->op3->ret_type.width);
-      if (ret_type != stmt->op2->ret_type.data_type) {
+      auto ret_type = promoted_type(stmt->op2->ret_type, stmt->op3->ret_type);
+      TI_ASSERT(stmt->op1->ret_type == PrimitiveType::i32)
+      TI_ASSERT(stmt->op1->ret_type->vector_width() ==
+                stmt->op2->ret_type->vector_width());
+      TI_ASSERT(stmt->op2->ret_type->vector_width() ==
+                stmt->op3->ret_type->vector_width());
+      if (ret_type != stmt->op2->ret_type) {
         auto cast_stmt = insert_type_cast_before(stmt, stmt->op2, ret_type);
         stmt->op2 = cast_stmt;
       }
-      if (ret_type != stmt->op3->ret_type.data_type) {
+      if (ret_type != stmt->op3->ret_type) {
         auto cast_stmt = insert_type_cast_before(stmt, stmt->op3, ret_type);
         stmt->op3 = cast_stmt;
       }
-      stmt->ret_type = LegacyVectorType(stmt->op1->width(), ret_type);
+      stmt->ret_type = TypeFactory::create_vector_or_scalar_type(
+          stmt->op1->width(), ret_type);
     } else {
       TI_NOT_IMPLEMENTED
     }
@@ -335,50 +338,57 @@ class TypeCheck : public IRVisitor {
     // TODO: Maybe have a type_inference() pass, which takes in the args/rets
     // defined by the kernel. After that, type_check() pass will purely do
     // verification, without modifying any types.
-    TI_ASSERT(rt.data_type != PrimitiveType::unknown);
-    TI_ASSERT(rt.width == 1);
+    TI_ASSERT(rt != PrimitiveType::unknown);
+    TI_ASSERT(rt->vector_width() == 1);
+    stmt->ret_type.set_is_pointer(stmt->is_ptr);
   }
 
   void visit(KernelReturnStmt *stmt) {
     // TODO: Support stmt->ret_id?
     const auto &rt = stmt->ret_type;
-    TI_ASSERT(stmt->value->element_type() == rt.data_type);
-    TI_ASSERT(rt.width == 1);
+    TI_ASSERT(stmt->value->element_type() == rt);
+    TI_ASSERT(rt->vector_width() == 1);
   }
 
   void visit(ExternalPtrStmt *stmt) {
     stmt->ret_type.set_is_pointer(true);
-    stmt->ret_type = LegacyVectorType(stmt->base_ptrs.size(),
-                                      stmt->base_ptrs[0]->ret_type.data_type);
+    stmt->ret_type = TypeFactory::create_vector_or_scalar_type(
+        stmt->base_ptrs.size(), stmt->base_ptrs[0]->ret_type);
   }
 
   void visit(LoopIndexStmt *stmt) {
-    stmt->ret_type = LegacyVectorType(1, PrimitiveType::i32);
+    stmt->ret_type =
+        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
   }
 
   void visit(LoopLinearIndexStmt *stmt) {
-    stmt->ret_type = LegacyVectorType(1, PrimitiveType::i32);
+    stmt->ret_type =
+        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
   }
 
   void visit(BlockCornerIndexStmt *stmt) {
-    stmt->ret_type = LegacyVectorType(1, PrimitiveType::i32);
+    stmt->ret_type =
+        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
   }
 
   void visit(BlockDimStmt *stmt) {
-    stmt->ret_type = LegacyVectorType(1, PrimitiveType::i32);
+    stmt->ret_type =
+        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
   }
 
   void visit(GetRootStmt *stmt) {
-    stmt->ret_type = LegacyVectorType(1, PrimitiveType::gen, true);
+    stmt->ret_type =
+        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::gen, true);
   }
 
   void visit(SNodeLookupStmt *stmt) {
-    stmt->ret_type = LegacyVectorType(1, PrimitiveType::gen, true);
+    stmt->ret_type =
+        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::gen, true);
   }
 
   void visit(GetChStmt *stmt) {
-    stmt->ret_type = LegacyVectorType(1, stmt->output_snode->dt);
-    stmt->ret_type.set_is_pointer(true);
+    stmt->ret_type = TypeFactory::create_vector_or_scalar_type(
+        1, stmt->output_snode->dt, true);
   }
 
   void visit(OffloadedStmt *stmt) {
@@ -390,15 +400,15 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(LinearizeStmt *stmt) {
-    stmt->ret_type.data_type = PrimitiveType::i32;
+    stmt->ret_type = PrimitiveType::i32;
   }
 
   void visit(IntegerOffsetStmt *stmt) {
-    stmt->ret_type.data_type = PrimitiveType::i32;
+    stmt->ret_type = PrimitiveType::i32;
   }
 
   void visit(StackAllocaStmt *stmt) {
-    stmt->ret_type.data_type = stmt->dt;
+    stmt->ret_type = stmt->dt;
     // ret_type stands for its element type.
     stmt->ret_type.set_is_pointer(false);
   }

@@ -1,9 +1,13 @@
 #include "taichi/ir/type_factory.h"
-#include "type_factory.h"
 
 TLANG_NAMESPACE_BEGIN
 
-Type *TypeFactory::get_primitive_type(PrimitiveType::primitive_type id) {
+TypeFactory &TypeFactory::get_instance() {
+  static TypeFactory *type_factory = new TypeFactory;
+  return *type_factory;
+}
+
+Type *TypeFactory::get_primitive_type(PrimitiveTypeID id) {
   std::lock_guard<std::mutex> _(mut_);
 
   if (primitive_types_.find(id) == primitive_types_.end()) {
@@ -27,6 +31,20 @@ Type *TypeFactory::get_pointer_type(Type *element) {
     pointer_types_[key] = std::make_unique<PointerType>(element, false);
   }
   return pointer_types_[key].get();
+}
+
+TypeFactory::TypeFactory() {
+}
+
+DataType TypeFactory::create_vector_or_scalar_type(int width,
+                                                   DataType element,
+                                                   bool element_is_pointer) {
+  TI_ASSERT(width == 1);
+  if (element_is_pointer) {
+    return TypeFactory::get_instance().get_pointer_type(element.get_ptr());
+  } else {
+    return element;
+  }
 }
 
 TLANG_NAMESPACE_END

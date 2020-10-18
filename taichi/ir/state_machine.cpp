@@ -134,7 +134,7 @@ void StateMachine::load(Stmt *load_stmt) {
 
   if (stored == never) {
     auto zero = load_stmt->insert_after_me(Stmt::make<ConstStmt>(
-        LaneAttribute<TypedConstant>(load_stmt->ret_type.data_type)));
+        LaneAttribute<TypedConstant>(load_stmt->ret_type)));
     zero->repeat(load_stmt->width());
     int current_stmt_id = load_stmt->parent->locate(load_stmt);
     load_stmt->replace_with(zero);

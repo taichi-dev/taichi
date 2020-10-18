@@ -4,9 +4,40 @@
 
 TLANG_NAMESPACE_BEGIN
 
+enum class PrimitiveTypeID : int {
+#define PER_TYPE(x) x,
+#include "taichi/inc/data_type.inc.h"
+#undef PER_TYPE
+};
+
 class Type {
  public:
   virtual std::string to_string() const = 0;
+
+  template <typename T>
+  bool is() const {
+    return cast<T>() != nullptr;
+  }
+
+  template <typename T>
+  const T *cast() const {
+    return dynamic_cast<const T *>(this);
+  }
+
+  template <typename T>
+  T *cast() {
+    return dynamic_cast<T *>(this);
+  }
+
+  template <typename T>
+  T *as() {
+    auto p = dynamic_cast<T *>(this);
+    TI_ASSERT(p != nullptr);
+    return p;
+  }
+
+  int vector_width() const;
+
   virtual ~Type() {
   }
 };
@@ -16,7 +47,10 @@ class DataType {
  public:
   DataType();
 
-  DataType(const Type *ptr) : ptr_(ptr) {
+  DataType(Type *ptr) : ptr_(ptr) {
+  }
+
+  DataType(const DataType &o) : ptr_(o.ptr_) {
   }
 
   bool operator==(const DataType &o) const {
@@ -34,34 +68,46 @@ class DataType {
   };
 
   // TODO: DataType itself should be a pointer in the future
-  const Type *get_ptr() const {
+  Type *get_ptr() const {
     return ptr_;
   }
 
+  // Temporary API and members
+  // for LegacyVectorType-compatibility
+
+  Type *operator->() const {
+    return ptr_;
+  }
+
+  DataType &operator=(const DataType &o) {
+    ptr_ = o.ptr_;
+    return *this;
+  }
+
+  bool is_pointer() const;
+
+  void set_is_pointer(bool ptr);
+
+  DataType ptr_removed() const;
+
  private:
-  const Type *ptr_;
+  Type *ptr_;
 };
 
 class PrimitiveType : public Type {
  public:
-  enum class primitive_type : int {
-#define PER_TYPE(x) x,
-#include "taichi/inc/data_type.inc.h"
-#undef PER_TYPE
-  };
-
 #define PER_TYPE(x) static DataType x;
 #include "taichi/inc/data_type.inc.h"
 #undef PER_TYPE
 
-  primitive_type type;
+  PrimitiveTypeID type;
 
-  PrimitiveType(primitive_type type) : type(type) {
+  PrimitiveType(PrimitiveTypeID type) : type(type) {
   }
 
   std::string to_string() const override;
 
-  static DataType get(primitive_type type);
+  static DataType get(PrimitiveTypeID type);
 };
 
 class PointerType : public Type {
@@ -96,6 +142,7 @@ class VectorType : public Type {
  public:
   VectorType(int num_elements, Type *element)
       : num_elements_(num_elements), element_(element) {
+    TI_ASSERT(num_elements_ != 1);
   }
 
   Type *get_element_type() const {

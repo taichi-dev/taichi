@@ -5,6 +5,7 @@
 #include "taichi/common/core.h"
 #include "taichi/system/profiler.h"
 #include "taichi/ir/type.h"
+#include "taichi/ir/type_factory.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -44,6 +45,35 @@ inline DataType get_data_type() {
     return PrimitiveType::u32;
   } else if (std::is_same<T, uint64>()) {
     return PrimitiveType::u64;
+  } else {
+    TI_NOT_IMPLEMENTED;
+  }
+}
+
+template <typename T>
+inline PrimitiveTypeID get_primitive_data_type() {
+  if (std::is_same<T, float32>()) {
+    return PrimitiveTypeID::f32;
+  } else if (std::is_same<T, float64>()) {
+    return PrimitiveTypeID::f64;
+  } else if (std::is_same<T, bool>()) {
+    return PrimitiveTypeID::u1;
+  } else if (std::is_same<T, int8>()) {
+    return PrimitiveTypeID::i8;
+  } else if (std::is_same<T, int16>()) {
+    return PrimitiveTypeID::i16;
+  } else if (std::is_same<T, int32>()) {
+    return PrimitiveTypeID::i32;
+  } else if (std::is_same<T, int64>()) {
+    return PrimitiveTypeID::i64;
+  } else if (std::is_same<T, uint8>()) {
+    return PrimitiveTypeID::u8;
+  } else if (std::is_same<T, uint16>()) {
+    return PrimitiveTypeID::u16;
+  } else if (std::is_same<T, uint32>()) {
+    return PrimitiveTypeID::u32;
+  } else if (std::is_same<T, uint64>()) {
+    return PrimitiveTypeID::u64;
   } else {
     TI_NOT_IMPLEMENTED;
   }
@@ -214,6 +244,8 @@ class TypedConstant {
 
   template <typename T>
   TypedConstant(DataType dt, const T &value) : dt(dt) {
+    // TODO: loud failure on pointers
+    dt.set_is_pointer(false);
     if (dt == PrimitiveType::f32) {
       val_f32 = value;
     } else if (dt == PrimitiveType::i32) {

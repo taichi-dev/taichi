@@ -8,15 +8,22 @@ TLANG_NAMESPACE_BEGIN
 
 class TypeFactory {
  public:
-  Type *get_primitive_type(PrimitiveType::primitive_type id);
+  static TypeFactory &get_instance();
+
+  Type *get_primitive_type(PrimitiveTypeID id);
 
   Type *get_vector_type(int num_elements, Type *element);
 
   Type *get_pointer_type(Type *element);
 
+  static DataType create_vector_or_scalar_type(int width,
+                                               DataType element,
+                                               bool element_is_pointer = false);
+
  private:
-  std::unordered_map<PrimitiveType::primitive_type, std::unique_ptr<Type>>
-      primitive_types_;
+  TypeFactory();
+
+  std::unordered_map<PrimitiveTypeID, std::unique_ptr<Type>> primitive_types_;
 
   // TODO: use unordered map
   std::map<std::pair<int, Type *>, std::unique_ptr<Type>> vector_types_;

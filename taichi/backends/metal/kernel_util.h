@@ -85,6 +85,8 @@ struct TaichiKernelAttributes {
   struct UsedFeatures {
     // Whether print() is called inside this kernel.
     bool print = false;
+    // Whether assert is called inside this kernel.
+    bool assertion = false;
     // Whether this kernel accesses (read or write) sparse SNodes.
     bool sparse = false;
     // Whether [[thread_index_in_simdgroup]] is used. This is only supported

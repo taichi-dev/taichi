@@ -63,6 +63,8 @@ def test_assert_message_formatted():
 
     with pytest.raises(RuntimeError, match=r'x\[10\] expect=0 got=42'):
         assert_formatted()
+    # TODO: note that we are not fully polished to be able to recover from
+    # assertion failures...
     with pytest.raises(RuntimeError, match=r'y = 0.5'):
         assert_float()
 

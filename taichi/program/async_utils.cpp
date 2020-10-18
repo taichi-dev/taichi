@@ -119,6 +119,17 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
       }
     }
 
+    if (auto *snode_op = stmt->cast<SNodeOpStmt>()) {
+      if (snode_op->op_type == SNodeOpType::activate ||
+          snode_op->op_type == SNodeOpType::deactivate) {
+        auto *sn = snode_op->snode;
+        if (is_gc_able(sn->type)) {
+          meta.input_states.emplace(sn, AsyncState::Type::allocator);
+          meta.output_states.emplace(sn, AsyncState::Type::allocator);
+        }
+      }
+    }
+
     if (auto ptr = stmt->cast<GlobalPtrStmt>()) {
       if (ptr->activate) {
         for (auto &snode : ptr->snodes.data) {
@@ -127,6 +138,10 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
             if (!s->is_path_all_dense) {
               meta.input_states.emplace(s, AsyncState::Type::mask);
               meta.output_states.emplace(s, AsyncState::Type::mask);
+              if (is_gc_able(s->type)) {
+                meta.input_states.emplace(s, AsyncState::Type::allocator);
+                meta.output_states.emplace(s, AsyncState::Type::allocator);
+              }
             }
             s = s->parent;
           }
@@ -170,6 +185,11 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
   } else if (root_stmt->task_type == OffloadedTaskType::struct_for) {
     meta.snode = root_stmt->snode;
     meta.input_states.emplace(root_stmt->snode, AsyncState::Type::list);
+  } else if ((root_stmt->task_type == OffloadedTaskType::gc) &&
+             (is_gc_able(root_stmt->snode->type))) {
+    meta.snode = root_stmt->snode;
+    meta.input_states.emplace(meta.snode, AsyncState::Type::allocator);
+    meta.output_states.emplace(meta.snode, AsyncState::Type::allocator);
   }
 
   meta_bank[t.ir_handle] = meta;

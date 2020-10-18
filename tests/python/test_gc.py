@@ -2,7 +2,7 @@ import taichi as ti
 
 
 @ti.test(require=ti.extension.sparse)
-def test_block():
+def _test_block_gc():
     N = 100000
 
     dx = 1 / 128
@@ -38,14 +38,29 @@ def test_block():
             x[p] += ti.Vector([0.0, 0.1])
 
     assert grid.num_dynamically_allocated == 0
-    for i in range(100):
+    for _ in range(100):
         grid.deactivate_all()
         # Scatter the particles to the sparse grid
         build_grid()
         # Move the block of particles
         move()
-        # The block of particles can occupy at most two blocks on the sparse grid
-        assert 1 <= grid.num_dynamically_allocated <= 2
+
+    ti.sync()
+    # The block of particles can occupy at most two blocks on the sparse grid.
+    # It's fine to run 100 times and do just one final check, because
+    # num_dynamically_allocated stores the number of slots *ever* allocated.
+    assert 1 <= grid.num_dynamically_allocated <= 2, grid.num_dynamically_allocated
+
+
+@ti.test(require=ti.extension.sparse)
+def test_block():
+    _test_block_gc()
+
+
+@ti.test(require=[ti.extension.sparse, ti.extension.async_mode],
+         async_mode=True)
+def test_block_async():
+    _test_block_gc()
 
 
 @ti.test(require=ti.extension.sparse)

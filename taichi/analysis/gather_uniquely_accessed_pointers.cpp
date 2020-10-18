@@ -12,7 +12,7 @@ class LoopUniqueStmtSearcher : public BasicStmtVisitor {
 
   // If loop_unique_[stmt] is -1, the value of stmt is unique among the
   // top-level loop.
-  // If loop_unique_[stmt] is x > 0, the value of stmt is unique to
+  // If loop_unique_[stmt] is x >= 0, the value of stmt is unique to
   // the x-th loop index.
   std::unordered_map<Stmt *, int> loop_unique_;
 

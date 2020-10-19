@@ -125,7 +125,9 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
         auto *sn = snode_op->snode;
         if (is_gc_able(sn->type)) {
           meta.input_states.emplace(sn, AsyncState::Type::allocator);
+          meta.input_states.emplace(sn, AsyncState::Type::mask);
           meta.output_states.emplace(sn, AsyncState::Type::allocator);
+          meta.output_states.emplace(sn, AsyncState::Type::mask);
         }
       }
     }
@@ -237,7 +239,9 @@ TaskFusionMeta get_task_fusion_meta(IRBank *bank, const TaskLaunchRecord &t) {
     meta.end_value = task->end_value;
   } else if (task->task_type != OffloadedTaskType::serial) {
     // Do not fuse gc/listgen tasks.
-    return fusion_meta_bank[t.ir_handle] = TaskFusionMeta();
+    meta.fusible = false;
+    meta.snode = task->snode;
+    return fusion_meta_bank[t.ir_handle] = meta;
   }
   meta.fusible = true;
   return fusion_meta_bank[t.ir_handle] = meta;

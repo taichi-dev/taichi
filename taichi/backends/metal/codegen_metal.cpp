@@ -627,7 +627,8 @@ class KernelCodegen : public IRVisitor {
         if (std::holds_alternative<Stmt *>(entry)) {
           auto *arg_stmt = std::get<Stmt *>(entry);
           const auto dt = arg_stmt->element_type();
-          TI_ASSERT_INFO(dt->is_primitive(PrimitiveTypeID::i32) || dt->is_primitive(PrimitiveTypeID::f32),
+          TI_ASSERT_INFO(dt->is_primitive(PrimitiveTypeID::i32) ||
+                             dt->is_primitive(PrimitiveTypeID::f32),
                          "print() only supports i32 or f32 scalars for now.");
           emit("{}.pm_set_{}({}, {});", msg_var_name, data_type_short_name(dt),
                i, arg_stmt->raw_name());
@@ -664,7 +665,8 @@ class KernelCodegen : public IRVisitor {
         for (int i = 1; i < num_args; ++i) {
           auto *arg = args[i - 1];
           const auto ty = arg->element_type();
-          if (ty->is_primitive(PrimitiveTypeID::i32) || ty->is_primitive(PrimitiveTypeID::f32)) {
+          if (ty->is_primitive(PrimitiveTypeID::i32) ||
+              ty->is_primitive(PrimitiveTypeID::f32)) {
             emit("{}.pm_set_{}({}, {});", asst_var_name,
                  data_type_short_name(ty), i, arg->raw_name());
           } else {

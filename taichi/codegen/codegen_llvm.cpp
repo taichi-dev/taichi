@@ -149,20 +149,20 @@ void CodeGenLLVM::emit_extra_unary(UnaryOpStmt *stmt) {
   auto op = stmt->op_type;
   auto input_type = input->getType();
 
-#define UNARY_STD(x)                                                   \
-  else if (op == UnaryOpType::x) {                                     \
-    if (input_taichi_type->is_primitive(PrimitiveTypeID::f32)) {                     \
-      llvm_val[stmt] =                                                 \
-          builder->CreateCall(get_runtime_function(#x "_f32"), input); \
-    } else if (input_taichi_type->is_primitive(PrimitiveTypeID::f64)) {              \
-      llvm_val[stmt] =                                                 \
-          builder->CreateCall(get_runtime_function(#x "_f64"), input); \
-    } else if (input_taichi_type->is_primitive(PrimitiveTypeID::i32)) {              \
-      llvm_val[stmt] =                                                 \
-          builder->CreateCall(get_runtime_function(#x "_i32"), input); \
-    } else {                                                           \
-      TI_NOT_IMPLEMENTED                                               \
-    }                                                                  \
+#define UNARY_STD(x)                                                    \
+  else if (op == UnaryOpType::x) {                                      \
+    if (input_taichi_type->is_primitive(PrimitiveTypeID::f32)) {        \
+      llvm_val[stmt] =                                                  \
+          builder->CreateCall(get_runtime_function(#x "_f32"), input);  \
+    } else if (input_taichi_type->is_primitive(PrimitiveTypeID::f64)) { \
+      llvm_val[stmt] =                                                  \
+          builder->CreateCall(get_runtime_function(#x "_f64"), input);  \
+    } else if (input_taichi_type->is_primitive(PrimitiveTypeID::i32)) { \
+      llvm_val[stmt] =                                                  \
+          builder->CreateCall(get_runtime_function(#x "_i32"), input);  \
+    } else {                                                            \
+      TI_NOT_IMPLEMENTED                                                \
+    }                                                                   \
   }
   if (false) {
   }

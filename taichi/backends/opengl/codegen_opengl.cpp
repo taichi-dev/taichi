@@ -484,7 +484,8 @@ class KernelGen : public IRVisitor {
         emit("{} {} = intBitsToFloat({});", dt_name, stmt->short_name(),
              stmt->operand->short_name());
       } else if (stmt->cast_type->is_primitive(PrimitiveTypeID::i32) &&
-                 stmt->operand->element_type()->is_primitive(PrimitiveTypeID::f32)) {
+                 stmt->operand->element_type()->is_primitive(
+                     PrimitiveTypeID::f32)) {
         emit("{} {} = floatBitsToInt({});", dt_name, stmt->short_name(),
              stmt->operand->short_name());
       } else {

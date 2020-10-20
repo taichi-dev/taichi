@@ -77,8 +77,10 @@ class ConstantFold : public BasicStmtVisitor {
     // ConstStmt of `bad` types like `i8` is not supported by LLVM.
     // Discussion:
     // https://github.com/taichi-dev/taichi/pull/839#issuecomment-625902727
-    if (dt->is_primitive(PrimitiveTypeID::i32) || dt->is_primitive(PrimitiveTypeID::f32) ||
-        dt->is_primitive(PrimitiveTypeID::i64) || dt->is_primitive(PrimitiveTypeID::f64))
+    if (dt->is_primitive(PrimitiveTypeID::i32) ||
+        dt->is_primitive(PrimitiveTypeID::f32) ||
+        dt->is_primitive(PrimitiveTypeID::i64) ||
+        dt->is_primitive(PrimitiveTypeID::f64))
       return true;
     else
       return false;

@@ -114,21 +114,28 @@ inline bool constexpr is_trigonometric(UnaryOpType op) {
 }
 
 inline bool is_real(DataType dt) {
-  return dt->is_primitive(PrimitiveTypeID::f16) || dt->is_primitive(PrimitiveTypeID::f32) ||
+  return dt->is_primitive(PrimitiveTypeID::f16) ||
+         dt->is_primitive(PrimitiveTypeID::f32) ||
          dt->is_primitive(PrimitiveTypeID::f64);
 }
 
 inline bool is_integral(DataType dt) {
-  return dt->is_primitive(PrimitiveTypeID::i8) || dt->is_primitive(PrimitiveTypeID::i16) ||
-         dt->is_primitive(PrimitiveTypeID::i32) || dt->is_primitive(PrimitiveTypeID::i64) ||
-         dt->is_primitive(PrimitiveTypeID::u8) || dt->is_primitive(PrimitiveTypeID::u16) ||
-         dt->is_primitive(PrimitiveTypeID::u32) || dt->is_primitive(PrimitiveTypeID::u64);
+  return dt->is_primitive(PrimitiveTypeID::i8) ||
+         dt->is_primitive(PrimitiveTypeID::i16) ||
+         dt->is_primitive(PrimitiveTypeID::i32) ||
+         dt->is_primitive(PrimitiveTypeID::i64) ||
+         dt->is_primitive(PrimitiveTypeID::u8) ||
+         dt->is_primitive(PrimitiveTypeID::u16) ||
+         dt->is_primitive(PrimitiveTypeID::u32) ||
+         dt->is_primitive(PrimitiveTypeID::u64);
 }
 
 inline bool is_signed(DataType dt) {
   TI_ASSERT(is_integral(dt));
-  return dt->is_primitive(PrimitiveTypeID::i8) || dt->is_primitive(PrimitiveTypeID::i16) ||
-         dt->is_primitive(PrimitiveTypeID::i32) || dt->is_primitive(PrimitiveTypeID::i64);
+  return dt->is_primitive(PrimitiveTypeID::i8) ||
+         dt->is_primitive(PrimitiveTypeID::i16) ||
+         dt->is_primitive(PrimitiveTypeID::i32) ||
+         dt->is_primitive(PrimitiveTypeID::i64);
 }
 
 inline bool is_unsigned(DataType dt) {

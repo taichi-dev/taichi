@@ -267,6 +267,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(RangeAssumptionStmt *stmt) override;
 
+  void visit(LoopUniqueStmt *stmt) override;
+
   llvm::Value *create_xlogue(std::unique_ptr<Block> &block);
 
   ~CodeGenLLVM() = default;

@@ -1,3 +1,4 @@
+#include "taichi/ir/analysis.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
@@ -8,6 +9,9 @@
 TLANG_NAMESPACE_BEGIN
 
 class DemoteAtomics : public BasicStmtVisitor {
+ private:
+  std::unordered_map<SNode *, GlobalPtrStmt *> loop_unique_ptr_;
+
  public:
   using BasicStmtVisitor::visit;
 
@@ -21,12 +25,32 @@ class DemoteAtomics : public BasicStmtVisitor {
   void visit(AtomicOpStmt *stmt) override {
     bool demote = false;
     bool is_local = false;
-    if (current_offloaded && arch_is_cpu(current_offloaded->device) &&
-        current_offloaded->num_cpu_threads == 1) {
-      demote = true;
-    }
-    if (current_offloaded && stmt->dest->is<ThreadLocalPtrStmt>()) {
-      demote = true;
+    if (current_offloaded) {
+      if (arch_is_cpu(current_offloaded->device) &&
+          current_offloaded->num_cpu_threads == 1) {
+        demote = true;
+      }
+      if (stmt->dest->is<ThreadLocalPtrStmt>()) {
+        demote = true;
+      }
+      if (current_offloaded->task_type == OffloadedTaskType::serial) {
+        demote = true;
+      }
+      if (!demote &&
+          (current_offloaded->task_type == OffloadedTaskType::range_for ||
+           current_offloaded->task_type == OffloadedTaskType::struct_for) &&
+          stmt->dest->is<GlobalPtrStmt>()) {
+        demote = true;
+        auto dest = stmt->dest->as<GlobalPtrStmt>();
+        for (auto snode : dest->snodes.data) {
+          if (loop_unique_ptr_[snode] == nullptr ||
+              loop_unique_ptr_[snode]->indices.empty()) {
+            // not uniquely accessed
+            demote = false;
+            break;
+          }
+        }
+      }
     }
     if (stmt->dest->is<AllocaStmt>()) {
       demote = true;
@@ -78,6 +102,12 @@ class DemoteAtomics : public BasicStmtVisitor {
 
   void visit(OffloadedStmt *stmt) override {
     current_offloaded = stmt;
+    if (stmt->task_type == OffloadedTaskType::range_for ||
+        stmt->task_type == OffloadedTaskType::struct_for) {
+      loop_unique_ptr_ =
+          irpass::analysis::gather_uniquely_accessed_pointers(stmt);
+    }
+    // We don't need to visit TLS/BLS prologues/epilogues.
     if (stmt->body) {
       stmt->body->accept(this);
     }

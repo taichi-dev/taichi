@@ -149,20 +149,20 @@ void CodeGenLLVM::emit_extra_unary(UnaryOpStmt *stmt) {
   auto op = stmt->op_type;
   auto input_type = input->getType();
 
-#define UNARY_STD(x)                                                   \
-  else if (op == UnaryOpType::x) {                                     \
-    if (input_taichi_type == PrimitiveType::f32) {                     \
-      llvm_val[stmt] =                                                 \
-          builder->CreateCall(get_runtime_function(#x "_f32"), input); \
-    } else if (input_taichi_type == PrimitiveType::f64) {              \
-      llvm_val[stmt] =                                                 \
-          builder->CreateCall(get_runtime_function(#x "_f64"), input); \
-    } else if (input_taichi_type == PrimitiveType::i32) {              \
-      llvm_val[stmt] =                                                 \
-          builder->CreateCall(get_runtime_function(#x "_i32"), input); \
-    } else {                                                           \
-      TI_NOT_IMPLEMENTED                                               \
-    }                                                                  \
+#define UNARY_STD(x)                                                    \
+  else if (op == UnaryOpType::x) {                                      \
+    if (input_taichi_type->is_primitive(PrimitiveTypeID::f32)) {        \
+      llvm_val[stmt] =                                                  \
+          builder->CreateCall(get_runtime_function(#x "_f32"), input);  \
+    } else if (input_taichi_type->is_primitive(PrimitiveTypeID::f64)) { \
+      llvm_val[stmt] =                                                  \
+          builder->CreateCall(get_runtime_function(#x "_f64"), input);  \
+    } else if (input_taichi_type->is_primitive(PrimitiveTypeID::i32)) { \
+      llvm_val[stmt] =                                                  \
+          builder->CreateCall(get_runtime_function(#x "_i32"), input);  \
+    } else {                                                            \
+      TI_NOT_IMPLEMENTED                                                \
+    }                                                                   \
   }
   if (false) {
   }
@@ -429,7 +429,7 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
     if (is_real(ret_type)) {
       llvm_val[stmt] =
           builder->CreateMaxNum(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
-    } else if (ret_type == PrimitiveType::i32) {
+    } else if (ret_type->is_primitive(PrimitiveTypeID::i32)) {
       llvm_val[stmt] =
           create_call("max_i32", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
     } else {
@@ -438,10 +438,10 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
     }
   } else if (op == BinaryOpType::atan2) {
     if (arch_is_cpu(current_arch())) {
-      if (ret_type == PrimitiveType::f32) {
+      if (ret_type->is_primitive(PrimitiveTypeID::f32)) {
         llvm_val[stmt] = create_call(
             "atan2_f32", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-      } else if (ret_type == PrimitiveType::f64) {
+      } else if (ret_type->is_primitive(PrimitiveTypeID::f64)) {
         llvm_val[stmt] = create_call(
             "atan2_f64", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
       } else {
@@ -449,10 +449,10 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
         TI_NOT_IMPLEMENTED
       }
     } else if (current_arch() == Arch::cuda) {
-      if (ret_type == PrimitiveType::f32) {
+      if (ret_type->is_primitive(PrimitiveTypeID::f32)) {
         llvm_val[stmt] = create_call(
             "__nv_atan2f", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-      } else if (ret_type == PrimitiveType::f64) {
+      } else if (ret_type->is_primitive(PrimitiveTypeID::f64)) {
         llvm_val[stmt] = create_call(
             "__nv_atan2", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
       } else {
@@ -464,16 +464,16 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
     }
   } else if (op == BinaryOpType::pow) {
     if (arch_is_cpu(current_arch())) {
-      if (ret_type == PrimitiveType::f32) {
+      if (ret_type->is_primitive(PrimitiveTypeID::f32)) {
         llvm_val[stmt] =
             create_call("pow_f32", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-      } else if (ret_type == PrimitiveType::f64) {
+      } else if (ret_type->is_primitive(PrimitiveTypeID::f64)) {
         llvm_val[stmt] =
             create_call("pow_f64", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-      } else if (ret_type == PrimitiveType::i32) {
+      } else if (ret_type->is_primitive(PrimitiveTypeID::i32)) {
         llvm_val[stmt] =
             create_call("pow_i32", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-      } else if (ret_type == PrimitiveType::i64) {
+      } else if (ret_type->is_primitive(PrimitiveTypeID::i64)) {
         llvm_val[stmt] =
             create_call("pow_i64", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
       } else {
@@ -481,16 +481,16 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
         TI_NOT_IMPLEMENTED
       }
     } else if (current_arch() == Arch::cuda) {
-      if (ret_type == PrimitiveType::f32) {
+      if (ret_type->is_primitive(PrimitiveTypeID::f32)) {
         llvm_val[stmt] = create_call(
             "__nv_powf", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-      } else if (ret_type == PrimitiveType::f64) {
+      } else if (ret_type->is_primitive(PrimitiveTypeID::f64)) {
         llvm_val[stmt] =
             create_call("__nv_pow", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-      } else if (ret_type == PrimitiveType::i32) {
+      } else if (ret_type->is_primitive(PrimitiveTypeID::i32)) {
         llvm_val[stmt] =
             create_call("pow_i32", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
-      } else if (ret_type == PrimitiveType::i64) {
+      } else if (ret_type->is_primitive(PrimitiveTypeID::i64)) {
         llvm_val[stmt] =
             create_call("pow_i64", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
       } else {
@@ -504,7 +504,7 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
     if (is_real(ret_type)) {
       llvm_val[stmt] =
           builder->CreateMinNum(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
-    } else if (ret_type == PrimitiveType::i32) {
+    } else if (ret_type->is_primitive(PrimitiveTypeID::i32)) {
       llvm_val[stmt] =
           create_call("min_i32", {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
     } else {
@@ -585,13 +585,13 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
 }
 
 llvm::Type *CodeGenLLVM::llvm_type(DataType dt) {
-  if (dt == PrimitiveType::i32) {
+  if (dt->is_primitive(PrimitiveTypeID::i32)) {
     return llvm::Type::getInt32Ty(*llvm_context);
-  } else if (dt == PrimitiveType::u1) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u1)) {
     return llvm::Type::getInt1Ty(*llvm_context);
-  } else if (dt == PrimitiveType::f32) {
+  } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
     return llvm::Type::getFloatTy(*llvm_context);
-  } else if (dt == PrimitiveType::f64) {
+  } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
     return llvm::Type::getDoubleTy(*llvm_context);
   } else {
     TI_NOT_IMPLEMENTED;
@@ -640,7 +640,7 @@ llvm::Value *CodeGenLLVM::create_print(std::string tag,
   args.push_back(builder->CreateGlobalStringPtr(
       ("[llvm codegen debug] " + tag + " = " + format + "\n").c_str(),
       "format_string"));
-  if (dt == PrimitiveType::f32)
+  if (dt->is_primitive(PrimitiveTypeID::f32))
     value =
         builder->CreateFPExt(value, tlctx->get_data_type(PrimitiveType::f64));
   args.push_back(value);
@@ -655,7 +655,7 @@ void CodeGenLLVM::visit(PrintStmt *stmt) {
     if (std::holds_alternative<Stmt *>(content)) {
       auto arg_stmt = std::get<Stmt *>(content);
       auto value = llvm_val[arg_stmt];
-      if (arg_stmt->ret_type == PrimitiveType::f32)
+      if (arg_stmt->ret_type->is_primitive(PrimitiveTypeID::f32))
         value = builder->CreateFPExt(value,
                                      tlctx->get_data_type(PrimitiveType::f64));
       args.push_back(value);
@@ -677,22 +677,22 @@ void CodeGenLLVM::visit(PrintStmt *stmt) {
 void CodeGenLLVM::visit(ConstStmt *stmt) {
   TI_ASSERT(stmt->width() == 1);
   auto val = stmt->val[0];
-  if (val.dt == PrimitiveType::f32) {
+  if (val.dt->is_primitive(PrimitiveTypeID::f32)) {
     llvm_val[stmt] =
         llvm::ConstantFP::get(*llvm_context, llvm::APFloat(val.val_float32()));
-  } else if (val.dt == PrimitiveType::f64) {
+  } else if (val.dt->is_primitive(PrimitiveTypeID::f64)) {
     llvm_val[stmt] =
         llvm::ConstantFP::get(*llvm_context, llvm::APFloat(val.val_float64()));
-  } else if (val.dt == PrimitiveType::i32) {
+  } else if (val.dt->is_primitive(PrimitiveTypeID::i32)) {
     llvm_val[stmt] = llvm::ConstantInt::get(
         *llvm_context, llvm::APInt(32, (uint64)val.val_int32(), true));
-  } else if (val.dt == PrimitiveType::u32) {
+  } else if (val.dt->is_primitive(PrimitiveTypeID::u32)) {
     llvm_val[stmt] = llvm::ConstantInt::get(
         *llvm_context, llvm::APInt(32, (uint64)val.val_uint32(), false));
-  } else if (val.dt == PrimitiveType::i64) {
+  } else if (val.dt->is_primitive(PrimitiveTypeID::i64)) {
     llvm_val[stmt] = llvm::ConstantInt::get(
         *llvm_context, llvm::APInt(64, (uint64)val.val_int64(), true));
-  } else if (val.dt == PrimitiveType::u64) {
+  } else if (val.dt->is_primitive(PrimitiveTypeID::u64)) {
     llvm_val[stmt] = llvm::ConstantInt::get(
         *llvm_context, llvm::APInt(64, val.val_uint64(), false));
   } else {
@@ -951,7 +951,7 @@ void CodeGenLLVM::visit(SNodeOpStmt *stmt) {
   auto snode = stmt->snode;
   if (stmt->op_type == SNodeOpType::append) {
     TI_ASSERT(snode->type == SNodeType::dynamic);
-    TI_ASSERT(stmt->ret_type == PrimitiveType::i32);
+    TI_ASSERT(stmt->ret_type->is_primitive(PrimitiveTypeID::i32));
     llvm_val[stmt] =
         call(snode, llvm_val[stmt->ptr], "append", {llvm_val[stmt->val]});
   } else if (stmt->op_type == SNodeOpType::length) {
@@ -987,11 +987,11 @@ void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
         old_value = builder->CreateAtomicRMW(
             llvm::AtomicRMWInst::BinOp::Add, llvm_val[stmt->dest],
             llvm_val[stmt->val], llvm::AtomicOrdering::SequentiallyConsistent);
-      } else if (stmt->val->ret_type == PrimitiveType::f32) {
+      } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f32)) {
         old_value =
             builder->CreateCall(get_runtime_function("atomic_add_f32"),
                                 {llvm_val[stmt->dest], llvm_val[stmt->val]});
-      } else if (stmt->val->ret_type == PrimitiveType::f64) {
+      } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f64)) {
         old_value =
             builder->CreateCall(get_runtime_function("atomic_add_f64"),
                                 {llvm_val[stmt->dest], llvm_val[stmt->val]});
@@ -1003,11 +1003,11 @@ void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
         old_value = builder->CreateAtomicRMW(
             llvm::AtomicRMWInst::BinOp::Min, llvm_val[stmt->dest],
             llvm_val[stmt->val], llvm::AtomicOrdering::SequentiallyConsistent);
-      } else if (stmt->val->ret_type == PrimitiveType::f32) {
+      } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f32)) {
         old_value =
             builder->CreateCall(get_runtime_function("atomic_min_f32"),
                                 {llvm_val[stmt->dest], llvm_val[stmt->val]});
-      } else if (stmt->val->ret_type == PrimitiveType::f64) {
+      } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f64)) {
         old_value =
             builder->CreateCall(get_runtime_function("atomic_min_f64"),
                                 {llvm_val[stmt->dest], llvm_val[stmt->val]});
@@ -1019,11 +1019,11 @@ void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
         old_value = builder->CreateAtomicRMW(
             llvm::AtomicRMWInst::BinOp::Max, llvm_val[stmt->dest],
             llvm_val[stmt->val], llvm::AtomicOrdering::SequentiallyConsistent);
-      } else if (stmt->val->ret_type == PrimitiveType::f32) {
+      } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f32)) {
         old_value =
             builder->CreateCall(get_runtime_function("atomic_max_f32"),
                                 {llvm_val[stmt->dest], llvm_val[stmt->val]});
-      } else if (stmt->val->ret_type == PrimitiveType::f64) {
+      } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f64)) {
         old_value =
             builder->CreateCall(get_runtime_function("atomic_max_f64"),
                                 {llvm_val[stmt->dest], llvm_val[stmt->val]});
@@ -1307,7 +1307,8 @@ std::tuple<llvm::Value *, llvm::Value *> CodeGenLLVM::get_range_for_bounds(
     begin = tlctx->get_constant(stmt->begin_value);
   } else {
     auto begin_stmt = Stmt::make<GlobalTemporaryStmt>(
-        stmt->begin_offset, LegacyVectorType(1, PrimitiveType::i32));
+        stmt->begin_offset,
+        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32));
     begin_stmt->accept(this);
     begin = builder->CreateLoad(llvm_val[begin_stmt.get()]);
   }
@@ -1315,7 +1316,8 @@ std::tuple<llvm::Value *, llvm::Value *> CodeGenLLVM::get_range_for_bounds(
     end = tlctx->get_constant(stmt->end_value);
   } else {
     auto end_stmt = Stmt::make<GlobalTemporaryStmt>(
-        stmt->end_offset, LegacyVectorType(1, PrimitiveType::i32));
+        stmt->end_offset,
+        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32));
     end_stmt->accept(this);
     end = builder->CreateLoad(llvm_val[end_stmt.get()]);
   }
@@ -1714,6 +1716,10 @@ void CodeGenLLVM::visit(StackAccAdjointStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(RangeAssumptionStmt *stmt) {
+  llvm_val[stmt] = llvm_val[stmt->input];
+}
+
+void CodeGenLLVM::visit(LoopUniqueStmt *stmt) {
   llvm_val[stmt] = llvm_val[stmt->input];
 }
 

@@ -24,6 +24,10 @@ class TypeFactory {
                             std::vector<Type *> member_types,
                             std::vector<int> member_bit_offsets);
 
+  static DataType create_vector_or_scalar_type(int width,
+                                               DataType element,
+                                               bool element_is_pointer = false);
+
  private:
   TypeFactory();
 

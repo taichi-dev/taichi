@@ -41,7 +41,7 @@ class TypeCheck : public IRVisitor {
   void visit(IfStmt *if_stmt) {
     // TODO: use PrimitiveType::u1 when it's supported
     TI_ASSERT_INFO(
-        if_stmt->cond->ret_type == PrimitiveType::i32,
+        if_stmt->cond->ret_type->is_primitive(PrimitiveTypeID::i32),
         "`if` conditions must be of type int32, consider using `if x != 0:` "
         "instead of `if x:` for float values.");
     if (if_stmt->true_statements)
@@ -71,7 +71,7 @@ class TypeCheck : public IRVisitor {
       stmt->val = insert_type_cast_before(stmt, stmt->val,
                                           stmt->dest->ret_type.ptr_removed());
     }
-    if (stmt->element_type() == PrimitiveType::unknown) {
+    if (stmt->element_type()->is_primitive(PrimitiveTypeID::unknown)) {
       stmt->ret_type = stmt->dest->ret_type.ptr_removed();
     }
     TI_ASSERT(!stmt->ret_type->is<PointerType>());
@@ -84,7 +84,7 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(LocalStoreStmt *stmt) {
-    if (stmt->ptr->ret_type == PrimitiveType::unknown) {
+    if (stmt->ptr->ret_type->is_primitive(PrimitiveTypeID::unknown)) {
       // Infer data type for alloca
       stmt->ptr->ret_type = stmt->data->ret_type;
     }
@@ -112,11 +112,13 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(SNodeOpStmt *stmt) {
-    stmt->ret_type = LegacyVectorType(1, PrimitiveType::i32);
+    stmt->ret_type =
+        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
   }
 
   void visit(ExternalTensorShapeAlongAxisStmt *stmt) {
-    stmt->ret_type = LegacyVectorType(1, PrimitiveType::i32);
+    stmt->ret_type =
+        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
   }
 
   void visit(GlobalPtrStmt *stmt) {
@@ -163,8 +165,10 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(RangeForStmt *stmt) {
-    mark_as_if_const(stmt->begin, LegacyVectorType(1, PrimitiveType::i32));
-    mark_as_if_const(stmt->end, LegacyVectorType(1, PrimitiveType::i32));
+    mark_as_if_const(stmt->begin, TypeFactory::create_vector_or_scalar_type(
+                                      1, PrimitiveType::i32));
+    mark_as_if_const(stmt->end, TypeFactory::create_vector_or_scalar_type(
+                                    1, PrimitiveType::i32));
     stmt->body->accept(this);
   }
 
@@ -241,8 +245,8 @@ class TypeCheck : public IRVisitor {
       TI_WARN("Compilation stopped due to type mismatch.");
       throw std::runtime_error("Binary operator type mismatch");
     };
-    if (stmt->lhs->ret_type == PrimitiveType::unknown &&
-        stmt->rhs->ret_type == PrimitiveType::unknown)
+    if (stmt->lhs->ret_type->is_primitive(PrimitiveTypeID::unknown) &&
+        stmt->rhs->ret_type->is_primitive(PrimitiveTypeID::unknown))
       error();
 
     // lower truediv into div
@@ -285,7 +289,8 @@ class TypeCheck : public IRVisitor {
       }
     }
     if (is_comparison(stmt->op_type)) {
-      stmt->ret_type = LegacyVectorType(stmt->lhs->width(), PrimitiveType::i32);
+      stmt->ret_type = TypeFactory::create_vector_or_scalar_type(
+          stmt->lhs->width(), PrimitiveType::i32);
     } else {
       stmt->ret_type = stmt->lhs->ret_type;
     }
@@ -294,7 +299,7 @@ class TypeCheck : public IRVisitor {
   void visit(TernaryOpStmt *stmt) {
     if (stmt->op_type == TernaryOpType::select) {
       auto ret_type = promoted_type(stmt->op2->ret_type, stmt->op3->ret_type);
-      TI_ASSERT(stmt->op1->ret_type == PrimitiveType::i32)
+      TI_ASSERT(stmt->op1->ret_type->is_primitive(PrimitiveTypeID::i32))
       TI_ASSERT(stmt->op1->ret_type->vector_width() ==
                 stmt->op2->ret_type->vector_width());
       TI_ASSERT(stmt->op2->ret_type->vector_width() ==
@@ -307,7 +312,8 @@ class TypeCheck : public IRVisitor {
         auto cast_stmt = insert_type_cast_before(stmt, stmt->op3, ret_type);
         stmt->op3 = cast_stmt;
       }
-      stmt->ret_type = LegacyVectorType(stmt->op1->width(), ret_type);
+      stmt->ret_type = TypeFactory::create_vector_or_scalar_type(
+          stmt->op1->width(), ret_type);
     } else {
       TI_NOT_IMPLEMENTED
     }
@@ -320,6 +326,10 @@ class TypeCheck : public IRVisitor {
 
   void visit(RangeAssumptionStmt *stmt) {
     TI_ASSERT(stmt->input->ret_type == stmt->base->ret_type);
+    stmt->ret_type = stmt->input->ret_type;
+  }
+
+  void visit(LoopUniqueStmt *stmt) {
     stmt->ret_type = stmt->input->ret_type;
   }
 
@@ -342,36 +352,43 @@ class TypeCheck : public IRVisitor {
 
   void visit(ExternalPtrStmt *stmt) {
     stmt->ret_type.set_is_pointer(true);
-    stmt->ret_type =
-        LegacyVectorType(stmt->base_ptrs.size(), stmt->base_ptrs[0]->ret_type);
+    stmt->ret_type = TypeFactory::create_vector_or_scalar_type(
+        stmt->base_ptrs.size(), stmt->base_ptrs[0]->ret_type);
   }
 
   void visit(LoopIndexStmt *stmt) {
-    stmt->ret_type = LegacyVectorType(1, PrimitiveType::i32);
+    stmt->ret_type =
+        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
   }
 
   void visit(LoopLinearIndexStmt *stmt) {
-    stmt->ret_type = LegacyVectorType(1, PrimitiveType::i32);
+    stmt->ret_type =
+        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
   }
 
   void visit(BlockCornerIndexStmt *stmt) {
-    stmt->ret_type = LegacyVectorType(1, PrimitiveType::i32);
+    stmt->ret_type =
+        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
   }
 
   void visit(BlockDimStmt *stmt) {
-    stmt->ret_type = LegacyVectorType(1, PrimitiveType::i32);
+    stmt->ret_type =
+        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
   }
 
   void visit(GetRootStmt *stmt) {
-    stmt->ret_type = LegacyVectorType(1, PrimitiveType::gen, true);
+    stmt->ret_type =
+        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::gen, true);
   }
 
   void visit(SNodeLookupStmt *stmt) {
-    stmt->ret_type = LegacyVectorType(1, PrimitiveType::gen, true);
+    stmt->ret_type =
+        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::gen, true);
   }
 
   void visit(GetChStmt *stmt) {
-    stmt->ret_type = LegacyVectorType(1, stmt->output_snode->dt, true);
+    stmt->ret_type = TypeFactory::create_vector_or_scalar_type(
+        1, stmt->output_snode->dt, true);
   }
 
   void visit(OffloadedStmt *stmt) {

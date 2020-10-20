@@ -72,17 +72,17 @@ std::string data_type_name(DataType t) {
 }
 
 std::string data_type_format(DataType dt) {
-  if (dt == PrimitiveType::i32) {
+  if (dt->is_primitive(PrimitiveTypeID::i32)) {
     return "%d";
-  } else if (dt == PrimitiveType::i64) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
 #if defined(TI_PLATFORM_UNIX)
     return "%lld";
 #else
     return "%I64d";
 #endif
-  } else if (dt == PrimitiveType::f32) {
+  } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
     return "%f";
-  } else if (dt == PrimitiveType::f64) {
+  } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
     return "%.12f";
   } else {
     TI_NOT_IMPLEMENTED
@@ -96,15 +96,15 @@ int data_type_size(DataType t) {
   //  2. Support pointer types here.
   t.set_is_pointer(false);
   if (false) {
-  } else if (t == PrimitiveType::f16)
+  } else if (t->is_primitive(PrimitiveTypeID::f16))
     return 2;
-  else if (t == PrimitiveType::gen)
+  else if (t->is_primitive(PrimitiveTypeID::gen))
     return 0;
-  else if (t == PrimitiveType::unknown)
+  else if (t->is_primitive(PrimitiveTypeID::unknown))
     return -1;
 
 #define REGISTER_DATA_TYPE(i, j) \
-  else if (t == PrimitiveType::i) return sizeof(j)
+  else if (t->is_primitive(PrimitiveTypeID::i)) return sizeof(j)
 
   REGISTER_DATA_TYPE(f32, float32);
   REGISTER_DATA_TYPE(f64, float64);
@@ -132,7 +132,7 @@ std::string data_type_short_name(DataType t) {
 
   if (false) {
   }
-#define PER_TYPE(i) else if (t == PrimitiveType::i) return #i;
+#define PER_TYPE(i) else if (t->is_primitive(PrimitiveTypeID::i)) return #i;
 #include "taichi/inc/data_type.inc.h"
 #undef PER_TYPE
   else
@@ -380,25 +380,25 @@ DataType promoted_type(DataType a, DataType b) {
 std::string TypedConstant::stringify() const {
   // TODO: remove the line below after type system upgrade.
   auto dt = this->dt.ptr_removed();
-  if (dt == PrimitiveType::f32) {
+  if (dt->is_primitive(PrimitiveTypeID::f32)) {
     return fmt::format("{}", val_f32);
-  } else if (dt == PrimitiveType::i32) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i32)) {
     return fmt::format("{}", val_i32);
-  } else if (dt == PrimitiveType::i64) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
     return fmt::format("{}", val_i64);
-  } else if (dt == PrimitiveType::f64) {
+  } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
     return fmt::format("{}", val_f64);
-  } else if (dt == PrimitiveType::i8) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i8)) {
     return fmt::format("{}", val_i8);
-  } else if (dt == PrimitiveType::i16) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
     return fmt::format("{}", val_i16);
-  } else if (dt == PrimitiveType::u8) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
     return fmt::format("{}", val_u8);
-  } else if (dt == PrimitiveType::u16) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
     return fmt::format("{}", val_u16);
-  } else if (dt == PrimitiveType::u32) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
     return fmt::format("{}", val_u32);
-  } else if (dt == PrimitiveType::u64) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
     return fmt::format("{}", val_u64);
   } else {
     TI_P(data_type_name(dt));
@@ -410,25 +410,25 @@ std::string TypedConstant::stringify() const {
 bool TypedConstant::equal_type_and_value(const TypedConstant &o) const {
   if (dt != o.dt)
     return false;
-  if (dt == PrimitiveType::f32) {
+  if (dt->is_primitive(PrimitiveTypeID::f32)) {
     return val_f32 == o.val_f32;
-  } else if (dt == PrimitiveType::i32) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i32)) {
     return val_i32 == o.val_i32;
-  } else if (dt == PrimitiveType::i64) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
     return val_i64 == o.val_i64;
-  } else if (dt == PrimitiveType::f64) {
+  } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
     return val_f64 == o.val_f64;
-  } else if (dt == PrimitiveType::i8) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i8)) {
     return val_i8 == o.val_i8;
-  } else if (dt == PrimitiveType::i16) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
     return val_i16 == o.val_i16;
-  } else if (dt == PrimitiveType::u8) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
     return val_u8 == o.val_u8;
-  } else if (dt == PrimitiveType::u16) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
     return val_u16 == o.val_u16;
-  } else if (dt == PrimitiveType::u32) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
     return val_u32 == o.val_u32;
-  } else if (dt == PrimitiveType::u64) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
     return val_u64 == o.val_u64;
   } else {
     TI_NOT_IMPLEMENTED
@@ -488,13 +488,13 @@ uint64 &TypedConstant::val_uint64() {
 
 int64 TypedConstant::val_int() const {
   TI_ASSERT(is_signed(dt));
-  if (dt == PrimitiveType::i32) {
+  if (dt->is_primitive(PrimitiveTypeID::i32)) {
     return val_i32;
-  } else if (dt == PrimitiveType::i64) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
     return val_i64;
-  } else if (dt == PrimitiveType::i8) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i8)) {
     return val_i8;
-  } else if (dt == PrimitiveType::i16) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
     return val_i16;
   } else {
     TI_NOT_IMPLEMENTED
@@ -503,13 +503,13 @@ int64 TypedConstant::val_int() const {
 
 uint64 TypedConstant::val_uint() const {
   TI_ASSERT(is_unsigned(dt));
-  if (dt == PrimitiveType::u32) {
+  if (dt->is_primitive(PrimitiveTypeID::u32)) {
     return val_u32;
-  } else if (dt == PrimitiveType::u64) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
     return val_u64;
-  } else if (dt == PrimitiveType::u8) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
     return val_u8;
-  } else if (dt == PrimitiveType::u16) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
     return val_u16;
   } else {
     TI_NOT_IMPLEMENTED
@@ -518,9 +518,9 @@ uint64 TypedConstant::val_uint() const {
 
 float64 TypedConstant::val_float() const {
   TI_ASSERT(is_real(dt));
-  if (dt == PrimitiveType::f32) {
+  if (dt->is_primitive(PrimitiveTypeID::f32)) {
     return val_f32;
-  } else if (dt == PrimitiveType::f64) {
+  } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
     return val_f64;
   } else {
     TI_NOT_IMPLEMENTED

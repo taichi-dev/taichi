@@ -9,12 +9,12 @@ TLANG_NAMESPACE_BEGIN
 class AllocaStmt : public Stmt {
  public:
   AllocaStmt(DataType type) {
-    ret_type = LegacyVectorType(1, type);
+    ret_type = TypeFactory::create_vector_or_scalar_type(1, type);
     TI_STMT_REG_FIELDS;
   }
 
   AllocaStmt(int width, DataType type) {
-    ret_type = LegacyVectorType(width, type);
+    ret_type = TypeFactory::create_vector_or_scalar_type(width, type);
     TI_STMT_REG_FIELDS;
   }
 
@@ -105,7 +105,7 @@ class ArgLoadStmt : public Stmt {
   bool is_ptr;
 
   ArgLoadStmt(int arg_id, DataType dt, bool is_ptr = false) : arg_id(arg_id) {
-    this->ret_type = LegacyVectorType(1, dt);
+    this->ret_type = TypeFactory::create_vector_or_scalar_type(1, dt);
     this->is_ptr = is_ptr;
     TI_STMT_REG_FIELDS;
   }
@@ -324,6 +324,23 @@ class RangeAssumptionStmt : public Stmt {
   }
 
   TI_STMT_DEF_FIELDS(ret_type, input, base, low, high);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
+// A statement that has unique values among the top-level loop.
+class LoopUniqueStmt : public Stmt {
+ public:
+  Stmt *input;
+
+  explicit LoopUniqueStmt(Stmt *input) : input(input) {
+    TI_STMT_REG_FIELDS;
+  }
+
+  bool has_global_side_effect() const override {
+    return false;
+  }
+
+  TI_STMT_DEF_FIELDS(ret_type, input);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
@@ -615,7 +632,7 @@ class KernelReturnStmt : public Stmt {
   Stmt *value;
 
   KernelReturnStmt(Stmt *value, DataType dt) : value(value) {
-    this->ret_type = LegacyVectorType(1, dt);
+    this->ret_type = TypeFactory::create_vector_or_scalar_type(1, dt);
     TI_STMT_REG_FIELDS;
   }
 
@@ -999,7 +1016,8 @@ class InternalFuncStmt : public Stmt {
   std::string func_name;
 
   InternalFuncStmt(const std::string &func_name) : func_name(func_name) {
-    this->ret_type = LegacyVectorType(1, PrimitiveType::i32);
+    this->ret_type =
+        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
     TI_STMT_REG_FIELDS;
   }
 

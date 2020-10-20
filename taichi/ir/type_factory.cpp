@@ -45,15 +45,15 @@ Type *TypeFactory::get_custom_int_type(int num_bits, bool is_signed) {
   return custom_int_types_[key].get();
 }
 
-Type *TypeFactory::get_bit_struct_type(int container_bits,
+Type *TypeFactory::get_bit_struct_type(PrimitiveType *physical_type,
                                        std::vector<Type *> member_types,
                                        std::vector<int> member_bit_offsets) {
   bit_struct_types_.push_back(std::make_unique<BitStructType>(
-      container_bits, member_types, member_bit_offsets));
+      physical_type, member_types, member_bit_offsets));
   return bit_struct_types_.back().get();
 }
 
-Type *TypeFactory::get_primitive_int_type(int bits, bool is_signed) {
+PrimitiveType *TypeFactory::get_primitive_int_type(int bits, bool is_signed) {
   Type *int_type;
   if (bits == 8) {
     int_type = get_primitive_type(PrimitiveTypeID::i8);
@@ -69,7 +69,7 @@ Type *TypeFactory::get_primitive_int_type(int bits, bool is_signed) {
   if (!is_signed) {
     int_type = to_unsigned(DataType(int_type)).get_ptr();
   }
-  return int_type;
+  return int_type->cast<PrimitiveType>();
 }
 
 DataType TypeFactory::create_vector_or_scalar_type(int width,

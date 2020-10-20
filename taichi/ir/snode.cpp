@@ -96,7 +96,8 @@ SNode &SNode::dynamic(const Index &expr, int n, int chunk_size) {
 
 SNode &SNode::bit_struct(int num_bits) {
   auto &snode = create_node({}, {}, SNodeType::bit_struct);
-  snode.num_container_bits = num_bits;
+  snode.physical_type =
+      TypeFactory::get_instance().get_primitive_int_type(num_bits, false);
   return snode;
 }
 

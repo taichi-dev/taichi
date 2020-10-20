@@ -76,7 +76,7 @@ class SNode {
   int64 n{};
   int total_num_bits{}, total_bit_start{};
   int chunk_size{};
-  int num_container_bits;  // for bit_struct and bit_array only
+  PrimitiveType *physical_type;  // for bit_struct and bit_array only
   DataType dt;
   bool has_ambient{};
   TypedConstant ambient_val;

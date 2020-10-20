@@ -71,11 +71,9 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
     }
 
     snode.dt = TypeFactory::get_instance().get_bit_struct_type(
-        snode.num_container_bits, ch_types, ch_offsets);
+        snode.physical_type, ch_types, ch_offsets);
 
-    DataType container_primitive_type(
-        TypeFactory::get_instance().get_primitive_int_type(
-            snode.num_container_bits, false));
+    DataType container_primitive_type(snode.physical_type);
     body_type = tlctx->get_data_type(container_primitive_type);
   } else if (type == SNodeType::pointer) {
     // mutex

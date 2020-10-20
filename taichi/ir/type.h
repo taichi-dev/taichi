@@ -193,23 +193,19 @@ class CustomIntType : public Type {
 
 class BitStructType : public Type {
  public:
-  BitStructType(int container_bits,
+  BitStructType(PrimitiveType *physical_type,
                 std::vector<Type *> member_types,
                 std::vector<int> member_bit_offsets)
-      : container_bits_(container_bits),
+      : physical_type_(physical_type),
         member_types_(member_types),
         member_bit_offsets_(member_bit_offsets) {
-    // TODO(type): maybe it makes sense to store an real Type * as container
-    // instead of the number of container bits?
-    TI_ASSERT(bit::is_power_of_two(container_bits_));
-    TI_ASSERT(8 <= container_bits_ && container_bits <= 64);
     TI_ASSERT(member_types_.size() == member_bit_offsets_.size());
   }
 
   std::string to_string() const override;
 
-  int get_container_bits() const {
-    return container_bits_;
+  PrimitiveType *get_physical_type() const {
+    return physical_type_;
   }
 
   int get_num_memebrs() const {
@@ -225,7 +221,7 @@ class BitStructType : public Type {
   }
 
  private:
-  int container_bits_;
+  PrimitiveType *physical_type_;
   std::vector<Type *> member_types_;
   std::vector<int> member_bit_offsets_;
 };

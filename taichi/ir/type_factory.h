@@ -10,9 +10,12 @@ class TypeFactory {
  public:
   static TypeFactory &get_instance();
 
+  // TODO(type): maybe it makes sense to let each get_X function return X*
+  // instead of generic Type*
+
   Type *get_primitive_type(PrimitiveTypeID id);
 
-  Type *get_primitive_int_type(int bits, bool is_signed = true);
+  PrimitiveType *get_primitive_int_type(int bits, bool is_signed = true);
 
   Type *get_vector_type(int num_elements, Type *element);
 
@@ -20,7 +23,7 @@ class TypeFactory {
 
   Type *get_custom_int_type(int num_bits, bool is_signed);
 
-  Type *get_bit_struct_type(int container_bits,
+  Type *get_bit_struct_type(PrimitiveType *physical_type,
                             std::vector<Type *> member_types,
                             std::vector<int> member_bit_offsets);
 

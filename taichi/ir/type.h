@@ -144,6 +144,7 @@ class VectorType : public Type {
  public:
   VectorType(int num_elements, Type *element)
       : num_elements_(num_elements), element_(element) {
+    TI_ASSERT(num_elements_ != 1);
   }
 
   Type *get_element_type() const {
@@ -162,9 +163,5 @@ class VectorType : public Type {
   int num_elements_{0};
   Type *element_{nullptr};
 };
-
-DataType LegacyVectorType(int width,
-                          DataType data_type,
-                          bool is_pointer = false);
 
 TLANG_NAMESPACE_END

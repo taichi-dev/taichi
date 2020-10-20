@@ -36,4 +36,15 @@ Type *TypeFactory::get_pointer_type(Type *element) {
 TypeFactory::TypeFactory() {
 }
 
+DataType TypeFactory::create_vector_or_scalar_type(int width,
+                                                   DataType element,
+                                                   bool element_is_pointer) {
+  TI_ASSERT(width == 1);
+  if (element_is_pointer) {
+    return TypeFactory::get_instance().get_pointer_type(element.get_ptr());
+  } else {
+    return element;
+  }
+}
+
 TLANG_NAMESPACE_END

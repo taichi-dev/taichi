@@ -450,10 +450,12 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
         fusion_meta[a] != fusion_meta[b]) {
       return false;
     }
-    if (nodes[a]->meta->type != OffloadedStmt::TaskType::serial) {
+    if (nodes[a]->meta->type != OffloadedTaskType::serial) {
       for (auto &state : nodes[a]->output_edges) {
-        if (state.first.type != AsyncState::Type::value) {
-          // No need to check mask/list states as there must be value states.
+        const auto sty = state.first.type;
+        if (sty != AsyncState::Type::value && sty != AsyncState::Type::mask) {
+          // No need to check allocator/list states, as they must be accompanied
+          // with either value or mask states.
           continue;
         }
         if (state.second.find(nodes[b]) != state.second.end()) {

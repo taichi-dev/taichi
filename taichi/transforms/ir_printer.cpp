@@ -424,6 +424,11 @@ class IRPrinter : public IRVisitor {
           stmt->base->name(), stmt->high);
   }
 
+  void visit(LoopUniqueStmt *stmt) override {
+    print("{}{} = loop_unique({})", stmt->type_hint(), stmt->name(),
+          stmt->input->name());
+  }
+
   void visit(LinearizeStmt *stmt) override {
     auto ind = make_list<Stmt *>(
         stmt->inputs, [&](Stmt *const &stmt) { return stmt->name(); }, "{");

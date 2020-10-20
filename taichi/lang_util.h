@@ -5,6 +5,7 @@
 #include "taichi/common/core.h"
 #include "taichi/system/profiler.h"
 #include "taichi/ir/type.h"
+#include "taichi/ir/type_factory.h"
 
 TLANG_NAMESPACE_BEGIN
 

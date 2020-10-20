@@ -1121,7 +1121,7 @@ class KernelCodegen : public IRVisitor {
 
   std::string inject_load_global_tmp(int offset,
                                      DataType dt = PrimitiveType::i32) {
-    const auto vt = LegacyVectorType(/*width=*/1, dt);
+    const auto vt = TypeFactory::create_vector_or_scalar_type(1, dt);
     auto gtmp = Stmt::make<GlobalTemporaryStmt>(offset, vt);
     gtmp->accept(this);
     auto gload = Stmt::make<GlobalLoadStmt>(gtmp.get());

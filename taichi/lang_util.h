@@ -113,21 +113,21 @@ inline bool constexpr is_trigonometric(UnaryOpType op) {
 }
 
 inline bool is_real(DataType dt) {
-  return dt == PrimitiveType::f16 || dt == PrimitiveType::f32 ||
-         dt == PrimitiveType::f64;
+  return dt->is_primitive(PrimitiveTypeID::f16) || dt->is_primitive(PrimitiveTypeID::f32) ||
+         dt->is_primitive(PrimitiveTypeID::f64);
 }
 
 inline bool is_integral(DataType dt) {
-  return dt == PrimitiveType::i8 || dt == PrimitiveType::i16 ||
-         dt == PrimitiveType::i32 || dt == PrimitiveType::i64 ||
-         dt == PrimitiveType::u8 || dt == PrimitiveType::u16 ||
-         dt == PrimitiveType::u32 || dt == PrimitiveType::u64;
+  return dt->is_primitive(PrimitiveTypeID::i8) || dt->is_primitive(PrimitiveTypeID::i16) ||
+         dt->is_primitive(PrimitiveTypeID::i32) || dt->is_primitive(PrimitiveTypeID::i64) ||
+         dt->is_primitive(PrimitiveTypeID::u8) || dt->is_primitive(PrimitiveTypeID::u16) ||
+         dt->is_primitive(PrimitiveTypeID::u32) || dt->is_primitive(PrimitiveTypeID::u64);
 }
 
 inline bool is_signed(DataType dt) {
   TI_ASSERT(is_integral(dt));
-  return dt == PrimitiveType::i8 || dt == PrimitiveType::i16 ||
-         dt == PrimitiveType::i32 || dt == PrimitiveType::i64;
+  return dt->is_primitive(PrimitiveTypeID::i8) || dt->is_primitive(PrimitiveTypeID::i16) ||
+         dt->is_primitive(PrimitiveTypeID::i32) || dt->is_primitive(PrimitiveTypeID::i64);
 }
 
 inline bool is_unsigned(DataType dt) {
@@ -137,13 +137,13 @@ inline bool is_unsigned(DataType dt) {
 
 inline DataType to_unsigned(DataType dt) {
   TI_ASSERT(is_signed(dt));
-  if (dt == PrimitiveType::i8)
+  if (dt->is_primitive(PrimitiveTypeID::i8))
     return PrimitiveType::u8;
-  else if (dt == PrimitiveType::i16)
+  else if (dt->is_primitive(PrimitiveTypeID::i16))
     return PrimitiveType::u16;
-  else if (dt == PrimitiveType::i32)
+  else if (dt->is_primitive(PrimitiveTypeID::i32))
     return PrimitiveType::u32;
-  else if (dt == PrimitiveType::i64)
+  else if (dt->is_primitive(PrimitiveTypeID::i64))
     return PrimitiveType::u64;
   else
     return PrimitiveType::unknown;
@@ -245,25 +245,25 @@ class TypedConstant {
   TypedConstant(DataType dt, const T &value) : dt(dt) {
     // TODO: loud failure on pointers
     dt.set_is_pointer(false);
-    if (dt == PrimitiveType::f32) {
+    if (dt->is_primitive(PrimitiveTypeID::f32)) {
       val_f32 = value;
-    } else if (dt == PrimitiveType::i32) {
+    } else if (dt->is_primitive(PrimitiveTypeID::i32)) {
       val_i32 = value;
-    } else if (dt == PrimitiveType::i64) {
+    } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
       val_i64 = value;
-    } else if (dt == PrimitiveType::f64) {
+    } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
       val_f64 = value;
-    } else if (dt == PrimitiveType::i8) {
+    } else if (dt->is_primitive(PrimitiveTypeID::i8)) {
       val_i8 = value;
-    } else if (dt == PrimitiveType::i16) {
+    } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
       val_i16 = value;
-    } else if (dt == PrimitiveType::u8) {
+    } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
       val_u8 = value;
-    } else if (dt == PrimitiveType::u16) {
+    } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
       val_u16 = value;
-    } else if (dt == PrimitiveType::u32) {
+    } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
       val_u32 = value;
-    } else if (dt == PrimitiveType::u64) {
+    } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
       val_u64 = value;
     } else {
       TI_NOT_IMPLEMENTED

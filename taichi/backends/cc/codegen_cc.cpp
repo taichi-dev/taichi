@@ -261,13 +261,13 @@ class CCTransformer : public IRVisitor {
   }
 
   static std::string _get_libc_function_name(std::string name, DataType dt) {
-    if (dt == PrimitiveType::i32)
+    if (dt->is_primitive(PrimitiveTypeID::i32))
       return name;
-    else if (dt == PrimitiveType::i64)
+    else if (dt->is_primitive(PrimitiveTypeID::i64))
       return "ll" + name;
-    else if (dt == PrimitiveType::f32)
+    else if (dt->is_primitive(PrimitiveTypeID::f32))
       return name + "f";
-    else if (dt == PrimitiveType::f64)
+    else if (dt->is_primitive(PrimitiveTypeID::f64))
       return name;
     else
       TI_ERROR("Unsupported function \"{}\" for DataType={} on C backend", name,

@@ -295,8 +295,8 @@ class BasicBlockSimplify : public IRVisitor {
       // compute offset...
       for (int i = 0; i < (int)snode->ch.size(); i++) {
         TI_ASSERT(snode->ch[i]->type == SNodeType::place);
-        TI_ASSERT(snode->ch[i]->dt == PrimitiveType::i32 ||
-                  snode->ch[i]->dt == PrimitiveType::f32);
+        TI_ASSERT(snode->ch[i]->dt->is_primitive(PrimitiveTypeID::i32) ||
+                  snode->ch[i]->dt->is_primitive(PrimitiveTypeID::f32));
       }
 
       auto offset_stmt = stmt->insert_after_me(Stmt::make<IntegerOffsetStmt>(

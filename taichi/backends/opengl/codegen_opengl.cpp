@@ -105,22 +105,22 @@ class KernelGen : public IRVisitor {
   // Note that the following two functions not only returns the corresponding
   // data type, but also **records** the usage of `i64` and `f64`.
   std::string opengl_data_type_short_name(DataType dt) {
-    if (dt == PrimitiveType::i64) {
+    if (dt->is_primitive(PrimitiveTypeID::i64)) {
       if (!TI_OPENGL_REQUIRE(used, GL_ARB_gpu_shader_int64)) {
         TI_ERROR(
             "Extension GL_ARB_gpu_shader_int64 not supported on your OpenGL");
       }
       used.int64 = true;
     }
-    if (dt == PrimitiveType::f64)
+    if (dt->is_primitive(PrimitiveTypeID::f64))
       used.float64 = true;
     return data_type_short_name(dt);
   }
 
   std::string opengl_data_type_name(DataType dt) {
-    if (dt == PrimitiveType::i64)
+    if (dt->is_primitive(PrimitiveTypeID::i64))
       used.int64 = true;
-    if (dt == PrimitiveType::f64)
+    if (dt->is_primitive(PrimitiveTypeID::f64))
       used.float64 = true;
     return opengl::opengl_data_type_name(dt);
   }
@@ -360,7 +360,7 @@ class KernelGen : public IRVisitor {
       }
 
     } else if (stmt->op_type == SNodeOpType::is_active) {
-      TI_ASSERT(stmt->ret_type == PrimitiveType::i32);
+      TI_ASSERT(stmt->ret_type->is_primitive(PrimitiveTypeID::i32));
       if (stmt->snode->type == SNodeType::dense ||
           stmt->snode->type == SNodeType::root) {
         emit("int {} = 1;", stmt->short_name());
@@ -373,7 +373,7 @@ class KernelGen : public IRVisitor {
 
     } else if (stmt->op_type == SNodeOpType::append) {
       TI_ASSERT(stmt->snode->type == SNodeType::dynamic);
-      TI_ASSERT(stmt->ret_type == PrimitiveType::i32);
+      TI_ASSERT(stmt->ret_type->is_primitive(PrimitiveTypeID::i32));
       emit("int {} = atomicAdd(_data_i32_[{} >> 2], 1);", stmt->short_name(),
            get_snode_meta_address(stmt->snode));
       auto dt = stmt->val->element_type();
@@ -387,7 +387,7 @@ class KernelGen : public IRVisitor {
 
     } else if (stmt->op_type == SNodeOpType::length) {
       TI_ASSERT(stmt->snode->type == SNodeType::dynamic);
-      TI_ASSERT(stmt->ret_type == PrimitiveType::i32);
+      TI_ASSERT(stmt->ret_type->is_primitive(PrimitiveTypeID::i32));
       emit("int {} = _data_i32_[{} >> 2];", stmt->short_name(),
            get_snode_meta_address(stmt->snode));
 
@@ -479,12 +479,12 @@ class KernelGen : public IRVisitor {
       emit("{} {} = {}({});", dt_name, stmt->short_name(),
            opengl_data_type_name(stmt->cast_type), stmt->operand->short_name());
     } else if (stmt->op_type == UnaryOpType::cast_bits) {
-      if (stmt->cast_type == PrimitiveType::f32 &&
-          stmt->operand->element_type() == PrimitiveType::i32) {
+      if (stmt->cast_type->is_primitive(PrimitiveTypeID::f32) &&
+          stmt->operand->element_type()->is_primitive(PrimitiveTypeID::i32)) {
         emit("{} {} = intBitsToFloat({});", dt_name, stmt->short_name(),
              stmt->operand->short_name());
-      } else if (stmt->cast_type == PrimitiveType::i32 &&
-                 stmt->operand->element_type() == PrimitiveType::f32) {
+      } else if (stmt->cast_type->is_primitive(PrimitiveTypeID::i32) &&
+                 stmt->operand->element_type()->is_primitive(PrimitiveTypeID::f32)) {
         emit("{} {} = floatBitsToInt({});", dt_name, stmt->short_name(),
              stmt->operand->short_name());
       } else {
@@ -573,15 +573,15 @@ class KernelGen : public IRVisitor {
   void visit(AtomicOpStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     auto dt = stmt->dest->element_type().ptr_removed();
-    if (dt == PrimitiveType::i32 ||
+    if (dt->is_primitive(PrimitiveTypeID::i32) ||
         (TI_OPENGL_REQUIRE(used, GL_NV_shader_atomic_int64) &&
-         dt == PrimitiveType::i64) ||
+         dt->is_primitive(PrimitiveTypeID::i64)) ||
         ((stmt->op_type == AtomicOpType::add ||
           stmt->op_type == AtomicOpType::sub) &&
          ((TI_OPENGL_REQUIRE(used, GL_NV_shader_atomic_float) &&
-           dt == PrimitiveType::f32) ||
+           dt->is_primitive(PrimitiveTypeID::f32)) ||
           (TI_OPENGL_REQUIRE(used, GL_NV_shader_atomic_float64) &&
-           dt == PrimitiveType::f64)))) {
+           dt->is_primitive(PrimitiveTypeID::f64))))) {
       emit("{} {} = {}(_{}_{}_[{} >> {}], {});",
            opengl_data_type_name(stmt->val->element_type()), stmt->short_name(),
            opengl_atomic_op_type_cap_name(stmt->op_type),

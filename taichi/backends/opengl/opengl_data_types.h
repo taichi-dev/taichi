@@ -9,13 +9,13 @@ namespace opengl {
 inline std::string opengl_data_type_name(DataType dt) {
   // https://www.khronos.org/opengl/wiki/Data_Type_(GLSL)
   dt.set_is_pointer(false);
-  if (dt == PrimitiveType::f32)
+  if (dt->is_primitive(PrimitiveTypeID::f32))
     return "float";
-  else if (dt == PrimitiveType::f64)
+  else if (dt->is_primitive(PrimitiveTypeID::f64))
     return "double";
-  else if (dt == PrimitiveType::i32)
+  else if (dt->is_primitive(PrimitiveTypeID::i32))
     return "int";
-  else if (dt == PrimitiveType::i64)
+  else if (dt->is_primitive(PrimitiveTypeID::i64))
     return "int64_t";
   else {
     TI_ERROR("Type {} not supported.", dt->to_string());
@@ -37,9 +37,9 @@ inline int opengl_data_address_shifter(DataType type) {
   // TODO: fail loudly when feeding a pointer type to this function, after type
   // system upgrade.
   type.set_is_pointer(false);
-  if (type == PrimitiveType::f32 || type == PrimitiveType::i32)
+  if (type->is_primitive(PrimitiveTypeID::f32) || type->is_primitive(PrimitiveTypeID::i32))
     return 2;
-  else if (type == PrimitiveType::f64 || type == PrimitiveType::i64) {
+  else if (type->is_primitive(PrimitiveTypeID::f64) || type->is_primitive(PrimitiveTypeID::i64)) {
     return 3;
   } else {
     TI_NOT_IMPLEMENTED

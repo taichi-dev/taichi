@@ -5,7 +5,7 @@ namespace metal {
 
 MetalDataType to_metal_type(DataType dt) {
   dt.set_is_pointer(false);
-#define METAL_CASE(x) else if (dt == PrimitiveType::x) return MetalDataType::x
+#define METAL_CASE(x) else if (dt->is_primitive(PrimitiveTypeID::x)) return MetalDataType::x
   if (false) {
   }
   METAL_CASE(f32);

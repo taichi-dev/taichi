@@ -1,6 +1,7 @@
 #pragma once
 
 #include "taichi/common/core.h"
+#include "taichi/util/bit.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -96,12 +97,15 @@ class DataType {
   Type *ptr_;
 };
 
+// Note that all types are immutable once created.
+
 class PrimitiveType : public Type {
  public:
 #define PER_TYPE(x) static DataType x;
 #include "taichi/inc/data_type.inc.h"
 #undef PER_TYPE
 
+  // TODO(type): make 'type' private and add a const getter
   PrimitiveTypeID type;
 
   PrimitiveType(PrimitiveTypeID type) : type(type) {
@@ -157,11 +161,69 @@ class VectorType : public Type {
 
   std::string to_string() const override {
     return fmt::format("[{} x {}]", num_elements_, element_->to_string());
-  };
+  }
 
  private:
   int num_elements_{0};
   Type *element_{nullptr};
+};
+
+class CustomIntType : public Type {
+ public:
+  CustomIntType(int num_bits, bool is_signed)
+      : num_bits_(num_bits), is_signed_(is_signed) {
+  }
+
+  std::string to_string() const override;
+
+  int get_num_bits() const {
+    return num_bits_;
+  }
+
+  bool get_is_signed() const {
+    return is_signed_;
+  }
+
+ private:
+  // TODO(type): for now we can uniformly use i32 as the "compute_type". It may
+  // be a good idea to make "compute_type" also customizable.
+  int num_bits_;
+  bool is_signed_;
+};
+
+class BitStructType : public Type {
+ public:
+  BitStructType(PrimitiveType *physical_type,
+                std::vector<Type *> member_types,
+                std::vector<int> member_bit_offsets)
+      : physical_type_(physical_type),
+        member_types_(member_types),
+        member_bit_offsets_(member_bit_offsets) {
+    TI_ASSERT(member_types_.size() == member_bit_offsets_.size());
+  }
+
+  std::string to_string() const override;
+
+  PrimitiveType *get_physical_type() const {
+    return physical_type_;
+  }
+
+  int get_num_memebrs() const {
+    return (int)member_types_.size();
+  }
+
+  Type *get_member_type(int i) const {
+    return member_types_[i];
+  }
+
+  int get_member_bit_offset(int i) const {
+    return member_bit_offsets_[i];
+  }
+
+ private:
+  PrimitiveType *physical_type_;
+  std::vector<Type *> member_types_;
+  std::vector<int> member_bit_offsets_;
 };
 
 TLANG_NAMESPACE_END

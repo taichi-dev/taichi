@@ -42,6 +42,14 @@ void StructCompiler::infer_snode_properties(SNode &snode) {
     std::memcpy(ch->physical_index_position, snode.physical_index_position,
                 sizeof(snode.physical_index_position));
     ch->num_active_indices = snode.num_active_indices;
+
+    if (snode.type == SNodeType::bit_struct ||
+        snode.type == SNodeType::bit_array) {
+      ch->is_bit_level = true;
+    } else {
+      ch->is_bit_level = snode.is_bit_level;
+    }
+
     infer_snode_properties(*ch);
 
     int total_bits_start_inferred = ch->total_bit_start + ch->total_num_bits;

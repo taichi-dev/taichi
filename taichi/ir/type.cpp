@@ -83,4 +83,21 @@ bool Type::is_primitive(PrimitiveTypeID type) const {
   }
 }
 
+std::string CustomIntType::to_string() const {
+  return fmt::format("c{}{}", is_signed_ ? 'i' : 'u', num_bits_);
+}
+
+std::string BitStructType::to_string() const {
+  std::string str = "bs(";
+  int num_members = (int)member_bit_offsets_.size();
+  for (int i = 0; i < num_members; i++) {
+    str += fmt::format("{}@{}", member_types_[i]->to_string(),
+                       member_bit_offsets_[i]);
+    if (i + 1 < num_members) {
+      str += ", ";
+    }
+  }
+  return str + ")";
+}
+
 TLANG_NAMESPACE_END

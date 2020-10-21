@@ -40,8 +40,9 @@ CUDAContext::CUDAContext()
   compute_capability = cc_major * 10 + cc_minor;
 
   if (compute_capability > 75) {
-    // The NVPTX backend of LLVM 10.0.0 does not seem to support CC > 75 yet.
-    // See llvm-10.0.0.src/build/lib/Target/NVPTX/NVPTXGenSubtargetInfo.inc
+    // The NVPTX backend of LLVM 10.0.0 does not seem to support
+    // compute_capability > 75 yet. See
+    // llvm-10.0.0.src/build/lib/Target/NVPTX/NVPTXGenSubtargetInfo.inc
     compute_capability = 75;
   }
 

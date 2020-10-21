@@ -164,7 +164,8 @@ class GUI:
                     "Only RGB images are supported in GUI.set_image when fast_gui=True"
 
             from taichi.lang.meta import vector_to_fast_image
-            vector_to_fast_image(img, self.img)
+            is_small_endian = ti.get_os_name() != 'osx'
+            vector_to_fast_image(img, is_small_endian, self.img)
             return
 
         if isinstance(img, ti.Expr):

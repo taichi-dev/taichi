@@ -65,9 +65,10 @@ class TypeCheck : public IRVisitor {
     TI_ASSERT(stmt->width() == 1);
     if (stmt->val->ret_type != stmt->dest->ret_type.ptr_removed()) {
       // TODO: make sure the ptr_removed type is indeed a numerical type
-      TI_WARN("[{}] Atomic add ({} to {}) may lose precision.", stmt->name(),
+      TI_WARN("[{}] Atomic add ({} to {}) may lose precision, at", stmt->name(),
               data_type_name(stmt->val->ret_type),
               data_type_name(stmt->dest->ret_type.ptr_removed()));
+      TI_WARN("\n{}", stmt->tb);
       stmt->val = insert_type_cast_before(stmt, stmt->val,
                                           stmt->dest->ret_type.ptr_removed());
     }

@@ -87,6 +87,7 @@ void export_lang(py::module &m) {
   py::class_<DataType>(m, "DataType")
       .def(py::init<Type *>())
       .def(py::self == py::self)
+      .def("__hash__", &DataType::hash)
       .def(py::pickle(
           [](const DataType &dt) {
             // Note: this only works for primitive types, which is fine for now.

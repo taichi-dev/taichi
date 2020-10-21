@@ -2,6 +2,7 @@
 
 #include "taichi/ir/ir.h"
 #include "taichi/ir/frontend.h"
+#include "taichi/ir/statements.h"
 #include "taichi/backends/cuda/cuda_driver.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -18,7 +19,7 @@ void set_kernel_args(const std::vector<int> &I,
 
 }  // namespace
 
-std::atomic<int> SNode::counter = 0;
+std::atomic<int> SNode::counter{0};
 
 SNode &SNode::insert_children(SNodeType t) {
   TI_ASSERT(t != SNodeType::root);
@@ -90,6 +91,13 @@ SNode &SNode::create_node(std::vector<Index> indices,
 SNode &SNode::dynamic(const Index &expr, int n, int chunk_size) {
   auto &snode = create_node({expr}, {n}, SNodeType::dynamic);
   snode.chunk_size = chunk_size;
+  return snode;
+}
+
+SNode &SNode::bit_struct(int num_bits) {
+  auto &snode = create_node({}, {}, SNodeType::bit_struct);
+  snode.physical_type =
+      TypeFactory::get_instance().get_primitive_int_type(num_bits, false);
   return snode;
 }
 
@@ -229,8 +237,11 @@ std::string SNode::get_node_type_name() const {
 
 std::string SNode::get_node_type_name_hinted() const {
   std::string suffix;
-  if (type == SNodeType::place)
-    suffix = fmt::format("_{}", data_type_short_name(dt));
+  if (type == SNodeType::place || type == SNodeType::bit_struct ||
+      type == SNodeType::bit_array)
+    suffix = fmt::format("<{}>", dt->to_string());
+  if (is_bit_level)
+    suffix += "<bit>";
   return fmt::format("S{}{}{}", id, snode_type_name(type), suffix);
 }
 

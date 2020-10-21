@@ -8,6 +8,7 @@
 
 #include "taichi/ir/frontend.h"
 #include "taichi/ir/frontend_ir.h"
+#include "taichi/ir/statements.h"
 #include "taichi/program/extension.h"
 #include "taichi/program/async_engine.h"
 #include "taichi/common/interface.h"
@@ -82,7 +83,9 @@ void export_lang(py::module &m) {
 #undef PER_EXTENSION
       .export_values();
 
+  // TODO(type): This should be removed
   py::class_<DataType>(m, "DataType")
+      .def(py::init<Type *>())
       .def(py::self == py::self)
       .def(py::pickle(
           [](const DataType &dt) {
@@ -95,8 +98,8 @@ void export_lang(py::module &m) {
             if (t.size() != 1)
               throw std::runtime_error("Invalid state!");
 
-            DataType dt = PrimitiveType::get(
-                (PrimitiveType::primitive_type)(t[0].cast<std::size_t>()));
+            DataType dt =
+                PrimitiveType::get((PrimitiveTypeID)(t[0].cast<std::size_t>()));
 
             return dt;
           }));
@@ -217,6 +220,7 @@ void export_lang(py::module &m) {
            (SNode & (SNode::*)(const std::vector<Index> &,
                                const std::vector<int> &))(&SNode::bitmasked),
            py::return_value_policy::reference)
+      .def("bit_struct", &SNode::bit_struct, py::return_value_policy::reference)
       .def("place",
            (void (SNode::*)(Expr &, const std::vector<int> &))(&SNode::place),
            py::return_value_policy::reference)
@@ -480,6 +484,8 @@ void export_lang(py::module &m) {
 
   m.def("expr_assume_in_range", AssumeInRange);
 
+  m.def("expr_loop_unique", LoopUnique);
+
   m.def("expr_select", expr_select);
 
 #define DEFINE_EXPRESSION_OP_UNARY(x) m.def("expr_" #x, expr_##x);
@@ -701,6 +707,16 @@ void export_lang(py::module &m) {
   m.def("print_sfg", async_print_sfg);
   m.def("dump_dot", async_dump_dot, py::arg("rankdir").none(true),
         py::arg("embed_states_threshold"));
+
+  // Type system
+
+  py::class_<Type>(m, "Type").def("to_string", &Type::to_string);
+
+  py::class_<TypeFactory>(m, "TypeFactory")
+      .def("get_custom_int_type", &TypeFactory::get_custom_int_type);
+
+  m.def("get_type_factory_instance", TypeFactory::get_instance,
+        py::return_value_policy::reference);
 }
 
 TI_NAMESPACE_END

@@ -67,6 +67,8 @@ std::unordered_set<Stmt *> detect_loops_with_continue(IRNode *root);
 std::unordered_set<SNode *> gather_deactivations(IRNode *root);
 std::vector<Stmt *> gather_statements(IRNode *root,
                                       const std::function<bool(Stmt *)> &test);
+std::unordered_map<SNode *, GlobalPtrStmt *> gather_uniquely_accessed_pointers(
+    IRNode *root);
 std::unique_ptr<std::unordered_set<AtomicOpStmt *>> gather_used_atomics(
     IRNode *root);
 std::vector<Stmt *> get_load_pointers(Stmt *load_stmt);

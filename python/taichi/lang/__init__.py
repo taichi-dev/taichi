@@ -47,6 +47,9 @@ kernel_profiler_clear = lambda: get_runtime().prog.kernel_profiler_clear()
 kernel_profiler_total_time = lambda: get_runtime(
 ).prog.kernel_profiler_total_time()
 
+# Unstable API
+type_factory_ = core.get_type_factory_instance()
+
 
 def memory_profiler_print():
     get_runtime().materialize()
@@ -231,6 +234,10 @@ def assume_in_range(val, base, low, high):
     return taichi_lang_core.expr_assume_in_range(
         Expr(val).ptr,
         Expr(base).ptr, low, high)
+
+
+def loop_unique(val):
+    return taichi_lang_core.expr_loop_unique(Expr(val).ptr)
 
 
 parallelize = core.parallelize

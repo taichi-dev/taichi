@@ -8,7 +8,6 @@
 #include "llvm/ADT/SmallSet.h"
 #include "llvm/ADT/SmallVector.h"
 #include "taichi/ir/ir.h"
-#include "taichi/ir/statements.h"
 #include "taichi/lang_util.h"
 #include "taichi/program/async_utils.h"
 #include "taichi/program/program.h"
@@ -178,8 +177,7 @@ class StateFlowGraph {
   int first_pending_task_index_;
   TaskMeta initial_meta_;
   std::unordered_map<AsyncState, Node *> latest_state_owner_;
-  std::unordered_map<AsyncState, std::unordered_set<Node *>>
-      latest_state_readers_;
+  StateToNodesMap latest_state_readers_;
   std::unordered_map<std::string, int> task_name_to_launch_ids_;
   IRBank *ir_bank_;
 };

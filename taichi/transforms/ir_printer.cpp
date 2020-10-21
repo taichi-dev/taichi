@@ -27,6 +27,8 @@ std::string scratch_pad_info(const ScratchPadOptions &opt) {
       ser += s.second->get_node_type_name_hinted() + ":" + type + " ";
     }
     ser += "] ";
+  } else {
+    ser = "none";
   }
   return ser;
 }
@@ -422,6 +424,11 @@ class IRPrinter : public IRVisitor {
           stmt->base->name(), stmt->high);
   }
 
+  void visit(LoopUniqueStmt *stmt) override {
+    print("{}{} = loop_unique({})", stmt->type_hint(), stmt->name(),
+          stmt->input->name());
+  }
+
   void visit(LinearizeStmt *stmt) override {
     auto ind = make_list<Stmt *>(
         stmt->inputs, [&](Stmt *const &stmt) { return stmt->name(); }, "{");
@@ -484,7 +491,7 @@ class IRPrinter : public IRVisitor {
 
   void visit(OffloadedStmt *stmt) override {
     std::string details;
-    if (stmt->task_type == stmt->range_for) {
+    if (stmt->task_type == OffloadedTaskType::range_for) {
       std::string begin_str, end_str;
       if (stmt->const_begin) {
         begin_str = std::to_string(stmt->begin_value);
@@ -499,17 +506,17 @@ class IRPrinter : public IRVisitor {
       details =
           fmt::format("range_for({}, {}) grid_dim={} block_dim={}", begin_str,
                       end_str, stmt->grid_dim, stmt->block_dim);
-    } else if (stmt->task_type == stmt->struct_for) {
-      details = fmt::format(
-          "struct_for({}) grid_dim={} block_dim={} bls={}",
-          stmt->snode->get_node_type_name_hinted(), stmt->grid_dim,
-          stmt->block_dim, scratch_pad_info(stmt->scratch_opt), stmt->bls_size);
+    } else if (stmt->task_type == OffloadedTaskType::struct_for) {
+      details =
+          fmt::format("struct_for({}) grid_dim={} block_dim={} bls={}",
+                      stmt->snode->get_node_type_name_hinted(), stmt->grid_dim,
+                      stmt->block_dim, scratch_pad_info(stmt->scratch_opt));
     }
-    if (stmt->task_type == OffloadedStmt::TaskType::listgen) {
+    if (stmt->task_type == OffloadedTaskType::listgen) {
       print("{} = offloaded listgen {}->{}", stmt->name(),
             stmt->snode->parent->get_node_type_name_hinted(),
             stmt->snode->get_node_type_name_hinted());
-    } else if (stmt->task_type == OffloadedStmt::TaskType::gc) {
+    } else if (stmt->task_type == OffloadedTaskType::gc) {
       print("{} = offloaded garbage collect {}", stmt->name(),
             stmt->snode->get_node_type_name_hinted());
     } else {

@@ -8,7 +8,6 @@
 #include <unordered_map>
 
 #include "taichi/ir/ir.h"
-#include "taichi/ir/statements.h"
 #include "taichi/lang_util.h"
 #define TI_RUNTIME_HOST
 #include "taichi/program/context.h"
@@ -139,8 +138,6 @@ class AsyncEngine {
 
   explicit AsyncEngine(Program *program,
                        const BackendExecCompilationFunc &compile_to_backend);
-
-  bool fuse();  // return true when modified
 
   void clear_cache() {
     queue.clear_cache();

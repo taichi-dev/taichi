@@ -7,8 +7,9 @@
 #include "taichi/backends/cpu/codegen_cpu.h"
 #include "taichi/util/testing.h"
 #include "taichi/util/statistics.h"
-#include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
+#include "taichi/ir/statements.h"
+#include "taichi/ir/transforms.h"
 #include "taichi/program/extension.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -254,106 +255,6 @@ void AsyncEngine::synchronize() {
   // Clear SFG debug stats
   cur_sync_sfg_debug_counter_ = 0;
   cur_sync_sfg_debug_per_stage_counts_.clear();
-}
-
-bool AsyncEngine::fuse() {
-  // TODO: migrated to SFG...
-  bool modified = false;
-  std::unordered_map<SNode *, bool> list_dirty;
-
-  if (false) {
-    // (experimental) print tasks
-    for (int i = 0; i < (int)task_queue.size(); i++) {
-      fmt::print("{}: {}\n", i, task_queue[i].stmt()->task_name());
-      irpass::print(task_queue[i].stmt());
-    }
-  }
-
-  for (int i = 0; i < (int)task_queue.size() - 1; i++) {
-    auto &rec_a = task_queue[i];
-    auto &rec_b = task_queue[i + 1];
-    auto *task_a = rec_a.stmt();
-    auto *task_b = rec_b.stmt();
-    bool is_same_struct_for = task_a->task_type == OffloadedStmt::struct_for &&
-                              task_b->task_type == OffloadedStmt::struct_for &&
-                              task_a->snode == task_b->snode &&
-                              task_a->block_dim == task_b->block_dim;
-    // TODO: a few problems with the range-for test condition:
-    // 1. This could incorrectly fuse two range-for kernels that have different
-    // sizes, but then the loop ranges get padded to the same power-of-two (E.g.
-    // maybe a side effect when a struct-for is demoted to range-for).
-    // 2. It has also fused range-fors that have the same linear range, but are
-    // of different dimensions of loop indices, e.g. (16, ) and (4, 4).
-    bool is_same_range_for = task_a->task_type == OffloadedStmt::range_for &&
-                             task_b->task_type == OffloadedStmt::range_for &&
-                             task_a->const_begin && task_b->const_begin &&
-                             task_a->const_end && task_b->const_end &&
-                             task_a->begin_value == task_b->begin_value &&
-                             task_a->end_value == task_b->end_value;
-
-    // We do not fuse serial kernels for now since they can be SNode accessors
-    bool are_both_serial = task_a->task_type == OffloadedStmt::serial &&
-                           task_b->task_type == OffloadedStmt::serial;
-    const bool same_kernel = (rec_a.kernel == rec_b.kernel);
-    bool kernel_args_match = true;
-    if (!same_kernel) {
-      // Merging kernels with different signatures will break invariants. E.g.
-      // https://github.com/taichi-dev/taichi/blob/a6575fb97557267e2f550591f43b183076b72ac2/taichi/transforms/type_check.cpp#L326
-      //
-      // TODO: we could merge different kernels if their args are the same. But
-      // we have no way to check that for now.
-      auto check = [](const Kernel *k) {
-        return (k->args.empty() && k->rets.empty());
-      };
-      kernel_args_match = (check(rec_a.kernel) && check(rec_b.kernel));
-    }
-    if (kernel_args_match && (is_same_range_for || is_same_struct_for)) {
-      // We are about to change both |task_a| and |task_b|. Clone them first.
-      auto cloned_task_a = rec_a.ir_handle.clone();
-      auto cloned_task_b = rec_b.ir_handle.clone();
-      task_a = cloned_task_a->as<OffloadedStmt>();
-      task_b = cloned_task_b->as<OffloadedStmt>();
-      // TODO: in certain cases this optimization can be wrong!
-      // Fuse task b into task_a
-      for (int j = 0; j < (int)task_b->body->size(); j++) {
-        task_a->body->insert(std::move(task_b->body->statements[j]));
-      }
-      task_b->body->statements.clear();
-
-      // replace all reference to the offloaded statement B to A
-      irpass::replace_all_usages_with(task_a, task_b, task_a);
-
-      auto kernel = task_queue[i].kernel;
-      irpass::full_simplify(task_a, /*after_lower_access=*/false, kernel);
-      // For now, re_id is necessary for the hash to be correct.
-      irpass::re_id(task_a);
-
-      auto h = ir_bank_.get_hash(task_a);
-      task_queue[i].ir_handle = IRHandle(task_a, h);
-      ir_bank_.insert(std::move(cloned_task_a), h);
-      task_queue[i + 1].ir_handle = IRHandle(nullptr, 0);
-
-      // TODO: since cloned_task_b->body is empty, can we remove this (i.e.,
-      //  simply delete cloned_task_b here)?
-      ir_bank_.insert_to_trash_bin(std::move(cloned_task_b));
-
-      modified = true;
-      i++;  // skip fusing task_queue[i + 1] and task_queue[i + 2]
-    }
-  }
-
-  auto new_task_queue = std::deque<TaskLaunchRecord>();
-
-  // Eliminate empty tasks
-  for (int i = 0; i < (int)task_queue.size(); i++) {
-    if (task_queue[i].ir_handle.ir() != nullptr) {
-      new_task_queue.push_back(task_queue[i]);
-    }
-  }
-
-  task_queue = std::move(new_task_queue);
-
-  return modified;
 }
 
 void AsyncEngine::debug_sfg(const std::string &stage) {

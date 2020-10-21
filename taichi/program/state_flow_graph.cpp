@@ -6,6 +6,7 @@
 #include <unordered_set>
 
 #include "taichi/ir/analysis.h"
+#include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/program/async_engine.h"
 #include "taichi/util/statistics.h"
@@ -139,16 +140,11 @@ void StateFlowGraph::clear() {
 void StateFlowGraph::mark_pending_tasks_as_executed() {
   std::vector<std::unique_ptr<Node>> new_nodes;
   std::unordered_set<Node *> state_owners;
-  std::unordered_set<Node *> state_readers;
   for (auto &owner : latest_state_owner_) {
     state_owners.insert(state_owners.end(), owner.second);
   }
-  for (auto &reader : latest_state_readers_) {
-    state_readers.insert(reader.second.begin(), reader.second.end());
-  }
   for (auto &node : nodes_) {
-    if (node->is_initial_node || state_owners.count(node.get()) > 0 ||
-        state_readers.count(node.get()) > 0) {
+    if (node->is_initial_node || state_owners.count(node.get()) > 0) {
       node->mark_executed();
       new_nodes.push_back(std::move(node));
     }
@@ -172,27 +168,27 @@ void StateFlowGraph::insert_task(const TaskLaunchRecord &rec) {
   }
   for (auto output_state : node->meta->output_states) {
     TI_PROFILER("insert_task meta->output_states");
-    if (latest_state_readers_[output_state].empty()) {
+    if (get_or_insert(latest_state_readers_, output_state).empty()) {
       if (latest_state_owner_.find(output_state) != latest_state_owner_.end()) {
         // insert a WAW dependency edge
         insert_edge(latest_state_owner_[output_state], node.get(),
                     output_state);
       } else {
-        latest_state_readers_[output_state].insert(initial_node_);
+        insert(latest_state_readers_, output_state, initial_node_);
       }
     }
     latest_state_owner_[output_state] = node.get();
-    for (auto &d : latest_state_readers_[output_state]) {
+    for (auto *d : get_or_insert(latest_state_readers_, output_state)) {
       // insert a WAR dependency edge
       insert_edge(d, node.get(), output_state);
     }
-    latest_state_readers_[output_state].clear();
+    get_or_insert(latest_state_readers_, output_state).clear();
   }
 
   // Note that this loop must happen AFTER the previous one
   for (auto input_state : node->meta->input_states) {
     TI_PROFILER("insert_task latest_state_readers_");
-    latest_state_readers_[input_state].insert(node.get());
+    insert(latest_state_readers_, input_state, node.get());
   }
   nodes_.push_back(std::move(node));
 }
@@ -454,10 +450,12 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
         fusion_meta[a] != fusion_meta[b]) {
       return false;
     }
-    if (nodes[a]->meta->type != OffloadedStmt::TaskType::serial) {
+    if (nodes[a]->meta->type != OffloadedTaskType::serial) {
       for (auto &state : nodes[a]->output_edges) {
-        if (state.first.type != AsyncState::Type::value) {
-          // No need to check mask/list states as there must be value states.
+        const auto sty = state.first.type;
+        if (sty != AsyncState::Type::value && sty != AsyncState::Type::mask) {
+          // No need to check allocator/list states, as they must be accompanied
+          // with either value or mask states.
           continue;
         }
         if (state.second.find(nodes[b]) != state.second.end()) {
@@ -1059,8 +1057,9 @@ bool StateFlowGraph::optimize_dead_store() {
     const auto mt = meta.type;
     // Do NOT check ir->body->statements first! |ir->body| could be done when
     // |mt| is not the desired type.
-    if ((mt == OffloadedStmt::serial || mt == OffloadedStmt::struct_for ||
-         mt == OffloadedStmt::range_for) &&
+    if ((mt == OffloadedTaskType::serial ||
+         mt == OffloadedTaskType::struct_for ||
+         mt == OffloadedTaskType::range_for) &&
         ir->body->statements.empty()) {
       to_delete.insert(i + first_pending_task_index_);
     }
@@ -1185,7 +1184,7 @@ bool StateFlowGraph::demote_activation() {
     auto list_state = AsyncState(snode, AsyncState::Type::list);
 
     // TODO: handle serial and range for
-    if (node->meta->type != OffloadedStmt::struct_for)
+    if (node->meta->type != OffloadedTaskType::struct_for)
       continue;
 
     if (get_or_insert(node->input_edges, list_state).size() != 1)

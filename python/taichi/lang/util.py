@@ -30,9 +30,9 @@ def is_taichi_class(rhs):
 
 # Real types
 
-float32 = taichi_lang_core.DataType_float32
+float32 = taichi_lang_core.DataType_f32
 f32 = float32
-float64 = taichi_lang_core.DataType_float64
+float64 = taichi_lang_core.DataType_f64
 f64 = float64
 
 real_types = [f32, f64, float]
@@ -40,22 +40,22 @@ real_type_ids = [id(t) for t in real_types]
 
 # Integer types
 
-int8 = taichi_lang_core.DataType_int8
+int8 = taichi_lang_core.DataType_i8
 i8 = int8
-int16 = taichi_lang_core.DataType_int16
+int16 = taichi_lang_core.DataType_i16
 i16 = int16
-int32 = taichi_lang_core.DataType_int32
+int32 = taichi_lang_core.DataType_i32
 i32 = int32
-int64 = taichi_lang_core.DataType_int64
+int64 = taichi_lang_core.DataType_i64
 i64 = int64
 
-uint8 = taichi_lang_core.DataType_uint8
+uint8 = taichi_lang_core.DataType_u8
 u8 = uint8
-uint16 = taichi_lang_core.DataType_uint16
+uint16 = taichi_lang_core.DataType_u16
 u16 = uint16
-uint32 = taichi_lang_core.DataType_uint32
+uint32 = taichi_lang_core.DataType_u32
 u32 = uint32
-uint64 = taichi_lang_core.DataType_uint64
+uint64 = taichi_lang_core.DataType_u64
 u64 = uint64
 
 integer_types = [i8, i16, i32, i64, u8, u16, u32, u64, int]
@@ -171,12 +171,14 @@ def cook_dtype(dtype):
     _taichi_skip_traceback = 1
     if isinstance(dtype, taichi_lang_core.DataType):
         return dtype
+    elif isinstance(dtype, taichi_lang_core.Type):
+        return taichi_lang_core.DataType(dtype)
     elif dtype is float:
         return get_runtime().default_fp
     elif dtype is int:
         return get_runtime().default_ip
     else:
-        raise ValueError(f'Bad data type {dtype}')
+        raise ValueError(f'Invalid data type {dtype}')
 
 
 def in_taichi_scope():

@@ -45,7 +45,7 @@ ExternalPtrStmt::ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
     TI_ASSERT(base_ptrs[i] != nullptr);
     TI_ASSERT(base_ptrs[i]->is<ArgLoadStmt>());
   }
-  width() = base_ptrs.size();
+  TI_ASSERT(base_ptrs.size() == 1);
   element_type() = dt;
   TI_STMT_REG_FIELDS;
 }
@@ -58,7 +58,7 @@ GlobalPtrStmt::GlobalPtrStmt(const LaneAttribute<SNode *> &snodes,
     TI_ASSERT(snodes[i] != nullptr);
     TI_ASSERT(snodes[0]->dt == snodes[i]->dt);
   }
-  width() = snodes.size();
+  TI_ASSERT(snodes.size() == 1);
   element_type() = snodes[0]->dt;
   TI_STMT_REG_FIELDS;
 }
@@ -90,7 +90,6 @@ SNodeOpStmt::SNodeOpStmt(SNodeOpType op_type,
                          Stmt *ptr,
                          Stmt *val)
     : op_type(op_type), snode(snode), ptr(ptr), val(val) {
-  width() = 1;
   element_type() = PrimitiveType::i32;
   TI_STMT_REG_FIELDS;
 }
@@ -104,7 +103,6 @@ SNodeOpStmt::SNodeOpStmt(SNodeOpType op_type,
   TI_ASSERT(op_type == SNodeOpType::is_active ||
             op_type == SNodeOpType::deactivate ||
             op_type == SNodeOpType::activate);
-  width() = 1;
   element_type() = PrimitiveType::i32;
   TI_STMT_REG_FIELDS;
 }
@@ -317,15 +315,7 @@ std::string OffloadedStmt::task_name() const {
 
 // static
 std::string OffloadedStmt::task_type_name(TaskType tt) {
-#define REGISTER_NAME(x) \
-  { TaskType::x, #x }
-  const static std::unordered_map<TaskType, std::string> m = {
-      REGISTER_NAME(serial),     REGISTER_NAME(range_for),
-      REGISTER_NAME(struct_for), REGISTER_NAME(listgen),
-      REGISTER_NAME(gc),
-  };
-#undef REGISTER_NAME
-  return m.find(tt)->second;
+  return offloaded_task_type_name(tt);
 }
 
 std::unique_ptr<Stmt> OffloadedStmt::clone() const {

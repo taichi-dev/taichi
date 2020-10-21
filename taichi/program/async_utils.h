@@ -5,7 +5,7 @@
 #include <atomic>
 
 #include "taichi/ir/snode.h"
-#include "taichi/ir/statements.h"
+#include "taichi/ir/offloaded_task_type.h"
 #define TI_RUNTIME_HOST
 #include "taichi/program/context.h"
 #undef TI_RUNTIME_HOST
@@ -13,6 +13,9 @@
 TLANG_NAMESPACE_BEGIN
 
 struct TaskMeta;
+
+class IRNode;
+class OffloadedStmt;
 
 class IRHandle {
  public:
@@ -75,7 +78,7 @@ class TaskLaunchRecord {
 };
 
 struct AsyncState {
-  enum class Type { mask, value, list };
+  enum class Type { mask, value, list, allocator };
 
   AsyncState(SNode *snode, Type type) : snode(snode), type(type) {
   }
@@ -103,6 +106,9 @@ struct AsyncState {
       case Type::list:
         type_name = "list";
         break;
+      case Type::allocator:
+        type_name = "allocator";
+        break;
     }
     return snode->get_node_type_name_hinted() + "_" + type_name;
   }
@@ -110,7 +116,7 @@ struct AsyncState {
 
 struct TaskFusionMeta {
   // meta for task fusion
-  OffloadedStmt::TaskType type{OffloadedStmt::TaskType::serial};
+  OffloadedTaskType type{OffloadedTaskType::serial};
   SNode *snode{nullptr};  // struct-for only
   int block_dim{0};       // struct-for only
   int32 begin_value{0};   // range-for only
@@ -172,7 +178,8 @@ struct hash<taichi::lang::AsyncState> {
 template <>
 struct hash<taichi::lang::TaskFusionMeta> {
   std::size_t operator()(const taichi::lang::TaskFusionMeta &t) const noexcept {
-    std::size_t result = (t.type << 1) ^ t.fusible ^ (std::size_t)t.kernel;
+    std::size_t result =
+        ((std::size_t)t.type << 1) ^ t.fusible ^ (std::size_t)t.kernel;
     result ^= (std::size_t)t.block_dim * 100000007UL + (std::size_t)t.snode;
     result ^= ((std::size_t)t.begin_value << 32) ^ t.end_value;
     return result;
@@ -185,11 +192,12 @@ TLANG_NAMESPACE_BEGIN
 
 struct TaskMeta {
   std::string name;
-  OffloadedStmt::TaskType type{OffloadedStmt::TaskType::serial};
+  OffloadedTaskType type{OffloadedTaskType::serial};
   SNode *snode{nullptr};  // struct-for and listgen only
   std::unordered_set<AsyncState> input_states;
   std::unordered_set<AsyncState> output_states;
   std::unordered_map<SNode *, bool> element_wise;
+  // TODO: split element-wise writes with loop-unique
 
   void print() const;
 };

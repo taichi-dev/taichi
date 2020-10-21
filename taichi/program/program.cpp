@@ -2,6 +2,7 @@
 
 #include "program.h"
 
+#include "taichi/ir/statements.h"
 #include "taichi/program/extension.h"
 #include "taichi/backends/metal/api.h"
 #include "taichi/backends/opengl/opengl_api.h"
@@ -22,6 +23,7 @@
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/program/async_engine.h"
 #include "taichi/util/statistics.h"
+#include "taichi/util/str.h"
 #if defined(TI_WITH_CC)
 #include "taichi/backends/cc/struct_cc.h"
 #include "taichi/backends/cc/cc_layout.h"
@@ -192,6 +194,13 @@ Program::Program(Arch desired_arch) {
 
   TI_TRACE("Program ({}) arch={} initialized.", fmt::ptr(this),
            arch_name(arch));
+}
+
+TypeFactory &Program::get_type_factory() {
+  TI_WARN(
+      "Program::get_type_factory() will be deprecated, Please use "
+      "TypeFactory::get_instance()");
+  return TypeFactory::get_instance();
 }
 
 FunctionType Program::compile(Kernel &kernel) {
@@ -421,7 +430,7 @@ void Program::check_runtime_error() {
     // memory), use the device context instead.
     tlctx = llvm_context_device.get();
   }
-  auto runtime_jit_module = tlctx->runtime_jit_module;
+  auto *runtime_jit_module = tlctx->runtime_jit_module;
   runtime_jit_module->call<void *>("runtime_retrieve_and_reset_error_code",
                                    llvm_runtime);
   auto error_code = fetch_result<int64>(taichi_result_buffer_error_id);
@@ -444,31 +453,13 @@ void Program::check_runtime_error() {
     }
 
     if (error_code == 1) {
-      std::string error_message_formatted;
-      int argument_id = 0;
-      for (int i = 0; i < (int)error_message_template.size(); i++) {
-        if (error_message_template[i] != '%') {
-          error_message_formatted += error_message_template[i];
-        } else {
-          auto dtype = error_message_template[i + 1];
-          runtime_jit_module->call<void *>(
-              "runtime_retrieve_error_message_argument", llvm_runtime,
-              argument_id);
-          auto argument = fetch_result<uint64>(taichi_result_buffer_error_id);
-          if (dtype == 'd') {
-            error_message_formatted += fmt::format(
-                "{}", taichi_union_cast_with_different_sizes<int32>(argument));
-          } else if (dtype == 'f') {
-            error_message_formatted += fmt::format(
-                "{}",
-                taichi_union_cast_with_different_sizes<float32>(argument));
-          } else {
-            TI_ERROR("Data type identifier %{} is not supported", dtype);
-          }
-          argument_id += 1;
-          i++;  // skip the dtype char
-        }
-      }
+      const auto error_message_formatted = format_error_message(
+          error_message_template, [runtime_jit_module, this](int argument_id) {
+            runtime_jit_module->call<void *>(
+                "runtime_retrieve_error_message_argument", llvm_runtime,
+                argument_id);
+            return fetch_result<uint64>(taichi_result_buffer_error_id);
+          });
       TI_ERROR("Assertion failure: {}", error_message_formatted);
     } else {
       TI_NOT_IMPLEMENTED

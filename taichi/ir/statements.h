@@ -1,6 +1,7 @@
 #pragma once
 
 #include "taichi/ir/ir.h"
+#include "taichi/ir/offloaded_task_type.h"
 #include "taichi/ir/scratch_pad.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -8,12 +9,12 @@ TLANG_NAMESPACE_BEGIN
 class AllocaStmt : public Stmt {
  public:
   AllocaStmt(DataType type) {
-    ret_type = VectorType(1, type);
+    ret_type = TypeFactory::create_vector_or_scalar_type(1, type);
     TI_STMT_REG_FIELDS;
   }
 
   AllocaStmt(int width, DataType type) {
-    ret_type = VectorType(width, type);
+    ret_type = TypeFactory::create_vector_or_scalar_type(width, type);
     TI_STMT_REG_FIELDS;
   }
 
@@ -101,9 +102,10 @@ class UnaryOpStmt : public Stmt {
 class ArgLoadStmt : public Stmt {
  public:
   int arg_id;
+  bool is_ptr;
 
   ArgLoadStmt(int arg_id, DataType dt, bool is_ptr = false) : arg_id(arg_id) {
-    this->ret_type = VectorType(1, dt);
+    this->ret_type = TypeFactory::create_vector_or_scalar_type(1, dt);
     this->is_ptr = is_ptr;
     TI_STMT_REG_FIELDS;
   }
@@ -119,7 +121,7 @@ class ArgLoadStmt : public Stmt {
 class RandStmt : public Stmt {
  public:
   RandStmt(DataType dt) {
-    ret_type.data_type = dt;
+    ret_type = dt;
     TI_STMT_REG_FIELDS;
   }
 
@@ -325,6 +327,23 @@ class RangeAssumptionStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+// A statement that has unique values among the top-level loop.
+class LoopUniqueStmt : public Stmt {
+ public:
+  Stmt *input;
+
+  explicit LoopUniqueStmt(Stmt *input) : input(input) {
+    TI_STMT_REG_FIELDS;
+  }
+
+  bool has_global_side_effect() const override {
+    return false;
+  }
+
+  TI_STMT_DEF_FIELDS(ret_type, input);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
 class GlobalLoadStmt : public Stmt {
  public:
   Stmt *ptr;
@@ -483,9 +502,9 @@ class ConstStmt : public Stmt {
   LaneAttribute<TypedConstant> val;
 
   ConstStmt(const LaneAttribute<TypedConstant> &val) : val(val) {
-    width() = val.size();
-    element_type() = val[0].dt;
-    for (int i = 0; i < ret_type.width; i++) {
+    TI_ASSERT(val.size() == 1);  // TODO: support vectorized case
+    ret_type = val[0].dt;
+    for (int i = 0; i < val.size(); i++) {
       TI_ASSERT(val[0].dt == val[i].dt);
     }
     TI_STMT_REG_FIELDS;
@@ -613,7 +632,7 @@ class KernelReturnStmt : public Stmt {
   Stmt *value;
 
   KernelReturnStmt(Stmt *value, DataType dt) : value(value) {
-    this->ret_type = VectorType(1, dt);
+    this->ret_type = TypeFactory::create_vector_or_scalar_type(1, dt);
     TI_STMT_REG_FIELDS;
   }
 
@@ -658,8 +677,8 @@ class ElementShuffleStmt : public Stmt {
   ElementShuffleStmt(const LaneAttribute<VectorElement> &elements,
                      bool pointer = false)
       : elements(elements), pointer(pointer) {
-    width() = elements.size();
-    element_type() = elements[0].stmt->element_type();
+    TI_ASSERT(elements.size() == 1);  // TODO: support vectorized cases
+    ret_type = elements[0].stmt->element_type();
     TI_STMT_REG_FIELDS;
   }
 
@@ -789,13 +808,7 @@ class GetChStmt : public Stmt {
 
 class OffloadedStmt : public Stmt {
  public:
-  enum TaskType : int {
-    serial,
-    range_for,
-    struct_for,
-    listgen,
-    gc,
-  };
+  using TaskType = OffloadedTaskType;
 
   TaskType task_type;
   SNode *snode;
@@ -830,7 +843,7 @@ class OffloadedStmt : public Stmt {
   static std::string task_type_name(TaskType tt);
 
   bool has_body() const {
-    return task_type != listgen && task_type != gc;
+    return task_type != TaskType::listgen && task_type != TaskType::gc;
   }
 
   bool is_container_statement() const override {
@@ -938,8 +951,7 @@ class GlobalTemporaryStmt : public Stmt {
  public:
   std::size_t offset;
 
-  GlobalTemporaryStmt(std::size_t offset, VectorType ret_type)
-      : offset(offset) {
+  GlobalTemporaryStmt(std::size_t offset, DataType ret_type) : offset(offset) {
     this->ret_type = ret_type;
     TI_STMT_REG_FIELDS;
   }
@@ -956,7 +968,7 @@ class ThreadLocalPtrStmt : public Stmt {
  public:
   std::size_t offset;
 
-  ThreadLocalPtrStmt(std::size_t offset, VectorType ret_type) : offset(offset) {
+  ThreadLocalPtrStmt(std::size_t offset, DataType ret_type) : offset(offset) {
     this->ret_type = ret_type;
     TI_STMT_REG_FIELDS;
   }
@@ -973,7 +985,7 @@ class BlockLocalPtrStmt : public Stmt {
  public:
   Stmt *offset;
 
-  BlockLocalPtrStmt(Stmt *offset, VectorType ret_type) : offset(offset) {
+  BlockLocalPtrStmt(Stmt *offset, DataType ret_type) : offset(offset) {
     this->ret_type = ret_type;
     TI_STMT_REG_FIELDS;
   }
@@ -1004,7 +1016,8 @@ class InternalFuncStmt : public Stmt {
   std::string func_name;
 
   InternalFuncStmt(const std::string &func_name) : func_name(func_name) {
-    this->ret_type = VectorType(1, PrimitiveType::i32);
+    this->ret_type =
+        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
     TI_STMT_REG_FIELDS;
   }
 
@@ -1023,7 +1036,7 @@ class StackAllocaStmt : public Stmt {
   }
 
   std::size_t element_size_in_bytes() const {
-    return data_type_size(ret_type.data_type);
+    return data_type_size(ret_type);
   }
 
   std::size_t entry_size_in_bytes() const {

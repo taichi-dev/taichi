@@ -1,4 +1,4 @@
-#include "codegen_cpu.h"
+#include "taichi/backends/cpu/codegen_cpu.h"
 
 #include "taichi/codegen/codegen_llvm.h"
 #include "taichi/common/core.h"
@@ -6,6 +6,7 @@
 #include "taichi/lang_util.h"
 #include "taichi/program/program.h"
 #include "taichi/ir/ir.h"
+#include "taichi/ir/statements.h"
 #include "taichi/util/statistics.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -30,6 +31,7 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
 
     auto *tls_prologue = create_xlogue(stmt->tls_prologue);
 
+    // The loop body
     llvm::Function *body;
     {
       auto guard = get_function_creation_guard(
@@ -96,13 +98,13 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
 
     for (auto s : stmt->arg_stmts) {
       TI_ASSERT(s->width() == 1);
-      arg_types.push_back(tlctx->get_data_type(s->ret_type.data_type));
+      arg_types.push_back(tlctx->get_data_type(s->ret_type));
       arg_values.push_back(llvm_val[s]);
     }
 
     for (auto s : stmt->output_stmts) {
       TI_ASSERT(s->width() == 1);
-      auto t = tlctx->get_data_type(s->ret_type.data_type);
+      auto t = tlctx->get_data_type(s->ret_type);
       auto ptr = llvm::PointerType::get(t, 0);
       arg_types.push_back(ptr);
       arg_values.push_back(llvm_val[s]);

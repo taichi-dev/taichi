@@ -38,7 +38,7 @@ bool TaskLaunchRecord::empty() const {
 
 void TaskMeta::print() const {
   fmt::print("TaskMeta\n  name {}\n", name);
-  fmt::print("  type {}\n", OffloadedStmt::task_type_name(type));
+  fmt::print("  type {}\n", offloaded_task_type_name(type));
   if (snode != nullptr) {
     fmt::print("  snode {}\n", snode->get_node_type_name_hinted());
   } else {
@@ -99,8 +99,8 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
   TaskMeta meta;
   // TODO: this is an abuse since it gathers nothing...
   auto *root_stmt = t.stmt();
-  meta.name = t.kernel->name + "_" +
-              OffloadedStmt::task_type_name(root_stmt->task_type);
+  meta.name =
+      t.kernel->name + "_" + offloaded_task_type_name(root_stmt->task_type);
   meta.type = root_stmt->task_type;
   get_meta_input_value_states(root_stmt, &meta);
   gather_statements(root_stmt, [&](Stmt *stmt) {
@@ -119,6 +119,19 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
       }
     }
 
+    if (auto *snode_op = stmt->cast<SNodeOpStmt>()) {
+      if (snode_op->op_type == SNodeOpType::activate ||
+          snode_op->op_type == SNodeOpType::deactivate) {
+        auto *sn = snode_op->snode;
+        if (is_gc_able(sn->type)) {
+          meta.input_states.emplace(sn, AsyncState::Type::allocator);
+          meta.input_states.emplace(sn, AsyncState::Type::mask);
+          meta.output_states.emplace(sn, AsyncState::Type::allocator);
+          meta.output_states.emplace(sn, AsyncState::Type::mask);
+        }
+      }
+    }
+
     if (auto ptr = stmt->cast<GlobalPtrStmt>()) {
       if (ptr->activate) {
         for (auto &snode : ptr->snodes.data) {
@@ -127,6 +140,10 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
             if (!s->is_path_all_dense) {
               meta.input_states.emplace(s, AsyncState::Type::mask);
               meta.output_states.emplace(s, AsyncState::Type::mask);
+              if (is_gc_able(s->type)) {
+                meta.input_states.emplace(s, AsyncState::Type::allocator);
+                meta.output_states.emplace(s, AsyncState::Type::allocator);
+              }
             }
             s = s->parent;
           }
@@ -160,16 +177,21 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
     }
   }
 
-  if (root_stmt->task_type == OffloadedStmt::listgen) {
+  if (root_stmt->task_type == OffloadedTaskType::listgen) {
     TI_ASSERT(root_stmt->snode->parent);
     meta.snode = root_stmt->snode;
     meta.input_states.emplace(root_stmt->snode->parent, AsyncState::Type::list);
     meta.input_states.emplace(root_stmt->snode, AsyncState::Type::list);
     meta.input_states.emplace(root_stmt->snode, AsyncState::Type::mask);
     meta.output_states.emplace(root_stmt->snode, AsyncState::Type::list);
-  } else if (root_stmt->task_type == OffloadedStmt::struct_for) {
+  } else if (root_stmt->task_type == OffloadedTaskType::struct_for) {
     meta.snode = root_stmt->snode;
     meta.input_states.emplace(root_stmt->snode, AsyncState::Type::list);
+  } else if ((root_stmt->task_type == OffloadedTaskType::gc) &&
+             (is_gc_able(root_stmt->snode->type))) {
+    meta.snode = root_stmt->snode;
+    meta.input_states.emplace(meta.snode, AsyncState::Type::allocator);
+    meta.output_states.emplace(meta.snode, AsyncState::Type::allocator);
   }
 
   meta_bank[t.ir_handle] = meta;
@@ -197,10 +219,10 @@ TaskFusionMeta get_task_fusion_meta(IRBank *bank, const TaskLaunchRecord &t) {
 
   auto *task = t.stmt();
   meta.type = task->task_type;
-  if (task->task_type == OffloadedStmt::struct_for) {
+  if (task->task_type == OffloadedTaskType::struct_for) {
     meta.snode = task->snode;
     meta.block_dim = task->block_dim;
-  } else if (task->task_type == OffloadedStmt::range_for) {
+  } else if (task->task_type == OffloadedTaskType::range_for) {
     // TODO: a few problems with the range-for test condition:
     // 1. This could incorrectly fuse two range-for kernels that have
     // different sizes, but then the loop ranges get padded to the same
@@ -215,9 +237,11 @@ TaskFusionMeta get_task_fusion_meta(IRBank *bank, const TaskLaunchRecord &t) {
     }
     meta.begin_value = task->begin_value;
     meta.end_value = task->end_value;
-  } else if (task->task_type != OffloadedStmt::serial) {
+  } else if (task->task_type != OffloadedTaskType::serial) {
     // Do not fuse gc/listgen tasks.
-    return fusion_meta_bank[t.ir_handle] = TaskFusionMeta();
+    meta.fusible = false;
+    meta.snode = task->snode;
+    return fusion_meta_bank[t.ir_handle] = meta;
   }
   meta.fusible = true;
   return fusion_meta_bank[t.ir_handle] = meta;

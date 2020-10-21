@@ -1,5 +1,7 @@
 #include "struct_opengl.h"
 
+#include "taichi/ir/snode.h"
+
 TLANG_NAMESPACE_BEGIN
 namespace opengl {
 

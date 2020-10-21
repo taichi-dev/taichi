@@ -6,6 +6,7 @@
 #include "taichi/program/async_engine.h"
 #include "taichi/codegen/codegen.h"
 #include "taichi/backends/cuda/cuda_driver.h"
+#include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/util/action_recorder.h"
 #include "taichi/program/extension.h"
@@ -149,25 +150,25 @@ void Kernel::LaunchContextBuilder::set_arg_float(int i, float64 d) {
                                  ActionArg("arg_id", i), ActionArg("val", d)});
 
   auto dt = kernel_->args[i].dt;
-  if (dt == PrimitiveType::f32) {
+  if (dt->is_primitive(PrimitiveTypeID::f32)) {
     ctx_->set_arg(i, (float32)d);
-  } else if (dt == PrimitiveType::f64) {
+  } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
     ctx_->set_arg(i, (float64)d);
-  } else if (dt == PrimitiveType::i32) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i32)) {
     ctx_->set_arg(i, (int32)d);
-  } else if (dt == PrimitiveType::i64) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
     ctx_->set_arg(i, (int64)d);
-  } else if (dt == PrimitiveType::i8) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i8)) {
     ctx_->set_arg(i, (int8)d);
-  } else if (dt == PrimitiveType::i16) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
     ctx_->set_arg(i, (int16)d);
-  } else if (dt == PrimitiveType::u8) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
     ctx_->set_arg(i, (uint8)d);
-  } else if (dt == PrimitiveType::u16) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
     ctx_->set_arg(i, (uint16)d);
-  } else if (dt == PrimitiveType::u32) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
     ctx_->set_arg(i, (uint32)d);
-  } else if (dt == PrimitiveType::u64) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
     ctx_->set_arg(i, (uint64)d);
   } else {
     TI_NOT_IMPLEMENTED
@@ -184,25 +185,25 @@ void Kernel::LaunchContextBuilder::set_arg_int(int i, int64 d) {
                                ActionArg("arg_id", i), ActionArg("val", d)});
 
   auto dt = kernel_->args[i].dt;
-  if (dt == PrimitiveType::i32) {
+  if (dt->is_primitive(PrimitiveTypeID::i32)) {
     ctx_->set_arg(i, (int32)d);
-  } else if (dt == PrimitiveType::i64) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
     ctx_->set_arg(i, (int64)d);
-  } else if (dt == PrimitiveType::i8) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i8)) {
     ctx_->set_arg(i, (int8)d);
-  } else if (dt == PrimitiveType::i16) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
     ctx_->set_arg(i, (int16)d);
-  } else if (dt == PrimitiveType::u8) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
     ctx_->set_arg(i, (uint8)d);
-  } else if (dt == PrimitiveType::u16) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
     ctx_->set_arg(i, (uint16)d);
-  } else if (dt == PrimitiveType::u32) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
     ctx_->set_arg(i, (uint32)d);
-  } else if (dt == PrimitiveType::u64) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
     ctx_->set_arg(i, (uint64)d);
-  } else if (dt == PrimitiveType::f32) {
+  } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
     ctx_->set_arg(i, (float32)d);
-  } else if (dt == PrimitiveType::f64) {
+  } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
     ctx_->set_arg(i, (float64)d);
   } else {
     TI_NOT_IMPLEMENTED
@@ -247,25 +248,25 @@ Context &Kernel::LaunchContextBuilder::get_context() {
 
 float64 Kernel::get_ret_float(int i) {
   auto dt = rets[i].dt;
-  if (dt == PrimitiveType::f32) {
+  if (dt->is_primitive(PrimitiveTypeID::f32)) {
     return (float64)get_current_program().fetch_result<float32>(i);
-  } else if (dt == PrimitiveType::f64) {
+  } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
     return (float64)get_current_program().fetch_result<float64>(i);
-  } else if (dt == PrimitiveType::i32) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i32)) {
     return (float64)get_current_program().fetch_result<int32>(i);
-  } else if (dt == PrimitiveType::i64) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
     return (float64)get_current_program().fetch_result<int64>(i);
-  } else if (dt == PrimitiveType::i8) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i8)) {
     return (float64)get_current_program().fetch_result<int8>(i);
-  } else if (dt == PrimitiveType::i16) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
     return (float64)get_current_program().fetch_result<int16>(i);
-  } else if (dt == PrimitiveType::u8) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
     return (float64)get_current_program().fetch_result<uint8>(i);
-  } else if (dt == PrimitiveType::u16) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
     return (float64)get_current_program().fetch_result<uint16>(i);
-  } else if (dt == PrimitiveType::u32) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
     return (float64)get_current_program().fetch_result<uint32>(i);
-  } else if (dt == PrimitiveType::u64) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
     return (float64)get_current_program().fetch_result<uint64>(i);
   } else {
     TI_NOT_IMPLEMENTED
@@ -274,25 +275,25 @@ float64 Kernel::get_ret_float(int i) {
 
 int64 Kernel::get_ret_int(int i) {
   auto dt = rets[i].dt;
-  if (dt == PrimitiveType::i32) {
+  if (dt->is_primitive(PrimitiveTypeID::i32)) {
     return (int64)get_current_program().fetch_result<int32>(i);
-  } else if (dt == PrimitiveType::i64) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
     return (int64)get_current_program().fetch_result<int64>(i);
-  } else if (dt == PrimitiveType::i8) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i8)) {
     return (int64)get_current_program().fetch_result<int8>(i);
-  } else if (dt == PrimitiveType::i16) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
     return (int64)get_current_program().fetch_result<int16>(i);
-  } else if (dt == PrimitiveType::u8) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
     return (int64)get_current_program().fetch_result<uint8>(i);
-  } else if (dt == PrimitiveType::u16) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
     return (int64)get_current_program().fetch_result<uint16>(i);
-  } else if (dt == PrimitiveType::u32) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
     return (int64)get_current_program().fetch_result<uint32>(i);
-  } else if (dt == PrimitiveType::u64) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
     return (int64)get_current_program().fetch_result<uint64>(i);
-  } else if (dt == PrimitiveType::f32) {
+  } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
     return (int64)get_current_program().fetch_result<float32>(i);
-  } else if (dt == PrimitiveType::f64) {
+  } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
     return (int64)get_current_program().fetch_result<float64>(i);
   } else {
     TI_NOT_IMPLEMENTED

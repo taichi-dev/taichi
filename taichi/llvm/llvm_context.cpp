@@ -87,25 +87,25 @@ TaichiLLVMContext::TaichiLLVMContext(Arch arch) : arch(arch) {
 
 llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {
   auto ctx = get_this_thread_context();
-  if (dt == PrimitiveType::i32) {
+  if (dt->is_primitive(PrimitiveTypeID::i32)) {
     return llvm::Type::getInt32Ty(*ctx);
-  } else if (dt == PrimitiveType::i8) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i8)) {
     return llvm::Type::getInt8Ty(*ctx);
-  } else if (dt == PrimitiveType::i16) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
     return llvm::Type::getInt16Ty(*ctx);
-  } else if (dt == PrimitiveType::i64) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
     return llvm::Type::getInt64Ty(*ctx);
-  } else if (dt == PrimitiveType::f32) {
+  } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
     return llvm::Type::getFloatTy(*ctx);
-  } else if (dt == PrimitiveType::f64) {
+  } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
     return llvm::Type::getDoubleTy(*ctx);
-  } else if (dt == PrimitiveType::u8) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
     return llvm::Type::getInt8Ty(*ctx);
-  } else if (dt == PrimitiveType::u16) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
     return llvm::Type::getInt16Ty(*ctx);
-  } else if (dt == PrimitiveType::u32) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
     return llvm::Type::getInt32Ty(*ctx);
-  } else if (dt == PrimitiveType::u64) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
     return llvm::Type::getInt64Ty(*ctx);
   } else {
     TI_INFO(data_type_name(dt));
@@ -560,17 +560,17 @@ void TaichiLLVMContext::set_struct_module(
 template <typename T>
 llvm::Value *TaichiLLVMContext::get_constant(DataType dt, T t) {
   auto ctx = get_this_thread_context();
-  if (dt == PrimitiveType::f32) {
+  if (dt->is_primitive(PrimitiveTypeID::f32)) {
     return llvm::ConstantFP::get(*ctx, llvm::APFloat((float32)t));
-  } else if (dt == PrimitiveType::f64) {
+  } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
     return llvm::ConstantFP::get(*ctx, llvm::APFloat((float64)t));
-  } else if (dt == PrimitiveType::i32) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i32)) {
     return llvm::ConstantInt::get(*ctx, llvm::APInt(32, t, true));
-  } else if (dt == PrimitiveType::u32) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
     return llvm::ConstantInt::get(*ctx, llvm::APInt(32, t, false));
-  } else if (dt == PrimitiveType::i64) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
     return llvm::ConstantInt::get(*ctx, llvm::APInt(64, t, true));
-  } else if (dt == PrimitiveType::u64) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
     return llvm::ConstantInt::get(*ctx, llvm::APInt(64, t, false));
   } else {
     TI_NOT_IMPLEMENTED
@@ -702,7 +702,9 @@ void TaichiLLVMContext::eliminate_unused_functions(
   TI_AUTO_PROF
   using namespace llvm;
   TI_ASSERT(module);
-  if (0) {  // temporary fix for now to make LLVM 8 work with CUDA
+  if (false) {
+    // temporary fix for now to make LLVM 8 work with CUDA
+    // TODO: recover this when it's time
     if (llvm::verifyModule(*module, &llvm::errs())) {
       TI_ERROR("Module broken\n");
     }

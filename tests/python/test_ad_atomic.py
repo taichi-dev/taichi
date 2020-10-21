@@ -2,14 +2,12 @@ import taichi as ti
 from taichi import approx
 
 
-@ti.all_archs
+@ti.test()
 def test_ad_reduce():
-    x = ti.field(ti.f32)
-    loss = ti.field(ti.f32)
-
     N = 16
 
-    ti.root.place(loss, loss.grad).dense(ti.i, N).place(x, x.grad)
+    x = ti.field(dtype=ti.f32, shape=N, needs_grad=True)
+    loss = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
 
     @ti.kernel
     def func():

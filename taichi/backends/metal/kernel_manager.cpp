@@ -13,6 +13,7 @@
 #include "taichi/util/action_recorder.h"
 #include "taichi/python/print_buffer.h"
 #include "taichi/util/file_sequence_writer.h"
+#include "taichi/util/str.h"
 
 #ifdef TI_PLATFORM_OSX
 #include <sys/mman.h>
@@ -34,7 +35,7 @@ namespace shaders {
 #include "taichi/backends/metal/shaders/runtime_utils.metal.h"
 }  // namespace shaders
 
-using KernelTaskType = OffloadedStmt::TaskType;
+using KernelTaskType = OffloadedTaskType;
 using BufferEnum = KernelAttributes::Buffers;
 
 inline int infer_msl_version(const TaichiKernelAttributes::UsedFeatures &f) {
@@ -53,7 +54,7 @@ class BufferMemoryView {
   BufferMemoryView(size_t size, MemoryPool *mem_pool) {
     // Both |ptr_| and |size_| must be aligned to page size.
     size_ = iroundup(size, taichi_page_size);
-    ptr_ = mem_pool->allocate(size_, /*alignment=*/taichi_page_size);
+    ptr_ = (char *)mem_pool->allocate(size_, /*alignment=*/taichi_page_size);
     TI_ASSERT(ptr_ != nullptr);
     std::memset(ptr_, 0, size_);
   }
@@ -66,13 +67,13 @@ class BufferMemoryView {
   inline size_t size() const {
     return size_;
   }
-  inline void *ptr() const {
+  inline char *ptr() const {
     return ptr_;
   }
 
  private:
   size_t size_;
-  void *ptr_;
+  char *ptr_;
 };
 
 // MetalRuntime maintains a series of MTLBuffers that are shared across all the
@@ -116,7 +117,7 @@ class CompiledMtlKernelBase {
 
   void launch_if_not_empty(BindBuffers buffers,
                            MTLCommandBuffer *command_buffer) {
-    const int num_threads = kernel_attribs_.num_threads;
+    const int num_threads = kernel_attribs_.advisory_total_num_threads;
     if (num_threads == 0) {
       return;
     }
@@ -133,7 +134,8 @@ class CompiledMtlKernelBase {
       set_mtl_buffer(encoder.get(), b.first, /*offset=*/0, bi);
     }
 
-    const auto tgs = get_thread_grid_settings(num_threads);
+    const auto tgs = get_thread_grid_settings(
+        num_threads, kernel_attribs_.advisory_num_threads_per_group);
     if (!is_jit_evalutor_) {
       ActionRecorder::get_instance().record(
           "launch_kernel",
@@ -152,7 +154,9 @@ class CompiledMtlKernelBase {
     int num_threadgroups;
   };
 
-  ThreadGridSettings get_thread_grid_settings(int num_threads) {
+  ThreadGridSettings get_thread_grid_settings(
+      int advisory_num_threads,
+      int advisory_num_threads_per_group) {
     int num_threads_per_group =
         get_max_total_threads_per_threadgroup(pipeline_state_.get());
     // Sometimes it is helpful to limit the maximum GPU block dim for the
@@ -162,17 +166,20 @@ class CompiledMtlKernelBase {
       num_threads_per_group =
           std::min(num_threads_per_group, prescribed_block_dim);
     }
+    if (advisory_num_threads_per_group > 0) {
+      num_threads_per_group =
+          std::min(num_threads_per_group, advisory_num_threads_per_group);
+    }
     // Cap by |num_threads| in case this is a very small kernel.
-    num_threads_per_group = std::min(num_threads_per_group, num_threads);
+    num_threads_per_group =
+        std::min(num_threads_per_group, advisory_num_threads);
 
-    int num_threadgroups =
-        ((num_threads + num_threads_per_group - 1) / num_threads_per_group);
-    // TODO(k-ye): Make sure |saturating_grid_dim| is configurable in ti.init()
-    // before enabling this.
-    // const int prescribed_grid_dim = config_->saturating_grid_dim;
-    // if (prescribed_grid_dim > 0) {
-    //   num_threadgroups = std::min(num_threadgroups, prescribed_grid_dim);
-    // }
+    int num_threadgroups = ((advisory_num_threads + num_threads_per_group - 1) /
+                            num_threads_per_group);
+    const int prescribed_grid_dim = config_->saturating_grid_dim;
+    if (prescribed_grid_dim > 0) {
+      num_threadgroups = std::min(num_threadgroups, prescribed_grid_dim);
+    }
     return {num_threads_per_group, num_threadgroups};
   }
 
@@ -189,7 +196,7 @@ class UserMtlKernel : public CompiledMtlKernelBase {
   void launch(InputBuffersMap &input_buffers,
               MTLCommandBuffer *command_buffer) override {
     // 0 is valid for |num_threads|!
-    TI_ASSERT(kernel_attribs_.num_threads >= 0);
+    TI_ASSERT(kernel_attribs_.advisory_total_num_threads >= 0);
     BindBuffers buffers;
     for (const auto b : kernel_attribs_.buffers) {
       buffers.push_back({input_buffers.find(b)->second, b});
@@ -230,8 +237,9 @@ class RuntimeListOpsMtlKernel : public CompiledMtlKernelBase {
         "Registered RuntimeListOpsMtlKernel: name={} num_threads={} "
         "parent_snode={} "
         "child_snode={} max_num_elems={} ",
-        params.kernel_attribs->name, params.kernel_attribs->num_threads, mem[0],
-        mem[1], mem[2]);
+        params.kernel_attribs->name,
+        params.kernel_attribs->advisory_total_num_threads, mem[0], mem[1],
+        mem[2]);
     did_modify_range(args_buffer_.get(), /*location=*/0, args_mem_->size());
   }
 
@@ -571,14 +579,13 @@ class KernelManager::Impl {
         "Failed to allocate Metal runtime buffer, requested {} bytes",
         runtime_mem_->size());
     print_mem_ = std::make_unique<BufferMemoryView>(
-        sizeof(shaders::PrintMsgAllocator) + shaders::kMetalPrintBufferSize,
-        mem_pool_);
+        shaders::kMetalPrintAssertBufferSize, mem_pool_);
     print_buffer_ = new_mtl_buffer_no_copy(device_.get(), print_mem_->ptr(),
                                            print_mem_->size());
     TI_ASSERT(print_buffer_ != nullptr);
 
     init_runtime(params.root_id);
-    init_print_buffer();
+    clear_print_assert_buffer();
   }
 
   void register_taichi_kernel(const std::string &taichi_kernel_name,
@@ -633,8 +640,10 @@ class KernelManager::Impl {
     for (const auto &mk : ctk.compiled_mtl_kernels) {
       mk->launch(input_buffers, cur_command_buffer_.get());
     }
-    const bool used_print = ctk.ti_kernel_attribs.used_features.print;
-    if (ctx_blitter || used_print) {
+
+    const auto &used = ctk.ti_kernel_attribs.used_features;
+    const bool used_print_assert = (used.print || used.assertion);
+    if (ctx_blitter || used_print_assert) {
       // TODO(k-ye): One optimization is to synchronize only when we absolutely
       // need to transfer the data back to host. This includes the cases where
       // an arg is 1) an array, or 2) used as return value.
@@ -642,7 +651,8 @@ class KernelManager::Impl {
       if (ctx_blitter) {
         buffers_to_blit.push_back(ctx_blitter->ctx_buffer());
       }
-      if (used_print) {
+      if (used_print_assert) {
+        clear_print_assert_buffer();
         buffers_to_blit.push_back(print_buffer_.get());
       }
       blit_buffers_and_sync(buffers_to_blit);
@@ -650,7 +660,10 @@ class KernelManager::Impl {
       if (ctx_blitter) {
         ctx_blitter->metal_to_host();
       }
-      if (used_print) {
+      if (used.assertion) {
+        check_assertion_failure();
+      }
+      if (used.print) {
         flush_print_buffers();
       }
     }
@@ -794,9 +807,10 @@ class KernelManager::Impl {
                      runtime_mem_->size());
   }
 
-  void init_print_buffer() {
-    // TODO(k-ye): Do we need this at all?
-    did_modify_range(print_buffer_.get(), /*location=*/0, print_mem_->size());
+  void clear_print_assert_buffer() {
+    const auto sz = print_mem_->size();
+    std::memset(print_mem_->ptr(), 0, sz);
+    did_modify_range(print_buffer_.get(), /*location=*/0, sz);
   }
 
   void blit_buffers_and_sync(
@@ -821,10 +835,51 @@ class KernelManager::Impl {
     profiler_->stop();
   }
 
+  void check_assertion_failure() {
+    // TODO: Copy this to program's result_buffer, and let the Taichi runtime
+    // handle the assertion failures uniformly.
+    auto *asst_rec =
+        reinterpret_cast<shaders::AssertRecorderData *>(print_mem_->ptr());
+    if (!asst_rec->flag) {
+      return;
+    }
+    auto *msg_ptr = reinterpret_cast<int32_t *>(asst_rec + 1);
+    shaders::PrintMsg msg(msg_ptr, asst_rec->num_args);
+    using MsgType = shaders::PrintMsg::Type;
+    TI_ASSERT(msg.pm_get_type(0) == MsgType::Str);
+    const auto fmt_str = print_strtable_.get(msg.pm_get_data(0));
+    const auto err_str = format_error_message(fmt_str, [&msg](int argument_id) {
+      // +1 to skip the first arg, which is the error message template.
+      const int32 x = msg.pm_get_data(argument_id + 1);
+      return taichi_union_cast_with_different_sizes<uint64>(x);
+    });
+    // Note that we intentionally comment out the flag reset below, because it
+    // is ineffective at all. This is a very tricky part:
+    // 1. Under .managed storage mode, we need to call [didModifyRange:] to sync
+    // buffer data from CPU -> GPU. So ideally, after resetting the flag, we
+    // should just do so.
+    // 2. However, during the assertion (TI_ERROR), the stack unwinding seems to
+    // have deviated from the normal execution path. As a result, if we put
+    // [didModifyRange:] after TI_ERROR, it doesn't get executed...
+    // 3. The reason we put [didModifyRange:] after TI_ERROR is because we
+    // should do so after flush_print_buffers():
+    //
+    //   check_assertion_failure();  <-- Code below is skipped...
+    //   flush_print_buffers();
+    //   memset(print_mem_->ptr(), 0, print_mem_->size());
+    //   did_modify_range(print_buffer_);
+    //
+    // As a workaround, we put [didModifyRange:] before sync, where the program
+    // is still executing normally.
+    // asst_rec->flag = 0;
+    TI_ERROR("Assertion failure: {}", err_str);
+  }
+
   void flush_print_buffers() {
-    auto *pa =
-        reinterpret_cast<shaders::PrintMsgAllocator *>(print_mem_->ptr());
-    const int used_sz = std::min(pa->next, shaders::kMetalPrintBufferSize);
+    auto *pa = reinterpret_cast<shaders::PrintMsgAllocator *>(
+        print_mem_->ptr() + shaders::kMetalAssertBufferSize);
+    const int used_sz =
+        std::min(pa->next, shaders::kMetalPrintMsgsMaxQueueSize);
     using MsgType = shaders::PrintMsg::Type;
     char *buf = reinterpret_cast<char *>(pa + 1);
     const char *buf_end = buf + used_sz;
@@ -850,11 +905,13 @@ class KernelManager::Impl {
       buf += shaders::mtl_compute_print_msg_bytes(num_entries);
     }
 
-    if (pa->next >= shaders::kMetalPrintBufferSize) {
+    if (pa->next >= shaders::kMetalPrintMsgsMaxQueueSize) {
       py_cout << "...(maximum print buffer reached)\n";
     }
 
-    pa->next = 0;
+    // Comment out intentionally since it is ineffective otherwise. See
+    // check_assertion_failure() for the explanation.
+    // pa->next = 0;
   }
 
   static int compute_num_elems_per_chunk(int n) {
@@ -895,6 +952,7 @@ class KernelManager::Impl {
   nsobj_unique_ptr<MTLBuffer> global_tmps_buffer_;
   std::unique_ptr<BufferMemoryView> runtime_mem_;
   nsobj_unique_ptr<MTLBuffer> runtime_buffer_;
+  // TODO: Rename these to 'print_assert_{mem|buffer}_'
   std::unique_ptr<BufferMemoryView> print_mem_;
   nsobj_unique_ptr<MTLBuffer> print_buffer_;
   std::unordered_map<std::string, std::unique_ptr<CompiledTaichiKernel>>

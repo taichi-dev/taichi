@@ -8,6 +8,7 @@
 #include "taichi/backends/metal/env_config.h"
 #include "taichi/backends/metal/features.h"
 #include "taichi/ir/ir.h"
+#include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/math/arithmetic.h"
 #include "taichi/util/line_appender.h"
@@ -40,8 +41,9 @@ constexpr char kContextBufferName[] = "ctx_addr";
 constexpr char kContextVarName[] = "kernel_ctx_";
 constexpr char kRuntimeBufferName[] = "runtime_addr";
 constexpr char kRuntimeVarName[] = "runtime_";
-constexpr char kPrintBufferName[] = "print_addr";
+constexpr char kPrintAssertBufferName[] = "print_assert_addr";
 constexpr char kPrintAllocVarName[] = "print_alloc_";
+constexpr char kAssertRecorderVarName[] = "assert_rec_";
 constexpr char kLinearLoopIndexName[] = "linear_loop_idx_";
 constexpr char kListgenElemVarName[] = "listgen_elem_";
 constexpr char kRandStateVarName[] = "rand_state_";
@@ -59,7 +61,7 @@ std::string buffer_to_name(BuffersEnum b) {
     case BuffersEnum::Runtime:
       return kRuntimeBufferName;
     case BuffersEnum::Print:
-      return kPrintBufferName;
+      return kPrintAssertBufferName;
     default:
       TI_NOT_IMPLEMENTED;
       break;
@@ -275,7 +277,7 @@ class KernelCodegen : public IRVisitor {
         }
       } else if (opty == SNodeOpType::append) {
         TI_ASSERT(is_dynamic);
-        TI_ASSERT(stmt->ret_type.data_type == PrimitiveType::i32);
+        TI_ASSERT(stmt->ret_type->is_primitive(PrimitiveTypeID::i32));
         emit("{} = {}.append({});", result_var, parent, stmt->val->raw_name());
       } else if (opty == SNodeOpType::length) {
         TI_ASSERT(is_dynamic);
@@ -348,7 +350,7 @@ class KernelCodegen : public IRVisitor {
 
   void visit(GlobalTemporaryStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    const auto dt = metal_data_type_name(stmt->element_type());
+    const auto dt = metal_data_type_name(stmt->element_type().ptr_removed());
     emit("device {}* {} = reinterpret_cast<device {}*>({} + {});", dt,
          stmt->raw_name(), dt, kGlobalTmpsBufferName, stmt->offset);
   }
@@ -356,7 +358,8 @@ class KernelCodegen : public IRVisitor {
   void visit(ThreadLocalPtrStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     emit("thread auto* {} = reinterpret_cast<thread {}*>({} + {});",
-         stmt->raw_name(), metal_data_type_name(stmt->element_type()),
+         stmt->raw_name(),
+         metal_data_type_name(stmt->element_type().ptr_removed()),
          kTlsBufferName, stmt->offset);
   }
 
@@ -410,7 +413,7 @@ class KernelCodegen : public IRVisitor {
     const auto bin_name = bin->raw_name();
     const auto op_type = bin->op_type;
     if (op_type == BinaryOpType::floordiv) {
-      if (is_integral(bin->ret_type.data_type)) {
+      if (is_integral(bin->ret_type)) {
         emit("const {} {} = ifloordiv({}, {});", dt_name, bin_name, lhs_name,
              rhs_name);
       } else {
@@ -419,7 +422,7 @@ class KernelCodegen : public IRVisitor {
       }
       return;
     }
-    if (op_type == BinaryOpType::pow && is_integral(bin->ret_type.data_type)) {
+    if (op_type == BinaryOpType::pow && is_integral(bin->ret_type)) {
       // TODO(k-ye): Make sure the type is not i64?
       emit("const {} {} = pow_i32({}, {});", dt_name, bin_name, lhs_name,
            rhs_name);
@@ -485,19 +488,19 @@ class KernelCodegen : public IRVisitor {
       current_appender().push_indent();
     }
 
-    if (dt == PrimitiveType::i32) {
+    if (dt->is_primitive(PrimitiveTypeID::i32)) {
       emit(
           "const auto {} = atomic_fetch_{}_explicit((device atomic_int*){}, "
           "{}, "
           "metal::memory_order_relaxed);",
           stmt->raw_name(), op_name, stmt->dest->raw_name(), val_var);
-    } else if (dt == PrimitiveType::u32) {
+    } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
       emit(
           "const auto {} = atomic_fetch_{}_explicit((device atomic_uint*){}, "
           "{}, "
           "metal::memory_order_relaxed);",
           stmt->raw_name(), op_name, stmt->dest->raw_name(), val_var);
-    } else if (dt == PrimitiveType::f32) {
+    } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
       if (handle_float) {
         emit("const float {} = fatomic_fetch_{}({}, {});", stmt->raw_name(),
              op_name, stmt->dest->raw_name(), val_var);
@@ -602,7 +605,7 @@ class KernelCodegen : public IRVisitor {
 
   void visit(RandStmt *stmt) override {
     emit("const auto {} = metal_rand_{}({});", stmt->raw_name(),
-         data_type_short_name(stmt->ret_type.data_type), kRandStateVarName);
+         data_type_short_name(stmt->ret_type), kRandStateVarName);
   }
 
   void visit(PrintStmt *stmt) override {
@@ -624,7 +627,8 @@ class KernelCodegen : public IRVisitor {
         if (std::holds_alternative<Stmt *>(entry)) {
           auto *arg_stmt = std::get<Stmt *>(entry);
           const auto dt = arg_stmt->element_type();
-          TI_ASSERT_INFO(dt == PrimitiveType::i32 || dt == PrimitiveType::f32,
+          TI_ASSERT_INFO(dt->is_primitive(PrimitiveTypeID::i32) ||
+                             dt->is_primitive(PrimitiveTypeID::f32),
                          "print() only supports i32 or f32 scalars for now.");
           emit("{}.pm_set_{}({}, {});", msg_var_name, data_type_short_name(dt),
                i, arg_stmt->raw_name());
@@ -633,6 +637,47 @@ class KernelCodegen : public IRVisitor {
           emit("{}.pm_set_str({}, {});", msg_var_name, i, str_id);
         }
       }
+    }
+    emit("}}");
+  }
+
+  void visit(AssertStmt *stmt) override {
+    used_features()->assertion = true;
+
+    const auto &args = stmt->args;
+    // +1 because the assertion message template itself takes one slot
+    const auto num_args = args.size() + 1;
+    TI_ASSERT_INFO(num_args <= shaders::kMetalMaxNumAssertArgs,
+                   "[Metal] Too many args in assert()");
+    emit("if (!({})) {{", stmt->cond->raw_name());
+    {
+      ScopedIndent s(current_appender());
+      // Only record the message for the first-time assertion failure.
+      emit("if ({}.mark_first_failure()) {{", kAssertRecorderVarName);
+      {
+        ScopedIndent s2(current_appender());
+        emit("{}.set_num_args({});", kAssertRecorderVarName, num_args);
+        const std::string asst_var_name = stmt->raw_name() + "_msg_";
+        emit("PrintMsg {}({}.msg_buf_addr(), {});", asst_var_name,
+             kAssertRecorderVarName, num_args);
+        const int msg_str_id = print_strtab_->put(stmt->text);
+        emit("{}.pm_set_str(/*i=*/0, {});", asst_var_name, msg_str_id);
+        for (int i = 1; i < num_args; ++i) {
+          auto *arg = args[i - 1];
+          const auto ty = arg->element_type();
+          if (ty->is_primitive(PrimitiveTypeID::i32) ||
+              ty->is_primitive(PrimitiveTypeID::f32)) {
+            emit("{}.pm_set_{}({}, {});", asst_var_name,
+                 data_type_short_name(ty), i, arg->raw_name());
+          } else {
+            TI_ERROR(
+                "[Metal] assert() only supports i32 or f32 scalars for now.");
+          }
+        }
+      }
+      emit("}}");
+      // This has failed, no point executing the rest of the kernel.
+      emit("return;");
     }
     emit("}}");
   }
@@ -806,7 +851,8 @@ class KernelCodegen : public IRVisitor {
     ka.name = mtl_kernel_name;
     ka.task_type = stmt->task_type;
     ka.buffers = get_common_buffers();
-    ka.num_threads = 1;
+    ka.advisory_total_num_threads = 1;
+    ka.advisory_num_threads_per_group = 1;
 
     emit_mtl_kernel_sig(mtl_kernel_name, ka.buffers);
     {
@@ -867,7 +913,7 @@ class KernelCodegen : public IRVisitor {
       // sdf_renderer.py benchmark for setting |num_threads|
       // - num_elemnts: ~20 samples/s
       // - kMaxNumThreadsGridStrideLoop: ~12 samples/s
-      ka.num_threads = num_elems;
+      ka.advisory_total_num_threads = num_elems;
     } else {
       emit("// range_for, range known at runtime");
       begin_expr = stmt->const_begin
@@ -877,8 +923,9 @@ class KernelCodegen : public IRVisitor {
                                 ? std::to_string(stmt->end_value)
                                 : inject_load_global_tmp(stmt->end_offset);
       emit("const int {} = {} - {};", total_elems_name, end_expr, begin_expr);
-      ka.num_threads = kMaxNumThreadsGridStrideLoop;
+      ka.advisory_total_num_threads = kMaxNumThreadsGridStrideLoop;
     }
+    ka.advisory_num_threads_per_group = stmt->block_dim;
     // begin_ = thread_id   + begin_expr
     emit("const int begin_ = {} + {};", kKernelThreadIdName, begin_expr);
     // end_   = total_elems + begin_expr
@@ -942,19 +989,40 @@ class KernelCodegen : public IRVisitor {
     ka.task_type = stmt->task_type;
     ka.buffers = get_common_buffers();
 
-    emit_mtl_kernel_sig(mtl_kernel_name, ka.buffers);
+    const bool used_tls = (stmt->tls_prologue != nullptr);
+    KernelSigExtensions kernel_exts;
+    kernel_exts.use_simdgroup = (used_tls && cgen_config_.allow_simdgroup);
+    used_features()->simdgroup =
+        used_features()->simdgroup || kernel_exts.use_simdgroup;
+    emit_mtl_kernel_sig(mtl_kernel_name, ka.buffers, kernel_exts);
 
     const int sn_id = stmt->snode->id;
     // struct_for kernels use grid-stride loops
     const int total_num_elems_from_root =
         compiled_structs_->snode_descriptors.find(sn_id)
             ->second.total_num_elems_from_root;
-    ka.num_threads =
+    ka.advisory_total_num_threads =
         std::min(total_num_elems_from_root, kMaxNumThreadsGridStrideLoop);
+    ka.advisory_num_threads_per_group = stmt->block_dim;
 
     current_appender().push_indent();
     emit("// struct_for");
     emit_runtime_and_memalloc_def();
+
+    if (used_tls) {
+      // Using TLS means we will access some SNodes within this kernel. The
+      // struct of an SNode needs Runtime and MemoryAllocator to construct.
+      // Using |int32_t| because it aligns to 4bytes.
+      //
+      // TODO(k-ye): De-dupe TLS for range-for and struct-for.
+      emit("// TLS prologue");
+      const std::string tls_bufi32_name = "tls_bufi32_";
+      emit("int32_t {}[{}];", tls_bufi32_name, (stmt->tls_size + 3) / 4);
+      emit("thread char* {} = reinterpret_cast<thread char*>({});",
+           kTlsBufferName, tls_bufi32_name);
+      stmt->tls_prologue->accept(this);
+    }
+
     emit("ListManager parent_list;");
     emit("parent_list.lm_data = ({}->snode_lists + {});", kRuntimeVarName,
          sn_id);
@@ -991,19 +1059,34 @@ class KernelCodegen : public IRVisitor {
 
       current_kernel_attribs_ = &ka;
       const auto mtl_func_name = mtl_kernel_func_name(mtl_kernel_name);
-      emit_mtl_kernel_func_def(
-          mtl_func_name, ka.buffers,
-          /*extra_params=*/
-          {{"thread const ListgenElement&", kListgenElemVarName}},
-          stmt->body.get());
-      emit_call_mtl_kernel_func(mtl_func_name, ka.buffers,
-                                /*extra_args=*/
-                                {kListgenElemVarName},
+      std::vector<FuncParamLiteral> extra_func_params = {
+          {"thread const ListgenElement&", kListgenElemVarName},
+      };
+      std::vector<std::string> extra_args = {
+          kListgenElemVarName,
+      };
+      if (used_tls) {
+        extra_func_params.push_back({"thread char*", kTlsBufferName});
+        extra_args.push_back(kTlsBufferName);
+      }
+      emit_mtl_kernel_func_def(mtl_func_name, ka.buffers, extra_func_params,
+                               stmt->body.get());
+      emit_call_mtl_kernel_func(mtl_func_name, ka.buffers, extra_args,
                                 /*loop_index_expr=*/"ii");
       current_kernel_attribs_ = nullptr;
     }
     emit("}}");  // closes for loop
     current_appender().pop_indent();
+
+    if (used_tls) {
+      // TODO(k-ye): De-dupe TLS for range-for and struct-for.
+      TI_ASSERT(stmt->tls_epilogue != nullptr);
+      inside_tls_epilogue_ = true;
+      emit("{{  // TLS epilogue");
+      stmt->tls_epilogue->accept(this);
+      inside_tls_epilogue_ = false;
+      emit("}}");
+    }
     emit("}}\n");  // closes kernel
 
     mtl_kernels_attribs()->push_back(ka);
@@ -1020,9 +1103,10 @@ class KernelCodegen : public IRVisitor {
     if (type == Type::listgen) {
       // listgen kernels use grid-stride loops
       const auto &sn_descs = compiled_structs_->snode_descriptors;
-      ka.num_threads = std::min(
+      ka.advisory_total_num_threads = std::min(
           sn_descs.find(sn->id)->second.total_num_self_from_root(sn_descs),
           kMaxNumThreadsGridStrideLoop);
+      ka.advisory_num_threads_per_group = stmt->block_dim;
       ka.buffers = {BuffersEnum::Runtime, BuffersEnum::Root,
                     BuffersEnum::Context};
     } else {
@@ -1039,7 +1123,7 @@ class KernelCodegen : public IRVisitor {
 
   std::string inject_load_global_tmp(int offset,
                                      DataType dt = PrimitiveType::i32) {
-    const auto vt = VectorType(/*width=*/1, dt);
+    const auto vt = TypeFactory::create_vector_or_scalar_type(1, dt);
     auto gtmp = Stmt::make<GlobalTemporaryStmt>(offset, vt);
     gtmp->accept(this);
     auto gload = Stmt::make<GlobalLoadStmt>(gtmp.get());
@@ -1084,9 +1168,17 @@ class KernelCodegen : public IRVisitor {
           fmt::arg("rtm", kRuntimeVarName),
           fmt::arg("lidx", kLinearLoopIndexName),
           fmt::arg("nums", kNumRandSeeds));
-      // Init PrintMsgAllocator
-      emit("device auto* {} = reinterpret_cast<device PrintMsgAllocator*>({});",
-           kPrintAllocVarName, kPrintBufferName);
+      // Init AssertRecorder.
+      emit("AssertRecorder {}({});", kAssertRecorderVarName,
+           kPrintAssertBufferName);
+      // Init PrintMsgAllocator.
+      // The print buffer comes after (AssertRecorder + assert message buffer),
+      // therefore we skip by +|kMetalAssertBufferSize|.
+      emit(
+          "device auto* {} = reinterpret_cast<device PrintMsgAllocator*>({} + "
+          "{});",
+          kPrintAllocVarName, kPrintAssertBufferName,
+          shaders::kMetalAssertBufferSize);
     }
     // We do not need additional indentation, because |func_ir| itself is a
     // block, which will be indented automatically.

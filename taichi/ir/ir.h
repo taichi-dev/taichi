@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <variant>
 #include <tuple>
+
 #include "taichi/common/core.h"
 #include "taichi/util/bit.h"
 #include "taichi/lang_util.h"
@@ -32,43 +33,6 @@ using ScratchPadOptions = std::vector<std::pair<int, SNode *>>;
 #undef PER_STATEMENT
 
 IRBuilder &current_ast_builder();
-
-struct VectorType {
- private:
-  bool _is_pointer;
-
- public:
-  int width;
-  DataType data_type;
-
-  VectorType(int width, DataType data_type, bool is_pointer = false)
-      : _is_pointer(is_pointer), width(width), data_type(data_type) {
-  }
-
-  VectorType()
-      : _is_pointer(false), width(1), data_type(PrimitiveType::unknown) {
-  }
-
-  bool operator==(const VectorType &o) const {
-    return width == o.width && data_type == o.data_type;
-  }
-
-  bool operator!=(const VectorType &o) const {
-    return !(*this == o);
-  }
-
-  std::string pointer_suffix() const;
-  std::string element_type_name() const;
-  std::string str() const;
-
-  bool is_pointer() const {
-    return _is_pointer;
-  }
-
-  void set_is_pointer(bool v) {
-    _is_pointer = v;
-  }
-};
 
 class DecoratorRecorder {
  public:
@@ -530,18 +494,13 @@ class Stmt : public IRNode {
   bool erased;
   bool fields_registered;
   std::string tb;
-  bool is_ptr;
-  VectorType ret_type;
+  DataType ret_type;
 
   Stmt();
   Stmt(const Stmt &stmt);
 
-  int &width() {
-    return ret_type.width;
-  }
-
-  const int &width() const {
-    return ret_type.width;
+  int width() const {
+    return ret_type->vector_width();
   }
 
   virtual bool is_container_statement() const {
@@ -549,11 +508,11 @@ class Stmt : public IRNode {
   }
 
   DataType &element_type() {
-    return ret_type.data_type;
+    return ret_type;
   }
 
   std::string ret_data_type_name() const {
-    return ret_type.str();
+    return ret_type->to_string();
   }
 
   std::string type_hint() const;
@@ -595,7 +554,8 @@ class Stmt : public IRNode {
   IRNode *get_parent() const override;
 
   virtual void repeat(int factor) {
-    ret_type.width *= factor;
+    TI_ASSERT(factor == 1);
+    // ret_type.width *= factor;
   }
 
   // returns the inserted stmt

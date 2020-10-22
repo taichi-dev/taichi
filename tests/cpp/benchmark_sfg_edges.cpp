@@ -226,6 +226,7 @@ void run_test(const std::vector<PairData> &data,
 
 // Basic tests within a basic block
 TI_TEST("benchmark_sfg") {
+#if 0
   std::vector<PairData> data = {
       {0, 0}, {0, 2}, {0, 2}, {0, 5},                  // 0
       {1, 1}, {1, 2}, {1, 3}, {1, 3}, {1, 6}, {1, 6},  // 1
@@ -281,6 +282,7 @@ TI_TEST("benchmark_sfg") {
     run_test<FlattenVec>(data, non_exists);
   }
   Profiling::get_instance().print_profile_info();
+#endif
 }
 
 TLANG_NAMESPACE_END

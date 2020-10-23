@@ -74,7 +74,7 @@ if (TI_WITH_CC)
   list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CC_SOURCE})
 endif()
 
-add_library(${CORE_LIBRARY_NAME} SHARED ${TAICHI_CORE_SOURCE} ${PROJECT_SOURCES})
+add_library(${CORE_LIBRARY_NAME} SHARED ${TAICHI_CORE_SOURCE} ${PROJECT_SOURCES} ../taichi/runtime/llvm/node_bit_struct.h)
 
 if (APPLE)
     # Ask OS X to minic Linux dynamic linking behavior

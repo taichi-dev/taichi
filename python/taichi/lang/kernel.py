@@ -522,8 +522,7 @@ _KERNEL_CLASS_STACKFRAME_STMT_RES = [
 
 
 def _inside_class(level_of_class_stackframe):
-    import inspect
-    frames = inspect.stack()
+    frames = oinspect.stack()
     try:
         maybe_class_frame = frames[level_of_class_stackframe]
         statement_list = maybe_class_frame[4]
@@ -615,7 +614,6 @@ def data_oriented(cls):
         _taichi_skip_traceback = 1
         x = super(cls, self).__getattribute__(item)
         if hasattr(x, '_is_wrapped_kernel'):
-            import inspect
             if inspect.ismethod(x):
                 wrapped = x.__func__
             else:

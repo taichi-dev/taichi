@@ -29,7 +29,7 @@ setuptools.setup(name=project_name,
                  install_requires=[
                      'numpy',
                      'pybind11>=2.5.0',
-                     'sourceinspect>=0.0.3',
+                     'sourceinspect>=0.0.4',
                      'colorama',
                      'astor',
                  ],

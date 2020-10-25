@@ -293,7 +293,7 @@ def make_constant_expr(val):
         else:
             assert False
     else:
-        raise ValueError(f'Bad constant scalar expression: {type(val)}')
+        raise ValueError(f'Invalid constant scalar expression: {type(val)}')
 
 
 def reset():

@@ -190,11 +190,11 @@ class KernelDefError(Exception):
 
 class KernelArgError(Exception):
     def __init__(self, pos, needed, provided):
+        message = f'Argument {pos} (type={provided}) cannot be converted into required type {needed}'
+        super().__init__(message)
         self.pos = pos
         self.needed = needed
         self.provided = provided
-        message = f'Argument {self.pos} (type={self.provided}) cannot be converted into required type {self.needed}'
-        super().__init__(message)
 
 
 def _get_global_vars(func):

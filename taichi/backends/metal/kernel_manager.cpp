@@ -793,9 +793,9 @@ class KernelManager::Impl {
       mem_alloc->next = shaders::kAlignment;
       // root list data are static
       ListgenElement root_elem;
-      root_elem.root_mem_offset = 0;
+      root_elem.mem_offset = 0;
       for (int i = 0; i < taichi_max_num_indices; ++i) {
-        root_elem.coords[i] = 0;
+        root_elem.coords.at[i] = 0;
       }
       ListManager root_lm;
       root_lm.lm_data = rtm_list_begin + root_id;
@@ -880,6 +880,7 @@ class KernelManager::Impl {
         print_mem_->ptr() + shaders::kMetalAssertBufferSize);
     const int used_sz =
         std::min(pa->next, shaders::kMetalPrintMsgsMaxQueueSize);
+    TI_TRACE("Print buffer used bytes: {}", used_sz);
     using MsgType = shaders::PrintMsg::Type;
     char *buf = reinterpret_cast<char *>(pa + 1);
     const char *buf_end = buf + used_sz;

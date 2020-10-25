@@ -25,15 +25,6 @@
 
 static_assert(false, "Do not include");
 
-// Just a mock to illustrate what the Runtime looks like, do not use.
-// The actual Runtime struct has to be emitted by codegen, because it depends
-// on the number of SNodes.
-struct Runtime {
-  SNodeMeta *snode_metas;
-  SNodeExtractors *snode_extractors;
-  ListManager *snode_lists;
-};
-
 #define METAL_BEGIN_RUNTIME_KERNELS_DEF
 #define METAL_END_RUNTIME_KERNELS_DEF
 
@@ -77,15 +68,17 @@ STR(
         }
         const int child_idx = (ii % num_slots);
         const auto parent_elem = parent_list.get<ListgenElement>(parent_idx);
-        device byte *parent_addr = root_addr + parent_elem.root_mem_offset;
+        device byte *parent_addr =
+            mtl_lgen_snode_addr(parent_elem, root_addr, runtime, mem_alloc);
         if (is_active(parent_addr, parent_meta, child_idx)) {
           ListgenElement child_elem;
-          child_elem.root_mem_offset = parent_elem.root_mem_offset +
-                                       child_idx * child_stride +
-                                       child_meta.mem_offset_in_parent;
-          refine_coordinates(parent_elem,
+          child_elem.mem_offset =
+              parent_elem.mem_offset + child_idx * child_stride;
+          child_elem.mem_offset += child_meta.mem_offset_in_parent;
+
+          refine_coordinates(parent_elem.coords,
                              runtime->snode_extractors[parent_snode_id],
-                             child_idx, &child_elem);
+                             child_idx, &(child_elem.coords));
           child_list.append(child_elem);
         }
       }

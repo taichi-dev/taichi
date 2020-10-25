@@ -34,11 +34,6 @@ STR(
 
     struct MemoryAllocator { atomic_int next; };
 
-    struct ListgenElement {
-      int32_t coords[kTaichiMaxNumIndices];
-      int32_t root_mem_offset = 0;
-    };
-
     // ListManagerData manages a list of elements with adjustable size.
     struct ListManagerData {
       int32_t element_stride = 0;
@@ -54,17 +49,11 @@ STR(
     // NodeManagerData stores the actual data needed to implement NodeManager
     // in Metal buffers.
     //
-    // There are several level of indirections here to retrieve an allocated
-    // element from a NodeManager. The actual allocated elements are not
-    // embedded in the memory region of NodeManagerData. Instead, all this data
-    // structure does is to maintain a few lists (ListManagerData).
-    //
-    // However, these lists do not store the actual data, either. Instead, their
-    // elements are just 32-bit integers, which are memory offsets (PtrOffset)
-    // in a Metal buffer. That buffer to which these offsets point holds the
-    // actual data.
+    // The actual allocated elements are not embedded in the memory region of
+    // NodeManagerData. Instead, all this data structure does is to maintain a
+    // few lists (ListManagerData). In particular, |data_list| stores the actual
+    // data, while |free_list| and |recycle_list| are only meant for GC.
     struct NodeManagerData {
-      using ElemIndex = int32_t;
       // Stores the actual data.
       ListManagerData data_list;
       // For GC
@@ -73,14 +62,51 @@ STR(
       atomic_int free_list_used;
       // Need this field to bookkeep some data during GC
       int recycled_list_size_backup;
-      // The first 8 index values are reserved to encode special status:
-      // * 0  : nullptr
-      // * 1  : spinning for allocation
-      // * 2-7: unused for now
-      //
-      /// For each allocated index, it is added by |index_offset| to skip over
-      /// these reserved values.
-      constant static constexpr ElemIndex kIndexOffset = 8;
+
+      // Use this type instead of the raw index type (int32_t), because the
+      // raw value needs to be shifted by |kIndexOffset| in order for the
+      // spinning memory allocation algorithm to work.
+      struct ElemIndex {
+        // The first 8 index values are reserved to encode special status:
+        // * 0  : nullptr
+        // * 1  : spinning for allocation
+        // * 2-7: unused for now
+        //
+        /// For each allocated index, it is added by |index_offset| to skip over
+        /// these reserved values.
+        constant static constexpr int32_t kIndexOffset = 8;
+
+        ElemIndex() = default;
+
+        static ElemIndex from_index(int i) {
+          return ElemIndex(i + kIndexOffset);
+        }
+
+        static ElemIndex from_raw(int r) {
+          return ElemIndex(r);
+        }
+
+        inline int32_t index() const {
+          return raw_ - kIndexOffset;
+        }
+
+        inline int32_t raw() const {
+          return raw_;
+        }
+
+        inline bool is_valid() const {
+          return raw_ >= kIndexOffset;
+        }
+
+        inline static bool is_valid(int raw) {
+          return ElemIndex::from_raw(raw).is_valid();
+        }
+
+       private:
+        explicit ElemIndex(int r) : raw_(r) {
+        }
+        int32_t raw_ = 0;
+      };
     };
 
     // This class is very similar to metal::SNodeDescriptor
@@ -101,6 +127,21 @@ STR(
       };
 
       Extractor extractors[kTaichiMaxNumIndices];
+    };
+
+    struct ElementCoords { int32_t at[kTaichiMaxNumIndices]; };
+
+    struct ListgenElement {
+      ElementCoords coords;
+      // Memory offset from a given address.
+      // * If in_root_buffer() is true, this is from the root buffer address.
+      // * O.W. this is from the |id|-th NodeManager's |elem_idx|-th element.
+      int32_t mem_offset = 0;
+
+      inline bool in_root_buffer() const {
+        // Placeholder impl
+        return true;
+      }
     };
     // clang-format off
 )

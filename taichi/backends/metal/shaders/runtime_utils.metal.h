@@ -23,6 +23,16 @@
 
 #else
 
+// Just a mock to illustrate what the Runtime looks like, do not use.
+// The actual Runtime struct has to be emitted by codegen, because it depends
+// on the number of SNodes.
+struct Runtime {
+  SNodeMeta *snode_metas = nullptr;
+  SNodeExtractors *snode_extractors = nullptr;
+  ListManagerData *snode_lists = nullptr;
+  uint32_t *rand_seeds = nullptr;
+};
+
 #define METAL_BEGIN_RUNTIME_UTILS_DEF
 #define METAL_END_RUNTIME_UTILS_DEF
 
@@ -148,10 +158,6 @@ STR(
       device NodeManagerData *nm_data;
       device MemoryAllocator *mem_alloc;
 
-      static inline bool is_valid(ElemIndex i) {
-        return i >= NodeManagerData::kIndexOffset;
-      }
-
       ElemIndex allocate() {
         ListManager free_list;
         free_list.lm_data = &(nm_data->free_list);
@@ -165,9 +171,8 @@ STR(
         if (cur_used < free_list.num_active()) {
           return free_list.get<ElemIndex>(cur_used);
         }
-        // Shift by |kIndexOffset| to skip special encoded values.
-        return data_list.reserve_new_elem().elem_idx +
-               NodeManagerData::kIndexOffset;
+
+        return ElemIndex::from_index(data_list.reserve_new_elem().elem_idx);
       }
 
       device byte *get(ElemIndex i) {
@@ -175,11 +180,10 @@ STR(
         data_list.lm_data = &(nm_data->data_list);
         data_list.mem_alloc = mem_alloc;
 
-        return data_list.get_ptr(i - NodeManagerData::kIndexOffset);
+        return data_list.get_ptr(i.index());
       }
 
       void recycle(ElemIndex i) {
-        // Precondition: |i| is shifted by |kIndexOffset|.
         ListManager recycled_list;
         recycled_list.lm_data = &(nm_data->recycled_list);
         recycled_list.mem_alloc = mem_alloc;
@@ -322,16 +326,23 @@ STR(
     }
 
     [[maybe_unused]] void refine_coordinates(
-        thread const ListgenElement &parent_elem,
-        device const SNodeExtractors &child_extrators,
-        int l,
-        thread ListgenElement *child_elem) {
+        thread const ElementCoords &parent,
+        device const SNodeExtractors &child_extrators, int l,
+        thread ElementCoords *child) {
       for (int i = 0; i < kTaichiMaxNumIndices; ++i) {
         device const auto &ex = child_extrators.extractors[i];
         const int mask = ((1 << ex.num_bits) - 1);
         const int addition = (((l >> ex.acc_offset) & mask) << ex.start);
-        child_elem->coords[i] = (parent_elem.coords[i] | addition);
+        child->at[i] = (parent.at[i] | addition);
       }
+    }
+
+    // Gets the address of an SNode cell identified by |lgen|.
+    [[maybe_unused]] device byte *mtl_lgen_snode_addr(
+        thread const ListgenElement &lgen, device byte *root_addr,
+        device Runtime *rtm, device MemoryAllocator *mem_alloc) {
+      // Placeholder impl
+      return root_addr + lgen.mem_offset;
     })
 METAL_END_RUNTIME_UTILS_DEF
 // clang-format on

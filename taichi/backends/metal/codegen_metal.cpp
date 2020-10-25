@@ -45,7 +45,7 @@ constexpr char kPrintAssertBufferName[] = "print_assert_addr";
 constexpr char kPrintAllocVarName[] = "print_alloc_";
 constexpr char kAssertRecorderVarName[] = "assert_rec_";
 constexpr char kLinearLoopIndexName[] = "linear_loop_idx_";
-constexpr char kListgenElemVarName[] = "listgen_elem_";
+constexpr char kElementCoordsVarName[] = "elem_coords_";
 constexpr char kRandStateVarName[] = "rand_state_";
 constexpr char kMemAllocVarName[] = "mem_alloc_";
 constexpr char kTlsBufferName[] = "tls_buffer_";
@@ -372,7 +372,7 @@ class KernelCodegen : public IRVisitor {
         TI_ASSERT(stmt->index == 0);
         emit("const int {} = {};", stmt_name, kLinearLoopIndexName);
       } else if (type == TaskType::struct_for) {
-        emit("const int {} = {}.coords[{}];", stmt_name, kListgenElemVarName,
+        emit("const int {} = {}.at[{}];", stmt_name, kElementCoordsVarName,
              stmt->index);
       } else {
         TI_NOT_IMPLEMENTED;
@@ -568,8 +568,6 @@ class KernelCodegen : public IRVisitor {
     } else if (stmt->task_type == Type::gc) {
       // Ignored
     } else {
-      // struct_for is automatically lowered to ranged_for for dense snodes
-      // (#378). So we only need to support serial and range_for tasks.
       TI_ERROR("Unsupported offload type={} on Metal arch", stmt->task_name());
     }
     is_top_level_ = true;
@@ -1015,32 +1013,29 @@ class KernelCodegen : public IRVisitor {
     {
       ScopedIndent s2(current_appender());
       emit("const int parent_idx_ = (ii / child_num_slots);");
-      emit("if (parent_idx_ >= parent_list.num_active()) return;");
+      emit("if (parent_idx_ >= parent_list.num_active()) break;");
       emit("const int child_idx_ = (ii % child_num_slots);");
       emit(
           "const auto parent_elem_ = "
           "parent_list.get<ListgenElement>(parent_idx_);");
-      emit("device auto *parent_addr_ = {} + parent_elem_.root_mem_offset;",
-           kRootBufferName);
+      emit(
+          "device auto *parent_addr_ = mtl_lgen_snode_addr(parent_elem_, {}, "
+          "{}, {});",
+          kRootBufferName, kRuntimeVarName, kMemAllocVarName);
       emit("if (!is_active(parent_addr_, parent_meta, child_idx_)) continue;");
-      emit("ListgenElement {};", kListgenElemVarName);
-      // No need to add mem_offset_in_parent, because place() always starts at 0
+      emit("ElementCoords {};", kElementCoordsVarName);
       emit(
-          "{}.root_mem_offset = parent_elem_.root_mem_offset + child_idx_ * "
-          "child_stride;",
-          kListgenElemVarName);
-      emit(
-          "refine_coordinates(parent_elem_, {}->snode_extractors[{}], "
+          "refine_coordinates(parent_elem_.coords, {}->snode_extractors[{}], "
           "child_idx_, &{});",
-          kRuntimeVarName, sn_id, kListgenElemVarName);
+          kRuntimeVarName, sn_id, kElementCoordsVarName);
 
       current_kernel_attribs_ = &ka;
       const auto mtl_func_name = mtl_kernel_func_name(mtl_kernel_name);
       std::vector<FuncParamLiteral> extra_func_params = {
-          {"thread const ListgenElement&", kListgenElemVarName},
+          {"thread const ElementCoords &", kElementCoordsVarName},
       };
       std::vector<std::string> extra_args = {
-          kListgenElemVarName,
+          kElementCoordsVarName,
       };
       if (used_tls) {
         extra_func_params.push_back({"thread char*", kTlsBufferName});
@@ -1053,11 +1048,11 @@ class KernelCodegen : public IRVisitor {
       current_kernel_attribs_ = nullptr;
     }
     emit("}}");  // closes for loop
-    current_appender().pop_indent();
-
     if (used_tls) {
       generate_tls_epilogue(stmt);
     }
+
+    current_appender().pop_indent();
     emit("}}\n");  // closes kernel
 
     mtl_kernels_attribs()->push_back(ka);

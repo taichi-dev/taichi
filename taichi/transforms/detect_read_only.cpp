@@ -15,7 +15,7 @@ void detect_read_only_offload(OffloadedStmt *offload) {
   auto accessed = irpass::analysis::gather_snode_read_writes(offload);
   for (auto snode : accessed.first) {
     if (accessed.second.count(snode) == 0) {
-      // read only SNode
+      // read-only SNode
       auto rec = std::make_pair(SNodeAccessFlag::read_only, snode);
       if (std::find(offload->scratch_opt.begin(), offload->scratch_opt.end(),
                     rec) == offload->scratch_opt.end()) {

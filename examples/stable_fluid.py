@@ -19,7 +19,7 @@ force_radius = res / 3.0
 debug = False
 paused = False
 
-ti.init(arch=ti.gpu)
+ti.init(arch=ti.gpu, detect_read_only=False)
 
 if use_mgpcg:
     from mgpcg_advanced import MGPCG  # examples/mgpcg_advanced.py
@@ -122,7 +122,6 @@ backtrace = backtrace_rk3
 @ti.kernel
 def advect_semilag(vf: ti.template(), qf: ti.template(), new_qf: ti.template(),
                    intermedia_qf: ti.template()):
-    ti.cache_read_only(qf, vf)
     for i, j in vf:
         p = ti.Vector([i, j]) + 0.5
         p = backtrace(vf, p, dt)
@@ -132,13 +131,11 @@ def advect_semilag(vf: ti.template(), qf: ti.template(), new_qf: ti.template(),
 @ti.kernel
 def advect_bfecc(vf: ti.template(), qf: ti.template(), new_qf: ti.template(),
                  intermedia_qf: ti.template()):
-    ti.cache_read_only(qf, vf)
     for i, j in vf:
         p = ti.Vector([i, j]) + 0.5
         p = backtrace(vf, p, dt)
         intermedia_qf[i, j] = bilerp(qf, p)
 
-    ti.cache_read_only(intermedia_qf, qf, vf)
     for i, j in vf:
         p = ti.Vector([i, j]) + 0.5
         # star means the temp value after a back tracing (forward advection)
@@ -184,7 +181,6 @@ def apply_impulse(vf: ti.template(), dyef: ti.template(),
 
 @ti.kernel
 def divergence(vf: ti.template()):
-    ti.cache_read_only(vf)
     for i, j in vf:
         vl = sample(vf, i - 1, j).x
         vr = sample(vf, i + 1, j).x
@@ -204,7 +200,6 @@ def divergence(vf: ti.template()):
 
 @ti.kernel
 def vorticity(vf: ti.template()):
-    ti.cache_read_only(vf)
     for i, j in vf:
         vl = sample(vf, i - 1, j).y
         vr = sample(vf, i + 1, j).y
@@ -216,7 +211,6 @@ def vorticity(vf: ti.template()):
 
 @ti.kernel
 def pressure_jacobi_single(pf: ti.template(), new_pf: ti.template()):
-    ti.cache_read_only(pf)
     for i, j in pf:
         pl = sample(pf, i - 1, j)
         pr = sample(pf, i + 1, j)
@@ -228,7 +222,6 @@ def pressure_jacobi_single(pf: ti.template(), new_pf: ti.template()):
 
 @ti.kernel
 def pressure_jacobi_dual(pf: ti.template(), new_pf: ti.template()):
-    ti.cache_read_only(pf)
     for i, j in pf:
         pcc = sample(pf, i, j)
         pll = sample(pf, i - 2, j)
@@ -257,7 +250,6 @@ if pressure_jacobi == pressure_jacobi_dual:
 
 @ti.kernel
 def subtract_gradient(vf: ti.template(), pf: ti.template()):
-    ti.cache_read_only(pf)
     for i, j in vf:
         pl = sample(pf, i - 1, j)
         pr = sample(pf, i + 1, j)
@@ -269,7 +261,6 @@ def subtract_gradient(vf: ti.template(), pf: ti.template()):
 @ti.kernel
 def enhance_vorticity(vf: ti.template(), cf: ti.template()):
     # anti-physics visual enhancement...
-    ti.cache_read_only(cf)
     for i, j in vf:
         cl = sample(cf, i - 1, j)
         cr = sample(cf, i + 1, j)
@@ -282,15 +273,13 @@ def enhance_vorticity(vf: ti.template(), cf: ti.template()):
         vf[i, j] = min(max(vf[i, j] + force * dt, -1e3), 1e3)
 
 
-def step(mouse_data):
+def step():
     advect(velocities_pair.cur, velocities_pair.cur, velocities_pair.nxt,
            _intermedia_velocities)
     advect(velocities_pair.cur, dyes_pair.cur, dyes_pair.nxt,
            _intermedia_dye_buffer)
     velocities_pair.swap()
     dyes_pair.swap()
-
-    apply_impulse(velocities_pair.cur, dyes_pair.cur, mouse_data)
 
     divergence(velocities_pair.cur)
 
@@ -351,31 +340,11 @@ def reset():
     dyes_pair.cur.fill(0)
 
 
-gui = ti.GUI('Stable Fluid', (res, res))
 md_gen = MouseDataGen()
-while gui.running:
-    if gui.get_event(ti.GUI.PRESS):
-        e = gui.event
-        if e.key == ti.GUI.ESCAPE:
-            break
-        elif e.key == 'r':
-            paused = False
-            reset()
-        elif e.key == 'p':
-            paused = not paused
-        elif e.key == 'd':
-            debug = not debug
+while True:
+    t = time.time()
+    for i in range(100):
+        step()
+    ti.sync()
+    print(time.time() - t)
 
-    if not paused:
-        mouse_data = md_gen(gui)
-        for i in range(10):
-            step(mouse_data)
-
-    gui.set_image(dyes_pair.cur)
-    # To visualize velocity field:
-    # gui.set_image(velocities_pair.cur.to_numpy() * 0.01 + 0.5)
-    # To visualize velocity divergence:
-    # divergence(velocities_pair.cur); gui.set_image(velocity_divs.to_numpy() * 0.1 + 0.5)
-    # To visualize velocity vorticity:
-    # vorticity(velocities_pair.cur); gui.set_image(velocity_curls.to_numpy() * 0.03 + 0.5)
-    gui.show()

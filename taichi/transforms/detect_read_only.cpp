@@ -11,7 +11,7 @@ namespace irpass {
 
 namespace {
 
-void detect_read_only_offload(OffloadedStmt *offload) {
+void detect_read_only_in_task(OffloadedStmt *offload) {
   auto accessed = irpass::analysis::gather_snode_read_writes(offload);
   for (auto snode : accessed.first) {
     if (accessed.second.count(snode) == 0) {
@@ -29,7 +29,7 @@ void detect_read_only_offload(OffloadedStmt *offload) {
 
 void detect_read_only(IRNode *root) {
   for (auto &offload : root->as<Block>()->statements) {
-    detect_read_only_offload(offload->as<OffloadedStmt>());
+    detect_read_only_in_task(offload->as<OffloadedStmt>());
   }
 }
 

@@ -6,12 +6,11 @@
 
 import taichi as ti
 import numpy as np
-import time
 
 use_mgpcg = False  # True to use multigrid-preconditioned conjugate gradients
 res = 512
 dt = 0.03
-p_jacobi_iters = 160  # 40 for quicker but not-so-accurate result
+p_jacobi_iters = 160  # 40 for a quicker but less accurate result
 f_strength = 10000.0
 curl_strength = 0  # 7 for unrealistic visual enhancement
 dye_decay = 0.99
@@ -19,7 +18,7 @@ force_radius = res / 3.0
 debug = False
 paused = False
 
-ti.init(arch=ti.gpu, detect_read_only=False)
+ti.init(arch=ti.gpu)
 
 if use_mgpcg:
     from mgpcg_advanced import MGPCG  # examples/mgpcg_advanced.py
@@ -273,13 +272,15 @@ def enhance_vorticity(vf: ti.template(), cf: ti.template()):
         vf[i, j] = min(max(vf[i, j] + force * dt, -1e3), 1e3)
 
 
-def step():
+def step(mouse_data):
     advect(velocities_pair.cur, velocities_pair.cur, velocities_pair.nxt,
            _intermedia_velocities)
     advect(velocities_pair.cur, dyes_pair.cur, dyes_pair.nxt,
            _intermedia_dye_buffer)
     velocities_pair.swap()
     dyes_pair.swap()
+
+    apply_impulse(velocities_pair.cur, dyes_pair.cur, mouse_data)
 
     divergence(velocities_pair.cur)
 
@@ -340,11 +341,30 @@ def reset():
     dyes_pair.cur.fill(0)
 
 
+gui = ti.GUI('Stable Fluid', (res, res))
 md_gen = MouseDataGen()
-while True:
-    t = time.time()
-    for i in range(100):
-        step()
-    ti.sync()
-    print(time.time() - t)
+while gui.running:
+    if gui.get_event(ti.GUI.PRESS):
+        e = gui.event
+        if e.key == ti.GUI.ESCAPE:
+            break
+        elif e.key == 'r':
+            paused = False
+            reset()
+        elif e.key == 'p':
+            paused = not paused
+        elif e.key == 'd':
+            debug = not debug
 
+    if not paused:
+        mouse_data = md_gen(gui)
+        step(mouse_data)
+
+    gui.set_image(dyes_pair.cur)
+    # To visualize velocity field:
+    # gui.set_image(velocities_pair.cur.to_numpy() * 0.01 + 0.5)
+    # To visualize velocity divergence:
+    # divergence(velocities_pair.cur); gui.set_image(velocity_divs.to_numpy() * 0.1 + 0.5)
+    # To visualize velocity vorticity:
+    # vorticity(velocities_pair.cur); gui.set_image(velocity_curls.to_numpy() * 0.03 + 0.5)
+    gui.show()

@@ -17,6 +17,16 @@ TLANG_NAMESPACE_BEGIN
 #define TI_EXPRESSION_IMPLEMENTATION
 #include "expression_ops.h"
 
+std::string snode_access_flag_name(SNodeAccessFlag type) {
+  if (type == SNodeAccessFlag::block_local) {
+    return "block_local";
+  } else if (type == SNodeAccessFlag::read_only) {
+    return "read_only";
+  } else {
+    TI_ERROR("Undefined SNode AccessType (value={})", int(type));
+  }
+}
+
 IRBuilder &current_ast_builder() {
   return context->builder();
 }

@@ -25,8 +25,11 @@ class Stmt;
 using pStmt = std::unique_ptr<Stmt>;
 
 class SNode;
+
+enum class SNodeAccessFlag : int { block_local, read_only };
+std::string snode_access_flag_name(SNodeAccessFlag type);
 class ScratchPads;
-using ScratchPadOptions = std::vector<std::pair<int, SNode *>>;
+using ScratchPadOptions = std::vector<std::pair<SNodeAccessFlag, SNode *>>;
 
 #define PER_STATEMENT(x) class x;
 #include "taichi/inc/statements.inc.h"

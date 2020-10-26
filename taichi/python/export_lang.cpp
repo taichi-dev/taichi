@@ -155,6 +155,7 @@ void export_lang(py::module &m) {
       .def_readwrite("flatten_if", &CompileConfig::flatten_if)
       .def_readwrite("make_thread_local", &CompileConfig::make_thread_local)
       .def_readwrite("make_block_local", &CompileConfig::make_block_local)
+      .def_readwrite("detect_read_only", &CompileConfig::detect_read_only)
       .def_readwrite("cc_compile_cmd", &CompileConfig::cc_compile_cmd)
       .def_readwrite("cc_link_cmd", &CompileConfig::cc_link_cmd)
       .def_readwrite("async_opt_fusion", &CompileConfig::async_opt_fusion)
@@ -616,7 +617,13 @@ void export_lang(py::module &m) {
   m.def("parallelize", Parallelize);
   m.def("vectorize", Vectorize);
   m.def("block_dim", BlockDim);
-  m.def("cache", Cache);
+
+  py::enum_<SNodeAccessFlag>(m, "SNodeAccessFlag", py::arithmetic())
+      .value("block_local", SNodeAccessFlag::block_local)
+      .value("read_only", SNodeAccessFlag::read_only)
+      .export_values();
+
+  m.def("insert_snode_access_flag", insert_snode_access_flag);
   m.def("no_activate", [](SNode *snode) {
     get_current_program().get_current_kernel().no_activate.push_back(snode);
   });

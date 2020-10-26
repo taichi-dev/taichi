@@ -65,6 +65,8 @@ bool definitely_same_address(Stmt *var1, Stmt *var2);
 std::unordered_set<Stmt *> detect_fors_with_break(IRNode *root);
 std::unordered_set<Stmt *> detect_loops_with_continue(IRNode *root);
 std::unordered_set<SNode *> gather_deactivations(IRNode *root);
+std::pair<std::unordered_set<SNode *>, std::unordered_set<SNode *>>
+gather_snode_read_writes(IRNode *root);
 std::vector<Stmt *> gather_statements(IRNode *root,
                                       const std::function<bool(Stmt *)> &test);
 std::unordered_map<SNode *, GlobalPtrStmt *> gather_uniquely_accessed_pointers(

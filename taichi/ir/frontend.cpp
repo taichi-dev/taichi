@@ -22,6 +22,10 @@ Expr global_new(DataType dt, std::string name) {
   return Expr::make<GlobalVariableExpression>(dt, id_expr->id);
 }
 
+void insert_snode_access_flag(SNodeAccessFlag v, const Expr &field) {
+  dec.scratch_opt.push_back(std::make_pair(v, field.snode()));
+}
+
 // Begin: legacy frontend constructs
 
 If::If(const Expr &cond) {

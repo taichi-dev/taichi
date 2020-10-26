@@ -35,6 +35,7 @@ CompileConfig::CompileConfig() {
   flatten_if = false;
   make_thread_local = true;
   make_block_local = true;
+  detect_read_only = true;
 
   saturating_grid_dim = 0;
   max_block_dim = 0;

@@ -389,7 +389,8 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     if (auto get_ch = stmt->ptr->cast<GetChStmt>(); get_ch) {
       bool should_cache_as_read_only = false;
       for (auto s : current_offload->scratch_opt) {
-        if (s.first == 1 && get_ch->output_snode == s.second) {
+        if (s.first == SNodeAccessFlag::read_only &&
+            get_ch->output_snode == s.second) {
           should_cache_as_read_only = true;
         }
       }

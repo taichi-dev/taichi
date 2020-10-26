@@ -433,8 +433,8 @@ def paint():
     max = -1.0e10
     min = 1.0e10
     for i, j in img:
-        max = ti.atomic_max(max, img[i, j])
-        min = ti.atomic_min(min, img[i, j])
+        ti.atomic_max(max, img[i, j])
+        ti.atomic_min(min, img[i, j])
 
     for i, j in img:
         if use_fixed_caxis:

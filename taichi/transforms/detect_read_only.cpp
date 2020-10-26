@@ -28,8 +28,12 @@ void detect_read_only_in_task(OffloadedStmt *offload) {
 }  // namespace
 
 void detect_read_only(IRNode *root) {
-  for (auto &offload : root->as<Block>()->statements) {
-    detect_read_only_in_task(offload->as<OffloadedStmt>());
+  if (root->is<Block>()) {
+    for (auto &offload : root->as<Block>()->statements) {
+      detect_read_only_in_task(offload->as<OffloadedStmt>());
+    }
+  } else {
+    detect_read_only_in_task(root->as<OffloadedStmt>());
   }
 }
 

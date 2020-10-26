@@ -9,8 +9,9 @@ TLANG_NAMESPACE_BEGIN
 
 namespace irpass {
 
-void detect_read_only(IRNode *root) {
-  auto offload = root->cast<OffloadedStmt>();
+namespace {
+
+void detect_read_only_offload(OffloadedStmt *offload) {
   auto accessed = irpass::analysis::gather_snode_read_writes(offload);
   for (auto snode : accessed.first) {
     if (accessed.second.count(snode) == 0) {
@@ -21,6 +22,14 @@ void detect_read_only(IRNode *root) {
         offload->scratch_opt.push_back(rec);
       }
     }
+  }
+}
+
+}  // namespace
+
+void detect_read_only(IRNode *root) {
+  for (auto &offload : root->as<Block>()->statements) {
+    detect_read_only_offload(offload->as<OffloadedStmt>());
   }
 }
 

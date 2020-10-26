@@ -9,7 +9,7 @@ import numpy as np
 import time
 
 use_mgpcg = False  # True to use multigrid-preconditioned conjugate gradients
-res = 512  # 600 for a larger resoultion
+res = 512
 dt = 0.03
 p_jacobi_iters = 160  # 40 for quicker but not-so-accurate result
 f_strength = 10000.0
@@ -368,7 +368,8 @@ while gui.running:
 
     if not paused:
         mouse_data = md_gen(gui)
-        step(mouse_data)
+        for i in range(10):
+            step(mouse_data)
 
     gui.set_image(dyes_pair.cur)
     # To visualize velocity field:

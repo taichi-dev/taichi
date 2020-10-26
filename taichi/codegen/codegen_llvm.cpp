@@ -585,8 +585,18 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
 }
 
 llvm::Type *CodeGenLLVM::llvm_type(DataType dt) {
-  if (dt->is_primitive(PrimitiveTypeID::i32)) {
+  if (dt->is_primitive(PrimitiveTypeID::i8) ||
+      dt->is_primitive(PrimitiveTypeID::u8)) {
+    return llvm::Type::getInt8Ty(*llvm_context);
+  } else if (dt->is_primitive(PrimitiveTypeID::i16) ||
+             dt->is_primitive(PrimitiveTypeID::u16)) {
+    return llvm::Type::getInt16Ty(*llvm_context);
+  } else if (dt->is_primitive(PrimitiveTypeID::i32) ||
+             dt->is_primitive(PrimitiveTypeID::u32)) {
     return llvm::Type::getInt32Ty(*llvm_context);
+  } else if (dt->is_primitive(PrimitiveTypeID::i64) ||
+             dt->is_primitive(PrimitiveTypeID::u64)) {
+    return llvm::Type::getInt64Ty(*llvm_context);
   } else if (dt->is_primitive(PrimitiveTypeID::u1)) {
     return llvm::Type::getInt1Ty(*llvm_context);
   } else if (dt->is_primitive(PrimitiveTypeID::f32)) {

@@ -6,12 +6,11 @@
 
 import taichi as ti
 import numpy as np
-import time
 
 use_mgpcg = False  # True to use multigrid-preconditioned conjugate gradients
-res = 512  # 600 for a larger resoultion
+res = 512
 dt = 0.03
-p_jacobi_iters = 160  # 40 for quicker but not-so-accurate result
+p_jacobi_iters = 160  # 40 for a quicker but less accurate result
 f_strength = 10000.0
 curl_strength = 0  # 7 for unrealistic visual enhancement
 dye_decay = 0.99
@@ -122,7 +121,6 @@ backtrace = backtrace_rk3
 @ti.kernel
 def advect_semilag(vf: ti.template(), qf: ti.template(), new_qf: ti.template(),
                    intermedia_qf: ti.template()):
-    ti.cache_read_only(qf, vf)
     for i, j in vf:
         p = ti.Vector([i, j]) + 0.5
         p = backtrace(vf, p, dt)
@@ -132,13 +130,11 @@ def advect_semilag(vf: ti.template(), qf: ti.template(), new_qf: ti.template(),
 @ti.kernel
 def advect_bfecc(vf: ti.template(), qf: ti.template(), new_qf: ti.template(),
                  intermedia_qf: ti.template()):
-    ti.cache_read_only(qf, vf)
     for i, j in vf:
         p = ti.Vector([i, j]) + 0.5
         p = backtrace(vf, p, dt)
         intermedia_qf[i, j] = bilerp(qf, p)
 
-    ti.cache_read_only(intermedia_qf, qf, vf)
     for i, j in vf:
         p = ti.Vector([i, j]) + 0.5
         # star means the temp value after a back tracing (forward advection)
@@ -184,7 +180,6 @@ def apply_impulse(vf: ti.template(), dyef: ti.template(),
 
 @ti.kernel
 def divergence(vf: ti.template()):
-    ti.cache_read_only(vf)
     for i, j in vf:
         vl = sample(vf, i - 1, j).x
         vr = sample(vf, i + 1, j).x
@@ -204,7 +199,6 @@ def divergence(vf: ti.template()):
 
 @ti.kernel
 def vorticity(vf: ti.template()):
-    ti.cache_read_only(vf)
     for i, j in vf:
         vl = sample(vf, i - 1, j).y
         vr = sample(vf, i + 1, j).y
@@ -216,7 +210,6 @@ def vorticity(vf: ti.template()):
 
 @ti.kernel
 def pressure_jacobi_single(pf: ti.template(), new_pf: ti.template()):
-    ti.cache_read_only(pf)
     for i, j in pf:
         pl = sample(pf, i - 1, j)
         pr = sample(pf, i + 1, j)
@@ -228,7 +221,6 @@ def pressure_jacobi_single(pf: ti.template(), new_pf: ti.template()):
 
 @ti.kernel
 def pressure_jacobi_dual(pf: ti.template(), new_pf: ti.template()):
-    ti.cache_read_only(pf)
     for i, j in pf:
         pcc = sample(pf, i, j)
         pll = sample(pf, i - 2, j)
@@ -257,7 +249,6 @@ if pressure_jacobi == pressure_jacobi_dual:
 
 @ti.kernel
 def subtract_gradient(vf: ti.template(), pf: ti.template()):
-    ti.cache_read_only(pf)
     for i, j in vf:
         pl = sample(pf, i - 1, j)
         pr = sample(pf, i + 1, j)
@@ -269,7 +260,6 @@ def subtract_gradient(vf: ti.template(), pf: ti.template()):
 @ti.kernel
 def enhance_vorticity(vf: ti.template(), cf: ti.template()):
     # anti-physics visual enhancement...
-    ti.cache_read_only(cf)
     for i, j in vf:
         cl = sample(cf, i - 1, j)
         cr = sample(cf, i + 1, j)

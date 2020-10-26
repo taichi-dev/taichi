@@ -132,6 +132,11 @@ void offload_to_executable(IRNode *ir,
   print("Start offload_to_executable");
   irpass::analysis::verify(ir);
 
+  if (config.detect_read_only) {
+    irpass::detect_read_only(ir);
+    print("Detect read-only accesses");
+  }
+
   if (config.demote_dense_struct_fors) {
     irpass::demote_dense_struct_fors(ir);
     irpass::type_check(ir);

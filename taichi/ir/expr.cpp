@@ -158,10 +158,6 @@ void Expr::operator/=(const Expr &o) {
   (*this) = (*this) / load_if_ptr(o);
 }
 
-void Cache(int v, const Expr &var) {
-  dec.scratch_opt.push_back(std::make_pair(v, var.snode()));
-}
-
 Expr load_if_ptr(const Expr &ptr) {
   if (ptr.is<GlobalPtrExpression>()) {
     return load(ptr);

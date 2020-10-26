@@ -190,13 +190,11 @@ class KernelDefError(Exception):
 
 class KernelArgError(Exception):
     def __init__(self, pos, needed, provided):
+        message = f'Argument {pos} (type={provided}) cannot be converted into required type {needed}'
+        super().__init__(message)
         self.pos = pos
         self.needed = needed
         self.provided = provided
-
-    def message(self):
-        return 'Argument {} (type={}) cannot be converted into required type {}'.format(
-            self.pos, str(self.needed), str(self.provided))
 
 
 def _get_global_vars(func):
@@ -393,11 +391,11 @@ class Kernel:
                 # Note: do not use sth like "needed == f32". That would be slow.
                 if id(needed) in real_type_ids:
                     if not isinstance(v, (float, int)):
-                        raise KernelArgError(i, needed, provided)
+                        raise KernelArgError(i, needed.to_string(), provided)
                     launch_ctx.set_arg_float(actual_argument_slot, float(v))
                 elif id(needed) in integer_type_ids:
                     if not isinstance(v, int):
-                        raise KernelArgError(i, needed, provided)
+                        raise KernelArgError(i, needed.to_string(), provided)
                     launch_ctx.set_arg_int(actual_argument_slot, int(v))
                 elif self.match_ext_arr(v, needed):
                     has_external_arrays = True

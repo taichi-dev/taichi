@@ -21,7 +21,7 @@ MetalDataType to_metal_type(DataType dt) {
   METAL_CASE(u64);
   METAL_CASE(unknown);
   else {
-    TI_NOT_IMPLEMENTED;
+    TI_ERROR("[Metal] type={} not supported", data_type_name(dt));
   }
 #undef METAL_CASE
   return MetalDataType::unknown;

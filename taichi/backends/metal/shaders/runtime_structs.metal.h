@@ -135,7 +135,7 @@ STR(
       ElementCoords coords;
       // Memory offset from a given address.
       // * If in_root_buffer() is true, this is from the root buffer address.
-      // * O.W. this is from the |id|-th NodeManager's |elem_idx|-th element.
+      // * O/W this is from the |id|-th NodeManager's |elem_idx|-th element.
       int32_t mem_offset = 0;
 
       inline bool in_root_buffer() const {

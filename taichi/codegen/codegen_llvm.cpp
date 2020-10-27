@@ -1079,8 +1079,27 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
 void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
   int width = stmt->width();
   TI_ASSERT(width == 1);
-  llvm_val[stmt] = builder->CreateLoad(tlctx->get_data_type(stmt->ret_type),
-                                       llvm_val[stmt->ptr]);
+  if (auto t = stmt->ret_type->cast<CustomIntType>()) {
+    TI_INFO("bit-level global load {}", t->to_string());
+    // 1. load byte pointer
+    auto byte_ptr_in_bit_struct = builder->CreateGEP(llvm_val[stmt->ptr], {tlctx->get_constant(0), tlctx->get_constant(0)});
+    TI_INFO("byte_ptr_in_bit_struct type: {}", byte_ptr_in_bit_struct->getType()->getPointerElementType()->getTypeID());
+    auto byte_ptr = builder->CreateLoad(byte_ptr_in_bit_struct);
+    assert(byte_ptr->getType()->getPointerElementType()->isIntegerTy(8));
+
+    // 2. load bit offset
+    auto bit_offset_in_bit_struct = builder->CreateGEP(llvm_val[stmt->ptr], {tlctx->get_constant(0), tlctx->get_constant(1)});
+    TI_INFO("byte_ptr_in_bit_struct type: {}", bit_offset_in_bit_struct->getType()->getPointerElementType()->getTypeID());
+    auto bit_offset = builder->CreateLoad(bit_offset_in_bit_struct);
+    assert(bit_offset->getType()->isIntegerTy(32));
+
+    // 3. bit shifting
+//    builder->CreateAs
+
+  } else {
+    llvm_val[stmt] = builder->CreateLoad(tlctx->get_data_type(stmt->ret_type),
+                                         llvm_val[stmt->ptr]);
+  }
 }
 
 void CodeGenLLVM::visit(ElementShuffleStmt *stmt){
@@ -1185,6 +1204,7 @@ void CodeGenLLVM::visit(IntegerOffsetStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(SNodeLookupStmt *stmt) {
+  TI_INFO("SNodeLookupStmt: {}", stmt->snode->get_node_type_name_hinted());
   llvm::Value *parent = nullptr;
   parent = llvm_val[stmt->input_snode];
   TI_ASSERT(parent);
@@ -1209,14 +1229,44 @@ void CodeGenLLVM::visit(SNodeLookupStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(GetChStmt *stmt) {
-  auto ch = create_call(
-      stmt->output_snode->get_ch_from_parent_func_name(),
-      {builder->CreateBitCast(llvm_val[stmt->input_ptr],
-                              llvm::PointerType::getInt8PtrTy(*llvm_context))});
-  llvm_val[stmt] = builder->CreateBitCast(
-      ch, llvm::PointerType::get(StructCompilerLLVM::get_llvm_node_type(
-                                     module.get(), stmt->output_snode),
-                                 0));
+  TI_INFO("GetChStmt input: {}", stmt->input_snode->get_node_type_name_hinted());
+  TI_INFO("GetChStmt ouptut: {}", stmt->output_snode->get_node_type_name_hinted());
+
+  if (stmt->output_snode->is_bit_level) {
+    // 1. create bit pointer struct
+    // struct bit_pointer {
+    //    i8* byte_ptr;
+    //    i32 offset;
+    // };
+    auto struct_type = llvm::StructType::get(*llvm_context, {llvm::Type::getInt8PtrTy(*llvm_context),
+                                                            llvm::Type::getInt32Ty(*llvm_context)});
+    // 2. alloca the bit pointer struct
+    auto bit_ptr_struct = create_entry_block_alloca(struct_type);
+
+    // 3. store the `input_ptr` in to `bit_struct`
+    auto byte_ptr = builder->CreateBitCast(llvm_val[stmt->input_ptr],
+                           llvm::PointerType::getInt8PtrTy(*llvm_context));
+
+    builder->CreateStore(byte_ptr, builder->CreateGEP(bit_ptr_struct,
+                                                      {tlctx->get_constant(0), tlctx->get_constant(0)}));
+    // 4. store `offset`
+    // temporarily use 0 for offset.
+    // TODO: correct offset.
+    builder->CreateStore(tlctx->get_constant(0), builder->CreateGEP(bit_ptr_struct,
+                                                                    {tlctx->get_constant(0), tlctx->get_constant(1)}));
+
+    llvm_val[stmt] = bit_ptr_struct;
+  } else {
+    auto ch = create_call(
+        stmt->output_snode->get_ch_from_parent_func_name(),
+        {builder->CreateBitCast(llvm_val[stmt->input_ptr],
+                                llvm::PointerType::getInt8PtrTy(*llvm_context))});
+    llvm_val[stmt] = builder->CreateBitCast(
+        ch, llvm::PointerType::get(StructCompilerLLVM::get_llvm_node_type(
+            module.get(), stmt->output_snode),
+                                   0));
+  }
+
 }
 
 void CodeGenLLVM::visit(ExternalPtrStmt *stmt) {

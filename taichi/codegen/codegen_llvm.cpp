@@ -1079,8 +1079,8 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
 void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
   int width = stmt->width();
   TI_ASSERT(width == 1);
-  if (auto t = stmt->ret_type->cast<CustomIntType>()) {
-    TI_INFO("bit-level global load {}", t->to_string());
+  if (auto cit = stmt->ret_type->cast<CustomIntType>()) {
+    TI_INFO("bit-level global load {}", cit->to_string());
     // 1. load byte pointer
     auto byte_ptr_in_bit_struct = builder->CreateGEP(llvm_val[stmt->ptr], {tlctx->get_constant(0), tlctx->get_constant(0)});
     TI_INFO("byte_ptr_in_bit_struct type: {}", byte_ptr_in_bit_struct->getType()->getPointerElementType()->getTypeID());
@@ -1094,7 +1094,6 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
     assert(bit_offset->getType()->isIntegerTy(32));
 
     // 3. bit shifting
-//    builder->CreateAs
 
   } else {
     llvm_val[stmt] = builder->CreateLoad(tlctx->get_data_type(stmt->ret_type),

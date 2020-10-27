@@ -1242,7 +1242,7 @@ void CodeGenLLVM::visit(GetChStmt *stmt) {
     // 2. alloca the bit pointer struct
     auto bit_ptr_struct = create_entry_block_alloca(struct_type);
 
-    // 3. store the `input_ptr` in to `bit_struct`
+    // 3. store `input_ptr` into `bit_ptr_struct`
     auto byte_ptr = builder->CreateBitCast(llvm_val[stmt->input_ptr],
                            llvm::PointerType::getInt8PtrTy(*llvm_context));
 

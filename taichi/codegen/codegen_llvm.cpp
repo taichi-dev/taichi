@@ -1073,12 +1073,17 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
   TI_ASSERT(!stmt->parent->mask() || stmt->width() == 1);
   TI_ASSERT(llvm_val[stmt->data]);
   TI_ASSERT(llvm_val[stmt->ptr]);
+  TI_INFO("GlobalStoreStmt: {}", stmt->ptr->ret_type->to_string());
+  if (stmt->ptr->ret_type->is<CustomIntType>()) {
+    exit(-1);
+  }
   builder->CreateStore(llvm_val[stmt->data], llvm_val[stmt->ptr]);
 }
 
 void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
   int width = stmt->width();
   TI_ASSERT(width == 1);
+  TI_INFO("stmt->ptr->ret_type->cast<PointerType>()->is_bit_pointer(): {}", stmt->ptr->ret_type->cast<PointerType>()->is_bit_pointer());
   if (auto cit = stmt->ret_type->cast<CustomIntType>()) {
     TI_INFO("bit-level global load {}", cit->to_string());
     // 1. load byte pointer
@@ -1093,11 +1098,13 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
     assert(bit_offset->getType()->isIntegerTy(32));
 
     // 3. bit shifting
+    //    first left shift `32 - (offset + num_bits)`
+    //    then right shift `32 - num_bits`
     auto bit_end = builder->CreateAdd(bit_offset, tlctx->get_constant(cit->get_num_bits()));
     auto left = builder->CreateAdd(tlctx->get_constant(32), builder->CreateNeg(bit_end));
-    auto left_plus_offset = builder->CreateAdd(bit_offset, left);
+    auto right = builder->CreateAdd(tlctx->get_constant(32), tlctx->get_constant(-cit->get_num_bits()));
     auto step1 = builder->CreateShl(bit_level_container, left);
-    auto step2 = builder->CreateAShr(step1, left_plus_offset);
+    auto step2 = builder->CreateAShr(step1, right);
     llvm_val[stmt] = step2;
   } else {
     llvm_val[stmt] = builder->CreateLoad(tlctx->get_data_type(stmt->ret_type),

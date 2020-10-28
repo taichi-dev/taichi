@@ -43,6 +43,7 @@ def test_simple_singleton():
     @ti.kernel
     def foo():
         print(x[None])
+        print(y[None])
 
     foo()
 

@@ -1083,18 +1083,22 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
     TI_INFO("bit-level global load {}", cit->to_string());
     // 1. load byte pointer
     auto byte_ptr_in_bit_struct = builder->CreateGEP(llvm_val[stmt->ptr], {tlctx->get_constant(0), tlctx->get_constant(0)});
-    TI_INFO("byte_ptr_in_bit_struct type: {}", byte_ptr_in_bit_struct->getType()->getPointerElementType()->getTypeID());
     auto byte_ptr = builder->CreateLoad(byte_ptr_in_bit_struct);
     assert(byte_ptr->getType()->getPointerElementType()->isIntegerTy(8));
+    auto bit_level_container = builder->CreateLoad(builder->CreateBitCast(byte_ptr, llvm::Type::getInt32PtrTy(*llvm_context)));
 
     // 2. load bit offset
     auto bit_offset_in_bit_struct = builder->CreateGEP(llvm_val[stmt->ptr], {tlctx->get_constant(0), tlctx->get_constant(1)});
-    TI_INFO("byte_ptr_in_bit_struct type: {}", bit_offset_in_bit_struct->getType()->getPointerElementType()->getTypeID());
     auto bit_offset = builder->CreateLoad(bit_offset_in_bit_struct);
     assert(bit_offset->getType()->isIntegerTy(32));
 
     // 3. bit shifting
-
+    auto bit_end = builder->CreateAdd(bit_offset, tlctx->get_constant(cit->get_num_bits()));
+    auto left = builder->CreateAdd(tlctx->get_constant(32), builder->CreateNeg(bit_end));
+    auto left_plus_offset = builder->CreateAdd(bit_offset, left);
+    auto step1 = builder->CreateShl(bit_level_container, left);
+    auto step2 = builder->CreateAShr(step1, left_plus_offset);
+    llvm_val[stmt] = step2;
   } else {
     llvm_val[stmt] = builder->CreateLoad(tlctx->get_data_type(stmt->ret_type),
                                          llvm_val[stmt->ptr]);
@@ -1213,15 +1217,17 @@ void CodeGenLLVM::visit(SNodeLookupStmt *stmt) {
   } else if (snode->type == SNodeType::dense ||
              snode->type == SNodeType::pointer ||
              snode->type == SNodeType::dynamic ||
-             snode->type == SNodeType::bitmasked ||
-             snode->type == SNodeType::bit_struct) {
+             snode->type == SNodeType::bitmasked) {
     if (stmt->activate) {
       call(snode, llvm_val[stmt->input_snode], "activate",
            {llvm_val[stmt->input_index]});
     }
     llvm_val[stmt] = call(snode, llvm_val[stmt->input_snode], "lookup_element",
                           {llvm_val[stmt->input_index]});
-  } else {
+  } else if (snode->type == SNodeType::bit_struct) {
+    llvm_val[stmt] = parent;
+  }
+  else {
     TI_INFO(snode_type_name(snode->type));
     TI_NOT_IMPLEMENTED
   }
@@ -1230,7 +1236,6 @@ void CodeGenLLVM::visit(SNodeLookupStmt *stmt) {
 void CodeGenLLVM::visit(GetChStmt *stmt) {
   TI_INFO("GetChStmt input: {}", stmt->input_snode->get_node_type_name_hinted());
   TI_INFO("GetChStmt ouptut: {}", stmt->output_snode->get_node_type_name_hinted());
-
   if (stmt->output_snode->is_bit_level) {
     // 1. create bit pointer struct
     // struct bit_pointer {
@@ -1248,12 +1253,11 @@ void CodeGenLLVM::visit(GetChStmt *stmt) {
 
     builder->CreateStore(byte_ptr, builder->CreateGEP(bit_ptr_struct,
                                                       {tlctx->get_constant(0), tlctx->get_constant(0)}));
-    // 4. store `offset`
-    // temporarily use 0 for offset.
-    // TODO: correct offset.
-    builder->CreateStore(tlctx->get_constant(0), builder->CreateGEP(bit_ptr_struct,
+    // 4. store `offset` in `bit_ptr_struct`
+    auto bit_struct = stmt->input_snode->dt.get_ptr()->cast<BitStructType>();
+    auto offset = bit_struct->get_member_bit_offset(stmt->input_snode->child_id(stmt->output_snode));
+    builder->CreateStore(tlctx->get_constant(offset), builder->CreateGEP(bit_ptr_struct,
                                                                     {tlctx->get_constant(0), tlctx->get_constant(1)}));
-
     llvm_val[stmt] = bit_ptr_struct;
   } else {
     auto ch = create_call(

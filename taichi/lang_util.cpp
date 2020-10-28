@@ -84,7 +84,10 @@ std::string data_type_format(DataType dt) {
     return "%f";
   } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
     return "%.12f";
-  } else {
+  } else if (dt->is<CustomIntType>()) {
+    return "%d";
+  }
+  else {
     TI_NOT_IMPLEMENTED
   }
 }

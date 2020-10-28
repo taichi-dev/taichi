@@ -308,6 +308,79 @@ STR(
       int32_t meta_offset_ = 0;
     };
 
+    class SNodeRep_pointer {
+     public:
+      using ElemIndex = NodeManagerData::ElemIndex;
+
+      void init(device byte * addr, NodeManager nm, ElemIndex ambient_idx) {
+        addr_ = addr;
+        nm_ = nm;
+        ambient_idx_ = ambient_idx;
+      }
+
+      device byte *child_or_ambient_addr(int i) {
+        auto nm_idx = to_nodemgr_idx(addr_, i);
+        nm_idx = nm_idx.is_valid() ? nm_idx : ambient_idx_;
+        return nm_.get(nm_idx);
+      }
+
+      inline bool is_active(int i) { return is_active(addr_, i); }
+
+      void activate(int i) {
+        device auto *nm_idx_ptr = to_nodemgr_idx_ptr(addr_, i);
+        auto nm_idx_raw =
+            atomic_load_explicit(nm_idx_ptr, metal::memory_order_relaxed);
+        while (!ElemIndex::is_valid(nm_idx_raw)) {
+          nm_idx_raw = 0;
+          // See ListManager::ensure_chunk() for the allocation algorithm.
+          // See also https://github.com/taichi-dev/taichi/issues/1174.
+          const bool is_me = atomic_compare_exchange_weak_explicit(
+              nm_idx_ptr, &nm_idx_raw, 1, metal::memory_order_relaxed,
+              metal::memory_order_relaxed);
+          if (is_me) {
+            nm_idx_raw = nm_.allocate().raw();
+            atomic_store_explicit(nm_idx_ptr, nm_idx_raw,
+                                  metal::memory_order_relaxed);
+            break;
+          } else if (ElemIndex::is_valid(nm_idx_raw)) {
+            break;
+          }
+          // |nm_idx_raw| == 1, just spin
+        }
+      }
+
+      void deactivate(int i) {
+        device auto *nm_idx_ptr = to_nodemgr_idx_ptr(addr_, i);
+        const auto old_nm_idx_raw = atomic_exchange_explicit(
+            nm_idx_ptr, 0, metal::memory_order_relaxed);
+        const auto old_nm_idx = ElemIndex::from_raw(old_nm_idx_raw);
+        if (!old_nm_idx.is_valid()) return;
+        nm_.recycle(old_nm_idx);
+      }
+
+      static inline device atomic_int *to_nodemgr_idx_ptr(device byte * addr,
+                                                          int ch_i) {
+        return reinterpret_cast<device atomic_int *>(addr +
+                                                     ch_i * sizeof(ElemIndex));
+      }
+
+      static inline ElemIndex to_nodemgr_idx(device byte * addr, int ch_i) {
+        device auto *ptr = to_nodemgr_idx_ptr(addr, ch_i);
+        const auto r = atomic_load_explicit(ptr, metal::memory_order_relaxed);
+        return ElemIndex::from_raw(r);
+      }
+
+      static bool is_active(device byte * addr, int ch_i) {
+        return to_nodemgr_idx(addr, ch_i).is_valid();
+      }
+
+     private:
+      device byte *addr_;
+      NodeManager nm_;
+      // Index of the ambient child element in |nm_|.
+      ElemIndex ambient_idx_;
+    };
+
     // This is still necessary in listgen and struct-for kernels, where we don't
     // have the actual SNode structs.
     [[maybe_unused]] int is_active(device byte *addr, SNodeMeta meta, int i) {

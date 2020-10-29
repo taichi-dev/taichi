@@ -579,3 +579,6 @@ def rescale_index(a, b, I):
         if a.shape[n] < b.shape[n]:
             Ib.entries[n] = I.entries[n] * (b.shape[n] // a.shape[n])
     return Ib
+
+def get_addr(l, indices):
+    return Expr(ti_core.expr_get_addr(l.snode.ptr, make_expr_group(indices)))

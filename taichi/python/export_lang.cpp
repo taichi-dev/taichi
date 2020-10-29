@@ -223,6 +223,7 @@ void export_lang(py::module &m) {
            py::return_value_policy::reference)
       .def("get_total_compilation_time", &Program::get_total_compilation_time)
       .def("print_snode_tree", &Program::print_snode_tree)
+      .def("visualize_layout", &Program::visualize_layout)
       .def("get_snode_num_dynamically_allocated",
            &Program::get_snode_num_dynamically_allocated)
       .def("benchmark_rebuild_graph",
@@ -399,6 +400,10 @@ void export_lang(py::module &m) {
 
   m.def("insert_activate", [](SNode *snode, const ExprGroup &indices) {
     return Activate(snode, indices);
+  });
+
+  m.def("expr_get_addr", [](SNode *snode, const ExprGroup &indices) {
+    return Expr::make<SNodeOpExpression>(snode, SNodeOpType::get_addr, indices);
   });
 
   m.def("insert_append",

@@ -593,6 +593,10 @@ void Program::visualize_layout(const std::string &fn) {
               R"($\mathbf{{{}}}^{{\mathbf{{{}b}}:{}}}_{{\mathbf{{{}b}}:{}}}$)",
               std::string(1, 'I' + i), 0, latex_short_digit(1 << 0), nb,
               latex_short_digit(1 << nb));
+
+          indices += fmt::format(
+              R"($\mathbf{{{}}}^{{{}}}_{{{}}}$)", std::string(1, 'I' + i),
+              latex_short_digit(1 << start), latex_short_digit(1 << nb));
         }
       }
       if (!indices.empty())

@@ -102,9 +102,9 @@ void compile_to_offloads(IRNode *ir,
   print("Offloaded");
   irpass::analysis::verify(ir);
 
-  irpass::cfg_optimization(ir, false);
-  print("Optimized by CFG");
-  irpass::analysis::verify(ir);
+//  irpass::cfg_optimization(ir, false);
+//  print("Optimized by CFG");
+//  irpass::analysis::verify(ir);
 
   irpass::flag_access(ir);
   print("Access flagged II");

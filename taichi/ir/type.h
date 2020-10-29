@@ -120,6 +120,7 @@ class PointerType : public Type {
  public:
   PointerType(Type *pointee, bool is_bit_pointer)
       : pointee_(pointee), is_bit_pointer_(is_bit_pointer) {
+    TI_INFO("PointerType ctor: is_bit_pointer: {}", is_bit_pointer_);
   }
 
   Type *get_pointee_type() const {

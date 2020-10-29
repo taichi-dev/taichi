@@ -150,6 +150,9 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(GlobalStoreStmt *stmt) {
+    if (stmt->ptr->ret_type.ptr_removed()->is<CustomIntType>()) {
+      return;
+    }
     auto promoted =
         promoted_type(stmt->ptr->ret_type.ptr_removed(), stmt->data->ret_type);
     auto input_type = stmt->data->ret_data_type_name();

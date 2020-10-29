@@ -27,12 +27,12 @@ def test_simple_array():
 
 
 def test_simple_singleton():
-    ti.init(arch=ti.cpu, print_ir=True)
+    ti.init(arch=ti.cpu, print_ir=True, advanced_optimization=False)
     ci13 = ti.type_factory_.get_custom_int_type(13, True)
-    cu19 = ti.type_factory_.get_custom_int_type(19, False)
+    cu14 = ti.type_factory_.get_custom_int_type(14, False)
 
     x = ti.field(dtype=ci13)
-    y = ti.field(dtype=cu19)
+    y = ti.field(dtype=cu14)
 
     ti.root._bit_struct(num_bits=32).place(x, y)
 
@@ -42,11 +42,13 @@ def test_simple_singleton():
 
     @ti.kernel
     def foo():
-        x[None] = 5
-        print(x[None])
-        print(y[None])
+        x[None] = 2**13-1
+        print('x: ', x[None])
+        y[None] = 2**14-1
+        print('y: ', y[None])
 
     foo()
-
+    print('----')
+    print("{}".format(hex(2**13)))
 
 test_simple_singleton()

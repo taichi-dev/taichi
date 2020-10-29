@@ -1552,21 +1552,21 @@ void stack_push(Ptr stack, size_t max_num_elements, std::size_t element_size) {
 #include "internal_functions.h"
 
 void set_partial_bits_b32(u32*ptr, u32 offset, u32 bits, u32 value) {
-  printf("+++set_partial_bits_b32+++\n");
-  printf("offset: %d\n", offset);
-  printf("bits: %d\n", bits);
-  printf("value: %X\n", value);
+//  printf("+++set_partial_bits_b32+++\n");
+//  printf("offset: %d\n", offset);
+//  printf("bits: %d\n", bits);
+//  printf("value: %X\n", value);
   u32 mask = ~(u32)0;
   mask = ((mask << offset) >> (32 - offset - bits));
-  printf("mask: %X\n", mask);
+//  printf("mask: %X\n", mask);
   u32 new_value = 0;
   do {
     u32 old_value = *ptr;
     new_value = (old_value & (~mask)) | (value << offset);
-    printf("old_value: %X:\n", old_value);
-    printf("new_value: %X:\n", new_value);
+//    printf("old_value: %X:\n", old_value);
+//    printf("new_value: %X:\n", new_value);
   } while (!atomic_exchange_u32(ptr, new_value));
-  printf("+++++++++++++++++++++++++\n");
+//  printf("+++++++++++++++++++++++++\n");
 }
 }
 

@@ -43,12 +43,13 @@ def test_simple_singleton():
     @ti.kernel
     def foo():
         x[None] = 2**13-1
-        print('x: ', x[None])
+        print('x: (2**13-1)', x[None])
         y[None] = 2**14-1
-        print('y: ', y[None])
+        print('y: ((2**14-1))', y[None])
 
     foo()
     print('----')
-    print("{}".format(hex(2**13)))
+    print("2**13-1 is {}".format(2**13-1))
+    print("2**14-1 is {}".format(2**14-1))
 
 test_simple_singleton()

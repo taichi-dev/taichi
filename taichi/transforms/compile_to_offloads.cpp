@@ -102,6 +102,9 @@ void compile_to_offloads(IRNode *ir,
   print("Offloaded");
   irpass::analysis::verify(ir);
 
+  // comment out `cfg_optimization` temporarily
+  // to avoid optimizing some important operations
+  // when testing bit-level GlobalLoad/Store
 //  irpass::cfg_optimization(ir, false);
 //  print("Optimized by CFG");
 //  irpass::analysis::verify(ir);

@@ -112,11 +112,12 @@ def autodiff(scale):
             b[i] += a.grad[i]
 
     def task():
-        with ti.Tape(loss=loss):
-            # The forward kernel of compute_loss should be completely eliminated (except for the last one)
-            compute_loss()
+        for i in range(10):
+            with ti.Tape(loss=loss):
+                # The forward kernel of compute_loss should be completely eliminated (except for the last one)
+                compute_loss()
 
-        accumulate_grad()
+            accumulate_grad()
 
     ti.benchmark(task, repeat=100)
 

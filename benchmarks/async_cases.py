@@ -295,3 +295,41 @@ def mpm_splitted(scale):
             substep()
 
     ti.benchmark(task, repeat=10)
+
+
+@benchmark_async
+def multires(scale):
+    num_levels = 4
+
+    x = []
+    for i in range(num_levels):
+        x.append(ti.field(dtype=ti.f32))
+
+    n = 1024 * 1024 * scale
+
+    block_size = 128
+    assert n % block_size == 0
+
+    for i in range(num_levels):
+        ti.root.pointer(ti.i,
+                        n // 2**i // block_size).dense(ti.i,
+                                                       block_size).place(x[i])
+
+    @ti.kernel
+    def initialize():
+        for i in range(n):
+            x[0][i] = i
+
+    @ti.kernel
+    def downsample(l: ti.template()):
+        for i in x[l]:
+            if i % 2 == 0:
+                x[l + 1][i // 2] = x[l][i]
+
+    initialize()
+
+    def task():
+        for l in range(num_levels - 1):
+            downsample(l)
+
+    ti.benchmark(task, repeat=5)

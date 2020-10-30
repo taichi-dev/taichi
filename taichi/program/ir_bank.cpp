@@ -102,6 +102,9 @@ IRHandle IRBank::fuse(IRHandle handle_a, IRHandle handle_b, Kernel *kernel) {
 }
 
 IRHandle IRBank::demote_activation(IRHandle handle) {
+  // Note that testing whether the task is using the same list as its previous
+  // instance is NOT the job of this function. Here we assume the same
+  // struct-for list is used.
   auto &result = demote_activation_bank_[handle];
   if (!result.empty()) {
     return result;

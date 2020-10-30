@@ -796,6 +796,7 @@ class KernelGen : public IRVisitor {
       ScopedGridStrideLoop _gsl(this);
       emit("if (_sid >= {}) {};", end_value - begin_value, get_return_stmt());
       emit("int _itv = {} + _sid * {};", begin_value, 1 /* stmt->step? */);
+      stmt->body->accept(this);
     } else {
       ScopedIndent _s(line_appender_);
       emit("// range known at runtime");
@@ -811,8 +812,8 @@ class KernelGen : public IRVisitor {
       emit("int _beg = {}, _end = {};", begin_expr, end_expr);
       emit("int _itv = _beg + _sid;");
       emit("if (_itv >= _end) {};", get_return_stmt());
+      stmt->body->accept(this);
     }
-    stmt->body->accept(this);
 
     if (used_tls) {
       TI_ASSERT(stmt->tls_epilogue != nullptr);

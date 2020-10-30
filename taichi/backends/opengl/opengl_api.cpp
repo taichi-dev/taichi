@@ -470,20 +470,15 @@ void display_kernel_info(std::string const &kernel_name,
 #endif
 }
 
-struct CompiledKernel {
+struct CompiledKernel::Impl {
   std::string kernel_name;
   std::unique_ptr<GLProgram> glsl;
   std::unique_ptr<ParallelSize> ps;
   std::string source;
 
-  // disscussion:
-  // https://github.com/taichi-dev/taichi/pull/696#issuecomment-609332527
-  CompiledKernel(CompiledKernel &&) = default;
-  CompiledKernel &operator=(CompiledKernel &&) = default;
-
-  explicit CompiledKernel(const std::string &kernel_name_,
-                          const std::string &kernel_source_code,
-                          std::unique_ptr<ParallelSize> ps_)
+  Impl(const std::string &kernel_name_,
+       const std::string &kernel_source_code,
+       std::unique_ptr<ParallelSize> ps_)
       : kernel_name(kernel_name_), ps(std::move(ps_)) {
     source =
         kernel_source_code +
@@ -715,6 +710,18 @@ bool is_opengl_api_available() {
 struct GLProgram {};
 struct GLSLLauncherImpl {};
 
+struct CompiledKernel::Impl {
+  Impl(const std::string &kernel_name_,
+       const std::string &kernel_source_code,
+       std::unique_ptr<ParallelSize> ps_) {
+    TI_NOT_IMPLEMENTED;
+  }
+
+  void dispatch_compute(GLSLLauncher *launcher) const {
+    TI_NOT_IMPLEMENTED;
+  }
+};
+
 struct CompiledProgram::Impl {
   UsedFeature used;
 
@@ -822,6 +829,18 @@ int CompiledProgram::lookup_or_add_string(const std::string &str) {
 void CompiledProgram::launch(Context &ctx, GLSLLauncher *launcher) const {
   impl->launch(ctx, launcher);
 }
+
+CompiledKernel::CompiledKernel(const std::string &kernel_name_,
+                 const std::string &kernel_source_code,
+                 std::unique_ptr<ParallelSize> ps_)
+      : impl(std::make_unique<Impl>(kernel_name_, kernel_source_code, std::move(ps_))) {
+}
+
+void CompiledKernel::dispatch_compute(GLSLLauncher *launcher) const {
+  impl->dispatch_compute(launcher);
+}
+
+CompiledKernel::~CompiledKernel() = default;
 
 GLSLLauncher::~GLSLLauncher() = default;
 

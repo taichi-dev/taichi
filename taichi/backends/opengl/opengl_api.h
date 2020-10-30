@@ -82,6 +82,23 @@ class ParallelSize_StructFor : public ParallelSize {
   virtual ~ParallelSize_StructFor() override = default;
 };
 
+struct CompiledKernel {
+  struct Impl;
+  std::unique_ptr<Impl> impl;
+
+  // disscussion:
+  // https://github.com/taichi-dev/taichi/pull/696#issuecomment-609332527
+  CompiledKernel(CompiledKernel &&) = default;
+  CompiledKernel &operator=(CompiledKernel &&) = default;
+
+  CompiledKernel(const std::string &kernel_name_,
+                 const std::string &kernel_source_code,
+                 std::unique_ptr<ParallelSize> ps_);
+  ~CompiledKernel();
+
+  void dispatch_compute(GLSLLauncher *launcher) const;
+};
+
 struct CompiledProgram {
   struct Impl;
   std::unique_ptr<Impl> impl;

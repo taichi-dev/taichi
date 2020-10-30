@@ -6,11 +6,11 @@ from async_advection import *
 rerun = True
 
 cases = [
-    fuse_dense_x2y2z, fuse_reduction, fill_1d, sparse_numpy, autodiff,
+    chain_copy, increments, fill_array, sparse_saxpy, autodiff,
     stencil_reduction, mpm_splitted, advection_2d
 ]
 
-cases = [multires]
+cases = [deep_hierarchy]
 
 if rerun:
     for c in cases:

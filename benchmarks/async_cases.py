@@ -11,7 +11,7 @@ from utils import *
 
 
 @benchmark_async
-def fuse_dense_x2y2z(scale):
+def chain_copy(scale):
     template_fuse_dense_x2y2z(size=scale * 1024**2,
                               repeat=1,
                               benchmark_repeat=100,
@@ -19,7 +19,7 @@ def fuse_dense_x2y2z(scale):
 
 
 @benchmark_async
-def fuse_reduction(scale):
+def increments(scale):
     template_fuse_reduction(size=scale * 1024**2,
                             repeat=10,
                             benchmark_repeat=10,
@@ -27,7 +27,7 @@ def fuse_reduction(scale):
 
 
 @benchmark_async
-def fill_1d(scale):
+def fill_array(scale):
     a = ti.field(dtype=ti.f32, shape=scale * 1024**2)
 
     @ti.kernel
@@ -58,7 +58,7 @@ def fill_scalar(scale):
 
 
 @benchmark_async
-def sparse_numpy(scale):
+def sparse_saxpy(scale):
     import math
     a = ti.field(dtype=ti.f32)
     b = ti.field(dtype=ti.f32)
@@ -299,7 +299,7 @@ def mpm_splitted(scale):
 
 @benchmark_async
 def multires(scale):
-    num_levels = 3
+    num_levels = 4
 
     x = []
     for i in range(num_levels):
@@ -307,13 +307,12 @@ def multires(scale):
 
     n = 1024 * 1024 * scale
 
-    block_size = 128
-    assert n % block_size == 0
+    block_size = 16
+    assert n % block_size**2 == 0
 
     for i in range(num_levels):
-        ti.root.pointer(ti.i,
-                        n // 2**i // block_size).dense(ti.i,
-                                                       block_size).place(x[i])
+        ti.root.pointer(ti.i, n // 2**i // block_size**2).pointer(
+            ti.i, block_size).dense(ti.i, block_size).place(x[i])
 
     @ti.kernel
     def initialize():
@@ -331,5 +330,43 @@ def multires(scale):
     def task():
         for l in range(num_levels - 1):
             downsample(l)
+
+    ti.benchmark(task, repeat=5)
+
+
+@benchmark_async
+def deep_hierarchy(scale):
+    num_levels = 7
+
+    x = ti.field(dtype=ti.f32)
+
+    n = 1024 * 1024 * scale
+    branching = 4
+
+    assert n % (branching**num_levels) == 0
+
+    snode = ti.root
+    for i in range(num_levels):
+        snode = snode.pointer(ti.i, branching)
+
+    snode.dense(ti.i, n // (branching * (num_levels - 1))).place(x)
+
+    @ti.kernel
+    def initialize():
+        for i in range(n):
+            x[i] = 0
+
+    # Not fusible, but no modification to the mask/list of x either
+    @ti.kernel
+    def jitter():
+        for i in x:
+            if i % 2 == 0:
+                x[i] += x[i + 1]
+
+    initialize()
+
+    def task():
+        for i in range(10):
+            jitter()
 
     ti.benchmark(task, repeat=5)

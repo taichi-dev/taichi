@@ -1092,7 +1092,6 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
 void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
   int width = stmt->width();
   TI_ASSERT(width == 1);
-  TI_INFO("stmt->ptr->ret_type->cast<PointerType>()->is_bit_pointer(): {}", stmt->ptr->ret_type->cast<PointerType>()->is_bit_pointer());
   if (auto cit = stmt->ret_type->cast<CustomIntType>()) {
     // 1. load bit pointer
     llvm::Value *byte_ptr, *bit_offset;

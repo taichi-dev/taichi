@@ -52,9 +52,6 @@ bool remove_loop_unique(IRNode *root);
 bool remove_range_assumption(IRNode *root);
 bool lower_access(IRNode *root, bool lower_atomic);
 void auto_diff(IRNode *root, bool use_stack = false);
-std::unordered_set<Stmt *> constexpr_prop(
-    Block *block,
-    std::function<bool(Stmt *)> is_const_seed);
 bool constant_fold(IRNode *root);
 void offload(IRNode *root);
 void replace_statements_with(IRNode *root,

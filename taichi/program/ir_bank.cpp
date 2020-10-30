@@ -115,7 +115,7 @@ IRHandle IRBank::demote_activation(IRHandle handle) {
   auto snode = offload->snode;
   TI_ASSERT(snode != nullptr);
 
-  auto consts = irpass::constexpr_prop(body, [](Stmt *stmt) {
+  auto consts = irpass::analysis::constexpr_prop(body, [](Stmt *stmt) {
     if (stmt->is<ConstStmt>()) {
       return true;
     } else if (stmt->is<LoopIndexStmt>())

@@ -232,8 +232,8 @@ class MPMSolver:
     def p2g(self, dt: ti.f32):
         ti.no_activate(self.particle)
         ti.block_dim(256)
-        ti.cache_shared(*self.grid_v.entries)
-        ti.cache_shared(self.grid_m)
+        # ti.cache_shared(*self.grid_v.entries)
+        # ti.cache_shared(self.grid_m)
         for I in ti.grouped(self.pid):
             p = self.pid[I]
             p = ti.loop_unique(p)
@@ -412,7 +412,7 @@ class MPMSolver:
     @ti.kernel
     def g2p(self, dt: ti.f32):
         ti.block_dim(256)
-        ti.cache_shared(*self.grid_v.entries)
+        # ti.cache_shared(*self.grid_v.entries)
         ti.no_activate(self.particle)
         for I in ti.grouped(self.pid):
             p = self.pid[I]
@@ -450,7 +450,9 @@ class MPMSolver:
         print('sync done')
         self.grid1.deactivate_all()
         self.grid2.deactivate_all()
-        self.build_pid()
+        print('deactivate: sync')
+        ti.sync()
+        print('sync done')
         for i in range(substeps):
             print('substep', i)
             self.total_substeps += 1
@@ -458,6 +460,12 @@ class MPMSolver:
 
             self.grid_m, self.grid_m2 = self.grid_m2, self.grid_m
             self.grid_v, self.grid_v2 = self.grid_v2, self.grid_v
+            self.pid, self.pid2 = self.pid2, self.pid
+            if i == 0:
+                self.build_pid()
+                print('sync 0')
+                ti.sync()
+                print('sync done')
             self.p2g(dt)
             if i == 0:
                 print('sync 1')

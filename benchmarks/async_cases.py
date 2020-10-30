@@ -1,4 +1,5 @@
 import taichi as ti
+import math
 import os
 import sys
 
@@ -59,7 +60,6 @@ def fill_scalar(scale):
 
 @benchmark_async
 def sparse_saxpy(scale):
-    import math
     a = ti.field(dtype=ti.f32)
     b = ti.field(dtype=ti.f32)
 
@@ -336,11 +336,11 @@ def multires(scale):
 
 @benchmark_async
 def deep_hierarchy(scale):
-    num_levels = 7
+    num_levels = 8 + int(math.log(scale, 4))
 
     x = ti.field(dtype=ti.f32)
 
-    n = 1024 * 1024 * scale
+    n = 256 * 1024 * scale
     branching = 4
 
     assert n % (branching**num_levels) == 0
@@ -349,7 +349,7 @@ def deep_hierarchy(scale):
     for i in range(num_levels):
         snode = snode.pointer(ti.i, branching)
 
-    snode.dense(ti.i, n // (branching * (num_levels - 1))).place(x)
+    snode.dense(ti.i, n // (branching**num_levels)).place(x)
 
     @ti.kernel
     def initialize():
@@ -366,7 +366,7 @@ def deep_hierarchy(scale):
     initialize()
 
     def task():
-        for i in range(10):
+        for i in range(5):
             jitter()
 
-    ti.benchmark(task, repeat=5)
+    ti.benchmark(task, repeat=3)

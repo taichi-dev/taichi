@@ -32,9 +32,9 @@ STR(
     constant constexpr int kTaichiMaxNumIndices = 8;
     constant constexpr int kTaichiNumChunks = 1024;
     constant constexpr int kAlignment = 8;
-    using PtrOffset = int32_t; 
+    using PtrOffset = int32_t;
 
-    struct MemoryAllocator { 
+    struct MemoryAllocator {
       atomic_int next;
 
       constant constexpr static int kInitOffset = 8;
@@ -58,15 +58,20 @@ STR(
       struct ReservedElemPtrOffset {
        public:
         ReservedElemPtrOffset() = default;
-        explicit ReservedElemPtrOffset(PtrOffset v) : val_(v) {}
-
-        inline bool is_valid() const { return is_valid(val_); }
-
-        inline static bool is_valid(PtrOffset v) { 
-          return MemoryAllocator::is_valid(v); 
+        explicit ReservedElemPtrOffset(PtrOffset v) : val_(v) {
         }
 
-        inline PtrOffset value() const { return val_; }
+        inline bool is_valid() const {
+          return is_valid(val_);
+        }
+
+        inline static bool is_valid(PtrOffset v) {
+          return MemoryAllocator::is_valid(v);
+        }
+
+        inline PtrOffset value() const {
+          return val_;
+        }
 
        private:
         PtrOffset val_{0};

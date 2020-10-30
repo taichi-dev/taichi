@@ -12,9 +12,9 @@ cases = [
 
 if rerun:
     for c in cases:
-        print('*'*30)
+        print('*' * 30)
         print(f'* Running {c.__name__}')
-        print('*'*30)
+        print('*' * 30)
         c()
 
 case_names = [c.__name__ for c in cases]

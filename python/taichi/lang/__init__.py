@@ -333,9 +333,9 @@ def benchmark(func, repeat=300, args=()):
             a = a.strip()
             b = int(float(b))
             if a == 'codegen_kernel_statements':
-                ti.stat_write('compiled_inst', b)
+                ti.stat_write('instructions', b)
             if a == 'codegen_offloaded_tasks':
-                ti.stat_write('compiled_tasks', b)
+                ti.stat_write('offloaded_tasks', b)
             elif a == 'launched_tasks':
                 ti.stat_write('launched_tasks', b)
 
@@ -352,9 +352,9 @@ def benchmark(func, repeat=300, args=()):
             ti.sync()
         elapsed = time.time() - t
         avg = elapsed / repeat
-        ti.stat_write('wall_clk_t', avg)
+        ti.stat_write('clock_time', avg)
         device_time = ti.kernel_profiler_total_time()
-        ti.stat_write('exec_t', device_time)
+        ti.stat_write('device_time', device_time)
 
     run_benchmark()
 

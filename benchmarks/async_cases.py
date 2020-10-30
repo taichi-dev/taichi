@@ -1,5 +1,4 @@
 import taichi as ti
-import math
 import os
 import sys
 
@@ -12,7 +11,7 @@ from utils import *
 
 
 @benchmark_async
-def chain_copy(scale):
+def fuse_dense_x2y2z(scale):
     template_fuse_dense_x2y2z(size=scale * 1024**2,
                               repeat=1,
                               benchmark_repeat=100,
@@ -20,7 +19,7 @@ def chain_copy(scale):
 
 
 @benchmark_async
-def increments(scale):
+def fuse_reduction(scale):
     template_fuse_reduction(size=scale * 1024**2,
                             repeat=10,
                             benchmark_repeat=10,
@@ -28,7 +27,7 @@ def increments(scale):
 
 
 @benchmark_async
-def fill_array(scale):
+def fill_1d(scale):
     a = ti.field(dtype=ti.f32, shape=scale * 1024**2)
 
     @ti.kernel
@@ -59,7 +58,8 @@ def fill_scalar(scale):
 
 
 @benchmark_async
-def sparse_saxpy(scale):
+def sparse_numpy(scale):
+    import math
     a = ti.field(dtype=ti.f32)
     b = ti.field(dtype=ti.f32)
 
@@ -112,14 +112,13 @@ def autodiff(scale):
             b[i] += a.grad[i]
 
     def task():
-        for i in range(10):
-            with ti.Tape(loss=loss):
-                # The forward kernel of compute_loss should be completely eliminated (except for the last one)
-                compute_loss()
+        with ti.Tape(loss=loss):
+            # The forward kernel of compute_loss should be completely eliminated (except for the last one)
+            compute_loss()
 
-            accumulate_grad()
+        accumulate_grad()
 
-    ti.benchmark(task, repeat=10)
+    ti.benchmark(task, repeat=100)
 
 
 @benchmark_async
@@ -295,79 +294,3 @@ def mpm_splitted(scale):
             substep()
 
     ti.benchmark(task, repeat=10)
-
-
-@benchmark_async
-def multires(scale):
-    num_levels = 4
-
-    x = []
-    for i in range(num_levels):
-        x.append(ti.field(dtype=ti.f32))
-
-    # TODO: Using 1024 instead of 512 hangs the CUDA case. Need to figure out why.
-    n = 512 * 1024 * scale
-
-    block_size = 16
-    assert n % block_size**2 == 0
-
-    for i in range(num_levels):
-        ti.root.pointer(ti.i, n // 2**i // block_size**2).pointer(
-            ti.i, block_size).dense(ti.i, block_size).place(x[i])
-
-    @ti.kernel
-    def initialize():
-        for i in range(n):
-            x[0][i] = i
-
-    @ti.kernel
-    def downsample(l: ti.template()):
-        for i in x[l]:
-            if i % 2 == 0:
-                x[l + 1][i // 2] = x[l][i]
-
-    initialize()
-
-    def task():
-        for l in range(num_levels - 1):
-            downsample(l)
-
-    ti.benchmark(task, repeat=5)
-
-
-@benchmark_async
-def deep_hierarchy(scale):
-    num_levels = 8 + int(math.log(scale, 4))
-
-    x = ti.field(dtype=ti.f32)
-
-    n = 256 * 1024 * scale
-    branching = 4
-
-    assert n % (branching**num_levels) == 0
-
-    snode = ti.root
-    for i in range(num_levels):
-        snode = snode.pointer(ti.i, branching)
-
-    snode.dense(ti.i, n // (branching**num_levels)).place(x)
-
-    @ti.kernel
-    def initialize():
-        for i in range(n):
-            x[i] = 0
-
-    # Not fusible, but no modification to the mask/list of x either
-    @ti.kernel
-    def jitter():
-        for i in x:
-            if i % 2 == 0:
-                x[i] += x[i + 1]
-
-    initialize()
-
-    def task():
-        for i in range(5):
-            jitter()
-
-    ti.benchmark(task, repeat=5)

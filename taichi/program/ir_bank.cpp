@@ -128,7 +128,7 @@ IRHandle IRBank::demote_activation(IRHandle handle) {
   irpass::analysis::gather_statements(body, [&](Stmt *stmt) {
     if (auto ptr = stmt->cast<GlobalPtrStmt>(); ptr && ptr->activate) {
       bool can_demote = true;
-      // TODO: test input mask?
+      // TODO: test input mask here?
       for (auto ind : ptr->indices) {
         if (consts.find(ind) == consts.end()) {
           // non-constant index

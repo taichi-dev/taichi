@@ -18,9 +18,10 @@ class ConstExprPropagation : public IRVisitor {
   ConstExprPropagation(const is_const_seed_func &is_const_seed)
       : is_const_seed_(is_const_seed) {
     allow_undefined_visitor = true;
+    invoke_default_visitor = true;
   }
 
-  bool is_const(Stmt *stmt) {
+  bool is_inferred_const(Stmt *stmt) {
     if (is_const_seed_(stmt)) {
       return true;
     } else {
@@ -28,20 +29,37 @@ class ConstExprPropagation : public IRVisitor {
     }
   };
 
+  bool generic_test(Stmt *stmt) {
+    if (is_const_seed_(stmt)) {
+      const_stmts_.insert(stmt);
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  void visit(Stmt *stmt) override {
+    generic_test(stmt);
+  }
+
   void visit(UnaryOpStmt *stmt) override {
-    if (is_const(stmt->operand)) {
+    if (generic_test(stmt))
+      return;
+    if (is_inferred_const(stmt->operand)) {
       const_stmts_.insert(stmt);
     }
   }
 
   void visit(BinaryOpStmt *stmt) override {
-    if (is_const(stmt->lhs) && is_const(stmt->rhs)) {
+    if (generic_test(stmt))
+      return;
+    if (is_inferred_const(stmt->lhs) && is_inferred_const(stmt->rhs)) {
       const_stmts_.insert(stmt);
     }
   }
 
   void visit(IfStmt *stmt) override {
-    if (is_const(stmt->cond)) {
+    if (is_inferred_const(stmt->cond)) {
       if (stmt->true_statements)
         stmt->true_statements->accept(this);
       if (stmt->false_statements)

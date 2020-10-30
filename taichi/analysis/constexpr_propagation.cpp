@@ -35,8 +35,8 @@ class ConstExprPropagation : public IRVisitor {
   }
 
   bool is_inferred_const(Stmt *stmt) {
-    // Note: every statements that tests true by is_const_seed_ should have
-    // already been included in const_stmts_
+    // Note: every statement that tests true by "is_const_seed_" should have
+    // already been included in const_stmts_.
     return const_stmts_.find(stmt) != const_stmts_.end();
   };
 

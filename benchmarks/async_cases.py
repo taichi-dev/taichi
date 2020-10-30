@@ -299,7 +299,7 @@ def mpm_splitted(scale):
 
 # @benchmark_async
 def multires(scale):
-    ti.init(arch=ti.cpu, async_mode=False)
+    ti.init(arch=ti.cpu, async_mode=True)
     num_levels = 3
 
     x = []
@@ -325,7 +325,7 @@ def multires(scale):
     def downsample(l: ti.template()):
         for i in x[l]:
             if i % 2 == 0:
-                x[l + 1][i // 2] = x[l][i]
+                x[l + 1][i // 2] += x[l][i]
 
     initialize()
 

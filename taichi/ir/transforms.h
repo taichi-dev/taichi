@@ -52,6 +52,9 @@ bool remove_loop_unique(IRNode *root);
 bool remove_range_assumption(IRNode *root);
 bool lower_access(IRNode *root, bool lower_atomic);
 void auto_diff(IRNode *root, bool use_stack = false);
+std::unordered_set<Stmt *> constexpr_prop(
+    Block *block,
+    std::function<bool(Stmt *)> is_const_seed);
 bool constant_fold(IRNode *root);
 void offload(IRNode *root);
 void replace_statements_with(IRNode *root,
@@ -64,8 +67,8 @@ void detect_read_only(IRNode *root);
 
 // compile_to_offloads does the basic compilation to create all the offloaded
 // tasks of a Taichi kernel. It's worth pointing out that this doesn't demote
-// dense struct fors. This is a necessary workaround to prevent the async engine
-// from fusing incompatible offloaded tasks.
+// dense struct fors. This is a necessary workaround to prevent the async
+// engine from fusing incompatible offloaded tasks.
 void compile_to_offloads(IRNode *ir,
                          const CompileConfig &config,
                          bool verbose,

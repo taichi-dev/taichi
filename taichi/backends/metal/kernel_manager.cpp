@@ -790,7 +790,7 @@ class KernelManager::Impl {
     if (compiled_structs_.need_snode_lists_data) {
       auto *mem_alloc = reinterpret_cast<MemoryAllocator *>(addr);
       // Make sure the retured memory address is always greater than 1.
-      mem_alloc->next = shaders::kAlignment;
+      mem_alloc->next = shaders::MemoryAllocator::kInitOffset;
       // root list data are static
       ListgenElement root_elem;
       root_elem.mem_offset = 0;

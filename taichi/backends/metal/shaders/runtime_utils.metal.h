@@ -41,9 +41,6 @@ struct Runtime {
 // clang-format off
 METAL_BEGIN_RUNTIME_UTILS_DEF
 STR(
-    using PtrOffset = int32_t;
-    constant constexpr int kAlignment = 8;
-
     [[maybe_unused]] PtrOffset mtl_memalloc_alloc(device MemoryAllocator *ma,
                                                   int32_t size) {
       size = ((size + kAlignment - 1) / kAlignment) * kAlignment;
@@ -57,6 +54,7 @@ STR(
     }
 
     struct ListManager {
+      using ReservedElemPtrOffset = ListManagerData::ReservedElemPtrOffset;
       device ListManagerData *lm_data;
       device MemoryAllocator *mem_alloc;
 
@@ -74,22 +72,19 @@ STR(
         resize(0);
       }
 
-      struct ReserveElemResult {
-        int elem_idx;
-        PtrOffset chunk_ptr_offs;
-      };
-
-      ReserveElemResult reserve_new_elem() {
+      ReservedElemPtrOffset reserve_new_elem() {
         const int elem_idx = atomic_fetch_add_explicit(
             &lm_data->next, 1, metal::memory_order_relaxed);
-        const int chunk_idx = elem_idx >> lm_data->log2_num_elems_per_chunk;
+        const int chunk_idx = get_chunk_index(elem_idx);
         const PtrOffset chunk_ptr_offs = ensure_chunk(chunk_idx);
-        return {elem_idx, chunk_ptr_offs};
+        const auto offset =
+            get_elem_ptr_offs_from_chunk(elem_idx, chunk_ptr_offs);
+        return ReservedElemPtrOffset{offset};
       }
 
       device char *append() {
         auto reserved = reserve_new_elem();
-        return get_elem_from_chunk(reserved.elem_idx, reserved.chunk_ptr_offs);
+        return get_ptr(reserved);
       }
 
       template <typename T>
@@ -104,8 +99,12 @@ STR(
         }
       }
 
+      device char *get_ptr(ReservedElemPtrOffset offs) {
+        return mtl_memalloc_to_ptr(mem_alloc, offs.value());
+      }
+
       device char *get_ptr(int i) {
-        const int chunk_idx = i >> lm_data->log2_num_elems_per_chunk;
+        const int chunk_idx = get_chunk_index(i);
         const PtrOffset chunk_ptr_offs = atomic_load_explicit(
             lm_data->chunks + chunk_idx, metal::memory_order_relaxed);
         return get_elem_from_chunk(i, chunk_ptr_offs);
@@ -117,7 +116,11 @@ STR(
       }
 
      private:
-      PtrOffset ensure_chunk(int i) {
+      inline int get_chunk_index(int elem_idx) const {
+        return elem_idx >> lm_data->log2_num_elems_per_chunk;
+      }
+
+      PtrOffset ensure_chunk(int chunk_idx) {
         PtrOffset offs = 0;
         const int chunk_bytes =
             (lm_data->element_stride << lm_data->log2_num_elems_per_chunk);
@@ -128,11 +131,11 @@ STR(
           // from requesting memory again. Once allocated, set chunks[i] to the
           // actual address offset, which is guaranteed to be greater than 1.
           const bool is_me = atomic_compare_exchange_weak_explicit(
-              lm_data->chunks + i, &stored, 1, metal::memory_order_relaxed,
-              metal::memory_order_relaxed);
+              lm_data->chunks + chunk_idx, &stored, 1,
+              metal::memory_order_relaxed, metal::memory_order_relaxed);
           if (is_me) {
             offs = mtl_memalloc_alloc(mem_alloc, chunk_bytes);
-            atomic_store_explicit(lm_data->chunks + i, offs,
+            atomic_store_explicit(lm_data->chunks + chunk_idx, offs,
                                   metal::memory_order_relaxed);
             break;
           } else if (stored > 1) {
@@ -144,11 +147,16 @@ STR(
         return offs;
       }
 
-      device char *get_elem_from_chunk(int i, PtrOffset chunk_ptr_offs) {
-        device char *chunk_ptr = reinterpret_cast<device char *>(
-            mtl_memalloc_to_ptr(mem_alloc, chunk_ptr_offs));
+      PtrOffset get_elem_ptr_offs_from_chunk(int elem_idx,
+                                             PtrOffset chunk_ptr_offs) {
         const uint32_t mask = ((1 << lm_data->log2_num_elems_per_chunk) - 1);
-        return chunk_ptr + ((i & mask) * lm_data->element_stride);
+        return chunk_ptr_offs + ((elem_idx & mask) * lm_data->element_stride);
+      }
+
+      device char *get_elem_from_chunk(int elem_idx, PtrOffset chunk_ptr_offs) {
+        const auto offs =
+            get_elem_ptr_offs_from_chunk(elem_idx, chunk_ptr_offs);
+        return mtl_memalloc_to_ptr(mem_alloc, offs);
       }
     };
 
@@ -172,7 +180,7 @@ STR(
           return free_list.get<ElemIndex>(cur_used);
         }
 
-        return ElemIndex::from_index(data_list.reserve_new_elem().elem_idx);
+        return data_list.reserve_new_elem();
       }
 
       device byte *get(ElemIndex i) {
@@ -180,7 +188,7 @@ STR(
         data_list.lm_data = &(nm_data->data_list);
         data_list.mem_alloc = mem_alloc;
 
-        return data_list.get_ptr(i.index());
+        return data_list.get_ptr(i);
       }
 
       void recycle(ElemIndex i) {
@@ -328,33 +336,35 @@ STR(
 
       void activate(int i) {
         device auto *nm_idx_ptr = to_nodemgr_idx_ptr(addr_, i);
-        auto nm_idx_raw =
+        auto nm_idx_val =
             atomic_load_explicit(nm_idx_ptr, metal::memory_order_relaxed);
-        while (!ElemIndex::is_valid(nm_idx_raw)) {
-          nm_idx_raw = 0;
+        while (!ElemIndex::is_valid(nm_idx_val)) {
+          nm_idx_val = 0;
           // See ListManager::ensure_chunk() for the allocation algorithm.
           // See also https://github.com/taichi-dev/taichi/issues/1174.
           const bool is_me = atomic_compare_exchange_weak_explicit(
-              nm_idx_ptr, &nm_idx_raw, 1, metal::memory_order_relaxed,
+              nm_idx_ptr, &nm_idx_val, 1, metal::memory_order_relaxed,
               metal::memory_order_relaxed);
           if (is_me) {
-            nm_idx_raw = nm_.allocate().raw();
-            atomic_store_explicit(nm_idx_ptr, nm_idx_raw,
+            nm_idx_val = nm_.allocate().value();
+            atomic_store_explicit(nm_idx_ptr, nm_idx_val,
                                   metal::memory_order_relaxed);
             break;
-          } else if (ElemIndex::is_valid(nm_idx_raw)) {
+          } else if (ElemIndex::is_valid(nm_idx_val)) {
             break;
           }
-          // |nm_idx_raw| == 1, just spin
+          // |nm_idx_val| == 1, just spin
         }
       }
 
       void deactivate(int i) {
         device auto *nm_idx_ptr = to_nodemgr_idx_ptr(addr_, i);
-        const auto old_nm_idx_raw = atomic_exchange_explicit(
+        const auto old_nm_idx_val = atomic_exchange_explicit(
             nm_idx_ptr, 0, metal::memory_order_relaxed);
-        const auto old_nm_idx = ElemIndex::from_raw(old_nm_idx_raw);
-        if (!old_nm_idx.is_valid()) return;
+        const auto old_nm_idx = ElemIndex(old_nm_idx_val);
+        if (!old_nm_idx.is_valid()) {
+          return;
+        }
         nm_.recycle(old_nm_idx);
       }
 
@@ -366,8 +376,8 @@ STR(
 
       static inline ElemIndex to_nodemgr_idx(device byte * addr, int ch_i) {
         device auto *ptr = to_nodemgr_idx_ptr(addr, ch_i);
-        const auto r = atomic_load_explicit(ptr, metal::memory_order_relaxed);
-        return ElemIndex::from_raw(r);
+        const auto v = atomic_load_explicit(ptr, metal::memory_order_relaxed);
+        return ElemIndex(v);
       }
 
       static bool is_active(device byte * addr, int ch_i) {

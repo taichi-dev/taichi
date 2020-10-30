@@ -31,8 +31,18 @@ STR(
     // clang-format on
     constant constexpr int kTaichiMaxNumIndices = 8;
     constant constexpr int kTaichiNumChunks = 1024;
+    constant constexpr int kAlignment = 8;
+    using PtrOffset = int32_t; 
 
-    struct MemoryAllocator { atomic_int next; };
+    struct MemoryAllocator { 
+      atomic_int next;
+
+      constant constexpr static int kInitOffset = 8;
+
+      static inline bool is_valid(PtrOffset v) {
+        return v >= kInitOffset;
+      }
+    };
 
     // ListManagerData manages a list of elements with adjustable size.
     struct ListManagerData {
@@ -44,6 +54,23 @@ STR(
       atomic_int next;
 
       atomic_int chunks[kTaichiNumChunks];
+
+      struct ReservedElemPtrOffset {
+       public:
+        ReservedElemPtrOffset() = default;
+        explicit ReservedElemPtrOffset(PtrOffset v) : val_(v) {}
+
+        inline bool is_valid() const { return is_valid(val_); }
+
+        inline static bool is_valid(PtrOffset v) { 
+          return MemoryAllocator::is_valid(v); 
+        }
+
+        inline PtrOffset value() const { return val_; }
+
+       private:
+        PtrOffset val_{0};
+      };
     };
 
     // NodeManagerData stores the actual data needed to implement NodeManager
@@ -54,6 +81,7 @@ STR(
     // few lists (ListManagerData). In particular, |data_list| stores the actual
     // data, while |free_list| and |recycle_list| are only meant for GC.
     struct NodeManagerData {
+      using ElemIndex = ListManagerData::ReservedElemPtrOffset;
       // Stores the actual data.
       ListManagerData data_list;
       // For GC
@@ -62,51 +90,6 @@ STR(
       atomic_int free_list_used;
       // Need this field to bookkeep some data during GC
       int recycled_list_size_backup;
-
-      // Use this type instead of the raw index type (int32_t), because the
-      // raw value needs to be shifted by |kIndexOffset| in order for the
-      // spinning memory allocation algorithm to work.
-      struct ElemIndex {
-        // The first 8 index values are reserved to encode special status:
-        // * 0  : nullptr
-        // * 1  : spinning for allocation
-        // * 2-7: unused for now
-        //
-        /// For each allocated index, it is added by |index_offset| to skip over
-        /// these reserved values.
-        constant static constexpr int32_t kIndexOffset = 8;
-
-        ElemIndex() = default;
-
-        static ElemIndex from_index(int i) {
-          return ElemIndex(i + kIndexOffset);
-        }
-
-        static ElemIndex from_raw(int r) {
-          return ElemIndex(r);
-        }
-
-        inline int32_t index() const {
-          return raw_ - kIndexOffset;
-        }
-
-        inline int32_t raw() const {
-          return raw_;
-        }
-
-        inline bool is_valid() const {
-          return raw_ >= kIndexOffset;
-        }
-
-        inline static bool is_valid(int raw) {
-          return ElemIndex::from_raw(raw).is_valid();
-        }
-
-       private:
-        explicit ElemIndex(int r) : raw_(r) {
-        }
-        int32_t raw_ = 0;
-      };
     };
 
     // This class is very similar to metal::SNodeDescriptor

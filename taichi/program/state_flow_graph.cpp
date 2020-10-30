@@ -453,22 +453,38 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
     if (nodes[a]->meta->type != OffloadedTaskType::serial) {
       for (auto &state : nodes[a]->output_edges) {
         const auto sty = state.first.type;
+        const auto snode = state.first.snode;
         if (sty != AsyncState::Type::value && sty != AsyncState::Type::mask) {
           // No need to check allocator/list states, as they must be accompanied
           // with either value or mask states.
           continue;
         }
         if (state.second.find(nodes[b]) != state.second.end()) {
-          if (!nodes[a]->meta->element_wise[state.first.snode] ||
-              !nodes[b]->meta->element_wise[state.first.snode]) {
+          if (nodes[a]->meta->loop_unique.count(snode) == 0 ||
+              nodes[b]->meta->loop_unique.count(snode) == 0) {
+//            if (nodes[b]->string().find_first_of("p2g_c6_0_struct_for") != std::string::npos) {
+//              TI_WARN("{} {} {} {} on {}", nodes[a]->string(), nodes[b]->string(),
+//                      nodes[a]->meta->loop_unique.count(snode),
+//                      nodes[b]->meta->loop_unique.count(snode),
+//                      snode->get_node_type_name_hinted());
+//            }
             return false;
           }
+          TI_ASSERT(nodes[a]->rec.stmt()->id == 0);
+          TI_ASSERT(nodes[b]->rec.stmt()->id == 0);
+          // TODO: check same loop_unique pointer
         }
       }
     }
     // check if a doesn't have a path to b of length >= 2
     auto a_has_path_to_b = has_path[a] & has_path_reverse[b];
     a_has_path_to_b[a] = a_has_path_to_b[b] = false;
+//    if (nodes[b]->string().find_first_of("p2g_c6_0_struct_for") != std::string::npos) {
+//      if (!a_has_path_to_b.none())
+//        TI_WARN("b {} {}", nodes[a]->string(), nodes[b]->string());
+//      else
+//        TI_WARN("OK {} {}", nodes[a]->string(), nodes[b]->string());
+//    }
     return a_has_path_to_b.none();
   };
 
@@ -670,7 +686,7 @@ std::string StateFlowGraph::dump_dot(const std::optional<std::string> &rankdir,
   std::stringstream ss;
 
   // TODO: expose an API that allows users to highlight a single state
-  AsyncState highlight_state{nullptr, AsyncState::Type::value};
+  AsyncState highlight_state{get_current_program().snodes[14], AsyncState::Type::mask};
 
   ss << "digraph {\n";
   auto node_id = [](const SFGNode *n) {
@@ -728,42 +744,43 @@ std::string StateFlowGraph::dump_dot(const std::optional<std::string> &rankdir,
   for (const auto &nd : nodes_) {
     const auto *n = nd.get();
 
-    std::stringstream labels;
-    if (!n->is_initial_node && !n->output_edges.empty() &&
-        (n->output_edges.size() < embed_states_threshold)) {
-      // Example:
-      //
-      // |-----------------------|
-      // |        node foo       |
-      // |-----------------------|
-      // |   X_mask  |  X_value  |
-      // |-----------------------|
-      //
-      // label={ node\ foo | { <X_mask> X_mask | <X_value> X_value } }
-      // See DOT node port...
-      labels << "{ " << escaped_label(n->string()) << " | { ";
-      const auto &edges = n->output_edges;
-      for (auto it = edges.begin(); it != edges.end(); ++it) {
-        if (it != edges.begin()) {
-          labels << " | ";
-        }
-        const auto name = it->first.name();
-        // Each state corresponds to one port
-        // "<port> displayed\ text"
-        labels << "<" << name << "> " << escaped_label(name);
-      }
-      labels << " } }";
-
-      nodes_with_embedded_states.insert(n);
-    } else {
-      // No states embedded.
-      labels << escaped_label(n->string());
-      if (!n->is_initial_node) {
-        labels << fmt::format("\\nhash: 0x{:08x}", n->rec.ir_handle.hash());
-      }
-    }
-
     if (node_selected(nd.get())) {
+
+      std::stringstream labels;
+      if (!n->is_initial_node && !n->output_edges.empty() &&
+          (n->output_edges.size() < embed_states_threshold)) {
+        // Example:
+        //
+        // |-----------------------|
+        // |        node foo       |
+        // |-----------------------|
+        // |   X_mask  |  X_value  |
+        // |-----------------------|
+        //
+        // label={ node\ foo | { <X_mask> X_mask | <X_value> X_value } }
+        // See DOT node port...
+        labels << "{ " << escaped_label(n->string()) << " | { ";
+        const auto &edges = n->output_edges;
+        for (auto it = edges.begin(); it != edges.end(); ++it) {
+          if (it != edges.begin()) {
+            labels << " | ";
+          }
+          const auto name = it->first.name();
+          // Each state corresponds to one port
+          // "<port> displayed\ text"
+          labels << "<" << name << "> " << escaped_label(name);
+        }
+        labels << " } }";
+
+        nodes_with_embedded_states.insert(n);
+      } else {
+        // No states embedded.
+        labels << escaped_label(n->string());
+        if (!n->is_initial_node) {
+          labels << fmt::format("\\nhash: 0x{:08x}", n->rec.ir_handle.hash());
+        }
+      }
+
       std::string color;
       if (highlight_single_state)
         color = " style=filled fillcolor=red ";

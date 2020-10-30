@@ -16,6 +16,7 @@ struct TaskMeta;
 
 class IRNode;
 class OffloadedStmt;
+class GlobalPtrStmt;
 
 class IRHandle {
  public:
@@ -197,6 +198,7 @@ struct TaskMeta {
   std::unordered_set<AsyncState> input_states;
   std::unordered_set<AsyncState> output_states;
   std::unordered_map<SNode *, bool> element_wise;
+  std::unordered_map<SNode *, GlobalPtrStmt *> loop_unique;
   // TODO: split element-wise writes with loop-unique
 
   void print() const;

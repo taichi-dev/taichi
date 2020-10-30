@@ -58,8 +58,16 @@ void TaskMeta::print() const {
     }
     fmt::print("\n");
   }
+  if (!loop_unique.empty()) {
+    fmt::print("  loop-unique snodes:\n    ");
+    for (auto &s : loop_unique) {
+      fmt::print("{}:{} ", s.first->get_node_type_name_hinted(),
+                 s.second ? s.second->name() : "nullptr");
+    }
+    fmt::print("\n");
+  }
   std::vector<SNode *> element_wise_snodes, non_element_wise_snodes;
-  for (auto s : element_wise) {
+  for (auto &s : element_wise) {
     if (s.second) {
       element_wise_snodes.push_back(s.first);
     } else {
@@ -103,6 +111,13 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
       t.kernel->name + "_" + offloaded_task_type_name(root_stmt->task_type);
   meta.type = root_stmt->task_type;
   get_meta_input_value_states(root_stmt, &meta);
+//  std::cout << std::endl;
+//  TI_INFO("meta of {}", t.kernel->name);
+//  std::cout << std::endl;
+//  meta.print();
+//  std::cout << std::endl;
+  meta.loop_unique = gather_uniquely_accessed_pointers(root_stmt);
+
   gather_statements(root_stmt, [&](Stmt *stmt) {
     if (auto global_store = stmt->cast<GlobalStoreStmt>()) {
       if (auto ptr = global_store->ptr->cast<GlobalPtrStmt>()) {
@@ -195,6 +210,11 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
   }
 
   meta_bank[t.ir_handle] = meta;
+//  std::cout << std::endl;
+//  TI_INFO("meta of {} done", t.kernel->name);
+//  std::cout << std::endl;
+//  meta.print();
+//  std::cout << std::endl;
   return &meta_bank[t.ir_handle];
 }
 

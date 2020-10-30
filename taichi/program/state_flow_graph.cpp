@@ -168,27 +168,27 @@ void StateFlowGraph::insert_task(const TaskLaunchRecord &rec) {
   }
   for (auto output_state : node->meta->output_states) {
     TI_PROFILER("insert_task meta->output_states");
-    if (latest_state_readers_[output_state].empty()) {
+    if (get_or_insert(latest_state_readers_, output_state).empty()) {
       if (latest_state_owner_.find(output_state) != latest_state_owner_.end()) {
         // insert a WAW dependency edge
         insert_edge(latest_state_owner_[output_state], node.get(),
                     output_state);
       } else {
-        latest_state_readers_[output_state].insert(initial_node_);
+        insert(latest_state_readers_, output_state, initial_node_);
       }
     }
     latest_state_owner_[output_state] = node.get();
-    for (auto &d : latest_state_readers_[output_state]) {
+    for (auto *d : get_or_insert(latest_state_readers_, output_state)) {
       // insert a WAR dependency edge
       insert_edge(d, node.get(), output_state);
     }
-    latest_state_readers_[output_state].clear();
+    get_or_insert(latest_state_readers_, output_state).clear();
   }
 
   // Note that this loop must happen AFTER the previous one
   for (auto input_state : node->meta->input_states) {
     TI_PROFILER("insert_task latest_state_readers_");
-    latest_state_readers_[input_state].insert(node.get());
+    insert(latest_state_readers_, input_state, node.get());
   }
   nodes_.push_back(std::move(node));
 }
@@ -399,7 +399,7 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
       auto update_list_i =
           has_path_reverse[i].or_eq_get_update_list(has_path_reverse[a]);
       for (auto j : update_list_i) {
-        has_path[i][j] = true;
+        has_path[j][i] = true;
       }
     }
   };
@@ -450,10 +450,12 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
         fusion_meta[a] != fusion_meta[b]) {
       return false;
     }
-    if (nodes[a]->meta->type != OffloadedStmt::TaskType::serial) {
+    if (nodes[a]->meta->type != OffloadedTaskType::serial) {
       for (auto &state : nodes[a]->output_edges) {
-        if (state.first.type != AsyncState::Type::value) {
-          // No need to check mask/list states as there must be value states.
+        const auto sty = state.first.type;
+        if (sty != AsyncState::Type::value && sty != AsyncState::Type::mask) {
+          // No need to check allocator/list states, as they must be accompanied
+          // with either value or mask states.
           continue;
         }
         if (state.second.find(nodes[b]) != state.second.end()) {
@@ -876,7 +878,20 @@ void StateFlowGraph::topo_sort_nodes() {
     nodes_.emplace_back(std::move(head));
   }
 
-  TI_ASSERT(previous_size == nodes_.size());
+  if (previous_size != nodes_.size()) {
+    auto first_not_sorted = std::find_if_not(
+        degrees_in.begin(), degrees_in.end(), [](int x) { return x == 0; });
+    if (first_not_sorted != degrees_in.end()) {
+      TI_ERROR("SFG contains a cycle with node {}{}",
+               first_not_sorted - degrees_in.begin(),
+               pending_tasks[first_not_sorted - degrees_in.begin()]->string());
+    } else {
+      TI_ERROR(
+          "Topo sort changes the size of SFG ({} -> {}) "
+          "but no cycles are found",
+          previous_size, nodes_.size());
+    }
+  }
   reid_nodes();
   reid_pending_nodes();
 }
@@ -907,6 +922,10 @@ void StateFlowGraph::replace_reference(StateFlowGraph::Node *node_a,
       // Replace reference to A with B
       const auto &ostate = edges.first;
       auto &c_ins = get_or_insert(node_c->input_edges, ostate);
+      TI_ASSERT_INFO(node_c != node_b,
+                     "Edge {} --({})-> {} will become a self-loop "
+                     "after replacing reference",
+                     node_a->string(), ostate.name(), node_b->string());
       if (c_ins.find(node_a) != c_ins.end()) {
         c_ins.erase(node_a);
         c_ins.insert(node_b);
@@ -924,6 +943,10 @@ void StateFlowGraph::replace_reference(StateFlowGraph::Node *node_a,
       // Replace reference to A with B
       const auto &istate = edges.first;
       auto &c_outs = get_or_insert(node_c->output_edges, istate);
+      TI_ASSERT_INFO(node_c != node_b,
+                     "Edge {} <-({})-- {} will become a self-loop "
+                     "after replacing reference",
+                     node_a->string(), istate.name(), node_b->string());
       if (c_outs.find(node_a) != c_outs.end()) {
         c_outs.erase(node_a);
         c_outs.insert(node_b);

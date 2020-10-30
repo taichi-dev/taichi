@@ -38,7 +38,17 @@ CUDAContext::CUDAContext()
            get_total_memory() / GB, get_free_memory() / GB);
 
   compute_capability = cc_major * 10 + cc_minor;
-  mcpu = fmt::format("sm_{}{}", cc_major, cc_minor);
+
+  if (compute_capability > 75) {
+    // The NVPTX backend of LLVM 10.0.0 does not seem to support
+    // compute_capability > 75 yet. See
+    // llvm-10.0.0.src/build/lib/Target/NVPTX/NVPTXGenSubtargetInfo.inc
+    compute_capability = 75;
+  }
+
+  mcpu = fmt::format("sm_{}", compute_capability);
+
+  TI_TRACE("Emitting CUDA code for {}", mcpu);
 }
 
 std::size_t CUDAContext::get_total_memory() {

@@ -16,7 +16,7 @@ class FrontendAllocaStmt : public Stmt {
   Identifier ident;
 
   FrontendAllocaStmt(const Identifier &lhs, DataType type) : ident(lhs) {
-    ret_type = LegacyVectorType(1, type);
+    ret_type = TypeFactory::create_vector_or_scalar_type(1, type);
   }
 
   TI_DEFINE_ACCEPT
@@ -203,7 +203,7 @@ class FrontendKernelReturnStmt : public Stmt {
   Expr value;
 
   FrontendKernelReturnStmt(const Expr &value, DataType dt) : value(value) {
-    ret_type = LegacyVectorType(1, dt);
+    ret_type = TypeFactory::create_vector_or_scalar_type(1, dt);
   }
 
   bool is_container_statement() const override {
@@ -445,6 +445,20 @@ class RangeAssumptionExpression : public Expression {
     return fmt::format("assume_in_range({}{:+d} <= ({}) < {}{:+d})",
                        base.serialize(), low, input.serialize(),
                        base.serialize(), high);
+  }
+
+  void flatten(FlattenContext *ctx) override;
+};
+
+class LoopUniqueExpression : public Expression {
+ public:
+  Expr input;
+
+  LoopUniqueExpression(const Expr &input) : input(input) {
+  }
+
+  std::string serialize() override {
+    return fmt::format("loop_unique({})", input.serialize());
   }
 
   void flatten(FlattenContext *ctx) override;

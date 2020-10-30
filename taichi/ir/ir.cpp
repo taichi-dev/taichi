@@ -17,25 +17,18 @@ TLANG_NAMESPACE_BEGIN
 #define TI_EXPRESSION_IMPLEMENTATION
 #include "expression_ops.h"
 
-IRBuilder &current_ast_builder() {
-  return context->builder();
-}
-
-std::string LegacyVectorType::pointer_suffix() const {
-  if (is_pointer()) {
-    return "*";
+std::string snode_access_flag_name(SNodeAccessFlag type) {
+  if (type == SNodeAccessFlag::block_local) {
+    return "block_local";
+  } else if (type == SNodeAccessFlag::read_only) {
+    return "read_only";
   } else {
-    return "";
+    TI_ERROR("Undefined SNode AccessType (value={})", int(type));
   }
 }
 
-std::string LegacyVectorType::element_type_name() const {
-  return fmt::format("{}{}", data_type_short_name(data_type), pointer_suffix());
-}
-
-std::string LegacyVectorType::str() const {
-  auto ename = element_type_name();
-  return fmt::format("{:4}x{}", ename, width);
+IRBuilder &current_ast_builder() {
+  return context->builder();
 }
 
 void DecoratorRecorder::reset() {
@@ -235,10 +228,10 @@ void Stmt::replace_operand_with(Stmt *old_stmt, Stmt *new_stmt) {
 }
 
 std::string Stmt::type_hint() const {
-  if (ret_type.data_type == PrimitiveType::unknown)
+  if (ret_type->is_primitive(PrimitiveTypeID::unknown))
     return "";
   else
-    return fmt::format("<{}>", ret_type.str());
+    return fmt::format("<{}> ", ret_type.to_string());
 }
 
 std::string Stmt::type() {

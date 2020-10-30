@@ -114,25 +114,50 @@ class TaichiOperations:
         _taichi_skip_traceback = 1
         return ti.bit_and(self, other)
 
+    def __rand__(self, other):
+        import taichi as ti
+        _taichi_skip_traceback = 1
+        return ti.bit_and(other, self)
+
     def __or__(self, other):
         import taichi as ti
         _taichi_skip_traceback = 1
         return ti.bit_or(self, other)
+
+    def __ror__(self, other):
+        import taichi as ti
+        _taichi_skip_traceback = 1
+        return ti.bit_or(other, self)
 
     def __xor__(self, other):
         import taichi as ti
         _taichi_skip_traceback = 1
         return ti.bit_xor(self, other)
 
+    def __rxor__(self, other):
+        import taichi as ti
+        _taichi_skip_traceback = 1
+        return ti.bit_xor(other, self)
+
     def __lshift__(self, other):
         import taichi as ti
         _taichi_skip_traceback = 1
         return ti.bit_shl(self, other)
 
+    def __rlshift__(self, other):
+        import taichi as ti
+        _taichi_skip_traceback = 1
+        return ti.bit_shl(other, self)
+
     def __rshift__(self, other):
         import taichi as ti
         _taichi_skip_traceback = 1
         return ti.bit_sar(self, other)
+
+    def __rrshift__(self, other):
+        import taichi as ti
+        _taichi_skip_traceback = 1
+        return ti.bit_sar(other, self)
 
     def logical_and(self, other):
         import taichi as ti
@@ -229,6 +254,18 @@ class TaichiOperations:
         self.assign(ti.mod(self, other))
         return self
 
+    def __ilshift__(self, other):
+        import taichi as ti
+        _taichi_skip_traceback = 1
+        self.assign(ti.bit_shl(self, other))
+        return self
+
+    def __irshift__(self, other):
+        import taichi as ti
+        _taichi_skip_traceback = 1
+        self.assign(ti.bit_shr(self, other))
+        return self
+
     def assign(self, other):
         import taichi as ti
         _taichi_skip_traceback = 1
@@ -254,6 +291,10 @@ class TaichiOperations:
             self |= x
         elif op == 'BitXor':
             self ^= x
+        elif op == 'RShift':
+            self >>= x
+        elif op == 'LShift':
+            self <<= x
         else:
             assert False, op
 

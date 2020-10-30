@@ -15,26 +15,30 @@ def tensor_to_ext_arr(tensor: ti.template(), arr: ti.ext_arr()):
         arr[I] = tensor[I]
 
 
-@ti.func
-def cook_image_type(x):
-    x = ti.cast(x, ti.f32)
-    return x
-
-
 @ti.kernel
 def vector_to_fast_image(img: ti.template(), out: ti.ext_arr()):
     # FIXME: Why is ``for i, j in img:`` slower than:
     for i, j in ti.ndrange(*img.shape):
-        u, v, w = min(255, max(0, int(img[i, img.shape[1] - 1 - j] * 255)))
+        r, g, b = min(255, max(0, int(img[i, img.shape[1] - 1 - j] * 255)))
+        idx = j * img.shape[0] + i
         # We use i32 for |out| since OpenGL and Metal doesn't support u8 types
-        # TODO: treat Cocoa and Big-endian machines, with XOR logic
-        out[j * img.shape[0] + i] = w + (v << 8) + (u << 16)
+        if ti.static(ti.get_os_name() != 'osx'):
+            out[idx] = (r << 16) + (g << 8) + b
+        else:
+            # What's -16777216?
+            #
+            # On Mac, we need to set the alpha channel to 0xff. Since Mac's GUI
+            # is big-endian, the color is stored in ABGR order, and we need to
+            # add 0xff000000, which is -16777216 in I32's legit range. (Albeit
+            # the clarity, adding 0xff000000 doesn't work.)
+            alpha = -16777216
+            out[idx] = (b << 16) + (g << 8) + r + alpha
 
 
 @ti.kernel
 def tensor_to_image(tensor: ti.template(), arr: ti.ext_arr()):
     for I in ti.grouped(tensor):
-        t = cook_image_type(tensor[I])
+        t = ti.cast(tensor[I], ti.f32)
         arr[I, 0] = t
         arr[I, 1] = t
         arr[I, 2] = t
@@ -44,7 +48,7 @@ def tensor_to_image(tensor: ti.template(), arr: ti.ext_arr()):
 def vector_to_image(mat: ti.template(), arr: ti.ext_arr()):
     for I in ti.grouped(mat):
         for p in ti.static(range(mat.n)):
-            arr[I, p] = cook_image_type(mat[I][p])
+            arr[I, p] = ti.cast(mat[I][p], ti.f32)
             if ti.static(mat.n <= 2):
                 arr[I, 2] = 0
 

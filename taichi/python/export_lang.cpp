@@ -83,8 +83,12 @@ void export_lang(py::module &m) {
 #undef PER_EXTENSION
       .export_values();
 
+  // TODO(type): This should be removed
   py::class_<DataType>(m, "DataType")
+      .def(py::init<Type *>())
       .def(py::self == py::self)
+      .def("__hash__", &DataType::hash)
+      .def("to_string", &DataType::to_string)
       .def(py::pickle(
           [](const DataType &dt) {
             // Note: this only works for primitive types, which is fine for now.
@@ -96,8 +100,8 @@ void export_lang(py::module &m) {
             if (t.size() != 1)
               throw std::runtime_error("Invalid state!");
 
-            DataType dt = PrimitiveType::get(
-                (PrimitiveType::primitive_type)(t[0].cast<std::size_t>()));
+            DataType dt =
+                PrimitiveType::get((PrimitiveTypeID)(t[0].cast<std::size_t>()));
 
             return dt;
           }));
@@ -152,6 +156,7 @@ void export_lang(py::module &m) {
       .def_readwrite("flatten_if", &CompileConfig::flatten_if)
       .def_readwrite("make_thread_local", &CompileConfig::make_thread_local)
       .def_readwrite("make_block_local", &CompileConfig::make_block_local)
+      .def_readwrite("detect_read_only", &CompileConfig::detect_read_only)
       .def_readwrite("cc_compile_cmd", &CompileConfig::cc_compile_cmd)
       .def_readwrite("cc_link_cmd", &CompileConfig::cc_link_cmd)
       .def_readwrite("async_opt_fusion", &CompileConfig::async_opt_fusion)
@@ -218,6 +223,7 @@ void export_lang(py::module &m) {
            (SNode & (SNode::*)(const std::vector<Index> &,
                                const std::vector<int> &))(&SNode::bitmasked),
            py::return_value_policy::reference)
+      .def("bit_struct", &SNode::bit_struct, py::return_value_policy::reference)
       .def("place",
            (void (SNode::*)(Expr &, const std::vector<int> &))(&SNode::place),
            py::return_value_policy::reference)
@@ -481,6 +487,8 @@ void export_lang(py::module &m) {
 
   m.def("expr_assume_in_range", AssumeInRange);
 
+  m.def("expr_loop_unique", LoopUnique);
+
   m.def("expr_select", expr_select);
 
 #define DEFINE_EXPRESSION_OP_UNARY(x) m.def("expr_" #x, expr_##x);
@@ -610,7 +618,13 @@ void export_lang(py::module &m) {
   m.def("parallelize", Parallelize);
   m.def("vectorize", Vectorize);
   m.def("block_dim", BlockDim);
-  m.def("cache", Cache);
+
+  py::enum_<SNodeAccessFlag>(m, "SNodeAccessFlag", py::arithmetic())
+      .value("block_local", SNodeAccessFlag::block_local)
+      .value("read_only", SNodeAccessFlag::read_only)
+      .export_values();
+
+  m.def("insert_snode_access_flag", insert_snode_access_flag);
   m.def("no_activate", [](SNode *snode) {
     get_current_program().get_current_kernel().no_activate.push_back(snode);
   });
@@ -702,6 +716,16 @@ void export_lang(py::module &m) {
   m.def("print_sfg", async_print_sfg);
   m.def("dump_dot", async_dump_dot, py::arg("rankdir").none(true),
         py::arg("embed_states_threshold"));
+
+  // Type system
+
+  py::class_<Type>(m, "Type").def("to_string", &Type::to_string);
+
+  py::class_<TypeFactory>(m, "TypeFactory")
+      .def("get_custom_int_type", &TypeFactory::get_custom_int_type);
+
+  m.def("get_type_factory_instance", TypeFactory::get_instance,
+        py::return_value_policy::reference);
 }
 
 TI_NAMESPACE_END

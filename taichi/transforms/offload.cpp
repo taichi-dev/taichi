@@ -258,10 +258,10 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
     global_offset = 0;
   }
 
-  std::size_t allocate_global(LegacyVectorType type) {
-    TI_ASSERT(type.width == 1);
+  std::size_t allocate_global(DataType type) {
+    TI_ASSERT(type->vector_width() == 1);
     auto ret = global_offset;
-    global_offset += data_type_size(type.data_type);
+    global_offset += data_type_size(type);
     TI_ASSERT(global_offset < taichi_global_tmp_buffer_size);
     return ret;
   }
@@ -417,7 +417,7 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
     auto ptr = replacement.push_back<GlobalTemporaryStmt>(
         local_to_global_offset[stmt], ret_type);
     LaneAttribute<TypedConstant> zeros(std::vector<TypedConstant>(
-        stmt->width(), TypedConstant(stmt->ret_type.data_type)));
+        stmt->width(), TypedConstant(stmt->ret_type)));
     auto const_zeros = replacement.push_back<ConstStmt>(zeros);
     replacement.push_back<GlobalStoreStmt>(ptr, const_zeros);
 
@@ -564,7 +564,7 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
   StmtToOffsetMap local_to_global_offset;
   std::unordered_map<Stmt *, Stmt *> stmt_to_offloaded;
   OffloadedRanges *const offloaded_ranges_;
-  std::unordered_map<Stmt *, LegacyVectorType> local_to_global_vector_type;
+  std::unordered_map<Stmt *, DataType> local_to_global_vector_type;
 };
 
 void insert_gc(IRNode *root) {

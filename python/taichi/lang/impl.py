@@ -97,7 +97,7 @@ def subscript(value, *indices):
     if isinstance(value, np.ndarray):
         return value.__getitem__(*indices)
 
-    if isinstance(value, tuple) or isinstance(value, list):
+    if isinstance(value, (tuple, list, dict)):
         assert len(indices) == 1
         return value[indices[0]]
 
@@ -243,6 +243,10 @@ class PyTaichi:
 
         for func in self.materialize_callbacks:
             func()
+        self.materialize_callbacks = []
+
+    def print_snode_tree(self):
+        self.prog.print_snode_tree()
 
     def clear(self):
         if self.prog:
@@ -289,7 +293,7 @@ def make_constant_expr(val):
         else:
             assert False
     else:
-        raise ValueError(f'Bad constant scalar expression: {type(val)}')
+        raise ValueError(f'Invalid constant scalar expression: {type(val)}')
 
 
 def reset():
@@ -534,12 +538,11 @@ def static(x, *xs):
         return [static(x)] + [static(x) for x in xs]
     import types
     import taichi as ti
-    if isinstance(x, (bool, int, float, range, list, tuple, enumerate,
-                      ti.ndrange, ti.GroupedNDRange)) or x is None:
+    if isinstance(x,
+                  (bool, int, float, range, list, tuple, enumerate, ti.ndrange,
+                   ti.GroupedNDRange, zip, filter, map)) or x is None:
         return x
-    elif isinstance(x, ti.lang.expr.Expr) and x.ptr.is_global_var():
-        return x
-    elif isinstance(x, ti.Matrix) and x.is_global():
+    elif isinstance(x, (ti.Expr, ti.Matrix)) and x.is_global():
         return x
     elif isinstance(x, (types.FunctionType, types.MethodType)):
         return x

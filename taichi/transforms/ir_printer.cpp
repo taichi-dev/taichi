@@ -6,7 +6,6 @@
 #include "taichi/ir/visitors.h"
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/util/str.h"
-#include <typeinfo>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -15,16 +14,8 @@ std::string scratch_pad_info(const ScratchPadOptions &opt) {
   if (!opt.empty()) {
     ser += "scratch_pad [ ";
     for (auto s : opt) {
-      // TODO: standardize scratch pad types
-      std::string type;
-      if (s.first == 0) {
-        type = "block local";
-      } else if (s.first == 1) {
-        type = "read_only";
-      } else {
-        TI_ERROR("scratch type {} not supported", s.first);
-      }
-      ser += s.second->get_node_type_name_hinted() + ":" + type + " ";
+      ser += s.second->get_node_type_name_hinted() + ":" +
+             snode_access_flag_name(s.first) + " ";
     }
     ser += "] ";
   } else {
@@ -422,6 +413,11 @@ class IRPrinter : public IRVisitor {
     print("{}{} = assume_in_range({}{:+d} <= {} < {}{:+d})", stmt->type_hint(),
           stmt->name(), stmt->base->name(), stmt->low, stmt->input->name(),
           stmt->base->name(), stmt->high);
+  }
+
+  void visit(LoopUniqueStmt *stmt) override {
+    print("{}{} = loop_unique({})", stmt->type_hint(), stmt->name(),
+          stmt->input->name());
   }
 
   void visit(LinearizeStmt *stmt) override {

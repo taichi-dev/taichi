@@ -127,7 +127,7 @@ std::unique_ptr<ScratchPads> initialize_scratch_pad(OffloadedStmt *offload) {
   pads = std::make_unique<ScratchPads>();
   if (!offload->scratch_opt.empty()) {
     for (auto &opt : offload->scratch_opt) {
-      if (opt.first == 0 /* shared */) {
+      if (opt.first == SNodeAccessFlag::block_local) {
         pads->insert(opt.second);
       }
     }

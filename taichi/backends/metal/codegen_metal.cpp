@@ -41,10 +41,11 @@ constexpr char kContextBufferName[] = "ctx_addr";
 constexpr char kContextVarName[] = "kernel_ctx_";
 constexpr char kRuntimeBufferName[] = "runtime_addr";
 constexpr char kRuntimeVarName[] = "runtime_";
-constexpr char kPrintBufferName[] = "print_addr";
+constexpr char kPrintAssertBufferName[] = "print_assert_addr";
 constexpr char kPrintAllocVarName[] = "print_alloc_";
+constexpr char kAssertRecorderVarName[] = "assert_rec_";
 constexpr char kLinearLoopIndexName[] = "linear_loop_idx_";
-constexpr char kListgenElemVarName[] = "listgen_elem_";
+constexpr char kElementCoordsVarName[] = "elem_coords_";
 constexpr char kRandStateVarName[] = "rand_state_";
 constexpr char kMemAllocVarName[] = "mem_alloc_";
 constexpr char kTlsBufferName[] = "tls_buffer_";
@@ -60,7 +61,7 @@ std::string buffer_to_name(BuffersEnum b) {
     case BuffersEnum::Runtime:
       return kRuntimeBufferName;
     case BuffersEnum::Print:
-      return kPrintBufferName;
+      return kPrintAssertBufferName;
     default:
       TI_NOT_IMPLEMENTED;
       break;
@@ -276,7 +277,7 @@ class KernelCodegen : public IRVisitor {
         }
       } else if (opty == SNodeOpType::append) {
         TI_ASSERT(is_dynamic);
-        TI_ASSERT(stmt->ret_type.data_type == PrimitiveType::i32);
+        TI_ASSERT(stmt->ret_type->is_primitive(PrimitiveTypeID::i32));
         emit("{} = {}.append({});", result_var, parent, stmt->val->raw_name());
       } else if (opty == SNodeOpType::length) {
         TI_ASSERT(is_dynamic);
@@ -349,7 +350,7 @@ class KernelCodegen : public IRVisitor {
 
   void visit(GlobalTemporaryStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    const auto dt = metal_data_type_name(stmt->element_type());
+    const auto dt = metal_data_type_name(stmt->element_type().ptr_removed());
     emit("device {}* {} = reinterpret_cast<device {}*>({} + {});", dt,
          stmt->raw_name(), dt, kGlobalTmpsBufferName, stmt->offset);
   }
@@ -357,7 +358,8 @@ class KernelCodegen : public IRVisitor {
   void visit(ThreadLocalPtrStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     emit("thread auto* {} = reinterpret_cast<thread {}*>({} + {});",
-         stmt->raw_name(), metal_data_type_name(stmt->element_type()),
+         stmt->raw_name(),
+         metal_data_type_name(stmt->element_type().ptr_removed()),
          kTlsBufferName, stmt->offset);
   }
 
@@ -370,7 +372,7 @@ class KernelCodegen : public IRVisitor {
         TI_ASSERT(stmt->index == 0);
         emit("const int {} = {};", stmt_name, kLinearLoopIndexName);
       } else if (type == TaskType::struct_for) {
-        emit("const int {} = {}.coords[{}];", stmt_name, kListgenElemVarName,
+        emit("const int {} = {}.at[{}];", stmt_name, kElementCoordsVarName,
              stmt->index);
       } else {
         TI_NOT_IMPLEMENTED;
@@ -411,7 +413,7 @@ class KernelCodegen : public IRVisitor {
     const auto bin_name = bin->raw_name();
     const auto op_type = bin->op_type;
     if (op_type == BinaryOpType::floordiv) {
-      if (is_integral(bin->ret_type.data_type)) {
+      if (is_integral(bin->ret_type)) {
         emit("const {} {} = ifloordiv({}, {});", dt_name, bin_name, lhs_name,
              rhs_name);
       } else {
@@ -420,7 +422,7 @@ class KernelCodegen : public IRVisitor {
       }
       return;
     }
-    if (op_type == BinaryOpType::pow && is_integral(bin->ret_type.data_type)) {
+    if (op_type == BinaryOpType::pow && is_integral(bin->ret_type)) {
       // TODO(k-ye): Make sure the type is not i64?
       emit("const {} {} = pow_i32({}, {});", dt_name, bin_name, lhs_name,
            rhs_name);
@@ -486,19 +488,19 @@ class KernelCodegen : public IRVisitor {
       current_appender().push_indent();
     }
 
-    if (dt == PrimitiveType::i32) {
+    if (dt->is_primitive(PrimitiveTypeID::i32)) {
       emit(
           "const auto {} = atomic_fetch_{}_explicit((device atomic_int*){}, "
           "{}, "
           "metal::memory_order_relaxed);",
           stmt->raw_name(), op_name, stmt->dest->raw_name(), val_var);
-    } else if (dt == PrimitiveType::u32) {
+    } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
       emit(
           "const auto {} = atomic_fetch_{}_explicit((device atomic_uint*){}, "
           "{}, "
           "metal::memory_order_relaxed);",
           stmt->raw_name(), op_name, stmt->dest->raw_name(), val_var);
-    } else if (dt == PrimitiveType::f32) {
+    } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
       if (handle_float) {
         emit("const float {} = fatomic_fetch_{}({}, {});", stmt->raw_name(),
              op_name, stmt->dest->raw_name(), val_var);
@@ -566,8 +568,6 @@ class KernelCodegen : public IRVisitor {
     } else if (stmt->task_type == Type::gc) {
       // Ignored
     } else {
-      // struct_for is automatically lowered to ranged_for for dense snodes
-      // (#378). So we only need to support serial and range_for tasks.
       TI_ERROR("Unsupported offload type={} on Metal arch", stmt->task_name());
     }
     is_top_level_ = true;
@@ -603,7 +603,7 @@ class KernelCodegen : public IRVisitor {
 
   void visit(RandStmt *stmt) override {
     emit("const auto {} = metal_rand_{}({});", stmt->raw_name(),
-         data_type_short_name(stmt->ret_type.data_type), kRandStateVarName);
+         data_type_short_name(stmt->ret_type), kRandStateVarName);
   }
 
   void visit(PrintStmt *stmt) override {
@@ -625,7 +625,8 @@ class KernelCodegen : public IRVisitor {
         if (std::holds_alternative<Stmt *>(entry)) {
           auto *arg_stmt = std::get<Stmt *>(entry);
           const auto dt = arg_stmt->element_type();
-          TI_ASSERT_INFO(dt == PrimitiveType::i32 || dt == PrimitiveType::f32,
+          TI_ASSERT_INFO(dt->is_primitive(PrimitiveTypeID::i32) ||
+                             dt->is_primitive(PrimitiveTypeID::f32),
                          "print() only supports i32 or f32 scalars for now.");
           emit("{}.pm_set_{}({}, {});", msg_var_name, data_type_short_name(dt),
                i, arg_stmt->raw_name());
@@ -634,6 +635,47 @@ class KernelCodegen : public IRVisitor {
           emit("{}.pm_set_str({}, {});", msg_var_name, i, str_id);
         }
       }
+    }
+    emit("}}");
+  }
+
+  void visit(AssertStmt *stmt) override {
+    used_features()->assertion = true;
+
+    const auto &args = stmt->args;
+    // +1 because the assertion message template itself takes one slot
+    const auto num_args = args.size() + 1;
+    TI_ASSERT_INFO(num_args <= shaders::kMetalMaxNumAssertArgs,
+                   "[Metal] Too many args in assert()");
+    emit("if (!({})) {{", stmt->cond->raw_name());
+    {
+      ScopedIndent s(current_appender());
+      // Only record the message for the first-time assertion failure.
+      emit("if ({}.mark_first_failure()) {{", kAssertRecorderVarName);
+      {
+        ScopedIndent s2(current_appender());
+        emit("{}.set_num_args({});", kAssertRecorderVarName, num_args);
+        const std::string asst_var_name = stmt->raw_name() + "_msg_";
+        emit("PrintMsg {}({}.msg_buf_addr(), {});", asst_var_name,
+             kAssertRecorderVarName, num_args);
+        const int msg_str_id = print_strtab_->put(stmt->text);
+        emit("{}.pm_set_str(/*i=*/0, {});", asst_var_name, msg_str_id);
+        for (int i = 1; i < num_args; ++i) {
+          auto *arg = args[i - 1];
+          const auto ty = arg->element_type();
+          if (ty->is_primitive(PrimitiveTypeID::i32) ||
+              ty->is_primitive(PrimitiveTypeID::f32)) {
+            emit("{}.pm_set_{}({}, {});", asst_var_name,
+                 data_type_short_name(ty), i, arg->raw_name());
+          } else {
+            TI_ERROR(
+                "[Metal] assert() only supports i32 or f32 scalars for now.");
+          }
+        }
+      }
+      emit("}}");
+      // This has failed, no point executing the rest of the kernel.
+      emit("return;");
     }
     emit("}}");
   }
@@ -887,17 +929,9 @@ class KernelCodegen : public IRVisitor {
     // end_   = total_elems + begin_expr
     emit("const int end_ = {} + {};", total_elems_name, begin_expr);
 
+    emit_runtime_and_memalloc_def();
     if (used_tls) {
-      // Using TLS means we will access some SNodes within this kernel. The
-      // struct of an SNode needs Runtime and MemoryAllocator to construct.
-      emit_runtime_and_memalloc_def();
-      // Using |int32_t| because it aligns to 4bytes.
-      emit("// TLS prologue");
-      const std::string tls_bufi32_name = "tls_bufi32_";
-      emit("int32_t {}[{}];", tls_bufi32_name, (stmt->tls_size + 3) / 4);
-      emit("thread char* {} = reinterpret_cast<thread char*>({});",
-           kTlsBufferName, tls_bufi32_name);
-      stmt->tls_prologue->accept(this);
+      generate_tls_prologue(stmt);
     }
 
     emit("for (int ii = begin_; ii < end_; ii += {}) {{", kKernelGridSizeName);
@@ -920,12 +954,7 @@ class KernelCodegen : public IRVisitor {
     emit("}}");  // closes for loop
 
     if (used_tls) {
-      TI_ASSERT(stmt->tls_epilogue != nullptr);
-      inside_tls_epilogue_ = true;
-      emit("{{  // TLS epilogue");
-      stmt->tls_epilogue->accept(this);
-      inside_tls_epilogue_ = false;
-      emit("}}");
+      generate_tls_epilogue(stmt);
     }
 
     current_appender().pop_indent();
@@ -966,17 +995,7 @@ class KernelCodegen : public IRVisitor {
     emit_runtime_and_memalloc_def();
 
     if (used_tls) {
-      // Using TLS means we will access some SNodes within this kernel. The
-      // struct of an SNode needs Runtime and MemoryAllocator to construct.
-      // Using |int32_t| because it aligns to 4bytes.
-      //
-      // TODO(k-ye): De-dupe TLS for range-for and struct-for.
-      emit("// TLS prologue");
-      const std::string tls_bufi32_name = "tls_bufi32_";
-      emit("int32_t {}[{}];", tls_bufi32_name, (stmt->tls_size + 3) / 4);
-      emit("thread char* {} = reinterpret_cast<thread char*>({});",
-           kTlsBufferName, tls_bufi32_name);
-      stmt->tls_prologue->accept(this);
+      generate_tls_prologue(stmt);
     }
 
     emit("ListManager parent_list;");
@@ -994,32 +1013,29 @@ class KernelCodegen : public IRVisitor {
     {
       ScopedIndent s2(current_appender());
       emit("const int parent_idx_ = (ii / child_num_slots);");
-      emit("if (parent_idx_ >= parent_list.num_active()) return;");
+      emit("if (parent_idx_ >= parent_list.num_active()) break;");
       emit("const int child_idx_ = (ii % child_num_slots);");
       emit(
           "const auto parent_elem_ = "
           "parent_list.get<ListgenElement>(parent_idx_);");
-      emit("device auto *parent_addr_ = {} + parent_elem_.root_mem_offset;",
-           kRootBufferName);
+      emit(
+          "device auto *parent_addr_ = mtl_lgen_snode_addr(parent_elem_, {}, "
+          "{}, {});",
+          kRootBufferName, kRuntimeVarName, kMemAllocVarName);
       emit("if (!is_active(parent_addr_, parent_meta, child_idx_)) continue;");
-      emit("ListgenElement {};", kListgenElemVarName);
-      // No need to add mem_offset_in_parent, because place() always starts at 0
+      emit("ElementCoords {};", kElementCoordsVarName);
       emit(
-          "{}.root_mem_offset = parent_elem_.root_mem_offset + child_idx_ * "
-          "child_stride;",
-          kListgenElemVarName);
-      emit(
-          "refine_coordinates(parent_elem_, {}->snode_extractors[{}], "
+          "refine_coordinates(parent_elem_.coords, {}->snode_extractors[{}], "
           "child_idx_, &{});",
-          kRuntimeVarName, sn_id, kListgenElemVarName);
+          kRuntimeVarName, sn_id, kElementCoordsVarName);
 
       current_kernel_attribs_ = &ka;
       const auto mtl_func_name = mtl_kernel_func_name(mtl_kernel_name);
       std::vector<FuncParamLiteral> extra_func_params = {
-          {"thread const ListgenElement&", kListgenElemVarName},
+          {"thread const ElementCoords &", kElementCoordsVarName},
       };
       std::vector<std::string> extra_args = {
-          kListgenElemVarName,
+          kElementCoordsVarName,
       };
       if (used_tls) {
         extra_func_params.push_back({"thread char*", kTlsBufferName});
@@ -1032,20 +1048,34 @@ class KernelCodegen : public IRVisitor {
       current_kernel_attribs_ = nullptr;
     }
     emit("}}");  // closes for loop
-    current_appender().pop_indent();
-
     if (used_tls) {
-      // TODO(k-ye): De-dupe TLS for range-for and struct-for.
-      TI_ASSERT(stmt->tls_epilogue != nullptr);
-      inside_tls_epilogue_ = true;
-      emit("{{  // TLS epilogue");
-      stmt->tls_epilogue->accept(this);
-      inside_tls_epilogue_ = false;
-      emit("}}");
+      generate_tls_epilogue(stmt);
     }
+
+    current_appender().pop_indent();
     emit("}}\n");  // closes kernel
 
     mtl_kernels_attribs()->push_back(ka);
+  }
+
+  void generate_tls_prologue(OffloadedStmt *stmt) {
+    TI_ASSERT(stmt->tls_prologue != nullptr);
+    emit("// TLS prologue");
+    const std::string tls_bufi32_name = "tls_bufi32_";
+    // Using |int32_t| because it aligns to 4bytes.
+    emit("int32_t {}[{}];", tls_bufi32_name, (stmt->tls_size + 3) / 4);
+    emit("thread char* {} = reinterpret_cast<thread char*>({});",
+         kTlsBufferName, tls_bufi32_name);
+    stmt->tls_prologue->accept(this);
+  }
+
+  void generate_tls_epilogue(OffloadedStmt *stmt) {
+    TI_ASSERT(stmt->tls_epilogue != nullptr);
+    inside_tls_epilogue_ = true;
+    emit("{{  // TLS epilogue");
+    stmt->tls_epilogue->accept(this);
+    inside_tls_epilogue_ = false;
+    emit("}}");
   }
 
   void add_runtime_list_op_kernel(OffloadedStmt *stmt,
@@ -1079,7 +1109,7 @@ class KernelCodegen : public IRVisitor {
 
   std::string inject_load_global_tmp(int offset,
                                      DataType dt = PrimitiveType::i32) {
-    const auto vt = LegacyVectorType(/*width=*/1, dt);
+    const auto vt = TypeFactory::create_vector_or_scalar_type(1, dt);
     auto gtmp = Stmt::make<GlobalTemporaryStmt>(offset, vt);
     gtmp->accept(this);
     auto gload = Stmt::make<GlobalLoadStmt>(gtmp.get());
@@ -1124,9 +1154,17 @@ class KernelCodegen : public IRVisitor {
           fmt::arg("rtm", kRuntimeVarName),
           fmt::arg("lidx", kLinearLoopIndexName),
           fmt::arg("nums", kNumRandSeeds));
-      // Init PrintMsgAllocator
-      emit("device auto* {} = reinterpret_cast<device PrintMsgAllocator*>({});",
-           kPrintAllocVarName, kPrintBufferName);
+      // Init AssertRecorder.
+      emit("AssertRecorder {}({});", kAssertRecorderVarName,
+           kPrintAssertBufferName);
+      // Init PrintMsgAllocator.
+      // The print buffer comes after (AssertRecorder + assert message buffer),
+      // therefore we skip by +|kMetalAssertBufferSize|.
+      emit(
+          "device auto* {} = reinterpret_cast<device PrintMsgAllocator*>({} + "
+          "{});",
+          kPrintAllocVarName, kPrintAssertBufferName,
+          shaders::kMetalAssertBufferSize);
     }
     // We do not need additional indentation, because |func_ir| itself is a
     // block, which will be indented automatically.

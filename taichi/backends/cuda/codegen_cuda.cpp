@@ -115,11 +115,11 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       if (std::holds_alternative<Stmt *>(content)) {
         auto arg_stmt = std::get<Stmt *>(content);
 
-        formats += data_type_format(arg_stmt->ret_type.data_type);
+        formats += data_type_format(arg_stmt->ret_type);
 
-        auto value_type = tlctx->get_data_type(arg_stmt->ret_type.data_type);
+        auto value_type = tlctx->get_data_type(arg_stmt->ret_type);
         auto value = llvm_val[arg_stmt];
-        if (arg_stmt->ret_type.data_type == PrimitiveType::f32) {
+        if (arg_stmt->ret_type->is_primitive(PrimitiveTypeID::f32)) {
           value_type = tlctx->get_data_type(PrimitiveType::f64);
           value = builder->CreateFPExt(value, value_type);
         }
@@ -158,48 +158,48 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   void emit_extra_unary(UnaryOpStmt *stmt) override {
     // functions from libdevice
     auto input = llvm_val[stmt->operand];
-    auto input_taichi_type = stmt->operand->ret_type.data_type;
+    auto input_taichi_type = stmt->operand->ret_type;
     auto op = stmt->op_type;
 
 #define UNARY_STD(x)                                                         \
   else if (op == UnaryOpType::x) {                                           \
-    if (input_taichi_type == PrimitiveType::f32) {                           \
+    if (input_taichi_type->is_primitive(PrimitiveTypeID::f32)) {             \
       llvm_val[stmt] =                                                       \
           builder->CreateCall(get_runtime_function("__nv_" #x "f"), input);  \
-    } else if (input_taichi_type == PrimitiveType::f64) {                    \
+    } else if (input_taichi_type->is_primitive(PrimitiveTypeID::f64)) {      \
       llvm_val[stmt] =                                                       \
           builder->CreateCall(get_runtime_function("__nv_" #x), input);      \
-    } else if (input_taichi_type == PrimitiveType::i32) {                    \
+    } else if (input_taichi_type->is_primitive(PrimitiveTypeID::i32)) {      \
       llvm_val[stmt] = builder->CreateCall(get_runtime_function(#x), input); \
     } else {                                                                 \
       TI_NOT_IMPLEMENTED                                                     \
     }                                                                        \
   }
     if (op == UnaryOpType::abs) {
-      if (input_taichi_type == PrimitiveType::f32) {
+      if (input_taichi_type->is_primitive(PrimitiveTypeID::f32)) {
         llvm_val[stmt] =
             builder->CreateCall(get_runtime_function("__nv_fabsf"), input);
-      } else if (input_taichi_type == PrimitiveType::f64) {
+      } else if (input_taichi_type->is_primitive(PrimitiveTypeID::f64)) {
         llvm_val[stmt] =
             builder->CreateCall(get_runtime_function("__nv_fabs"), input);
-      } else if (input_taichi_type == PrimitiveType::i32) {
+      } else if (input_taichi_type->is_primitive(PrimitiveTypeID::i32)) {
         llvm_val[stmt] =
             builder->CreateCall(get_runtime_function("__nv_abs"), input);
       } else {
         TI_NOT_IMPLEMENTED
       }
     } else if (op == UnaryOpType::sqrt) {
-      if (input_taichi_type == PrimitiveType::f32) {
+      if (input_taichi_type->is_primitive(PrimitiveTypeID::f32)) {
         llvm_val[stmt] =
             builder->CreateCall(get_runtime_function("__nv_sqrtf"), input);
-      } else if (input_taichi_type == PrimitiveType::f64) {
+      } else if (input_taichi_type->is_primitive(PrimitiveTypeID::f64)) {
         llvm_val[stmt] =
             builder->CreateCall(get_runtime_function("__nv_sqrt"), input);
       } else {
         TI_NOT_IMPLEMENTED
       }
     } else if (op == UnaryOpType::logic_not) {
-      if (input_taichi_type == PrimitiveType::i32) {
+      if (input_taichi_type->is_primitive(PrimitiveTypeID::i32)) {
         llvm_val[stmt] =
             builder->CreateCall(get_runtime_function("logic_not_i32"), input);
       } else {
@@ -232,16 +232,16 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     for (int l = 0; l < stmt->width(); l++) {
       llvm::Value *old_value;
       if (stmt->op_type == AtomicOpType::add) {
-        if (is_integral(stmt->val->ret_type.data_type)) {
+        if (is_integral(stmt->val->ret_type)) {
           old_value = builder->CreateAtomicRMW(
               llvm::AtomicRMWInst::BinOp::Add, llvm_val[stmt->dest],
               llvm_val[stmt->val],
               llvm::AtomicOrdering::SequentiallyConsistent);
-        } else if (stmt->val->ret_type.data_type == PrimitiveType::f32) {
+        } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f32)) {
           old_value = builder->CreateAtomicRMW(
               llvm::AtomicRMWInst::FAdd, llvm_val[stmt->dest],
               llvm_val[stmt->val], AtomicOrdering::SequentiallyConsistent);
-        } else if (stmt->val->ret_type.data_type == PrimitiveType::f64) {
+        } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f64)) {
           old_value = builder->CreateAtomicRMW(
               llvm::AtomicRMWInst::FAdd, llvm_val[stmt->dest],
               llvm_val[stmt->val], AtomicOrdering::SequentiallyConsistent);
@@ -249,16 +249,16 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
           TI_NOT_IMPLEMENTED
         }
       } else if (stmt->op_type == AtomicOpType::min) {
-        if (is_integral(stmt->val->ret_type.data_type)) {
+        if (is_integral(stmt->val->ret_type)) {
           old_value = builder->CreateAtomicRMW(
               llvm::AtomicRMWInst::BinOp::Min, llvm_val[stmt->dest],
               llvm_val[stmt->val],
               llvm::AtomicOrdering::SequentiallyConsistent);
-        } else if (stmt->val->ret_type.data_type == PrimitiveType::f32) {
+        } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f32)) {
           old_value =
               builder->CreateCall(get_runtime_function("atomic_min_f32"),
                                   {llvm_val[stmt->dest], llvm_val[stmt->val]});
-        } else if (stmt->val->ret_type.data_type == PrimitiveType::f64) {
+        } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f64)) {
           old_value =
               builder->CreateCall(get_runtime_function("atomic_min_f64"),
                                   {llvm_val[stmt->dest], llvm_val[stmt->val]});
@@ -266,16 +266,16 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
           TI_NOT_IMPLEMENTED
         }
       } else if (stmt->op_type == AtomicOpType::max) {
-        if (is_integral(stmt->val->ret_type.data_type)) {
+        if (is_integral(stmt->val->ret_type)) {
           old_value = builder->CreateAtomicRMW(
               llvm::AtomicRMWInst::BinOp::Max, llvm_val[stmt->dest],
               llvm_val[stmt->val],
               llvm::AtomicOrdering::SequentiallyConsistent);
-        } else if (stmt->val->ret_type.data_type == PrimitiveType::f32) {
+        } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f32)) {
           old_value =
               builder->CreateCall(get_runtime_function("atomic_max_f32"),
                                   {llvm_val[stmt->dest], llvm_val[stmt->val]});
-        } else if (stmt->val->ret_type.data_type == PrimitiveType::f64) {
+        } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f64)) {
           old_value =
               builder->CreateCall(get_runtime_function("atomic_max_f64"),
                                   {llvm_val[stmt->dest], llvm_val[stmt->val]});
@@ -283,7 +283,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
           TI_NOT_IMPLEMENTED
         }
       } else if (stmt->op_type == AtomicOpType::bit_and) {
-        if (is_integral(stmt->val->ret_type.data_type)) {
+        if (is_integral(stmt->val->ret_type)) {
           old_value = builder->CreateAtomicRMW(
               llvm::AtomicRMWInst::BinOp::And, llvm_val[stmt->dest],
               llvm_val[stmt->val],
@@ -292,7 +292,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
           TI_NOT_IMPLEMENTED
         }
       } else if (stmt->op_type == AtomicOpType::bit_or) {
-        if (is_integral(stmt->val->ret_type.data_type)) {
+        if (is_integral(stmt->val->ret_type)) {
           old_value = builder->CreateAtomicRMW(
               llvm::AtomicRMWInst::BinOp::Or, llvm_val[stmt->dest],
               llvm_val[stmt->val],
@@ -301,7 +301,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
           TI_NOT_IMPLEMENTED
         }
       } else if (stmt->op_type == AtomicOpType::bit_xor) {
-        if (is_integral(stmt->val->ret_type.data_type)) {
+        if (is_integral(stmt->val->ret_type)) {
           old_value = builder->CreateAtomicRMW(
               llvm::AtomicRMWInst::BinOp::Xor, llvm_val[stmt->dest],
               llvm_val[stmt->val],
@@ -317,10 +317,9 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   }
 
   void visit(RandStmt *stmt) override {
-    llvm_val[stmt] =
-        create_call(fmt::format("cuda_rand_{}",
-                                data_type_short_name(stmt->ret_type.data_type)),
-                    {get_context()});
+    llvm_val[stmt] = create_call(
+        fmt::format("cuda_rand_{}", data_type_short_name(stmt->ret_type)),
+        {get_context()});
   }
   void visit(RangeForStmt *for_stmt) override {
     create_naive_range_for(for_stmt);
@@ -390,14 +389,15 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     if (auto get_ch = stmt->ptr->cast<GetChStmt>(); get_ch) {
       bool should_cache_as_read_only = false;
       for (auto s : current_offload->scratch_opt) {
-        if (s.first == 1 && get_ch->output_snode == s.second) {
+        if (s.first == SNodeAccessFlag::read_only &&
+            get_ch->output_snode == s.second) {
           should_cache_as_read_only = true;
         }
       }
       if (should_cache_as_read_only) {
         // Issue an CUDA "__ldg" instruction so that data are cached in
         // the CUDA read-only data cache.
-        auto dtype = stmt->ret_type.data_type;
+        auto dtype = stmt->ret_type;
         auto llvm_dtype = llvm_type(dtype);
         auto llvm_dtype_ptr = llvm::PointerType::get(llvm_type(dtype), 0);
         llvm::Intrinsic::ID intrin;

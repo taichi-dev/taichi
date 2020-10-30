@@ -69,7 +69,7 @@ class LowerAST : public IRVisitor {
     auto ident = stmt->ident;
     TI_ASSERT(block->local_var_to_stmt.find(ident) ==
               block->local_var_to_stmt.end());
-    auto lowered = std::make_unique<AllocaStmt>(stmt->ret_type.data_type);
+    auto lowered = std::make_unique<AllocaStmt>(stmt->ret_type);
     block->local_var_to_stmt.insert(std::make_pair(ident, lowered.get()));
     stmt->parent->replace_with(stmt, std::move(lowered));
     throw IRModified();

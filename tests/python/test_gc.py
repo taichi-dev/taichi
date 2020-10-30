@@ -2,7 +2,7 @@ import taichi as ti
 
 
 @ti.test(require=ti.extension.sparse)
-def test_block():
+def _test_block_gc():
     N = 100000
 
     dx = 1 / 128
@@ -38,14 +38,29 @@ def test_block():
             x[p] += ti.Vector([0.0, 0.1])
 
     assert grid.num_dynamically_allocated == 0
-    for i in range(100):
+    for _ in range(100):
         grid.deactivate_all()
         # Scatter the particles to the sparse grid
         build_grid()
         # Move the block of particles
         move()
-        # The block of particles can occupy at most two blocks on the sparse grid
-        assert 1 <= grid.num_dynamically_allocated <= 2
+
+    ti.sync()
+    # The block of particles can occupy at most two blocks on the sparse grid.
+    # It's fine to run 100 times and do just one final check, because
+    # num_dynamically_allocated stores the number of slots *ever* allocated.
+    assert 1 <= grid.num_dynamically_allocated <= 2, grid.num_dynamically_allocated
+
+
+@ti.test(require=ti.extension.sparse)
+def test_block():
+    _test_block_gc()
+
+
+@ti.test(require=[ti.extension.sparse, ti.extension.async_mode],
+         async_mode=True)
+def test_block_async():
+    _test_block_gc()
 
 
 @ti.test(require=ti.extension.sparse)
@@ -79,3 +94,38 @@ def test_pointer_gc():
 
         # Note that being inactive doesn't mean it's not allocated.
         assert L.num_dynamically_allocated == 1
+
+
+@ti.test(require=[ti.extension.sparse, ti.extension.async_mode],
+         async_mode=True)
+def test_fuse_allocator_state():
+    N = 16
+    x = ti.field(dtype=ti.i32, shape=N)
+    y = ti.field(dtype=ti.i32)
+
+    y_parent = ti.root.pointer(ti.i, N * 2)
+    y_parent.place(y)
+
+    # https://github.com/taichi-dev/taichi/pull/1973#pullrequestreview-511154376
+
+    @ti.kernel
+    def activate_y():
+        for i in x:
+            idx = i + 1
+            y[idx] = idx
+
+    @ti.kernel
+    def deactivate_y():
+        for i in x:
+            ti.deactivate(y_parent, i)
+
+    activate_y()
+    deactivate_y()
+    ti.sync()
+
+    # TODO: assert that activate_y and deactivate_y are not fused.
+    assert y_parent.num_dynamically_allocated == N
+    ys = y.to_numpy()
+    for i, y in enumerate(ys):
+        expected = N if i == N else 0
+        assert y == expected

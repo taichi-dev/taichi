@@ -153,7 +153,7 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
       return;
     }
     // Create a alloc
-    auto alloc = Stmt::make<AllocaStmt>(1, stmt->ret_type.data_type);
+    auto alloc = Stmt::make<AllocaStmt>(1, stmt->ret_type);
     auto alloc_ptr = alloc.get();
     TI_ASSERT(alloca_block);
     alloca_block->insert(std::move(alloc), 0);
@@ -201,7 +201,7 @@ class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
                          })
                          .empty();
     if (!load_only) {
-      auto dtype = alloc->ret_type.data_type;
+      auto dtype = alloc->ret_type;
       auto stack_alloca = Stmt::make<StackAllocaStmt>(
           dtype, alloc->get_kernel()->program.config.ad_stack_size);
       auto stack_alloca_ptr = stack_alloca.get();
@@ -381,7 +381,7 @@ class MakeAdjoint : public IRVisitor {
       return;  // primal may be int variable
     if (alloca_->is<StackAllocaStmt>()) {
       auto alloca = alloca_->cast<StackAllocaStmt>();
-      if (needs_grad(alloca->ret_type.data_type)) {
+      if (needs_grad(alloca->ret_type)) {
         insert<StackAccAdjointStmt>(alloca, load(value));
       }
     } else {
@@ -394,7 +394,7 @@ class MakeAdjoint : public IRVisitor {
   }
 
   Stmt *adjoint(Stmt *stmt) {
-    if (!needs_grad(stmt->ret_type.data_type)) {
+    if (!needs_grad(stmt->ret_type)) {
       return constant(0);
     }
     if (adjoint_stmt.find(stmt) == adjoint_stmt.end()) {
@@ -404,7 +404,7 @@ class MakeAdjoint : public IRVisitor {
       // auto alloca =
       //    Stmt::make<AllocaStmt>(1, get_current_program().config.gradient_dt);
       // maybe it's better to use the statement data type than the default type
-      auto alloca = Stmt::make<AllocaStmt>(1, stmt->ret_type.data_type);
+      auto alloca = Stmt::make<AllocaStmt>(1, stmt->ret_type);
       adjoint_stmt[stmt] = alloca.get();
       alloca_block->insert(std::move(alloca), 0);
     }
@@ -461,8 +461,7 @@ class MakeAdjoint : public IRVisitor {
       accumulate(stmt->operand,
                  mul(adjoint(stmt), div(constant(0.5f), sqrt(stmt->operand))));
     } else if (stmt->op_type == UnaryOpType::cast_value) {
-      if (is_real(stmt->cast_type) &&
-          is_real(stmt->operand->ret_type.data_type)) {
+      if (is_real(stmt->cast_type) && is_real(stmt->operand->ret_type)) {
         accumulate(stmt->operand, adjoint(stmt));
       }
     } else if (stmt->op_type == UnaryOpType::logic_not) {
@@ -505,7 +504,7 @@ class MakeAdjoint : public IRVisitor {
                bin->op_type == BinaryOpType::max) {
       auto cmp = bin->op_type == BinaryOpType::min ? cmp_lt(bin->lhs, bin->rhs)
                                                    : cmp_lt(bin->rhs, bin->lhs);
-      auto zero = insert<ConstStmt>(TypedConstant(bin->ret_type.data_type));
+      auto zero = insert<ConstStmt>(TypedConstant(bin->ret_type));
       accumulate(bin->lhs, sel(cmp, adjoint(bin), zero));
       accumulate(bin->rhs, sel(cmp, zero, adjoint(bin)));
     } else if (bin->op_type == BinaryOpType::floordiv) {
@@ -520,7 +519,7 @@ class MakeAdjoint : public IRVisitor {
 
   void visit(TernaryOpStmt *stmt) override {
     TI_ASSERT(stmt->op_type == TernaryOpType::select);
-    auto zero = insert<ConstStmt>(TypedConstant(stmt->ret_type.data_type));
+    auto zero = insert<ConstStmt>(TypedConstant(stmt->ret_type));
     accumulate(stmt->op2,
                insert<TernaryOpStmt>(TernaryOpType::select, stmt->op1,
                                      load(adjoint(stmt)), zero));
@@ -612,11 +611,11 @@ class MakeAdjoint : public IRVisitor {
   }
 
   void visit(LocalLoadStmt *stmt) override {
-    // TI_ASSERT(!needs_grad(stmt->ret_type.data_type));
+    // TI_ASSERT(!needs_grad(stmt->ret_type));
   }
 
   void visit(StackLoadTopStmt *stmt) override {
-    if (needs_grad(stmt->ret_type.data_type))
+    if (needs_grad(stmt->ret_type))
       insert<StackAccAdjointStmt>(stmt->stack, load(adjoint(stmt)));
   }
 
@@ -737,13 +736,10 @@ class BackupSSA : public BasicStmtVisitor {
 
   Stmt *load(Stmt *stmt) {
     if (backup_alloca.find(stmt) == backup_alloca.end()) {
-      auto alloca =
-          Stmt::make<AllocaStmt>(stmt->width(), stmt->ret_type.data_type);
-      alloca->ret_type.set_is_pointer(stmt->ret_type.is_pointer());
+      auto alloca = Stmt::make<AllocaStmt>(stmt->width(), stmt->ret_type);
       auto alloca_ptr = alloca.get();
       independent_block->insert(std::move(alloca), 0);
       auto local_store = Stmt::make<LocalStoreStmt>(alloca_ptr, stmt);
-      local_store->ret_type.set_is_pointer(stmt->ret_type.is_pointer());
       stmt->insert_after_me(std::move(local_store));
       backup_alloca[stmt] = alloca_ptr;
     }

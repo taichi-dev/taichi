@@ -47,6 +47,9 @@ kernel_profiler_clear = lambda: get_runtime().prog.kernel_profiler_clear()
 kernel_profiler_total_time = lambda: get_runtime(
 ).prog.kernel_profiler_total_time()
 
+# Unstable API
+type_factory_ = core.get_type_factory_instance()
+
 
 def memory_profiler_print():
     get_runtime().materialize()
@@ -218,13 +221,15 @@ def no_activate(*args):
 def cache_shared(*args):
     for a in args:
         for v in a.get_field_members():
-            taichi_lang_core.cache(0, v.ptr)
+            taichi_lang_core.insert_snode_access_flag(
+                taichi_lang_core.SNodeAccessFlag.block_local, v.ptr)
 
 
 def cache_read_only(*args):
     for a in args:
         for v in a.get_field_members():
-            taichi_lang_core.cache(0, v.ptr)
+            taichi_lang_core.insert_snode_access_flag(
+                taichi_lang_core.SNodeAccessFlag.read_only, v.ptr)
 
 
 def assume_in_range(val, base, low, high):
@@ -233,11 +238,14 @@ def assume_in_range(val, base, low, high):
         Expr(base).ptr, low, high)
 
 
+def loop_unique(val):
+    return taichi_lang_core.expr_loop_unique(Expr(val).ptr)
+
+
 parallelize = core.parallelize
 serialize = lambda: parallelize(1)
 vectorize = core.vectorize
 block_dim = core.block_dim
-cache = core.cache
 
 inversed = deprecated('ti.inversed(a)', 'a.inverse()')(Matrix.inversed)
 transposed = deprecated('ti.transposed(a)', 'a.transpose()')(Matrix.transposed)
@@ -303,7 +311,6 @@ def clear_all_gradients():
     visit(ti.root)
 
 
-schedules = [parallelize, vectorize, block_dim, cache]
 lang_core = core
 
 

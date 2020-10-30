@@ -48,6 +48,7 @@ bool check_out_of_bound(IRNode *root);
 void make_thread_local(IRNode *root);
 std::unique_ptr<ScratchPads> initialize_scratch_pad(OffloadedStmt *root);
 void make_block_local(IRNode *root);
+bool remove_loop_unique(IRNode *root);
 bool remove_range_assumption(IRNode *root);
 bool lower_access(IRNode *root, bool lower_atomic);
 void auto_diff(IRNode *root, bool use_stack = false);
@@ -59,6 +60,7 @@ void replace_statements_with(IRNode *root,
 void demote_dense_struct_fors(IRNode *root);
 bool demote_atomics(IRNode *root);
 void reverse_segments(IRNode *root);  // for autograd
+void detect_read_only(IRNode *root);
 
 // compile_to_offloads does the basic compilation to create all the offloaded
 // tasks of a Taichi kernel. It's worth pointing out that this doesn't demote

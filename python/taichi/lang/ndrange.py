@@ -3,7 +3,7 @@ class ndrange:
         args = list(args)
         for i in range(len(args)):
             if isinstance(args[i], list):
-                args[i] = list(args[i])
+                args[i] = tuple(args[i])
             if not isinstance(args[i], tuple):
                 args[i] = (0, args[i])
             assert len(args[i]) == 2

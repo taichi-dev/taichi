@@ -188,6 +188,12 @@ inline Expr AssumeInRange(const Expr &expr,
   return Expr::make<RangeAssumptionExpression>(expr, base, low, high);
 }
 
+inline Expr LoopUnique(const Expr &input) {
+  return Expr::make<LoopUniqueExpression>(load_if_ptr(input));
+}
+
+void insert_snode_access_flag(SNodeAccessFlag v, const Expr &field);
+
 // Begin: legacy frontend constructs
 
 class If {
@@ -223,9 +229,6 @@ class While {
 };
 
 // End: legacy frontend constructs
-
-#define Kernel(x) auto &x = get_current_program().kernel(#x)
-#define Assert(x) InsertAssert(#x, (x))
 
 TLANG_NAMESPACE_END
 

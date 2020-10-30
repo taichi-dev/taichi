@@ -4,7 +4,9 @@ TLANG_NAMESPACE_BEGIN
 namespace metal {
 
 MetalDataType to_metal_type(DataType dt) {
-#define METAL_CASE(x) else if (dt == PrimitiveType::x) return MetalDataType::x
+  dt.set_is_pointer(false);
+#define METAL_CASE(x) \
+  else if (dt->is_primitive(PrimitiveTypeID::x)) return MetalDataType::x
   if (false) {
   }
   METAL_CASE(f32);
@@ -19,7 +21,7 @@ MetalDataType to_metal_type(DataType dt) {
   METAL_CASE(u64);
   METAL_CASE(unknown);
   else {
-    TI_NOT_IMPLEMENTED;
+    TI_ERROR("[Metal] type={} not supported", data_type_name(dt));
   }
 #undef METAL_CASE
   return MetalDataType::unknown;

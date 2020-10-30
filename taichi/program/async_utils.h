@@ -78,7 +78,7 @@ class TaskLaunchRecord {
 };
 
 struct AsyncState {
-  enum class Type { mask, value, list };
+  enum class Type { mask, value, list, allocator };
 
   AsyncState(SNode *snode, Type type) : snode(snode), type(type) {
   }
@@ -105,6 +105,9 @@ struct AsyncState {
         break;
       case Type::list:
         type_name = "list";
+        break;
+      case Type::allocator:
+        type_name = "allocator";
         break;
     }
     return snode->get_node_type_name_hinted() + "_" + type_name;
@@ -194,6 +197,7 @@ struct TaskMeta {
   std::unordered_set<AsyncState> input_states;
   std::unordered_set<AsyncState> output_states;
   std::unordered_map<SNode *, bool> element_wise;
+  // TODO: split element-wise writes with loop-unique
 
   void print() const;
 };

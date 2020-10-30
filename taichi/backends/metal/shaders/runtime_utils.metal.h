@@ -23,6 +23,16 @@
 
 #else
 
+// Just a mock to illustrate what the Runtime looks like, do not use.
+// The actual Runtime struct has to be emitted by codegen, because it depends
+// on the number of SNodes.
+struct Runtime {
+  SNodeMeta *snode_metas = nullptr;
+  SNodeExtractors *snode_extractors = nullptr;
+  ListManagerData *snode_lists = nullptr;
+  uint32_t *rand_seeds = nullptr;
+};
+
 #define METAL_BEGIN_RUNTIME_UTILS_DEF
 #define METAL_END_RUNTIME_UTILS_DEF
 
@@ -148,10 +158,6 @@ STR(
       device NodeManagerData *nm_data;
       device MemoryAllocator *mem_alloc;
 
-      static inline bool is_valid(ElemIndex i) {
-        return i >= NodeManagerData::kIndexOffset;
-      }
-
       ElemIndex allocate() {
         ListManager free_list;
         free_list.lm_data = &(nm_data->free_list);
@@ -165,9 +171,8 @@ STR(
         if (cur_used < free_list.num_active()) {
           return free_list.get<ElemIndex>(cur_used);
         }
-        // Shift by |kIndexOffset| to skip special encoded values.
-        return data_list.reserve_new_elem().elem_idx +
-               NodeManagerData::kIndexOffset;
+
+        return ElemIndex::from_index(data_list.reserve_new_elem().elem_idx);
       }
 
       device byte *get(ElemIndex i) {
@@ -175,11 +180,10 @@ STR(
         data_list.lm_data = &(nm_data->data_list);
         data_list.mem_alloc = mem_alloc;
 
-        return data_list.get_ptr(i - NodeManagerData::kIndexOffset);
+        return data_list.get_ptr(i.index());
       }
 
       void recycle(ElemIndex i) {
-        // Precondition: |i| is shifted by |kIndexOffset|.
         ListManager recycled_list;
         recycled_list.lm_data = &(nm_data->recycled_list);
         recycled_list.mem_alloc = mem_alloc;
@@ -304,6 +308,79 @@ STR(
       int32_t meta_offset_ = 0;
     };
 
+    class SNodeRep_pointer {
+     public:
+      using ElemIndex = NodeManagerData::ElemIndex;
+
+      void init(device byte * addr, NodeManager nm, ElemIndex ambient_idx) {
+        addr_ = addr;
+        nm_ = nm;
+        ambient_idx_ = ambient_idx;
+      }
+
+      device byte *child_or_ambient_addr(int i) {
+        auto nm_idx = to_nodemgr_idx(addr_, i);
+        nm_idx = nm_idx.is_valid() ? nm_idx : ambient_idx_;
+        return nm_.get(nm_idx);
+      }
+
+      inline bool is_active(int i) { return is_active(addr_, i); }
+
+      void activate(int i) {
+        device auto *nm_idx_ptr = to_nodemgr_idx_ptr(addr_, i);
+        auto nm_idx_raw =
+            atomic_load_explicit(nm_idx_ptr, metal::memory_order_relaxed);
+        while (!ElemIndex::is_valid(nm_idx_raw)) {
+          nm_idx_raw = 0;
+          // See ListManager::ensure_chunk() for the allocation algorithm.
+          // See also https://github.com/taichi-dev/taichi/issues/1174.
+          const bool is_me = atomic_compare_exchange_weak_explicit(
+              nm_idx_ptr, &nm_idx_raw, 1, metal::memory_order_relaxed,
+              metal::memory_order_relaxed);
+          if (is_me) {
+            nm_idx_raw = nm_.allocate().raw();
+            atomic_store_explicit(nm_idx_ptr, nm_idx_raw,
+                                  metal::memory_order_relaxed);
+            break;
+          } else if (ElemIndex::is_valid(nm_idx_raw)) {
+            break;
+          }
+          // |nm_idx_raw| == 1, just spin
+        }
+      }
+
+      void deactivate(int i) {
+        device auto *nm_idx_ptr = to_nodemgr_idx_ptr(addr_, i);
+        const auto old_nm_idx_raw = atomic_exchange_explicit(
+            nm_idx_ptr, 0, metal::memory_order_relaxed);
+        const auto old_nm_idx = ElemIndex::from_raw(old_nm_idx_raw);
+        if (!old_nm_idx.is_valid()) return;
+        nm_.recycle(old_nm_idx);
+      }
+
+      static inline device atomic_int *to_nodemgr_idx_ptr(device byte * addr,
+                                                          int ch_i) {
+        return reinterpret_cast<device atomic_int *>(addr +
+                                                     ch_i * sizeof(ElemIndex));
+      }
+
+      static inline ElemIndex to_nodemgr_idx(device byte * addr, int ch_i) {
+        device auto *ptr = to_nodemgr_idx_ptr(addr, ch_i);
+        const auto r = atomic_load_explicit(ptr, metal::memory_order_relaxed);
+        return ElemIndex::from_raw(r);
+      }
+
+      static bool is_active(device byte * addr, int ch_i) {
+        return to_nodemgr_idx(addr, ch_i).is_valid();
+      }
+
+     private:
+      device byte *addr_;
+      NodeManager nm_;
+      // Index of the ambient child element in |nm_|.
+      ElemIndex ambient_idx_;
+    };
+
     // This is still necessary in listgen and struct-for kernels, where we don't
     // have the actual SNode structs.
     [[maybe_unused]] int is_active(device byte *addr, SNodeMeta meta, int i) {
@@ -322,16 +399,23 @@ STR(
     }
 
     [[maybe_unused]] void refine_coordinates(
-        thread const ListgenElement &parent_elem,
-        device const SNodeExtractors &child_extrators,
-        int l,
-        thread ListgenElement *child_elem) {
+        thread const ElementCoords &parent,
+        device const SNodeExtractors &child_extrators, int l,
+        thread ElementCoords *child) {
       for (int i = 0; i < kTaichiMaxNumIndices; ++i) {
         device const auto &ex = child_extrators.extractors[i];
         const int mask = ((1 << ex.num_bits) - 1);
         const int addition = (((l >> ex.acc_offset) & mask) << ex.start);
-        child_elem->coords[i] = (parent_elem.coords[i] | addition);
+        child->at[i] = (parent.at[i] | addition);
       }
+    }
+
+    // Gets the address of an SNode cell identified by |lgen|.
+    [[maybe_unused]] device byte *mtl_lgen_snode_addr(
+        thread const ListgenElement &lgen, device byte *root_addr,
+        device Runtime *rtm, device MemoryAllocator *mem_alloc) {
+      // Placeholder impl
+      return root_addr + lgen.mem_offset;
     })
 METAL_END_RUNTIME_UTILS_DEF
 // clang-format on

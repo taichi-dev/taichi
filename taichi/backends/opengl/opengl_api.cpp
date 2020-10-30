@@ -209,6 +209,10 @@ struct GLSSBO {
     check_opengl_error("glBindBufferRange");
   }
 
+  void as_indirect_buffer() {
+    glBindBuffer(GL_DISPATCH_INDIRECT_BUFFER, id_);
+  }
+
   void *map(size_t offset,
             size_t length,
             GLbitfield access = GL_READ_ONLY) const {
@@ -307,6 +311,14 @@ struct GLSLLauncherImpl {
 };
 
 ParallelSize::~ParallelSize() {
+}
+
+bool ParallelSize::is_indirect() const {
+  return false;
+}
+
+bool ParallelSize_DynamicRange::is_indirect() const {
+  return true;
 }
 
 size_t ParallelSize::get_threads_per_block() const {
@@ -483,10 +495,6 @@ struct CompiledKernel {
   }
 
   void dispatch_compute(GLSLLauncher *launcher) const {
-    int num_blocks = ps->get_num_blocks(launcher);
-
-    glsl->use();
-
     // https://www.khronos.org/opengl/wiki/Compute_Shader
     // https://community.arm.com/developer/tools-software/graphics/b/blog/posts/get-started-with-compute-shaders
     // https://www.khronos.org/assets/uploads/developers/library/2014-siggraph-bof/KITE-BOF_Aug14.pdf
@@ -494,8 +502,21 @@ struct CompiledKernel {
     // `glDispatchCompute(X, Y, Z)`   - the X*Y*Z  == `Blocks`   in CUDA
     // `layout(local_size_x = X) in;` - the X      == `Threads`  in CUDA
     //
-    glDispatchCompute(num_blocks, 1, 1);
-    check_opengl_error(fmt::format("glDispatchCompute({})", num_blocks));
+    if (/*!taichi::starts_with(kernel_name, "indirect_") && */!ps->is_indirect()) {
+      int num_blocks = ps->get_num_blocks(launcher);
+      glsl->use();
+      glDispatchCompute(num_blocks, 1, 1);
+      check_opengl_error(fmt::format("glDispatchCompute({})", num_blocks));
+
+    } else {
+      //auto runtime = launcher->impl->core_bufs.get(GLBufId::Runtime);
+      //runtime->as_indirect_buffer();
+      auto root = launcher->impl->core_bufs.get(GLBufId::Root);
+      root->as_indirect_buffer();
+      glsl->use();
+      glDispatchComputeIndirect(0);  // offset of runtime.indirect_x is 0
+      check_opengl_error(fmt::format("glDispatchComputeIndirect"));
+    }
 
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
     check_opengl_error("glMemoryBarrier");
@@ -721,6 +742,14 @@ bool initialize_opengl(bool error_tolerance) {
 }
 
 ParallelSize::~ParallelSize() {
+}
+
+bool ParallelSize::is_indirect() const {
+  TI_NOT_IMPLEMENTED;
+}
+
+bool ParallelSize_DynamicRange::is_indirect() const {
+  TI_NOT_IMPLEMENTED;
 }
 
 size_t ParallelSize::get_num_threads(GLSLLauncher *launcher) const {

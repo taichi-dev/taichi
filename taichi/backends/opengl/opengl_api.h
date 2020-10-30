@@ -44,6 +44,7 @@ class ParallelSize {
   std::optional<size_t> strides_per_thread;
   std::optional<size_t> threads_per_block;
 
+  virtual bool is_indirect() const;
   virtual size_t get_num_strides(GLSLLauncher *launcher) const = 0;
   size_t get_num_threads(GLSLLauncher *launcher) const;
   size_t get_num_blocks(GLSLLauncher *launcher) const;
@@ -71,6 +72,7 @@ class ParallelSize_DynamicRange : public ParallelSize {
   ParallelSize_DynamicRange(OffloadedStmt *stmt);
   virtual size_t get_num_strides(GLSLLauncher *launcher) const override;
   virtual ~ParallelSize_DynamicRange() override = default;
+  virtual bool is_indirect() const override;
 };
 
 class ParallelSize_StructFor : public ParallelSize {

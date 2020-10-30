@@ -86,8 +86,7 @@ std::string data_type_format(DataType dt) {
     return "%.12f";
   } else if (dt->is<CustomIntType>()) {
     return "%d";
-  }
-  else {
+  } else {
     TI_NOT_IMPLEMENTED
   }
 }

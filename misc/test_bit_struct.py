@@ -45,7 +45,7 @@ def test_simple_singleton():
         x[None] = 2**13-1
         assert(x[None] == 2**13-1)
         y[None] = 2**14-1
-        assert(int(y[None]) == 2**14-1)
+        assert(y[None] == 2**14-1)
 
     foo()
 

@@ -7,7 +7,7 @@ rerun = True
 
 cases = [
     chain_copy, increments, fill_array, sparse_saxpy, autodiff,
-    stencil_reduction, mpm_splitted, advection_2d, multires, deep_hierarchy
+    stencil_reduction, mpm_splitted, simple_advection, multires, deep_hierarchy
 ]
 
 if rerun:

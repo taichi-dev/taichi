@@ -135,7 +135,7 @@ def stencil_reduction(scale):
 
     @ti.kernel
     def initialize():
-        for i in range(block_size, (block_size - 1) * block_count):
+        for i in range(block_size, block_size * (block_count - 1)):
             a[i] = i
 
     @ti.kernel

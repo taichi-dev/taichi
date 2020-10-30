@@ -297,9 +297,10 @@ def mpm_splitted(scale):
     ti.benchmark(task, repeat=10)
 
 
-@benchmark_async
+# @benchmark_async
 def multires(scale):
-    num_levels = 4
+    ti.init(arch=ti.cpu, async_mode=False)
+    num_levels = 3
 
     x = []
     for i in range(num_levels):
@@ -332,4 +333,13 @@ def multires(scale):
         for l in range(num_levels - 1):
             downsample(l)
 
-    ti.benchmark(task, repeat=5)
+    for i in range(30):
+        task()
+
+    # ti.benchmark(task, repeat=5)
+    ti.sync()
+    ti.core.print_stat()
+    print(1)
+
+
+multires(1)

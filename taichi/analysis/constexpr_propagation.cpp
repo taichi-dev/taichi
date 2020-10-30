@@ -1,6 +1,5 @@
-#include "taichi/ir/transforms.h"
+#include "taichi/ir/visitors.h"
 #include "taichi/ir/statements.h"
-#include "taichi/program/program.h"
 
 #include <unordered_set>
 #include <functional>
@@ -9,8 +8,8 @@ TLANG_NAMESPACE_BEGIN
 
 namespace {
 
-// A statement is const expr in Taichi IR, iff both its value and the control
-// flow reaching it is constant w.r.t. const_seed(...)
+// A statement is considered constexpr in this pass, iff both its value and the
+// control flow reaching it are constant w.r.t. const_seed(...)
 
 class ConstExprPropagation : public IRVisitor {
  public:
@@ -70,12 +69,12 @@ class ConstExprPropagation : public IRVisitor {
 
 }  // namespace
 
-namespace irpass {
+namespace irpass::analysis {
 std::unordered_set<Stmt *> constexpr_prop(
     Block *block,
     std::function<bool(Stmt *)> is_const_seed) {
   return ConstExprPropagation::run(block, is_const_seed);
 }
-}  // namespace irpass
+}  // namespace irpass::analysis
 
 TLANG_NAMESPACE_END

@@ -305,7 +305,8 @@ def multires(scale):
     for i in range(num_levels):
         x.append(ti.field(dtype=ti.f32))
 
-    n = 1024 * 1024 * scale
+    # TODO: Using 1024 instead of 512 hangs the CUDA case. Need to figure out why.
+    n = 512 * 1024 * scale
 
     block_size = 16
     assert n % block_size**2 == 0
@@ -329,7 +330,6 @@ def multires(scale):
 
     def task():
         for l in range(num_levels - 1):
-            print(l)
             downsample(l)
 
     ti.benchmark(task, repeat=5)

@@ -10,8 +10,6 @@ cases = [
     stencil_reduction, mpm_splitted, advection_2d, multires, deep_hierarchy
 ]
 
-cases = [multires]
-
 if rerun:
     for c in cases:
         print('*'*30)

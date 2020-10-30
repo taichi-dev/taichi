@@ -27,7 +27,7 @@ def test_simple_array():
 
 
 def test_simple_singleton():
-    ti.init(arch=ti.cpu, print_ir=True, advanced_optimization=False)
+    ti.init(arch=ti.cpu, debug=True, print_ir=True, advanced_optimization=False)
     ci13 = ti.type_factory_.get_custom_int_type(13, True)
     cu14 = ti.type_factory_.get_custom_int_type(14, False)
 
@@ -42,15 +42,12 @@ def test_simple_singleton():
 
     @ti.kernel
     def foo():
-        x[None] = 2**13 - 1
-        print('x: (2**13-1)', x[None])
-        y[None] = 2**14 - 1
-        print('y: ((2**14-1))', y[None])
+        x[None] = 2**13-1
+        assert(x[None] == 2**13-1)
+        y[None] = 2**14-1
+        assert(int(y[None]) == 2**14-1)
 
     foo()
-    print('----')
-    print("2**13-1 is {}".format(2**13 - 1))
-    print("2**14-1 is {}".format(2**14 - 1))
 
 
 test_simple_singleton()

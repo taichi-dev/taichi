@@ -267,9 +267,15 @@ class TypeCheck : public IRVisitor {
     }
 
     if (stmt->lhs->ret_type != stmt->rhs->ret_type) {
+      if (stmt->lhs->ret_type->is<CustomIntType>()) {
+        stmt->lhs = insert_type_cast_before(stmt, stmt->lhs, get_data_type<int32>());
+      }
+      if (stmt->rhs->ret_type->is<CustomIntType>()) {
+        stmt->rhs = insert_type_cast_before(stmt, stmt->rhs, get_data_type<int32>());
+      }
       auto ret_type = promoted_type(stmt->lhs->ret_type, stmt->rhs->ret_type);
       if (ret_type != stmt->lhs->ret_type) {
-        // promote rhs
+        // promote lhs
         auto cast_stmt = insert_type_cast_before(stmt, stmt->lhs, ret_type);
         stmt->lhs = cast_stmt;
       }

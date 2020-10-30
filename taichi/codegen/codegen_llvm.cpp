@@ -209,10 +209,6 @@ std::unique_ptr<RuntimeObject> CodeGenLLVM::emit_struct_meta_object(
     meta =
         std::make_unique<RuntimeObject>("BitmaskedMeta", this, builder.get());
     emit_struct_meta_base("Bitmasked", meta->ptr, snode);
-  } else if (snode->type == SNodeType::bit_struct) {
-    meta =
-        std::make_unique<RuntimeObject>("BitStructMeta", this, builder.get());
-    emit_struct_meta_base("BitStruct", meta->ptr, snode);
   } else {
     TI_P(snode_type_name(snode->type));
     TI_NOT_IMPLEMENTED;
@@ -327,7 +323,15 @@ void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
             llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
       }
     } else if (!is_real(from) && !is_real(to)) {
-      if (data_type_size(from) < data_type_size(to)) {
+      // todo: implement casting into custom integer type
+      TI_ASSERT(!to->is<CustomIntType>());
+      auto from_size = 0;
+      if (from->is<CustomIntType>()) {
+        from_size = 32;
+      } else {
+        from_size = data_type_size(from);
+      }
+      if (from_size < data_type_size(to)) {
         llvm_val[stmt] = builder->CreateSExt(
             llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
       } else {
@@ -1074,25 +1078,13 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
   TI_ASSERT(llvm_val[stmt->data]);
   TI_ASSERT(llvm_val[stmt->ptr]);
   if (auto cit = stmt->ptr->ret_type.ptr_removed()->cast<CustomIntType>()) {
-    // 1. load byte pointer
-    auto byte_ptr_in_bit_struct = builder->CreateGEP(
-        llvm_val[stmt->ptr], {tlctx->get_constant(0), tlctx->get_constant(0)});
-    auto byte_ptr = builder->CreateLoad(byte_ptr_in_bit_struct);
-    assert(byte_ptr->getType()->getPointerElementType()->isIntegerTy(8));
-
-    // 2. load bit offset
-    auto bit_offset_in_bit_struct = builder->CreateGEP(
-        llvm_val[stmt->ptr], {tlctx->get_constant(0), tlctx->get_constant(1)});
-    auto bit_offset = builder->CreateLoad(bit_offset_in_bit_struct);
-    assert(bit_offset->getType()->isIntegerTy(32));
-
-    builder->CreateCall(
-        get_runtime_function("set_partial_bits_b32"),
-        {builder->CreateBitCast(byte_ptr,
-                                llvm::Type::getInt32PtrTy(*llvm_context)),
-         bit_offset, tlctx->get_constant(cit->get_num_bits()),
-         llvm_val[stmt->data]});
-  } else {
+    llvm::Value *byte_ptr = nullptr, *bit_offset = nullptr;
+    read_bit_pointer(llvm_val[stmt->ptr], byte_ptr, bit_offset);
+    builder->CreateCall(get_runtime_function("set_partial_bits_b32"),
+                        {builder->CreateBitCast(byte_ptr, llvm::Type::getInt32PtrTy(*llvm_context))
+                             , bit_offset, tlctx->get_constant(cit->get_num_bits()), llvm_val[stmt->data]});
+  }
+  else {
     builder->CreateStore(llvm_val[stmt->data], llvm_val[stmt->ptr]);
   }
 }
@@ -1100,25 +1092,13 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
 void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
   int width = stmt->width();
   TI_ASSERT(width == 1);
-  TI_INFO("stmt->ptr->ret_type->cast<PointerType>()->is_bit_pointer(): {}",
-          stmt->ptr->ret_type->cast<PointerType>()->is_bit_pointer());
+  TI_INFO("stmt->ptr->ret_type->cast<PointerType>()->is_bit_pointer(): {}", stmt->ptr->ret_type->cast<PointerType>()->is_bit_pointer());
   if (auto cit = stmt->ret_type->cast<CustomIntType>()) {
-    TI_INFO("bit-level global load {}", cit->to_string());
-    // 1. load byte pointer
-    auto byte_ptr_in_bit_struct = builder->CreateGEP(
-        llvm_val[stmt->ptr], {tlctx->get_constant(0), tlctx->get_constant(0)});
-    auto byte_ptr = builder->CreateLoad(byte_ptr_in_bit_struct);
-    assert(byte_ptr->getType()->getPointerElementType()->isIntegerTy(8));
-    auto bit_level_container = builder->CreateLoad(builder->CreateBitCast(
-        byte_ptr, llvm::Type::getInt32PtrTy(*llvm_context)));
-
-    // 2. load bit offset
-    auto bit_offset_in_bit_struct = builder->CreateGEP(
-        llvm_val[stmt->ptr], {tlctx->get_constant(0), tlctx->get_constant(1)});
-    auto bit_offset = builder->CreateLoad(bit_offset_in_bit_struct);
-    assert(bit_offset->getType()->isIntegerTy(32));
-    //
-    // 3. bit shifting
+    // 1. load bit pointer
+    llvm::Value *byte_ptr, *bit_offset;
+    read_bit_pointer(llvm_val[stmt->ptr], byte_ptr, bit_offset);
+    auto bit_level_container = builder->CreateLoad(builder->CreateBitCast(byte_ptr, llvm::Type::getInt32PtrTy(*llvm_context)));
+    // 2. bit shifting
     //    first left shift `32 - (offset + num_bits)`
     //    then right shift `32 - num_bits`
     auto bit_end = builder->CreateAdd(bit_offset,

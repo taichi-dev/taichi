@@ -328,8 +328,14 @@ CompiledKernel *ParallelSize::get_indirect_evaluator() {
 CompiledKernel *ParallelSize_DynamicRange::get_indirect_evaluator() {
   if (!indirect_evaluator) {
     auto ps = std::make_unique<ParallelSize_ConstRange>(0);
+    size_t SPT = strides_per_thread.value_or(1);
+    size_t TPG = ParallelSize::get_threads_per_block();
     std::string source =
 #include "taichi/backends/opengl/shaders/indirect.glsl.h"
+      + fmt::format("\nvoid main() {{\n"
+          "  _compute_indirect({}, {}, {}, {}, {}, {});\n"
+          "}}\n", (int)const_begin, (int)const_end, range_begin, range_end,
+          SPT, TPG);
       ;
     indirect_evaluator = std::make_unique<CompiledKernel>(
         "indirect_evaluator_opengl", source, std::move(ps));
@@ -352,7 +358,7 @@ size_t ParallelSize_ConstRange::get_num_strides(GLSLLauncher *launcher) const {
 }
 
 size_t ParallelSize_ConstRange::get_threads_per_block() const {
-  size_t n = get_num_threads(nullptr);
+  size_t n = get_num_threads(nullptr);  // TODO: clean up these (iapr)
   size_t TPG = ParallelSize::get_threads_per_block();
   return std::max(std::min(n, TPG), (size_t)1);
 }

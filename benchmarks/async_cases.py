@@ -337,12 +337,12 @@ def multires(scale):
 
 @benchmark_async
 def deep_hierarchy(scale):
-    num_levels = 8 + int(math.log(scale, 4))
+    branching = 4
+    num_levels = 8 + int(math.log(scale, branching))
 
     x = ti.field(dtype=ti.f32)
 
     n = 256 * 1024 * scale
-    branching = 4
 
     assert n % (branching**num_levels) == 0
 
@@ -357,14 +357,14 @@ def deep_hierarchy(scale):
         for i in range(n):
             x[i] = 0
 
+    initialize()
+
     # Not fusible, but no modification to the mask/list of x either
     @ti.kernel
     def jitter():
         for i in x:
             if i % 2 == 0:
                 x[i] += x[i + 1]
-
-    initialize()
 
     def task():
         for i in range(5):

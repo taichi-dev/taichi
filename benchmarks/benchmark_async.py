@@ -7,13 +7,16 @@ rerun = True
 
 cases = [
     chain_copy, increments, fill_array, sparse_saxpy, autodiff,
-    stencil_reduction, mpm_splitted, advection_2d
+    stencil_reduction, mpm_splitted, advection_2d, multires, deep_hierarchy
 ]
 
-cases = [deep_hierarchy]
+cases = [multires]
 
 if rerun:
     for c in cases:
+        print('*'*30)
+        print(f'* Running {c.__name__}')
+        print('*'*30)
         c()
 
 case_names = [c.__name__ for c in cases]

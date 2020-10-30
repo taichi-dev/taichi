@@ -119,7 +119,7 @@ def autodiff(scale):
 
             accumulate_grad()
 
-    ti.benchmark(task, repeat=100)
+    ti.benchmark(task, repeat=10)
 
 
 @benchmark_async
@@ -329,6 +329,7 @@ def multires(scale):
 
     def task():
         for l in range(num_levels - 1):
+            print(l)
             downsample(l)
 
     ti.benchmark(task, repeat=5)
@@ -369,4 +370,4 @@ def deep_hierarchy(scale):
         for i in range(5):
             jitter()
 
-    ti.benchmark(task, repeat=3)
+    ti.benchmark(task, repeat=5)

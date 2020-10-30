@@ -50,7 +50,7 @@ class ParallelSize {
   virtual size_t get_num_strides(GLSLLauncher *launcher) const = 0;
   size_t get_num_threads(GLSLLauncher *launcher) const;
   size_t get_num_blocks(GLSLLauncher *launcher) const;
-  virtual std::unique_ptr<CompiledKernel> get_indirect_evaluator();
+  virtual CompiledKernel *get_indirect_evaluator();
   virtual size_t get_threads_per_block() const;
   virtual ~ParallelSize();
 };
@@ -70,12 +70,13 @@ class ParallelSize_DynamicRange : public ParallelSize {
   bool const_end;
   int range_begin;
   int range_end;
+  std::unique_ptr<CompiledKernel> indirect_evaluator = nullptr;
 
  public:
   ParallelSize_DynamicRange(OffloadedStmt *stmt);
   virtual size_t get_num_strides(GLSLLauncher *launcher) const override;
   virtual ~ParallelSize_DynamicRange() override = default;
-  virtual std::unique_ptr<CompiledKernel> get_indirect_evaluator() override;
+  virtual CompiledKernel *get_indirect_evaluator() override;
   virtual bool is_indirect() const override;
 };
 

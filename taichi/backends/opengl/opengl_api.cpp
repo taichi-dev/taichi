@@ -321,18 +321,20 @@ bool ParallelSize_DynamicRange::is_indirect() const {
   return true;
 }
 
-std::unique_ptr<CompiledKernel> ParallelSize::get_indirect_evaluator() {
+CompiledKernel *ParallelSize::get_indirect_evaluator() {
   return nullptr;
 }
 
-std::unique_ptr<CompiledKernel> ParallelSize_DynamicRange::get_indirect_evaluator() {
-  auto ps = std::make_unique<ParallelSize_ConstRange>(0);
-  std::string source =
+CompiledKernel *ParallelSize_DynamicRange::get_indirect_evaluator() {
+  if (!indirect_evaluator) {
+    auto ps = std::make_unique<ParallelSize_ConstRange>(0);
+    std::string source =
 #include "taichi/backends/opengl/shaders/indirect.glsl.h"
-    ;
-  auto ck = std::make_unique<CompiledKernel>("indirect_evaluator_0",
-      source, std::move(ps));
-  return ck;
+      ;
+    indirect_evaluator = std::make_unique<CompiledKernel>(
+        "indirect_evaluator_opengl", source, std::move(ps));
+  }
+  return indirect_evaluator.get();
 }
 
 size_t ParallelSize::get_threads_per_block() const {
@@ -472,7 +474,7 @@ void display_kernel_info(std::string const &kernel_name,
                      taichi::starts_with(kernel_name, "tensor_to_") ||
                      taichi::starts_with(kernel_name, "matrix_to_") ||
                      taichi::starts_with(kernel_name, "ext_arr_to_") ||
-                     //taichi::starts_with(kernel_name, "indirect_evaluator_") ||
+                     taichi::starts_with(kernel_name, "indirect_evaluator_") ||
                      taichi::starts_with(kernel_name, "jit_evaluator_");
   if (!is_accessor)
     TI_DEBUG("source of kernel [{}]:\n{}", kernel_name, kernel_source_code);
@@ -504,16 +506,6 @@ struct CompiledKernel::Impl {
     glsl->link();
   }
 
-  static std::unique_ptr<CompiledKernel> dbg_make_indirect_evaluator() {
-    auto ps = std::make_unique<ParallelSize_ConstRange>(0);
-    std::string source =
-#include "taichi/backends/opengl/shaders/indirect.glsl.h"
-      ;
-    auto ck = std::make_unique<CompiledKernel>("indirect_evaluator_0",
-        source, std::move(ps));
-    return ck;
-  }
-
   void dispatch_compute(GLSLLauncher *launcher) const {
     // https://www.khronos.org/opengl/wiki/Compute_Shader
     // https://community.arm.com/developer/tools-software/graphics/b/blog/posts/get-started-with-compute-shaders
@@ -530,7 +522,6 @@ struct CompiledKernel::Impl {
 
     } else {
       auto ie = ps->get_indirect_evaluator();
-      //auto ie = dbg_make_indirect_evaluator();
       ie->dispatch_compute(launcher);
       auto runtime = launcher->impl->core_bufs.get(GLBufId::Runtime);
       runtime->as_indirect_buffer();
@@ -814,11 +805,11 @@ size_t ParallelSize_StructFor::get_num_strides(GLSLLauncher *launcher) const {
   TI_NOT_IMPLEMENTED;
 }
 
-std::unique_ptr<CompiledKernel> ParallelSize::get_indirect_evaluator() {
+CompiledKernel *ParallelSize::get_indirect_evaluator() {
   TI_NOT_IMPLEMENTED;
 }
 
-std::unique_ptr<CompiledKernel> ParallelSize_DynamicRange::get_indirect_evaluator() {
+CompiledKernel *ParallelSize_DynamicRange::get_indirect_evaluator() {
   TI_NOT_IMPLEMENTED;
 }
 

@@ -16,7 +16,7 @@ def indirect():
 a[0] = 128
 a[1] = 1
 a[2] = 1
-a[3] = N
+a[3] = N - 1
 stmt = lambda: indirect()
 print(timeit.timeit(stmt, stmt, number=10000))
 print(x)

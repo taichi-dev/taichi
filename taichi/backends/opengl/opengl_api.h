@@ -37,6 +37,8 @@ extern int opengl_threads_per_block;
     return false;                  \
   })()
 
+struct CompiledKernel;
+
 class ParallelSize {
   // GLSL: stride < invocation < local work group < 'dispatch'
   // CUDA: stride < thread < block < grid
@@ -48,6 +50,7 @@ class ParallelSize {
   virtual size_t get_num_strides(GLSLLauncher *launcher) const = 0;
   size_t get_num_threads(GLSLLauncher *launcher) const;
   size_t get_num_blocks(GLSLLauncher *launcher) const;
+  virtual std::unique_ptr<CompiledKernel> get_indirect_evaluator();
   virtual size_t get_threads_per_block() const;
   virtual ~ParallelSize();
 };
@@ -72,6 +75,7 @@ class ParallelSize_DynamicRange : public ParallelSize {
   ParallelSize_DynamicRange(OffloadedStmt *stmt);
   virtual size_t get_num_strides(GLSLLauncher *launcher) const override;
   virtual ~ParallelSize_DynamicRange() override = default;
+  virtual std::unique_ptr<CompiledKernel> get_indirect_evaluator() override;
   virtual bool is_indirect() const override;
 };
 

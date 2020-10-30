@@ -21,14 +21,6 @@ class ConstExprPropagation : public IRVisitor {
     invoke_default_visitor = true;
   }
 
-  bool is_inferred_const(Stmt *stmt) {
-    if (is_const_seed_(stmt)) {
-      return true;
-    } else {
-      return const_stmts_.find(stmt) != const_stmts_.end();
-    }
-  };
-
   bool generic_test(Stmt *stmt) {
     if (is_const_seed_(stmt)) {
       const_stmts_.insert(stmt);
@@ -41,6 +33,12 @@ class ConstExprPropagation : public IRVisitor {
   void visit(Stmt *stmt) override {
     generic_test(stmt);
   }
+
+  bool is_inferred_const(Stmt *stmt) {
+    // Note: every statements that tests true by is_const_seed_ should have
+    // already been included in const_stmts_
+    return const_stmts_.find(stmt) != const_stmts_.end();
+  };
 
   void visit(UnaryOpStmt *stmt) override {
     if (generic_test(stmt))

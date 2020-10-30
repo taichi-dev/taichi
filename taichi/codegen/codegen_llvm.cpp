@@ -1107,7 +1107,11 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
     auto right = builder->CreateAdd(tlctx->get_constant(32),
                                     tlctx->get_constant(-cit->get_num_bits()));
     auto step1 = builder->CreateShl(bit_level_container, left);
-    auto step2 = builder->CreateLShr(step1, right);
+    llvm::Value* step2 = nullptr;
+    if (cit->get_is_signed())
+      step2 = builder->CreateAShr(step1, right);
+    else
+      step2 = builder->CreateLShr(step1, right);
     llvm_val[stmt] = step2;
   } else {
     llvm_val[stmt] = builder->CreateLoad(tlctx->get_data_type(stmt->ret_type),

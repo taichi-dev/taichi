@@ -267,12 +267,17 @@ class TypeCheck : public IRVisitor {
     }
 
     if (stmt->lhs->ret_type != stmt->rhs->ret_type) {
-      if (stmt->lhs->ret_type->is<CustomIntType>()) {
-        stmt->lhs = insert_type_cast_before(stmt, stmt->lhs, get_data_type<int32>());
-      }
-      if (stmt->rhs->ret_type->is<CustomIntType>()) {
-        stmt->rhs = insert_type_cast_before(stmt, stmt->rhs, get_data_type<int32>());
-      }
+      auto promote_custom_int_type = [&](Stmt* stmt, Stmt *hs) {
+        if (hs->ret_type->is<CustomIntType>()) {
+          if (hs->ret_type->cast<CustomIntType>()->get_is_signed())
+            return insert_type_cast_before(stmt, hs, get_data_type<int32>());
+          else
+            return insert_type_cast_before(stmt, hs, get_data_type<uint32>());
+        }
+        return hs;
+      };
+      stmt->lhs = promote_custom_int_type(stmt, stmt->lhs);
+      stmt->rhs = promote_custom_int_type(stmt, stmt->rhs);
       auto ret_type = promoted_type(stmt->lhs->ret_type, stmt->rhs->ret_type);
       if (ret_type != stmt->lhs->ret_type) {
         // promote lhs

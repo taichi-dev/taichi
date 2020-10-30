@@ -332,11 +332,12 @@ CompiledKernel *ParallelSize_DynamicRange::get_indirect_evaluator() {
     size_t TPG = ParallelSize::get_threads_per_block();
     std::string source =
 #include "taichi/backends/opengl/shaders/indirect.glsl.h"
-      + fmt::format("\nvoid main() {{\n"
-          "  _compute_indirect({}, {}, {}, {}, {}, {});\n"
-          "}}\n", (int)const_begin, (int)const_end, range_begin, range_end,
-          SPT, TPG);
-      ;
+        +fmt::format(
+            "\nvoid main() {{\n"
+            "  _compute_indirect({}, {}, {}, {}, {}, {});\n"
+            "}}\n",
+            (int)const_begin, (int)const_end, range_begin, range_end, SPT, TPG);
+    ;
     indirect_evaluator = std::make_unique<CompiledKernel>(
         "indirect_evaluator_opengl", source, std::move(ps));
   }
@@ -850,9 +851,11 @@ void CompiledProgram::launch(Context &ctx, GLSLLauncher *launcher) const {
 }
 
 CompiledKernel::CompiledKernel(const std::string &kernel_name_,
-                 const std::string &kernel_source_code,
-                 std::unique_ptr<ParallelSize> ps_)
-      : impl(std::make_unique<Impl>(kernel_name_, kernel_source_code, std::move(ps_))) {
+                               const std::string &kernel_source_code,
+                               std::unique_ptr<ParallelSize> ps_)
+    : impl(std::make_unique<Impl>(kernel_name_,
+                                  kernel_source_code,
+                                  std::move(ps_))) {
 }
 
 void CompiledKernel::dispatch_compute(GLSLLauncher *launcher) const {

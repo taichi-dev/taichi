@@ -458,8 +458,6 @@ class MPMSolver:
             self.x[p] += dt * self.v[p]  # advection
 
     def step(self, frame_dt, print_stat=False):
-        print('begin step')
-        ti.sync()
         begin_t = time.time()
         begin_substep = self.total_substeps
 
@@ -501,8 +499,6 @@ class MPMSolver:
                     p(dt)
                 self.g2p(dt)
 
-        print('end step')
-        ti.sync()
         if print_stat:
             ti.kernel_profiler_print()
             try:

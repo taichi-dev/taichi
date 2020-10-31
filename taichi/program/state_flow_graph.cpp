@@ -299,12 +299,10 @@ bool StateFlowGraph::optimize_listgen() {
           ir_bank_->insert(std::move(new_ir), new_handle.hash());
           clear_node->rec.ir_handle = new_handle;
           clear_node->meta = get_task_meta(ir_bank_, clear_node->rec);
-          TI_WARN("clear_node {} {}", offloaded_task_type_name(clear_node->meta->type),
-              offloaded_task_type_name(clear_node->rec.stmt()->task_type));
         }
 
-        TI_WARN("Common list generation {} and (to erase) {}",
-                 node_a->string(), node_b->string());
+        TI_INFO("Common list generation {} and (to erase) {}", node_a->string(),
+                node_b->string());
 
         nodes_to_delete.insert(node_b->node_id);
         erased_any = true;
@@ -1090,7 +1088,6 @@ bool StateFlowGraph::optimize_dead_store() {
     // *****************************
     // Erase the state s output.
     if (!store_eliminable_snodes.empty()) {
-      TI_WARN("DSE");
       const bool verbose = task->rec.kernel->program.config.verbose;
 
       const auto dse_result = ir_bank_->optimize_dse(

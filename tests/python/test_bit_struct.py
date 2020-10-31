@@ -42,11 +42,10 @@ def test_custom_int_load_and_store():
     y = ti.field(dtype=cu14)
     z = ti.field(dtype=ci5)
 
-    test_case_np = np.array([[2**12 - 1, 2**14 - 1, -(2**3)],
-                             [2**11 - 1, 2**13 - 1, -(2**2)], [0, 0, 0],
-                             [123, 4567, 8],
-                             [10, 31, 11]],
-                            dtype=np.int32)
+    test_case_np = np.array(
+        [[2**12 - 1, 2**14 - 1, -(2**3)], [2**11 - 1, 2**13 - 1, -(2**2)],
+         [0, 0, 0], [123, 4567, 8], [10, 31, 11]],
+        dtype=np.int32)
 
     ti.root._bit_struct(num_bits=32).place(x, y, z)
     test_case = ti.Vector.field(3, dtype=ti.i32, shape=len(test_case_np))

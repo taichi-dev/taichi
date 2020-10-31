@@ -1081,11 +1081,13 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
   if (auto cit = stmt->ptr->ret_type.ptr_removed()->cast<CustomIntType>()) {
     llvm::Value *byte_ptr = nullptr, *bit_offset = nullptr;
     read_bit_pointer(llvm_val[stmt->ptr], byte_ptr, bit_offset);
-    builder->CreateCall(get_runtime_function("set_partial_bits_b32"),
-                        {builder->CreateBitCast(byte_ptr, llvm::Type::getInt32PtrTy(*llvm_context))
-                             , bit_offset, tlctx->get_constant(cit->get_num_bits()), llvm_val[stmt->data]});
-  }
-  else {
+    builder->CreateCall(
+        get_runtime_function("set_partial_bits_b32"),
+        {builder->CreateBitCast(byte_ptr,
+                                llvm::Type::getInt32PtrTy(*llvm_context)),
+         bit_offset, tlctx->get_constant(cit->get_num_bits()),
+         llvm_val[stmt->data]});
+  } else {
     builder->CreateStore(llvm_val[stmt->data], llvm_val[stmt->ptr]);
   }
 }
@@ -1097,18 +1099,18 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
     // 1. load bit pointer
     llvm::Value *byte_ptr, *bit_offset;
     read_bit_pointer(llvm_val[stmt->ptr], byte_ptr, bit_offset);
-    auto bit_level_container = builder->CreateLoad(builder->CreateBitCast(byte_ptr, llvm::Type::getInt32PtrTy(*llvm_context)));
+    auto bit_level_container = builder->CreateLoad(builder->CreateBitCast(
+        byte_ptr, llvm::Type::getInt32PtrTy(*llvm_context)));
     // 2. bit shifting
     //    first left shift `32 - (offset + num_bits)`
     //    then right shift `32 - num_bits`
     auto bit_end = builder->CreateAdd(bit_offset,
                                       tlctx->get_constant(cit->get_num_bits()));
-    auto left = builder->CreateSub(tlctx->get_constant(32),
-                                   bit_end);
+    auto left = builder->CreateSub(tlctx->get_constant(32), bit_end);
     auto right = builder->CreateAdd(tlctx->get_constant(32),
                                     tlctx->get_constant(-cit->get_num_bits()));
     auto step1 = builder->CreateShl(bit_level_container, left);
-    llvm::Value* step2 = nullptr;
+    llvm::Value *step2 = nullptr;
     if (cit->get_is_signed())
       step2 = builder->CreateAShr(step1, right);
     else

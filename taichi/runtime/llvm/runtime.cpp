@@ -1551,7 +1551,7 @@ void stack_push(Ptr stack, size_t max_num_elements, std::size_t element_size) {
 
 #include "internal_functions.h"
 
-void set_partial_bits_b32(u32* ptr, u32 offset, u32 bits, u32 value) {
+void set_partial_bits_b32(u32 *ptr, u32 offset, u32 bits, u32 value) {
   u32 mask = ((((u32)1 << bits) - 1) << offset);
   u32 new_value = 0;
   u32 old_value = *ptr;

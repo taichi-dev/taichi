@@ -126,14 +126,18 @@ class LLVMModuleBuilder {
     return call(this->builder.get(), func_name, std::forward<Args>(args)...);
   }
 
-  void read_bit_pointer(llvm::Value* ptr, llvm::Value*& byte_ptr, llvm::Value*& bit_offset) {
+  void read_bit_pointer(llvm::Value *ptr,
+                        llvm::Value *&byte_ptr,
+                        llvm::Value *&bit_offset) {
     // 1. load byte pointer
-    auto byte_ptr_in_bit_struct = builder->CreateGEP(ptr, {tlctx->get_constant(0), tlctx->get_constant(0)});
+    auto byte_ptr_in_bit_struct = builder->CreateGEP(
+        ptr, {tlctx->get_constant(0), tlctx->get_constant(0)});
     byte_ptr = builder->CreateLoad(byte_ptr_in_bit_struct);
     TI_ASSERT(byte_ptr->getType()->getPointerElementType()->isIntegerTy(8));
 
     // 2. load bit offset
-    auto bit_offset_in_bit_struct = builder->CreateGEP(ptr, {tlctx->get_constant(0), tlctx->get_constant(1)});
+    auto bit_offset_in_bit_struct = builder->CreateGEP(
+        ptr, {tlctx->get_constant(0), tlctx->get_constant(1)});
     bit_offset = builder->CreateLoad(bit_offset_in_bit_struct);
     TI_ASSERT(bit_offset->getType()->isIntegerTy(32));
   }

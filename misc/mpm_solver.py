@@ -445,16 +445,9 @@ class MPMSolver:
 
         substeps = int(frame_dt / self.default_dt) + 1
 
-        print('before: sync')
-        ti.sync()
-        print('sync done')
         self.grid1.deactivate_all()
         self.grid2.deactivate_all()
-        print('deactivate: sync')
-        ti.sync()
-        print('sync done')
         for i in range(substeps):
-            print('substep', i)
             self.total_substeps += 1
             dt = frame_dt / substeps
 
@@ -463,37 +456,14 @@ class MPMSolver:
             self.pid, self.pid2 = self.pid2, self.pid
             if i == 0:
                 self.build_pid()
-                print('sync 0')
-                ti.sync()
-                print('sync done')
             self.p2g(dt)
-            if i == 0:
-                print('sync 1')
-                ti.sync()
-                print('sync done')
             self.clear_next_grid()
-            if i == 0:
-                print('sync 2')
-                ti.sync()
-                print('sync done')
             self.pid.snode.deactivate_all()
-            if i == 0:
-                print('sync 3')
-                ti.sync()
-                print('sync done')
             self.build_pid()
-            if i == 0:
-                print('sync 4')
-                ti.sync()
-                print('sync done')
             self.grid_normalization_and_gravity(dt)
             for p in self.grid_postprocess:
                 p(dt)
             self.g2p(dt)
-            if i == 0:
-                print('sync 5')
-                ti.sync()
-                print('sync done')
 
         if print_stat:
             ti.kernel_profiler_print()
@@ -548,7 +518,6 @@ class MPMSolver:
                  color=0xFFFFFF,
                  sample_density=None,
                  velocity=None):
-        print('add cube', lower_corner)
         if sample_density is None:
             sample_density = 2 ** self.dim
         vol = 1

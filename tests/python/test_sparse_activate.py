@@ -30,7 +30,7 @@ def test_pointer():
 
 
 @ti.test(require=ti.extension.sparse)
-def test_snode_order():
+def test_non_dfs_snode_order():
     x = ti.field(dtype=ti.i32)
     y = ti.field(dtype=ti.i32)
 

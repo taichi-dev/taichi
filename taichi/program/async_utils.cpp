@@ -112,13 +112,6 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
       t.kernel->name + "_" + offloaded_task_type_name(root_stmt->task_type);
   meta.type = root_stmt->task_type;
   get_meta_input_value_states(root_stmt, &meta);
-
-//  std::cout << std::endl;
-//  TI_INFO("meta of {}", t.kernel->name);
-//  std::cout << std::endl;
-//  meta.print();
-//  std::cout << std::endl;
-
   meta.loop_unique = gather_uniquely_accessed_pointers(root_stmt);
 
   gather_statements(root_stmt, [&](Stmt *stmt) {
@@ -219,15 +212,6 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
     meta.output_states.emplace(meta.snode, AsyncState::Type::allocator);
   }
 
-//  if ((meta.name.find("g2p") != std::string::npos || meta.name.find("p2g") != std::string::npos) &&
-//      meta.name.find("struct_for") != std::string::npos) {
-//    std::cout << std::endl;
-//    TI_INFO("meta of {} done", t.kernel->name);
-//    std::cout << std::endl;
-//    meta.print();
-//    std::cout << std::endl;
-//    irpass::print(t.stmt());
-//  }
   meta_bank[t.ir_handle] = meta;
   return &meta_bank[t.ir_handle];
 }

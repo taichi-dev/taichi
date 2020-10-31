@@ -8,8 +8,8 @@ from mpm_solver import MPMSolver
 
 write_to_disk = False
 
-ti.init(arch=ti.cpu, async_mode=True)
-        # async_opt_intermediate_file="mpm")  # Try to run on GPU
+ti.init(arch=ti.cpu, async_mode=True,
+        async_opt_intermediate_file="mpm")  # Try to run on GPU
 
 gui = ti.GUI("Taichi Elements", res=512, background_color=0x112F41,
              show_gui=False)
@@ -23,7 +23,7 @@ for i in range(3):
 
 ti.sync()
 t = time.time()
-for frame in range(50):
+for frame in range(2):
     mpm.step(8e-3, print_stat=False)
     if frame < 500:
         mpm.add_cube(lower_corner=[0.1, 0.8],

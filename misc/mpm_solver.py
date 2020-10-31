@@ -247,7 +247,7 @@ class MPMSolver:
 
 
     @ti.kernel
-    def p2g(self, dt: ti.f32):
+    def p2g(self, dt: ti.template()):
         ti.no_activate(self.particle)
         ti.block_dim(256)
         ti.cache_shared(*self.grid_v.entries)
@@ -428,7 +428,7 @@ class MPMSolver:
             lambda dt: self.grid_bounding_box(dt, unbounded))
 
     @ti.kernel
-    def g2p(self, dt: ti.f32):
+    def g2p(self, dt: ti.template()):
         ti.block_dim(256)
         ti.cache_shared(*self.grid_v.entries)
         ti.no_activate(self.particle)
@@ -458,15 +458,18 @@ class MPMSolver:
             self.x[p] += dt * self.v[p]  # advection
 
     def step(self, frame_dt, print_stat=False):
+        print('begin step')
+        ti.sync()
         begin_t = time.time()
         begin_substep = self.total_substeps
 
         substeps = int(frame_dt / self.default_dt) + 1
 
+        dt = frame_dt / substeps
+
         if False:  # before
             for i in range(substeps):
                 self.total_substeps += 1
-            dt = frame_dt / substeps
 
             self.grid1.deactivate_all()
             self.build_pid()
@@ -481,7 +484,6 @@ class MPMSolver:
 
             for i in range(substeps):
                 self.total_substeps += 1
-                dt = frame_dt / substeps
 
                 self.grid_m, self.grid_m2 = self.grid_m2, self.grid_m
                 self.grid_v, self.grid_v2 = self.grid_v2, self.grid_v
@@ -499,6 +501,8 @@ class MPMSolver:
                     p(dt)
                 self.g2p(dt)
 
+        print('end step')
+        ti.sync()
         if print_stat:
             ti.kernel_profiler_print()
             try:

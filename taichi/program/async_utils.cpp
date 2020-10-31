@@ -1,5 +1,6 @@
 #include "taichi/program/async_utils.h"
 
+#include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
@@ -209,12 +210,15 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
     meta.output_states.emplace(meta.snode, AsyncState::Type::allocator);
   }
 
-  meta_bank[t.ir_handle] = meta;
-//  std::cout << std::endl;
-//  TI_INFO("meta of {} done", t.kernel->name);
-//  std::cout << std::endl;
-//  meta.print();
-//  std::cout << std::endl;
+//  if ((meta.name.find("g2p") != std::string::npos || meta.name.find("p2g") != std::string::npos) &&
+//      meta.name.find("struct_for") != std::string::npos) {
+//    std::cout << std::endl;
+//    TI_INFO("meta of {} done", t.kernel->name);
+//    std::cout << std::endl;
+//    meta.print();
+//    std::cout << std::endl;
+//    irpass::print(t.stmt());
+//  }
   return &meta_bank[t.ir_handle];
 }
 

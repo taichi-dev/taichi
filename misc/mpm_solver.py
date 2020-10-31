@@ -455,7 +455,7 @@ class MPMSolver:
 
         substeps = int(frame_dt / self.default_dt) + 1
 
-        if True:  # before
+        if False:  # before
             for i in range(substeps):
                 self.total_substeps += 1
             dt = frame_dt / substeps
@@ -468,10 +468,10 @@ class MPMSolver:
                 p(dt)
             self.g2p(dt)
         else:  # after
-            self.clear_this_grid()
-            self.clear_next_grid()
-            # self.grid1.deactivate_all()
-            # self.grid2.deactivate_all()
+            # self.clear_this_grid()
+            # self.clear_next_grid()
+            self.grid1.deactivate_all()
+            self.grid2.deactivate_all()
 
             for i in range(substeps):
                 self.total_substeps += 1

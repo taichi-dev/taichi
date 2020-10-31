@@ -8,8 +8,7 @@ from mpm_solver import MPMSolver
 
 write_to_disk = False
 
-ti.init(arch=ti.cpu, async_mode=True,
-        async_opt_intermediate_file="mpm")  # Try to run on GPU
+ti.init(arch=ti.cpu, async_mode=True)  # Try to run on GPU
 
 gui = ti.GUI("Taichi Elements", res=512, background_color=0x112F41,
              show_gui=False)

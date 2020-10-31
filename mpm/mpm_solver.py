@@ -100,7 +100,7 @@ class MPMSolver:
         
         use2 = True
         if use2:
-            self.grid2 = ti.root.pointer(indices, self.grid_size // grid_block_size)
+            self.grid2 = ti.root.dense(indices, self.grid_size // grid_block_size)
 
         if self.dim == 2:
             self.leaf_block_size = 16
@@ -110,7 +110,7 @@ class MPMSolver:
         block = self.grid1.pointer(indices,
                                   grid_block_size // self.leaf_block_size)
         if use2:
-            block2 = self.grid2.pointer(indices,
+            block2 = self.grid2.dense(indices,
                                        grid_block_size // self.leaf_block_size)
 
         def block_component(blk, c):
@@ -125,12 +125,12 @@ class MPMSolver:
             # grid node momentum/velocity
             # self.grid_v2 = ti.Vector(self.dim, dt=ti.f32)
             # grid node mass
-            # self.grid_m2 = ti.var(dt=ti.f32)
+            self.grid_m2 = ti.var(dt=ti.f32)
 
-            self.pid2 = ti.var(ti.i32)
+            # self.pid2 = ti.var(ti.i32)
 
 
-            # block_component(block2, self.grid_m2)
+            block_component(block2, self.grid_m2)
             # for v in self.grid_v2.entries:
             #     block_component(block2, v)
 
@@ -140,10 +140,11 @@ class MPMSolver:
                       chunk_size=self.leaf_block_size ** self.dim * 8).place(
             self.pid, offset=offset + (0,))
         if use2:
-            block2.dynamic(ti.indices(self.dim),
-                          1024 * 1024,
-                          chunk_size=self.leaf_block_size ** self.dim * 8).place(
-                self.pid2, offset=offset + (0,))
+            pass
+            # block2.dynamic(ti.indices(self.dim),
+            #               1024 * 1024,
+            #               chunk_size=self.leaf_block_size ** self.dim * 8).place(
+            #     self.pid2, offset=offset + (0,))
 
         self.padding = padding
 
@@ -457,6 +458,9 @@ class MPMSolver:
         print('sync done')
         print(111)
         self.grid1.deactivate_all()
+        ti.sync()
+        print('successfully finishes')
+        exit()
         print(112)
         self.grid2.deactivate_all()
         print(113)

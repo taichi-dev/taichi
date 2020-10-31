@@ -467,7 +467,17 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
           }
           TI_ASSERT(nodes[a]->rec.stmt()->id == 0);
           TI_ASSERT(nodes[b]->rec.stmt()->id == 0);
-          // TODO: check same loop_unique pointer
+          // Only map the OffloadedStmt to see if both SNodes are loop-unique
+          // on the same statement.
+          std::unordered_map<int, int> offload_map;
+          offload_map[0] = 0;
+          if (!irpass::analysis::same_value(
+                  nodes[a]->meta->loop_unique[snode],
+                  nodes[b]->meta->loop_unique[snode],
+                  std::make_optional<std::unordered_map<int, int>>(
+                      offload_map))) {
+            return false;
+          }
         }
       }
     }
@@ -1198,12 +1208,13 @@ void StateFlowGraph::verify(bool also_verify_ir) const {
   if (also_verify_ir) {
     // Check IR
     for (int i = 1; i < n; i++) {
-      TI_ASSERT_INFO(nodes_[i]->meta->type == nodes_[i]->rec.stmt()->task_type,
-                     "nodes_[{}]({}) has type {}, "
-                     "but its IR has task_type {}",
-                     i, nodes_[i]->string(),
-                     offloaded_task_type_name(nodes_[i]->meta->type),
-                     offloaded_task_type_name(nodes_[i]->rec.stmt()->task_type));
+      TI_ASSERT_INFO(
+          nodes_[i]->meta->type == nodes_[i]->rec.stmt()->task_type,
+          "nodes_[{}]({}) has type {}, "
+          "but its IR has task_type {}",
+          i, nodes_[i]->string(),
+          offloaded_task_type_name(nodes_[i]->meta->type),
+          offloaded_task_type_name(nodes_[i]->rec.stmt()->task_type));
       irpass::analysis::verify(nodes_[i]->rec.stmt());
     }
   }

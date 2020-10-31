@@ -13,23 +13,35 @@ class IRNodeComparator : public IRVisitor {
   IRNode *other_node;
   // map the id from this node to the other node
   std::unordered_map<int, int> id_map;
+
   // ids which don't belong to either node
   std::unordered_set<int> captured_id;
+  bool implicitly_capture_ids;
 
  public:
   bool same;
 
-  explicit IRNodeComparator(IRNode *other_node) : other_node(other_node) {
+  explicit IRNodeComparator(IRNode *other_node,
+                            std::optional<std::unordered_map<int, int>> id_map)
+      : other_node(other_node) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
     same = true;
+    if (id_map.has_value()) {
+      implicitly_capture_ids = false;
+      this->id_map = std::move(id_map.value());
+    } else {
+      implicitly_capture_ids = true;
+    }
   }
 
   void map_id(int this_id, int other_id) {
-    if (captured_id.find(this_id) != captured_id.end() ||
-        captured_id.find(other_id) != captured_id.end()) {
-      same = false;
-      return;
+    if (implicitly_capture_ids) {
+      if (captured_id.find(this_id) != captured_id.end() ||
+          captured_id.find(other_id) != captured_id.end()) {
+        same = false;
+        return;
+      }
     }
     auto it = id_map.find(this_id);
     if (it == id_map.end()) {
@@ -39,18 +51,31 @@ class IRNodeComparator : public IRVisitor {
     }
   }
 
-  int get_other_id(int this_id) {
+  void check_mapping(Stmt *this_stmt, Stmt *other_stmt) {
     // get the corresponding id in the other node
-    auto it = id_map.find(this_id);
+    // and check if it is other_stmt->id
+    auto it = id_map.find(this_stmt->id);
     if (it != id_map.end()) {
-      return it->second;
+      if (it->second != this_stmt->id) {
+        same = false;
+      }
+      return;
     }
-    // if not found, should be captured
-    // (What if this_id belongs to the other node? Ignoring this case here.)
-    if (captured_id.find(this_id) == captured_id.end()) {
-      captured_id.insert(this_id);
+    if (implicitly_capture_ids) {
+      // if not found, should be captured
+      if (captured_id.find(this_stmt->id) == captured_id.end()) {
+        captured_id.insert(this_stmt->id);
+      }
+      if (this_stmt->id != other_stmt->id) {
+        same = false;
+      }
+    } else {
+      // recursively check them
+      IRNode *backup_other_node = other_node;
+      other_node = other_stmt;
+      this_stmt->accept(this);
+      other_node = backup_other_node;
     }
-    return this_id;
   }
 
   void visit(Block *stmt_list) override {
@@ -80,8 +105,14 @@ class IRNodeComparator : public IRVisitor {
       return;
     }
 
-    // operand check
+    // field check
     auto other = other_node->as<Stmt>();
+    if (!stmt->field_manager.equal(other->field_manager)) {
+      same = false;
+      return;
+    }
+
+    // operand check
     if (stmt->num_operands() != other->num_operands()) {
       same = false;
       return;
@@ -93,16 +124,7 @@ class IRNodeComparator : public IRVisitor {
       }
       if (stmt->operand(i) == nullptr)
         continue;
-      if (get_other_id(stmt->operand(i)->id) != other->operand(i)->id) {
-        same = false;
-        return;
-      }
-    }
-
-    // field check
-    if (!stmt->field_manager.equal(other->field_manager)) {
-      same = false;
-      return;
+      check_mapping(stmt->operand(i), other->operand(i));
     }
 
     map_id(stmt->id, other->id);
@@ -191,22 +213,37 @@ class IRNodeComparator : public IRVisitor {
     }
   }
 
-  static bool run(IRNode *root1, IRNode *root2) {
-    IRNodeComparator comparator(root2);
+  static bool run(IRNode *root1,
+                  IRNode *root2,
+                  std::optional<std::unordered_map<int, int>> id_map) {
+    IRNodeComparator comparator(root2, id_map);
     root1->accept(&comparator);
     return comparator.same;
   }
 };
 
 namespace irpass::analysis {
-bool same_statements(IRNode *root1, IRNode *root2) {
+bool same_statements(IRNode *root1,
+                     IRNode *root2,
+                     std::optional<std::unordered_map<int, int>> id_map) {
+  // id_map is an id map from root1 to root2.
+  //
+  // For example, same_statements($3, $6) is true
+  // iff id_map[1] == 4 && id_map[2] == 5:
+  // <i32> $3 = add $1 $2
+  // <i32> $6 = add $4 $5
+  //
+  // If capture_ids is std::nullopt by default, an identity mapping will
+  // be used. This is correct when root1 and root2 share the same IR root.
   if (root1 == root2)
     return true;
   if (!root1 || !root2)
     return false;
-  return IRNodeComparator::run(root1, root2);
+  return IRNodeComparator::run(root1, root2, id_map);
 }
-bool same_value(Stmt *stmt1, Stmt *stmt2) {
+bool same_value(Stmt *stmt1,
+                Stmt *stmt2,
+                std::optional<std::unordered_map<int, int>> id_map) {
   // Test if two statements must have the same value.
   if (stmt1 == stmt2)
     return true;
@@ -218,7 +255,7 @@ bool same_value(Stmt *stmt1, Stmt *stmt2) {
   // Note that we do not need to test !stmt2->common_statement_eliminable()
   // because if this condition does not hold,
   // same_statements(stmt1, stmt2) returns false anyway.
-  return same_statements(stmt1, stmt2);
+  return same_statements(stmt1, stmt2, id_map);
 }
 }  // namespace irpass::analysis
 

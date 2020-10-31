@@ -24,8 +24,8 @@ def send_request(url):
     # https://docs.github.com/en/actions/getting-started-with-github-actions/about-github-actions#usage-limits
     rl = res.getheader('X-Ratelimit-Limit', None)
     rl_remain = res.getheader('X-Ratelimit-Remaining', None)
-    logging.debug(
-        'request=%s rate_limit=%s rate_limit_remaining=%s', url, rl, rl_remain)
+    logging.debug('request=%s rate_limit=%s rate_limit_remaining=%s', url, rl,
+                  rl_remain)
     return res
 
 
@@ -98,15 +98,18 @@ def cancel_workflow_run(run_id):
     for r in range(MAX_RETRIES):
         f = send_request(url)
         j = json.loads(f.read())
-        
+
         status = j['status']
         if status not in {'queued', 'in_progress'}:
-          logging.info('Wrkflow run=%s done, conclusion=%s', run_id, j['conclusion'])
-          return True
-        
+            logging.info('Wrkflow run=%s done, conclusion=%s', run_id,
+                         j['conclusion'])
+            return True
+
         cancel_url = j['cancel_url']
         f = send_request(cancel_url)
-        logging.debug('[%d] Issued cancel requeest (url=%s) to workflow run=%s, waiting for the status...', r, cancel_url, run_id)
+        logging.debug(
+            '[%d] Issued cancel requeest (url=%s) to workflow run=%s, waiting for the status...',
+            r, cancel_url, run_id)
         time.sleep(30)
     return False
 

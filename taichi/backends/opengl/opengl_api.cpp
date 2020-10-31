@@ -209,6 +209,10 @@ struct GLSSBO {
     check_opengl_error("glBindBufferRange");
   }
 
+  void as_indirect_buffer() {
+    glBindBuffer(GL_DISPATCH_INDIRECT_BUFFER, id_);
+  }
+
   void *map(size_t offset,
             size_t length,
             GLbitfield access = GL_READ_ONLY) const {
@@ -309,6 +313,37 @@ struct GLSLLauncherImpl {
 ParallelSize::~ParallelSize() {
 }
 
+bool ParallelSize::is_indirect() const {
+  return false;
+}
+
+bool ParallelSize_DynamicRange::is_indirect() const {
+  return true;
+}
+
+CompiledKernel *ParallelSize::get_indirect_evaluator() {
+  return nullptr;
+}
+
+CompiledKernel *ParallelSize_DynamicRange::get_indirect_evaluator() {
+  if (!indirect_evaluator) {
+    auto ps = std::make_unique<ParallelSize_ConstRange>(0);
+    size_t SPT = strides_per_thread.value_or(1);
+    size_t TPG = ParallelSize::get_threads_per_block();
+    std::string source =
+#include "taichi/backends/opengl/shaders/indirect.glsl.h"
+        +fmt::format(
+            "\nvoid main() {{\n"
+            "  _compute_indirect({}, {}, {}, {}, {}, {});\n"
+            "}}\n",
+            (int)const_begin, (int)const_end, range_begin, range_end, SPT, TPG);
+    ;
+    indirect_evaluator = std::make_unique<CompiledKernel>(
+        "indirect_evaluator_opengl", source, std::move(ps));
+  }
+  return indirect_evaluator.get();
+}
+
 size_t ParallelSize::get_threads_per_block() const {
   size_t limit = opengl_threads_per_block;
   size_t n = threads_per_block.value_or(0);
@@ -324,7 +359,7 @@ size_t ParallelSize_ConstRange::get_num_strides(GLSLLauncher *launcher) const {
 }
 
 size_t ParallelSize_ConstRange::get_threads_per_block() const {
-  size_t n = get_num_threads(nullptr);
+  size_t n = get_num_threads(nullptr);  // TODO: clean up these (iapr)
   size_t TPG = ParallelSize::get_threads_per_block();
   return std::max(std::min(n, TPG), (size_t)1);
 }
@@ -446,6 +481,7 @@ void display_kernel_info(std::string const &kernel_name,
                      taichi::starts_with(kernel_name, "tensor_to_") ||
                      taichi::starts_with(kernel_name, "matrix_to_") ||
                      taichi::starts_with(kernel_name, "ext_arr_to_") ||
+                     taichi::starts_with(kernel_name, "indirect_evaluator_") ||
                      taichi::starts_with(kernel_name, "jit_evaluator_");
   if (!is_accessor)
     TI_DEBUG("source of kernel [{}]:\n{}", kernel_name, kernel_source_code);
@@ -457,20 +493,15 @@ void display_kernel_info(std::string const &kernel_name,
 #endif
 }
 
-struct CompiledKernel {
+struct CompiledKernel::Impl {
   std::string kernel_name;
   std::unique_ptr<GLProgram> glsl;
   std::unique_ptr<ParallelSize> ps;
   std::string source;
 
-  // disscussion:
-  // https://github.com/taichi-dev/taichi/pull/696#issuecomment-609332527
-  CompiledKernel(CompiledKernel &&) = default;
-  CompiledKernel &operator=(CompiledKernel &&) = default;
-
-  explicit CompiledKernel(const std::string &kernel_name_,
-                          const std::string &kernel_source_code,
-                          std::unique_ptr<ParallelSize> ps_)
+  Impl(const std::string &kernel_name_,
+       const std::string &kernel_source_code,
+       std::unique_ptr<ParallelSize> ps_)
       : kernel_name(kernel_name_), ps(std::move(ps_)) {
     source =
         kernel_source_code +
@@ -483,10 +514,6 @@ struct CompiledKernel {
   }
 
   void dispatch_compute(GLSLLauncher *launcher) const {
-    int num_blocks = ps->get_num_blocks(launcher);
-
-    glsl->use();
-
     // https://www.khronos.org/opengl/wiki/Compute_Shader
     // https://community.arm.com/developer/tools-software/graphics/b/blog/posts/get-started-with-compute-shaders
     // https://www.khronos.org/assets/uploads/developers/library/2014-siggraph-bof/KITE-BOF_Aug14.pdf
@@ -494,8 +521,21 @@ struct CompiledKernel {
     // `glDispatchCompute(X, Y, Z)`   - the X*Y*Z  == `Blocks`   in CUDA
     // `layout(local_size_x = X) in;` - the X      == `Threads`  in CUDA
     //
-    glDispatchCompute(num_blocks, 1, 1);
-    check_opengl_error(fmt::format("glDispatchCompute({})", num_blocks));
+    if (!ps->is_indirect()) {
+      int num_blocks = ps->get_num_blocks(launcher);
+      glsl->use();
+      glDispatchCompute(num_blocks, 1, 1);
+      check_opengl_error(fmt::format("glDispatchCompute({})", num_blocks));
+
+    } else {
+      auto ie = ps->get_indirect_evaluator();
+      ie->dispatch_compute(launcher);
+      auto runtime = launcher->impl->core_bufs.get(GLBufId::Runtime);
+      runtime->as_indirect_buffer();
+      glsl->use();
+      glDispatchComputeIndirect(0);  // offset of runtime.indirect_x is 0
+      check_opengl_error(fmt::format("glDispatchComputeIndirect"));
+    }
 
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
     check_opengl_error("glMemoryBarrier");
@@ -682,6 +722,18 @@ bool is_opengl_api_available() {
 struct GLProgram {};
 struct GLSLLauncherImpl {};
 
+struct CompiledKernel::Impl {
+  Impl(const std::string &kernel_name_,
+       const std::string &kernel_source_code,
+       std::unique_ptr<ParallelSize> ps_) {
+    TI_NOT_IMPLEMENTED;
+  }
+
+  void dispatch_compute(GLSLLauncher *launcher) const {
+    TI_NOT_IMPLEMENTED;
+  }
+};
+
 struct CompiledProgram::Impl {
   UsedFeature used;
 
@@ -723,6 +775,14 @@ bool initialize_opengl(bool error_tolerance) {
 ParallelSize::~ParallelSize() {
 }
 
+bool ParallelSize::is_indirect() const {
+  TI_NOT_IMPLEMENTED;
+}
+
+bool ParallelSize_DynamicRange::is_indirect() const {
+  TI_NOT_IMPLEMENTED;
+}
+
 size_t ParallelSize::get_num_threads(GLSLLauncher *launcher) const {
   TI_NOT_IMPLEMENTED;
 }
@@ -749,6 +809,14 @@ size_t ParallelSize_DynamicRange::get_num_strides(
 }
 
 size_t ParallelSize_StructFor::get_num_strides(GLSLLauncher *launcher) const {
+  TI_NOT_IMPLEMENTED;
+}
+
+CompiledKernel *ParallelSize::get_indirect_evaluator() {
+  TI_NOT_IMPLEMENTED;
+}
+
+CompiledKernel *ParallelSize_DynamicRange::get_indirect_evaluator() {
   TI_NOT_IMPLEMENTED;
 }
 
@@ -781,6 +849,20 @@ int CompiledProgram::lookup_or_add_string(const std::string &str) {
 void CompiledProgram::launch(Context &ctx, GLSLLauncher *launcher) const {
   impl->launch(ctx, launcher);
 }
+
+CompiledKernel::CompiledKernel(const std::string &kernel_name_,
+                               const std::string &kernel_source_code,
+                               std::unique_ptr<ParallelSize> ps_)
+    : impl(std::make_unique<Impl>(kernel_name_,
+                                  kernel_source_code,
+                                  std::move(ps_))) {
+}
+
+void CompiledKernel::dispatch_compute(GLSLLauncher *launcher) const {
+  impl->dispatch_compute(launcher);
+}
+
+CompiledKernel::~CompiledKernel() = default;
 
 GLSLLauncher::~GLSLLauncher() = default;
 

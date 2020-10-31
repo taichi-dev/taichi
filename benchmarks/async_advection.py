@@ -7,7 +7,7 @@ from utils import benchmark_async
 
 
 @benchmark_async
-def advection_2d(scale):
+def simple_advection(scale):
     n = 128 * 2**int((math.log(scale, 2)) // 2)
     x = ti.Vector.field(3, dtype=ti.f32, shape=(n, n))
     new_x = ti.Vector.field(3, dtype=ti.f32, shape=(n, n))
@@ -122,4 +122,4 @@ def advection_2d(scale):
 
 
 if __name__ == '__main__':
-    advection_2d()
+    simple_advection()

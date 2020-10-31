@@ -16,6 +16,9 @@ struct _msg_entry_t {
 };
 
 layout(std430, binding = 6) buffer runtime {
+  int _indirect_x_;
+  int _indirect_y_;
+  int _indirect_z_;
   int _rand_state_;
   int _msg_count_;
   // TODO: move msg buf to gtmp
@@ -46,6 +49,9 @@ struct GLSLMsgEntry {
 };
 
 struct GLSLRuntime {
+  int indirect_x;
+  int indirect_y;
+  int indirect_z;
   int rand_state;
   int msg_count;
   GLSLMsgEntry msg_buf[MAX_MESSAGES];

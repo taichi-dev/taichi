@@ -8,7 +8,7 @@ from mpm_solver import MPMSolver
 
 write_to_disk = False
 
-ti.init(arch=ti.cpu, async_mode=True)
+ti.init(arch=ti.cpu, async_mode=True, debug=True)
         # async_opt_intermediate_file="mpm")  # Try to run on GPU
 
 gui = ti.GUI("Taichi Elements", res=512, background_color=0x112F41,
@@ -17,7 +17,6 @@ gui = ti.GUI("Taichi Elements", res=512, background_color=0x112F41,
 mpm = MPMSolver(res=(128, 128))
 
 for i in range(3):
-    print('add cube', i)
     mpm.add_cube(lower_corner=[0.2 + i * 0.1, 0.3 + i * 0.1],
                  cube_size=[0.1, 0.1],
                  material=MPMSolver.material_elastic)
@@ -25,7 +24,7 @@ for i in range(3):
 ti.sync()
 t = time.time()
 for frame in range(2):
-    mpm.step(8e-3, print_stat=True)
+    mpm.step(8e-3, print_stat=False)
     if frame < 500:
         mpm.add_cube(lower_corner=[0.1, 0.8],
                      cube_size=[0.01, 0.05],
@@ -44,6 +43,9 @@ for frame in range(2):
             material=MPMSolver.material_snow)
     colors = np.array([0x068587, 0xED553B, 0xEEEEF0, 0xFFFF00],
                       dtype=np.uint32)
+    print(frame, 'sync')
+    ti.sync()
+    print(frame, 'sync done')
     # particles = mpm.particle_info()
     # gui.circles(particles['position'],
     #             radius=1.5,

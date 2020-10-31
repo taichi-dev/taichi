@@ -223,17 +223,29 @@ class MPMSolver:
 
     @ti.kernel
     def clear_next_grid(self):
+        for I in ti.grouped(self.grid_m2):
+            self.grid_m2[I] = 0
+            self.grid_v2[I] = [0,] * self.dim
+
+
+    @ti.kernel
+    def clear_this_grid(self):
         for I in ti.grouped(self.grid_m):
             self.grid_m[I] = 0
             self.grid_v[I] = [0,] * self.dim
+
+    @ti.kernel
+    def clear_pid(self):
+        for I in ti.grouped(self.pid):
+            self.pid[I] = 0
 
 
     @ti.kernel
     def p2g(self, dt: ti.f32):
         ti.no_activate(self.particle)
         ti.block_dim(256)
-        # ti.cache_shared(*self.grid_v.entries)
-        # ti.cache_shared(self.grid_m)
+        ti.cache_shared(*self.grid_v.entries)
+        ti.cache_shared(self.grid_m)
         for I in ti.grouped(self.pid):
             p = self.pid[I]
             p = ti.loop_unique(p)
@@ -440,13 +452,24 @@ class MPMSolver:
             self.x[p] += dt * self.v[p]  # advection
 
     def step(self, frame_dt, print_stat=False):
+        print('step begin')
+
+        print('test')
+        print(f'num particles={self.n_particles[None]}')
+        print('test done')
         begin_t = time.time()
         begin_substep = self.total_substeps
 
         substeps = int(frame_dt / self.default_dt) + 1
 
-        self.grid1.deactivate_all()
-        self.grid2.deactivate_all()
+        self.clear_this_grid()
+        self.clear_next_grid()
+        # self.grid1.deactivate_all()
+        # self.grid2.deactivate_all()
+
+        print('test1')
+        print(f'num particles={self.n_particles[None]}')
+        print('test done')
         for i in range(substeps):
             self.total_substeps += 1
             dt = frame_dt / substeps
@@ -455,16 +478,29 @@ class MPMSolver:
             self.grid_v, self.grid_v2 = self.grid_v2, self.grid_v
             self.pid, self.pid2 = self.pid2, self.pid
             if i == 0:
+                self.clear_pid()
                 self.build_pid()
+
+            print('test2')
+            print(f'num particles={self.n_particles[None]}')
+            print('test done')
             self.p2g(dt)
+
+            print('test3')
+            print(f'num particles={self.n_particles[None]}')
+            print('test done')
             self.clear_next_grid()
-            self.pid.snode.deactivate_all()
+            self.clear_pid()
             self.build_pid()
             self.grid_normalization_and_gravity(dt)
             for p in self.grid_postprocess:
                 p(dt)
             self.g2p(dt)
 
+
+        print('test')
+        print(f'num particles={self.n_particles[None]}')
+        print('test done')
         if print_stat:
             ti.kernel_profiler_print()
             try:
@@ -476,6 +512,9 @@ class MPMSolver:
             print(
                 f'  substep time {1000 * (time.time() - begin_t) / (self.total_substeps - begin_substep):.3f} ms'
             )
+
+        print('step end')
+        print(f'num particles={self.n_particles[None]}')
 
     @ti.func
     def seed_particle(self, i, x, material, color, velocity):
@@ -518,23 +557,33 @@ class MPMSolver:
                  color=0xFFFFFF,
                  sample_density=None,
                  velocity=None):
+        print('add_cube begin')
+        print(f'num particles={self.n_particles[None]}')
         if sample_density is None:
             sample_density = 2 ** self.dim
+        print('add_cube begin')
         vol = 1
         for i in range(self.dim):
             vol = vol * cube_size[i]
         num_new_particles = int(sample_density * vol / self.dx ** self.dim + 1)
+
+        print('add_cube begin')
+        print('num_new_particles=', num_new_particles)
         assert self.n_particles[
                    None] + num_new_particles <= self.max_num_particles
 
+        print('add_cube begin')
         for i in range(self.dim):
             self.source_bound[0][i] = lower_corner[i]
             self.source_bound[1][i] = cube_size[i]
 
+        print('add_cube begin')
         self.set_source_velocity(velocity=velocity)
 
+        print('add_cube begin')
         self.seed(num_new_particles, material, color)
         self.n_particles[None] += num_new_particles
+        print('add_cube end')
 
     @ti.func
     def random_point_in_unit_sphere(self):

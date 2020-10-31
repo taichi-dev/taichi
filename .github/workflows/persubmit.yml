@@ -58,7 +58,7 @@ jobs:
           ti test -vr2 -t2
 
   build_and_test_cuda:
-    name: Build and Test (CUDA)
+    name: Build and Test (CUDA and OpenGL)
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip ci') && github.event.sender.login != 'taichi-gardener' }}
     runs-on: [zhen]
     steps:
@@ -66,9 +66,6 @@ jobs:
 
       - name: Build
         run: |
-          export DISPLAY=:2
-          glewinfo
-          glxgears
           git --version
           export TAICHI_REPO_DIR=`pwd`
           export PATH=/home/github/taichi-llvm/bin/:$PATH
@@ -85,6 +82,8 @@ jobs:
           export PATH=$TAICHI_REPO_DIR/bin:$PATH
           export PATH=/home/github/taichi-llvm/bin/:$PATH
           export PYTHONPATH=$TAICHI_REPO_DIR/python
+          export DISPLAY=:2
+          glewinfo
           $PYTHON examples/laplace.py
           ti diagnose
           ti test -vr2 -t2

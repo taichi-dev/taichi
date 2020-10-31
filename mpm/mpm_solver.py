@@ -55,31 +55,16 @@ class MPMSolver:
 
 
         if use2:
-            # grid node momentum/velocity
-            # self.grid_v2 = ti.Vector(self.dim, dt=ti.f32)
-            # grid node mass
             self.grid_m2 = ti.var(dt=ti.f32)
 
-            # self.pid2 = ti.var(ti.i32)
-
-
             block_component(block2, self.grid_m2)
-            # for v in self.grid_v2.entries:
-            #     block_component(block2, v)
 
 
         block.dynamic(ti.indices(self.dim),
                       1024 * 1024,
                       chunk_size=self.leaf_block_size ** self.dim * 8).place(
             self.pid, offset=offset + (0,))
-        if use2:
-            pass
-            # block2.dynamic(ti.indices(self.dim),
-            #               1024 * 1024,
-            #               chunk_size=self.leaf_block_size ** self.dim * 8).place(
-            #     self.pid2, offset=offset + (0,))
-
-
+        
         self.particle = ti.root.dynamic(ti.i, max_num_particles, 2 ** 20)
         self.particle.place(self.x)
 

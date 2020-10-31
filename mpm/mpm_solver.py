@@ -1,43 +1,8 @@
 import taichi as ti
-import numpy as np
-import time
-import numbers
 import math
-import multiprocessing as mp
-
-USE_IN_BLENDER = False
-
-ti.require_version(0, 6, 22)
-
 
 @ti.data_oriented
 class MPMSolver:
-    material_water = 0
-    material_elastic = 1
-    material_snow = 2
-    material_sand = 3
-    materials = {
-        'WATER': material_water,
-        'ELASTIC': material_elastic,
-        'SNOW': material_snow,
-        'SAND': material_sand
-    }
-
-    # Surface boundary conditions
-
-    # Stick to the boundary
-    surface_sticky = 0
-    # Slippy boundary
-    surface_slip = 1
-    # Slippy and free to separate
-    surface_separate = 2
-
-    surfaces = {
-        'STICKY': surface_sticky,
-        'SLIP': surface_slip,
-        'SEPARATE': surface_separate
-    }
-
     grid_size = 1024
 
     def __init__(
@@ -46,7 +11,6 @@ class MPMSolver:
             size=1,
             max_num_particles=2 ** 27,
             # Max 128 MB particles
-            padding=3,
             unbounded=False,
             dt_scale=1,
             E_scale=1,
@@ -102,10 +66,7 @@ class MPMSolver:
         if use2:
             self.grid2 = ti.root.dense(indices, self.grid_size // grid_block_size)
 
-        if self.dim == 2:
-            self.leaf_block_size = 16
-        else:
-            self.leaf_block_size = 8
+        self.leaf_block_size = 16
 
         block = self.grid1.pointer(indices,
                                   grid_block_size // self.leaf_block_size)
@@ -146,28 +107,10 @@ class MPMSolver:
             #               chunk_size=self.leaf_block_size ** self.dim * 8).place(
             #     self.pid2, offset=offset + (0,))
 
-        self.padding = padding
-
-        # Young's modulus and Poisson's ratio
-        self.E, self.nu = 1e6 * size * E_scale, 0.2
-        # Lame parameters
-        self.mu_0, self.lambda_0 = self.E / (
-                2 * (1 + self.nu)), self.E * self.nu / ((1 + self.nu) *
-                                                        (1 - 2 * self.nu))
-
-        # Sand parameters
-        friction_angle = math.radians(45)
-        sin_phi = math.sin(friction_angle)
-        self.alpha = math.sqrt(2 / 3) * 2 * sin_phi / (3 - sin_phi)
 
         self.particle = ti.root.dynamic(ti.i, max_num_particles, 2 ** 20)
         self.particle.place(self.x, self.v, self.C, self.F, self.material,
                             self.color, self.Jp)
-
-        self.total_substeps = 0
-        self.unbounded = unbounded
-
-        self.writers = []
 
 
     def step(self, frame_dt, print_stat=False):

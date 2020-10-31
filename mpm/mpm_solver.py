@@ -13,9 +13,9 @@ grid2.place(y)
 ti.get_runtime().prog.print_snode_tree()
 
 @ti.kernel
-def snode_deactivate():
-    ti.deactivate(ptr, [0])
+def foo():
+    ti.activate(ptr, [0])
 
-snode_deactivate()
+foo()
 ti.sync()
 print('successfully finishes')

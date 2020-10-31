@@ -149,12 +149,13 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
           auto s = snode;
           while (s) {
             bool kernel_forces_no_activate =
-                std::find(t.kernel->no_activate.begin(), t.kernel->no_activate.end(),
+                std::find(t.kernel->no_activate.begin(),
+                          t.kernel->no_activate.end(),
                           snode) != t.kernel->no_activate.end();
 
             // Do not record dense SNodes' mask states.
-            auto needs_activation = snode->need_activation() &&
-                !kernel_forces_no_activate;
+            auto needs_activation =
+                snode->need_activation() && !kernel_forces_no_activate;
             if (needs_activation) {
               meta.input_states.emplace(s, AsyncState::Type::mask);
               meta.output_states.emplace(s, AsyncState::Type::mask);

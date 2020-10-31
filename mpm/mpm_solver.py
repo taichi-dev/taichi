@@ -4,8 +4,7 @@ import taichi as ti
 class MPMSolver:
     grid_size = 1024
 
-    def __init__(
-            self):
+    def __init__(self):
         self.dim = 2
         
         indices = ti.ij
@@ -23,9 +22,6 @@ class MPMSolver:
 
         block = self.grid1.pointer(indices,
                                   grid_block_size // self.leaf_block_size)
-        if use2:
-            block2 = self.grid2.dense(indices,
-                                       grid_block_size // self.leaf_block_size)
 
         def block_component(blk, c):
             blk.dense(indices, self.leaf_block_size).place(c)
@@ -33,6 +29,8 @@ class MPMSolver:
         block_component(block, self.grid_m)
 
         if use2:
+            block2 = self.grid2.dense(indices,
+                                      grid_block_size // self.leaf_block_size)
             self.grid_m2 = ti.var(dt=ti.f32)
 
             block_component(block2, self.grid_m2)

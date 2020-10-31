@@ -17,6 +17,7 @@ CompileConfig::CompileConfig() {
   advanced_optimization = true;
   max_vector_width = 8;
   debug = false;
+  cfg_optimization = true;
   check_out_of_bound = false;
   lazy_compilation = true;
   serial_schedule = false;

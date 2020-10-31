@@ -150,6 +150,9 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(GlobalStoreStmt *stmt) {
+    if (stmt->ptr->ret_type.ptr_removed()->is<CustomIntType>()) {
+      return;
+    }
     auto promoted =
         promoted_type(stmt->ptr->ret_type.ptr_removed(), stmt->data->ret_type);
     auto input_type = stmt->data->ret_data_type_name();
@@ -264,9 +267,20 @@ class TypeCheck : public IRVisitor {
     }
 
     if (stmt->lhs->ret_type != stmt->rhs->ret_type) {
+      auto promote_custom_int_type = [&](Stmt *stmt, Stmt *hs) {
+        if (hs->ret_type->is<CustomIntType>()) {
+          if (hs->ret_type->cast<CustomIntType>()->get_is_signed())
+            return insert_type_cast_before(stmt, hs, get_data_type<int32>());
+          else
+            return insert_type_cast_before(stmt, hs, get_data_type<uint32>());
+        }
+        return hs;
+      };
+      stmt->lhs = promote_custom_int_type(stmt, stmt->lhs);
+      stmt->rhs = promote_custom_int_type(stmt, stmt->rhs);
       auto ret_type = promoted_type(stmt->lhs->ret_type, stmt->rhs->ret_type);
       if (ret_type != stmt->lhs->ret_type) {
-        // promote rhs
+        // promote lhs
         auto cast_stmt = insert_type_cast_before(stmt, stmt->lhs, ret_type);
         stmt->lhs = cast_stmt;
       }

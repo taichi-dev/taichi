@@ -127,11 +127,13 @@ inline bool is_integral(DataType dt) {
          dt->is_primitive(PrimitiveTypeID::u8) ||
          dt->is_primitive(PrimitiveTypeID::u16) ||
          dt->is_primitive(PrimitiveTypeID::u32) ||
-         dt->is_primitive(PrimitiveTypeID::u64);
+         dt->is_primitive(PrimitiveTypeID::u64) || dt->is<CustomIntType>();
 }
 
 inline bool is_signed(DataType dt) {
   TI_ASSERT(is_integral(dt));
+  if (auto t = dt->cast<CustomIntType>())
+    return t->get_is_signed();
   return dt->is_primitive(PrimitiveTypeID::i8) ||
          dt->is_primitive(PrimitiveTypeID::i16) ||
          dt->is_primitive(PrimitiveTypeID::i32) ||

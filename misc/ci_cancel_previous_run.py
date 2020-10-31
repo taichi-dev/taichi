@@ -25,7 +25,7 @@ def send_request(url):
     rl = res.getheader('X-Ratelimit-Limit', None)
     rl_remain = res.getheader('X-Ratelimit-Remaining', None)
     logging.debug(
-        f'request={url} rate_limit={rl} rate_limit_remaining={rl_remain}')
+        'request=%s rate_limit=%s rate_limit_remaining=%s', url, rl, rl_remain)
     return res
 
 
@@ -54,7 +54,7 @@ def get_workflow_runs(page_id):
 
 def is_desired_workflow(run_json):
     """
-    Checks if this run is for the "Presubmit Checks" workflow.
+    Checks if this run is for the "Persubmit Checks" workflow.
     """
     # Each workflow has a fixed ID.
     # For the "Persubmit Checks" workflow, it is:
@@ -76,70 +76,38 @@ def locate_workflow_run_id(sha):
     return ''
 
 
-CHECK_STILL_RUNNING = 1
-CHECK_FOUND_FAILED_JOB = 2
-CHECK_ALL_JOBS_SUCCEEDED = 3
-
-
-def check_all_jobs(jobs):
-    # Denotes if there is still any job that has not completed yet.
-    still_running = False
-    for j in jobs:
-        name = j['name']
-        if not name.startswith('Build and Test'):
-            continue
-
-        job_id = j['id']
-        # https://developer.github.com/v3/checks/runs/#create-a-check-run
-        status = j['status']
-        if status != 'completed':
-            logging.debug(
-                f'  job={job_id} name={name} still running, status={status}')
-            still_running = True
-            continue
-
-        concl = j['conclusion']
-        if concl != 'success':
-            # If we ever find a failed job, the entire check has failed.
-            logging.warning(
-                f'  job={job_id} name={name} failed, conclusion={concl}')
-            return CHECK_FOUND_FAILED_JOB
-
-    return CHECK_STILL_RUNNING if still_running else CHECK_ALL_JOBS_SUCCEEDED
-
-
-def get_status_of_run(run_id):
+def cancel_workflow_run(run_id):
     """
-    Waits for run identified by |run_id| to complete and returns its status.
+    Cancels the workflow run identified by |run_id|.
 
-    Instead of waiting for the result of the entire workflow run, we only wait
-    on those "Build and Test" jobs. The reason is that when jobs like code
-    format failed, the entire workflow run will be marked as failed, yet
-    @taichi-gardener will automatically make another commit to format the code.
-    However, if this check relies on the previous workflow's result, it will be
-    marked as failed again...
+    I gave up trying to utilize the existing actions such as
+    https://github.com/marketplace/actions/cancel-workflow-action
+    It kept giving me "Error while cancelling workflow_id 1291024:
+    Resource not accessible by integration"
+
+    Some issues reported around this:
+    * https://github.com/styfle/cancel-workflow-action/issues/7
+    * https://github.com/styfle/cancel-workflow-action/issues/8
+    * https://github.community/t/github-actions-are-severely-limited-on-prs/18179#M9249
+    and many more...
+
+    Whatever, github.
     """
-    url = make_api_url(f'actions/runs/{run_id}/jobs')
-    start = time.time()
-    retries = 0
-    MAX_TIMEOUT = 60 * 60  # 1 hour
-    while True:
+    url = make_api_url(f'actions/runs/{run_id}')
+    MAX_RETRIES = 20
+    for r in range(MAX_RETRIES):
         f = send_request(url)
         j = json.loads(f.read())
-        check_result = check_all_jobs(j['jobs'])
-        if check_result != CHECK_STILL_RUNNING:
-            ok = check_result == CHECK_ALL_JOBS_SUCCEEDED
-            logging.info(f'Done checking the jobs in run={run_id}. ok={ok}')
-            return ok
-
-        if time.time() - start > MAX_TIMEOUT:
-            logging.warning(f'Timed out waiting for run={run_id}')
-            return False
-        retries += 1
-        logging.info(
-            f'Waiting to get the status of run={run_id} (url={url}). retries={retries}'
-        )
-        time.sleep(60)
+        
+        status = j['status']
+        if status not in {'queued', 'in_progress'}:
+          logging.info('Wrkflow run=%s done, conclusion=%s', run_id, j['conclusion'])
+          return True
+        
+        cancel_url = j['cancel_url']
+        f = send_request(cancel_url)
+        logging.debug('[%d] Issued cancel requeest (url=%s) to workflow run=%s, waiting for the status...', r, cancel_url, run_id)
+        time.sleep(30)
     return False
 
 
@@ -162,25 +130,24 @@ def main():
     pr = args.pr
     commits = get_commits(pr)
     num_commits = len(commits)
-    logging.debug(f'\nPR={pr} #commits={num_commits}')
+    logging.debug('\nPR=%s #commits=%d', pr, num_commits)
 
     head_sha = args.sha
     prev_sha = locate_previous_commit_sha(commits, head_sha)
-    logging.debug(f'SHA: head={head_sha} prev={prev_sha}')
+    logging.debug(f'SHA: head=%s prev=%s', head_sha, prev_sha)
     if prev_sha is None:
-        logging.info(f'First commit in PR={pr}, no previous run to check')
+        logging.info('First commit in PR=%s, no previous run to check', pr)
         # First commit in the PR
         return 0
 
     run_id = locate_workflow_run_id(prev_sha)
     if not run_id:
-        logging.warning(f'Could not find the workflow run for SHA={prev_sha}')
+        logging.warning('Could not find the workflow run for SHA=%s', prev_sha)
         return 0
 
-    logging.info(f'Prev commit: SHA={prev_sha} workflow_run_id={run_id}')
-    run_ok = get_status_of_run(run_id)
-    logging.info(f'workflow_run_id={run_id} ok={run_ok}')
-    return 0 if run_ok else 1
+    logging.info('Prev commit: SHA=%s workflow_run_id=%s', prev_sha, run_id)
+    done = cancel_workflow_run(run_id)
+    return 0 if done else 1
 
 
 if __name__ == '__main__':

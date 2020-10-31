@@ -220,6 +220,14 @@ class MPMSolver:
                       p)
 
     @ti.kernel
+    def build_pid2(self):
+        ti.block_dim(64)
+        for p in self.x:
+            base = int(ti.floor(self.x[p] * self.inv_dx - 0.5))
+            ti.append(self.pid2.parent(), base - ti.Vector(list(self.offset)),
+                      p)
+
+    @ti.kernel
     def clear_next_grid(self):
         for I in ti.grouped(self.grid_m2):
             self.grid_m2[I] = 0
@@ -481,13 +489,13 @@ class MPMSolver:
                 self.grid_v, self.grid_v2 = self.grid_v2, self.grid_v
                 self.pid, self.pid2 = self.pid2, self.pid
                 if i == 0:
-                    self.clear_pid()
                     self.build_pid()
 
                 self.p2g(dt)
-                self.clear_next_grid()
-                self.clear_pid()
+                self.grid2.deactivate_all()
+                self.pid.snode.deactivate_all()
                 self.build_pid()
+                self.build_pid2()
                 self.grid_normalization_and_gravity(dt)
                 for p in self.grid_postprocess:
                     p(dt)

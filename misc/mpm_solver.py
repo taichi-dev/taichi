@@ -106,8 +106,6 @@ class MPMSolver:
 
         block = self.grid1.pointer(indices,
                                   grid_block_size // self.leaf_block_size)
-        block2 = self.grid2.pointer(indices,
-                                   grid_block_size // self.leaf_block_size)
 
         def block_component(blk, c):
             blk.dense(indices, self.leaf_block_size).place(c, offset=offset)
@@ -124,16 +122,17 @@ class MPMSolver:
 
         self.pid2 = ti.var(ti.i32)
 
-
-        block_component(block2, self.grid_m2)
-        for v in self.grid_v2.entries:
-            block_component(block2, v)
-
-
         block.dynamic(ti.indices(self.dim),
                       1024 * 1024,
                       chunk_size=self.leaf_block_size ** self.dim * 8).place(
             self.pid, offset=offset + (0,))
+
+        block2 = self.grid2.pointer(indices,
+                                    grid_block_size // self.leaf_block_size)
+        block_component(block2, self.grid_m2)
+        for v in self.grid_v2.entries:
+            block_component(block2, v)
+
         block2.dynamic(ti.indices(self.dim),
                       1024 * 1024,
                       chunk_size=self.leaf_block_size ** self.dim * 8).place(
@@ -457,30 +456,43 @@ class MPMSolver:
 
         substeps = int(frame_dt / self.default_dt) + 1
 
-        self.clear_this_grid()
-        self.clear_next_grid()
-        # self.grid1.deactivate_all()
-        # self.grid2.deactivate_all()
-
-        for i in range(substeps):
-            self.total_substeps += 1
+        if True:  # before
+            for i in range(substeps):
+                self.total_substeps += 1
             dt = frame_dt / substeps
 
-            self.grid_m, self.grid_m2 = self.grid_m2, self.grid_m
-            self.grid_v, self.grid_v2 = self.grid_v2, self.grid_v
-            self.pid, self.pid2 = self.pid2, self.pid
-            if i == 0:
-                self.clear_pid()
-                self.build_pid()
-
-            self.p2g(dt)
-            self.clear_next_grid()
-            self.clear_pid()
+            self.grid1.deactivate_all()
             self.build_pid()
+            self.p2g(dt)
             self.grid_normalization_and_gravity(dt)
             for p in self.grid_postprocess:
                 p(dt)
             self.g2p(dt)
+        else:  # after
+            self.clear_this_grid()
+            self.clear_next_grid()
+            # self.grid1.deactivate_all()
+            # self.grid2.deactivate_all()
+
+            for i in range(substeps):
+                self.total_substeps += 1
+                dt = frame_dt / substeps
+
+                self.grid_m, self.grid_m2 = self.grid_m2, self.grid_m
+                self.grid_v, self.grid_v2 = self.grid_v2, self.grid_v
+                self.pid, self.pid2 = self.pid2, self.pid
+                if i == 0:
+                    self.clear_pid()
+                    self.build_pid()
+
+                self.p2g(dt)
+                self.clear_next_grid()
+                self.clear_pid()
+                self.build_pid()
+                self.grid_normalization_and_gravity(dt)
+                for p in self.grid_postprocess:
+                    p(dt)
+                self.g2p(dt)
 
         if print_stat:
             ti.kernel_profiler_print()

@@ -7,10 +7,7 @@ class MPMSolver:
     def __init__(
             self):
         self.dim = 2
-
-        self.pid = ti.var(ti.i32)
-        # position
-
+        
         indices = ti.ij
 
         self.grid_m = ti.var(dt=ti.f32)
@@ -40,12 +37,6 @@ class MPMSolver:
 
             block_component(block2, self.grid_m2)
 
-
-        block.dynamic(ti.indices(self.dim),
-                      1024 * 1024,
-                      chunk_size=self.leaf_block_size ** self.dim * 8).place(
-            self.pid)
-        
 
 ti.init(arch=ti.cpu, async_mode=False, debug=True)
 

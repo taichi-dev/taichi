@@ -323,10 +323,11 @@ void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
             llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
       }
     } else if (!is_real(from) && !is_real(to)) {
-      // todo: implement casting into custom integer type
+      // TODO: implement casting into custom integer type
       TI_ASSERT(!to->is<CustomIntType>());
       auto from_size = 0;
       if (from->is<CustomIntType>()) {
+        // TODO: replace 32 with a customizable type
         from_size = 32;
       } else {
         from_size = data_type_size(from);

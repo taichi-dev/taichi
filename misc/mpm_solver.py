@@ -97,7 +97,6 @@ class MPMSolver:
 
         grid_block_size = 128
         self.grid1 = ti.root.pointer(indices, self.grid_size // grid_block_size)
-        self.grid2 = ti.root.pointer(indices, self.grid_size // grid_block_size)
 
         if self.dim == 2:
             self.leaf_block_size = 16
@@ -114,6 +113,10 @@ class MPMSolver:
         for v in self.grid_v.entries:
             block_component(block, v)
 
+        block.dynamic(ti.indices(self.dim),
+                      1024 * 1024,
+                      chunk_size=self.leaf_block_size ** self.dim * 8).place(
+            self.pid, offset=offset + (0,))
 
         # grid node momentum/velocity
         self.grid_v2 = ti.Vector(self.dim, dt=ti.f32)
@@ -122,11 +125,7 @@ class MPMSolver:
 
         self.pid2 = ti.var(ti.i32)
 
-        block.dynamic(ti.indices(self.dim),
-                      1024 * 1024,
-                      chunk_size=self.leaf_block_size ** self.dim * 8).place(
-            self.pid, offset=offset + (0,))
-
+        self.grid2 = ti.root.pointer(indices, self.grid_size // grid_block_size)
         block2 = self.grid2.pointer(indices,
                                     grid_block_size // self.leaf_block_size)
         block_component(block2, self.grid_m2)
@@ -423,7 +422,7 @@ class MPMSolver:
     @ti.kernel
     def g2p(self, dt: ti.f32):
         ti.block_dim(256)
-        # ti.cache_shared(*self.grid_v.entries)
+        ti.cache_shared(*self.grid_v.entries)
         ti.no_activate(self.particle)
         for I in ti.grouped(self.pid):
             p = self.pid[I]

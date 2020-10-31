@@ -446,29 +446,9 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
   auto edge_fusible = [&](int a, int b) {
     TI_PROFILER("edge_fusible");
 
-    //    if (nodes[a]->string().find("g2p") != std::string::npos &&
-    //        nodes[a]->string().find("struct_for") != std::string::npos &&
-    //        nodes[b]->string().find("p2g") != std::string::npos &&
-    //        nodes[b]->string().find("struct_for") != std::string::npos) {
-    //      TI_WARN("check {} {}", nodes[a]->string(), nodes[b]->string());
-    //    }
     // Check if a and b are fusible if there is an edge (a, b).
     if (fused[a] || fused[b] || !fusion_meta[a].fusible ||
         fusion_meta[a] != fusion_meta[b]) {
-      //      if (nodes[a]->string().find("g2p") != std::string::npos &&
-      //          nodes[a]->string().find("struct_for") != std::string::npos &&
-      //          nodes[b]->string().find("p2g") != std::string::npos &&
-      //          nodes[b]->string().find("struct_for") != std::string::npos) {
-      //        TI_WARN("gg {} {} {} {}", nodes[a]->string(),
-      //        nodes[b]->string(),
-      //                !fusion_meta[a].fusible, fusion_meta[a] !=
-      //                fusion_meta[b]);
-      //        if (fusion_meta[a] != fusion_meta[b]) {
-      //          TI_WARN("snode: {} {}",
-      //                  fusion_meta[a].snode->get_node_type_name_hinted(),
-      //                  fusion_meta[b].snode->get_node_type_name_hinted());
-      //        }
-      //      }
       return false;
     }
     if (nodes[a]->meta->type != OffloadedTaskType::serial) {
@@ -483,19 +463,6 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
         if (state.second.find(nodes[b]) != state.second.end()) {
           if (nodes[a]->meta->loop_unique.count(snode) == 0 ||
               nodes[b]->meta->loop_unique.count(snode) == 0) {
-            //            if (nodes[a]->string().find("g2p") !=
-            //            std::string::npos &&
-            //                nodes[a]->string().find("struct_for") !=
-            //                std::string::npos &&
-            //                nodes[b]->string().find("p2g") !=
-            //                std::string::npos &&
-            //                nodes[b]->string().find("struct_for") !=
-            //                std::string::npos) {
-            //              TI_WARN("not_loop_unique {} {} on {} (value?={})",
-            //                      nodes[a]->string(), nodes[b]->string(),
-            //                      snode->get_node_type_name_hinted(),
-            //                      (sty == AsyncState::Type::value));
-            //            }
             return false;
           }
           TI_ASSERT(nodes[a]->rec.stmt()->id == 0);
@@ -507,16 +474,6 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
     // check if a doesn't have a path to b of length >= 2
     auto a_has_path_to_b = has_path[a] & has_path_reverse[b];
     a_has_path_to_b[a] = a_has_path_to_b[b] = false;
-    //    if (nodes[a]->string().find("g2p") != std::string::npos &&
-    //        nodes[a]->string().find("struct_for") != std::string::npos &&
-    //        nodes[b]->string().find("p2g") != std::string::npos &&
-    //        nodes[b]->string().find("struct_for") != std::string::npos) {
-    //      if (!a_has_path_to_b.none())
-    //        TI_WARN("a_has_path_to_b {} {}", nodes[a]->string(),
-    //                nodes[b]->string());
-    //      else
-    //        TI_WARN("OK {} {}", nodes[a]->string(), nodes[b]->string());
-    //    }
     return a_has_path_to_b.none();
   };
 
@@ -1047,8 +1004,6 @@ bool StateFlowGraph::optimize_dead_store() {
   TI_AUTO_PROF
   bool modified = false;
 
-  verify();
-
   auto nodes = get_pending_tasks();
   for (auto &task : nodes) {
     // Dive into this task and erase dead stores
@@ -1121,29 +1076,18 @@ bool StateFlowGraph::optimize_dead_store() {
     }
   }
 
-  verify();
   std::unordered_set<int> to_delete;
   // erase empty blocks
   for (int i = 0; i < (int)nodes.size(); i++) {
     auto &meta = *nodes[i]->meta;
     auto ir = nodes[i]->rec.ir_handle.ir()->cast<OffloadedStmt>();
     const auto mt = meta.type;
-    if (!ir) {
-      TI_ERROR("empty ir");
-    } else if ((mt == OffloadedTaskType::serial ||
-                mt == OffloadedTaskType::struct_for ||
-                mt == OffloadedTaskType::range_for) &&
-               !ir->body) {
-      TI_ERROR("empty body {} {}", offloaded_task_type_name(mt),
-               offloaded_task_type_name(ir->task_type));
-    }
     // Do NOT check ir->body->statements first! |ir->body| could be done when
     // |mt| is not the desired type.
     if ((mt == OffloadedTaskType::serial ||
          mt == OffloadedTaskType::struct_for ||
          mt == OffloadedTaskType::range_for) &&
-        (ir->body->statements.empty())) {
-      //      TI_INFO("SFG DSE deleting {}", i);
+        ir->body->statements.empty()) {
       to_delete.insert(i + first_pending_task_index_);
     }
   }
@@ -1157,7 +1101,7 @@ bool StateFlowGraph::optimize_dead_store() {
   return modified;
 }
 
-void StateFlowGraph::verify() const {
+void StateFlowGraph::verify(bool also_verify_ir) const {
   TI_AUTO_PROF
   // Check nodes
   const int n = nodes_.size();
@@ -1251,15 +1195,17 @@ void StateFlowGraph::verify() const {
     }
   }
 
-  // Check IR
-  for (int i = 1; i < n; i++) {
-    TI_ASSERT_INFO(nodes_[i]->meta->type == nodes_[i]->rec.stmt()->task_type,
-                   "nodes_[{}]({}) has type {}, "
-                   "but its IR has task_type {}",
-                   i, nodes_[i]->string(),
-                   offloaded_task_type_name(nodes_[i]->meta->type),
-                   offloaded_task_type_name(nodes_[i]->rec.stmt()->task_type));
-    irpass::analysis::verify(nodes_[i]->rec.stmt());
+  if (also_verify_ir) {
+    // Check IR
+    for (int i = 1; i < n; i++) {
+      TI_ASSERT_INFO(nodes_[i]->meta->type == nodes_[i]->rec.stmt()->task_type,
+                     "nodes_[{}]({}) has type {}, "
+                     "but its IR has task_type {}",
+                     i, nodes_[i]->string(),
+                     offloaded_task_type_name(nodes_[i]->meta->type),
+                     offloaded_task_type_name(nodes_[i]->rec.stmt()->task_type));
+      irpass::analysis::verify(nodes_[i]->rec.stmt());
+    }
   }
 }
 

@@ -66,6 +66,9 @@ jobs:
 
       - name: Build
         run: |
+          export DISPLAY=:2
+          glewinfo
+          glxgears
           git --version
           export TAICHI_REPO_DIR=`pwd`
           export PATH=/home/github/taichi-llvm/bin/:$PATH

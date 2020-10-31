@@ -48,7 +48,6 @@ def test_custom_int_load_and_store():
 
     ti.root._bit_struct(num_bits=32).place(x, y, z)
     test_case = ti.Vector.field(3, dtype=ti.i32, shape=len(test_case_np))
-    ti.get_runtime().materialize()
     test_case.from_numpy(test_case_np)
 
     @ti.kernel

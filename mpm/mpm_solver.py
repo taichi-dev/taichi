@@ -38,7 +38,7 @@ class MPMSolver:
         'SEPARATE': surface_separate
     }
 
-    grid_size = 4096
+    grid_size = 1024
 
     def __init__(
             self,

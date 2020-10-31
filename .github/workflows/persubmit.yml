@@ -7,14 +7,14 @@ jobs:
   cancel_prev_runs:
     # This action in the market doesn't work...
     # https://github.com/marketplace/actions/cancel-workflow-action
+    name: Cancel Previous Runs
     runs-on: ubuntu-latest
     steps:
-      - name: Cancel Previous Runs
-        - uses: actions/checkout@v2
-        - uses: actions/setup-python@v2
-          with:
-            python-version: 3.8
-        - name: Check the previous run
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Check the previous run
         env:
           PR: ${{ github.event.pull_request.number }}
           SHA: ${{ github.event.pull_request.head.sha }}

@@ -7,16 +7,16 @@ indices = ti.ij
 
 m = ti.field(dtype=ti.f32)
 
-grid_block_size = 128
-grid1 = ti.root.pointer(indices, grid_size // grid_block_size)
+grid_size = 128
+grid1 = ti.root.pointer(indices, grid_size)
 
 use2 = True
 if use2:
-    grid2 = ti.root.dense(indices, grid_size // grid_block_size)
+    grid2 = ti.root.dense(indices, grid_size)
 
 leaf_block_size = 16
 
-grid1.pointer(indices, grid_block_size // leaf_block_size).place(m)
+grid1.pointer(indices, grid_size).place(m)
 
 if use2:
     m2 = ti.field(dtype=ti.f32)

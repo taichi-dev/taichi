@@ -325,21 +325,22 @@ CompiledKernel *ParallelSize::get_indirect_evaluator() {
   return nullptr;
 }
 
+static int n_indirect_evaluators = 0;
+
 CompiledKernel *ParallelSize_DynamicRange::get_indirect_evaluator() {
   if (!indirect_evaluator) {
     auto ps = std::make_unique<ParallelSize_ConstRange>(0);
     size_t SPT = strides_per_thread.value_or(1);
-    size_t TPG = ParallelSize::get_threads_per_block();
     std::string source =
 #include "taichi/backends/opengl/shaders/indirect.glsl.h"
         +fmt::format(
             "\nvoid main() {{\n"
-            "  _compute_indirect({}, {}, {}, {}, {}, {});\n"
+            "  _compute_indirect({}, {}, {}, {}, {}, int(gl_WorkGroupSize.x));\n"
             "}}\n",
-            (int)const_begin, (int)const_end, range_begin, range_end, SPT, TPG);
+            (int)const_begin, (int)const_end, range_begin, range_end, SPT);
     ;
-    indirect_evaluator = std::make_unique<CompiledKernel>(
-        "indirect_evaluator_opengl", source, std::move(ps));
+    std::string name = fmt::format("indirect_evaluator_{}", n_indirect_evaluators++);
+    indirect_evaluator = std::make_unique<CompiledKernel>(name, source, std::move(ps));
   }
   return indirect_evaluator.get();
 }
@@ -503,11 +504,14 @@ struct CompiledKernel::Impl {
        const std::string &kernel_source_code,
        std::unique_ptr<ParallelSize> ps_)
       : kernel_name(kernel_name_), ps(std::move(ps_)) {
+    size_t needle = kernel_source_code.find("precision highp float;\n");
+    TI_ASSERT(needle != std::string::npos);
     source =
-        kernel_source_code +
+        kernel_source_code.substr(0, needle) +
         fmt::format(
-            "layout(local_size_x = {}, local_size_y = 1, local_size_z = 1) in;",
-            ps->get_threads_per_block());
+            "layout(local_size_x = {}, local_size_y = 1, local_size_z = 1) in;\n",
+            ps->get_threads_per_block()) +
+        kernel_source_code.substr(needle);
     display_kernel_info(kernel_name_, source);
     glsl = std::make_unique<GLProgram>(GLShader(source));
     glsl->link();

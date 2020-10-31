@@ -8,6 +8,7 @@ TLANG_NAMESPACE_BEGIN
 struct CompileConfig {
   Arch arch;
   bool debug;
+  bool cfg_optimization;
   bool check_out_of_bound;
   int simd_width;
   bool lazy_compilation;

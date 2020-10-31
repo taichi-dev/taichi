@@ -56,7 +56,18 @@ class ConstExprPropagation : public IRVisitor {
     }
   }
 
+  void visit(TernaryOpStmt *stmt) override {
+    if (generic_test(stmt))
+      return;
+    if (is_inferred_const(stmt->op1) && is_inferred_const(stmt->op2) &&
+        is_inferred_const(stmt->op3)) {
+      const_stmts_.insert(stmt);
+    }
+  }
+
   void visit(IfStmt *stmt) override {
+    // If the condition is constexpr, then the control flow is also considered
+    // const.
     if (is_inferred_const(stmt->cond)) {
       if (stmt->true_statements)
         stmt->true_statements->accept(this);
@@ -69,6 +80,8 @@ class ConstExprPropagation : public IRVisitor {
     for (auto &stmt : block->statements)
       stmt->accept(this);
   }
+
+  // TODO: how do we rigorously define constexpr in RangeFor loops?
 
   static std::unordered_set<Stmt *> run(
       Block *block,

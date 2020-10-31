@@ -685,8 +685,7 @@ std::string StateFlowGraph::dump_dot(const std::optional<std::string> &rankdir,
   std::stringstream ss;
 
   // TODO: expose an API that allows users to highlight a single state
-  AsyncState highlight_state{get_current_program().snodes[14],
-                             AsyncState::Type::mask};
+  AsyncState highlight_state{nullptr, AsyncState::Type::mask};
 
   ss << "digraph {\n";
   auto node_id = [](const SFGNode *n) {
@@ -744,61 +743,59 @@ std::string StateFlowGraph::dump_dot(const std::optional<std::string> &rankdir,
   for (const auto &nd : nodes_) {
     const auto *n = nd.get();
 
-    if (node_selected(nd.get())) {
-      std::stringstream labels;
-      if (!n->is_initial_node && !n->output_edges.empty() &&
-          (n->output_edges.size() < embed_states_threshold)) {
-        // Example:
-        //
-        // |-----------------------|
-        // |        node foo       |
-        // |-----------------------|
-        // |   X_mask  |  X_value  |
-        // |-----------------------|
-        //
-        // label={ node\ foo | { <X_mask> X_mask | <X_value> X_value } }
-        // See DOT node port...
-        labels << "{ " << escaped_label(n->string()) << " | { ";
-        const auto &edges = n->output_edges;
-        for (auto it = edges.begin(); it != edges.end(); ++it) {
-          if (it != edges.begin()) {
-            labels << " | ";
-          }
-          const auto name = it->first.name();
-          // Each state corresponds to one port
-          // "<port> displayed\ text"
-          labels << "<" << name << "> " << escaped_label(name);
+    std::stringstream labels;
+    if (!n->is_initial_node && !n->output_edges.empty() &&
+        (n->output_edges.size() < embed_states_threshold)) {
+      // Example:
+      //
+      // |-----------------------|
+      // |        node foo       |
+      // |-----------------------|
+      // |   X_mask  |  X_value  |
+      // |-----------------------|
+      //
+      // label={ node\ foo | { <X_mask> X_mask | <X_value> X_value } }
+      // See DOT node port...
+      labels << "{ " << escaped_label(n->string()) << " | { ";
+      const auto &edges = n->output_edges;
+      for (auto it = edges.begin(); it != edges.end(); ++it) {
+        if (it != edges.begin()) {
+          labels << " | ";
         }
-        labels << " } }";
-
-        nodes_with_embedded_states.insert(n);
-      } else {
-        // No states embedded.
-        labels << escaped_label(n->string());
-        if (!n->is_initial_node) {
-          labels << fmt::format("\\nhash: 0x{:08x}", n->rec.ir_handle.hash());
-        }
+        const auto name = it->first.name();
+        // Each state corresponds to one port
+        // "<port> displayed\ text"
+        labels << "<" << name << "> " << escaped_label(name);
       }
+      labels << " } }";
 
-      std::string color;
-      if (highlight_single_state)
-        color = " style=filled fillcolor=red ";
-
-      ss << "  "
-         << fmt::format("{} [label=\"{}\" shape=record {}", node_id(n),
-                        labels.str(), color);
-      if (latest_state_nodes.find(n) != latest_state_nodes.end()) {
-        ss << " peripheries=2";
+      nodes_with_embedded_states.insert(n);
+    } else {
+      // No states embedded.
+      labels << escaped_label(n->string());
+      if (!n->is_initial_node) {
+        labels << fmt::format("\\nhash: 0x{:08x}", n->rec.ir_handle.hash());
       }
-      // Highlight user-defined tasks
-      const auto tt = nd->meta->type;
-      if (!nd->is_initial_node &&
-          (tt == TaskType::range_for || tt == TaskType::struct_for ||
-           tt == TaskType::serial)) {
-        // ss << " style=filled fillcolor=lightgray";
-      }
-      ss << "]\n";
     }
+
+    std::string color;
+    if (highlight_single_state)
+      color = " style=filled fillcolor=red ";
+
+    ss << "  "
+       << fmt::format("{} [label=\"{}\" shape=record {}", node_id(n),
+                      labels.str(), color);
+    if (latest_state_nodes.find(n) != latest_state_nodes.end()) {
+      ss << " peripheries=2";
+    }
+    // Highlight user-defined tasks
+    const auto tt = nd->meta->type;
+    if (!nd->is_initial_node &&
+        (tt == TaskType::range_for || tt == TaskType::struct_for ||
+         tt == TaskType::serial)) {
+      // ss << " style=filled fillcolor=lightgray";
+    }
+    ss << "]\n";
     if (nd->input_edges.empty())
       nodes_with_no_inputs.push_back(n);
   }

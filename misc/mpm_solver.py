@@ -465,7 +465,7 @@ class MPMSolver:
 
         dt = frame_dt / substeps
 
-        if False:  # before
+        if True:  # before
             for i in range(substeps):
                 self.total_substeps += 1
 

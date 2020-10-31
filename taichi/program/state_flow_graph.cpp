@@ -301,8 +301,8 @@ bool StateFlowGraph::optimize_listgen() {
           clear_node->meta = get_task_meta(ir_bank_, clear_node->rec);
         }
 
-        TI_INFO("Common list generation {} and (to erase) {}", node_a->string(),
-                node_b->string());
+        TI_DEBUG("Common list generation {} and (to erase) {}",
+                 node_a->string(), node_b->string());
 
         nodes_to_delete.insert(node_b->node_id);
         erased_any = true;
@@ -446,27 +446,29 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
   auto edge_fusible = [&](int a, int b) {
     TI_PROFILER("edge_fusible");
 
-    if (nodes[a]->string().find("g2p") != std::string::npos &&
-        nodes[a]->string().find("struct_for") != std::string::npos &&
-        nodes[b]->string().find("p2g") != std::string::npos &&
-        nodes[b]->string().find("struct_for") != std::string::npos) {
-      TI_WARN("check {} {}", nodes[a]->string(), nodes[b]->string());
-    }
+    //    if (nodes[a]->string().find("g2p") != std::string::npos &&
+    //        nodes[a]->string().find("struct_for") != std::string::npos &&
+    //        nodes[b]->string().find("p2g") != std::string::npos &&
+    //        nodes[b]->string().find("struct_for") != std::string::npos) {
+    //      TI_WARN("check {} {}", nodes[a]->string(), nodes[b]->string());
+    //    }
     // Check if a and b are fusible if there is an edge (a, b).
     if (fused[a] || fused[b] || !fusion_meta[a].fusible ||
         fusion_meta[a] != fusion_meta[b]) {
-      if (nodes[a]->string().find("g2p") != std::string::npos &&
-          nodes[a]->string().find("struct_for") != std::string::npos &&
-          nodes[b]->string().find("p2g") != std::string::npos &&
-          nodes[b]->string().find("struct_for") != std::string::npos) {
-        TI_WARN("gg {} {} {} {}", nodes[a]->string(), nodes[b]->string(),
-                !fusion_meta[a].fusible, fusion_meta[a] != fusion_meta[b]);
-        if (fusion_meta[a] != fusion_meta[b]) {
-          TI_WARN("snode: {} {}",
-                  fusion_meta[a].snode->get_node_type_name_hinted(),
-                  fusion_meta[b].snode->get_node_type_name_hinted());
-        }
-      }
+      //      if (nodes[a]->string().find("g2p") != std::string::npos &&
+      //          nodes[a]->string().find("struct_for") != std::string::npos &&
+      //          nodes[b]->string().find("p2g") != std::string::npos &&
+      //          nodes[b]->string().find("struct_for") != std::string::npos) {
+      //        TI_WARN("gg {} {} {} {}", nodes[a]->string(),
+      //        nodes[b]->string(),
+      //                !fusion_meta[a].fusible, fusion_meta[a] !=
+      //                fusion_meta[b]);
+      //        if (fusion_meta[a] != fusion_meta[b]) {
+      //          TI_WARN("snode: {} {}",
+      //                  fusion_meta[a].snode->get_node_type_name_hinted(),
+      //                  fusion_meta[b].snode->get_node_type_name_hinted());
+      //        }
+      //      }
       return false;
     }
     if (nodes[a]->meta->type != OffloadedTaskType::serial) {
@@ -481,15 +483,19 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
         if (state.second.find(nodes[b]) != state.second.end()) {
           if (nodes[a]->meta->loop_unique.count(snode) == 0 ||
               nodes[b]->meta->loop_unique.count(snode) == 0) {
-            if (nodes[a]->string().find("g2p") != std::string::npos &&
-                nodes[a]->string().find("struct_for") != std::string::npos &&
-                nodes[b]->string().find("p2g") != std::string::npos &&
-                nodes[b]->string().find("struct_for") != std::string::npos) {
-              TI_WARN("not_loop_unique {} {} on {} (value?={})",
-                      nodes[a]->string(), nodes[b]->string(),
-                      snode->get_node_type_name_hinted(),
-                      (sty == AsyncState::Type::value));
-            }
+            //            if (nodes[a]->string().find("g2p") !=
+            //            std::string::npos &&
+            //                nodes[a]->string().find("struct_for") !=
+            //                std::string::npos &&
+            //                nodes[b]->string().find("p2g") !=
+            //                std::string::npos &&
+            //                nodes[b]->string().find("struct_for") !=
+            //                std::string::npos) {
+            //              TI_WARN("not_loop_unique {} {} on {} (value?={})",
+            //                      nodes[a]->string(), nodes[b]->string(),
+            //                      snode->get_node_type_name_hinted(),
+            //                      (sty == AsyncState::Type::value));
+            //            }
             return false;
           }
           TI_ASSERT(nodes[a]->rec.stmt()->id == 0);
@@ -501,16 +507,16 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
     // check if a doesn't have a path to b of length >= 2
     auto a_has_path_to_b = has_path[a] & has_path_reverse[b];
     a_has_path_to_b[a] = a_has_path_to_b[b] = false;
-    if (nodes[a]->string().find("g2p") != std::string::npos &&
-        nodes[a]->string().find("struct_for") != std::string::npos &&
-        nodes[b]->string().find("p2g") != std::string::npos &&
-        nodes[b]->string().find("struct_for") != std::string::npos) {
-      if (!a_has_path_to_b.none())
-        TI_WARN("a_has_path_to_b {} {}", nodes[a]->string(),
-                nodes[b]->string());
-      else
-        TI_WARN("OK {} {}", nodes[a]->string(), nodes[b]->string());
-    }
+    //    if (nodes[a]->string().find("g2p") != std::string::npos &&
+    //        nodes[a]->string().find("struct_for") != std::string::npos &&
+    //        nodes[b]->string().find("p2g") != std::string::npos &&
+    //        nodes[b]->string().find("struct_for") != std::string::npos) {
+    //      if (!a_has_path_to_b.none())
+    //        TI_WARN("a_has_path_to_b {} {}", nodes[a]->string(),
+    //                nodes[b]->string());
+    //      else
+    //        TI_WARN("OK {} {}", nodes[a]->string(), nodes[b]->string());
+    //    }
     return a_has_path_to_b.none();
   };
 

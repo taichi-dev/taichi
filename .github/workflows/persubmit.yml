@@ -73,7 +73,7 @@ jobs:
           export PYTHON=/usr/bin/python3.7
           $PYTHON misc/ci_setup.py ci
         env:
-          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }}
+          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=${{ matrix.with_cc }}
 
       - name: Test
         run: |

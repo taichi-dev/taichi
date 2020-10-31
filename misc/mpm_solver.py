@@ -123,7 +123,7 @@ class MPMSolver:
         # grid node mass
         self.grid_m2 = ti.var(dt=ti.f32)
 
-        self.pid2 = ti.var(ti.i32)
+        # self.pid2 = ti.var(ti.i32)
 
         self.grid2 = ti.root.pointer(indices, self.grid_size // grid_block_size)
         block2 = self.grid2.pointer(indices,
@@ -132,10 +132,10 @@ class MPMSolver:
         for v in self.grid_v2.entries:
             block_component(block2, v)
 
-        block2.dynamic(ti.indices(self.dim),
-                      1024 * 1024,
-                      chunk_size=self.leaf_block_size ** self.dim * 8).place(
-            self.pid2, offset=offset + (0,))
+        # block2.dynamic(ti.indices(self.dim),
+        #               1024 * 1024,
+        #               chunk_size=self.leaf_block_size ** self.dim * 8).place(
+        #     self.pid2, offset=offset + (0,))
 
         self.padding = padding
 
@@ -476,8 +476,6 @@ class MPMSolver:
                 p(dt)
             self.g2p(dt)
         else:  # after
-            # self.clear_this_grid()
-            # self.clear_next_grid()
             self.grid1.deactivate_all()
             self.grid2.deactivate_all()
 
@@ -487,7 +485,7 @@ class MPMSolver:
 
                 self.grid_m, self.grid_m2 = self.grid_m2, self.grid_m
                 self.grid_v, self.grid_v2 = self.grid_v2, self.grid_v
-                self.pid, self.pid2 = self.pid2, self.pid
+                # self.pid, self.pid2 = self.pid2, self.pid
                 if i == 0:
                     self.build_pid()
 
@@ -495,7 +493,7 @@ class MPMSolver:
                 self.grid2.deactivate_all()
                 self.pid.snode.deactivate_all()
                 self.build_pid()
-                self.build_pid2()
+                # self.build_pid2()
                 self.grid_normalization_and_gravity(dt)
                 for p in self.grid_postprocess:
                     p(dt)

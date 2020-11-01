@@ -44,7 +44,8 @@ class ParallelSize {
   size_t block_dim;
   size_t grid_dim;
   ParallelSize(size_t block_dim = 1, size_t grid_dim = 1)
-    : block_dim(block_dim), grid_dim(grid_dim) {}
+      : block_dim(block_dim), grid_dim(grid_dim) {
+  }
 };
 
 struct CompiledKernel {

@@ -394,8 +394,9 @@ void show_kernel_info(std::string const &kernel_name,
                      taichi::starts_with(kernel_name, "ext_arr_to_") ||
                      taichi::starts_with(kernel_name, "indirect_evaluator_") ||
                      taichi::starts_with(kernel_name, "jit_evaluator_");
-  auto msg = fmt::format("[glsl]\ncompiling kernel {}<<<{}, {}>>>\n{}",
-      kernel_name, ps->grid_dim, ps->block_dim, kernel_source_code);
+  auto msg =
+      fmt::format("[glsl]\ncompiling kernel {}<<<{}, {}>>>\n{}", kernel_name,
+                  ps->grid_dim, ps->block_dim, kernel_source_code);
   if (!is_accessor)
     TI_DEBUG("{}", msg);
   else
@@ -419,10 +420,12 @@ struct CompiledKernel::Impl {
 
     size_t needle = kernel_source_code.find("precision highp float;\n");
     TI_ASSERT(needle != std::string::npos);
-    source =
-        kernel_source_code.substr(0, needle) + fmt::format(
-            "layout(local_size_x = {}, local_size_y = 1, local_size_z = 1) in;\n",
-            ps->block_dim) + kernel_source_code.substr(needle);
+    source = kernel_source_code.substr(0, needle) +
+             fmt::format(
+                 "layout(local_size_x = {}, local_size_y = 1, local_size_z = "
+                 "1) in;\n",
+                 ps->block_dim) +
+             kernel_source_code.substr(needle);
     show_kernel_info(kernel_name_, source, ps.get());
     glsl = std::make_unique<GLProgram>(GLShader(source));
     glsl->link();

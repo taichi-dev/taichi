@@ -8,7 +8,7 @@ x = ti.field(int, N)
 
 @ti.kernel
 def func():
-    for i in range(a[None]):
+    for i in range(N):
         x[i] = i + 1
 
 a[None] = 1023

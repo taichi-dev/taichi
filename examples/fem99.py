@@ -1,8 +1,9 @@
 import taichi as ti
-ti.init(arch=ti.gpu)
+ti.init(arch=ti.opengl, log_level=ti.DEBUG)
 
-N = 32
-dt = 1e-4
+N = 128
+dt = 3e-5
+steps = 48
 dx = 1 / N
 rho = 4e1
 NF = 2 * N ** 2   # number of faces
@@ -90,10 +91,10 @@ while gui.running:
             gui.running = False
         elif e.key == 'r':
             init_pos()
-    for i in range(30):
+    for i in range(steps):
         with ti.Tape(loss=U):
             update_U()
         advance()
-    gui.circles(pos.to_numpy(), radius=2, color=0xffaa33)
+    gui.circles(pos.to_numpy(), radius=1, color=0xffaa33)
     gui.circle(ball_pos, radius=ball_radius * 512, color=0x666666)
     gui.show()

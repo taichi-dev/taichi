@@ -4,6 +4,7 @@
 #include "taichi/ir/visitors.h"
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -56,7 +57,7 @@ class IRNodeComparator : public IRVisitor {
     // and check if it is other_stmt->id
     auto it = id_map.find(this_stmt->id);
     if (it != id_map.end()) {
-      if (it->second != this_stmt->id) {
+      if (it->second != other_stmt->id) {
         same = false;
       }
       return;
@@ -216,7 +217,7 @@ class IRNodeComparator : public IRVisitor {
   static bool run(IRNode *root1,
                   IRNode *root2,
                   std::optional<std::unordered_map<int, int>> id_map) {
-    IRNodeComparator comparator(root2, id_map);
+    IRNodeComparator comparator(root2, std::move(id_map));
     root1->accept(&comparator);
     return comparator.same;
   }
@@ -239,7 +240,7 @@ bool same_statements(IRNode *root1,
     return true;
   if (!root1 || !root2)
     return false;
-  return IRNodeComparator::run(root1, root2, id_map);
+  return IRNodeComparator::run(root1, root2, std::move(id_map));
 }
 bool same_value(Stmt *stmt1,
                 Stmt *stmt2,
@@ -255,7 +256,7 @@ bool same_value(Stmt *stmt1,
   // Note that we do not need to test !stmt2->common_statement_eliminable()
   // because if this condition does not hold,
   // same_statements(stmt1, stmt2) returns false anyway.
-  return same_statements(stmt1, stmt2, id_map);
+  return same_statements(stmt1, stmt2, std::move(id_map));
 }
 }  // namespace irpass::analysis
 

@@ -91,6 +91,9 @@ bool same_value(
     std::optional<std::unordered_map<int, int>> id_map = std::nullopt);
 DiffRange value_diff_loop_index(Stmt *stmt, Stmt *loop, int index_id);
 std::pair<bool, int> value_diff_ptr_index(Stmt *val1, Stmt *val2);
+std::unordered_set<Stmt *> constexpr_prop(
+    Block *block,
+    std::function<bool(Stmt *)> is_const_seed);
 void verify(IRNode *root);
 
 }  // namespace irpass::analysis

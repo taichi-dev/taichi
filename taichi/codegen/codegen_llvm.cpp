@@ -323,7 +323,16 @@ void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
             llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
       }
     } else if (!is_real(from) && !is_real(to)) {
-      if (data_type_size(from) < data_type_size(to)) {
+      // TODO: implement casting into custom integer type
+      TI_ASSERT(!to->is<CustomIntType>());
+      auto from_size = 0;
+      if (from->is<CustomIntType>()) {
+        // TODO: replace 32 with a customizable type
+        from_size = 32;
+      } else {
+        from_size = data_type_size(from);
+      }
+      if (from_size < data_type_size(to)) {
         llvm_val[stmt] = builder->CreateSExt(
             llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
       } else {
@@ -1079,14 +1088,48 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
   TI_ASSERT(!stmt->parent->mask() || stmt->width() == 1);
   TI_ASSERT(llvm_val[stmt->data]);
   TI_ASSERT(llvm_val[stmt->ptr]);
-  builder->CreateStore(llvm_val[stmt->data], llvm_val[stmt->ptr]);
+  if (auto cit = stmt->ptr->ret_type.ptr_removed()->cast<CustomIntType>()) {
+    llvm::Value *byte_ptr = nullptr, *bit_offset = nullptr;
+    read_bit_pointer(llvm_val[stmt->ptr], byte_ptr, bit_offset);
+    builder->CreateCall(
+        get_runtime_function("set_partial_bits_b32"),
+        {builder->CreateBitCast(byte_ptr,
+                                llvm::Type::getInt32PtrTy(*llvm_context)),
+         bit_offset, tlctx->get_constant(cit->get_num_bits()),
+         llvm_val[stmt->data]});
+  } else {
+    builder->CreateStore(llvm_val[stmt->data], llvm_val[stmt->ptr]);
+  }
 }
 
 void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
   int width = stmt->width();
   TI_ASSERT(width == 1);
-  llvm_val[stmt] = builder->CreateLoad(tlctx->get_data_type(stmt->ret_type),
-                                       llvm_val[stmt->ptr]);
+  if (auto cit = stmt->ret_type->cast<CustomIntType>()) {
+    // 1. load bit pointer
+    llvm::Value *byte_ptr, *bit_offset;
+    read_bit_pointer(llvm_val[stmt->ptr], byte_ptr, bit_offset);
+    auto bit_level_container = builder->CreateLoad(builder->CreateBitCast(
+        byte_ptr, llvm::Type::getInt32PtrTy(*llvm_context)));
+    // 2. bit shifting
+    //    first left shift `32 - (offset + num_bits)`
+    //    then right shift `32 - num_bits`
+    auto bit_end = builder->CreateAdd(bit_offset,
+                                      tlctx->get_constant(cit->get_num_bits()));
+    auto left = builder->CreateSub(tlctx->get_constant(32), bit_end);
+    auto right = builder->CreateAdd(tlctx->get_constant(32),
+                                    tlctx->get_constant(-cit->get_num_bits()));
+    auto step1 = builder->CreateShl(bit_level_container, left);
+    llvm::Value *step2 = nullptr;
+    if (cit->get_is_signed())
+      step2 = builder->CreateAShr(step1, right);
+    else
+      step2 = builder->CreateLShr(step1, right);
+    llvm_val[stmt] = step2;
+  } else {
+    llvm_val[stmt] = builder->CreateLoad(tlctx->get_data_type(stmt->ret_type),
+                                         llvm_val[stmt->ptr]);
+  }
 }
 
 void CodeGenLLVM::visit(ElementShuffleStmt *stmt){
@@ -1120,6 +1163,8 @@ std::string CodeGenLLVM::get_runtime_snode_name(SNode *snode) {
     return "Hash";
   } else if (snode->type == SNodeType::bitmasked) {
     return "Bitmasked";
+  } else if (snode->type == SNodeType::bit_struct) {
+    return "BitStruct";
   } else {
     TI_P(snode_type_name(snode->type));
     TI_NOT_IMPLEMENTED
@@ -1204,6 +1249,8 @@ void CodeGenLLVM::visit(SNodeLookupStmt *stmt) {
     }
     llvm_val[stmt] = call(snode, llvm_val[stmt->input_snode], "lookup_element",
                           {llvm_val[stmt->input_index]});
+  } else if (snode->type == SNodeType::bit_struct) {
+    llvm_val[stmt] = parent;
   } else {
     TI_INFO(snode_type_name(snode->type));
     TI_NOT_IMPLEMENTED
@@ -1211,14 +1258,45 @@ void CodeGenLLVM::visit(SNodeLookupStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(GetChStmt *stmt) {
-  auto ch = create_call(
-      stmt->output_snode->get_ch_from_parent_func_name(),
-      {builder->CreateBitCast(llvm_val[stmt->input_ptr],
+  if (stmt->output_snode->is_bit_level) {
+    // 1. create bit pointer struct
+    // struct bit_pointer {
+    //    i8* byte_ptr;
+    //    i32 offset;
+    // };
+    auto struct_type = llvm::StructType::get(
+        *llvm_context, {llvm::Type::getInt8PtrTy(*llvm_context),
+                        llvm::Type::getInt32Ty(*llvm_context)});
+    // 2. alloca the bit pointer struct
+    auto bit_ptr_struct = create_entry_block_alloca(struct_type);
+
+    // 3. store `input_ptr` into `bit_ptr_struct`
+    auto byte_ptr =
+        builder->CreateBitCast(llvm_val[stmt->input_ptr],
+                               llvm::PointerType::getInt8PtrTy(*llvm_context));
+
+    builder->CreateStore(
+        byte_ptr, builder->CreateGEP(bit_ptr_struct, {tlctx->get_constant(0),
+                                                      tlctx->get_constant(0)}));
+    // 4. store `offset` in `bit_ptr_struct`
+    auto bit_struct = stmt->input_snode->dt.get_ptr()->cast<BitStructType>();
+    auto offset = bit_struct->get_member_bit_offset(
+        stmt->input_snode->child_id(stmt->output_snode));
+    builder->CreateStore(
+        tlctx->get_constant(offset),
+        builder->CreateGEP(bit_ptr_struct,
+                           {tlctx->get_constant(0), tlctx->get_constant(1)}));
+    llvm_val[stmt] = bit_ptr_struct;
+  } else {
+    auto ch = create_call(stmt->output_snode->get_ch_from_parent_func_name(),
+                          {builder->CreateBitCast(
+                              llvm_val[stmt->input_ptr],
                               llvm::PointerType::getInt8PtrTy(*llvm_context))});
-  llvm_val[stmt] = builder->CreateBitCast(
-      ch, llvm::PointerType::get(StructCompilerLLVM::get_llvm_node_type(
-                                     module.get(), stmt->output_snode),
-                                 0));
+    llvm_val[stmt] = builder->CreateBitCast(
+        ch, llvm::PointerType::get(StructCompilerLLVM::get_llvm_node_type(
+                                       module.get(), stmt->output_snode),
+                                   0));
+  }
 }
 
 void CodeGenLLVM::visit(ExternalPtrStmt *stmt) {

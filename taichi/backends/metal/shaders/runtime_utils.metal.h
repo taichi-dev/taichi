@@ -40,6 +40,7 @@ struct Runtime {
 
 #endif  // TI_INSIDE_METAL_CODEGEN
 
+// clang-format off
 METAL_BEGIN_RUNTIME_UTILS_DEF
 STR(
     [[maybe_unused]] PtrOffset mtl_memalloc_alloc(device MemoryAllocator *ma,
@@ -205,19 +206,21 @@ STR(
     // * init(), instead of doing initiliaztion in the constructor.
     class SNodeRep_dense {
      public:
-      void init(device byte *addr) {
-        addr_ = addr;
-      }
+      void init(device byte * addr) { addr_ = addr; }
 
       inline device byte *addr() {
         return addr_;
       }
 
-      inline bool is_active(int) { return true; }
+      inline bool is_active(int) {
+        return true;
+      }
 
-      inline void activate(int) {}
+      inline void activate(int) {
+      }
 
-      inline void deactivate(int) {}
+      inline void deactivate(int) {
+      }
 
      private:
       device byte *addr_ = nullptr;
@@ -229,7 +232,7 @@ STR(
      public:
       constant static constexpr int kBitsPerMask = (sizeof(uint32_t) * 8);
 
-      void init(device byte *addr, int meta_offset) {
+      void init(device byte * addr, int meta_offset) {
         addr_ = addr;
         meta_offset_ = meta_offset;
       }
@@ -268,7 +271,7 @@ STR(
 
     class SNodeRep_dynamic {
      public:
-      void init(device byte *addr, int meta_offset) {
+      void init(device byte * addr, int meta_offset) {
         addr_ = addr;
         meta_offset_ = meta_offset;
       }
@@ -333,7 +336,9 @@ STR(
         return nm_.get(nm_idx);
       }
 
-      inline bool is_active(int i) { return is_active(addr_, i); }
+      inline bool is_active(int i) {
+        return is_active(addr_, i);
+      }
 
       void activate(int i) {
         device auto *nm_idx_ptr = to_nodemgr_idx_ptr(addr_, i);

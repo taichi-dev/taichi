@@ -145,7 +145,9 @@ STR(
       };
       BelongedNodeManager belonged_nodemgr;
 
-      inline bool in_root_buffer() const { return belonged_nodemgr.id < 0; }
+      inline bool in_root_buffer() const {
+        return belonged_nodemgr.id < 0;
+      }
     };
     // clang-format off
 )

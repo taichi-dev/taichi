@@ -88,7 +88,7 @@ STR(
             // * Y is `dense`, but Z is a `pointer`: Z's memory location is
             //   known at compile time! So Z itself still lives in the `root`
             //   buffer! However, each Z cell stores the pointer allocated from
-            //   the runtime memory pool. 
+            //   the runtime memory pool.
             child_elem.belonged_nodemgr = parent_elem.belonged_nodemgr;
             child_elem.mem_offset =
                 parent_elem.mem_offset + child_idx * child_stride;

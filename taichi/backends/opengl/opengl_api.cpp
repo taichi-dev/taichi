@@ -383,22 +383,21 @@ bool initialize_opengl(bool error_tolerance) {
   return true;
 }
 
-void display_kernel_info(std::string const &kernel_name,
-                         std::string const &kernel_source_code) {
+void show_kernel_info(std::string const &kernel_name,
+                      std::string const &kernel_source_code,
+                      ParallelSize *ps) {
   bool is_accessor = taichi::starts_with(kernel_name, "snode_") ||
                      taichi::starts_with(kernel_name, "tensor_to_") ||
                      taichi::starts_with(kernel_name, "matrix_to_") ||
                      taichi::starts_with(kernel_name, "ext_arr_to_") ||
                      taichi::starts_with(kernel_name, "indirect_evaluator_") ||
                      taichi::starts_with(kernel_name, "jit_evaluator_");
+  auto msg = fmt::format("[glsl]\ncompiling kernel {}<<<{}, {}>>>\n{}",
+      kernel_name, ps->grid_dim, ps->block_dim, kernel_source_code);
   if (!is_accessor)
-    TI_DEBUG("source of kernel [{}]:\n{}", kernel_name, kernel_source_code);
+    TI_DEBUG("{}", msg);
   else
-    TI_TRACE("source of kernel [{}]:\n{}", kernel_name, kernel_source_code);
-#ifdef _GLSL_DEBUG
-  std::ofstream(fmt::format("/tmp/{}.comp", kernel_name))
-      .write(kernel_source_code.c_str(), kernel_source_code.size());
-#endif
+    TI_TRACE("{}", msg);
 }
 
 struct CompiledKernel::Impl {
@@ -417,7 +416,7 @@ struct CompiledKernel::Impl {
         kernel_source_code.substr(0, needle) + fmt::format(
             "layout(local_size_x = {}, local_size_y = 1, local_size_z = 1) in;\n",
             ps->block_dim) + kernel_source_code.substr(needle);
-    display_kernel_info(kernel_name_, source);
+    show_kernel_info(kernel_name_, source, ps.get());
     glsl = std::make_unique<GLProgram>(GLShader(source));
     glsl->link();
   }

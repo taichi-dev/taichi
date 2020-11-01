@@ -720,25 +720,41 @@ class KernelGen : public IRVisitor {
     KernelGen *gen;
     std::unique_ptr<ScopedIndent> s;
 
-    ScopedGridStrideLoop(KernelGen *gen, std::string iterations) : gen(gen) {
-      // TODO: use a decorator `ti.grid_dim` to tweak this per-offload?
+    ScopedGridStrideLoop(KernelGen *gen, int const_iterations)
+      : ScopedGridStrideLoop(gen, fmt::format("{}", const_iterations),
+          const_iterations)
+    {}
+
+    ScopedGridStrideLoop(KernelGen *gen, std::string iterations,
+        int const_iterations = -1) : gen(gen) {
       gen->emit("int _sid0 = int(gl_GlobalInvocationID.x);");
       gen->emit("for (int _sid = _sid0; _sid < ({}); _sid += {}) {{",
           iterations, "int(gl_WorkGroupSize.x * gl_NumWorkGroups.x)");
       s = std::make_unique<ScopedIndent>(gen->line_appender_);
 
-      size_t saturating_grid_dim = gen->kernel->program.config.saturating_grid_dim;
-      if (saturating_grid_dim != 0) {
-        TI_ASSERT(gen->ps);
-        gen->ps->grid_dim = saturating_grid_dim;
+      TI_ASSERT(gen->ps);
+      if (gen->ps->grid_dim == 0) {
+        // if not specified, guess an optimal grid_dim for different situations
+
+        if (gen->used_tls) {
+          // TLS reduction
+          gen->ps->grid_dim = std::max(
+              (size_t)const_iterations / gen->ps->block_dim / 32, (size_t)1);
+          gen->ps->block_dim /= 4;
+        } else if (const_iterations > 0) {
+          // const range
+          gen->ps->grid_dim = std::max(
+              (size_t)const_iterations / gen->ps->block_dim, (size_t)1);
+        } else {
+          // dynamic range
+          gen->ps->grid_dim = 8;
+        }
       }
     }
 
     ~ScopedGridStrideLoop() {
-      if (s) {
-        s = nullptr;
-        gen->emit("}}");
-      }
+      s = nullptr;
+      gen->emit("}}");
     }
   };
 
@@ -771,9 +787,8 @@ class KernelGen : public IRVisitor {
       auto end_value = stmt->end_value;
       if (end_value < begin_value)
         end_value = begin_value;
-      ps = std::make_unique<ParallelSize>(stmt->block_dim);
-      ScopedGridStrideLoop _gsl(this,
-          fmt::format("{} - {}", end_value, begin_value));
+      ps = std::make_unique<ParallelSize>(stmt->block_dim, stmt->grid_dim);
+      ScopedGridStrideLoop _gsl(this, end_value - begin_value);
       emit("int _itv = {} + _sid;", begin_value);
       stmt->body->accept(this);
     } else {
@@ -785,7 +800,7 @@ class KernelGen : public IRVisitor {
       auto end_expr = stmt->const_end ? std::to_string(stmt->end_value)
                                       : fmt::format("_gtmp_i32_[{} >> 2]",
                                                     stmt->end_offset);
-      ps = std::make_unique<ParallelSize>(stmt->block_dim);
+      ps = std::make_unique<ParallelSize>(stmt->block_dim, stmt->grid_dim);
       emit("int _beg = {}, _end = {};", begin_expr, end_expr);
       ScopedGridStrideLoop _gsl(this, "_end - _beg");
       emit("int _itv = _beg + _sid;");
@@ -812,7 +827,7 @@ class KernelGen : public IRVisitor {
     emit("{{ // struct for {}", stmt->snode->node_type_name);
     {
       ScopedIndent _s(line_appender_);
-      ps = std::make_unique<ParallelSize>(stmt->block_dim);
+      ps = std::make_unique<ParallelSize>(stmt->block_dim, stmt->grid_dim);
       ScopedGridStrideLoop _gsl(this, "_list_len_");
       emit("int _itv = _list_[_sid];");
       stmt->body->accept(this);

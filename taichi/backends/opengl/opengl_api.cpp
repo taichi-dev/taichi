@@ -376,6 +376,7 @@ size_t ParallelSize_DynamicRange::get_num_strides(
 }
 
 size_t ParallelSize_StructFor::get_num_strides(GLSLLauncher *launcher) const {
+  // TODO: indirect / GSL this too:
   auto listman = launcher->impl->core_bufs.get(GLBufId::Listman);
   auto lm_buf = (GLSLListman *)listman->map();
   auto n = lm_buf->list_len;
@@ -501,6 +502,7 @@ struct CompiledKernel::Impl {
       : kernel_name(kernel_name_), ps(std::move(ps_)) {
     size_t needle = kernel_source_code.find("precision highp float;\n");
     TI_ASSERT(needle != std::string::npos);
+    TI_WARN("{}", ps->get_threads_per_block());
     source =
         kernel_source_code.substr(0, needle) +
         fmt::format(

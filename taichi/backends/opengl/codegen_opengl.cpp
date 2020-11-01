@@ -736,7 +736,7 @@ class KernelGen : public IRVisitor {
       size_t saturating_grid_dim = gen->kernel->program.config.saturating_grid_dim;
       if (gen->used_tls && saturating_grid_dim == 0) {
         // automatically enable grid-stride-loop when TLS used:
-        saturating_grid_dim = 4;
+        saturating_grid_dim = 1;
       }
       if (saturating_grid_dim != 0) {
         gen->is_grid_stride_loop_ = true;

@@ -740,10 +740,9 @@ class KernelGen : public IRVisitor {
       }
       if (stride_size != 0) {
         gen->is_grid_stride_loop_ = true;
-        gen->emit("int _sid0 = int(gl_GlobalInvocationID.x) * {};",
-                  stride_size);
-        gen->emit("for (int _sid = _sid0; _sid < _sid0 + {}; _sid++) {{",
-                  stride_size);
+        gen->emit("int _sid0 = int(gl_GlobalInvocationID.x);");
+        gen->emit("for (int _sid = _sid0; 0 == 0; _sid += {}) {{",
+            "int(gl_WorkGroupSize.x * gl_NumWorkGroups.x)");
         s = std::make_unique<ScopedIndent>(gen->line_appender_);
         TI_ASSERT(gen->ps);
         gen->ps->strides_per_thread = stride_size;
@@ -754,9 +753,10 @@ class KernelGen : public IRVisitor {
     }
 
     ~ScopedGridStrideLoop() {
-      if (s)
+      if (s) {
+        s = nullptr;
         gen->emit("}}");
-      s = nullptr;
+      }
 
       gen->is_grid_stride_loop_ = false;
     }
@@ -967,7 +967,7 @@ class KernelGen : public IRVisitor {
   }
 
   std::string get_return_stmt() {
-    return is_grid_stride_loop_ ? "continue" : "return";
+    return is_grid_stride_loop_ ? "break" : "return";
   }
 
   void visit(ContinueStmt *stmt) override {

@@ -30,6 +30,8 @@ struct Runtime {
   SNodeMeta *snode_metas = nullptr;
   SNodeExtractors *snode_extractors = nullptr;
   ListManagerData *snode_lists = nullptr;
+  NodeManagerData *snode_allocators = nullptr;
+  NodeManagerData::ElemIndex *ambient_indices = nullptr;
   uint32_t *rand_seeds = nullptr;
 };
 
@@ -38,7 +40,6 @@ struct Runtime {
 
 #endif  // TI_INSIDE_METAL_CODEGEN
 
-// clang-format off
 METAL_BEGIN_RUNTIME_UTILS_DEF
 STR(
     [[maybe_unused]] PtrOffset mtl_memalloc_alloc(device MemoryAllocator *ma,
@@ -404,6 +405,8 @@ STR(
         SNodeRep_bitmasked rep;
         rep.init(addr, /*meta_offset=*/meta.num_slots * meta.element_stride);
         return rep.is_active(i);
+      } else if (meta.type == SNodeMeta::Pointer) {
+        return SNodeRep_pointer::is_active(addr, i);
       }
       return false;
     }
@@ -424,8 +427,14 @@ STR(
     [[maybe_unused]] device byte *mtl_lgen_snode_addr(
         thread const ListgenElement &lgen, device byte *root_addr,
         device Runtime *rtm, device MemoryAllocator *mem_alloc) {
-      // Placeholder impl
-      return root_addr + lgen.mem_offset;
+      if (lgen.in_root_buffer()) {
+        return root_addr + lgen.mem_offset;
+      }
+      NodeManager nm;
+      nm.nm_data = (rtm->snode_allocators + lgen.belonged_nodemgr.id);
+      nm.mem_alloc = mem_alloc;
+      device byte *addr = nm.get(lgen.belonged_nodemgr.elem_idx);
+      return addr + lgen.mem_offset;
     })
 METAL_END_RUNTIME_UTILS_DEF
 // clang-format on

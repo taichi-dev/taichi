@@ -72,8 +72,36 @@ STR(
             mtl_lgen_snode_addr(parent_elem, root_addr, runtime, mem_alloc);
         if (is_active(parent_addr, parent_meta, child_idx)) {
           ListgenElement child_elem;
-          child_elem.mem_offset =
-              parent_elem.mem_offset + child_idx * child_stride;
+          if (parent_meta.type != SNodeMeta::Pointer) {
+            // Need to inherit |parent_elem|'s NodeManager settings. This means
+            // that the memory of the child cell will be part of that of the
+            // parent container.
+            //
+            // For example, denoting parent as Y, and child as Z:
+            //
+            // * Both Y and Z are `dense`: belonged_nodemgr.id = -1. This is the
+            //   simplest case, both Y and Z's memory location are known at
+            //   compile time. ==> Both live in the `root` buffer.
+            // * Y's parent (X) is a `pointer`: Y's NodeManager ID >= 0 (i.e.
+            //   |parent_elem.belonged_nodemgr| >= 0), Z inherits Y's
+            //   NodeManager settings. ==> Both Y and Z are in the memory
+            //   dynamically allocated for X.
+            // * Y is `dense`, but Z is a `pointer`: Z's memory location is
+            //   known at compile time! So Z itself still lives in the `root`
+            //   buffer! However, each Z cell stores the pointer allocated from
+            //   the runtime memory pool. 
+            child_elem.belonged_nodemgr = parent_elem.belonged_nodemgr;
+            child_elem.mem_offset =
+                parent_elem.mem_offset + child_idx * child_stride;
+          } else {
+            child_elem.belonged_nodemgr.id = parent_snode_id;
+            child_elem.belonged_nodemgr.elem_idx =
+                SNodeRep_pointer::to_nodemgr_idx(parent_addr, child_idx);
+            // For `pointer` parent, |child_elem.belonged_nodemgr.elem_idx|
+            // has already encoded the memory offset for which this child cell
+            // belongs to. Therefore |mem_offset| is just 0.
+            child_elem.mem_offset = 0;
+          }
           child_elem.mem_offset += child_meta.mem_offset_in_parent;
 
           refine_coordinates(parent_elem.coords,

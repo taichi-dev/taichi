@@ -208,6 +208,7 @@ bool StateFlowGraph::optimize_listgen() {
   std::vector<std::pair<int, int>> common_pairs;
 
   topo_sort_nodes();
+  return false;  // debug
 
   std::unordered_map<SNode *, std::vector<Node *>> listgen_nodes;
 

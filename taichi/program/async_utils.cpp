@@ -131,15 +131,29 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
     }
 
     if (auto *snode_op = stmt->cast<SNodeOpStmt>()) {
+      auto *sn = snode_op->snode;
       if (snode_op->op_type == SNodeOpType::activate ||
           snode_op->op_type == SNodeOpType::deactivate) {
-        auto *sn = snode_op->snode;
+        meta.input_states.emplace(sn, AsyncState::Type::mask);
+        meta.output_states.emplace(sn, AsyncState::Type::mask);
         if (is_gc_able(sn->type)) {
           meta.input_states.emplace(sn, AsyncState::Type::allocator);
-          meta.input_states.emplace(sn, AsyncState::Type::mask);
           meta.output_states.emplace(sn, AsyncState::Type::allocator);
-          meta.output_states.emplace(sn, AsyncState::Type::mask);
         }
+        if (snode_op->op_type == SNodeOpType::deactivate) {
+          meta.output_states.emplace(sn, AsyncState::Type::value);
+        }
+      } else if (snode_op->op_type == SNodeOpType::append) {
+        meta.input_states.emplace(sn, AsyncState::Type::value);
+        meta.input_states.emplace(sn, AsyncState::Type::mask);
+        meta.output_states.emplace(sn, AsyncState::Type::value);
+        meta.output_states.emplace(sn, AsyncState::Type::mask);
+        if (is_gc_able(sn->type)) {
+          meta.input_states.emplace(sn, AsyncState::Type::allocator);
+          meta.output_states.emplace(sn, AsyncState::Type::allocator);
+        }
+      } else {
+        TI_ERROR("TODO: handle other SNodeOpTypes");
       }
     }
 
@@ -180,7 +194,6 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
     if (auto clear_list = stmt->cast<ClearListStmt>()) {
       meta.output_states.emplace(clear_list->snode, AsyncState::Type::list);
     }
-    // TODO: handle SNodeOpStmt etc.
     return false;
   });
 
@@ -213,6 +226,10 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
     meta.output_states.emplace(meta.snode, AsyncState::Type::allocator);
   }
 
+//  std::cout << "meta:" << std::endl;
+//  meta.print();
+//  irpass::print(root_stmt);
+//  std::cout << std::endl;
   meta_bank[t.ir_handle] = meta;
   return &meta_bank[t.ir_handle];
 }

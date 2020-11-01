@@ -489,6 +489,7 @@ class MPMSolver:
 
                 self.grid_m, self.grid_m2 = self.grid_m2, self.grid_m
                 self.grid_v, self.grid_v2 = self.grid_v2, self.grid_v
+                self.grid1, self.grid2 = self.grid2, self.grid1
                 # self.pid, self.pid2 = self.pid2, self.pid
                 if i == 0:
                     self.build_pid()

@@ -33,7 +33,6 @@ static_assert(false, "Do not include");
 // clang-format off
 METAL_BEGIN_RUNTIME_KERNELS_DEF
 STR(
-    // clang-format on
     kernel void element_listgen(device byte *runtime_addr[[buffer(0)]],
                                 device byte *root_addr[[buffer(1)]],
                                 device int *args[[buffer(2)]],
@@ -110,9 +109,7 @@ STR(
           child_list.append(child_elem);
         }
       }
-    }
-    // clang-format off
-)
+    })
 METAL_END_RUNTIME_KERNELS_DEF
 // clang-format on
 

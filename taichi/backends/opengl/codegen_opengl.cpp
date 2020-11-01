@@ -735,7 +735,7 @@ class KernelGen : public IRVisitor {
       TI_ASSERT(gen->ps);
       if (gen->ps->grid_dim == 0) {
         // if not specified, guess an optimal grid_dim for different situations
-
+        // Refs: https://stackoverflow.com/questions/36374652/compute-shaders-optimal-data-division-on-invocations-threads-and-workgroups
         if (gen->used_tls) {
           // TLS reduction
           gen->ps->grid_dim = std::max(
@@ -743,11 +743,12 @@ class KernelGen : public IRVisitor {
           gen->ps->block_dim /= 4;
         } else if (const_iterations > 0) {
           // const range
-          gen->ps->grid_dim = std::max(
-              (size_t)const_iterations / gen->ps->block_dim, (size_t)1);
+          gen->ps->grid_dim = std::max(((size_t)const_iterations
+                + gen->ps->block_dim - 1) / gen->ps->block_dim, (size_t)1);
         } else {
           // dynamic range
-          gen->ps->grid_dim = 8;
+          gen->ps->block_dim *= 2;
+          gen->ps->grid_dim = 4;
         }
       }
     }

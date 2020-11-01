@@ -21,7 +21,8 @@ namespace opengl {
 #include "taichi/inc/opengl_extension.inc.h"
 #undef PER_OPENGL_EXTENSION
 
-int opengl_threads_per_block = 1024;
+int opengl_max_block_dim = 1024;
+int opengl_max_grid_dim = 1024;
 
 #ifdef TI_WITH_OPENGL
 
@@ -373,11 +374,12 @@ bool initialize_opengl(bool error_tolerance) {
     TI_ERROR("Your OpenGL does not support GL_ARB_compute_shader extension");
   }
 
-  glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS,
-                &opengl_threads_per_block);
+  glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &opengl_max_block_dim);
   check_opengl_error("glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS)");
-  TI_TRACE("GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS: {}",
-           opengl_threads_per_block);
+  TI_TRACE("GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS: {}", opengl_max_block_dim);
+  glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 0, &opengl_max_grid_dim);
+  check_opengl_error("glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_SIZE)");
+  TI_TRACE("GL_MAX_COMPUTE_WORK_GROUP_SIZE: {}", opengl_max_grid_dim);
 
   supported = std::make_optional<bool>(true);
   return true;
@@ -410,6 +412,11 @@ struct CompiledKernel::Impl {
        const std::string &kernel_source_code,
        std::unique_ptr<ParallelSize> ps_)
       : kernel_name(kernel_name_), ps(std::move(ps_)) {
+    if (ps->grid_dim > opengl_max_grid_dim)
+      ps->grid_dim = opengl_max_grid_dim;
+    if (ps->block_dim > opengl_max_block_dim)
+      ps->block_dim = opengl_max_block_dim;
+
     size_t needle = kernel_source_code.find("precision highp float;\n");
     TI_ASSERT(needle != std::string::npos);
     source =

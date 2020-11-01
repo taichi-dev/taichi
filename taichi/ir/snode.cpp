@@ -145,6 +145,18 @@ SNode *SNode::get_grad() const {
       ->snode;
 }
 
+SNode *SNode::get_least_sparse_ancestor() const {
+  if (is_path_all_dense) {
+    return nullptr;
+  }
+  SNode *result = parent;
+  while (result->type == SNodeType::dense) {
+    result = result->parent;
+    TI_ASSERT(result);
+  }
+  return result;
+}
+
 // for float and double
 void SNode::write_float(const std::vector<int> &I, float64 val) {
   if (writer_kernel == nullptr) {

@@ -154,9 +154,8 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
                           snode) != t.kernel->no_activate.end();
 
             // Do not record dense SNodes' mask states.
-            auto needs_activation =
-                snode->need_activation() && !kernel_forces_no_activate;
-            if (needs_activation) {
+            if (s->type != SNodeType::dense && s->type != SNodeType::place &&
+                s->type != SNodeType::root && !kernel_forces_no_activate) {
               meta.input_states.emplace(s, AsyncState::Type::mask);
               meta.output_states.emplace(s, AsyncState::Type::mask);
               if (is_gc_able(s->type)) {

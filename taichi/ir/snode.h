@@ -235,6 +235,8 @@ class SNode {
 
   SNode *get_grad() const;
 
+  SNode *get_least_sparse_ancestor() const;
+
   std::string get_name() const {
     return node_type_name;
   }

@@ -250,8 +250,6 @@ bool StateFlowGraph::optimize_listgen() {
 
         auto mask_state = AsyncState{snode, AsyncState::Type::mask};
         auto list_state = AsyncState{snode, AsyncState::Type::list};
-        auto parent_list_state =
-            AsyncState{snode->parent, AsyncState::Type::list};
 
         TI_ASSERT(get_or_insert(node_a->input_edges, mask_state).size() == 1);
         TI_ASSERT(get_or_insert(node_b->input_edges, mask_state).size() == 1);
@@ -260,13 +258,20 @@ bool StateFlowGraph::optimize_listgen() {
             *get_or_insert(node_b->input_edges, mask_state).begin())
           break;
 
-        TI_ASSERT(
-            get_or_insert(node_a->input_edges, parent_list_state).size() == 1);
-        TI_ASSERT(
-            get_or_insert(node_b->input_edges, parent_list_state).size() == 1);
-        if (*get_or_insert(node_a->input_edges, parent_list_state).begin() !=
-            *get_or_insert(node_b->input_edges, parent_list_state).begin())
-          break;
+        if (!snode->is_path_all_dense) {
+          // List generation requires parent list
+          auto parent_list_state = AsyncState{
+              snode->get_least_sparse_ancestor(), AsyncState::Type::list};
+          TI_ASSERT(
+              get_or_insert(node_a->input_edges, parent_list_state).size() ==
+              1);
+          TI_ASSERT(
+              get_or_insert(node_b->input_edges, parent_list_state).size() ==
+              1);
+          if (*get_or_insert(node_a->input_edges, parent_list_state).begin() !=
+              *get_or_insert(node_b->input_edges, parent_list_state).begin())
+            break;
+        }
 
         TI_ASSERT(get_or_insert(node_b->input_edges, list_state).size() == 1);
         Node *clear_node =

@@ -313,14 +313,6 @@ struct GLSLLauncherImpl {
 ParallelSize::~ParallelSize() {
 }
 
-bool ParallelSize::is_indirect() const {
-  return false;
-}
-
-bool ParallelSize_DynamicRange::is_indirect() const {
-  return true;
-}
-
 CompiledKernel *ParallelSize::get_indirect_evaluator() {
   return nullptr;
 }
@@ -398,6 +390,9 @@ size_t ParallelSize::get_num_threads(GLSLLauncher *launcher) const {
 }
 
 size_t ParallelSize::get_num_blocks(GLSLLauncher *launcher) const {
+  if (blocks_per_grid.has_value()) {
+    return blocks_per_grid.value();
+  }
   size_t n = get_num_threads(launcher);
   size_t TPG = get_threads_per_block();
   return std::max((n + TPG - 1) / TPG, (size_t)1);
@@ -525,7 +520,7 @@ struct CompiledKernel::Impl {
     // `glDispatchCompute(X, Y, Z)`   - the X*Y*Z  == `Blocks`   in CUDA
     // `layout(local_size_x = X) in;` - the X      == `Threads`  in CUDA
     //
-    if (!ps->is_indirect()) {
+    if (!ps->is_indirect) {
       int num_blocks = ps->get_num_blocks(launcher);
       glsl->use();
       glDispatchCompute(num_blocks, 1, 1);
@@ -777,14 +772,6 @@ bool initialize_opengl(bool error_tolerance) {
 }
 
 ParallelSize::~ParallelSize() {
-}
-
-bool ParallelSize::is_indirect() const {
-  TI_NOT_IMPLEMENTED;
-}
-
-bool ParallelSize_DynamicRange::is_indirect() const {
-  TI_NOT_IMPLEMENTED;
 }
 
 size_t ParallelSize::get_num_threads(GLSLLauncher *launcher) const {

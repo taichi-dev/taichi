@@ -36,6 +36,9 @@ class SNode:
     def _bit_struct(self, num_bits):
         return SNode(self.ptr.bit_struct(num_bits))
 
+    def _bit_array(self, num_bits):
+        return SNode(self.ptr.bit_array(num_bits))
+
     def place(self, *args, offset=None):
         from .expr import Expr
         from .util import is_taichi_class

@@ -75,6 +75,17 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
 
     DataType container_primitive_type(snode.physical_type);
     body_type = tlctx->get_data_type(container_primitive_type);
+  } else if (type == SNodeType::bit_array) {
+    // bit array snode should have at least one children(element)
+    // TODO: how to enforce this?
+    TI_ASSERT(snode.ch.size() >= 1);
+    auto &ch = snode.ch[0];
+    Type *ch_type = ch->dt.get_ptr();
+    snode.dt = TypeFactory::get_instance().get_bit_array_type(
+        snode.physical_type, ch_type, snode.ch.size());
+
+    DataType container_primitive_type(snode.physical_type);
+    body_type = tlctx->get_data_type(container_primitive_type);
   } else if (type == SNodeType::pointer) {
     // mutex
     aux_type = llvm::ArrayType::get(llvm::PointerType::getInt64Ty(*ctx),

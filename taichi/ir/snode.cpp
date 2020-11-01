@@ -101,6 +101,13 @@ SNode &SNode::bit_struct(int num_bits) {
   return snode;
 }
 
+SNode &SNode::bit_array(int num_bits) {
+  auto &snode = create_node({}, {}, SNodeType::bit_array);
+  snode.physical_type =
+      TypeFactory::get_instance().get_primitive_int_type(num_bits, false);
+  return snode;
+}
+
 void SNode::lazy_grad() {
   if (this->type == SNodeType::place)
     return;

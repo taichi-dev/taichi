@@ -64,8 +64,8 @@ void detect_read_only(IRNode *root);
 
 // compile_to_offloads does the basic compilation to create all the offloaded
 // tasks of a Taichi kernel. It's worth pointing out that this doesn't demote
-// dense struct fors. This is a necessary workaround to prevent the async engine
-// from fusing incompatible offloaded tasks.
+// dense struct fors. This is a necessary workaround to prevent the async
+// engine from fusing incompatible offloaded tasks.
 void compile_to_offloads(IRNode *ir,
                          const CompileConfig &config,
                          bool verbose,

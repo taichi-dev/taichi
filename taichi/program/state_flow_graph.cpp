@@ -1199,11 +1199,13 @@ bool StateFlowGraph::demote_activation() {
   // TODO: use unordered_map
   std::map<std::pair<IRHandle, Node *>, std::vector<Node *>> tasks;
 
+  // Gather identical struct-for tasks that use the same lists
   for (int i = 1; i < (int)nodes_.size(); i++) {
     Node *node = nodes_[i].get();
     auto snode = node->meta->snode;
     auto list_state = AsyncState(snode, AsyncState::Type::list);
 
+    // Currently we handle struct for only
     // TODO: handle serial and range for
     if (node->meta->type != OffloadedTaskType::struct_for)
       continue;
@@ -1221,12 +1223,14 @@ bool StateFlowGraph::demote_activation() {
     if (nodes.size() <= 1)
       continue;
 
+    // Starting from the second task in the list, activations may be demoted
     auto new_handle = ir_bank_->demote_activation(nodes[0]->rec.ir_handle);
     if (new_handle != nodes[0]->rec.ir_handle) {
       modified = true;
       TI_ASSERT(!nodes[1]->executed());
       nodes[1]->rec.ir_handle = new_handle;
       nodes[1]->meta = get_task_meta(ir_bank_, nodes[1]->rec);
+      // Copy nodes[1] replacement result to later nodes
       for (int j = 2; j < (int)nodes.size(); j++) {
         TI_ASSERT(!nodes[j]->executed());
         nodes[j]->rec.ir_handle = new_handle;

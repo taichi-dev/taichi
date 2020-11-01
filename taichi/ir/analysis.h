@@ -84,6 +84,9 @@ bool same_statements(IRNode *root1, IRNode *root2);
 bool same_value(Stmt *stmt1, Stmt *stmt2);
 DiffRange value_diff_loop_index(Stmt *stmt, Stmt *loop, int index_id);
 std::pair<bool, int> value_diff_ptr_index(Stmt *val1, Stmt *val2);
+std::unordered_set<Stmt *> constexpr_prop(
+    Block *block,
+    std::function<bool(Stmt *)> is_const_seed);
 void verify(IRNode *root);
 
 }  // namespace irpass::analysis

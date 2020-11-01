@@ -189,7 +189,8 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
   // overwriting the value state (e.g., for i in x: x[i] = 0).
   for (auto &state : meta.output_states) {
     if (state.type == AsyncState::Type::value) {
-      if (meta.element_wise.find(state.snode) == meta.element_wise.end()) {
+      if (meta.element_wise.find(state.snode) == meta.element_wise.end() ||
+          !meta.element_wise[state.snode]) {
         meta.input_states.insert(state);
       }
     }

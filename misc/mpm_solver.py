@@ -465,17 +465,21 @@ class MPMSolver:
 
         dt = frame_dt / substeps
 
+        num_substeps_per_sync = 10
+
         if False:  # before
             for i in range(substeps):
                 self.total_substeps += 1
 
-            self.grid1.deactivate_all()
-            self.build_pid()
-            self.p2g(dt)
-            self.grid_normalization_and_gravity(dt)
-            for p in self.grid_postprocess:
-                p(dt)
-            self.g2p(dt)
+                self.grid1.deactivate_all()
+                self.build_pid()
+                self.p2g(dt)
+                self.grid_normalization_and_gravity(dt)
+                for p in self.grid_postprocess:
+                    p(dt)
+                self.g2p(dt)
+                if (i + 1) % num_substeps_per_sync == 0:
+                    ti.sync()
         else:  # after
             self.grid1.deactivate_all()
             self.grid2.deactivate_all()
@@ -498,7 +502,10 @@ class MPMSolver:
                 for p in self.grid_postprocess:
                     p(dt)
                 self.g2p(dt)
+                if (i + 1) % num_substeps_per_sync == 0:
+                    ti.sync()
 
+        ti.sync()
         if print_stat:
             ti.kernel_profiler_print()
             try:

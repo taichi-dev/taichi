@@ -208,7 +208,6 @@ bool StateFlowGraph::optimize_listgen() {
   std::vector<std::pair<int, int>> common_pairs;
 
   topo_sort_nodes();
-  return false;  // debug
 
   std::unordered_map<SNode *, std::vector<Node *>> listgen_nodes;
 
@@ -663,7 +662,7 @@ void StateFlowGraph::print() {
   fmt::print("=== State Flow Graph ===\n");
   fmt::print("{}\n", first_pending_task_index_);
   for (auto &node : nodes_) {
-    fmt::print("{}\n", node->string());
+    fmt::print("{}{}\n", node->string(), node->executed() ? " (executed)" : "");
     if (!node->input_edges.empty()) {
       fmt::print("  Inputs:\n");
       for (const auto &p : node->input_edges) {
@@ -851,6 +850,8 @@ std::string StateFlowGraph::dump_dot(const std::optional<std::string> &rankdir,
 
 void StateFlowGraph::topo_sort_nodes() {
   TI_AUTO_PROF
+//  std::cout << "before topo_sort:" << std::endl;
+//  print();
   // Only sort pending tasks.
   const auto previous_size = nodes_.size();
   std::deque<std::unique_ptr<Node>> queue;
@@ -911,8 +912,19 @@ void StateFlowGraph::topo_sort_nodes() {
           previous_size, nodes_.size());
     }
   }
+//  bool changed = false;
+//  for (int i = 1; i < (int)nodes_.size(); i++)
+//    if (nodes_[i]->node_id != i) {
+//      changed = true;
+//      break;
+//    }
   reid_nodes();
   reid_pending_nodes();
+
+//  if (changed) {
+//    std::cout << "changed after topo_sort:" << std::endl;
+//    print();
+//  }
 }
 
 void StateFlowGraph::reid_nodes() {

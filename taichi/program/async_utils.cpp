@@ -131,29 +131,53 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
     }
 
     if (auto *snode_op = stmt->cast<SNodeOpStmt>()) {
-      auto *sn = snode_op->snode;
-      if (snode_op->op_type == SNodeOpType::activate ||
-          snode_op->op_type == SNodeOpType::deactivate) {
-        meta.input_states.emplace(sn, AsyncState::Type::mask);
-        meta.output_states.emplace(sn, AsyncState::Type::mask);
-        if (is_gc_able(sn->type)) {
-          meta.input_states.emplace(sn, AsyncState::Type::allocator);
-          meta.output_states.emplace(sn, AsyncState::Type::allocator);
-        }
+      auto *s = snode_op->snode;
+      while (s) {
+        bool kernel_forces_no_activate =
+            std::find(t.kernel->no_activate.begin(),
+                      t.kernel->no_activate.end(),
+                      s) != t.kernel->no_activate.end();
+
         if (snode_op->op_type == SNodeOpType::deactivate) {
-          meta.output_states.emplace(sn, AsyncState::Type::value);
+          meta.input_states.emplace(s, AsyncState::Type::value);
+          meta.output_states.emplace(s, AsyncState::Type::value);
         }
-      } else if (snode_op->op_type == SNodeOpType::append) {
-        meta.input_states.emplace(sn, AsyncState::Type::value);
-        meta.input_states.emplace(sn, AsyncState::Type::mask);
-        meta.output_states.emplace(sn, AsyncState::Type::value);
-        meta.output_states.emplace(sn, AsyncState::Type::mask);
-        if (is_gc_able(sn->type)) {
-          meta.input_states.emplace(sn, AsyncState::Type::allocator);
-          meta.output_states.emplace(sn, AsyncState::Type::allocator);
+
+        if (kernel_forces_no_activate &&
+            (snode_op->op_type == SNodeOpType::activate ||
+             snode_op->op_type == SNodeOpType::append)) {
+          s = s->parent;
+          continue;
         }
-      } else {
-        TI_ERROR("TODO: handle other SNodeOpTypes");
+
+        // Do not record dense SNodes' mask states.
+        if (s->type != SNodeType::dense && s->type != SNodeType::place &&
+            s->type != SNodeType::root) {
+          if (snode_op->op_type == SNodeOpType::activate ||
+              snode_op->op_type == SNodeOpType::deactivate) {
+            meta.input_states.emplace(s, AsyncState::Type::mask);
+            meta.output_states.emplace(s, AsyncState::Type::mask);
+            if (is_gc_able(s->type)) {
+              meta.input_states.emplace(s, AsyncState::Type::allocator);
+              meta.output_states.emplace(s, AsyncState::Type::allocator);
+            }
+          } else if (snode_op->op_type == SNodeOpType::append) {
+            meta.input_states.emplace(s, AsyncState::Type::value);
+            meta.input_states.emplace(s, AsyncState::Type::mask);
+            meta.output_states.emplace(s, AsyncState::Type::value);
+            meta.output_states.emplace(s, AsyncState::Type::mask);
+            if (is_gc_able(s->type)) {
+              meta.input_states.emplace(s, AsyncState::Type::allocator);
+              meta.output_states.emplace(s, AsyncState::Type::allocator);
+            }
+          } else if (snode_op->op_type == SNodeOpType::is_active ||
+                     snode_op->op_type == SNodeOpType::length) {
+            meta.input_states.emplace(s, AsyncState::Type::mask);
+          } else {
+            TI_NOT_IMPLEMENTED
+          }
+        }
+        s = s->parent;
       }
     }
 
@@ -165,7 +189,7 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
             bool kernel_forces_no_activate =
                 std::find(t.kernel->no_activate.begin(),
                           t.kernel->no_activate.end(),
-                          snode) != t.kernel->no_activate.end();
+                          s) != t.kernel->no_activate.end();
 
             // Do not record dense SNodes' mask states.
             if (s->type != SNodeType::dense && s->type != SNodeType::place &&
@@ -223,13 +247,15 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
              (is_gc_able(root_stmt->snode->type))) {
     meta.snode = root_stmt->snode;
     meta.input_states.emplace(meta.snode, AsyncState::Type::allocator);
+    meta.input_states.emplace(meta.snode, AsyncState::Type::value);
     meta.output_states.emplace(meta.snode, AsyncState::Type::allocator);
+    meta.output_states.emplace(meta.snode, AsyncState::Type::value);
   }
 
-//  std::cout << "meta:" << std::endl;
-//  meta.print();
-//  irpass::print(root_stmt);
-//  std::cout << std::endl;
+  //  std::cout << "meta:" << std::endl;
+  //  meta.print();
+  //  irpass::print(root_stmt);
+  //  std::cout << std::endl;
   meta_bank[t.ir_handle] = meta;
   return &meta_bank[t.ir_handle];
 }

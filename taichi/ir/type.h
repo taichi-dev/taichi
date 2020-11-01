@@ -226,15 +226,15 @@ class BitStructType : public Type {
   std::vector<int> member_bit_offsets_;
 };
 
-
 class BitArrayType : public Type {
  public:
   BitArrayType(PrimitiveType *physical_type,
-                Type * element_type_,
-                int num_elements_)
+               Type *element_type_,
+               int num_elements_)
       : physical_type_(physical_type),
         element_type_(element_type_),
-        num_elements_(num_elements_) {}
+        num_elements_(num_elements_) {
+  }
 
   std::string to_string() const override;
 
@@ -252,7 +252,7 @@ class BitArrayType : public Type {
 
  private:
   PrimitiveType *physical_type_;
-  Type * element_type_;
+  Type *element_type_;
   int num_elements_;
 };
 

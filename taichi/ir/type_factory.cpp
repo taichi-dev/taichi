@@ -54,8 +54,8 @@ Type *TypeFactory::get_bit_struct_type(PrimitiveType *physical_type,
 }
 
 Type *TypeFactory::get_bit_array_type(PrimitiveType *physical_type,
-                           Type *element_type,
-                           int num_elements) {
+                                      Type *element_type,
+                                      int num_elements) {
   bit_array_types_.push_back(std::make_unique<BitArrayType>(
       physical_type, element_type, num_elements));
   return bit_array_types_.back().get();

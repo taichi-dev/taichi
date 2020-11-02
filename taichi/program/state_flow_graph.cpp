@@ -418,6 +418,9 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
     auto *node_b = nodes[b];
     TI_TRACE("Fuse: nodes[{}]({}) <- nodes[{}]({})", a, node_a->string(), b,
              node_b->string());
+    if (node_a->meta->type == OffloadedTaskType::struct_for) {
+      TI_INFO("OK {} {}", node_a->string(), node_b->string());
+    }
     auto &rec_a = node_a->rec;
     auto &rec_b = node_b->rec;
     rec_a.ir_handle =
@@ -450,7 +453,12 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
 
   auto edge_fusible = [&](int a, int b) {
     TI_PROFILER("edge_fusible");
-
+//    if (nodes[a]->string().find("g2p") != std::string::npos &&
+//        nodes[a]->string().find("struct_for") != std::string::npos &&
+//        nodes[b]->string().find("p2g") != std::string::npos &&
+//        nodes[b]->string().find("struct_for") != std::string::npos) {
+//      TI_WARN("check {} {}", nodes[a]->string(), nodes[b]->string());
+//    }
     // Check if a and b are fusible if there is an edge (a, b).
     if (fused[a] || fused[b] || !fusion_meta[a].fusible ||
         fusion_meta[a] != fusion_meta[b]) {
@@ -468,19 +476,51 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
         if (state.second.find(nodes[b]) != state.second.end()) {
           if (nodes[a]->meta->loop_unique.count(snode) == 0 ||
               nodes[b]->meta->loop_unique.count(snode) == 0) {
+//            if (nodes[a]->string().find("g2p") != std::string::npos &&
+//                nodes[a]->string().find("struct_for") != std::string::npos &&
+//                nodes[b]->string().find("p2g") != std::string::npos &&
+//                nodes[b]->string().find("struct_for") != std::string::npos) {
+//              TI_WARN("not_loop_unique a {} {} on {} (value?={})",
+//                      nodes[a]->string(), nodes[b]->string(),
+//                      snode->get_node_type_name_hinted(),
+//                      (sty == AsyncState::Type::value));
+//            }
             return false;
           }
-          TI_ASSERT(nodes[a]->rec.stmt()->id == 0);
-          TI_ASSERT(nodes[b]->rec.stmt()->id == 0);
-          // Only map the OffloadedStmt to see if both SNodes are loop-unique
-          // on the same statement.
-          std::unordered_map<int, int> offload_map;
-          offload_map[0] = 0;
-          if (!irpass::analysis::same_value(
-                  nodes[a]->meta->loop_unique[snode],
-                  nodes[b]->meta->loop_unique[snode],
-                  std::make_optional<std::unordered_map<int, int>>(
-                      offload_map))) {
+          auto same_loop_unique_address = [&](GlobalPtrStmt *ptr1,
+                                              GlobalPtrStmt *ptr2) {
+            if (!ptr1 || !ptr2) {
+              return false;
+            }
+            TI_ASSERT(snode == ptr1->snodes[0]);
+            TI_ASSERT(snode == ptr2->snodes[0]);
+            TI_ASSERT(nodes[a]->rec.stmt()->id == 0);
+            TI_ASSERT(nodes[b]->rec.stmt()->id == 0);
+            // Only map the OffloadedStmt to see if both SNodes are loop-unique
+            // on the same statement.
+            std::unordered_map<int, int> offload_map;
+            offload_map[0] = 0;
+            for (int i = 0; i < (int)ptr1->indices.size(); i++) {
+              if (!irpass::analysis::same_value(
+                      ptr1->indices[i], ptr2->indices[i],
+                      std::make_optional<std::unordered_map<int, int>>(
+                          offload_map))) {
+                return false;
+              }
+            }
+            return true;
+          };
+          if (!same_loop_unique_address(nodes[a]->meta->loop_unique[snode],
+                                        nodes[b]->meta->loop_unique[snode])) {
+//            if (nodes[a]->string().find("g2p") != std::string::npos &&
+//                nodes[a]->string().find("struct_for") != std::string::npos &&
+//                nodes[b]->string().find("p2g") != std::string::npos &&
+//                nodes[b]->string().find("struct_for") != std::string::npos) {
+//              TI_WARN("not_loop_unique b {} {} on {} (value?={})",
+//                      nodes[a]->string(), nodes[b]->string(),
+//                      snode->get_node_type_name_hinted(),
+//                      (sty == AsyncState::Type::value));
+//            }
             return false;
           }
         }
@@ -489,6 +529,16 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
     // check if a doesn't have a path to b of length >= 2
     auto a_has_path_to_b = has_path[a] & has_path_reverse[b];
     a_has_path_to_b[a] = a_has_path_to_b[b] = false;
+//    if (nodes[a]->string().find("g2p") != std::string::npos &&
+//        nodes[a]->string().find("struct_for") != std::string::npos &&
+//        nodes[b]->string().find("p2g") != std::string::npos &&
+//        nodes[b]->string().find("struct_for") != std::string::npos) {
+//      if (!a_has_path_to_b.none())
+//        TI_WARN("a_has_path_to_b {} {}", nodes[a]->string(),
+//                nodes[b]->string());
+//      else
+//        TI_WARN("OK {} {}", nodes[a]->string(), nodes[b]->string());
+//    }
     return a_has_path_to_b.none();
   };
 
@@ -850,8 +900,8 @@ std::string StateFlowGraph::dump_dot(const std::optional<std::string> &rankdir,
 
 void StateFlowGraph::topo_sort_nodes() {
   TI_AUTO_PROF
-//  std::cout << "before topo_sort:" << std::endl;
-//  print();
+  //  std::cout << "before topo_sort:" << std::endl;
+  //  print();
   // Only sort pending tasks.
   const auto previous_size = nodes_.size();
   std::deque<std::unique_ptr<Node>> queue;
@@ -912,19 +962,19 @@ void StateFlowGraph::topo_sort_nodes() {
           previous_size, nodes_.size());
     }
   }
-//  bool changed = false;
-//  for (int i = 1; i < (int)nodes_.size(); i++)
-//    if (nodes_[i]->node_id != i) {
-//      changed = true;
-//      break;
-//    }
+  //  bool changed = false;
+  //  for (int i = 1; i < (int)nodes_.size(); i++)
+  //    if (nodes_[i]->node_id != i) {
+  //      changed = true;
+  //      break;
+  //    }
   reid_nodes();
   reid_pending_nodes();
 
-//  if (changed) {
-//    std::cout << "changed after topo_sort:" << std::endl;
-//    print();
-//  }
+  //  if (changed) {
+  //    std::cout << "changed after topo_sort:" << std::endl;
+  //    print();
+  //  }
 }
 
 void StateFlowGraph::reid_nodes() {

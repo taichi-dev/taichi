@@ -274,10 +274,6 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
     meta.output_states.emplace(meta.snode, AsyncState::Type::value);
   }
 
-//  std::cout << "meta:" << std::endl;
-//  meta.print();
-//  irpass::print(root_stmt);
-//  std::cout << std::endl;
   meta_bank[t.ir_handle] = meta;
   return &meta_bank[t.ir_handle];
 }

@@ -673,7 +673,7 @@ std::vector<TaskLaunchRecord> StateFlowGraph::extract_to_execute() {
 
 void StateFlowGraph::print() {
   fmt::print("=== State Flow Graph ===\n");
-  fmt::print("{}\n", first_pending_task_index_);
+  fmt::print("{} nodes ({} pending)\n", size(), num_pending_tasks());
   for (auto &node : nodes_) {
     fmt::print("{}{}\n", node->string(), node->executed() ? " (executed)" : "");
     if (!node->input_edges.empty()) {
@@ -703,7 +703,7 @@ std::string StateFlowGraph::dump_dot(const std::optional<std::string> &rankdir,
   std::stringstream ss;
 
   // TODO: expose an API that allows users to highlight a single state
-  AsyncState highlight_state{nullptr, AsyncState::Type::mask};
+  AsyncState highlight_state{nullptr, AsyncState::Type::value};
 
   ss << "digraph {\n";
   auto node_id = [](const SFGNode *n) {
@@ -796,24 +796,26 @@ std::string StateFlowGraph::dump_dot(const std::optional<std::string> &rankdir,
       }
     }
 
-    std::string color;
-    if (highlight_single_state)
-      color = " style=filled fillcolor=red ";
+    if (node_selected(nd.get())) {
+      std::string color;
+      if (highlight_single_state)
+        color = " style=filled fillcolor=red ";
 
-    ss << "  "
-       << fmt::format("{} [label=\"{}\" shape=record {}", node_id(n),
-                      labels.str(), color);
-    if (latest_state_nodes.find(n) != latest_state_nodes.end()) {
-      ss << " peripheries=2";
+      ss << "  "
+         << fmt::format("{} [label=\"{}\" shape=record {}", node_id(n),
+                        labels.str(), color);
+      if (latest_state_nodes.find(n) != latest_state_nodes.end()) {
+        ss << " peripheries=2";
+      }
+      // Highlight user-defined tasks
+      const auto tt = nd->meta->type;
+      if (!nd->is_initial_node &&
+          (tt == TaskType::range_for || tt == TaskType::struct_for ||
+           tt == TaskType::serial)) {
+        // ss << " style=filled fillcolor=lightgray";
+      }
+      ss << "]\n";
     }
-    // Highlight user-defined tasks
-    const auto tt = nd->meta->type;
-    if (!nd->is_initial_node &&
-        (tt == TaskType::range_for || tt == TaskType::struct_for ||
-         tt == TaskType::serial)) {
-      // ss << " style=filled fillcolor=lightgray";
-    }
-    ss << "]\n";
     if (nd->input_edges.empty())
       nodes_with_no_inputs.push_back(n);
   }
@@ -863,8 +865,8 @@ std::string StateFlowGraph::dump_dot(const std::optional<std::string> &rankdir,
 
 void StateFlowGraph::topo_sort_nodes() {
   TI_AUTO_PROF
-//    std::cout << "before topo_sort:" << std::endl;
-//    print();
+  //    std::cout << "before topo_sort:" << std::endl;
+  //    print();
   // Only sort pending tasks.
   const auto previous_size = nodes_.size();
   std::deque<std::unique_ptr<Node>> queue;
@@ -925,32 +927,33 @@ void StateFlowGraph::topo_sort_nodes() {
           previous_size, nodes_.size());
     }
   }
-    bool changed = false;
-    for (int i = 1; i < (int)nodes_.size(); i++)
-      if (nodes_[i]->node_id != i) {
-        changed = true;
-        break;
-      }
+  bool changed = false;
+  for (int i = 1; i < (int)nodes_.size(); i++)
+    if (nodes_[i]->node_id != i) {
+      changed = true;
+      break;
+    }
   reid_nodes();
   reid_pending_nodes();
 
-//    if (changed) {
-//      std::cout << "changed after topo_sort:" << std::endl;
-//      print();
-//
-//      static bool first = true;
-//      if (first) {
-//        first = false;
-//        auto dot = dump_dot(/*rankdir=*/std::nullopt);
-//        auto dot_fn = std::string("test_good");
-//        {
-//          std::ofstream dot_file(dot_fn + ".dot");
-//          dot_file << dot;
-//        }
-//        std::system(
-//            fmt::format("dot -Tpdf -o {}.pdf {}.dot", dot_fn, dot_fn).c_str());
-//      }
-//    }
+  //    if (changed) {
+  //      std::cout << "changed after topo_sort:" << std::endl;
+  //      print();
+  //
+  //      static bool first = true;
+  //      if (first) {
+  //        first = false;
+  //        auto dot = dump_dot(/*rankdir=*/std::nullopt);
+  //        auto dot_fn = std::string("test_good");
+  //        {
+  //          std::ofstream dot_file(dot_fn + ".dot");
+  //          dot_file << dot;
+  //        }
+  //        std::system(
+  //            fmt::format("dot -Tpdf -o {}.pdf {}.dot", dot_fn,
+  //            dot_fn).c_str());
+  //      }
+  //    }
 }
 
 void StateFlowGraph::reid_nodes() {

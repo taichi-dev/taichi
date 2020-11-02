@@ -27,8 +27,14 @@ namespace shaders {
 }  // namespace shaders
 
 constexpr size_t kListManagerDataSize = sizeof(shaders::ListManagerData);
+constexpr size_t kNodeManagerDataSize = sizeof(shaders::NodeManagerData);
+constexpr size_t kNodeManagerElemIndexSize =
+    sizeof(shaders::NodeManagerData::ElemIndex);
 constexpr size_t kSNodeMetaSize = sizeof(shaders::SNodeMeta);
 constexpr size_t kSNodeExtractorsSize = sizeof(shaders::SNodeExtractors);
+
+static_assert(kNodeManagerElemIndexSize == sizeof(int32_t),
+              "sizeof(NodeManagerData::ElemIndex) != 4");
 
 constexpr int kAlignment = 8;
 
@@ -60,7 +66,8 @@ class StructCompiler {
       for (const auto &sn : snodes_) {
         const auto ty = sn->type;
         if (ty == SNodeType::root || ty == SNodeType::dense ||
-            ty == SNodeType::bitmasked || ty == SNodeType::dynamic) {
+            ty == SNodeType::bitmasked || ty == SNodeType::dynamic ||
+            ty == SNodeType::pointer) {
           max_snodes_ = std::max(max_snodes_, sn->id);
         }
         has_sparse_snode_ = has_sparse_snode_ || is_supported_sparse_type(ty);
@@ -95,7 +102,15 @@ class StructCompiler {
   }
 
   void emit_snode_stride(SNodeType ty, const std::string &ch_name, int n) {
-    emit("  constant static constexpr int elem_stride = {}::stride;", ch_name);
+    if (ty == SNodeType::pointer) {
+      emit(
+          "  constant static constexpr int elem_stride = "
+          "/*pointer ElemIndex=*/{};",
+          kNodeManagerElemIndexSize);
+    } else {
+      emit("  constant static constexpr int elem_stride = {}::stride;",
+           ch_name);
+    }
 
     if (ty == SNodeType::bitmasked) {
       emit(
@@ -108,14 +123,13 @@ class StructCompiler {
           "/*dynamic=*/{};",
           kAlignment);
     } else {
-      // `root`, `dense`
+      // `root`, `dense`, `pointer`
       emit("  constant static constexpr int stride = elem_stride * n;");
     }
     emit("");
   }
 
   void emit_snode_constructor(const SNode &sn) {
-    // TODO(k-ye): handle `pointer`
     const auto ty = sn.type;
     const auto &name = sn.node_type_name;
     if (ty == SNodeType::root) {
@@ -128,6 +142,13 @@ class StructCompiler {
     }
     if (ty == SNodeType::bitmasked || ty == SNodeType::dynamic) {
       emit("    rep_.init(addr, /*meta_offset=*/elem_stride * n);");
+    } else if (ty == SNodeType::pointer) {
+      const auto snid = sn.id;
+      emit("    NodeManager nm;");
+      emit("    nm.nm_data = (rtm->snode_allocators + {});", snid);
+      emit("    nm.mem_alloc = ma;");
+      emit("    const auto amb_idx = rtm->ambient_indices[{}];", snid);
+      emit("    rep_.init(addr, nm, amb_idx);");
     } else {
       // `dense` or `root`
       emit("    rep_.init(addr);");
@@ -136,9 +157,12 @@ class StructCompiler {
   }
 
   void emit_snode_get_child_func(SNodeType ty, const std::string &ch_name) {
-    // TODO(k-ye): handle `pointer`
     emit("  {} children(int i) {{", ch_name);
-    emit("    return {{rep_.addr() + (i * elem_stride)}};");
+    if (ty == SNodeType::pointer) {
+      emit("    return {{rep_.child_or_ambient_addr(i)}};");
+    } else {
+      emit("    return {{rep_.addr() + (i * elem_stride)}};");
+    }
     emit("  }}\n");
   }
 
@@ -204,7 +228,8 @@ class StructCompiler {
       emit("  device {}* val;", dt_name);
       emit("}};");
     } else if (snty == SNodeType::dense || snty == SNodeType::root ||
-               snty == SNodeType::bitmasked || snty == SNodeType::dynamic) {
+               snty == SNodeType::bitmasked || snty == SNodeType::dynamic ||
+               snty == SNodeType::pointer) {
       const std::string ch_name = fmt::format("{}_ch", node_name);
       emit("struct {} {{", node_name);
       const auto snty_name = snode_type_name(snty);
@@ -260,6 +285,9 @@ class StructCompiler {
       sn_desc.stride += bitmasks_stride(n);
     } else if (sn->type == SNodeType::dynamic) {
       sn_desc.stride += kAlignment;
+    } else if (sn->type == SNodeType::pointer) {
+      // A `pointer` SNode itself only stores pointers, not the actual data!
+      sn_desc.stride = n * kNodeManagerElemIndexSize;
     }
     sn_desc.total_num_elems_from_root = 1;
     for (const auto &e : sn->extractors) {
@@ -278,6 +306,8 @@ class StructCompiler {
     emit("  SNodeMeta snode_metas[{}];", max_snodes_);
     emit("  SNodeExtractors snode_extractors[{}];", max_snodes_);
     emit("  ListManagerData snode_lists[{}];", max_snodes_);
+    emit("  NodeManagerData snode_allocators[{}];", max_snodes_);
+    emit("  NodeManagerData::ElemIndex ambient_indices[{}];", max_snodes_);
     emit("  uint32_t rand_seeds[{}];", kNumRandSeeds);
     emit("}};");
     line_appender_.append_raw(shaders::kMetalRuntimeUtilsSourceCode);
@@ -285,8 +315,9 @@ class StructCompiler {
   }
 
   size_t compute_runtime_size() {
-    size_t result = (max_snodes_) * (kSNodeMetaSize + kSNodeExtractorsSize +
-                                     kListManagerDataSize);
+    size_t result = max_snodes_ * (kSNodeMetaSize + kSNodeExtractorsSize +
+                                   kListManagerDataSize + kNodeManagerDataSize +
+                                   kNodeManagerElemIndexSize);
     result += sizeof(uint32_t) * kNumRandSeeds;
     return result;
   }

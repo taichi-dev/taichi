@@ -99,7 +99,13 @@ STR(
 
     // This class is very similar to metal::SNodeDescriptor
     struct SNodeMeta {
-      enum Type { Root = 0, Dense = 1, Bitmasked = 2, Dynamic = 3 };
+      enum Type {
+        Root = 0,
+        Dense = 1,
+        Bitmasked = 2,
+        Dynamic = 3,
+        Pointer = 4,
+      };
       int32_t element_stride = 0;
       int32_t num_slots = 0;
       int32_t mem_offset_in_parent = 0;
@@ -126,9 +132,21 @@ STR(
       // * O/W this is from the |id|-th NodeManager's |elem_idx|-th element.
       int32_t mem_offset = 0;
 
+      struct BelongedNodeManager {
+        // Index of the *NodeManager itself* in the runtime buffer.
+        // If -1, the memory where this cell lives isn't in a particular
+        // NodeManager's dynamically allocated memory. Instead, it is at a fixed
+        // location in the root buffer.
+        //
+        // For {dense, bitmasked}, this should always be -1.
+        int32_t id = -1;
+        // Index of the element within the NodeManager.
+        NodeManagerData::ElemIndex elem_idx;
+      };
+      BelongedNodeManager belonged_nodemgr;
+
       inline bool in_root_buffer() const {
-        // Placeholder impl
-        return true;
+        return belonged_nodemgr.id < 0;
       }
     };
     // clang-format off

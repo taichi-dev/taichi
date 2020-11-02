@@ -76,7 +76,7 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
     DataType container_primitive_type(snode.physical_type);
     body_type = tlctx->get_data_type(container_primitive_type);
   } else if (type == SNodeType::bit_array) {
-    // bit array snode should only have at one children(element)
+    // A bit array SNode should only have one child
     TI_ASSERT(snode.ch.size() == 1);
     auto &ch = snode.ch[0];
     Type *ch_type = ch->dt.get_ptr();

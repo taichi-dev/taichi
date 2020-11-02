@@ -139,7 +139,8 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
                       s) != t.kernel->no_activate.end();
 
         if (snode_op->op_type == SNodeOpType::deactivate) {
-          meta.input_states.emplace(s, AsyncState::Type::value);
+          // Input value states will be inserted later if it's not
+          // element-wise written.
           meta.output_states.emplace(s, AsyncState::Type::value);
         }
 

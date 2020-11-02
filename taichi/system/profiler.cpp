@@ -69,6 +69,13 @@ class ProfilerRecords {
     enabled = true;
   }
 
+  void clear() {
+    root->childs.clear();
+    current_node = root.get();
+    current_depth = 0;
+    enabled = true;
+  }
+
   void print(ProfilerRecordNode *node, int depth);
 
   void print() {
@@ -260,6 +267,13 @@ void Profiling::print_profile_info() {
   std::lock_guard<std::mutex> _(mut);
   for (auto p : profilers) {
     p.second->print();
+  }
+}
+
+void Profiling::clear_profile_info() {
+  std::lock_guard<std::mutex> _(mut);
+  for (auto p : profilers) {
+    p.second->clear();
   }
 }
 

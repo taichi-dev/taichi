@@ -7,6 +7,8 @@
 #include "taichi/program/ir_bank.h"
 #include "taichi/program/kernel.h"
 
+#include <queue>
+
 TLANG_NAMESPACE_BEGIN
 
 std::unique_ptr<IRNode> IRHandle::clone() const {
@@ -106,7 +108,6 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
 
   using namespace irpass::analysis;
   TaskMeta meta;
-  // TODO: this is an abuse since it gathers nothing...
   auto *root_stmt = t.stmt();
   meta.name =
       t.kernel->name + "_" + offloaded_task_type_name(root_stmt->task_type);
@@ -114,6 +115,9 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
   get_meta_input_value_states(root_stmt, &meta);
   meta.loop_unique = gather_uniquely_accessed_pointers(root_stmt);
 
+  std::unordered_set<SNode *> activates, deactivates;
+
+  // TODO: this is an abuse since it gathers nothing...
   gather_statements(root_stmt, [&](Stmt *stmt) {
     if (auto global_store = stmt->cast<GlobalStoreStmt>()) {
       if (auto ptr = global_store->ptr->cast<GlobalPtrStmt>()) {
@@ -131,79 +135,31 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
     }
 
     if (auto *snode_op = stmt->cast<SNodeOpStmt>()) {
-      auto *s = snode_op->snode;
-      while (s) {
-        bool kernel_forces_no_activate =
-            std::find(t.kernel->no_activate.begin(),
-                      t.kernel->no_activate.end(),
-                      s) != t.kernel->no_activate.end();
-
-        if (snode_op->op_type == SNodeOpType::deactivate) {
-          // Input value states will be inserted later if it's not
-          // element-wise written.
-          meta.output_states.emplace(s, AsyncState::Type::value);
+      auto *sn = snode_op->snode;
+      const auto sty = snode_op->op_type;
+      if (sty == SNodeOpType::activate) {
+        activates.insert(sn);
+      } else if (sty == SNodeOpType::deactivate) {
+        deactivates.insert(sn);
+      } else if (snode_op->op_type == SNodeOpType::append) {
+        activates.insert(sn);
+        for (auto &child : sn->ch) {
+          TI_ASSERT(child->type == SNodeType::place);
+          meta.input_states.emplace(child.get(), AsyncState::Type::value);
+          meta.output_states.emplace(child.get(), AsyncState::Type::value);
         }
-
-        if (kernel_forces_no_activate &&
-            (snode_op->op_type == SNodeOpType::activate ||
-             snode_op->op_type == SNodeOpType::append)) {
-          s = s->parent;
-          continue;
-        }
-
-        // Do not record dense SNodes' mask states.
-        if (s->type != SNodeType::dense && s->type != SNodeType::place &&
-            s->type != SNodeType::root) {
-          if (snode_op->op_type == SNodeOpType::activate ||
-              snode_op->op_type == SNodeOpType::deactivate) {
-            meta.input_states.emplace(s, AsyncState::Type::mask);
-            meta.output_states.emplace(s, AsyncState::Type::mask);
-            if (is_gc_able(s->type)) {
-              meta.input_states.emplace(s, AsyncState::Type::allocator);
-              meta.output_states.emplace(s, AsyncState::Type::allocator);
-            }
-          } else if (snode_op->op_type == SNodeOpType::append) {
-            meta.input_states.emplace(s, AsyncState::Type::value);
-            meta.input_states.emplace(s, AsyncState::Type::mask);
-            meta.output_states.emplace(s, AsyncState::Type::value);
-            meta.output_states.emplace(s, AsyncState::Type::mask);
-            if (is_gc_able(s->type)) {
-              meta.input_states.emplace(s, AsyncState::Type::allocator);
-              meta.output_states.emplace(s, AsyncState::Type::allocator);
-            }
-          } else if (snode_op->op_type == SNodeOpType::is_active ||
-                     snode_op->op_type == SNodeOpType::length) {
-            meta.input_states.emplace(s, AsyncState::Type::mask);
-          } else {
-            TI_NOT_IMPLEMENTED
-          }
-        }
-        s = s->parent;
+      } else if (snode_op->op_type == SNodeOpType::is_active ||
+                 snode_op->op_type == SNodeOpType::length) {
+        meta.input_states.emplace(sn, AsyncState::Type::mask);
+      } else {
+        TI_NOT_IMPLEMENTED
       }
     }
 
     if (auto ptr = stmt->cast<GlobalPtrStmt>()) {
       if (ptr->activate) {
         for (auto &snode : ptr->snodes.data) {
-          auto s = snode;
-          while (s) {
-            bool kernel_forces_no_activate =
-                std::find(t.kernel->no_activate.begin(),
-                          t.kernel->no_activate.end(),
-                          s) != t.kernel->no_activate.end();
-
-            // Do not record dense SNodes' mask states.
-            if (s->type != SNodeType::dense && s->type != SNodeType::place &&
-                s->type != SNodeType::root && !kernel_forces_no_activate) {
-              meta.input_states.emplace(s, AsyncState::Type::mask);
-              meta.output_states.emplace(s, AsyncState::Type::mask);
-              if (is_gc_able(s->type)) {
-                meta.input_states.emplace(s, AsyncState::Type::allocator);
-                meta.output_states.emplace(s, AsyncState::Type::allocator);
-              }
-            }
-            s = s->parent;
-          }
+          activates.insert(snode);
         }
       }
       for (auto &snode : ptr->snodes.data) {
@@ -221,6 +177,71 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
     }
     return false;
   });
+
+  std::unordered_set<SNode *> kernel_forces_no_activate(
+      t.kernel->no_activate.begin(), t.kernel->no_activate.end());
+
+  std::unordered_set<SNode *> mask_state_inserted;
+  auto insert_mask_states_for_activation = [&](SNode *s) {
+    while (s) {
+      if (kernel_forces_no_activate.count(s) > 0) {
+        break;
+      }
+      if (mask_state_inserted.count(s) > 0) {
+        // already handled by other activations
+        break;
+      }
+      mask_state_inserted.insert(s);
+
+      // Do not record dense SNodes' mask states.
+      if (s->type != SNodeType::dense && s->type != SNodeType::place &&
+          s->type != SNodeType::root) {
+        meta.input_states.emplace(s, AsyncState::Type::mask);
+        meta.output_states.emplace(s, AsyncState::Type::mask);
+        if (is_gc_able(s->type)) {
+          meta.input_states.emplace(s, AsyncState::Type::allocator);
+          meta.output_states.emplace(s, AsyncState::Type::allocator);
+        }
+      }
+      s = s->parent;
+    }
+  };
+
+  for (auto &snode : activates) {
+    insert_mask_states_for_activation(snode);
+  }
+  for (auto &snode : deactivates) {
+    insert_mask_states_for_activation(snode);
+  }
+
+  auto insert_value_states_for_deactivation = [&](SNode *snode) {
+    // Insert output value states for all successors of snode.
+    // Input value states will be inserted later if it's not
+    // element-wise written.
+    std::queue<SNode *> to_insert;
+    to_insert.push(snode);
+    while (!to_insert.empty()) {
+      auto *s = to_insert.front();
+      to_insert.pop();
+      if (kernel_forces_no_activate.count(s) > 0) {
+        continue;
+      }
+      if (s->type == SNodeType::place) {
+        meta.output_states.emplace(s, AsyncState::Type::value);
+      } else {
+        for (auto &child : s->ch) {
+          if (deactivates.count(child.get()) == 0) {
+            // not already handled by other deactivations
+            to_insert.push(child.get());
+          }
+        }
+      }
+    }
+  };
+
+  for (auto &snode : deactivates) {
+    insert_value_states_for_deactivation(snode);
+  }
 
   // We are being conservative here: if there are any non-element-wise
   // accesses (e.g., a = x[i + 1]), we don't treat it as completely

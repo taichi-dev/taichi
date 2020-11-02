@@ -740,24 +740,25 @@ class KernelGen : public IRVisitor {
         // if not specified, guess an optimal grid_dim for different situations
         // Refs:
         // https://stackoverflow.com/questions/36374652/compute-shaders-optimal-data-division-on-invocations-threads-and-workgroups
-        if (gen->used_tls) {
-          // TLS reduction
-          gen->ps->grid_dim =
-              std::max((size_t)const_iterations /
-                           std::max(gen->ps->block_dim, (size_t)1) / 32,
-                       (size_t)1);
-          gen->ps->block_dim = std::max(gen->ps->block_dim / 4, (size_t)1);
-        } else if (const_iterations > 0) {
-          // const range
-          gen->ps->grid_dim =
-              std::max(((size_t)const_iterations + gen->ps->block_dim - 1) /
-                           gen->ps->block_dim,
-                       (size_t)1);
+        if (const_iterations > 0) {
+          if (gen->used_tls) {
+            // const range with TLS reduction
+            gen->ps->grid_dim =
+                std::max((size_t)const_iterations /
+                             std::max(gen->ps->block_dim, (size_t)1) / 32,
+                         (size_t)1);
+            gen->ps->block_dim = std::max(gen->ps->block_dim / 4, (size_t)1);
+          } else {
+            // const range
+            gen->ps->grid_dim =
+                std::max(((size_t)const_iterations + gen->ps->block_dim - 1) /
+                             gen->ps->block_dim,
+                         (size_t)1);
+          }
         } else {
           // dynamic range
-          // here we use 4096 threads as a rough guess:
-          gen->ps->block_dim *= 4;
-          gen->ps->grid_dim = 8;
+          // TODO(archibate): think for a better value for SM utilization:
+          gen->ps->grid_dim = 256;
         }
       }
     }

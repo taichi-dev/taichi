@@ -102,7 +102,8 @@ SNode &SNode::bit_struct(int num_bits) {
 }
 
 SNode &SNode::bit_array(const std::vector<Index> &indices,
-                        const std::vector<int> &sizes, int bits) {
+                        const std::vector<int> &sizes,
+                        int bits) {
   auto &snode = create_node(indices, sizes, SNodeType::bit_array);
   snode.physical_type =
       TypeFactory::get_instance().get_primitive_int_type(bits, false);

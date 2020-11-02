@@ -243,18 +243,6 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
     insert_value_states_for_deactivation(snode);
   }
 
-  // We are being conservative here: if there are any non-element-wise
-  // accesses (e.g., a = x[i + 1]), we don't treat it as completely
-  // overwriting the value state (e.g., for i in x: x[i] = 0).
-  for (auto &state : meta.output_states) {
-    if (state.type == AsyncState::Type::value) {
-      if (meta.element_wise.find(state.snode) == meta.element_wise.end() ||
-          !meta.element_wise[state.snode]) {
-        meta.input_states.insert(state);
-      }
-    }
-  }
-
   if (root_stmt->task_type == OffloadedTaskType::listgen) {
     TI_ASSERT(root_stmt->snode->parent);
     meta.snode = root_stmt->snode;
@@ -269,9 +257,20 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
              (is_gc_able(root_stmt->snode->type))) {
     meta.snode = root_stmt->snode;
     meta.input_states.emplace(meta.snode, AsyncState::Type::allocator);
-    meta.input_states.emplace(meta.snode, AsyncState::Type::value);
     meta.output_states.emplace(meta.snode, AsyncState::Type::allocator);
-    meta.output_states.emplace(meta.snode, AsyncState::Type::value);
+    insert_value_states_for_deactivation(root_stmt->snode);
+  }
+
+  // We are being conservative here: if there are any non-element-wise
+  // accesses (e.g., a = x[i + 1]), we don't treat it as completely
+  // overwriting the value state (e.g., for i in x: x[i] = 0).
+  for (auto &state : meta.output_states) {
+    if (state.type == AsyncState::Type::value) {
+      if (meta.element_wise.find(state.snode) == meta.element_wise.end() ||
+          !meta.element_wise[state.snode]) {
+        meta.input_states.insert(state);
+      }
+    }
   }
 
   meta_bank[t.ir_handle] = meta;

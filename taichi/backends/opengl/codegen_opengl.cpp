@@ -742,9 +742,11 @@ class KernelGen : public IRVisitor {
         // https://stackoverflow.com/questions/36374652/compute-shaders-optimal-data-division-on-invocations-threads-and-workgroups
         if (gen->used_tls) {
           // TLS reduction
-          gen->ps->grid_dim = std::max(
-              (size_t)const_iterations / gen->ps->block_dim / 32, (size_t)1);
-          gen->ps->block_dim /= 4;
+          gen->ps->grid_dim =
+              std::max((size_t)const_iterations /
+                           std::max(gen->ps->block_dim, (size_t)1) / 32,
+                       (size_t)1);
+          gen->ps->block_dim = std::max(gen->ps->block_dim / 4, (size_t)1);
         } else if (const_iterations > 0) {
           // const range
           gen->ps->grid_dim =
@@ -753,8 +755,9 @@ class KernelGen : public IRVisitor {
                        (size_t)1);
         } else {
           // dynamic range
-          gen->ps->block_dim *= 2;
-          gen->ps->grid_dim = 4;
+          // here we use 4096 threads as a rough guess:
+          gen->ps->block_dim *= 4;
+          gen->ps->grid_dim = 8;
         }
       }
     }

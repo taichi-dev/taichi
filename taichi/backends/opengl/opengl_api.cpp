@@ -21,6 +21,8 @@ namespace opengl {
 #include "taichi/inc/opengl_extension.inc.h"
 #undef PER_OPENGL_EXTENSION
 
+// will later be initialized in initialize_opengl, here we use the minimum
+// value according to OpenGL spec in case glGetIntegerv didn't work properly
 int opengl_max_block_dim = 1024;
 int opengl_max_grid_dim = 1024;
 
@@ -395,7 +397,7 @@ void show_kernel_info(std::string const &kernel_name,
                      taichi::starts_with(kernel_name, "indirect_evaluator_") ||
                      taichi::starts_with(kernel_name, "jit_evaluator_");
   auto msg =
-      fmt::format("[glsl]\ncompiling kernel {}<<<{}, {}>>>\n{}", kernel_name,
+      fmt::format("[glsl]\ncompiling kernel {}<<<{}, {}>>>:\n{}", kernel_name,
                   ps->grid_dim, ps->block_dim, kernel_source_code);
   if (!is_accessor)
     TI_DEBUG("{}", msg);
@@ -418,14 +420,14 @@ struct CompiledKernel::Impl {
     if (ps->block_dim > opengl_max_block_dim)
       ps->block_dim = opengl_max_block_dim;
 
-    size_t needle = kernel_source_code.find("precision highp float;\n");
-    TI_ASSERT(needle != std::string::npos);
-    source = kernel_source_code.substr(0, needle) +
+    size_t layout_pos = kernel_source_code.find("precision highp float;\n");
+    TI_ASSERT(layout_pos != std::string::npos);
+    source = kernel_source_code.substr(0, layout_pos) +
              fmt::format(
                  "layout(local_size_x = {}, local_size_y = 1, local_size_z = "
                  "1) in;\n",
                  ps->block_dim) +
-             kernel_source_code.substr(needle);
+             kernel_source_code.substr(layout_pos);
     show_kernel_info(kernel_name_, source, ps.get());
     glsl = std::make_unique<GLProgram>(GLShader(source));
     glsl->link();

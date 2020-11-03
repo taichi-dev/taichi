@@ -182,7 +182,7 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
       t.kernel->no_activate.begin(), t.kernel->no_activate.end());
 
   std::unordered_set<SNode *> mask_state_inserted;
-  auto insert_mask_states_for_activation = [&](SNode *s) {
+  auto insert_mask_states_bottom_up = [&](SNode *s) {
     while (s) {
       if (kernel_forces_no_activate.count(s) > 0) {
         break;
@@ -208,13 +208,13 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
   };
 
   for (auto &snode : activates) {
-    insert_mask_states_for_activation(snode);
+    insert_mask_states_bottom_up(snode);
   }
   for (auto &snode : deactivates) {
-    insert_mask_states_for_activation(snode);
+    insert_mask_states_bottom_up(snode);
   }
 
-  auto insert_value_states_for_deactivation = [&](SNode *snode) {
+  auto insert_value_states_top_down = [&](SNode *snode) {
     // Insert output value states for all successors of snode.
     // Input value states will be inserted later if it's not
     // element-wise written.
@@ -240,13 +240,16 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
   };
 
   for (auto &snode : deactivates) {
-    insert_value_states_for_deactivation(snode);
+    insert_value_states_top_down(snode);
   }
 
   if (root_stmt->task_type == OffloadedTaskType::listgen) {
     TI_ASSERT(root_stmt->snode->parent);
     meta.snode = root_stmt->snode;
-    meta.input_states.emplace(root_stmt->snode->parent, AsyncState::Type::list);
+    if (!root_stmt->snode->parent->is_path_all_dense) {
+      meta.input_states.emplace(root_stmt->snode->get_least_sparse_ancestor(),
+                                AsyncState::Type::list);
+    }
     meta.input_states.emplace(root_stmt->snode, AsyncState::Type::list);
     meta.input_states.emplace(root_stmt->snode, AsyncState::Type::mask);
     meta.output_states.emplace(root_stmt->snode, AsyncState::Type::list);
@@ -258,7 +261,7 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
     meta.snode = root_stmt->snode;
     meta.input_states.emplace(meta.snode, AsyncState::Type::allocator);
     meta.output_states.emplace(meta.snode, AsyncState::Type::allocator);
-    insert_value_states_for_deactivation(root_stmt->snode);
+    insert_value_states_top_down(root_stmt->snode);
   }
 
   // We are being conservative here: if there are any non-element-wise

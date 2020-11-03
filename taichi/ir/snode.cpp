@@ -146,7 +146,7 @@ SNode *SNode::get_grad() const {
 }
 
 SNode *SNode::get_least_sparse_ancestor() const {
-  if (is_path_all_dense) {
+  if (!parent || parent->is_path_all_dense) {
     return nullptr;
   }
   SNode *result = parent;

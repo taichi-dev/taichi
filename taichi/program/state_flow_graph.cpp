@@ -258,7 +258,7 @@ bool StateFlowGraph::optimize_listgen() {
             *get_or_insert(node_b->input_edges, mask_state).begin())
           break;
 
-        if (!snode->is_path_all_dense) {
+        if (!snode->parent->is_path_all_dense) {
           // List generation requires parent list
           auto parent_list_state = AsyncState{
               snode->get_least_sparse_ancestor(), AsyncState::Type::list};

@@ -2,7 +2,7 @@ import taichi as ti
 import numpy as np
 
 
-@pytest.mark.parametrize('val', [0, 1]):
+@pytest.mark.parametrize('val', [0, 1])
 @ti.test(ti.cpu)
 def test_static_if(val):
     x = ti.field(ti.i32)

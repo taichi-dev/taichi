@@ -15,7 +15,6 @@ def test_do_nothing():
 
 @ti.test(arch=ti.cuda)
 def test_active_mask():
-
     @ti.kernel
     def test():
         for i in range(48):

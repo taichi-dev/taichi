@@ -865,8 +865,6 @@ std::string StateFlowGraph::dump_dot(const std::optional<std::string> &rankdir,
 
 void StateFlowGraph::topo_sort_nodes() {
   TI_AUTO_PROF
-  //    std::cout << "before topo_sort:" << std::endl;
-  //    print();
   // Only sort pending tasks.
   const auto previous_size = nodes_.size();
   std::deque<std::unique_ptr<Node>> queue;
@@ -935,25 +933,6 @@ void StateFlowGraph::topo_sort_nodes() {
     }
   reid_nodes();
   reid_pending_nodes();
-
-  //    if (changed) {
-  //      std::cout << "changed after topo_sort:" << std::endl;
-  //      print();
-  //
-  //      static bool first = true;
-  //      if (first) {
-  //        first = false;
-  //        auto dot = dump_dot(/*rankdir=*/std::nullopt);
-  //        auto dot_fn = std::string("test_good");
-  //        {
-  //          std::ofstream dot_file(dot_fn + ".dot");
-  //          dot_file << dot;
-  //        }
-  //        std::system(
-  //            fmt::format("dot -Tpdf -o {}.pdf {}.dot", dot_fn,
-  //            dot_fn).c_str());
-  //      }
-  //    }
 }
 
 void StateFlowGraph::reid_nodes() {

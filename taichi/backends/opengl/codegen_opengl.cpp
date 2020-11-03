@@ -160,10 +160,6 @@ class KernelGen : public IRVisitor {
       if (used.int64)
         kernel_header += "layout(std430, binding = 2) buffer args_i64 { int64_t _args_i64_[]; };\n";
     }
-    if (used.buf_earg) {
-      kernel_header +=
-          "layout(std430, binding = 3) buffer earg_i32 { int _earg_i32_[]; };\n";
-    }
     if (used.buf_extr) {
       kernel_header +=
           "layout(std430, binding = 4) buffer extr_i32 { int _extr_i32_[]; };\n"
@@ -427,9 +423,10 @@ class KernelGen : public IRVisitor {
       const int num_indices = stmt->indices.size();
       std::vector<std::string> size_var_names;
       for (int i = 0; i < num_indices; i++) {
-        used.buf_earg = true;
+        used.buf_args = true;
         std::string var_name = fmt::format("_s{}_{}", i, stmt->short_name());
-        emit("int {} = _earg_i32_[{} * {} + {}];", var_name, arg_id,
+        emit("int {} = _args_i32_[{} + {} * {} + {}];", var_name,
+             taichi_opengl_earg_base / sizeof(int), arg_id,
              taichi_max_num_indices, i);
         size_var_names.push_back(std::move(var_name));
       }
@@ -693,9 +690,10 @@ class KernelGen : public IRVisitor {
     const auto name = stmt->short_name();
     const auto arg_id = stmt->arg_id;
     const auto axis = stmt->axis;
-    used.buf_earg = true;
-    emit("int {} = _earg_i32_[{} * {} + {}];", name, arg_id,
-         taichi_max_num_indices, axis);
+    used.buf_args = true;
+    emit("int {} = _args_i32_[{} + {} * {} + {}];", name,
+         taichi_opengl_earg_base / sizeof(int), arg_id, taichi_max_num_indices,
+         axis);
   }
 
   std::string make_kernel_name() {

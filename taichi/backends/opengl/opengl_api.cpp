@@ -272,15 +272,15 @@ struct GLBuffer : GLSSBO {
   }
 
   void copy_back() {
-    copy_back(base);
+    copy_back(base, size);
   }
 
-  void copy_back(void *ptr) {
-    if (!size)
+  void copy_back(void *ptr, size_t len) {
+    if (!len)
       return;
     void *mapped = this->map();
     TI_ASSERT(mapped);
-    std::memcpy(ptr, mapped, size);
+    std::memcpy(ptr, mapped, len);
     this->unmap();
   }
 };
@@ -528,11 +528,15 @@ struct CompiledProgram::Impl {
     GLBufferTable &bufs = launcher->impl->user_bufs;
     std::vector<char> base_arr;
     std::vector<void *> saved_ctx_ptrs;
+    std::vector<char> args;
+    args.resize(std::max(arg_count, ret_count) * sizeof(uint64_t));
     // NOTE: these dirty codes are introduced by #694, TODO: RAII
     /// DIRTY_BEGIN {{{
     if (ext_arr_map.size()) {
-      bufs.add_buffer(GLBufId::Earg, ctx.extra_args,
-                      arg_count * taichi_max_num_args * sizeof(int));
+      args.resize(taichi_opengl_earg_base +
+                  arg_count * taichi_max_num_indices * sizeof(int));
+      std::memcpy(args.data() + taichi_opengl_earg_base, ctx.extra_args,
+                  arg_count * taichi_max_num_indices * sizeof(int));
       if (ext_arr_map.size() == 1) {  // zero-copy for only one ext_arr
         auto it = ext_arr_map.begin();
         auto extptr = (void *)ctx.args[it->first];
@@ -558,8 +562,8 @@ struct CompiledProgram::Impl {
       }
     }
     /// DIRTY_END }}}
-    bufs.add_buffer(GLBufId::Args, ctx.args,
-                    std::max(arg_count, ret_count) * sizeof(uint64_t));
+    std::memcpy(args.data(), ctx.args, arg_count * sizeof(uint64_t));
+    bufs.add_buffer(GLBufId::Args, args.data(), args.size());
     if (used.print) {
       // TODO(archibate): use result_buffer for print results
       auto runtime_buf = launcher->impl->core_bufs.get(GLBufId::Runtime);
@@ -571,10 +575,11 @@ struct CompiledProgram::Impl {
       ker->dispatch_compute(launcher);
     }
     for (auto &[idx, buf] : launcher->impl->user_bufs.bufs) {
-      if (buf->index == GLBufId::Args)
-        buf->copy_back(launcher->result_buffer);
-      else
+      if (buf->index == GLBufId::Args) {
+        buf->copy_back(launcher->result_buffer, ret_count * sizeof(uint64_t));
+      } else {
         buf->copy_back();
+      }
     }
     launcher->impl->user_bufs.clear();
     if (used.print) {

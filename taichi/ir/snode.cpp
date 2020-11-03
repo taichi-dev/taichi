@@ -150,7 +150,7 @@ SNode *SNode::get_least_sparse_ancestor() const {
     return nullptr;
   }
   SNode *result = parent;
-  while (result->type == SNodeType::dense) {
+  while (!result->need_activation()) {
     result = result->parent;
     TI_ASSERT(result);
   }

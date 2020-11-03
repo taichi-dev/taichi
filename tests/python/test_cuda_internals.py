@@ -3,9 +3,8 @@ import taichi as ti
 # TODO: these are not really tests...
 
 
+@ti.test(arch=ti.cuda)
 def test_do_nothing():
-    ti.init(arch=ti.cuda)
-
     @ti.kernel
     def test():
         for i in range(10):
@@ -14,8 +13,8 @@ def test_do_nothing():
     test()
 
 
+@ti.test(arch=ti.cuda)
 def test_active_mask():
-    ti.init(arch=ti.cuda)
 
     @ti.kernel
     def test():
@@ -26,9 +25,8 @@ def test_active_mask():
     test()
 
 
+@ti.test(arch=ti.cuda)
 def test_shfl_down():
-    ti.init(arch=ti.cuda)
-
     @ti.kernel
     def test():
         for i in range(32):

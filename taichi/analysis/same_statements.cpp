@@ -15,9 +15,7 @@ class IRNodeComparator : public IRVisitor {
   // map the id from this node to the other node
   std::unordered_map<int, int> id_map;
 
-  // ids which don't belong to either node
-  std::unordered_set<int> captured_id;
-  bool implicitly_capture_ids;
+  bool implicitly_map_ids;
 
  public:
   bool same;
@@ -29,21 +27,14 @@ class IRNodeComparator : public IRVisitor {
     invoke_default_visitor = true;
     same = true;
     if (id_map.has_value()) {
-      implicitly_capture_ids = false;
+      implicitly_map_ids = false;
       this->id_map = std::move(id_map.value());
     } else {
-      implicitly_capture_ids = true;
+      implicitly_map_ids = true;
     }
   }
 
   void map_id(int this_id, int other_id) {
-    if (implicitly_capture_ids) {
-      if (captured_id.find(this_id) != captured_id.end() ||
-          captured_id.find(other_id) != captured_id.end()) {
-        same = false;
-        return;
-      }
-    }
     auto it = id_map.find(this_id);
     if (it == id_map.end()) {
       id_map[this_id] = other_id;
@@ -62,14 +53,12 @@ class IRNodeComparator : public IRVisitor {
       }
       return;
     }
-    if (implicitly_capture_ids) {
-      // if not found, should be captured
-      if (captured_id.find(this_stmt->id) == captured_id.end()) {
-        captured_id.insert(this_stmt->id);
-      }
+    if (implicitly_map_ids) {
+      // use identity mapping if not found
       if (this_stmt->id != other_stmt->id) {
         same = false;
       }
+      id_map[this_stmt->id] = other_stmt->id;
     } else {
       // recursively check them
       IRNode *backup_other_node = other_node;

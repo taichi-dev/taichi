@@ -214,8 +214,9 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
     insert_mask_states_bottom_up(snode);
   }
 
-  auto insert_value_states_top_down = [&](SNode *snode) {
-    // Insert output value states for all successors of snode.
+  auto insert_mask_and_value_states_top_down = [&](SNode *snode) {
+    // Insert input/output mask states and output value states
+    // for all descendents of snode.
     // Input value states will be inserted later if it's not
     // element-wise written.
     std::queue<SNode *> to_insert;
@@ -225,6 +226,15 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
       to_insert.pop();
       if (kernel_forces_no_activate.count(s) > 0) {
         continue;
+      }
+      if (s->type != SNodeType::dense && s->type != SNodeType::place &&
+          s->type != SNodeType::root) {
+        meta.input_states.emplace(s, AsyncState::Type::mask);
+        meta.output_states.emplace(s, AsyncState::Type::mask);
+        if (is_gc_able(s->type)) {
+          meta.input_states.emplace(s, AsyncState::Type::allocator);
+          meta.output_states.emplace(s, AsyncState::Type::allocator);
+        }
       }
       if (s->type == SNodeType::place) {
         meta.output_states.emplace(s, AsyncState::Type::value);
@@ -240,7 +250,9 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
   };
 
   for (auto &snode : deactivates) {
-    insert_value_states_top_down(snode);
+    // The mask states and value states are actually modified in
+    // the next gc task of snode.
+    insert_mask_and_value_states_top_down(snode);
   }
 
   if (root_stmt->task_type == OffloadedTaskType::listgen) {
@@ -259,9 +271,7 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
   } else if ((root_stmt->task_type == OffloadedTaskType::gc) &&
              (is_gc_able(root_stmt->snode->type))) {
     meta.snode = root_stmt->snode;
-    meta.input_states.emplace(meta.snode, AsyncState::Type::allocator);
-    meta.output_states.emplace(meta.snode, AsyncState::Type::allocator);
-    insert_value_states_top_down(root_stmt->snode);
+    insert_mask_and_value_states_top_down(root_stmt->snode);
   }
 
   // We are being conservative here: if there are any non-element-wise

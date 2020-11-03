@@ -12,6 +12,8 @@ class SNode;
 
 namespace opengl {
 
+constexpr int taichi_opengl_earg_base = taichi_max_num_args * sizeof(uint64_t);
+
 struct UsedFeature {
   // types:
   bool simulated_atomic_float{false};
@@ -60,7 +62,6 @@ enum class GLBufId {
   Listman = 7,
   Gtmp = 1,
   Args = 2,
-  Earg = 3,
   Extr = 4,
 };
 

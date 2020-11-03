@@ -248,17 +248,21 @@ bool StateFlowGraph::optimize_listgen() {
         // Test if two list generations share the same mask and parent list
         auto snode = node_a->meta->snode;
 
-        auto mask_state = AsyncState{snode, AsyncState::Type::mask};
         auto list_state = AsyncState{snode, AsyncState::Type::list};
         auto parent_list_state =
             AsyncState{snode->parent, AsyncState::Type::list};
 
-        TI_ASSERT(get_or_insert(node_a->input_edges, mask_state).size() == 1);
-        TI_ASSERT(get_or_insert(node_b->input_edges, mask_state).size() == 1);
+        if (!snode->is_path_all_dense) {
+          // Needs mask state
+          auto mask_state = AsyncState{snode->get_least_sparse_ancestor(),
+                                       AsyncState::Type::mask};
+          TI_ASSERT(get_or_insert(node_a->input_edges, mask_state).size() == 1);
+          TI_ASSERT(get_or_insert(node_b->input_edges, mask_state).size() == 1);
 
-        if (*get_or_insert(node_a->input_edges, mask_state).begin() !=
-            *get_or_insert(node_b->input_edges, mask_state).begin())
-          break;
+          if (*get_or_insert(node_a->input_edges, mask_state).begin() !=
+              *get_or_insert(node_b->input_edges, mask_state).begin())
+            break;
+        }
 
         TI_ASSERT(
             get_or_insert(node_a->input_edges, parent_list_state).size() == 1);

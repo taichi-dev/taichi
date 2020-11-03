@@ -260,7 +260,10 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
     meta.snode = root_stmt->snode;
     meta.input_states.emplace(root_stmt->snode->parent, AsyncState::Type::list);
     meta.input_states.emplace(root_stmt->snode, AsyncState::Type::list);
-    meta.input_states.emplace(root_stmt->snode, AsyncState::Type::mask);
+    if (!root_stmt->snode->is_path_all_dense) {
+      meta.input_states.emplace(root_stmt->snode->get_least_sparse_ancestor(),
+                                AsyncState::Type::mask);
+    }
     meta.output_states.emplace(root_stmt->snode, AsyncState::Type::list);
   } else if (root_stmt->task_type == OffloadedTaskType::struct_for) {
     meta.snode = root_stmt->snode;

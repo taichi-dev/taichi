@@ -252,10 +252,9 @@ bool StateFlowGraph::optimize_listgen() {
         auto parent_list_state =
             AsyncState{snode->parent, AsyncState::Type::list};
 
-        if (!snode->is_path_all_dense) {
+        if (snode->need_activation()) {
           // Needs mask state
-          auto mask_state = AsyncState{snode->get_least_sparse_ancestor(),
-                                       AsyncState::Type::mask};
+          auto mask_state = AsyncState{snode, AsyncState::Type::mask};
           TI_ASSERT(get_or_insert(node_a->input_edges, mask_state).size() == 1);
           TI_ASSERT(get_or_insert(node_b->input_edges, mask_state).size() == 1);
 
@@ -924,12 +923,6 @@ void StateFlowGraph::topo_sort_nodes() {
           previous_size, nodes_.size());
     }
   }
-  bool changed = false;
-  for (int i = 1; i < (int)nodes_.size(); i++)
-    if (nodes_[i]->node_id != i) {
-      changed = true;
-      break;
-    }
   reid_nodes();
   reid_pending_nodes();
 }

@@ -15,7 +15,7 @@ class IRNodeComparator : public IRVisitor {
   // map the id from this node to the other node
   std::unordered_map<int, int> id_map;
 
-  bool implicitly_map_ids;
+  bool recursively_check_;
 
  public:
   bool same;
@@ -27,10 +27,10 @@ class IRNodeComparator : public IRVisitor {
     invoke_default_visitor = true;
     same = true;
     if (id_map.has_value()) {
-      implicitly_map_ids = false;
+      recursively_check_ = true;
       this->id_map = std::move(id_map.value());
     } else {
-      implicitly_map_ids = true;
+      recursively_check_ = false;
     }
   }
 
@@ -53,7 +53,7 @@ class IRNodeComparator : public IRVisitor {
       }
       return;
     }
-    if (implicitly_map_ids) {
+    if (!recursively_check_) {
       // use identity mapping if not found
       if (this_stmt->id != other_stmt->id) {
         same = false;
@@ -216,15 +216,37 @@ namespace irpass::analysis {
 bool same_statements(IRNode *root1,
                      IRNode *root2,
                      std::optional<std::unordered_map<int, int>> id_map) {
+  // When id_map is std::nullopt by default, this function tests if
+  // root1 and root2 are the same, i.e., have the same type,
+  // the same operands and the same fields.
+  // If root1 and root2 are container statements or statement blocks,
+  // this function traverses the contents correspondingly.
+  // Two operands are considered the same if they have the same id
+  // and do not belong to either root, or they belong to root1 and root2
+  // according to the same position in the roots.
+  //
+  // For example, same_statements(block1, block2, std::nullopt) is true:
+  // <i32> $1 = ...
+  // block1 : {
+  //   <i32> $2 = const [1]
+  //   <i32> $3 = add $1 $2
+  // }
+  // block2 : {
+  //   <i32> $4 = const [1]
+  //   <i32> $5 = add $1 $4
+  // }
+  //
+  // If id_map is not std::nullopt, this function also recursively
+  // check the operands until ids in the id_map are reached.
   // id_map is an id map from root1 to root2.
   //
-  // For example, same_statements($3, $6) is true
+  // In the above example, same_statements($3, $5, std::nullopt) is false
+  // but same_statements($3, $5, (an empty map)) is true.
+  //
+  // In the following example, same_statements($3, $6, id_map) is true
   // iff id_map[1] == 4 && id_map[2] == 5:
   // <i32> $3 = add $1 $2
   // <i32> $6 = add $4 $5
-  //
-  // If capture_ids is std::nullopt by default, an identity mapping will
-  // be used. This is correct when root1 and root2 share the same IR root.
   if (root1 == root2)
     return true;
   if (!root1 || !root2)

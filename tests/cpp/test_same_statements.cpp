@@ -112,6 +112,44 @@ TI_TEST("same_statements") {
     TI_CHECK(!irpass::analysis::same_statements(lookup1, lookup_activate));
     TI_CHECK(!irpass::analysis::same_statements(lookup1, lookup_child));
   }
+
+  SECTION("test_same_value") {
+    auto block = std::make_unique<Block>();
+    auto one = block->push_back<ConstStmt>(TypedConstant(1));
+    auto if_stmt = block->push_back<IfStmt>(one)->as<IfStmt>();
+
+    auto true_clause = std::make_unique<Block>();
+    auto true_rand = true_clause->push_back<RandStmt>(PrimitiveType::i32);
+    auto true_add =
+        true_clause->push_back<BinaryOpStmt>(BinaryOpType::add, one, true_rand);
+    if_stmt->set_true_statements(std::move(true_clause));
+
+    auto false_clause = std::make_unique<Block>();
+    auto false_rand = false_clause->push_back<RandStmt>(PrimitiveType::i32);
+    auto false_add = false_clause->push_back<BinaryOpStmt>(BinaryOpType::add,
+                                                           one, false_rand);
+    if_stmt->set_false_statements(std::move(false_clause));
+
+    irpass::type_check(block.get());
+    irpass::re_id(block.get());
+    TI_CHECK(irpass::analysis::count_statements(block.get()) == 6);
+
+    TI_CHECK(irpass::analysis::same_statements(true_rand, false_rand));
+    TI_CHECK(!irpass::analysis::same_value(true_rand, false_rand));
+    TI_CHECK(irpass::analysis::same_statements(
+        if_stmt->true_statements.get(), if_stmt->false_statements.get()));
+
+    // They should be considered different if we don't check recursively.
+    TI_CHECK(
+        !irpass::analysis::same_statements(true_add, false_add, std::nullopt));
+    TI_CHECK(irpass::analysis::same_statements(
+        true_add, false_add,
+        std::make_optional<std::unordered_map<int, int>>()));
+
+    TI_CHECK(!irpass::analysis::same_value(
+        true_add, false_add,
+        std::make_optional<std::unordered_map<int, int>>()));
+  }
 }
 
 TLANG_NAMESPACE_END

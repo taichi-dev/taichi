@@ -20,9 +20,6 @@ struct UsedFeature {
   bool int64{false};
   bool float64{false};
 
-  // sparse:
-  bool listman{false};
-
   // buffers:
   bool buf_args{false};
   bool buf_earg{false};
@@ -31,6 +28,7 @@ struct UsedFeature {
 
   // utilties:
   bool fast_pow{false};
+  bool listman{false};
   bool random{false};
   bool print{false};
 

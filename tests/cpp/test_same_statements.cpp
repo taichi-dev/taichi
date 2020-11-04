@@ -150,6 +150,25 @@ TI_TEST("same_statements") {
         true_add, false_add,
         std::make_optional<std::unordered_map<int, int>>()));
   }
+
+  SECTION("test_same_loop_index") {
+    auto block = std::make_unique<Block>();
+    auto zero = block->push_back<ConstStmt>(TypedConstant(0));
+    auto four = block->push_back<ConstStmt>(TypedConstant(4));
+    auto range_for =
+        block
+            ->push_back<RangeForStmt>(zero, four, std::make_unique<Block>(), 1,
+                                      1, 1, false)
+            ->as<RangeForStmt>();
+    auto loop_index_a = range_for->body->push_back<LoopIndexStmt>(range_for, 0);
+    auto loop_index_b = range_for->body->push_back<LoopIndexStmt>(range_for, 0);
+
+    irpass::type_check(block.get());
+    irpass::re_id(block.get());
+
+    TI_CHECK(irpass::analysis::same_statements(loop_index_a, loop_index_b));
+    TI_CHECK(irpass::analysis::same_value(loop_index_a, loop_index_b));
+  }
 }
 
 TLANG_NAMESPACE_END

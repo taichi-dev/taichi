@@ -84,11 +84,11 @@ bool maybe_same_address(Stmt *var1, Stmt *var2);
 bool same_statements(
     IRNode *root1,
     IRNode *root2,
-    std::optional<std::unordered_map<int, int>> id_map = std::nullopt);
+    const std::optional<std::unordered_map<int, int>> &id_map = std::nullopt);
 bool same_value(
     Stmt *stmt1,
     Stmt *stmt2,
-    std::optional<std::unordered_map<int, int>> id_map = std::nullopt);
+    const std::optional<std::unordered_map<int, int>> &id_map = std::nullopt);
 DiffRange value_diff_loop_index(Stmt *stmt, Stmt *loop, int index_id);
 std::pair<bool, int> value_diff_ptr_index(Stmt *val1, Stmt *val2);
 std::unordered_set<Stmt *> constexpr_prop(

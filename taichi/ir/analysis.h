@@ -81,6 +81,16 @@ std::vector<Stmt *> get_store_destination(Stmt *store_stmt);
 bool has_store_or_atomic(IRNode *root, const std::vector<Stmt *> &vars);
 std::pair<bool, Stmt *> last_store_or_atomic(IRNode *root, Stmt *var);
 bool maybe_same_address(Stmt *var1, Stmt *var2);
+/** Test if root1 and root2 are the same, i.e., have the same type,
+ *  the same operands, the same fields, and the same containing statements.
+ *
+ *  @param id_map
+ *    If id_map is std::nullopt by default, two operands are considered
+ *    the same if they have the same id and do not belong to either root,
+ *    or they belong to root1 and root2 at the same position in the roots.
+ *    Otherwise, this function also recursively check the operands until
+ *    ids in the id_map are reached.
+ */
 bool same_statements(
     IRNode *root1,
     IRNode *root2,

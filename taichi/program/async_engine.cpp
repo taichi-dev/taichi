@@ -212,9 +212,11 @@ void AsyncEngine::synchronize() {
   bool modified = true;
   TI_TRACE("Synchronizing SFG of {} nodes", sfg->size());
   debug_sfg("initial");
-  sfg->reid_nodes();
-  sfg->reid_pending_nodes();
-  sfg->verify();
+  if (program->config.debug) {
+    sfg->reid_nodes();
+    sfg->reid_pending_nodes();
+    sfg->verify();
+  }
   while (modified) {
     modified = false;
     if (program->config.async_opt_listgen) {

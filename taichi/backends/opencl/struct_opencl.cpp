@@ -18,6 +18,7 @@ class OpenclLayoutGen {
   std::string compile() {
     TI_ASSERT(root->type == SNodeType::root);
     generate_types(root);
+
     auto source = line_appender.lines();
     TI_INFO("struct compiled result:\n{}", source);
     return source;
@@ -41,12 +42,12 @@ class OpenclLayoutGen {
       emit("{} {};", type, node_name);
 
     } else if (snode->type == SNodeType::root) {
-      emit("struct {} {{", struct_name);
+      emit("struct Ti_{} {{", struct_name);
       generate_children(snode);
       emit("}};");
 
     } else if (snode->type == SNodeType::dense) {
-      emit("struct {} {{", struct_name);
+      emit("struct Ti_{} {{", struct_name);
       generate_children(snode);
       emit("}} {}[{}];", node_name, snode->n);
 

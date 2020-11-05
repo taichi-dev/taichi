@@ -18,10 +18,12 @@ namespace {
 // Generate corresponding OpenCL Source Code for Taichi Kernels
 class OpenclKernelGen : public IRVisitor {
  private:
+  OpenclProgram *program;
   Kernel *kernel;
 
  public:
-  OpenclKernelGen(Kernel *kernel) : kernel(kernel) {
+  OpenclKernelGen(OpenclProgram *program, Kernel *kernel)
+      : program(program), kernel(kernel) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
   }
@@ -29,8 +31,8 @@ class OpenclKernelGen : public IRVisitor {
   std::unique_ptr<OpenclKernel> compile() {
     this->lower();
     this->run();
-    auto source = line_appender.lines();
-    TI_INFO("kernel [{}]:\n{}", kernel->name, source);
+    auto source = program->get_header_lines() + line_appender.lines();
+    TI_INFO("[{}]:\n{}", kernel->name, source);
     return std::make_unique<OpenclKernel>(kernel->name, source);
   }
 
@@ -83,8 +85,8 @@ class OpenclKernelGen : public IRVisitor {
     auto end_expr = fmt::format("{}", stmt->end_value);
 
     emit("for (int {} = {} + get_global_id(0);", stmt->raw_name(), begin_expr);
-    emit("         {} < {}; {} += get_global_size(0)) {{",
-        stmt->raw_name(), end_expr, stmt->raw_name());
+    emit("         {} < {}; {} += get_global_size(0)) {{", stmt->raw_name(),
+         end_expr, stmt->raw_name());
     stmt->body->accept(this);
     emit("}}");
   }
@@ -136,13 +138,20 @@ bool OpenclProgram::is_opencl_api_available() {
 }
 
 OpenclProgram::OpenclProgram(Program *prog) : prog(prog) {
+  header_source =
+#include "taichi/backends/opencl/runtime/base.h"
+    ;
+}
+
+std::string OpenclProgram::get_header_lines() {
+  return header_source + "\n" + layout_source + "\n";
 }
 
 OpenclProgram::~OpenclProgram() {
 }
 
 FunctionType OpenclProgram::compile_kernel(Kernel *kernel) {
-  OpenclKernelGen codegen(kernel);
+  OpenclKernelGen codegen(this, kernel);
   auto ker = codegen.compile();
   auto ker_ptr = ker.get();
   kernels.push_back(std::move(ker));  // prevent unique_ptr being released

@@ -11,29 +11,7 @@ TLANG_NAMESPACE_BEGIN
 namespace opencl {
 
 inline std::string opencl_data_type_name(DataType dt) {
-  TI_ASSERT(dt->is<PrimitiveType>());
-  if (dt->is_primitive(PrimitiveTypeID::i8))
-    return "char";
-  if (dt->is_primitive(PrimitiveTypeID::i16))
-    return "short";
-  if (dt->is_primitive(PrimitiveTypeID::i32))
-    return "int";
-  if (dt->is_primitive(PrimitiveTypeID::i64))
-    return "long long";
-  if (dt->is_primitive(PrimitiveTypeID::u8))
-    return "unsigned char";
-  if (dt->is_primitive(PrimitiveTypeID::u16))
-    return "unsigned short";
-  if (dt->is_primitive(PrimitiveTypeID::u32))
-    return "unsigned int";
-  if (dt->is_primitive(PrimitiveTypeID::u64))
-    return "unsigned long long";
-  if (dt->is_primitive(PrimitiveTypeID::f32))
-    return "float";
-  if (dt->is_primitive(PrimitiveTypeID::f64))
-    return "double";
-  TI_P(data_type_name(dt));
-  TI_NOT_IMPLEMENTED
+  return "Ti_" + data_type_short_name(dt);
 }
 
 inline bool opencl_is_binary_op_infix(BinaryOpType op) {

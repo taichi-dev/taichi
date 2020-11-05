@@ -18,6 +18,7 @@ class OpenclKernel;
 class OpenclProgram {
   Program *prog;
   std::string layout_source;
+  std::string header_source;
 
   std::vector<std::unique_ptr<OpenclKernel>> kernels;
 
@@ -29,6 +30,7 @@ class OpenclProgram {
 
   FunctionType compile_kernel(Kernel *kernel);
   void compile_layout(SNode *root);
+  std::string get_header_lines();
 };
 
 }  // namespace opencl

@@ -1,4 +1,4 @@
-#ifdef _CC_INSIDE_KERNEL
+#ifdef _TI_OPENCL_INSIDE_KERNEL
 #include "taichi/util/macros.h"
 // clang-format off
 STR(
@@ -27,35 +27,29 @@ union Ti_BitCast {
 };
 
 struct Ti_Context {
-  struct Ti_S0root *root;
-  // In some C compilers `void *p; p + 1 == p;`, so let's use `char *p`:
-  Ti_i8 *gtmp;
-
-  union Ti_BitCast *args;
-  Ti_i32 *earg;
+  union Ti_BitCast args[8];
+  Ti_i32 extra_args[8 * 8];
 };
 )
 
 // clang-format on
-#else  // _CC_INSIDE_KERNEL
+#else  // _TI_OPENCL_INSIDE_KERNEL
 
 #include "cc_program.h"
 #include "taichi/lang_util.h"
 
 TLANG_NAMESPACE_BEGIN
 
-namespace cccp {
+namespace opencl {
 
-struct CCContext {
-  void *root;
-  void *gtmp;
-
-  uint64_t *args;
-  int *earg;
+struct OpenclContext {
+  uint64_t args[8];
+  int extra_args[8 * 8];
 };
 
 };  // namespace cccp
 
 TLANG_NAMESPACE_END
 
-#endif  // _CC_INSIDE_KERNEL
+#endif  // _TI_OPENCL_INSIDE_KERNEL
+

@@ -238,7 +238,7 @@ bool same_statements(
   // this function traverses the contents correspondingly.
   // Two operands are considered the same if they have the same id
   // and do not belong to either root, or they belong to root1 and root2
-  // according to the same position in the roots.
+  // at the same position in the roots.
   //
   // For example, same_statements(block1, block2, std::nullopt) is true:
   // <i32> $1 = ...

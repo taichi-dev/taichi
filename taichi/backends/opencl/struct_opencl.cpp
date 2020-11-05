@@ -12,7 +12,7 @@ namespace {
 class OpenclLayoutGen {
  public:
   OpenclLayoutGen(OpenclProgram *program, SNode *root)
-    : program(program), root(root) {
+      : program(program), root(root) {
   }
 
   std::string compile() {

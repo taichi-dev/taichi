@@ -176,7 +176,8 @@ void export_misc(py::module &m) {
   m.def("with_opengl", taichi::lang::opengl::is_opengl_api_available);
 
 #ifdef TI_WITH_OPENCL
-  m.def("with_opencl", taichi::lang::opencl::OpenclProgram::is_opencl_api_available);
+  m.def("with_opencl",
+        taichi::lang::opencl::OpenclProgram::is_opencl_api_available);
 #else
   m.def("with_opencl", []() { return false; });
 #endif
@@ -191,8 +192,9 @@ void export_misc(py::module &m) {
       .def(py::init<>())
       .def("clear", &Statistics::clear)
       .def("get_counters", &Statistics::get_counters);
-  m.def("get_kernel_stats", []() -> Statistics & { return stat; },
-        py::return_value_policy::reference);
+  m.def(
+      "get_kernel_stats", []() -> Statistics & { return stat; },
+      py::return_value_policy::reference);
 }
 
 TI_NAMESPACE_END

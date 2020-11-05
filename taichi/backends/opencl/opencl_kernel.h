@@ -19,11 +19,12 @@ class OpenclKernel {
 
  public:
   OpenclKernel(std::string name, std::string const &source)
-    : name(name), source(source) {}
+      : name(name), source(source) {
+  }
 
-  void launch(Context *ctx) {}
+  void launch(Context *ctx) {
+  }
 };
 
 }  // namespace opencl
 TLANG_NAMESPACE_END
-

@@ -8,6 +8,7 @@
 #include "taichi/program/program.h"
 #include "taichi/util/line_appender.h"
 #include "taichi/util/macros.h"
+#include "taichi/util/str.h"
 
 TLANG_NAMESPACE_BEGIN
 namespace opencl {
@@ -28,7 +29,9 @@ class OpenclKernelGen : public IRVisitor {
   std::unique_ptr<OpenclKernel> compile() {
     this->lower();
     this->run();
-    return std::make_unique<OpenclKernel>("func", "hello");
+    auto source = line_appender.lines();
+    TI_INFO("kernel [{}]:\n{}", kernel->name, source);
+    return std::make_unique<OpenclKernel>(kernel->name, source);
   }
 
  private:
@@ -51,11 +54,66 @@ class OpenclKernelGen : public IRVisitor {
   }
 
   void visit(Stmt *stmt) override {
-    TI_WARN("[cl] unsupported statement type {}", typeid(*stmt).name());
+    TI_WARN("Unsupported statement `{}` for OpenCL", typeid(*stmt).name());
+  }
+
+  void visit(OffloadedStmt *stmt) override {
+    TI_ASSERT(is_top_level);
+    is_top_level = false;
+    if (stmt->task_type == OffloadedStmt::TaskType::serial) {
+      generate_serial_kernel(stmt);
+    } else if (stmt->task_type == OffloadedStmt::TaskType::range_for) {
+      generate_range_for_kernel(stmt);
+    } else {
+      TI_ERROR("Unsupported offload type={} on OpenCL backend",
+               stmt->task_name());
+    }
+    is_top_level = true;
+  }
+
+  void generate_serial_kernel(OffloadedStmt *stmt) {
+    stmt->body->accept(this);
+  }
+
+  void generate_range_for_kernel(OffloadedStmt *stmt) {
+    ScopedIndent _s(line_appender);
+
+    TI_ASSERT(stmt->const_begin && stmt->const_end);
+    auto begin_expr = fmt::format("{}", stmt->begin_value);
+    auto end_expr = fmt::format("{}", stmt->end_value);
+
+    emit("for (int {} = {} + get_global_id(0);", stmt->raw_name(), begin_expr);
+    emit("         {} < {}; {} += get_global_size(0)) {{",
+        stmt->raw_name(), end_expr, stmt->raw_name());
+    stmt->body->accept(this);
+    emit("}}");
+  }
+
+  void visit(PrintStmt *stmt) override {
+    std::string format;
+    std::vector<std::string> values;
+
+    for (int i = 0; i < stmt->contents.size(); i++) {
+      auto const &content = stmt->contents[i];
+
+      if (std::holds_alternative<Stmt *>(content)) {
+        auto arg_stmt = std::get<Stmt *>(content);
+        format += data_type_format(arg_stmt->ret_type);
+        values.push_back(arg_stmt->raw_name());
+
+      } else {
+        auto str = std::get<std::string>(content);
+        format += "%s";
+        values.push_back(c_quoted(str));
+      }
+    }
+
+    values.insert(values.begin(), c_quoted(format));
+    emit("printf({});", fmt::join(values, ", "));
   }
 
   void run() {
-    emit("void Tk_{}() {{", kernel->name);
+    emit("__kernel void {}() {{", kernel->name);
     kernel->ir->accept(this);
     emit("}}");
   }

@@ -39,6 +39,7 @@ arm64 = core.arm64
 cuda = core.cuda
 metal = core.metal
 opengl = core.opengl
+opencl = core.opencl
 cc = core.cc
 gpu = [cuda, metal, opengl]
 cpu = core.host_arch()
@@ -514,6 +515,7 @@ def is_arch_supported(arch):
         cuda: core.with_cuda,
         metal: core.with_metal,
         opengl: core.with_opengl,
+        opencl: core.with_opencl,
         cc: core.with_cc,
         cpu: lambda: True
     }

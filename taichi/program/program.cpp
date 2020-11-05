@@ -28,7 +28,9 @@
 #include "taichi/backends/cc/struct_cc.h"
 #include "taichi/backends/cc/cc_layout.h"
 #include "taichi/backends/cc/codegen_cc.h"
-#else
+#endif
+#if defined(TI_WITH_OPENCL)
+#include "taichi/backends/opencl/opencl_program.h"
 #endif
 
 TI_NAMESPACE_BEGIN
@@ -100,6 +102,20 @@ Program::Program(Arch desired_arch) {
     cc_program = std::make_unique<cccp::CCProgram>(this);
 #else
     TI_WARN("No C backend detected.");
+    arch = host_arch();
+#endif
+  }
+
+  if (arch == Arch::opencl) {
+#ifdef TI_WITH_OPENCL
+    if (!opencl::OpenclProgram::is_opencl_api_available()) {
+      TI_WARN("No OpenCL platforms detected.");
+      arch = host_arch();
+    } else {
+      opencl_program = std::make_unique<opencl::OpenclProgram>(this);
+    }
+#else
+    TI_WARN("Taichi is not built with OpenCL backend.");
     arch = host_arch();
 #endif
   }
@@ -219,6 +235,10 @@ FunctionType Program::compile(Kernel &kernel) {
   } else if (kernel.arch == Arch::cc) {
     ret = cccp::compile_kernel(&kernel);
 #endif
+#ifdef TI_WITH_OPENCL
+  } else if (kernel.arch == Arch::opencl) {
+    ret = opencl_program->compile_kernel(&kernel);
+#endif
   } else {
     TI_NOT_IMPLEMENTED;
   }
@@ -227,6 +247,7 @@ FunctionType Program::compile(Kernel &kernel) {
   return ret;
 }
 
+// TODO(archibate): utilize this function in cc/opencl/opengl?
 FunctionType Program::compile_to_backend_executable(Kernel &kernel,
                                                     OffloadedStmt *offloaded) {
   if (arch_is_cpu(kernel.arch) || kernel.arch == Arch::cuda) {
@@ -379,12 +400,14 @@ void Program::materialize_layout() {
   }
 
   TI_TRACE("materialize_layout called");
+
   if (config.arch == Arch::cuda) {
     initialize_device_llvm_context();
     std::unique_ptr<StructCompiler> scomp_gpu =
         StructCompiler::make(this, Arch::cuda);
     scomp_gpu->run(*snode_root, false);
     initialize_runtime_system(scomp_gpu.get());
+
   } else if (config.arch == Arch::metal) {
     TI_ASSERT_INFO(config.use_llvm,
                    "Metal arch requires that LLVM being enabled");
@@ -403,6 +426,7 @@ void Program::materialize_layout() {
       metal_kernel_mgr_ =
           std::make_unique<metal::KernelManager>(std::move(params));
     }
+
   } else if (config.arch == Arch::opengl) {
     TI_ASSERT(result_buffer == nullptr);
     result_buffer = allocate_result_buffer_default(this);
@@ -413,11 +437,19 @@ void Program::materialize_layout() {
     opengl_kernel_launcher_ = std::make_unique<opengl::GLSLLauncher>(
         opengl_struct_compiled_->root_size);
     opengl_kernel_launcher_->result_buffer = result_buffer;
+
 #ifdef TI_WITH_CC
   } else if (config.arch == Arch::cc) {
     TI_ASSERT(result_buffer == nullptr);
     result_buffer = allocate_result_buffer_default(this);
     cc_program->compile_layout(snode_root.get());
+#endif
+
+#ifdef TI_WITH_OPENCL
+  } else if (config.arch == Arch::opencl) {
+    TI_ASSERT(result_buffer == nullptr);
+    result_buffer = allocate_result_buffer_default(this);
+    opencl_program->compile_layout(snode_root.get());
 #endif
   }
 }

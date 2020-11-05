@@ -8,6 +8,7 @@
   "lang"            : "Language and syntax",
   "metal"           : "Metal backend",
   "opengl"          : "OpenGL backend",
+  "opencl"          : "OpenCL backend",
   "misc"            : "Miscellaneous",
   "std"             : "Standard library",
   "opt"             : "IR optimization passes",

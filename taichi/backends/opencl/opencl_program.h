@@ -18,11 +18,13 @@ class OpenclKernel;
 class OpenclProgram {
   Program *prog;
   std::string layout_source;
-  std::string header_source;
 
   std::vector<std::unique_ptr<OpenclKernel>> kernels;
 
  public:
+  struct Impl;
+  std::unique_ptr<Impl> impl;
+
   static bool is_opencl_api_available();
 
   OpenclProgram(Program *prog);

@@ -33,7 +33,8 @@ class OpenclKernelGen : public IRVisitor {
     this->run();
     auto source = line_appender.lines();
     TI_INFO("[{}]:\n{}", kernel->name, source);
-    return std::make_unique<OpenclKernel>(kernel->name, source);
+    return std::make_unique<OpenclKernel>(program, kernel->name,
+        offload_count, source);
   }
 
  private:
@@ -149,17 +150,11 @@ bool OpenclProgram::is_opencl_api_available() {
   return true;
 }
 
-OpenclProgram::OpenclProgram(Program *prog) : prog(prog) {
-  header_source =
+std::string OpenclProgram::get_header_lines() {
+  std::string header_source =
 #include "taichi/backends/opencl/runtime/base.h"
     ;
-}
-
-std::string OpenclProgram::get_header_lines() {
   return header_source + "\n" + layout_source + "\n";
-}
-
-OpenclProgram::~OpenclProgram() {
 }
 
 FunctionType OpenclProgram::compile_kernel(Kernel *kernel) {

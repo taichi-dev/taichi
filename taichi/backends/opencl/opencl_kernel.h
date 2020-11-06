@@ -6,24 +6,25 @@
 
 TLANG_NAMESPACE_BEGIN
 
-class SNode;
 struct Context;
-class Program;
-class Kernel;
 
 namespace opencl {
+
+class OpenclProgram;
 
 class OpenclKernel {
   std::string name;
   std::string source;
 
  public:
-  OpenclKernel(std::string name, std::string const &source)
-      : name(name), source(source) {
-  }
+  struct Impl;
+  std::unique_ptr<Impl> impl;
 
-  void launch(Context *ctx) {
-  }
+  OpenclKernel(OpenclProgram *prog, std::string name,
+      int offload_count, std::string const &source);
+  ~OpenclKernel();
+
+  void launch(Context *ctx);
 };
 
 }  // namespace opencl

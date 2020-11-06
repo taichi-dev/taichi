@@ -14,9 +14,6 @@ typedef unsigned long long Ti_u64;
 typedef float Ti_f32;
 typedef double Ti_f64;
 
-{
-}
-
 ) "\n" STR(
 )
 

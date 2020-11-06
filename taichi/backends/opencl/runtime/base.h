@@ -25,8 +25,4 @@ typedef double Ti_f64;
 #undef _TI_OPENCL_INSIDE_KERNEL
 
 "\n" STR(
-
-__global struct Ti_Context ti_ctx;
-__global struct Ti_S0root ti_root;
-
 )

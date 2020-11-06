@@ -31,7 +31,7 @@ class OpenclKernelGen : public IRVisitor {
   std::unique_ptr<OpenclKernel> compile() {
     this->lower();
     this->run();
-    auto source = program->get_header_lines() + line_appender.lines();
+    auto source = line_appender.lines();
     TI_INFO("[{}]:\n{}", kernel->name, source);
     return std::make_unique<OpenclKernel>(kernel->name, source);
   }
@@ -39,6 +39,7 @@ class OpenclKernelGen : public IRVisitor {
  private:
   LineAppender line_appender;
   bool is_top_level{true};
+  int offload_count = 0;
 
   template <typename... Args>
   void emit(std::string f, Args &&... args) {
@@ -60,6 +61,11 @@ class OpenclKernelGen : public IRVisitor {
   }
 
   void visit(OffloadedStmt *stmt) override {
+    emit("__kernel void offload_{}(", offload_count);
+    emit("    __global struct Ti_S0root *root,");
+    emit("    __global void *external,");
+    emit("    struct Ti_Context context) {{");
+
     TI_ASSERT(is_top_level);
     is_top_level = false;
     if (stmt->task_type == OffloadedStmt::TaskType::serial) {
@@ -71,22 +77,28 @@ class OpenclKernelGen : public IRVisitor {
                stmt->task_name());
     }
     is_top_level = true;
+
+    emit("}}");
+    offload_count++;
   }
 
   void generate_serial_kernel(OffloadedStmt *stmt) {
+    emit("  /* serial kernel */");
     stmt->body->accept(this);
   }
 
   void generate_range_for_kernel(OffloadedStmt *stmt) {
+    emit("  /* range-for kernel */");
     ScopedIndent _s(line_appender);
 
-    TI_ASSERT(stmt->const_begin && stmt->const_end);
-    auto begin_expr = fmt::format("{}", stmt->begin_value);
-    auto end_expr = fmt::format("{}", stmt->end_value);
+    auto name = stmt->raw_name();
 
-    emit("for (int {} = {} + get_global_id(0);", stmt->raw_name(), begin_expr);
-    emit("         {} < {}; {} += get_global_size(0)) {{", stmt->raw_name(),
-         end_expr, stmt->raw_name());
+    TI_ASSERT(stmt->const_begin && stmt->const_end);
+    emit("int {}_beg = {};", name, stmt->begin_value);
+    emit("int {}_end = {};", name, stmt->end_value);
+
+    emit("for (int {} = {}_beg + get_global_id(0);", name, name);
+    emit("    {} < {}_end; {} += get_global_size(0)) {{", name, name, name);
     stmt->body->accept(this);
     emit("}}");
   }
@@ -115,9 +127,9 @@ class OpenclKernelGen : public IRVisitor {
   }
 
   void run() {
-    emit("__kernel void {}() {{", kernel->name);
+    emit("{}", program->get_header_lines());
+    emit("/* Generated OpenCL program of Taichi kernel: {} */", kernel->name);
     kernel->ir->accept(this);
-    emit("}}");
   }
 
   void lower() {

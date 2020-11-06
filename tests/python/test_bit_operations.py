@@ -31,7 +31,6 @@ def test_bit_sar():
         assert sar(neg_test_num, i) == -2**(n - i)
 
 
-
 # TODO: the OpenGL backend doesn't support u32 type yet (#1931)
 @ti.test(exclude=ti.opengl)
 def test_bit_shr():

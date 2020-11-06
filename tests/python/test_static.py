@@ -28,14 +28,14 @@ def test_static_if_error():
     ti.root.dense(ti.i, 1).place(x)
 
     @ti.kernel
-    def static():
-        if ti.static(x[0]):
+    def static(val: float):
+        if ti.static(val > 0.5):
             x[0] = 1
         else:
             x[0] = 0
 
     with pytest.raises(ValueError, match='must be compile-time constants'):
-        static()
+        static(42)
 
 
 @ti.test()

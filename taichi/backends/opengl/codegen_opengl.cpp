@@ -92,25 +92,31 @@ class KernelGen : public IRVisitor {
   }
 
   // Note that the following two functions not only returns the corresponding
-  // data type, but also **records** the usage of `i64` and `f64`.
+  // data type, but also **records** the usage of data types to UsedFeatures.
   std::string opengl_data_type_short_name(DataType dt) {
-    if (dt->is_primitive(PrimitiveTypeID::i64)) {
+    if (dt->is_primitive(PrimitiveTypeID::i64)
+        || dt->is_primitive(PrimitiveTypeID::u64)) {
       if (!TI_OPENGL_REQUIRE(used, GL_ARB_gpu_shader_int64)) {
         TI_ERROR(
             "Extension GL_ARB_gpu_shader_int64 not supported on your OpenGL");
       }
-      used.int64 = true;
     }
+    if (dt->is_primitive(PrimitiveTypeID::f32))
+      used.float32 = true;
     if (dt->is_primitive(PrimitiveTypeID::f64))
       used.float64 = true;
+    if (dt->is_primitive(PrimitiveTypeID::i32))
+      used.int32 = true;
+    if (dt->is_primitive(PrimitiveTypeID::i64))
+      used.int64 = true;
+    if (dt->is_primitive(PrimitiveTypeID::u32))
+      used.uint32 = true;
+    if (dt->is_primitive(PrimitiveTypeID::u64))
+      used.uint64 = true;
     return data_type_short_name(dt);
   }
 
   std::string opengl_data_type_name(DataType dt) {
-    if (dt->is_primitive(PrimitiveTypeID::i64))
-      used.int64 = true;
-    if (dt->is_primitive(PrimitiveTypeID::f64))
-      used.float64 = true;
     return opengl::opengl_data_type_name(dt);
   }
 
@@ -136,42 +142,39 @@ class KernelGen : public IRVisitor {
 #include "taichi/backends/opengl/shaders/listman.h"
           );
 #undef __GLSL__
-    kernel_header +=
-      "layout(std430, binding = 0) buffer data_i32 { int _data_i32_[]; };\n"
-      "layout(std430, binding = 0) buffer data_f32 { float _data_f32_[]; };\n";
-    if (used.float64)
-      kernel_header += "layout(std430, binding = 0) buffer data_f64 { double _data_f64_[]; };\n";
-    if (used.int64)
-      kernel_header += "layout(std430, binding = 0) buffer data_i64 { int64_t _data_i64_[]; };\n";
 
-    if (used.buf_gtmp || used.random) {
-      kernel_header +=
-          "layout(std430, binding = 1) buffer gtmp_i32 { int _rand_state_[4]; int _gtmp_i32_[]; };\n"
-          "layout(std430, binding = 1) buffer gtmp_f32 { int _padding1_[4]; float _gtmp_f32_[]; };\n";
-      if (used.float64)
-        kernel_header += "layout(std430, binding = 1) buffer gtmp_f64 { int _padding2_[4]; double _gtmp_f64_[]; };\n";
-      if (used.int64)
-        kernel_header += "layout(std430, binding = 1) buffer gtmp_i64 { int _padding3_[4]; int64_t _gtmp_i64_[]; };\n";
-    }
-    if (used.buf_args) {
-      kernel_header +=
-          "layout(std430, binding = 2) buffer args_i32 { int _args_i32_[]; };\n"
-          "layout(std430, binding = 2) buffer args_f32 { float _args_f32_[]; };\n";
-      if (used.float64)
-        kernel_header += "layout(std430, binding = 2) buffer args_f64 { double _args_f64_[]; };\n";
-      if (used.int64)
-        kernel_header += "layout(std430, binding = 2) buffer args_i64 { int64_t _args_i64_[]; };\n";
-    }
-    if (used.buf_extr) {
-      kernel_header +=
-          "layout(std430, binding = 4) buffer extr_i32 { int _extr_i32_[]; };\n"
-          "layout(std430, binding = 4) buffer extr_f32 { float _extr_f32_[]; };\n";
-      if (used.float64)
-        kernel_header += "layout(std430, binding = 4) buffer extr_f64 { double _extr_f64_[]; };\n";
-      if (used.int64)
-        kernel_header += "layout(std430, binding = 4) buffer extr_i64 { int64_t _extr_i64_[]; };\n";
-    }
+#define REGISTER_BUFFER(name, id) do { \
+    if (used.int32) \
+      kernel_header += "layout(std430, binding = " + fmt::format("{}", id) \
+                    + ") buffer " #name "_i32 { int _" #name "_i32_[]; };\n"; \
+    if (used.int64) \
+      kernel_header += "layout(std430, binding = " + fmt::format("{}", id) \
+                    + ") buffer " #name "_i64 { int64_t _" #name "_i64_[]; };\n"; \
+    if (used.uint32) \
+      kernel_header += "layout(std430, binding = " + fmt::format("{}", id) \
+                    + ") buffer " #name "_u32 { uint _" #name "_u32_[]; };\n"; \
+    if (used.uint64) \
+      kernel_header += "layout(std430, binding = " + fmt::format("{}", id) \
+                    + ") buffer " #name "_u64 { uint64_t _" #name "_u64_[]; };\n"; \
+    if (used.float32) \
+      kernel_header += "layout(std430, binding = " + fmt::format("{}", id) \
+                    + ") buffer " #name "_f32 { float _" #name "_f32_[]; };\n"; \
+    if (used.float64) \
+      kernel_header += "layout(std430, binding = " + fmt::format("{}", id) \
+                    + ") buffer " #name "_f64 { double _" #name "_f64_[]; };\n"; \
+  } while (0)
+
+    REGISTER_BUFFER(data, GLBufId::Root);
+    if (used.buf_gtmp)
+      REGISTER_BUFFER(gtmp, GLBufId::Gtmp);
+    if (used.buf_args)
+      REGISTER_BUFFER(args, GLBufId::Args);
+    if (used.buf_extr)
+      REGISTER_BUFFER(extr, GLBufId::Extr);
+
+#undef REGISTER_BUFFER
     // clang-format on
+
     if (used.simulated_atomic_float) {
       kernel_header += (
 #include "taichi/backends/opengl/shaders/atomics_data_f32.glsl.h"
@@ -187,7 +190,7 @@ class KernelGen : public IRVisitor {
         );
       }
     }
-    // TODO(archibate): random in different offloads should share rand seed?
+
     if (used.random) {
       kernel_header += (
 #include "taichi/backends/opengl/shaders/random.glsl.h"
@@ -268,6 +271,9 @@ class KernelGen : public IRVisitor {
 
   void visit(RandStmt *stmt) override {
     used.random = true;
+    // since random generator uses _gtmp_i32_ as rand state:
+    used.buf_gtmp = true;
+    used.int32 = true;
     emit("{} {} = _rand_{}();", opengl_data_type_name(stmt->ret_type),
          stmt->short_name(), opengl_data_type_short_name(stmt->ret_type));
   }
@@ -426,6 +432,7 @@ class KernelGen : public IRVisitor {
       std::vector<std::string> size_var_names;
       for (int i = 0; i < num_indices; i++) {
         used.buf_args = true;
+        used.int32 = true;
         std::string var_name = fmt::format("_s{}_{}", i, stmt->short_name());
         emit("int {} = _args_i32_[{} + {} * {} + {}];", var_name,
              taichi_opengl_earg_base / sizeof(int), arg_id,
@@ -586,6 +593,7 @@ class KernelGen : public IRVisitor {
             opengl_data_type_short_name(dt));
       }
       used.simulated_atomic_float = true;
+      used.int32 = true;  // since simulated atomics are based on _data_i32_
       emit("{} {} = {}_{}_{}({} >> {}, {});",
            opengl_data_type_name(stmt->val->element_type()), stmt->short_name(),
            opengl_atomic_op_type_cap_name(stmt->op_type),
@@ -649,6 +657,7 @@ class KernelGen : public IRVisitor {
     const auto dt = opengl_data_type_name(stmt->element_type());
     used.buf_args = true;
     if (stmt->is_ptr) {
+      used.int32 = true;
       emit("int {} = _args_i32_[{} << 1]; // is ext pointer {}",
            stmt->short_name(), stmt->arg_id, dt);
     } else {
@@ -693,6 +702,7 @@ class KernelGen : public IRVisitor {
     const auto arg_id = stmt->arg_id;
     const auto axis = stmt->axis;
     used.buf_args = true;
+    used.int32 = true;
     emit("int {} = _args_i32_[{} + {} * {} + {}];", name,
          taichi_opengl_earg_base / sizeof(int), arg_id, taichi_max_num_indices,
          axis);
@@ -778,14 +788,21 @@ class KernelGen : public IRVisitor {
 
     used_tls = (stmt->tls_prologue != nullptr);
     if (used_tls) {
-      TI_ASSERT(stmt->tls_prologue != nullptr);
       auto tls_size = stmt->tls_size;
+      // TODO(k-ye): support 'cursor' in LineAppender:
+
+      // if (used.int32)
       emit("int _tls_i32_[{}];", (tls_size + 3) / 4);
+      if (used.int64)
+        emit("int64_t _tls_i64_[{}];", (tls_size + 7) / 8);
+      if (used.uint32)
+        emit("int _tls_u32_[{}];", (tls_size + 3) / 4);
+      if (used.uint64)
+        emit("int64_t _tls_u64_[{}];", (tls_size + 7) / 8);
+      // if (used.float32)
       emit("float _tls_f32_[{}];", (tls_size + 3) / 4);
       if (used.float64)
         emit("double _tls_f64_[{}];", (tls_size + 7) / 8);
-      if (used.int64)
-        emit("int64_t _tls_i64_[{}];", (tls_size + 7) / 8);
       emit("{{  // TLS prologue");
       stmt->tls_prologue->accept(this);
       emit("}}");

@@ -262,6 +262,9 @@ bool same_statements(
   // iff id_map[1] == 4 && id_map[2] == 5:
   // <i32> $3 = add $1 $2
   // <i32> $6 = add $4 $5
+  //
+  // Null pointers as IRNodes are defined to be NOT the same as any other IRNode,
+  // except for another nullptr IRNode.
   if (root1 == root2)
     return true;
   if (!root1 || !root2)

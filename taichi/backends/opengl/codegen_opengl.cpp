@@ -320,6 +320,7 @@ class KernelGen : public IRVisitor {
       if (stmt->snode->type == SNodeType::dense) {
         // do nothing
       } else if (stmt->snode->type == SNodeType::dynamic) {
+        used.int32 = true;
         emit("atomicMax(_data_i32_[{} >> 2], {} + 1); // dynamic activate",
              get_snode_meta_address(stmt->snode),
              stmt->input_index->short_name());
@@ -335,6 +336,7 @@ class KernelGen : public IRVisitor {
           stmt->snode->type == SNodeType::root) {
         // do nothing
       } else if (stmt->snode->type == SNodeType::dynamic) {
+        used.int32 = true;
         emit("atomicMax(_data_i32_[{} >> 2], {} + 1); // dynamic activate",
              get_snode_meta_address(stmt->snode), stmt->val->short_name());
       } else {
@@ -346,6 +348,7 @@ class KernelGen : public IRVisitor {
           stmt->snode->type == SNodeType::root) {
         // do nothing
       } else if (stmt->snode->type == SNodeType::dynamic) {
+        used.int32 = true;
         emit("_data_i32_[{} >> 2] = 0; // dynamic deactivate",
              get_snode_meta_address(stmt->snode), stmt->val->short_name());
       } else {
@@ -358,6 +361,7 @@ class KernelGen : public IRVisitor {
           stmt->snode->type == SNodeType::root) {
         emit("int {} = 1;", stmt->short_name());
       } else if (stmt->snode->type == SNodeType::dynamic) {
+        used.int32 = true;
         emit("int {} = int({} < _data_i32_[{} >> 2]);", stmt->short_name(),
              stmt->val->short_name(), get_snode_meta_address(stmt->snode));
       } else {
@@ -367,6 +371,7 @@ class KernelGen : public IRVisitor {
     } else if (stmt->op_type == SNodeOpType::append) {
       TI_ASSERT(stmt->snode->type == SNodeType::dynamic);
       TI_ASSERT(stmt->ret_type->is_primitive(PrimitiveTypeID::i32));
+      used.int32 = true;
       emit("int {} = atomicAdd(_data_i32_[{} >> 2], 1);", stmt->short_name(),
            get_snode_meta_address(stmt->snode));
       auto dt = stmt->val->element_type();
@@ -381,6 +386,7 @@ class KernelGen : public IRVisitor {
     } else if (stmt->op_type == SNodeOpType::length) {
       TI_ASSERT(stmt->snode->type == SNodeType::dynamic);
       TI_ASSERT(stmt->ret_type->is_primitive(PrimitiveTypeID::i32));
+      used.int32 = true;
       emit("int {} = _data_i32_[{} >> 2];", stmt->short_name(),
            get_snode_meta_address(stmt->snode));
 
@@ -921,6 +927,7 @@ class KernelGen : public IRVisitor {
     TI_ASSERT_INFO(snode->parent->type == SNodeType::root,
                    "Non-top-level dynamic not supported yet on OpenGL");
     size_t addr = get_snode_meta_address(snode);
+    used.int32 = true;
     emit("_list_len_ = _data_i32_[{} >> 2];", addr);
     emit("for (int i = 0; i < _list_len_; i++) {{");
     {

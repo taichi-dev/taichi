@@ -281,7 +281,8 @@ class KernelGen : public IRVisitor {
 
   void visit(BitExtractStmt *stmt) override {
     TI_WARN(
-        "BitExtractStmt visited. It should have been taken care of the demote_operations pass.");
+        "BitExtractStmt visited. It should have been taken care of by the "
+        "demote_operations pass.");
     emit("int {} = (({} >> {}) & ((1 << {}) - 1));", stmt->short_name(),
          stmt->input->short_name(), stmt->bit_begin,
          stmt->bit_end - stmt->bit_begin);

@@ -20,12 +20,13 @@ class DemoteOperations : public BasicStmtVisitor {
     // def bit_extract(input, begin, end):
     //   return (input >> begin) & ((1 << (end - begin)) - 1)
     VecStatement statements;
-    auto begin = statements.push_back<ConstStmt>(
-        LaneAttribute<TypedConstant>(stmt->bit_begin));
+    auto begin = statements.push_back<ConstStmt>(LaneAttribute<TypedConstant>(
+        TypedConstant(stmt->input->ret_type, stmt->bit_begin)));
     auto input_sar_begin = statements.push_back<BinaryOpStmt>(
         BinaryOpType::bit_sar, stmt->input, begin);
     auto mask = statements.push_back<ConstStmt>(LaneAttribute<TypedConstant>(
-        ((1 << (stmt->bit_end - stmt->bit_begin)) - 1)));
+        TypedConstant(stmt->input->ret_type,
+                      (1LL << (stmt->bit_end - stmt->bit_begin)) - 1)));
     auto ret = statements.push_back<BinaryOpStmt>(BinaryOpType::bit_and,
                                                   input_sar_begin, mask);
 

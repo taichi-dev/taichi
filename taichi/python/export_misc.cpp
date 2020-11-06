@@ -149,6 +149,8 @@ void export_misc(py::module &m) {
   });
   m.def("print_profile_info",
         [&]() { Profiling::get_instance().print_profile_info(); });
+  m.def("clear_profile_info",
+        [&]() { Profiling::get_instance().clear_profile_info(); });
   m.def("start_memory_monitoring", start_memory_monitoring);
   m.def("absolute_path", absolute_path);
   m.def("get_repo_dir", get_repo_dir);

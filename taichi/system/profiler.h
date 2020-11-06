@@ -44,6 +44,7 @@ class ScopedProfiler {
 class Profiling {
  public:
   void print_profile_info();
+  void clear_profile_info();
   ProfilerRecords *get_this_thread_profiler();
   static Profiling &get_instance();
 

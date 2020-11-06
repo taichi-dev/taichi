@@ -239,6 +239,10 @@ def print_profile_info():
     taichi.ti_core.print_profile_info()
 
 
+def clear_profile_info():
+    taichi.ti_core.clear_profile_info()
+
+
 @deprecated('ti.vec(x, y)', 'ti.core_vec(x, y)')
 def vec(*args, **kwargs):
     return core_vec(*args, **kwargs)
@@ -287,6 +291,7 @@ __all__ = [
     'get_traceback',
     'set_gdb_trigger',
     'print_profile_info',
+    'clear_profile_info',
     'set_logging_level',
     'info',
     'warn',

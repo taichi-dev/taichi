@@ -225,6 +225,7 @@ void export_lang(py::module &m) {
                                const std::vector<int> &))(&SNode::bitmasked),
            py::return_value_policy::reference)
       .def("bit_struct", &SNode::bit_struct, py::return_value_policy::reference)
+      .def("bit_array", &SNode::bit_array, py::return_value_policy::reference)
       .def("place",
            (void (SNode::*)(Expr &, const std::vector<int> &))(&SNode::place),
            py::return_value_policy::reference)
@@ -722,8 +723,12 @@ void export_lang(py::module &m) {
 
   py::class_<Type>(m, "Type").def("to_string", &Type::to_string);
 
+  // Note that it is important to specify py::return_value_policy::reference for
+  // the factory methods, otherwise pybind11 will delete the Types owned by
+  // TypeFactory on Python-scope pointer destruction.
   py::class_<TypeFactory>(m, "TypeFactory")
-      .def("get_custom_int_type", &TypeFactory::get_custom_int_type);
+      .def("get_custom_int_type", &TypeFactory::get_custom_int_type,
+           py::return_value_policy::reference);
 
   m.def("get_type_factory_instance", TypeFactory::get_instance,
         py::return_value_policy::reference);

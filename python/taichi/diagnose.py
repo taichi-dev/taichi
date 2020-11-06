@@ -15,13 +15,7 @@ def main():
     print(f'executable: {executable}')
     print(f'platform: {platform.platform()}')
     print(f'architecture: {" ".join(platform.architecture())}')
-    try:
-        uname = subprocess.check_output(['uname', '-a'])
-    except Exception as e:
-        print(f'`uname` not available: {e}')
-    else:
-        print(f'uname: {uname.decode().splitlines()[0]}')
-    print('')
+    print(f'uname: {platform.uname()}')
 
     print(f'locale: {".".join(locale.getdefaultlocale())}')
     print(f'PATH: {os.environ.get("PATH")}')

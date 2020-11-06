@@ -14,6 +14,12 @@ TI_TEST("type") {
                                                               {0, 5});
 
     TI_CHECK(bs->to_string() == "bs(ci5@0, cu11@5)");
+
+    auto i32 = TypeFactory::get_instance().get_primitive_int_type(32, true);
+    auto ci1 = TypeFactory::get_instance().get_custom_int_type(1, true);
+    auto ba = TypeFactory::get_instance().get_bit_array_type(i32, ci1, 32);
+
+    TI_CHECK(ba->to_string() == "ba(ci1x32)");
   }
 }
 

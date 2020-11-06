@@ -125,8 +125,10 @@ class KernelGen : public IRVisitor {
     emit("}}");
 
     // clang-format off
+    std::string kernel_header;
 #define __GLSL__
-    std::string kernel_header = (
+    if (used.print)  // the runtime buffer is only used for print now..
+      kernel_header += (
 #include "taichi/backends/opengl/shaders/runtime.h"
         );
     if (used.listman)
@@ -142,14 +144,14 @@ class KernelGen : public IRVisitor {
     if (used.int64)
       kernel_header += "layout(std430, binding = 0) buffer data_i64 { int64_t _data_i64_[]; };\n";
 
-    if (used.buf_gtmp) {
+    if (used.buf_gtmp || used.random) {
       kernel_header +=
-          "layout(std430, binding = 1) buffer gtmp_i32 { int _gtmp_i32_[]; };\n"
-          "layout(std430, binding = 1) buffer gtmp_f32 { float _gtmp_f32_[]; };\n";
+          "layout(std430, binding = 1) buffer gtmp_i32 { int _rand_state_[4]; int _gtmp_i32_[]; };\n"
+          "layout(std430, binding = 1) buffer gtmp_f32 { int _padding1_[4]; float _gtmp_f32_[]; };\n";
       if (used.float64)
-        kernel_header += "layout(std430, binding = 1) buffer gtmp_f64 { double _gtmp_f64_[]; };\n";
+        kernel_header += "layout(std430, binding = 1) buffer gtmp_f64 { int _padding2_[4]; double _gtmp_f64_[]; };\n";
       if (used.int64)
-        kernel_header += "layout(std430, binding = 1) buffer gtmp_i64 { int64_t _gtmp_i64_[]; };\n";
+        kernel_header += "layout(std430, binding = 1) buffer gtmp_i64 { int _padding3_[4]; int64_t _gtmp_i64_[]; };\n";
     }
     if (used.buf_args) {
       kernel_header +=

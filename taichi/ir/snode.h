@@ -177,6 +177,10 @@ class SNode {
 
   SNode &bit_struct(int bits);
 
+  SNode &bit_array(const std::vector<Index> &indices,
+                   const std::vector<int> &sizes,
+                   int bits);
+
   void print();
 
   void set_index_offsets(std::vector<int> index_offsets);

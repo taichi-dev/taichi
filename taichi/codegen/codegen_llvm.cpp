@@ -1088,7 +1088,9 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
   TI_ASSERT(!stmt->parent->mask() || stmt->width() == 1);
   TI_ASSERT(llvm_val[stmt->data]);
   TI_ASSERT(llvm_val[stmt->ptr]);
-  if (auto cit = stmt->ptr->ret_type.ptr_removed()->cast<CustomIntType>()) {
+  auto ptr_type = stmt->ptr->ret_type->as<PointerType>();
+  if (ptr_type->is_bit_pointer()) {
+    auto cit = ptr_type->get_pointee_type()->as<CustomIntType>();
     llvm::Value *byte_ptr = nullptr, *bit_offset = nullptr;
     read_bit_pointer(llvm_val[stmt->ptr], byte_ptr, bit_offset);
     builder->CreateCall(
@@ -1105,7 +1107,8 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
 void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
   int width = stmt->width();
   TI_ASSERT(width == 1);
-  if (auto cit = stmt->ret_type->cast<CustomIntType>()) {
+  if (stmt->ptr->ret_type->as<PointerType>()->is_bit_pointer()) {
+    auto cit = stmt->ret_type->as<CustomIntType>();
     // 1. load bit pointer
     llvm::Value *byte_ptr, *bit_offset;
     read_bit_pointer(llvm_val[stmt->ptr], byte_ptr, bit_offset);
@@ -1258,7 +1261,7 @@ void CodeGenLLVM::visit(SNodeLookupStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(GetChStmt *stmt) {
-  if (stmt->output_snode->is_bit_level) {
+  if (stmt->ret_type->as<PointerType>()->is_bit_pointer()) {
     // 1. create bit pointer struct
     // struct bit_pointer {
     //    i8* byte_ptr;

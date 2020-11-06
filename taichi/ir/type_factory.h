@@ -19,7 +19,7 @@ class TypeFactory {
 
   Type *get_vector_type(int num_elements, Type *element);
 
-  Type *get_pointer_type(Type *element);
+  Type *get_pointer_type(Type *element, bool is_bit_pointer = false);
 
   Type *get_custom_int_type(int num_bits, bool is_signed);
 
@@ -44,7 +44,7 @@ class TypeFactory {
   std::map<std::pair<int, Type *>, std::unique_ptr<Type>> vector_types_;
 
   // TODO: is_bit_ptr?
-  std::map<Type *, std::unique_ptr<Type>> pointer_types_;
+  std::map<std::pair<Type *, bool>, std::unique_ptr<Type>> pointer_types_;
 
   // TODO: use unordered map
   std::map<std::pair<int, bool>, std::unique_ptr<Type>> custom_int_types_;

@@ -28,10 +28,11 @@ Type *TypeFactory::get_vector_type(int num_elements, Type *element) {
   return vector_types_[key].get();
 }
 
-Type *TypeFactory::get_pointer_type(Type *element) {
-  auto key = element;  // may need to add is_bit_ptr later
+Type *TypeFactory::get_pointer_type(Type *element, bool is_bit_pointer) {
+  auto key = std::make_pair(element, is_bit_pointer);
   if (pointer_types_.find(key) == pointer_types_.end()) {
-    pointer_types_[key] = std::make_unique<PointerType>(element, false);
+    pointer_types_[key] =
+        std::make_unique<PointerType>(element, is_bit_pointer);
   }
   return pointer_types_[key].get();
 }

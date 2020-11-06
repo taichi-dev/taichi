@@ -4,6 +4,8 @@
 #include "taichi/util/io.h"
 #include "taichi/common/core.h"
 #include "taichi/system/profiler.h"
+#include "taichi/ir/type.h"
+#include "taichi/ir/type_factory.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -19,36 +21,59 @@ struct Context;
 
 using FunctionType = std::function<void(Context &)>;
 
-enum class DataType : int {
-#define PER_TYPE(x) x,
-#include "taichi/inc/data_type.inc.h"
-#undef PER_TYPE
-};
-
 template <typename T>
 inline DataType get_data_type() {
   if (std::is_same<T, float32>()) {
-    return DataType::f32;
+    return PrimitiveType::f32;
   } else if (std::is_same<T, float64>()) {
-    return DataType::f64;
+    return PrimitiveType::f64;
   } else if (std::is_same<T, bool>()) {
-    return DataType::u1;
+    return PrimitiveType::u1;
   } else if (std::is_same<T, int8>()) {
-    return DataType::i8;
+    return PrimitiveType::i8;
   } else if (std::is_same<T, int16>()) {
-    return DataType::i16;
+    return PrimitiveType::i16;
   } else if (std::is_same<T, int32>()) {
-    return DataType::i32;
+    return PrimitiveType::i32;
   } else if (std::is_same<T, int64>()) {
-    return DataType::i64;
+    return PrimitiveType::i64;
   } else if (std::is_same<T, uint8>()) {
-    return DataType::u8;
+    return PrimitiveType::u8;
   } else if (std::is_same<T, uint16>()) {
-    return DataType::u16;
+    return PrimitiveType::u16;
   } else if (std::is_same<T, uint32>()) {
-    return DataType::u32;
+    return PrimitiveType::u32;
   } else if (std::is_same<T, uint64>()) {
-    return DataType::u64;
+    return PrimitiveType::u64;
+  } else {
+    TI_NOT_IMPLEMENTED;
+  }
+}
+
+template <typename T>
+inline PrimitiveTypeID get_primitive_data_type() {
+  if (std::is_same<T, float32>()) {
+    return PrimitiveTypeID::f32;
+  } else if (std::is_same<T, float64>()) {
+    return PrimitiveTypeID::f64;
+  } else if (std::is_same<T, bool>()) {
+    return PrimitiveTypeID::u1;
+  } else if (std::is_same<T, int8>()) {
+    return PrimitiveTypeID::i8;
+  } else if (std::is_same<T, int16>()) {
+    return PrimitiveTypeID::i16;
+  } else if (std::is_same<T, int32>()) {
+    return PrimitiveTypeID::i32;
+  } else if (std::is_same<T, int64>()) {
+    return PrimitiveTypeID::i64;
+  } else if (std::is_same<T, uint8>()) {
+    return PrimitiveTypeID::u8;
+  } else if (std::is_same<T, uint16>()) {
+    return PrimitiveTypeID::u16;
+  } else if (std::is_same<T, uint32>()) {
+    return PrimitiveTypeID::u32;
+  } else if (std::is_same<T, uint64>()) {
+    return PrimitiveTypeID::u64;
   } else {
     TI_NOT_IMPLEMENTED;
   }
@@ -78,7 +103,7 @@ enum class UnaryOpType : int {
 
 std::string unary_op_type_name(UnaryOpType type);
 
-inline bool unary_op_is_cast(UnaryOpType op) {
+inline bool constexpr unary_op_is_cast(UnaryOpType op) {
   return op == UnaryOpType::cast_value || op == UnaryOpType::cast_bits;
 }
 
@@ -88,25 +113,50 @@ inline bool constexpr is_trigonometric(UnaryOpType op) {
          op == UnaryOpType::tan || op == UnaryOpType::tanh;
 }
 
-inline bool constexpr is_real(DataType dt) {
-  return dt == DataType::f16 || dt == DataType::f32 || dt == DataType::f64;
+inline bool is_real(DataType dt) {
+  return dt->is_primitive(PrimitiveTypeID::f16) ||
+         dt->is_primitive(PrimitiveTypeID::f32) ||
+         dt->is_primitive(PrimitiveTypeID::f64);
 }
 
-inline bool constexpr is_integral(DataType dt) {
-  return dt == DataType::i8 || dt == DataType::i16 || dt == DataType::i32 ||
-         dt == DataType::i64 || dt == DataType::u8 || dt == DataType::u16 ||
-         dt == DataType::u32 || dt == DataType::u64;
+inline bool is_integral(DataType dt) {
+  return dt->is_primitive(PrimitiveTypeID::i8) ||
+         dt->is_primitive(PrimitiveTypeID::i16) ||
+         dt->is_primitive(PrimitiveTypeID::i32) ||
+         dt->is_primitive(PrimitiveTypeID::i64) ||
+         dt->is_primitive(PrimitiveTypeID::u8) ||
+         dt->is_primitive(PrimitiveTypeID::u16) ||
+         dt->is_primitive(PrimitiveTypeID::u32) ||
+         dt->is_primitive(PrimitiveTypeID::u64) || dt->is<CustomIntType>();
 }
 
-inline bool constexpr is_signed(DataType dt) {
+inline bool is_signed(DataType dt) {
   TI_ASSERT(is_integral(dt));
-  return dt == DataType::i8 || dt == DataType::i16 || dt == DataType::i32 ||
-         dt == DataType::i64;
+  if (auto t = dt->cast<CustomIntType>())
+    return t->get_is_signed();
+  return dt->is_primitive(PrimitiveTypeID::i8) ||
+         dt->is_primitive(PrimitiveTypeID::i16) ||
+         dt->is_primitive(PrimitiveTypeID::i32) ||
+         dt->is_primitive(PrimitiveTypeID::i64);
 }
 
-inline bool constexpr is_unsigned(DataType dt) {
+inline bool is_unsigned(DataType dt) {
   TI_ASSERT(is_integral(dt));
   return !is_signed(dt);
+}
+
+inline DataType to_unsigned(DataType dt) {
+  TI_ASSERT(is_signed(dt));
+  if (dt->is_primitive(PrimitiveTypeID::i8))
+    return PrimitiveType::u8;
+  else if (dt->is_primitive(PrimitiveTypeID::i16))
+    return PrimitiveType::u16;
+  else if (dt->is_primitive(PrimitiveTypeID::i32))
+    return PrimitiveType::u32;
+  else if (dt->is_primitive(PrimitiveTypeID::i64))
+    return PrimitiveType::u64;
+  else
+    return PrimitiveType::unknown;
 }
 
 inline bool needs_grad(DataType dt) {
@@ -114,8 +164,8 @@ inline bool needs_grad(DataType dt) {
 }
 
 // Regular binary ops:
-// Operations that take two oprands, and returns a single operand with the same
-// type
+// Operations that take two operands, and returns a single operand with the
+// same type
 
 enum class BinaryOpType : int {
 #define PER_BINARY_OP(x) x,
@@ -182,46 +232,48 @@ class TypedConstant {
   };
 
  public:
-  TypedConstant() : dt(DataType::unknown) {
+  TypedConstant() : dt(PrimitiveType::unknown) {
   }
 
   TypedConstant(DataType dt) : dt(dt) {
     value_bits = 0;
   }
 
-  TypedConstant(int32 x) : dt(DataType::i32), val_i32(x) {
+  TypedConstant(int32 x) : dt(PrimitiveType::i32), val_i32(x) {
   }
 
-  TypedConstant(float32 x) : dt(DataType::f32), val_f32(x) {
+  TypedConstant(float32 x) : dt(PrimitiveType::f32), val_f32(x) {
   }
 
-  TypedConstant(int64 x) : dt(DataType::i64), val_i64(x) {
+  TypedConstant(int64 x) : dt(PrimitiveType::i64), val_i64(x) {
   }
 
-  TypedConstant(float64 x) : dt(DataType::f64), val_f64(x) {
+  TypedConstant(float64 x) : dt(PrimitiveType::f64), val_f64(x) {
   }
 
   template <typename T>
   TypedConstant(DataType dt, const T &value) : dt(dt) {
-    if (dt == DataType::f32) {
+    // TODO: loud failure on pointers
+    dt.set_is_pointer(false);
+    if (dt->is_primitive(PrimitiveTypeID::f32)) {
       val_f32 = value;
-    } else if (dt == DataType::i32) {
+    } else if (dt->is_primitive(PrimitiveTypeID::i32)) {
       val_i32 = value;
-    } else if (dt == DataType::i64) {
+    } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
       val_i64 = value;
-    } else if (dt == DataType::f64) {
+    } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
       val_f64 = value;
-    } else if (dt == DataType::i8) {
+    } else if (dt->is_primitive(PrimitiveTypeID::i8)) {
       val_i8 = value;
-    } else if (dt == DataType::i16) {
+    } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
       val_i16 = value;
-    } else if (dt == DataType::u8) {
+    } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
       val_u8 = value;
-    } else if (dt == DataType::u16) {
+    } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
       val_u16 = value;
-    } else if (dt == DataType::u32) {
+    } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
       val_u32 = value;
-    } else if (dt == DataType::u64) {
+    } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
       val_u64 = value;
     } else {
       TI_NOT_IMPLEMENTED

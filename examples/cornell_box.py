@@ -229,7 +229,10 @@ def intersect_scene(pos, ray_dir):
 
 @ti.func
 def visible_to_light(pos, ray_dir):
-    a, b, c, mat = intersect_scene(pos, ray_dir)
+    # eps*ray_dir is easy way to prevent rounding error
+    # here is best way to check the float precision:
+    # http://www.pbr-book.org/3ed-2018/Shapes/Managing_Rounding_Error.html
+    a, b, c, mat = intersect_scene(pos + eps * ray_dir, ray_dir)
     return mat == mat_light
 
 
@@ -332,6 +335,7 @@ def sample_direct_light(hit_pos, hit_normal, hit_color):
     direct_li = ti.Vector([0.0, 0.0, 0.0])
     fl = lambertian_brdf * hit_color * light_color
     light_pdf, brdf_pdf = 0.0, 0.0
+
     # sample area light
     to_light_dir = sample_area_light(hit_pos, hit_normal)
     if to_light_dir.dot(hit_normal) > 0:
@@ -343,6 +347,7 @@ def sample_direct_light(hit_pos, hit_normal, hit_color):
                 w = mis_power_heuristic(light_pdf, brdf_pdf)
                 nl = dot_or_zero(to_light_dir, hit_normal)
                 direct_li += fl * w * nl / light_pdf
+
     # sample brdf
     brdf_dir = sample_brdf(hit_normal)
     brdf_pdf = compute_brdf_pdf(hit_normal, brdf_dir)
@@ -354,6 +359,7 @@ def sample_direct_light(hit_pos, hit_normal, hit_color):
                 w = mis_power_heuristic(brdf_pdf, light_pdf)
                 nl = dot_or_zero(brdf_dir, hit_normal)
                 direct_li += fl * w * nl / brdf_pdf
+
     return direct_li
 
 

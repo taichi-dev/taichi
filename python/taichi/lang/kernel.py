@@ -190,13 +190,11 @@ class KernelDefError(Exception):
 
 class KernelArgError(Exception):
     def __init__(self, pos, needed, provided):
+        message = f'Argument {pos} (type={provided}) cannot be converted into required type {needed}'
+        super().__init__(message)
         self.pos = pos
         self.needed = needed
         self.provided = provided
-
-    def message(self):
-        return 'Argument {} (type={}) cannot be converted into required type {}'.format(
-            self.pos, str(self.needed), str(self.provided))
 
 
 def _get_global_vars(func):
@@ -393,11 +391,11 @@ class Kernel:
                 # Note: do not use sth like "needed == f32". That would be slow.
                 if id(needed) in real_type_ids:
                     if not isinstance(v, (float, int)):
-                        raise KernelArgError(i, needed, provided)
+                        raise KernelArgError(i, needed.to_string(), provided)
                     launch_ctx.set_arg_float(actual_argument_slot, float(v))
                 elif id(needed) in integer_type_ids:
                     if not isinstance(v, int):
-                        raise KernelArgError(i, needed, provided)
+                        raise KernelArgError(i, needed.to_string(), provided)
                     launch_ctx.set_arg_int(actual_argument_slot, int(v))
                 elif self.match_ext_arr(v, needed):
                     has_external_arrays = True
@@ -522,8 +520,7 @@ _KERNEL_CLASS_STACKFRAME_STMT_RES = [
 
 
 def _inside_class(level_of_class_stackframe):
-    import inspect
-    frames = inspect.stack()
+    frames = oinspect.stack()
     try:
         maybe_class_frame = frames[level_of_class_stackframe]
         statement_list = maybe_class_frame[4]
@@ -602,17 +599,19 @@ class BoundedDifferentiableMethod:
         self._adjoint = wrapped_kernel_func._adjoint
 
     def __call__(self, *args, **kwargs):
+        _taichi_skip_traceback = 1
         return self._primal(self._kernel_owner, *args, **kwargs)
 
     def grad(self, *args, **kwargs):
+        _taichi_skip_traceback = 1
         return self._adjoint(self._kernel_owner, *args, **kwargs)
 
 
 def data_oriented(cls):
     def getattr(self, item):
+        _taichi_skip_traceback = 1
         x = super(cls, self).__getattribute__(item)
         if hasattr(x, '_is_wrapped_kernel'):
-            import inspect
             if inspect.ismethod(x):
                 wrapped = x.__func__
             else:

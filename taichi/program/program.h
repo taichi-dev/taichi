@@ -8,6 +8,7 @@
 
 #define TI_RUNTIME_HOST
 #include "taichi/ir/ir.h"
+#include "taichi/ir/type_factory.h"
 #include "taichi/ir/snode.h"
 #include "taichi/lang_util.h"
 #include "taichi/llvm/llvm_context.h"
@@ -57,9 +58,8 @@ template <>
 struct hash<taichi::lang::JITEvaluatorId> {
   std::size_t operator()(taichi::lang::JITEvaluatorId const &id) const
       noexcept {
-    return ((std::size_t)id.op | ((std::size_t)id.ret << 8) |
-            ((std::size_t)id.lhs << 16) | ((std::size_t)id.rhs << 24) |
-            ((std::size_t)id.is_binary << 31)) ^
+    return ((std::size_t)id.op | (id.ret.hash() << 8) | (id.lhs.hash() << 16) |
+            (id.rhs.hash() << 24) | ((std::size_t)id.is_binary << 31)) ^
            (std::hash<std::thread::id>{}(id.thread_id) << 32);
   }
 };
@@ -93,6 +93,7 @@ class Program {
   std::unique_ptr<MemoryPool> memory_pool;
   uint64 *result_buffer;             // TODO: move this
   void *preallocated_device_buffer;  // TODO: move this to memory allocator
+  std::unordered_map<int, SNode *> snodes;
 
   std::unique_ptr<Runtime> runtime;
   std::unique_ptr<AsyncEngine> async_engine;
@@ -104,6 +105,10 @@ class Program {
   std::unordered_map<JITEvaluatorId, std::unique_ptr<Kernel>>
       jit_evaluator_cache;
   std::mutex jit_evaluator_cache_mut;
+
+  // Note: for now we let all Programs share a single TypeFactory for smooth
+  // migration. In the future each program should have its own copy.
+  static TypeFactory &get_type_factory();
 
   Program() : Program(default_compile_config.arch) {
   }
@@ -180,7 +185,13 @@ class Program {
   void end_function_definition() {
   }
 
+  // TODO: This function is doing two things: 1) compiling CHI IR, and 2)
+  // offloading them to each backend. We should probably separate the logic?
   FunctionType compile(Kernel &kernel);
+
+  // Just does the per-backend executable compilation without kernel lowering.
+  FunctionType compile_to_backend_executable(Kernel &kernel,
+                                             OffloadedStmt *stmt);
 
   void initialize_runtime_system(StructCompiler *scomp);
 

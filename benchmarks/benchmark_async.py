@@ -1,21 +1,20 @@
 import taichi as ti
 
 from async_cases import *
+from async_advection import *
 
 rerun = True
 
 cases = [
-    fuse_dense_x2y2z,
-    fuse_reduction,
-    fill_1d,
-    sparse_numpy,
-    autodiff,
-    stencil_reduction,
-    # mpm_splitted,
+    chain_copy, increments, fill_array, sparse_saxpy, autodiff,
+    stencil_reduction, mpm_splitted, simple_advection, multires, deep_hierarchy
 ]
 
 if rerun:
     for c in cases:
+        print('*' * 30)
+        print(f'* Running {c.__name__}')
+        print('*' * 30)
         c()
 
 case_names = [c.__name__ for c in cases]

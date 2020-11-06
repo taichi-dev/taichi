@@ -122,13 +122,12 @@ def test_init_arch(arch):
         assert ti.cfg.arch == arch
 
 
-@ti.must_throw(KeyError)
 def test_init_bad_arg():
-    ti.init(_test_mode=True, debug=True, foo_bar=233)
+    with pytest.raises(KeyError):
+        ti.init(_test_mode=True, debug=True, foo_bar=233)
 
 
-@ti.all_archs
-@ti.must_throw(RuntimeError)
+@ti.test(arch=ti.cpu)
 def test_materialization_after_kernel():
     x = ti.field(ti.f32, (3, 4))
 
@@ -138,27 +137,45 @@ def test_materialization_after_kernel():
 
     func()
 
-    y = ti.field(ti.f32, (2, 3))
+    with pytest.raises(RuntimeError, match='declared after'):
+        y = ti.field(ti.f32, (2, 3))
     # ERROR: No new variable should be declared after kernel invocation!
 
 
-@ti.all_archs
-@ti.must_throw(RuntimeError)
+@ti.test(arch=ti.cpu)
 def test_materialization_after_access():
     x = ti.field(ti.f32, (3, 4))
 
     print(x[2, 3])
 
-    y = ti.field(ti.f32, (2, 3))
+    with pytest.raises(RuntimeError, match='declared after'):
+        y = ti.field(ti.f32, (2, 3))
     # ERROR: No new variable should be declared after Python-scope field access!
 
 
-@ti.all_archs
-@ti.must_throw(RuntimeError)
+@ti.test(arch=ti.cpu)
 def test_materialization_after_get_shape():
     x = ti.field(ti.f32, (3, 4))
 
     print(x.shape)
 
-    y = ti.field(ti.f32, (2, 3))
+    with pytest.raises(RuntimeError, match='declared after'):
+        y = ti.field(ti.f32, (2, 3))
     # ERROR: No new variable should be declared after Python-scope field access!
+
+
+@ti.test(arch=ti.cpu)
+def test_materialize_callback():
+    x = ti.field(ti.f32, (3, 4))
+
+    @ti.materialize_callback
+    @ti.kernel
+    def init_x():
+        for i in range(3):
+            for j in range(4):
+                x[i, j] = i + j + 1
+
+    # x will be initialized on first invocation
+    for i in range(3):
+        for j in range(4):
+            assert x[i, j] == i + j + 1

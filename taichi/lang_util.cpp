@@ -1,9 +1,10 @@
 // Definitions of utility functions and enums
 
-#include "lang_util.h"
+#include "taichi/lang_util.h"
 
 #include "taichi/math/linalg.h"
 #include "taichi/program/arch.h"
+#include "taichi/program/program.h"
 #include "taichi/program/compile_config.h"
 #include "taichi/system/timer.h"
 
@@ -64,94 +65,81 @@ real measure_cpe(std::function<void()> target,
   return elasped_cycles / float64(total_batches * elements_per_call);
 }
 
+// TODO: Remove data_type_short_name. Having two names for a data type is
+// confusing.
 std::string data_type_name(DataType t) {
-  switch (t) {
-#define REGISTER_DATA_TYPE(i, j) \
-  case DataType::i:              \
-    return #j;
-
-    REGISTER_DATA_TYPE(f16, float16);
-    REGISTER_DATA_TYPE(f32, float32);
-    REGISTER_DATA_TYPE(f64, float64);
-    REGISTER_DATA_TYPE(u1, int1);
-    REGISTER_DATA_TYPE(i8, int8);
-    REGISTER_DATA_TYPE(i16, int16);
-    REGISTER_DATA_TYPE(i32, int32);
-    REGISTER_DATA_TYPE(i64, int64);
-    REGISTER_DATA_TYPE(u8, uint8);
-    REGISTER_DATA_TYPE(u16, uint16);
-    REGISTER_DATA_TYPE(u32, uint32);
-    REGISTER_DATA_TYPE(u64, uint64);
-    REGISTER_DATA_TYPE(gen, generic);
-    REGISTER_DATA_TYPE(unknown, unknown);
-
-#undef REGISTER_DATA_TYPE
-    default:
-      TI_NOT_IMPLEMENTED
-  }
+  return data_type_short_name(t);
 }
 
 std::string data_type_format(DataType dt) {
-  if (dt == DataType::i32) {
+  if (dt->is_primitive(PrimitiveTypeID::i32)) {
     return "%d";
-  } else if (dt == DataType::i64) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
 #if defined(TI_PLATFORM_UNIX)
     return "%lld";
 #else
     return "%I64d";
 #endif
-  } else if (dt == DataType::f32) {
+  } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
     return "%f";
-  } else if (dt == DataType::f64) {
+  } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
     return "%.12f";
+  } else if (dt->is<CustomIntType>()) {
+    return "%d";
   } else {
     TI_NOT_IMPLEMENTED
   }
 }
 
 int data_type_size(DataType t) {
-  switch (t) {
-    case DataType::f16:
-      return 2;
-    case DataType::gen:
-      return 0;
-    case DataType::unknown:
-      return -1;
+  // TODO:
+  //  1. Ensure in the old code, pointer attributes of t are correct (by setting
+  //  a loud failure on pointers);
+  //  2. Support pointer types here.
+  t.set_is_pointer(false);
+  if (false) {
+  } else if (t->is_primitive(PrimitiveTypeID::f16))
+    return 2;
+  else if (t->is_primitive(PrimitiveTypeID::gen))
+    return 0;
+  else if (t->is_primitive(PrimitiveTypeID::unknown))
+    return -1;
 
 #define REGISTER_DATA_TYPE(i, j) \
-  case DataType::i:              \
-    return sizeof(j);
+  else if (t->is_primitive(PrimitiveTypeID::i)) return sizeof(j)
 
-      REGISTER_DATA_TYPE(f32, float32);
-      REGISTER_DATA_TYPE(f64, float64);
-      REGISTER_DATA_TYPE(i8, int8);
-      REGISTER_DATA_TYPE(i16, int16);
-      REGISTER_DATA_TYPE(i32, int32);
-      REGISTER_DATA_TYPE(i64, int64);
-      REGISTER_DATA_TYPE(u8, uint8);
-      REGISTER_DATA_TYPE(u16, uint16);
-      REGISTER_DATA_TYPE(u32, uint32);
-      REGISTER_DATA_TYPE(u64, uint64);
+  REGISTER_DATA_TYPE(f32, float32);
+  REGISTER_DATA_TYPE(f64, float64);
+  REGISTER_DATA_TYPE(i8, int8);
+  REGISTER_DATA_TYPE(i16, int16);
+  REGISTER_DATA_TYPE(i32, int32);
+  REGISTER_DATA_TYPE(i64, int64);
+  REGISTER_DATA_TYPE(u8, uint8);
+  REGISTER_DATA_TYPE(u16, uint16);
+  REGISTER_DATA_TYPE(u32, uint32);
+  REGISTER_DATA_TYPE(u64, uint64);
 
 #undef REGISTER_DATA_TYPE
-    default:
-      TI_NOT_IMPLEMENTED
+  else {
+    TI_NOT_IMPLEMENTED
   }
 }
 
 std::string data_type_short_name(DataType t) {
-  switch (t) {
-#define PER_TYPE(i) \
-  case DataType::i: \
-    return #i;
-
-#include "taichi/inc/data_type.inc.h"
-
-#undef PER_TYPE
-    default:
-      TI_NOT_IMPLEMENTED
+  if (!t->is<PrimitiveType>()) {
+    return t->to_string();
   }
-}
+
+  // Handle primitive types below.
+
+  if (false) {
+  }
+#define PER_TYPE(i) else if (t->is_primitive(PrimitiveTypeID::i)) return #i;
+#include "taichi/inc/data_type.inc.h"
+#undef PER_TYPE
+  else
+    TI_NOT_IMPLEMENTED
+}  // namespace lang
 
 std::string snode_type_name(SNodeType t) {
   switch (t) {
@@ -227,6 +215,7 @@ std::string binary_op_type_symbol(BinaryOpType type) {
     REGISTER_TYPE(pow, pow);
     REGISTER_TYPE(bit_shl, <<);
     REGISTER_TYPE(bit_sar, >>);
+    REGISTER_TYPE(bit_shr, shr);
 
 #undef REGISTER_TYPE
     default:
@@ -324,12 +313,15 @@ bool command_exist(const std::string &command) {
 #endif
 }
 
-DataType promoted_type(DataType a, DataType b) {
-  std::map<std::pair<DataType, DataType>, DataType> mapping;
-  if (mapping.empty()) {
-#define TRY_SECOND(x, y)                                            \
-  mapping[std::make_pair(get_data_type<x>(), get_data_type<y>())] = \
-      get_data_type<decltype(std::declval<x>() + std::declval<y>())>();
+namespace {
+class TypePromotionMapping {
+ public:
+  TypePromotionMapping() {
+#define TRY_SECOND(x, y)                                   \
+  mapping[std::make_pair(get_primitive_data_type<x>(),     \
+                         get_primitive_data_type<y>())] =  \
+      get_primitive_data_type<decltype(std::declval<x>() + \
+                                       std::declval<y>())>();
 #define TRY_FIRST(x)      \
   TRY_SECOND(x, float32); \
   TRY_SECOND(x, float64); \
@@ -353,29 +345,62 @@ DataType promoted_type(DataType a, DataType b) {
     TRY_FIRST(uint32);
     TRY_FIRST(uint64);
   }
-  return mapping[std::make_pair(a, b)];
+  DataType query(DataType x, DataType y) {
+    auto primitive =
+        mapping[std::make_pair(to_primitive_type(x), to_primitive_type(y))];
+    return TypeFactory::get_instance().get_primitive_type(primitive);
+  }
+
+ private:
+  std::map<std::pair<PrimitiveTypeID, PrimitiveTypeID>, PrimitiveTypeID>
+      mapping;
+  static PrimitiveTypeID to_primitive_type(const DataType d_) {
+    Type *d = d_.get_ptr();
+    if (d->is<PointerType>()) {
+      d = d->as<PointerType>()->get_pointee_type();
+      TI_WARN("promoted_type got a pointer input.");
+    }
+
+    if (d->is<VectorType>()) {
+      d = d->as<VectorType>()->get_element_type();
+      TI_WARN("promoted_type got a vector input.");
+    }
+
+    auto primitive = d->cast<PrimitiveType>();
+    TI_ASSERT_INFO(primitive, "Failed to get primitive type from {}",
+                   d->to_string());
+    return primitive->type;
+  };
+};
+TypePromotionMapping type_promotion_mapping;
+}  // namespace
+
+DataType promoted_type(DataType a, DataType b) {
+  return type_promotion_mapping.query(a, b);
 }
 
 std::string TypedConstant::stringify() const {
-  if (dt == DataType::f32) {
+  // TODO: remove the line below after type system upgrade.
+  auto dt = this->dt.ptr_removed();
+  if (dt->is_primitive(PrimitiveTypeID::f32)) {
     return fmt::format("{}", val_f32);
-  } else if (dt == DataType::i32) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i32)) {
     return fmt::format("{}", val_i32);
-  } else if (dt == DataType::i64) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
     return fmt::format("{}", val_i64);
-  } else if (dt == DataType::f64) {
+  } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
     return fmt::format("{}", val_f64);
-  } else if (dt == DataType::i8) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i8)) {
     return fmt::format("{}", val_i8);
-  } else if (dt == DataType::i16) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
     return fmt::format("{}", val_i16);
-  } else if (dt == DataType::u8) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
     return fmt::format("{}", val_u8);
-  } else if (dt == DataType::u16) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
     return fmt::format("{}", val_u16);
-  } else if (dt == DataType::u32) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
     return fmt::format("{}", val_u32);
-  } else if (dt == DataType::u64) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
     return fmt::format("{}", val_u64);
   } else {
     TI_P(data_type_name(dt));
@@ -387,25 +412,25 @@ std::string TypedConstant::stringify() const {
 bool TypedConstant::equal_type_and_value(const TypedConstant &o) const {
   if (dt != o.dt)
     return false;
-  if (dt == DataType::f32) {
+  if (dt->is_primitive(PrimitiveTypeID::f32)) {
     return val_f32 == o.val_f32;
-  } else if (dt == DataType::i32) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i32)) {
     return val_i32 == o.val_i32;
-  } else if (dt == DataType::i64) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
     return val_i64 == o.val_i64;
-  } else if (dt == DataType::f64) {
+  } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
     return val_f64 == o.val_f64;
-  } else if (dt == DataType::i8) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i8)) {
     return val_i8 == o.val_i8;
-  } else if (dt == DataType::i16) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
     return val_i16 == o.val_i16;
-  } else if (dt == DataType::u8) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
     return val_u8 == o.val_u8;
-  } else if (dt == DataType::u16) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
     return val_u16 == o.val_u16;
-  } else if (dt == DataType::u32) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
     return val_u32 == o.val_u32;
-  } else if (dt == DataType::u64) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
     return val_u64 == o.val_u64;
   } else {
     TI_NOT_IMPLEMENTED
@@ -465,13 +490,13 @@ uint64 &TypedConstant::val_uint64() {
 
 int64 TypedConstant::val_int() const {
   TI_ASSERT(is_signed(dt));
-  if (dt == DataType::i32) {
+  if (dt->is_primitive(PrimitiveTypeID::i32)) {
     return val_i32;
-  } else if (dt == DataType::i64) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
     return val_i64;
-  } else if (dt == DataType::i8) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i8)) {
     return val_i8;
-  } else if (dt == DataType::i16) {
+  } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
     return val_i16;
   } else {
     TI_NOT_IMPLEMENTED
@@ -480,13 +505,13 @@ int64 TypedConstant::val_int() const {
 
 uint64 TypedConstant::val_uint() const {
   TI_ASSERT(is_unsigned(dt));
-  if (dt == DataType::u32) {
+  if (dt->is_primitive(PrimitiveTypeID::u32)) {
     return val_u32;
-  } else if (dt == DataType::u64) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
     return val_u64;
-  } else if (dt == DataType::u8) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
     return val_u8;
-  } else if (dt == DataType::u16) {
+  } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
     return val_u16;
   } else {
     TI_NOT_IMPLEMENTED
@@ -495,9 +520,9 @@ uint64 TypedConstant::val_uint() const {
 
 float64 TypedConstant::val_float() const {
   TI_ASSERT(is_real(dt));
-  if (dt == DataType::f32) {
+  if (dt->is_primitive(PrimitiveTypeID::f32)) {
     return val_f32;
-  } else if (dt == DataType::f64) {
+  } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
     return val_f64;
   } else {
     TI_NOT_IMPLEMENTED

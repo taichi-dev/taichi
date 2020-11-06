@@ -1,4 +1,5 @@
 #include "taichi/ir/ir.h"
+#include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/visitors.h"
@@ -77,7 +78,9 @@ class Offloader {
           offloaded_ranges.end_stmts.insert(
               std::make_pair(offloaded.get(), s->end));
         }
-        offloaded->num_cpu_threads = s->parallelize;
+        offloaded->num_cpu_threads =
+            std::min(s->parallelize,
+                     root->get_kernel()->program.config.cpu_max_num_threads);
         replace_all_usages_with(s, s, offloaded.get());
         for (int j = 0; j < (int)s->body->statements.size(); j++) {
           offloaded->body->insert(std::move(s->body->statements[j]));
@@ -118,11 +121,15 @@ class Offloader {
     if (!demotable) {
       for (int i = 1; i < path.size(); i++) {
         auto snode_child = path[i];
-        auto offloaded_clear_list = Stmt::make_typed<OffloadedStmt>(
-            OffloadedStmt::TaskType::clear_list);
+        auto offloaded_clear_list =
+            Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::serial);
+        offloaded_clear_list->body->insert(
+            Stmt::make<ClearListStmt>(snode_child));
         offloaded_clear_list->grid_dim = 1;
         offloaded_clear_list->block_dim = 1;
-        offloaded_clear_list->snode = snode_child;
+        // Intentionally do not set offloaded_clear_list->snode, so that there
+        // is nothing special about this task, which could otherwise cause
+        // problems when fused with other serial tasks.
         root_block->insert(std::move(offloaded_clear_list));
         auto offloaded_listgen =
             Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::listgen);
@@ -147,7 +154,7 @@ class Offloader {
     if (for_stmt->block_dim == 0) {
       // adaptive
       offloaded_struct_for->block_dim =
-          std::min(snode_num_elements, program->config.max_block_dim);
+          std::min(snode_num_elements, program->config.default_gpu_block_dim);
     } else {
       if (for_stmt->block_dim > snode_num_elements) {
         TI_WARN(
@@ -168,7 +175,8 @@ class Offloader {
     }
 
     offloaded_struct_for->snode = for_stmt->snode;
-    offloaded_struct_for->num_cpu_threads = for_stmt->parallelize;
+    offloaded_struct_for->num_cpu_threads =
+        std::min(for_stmt->parallelize, program->config.cpu_max_num_threads);
     offloaded_struct_for->scratch_opt = scratch_opt;
 
     root_block->insert(std::move(offloaded_struct_for));
@@ -250,10 +258,10 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
     global_offset = 0;
   }
 
-  std::size_t allocate_global(VectorType type) {
-    TI_ASSERT(type.width == 1);
+  std::size_t allocate_global(DataType type) {
+    TI_ASSERT(type->vector_width() == 1);
     auto ret = global_offset;
-    global_offset += data_type_size(type.data_type);
+    global_offset += data_type_size(type);
     TI_ASSERT(global_offset < taichi_global_tmp_buffer_size);
     return ret;
   }
@@ -409,7 +417,7 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
     auto ptr = replacement.push_back<GlobalTemporaryStmt>(
         local_to_global_offset[stmt], ret_type);
     LaneAttribute<TypedConstant> zeros(std::vector<TypedConstant>(
-        stmt->width(), TypedConstant(stmt->ret_type.data_type)));
+        stmt->width(), TypedConstant(stmt->ret_type)));
     auto const_zeros = replacement.push_back<ConstStmt>(zeros);
     replacement.push_back<GlobalStoreStmt>(ptr, const_zeros);
 
@@ -556,7 +564,7 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
   StmtToOffsetMap local_to_global_offset;
   std::unordered_map<Stmt *, Stmt *> stmt_to_offloaded;
   OffloadedRanges *const offloaded_ranges_;
-  std::unordered_map<Stmt *, VectorType> local_to_global_vector_type;
+  std::unordered_map<Stmt *, DataType> local_to_global_vector_type;
 };
 
 void insert_gc(IRNode *root) {

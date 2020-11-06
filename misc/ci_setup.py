@@ -188,7 +188,7 @@ class Installer:
             "autograd",
             "astor",
             "sourceinspect",
-            "pytest",
+            "pytest==6.0.2",
             "pytest-xdist",
             "pytest-rerunfailures",
             "pytest-cov",
@@ -261,8 +261,9 @@ class Installer:
             # compile ..
             os.makedirs('build', exist_ok=True)
             arg = environ.get('CI_SETUP_CMAKE_ARGS', '')
-            execute_command('cd build && cmake .. -DTI_WITH_CUDA:BOOL=OFF ' +
-                            arg)
+            execute_command(
+                f'cd build && cmake .. -DPYTHON_EXECUTABLE={sys.executable} {arg}'
+            )
             execute_command('cd build && make -j 10')
         return
         if test_installation():

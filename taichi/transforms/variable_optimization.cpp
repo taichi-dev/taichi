@@ -1,5 +1,6 @@
 #include "taichi/ir/ir.h"
 #include "taichi/ir/analysis.h"
+#include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
 #include "taichi/ir/state_machine.h"
@@ -317,7 +318,7 @@ class GlobalTempOptimize : public VariableOptimize {
   }
 
   void visit(OffloadedStmt *stmt) override {
-    if (stmt->task_type == stmt->range_for) {
+    if (stmt->task_type == OffloadedTaskType::range_for) {
       TI_ASSERT(!maybe_run);
       if (!stmt->const_begin) {
         TI_ASSERT(state_machines.find(stmt->begin_offset) !=

@@ -104,7 +104,7 @@ Linux issues
 
 - If Taichi crashes and reports ``libtinfo.so.5 not found``:
 
-  * On Ubuntu, execute ``sudo apt install libtinfo-dev``.
+  * On Ubuntu, execute ``sudo apt install libtinfo5``.
 
   * On Arch Linux, first edit ``/etc/pacman.conf``, and append these lines:
 

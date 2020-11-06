@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.archs_support_sparse
+@ti.test(require=ti.extension.sparse)
 def test_pointer():
     x = ti.field(ti.f32)
     s = ti.field(ti.i32)
@@ -29,4 +29,28 @@ def test_pointer():
     assert s[None] == 32
 
 
-test_pointer()
+@ti.test(require=ti.extension.sparse)
+def test_non_dfs_snode_order():
+    x = ti.field(dtype=ti.i32)
+    y = ti.field(dtype=ti.i32)
+
+    grid1 = ti.root.dense(ti.i, 1)
+    grid2 = ti.root.dense(ti.i, 1)
+    ptr = grid1.pointer(ti.i, 1)
+    ptr.place(x)
+    grid2.place(y)
+    '''
+    This SNode tree has node ids that do not follow DFS order:
+    S0root
+      S1dense
+        S3pointer
+          S4place<i32>
+      S2dense
+        S5place<i32>
+    '''
+    @ti.kernel
+    def foo():
+        ti.activate(ptr, [0])
+
+    foo()  # Just make sure it doesn't crash
+    ti.sync()

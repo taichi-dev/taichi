@@ -1059,6 +1059,25 @@ class TaichiMain:
 
         local_scope()
 
+    @register
+    def lint(self, arguments: list = sys.argv[2:]):
+        """Run pylint checker for the Python codebase of Taichi"""
+        parser = argparse.ArgumentParser(prog='ti lint',
+                                         description=f"{self.lint.__doc__}")
+        # TODO: support arguments for lint specific files
+        args = parser.parse_args(arguments)
+
+        options = [os.path.dirname(__file__)]
+
+        from multiprocessing import cpu_count
+        threads = min(8, cpu_count())
+        options += ['-j', str(threads)]
+
+        # http://pylint.pycqa.org/en/latest/user_guide/run.html
+        # TODO: support redirect output to lint.log
+        import pylint.lint
+        pylint.lint.Run(options)
+
 
 def main():
     cli = TaichiMain()

@@ -8,20 +8,18 @@ namespace opengl {
 
 inline std::string opengl_data_type_name(DataType dt) {
   // https://www.khronos.org/opengl/wiki/Data_Type_(GLSL)
-  switch (dt) {
-    case DataType::f32:
-      return "float";
-    case DataType::f64:
-      return "double";
-    case DataType::i32:
-      return "int";
-    case DataType::i64:
-      return "int64_t";
-    default:
-      TI_NOT_IMPLEMENTED;
-      break;
+  dt.set_is_pointer(false);
+  if (dt->is_primitive(PrimitiveTypeID::f32))
+    return "float";
+  else if (dt->is_primitive(PrimitiveTypeID::f64))
+    return "double";
+  else if (dt->is_primitive(PrimitiveTypeID::i32))
+    return "int";
+  else if (dt->is_primitive(PrimitiveTypeID::i64))
+    return "int64_t";
+  else {
+    TI_ERROR("Type {} not supported.", dt->to_string());
   }
-  return "";
 }
 
 inline bool is_opengl_binary_op_infix(BinaryOpType type) {
@@ -36,15 +34,17 @@ inline bool is_opengl_binary_op_different_return_type(BinaryOpType type) {
 }
 
 inline int opengl_data_address_shifter(DataType type) {
-  switch (type) {
-    case DataType::f32:
-    case DataType::i32:
-      return 2;
-    case DataType::f64:
-    case DataType::i64:
-      return 3;
-    default:
-      TI_NOT_IMPLEMENTED
+  // TODO: fail loudly when feeding a pointer type to this function, after type
+  // system upgrade.
+  type.set_is_pointer(false);
+  if (type->is_primitive(PrimitiveTypeID::f32) ||
+      type->is_primitive(PrimitiveTypeID::i32))
+    return 2;
+  else if (type->is_primitive(PrimitiveTypeID::f64) ||
+           type->is_primitive(PrimitiveTypeID::i64)) {
+    return 3;
+  } else {
+    TI_NOT_IMPLEMENTED
   }
 }
 

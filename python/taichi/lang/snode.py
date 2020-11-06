@@ -32,6 +32,10 @@ class SNode:
             dimensions = [dimensions] * len(indices)
         return SNode(self.ptr.bitmasked(indices, dimensions))
 
+    # Not yet stable API
+    def _bit_struct(self, num_bits):
+        return SNode(self.ptr.bit_struct(num_bits))
+
     def place(self, *args, offset=None):
         from .expr import Expr
         from .util import is_taichi_class

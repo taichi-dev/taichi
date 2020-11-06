@@ -77,7 +77,7 @@ Trigonometric functions
 .. function:: ti.tan(x)
 .. function:: ti.asin(x)
 .. function:: ti.acos(x)
-.. function:: ti.atan2(x, y)
+.. function:: ti.atan2(y, x)
 .. function:: ti.tanh(x)
 
 Other arithmetic functions

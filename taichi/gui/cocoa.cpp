@@ -194,21 +194,27 @@ void updateLayer(id self, SEL _) {
   using namespace taichi;
   auto *gui = gui_from_id[self];
   auto width = gui->width, height = gui->height;
-  auto &img = gui->canvas->img;
-  auto &data = gui->img_data;
-  for (int j = 0; j < height; j++) {
-    for (int i = 0; i < width; i++) {
-      int index = 4 * (i + j * width);
-      auto pixel = img[i][height - j - 1];
-      data[index++] = uint8(clamp(int(pixel[0] * 255.0_f), 0, 255));
-      data[index++] = uint8(clamp(int(pixel[1] * 255.0_f), 0, 255));
-      data[index++] = uint8(clamp(int(pixel[2] * 255.0_f), 0, 255));
-      data[index++] = 255;  // alpha
+  uint8_t *data_ptr = nullptr;
+  if (gui->fast_gui) {
+    data_ptr = reinterpret_cast<uint8_t *>(gui->fast_buf);
+  } else {
+    auto &img = gui->canvas->img;
+    auto &data = gui->img_data;
+    data_ptr = data.data();
+    for (int j = 0; j < height; j++) {
+      for (int i = 0; i < width; i++) {
+        int index = 4 * (i + j * width);
+        auto pixel = img[i][height - j - 1];
+        data[index++] = uint8(clamp(int(pixel[0] * 255.0_f), 0, 255));
+        data[index++] = uint8(clamp(int(pixel[1] * 255.0_f), 0, 255));
+        data[index++] = uint8(clamp(int(pixel[2] * 255.0_f), 0, 255));
+        data[index++] = 255;  // alpha
+      }
     }
   }
 
   CGDataProviderRef provider = CGDataProviderCreateWithData(
-      nullptr, data.data(), gui->img_data_length, nullptr);
+      nullptr, data_ptr, gui->img_data_length, nullptr);
   CGColorSpaceRef colorspace = CGColorSpaceCreateDeviceRGB();
   CGImageRef image =
       CGImageCreate(width, height, 8, 32, width * 4, colorspace,
@@ -308,6 +314,9 @@ void GUI::create_window() {
   call(window, "becomeFirstResponder");
   call(window, "setAcceptsMouseMovedEvents:", YES);
   call(window, "makeKeyAndOrderFront:", window);
+  if (fullscreen) {
+    call(window, "toggleFullScreen:");
+  }
 }
 
 void GUI::process_event() {

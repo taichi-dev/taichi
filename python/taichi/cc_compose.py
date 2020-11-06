@@ -3,13 +3,45 @@ import warnings
 import sys
 
 
-class Composer:
+class ComposerBase:
+    def __init__(self, entries):
+        self.entries = entries
+        self.current_group = None
+        self.groups = {}
+        self.launches = []
+
+    def run(self):
+        for e in self.entries:
+            action = e['action']
+            func = getattr(self, 'do_' + action, self.do_unknown)
+            func(e)
+
+    def do_unknown(self, e):
+        pass
+
+    def do_group_begin(self, e):
+        name = e['content']
+        self.current_group = name
+        self.launches = []
+
+    def do_group_end(self, e):
+        name = e['content']
+        self.groups[self.current_group] = list(self.launches)
+        self.current_group = None
+        self.launches = []
+
+    def do_launch_kernel(self, e):
+        name = e['kernel_name']
+        self.launches.append(name)
+
+
+class ComposerCC(ComposerBase):
     def __init__(self, entries, fout, hdrout, emscripten=False):
+        super().__init__(entries)
+
         self.fout = fout
         self.hdrout = hdrout
-        self.entries = entries
         self.emscripten = emscripten
-        self.launches = []
 
     def emit(self, line):
         print(line, file=self.fout)
@@ -21,13 +53,10 @@ class Composer:
         if self.emscripten:
             self.emit('#include <emscripten.h>')
 
-        for e in self.entries:
-            action = e['action']
-            func = getattr(self, 'do_' + action, self.do_unknown)
-            func(e)
+        super().run()
 
-    def do_unknown(self, e):
-        pass
+        for key, launches in self.groups.items():
+            self.emit(f'// group {key}: {launches}')
 
     def do_compile_runtime(self, e):
         header = e['runtime_header']
@@ -88,8 +117,21 @@ class Composer:
         declaration = source.split('{', 1)[0].strip()
         self.emit_header(f'extern {declaration};')
 
-    def do_launch_kernel(self, e):
-        self.launches.append(e)
+    def do_config(self, e):
+        key = e['key']
+        value = e['value']
+        variable = f'Ti_cfg_{key}'
+        if isinstance(value, str):
+            declaration = f'const char {variable}[]'
+            value = repr(value)
+            value = '\"' + value[1:-1] + '\"'
+        elif isinstance(value, int):
+            declaration = f'const int {variable}'
+        else:
+            declaration = f'const float {variable}'
+        self.emit(f'{declaration} = {value};')
+        self.emit('')
+        self.emit_header(f'extern {declaration};')
 
 
 def main(fin_name, fout_name, hdrout_name, emscripten=False):
@@ -99,7 +141,7 @@ def main(fin_name, fout_name, hdrout_name, emscripten=False):
 
     with open(hdrout_name, 'w') as hdrout:
         with open(fout_name, 'w') as fout:
-            comp = Composer(obj, fout, hdrout, emscripten)
+            comp = ComposerCC(obj, fout, hdrout, emscripten)
             comp.run()
 
 

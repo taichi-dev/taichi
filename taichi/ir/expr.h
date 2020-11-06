@@ -132,7 +132,6 @@ inline Expr smart_load(const Expr &var) {
 }
 
 // Begin: legacy frontend functions
-void Cache(int v, const Expr &var);
 Expr Var(const Expr &x);
 // End: legacy frontend functions
 

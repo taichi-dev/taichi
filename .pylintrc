@@ -1,0 +1,2 @@
+[MESSAGES CONTROL]
+disable=invalid-name, missing-function-docstring, missing-class-docstring, missing-module-docstring, unused-wildcard-import, cyclic-import, blacklisted-name, import-outside-toplevel

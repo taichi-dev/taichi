@@ -5,6 +5,7 @@
 
 #include "taichi/ir/ir.h"
 #include "taichi/ir/snode.h"
+#include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
 #include "taichi/program/program.h"
@@ -76,15 +77,13 @@ class ConstantFold : public BasicStmtVisitor {
     // ConstStmt of `bad` types like `i8` is not supported by LLVM.
     // Discussion:
     // https://github.com/taichi-dev/taichi/pull/839#issuecomment-625902727
-    switch (dt) {
-      case DataType::i32:
-      case DataType::f32:
-      case DataType::i64:
-      case DataType::f64:
-        return true;
-      default:
-        return false;
-    }
+    if (dt->is_primitive(PrimitiveTypeID::i32) ||
+        dt->is_primitive(PrimitiveTypeID::f32) ||
+        dt->is_primitive(PrimitiveTypeID::i64) ||
+        dt->is_primitive(PrimitiveTypeID::f64))
+      return true;
+    else
+      return false;
   }
 
   static bool jit_evaluate_binary_op(TypedConstant &ret,
@@ -136,7 +135,7 @@ class ConstantFold : public BasicStmtVisitor {
       return;
     if (stmt->width() != 1)
       return;
-    auto dst_type = stmt->ret_type.data_type;
+    auto dst_type = stmt->ret_type;
     TypedConstant new_constant(dst_type);
     if (jit_evaluate_binary_op(new_constant, stmt, lhs->val[0], rhs->val[0])) {
       auto evaluated =
@@ -148,8 +147,7 @@ class ConstantFold : public BasicStmtVisitor {
   }
 
   void visit(UnaryOpStmt *stmt) override {
-    if (stmt->is_cast() &&
-        stmt->cast_type == stmt->operand->ret_type.data_type) {
+    if (stmt->is_cast() && stmt->cast_type == stmt->operand->ret_type) {
       stmt->replace_with(stmt->operand);
       modifier.erase(stmt);
       return;
@@ -159,7 +157,7 @@ class ConstantFold : public BasicStmtVisitor {
       return;
     if (stmt->width() != 1)
       return;
-    auto dst_type = stmt->ret_type.data_type;
+    auto dst_type = stmt->ret_type;
     TypedConstant new_constant(dst_type);
     if (jit_evaluate_unary_op(new_constant, stmt, operand->val[0])) {
       auto evaluated =

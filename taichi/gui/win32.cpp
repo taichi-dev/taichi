@@ -183,11 +183,16 @@ void GUI::create_window() {
                         GetModuleHandle(0),  // Instance handle
                         NULL                 // Additional application data
   );
-
+  TI_ERROR_IF(hwnd == NULL, "Window creation failed");
   gui_from_hwnd[hwnd] = this;
 
-  if (hwnd == NULL) {
-    TI_ERROR("Window creation failed");
+  if (fullscreen) {
+    // https://www.cnblogs.com/lidabo/archive/2012/07/17/2595452.html
+    LONG style = GetWindowLong(hwnd, GWL_STYLE);
+    style &= ~WS_CAPTION & ~WS_SIZEBOX;
+    SetWindowLong(hwnd, GWL_STYLE, style);
+    SetWindowPos(hwnd, NULL, 0, 0, GetSystemMetrics(SM_CXSCREEN),
+                 GetSystemMetrics(SM_CYSCREEN), SWP_NOZORDER);
   }
 
   ShowWindow(hwnd, SW_SHOWDEFAULT);
@@ -198,18 +203,21 @@ void GUI::create_window() {
 
 void GUI::redraw() {
   UpdateWindow(hwnd);
-  // http:// www.cplusplus.com/reference/cstdlib/calloc/
-  for (int i = 0; i < width; i++) {
-    for (int j = 0; j < height; j++) {
-      auto c = reinterpret_cast<unsigned char *>(data + (j * width) + i);
-      auto d = canvas->img[i][height - j - 1];
-      c[0] = uint8(clamp(int(d[2] * 255.0_f), 0, 255));
-      c[1] = uint8(clamp(int(d[1] * 255.0_f), 0, 255));
-      c[2] = uint8(clamp(int(d[0] * 255.0_f), 0, 255));
-      c[3] = 0;
+  if (!fast_gui) {
+    // http://www.cplusplus.com/reference/cstdlib/calloc/
+    for (int i = 0; i < width; i++) {
+      for (int j = 0; j < height; j++) {
+        auto c = reinterpret_cast<unsigned char *>(data + (j * width) + i);
+        auto d = canvas->img[i][height - j - 1];
+        c[0] = uint8(clamp(int(d[2] * 255.0_f), 0, 255));
+        c[1] = uint8(clamp(int(d[1] * 255.0_f), 0, 255));
+        c[2] = uint8(clamp(int(d[0] * 255.0_f), 0, 255));
+        c[3] = 0;
+      }
     }
   }
-  bitmap = CreateBitmap(width, height, 1, 32, (void *)data);
+  bitmap = CreateBitmap(width, height, 1, 32,
+                        fast_gui ? (void *)fast_buf : (void *)data);
   SelectObject(src, bitmap);
   BitBlt(hdc, 0, 0, width, height, src, 0, 0, SRCCOPY);
   DeleteObject(bitmap);
@@ -223,6 +231,7 @@ GUI::~GUI() {
   if (show_gui) {
     std::free(data);
     DeleteDC(src);
+    DestroyWindow(hwnd);
     gui_from_hwnd.erase(hwnd);
   }
 }

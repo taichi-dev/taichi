@@ -1,40 +1,24 @@
 #include <atomic>
 #include <condition_variable>
 #include <deque>
+#include <functional>
 #include <future>
 #include <mutex>
 #include <thread>
 #include <unordered_map>
 
 #include "taichi/ir/ir.h"
-#include "taichi/ir/statements.h"
 #include "taichi/lang_util.h"
 #define TI_RUNTIME_HOST
 #include "taichi/program/context.h"
 #undef TI_RUNTIME_HOST
 #include "taichi/program/async_utils.h"
+#include "taichi/program/ir_bank.h"
 #include "taichi/program/state_flow_graph.h"
 
 TLANG_NAMESPACE_BEGIN
 
 // TODO(yuanming-hu): split into multiple files
-
-class IRBank {
- public:
-  uint64 get_hash(IRNode *ir);
-  void set_hash(IRNode *ir, uint64 hash);
-
-  bool insert(std::unique_ptr<IRNode> &&ir, uint64 hash);
-  void insert_to_trash_bin(std::unique_ptr<IRNode> &&ir);
-  IRNode *find(IRHandle ir_handle);
-
- private:
-  std::unordered_map<IRNode *, uint64> hash_bank_;
-  std::unordered_map<IRHandle, std::unique_ptr<IRNode>> ir_bank_;
-  std::vector<std::unique_ptr<IRNode>> trash_bin;  // prevent IR from deleted
-  // TODO:
-  //  std::unordered_map<std::pair<IRHandle, IRHandle>, IRHandle> fuse_bank_;
-};
 
 class ParallelExecutor {
  public:
@@ -86,6 +70,10 @@ class ParallelExecutor {
   std::condition_variable flush_cv_;
 };
 
+// Compiles the offloaded and optimized IR to the target backend's executable.
+using BackendExecCompilationFunc =
+    std::function<FunctionType(Kernel &, OffloadedStmt *)>;
+
 // In charge of (parallel) compilation to binary and (serial) kernel launching
 class ExecutionQueue {
  public:
@@ -94,7 +82,8 @@ class ExecutionQueue {
   ParallelExecutor compilation_workers;  // parallel compilation
   ParallelExecutor launch_worker;        // serial launching
 
-  explicit ExecutionQueue(IRBank *ir_bank);
+  explicit ExecutionQueue(IRBank *ir_bank,
+                          const BackendExecCompilationFunc &compile_to_backend);
 
   void enqueue(const TaskLaunchRecord &ker);
 
@@ -133,6 +122,7 @@ class ExecutionQueue {
   std::unordered_map<uint64, AsyncCompiledFunc> compiled_funcs_;
 
   IRBank *ir_bank_;  // not owned
+  BackendExecCompilationFunc compile_to_backend_;
 };
 
 // An engine for asynchronous execution and optimization
@@ -146,11 +136,8 @@ class AsyncEngine {
   std::unique_ptr<StateFlowGraph> sfg;
   std::deque<TaskLaunchRecord> task_queue;
 
-  explicit AsyncEngine(Program *program);
-
-  bool optimize_listgen();  // return true when modified
-
-  bool fuse();  // return true when modified
+  explicit AsyncEngine(Program *program,
+                       const BackendExecCompilationFunc &compile_to_backend);
 
   void clear_cache() {
     queue.clear_cache();
@@ -161,6 +148,8 @@ class AsyncEngine {
   void enqueue(const TaskLaunchRecord &t);
 
   void synchronize();
+
+  void debug_sfg(const std::string &suffix);
 
  private:
   IRBank ir_bank_;
@@ -177,9 +166,11 @@ class AsyncEngine {
     std::vector<IRHandle> ir_handle_cached;
   };
 
-  TaskMeta create_task_meta(const TaskLaunchRecord &t);
   std::unordered_map<const Kernel *, KernelMeta> kernel_metas_;
-  std::unordered_map<IRHandle, TaskMeta> offloaded_metas_;
+  // How many times we have synchronized
+  int sync_counter_{0};
+  int cur_sync_sfg_debug_counter_{0};
+  std::unordered_map<std::string, int> cur_sync_sfg_debug_per_stage_counts_;
 };
 
 TLANG_NAMESPACE_END

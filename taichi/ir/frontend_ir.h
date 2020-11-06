@@ -16,7 +16,7 @@ class FrontendAllocaStmt : public Stmt {
   Identifier ident;
 
   FrontendAllocaStmt(const Identifier &lhs, DataType type) : ident(lhs) {
-    ret_type = VectorType(1, type);
+    ret_type = TypeFactory::create_vector_or_scalar_type(1, type);
   }
 
   TI_DEFINE_ACCEPT
@@ -203,7 +203,7 @@ class FrontendKernelReturnStmt : public Stmt {
   Expr value;
 
   FrontendKernelReturnStmt(const Expr &value, DataType dt) : value(value) {
-    ret_type = VectorType(1, dt);
+    ret_type = TypeFactory::create_vector_or_scalar_type(1, dt);
   }
 
   bool is_container_statement() const override {
@@ -227,11 +227,7 @@ class ArgLoadExpression : public Expression {
     return fmt::format("arg[{}] (dt={})", arg_id, data_type_name(dt));
   }
 
-  void flatten(FlattenContext *ctx) override {
-    auto argl = std::make_unique<ArgLoadStmt>(arg_id, dt);
-    ctx->push_back(std::move(argl));
-    stmt = ctx->back_stmt();
-  }
+  void flatten(FlattenContext *ctx) override;
 };
 
 class RandExpression : public Expression {
@@ -245,11 +241,7 @@ class RandExpression : public Expression {
     return fmt::format("rand<{}>()", data_type_name(dt));
   }
 
-  void flatten(FlattenContext *ctx) override {
-    auto ran = std::make_unique<RandStmt>(dt);
-    ctx->push_back(std::move(ran));
-    stmt = ctx->back_stmt();
-  }
+  void flatten(FlattenContext *ctx) override;
 };
 
 class UnaryOpExpression : public Expression {
@@ -260,7 +252,7 @@ class UnaryOpExpression : public Expression {
 
   UnaryOpExpression(UnaryOpType type, const Expr &operand)
       : type(type), operand(smart_load(operand)) {
-    cast_type = DataType::unknown;
+    cast_type = PrimitiveType::unknown;
   }
 
   bool is_cast() const;
@@ -286,15 +278,7 @@ class BinaryOpExpression : public Expression {
                        binary_op_type_symbol(type), rhs->serialize());
   }
 
-  void flatten(FlattenContext *ctx) override {
-    // if (stmt)
-    //  return;
-    lhs->flatten(ctx);
-    rhs->flatten(ctx);
-    ctx->push_back(std::make_unique<BinaryOpStmt>(type, lhs->stmt, rhs->stmt));
-    ctx->stmts.back()->tb = tb;
-    stmt = ctx->back_stmt();
-  }
+  void flatten(FlattenContext *ctx) override;
 };
 
 class TernaryOpExpression : public Expression {
@@ -317,16 +301,7 @@ class TernaryOpExpression : public Expression {
                        op1->serialize(), op2->serialize(), op3->serialize());
   }
 
-  void flatten(FlattenContext *ctx) override {
-    // if (stmt)
-    //  return;
-    op1->flatten(ctx);
-    op2->flatten(ctx);
-    op3->flatten(ctx);
-    ctx->push_back(
-        std::make_unique<TernaryOpStmt>(type, op1->stmt, op2->stmt, op3->stmt));
-    stmt = ctx->back_stmt();
-  }
+  void flatten(FlattenContext *ctx) override;
 };
 
 class ExternalFuncCallExpression : public Expression {
@@ -381,11 +356,7 @@ class ExternalTensorExpression : public Expression {
     return fmt::format("{}d_ext_arr", dim);
   }
 
-  void flatten(FlattenContext *ctx) override {
-    auto ptr = Stmt::make<ArgLoadStmt>(arg_id, dt, /*is_ptr=*/true);
-    ctx->push_back(std::move(ptr));
-    stmt = ctx->back_stmt();
-  }
+  void flatten(FlattenContext *ctx) override;
 };
 
 class GlobalVariableExpression : public Expression {
@@ -420,12 +391,7 @@ class GlobalVariableExpression : public Expression {
     return "#" + ident.name();
   }
 
-  void flatten(FlattenContext *ctx) override {
-    TI_ASSERT(snode->num_active_indices == 0);
-    auto ptr = Stmt::make<GlobalPtrStmt>(LaneAttribute<SNode *>(snode),
-                                         std::vector<Stmt *>());
-    ctx->push_back(std::move(ptr));
-  }
+  void flatten(FlattenContext *ctx) override;
 };
 
 class GlobalPtrExpression : public Expression {
@@ -481,13 +447,21 @@ class RangeAssumptionExpression : public Expression {
                        base.serialize(), high);
   }
 
-  void flatten(FlattenContext *ctx) override {
-    input->flatten(ctx);
-    base->flatten(ctx);
-    ctx->push_back(
-        Stmt::make<RangeAssumptionStmt>(input->stmt, base->stmt, low, high));
-    stmt = ctx->back_stmt();
+  void flatten(FlattenContext *ctx) override;
+};
+
+class LoopUniqueExpression : public Expression {
+ public:
+  Expr input;
+
+  LoopUniqueExpression(const Expr &input) : input(input) {
   }
+
+  std::string serialize() override {
+    return fmt::format("loop_unique({})", input.serialize());
+  }
+
+  void flatten(FlattenContext *ctx) override;
 };
 
 class IdExpression : public Expression {
@@ -502,18 +476,7 @@ class IdExpression : public Expression {
     return id.name();
   }
 
-  void flatten(FlattenContext *ctx) override {
-    auto var_stmt = ctx->current_block->lookup_var(id);
-    if (var_stmt->is<AllocaStmt>()) {
-      ctx->push_back(
-          std::make_unique<LocalLoadStmt>(LocalAddress(var_stmt, 0)));
-      stmt = ctx->back_stmt();
-    } else {
-      // The loop index may have a coordinate offset.
-      TI_ASSERT(var_stmt->is<LoopIndexStmt>() || var_stmt->is<BinaryOpStmt>());
-      stmt = var_stmt;
-    }
-  }
+  void flatten(FlattenContext *ctx) override;
 
   Stmt *flatten_noload(FlattenContext *ctx) {
     return ctx->current_block->lookup_var(id);
@@ -572,11 +535,7 @@ class GlobalLoadExpression : public Expression {
     return "gbl load " + ptr.serialize();
   }
 
-  void flatten(FlattenContext *ctx) override {
-    ptr->flatten(ctx);
-    ctx->push_back(std::make_unique<GlobalLoadStmt>(ptr->stmt));
-    stmt = ctx->back_stmt();
-  }
+  void flatten(FlattenContext *ctx) override;
 };
 
 class ConstExpression : public Expression {
@@ -591,10 +550,7 @@ class ConstExpression : public Expression {
     return val.stringify();
   }
 
-  void flatten(FlattenContext *ctx) override {
-    ctx->push_back(Stmt::make<ConstStmt>(val));
-    stmt = ctx->back_stmt();
-  }
+  void flatten(FlattenContext *ctx) override;
 };
 
 class ExternalTensorShapeAlongAxisExpression : public Expression {

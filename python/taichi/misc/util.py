@@ -110,18 +110,18 @@ def get_line_number(asc=0):
     return inspect.stack()[1 + asc][2]
 
 
+# The builtin `warnings` module is unreliable as it may be supressed
+# by other packages, e.g. IPython.
 def warning(msg, type=UserWarning, stacklevel=1):
-    import warnings
+    from colorama import Fore, Back, Style
     import traceback
     import taichi as ti
-    use_spdlog = False
-    if use_spdlog:
-        s = traceback.extract_stack()[:-stacklevel]
-        raw = ''.join(traceback.format_list(s))
-        ti.warn(f'{type.__name__}: {msg}')
-        ti.warn(f'\n{raw}')
-    else:
-        warnings.warn(msg, type, stacklevel=stacklevel + 1)
+    s = traceback.extract_stack()[:-stacklevel]
+    raw = ''.join(traceback.format_list(s))
+    print(Fore.YELLOW + Style.BRIGHT, end='')
+    print(f'{type.__name__}: {msg}')
+    print(f'\n{raw}')
+    print(Style.RESET_ALL, end='')
 
 
 def deprecated(old, new, type=DeprecationWarning):
@@ -239,6 +239,10 @@ def print_profile_info():
     taichi.ti_core.print_profile_info()
 
 
+def clear_profile_info():
+    taichi.ti_core.clear_profile_info()
+
+
 @deprecated('ti.vec(x, y)', 'ti.core_vec(x, y)')
 def vec(*args, **kwargs):
     return core_vec(*args, **kwargs)
@@ -249,9 +253,9 @@ def veci(*args, **kwargs):
     return core_veci(*args, **kwargs)
 
 
-def dump_dot(filepath=None):
+def dump_dot(filepath=None, rankdir=None, embed_states_threshold=0):
     from taichi.core import ti_core
-    d = ti_core.dump_dot()
+    d = ti_core.dump_dot(rankdir, embed_states_threshold)
     if filepath is not None:
         with open(filepath, 'w') as fh:
             fh.write(d)
@@ -269,6 +273,11 @@ def dot_to_pdf(dot, filepath):
         fh.write(pdf_contents)
 
 
+def get_kernel_stats():
+    from taichi.core import ti_core
+    return ti_core.get_kernel_stats()
+
+
 __all__ = [
     'vec',
     'veci',
@@ -278,9 +287,11 @@ __all__ = [
     'dump_dot',
     'dot_to_pdf',
     'obsolete',
+    'get_kernel_stats',
     'get_traceback',
     'set_gdb_trigger',
     'print_profile_info',
+    'clear_profile_info',
     'set_logging_level',
     'info',
     'warn',

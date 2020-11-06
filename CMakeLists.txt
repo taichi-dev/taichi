@@ -1,5 +1,5 @@
 #*********************************************************************
-# Taichi - Open-Source Computer Graphics Library
+# The Taichi Programming Language
 #*********************************************************************
 
 cmake_minimum_required(VERSION 3.0)
@@ -7,8 +7,10 @@ cmake_minimum_required(VERSION 3.0)
 project(taichi)
 
 SET(TI_VERSION_MAJOR 0)
-SET(TI_VERSION_MINOR 6)
-SET(TI_VERSION_PATCH 32)
+SET(TI_VERSION_MINOR 7)
+SET(TI_VERSION_PATCH 4)
+
+set(CMAKE_CXX_STANDARD 17)
 
 execute_process(
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
@@ -25,10 +27,6 @@ string(STRIP ${TI_COMMIT_SHORT_HASH} TI_COMMIT_SHORT_HASH)
 
 message("Taichi Version ${TI_VERSION_MAJOR}.${TI_VERSION_MINOR}.${TI_VERSION_PATCH}")
 message("       Commit ${TI_COMMIT_HASH}")
-
-FILE(WRITE ${CMAKE_CURRENT_LIST_DIR}/docs/version
-        "${TI_VERSION_MAJOR}.${TI_VERSION_MINOR}.${TI_VERSION_PATCH}\n"
-        )
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING

@@ -2,6 +2,7 @@ import numbers
 import numpy as np
 from taichi.core import ti_core
 from .util import deprecated, core_veci
+import os
 
 
 class GUI:
@@ -38,14 +39,32 @@ class GUI:
                  name='Taichi',
                  res=512,
                  background_color=0x0,
-                 show_gui=True):
+                 show_gui=True,
+                 fullscreen=False,
+                 fast_gui=False):
+        if 'TI_GUI_SHOW' in os.environ:
+            show_gui = bool(int(os.environ['TI_GUI_SHOW']))
+        if 'TI_GUI_FULLSCREEN' in os.environ:
+            fullscreen = bool(int(os.environ['TI_GUI_FULLSCREEN']))
+        if 'TI_GUI_FAST' in os.environ:
+            fast_gui = bool(int(os.environ['TI_GUI_FAST']))
+
         self.name = name
         if isinstance(res, numbers.Number):
             res = (res, res)
         self.res = res
-        # The GUI canvas uses RGBA for storage, therefore we need NxMx4 for an image.
-        self.img = np.ascontiguousarray(np.zeros(self.res + (4, ), np.float32))
-        self.core = ti_core.GUI(name, core_veci(*res), show_gui)
+        self.fast_gui = fast_gui
+        if fast_gui:
+            self.img = np.ascontiguousarray(
+                np.zeros(self.res[0] * self.res[1], dtype=np.uint32))
+            fast_buf = self.img.ctypes.data
+        else:
+            # The GUI canvas uses RGBA for storage, therefore we need NxMx4 for an image.
+            self.img = np.ascontiguousarray(
+                np.zeros(self.res + (4, ), np.float32))
+            fast_buf = 0
+        self.core = ti_core.GUI(name, core_veci(*res), show_gui, fullscreen,
+                                fast_gui, fast_buf)
         self.canvas = self.core.get_canvas()
         self.background_color = background_color
         self.key_pressed = set()
@@ -57,6 +76,9 @@ class GUI:
         return self
 
     def __exit__(self, type, val, tb):
+        self.close()
+
+    def __del__(self):
         self.close()
 
     def close(self):
@@ -132,6 +154,18 @@ class GUI:
     def set_image(self, img):
         import numpy as np
         import taichi as ti
+
+        if self.fast_gui:
+            assert isinstance(img, ti.Matrix), \
+                    "Only ti.Vector.field is supported in GUI.set_image when fast_gui=True"
+            assert img.shape == self.res, \
+                    "Image resolution does not match GUI resolution"
+            assert img.n in [3, 4] and img.m == 1, \
+                    "Only RGB images are supported in GUI.set_image when fast_gui=True"
+
+            from taichi.lang.meta import vector_to_fast_image
+            vector_to_fast_image(img, self.img)
+            return
 
         if isinstance(img, ti.Expr):
             if ti.core.is_integral(img.dtype) or len(img.shape) != 2:
@@ -342,7 +376,8 @@ class GUI:
         color = ti.core_vec(r, g, b, 1)
         self.canvas.text(content, pos, font_size, color)
 
-    def _make_field_base(gui, w, h, bound):
+    @staticmethod
+    def _make_field_base(w, h, bound):
         x = np.linspace(bound / w, 1 - bound / w, w)
         y = np.linspace(bound / h, 1 - bound / h, h)
         base = np.array(np.meshgrid(x, y))

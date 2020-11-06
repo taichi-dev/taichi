@@ -76,24 +76,64 @@ def locate_workflow_run_id(sha):
     return ''
 
 
+CHECK_STILL_RUNNING = 1
+CHECK_FOUND_FAILED_JOB = 2
+CHECK_ALL_JOBS_SUCCEEDED = 3
+
+
+def check_all_jobs(jobs):
+    # Denotes if there is still any job that has not completed yet.
+    still_running = False
+    for j in jobs:
+        name = j['name']
+        if not name.startswith('Build and Test'):
+            continue
+
+        job_id = j['id']
+        # https://developer.github.com/v3/checks/runs/#create-a-check-run
+        status = j['status']
+        if status != 'completed':
+            logging.debug(
+                f'  job={job_id} name={name} still running, status={status}')
+            still_running = True
+            continue
+
+        concl = j['conclusion']
+        if concl != 'success':
+            # If we ever find a failed job, the entire check has failed.
+            logging.warning(
+                f'  job={job_id} name={name} failed, conclusion={concl}')
+            return CHECK_FOUND_FAILED_JOB
+
+    return CHECK_STILL_RUNNING if still_running else CHECK_ALL_JOBS_SUCCEEDED
+
+
 def get_status_of_run(run_id):
     """
     Waits for run identified by |run_id| to complete and returns its status.
+
+    Instead of waiting for the result of the entire workflow run, we only wait
+    on those "Build and Test" jobs. The reason is that when jobs like code
+    format failed, the entire workflow run will be marked as failed, yet
+    @taichi-gardener will automatically make another commit to format the code.
+    However, if this check relies on the previous workflow's result, it will be
+    marked as failed again...
     """
-    url = make_api_url(f'actions/runs/{run_id}')
+    url = make_api_url(f'actions/runs/{run_id}/jobs')
     start = time.time()
     retries = 0
     MAX_TIMEOUT = 60 * 60  # 1 hour
     while True:
         f = send_request(url)
         j = json.loads(f.read())
-        # https://developer.github.com/v3/checks/runs/#create-a-check-run
-        if j['status'] == 'completed':
-            c = j['conclusion']
-            logging.debug(f'run={run_id} conclusion={c}')
-            return c == 'success'
+        check_result = check_all_jobs(j['jobs'])
+        if check_result != CHECK_STILL_RUNNING:
+            ok = check_result == CHECK_ALL_JOBS_SUCCEEDED
+            logging.info(f'Done checking the jobs in run={run_id}. ok={ok}')
+            return ok
 
         if time.time() - start > MAX_TIMEOUT:
+            logging.warning(f'Timed out waiting for run={run_id}')
             return False
         retries += 1
         logging.info(

@@ -1,8 +1,11 @@
 // Split vectors wider than machine vector width into multiple vectors
 
 #include "taichi/ir/ir.h"
+#include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
+#include "taichi/program/program.h"
+
 #include <algorithm>
 
 TLANG_NAMESPACE_BEGIN
@@ -58,8 +61,9 @@ class BasicBlockVectorSplit : public IRVisitor {
         stmt->accept(this);
         origin2split[stmt] = std::vector<Stmt *>(current_split_factor, nullptr);
         for (int j = 0; j < current_split_factor; j++) {
-          current_split[j]->element_type() = stmt->element_type();
-          current_split[j]->width() = max_width;
+          current_split[j]->ret_type =
+              Program::get_type_factory().get_vector_type(
+                  max_width, stmt->element_type().get_ptr());
           origin2split[stmt][j] = current_split[j].get();
         }
         splits.push_back(std::move(current_split));
@@ -70,8 +74,10 @@ class BasicBlockVectorSplit : public IRVisitor {
         need_split = false;
         stmt->accept(this);
         origin2split[stmt] = std::vector<Stmt *>(1, nullptr);
-        current_split[0]->width() = stmt->width();
         current_split[0]->element_type() = stmt->element_type();
+        current_split[0]->ret_type =
+            Program::get_type_factory().get_vector_type(
+                stmt->width(), stmt->element_type().get_ptr());
         origin2split[stmt][0] = current_split[0].get();
         std::vector<pStmt> split;
         split.push_back(std::move(current_split[0]));

@@ -1,4 +1,5 @@
 #include "taichi/ir/ir.h"
+#include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
 #include "taichi/program/program.h"
@@ -92,6 +93,29 @@ class DemoteOperations : public BasicStmtVisitor {
         modifier.insert_before(stmt, std::move(floor));
         modifier.erase(stmt);
       }
+    } else if (stmt->op_type == BinaryOpType::bit_shr &&
+               is_integral(lhs->element_type()) &&
+               is_integral(rhs->element_type()) &&
+               is_signed(lhs->element_type())) {
+      // @ti.func
+      // def bit_shr(a, b):
+      //     signed_a = ti.cast(a, ti.uXX)
+      //     shifted = ti.bit_sar(signed_a, b)
+      //     ret = ti.cast(shifted, ti.iXX)
+      //     return ret
+      auto unsigned_cast = Stmt::make<UnaryOpStmt>(UnaryOpType::cast_bits, lhs);
+      unsigned_cast->as<UnaryOpStmt>()->cast_type =
+          to_unsigned(lhs->element_type());
+      auto shift = Stmt::make<BinaryOpStmt>(BinaryOpType::bit_sar,
+                                            unsigned_cast.get(), rhs);
+      auto signed_cast =
+          Stmt::make<UnaryOpStmt>(UnaryOpType::cast_bits, shift.get());
+      signed_cast->as<UnaryOpStmt>()->cast_type = lhs->element_type();
+      stmt->replace_with(signed_cast.get());
+      modifier.insert_before(stmt, std::move(unsigned_cast));
+      modifier.insert_before(stmt, std::move(shift));
+      modifier.insert_before(stmt, std::move(signed_cast));
+      modifier.erase(stmt);
     }
   }
 

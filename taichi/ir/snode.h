@@ -76,6 +76,7 @@ class SNode {
   int64 n{};
   int total_num_bits{}, total_bit_start{};
   int chunk_size{};
+  PrimitiveType *physical_type;  // for bit_struct and bit_array only
   DataType dt;
   bool has_ambient{};
   TypedConstant ambient_val;
@@ -84,6 +85,11 @@ class SNode {
   Kernel *reader_kernel{};
   Kernel *writer_kernel{};
   Expr expr;
+
+  // is_bit_level=false: the SNode is not bitpacked
+  // is_bit_level=true: the SNode is bitpacked (i.e., strictly inside bit_struct
+  // or bit_array)
+  bool is_bit_level{false};
 
   // Whether the path from root to |this| contains only `dense` SNodes.
   bool is_path_all_dense{false};
@@ -169,6 +175,8 @@ class SNode {
     return snode_type_name(type);
   }
 
+  SNode &bit_struct(int bits);
+
   void print();
 
   void set_index_offsets(std::vector<int> index_offsets);
@@ -216,6 +224,8 @@ class SNode {
   bool is_primal() const;
 
   bool is_place() const;
+
+  bool is_scalar() const;
 
   const Expr &get_expr() const {
     return expr;

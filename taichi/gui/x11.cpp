@@ -2,6 +2,7 @@
 
 #if defined(TI_GUI_X11)
 #include <X11/Xlib.h>
+#include <X11/Xatom.h>
 #include <X11/Xutil.h>
 #include <cstdlib>
 
@@ -19,13 +20,26 @@ class CXImage {
  public:
   XImage *image;
   std::vector<uint8> image_data;
+  void *fast_data{nullptr};
   int width, height;
+
   CXImage(Display *display, Visual *visual, int width, int height)
       : width(width), height(height) {
     image_data.resize(width * height * 4);
     image = XCreateImage(display, visual, 24, ZPixmap, 0,
                          (char *)image_data.data(), width, height, 32, 0);
     TI_ASSERT((void *)image->data == image_data.data());
+  }
+
+  CXImage(Display *display,
+          Visual *visual,
+          void *fast_data,
+          int width,
+          int height)
+      : width(width), height(height) {
+    image = XCreateImage(display, visual, 24, ZPixmap, 0, (char *)fast_data,
+                         width, height, 32, 0);
+    TI_ASSERT((void *)image->data == fast_data);
   }
 
   void set_data(const Array2D<Vector4> &color) {
@@ -136,12 +150,23 @@ void GUI::create_window() {
   TI_ASSERT_INFO(display,
                  "Taichi fails to create a window."
                  " This is probably due to the lack of an X11 GUI environment."
-                 " If you are using ssh, try ssh -XY.");
+                 " Consider using the `ti.GUI(show_gui=False)` option, see"
+                 " https://taichi.readthedocs.io/en/stable/gui.html");
   visual = DefaultVisual(display, 0);
   window =
       XCreateSimpleWindow((Display *)display, RootWindow((Display *)display, 0),
                           0, 0, width, height, 1, 0, 0);
   TI_ASSERT_INFO(window, "failed to create X window");
+
+  if (fullscreen) {
+    // https://stackoverflow.com/questions/9083273/x11-fullscreen-window-opengl
+    Atom atoms[2] = {
+        XInternAtom((Display *)display, "_NET_WM_STATE_FULLSCREEN", False), 0};
+    Atom wmstate = XInternAtom((Display *)display, "_NET_WM_STATE", False);
+    XChangeProperty((Display *)display, window, wmstate, XA_ATOM, 32,
+                    PropModeReplace, (unsigned char *)atoms, 1);
+  }
+
   XSelectInput((Display *)display, window,
                ButtonPressMask | ExposureMask | KeyPressMask | KeyReleaseMask |
                    ButtonPress | ButtonReleaseMask | EnterWindowMask |
@@ -152,11 +177,16 @@ void GUI::create_window() {
   XSetWMProtocols((Display *)display, window, (Atom *)wmDeleteMessage.data(),
                   1);
   XMapWindow((Display *)display, window);
-  img = new CXImage((Display *)display, (Visual *)visual, width, height);
+  if (!fast_gui)
+    img = new CXImage((Display *)display, (Visual *)visual, width, height);
+  else
+    img = new CXImage((Display *)display, (Visual *)visual, (void *)fast_buf,
+                      width, height);
 }
 
 void GUI::redraw() {
-  img->set_data(buffer);
+  if (!fast_gui)
+    img->set_data(buffer);
   XPutImage((Display *)display, window, DefaultGC(display, 0), img->image, 0, 0,
             0, 0, width, height);
 }

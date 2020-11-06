@@ -2,6 +2,7 @@
 
 #include "program.h"
 
+#include "taichi/ir/statements.h"
 #include "taichi/program/extension.h"
 #include "taichi/backends/metal/api.h"
 #include "taichi/backends/opengl/opengl_api.h"
@@ -11,7 +12,6 @@
 #include "taichi/backends/cuda/cuda_context.h"
 #endif
 #include "taichi/backends/metal/codegen_metal.h"
-#include "taichi/backends/metal/env_config.h"
 #include "taichi/backends/opengl/codegen_opengl.h"
 #include "taichi/backends/cpu/codegen_cpu.h"
 #include "taichi/struct/struct.h"
@@ -23,6 +23,7 @@
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/program/async_engine.h"
 #include "taichi/util/statistics.h"
+#include "taichi/util/str.h"
 #if defined(TI_WITH_CC)
 #include "taichi/backends/cc/struct_cc.h"
 #include "taichi/backends/cc/cc_layout.h"
@@ -146,8 +147,11 @@ Program::Program(Arch desired_arch) {
 
   if (config.async_mode) {
     TI_WARN("Running in async mode. This is experimental.");
-    TI_ASSERT(arch_is_cpu(config.arch) || config.arch == Arch::cuda);
-    async_engine = std::make_unique<AsyncEngine>(this);
+    TI_ASSERT(is_extension_supported(config.arch, Extension::async_mode));
+    async_engine = std::make_unique<AsyncEngine>(
+        this, [this](Kernel &kernel, OffloadedStmt *offloaded) {
+          return this->compile_to_backend_executable(kernel, offloaded);
+        });
   }
 
   // TODO: allow users to run in debug mode without out-of-bound checks
@@ -192,21 +196,21 @@ Program::Program(Arch desired_arch) {
            arch_name(arch));
 }
 
+TypeFactory &Program::get_type_factory() {
+  TI_WARN(
+      "Program::get_type_factory() will be deprecated, Please use "
+      "TypeFactory::get_instance()");
+  return TypeFactory::get_instance();
+}
+
 FunctionType Program::compile(Kernel &kernel) {
   auto start_t = Time::get_time();
   TI_AUTO_PROF;
   FunctionType ret = nullptr;
-  if (arch_is_cpu(kernel.arch) || kernel.arch == Arch::cuda) {
+  if (arch_is_cpu(kernel.arch) || kernel.arch == Arch::cuda ||
+      kernel.arch == Arch::metal) {
     kernel.lower();
-    auto codegen = KernelCodeGen::create(kernel.arch, &kernel);
-    ret = codegen->compile();
-  } else if (kernel.arch == Arch::metal) {
-    metal::CodeGen::Config cgen_config;
-    cgen_config.allow_simdgroup =
-        metal::EnvConfig::instance().is_simdgroup_enabled();
-    metal::CodeGen codegen(&kernel, metal_kernel_mgr_.get(),
-                           &metal_compiled_structs_.value(), cgen_config);
-    ret = codegen.compile();
+    ret = compile_to_backend_executable(kernel, /*offloaded=*/nullptr);
   } else if (kernel.arch == Arch::opengl) {
     opengl::OpenglCodeGen codegen(kernel.name, &opengl_struct_compiled_.value(),
                                   opengl_kernel_launcher_.get());
@@ -221,6 +225,20 @@ FunctionType Program::compile(Kernel &kernel) {
   TI_ASSERT(ret);
   total_compilation_time += Time::get_time() - start_t;
   return ret;
+}
+
+FunctionType Program::compile_to_backend_executable(Kernel &kernel,
+                                                    OffloadedStmt *offloaded) {
+  if (arch_is_cpu(kernel.arch) || kernel.arch == Arch::cuda) {
+    auto codegen = KernelCodeGen::create(kernel.arch, &kernel, offloaded);
+    return codegen->compile();
+  } else if (kernel.arch == Arch::metal) {
+    return metal::compile_to_metal_executable(&kernel, metal_kernel_mgr_.get(),
+                                              &metal_compiled_structs_.value(),
+                                              offloaded);
+  }
+  TI_NOT_IMPLEMENTED;
+  return nullptr;
 }
 
 // For CPU and CUDA archs only
@@ -319,7 +337,7 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
                snodes[i]->id, node_size);
       auto rt = llvm_runtime;
       runtime->call<void *, int, std::size_t>(
-          "runtime_NodeAllocator_initialize", rt, i, node_size);
+          "runtime_NodeAllocator_initialize", rt, snodes[i]->id, node_size);
       TI_TRACE("Allocating ambient element for snode {} (node size {})",
                snodes[i]->id, node_size);
       runtime->call<void *, int>("runtime_allocate_ambient", rt, i, node_size);
@@ -351,6 +369,10 @@ void Program::materialize_layout() {
   std::unique_ptr<StructCompiler> scomp =
       StructCompiler::make(this, host_arch());
   scomp->run(*snode_root, true);
+
+  for (auto snode : scomp->snodes) {
+    snodes[snode->id] = snode;
+  }
 
   if (arch_is_cpu(config.arch)) {
     initialize_runtime_system(scomp.get());
@@ -408,7 +430,7 @@ void Program::check_runtime_error() {
     // memory), use the device context instead.
     tlctx = llvm_context_device.get();
   }
-  auto runtime_jit_module = tlctx->runtime_jit_module;
+  auto *runtime_jit_module = tlctx->runtime_jit_module;
   runtime_jit_module->call<void *>("runtime_retrieve_and_reset_error_code",
                                    llvm_runtime);
   auto error_code = fetch_result<int64>(taichi_result_buffer_error_id);
@@ -431,31 +453,13 @@ void Program::check_runtime_error() {
     }
 
     if (error_code == 1) {
-      std::string error_message_formatted;
-      int argument_id = 0;
-      for (int i = 0; i < (int)error_message_template.size(); i++) {
-        if (error_message_template[i] != '%') {
-          error_message_formatted += error_message_template[i];
-        } else {
-          auto dtype = error_message_template[i + 1];
-          runtime_jit_module->call<void *>(
-              "runtime_retrieve_error_message_argument", llvm_runtime,
-              argument_id);
-          auto argument = fetch_result<uint64>(taichi_result_buffer_error_id);
-          if (dtype == 'd') {
-            error_message_formatted += fmt::format(
-                "{}", taichi_union_cast_with_different_sizes<int32>(argument));
-          } else if (dtype == 'f') {
-            error_message_formatted += fmt::format(
-                "{}",
-                taichi_union_cast_with_different_sizes<float32>(argument));
-          } else {
-            TI_ERROR("Data type identifier %{} is not supported", dtype);
-          }
-          argument_id += 1;
-          i++;  // skip the dtype char
-        }
-      }
+      const auto error_message_formatted = format_error_message(
+          error_message_template, [runtime_jit_module, this](int argument_id) {
+            runtime_jit_module->call<void *>(
+                "runtime_retrieve_error_message_argument", llvm_runtime,
+                argument_id);
+            return fetch_result<uint64>(taichi_result_buffer_error_id);
+          });
       TI_ERROR("Assertion failure: {}", error_message_formatted);
     } else {
       TI_NOT_IMPLEMENTED
@@ -468,6 +472,8 @@ void Program::synchronize() {
     if (config.async_mode) {
       async_engine->synchronize();
     }
+    if (profiler)
+      profiler->sync();
     device_synchronize();
     sync = true;
   }
@@ -594,7 +600,7 @@ Kernel &Program::get_snode_reader(SNode *snode) {
   auto &ker = kernel([snode] {
     ExprGroup indices;
     for (int i = 0; i < snode->num_active_indices; i++) {
-      indices.push_back(Expr::make<ArgLoadExpression>(i, DataType::i32));
+      indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
     }
     auto ret = Stmt::make<FrontendKernelReturnStmt>(
         load_if_ptr((snode->expr)[indices]), snode->dt);
@@ -604,7 +610,7 @@ Kernel &Program::get_snode_reader(SNode *snode) {
   ker.name = kernel_name;
   ker.is_accessor = true;
   for (int i = 0; i < snode->num_active_indices; i++)
-    ker.insert_arg(DataType::i32, false);
+    ker.insert_arg(PrimitiveType::i32, false);
   ker.insert_ret(snode->dt);
   return ker;
 }
@@ -615,7 +621,7 @@ Kernel &Program::get_snode_writer(SNode *snode) {
   auto &ker = kernel([&] {
     ExprGroup indices;
     for (int i = 0; i < snode->num_active_indices; i++) {
-      indices.push_back(Expr::make<ArgLoadExpression>(i, DataType::i32));
+      indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
     }
     (snode->expr)[indices] =
         Expr::make<ArgLoadExpression>(snode->num_active_indices, snode->dt);
@@ -624,7 +630,7 @@ Kernel &Program::get_snode_writer(SNode *snode) {
   ker.name = kernel_name;
   ker.is_accessor = true;
   for (int i = 0; i < snode->num_active_indices; i++)
-    ker.insert_arg(DataType::i32, false);
+    ker.insert_arg(PrimitiveType::i32, false);
   ker.insert_arg(snode->dt, false);
   return ker;
 }

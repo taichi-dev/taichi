@@ -1,9 +1,12 @@
 #pragma once
 
-#include "taichi/ir/ir.h"
 #include <atomic>
-#include <unordered_set>
+#include <optional>
 #include <unordered_map>
+#include <unordered_set>
+
+#include "taichi/ir/control_flow_graph.h"
+#include "taichi/ir/ir.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -19,7 +22,11 @@ void re_id(IRNode *root);
 void flag_access(IRNode *root);
 bool die(IRNode *root);
 bool simplify(IRNode *root, Kernel *kernel = nullptr);
-bool cfg_optimization(IRNode *root, bool after_lower_access);
+bool cfg_optimization(
+    IRNode *root,
+    bool after_lower_access,
+    const std::optional<ControlFlowGraph::LiveVarAnalysisConfig>
+        &lva_config_opt = std::nullopt);
 bool alg_simp(IRNode *root);
 bool demote_operations(IRNode *root);
 bool binary_op_simplify(IRNode *root);
@@ -41,6 +48,7 @@ bool check_out_of_bound(IRNode *root);
 void make_thread_local(IRNode *root);
 std::unique_ptr<ScratchPads> initialize_scratch_pad(OffloadedStmt *root);
 void make_block_local(IRNode *root);
+bool remove_loop_unique(IRNode *root);
 bool remove_range_assumption(IRNode *root);
 bool lower_access(IRNode *root, bool lower_atomic);
 void auto_diff(IRNode *root, bool use_stack = false);
@@ -52,11 +60,12 @@ void replace_statements_with(IRNode *root,
 void demote_dense_struct_fors(IRNode *root);
 bool demote_atomics(IRNode *root);
 void reverse_segments(IRNode *root);  // for autograd
+void detect_read_only(IRNode *root);
 
 // compile_to_offloads does the basic compilation to create all the offloaded
 // tasks of a Taichi kernel. It's worth pointing out that this doesn't demote
-// dense struct fors. This is a necessary workaround to prevent the async engine
-// from fusing incompatible offloaded tasks.
+// dense struct fors. This is a necessary workaround to prevent the async
+// engine from fusing incompatible offloaded tasks.
 void compile_to_offloads(IRNode *ir,
                          const CompileConfig &config,
                          bool verbose,

@@ -1,5 +1,7 @@
 import taichi as ti
 
+ti.init()
+
 N = 8
 dt = 1e-5
 
@@ -27,10 +29,10 @@ def advance():
 
 def substep():
     with ti.Tape(U):
-        # every kernel invocation within this indent scope
-        # will also be accounted into the partial derivate of U
-        # with corresponding input variables like x.
-        compute_U()  # will also computes dU/dx and save in x.grad
+        # Kernel invocations in this scope contribute to partial derivatives of
+        # U with respect to input variables such as x.
+        compute_U(
+        )  # The tape will automatically compute dU/dx and save the results in x.grad
     advance()
 
 

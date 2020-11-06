@@ -1,5 +1,7 @@
 #include "compile_config.h"
 
+#include <thread>
+
 TLANG_NAMESPACE_BEGIN
 
 CompileConfig::CompileConfig() {
@@ -15,14 +17,15 @@ CompileConfig::CompileConfig() {
   advanced_optimization = true;
   max_vector_width = 8;
   debug = false;
+  cfg_optimization = true;
   check_out_of_bound = false;
   lazy_compilation = true;
   serial_schedule = false;
   simplify_before_lower_access = true;
   lower_access = true;
   simplify_after_lower_access = true;
-  default_fp = DataType::f32;
-  default_ip = DataType::i32;
+  default_fp = PrimitiveType::f32;
+  default_ip = PrimitiveType::i32;
   verbose_kernel_launches = false;
   kernel_profiler = false;
   default_cpu_block_dim = 32;
@@ -33,9 +36,11 @@ CompileConfig::CompileConfig() {
   flatten_if = false;
   make_thread_local = true;
   make_block_local = true;
+  detect_read_only = true;
 
   saturating_grid_dim = 0;
   max_block_dim = 0;
+  cpu_max_num_threads = std::thread::hardware_concurrency();
 
   ad_stack_size = 16;
 

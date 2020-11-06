@@ -1,4 +1,5 @@
 #include "taichi/ir/ir.h"
+#include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/visitors.h"
@@ -121,12 +122,12 @@ class AccessAnalysis : public BasicStmtVisitor {
 namespace irpass {
 
 std::unique_ptr<ScratchPads> initialize_scratch_pad(OffloadedStmt *offload) {
-  TI_ASSERT(offload->task_type == OffloadedStmt::struct_for);
+  TI_ASSERT(offload->task_type == OffloadedTaskType::struct_for);
   std::unique_ptr<ScratchPads> pads;
   pads = std::make_unique<ScratchPads>();
   if (!offload->scratch_opt.empty()) {
     for (auto &opt : offload->scratch_opt) {
-      if (opt.first == 0 /* shared */) {
+      if (opt.first == SNodeAccessFlag::block_local) {
         pads->insert(opt.second);
       }
     }

@@ -1,6 +1,9 @@
 // The loop vectorizer
 
+#include "taichi/program/program.h"
 #include "taichi/ir/ir.h"
+#include "taichi/ir/type_factory.h"
+#include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
 
@@ -20,13 +23,19 @@ class LoopVectorize : public IRVisitor {
     vectorize = 1;
   }
 
+  static void widen_type(DataType &type, int width) {
+    if (width != 1) {
+      type = Program::get_type_factory().get_vector_type(width, type.get_ptr());
+    }
+  }
+
   void visit(Stmt *stmt) override {
-    stmt->ret_type.width *= vectorize;
+    widen_type(stmt->ret_type, vectorize);
   }
 
   void visit(ConstStmt *stmt) override {
     stmt->val.repeat(vectorize);
-    stmt->ret_type.width *= vectorize;
+    widen_type(stmt->ret_type, vectorize);
   }
 
   void visit(Block *stmt_list) override {
@@ -41,11 +50,11 @@ class LoopVectorize : public IRVisitor {
 
   void visit(GlobalPtrStmt *ptr) override {
     ptr->snodes.repeat(vectorize);
-    ptr->width() *= vectorize;
+    widen_type(ptr->ret_type, vectorize);
   }
 
   void visit(AllocaStmt *alloca) override {
-    alloca->ret_type.width *= vectorize;
+    widen_type(alloca->ret_type, vectorize);
   }
 
   void visit(SNodeOpStmt *stmt) override {
@@ -62,7 +71,7 @@ class LoopVectorize : public IRVisitor {
     if (vectorize == 1)
       return;
     int original_width = stmt->width();
-    stmt->ret_type.width *= vectorize;
+    widen_type(stmt->ret_type, vectorize);
     stmt->elements.repeat(vectorize);
     // TODO: this can be buggy
     int stride = stmt->elements[original_width - 1].index + 1;
@@ -79,7 +88,7 @@ class LoopVectorize : public IRVisitor {
     if (vectorize == 1)
       return;
     int original_width = stmt->width();
-    stmt->ret_type.width *= vectorize;
+    widen_type(stmt->ret_type, vectorize);
     stmt->ptr.repeat(vectorize);
     // TODO: this can be buggy
     int stride = stmt->ptr[original_width - 1].offset + 1;

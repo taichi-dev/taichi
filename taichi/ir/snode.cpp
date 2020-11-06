@@ -2,6 +2,7 @@
 
 #include "taichi/ir/ir.h"
 #include "taichi/ir/frontend.h"
+#include "taichi/ir/statements.h"
 #include "taichi/backends/cuda/cuda_driver.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -18,7 +19,7 @@ void set_kernel_args(const std::vector<int> &I,
 
 }  // namespace
 
-std::atomic<int> SNode::counter = 0;
+std::atomic<int> SNode::counter{0};
 
 SNode &SNode::insert_children(SNodeType t) {
   TI_ASSERT(t != SNodeType::root);
@@ -93,6 +94,13 @@ SNode &SNode::dynamic(const Index &expr, int n, int chunk_size) {
   return snode;
 }
 
+SNode &SNode::bit_struct(int num_bits) {
+  auto &snode = create_node({}, {}, SNodeType::bit_struct);
+  snode.physical_type =
+      TypeFactory::get_instance().get_primitive_int_type(num_bits, false);
+  return snode;
+}
+
 void SNode::lazy_grad() {
   if (this->type == SNodeType::place)
     return;
@@ -118,6 +126,10 @@ bool SNode::is_primal() const {
 
 bool SNode::is_place() const {
   return type == SNodeType::place;
+}
+
+bool SNode::is_scalar() const {
+  return is_place() && (num_active_indices == 0);
 }
 
 bool SNode::has_grad() const {
@@ -207,7 +219,7 @@ SNode::SNode(int depth, SNodeType t) : depth(depth), type(t) {
   std::memset(physical_index_position, -1, sizeof(physical_index_position));
   parent = nullptr;
   has_ambient = false;
-  dt = DataType::gen;
+  dt = PrimitiveType::gen;
   _morton = false;
 
   reader_kernel = nullptr;
@@ -225,8 +237,11 @@ std::string SNode::get_node_type_name() const {
 
 std::string SNode::get_node_type_name_hinted() const {
   std::string suffix;
-  if (type == SNodeType::place)
-    suffix = fmt::format("_{}", data_type_short_name(dt));
+  if (type == SNodeType::place || type == SNodeType::bit_struct ||
+      type == SNodeType::bit_array)
+    suffix = fmt::format("<{}>", dt->to_string());
+  if (is_bit_level)
+    suffix += "<bit>";
   return fmt::format("S{}{}{}", id, snode_type_name(type), suffix);
 }
 

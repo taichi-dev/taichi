@@ -38,7 +38,17 @@ CUDAContext::CUDAContext()
            get_total_memory() / GB, get_free_memory() / GB);
 
   compute_capability = cc_major * 10 + cc_minor;
-  mcpu = fmt::format("sm_{}{}", cc_major, cc_minor);
+
+  if (compute_capability > 75) {
+    // The NVPTX backend of LLVM 10.0.0 does not seem to support
+    // compute_capability > 75 yet. See
+    // llvm-10.0.0.src/build/lib/Target/NVPTX/NVPTXGenSubtargetInfo.inc
+    compute_capability = 75;
+  }
+
+  mcpu = fmt::format("sm_{}", compute_capability);
+
+  TI_TRACE("Emitting CUDA code for {}", mcpu);
 }
 
 std::size_t CUDAContext::get_total_memory() {
@@ -59,9 +69,14 @@ void CUDAContext::launch(void *func,
                          unsigned grid_dim,
                          unsigned block_dim,
                          std::size_t shared_mem_bytes) {
+  // It is important to keep a handle since in async mode
+  // a constant folding kernel may happen during a kernel launch
+  // then profiler->start and profiler->stop mismatch.
+
+  KernelProfilerBase::TaskHandle task_handle;
   // Kernel launch
   if (profiler)
-    profiler->start(task_name);
+    task_handle = profiler->start_with_handle(task_name);
   auto context_guard = CUDAContext::get_instance().get_guard();
 
   // TODO: remove usages of get_current_program here.
@@ -78,7 +93,7 @@ void CUDAContext::launch(void *func,
                          nullptr);
   }
   if (profiler)
-    profiler->stop();
+    profiler->stop(task_handle);
 
   if (get_current_program().config.debug) {
     driver.stream_synchronize(nullptr);

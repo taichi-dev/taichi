@@ -1,6 +1,7 @@
 #include "taichi/ir/frontend.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
+#include "taichi/ir/statements.h"
 #include "taichi/util/testing.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -9,11 +10,11 @@ TI_TEST("same_statements") {
   SECTION("test_same_block") {
     auto block = std::make_unique<Block>();
 
-    auto global_load_addr =
-        block->push_back<GlobalTemporaryStmt>(0, VectorType(1, DataType::i32));
+    auto global_load_addr = block->push_back<GlobalTemporaryStmt>(
+        0, TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32));
     auto global_load = block->push_back<GlobalLoadStmt>(global_load_addr);
-    auto global_store_addr =
-        block->push_back<GlobalTemporaryStmt>(4, VectorType(1, DataType::i32));
+    auto global_store_addr = block->push_back<GlobalTemporaryStmt>(
+        4, TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32));
     auto one = block->push_back<ConstStmt>(TypedConstant(1));
     auto if_stmt = block->push_back<IfStmt>(one)->as<IfStmt>();
 

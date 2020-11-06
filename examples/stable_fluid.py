@@ -6,11 +6,11 @@
 
 import taichi as ti
 import numpy as np
-import time
 
-res = 512  # 600 for a larger resoultion
+use_mgpcg = False  # True to use multigrid-preconditioned conjugate gradients
+res = 512
 dt = 0.03
-p_jacobi_iters = 160  # 40 for quicker but not-so-accurate result
+p_jacobi_iters = 160  # 40 for a quicker but less accurate result
 f_strength = 10000.0
 curl_strength = 0  # 7 for unrealistic visual enhancement
 dye_decay = 0.99
@@ -20,13 +20,19 @@ paused = False
 
 ti.init(arch=ti.gpu)
 
+if use_mgpcg:
+    from mgpcg_advanced import MGPCG  # examples/mgpcg_advanced.py
+    mgpcg = MGPCG(dim=2, N=res, n_mg_levels=6)
+
 _velocities = ti.Vector.field(2, float, shape=(res, res))
+_intermedia_velocities = ti.Vector.field(2, float, shape=(res, res))
 _new_velocities = ti.Vector.field(2, float, shape=(res, res))
 velocity_divs = ti.field(float, shape=(res, res))
 velocity_curls = ti.field(float, shape=(res, res))
 _pressures = ti.field(float, shape=(res, res))
 _new_pressures = ti.field(float, shape=(res, res))
 _dye_buffer = ti.Vector.field(3, float, shape=(res, res))
+_intermedia_dye_buffer = ti.Vector.field(3, float, shape=(res, res))
 _new_dye_buffer = ti.Vector.field(3, float, shape=(res, res))
 
 
@@ -65,10 +71,10 @@ def bilerp(vf, p):
     iu, iv = ti.floor(s), ti.floor(t)
     # fract
     fu, fv = s - iu, t - iv
-    a = sample(vf, iu + 0.5, iv + 0.5)
-    b = sample(vf, iu + 1.5, iv + 0.5)
-    c = sample(vf, iu + 0.5, iv + 1.5)
-    d = sample(vf, iu + 1.5, iv + 1.5)
+    a = sample(vf, iu, iv)
+    b = sample(vf, iu + 1, iv)
+    c = sample(vf, iu, iv + 1)
+    d = sample(vf, iu + 1, iv + 1)
     return lerp(lerp(a, b, fu), lerp(c, d, fu), fv)
 
 
@@ -77,11 +83,11 @@ def sample_minmax(vf, p):
     u, v = p
     s, t = u - 0.5, v - 0.5
     # floor
-    iu, iv = int(s), int(t)
-    a = sample(vf, iu + 0.5, iv + 0.5)
-    b = sample(vf, iu + 1.5, iv + 0.5)
-    c = sample(vf, iu + 0.5, iv + 1.5)
-    d = sample(vf, iu + 1.5, iv + 1.5)
+    iu, iv = ti.floor(s), ti.floor(t)
+    a = sample(vf, iu, iv)
+    b = sample(vf, iu + 1, iv)
+    c = sample(vf, iu, iv + 1)
+    d = sample(vf, iu + 1, iv + 1)
     return min(a, b, c, d), max(a, b, c, d)
 
 
@@ -113,9 +119,8 @@ backtrace = backtrace_rk3
 
 
 @ti.kernel
-def advect_semilag(vf: ti.template(), qf: ti.template(),
-                   new_qf: ti.template()):
-    ti.cache_read_only(qf, vf)
+def advect_semilag(vf: ti.template(), qf: ti.template(), new_qf: ti.template(),
+                   intermedia_qf: ti.template()):
     for i, j in vf:
         p = ti.Vector([i, j]) + 0.5
         p = backtrace(vf, p, dt)
@@ -123,21 +128,29 @@ def advect_semilag(vf: ti.template(), qf: ti.template(),
 
 
 @ti.kernel
-def advect_bfecc(vf: ti.template(), qf: ti.template(), new_qf: ti.template()):
-    ti.cache_read_only(qf, vf)
+def advect_bfecc(vf: ti.template(), qf: ti.template(), new_qf: ti.template(),
+                 intermedia_qf: ti.template()):
     for i, j in vf:
         p = ti.Vector([i, j]) + 0.5
-        p_mid = backtrace(vf, p, dt)
-        q_mid = bilerp(qf, p_mid)
-        p_fin = backtrace(vf, p_mid, -dt)
-        q_fin = bilerp(qf, p_fin)
-        new_qf[i, j] = q_mid + 0.5 * (q_fin - qf[i, j])
+        p = backtrace(vf, p, dt)
+        intermedia_qf[i, j] = bilerp(qf, p)
 
-        min_val, max_val = sample_minmax(qf, p_mid)
+    for i, j in vf:
+        p = ti.Vector([i, j]) + 0.5
+        # star means the temp value after a back tracing (forward advection)
+        # two star means the temp value after a forward tracing (reverse advection)
+        p_two_star = backtrace(vf, p, -dt)
+        p_star = backtrace(vf, p, dt)
+        q_star = intermedia_qf[i, j]
+        new_qf[i, j] = bilerp(intermedia_qf, p_two_star)
+
+        new_qf[i, j] = q_star + 0.5 * (qf[i, j] - new_qf[i, j])
+
+        min_val, max_val = sample_minmax(qf, p_star)
         cond = min_val < new_qf[i, j] < max_val
         for k in ti.static(range(cond.n)):
             if not cond[k]:
-                new_qf[i, j][k] = q_mid[k]
+                new_qf[i, j][k] = q_star[k]
 
 
 advect = advect_bfecc
@@ -167,7 +180,6 @@ def apply_impulse(vf: ti.template(), dyef: ti.template(),
 
 @ti.kernel
 def divergence(vf: ti.template()):
-    ti.cache_read_only(vf)
     for i, j in vf:
         vl = sample(vf, i - 1, j).x
         vr = sample(vf, i + 1, j).x
@@ -175,19 +187,18 @@ def divergence(vf: ti.template()):
         vt = sample(vf, i, j + 1).y
         vc = sample(vf, i, j)
         if i == 0:
-            vl = -vc.x
+            vl = 0
         if i == res - 1:
-            vr = -vc.x
+            vr = 0
         if j == 0:
-            vb = -vc.y
+            vb = 0
         if j == res - 1:
-            vt = -vc.y
+            vt = 0
         velocity_divs[i, j] = (vr - vl + vt - vb) * 0.5
 
 
 @ti.kernel
 def vorticity(vf: ti.template()):
-    ti.cache_read_only(vf)
     for i, j in vf:
         vl = sample(vf, i - 1, j).y
         vr = sample(vf, i + 1, j).y
@@ -199,7 +210,6 @@ def vorticity(vf: ti.template()):
 
 @ti.kernel
 def pressure_jacobi_single(pf: ti.template(), new_pf: ti.template()):
-    ti.cache_read_only(pf)
     for i, j in pf:
         pl = sample(pf, i - 1, j)
         pr = sample(pf, i + 1, j)
@@ -211,7 +221,6 @@ def pressure_jacobi_single(pf: ti.template(), new_pf: ti.template()):
 
 @ti.kernel
 def pressure_jacobi_dual(pf: ti.template(), new_pf: ti.template()):
-    ti.cache_read_only(pf)
     for i, j in pf:
         pcc = sample(pf, i, j)
         pll = sample(pf, i - 2, j)
@@ -232,7 +241,7 @@ def pressure_jacobi_dual(pf: ti.template(), new_pf: ti.template()):
                      (plt + prt + prb + plb) * 2 + pcc * 4) * 0.0625
 
 
-pressure_jacobi = pressure_jacobi_dual
+pressure_jacobi = pressure_jacobi_single
 
 if pressure_jacobi == pressure_jacobi_dual:
     p_jacobi_iters //= 2
@@ -240,7 +249,6 @@ if pressure_jacobi == pressure_jacobi_dual:
 
 @ti.kernel
 def subtract_gradient(vf: ti.template(), pf: ti.template()):
-    ti.cache_read_only(pf)
     for i, j in vf:
         pl = sample(pf, i - 1, j)
         pr = sample(pf, i + 1, j)
@@ -252,7 +260,6 @@ def subtract_gradient(vf: ti.template(), pf: ti.template()):
 @ti.kernel
 def enhance_vorticity(vf: ti.template(), cf: ti.template()):
     # anti-physics visual enhancement...
-    ti.cache_read_only(cf)
     for i, j in vf:
         cl = sample(cf, i - 1, j)
         cr = sample(cf, i + 1, j)
@@ -266,8 +273,10 @@ def enhance_vorticity(vf: ti.template(), cf: ti.template()):
 
 
 def step(mouse_data):
-    advect(velocities_pair.cur, velocities_pair.cur, velocities_pair.nxt)
-    advect(velocities_pair.cur, dyes_pair.cur, dyes_pair.nxt)
+    advect(velocities_pair.cur, velocities_pair.cur, velocities_pair.nxt,
+           _intermedia_velocities)
+    advect(velocities_pair.cur, dyes_pair.cur, dyes_pair.nxt,
+           _intermedia_dye_buffer)
     velocities_pair.swap()
     dyes_pair.swap()
 
@@ -279,9 +288,15 @@ def step(mouse_data):
         vorticity(velocities_pair.cur)
         enhance_vorticity(velocities_pair.cur, velocity_curls)
 
-    for _ in range(p_jacobi_iters):
-        pressure_jacobi(pressures_pair.cur, pressures_pair.nxt)
-        pressures_pair.swap()
+    if use_mgpcg:
+        mgpcg.init(velocity_divs, -1)
+        mgpcg.solve(max_iters=10)
+        mgpcg.get_result(pressures_pair.cur)
+
+    else:
+        for _ in range(p_jacobi_iters):
+            pressure_jacobi(pressures_pair.cur, pressures_pair.nxt)
+            pressures_pair.swap()
 
     subtract_gradient(velocities_pair.cur, pressures_pair.cur)
 
@@ -347,9 +362,9 @@ while gui.running:
 
     gui.set_image(dyes_pair.cur)
     # To visualize velocity field:
-    #gui.set_image(velocities_pair.cur.to_numpy() * 0.01 + 0.5)
+    # gui.set_image(velocities_pair.cur.to_numpy() * 0.01 + 0.5)
     # To visualize velocity divergence:
-    #divergence(velocities_pair.cur); gui.set_image(velocity_divs.to_numpy() * 0.1 + 0.5)
+    # divergence(velocities_pair.cur); gui.set_image(velocity_divs.to_numpy() * 0.1 + 0.5)
     # To visualize velocity vorticity:
-    #vorticity(velocities_pair.cur); gui.set_image(velocity_curls.to_numpy() * 0.03 + 0.5)
+    # vorticity(velocities_pair.cur); gui.set_image(velocity_curls.to_numpy() * 0.03 + 0.5)
     gui.show()

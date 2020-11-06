@@ -3,18 +3,19 @@
     The use of this software is governed by the LICENSE file.
 *******************************************************************************/
 
+#include "taichi/backends/metal/api.h"
+#include "taichi/backends/opengl/opengl_api.h"
 #include "taichi/common/core.h"
 #include "taichi/common/task.h"
 #include "taichi/math/math.h"
 #include "taichi/python/exception.h"
-#include "taichi/python/print_buffer.h"
 #include "taichi/python/export.h"
+#include "taichi/python/print_buffer.h"
 #include "taichi/system/benchmark.h"
-#include "taichi/system/profiler.h"
-#include "taichi/system/memory_usage_monitor.h"
 #include "taichi/system/dynamic_loader.h"
-#include "taichi/backends/metal/api.h"
-#include "taichi/backends/opengl/opengl_api.h"
+#include "taichi/system/memory_usage_monitor.h"
+#include "taichi/system/profiler.h"
+#include "taichi/util/statistics.h"
 #if defined(TI_WITH_CUDA)
 #include "taichi/backends/cuda/cuda_driver.h"
 #endif
@@ -148,6 +149,8 @@ void export_misc(py::module &m) {
   });
   m.def("print_profile_info",
         [&]() { Profiling::get_instance().print_profile_info(); });
+  m.def("clear_profile_info",
+        [&]() { Profiling::get_instance().clear_profile_info(); });
   m.def("start_memory_monitoring", start_memory_monitoring);
   m.def("absolute_path", absolute_path);
   m.def("get_repo_dir", get_repo_dir);
@@ -173,6 +176,13 @@ void export_misc(py::module &m) {
 #else
   m.def("with_cc", []() { return false; });
 #endif
+
+  py::class_<Statistics>(m, "Statistics")
+      .def(py::init<>())
+      .def("clear", &Statistics::clear)
+      .def("get_counters", &Statistics::get_counters);
+  m.def("get_kernel_stats", []() -> Statistics & { return stat; },
+        py::return_value_policy::reference);
 }
 
 TI_NAMESPACE_END

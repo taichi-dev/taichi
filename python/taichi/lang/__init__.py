@@ -9,19 +9,6 @@ import os
 
 core = taichi_lang_core
 
-
-def record_action_hint(s):
-    core.record_action_hint(s)
-
-
-def begin_recording(fn):
-    core.begin_recording(fn)
-
-
-def stop_recording():
-    core.stop_recording()
-
-
 runtime = get_runtime()
 
 i = indices(0)
@@ -55,10 +42,13 @@ opengl = core.opengl
 cc = core.cc
 gpu = [cuda, metal, opengl]
 cpu = core.host_arch()
-kernel_profiler_print = lambda: core.get_current_program(
-).kernel_profiler_print()
-kernel_profiler_clear = lambda: core.get_current_program(
-).kernel_profiler_clear()
+kernel_profiler_print = lambda: get_runtime().prog.kernel_profiler_print()
+kernel_profiler_clear = lambda: get_runtime().prog.kernel_profiler_clear()
+kernel_profiler_total_time = lambda: get_runtime(
+).prog.kernel_profiler_total_time()
+
+# Unstable API
+type_factory_ = core.get_type_factory_instance()
 
 
 def memory_profiler_print():
@@ -231,13 +221,15 @@ def no_activate(*args):
 def cache_shared(*args):
     for a in args:
         for v in a.get_field_members():
-            taichi_lang_core.cache(0, v.ptr)
+            taichi_lang_core.insert_snode_access_flag(
+                taichi_lang_core.SNodeAccessFlag.block_local, v.ptr)
 
 
 def cache_read_only(*args):
     for a in args:
         for v in a.get_field_members():
-            taichi_lang_core.cache(0, v.ptr)
+            taichi_lang_core.insert_snode_access_flag(
+                taichi_lang_core.SNodeAccessFlag.read_only, v.ptr)
 
 
 def assume_in_range(val, base, low, high):
@@ -246,11 +238,14 @@ def assume_in_range(val, base, low, high):
         Expr(base).ptr, low, high)
 
 
+def loop_unique(val):
+    return taichi_lang_core.expr_loop_unique(Expr(val).ptr)
+
+
 parallelize = core.parallelize
 serialize = lambda: parallelize(1)
 vectorize = core.vectorize
 block_dim = core.block_dim
-cache = core.cache
 
 inversed = deprecated('ti.inversed(a)', 'a.inverse()')(Matrix.inversed)
 transposed = deprecated('ti.transposed(a)', 'a.transpose()')(Matrix.transposed)
@@ -286,8 +281,10 @@ def Tape(loss, clear_gradients=True):
             ' for all fields that are required by autodiff.')
     if clear_gradients:
         clear_all_gradients()
-    loss[None] = 0
-    loss.grad[None] = 1
+
+    from .meta import clear_loss
+    clear_loss(loss)
+
     return runtime.get_tape(loss)
 
 
@@ -314,7 +311,6 @@ def clear_all_gradients():
     visit(ti.root)
 
 
-schedules = [parallelize, vectorize, block_dim, cache]
 lang_core = core
 
 
@@ -337,24 +333,28 @@ def benchmark(func, repeat=300, args=()):
             a = a.strip()
             b = int(float(b))
             if a == 'codegen_kernel_statements':
-                ti.stat_write('instructions', b)
+                ti.stat_write('compiled_inst', b)
             if a == 'codegen_offloaded_tasks':
-                ti.stat_write('offloaded_tasks', b)
+                ti.stat_write('compiled_tasks', b)
             elif a == 'launched_tasks':
                 ti.stat_write('launched_tasks', b)
-        # The reason why we run 3 more times is to warm up
+
+        # Use 3 initial iterations to warm up
         # instruction/data caches. Discussion:
         # https://github.com/taichi-dev/taichi/pull/1002#discussion_r426312136
         for i in range(3):
             func(*args)
             ti.sync()
+        ti.kernel_profiler_clear()
         t = time.time()
         for n in range(repeat):
             func(*args)
             ti.sync()
         elapsed = time.time() - t
         avg = elapsed / repeat
-        ti.stat_write('running_time', avg)
+        ti.stat_write('wall_clk_t', avg)
+        device_time = ti.kernel_profiler_total_time()
+        ti.stat_write('exec_t', device_time)
 
     run_benchmark()
 

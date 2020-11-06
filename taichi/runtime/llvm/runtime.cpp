@@ -1144,7 +1144,7 @@ void element_listgen_nonroot(LLVMRuntime *runtime,
   }
 }
 
-using BlockTask = void(Context *, Element *, int, int);
+using BlockTask = void(Context *, char *, Element *, int, int);
 
 struct cpu_block_task_helper_context {
   Context *context;
@@ -1152,6 +1152,7 @@ struct cpu_block_task_helper_context {
   ListManager *list;
   int element_size;
   int element_split;
+  std::size_t tls_buffer_size;
 };
 
 // TODO: To enforce inlining, we need to create in LLVM a new function that
@@ -1170,9 +1171,10 @@ void block_helper(void *ctx_, int i) {
   int lower = e.loop_bounds[0] + part_id * part_size;
   int upper = e.loop_bounds[0] + (part_id + 1) * part_size;
   upper = std::min(upper, e.loop_bounds[1]);
+  alignas(8) char tls_buffer[ctx->tls_buffer_size];
   if (lower < upper) {
-    (*ctx->task)(ctx->context, &ctx->list->get<Element>(element_id), lower,
-                 upper);
+    (*ctx->task)(ctx->context, tls_buffer, &ctx->list->get<Element>(element_id),
+                 lower, upper);
   }
 }
 
@@ -1181,11 +1183,15 @@ void parallel_struct_for(Context *context,
                          int element_size,
                          int element_split,
                          BlockTask *task,
+                         std::size_t tls_buffer_size,
                          int num_threads) {
   auto list = (context->runtime)->element_lists[snode_id];
   auto list_tail = list->size();
 #if ARCH_cuda
   int i = block_idx();
+  // Note: CUDA requires compile-time constant local array sizes.
+  // We use "1" here and modify it during codegen to tls_buffer_size.
+  alignas(8) char tls_buffer[1];
   // TODO: refactor element_split more systematically.
   element_split = 1;
   const auto part_size = element_size / element_split;
@@ -1199,7 +1205,7 @@ void parallel_struct_for(Context *context,
     int upper = e.loop_bounds[0] + (part_id + 1) * part_size;
     upper = std::min(upper, e.loop_bounds[1]);
     if (lower < upper)
-      task(context, &list->get<Element>(element_id), lower, upper);
+      task(context, tls_buffer, &list->get<Element>(element_id), lower, upper);
     i += grid_dim();
   }
 #else
@@ -1209,8 +1215,7 @@ void parallel_struct_for(Context *context,
   ctx.list = list;
   ctx.element_size = element_size;
   ctx.element_split = element_split;
-  // printf("size %d spilt %d tail %d\n", ctx.element_size, ctx.element_split,
-  // list_tail);
+  ctx.tls_buffer_size = tls_buffer_size;
   auto runtime = context->runtime;
   runtime->parallel_for(runtime->thread_pool, list_tail * element_split,
                         num_threads, &ctx, block_helper);
@@ -1545,6 +1550,18 @@ void stack_push(Ptr stack, size_t max_num_elements, std::size_t element_size) {
 }
 
 #include "internal_functions.h"
+
+void set_partial_bits_b32(u32 *ptr, u32 offset, u32 bits, u32 value) {
+  u32 mask = ((((u32)1 << bits) - 1) << offset);
+  u32 new_value = 0;
+  u32 old_value = *ptr;
+  do {
+    old_value = *ptr;
+    new_value = (old_value & (~mask)) | (value << offset);
+  } while (!__atomic_compare_exchange(ptr, &old_value, &new_value, true,
+                                      std::memory_order::memory_order_seq_cst,
+                                      std::memory_order::memory_order_seq_cst));
+}
 }
 
 #endif

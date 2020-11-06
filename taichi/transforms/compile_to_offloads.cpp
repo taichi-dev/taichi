@@ -102,9 +102,11 @@ void compile_to_offloads(IRNode *ir,
   print("Offloaded");
   irpass::analysis::verify(ir);
 
-  irpass::cfg_optimization(ir, false);
-  print("Optimized by CFG");
-  irpass::analysis::verify(ir);
+  if (config.cfg_optimization) {
+    irpass::cfg_optimization(ir, false);
+    print("Optimized by CFG");
+    irpass::analysis::verify(ir);
+  }
 
   irpass::flag_access(ir);
   print("Access flagged II");
@@ -132,6 +134,11 @@ void offload_to_executable(IRNode *ir,
   print("Start offload_to_executable");
   irpass::analysis::verify(ir);
 
+  if (config.detect_read_only) {
+    irpass::detect_read_only(ir);
+    print("Detect read-only accesses");
+  }
+
   if (config.demote_dense_struct_fors) {
     irpass::demote_dense_struct_fors(ir);
     irpass::type_check(ir);
@@ -149,8 +156,16 @@ void offload_to_executable(IRNode *ir,
     print("Make block local");
   }
 
+  irpass::demote_atomics(ir);
+  print("Atomics demoted");
+  irpass::analysis::verify(ir);
+
   irpass::remove_range_assumption(ir);
   print("Remove range assumption");
+
+  irpass::remove_loop_unique(ir);
+  print("Remove loop_unique");
+  irpass::analysis::verify(ir);
 
   if (lower_global_access) {
     irpass::lower_access(ir, true);
@@ -165,10 +180,6 @@ void offload_to_executable(IRNode *ir,
     print("Access flagged III");
     irpass::analysis::verify(ir);
   }
-
-  irpass::demote_atomics(ir);
-  print("Atomics demoted");
-  irpass::analysis::verify(ir);
 
   irpass::demote_operations(ir);
   print("Operations demoted");

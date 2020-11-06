@@ -16,30 +16,14 @@
 TLANG_NAMESPACE_BEGIN
 namespace metal {
 
-class CodeGen {
- public:
-  struct Config {
-    bool allow_simdgroup = true;
-  };
-
-  CodeGen(Kernel *kernel,
-          KernelManager *kernel_mgr,
-          const CompiledStructs *compiled_structs,
-          const Config &config);
-
-  FunctionType compile();
-
- private:
-  void lower();
-  FunctionType gen(const SNode &root_snode, KernelManager *runtime);
-
-  Kernel *const kernel_;
-  KernelManager *const kernel_mgr_;
-  const CompiledStructs *const compiled_structs_;
-  const int id_;
-  const std::string taichi_kernel_name_;
-  const Config config_;
-};
+// If |offloaded| is nullptr, this compiles the AST in |kernel|. Otherwise it
+// compiles just |offloaded|. These ASTs must have already been lowered at the
+// CHI level.
+FunctionType compile_to_metal_executable(
+    Kernel *kernel,
+    KernelManager *kernel_mgr,
+    const CompiledStructs *compiled_structs,
+    OffloadedStmt *offloaded = nullptr);
 
 }  // namespace metal
 

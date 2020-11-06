@@ -6,8 +6,11 @@
 #include <vector>
 #include <optional>
 
-#include "opengl_kernel_util.h"
-#include "opengl_kernel_launcher.h"
+#include "taichi/backends/opengl/opengl_kernel_util.h"
+#include "taichi/backends/opengl/opengl_kernel_launcher.h"
+#define TI_RUNTIME_HOST
+#include "taichi/program/context.h"
+#undef TI_RUNTIME_HOST
 
 TLANG_NAMESPACE_BEGIN
 
@@ -34,47 +37,32 @@ extern int opengl_threads_per_block;
     return false;                  \
   })()
 
+struct CompiledKernel;
+
 class ParallelSize {
-  // GLSL: stride < invocation < local work group < 'dispatch'
-  // CUDA: stride < thread < block < grid
  public:
-  std::optional<size_t> strides_per_thread;
-  std::optional<size_t> threads_per_block;
-
-  virtual size_t get_num_strides(GLSLLauncher *launcher) const = 0;
-  size_t get_num_threads(GLSLLauncher *launcher) const;
-  size_t get_num_blocks(GLSLLauncher *launcher) const;
-  virtual size_t get_threads_per_block() const;
-  virtual ~ParallelSize();
+  size_t block_dim;
+  size_t grid_dim;
+  ParallelSize(size_t block_dim = 1, size_t grid_dim = 1)
+      : block_dim(block_dim), grid_dim(grid_dim) {
+  }
 };
 
-class ParallelSize_ConstRange : public ParallelSize {
-  size_t num_strides{1};
+struct CompiledKernel {
+  struct Impl;
+  std::unique_ptr<Impl> impl;
 
- public:
-  ParallelSize_ConstRange(size_t num_strides);
-  virtual size_t get_num_strides(GLSLLauncher *launcher) const override;
-  virtual size_t get_threads_per_block() const override;
-  virtual ~ParallelSize_ConstRange() override = default;
-};
+  // disscussion:
+  // https://github.com/taichi-dev/taichi/pull/696#issuecomment-609332527
+  CompiledKernel(CompiledKernel &&) = default;
+  CompiledKernel &operator=(CompiledKernel &&) = default;
 
-class ParallelSize_DynamicRange : public ParallelSize {
-  bool const_begin;
-  bool const_end;
-  int range_begin;
-  int range_end;
+  CompiledKernel(const std::string &kernel_name_,
+                 const std::string &kernel_source_code,
+                 std::unique_ptr<ParallelSize> ps_);
+  ~CompiledKernel();
 
- public:
-  ParallelSize_DynamicRange(OffloadedStmt *stmt);
-  virtual size_t get_num_strides(GLSLLauncher *launcher) const override;
-  virtual ~ParallelSize_DynamicRange() override = default;
-};
-
-class ParallelSize_StructFor : public ParallelSize {
- public:
-  ParallelSize_StructFor(OffloadedStmt *stmt);
-  virtual size_t get_num_strides(GLSLLauncher *launcher) const override;
-  virtual ~ParallelSize_StructFor() override = default;
+  void dispatch_compute(GLSLLauncher *launcher) const;
 };
 
 struct CompiledProgram {

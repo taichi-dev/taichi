@@ -2,6 +2,7 @@
 
 #include "taichi/ir/ir.h"
 #include "taichi/ir/analysis.h"
+#include "taichi/ir/statements.h"
 #include "taichi/ir/visitors.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -55,7 +56,7 @@ class ValueDiffLoopIndex : public IRVisitor {
   }
 
   void visit(ConstStmt *stmt) override {
-    if (stmt->val[lane].dt == DataType::i32) {
+    if (stmt->val[lane].dt->is_primitive(PrimitiveTypeID::i32)) {
       results[stmt->instance_id] = DiffRange(true, 0, stmt->val[lane].val_i32);
     } else {
       results[stmt->instance_id] = DiffRange();
@@ -111,7 +112,7 @@ class FindDirectValueBaseAndOffset : public IRVisitor {
 
   void visit(ConstStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    if (stmt->val[0].dt == DataType::i32) {
+    if (stmt->val[0].dt->is_primitive(PrimitiveTypeID::i32)) {
       result = std::make_tuple(true, nullptr, stmt->val[0].val_i32);
     }
   }

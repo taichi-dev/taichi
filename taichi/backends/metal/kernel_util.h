@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "taichi/ir/statements.h"
+#include "taichi/ir/offloaded_task_type.h"
 #include "taichi/backends/metal/data_types.h"
 
 // Data structures defined in this file may overlap with some of the Taichi data
@@ -42,8 +42,14 @@ struct KernelAttributes {
     Print,
   };
   std::string name;
-  int num_threads;
-  OffloadedStmt::TaskType task_type;
+  // Total number of threads to launch (i.e. threads per grid). Note that this
+  // is only advisory, because eventually this numb er is also determined by the
+  // runtime config. This works because grid strided loop is supported.
+  int advisory_total_num_threads;
+  // Block size in CUDA's terminology. On Metal, it is called a threadgroup.
+  int advisory_num_threads_per_group;
+
+  OffloadedTaskType task_type;
 
   struct RangeForAttributes {
     // |begin| has differen meanings depending on |const_begin|:
@@ -79,6 +85,8 @@ struct TaichiKernelAttributes {
   struct UsedFeatures {
     // Whether print() is called inside this kernel.
     bool print = false;
+    // Whether assert is called inside this kernel.
+    bool assertion = false;
     // Whether this kernel accesses (read or write) sparse SNodes.
     bool sparse = false;
     // Whether [[thread_index_in_simdgroup]] is used. This is only supported

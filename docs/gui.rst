@@ -10,11 +10,14 @@ Create a window
 ---------------
 
 
-.. function:: ti.GUI(title = 'Taichi', res = (512, 512), background_color = 0x000000)
+.. function:: ti.GUI(title = 'Taichi', res = (512, 512), background_color = 0x000000, show_gui = True, fullscreen = False)
 
     :parameter title: (optional, string) the window title
     :parameter res: (optional, scalar or tuple) resolution / size of the window
     :parameter background_color: (optional, RGB hex) background color of the window
+    :parameter show_gui: (optional, bool) see the note below
+    :parameter fullscreen: (optional, bool) ``True`` for fullscreen window
+    :parameter fast_gui: (optional, bool) see :ref:`fast_gui`
     :return: (GUI) an object represents the window
 
     Create a window.
@@ -22,9 +25,22 @@ Create a window
 
     The following code creates a window of resolution ``640x360``:
 
-    ::
+    .. code-block:: python
 
         gui = ti.GUI('Window Title', (640, 360))
+
+    .. note::
+
+        If you are running Taichi on a machine without a GUI environment, consider
+        setting ``show_gui`` to ``False``:
+
+        .. code-block:: python
+
+            gui = ti.GUI('Window Title', (640, 360), show_gui=False)
+
+            while gui.running:
+                ...
+                gui.show(f'{gui.frame:06d}.png')  # save a series of screenshot
 
 
 .. function:: gui.show(filename = None)
@@ -48,6 +64,14 @@ Create a window
 
 Paint on a window
 -----------------
+
+Taichi's GUI supports painting simple geometric objects, such as lines, triangles, rectangles, circles, and text.
+
+
+.. note::
+
+    The position parameter ``pos`` expects an input of a 2-element tuple, whose values are the relative position of the object.
+    ``(0.0, 0.0)`` stands for the lower left corner of the window, and ``(1.0, 1.0)`` stands for the upper right corner.
 
 
 .. function:: gui.set_image(img)
@@ -535,3 +559,44 @@ Image I/O
     If ``h`` is not specified, it will be equal to ``w`` by default.
 
     The output image shape is: ``(w, h, *img.shape[2:])``.
+
+
+.. _fast_gui:
+
+Zero-copying frame buffer
+-------------------------
+
+Sometimes when the GUI resolution (window size) is large, we find it impossible
+to reach 60 FPS even without any kernel invocations between each frame.
+
+This is mainly due to the copy overhead when Taichi GUI is copying image buffer
+from a place to another place, to make high-level painting APIs like
+``gui.circles`` functional. The larger the image, the larger the overhead.
+
+However, in some cases we only need ``gui.set_image`` alone. Then we may turn
+on the ``fast_gui`` mode for better performance.
+
+It will directly write the image specified in ``gui.set_image`` to frame buffer
+without hesitation, results in a much better FPS when resolution is huge.
+
+To do so, simply initialize your GUI with ``fast_gui=True``:
+
+.. code-block:: python
+
+   gui = ti.GUI(res, title, fast_gui=True)
+
+
+.. note::
+
+   If possible, consider enabling this option, especially when ``fullscreen=True``.
+
+
+.. warning::
+
+    Despite the performance boost, it has many limitations as trade off:
+
+    ``gui.set_image`` is the only available paint API in this mode. **All other
+    APIs like ``gui.circles``, ``gui.rect``, ``gui.triangles``, etc., won't work**.
+
+    ``gui.set_image`` will only takes Taichi 3D or 4D vector fields (RGB or RGBA)
+    as input.

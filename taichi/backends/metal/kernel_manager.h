@@ -6,9 +6,10 @@
 #include <vector>
 
 #include "taichi/backends/metal/kernel_util.h"
-#include "taichi/lang_util.h"
-#include "taichi/program/kernel_profiler.h"
 #include "taichi/backends/metal/struct_metal.h"
+#include "taichi/lang_util.h"
+#include "taichi/program/compile_config.h"
+#include "taichi/program/kernel_profiler.h"
 #include "taichi/system/memory_pool.h"
 
 TLANG_NAMESPACE_BEGIN

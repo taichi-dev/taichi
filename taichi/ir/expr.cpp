@@ -158,10 +158,6 @@ void Expr::operator/=(const Expr &o) {
   (*this) = (*this) / load_if_ptr(o);
 }
 
-void Cache(int v, const Expr &var) {
-  dec.scratch_opt.push_back(std::make_pair(v, var.snode()));
-}
-
 Expr load_if_ptr(const Expr &ptr) {
   if (ptr.is<GlobalPtrExpression>()) {
     return load(ptr);
@@ -194,7 +190,8 @@ Expr ptr_if_global(const Expr &var) {
 Expr Var(const Expr &x) {
   auto var = Expr(std::make_shared<IdExpression>());
   current_ast_builder().insert(std::make_unique<FrontendAllocaStmt>(
-      std::static_pointer_cast<IdExpression>(var.expr)->id, DataType::unknown));
+      std::static_pointer_cast<IdExpression>(var.expr)->id,
+      PrimitiveType::unknown));
   var = x;
   return var;
 }

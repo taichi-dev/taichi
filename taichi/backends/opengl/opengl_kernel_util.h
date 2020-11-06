@@ -4,13 +4,15 @@
 #include <vector>
 #include <unordered_map>
 
-#include "taichi/ir/statements.h"
+#include "taichi/ir/snode.h"
 
 TLANG_NAMESPACE_BEGIN
 
 class SNode;
 
 namespace opengl {
+
+constexpr int taichi_opengl_earg_base = taichi_max_num_args * sizeof(uint64_t);
 
 struct UsedFeature {
   // types:
@@ -60,7 +62,6 @@ enum class GLBufId {
   Listman = 7,
   Gtmp = 1,
   Args = 2,
-  Earg = 3,
   Extr = 4,
 };
 

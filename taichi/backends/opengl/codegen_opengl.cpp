@@ -474,17 +474,52 @@ class KernelGen : public IRVisitor {
       emit("{} {} = {}({});", dt_name, stmt->short_name(),
            opengl_data_type_name(stmt->cast_type), stmt->operand->short_name());
     } else if (stmt->op_type == UnaryOpType::cast_bits) {
-      if (stmt->cast_type->is_primitive(PrimitiveTypeID::f32) &&
-          stmt->operand->element_type()->is_primitive(PrimitiveTypeID::i32)) {
+
+      auto dst_type = stmt->cast_type;
+      auto src_type = stmt->operand->element_type();
+
+      if ((dst_type->is_primitive(PrimitiveTypeID::u32) &&
+            src_type->is_primitive(PrimitiveTypeID::i32)) ||
+          (dst_type->is_primitive(PrimitiveTypeID::u64) &&
+           src_type->is_primitive(PrimitiveTypeID::i64)) ||
+          (dst_type->is_primitive(PrimitiveTypeID::i32) &&
+           src_type->is_primitive(PrimitiveTypeID::u32)) ||
+          (dst_type->is_primitive(PrimitiveTypeID::i64) &&
+           src_type->is_primitive(PrimitiveTypeID::u64))) {
+        emit("{} {} = {}({});", dt_name, stmt->short_name(),
+            dt_name, stmt->operand->short_name());
+
+      } else if ((dst_type->is_primitive(PrimitiveTypeID::f32) &&
+            src_type->is_primitive(PrimitiveTypeID::i32)) ||
+          (dst_type->is_primitive(PrimitiveTypeID::f64) &&
+           src_type->is_primitive(PrimitiveTypeID::i64))) {
         emit("{} {} = intBitsToFloat({});", dt_name, stmt->short_name(),
-             stmt->operand->short_name());
-      } else if (stmt->cast_type->is_primitive(PrimitiveTypeID::i32) &&
-                 stmt->operand->element_type()->is_primitive(
-                     PrimitiveTypeID::f32)) {
+            stmt->operand->short_name());
+
+      } else if ((dst_type->is_primitive(PrimitiveTypeID::i32) &&
+            src_type->is_primitive(PrimitiveTypeID::f32)) ||
+          (dst_type->is_primitive(PrimitiveTypeID::i64) &&
+           src_type->is_primitive(PrimitiveTypeID::f64))) {
         emit("{} {} = floatBitsToInt({});", dt_name, stmt->short_name(),
-             stmt->operand->short_name());
+            stmt->operand->short_name());
+
+      } else if ((dst_type->is_primitive(PrimitiveTypeID::f32) &&
+            src_type->is_primitive(PrimitiveTypeID::u32)) ||
+          (dst_type->is_primitive(PrimitiveTypeID::f64) &&
+           src_type->is_primitive(PrimitiveTypeID::u64))) {
+        emit("{} {} = uintBitsToFloat({});", dt_name, stmt->short_name(),
+            stmt->operand->short_name());
+
+      } else if ((dst_type->is_primitive(PrimitiveTypeID::u32) &&
+            src_type->is_primitive(PrimitiveTypeID::f32)) ||
+          (dst_type->is_primitive(PrimitiveTypeID::u64) &&
+           src_type->is_primitive(PrimitiveTypeID::f64))) {
+        emit("{} {} = floatBitsToUint({});", dt_name, stmt->short_name(),
+            stmt->operand->short_name());
+
       } else {
-        TI_ERROR("unsupported reinterpret cast");
+        TI_ERROR("[glsl] unsupported bit cast from {} to {}",
+            data_type_name(src_type), data_type_name(dst_type));
       }
     } else {
       emit("{} {} = {}({}({}));", dt_name, stmt->short_name(), dt_name,

@@ -40,51 +40,12 @@ extern int opengl_threads_per_block;
 struct CompiledKernel;
 
 class ParallelSize {
-  // GLSL: stride < invocation < local work group < 'dispatch'
-  // CUDA: stride < thread < block < grid
  public:
-  std::optional<size_t> strides_per_thread;
-  std::optional<size_t> threads_per_block;
-
-  virtual bool is_indirect() const;
-  virtual size_t get_num_strides(GLSLLauncher *launcher) const = 0;
-  size_t get_num_threads(GLSLLauncher *launcher) const;
-  size_t get_num_blocks(GLSLLauncher *launcher) const;
-  virtual CompiledKernel *get_indirect_evaluator();
-  virtual size_t get_threads_per_block() const;
-  virtual ~ParallelSize();
-};
-
-class ParallelSize_ConstRange : public ParallelSize {
-  size_t num_strides{1};
-
- public:
-  ParallelSize_ConstRange(size_t num_strides);
-  virtual size_t get_num_strides(GLSLLauncher *launcher) const override;
-  virtual size_t get_threads_per_block() const override;
-  virtual ~ParallelSize_ConstRange() override = default;
-};
-
-class ParallelSize_DynamicRange : public ParallelSize {
-  bool const_begin;
-  bool const_end;
-  int range_begin;
-  int range_end;
-  std::unique_ptr<CompiledKernel> indirect_evaluator = nullptr;
-
- public:
-  ParallelSize_DynamicRange(OffloadedStmt *stmt);
-  virtual size_t get_num_strides(GLSLLauncher *launcher) const override;
-  virtual ~ParallelSize_DynamicRange() override = default;
-  virtual CompiledKernel *get_indirect_evaluator() override;
-  virtual bool is_indirect() const override;
-};
-
-class ParallelSize_StructFor : public ParallelSize {
- public:
-  ParallelSize_StructFor(OffloadedStmt *stmt);
-  virtual size_t get_num_strides(GLSLLauncher *launcher) const override;
-  virtual ~ParallelSize_StructFor() override = default;
+  size_t block_dim;
+  size_t grid_dim;
+  ParallelSize(size_t block_dim = 1, size_t grid_dim = 1)
+      : block_dim(block_dim), grid_dim(grid_dim) {
+  }
 };
 
 struct CompiledKernel {

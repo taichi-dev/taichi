@@ -557,7 +557,8 @@ class KernelManager::Impl {
     TI_ASSERT(global_tmps_buffer_ != nullptr);
 
     TI_ASSERT(compiled_structs_.runtime_size > 0);
-    const int mem_pool_bytes = (config_->device_memory_GB * 1024 * 1024 * 1024);
+    const size_t mem_pool_bytes =
+        (config_->device_memory_GB * 1024 * 1024 * 1024ULL);
     runtime_mem_ = std::make_unique<BufferMemoryView>(
         compiled_structs_.runtime_size + mem_pool_bytes, mem_pool_);
     runtime_buffer_ = new_mtl_buffer_no_copy(device_.get(), runtime_mem_->ptr(),
@@ -709,6 +710,9 @@ class KernelManager::Impl {
         case SNodeType::dynamic:
           rtm_meta->type = SNodeMeta::Dynamic;
           break;
+        case SNodeType::pointer:
+          rtm_meta->type = SNodeMeta::Pointer;
+          break;
         default:
           TI_ERROR("Unsupported SNode type={}",
                    snode_type_name(sn_meta.snode->type));
@@ -771,6 +775,11 @@ class KernelManager::Impl {
     addr += addr_offset;
     TI_DEBUG("Initialized ListManagerData, size={} accumulated={}", addr_offset,
              (addr - addr_begin));
+    // TODO(k-ye): Initialize these
+    addr_offset = sizeof(NodeManagerData) * max_snodes;
+    addr += addr_offset;
+    addr_offset = sizeof(NodeManagerData::ElemIndex) * max_snodes;
+    addr += addr_offset;
     // init rand_seeds
     // TODO(k-ye): Provide a way to use a fixed seed in dev mode.
     std::mt19937 generator(

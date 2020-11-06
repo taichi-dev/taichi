@@ -15,16 +15,6 @@
 TLANG_NAMESPACE_BEGIN
 namespace opengl {
 
-ParallelSize_DynamicRange::ParallelSize_DynamicRange(OffloadedStmt *stmt) {
-  const_begin = stmt->const_begin;
-  const_end = stmt->const_end;
-  range_begin = stmt->const_begin ? stmt->begin_value : stmt->begin_offset;
-  range_end = stmt->const_end ? stmt->end_value : stmt->end_offset;
-}
-
-ParallelSize_StructFor::ParallelSize_StructFor(OffloadedStmt *stmt) {
-}
-
 namespace {
 
 int find_children_id(const SNode *snode) {
@@ -66,7 +56,7 @@ class KernelGen : public IRVisitor {
         kernel_name_(kernel_name),
         glsl_kernel_prefix_(kernel_name),
         compiled_program_(std::make_unique<CompiledProgram>(kernel)),
-        ps(std::make_unique<ParallelSize_ConstRange>(0)) {
+        ps(std::make_unique<ParallelSize>()) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
   }
@@ -91,7 +81,6 @@ class KernelGen : public IRVisitor {
   LineAppender line_appender_header_;
   std::string glsl_kernel_name_;
   std::unique_ptr<ParallelSize> ps;
-  bool is_grid_stride_loop_{false};
   bool used_tls;  // TODO: move into UsedFeature?
 
   template <typename... Args>
@@ -136,8 +125,10 @@ class KernelGen : public IRVisitor {
     emit("}}");
 
     // clang-format off
+    std::string kernel_header;
 #define __GLSL__
-    std::string kernel_header = (
+    if (used.print)  // the runtime buffer is only used for print now..
+      kernel_header += (
 #include "taichi/backends/opengl/shaders/runtime.h"
         );
     if (used.listman)
@@ -153,14 +144,14 @@ class KernelGen : public IRVisitor {
     if (used.int64)
       kernel_header += "layout(std430, binding = 0) buffer data_i64 { int64_t _data_i64_[]; };\n";
 
-    if (used.buf_gtmp) {
+    if (used.buf_gtmp || used.random) {
       kernel_header +=
-          "layout(std430, binding = 1) buffer gtmp_i32 { int _gtmp_i32_[]; };\n"
-          "layout(std430, binding = 1) buffer gtmp_f32 { float _gtmp_f32_[]; };\n";
+          "layout(std430, binding = 1) buffer gtmp_i32 { int _rand_state_[4]; int _gtmp_i32_[]; };\n"
+          "layout(std430, binding = 1) buffer gtmp_f32 { int _padding1_[4]; float _gtmp_f32_[]; };\n";
       if (used.float64)
-        kernel_header += "layout(std430, binding = 1) buffer gtmp_f64 { double _gtmp_f64_[]; };\n";
+        kernel_header += "layout(std430, binding = 1) buffer gtmp_f64 { int _padding2_[4]; double _gtmp_f64_[]; };\n";
       if (used.int64)
-        kernel_header += "layout(std430, binding = 1) buffer gtmp_i64 { int64_t _gtmp_i64_[]; };\n";
+        kernel_header += "layout(std430, binding = 1) buffer gtmp_i64 { int _padding3_[4]; int64_t _gtmp_i64_[]; };\n";
     }
     if (used.buf_args) {
       kernel_header +=
@@ -170,10 +161,6 @@ class KernelGen : public IRVisitor {
         kernel_header += "layout(std430, binding = 2) buffer args_f64 { double _args_f64_[]; };\n";
       if (used.int64)
         kernel_header += "layout(std430, binding = 2) buffer args_i64 { int64_t _args_i64_[]; };\n";
-    }
-    if (used.buf_earg) {
-      kernel_header +=
-          "layout(std430, binding = 3) buffer earg_i32 { int _earg_i32_[]; };\n";
     }
     if (used.buf_extr) {
       kernel_header +=
@@ -233,7 +220,7 @@ class KernelGen : public IRVisitor {
                            std::move(ps));
     line_appender_header_.clear_all();
     line_appender_.clear_all();
-    ps = std::make_unique<ParallelSize_ConstRange>(0);
+    ps = std::make_unique<ParallelSize>();
   }
 
   void visit(Block *stmt) override {
@@ -438,9 +425,10 @@ class KernelGen : public IRVisitor {
       const int num_indices = stmt->indices.size();
       std::vector<std::string> size_var_names;
       for (int i = 0; i < num_indices; i++) {
-        used.buf_earg = true;
+        used.buf_args = true;
         std::string var_name = fmt::format("_s{}_{}", i, stmt->short_name());
-        emit("int {} = _earg_i32_[{} * {} + {}];", var_name, arg_id,
+        emit("int {} = _args_i32_[{} + {} * {} + {}];", var_name,
+             taichi_opengl_earg_base / sizeof(int), arg_id,
              taichi_max_num_indices, i);
         size_var_names.push_back(std::move(var_name));
       }
@@ -704,9 +692,10 @@ class KernelGen : public IRVisitor {
     const auto name = stmt->short_name();
     const auto arg_id = stmt->arg_id;
     const auto axis = stmt->axis;
-    used.buf_earg = true;
-    emit("int {} = _earg_i32_[{} * {} + {}];", name, arg_id,
-         taichi_max_num_indices, axis);
+    used.buf_args = true;
+    emit("int {} = _args_i32_[{} + {} * {} + {}];", name,
+         taichi_opengl_earg_base / sizeof(int), arg_id, taichi_max_num_indices,
+         axis);
   }
 
   std::string make_kernel_name() {
@@ -731,34 +720,52 @@ class KernelGen : public IRVisitor {
     KernelGen *gen;
     std::unique_ptr<ScopedIndent> s;
 
-    ScopedGridStrideLoop(KernelGen *gen) : gen(gen) {
-      // TODO(archibate): what's grid dim actually?
-      size_t stride_size = gen->kernel->program.config.saturating_grid_dim;
-      if (gen->used_tls && stride_size == 0) {
-        // automatically enable grid-stride-loop when TLS used:
-        stride_size = 32;  // seems to be the most optimal number for fem99.py
-      }
-      if (stride_size != 0) {
-        gen->is_grid_stride_loop_ = true;
-        gen->emit("int _sid0 = int(gl_GlobalInvocationID.x) * {};",
-                  stride_size);
-        gen->emit("for (int _sid = _sid0; _sid < _sid0 + {}; _sid++) {{",
-                  stride_size);
-        s = std::make_unique<ScopedIndent>(gen->line_appender_);
-        TI_ASSERT(gen->ps);
-        gen->ps->strides_per_thread = stride_size;
+    ScopedGridStrideLoop(KernelGen *gen, int const_iterations)
+        : ScopedGridStrideLoop(gen,
+                               fmt::format("{}", const_iterations),
+                               const_iterations) {
+    }
 
-      } else {  // zero regression
-        gen->emit("int _sid = int(gl_GlobalInvocationID.x);");
+    ScopedGridStrideLoop(KernelGen *gen,
+                         std::string iterations,
+                         int const_iterations = -1)
+        : gen(gen) {
+      gen->emit("int _sid0 = int(gl_GlobalInvocationID.x);");
+      gen->emit("for (int _sid = _sid0; _sid < ({}); _sid += {}) {{",
+                iterations, "int(gl_WorkGroupSize.x * gl_NumWorkGroups.x)");
+      s = std::make_unique<ScopedIndent>(gen->line_appender_);
+
+      TI_ASSERT(gen->ps);
+      if (gen->ps->grid_dim == 0) {
+        // if not specified, guess an optimal grid_dim for different situations
+        // Refs:
+        // https://stackoverflow.com/questions/36374652/compute-shaders-optimal-data-division-on-invocations-threads-and-workgroups
+        if (const_iterations > 0) {
+          if (gen->used_tls) {
+            // const range with TLS reduction
+            gen->ps->grid_dim =
+                std::max((size_t)const_iterations /
+                             std::max(gen->ps->block_dim, (size_t)1) / 32,
+                         (size_t)1);
+            gen->ps->block_dim = std::max(gen->ps->block_dim / 4, (size_t)1);
+          } else {
+            // const range
+            gen->ps->grid_dim =
+                std::max(((size_t)const_iterations + gen->ps->block_dim - 1) /
+                             gen->ps->block_dim,
+                         (size_t)1);
+          }
+        } else {
+          // dynamic range
+          // TODO(archibate): think for a better value for SM utilization:
+          gen->ps->grid_dim = 256;
+        }
       }
     }
 
     ~ScopedGridStrideLoop() {
-      if (s)
-        gen->emit("}}");
       s = nullptr;
-
-      gen->is_grid_stride_loop_ = false;
+      gen->emit("}}");
     }
   };
 
@@ -791,11 +798,9 @@ class KernelGen : public IRVisitor {
       auto end_value = stmt->end_value;
       if (end_value < begin_value)
         end_value = begin_value;
-      ps = std::make_unique<ParallelSize_ConstRange>(end_value - begin_value);
-      ps->threads_per_block = stmt->block_dim;
-      ScopedGridStrideLoop _gsl(this);
-      emit("if (_sid >= {}) {};", end_value - begin_value, get_return_stmt());
-      emit("int _itv = {} + _sid * {};", begin_value, 1 /* stmt->step? */);
+      ps = std::make_unique<ParallelSize>(stmt->block_dim, stmt->grid_dim);
+      ScopedGridStrideLoop _gsl(this, end_value - begin_value);
+      emit("int _itv = {} + _sid;", begin_value);
       stmt->body->accept(this);
     } else {
       ScopedIndent _s(line_appender_);
@@ -806,12 +811,10 @@ class KernelGen : public IRVisitor {
       auto end_expr = stmt->const_end ? std::to_string(stmt->end_value)
                                       : fmt::format("_gtmp_i32_[{} >> 2]",
                                                     stmt->end_offset);
-      ps = std::make_unique<ParallelSize_DynamicRange>(stmt);
-      ps->threads_per_block = stmt->block_dim;
-      ScopedGridStrideLoop _gsl(this);
+      ps = std::make_unique<ParallelSize>(stmt->block_dim, stmt->grid_dim);
       emit("int _beg = {}, _end = {};", begin_expr, end_expr);
+      ScopedGridStrideLoop _gsl(this, "_end - _beg");
       emit("int _itv = _beg + _sid;");
-      emit("if (_itv >= _end) {};", get_return_stmt());
       stmt->body->accept(this);
     }
 
@@ -835,10 +838,8 @@ class KernelGen : public IRVisitor {
     emit("{{ // struct for {}", stmt->snode->node_type_name);
     {
       ScopedIndent _s(line_appender_);
-      ps = std::make_unique<ParallelSize_StructFor>(stmt);
-      ps->threads_per_block = stmt->block_dim;
-      ScopedGridStrideLoop _gsl(this);
-      emit("if (_sid >= _end) {};", get_return_stmt());
+      ps = std::make_unique<ParallelSize>(stmt->block_dim, stmt->grid_dim);
+      ScopedGridStrideLoop _gsl(this, "_list_len_");
       emit("int _itv = _list_[_sid];");
       stmt->body->accept(this);
     }
@@ -966,17 +967,9 @@ class KernelGen : public IRVisitor {
     emit("if ({} == 0) break;", stmt->cond->short_name());
   }
 
-  std::string get_return_stmt() {
-    return is_grid_stride_loop_ ? "continue" : "return";
-  }
-
   void visit(ContinueStmt *stmt) override {
     // stmt->as_return() is unused when embraced with a grid-stride-loop
-    if (stmt->as_return()) {
-      emit("{};", get_return_stmt());
-    } else {
-      emit("continue;");
-    }
+    emit("continue;");
   }
 
   void visit(WhileStmt *stmt) override {

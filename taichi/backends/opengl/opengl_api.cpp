@@ -21,7 +21,10 @@ namespace opengl {
 #include "taichi/inc/opengl_extension.inc.h"
 #undef PER_OPENGL_EXTENSION
 
-int opengl_threads_per_block = 1024;
+// will later be initialized in initialize_opengl, here we use the minimum
+// value according to OpenGL spec in case glGetIntegerv didn't work properly
+int opengl_max_block_dim = 1024;
+int opengl_max_grid_dim = 1024;
 
 #ifdef TI_WITH_OPENGL
 
@@ -269,15 +272,15 @@ struct GLBuffer : GLSSBO {
   }
 
   void copy_back() {
-    copy_back(base);
+    copy_back(base, size);
   }
 
-  void copy_back(void *ptr) {
-    if (!size)
+  void copy_back(void *ptr, size_t len) {
+    if (!len)
       return;
     void *mapped = this->map();
     TI_ASSERT(mapped);
-    std::memcpy(ptr, mapped, size);
+    std::memcpy(ptr, mapped, len);
     this->unmap();
   }
 };
@@ -309,98 +312,6 @@ struct GLSLLauncherImpl {
 
   std::vector<std::unique_ptr<CompiledProgram>> programs;
 };
-
-ParallelSize::~ParallelSize() {
-}
-
-bool ParallelSize::is_indirect() const {
-  return false;
-}
-
-bool ParallelSize_DynamicRange::is_indirect() const {
-  return true;
-}
-
-CompiledKernel *ParallelSize::get_indirect_evaluator() {
-  return nullptr;
-}
-
-CompiledKernel *ParallelSize_DynamicRange::get_indirect_evaluator() {
-  if (!indirect_evaluator) {
-    auto ps = std::make_unique<ParallelSize_ConstRange>(0);
-    size_t SPT = strides_per_thread.value_or(1);
-    size_t TPG = ParallelSize::get_threads_per_block();
-    std::string source =
-#include "taichi/backends/opengl/shaders/indirect.glsl.h"
-        +fmt::format(
-            "\nvoid main() {{\n"
-            "  _compute_indirect({}, {}, {}, {}, {}, {});\n"
-            "}}\n",
-            (int)const_begin, (int)const_end, range_begin, range_end, SPT, TPG);
-    ;
-    indirect_evaluator = std::make_unique<CompiledKernel>(
-        "indirect_evaluator_opengl", source, std::move(ps));
-  }
-  return indirect_evaluator.get();
-}
-
-size_t ParallelSize::get_threads_per_block() const {
-  size_t limit = opengl_threads_per_block;
-  size_t n = threads_per_block.value_or(0);
-  return n == 0 ? limit : std::min(n, limit);
-}
-
-ParallelSize_ConstRange::ParallelSize_ConstRange(size_t num_strides)
-    : num_strides(num_strides) {
-}
-
-size_t ParallelSize_ConstRange::get_num_strides(GLSLLauncher *launcher) const {
-  return num_strides;
-}
-
-size_t ParallelSize_ConstRange::get_threads_per_block() const {
-  size_t n = get_num_threads(nullptr);  // TODO: clean up these (iapr)
-  size_t TPG = ParallelSize::get_threads_per_block();
-  return std::max(std::min(n, TPG), (size_t)1);
-}
-
-size_t ParallelSize_DynamicRange::get_num_strides(
-    GLSLLauncher *launcher) const {
-  size_t n;
-  auto gtmp = launcher->impl->core_bufs.get(GLBufId::Gtmp);
-  void *gtmp_now = gtmp->map();  // TODO: RAII map/unmap
-  size_t b = range_begin, e = range_end;
-  if (!const_begin)
-    b = *(const int *)((const char *)gtmp_now + b);
-  if (!const_end)
-    e = *(const int *)((const char *)gtmp_now + e);
-  gtmp->unmap();
-  if (e <= b)
-    n = 1;
-  else
-    n = e - b;
-  return n;
-}
-
-size_t ParallelSize_StructFor::get_num_strides(GLSLLauncher *launcher) const {
-  auto listman = launcher->impl->core_bufs.get(GLBufId::Listman);
-  auto lm_buf = (GLSLListman *)listman->map();
-  auto n = lm_buf->list_len;
-  listman->unmap();
-  return n;
-}
-
-size_t ParallelSize::get_num_threads(GLSLLauncher *launcher) const {
-  size_t n = get_num_strides(launcher);
-  size_t SPT = strides_per_thread.value_or(1);
-  return std::max((n + SPT - 1) / SPT, (size_t)1);
-}
-
-size_t ParallelSize::get_num_blocks(GLSLLauncher *launcher) const {
-  size_t n = get_num_threads(launcher);
-  size_t TPG = get_threads_per_block();
-  return std::max((n + TPG - 1) / TPG, (size_t)1);
-}
 
 bool initialize_opengl(bool error_tolerance) {
   static std::optional<bool> supported;  // std::nullopt
@@ -465,32 +376,33 @@ bool initialize_opengl(bool error_tolerance) {
     TI_ERROR("Your OpenGL does not support GL_ARB_compute_shader extension");
   }
 
-  glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS,
-                &opengl_threads_per_block);
+  glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &opengl_max_block_dim);
   check_opengl_error("glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS)");
-  TI_TRACE("GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS: {}",
-           opengl_threads_per_block);
+  TI_TRACE("GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS: {}", opengl_max_block_dim);
+  glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 0, &opengl_max_grid_dim);
+  check_opengl_error("glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_SIZE)");
+  TI_TRACE("GL_MAX_COMPUTE_WORK_GROUP_SIZE: {}", opengl_max_grid_dim);
 
   supported = std::make_optional<bool>(true);
   return true;
 }
 
-void display_kernel_info(std::string const &kernel_name,
-                         std::string const &kernel_source_code) {
+void show_kernel_info(std::string const &kernel_name,
+                      std::string const &kernel_source_code,
+                      ParallelSize *ps) {
   bool is_accessor = taichi::starts_with(kernel_name, "snode_") ||
                      taichi::starts_with(kernel_name, "tensor_to_") ||
                      taichi::starts_with(kernel_name, "matrix_to_") ||
                      taichi::starts_with(kernel_name, "ext_arr_to_") ||
                      taichi::starts_with(kernel_name, "indirect_evaluator_") ||
                      taichi::starts_with(kernel_name, "jit_evaluator_");
+  auto msg =
+      fmt::format("[glsl]\ncompiling kernel {}<<<{}, {}>>>:\n{}", kernel_name,
+                  ps->grid_dim, ps->block_dim, kernel_source_code);
   if (!is_accessor)
-    TI_DEBUG("source of kernel [{}]:\n{}", kernel_name, kernel_source_code);
+    TI_DEBUG("{}", msg);
   else
-    TI_TRACE("source of kernel [{}]:\n{}", kernel_name, kernel_source_code);
-#ifdef _GLSL_DEBUG
-  std::ofstream(fmt::format("/tmp/{}.comp", kernel_name))
-      .write(kernel_source_code.c_str(), kernel_source_code.size());
-#endif
+    TI_TRACE("{}", msg);
 }
 
 struct CompiledKernel::Impl {
@@ -503,12 +415,20 @@ struct CompiledKernel::Impl {
        const std::string &kernel_source_code,
        std::unique_ptr<ParallelSize> ps_)
       : kernel_name(kernel_name_), ps(std::move(ps_)) {
-    source =
-        kernel_source_code +
-        fmt::format(
-            "layout(local_size_x = {}, local_size_y = 1, local_size_z = 1) in;",
-            ps->get_threads_per_block());
-    display_kernel_info(kernel_name_, source);
+    if (ps->grid_dim > opengl_max_grid_dim)
+      ps->grid_dim = opengl_max_grid_dim;
+    if (ps->block_dim > opengl_max_block_dim)
+      ps->block_dim = opengl_max_block_dim;
+
+    size_t layout_pos = kernel_source_code.find("precision highp float;\n");
+    TI_ASSERT(layout_pos != std::string::npos);
+    source = kernel_source_code.substr(0, layout_pos) +
+             fmt::format(
+                 "layout(local_size_x = {}, local_size_y = 1, local_size_z = "
+                 "1) in;\n",
+                 ps->block_dim) +
+             kernel_source_code.substr(layout_pos);
+    show_kernel_info(kernel_name_, source, ps.get());
     glsl = std::make_unique<GLProgram>(GLShader(source));
     glsl->link();
   }
@@ -521,21 +441,9 @@ struct CompiledKernel::Impl {
     // `glDispatchCompute(X, Y, Z)`   - the X*Y*Z  == `Blocks`   in CUDA
     // `layout(local_size_x = X) in;` - the X      == `Threads`  in CUDA
     //
-    if (!ps->is_indirect()) {
-      int num_blocks = ps->get_num_blocks(launcher);
-      glsl->use();
-      glDispatchCompute(num_blocks, 1, 1);
-      check_opengl_error(fmt::format("glDispatchCompute({})", num_blocks));
-
-    } else {
-      auto ie = ps->get_indirect_evaluator();
-      ie->dispatch_compute(launcher);
-      auto runtime = launcher->impl->core_bufs.get(GLBufId::Runtime);
-      runtime->as_indirect_buffer();
-      glsl->use();
-      glDispatchComputeIndirect(0);  // offset of runtime.indirect_x is 0
-      check_opengl_error(fmt::format("glDispatchComputeIndirect"));
-    }
+    glsl->use();
+    glDispatchCompute(ps->grid_dim, 1, 1);
+    check_opengl_error("glDispatchCompute");
 
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
     check_opengl_error("glMemoryBarrier");
@@ -620,11 +528,15 @@ struct CompiledProgram::Impl {
     GLBufferTable &bufs = launcher->impl->user_bufs;
     std::vector<char> base_arr;
     std::vector<void *> saved_ctx_ptrs;
+    std::vector<char> args;
+    args.resize(std::max(arg_count, ret_count) * sizeof(uint64_t));
     // NOTE: these dirty codes are introduced by #694, TODO: RAII
     /// DIRTY_BEGIN {{{
     if (ext_arr_map.size()) {
-      bufs.add_buffer(GLBufId::Earg, ctx.extra_args,
-                      arg_count * taichi_max_num_args * sizeof(int));
+      args.resize(taichi_opengl_earg_base +
+                  arg_count * taichi_max_num_indices * sizeof(int));
+      std::memcpy(args.data() + taichi_opengl_earg_base, ctx.extra_args,
+                  arg_count * taichi_max_num_indices * sizeof(int));
       if (ext_arr_map.size() == 1) {  // zero-copy for only one ext_arr
         auto it = ext_arr_map.begin();
         auto extptr = (void *)ctx.args[it->first];
@@ -650,8 +562,8 @@ struct CompiledProgram::Impl {
       }
     }
     /// DIRTY_END }}}
-    bufs.add_buffer(GLBufId::Args, ctx.args,
-                    std::max(arg_count, ret_count) * sizeof(uint64_t));
+    std::memcpy(args.data(), ctx.args, arg_count * sizeof(uint64_t));
+    bufs.add_buffer(GLBufId::Args, args.data(), args.size());
     if (used.print) {
       // TODO(archibate): use result_buffer for print results
       auto runtime_buf = launcher->impl->core_bufs.get(GLBufId::Runtime);
@@ -663,10 +575,11 @@ struct CompiledProgram::Impl {
       ker->dispatch_compute(launcher);
     }
     for (auto &[idx, buf] : launcher->impl->user_bufs.bufs) {
-      if (buf->index == GLBufId::Args)
-        buf->copy_back(launcher->result_buffer);
-      else
+      if (buf->index == GLBufId::Args) {
+        buf->copy_back(launcher->result_buffer, ret_count * sizeof(uint64_t));
+      } else {
         buf->copy_back();
+      }
     }
     launcher->impl->user_bufs.clear();
     if (used.print) {
@@ -770,58 +683,6 @@ bool is_opengl_api_available() {
 
 bool initialize_opengl(bool error_tolerance) {
   TI_NOT_IMPLEMENTED;
-}
-
-ParallelSize::~ParallelSize() {
-}
-
-bool ParallelSize::is_indirect() const {
-  TI_NOT_IMPLEMENTED;
-}
-
-bool ParallelSize_DynamicRange::is_indirect() const {
-  TI_NOT_IMPLEMENTED;
-}
-
-size_t ParallelSize::get_num_threads(GLSLLauncher *launcher) const {
-  TI_NOT_IMPLEMENTED;
-}
-
-size_t ParallelSize::get_num_blocks(GLSLLauncher *launcher) const {
-  TI_NOT_IMPLEMENTED;
-}
-
-size_t ParallelSize::get_threads_per_block() const {
-  TI_NOT_IMPLEMENTED;
-}
-
-size_t ParallelSize_ConstRange::get_threads_per_block() const {
-  TI_NOT_IMPLEMENTED;
-}
-
-size_t ParallelSize_ConstRange::get_num_strides(GLSLLauncher *launcher) const {
-  TI_NOT_IMPLEMENTED;
-}
-
-size_t ParallelSize_DynamicRange::get_num_strides(
-    GLSLLauncher *launcher) const {
-  TI_NOT_IMPLEMENTED;
-}
-
-size_t ParallelSize_StructFor::get_num_strides(GLSLLauncher *launcher) const {
-  TI_NOT_IMPLEMENTED;
-}
-
-CompiledKernel *ParallelSize::get_indirect_evaluator() {
-  TI_NOT_IMPLEMENTED;
-}
-
-CompiledKernel *ParallelSize_DynamicRange::get_indirect_evaluator() {
-  TI_NOT_IMPLEMENTED;
-}
-
-ParallelSize_ConstRange::ParallelSize_ConstRange(size_t num_strides)
-    : num_strides(num_strides) {
 }
 
 #endif  // TI_WITH_OPENGL

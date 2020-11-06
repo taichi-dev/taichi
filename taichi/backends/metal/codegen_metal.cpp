@@ -246,6 +246,7 @@ class KernelCodegen : public IRVisitor {
         opty == SNodeOpType::length) {
       emit("int {};", result_var);
     }
+
     emit("{{");
     {
       ScopedIndent s(current_appender());
@@ -564,7 +565,7 @@ class KernelCodegen : public IRVisitor {
     } else if (stmt->task_type == Type::struct_for) {
       generate_struct_for_kernel(stmt);
     } else if (stmt->task_type == Type::listgen) {
-      add_runtime_list_op_kernel(stmt, "element_listgen");
+      add_runtime_list_op_kernel(stmt);
     } else if (stmt->task_type == Type::gc) {
       // Ignored
     } else {
@@ -575,7 +576,7 @@ class KernelCodegen : public IRVisitor {
 
   void visit(ClearListStmt *stmt) override {
     // TODO: Try to move this into shaders/runtime_utils.metal.h
-    const std::string listmgr("listmgr");
+    const std::string listmgr = fmt::format("listmgr_{}", stmt->raw_name());
     emit("ListManager {};", listmgr);
     emit("{}.lm_data = ({}->snode_lists + {});", listmgr, kRuntimeVarName,
          stmt->snode->id);
@@ -1078,26 +1079,20 @@ class KernelCodegen : public IRVisitor {
     emit("}}");
   }
 
-  void add_runtime_list_op_kernel(OffloadedStmt *stmt,
-                                  const std::string &kernel_name) {
-    using Type = OffloadedStmt::TaskType;
-    const auto type = stmt->task_type;
+  void add_runtime_list_op_kernel(OffloadedStmt *stmt) {
+    TI_ASSERT(stmt->task_type == OffloadedTaskType::listgen);
     auto *const sn = stmt->snode;
     KernelAttributes ka;
-    ka.name = kernel_name;
+    ka.name = "element_listgen";
     ka.task_type = stmt->task_type;
-    if (type == Type::listgen) {
-      // listgen kernels use grid-stride loops
-      const auto &sn_descs = compiled_structs_->snode_descriptors;
-      ka.advisory_total_num_threads = std::min(
-          sn_descs.find(sn->id)->second.total_num_self_from_root(sn_descs),
-          kMaxNumThreadsGridStrideLoop);
-      ka.advisory_num_threads_per_group = stmt->block_dim;
-      ka.buffers = {BuffersEnum::Runtime, BuffersEnum::Root,
-                    BuffersEnum::Context};
-    } else {
-      TI_ERROR("Unsupported offload task type {}", stmt->task_name());
-    }
+    // listgen kernels use grid-stride loops
+    const auto &sn_descs = compiled_structs_->snode_descriptors;
+    ka.advisory_total_num_threads =
+        std::min(total_num_self_from_root(sn_descs, sn->id),
+                 kMaxNumThreadsGridStrideLoop);
+    ka.advisory_num_threads_per_group = stmt->block_dim;
+    ka.buffers = {BuffersEnum::Runtime, BuffersEnum::Root,
+                  BuffersEnum::Context};
 
     ka.runtime_list_op_attribs = KernelAttributes::RuntimeListOpAttributes();
     ka.runtime_list_op_attribs->snode = sn;

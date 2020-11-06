@@ -135,7 +135,6 @@ class PointerType : public Type {
   }
 
   std::string to_string() const override;
-  ;
 
  private:
   Type *pointee_{nullptr};

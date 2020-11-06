@@ -94,8 +94,8 @@ class KernelGen : public IRVisitor {
   // Note that the following two functions not only returns the corresponding
   // data type, but also **records** the usage of data types to UsedFeatures.
   std::string opengl_data_type_short_name(DataType dt) {
-    if (dt->is_primitive(PrimitiveTypeID::i64)
-        || dt->is_primitive(PrimitiveTypeID::u64)) {
+    if (dt->is_primitive(PrimitiveTypeID::i64) ||
+        dt->is_primitive(PrimitiveTypeID::u64)) {
       if (!TI_OPENGL_REQUIRE(used, GL_ARB_gpu_shader_int64)) {
         TI_ERROR(
             "Extension GL_ARB_gpu_shader_int64 not supported on your OpenGL");
@@ -474,52 +474,51 @@ class KernelGen : public IRVisitor {
       emit("{} {} = {}({});", dt_name, stmt->short_name(),
            opengl_data_type_name(stmt->cast_type), stmt->operand->short_name());
     } else if (stmt->op_type == UnaryOpType::cast_bits) {
-
       auto dst_type = stmt->cast_type;
       auto src_type = stmt->operand->element_type();
 
       if ((dst_type->is_primitive(PrimitiveTypeID::u32) &&
-            src_type->is_primitive(PrimitiveTypeID::i32)) ||
+           src_type->is_primitive(PrimitiveTypeID::i32)) ||
           (dst_type->is_primitive(PrimitiveTypeID::u64) &&
            src_type->is_primitive(PrimitiveTypeID::i64)) ||
           (dst_type->is_primitive(PrimitiveTypeID::i32) &&
            src_type->is_primitive(PrimitiveTypeID::u32)) ||
           (dst_type->is_primitive(PrimitiveTypeID::i64) &&
            src_type->is_primitive(PrimitiveTypeID::u64))) {
-        emit("{} {} = {}({});", dt_name, stmt->short_name(),
-            dt_name, stmt->operand->short_name());
+        emit("{} {} = {}({});", dt_name, stmt->short_name(), dt_name,
+             stmt->operand->short_name());
 
       } else if ((dst_type->is_primitive(PrimitiveTypeID::f32) &&
-            src_type->is_primitive(PrimitiveTypeID::i32)) ||
-          (dst_type->is_primitive(PrimitiveTypeID::f64) &&
-           src_type->is_primitive(PrimitiveTypeID::i64))) {
+                  src_type->is_primitive(PrimitiveTypeID::i32)) ||
+                 (dst_type->is_primitive(PrimitiveTypeID::f64) &&
+                  src_type->is_primitive(PrimitiveTypeID::i64))) {
         emit("{} {} = intBitsToFloat({});", dt_name, stmt->short_name(),
-            stmt->operand->short_name());
+             stmt->operand->short_name());
 
       } else if ((dst_type->is_primitive(PrimitiveTypeID::i32) &&
-            src_type->is_primitive(PrimitiveTypeID::f32)) ||
-          (dst_type->is_primitive(PrimitiveTypeID::i64) &&
-           src_type->is_primitive(PrimitiveTypeID::f64))) {
+                  src_type->is_primitive(PrimitiveTypeID::f32)) ||
+                 (dst_type->is_primitive(PrimitiveTypeID::i64) &&
+                  src_type->is_primitive(PrimitiveTypeID::f64))) {
         emit("{} {} = floatBitsToInt({});", dt_name, stmt->short_name(),
-            stmt->operand->short_name());
+             stmt->operand->short_name());
 
       } else if ((dst_type->is_primitive(PrimitiveTypeID::f32) &&
-            src_type->is_primitive(PrimitiveTypeID::u32)) ||
-          (dst_type->is_primitive(PrimitiveTypeID::f64) &&
-           src_type->is_primitive(PrimitiveTypeID::u64))) {
+                  src_type->is_primitive(PrimitiveTypeID::u32)) ||
+                 (dst_type->is_primitive(PrimitiveTypeID::f64) &&
+                  src_type->is_primitive(PrimitiveTypeID::u64))) {
         emit("{} {} = uintBitsToFloat({});", dt_name, stmt->short_name(),
-            stmt->operand->short_name());
+             stmt->operand->short_name());
 
       } else if ((dst_type->is_primitive(PrimitiveTypeID::u32) &&
-            src_type->is_primitive(PrimitiveTypeID::f32)) ||
-          (dst_type->is_primitive(PrimitiveTypeID::u64) &&
-           src_type->is_primitive(PrimitiveTypeID::f64))) {
+                  src_type->is_primitive(PrimitiveTypeID::f32)) ||
+                 (dst_type->is_primitive(PrimitiveTypeID::u64) &&
+                  src_type->is_primitive(PrimitiveTypeID::f64))) {
         emit("{} {} = floatBitsToUint({});", dt_name, stmt->short_name(),
-            stmt->operand->short_name());
+             stmt->operand->short_name());
 
       } else {
         TI_ERROR("[glsl] unsupported bit cast from {} to {}",
-            data_type_name(src_type), data_type_name(dst_type));
+                 data_type_name(src_type), data_type_name(dst_type));
       }
     } else {
       emit("{} {} = {}({}({}));", dt_name, stmt->short_name(), dt_name,

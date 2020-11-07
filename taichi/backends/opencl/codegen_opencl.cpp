@@ -107,8 +107,8 @@ class OpenclKernelGen : public IRVisitor {
     emit("Ti_i32 {}_beg = {};", name, stmt->begin_value);
     emit("Ti_i32 {}_end = {};", name, stmt->end_value);
 
-    emit("for (Ti_i32 {} = {}_beg + (Ti_i32)get_global_id(0);", name, name);
-    emit("    {} < {}_end; {} += (Ti_i32)get_global_size(0)) {{", name, name, name);
+    emit("for (Ti_i32 {} = {}_beg + (Ti_i32) get_global_id(0);", name, name);
+    emit("    {} < {}_end; {} += (Ti_i32) get_global_size(0)) {{", name, name, name);
     //emit(R"(printf("What?\n%llu %llu\n", get_global_id(0), get_global_size(0));)");
     stmt->body->accept(this);
     emit("}}");
@@ -213,6 +213,65 @@ class OpenclKernelGen : public IRVisitor {
   void visit(GlobalStoreStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     emit("*{} = {};", stmt->ptr->raw_name(), stmt->data->raw_name());
+  }
+
+  void visit(UnaryOpStmt *stmt) override {
+    TI_ASSERT(stmt->width() == 1);
+    const auto dt_name = opencl_data_type_name(stmt->element_type());
+    const auto operand_name = stmt->operand->raw_name();
+    const auto dest_name = stmt->raw_name();
+    const auto type = stmt->element_type();
+    const auto op = unary_op_type_symbol(stmt->op_type);
+    if (stmt->op_type == UnaryOpType::cast_value) {
+      emit("{} {} = ({}) {};", dt_name, dest_name, dt_name, operand_name);
+
+    } else if (stmt->op_type == UnaryOpType::cast_bits) {
+      const auto operand_dt_name =
+          opencl_data_type_name(stmt->operand->element_type());
+      emit("union {{ {} bc_src; {} bc_dst; }} {}_bitcast;", operand_dt_name,
+           dt_name, dest_name);
+      emit("{}_bitcast.bc_src = {};", dest_name, operand_name);
+      emit("{} {} = {}_bitcast.bc_dst;", dt_name, dest_name, dest_name);
+
+    } else if (opencl_is_unary_op_infix(stmt->op_type)) {
+      emit("{} {} = {}{};", dt_name, dest_name, op, operand_name);
+    } else {
+      emit("{} {} = {}({});", dt_name, dest_name, op, operand_name);
+    }
+  }
+
+  void visit(BinaryOpStmt *bin) override {
+    TI_ASSERT(bin->width() == 1);
+    const auto dt_name = opencl_data_type_name(bin->element_type());
+    const auto lhs_name = bin->lhs->raw_name();
+    const auto rhs_name = bin->rhs->raw_name();
+    const auto bin_name = bin->raw_name();
+    const auto type = bin->element_type();
+    const auto binop = binary_op_type_symbol(bin->op_type);
+    if (opencl_is_binary_op_infix(bin->op_type)) {
+      if (is_comparison(bin->op_type)) {
+        // XXX(#577): Taichi uses -1 as true due to LLVM i1...
+        emit("{} {} {} = -({} {} {});", dt_name, bin_name,
+            lhs_name, binop, rhs_name);
+      } else if (bin->op_type == BinaryOpType::truediv) {
+        emit("{} {} {} = ({}) {} / {};", dt_name, bin_name,
+            dt_name, lhs_name, rhs_name);
+      } else if (bin->op_type == BinaryOpType::floordiv) {
+        auto lhs_dt_name = data_type_short_name(bin->lhs->element_type());
+        if (is_integral(bin->lhs->element_type()) &&
+            is_integral(bin->rhs->element_type())) {
+          emit("{} {} = Ti_floordiv_{}({}, {});", dt_name, bin_name,
+              lhs_dt_name, lhs_name, rhs_name);
+        } else {
+          emit("{} {} = Ti_floordiv_{}({}, {});", dt_name, bin_name,
+              lhs_dt_name, lhs_name, rhs_name);
+        }
+      } else {
+        emit("{} {} = {} {} {};", dt_name, bin_name, lhs_name, binop, rhs_name);
+      }
+    } else {
+      emit("{} {} = {}({});", dt_name, bin_name, binop, lhs_name, rhs_name);
+    }
   }
 
   void run() {

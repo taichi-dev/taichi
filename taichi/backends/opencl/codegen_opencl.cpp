@@ -83,7 +83,7 @@ class OpenclKernelGen : public IRVisitor {
   void visit(ArgLoadStmt *stmt) override {
     if (stmt->is_ptr) {
       auto dt_name = opencl_data_type_name(stmt->element_type().ptr_removed());
-      emit("{} *{} = arg{};", dt_name, stmt->raw_name(), stmt->arg_id);
+      emit("{} *{} = arg{}.arr;", dt_name, stmt->raw_name(), stmt->arg_id);
     } else {
       auto dt_name = opencl_data_type_name(stmt->element_type());
       emit("{} {} = arg{};", dt_name, stmt->raw_name(), stmt->arg_id);
@@ -97,7 +97,11 @@ class OpenclKernelGen : public IRVisitor {
     emit("    ( __global struct Ti_S0root *root");
     emit("    , __global Ti_i8 *gtmp");
     for (int i = 0; i < kernel->args.size(); i++) {
-      emit("    , {} arg{}", opencl_data_type_name(kernel->args[i].dt), i);
+      if (kernel->args[i].is_nparray) {
+        emit("    , struct Ti_ExtArr arg{}", i);
+      } else {
+        emit("    , {} arg{}", opencl_data_type_name(kernel->args[i].dt), i);
+      }
     }
     emit("    ) {{");
 
@@ -192,6 +196,80 @@ class OpenclKernelGen : public IRVisitor {
     TI_ASSERT(stmt->width() == 1);
     emit("{} {} = 0;",
          opencl_data_type_name(stmt->element_type()), stmt->raw_name());
+  }
+
+  void visit(LocalLoadStmt *stmt) override {
+    bool linear_index = true;
+    for (int i = 0; i < (int)stmt->ptr.size(); i++) {
+      if (stmt->ptr[i].offset != i) {
+        linear_index = false;
+      }
+    }
+    TI_ASSERT(stmt->same_source() && linear_index &&
+              stmt->width() == stmt->ptr[0].var->width());
+
+    emit("{} {} = {};", opencl_data_type_name(stmt->element_type()),
+        stmt->raw_name(), stmt->ptr[0].var->raw_name());
+  }
+
+  void visit(LocalStoreStmt *stmt) override {
+    emit("{} = {};", stmt->ptr->raw_name(), stmt->data->raw_name());
+  }
+
+  void visit(ExternalFuncCallStmt *stmt) override {
+    TI_ASSERT(!stmt->func);
+    auto format = stmt->source;
+    std::string source;
+
+    for (int i = 0; i < format.size(); i++) {
+      char c = format[i];
+      if (c == '%' || c == '$') {  // '$' for output, '%' for input
+        int num = 0;
+        while (i < format.size()) {
+          i += 1;
+          if (!::isdigit(format[i])) {
+            i -= 1;
+            break;
+          }
+          num *= 10;
+          num += format[i] - '0';
+        }
+        auto args = (c == '%') ? stmt->arg_stmts : stmt->output_stmts;
+        TI_ASSERT_INFO(num < args.size(), "{}{} out of {} argument range {}", c,
+                       num, ((c == '%') ? "input" : "output"), args.size());
+        source += args[num]->raw_name();
+      } else {
+        source.push_back(c);
+      }
+    }
+
+    emit("{};", source);
+  }
+
+  void visit(ExternalTensorShapeAlongAxisStmt *stmt) override {
+    emit("{} {} = arg{}.shape[{}];", opencl_data_type_name(stmt->element_type()),
+        stmt->raw_name(), stmt->arg_id, stmt->axis);
+  }
+
+  void visit(ExternalPtrStmt *stmt) override {
+    TI_ASSERT(stmt->width() == 1);
+    std::string offset = "0";
+    const auto *argload = stmt->base_ptrs[0]->as<ArgLoadStmt>();
+    const int arg_id = argload->arg_id;
+    for (int i = 0; i < stmt->indices.size(); i++) {
+      auto stride = fmt::format("arg{}.shape[{}]", arg_id, i);
+      offset = fmt::format("({} * {} + {})", offset, stride,
+                           stmt->indices[i]->raw_name());
+    }
+    auto dt_name = opencl_data_type_name(stmt->element_type().ptr_removed());
+    emit("__global {} *{} = {} + {};", dt_name, stmt->raw_name(),
+        stmt->base_ptrs[0]->raw_name(), offset);
+  }
+
+  void visit(BitExtractStmt *stmt) override {
+    emit("Ti_i32 {} = (({} >> {}) & ((1 << {}) - 1));",
+         stmt->raw_name(), stmt->input->raw_name(),
+         stmt->bit_begin, stmt->bit_end - stmt->bit_begin);
   }
 
   void visit(GetRootStmt *stmt) override {

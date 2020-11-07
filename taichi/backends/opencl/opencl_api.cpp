@@ -403,10 +403,33 @@ struct OpenclKernel::Impl {
   void launch(Context *ctx) {
     TI_ASSERT(prog->impl->root_buf);
 
+    std::vector<std::unique_ptr<CLBuffer>> extrs;
+
+    for (int i = 0; i < kernel->args.size(); i++) {
+      if (kernel->args[i].is_nparray) {
+        auto extr = std::make_unique<CLBuffer>(prog->impl->context.get(),
+            kernel->args[i].size);
+        extrs.push_back(std::move(extr));
+      }
+    }
+
     for (const auto &ker: kernels) {
       ker->set_arg(0, *prog->impl->root_buf);
       ker->set_arg(1, *prog->impl->gtmp_buf);
+
+      auto extr_iter = extrs.begin();
       for (int i = 0; i < kernel->args.size(); i++) {
+        if (kernel->args[i].is_nparray) {
+          struct OpenclExtArr {
+            cl_mem arr;
+            int shape[8];
+          } extr;
+          extr.arr = (*extr_iter++)->buf;
+          std::memcpy(extr.shape, ctx->extra_args[i], sizeof(int) * 8);
+          ker->set_arg(i + 2, &extr, sizeof(extr));
+          continue;
+        }
+
         ker->set_arg(i + 2, &ctx->args[i], data_type_size(kernel->args[i].dt));
       }
 

@@ -4,6 +4,8 @@
 #include "taichi/util/line_appender.h"
 #include "taichi/ir/snode.h"
 
+#include <tuple>
+
 TLANG_NAMESPACE_BEGIN
 namespace opencl {
 
@@ -15,24 +17,26 @@ class OpenclLayoutGen {
   OpenclLayoutGen(SNode *root) : root(root) {
   }
 
-  std::string compile() {
+  std::tuple<std::string, size_t> compile() {
     TI_ASSERT(root->type == SNodeType::root);
-    generate_types(root);
+    size_t size = generate_types(root);
 
     auto source = line_appender.lines();
-    TI_INFO("struct compiled result:\n{}", source);
-    return source;
+    TI_INFO("root buffer (size {}):\n{}", size, source);
+    return std::make_tuple(source, size);
   }
 
  private:
-  void generate_children(SNode *snode) {
+  size_t generate_children(SNode *snode) {
+    size_t size = 0;
     ScopedIndent _s(line_appender);
     for (auto const &ch : snode->ch) {
-      generate_types(ch.get());
+      size += generate_types(ch.get());
     }
+    return size;
   }
 
-  void generate_types(SNode *snode) {
+  size_t generate_types(SNode *snode) {
     // suffix is for the array size
     auto node_name = snode->node_type_name;
     auto struct_name = snode->get_node_type_name_hinted();
@@ -40,16 +44,19 @@ class OpenclLayoutGen {
     if (snode->type == SNodeType::place) {
       const auto type = opencl_data_type_name(snode->dt);
       emit("{} {};", type, node_name);
+      return data_type_size(snode->dt);
 
     } else if (snode->type == SNodeType::root) {
       emit("struct Ti_{} {{", struct_name);
-      generate_children(snode);
+      size_t size = generate_children(snode);
       emit("}};");
+      return size;
 
     } else if (snode->type == SNodeType::dense) {
       emit("struct Ti_{} {{", struct_name);
-      generate_children(snode);
+      size_t size = generate_children(snode);
       emit("}} {}[{}];", node_name, snode->n);
+      return size * snode->n;
 
     } else {
       TI_ERROR("SNodeType={} not supported on OpenCL backend",
@@ -71,7 +78,9 @@ class OpenclLayoutGen {
 
 void OpenclProgram::compile_layout(SNode *root) {
   OpenclLayoutGen gen(root);
-  layout_source = gen.compile();
+  auto [source, size] = gen.compile();
+  layout_source = source;
+  layout_size = size;
 }
 
 }  // namespace opencl

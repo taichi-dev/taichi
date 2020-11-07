@@ -364,13 +364,17 @@ struct OpenclProgram::Impl {
     context = std::make_unique<CLContext>(0, 0);
   }
 
-  void allocate_root(size_t size) {
+  void allocate_root_buffer(size_t size) {
     root_buf = std::make_unique<CLBuffer>(context.get(), size);
   }
 };
 
 OpenclProgram::OpenclProgram(Program *prog)
   : impl(std::make_unique<Impl>(prog)) {
+}
+
+void OpenclProgram::allocate_root_buffer() {
+  impl->allocate_root_buffer(layout_size);
 }
 
 OpenclProgram::~OpenclProgram() = default;
@@ -397,15 +401,11 @@ struct OpenclKernel::Impl {
 
   void set_arguments_for(CLKernel *ker, Context *ctx) {
     ker->set_arg(0, prog->impl->root_buf);
-    if (prog->impl->extr_buf)
-      ker->set_arg(1, prog->impl->extr_buf);
-    ker->set_arg(2, (void *)ctx->args,
-        sizeof(ctx->args) + sizeof(ctx->extra_args));
   }
 
   void launch(Context *ctx) {
     for (const auto &ker: kernels) {
-      //set_arguments_for(ker.get(), ctx);
+      set_arguments_for(ker.get(), ctx);
       ker->launch(1, 1);
     }
   }

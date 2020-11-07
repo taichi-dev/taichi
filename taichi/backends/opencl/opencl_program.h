@@ -18,8 +18,11 @@ class OpenclKernel;
 class OpenclProgram {
   Program *prog;
   std::string layout_source;
+  size_t layout_size;
 
   std::vector<std::unique_ptr<OpenclKernel>> kernels;
+
+  void allocate_root_buffer();
 
  public:
   struct Impl;

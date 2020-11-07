@@ -63,7 +63,9 @@ class OpenclKernelGen : public IRVisitor {
 
   void visit(OffloadedStmt *stmt) override {
     auto kernel_name = fmt::format("{}_k{}", kernel->name, offload_count);
-    emit("__kernel void {}() {{", kernel_name);
+    emit("__kernel void {}(", kernel_name);
+    emit("    __global struct Ti_S0root *root");
+    emit("    ) {{");
 
     TI_ASSERT(is_top_level);
     is_top_level = false;

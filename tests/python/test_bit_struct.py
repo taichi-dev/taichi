@@ -31,6 +31,10 @@ def test_simple_array():
     set_val()
     verify_val()
 
+    # Test bit_struct SNode read and write in Python-scope by calling the wrapped, untranslated function body
+    set_val.__wrapped__()
+    verify_val.__wrapped__()
+
 
 @ti.test(arch=ti.cpu, debug=True, cfg_optimization=False)
 def test_custom_int_load_and_store():
@@ -66,3 +70,8 @@ def test_custom_int_load_and_store():
     for idx in range(len(test_case_np)):
         set_val(idx)
         verify_val(idx)
+
+    # Test bit_struct SNode read and write in Python-scope by calling the wrapped, untranslated function body
+    for idx in range(len(test_case_np)):
+        set_val.__wrapped__(idx)
+        verify_val.__wrapped__(idx)

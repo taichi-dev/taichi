@@ -887,7 +887,14 @@ void CodeGenLLVM::visit(ArgLoadStmt *stmt) {
     llvm_val[stmt] = builder->CreateIntToPtr(raw_arg, dest_ty);
   } else {
     TI_ASSERT(!stmt->ret_type->is<PointerType>());
-    dest_ty = tlctx->get_data_type(stmt->ret_type);
+    if (auto cit = stmt->ret_type->cast<CustomIntType>()) {
+      if (cit->get_is_signed())
+        dest_ty = tlctx->get_data_type(PrimitiveType::i32);
+      else
+        dest_ty = tlctx->get_data_type(PrimitiveType::u32);
+    } else {
+      dest_ty = tlctx->get_data_type(stmt->ret_type);
+    }
     auto dest_bits = dest_ty->getPrimitiveSizeInBits();
     auto truncated = builder->CreateTrunc(
         raw_arg, llvm::Type::getIntNTy(*llvm_context, dest_bits));
@@ -899,8 +906,13 @@ void CodeGenLLVM::visit(KernelReturnStmt *stmt) {
   if (stmt->ret_type.is_pointer()) {
     TI_NOT_IMPLEMENTED
   } else {
-    auto intermediate_bits =
-        tlctx->get_data_type(stmt->value->ret_type)->getPrimitiveSizeInBits();
+    auto intermediate_bits = 0 ;
+    if (stmt->value->ret_type->is<CustomIntType>()) {
+      intermediate_bits = 32;
+    } else {
+      intermediate_bits =
+          tlctx->get_data_type(stmt->value->ret_type)->getPrimitiveSizeInBits();
+    }
     llvm::Type *intermediate_type =
         llvm::Type::getIntNTy(*llvm_context, intermediate_bits);
     llvm::Type *dest_ty = tlctx->get_data_type<int64>();

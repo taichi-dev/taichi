@@ -305,7 +305,7 @@ int64 Kernel::get_ret_int(int i) {
     if (cit->get_is_signed())
       return (int64)get_current_program().fetch_result<int32>(i);
     else
-      return (uint64)get_current_program().fetch_result<uint32>(i);
+      return (int64)get_current_program().fetch_result<uint32>(i);
   } else {
     TI_NOT_IMPLEMENTED
   }

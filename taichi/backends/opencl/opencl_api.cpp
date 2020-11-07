@@ -358,7 +358,7 @@ struct CLKernel {
 struct OpenclProgram::Impl {
   std::unique_ptr<CLContext> context;
   std::unique_ptr<CLBuffer> root_buf;
-  std::unique_ptr<CLBuffer> extr_buf;
+  std::unique_ptr<CLBuffer> gtmp_buf;
 
   Impl(Program *prog) {
     context = std::make_unique<CLContext>(0, 0);
@@ -366,6 +366,7 @@ struct OpenclProgram::Impl {
 
   void allocate_root_buffer(size_t size) {
     root_buf = std::make_unique<CLBuffer>(context.get(), size);
+    gtmp_buf = std::make_unique<CLBuffer>(context.get(), size);
   }
 };
 
@@ -385,29 +386,36 @@ struct OpenclKernel::Impl {
   std::unique_ptr<CLProgram> program;
   std::vector<std::unique_ptr<CLKernel>> kernels;
 
-  Kernel *kern;
+  Kernel *kernel;
 
-  Impl(OpenclProgram *prog, Kernel *kern,
+  Impl(OpenclProgram *prog, Kernel *kernel,
       int offload_count, std::string const &source)
-    : prog(prog), kern(kern) {
+    : prog(prog), kernel(kernel) {
       program = std::make_unique<CLProgram>(prog->impl->context.get(), source);
 
       for (int i = 0; i < offload_count; i++) {
-        auto kernel_name = fmt::format("{}_k{}", kern->name, i);
+        auto kernel_name = fmt::format("{}_k{}", kernel->name, i);
         kernels.push_back(std::make_unique<CLKernel>(
               program.get(), kernel_name));
       }
   }
 
-  void set_arguments_for(CLKernel *ker, Context *ctx) {
-    TI_ASSERT(prog->impl->root_buf);
-    ker->set_arg(0, *prog->impl->root_buf);
-  }
-
   void launch(Context *ctx) {
+    TI_ASSERT(prog->impl->root_buf);
+
     for (const auto &ker: kernels) {
-      set_arguments_for(ker.get(), ctx);
+      ker->set_arg(0, *prog->impl->root_buf);
+      ker->set_arg(1, *prog->impl->gtmp_buf);
+      for (int i = 0; i < kernel->args.size(); i++) {
+        ker->set_arg(i + 2, &ctx->args[i], data_type_size(kernel->args[i].dt));
+      }
+
       ker->launch(1, 1);
+    }
+
+    if (kernel->rets.size()) {
+      prog->impl->gtmp_buf->read(kernel->program.result_buffer,
+          kernel->rets.size() * sizeof(uint64_t));
     }
   }
 };

@@ -68,11 +68,37 @@ class OpenclKernelGen : public IRVisitor {
     TI_WARN("Unsupported statement `{}` for OpenCL", typeid(*stmt).name());
   }
 
+  void visit(GlobalTemporaryStmt *stmt) override {
+    TI_ASSERT(stmt->width() == 1);
+    auto dt_name = opencl_data_type_name(stmt->element_type().ptr_removed());
+    emit("{} *{} = (__global {} *)(gtmp + {});", dt_name,  // |gtmp| is |char *|
+        stmt->raw_name(), dt_name, stmt->offset);
+  }
+
+  void visit(KernelReturnStmt *stmt) override {
+    emit("*(__global {} *)gtmp = {};",
+         opencl_data_type_name(stmt->element_type()), stmt->value->raw_name());
+  }
+
+  void visit(ArgLoadStmt *stmt) override {
+    if (stmt->is_ptr) {
+      auto dt_name = opencl_data_type_name(stmt->element_type().ptr_removed());
+      emit("{} *{} = arg{};", dt_name, stmt->raw_name(), stmt->arg_id);
+    } else {
+      auto dt_name = opencl_data_type_name(stmt->element_type());
+      emit("{} {} = arg{};", dt_name, stmt->raw_name(), stmt->arg_id);
+    }
+  }
+
   void visit(OffloadedStmt *stmt) override {
     auto kernel_name = fmt::format("{}_k{}", kernel->name, offload_count);
     emit("");
-    emit("__kernel void {}(", kernel_name);
-    emit("    __global struct Ti_S0root *root");
+    emit("__kernel void {}", kernel_name);
+    emit("    ( __global struct Ti_S0root *root");
+    emit("    , __global Ti_i8 *gtmp");
+    for (int i = 0; i < kernel->args.size(); i++) {
+      emit("    , {} arg{}", opencl_data_type_name(kernel->args[i].dt), i);
+    }
     emit("    ) {{");
 
     TI_ASSERT(is_top_level);

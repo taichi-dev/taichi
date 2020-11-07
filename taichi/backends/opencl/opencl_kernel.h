@@ -20,7 +20,7 @@ class OpenclKernel {
   struct Impl;
   std::unique_ptr<Impl> impl;
 
-  OpenclKernel(OpenclProgram *prog, std::string name,
+  OpenclKernel(OpenclProgram *prog, Kernel *kernel,
       int offload_count, std::string const &source);
   ~OpenclKernel();
 

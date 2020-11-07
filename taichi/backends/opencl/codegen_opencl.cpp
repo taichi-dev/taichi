@@ -33,7 +33,7 @@ class OpenclKernelGen : public IRVisitor {
     this->run();
     auto source = line_appender.lines();
     TI_INFO("[{}]:\n{}", kernel->name, source);
-    return std::make_unique<OpenclKernel>(program, kernel->name,
+    return std::make_unique<OpenclKernel>(program, kernel,
         offload_count, source);
   }
 
@@ -62,10 +62,8 @@ class OpenclKernelGen : public IRVisitor {
   }
 
   void visit(OffloadedStmt *stmt) override {
-    emit("__kernel void offload_{}(", offload_count);
-    emit("    __global struct Ti_S0root *root,");
-    emit("    __global void *external,");
-    emit("    struct Ti_Context context) {{");
+    auto kernel_name = fmt::format("{}_k{}", kernel->name, offload_count);
+    emit("__kernel void {}() {{", kernel_name);
 
     TI_ASSERT(is_top_level);
     is_top_level = false;

@@ -31,7 +31,7 @@ def test_simple_array():
     set_val()
     verify_val()
 
-    # test bit_struct SNode read and write in python scope
+    # Test bit_struct SNode read and write in Python-scope by calling the wrapped, untranslated function body
     set_val.__wrapped__()
     verify_val.__wrapped__()
 
@@ -71,7 +71,7 @@ def test_custom_int_load_and_store():
         set_val(idx)
         verify_val(idx)
 
-    # test bit_struct SNode read and write in python scope
+    # Test bit_struct SNode read and write in Python-scope by calling the wrapped, untranslated function body
     for idx in range(len(test_case_np)):
         set_val.__wrapped__(idx)
         verify_val.__wrapped__(idx)

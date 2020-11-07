@@ -906,7 +906,7 @@ void CodeGenLLVM::visit(KernelReturnStmt *stmt) {
   if (stmt->ret_type.is_pointer()) {
     TI_NOT_IMPLEMENTED
   } else {
-    auto intermediate_bits = 0 ;
+    auto intermediate_bits = 0;
     if (stmt->value->ret_type->is<CustomIntType>()) {
       intermediate_bits = 32;
     } else {

@@ -400,7 +400,8 @@ struct OpenclKernel::Impl {
   }
 
   void set_arguments_for(CLKernel *ker, Context *ctx) {
-    ker->set_arg(0, prog->impl->root_buf);
+    TI_ASSERT(prog->impl->root_buf);
+    ker->set_arg(0, *prog->impl->root_buf);
   }
 
   void launch(Context *ctx) {

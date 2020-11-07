@@ -1,5 +1,6 @@
 #include "opencl_program.h"
 #include "opencl_kernel.h"
+#include "opencl_utils.h"
 
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
@@ -14,6 +15,10 @@ TLANG_NAMESPACE_BEGIN
 namespace opencl {
 
 namespace {
+
+std::string opencl_get_node_type_name(SNode *snode) {
+  return fmt::format("struct Ti_{}", snode->get_node_type_name_hinted());
+}
 
 // Generate corresponding OpenCL Source Code for Taichi Kernels
 class OpenclKernelGen : public IRVisitor {
@@ -40,7 +45,9 @@ class OpenclKernelGen : public IRVisitor {
  private:
   LineAppender line_appender;
   bool is_top_level{true};
-  int offload_count = 0;
+  GetRootStmt *root_stmt{nullptr};
+
+  int offload_count{0};
 
   template <typename... Args>
   void emit(std::string f, Args &&... args) {
@@ -63,6 +70,7 @@ class OpenclKernelGen : public IRVisitor {
 
   void visit(OffloadedStmt *stmt) override {
     auto kernel_name = fmt::format("{}_k{}", kernel->name, offload_count);
+    emit("");
     emit("__kernel void {}(", kernel_name);
     emit("    __global struct Ti_S0root *root");
     emit("    ) {{");
@@ -80,6 +88,7 @@ class OpenclKernelGen : public IRVisitor {
     is_top_level = true;
 
     emit("}}");
+    emit("");
     offload_count++;
   }
 
@@ -95,11 +104,12 @@ class OpenclKernelGen : public IRVisitor {
     auto name = stmt->raw_name();
 
     TI_ASSERT(stmt->const_begin && stmt->const_end);
-    emit("int {}_beg = {};", name, stmt->begin_value);
-    emit("int {}_end = {};", name, stmt->end_value);
+    emit("Ti_i32 {}_beg = {};", name, stmt->begin_value);
+    emit("Ti_i32 {}_end = {};", name, stmt->end_value);
 
-    emit("for (int {} = {}_beg + get_global_id(0);", name, name);
-    emit("    {} < {}_end; {} += get_global_size(0)) {{", name, name, name);
+    emit("for (Ti_i32 {} = {}_beg + (Ti_i32)get_global_id(0);", name, name);
+    emit("    {} < {}_end; {} += (Ti_i32)get_global_size(0)) {{", name, name, name);
+    //emit(R"(printf("What?\n%llu %llu\n", get_global_id(0), get_global_size(0));)");
     stmt->body->accept(this);
     emit("}}");
   }
@@ -125,6 +135,84 @@ class OpenclKernelGen : public IRVisitor {
 
     values.insert(values.begin(), c_quoted(format));
     emit("printf({});", fmt::join(values, ", "));
+  }
+
+  void visit(LoopIndexStmt *stmt) override {
+    TI_ASSERT(stmt->index == 0);
+    if (stmt->loop->is<OffloadedStmt>()) {
+      auto type = stmt->loop->as<OffloadedStmt>()->task_type;
+      if (type == OffloadedStmt::TaskType::range_for) {
+        emit("Ti_i32 {} = {};", stmt->raw_name(), stmt->loop->raw_name());
+      } else {
+        TI_NOT_IMPLEMENTED
+      }
+
+    } else if (stmt->loop->is<RangeForStmt>()) {
+      emit("Ti_i32 {} = {};", stmt->raw_name(), stmt->loop->raw_name());
+
+    } else {
+      TI_NOT_IMPLEMENTED
+    }
+  }
+
+  void visit(ConstStmt *stmt) override {
+    TI_ASSERT(stmt->width() == 1);
+    emit("{} {} = {};",
+         opencl_data_type_name(stmt->element_type()), stmt->raw_name(),
+         stmt->val[0].stringify());
+  }
+
+  void visit(AllocaStmt *stmt) override {
+    TI_ASSERT(stmt->width() == 1);
+    emit("{} {} = 0;",
+         opencl_data_type_name(stmt->element_type()), stmt->raw_name());
+  }
+
+  void visit(GetRootStmt *stmt) override {
+    auto root = kernel->program.snode_root.get();
+    emit("__global {} *{} = root;",  // |root| is passed as a kernel argument
+         opencl_get_node_type_name(root), stmt->raw_name());
+    root_stmt = stmt;
+  }
+
+  void visit(SNodeLookupStmt *stmt) override {
+    Stmt *input_ptr;
+    if (stmt->input_snode) {
+      input_ptr = stmt->input_snode;
+    } else {
+      TI_ASSERT(root_stmt != nullptr);
+      input_ptr = root_stmt;
+    }
+
+    emit("__global {} *{} = &{}[{}];",
+         opencl_get_node_type_name(stmt->snode), stmt->raw_name(),
+         input_ptr->raw_name(), stmt->input_index->raw_name());
+  }
+
+  void visit(GetChStmt *stmt) override {
+    auto snode = stmt->output_snode;
+    std::string type;
+    if (snode->type == SNodeType::place) {
+      emit("__global {} *{} = &{}->{};",
+          opencl_data_type_name(snode->dt), stmt->raw_name(),
+          stmt->input_ptr->raw_name(), snode->get_node_type_name());
+    } else {
+      emit("__global {} *{} = {}->{};",
+          opencl_get_node_type_name(snode), stmt->raw_name(),
+          stmt->input_ptr->raw_name(), snode->get_node_type_name());
+    }
+  }
+
+  void visit(GlobalLoadStmt *stmt) override {
+    TI_ASSERT(stmt->width() == 1);
+    emit("{} {} = *{};",
+         opencl_data_type_name(stmt->element_type()), stmt->raw_name(),
+         stmt->ptr->raw_name());
+  }
+
+  void visit(GlobalStoreStmt *stmt) override {
+    TI_ASSERT(stmt->width() == 1);
+    emit("*{} = {};", stmt->ptr->raw_name(), stmt->data->raw_name());
   }
 
   void run() {
@@ -154,7 +242,7 @@ std::string OpenclProgram::get_header_lines() {
   std::string header_source =
 #include "taichi/backends/opencl/runtime/base.h"
     ;
-  return header_source + "\n" + layout_source + "\n";
+  return header_source + "\n" + layout_source;
 }
 
 FunctionType OpenclProgram::compile_kernel(Kernel *kernel) {

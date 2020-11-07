@@ -81,6 +81,7 @@ void OpenclProgram::compile_layout(SNode *root) {
   auto [source, size] = gen.compile();
   layout_source = source;
   layout_size = size;
+  allocate_root_buffer();
 }
 
 }  // namespace opencl

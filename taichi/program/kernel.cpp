@@ -31,8 +31,8 @@ class CurrentKernelGuard {
 }  // namespace
 
 Kernel::Kernel(Program &program,
-               std::function<void()> func,
-               std::string primal_name,
+               const std::function<void()> &func,
+               const std::string &primal_name,
                bool grad)
     : program(program), lowered(false), grad(grad) {
   program.initialize_device_llvm_context();
@@ -43,6 +43,9 @@ Kernel::Kernel(Program &program,
   ir = taichi::lang::context->get_root();
 
   {
+    // Note: this is NOT a mutex. If we want to call Kernel::Kernel()
+    // concurrently, we need to lock this block of code together with
+    // taichi::lang::context with a mutex.
     CurrentKernelGuard _(program, this);
     program.start_function_definition(this);
     func();

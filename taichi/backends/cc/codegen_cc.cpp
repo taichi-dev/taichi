@@ -336,18 +336,15 @@ class CCTransformer : public IRVisitor {
       if (is_comparison(bin->op_type)) {
         // XXX(#577): Taichi uses -1 as true due to LLVM i1...
         emit("{} = -({} {} {});", var, lhs_name, binop, rhs_name);
+
       } else if (bin->op_type == BinaryOpType::truediv) {
         emit("{} = ({}) {} / {};", var, dt_name, lhs_name, rhs_name);
+
       } else if (bin->op_type == BinaryOpType::floordiv) {
+        TI_WARN("floordiv called! It should be taken care by demote_operations");
         auto lhs_dt_name = data_type_short_name(bin->lhs->element_type());
-        if (is_integral(bin->lhs->element_type()) &&
-            is_integral(bin->rhs->element_type())) {
-          emit("{} = Ti_floordiv_{}({}, {});", var, lhs_dt_name, lhs_name,
-               rhs_name);
-        } else {
-          emit("{} = Ti_floordiv_{}({}, {});", var, lhs_dt_name, lhs_name,
-               rhs_name);
-        }
+        emit("{} = Ti_floordiv_{}({}, {});", var, lhs_dt_name, lhs_name,
+             rhs_name);
       } else {
         emit("{} = {} {} {};", var, lhs_name, binop, rhs_name);
       }

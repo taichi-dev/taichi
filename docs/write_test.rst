@@ -205,7 +205,7 @@ Use two separate ``parametrize`` to test **all combinations** of input arguments
 
 .. note::
 
-   The order of these decorators doesn't matter.
+   The order of these decorators does not matter.
 
 Specifying ``ti.init`` options
 ******************************
@@ -242,7 +242,7 @@ You may also use the ``extensions`` keyword to exclude backends without specific
 
 .. code-block:: python
 
-    # Run this test on all backends except for OpenGL
+    # Run this test on all backends that support sparse computation
     @ti.test(require=[ti.extension.sparse])
     def test_sparse_field():
         # ... (some tests that requires sparse feature which is not supported by OpenGL)

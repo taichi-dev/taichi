@@ -55,8 +55,8 @@ size_t CCLayout::compile() {
                                             ActionArg("layout_source", source),
                                         });
 
-  obj_path = fmt::format("{}/_rti_root.o", runtime_tmp_dir);
-  src_path = fmt::format("{}/_rti_root.c", runtime_tmp_dir);
+  obj_path = fmt::format("{}/_rti_roottest.o", runtime_tmp_dir);
+  src_path = fmt::format("{}/_rti_roottest.c", runtime_tmp_dir);
   auto dll_path = fmt::format("{}/libti_roottest.so", runtime_tmp_dir);
 
   std::ofstream(src_path) << program->get_runtime()->header << "\n"
@@ -83,21 +83,6 @@ size_t CCLayout::compile() {
   return (*get_root_size)();
 }
 
-void CCRuntime::compile() {
-  ActionRecorder::get_instance().record("compile_runtime",
-                                        {
-                                            ActionArg("runtime_header", header),
-                                            ActionArg("runtime_source", source),
-                                        });
-
-  obj_path = fmt::format("{}/_rti_runtime.o", runtime_tmp_dir);
-  src_path = fmt::format("{}/_rti_runtime.c", runtime_tmp_dir);
-
-  std::ofstream(src_path) << header << "\n" << source;
-  TI_DEBUG("[cc] compiling runtime -> [{}]:\n{}\n", obj_path, source);
-  execute(program->program->config.cc_compile_cmd, obj_path, src_path);
-}
-
 void CCProgram::relink() {
   if (!need_relink)
     return;
@@ -105,7 +90,6 @@ void CCProgram::relink() {
   dll_path = fmt::format("{}/libti_program.so", runtime_tmp_dir);
 
   std::vector<std::string> objects;
-  objects.push_back(runtime->get_object());
   for (auto const &ker : kernels) {
     objects.push_back(ker->get_object());
   }
@@ -156,14 +140,12 @@ void CCProgram::add_kernel(std::unique_ptr<CCKernel> kernel) {
 void CCProgram::init_runtime() {
   runtime = std::make_unique<CCRuntime>(this,
 #include "runtime/base.h"
-                                        "\n",
-#include "runtime/base.c"
                                         "\n");
-  runtime->compile();
 }
 
 CCFuncEntryType *CCProgram::load_kernel(std::string const &name) {
-  return reinterpret_cast<CCFuncEntryType *>(dll->load_function("Tk_" + name));
+  return reinterpret_cast<CCFuncEntryType *>(
+      dll->load_function("Tk_" + name));
 }
 
 CCProgram::CCProgram(Program *program) : program(program) {

@@ -210,10 +210,17 @@ void AsyncEngine::enqueue(const TaskLaunchRecord &t) {
 void AsyncEngine::synchronize() {
   TI_AUTO_PROF
   bool modified = true;
-  TI_TRACE("Synchronizing SFG of {} nodes", sfg->size());
-  debug_sfg("initial");
   sfg->reid_nodes();
   sfg->reid_pending_nodes();
+  TI_TRACE("Synchronizing SFG of {} nodes ({} pending)", sfg->size(),
+           sfg->num_pending_tasks());
+  std::cout << std::flush;
+  sfg->print();
+  for (auto i : sfg->get_pending_tasks()) {
+    irpass::print(i->rec.stmt());
+  }
+  std::cout << std::flush;
+  debug_sfg("initial");
   if (program->config.debug) {
     sfg->verify();
   }
@@ -249,6 +256,13 @@ void AsyncEngine::synchronize() {
     sfg->verify();
   }
   debug_sfg("final");
+  TI_TRACE("final");
+  std::cout << std::flush;
+  sfg->print();
+  for (auto i : sfg->get_pending_tasks()) {
+    irpass::print(i->rec.stmt());
+  }
+  std::cout << std::flush;
   auto tasks = sfg->extract_to_execute();
   TI_TRACE("Ended up with {} nodes", tasks.size());
   for (auto &task : tasks) {

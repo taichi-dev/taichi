@@ -59,6 +59,7 @@ struct CompileConfig {
   // C backend options:
   std::string cc_compile_cmd;
   std::string cc_link_cmd;
+  bool cc_use_openmp;
 
   bool async_opt_fusion{true};
   bool async_opt_listgen{true};

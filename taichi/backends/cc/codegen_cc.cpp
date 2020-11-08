@@ -29,7 +29,7 @@ class CCTransformer : public IRVisitor {
   bool is_top_level{true};
   GetRootStmt *root_stmt;
 
-  bool omp_enabled{true};
+  bool omp_enabled{false};
   bool omp_strict_atomics{true};
 
  public:
@@ -37,6 +37,8 @@ class CCTransformer : public IRVisitor {
       : kernel(kernel), layout(layout) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
+
+    omp_enabled = kernel->program.config.cc_use_openmp;
   }
 
   void run() {
@@ -389,14 +391,13 @@ class CCTransformer : public IRVisitor {
     auto var = define_var(cc_data_type_name(type), stmt->raw_name());
 
     std::unique_ptr<ScopedIndent> _s;
-
-    if (omp_enabled && omp_strict_atomics) {
+    if (omp_enabled) {
       emit("{};", var);
       emit("#pragma omp atomic capture");
       emit("{{");
       _s = std::make_unique<ScopedIndent>(line_appender);
-
       emit("{} = *{};", stmt->raw_name(), dest_ptr);
+
     } else {
       emit("{} = *{};", var, dest_ptr);
     }
@@ -406,12 +407,10 @@ class CCTransformer : public IRVisitor {
       emit("*{} = {};", dest_ptr,
            invoke_libc(op, type, "*{}, {}", dest_ptr, src_name));
     } else {
-      if (omp_enabled && !omp_strict_atomics)
-        emit("#pragma omp atomic update");
       emit("*{} {}= {};", dest_ptr, op, src_name);
     }
 
-    if (omp_enabled && omp_strict_atomics) {
+    if (omp_enabled) {
       emit("}}");
     }
   }

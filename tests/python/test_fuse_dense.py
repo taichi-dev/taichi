@@ -20,7 +20,7 @@ from .fuse_test_template import template_fuse_dense_x2y2z, \
          async_opt_activation_demotion=False,
          arch=ti.cpu)
 def test_no_fuse_sigs_mismatch():
-    n = 4096
+    n = 1
     x = ti.field(ti.i32, shape=(n, ))
 
     @ti.kernel

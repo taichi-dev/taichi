@@ -111,5 +111,18 @@ inline DataType real_to_integral(DataType dt) {
     return PrimitiveType::unknown;
 }
 
+// TODO: move this to lang_util.h:
+inline DataType integral_to_real(DataType dt) {
+  TI_ASSERT(is_integral(dt));
+  if (dt->is_primitive(PrimitiveTypeID::i16))
+    return PrimitiveType::f16;
+  else if (dt->is_primitive(PrimitiveTypeID::i32))
+    return PrimitiveType::f32;
+  else if (dt->is_primitive(PrimitiveTypeID::i64))
+    return PrimitiveType::f64;
+  else
+    return PrimitiveType::unknown;
+}
+
 }  // namespace opencl
 TLANG_NAMESPACE_END

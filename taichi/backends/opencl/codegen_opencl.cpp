@@ -491,8 +491,8 @@ class OpenclKernelGen : public IRVisitor {
     auto type = bin->element_type();
     auto binop = binary_op_type_symbol(bin->op_type);
 
-    // should have been demoted
-    TI_ASSERT(bin->op_type != BinaryOpType::mod);
+    // floordiv should have been demoted in demote_operations.cpp
+    TI_ASSERT(bin->op_type != BinaryOpType::floordiv);
 
     if (is_real(type) && (bin->op_type == BinaryOpType::min
           || bin->op_type == BinaryOpType::max))
@@ -509,28 +509,43 @@ class OpenclKernelGen : public IRVisitor {
         // NOTE: the OpenCL built-in function `fmod()` is a pythonic mod:
         // https://www.khronos.org/registry/OpenCL/sdk/1.0/docs/man/xhtml/fmod.html
         // but |BinaryOpType::mod| means a C-style mod in Taichi...
-        emit("{} {} = {} - {} * int({} / {});", dt_name, bin_name, lhs_name,
+        emit("{} {} = {} - {} * (int)({} / {});", dt_name, bin_name, lhs_name,
              rhs_name, lhs_name, rhs_name);
 
       } else if (bin->op_type == BinaryOpType::truediv) {
         emit("{} {} = ({}) {} / {};", dt_name, bin_name,
             dt_name, lhs_name, rhs_name);
 
-      } else if (bin->op_type == BinaryOpType::floordiv) {
-        auto lhs_dt_name = data_type_short_name(bin->lhs->element_type());
-
-        // mockup
-        if (is_integral(bin->lhs->element_type()) &&
-            is_integral(bin->rhs->element_type())) {
-          emit("{} {} = Ti_floordiv_{}({}, {});", dt_name, bin_name,
-              lhs_dt_name, lhs_name, rhs_name);
-        } else {
-          emit("{} {} = Ti_floordiv_{}({}, {});", dt_name, bin_name,
-              lhs_dt_name, lhs_name, rhs_name);
-        }
-
       } else {
         emit("{} {} = {} {} {};", dt_name, bin_name, lhs_name, binop, rhs_name);
+      }
+
+    } else if (bin->op_type == BinaryOpType::pow) {
+      if (is_integral(bin->rhs->element_type())) {
+        if (is_integral(bin->lhs->element_type())) {
+          auto ret = bin_name;
+          auto x = bin_name + "_x";
+          auto y = bin_name + "_y";
+          emit("{} {} = 0;", dt_name, ret);
+          emit("{} {} = {};", dt_name, x, lhs_name);
+          emit("{} {} = {};", dt_name, y, rhs_name);
+          emit("if ({} >= 0) {{", y);
+          emit("  {} = 1;", ret);
+          emit("  while ({}) {{", y);
+          emit("    if ({} & 1)", y);
+          emit("      {} *= {};", ret, x);
+          emit("    {} *= {};", x, x);
+          emit("    {} >>= 1;", y);
+          emit("  }}");
+          emit("}}");
+
+        } else {
+          emit("{} {} = ({}) pown({}, {});", dt_name, bin_name, dt_name,
+              lhs_name, rhs_name);
+        }
+      } else {
+        emit("{} {} = ({}) pow(({}) {}, ({}) {});", dt_name,
+            bin_name, dt_name, dt_name, lhs_name, dt_name, rhs_name);
       }
 
     } else {

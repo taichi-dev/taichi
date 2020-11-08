@@ -162,13 +162,7 @@ class OpenclKernelGen : public IRVisitor {
   }
 
   size_t generate_range_for_kernel(OffloadedStmt *stmt) {
-    size_t global_dim;
-    if (stmt->const_begin && stmt->const_end) {
-      global_dim = stmt->end_value - stmt->begin_value;
-    } else {
-      global_dim = 4096;  // guessed range size for dynamic range-for
-    }
-    emit("  /* range-for kernel, global size: {} */", global_dim);
+    emit("  /* range-for kernel */");
 
     ScopedIndent _s(line_appender);
     auto name = stmt->raw_name();
@@ -188,7 +182,11 @@ class OpenclKernelGen : public IRVisitor {
     stmt->body->accept(this);
     emit("}}");
 
-    return global_dim;
+    if (stmt->const_begin && stmt->const_end) {
+      return stmt->end_value - stmt->begin_value;
+    } else {
+      return 4096;  // default global_dim for dynamic range-for
+    }
   }
 
   void visit(WhileControlStmt *stmt) override {
@@ -433,9 +431,8 @@ class OpenclKernelGen : public IRVisitor {
     auto type = stmt->element_type();
     auto op = unary_op_type_symbol(stmt->op_type);
 
-    if (is_real(type) && stmt->op_type == UnaryOpType::abs) {
+    if (is_real(type) && stmt->op_type == UnaryOpType::abs)
       op = "fabs";
-    }
 
     if (stmt->op_type == UnaryOpType::cast_value) {
       emit("{} {} = ({}) {};", dt_name, dest_name, dt_name, operand_name);
@@ -451,7 +448,7 @@ class OpenclKernelGen : public IRVisitor {
     } else if (opencl_is_unary_op_infix(stmt->op_type)) {
       emit("{} {} = {}{};", dt_name, dest_name, op, operand_name);
 
-    } else if (bin->op_type == BinaryOpType::sgn) {
+    } else if (stmt->op_type == UnaryOpType::sgn) {
       emit("{} {} = copysign(1, {});", dt_name, dest_name, operand_name);
 
     } else {
@@ -513,6 +510,13 @@ class OpenclKernelGen : public IRVisitor {
     } else {
       emit("{} {} = {}({}, {});", dt_name, bin_name, binop, lhs_name, rhs_name);
     }
+  }
+
+  void visit(TernaryOpStmt *tri) override {
+    TI_ASSERT(tri->op_type == TernaryOpType::select);
+    emit("{} {} = {} ? {} : {};", opencl_data_type_name(tri->element_type()),
+         tri->raw_name(), tri->op1->raw_name(), tri->op2->raw_name(),
+         tri->op3->raw_name());
   }
 
   void visit(AtomicOpStmt *stmt) override {

@@ -162,14 +162,13 @@ class OpenclKernelGen : public IRVisitor {
   }
 
   size_t generate_range_for_kernel(OffloadedStmt *stmt) {
-    emit("  /* range-for kernel */");
     size_t global_dim;
     if (stmt->const_begin && stmt->const_end) {
       global_dim = stmt->end_value - stmt->begin_value;
     } else {
       global_dim = 4096;  // guessed range size for dynamic range-for
     }
-    emit("  /* suggested global_dim {} */", global_dim);
+    emit("  /* range-for kernel, global size: {} */", global_dim);
 
     ScopedIndent _s(line_appender);
     auto name = stmt->raw_name();
@@ -223,13 +222,13 @@ class OpenclKernelGen : public IRVisitor {
     emit("seed = (seed * 0x5deece66dl + 0xbl) & ((1l << 48) - 1);");
     // Wang hash: https://software.intel.com/content/www/us/en/develop/articles/parallel-noise-and-random-functions-for-opencl-kernels.html
     emit("uint {} = seed >> 16;", name);
-	  emit("{} = {} * 1103515245 + 12345;", name, name);
+    //emit("{} = {} * 1103515245 + 12345;", name, name);
     emit("{} = 9 * (({} ^ 61) ^ ({} >> 16));", name, name, name);
-	  emit("{} = 0x27d4eb2d * ({} ^ ({} << 4));", name, name, name);
+    emit("{} = 0x27d4eb2d * ({} ^ ({} << 4));", name, name, name);
 	  emit("{} ^= {} >> 15;", name, name);
   }
 
-  void visit(RandStmt *stmt) override {  // mockup
+  void visit(RandStmt *stmt) override {
     auto name = stmt->raw_name();
     auto dt_name = opencl_data_type_name(stmt->ret_type);
 
@@ -433,6 +432,11 @@ class OpenclKernelGen : public IRVisitor {
     auto dest_name = stmt->raw_name();
     auto type = stmt->element_type();
     auto op = unary_op_type_symbol(stmt->op_type);
+
+    if (is_real(type) && stmt->op_type == UnaryOpType::abs) {
+      op = "fabs";
+    }
+
     if (stmt->op_type == UnaryOpType::cast_value) {
       emit("{} {} = ({}) {};", dt_name, dest_name, dt_name, operand_name);
 
@@ -446,6 +450,10 @@ class OpenclKernelGen : public IRVisitor {
 
     } else if (opencl_is_unary_op_infix(stmt->op_type)) {
       emit("{} {} = {}{};", dt_name, dest_name, op, operand_name);
+
+    } else if (bin->op_type == BinaryOpType::sgn) {
+      emit("{} {} = copysign(1, {});", dt_name, dest_name, operand_name);
+
     } else {
       emit("{} {} = {}({});", dt_name, dest_name, op, operand_name);
     }
@@ -459,6 +467,13 @@ class OpenclKernelGen : public IRVisitor {
     auto bin_name = bin->raw_name();
     auto type = bin->element_type();
     auto binop = binary_op_type_symbol(bin->op_type);
+
+    TI_ASSERT(bin->op_type != BinaryOpType::mod);  // should have been demoted
+
+    if (is_real(type) && (bin->op_type == BinaryOpType::min
+          || bin->op_type == BinaryOpType::max))
+      binop = "f" + binop;
+
     if (opencl_is_binary_op_infix(bin->op_type)) {
 
       if (is_comparison(bin->op_type)) {
@@ -473,9 +488,9 @@ class OpenclKernelGen : public IRVisitor {
       } else if (bin->op_type == BinaryOpType::floordiv) {
         auto lhs_dt_name = data_type_short_name(bin->lhs->element_type());
 
+        // mockup
         if (is_integral(bin->lhs->element_type()) &&
             is_integral(bin->rhs->element_type())) {
-          // mockup
           emit("{} {} = Ti_floordiv_{}({}, {});", dt_name, bin_name,
               lhs_dt_name, lhs_name, rhs_name);
         } else {
@@ -530,7 +545,7 @@ class OpenclKernelGen : public IRVisitor {
   void run() {
     TI_TRACE("start running OpenCL codegen for {}", kernel->name);
     emit("{}", program->get_header_lines());
-    emit("/* Generated OpenCL program of Taichi kernel: {} */", kernel->name);
+    emit("/* Generated OpenCL program for Taichi kernel: {} */", kernel->name);
     kernel->ir->accept(this);
     TI_TRACE("done running OpenCL codegen for {}", kernel->name);
   }

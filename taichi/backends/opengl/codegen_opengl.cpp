@@ -475,43 +475,33 @@ class KernelGen : public IRVisitor {
     } else if (stmt->op_type == UnaryOpType::cast_bits) {
       auto dst_type = stmt->cast_type;
       auto src_type = stmt->operand->element_type();
+      auto dst_int = 0;
+      if (is_integral(dst_type))
+        dst_int = is_unsigned(dst_type) ? 2 : 1;
+      auto src_int = 0;
+      if (is_integral(src_type))
+        src_int = is_unsigned(src_type) ? 2 : 1;
 
-      if ((dst_type->is_primitive(PrimitiveTypeID::u32) &&
-           src_type->is_primitive(PrimitiveTypeID::i32)) ||
-          (dst_type->is_primitive(PrimitiveTypeID::u64) &&
-           src_type->is_primitive(PrimitiveTypeID::i64)) ||
-          (dst_type->is_primitive(PrimitiveTypeID::i32) &&
-           src_type->is_primitive(PrimitiveTypeID::u32)) ||
-          (dst_type->is_primitive(PrimitiveTypeID::i64) &&
-           src_type->is_primitive(PrimitiveTypeID::u64))) {
+      TI_ASSERT_INFO(data_type_size(dst_type) == data_type_size(src_type),
+          "bit_cast is only supported between data type with same size");
+
+      if (dst_int && src_int) {
         emit("{} {} = {}({});", dt_name, stmt->short_name(), dt_name,
              stmt->operand->short_name());
 
-      } else if ((dst_type->is_primitive(PrimitiveTypeID::f32) &&
-                  src_type->is_primitive(PrimitiveTypeID::i32)) ||
-                 (dst_type->is_primitive(PrimitiveTypeID::f64) &&
-                  src_type->is_primitive(PrimitiveTypeID::i64))) {
+      } else if (dst_int == 0 && src_int == 1) {
         emit("{} {} = intBitsToFloat({});", dt_name, stmt->short_name(),
              stmt->operand->short_name());
 
-      } else if ((dst_type->is_primitive(PrimitiveTypeID::i32) &&
-                  src_type->is_primitive(PrimitiveTypeID::f32)) ||
-                 (dst_type->is_primitive(PrimitiveTypeID::i64) &&
-                  src_type->is_primitive(PrimitiveTypeID::f64))) {
+      } else if (dst_int == 1 && src_int == 0) {
         emit("{} {} = floatBitsToInt({});", dt_name, stmt->short_name(),
              stmt->operand->short_name());
 
-      } else if ((dst_type->is_primitive(PrimitiveTypeID::f32) &&
-                  src_type->is_primitive(PrimitiveTypeID::u32)) ||
-                 (dst_type->is_primitive(PrimitiveTypeID::f64) &&
-                  src_type->is_primitive(PrimitiveTypeID::u64))) {
+      } else if (dst_int == 0 && src_int == 2) {
         emit("{} {} = uintBitsToFloat({});", dt_name, stmt->short_name(),
              stmt->operand->short_name());
 
-      } else if ((dst_type->is_primitive(PrimitiveTypeID::u32) &&
-                  src_type->is_primitive(PrimitiveTypeID::f32)) ||
-                 (dst_type->is_primitive(PrimitiveTypeID::u64) &&
-                  src_type->is_primitive(PrimitiveTypeID::f64))) {
+      } else if (dst_int == 2 && src_int == 0) {
         emit("{} {} = floatBitsToUint({});", dt_name, stmt->short_name(),
              stmt->operand->short_name());
 

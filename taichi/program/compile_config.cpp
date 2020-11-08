@@ -62,6 +62,10 @@ CompileConfig::CompileConfig() {
   // C backend options:
   cc_compile_cmd = "gcc -Wc99-c11-compat -c -o '{}' '{}' -O3";
   cc_link_cmd = "gcc -shared -fPIC -o '{}' '{}'";
+
+  // OpenCL backend options:
+  opencl_platform = 0;
+  opencl_device = 0;
 }
 
 TLANG_NAMESPACE_END

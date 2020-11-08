@@ -96,9 +96,12 @@ class ConstantFold : public BasicStmtVisitor {
     auto launch_ctx = ker->make_launch_context();
     launch_ctx.set_arg_raw(0, lhs.val_u64);
     launch_ctx.set_arg_raw(1, rhs.val_u64);
-    (*ker)(launch_ctx);
     auto &current_program = stmt->get_kernel()->program;
-    ret.val_i64 = current_program.fetch_result<int64_t>(0);
+    {
+      std::lock_guard<std::mutex> _(current_program.jit_evaluator_cache_mut);
+      (*ker)(launch_ctx);
+      ret.val_i64 = current_program.fetch_result<int64_t>(0);
+    }
     return true;
   }
 
@@ -116,9 +119,12 @@ class ConstantFold : public BasicStmtVisitor {
     auto *ker = get_jit_evaluator_kernel(id);
     auto launch_ctx = ker->make_launch_context();
     launch_ctx.set_arg_raw(0, operand.val_u64);
-    (*ker)(launch_ctx);
     auto &current_program = stmt->get_kernel()->program;
-    ret.val_i64 = current_program.fetch_result<int64_t>(0);
+    {
+      std::lock_guard<std::mutex> _(current_program.jit_evaluator_cache_mut);
+      (*ker)(launch_ctx);
+      ret.val_i64 = current_program.fetch_result<int64_t>(0);
+    }
     return true;
   }
 

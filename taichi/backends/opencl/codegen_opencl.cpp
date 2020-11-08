@@ -70,7 +70,7 @@ class OpenclKernelGen : public IRVisitor {
   void visit(GlobalTemporaryStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     auto dt_name = opencl_data_type_name(stmt->element_type().ptr_removed());
-    emit("{} *{} = (__global {} *)(gtmp + {});", dt_name,  // |gtmp| is |char *|
+    emit("{} *{} = (__global {} *)(gtmp + {});", dt_name,
         stmt->raw_name(), dt_name, stmt->offset);
   }
 
@@ -100,7 +100,8 @@ class OpenclKernelGen : public IRVisitor {
     }
     for (int i = 0; i < kernel->args.size(); i++) {
       if (kernel->args[i].is_nparray) {
-        emit("    , struct Ti_ExtArrMeta arg{}_meta", i);
+        static_assert(taichi_max_num_indices == 8);
+        emit("    , int8 arg{}_shape", i);
       }
     }
   }
@@ -128,7 +129,7 @@ class OpenclKernelGen : public IRVisitor {
     emit("");
     emit("__kernel void {}", kernel_name);
     emit("    ( __global struct Ti_S0root *root");
-    emit("    , __global Ti_i8 *gtmp");
+    emit("    , __global uchar *gtmp");
     generate_kernel_arguments();
     emit("    ) {{");
 
@@ -173,16 +174,16 @@ class OpenclKernelGen : public IRVisitor {
     auto name = stmt->raw_name();
 
     if (stmt->const_begin)
-      emit("Ti_i32 {}_beg = {};", name, stmt->begin_value);
+      emit("int {}_beg = {};", name, stmt->begin_value);
     else
-      emit("Ti_i32 {}_beg = *(Ti_i32 *)(gtmp + {});", name, stmt->begin_offset);
+      emit("int {}_beg = *(int *)(gtmp + {});", name, stmt->begin_offset);
 
     if (stmt->const_end)
-      emit("Ti_i32 {}_end = {};", name, stmt->end_value);
+      emit("int {}_end = {};", name, stmt->end_value);
     else
-      emit("Ti_i32 {}_end = *(Ti_i32 *)(gtmp + {});", name, stmt->end_offset);
+      emit("int {}_end = *(int *)(gtmp + {});", name, stmt->end_offset);
 
-    emit("for (Ti_i32 {} = {}_beg + get_global_id(0);", name, name);
+    emit("for (int {} = {}_beg + get_global_id(0);", name, name);
     emit("    {} < {}_end; {} += get_global_size(0)) {{", name, name, name);
     stmt->body->accept(this);
     emit("}}");
@@ -216,7 +217,8 @@ class OpenclKernelGen : public IRVisitor {
     emit("}}");
   }
 
-  void visit(RandStmt *stmt) override {
+  void visit(RandStmt *stmt) override {  // mockup
+    // https://stackoverflow.com/questions/9912143/how-to-get-a-random-number-in-opencl
     emit("{} {} = Ti_rand_{}();", opencl_data_type_name(stmt->ret_type),
         stmt->raw_name(), data_type_short_name(stmt->ret_type));
   }
@@ -249,13 +251,13 @@ class OpenclKernelGen : public IRVisitor {
     if (stmt->loop->is<OffloadedStmt>()) {
       auto type = stmt->loop->as<OffloadedStmt>()->task_type;
       if (type == OffloadedStmt::TaskType::range_for) {
-        emit("Ti_i32 {} = {};", stmt->raw_name(), stmt->loop->raw_name());
+        emit("int {} = {};", stmt->raw_name(), stmt->loop->raw_name());
       } else {
         TI_NOT_IMPLEMENTED
       }
 
     } else if (stmt->loop->is<RangeForStmt>()) {
-      emit("Ti_i32 {} = {};", stmt->raw_name(), stmt->loop->raw_name());
+      emit("int {} = {};", stmt->raw_name(), stmt->loop->raw_name());
 
     } else {
       TI_NOT_IMPLEMENTED
@@ -324,7 +326,7 @@ class OpenclKernelGen : public IRVisitor {
   }
 
   void visit(ExternalTensorShapeAlongAxisStmt *stmt) override {
-    emit("{} {} = arg{}_meta.shape[{}];", opencl_data_type_name(stmt->element_type()),
+    emit("{} {} = arg{}_shape.s{};", opencl_data_type_name(stmt->element_type()),
         stmt->raw_name(), stmt->arg_id, stmt->axis);
   }
 
@@ -334,7 +336,7 @@ class OpenclKernelGen : public IRVisitor {
     const auto *argload = stmt->base_ptrs[0]->as<ArgLoadStmt>();
     int arg_id = argload->arg_id;
     for (int i = 0; i < stmt->indices.size(); i++) {
-      auto stride = fmt::format("arg{}_meta.shape[{}]", arg_id, i);
+      auto stride = fmt::format("arg{}_shape.s{}", arg_id, i);
       offset = fmt::format("({} * {} + {})", offset, stride,
                            stmt->indices[i]->raw_name());
     }
@@ -344,7 +346,7 @@ class OpenclKernelGen : public IRVisitor {
   }
 
   void visit(BitExtractStmt *stmt) override {
-    emit("Ti_i32 {} = (({} >> {}) & ((1 << {}) - 1));",
+    emit("int {} = (({} >> {}) & ((1 << {}) - 1));",
          stmt->raw_name(), stmt->input->raw_name(),
          stmt->bit_begin, stmt->bit_end - stmt->bit_begin);
   }
@@ -442,8 +444,10 @@ class OpenclKernelGen : public IRVisitor {
 
       } else if (bin->op_type == BinaryOpType::floordiv) {
         auto lhs_dt_name = data_type_short_name(bin->lhs->element_type());
+
         if (is_integral(bin->lhs->element_type()) &&
             is_integral(bin->rhs->element_type())) {
+          // mockup
           emit("{} {} = Ti_floordiv_{}({}, {});", dt_name, bin_name,
               lhs_dt_name, lhs_name, rhs_name);
         } else {
@@ -467,10 +471,13 @@ class OpenclKernelGen : public IRVisitor {
     auto op_name = opencl_atomic_op_type_name(stmt->op_type);
     auto type = stmt->dest->element_type().ptr_removed();
     auto dt_name = opencl_data_type_name(type);
+
     if (is_integral(type)) {
       emit("{} {} = atomic_{}({}, {});", dt_name, name, op_name,
           dst_name, src_name);
+
     } else {
+      // https://streamhpc.com/blog/2016-02-09/atomic-operations-for-floats-in-opencl-improved/#:~:text=In%20OpenCL%20there%20is%20only%20atomic_add%20or%20atomic_mul,%28%29.%20Here%20is%20his%20example%20for%20atomic%20add%3A
       auto int_dt_name = opencl_data_type_name(real_to_integral(type));
       emit("union {{");
       emit("  {} f;", dt_name);

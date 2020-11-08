@@ -10,8 +10,34 @@
 TLANG_NAMESPACE_BEGIN
 namespace opencl {
 
+// https://www.khronos.org/registry/OpenCL/sdk/1.0/docs/man/xhtml/scalarDataTypes.html
 inline std::string opencl_data_type_name(DataType dt) {
-  return "Ti_" + data_type_short_name(dt);
+  if (dt->is_primitive(PrimitiveTypeID::i8))
+    return "char";
+  else if (dt->is_primitive(PrimitiveTypeID::i16))
+    return "short";
+  else if (dt->is_primitive(PrimitiveTypeID::i32))
+    return "int";
+  else if (dt->is_primitive(PrimitiveTypeID::i64))
+    return "long";
+  else if (dt->is_primitive(PrimitiveTypeID::u8))
+    return "uchar";
+  else if (dt->is_primitive(PrimitiveTypeID::u16))
+    return "ushort";
+  else if (dt->is_primitive(PrimitiveTypeID::u32))
+    return "uint";
+  else if (dt->is_primitive(PrimitiveTypeID::u64))
+    return "ulong";
+  else if (dt->is_primitive(PrimitiveTypeID::f16))
+    return "half";
+  else if (dt->is_primitive(PrimitiveTypeID::f32))
+    return "float";
+  else if (dt->is_primitive(PrimitiveTypeID::f64))
+    return "double";
+  else if (dt->is_primitive(PrimitiveTypeID::u1))
+    return "bool";
+  TI_ERROR("Unsupported DataType={} on OpenCL backend",
+           data_type_name(dt));
 }
 
 inline std::string opencl_atomic_op_type_name(AtomicOpType op) {

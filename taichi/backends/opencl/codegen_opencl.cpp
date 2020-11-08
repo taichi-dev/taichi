@@ -109,16 +109,22 @@ class OpenclKernelGen : public IRVisitor {
   OpenclOffloadMeta make_offload_meta(
       OffloadedStmt *stmt, std::string kernel_name, size_t global_dim) {
     OpenclOffloadMeta meta;
+
     meta.kernel_name = kernel_name;
     meta.block_dim = stmt->block_dim;
+
     if (stmt->grid_dim != 0) {
-      if (meta.block_dim != 0) {
-        meta.global_dim = stmt->grid_dim * meta.block_dim;
-      } else {
-        meta.global_dim = stmt->grid_dim;
-      }
+      TI_ASSERT(meta.block_dim != 0);
+      meta.global_dim = stmt->grid_dim * meta.block_dim;
+
     } else {
-        meta.global_dim = global_dim;
+      if (meta.block_dim != 0) {
+        // OpenCL seems require |global_dim| to be a *integral multiple* of
+        // |block_dim| when |block_dim| is explicitly specified (non-zero):
+        global_dim = (global_dim + meta.block_dim - 1)
+          / meta.block_dim * meta.block_dim;
+      }
+      meta.global_dim = global_dim;
     }
     return meta;
   }
@@ -132,7 +138,7 @@ class OpenclKernelGen : public IRVisitor {
     emit("    , __global uchar *gtmp");
     generate_kernel_arguments();
     emit("    ) {{");
-    emit("  ulong seed = get_global_id(0);");  // for RandStmt
+    emit("  ulong rand_seed = ((int *)gtmp)[1024] + get_global_id(0);");
 
     TI_ASSERT(is_top_level);
     is_top_level = false;
@@ -217,9 +223,9 @@ class OpenclKernelGen : public IRVisitor {
 
   void make_random_uint(std::string name) {
     // Java random: https://stackoverflow.com/questions/9912143/how-to-get-a-random-number-in-opencl
-    emit("seed = (seed * 0x5deece66dl + 0xbl) & ((1l << 48) - 1);");
+    emit("rand_seed = (rand_seed * 0x5deece66dl + 0xbl) & ((1l << 48) - 1);");
     // Wang hash: https://software.intel.com/content/www/us/en/develop/articles/parallel-noise-and-random-functions-for-opencl-kernels.html
-    emit("uint {} = seed >> 16;", name);
+    emit("uint {} = rand_seed >> 16;", name);
     //emit("{} = {} * 1103515245 + 12345;", name, name);
     emit("{} = 9 * (({} ^ 61) ^ ({} >> 16));", name, name, name);
     emit("{} = 0x27d4eb2d * ({} ^ ({} << 4));", name, name, name);

@@ -29,6 +29,9 @@ class CCTransformer : public IRVisitor {
   bool is_top_level{true};
   GetRootStmt *root_stmt;
 
+  bool omp_enabled{true};
+  bool omp_strict_atomics{true};
+
  public:
   CCTransformer(Kernel *kernel, CCLayout *layout)
       : kernel(kernel), layout(layout) {
@@ -38,6 +41,8 @@ class CCTransformer : public IRVisitor {
 
   void run() {
     this->lower_ast();
+    if (omp_enabled)
+      emit_header("#include <omp.h>");
     emit_header("void Tk_{}(struct Ti_Context *ti_ctx) {{", kernel->name);
     kernel->ir->accept(this);
     emit("}}");
@@ -382,13 +387,32 @@ class CCTransformer : public IRVisitor {
     const auto op = cc_atomic_op_type_symbol(stmt->op_type);
     const auto type = stmt->dest->element_type().ptr_removed();
     auto var = define_var(cc_data_type_name(type), stmt->raw_name());
-    emit("{} = *{};", var, dest_ptr);
+
+    std::unique_ptr<ScopedIndent> _s;
+
+    if (omp_enabled && omp_strict_atomics) {
+      emit("{};", var);
+      emit("#pragma omp atomic capture");
+      emit("{{");
+      _s = std::make_unique<ScopedIndent>(line_appender);
+
+      emit("{} = *{};", stmt->raw_name(), dest_ptr);
+    } else {
+      emit("{} = *{};", var, dest_ptr);
+    }
+
     if (stmt->op_type == AtomicOpType::max ||
         stmt->op_type == AtomicOpType::min) {
       emit("*{} = {};", dest_ptr,
            invoke_libc(op, type, "*{}, {}", dest_ptr, src_name));
     } else {
+      if (omp_enabled && !omp_strict_atomics)
+        emit("#pragma omp atomic update");
       emit("*{} {}= {};", dest_ptr, op, src_name);
+    }
+
+    if (omp_enabled && omp_strict_atomics) {
+      emit("}}");
     }
   }
 
@@ -425,10 +449,13 @@ class CCTransformer : public IRVisitor {
       auto begin_value = stmt->begin_value;
       auto end_value = stmt->end_value;
       auto var = define_var("Ti_i32", stmt->raw_name());
+      if (omp_enabled)
+        emit("#pragma omp parallel for simd");
       emit("for ({} = {}; {} < {}; {} += {}) {{", var, begin_value,
            stmt->raw_name(), end_value, stmt->raw_name(), 1 /* stmt->step? */);
       stmt->body->accept(this);
       emit("}}");
+
     } else {
       auto var = define_var("Ti_i32", stmt->raw_name());
       auto begin_expr = "tmp_begin_" + stmt->raw_name();
@@ -447,6 +474,8 @@ class CCTransformer : public IRVisitor {
       } else {
         emit("{} = {};", end_var, stmt->end_value);
       }
+      if (omp_enabled)
+        emit("#pragma omp parallel for simd");
       emit("for ({} = {}; {} < {}; {} += {}) {{", var, begin_expr,
            stmt->raw_name(), end_expr, stmt->raw_name(), 1 /* stmt->step? */);
       stmt->body->accept(this);
@@ -470,18 +499,8 @@ class CCTransformer : public IRVisitor {
 
   void visit(LoopIndexStmt *stmt) override {
     TI_ASSERT(stmt->index == 0);  // TODO: multiple indices
-    if (stmt->loop->is<OffloadedStmt>()) {
-      auto type = stmt->loop->as<OffloadedStmt>()->task_type;
-      if (type == OffloadedStmt::TaskType::range_for) {
-        emit("Ti_i32 {} = {};", stmt->raw_name(), stmt->loop->raw_name());
-      } else {
-        TI_NOT_IMPLEMENTED
-      }
-    } else if (stmt->loop->is<RangeForStmt>()) {
-      emit("Ti_i32 {} = {};", stmt->raw_name(), stmt->loop->raw_name());
-    } else {
-      TI_NOT_IMPLEMENTED
-    }
+
+    emit("Ti_i32 {} = {};", stmt->raw_name(), stmt->loop->raw_name());
   }
 
   void visit(RangeForStmt *stmt) override {

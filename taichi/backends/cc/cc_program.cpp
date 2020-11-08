@@ -40,13 +40,11 @@ void CCKernel::launch(Context *ctx) {
                                           });
 
   program->relink();
-  TI_TRACE("[cc] entering kernel [{}]", name);
   auto entry = program->load_kernel(name);
   TI_ASSERT(entry);
   auto *context = program->update_context(ctx);
   (*entry)(context);
   program->context_to_result_buffer();
-  TI_TRACE("[cc] leaving kernel [{}]", name);
 }
 
 size_t CCLayout::compile() {

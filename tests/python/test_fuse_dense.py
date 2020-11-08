@@ -18,7 +18,9 @@ from .fuse_test_template import template_fuse_dense_x2y2z, \
          async_opt_listgen=False,
          async_opt_dse=False,
          async_opt_activation_demotion=False,
-         arch=ti.cpu)
+         arch=ti.cpu,
+         print_ir=True,
+         print_accessor_ir=True)
 def test_no_fuse_sigs_mismatch():
     n = 1
     x = ti.field(ti.i32, shape=(n, ))

@@ -64,7 +64,7 @@ class OpenclKernelGen : public IRVisitor {
   }
 
   void visit(Stmt *stmt) override {
-    TI_WARN("Unsupported statement `{}` for OpenCL", typeid(*stmt).name());
+    TI_ERROR("Unsupported statement `{}` for OpenCL", typeid(*stmt).name());
   }
 
   void visit(GlobalTemporaryStmt *stmt) override {
@@ -182,9 +182,8 @@ class OpenclKernelGen : public IRVisitor {
     else
       emit("Ti_i32 {}_end = *(Ti_i32 *)(gtmp + {});", name, stmt->end_offset);
 
-    emit("for (Ti_i32 {} = {}_beg + (Ti_i32) get_global_id(0);", name, name);
-    emit("    {} < {}_end; {} += (Ti_i32) get_global_size(0)) {{", name, name, name);
-    //emit(R"(printf("What?\n%llu %llu\n", get_global_id(0), get_global_size(0));)");
+    emit("for (Ti_i32 {} = {}_beg + get_global_id(0);", name, name);
+    emit("    {} < {}_end; {} += get_global_size(0)) {{", name, name, name);
     stmt->body->accept(this);
     emit("}}");
 
@@ -462,14 +461,35 @@ class OpenclKernelGen : public IRVisitor {
   }
 
   void visit(AtomicOpStmt *stmt) override {
-    auto ret_name = stmt->raw_name();
+    auto name = stmt->raw_name();
     auto dst_name = stmt->dest->raw_name();
     auto src_name = stmt->val->raw_name();
     auto op_name = opencl_atomic_op_type_name(stmt->op_type);
     auto type = stmt->dest->element_type().ptr_removed();
     auto dt_name = opencl_data_type_name(type);
-    emit("{} {} = atomic_{}({}, {});", dt_name, ret_name, op_name,
-        dst_name, src_name);
+    if (is_integral(type)) {
+      emit("{} {} = atomic_{}({}, {});", dt_name, name, op_name,
+          dst_name, src_name);
+    } else {
+      auto int_dt_name = opencl_data_type_name(real_to_integral(type));
+      emit("union {{");
+      emit("  {} f;", dt_name);
+      emit("  {} i;", int_dt_name);
+      emit("}} {}_old, {}_new;", name, name);
+      emit("do {{");
+      emit("  {}_old.f = *{};", name, dst_name);
+      auto bin_op = atomic_to_binary_op_type(stmt->op_type);
+      auto op_name = binary_op_type_symbol(bin_op);
+      if (opencl_is_binary_op_infix(bin_op)) {
+        emit("  {}_new.f = {}_old.f {} {};", name, name, op_name, src_name);
+      } else {
+        emit("  {}_new.f = {}({}_old.f, {});", name, op_name, name, src_name);
+      }
+      emit("}} while ({}_old.i != atomic_cmpxchg(", name);
+      emit("    (volatile __global {} *){},", int_dt_name, dst_name);
+      emit("    {}_old.i, {}_new.i));", name, name);
+      emit("{} {} = {}_old.f;", dt_name, name, name);
+    }
   }
 
   void run() {

@@ -277,17 +277,16 @@ struct CLProgram {
     }
 
     err = clBuildProgram(prog, 0, NULL, options.c_str(), NULL, NULL);
-    if (err == CL_BUILD_PROGRAM_FAILURE) {
-      size_t n;
-      clGetProgramBuildInfo(prog, ctx->device, CL_PROGRAM_BUILD_LOG, 0, NULL, &n);
-      char log[n + 1];
-      clGetProgramBuildInfo(prog, ctx->device, CL_PROGRAM_BUILD_LOG, n, (void *)log, NULL);
-      log[n] = 0;
-      TI_ERROR("Failed to compile OpenCL program:\n{}", std::string(log));
-    }
-
     if (err < 0) {
-      TI_ERROR("Failed to build OpenCL program: {}", opencl_error(err));
+      size_t n;
+      clGetProgramBuildInfo(prog, ctx->device,
+          CL_PROGRAM_BUILD_LOG, 0, NULL, &n);
+      char log[n + 1];
+      clGetProgramBuildInfo(prog, ctx->device,
+          CL_PROGRAM_BUILD_LOG, n, (void *)log, NULL);
+      log[n] = 0;
+      TI_ERROR("Failed to build OpenCL program {}:\n{}",
+          opencl_error(err), std::string(log));
     }
   }
 
@@ -348,6 +347,8 @@ struct CLKernel {
   }
 
   void launch(size_t global_dim, size_t block_dim = 0) {
+    if (global_dim < block_dim)
+      block_dim = global_dim;
     return launch(1, &global_dim, block_dim ? &block_dim : NULL);
   }
 };

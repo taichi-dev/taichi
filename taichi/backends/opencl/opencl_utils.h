@@ -72,5 +72,18 @@ inline std::string unary_op_type_symbol(UnaryOpType op) {
   }
 }
 
+// TODO: move this to lang_util.h:
+inline DataType real_to_integral(DataType dt) {
+  TI_ASSERT(is_real(dt));
+  if (dt->is_primitive(PrimitiveTypeID::f16))
+    return PrimitiveType::i16;
+  else if (dt->is_primitive(PrimitiveTypeID::f32))
+    return PrimitiveType::i32;
+  else if (dt->is_primitive(PrimitiveTypeID::f64))
+    return PrimitiveType::i64;
+  else
+    return PrimitiveType::unknown;
+}
+
 }  // namespace opencl
 TLANG_NAMESPACE_END

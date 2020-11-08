@@ -229,7 +229,7 @@ struct CLBuffer {
   size_t size;
 
   CLBuffer(CLContext *ctx, size_t size, cl_uint type = CL_MEM_READ_WRITE)
-    : ctx(ctx), size(size) {
+    : ctx(ctx), size(size = std::max(size, (size_t)1)) {  // OpenCL will complain about zero-length buffers
     cl_int err = -1;
     buf = clCreateBuffer(ctx->context, type, size, NULL, &err);
     if (err < 0) {

@@ -138,7 +138,7 @@ class OpenclKernelGen : public IRVisitor {
     emit("    , __global uchar *gtmp");
     generate_kernel_arguments();
     emit("    ) {{");
-    emit("  ulong rand_seed = ((int *)gtmp)[1024] + get_global_id(0);");
+    emit("  ulong rand_seed = *(__global int *)(gtmp + 4096) + get_global_id(0);");
 
     TI_ASSERT(is_top_level);
     is_top_level = false;
@@ -193,6 +193,22 @@ class OpenclKernelGen : public IRVisitor {
     } else {
       return 4096;  // default global_dim for dynamic range-for
     }
+  }
+
+  void visit(RangeForStmt *stmt) override {
+    TI_ASSERT(stmt->width() == 1);
+    if (!stmt->reversed) {
+      emit("for (int {} = {}; {} < {}; {}++) {{", stmt->raw_name(),
+          stmt->begin->raw_name(), stmt->raw_name(), stmt->end->raw_name(),
+          stmt->raw_name());
+    } else {
+      // reversed for loop
+      emit("for (int {} = {}; {} >= {}; {}--) {{", stmt->raw_name(),
+          stmt->begin->raw_name(), stmt->raw_name(), stmt->end->raw_name(),
+          stmt->raw_name());
+    }
+    stmt->body->accept(this);
+    emit("}}");
   }
 
   void visit(WhileControlStmt *stmt) override {
@@ -455,7 +471,8 @@ class OpenclKernelGen : public IRVisitor {
       emit("{} {} = {}{};", dt_name, dest_name, op, operand_name);
 
     } else if (stmt->op_type == UnaryOpType::sgn) {
-      emit("{} {} = copysign(1, {});", dt_name, dest_name, operand_name);
+      emit("{} {} = {} > 0 ? 1 : {} < 0 ? -1 : 0;",
+          dt_name, dest_name, operand_name, operand_name);
 
     } else {
       emit("{} {} = {}({});", dt_name, dest_name, op, operand_name);

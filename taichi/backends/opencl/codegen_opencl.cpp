@@ -138,7 +138,7 @@ class OpenclKernelGen : public IRVisitor {
     emit("    , __global uchar *gtmp");
     generate_kernel_arguments();
     emit("    ) {{");
-    emit("  ulong rand_seed = *(__global int *)(gtmp + 4096) + get_global_id(0);");
+    emit("  ulong rand_seed = ++*(__global int *)(gtmp + 4096) + get_global_id(0);");
 
     TI_ASSERT(is_top_level);
     is_top_level = false;
@@ -206,8 +206,8 @@ class OpenclKernelGen : public IRVisitor {
           stmt->raw_name());
     } else {
       // reversed for loop
-      emit("for (int {} = {}; {} >= {}; {}--) {{", stmt->raw_name(),
-          stmt->begin->raw_name(), stmt->raw_name(), stmt->end->raw_name(),
+      emit("for (int {} = {} - 1; {} >= {}; {}--) {{", stmt->raw_name(),
+          stmt->end->raw_name(), stmt->raw_name(), stmt->begin->raw_name(),
           stmt->raw_name());
     }
     stmt->body->accept(this);

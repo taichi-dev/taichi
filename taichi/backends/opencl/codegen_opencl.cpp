@@ -70,7 +70,7 @@ class OpenclKernelGen : public IRVisitor {
   void visit(GlobalTemporaryStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     auto dt_name = opencl_data_type_name(stmt->element_type().ptr_removed());
-    emit("{} *{} = (__global {} *)(gtmp + {});", dt_name,
+    emit("__global {} *{} = (__global {} *)(gtmp + {});", dt_name,
         stmt->raw_name(), dt_name, stmt->offset);
   }
 

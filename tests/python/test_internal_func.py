@@ -4,8 +4,8 @@ import time
 
 # TODO: these are not really tests...
 def all_archs_for_this(test):
-    # ti.call_internal() is not supported on CUDA, Metal, OpenGL yet
-    return ti.archs_excluding(ti.metal, ti.opengl, ti.cuda)(test)
+    # ti.call_internal() is only supported on LLVM CPU backend for now...
+    return ti.test(ti.cpu)(test)
 
 
 @all_archs_for_this

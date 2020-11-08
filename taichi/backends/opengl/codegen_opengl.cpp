@@ -143,25 +143,17 @@ class KernelGen : public IRVisitor {
           );
 #undef __GLSL__
 
+#define DEFINE_LAYOUT(name, id, dt, dtype) \
+      kernel_header += "layout(std430, binding = " + fmt::format("{}", id) \
+                    + ") buffer " #name "_" #dt " { " #dtype " _" \
+                    #name "_" #dt "_[]; };\n"
 #define REGISTER_BUFFER(name, id) do { \
-    if (used.int32) \
-      kernel_header += "layout(std430, binding = " + fmt::format("{}", id) \
-                    + ") buffer " #name "_i32 { int _" #name "_i32_[]; };\n"; \
-    if (used.int64) \
-      kernel_header += "layout(std430, binding = " + fmt::format("{}", id) \
-                    + ") buffer " #name "_i64 { int64_t _" #name "_i64_[]; };\n"; \
-    if (used.uint32) \
-      kernel_header += "layout(std430, binding = " + fmt::format("{}", id) \
-                    + ") buffer " #name "_u32 { uint _" #name "_u32_[]; };\n"; \
-    if (used.uint64) \
-      kernel_header += "layout(std430, binding = " + fmt::format("{}", id) \
-                    + ") buffer " #name "_u64 { uint64_t _" #name "_u64_[]; };\n"; \
-    if (used.float32) \
-      kernel_header += "layout(std430, binding = " + fmt::format("{}", id) \
-                    + ") buffer " #name "_f32 { float _" #name "_f32_[]; };\n"; \
-    if (used.float64) \
-      kernel_header += "layout(std430, binding = " + fmt::format("{}", id) \
-                    + ") buffer " #name "_f64 { double _" #name "_f64_[]; };\n"; \
+    if (used.int32) DEFINE_LAYOUT(name, id, i32, int); \
+    if (used.int64) DEFINE_LAYOUT(name, id, i64, int64_t); \
+    if (used.uint32) DEFINE_LAYOUT(name, id, i32, uint); \
+    if (used.uint64) DEFINE_LAYOUT(name, id, i64, uint64_t); \
+    if (used.float32) DEFINE_LAYOUT(name, id, f32, float); \
+    if (used.float64) DEFINE_LAYOUT(name, id, f64, double); \
   } while (0)
 
     REGISTER_BUFFER(data, GLBufId::Root);
@@ -173,6 +165,7 @@ class KernelGen : public IRVisitor {
       REGISTER_BUFFER(extr, GLBufId::Extr);
 
 #undef REGISTER_BUFFER
+#undef DEFINE_LAYOUT
     // clang-format on
 
     if (used.simulated_atomic_float) {

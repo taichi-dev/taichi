@@ -33,7 +33,7 @@ def test_no_fuse_sigs_mismatch():
         for i in x:
             x[i] += k
 
-    repeat = 2
+    repeat = 1
     for i in range(repeat):
         inc_i()
         inc_by(i)

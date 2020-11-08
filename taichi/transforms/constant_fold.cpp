@@ -22,15 +22,13 @@ class ConstantFold : public BasicStmtVisitor {
 
   static Kernel *get_jit_evaluator_kernel(JITEvaluatorId const &id) {
     auto &cache = get_current_program().jit_evaluator_cache;
-    {
-      // Discussion:
-      // https://github.com/taichi-dev/taichi/pull/954#discussion_r423442606
-      std::lock_guard<std::mutex> _(
-          get_current_program().jit_evaluator_cache_mut);
-      auto it = cache.find(id);
-      if (it != cache.end())  // cached?
-        return it->second.get();
-    }
+    // Discussion:
+    // https://github.com/taichi-dev/taichi/pull/954#discussion_r423442606
+    std::lock_guard<std::mutex> _(
+        get_current_program().jit_evaluator_cache_mut);
+    auto it = cache.find(id);
+    if (it != cache.end())  // cached?
+      return it->second.get();
 
     auto kernel_name = fmt::format("jit_evaluator_{}", cache.size());
     auto func = [&id]() {
@@ -65,11 +63,7 @@ class ConstantFold : public BasicStmtVisitor {
     auto *ker_ptr = ker.get();
     TI_TRACE("Saving JIT evaluator cache entry id={}",
              std::hash<JITEvaluatorId>{}(id));
-    {
-      std::lock_guard<std::mutex> _(
-          get_current_program().jit_evaluator_cache_mut);
-      cache[id] = std::move(ker);
-    }
+    cache[id] = std::move(ker);
     return ker_ptr;
   }
 

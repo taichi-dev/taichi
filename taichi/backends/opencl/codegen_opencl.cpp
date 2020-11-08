@@ -71,7 +71,7 @@ class OpenclKernelGen : public IRVisitor {
     TI_ASSERT(stmt->width() == 1);
     auto dt_name = opencl_data_type_name(stmt->element_type().ptr_removed());
     emit("__global {} *{} = (__global {} *)(gtmp + {});", dt_name,
-        stmt->raw_name(), dt_name, stmt->offset);
+         stmt->raw_name(), dt_name, stmt->offset);
   }
 
   void visit(KernelReturnStmt *stmt) override {
@@ -106,8 +106,9 @@ class OpenclKernelGen : public IRVisitor {
     }
   }
 
-  OpenclOffloadMeta make_offload_meta(
-      OffloadedStmt *stmt, std::string kernel_name, size_t global_dim) {
+  OpenclOffloadMeta make_offload_meta(OffloadedStmt *stmt,
+                                      std::string kernel_name,
+                                      size_t global_dim) {
     OpenclOffloadMeta meta;
 
     meta.kernel_name = kernel_name;
@@ -121,8 +122,8 @@ class OpenclKernelGen : public IRVisitor {
       if (meta.block_dim != 0) {
         // OpenCL seems require |global_dim| to be a *integral multiple* of
         // |block_dim| when |block_dim| is explicitly specified (non-zero):
-        global_dim = (global_dim + meta.block_dim - 1)
-          / meta.block_dim * meta.block_dim;
+        global_dim =
+            (global_dim + meta.block_dim - 1) / meta.block_dim * meta.block_dim;
       }
       meta.global_dim = global_dim;
     }
@@ -138,7 +139,9 @@ class OpenclKernelGen : public IRVisitor {
     emit("    , __global uchar *gtmp");
     generate_kernel_arguments();
     emit("    ) {{");
-    emit("  ulong rand_seed = ++*(__global int *)(gtmp + 4096) + get_global_id(0);");
+    emit(
+        "  ulong rand_seed = ++*(__global int *)(gtmp + 4096) + "
+        "get_global_id(0);");
 
     TI_ASSERT(is_top_level);
     is_top_level = false;
@@ -176,12 +179,14 @@ class OpenclKernelGen : public IRVisitor {
     if (stmt->const_begin)
       emit("int {}_beg = {};", name, stmt->begin_value);
     else
-      emit("int {}_beg = *(__global int *)(gtmp + {});", name, stmt->begin_offset);
+      emit("int {}_beg = *(__global int *)(gtmp + {});", name,
+           stmt->begin_offset);
 
     if (stmt->const_end)
       emit("int {}_end = {};", name, stmt->end_value);
     else
-      emit("int {}_end = *(__global int *)(gtmp + {});", name, stmt->end_offset);
+      emit("int {}_end = *(__global int *)(gtmp + {});", name,
+           stmt->end_offset);
 
     emit("for (int {} = {}_beg + get_global_id(0);", name, name);
     emit("    {} < {}_end; {} += get_global_size(0)) {{", name, name, name);
@@ -202,13 +207,13 @@ class OpenclKernelGen : public IRVisitor {
     TI_ASSERT(stmt->width() == 1);
     if (!stmt->reversed) {
       emit("for (int {} = {}; {} < {}; {}++) {{", stmt->raw_name(),
-          stmt->begin->raw_name(), stmt->raw_name(), stmt->end->raw_name(),
-          stmt->raw_name());
+           stmt->begin->raw_name(), stmt->raw_name(), stmt->end->raw_name(),
+           stmt->raw_name());
     } else {
       // reversed for loop
       emit("for (int {} = {} - 1; {} >= {}; {}--) {{", stmt->raw_name(),
-          stmt->end->raw_name(), stmt->raw_name(), stmt->begin->raw_name(),
-          stmt->raw_name());
+           stmt->end->raw_name(), stmt->raw_name(), stmt->begin->raw_name(),
+           stmt->raw_name());
     }
     stmt->body->accept(this);
     emit("}}");
@@ -241,14 +246,16 @@ class OpenclKernelGen : public IRVisitor {
   }
 
   void make_random_uint(std::string name) {
-    // Java random: https://stackoverflow.com/questions/9912143/how-to-get-a-random-number-in-opencl
+    // Java random:
+    // https://stackoverflow.com/questions/9912143/how-to-get-a-random-number-in-opencl
     emit("rand_seed = (rand_seed * 0x5deece66dl + 0xbl) & ((1l << 48) - 1);");
-    // Wang hash: https://software.intel.com/content/www/us/en/develop/articles/parallel-noise-and-random-functions-for-opencl-kernels.html
+    // Wang hash:
+    // https://software.intel.com/content/www/us/en/develop/articles/parallel-noise-and-random-functions-for-opencl-kernels.html
     emit("uint {} = rand_seed >> 16;", name);
-    //emit("{} = {} * 1103515245 + 12345;", name, name);
+    // emit("{} = {} * 1103515245 + 12345;", name, name);
     emit("{} = 9 * (({} ^ 61) ^ ({} >> 16));", name, name, name);
     emit("{} = 0x27d4eb2d * ({} ^ ({} << 4));", name, name, name);
-	  emit("{} ^= {} >> 15;", name, name);
+    emit("{} ^= {} >> 15;", name, name);
   }
 
   void visit(RandStmt *stmt) override {
@@ -258,8 +265,8 @@ class OpenclKernelGen : public IRVisitor {
     if (stmt->ret_type->is_primitive(PrimitiveTypeID::i64)) {
       make_random_uint(fmt::format("{}_low", name));
       make_random_uint(fmt::format("{}_high", name));
-      emit("{} {} = ((ulong){}_high << 32) | {}_low;",
-          dt_name, name, name, name);
+      emit("{} {} = ((ulong){}_high << 32) | {}_low;", dt_name, name, name,
+           name);
 
     } else if (is_integral(stmt->ret_type)) {
       make_random_uint(fmt::format("{}_uint", name));
@@ -267,8 +274,8 @@ class OpenclKernelGen : public IRVisitor {
 
     } else {
       make_random_uint(fmt::format("{}_uint", name));
-      emit("{} {} = ({}){}_uint * ({})(1.0 / 4294967296.0);",
-          dt_name, name, dt_name, name, dt_name);
+      emit("{} {} = ({}){}_uint * ({})(1.0 / 4294967296.0);", dt_name, name,
+           dt_name, name, dt_name);
     }
   }
 
@@ -315,15 +322,14 @@ class OpenclKernelGen : public IRVisitor {
 
   void visit(ConstStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    emit("{} {} = {};",
-         opencl_data_type_name(stmt->element_type()), stmt->raw_name(),
-         stmt->val[0].stringify());
+    emit("{} {} = {};", opencl_data_type_name(stmt->element_type()),
+         stmt->raw_name(), stmt->val[0].stringify());
   }
 
   void visit(AllocaStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    emit("{} {} = 0;",
-         opencl_data_type_name(stmt->element_type()), stmt->raw_name());
+    emit("{} {} = 0;", opencl_data_type_name(stmt->element_type()),
+         stmt->raw_name());
   }
 
   void visit(LocalLoadStmt *stmt) override {
@@ -337,7 +343,7 @@ class OpenclKernelGen : public IRVisitor {
               stmt->width() == stmt->ptr[0].var->width());
 
     emit("{} {} = {};", opencl_data_type_name(stmt->element_type()),
-        stmt->raw_name(), stmt->ptr[0].var->raw_name());
+         stmt->raw_name(), stmt->ptr[0].var->raw_name());
   }
 
   void visit(LocalStoreStmt *stmt) override {
@@ -376,8 +382,9 @@ class OpenclKernelGen : public IRVisitor {
 
   void visit(ExternalTensorShapeAlongAxisStmt *stmt) override {
     // https://www.informit.com/articles/article.aspx?p=1732873&seqNum=3
-    emit("{} {} = arg{}_shape.s{};", opencl_data_type_name(stmt->element_type()),
-        stmt->raw_name(), stmt->arg_id, stmt->axis);
+    emit("{} {} = arg{}_shape.s{};",
+         opencl_data_type_name(stmt->element_type()), stmt->raw_name(),
+         stmt->arg_id, stmt->axis);
   }
 
   void visit(ExternalPtrStmt *stmt) override {
@@ -392,13 +399,13 @@ class OpenclKernelGen : public IRVisitor {
     }
     auto dt_name = opencl_data_type_name(stmt->element_type().ptr_removed());
     emit("__global {} *{} = {} + {};", dt_name, stmt->raw_name(),
-        stmt->base_ptrs[0]->raw_name(), offset);
+         stmt->base_ptrs[0]->raw_name(), offset);
   }
 
   void visit(BitExtractStmt *stmt) override {
-    emit("int {} = (({} >> {}) & ((1 << {}) - 1));",
-         stmt->raw_name(), stmt->input->raw_name(),
-         stmt->bit_begin, stmt->bit_end - stmt->bit_begin);
+    emit("int {} = (({} >> {}) & ((1 << {}) - 1));", stmt->raw_name(),
+         stmt->input->raw_name(), stmt->bit_begin,
+         stmt->bit_end - stmt->bit_begin);
   }
 
   void visit(GetRootStmt *stmt) override {
@@ -417,30 +424,29 @@ class OpenclKernelGen : public IRVisitor {
       input_ptr = root_stmt;
     }
 
-    emit("__global {} *{} = &{}[{}];",
-         opencl_get_node_type_name(stmt->snode), stmt->raw_name(),
-         input_ptr->raw_name(), stmt->input_index->raw_name());
+    emit("__global {} *{} = &{}[{}];", opencl_get_node_type_name(stmt->snode),
+         stmt->raw_name(), input_ptr->raw_name(),
+         stmt->input_index->raw_name());
   }
 
   void visit(GetChStmt *stmt) override {
     auto snode = stmt->output_snode;
     std::string type;
     if (snode->type == SNodeType::place) {
-      emit("__global {} *{} = &{}->{};",
-          opencl_data_type_name(snode->dt), stmt->raw_name(),
-          stmt->input_ptr->raw_name(), snode->get_node_type_name());
+      emit("__global {} *{} = &{}->{};", opencl_data_type_name(snode->dt),
+           stmt->raw_name(), stmt->input_ptr->raw_name(),
+           snode->get_node_type_name());
     } else {
-      emit("__global {} *{} = {}->{};",
-          opencl_get_node_type_name(snode), stmt->raw_name(),
-          stmt->input_ptr->raw_name(), snode->get_node_type_name());
+      emit("__global {} *{} = {}->{};", opencl_get_node_type_name(snode),
+           stmt->raw_name(), stmt->input_ptr->raw_name(),
+           snode->get_node_type_name());
     }
   }
 
   void visit(GlobalLoadStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    emit("{} {} = *{};",
-         opencl_data_type_name(stmt->element_type()), stmt->raw_name(),
-         stmt->ptr->raw_name());
+    emit("{} {} = *{};", opencl_data_type_name(stmt->element_type()),
+         stmt->raw_name(), stmt->ptr->raw_name());
   }
 
   void visit(GlobalStoreStmt *stmt) override {
@@ -474,8 +480,8 @@ class OpenclKernelGen : public IRVisitor {
       emit("{} {} = {}{};", dt_name, dest_name, op, operand_name);
 
     } else if (stmt->op_type == UnaryOpType::sgn) {
-      emit("{} {} = {} > 0 ? 1 : {} < 0 ? -1 : 0;",
-          dt_name, dest_name, operand_name, operand_name);
+      emit("{} {} = {} > 0 ? 1 : {} < 0 ? -1 : 0;", dt_name, dest_name,
+           operand_name, operand_name);
 
     } else {
       emit("{} {} = {}({});", dt_name, dest_name, op, operand_name);
@@ -494,16 +500,15 @@ class OpenclKernelGen : public IRVisitor {
     // floordiv should have been demoted in demote_operations.cpp
     TI_ASSERT(bin->op_type != BinaryOpType::floordiv);
 
-    if (is_real(type) && (bin->op_type == BinaryOpType::min
-          || bin->op_type == BinaryOpType::max))
+    if (is_real(type) && (bin->op_type == BinaryOpType::min ||
+                          bin->op_type == BinaryOpType::max))
       binop = "f" + binop;
 
     if (opencl_is_binary_op_infix(bin->op_type)) {
-
       if (is_comparison(bin->op_type)) {
         // XXX(#577): Taichi uses -1 as true due to LLVM i1...
-        emit("{} {} = -({} {} {});", dt_name, bin_name,
-            lhs_name, binop, rhs_name);
+        emit("{} {} = -({} {} {});", dt_name, bin_name, lhs_name, binop,
+             rhs_name);
 
       } else if (bin->op_type == BinaryOpType::mod) {
         // NOTE: the OpenCL built-in function `fmod()` is a pythonic mod:
@@ -513,8 +518,8 @@ class OpenclKernelGen : public IRVisitor {
              rhs_name, lhs_name, rhs_name);
 
       } else if (bin->op_type == BinaryOpType::truediv) {
-        emit("{} {} = ({}) {} / {};", dt_name, bin_name,
-            dt_name, lhs_name, rhs_name);
+        emit("{} {} = ({}) {} / {};", dt_name, bin_name, dt_name, lhs_name,
+             rhs_name);
 
       } else {
         emit("{} {} = {} {} {};", dt_name, bin_name, lhs_name, binop, rhs_name);
@@ -541,11 +546,11 @@ class OpenclKernelGen : public IRVisitor {
 
         } else {
           emit("{} {} = ({}) pown({}, {});", dt_name, bin_name, dt_name,
-              lhs_name, rhs_name);
+               lhs_name, rhs_name);
         }
       } else {
-        emit("{} {} = ({}) pow(({}) {}, ({}) {});", dt_name,
-            bin_name, dt_name, dt_name, lhs_name, dt_name, rhs_name);
+        emit("{} {} = ({}) pow(({}) {}, ({}) {});", dt_name, bin_name, dt_name,
+             dt_name, lhs_name, dt_name, rhs_name);
       }
 
     } else {
@@ -569,8 +574,8 @@ class OpenclKernelGen : public IRVisitor {
     auto dt_name = opencl_data_type_name(type);
 
     if (is_integral(type)) {
-      emit("{} {} = atomic_{}({}, {});", dt_name, name, op_name,
-          dst_name, src_name);
+      emit("{} {} = atomic_{}({}, {});", dt_name, name, op_name, dst_name,
+           src_name);
 
     } else {
       // https://streamhpc.com/blog/2016-02-09/atomic-operations-for-floats-in-opencl-improved/#:~:text=In%20OpenCL%20there%20is%20only%20atomic_add%20or%20atomic_mul,%28%29.%20Here%20is%20his%20example%20for%20atomic%20add%3A
@@ -623,7 +628,7 @@ bool OpenclProgram::is_opencl_api_available() {
 std::string OpenclProgram::get_header_lines() {
   std::string header_source =
 #include "taichi/backends/opencl/runtime/base.h"
-    ;
+      ;
   return header_source + "\n" + layout_source;
 }
 

@@ -36,8 +36,7 @@ inline std::string opencl_data_type_name(DataType dt) {
     return "double";
   else if (dt->is_primitive(PrimitiveTypeID::u1))
     return "bool";
-  TI_ERROR("Unsupported DataType={} on OpenCL backend",
-           data_type_name(dt));
+  TI_ERROR("Unsupported DataType={} on OpenCL backend", data_type_name(dt));
 }
 
 inline std::string opencl_atomic_op_type_name(AtomicOpType op) {

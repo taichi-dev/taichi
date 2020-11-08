@@ -27,9 +27,10 @@ class OpenclKernel {
   struct Impl;
   std::unique_ptr<Impl> impl;
 
-  OpenclKernel(OpenclProgram *prog, Kernel *kernel,
-      std::vector<OpenclOffloadMeta> const &offloads,
-      std::string const &source);
+  OpenclKernel(OpenclProgram *prog,
+               Kernel *kernel,
+               std::vector<OpenclOffloadMeta> const &offloads,
+               std::string const &source);
   ~OpenclKernel();
 
   void launch(Context *ctx);

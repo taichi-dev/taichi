@@ -176,12 +176,12 @@ class OpenclKernelGen : public IRVisitor {
     if (stmt->const_begin)
       emit("int {}_beg = {};", name, stmt->begin_value);
     else
-      emit("int {}_beg = *(int *)(gtmp + {});", name, stmt->begin_offset);
+      emit("int {}_beg = *(__global int *)(gtmp + {});", name, stmt->begin_offset);
 
     if (stmt->const_end)
       emit("int {}_end = {};", name, stmt->end_value);
     else
-      emit("int {}_end = *(int *)(gtmp + {});", name, stmt->end_offset);
+      emit("int {}_end = *(__global int *)(gtmp + {});", name, stmt->end_offset);
 
     emit("for (int {} = {}_beg + get_global_id(0);", name, name);
     emit("    {} < {}_end; {} += get_global_size(0)) {{", name, name, name);
@@ -189,7 +189,10 @@ class OpenclKernelGen : public IRVisitor {
     emit("}}");
 
     if (stmt->const_begin && stmt->const_end) {
-      return stmt->end_value - stmt->begin_value;
+      if (stmt->end_value > stmt->begin_value)
+        return stmt->end_value - stmt->begin_value;
+      else
+        return 1;
     } else {
       return 4096;  // default global_dim for dynamic range-for
     }

@@ -90,12 +90,7 @@ class OpenclKernelGen : public IRVisitor {
     }
   }
 
-  void visit(OffloadedStmt *stmt) override {
-    auto kernel_name = fmt::format("{}_k{}", kernel->name, offload_count);
-    emit("");
-    emit("__kernel void {}", kernel_name);
-    emit("    ( __global struct Ti_S0root *root");
-    emit("    , __global Ti_i8 *gtmp");
+  void generate_kernel_arguments() {
     for (int i = 0; i < kernel->args.size(); i++) {
       auto dt_name = opencl_data_type_name(kernel->args[i].dt);
       if (kernel->args[i].is_nparray) {
@@ -109,6 +104,15 @@ class OpenclKernelGen : public IRVisitor {
         emit("    , struct Ti_ExtArrMeta arg{}_meta", i);
       }
     }
+  }
+
+  void visit(OffloadedStmt *stmt) override {
+    auto kernel_name = fmt::format("{}_k{}", kernel->name, offload_count);
+    emit("");
+    emit("__kernel void {}", kernel_name);
+    emit("    ( __global struct Ti_S0root *root");
+    emit("    , __global Ti_i8 *gtmp");
+    generate_kernel_arguments();
     emit("    ) {{");
 
     TI_ASSERT(is_top_level);
@@ -140,6 +144,7 @@ class OpenclKernelGen : public IRVisitor {
     auto name = stmt->raw_name();
 
     TI_ASSERT(stmt->const_begin && stmt->const_end);
+
     emit("Ti_i32 {}_beg = {};", name, stmt->begin_value);
     emit("Ti_i32 {}_end = {};", name, stmt->end_value);
 
@@ -148,6 +153,37 @@ class OpenclKernelGen : public IRVisitor {
     //emit(R"(printf("What?\n%llu %llu\n", get_global_id(0), get_global_size(0));)");
     stmt->body->accept(this);
     emit("}}");
+  }
+
+  void visit(WhileControlStmt *stmt) override {
+    emit("if (!{}) break;", stmt->cond->raw_name());
+  }
+
+  void visit(ContinueStmt *stmt) override {
+    emit("continue;");
+  }
+
+  void visit(WhileStmt *stmt) override {
+    emit("while (1) {{");
+    stmt->body->accept(this);
+    emit("}}");
+  }
+
+  void visit(IfStmt *stmt) override {
+    emit("if ({}) {{", stmt->cond->raw_name());
+    if (stmt->true_statements) {
+      stmt->true_statements->accept(this);
+    }
+    if (stmt->false_statements) {
+      emit("}} else {{");
+      stmt->false_statements->accept(this);
+    }
+    emit("}}");
+  }
+
+  void visit(RandStmt *stmt) override {
+    emit("{} {} = Ti_rand_{}();", opencl_data_type_name(stmt->ret_type),
+        stmt->raw_name(), data_type_short_name(stmt->ret_type));
   }
 
   void visit(PrintStmt *stmt) override {
@@ -359,13 +395,16 @@ class OpenclKernelGen : public IRVisitor {
     const auto type = bin->element_type();
     const auto binop = binary_op_type_symbol(bin->op_type);
     if (opencl_is_binary_op_infix(bin->op_type)) {
+
       if (is_comparison(bin->op_type)) {
         // XXX(#577): Taichi uses -1 as true due to LLVM i1...
-        emit("{} {} {} = -({} {} {});", dt_name, bin_name,
+        emit("{} {} = -({} {} {});", dt_name, bin_name,
             lhs_name, binop, rhs_name);
+
       } else if (bin->op_type == BinaryOpType::truediv) {
-        emit("{} {} {} = ({}) {} / {};", dt_name, bin_name,
+        emit("{} {} = ({}) {} / {};", dt_name, bin_name,
             dt_name, lhs_name, rhs_name);
+
       } else if (bin->op_type == BinaryOpType::floordiv) {
         auto lhs_dt_name = data_type_short_name(bin->lhs->element_type());
         if (is_integral(bin->lhs->element_type()) &&
@@ -376,18 +415,22 @@ class OpenclKernelGen : public IRVisitor {
           emit("{} {} = Ti_floordiv_{}({}, {});", dt_name, bin_name,
               lhs_dt_name, lhs_name, rhs_name);
         }
+
       } else {
         emit("{} {} = {} {} {};", dt_name, bin_name, lhs_name, binop, rhs_name);
       }
+
     } else {
-      emit("{} {} = {}({});", dt_name, bin_name, binop, lhs_name, rhs_name);
+      emit("{} {} = {}({}, {});", dt_name, bin_name, binop, lhs_name, rhs_name);
     }
   }
 
   void run() {
+    TI_TRACE("start running OpenCL codegen for {}", kernel->name);
     emit("{}", program->get_header_lines());
     emit("/* Generated OpenCL program of Taichi kernel: {} */", kernel->name);
     kernel->ir->accept(this);
+    TI_TRACE("done running OpenCL codegen for {}", kernel->name);
   }
 
   void lower() {

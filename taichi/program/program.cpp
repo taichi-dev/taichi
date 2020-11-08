@@ -619,6 +619,8 @@ Arch Program::get_snode_accessor_arch() {
     return Arch::cuda;
   } else if (config.arch == Arch::metal) {
     return Arch::metal;
+  } else if (config.arch == Arch::opencl) {
+    return Arch::opencl;
   } else if (config.arch == Arch::cc) {
     return Arch::cc;
   } else {

@@ -333,7 +333,7 @@ class OpenclKernelGen : public IRVisitor {
     TI_ASSERT(stmt->width() == 1);
     std::string offset = "0";
     const auto *argload = stmt->base_ptrs[0]->as<ArgLoadStmt>();
-    const int arg_id = argload->arg_id;
+    int arg_id = argload->arg_id;
     for (int i = 0; i < stmt->indices.size(); i++) {
       auto stride = fmt::format("arg{}_meta.shape[{}]", arg_id, i);
       offset = fmt::format("({} * {} + {})", offset, stride,
@@ -399,16 +399,16 @@ class OpenclKernelGen : public IRVisitor {
 
   void visit(UnaryOpStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    const auto dt_name = opencl_data_type_name(stmt->element_type());
-    const auto operand_name = stmt->operand->raw_name();
-    const auto dest_name = stmt->raw_name();
-    const auto type = stmt->element_type();
-    const auto op = unary_op_type_symbol(stmt->op_type);
+    auto dt_name = opencl_data_type_name(stmt->element_type());
+    auto operand_name = stmt->operand->raw_name();
+    auto dest_name = stmt->raw_name();
+    auto type = stmt->element_type();
+    auto op = unary_op_type_symbol(stmt->op_type);
     if (stmt->op_type == UnaryOpType::cast_value) {
       emit("{} {} = ({}) {};", dt_name, dest_name, dt_name, operand_name);
 
     } else if (stmt->op_type == UnaryOpType::cast_bits) {
-      const auto operand_dt_name =
+      auto operand_dt_name =
           opencl_data_type_name(stmt->operand->element_type());
       emit("union {{ {} bc_src; {} bc_dst; }} {}_bitcast;", operand_dt_name,
            dt_name, dest_name);
@@ -424,12 +424,12 @@ class OpenclKernelGen : public IRVisitor {
 
   void visit(BinaryOpStmt *bin) override {
     TI_ASSERT(bin->width() == 1);
-    const auto dt_name = opencl_data_type_name(bin->element_type());
-    const auto lhs_name = bin->lhs->raw_name();
-    const auto rhs_name = bin->rhs->raw_name();
-    const auto bin_name = bin->raw_name();
-    const auto type = bin->element_type();
-    const auto binop = binary_op_type_symbol(bin->op_type);
+    auto dt_name = opencl_data_type_name(bin->element_type());
+    auto lhs_name = bin->lhs->raw_name();
+    auto rhs_name = bin->rhs->raw_name();
+    auto bin_name = bin->raw_name();
+    auto type = bin->element_type();
+    auto binop = binary_op_type_symbol(bin->op_type);
     if (opencl_is_binary_op_infix(bin->op_type)) {
 
       if (is_comparison(bin->op_type)) {
@@ -459,6 +459,17 @@ class OpenclKernelGen : public IRVisitor {
     } else {
       emit("{} {} = {}({}, {});", dt_name, bin_name, binop, lhs_name, rhs_name);
     }
+  }
+
+  void visit(AtomicOpStmt *stmt) override {
+    auto ret_name = stmt->raw_name();
+    auto dst_name = stmt->dest->raw_name();
+    auto src_name = stmt->val->raw_name();
+    auto op_name = opencl_atomic_op_type_name(stmt->op_type);
+    auto type = stmt->dest->element_type().ptr_removed();
+    auto dt_name = opencl_data_type_name(type);
+    emit("{} {} = atomic_{}({}, {});", dt_name, ret_name, op_name,
+        dst_name, src_name);
   }
 
   void run() {

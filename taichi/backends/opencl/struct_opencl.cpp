@@ -22,7 +22,7 @@ class OpenclLayoutGen {
     size_t size = generate_types(root);
 
     auto source = line_appender.lines();
-    TI_INFO("root buffer (size {}):\n{}", size, source);
+    TI_INFO("root buffer ({} bytes):\n{}", size, source);
     return std::make_tuple(source, size);
   }
 

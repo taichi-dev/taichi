@@ -233,7 +233,8 @@ struct CLBuffer {
     cl_int err = -1;
     buf = clCreateBuffer(ctx->context, type, size, NULL, &err);
     if (err < 0) {
-      TI_ERROR("Failed to create OpenCL buffer: {}", opencl_error(err));
+      TI_ERROR("Failed to create OpenCL buffer of size {}: {}",
+          size, opencl_error(err));
     }
   }
 
@@ -245,8 +246,8 @@ struct CLBuffer {
     cl_int err = clEnqueueWriteBuffer(ctx->cmdqueue, buf, CL_FALSE,
         offset, size, ptr, 0, NULL, NULL);
     if (err < 0) {
-      std::cerr << err << std::endl;
-      TI_ERROR("Failed to write OpenCL buffer: {}", opencl_error(err));
+      TI_ERROR("Failed to write OpenCL buffer offset {} size {}: {}",
+          offset, size, opencl_error(err));
     }
   }
 
@@ -254,12 +255,11 @@ struct CLBuffer {
     cl_int err = clEnqueueReadBuffer(ctx->cmdqueue, buf, CL_TRUE,
         offset, size, ptr, 0, NULL, NULL);
     if (err < 0) {
-      std::cerr << err << std::endl;
-      TI_ERROR("Failed to read OpenCL buffer: {}", opencl_error(err));
+      TI_ERROR("Failed to read OpenCL buffer offset {} size {}: {}",
+          offset, size, opencl_error(err));
     }
   }
 };
-
 
 struct CLProgram {
   CLContext *ctx;
@@ -365,7 +365,8 @@ struct OpenclProgram::Impl {
 
   void allocate_root_buffer(size_t size) {
     root_buf = std::make_unique<CLBuffer>(context.get(), size);
-    gtmp_buf = std::make_unique<CLBuffer>(context.get(), size);
+    gtmp_buf = std::make_unique<CLBuffer>(context.get(),
+        taichi_global_tmp_buffer_size);
   }
 };
 
@@ -434,6 +435,7 @@ struct OpenclKernel::Impl {
     }
 
     if (kernel->rets.size()) {
+      TI_ASSERT(kernel->program.result_buffer);
       prog->impl->gtmp_buf->read(kernel->program.result_buffer,
           kernel->rets.size() * sizeof(uint64_t));
     }

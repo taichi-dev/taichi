@@ -14,6 +14,28 @@ inline std::string opencl_data_type_name(DataType dt) {
   return "Ti_" + data_type_short_name(dt);
 }
 
+inline std::string opencl_atomic_op_type_name(AtomicOpType op) {
+  switch (op) {
+    case AtomicOpType::add:
+      return "add";
+    case AtomicOpType::sub:
+      return "sub";
+    case AtomicOpType::bit_or:
+      return "or";
+    case AtomicOpType::bit_xor:
+      return "xor";
+    case AtomicOpType::bit_and:
+      return "and";
+    case AtomicOpType::max:
+      return "max";
+    case AtomicOpType::min:
+      return "min";
+    default:
+      TI_ERROR("Unsupported AtomicOpType={} on OpenCL backend",
+               atomic_op_type_name(op));
+  }
+}
+
 inline bool opencl_is_binary_op_infix(BinaryOpType op) {
   switch (op) {
     case BinaryOpType::max:

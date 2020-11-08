@@ -13,7 +13,12 @@ from .fuse_test_template import template_fuse_dense_x2y2z, \
 #     template_fuse_reduction(size=10 * 1024**2)
 
 
-@ti.test(require=ti.extension.async_mode, async_mode=True, arch=ti.cpu)
+@ti.test(require=ti.extension.async_mode, async_mode=True,
+         async_opt_fusion=False,
+         async_opt_listgen=False,
+         async_opt_dse=False,
+         async_opt_activation_demotion=False,
+         arch=ti.cpu)
 def test_no_fuse_sigs_mismatch():
     n = 4096
     x = ti.field(ti.i32, shape=(n, ))

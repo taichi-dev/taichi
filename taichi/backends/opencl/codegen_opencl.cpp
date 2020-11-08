@@ -132,6 +132,7 @@ class OpenclKernelGen : public IRVisitor {
     emit("    , __global uchar *gtmp");
     generate_kernel_arguments();
     emit("    ) {{");
+    emit("  ulong seed = get_global_id(0);");  // for RandStmt
 
     TI_ASSERT(is_top_level);
     is_top_level = false;
@@ -217,10 +218,36 @@ class OpenclKernelGen : public IRVisitor {
     emit("}}");
   }
 
+  void make_random_uint(std::string name) {
+    // Java random: https://stackoverflow.com/questions/9912143/how-to-get-a-random-number-in-opencl
+    emit("seed = (seed * 0x5deece66dl + 0xbl) & ((1l << 48) - 1);");
+    // Wang hash: https://software.intel.com/content/www/us/en/develop/articles/parallel-noise-and-random-functions-for-opencl-kernels.html
+    emit("uint {} = seed >> 16;", name);
+	  emit("{} = {} * 1103515245 + 12345;", name, name);
+    emit("{} = 9 * (({} ^ 61) ^ ({} >> 16));", name, name, name);
+	  emit("{} = 0x27d4eb2d * ({} ^ ({} << 4));", name, name, name);
+	  emit("{} ^= {} >> 15;", name, name);
+  }
+
   void visit(RandStmt *stmt) override {  // mockup
-    // https://stackoverflow.com/questions/9912143/how-to-get-a-random-number-in-opencl
-    emit("{} {} = Ti_rand_{}();", opencl_data_type_name(stmt->ret_type),
-        stmt->raw_name(), data_type_short_name(stmt->ret_type));
+    auto name = stmt->raw_name();
+    auto dt_name = opencl_data_type_name(stmt->ret_type);
+
+    if (stmt->ret_type->is_primitive(PrimitiveTypeID::i64)) {
+      make_random_uint(fmt::format("{}_low", name));
+      make_random_uint(fmt::format("{}_high", name));
+      emit("{} {} = ((ulong){}_high << 32) | {}_low;",
+          dt_name, name, name, name);
+
+    } else if (is_integral(stmt->ret_type)) {
+      make_random_uint(fmt::format("{}_uint", name));
+      emit("{} {} = ({}){}_uint;", dt_name, name, dt_name, name);
+
+    } else {
+      make_random_uint(fmt::format("{}_uint", name));
+      emit("{} {} = ({}){}_uint * ({})(1.0 / 4294967296.0);",
+          dt_name, name, dt_name, name, dt_name);
+    }
   }
 
   void visit(PrintStmt *stmt) override {
@@ -326,6 +353,7 @@ class OpenclKernelGen : public IRVisitor {
   }
 
   void visit(ExternalTensorShapeAlongAxisStmt *stmt) override {
+    // https://www.informit.com/articles/article.aspx?p=1732873&seqNum=3
     emit("{} {} = arg{}_shape.s{};", opencl_data_type_name(stmt->element_type()),
         stmt->raw_name(), stmt->arg_id, stmt->axis);
   }

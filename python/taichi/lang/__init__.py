@@ -532,7 +532,7 @@ def is_arch_supported(arch):
 
 
 def supported_archs():
-    archs = [cpu, cuda, metal, opengl, cc]
+    archs = [cpu, cuda, metal, opengl, opencl, cc]
 
     wanted_archs = os.environ.get('TI_WANTED_ARCHS', '')
     want_exclude = wanted_archs.startswith('^')

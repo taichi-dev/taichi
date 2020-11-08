@@ -468,7 +468,8 @@ class OpenclKernelGen : public IRVisitor {
     auto type = bin->element_type();
     auto binop = binary_op_type_symbol(bin->op_type);
 
-    TI_ASSERT(bin->op_type != BinaryOpType::mod);  // should have been demoted
+    // should have been demoted
+    TI_ASSERT(bin->op_type != BinaryOpType::mod);
 
     if (is_real(type) && (bin->op_type == BinaryOpType::min
           || bin->op_type == BinaryOpType::max))
@@ -480,6 +481,13 @@ class OpenclKernelGen : public IRVisitor {
         // XXX(#577): Taichi uses -1 as true due to LLVM i1...
         emit("{} {} = -({} {} {});", dt_name, bin_name,
             lhs_name, binop, rhs_name);
+
+      } else if (bin->op_type == BinaryOpType::mod) {
+        // NOTE: the OpenCL built-in function `fmod()` is a pythonic mod:
+        // https://www.khronos.org/registry/OpenCL/sdk/1.0/docs/man/xhtml/fmod.html
+        // but |BinaryOpType::mod| means a C-style mod in Taichi...
+        emit("{} {} = {} - {} * int({} / {});", dt_name, bin_name, lhs_name,
+             rhs_name, lhs_name, rhs_name);
 
       } else if (bin->op_type == BinaryOpType::truediv) {
         emit("{} {} = ({}) {} / {};", dt_name, bin_name,

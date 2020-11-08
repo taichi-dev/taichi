@@ -337,20 +337,18 @@ struct CLKernel {
     set_arg(index, &buf.buf, sizeof(cl_mem));
   }
 
-  void launch(size_t n_dims, const size_t *grid_dim, const size_t *block_dim) {
+  void launch(size_t n_dims, const size_t *global_dim, const size_t *block_dim) {
     cl_int err = clEnqueueNDRangeKernel(ctx->cmdqueue, kern,
-        n_dims, NULL, grid_dim, block_dim, 0, NULL, NULL);
+        n_dims, NULL, global_dim, block_dim, 0, NULL, NULL);
     if (err < 0) {
-      TI_ERROR("Failed to launch OpenCL kernel {}: {}", name, opencl_error(err));
+      TI_ERROR("Failed to launch OpenCL kernel {} on ({}, {}): {}", name,
+          n_dims ? global_dim[0] : 0, n_dims && block_dim ? block_dim[0] : 0,
+          opencl_error(err));
     }
   }
 
-  void launch(size_t grid_dim, size_t block_dim) {
-    return launch(1, &grid_dim, &block_dim);
-  }
-
-  void launch(size_t grid_dim) {
-    return launch(1, &grid_dim, NULL);
+  void launch(size_t global_dim, size_t block_dim = 0) {
+    return launch(1, &global_dim, block_dim ? &block_dim : NULL);
   }
 };
 
@@ -385,20 +383,19 @@ struct OpenclKernel::Impl {
   OpenclProgram *prog;
 
   std::unique_ptr<CLProgram> program;
-  std::vector<std::unique_ptr<CLKernel>> kernels;
-  std::vector<OpenclOffloadMeta> offload_metas;
+  std::vector<std::tuple<OpenclOffloadMeta, std::unique_ptr<CLKernel>>> kernels;
 
   Kernel *kernel;
 
   Impl(OpenclProgram *prog, Kernel *kernel,
       std::vector<OpenclOffloadMeta> const &offloads,
       std::string const &source)
-    : prog(prog), kernel(kernel), offload_metas(offloads) {
+    : prog(prog), kernel(kernel) {
       program = std::make_unique<CLProgram>(prog->impl->context.get(), source);
 
-      for (auto const &offload: offload_metas) {
-        kernels.push_back(std::make_unique<CLKernel>(
-              program.get(), offload.kernel_name));
+      for (auto const &meta: offloads) {
+        auto ker = std::make_unique<CLKernel>(program.get(), meta.kernel_name);
+        kernels.push_back(std::make_tuple(meta, std::move(ker)));
       }
   }
 
@@ -416,7 +413,7 @@ struct OpenclKernel::Impl {
       }
     }
 
-    for (const auto &ker: kernels) {
+    for (const auto &[meta, ker]: kernels) {
       ker->set_arg_buffer(0, *prog->impl->root_buf);
       ker->set_arg_buffer(1, *prog->impl->gtmp_buf);
 
@@ -433,7 +430,7 @@ struct OpenclKernel::Impl {
         }
       }
 
-      ker->launch(1, 1);
+      ker->launch(meta.global_dim, meta.block_dim);
     }
 
     if (kernel->rets.size()) {

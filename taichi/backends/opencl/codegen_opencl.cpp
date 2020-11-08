@@ -105,8 +105,26 @@ class OpenclKernelGen : public IRVisitor {
     }
   }
 
+  OpenclOffloadMeta make_offload_meta(
+      OffloadedStmt *stmt, std::string kernel_name, size_t global_dim) {
+    OpenclOffloadMeta meta;
+    meta.kernel_name = kernel_name;
+    meta.block_dim = stmt->block_dim;
+    if (stmt->grid_dim != 0) {
+      if (meta.block_dim != 0) {
+        meta.global_dim = stmt->grid_dim * meta.block_dim;
+      } else {
+        meta.global_dim = stmt->grid_dim;
+      }
+    } else {
+        meta.global_dim = global_dim;
+    }
+    return meta;
+  }
+
   void visit(OffloadedStmt *stmt) override {
     auto kernel_name = fmt::format("{}_k{}", kernel->name, offloads.size());
+
     emit("");
     emit("__kernel void {}", kernel_name);
     emit("    ( __global struct Ti_S0root *root");
@@ -116,44 +134,61 @@ class OpenclKernelGen : public IRVisitor {
 
     TI_ASSERT(is_top_level);
     is_top_level = false;
+
+    size_t global_dim = 1;
     if (stmt->task_type == OffloadedStmt::TaskType::serial) {
-      generate_serial_kernel(stmt);
+      global_dim = generate_serial_kernel(stmt);
     } else if (stmt->task_type == OffloadedStmt::TaskType::range_for) {
-      generate_range_for_kernel(stmt);
+      global_dim = generate_range_for_kernel(stmt);
     } else {
       TI_ERROR("Unsupported offload type={} on OpenCL backend",
                stmt->task_name());
     }
+
     is_top_level = true;
 
     emit("}}");
     emit("");
-    OpenclOffloadMeta meta;
-    meta.kernel_name = kernel_name;
-    offloads.push_back(meta);
+
+    offloads.push_back(make_offload_meta(stmt, kernel_name, global_dim));
   }
 
-  void generate_serial_kernel(OffloadedStmt *stmt) {
+  size_t generate_serial_kernel(OffloadedStmt *stmt) {
     emit("  /* serial kernel */");
     stmt->body->accept(this);
+    return 1;
   }
 
-  void generate_range_for_kernel(OffloadedStmt *stmt) {
+  size_t generate_range_for_kernel(OffloadedStmt *stmt) {
     emit("  /* range-for kernel */");
-    ScopedIndent _s(line_appender);
+    size_t global_dim;
+    if (stmt->const_begin && stmt->const_end) {
+      global_dim = stmt->end_value - stmt->begin_value;
+    } else {
+      global_dim = 4096;  // guessed range size for dynamic range-for
+    }
+    emit("  /* suggested global_dim {} */", global_dim);
 
+    ScopedIndent _s(line_appender);
     auto name = stmt->raw_name();
 
-    TI_ASSERT(stmt->const_begin && stmt->const_end);
+    if (stmt->const_begin)
+      emit("Ti_i32 {}_beg = {};", name, stmt->begin_value);
+    else
+      emit("Ti_i32 {}_beg = *(Ti_i32 *)(gtmp + {});", name, stmt->begin_offset);
 
-    emit("Ti_i32 {}_beg = {};", name, stmt->begin_value);
-    emit("Ti_i32 {}_end = {};", name, stmt->end_value);
+    if (stmt->const_end)
+      emit("Ti_i32 {}_end = {};", name, stmt->end_value);
+    else
+      emit("Ti_i32 {}_end = *(Ti_i32 *)(gtmp + {});", name, stmt->end_offset);
 
     emit("for (Ti_i32 {} = {}_beg + (Ti_i32) get_global_id(0);", name, name);
     emit("    {} < {}_end; {} += (Ti_i32) get_global_size(0)) {{", name, name, name);
     //emit(R"(printf("What?\n%llu %llu\n", get_global_id(0), get_global_size(0));)");
     stmt->body->accept(this);
     emit("}}");
+
+    return global_dim;
   }
 
   void visit(WhileControlStmt *stmt) override {

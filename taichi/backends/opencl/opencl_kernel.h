@@ -14,7 +14,8 @@ class OpenclProgram;
 
 struct OpenclOffloadMeta {
   std::string kernel_name;
-  int grid_dim{1};
+  // NOTE: |global_dim| = |grid_dim| * |block_dim|
+  int global_dim{1};
   int block_dim{1};
 };
 

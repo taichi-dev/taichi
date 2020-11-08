@@ -83,7 +83,7 @@ class OpenclKernelGen : public IRVisitor {
   void visit(ArgLoadStmt *stmt) override {
     if (stmt->is_ptr) {
       auto dt_name = opencl_data_type_name(stmt->element_type().ptr_removed());
-      emit("{} *{} = arg{}.arr;", dt_name, stmt->raw_name(), stmt->arg_id);
+      emit("__global {} *{} = arg{};", dt_name, stmt->raw_name(), stmt->arg_id);
     } else {
       auto dt_name = opencl_data_type_name(stmt->element_type());
       emit("{} {} = arg{};", dt_name, stmt->raw_name(), stmt->arg_id);
@@ -97,10 +97,16 @@ class OpenclKernelGen : public IRVisitor {
     emit("    ( __global struct Ti_S0root *root");
     emit("    , __global Ti_i8 *gtmp");
     for (int i = 0; i < kernel->args.size(); i++) {
+      auto dt_name = opencl_data_type_name(kernel->args[i].dt);
       if (kernel->args[i].is_nparray) {
-        emit("    , struct Ti_ExtArr arg{}", i);
+        emit("    , __global {} *arg{}", dt_name, i);
       } else {
-        emit("    , {} arg{}", opencl_data_type_name(kernel->args[i].dt), i);
+        emit("    , {} arg{}", dt_name, i);
+      }
+    }
+    for (int i = 0; i < kernel->args.size(); i++) {
+      if (kernel->args[i].is_nparray) {
+        emit("    , struct Ti_ExtArrMeta arg{}_meta", i);
       }
     }
     emit("    ) {{");
@@ -247,7 +253,7 @@ class OpenclKernelGen : public IRVisitor {
   }
 
   void visit(ExternalTensorShapeAlongAxisStmt *stmt) override {
-    emit("{} {} = arg{}.shape[{}];", opencl_data_type_name(stmt->element_type()),
+    emit("{} {} = arg{}_meta.shape[{}];", opencl_data_type_name(stmt->element_type()),
         stmt->raw_name(), stmt->arg_id, stmt->axis);
   }
 
@@ -257,7 +263,7 @@ class OpenclKernelGen : public IRVisitor {
     const auto *argload = stmt->base_ptrs[0]->as<ArgLoadStmt>();
     const int arg_id = argload->arg_id;
     for (int i = 0; i < stmt->indices.size(); i++) {
-      auto stride = fmt::format("arg{}.shape[{}]", arg_id, i);
+      auto stride = fmt::format("arg{}_meta.shape[{}]", arg_id, i);
       offset = fmt::format("({} * {} + {})", offset, stride,
                            stmt->indices[i]->raw_name());
     }

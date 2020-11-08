@@ -14,8 +14,7 @@ typedef unsigned long long Ti_u64;
 typedef float Ti_f32;
 typedef double Ti_f64;
 
-struct Ti_ExtArr {
-  __global void *arr;
+struct Ti_ExtArrMeta {
   Ti_i32 shape[8];
 };
 

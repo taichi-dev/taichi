@@ -328,11 +328,12 @@ struct CLKernel {
   void set_arg(int index, const void *base, size_t size) {
     cl_int err = clSetKernelArg(kern, index, size, base);
     if (err < 0) {
-      TI_ERROR("Failed to set kernel argument for {}: {}", name, opencl_error(err));
+      TI_ERROR("Failed to set kernel argument {} for {}: {}",
+          index, name, opencl_error(err));
     }
   }
 
-  void set_arg(int index, const CLBuffer &buf) {
+  void set_arg_buffer(int index, const CLBuffer &buf) {
     set_arg(index, &buf.buf, sizeof(cl_mem));
   }
 
@@ -409,28 +410,26 @@ struct OpenclKernel::Impl {
       if (kernel->args[i].is_nparray) {
         auto extr = std::make_unique<CLBuffer>(prog->impl->context.get(),
             kernel->args[i].size);
+        extr->write(reinterpret_cast<void *>(ctx->args[i]), kernel->args[i].size);
         extrs.push_back(std::move(extr));
       }
     }
 
     for (const auto &ker: kernels) {
-      ker->set_arg(0, *prog->impl->root_buf);
-      ker->set_arg(1, *prog->impl->gtmp_buf);
+      ker->set_arg_buffer(0, *prog->impl->root_buf);
+      ker->set_arg_buffer(1, *prog->impl->gtmp_buf);
 
       auto extr_iter = extrs.begin();
       for (int i = 0; i < kernel->args.size(); i++) {
         if (kernel->args[i].is_nparray) {
-          struct OpenclExtArr {
-            cl_mem arr;
-            int shape[8];
-          } extr;
-          extr.arr = (*extr_iter++)->buf;
-          std::memcpy(extr.shape, ctx->extra_args[i], sizeof(int) * 8);
-          ker->set_arg(i + 2, &extr, sizeof(extr));
-          continue;
-        }
+          auto const &extr = *extr_iter++;
+          ker->set_arg_buffer(i + 2, *extr);
+          ker->set_arg(i + 2 + kernel->args.size(),
+              ctx->extra_args[i], sizeof(int) * 8);
 
-        ker->set_arg(i + 2, &ctx->args[i], data_type_size(kernel->args[i].dt));
+        } else {
+          ker->set_arg(i + 2, &ctx->args[i], data_type_size(kernel->args[i].dt));
+        }
       }
 
       ker->launch(1, 1);
@@ -439,6 +438,14 @@ struct OpenclKernel::Impl {
     if (kernel->rets.size()) {
       prog->impl->gtmp_buf->read(kernel->program.result_buffer,
           kernel->rets.size() * sizeof(uint64_t));
+    }
+
+    auto extr_iter = extrs.begin();
+    for (int i = 0; i < kernel->args.size(); i++) {
+      if (kernel->args[i].is_nparray) {
+        auto const &extr = *extr_iter++;
+        extr->read(reinterpret_cast<void *>(ctx->args[i]), kernel->args[i].size);
+      }
     }
   }
 };

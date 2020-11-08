@@ -482,7 +482,8 @@ class KernelGen : public IRVisitor {
       if (is_integral(src_type))
         src_int = is_unsigned(src_type) ? 2 : 1;
 
-      TI_ASSERT_INFO(data_type_size(dst_type) == data_type_size(src_type),
+      TI_ASSERT_INFO(
+          data_type_size(dst_type) == data_type_size(src_type),
           "bit_cast is only supported between data type with same size");
 
       if (dst_int && src_int) {

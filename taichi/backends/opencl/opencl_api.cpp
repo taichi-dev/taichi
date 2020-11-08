@@ -386,18 +386,19 @@ struct OpenclKernel::Impl {
 
   std::unique_ptr<CLProgram> program;
   std::vector<std::unique_ptr<CLKernel>> kernels;
+  std::vector<OpenclOffloadMeta> offload_metas;
 
   Kernel *kernel;
 
   Impl(OpenclProgram *prog, Kernel *kernel,
-      int offload_count, std::string const &source)
-    : prog(prog), kernel(kernel) {
+      std::vector<OpenclOffloadMeta> const &offloads,
+      std::string const &source)
+    : prog(prog), kernel(kernel), offload_metas(offloads) {
       program = std::make_unique<CLProgram>(prog->impl->context.get(), source);
 
-      for (int i = 0; i < offload_count; i++) {
-        auto kernel_name = fmt::format("{}_k{}", kernel->name, i);
+      for (auto const &offload: offload_metas) {
         kernels.push_back(std::make_unique<CLKernel>(
-              program.get(), kernel_name));
+              program.get(), offload.kernel_name));
       }
   }
 
@@ -451,9 +452,9 @@ struct OpenclKernel::Impl {
 };
 
 OpenclKernel::OpenclKernel(OpenclProgram *prog, Kernel *kernel,
-    int offload_count, std::string const &source)
+    std::vector<OpenclOffloadMeta> const &offloads, std::string const &source)
   : name(kernel->name), source(source), impl(std::make_unique<Impl>(prog,
-        kernel, offload_count, source)) {
+        kernel, offloads, source)) {
 }
 
 OpenclKernel::~OpenclKernel() = default;

@@ -38,8 +38,7 @@ class OpenclKernelGen : public IRVisitor {
     this->run();
     auto source = line_appender.lines();
     TI_INFO("[{}]:\n{}", kernel->name, source);
-    return std::make_unique<OpenclKernel>(program, kernel,
-        offload_count, source);
+    return std::make_unique<OpenclKernel>(program, kernel, offloads, source);
   }
 
  private:
@@ -47,7 +46,7 @@ class OpenclKernelGen : public IRVisitor {
   bool is_top_level{true};
   GetRootStmt *root_stmt{nullptr};
 
-  int offload_count{0};
+  std::vector<OpenclOffloadMeta> offloads;
 
   template <typename... Args>
   void emit(std::string f, Args &&... args) {
@@ -107,7 +106,7 @@ class OpenclKernelGen : public IRVisitor {
   }
 
   void visit(OffloadedStmt *stmt) override {
-    auto kernel_name = fmt::format("{}_k{}", kernel->name, offload_count);
+    auto kernel_name = fmt::format("{}_k{}", kernel->name, offloads.size());
     emit("");
     emit("__kernel void {}", kernel_name);
     emit("    ( __global struct Ti_S0root *root");
@@ -129,7 +128,9 @@ class OpenclKernelGen : public IRVisitor {
 
     emit("}}");
     emit("");
-    offload_count++;
+    OpenclOffloadMeta meta;
+    meta.kernel_name = kernel_name;
+    offloads.push_back(meta);
   }
 
   void generate_serial_kernel(OffloadedStmt *stmt) {

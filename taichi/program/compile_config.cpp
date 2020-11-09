@@ -60,9 +60,8 @@ CompileConfig::CompileConfig() {
   device_memory_fraction = 0.0;
 
   // C backend options:
-  cc_compile_cmd = "";
   cc_linkage_cmd = "";
-  cc_extra_options = "";
+  cc_compile_cmd = "";
 }
 
 TLANG_NAMESPACE_END

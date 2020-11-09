@@ -146,11 +146,11 @@ CCFuncEntryType *CCProgram::load_kernel(std::string const &name) {
 }
 
 CCProgram::CCProgram(Program *program) : program(program) {
-  cflags = program->config.cc_compile_flags;
-  lflags = program->config.cc_linkage_flags;
+  compile_cmd = program->config.cc_compile_cmd;
+  linkage_cmd = program->config.cc_linkage_cmd;
 
-  linkage_cmd = "gcc -shared -fPIC -o '{}' '{}'";
-  compile_cmd = "gcc -c -o '{}' '{}'";
+  linkage_cmd = "gcc -shared -o '{}' '{}'";
+  compile_cmd = "gcc -O3 -c -o '{}' '{}'";
 
   init_runtime();
 

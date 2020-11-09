@@ -145,15 +145,39 @@ CCFuncEntryType *CCProgram::load_kernel(std::string const &name) {
   return reinterpret_cast<CCFuncEntryType *>(dll->load_function("Tk_" + name));
 }
 
+void CCProgram::smart_choose_compiler() {
+  if (linkage_cmd.size() == 0) {
+    // automatically search for compiler
+
+    auto compiler = compile_cmd;
+    if (compiler.size() == 0) {
+      if (command_exist("clang")) {
+        compiler = "clang";
+      } else if (command_exist("gcc")) {
+        compiler = "gcc -Wc99-c11-compat -Wc11-c2x-compat";
+      } else {
+        TI_ERROR("[cc] cannot find a vaild compiler! Please manually specify it"
+            " by ti.init(compile_cmd=..., linkage_cmd=...) options");
+      }
+    }
+
+    TI_INFO("[cc] using `{}` as compiler", compiler);
+
+    linkage_cmd = compiler + " -o '{}' '{}'";
+    compile_cmd = compiler + " -c -o '{}' '{}'";
+
+    linkage_cmd += " -shared -fPIC";
+    compile_cmd += " -O3";
+  }
+}
+
 CCProgram::CCProgram(Program *program) : program(program) {
   compile_cmd = program->config.cc_compile_cmd;
   linkage_cmd = program->config.cc_linkage_cmd;
-
-  linkage_cmd = "gcc -shared -o '{}' '{}'";
-  compile_cmd = "gcc -O3 -c -o '{}' '{}'";
+  TI_WARN("{}", compile_cmd);
+  smart_choose_compiler();
 
   init_runtime();
-
   context = std::make_unique<CCContext>();
 }
 

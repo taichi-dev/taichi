@@ -381,7 +381,6 @@ class CCTransformer : public IRVisitor {
     const auto type = stmt->dest->element_type().ptr_removed();
     auto var = define_var(cc_data_type_name(type), stmt->raw_name());
 
-    std::unique_ptr<ScopedIndent> _s;
     emit("{} = *{};", var, dest_ptr);
 
     if (stmt->op_type == AtomicOpType::max ||
@@ -472,7 +471,6 @@ class CCTransformer : public IRVisitor {
 
   void visit(LoopIndexStmt *stmt) override {
     TI_ASSERT(stmt->index == 0);  // TODO: multiple indices
-
     emit("Ti_i32 {} = {};", stmt->raw_name(), stmt->loop->raw_name());
   }
 

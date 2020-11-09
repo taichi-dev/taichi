@@ -47,13 +47,15 @@ class CCProgram {
 
   Program *const program;
 
+  std::string compile_cmd;
+  std::string linkage_cmd;
+
  private:
+  void smart_choose_compiler();
+
   std::vector<char> args_buf;
   std::vector<char> root_buf;
   std::vector<char> gtmp_buf;
-
-  std::string compile_cmd;
-  std::string linkage_cmd;
 
   std::vector<std::unique_ptr<CCKernel>> kernels;
   std::unique_ptr<CCContext> context;

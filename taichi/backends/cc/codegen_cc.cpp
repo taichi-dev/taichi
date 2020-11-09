@@ -341,7 +341,8 @@ class CCTransformer : public IRVisitor {
         emit("{} = ({}) {} / {};", var, dt_name, lhs_name, rhs_name);
 
       } else if (bin->op_type == BinaryOpType::floordiv) {
-        TI_WARN("floordiv called! It should be taken care by demote_operations");
+        TI_WARN(
+            "floordiv called! It should be taken care by demote_operations");
         auto lhs_dt_name = data_type_short_name(bin->lhs->element_type());
         emit("{} = Ti_floordiv_{}({}, {});", var, lhs_dt_name, lhs_name,
              rhs_name);

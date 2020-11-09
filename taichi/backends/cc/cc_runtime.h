@@ -9,8 +9,7 @@ class CCProgram;
 
 class CCRuntime {
  public:
-  CCRuntime(CCProgram *program,
-            std::string const &header)
+  CCRuntime(CCProgram *program, std::string const &header)
       : header(header), program(program) {
   }
 

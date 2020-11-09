@@ -150,8 +150,8 @@ class KernelGen : public IRVisitor {
 #define REGISTER_BUFFER(name, id) do { \
     if (used.int32) DEFINE_LAYOUT(name, id, i32, int); \
     if (used.int64) DEFINE_LAYOUT(name, id, i64, int64_t); \
-    if (used.uint32) DEFINE_LAYOUT(name, id, i32, uint); \
-    if (used.uint64) DEFINE_LAYOUT(name, id, i64, uint64_t); \
+    if (used.uint32) DEFINE_LAYOUT(name, id, u32, uint); \
+    if (used.uint64) DEFINE_LAYOUT(name, id, u64, uint64_t); \
     if (used.float32) DEFINE_LAYOUT(name, id, f32, float); \
     if (used.float64) DEFINE_LAYOUT(name, id, f64, double); \
   } while (0)
@@ -473,36 +473,40 @@ class KernelGen : public IRVisitor {
       emit("{} {} = {}({});", dt_name, stmt->short_name(),
            opengl_data_type_name(stmt->cast_type), stmt->operand->short_name());
     } else if (stmt->op_type == UnaryOpType::cast_bits) {
+      constexpr int FLOATING_POINT = 0;
+      constexpr int SIGNED_INTEGER = 1;
+      constexpr int UNSIGNED_INTEGER = 2;
+
       auto dst_type = stmt->cast_type;
       auto src_type = stmt->operand->element_type();
       auto dst_int = 0;
       if (is_integral(dst_type))
-        dst_int = is_unsigned(dst_type) ? 2 : 1;
+        dst_int = is_unsigned(dst_type) ? UNSIGNED_INTEGER : SIGNED_INTEGER;
       auto src_int = 0;
       if (is_integral(src_type))
-        src_int = is_unsigned(src_type) ? 2 : 1;
+        src_int = is_unsigned(src_type) ? UNSIGNED_INTEGER : SIGNED_INTEGER;
 
       TI_ASSERT_INFO(
           data_type_size(dst_type) == data_type_size(src_type),
           "bit_cast is only supported between data type with same size");
 
-      if (dst_int && src_int) {
+      if (dst_int != FLOATING_POINT && src_int != FLOATING_POINT) {
         emit("{} {} = {}({});", dt_name, stmt->short_name(), dt_name,
              stmt->operand->short_name());
 
-      } else if (dst_int == 0 && src_int == 1) {
+      } else if (dst_int == FLOATING_POINT && src_int == SIGNED_INTEGER) {
         emit("{} {} = intBitsToFloat({});", dt_name, stmt->short_name(),
              stmt->operand->short_name());
 
-      } else if (dst_int == 1 && src_int == 0) {
+      } else if (dst_int == SIGNED_INTEGER && src_int == FLOATING_POINT) {
         emit("{} {} = floatBitsToInt({});", dt_name, stmt->short_name(),
              stmt->operand->short_name());
 
-      } else if (dst_int == 0 && src_int == 2) {
+      } else if (dst_int == FLOATING_POINT && src_int == UNSIGNED_INTEGER) {
         emit("{} {} = uintBitsToFloat({});", dt_name, stmt->short_name(),
              stmt->operand->short_name());
 
-      } else if (dst_int == 2 && src_int == 0) {
+      } else if (dst_int == UNSIGNED_INTEGER && src_int == FLOATING_POINT) {
         emit("{} {} = floatBitsToUint({});", dt_name, stmt->short_name(),
              stmt->operand->short_name());
 
@@ -814,8 +818,6 @@ class KernelGen : public IRVisitor {
     if (used_tls) {
       auto tls_size = stmt->tls_size;
       // TODO(k-ye): support 'cursor' in LineAppender:
-
-      // if (used.int32)
       emit("int _tls_i32_[{}];", (tls_size + 3) / 4);
       if (used.int64)
         emit("int64_t _tls_i64_[{}];", (tls_size + 7) / 8);
@@ -823,7 +825,6 @@ class KernelGen : public IRVisitor {
         emit("int _tls_u32_[{}];", (tls_size + 3) / 4);
       if (used.uint64)
         emit("int64_t _tls_u64_[{}];", (tls_size + 7) / 8);
-      // if (used.float32)
       emit("float _tls_f32_[{}];", (tls_size + 3) / 4);
       if (used.float64)
         emit("double _tls_f64_[{}];", (tls_size + 7) / 8);

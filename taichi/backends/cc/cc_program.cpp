@@ -167,7 +167,7 @@ void CCProgram::smart_choose_compiler() {
     compile_cmd = compiler + " -c -o '{}' '{}'";
 
     linkage_cmd += " -shared -fPIC";
-    compile_cmd += " -O3";
+    compile_cmd += " -O3 -fPIC";
   }
 }
 

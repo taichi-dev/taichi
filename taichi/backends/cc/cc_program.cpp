@@ -156,7 +156,8 @@ void CCProgram::smart_choose_compiler() {
       } else if (command_exist("gcc")) {
         compiler = "gcc -Wc99-c11-compat -Wc11-c2x-compat";
       } else {
-        TI_ERROR("[cc] cannot find a vaild compiler! Please manually specify it"
+        TI_ERROR(
+            "[cc] cannot find a vaild compiler! Please manually specify it"
             " by ti.init(compile_cmd=..., linkage_cmd=...) options");
       }
     }

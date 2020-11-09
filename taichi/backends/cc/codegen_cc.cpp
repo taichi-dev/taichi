@@ -30,7 +30,6 @@ class CCTransformer : public IRVisitor {
   GetRootStmt *root_stmt;
 
   bool omp_enabled{false};
-  bool omp_strict_atomics{true};
 
  public:
   CCTransformer(Kernel *kernel, CCLayout *layout)

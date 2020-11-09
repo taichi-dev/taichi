@@ -51,10 +51,15 @@ class CCProgram {
   std::vector<char> args_buf;
   std::vector<char> root_buf;
   std::vector<char> gtmp_buf;
+
+  std::string compile_cmd;
+  std::string linkage_cmd;
+
   std::vector<std::unique_ptr<CCKernel>> kernels;
   std::unique_ptr<CCContext> context;
   std::unique_ptr<CCRuntime> runtime;
   std::unique_ptr<CCLayout> layout;
+
   std::unique_ptr<DynamicLoader> dll;
   std::string dll_path;
   bool need_relink{true};

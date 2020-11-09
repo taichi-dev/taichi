@@ -29,7 +29,7 @@ void CCKernel::compile() {
                           << program->get_layout()->source << "\n"
                           << source;
   TI_DEBUG("[cc] compiling [{}] -> [{}]:\n{}\n", name, obj_path, source);
-  execute(program->program->config.cc_compile_cmd, obj_path, src_path);
+  execute(program->compile_cmd, obj_path, src_path);
 }
 
 void CCKernel::launch(Context *ctx) {
@@ -64,10 +64,10 @@ size_t CCLayout::compile() {
                           << "}\n";
 
   TI_DEBUG("[cc] compiling root struct -> [{}]:\n{}\n", obj_path, source);
-  execute(program->program->config.cc_compile_cmd, obj_path, src_path);
+  execute(program->compile_cmd, obj_path, src_path);
 
   TI_DEBUG("[cc] linking root struct object [{}] -> [{}]", obj_path, dll_path);
-  execute(program->program->config.cc_link_cmd, dll_path, obj_path);
+  execute(program->linkage_cmd, dll_path, obj_path);
 
   TI_DEBUG("[cc] loading root struct object: {}", dll_path);
   DynamicLoader dll(dll_path);
@@ -94,7 +94,7 @@ void CCProgram::relink() {
 
   TI_DEBUG("[cc] linking shared object [{}] with [{}]", dll_path,
            fmt::join(objects, "] ["));
-  execute(program->config.cc_link_cmd, dll_path, fmt::join(objects, "' '"));
+  execute(linkage_cmd, dll_path, fmt::join(objects, "' '"));
 
   dll = nullptr;
   TI_DEBUG("[cc] loading shared object: {}", dll_path);
@@ -146,6 +146,12 @@ CCFuncEntryType *CCProgram::load_kernel(std::string const &name) {
 }
 
 CCProgram::CCProgram(Program *program) : program(program) {
+  cflags = program->config.cc_compile_flags;
+  lflags = program->config.cc_linkage_flags;
+
+  linkage_cmd = "gcc -shared -fPIC -o '{}' '{}'";
+  compile_cmd = "gcc -c -o '{}' '{}'";
+
   init_runtime();
 
   context = std::make_unique<CCContext>();

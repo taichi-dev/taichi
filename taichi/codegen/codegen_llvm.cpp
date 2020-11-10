@@ -209,6 +209,10 @@ std::unique_ptr<RuntimeObject> CodeGenLLVM::emit_struct_meta_object(
     meta =
         std::make_unique<RuntimeObject>("BitmaskedMeta", this, builder.get());
     emit_struct_meta_base("Bitmasked", meta->ptr, snode);
+  } else if (snode->type == SNodeType::bit_array) {
+    meta =
+        std::make_unique<RuntimeObject>("BitArrayMeta", this, builder.get());
+    emit_struct_meta_base("BitArray", meta->ptr, snode);
   } else {
     TI_P(snode_type_name(snode->type));
     TI_NOT_IMPLEMENTED;
@@ -1165,6 +1169,8 @@ std::string CodeGenLLVM::get_runtime_snode_name(SNode *snode) {
     return "Bitmasked";
   } else if (snode->type == SNodeType::bit_struct) {
     return "BitStruct";
+  } else if (snode->type == SNodeType::bit_array) {
+    return "BitArray";
   } else {
     TI_P(snode_type_name(snode->type));
     TI_NOT_IMPLEMENTED
@@ -1251,6 +1257,9 @@ void CodeGenLLVM::visit(SNodeLookupStmt *stmt) {
                           {llvm_val[stmt->input_index]});
   } else if (snode->type == SNodeType::bit_struct) {
     llvm_val[stmt] = parent;
+  } else if (snode->type == SNodeType::bit_array) {
+    llvm_val[stmt] = call(snode, llvm_val[stmt->input_snode], "lookup_element",
+                          {llvm_val[stmt->input_index]});
   } else {
     TI_INFO(snode_type_name(snode->type));
     TI_NOT_IMPLEMENTED

@@ -2,16 +2,27 @@ import taichi as ti
 
 
 def test_simple_array():
-    ti.init(arch=ti.cpu, print_ir=True)
+    ti.init(arch=ti.cpu, print_ir=True, cfg_optimization=False)
     ci1 = ti.type_factory_.get_custom_int_type(1, True)
 
     x = ti.field(dtype=ci1)
 
     ti.root._bit_array(ti.i, 32, num_bits=32).place(x)
 
-    ti.get_runtime().print_snode_tree()
     ti.get_runtime().materialize()
-    ti.get_runtime().print_snode_tree()
+
+    @ti.kernel
+    def set_val():
+        for i in range(32):
+            x[i] = 0
+
+    @ti.kernel
+    def verify_val():
+        for i in range(32):
+            assert x[i] == 0
+
+    set_val()
+    verify_val()
 
 
 def test_2D_array():
@@ -27,4 +38,4 @@ def test_2D_array():
     ti.get_runtime().print_snode_tree()
 
 
-test_2D_array()
+test_simple_array()

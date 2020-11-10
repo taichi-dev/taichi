@@ -494,19 +494,23 @@ class KernelGen : public IRVisitor {
         emit("{} {} = {}({});", dt_name, stmt->short_name(), dt_name,
              stmt->operand->short_name());
 
-      } else if (dst_type_id == FLOATING_POINT && src_type_id == SIGNED_INTEGER) {
+      } else if (dst_type_id == FLOATING_POINT &&
+                 src_type_id == SIGNED_INTEGER) {
         emit("{} {} = intBitsToFloat({});", dt_name, stmt->short_name(),
              stmt->operand->short_name());
 
-      } else if (dst_type_id == SIGNED_INTEGER && src_type_id == FLOATING_POINT) {
+      } else if (dst_type_id == SIGNED_INTEGER &&
+                 src_type_id == FLOATING_POINT) {
         emit("{} {} = floatBitsToInt({});", dt_name, stmt->short_name(),
              stmt->operand->short_name());
 
-      } else if (dst_type_id == FLOATING_POINT && src_type_id == UNSIGNED_INTEGER) {
+      } else if (dst_type_id == FLOATING_POINT &&
+                 src_type_id == UNSIGNED_INTEGER) {
         emit("{} {} = uintBitsToFloat({});", dt_name, stmt->short_name(),
              stmt->operand->short_name());
 
-      } else if (dst_type_id == UNSIGNED_INTEGER && src_type_id == FLOATING_POINT) {
+      } else if (dst_type_id == UNSIGNED_INTEGER &&
+                 src_type_id == FLOATING_POINT) {
         emit("{} {} = floatBitsToUint({});", dt_name, stmt->short_name(),
              stmt->operand->short_name());
 

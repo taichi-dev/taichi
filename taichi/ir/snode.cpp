@@ -25,11 +25,13 @@ SNode &SNode::insert_children(SNodeType t) {
   TI_ASSERT(t != SNodeType::root);
 
   auto new_ch = std::make_unique<SNode>(depth + 1, t);
-  new_ch->is_path_all_dense = (is_path_all_dense && ((t == SNodeType::dense) ||
-                                                     (t == SNodeType::place)));
+  new_ch->is_path_all_dense = (is_path_all_dense && !new_ch->need_activation());
   ch.push_back(std::move(new_ch));
-  // Note: |new_ch->parent| will not be set until structural nodes are compiled!
-  // (But why..?)
+
+  // Note: |new_ch->parent| will not be set (or well-defined) until structural
+  // nodes are compiled! This is because the structure compiler may modify the
+  // SNode tree during compilation.
+
   return *ch.back();
 }
 
@@ -291,6 +293,12 @@ void SNode::set_index_offsets(std::vector<int> index_offsets_) {
   TI_ASSERT(!index_offsets_.empty());
   TI_ASSERT(type == SNodeType::place);
   this->index_offsets = index_offsets_;
+}
+
+// TODO: rename to is_sparse?
+bool SNode::need_activation() const {
+  return type == SNodeType::pointer || type == SNodeType::hash ||
+         type == SNodeType::bitmasked || type == SNodeType::dynamic;
 }
 
 TLANG_NAMESPACE_END

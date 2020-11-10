@@ -479,34 +479,34 @@ class KernelGen : public IRVisitor {
 
       auto dst_type = stmt->cast_type;
       auto src_type = stmt->operand->element_type();
-      auto dst_int = 0;
+      auto dst_type_id = FLOATING_POINT;
       if (is_integral(dst_type))
-        dst_int = is_unsigned(dst_type) ? UNSIGNED_INTEGER : SIGNED_INTEGER;
-      auto src_int = 0;
+        dst_type_id = is_unsigned(dst_type) ? UNSIGNED_INTEGER : SIGNED_INTEGER;
+      auto src_type_id = FLOATING_POINT;
       if (is_integral(src_type))
-        src_int = is_unsigned(src_type) ? UNSIGNED_INTEGER : SIGNED_INTEGER;
+        src_type_id = is_unsigned(src_type) ? UNSIGNED_INTEGER : SIGNED_INTEGER;
 
       TI_ASSERT_INFO(
           data_type_size(dst_type) == data_type_size(src_type),
           "bit_cast is only supported between data type with same size");
 
-      if (dst_int != FLOATING_POINT && src_int != FLOATING_POINT) {
+      if (dst_type_id != FLOATING_POINT && src_type_id != FLOATING_POINT) {
         emit("{} {} = {}({});", dt_name, stmt->short_name(), dt_name,
              stmt->operand->short_name());
 
-      } else if (dst_int == FLOATING_POINT && src_int == SIGNED_INTEGER) {
+      } else if (dst_type_id == FLOATING_POINT && src_type_id == SIGNED_INTEGER) {
         emit("{} {} = intBitsToFloat({});", dt_name, stmt->short_name(),
              stmt->operand->short_name());
 
-      } else if (dst_int == SIGNED_INTEGER && src_int == FLOATING_POINT) {
+      } else if (dst_type_id == SIGNED_INTEGER && src_type_id == FLOATING_POINT) {
         emit("{} {} = floatBitsToInt({});", dt_name, stmt->short_name(),
              stmt->operand->short_name());
 
-      } else if (dst_int == FLOATING_POINT && src_int == UNSIGNED_INTEGER) {
+      } else if (dst_type_id == FLOATING_POINT && src_type_id == UNSIGNED_INTEGER) {
         emit("{} {} = uintBitsToFloat({});", dt_name, stmt->short_name(),
              stmt->operand->short_name());
 
-      } else if (dst_int == UNSIGNED_INTEGER && src_int == FLOATING_POINT) {
+      } else if (dst_type_id == UNSIGNED_INTEGER && src_type_id == FLOATING_POINT) {
         emit("{} {} = floatBitsToUint({});", dt_name, stmt->short_name(),
              stmt->operand->short_name());
 

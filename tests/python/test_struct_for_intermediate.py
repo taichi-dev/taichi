@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.test(demote_dense_struct_fors=False)
+@ti.test(require=ti.extension.sparse, demote_dense_struct_fors=False)
 def test_nested():
     x = ti.field(ti.i32)
 

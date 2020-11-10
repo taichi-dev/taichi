@@ -210,8 +210,7 @@ std::unique_ptr<RuntimeObject> CodeGenLLVM::emit_struct_meta_object(
         std::make_unique<RuntimeObject>("BitmaskedMeta", this, builder.get());
     emit_struct_meta_base("Bitmasked", meta->ptr, snode);
   } else if (snode->type == SNodeType::bit_array) {
-    meta =
-        std::make_unique<RuntimeObject>("BitArrayMeta", this, builder.get());
+    meta = std::make_unique<RuntimeObject>("BitArrayMeta", this, builder.get());
     emit_struct_meta_base("BitArray", meta->ptr, snode);
   } else {
     TI_P(snode_type_name(snode->type));

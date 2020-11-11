@@ -1257,8 +1257,24 @@ void CodeGenLLVM::visit(SNodeLookupStmt *stmt) {
   } else if (snode->type == SNodeType::bit_struct) {
     llvm_val[stmt] = parent;
   } else if (snode->type == SNodeType::bit_array) {
-    llvm_val[stmt] = call(snode, llvm_val[stmt->input_snode], "lookup_element",
-                          {llvm_val[stmt->input_index]});
+    // TODO: make bit_ptr construct an utility function
+    auto struct_type = llvm::StructType::get(
+        *llvm_context, {llvm::Type::getInt8PtrTy(*llvm_context),
+                        llvm::Type::getInt32Ty(*llvm_context)});
+    auto bit_ptr_struct = create_entry_block_alloca(struct_type);
+    auto byte_ptr =
+        builder->CreateBitCast(llvm_val[stmt->input_snode],
+                               llvm::PointerType::getInt8PtrTy(*llvm_context));
+    builder->CreateStore(
+        byte_ptr, builder->CreateGEP(bit_ptr_struct, {tlctx->get_constant(0), tlctx->get_constant(0)}));
+    auto element_offset = snode->dt.get_ptr()->as<BitArrayType>()->get_element_offset();
+    auto offset = tlctx->get_constant(element_offset);
+    offset = builder->CreateMul(offset, llvm_val[stmt->input_index]);
+    builder->CreateStore(
+        tlctx->get_constant(offset),
+        builder->CreateGEP(bit_ptr_struct,
+                           {tlctx->get_constant(0), tlctx->get_constant(1)}));
+    llvm_val[stmt] = bit_ptr_struct;
   } else {
     TI_INFO(snode_type_name(snode->type));
     TI_NOT_IMPLEMENTED
@@ -1266,7 +1282,7 @@ void CodeGenLLVM::visit(SNodeLookupStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(GetChStmt *stmt) {
-  if (stmt->output_snode->is_bit_level) {
+  if (stmt->output_snode->is_bit_level && stmt->output_snode->type == SNodeType::bit_struct) {
     // 1. create bit pointer struct
     // struct bit_pointer {
     //    i8* byte_ptr;

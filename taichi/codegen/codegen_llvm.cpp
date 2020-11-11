@@ -1305,9 +1305,8 @@ void CodeGenLLVM::visit(SNodeLookupStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(GetChStmt *stmt) {
-  if (stmt->output_snode->type == SNodeType::bit_array) {
+  if (stmt->input_snode->type == SNodeType::bit_array) {
     llvm_val[stmt] = llvm_val[stmt->input_ptr];
-    return;
   } else if (stmt->ret_type->as<PointerType>()->is_bit_pointer()) {
     auto bit_struct = stmt->input_snode->dt.get_ptr()->cast<BitStructType>();
     auto bit_offset = bit_struct->get_member_bit_offset(

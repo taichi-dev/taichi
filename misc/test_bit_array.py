@@ -3,7 +3,7 @@ import taichi as ti
 
 def test_simple_array():
     ti.init(arch=ti.cpu, print_ir=True, cfg_optimization=False)
-    ci1 = ti.type_factory_.get_custom_int_type(1, True)
+    ci1 = ti.type_factory_.get_custom_int_type(1, False)
 
     x = ti.field(dtype=ci1)
 

@@ -29,7 +29,7 @@ Advanced features of Taichi include [spatially sparse computing](https://taichi.
 <a href="https://github.com/taichi-dev/taichi/blob/master/examples/sdf_renderer.py"><img src="https://github.com/taichi-dev/public_files/raw/master/taichi/sdf_renderer.jpg" height="192px"></a>
 <a href="https://github.com/taichi-dev/taichi/blob/master/examples/euler.py"><img src="https://github.com/taichi-dev/public_files/raw/master/taichi/euler.gif" height="192px"></a>
 
-## Installation [![Downloads](https://pepy.tech/badge/taichi/month)](https://pepy.tech/project/taichi/month)
+## Installation [![Downloads](https://pepy.tech/badge/taichi)](https://pepy.tech/project/taichi)
 
 ```bash
 python3 -m pip install taichi
@@ -40,7 +40,7 @@ python3 -m pip install taichi
 Please build from source for other configurations (e.g., your CPU is ARM, or you want to try out our experimental C backend).
 
 **Note:**
- - Starting April 13 2020 (v0.5.12), we release the Python package [`taichi`](https://pypi.org/project/taichi/) instead of [`taichi-nightly`](https://pypi.org/project/taichi-nightly/). Now this PyPI package includes CPU, CUDA 10/11, Metal, and OpenGL support.
+ - The PyPI package supports x64 CPU, CUDA 10/11, Metal, and OpenGL Compute Shader backends.
  - On Ubuntu 19.04+, please `sudo apt install libtinfo5`.
  - On Windows, please install [Microsoft Visual C++ Redistributable](https://aka.ms/vs/16/release/vc_redist.x64.exe) if you haven't.
  - [[All releases]](https://github.com/taichi-dev/taichi/releases)

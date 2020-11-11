@@ -1295,7 +1295,10 @@ void CodeGenLLVM::visit(SNodeLookupStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(GetChStmt *stmt) {
-  if (stmt->ret_type->as<PointerType>()->is_bit_pointer()) {
+  if (stmt->output_snode->type == SNodeType::bit_array) {
+    llvm_val[stmt] = llvm_val[stmt->input_ptr];
+    return;
+  } else if (stmt->ret_type->as<PointerType>()->is_bit_pointer()) {
     // 1. create bit pointer struct
     // struct bit_pointer {
     //    i8* byte_ptr;

@@ -230,7 +230,7 @@ class BitArrayType : public Type {
       : physical_type_(physical_type),
         element_type_(element_type_),
         num_elements_(num_elements_) {
-    // TODO: better
+    // TODO: avoid assertion?
     TI_ASSERT(element_type_->is<CustomIntType>());
     element_offset_ = element_type_->as<CustomIntType>()->get_num_bits();
   }

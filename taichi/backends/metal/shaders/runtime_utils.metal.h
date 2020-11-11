@@ -30,6 +30,8 @@ struct Runtime {
   SNodeMeta *snode_metas = nullptr;
   SNodeExtractors *snode_extractors = nullptr;
   ListManagerData *snode_lists = nullptr;
+  NodeManagerData *snode_allocators = nullptr;
+  NodeManagerData::ElemIndex *ambient_indices = nullptr;
   uint32_t *rand_seeds = nullptr;
 };
 
@@ -204,19 +206,21 @@ STR(
     // * init(), instead of doing initiliaztion in the constructor.
     class SNodeRep_dense {
      public:
-      void init(device byte *addr) {
-        addr_ = addr;
-      }
+      void init(device byte * addr) { addr_ = addr; }
 
       inline device byte *addr() {
         return addr_;
       }
 
-      inline bool is_active(int) { return true; }
+      inline bool is_active(int) {
+        return true;
+      }
 
-      inline void activate(int) {}
+      inline void activate(int) {
+      }
 
-      inline void deactivate(int) {}
+      inline void deactivate(int) {
+      }
 
      private:
       device byte *addr_ = nullptr;
@@ -228,7 +232,7 @@ STR(
      public:
       constant static constexpr int kBitsPerMask = (sizeof(uint32_t) * 8);
 
-      void init(device byte *addr, int meta_offset) {
+      void init(device byte * addr, int meta_offset) {
         addr_ = addr;
         meta_offset_ = meta_offset;
       }
@@ -267,7 +271,7 @@ STR(
 
     class SNodeRep_dynamic {
      public:
-      void init(device byte *addr, int meta_offset) {
+      void init(device byte * addr, int meta_offset) {
         addr_ = addr;
         meta_offset_ = meta_offset;
       }
@@ -332,7 +336,9 @@ STR(
         return nm_.get(nm_idx);
       }
 
-      inline bool is_active(int i) { return is_active(addr_, i); }
+      inline bool is_active(int i) {
+        return is_active(addr_, i);
+      }
 
       void activate(int i) {
         device auto *nm_idx_ptr = to_nodemgr_idx_ptr(addr_, i);
@@ -404,6 +410,8 @@ STR(
         SNodeRep_bitmasked rep;
         rep.init(addr, /*meta_offset=*/meta.num_slots * meta.element_stride);
         return rep.is_active(i);
+      } else if (meta.type == SNodeMeta::Pointer) {
+        return SNodeRep_pointer::is_active(addr, i);
       }
       return false;
     }
@@ -424,8 +432,14 @@ STR(
     [[maybe_unused]] device byte *mtl_lgen_snode_addr(
         thread const ListgenElement &lgen, device byte *root_addr,
         device Runtime *rtm, device MemoryAllocator *mem_alloc) {
-      // Placeholder impl
-      return root_addr + lgen.mem_offset;
+      if (lgen.in_root_buffer()) {
+        return root_addr + lgen.mem_offset;
+      }
+      NodeManager nm;
+      nm.nm_data = (rtm->snode_allocators + lgen.belonged_nodemgr.id);
+      nm.mem_alloc = mem_alloc;
+      device byte *addr = nm.get(lgen.belonged_nodemgr.elem_idx);
+      return addr + lgen.mem_offset;
     })
 METAL_END_RUNTIME_UTILS_DEF
 // clang-format on

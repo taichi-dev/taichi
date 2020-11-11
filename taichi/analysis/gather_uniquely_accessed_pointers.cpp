@@ -166,6 +166,7 @@ class UniquelyAccessedSNodeSearcher : public BasicStmtVisitor {
 namespace irpass::analysis {
 std::unordered_map<SNode *, GlobalPtrStmt *> gather_uniquely_accessed_pointers(
     IRNode *root) {
+  // TODO: What about SNodeOpStmts?
   return UniquelyAccessedSNodeSearcher::run(root);
 }
 }  // namespace irpass::analysis

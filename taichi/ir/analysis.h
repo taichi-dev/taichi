@@ -2,6 +2,7 @@
 
 #include "taichi/ir/ir.h"
 #include <atomic>
+#include <optional>
 #include <unordered_set>
 #include <unordered_map>
 
@@ -80,10 +81,29 @@ std::vector<Stmt *> get_store_destination(Stmt *store_stmt);
 bool has_store_or_atomic(IRNode *root, const std::vector<Stmt *> &vars);
 std::pair<bool, Stmt *> last_store_or_atomic(IRNode *root, Stmt *var);
 bool maybe_same_address(Stmt *var1, Stmt *var2);
-bool same_statements(IRNode *root1, IRNode *root2);
-bool same_value(Stmt *stmt1, Stmt *stmt2);
+/** Test if root1 and root2 are the same, i.e., have the same type,
+ *  the same operands, the same fields, and the same containing statements.
+ *
+ *  @param id_map
+ *    If id_map is std::nullopt by default, two operands are considered
+ *    the same if they have the same id and do not belong to either root,
+ *    or they belong to root1 and root2 at the same position in the roots.
+ *    Otherwise, this function also recursively check the operands until
+ *    ids in the id_map are reached.
+ */
+bool same_statements(
+    IRNode *root1,
+    IRNode *root2,
+    const std::optional<std::unordered_map<int, int>> &id_map = std::nullopt);
+bool same_value(
+    Stmt *stmt1,
+    Stmt *stmt2,
+    const std::optional<std::unordered_map<int, int>> &id_map = std::nullopt);
 DiffRange value_diff_loop_index(Stmt *stmt, Stmt *loop, int index_id);
 std::pair<bool, int> value_diff_ptr_index(Stmt *val1, Stmt *val2);
+std::unordered_set<Stmt *> constexpr_prop(
+    Block *block,
+    std::function<bool(Stmt *)> is_const_seed);
 void verify(IRNode *root);
 
 }  // namespace irpass::analysis

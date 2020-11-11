@@ -25,11 +25,13 @@ SNode &SNode::insert_children(SNodeType t) {
   TI_ASSERT(t != SNodeType::root);
 
   auto new_ch = std::make_unique<SNode>(depth + 1, t);
-  new_ch->is_path_all_dense = (is_path_all_dense && ((t == SNodeType::dense) ||
-                                                     (t == SNodeType::place)));
+  new_ch->is_path_all_dense = (is_path_all_dense && !new_ch->need_activation());
   ch.push_back(std::move(new_ch));
-  // Note: |new_ch->parent| will not be set until structural nodes are compiled!
-  // (But why..?)
+
+  // Note: |new_ch->parent| will not be set (or well-defined) until structural
+  // nodes are compiled! This is because the structure compiler may modify the
+  // SNode tree during compilation.
+
   return *ch.back();
 }
 
@@ -101,6 +103,15 @@ SNode &SNode::bit_struct(int num_bits) {
   return snode;
 }
 
+SNode &SNode::bit_array(const std::vector<Index> &indices,
+                        const std::vector<int> &sizes,
+                        int bits) {
+  auto &snode = create_node(indices, sizes, SNodeType::bit_array);
+  snode.physical_type =
+      TypeFactory::get_instance().get_primitive_int_type(bits, false);
+  return snode;
+}
+
 void SNode::lazy_grad() {
   if (this->type == SNodeType::place)
     return;
@@ -143,6 +154,18 @@ SNode *SNode::get_grad() const {
   return expr.cast<GlobalVariableExpression>()
       ->adjoint.cast<GlobalVariableExpression>()
       ->snode;
+}
+
+SNode *SNode::get_least_sparse_ancestor() const {
+  if (is_path_all_dense) {
+    return nullptr;
+  }
+  auto *result = const_cast<SNode *>(this);
+  while (!result->need_activation()) {
+    result = result->parent;
+    TI_ASSERT(result);
+  }
+  return result;
 }
 
 // for float and double
@@ -270,6 +293,12 @@ void SNode::set_index_offsets(std::vector<int> index_offsets_) {
   TI_ASSERT(!index_offsets_.empty());
   TI_ASSERT(type == SNodeType::place);
   this->index_offsets = index_offsets_;
+}
+
+// TODO: rename to is_sparse?
+bool SNode::need_activation() const {
+  return type == SNodeType::pointer || type == SNodeType::hash ||
+         type == SNodeType::bitmasked || type == SNodeType::dynamic;
 }
 
 TLANG_NAMESPACE_END

@@ -31,8 +31,8 @@ class CurrentKernelGuard {
 }  // namespace
 
 Kernel::Kernel(Program &program,
-               std::function<void()> func,
-               std::string primal_name,
+               const std::function<void()> &func,
+               const std::string &primal_name,
                bool grad)
     : program(program), lowered(false), grad(grad) {
   program.initialize_device_llvm_context();
@@ -43,6 +43,9 @@ Kernel::Kernel(Program &program,
   ir = taichi::lang::context->get_root();
 
   {
+    // Note: this is NOT a mutex. If we want to call Kernel::Kernel()
+    // concurrently, we need to lock this block of code together with
+    // taichi::lang::context with a mutex.
     CurrentKernelGuard _(program, this);
     program.start_function_definition(this);
     func();
@@ -205,7 +208,13 @@ void Kernel::LaunchContextBuilder::set_arg_int(int i, int64 d) {
     ctx_->set_arg(i, (float32)d);
   } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
     ctx_->set_arg(i, (float64)d);
+  } else if (auto cit = dt->cast<CustomIntType>()) {
+    if (cit->get_is_signed())
+      ctx_->set_arg(i, (int32)d);
+    else
+      ctx_->set_arg(i, (uint32)d);
   } else {
+    TI_INFO(dt->to_string());
     TI_NOT_IMPLEMENTED
   }
 }
@@ -295,6 +304,11 @@ int64 Kernel::get_ret_int(int i) {
     return (int64)get_current_program().fetch_result<float32>(i);
   } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
     return (int64)get_current_program().fetch_result<float64>(i);
+  } else if (auto cit = dt->cast<CustomIntType>()) {
+    if (cit->get_is_signed())
+      return (int64)get_current_program().fetch_result<int32>(i);
+    else
+      return (int64)get_current_program().fetch_result<uint32>(i);
   } else {
     TI_NOT_IMPLEMENTED
   }

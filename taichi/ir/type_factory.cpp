@@ -28,10 +28,11 @@ Type *TypeFactory::get_vector_type(int num_elements, Type *element) {
   return vector_types_[key].get();
 }
 
-Type *TypeFactory::get_pointer_type(Type *element) {
-  auto key = element;  // may need to add is_bit_ptr later
+Type *TypeFactory::get_pointer_type(Type *element, bool is_bit_pointer) {
+  auto key = std::make_pair(element, is_bit_pointer);
   if (pointer_types_.find(key) == pointer_types_.end()) {
-    pointer_types_[key] = std::make_unique<PointerType>(element, false);
+    pointer_types_[key] =
+        std::make_unique<PointerType>(element, is_bit_pointer);
   }
   return pointer_types_[key].get();
 }
@@ -51,6 +52,14 @@ Type *TypeFactory::get_bit_struct_type(PrimitiveType *physical_type,
   bit_struct_types_.push_back(std::make_unique<BitStructType>(
       physical_type, member_types, member_bit_offsets));
   return bit_struct_types_.back().get();
+}
+
+Type *TypeFactory::get_bit_array_type(PrimitiveType *physical_type,
+                                      Type *element_type,
+                                      int num_elements) {
+  bit_array_types_.push_back(std::make_unique<BitArrayType>(
+      physical_type, element_type, num_elements));
+  return bit_array_types_.back().get();
 }
 
 PrimitiveType *TypeFactory::get_primitive_int_type(int bits, bool is_signed) {

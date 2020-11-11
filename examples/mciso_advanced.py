@@ -2,15 +2,6 @@ import taichi as ti
 import numpy as np
 
 
-@ti.func
-def list_subscript(a, i):
-    ret = sum(a) * 0
-    for j in ti.static(range(len(a))):
-        if i == j:
-            ret = a[j]
-    return ret
-
-
 @ti.data_oriented
 class MCISO:
     et2 = np.array(
@@ -295,11 +286,6 @@ class MCISO:
         ],
         np.int32)[:, :15].reshape(256, 5, 3)  # }}}
 
-    E2 = [(.5, 0), (0, .5), (1, .5), (.5, 1)]
-    E3 = [(.5, 0, 0), (1, .5, 0), (.5, 1, 0), (0, .5, 0), (.5, 0, 1),
-          (1, .5, 1), (.5, 1, 1), (0, .5, 1), (0, 0, .5), (1, 0, .5),
-          (1, 1, .5), (0, 1, .5)]
-
     def __init__(self, N=64, dim=3, blk_size=None):
 
         self.N = N
@@ -308,24 +294,41 @@ class MCISO:
         self.blk_size = blk_size
 
         et = [self.et2, self.et3][dim - 2]
+        self.et = ti.Vector.field(dim, int, et.shape[:2])
 
-        self.m = ti.field(float)
+        @ti.materialize_callback
+        def init_et():
+            self.et.from_numpy(et)
+
+        self.m = ti.field(float)  # field to sample
+        self.g = ti.Vector.field(self.dim, float)  # normalized gradient
         indices = [ti.ij, ti.ijk][dim - 2]
         if self.use_sparse:
             ti.root.pointer(indices, self.N // self.blk_size).dense(
                 indices, self.blk_size).place(self.m)
+            ti.root.dense(indices, self.N).place(self.g)
         else:
             ti.root.dense(indices, self.N).place(self.m)
+            ti.root.dense(indices, self.N).place(self.g)
 
-        self.r = ti.Vector.field(dim, float, (self.N**self.dim, self.dim))
-        self.et = ti.Vector.field(dim, int, et.shape[:2])
-        self.et.from_numpy(et)
+        self.r = ti.Vector.field(
+            dim, float,
+            (self.N**self.dim, self.dim))  # result buffer, TODO: optimize this
+
+    @ti.kernel
+    def compute_grad(self):
+        for I in ti.grouped(self.g):
+            r = ti.Vector.zero(float, self.dim)
+            for i in ti.static(range(self.dim)):
+                d = ti.Vector.unit(self.dim, i, int)
+                r[i] = self.m[I + d] - self.m[I - d]
+            self.g[I] = r
 
     @ti.kernel
     def march(self) -> int:
         r_n = 0
 
-        for I in ti.grouped(ti.ndrange(*[self.N - 1] * self.dim)):
+        for I in ti.grouped(ti.ndrange(*[[1, self.N - 1]] * self.dim)):
             id = 0
             if ti.static(self.dim == 2):
                 i, j = I
@@ -344,16 +347,91 @@ class MCISO:
                 if self.m[i + 1, j + 1, k + 1] > 1: id |= 64
                 if self.m[i, j + 1, k + 1] > 1: id |= 128
 
-            E = [ti.Vector(_) + .5 for _ in [self.E2, self.E3][self.dim - 2]]
-
-            for k in range(self.et.shape[1]):
-                if self.et[id, k][0] == -1:
+            for m in range(self.et.shape[1]):
+                if self.et[id, m][0] == -1:
                     break
 
                 n = ti.atomic_add(r_n, 1)
                 for l in ti.static(range(self.dim)):
-                    e = self.et[id, k][l]
-                    self.r[n, l] = I + list_subscript(E, e)
+                    e = self.et[id, m][l]
+                    R = float(I)
+
+                    if ti.static(self.dim == 2):
+                        i, j = I
+                        # (.5, 0), (0, .5), (1, .5), (.5, 1)
+                        if e == 0:
+                            p = (1 - self.m[i, j]) / (self.m[i + 1, j] -
+                                                      self.m[i, j])
+                            R = [i + p, j]
+                        elif e == 1:
+                            p = (1 - self.m[i, j]) / (self.m[i, j + 1] -
+                                                      self.m[i, j])
+                            R = [i, j + p]
+                        elif e == 2:
+                            p = (1 - self.m[i + 1, j]) / (
+                                self.m[i + 1, j + 1] - self.m[i + 1, j])
+                            R = [i + 1, j + p]
+                        elif e == 3:
+                            p = (1 - self.m[i, j + 1]) / (
+                                self.m[i + 1, j + 1] - self.m[i, j + 1])
+                            R = [i + p, j + 1]
+                    else:
+                        i, j, k = I
+                        # (.5, 0, 0), (1, .5, 0), (.5, 1, 0), (0, .5, 0)
+                        # (.5, 0, 1), (1, .5, 1), (.5, 1, 1), (0, .5, 1)
+                        # (0, 0, .5), (1, 0, .5), (1, 1, .5), (0, 1, .5)
+                        if e == 0:
+                            p = (1 - self.m[i, j, k]) / (self.m[i + 1, j, k] -
+                                                         self.m[i, j, k])
+                            R = [i + p, j, k]
+                        elif e == 1:
+                            p = (1 - self.m[i + 1, j, k]) / (
+                                self.m[i + 1, j + 1, k] - self.m[i + 1, j, k])
+                            R = [i + 1, j + p, k]
+                        elif e == 2:
+                            p = (1 - self.m[i, j + 1, k]) / (
+                                self.m[i + 1, j + 1, k] - self.m[i, j + 1, k])
+                            R = [i + p, j + 1, k]
+                        elif e == 3:
+                            p = (1 - self.m[i, j, k]) / (self.m[i, j + 1, k] -
+                                                         self.m[i, j, k])
+                            R = [i, j + p, k]
+                        elif e == 4:
+                            p = (1 - self.m[i, j, k + 1]) / (
+                                self.m[i + 1, j, k + 1] - self.m[i, j, k + 1])
+                            R = [i + p, j, k + 1]
+                        elif e == 5:
+                            p = (1 - self.m[i + 1, j, k + 1]) / (
+                                self.m[i + 1, j + 1, k + 1] -
+                                self.m[i + 1, j, k + 1])
+                            R = [i + 1, j + p, k + 1]
+                        elif e == 6:
+                            p = (1 - self.m[i, j + 1, k + 1]) / (
+                                self.m[i + 1, j + 1, k + 1] -
+                                self.m[i, j + 1, k + 1])
+                            R = [i + p, j + 1, k + 1]
+                        elif e == 7:
+                            p = (1 - self.m[i, j, k + 1]) / (
+                                self.m[i, j + 1, k + 1] - self.m[i, j, k + 1])
+                            R = [i, j + p, k + 1]
+                        elif e == 8:
+                            p = (1 - self.m[i, j, k]) / (self.m[i, j, k + 1] -
+                                                         self.m[i, j, k])
+                            R = [i, j, k + p]
+                        elif e == 9:
+                            p = (1 - self.m[i + 1, j, k]) / (
+                                self.m[i + 1, j, k + 1] - self.m[i + 1, j, k])
+                            R = [i + 1, j, k + p]
+                        elif e == 10:
+                            p = (1 - self.m[i + 1, j + 1, k]) / (
+                                self.m[i + 1, j + 1, k + 1] -
+                                self.m[i + 1, j + 1, k])
+                            R = [i + 1, j + 1, k + p]
+                        elif e == 11:
+                            p = (1 - self.m[i, j + 1, k]) / (
+                                self.m[i, j + 1, k + 1] - self.m[i, j + 1, k])
+                            R = [i, j + 1, k + p]
+                    self.r[n, l] = R
 
         return r_n
 
@@ -378,7 +456,7 @@ class MCISO_Example(MCISO):
                 continue
             self.m[o] = r * 3
 
-    def main(self, export_result=None):
+    def main(self):
         gui = ti.GUI('Marching cube')
         while gui.running and not gui.get_event(gui.ESCAPE):
             if self.use_sparse:
@@ -389,7 +467,9 @@ class MCISO_Example(MCISO):
             ret_len = self.march()
             ret = self.r.to_numpy()[:ret_len] / self.N
             if self.dim == 2:
-                gui.set_image(ti.imresize(self.m, *gui.res))
+                #gui.set_image(ti.imresize(self.m, *gui.res))
+                self.compute_grad()
+                gui.set_image(ti.imresize(self.g, *gui.res) * 0.5 + 0.5)
                 gui.lines(ret[:, 0], ret[:, 1], color=0xff66cc, radius=1.5)
             else:
                 gui.triangles(ret[:, 0, 0:2],
@@ -408,7 +488,9 @@ class MCISO_Example(MCISO):
                           ret[:, 0, 0:2],
                           color=0xff66cc,
                           radius=0.5)
-                if export_result is not None:
+                gui.text(f'Press space to save mesh to PLY ({len(ret)} faces)',
+                         (0, 1))
+                if gui.is_pressed(gui.SPACE):
                     num = ret.shape[0]
                     writer = ti.PLYWriter(num_vertices=num * 3, num_faces=num)
                     vertices = ret.reshape(num * 3, 3) * 2 - 1
@@ -416,12 +498,12 @@ class MCISO_Example(MCISO):
                                           vertices[:, 2])
                     indices = np.arange(0, num * 3)
                     writer.add_faces(indices)
-                    writer.export_frame(gui.frame, export_result)
+                    writer.export('mciso_output.ply')
+                    print('Mesh saved to mciso_output.ply')
             gui.show()
 
 
 if __name__ == '__main__':
-    ti.init(arch=ti.gpu)
-    main = MCISO_Example()
+    ti.init(arch=ti.cuda)
+    main = MCISO_Example(dim=3)
     main.main()
-    #main.main(export_result='/tmp/marching_cube.ply')

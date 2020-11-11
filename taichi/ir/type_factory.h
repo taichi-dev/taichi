@@ -19,13 +19,17 @@ class TypeFactory {
 
   Type *get_vector_type(int num_elements, Type *element);
 
-  Type *get_pointer_type(Type *element);
+  Type *get_pointer_type(Type *element, bool is_bit_pointer = false);
 
   Type *get_custom_int_type(int num_bits, bool is_signed);
 
   Type *get_bit_struct_type(PrimitiveType *physical_type,
                             std::vector<Type *> member_types,
                             std::vector<int> member_bit_offsets);
+
+  Type *get_bit_array_type(PrimitiveType *physical_type,
+                           Type *element_type,
+                           int num_elements);
 
   static DataType create_vector_or_scalar_type(int width,
                                                DataType element,
@@ -40,13 +44,16 @@ class TypeFactory {
   std::map<std::pair<int, Type *>, std::unique_ptr<Type>> vector_types_;
 
   // TODO: is_bit_ptr?
-  std::map<Type *, std::unique_ptr<Type>> pointer_types_;
+  std::map<std::pair<Type *, bool>, std::unique_ptr<Type>> pointer_types_;
 
   // TODO: use unordered map
   std::map<std::pair<int, bool>, std::unique_ptr<Type>> custom_int_types_;
 
   // TODO: avoid duplication
   std::vector<std::unique_ptr<Type>> bit_struct_types_;
+
+  // TODO: avoid duplication
+  std::vector<std::unique_ptr<Type>> bit_array_types_;
 
   std::mutex mut_;
 };

@@ -134,9 +134,7 @@ class PointerType : public Type {
     return is_bit_pointer_;
   }
 
-  std::string to_string() const override {
-    return fmt::format("*{}", pointee_->to_string());
-  };
+  std::string to_string() const override;
 
  private:
   Type *pointee_{nullptr};
@@ -159,9 +157,7 @@ class VectorType : public Type {
     return num_elements_;
   }
 
-  std::string to_string() const override {
-    return fmt::format("[{} x {}]", num_elements_, element_->to_string());
-  }
+  std::string to_string() const override;
 
  private:
   int num_elements_{0};
@@ -224,6 +220,36 @@ class BitStructType : public Type {
   PrimitiveType *physical_type_;
   std::vector<Type *> member_types_;
   std::vector<int> member_bit_offsets_;
+};
+
+class BitArrayType : public Type {
+ public:
+  BitArrayType(PrimitiveType *physical_type,
+               Type *element_type_,
+               int num_elements_)
+      : physical_type_(physical_type),
+        element_type_(element_type_),
+        num_elements_(num_elements_) {
+  }
+
+  std::string to_string() const override;
+
+  PrimitiveType *get_physical_type() const {
+    return physical_type_;
+  }
+
+  Type *get_element_type() const {
+    return element_type_;
+  }
+
+  int get_num_elements() const {
+    return num_elements_;
+  }
+
+ private:
+  PrimitiveType *physical_type_;
+  Type *element_type_;
+  int num_elements_;
 };
 
 TLANG_NAMESPACE_END

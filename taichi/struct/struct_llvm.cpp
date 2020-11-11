@@ -75,6 +75,16 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
 
     DataType container_primitive_type(snode.physical_type);
     body_type = tlctx->get_data_type(container_primitive_type);
+  } else if (type == SNodeType::bit_array) {
+    // A bit array SNode should only have one child
+    TI_ASSERT(snode.ch.size() == 1);
+    auto &ch = snode.ch[0];
+    Type *ch_type = ch->dt.get_ptr();
+    snode.dt = TypeFactory::get_instance().get_bit_array_type(
+        snode.physical_type, ch_type, snode.n);
+
+    DataType container_primitive_type(snode.physical_type);
+    body_type = tlctx->get_data_type(container_primitive_type);
   } else if (type == SNodeType::pointer) {
     // mutex
     aux_type = llvm::ArrayType::get(llvm::PointerType::getInt64Ty(*ctx),
@@ -286,11 +296,6 @@ llvm::Type *StructCompilerLLVM::get_llvm_element_type(llvm::Module *module,
 
 std::unique_ptr<StructCompiler> StructCompiler::make(Program *prog, Arch arch) {
   return std::make_unique<StructCompilerLLVM>(prog, arch);
-}
-
-bool SNode::need_activation() const {
-  return type == SNodeType::pointer || type == SNodeType::hash ||
-         type == SNodeType::bitmasked || type == SNodeType::dynamic;
 }
 
 TLANG_NAMESPACE_END

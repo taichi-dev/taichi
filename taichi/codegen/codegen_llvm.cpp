@@ -1285,9 +1285,8 @@ void CodeGenLLVM::visit(SNodeLookupStmt *stmt) {
     auto offset = tlctx->get_constant(element_offset);
     offset = builder->CreateMul(offset, llvm_val[stmt->input_index]);
     builder->CreateStore(
-        offset,
-        builder->CreateGEP(bit_ptr_struct,
-                           {tlctx->get_constant(0), tlctx->get_constant(1)}));
+        offset, builder->CreateGEP(bit_ptr_struct, {tlctx->get_constant(0),
+                                                    tlctx->get_constant(1)}));
     llvm_val[stmt] = bit_ptr_struct;
   } else {
     TI_INFO(snode_type_name(snode->type));

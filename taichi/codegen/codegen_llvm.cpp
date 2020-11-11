@@ -1281,8 +1281,10 @@ void CodeGenLLVM::visit(SNodeLookupStmt *stmt) {
         builder->CreateBitCast(llvm_val[stmt->input_snode],
                                llvm::PointerType::getInt8PtrTy(*llvm_context));
     builder->CreateStore(
-        byte_ptr, builder->CreateGEP(bit_ptr_struct, {tlctx->get_constant(0), tlctx->get_constant(0)}));
-    auto element_offset = snode->dt.get_ptr()->as<BitArrayType>()->get_element_offset();
+        byte_ptr, builder->CreateGEP(bit_ptr_struct, {tlctx->get_constant(0),
+                                                      tlctx->get_constant(0)}));
+    auto element_offset =
+        snode->dt.get_ptr()->as<BitArrayType>()->get_element_offset();
     auto offset = tlctx->get_constant(element_offset);
     offset = builder->CreateMul(offset, llvm_val[stmt->input_index]);
     builder->CreateStore(

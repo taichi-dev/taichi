@@ -328,7 +328,7 @@ void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
       auto from_size = 0;
       if (from->is<CustomIntType>()) {
         // TODO: replace 32 with a customizable type
-        from_size = 32;
+        from_size = data_type_size(from->cast<CustomIntType>()->get_compute_type());
       } else {
         from_size = data_type_size(from);
       }
@@ -1132,8 +1132,8 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
     auto bit_end = builder->CreateAdd(bit_offset,
                                       tlctx->get_constant(cit->get_num_bits()));
     auto left = builder->CreateSub(tlctx->get_constant(32), bit_end);
-    auto right = builder->CreateAdd(tlctx->get_constant(32),
-                                    tlctx->get_constant(-cit->get_num_bits()));
+    auto right = builder->CreateSub(tlctx->get_constant(32),
+                                    tlctx->get_constant(cit->get_num_bits()));
     auto step1 = builder->CreateShl(bit_level_container, left);
     llvm::Value *step2 = nullptr;
     if (cit->get_is_signed())

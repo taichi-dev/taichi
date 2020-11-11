@@ -167,10 +167,21 @@ class VectorType : public Type {
 class CustomIntType : public Type {
  public:
   CustomIntType(int num_bits, bool is_signed)
-      : num_bits_(num_bits), is_signed_(is_signed) {
+      : compute_type(nullptr), num_bits_(num_bits), is_signed_(is_signed) {
+    TI_ASSERT(num_bits <= 32);
+    compute_type = is_signed ? new PrimitiveType(PrimitiveTypeID::i32) :
+                             new PrimitiveType(PrimitiveTypeID::u32);
+  }
+
+  ~CustomIntType() override {
+    delete compute_type;
   }
 
   std::string to_string() const override;
+
+  Type* get_compute_type() {
+    return compute_type;
+  }
 
   int get_num_bits() const {
     return num_bits_;
@@ -183,8 +194,9 @@ class CustomIntType : public Type {
  private:
   // TODO(type): for now we can uniformly use i32 as the "compute_type". It may
   // be a good idea to make "compute_type" also customizable.
-  int num_bits_;
-  bool is_signed_;
+  Type* compute_type{nullptr};
+  int num_bits_{32};
+  bool is_signed_{true};
 };
 
 class BitStructType : public Type {

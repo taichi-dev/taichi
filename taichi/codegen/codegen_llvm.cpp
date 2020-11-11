@@ -1269,7 +1269,7 @@ void CodeGenLLVM::visit(SNodeLookupStmt *stmt) {
   } else if (snode->type == SNodeType::bit_struct) {
     llvm_val[stmt] = parent;
   } else if (snode->type == SNodeType::bit_array) {
-    // TODO: make bit_ptr construct an utility function
+    // TODO: make bit_ptr construction a utility function
     auto struct_type = llvm::StructType::get(
         *llvm_context, {llvm::Type::getInt8PtrTy(*llvm_context),
                         llvm::Type::getInt32Ty(*llvm_context)});
@@ -1280,9 +1280,9 @@ void CodeGenLLVM::visit(SNodeLookupStmt *stmt) {
     builder->CreateStore(
         byte_ptr, builder->CreateGEP(bit_ptr_struct, {tlctx->get_constant(0),
                                                       tlctx->get_constant(0)}));
-    auto element_offset =
-        snode->dt.get_ptr()->as<BitArrayType>()->get_element_offset();
-    auto offset = tlctx->get_constant(element_offset);
+    auto element_num_bits =
+        snode->dt.get_ptr()->as<BitArrayType>()->get_element_num_bits();
+    auto offset = tlctx->get_constant(element_num_bits);
     offset = builder->CreateMul(offset, llvm_val[stmt->input_index]);
     builder->CreateStore(
         offset, builder->CreateGEP(bit_ptr_struct, {tlctx->get_constant(0),

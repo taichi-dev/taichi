@@ -232,7 +232,7 @@ class BitArrayType : public Type {
         num_elements_(num_elements_) {
     // TODO: avoid assertion?
     TI_ASSERT(element_type_->is<CustomIntType>());
-    element_offset_ = element_type_->as<CustomIntType>()->get_num_bits();
+    element_num_bits_ = element_type_->as<CustomIntType>()->get_num_bits();
   }
 
   std::string to_string() const override;
@@ -249,15 +249,15 @@ class BitArrayType : public Type {
     return num_elements_;
   }
 
-  int get_element_offset() const {
-    return element_offset_;
+  int get_element_num_bits() const {
+    return element_num_bits_;
   }
 
  private:
   PrimitiveType *physical_type_;
   Type *element_type_;
   int num_elements_;
-  int element_offset_;
+  int element_num_bits_;
 };
 
 TLANG_NAMESPACE_END

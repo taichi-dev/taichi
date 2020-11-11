@@ -14,12 +14,12 @@ def test_simple_array():
     @ti.kernel
     def set_val():
         for i in range(32):
-            x[i] = 0
+            x[i] = i % 2
 
     @ti.kernel
     def verify_val():
         for i in range(32):
-            assert x[i] == 0
+            assert x[i] == i % 2
 
     set_val()
     verify_val()

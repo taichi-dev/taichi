@@ -57,7 +57,7 @@ jobs:
           ti diagnose
           ti test -vr2 -t2
 
-  build_and_test_cuda:
+  build_and_test_gpu:
     name: Build and Test (CUDA and OpenGL)
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip ci') && github.event.sender.login != 'taichi-gardener' }}
     runs-on: [zhen]
@@ -73,7 +73,7 @@ jobs:
           export PYTHON=/usr/bin/python3.7
           $PYTHON misc/ci_setup.py ci
         env:
-          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=${{ matrix.with_cc }}
+          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF
 
       - name: Test
         run: |

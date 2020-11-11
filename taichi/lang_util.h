@@ -345,6 +345,7 @@ std::string make_list(const std::vector<T> &data,
 }
 
 int data_type_size(DataType t);
+int data_type_bits(DataType t);
 DataType promoted_type(DataType a, DataType b);
 
 extern std::string compiled_lib_dir;

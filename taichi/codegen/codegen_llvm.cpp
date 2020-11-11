@@ -618,6 +618,31 @@ llvm::Type *CodeGenLLVM::llvm_type(DataType dt) {
   return nullptr;
 }
 
+llvm::Type *CodeGenLLVM::llvm_ptr_type(DataType dt) {
+  if (dt->is_primitive(PrimitiveTypeID::i8) ||
+      dt->is_primitive(PrimitiveTypeID::u8)) {
+    return llvm::Type::getInt8PtrTy(*llvm_context);
+  } else if (dt->is_primitive(PrimitiveTypeID::i16) ||
+             dt->is_primitive(PrimitiveTypeID::u16)) {
+    return llvm::Type::getInt16PtrTy(*llvm_context);
+  } else if (dt->is_primitive(PrimitiveTypeID::i32) ||
+             dt->is_primitive(PrimitiveTypeID::u32)) {
+    return llvm::Type::getInt32PtrTy(*llvm_context);
+  } else if (dt->is_primitive(PrimitiveTypeID::i64) ||
+             dt->is_primitive(PrimitiveTypeID::u64)) {
+    return llvm::Type::getInt64PtrTy(*llvm_context);
+  } else if (dt->is_primitive(PrimitiveTypeID::u1)) {
+    return llvm::Type::getInt1PtrTy(*llvm_context);
+  } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
+    return llvm::Type::getFloatPtrTy(*llvm_context);
+  } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
+    return llvm::Type::getDoublePtrTy(*llvm_context);
+  } else {
+    TI_NOT_IMPLEMENTED;
+  }
+  return nullptr;
+}
+
 void CodeGenLLVM::visit(TernaryOpStmt *stmt) {
   TI_ASSERT(stmt->op_type == TernaryOpType::select);
   llvm_val[stmt] = builder->CreateSelect(
@@ -1108,7 +1133,7 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
     builder->CreateCall(
         get_runtime_function("set_partial_bits_b32"),
         {builder->CreateBitCast(byte_ptr,
-                                llvm::Type::getInt32PtrTy(*llvm_context)),
+                                llvm_ptr_type(cit->get_compute_type())),
          bit_offset, tlctx->get_constant(cit->get_num_bits()),
          llvm_val[stmt->data]});
   } else {
@@ -1125,14 +1150,15 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
     llvm::Value *byte_ptr, *bit_offset;
     read_bit_pointer(llvm_val[stmt->ptr], byte_ptr, bit_offset);
     auto bit_level_container = builder->CreateLoad(builder->CreateBitCast(
-        byte_ptr, llvm::Type::getInt32PtrTy(*llvm_context)));
+        byte_ptr, llvm_ptr_type(cit->get_compute_type())));
     // 2. bit shifting
     //    first left shift `32 - (offset + num_bits)`
     //    then right shift `32 - num_bits`
+    auto compute_type_size = data_type_size(cit->get_compute_type()) * 8;
     auto bit_end = builder->CreateAdd(bit_offset,
                                       tlctx->get_constant(cit->get_num_bits()));
-    auto left = builder->CreateSub(tlctx->get_constant(32), bit_end);
-    auto right = builder->CreateSub(tlctx->get_constant(32),
+    auto left = builder->CreateSub(tlctx->get_constant(compute_type_size), bit_end);
+    auto right = builder->CreateSub(tlctx->get_constant(compute_type_size),
                                     tlctx->get_constant(cit->get_num_bits()));
     auto step1 = builder->CreateShl(bit_level_container, left);
     llvm::Value *step2 = nullptr;

@@ -92,25 +92,31 @@ class KernelGen : public IRVisitor {
   }
 
   // Note that the following two functions not only returns the corresponding
-  // data type, but also **records** the usage of `i64` and `f64`.
+  // data type, but also **records** the usage of data types to UsedFeatures.
   std::string opengl_data_type_short_name(DataType dt) {
-    if (dt->is_primitive(PrimitiveTypeID::i64)) {
+    if (dt->is_primitive(PrimitiveTypeID::i64) ||
+        dt->is_primitive(PrimitiveTypeID::u64)) {
       if (!TI_OPENGL_REQUIRE(used, GL_ARB_gpu_shader_int64)) {
         TI_ERROR(
             "Extension GL_ARB_gpu_shader_int64 not supported on your OpenGL");
       }
-      used.int64 = true;
     }
+    if (dt->is_primitive(PrimitiveTypeID::f32))
+      used.float32 = true;
     if (dt->is_primitive(PrimitiveTypeID::f64))
       used.float64 = true;
+    if (dt->is_primitive(PrimitiveTypeID::i32))
+      used.int32 = true;
+    if (dt->is_primitive(PrimitiveTypeID::i64))
+      used.int64 = true;
+    if (dt->is_primitive(PrimitiveTypeID::u32))
+      used.uint32 = true;
+    if (dt->is_primitive(PrimitiveTypeID::u64))
+      used.uint64 = true;
     return data_type_short_name(dt);
   }
 
   std::string opengl_data_type_name(DataType dt) {
-    if (dt->is_primitive(PrimitiveTypeID::i64))
-      used.int64 = true;
-    if (dt->is_primitive(PrimitiveTypeID::f64))
-      used.float64 = true;
     return opengl::opengl_data_type_name(dt);
   }
 
@@ -136,42 +142,32 @@ class KernelGen : public IRVisitor {
 #include "taichi/backends/opengl/shaders/listman.h"
           );
 #undef __GLSL__
-    kernel_header +=
-      "layout(std430, binding = 0) buffer data_i32 { int _data_i32_[]; };\n"
-      "layout(std430, binding = 0) buffer data_f32 { float _data_f32_[]; };\n";
-    if (used.float64)
-      kernel_header += "layout(std430, binding = 0) buffer data_f64 { double _data_f64_[]; };\n";
-    if (used.int64)
-      kernel_header += "layout(std430, binding = 0) buffer data_i64 { int64_t _data_i64_[]; };\n";
 
-    if (used.buf_gtmp || used.random) {
-      kernel_header +=
-          "layout(std430, binding = 1) buffer gtmp_i32 { int _rand_state_[4]; int _gtmp_i32_[]; };\n"
-          "layout(std430, binding = 1) buffer gtmp_f32 { int _padding1_[4]; float _gtmp_f32_[]; };\n";
-      if (used.float64)
-        kernel_header += "layout(std430, binding = 1) buffer gtmp_f64 { int _padding2_[4]; double _gtmp_f64_[]; };\n";
-      if (used.int64)
-        kernel_header += "layout(std430, binding = 1) buffer gtmp_i64 { int _padding3_[4]; int64_t _gtmp_i64_[]; };\n";
-    }
-    if (used.buf_args) {
-      kernel_header +=
-          "layout(std430, binding = 2) buffer args_i32 { int _args_i32_[]; };\n"
-          "layout(std430, binding = 2) buffer args_f32 { float _args_f32_[]; };\n";
-      if (used.float64)
-        kernel_header += "layout(std430, binding = 2) buffer args_f64 { double _args_f64_[]; };\n";
-      if (used.int64)
-        kernel_header += "layout(std430, binding = 2) buffer args_i64 { int64_t _args_i64_[]; };\n";
-    }
-    if (used.buf_extr) {
-      kernel_header +=
-          "layout(std430, binding = 4) buffer extr_i32 { int _extr_i32_[]; };\n"
-          "layout(std430, binding = 4) buffer extr_f32 { float _extr_f32_[]; };\n";
-      if (used.float64)
-        kernel_header += "layout(std430, binding = 4) buffer extr_f64 { double _extr_f64_[]; };\n";
-      if (used.int64)
-        kernel_header += "layout(std430, binding = 4) buffer extr_i64 { int64_t _extr_i64_[]; };\n";
-    }
+#define DEFINE_LAYOUT(name, id, dt, dtype) \
+      kernel_header += "layout(std430, binding = " + fmt::format("{}", id) \
+                    + ") buffer " #name "_" #dt " { " #dtype " _" \
+                    #name "_" #dt "_[]; };\n"
+#define REGISTER_BUFFER(name, id) do { \
+    if (used.int32) DEFINE_LAYOUT(name, id, i32, int); \
+    if (used.int64) DEFINE_LAYOUT(name, id, i64, int64_t); \
+    if (used.uint32) DEFINE_LAYOUT(name, id, u32, uint); \
+    if (used.uint64) DEFINE_LAYOUT(name, id, u64, uint64_t); \
+    if (used.float32) DEFINE_LAYOUT(name, id, f32, float); \
+    if (used.float64) DEFINE_LAYOUT(name, id, f64, double); \
+  } while (0)
+
+    REGISTER_BUFFER(data, GLBufId::Root);
+    if (used.buf_gtmp)
+      REGISTER_BUFFER(gtmp, GLBufId::Gtmp);
+    if (used.buf_args)
+      REGISTER_BUFFER(args, GLBufId::Args);
+    if (used.buf_extr)
+      REGISTER_BUFFER(extr, GLBufId::Extr);
+
+#undef REGISTER_BUFFER
+#undef DEFINE_LAYOUT
     // clang-format on
+
     if (used.simulated_atomic_float) {
       kernel_header += (
 #include "taichi/backends/opengl/shaders/atomics_data_f32.glsl.h"
@@ -187,7 +183,7 @@ class KernelGen : public IRVisitor {
         );
       }
     }
-    // TODO(archibate): random in different offloads should share rand seed?
+
     if (used.random) {
       kernel_header += (
 #include "taichi/backends/opengl/shaders/random.glsl.h"
@@ -268,6 +264,9 @@ class KernelGen : public IRVisitor {
 
   void visit(RandStmt *stmt) override {
     used.random = true;
+    // since random generator uses _gtmp_i32_ as rand state:
+    used.buf_gtmp = true;
+    used.int32 = true;
     emit("{} {} = _rand_{}();", opengl_data_type_name(stmt->ret_type),
          stmt->short_name(), opengl_data_type_short_name(stmt->ret_type));
   }
@@ -317,6 +316,7 @@ class KernelGen : public IRVisitor {
       if (stmt->snode->type == SNodeType::dense) {
         // do nothing
       } else if (stmt->snode->type == SNodeType::dynamic) {
+        used.int32 = true;
         emit("atomicMax(_data_i32_[{} >> 2], {} + 1); // dynamic activate",
              get_snode_meta_address(stmt->snode),
              stmt->input_index->short_name());
@@ -332,6 +332,7 @@ class KernelGen : public IRVisitor {
           stmt->snode->type == SNodeType::root) {
         // do nothing
       } else if (stmt->snode->type == SNodeType::dynamic) {
+        used.int32 = true;
         emit("atomicMax(_data_i32_[{} >> 2], {} + 1); // dynamic activate",
              get_snode_meta_address(stmt->snode), stmt->val->short_name());
       } else {
@@ -343,6 +344,7 @@ class KernelGen : public IRVisitor {
           stmt->snode->type == SNodeType::root) {
         // do nothing
       } else if (stmt->snode->type == SNodeType::dynamic) {
+        used.int32 = true;
         emit("_data_i32_[{} >> 2] = 0; // dynamic deactivate",
              get_snode_meta_address(stmt->snode), stmt->val->short_name());
       } else {
@@ -355,6 +357,7 @@ class KernelGen : public IRVisitor {
           stmt->snode->type == SNodeType::root) {
         emit("int {} = 1;", stmt->short_name());
       } else if (stmt->snode->type == SNodeType::dynamic) {
+        used.int32 = true;
         emit("int {} = int({} < _data_i32_[{} >> 2]);", stmt->short_name(),
              stmt->val->short_name(), get_snode_meta_address(stmt->snode));
       } else {
@@ -364,6 +367,7 @@ class KernelGen : public IRVisitor {
     } else if (stmt->op_type == SNodeOpType::append) {
       TI_ASSERT(stmt->snode->type == SNodeType::dynamic);
       TI_ASSERT(stmt->ret_type->is_primitive(PrimitiveTypeID::i32));
+      used.int32 = true;
       emit("int {} = atomicAdd(_data_i32_[{} >> 2], 1);", stmt->short_name(),
            get_snode_meta_address(stmt->snode));
       auto dt = stmt->val->element_type();
@@ -378,6 +382,7 @@ class KernelGen : public IRVisitor {
     } else if (stmt->op_type == SNodeOpType::length) {
       TI_ASSERT(stmt->snode->type == SNodeType::dynamic);
       TI_ASSERT(stmt->ret_type->is_primitive(PrimitiveTypeID::i32));
+      used.int32 = true;
       emit("int {} = _data_i32_[{} >> 2];", stmt->short_name(),
            get_snode_meta_address(stmt->snode));
 
@@ -429,6 +434,7 @@ class KernelGen : public IRVisitor {
       std::vector<std::string> size_var_names;
       for (int i = 0; i < num_indices; i++) {
         used.buf_args = true;
+        used.int32 = true;
         std::string var_name = fmt::format("_s{}_{}", i, stmt->short_name());
         emit("int {} = _args_i32_[{} + {} * {} + {}];", var_name,
              taichi_opengl_earg_base / sizeof(int), arg_id,
@@ -470,17 +476,50 @@ class KernelGen : public IRVisitor {
       emit("{} {} = {}({});", dt_name, stmt->short_name(),
            opengl_data_type_name(stmt->cast_type), stmt->operand->short_name());
     } else if (stmt->op_type == UnaryOpType::cast_bits) {
-      if (stmt->cast_type->is_primitive(PrimitiveTypeID::f32) &&
-          stmt->operand->element_type()->is_primitive(PrimitiveTypeID::i32)) {
+      constexpr int FLOATING_POINT = 0;
+      constexpr int SIGNED_INTEGER = 1;
+      constexpr int UNSIGNED_INTEGER = 2;
+
+      auto dst_type = stmt->cast_type;
+      auto src_type = stmt->operand->element_type();
+      auto dst_type_id = FLOATING_POINT;
+      if (is_integral(dst_type))
+        dst_type_id = is_unsigned(dst_type) ? UNSIGNED_INTEGER : SIGNED_INTEGER;
+      auto src_type_id = FLOATING_POINT;
+      if (is_integral(src_type))
+        src_type_id = is_unsigned(src_type) ? UNSIGNED_INTEGER : SIGNED_INTEGER;
+
+      TI_ASSERT_INFO(
+          data_type_size(dst_type) == data_type_size(src_type),
+          "bit_cast is only supported between data type with same size");
+
+      if (dst_type_id != FLOATING_POINT && src_type_id != FLOATING_POINT) {
+        emit("{} {} = {}({});", dt_name, stmt->short_name(), dt_name,
+             stmt->operand->short_name());
+
+      } else if (dst_type_id == FLOATING_POINT &&
+                 src_type_id == SIGNED_INTEGER) {
         emit("{} {} = intBitsToFloat({});", dt_name, stmt->short_name(),
              stmt->operand->short_name());
-      } else if (stmt->cast_type->is_primitive(PrimitiveTypeID::i32) &&
-                 stmt->operand->element_type()->is_primitive(
-                     PrimitiveTypeID::f32)) {
+
+      } else if (dst_type_id == SIGNED_INTEGER &&
+                 src_type_id == FLOATING_POINT) {
         emit("{} {} = floatBitsToInt({});", dt_name, stmt->short_name(),
              stmt->operand->short_name());
+
+      } else if (dst_type_id == FLOATING_POINT &&
+                 src_type_id == UNSIGNED_INTEGER) {
+        emit("{} {} = uintBitsToFloat({});", dt_name, stmt->short_name(),
+             stmt->operand->short_name());
+
+      } else if (dst_type_id == UNSIGNED_INTEGER &&
+                 src_type_id == FLOATING_POINT) {
+        emit("{} {} = floatBitsToUint({});", dt_name, stmt->short_name(),
+             stmt->operand->short_name());
+
       } else {
-        TI_ERROR("unsupported reinterpret cast");
+        TI_ERROR("[glsl] unsupported bit cast from {} to {}",
+                 data_type_name(src_type), data_type_name(dst_type));
       }
     } else {
       emit("{} {} = {}({}({}));", dt_name, stmt->short_name(), dt_name,
@@ -589,6 +628,7 @@ class KernelGen : public IRVisitor {
             opengl_data_type_short_name(dt));
       }
       used.simulated_atomic_float = true;
+      used.int32 = true;  // since simulated atomics are based on _data_i32_
       emit("{} {} = {}_{}_{}({} >> {}, {});",
            opengl_data_type_name(stmt->val->element_type()), stmt->short_name(),
            opengl_atomic_op_type_cap_name(stmt->op_type),
@@ -652,6 +692,7 @@ class KernelGen : public IRVisitor {
     const auto dt = opengl_data_type_name(stmt->element_type());
     used.buf_args = true;
     if (stmt->is_ptr) {
+      used.int32 = true;
       emit("int {} = _args_i32_[{} << 1]; // is ext pointer {}",
            stmt->short_name(), stmt->arg_id, dt);
     } else {
@@ -696,6 +737,7 @@ class KernelGen : public IRVisitor {
     const auto arg_id = stmt->arg_id;
     const auto axis = stmt->axis;
     used.buf_args = true;
+    used.int32 = true;
     emit("int {} = _args_i32_[{} + {} * {} + {}];", name,
          taichi_opengl_earg_base / sizeof(int), arg_id, taichi_max_num_indices,
          axis);
@@ -781,14 +823,18 @@ class KernelGen : public IRVisitor {
 
     used_tls = (stmt->tls_prologue != nullptr);
     if (used_tls) {
-      TI_ASSERT(stmt->tls_prologue != nullptr);
       auto tls_size = stmt->tls_size;
+      // TODO(k-ye): support 'cursor' in LineAppender:
       emit("int _tls_i32_[{}];", (tls_size + 3) / 4);
+      if (used.int64)
+        emit("int64_t _tls_i64_[{}];", (tls_size + 7) / 8);
+      if (used.uint32)
+        emit("int _tls_u32_[{}];", (tls_size + 3) / 4);
+      if (used.uint64)
+        emit("int64_t _tls_u64_[{}];", (tls_size + 7) / 8);
       emit("float _tls_f32_[{}];", (tls_size + 3) / 4);
       if (used.float64)
         emit("double _tls_f64_[{}];", (tls_size + 7) / 8);
-      if (used.int64)
-        emit("int64_t _tls_i64_[{}];", (tls_size + 7) / 8);
       emit("{{  // TLS prologue");
       stmt->tls_prologue->accept(this);
       emit("}}");
@@ -873,6 +919,7 @@ class KernelGen : public IRVisitor {
     TI_ASSERT_INFO(snode->parent->type == SNodeType::root,
                    "Non-top-level dynamic not supported yet on OpenGL");
     size_t addr = get_snode_meta_address(snode);
+    used.int32 = true;
     emit("_list_len_ = _data_i32_[{} >> 2];", addr);
     emit("for (int i = 0; i < _list_len_; i++) {{");
     {

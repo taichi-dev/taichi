@@ -2,8 +2,8 @@ import taichi as ti
 import numpy as np
 
 
+@ti.test(arch=ti.cpu, debug=True, cfg_optimization=False)
 def test_simple_array():
-    ti.init(arch=ti.cpu, debug=True, print_ir=True, cfg_optimization=False)
     ci13 = ti.type_factory_.get_custom_int_type(13, True)
     cu19 = ti.type_factory_.get_custom_int_type(19, False)
 
@@ -31,9 +31,13 @@ def test_simple_array():
     set_val()
     verify_val()
 
+    # Test bit_struct SNode read and write in Python-scope by calling the wrapped, untranslated function body
+    set_val.__wrapped__()
+    verify_val.__wrapped__()
 
+
+@ti.test(arch=ti.cpu, debug=True, cfg_optimization=False)
 def test_custom_int_load_and_store():
-    ti.init(arch=ti.cpu, debug=True, print_ir=True, cfg_optimization=False)
     ci13 = ti.type_factory_.get_custom_int_type(13, True)
     cu14 = ti.type_factory_.get_custom_int_type(14, False)
     ci5 = ti.type_factory_.get_custom_int_type(5, True)
@@ -66,3 +70,8 @@ def test_custom_int_load_and_store():
     for idx in range(len(test_case_np)):
         set_val(idx)
         verify_val(idx)
+
+    # Test bit_struct SNode read and write in Python-scope by calling the wrapped, untranslated function body
+    for idx in range(len(test_case_np)):
+        set_val.__wrapped__(idx)
+        verify_val.__wrapped__(idx)

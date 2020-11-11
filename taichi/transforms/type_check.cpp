@@ -397,13 +397,20 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(SNodeLookupStmt *stmt) {
+    // TODO: for bit_array SNodes, an SNodeLookupStmt should convert a byte
+    // pointer to bit pointer.
+    // See the GetChStmt treatment below.
     stmt->ret_type =
         TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::gen, true);
   }
 
   void visit(GetChStmt *stmt) {
-    stmt->ret_type = TypeFactory::create_vector_or_scalar_type(
-        1, stmt->output_snode->dt, true);
+    TI_ASSERT(stmt->width() == 1);
+    auto element_type = stmt->output_snode->dt;
+    // For bit_struct SNodes, their component SNodes must have is_bit_level=true
+    auto pointer_type = TypeFactory::get_instance().get_pointer_type(
+        element_type.get_ptr(), stmt->output_snode->is_bit_level);
+    stmt->ret_type = pointer_type;
   }
 
   void visit(OffloadedStmt *stmt) {

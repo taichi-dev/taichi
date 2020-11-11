@@ -17,11 +17,12 @@ constexpr int taichi_opengl_earg_base = taichi_max_num_args * sizeof(uint64_t);
 struct UsedFeature {
   // types:
   bool simulated_atomic_float{false};
+  bool int32{false};
+  bool float32{false};
   bool int64{false};
+  bool uint32{false};
+  bool uint64{false};
   bool float64{false};
-
-  // sparse:
-  bool listman{false};
 
   // buffers:
   bool buf_args{false};
@@ -31,6 +32,7 @@ struct UsedFeature {
 
   // utilties:
   bool fast_pow{false};
+  bool listman{false};
   bool random{false};
   bool print{false};
 
@@ -38,22 +40,6 @@ struct UsedFeature {
 #define PER_OPENGL_EXTENSION(x) bool extension_##x{false};
 #include "taichi/inc/opengl_extension.inc.h"
 #undef PER_OPENGL_EXTENSION
-};
-
-using SNodeId = std::string;
-
-struct SNodeInfo {
-  size_t stride;
-  size_t length;
-  std::vector<size_t> children_offsets;
-  size_t elem_stride;
-};
-
-struct StructCompiledResult {
-  // Source code of the SNode data structures compiled to GLSL
-  std::unordered_map<SNodeId, SNodeInfo> snode_map;
-  // Root buffer size in bytes.
-  size_t root_size;
 };
 
 enum class GLBufId {

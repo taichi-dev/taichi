@@ -260,3 +260,22 @@ def test_struct_for_pointer_block():
         return tot
 
     assert count() == 1
+
+
+@ti.test(require=ti.extension.quant)
+def test_struct_for_quant():
+    n = 8
+
+    ci13 = ti.type_factory_.get_custom_int_type(13, True)
+    x = ti.field(dtype=ci13)
+
+    ti.root.dense(ti.i, n)._bit_struct(num_bits=16).place(x)
+
+    @ti.kernel
+    def count() -> int:
+        tot = 0
+        for i in x:
+            tot += i
+        return tot
+
+    assert count() == 28

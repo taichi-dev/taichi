@@ -134,9 +134,7 @@ class PointerType : public Type {
     return is_bit_pointer_;
   }
 
-  std::string to_string() const override {
-    return fmt::format("*{}", pointee_->to_string());
-  };
+  std::string to_string() const override;
 
  private:
   Type *pointee_{nullptr};
@@ -159,9 +157,7 @@ class VectorType : public Type {
     return num_elements_;
   }
 
-  std::string to_string() const override {
-    return fmt::format("[{} x {}]", num_elements_, element_->to_string());
-  }
+  std::string to_string() const override;
 
  private:
   int num_elements_{0};

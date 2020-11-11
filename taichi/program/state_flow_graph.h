@@ -155,7 +155,7 @@ class StateFlowGraph {
 
   void topo_sort_nodes();
 
-  void verify() const;
+  void verify(bool also_verify_ir = false) const;
 
   // Extract all pending tasks and insert them in topological/original order.
   void rebuild_graph(bool sort);

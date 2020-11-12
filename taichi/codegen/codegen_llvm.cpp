@@ -1239,7 +1239,7 @@ void CodeGenLLVM::visit(IntegerOffsetStmt *stmt){
 
 llvm::Value *CodeGenLLVM::create_bit_ptr_struct(llvm::Value *byte_ptr_base,
                                                 llvm::Value *bit_offset) {
-  // 1. create bit pointer struct
+  // 1. create a bit pointer struct
   // struct bit_pointer {
   //    i8* byte_ptr;
   //    i32 offset;

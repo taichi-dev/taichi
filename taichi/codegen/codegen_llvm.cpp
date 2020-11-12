@@ -1233,9 +1233,7 @@ void CodeGenLLVM::visit(LinearizeStmt *stmt) {
   llvm_val[stmt] = val;
 }
 
-void CodeGenLLVM::visit(IntegerOffsetStmt *stmt){
-    TI_NOT_IMPLEMENTED
-}
+void CodeGenLLVM::visit(IntegerOffsetStmt *stmt){TI_NOT_IMPLEMENTED}
 
 llvm::Value *CodeGenLLVM::create_bit_ptr_struct(llvm::Value *byte_ptr_base,
                                                 llvm::Value *bit_offset) {

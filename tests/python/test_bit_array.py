@@ -27,6 +27,7 @@ def test_1D_bit_array():
     set_val()
     verify_val()
 
+
 @ti.test(arch=ti.cpu, debug=True, cfg_optimization=False)
 def test_2D_bit_array():
     ci1 = ti.type_factory_.get_custom_int_type(1, False)

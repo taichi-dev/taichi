@@ -1235,17 +1235,6 @@ void CodeGenLLVM::visit(LinearizeStmt *stmt) {
 
 void CodeGenLLVM::visit(IntegerOffsetStmt *stmt){
     TI_NOT_IMPLEMENTED
-    /*
-    if (stmt->input->is<GetChStmt>() &&
-        stmt->input->as<GetChStmt>()->output_snode->type == SNodeType::place) {
-      auto input = stmt->input->as<GetChStmt>();
-      auto dtn = input->output_snode->data_type_name();
-      emit(R"({}* {}[1] {{({} *)((char *){}[0] + {})}};)", dtn,
-    stmt->raw_name(), dtn, stmt->input->raw_name(), stmt->offset); } else {
-      emit(R"(auto {} = {} + {};)", stmt->raw_name(), stmt->input->raw_name(),
-           stmt->offset);
-    }
-    */
 }
 
 llvm::Value *CodeGenLLVM::create_bit_ptr_struct(llvm::Value *byte_ptr_base,

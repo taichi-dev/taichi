@@ -211,12 +211,11 @@ class LowerAccess : public IRVisitor {
   void visit(SNodeOpStmt *stmt) override {
     if (SNodeOpStmt::activation_related(stmt->op_type) &&
         stmt->snode->type != SNodeType::dynamic) {
-      if (stmt->val == nullptr) {
+      TI_ASSERT(stmt->ptr);
+      if (stmt->ptr->is<GlobalPtrStmt>()) {
         auto lowered = lower_vector_ptr(stmt->ptr->as<GlobalPtrStmt>(), false,
                                         stmt->op_type);
         modifier.replace_with(stmt, std::move(lowered), true);
-      } else {
-        // already lowered, do nothing
       }
     } else {
       if (stmt->ptr->is<GlobalPtrStmt>()) {

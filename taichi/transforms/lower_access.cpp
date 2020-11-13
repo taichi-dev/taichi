@@ -212,12 +212,8 @@ class LowerAccess : public IRVisitor {
     if (SNodeOpStmt::activation_related(stmt->op_type) &&
         stmt->snode->type != SNodeType::dynamic) {
       if (stmt->val == nullptr) {
-        std::vector<SNode *> snodes(stmt->width(), stmt->snode);
-        auto proxy_ptr = Stmt::make_typed<GlobalPtrStmt>(snodes, stmt->indices);
-        // Pretend to be in the IR hierarchy so that we can safely query
-        // stmt->get_kernel() later.
-        proxy_ptr->parent = stmt->parent;
-        auto lowered = lower_vector_ptr(proxy_ptr.get(), false, stmt->op_type);
+        auto lowered = lower_vector_ptr(stmt->ptr->as<GlobalPtrStmt>(), false,
+                                        stmt->op_type);
         modifier.replace_with(stmt, std::move(lowered), true);
       } else {
         // already lowered, do nothing

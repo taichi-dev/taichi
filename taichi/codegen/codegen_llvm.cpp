@@ -1152,9 +1152,9 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
     auto bit_level_container = builder->CreateLoad(builder->CreateBitCast(
         byte_ptr, llvm_ptr_type(cit->get_compute_type())));
     // 2. bit shifting
-    //    first left shift `32 - (offset + num_bits)`
-    //    then right shift `32 - num_bits`
-    auto compute_type_size = data_type_size(cit->get_compute_type()) * 8;
+    //    first left shift `compute_type_size(like 32, 64, ...) - (offset + num_bits)`
+    //    then right shift `compute_type_size - num_bits`
+    auto compute_type_size = data_type_bits(cit->get_compute_type());
     auto bit_end = builder->CreateAdd(bit_offset,
                                       tlctx->get_constant(cit->get_num_bits()));
     auto left = builder->CreateSub(tlctx->get_constant(compute_type_size), bit_end);

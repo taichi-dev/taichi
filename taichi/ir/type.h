@@ -166,14 +166,7 @@ class VectorType : public Type {
 
 class CustomIntType : public Type {
  public:
-  CustomIntType(int num_bits, bool is_signed)
-      : compute_type(nullptr), num_bits_(num_bits), is_signed_(is_signed) {
-    // TODO(type): support customizable compute_type
-    //  and should we expose it to users?
-    TI_ASSERT(num_bits <= 32);
-    compute_type = is_signed ? new PrimitiveType(PrimitiveTypeID::i32)
-                             : new PrimitiveType(PrimitiveTypeID::u32);
-  }
+  CustomIntType(int num_bits, bool is_signed);
 
   ~CustomIntType() override {
     delete compute_type;

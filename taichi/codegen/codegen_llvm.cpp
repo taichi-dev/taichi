@@ -328,7 +328,8 @@ void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
       auto from_size = 0;
       if (from->is<CustomIntType>()) {
         // TODO: replace 32 with a customizable type
-        from_size = data_type_size(from->cast<CustomIntType>()->get_compute_type());
+        from_size =
+            data_type_size(from->cast<CustomIntType>()->get_compute_type());
       } else {
         from_size = data_type_size(from);
       }
@@ -1130,12 +1131,11 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
     auto cit = ptr_type->get_pointee_type()->as<CustomIntType>();
     llvm::Value *byte_ptr = nullptr, *bit_offset = nullptr;
     read_bit_pointer(llvm_val[stmt->ptr], byte_ptr, bit_offset);
-    builder->CreateCall(
-        get_runtime_function("set_partial_bits_b32"),
-        {builder->CreateBitCast(byte_ptr,
-                                llvm_ptr_type(cit->get_compute_type())),
-         bit_offset, tlctx->get_constant(cit->get_num_bits()),
-         llvm_val[stmt->data]});
+    builder->CreateCall(get_runtime_function("set_partial_bits_b32"),
+                        {builder->CreateBitCast(
+                             byte_ptr, llvm_ptr_type(cit->get_compute_type())),
+                         bit_offset, tlctx->get_constant(cit->get_num_bits()),
+                         llvm_val[stmt->data]});
   } else {
     builder->CreateStore(llvm_val[stmt->data], llvm_val[stmt->ptr]);
   }
@@ -1152,12 +1152,13 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
     auto bit_level_container = builder->CreateLoad(builder->CreateBitCast(
         byte_ptr, llvm_ptr_type(cit->get_compute_type())));
     // 2. bit shifting
-    //    first left shift `compute_type_size(like 32, 64, ...) - (offset + num_bits)`
-    //    then right shift `compute_type_size - num_bits`
+    //    first left shift `compute_type_size(like 32, 64, ...) - (offset +
+    //    num_bits)` then right shift `compute_type_size - num_bits`
     auto compute_type_size = data_type_bits(cit->get_compute_type());
     auto bit_end = builder->CreateAdd(bit_offset,
                                       tlctx->get_constant(cit->get_num_bits()));
-    auto left = builder->CreateSub(tlctx->get_constant(compute_type_size), bit_end);
+    auto left =
+        builder->CreateSub(tlctx->get_constant(compute_type_size), bit_end);
     auto right = builder->CreateSub(tlctx->get_constant(compute_type_size),
                                     tlctx->get_constant(cit->get_num_bits()));
     auto step1 = builder->CreateShl(bit_level_container, left);

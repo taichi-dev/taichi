@@ -171,8 +171,8 @@ class CustomIntType : public Type {
     // TODO(type): support customizable compute_type
     //  and should we expose it to users?
     TI_ASSERT(num_bits <= 32);
-    compute_type = is_signed ? new PrimitiveType(PrimitiveTypeID::i32) :
-                             new PrimitiveType(PrimitiveTypeID::u32);
+    compute_type = is_signed ? new PrimitiveType(PrimitiveTypeID::i32)
+                             : new PrimitiveType(PrimitiveTypeID::u32);
   }
 
   ~CustomIntType() override {
@@ -181,7 +181,7 @@ class CustomIntType : public Type {
 
   std::string to_string() const override;
 
-  Type* get_compute_type() {
+  Type *get_compute_type() {
     return compute_type;
   }
 
@@ -196,7 +196,7 @@ class CustomIntType : public Type {
  private:
   // TODO(type): for now we can uniformly use i32 as the "compute_type". It may
   // be a good idea to make "compute_type" also customizable.
-  Type* compute_type{nullptr};
+  Type *compute_type{nullptr};
   int num_bits_{32};
   bool is_signed_{true};
 };

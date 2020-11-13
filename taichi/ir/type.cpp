@@ -101,8 +101,8 @@ std::string CustomIntType::to_string() const {
   return fmt::format("c{}{}", is_signed_ ? 'i' : 'u', num_bits_);
 }
 
-CustomIntType::CustomIntType(int num_bits, bool is_signed):
-    compute_type(nullptr), num_bits_(num_bits), is_signed_(is_signed) {
+CustomIntType::CustomIntType(int num_bits, bool is_signed)
+    : compute_type(nullptr), num_bits_(num_bits), is_signed_(is_signed) {
   // TODO(type): support customizable compute_type
   //  and should we expose it to users?
   TI_ASSERT(num_bits <= 32);

@@ -81,9 +81,11 @@ using float32 = float;
 using float64 = double;
 
 using i8 = int8;
+using i16 = int16;
 using i32 = int32;
 using i64 = int64;
 using u8 = uint8;
+using u16 = uint16;
 using u32 = uint32;
 using u64 = uint64;
 using f32 = float32;
@@ -1551,17 +1553,23 @@ void stack_push(Ptr stack, size_t max_num_elements, std::size_t element_size) {
 
 #include "internal_functions.h"
 
-void set_partial_bits_b32(u32 *ptr, u32 offset, u32 bits, u32 value) {
-  u32 mask = ((((u32)1 << bits) - 1) << offset);
-  u32 new_value = 0;
-  u32 old_value = *ptr;
-  do {
-    old_value = *ptr;
-    new_value = (old_value & (~mask)) | (value << offset);
-  } while (!__atomic_compare_exchange(ptr, &old_value, &new_value, true,
-                                      std::memory_order::memory_order_seq_cst,
-                                      std::memory_order::memory_order_seq_cst));
+#define DEFINE_SET_PARTIAL_BITS(N)                                            \
+void set_partial_bits_b##N(u##N* ptr, u32 offset, u32 bits, u##N value) {      \
+  u##N mask = ((((u##N)1 << bits) - 1) << offset);                           \
+  u##N new_value = 0;                                                         \
+  u##N old_value = *ptr;                                                      \
+  do {                                                                        \
+    old_value = *ptr;                                                         \
+    new_value = (old_value & (~mask)) | (u##N)(value << offset);                    \
+  } while (!__atomic_compare_exchange(ptr, &old_value, &new_value, true,      \
+            std::memory_order::memory_order_seq_cst,                          \
+            std::memory_order::memory_order_seq_cst));                        \
 }
+
+DEFINE_SET_PARTIAL_BITS(8);
+DEFINE_SET_PARTIAL_BITS(16);
+DEFINE_SET_PARTIAL_BITS(32);
+DEFINE_SET_PARTIAL_BITS(64);
 }
 
 #endif

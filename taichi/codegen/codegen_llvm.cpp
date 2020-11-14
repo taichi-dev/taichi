@@ -1131,14 +1131,16 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
     auto cit = ptr_type->get_pointee_type()->as<CustomIntType>();
     llvm::Value *byte_ptr = nullptr, *bit_offset = nullptr;
     read_bit_pointer(llvm_val[stmt->ptr], byte_ptr, bit_offset);
-    auto runtime_func_name = fmt::format("set_partial_bits_b{}",
-                                         data_type_bits(cit->get_compute_type()));
-    builder->CreateCall(get_runtime_function(runtime_func_name),
-                        {builder->CreateBitCast(
-                             byte_ptr, llvm_ptr_type(cit->get_compute_type())),
-                         bit_offset, tlctx->get_constant(cit->get_num_bits()),
-                         builder->CreateIntCast(llvm_val[stmt->data],
-                                                llvm_type(cit->get_compute_type()), cit->get_is_signed())});
+    auto runtime_func_name = fmt::format(
+        "set_partial_bits_b{}", data_type_bits(cit->get_compute_type()));
+    builder->CreateCall(
+        get_runtime_function(runtime_func_name),
+        {builder->CreateBitCast(byte_ptr,
+                                llvm_ptr_type(cit->get_compute_type())),
+         bit_offset, tlctx->get_constant(cit->get_num_bits()),
+         builder->CreateIntCast(llvm_val[stmt->data],
+                                llvm_type(cit->get_compute_type()),
+                                cit->get_is_signed())});
   } else {
     builder->CreateStore(llvm_val[stmt->data], llvm_val[stmt->ptr]);
   }
@@ -1164,8 +1166,10 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
         builder->CreateSub(tlctx->get_constant(compute_type_size), bit_end);
     auto right = builder->CreateSub(tlctx->get_constant(compute_type_size),
                                     tlctx->get_constant(cit->get_num_bits()));
-    left = builder->CreateIntCast(left, llvm_type(cit->get_compute_type()), cit->get_is_signed());
-    right = builder->CreateIntCast(right, llvm_type(cit->get_compute_type()), cit->get_is_signed());
+    left = builder->CreateIntCast(left, llvm_type(cit->get_compute_type()),
+                                  cit->get_is_signed());
+    right = builder->CreateIntCast(right, llvm_type(cit->get_compute_type()),
+                                   cit->get_is_signed());
     auto step1 = builder->CreateShl(bit_level_container, left);
     llvm::Value *step2 = nullptr;
     if (cit->get_is_signed())

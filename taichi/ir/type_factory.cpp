@@ -46,6 +46,17 @@ Type *TypeFactory::get_custom_int_type(int num_bits, bool is_signed) {
   return custom_int_types_[key].get();
 }
 
+Type *TypeFactory::_get_custom_int_type(int compute_type_bits,
+                                        int num_bits,
+                                        bool is_signed) {
+  auto key = std::make_pair(num_bits, is_signed);
+  if (custom_int_types_with_compute_types_.find(key) == custom_int_types_with_compute_types_.end()) {
+    custom_int_types_with_compute_types_[key] =
+        std::make_unique<CustomIntType>(compute_type_bits, num_bits, is_signed);
+  }
+  return custom_int_types_with_compute_types_[key].get();
+}
+
 Type *TypeFactory::get_bit_struct_type(PrimitiveType *physical_type,
                                        std::vector<Type *> member_types,
                                        std::vector<int> member_bit_offsets) {

@@ -128,7 +128,8 @@ class LLVMModuleBuilder {
 
   void read_bit_pointer(llvm::Value *ptr,
                         llvm::Value *&byte_ptr,
-                        llvm::Value *&bit_offset) {
+                        llvm::Value *&bit_offset,
+                        llvm::Value *&physical_type) {
     // 1. load byte pointer
     auto byte_ptr_in_bit_struct = builder->CreateGEP(
         ptr, {tlctx->get_constant(0), tlctx->get_constant(0)});
@@ -139,6 +140,10 @@ class LLVMModuleBuilder {
     auto bit_offset_in_bit_struct = builder->CreateGEP(
         ptr, {tlctx->get_constant(0), tlctx->get_constant(1)});
     bit_offset = builder->CreateLoad(bit_offset_in_bit_struct);
+    TI_ASSERT(bit_offset->getType()->isIntegerTy(32));
+
+    auto physical_type_bit_struct = builder->CreateGEP(ptr, {tlctx->get_constant(0), tlctx->get_constant(2)});
+    physical_type = builder->CreateLoad(physical_type_bit_struct);
     TI_ASSERT(bit_offset->getType()->isIntegerTy(32));
   }
 };

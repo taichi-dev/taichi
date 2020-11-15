@@ -23,6 +23,8 @@ class TypeFactory {
 
   Type *get_custom_int_type(int num_bits, bool is_signed);
 
+  Type *_get_custom_int_type(int compute_type_bits, int num_bits, bool is_signed);
+
   Type *get_bit_struct_type(PrimitiveType *physical_type,
                             std::vector<Type *> member_types,
                             std::vector<int> member_bit_offsets);
@@ -48,6 +50,8 @@ class TypeFactory {
 
   // TODO: use unordered map
   std::map<std::pair<int, bool>, std::unique_ptr<Type>> custom_int_types_;
+
+  std::map<std::pair<int, bool>, std::unique_ptr<Type>> custom_int_types_with_compute_types_;
 
   // TODO: avoid duplication
   std::vector<std::unique_ptr<Type>> bit_struct_types_;

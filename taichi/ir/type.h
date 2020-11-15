@@ -168,6 +168,8 @@ class CustomIntType : public Type {
  public:
   CustomIntType(int num_bits, bool is_signed);
 
+  CustomIntType(int compute_type_bits, int numBits, bool isSigned);
+
   ~CustomIntType() override {
     delete compute_type;
   }

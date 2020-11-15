@@ -209,7 +209,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   void visit(IntegerOffsetStmt *stmt) override;
 
   llvm::Value *create_bit_ptr_struct(llvm::Value *byte_ptr_base,
-                                     llvm::Value *bit_offset);
+                                     llvm::Value *bit_offset,
+                                     int num_bits=32);
 
   void visit(SNodeLookupStmt *stmt) override;
 

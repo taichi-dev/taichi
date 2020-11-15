@@ -115,6 +115,36 @@ CustomIntType::CustomIntType(int num_bits, bool is_signed)
   }
 }
 
+
+CustomIntType::CustomIntType(int compute_type_bits, int num_bits, bool is_signed)
+    : compute_type(nullptr), num_bits_(num_bits), is_signed_(is_signed) {
+  if (compute_type_bits == 32) {
+    if (is_signed) {
+      compute_type =
+          TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32);
+    } else {
+      compute_type =
+          TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::u32);
+    }
+  } else if (compute_type_bits == 16) {
+    if (is_signed) {
+      compute_type =
+          TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i16);
+    } else {
+      compute_type =
+          TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::u16);
+    }
+  } else if (compute_type_bits == 8) {
+    if (is_signed) {
+      compute_type =
+          TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i8);
+    } else {
+      compute_type =
+          TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::u8);
+    }
+  }
+}
+
 std::string BitStructType::to_string() const {
   std::string str = "bs(";
   int num_members = (int)member_bit_offsets_.size();

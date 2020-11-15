@@ -115,8 +115,9 @@ CustomIntType::CustomIntType(int num_bits, bool is_signed)
   }
 }
 
-
-CustomIntType::CustomIntType(int compute_type_bits, int num_bits, bool is_signed)
+CustomIntType::CustomIntType(int compute_type_bits,
+                             int num_bits,
+                             bool is_signed)
     : compute_type(nullptr), num_bits_(num_bits), is_signed_(is_signed) {
   if (compute_type_bits == 32) {
     if (is_signed) {

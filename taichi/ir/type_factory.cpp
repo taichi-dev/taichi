@@ -50,7 +50,8 @@ Type *TypeFactory::_get_custom_int_type(int compute_type_bits,
                                         int num_bits,
                                         bool is_signed) {
   auto key = std::make_pair(num_bits, is_signed);
-  if (custom_int_types_with_compute_types_.find(key) == custom_int_types_with_compute_types_.end()) {
+  if (custom_int_types_with_compute_types_.find(key) ==
+      custom_int_types_with_compute_types_.end()) {
     custom_int_types_with_compute_types_[key] =
         std::make_unique<CustomIntType>(compute_type_bits, num_bits, is_signed);
   }

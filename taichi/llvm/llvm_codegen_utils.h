@@ -142,7 +142,8 @@ class LLVMModuleBuilder {
     bit_offset = builder->CreateLoad(bit_offset_in_bit_struct);
     TI_ASSERT(bit_offset->getType()->isIntegerTy(32));
 
-    auto physical_type_bit_struct = builder->CreateGEP(ptr, {tlctx->get_constant(0), tlctx->get_constant(2)});
+    auto physical_type_bit_struct = builder->CreateGEP(
+        ptr, {tlctx->get_constant(0), tlctx->get_constant(2)});
     physical_type = builder->CreateLoad(physical_type_bit_struct);
     TI_ASSERT(bit_offset->getType()->isIntegerTy(32));
   }

@@ -1554,30 +1554,30 @@ void stack_push(Ptr stack, size_t max_num_elements, std::size_t element_size) {
 #include "internal_functions.h"
 
 #define DEFINE_SET_PARTIAL_BITS(N)                                            \
-void set_partial_bits_b##N(u##N* ptr, u32 offset, u32 bits, u##N value) {      \
-  u##N mask = ((((u##N)1 << bits) - 1) << offset);                           \
-  u##N new_value = 0;                                                         \
-  u##N old_value = *ptr;                                                      \
-  do {                                                                        \
-    old_value = *ptr;                                                         \
-    new_value = (old_value & (~mask)) | (value << offset);                    \
-  } while (!__atomic_compare_exchange(ptr, &old_value, &new_value, true,      \
-            std::memory_order::memory_order_seq_cst,                          \
-            std::memory_order::memory_order_seq_cst));                        \
-}
+  void set_partial_bits_b##N(u##N *ptr, u32 offset, u32 bits, u##N value) {   \
+    u##N mask = ((((u##N)1 << bits) - 1) << offset);                          \
+    u##N new_value = 0;                                                       \
+    u##N old_value = *ptr;                                                    \
+    do {                                                                      \
+      old_value = *ptr;                                                       \
+      new_value = (old_value & (~mask)) | (value << offset);                  \
+    } while (                                                                 \
+        !__atomic_compare_exchange(ptr, &old_value, &new_value, true,         \
+                                   std::memory_order::memory_order_seq_cst,   \
+                                   std::memory_order::memory_order_seq_cst)); \
+  }
 
 DEFINE_SET_PARTIAL_BITS(8);
 DEFINE_SET_PARTIAL_BITS(16);
 DEFINE_SET_PARTIAL_BITS(32);
 DEFINE_SET_PARTIAL_BITS(64);
 
-#define CALL_SET_PARTIAL_BITS_FUNC(ptr, offset, bits, value, n, N)   \
-  else if (n == N) {                                          \
-    set_partial_bits_b##N((u##N*)ptr, offset, bits, (u##N)value);   \
+#define CALL_SET_PARTIAL_BITS_FUNC(ptr, offset, bits, value, n, N) \
+  else if (n == N) {                                               \
+    set_partial_bits_b##N((u##N *)ptr, offset, bits, (u##N)value); \
   }
 
-
-void set_partial_bits(u32* ptr, u32 offset, u32 bits, u32 value, u32 n) {
+void set_partial_bits(u32 *ptr, u32 offset, u32 bits, u32 value, u32 n) {
   if (false) {
   }
   CALL_SET_PARTIAL_BITS_FUNC(ptr, offset, bits, value, n, 8)

@@ -1326,7 +1326,7 @@ void CodeGenLLVM::visit(SNodeLookupStmt *stmt) {
     llvm_val[stmt] = create_bit_ptr_struct(
         llvm_val[stmt->input_snode], offset,
         data_type_bits(
-            snode->dt.get_ptr()->as<BitArrayType>()->get_element_type()));
+            snode->dt.get_ptr()->as<BitArrayType>()->get_physical_type()));
   } else {
     TI_INFO(snode_type_name(snode->type));
     TI_NOT_IMPLEMENTED

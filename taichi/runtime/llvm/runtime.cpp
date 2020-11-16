@@ -1554,40 +1554,81 @@ void stack_push(Ptr stack, size_t max_num_elements, std::size_t element_size) {
 #include "internal_functions.h"
 
 #define DEFINE_SET_PARTIAL_BITS(N)                                            \
-  void set_partial_bits_b##N(u##N *ptr, u32 offset, u32 bits, u##N value) {   \
-    u##N mask = ((((u##N)1 << bits) - 1) << offset);                          \
-    u##N new_value = 0;                                                       \
-    u##N old_value = *ptr;                                                    \
-    do {                                                                      \
-      old_value = *ptr;                                                       \
-      new_value = (old_value & (~mask)) | (value << offset);                  \
-    } while (                                                                 \
-        !__atomic_compare_exchange(ptr, &old_value, &new_value, true,         \
-                                   std::memory_order::memory_order_seq_cst,   \
-                                   std::memory_order::memory_order_seq_cst)); \
-  }
+void set_partial_bits_b##N(u##N *ptr, u32 offset, u32 bits, u##N value) {   \
+  u##N mask = ((((u##N)1 << bits) - 1) << offset);                          \
+  u##N new_value = 0;                                                       \
+  u##N old_value = *ptr;                                                    \
+  do {                                                                      \
+    old_value = *ptr;                                                       \
+    new_value = (old_value & (~mask)) | (value << offset);                  \
+  } while (                                                                 \
+      !__atomic_compare_exchange(ptr, &old_value, &new_value, true,         \
+                                 std::memory_order::memory_order_seq_cst,   \
+                                 std::memory_order::memory_order_seq_cst)); \
+}
 
 DEFINE_SET_PARTIAL_BITS(8);
 DEFINE_SET_PARTIAL_BITS(16);
 DEFINE_SET_PARTIAL_BITS(32);
 DEFINE_SET_PARTIAL_BITS(64);
 
-#define CALL_SET_PARTIAL_BITS_FUNC(ptr, offset, bits, value, n, N) \
+
+
+void set_partial_bits(u32 *ptr, u32 offset, u32 bits, u32 value, u32 n) {
+#define CALL_SET_PARTIAL_BITS_FUNC(N) \
   else if (n == N) {                                               \
     set_partial_bits_b##N((u##N *)ptr, offset, bits, (u##N)value); \
   }
 
-void set_partial_bits(u32 *ptr, u32 offset, u32 bits, u32 value, u32 n) {
   if (false) {
   }
-  CALL_SET_PARTIAL_BITS_FUNC(ptr, offset, bits, value, n, 8)
-  CALL_SET_PARTIAL_BITS_FUNC(ptr, offset, bits, value, n, 16)
-  CALL_SET_PARTIAL_BITS_FUNC(ptr, offset, bits, value, n, 32)
-  CALL_SET_PARTIAL_BITS_FUNC(ptr, offset, bits, value, n, 64)
+  CALL_SET_PARTIAL_BITS_FUNC(8)
+  CALL_SET_PARTIAL_BITS_FUNC(16)
+  CALL_SET_PARTIAL_BITS_FUNC(32)
+  CALL_SET_PARTIAL_BITS_FUNC(64)
   else {
     assert(false);
   }
 }
+
+#define DEFINE_LOAD_PARTIAL_BITS(s, N)                             \
+int64 load_partial_bits_##s##N(i8 *ptr, u32 offset, u32 bits) {   \
+  s##N value = *(s##N*)ptr;                                     \
+  value = (value << (N - offset - bits));                       \
+  value = (value >> (N - bits));                                \
+  return value;                                                 \
+}
+
+DEFINE_LOAD_PARTIAL_BITS(i, 8)
+DEFINE_LOAD_PARTIAL_BITS(i, 16)
+DEFINE_LOAD_PARTIAL_BITS(i, 32)
+DEFINE_LOAD_PARTIAL_BITS(i, 64)
+
+DEFINE_LOAD_PARTIAL_BITS(u, 8)
+DEFINE_LOAD_PARTIAL_BITS(u, 16)
+DEFINE_LOAD_PARTIAL_BITS(u, 32)
+DEFINE_LOAD_PARTIAL_BITS(u, 64)
+
+int64 load_partial_bits(i8 *ptr, u32 offset, u32 bits, u32 n, u32 is_signed) {
+#define CALL_LOAD_PARTIAL_BITS_FUNC(N)                             \
+  else if (n == N) {                                               \
+    if (is_signed)                                                               \
+      return load_partial_bits_i##N(ptr, offset, bits);         \
+    else                                                           \
+      return load_partial_bits_u##N(ptr, offset, bits);\
+  }
+  if (false) {
+  }
+  CALL_LOAD_PARTIAL_BITS_FUNC(8)
+  CALL_LOAD_PARTIAL_BITS_FUNC(16)
+  CALL_LOAD_PARTIAL_BITS_FUNC(32)
+  CALL_LOAD_PARTIAL_BITS_FUNC(64)
+  else {
+    assert(false);
+  }
+  return 0;
+}
+
 }
 
 #endif

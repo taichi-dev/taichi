@@ -1153,25 +1153,12 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
     llvm::Value *byte_ptr, *bit_offset, *physical_type_size;
     read_bit_pointer(llvm_val[stmt->ptr], byte_ptr, bit_offset,
                      physical_type_size);
-    auto bit_level_container = builder->CreateLoad(builder->CreateBitCast(
-        byte_ptr, llvm::Type::getInt32PtrTy(*llvm_context)));
-    // 2. bit shifting
-    //    first left shift `compute_type_size(like 32, 64, ...) - (offset +z
-    //    num_bits)` then right shift `compute_type_size - num_bits`
-    auto bit_end = builder->CreateAdd(bit_offset,
-                                      tlctx->get_constant(cit->get_num_bits()));
-    auto left = builder->CreateSub(physical_type_size, bit_end);
-    auto right = builder->CreateSub(physical_type_size,
-                                    tlctx->get_constant(cit->get_num_bits()));
-    left = builder->CreateIntCast(left, physical_type_size->getType(), false);
-    right = builder->CreateIntCast(right, physical_type_size->getType(), false);
-    auto step1 = builder->CreateShl(bit_level_container, left);
-    llvm::Value *step2 = nullptr;
-    if (cit->get_is_signed())
-      step2 = builder->CreateAShr(step1, right);
-    else
-      step2 = builder->CreateLShr(step1, right);
-    llvm_val[stmt] = step2;
+    auto tmp = builder->CreateCall(
+        get_runtime_function("load_partial_bits"),
+        {byte_ptr,
+         bit_offset, tlctx->get_constant(cit->get_num_bits()),
+         physical_type_size, tlctx->get_constant((uint32)cit->get_is_signed())});
+    llvm_val[stmt] = builder->CreateIntCast(tmp, llvm_type(cit->get_compute_type()), cit->get_is_signed());
   } else {
     llvm_val[stmt] = builder->CreateLoad(tlctx->get_data_type(stmt->ret_type),
                                          llvm_val[stmt->ptr]);

@@ -115,34 +115,43 @@ CustomIntType::CustomIntType(int num_bits, bool is_signed)
   }
 }
 
+#define SET_COMPUTE_TYPE(n, N) \
+  else if (n == N) {           \
+    if (is_signed)             \
+      type_id = PrimitiveTypeID::i##N; \
+    else                       \
+      type_id = PrimitiveTypeID::u##N; \
+  }
+
 CustomIntType::CustomIntType(int compute_type_bits,
                              int num_bits,
                              bool is_signed)
     : compute_type(nullptr), num_bits_(num_bits), is_signed_(is_signed) {
-  if (compute_type_bits == 32) {
-    if (is_signed) {
-      compute_type =
-          TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32);
-    } else {
-      compute_type =
-          TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::u32);
-    }
-  } else if (compute_type_bits == 16) {
-    if (is_signed) {
-      compute_type =
-          TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i16);
-    } else {
-      compute_type =
-          TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::u16);
-    }
-  } else if (compute_type_bits == 8) {
-    if (is_signed) {
-      compute_type =
-          TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i8);
-    } else {
-      compute_type =
-          TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::u8);
-    }
+  auto type_id = PrimitiveTypeID::unknown;
+  if (false) {
+  }
+  SET_COMPUTE_TYPE(compute_type_bits, 64)
+  SET_COMPUTE_TYPE(compute_type_bits, 32)
+  SET_COMPUTE_TYPE(compute_type_bits, 16)
+  SET_COMPUTE_TYPE(compute_type_bits, 8)
+  else {
+    TI_NOT_IMPLEMENTED
+  }
+  compute_type = TypeFactory::get_instance().get_primitive_type(type_id);
+}
+
+BitStructType::BitStructType(PrimitiveType *physical_type,
+                             std::vector<Type *> member_types,
+                             std::vector<int> member_bit_offsets)
+    : physical_type_(physical_type),
+      member_types_(member_types),
+      member_bit_offsets_(member_bit_offsets) {
+  TI_ASSERT(member_types_.size() == member_bit_offsets_.size());
+  int physical_type_bits = data_type_bits(physical_type);
+  for (auto i = 0; i < member_types_.size(); ++i) {
+    auto bits_end = member_types_[i]->as<CustomIntType>()->get_num_bits() +
+                    member_bit_offsets_[i];
+    TI_ASSERT(physical_type_bits >= bits_end)
   }
 }
 

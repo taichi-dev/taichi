@@ -201,16 +201,16 @@ class BitStructType : public Type {
   BitStructType(PrimitiveType *physical_type,
                 std::vector<Type *> member_types,
                 std::vector<int> member_bit_offsets);
-//      : physical_type_(physical_type),
-//        member_types_(member_types),
-//        member_bit_offsets_(member_bit_offsets) {
-//    TI_ASSERT(member_types_.size() == member_bit_offsets_.size());
-//    int physical_type_bits = data_type_bits(physical_type);
-//    for (auto i = 0; i < member_types_.size(); ++i) {
-//      auto bits_end = member_types_[i]->as<CustomIntType>()->get_num_bits() + member_bit_offsets_[i];
-//      TI_ASSERT(physical_type_bits >= bits_end)
-//    }
-//  }
+  //      : physical_type_(physical_type),
+  //        member_types_(member_types),
+  //        member_bit_offsets_(member_bit_offsets) {
+  //    TI_ASSERT(member_types_.size() == member_bit_offsets_.size());
+  //    int physical_type_bits = data_type_bits(physical_type);
+  //    for (auto i = 0; i < member_types_.size(); ++i) {
+  //      auto bits_end = member_types_[i]->as<CustomIntType>()->get_num_bits()
+  //      + member_bit_offsets_[i]; TI_ASSERT(physical_type_bits >= bits_end)
+  //    }
+  //  }
 
   std::string to_string() const override;
 

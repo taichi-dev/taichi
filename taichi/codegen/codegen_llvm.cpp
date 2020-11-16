@@ -1155,10 +1155,11 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
                      physical_type_size);
     auto tmp = builder->CreateCall(
         get_runtime_function("load_partial_bits"),
-        {byte_ptr,
-         bit_offset, tlctx->get_constant(cit->get_num_bits()),
-         physical_type_size, tlctx->get_constant((uint32)cit->get_is_signed())});
-    llvm_val[stmt] = builder->CreateIntCast(tmp, llvm_type(cit->get_compute_type()), cit->get_is_signed());
+        {byte_ptr, bit_offset, tlctx->get_constant(cit->get_num_bits()),
+         physical_type_size,
+         tlctx->get_constant((uint32)cit->get_is_signed())});
+    llvm_val[stmt] = builder->CreateIntCast(
+        tmp, llvm_type(cit->get_compute_type()), cit->get_is_signed());
   } else {
     llvm_val[stmt] = builder->CreateLoad(tlctx->get_data_type(stmt->ret_type),
                                          llvm_val[stmt->ptr]);

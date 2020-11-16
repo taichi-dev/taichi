@@ -115,11 +115,11 @@ CustomIntType::CustomIntType(int num_bits, bool is_signed)
   }
 }
 
-#define SET_COMPUTE_TYPE(n, N) \
-  else if (n == N) {           \
-    if (is_signed)             \
+#define SET_COMPUTE_TYPE(n, N)         \
+  else if (n == N) {                   \
+    if (is_signed)                     \
       type_id = PrimitiveTypeID::i##N; \
-    else                       \
+    else                               \
       type_id = PrimitiveTypeID::u##N; \
   }
 
@@ -134,10 +134,8 @@ CustomIntType::CustomIntType(int compute_type_bits,
   SET_COMPUTE_TYPE(compute_type_bits, 32)
   SET_COMPUTE_TYPE(compute_type_bits, 16)
   SET_COMPUTE_TYPE(compute_type_bits, 8)
-  else {
-    TI_NOT_IMPLEMENTED
-  }
-  compute_type = TypeFactory::get_instance().get_primitive_type(type_id);
+  else {TI_NOT_IMPLEMENTED} compute_type =
+      TypeFactory::get_instance().get_primitive_type(type_id);
 }
 
 BitStructType::BitStructType(PrimitiveType *physical_type,

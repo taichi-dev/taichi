@@ -106,21 +106,27 @@ def test_bit_struct_with_physical_type():
     i = ti.field(dtype=ci64_20)
     j = ti.field(dtype=ci64_7)
 
+    k = ti.field(dtype=ci16_4)
+    l = ti.field(dtype=cu16_12)
+
+    m = ti.field(dtype=ci32_17)
+    n = ti.field(dtype=ci32_11)
+    o = ti.field(dtype=cu32_4)
+
     ti.root._bit_struct(num_bits=8).place(a, b)
     ti.root._bit_struct(num_bits=16).place(c, d)
     ti.root._bit_struct(num_bits=32).place(e, f, g)
     ti.root._bit_struct(num_bits=64).place(h, i, j)
 
-    test_case_np = np.array([[
-        2**4 - 1, 2**3 - 1, 2**3 - 1, 2**12 - 1, 2**16 - 1, 2**10 - 1,
-        2**4 - 1, 2**31 - 1, 2**21 - 1, 2**7 - 1
-    ],
-                             [
-                                 -2**3, 2**2 - 1, -2**2, 2**11 - 1, -2**15,
-                                 -2**9, 2**2 - 1, -2**30, 2**20 - 1, 2**6 - 1
-                             ], [3, 4, 5, 16, 21, 34, 1, 2020, 456, 123]],
-                            dtype=np.int32)
-    test_case = ti.Vector.field(10, dtype=ti.i32, shape=len(test_case_np))
+    ti.root._bit_struct(num_bits=32).place(k, l)
+    ti.root._bit_struct(num_bits=64).place(m, n, o)
+
+    test_case_np = np.array(
+        [[2**4 - 1, 2**3 - 1, 2**3 - 1, 2**12 - 1, 2**16-1, 2**10-1, 2**4-1, 2**31-1, 2**21-1, 2**7-1, 2**3 - 1, 2**12 - 1, 2**16-1, 2**10-1, 2**4-1],
+         [-2**3, 2**2 - 1, -2**2, 2**11 - 1, -2**15, -2**9, 2**2-1, -2**30, 2**20-1, 2**6-1, -2**2, 2**11 - 1, -2**15, -2**9, 2**2-1,],
+         [3, 4, 5, 16, 21, 34, 1, 2020, 456, 123, 5, 16, 21, 34, 1]],
+        dtype=np.int32)
+    test_case = ti.Vector.field(15, dtype=ti.i32, shape=len(test_case_np))
     test_case.from_numpy(test_case_np)
 
     @ti.kernel
@@ -134,6 +140,12 @@ def test_bit_struct_with_physical_type():
         g[None] = test_case[idx][6]
         h[None] = test_case[idx][7]
         i[None] = test_case[idx][8]
+        j[None] = test_case[idx][9]
+        k[None] = test_case[idx][10]
+        l[None] = test_case[idx][11]
+        m[None] = test_case[idx][12]
+        n[None] = test_case[idx][13]
+        o[None] = test_case[idx][14]
 
     @ti.kernel
     def verify_val(idx: ti.i32):
@@ -146,6 +158,12 @@ def test_bit_struct_with_physical_type():
         assert g[None] == test_case[idx][6]
         assert h[None] == test_case[idx][7]
         assert i[None] == test_case[idx][8]
+        assert j[None] == test_case[idx][9]
+        assert k[None] == test_case[idx][10]
+        assert l[None] == test_case[idx][11]
+        assert m[None] == test_case[idx][12]
+        assert n[None] == test_case[idx][13]
+        assert o[None] == test_case[idx][14]
 
     for idx in range(len(test_case_np)):
         set_val(idx)

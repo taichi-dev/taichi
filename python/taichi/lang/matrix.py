@@ -114,6 +114,9 @@ class Matrix(TaichiOperations):
                 stacklevel=2)
 
     def is_global(self):
+        # 0-D vectors are considered to be local:
+        if len(self.entries) == 0:
+            return True
         results = [False for _ in self.entries]
         for i, e in enumerate(self.entries):
             if isinstance(e, expr.Expr):
@@ -816,6 +819,7 @@ class Matrix(TaichiOperations):
               needs_grad=False,
               layout=None):  # TODO(archibate): deprecate layout
         '''ti.Matrix.field'''
+        assert n > 0 and m > 0, 'matrix fields must have positive n and m'
         self = cls.empty(n, m)
         self.entries = []
         self.n = n
@@ -828,7 +832,7 @@ class Matrix(TaichiOperations):
         if layout is not None:
             assert shape is not None, 'layout is useless without shape'
         if shape is None:
-            assert offset is None, "shape cannot be None when offset is being set"
+            assert offset is None, 'shape cannot be None when offset is being set'
 
         if shape is not None:
             if isinstance(shape, numbers.Number):
@@ -839,7 +843,7 @@ class Matrix(TaichiOperations):
             if offset is not None:
                 assert len(shape) == len(
                     offset
-                ), f'The dimensionality of shape and offset must be the same  ({len(shape)} != {len(offset)})'
+                ), f'The dimensionality of shape and offset must be the same ({len(shape)} != {len(offset)})'
 
             import taichi as ti
             if layout is None:

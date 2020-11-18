@@ -1466,7 +1466,7 @@ f32 cuda_rand_f32(Context *context) {
   return cuda_rand_u32(context) * (1.0f / 4294967296.0f);
 }
 
-f32 cuda_rand_f64(Context *context) {
+f64 cuda_rand_f64(Context *context) {
   return cuda_rand_f32(context);
 }
 

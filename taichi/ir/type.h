@@ -134,9 +134,7 @@ class PointerType : public Type {
     return is_bit_pointer_;
   }
 
-  std::string to_string() const override {
-    return fmt::format("*{}", pointee_->to_string());
-  };
+  std::string to_string() const override;
 
  private:
   Type *pointee_{nullptr};
@@ -159,9 +157,7 @@ class VectorType : public Type {
     return num_elements_;
   }
 
-  std::string to_string() const override {
-    return fmt::format("[{} x {}]", num_elements_, element_->to_string());
-  }
+  std::string to_string() const override;
 
  private:
   int num_elements_{0};
@@ -234,6 +230,9 @@ class BitArrayType : public Type {
       : physical_type_(physical_type),
         element_type_(element_type_),
         num_elements_(num_elements_) {
+    // TODO: avoid assertion?
+    TI_ASSERT(element_type_->is<CustomIntType>());
+    element_num_bits_ = element_type_->as<CustomIntType>()->get_num_bits();
   }
 
   std::string to_string() const override;
@@ -250,10 +249,15 @@ class BitArrayType : public Type {
     return num_elements_;
   }
 
+  int get_element_num_bits() const {
+    return element_num_bits_;
+  }
+
  private:
   PrimitiveType *physical_type_;
   Type *element_type_;
   int num_elements_;
+  int element_num_bits_;
 };
 
 TLANG_NAMESPACE_END

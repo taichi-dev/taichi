@@ -61,7 +61,7 @@ we provide a useful decorator ``@ti.test``:
     import taichi as ti
 
     # will test against both CPU and CUDA backends
-    @ti.test(ti.cpu, ti.cuda)
+    @ti.test(arch=[ti.cpu, ti.cuda])
     def test_log10():
         r = ti.field(ti.f32, ())
 
@@ -107,7 +107,6 @@ backends, for example ``2.001 == ti.approx(2)`` will return ``True`` on the Open
 
     import taichi as ti
 
-    # will test against all backends available on your end
     @ti.test()
     def test_log10():
         r = ti.field(ti.f32, ())
@@ -118,7 +117,7 @@ backends, for example ``2.001 == ti.approx(2)`` will return ``True`` on the Open
 
         r[None] = 100
         foo()
-        assert r[None] == ti.approx(2)
+        assert r[None] == ti.approx(2)  # with error tolerance
 
 .. warning::
 
@@ -204,14 +203,18 @@ Use two separate ``parametrize`` to test **all combinations** of input arguments
         foo()
         assert ti.approx(r[None]) == math.atan2(y, x)
 
-Specifying ``ti.init`` configurations
-*************************************
+.. note::
 
-You may specify keyword arguments to ``ti.init()`` in ``ti.test()``, e.g.:
+   The order of these decorators does not matter.
+
+Specifying ``ti.init`` options
+******************************
+
+You may specify keyword arguments of ``ti.init()`` in ``ti.test()``, e.g.:
 
 .. code-block:: python
 
-    @ti.test(ti.cpu, debug=True, log_level=ti.TRACE)
+    @ti.test(arch=ti.cpu, debug=True, log_level=ti.TRACE)
     def test_debugging_utils():
         # ... (some tests have to be done in debug mode)
 
@@ -239,7 +242,7 @@ You may also use the ``extensions`` keyword to exclude backends without specific
 
 .. code-block:: python
 
-    # Run this test on all backends except for OpenGL
-    @ti.test(extensions=[ti.extension.sparse])
+    # Run this test on all backends that support sparse computation
+    @ti.test(require=[ti.extension.sparse])
     def test_sparse_field():
         # ... (some tests that requires sparse feature which is not supported by OpenGL)

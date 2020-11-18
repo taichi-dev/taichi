@@ -55,9 +55,9 @@ def bls_test_template(dim,
     @ti.kernel
     def apply(use_bls: ti.template(), y: ti.template()):
         if ti.static(use_bls and not scatter):
-            ti.cache_shared(x)
+            ti.block_local(x)
         if ti.static(use_bls and scatter):
-            ti.cache_shared(y)
+            ti.block_local(y)
 
         ti.block_dim(block_dim)
         for I in ti.grouped(x):
@@ -182,7 +182,7 @@ def bls_particle_grid(N,
     def p2g(use_shared: ti.template(), m: ti.template()):
         ti.block_dim(256)
         if ti.static(use_shared):
-            ti.cache_shared(m)
+            ti.block_local(m)
         for i, j, l in pid:
             p = pid[i, j, l]
 
@@ -214,7 +214,7 @@ def bls_particle_grid(N,
     def g2p(use_shared: ti.template(), s: ti.template()):
         ti.block_dim(256)
         if ti.static(use_shared):
-            ti.cache_shared(m1)
+            ti.block_local(m1)
         for i, j, l in pid:
             p = pid[i, j, l]
 

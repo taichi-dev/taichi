@@ -219,11 +219,16 @@ def no_activate(*args):
         taichi_lang_core.no_activate(v.snode.ptr)
 
 
-def cache_shared(*args):
+def block_local(*args):
     for a in args:
         for v in a.get_field_members():
             taichi_lang_core.insert_snode_access_flag(
                 taichi_lang_core.SNodeAccessFlag.block_local, v.ptr)
+
+
+@deprecated('ti.cache_shared', 'ti.block_local')
+def cache_shared(*args):
+    block_local(*args)
 
 
 def cache_read_only(*args):

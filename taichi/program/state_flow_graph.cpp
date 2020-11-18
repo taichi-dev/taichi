@@ -248,17 +248,20 @@ bool StateFlowGraph::optimize_listgen() {
         // Test if two list generations share the same mask and parent list
         auto snode = node_a->meta->snode;
 
-        auto mask_state = AsyncState{snode, AsyncState::Type::mask};
         auto list_state = AsyncState{snode, AsyncState::Type::list};
         auto parent_list_state =
             AsyncState{snode->parent, AsyncState::Type::list};
 
-        TI_ASSERT(get_or_insert(node_a->input_edges, mask_state).size() == 1);
-        TI_ASSERT(get_or_insert(node_b->input_edges, mask_state).size() == 1);
+        if (snode->need_activation()) {
+          // Needs mask state
+          auto mask_state = AsyncState{snode, AsyncState::Type::mask};
+          TI_ASSERT(get_or_insert(node_a->input_edges, mask_state).size() == 1);
+          TI_ASSERT(get_or_insert(node_b->input_edges, mask_state).size() == 1);
 
-        if (*get_or_insert(node_a->input_edges, mask_state).begin() !=
-            *get_or_insert(node_b->input_edges, mask_state).begin())
-          break;
+          if (*get_or_insert(node_a->input_edges, mask_state).begin() !=
+              *get_or_insert(node_b->input_edges, mask_state).begin())
+            break;
+        }
 
         TI_ASSERT(
             get_or_insert(node_a->input_edges, parent_list_state).size() == 1);
@@ -453,14 +456,42 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
     if (nodes[a]->meta->type != OffloadedTaskType::serial) {
       for (auto &state : nodes[a]->output_edges) {
         const auto sty = state.first.type;
+        const auto snode = state.first.snode;
         if (sty != AsyncState::Type::value && sty != AsyncState::Type::mask) {
           // No need to check allocator/list states, as they must be accompanied
           // with either value or mask states.
           continue;
         }
         if (state.second.find(nodes[b]) != state.second.end()) {
-          if (!nodes[a]->meta->element_wise[state.first.snode] ||
-              !nodes[b]->meta->element_wise[state.first.snode]) {
+          if (nodes[a]->meta->loop_unique.count(snode) == 0 ||
+              nodes[b]->meta->loop_unique.count(snode) == 0) {
+            return false;
+          }
+          auto same_loop_unique_address = [&](GlobalPtrStmt *ptr1,
+                                              GlobalPtrStmt *ptr2) {
+            if (!ptr1 || !ptr2) {
+              return false;
+            }
+            TI_ASSERT(snode == ptr1->snodes[0]);
+            TI_ASSERT(snode == ptr2->snodes[0]);
+            TI_ASSERT(nodes[a]->rec.stmt()->id == 0);
+            TI_ASSERT(nodes[b]->rec.stmt()->id == 0);
+            // Only map the OffloadedStmt to see if both SNodes are loop-unique
+            // on the same statement.
+            std::unordered_map<int, int> offload_map;
+            offload_map[0] = 0;
+            for (int i = 0; i < (int)ptr1->indices.size(); i++) {
+              if (!irpass::analysis::same_value(
+                      ptr1->indices[i], ptr2->indices[i],
+                      std::make_optional<std::unordered_map<int, int>>(
+                          offload_map))) {
+                return false;
+              }
+            }
+            return true;
+          };
+          if (!same_loop_unique_address(nodes[a]->meta->loop_unique[snode],
+                                        nodes[b]->meta->loop_unique[snode])) {
             return false;
           }
         }
@@ -640,9 +671,9 @@ std::vector<TaskLaunchRecord> StateFlowGraph::extract_to_execute() {
 
 void StateFlowGraph::print() {
   fmt::print("=== State Flow Graph ===\n");
-  fmt::print("{}\n", first_pending_task_index_);
+  fmt::print("{} nodes ({} pending)\n", size(), num_pending_tasks());
   for (auto &node : nodes_) {
-    fmt::print("{}\n", node->string());
+    fmt::print("{}{}\n", node->string(), node->executed() ? " (executed)" : "");
     if (!node->input_edges.empty()) {
       fmt::print("  Inputs:\n");
       for (const auto &p : node->input_edges) {
@@ -1095,7 +1126,7 @@ bool StateFlowGraph::optimize_dead_store() {
   return modified;
 }
 
-void StateFlowGraph::verify() const {
+void StateFlowGraph::verify(bool also_verify_ir) const {
   TI_AUTO_PROF
   // Check nodes
   const int n = nodes_.size();
@@ -1186,6 +1217,20 @@ void StateFlowGraph::verify() const {
                        "has an output edge to nodes_[{}]({})",
                        i, nodes_[i]->string(), dest, nodes_[dest]->string());
       }
+    }
+  }
+
+  if (also_verify_ir) {
+    // Check IR
+    for (int i = 1; i < n; i++) {
+      TI_ASSERT_INFO(
+          nodes_[i]->meta->type == nodes_[i]->rec.stmt()->task_type,
+          "nodes_[{}]({}) has type {}, "
+          "but its IR has task_type {}",
+          i, nodes_[i]->string(),
+          offloaded_task_type_name(nodes_[i]->meta->type),
+          offloaded_task_type_name(nodes_[i]->rec.stmt()->task_type));
+      irpass::analysis::verify(nodes_[i]->rec.stmt());
     }
   }
 }

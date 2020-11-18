@@ -14,7 +14,6 @@
 #include "taichi/llvm/llvm_context.h"
 #include "taichi/backends/metal/kernel_manager.h"
 #include "taichi/backends/opengl/opengl_kernel_launcher.h"
-#include "taichi/backends/opengl/opengl_kernel_util.h"
 #ifdef TI_WITH_CC
 #include "taichi/backends/cc/cc_program.h"
 #endif

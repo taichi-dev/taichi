@@ -102,7 +102,8 @@ std::string CustomIntType::to_string() const {
 }
 
 CustomIntType::CustomIntType(int num_bits, bool is_signed)
-    : compute_type(nullptr), num_bits_(num_bits), is_signed_(is_signed) {
+    : compute_type(nullptr), physical_type(nullptr),
+      num_bits_(num_bits), is_signed_(is_signed) {
   // TODO(type): support customizable compute_type
   //  and should we expose it to users?
   TI_ASSERT(num_bits <= 32);
@@ -126,7 +127,8 @@ CustomIntType::CustomIntType(int num_bits, bool is_signed)
 CustomIntType::CustomIntType(int compute_type_bits,
                              int num_bits,
                              bool is_signed)
-    : compute_type(nullptr), num_bits_(num_bits), is_signed_(is_signed) {
+    : compute_type(nullptr), physical_type(nullptr),
+      num_bits_(num_bits), is_signed_(is_signed) {
   auto type_id = PrimitiveTypeID::unknown;
   if (false) {
   }
@@ -136,6 +138,23 @@ CustomIntType::CustomIntType(int compute_type_bits,
   SET_COMPUTE_TYPE(compute_type_bits, 8)
   else {TI_NOT_IMPLEMENTED} compute_type =
       TypeFactory::get_instance().get_primitive_type(type_id);
+}
+
+CustomIntType::CustomIntType(int compute_type_bits,
+                             Type *physical_type,
+                             int num_bits,
+                             bool is_signed)
+    : compute_type(nullptr), physical_type(physical_type),
+      num_bits_(num_bits), is_signed_(is_signed) {
+  auto type_id = PrimitiveTypeID::unknown;
+  if (false) {
+  }
+  SET_COMPUTE_TYPE(compute_type_bits, 64)
+  SET_COMPUTE_TYPE(compute_type_bits, 32)
+  SET_COMPUTE_TYPE(compute_type_bits, 16)
+  SET_COMPUTE_TYPE(compute_type_bits, 8)
+  else {TI_NOT_IMPLEMENTED} compute_type =
+                                TypeFactory::get_instance().get_primitive_type(type_id);
 }
 
 BitStructType::BitStructType(PrimitiveType *physical_type,

@@ -68,6 +68,7 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
       ch_types.push_back(ch->dt.get_ptr());
       ch_offsets.push_back(total_offset);
       total_offset += ch->dt->as<CustomIntType>()->get_num_bits();
+      ch->dt->as<CustomIntType>()->set_physical_type(snode.physical_type);
     }
 
     snode.dt = TypeFactory::get_instance().get_bit_struct_type(

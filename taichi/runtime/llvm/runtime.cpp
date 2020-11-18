@@ -1572,60 +1572,6 @@ DEFINE_SET_PARTIAL_BITS(16);
 DEFINE_SET_PARTIAL_BITS(32);
 DEFINE_SET_PARTIAL_BITS(64);
 
-void set_partial_bits(u32 *ptr, u32 offset, u32 bits, u32 value, u32 n) {
-#define CALL_SET_PARTIAL_BITS_FUNC(N)                              \
-  else if (n == N) {                                               \
-    set_partial_bits_b##N((u##N *)ptr, offset, bits, (u##N)value); \
-  }
-
-  if (false) {
-  }
-  CALL_SET_PARTIAL_BITS_FUNC(8)
-  CALL_SET_PARTIAL_BITS_FUNC(16)
-  CALL_SET_PARTIAL_BITS_FUNC(32)
-  CALL_SET_PARTIAL_BITS_FUNC(64)
-  else {
-    assert(false);
-  }
-}
-
-#define DEFINE_LOAD_PARTIAL_BITS(s, N)                            \
-  int64 load_partial_bits_##s##N(i8 *ptr, u32 offset, u32 bits) { \
-    s##N value = *(s##N *)ptr;                                    \
-    value = (value << (N - offset - bits));                       \
-    value = (value >> (N - bits));                                \
-    return value;                                                 \
-  }
-
-DEFINE_LOAD_PARTIAL_BITS(i, 8)
-DEFINE_LOAD_PARTIAL_BITS(i, 16)
-DEFINE_LOAD_PARTIAL_BITS(i, 32)
-DEFINE_LOAD_PARTIAL_BITS(i, 64)
-
-DEFINE_LOAD_PARTIAL_BITS(u, 8)
-DEFINE_LOAD_PARTIAL_BITS(u, 16)
-DEFINE_LOAD_PARTIAL_BITS(u, 32)
-DEFINE_LOAD_PARTIAL_BITS(u, 64)
-
-int64 load_partial_bits(i8 *ptr, u32 offset, u32 bits, u32 n, u32 is_signed) {
-#define CALL_LOAD_PARTIAL_BITS_FUNC(N)                  \
-  else if (n == N) {                                    \
-    if (is_signed)                                      \
-      return load_partial_bits_i##N(ptr, offset, bits); \
-    else                                                \
-      return load_partial_bits_u##N(ptr, offset, bits); \
-  }
-  if (false) {
-  }
-  CALL_LOAD_PARTIAL_BITS_FUNC(8)
-  CALL_LOAD_PARTIAL_BITS_FUNC(16)
-  CALL_LOAD_PARTIAL_BITS_FUNC(32)
-  CALL_LOAD_PARTIAL_BITS_FUNC(64)
-  else {
-    assert(false);
-  }
-  return 0;
-}
 }
 
 #endif

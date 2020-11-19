@@ -46,7 +46,7 @@ inline int opengl_data_address_shifter(DataType type) {
   auto dtype_size = data_type_size(type);
   if (dtype_size == 4) {
     return 2;
-  else if (dtype_size == 8) {
+  } else if (dtype_size == 8) {
     return 3;
   } else {
     TI_NOT_IMPLEMENTED

@@ -56,7 +56,10 @@ class ComposerCC(ComposerBase):
         super().run()
 
         for key, launches in self.groups.items():
-            self.emit(f'// group {key}: {launches}')
+            self.emit(f'const char *Ti_group_{key}[] = {{')
+            for name in launches:
+                self.emit(f'  "{name}",')
+            self.emit(f"}};")
 
     def do_compile_runtime(self, e):
         header = e['runtime_header']

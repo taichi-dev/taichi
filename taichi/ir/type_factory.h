@@ -23,7 +23,7 @@ class TypeFactory {
 
   Type *get_custom_int_type(int num_bits, bool is_signed);
 
-  Type *_get_custom_int_type(int compute_type_bits,
+  Type *get_custom_int_type_with_compute_type(int compute_type_bits,
                              int num_bits,
                              bool is_signed);
 

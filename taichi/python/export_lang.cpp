@@ -729,7 +729,8 @@ void export_lang(py::module &m) {
   py::class_<TypeFactory>(m, "TypeFactory")
       .def("get_custom_int_type", &TypeFactory::get_custom_int_type,
            py::return_value_policy::reference)
-      .def("_get_custom_int_type", &TypeFactory::_get_custom_int_type,
+      .def("get_custom_int_type_with_compute_type",
+           &TypeFactory::get_custom_int_type_with_compute_type,
            py::return_value_policy::reference);
 
   m.def("get_type_factory_instance", TypeFactory::get_instance,

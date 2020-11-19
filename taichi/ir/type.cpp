@@ -107,7 +107,7 @@ CustomIntType::CustomIntType(int num_bits, bool is_signed)
       num_bits_(num_bits),
       is_signed_(is_signed) {
   // TODO(type): support customizable compute_type
-  //  and should we expose it to users?
+  //  and expose it to users in the future.
   TI_ASSERT(num_bits <= 32);
   if (is_signed) {
     compute_type =

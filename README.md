@@ -61,6 +61,7 @@ Please build from source for other configurations (e.g., your CPU is ARM, or you
 - [Taichi THREE](https://github.com/taichi-dev/taichi_three): A 3D rendering library based on Taichi.
 - [Taichi GLSL](https://github.com/taichi-dev/taichi_glsl): A Taichi extension library that provides a set of GLSL-style helper functions.
 - [Taichi Elements](https://github.com/taichi-dev/taichi_elements): A high-performance multi-material continuum physics engine based on Taichi (work in progress).
+- [Taichi Blend](https://github.com/taichi-dev/taichi_blend): Taichi Blender intergration for physics-based animations (work in progress)
 - [Taichi.js](https://github.com/taichi-dev/taichi.js): Run compiled Taichi programs in Javascript and WASM (work in progress).
 
 ---

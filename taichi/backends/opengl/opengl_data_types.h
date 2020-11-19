@@ -37,11 +37,10 @@ inline int opengl_data_address_shifter(DataType type) {
   // TODO: fail loudly when feeding a pointer type to this function, after type
   // system upgrade.
   type.set_is_pointer(false);
-  if (type->is_primitive(PrimitiveTypeID::f32) ||
-      type->is_primitive(PrimitiveTypeID::i32))
+  auto dtype_size = data_type_size(type);
+  if (dtype_size == 4) {
     return 2;
-  else if (type->is_primitive(PrimitiveTypeID::f64) ||
-           type->is_primitive(PrimitiveTypeID::i64)) {
+  else if (dtype_size == 8) {
     return 3;
   } else {
     TI_NOT_IMPLEMENTED

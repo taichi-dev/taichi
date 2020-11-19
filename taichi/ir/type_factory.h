@@ -53,7 +53,7 @@ class TypeFactory {
   // TODO: use unordered map
   std::map<std::pair<int, bool>, std::unique_ptr<Type>> custom_int_types_;
 
-  std::map<std::pair<int, bool>, std::unique_ptr<Type>>
+  std::map<std::tuple<int, int, bool>, std::unique_ptr<Type>>
       custom_int_types_with_compute_types_;
 
   // TODO: avoid duplication

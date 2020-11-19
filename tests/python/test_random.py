@@ -105,3 +105,12 @@ def test_random_seed_per_launch():
         count += 1 if x[i] == x[i - 1] else 0
 
     assert count <= n * 0.15
+
+
+@ti.test(arch=[ti.cpu, ti.cuda])
+def test_random_f64():
+    @ti.kernel
+    def foo() -> ti.f64:
+        return ti.random(dtype=ti.f64)
+
+    foo()

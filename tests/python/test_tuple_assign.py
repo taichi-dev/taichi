@@ -39,8 +39,6 @@ def test_assign2():
 @ti.host_arch_only
 @ti.must_throw(ValueError)
 def test_assign2_mismatch3():
-    ti.init(print_preprocessed=True)
-
     a = ti.field(ti.f32, ())
     b = ti.field(ti.f32, ())
 
@@ -54,8 +52,6 @@ def test_assign2_mismatch3():
 @ti.host_arch_only
 @ti.must_throw(TypeError)
 def test_assign2_mismatch1():
-    ti.init(print_preprocessed=True)
-
     a = ti.field(ti.f32, ())
     b = ti.field(ti.f32, ())
 
@@ -138,7 +134,6 @@ def test_unpack_from_tuple():
 @ti.host_arch_only
 @ti.must_throw(ValueError)
 def test_unpack_mismatch_tuple():
-    ti.init(print_preprocessed=True)
     a = ti.field(ti.f32, ())
     b = ti.field(ti.f32, ())
 
@@ -171,7 +166,6 @@ def test_unpack_from_vector():
 @ti.host_arch_only
 @ti.must_throw(ValueError)
 def test_unpack_mismatch_vector():
-    ti.init(print_preprocessed=True)
     a = ti.field(ti.f32, ())
     b = ti.field(ti.f32, ())
 
@@ -186,7 +180,6 @@ def test_unpack_mismatch_vector():
 @ti.host_arch_only
 @ti.must_throw(TypeError)
 def test_unpack_mismatch_type():
-    ti.init(print_preprocessed=True)
     a = ti.field(ti.f32, ())
     b = ti.field(ti.f32, ())
 
@@ -202,7 +195,6 @@ def test_unpack_mismatch_type():
 @ti.host_arch_only
 @ti.must_throw(ValueError)
 def test_unpack_mismatch_matrix():
-    ti.init(print_preprocessed=True)
     a = ti.field(ti.f32, ())
     b = ti.field(ti.f32, ())
     c = ti.field(ti.f32, ())

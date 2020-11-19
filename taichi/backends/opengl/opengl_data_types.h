@@ -1,9 +1,11 @@
 #pragma once
 
 #include "taichi/lang_util.h"
+#include "taichi/ir/snode.h"
 #include <string>
 
 TLANG_NAMESPACE_BEGIN
+
 namespace opengl {
 
 inline std::string opengl_data_type_name(DataType dt) {
@@ -17,6 +19,10 @@ inline std::string opengl_data_type_name(DataType dt) {
     return "int";
   else if (dt->is_primitive(PrimitiveTypeID::i64))
     return "int64_t";
+  else if (dt->is_primitive(PrimitiveTypeID::u32))
+    return "uint";
+  else if (dt->is_primitive(PrimitiveTypeID::u64))
+    return "uint64_t";
   else {
     TI_ERROR("Type {} not supported.", dt->to_string());
   }

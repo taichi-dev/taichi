@@ -1,8 +1,7 @@
 import taichi as ti
-ti.init()
 
 
-@ti.host_arch_only
+@ti.test(ti.cpu)
 def test_func_closure():
     def my_test():
         a = 32

@@ -81,6 +81,7 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
     TI_ASSERT(snode.ch.size() == 1);
     auto &ch = snode.ch[0];
     Type *ch_type = ch->dt.get_ptr();
+    ch->dt->as<CustomIntType>()->set_physical_type(snode.physical_type);
     snode.dt = TypeFactory::get_instance().get_bit_array_type(
         snode.physical_type, ch_type, snode.n);
 

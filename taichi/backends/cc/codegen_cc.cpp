@@ -471,7 +471,18 @@ class CCTransformer : public IRVisitor {
 
   void visit(LoopIndexStmt *stmt) override {
     TI_ASSERT(stmt->index == 0);  // TODO: multiple indices
-    emit("Ti_i32 {} = {};", stmt->raw_name(), stmt->loop->raw_name());
+    if (stmt->loop->is<OffloadedStmt>()) {
+      auto type = stmt->loop->as<OffloadedStmt>()->task_type;
+      if (type == OffloadedStmt::TaskType::range_for) {
+        emit("Ti_i32 {} = {};", stmt->raw_name(), stmt->loop->raw_name());
+      } else {
+        TI_NOT_IMPLEMENTED
+      }
+    } else if (stmt->loop->is<RangeForStmt>()) {
+      emit("Ti_i32 {} = {};", stmt->raw_name(), stmt->loop->raw_name());
+    } else {
+      TI_NOT_IMPLEMENTED
+    }
   }
 
   void visit(RangeForStmt *stmt) override {

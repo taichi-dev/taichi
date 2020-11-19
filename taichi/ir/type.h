@@ -170,7 +170,9 @@ class CustomIntType : public Type {
 
   CustomIntType(int compute_type_bits, int numBits, bool isSigned);
 
-  CustomIntType(int compute_type_bits, Type *physical_type, int num_bits,
+  CustomIntType(int compute_type_bits,
+                Type *physical_type,
+                int num_bits,
                 bool is_signed);
 
   ~CustomIntType() override {
@@ -179,11 +181,11 @@ class CustomIntType : public Type {
 
   std::string to_string() const override;
 
-  void set_physical_type(Type*physical_type_) {
+  void set_physical_type(Type *physical_type_) {
     this->physical_type = physical_type_;
   }
 
-  Type* get_physical_type() {
+  Type *get_physical_type() {
     return physical_type;
   }
 

@@ -1110,13 +1110,15 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
     auto cit = ptr_type->get_pointee_type()->as<CustomIntType>();
     llvm::Value *byte_ptr = nullptr, *bit_offset = nullptr;
     read_bit_pointer(llvm_val[stmt->ptr], byte_ptr, bit_offset);
-    auto func_name = fmt::format("set_partial_bits_b{}", data_type_bits(cit->get_physical_type()));
+    auto func_name = fmt::format("set_partial_bits_b{}",
+                                 data_type_bits(cit->get_physical_type()));
     builder->CreateCall(
         get_runtime_function(func_name),
         {builder->CreateBitCast(byte_ptr,
                                 llvm_ptr_type(cit->get_physical_type())),
          bit_offset, tlctx->get_constant(cit->get_num_bits()),
-         builder->CreateIntCast(llvm_val[stmt->data], llvm_type(cit->get_physical_type()), false)});
+         builder->CreateIntCast(llvm_val[stmt->data],
+                                llvm_type(cit->get_physical_type()), false)});
   } else {
     builder->CreateStore(llvm_val[stmt->data], llvm_val[stmt->ptr]);
   }
@@ -1138,11 +1140,14 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
     //    then right shift `physical_type - num_bits`
     auto bit_end = builder->CreateAdd(bit_offset,
                                       tlctx->get_constant(cit->get_num_bits()));
-    auto left = builder->CreateSub(tlctx->get_constant(data_type_bits(cit->get_physical_type())), bit_end);
-    auto right = builder->CreateSub(tlctx->get_constant(data_type_bits(cit->get_physical_type())),
-                                    tlctx->get_constant(cit->get_num_bits()));
+    auto left = builder->CreateSub(
+        tlctx->get_constant(data_type_bits(cit->get_physical_type())), bit_end);
+    auto right = builder->CreateSub(
+        tlctx->get_constant(data_type_bits(cit->get_physical_type())),
+        tlctx->get_constant(cit->get_num_bits()));
     left = builder->CreateIntCast(left, bit_level_container->getType(), false);
-    right = builder->CreateIntCast(right, bit_level_container->getType(), false);
+    right =
+        builder->CreateIntCast(right, bit_level_container->getType(), false);
     auto step1 = builder->CreateShl(bit_level_container, left);
     llvm::Value *step2 = nullptr;
     if (cit->get_is_signed())
@@ -1296,8 +1301,7 @@ void CodeGenLLVM::visit(SNodeLookupStmt *stmt) {
         snode->dt.get_ptr()->as<BitArrayType>()->get_element_num_bits();
     auto offset = tlctx->get_constant(element_num_bits);
     offset = builder->CreateMul(offset, llvm_val[stmt->input_index]);
-    llvm_val[stmt] = create_bit_ptr_struct(
-        llvm_val[stmt->input_snode], offset);
+    llvm_val[stmt] = create_bit_ptr_struct(llvm_val[stmt->input_snode], offset);
   } else {
     TI_INFO(snode_type_name(snode->type));
     TI_NOT_IMPLEMENTED
@@ -1312,8 +1316,7 @@ void CodeGenLLVM::visit(GetChStmt *stmt) {
     auto bit_offset = bit_struct->get_member_bit_offset(
         stmt->input_snode->child_id(stmt->output_snode));
     auto offset = tlctx->get_constant(bit_offset);
-    llvm_val[stmt] =
-        create_bit_ptr_struct(llvm_val[stmt->input_ptr], offset);
+    llvm_val[stmt] = create_bit_ptr_struct(llvm_val[stmt->input_ptr], offset);
   } else {
     auto ch = create_call(stmt->output_snode->get_ch_from_parent_func_name(),
                           {builder->CreateBitCast(

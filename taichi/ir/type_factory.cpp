@@ -47,8 +47,8 @@ Type *TypeFactory::get_custom_int_type(int num_bits, bool is_signed) {
 }
 
 Type *TypeFactory::get_custom_int_type_with_compute_type(int compute_type_bits,
-                                        int num_bits,
-                                        bool is_signed) {
+                                                         int num_bits,
+                                                         bool is_signed) {
   auto key = std::make_tuple(compute_type_bits, num_bits, is_signed);
   if (custom_int_types_with_compute_types_.find(key) ==
       custom_int_types_with_compute_types_.end()) {

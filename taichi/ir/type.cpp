@@ -101,56 +101,19 @@ std::string CustomIntType::to_string() const {
   return fmt::format("c{}{}", is_signed_ ? 'i' : 'u', num_bits_);
 }
 
-CustomIntType::CustomIntType(int num_bits, bool is_signed)
-    : compute_type(nullptr),
-      physical_type(nullptr),
-      num_bits_(num_bits),
-      is_signed_(is_signed) {
-  // TODO(type): support customizable compute_type
-  //  and expose it to users in the future.
-  TI_ASSERT(num_bits <= 32);
-  if (is_signed) {
-    compute_type =
-        TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32);
-  } else {
-    compute_type =
-        TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::u32);
-  }
-}
-
-#define SET_COMPUTE_TYPE(n, N)         \
-  else if (n == N) {                   \
-    if (is_signed)                     \
-      type_id = PrimitiveTypeID::i##N; \
-    else                               \
-      type_id = PrimitiveTypeID::u##N; \
-  }
-
-CustomIntType::CustomIntType(int compute_type_bits,
-                             int num_bits,
-                             bool is_signed)
-    : CustomIntType(compute_type_bits, nullptr, num_bits, is_signed) {
-}
-
-CustomIntType::CustomIntType(int compute_type_bits,
-                             Type *physical_type,
-                             int num_bits,
-                             bool is_signed)
-    : compute_type(nullptr),
+CustomIntType::CustomIntType(int num_bits,
+                             bool is_signed,
+                             Type* compute_type,
+                             Type *physical_type)
+    : compute_type(compute_type),
       physical_type(physical_type),
       num_bits_(num_bits),
       is_signed_(is_signed) {
-  auto type_id = PrimitiveTypeID::unknown;
-  if (false) {
+  if (compute_type == nullptr) {
+    auto type_id = is_signed ? PrimitiveTypeID::i32 : PrimitiveTypeID::u32;
+    this->compute_type = TypeFactory::get_instance().get_primitive_type(type_id);
   }
-  SET_COMPUTE_TYPE(compute_type_bits, 64)
-  SET_COMPUTE_TYPE(compute_type_bits, 32)
-  SET_COMPUTE_TYPE(compute_type_bits, 16)
-  SET_COMPUTE_TYPE(compute_type_bits, 8)
-  else {TI_NOT_IMPLEMENTED} compute_type =
-      TypeFactory::get_instance().get_primitive_type(type_id);
 }
-#undef SET_COMPUTE_TYPE
 
 BitStructType::BitStructType(PrimitiveType *physical_type,
                              std::vector<Type *> member_types,

@@ -11,7 +11,7 @@ TLANG_NAMESPACE_BEGIN
 // scratch_pad term
 
 // Figure out accessed SNodes, and their ranges in this for stmt
-class AccessAnalysis : public BasicStmtVisitor {
+class BLSAnalysis : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
 
  public:
@@ -20,7 +20,7 @@ class AccessAnalysis : public BasicStmtVisitor {
 
   std::vector<std::vector<int>> block_indices;
 
-  AccessAnalysis(OffloadedStmt *for_stmt, ScratchPads *pads)
+  BLSAnalysis(OffloadedStmt *for_stmt, ScratchPads *pads)
       : for_stmt(for_stmt), pads(pads) {
     TI_AUTO_PROF;
     allow_undefined_visitor = true;
@@ -37,8 +37,8 @@ class AccessAnalysis : public BasicStmtVisitor {
     }
   }
 
-  // Recursively (dimension by dimension) generate the indices in a SNode (block)
-  // E.g., a dense(ti.ij, (2, 4)) SNode has indices
+  // Recursively (dimension by dimension) generate the indices in a SNode
+  // (block) E.g., a dense(ti.ij, (2, 4)) SNode has indices
   // [(0, 0), (0, 1), (0, 2), (0, 3), (1, 0), (1, 1), (1, 2), (1, 3)]
   void generate_block_indices(SNode *snode, std::vector<int> index, int s) {
     TI_AUTO_PROF
@@ -140,7 +140,7 @@ std::unique_ptr<ScratchPads> initialize_scratch_pad(OffloadedStmt *offload) {
       pads->insert(opt.second);
     }
   }
-  AccessAnalysis _(offload, pads.get());
+  BLSAnalysis _(offload, pads.get());
   pads->finalize();
   return pads;
 }

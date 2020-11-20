@@ -1,3 +1,7 @@
+# Tutorials (Chinese):
+# - https://www.bilibili.com/video/BV1UK4y177iH
+# - https://www.bilibili.com/video/BV1DK411A771
+
 import taichi as ti
 
 ti.init(arch=ti.cpu)

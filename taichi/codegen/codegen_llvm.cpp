@@ -327,7 +327,6 @@ void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
       TI_ASSERT(!to->is<CustomIntType>());
       auto from_size = 0;
       if (from->is<CustomIntType>()) {
-        // TODO: replace 32 with a customizable type
         from_size =
             data_type_size(from->cast<CustomIntType>()->get_compute_type());
       } else {

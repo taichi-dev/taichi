@@ -23,7 +23,7 @@ class TypeFactory {
 
   Type *get_custom_int_type(int num_bits,
                             bool is_signed,
-                            int compute_type_bits=32);
+                            int compute_type_bits = 32);
 
   Type *get_bit_struct_type(PrimitiveType *physical_type,
                             std::vector<Type *> member_types,

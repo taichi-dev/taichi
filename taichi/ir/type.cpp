@@ -103,7 +103,7 @@ std::string CustomIntType::to_string() const {
 
 CustomIntType::CustomIntType(int num_bits,
                              bool is_signed,
-                             Type* compute_type,
+                             Type *compute_type,
                              Type *physical_type)
     : compute_type(compute_type),
       physical_type(physical_type),
@@ -111,7 +111,8 @@ CustomIntType::CustomIntType(int num_bits,
       is_signed_(is_signed) {
   if (compute_type == nullptr) {
     auto type_id = is_signed ? PrimitiveTypeID::i32 : PrimitiveTypeID::u32;
-    this->compute_type = TypeFactory::get_instance().get_primitive_type(type_id);
+    this->compute_type =
+        TypeFactory::get_instance().get_primitive_type(type_id);
   }
 }
 

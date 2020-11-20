@@ -166,8 +166,10 @@ class VectorType : public Type {
 
 class CustomIntType : public Type {
  public:
-  CustomIntType(int num_bits, bool is_signed,
-                Type* compute_type=nullptr, Type* physical_type=nullptr);
+  CustomIntType(int num_bits,
+                bool is_signed,
+                Type *compute_type = nullptr,
+                Type *physical_type = nullptr);
 
   ~CustomIntType() override {
     delete compute_type;

@@ -43,9 +43,9 @@ Type *TypeFactory::get_custom_int_type(int num_bits,
   auto key = std::make_tuple(compute_type_bits, num_bits, is_signed);
   if (custom_int_types_with_compute_types_.find(key) ==
       custom_int_types_with_compute_types_.end()) {
-    custom_int_types_with_compute_types_[key] =
-        std::make_unique<CustomIntType>(num_bits, is_signed,
-                            get_primitive_int_type(compute_type_bits, is_signed));
+    custom_int_types_with_compute_types_[key] = std::make_unique<CustomIntType>(
+        num_bits, is_signed,
+        get_primitive_int_type(compute_type_bits, is_signed));
   }
   return custom_int_types_with_compute_types_[key].get();
 }

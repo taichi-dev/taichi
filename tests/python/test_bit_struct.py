@@ -85,12 +85,12 @@ def test_bit_struct():
                 print_ir=False,
                 cfg_optimization=False)
 
-        cit1 = ti.type_factory_.get_custom_int_type(
-            custom_bits[0], True, compute_type)
-        cit2 = ti.type_factory_.get_custom_int_type(
-            custom_bits[1], False, compute_type)
-        cit3 = ti.type_factory_.get_custom_int_type(
-            custom_bits[2], True, compute_type)
+        cit1 = ti.type_factory_.get_custom_int_type(custom_bits[0], True,
+                                                    compute_type)
+        cit2 = ti.type_factory_.get_custom_int_type(custom_bits[1], False,
+                                                    compute_type)
+        cit3 = ti.type_factory_.get_custom_int_type(custom_bits[2], True,
+                                                    compute_type)
 
         a = ti.field(dtype=cit1)
         b = ti.field(dtype=cit2)

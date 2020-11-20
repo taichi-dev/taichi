@@ -18,7 +18,9 @@ class BLSAnalysis : public BasicStmtVisitor {
   OffloadedStmt *for_stmt;
   ScratchPads *pads;
 
-  std::vector<std::vector<int>> block_indices;
+  using BlockIndices = std::vector<std::vector<int>>;
+
+  std::unordered_map<SNode *, BlockIndices> block_indices;
 
   BLSAnalysis(OffloadedStmt *for_stmt, ScratchPads *pads)
       : for_stmt(for_stmt), pads(pads) {
@@ -26,9 +28,14 @@ class BLSAnalysis : public BasicStmtVisitor {
     allow_undefined_visitor = true;
     invoke_default_visitor = false;
 
-    TI_WARN(
-        "Using the size of scratch_opt[0].second as the snode size to cache");
-    generate_block_indices(for_stmt->scratch_opt[0].second->parent, {}, 0);
+    for (auto &opt : for_stmt->scratch_opt) {
+      if (opt.first == SNodeAccessFlag::block_local) {
+        auto block = opt.second->parent;
+        if (block_indices.find(block) == block_indices.end()) {
+          generate_block_indices(block, block_indices[block], {}, 0);
+        }
+      }
+    }
 
     const auto &block = for_stmt->body;
 
@@ -40,8 +47,10 @@ class BLSAnalysis : public BasicStmtVisitor {
   // Recursively (dimension by dimension) generate the indices in a SNode
   // (block) E.g., a dense(ti.ij, (2, 4)) SNode has indices
   // [(0, 0), (0, 1), (0, 2), (0, 3), (1, 0), (1, 1), (1, 2), (1, 3)]
-  void generate_block_indices(SNode *snode, std::vector<int> index, int s) {
-    TI_AUTO_PROF
+  void generate_block_indices(SNode *snode,
+                              BlockIndices &block_indices,
+                              std::vector<int> index,
+                              int s) {
     // NOTE: Assuming not vectorized
     if (s == taichi_max_num_indices) {
       block_indices.push_back(index);
@@ -52,10 +61,10 @@ class BLSAnalysis : public BasicStmtVisitor {
       for (int i = 0; i < (1 << snode->extractors[s].num_bits); i++) {
         auto new_index = index;
         new_index.push_back(i);
-        generate_block_indices(snode, new_index, s + 1);
+        generate_block_indices(snode, block_indices, new_index, s + 1);
       }
     } else {
-      generate_block_indices(snode, index, s + 1);
+      generate_block_indices(snode, block_indices, index, s + 1);
     }
   }
 
@@ -87,7 +96,8 @@ class BLSAnalysis : public BasicStmtVisitor {
         }
       }
       if (matching_indices) {
-        for (const auto &bind : block_indices) {
+        auto block = snode->parent;
+        for (const auto &bind : block_indices[block]) {
           std::function<void(std::vector<int>, int)> visit =
               [&](std::vector<int> ind, int depth) {
                 if (depth == num_indices) {

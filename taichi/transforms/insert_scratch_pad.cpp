@@ -45,26 +45,26 @@ class BLSAnalysis : public BasicStmtVisitor {
   }
 
   // Recursively (dimension by dimension) generate the indices in a SNode
-  // (block) E.g., a dense(ti.ij, (2, 4)) SNode has indices
+  // (block). E.g., a dense(ti.ij, (2, 4)) SNode has indices
   // [(0, 0), (0, 1), (0, 2), (0, 3), (1, 0), (1, 1), (1, 2), (1, 3)]
   void generate_block_indices(SNode *snode,
                               BlockIndices &block_indices,
                               std::vector<int> index,
-                              int s) {
+                              int index_id) {
     // NOTE: Assuming not vectorized
-    if (s == taichi_max_num_indices) {
+    if (index_id == taichi_max_num_indices) {
       block_indices.push_back(index);
       return;
     }
 
-    if (snode->extractors[s].active) {
-      for (int i = 0; i < (1 << snode->extractors[s].num_bits); i++) {
+    if (snode->extractors[index_id].active) {
+      for (int i = 0; i < (1 << snode->extractors[index_id].num_bits); i++) {
         auto new_index = index;
         new_index.push_back(i);
-        generate_block_indices(snode, block_indices, new_index, s + 1);
+        generate_block_indices(snode, block_indices, new_index, index_id + 1);
       }
     } else {
-      generate_block_indices(snode, block_indices, index, s + 1);
+      generate_block_indices(snode, block_indices, index, index_id + 1);
     }
   }
 

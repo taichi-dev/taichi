@@ -49,10 +49,7 @@ class TypeFactory {
   std::map<std::pair<Type *, bool>, std::unique_ptr<Type>> pointer_types_;
 
   // TODO: use unordered map
-  std::map<std::pair<int, bool>, std::unique_ptr<Type>> custom_int_types_;
-
-  std::map<std::tuple<int, int, bool>, std::unique_ptr<Type>>
-      custom_int_types_with_compute_types_;
+  std::map<std::tuple<int, int, bool>, std::unique_ptr<Type>> custom_int_types;
 
   // TODO: avoid duplication
   std::vector<std::unique_ptr<Type>> bit_struct_types_;

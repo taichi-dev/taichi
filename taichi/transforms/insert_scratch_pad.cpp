@@ -7,6 +7,9 @@
 
 TLANG_NAMESPACE_BEGIN
 
+// TODO: rename scratch_pad to block_local_cache? Need to get rid of the
+// scratch_pad term
+
 // Figure out accessed SNodes, and their ranges in this for stmt
 class AccessAnalysis : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
@@ -19,6 +22,7 @@ class AccessAnalysis : public BasicStmtVisitor {
 
   AccessAnalysis(OffloadedStmt *for_stmt, ScratchPads *pads)
       : for_stmt(for_stmt), pads(pads) {
+    TI_AUTO_PROF;
     allow_undefined_visitor = true;
     invoke_default_visitor = false;
 
@@ -33,7 +37,11 @@ class AccessAnalysis : public BasicStmtVisitor {
     }
   }
 
+  // Recursively (dimension by dimension) generate the indices in a SNode (block)
+  // E.g., a dense(ti.ij, (2, 4)) SNode has indices
+  // [(0, 0), (0, 1), (0, 2), (0, 3), (1, 0), (1, 1), (1, 2), (1, 3)]
   void generate_block_indices(SNode *snode, std::vector<int> index, int s) {
+    TI_AUTO_PROF
     // NOTE: Assuming not vectorized
     if (s == taichi_max_num_indices) {
       block_indices.push_back(index);
@@ -54,6 +62,7 @@ class AccessAnalysis : public BasicStmtVisitor {
   void visit(GlobalPtrStmt *stmt) override {
   }
 
+  // TODO: rename to mark_access
   void access(Stmt *stmt, AccessFlag flag) {
     if (!stmt->is<GlobalPtrStmt>())
       return;  // local alloca
@@ -122,17 +131,16 @@ class AccessAnalysis : public BasicStmtVisitor {
 namespace irpass {
 
 std::unique_ptr<ScratchPads> initialize_scratch_pad(OffloadedStmt *offload) {
+  TI_AUTO_PROF
   TI_ASSERT(offload->task_type == OffloadedTaskType::struct_for);
   std::unique_ptr<ScratchPads> pads;
   pads = std::make_unique<ScratchPads>();
-  if (!offload->scratch_opt.empty()) {
-    for (auto &opt : offload->scratch_opt) {
-      if (opt.first == SNodeAccessFlag::block_local) {
-        pads->insert(opt.second);
-      }
+  for (auto &opt : offload->scratch_opt) {
+    if (opt.first == SNodeAccessFlag::block_local) {
+      pads->insert(opt.second);
     }
-    AccessAnalysis _(offload, pads.get());
   }
+  AccessAnalysis _(offload, pads.get());
   pads->finalize();
   return pads;
 }

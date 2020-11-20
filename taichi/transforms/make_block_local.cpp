@@ -17,7 +17,9 @@ void make_block_local_offload(OffloadedStmt *offload) {
 
   bool debug = offload->get_kernel()->program.config.debug;
 
+  TI_TAG;
   auto pads = irpass::initialize_scratch_pad(offload);
+  TI_TAG;
 
   std::size_t bls_offset = 0;
 
@@ -44,6 +46,7 @@ void make_block_local_offload(OffloadedStmt *offload) {
     std::vector<int> bls_strides(dim);
     block_strides[dim - 1] = 1;
     bls_strides[dim - 1] = 1;
+    TI_TAG;
     for (int i = dim - 2; i >= 0; i--) {
       // TODO: fix the virtual/physical index correspondence here
       // TODO: rename "pad"
@@ -51,11 +54,13 @@ void make_block_local_offload(OffloadedStmt *offload) {
       block_strides[i] = block_strides[i + 1] * pad.second.block_size[i + 1];
       bls_strides[i] = bls_strides[i + 1] * pad.second.pad_size[i + 1];
     }
+    TI_TAG;
 
     // TODO: improve IR builder to make this part easier to read
 
     // Ensure BLS alignment
     bls_offset += (dtype_size - bls_offset % dtype_size) % dtype_size;
+    TI_TAG;
 
     // This lambda is used for both BLS prologue and epilogue creation
     auto create_xlogue =
@@ -63,6 +68,7 @@ void make_block_local_offload(OffloadedStmt *offload) {
             const std::function<void(
                 Block * element_block, std::vector<Stmt *> global_indices,
                 Stmt * bls_element_offset_bytes)> &operation) {
+          TI_TAG;
           if (block == nullptr) {
             block = std::make_unique<Block>();
             block->parent_stmt = offload;
@@ -106,6 +112,7 @@ void make_block_local_offload(OffloadedStmt *offload) {
             bls_element_offset_bytes = block->push_back<BinaryOpStmt>(
                 BinaryOpType::add, bls_element_offset_bytes,
                 block->push_back<ConstStmt>(TypedConstant((int32)bls_offset)));
+            TI_TAG;
 
             if (loop_offset + block_dim > bls_num_elements) {
               // Need to create an IfStmt to safeguard since bls size may not be
@@ -149,6 +156,7 @@ void make_block_local_offload(OffloadedStmt *offload) {
                   element_block->push_back<BlockCornerIndexStmt>(offload, i));
 
               global_indices[i] = global_index;
+              TI_TAG;
             }
 
             operation(element_block, global_indices, bls_element_offset_bytes);
@@ -156,8 +164,10 @@ void make_block_local_offload(OffloadedStmt *offload) {
 
             loop_offset += block_dim;
           }
+          TI_TAG;
         };
 
+    TI_TAG;
     // Step 1:
     // Fetch to BLS
     {
@@ -186,6 +196,7 @@ void make_block_local_offload(OffloadedStmt *offload) {
           });
     }
 
+    TI_TAG;
     // Step 2:
     // Make loop body load from BLS instead of global fields
     {
@@ -295,10 +306,12 @@ void make_block_local_offload(OffloadedStmt *offload) {
                                                    global_pointer, bls_val);
           });
     }
+    TI_TAG;
 
     // allocate storage for the BLS variable
     bls_offset += dtype_size * bls_num_elements;
   }
+  TI_TAG;
 
   offload->bls_size = std::max(std::size_t(1), bls_offset);
 }
@@ -311,13 +324,20 @@ namespace irpass {
 void make_block_local(IRNode *root) {
   TI_AUTO_PROF;
 
+  TI_TAG;
   if (auto root_block = root->cast<Block>()) {
+    TI_TAG;
     for (auto &offload : root_block->statements) {
+      TI_TAG;
       make_block_local_offload(offload->cast<OffloadedStmt>());
     }
+    TI_TAG;
   } else {
+    TI_TAG;
     make_block_local_offload(root->as<OffloadedStmt>());
+    TI_TAG;
   }
+  TI_TAG;
   type_check(root);
 }
 

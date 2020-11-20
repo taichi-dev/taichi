@@ -82,9 +82,9 @@ for T in range(1000):
         advect()
         integrate_vortex()
 
-    gui.circles(
-        tracer.to_numpy() * np.array([[0.05, 0.1]]) + np.array([[0.0, 0.5]]),
-        radius=0.5,
-        color=0x0)
+    gui.circles(tracer.to_numpy() * np.array([[0.05, 0.1]]) +
+                np.array([[0.0, 0.5]]),
+                radius=0.5,
+                color=0x0)
 
     gui.show()

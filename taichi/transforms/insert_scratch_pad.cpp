@@ -71,8 +71,7 @@ class BLSAnalysis : public BasicStmtVisitor {
   void visit(GlobalPtrStmt *stmt) override {
   }
 
-  // TODO: rename to mark_access
-  void access(Stmt *stmt, AccessFlag flag) {
+  void record_access(Stmt *stmt, AccessFlag flag) {
     if (!stmt->is<GlobalPtrStmt>())
       return;  // local alloca
     auto ptr = stmt->as<GlobalPtrStmt>();
@@ -119,17 +118,17 @@ class BLSAnalysis : public BasicStmtVisitor {
   // Do not eliminate global data access
   void visit(GlobalLoadStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);  // TODO: support vectorization
-    access(stmt->ptr, AccessFlag::read);
+    record_access(stmt->ptr, AccessFlag::read);
   }
 
   void visit(GlobalStoreStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);  // TODO: support vectorization
-    access(stmt->ptr, AccessFlag::write);
+    record_access(stmt->ptr, AccessFlag::write);
   }
 
   void visit(AtomicOpStmt *stmt) override {
     if (stmt->op_type == AtomicOpType::add) {
-      access(stmt->dest, AccessFlag::accumulate);
+      record_access(stmt->dest, AccessFlag::accumulate);
     }
   }
 

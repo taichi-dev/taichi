@@ -728,6 +728,8 @@ void export_lang(py::module &m) {
   // TypeFactory on Python-scope pointer destruction.
   py::class_<TypeFactory>(m, "TypeFactory")
       .def("get_custom_int_type", &TypeFactory::get_custom_int_type,
+           py::arg("num_bits"), py::arg("is_signed"),
+           py::arg("compute_type_bits") = 32,
            py::return_value_policy::reference);
 
   m.def("get_type_factory_instance", TypeFactory::get_instance,

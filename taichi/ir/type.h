@@ -166,11 +166,28 @@ class VectorType : public Type {
 
 class CustomIntType : public Type {
  public:
-  CustomIntType(int num_bits, bool is_signed)
-      : num_bits_(num_bits), is_signed_(is_signed) {
+  CustomIntType(int num_bits,
+                bool is_signed,
+                Type *compute_type = nullptr,
+                Type *physical_type = nullptr);
+
+  ~CustomIntType() override {
+    delete compute_type;
   }
 
   std::string to_string() const override;
+
+  void set_physical_type(Type *physical_type_) {
+    this->physical_type = physical_type_;
+  }
+
+  Type *get_physical_type() {
+    return physical_type;
+  }
+
+  Type *get_compute_type() {
+    return compute_type;
+  }
 
   int get_num_bits() const {
     return num_bits_;
@@ -183,20 +200,17 @@ class CustomIntType : public Type {
  private:
   // TODO(type): for now we can uniformly use i32 as the "compute_type". It may
   // be a good idea to make "compute_type" also customizable.
-  int num_bits_;
-  bool is_signed_;
+  Type *compute_type{nullptr};
+  Type *physical_type{nullptr};
+  int num_bits_{32};
+  bool is_signed_{true};
 };
 
 class BitStructType : public Type {
  public:
   BitStructType(PrimitiveType *physical_type,
                 std::vector<Type *> member_types,
-                std::vector<int> member_bit_offsets)
-      : physical_type_(physical_type),
-        member_types_(member_types),
-        member_bit_offsets_(member_bit_offsets) {
-    TI_ASSERT(member_types_.size() == member_bit_offsets_.size());
-  }
+                std::vector<int> member_bit_offsets);
 
   std::string to_string() const override;
 

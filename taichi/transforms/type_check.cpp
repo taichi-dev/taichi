@@ -268,11 +268,8 @@ class TypeCheck : public IRVisitor {
 
     if (stmt->lhs->ret_type != stmt->rhs->ret_type) {
       auto promote_custom_int_type = [&](Stmt *stmt, Stmt *hs) {
-        if (hs->ret_type->is<CustomIntType>()) {
-          if (hs->ret_type->cast<CustomIntType>()->get_is_signed())
-            return insert_type_cast_before(stmt, hs, get_data_type<int32>());
-          else
-            return insert_type_cast_before(stmt, hs, get_data_type<uint32>());
+        if (auto cit = hs->ret_type->cast<CustomIntType>()) {
+          return insert_type_cast_before(stmt, hs, cit->get_compute_type());
         }
         return hs;
       };

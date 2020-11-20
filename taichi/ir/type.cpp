@@ -101,6 +101,36 @@ std::string CustomIntType::to_string() const {
   return fmt::format("c{}{}", is_signed_ ? 'i' : 'u', num_bits_);
 }
 
+CustomIntType::CustomIntType(int num_bits,
+                             bool is_signed,
+                             Type *compute_type,
+                             Type *physical_type)
+    : compute_type(compute_type),
+      physical_type(physical_type),
+      num_bits_(num_bits),
+      is_signed_(is_signed) {
+  if (compute_type == nullptr) {
+    auto type_id = is_signed ? PrimitiveTypeID::i32 : PrimitiveTypeID::u32;
+    this->compute_type =
+        TypeFactory::get_instance().get_primitive_type(type_id);
+  }
+}
+
+BitStructType::BitStructType(PrimitiveType *physical_type,
+                             std::vector<Type *> member_types,
+                             std::vector<int> member_bit_offsets)
+    : physical_type_(physical_type),
+      member_types_(member_types),
+      member_bit_offsets_(member_bit_offsets) {
+  TI_ASSERT(member_types_.size() == member_bit_offsets_.size());
+  int physical_type_bits = data_type_bits(physical_type);
+  for (auto i = 0; i < member_types_.size(); ++i) {
+    auto bits_end = member_types_[i]->as<CustomIntType>()->get_num_bits() +
+                    member_bit_offsets_[i];
+    TI_ASSERT(physical_type_bits >= bits_end)
+  }
+}
+
 std::string BitStructType::to_string() const {
   std::string str = "bs(";
   int num_members = (int)member_bit_offsets_.size();

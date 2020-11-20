@@ -21,7 +21,9 @@ class TypeFactory {
 
   Type *get_pointer_type(Type *element, bool is_bit_pointer = false);
 
-  Type *get_custom_int_type(int num_bits, bool is_signed);
+  Type *get_custom_int_type(int num_bits,
+                            bool is_signed,
+                            int compute_type_bits = 32);
 
   Type *get_bit_struct_type(PrimitiveType *physical_type,
                             std::vector<Type *> member_types,
@@ -47,7 +49,7 @@ class TypeFactory {
   std::map<std::pair<Type *, bool>, std::unique_ptr<Type>> pointer_types_;
 
   // TODO: use unordered map
-  std::map<std::pair<int, bool>, std::unique_ptr<Type>> custom_int_types_;
+  std::map<std::tuple<int, int, bool>, std::unique_ptr<Type>> custom_int_types;
 
   // TODO: avoid duplication
   std::vector<std::unique_ptr<Type>> bit_struct_types_;

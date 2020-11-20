@@ -327,8 +327,8 @@ void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
       TI_ASSERT(!to->is<CustomIntType>());
       auto from_size = 0;
       if (from->is<CustomIntType>()) {
-        // TODO: replace 32 with a customizable type
-        from_size = 32;
+        from_size =
+            data_type_size(from->cast<CustomIntType>()->get_compute_type());
       } else {
         from_size = data_type_size(from);
       }
@@ -616,6 +616,10 @@ llvm::Type *CodeGenLLVM::llvm_type(DataType dt) {
     TI_NOT_IMPLEMENTED;
   }
   return nullptr;
+}
+
+llvm::Type *CodeGenLLVM::llvm_ptr_type(DataType dt) {
+  return llvm::PointerType::get(llvm_type(dt), 0);
 }
 
 void CodeGenLLVM::visit(TernaryOpStmt *stmt) {
@@ -907,8 +911,8 @@ void CodeGenLLVM::visit(KernelReturnStmt *stmt) {
     TI_NOT_IMPLEMENTED
   } else {
     auto intermediate_bits = 0;
-    if (stmt->value->ret_type->is<CustomIntType>()) {
-      intermediate_bits = 32;
+    if (auto cit = stmt->value->ret_type->cast<CustomIntType>()) {
+      intermediate_bits = data_type_bits(cit->get_compute_type());
     } else {
       intermediate_bits =
           tlctx->get_data_type(stmt->value->ret_type)->getPrimitiveSizeInBits();
@@ -1105,12 +1109,15 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
     auto cit = ptr_type->get_pointee_type()->as<CustomIntType>();
     llvm::Value *byte_ptr = nullptr, *bit_offset = nullptr;
     read_bit_pointer(llvm_val[stmt->ptr], byte_ptr, bit_offset);
+    auto func_name = fmt::format("set_partial_bits_b{}",
+                                 data_type_bits(cit->get_physical_type()));
     builder->CreateCall(
-        get_runtime_function("set_partial_bits_b32"),
+        get_runtime_function(func_name),
         {builder->CreateBitCast(byte_ptr,
-                                llvm::Type::getInt32PtrTy(*llvm_context)),
+                                llvm_ptr_type(cit->get_physical_type())),
          bit_offset, tlctx->get_constant(cit->get_num_bits()),
-         llvm_val[stmt->data]});
+         builder->CreateIntCast(llvm_val[stmt->data],
+                                llvm_type(cit->get_physical_type()), false)});
   } else {
     builder->CreateStore(llvm_val[stmt->data], llvm_val[stmt->ptr]);
   }
@@ -1124,23 +1131,31 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
     // 1. load bit pointer
     llvm::Value *byte_ptr, *bit_offset;
     read_bit_pointer(llvm_val[stmt->ptr], byte_ptr, bit_offset);
+
     auto bit_level_container = builder->CreateLoad(builder->CreateBitCast(
-        byte_ptr, llvm::Type::getInt32PtrTy(*llvm_context)));
+        byte_ptr, llvm_ptr_type(cit->get_physical_type())));
     // 2. bit shifting
-    //    first left shift `32 - (offset + num_bits)`
-    //    then right shift `32 - num_bits`
+    //    first left shift `physical_type - (offset + num_bits)`
+    //    then right shift `physical_type - num_bits`
     auto bit_end = builder->CreateAdd(bit_offset,
                                       tlctx->get_constant(cit->get_num_bits()));
-    auto left = builder->CreateSub(tlctx->get_constant(32), bit_end);
-    auto right = builder->CreateAdd(tlctx->get_constant(32),
-                                    tlctx->get_constant(-cit->get_num_bits()));
+    auto left = builder->CreateSub(
+        tlctx->get_constant(data_type_bits(cit->get_physical_type())), bit_end);
+    auto right = builder->CreateSub(
+        tlctx->get_constant(data_type_bits(cit->get_physical_type())),
+        tlctx->get_constant(cit->get_num_bits()));
+    left = builder->CreateIntCast(left, bit_level_container->getType(), false);
+    right =
+        builder->CreateIntCast(right, bit_level_container->getType(), false);
     auto step1 = builder->CreateShl(bit_level_container, left);
     llvm::Value *step2 = nullptr;
     if (cit->get_is_signed())
       step2 = builder->CreateAShr(step1, right);
     else
       step2 = builder->CreateLShr(step1, right);
-    llvm_val[stmt] = step2;
+
+    llvm_val[stmt] = builder->CreateIntCast(
+        step2, llvm_type(cit->get_compute_type()), cit->get_is_signed());
   } else {
     llvm_val[stmt] = builder->CreateLoad(tlctx->get_data_type(stmt->ret_type),
                                          llvm_val[stmt->ptr]);
@@ -1244,6 +1259,7 @@ llvm::Value *CodeGenLLVM::create_bit_ptr_struct(llvm::Value *byte_ptr_base,
   // };
   auto struct_type = llvm::StructType::get(
       *llvm_context, {llvm::Type::getInt8PtrTy(*llvm_context),
+                      llvm::Type::getInt32Ty(*llvm_context),
                       llvm::Type::getInt32Ty(*llvm_context)});
   // 2. alloca the bit pointer struct
   auto bit_ptr_struct = create_entry_block_alloca(struct_type);

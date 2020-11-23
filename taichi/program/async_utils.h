@@ -1,8 +1,9 @@
 #pragma once
 
+#include <atomic>
 #include <unordered_map>
 #include <unordered_set>
-#include <atomic>
+#include <variant>
 
 #include "taichi/ir/snode.h"
 #include "taichi/ir/offloaded_task_type.h"
@@ -80,38 +81,45 @@ class TaskLaunchRecord {
 
 struct AsyncState {
   enum class Type { mask, value, list, allocator };
+  std::variant<SNode *, Kernel *> snode_or_global_tmp;
+  Type type;
+  AsyncState() = default;
 
-  AsyncState(SNode *snode, Type type) : snode(snode), type(type) {
+  // For SNode
+  AsyncState(SNode *snode, Type type) : snode_or_global_tmp(snode), type(type) {
   }
 
-  SNode *snode;
-  Type type;
+  // For global temporaries
+  static AsyncState for_global_tmp(Kernel *k) {
+    AsyncState res;
+    res.snode_or_global_tmp = k;
+    res.type = Type::value;
+    return res;
+  }
 
   bool operator<(const AsyncState &other) const {
-    return snode < other.snode || (snode == other.snode && type < other.type);
+    return snode_or_global_tmp < other.snode_or_global_tmp ||
+           (snode_or_global_tmp == other.snode_or_global_tmp &&
+            type < other.type);
   }
 
   bool operator==(const AsyncState &other) const {
-    return snode == other.snode && type == other.type;
+    return snode_or_global_tmp == other.snode_or_global_tmp &&
+           type == other.type;
   }
 
-  std::string name() const {
-    std::string type_name;
-    switch (type) {
-      case Type::mask:
-        type_name = "mask";
-        break;
-      case Type::value:
-        type_name = "value";
-        break;
-      case Type::list:
-        type_name = "list";
-        break;
-      case Type::allocator:
-        type_name = "allocator";
-        break;
-    }
-    return snode->get_node_type_name_hinted() + "_" + type_name;
+  std::string name() const;
+
+  bool holds_snode() const {
+    return std::holds_alternative<SNode *>(snode_or_global_tmp);
+  }
+
+  SNode *snode() {
+    return std::get<SNode *>(snode_or_global_tmp);
+  }
+
+  const SNode *snode() const {
+    return std::get<SNode *>(snode_or_global_tmp);
   }
 };
 
@@ -154,8 +162,8 @@ TLANG_NAMESPACE_END
 namespace std {
 template <>
 struct hash<taichi::lang::IRHandle> {
-  std::size_t operator()(const taichi::lang::IRHandle &ir_handle) const
-      noexcept {
+  std::size_t operator()(
+      const taichi::lang::IRHandle &ir_handle) const noexcept {
     return ir_handle.hash();
   }
 };
@@ -172,7 +180,8 @@ struct hash<std::pair<taichi::lang::IRHandle, taichi::lang::IRHandle>> {
 template <>
 struct hash<taichi::lang::AsyncState> {
   std::size_t operator()(const taichi::lang::AsyncState &s) const noexcept {
-    return (std::size_t)s.snode ^ (std::size_t)s.type;
+    std::hash<decltype(s.snode_or_global_tmp)> h;
+    return h(s.snode_or_global_tmp) ^ (std::size_t)s.type;
   }
 };
 
@@ -198,7 +207,7 @@ struct TaskMeta {
   std::unordered_set<AsyncState> input_states;
   std::unordered_set<AsyncState> output_states;
   std::unordered_map<SNode *, GlobalPtrStmt *> loop_unique;
-  std::unordered_map<SNode *, bool> element_wise;
+  std::unordered_map<const SNode *, bool> element_wise;
 
   void print() const;
 };

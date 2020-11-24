@@ -11,6 +11,7 @@ def test_custom_float_load():
 
     ti.root._bit_struct(num_bits=32).place(x)
 
+    ti.get_runtime().print_snode_tree()
     ti.get_runtime().materialize()
 
     return

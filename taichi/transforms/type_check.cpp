@@ -150,22 +150,22 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(GlobalStoreStmt *stmt) {
-    if (stmt->ptr->ret_type.ptr_removed()->is<CustomIntType>()) {
+    const auto dst_value_type = stmt->ptr->ret_type.ptr_removed();
+    if (dst_value_type->is<CustomIntType>() ||
+        dst_value_type->is<CustomFloatType>()) {
       return;
     }
-    auto promoted =
-        promoted_type(stmt->ptr->ret_type.ptr_removed(), stmt->data->ret_type);
+    auto promoted = promoted_type(dst_value_type, stmt->data->ret_type);
     auto input_type = stmt->data->ret_data_type_name();
-    if (stmt->ptr->ret_type.ptr_removed() != stmt->data->ret_type) {
-      stmt->data = insert_type_cast_before(stmt, stmt->data,
-                                           stmt->ptr->ret_type.ptr_removed());
+    if (dst_value_type != stmt->data->ret_type) {
+      stmt->data = insert_type_cast_before(stmt, stmt->data, dst_value_type);
     }
-    if (stmt->ptr->ret_type.ptr_removed() != promoted) {
+    if (dst_value_type != promoted) {
       TI_WARN("[{}] Global store may lose precision: {} <- {}, at",
               stmt->name(), stmt->ptr->ret_data_type_name(), input_type);
       TI_WARN("\n{}", stmt->tb);
     }
-    stmt->ret_type = stmt->ptr->ret_type.ptr_removed();
+    stmt->ret_type = dst_value_type;
   }
 
   void visit(RangeForStmt *stmt) {

@@ -14,6 +14,12 @@ def test_custom_float_load():
     ti.get_runtime().print_snode_tree()
     ti.get_runtime().materialize()
 
+    @ti.kernel
+    def foo():
+        print(x[None])
+
+    foo()
+    print(x[None])
     return
 
     @ti.kernel
@@ -37,5 +43,7 @@ def test_custom_float_load():
         set_val.__wrapped__(idx)
         verify_val.__wrapped__(idx)
     '''
+
+
 ti.init(arch=ti.cpu, debug=True, cfg_optimization=False)
 test_custom_float_load()

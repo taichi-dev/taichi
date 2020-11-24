@@ -89,7 +89,7 @@ void export_lang(py::module &m) {
       .def(py::self == py::self)
       .def("__hash__", &DataType::hash)
       .def("to_string", &DataType::to_string)
-      .def("get_ptr", &DataType::get_ptr)
+      .def("get_ptr", &DataType::get_ptr, py::return_value_policy::reference)
       .def(py::pickle(
           [](const DataType &dt) {
             // Note: this only works for primitive types, which is fine for now.

@@ -171,22 +171,18 @@ class CustomIntType : public Type {
                 Type *compute_type = nullptr,
                 Type *physical_type = nullptr);
 
-  ~CustomIntType() override {
-    delete compute_type;
-  }
-
   std::string to_string() const override;
 
-  void set_physical_type(Type *physical_type_) {
-    this->physical_type = physical_type_;
+  void set_physical_type(Type *physical_type) {
+    this->physical_type_ = physical_type;
   }
 
   Type *get_physical_type() {
-    return physical_type;
+    return physical_type_;
   }
 
   Type *get_compute_type() {
-    return compute_type;
+    return compute_type_;
   }
 
   int get_num_bits() const {
@@ -200,10 +196,34 @@ class CustomIntType : public Type {
  private:
   // TODO(type): for now we can uniformly use i32 as the "compute_type". It may
   // be a good idea to make "compute_type" also customizable.
-  Type *compute_type{nullptr};
-  Type *physical_type{nullptr};
+  Type *compute_type_{nullptr};
+  Type *physical_type_{nullptr};
   int num_bits_{32};
   bool is_signed_{true};
+};
+
+class CustomFloatType : public Type {
+ public:
+  CustomFloatType(Type *digits_type, Type *compute_type, float64 scale);
+
+  std::string to_string() const override;
+
+  float64 get_scale() const {
+    return scale_;
+  }
+
+  Type *get_digits_type() {
+    return digits_type_;
+  }
+
+  Type *get_compute_type() {
+    return compute_type_;
+  }
+
+ private:
+  float64 scale_;
+  Type *digits_type_{nullptr};
+  Type *compute_type_{nullptr};
 };
 
 class BitStructType : public Type {

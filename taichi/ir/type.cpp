@@ -1,5 +1,4 @@
 #include "taichi/ir/type.h"
-
 #include "taichi/program/program.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -105,15 +104,26 @@ CustomIntType::CustomIntType(int num_bits,
                              bool is_signed,
                              Type *compute_type,
                              Type *physical_type)
-    : compute_type(compute_type),
-      physical_type(physical_type),
+    : compute_type_(compute_type),
+      physical_type_(physical_type),
       num_bits_(num_bits),
       is_signed_(is_signed) {
   if (compute_type == nullptr) {
     auto type_id = is_signed ? PrimitiveTypeID::i32 : PrimitiveTypeID::u32;
-    this->compute_type =
+    this->compute_type_ =
         TypeFactory::get_instance().get_primitive_type(type_id);
   }
+}
+
+CustomFloatType::CustomFloatType(Type *compute_type,
+                                 Type *digits_type,
+                                 float64 scale)
+    : compute_type_(compute_type), digits_type_(digits_type), scale_(scale) {
+}
+
+std::string CustomFloatType::to_string() const {
+  return fmt::format("cf(d={} c={} s={})", digits_type_->to_string(),
+                     compute_type_->to_string(), scale_);
 }
 
 BitStructType::BitStructType(PrimitiveType *physical_type,

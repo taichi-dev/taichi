@@ -143,20 +143,13 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
 
   // TODO: this is an abuse since it gathers nothing...
   gather_statements(root_stmt, [&](Stmt *stmt) {
-    if (auto global_load = stmt->cast<GlobalLoadStmt>()) {
-      // For a global load, GlobalPtrStmt has already been handled in
-      // get_meta_input_value_states().
-      if (global_load->ptr->is<GlobalTemporaryStmt>()) {
-        meta.input_states.insert(AsyncState::for_global_tmp(t.kernel));
-      }
-    }
+    // For a global load, GlobalPtrStmt has already been handled in
+    // get_meta_input_value_states().
     if (auto global_store = stmt->cast<GlobalStoreStmt>()) {
       if (auto ptr = global_store->ptr->cast<GlobalPtrStmt>()) {
         for (auto &snode : ptr->snodes.data) {
           meta.output_states.emplace(snode, AsyncState::Type::value);
         }
-      } else if (global_store->ptr->is<GlobalTemporaryStmt>()) {
-        meta.output_states.insert(AsyncState::for_global_tmp(t.kernel));
       }
     }
     if (auto global_atomic = stmt->cast<AtomicOpStmt>()) {
@@ -166,10 +159,6 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
           // get_meta_input_value_states().
           meta.output_states.emplace(snode, AsyncState::Type::value);
         }
-      } else if (global_atomic->dest->is<GlobalTemporaryStmt>()) {
-        auto as = AsyncState::for_global_tmp(t.kernel);
-        meta.input_states.insert(as);
-        meta.output_states.insert(as);
       }
     }
 
@@ -210,6 +199,11 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
           meta.element_wise[snode] = false;
         }
       }
+    }
+    if (stmt->is<GlobalTemporaryStmt>()) {
+      auto as = AsyncState::for_global_tmp(t.kernel);
+      meta.input_states.insert(as);
+      meta.output_states.insert(as);
     }
     if (auto clear_list = stmt->cast<ClearListStmt>()) {
       meta.output_states.emplace(clear_list->snode, AsyncState::Type::list);

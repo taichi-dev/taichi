@@ -455,8 +455,11 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
     }
     if (nodes[a]->meta->type != OffloadedTaskType::serial) {
       for (auto &state : nodes[a]->output_edges) {
+        if (!state.first.holds_snode()) {
+          continue;
+        }
+        const auto snode = state.first.snode();
         const auto sty = state.first.type;
-        const auto snode = state.first.snode;
         if (sty != AsyncState::Type::value && sty != AsyncState::Type::mask) {
           // No need to check allocator/list states, as they must be accompanied
           // with either value or mask states.
@@ -1035,7 +1038,7 @@ bool StateFlowGraph::optimize_dead_store() {
     std::set<const SNode *> store_eliminable_snodes;
     // Try to find unnecessary output state
     for (auto &s : task->meta->output_states) {
-      if (s.type != AsyncState::Type::value) {
+      if (s.type != AsyncState::Type::value || !s.holds_snode()) {
         // Listgen elimination has been handled in optimize_listgen, so we will
         // only focus on "value" states.
         continue;
@@ -1048,7 +1051,7 @@ bool StateFlowGraph::optimize_dead_store() {
         // value will never be used?
         continue;
       }
-      auto *snode = s.snode;
+      auto *snode = s.snode();
       if (!snode->is_scalar()) {
         // TODO: handle non-scalar SNodes, i.e. num_active_indices > 0.
         continue;

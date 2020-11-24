@@ -39,6 +39,30 @@ bool TaskLaunchRecord::empty() const {
   return ir_handle.ir() == nullptr;
 }
 
+std::string AsyncState::name() const {
+  std::string type_name;
+  switch (type) {
+    case Type::mask:
+      type_name = "mask";
+      break;
+    case Type::value:
+      type_name = "value";
+      break;
+    case Type::list:
+      type_name = "list";
+      break;
+    case Type::allocator:
+      type_name = "allocator";
+      break;
+  }
+  const auto prefix =
+      holds_snode()
+          ? std::get<SNode *>(snode_or_global_tmp)->get_node_type_name_hinted()
+          : fmt::format("global_tmp[{}]",
+                        std::get<Kernel *>(snode_or_global_tmp)->name);
+  return prefix + "_" + type_name;
+}
+
 void TaskMeta::print() const {
   fmt::print("TaskMeta\n  name {}\n", name);
   fmt::print("  type {}\n", offloaded_task_type_name(type));
@@ -69,7 +93,7 @@ void TaskMeta::print() const {
     }
     fmt::print("\n");
   }
-  std::vector<SNode *> element_wise_snodes, non_element_wise_snodes;
+  std::vector<const SNode *> element_wise_snodes, non_element_wise_snodes;
   for (auto &s : element_wise) {
     if (s.second) {
       element_wise_snodes.push_back(s.first);
@@ -119,6 +143,8 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
 
   // TODO: this is an abuse since it gathers nothing...
   gather_statements(root_stmt, [&](Stmt *stmt) {
+    // For a global load, GlobalPtrStmt has already been handled in
+    // get_meta_input_value_states().
     if (auto global_store = stmt->cast<GlobalStoreStmt>()) {
       if (auto ptr = global_store->ptr->cast<GlobalPtrStmt>()) {
         for (auto &snode : ptr->snodes.data) {
@@ -129,6 +155,8 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
     if (auto global_atomic = stmt->cast<AtomicOpStmt>()) {
       if (auto ptr = global_atomic->dest->cast<GlobalPtrStmt>()) {
         for (auto &snode : ptr->snodes.data) {
+          // input_state is already handled in
+          // get_meta_input_value_states().
           meta.output_states.emplace(snode, AsyncState::Type::value);
         }
       }
@@ -171,6 +199,11 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
           meta.element_wise[snode] = false;
         }
       }
+    }
+    if (stmt->is<GlobalTemporaryStmt>()) {
+      auto as = AsyncState::for_global_tmp(t.kernel);
+      meta.input_states.insert(as);
+      meta.output_states.insert(as);
     }
     if (auto clear_list = stmt->cast<ClearListStmt>()) {
       meta.output_states.emplace(clear_list->snode, AsyncState::Type::list);
@@ -269,9 +302,10 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
   // accesses (e.g., a = x[i + 1]), we don't treat it as completely
   // overwriting the value state (e.g., for i in x: x[i] = 0).
   for (auto &state : meta.output_states) {
-    if (state.type == AsyncState::Type::value) {
-      if (meta.element_wise.find(state.snode) == meta.element_wise.end() ||
-          !meta.element_wise[state.snode]) {
+    if (state.type == AsyncState::Type::value && state.holds_snode()) {
+      const auto *sn = state.snode();
+      if (meta.element_wise.find(sn) == meta.element_wise.end() ||
+          !meta.element_wise[sn]) {
         meta.input_states.insert(state);
       }
     }

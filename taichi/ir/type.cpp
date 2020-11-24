@@ -139,8 +139,15 @@ BitStructType::BitStructType(PrimitiveType *physical_type,
   TI_ASSERT(member_types_.size() == member_bit_offsets_.size());
   int physical_type_bits = data_type_bits(physical_type);
   for (auto i = 0; i < member_types_.size(); ++i) {
-    auto bits_end = member_types_[i]->as<CustomIntType>()->get_num_bits() +
-                    member_bit_offsets_[i];
+    CustomIntType *component_cit = nullptr;
+    if (auto cit = member_types_[i]->cast<CustomIntType>()) {
+      component_cit = cit;
+    } else if (auto cft = member_types_[i]->cast<CustomFloatType>()) {
+      component_cit = cft->get_digits_type()->as<CustomIntType>();
+    } else {
+      TI_NOT_IMPLEMENTED
+    }
+    auto bits_end = component_cit->get_num_bits() + member_bit_offsets_[i];
     TI_ASSERT(physical_type_bits >= bits_end)
   }
 }

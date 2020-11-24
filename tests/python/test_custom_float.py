@@ -2,7 +2,7 @@ import taichi as ti
 import numpy as np
 
 
-@ti.test(arch=ti.cpu, debug=True, cfg_optimization=False)
+# @ti.test(arch=ti.cpu, debug=True, cfg_optimization=False)
 def test_custom_float_load():
     ci13 = ti.type_factory_.get_custom_int_type(13, True)
     cft = ti.type_factory_.get_custom_float_type(ci13, ti.f32.get_ptr(), 0.1)
@@ -36,3 +36,5 @@ def test_custom_float_load():
         set_val.__wrapped__(idx)
         verify_val.__wrapped__(idx)
     '''
+ti.init(arch=ti.cpu, debug=True, cfg_optimization=False)
+test_custom_float_load()

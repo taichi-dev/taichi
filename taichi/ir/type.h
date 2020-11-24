@@ -221,9 +221,9 @@ class CustomFloatType : public Type {
   }
 
  private:
-  float64 scale_;
   Type *digits_type_{nullptr};
   Type *compute_type_{nullptr};
+  float64 scale_;
 };
 
 class BitStructType : public Type {

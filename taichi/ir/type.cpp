@@ -115,10 +115,14 @@ CustomIntType::CustomIntType(int num_bits,
   }
 }
 
-CustomFloatType::CustomFloatType(Type *compute_type,
-                                 Type *digits_type,
+CustomFloatType::CustomFloatType(Type *digits_type,
+                                 Type *compute_type,
                                  float64 scale)
-    : compute_type_(compute_type), digits_type_(digits_type), scale_(scale) {
+    : digits_type_(digits_type), compute_type_(compute_type), scale_(scale) {
+  TI_ASSERT(digits_type->is<CustomIntType>());
+  TI_ASSERT(digits_type->as<CustomIntType>()->get_is_signed());
+  TI_ASSERT(compute_type->is<PrimitiveType>());
+  TI_ASSERT(is_real(compute_type->as<PrimitiveType>()));
 }
 
 std::string CustomFloatType::to_string() const {

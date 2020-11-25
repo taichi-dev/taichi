@@ -12,7 +12,6 @@
 TLANG_NAMESPACE_BEGIN
 
 // Lower GlobalPtrStmt into smaller pieces for access optimization
-// Note that this pass also applies index offsets to the global pointers
 
 class LowerAccess : public IRVisitor {
  public:
@@ -82,17 +81,6 @@ class LowerAccess : public IRVisitor {
       snodes.push_front(s);
 
     Stmt *last = lowered.push_back<GetRootStmt>();
-
-    const auto &offsets = snodes.back()->index_offsets;
-    if (!offsets.empty()) {
-      for (int i = 0; i < (int)indices.size(); i++) {
-        // Subtract offsets from indices so that new indices are
-        // within [0, +inf)
-        auto offset = lowered.push_back<ConstStmt>(TypedConstant(offsets[i]));
-        indices[i] = lowered.push_back<BinaryOpStmt>(BinaryOpType::sub,
-                                                     indices[i], offset);
-      }
-    }
 
     int path_inc = int(snode_op != SNodeOpType::undefined);
     for (int i = 0; i < (int)snodes.size() - 1 + path_inc; i++) {

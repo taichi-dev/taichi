@@ -1115,20 +1115,20 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
     } else if (auto cft = pointee_type->cast<CustomFloatType>()) {
       cit = cft->get_digits_type()->as<CustomIntType>();
       llvm::Value *s = nullptr;
+
+      // Compute int(input * scale + 0.5)
       auto s_numeric = 1.0 / cft->get_scale();
       auto compute_type = cft->get_compute_type();
-      if (compute_type->is_primitive(PrimitiveTypeID::f32)) {
-        s = llvm::ConstantFP::get(*llvm_context,
-                                  llvm::APFloat(float32(s_numeric)));
-      } else if (compute_type->is_primitive(PrimitiveTypeID::f64)) {
-        s = llvm::ConstantFP::get(*llvm_context,
-                                  llvm::APFloat(float64(s_numeric)));
-      } else {
-        TI_NOT_IMPLEMENTED
-      }
+      s = builder->CreateFPCast(
+          llvm::ConstantFP::get(*llvm_context, llvm::APFloat(s_numeric)),
+          llvm_type(compute_type));
       auto input_real =
           builder->CreateFPCast(llvm_val[stmt->data], llvm_type(compute_type));
       auto scaled = builder->CreateFMul(input_real, s);
+      auto half = builder->CreateFPCast(
+          llvm::ConstantFP::get(*llvm_context, llvm::APFloat(0.5)),
+          llvm_type(compute_type));
+      scaled = builder->CreateFAdd(scaled, half);
       if (cit->get_is_signed()) {
         store_value =
             builder->CreateFPToSI(scaled, llvm_type(cit->get_compute_type()));

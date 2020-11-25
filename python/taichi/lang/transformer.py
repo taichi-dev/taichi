@@ -864,15 +864,12 @@ if 1:
                 ret_expr = self.parse_expr('ti.cast(ti.Expr(0), 0)')
                 ret_expr.args[0].args[0] = node.value
                 ret_expr.args[1] = self.returns
-                dt_expr = self.parse_expr('ti.cook_dtype(0)')
-                dt_expr.args[0] = self.returns
                 ret_stmt = self.parse_stmt(
                     'ti.core.create_kernel_return(ret.ptr, 0)')
                 # For args[0], it is an ast.Attribute, because it loads the
                 # attribute, |ptr|, of the expression |ret_expr|. Therefore we
                 # only need to replace the object part, i.e. args[0].value
                 ret_stmt.value.args[0].value = ret_expr
-                ret_stmt.value.args[1] = dt_expr
                 return ret_stmt
         return node
 

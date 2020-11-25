@@ -1160,7 +1160,7 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
   TI_ASSERT(width == 1);
   if (auto ptr_type = stmt->ptr->ret_type->cast<PointerType>();
       ptr_type->is_bit_pointer()) {
-    auto val_type = stmt->ret_type.get_ptr();
+    auto val_type = ptr_type->get_pointee_type();
     if (val_type->is<CustomIntType>()) {
       llvm_val[stmt] = load_as_custom_int(stmt->ptr, val_type);
     } else if (auto cft = val_type->cast<CustomFloatType>()) {
@@ -1173,6 +1173,8 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
         scaled = builder->CreateUIToFP(digits, llvm_type(compute_type));
       }
       llvm_val[stmt] = scaled;
+    } else {
+      TI_NOT_IMPLEMENTED
     }
   } else {
     llvm_val[stmt] = builder->CreateLoad(tlctx->get_data_type(stmt->ret_type),

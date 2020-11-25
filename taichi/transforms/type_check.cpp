@@ -108,12 +108,15 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(GlobalLoadStmt *stmt) {
-    stmt->ret_type = stmt->ptr->ret_type.ptr_removed();
-    if (auto cit = stmt->ret_type->cast<CustomIntType>()) {
+    auto pointee_type = stmt->ptr->ret_type.ptr_removed();
+    if (auto cit = pointee_type->cast<CustomIntType>()) {
       stmt->ret_type = cit->get_compute_type();
-    } else if (auto cft = stmt->ret_type->cast<CustomFloatType>()) {
+    } else if (auto cft = pointee_type->cast<CustomFloatType>()) {
       stmt->ret_type = cft->get_compute_type();
+    } else {
+      stmt->ret_type = pointee_type;
     }
+    TI_P(stmt->ret_type->to_string());
   }
 
   void visit(SNodeOpStmt *stmt) {
@@ -367,9 +370,8 @@ class TypeCheck : public IRVisitor {
 
   void visit(KernelReturnStmt *stmt) {
     // TODO: Support stmt->ret_id?
-    const auto &rt = stmt->ret_type;
-    TI_ASSERT(stmt->value->element_type() == rt);
-    TI_ASSERT(rt->vector_width() == 1);
+    stmt->ret_type = stmt->value->ret_type;
+    TI_ASSERT(stmt->ret_type->vector_width() == 1);
   }
 
   void visit(ExternalPtrStmt *stmt) {

@@ -46,5 +46,5 @@ def test_custom_float_load():
     '''
 
 
-ti.init(arch=ti.cpu, debug=True, cfg_optimization=False, print_ir=True)
+ti.init(arch=ti.cpu, debug=True, cfg_optimization=False, print_ir=True, print_accessor_ir=True)
 test_custom_float_load()

@@ -603,7 +603,7 @@ Kernel &Program::get_snode_reader(SNode *snode) {
       indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
     }
     auto ret = Stmt::make<FrontendKernelReturnStmt>(
-        load_if_ptr((snode->expr)[indices]), snode->dt);
+        load_if_ptr((snode->expr)[indices]));
     current_ast_builder().insert(std::move(ret));
   });
   ker.set_arch(get_snode_accessor_arch());

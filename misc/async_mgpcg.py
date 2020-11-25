@@ -10,8 +10,7 @@ ti.init(default_fp=real,
         async_opt_dse=True,
         async_opt_activation_demotion=True,
         async_opt_fusion=True,
-        kernel_profiler=True
-        )
+        kernel_profiler=True)
 
 # grid parameters
 N = 256

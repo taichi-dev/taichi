@@ -108,8 +108,12 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(GlobalLoadStmt *stmt) {
-    stmt->ret_type = stmt->ptr->ret_type;
-    stmt->ret_type.set_is_pointer(false);
+    stmt->ret_type = stmt->ptr->ret_type.ptr_removed();
+    if (auto cit = stmt->ret_type->cast<CustomIntType>()) {
+      stmt->ret_type = cit->get_compute_type();
+    } else if (auto cft = stmt->ret_type->cast<CustomFloatType>()) {
+      stmt->ret_type = cft->get_compute_type();
+    }
   }
 
   void visit(SNodeOpStmt *stmt) {
@@ -124,9 +128,15 @@ class TypeCheck : public IRVisitor {
 
   void visit(GlobalPtrStmt *stmt) {
     stmt->ret_type.set_is_pointer(true);
-    if (stmt->snodes)
-      stmt->ret_type = stmt->snodes[0]->dt;
-    else
+    if (stmt->snodes) {
+      stmt->ret_type = stmt->snodes[0]->dt.get_ptr();
+      // TODO(type): GlobalPtr should return a pointer type but using the
+      // following crashes the compiler:
+      //
+      // stmt->ret_type =
+      // TypeFactory::get_instance().get_pointer_type(
+      //    stmt->snodes[0]->dt.get_ptr());
+    } else
       TI_WARN("[{}] Type inference failed: snode is nullptr.", stmt->name());
     for (int l = 0; l < stmt->snodes.size(); l++) {
       if (stmt->snodes[l]->parent->num_active_indices != 0 &&
@@ -410,7 +420,8 @@ class TypeCheck : public IRVisitor {
   void visit(GetChStmt *stmt) {
     TI_ASSERT(stmt->width() == 1);
     auto element_type = stmt->output_snode->dt;
-    // For bit_struct SNodes, their component SNodes must have is_bit_level=true
+    // For bit_struct SNodes, their component SNodes must have
+    // is_bit_level=true
     auto pointer_type = TypeFactory::get_instance().get_pointer_type(
         element_type.get_ptr(), stmt->output_snode->is_bit_level);
     stmt->ret_type = pointer_type;

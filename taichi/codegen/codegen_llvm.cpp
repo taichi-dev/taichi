@@ -1123,8 +1123,7 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
   }
 }
 
-llvm::Value *CodeGenLLVM::load_as_custom_int(GlobalPtrStmt *ptr,
-                                             Type *load_type) {
+llvm::Value *CodeGenLLVM::load_as_custom_int(Stmt *ptr, Type *load_type) {
   auto *cit = load_type->as<CustomIntType>();
   // 1. load bit pointer
   llvm::Value *byte_ptr, *bit_offset;
@@ -1146,6 +1145,7 @@ llvm::Value *CodeGenLLVM::load_as_custom_int(GlobalPtrStmt *ptr,
   right = builder->CreateIntCast(right, bit_level_container->getType(), false);
   auto step1 = builder->CreateShl(bit_level_container, left);
   llvm::Value *step2 = nullptr;
+
   if (cit->get_is_signed())
     step2 = builder->CreateAShr(step1, right);
   else
@@ -1158,9 +1158,22 @@ llvm::Value *CodeGenLLVM::load_as_custom_int(GlobalPtrStmt *ptr,
 void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
   int width = stmt->width();
   TI_ASSERT(width == 1);
-  if (stmt->ptr->ret_type->as<PointerType>()->is_bit_pointer()) {
-    llvm_val[stmt] = load_as_custom_int(stmt->ptr->as<GlobalPtrStmt>(),
-                                        stmt->ret_type.get_ptr());
+  if (auto ptr_type = stmt->ptr->ret_type->cast<PointerType>();
+      ptr_type->is_bit_pointer()) {
+    auto val_type = stmt->ret_type.get_ptr();
+    if (val_type->is<CustomIntType>()) {
+      llvm_val[stmt] = load_as_custom_int(stmt->ptr, val_type);
+    } else if (auto cft = val_type->cast<CustomFloatType>()) {
+      auto digits = load_as_custom_int(stmt->ptr, cft->get_digits_type());
+      llvm::Value *scaled = nullptr;
+      auto compute_type = cft->get_compute_type()->as<PrimitiveType>();
+      if (cft->get_digits_type()->cast<CustomIntType>()->get_is_signed()) {
+        scaled = builder->CreateSIToFP(digits, llvm_type(compute_type));
+      } else {
+        scaled = builder->CreateUIToFP(digits, llvm_type(compute_type));
+      }
+      llvm_val[stmt] = scaled;
+    }
   } else {
     llvm_val[stmt] = builder->CreateLoad(tlctx->get_data_type(stmt->ret_type),
                                          llvm_val[stmt->ptr]);

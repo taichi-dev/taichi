@@ -7,6 +7,8 @@
 
 TLANG_NAMESPACE_BEGIN
 
+// TODO: also check RangeAssumptionStmt
+
 class CheckOutOfBound : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;

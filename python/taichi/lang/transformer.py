@@ -865,7 +865,7 @@ if 1:
                 ret_expr.args[0].args[0] = node.value
                 ret_expr.args[1] = self.returns
                 ret_stmt = self.parse_stmt(
-                    'ti.core.create_kernel_return(ret.ptr, 0)')
+                    'ti.core.create_kernel_return(ret.ptr)')
                 # For args[0], it is an ast.Attribute, because it loads the
                 # attribute, |ptr|, of the expression |ret_expr|. Therefore we
                 # only need to replace the object part, i.e. args[0].value

@@ -208,11 +208,6 @@ void Kernel::LaunchContextBuilder::set_arg_int(int i, int64 d) {
     ctx_->set_arg(i, (float32)d);
   } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
     ctx_->set_arg(i, (float64)d);
-  } else if (auto cit = dt->cast<CustomIntType>()) {
-    if (cit->get_is_signed())
-      ctx_->set_arg(i, (int32)d);
-    else
-      ctx_->set_arg(i, (uint32)d);
   } else {
     TI_INFO(dt->to_string());
     TI_NOT_IMPLEMENTED
@@ -323,11 +318,21 @@ void Kernel::set_arch(Arch arch) {
 }
 
 int Kernel::insert_arg(DataType dt, bool is_nparray) {
+  if (auto cft = dt->cast<CustomFloatType>()) {
+    dt = cft->get_compute_type();
+  } else if (auto cit = dt->cast<CustomIntType>()) {
+    dt = cit->get_compute_type();
+  }
   args.push_back(Arg{dt, is_nparray, /*size=*/0});
   return args.size() - 1;
 }
 
 int Kernel::insert_ret(DataType dt) {
+  if (auto cft = dt->cast<CustomFloatType>()) {
+    dt = cft->get_compute_type();
+  } else if (auto cit = dt->cast<CustomIntType>()) {
+    dt = cit->get_compute_type();
+  }
   rets.push_back(Ret{dt});
   return rets.size() - 1;
 }

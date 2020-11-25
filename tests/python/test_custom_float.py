@@ -22,6 +22,8 @@ def test_custom_float_load():
 
     foo()
     print(x[None])
+    x[None] = 0.64
+    print(x[None])
     return
 
 

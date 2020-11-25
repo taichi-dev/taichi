@@ -41,6 +41,10 @@ class Type {
 
   bool is_primitive(PrimitiveTypeID type) const;
 
+  virtual Type *get_compute_type() {
+    TI_NOT_IMPLEMENTED;
+  }
+
   virtual ~Type() {
   }
 };
@@ -113,6 +117,10 @@ class PrimitiveType : public Type {
 
   std::string to_string() const override;
 
+  virtual Type *get_compute_type() override {
+    return this;
+  }
+
   static DataType get(PrimitiveTypeID type);
 };
 
@@ -181,7 +189,7 @@ class CustomIntType : public Type {
     return physical_type_;
   }
 
-  Type *get_compute_type() {
+  Type *get_compute_type() override {
     return compute_type_;
   }
 
@@ -216,7 +224,7 @@ class CustomFloatType : public Type {
     return digits_type_;
   }
 
-  Type *get_compute_type() {
+  Type *get_compute_type() override {
     return compute_type_;
   }
 

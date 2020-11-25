@@ -623,8 +623,8 @@ Kernel &Program::get_snode_writer(SNode *snode) {
     for (int i = 0; i < snode->num_active_indices; i++) {
       indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
     }
-    (snode->expr)[indices] =
-        Expr::make<ArgLoadExpression>(snode->num_active_indices, snode->dt);
+    (snode->expr)[indices] = Expr::make<ArgLoadExpression>(
+        snode->num_active_indices, snode->dt->get_compute_type());
   });
   ker.set_arch(get_snode_accessor_arch());
   ker.name = kernel_name;

@@ -1123,39 +1123,44 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
   }
 }
 
+llvm::Value *CodeGenLLVM::load_as_custom_int(GlobalPtrStmt *ptr,
+                                             Type *load_type) {
+  auto *cit = load_type->as<CustomIntType>();
+  // 1. load bit pointer
+  llvm::Value *byte_ptr, *bit_offset;
+  read_bit_pointer(llvm_val[ptr], byte_ptr, bit_offset);
+
+  auto bit_level_container = builder->CreateLoad(builder->CreateBitCast(
+      byte_ptr, llvm_ptr_type(cit->get_physical_type())));
+  // 2. bit shifting
+  //    first left shift `physical_type - (offset + num_bits)`
+  //    then right shift `physical_type - num_bits`
+  auto bit_end =
+      builder->CreateAdd(bit_offset, tlctx->get_constant(cit->get_num_bits()));
+  auto left = builder->CreateSub(
+      tlctx->get_constant(data_type_bits(cit->get_physical_type())), bit_end);
+  auto right = builder->CreateSub(
+      tlctx->get_constant(data_type_bits(cit->get_physical_type())),
+      tlctx->get_constant(cit->get_num_bits()));
+  left = builder->CreateIntCast(left, bit_level_container->getType(), false);
+  right = builder->CreateIntCast(right, bit_level_container->getType(), false);
+  auto step1 = builder->CreateShl(bit_level_container, left);
+  llvm::Value *step2 = nullptr;
+  if (cit->get_is_signed())
+    step2 = builder->CreateAShr(step1, right);
+  else
+    step2 = builder->CreateLShr(step1, right);
+
+  return builder->CreateIntCast(step2, llvm_type(cit->get_compute_type()),
+                                cit->get_is_signed());
+}
+
 void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
   int width = stmt->width();
   TI_ASSERT(width == 1);
   if (stmt->ptr->ret_type->as<PointerType>()->is_bit_pointer()) {
-    auto cit = stmt->ret_type->as<CustomIntType>();
-    // 1. load bit pointer
-    llvm::Value *byte_ptr, *bit_offset;
-    read_bit_pointer(llvm_val[stmt->ptr], byte_ptr, bit_offset);
-
-    auto bit_level_container = builder->CreateLoad(builder->CreateBitCast(
-        byte_ptr, llvm_ptr_type(cit->get_physical_type())));
-    // 2. bit shifting
-    //    first left shift `physical_type - (offset + num_bits)`
-    //    then right shift `physical_type - num_bits`
-    auto bit_end = builder->CreateAdd(bit_offset,
-                                      tlctx->get_constant(cit->get_num_bits()));
-    auto left = builder->CreateSub(
-        tlctx->get_constant(data_type_bits(cit->get_physical_type())), bit_end);
-    auto right = builder->CreateSub(
-        tlctx->get_constant(data_type_bits(cit->get_physical_type())),
-        tlctx->get_constant(cit->get_num_bits()));
-    left = builder->CreateIntCast(left, bit_level_container->getType(), false);
-    right =
-        builder->CreateIntCast(right, bit_level_container->getType(), false);
-    auto step1 = builder->CreateShl(bit_level_container, left);
-    llvm::Value *step2 = nullptr;
-    if (cit->get_is_signed())
-      step2 = builder->CreateAShr(step1, right);
-    else
-      step2 = builder->CreateLShr(step1, right);
-
-    llvm_val[stmt] = builder->CreateIntCast(
-        step2, llvm_type(cit->get_compute_type()), cit->get_is_signed());
+    llvm_val[stmt] = load_as_custom_int(stmt->ptr->as<GlobalPtrStmt>(),
+                                        stmt->ret_type.get_ptr());
   } else {
     llvm_val[stmt] = builder->CreateLoad(tlctx->get_data_type(stmt->ret_type),
                                          llvm_val[stmt->ptr]);
@@ -1957,5 +1962,4 @@ llvm::Value *CodeGenLLVM::create_xlogue(std::unique_ptr<Block> &block) {
 
   return xlogue;
 }
-
 TLANG_NAMESPACE_END

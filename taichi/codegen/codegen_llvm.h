@@ -196,6 +196,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(GlobalStoreStmt *stmt) override;
 
+  llvm::Value *load_as_custom_int(GlobalPtrStmt *ptr, Type *load_type);
+
   void visit(GlobalLoadStmt *stmt) override;
 
   void visit(ElementShuffleStmt *stmt) override;

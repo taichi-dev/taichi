@@ -17,5 +17,5 @@ def test_listgen_opt_with_offsets():
     ti.core.print_stat()
     assert ti.get_kernel_stats().get_counters()['launched_tasks_list_gen'] <= 2
     
-ti.init(async_mode=True)
+ti.init(async_mode=True, print_ir=True)
 test_listgen_opt_with_offsets()

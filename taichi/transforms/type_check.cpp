@@ -131,13 +131,8 @@ class TypeCheck : public IRVisitor {
   void visit(GlobalPtrStmt *stmt) {
     stmt->ret_type.set_is_pointer(true);
     if (stmt->snodes) {
-      stmt->ret_type = stmt->snodes[0]->dt.get_ptr();
-      // TODO(type): GlobalPtr should return a pointer type but using the
-      // following crashes the compiler:
-      //
-      // stmt->ret_type =
-      // TypeFactory::get_instance().get_pointer_type(
-      //    stmt->snodes[0]->dt.get_ptr());
+      stmt->ret_type = TypeFactory::get_instance().get_pointer_type(
+          stmt->snodes[0]->dt.get_ptr());
     } else
       TI_WARN("[{}] Type inference failed: snode is nullptr.", stmt->name());
     for (int l = 0; l < stmt->snodes.size(); l++) {

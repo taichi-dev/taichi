@@ -25,3 +25,5 @@ def test_custom_float():
     assert x[None] == approx(0.6)
     x[None] = 0.66
     assert x[None] == approx(0.7)
+
+    # TODO(type): atomic_add

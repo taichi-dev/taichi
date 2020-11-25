@@ -1,5 +1,6 @@
 from . import impl
 from .util import deprecated
+import numbers
 
 
 class SNode:
@@ -46,6 +47,8 @@ class SNode:
         from .util import is_taichi_class
         if offset is None:
             offset = []
+        if isinstance(offset, numbers.Number):
+            offset = (offset, )
         for arg in args:
             if isinstance(arg, Expr):
                 self.ptr.place(Expr(arg).ptr, offset)

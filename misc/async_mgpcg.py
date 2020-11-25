@@ -11,7 +11,6 @@ ti.init(default_fp=real,
         async_opt_activation_demotion=True,
         async_opt_fusion=True,
         kernel_profiler=True
-        #, async_opt_intermediate_file="mgpcg"
         )
 
 # grid parameters
@@ -28,13 +27,13 @@ N_tot = 2 * N
 
 # setup sparse simulation data arrays
 r = [ti.field(dtype=real) for _ in range(n_mg_levels)]  # residual
-z = [ti.field(dtype=real) for _ in range(n_mg_levels)]  # M^-1 r
-x = ti.field(dtype=real)  # solution
-p = ti.field(dtype=real)  # conjugate gradient
-Ap = ti.field(dtype=real)  # matrix-vector product
-alpha = ti.field(dtype=real)  # step size
-beta = ti.field(dtype=real)  # step size
-sum = ti.field(dtype=real)  # storage for reductions
+z = [ti.field(dtype=real) for _ in range(n_mg_levels)]  # z = M^-1 r
+x = ti.field(dtype=real)
+p = ti.field(dtype=real)
+Ap = ti.field(dtype=real)
+alpha = ti.field(dtype=real)
+beta = ti.field(dtype=real)
+sum = ti.field(dtype=real)
 rTr = ti.field(dtype=real, shape=())
 old_zTr = ti.field(dtype=real, shape=())
 new_zTr = ti.field(dtype=real, shape=())

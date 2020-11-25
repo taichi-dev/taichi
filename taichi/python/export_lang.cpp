@@ -567,6 +567,7 @@ void export_lang(py::module &m) {
 
   m.def("is_integral", is_integral);
   m.def("is_signed", is_signed);
+  m.def("is_real", is_real);
   m.def("is_unsigned", is_unsigned);
 
   m.def("global_new", static_cast<Expr (*)(Expr, DataType)>(global_new));

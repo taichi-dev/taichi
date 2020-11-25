@@ -20,7 +20,7 @@ def test_custom_float_load():
         print(x[None])
 
     foo()
-    # print(x[None])
+    print(x[None])
     return
 
 

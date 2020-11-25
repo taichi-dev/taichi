@@ -257,6 +257,9 @@ Context &Kernel::LaunchContextBuilder::get_context() {
 
 float64 Kernel::get_ret_float(int i) {
   auto dt = rets[i].dt;
+  if (auto cft = dt->cast<CustomFloatType>()) {
+    dt = cft->get_compute_type();
+  }
   if (dt->is_primitive(PrimitiveTypeID::f32)) {
     return (float64)get_current_program().fetch_result<float32>(i);
   } else if (dt->is_primitive(PrimitiveTypeID::f64)) {

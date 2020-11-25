@@ -79,7 +79,7 @@ class Expr(TaichiOperations):
             return
         snode = self.ptr.snode()
 
-        if self.dtype == f32 or self.dtype == f64:
+        if taichi_lang_core.is_real(self.dtype):
 
             def getter(*key):
                 assert len(key) == taichi_lang_core.get_max_num_indices()

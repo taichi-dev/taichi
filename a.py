@@ -19,5 +19,3 @@ def test_listgen_opt_with_offsets():
     
 ti.init(async_mode=True)
 test_listgen_opt_with_offsets()
-
-

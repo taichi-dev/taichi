@@ -116,7 +116,6 @@ class TypeCheck : public IRVisitor {
     } else {
       stmt->ret_type = pointee_type;
     }
-    TI_P(stmt->ret_type->to_string());
   }
 
   void visit(SNodeOpStmt *stmt) {

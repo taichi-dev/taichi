@@ -1116,7 +1116,7 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
       cit = cft->get_digits_type()->as<CustomIntType>();
       llvm::Value *s = nullptr;
 
-      // Compute int(input * scale + 0.5)
+      // Compute int(input * (1.0 / scale) + 0.5)
       auto s_numeric = 1.0 / cft->get_scale();
       auto compute_type = cft->get_compute_type();
       s = builder->CreateFPCast(
@@ -1197,6 +1197,7 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
       llvm_val[stmt] = load_as_custom_int(stmt->ptr, val_type);
     } else if (auto cft = val_type->cast<CustomFloatType>()) {
       auto digits = load_as_custom_int(stmt->ptr, cft->get_digits_type());
+      // Compute float(digits) * scale
       llvm::Value *cast = nullptr;
       auto compute_type = cft->get_compute_type()->as<PrimitiveType>();
       if (cft->get_digits_type()->cast<CustomIntType>()->get_is_signed()) {

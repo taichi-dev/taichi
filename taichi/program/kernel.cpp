@@ -251,10 +251,7 @@ Context &Kernel::LaunchContextBuilder::get_context() {
 }
 
 float64 Kernel::get_ret_float(int i) {
-  auto dt = rets[i].dt;
-  if (auto cft = dt->cast<CustomFloatType>()) {
-    dt = cft->get_compute_type();
-  }
+  auto dt = rets[i].dt->get_compute_type();
   if (dt->is_primitive(PrimitiveTypeID::f32)) {
     return (float64)get_current_program().fetch_result<float32>(i);
   } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
@@ -281,7 +278,7 @@ float64 Kernel::get_ret_float(int i) {
 }
 
 int64 Kernel::get_ret_int(int i) {
-  auto dt = rets[i].dt;
+  auto dt = rets[i].dt->get_compute_type();
   if (dt->is_primitive(PrimitiveTypeID::i32)) {
     return (int64)get_current_program().fetch_result<int32>(i);
   } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
@@ -302,11 +299,6 @@ int64 Kernel::get_ret_int(int i) {
     return (int64)get_current_program().fetch_result<float32>(i);
   } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
     return (int64)get_current_program().fetch_result<float64>(i);
-  } else if (auto cit = dt->cast<CustomIntType>()) {
-    if (cit->get_is_signed())
-      return (int64)get_current_program().fetch_result<int32>(i);
-    else
-      return (int64)get_current_program().fetch_result<uint32>(i);
   } else {
     TI_NOT_IMPLEMENTED
   }
@@ -318,22 +310,12 @@ void Kernel::set_arch(Arch arch) {
 }
 
 int Kernel::insert_arg(DataType dt, bool is_nparray) {
-  if (auto cft = dt->cast<CustomFloatType>()) {
-    dt = cft->get_compute_type();
-  } else if (auto cit = dt->cast<CustomIntType>()) {
-    dt = cit->get_compute_type();
-  }
-  args.push_back(Arg{dt, is_nparray, /*size=*/0});
+  args.push_back(Arg{dt->get_compute_type(), is_nparray, /*size=*/0});
   return args.size() - 1;
 }
 
 int Kernel::insert_ret(DataType dt) {
-  if (auto cft = dt->cast<CustomFloatType>()) {
-    dt = cft->get_compute_type();
-  } else if (auto cit = dt->cast<CustomIntType>()) {
-    dt = cit->get_compute_type();
-  }
-  rets.push_back(Ret{dt});
+  rets.push_back(Ret{dt->get_compute_type()});
   return rets.size() - 1;
 }
 

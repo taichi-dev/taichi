@@ -109,13 +109,7 @@ class TypeCheck : public IRVisitor {
 
   void visit(GlobalLoadStmt *stmt) {
     auto pointee_type = stmt->ptr->ret_type.ptr_removed();
-    if (auto cit = pointee_type->cast<CustomIntType>()) {
-      stmt->ret_type = cit->get_compute_type();
-    } else if (auto cft = pointee_type->cast<CustomFloatType>()) {
-      stmt->ret_type = cft->get_compute_type();
-    } else {
-      stmt->ret_type = pointee_type;
-    }
+    stmt->ret_type = pointee_type->get_compute_type();
   }
 
   void visit(SNodeOpStmt *stmt) {
@@ -172,7 +166,6 @@ class TypeCheck : public IRVisitor {
               stmt->name(), stmt->ptr->ret_data_type_name(), input_type);
       TI_WARN("\n{}", stmt->tb);
     }
-    stmt->ret_type = dst_value_type;
   }
 
   void visit(RangeForStmt *stmt) {

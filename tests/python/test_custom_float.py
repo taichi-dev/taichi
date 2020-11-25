@@ -17,6 +17,7 @@ def test_custom_float_load():
 
     @ti.kernel
     def foo():
+        x[None] = 0.7
         print(x[None])
 
     foo()

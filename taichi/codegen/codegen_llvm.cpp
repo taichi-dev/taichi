@@ -1106,7 +1106,39 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
   TI_ASSERT(llvm_val[stmt->ptr]);
   auto ptr_type = stmt->ptr->ret_type->as<PointerType>();
   if (ptr_type->is_bit_pointer()) {
-    auto cit = ptr_type->get_pointee_type()->as<CustomIntType>();
+    auto pointee_type = ptr_type->get_pointee_type();
+    llvm::Value *store_value = nullptr;
+    CustomIntType *cit = nullptr;
+    if (auto cit_ = pointee_type->cast<CustomIntType>()) {
+      cit = cit_;
+      store_value = llvm_val[stmt->data];
+    } else if (auto cft = pointee_type->cast<CustomFloatType>()) {
+      cit = cft->get_digits_type()->as<CustomIntType>();
+      llvm::Value *s = nullptr;
+
+      // Compute int(input * (1.0 / scale) + 0.5)
+      auto s_numeric = 1.0 / cft->get_scale();
+      auto compute_type = cft->get_compute_type();
+      s = builder->CreateFPCast(
+          llvm::ConstantFP::get(*llvm_context, llvm::APFloat(s_numeric)),
+          llvm_type(compute_type));
+      auto input_real =
+          builder->CreateFPCast(llvm_val[stmt->data], llvm_type(compute_type));
+      auto scaled = builder->CreateFMul(input_real, s);
+      auto half = builder->CreateFPCast(
+          llvm::ConstantFP::get(*llvm_context, llvm::APFloat(0.5)),
+          llvm_type(compute_type));
+      scaled = builder->CreateFAdd(scaled, half);
+      if (cit->get_is_signed()) {
+        store_value =
+            builder->CreateFPToSI(scaled, llvm_type(cit->get_compute_type()));
+      } else {
+        store_value =
+            builder->CreateFPToUI(scaled, llvm_type(cit->get_compute_type()));
+      }
+    } else {
+      TI_NOT_IMPLEMENTED
+    }
     llvm::Value *byte_ptr = nullptr, *bit_offset = nullptr;
     read_bit_pointer(llvm_val[stmt->ptr], byte_ptr, bit_offset);
     auto func_name = fmt::format("set_partial_bits_b{}",
@@ -1116,46 +1148,71 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
         {builder->CreateBitCast(byte_ptr,
                                 llvm_ptr_type(cit->get_physical_type())),
          bit_offset, tlctx->get_constant(cit->get_num_bits()),
-         builder->CreateIntCast(llvm_val[stmt->data],
+         builder->CreateIntCast(store_value,
                                 llvm_type(cit->get_physical_type()), false)});
   } else {
     builder->CreateStore(llvm_val[stmt->data], llvm_val[stmt->ptr]);
   }
 }
 
+llvm::Value *CodeGenLLVM::load_as_custom_int(Stmt *ptr, Type *load_type) {
+  auto *cit = load_type->as<CustomIntType>();
+  // 1. load bit pointer
+  llvm::Value *byte_ptr, *bit_offset;
+  read_bit_pointer(llvm_val[ptr], byte_ptr, bit_offset);
+
+  auto bit_level_container = builder->CreateLoad(builder->CreateBitCast(
+      byte_ptr, llvm_ptr_type(cit->get_physical_type())));
+  // 2. bit shifting
+  //    first left shift `physical_type - (offset + num_bits)`
+  //    then right shift `physical_type - num_bits`
+  auto bit_end =
+      builder->CreateAdd(bit_offset, tlctx->get_constant(cit->get_num_bits()));
+  auto left = builder->CreateSub(
+      tlctx->get_constant(data_type_bits(cit->get_physical_type())), bit_end);
+  auto right = builder->CreateSub(
+      tlctx->get_constant(data_type_bits(cit->get_physical_type())),
+      tlctx->get_constant(cit->get_num_bits()));
+  left = builder->CreateIntCast(left, bit_level_container->getType(), false);
+  right = builder->CreateIntCast(right, bit_level_container->getType(), false);
+  auto step1 = builder->CreateShl(bit_level_container, left);
+  llvm::Value *step2 = nullptr;
+
+  if (cit->get_is_signed())
+    step2 = builder->CreateAShr(step1, right);
+  else
+    step2 = builder->CreateLShr(step1, right);
+
+  return builder->CreateIntCast(step2, llvm_type(cit->get_compute_type()),
+                                cit->get_is_signed());
+}
+
 void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
   int width = stmt->width();
   TI_ASSERT(width == 1);
-  if (stmt->ptr->ret_type->as<PointerType>()->is_bit_pointer()) {
-    auto cit = stmt->ret_type->as<CustomIntType>();
-    // 1. load bit pointer
-    llvm::Value *byte_ptr, *bit_offset;
-    read_bit_pointer(llvm_val[stmt->ptr], byte_ptr, bit_offset);
-
-    auto bit_level_container = builder->CreateLoad(builder->CreateBitCast(
-        byte_ptr, llvm_ptr_type(cit->get_physical_type())));
-    // 2. bit shifting
-    //    first left shift `physical_type - (offset + num_bits)`
-    //    then right shift `physical_type - num_bits`
-    auto bit_end = builder->CreateAdd(bit_offset,
-                                      tlctx->get_constant(cit->get_num_bits()));
-    auto left = builder->CreateSub(
-        tlctx->get_constant(data_type_bits(cit->get_physical_type())), bit_end);
-    auto right = builder->CreateSub(
-        tlctx->get_constant(data_type_bits(cit->get_physical_type())),
-        tlctx->get_constant(cit->get_num_bits()));
-    left = builder->CreateIntCast(left, bit_level_container->getType(), false);
-    right =
-        builder->CreateIntCast(right, bit_level_container->getType(), false);
-    auto step1 = builder->CreateShl(bit_level_container, left);
-    llvm::Value *step2 = nullptr;
-    if (cit->get_is_signed())
-      step2 = builder->CreateAShr(step1, right);
-    else
-      step2 = builder->CreateLShr(step1, right);
-
-    llvm_val[stmt] = builder->CreateIntCast(
-        step2, llvm_type(cit->get_compute_type()), cit->get_is_signed());
+  if (auto ptr_type = stmt->ptr->ret_type->cast<PointerType>();
+      ptr_type->is_bit_pointer()) {
+    auto val_type = ptr_type->get_pointee_type();
+    if (val_type->is<CustomIntType>()) {
+      llvm_val[stmt] = load_as_custom_int(stmt->ptr, val_type);
+    } else if (auto cft = val_type->cast<CustomFloatType>()) {
+      auto digits = load_as_custom_int(stmt->ptr, cft->get_digits_type());
+      // Compute float(digits) * scale
+      llvm::Value *cast = nullptr;
+      auto compute_type = cft->get_compute_type()->as<PrimitiveType>();
+      if (cft->get_digits_type()->cast<CustomIntType>()->get_is_signed()) {
+        cast = builder->CreateSIToFP(digits, llvm_type(compute_type));
+      } else {
+        cast = builder->CreateUIToFP(digits, llvm_type(compute_type));
+      }
+      llvm::Value *s =
+          llvm::ConstantFP::get(*llvm_context, llvm::APFloat(cft->get_scale()));
+      s = builder->CreateFPCast(s, llvm_type(compute_type));
+      auto scaled = builder->CreateFMul(cast, s);
+      llvm_val[stmt] = scaled;
+    } else {
+      TI_NOT_IMPLEMENTED
+    }
   } else {
     llvm_val[stmt] = builder->CreateLoad(tlctx->get_data_type(stmt->ret_type),
                                          llvm_val[stmt->ptr]);
@@ -1957,5 +2014,4 @@ llvm::Value *CodeGenLLVM::create_xlogue(std::unique_ptr<Block> &block) {
 
   return xlogue;
 }
-
 TLANG_NAMESPACE_END

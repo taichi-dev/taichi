@@ -89,8 +89,8 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
 }
 
 void ArgLoadExpression::flatten(FlattenContext *ctx) {
-  auto argl = std::make_unique<ArgLoadStmt>(arg_id, dt);
-  ctx->push_back(std::move(argl));
+  auto arg_load = std::make_unique<ArgLoadStmt>(arg_id, dt);
+  ctx->push_back(std::move(arg_load));
   stmt = ctx->back_stmt();
 }
 

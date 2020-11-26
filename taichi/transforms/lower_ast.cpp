@@ -323,9 +323,7 @@ class LowerAST : public IRVisitor {
     auto expr = stmt->value;
     auto fctx = make_flatten_ctx();
     expr->flatten(&fctx);
-    const auto dt = stmt->element_type();
-    TI_ASSERT(dt != PrimitiveType::unknown);
-    fctx.push_back<KernelReturnStmt>(fctx.back_stmt(), dt);
+    fctx.push_back<KernelReturnStmt>(fctx.back_stmt());
     stmt->parent->replace_with(stmt, std::move(fctx.stmts));
     throw IRModified();
   }

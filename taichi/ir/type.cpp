@@ -1,5 +1,4 @@
 #include "taichi/ir/type.h"
-
 #include "taichi/program/program.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -105,15 +104,29 @@ CustomIntType::CustomIntType(int num_bits,
                              bool is_signed,
                              Type *compute_type,
                              Type *physical_type)
-    : compute_type(compute_type),
-      physical_type(physical_type),
+    : compute_type_(compute_type),
+      physical_type_(physical_type),
       num_bits_(num_bits),
       is_signed_(is_signed) {
   if (compute_type == nullptr) {
     auto type_id = is_signed ? PrimitiveTypeID::i32 : PrimitiveTypeID::u32;
-    this->compute_type =
+    this->compute_type_ =
         TypeFactory::get_instance().get_primitive_type(type_id);
   }
+}
+
+CustomFloatType::CustomFloatType(Type *digits_type,
+                                 Type *compute_type,
+                                 float64 scale)
+    : digits_type_(digits_type), compute_type_(compute_type), scale_(scale) {
+  TI_ASSERT(digits_type->is<CustomIntType>());
+  TI_ASSERT(compute_type->is<PrimitiveType>());
+  TI_ASSERT(is_real(compute_type->as<PrimitiveType>()));
+}
+
+std::string CustomFloatType::to_string() const {
+  return fmt::format("cf(d={} c={} s={})", digits_type_->to_string(),
+                     compute_type_->to_string(), scale_);
 }
 
 BitStructType::BitStructType(PrimitiveType *physical_type,
@@ -125,8 +138,15 @@ BitStructType::BitStructType(PrimitiveType *physical_type,
   TI_ASSERT(member_types_.size() == member_bit_offsets_.size());
   int physical_type_bits = data_type_bits(physical_type);
   for (auto i = 0; i < member_types_.size(); ++i) {
-    auto bits_end = member_types_[i]->as<CustomIntType>()->get_num_bits() +
-                    member_bit_offsets_[i];
+    CustomIntType *component_cit = nullptr;
+    if (auto cit = member_types_[i]->cast<CustomIntType>()) {
+      component_cit = cit;
+    } else if (auto cft = member_types_[i]->cast<CustomFloatType>()) {
+      component_cit = cft->get_digits_type()->as<CustomIntType>();
+    } else {
+      TI_NOT_IMPLEMENTED
+    }
+    auto bits_end = component_cit->get_num_bits() + member_bit_offsets_[i];
     TI_ASSERT(physical_type_bits >= bits_end)
   }
 }

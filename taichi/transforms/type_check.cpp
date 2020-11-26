@@ -108,8 +108,8 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(GlobalLoadStmt *stmt) {
-    stmt->ret_type = stmt->ptr->ret_type;
-    stmt->ret_type.set_is_pointer(false);
+    auto pointee_type = stmt->ptr->ret_type.ptr_removed();
+    stmt->ret_type = pointee_type->get_compute_type();
   }
 
   void visit(SNodeOpStmt *stmt) {
@@ -124,9 +124,10 @@ class TypeCheck : public IRVisitor {
 
   void visit(GlobalPtrStmt *stmt) {
     stmt->ret_type.set_is_pointer(true);
-    if (stmt->snodes)
-      stmt->ret_type = stmt->snodes[0]->dt;
-    else
+    if (stmt->snodes) {
+      stmt->ret_type = TypeFactory::get_instance().get_pointer_type(
+          stmt->snodes[0]->dt.get_ptr());
+    } else
       TI_WARN("[{}] Type inference failed: snode is nullptr.", stmt->name());
     for (int l = 0; l < stmt->snodes.size(); l++) {
       if (stmt->snodes[l]->parent->num_active_indices != 0 &&
@@ -150,22 +151,23 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(GlobalStoreStmt *stmt) {
-    if (stmt->ptr->ret_type.ptr_removed()->is<CustomIntType>()) {
+    const auto dst_value_type = stmt->ptr->ret_type.ptr_removed();
+    if (dst_value_type->is<CustomIntType>() ||
+        dst_value_type->is<CustomFloatType>()) {
+      // TODO(type): maybe we still need some kind of check here. E.g., we
+      // should warn user when he stores int to CustomFloat.
       return;
     }
-    auto promoted =
-        promoted_type(stmt->ptr->ret_type.ptr_removed(), stmt->data->ret_type);
+    auto promoted = promoted_type(dst_value_type, stmt->data->ret_type);
     auto input_type = stmt->data->ret_data_type_name();
-    if (stmt->ptr->ret_type.ptr_removed() != stmt->data->ret_type) {
-      stmt->data = insert_type_cast_before(stmt, stmt->data,
-                                           stmt->ptr->ret_type.ptr_removed());
+    if (dst_value_type != stmt->data->ret_type) {
+      stmt->data = insert_type_cast_before(stmt, stmt->data, dst_value_type);
     }
-    if (stmt->ptr->ret_type.ptr_removed() != promoted) {
+    if (dst_value_type != promoted) {
       TI_WARN("[{}] Global store may lose precision: {} <- {}, at",
               stmt->name(), stmt->ptr->ret_data_type_name(), input_type);
       TI_WARN("\n{}", stmt->tb);
     }
-    stmt->ret_type = stmt->ptr->ret_type.ptr_removed();
   }
 
   void visit(RangeForStmt *stmt) {
@@ -357,9 +359,8 @@ class TypeCheck : public IRVisitor {
 
   void visit(KernelReturnStmt *stmt) {
     // TODO: Support stmt->ret_id?
-    const auto &rt = stmt->ret_type;
-    TI_ASSERT(stmt->value->element_type() == rt);
-    TI_ASSERT(rt->vector_width() == 1);
+    stmt->ret_type = stmt->value->ret_type;
+    TI_ASSERT(stmt->ret_type->vector_width() == 1);
   }
 
   void visit(ExternalPtrStmt *stmt) {
@@ -410,7 +411,8 @@ class TypeCheck : public IRVisitor {
   void visit(GetChStmt *stmt) {
     TI_ASSERT(stmt->width() == 1);
     auto element_type = stmt->output_snode->dt;
-    // For bit_struct SNodes, their component SNodes must have is_bit_level=true
+    // For bit_struct SNodes, their component SNodes must have
+    // is_bit_level=true
     auto pointer_type = TypeFactory::get_instance().get_pointer_type(
         element_type.get_ptr(), stmt->output_snode->is_bit_level);
     stmt->ret_type = pointer_type;

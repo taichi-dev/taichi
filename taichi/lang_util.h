@@ -116,7 +116,7 @@ inline bool constexpr is_trigonometric(UnaryOpType op) {
 inline bool is_real(DataType dt) {
   return dt->is_primitive(PrimitiveTypeID::f16) ||
          dt->is_primitive(PrimitiveTypeID::f32) ||
-         dt->is_primitive(PrimitiveTypeID::f64);
+         dt->is_primitive(PrimitiveTypeID::f64) || dt->is<CustomFloatType>();
 }
 
 inline bool is_integral(DataType dt) {

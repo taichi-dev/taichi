@@ -89,6 +89,7 @@ void export_lang(py::module &m) {
       .def(py::self == py::self)
       .def("__hash__", &DataType::hash)
       .def("to_string", &DataType::to_string)
+      .def("get_ptr", &DataType::get_ptr, py::return_value_policy::reference)
       .def(py::pickle(
           [](const DataType &dt) {
             // Note: this only works for primitive types, which is fine for now.
@@ -392,9 +393,8 @@ void export_lang(py::module &m) {
     current_ast_builder().insert(Stmt::make<FrontendBreakStmt>());
   });
 
-  m.def("create_kernel_return", [&](const Expr &value, const DataType &dt) {
-    current_ast_builder().insert(
-        Stmt::make<FrontendKernelReturnStmt>(value, dt));
+  m.def("create_kernel_return", [&](const Expr &value) {
+    current_ast_builder().insert(Stmt::make<FrontendKernelReturnStmt>(value));
   });
 
   m.def("insert_continue_stmt", [&]() {
@@ -567,6 +567,7 @@ void export_lang(py::module &m) {
 
   m.def("is_integral", is_integral);
   m.def("is_signed", is_signed);
+  m.def("is_real", is_real);
   m.def("is_unsigned", is_unsigned);
 
   m.def("global_new", static_cast<Expr (*)(Expr, DataType)>(global_new));
@@ -730,6 +731,9 @@ void export_lang(py::module &m) {
       .def("get_custom_int_type", &TypeFactory::get_custom_int_type,
            py::arg("num_bits"), py::arg("is_signed"),
            py::arg("compute_type_bits") = 32,
+           py::return_value_policy::reference)
+      .def("get_custom_float_type", &TypeFactory::get_custom_float_type,
+           py::arg("digits_type"), py::arg("compute_type"), py::arg("scale"),
            py::return_value_policy::reference);
 
   m.def("get_type_factory_instance", TypeFactory::get_instance,

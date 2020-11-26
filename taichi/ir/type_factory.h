@@ -25,6 +25,10 @@ class TypeFactory {
                             bool is_signed,
                             int compute_type_bits = 32);
 
+  Type *get_custom_float_type(Type *digits_type,
+                              Type *compute_type,
+                              float64 scale);
+
   Type *get_bit_struct_type(PrimitiveType *physical_type,
                             std::vector<Type *> member_types,
                             std::vector<int> member_bit_offsets);
@@ -50,6 +54,10 @@ class TypeFactory {
 
   // TODO: use unordered map
   std::map<std::tuple<int, int, bool>, std::unique_ptr<Type>> custom_int_types;
+
+  // TODO: use unordered map
+  std::map<std::tuple<Type *, Type *, float64>, std::unique_ptr<Type>>
+      custom_float_types;
 
   // TODO: avoid duplication
   std::vector<std::unique_ptr<Type>> bit_struct_types_;

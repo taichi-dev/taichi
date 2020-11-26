@@ -631,8 +631,7 @@ class KernelReturnStmt : public Stmt {
  public:
   Stmt *value;
 
-  KernelReturnStmt(Stmt *value, DataType dt) : value(value) {
-    this->ret_type = TypeFactory::create_vector_or_scalar_type(1, dt);
+  KernelReturnStmt(Stmt *value) : value(value) {
     TI_STMT_REG_FIELDS;
   }
 

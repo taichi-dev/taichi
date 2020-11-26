@@ -49,7 +49,16 @@ Type *TypeFactory::get_custom_int_type(int num_bits,
   return custom_int_types[key].get();
 }
 
-#undef SET_COMPUTE_TYPE
+Type *TypeFactory::get_custom_float_type(Type *digits_type,
+                                         Type *compute_type,
+                                         float64 scale) {
+  auto key = std::make_tuple(digits_type, compute_type, scale);
+  if (custom_float_types.find(key) == custom_float_types.end()) {
+    custom_float_types[key] =
+        std::make_unique<CustomFloatType>(digits_type, compute_type, scale);
+  }
+  return custom_float_types[key].get();
+}
 
 Type *TypeFactory::get_bit_struct_type(PrimitiveType *physical_type,
                                        std::vector<Type *> member_types,

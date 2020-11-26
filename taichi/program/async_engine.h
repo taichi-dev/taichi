@@ -144,10 +144,6 @@ class AsyncEngine {
 
   void launch(Kernel *kernel, Context &context);
 
-  void enqueue(const TaskLaunchRecord &t);
-
-  void enqueue(const std::vector<TaskLaunchRecord> &records);
-
   void synchronize();
 
   void debug_sfg(const std::string &suffix);

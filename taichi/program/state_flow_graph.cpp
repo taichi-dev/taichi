@@ -154,11 +154,49 @@ void StateFlowGraph::mark_pending_tasks_as_executed() {
   reid_nodes();
 }
 
-void StateFlowGraph::insert_task(const TaskLaunchRecord &rec) {
+void StateFlowGraph::insert_tasks(const std::vector<TaskLaunchRecord> &records,
+                                  bool filter) {
   TI_AUTO_PROF;
-  auto node = std::make_unique<Node>();
-  node->rec = rec;
-  node->meta = get_task_meta(ir_bank_, rec);
+  std::vector<TaskLaunchRecord> filtered_records;
+  if (filter && get_current_program().config.async_opt_listgen) {
+    /*
+     * Here we find all the ClearList/ListGen pairs and try to evict obvious
+     * redundant list operations.
+     */
+    for (int i = 0; i < (int)records.size(); i++) {
+      auto r = records[i];
+      filtered_records.push_back(r);
+      auto offload = r.ir_handle.ir()->as<OffloadedStmt>();
+      auto snode = offload->snode;
+      if (i >= 1 && offload->task_type == OffloadedTaskType::listgen) {
+        auto previous = records[i - 1];
+        auto previous_offload = r.ir_handle.ir()->as<OffloadedStmt>();
+        if (previous_offload->task_type != OffloadedTaskType::serial ||
+            previous_offload->body->statements.size() != 1) {
+          TI_ERROR(
+              "When early filtering tasks, the previous task of list "
+              "generation must be a serial offload with a single statement.");
+        }
+        if (auto clear_list =
+                previous_offload->body->statements[0]->cast<ClearListStmt>();
+            clear_list && clear_list->snode == snode) {
+        } else {
+          TI_ERROR("Invalid clear list stmt");
+        }
+      }
+    }
+  } else {
+    filtered_records = records;
+  }
+  for (auto rec : records) {
+    auto node = std::make_unique<Node>();
+    node->rec = rec;
+    node->meta = get_task_meta(ir_bank_, rec);
+    insert_node(std::move(node));
+  }
+}
+
+void StateFlowGraph::insert_node(std::unique_ptr<StateFlowGraph::Node> &&node) {
   for (auto input_state : node->meta->input_states) {
     TI_PROFILER("insert_task meta->input_states");
     if (latest_state_owner_.find(input_state) == latest_state_owner_.end()) {
@@ -646,9 +684,7 @@ void StateFlowGraph::rebuild_graph(bool sort) {
     }
   }
   clear();
-  for (auto &task : tasks) {
-    insert_task(task);
-  }
+  insert_tasks(tasks, false);
   for (int i = 1; i <= num_executed_tasks; i++) {
     nodes_[i]->mark_executed();
   }

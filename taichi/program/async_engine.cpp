@@ -200,17 +200,7 @@ void AsyncEngine::launch(Kernel *kernel, Context &context) {
     TaskLaunchRecord rec(context, kernel, kmeta.ir_handle_cached[i]);
     records.push_back(rec);
   }
-  enqueue(records);
-}
-
-void AsyncEngine::enqueue(const TaskLaunchRecord &t) {
-  sfg->insert_task(t);
-}
-
-void AsyncEngine::enqueue(const std::vector<TaskLaunchRecord> &records) {
-  for (auto rec : records) {
-    sfg->insert_task(rec);
-  }
+  sfg->insert_tasks(records);
 }
 
 void AsyncEngine::synchronize() {

@@ -220,14 +220,14 @@ void StateFlowGraph::insert_tasks(const std::vector<TaskLaunchRecord> &records,
 
 void StateFlowGraph::insert_node(std::unique_ptr<StateFlowGraph::Node> &&node) {
   for (auto input_state : node->meta->input_states) {
-    TI_PROFILER("insert_task meta->input_states");
+    // TI_PROFILER("insert_task meta->input_states");
     if (latest_state_owner_.find(input_state) == latest_state_owner_.end()) {
       latest_state_owner_[input_state] = initial_node_;
     }
     insert_edge(latest_state_owner_[input_state], node.get(), input_state);
   }
   for (auto output_state : node->meta->output_states) {
-    TI_PROFILER("insert_task meta->output_states");
+    // TI_PROFILER("insert_task meta->output_states");
     if (get_or_insert(latest_state_readers_, output_state).empty()) {
       if (latest_state_owner_.find(output_state) != latest_state_owner_.end()) {
         // insert a WAW dependency edge
@@ -247,14 +247,14 @@ void StateFlowGraph::insert_node(std::unique_ptr<StateFlowGraph::Node> &&node) {
 
   // Note that this loop must happen AFTER the previous one
   for (auto input_state : node->meta->input_states) {
-    TI_PROFILER("insert_task latest_state_readers_");
+    // TI_PROFILER("insert_task latest_state_readers_");
     insert(latest_state_readers_, input_state, node.get());
   }
   nodes_.push_back(std::move(node));
 }
 
 void StateFlowGraph::insert_edge(Node *from, Node *to, AsyncState state) {
-  TI_AUTO_PROF;
+  // TI_AUTO_PROF;
   TI_ASSERT(from != nullptr);
   TI_ASSERT(to != nullptr);
   insert(from->output_edges, state, to);

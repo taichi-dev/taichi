@@ -1,7 +1,6 @@
 #include "taichi/program/async_engine.h"
 
 #include <memory>
-
 #include "taichi/program/kernel.h"
 #include "taichi/program/program.h"
 #include "taichi/backends/cpu/codegen_cpu.h"
@@ -187,6 +186,7 @@ void AsyncEngine::launch(Kernel *kernel, Context &context) {
   auto &offloads = block->statements;
   auto &kmeta = kernel_metas_[kernel];
   const bool kmeta_inited = !kmeta.ir_handle_cached.empty();
+  std::vector<TaskLaunchRecord> records;
   for (std::size_t i = 0; i < offloads.size(); i++) {
     if (!kmeta_inited) {
       TI_ASSERT(kmeta.ir_handle_cached.size() == i);
@@ -198,13 +198,19 @@ void AsyncEngine::launch(Kernel *kernel, Context &context) {
       ir_bank_.insert(std::move(cloned_offs), h);
     }
     TaskLaunchRecord rec(context, kernel, kmeta.ir_handle_cached[i]);
-    enqueue(rec);
+    records.push_back(rec);
   }
+  enqueue(records);
 }
 
 void AsyncEngine::enqueue(const TaskLaunchRecord &t) {
   sfg->insert_task(t);
-  task_queue.push_back(t);
+}
+
+void AsyncEngine::enqueue(const std::vector<TaskLaunchRecord> &records) {
+  for (auto rec : records) {
+    sfg->insert_task(rec);
+  }
 }
 
 void AsyncEngine::synchronize() {

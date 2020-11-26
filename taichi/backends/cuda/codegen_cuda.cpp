@@ -398,6 +398,17 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         // Issue an CUDA "__ldg" instruction so that data are cached in
         // the CUDA read-only data cache.
         auto dtype = stmt->ret_type;
+        llvm::Value *data_ptr = llvm_val[stmt->ptr];
+        llvm::Value *bit_offset = nullptr;
+        if (auto ptr_type = stmt->ptr->ret_type->cast<PointerType>(); ptr_type->is_bit_pointer()) {
+          auto val_type = ptr_type->get_pointee_type();
+          if (auto cit = val_type->cast<CustomIntType>()) {
+            dtype = cit->get_physical_type();
+            read_bit_pointer(llvm_val[stmt->ptr], data_ptr, bit_offset);
+            data_ptr = builder->CreateBitCast(data_ptr, llvm_ptr_type(dtype));
+          }
+        } 
+
         auto llvm_dtype = llvm_type(dtype);
         auto llvm_dtype_ptr = llvm::PointerType::get(llvm_type(dtype), 0);
         llvm::Intrinsic::ID intrin;
@@ -407,9 +418,16 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
           intrin = llvm::Intrinsic::nvvm_ldg_global_i;
         }
 
-        llvm_val[stmt] = builder->CreateIntrinsic(
+        auto data = builder->CreateIntrinsic(
             intrin, {llvm_dtype, llvm_dtype_ptr},
-            {llvm_val[stmt->ptr], tlctx->get_constant(data_type_size(dtype))});
+            {data_ptr, tlctx->get_constant(data_type_size(dtype))});
+
+        if (bit_offset != nullptr) {
+          llvm_val[stmt] = extract_custom_int(data, bit_offset, stmt->ptr->ret_type->cast<PointerType>()->get_pointee_type());
+        } else {
+          llvm_val[stmt] = data;
+        }
+
       } else {
         CodeGenLLVM::visit(stmt);
       }

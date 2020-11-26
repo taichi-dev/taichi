@@ -1157,15 +1157,21 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
 
 llvm::Value *CodeGenLLVM::load_as_custom_int(Stmt *ptr, Type *load_type) {
   auto *cit = load_type->as<CustomIntType>();
-  // 1. load bit pointer
+  // load bit pointer
   llvm::Value *byte_ptr, *bit_offset;
   read_bit_pointer(llvm_val[ptr], byte_ptr, bit_offset);
 
   auto bit_level_container = builder->CreateLoad(builder->CreateBitCast(
       byte_ptr, llvm_ptr_type(cit->get_physical_type())));
-  // 2. bit shifting
+  
+  return extract_custom_int(bit_level_container, bit_offset, load_type);
+} 
+
+llvm::Value *CodeGenLLVM::extract_custom_int(llvm::Value* physical_value, llvm::Value* bit_offset, Type* load_type) {
+  //  bit shifting
   //    first left shift `physical_type - (offset + num_bits)`
   //    then right shift `physical_type - num_bits`
+  auto cit = load_type->as<CustomIntType>();
   auto bit_end =
       builder->CreateAdd(bit_offset, tlctx->get_constant(cit->get_num_bits()));
   auto left = builder->CreateSub(
@@ -1173,9 +1179,9 @@ llvm::Value *CodeGenLLVM::load_as_custom_int(Stmt *ptr, Type *load_type) {
   auto right = builder->CreateSub(
       tlctx->get_constant(data_type_bits(cit->get_physical_type())),
       tlctx->get_constant(cit->get_num_bits()));
-  left = builder->CreateIntCast(left, bit_level_container->getType(), false);
-  right = builder->CreateIntCast(right, bit_level_container->getType(), false);
-  auto step1 = builder->CreateShl(bit_level_container, left);
+  left = builder->CreateIntCast(left, physical_value->getType(), false);
+  right = builder->CreateIntCast(right, physical_value->getType(), false);
+  auto step1 = builder->CreateShl(physical_value, left);
   llvm::Value *step2 = nullptr;
 
   if (cit->get_is_signed())

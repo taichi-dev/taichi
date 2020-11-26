@@ -85,8 +85,11 @@ void StateFlowGraph::Node::disconnect_with(StateFlowGraph::Node *other) {
   }
 }
 
-StateFlowGraph::StateFlowGraph(IRBank *ir_bank)
-    : first_pending_task_index_(1 /*after initial node*/), ir_bank_(ir_bank) {
+StateFlowGraph::StateFlowGraph(AsyncEngine *engine, IRBank *ir_bank)
+    : first_pending_task_index_(1 /*after initial node*/),
+      ir_bank_(ir_bank),
+      engine_(engine),
+      program_(engine->program) {
   nodes_.push_back(std::make_unique<Node>());
   initial_node_ = nodes_.back().get();
   initial_meta_.name = "initial_state";
@@ -94,6 +97,10 @@ StateFlowGraph::StateFlowGraph(IRBank *ir_bank)
   initial_node_->is_initial_node = true;
   initial_node_->node_id = 0;
   initial_node_->mark_executed();
+
+  for (auto snode : program_->snodes) {
+    list_up_to_date_[snode.second] = false;
+  }
 }
 
 std::vector<StateFlowGraph::Node *> StateFlowGraph::get_pending_tasks() const {
@@ -158,37 +165,52 @@ void StateFlowGraph::insert_tasks(const std::vector<TaskLaunchRecord> &records,
                                   bool filter) {
   TI_AUTO_PROF;
   std::vector<TaskLaunchRecord> filtered_records;
-  if (filter && get_current_program().config.async_opt_listgen) {
+  if (filter && program_->config.async_opt_listgen) {
     /*
      * Here we find all the ClearList/ListGen pairs and try to evict obvious
      * redundant list operations.
      */
     for (int i = 0; i < (int)records.size(); i++) {
       auto r = records[i];
+      auto meta = get_task_meta(ir_bank_, r);
+      for (auto output_state : meta->output_states) {
+        if (output_state.type == AsyncState::Type::mask) {
+          mark_list_as_dirty(output_state.snode());
+        }
+      }
       filtered_records.push_back(r);
       auto offload = r.ir_handle.ir()->as<OffloadedStmt>();
       auto snode = offload->snode;
-      if (i >= 1 && offload->task_type == OffloadedTaskType::listgen) {
-        auto previous = records[i - 1];
-        auto previous_offload = r.ir_handle.ir()->as<OffloadedStmt>();
-        if (previous_offload->task_type != OffloadedTaskType::serial ||
-            previous_offload->body->statements.size() != 1) {
-          TI_ERROR(
-              "When early filtering tasks, the previous task of list "
-              "generation must be a serial offload with a single statement.");
-        }
-        if (auto clear_list =
-                previous_offload->body->statements[0]->cast<ClearListStmt>();
-            clear_list && clear_list->snode == snode) {
-        } else {
-          TI_ERROR("Invalid clear list stmt");
-        }
+      if (i < 1 || offload->task_type != OffloadedTaskType::listgen)
+        continue;
+      auto previous = records[i - 1];
+      auto previous_offload = previous.ir_handle.ir()->as<OffloadedStmt>();
+      if (previous_offload->task_type != OffloadedTaskType::serial ||
+          previous_offload->body->statements.size() != 1) {
+        TI_ERROR(
+            "When early filtering tasks, the previous task of list "
+            "generation must be a serial offload with a single statement.");
+      }
+      if (auto clear_list =
+              previous_offload->body->statements[0]->cast<ClearListStmt>();
+          clear_list && clear_list->snode == snode) {
+      } else
+        TI_ERROR("Invalid clear list stmt");
+      stat.add("total_list_gen");
+      if (list_up_to_date_[snode]) {
+        stat.add("filtered_list_gen");
+        // Remove the list gen task
+        filtered_records.pop_back();
+        // Remove the clear list task
+        filtered_records.pop_back();
+      } else {
+        list_up_to_date_[snode] = true;
       }
     }
   } else {
     filtered_records = records;
   }
-  for (auto rec : records) {
+  for (auto rec : filtered_records) {
     auto node = std::make_unique<Node>();
     node->rec = rec;
     node->meta = get_task_meta(ir_bank_, rec);
@@ -1333,6 +1355,15 @@ bool StateFlowGraph::demote_activation() {
   }
 
   return modified;
+}
+
+void StateFlowGraph::mark_list_as_dirty(SNode *snode) {
+  list_up_to_date_[snode] = false;
+  for (auto &ch : snode->ch) {
+    if (ch->type != SNodeType::place) {
+      mark_list_as_dirty(ch.get());
+    }
+  }
 }
 
 void async_print_sfg() {

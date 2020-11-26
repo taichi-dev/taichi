@@ -173,7 +173,7 @@ AsyncEngine::AsyncEngine(Program *program,
                          const BackendExecCompilationFunc &compile_to_backend)
     : queue(&ir_bank_, compile_to_backend),
       program(program),
-      sfg(std::make_unique<StateFlowGraph>(&ir_bank_)) {
+      sfg(std::make_unique<StateFlowGraph>(this, &ir_bank_)) {
 }
 
 void AsyncEngine::launch(Kernel *kernel, Context &context) {
@@ -200,7 +200,7 @@ void AsyncEngine::launch(Kernel *kernel, Context &context) {
     TaskLaunchRecord rec(context, kernel, kmeta.ir_handle_cached[i]);
     records.push_back(rec);
   }
-  sfg->insert_tasks(records);
+  sfg->insert_tasks(records, true);
 }
 
 void AsyncEngine::synchronize() {

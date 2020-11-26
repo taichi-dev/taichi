@@ -16,6 +16,8 @@
 TLANG_NAMESPACE_BEGIN
 
 class IRBank;
+class AsyncEngine;
+
 class StateFlowGraph {
  public:
   struct Node;
@@ -97,7 +99,7 @@ class StateFlowGraph {
     void disconnect_with(Node *other);
   };
 
-  StateFlowGraph(IRBank *ir_bank);
+  StateFlowGraph(AsyncEngine *engine, IRBank *ir_bank);
 
   std::vector<Node *> get_pending_tasks() const;
 
@@ -174,6 +176,8 @@ class StateFlowGraph {
     return nodes_.size() - first_pending_task_index_;
   }
 
+  void mark_list_as_dirty(SNode *snode);
+
  private:
   std::vector<std::unique_ptr<Node>> nodes_;
   Node *initial_node_;  // The initial node holds all the initial states.
@@ -183,6 +187,9 @@ class StateFlowGraph {
   StateToNodesMap latest_state_readers_;
   std::unordered_map<std::string, int> task_name_to_launch_ids_;
   IRBank *ir_bank_;
+  std::unordered_map<SNode *, bool> list_up_to_date_;
+  [[maybe_unused]] AsyncEngine *engine_;
+  Program *program_;
 };
 
 TLANG_NAMESPACE_END

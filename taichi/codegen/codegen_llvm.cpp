@@ -1141,7 +1141,7 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
     }
     llvm::Value *byte_ptr = nullptr, *bit_offset = nullptr;
     read_bit_pointer(llvm_val[stmt->ptr], byte_ptr, bit_offset);
-    // TODO(type): cuda only supports atomic CAS on 32 and 64 bit integer 
+    // TODO(type): cuda only supports atomic CAS on 32 and 64 bit integer
     // try to support CustomInt/Float Type with 16-bits or 8-bits physical type
     auto func_name = fmt::format("set_partial_bits_b{}",
                                  data_type_bits(cit->get_physical_type()));

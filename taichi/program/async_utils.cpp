@@ -1,13 +1,14 @@
 #include "taichi/program/async_utils.h"
 
+#include <queue>
+#include <unordered_map>
+
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
 #include "taichi/program/ir_bank.h"
 #include "taichi/program/kernel.h"
-
-#include <queue>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -54,6 +55,8 @@ std::string AsyncState::name() const {
     case Type::allocator:
       type_name = "allocator";
       break;
+    case Type::undefined:
+      TI_ERROR("invalue type");
   }
   const auto prefix =
       holds_snode()
@@ -61,6 +64,13 @@ std::string AsyncState::name() const {
           : fmt::format("global_tmp[{}]",
                         std::get<Kernel *>(snode_or_global_tmp)->name);
   return prefix + "_" + type_name;
+}
+
+std::size_t AsyncState::get_unique_id(void *ptr, AsyncState::Type type) {
+  static_assert((int)Type::undefined < 8);
+  static_assert(std::alignment_of<SNode>() % 8 == 0);
+  static_assert(std::alignment_of<Kernel>() % 8 == 0);
+  return (std::size_t)ptr ^ (std::size_t)type;
 }
 
 void TaskMeta::print() const {
@@ -118,7 +128,6 @@ void TaskMeta::print() const {
 }
 
 TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
-  TI_AUTO_PROF
   // TODO: this function should ideally take only an IRNode
   static std::mutex mut;
 
@@ -201,7 +210,7 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
       }
     }
     if (stmt->is<GlobalTemporaryStmt>()) {
-      auto as = AsyncState::for_global_tmp(t.kernel);
+      auto as = AsyncState(t.kernel);
       meta.input_states.insert(as);
       meta.output_states.insert(as);
     }

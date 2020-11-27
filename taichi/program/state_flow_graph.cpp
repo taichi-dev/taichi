@@ -33,9 +33,11 @@ SFGStateToNodes::iterator find(SFGStateToNodes &m, const AsyncState &s) {
 std::pair<SFGStateToNodes::value_type::second_type *, bool> insert(
     SFGStateToNodes &m,
     const AsyncState &s) {
-  auto itr = find(m, s);
-  if (itr != m.end()) {
-    return std::make_pair(&(itr->second), true);
+  int sz = m.size();
+  for (int i = 0; i < sz; i++) {
+    if (m[i].first == s) {
+      return std::make_pair(&m[i].second, true);
+    }
   }
   m.push_back(std::make_pair(s, SFGStateToNodes::value_type::second_type{}));
   return std::make_pair(&(m.back().second), false);
@@ -249,7 +251,7 @@ void StateFlowGraph::insert_node(std::unique_ptr<StateFlowGraph::Node> &&node) {
   for (auto input_state : node->meta->input_states) {
     insert(latest_state_readers_, input_state, node.get());
   }
-  nodes_.push_back(std::move(node));
+  nodes_.emplace_back(std::move(node));
 }
 
 void StateFlowGraph::insert_edge(Node *from, Node *to, AsyncState state) {
@@ -1361,6 +1363,17 @@ void StateFlowGraph::mark_list_as_dirty(SNode *snode) {
     if (ch->type != SNodeType::place) {
       mark_list_as_dirty(ch.get());
     }
+  }
+}
+
+void StateFlowGraph::benchmark_rebuild_graph() {
+  for (int k = 0; k < 100000; k++) {
+    auto t = Time::get_time();
+    for (int i = 0; i < 100; i++)
+      rebuild_graph(/*sort=*/false);
+    auto rebuild_t = Time::get_time() - t;
+    TI_INFO("nodes = {} total time {:.4f} ns; per_node {:.4f} ns",
+            nodes_.size(), rebuild_t * 1e7, 1e7 * rebuild_t / nodes_.size());
   }
 }
 

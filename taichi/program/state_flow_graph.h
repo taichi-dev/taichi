@@ -179,6 +179,8 @@ class StateFlowGraph {
   // Recursively mark as dirty the list state of "snode" and all its children
   void mark_list_as_dirty(SNode *snode);
 
+  void benchmark_rebuild_graph();
+
  private:
   std::vector<std::unique_ptr<Node>> nodes_;
   Node *initial_node_;  // The initial node holds all the initial states.

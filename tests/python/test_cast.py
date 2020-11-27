@@ -87,3 +87,45 @@ def test_bit_cast():
     func1()
     func2()
     assert z[None] == 2333
+
+
+@ti.test(arch=ti.cpu)
+def test_int_extension():
+    x = ti.field(dtype=ti.i32, shape=1)
+    y = ti.field(dtype=ti.u16, shape=1)
+
+    @ti.kernel
+    def run_cast():
+        x[0] = ti.cast(y[0], ti.i32)
+
+    y[0] = 0xFFFF
+    run_cast()
+    assert x[0] == 0xFFFF
+
+    y[0] = 0x8234
+    run_cast()
+    assert x[0] == 0x8234
+
+
+@ti.test(arch=ti.cpu)
+def test_custom_int_extension():
+    x = ti.field(dtype=ti.i32, shape=2)
+
+    ci5 = ti.type_factory_.get_custom_int_type(5, True, 16)
+    cu7 = ti.type_factory_.get_custom_int_type(7, False, 16)
+
+    a = ti.field(dtype=ci5)
+    b = ti.field(dtype=cu7)
+
+    ti.root._bit_struct(num_bits=32).place(a, b)
+
+    @ti.kernel
+    def run_cast():
+        x[0] = ti.cast(a[None], ti.i32)
+        x[1] = ti.cast(b[None], ti.i32)
+
+    a[None] = 0x1F
+    b[None] = 0x3F
+    run_cast()
+    assert x[0] == -1
+    assert x[1] == 0x3F

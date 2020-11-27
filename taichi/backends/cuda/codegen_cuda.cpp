@@ -321,7 +321,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         fmt::format("cuda_rand_{}", data_type_short_name(stmt->ret_type)),
         {get_context()});
   }
-  
+
   void visit(RangeForStmt *for_stmt) override {
     create_naive_range_for(for_stmt);
   }
@@ -386,7 +386,8 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     return true;  // on CUDA, pass the argument by value
   }
 
-  llvm::Value *create_intrinsic_load(const DataType& dtype, llvm::Value* data_ptr) {
+  llvm::Value *create_intrinsic_load(const DataType &dtype,
+                                     llvm::Value *data_ptr) {
     auto llvm_dtype = llvm_type(dtype);
     auto llvm_dtype_ptr = llvm::PointerType::get(llvm_type(dtype), 0);
     llvm::Intrinsic::ID intrin;
@@ -396,8 +397,8 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       intrin = llvm::Intrinsic::nvvm_ldg_global_i;
     }
     return builder->CreateIntrinsic(
-            intrin, {llvm_dtype, llvm_dtype_ptr},
-            {data_ptr, tlctx->get_constant(data_type_size(dtype))});
+        intrin, {llvm_dtype, llvm_dtype_ptr},
+        {data_ptr, tlctx->get_constant(data_type_size(dtype))});
   }
 
   void visit(GlobalLoadStmt *stmt) override {
@@ -413,14 +414,17 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         // Issue an CUDA "__ldg" instruction so that data are cached in
         // the CUDA read-only data cache.
         auto dtype = stmt->ret_type;
-        if (auto ptr_type = stmt->ptr->ret_type->cast<PointerType>(); ptr_type->is_bit_pointer()) {
+        if (auto ptr_type = stmt->ptr->ret_type->cast<PointerType>();
+            ptr_type->is_bit_pointer()) {
           auto val_type = ptr_type->get_pointee_type();
           llvm::Value *data_ptr = nullptr;
           llvm::Value *bit_offset = nullptr;
           if (auto cit = val_type->cast<CustomIntType>()) {
             dtype = cit->get_physical_type();
           } else if (auto cft = val_type->cast<CustomFloatType>()) {
-            dtype = cft->get_compute_type()->as<CustomIntType>()->get_physical_type();
+            dtype = cft->get_compute_type()
+                        ->as<CustomIntType>()
+                        ->get_physical_type();
           } else {
             TI_NOT_IMPLEMENTED;
           }

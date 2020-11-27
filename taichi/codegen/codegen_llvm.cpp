@@ -1163,11 +1163,13 @@ llvm::Value *CodeGenLLVM::load_as_custom_int(Stmt *ptr, Type *load_type) {
 
   auto bit_level_container = builder->CreateLoad(builder->CreateBitCast(
       byte_ptr, llvm_ptr_type(cit->get_physical_type())));
-  
-  return extract_custom_int(bit_level_container, bit_offset, load_type);
-} 
 
-llvm::Value *CodeGenLLVM::extract_custom_int(llvm::Value* physical_value, llvm::Value* bit_offset, Type* load_type) {
+  return extract_custom_int(bit_level_container, bit_offset, load_type);
+}
+
+llvm::Value *CodeGenLLVM::extract_custom_int(llvm::Value *physical_value,
+                                             llvm::Value *bit_offset,
+                                             Type *load_type) {
   //  bit shifting
   //    first left shift `physical_type - (offset + num_bits)`
   //    then right shift `physical_type - num_bits`
@@ -1193,7 +1195,8 @@ llvm::Value *CodeGenLLVM::extract_custom_int(llvm::Value* physical_value, llvm::
                                 cit->get_is_signed());
 }
 
-llvm::Value *CodeGenLLVM::restore_custom_float(llvm::Value* digits, Type* load_type) {
+llvm::Value *CodeGenLLVM::restore_custom_float(llvm::Value *digits,
+                                               Type *load_type) {
   // Compute float(digits) * scale
   auto cft = load_type->as<CustomFloatType>();
   llvm::Value *cast = nullptr;

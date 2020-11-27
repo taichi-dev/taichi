@@ -89,7 +89,7 @@ def test_bit_cast():
     assert z[None] == 2333
 
 
-@ti.test(arch=ti.cpu)
+@ti.test(ti.cpu, ti.cuda, cfg_optimization=False)
 def test_int_extension():
     x = ti.field(dtype=ti.i32, shape=1)
     y = ti.field(dtype=ti.u16, shape=1)
@@ -107,7 +107,8 @@ def test_int_extension():
     assert x[0] == 0x8234
 
 
-@ti.test(arch=ti.cpu)
+# TODO: add arch=ti.cuda after bit-pointer is supported on cuda
+@ti.test(ti.cpu, cfg_optimization=False)
 def test_custom_int_extension():
     x = ti.field(dtype=ti.i32, shape=2)
 

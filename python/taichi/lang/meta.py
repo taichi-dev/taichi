@@ -20,9 +20,9 @@ def vector_to_fast_image(img: ti.template(), out: ti.ext_arr()):
     # FIXME: Why is ``for i, j in img:`` slower than:
     for i, j in ti.ndrange(*img.shape):
         r, g, b = 0, 0, 0
-        clr = img[i, img.shape[1] - 1 - j]
+        color = img[i, img.shape[1] - 1 - j]
         if ti.static(img.dtype in [ti.f32, ti.f64]):
-            r, g, b = min(255, max(0, int(clr * 255)))
+            r, g, b = min(255, max(0, int(color * 255)))
         else:
             ti.static_assert(img.dtype == ti.u8)
             r, g, b = clr

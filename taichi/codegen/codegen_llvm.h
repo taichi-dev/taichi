@@ -200,6 +200,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   llvm::Value *extract_custom_int(llvm::Value* physical_value, llvm::Value* bit_offset, Type* load_type);
 
+  llvm::Value *restore_custom_float(llvm::Value* digits, Type* load_type);
+  
   void visit(GlobalLoadStmt *stmt) override;
 
   void visit(ElementShuffleStmt *stmt) override;

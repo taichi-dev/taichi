@@ -400,10 +400,16 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         auto dtype = stmt->ret_type;
         llvm::Value *data_ptr = llvm_val[stmt->ptr];
         llvm::Value *bit_offset = nullptr;
+        bool is_cft = false;
         if (auto ptr_type = stmt->ptr->ret_type->cast<PointerType>(); ptr_type->is_bit_pointer()) {
           auto val_type = ptr_type->get_pointee_type();
           if (auto cit = val_type->cast<CustomIntType>()) {
             dtype = cit->get_physical_type();
+            read_bit_pointer(llvm_val[stmt->ptr], data_ptr, bit_offset);
+            data_ptr = builder->CreateBitCast(data_ptr, llvm_ptr_type(dtype));
+          } else if (auto cft = val_type->cast<CustomFloatType>()) {
+            is_cft = true;
+            dtype = cft->get_compute_type()->as<CustomIntType>()->get_physical_type();
             read_bit_pointer(llvm_val[stmt->ptr], data_ptr, bit_offset);
             data_ptr = builder->CreateBitCast(data_ptr, llvm_ptr_type(dtype));
           }
@@ -424,6 +430,9 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 
         if (bit_offset != nullptr) {
           llvm_val[stmt] = extract_custom_int(data, bit_offset, stmt->ptr->ret_type->cast<PointerType>()->get_pointee_type());
+          if (is_cft) {
+            llvm_val[stmt] = restore_custom_float(llvm_val[stmt], stmt->ptr->ret_type->cast<PointerType>()->get_pointee_type());
+          }
         } else {
           llvm_val[stmt] = data;
         }

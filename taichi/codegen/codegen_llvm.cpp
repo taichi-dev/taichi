@@ -1193,6 +1193,22 @@ llvm::Value *CodeGenLLVM::extract_custom_int(llvm::Value* physical_value, llvm::
                                 cit->get_is_signed());
 }
 
+llvm::Value *CodeGenLLVM::restore_custom_float(llvm::Value* digits, Type* load_type) {
+  // Compute float(digits) * scale
+  auto cft = load_type->as<CustomFloatType>();
+  llvm::Value *cast = nullptr;
+  auto compute_type = cft->get_compute_type()->as<PrimitiveType>();
+  if (cft->get_digits_type()->cast<CustomIntType>()->get_is_signed()) {
+    cast = builder->CreateSIToFP(digits, llvm_type(compute_type));
+  } else {
+    cast = builder->CreateUIToFP(digits, llvm_type(compute_type));
+  }
+  llvm::Value *s =
+      llvm::ConstantFP::get(*llvm_context, llvm::APFloat(cft->get_scale()));
+  s = builder->CreateFPCast(s, llvm_type(compute_type));
+  return builder->CreateFMul(cast, s);
+}
+
 void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
   int width = stmt->width();
   TI_ASSERT(width == 1);
@@ -1203,19 +1219,7 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
       llvm_val[stmt] = load_as_custom_int(stmt->ptr, val_type);
     } else if (auto cft = val_type->cast<CustomFloatType>()) {
       auto digits = load_as_custom_int(stmt->ptr, cft->get_digits_type());
-      // Compute float(digits) * scale
-      llvm::Value *cast = nullptr;
-      auto compute_type = cft->get_compute_type()->as<PrimitiveType>();
-      if (cft->get_digits_type()->cast<CustomIntType>()->get_is_signed()) {
-        cast = builder->CreateSIToFP(digits, llvm_type(compute_type));
-      } else {
-        cast = builder->CreateUIToFP(digits, llvm_type(compute_type));
-      }
-      llvm::Value *s =
-          llvm::ConstantFP::get(*llvm_context, llvm::APFloat(cft->get_scale()));
-      s = builder->CreateFPCast(s, llvm_type(compute_type));
-      auto scaled = builder->CreateFMul(cast, s);
-      llvm_val[stmt] = scaled;
+      llvm_val[stmt] = restore_custom_float(digits, val_type);
     } else {
       TI_NOT_IMPLEMENTED
     }

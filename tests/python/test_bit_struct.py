@@ -36,7 +36,7 @@ def test_simple_array():
     verify_val.__wrapped__()
 
 
-@ti.test(ti.cpu, ti.cuda, debug=True, cfg_optimization=False)
+@ti.test(arch=ti.cpu, debug=True, cfg_optimization=False)
 def test_custom_int_load_and_store():
     ci13 = ti.type_factory_.get_custom_int_type(13, True)
     cu14 = ti.type_factory_.get_custom_int_type(14, False)

@@ -162,12 +162,12 @@ void StateFlowGraph::mark_pending_tasks_as_executed() {
 }
 
 void StateFlowGraph::insert_tasks(const std::vector<TaskLaunchRecord> &records,
-                                  bool filter) {
+                                  bool filter_listgen) {
   TI_AUTO_PROF;
   std::vector<TaskLaunchRecord> filtered_records;
-  if (filter && program_->config.async_opt_listgen) {
+  if (filter_listgen && program_->config.async_opt_listgen) {
     /*
-     * Here we find all the ClearList/ListGen pairs and try to evict obvious
+     * Here we find all the ClearList/ListGen pairs and try to evict obviously
      * redundant list operations.
      */
     for (int i = 0; i < (int)records.size(); i++) {
@@ -175,26 +175,28 @@ void StateFlowGraph::insert_tasks(const std::vector<TaskLaunchRecord> &records,
       auto meta = get_task_meta(ir_bank_, r);
       for (auto output_state : meta->output_states) {
         if (output_state.type == AsyncState::Type::mask) {
+          // If the task modifies an SNode mask, all lists of all its children
+          // will be marked as dirty.
           mark_list_as_dirty(output_state.snode());
         }
       }
+      // push it back for now (maybe removed later if we find it is redundant)
       filtered_records.push_back(r);
       auto offload = r.ir_handle.ir()->as<OffloadedStmt>();
       auto snode = offload->snode;
       if (i < 1 || offload->task_type != OffloadedTaskType::listgen)
         continue;
-      auto previous = records[i - 1];
-      auto previous_offload = previous.ir_handle.ir()->as<OffloadedStmt>();
+      auto previous_r = records[i - 1];
+      auto previous_offload = previous_r.ir_handle.ir()->as<OffloadedStmt>();
       if (previous_offload->task_type != OffloadedTaskType::serial ||
           previous_offload->body->statements.size() != 1) {
         TI_ERROR(
             "When early filtering tasks, the previous task of list "
             "generation must be a serial offload with a single statement.");
       }
-      if (auto clear_list =
-              previous_offload->body->statements[0]->cast<ClearListStmt>();
-          clear_list && clear_list->snode == snode) {
-      } else
+      auto clear_list =
+          previous_offload->body->statements[0]->cast<ClearListStmt>();
+      if (!clear_list || clear_list->snode != snode)
         TI_ERROR("Invalid clear list stmt");
       stat.add("total_list_gen");
       if (list_up_to_date_[snode]) {
@@ -210,7 +212,7 @@ void StateFlowGraph::insert_tasks(const std::vector<TaskLaunchRecord> &records,
   } else {
     filtered_records = records;
   }
-  for (auto rec : filtered_records) {
+  for (const auto &rec : filtered_records) {
     auto node = std::make_unique<Node>();
     node->rec = rec;
     node->meta = get_task_meta(ir_bank_, rec);
@@ -220,14 +222,12 @@ void StateFlowGraph::insert_tasks(const std::vector<TaskLaunchRecord> &records,
 
 void StateFlowGraph::insert_node(std::unique_ptr<StateFlowGraph::Node> &&node) {
   for (auto input_state : node->meta->input_states) {
-    // TI_PROFILER("insert_task meta->input_states");
     if (latest_state_owner_.find(input_state) == latest_state_owner_.end()) {
       latest_state_owner_[input_state] = initial_node_;
     }
     insert_edge(latest_state_owner_[input_state], node.get(), input_state);
   }
   for (auto output_state : node->meta->output_states) {
-    // TI_PROFILER("insert_task meta->output_states");
     if (get_or_insert(latest_state_readers_, output_state).empty()) {
       if (latest_state_owner_.find(output_state) != latest_state_owner_.end()) {
         // insert a WAW dependency edge
@@ -247,14 +247,12 @@ void StateFlowGraph::insert_node(std::unique_ptr<StateFlowGraph::Node> &&node) {
 
   // Note that this loop must happen AFTER the previous one
   for (auto input_state : node->meta->input_states) {
-    // TI_PROFILER("insert_task latest_state_readers_");
     insert(latest_state_readers_, input_state, node.get());
   }
   nodes_.push_back(std::move(node));
 }
 
 void StateFlowGraph::insert_edge(Node *from, Node *to, AsyncState state) {
-  // TI_AUTO_PROF;
   TI_ASSERT(from != nullptr);
   TI_ASSERT(to != nullptr);
   insert(from->output_edges, state, to);

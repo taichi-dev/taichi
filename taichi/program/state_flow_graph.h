@@ -126,7 +126,7 @@ class StateFlowGraph {
                        int embed_states_threshold = 0);
 
   void insert_tasks(const std::vector<TaskLaunchRecord> &rec,
-                    bool filter = true);
+                    bool filter_listgen = true);
 
   void insert_node(std::unique_ptr<Node> &&node);
 
@@ -176,6 +176,7 @@ class StateFlowGraph {
     return nodes_.size() - first_pending_task_index_;
   }
 
+  // Recursively mark as dirty the list state of "snode" and all its children
   void mark_list_as_dirty(SNode *snode);
 
  private:

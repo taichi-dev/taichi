@@ -107,7 +107,7 @@ def test_int_extension():
     assert x[0] == 0x8234
 
 
-# TODO: add arch=ti.cuda after bit-pointer is supported on cuda
+# TODO: add arch=ti.cuda after bit-pointer being supported on cuda
 @ti.test(ti.cpu, cfg_optimization=False)
 def test_custom_int_extension():
     x = ti.field(dtype=ti.i32, shape=2)

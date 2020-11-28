@@ -202,7 +202,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
                                   llvm::Value *bit_offset,
                                   Type *load_type);
 
-  llvm::Value *restore_custom_float(llvm::Value *digits, Type *load_type);
+  llvm::Value *reconstruct_custom_float(llvm::Value *digits, Type *load_type);
 
   void visit(GlobalLoadStmt *stmt) override;
 

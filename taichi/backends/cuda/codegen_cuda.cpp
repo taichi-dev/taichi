@@ -433,7 +433,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
           auto data = create_intrinsic_load(dtype, data_ptr);
           llvm_val[stmt] = extract_custom_int(data, bit_offset, val_type);
           if (val_type->is<CustomFloatType>()) {
-            llvm_val[stmt] = restore_custom_float(llvm_val[stmt], val_type);
+            llvm_val[stmt] = reconstruct_custom_float(llvm_val[stmt], val_type);
           }
         } else {
           llvm_val[stmt] = create_intrinsic_load(dtype, llvm_val[stmt->ptr]);

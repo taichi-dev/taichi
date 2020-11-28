@@ -1197,7 +1197,7 @@ llvm::Value *CodeGenLLVM::extract_custom_int(llvm::Value *physical_value,
                                 cit->get_is_signed());
 }
 
-llvm::Value *CodeGenLLVM::restore_custom_float(llvm::Value *digits,
+llvm::Value *CodeGenLLVM::reconstruct_custom_float(llvm::Value *digits,
                                                Type *load_type) {
   // Compute float(digits) * scale
   auto cft = load_type->as<CustomFloatType>();
@@ -1224,7 +1224,7 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
       llvm_val[stmt] = load_as_custom_int(stmt->ptr, val_type);
     } else if (auto cft = val_type->cast<CustomFloatType>()) {
       auto digits = load_as_custom_int(stmt->ptr, cft->get_digits_type());
-      llvm_val[stmt] = restore_custom_float(digits, val_type);
+      llvm_val[stmt] = reconstruct_custom_float(digits, val_type);
     } else {
       TI_NOT_IMPLEMENTED
     }

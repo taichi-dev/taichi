@@ -126,7 +126,7 @@ class StateFlowGraph {
                        int embed_states_threshold = 0);
 
   void insert_tasks(const std::vector<TaskLaunchRecord> &rec,
-                    bool filter_listgen = true);
+                    bool filter_listgen);
 
   void insert_node(std::unique_ptr<Node> &&node);
 

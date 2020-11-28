@@ -2,7 +2,7 @@ import taichi as ti
 import numpy as np
 
 
-@ti.test(ti.cpu, ti.cuda, debug=True, cfg_optimization=False)
+@ti.test(require=ti.extension.quant, debug=True, cfg_optimization=False)
 def test_1D_bit_array():
     ci1 = ti.type_factory_.get_custom_int_type(1, False)
 
@@ -28,7 +28,7 @@ def test_1D_bit_array():
     verify_val()
 
 
-@ti.test(ti.cpu, ti.cuda, debug=True, cfg_optimization=False)
+@ti.test(require=ti.extension.quant, debug=True, cfg_optimization=False)
 def test_2D_bit_array():
     ci1 = ti.type_factory_.get_custom_int_type(1, False)
 

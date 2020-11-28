@@ -174,7 +174,7 @@ AsyncEngine::AsyncEngine(Program *program,
                          const BackendExecCompilationFunc &compile_to_backend)
     : queue(&ir_bank_, compile_to_backend),
       program(program),
-      sfg(std::make_unique<StateFlowGraph>(&ir_bank_)) {
+      sfg(std::make_unique<StateFlowGraph>(this, &ir_bank_)) {
 }
 
 void AsyncEngine::launch(Kernel *kernel, Context &context) {
@@ -187,6 +187,7 @@ void AsyncEngine::launch(Kernel *kernel, Context &context) {
   auto &offloads = block->statements;
   auto &kmeta = kernel_metas_[kernel];
   const bool kmeta_inited = !kmeta.ir_handle_cached.empty();
+  std::vector<TaskLaunchRecord> records;
   for (std::size_t i = 0; i < offloads.size(); i++) {
     if (!kmeta_inited) {
       TI_ASSERT(kmeta.ir_handle_cached.size() == i);
@@ -198,13 +199,9 @@ void AsyncEngine::launch(Kernel *kernel, Context &context) {
       ir_bank_.insert(std::move(cloned_offs), h);
     }
     TaskLaunchRecord rec(context, kernel, kmeta.ir_handle_cached[i]);
-    enqueue(rec);
+    records.push_back(rec);
   }
-}
-
-void AsyncEngine::enqueue(const TaskLaunchRecord &t) {
-  sfg->insert_task(t);
-  task_queue.push_back(t);
+  sfg->insert_tasks(records, true);
 }
 
 void AsyncEngine::synchronize() {

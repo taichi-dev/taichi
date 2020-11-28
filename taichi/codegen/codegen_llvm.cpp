@@ -1217,8 +1217,8 @@ llvm::Value *CodeGenLLVM::reconstruct_custom_float(llvm::Value *digits,
 void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
   int width = stmt->width();
   TI_ASSERT(width == 1);
-  if (auto ptr_type = stmt->ptr->ret_type->cast<PointerType>();
-      ptr_type->is_bit_pointer()) {
+  auto ptr_type = stmt->ptr->ret_type->as<PointerType>();
+  if (ptr_type->is_bit_pointer()) {
     auto val_type = ptr_type->get_pointee_type();
     if (val_type->is<CustomIntType>()) {
       llvm_val[stmt] = load_as_custom_int(stmt->ptr, val_type);

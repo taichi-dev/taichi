@@ -1198,7 +1198,7 @@ llvm::Value *CodeGenLLVM::extract_custom_int(llvm::Value *physical_value,
 }
 
 llvm::Value *CodeGenLLVM::reconstruct_custom_float(llvm::Value *digits,
-                                               Type *load_type) {
+                                                   Type *load_type) {
   // Compute float(digits) * scale
   auto cft = load_type->as<CustomFloatType>();
   llvm::Value *cast = nullptr;

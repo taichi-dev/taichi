@@ -207,7 +207,6 @@ void AsyncEngine::launch(Kernel *kernel, Context &context) {
 void AsyncEngine::synchronize() {
   TI_AUTO_PROF
   bool modified = true;
-  sfg->benchmark_rebuild_graph();
   sfg->reid_nodes();
   sfg->reid_pending_nodes();
   TI_TRACE("Synchronizing SFG of {} nodes ({} pending)", sfg->size(),

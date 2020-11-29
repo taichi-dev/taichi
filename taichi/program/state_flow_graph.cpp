@@ -251,7 +251,7 @@ void StateFlowGraph::insert_node(std::unique_ptr<StateFlowGraph::Node> &&node) {
   for (auto input_state : node->meta->input_states) {
     insert(latest_state_readers_, input_state, node.get());
   }
-  nodes_.emplace_back(std::move(node));
+  nodes_.push_back(std::move(node));
 }
 
 void StateFlowGraph::insert_edge(Node *from, Node *to, AsyncState state) {

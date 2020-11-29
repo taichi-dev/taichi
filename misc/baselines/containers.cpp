@@ -36,7 +36,7 @@ int main() {
     for (int i = 0; i < N; i++) {
       a[(i + 3) & (n - 1)] = i - 3;
     }
-    printf("unordered_map write %.4f ns\n", (get_time() - t) / N * 1e9);
+    printf("map write %.4f ns\n", (get_time() - t) / N * 1e9);
   }
   return 0;
 }
@@ -45,4 +45,4 @@ int main() {
 //
 // vector write 0.4538 ns
 // unordered_map write 6.5586 ns
-// unordered_map write 35.9977 ns
+// map write 35.9977 ns

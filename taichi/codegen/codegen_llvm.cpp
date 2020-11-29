@@ -333,8 +333,13 @@ void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
         from_size = data_type_size(from);
       }
       if (from_size < data_type_size(to)) {
-        llvm_val[stmt] = builder->CreateSExt(
-            llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
+        if (is_signed(from)) {
+          llvm_val[stmt] = builder->CreateSExt(
+              llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
+        } else {
+          llvm_val[stmt] = builder->CreateZExt(
+              llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
+        }
       } else {
         llvm_val[stmt] = builder->CreateTrunc(
             llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));

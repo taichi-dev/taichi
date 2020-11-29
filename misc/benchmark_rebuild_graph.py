@@ -22,4 +22,5 @@ def foo():
 
 for i in range(1000):
     foo()
+
 ti.sync()

@@ -194,4 +194,13 @@ std::pair<IRHandle, bool> IRBank::optimize_dse(
   return std::make_pair(ret_handle, false);
 }
 
+AsyncState IRBank::get_async_state(SNode *snode, AsyncState::Type type) {
+  return AsyncState(snode, type, lookup_async_state_id(snode, type));
+}
+
+AsyncState IRBank::get_async_state(Kernel *kernel) {
+  return AsyncState(kernel,
+                    lookup_async_state_id(kernel, AsyncState::Type::value));
+}
+
 TLANG_NAMESPACE_END

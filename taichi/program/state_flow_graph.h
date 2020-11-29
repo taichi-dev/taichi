@@ -181,6 +181,12 @@ class StateFlowGraph {
 
   void benchmark_rebuild_graph();
 
+  std::size_t lookup_async_state_id(void *ptr, AsyncState::Type);
+
+  AsyncState get_async_state(SNode *snode, AsyncState::Type type);
+
+  AsyncState get_async_state(Kernel *kernel);
+
  private:
   std::vector<std::unique_ptr<Node>> nodes_;
   Node *initial_node_;  // The initial node holds all the initial states.

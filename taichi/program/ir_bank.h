@@ -33,6 +33,10 @@ class IRBank {
   std::unordered_map<IRHandle, TaskMeta> meta_bank_;
   std::unordered_map<IRHandle, TaskFusionMeta> fusion_meta_bank_;
 
+  AsyncState get_async_state(SNode *snode, AsyncState::Type type);
+
+  AsyncState get_async_state(Kernel *kernel);
+
  private:
   std::unordered_map<IRNode *, uint64> hash_bank_;
   std::unordered_map<IRHandle, std::unique_ptr<IRNode>> ir_bank_;
@@ -72,8 +76,19 @@ class IRBank {
       }
     };
   };
+
   std::unordered_map<OptimizeDseKey, IRHandle, OptimizeDseKey::Hash>
       optimize_dse_bank_;
+  std::unordered_map<std::size_t, std::size_t> async_state_to_unique_id_;
+
+  std::size_t lookup_async_state_id(void *ptr, AsyncState::Type type) {
+    auto h = AsyncState::perfect_hash(ptr, type);
+    if (async_state_to_unique_id_.find(h) == async_state_to_unique_id_.end()) {
+      async_state_to_unique_id_.insert(
+          std::make_pair(h, async_state_to_unique_id_.size()));
+    }
+    return async_state_to_unique_id_[h];
+  }
 };
 
 TLANG_NAMESPACE_END

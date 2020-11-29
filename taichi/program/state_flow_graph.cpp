@@ -308,13 +308,15 @@ bool StateFlowGraph::optimize_listgen() {
         // Test if two list generations share the same mask and parent list
         auto snode = node_a->meta->snode;
 
-        auto list_state = AsyncState{snode, AsyncState::Type::list};
+        auto list_state =
+            ir_bank_->get_async_state(snode, AsyncState::Type::list);
         auto parent_list_state =
-            AsyncState{snode->parent, AsyncState::Type::list};
+            ir_bank_->get_async_state(snode->parent, AsyncState::Type::list);
 
         if (snode->need_activation()) {
           // Needs mask state
-          auto mask_state = AsyncState{snode, AsyncState::Type::mask};
+          auto mask_state =
+              ir_bank_->get_async_state(snode, AsyncState::Type::mask);
           TI_ASSERT(get_or_insert(node_a->input_edges, mask_state).size() == 1);
           TI_ASSERT(get_or_insert(node_b->input_edges, mask_state).size() == 1);
 
@@ -762,7 +764,8 @@ std::string StateFlowGraph::dump_dot(const std::optional<std::string> &rankdir,
   std::stringstream ss;
 
   // TODO: expose an API that allows users to highlight a single state
-  AsyncState highlight_state{nullptr, AsyncState::Type::value};
+  AsyncState highlight_state =
+      ir_bank_->get_async_state(nullptr, AsyncState::Type::value);
 
   ss << "digraph {\n";
   auto node_id = [](const SFGNode *n) {
@@ -1309,7 +1312,7 @@ bool StateFlowGraph::demote_activation() {
   for (int i = 1; i < (int)nodes_.size(); i++) {
     Node *node = nodes_[i].get();
     auto snode = node->meta->snode;
-    auto list_state = AsyncState(snode, AsyncState::Type::list);
+    auto list_state = ir_bank_->get_async_state(snode, AsyncState::Type::list);
 
     // Currently we handle struct for only
     // TODO: handle serial and range for

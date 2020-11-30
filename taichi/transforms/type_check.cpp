@@ -63,19 +63,20 @@ class TypeCheck : public IRVisitor {
 
   void visit(AtomicOpStmt *stmt) {
     TI_ASSERT(stmt->width() == 1);
-    if (stmt->val->ret_type != stmt->dest->ret_type.ptr_removed()) {
+    auto dst_type = stmt->dest->ret_type->as<PointerType>()->get_pointee_type();
+    if (stmt->val->ret_type != dst_type) {
       // TODO: make sure the ptr_removed type is indeed a numerical type
       TI_WARN("[{}] Atomic add ({} to {}) may lose precision, at", stmt->name(),
-              data_type_name(stmt->val->ret_type),
-              data_type_name(stmt->dest->ret_type.ptr_removed()));
+              data_type_name(stmt->val->ret_type), data_type_name(dst_type));
       TI_WARN("\n{}", stmt->tb);
-      stmt->val = insert_type_cast_before(stmt, stmt->val,
-                                          stmt->dest->ret_type.ptr_removed());
+      stmt->val = insert_type_cast_before(stmt, stmt->val, dst_type);
     }
     if (stmt->element_type()->is_primitive(PrimitiveTypeID::unknown)) {
-      stmt->ret_type = stmt->dest->ret_type.ptr_removed();
+      stmt->ret_type = dst_type;
     }
-    TI_ASSERT(!stmt->ret_type->is<PointerType>());
+    if (dst_type->is<CustomIntType>()) {
+      TI_ERROR("here");
+    }
   }
 
   void visit(LocalLoadStmt *stmt) {

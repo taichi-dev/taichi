@@ -1,7 +1,6 @@
 import taichi as ti
 from pytest import approx
 
-
 @ti.test(require=ti.extension.quant, cfg_optimization=False)
 def test_custom_float():
     ci13 = ti.type_factory_.get_custom_int_type(13, True)
@@ -22,5 +21,3 @@ def test_custom_float():
     assert x[None] == approx(0.6)
     x[None] = 0.66
     assert x[None] == approx(0.7)
-
-    # TODO(type): atomic_add

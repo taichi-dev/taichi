@@ -88,7 +88,7 @@ class Offloader {
         root_block->insert(std::move(offloaded));
       } else if (auto s = stmt->cast<StructForStmt>()) {
         assemble_serial_statements();
-        emit_struct_for(s, root_block, s->scratch_opt);
+        emit_struct_for(s, root_block, s->mem_access_opt);
       } else {
         pending_serial_statements->body->insert(std::move(stmt));
       }
@@ -100,7 +100,7 @@ class Offloader {
  private:
   static void emit_struct_for(StructForStmt *for_stmt,
                               Block *root_block,
-                              const ScratchPadOptions &scratch_opt) {
+                              const MemoryAccessOptions &mem_access_opt) {
     auto leaf = for_stmt->snode;
     // make a list of nodes, from the leaf block (instead of 'place') to root
     std::vector<SNode *> path;
@@ -177,7 +177,7 @@ class Offloader {
     offloaded_struct_for->snode = for_stmt->snode;
     offloaded_struct_for->num_cpu_threads =
         std::min(for_stmt->parallelize, program->config.cpu_max_num_threads);
-    offloaded_struct_for->scratch_opt = scratch_opt;
+    offloaded_struct_for->mem_access_opt = mem_access_opt;
 
     root_block->insert(std::move(offloaded_struct_for));
   }

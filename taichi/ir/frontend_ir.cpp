@@ -46,7 +46,7 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
     if (parallelize == 0)
       parallelize = std::thread::hardware_concurrency();
   }
-  scratch_opt = dec.scratch_opt;
+  mem_access_opt = dec.mem_access_opt;
   dec.reset();
   if (vectorize == -1)
     vectorize = 1;
@@ -80,7 +80,7 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
     if (parallelize == 0)
       parallelize = std::thread::hardware_concurrency();
   }
-  scratch_opt = dec.scratch_opt;
+  mem_access_opt = dec.mem_access_opt;
   dec.reset();
   if (vectorize == -1)
     vectorize = 1;

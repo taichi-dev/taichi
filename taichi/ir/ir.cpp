@@ -35,7 +35,7 @@ void DecoratorRecorder::reset() {
   vectorize = -1;
   parallelize = 0;
   uniform = false;
-  scratch_opt.clear();
+  mem_access_opt.clear();
   block_dim = 0;
   strictly_serialized = false;
 }
@@ -139,6 +139,17 @@ int StmtFieldSNode::get_snode_id(SNode *snode) {
 bool StmtFieldSNode::equal(const StmtField *other_generic) const {
   if (auto other = dynamic_cast<const StmtFieldSNode *>(other_generic)) {
     return get_snode_id(snode) == get_snode_id(other->snode);
+  } else {
+    // Different types
+    return false;
+  }
+}
+
+bool StmtFieldMemoryAccessOptions::equal(const StmtField *other_generic) const {
+  if (auto other =
+          dynamic_cast<const StmtFieldMemoryAccessOptions *>(other_generic)) {
+    auto a = opt_.get_all(), b = other->opt_.get_all();
+    return a == b;
   } else {
     // Different types
     return false;

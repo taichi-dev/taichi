@@ -238,7 +238,7 @@ StructForStmt::StructForStmt(SNode *snode,
 std::unique_ptr<Stmt> StructForStmt::clone() const {
   auto new_stmt = std::make_unique<StructForStmt>(
       snode, body->clone(), vectorize, parallelize, block_dim);
-  new_stmt->scratch_opt = scratch_opt;
+  new_stmt->mem_access_opt = mem_access_opt;
   return new_stmt;
 }
 

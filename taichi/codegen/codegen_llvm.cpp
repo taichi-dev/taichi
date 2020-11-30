@@ -1019,11 +1019,14 @@ void CodeGenLLVM::visit(SNodeOpStmt *stmt) {
 void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
   // auto mask = stmt->parent->mask();
   // TODO: deal with mask when vectorized
+  // TODO(type): support all AtomicOpTypes on custom types
   TI_ASSERT(stmt->width() == 1);
   for (int l = 0; l < stmt->width(); l++) {
     llvm::Value *old_value;
     if (stmt->op_type == AtomicOpType::add) {
-      if (is_integral(stmt->val->ret_type)) {
+      auto dst_type =
+          stmt->dest->ret_type->as<PointerType>()->get_pointee_type();
+      if (dst_type->is<PrimitiveType>() && is_integral(stmt->val->ret_type)) {
         old_value = builder->CreateAtomicRMW(
             llvm::AtomicRMWInst::BinOp::Add, llvm_val[stmt->dest],
             llvm_val[stmt->val], llvm::AtomicOrdering::SequentiallyConsistent);
@@ -1035,6 +1038,15 @@ void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
         old_value =
             builder->CreateCall(get_runtime_function("atomic_add_f64"),
                                 {llvm_val[stmt->dest], llvm_val[stmt->val]});
+      } else if (auto cit = dst_type->cast<CustomIntType>()) {
+        llvm::Value *byte_ptr, *bit_offset;
+        read_bit_pointer(llvm_val[stmt->dest], byte_ptr, bit_offset);
+        old_value =
+            create_call("atomic_add_partial_bits_b32",
+                        {builder->CreateBitCast(
+                             byte_ptr, llvm_ptr_type(cit->get_physical_type())),
+                         bit_offset, tlctx->get_constant(cit->get_num_bits()),
+                         llvm_val[stmt->val]});
       } else {
         TI_NOT_IMPLEMENTED
       }

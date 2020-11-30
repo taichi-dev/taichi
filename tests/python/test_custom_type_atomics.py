@@ -25,6 +25,6 @@ def main():
     
     foo()
     
-    print(x[None])
+    assert x[None] == 43
 
 main()

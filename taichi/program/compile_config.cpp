@@ -60,8 +60,8 @@ CompileConfig::CompileConfig() {
   device_memory_fraction = 0.0;
 
   // C backend options:
-  cc_compile_cmd = "gcc -Wc99-c11-compat -c -o '{}' '{}' -O3";
-  cc_link_cmd = "gcc -shared -fPIC -o '{}' '{}'";
+  cc_linkage_cmd = "";
+  cc_compile_cmd = "";
 }
 
 TLANG_NAMESPACE_END

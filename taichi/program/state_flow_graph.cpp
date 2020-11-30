@@ -139,7 +139,8 @@ void StateFlowGraph::clear() {
   // TODO: GC here?
   nodes_.resize(1);  // Erase all nodes except the initial one
   initial_node_->output_edges.clear();
-  latest_state_owner_.clear();
+  std::fill(latest_state_owner_.begin(), latest_state_owner_.end(),
+            initial_node_);
   latest_state_readers_.clear();
   first_pending_task_index_ = 1;
 
@@ -150,7 +151,7 @@ void StateFlowGraph::mark_pending_tasks_as_executed() {
   std::vector<std::unique_ptr<Node>> new_nodes;
   std::unordered_set<Node *> state_owners;
   for (auto &owner : latest_state_owner_) {
-    state_owners.insert(state_owners.end(), owner.second);
+    state_owners.insert(state_owners.end(), owner);
   }
   for (auto &node : nodes_) {
     if (node->is_initial_node || state_owners.count(node.get()) > 0) {
@@ -224,22 +225,20 @@ void StateFlowGraph::insert_tasks(const std::vector<TaskLaunchRecord> &records,
 
 void StateFlowGraph::insert_node(std::unique_ptr<StateFlowGraph::Node> &&node) {
   for (auto input_state : node->meta->input_states) {
-    if (latest_state_owner_.find(input_state) == latest_state_owner_.end()) {
-      latest_state_owner_[input_state] = initial_node_;
-    }
-    insert_edge(latest_state_owner_[input_state], node.get(), input_state);
+    insert_edge(latest_state_owner_[input_state.unique_id], node.get(),
+                input_state);
   }
   for (auto output_state : node->meta->output_states) {
     if (get_or_insert(latest_state_readers_, output_state).empty()) {
-      if (latest_state_owner_.find(output_state) != latest_state_owner_.end()) {
+      if (latest_state_owner_[output_state.unique_id] != initial_node_) {
         // insert a WAW dependency edge
-        insert_edge(latest_state_owner_[output_state], node.get(),
+        insert_edge(latest_state_owner_[output_state.unique_id], node.get(),
                     output_state);
       } else {
         insert(latest_state_readers_, output_state, initial_node_);
       }
     }
-    latest_state_owner_[output_state] = node.get();
+    latest_state_owner_[output_state.unique_id] = node.get();
     for (auto *d : get_or_insert(latest_state_readers_, output_state)) {
       // insert a WAR dependency edge
       insert_edge(d, node.get(), output_state);
@@ -795,7 +794,7 @@ std::string StateFlowGraph::dump_dot(const std::optional<std::string> &rankdir,
   std::unordered_set<const SFGNode *> nodes_with_embedded_states;
   // TODO: make this configurable
   for (const auto &p : latest_state_owner_) {
-    latest_state_nodes.insert(p.second);
+    latest_state_nodes.insert(p);
   }
 
   bool highlight_single_state = false;
@@ -1073,8 +1072,8 @@ void StateFlowGraph::delete_nodes(
   }
 
   for (auto &s : latest_state_owner_) {
-    if (nodes_to_delete.find(s.second) != nodes_to_delete.end()) {
-      s.second = initial_node_;
+    if (nodes_to_delete.find(s) != nodes_to_delete.end()) {
+      s = initial_node_;
     }
   }
 
@@ -1104,7 +1103,7 @@ bool StateFlowGraph::optimize_dead_store() {
         // only focus on "value" states.
         continue;
       }
-      if (latest_state_owner_[s] == task) {
+      if (latest_state_owner_[s.unique_id] == task) {
         // Cannot eliminate the latest write, because it may form a state-flow
         // with the later kernel launches.
         //
@@ -1377,6 +1376,24 @@ void StateFlowGraph::benchmark_rebuild_graph() {
     auto rebuild_t = Time::get_time() - t;
     TI_INFO("nodes = {} total time {:.4f} ns; per_node {:.4f} ns",
             nodes_.size(), rebuild_t * 1e7, 1e7 * rebuild_t / nodes_.size());
+  }
+}
+AsyncState StateFlowGraph::get_async_state(SNode *snode,
+                                           AsyncState::Type type) {
+  return ir_bank_->get_async_state(snode, type);
+}
+
+AsyncState StateFlowGraph::get_async_state(Kernel *kernel) {
+  return ir_bank_->get_async_state(kernel);
+}
+
+void StateFlowGraph::populate_latest_state_owner(std::size_t h) {
+  if (h >= latest_state_owner_.size()) {
+    std::size_t old_size = latest_state_owner_.size();
+    latest_state_owner_.resize(h + 1);
+    for (int i = old_size; i < latest_state_owner_.size(); i++) {
+      latest_state_owner_[i] = initial_node_;
+    }
   }
 }
 

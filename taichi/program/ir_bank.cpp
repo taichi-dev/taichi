@@ -5,6 +5,7 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/program/kernel.h"
+#include "taichi/program/state_flow_graph.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -195,12 +196,19 @@ std::pair<IRHandle, bool> IRBank::optimize_dse(
 }
 
 AsyncState IRBank::get_async_state(SNode *snode, AsyncState::Type type) {
-  return AsyncState(snode, type, lookup_async_state_id(snode, type));
+  auto id = lookup_async_state_id(snode, type);
+  sfg_->populate_latest_state_owner(id);
+  return AsyncState(snode, type, id);
 }
 
 AsyncState IRBank::get_async_state(Kernel *kernel) {
-  return AsyncState(kernel,
-                    lookup_async_state_id(kernel, AsyncState::Type::value));
+  auto id = lookup_async_state_id(kernel, AsyncState::Type::value);
+  sfg_->populate_latest_state_owner(id);
+  return AsyncState(kernel, id);
+}
+
+void IRBank::set_sfg(StateFlowGraph *sfg) {
+  sfg_ = sfg;
 }
 
 TLANG_NAMESPACE_END

@@ -6,6 +6,8 @@
 
 TLANG_NAMESPACE_BEGIN
 
+class StateFlowGraph;
+
 class IRBank {
  public:
   uint64 get_hash(IRNode *ir);
@@ -33,11 +35,14 @@ class IRBank {
   std::unordered_map<IRHandle, TaskMeta> meta_bank_;
   std::unordered_map<IRHandle, TaskFusionMeta> fusion_meta_bank_;
 
+  void set_sfg(StateFlowGraph *sfg);
+
   AsyncState get_async_state(SNode *snode, AsyncState::Type type);
 
   AsyncState get_async_state(Kernel *kernel);
 
  private:
+  StateFlowGraph *sfg_;
   std::unordered_map<IRNode *, uint64> hash_bank_;
   std::unordered_map<IRHandle, std::unique_ptr<IRNode>> ir_bank_;
   std::vector<std::unique_ptr<IRNode>> trash_bin;  // prevent IR from deleted

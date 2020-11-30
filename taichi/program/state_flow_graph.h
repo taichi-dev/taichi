@@ -181,18 +181,18 @@ class StateFlowGraph {
 
   void benchmark_rebuild_graph();
 
-  std::size_t lookup_async_state_id(void *ptr, AsyncState::Type);
-
   AsyncState get_async_state(SNode *snode, AsyncState::Type type);
 
   AsyncState get_async_state(Kernel *kernel);
+
+  void populate_latest_state_owner(std::size_t id);
 
  private:
   std::vector<std::unique_ptr<Node>> nodes_;
   Node *initial_node_;  // The initial node holds all the initial states.
   int first_pending_task_index_;
   TaskMeta initial_meta_;
-  std::unordered_map<AsyncState, Node *> latest_state_owner_;
+  std::vector<Node *> latest_state_owner_;
   StateToNodesMap latest_state_readers_;
   std::unordered_map<std::string, int> task_name_to_launch_ids_;
   IRBank *ir_bank_;

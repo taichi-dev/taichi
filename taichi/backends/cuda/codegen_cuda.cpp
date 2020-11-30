@@ -404,11 +404,9 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   void visit(GlobalLoadStmt *stmt) override {
     if (auto get_ch = stmt->ptr->cast<GetChStmt>(); get_ch) {
       bool should_cache_as_read_only = false;
-      for (auto s : current_offload->scratch_opt) {
-        if (s.first == SNodeAccessFlag::read_only &&
-            get_ch->output_snode == s.second) {
-          should_cache_as_read_only = true;
-        }
+      if (current_offload->mem_access_opt.has_flag(
+              get_ch->output_snode, SNodeAccessFlag::read_only)) {
+        should_cache_as_read_only = true;
       }
       if (should_cache_as_read_only) {
         // Issue an CUDA "__ldg" instruction so that data are cached in

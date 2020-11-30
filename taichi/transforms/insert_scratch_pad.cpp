@@ -28,12 +28,11 @@ class BLSAnalysis : public BasicStmtVisitor {
     allow_undefined_visitor = true;
     invoke_default_visitor = false;
 
-    for (auto &opt : for_stmt->scratch_opt) {
-      if (opt.first == SNodeAccessFlag::block_local) {
-        auto block = opt.second->parent;
-        if (block_indices.find(block) == block_indices.end()) {
-          generate_block_indices(block, block_indices[block], {}, 0);
-        }
+    for (auto &snode : for_stmt->mem_access_opt.get_snodes_with_flag(
+             SNodeAccessFlag::block_local)) {
+      auto block = snode->parent;
+      if (block_indices.find(block) == block_indices.end()) {
+        generate_block_indices(block, block_indices[block], {}, 0);
       }
     }
 
@@ -144,10 +143,9 @@ std::unique_ptr<ScratchPads> initialize_scratch_pad(OffloadedStmt *offload) {
   TI_ASSERT(offload->task_type == OffloadedTaskType::struct_for);
   std::unique_ptr<ScratchPads> pads;
   pads = std::make_unique<ScratchPads>();
-  for (auto &opt : offload->scratch_opt) {
-    if (opt.first == SNodeAccessFlag::block_local) {
-      pads->insert(opt.second);
-    }
+  for (auto snode : offload->mem_access_opt.get_snodes_with_flag(
+           SNodeAccessFlag::block_local)) {
+    pads->insert(snode);
   }
   BLSAnalysis _(offload, pads.get());
   pads->finalize();

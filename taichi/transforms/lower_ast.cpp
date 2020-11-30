@@ -298,7 +298,7 @@ class LowerAST : public IRVisitor {
         new_for->body->local_var_to_stmt[stmt->loop_var_id[i]] = loop_index;
       }
       new_for->body->insert(std::move(new_statements), 0);
-      new_for->scratch_opt = stmt->scratch_opt;
+      new_for->mem_access_opt = stmt->mem_access_opt;
       fctx.push_back(std::move(new_for));
     }
     stmt->parent->replace_with(stmt, std::move(fctx.stmts));

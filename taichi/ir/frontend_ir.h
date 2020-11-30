@@ -123,7 +123,7 @@ class FrontendForStmt : public Stmt {
   int vectorize;
   int parallelize;
   bool strictly_serialized;
-  ScratchPadOptions scratch_opt;
+  MemoryAccessOptions mem_access_opt;
   int block_dim;
 
   bool is_ranged() const {

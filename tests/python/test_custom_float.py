@@ -2,7 +2,7 @@ import taichi as ti
 from pytest import approx
 
 
-@ti.test(arch=ti.cpu, cfg_optimization=False)
+@ti.test(require=ti.extension.quant, cfg_optimization=False)
 def test_custom_float():
     ci13 = ti.type_factory_.get_custom_int_type(13, True)
     cft = ti.type_factory_.get_custom_float_type(ci13, ti.f32.get_ptr(), 0.1)

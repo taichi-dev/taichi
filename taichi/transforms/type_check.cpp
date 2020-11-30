@@ -74,8 +74,8 @@ class TypeCheck : public IRVisitor {
     if (stmt->element_type()->is_primitive(PrimitiveTypeID::unknown)) {
       stmt->ret_type = dst_type;
     }
-    if (dst_type->is<CustomIntType>()) {
-      TI_ERROR("here");
+    if (auto cit = dst_type->as<CustomIntType>()) {
+      stmt->ret_type = cit->get_compute_type();
     }
   }
 

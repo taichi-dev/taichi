@@ -231,8 +231,10 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     TI_ASSERT(stmt->width() == 1);
     for (int l = 0; l < stmt->width(); l++) {
       llvm::Value *old_value;
+      auto dst_type =
+          stmt->dest->ret_type->as<PointerType>()->get_pointee_type();
       if (stmt->op_type == AtomicOpType::add) {
-        if (is_integral(stmt->val->ret_type)) {
+        if (dst_type->is<PrimitiveType>() && is_integral(stmt->val->ret_type)) {
           old_value = builder->CreateAtomicRMW(
               llvm::AtomicRMWInst::BinOp::Add, llvm_val[stmt->dest],
               llvm_val[stmt->val],
@@ -245,6 +247,8 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
           old_value = builder->CreateAtomicRMW(
               llvm::AtomicRMWInst::FAdd, llvm_val[stmt->dest],
               llvm_val[stmt->val], AtomicOrdering::SequentiallyConsistent);
+        } else if (auto cit = dst_type->cast<CustomIntType>()) {
+          old_value = atomic_add_custom_int(stmt, cit);
         } else {
           TI_NOT_IMPLEMENTED
         }

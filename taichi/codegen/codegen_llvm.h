@@ -190,6 +190,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(SNodeOpStmt *stmt) override;
 
+  llvm::Value *atomic_add_custom_int(AtomicOpStmt *stmt, CustomIntType *cit);
+
   void visit(AtomicOpStmt *stmt) override;
 
   void visit(GlobalPtrStmt *stmt) override;

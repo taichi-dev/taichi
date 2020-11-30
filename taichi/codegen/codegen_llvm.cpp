@@ -1016,6 +1016,17 @@ void CodeGenLLVM::visit(SNodeOpStmt *stmt) {
   }
 }
 
+llvm::Value *CodeGenLLVM::atomic_add_custom_int(AtomicOpStmt *stmt,
+                                                CustomIntType *cit) {
+  llvm::Value *byte_ptr, *bit_offset;
+  read_bit_pointer(llvm_val[stmt->dest], byte_ptr, bit_offset);
+  return create_call("atomic_add_partial_bits_b32",
+                     {builder->CreateBitCast(
+                          byte_ptr, llvm_ptr_type(cit->get_physical_type())),
+                      bit_offset, tlctx->get_constant(cit->get_num_bits()),
+                      llvm_val[stmt->val]});
+}
+
 void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
   // auto mask = stmt->parent->mask();
   // TODO: deal with mask when vectorized
@@ -1039,14 +1050,7 @@ void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
             builder->CreateCall(get_runtime_function("atomic_add_f64"),
                                 {llvm_val[stmt->dest], llvm_val[stmt->val]});
       } else if (auto cit = dst_type->cast<CustomIntType>()) {
-        llvm::Value *byte_ptr, *bit_offset;
-        read_bit_pointer(llvm_val[stmt->dest], byte_ptr, bit_offset);
-        old_value =
-            create_call("atomic_add_partial_bits_b32",
-                        {builder->CreateBitCast(
-                             byte_ptr, llvm_ptr_type(cit->get_physical_type())),
-                         bit_offset, tlctx->get_constant(cit->get_num_bits()),
-                         llvm_val[stmt->val]});
+        old_value = atomic_add_custom_int(stmt, cit);
       } else {
         TI_NOT_IMPLEMENTED
       }
@@ -2046,4 +2050,5 @@ llvm::Value *CodeGenLLVM::create_xlogue(std::unique_ptr<Block> &block) {
 
   return xlogue;
 }
+
 TLANG_NAMESPACE_END

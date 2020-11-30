@@ -148,8 +148,7 @@ bool StmtFieldSNode::equal(const StmtField *other_generic) const {
 bool StmtFieldMemoryAccessOptions::equal(const StmtField *other_generic) const {
   if (auto other =
           dynamic_cast<const StmtFieldMemoryAccessOptions *>(other_generic)) {
-    auto a = opt_.get_all(), b = other->opt_.get_all();
-    return a == b;
+    return opt_.get_all() == other->opt_.get_all();
   } else {
     // Different types
     return false;

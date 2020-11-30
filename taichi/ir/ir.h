@@ -26,7 +26,7 @@ using pStmt = std::unique_ptr<Stmt>;
 
 class SNode;
 
-enum class SNodeAccessFlag : int { block_local = 1, read_only = 2 };
+enum class SNodeAccessFlag : int { block_local, read_only };
 std::string snode_access_flag_name(SNodeAccessFlag type);
 class ScratchPads;
 

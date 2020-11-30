@@ -89,17 +89,13 @@ struct AsyncState {
   AsyncState() = default;
 
   // For SNode
-  AsyncState(SNode *snode, Type type)
-      : snode_or_global_tmp(snode),
-        type(type),
-        unique_id(get_unique_id(snode, type)) {
+  AsyncState(SNode *snode, Type type, std::size_t unique_id)
+      : snode_or_global_tmp(snode), type(type), unique_id(unique_id) {
   }
 
   // For global temporaries
-  AsyncState(Kernel *kernel)
-      : snode_or_global_tmp(kernel),
-        type(Type::value),
-        unique_id(get_unique_id(kernel, type)) {
+  AsyncState(Kernel *kernel, std::size_t unique_id)
+      : snode_or_global_tmp(kernel), type(Type::value), unique_id(unique_id) {
   }
 
   bool operator<(const AsyncState &other) const {
@@ -124,7 +120,7 @@ struct AsyncState {
     return std::get<SNode *>(snode_or_global_tmp);
   }
 
-  static std::size_t get_unique_id(void *ptr, Type type);
+  static std::size_t perfect_hash(void *ptr, Type type);
 };
 
 struct TaskFusionMeta {

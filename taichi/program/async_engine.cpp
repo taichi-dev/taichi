@@ -175,6 +175,7 @@ AsyncEngine::AsyncEngine(Program *program,
     : queue(&ir_bank_, compile_to_backend),
       program(program),
       sfg(std::make_unique<StateFlowGraph>(this, &ir_bank_)) {
+  ir_bank_.set_sfg(sfg.get());
 }
 
 void AsyncEngine::launch(Kernel *kernel, Context &context) {

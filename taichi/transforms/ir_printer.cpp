@@ -13,9 +13,9 @@ std::string scratch_pad_info(const MemoryAccessOptions &opt) {
   std::string ser;
   if (!opt.get_all().empty()) {
     ser += "mem_access_opt [ ";
-    for (auto snode : opt.get_all()) {
-      for (auto flag : snode.second) {
-        ser += snode.first->get_node_type_name_hinted() + ":" +
+    for (auto &rec : opt.get_all()) {
+      for (auto flag : rec.second) {
+        ser += rec.first->get_node_type_name_hinted() + ":" +
                snode_access_flag_name(flag) + " ";
       }
     }

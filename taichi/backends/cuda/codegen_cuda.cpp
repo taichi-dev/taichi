@@ -414,7 +414,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         // Issue an CUDA "__ldg" instruction so that data are cached in
         // the CUDA read-only data cache.
         auto dtype = stmt->ret_type;
-        if (auto ptr_type = stmt->ptr->ret_type->cast<PointerType>();
+        if (auto ptr_type = stmt->ptr->ret_type->as<PointerType>();
             ptr_type->is_bit_pointer()) {
           auto val_type = ptr_type->get_pointee_type();
           llvm::Value *data_ptr = nullptr;

@@ -86,14 +86,7 @@ class IRBank {
       optimize_dse_bank_;
   std::unordered_map<std::size_t, std::size_t> async_state_to_unique_id_;
 
-  std::size_t lookup_async_state_id(void *ptr, AsyncState::Type type) {
-    auto h = AsyncState::perfect_hash(ptr, type);
-    if (async_state_to_unique_id_.find(h) == async_state_to_unique_id_.end()) {
-      async_state_to_unique_id_.insert(
-          std::make_pair(h, async_state_to_unique_id_.size()));
-    }
-    return async_state_to_unique_id_[h];
-  }
+  std::size_t lookup_async_state_id(void *ptr, AsyncState::Type type);
 };
 
 TLANG_NAMESPACE_END

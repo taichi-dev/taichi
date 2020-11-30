@@ -211,4 +211,13 @@ void IRBank::set_sfg(StateFlowGraph *sfg) {
   sfg_ = sfg;
 }
 
+std::size_t IRBank::lookup_async_state_id(void *ptr, AsyncState::Type type) {
+  auto h = AsyncState::perfect_hash(ptr, type);
+  if (async_state_to_unique_id_.find(h) == async_state_to_unique_id_.end()) {
+    async_state_to_unique_id_.insert(
+        std::make_pair(h, async_state_to_unique_id_.size()));
+  }
+  return async_state_to_unique_id_[h];
+}
+
 TLANG_NAMESPACE_END

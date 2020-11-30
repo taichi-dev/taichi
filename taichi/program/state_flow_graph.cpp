@@ -150,7 +150,7 @@ void StateFlowGraph::clear() {
 void StateFlowGraph::mark_pending_tasks_as_executed() {
   std::vector<std::unique_ptr<Node>> new_nodes;
   std::unordered_set<Node *> state_owners;
-  for (auto &owner : latest_state_owner_) {
+  for (auto owner : latest_state_owner_) {
     state_owners.insert(state_owners.end(), owner);
   }
   for (auto &node : nodes_) {
@@ -307,15 +307,13 @@ bool StateFlowGraph::optimize_listgen() {
         // Test if two list generations share the same mask and parent list
         auto snode = node_a->meta->snode;
 
-        auto list_state =
-            ir_bank_->get_async_state(snode, AsyncState::Type::list);
+        auto list_state = get_async_state(snode, AsyncState::Type::list);
         auto parent_list_state =
-            ir_bank_->get_async_state(snode->parent, AsyncState::Type::list);
+            get_async_state(snode->parent, AsyncState::Type::list);
 
         if (snode->need_activation()) {
           // Needs mask state
-          auto mask_state =
-              ir_bank_->get_async_state(snode, AsyncState::Type::mask);
+          auto mask_state = get_async_state(snode, AsyncState::Type::mask);
           TI_ASSERT(get_or_insert(node_a->input_edges, mask_state).size() == 1);
           TI_ASSERT(get_or_insert(node_b->input_edges, mask_state).size() == 1);
 
@@ -764,7 +762,7 @@ std::string StateFlowGraph::dump_dot(const std::optional<std::string> &rankdir,
 
   // TODO: expose an API that allows users to highlight a single state
   AsyncState highlight_state =
-      ir_bank_->get_async_state(nullptr, AsyncState::Type::value);
+      get_async_state(nullptr, AsyncState::Type::value);
 
   ss << "digraph {\n";
   auto node_id = [](const SFGNode *n) {
@@ -793,7 +791,7 @@ std::string StateFlowGraph::dump_dot(const std::optional<std::string> &rankdir,
   std::unordered_set<const SFGNode *> latest_state_nodes;
   std::unordered_set<const SFGNode *> nodes_with_embedded_states;
   // TODO: make this configurable
-  for (const auto &p : latest_state_owner_) {
+  for (auto p : latest_state_owner_) {
     latest_state_nodes.insert(p);
   }
 
@@ -1311,7 +1309,7 @@ bool StateFlowGraph::demote_activation() {
   for (int i = 1; i < (int)nodes_.size(); i++) {
     Node *node = nodes_[i].get();
     auto snode = node->meta->snode;
-    auto list_state = ir_bank_->get_async_state(snode, AsyncState::Type::list);
+    auto list_state = get_async_state(snode, AsyncState::Type::list);
 
     // Currently we handle struct for only
     // TODO: handle serial and range for
@@ -1378,6 +1376,7 @@ void StateFlowGraph::benchmark_rebuild_graph() {
             nodes_.size(), rebuild_t * 1e7, 1e7 * rebuild_t / nodes_.size());
   }
 }
+
 AsyncState StateFlowGraph::get_async_state(SNode *snode,
                                            AsyncState::Type type) {
   return ir_bank_->get_async_state(snode, type);
@@ -1387,10 +1386,10 @@ AsyncState StateFlowGraph::get_async_state(Kernel *kernel) {
   return ir_bank_->get_async_state(kernel);
 }
 
-void StateFlowGraph::populate_latest_state_owner(std::size_t h) {
-  if (h >= latest_state_owner_.size()) {
+void StateFlowGraph::populate_latest_state_owner(std::size_t id) {
+  if (id >= latest_state_owner_.size()) {
     std::size_t old_size = latest_state_owner_.size();
-    latest_state_owner_.resize(h + 1);
+    latest_state_owner_.resize(id + 1);
     for (int i = old_size; i < latest_state_owner_.size(); i++) {
       latest_state_owner_[i] = initial_node_;
     }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iterator>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -21,9 +22,121 @@ class AsyncEngine;
 class StateFlowGraph {
  public:
   struct Node;
-  using StateToNodesMap =
-      llvm::SmallVector<std::pair<AsyncState, llvm::SmallSet<Node *, 8>>, 4>;
 
+  // A specialized container for fast edge insertion and lookup
+  class StateToNodesMap {
+   private:
+    using MaskType = uint64;  // Unused yet
+    static constexpr unsigned kNumInlined = sizeof(MaskType) * 8u;
+
+   public:
+    using Edge = std::pair<AsyncState, Node *>;
+    using Container = llvm::SmallVector<Edge, kNumInlined>;
+
+    StateToNodesMap();
+
+    bool empty() const {
+      return data_.empty();
+    }
+    std::size_t size() const {
+      return data_.size();
+    }
+    void clear();
+    // Returns if there is an edge from the owning node to |n| through |as|.
+    bool has_edge(const Edge &e) const;
+    bool has_edge(const AsyncState &as, Node *n) const {
+      return has_edge(std::make_pair(as, n));
+    }
+
+    void insert_edge(const AsyncState &as, Node *n);
+    // Removes all occurrences of Node |n|
+    void remove_node(const Node *n);
+
+    // The two methods below are dedicated for fusion.
+    // If edge(as, old_nd) exists, then replaces |old_nd| with |new_nd| and
+    // returns true. Otherwise returns false.
+    bool replace_node_in_edge(const AsyncState &as, Node *old_nd, Node *new_nd);
+    // Insert an edge when |data_| is already sorted.
+    void insert_edge_sorted(const AsyncState &as, Node *n);
+
+    struct Range {
+      using iterator = StateToNodesMap::Container::iterator;
+
+      iterator begin() {
+        return begin_;
+      }
+
+      iterator end() {
+        return end_;
+      }
+
+      std::size_t size() const {
+        return end_ - begin_;
+      }
+
+     private:
+      friend class StateToNodesMap;
+      explicit Range(iterator begin, iterator end) : begin_(begin), end_(end) {
+      }
+
+      iterator begin_;
+      iterator end_;
+    };
+
+    // Iterates over the edges on state |as| in sorted order.
+    Range operator[](const AsyncState &as);
+    // Iterates over all the edges in sorted order.
+    Range get_all_edges();
+
+    // Only iterates through the async states. This is dedicated for fusion.
+    // Non-STL conforming
+    class StateIterator {
+     public:
+      bool done() const {
+        return cur_ == end_;
+      }
+
+      AsyncState get_state() const {
+        TI_ASSERT(!done());
+        return cur_->first;
+      }
+
+      StateIterator &operator++();  // pre increment
+      // Is there an edge to node |n| through the current async state?
+      bool has_edge(Node *n) const;
+
+     private:
+      friend class StateToNodesMap;
+      using iterator = StateToNodesMap::Container::iterator;
+
+      explicit StateIterator(StateToNodesMap::Container &data)
+          : cur_(data.begin()), end_(data.end()) {
+      }
+
+      iterator cur_;
+      iterator end_;
+    };
+
+    StateIterator get_state_iterator() {
+      maybe_sort();
+      return StateIterator(data_);
+    }
+
+   private:
+    void maybe_sort();
+
+    bool matches(const Container::iterator &it, const Edge &e) {
+      return (it != data_.end()) && (*it == e);
+    }
+
+    static Edge get_high_sentinel(const AsyncState &as) {
+      return std::make_pair(
+          as, reinterpret_cast<Node *>(std::numeric_limits<uintptr_t>().max()));
+    }
+
+    Container data_;
+    bool sorted_{false};
+  };
   // Each node is a task
   // Note: after SFG is done, each node here should hold a TaskLaunchRecord.
   // Optimization should happen fully on the SFG, instead of the queue in
@@ -186,6 +299,8 @@ class StateFlowGraph {
   AsyncState get_async_state(Kernel *kernel);
 
   void populate_latest_state_owner(std::size_t id);
+  using LatestStateReaders =
+      llvm::SmallVector<std::pair<AsyncState, llvm::SmallSet<Node *, 8>>, 4>;
 
  private:
   std::vector<std::unique_ptr<Node>> nodes_;
@@ -193,7 +308,7 @@ class StateFlowGraph {
   int first_pending_task_index_;
   TaskMeta initial_meta_;
   std::vector<Node *> latest_state_owner_;
-  StateToNodesMap latest_state_readers_;
+  LatestStateReaders latest_state_readers_;
   std::unordered_map<std::string, int> task_name_to_launch_ids_;
   IRBank *ir_bank_;
   std::unordered_map<SNode *, bool> list_up_to_date_;

@@ -106,10 +106,6 @@ struct AsyncState {
     return unique_id == other.unique_id;
   }
 
-  bool operator!=(const AsyncState &other) const {
-    return !(*this == other);
-  }
-
   std::string name() const;
 
   bool holds_snode() const {

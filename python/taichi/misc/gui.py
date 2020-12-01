@@ -457,7 +457,7 @@ class GUI:
         e.modifier = []
 
         if e.key == GUI.WHEEL:
-            e.delta = event.delta
+            e.delta = (event.delta[0], event.delta[1])
         else:
             e.delta = (0, 0)
 

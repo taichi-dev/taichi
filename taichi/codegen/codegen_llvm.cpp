@@ -1169,9 +1169,9 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
     }
     llvm::Value *byte_ptr = nullptr, *bit_offset = nullptr;
     read_bit_pointer(llvm_val[stmt->ptr], byte_ptr, bit_offset);
-    // TODO(type): CUDA only supports atomicCAS on 32- and 64-bit integers
-    // try to support CustomInt/Float Type with 16-bits or 8-bits physical
-    // type
+    // TODO(type): CUDA only supports atomicCAS on 32- and 64-bit integers.
+    // Try to support CustomInt/FloatType with 8/16-bit physical
+    // types.
     create_call(fmt::format("set_partial_bits_b{}",
                             data_type_bits(cit->get_physical_type())),
                 {builder->CreateBitCast(

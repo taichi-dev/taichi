@@ -63,7 +63,8 @@ class TypeCheck : public IRVisitor {
 
   void visit(AtomicOpStmt *stmt) {
     TI_ASSERT(stmt->width() == 1);
-    auto dst_type = stmt->dest->ret_type->as<PointerType>()->get_pointee_type();
+    // TODO(type): test_ad_for fails if we assume dest is a pointer type.
+    auto dst_type = stmt->dest->ret_type.ptr_removed();
     if (auto cit = dst_type->cast<CustomIntType>()) {
       dst_type = cit->get_compute_type();
     } else if (auto cft = dst_type->cast<CustomFloatType>()) {

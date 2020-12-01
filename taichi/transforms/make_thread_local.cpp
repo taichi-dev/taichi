@@ -95,7 +95,8 @@ void make_thread_local_offload(OffloadedStmt *offload) {
     auto valid_global_ptrs = find_global_reduction_destinations<GlobalPtrStmt>(
         offload, [](GlobalPtrStmt *dest) {
           // We can only optimized reductions to global ptrs with form like
-          // loss[None] (0-D fields) for now
+          // loss[None] (0-D fields) for now.
+          // No TLS on CustomInt/FloatType.
           return (dest->snodes[0]->type == SNodeType::place) &&
                  dest->indices.empty() &&
                  dest->snodes[0]->dt->is<PrimitiveType>();

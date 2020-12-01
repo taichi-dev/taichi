@@ -79,7 +79,8 @@ Python issues
 
   * **Possible solution**: don't name your file as ``taichi.py``, **rename it
     to any other name**, like ``hello_taichi.py``. Also double-check you don't
-    have other files named ``taichi.py`` in the current directory.
+    have other files named ``taichi.py`` and directories named ``taichi/`` in
+    the current directory.
 
 
 CUDA issues

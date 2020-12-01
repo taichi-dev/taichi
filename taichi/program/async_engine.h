@@ -134,7 +134,6 @@ class AsyncEngine {
   Program *program;
 
   std::unique_ptr<StateFlowGraph> sfg;
-  std::deque<TaskLaunchRecord> task_queue;
 
   explicit AsyncEngine(Program *program,
                        const BackendExecCompilationFunc &compile_to_backend);
@@ -145,11 +144,11 @@ class AsyncEngine {
 
   void launch(Kernel *kernel, Context &context);
 
-  void enqueue(const TaskLaunchRecord &t);
-
   void synchronize();
 
   void debug_sfg(const std::string &suffix);
+
+  void benchmark_rebuild_graph();
 
  private:
   IRBank ir_bank_;

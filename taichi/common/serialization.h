@@ -471,13 +471,6 @@ class BinarySerializer : public Serializer {
       this->operator()("", n);
       val.resize(n);
     }
-    /*
-    for (std::size_t i = 0; i < val.size(); i++) {
-      printf("i %d\n", i);
-      printf("val %d\n", val[i]);
-    }
-
-     */
     for (std::size_t i = 0; i < val.size(); i++) {
       this->operator()("", val[i]);
     }

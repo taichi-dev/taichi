@@ -16,11 +16,7 @@ void detect_read_only_in_task(OffloadedStmt *offload) {
   for (auto snode : accessed.first) {
     if (accessed.second.count(snode) == 0) {
       // read-only SNode
-      auto rec = std::make_pair(SNodeAccessFlag::read_only, snode);
-      if (std::find(offload->scratch_opt.begin(), offload->scratch_opt.end(),
-                    rec) == offload->scratch_opt.end()) {
-        offload->scratch_opt.push_back(rec);
-      }
+      offload->mem_access_opt.add_flag(snode, SNodeAccessFlag::read_only);
     }
   }
 }

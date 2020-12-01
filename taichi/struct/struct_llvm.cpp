@@ -67,7 +67,16 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
       auto &ch = snode.ch[i];
       ch_types.push_back(ch->dt.get_ptr());
       ch_offsets.push_back(total_offset);
-      total_offset += ch->dt->as<CustomIntType>()->get_num_bits();
+      CustomIntType *component_cit = nullptr;
+      if (auto cit = ch->dt->cast<CustomIntType>()) {
+        component_cit = cit;
+      } else if (auto cft = ch->dt->cast<CustomFloatType>()) {
+        component_cit = cft->get_digits_type()->as<CustomIntType>();
+      } else {
+        TI_NOT_IMPLEMENTED
+      }
+      component_cit->set_physical_type(snode.physical_type);
+      total_offset += component_cit->get_num_bits();
     }
 
     snode.dt = TypeFactory::get_instance().get_bit_struct_type(
@@ -76,10 +85,11 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
     DataType container_primitive_type(snode.physical_type);
     body_type = tlctx->get_data_type(container_primitive_type);
   } else if (type == SNodeType::bit_array) {
-    // A bit array SNode should only have one child
+    // A bit array SNode should have only one child
     TI_ASSERT(snode.ch.size() == 1);
     auto &ch = snode.ch[0];
     Type *ch_type = ch->dt.get_ptr();
+    ch->dt->as<CustomIntType>()->set_physical_type(snode.physical_type);
     snode.dt = TypeFactory::get_instance().get_bit_array_type(
         snode.physical_type, ch_type, snode.n);
 

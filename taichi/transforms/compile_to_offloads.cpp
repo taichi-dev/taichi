@@ -139,6 +139,10 @@ void offload_to_executable(IRNode *ir,
     print("Detect read-only accesses");
   }
 
+  irpass::demote_atomics(ir);
+  print("Atomics demoted I");
+  irpass::analysis::verify(ir);
+
   if (config.demote_dense_struct_fors) {
     irpass::demote_dense_struct_fors(ir);
     irpass::type_check(ir);
@@ -157,7 +161,7 @@ void offload_to_executable(IRNode *ir,
   }
 
   irpass::demote_atomics(ir);
-  print("Atomics demoted");
+  print("Atomics demoted II");
   irpass::analysis::verify(ir);
 
   irpass::remove_range_assumption(ir);

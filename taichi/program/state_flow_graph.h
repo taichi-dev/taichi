@@ -16,6 +16,8 @@
 TLANG_NAMESPACE_BEGIN
 
 class IRBank;
+class AsyncEngine;
+
 class StateFlowGraph {
  public:
   struct Node;
@@ -97,7 +99,7 @@ class StateFlowGraph {
     void disconnect_with(Node *other);
   };
 
-  StateFlowGraph(IRBank *ir_bank);
+  StateFlowGraph(AsyncEngine *engine, IRBank *ir_bank);
 
   std::vector<Node *> get_pending_tasks() const;
 
@@ -123,7 +125,10 @@ class StateFlowGraph {
   std::string dump_dot(const std::optional<std::string> &rankdir,
                        int embed_states_threshold = 0);
 
-  void insert_task(const TaskLaunchRecord &rec);
+  void insert_tasks(const std::vector<TaskLaunchRecord> &rec,
+                    bool filter_listgen);
+
+  void insert_node(std::unique_ptr<Node> &&node);
 
   void insert_edge(Node *from, Node *to, AsyncState state);
 
@@ -171,15 +176,29 @@ class StateFlowGraph {
     return nodes_.size() - first_pending_task_index_;
   }
 
+  // Recursively mark as dirty the list state of "snode" and all its children
+  void mark_list_as_dirty(SNode *snode);
+
+  void benchmark_rebuild_graph();
+
+  AsyncState get_async_state(SNode *snode, AsyncState::Type type);
+
+  AsyncState get_async_state(Kernel *kernel);
+
+  void populate_latest_state_owner(std::size_t id);
+
  private:
   std::vector<std::unique_ptr<Node>> nodes_;
   Node *initial_node_;  // The initial node holds all the initial states.
   int first_pending_task_index_;
   TaskMeta initial_meta_;
-  std::unordered_map<AsyncState, Node *> latest_state_owner_;
+  std::vector<Node *> latest_state_owner_;
   StateToNodesMap latest_state_readers_;
   std::unordered_map<std::string, int> task_name_to_launch_ids_;
   IRBank *ir_bank_;
+  std::unordered_map<SNode *, bool> list_up_to_date_;
+  [[maybe_unused]] AsyncEngine *engine_;
+  Program *program_;
 };
 
 TLANG_NAMESPACE_END

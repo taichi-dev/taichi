@@ -125,6 +125,10 @@ int data_type_size(DataType t) {
   }
 }
 
+int data_type_bits(DataType t) {
+  return data_type_size(t) * 8;
+}
+
 std::string data_type_short_name(DataType t) {
   if (!t->is<PrimitiveType>()) {
     return t->to_string();

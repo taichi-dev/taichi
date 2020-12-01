@@ -148,6 +148,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   llvm::Type *llvm_type(DataType dt);
 
+  llvm::Type *llvm_ptr_type(DataType dt);
+
   void visit(Block *stmt_list) override;
 
   void visit(AllocaStmt *stmt) override;
@@ -193,6 +195,14 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   void visit(GlobalPtrStmt *stmt) override;
 
   void visit(GlobalStoreStmt *stmt) override;
+
+  llvm::Value *load_as_custom_int(Stmt *ptr, Type *load_type);
+
+  llvm::Value *extract_custom_int(llvm::Value *physical_value,
+                                  llvm::Value *bit_offset,
+                                  Type *load_type);
+
+  llvm::Value *reconstruct_custom_float(llvm::Value *digits, Type *load_type);
 
   void visit(GlobalLoadStmt *stmt) override;
 

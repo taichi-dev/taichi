@@ -5,6 +5,7 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/program/kernel.h"
+#include "taichi/program/state_flow_graph.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -192,6 +193,31 @@ std::pair<IRHandle, bool> IRBank::optimize_dse(
   ret_handle = IRHandle(new_ir.get(), get_hash(new_ir.get()));
   insert(std::move(new_ir), ret_handle.hash());
   return std::make_pair(ret_handle, false);
+}
+
+AsyncState IRBank::get_async_state(SNode *snode, AsyncState::Type type) {
+  auto id = lookup_async_state_id(snode, type);
+  sfg_->populate_latest_state_owner(id);
+  return AsyncState(snode, type, id);
+}
+
+AsyncState IRBank::get_async_state(Kernel *kernel) {
+  auto id = lookup_async_state_id(kernel, AsyncState::Type::value);
+  sfg_->populate_latest_state_owner(id);
+  return AsyncState(kernel, id);
+}
+
+void IRBank::set_sfg(StateFlowGraph *sfg) {
+  sfg_ = sfg;
+}
+
+std::size_t IRBank::lookup_async_state_id(void *ptr, AsyncState::Type type) {
+  auto h = AsyncState::perfect_hash(ptr, type);
+  if (async_state_to_unique_id_.find(h) == async_state_to_unique_id_.end()) {
+    async_state_to_unique_id_.insert(
+        std::make_pair(h, async_state_to_unique_id_.size()));
+  }
+  return async_state_to_unique_id_[h];
 }
 
 TLANG_NAMESPACE_END

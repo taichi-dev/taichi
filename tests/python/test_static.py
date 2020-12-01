@@ -1,43 +1,44 @@
 import taichi as ti
 import numpy as np
+import pytest
 
 
-@ti.all_archs
-def test_static_if():
-    for val in [0, 1]:
-        ti.init()
-        x = ti.field(ti.i32)
-
-        ti.root.dense(ti.i, 1).place(x)
-
-        @ti.kernel
-        def static():
-            if ti.static(val > 0.5):
-                x[0] = 1
-            else:
-                x[0] = 0
-
-        static()
-        assert x[0] == val
-
-
-@ti.must_throw(AssertionError)
-def test_static_if_error():
+@pytest.mark.parametrize('val', [0, 1])
+@ti.test(ti.cpu)
+def test_static_if(val):
     x = ti.field(ti.i32)
 
     ti.root.dense(ti.i, 1).place(x)
 
     @ti.kernel
     def static():
-        if ti.static(x[0]):
+        if ti.static(val > 0.5):
             x[0] = 1
         else:
             x[0] = 0
 
     static()
+    assert x[0] == val
 
 
-@ti.all_archs
+@ti.test(ti.cpu)
+def test_static_if_error():
+    x = ti.field(ti.i32)
+
+    ti.root.dense(ti.i, 1).place(x)
+
+    @ti.kernel
+    def static(val: float):
+        if ti.static(val > 0.5):
+            x[0] = 1
+        else:
+            x[0] = 0
+
+    with pytest.raises(ValueError, match='must be compile-time constants'):
+        static(42)
+
+
+@ti.test()
 def test_static_ndrange():
     n = 3
     x = ti.Matrix.field(n, n, dtype=ti.f32, shape=(n, n))
@@ -54,7 +55,7 @@ def test_static_ndrange():
             assert x[i, j][i, j] == i + j * 2
 
 
-@ti.host_arch_only
+@ti.test(ti.cpu)
 def test_static_break():
     x = ti.field(ti.i32, 5)
 
@@ -70,7 +71,7 @@ def test_static_break():
     assert np.allclose(x.to_numpy(), np.array([1, 1, 1, 0, 0]))
 
 
-@ti.host_arch_only
+@ti.test(ti.cpu)
 def test_static_continue():
     x = ti.field(ti.i32, 5)
 

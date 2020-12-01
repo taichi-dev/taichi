@@ -37,13 +37,27 @@ Type *TypeFactory::get_pointer_type(Type *element, bool is_bit_pointer) {
   return pointer_types_[key].get();
 }
 
-Type *TypeFactory::get_custom_int_type(int num_bits, bool is_signed) {
-  auto key = std::make_pair(num_bits, is_signed);
-  if (custom_int_types_.find(key) == custom_int_types_.end()) {
-    custom_int_types_[key] =
-        std::make_unique<CustomIntType>(num_bits, is_signed);
+Type *TypeFactory::get_custom_int_type(int num_bits,
+                                       bool is_signed,
+                                       int compute_type_bits) {
+  auto key = std::make_tuple(compute_type_bits, num_bits, is_signed);
+  if (custom_int_types.find(key) == custom_int_types.end()) {
+    custom_int_types[key] = std::make_unique<CustomIntType>(
+        num_bits, is_signed,
+        get_primitive_int_type(compute_type_bits, is_signed));
   }
-  return custom_int_types_[key].get();
+  return custom_int_types[key].get();
+}
+
+Type *TypeFactory::get_custom_float_type(Type *digits_type,
+                                         Type *compute_type,
+                                         float64 scale) {
+  auto key = std::make_tuple(digits_type, compute_type, scale);
+  if (custom_float_types.find(key) == custom_float_types.end()) {
+    custom_float_types[key] =
+        std::make_unique<CustomFloatType>(digits_type, compute_type, scale);
+  }
+  return custom_float_types[key].get();
 }
 
 Type *TypeFactory::get_bit_struct_type(PrimitiveType *physical_type,

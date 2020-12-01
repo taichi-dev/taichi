@@ -575,7 +575,7 @@ class StructForStmt : public Stmt {
   int vectorize;
   int parallelize;
   int block_dim;
-  ScratchPadOptions scratch_opt;
+  MemoryAccessOptions mem_access_opt;
 
   StructForStmt(SNode *snode,
                 std::unique_ptr<Block> &&body,
@@ -594,7 +594,7 @@ class StructForStmt : public Stmt {
                      vectorize,
                      parallelize,
                      block_dim,
-                     scratch_opt);
+                     mem_access_opt);
   TI_DEFINE_ACCEPT
 };
 
@@ -631,8 +631,7 @@ class KernelReturnStmt : public Stmt {
  public:
   Stmt *value;
 
-  KernelReturnStmt(Stmt *value, DataType dt) : value(value) {
-    this->ret_type = TypeFactory::create_vector_or_scalar_type(1, dt);
+  KernelReturnStmt(Stmt *value) : value(value) {
     TI_STMT_REG_FIELDS;
   }
 
@@ -832,7 +831,7 @@ class OffloadedStmt : public Stmt {
   std::unique_ptr<Block> tls_epilogue;
   std::size_t tls_size{1};  // avoid allocating dynamic memory with 0 byte
   std::size_t bls_size{0};
-  ScratchPadOptions scratch_opt;
+  MemoryAccessOptions mem_access_opt;
 
   OffloadedStmt(TaskType task_type);
 
@@ -870,7 +869,7 @@ class OffloadedStmt : public Stmt {
                      num_cpu_threads,
                      device,
                      index_offsets,
-                     scratch_opt);
+                     mem_access_opt);
   TI_DEFINE_ACCEPT
 };
 

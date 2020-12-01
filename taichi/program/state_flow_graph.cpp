@@ -33,9 +33,11 @@ SFGStateToNodes::iterator find(SFGStateToNodes &m, const AsyncState &s) {
 std::pair<SFGStateToNodes::value_type::second_type *, bool> insert(
     SFGStateToNodes &m,
     const AsyncState &s) {
-  auto itr = find(m, s);
-  if (itr != m.end()) {
-    return std::make_pair(&(itr->second), true);
+  int sz = m.size();
+  for (int i = 0; i < sz; i++) {
+    if (m[i].first == s) {
+      return std::make_pair(&m[i].second, true);
+    }
   }
   m.push_back(std::make_pair(s, SFGStateToNodes::value_type::second_type{}));
   return std::make_pair(&(m.back().second), false);
@@ -85,8 +87,11 @@ void StateFlowGraph::Node::disconnect_with(StateFlowGraph::Node *other) {
   }
 }
 
-StateFlowGraph::StateFlowGraph(IRBank *ir_bank)
-    : first_pending_task_index_(1 /*after initial node*/), ir_bank_(ir_bank) {
+StateFlowGraph::StateFlowGraph(AsyncEngine *engine, IRBank *ir_bank)
+    : first_pending_task_index_(1 /*after initial node*/),
+      ir_bank_(ir_bank),
+      engine_(engine),
+      program_(engine->program) {
   nodes_.push_back(std::make_unique<Node>());
   initial_node_ = nodes_.back().get();
   initial_meta_.name = "initial_state";
@@ -94,6 +99,10 @@ StateFlowGraph::StateFlowGraph(IRBank *ir_bank)
   initial_node_->is_initial_node = true;
   initial_node_->node_id = 0;
   initial_node_->mark_executed();
+
+  for (auto snode : program_->snodes) {
+    list_up_to_date_[snode.second] = false;
+  }
 }
 
 std::vector<StateFlowGraph::Node *> StateFlowGraph::get_pending_tasks() const {
@@ -130,7 +139,8 @@ void StateFlowGraph::clear() {
   // TODO: GC here?
   nodes_.resize(1);  // Erase all nodes except the initial one
   initial_node_->output_edges.clear();
-  latest_state_owner_.clear();
+  std::fill(latest_state_owner_.begin(), latest_state_owner_.end(),
+            initial_node_);
   latest_state_readers_.clear();
   first_pending_task_index_ = 1;
 
@@ -140,8 +150,8 @@ void StateFlowGraph::clear() {
 void StateFlowGraph::mark_pending_tasks_as_executed() {
   std::vector<std::unique_ptr<Node>> new_nodes;
   std::unordered_set<Node *> state_owners;
-  for (auto &owner : latest_state_owner_) {
-    state_owners.insert(state_owners.end(), owner.second);
+  for (auto owner : latest_state_owner_) {
+    state_owners.insert(state_owners.end(), owner);
   }
   for (auto &node : nodes_) {
     if (node->is_initial_node || state_owners.count(node.get()) > 0) {
@@ -154,30 +164,81 @@ void StateFlowGraph::mark_pending_tasks_as_executed() {
   reid_nodes();
 }
 
-void StateFlowGraph::insert_task(const TaskLaunchRecord &rec) {
+void StateFlowGraph::insert_tasks(const std::vector<TaskLaunchRecord> &records,
+                                  bool filter_listgen) {
   TI_AUTO_PROF;
-  auto node = std::make_unique<Node>();
-  node->rec = rec;
-  node->meta = get_task_meta(ir_bank_, rec);
-  for (auto input_state : node->meta->input_states) {
-    TI_PROFILER("insert_task meta->input_states");
-    if (latest_state_owner_.find(input_state) == latest_state_owner_.end()) {
-      latest_state_owner_[input_state] = initial_node_;
+  std::vector<TaskLaunchRecord> filtered_records;
+  if (filter_listgen && program_->config.async_opt_listgen) {
+    /*
+     * Here we find all the ClearList/ListGen pairs and try to evict obviously
+     * redundant list operations.
+     */
+    for (int i = 0; i < (int)records.size(); i++) {
+      auto r = records[i];
+      auto meta = get_task_meta(ir_bank_, r);
+      for (auto output_state : meta->output_states) {
+        if (output_state.type == AsyncState::Type::mask) {
+          // If the task modifies an SNode mask, all lists of all its children
+          // will be marked as dirty.
+          mark_list_as_dirty(output_state.snode());
+        }
+      }
+      // push it back for now (maybe removed later if we find it is redundant)
+      filtered_records.push_back(r);
+      auto offload = r.ir_handle.ir()->as<OffloadedStmt>();
+      auto snode = offload->snode;
+      if (i < 1 || offload->task_type != OffloadedTaskType::listgen)
+        continue;
+      auto previous_r = records[i - 1];
+      auto previous_offload = previous_r.ir_handle.ir()->as<OffloadedStmt>();
+      if (previous_offload->task_type != OffloadedTaskType::serial ||
+          previous_offload->body->statements.size() != 1) {
+        TI_ERROR(
+            "When early filtering tasks, the previous task of list "
+            "generation must be a serial offload with a single statement.");
+      }
+      auto clear_list =
+          previous_offload->body->statements[0]->cast<ClearListStmt>();
+      if (!clear_list || clear_list->snode != snode)
+        TI_ERROR("Invalid clear list stmt");
+      stat.add("total_list_gen");
+      if (list_up_to_date_[snode]) {
+        stat.add("filtered_list_gen");
+        // Remove the list gen task
+        filtered_records.pop_back();
+        // Remove the clear list task
+        filtered_records.pop_back();
+      } else {
+        list_up_to_date_[snode] = true;
+      }
     }
-    insert_edge(latest_state_owner_[input_state], node.get(), input_state);
+  } else {
+    filtered_records = records;
+  }
+  for (const auto &rec : filtered_records) {
+    auto node = std::make_unique<Node>();
+    node->rec = rec;
+    node->meta = get_task_meta(ir_bank_, rec);
+    insert_node(std::move(node));
+  }
+}
+
+void StateFlowGraph::insert_node(std::unique_ptr<StateFlowGraph::Node> &&node) {
+  for (auto input_state : node->meta->input_states) {
+    insert_edge(latest_state_owner_[input_state.unique_id], node.get(),
+                input_state);
   }
   for (auto output_state : node->meta->output_states) {
-    TI_PROFILER("insert_task meta->output_states");
     if (get_or_insert(latest_state_readers_, output_state).empty()) {
-      if (latest_state_owner_.find(output_state) != latest_state_owner_.end()) {
+      if (latest_state_owner_[output_state.unique_id] != initial_node_) {
         // insert a WAW dependency edge
-        insert_edge(latest_state_owner_[output_state], node.get(),
+        insert_edge(latest_state_owner_[output_state.unique_id], node.get(),
                     output_state);
       } else {
         insert(latest_state_readers_, output_state, initial_node_);
       }
     }
-    latest_state_owner_[output_state] = node.get();
+    latest_state_owner_[output_state.unique_id] = node.get();
     for (auto *d : get_or_insert(latest_state_readers_, output_state)) {
       // insert a WAR dependency edge
       insert_edge(d, node.get(), output_state);
@@ -187,14 +248,12 @@ void StateFlowGraph::insert_task(const TaskLaunchRecord &rec) {
 
   // Note that this loop must happen AFTER the previous one
   for (auto input_state : node->meta->input_states) {
-    TI_PROFILER("insert_task latest_state_readers_");
     insert(latest_state_readers_, input_state, node.get());
   }
   nodes_.push_back(std::move(node));
 }
 
 void StateFlowGraph::insert_edge(Node *from, Node *to, AsyncState state) {
-  TI_AUTO_PROF;
   TI_ASSERT(from != nullptr);
   TI_ASSERT(to != nullptr);
   insert(from->output_edges, state, to);
@@ -248,13 +307,13 @@ bool StateFlowGraph::optimize_listgen() {
         // Test if two list generations share the same mask and parent list
         auto snode = node_a->meta->snode;
 
-        auto list_state = AsyncState{snode, AsyncState::Type::list};
+        auto list_state = get_async_state(snode, AsyncState::Type::list);
         auto parent_list_state =
-            AsyncState{snode->parent, AsyncState::Type::list};
+            get_async_state(snode->parent, AsyncState::Type::list);
 
         if (snode->need_activation()) {
           // Needs mask state
-          auto mask_state = AsyncState{snode, AsyncState::Type::mask};
+          auto mask_state = get_async_state(snode, AsyncState::Type::mask);
           TI_ASSERT(get_or_insert(node_a->input_edges, mask_state).size() == 1);
           TI_ASSERT(get_or_insert(node_b->input_edges, mask_state).size() == 1);
 
@@ -455,8 +514,11 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
     }
     if (nodes[a]->meta->type != OffloadedTaskType::serial) {
       for (auto &state : nodes[a]->output_edges) {
+        if (!state.first.holds_snode()) {
+          continue;
+        }
+        const auto snode = state.first.snode();
         const auto sty = state.first.type;
-        const auto snode = state.first.snode;
         if (sty != AsyncState::Type::value && sty != AsyncState::Type::mask) {
           // No need to check allocator/list states, as they must be accompanied
           // with either value or mask states.
@@ -643,9 +705,7 @@ void StateFlowGraph::rebuild_graph(bool sort) {
     }
   }
   clear();
-  for (auto &task : tasks) {
-    insert_task(task);
-  }
+  insert_tasks(tasks, false);
   for (int i = 1; i <= num_executed_tasks; i++) {
     nodes_[i]->mark_executed();
   }
@@ -701,7 +761,8 @@ std::string StateFlowGraph::dump_dot(const std::optional<std::string> &rankdir,
   std::stringstream ss;
 
   // TODO: expose an API that allows users to highlight a single state
-  AsyncState highlight_state{nullptr, AsyncState::Type::value};
+  AsyncState highlight_state =
+      get_async_state(nullptr, AsyncState::Type::value);
 
   ss << "digraph {\n";
   auto node_id = [](const SFGNode *n) {
@@ -730,8 +791,8 @@ std::string StateFlowGraph::dump_dot(const std::optional<std::string> &rankdir,
   std::unordered_set<const SFGNode *> latest_state_nodes;
   std::unordered_set<const SFGNode *> nodes_with_embedded_states;
   // TODO: make this configurable
-  for (const auto &p : latest_state_owner_) {
-    latest_state_nodes.insert(p.second);
+  for (auto p : latest_state_owner_) {
+    latest_state_nodes.insert(p);
   }
 
   bool highlight_single_state = false;
@@ -1009,8 +1070,8 @@ void StateFlowGraph::delete_nodes(
   }
 
   for (auto &s : latest_state_owner_) {
-    if (nodes_to_delete.find(s.second) != nodes_to_delete.end()) {
-      s.second = initial_node_;
+    if (nodes_to_delete.find(s) != nodes_to_delete.end()) {
+      s = initial_node_;
     }
   }
 
@@ -1035,12 +1096,12 @@ bool StateFlowGraph::optimize_dead_store() {
     std::set<const SNode *> store_eliminable_snodes;
     // Try to find unnecessary output state
     for (auto &s : task->meta->output_states) {
-      if (s.type != AsyncState::Type::value) {
+      if (s.type != AsyncState::Type::value || !s.holds_snode()) {
         // Listgen elimination has been handled in optimize_listgen, so we will
         // only focus on "value" states.
         continue;
       }
-      if (latest_state_owner_[s] == task) {
+      if (latest_state_owner_[s.unique_id] == task) {
         // Cannot eliminate the latest write, because it may form a state-flow
         // with the later kernel launches.
         //
@@ -1048,7 +1109,7 @@ bool StateFlowGraph::optimize_dead_store() {
         // value will never be used?
         continue;
       }
-      auto *snode = s.snode;
+      auto *snode = s.snode();
       if (!snode->is_scalar()) {
         // TODO: handle non-scalar SNodes, i.e. num_active_indices > 0.
         continue;
@@ -1248,7 +1309,7 @@ bool StateFlowGraph::demote_activation() {
   for (int i = 1; i < (int)nodes_.size(); i++) {
     Node *node = nodes_[i].get();
     auto snode = node->meta->snode;
-    auto list_state = AsyncState(snode, AsyncState::Type::list);
+    auto list_state = get_async_state(snode, AsyncState::Type::list);
 
     // Currently we handle struct for only
     // TODO: handle serial and range for
@@ -1294,6 +1355,45 @@ bool StateFlowGraph::demote_activation() {
   }
 
   return modified;
+}
+
+void StateFlowGraph::mark_list_as_dirty(SNode *snode) {
+  list_up_to_date_[snode] = false;
+  for (auto &ch : snode->ch) {
+    if (ch->type != SNodeType::place) {
+      mark_list_as_dirty(ch.get());
+    }
+  }
+}
+
+void StateFlowGraph::benchmark_rebuild_graph() {
+  for (int k = 0; k < 100000; k++) {
+    auto t = Time::get_time();
+    for (int i = 0; i < 100; i++)
+      rebuild_graph(/*sort=*/false);
+    auto rebuild_t = Time::get_time() - t;
+    TI_INFO("nodes = {} total time {:.4f} ns; per_node {:.4f} ns",
+            nodes_.size(), rebuild_t * 1e7, 1e7 * rebuild_t / nodes_.size());
+  }
+}
+
+AsyncState StateFlowGraph::get_async_state(SNode *snode,
+                                           AsyncState::Type type) {
+  return ir_bank_->get_async_state(snode, type);
+}
+
+AsyncState StateFlowGraph::get_async_state(Kernel *kernel) {
+  return ir_bank_->get_async_state(kernel);
+}
+
+void StateFlowGraph::populate_latest_state_owner(std::size_t id) {
+  if (id >= latest_state_owner_.size()) {
+    std::size_t old_size = latest_state_owner_.size();
+    latest_state_owner_.resize(id + 1);
+    for (int i = old_size; i < latest_state_owner_.size(); i++) {
+      latest_state_owner_[i] = initial_node_;
+    }
+  }
 }
 
 void async_print_sfg() {

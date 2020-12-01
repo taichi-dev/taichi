@@ -174,7 +174,8 @@ AsyncEngine::AsyncEngine(Program *program,
                          const BackendExecCompilationFunc &compile_to_backend)
     : queue(&ir_bank_, compile_to_backend),
       program(program),
-      sfg(std::make_unique<StateFlowGraph>(&ir_bank_)) {
+      sfg(std::make_unique<StateFlowGraph>(this, &ir_bank_)) {
+  ir_bank_.set_sfg(sfg.get());
 }
 
 void AsyncEngine::launch(Kernel *kernel, Context &context) {
@@ -187,6 +188,7 @@ void AsyncEngine::launch(Kernel *kernel, Context &context) {
   auto &offloads = block->statements;
   auto &kmeta = kernel_metas_[kernel];
   const bool kmeta_inited = !kmeta.ir_handle_cached.empty();
+  std::vector<TaskLaunchRecord> records;
   for (std::size_t i = 0; i < offloads.size(); i++) {
     if (!kmeta_inited) {
       TI_ASSERT(kmeta.ir_handle_cached.size() == i);
@@ -198,13 +200,9 @@ void AsyncEngine::launch(Kernel *kernel, Context &context) {
       ir_bank_.insert(std::move(cloned_offs), h);
     }
     TaskLaunchRecord rec(context, kernel, kmeta.ir_handle_cached[i]);
-    enqueue(rec);
+    records.push_back(rec);
   }
-}
-
-void AsyncEngine::enqueue(const TaskLaunchRecord &t) {
-  sfg->insert_task(t);
-  task_queue.push_back(t);
+  sfg->insert_tasks(records, true);
 }
 
 void AsyncEngine::synchronize() {
@@ -220,6 +218,13 @@ void AsyncEngine::synchronize() {
   }
   while (modified) {
     modified = false;
+    if (program->config.async_opt_activation_demotion) {
+      while (sfg->demote_activation()) {
+        debug_sfg("act");
+        modified = true;
+      }
+    }
+    sfg->verify();
     if (program->config.async_opt_listgen) {
       while (sfg->optimize_listgen()) {
         debug_sfg("listgen");
@@ -230,13 +235,6 @@ void AsyncEngine::synchronize() {
     if (program->config.async_opt_dse) {
       while (sfg->optimize_dead_store()) {
         debug_sfg("dse");
-        modified = true;
-      }
-    }
-    sfg->verify();
-    if (program->config.async_opt_activation_demotion) {
-      while (sfg->demote_activation()) {
-        debug_sfg("act");
         modified = true;
       }
     }

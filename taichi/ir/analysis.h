@@ -53,6 +53,7 @@ enum AliasResult { same, uncertain, different };
 class ControlFlowGraph;
 
 struct TaskMeta;
+class IRBank;
 
 // IR Analysis
 namespace irpass::analysis {
@@ -75,7 +76,7 @@ std::unordered_map<SNode *, GlobalPtrStmt *> gather_uniquely_accessed_pointers(
 std::unique_ptr<std::unordered_set<AtomicOpStmt *>> gather_used_atomics(
     IRNode *root);
 std::vector<Stmt *> get_load_pointers(Stmt *load_stmt);
-void get_meta_input_value_states(IRNode *root, TaskMeta *meta);
+void get_meta_input_value_states(IRNode *root, TaskMeta *meta, IRBank *ir_bank);
 Stmt *get_store_data(Stmt *store_stmt);
 std::vector<Stmt *> get_store_destination(Stmt *store_stmt);
 bool has_store_or_atomic(IRNode *root, const std::vector<Stmt *> &vars);

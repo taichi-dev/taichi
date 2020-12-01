@@ -9,13 +9,15 @@
 
 TLANG_NAMESPACE_BEGIN
 
-std::string scratch_pad_info(const ScratchPadOptions &opt) {
+std::string scratch_pad_info(const MemoryAccessOptions &opt) {
   std::string ser;
-  if (!opt.empty()) {
-    ser += "scratch_pad [ ";
-    for (auto s : opt) {
-      ser += s.second->get_node_type_name_hinted() + ":" +
-             snode_access_flag_name(s.first) + " ";
+  if (!opt.get_all().empty()) {
+    ser += "mem_access_opt [ ";
+    for (auto &rec : opt.get_all()) {
+      for (auto flag : rec.second) {
+        ser += rec.first->get_node_type_name_hinted() + ":" +
+               snode_access_flag_name(flag) + " ";
+      }
     }
     ser += "] ";
   } else {
@@ -313,7 +315,7 @@ class IRPrinter : public IRVisitor {
       print("{} : for {} in {} {}{}{{", for_stmt->name(), vars,
             for_stmt->global_var.cast<GlobalVariableExpression>()
                 ->snode->get_node_type_name_hinted(),
-            scratch_pad_info(for_stmt->scratch_opt),
+            scratch_pad_info(for_stmt->mem_access_opt),
             block_dim_info(for_stmt->block_dim));
     }
     for_stmt->body->accept(this);
@@ -332,7 +334,7 @@ class IRPrinter : public IRVisitor {
   void visit(StructForStmt *for_stmt) override {
     print("{} : struct for in {} (vectorize {}) {}{}{{", for_stmt->name(),
           for_stmt->snode->get_node_type_name_hinted(), for_stmt->vectorize,
-          scratch_pad_info(for_stmt->scratch_opt),
+          scratch_pad_info(for_stmt->mem_access_opt),
           block_dim_info(for_stmt->block_dim));
     for_stmt->body->accept(this);
     print("}}");
@@ -501,7 +503,7 @@ class IRPrinter : public IRVisitor {
       details =
           fmt::format("struct_for({}) grid_dim={} block_dim={} bls={}",
                       stmt->snode->get_node_type_name_hinted(), stmt->grid_dim,
-                      stmt->block_dim, scratch_pad_info(stmt->scratch_opt));
+                      stmt->block_dim, scratch_pad_info(stmt->mem_access_opt));
     }
     if (stmt->task_type == OffloadedTaskType::listgen) {
       print("{} = offloaded listgen {}->{}", stmt->name(),

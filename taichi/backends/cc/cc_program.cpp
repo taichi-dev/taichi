@@ -154,7 +154,7 @@ void CCProgram::smart_choose_compiler() {
       if (command_exist("clang")) {
         compiler = "clang";
       } else if (command_exist("gcc")) {
-        compiler = "gcc -Wc99-c11-compat -Wc11-c2x-compat";
+        compiler = "gcc";
       } else {
         TI_ERROR(
             "[cc] cannot find a vaild compiler! Please manually specify it"

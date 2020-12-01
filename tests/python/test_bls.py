@@ -18,7 +18,7 @@ def test_simple_1d():
 
     @ti.kernel
     def copy():
-        ti.cache_shared(x)
+        ti.block_local(x)
         for i in x:
             y[i] = x[i]
 
@@ -46,7 +46,7 @@ def test_simple_2d():
 
     @ti.kernel
     def copy():
-        ti.cache_shared(x)
+        ti.block_local(x)
         for i, j in x:
             y[i, j] = x[i, j]
 
@@ -128,7 +128,7 @@ def test_multiple_inputs():
     @ti.kernel
     def copy(bls: ti.template(), w: ti.template()):
         if ti.static(bls):
-            ti.cache_shared(x, y, z)
+            ti.block_local(x, y, z)
         for i, j in x:
             w[i,
               j] = x[i, j - 2] + y[i + 2, j -

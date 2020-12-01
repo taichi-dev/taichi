@@ -210,8 +210,14 @@ void AsyncEngine::enqueue(const TaskLaunchRecord &t) {
 void AsyncEngine::synchronize() {
   TI_AUTO_PROF
   bool modified = true;
-  TI_TRACE("Synchronizing SFG of {} nodes", sfg->size());
+  sfg->reid_nodes();
+  sfg->reid_pending_nodes();
+  TI_TRACE("Synchronizing SFG of {} nodes ({} pending)", sfg->size(),
+           sfg->num_pending_tasks());
   debug_sfg("initial");
+  if (program->config.debug) {
+    sfg->verify();
+  }
   while (modified) {
     modified = false;
     if (program->config.async_opt_listgen) {

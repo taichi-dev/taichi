@@ -298,9 +298,4 @@ std::unique_ptr<StructCompiler> StructCompiler::make(Program *prog, Arch arch) {
   return std::make_unique<StructCompilerLLVM>(prog, arch);
 }
 
-bool SNode::need_activation() const {
-  return type == SNodeType::pointer || type == SNodeType::hash ||
-         type == SNodeType::bitmasked || type == SNodeType::dynamic;
-}
-
 TLANG_NAMESPACE_END

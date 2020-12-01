@@ -67,6 +67,20 @@ std::string PrimitiveType::to_string() const {
   return data_type_name(DataType(const_cast<PrimitiveType *>(this)));
 }
 
+std::string PointerType::to_string() const {
+  if (is_bit_pointer_) {
+    // "^" for bit-level pointers
+    return fmt::format("^{}", pointee_->to_string());
+  } else {
+    // "*" for C-style byte-level pointers
+    return fmt::format("*{}", pointee_->to_string());
+  }
+}
+
+std::string VectorType::to_string() const {
+  return fmt::format("[{} x {}]", num_elements_, element_->to_string());
+}
+
 int Type::vector_width() const {
   if (auto vec = cast<VectorType>()) {
     return vec->get_num_elements();

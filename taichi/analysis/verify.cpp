@@ -87,6 +87,19 @@ class IRVerifier : public BasicStmtVisitor {
     visible_stmts.pop_back();
   }
 
+  void visit(OffloadedStmt *stmt) override {
+    basic_verify(stmt);
+    if (stmt->has_body() && !stmt->body) {
+      TI_ERROR("offloaded {} ({})->body is nullptr",
+               offloaded_task_type_name(stmt->task_type), stmt->name());
+    } else if (!stmt->has_body() && stmt->body) {
+      TI_ERROR("offloaded {} ({})->body is {} (should be nullptr)",
+               offloaded_task_type_name(stmt->task_type), stmt->name(),
+               fmt::ptr(stmt->body));
+    }
+    stmt->all_blocks_accept(this);
+  }
+
   void visit(LocalLoadStmt *stmt) override {
     basic_verify(stmt);
     for (int i = 0; i < stmt->width(); i++) {

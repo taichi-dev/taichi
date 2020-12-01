@@ -206,6 +206,18 @@ class AlgSimp : public BasicStmtVisitor {
         stmt->replace_with(stmt->rhs);
         modifier.erase(stmt);
       }
+    } else if (stmt->op_type == BinaryOpType::bit_sar ||
+               stmt->op_type == BinaryOpType::bit_shl ||
+               stmt->op_type == BinaryOpType::bit_shr) {
+      if (alg_is_zero(rhs) || alg_is_zero(lhs)) {
+        // a >> 0 -> a
+        // a << 0 -> a
+        // 0 << a -> 0
+        // 0 >> a -> 0
+        TI_ASSERT(stmt->lhs->ret_type == stmt->ret_type);
+        stmt->replace_with(stmt->lhs);
+        modifier.erase(stmt);
+      }
     }
   }
 

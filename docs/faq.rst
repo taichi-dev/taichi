@@ -28,6 +28,11 @@ Frequently asked questions
 
 **A:** Yes, as long as that *package* provides an interface with ``numpy``, see :ref:`other_python_packages`.
 
+**Q:** Can we dynamically create fields within kernel / after kernel invocation?
+
+**A:** Sorry, we don't support that yet. Consider allocate a large enough field
+       in advance to walkaround.
+
 **Q:** Shall we add some handy functions like ``ti.smoothstep`` or ``ti.vec3``?
 
 **A:** No, but we provide them in an extension library `Taichi GLSL <https://taichi-glsl.readthedocs.io>`_ , install it using:
@@ -40,6 +45,7 @@ Frequently asked questions
 
 **A:** You may export it with :ref:`export_ply_files` so that you could view it in Houdini or Blender.
        Or make use the extension library `Taichi THREE <https://github.com/taichi-dev/taichi_glsl>`_ to render images and update to GUI in real-time.
+       Or make use our Blender addon `Taichi Blend <https://github.com/taichi-dev/taichi_blend>`_ to update meshes to Blender and make physically-based animations.
 
 **Q:** How do I declare a field with **dynamic length**?
 

@@ -418,14 +418,14 @@ if 1:
 
     def visit_ndrange_for(self, node):
         # for i, j in ti.ndrange(n)
-        template = '''
+        template = f'''
 if ti.static(1):
-    __ndrange = 0
-    for __ndrange_I in range(0):
-        __I = __ndrange_I
+    __ndrange = ti.static(0)
+    for __ndrange_I{id(node)} in range(0):
+        __I = __ndrange_I{id(node)}
         '''
         t = ast.parse(template).body[0]
-        t.body[0].value = node.iter
+        t.body[0].value.args[0] = node.iter
         t_loop = t.body[1]
         t_loop.iter.args[0] = self.parse_expr('__ndrange.acc_dimensions[0]')
         targets = self.get_targets(node)

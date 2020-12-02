@@ -94,19 +94,6 @@ SNodeOpStmt::SNodeOpStmt(SNodeOpType op_type,
   TI_STMT_REG_FIELDS;
 }
 
-SNodeOpStmt::SNodeOpStmt(SNodeOpType op_type,
-                         SNode *snode,
-                         const std::vector<Stmt *> &indices)
-    : op_type(op_type), snode(snode), indices(indices) {
-  ptr = nullptr;
-  val = nullptr;
-  TI_ASSERT(op_type == SNodeOpType::is_active ||
-            op_type == SNodeOpType::deactivate ||
-            op_type == SNodeOpType::activate);
-  element_type() = PrimitiveType::i32;
-  TI_STMT_REG_FIELDS;
-}
-
 bool SNodeOpStmt::activation_related(SNodeOpType op) {
   return op == SNodeOpType::activate || op == SNodeOpType::deactivate ||
          op == SNodeOpType::is_active;

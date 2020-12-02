@@ -238,22 +238,17 @@ class SNodeOpStmt : public Stmt {
   SNode *snode;
   Stmt *ptr;
   Stmt *val;
-  std::vector<Stmt *> indices;
 
   SNodeOpStmt(SNodeOpType op_type,
               SNode *snode,
               Stmt *ptr,
               Stmt *val = nullptr);
 
-  SNodeOpStmt(SNodeOpType op_type,
-              SNode *snode,
-              const std::vector<Stmt *> &indices);
-
   static bool activation_related(SNodeOpType op);
 
   static bool need_activation(SNodeOpType op);
 
-  TI_STMT_DEF_FIELDS(ret_type, op_type, snode, ptr, val, indices);
+  TI_STMT_DEF_FIELDS(ret_type, op_type, snode, ptr, val);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

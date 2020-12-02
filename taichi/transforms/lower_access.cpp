@@ -197,16 +197,13 @@ class LowerAccess : public IRVisitor {
   }
 
   void visit(SNodeOpStmt *stmt) override {
-    if (SNodeOpStmt::activation_related(stmt->op_type) &&
-        stmt->snode->type != SNodeType::dynamic) {
-      TI_ASSERT(stmt->ptr);
-      if (stmt->ptr->is<GlobalPtrStmt>()) {
+    if (stmt->ptr->is<GlobalPtrStmt>()) {
+      if (SNodeOpStmt::activation_related(stmt->op_type) &&
+          stmt->snode->type != SNodeType::dynamic) {
         auto lowered = lower_vector_ptr(stmt->ptr->as<GlobalPtrStmt>(), false,
                                         stmt->op_type);
         modifier.replace_with(stmt, std::move(lowered), true);
-      }
-    } else {
-      if (stmt->ptr->is<GlobalPtrStmt>()) {
+      } else {
         auto lowered =
             lower_vector_ptr(stmt->ptr->as<GlobalPtrStmt>(),
                              SNodeOpStmt::need_activation(stmt->op_type));

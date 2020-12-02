@@ -156,6 +156,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(RandStmt *stmt) override;
 
+  llvm::Value *cast_int(llvm::Value *input_val, Type *from, Type *to);
+
   virtual void emit_extra_unary(UnaryOpStmt *stmt);
 
   void visit(UnaryOpStmt *stmt) override;
@@ -189,6 +191,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   void visit(AssertStmt *stmt) override;
 
   void visit(SNodeOpStmt *stmt) override;
+
+  llvm::Value *atomic_add_custom_int(AtomicOpStmt *stmt, CustomIntType *cit);
 
   void visit(AtomicOpStmt *stmt) override;
 

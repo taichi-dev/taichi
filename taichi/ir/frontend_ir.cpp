@@ -311,7 +311,8 @@ void SNodeOpExpression::flatten(FlattenContext *ctx) {
                     snode->type != SNodeType::hash &&
                     snode->type != SNodeType::bitmasked,
                 "ti.is_active only works on pointer, hash or bitmasked nodes.");
-    ctx->push_back<SNodeOpStmt>(SNodeOpType::is_active, snode, indices_stmt);
+    auto ptr = ctx->push_back<GlobalPtrStmt>(snode, indices_stmt);
+    ctx->push_back<SNodeOpStmt>(SNodeOpType::is_active, snode, ptr, nullptr);
   } else {
     auto ptr = ctx->push_back<GlobalPtrStmt>(snode, indices_stmt);
     if (op_type == SNodeOpType::append) {

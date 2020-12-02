@@ -274,15 +274,41 @@ def materialize_callback(foo):
     get_runtime().materialize_callbacks.append(foo)
 
 
+def _clamp_unsigned_to_range(npty, val):
+    # npty: np.int32 or np.int64
+    iif = np.iinfo(npty)
+    if iif.min <= val <= iif.max:
+        return val
+    cap = (1 << iif.bits)
+    if not (0 <= val < cap):
+        # We let pybind11 fail intentionally, because this isn't the case we want
+        # to deal with: |val| does't fall into the valid range of either
+        # the signed or the unsigned type.
+        return val
+    import taichi as ti
+    new_val = val - cap
+    ti.warn(
+        f'Constant {val} has exceeded the range of {iif.bits} int, clamped to {new_val}'
+    )
+    return new_val
+
+
 @taichi_scope
 def make_constant_expr(val):
     import numpy as np
     _taichi_skip_traceback = 1
     if isinstance(val, (int, np.integer)):
-        if pytaichi.default_ip == i32:
-            return Expr(taichi_lang_core.make_const_expr_i32(val))
-        elif pytaichi.default_ip == i64:
-            return Expr(taichi_lang_core.make_const_expr_i64(val))
+        if pytaichi.default_ip in {i32, u32}:
+            # It is not always correct to do such clamp without the type info on
+            # the LHS, but at least this makes assigning constant to unsigned
+            # int work. See https://github.com/taichi-dev/taichi/issues/2060
+            return Expr(
+                taichi_lang_core.make_const_expr_i32(
+                    _clamp_unsigned_to_range(np.int32, val)))
+        elif pytaichi.default_ip in {i64, u64}:
+            return Expr(
+                taichi_lang_core.make_const_expr_i64(
+                    _clamp_unsigned_to_range(np.int64, val)))
         else:
             assert False
     elif isinstance(val, (float, np.floating, np.ndarray)):

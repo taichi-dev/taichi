@@ -1565,6 +1565,20 @@ void stack_push(Ptr stack, size_t max_num_elements, std::size_t element_size) {
         !__atomic_compare_exchange(ptr, &old_value, &new_value, true,         \
                                    std::memory_order::memory_order_seq_cst,   \
                                    std::memory_order::memory_order_seq_cst)); \
+  }                                                                           \
+                                                                              \
+  u##N atomic_add_partial_bits_b##N(u##N *ptr, u32 offset, u32 bits,          \
+                                    u##N value) {                             \
+    u##N new_value = 0;                                                       \
+    u##N old_value = *ptr;                                                    \
+    do {                                                                      \
+      old_value = *ptr;                                                       \
+      new_value = old_value + (value << offset);                              \
+    } while (                                                                 \
+        !__atomic_compare_exchange(ptr, &old_value, &new_value, true,         \
+                                   std::memory_order::memory_order_seq_cst,   \
+                                   std::memory_order::memory_order_seq_cst)); \
+    return old_value;                                                         \
   }
 
 DEFINE_SET_PARTIAL_BITS(8);

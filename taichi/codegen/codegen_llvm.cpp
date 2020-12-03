@@ -1045,14 +1045,14 @@ llvm::Value *CodeGenLLVM::atomic_add_custom_float(AtomicOpStmt *stmt,
   auto s = builder->CreateFPCast(
       llvm::ConstantFP::get(*llvm_context, llvm::APFloat(1.0 / cft->get_scale())),
       llvm_type(compute_type));
+  auto val_scaled = builder->CreateFMul(llvm_val[stmt->val], s);
+  auto val_scaled_int = builder->CreateFPToSI(val_scaled, llvm_type(physical_type));
 
-  auto val_quant = builder->CreateFMul(llvm_val[stmt->val], s);
-  auto val_quant_int = builder->CreateFPToSI(val_quant, llvm_type(physical_type));
   return create_call(
       fmt::format("atomic_add_partial_bits_b{}", data_type_bits(physical_type)),
       {builder->CreateBitCast(byte_ptr, llvm_ptr_type(physical_type)),
        bit_offset, tlctx->get_constant(cit->get_num_bits()),
-       val_quant_int});
+       val_scaled_int});
 }
 
 void CodeGenLLVM::visit(AtomicOpStmt *stmt) {

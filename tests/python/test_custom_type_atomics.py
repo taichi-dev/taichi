@@ -1,4 +1,5 @@
 import taichi as ti
+from pytest import approx
 
 
 @ti.test(require=ti.extension.quant, debug=True, cfg_optimization=False)
@@ -50,3 +51,28 @@ def test_custom_int_atomics_b64():
     assert x[0] == 109
     assert x[1] == 212
     assert x[2] == 315
+
+
+@ti.test(require=ti.extension.quant, debug=True, cfg_optimization=False)
+def test_custom_float_atomics():
+    ci13 = ti.type_factory_.get_custom_int_type(13, True)
+    ci19 = ti.type_factory_.get_custom_int_type(19, False)
+    cft13 = ti.type_factory_.get_custom_float_type(ci13, ti.f32.get_ptr(), 0.1)
+    cft19 = ti.type_factory_.get_custom_float_type(ci19, ti.f32.get_ptr(), 0.1)
+
+    x = ti.field(dtype=cft13)
+    y = ti.field(dtype=cft19)
+
+    ti.root._bit_struct(num_bits=32).place(x, y)
+
+    @ti.kernel
+    def foo():
+        x[None] = 0.7
+        y[None] = 123.4
+        for _ in range(10):
+            x[None] += 0.4
+            y[None] += 100.1
+
+    foo()
+    assert x[None] == approx(4.7)
+    assert y[None] == approx(1124.4)

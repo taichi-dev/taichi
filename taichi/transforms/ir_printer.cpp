@@ -150,16 +150,6 @@ class IRPrinter : public IRVisitor {
     if (stmt->val) {
       extras += ", val = " + stmt->val->name();
     }
-    if (!stmt->indices.empty()) {
-      extras += " index [";
-      for (int i = 0; i < (int)stmt->indices.size(); i++) {
-        extras += fmt::format("{}", stmt->indices[i]->name());
-        if (i + 1 < (int)stmt->indices.size()) {
-          extras += ", ";
-        }
-      }
-      extras += "]";
-    }
     std::string snode = stmt->snode->get_node_type_name_hinted();
     print("{}{} = {} [{}] {}", stmt->type_hint(), stmt->name(),
           snode_op_type_name(stmt->op_type), snode, extras);

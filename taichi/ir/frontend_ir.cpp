@@ -304,28 +304,24 @@ void SNodeOpExpression::flatten(FlattenContext *ctx) {
     indices[i]->flatten(ctx);
     indices_stmt.push_back(indices[i]->stmt);
   }
+  auto ptr = ctx->push_back<GlobalPtrStmt>(snode, indices_stmt);
   if (op_type == SNodeOpType::is_active) {
-    // is_active cannot be lowered all the way to a global pointer.
-    // It should be lowered into a pointer to parent and an index.
     TI_ERROR_IF(snode->type != SNodeType::pointer &&
                     snode->type != SNodeType::hash &&
                     snode->type != SNodeType::bitmasked,
                 "ti.is_active only works on pointer, hash or bitmasked nodes.");
-    ctx->push_back<SNodeOpStmt>(SNodeOpType::is_active, snode, indices_stmt);
-  } else {
-    auto ptr = ctx->push_back<GlobalPtrStmt>(snode, indices_stmt);
-    if (op_type == SNodeOpType::append) {
-      value->flatten(ctx);
-      ctx->push_back<SNodeOpStmt>(SNodeOpType::append, snode, ptr, value->stmt);
-      TI_ERROR_IF(snode->type != SNodeType::dynamic,
-                  "ti.append only works on dynamic nodes.");
-      TI_ERROR_IF(snode->ch.size() != 1,
-                  "ti.append only works on single-child dynamic nodes.");
-      TI_ERROR_IF(data_type_size(snode->ch[0]->dt) != 4,
-                  "ti.append only works on i32/f32 nodes.");
-    } else if (op_type == SNodeOpType::length) {
-      ctx->push_back<SNodeOpStmt>(SNodeOpType::length, snode, ptr, nullptr);
-    }
+    ctx->push_back<SNodeOpStmt>(SNodeOpType::is_active, snode, ptr, nullptr);
+  } else if (op_type == SNodeOpType::length) {
+    ctx->push_back<SNodeOpStmt>(SNodeOpType::length, snode, ptr, nullptr);
+  } else if (op_type == SNodeOpType::append) {
+    value->flatten(ctx);
+    ctx->push_back<SNodeOpStmt>(SNodeOpType::append, snode, ptr, value->stmt);
+    TI_ERROR_IF(snode->type != SNodeType::dynamic,
+                "ti.append only works on dynamic nodes.");
+    TI_ERROR_IF(snode->ch.size() != 1,
+                "ti.append only works on single-child dynamic nodes.");
+    TI_ERROR_IF(data_type_size(snode->ch[0]->dt) != 4,
+                "ti.append only works on i32/f32 nodes.");
   }
   stmt = ctx->back_stmt();
 }

@@ -239,11 +239,13 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
               llvm::AtomicRMWInst::BinOp::Add, llvm_val[stmt->dest],
               llvm_val[stmt->val],
               llvm::AtomicOrdering::SequentiallyConsistent);
-        } else if (!dst_type->is<CustomFloatType>() && stmt->val->ret_type->is_primitive(PrimitiveTypeID::f32)) {
+        } else if (!dst_type->is<CustomFloatType>() &&
+                   stmt->val->ret_type->is_primitive(PrimitiveTypeID::f32)) {
           old_value = builder->CreateAtomicRMW(
               llvm::AtomicRMWInst::FAdd, llvm_val[stmt->dest],
               llvm_val[stmt->val], AtomicOrdering::SequentiallyConsistent);
-        } else if (!dst_type->is<CustomFloatType>() && stmt->val->ret_type->is_primitive(PrimitiveTypeID::f64)) {
+        } else if (!dst_type->is<CustomFloatType>() &&
+                   stmt->val->ret_type->is_primitive(PrimitiveTypeID::f64)) {
           old_value = builder->CreateAtomicRMW(
               llvm::AtomicRMWInst::FAdd, llvm_val[stmt->dest],
               llvm_val[stmt->val], AtomicOrdering::SequentiallyConsistent);

@@ -118,13 +118,25 @@ class StateFlowGraph {
     };
 
     StateIterator get_state_iterator() {
-      maybe_sort();
+      TI_ASSERT(sorted_);
       return StateIterator(data_);
     }
 
-   private:
-    void maybe_sort();
+    // After this, one cannot insert edges anymore (unless using
+    // insert_edge_sorted()).
+    // |allow_already_sorted| is a backdoor for the initial node.
+    void sort_edges(bool allow_already_sorted = false);
 
+    // It's unfortunate to have this method. But without this, we cannot support
+    // executed but retained nodes.
+    void unsort_edges() {
+      // TODO(mask): Handle masks
+      sorted_ = false;
+    }
+    // For debugging purpose
+    int node_id = -1;
+
+   private:
     bool matches(const Container::iterator &it, const Edge &e) {
       return (it != data_.end()) && (*it == e);
     }

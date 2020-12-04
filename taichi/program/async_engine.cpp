@@ -157,7 +157,7 @@ void ExecutionQueue::enqueue(const TaskLaunchRecord &ker) {
 }
 
 void ExecutionQueue::synchronize() {
-  TI_AUTO_PROF
+  TI_AUTO_PROF;
   launch_worker.flush();
 }
 
@@ -206,10 +206,9 @@ void AsyncEngine::launch(Kernel *kernel, Context &context) {
 }
 
 void AsyncEngine::synchronize() {
-  TI_AUTO_PROF
+  TI_AUTO_PROF;
   bool modified = true;
-  sfg->reid_nodes();
-  sfg->reid_pending_nodes();
+  sfg->rebuild_graph(/*sort=*/false);
   TI_TRACE("Synchronizing SFG of {} nodes ({} pending)", sfg->size(),
            sfg->num_pending_tasks());
   debug_sfg("initial");
@@ -262,6 +261,7 @@ void AsyncEngine::synchronize() {
 }
 
 void AsyncEngine::debug_sfg(const std::string &stage) {
+  TI_TRACE("Ran {}, counter={}", stage, cur_sync_sfg_debug_counter_);
   auto prefix = program->config.async_opt_intermediate_file;
   if (prefix.empty())
     return;

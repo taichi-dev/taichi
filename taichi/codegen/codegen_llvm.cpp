@@ -1034,6 +1034,28 @@ llvm::Value *CodeGenLLVM::atomic_add_custom_int(AtomicOpStmt *stmt,
                 physical_type)});
 }
 
+llvm::Value *CodeGenLLVM::atomic_add_custom_float(AtomicOpStmt *stmt,
+                                                  CustomFloatType *cft) {
+  llvm::Value *byte_ptr, *bit_offset;
+  read_bit_pointer(llvm_val[stmt->dest], byte_ptr, bit_offset);
+  auto cit = cft->get_digits_type()->as<CustomIntType>();
+  auto physical_type = cit->get_physical_type();
+  auto compute_type = cft->get_compute_type();
+
+  auto s = builder->CreateFPCast(
+      llvm::ConstantFP::get(*llvm_context,
+                            llvm::APFloat(1.0 / cft->get_scale())),
+      llvm_type(compute_type));
+  auto val_scaled = builder->CreateFMul(llvm_val[stmt->val], s);
+  auto val_scaled_int =
+      builder->CreateFPToSI(val_scaled, llvm_type(physical_type));
+
+  return create_call(
+      fmt::format("atomic_add_partial_bits_b{}", data_type_bits(physical_type)),
+      {builder->CreateBitCast(byte_ptr, llvm_ptr_type(physical_type)),
+       bit_offset, tlctx->get_constant(cit->get_num_bits()), val_scaled_int});
+}
+
 void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
   // auto mask = stmt->parent->mask();
   // TODO: deal with mask when vectorized
@@ -1048,16 +1070,20 @@ void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
         old_value = builder->CreateAtomicRMW(
             llvm::AtomicRMWInst::BinOp::Add, llvm_val[stmt->dest],
             llvm_val[stmt->val], llvm::AtomicOrdering::SequentiallyConsistent);
-      } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f32)) {
+      } else if (!dst_type->is<CustomFloatType>() &&
+                 stmt->val->ret_type->is_primitive(PrimitiveTypeID::f32)) {
         old_value =
             builder->CreateCall(get_runtime_function("atomic_add_f32"),
                                 {llvm_val[stmt->dest], llvm_val[stmt->val]});
-      } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f64)) {
+      } else if (!dst_type->is<CustomFloatType>() &&
+                 stmt->val->ret_type->is_primitive(PrimitiveTypeID::f64)) {
         old_value =
             builder->CreateCall(get_runtime_function("atomic_add_f64"),
                                 {llvm_val[stmt->dest], llvm_val[stmt->val]});
       } else if (auto cit = dst_type->cast<CustomIntType>()) {
         old_value = atomic_add_custom_int(stmt, cit);
+      } else if (auto cft = dst_type->cast<CustomFloatType>()) {
+        old_value = atomic_add_custom_float(stmt, cft);
       } else {
         TI_NOT_IMPLEMENTED
       }
@@ -2056,4 +2082,5 @@ llvm::Value *CodeGenLLVM::create_xlogue(std::unique_ptr<Block> &block) {
 
   return xlogue;
 }
+
 TLANG_NAMESPACE_END

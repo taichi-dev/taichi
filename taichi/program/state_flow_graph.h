@@ -248,7 +248,8 @@ class StateFlowGraph {
   //
   // TODO: In case we add more and more DOT configs, create a struct?
   std::string dump_dot(const std::optional<std::string> &rankdir,
-                       int embed_states_threshold = 0);
+                       int embed_states_threshold = 0,
+                       bool include_hash = false);
 
   void insert_tasks(const std::vector<TaskLaunchRecord> &rec,
                     bool filter_listgen);

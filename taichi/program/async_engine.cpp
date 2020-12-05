@@ -202,7 +202,7 @@ void AsyncEngine::launch(Kernel *kernel, Context &context) {
     TaskLaunchRecord rec(context, kernel, kmeta.ir_handle_cached[i]);
     records.push_back(rec);
   }
-  sfg->insert_tasks(records, true);
+  sfg->insert_tasks(records, program->config.async_listgen_fast_filtering);
 }
 
 void AsyncEngine::synchronize() {

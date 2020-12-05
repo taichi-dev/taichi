@@ -888,7 +888,8 @@ void StateFlowGraph::print() {
 }
 
 std::string StateFlowGraph::dump_dot(const std::optional<std::string> &rankdir,
-                                     int embed_states_threshold) {
+                                     int embed_states_threshold,
+                                     bool include_hash) {
   using SFGNode = StateFlowGraph::Node;
   using TaskType = OffloadedStmt::TaskType;
   std::stringstream ss;
@@ -898,6 +899,10 @@ std::string StateFlowGraph::dump_dot(const std::optional<std::string> &rankdir,
       get_async_state(nullptr, AsyncState::Type::value);
 
   ss << "digraph {\n";
+  const std::string fontname = "consolas";
+  ss << "  graph [fontname = \"" << fontname << "\"]\n";
+  ss << "  node [fontname = \"" << fontname << "\"]\n";
+  ss << "  edge [fontname = \"" << fontname << "\"]\n";
   auto node_id = [](const SFGNode *n) {
     // https://graphviz.org/doc/info/lang.html ID naming
     return fmt::format("n_{}_{}", n->meta->name, n->rec.id);
@@ -958,7 +963,7 @@ std::string StateFlowGraph::dump_dot(const std::optional<std::string> &rankdir,
     std::stringstream labels;
     // No states embedded.
     labels << escaped_label(n->string());
-    if (!n->is_initial_node) {
+    if (include_hash && !n->is_initial_node) {
       labels << fmt::format("\\nhash: 0x{:08x}", n->rec.ir_handle.hash());
     }
 

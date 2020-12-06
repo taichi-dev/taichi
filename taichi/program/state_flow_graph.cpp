@@ -61,33 +61,38 @@ using StateToNodesMap = StateFlowGraph::StateToNodesMap;
 // TODO: rename state to edge since we have not only state flow edges but also
 // dependency edges.
 
-StateToNodesMap::StateToNodesMap() {
-  // TODO(mask): need to resize |data_| to |kNumInlined| first?
-}
 void StateToNodesMap::clear() {
   sorted_ = false;
+  mask_ = 0;
   // It seems that once we are beyond the small buffer threshold, there's no
   // going back...
   data_.clear();
 }
 
 bool StateToNodesMap::has_edge(const Edge &e) const {
-  // TODO(mask): Could be a bit tricky once mask is implemented: we need to
-  // support both sorted and unsorted cases.
-  // Alternatively, only use this in sorted case, and don't call this inside
-  // insert_edge()?
   TI_ASSERT(sorted_);
   return std::binary_search(data_.begin(), data_.end(), e);
+}
+
+bool StateToNodesMap::has_state(const AsyncState &as) const {
+  for (auto iter = get_state_iterator(); !iter.done(); ++iter) {
+    if (iter.get_state() == as) {
+      return true;
+    }
+  }
+  return false;
 }
 
 void StateToNodesMap::insert_edge(const AsyncState &as, Node *n) {
   TI_ASSERT(!sorted_);
   const Edge e = std::make_pair(as, n);
-  if (std::find(data_.begin(), data_.end(), e) != data_.end()) {
+  const auto slot = get_mask_slot(e);
+  const MaskType mask_bit = (1ULL << slot);
+  if ((mask_ & mask_bit) == 0) {
+    mask_ |= mask_bit;
+  } else if (std::find(data_.begin(), data_.end(), e) != data_.end()) {
     return;
   }
-
-  // TODO(mask): check if we should write to the inlined region.
   data_.push_back(e);
 }
 
@@ -154,9 +159,10 @@ StateToNodesMap::Range StateToNodesMap::operator[](const AsyncState &as) {
 StateToNodesMap::Range StateToNodesMap::get_all_edges() {
   if (empty()) {
     // Note that we intentionally do NOT check |sorted_| if this is empty. This
-    // is fusion may call clear(), which sets |sorted_| to false. Later on,
-    // the cleared node will be disconnected, at which point this method gets
-    // invoked. Tricky..
+    // is because fusion may call clear(), which sets |sorted_| to false. Later
+    // on, the cleared node will be disconnected, at which point this method
+    // gets invoked.
+    //
     // More things to note:
     // * Following the above case, |sorted_| is also false for remove_node()
     // during disconnection. However, because the range is empty, remove_node()
@@ -180,6 +186,14 @@ void StateToNodesMap::sort_edges(bool allow_already_sorted) {
   sorted_ = true;
 }
 
+void StateToNodesMap::unsort_edges() {
+  auto tmp_data = std::move(data_);
+  clear();
+  for (const auto &e : data_) {
+    insert_edge(e.first, e.second);
+  }
+}
+
 StateToNodesMap::StateIterator &StateToNodesMap::StateIterator::operator++() {
   if (!done()) {
     const auto cur_state = get_state();
@@ -195,6 +209,15 @@ bool StateToNodesMap::StateIterator::has_edge(Node *n) const {
   const Edge e = std::make_pair(get_state(), n);
   // Assuming finding the upper bound for the current state matters little...
   return std::binary_search(cur_, end_, e);
+}
+
+// static
+int StateToNodesMap::get_mask_slot(const Edge &e) {
+  constexpr int kNumBits = sizeof(MaskType) * 8;
+  // Divided by 8 to avoid trailing zeros.
+  const size_t h =
+      e.first.unique_id ^ (reinterpret_cast<uintptr_t>(e.second) / 8);
+  return h % kNumBits;
 }
 
 std::string StateFlowGraph::Node::string() const {
@@ -832,17 +855,7 @@ void StateFlowGraph::rebuild_graph(bool sort) {
   reid_nodes();
   reid_pending_nodes();
 
-  // Note that inside clear(), |initial_node_| is preserved, including its
-  // input/output edges. Therefore it could be already sorted across different
-  // SFG stages. For other nodes, each stage destroys them all and reallocate
-  // new ones.
-  initial_node_->input_edges.sort_edges(/*allow_already_sorted=*/true);
-  initial_node_->output_edges.sort_edges(/*allow_already_sorted=*/true);
-  for (int i = 1; i < nodes_.size(); ++i) {
-    auto &nd = nodes_[i];
-    nd->input_edges.sort_edges();
-    nd->output_edges.sort_edges();
-  }
+  sort_node_edges();
 }
 
 std::vector<TaskLaunchRecord> StateFlowGraph::extract_to_execute() {
@@ -861,6 +874,7 @@ std::vector<TaskLaunchRecord> StateFlowGraph::extract_to_execute() {
     // The reason we do this is that, upon the next launch, we could insert
     // edges to these executed but retained nodes. To allow for insertion, we
     // have to "unsort" them here.
+    nodes_[i]->input_edges.unsort_edges();
     nodes_[i]->output_edges.unsort_edges();
   }
   return tasks;
@@ -937,12 +951,8 @@ std::string StateFlowGraph::dump_dot(const std::optional<std::string> &rankdir,
 
   auto node_selected = [&](const SFGNode *node) {
     if (highlight_single_state) {
-      TI_ERROR("Restore this!");
-      return false;
-      // return find(node->input_edges, highlight_state) !=
-      //            node->input_edges.end() ||
-      //        find(node->output_edges, highlight_state) !=
-      //            node->output_edges.end();
+      return node->input_edges.has_state(highlight_state) ||
+             node->output_edges.has_state(highlight_state);
     } else {
       return true;
     }
@@ -1094,6 +1104,20 @@ void StateFlowGraph::topo_sort_nodes() {
   }
   reid_nodes();
   reid_pending_nodes();
+}
+
+void StateFlowGraph::sort_node_edges() {
+  // Note that inside clear(), |initial_node_| is preserved, including its
+  // input/output edges. Therefore it could be already sorted across different
+  // SFG stages. For other nodes, each stage destroys them all and reallocate
+  // new ones.
+  initial_node_->input_edges.sort_edges(/*allow_already_sorted=*/true);
+  initial_node_->output_edges.sort_edges(/*allow_already_sorted=*/true);
+  for (int i = 1; i < nodes_.size(); ++i) {
+    auto &nd = nodes_[i];
+    nd->input_edges.sort_edges();
+    nd->output_edges.sort_edges();
+  }
 }
 
 void StateFlowGraph::reid_nodes() {

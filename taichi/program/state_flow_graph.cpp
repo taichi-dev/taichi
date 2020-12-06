@@ -1470,8 +1470,8 @@ void StateFlowGraph::benchmark_rebuild_graph() {
     for (int i = 0; i < 100; i++)
       rebuild_graph(/*sort=*/false);
     auto rebuild_t = Time::get_time() - t;
-    TI_INFO("nodes = {} total time {:.4f} ns; per_node {:.4f} ns",
-            nodes_.size(), rebuild_t * 1e7, 1e7 * rebuild_t / nodes_.size());
+    TI_INFO("nodes = {} total time {:.4f} ms; per_node {:.4f} ns",
+            nodes_.size(), rebuild_t * 1e4, 1e7 * rebuild_t / nodes_.size());
   }
 }
 

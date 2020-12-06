@@ -196,6 +196,10 @@ void export_lang(py::module &m) {
       .def("print_snode_tree", &Program::print_snode_tree)
       .def("get_snode_num_dynamically_allocated",
            &Program::get_snode_num_dynamically_allocated)
+      .def("benchmark_rebuild_graph",
+           [](Program *program) {
+             program->async_engine->sfg->benchmark_rebuild_graph();
+           })
       .def("synchronize", &Program::synchronize);
 
   m.def("get_current_program", get_current_program,

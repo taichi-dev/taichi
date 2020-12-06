@@ -23,4 +23,4 @@ def foo():
 for i in range(1000):
     foo()
 
-ti.sync()
+ti.get_runtime().prog.benchmark_rebuild_graph()

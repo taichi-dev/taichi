@@ -148,8 +148,6 @@ class AsyncEngine {
 
   void debug_sfg(const std::string &suffix);
 
-  void benchmark_rebuild_graph();
-
  private:
   IRBank ir_bank_;
 

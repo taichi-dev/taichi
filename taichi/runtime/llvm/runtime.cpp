@@ -1569,11 +1569,13 @@ void stack_push(Ptr stack, size_t max_num_elements, std::size_t element_size) {
                                                                               \
   u##N atomic_add_partial_bits_b##N(u##N *ptr, u32 offset, u32 bits,          \
                                     u##N value) {                             \
+    u##N mask = ((((u##N)1 << bits) - 1) << offset);                          \
     u##N new_value = 0;                                                       \
     u##N old_value = *ptr;                                                    \
     do {                                                                      \
       old_value = *ptr;                                                       \
       new_value = old_value + (value << offset);                              \
+      new_value = (old_value & (~mask)) | (new_value & mask);                 \
     } while (                                                                 \
         !__atomic_compare_exchange(ptr, &old_value, &new_value, true,         \
                                    std::memory_order::memory_order_seq_cst,   \

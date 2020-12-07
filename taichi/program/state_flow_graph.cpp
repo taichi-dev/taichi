@@ -187,11 +187,13 @@ void StateToNodesMap::sort_edges(bool allow_already_sorted) {
 }
 
 void StateToNodesMap::unsort_edges() {
+  const auto old_size = data_.size();
   auto tmp_data = std::move(data_);
   clear();
-  for (const auto &e : data_) {
+  for (const auto &e : tmp_data) {
     insert_edge(e.first, e.second);
   }
+  TI_ASSERT(data_.size() == old_size);
 }
 
 StateToNodesMap::StateIterator &StateToNodesMap::StateIterator::operator++() {

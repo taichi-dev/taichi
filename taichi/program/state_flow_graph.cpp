@@ -87,7 +87,7 @@ void StateToNodesMap::insert_edge(const AsyncState &as, Node *n) {
   TI_ASSERT(!sorted_);
   const Edge e = std::make_pair(as, n);
   const auto slot = get_mask_slot(e);
-  const MaskType mask_bit = (1ULL << slot);
+  const MaskType mask_bit = (MaskType(1) << slot);
   if ((mask_ & mask_bit) == 0) {
     mask_ |= mask_bit;
   } else if (std::find(data_.begin(), data_.end(), e) != data_.end()) {
@@ -215,6 +215,7 @@ bool StateToNodesMap::StateIterator::has_edge(Node *n) const {
 int StateToNodesMap::get_mask_slot(const Edge &e) {
   constexpr int kNumBits = sizeof(MaskType) * 8;
   // Divided by 8 to avoid trailing zeros.
+  // TODO: see if e.second->node_id suits better for hashing.
   const size_t h =
       e.first.unique_id ^ (reinterpret_cast<uintptr_t>(e.second) / 8);
   return h % kNumBits;

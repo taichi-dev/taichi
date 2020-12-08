@@ -1588,6 +1588,29 @@ DEFINE_SET_PARTIAL_BITS(8);
 DEFINE_SET_PARTIAL_BITS(16);
 DEFINE_SET_PARTIAL_BITS(32);
 DEFINE_SET_PARTIAL_BITS(64);
+
+f32 rounding_prepare_f32(f32 f) {
+  /* slower (but clearer) version with branching:
+  if (f > 0)
+    return f + 0.5;
+  else
+    return f - 0.5;
+  */
+
+  // Branch-free implementation: copy the sign bit of "f" to "0.5"
+  i32 delta_bits =
+      (taichi_union_cast<i32>(f) & 0x80000000) | taichi_union_cast<i32>(0.5f);
+  f32 delta = taichi_union_cast<f32>(delta_bits);
+  return f + delta;
+}
+
+f64 rounding_prepare_f64(f64 f) {
+  // Same as above
+  i64 delta_bits = (taichi_union_cast<i64>(f) & 0x8000000000000000LL) |
+                   taichi_union_cast<i64>(0.5);
+  f64 delta = taichi_union_cast<f64>(delta_bits);
+  return f + delta;
+}
 }
 
 #endif

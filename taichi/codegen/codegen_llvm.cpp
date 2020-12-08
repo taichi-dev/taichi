@@ -1179,10 +1179,12 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
       auto input_real =
           builder->CreateFPCast(llvm_val[stmt->data], llvm_type(compute_type));
       auto scaled = builder->CreateFMul(input_real, s);
-      auto half = builder->CreateFPCast(
-          llvm::ConstantFP::get(*llvm_context, llvm::APFloat(0.5)),
-          llvm_type(compute_type));
-      scaled = builder->CreateFAdd(scaled, half);
+
+      // Add/minus the 0.5 offset for rounding
+      scaled = create_call(
+          fmt::format("rounding_prepare_f{}", data_type_bits(compute_type)),
+          {scaled});
+
       if (cit->get_is_signed()) {
         store_value =
             builder->CreateFPToSI(scaled, llvm_type(cit->get_compute_type()));

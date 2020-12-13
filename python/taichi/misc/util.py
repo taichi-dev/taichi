@@ -278,6 +278,24 @@ def get_kernel_stats():
     return ti_core.get_kernel_stats()
 
 
+def print_async_stats(include_kernel_profiler=False):
+    import taichi as ti
+    if include_kernel_profiler:
+        ti.kernel_profiler_print()
+        print()
+    stat = ti.get_kernel_stats()
+    counters = stat.get_counters()
+    print('=======================')
+    print('Async benchmark metrics')
+    print('-----------------------')
+    print(f'Async mode:           {ti.current_cfg().async_mode}')
+    print(f'Kernel time:          {ti.kernel_profiler_total_time():.3f} s')
+    print(f'Tasks launched:       {int(counters["launched_tasks"])}')
+    print(f'Instructions emitted: {int(counters["codegen_statements"])}')
+    print(f'Tasks compiled:       {int(counters["codegen_offloaded_tasks"])}')
+    print('=======================')
+
+
 __all__ = [
     'vec',
     'veci',

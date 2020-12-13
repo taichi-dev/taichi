@@ -1,7 +1,7 @@
 import taichi as ti
 import numpy as np
 
-ti.init(arch=ti.gpu, kernel_profiler=True)
+ti.init(arch=ti.gpu)
 
 dim = 2
 quality = 1  # Use a larger integral number for higher quality

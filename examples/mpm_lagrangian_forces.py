@@ -1,10 +1,10 @@
 import taichi as ti
 import numpy as np
 
-ti.init(arch=ti.gpu, kernel_profiler=True)
+ti.init(arch=ti.gpu, kernel_profiler=True, async_mode=True)
 
 dim = 2
-quality = 1  # Use a larger integral number for higher quality
+quality = 4  # Use a larger integral number for higher quality
 n_particle_x = 100 * quality
 n_particle_y = 8 * quality
 n_particles = n_particle_x * n_particle_y
@@ -163,7 +163,10 @@ def main():
 
     vertices_ = vertices.to_numpy()
 
-    while gui.running and not gui.get_event(gui.ESCAPE):
+    for f in range(200):
+        print(f)
+        if f == 1:
+            ti.kernel_profiler_clear()
         for s in range(int(1e-2 // dt)):
             grid_m.fill(0)
             grid_v.fill(0)
@@ -187,6 +190,9 @@ def main():
                  color=0xFFFFFF,
                  radius=3)
         gui.show()
+    ti.kernel_profiler_print()
+
+    ti.misc.util.print_async_stats()
 
 
 if __name__ == '__main__':

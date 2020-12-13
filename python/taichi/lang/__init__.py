@@ -32,7 +32,6 @@ normalized = deprecated('ti.normalized(a)',
                         'a.normalized()')(Matrix.normalized)
 
 cfg = default_cfg()
-current_cfg = current_cfg()
 x86_64 = core.x64
 x64 = core.x64
 arm64 = core.arm64

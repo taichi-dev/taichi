@@ -278,8 +278,11 @@ def get_kernel_stats():
     return ti_core.get_kernel_stats()
 
 
-def print_async_stats():
+def print_async_stats(include_kernel_profiler=False):
     import taichi as ti
+    if include_kernel_profiler:
+        ti.kernel_profiler_print()
+        print()
     stat = ti.get_kernel_stats()
     counters = stat.get_counters()
     print('=======================')

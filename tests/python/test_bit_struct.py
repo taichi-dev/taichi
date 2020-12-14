@@ -83,13 +83,14 @@ def test_custom_int_full_struct():
     x = ti.field(dtype=cit)
     ti.root.dense(ti.i, 2)._bit_struct(num_bits=32).place(x)
 
+    x[0] = 5
     @ti.kernel
     def set_val():
-        x[0] = 5
+        x[0]= 15
         x[1] = 0xFFFFFFFF
 
     set_val()
-    assert x[0] == 5
+    assert x[0] == 15
     assert x[1] == -1
 
 

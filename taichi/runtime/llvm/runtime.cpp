@@ -1556,7 +1556,7 @@ void stack_push(Ptr stack, size_t max_num_elements, std::size_t element_size) {
 // TODO: make here less repetitious.
 #define DEFINE_SET_PARTIAL_BITS(N)                                            \
   void set_partial_bits_b##N(u##N *ptr, u32 offset, u32 bits, u##N value) {   \
-    u##N mask = ((((u##N)1 << bits) - 1) << offset);                          \
+    u##N mask = ((~(u##N)0) << (N - bits)) >> (N - offset - bits);            \
     u##N new_value = 0;                                                       \
     u##N old_value = *ptr;                                                    \
     do {                                                                      \
@@ -1570,7 +1570,7 @@ void stack_push(Ptr stack, size_t max_num_elements, std::size_t element_size) {
                                                                               \
   u##N atomic_add_partial_bits_b##N(u##N *ptr, u32 offset, u32 bits,          \
                                     u##N value) {                             \
-    u##N mask = ((((u##N)1 << bits) - 1) << offset);                          \
+    u##N mask = ((~(u##N)0) << (N - bits)) >> (N - offset - bits);            \
     u##N new_value = 0;                                                       \
     u##N old_value = *ptr;                                                    \
     do {                                                                      \

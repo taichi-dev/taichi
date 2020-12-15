@@ -197,6 +197,10 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   llvm::Value *atomic_add_custom_float(AtomicOpStmt *stmt,
                                        CustomFloatType *cft);
 
+  llvm::Value *float_to_custom_int(CustomFloatType *cft,
+                                   CustomIntType *cit,
+                                   llvm::Value *real);
+
   void visit(AtomicOpStmt *stmt) override;
 
   void visit(GlobalPtrStmt *stmt) override;

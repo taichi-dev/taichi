@@ -1048,8 +1048,9 @@ llvm::Value *CodeGenLLVM::atomic_add_custom_float(AtomicOpStmt *stmt,
        bit_offset, tlctx->get_constant(cit->get_num_bits()), val_store});
 }
 
-
-llvm::Value *CodeGenLLVM::float_to_custom_int(CustomFloatType* cft, CustomIntType* cit, llvm::Value* real) {
+llvm::Value *CodeGenLLVM::float_to_custom_int(CustomFloatType *cft,
+                                              CustomIntType *cit,
+                                              llvm::Value *real) {
   llvm::Value *s = nullptr;
 
   // Compute int(input * (1.0 / scale) + 0.5)
@@ -1058,8 +1059,7 @@ llvm::Value *CodeGenLLVM::float_to_custom_int(CustomFloatType* cft, CustomIntTyp
   s = builder->CreateFPCast(
       llvm::ConstantFP::get(*llvm_context, llvm::APFloat(s_numeric)),
       llvm_type(compute_type));
-  auto input_real =
-      builder->CreateFPCast(real, llvm_type(compute_type));
+  auto input_real = builder->CreateFPCast(real, llvm_type(compute_type));
   auto scaled = builder->CreateFMul(input_real, s);
 
   // Add/minus the 0.5 offset for rounding
@@ -2079,6 +2079,5 @@ llvm::Value *CodeGenLLVM::create_xlogue(std::unique_ptr<Block> &block) {
 
   return xlogue;
 }
-
 
 TLANG_NAMESPACE_END

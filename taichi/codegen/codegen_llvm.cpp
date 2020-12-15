@@ -1039,7 +1039,7 @@ llvm::Value *CodeGenLLVM::atomic_add_custom_float(AtomicOpStmt *stmt,
   llvm::Value *byte_ptr, *bit_offset;
   read_bit_pointer(llvm_val[stmt->dest], byte_ptr, bit_offset);
   auto cit = cft->get_digits_type()->as<CustomIntType>();
-  auto val_store = convert_float_to_custom_int(cft, cit, llvm_val[stmt->val]);
+  auto val_store = float_to_custom_int(cft, cit, llvm_val[stmt->val]);
   auto physical_type = cit->get_physical_type();
 
   return create_call(
@@ -1049,7 +1049,7 @@ llvm::Value *CodeGenLLVM::atomic_add_custom_float(AtomicOpStmt *stmt,
 }
 
 
-llvm::Value *CodeGenLLVM::convert_float_to_custom_int(CustomFloatType* cft, CustomIntType* cit, llvm::Value* real) {
+llvm::Value *CodeGenLLVM::float_to_custom_int(CustomFloatType* cft, CustomIntType* cit, llvm::Value* real) {
   llvm::Value *s = nullptr;
 
   // Compute int(input * (1.0 / scale) + 0.5)
@@ -1186,7 +1186,7 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
       store_value = llvm_val[stmt->data];
     } else if (auto cft = pointee_type->cast<CustomFloatType>()) {
       cit = cft->get_digits_type()->as<CustomIntType>();
-      store_value = convert_float_to_custom_int(cft, cit, llvm_val[stmt->data]);
+      store_value = float_to_custom_int(cft, cit, llvm_val[stmt->data]);
     } else {
       TI_NOT_IMPLEMENTED
     }

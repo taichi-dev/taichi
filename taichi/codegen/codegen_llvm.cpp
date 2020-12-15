@@ -1047,13 +1047,21 @@ llvm::Value *CodeGenLLVM::atomic_add_custom_float(AtomicOpStmt *stmt,
                             llvm::APFloat(1.0 / cft->get_scale())),
       llvm_type(compute_type));
   auto val_scaled = builder->CreateFMul(llvm_val[stmt->val], s);
-  auto val_scaled_int =
-      builder->CreateFPToSI(val_scaled, llvm_type(physical_type));
+  llvm::Value *val_store = nullptr;
+
+  auto val_rounded = create_call(
+        fmt::format("rounding_prepare_f{}", data_type_bits(compute_type)),
+        {val_scaled});
+  if (cit->get_is_signed()) {
+    val_store = builder->CreateFPToSI(val_rounded, llvm_type(physical_type));
+  } else {
+    val_store = builder->CreateFPToUI(val_rounded, llvm_type(physical_type));
+  }
 
   return create_call(
       fmt::format("atomic_add_partial_bits_b{}", data_type_bits(physical_type)),
       {builder->CreateBitCast(byte_ptr, llvm_ptr_type(physical_type)),
-       bit_offset, tlctx->get_constant(cit->get_num_bits()), val_scaled_int});
+       bit_offset, tlctx->get_constant(cit->get_num_bits()), val_store});
 }
 
 void CodeGenLLVM::visit(AtomicOpStmt *stmt) {

@@ -81,7 +81,7 @@ def test_custom_int_load_and_store():
 def test_custom_int_full_struct():
     cit = ti.type_factory_.get_custom_int_type(32, True)
     x = ti.field(dtype=cit)
-    ti.root.dense(ti.i, 2)._bit_struct(num_bits=32).place(x)
+    ti.root.dense(ti.i, 1)._bit_struct(num_bits=32).place(x)
 
     @ti.kernel
     def set_val():

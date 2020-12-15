@@ -1038,8 +1038,8 @@ llvm::Value *CodeGenLLVM::atomic_add_custom_float(AtomicOpStmt *stmt,
                                                   CustomFloatType *cft) {
   llvm::Value *byte_ptr, *bit_offset;
   read_bit_pointer(llvm_val[stmt->dest], byte_ptr, bit_offset);
-  auto val_store = convert_float_to_custom_int(cft, llvm_val[stmt->val]);
   auto cit = cft->get_digits_type()->as<CustomIntType>();
+  auto val_store = convert_float_to_custom_int(cft, cit, llvm_val[stmt->val]);
   auto physical_type = cit->get_physical_type();
 
   return create_call(
@@ -1049,8 +1049,7 @@ llvm::Value *CodeGenLLVM::atomic_add_custom_float(AtomicOpStmt *stmt,
 }
 
 
-llvm::Value *CodeGenLLVM::convert_float_to_custom_int(CustomFloatType* cft, llvm::Value* real) {
-  auto cit = cft->get_digits_type()->as<CustomIntType>();
+llvm::Value *CodeGenLLVM::convert_float_to_custom_int(CustomFloatType* cft, CustomIntType* cit, llvm::Value* real) {
   llvm::Value *s = nullptr;
 
   // Compute int(input * (1.0 / scale) + 0.5)
@@ -1186,32 +1185,8 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
       cit = cit_;
       store_value = llvm_val[stmt->data];
     } else if (auto cft = pointee_type->cast<CustomFloatType>()) {
-      store_value = convert_float_to_custom_int(cft, llvm_val[stmt->data]);
-//      cit = cft->get_digits_type()->as<CustomIntType>();
-//      llvm::Value *s = nullptr;
-//
-//      // Compute int(input * (1.0 / scale) + 0.5)
-//      auto s_numeric = 1.0 / cft->get_scale();
-//      auto compute_type = cft->get_compute_type();
-//      s = builder->CreateFPCast(
-//          llvm::ConstantFP::get(*llvm_context, llvm::APFloat(s_numeric)),
-//          llvm_type(compute_type));
-//      auto input_real =
-//          builder->CreateFPCast(llvm_val[stmt->data], llvm_type(compute_type));
-//      auto scaled = builder->CreateFMul(input_real, s);
-//
-//      // Add/minus the 0.5 offset for rounding
-//      scaled = create_call(
-//          fmt::format("rounding_prepare_f{}", data_type_bits(compute_type)),
-//          {scaled});
-//
-//      if (cit->get_is_signed()) {
-//        store_value =
-//            builder->CreateFPToSI(scaled, llvm_type(cit->get_compute_type()));
-//      } else {
-//        store_value =
-//            builder->CreateFPToUI(scaled, llvm_type(cit->get_compute_type()));
-//      }
+      cit = cft->get_digits_type()->as<CustomIntType>();
+      store_value = convert_float_to_custom_int(cft, cit, llvm_val[stmt->data]);
     } else {
       TI_NOT_IMPLEMENTED
     }

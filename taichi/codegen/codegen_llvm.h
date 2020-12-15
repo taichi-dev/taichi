@@ -198,6 +198,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
                                        CustomFloatType *cft);
 
   llvm::Value *convert_float_to_custom_int(CustomFloatType* cft,
+                                           CustomIntType* cit,
                                            llvm::Value * real);
 
   void visit(AtomicOpStmt *stmt) override;

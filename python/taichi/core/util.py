@@ -8,8 +8,9 @@ from colorama import Fore, Back, Style
 from .settings import *
 
 if sys.version_info[0] < 3 or sys.version_info[1] <= 5:
-    raise RuntimeError("\nPlease restart with Python 3.6+\n" +
-                       "Current Python version:", sys.version_info)
+    raise RuntimeError(
+        "\nPlease restart with Python 3.6+\n" + "Current Python version:",
+        sys.version_info)
 
 ti_core = None
 

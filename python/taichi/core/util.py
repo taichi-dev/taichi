@@ -8,9 +8,8 @@ from colorama import Fore, Back, Style
 from .settings import *
 
 if sys.version_info[0] < 3 or sys.version_info[1] <= 5:
-    print("\nPlease restart with Python 3.6+\n")
-    print("Current Python version:", sys.version_info)
-    exit(-1)
+    raise RuntimeError("\nPlease restart with Python 3.6+\n" +
+                       "Current Python version:", sys.version_info)
 
 ti_core = None
 
@@ -39,7 +38,11 @@ def import_ti_core(tmp_dir=None):
                 "check this page for possible solutions:\n"
                 "https://taichi.readthedocs.io/en/stable/install.html#troubleshooting"
                 + Fore.RESET)
-        raise e
+            if get_os_name() == 'win':
+                e.msg += '\nConsider installing Microsoft Visual C++ Redistributable: https://aka.ms/vs/16/release/vc_redist.x64.exe'
+            elif get_os_name() == 'linux':
+                e.msg += '\nConsider installing libtinfo5: sudo apt-get install libtinfo5'
+        raise e from None
     ti_core = core
     if get_os_name() != 'win':
         sys.setdlopenflags(old_flags)
@@ -211,7 +214,7 @@ else:
                 Fore.YELLOW + "check this page for possible solutions:\n"
                 "https://taichi.readthedocs.io/en/stable/install.html#troubleshooting"
                 + Fore.RESET)
-            exit(-1)
+            raise e from None
         os.chdir(tmp_cwd)
 
     elif get_os_name() == 'win':

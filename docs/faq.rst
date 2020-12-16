@@ -30,7 +30,7 @@ Frequently asked questions
 
 **Q:** Can we dynamically create fields within kernel / after kernel invocation?
 
-**A:** Sorry, we don't support that yet. Consider allocate a large enough field
+**A:** Sorry, we don't support it yet. Try allocating a large enough field
        in advance to walkaround.
 
 **Q:** Shall we add some handy functions like ``ti.smoothstep`` or ``ti.vec3``?

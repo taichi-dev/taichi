@@ -21,7 +21,8 @@ std::unique_ptr<IRNode> IRHandle::clone() const {
 TaskLaunchRecord::TaskLaunchRecord() : kernel(nullptr), ir_handle(nullptr, 0) {
 }
 
-std::atomic<int> TaskLaunchRecord::task_counter = 0;
+// Initial node has rec.id == 0, so we start from rec.id == 1.
+std::atomic<int> TaskLaunchRecord::task_counter = 1;
 
 TaskLaunchRecord::TaskLaunchRecord(Context context,
                                    Kernel *kernel,

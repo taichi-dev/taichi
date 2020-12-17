@@ -1034,6 +1034,46 @@ llvm::Value *CodeGenLLVM::atomic_add_custom_int(AtomicOpStmt *stmt,
                 physical_type)});
 }
 
+llvm::Value *CodeGenLLVM::atomic_add_custom_float(AtomicOpStmt *stmt,
+                                                  CustomFloatType *cft) {
+  llvm::Value *byte_ptr, *bit_offset;
+  read_bit_pointer(llvm_val[stmt->dest], byte_ptr, bit_offset);
+  auto cit = cft->get_digits_type()->as<CustomIntType>();
+  auto val_store = float_to_custom_int(cft, cit, llvm_val[stmt->val]);
+  auto physical_type = cit->get_physical_type();
+
+  return create_call(
+      fmt::format("atomic_add_partial_bits_b{}", data_type_bits(physical_type)),
+      {builder->CreateBitCast(byte_ptr, llvm_ptr_type(physical_type)),
+       bit_offset, tlctx->get_constant(cit->get_num_bits()), val_store});
+}
+
+llvm::Value *CodeGenLLVM::float_to_custom_int(CustomFloatType *cft,
+                                              CustomIntType *cit,
+                                              llvm::Value *real) {
+  llvm::Value *s = nullptr;
+
+  // Compute int(input * (1.0 / scale) + 0.5)
+  auto s_numeric = 1.0 / cft->get_scale();
+  auto compute_type = cft->get_compute_type();
+  s = builder->CreateFPCast(
+      llvm::ConstantFP::get(*llvm_context, llvm::APFloat(s_numeric)),
+      llvm_type(compute_type));
+  auto input_real = builder->CreateFPCast(real, llvm_type(compute_type));
+  auto scaled = builder->CreateFMul(input_real, s);
+
+  // Add/minus the 0.5 offset for rounding
+  scaled = create_call(
+      fmt::format("rounding_prepare_f{}", data_type_bits(compute_type)),
+      {scaled});
+
+  if (cit->get_is_signed()) {
+    return builder->CreateFPToSI(scaled, llvm_type(cit->get_compute_type()));
+  } else {
+    return builder->CreateFPToUI(scaled, llvm_type(cit->get_compute_type()));
+  }
+}
+
 void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
   // auto mask = stmt->parent->mask();
   // TODO: deal with mask when vectorized
@@ -1048,16 +1088,20 @@ void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
         old_value = builder->CreateAtomicRMW(
             llvm::AtomicRMWInst::BinOp::Add, llvm_val[stmt->dest],
             llvm_val[stmt->val], llvm::AtomicOrdering::SequentiallyConsistent);
-      } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f32)) {
+      } else if (!dst_type->is<CustomFloatType>() &&
+                 stmt->val->ret_type->is_primitive(PrimitiveTypeID::f32)) {
         old_value =
             builder->CreateCall(get_runtime_function("atomic_add_f32"),
                                 {llvm_val[stmt->dest], llvm_val[stmt->val]});
-      } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f64)) {
+      } else if (!dst_type->is<CustomFloatType>() &&
+                 stmt->val->ret_type->is_primitive(PrimitiveTypeID::f64)) {
         old_value =
             builder->CreateCall(get_runtime_function("atomic_add_f64"),
                                 {llvm_val[stmt->dest], llvm_val[stmt->val]});
       } else if (auto cit = dst_type->cast<CustomIntType>()) {
         old_value = atomic_add_custom_int(stmt, cit);
+      } else if (auto cft = dst_type->cast<CustomFloatType>()) {
+        old_value = atomic_add_custom_float(stmt, cft);
       } else {
         TI_NOT_IMPLEMENTED
       }
@@ -1142,28 +1186,7 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
       store_value = llvm_val[stmt->data];
     } else if (auto cft = pointee_type->cast<CustomFloatType>()) {
       cit = cft->get_digits_type()->as<CustomIntType>();
-      llvm::Value *s = nullptr;
-
-      // Compute int(input * (1.0 / scale) + 0.5)
-      auto s_numeric = 1.0 / cft->get_scale();
-      auto compute_type = cft->get_compute_type();
-      s = builder->CreateFPCast(
-          llvm::ConstantFP::get(*llvm_context, llvm::APFloat(s_numeric)),
-          llvm_type(compute_type));
-      auto input_real =
-          builder->CreateFPCast(llvm_val[stmt->data], llvm_type(compute_type));
-      auto scaled = builder->CreateFMul(input_real, s);
-      auto half = builder->CreateFPCast(
-          llvm::ConstantFP::get(*llvm_context, llvm::APFloat(0.5)),
-          llvm_type(compute_type));
-      scaled = builder->CreateFAdd(scaled, half);
-      if (cit->get_is_signed()) {
-        store_value =
-            builder->CreateFPToSI(scaled, llvm_type(cit->get_compute_type()));
-      } else {
-        store_value =
-            builder->CreateFPToUI(scaled, llvm_type(cit->get_compute_type()));
-      }
+      store_value = float_to_custom_int(cft, cit, llvm_val[stmt->data]);
     } else {
       TI_NOT_IMPLEMENTED
     }
@@ -2056,4 +2079,5 @@ llvm::Value *CodeGenLLVM::create_xlogue(std::unique_ptr<Block> &block) {
 
   return xlogue;
 }
+
 TLANG_NAMESPACE_END

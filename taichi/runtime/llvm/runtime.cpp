@@ -1553,9 +1553,15 @@ void stack_push(Ptr stack, size_t max_num_elements, std::size_t element_size) {
 
 #include "internal_functions.h"
 
+// TODO: make here less repetitious.
+// Original implementation is
+// u##N mask = ((((u##N)1 << bits) - 1) << offset);
+// When N equals bits equals 32, 32 times of left shifting will be carried on
+// which is an undefined behavior.
+// see #2096 for more details
 #define DEFINE_SET_PARTIAL_BITS(N)                                            \
   void set_partial_bits_b##N(u##N *ptr, u32 offset, u32 bits, u##N value) {   \
-    u##N mask = ((((u##N)1 << bits) - 1) << offset);                          \
+    u##N mask = ((~(u##N)0) << (N - bits)) >> (N - offset - bits);            \
     u##N new_value = 0;                                                       \
     u##N old_value = *ptr;                                                    \
     do {                                                                      \
@@ -1569,11 +1575,13 @@ void stack_push(Ptr stack, size_t max_num_elements, std::size_t element_size) {
                                                                               \
   u##N atomic_add_partial_bits_b##N(u##N *ptr, u32 offset, u32 bits,          \
                                     u##N value) {                             \
+    u##N mask = ((~(u##N)0) << (N - bits)) >> (N - offset - bits);            \
     u##N new_value = 0;                                                       \
     u##N old_value = *ptr;                                                    \
     do {                                                                      \
       old_value = *ptr;                                                       \
       new_value = old_value + (value << offset);                              \
+      new_value = (old_value & (~mask)) | (new_value & mask);                 \
     } while (                                                                 \
         !__atomic_compare_exchange(ptr, &old_value, &new_value, true,         \
                                    std::memory_order::memory_order_seq_cst,   \
@@ -1585,6 +1593,29 @@ DEFINE_SET_PARTIAL_BITS(8);
 DEFINE_SET_PARTIAL_BITS(16);
 DEFINE_SET_PARTIAL_BITS(32);
 DEFINE_SET_PARTIAL_BITS(64);
+
+f32 rounding_prepare_f32(f32 f) {
+  /* slower (but clearer) version with branching:
+  if (f > 0)
+    return f + 0.5;
+  else
+    return f - 0.5;
+  */
+
+  // Branch-free implementation: copy the sign bit of "f" to "0.5"
+  i32 delta_bits =
+      (taichi_union_cast<i32>(f) & 0x80000000) | taichi_union_cast<i32>(0.5f);
+  f32 delta = taichi_union_cast<f32>(delta_bits);
+  return f + delta;
+}
+
+f64 rounding_prepare_f64(f64 f) {
+  // Same as above
+  i64 delta_bits = (taichi_union_cast<i64>(f) & 0x8000000000000000LL) |
+                   taichi_union_cast<i64>(0.5);
+  f64 delta = taichi_union_cast<f64>(delta_bits);
+  return f + delta;
+}
 }
 
 #endif

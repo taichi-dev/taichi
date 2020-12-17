@@ -202,13 +202,15 @@ void AsyncEngine::launch(Kernel *kernel, Context &context) {
     TaskLaunchRecord rec(context, kernel, kmeta.ir_handle_cached[i]);
     records.push_back(rec);
   }
-  sfg->insert_tasks(records, true);
+  sfg->insert_tasks(records, program->config.async_listgen_fast_filtering);
 }
 
 void AsyncEngine::synchronize() {
   TI_AUTO_PROF;
   bool modified = true;
-  sfg->rebuild_graph(/*sort=*/false);
+  sfg->reid_nodes();
+  sfg->reid_pending_nodes();
+  sfg->sort_node_edges();
   TI_TRACE("Synchronizing SFG of {} nodes ({} pending)", sfg->size(),
            sfg->num_pending_tasks());
   debug_sfg("initial");

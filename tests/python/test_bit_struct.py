@@ -77,6 +77,34 @@ def test_custom_int_load_and_store():
         verify_val.__wrapped__(idx)
 
 
+@ti.test(require=ti.extension.quant, debug=True, cfg_optimization=False)
+def test_custom_int_full_struct():
+    cit = ti.type_factory_.get_custom_int_type(32, True)
+    x = ti.field(dtype=cit)
+    ti.root.dense(ti.i, 1)._bit_struct(num_bits=32).place(x)
+
+    @ti.kernel
+    def set_val():
+        x[0] = 15
+
+    @ti.kernel
+    def varify_val1():
+        assert x[0] == 15
+
+    @ti.kernel
+    def set_val2():
+        x[0] = 12
+
+    @ti.kernel
+    def varify_val2():
+        assert x[0] == 12
+
+    set_val()
+    varify_val1()
+    set_val2()
+    varify_val2()
+
+
 def test_bit_struct():
     def test_single_bit_struct(physical_type, compute_type, custom_bits,
                                test_case):

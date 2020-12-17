@@ -26,14 +26,13 @@ class StateFlowGraph {
   // A specialized container for fast edge insertion and lookup
   class StateToNodesMap {
    private:
-    using MaskType = uint64;  // Unused yet
-    static constexpr unsigned kNumInlined = sizeof(MaskType) * 8u;
+    static constexpr unsigned kNumInlined = 16u;
 
    public:
     using Edge = std::pair<AsyncState, Node *>;
     using Container = llvm::SmallVector<Edge, kNumInlined>;
 
-    StateToNodesMap();
+    StateToNodesMap() = default;
 
     bool empty() const {
       return data_.empty();
@@ -47,6 +46,7 @@ class StateFlowGraph {
     bool has_edge(const AsyncState &as, Node *n) const {
       return has_edge(std::make_pair(as, n));
     }
+    bool has_state(const AsyncState &as) const;
 
     void insert_edge(const AsyncState &as, Node *n);
     // Removes all occurrences of Node |n|
@@ -107,17 +107,17 @@ class StateFlowGraph {
 
      private:
       friend class StateToNodesMap;
-      using iterator = StateToNodesMap::Container::iterator;
+      using const_iterator = StateToNodesMap::Container::const_iterator;
 
-      explicit StateIterator(StateToNodesMap::Container &data)
+      explicit StateIterator(const StateToNodesMap::Container &data)
           : cur_(data.begin()), end_(data.end()) {
       }
 
-      iterator cur_;
-      iterator end_;
+      const_iterator cur_;
+      const_iterator end_;
     };
 
-    StateIterator get_state_iterator() {
+    StateIterator get_state_iterator() const {
       TI_ASSERT(sorted_);
       return StateIterator(data_);
     }
@@ -127,17 +127,16 @@ class StateFlowGraph {
     // |allow_already_sorted| is a backdoor for the initial node.
     void sort_edges(bool allow_already_sorted = false);
 
+    // This reverts the container to its unsorted state (including |mask_|).
     // It's unfortunate to have this method. But without this, we cannot support
     // executed but retained nodes.
-    void unsort_edges() {
-      // TODO(mask): Handle masks
-      sorted_ = false;
-    }
+    void unsort_edges();
+
     // For debugging purpose
     int node_id = -1;
 
    private:
-    bool matches(const Container::iterator &it, const Edge &e) {
+    bool matches(const Container::iterator &it, const Edge &e) const {
       return (it != data_.end()) && (*it == e);
     }
 
@@ -146,8 +145,12 @@ class StateFlowGraph {
           as, reinterpret_cast<Node *>(std::numeric_limits<uintptr_t>().max()));
     }
 
+    static int get_mask_slot(const Edge &e);
+
+    using MaskType = uint64;
     Container data_;
     bool sorted_{false};
+    MaskType mask_{0};
   };
   // Each node is a task
   // Note: after SFG is done, each node here should hold a TaskLaunchRecord.
@@ -248,7 +251,8 @@ class StateFlowGraph {
   //
   // TODO: In case we add more and more DOT configs, create a struct?
   std::string dump_dot(const std::optional<std::string> &rankdir,
-                       int embed_states_threshold = 0);
+                       int embed_states_threshold = 0,
+                       bool include_hash = false);
 
   void insert_tasks(const std::vector<TaskLaunchRecord> &rec,
                     bool filter_listgen);
@@ -284,6 +288,8 @@ class StateFlowGraph {
                          bool only_output_edges = false);
 
   void topo_sort_nodes();
+
+  void sort_node_edges();
 
   void verify(bool also_verify_ir = false) const;
 

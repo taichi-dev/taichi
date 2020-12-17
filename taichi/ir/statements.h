@@ -527,6 +527,7 @@ class RangeForStmt : public Stmt {
   std::unique_ptr<Block> body;
   bool reversed;
   int vectorize;
+  int bit_vectorize;
   int parallelize;
   int block_dim;
   bool strictly_serialized;
@@ -535,6 +536,7 @@ class RangeForStmt : public Stmt {
                Stmt *end,
                std::unique_ptr<Block> &&body,
                int vectorize,
+               int bit_vectorize,
                int parallelize,
                int block_dim,
                bool strictly_serialized);
@@ -553,6 +555,7 @@ class RangeForStmt : public Stmt {
                      end,
                      reversed,
                      vectorize,
+                     bit_vectorize,
                      parallelize,
                      block_dim,
                      strictly_serialized);
@@ -568,6 +571,7 @@ class StructForStmt : public Stmt {
   std::unique_ptr<Block> block_finalization;
   std::vector<int> index_offsets;
   int vectorize;
+  int bit_vectorize;
   int parallelize;
   int block_dim;
   MemoryAccessOptions mem_access_opt;
@@ -575,6 +579,7 @@ class StructForStmt : public Stmt {
   StructForStmt(SNode *snode,
                 std::unique_ptr<Block> &&body,
                 int vectorize,
+                int bit_vectorize,
                 int parallelize,
                 int block_dim);
 
@@ -587,6 +592,7 @@ class StructForStmt : public Stmt {
   TI_STMT_DEF_FIELDS(snode,
                      index_offsets,
                      vectorize,
+                     bit_vectorize,
                      parallelize,
                      block_dim,
                      mem_access_opt);

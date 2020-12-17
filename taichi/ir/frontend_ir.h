@@ -121,6 +121,7 @@ class FrontendForStmt : public Stmt {
   std::unique_ptr<Block> body;
   std::vector<Identifier> loop_var_id;
   int vectorize;
+  int bit_vectorize;
   int parallelize;
   bool strictly_serialized;
   MemoryAccessOptions mem_access_opt;

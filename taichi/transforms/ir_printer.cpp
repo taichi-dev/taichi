@@ -313,17 +313,17 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(RangeForStmt *for_stmt) override {
-    print("{} : {}for in range({}, {}) (vectorize {}) {}{{", for_stmt->name(),
+    print("{} : {}for in range({}, {}) (vectorize {}) (bit_vectorize {}) {}{{", for_stmt->name(),
           for_stmt->reversed ? "reversed " : "", for_stmt->begin->name(),
-          for_stmt->end->name(), for_stmt->vectorize,
+          for_stmt->end->name(), for_stmt->vectorize, for_stmt->bit_vectorize,
           block_dim_info(for_stmt->block_dim));
     for_stmt->body->accept(this);
     print("}}");
   }
 
   void visit(StructForStmt *for_stmt) override {
-    print("{} : struct for in {} (vectorize {}) {}{}{{", for_stmt->name(),
-          for_stmt->snode->get_node_type_name_hinted(), for_stmt->vectorize,
+    print("{} : struct for in {} (vectorize {}) (bit_vectorize {}) {}{}{{", for_stmt->name(),
+          for_stmt->snode->get_node_type_name_hinted(), for_stmt->vectorize, for_stmt->bit_vectorize,
           scratch_pad_info(for_stmt->mem_access_opt),
           block_dim_info(for_stmt->block_dim));
     for_stmt->body->accept(this);

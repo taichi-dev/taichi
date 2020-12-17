@@ -204,8 +204,8 @@ RangeForStmt::RangeForStmt(Stmt *begin,
 
 std::unique_ptr<Stmt> RangeForStmt::clone() const {
   auto new_stmt = std::make_unique<RangeForStmt>(
-      begin, end, body->clone(), vectorize, bit_vectorize, parallelize, block_dim,
-      strictly_serialized);
+      begin, end, body->clone(), vectorize, bit_vectorize, parallelize,
+      block_dim, strictly_serialized);
   new_stmt->reversed = reversed;
   return new_stmt;
 }

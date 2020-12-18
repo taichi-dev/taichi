@@ -19,7 +19,13 @@ def tensor_to_ext_arr(tensor: ti.template(), arr: ti.ext_arr()):
 def vector_to_fast_image(img: ti.template(), out: ti.ext_arr()):
     # FIXME: Why is ``for i, j in img:`` slower than:
     for i, j in ti.ndrange(*img.shape):
-        r, g, b = min(255, max(0, int(img[i, img.shape[1] - 1 - j] * 255)))
+        r, g, b = 0, 0, 0
+        color = img[i, img.shape[1] - 1 - j]
+        if ti.static(img.dtype in [ti.f32, ti.f64]):
+            r, g, b = min(255, max(0, int(color * 255)))
+        else:
+            ti.static_assert(img.dtype == ti.u8)
+            r, g, b = color
         idx = j * img.shape[0] + i
         # We use i32 for |out| since OpenGL and Metal doesn't support u8 types
         if ti.static(ti.get_os_name() != 'osx'):

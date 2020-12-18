@@ -19,6 +19,7 @@ def main():
 
     print(f'locale: {".".join(locale.getdefaultlocale())}')
     print(f'PATH: {os.environ.get("PATH")}')
+    print(f'PYTHONPATH: {sys.path}')
     print('')
 
     try:

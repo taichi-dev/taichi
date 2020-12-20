@@ -2,7 +2,7 @@ import taichi as ti
 import numpy as np
 
 
-@ti.test(require=ti.extension.quant, debug=True, cfg_optimization=False)
+@ti.test(require=ti.extension.quant, debug=True)
 def test_simple_array():
     ci13 = ti.type_factory_.get_custom_int_type(13, True)
     cu19 = ti.type_factory_.get_custom_int_type(19, False)
@@ -36,7 +36,7 @@ def test_simple_array():
     verify_val.__wrapped__()
 
 
-@ti.test(require=ti.extension.quant, debug=True, cfg_optimization=False)
+@ti.test(require=ti.extension.quant, debug=True)
 def test_custom_int_load_and_store():
     ci13 = ti.type_factory_.get_custom_int_type(13, True)
     cu14 = ti.type_factory_.get_custom_int_type(14, False)
@@ -77,7 +77,7 @@ def test_custom_int_load_and_store():
         verify_val.__wrapped__(idx)
 
 
-@ti.test(require=ti.extension.quant, debug=True, cfg_optimization=False)
+@ti.test(require=ti.extension.quant, debug=True)
 def test_custom_int_full_struct():
     cit = ti.type_factory_.get_custom_int_type(32, True)
     x = ti.field(dtype=cit)
@@ -110,8 +110,7 @@ def test_bit_struct():
                                test_case):
         ti.init(arch=ti.cpu,
                 debug=True,
-                print_ir=False,
-                cfg_optimization=False)
+                print_ir=False)
 
         cit1 = ti.type_factory_.get_custom_int_type(custom_bits[0], True,
                                                     compute_type)

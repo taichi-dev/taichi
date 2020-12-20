@@ -1492,13 +1492,18 @@ void StateFlowGraph::mark_list_as_dirty(SNode *snode) {
 }
 
 void StateFlowGraph::benchmark_rebuild_graph() {
+  double total_time = 0;
   for (int k = 0; k < 100000; k++) {
     auto t = Time::get_time();
     for (int i = 0; i < 100; i++)
       rebuild_graph(/*sort=*/false);
     auto rebuild_t = Time::get_time() - t;
-    TI_INFO("nodes = {} total time {:.4f} ms; per_node {:.4f} ns",
-            nodes_.size(), rebuild_t * 1e4, 1e7 * rebuild_t / nodes_.size());
+    total_time += rebuild_t;
+    TI_INFO(
+        "nodes = {} total time {:.4f} ms (averaged so far {:.4} ms); per_node "
+        "{:.4f} ns",
+        nodes_.size(), rebuild_t * 1e4, (total_time * 1e4 / (k + 1)),
+        1e7 * rebuild_t / nodes_.size());
   }
 }
 

@@ -25,10 +25,8 @@ class StateFlowGraph {
 
   // A specialized container for fast edge insertion and lookup
   class StateToNodesMap {
-   private:
-    static constexpr unsigned kNumInlined = 16u;
-
    public:
+    static constexpr unsigned kNumInlined = 8u;
     using Edge = std::pair<AsyncState, Node *>;
     using Container = llvm::SmallVector<Edge, kNumInlined>;
 

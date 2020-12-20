@@ -108,9 +108,7 @@ def test_custom_int_full_struct():
 def test_bit_struct():
     def test_single_bit_struct(physical_type, compute_type, custom_bits,
                                test_case):
-        ti.init(arch=ti.cpu,
-                debug=True,
-                print_ir=False)
+        ti.init(arch=ti.cpu, debug=True, print_ir=False)
 
         cit1 = ti.type_factory_.get_custom_int_type(custom_bits[0], True,
                                                     compute_type)

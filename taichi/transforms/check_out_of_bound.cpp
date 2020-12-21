@@ -121,7 +121,8 @@ namespace irpass {
 
 bool check_out_of_bound(IRNode *root) {
   TI_AUTO_PROF;
-  return CheckOutOfBound::run(root);
+  if (CheckOutOfBound::run(root))
+    type_check(root);
 }
 
 }  // namespace irpass

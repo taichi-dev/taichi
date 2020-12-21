@@ -71,6 +71,8 @@ TaichiLLVMContext::TaichiLLVMContext(Arch arch) : arch(arch) {
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();
     llvm::InitializeNativeTargetAsmParser();
+    llvm::InitializeAllTargets();
+    llvm::InitializeAllTargetMCs();
   } else {
 #if defined(TI_WITH_CUDA)
     LLVMInitializeNVPTXTarget();

@@ -131,6 +131,7 @@ llvm_map_components_to_libnames(llvm_libs
         Passes
         ipo
         Analysis
+        AArch64
         )
 target_link_libraries(${LIBRARY_NAME} ${llvm_libs})
 

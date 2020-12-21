@@ -165,7 +165,7 @@ void JITSessionCPU::global_optimize_module_cpu(
     module->print(llvm::errs(), nullptr);
     TI_ERROR("Module broken");
   }
-  auto JTMB = JITTargetMachineBuilder(llvm::Triple("aarch64-apple-macosx11.0.0"));
+  auto JTMB = JITTargetMachineBuilder(llvm::Triple("aarch64-unknown-unknown"));
   module->setTargetTriple(JTMB.getTargetTriple().str());
   llvm::Triple triple(module->getTargetTriple());
 
@@ -262,7 +262,7 @@ std::unique_ptr<JITSession> create_llvm_jit_session_cpu(Arch arch) {
     TI_ERROR("LLVM TargetMachineBuilder has failed when getting data layout.");
   }
   */
-  auto jtmb = JITTargetMachineBuilder(llvm::Triple("aarch64-apple-macosx11.0.0"));
+  auto jtmb = JITTargetMachineBuilder(llvm::Triple("aarch64-unknown-unknown"));
   llvm::DataLayout data_layout("e-m:o-i64:64-i128:128-n32:64-S128");
 
   return std::make_unique<JITSessionCPU>(std::move(jtmb),

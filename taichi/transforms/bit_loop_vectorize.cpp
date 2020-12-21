@@ -42,6 +42,7 @@ class BitLoopVectorize : public IRVisitor {
         auto ptr_physical_type = TypeFactory::get_instance().get_pointer_type(bit_array_physical_type, false);
         DataType new_ret_type(ptr_physical_type);
         ptr->ret_type = new_ret_type;
+        ptr->is_bit_vectorized = true;
         // TODO: Do we need to explicitly make the load stmt's return type same as physical type
         //       for now, this seems to hold under the demo code
       }
@@ -57,6 +58,7 @@ class BitLoopVectorize : public IRVisitor {
         auto ptr_physical_type = TypeFactory::get_instance().get_pointer_type(bit_array_physical_type, false);
         DataType new_ret_type(ptr_physical_type);
         ptr->ret_type = new_ret_type;
+        ptr->is_bit_vectorized = true;
       }
     }
   }

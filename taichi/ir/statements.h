@@ -213,6 +213,7 @@ class GlobalPtrStmt : public Stmt {
   LaneAttribute<SNode *> snodes;
   std::vector<Stmt *> indices;
   bool activate;
+  bool is_bit_vectorized; // for bit_loop_vectorize pass
 
   GlobalPtrStmt(const LaneAttribute<SNode *> &snodes,
                 const std::vector<Stmt *> &indices,
@@ -228,7 +229,7 @@ class GlobalPtrStmt : public Stmt {
     return true;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, snodes, indices, activate);
+  TI_STMT_DEF_FIELDS(ret_type, snodes, indices, activate, is_bit_vectorized);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

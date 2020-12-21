@@ -124,6 +124,9 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(GlobalPtrStmt *stmt) {
+    if (stmt->is_bit_vectorized) {
+      return;
+    }
     stmt->ret_type.set_is_pointer(true);
     if (stmt->snodes) {
       stmt->ret_type = TypeFactory::get_instance().get_pointer_type(

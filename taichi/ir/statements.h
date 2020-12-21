@@ -213,7 +213,7 @@ class GlobalPtrStmt : public Stmt {
   LaneAttribute<SNode *> snodes;
   std::vector<Stmt *> indices;
   bool activate;
-  bool is_bit_vectorized; // for bit_loop_vectorize pass
+  bool is_bit_vectorized;  // for bit_loop_vectorize pass
 
   GlobalPtrStmt(const LaneAttribute<SNode *> &snodes,
                 const std::vector<Stmt *> &indices,

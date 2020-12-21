@@ -53,7 +53,10 @@ ExternalPtrStmt::ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
 GlobalPtrStmt::GlobalPtrStmt(const LaneAttribute<SNode *> &snodes,
                              const std::vector<Stmt *> &indices,
                              bool activate)
-    : snodes(snodes), indices(indices), activate(activate), is_bit_vectorized(false) {
+    : snodes(snodes),
+      indices(indices),
+      activate(activate),
+      is_bit_vectorized(false) {
   for (int i = 0; i < (int)snodes.size(); i++) {
     TI_ASSERT(snodes[i] != nullptr);
     TI_ASSERT(snodes[0]->dt == snodes[i]->dt);

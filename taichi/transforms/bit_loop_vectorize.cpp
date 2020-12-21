@@ -13,7 +13,7 @@ class BitLoopVectorize : public IRVisitor {
  public:
   int bit_vectorize;
   bool in_struct_for_loop;
-  PrimitiveType* bit_array_physical_type;
+  PrimitiveType *bit_array_physical_type;
 
   BitLoopVectorize() {
     allow_undefined_visitor = true;
@@ -37,14 +37,16 @@ class BitLoopVectorize : public IRVisitor {
     auto ptr_type = stmt->ptr->ret_type->as<PointerType>();
     if (in_struct_for_loop && bit_vectorize != 1) {
       if (auto cit = ptr_type->get_pointee_type()->cast<CustomIntType>()) {
-        // rewrite the previous GlobalPtrStmt's return type from *cit to *phy_type
+        // rewrite the previous GlobalPtrStmt's return type from *cit to
+        // *phy_type
         auto ptr = stmt->ptr->cast<GlobalPtrStmt>();
-        auto ptr_physical_type = TypeFactory::get_instance().get_pointer_type(bit_array_physical_type, false);
+        auto ptr_physical_type = TypeFactory::get_instance().get_pointer_type(
+            bit_array_physical_type, false);
         DataType new_ret_type(ptr_physical_type);
         ptr->ret_type = new_ret_type;
         ptr->is_bit_vectorized = true;
-        // TODO: Do we need to explicitly make the load stmt's return type same as physical type
-        //       for now, this seems to hold under the demo code
+        // TODO: Do we need to explicitly make the load stmt's return type same
+        // as physical type for now, this seems to hold under the demo code
       }
     }
   }
@@ -53,9 +55,11 @@ class BitLoopVectorize : public IRVisitor {
     auto ptr_type = stmt->ptr->ret_type->as<PointerType>();
     if (in_struct_for_loop && bit_vectorize != 1) {
       if (auto cit = ptr_type->get_pointee_type()->cast<CustomIntType>()) {
-        // rewrite the previous GlobalPtrStmt's return type from *cit to *phy_type
+        // rewrite the previous GlobalPtrStmt's return type from *cit to
+        // *phy_type
         auto ptr = stmt->ptr->cast<GlobalPtrStmt>();
-        auto ptr_physical_type = TypeFactory::get_instance().get_pointer_type(bit_array_physical_type, false);
+        auto ptr_physical_type = TypeFactory::get_instance().get_pointer_type(
+            bit_array_physical_type, false);
         DataType new_ret_type(ptr_physical_type);
         ptr->ret_type = new_ret_type;
         ptr->is_bit_vectorized = true;

@@ -266,7 +266,6 @@ void JITSessionCPU::global_optimize_module_cpu(
 
 
 std::unique_ptr<JITSession> create_llvm_jit_session_cpu(Arch arch) {
-  // std::unique_ptr<JITTargetMachineBuilder> jtmb;
   TI_ASSERT(arch_is_cpu(arch));
   auto target_info = get_host_target_info();
   return std::make_unique<JITSessionCPU>(target_info.first, target_info.second);

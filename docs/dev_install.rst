@@ -22,6 +22,8 @@ Installing Dependencies
     python3 -m pip install --user setuptools astor pybind11 pylint sourceinspect
     python3 -m pip install --user pytest pytest-rerunfailures pytest-xdist yapf
     python3 -m pip install --user numpy GitPython coverage colorama autograd
+    
+    # To install numpy on Apple M1 devices: python3 -m pip install --user numpy --compile --pre
 
 
 - Make sure you have ``clang`` with version >= 7:
@@ -64,6 +66,7 @@ Installing Dependencies
         cd build
         cmake .. -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON
         # If you are building on NVIDIA Jetson TX2, use -DLLVM_TARGETS_TO_BUILD="ARM;NVPTX"
+        # If you are building on Apple M1, use -DLLVM_TARGETS_TO_BUILD="ARM;AArch64"
 
         make -j 8
         sudo make install

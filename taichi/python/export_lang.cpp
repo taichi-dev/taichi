@@ -582,7 +582,6 @@ void export_lang(py::module &m) {
     expr.cast<GlobalVariableExpression>()->is_primal = false;
   });
   m.def("data_type_name", data_type_name);
-  m.def("data_type_short_name", data_type_short_name);
 
   m.def("subscript", [](const Expr &expr, const ExprGroup &expr_group) {
     return expr[expr_group];

@@ -65,12 +65,6 @@ real measure_cpe(std::function<void()> target,
   return elasped_cycles / float64(total_batches * elements_per_call);
 }
 
-// TODO: Remove data_type_short_name. Having two names for a data type is
-// confusing.
-std::string data_type_name(DataType t) {
-  return data_type_short_name(t);
-}
-
 std::string data_type_format(DataType dt) {
   if (dt->is_primitive(PrimitiveTypeID::i32)) {
     return "%d";
@@ -129,7 +123,7 @@ int data_type_bits(DataType t) {
   return data_type_size(t) * 8;
 }
 
-std::string data_type_short_name(DataType t) {
+std::string data_type_name(DataType t) {
   if (!t->is<PrimitiveType>()) {
     return t->to_string();
   }

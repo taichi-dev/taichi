@@ -165,16 +165,14 @@ void JITSessionCPU::global_optimize_module_cpu(
     module->print(llvm::errs(), nullptr);
     TI_ERROR("Module broken");
   }
-  auto JTMB = JITTargetMachineBuilder::detectHost();
-  if (!JTMB) {
-    TI_ERROR("Target machine creation failed.");
-  }
-  module->setTargetTriple(JTMB->getTargetTriple().str());
+  auto JTMB = JITTargetMachineBuilder(llvm::Triple("aarch64-apple-macosx11.0.0"));
+  module->setTargetTriple(JTMB.getTargetTriple().str());
   llvm::Triple triple(module->getTargetTriple());
 
   std::string err_str;
   const llvm::Target *target =
       TargetRegistry::lookupTarget(triple.str(), err_str);
+  TI_P(triple.str());
   TI_ERROR_UNLESS(target, err_str);
 
   TargetOptions options;
@@ -251,8 +249,9 @@ void JITSessionCPU::global_optimize_module_cpu(
 }
 
 std::unique_ptr<JITSession> create_llvm_jit_session_cpu(Arch arch) {
-  std::unique_ptr<JITTargetMachineBuilder> jtmb;
+  // std::unique_ptr<JITTargetMachineBuilder> jtmb;
   TI_ASSERT(arch_is_cpu(arch));
+/*
   auto JTMB = JITTargetMachineBuilder::detectHost();
   if (!JTMB)
     TI_ERROR("LLVM TargetMachineBuilder has failed.");
@@ -262,9 +261,12 @@ std::unique_ptr<JITSession> create_llvm_jit_session_cpu(Arch arch) {
   if (!data_layout) {
     TI_ERROR("LLVM TargetMachineBuilder has failed when getting data layout.");
   }
+  */
+  auto jtmb = JITTargetMachineBuilder(llvm::Triple("aarch64-apple-macosx11.0.0"));
+  llvm::DataLayout data_layout("e-m:o-i64:64-i128:128-n32:64-S128");
 
-  return std::make_unique<JITSessionCPU>(std::move(*jtmb),
-                                         std::move(*data_layout));
+  return std::make_unique<JITSessionCPU>(std::move(jtmb),
+                                         std::move(data_layout));
 }
 
 TLANG_NAMESPACE_END

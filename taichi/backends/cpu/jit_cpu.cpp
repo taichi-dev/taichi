@@ -45,6 +45,8 @@ using namespace llvm::orc;
 
 std::pair<JITTargetMachineBuilder, llvm::DataLayout> get_host_target_info() {
 #if defined(TI_PLATFORM_OSX) and defined(TI_ARCH_ARM)
+  // JITTargetMachineBuilder::detectHost() doesn't seem to work properly on Apple M1 yet.
+  // Hence the hardcoded strings here.
   auto jtmb =
       JITTargetMachineBuilder(llvm::Triple("aarch64-apple-macosx11.0.0"));
   llvm::DataLayout data_layout("e-m:o-i64:64-i128:128-n32:64-S128");

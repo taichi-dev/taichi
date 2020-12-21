@@ -45,7 +45,8 @@ using namespace llvm::orc;
 
 std::pair<JITTargetMachineBuilder, llvm::DataLayout> get_host_target_info() {
 #if defined(TI_PLATFORM_OSX) and defined(TI_ARCH_ARM)
-  auto jtmb = JITTargetMachineBuilder(llvm::Triple("aarch64-apple-macosx11.0.0"));
+  auto jtmb =
+      JITTargetMachineBuilder(llvm::Triple("aarch64-apple-macosx11.0.0"));
   llvm::DataLayout data_layout("e-m:o-i64:64-i128:128-n32:64-S128");
 #else
   auto expected_jtmb = JITTargetMachineBuilder::detectHost();
@@ -263,7 +264,6 @@ void JITSessionCPU::global_optimize_module_cpu(
     writer.write(module.get());
   }
 }
-
 
 std::unique_ptr<JITSession> create_llvm_jit_session_cpu(Arch arch) {
   TI_ASSERT(arch_is_cpu(arch));

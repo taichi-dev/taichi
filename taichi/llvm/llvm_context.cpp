@@ -68,17 +68,18 @@ TaichiLLVMContext::TaichiLLVMContext(Arch arch) : arch(arch) {
       nullptr);
 
   if (arch_is_cpu(arch)) {
-    #if defined(TI_PLATFORM_OSX) and defined(TI_ARCH_ARM)
-    // Note that on Apple Silicon (M1), "native" seems to mean arm instead of arm64 (aka AArch64).
+#if defined(TI_PLATFORM_OSX) and defined(TI_ARCH_ARM)
+    // Note that on Apple Silicon (M1), "native" seems to mean arm instead of
+    // arm64 (aka AArch64).
     LLVMInitializeAArch64Target();
     LLVMInitializeAArch64TargetMC();
     LLVMInitializeAArch64TargetInfo();
     LLVMInitializeAArch64AsmPrinter();
-    #else
+#else
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();
     llvm::InitializeNativeTargetAsmParser();
-    #endif
+#endif
   } else {
 #if defined(TI_WITH_CUDA)
     LLVMInitializeNVPTXTarget();

@@ -22,7 +22,7 @@ Installing Dependencies
     python3 -m pip install --user setuptools astor pybind11 pylint sourceinspect
     python3 -m pip install --user pytest pytest-rerunfailures pytest-xdist yapf
     python3 -m pip install --user numpy GitPython coverage colorama autograd
-    
+
     # To install numpy on Apple M1 devices: python3 -m pip install --user numpy --compile --pre
 
 

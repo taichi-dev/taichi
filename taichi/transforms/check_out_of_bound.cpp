@@ -113,6 +113,8 @@ class CheckOutOfBound : public BasicStmtVisitor {
         break;
       }
     }
+    if (modified)
+      irpass::type_check(node);
     return modified;
   }
 };
@@ -121,8 +123,7 @@ namespace irpass {
 
 bool check_out_of_bound(IRNode *root) {
   TI_AUTO_PROF;
-  if (CheckOutOfBound::run(root))
-    type_check(root);
+  return CheckOutOfBound::run(root);
 }
 
 }  // namespace irpass

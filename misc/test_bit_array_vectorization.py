@@ -1,7 +1,7 @@
 import taichi as ti
 
-ti.init(debug=True, cfg_optimization=False)
-# ti.init(debug=True, cfg_optimization=False, print_ir=True)
+# ti.init(debug=True, cfg_optimization=False)
+ti.init(debug=True, cfg_optimization=False, print_ir=True)
 
 ci1 = ti.type_factory_.get_custom_int_type(1, False)
 
@@ -14,24 +14,25 @@ ti.root.dense(ti.ij,  (N, N // bits))._bit_array(ti.j, bits, num_bits=bits).plac
 ti.root.dense(ti.ij,  (N, N // bits))._bit_array(ti.j, bits, num_bits=bits).place(y)
 
 
-@ti.kernel
-def init():
-    for i, j in ti.ndrange(N, N):
-        x[i, j] = (N * i + j) % 2
+# @ti.kernel
+# def init():
+#     for i, j in ti.ndrange(N, N):
+#         x[i, j] = (N * i + j) % 2
 
 
 @ti.kernel
 def assign():
+    ti.bit_vectorize(32)
     for i in ti.grouped(x):
         y[i] = x[i]
 
 
-@ti.kernel
-def verify():
-    for i, j in ti.ndrange(N, N):
-        assert y[i, j] == (N * i + j) % 2
+# @ti.kernel
+# def verify():
+#     for i, j in ti.ndrange(N, N):
+#         assert y[i, j] == (N * i + j) % 2
 
 
-init()
+# init()
 assign()
-verify()
+# verify()

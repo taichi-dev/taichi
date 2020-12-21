@@ -552,7 +552,7 @@ void Program::visualize_layout(const std::string &fn) {
       if (!indices.empty())
         emit("\\\\" + indices);
       if (snode->type == SNodeType::place) {
-        emit("\\\\" + data_type_short_name(snode->dt));
+        emit("\\\\" + data_type_name(snode->dt));
       }
       emit("} ");
 

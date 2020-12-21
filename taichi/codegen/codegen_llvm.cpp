@@ -140,7 +140,7 @@ void CodeGenLLVM::visit(AllocaStmt *stmt) {
 
 void CodeGenLLVM::visit(RandStmt *stmt) {
   llvm_val[stmt] =
-      create_call(fmt::format("rand_{}", data_type_short_name(stmt->ret_type)));
+      create_call(fmt::format("rand_{}", data_type_name(stmt->ret_type)));
 }
 
 void CodeGenLLVM::emit_extra_unary(UnaryOpStmt *stmt) {
@@ -405,9 +405,9 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
     }
   } else if (op == BinaryOpType::floordiv) {
     if (is_integral(ret_type))
-      llvm_val[stmt] = create_call(
-          fmt::format("floordiv_{}", data_type_short_name(ret_type)),
-          {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
+      llvm_val[stmt] =
+          create_call(fmt::format("floordiv_{}", data_type_name(ret_type)),
+                      {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
     else {
       auto div = builder->CreateFDiv(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
       llvm_val[stmt] = builder->CreateIntrinsic(

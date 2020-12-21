@@ -43,6 +43,24 @@ TLANG_NAMESPACE_BEGIN
 using namespace llvm;
 using namespace llvm::orc;
 
+std::pair<JITTargetMachineBuilder, llvm::DataLayout> get_host_target_info() {
+#if defined(TI_PLATFORM_OSX) and defined(TI_ARCH_ARM)
+  auto jtmb = JITTargetMachineBuilder(llvm::Triple("aarch64-apple-macosx11.0.0"));
+  llvm::DataLayout data_layout("e-m:o-i64:64-i128:128-n32:64-S128");
+#else
+  auto expected_jtmb = JITTargetMachineBuilder::detectHost();
+  if (!expected_jtmb)
+    TI_ERROR("LLVM TargetMachineBuilder has failed.");
+  auto jtmb = *expected_jtmb;
+  auto expected_data_layout = jtmb.getDefaultDataLayoutForTarget();
+  if (!expected_data_layout) {
+    TI_ERROR("LLVM TargetMachineBuilder has failed when getting data layout.");
+  }
+  auto data_layout = *expected_data_layout;
+#endif
+  return std::make_pair(jtmb, data_layout);
+}
+
 class JITSessionCPU;
 
 class JITModuleCPU : public JITModule {
@@ -84,7 +102,7 @@ class JITSessionCPU : public JITSession {
                      }),
         compile_layer(ES,
                       object_layer,
-                      std::make_unique<ConcurrentIRCompiler>(std::move(JTMB))),
+                      std::make_unique<ConcurrentIRCompiler>(JTMB)),
         DL(DL),
         Mangle(ES, this->DL),
         module_counter(0),
@@ -166,17 +184,7 @@ void JITSessionCPU::global_optimize_module_cpu(
     TI_ERROR("Module broken");
   }
 
-#if defined(TI_PLATFORM_OSX) and defined(TI_ARCH_ARM)
-  llvm::Triple triple("aarch64-apple-macosx11.0.0");
-  module->setTargetTriple(triple.str());
-#else
-  auto JTMB = JITTargetMachineBuilder::detectHost();
-  if (!JTMB) {
-    TI_ERROR("Target machine creation failed.");
-  }
-  module->setTargetTriple(JTMB->getTargetTriple().str());
-#endif
-
+  auto triple = get_host_target_info().first.getTargetTriple();
 
   std::string err_str;
   const llvm::Target *target =
@@ -256,28 +264,12 @@ void JITSessionCPU::global_optimize_module_cpu(
   }
 }
 
+
 std::unique_ptr<JITSession> create_llvm_jit_session_cpu(Arch arch) {
   // std::unique_ptr<JITTargetMachineBuilder> jtmb;
   TI_ASSERT(arch_is_cpu(arch));
-#if defined(TI_PLATFORM_OSX) and defined(TI_ARCH_ARM)
-  auto jtmb = JITTargetMachineBuilder(llvm::Triple("aarch64-apple-macosx11.0.0"));
-  llvm::DataLayout data_layout("e-m:o-i64:64-i128:128-n32:64-S128");
-
-  return std::make_unique<JITSessionCPU>(std::move(jtmb),
-                                         std::move(data_layout));
-#else
-  auto JTMB = JITTargetMachineBuilder::detectHost();
-  if (!JTMB)
-    TI_ERROR("LLVM TargetMachineBuilder has failed.");
-  jtmb = std::make_unique<JITTargetMachineBuilder>(std::move(*JTMB));
-
-  auto data_layout = jtmb->getDefaultDataLayoutForTarget();
-  if (!data_layout) {
-    TI_ERROR("LLVM TargetMachineBuilder has failed when getting data layout.");
-  }
-  return std::make_unique<JITSessionCPU>(std::move(jtmb),
-                                         std::move(data_layout));
-#endif
+  auto target_info = get_host_target_info();
+  return std::make_unique<JITSessionCPU>(target_info.first, target_info.second);
 }
 
 TLANG_NAMESPACE_END

@@ -3,7 +3,7 @@ import math
 from pytest import approx
 
 
-@ti.test(require=ti.extension.quant, cfg_optimization=False)
+@ti.test(require=ti.extension.quant)
 def test_custom_float():
     ci13 = ti.type_factory_.get_custom_int_type(13, True)
     cft = ti.type_factory_.get_custom_float_type(ci13, ti.f32.get_ptr(), 0.1)
@@ -25,7 +25,7 @@ def test_custom_float():
     assert x[None] == approx(0.7)
 
 
-@ti.test(require=ti.extension.quant, cfg_optimization=False)
+@ti.test(require=ti.extension.quant)
 def test_custom_matrix_rotation():
     ci16 = ti.type_factory_.get_custom_int_type(16, True)
     cft = ti.type_factory_.get_custom_float_type(ci16, ti.f32.get_ptr(),

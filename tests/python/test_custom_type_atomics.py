@@ -2,7 +2,7 @@ import taichi as ti
 from pytest import approx
 
 
-@ti.test(require=ti.extension.quant, debug=True, cfg_optimization=False)
+@ti.test(require=ti.extension.quant, debug=True)
 def test_custom_int_atomics():
     ci13 = ti.type_factory_.get_custom_int_type(13, True)
     ci5 = ti.type_factory_.get_custom_int_type(5, True)
@@ -36,7 +36,7 @@ def test_custom_int_atomics():
     assert z[None] == 3
 
 
-@ti.test(require=ti.extension.quant, debug=True, cfg_optimization=False)
+@ti.test(require=ti.extension.quant, debug=True)
 def test_custom_int_atomics_b64():
     ci13 = ti.type_factory_.get_custom_int_type(13, True)
 
@@ -60,7 +60,7 @@ def test_custom_int_atomics_b64():
     assert x[2] == 315
 
 
-@ti.test(require=ti.extension.quant, debug=True, cfg_optimization=False)
+@ti.test(require=ti.extension.quant, debug=True)
 def test_custom_float_atomics():
     ci13 = ti.type_factory_.get_custom_int_type(13, True)
     ci19 = ti.type_factory_.get_custom_int_type(19, False)

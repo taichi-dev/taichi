@@ -102,6 +102,8 @@ void compile_to_offloads(IRNode *ir,
   print("Offloaded");
   irpass::analysis::verify(ir);
 
+  // TODO: This pass may be redundant as cfg_optimization() is already called
+  //  in full_simplify().
   if (config.cfg_optimization) {
     irpass::cfg_optimization(ir, false);
     print("Optimized by CFG");

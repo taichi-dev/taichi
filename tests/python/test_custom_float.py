@@ -55,9 +55,6 @@ def test_custom_matrix_rotation():
 
 @ti.test(require=ti.extension.quant)
 def test_custom_float_implicit_cast():
-    pass
-    
-def main():
     ci13 = ti.type_factory_.get_custom_int_type(13, True)
     cft = ti.type_factory_.get_custom_float_type(ci13, ti.f32.get_ptr(), 0.1)
     x = ti.field(dtype=cft)
@@ -70,6 +67,3 @@ def main():
 
     foo()
     assert x[None] == approx(10.0)
-
-ti.init()
-main()

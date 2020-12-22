@@ -152,12 +152,12 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(GlobalStoreStmt *stmt) {
-    const auto dst_value_type = stmt->ptr->ret_type.ptr_removed();
+    auto dst_value_type = stmt->ptr->ret_type.ptr_removed();
     if (dst_value_type->is<CustomIntType>() ||
         dst_value_type->is<CustomFloatType>()) {
-      // TODO(type): maybe we still need some kind of check here. E.g., we
-      // should warn user when he stores int to CustomFloat.
-      return;
+      // We force the value type to be the compute_type of the bit pointer.
+      // Casting from compute_type to physical_type is handled in codegen.
+      dst_value_type = dst_value_type->get_compute_type();
     }
     auto promoted = promoted_type(dst_value_type, stmt->data->ret_type);
     auto input_type = stmt->data->ret_data_type_name();

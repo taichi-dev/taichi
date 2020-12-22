@@ -51,3 +51,25 @@ def test_custom_matrix_rotation():
     assert x[None][0, 1] == approx(1, abs=1e-4)
     assert x[None][1, 0] == approx(-1, abs=1e-4)
     assert x[None][1, 1] == approx(0, abs=1e-4)
+
+
+@ti.test(require=ti.extension.quant)
+def test_custom_float_implicit_cast():
+    pass
+    
+def main():
+    ci13 = ti.type_factory_.get_custom_int_type(13, True)
+    cft = ti.type_factory_.get_custom_float_type(ci13, ti.f32.get_ptr(), 0.1)
+    x = ti.field(dtype=cft)
+
+    ti.root._bit_struct(num_bits=32).place(x)
+
+    @ti.kernel
+    def foo():
+        x[None] = 10
+
+    foo()
+    assert x[None] == approx(10.0)
+
+ti.init()
+main()

@@ -123,7 +123,7 @@ class FrontendForStmt : public Stmt {
   int vectorize;
   int parallelize;
   bool strictly_serialized;
-  ScratchPadOptions scratch_opt;
+  MemoryAccessOptions mem_access_opt;
   int block_dim;
 
   bool is_ranged() const {
@@ -202,8 +202,7 @@ class FrontendKernelReturnStmt : public Stmt {
  public:
   Expr value;
 
-  FrontendKernelReturnStmt(const Expr &value, DataType dt) : value(value) {
-    ret_type = TypeFactory::create_vector_or_scalar_type(1, dt);
+  FrontendKernelReturnStmt(const Expr &value) : value(value) {
   }
 
   bool is_container_statement() const override {

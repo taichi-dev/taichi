@@ -7,6 +7,8 @@
 
 TLANG_NAMESPACE_BEGIN
 
+// TODO: also check RangeAssumptionStmt
+
 class CheckOutOfBound : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
@@ -53,14 +55,15 @@ class CheckOutOfBound : public BasicStmtVisitor {
     std::vector<Stmt *> args;
     for (int i = 0; i < stmt->indices.size(); i++) {
       int offset_i = has_offset ? snode->index_offsets[i] : 0;
-      auto lower_bound = offset_i != 0
-                             ? new_stmts.push_back<ConstStmt>(
-                                   LaneAttribute<TypedConstant>(offset_i))
-                             : zero;
+
+      // Note that during lower_ast, index arguments to GlobalPtrStmt are
+      // already converted to [0, +inf) range.
+
+      auto lower_bound = zero;
       auto check_lower_bound = new_stmts.push_back<BinaryOpStmt>(
           BinaryOpType::cmp_ge, stmt->indices[i], lower_bound);
       int size_i = snode->shape_along_axis(i);
-      int upper_bound_i = offset_i + size_i;
+      int upper_bound_i = size_i;
       auto upper_bound = new_stmts.push_back<ConstStmt>(
           LaneAttribute<TypedConstant>(upper_bound_i));
       auto check_upper_bound = new_stmts.push_back<BinaryOpStmt>(
@@ -75,7 +78,15 @@ class CheckOutOfBound : public BasicStmtVisitor {
       }
       msg += std::to_string(size_i);
       offset_msg += std::to_string(offset_i);
-      args.emplace_back(stmt->indices[i]);
+
+      auto input_index = stmt->indices[i];
+      if (offset_i != 0) {
+        auto offset = new_stmts.push_back<ConstStmt>(
+            LaneAttribute<TypedConstant>(offset_i));
+        input_index = new_stmts.push_back<BinaryOpStmt>(BinaryOpType::add,
+                                                        input_index, offset);
+      }
+      args.emplace_back(input_index);
     }
     offset_msg += ") ";
     msg += ") " + (has_offset ? offset_msg : "") + "with indices (";

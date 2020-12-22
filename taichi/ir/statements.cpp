@@ -94,19 +94,6 @@ SNodeOpStmt::SNodeOpStmt(SNodeOpType op_type,
   TI_STMT_REG_FIELDS;
 }
 
-SNodeOpStmt::SNodeOpStmt(SNodeOpType op_type,
-                         SNode *snode,
-                         const std::vector<Stmt *> &indices)
-    : op_type(op_type), snode(snode), indices(indices) {
-  ptr = nullptr;
-  val = nullptr;
-  TI_ASSERT(op_type == SNodeOpType::is_active ||
-            op_type == SNodeOpType::deactivate ||
-            op_type == SNodeOpType::activate);
-  element_type() = PrimitiveType::i32;
-  TI_STMT_REG_FIELDS;
-}
-
 bool SNodeOpStmt::activation_related(SNodeOpType op) {
   return op == SNodeOpType::activate || op == SNodeOpType::deactivate ||
          op == SNodeOpType::is_active;
@@ -238,7 +225,7 @@ StructForStmt::StructForStmt(SNode *snode,
 std::unique_ptr<Stmt> StructForStmt::clone() const {
   auto new_stmt = std::make_unique<StructForStmt>(
       snode, body->clone(), vectorize, parallelize, block_dim);
-  new_stmt->scratch_opt = scratch_opt;
+  new_stmt->mem_access_opt = mem_access_opt;
   return new_stmt;
 }
 

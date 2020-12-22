@@ -12,7 +12,6 @@
 TLANG_NAMESPACE_BEGIN
 
 // Lower GlobalPtrStmt into smaller pieces for access optimization
-// Note that this pass also applies index offsets to the global pointers
 
 class LowerAccess : public IRVisitor {
  public:
@@ -82,17 +81,6 @@ class LowerAccess : public IRVisitor {
       snodes.push_front(s);
 
     Stmt *last = lowered.push_back<GetRootStmt>();
-
-    const auto &offsets = snodes.back()->index_offsets;
-    if (!offsets.empty()) {
-      for (int i = 0; i < (int)indices.size(); i++) {
-        // Subtract offsets from indices so that new indices are
-        // within [0, +inf)
-        auto offset = lowered.push_back<ConstStmt>(TypedConstant(offsets[i]));
-        indices[i] = lowered.push_back<BinaryOpStmt>(BinaryOpType::sub,
-                                                     indices[i], offset);
-      }
-    }
 
     int path_inc = int(snode_op != SNodeOpType::undefined);
     for (int i = 0; i < (int)snodes.size() - 1 + path_inc; i++) {
@@ -209,21 +197,13 @@ class LowerAccess : public IRVisitor {
   }
 
   void visit(SNodeOpStmt *stmt) override {
-    if (SNodeOpStmt::activation_related(stmt->op_type) &&
-        stmt->snode->type != SNodeType::dynamic) {
-      if (stmt->val == nullptr) {
-        std::vector<SNode *> snodes(stmt->width(), stmt->snode);
-        auto proxy_ptr = Stmt::make_typed<GlobalPtrStmt>(snodes, stmt->indices);
-        // Pretend to be in the IR hierarchy so that we can safely query
-        // stmt->get_kernel() later.
-        proxy_ptr->parent = stmt->parent;
-        auto lowered = lower_vector_ptr(proxy_ptr.get(), false, stmt->op_type);
+    if (stmt->ptr->is<GlobalPtrStmt>()) {
+      if (SNodeOpStmt::activation_related(stmt->op_type) &&
+          stmt->snode->type != SNodeType::dynamic) {
+        auto lowered = lower_vector_ptr(stmt->ptr->as<GlobalPtrStmt>(), false,
+                                        stmt->op_type);
         modifier.replace_with(stmt, std::move(lowered), true);
       } else {
-        // already lowered, do nothing
-      }
-    } else {
-      if (stmt->ptr->is<GlobalPtrStmt>()) {
         auto lowered =
             lower_vector_ptr(stmt->ptr->as<GlobalPtrStmt>(),
                              SNodeOpStmt::need_activation(stmt->op_type));

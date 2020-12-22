@@ -83,8 +83,6 @@ std::string data_type_name(DataType t);
 
 std::string data_type_format(DataType dt);
 
-std::string data_type_short_name(DataType t);
-
 enum class SNodeType {
 #define PER_SNODE(x) x,
 #include "taichi/inc/snodes.inc.h"
@@ -116,7 +114,7 @@ inline bool constexpr is_trigonometric(UnaryOpType op) {
 inline bool is_real(DataType dt) {
   return dt->is_primitive(PrimitiveTypeID::f16) ||
          dt->is_primitive(PrimitiveTypeID::f32) ||
-         dt->is_primitive(PrimitiveTypeID::f64);
+         dt->is_primitive(PrimitiveTypeID::f64) || dt->is<CustomFloatType>();
 }
 
 inline bool is_integral(DataType dt) {
@@ -345,6 +343,7 @@ std::string make_list(const std::vector<T> &data,
 }
 
 int data_type_size(DataType t);
+int data_type_bits(DataType t);
 DataType promoted_type(DataType a, DataType b);
 
 extern std::string compiled_lib_dir;

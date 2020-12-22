@@ -140,7 +140,7 @@ void CodeGenLLVM::visit(AllocaStmt *stmt) {
 
 void CodeGenLLVM::visit(RandStmt *stmt) {
   llvm_val[stmt] =
-      create_call(fmt::format("rand_{}", data_type_short_name(stmt->ret_type)));
+      create_call(fmt::format("rand_{}", data_type_name(stmt->ret_type)));
 }
 
 void CodeGenLLVM::emit_extra_unary(UnaryOpStmt *stmt) {
@@ -286,6 +286,28 @@ CodeGenLLVM::CodeGenLLVM(Kernel *kernel, IRNode *ir)
   kernel_name = kernel->name + "_kernel";
 }
 
+llvm::Value *CodeGenLLVM::cast_int(llvm::Value *input_val,
+                                   Type *from,
+                                   Type *to) {
+  if (from == to)
+    return input_val;
+  auto from_size = 0;
+  if (from->is<CustomIntType>()) {
+    from_size = data_type_size(from->cast<CustomIntType>()->get_compute_type());
+  } else {
+    from_size = data_type_size(from);
+  }
+  if (from_size < data_type_size(to)) {
+    if (is_signed(from)) {
+      return builder->CreateSExt(input_val, tlctx->get_data_type(to));
+    } else {
+      return builder->CreateZExt(input_val, tlctx->get_data_type(to));
+    }
+  } else {
+    return builder->CreateTrunc(input_val, tlctx->get_data_type(to));
+  }
+}
+
 void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
   auto input = llvm_val[stmt->operand];
   auto input_type = input->getType();
@@ -325,20 +347,8 @@ void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
     } else if (!is_real(from) && !is_real(to)) {
       // TODO: implement casting into custom integer type
       TI_ASSERT(!to->is<CustomIntType>());
-      auto from_size = 0;
-      if (from->is<CustomIntType>()) {
-        // TODO: replace 32 with a customizable type
-        from_size = 32;
-      } else {
-        from_size = data_type_size(from);
-      }
-      if (from_size < data_type_size(to)) {
-        llvm_val[stmt] = builder->CreateSExt(
-            llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
-      } else {
-        llvm_val[stmt] = builder->CreateTrunc(
-            llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
-      }
+      llvm_val[stmt] =
+          cast_int(llvm_val[stmt->operand], from.get_ptr(), to.get_ptr());
     }
   } else if (stmt->op_type == UnaryOpType::cast_bits) {
     TI_ASSERT(data_type_size(stmt->ret_type) ==
@@ -395,9 +405,9 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
     }
   } else if (op == BinaryOpType::floordiv) {
     if (is_integral(ret_type))
-      llvm_val[stmt] = create_call(
-          fmt::format("floordiv_{}", data_type_short_name(ret_type)),
-          {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
+      llvm_val[stmt] =
+          create_call(fmt::format("floordiv_{}", data_type_name(ret_type)),
+                      {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
     else {
       auto div = builder->CreateFDiv(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
       llvm_val[stmt] = builder->CreateIntrinsic(
@@ -616,6 +626,10 @@ llvm::Type *CodeGenLLVM::llvm_type(DataType dt) {
     TI_NOT_IMPLEMENTED;
   }
   return nullptr;
+}
+
+llvm::Type *CodeGenLLVM::llvm_ptr_type(DataType dt) {
+  return llvm::PointerType::get(llvm_type(dt), 0);
 }
 
 void CodeGenLLVM::visit(TernaryOpStmt *stmt) {
@@ -907,8 +921,8 @@ void CodeGenLLVM::visit(KernelReturnStmt *stmt) {
     TI_NOT_IMPLEMENTED
   } else {
     auto intermediate_bits = 0;
-    if (stmt->value->ret_type->is<CustomIntType>()) {
-      intermediate_bits = 32;
+    if (auto cit = stmt->value->ret_type->cast<CustomIntType>()) {
+      intermediate_bits = data_type_bits(cit->get_compute_type());
     } else {
       intermediate_bits =
           tlctx->get_data_type(stmt->value->ret_type)->getPrimitiveSizeInBits();
@@ -1007,25 +1021,87 @@ void CodeGenLLVM::visit(SNodeOpStmt *stmt) {
   }
 }
 
+llvm::Value *CodeGenLLVM::atomic_add_custom_int(AtomicOpStmt *stmt,
+                                                CustomIntType *cit) {
+  llvm::Value *byte_ptr, *bit_offset;
+  read_bit_pointer(llvm_val[stmt->dest], byte_ptr, bit_offset);
+  auto physical_type = cit->get_physical_type();
+  return create_call(
+      fmt::format("atomic_add_partial_bits_b{}", data_type_bits(physical_type)),
+      {builder->CreateBitCast(byte_ptr, llvm_ptr_type(physical_type)),
+       bit_offset, tlctx->get_constant(cit->get_num_bits()),
+       cast_int(llvm_val[stmt->val], stmt->val->ret_type.get_ptr(),
+                physical_type)});
+}
+
+llvm::Value *CodeGenLLVM::atomic_add_custom_float(AtomicOpStmt *stmt,
+                                                  CustomFloatType *cft) {
+  llvm::Value *byte_ptr, *bit_offset;
+  read_bit_pointer(llvm_val[stmt->dest], byte_ptr, bit_offset);
+  auto cit = cft->get_digits_type()->as<CustomIntType>();
+  auto val_store = float_to_custom_int(cft, cit, llvm_val[stmt->val]);
+  auto physical_type = cit->get_physical_type();
+
+  return create_call(
+      fmt::format("atomic_add_partial_bits_b{}", data_type_bits(physical_type)),
+      {builder->CreateBitCast(byte_ptr, llvm_ptr_type(physical_type)),
+       bit_offset, tlctx->get_constant(cit->get_num_bits()), val_store});
+}
+
+llvm::Value *CodeGenLLVM::float_to_custom_int(CustomFloatType *cft,
+                                              CustomIntType *cit,
+                                              llvm::Value *real) {
+  llvm::Value *s = nullptr;
+
+  // Compute int(input * (1.0 / scale) + 0.5)
+  auto s_numeric = 1.0 / cft->get_scale();
+  auto compute_type = cft->get_compute_type();
+  s = builder->CreateFPCast(
+      llvm::ConstantFP::get(*llvm_context, llvm::APFloat(s_numeric)),
+      llvm_type(compute_type));
+  auto input_real = builder->CreateFPCast(real, llvm_type(compute_type));
+  auto scaled = builder->CreateFMul(input_real, s);
+
+  // Add/minus the 0.5 offset for rounding
+  scaled = create_call(
+      fmt::format("rounding_prepare_f{}", data_type_bits(compute_type)),
+      {scaled});
+
+  if (cit->get_is_signed()) {
+    return builder->CreateFPToSI(scaled, llvm_type(cit->get_compute_type()));
+  } else {
+    return builder->CreateFPToUI(scaled, llvm_type(cit->get_compute_type()));
+  }
+}
+
 void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
   // auto mask = stmt->parent->mask();
   // TODO: deal with mask when vectorized
+  // TODO(type): support all AtomicOpTypes on custom types
   TI_ASSERT(stmt->width() == 1);
   for (int l = 0; l < stmt->width(); l++) {
     llvm::Value *old_value;
     if (stmt->op_type == AtomicOpType::add) {
-      if (is_integral(stmt->val->ret_type)) {
+      auto dst_type =
+          stmt->dest->ret_type->as<PointerType>()->get_pointee_type();
+      if (dst_type->is<PrimitiveType>() && is_integral(stmt->val->ret_type)) {
         old_value = builder->CreateAtomicRMW(
             llvm::AtomicRMWInst::BinOp::Add, llvm_val[stmt->dest],
             llvm_val[stmt->val], llvm::AtomicOrdering::SequentiallyConsistent);
-      } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f32)) {
+      } else if (!dst_type->is<CustomFloatType>() &&
+                 stmt->val->ret_type->is_primitive(PrimitiveTypeID::f32)) {
         old_value =
             builder->CreateCall(get_runtime_function("atomic_add_f32"),
                                 {llvm_val[stmt->dest], llvm_val[stmt->val]});
-      } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f64)) {
+      } else if (!dst_type->is<CustomFloatType>() &&
+                 stmt->val->ret_type->is_primitive(PrimitiveTypeID::f64)) {
         old_value =
             builder->CreateCall(get_runtime_function("atomic_add_f64"),
                                 {llvm_val[stmt->dest], llvm_val[stmt->val]});
+      } else if (auto cit = dst_type->cast<CustomIntType>()) {
+        old_value = atomic_add_custom_int(stmt, cit);
+      } else if (auto cft = dst_type->cast<CustomFloatType>()) {
+        old_value = atomic_add_custom_float(stmt, cft);
       } else {
         TI_NOT_IMPLEMENTED
       }
@@ -1102,45 +1178,106 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
   TI_ASSERT(llvm_val[stmt->ptr]);
   auto ptr_type = stmt->ptr->ret_type->as<PointerType>();
   if (ptr_type->is_bit_pointer()) {
-    auto cit = ptr_type->get_pointee_type()->as<CustomIntType>();
+    auto pointee_type = ptr_type->get_pointee_type();
+    llvm::Value *store_value = nullptr;
+    CustomIntType *cit = nullptr;
+    if (auto cit_ = pointee_type->cast<CustomIntType>()) {
+      cit = cit_;
+      store_value = llvm_val[stmt->data];
+    } else if (auto cft = pointee_type->cast<CustomFloatType>()) {
+      cit = cft->get_digits_type()->as<CustomIntType>();
+      store_value = float_to_custom_int(cft, cit, llvm_val[stmt->data]);
+    } else {
+      TI_NOT_IMPLEMENTED
+    }
     llvm::Value *byte_ptr = nullptr, *bit_offset = nullptr;
     read_bit_pointer(llvm_val[stmt->ptr], byte_ptr, bit_offset);
-    builder->CreateCall(
-        get_runtime_function("set_partial_bits_b32"),
-        {builder->CreateBitCast(byte_ptr,
-                                llvm::Type::getInt32PtrTy(*llvm_context)),
-         bit_offset, tlctx->get_constant(cit->get_num_bits()),
-         llvm_val[stmt->data]});
+    // TODO(type): CUDA only supports atomicCAS on 32- and 64-bit integers.
+    // Try to support CustomInt/FloatType with 8/16-bit physical
+    // types.
+    create_call(fmt::format("set_partial_bits_b{}",
+                            data_type_bits(cit->get_physical_type())),
+                {builder->CreateBitCast(
+                     byte_ptr, llvm_ptr_type(cit->get_physical_type())),
+                 bit_offset, tlctx->get_constant(cit->get_num_bits()),
+                 builder->CreateIntCast(
+                     store_value, llvm_type(cit->get_physical_type()), false)});
   } else {
     builder->CreateStore(llvm_val[stmt->data], llvm_val[stmt->ptr]);
   }
 }
 
+llvm::Value *CodeGenLLVM::load_as_custom_int(Stmt *ptr, Type *load_type) {
+  auto *cit = load_type->as<CustomIntType>();
+  // load bit pointer
+  llvm::Value *byte_ptr, *bit_offset;
+  read_bit_pointer(llvm_val[ptr], byte_ptr, bit_offset);
+
+  auto bit_level_container = builder->CreateLoad(builder->CreateBitCast(
+      byte_ptr, llvm_ptr_type(cit->get_physical_type())));
+
+  return extract_custom_int(bit_level_container, bit_offset, load_type);
+}
+
+llvm::Value *CodeGenLLVM::extract_custom_int(llvm::Value *physical_value,
+                                             llvm::Value *bit_offset,
+                                             Type *load_type) {
+  //  bit shifting
+  //    first left shift `physical_type - (offset + num_bits)`
+  //    then right shift `physical_type - num_bits`
+  auto cit = load_type->as<CustomIntType>();
+  auto bit_end =
+      builder->CreateAdd(bit_offset, tlctx->get_constant(cit->get_num_bits()));
+  auto left = builder->CreateSub(
+      tlctx->get_constant(data_type_bits(cit->get_physical_type())), bit_end);
+  auto right = builder->CreateSub(
+      tlctx->get_constant(data_type_bits(cit->get_physical_type())),
+      tlctx->get_constant(cit->get_num_bits()));
+  left = builder->CreateIntCast(left, physical_value->getType(), false);
+  right = builder->CreateIntCast(right, physical_value->getType(), false);
+  auto step1 = builder->CreateShl(physical_value, left);
+  llvm::Value *step2 = nullptr;
+
+  if (cit->get_is_signed())
+    step2 = builder->CreateAShr(step1, right);
+  else
+    step2 = builder->CreateLShr(step1, right);
+
+  return builder->CreateIntCast(step2, llvm_type(cit->get_compute_type()),
+                                cit->get_is_signed());
+}
+
+llvm::Value *CodeGenLLVM::reconstruct_custom_float(llvm::Value *digits,
+                                                   Type *load_type) {
+  // Compute float(digits) * scale
+  auto cft = load_type->as<CustomFloatType>();
+  llvm::Value *cast = nullptr;
+  auto compute_type = cft->get_compute_type()->as<PrimitiveType>();
+  if (cft->get_digits_type()->cast<CustomIntType>()->get_is_signed()) {
+    cast = builder->CreateSIToFP(digits, llvm_type(compute_type));
+  } else {
+    cast = builder->CreateUIToFP(digits, llvm_type(compute_type));
+  }
+  llvm::Value *s =
+      llvm::ConstantFP::get(*llvm_context, llvm::APFloat(cft->get_scale()));
+  s = builder->CreateFPCast(s, llvm_type(compute_type));
+  return builder->CreateFMul(cast, s);
+}
+
 void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
   int width = stmt->width();
   TI_ASSERT(width == 1);
-  if (stmt->ptr->ret_type->as<PointerType>()->is_bit_pointer()) {
-    auto cit = stmt->ret_type->as<CustomIntType>();
-    // 1. load bit pointer
-    llvm::Value *byte_ptr, *bit_offset;
-    read_bit_pointer(llvm_val[stmt->ptr], byte_ptr, bit_offset);
-    auto bit_level_container = builder->CreateLoad(builder->CreateBitCast(
-        byte_ptr, llvm::Type::getInt32PtrTy(*llvm_context)));
-    // 2. bit shifting
-    //    first left shift `32 - (offset + num_bits)`
-    //    then right shift `32 - num_bits`
-    auto bit_end = builder->CreateAdd(bit_offset,
-                                      tlctx->get_constant(cit->get_num_bits()));
-    auto left = builder->CreateSub(tlctx->get_constant(32), bit_end);
-    auto right = builder->CreateAdd(tlctx->get_constant(32),
-                                    tlctx->get_constant(-cit->get_num_bits()));
-    auto step1 = builder->CreateShl(bit_level_container, left);
-    llvm::Value *step2 = nullptr;
-    if (cit->get_is_signed())
-      step2 = builder->CreateAShr(step1, right);
-    else
-      step2 = builder->CreateLShr(step1, right);
-    llvm_val[stmt] = step2;
+  auto ptr_type = stmt->ptr->ret_type->as<PointerType>();
+  if (ptr_type->is_bit_pointer()) {
+    auto val_type = ptr_type->get_pointee_type();
+    if (val_type->is<CustomIntType>()) {
+      llvm_val[stmt] = load_as_custom_int(stmt->ptr, val_type);
+    } else if (auto cft = val_type->cast<CustomFloatType>()) {
+      auto digits = load_as_custom_int(stmt->ptr, cft->get_digits_type());
+      llvm_val[stmt] = reconstruct_custom_float(digits, val_type);
+    } else {
+      TI_NOT_IMPLEMENTED
+    }
   } else {
     llvm_val[stmt] = builder->CreateLoad(tlctx->get_data_type(stmt->ret_type),
                                          llvm_val[stmt->ptr]);
@@ -1244,6 +1381,7 @@ llvm::Value *CodeGenLLVM::create_bit_ptr_struct(llvm::Value *byte_ptr_base,
   // };
   auto struct_type = llvm::StructType::get(
       *llvm_context, {llvm::Type::getInt8PtrTy(*llvm_context),
+                      llvm::Type::getInt32Ty(*llvm_context),
                       llvm::Type::getInt32Ty(*llvm_context)});
   // 2. alloca the bit pointer struct
   auto bit_ptr_struct = create_entry_block_alloca(struct_type);
@@ -1710,8 +1848,8 @@ void CodeGenLLVM::visit(BlockCornerIndexStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(BlockDimStmt *stmt) {
-  TI_NOT_IMPLEMENTED  // No need for this statement for now. Untested so mark it
-                      // as a loud failure.
+  TI_NOT_IMPLEMENTED  // No need for this statement for now. Untested so mark
+                      // it as a loud failure.
       llvm_val[stmt] = create_call("block_dim", {});
 }
 

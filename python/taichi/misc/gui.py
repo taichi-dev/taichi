@@ -162,6 +162,8 @@ class GUI:
                     "Image resolution does not match GUI resolution"
             assert img.n in [3, 4] and img.m == 1, \
                     "Only RGB images are supported in GUI.set_image when fast_gui=True"
+            assert img.dtype in [ti.f32, ti.f64, ti.u8], \
+                    "Only f32, f64, u8 are supported in GUI.set_image when fast_gui=True"
 
             from taichi.lang.meta import vector_to_fast_image
             vector_to_fast_image(img, self.img)

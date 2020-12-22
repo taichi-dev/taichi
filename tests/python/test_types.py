@@ -132,3 +132,25 @@ def test_overflow(dt, n):
 @ti.archs_excluding(ti.opengl)
 def test_overflow64(dt, n):
     _test_overflow(dt, n)
+
+
+@pytest.mark.parametrize('dt,val', [
+    (ti.u32, 0xffffffff),
+    (ti.u64, 0xffffffffffffffff),
+])
+@ti.test(require=ti.extension.data64)
+def test_uint_max(dt, val):
+    # https://github.com/taichi-dev/taichi/issues/2060
+    ti.get_runtime().default_ip = dt
+    N = 16
+    f = ti.field(dt, shape=N)
+
+    @ti.kernel
+    def run():
+        for i in f:
+            f[i] = val
+
+    run()
+    fs = f.to_numpy()
+    for f in fs:
+        assert f == val

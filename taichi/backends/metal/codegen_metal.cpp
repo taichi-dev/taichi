@@ -604,7 +604,7 @@ class KernelCodegen : public IRVisitor {
 
   void visit(RandStmt *stmt) override {
     emit("const auto {} = metal_rand_{}({});", stmt->raw_name(),
-         data_type_short_name(stmt->ret_type), kRandStateVarName);
+         data_type_name(stmt->ret_type), kRandStateVarName);
   }
 
   void visit(PrintStmt *stmt) override {
@@ -629,8 +629,8 @@ class KernelCodegen : public IRVisitor {
           TI_ASSERT_INFO(dt->is_primitive(PrimitiveTypeID::i32) ||
                              dt->is_primitive(PrimitiveTypeID::f32),
                          "print() only supports i32 or f32 scalars for now.");
-          emit("{}.pm_set_{}({}, {});", msg_var_name, data_type_short_name(dt),
-               i, arg_stmt->raw_name());
+          emit("{}.pm_set_{}({}, {});", msg_var_name, data_type_name(dt), i,
+               arg_stmt->raw_name());
         } else {
           const int str_id = print_strtab_->put(std::get<std::string>(entry));
           emit("{}.pm_set_str({}, {});", msg_var_name, i, str_id);
@@ -666,8 +666,8 @@ class KernelCodegen : public IRVisitor {
           const auto ty = arg->element_type();
           if (ty->is_primitive(PrimitiveTypeID::i32) ||
               ty->is_primitive(PrimitiveTypeID::f32)) {
-            emit("{}.pm_set_{}({}, {});", asst_var_name,
-                 data_type_short_name(ty), i, arg->raw_name());
+            emit("{}.pm_set_{}({}, {});", asst_var_name, data_type_name(ty), i,
+                 arg->raw_name());
           } else {
             TI_ERROR(
                 "[Metal] assert() only supports i32 or f32 scalars for now.");

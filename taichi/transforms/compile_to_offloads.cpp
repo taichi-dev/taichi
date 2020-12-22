@@ -102,6 +102,8 @@ void compile_to_offloads(IRNode *ir,
   print("Offloaded");
   irpass::analysis::verify(ir);
 
+  // TODO: This pass may be redundant as cfg_optimization() is already called
+  //  in full_simplify().
   if (config.cfg_optimization) {
     irpass::cfg_optimization(ir, false);
     print("Optimized by CFG");
@@ -139,6 +141,10 @@ void offload_to_executable(IRNode *ir,
     print("Detect read-only accesses");
   }
 
+  irpass::demote_atomics(ir);
+  print("Atomics demoted I");
+  irpass::analysis::verify(ir);
+
   if (config.demote_dense_struct_fors) {
     irpass::demote_dense_struct_fors(ir);
     irpass::type_check(ir);
@@ -157,7 +163,7 @@ void offload_to_executable(IRNode *ir,
   }
 
   irpass::demote_atomics(ir);
-  print("Atomics demoted");
+  print("Atomics demoted II");
   irpass::analysis::verify(ir);
 
   irpass::remove_range_assumption(ir);

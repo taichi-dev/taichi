@@ -425,7 +425,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
           auto val_type = ptr_type->get_pointee_type();
           llvm::Value *data_ptr = nullptr;
           llvm::Value *bit_offset = nullptr;
-          Type* int_in_mem = nullptr;
+          Type *int_in_mem = nullptr;
           if (auto cit = val_type->cast<CustomIntType>()) {
             int_in_mem = val_type;
             dtype = cit->get_physical_type();

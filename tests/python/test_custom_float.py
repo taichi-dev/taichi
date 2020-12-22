@@ -83,6 +83,6 @@ def test_cache_read_only():
         assert x[None] == data
 
     x[None] = 0.7
-    test(0.7)    
+    test(0.7)
     x[None] = 1.2
     test(1.2)

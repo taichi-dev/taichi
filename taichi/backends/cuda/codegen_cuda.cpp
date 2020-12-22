@@ -425,19 +425,20 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
           auto val_type = ptr_type->get_pointee_type();
           llvm::Value *data_ptr = nullptr;
           llvm::Value *bit_offset = nullptr;
+          Type* int_in_mem = nullptr;
           if (auto cit = val_type->cast<CustomIntType>()) {
+            int_in_mem = val_type;
             dtype = cit->get_physical_type();
           } else if (auto cft = val_type->cast<CustomFloatType>()) {
-            dtype = cft->get_compute_type()
-                        ->as<CustomIntType>()
-                        ->get_physical_type();
+            int_in_mem = cft->get_digits_type();
+            dtype = int_in_mem->as<CustomIntType>()->get_physical_type();
           } else {
             TI_NOT_IMPLEMENTED;
           }
           read_bit_pointer(llvm_val[stmt->ptr], data_ptr, bit_offset);
           data_ptr = builder->CreateBitCast(data_ptr, llvm_ptr_type(dtype));
           auto data = create_intrinsic_load(dtype, data_ptr);
-          llvm_val[stmt] = extract_custom_int(data, bit_offset, val_type);
+          llvm_val[stmt] = extract_custom_int(data, bit_offset, int_in_mem);
           if (val_type->is<CustomFloatType>()) {
             llvm_val[stmt] = reconstruct_custom_float(llvm_val[stmt], val_type);
           }

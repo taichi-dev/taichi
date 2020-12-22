@@ -67,3 +67,22 @@ def test_custom_float_implicit_cast():
 
     foo()
     assert x[None] == approx(10.0)
+
+
+@ti.test(require=ti.extension.quant)
+def test_cache_read_only():
+    ci15 = ti.type_factory_.get_custom_int_type(15, True)
+    cft = ti.type_factory_.get_custom_float_type(ci15, ti.f32.get_ptr(), 0.1)
+    x = ti.field(dtype=cft)
+
+    ti.root._bit_struct(num_bits=32).place(x)
+
+    @ti.kernel
+    def test(data: ti.f32):
+        ti.cache_read_only(x)
+        assert x[None] == data
+
+    x[None] = 0.7
+    test(0.7)    
+    x[None] = 1.2
+    test(1.2)

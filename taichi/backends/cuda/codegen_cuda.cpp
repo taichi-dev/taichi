@@ -426,6 +426,8 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
           llvm::Value *data_ptr = nullptr;
           llvm::Value *bit_offset = nullptr;
           Type *int_in_mem = nullptr;
+          // For CustomIntType "int_in_mem" refers to the type itself;
+          // for CustomFloatType "int_in_mem" refers to the CustomIntType of the digits. 
           if (auto cit = val_type->cast<CustomIntType>()) {
             int_in_mem = val_type;
             dtype = cit->get_physical_type();

@@ -14,7 +14,7 @@
 
 TI_NAMESPACE_BEGIN
 
-using RangeForTaskFunc = void(void *, int i);
+using RangeForTaskFunc = void(void *, int thread_id, int i);
 using ParallelFor = void(int n, int num_threads, void *, RangeForTaskFunc func);
 
 class PID {
@@ -39,22 +39,25 @@ class ThreadPool {
   bool started;
   bool exiting;
   RangeForTaskFunc *func;
-  void *context;
+  void *range_for_task_context;  // Note: this is a pointer to a
+                                 // range_task_helper_context defined in the
+                                 // LLVM runtime, which is different from
+                                 // taichi::lang::Context.
   int thread_counter;
 
   ThreadPool(int max_num_threads);
 
   void run(int splits,
            int desired_num_threads,
-           void *context,
+           void *range_for_task_context,
            RangeForTaskFunc *func);
 
   static void static_run(ThreadPool *pool,
                          int splits,
                          int desired_num_threads,
-                         void *context,
+                         void *range_for_task_context,
                          RangeForTaskFunc *func) {
-    return pool->run(splits, desired_num_threads, context, func);
+    return pool->run(splits, desired_num_threads, range_for_task_context, func);
   }
 
   void target();

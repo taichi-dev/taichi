@@ -26,7 +26,7 @@ TI_NAMESPACE_BEGIN
 bool test_threading() {
   auto tp = ThreadPool(20);
   for (int j = 0; j < 100; j++) {
-    tp.run(10, j + 1, &j, [](void *j, int i) {
+    tp.run(10, j + 1, &j, [](void *j, int _thread_id, int i) {
       double ret = 0.0;
       for (int t = 0; t < 10000000; t++) {
         ret += t * 1e-20;
@@ -71,11 +71,11 @@ ThreadPool::ThreadPool(int max_num_threads) : max_num_threads(max_num_threads) {
 
 void ThreadPool::run(int splits,
                      int desired_num_threads,
-                     void *context,
+                     void *range_for_task_context,
                      RangeForTaskFunc *func) {
   {
     std::lock_guard _(mutex);
-    this->context = context;
+    this->range_for_task_context = range_for_task_context;
     this->func = func;
     this->desired_num_threads = std::min(desired_num_threads, max_num_threads);
     TI_ASSERT(this->desired_num_threads > 0);
@@ -137,11 +137,7 @@ void ThreadPool::target() {
           break;
       }
 
-      using Context = lang::Context;
-      Context this_thread_context = *(Context *)context;
-      this_thread_context.cpu_thread_id = thread_id;
-
-      func(context, task_id);
+      func(this->range_for_task_context, thread_id, task_id);
     }
 
     bool all_finished = false;

@@ -28,7 +28,7 @@ using parallel_for_type = void (*)(void *thread_pool,
                                    int splits,
                                    int num_desired_threads,
                                    void *context,
-                                   void (*func)(void *, int i));
+                                   void (*func)(void *, int thread_id, int i));
 
 #if defined(__linux__) && !ARCH_cuda && defined(TI_ARCH_x64)
 __asm__(".symver logf,logf@GLIBC_2.2.5");
@@ -1131,7 +1131,7 @@ struct cpu_block_task_helper_context {
 // TODO: TLS should be directly passed to the scheduler, so that it lives
 // with the threads (instead of blocks).
 
-void block_helper(void *ctx_, int i) {
+void block_helper(void *ctx_, int thread_id, int i) {
   auto ctx = (cpu_block_task_helper_context *)(ctx_);
   int element_id = i / ctx->element_split;
   int part_size = ctx->element_size / ctx->element_split;
@@ -1141,9 +1141,11 @@ void block_helper(void *ctx_, int i) {
   int upper = e.loop_bounds[0] + (part_id + 1) * part_size;
   upper = std::min(upper, e.loop_bounds[1]);
   alignas(8) char tls_buffer[ctx->tls_buffer_size];
+  Context this_thread_context = *ctx->context;
+  this_thread_context.cpu_thread_id = thread_id;
   if (lower < upper) {
-    (*ctx->task)(ctx->context, tls_buffer, &ctx->list->get<Element>(element_id),
-                 lower, upper);
+    (*ctx->task)(&this_thread_context, tls_buffer,
+                 &ctx->list->get<Element>(element_id), lower, upper);
   }
 }
 
@@ -1205,23 +1207,28 @@ struct range_task_helper_context {
   int step;
 };
 
-void cpu_parallel_range_for_task(void *range_context, int task_id) {
+void cpu_parallel_range_for_task(void *range_context,
+                                 int thread_id,
+                                 int task_id) {
   auto ctx = *(range_task_helper_context *)range_context;
   alignas(8) char tls_buffer[ctx.tls_size];
   auto tls_ptr = &tls_buffer[0];
   if (ctx.prologue)
     ctx.prologue(ctx.context, tls_ptr);
+
+  Context this_thread_context = *ctx.context;
+  this_thread_context.cpu_thread_id = thread_id;
   if (ctx.step == 1) {
     int block_start = ctx.begin + task_id * ctx.block_size;
     int block_end = std::min(block_start + ctx.block_size, ctx.end);
     for (int i = block_start; i < block_end; i++) {
-      ctx.body(ctx.context, tls_ptr, i);
+      ctx.body(&this_thread_context, tls_ptr, i);
     }
   } else if (ctx.step == -1) {
     int block_start = ctx.end - task_id * ctx.block_size;
     int block_end = std::max(ctx.begin, block_start * ctx.block_size);
     for (int i = block_start - 1; i >= block_end; i--) {
-      ctx.body(ctx.context, tls_ptr, i);
+      ctx.body(&this_thread_context, tls_ptr, i);
     }
   }
   if (ctx.epilogue)
@@ -1429,7 +1436,7 @@ u32 rand_u32(Context *context) {
   w = (w ^ (w >> 19)) ^ (t ^ (t >> 8));
 
   return w * 1000000007;  // multiply a prime number here is very necessary -
-                          // it decorrelates streams of PRNGs
+                          // it decorrelates streams of PRNGs.
 }
 
 uint64 rand_u64(Context *context) {

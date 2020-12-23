@@ -11,6 +11,7 @@ y = ti.field(dtype=ci1)
 N = 4096
 block_size = 4
 bits = 32
+boundary_offset = 64
 
 block = ti.root.pointer(ti.ij, (block_size, block_size))
 block.dense(ti.ij, (N // block_size, N // (bits * block_size)))._bit_array(
@@ -20,19 +21,20 @@ block.dense(ti.ij, (N // block_size, N // (bits * block_size)))._bit_array(
 
 # @ti.kernel
 # def init():
-#     for i, j in ti.ndrange(N, N):
-#         x[i, j] = (N * i + j) % 2
+#     for i, j in ti.ndrange((boundary_offset, N - boundary_offset), (boundary_offset, N - boundary_offset)):
+#         x[i, j] = 1
 
 
 @ti.kernel
 def assign():
+    ti.bit_vectorize(32)
     for i, j in x:
         y[i, j] = x[i, j]
 
 
 # @ti.kernel
 # def verify():
-#     for i, j in ti.ndrange(N, N):
+#     for i, j in ti.ndrange((boundary_offset, N - boundary_offset), (boundary_offset, N - boundary_offset)):
 #         assert y[i, j] == (N * i + j) % 2
 
 # init()

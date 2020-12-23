@@ -796,14 +796,15 @@ class GetChStmt : public Stmt {
   Stmt *input_ptr;
   SNode *input_snode, *output_snode;
   int chid;
+  bool is_bit_vectorized;
 
-  GetChStmt(Stmt *input_ptr, int chid);
+  GetChStmt(Stmt *input_ptr, int chid, bool is_bit_vectorized = false);
 
   bool has_global_side_effect() const override {
     return false;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, input_ptr, input_snode, output_snode, chid);
+  TI_STMT_DEF_FIELDS(ret_type, input_ptr, input_snode, output_snode, chid, is_bit_vectorized);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

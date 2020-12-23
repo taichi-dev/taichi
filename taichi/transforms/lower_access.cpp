@@ -62,7 +62,8 @@ class LowerAccess : public IRVisitor {
                         std::vector<Stmt *> indices,
                         bool pointer_needs_activation,
                         Kernel *kernel,
-                        SNodeOpType snode_op = SNodeOpType::undefined) {
+                        SNodeOpType snode_op = SNodeOpType::undefined,
+                        bool is_bit_vectorized = false) {
     if (snode_op == SNodeOpType::is_active) {
       // For ti.is_active
       TI_ASSERT(!pointer_needs_activation);
@@ -72,6 +73,7 @@ class LowerAccess : public IRVisitor {
     std::set<SNode *> nodes_on_loop;
     if (current_struct_for) {
       for (SNode *s = current_struct_for->snode; s != nullptr; s = s->parent) {
+        TI_INFO("current struct_for {}", s->type_name());
         nodes_on_loop.insert(s);
       }
     }
@@ -83,8 +85,12 @@ class LowerAccess : public IRVisitor {
     Stmt *last = lowered.push_back<GetRootStmt>();
 
     int path_inc = int(snode_op != SNodeOpType::undefined);
-    for (int i = 0; i < (int)snodes.size() - 1 + path_inc; i++) {
+    int length = (int)snodes.size() - 1 + path_inc;
+    for (int i = 0; i < length; i++) {
       auto snode = snodes[i];
+      if (snode->type == SNodeType::bit_array && i == length - 1 && snodes[i - 1]->type == SNodeType::dense) {
+        continue;
+      }
       std::vector<Stmt *> lowered_indices;
       std::vector<int> strides;
       // extract bits
@@ -142,7 +148,11 @@ class LowerAccess : public IRVisitor {
         auto lookup = lowered.push_back<SNodeLookupStmt>(
             snode, last, linearized, needs_activation);
         int chid = snode->child_id(snodes[i + 1]);
-        last = lowered.push_back<GetChStmt>(lookup, chid);
+        if (is_bit_vectorized && snode->type == SNodeType::dense && i == length - 2) {
+          last = lowered.push_back<GetChStmt>(lookup, chid, true);
+        } else {
+          last = lowered.push_back<GetChStmt>(lookup, chid, false);
+        }
       }
     }
   }
@@ -161,7 +171,7 @@ class LowerAccess : public IRVisitor {
         lowered.push_back(std::move(extractor));
       }
       lower_scalar_ptr(lowered, ptr->snodes[i], indices, activate,
-                       ptr->get_kernel(), snode_op);
+                       ptr->get_kernel(), snode_op, ptr->is_bit_vectorized);
       TI_ASSERT(lowered.size());
       lowered_pointers.push_back(lowered.back().get());
     }
@@ -171,7 +181,15 @@ class LowerAccess : public IRVisitor {
       lanes.push_back(VectorElement(lowered_pointers[i], 0));
     }
     auto merge = Stmt::make<ElementShuffleStmt>(lanes, true);
-    merge->ret_type = ptr->snodes[0]->dt;
+    if (ptr->is_bit_vectorized) {
+      // if the global ptr is bit vectorized, we start from the place snode
+      // and find the parent bit array snode, use its physical type
+      auto parent_ret_type = ptr->snodes[0]->parent->physical_type;
+      auto ptr_ret_type = TypeFactory::get_instance().get_pointer_type(parent_ret_type);
+      merge->ret_type = DataType(ptr_ret_type);
+    } else {
+      merge->ret_type = ptr->snodes[0]->dt;
+    }
     lowered.push_back(std::move(merge));
     return lowered;
   }

@@ -260,8 +260,8 @@ std::unique_ptr<Stmt> WhileStmt::clone() const {
   return new_stmt;
 }
 
-GetChStmt::GetChStmt(Stmt *input_ptr, int chid)
-    : input_ptr(input_ptr), chid(chid) {
+GetChStmt::GetChStmt(Stmt *input_ptr, int chid, bool is_bit_vectorized)
+    : input_ptr(input_ptr), chid(chid), is_bit_vectorized(is_bit_vectorized) {
   TI_ASSERT(input_ptr->is<SNodeLookupStmt>());
   input_snode = input_ptr->as<SNodeLookupStmt>()->snode;
   output_snode = input_snode->ch[chid].get();

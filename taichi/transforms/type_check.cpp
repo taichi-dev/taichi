@@ -413,6 +413,12 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(GetChStmt *stmt) {
+    if (stmt->is_bit_vectorized) {
+      auto physical_type = stmt->output_snode->physical_type;
+      auto ptr_ret_type = TypeFactory::get_instance().get_pointer_type(physical_type);
+      stmt->ret_type = DataType(ptr_ret_type);
+      return;
+    }
     TI_ASSERT(stmt->width() == 1);
     auto element_type = stmt->output_snode->dt;
     // For bit_struct SNodes, their component SNodes must have

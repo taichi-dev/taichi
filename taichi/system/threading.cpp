@@ -136,9 +136,11 @@ void ThreadPool::target() {
         if (task_id >= task_tail)
           break;
       }
+
       using Context = lang::Context;
       Context this_thread_context = *(Context *)context;
       this_thread_context.cpu_thread_id = thread_id;
+
       func(context, task_id);
     }
 

@@ -285,7 +285,7 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
   auto snodes = scomp->snodes;
   int root_id = snode_root->id;
 
-  // Number random states. One per CPU/CUDA thread.
+  // Number of random states. One per CPU/CUDA thread.
   int num_rand_states = 0;
 
   if (config.arch == Arch::cuda) {

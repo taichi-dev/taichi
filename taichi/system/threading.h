@@ -42,7 +42,7 @@ class ThreadPool {
   void *context;
   int thread_counter;
 
-  ThreadPool();
+  ThreadPool(int max_num_threads);
 
   void run(int splits,
            int desired_num_threads,

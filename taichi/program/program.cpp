@@ -119,6 +119,8 @@ Program::Program(Arch desired_arch) {
   config = default_compile_config;
   config.arch = arch;
 
+  thread_pool = std::make_unique<ThreadPool>(config.cpu_max_num_threads);
+
   llvm_context_host = std::make_unique<TaichiLLVMContext>(host_arch());
   profiler = make_profiler(arch);
 
@@ -283,7 +285,7 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
   auto snodes = scomp->snodes;
   int root_id = snode_root->id;
 
-  // A buffer of random states, one per CUDA thread
+  // Number random states. One per CPU/CUDA thread.
   int num_rand_states = 0;
 
   if (config.arch == Arch::cuda) {
@@ -294,6 +296,8 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
 #else
     TI_NOT_IMPLEMENTED
 #endif
+  } else {
+    num_rand_states = config.cpu_max_num_threads;
   }
 
   TI_TRACE("Allocating data structure of size {} B", scomp->root_size);
@@ -346,7 +350,7 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
 
   if (arch_use_host_memory(config.arch)) {
     runtime->call<void *, void *, void *>("LLVMRuntime_initialize_thread_pool",
-                                          llvm_runtime, &thread_pool,
+                                          llvm_runtime, thread_pool.get(),
                                           (void *)ThreadPool::static_run);
 
     runtime->call<void *, void *>("LLVMRuntime_set_assert_failed", llvm_runtime,

@@ -24,7 +24,7 @@
 TI_NAMESPACE_BEGIN
 
 bool test_threading() {
-  auto tp = ThreadPool();
+  auto tp = ThreadPool(20);
   for (int j = 0; j < 100; j++) {
     tp.run(10, j + 1, &j, [](void *j, int i) {
       double ret = 0.0;
@@ -54,7 +54,7 @@ int PID::get_parent_pid() {
 #endif
 }
 
-ThreadPool::ThreadPool() {
+ThreadPool::ThreadPool(int max_num_threads) : max_num_threads(max_num_threads) {
   exiting = false;
   started = false;
   running_threads = 0;
@@ -63,7 +63,6 @@ ThreadPool::ThreadPool() {
   task_head = 0;
   task_tail = 0;
   thread_counter = 0;
-  max_num_threads = std::thread::hardware_concurrency();
   threads.resize((std::size_t)max_num_threads);
   for (int i = 0; i < max_num_threads; i++) {
     threads[i] = std::thread([this] { this->target(); });

@@ -180,39 +180,6 @@ int abs_i32(int a) {
   }
 }
 
-#if ARCH_x64 || ARCH_arm64
-
-u32 rand_u32() {
-  static u32 x = 123456789, y = 362436069, z = 521288629, w = 88675123;
-  u32 t = x ^ (x << 11);
-  x = y;
-  y = z;
-  z = w;
-  return (w = (w ^ (w >> 19)) ^ (t ^ (t >> 8)));
-}
-
-u64 rand_u64() {
-  return ((u64)rand_u32() << 32) + rand_u32();
-}
-
-f32 rand_f32() {
-  return rand_u32() * f32(1 / 4294967296.0);
-}
-
-f64 rand_f64() {
-  return rand_f32();
-}
-
-i32 rand_i32() {
-  return rand_u32();
-}
-
-i64 rand_i64() {
-  return rand_u64();
-}
-
-#endif
-
 i32 floordiv_i32(i32 a, i32 b) {
   return ifloordiv(a, b);
 }
@@ -1444,11 +1411,9 @@ void gc_parallel_2(Context *context, int snode_id) {
 }
 }
 
-#if ARCH_cuda
-
 extern "C" {
 
-u32 cuda_rand_u32(Context *context) {
+u32 rand_u32(Context *context) {
   auto state = &((LLVMRuntime *)context->runtime)
                     ->rand_states[linear_thread_idx(context)];
 
@@ -1467,27 +1432,26 @@ u32 cuda_rand_u32(Context *context) {
                           // it decorrelates streams of PRNGs
 }
 
-uint64 cuda_rand_u64(Context *context) {
-  return ((u64)cuda_rand_u32(context) << 32) + cuda_rand_u32(context);
+uint64 rand_u64(Context *context) {
+  return ((u64)rand_u32(context) << 32) + rand_u32(context);
 }
 
-f32 cuda_rand_f32(Context *context) {
-  return cuda_rand_u32(context) * (1.0f / 4294967296.0f);
+f32 rand_f32(Context *context) {
+  return rand_u32(context) * (1.0f / 4294967296.0f);
 }
 
-f64 cuda_rand_f64(Context *context) {
-  return cuda_rand_f32(context);
+f64 rand_f64(Context *context) {
+  return rand_f32(context);
 }
 
-i32 cuda_rand_i32(Context *context) {
-  return cuda_rand_u32(context);
+i32 rand_i32(Context *context) {
+  return rand_u32(context);
 }
 
-i64 cuda_rand_i64(Context *context) {
-  return cuda_rand_u64(context);
+i64 rand_i64(Context *context) {
+  return rand_u64(context);
 }
 };
-#endif
 
 struct printf_helper {
   char buffer[1024];

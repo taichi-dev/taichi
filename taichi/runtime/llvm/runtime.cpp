@@ -1318,8 +1318,12 @@ void gpu_parallel_range_for(Context *context,
     epilogue(context, tls_ptr);
 }
 
-i32 linear_thread_idx() {
+i32 linear_thread_idx(Context *context) {
+#if ARCH_cuda
   return block_idx() * block_dim() + thread_idx();
+#else
+  return context->cpu_thread_id;
+#endif
 }
 
 #include "node_dense.h"
@@ -1356,7 +1360,8 @@ void node_gc(LLVMRuntime *runtime, int snode_id) {
   runtime->node_allocators[snode_id]->gc_serial();
 }
 
-void gc_parallel_0(LLVMRuntime *runtime, int snode_id) {
+void gc_parallel_0(Context *context, int snode_id) {
+  LLVMRuntime *runtime = context->runtime;
   auto allocator = runtime->node_allocators[snode_id];
   auto free_list = allocator->free_list;
   auto free_list_size = free_list->size();
@@ -1364,7 +1369,7 @@ void gc_parallel_0(LLVMRuntime *runtime, int snode_id) {
   using T = NodeManager::list_data_type;
 
   // Move unused elements to the beginning of the free_list
-  int i = linear_thread_idx();
+  int i = linear_thread_idx(context);
   if (free_list_used * 2 > free_list_size) {
     // Directly copy. Dst and src does not overlap
     auto items_to_copy = free_list_size - free_list_used;
@@ -1383,7 +1388,8 @@ void gc_parallel_0(LLVMRuntime *runtime, int snode_id) {
   }
 }
 
-void gc_parallel_1(LLVMRuntime *runtime, int snode_id) {
+void gc_parallel_1(Context *context, int snode_id) {
+  LLVMRuntime *runtime = context->runtime;
   auto allocator = runtime->node_allocators[snode_id];
   auto free_list = allocator->free_list;
 
@@ -1396,7 +1402,8 @@ void gc_parallel_1(LLVMRuntime *runtime, int snode_id) {
   allocator->recycled_list->clear();
 }
 
-void gc_parallel_2(LLVMRuntime *runtime, int snode_id) {
+void gc_parallel_2(Context *context, int snode_id) {
+  LLVMRuntime *runtime = context->runtime;
   auto allocator = runtime->node_allocators[snode_id];
   auto elements = allocator->recycle_list_size_backup;
   auto free_list = allocator->free_list;
@@ -1442,8 +1449,8 @@ void gc_parallel_2(LLVMRuntime *runtime, int snode_id) {
 extern "C" {
 
 u32 cuda_rand_u32(Context *context) {
-  auto state =
-      &((LLVMRuntime *)context->runtime)->rand_states[linear_thread_idx()];
+  auto state = &((LLVMRuntime *)context->runtime)
+                    ->rand_states[linear_thread_idx(context)];
 
   auto &x = state->x;
   auto &y = state->y;

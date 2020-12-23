@@ -88,8 +88,8 @@ class LowerAccess : public IRVisitor {
     int length = (int)snodes.size() - 1 + path_inc;
     for (int i = 0; i < length; i++) {
       auto snode = snodes[i];
-      if (snode->type == SNodeType::bit_array && i == length - 1 &&
-          snodes[i - 1]->type == SNodeType::dense) {
+      if (is_bit_vectorized && snode->type == SNodeType::bit_array &&
+          i == length - 1 && snodes[i - 1]->type == SNodeType::dense) {
         continue;
       }
       std::vector<Stmt *> lowered_indices;

@@ -4,9 +4,6 @@
 *******************************************************************************/
 
 #include "taichi/system/threading.h"
-#define TI_RUNTIME_HOST
-#include "taichi/program/context.h"
-#undef TI_RUNTIME_HOST
 
 #if defined(TI_PLATFORM_WINDOWS)
 #include "taichi/platform/windows/windows.h"

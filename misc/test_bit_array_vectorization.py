@@ -12,11 +12,11 @@ N = 4096
 block_size = 4
 bits = 32
 
-ti.root.pointer(ti.ij, (block_size, block_size)).dense(ti.ij, (N // block_size, N // (bits * block_size)))._bit_array(ti.j, bits,
-                                                num_bits=bits).place(x)
-ti.root.pointer(ti.ij, (block_size, block_size)).dense(ti.ij, (N // block_size, N // (bits * block_size)))._bit_array(ti.j, bits,
-                                                num_bits=bits).place(y)
-
+block = ti.root.pointer(ti.ij, (block_size, block_size))
+block.dense(ti.ij, (N // block_size, N // (bits * block_size)))._bit_array(
+    ti.j, bits, num_bits=bits).place(x)
+block.dense(ti.ij, (N // block_size, N // (bits * block_size)))._bit_array(
+    ti.j, bits, num_bits=bits).place(y)
 
 # @ti.kernel
 # def init():
@@ -34,7 +34,6 @@ def assign():
 # def verify():
 #     for i, j in ti.ndrange(N, N):
 #         assert y[i, j] == (N * i + j) % 2
-
 
 # init()
 assign()

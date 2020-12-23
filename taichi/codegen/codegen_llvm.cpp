@@ -1696,7 +1696,8 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     //    voxels
     auto exec_cond = tlctx->get_constant(true);
     auto snode = stmt->snode;
-    if (snode->type == SNodeType::bit_array && snode->parent && snode->parent->type == SNodeType::dense) {
+    if (snode->type == SNodeType::bit_array && snode->parent &&
+        snode->parent->type == SNodeType::dense) {
       snode = snode->parent;
     }
 

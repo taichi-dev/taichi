@@ -17,8 +17,14 @@ uint64 hash(IRNode *stmt) {
   std::string serialized;
   irpass::re_id(stmt);
   irpass::print(stmt, &serialized);
+
   // TODO: separate kernel from IR template
-  serialized += stmt->get_kernel()->name;
+  auto *kernel = stmt->get_kernel();
+  if (!kernel->args.empty()) {
+    // We need to record the kernel's name if it has arguments.
+    serialized += stmt->get_kernel()->name;
+  }
+
   uint64 ret = 0;
   for (uint64 i = 0; i < serialized.size(); i++) {
     ret = ret * 100000007UL + (uint64)serialized[i];

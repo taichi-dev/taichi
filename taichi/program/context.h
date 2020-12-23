@@ -10,12 +10,13 @@ namespace lang {
 
 struct LLVMRuntime;
 
-// "Context" holds necessary data for function calls, such as arguments and
-// LLVMRuntime struct
+// "Context" holds necessary data for kernel body execution, such as a pointer
+// to the LLVMRuntime struct, and required arguments.
 struct Context {
   LLVMRuntime *runtime;
   uint64 args[taichi_max_num_args];
   int32 extra_args[taichi_max_num_args][taichi_max_num_indices];
+  int32 cpu_thread_id;
 
   static constexpr size_t extra_args_size = sizeof(extra_args);
 

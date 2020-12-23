@@ -3,19 +3,23 @@
     The use of this software is governed by the LICENSE file.
 *******************************************************************************/
 
-#include <algorithm>
-#include <condition_variable>
 #include "taichi/system/threading.h"
-#include <thread>
-#include <vector>
+#define TI_RUNTIME_HOST
+#include "taichi/program/context.h"
+#undef TI_RUNTIME_HOST
+
 #if defined(TI_PLATFORM_WINDOWS)
 #include "taichi/platform/windows/windows.h"
 #else
 // Mac and Linux
 #include "threading.h"
 #include <unistd.h>
-
 #endif
+
+#include <algorithm>
+#include <condition_variable>
+#include <thread>
+#include <vector>
 
 TI_NAMESPACE_BEGIN
 
@@ -133,6 +137,9 @@ void ThreadPool::target() {
         if (task_id >= task_tail)
           break;
       }
+      using Context = lang::Context;
+      Context this_thread_context = *(Context *)context;
+      this_thread_context.cpu_thread_id = thread_id;
       func(context, task_id);
     }
 

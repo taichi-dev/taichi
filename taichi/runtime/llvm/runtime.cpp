@@ -1131,7 +1131,7 @@ struct cpu_block_task_helper_context {
 // TODO: TLS should be directly passed to the scheduler, so that it lives
 // with the threads (instead of blocks).
 
-void block_helper(void *ctx_, int thread_id, int i) {
+void cpu_struct_for_block_helper(void *ctx_, int thread_id, int i) {
   auto ctx = (cpu_block_task_helper_context *)(ctx_);
   int element_id = i / ctx->element_split;
   int part_size = ctx->element_size / ctx->element_split;
@@ -1141,6 +1141,7 @@ void block_helper(void *ctx_, int thread_id, int i) {
   int upper = e.loop_bounds[0] + (part_id + 1) * part_size;
   upper = std::min(upper, e.loop_bounds[1]);
   alignas(8) char tls_buffer[ctx->tls_buffer_size];
+
   Context this_thread_context = *ctx->context;
   this_thread_context.cpu_thread_id = thread_id;
   if (lower < upper) {
@@ -1189,7 +1190,7 @@ void parallel_struct_for(Context *context,
   ctx.tls_buffer_size = tls_buffer_size;
   auto runtime = context->runtime;
   runtime->parallel_for(runtime->thread_pool, list_tail * element_split,
-                        num_threads, &ctx, block_helper);
+                        num_threads, &ctx, cpu_struct_for_block_helper);
 #endif
 }
 

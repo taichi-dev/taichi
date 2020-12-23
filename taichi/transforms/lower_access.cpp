@@ -88,7 +88,8 @@ class LowerAccess : public IRVisitor {
     int length = (int)snodes.size() - 1 + path_inc;
     for (int i = 0; i < length; i++) {
       auto snode = snodes[i];
-      if (snode->type == SNodeType::bit_array && i == length - 1 && snodes[i - 1]->type == SNodeType::dense) {
+      if (snode->type == SNodeType::bit_array && i == length - 1 &&
+          snodes[i - 1]->type == SNodeType::dense) {
         continue;
       }
       std::vector<Stmt *> lowered_indices;
@@ -148,7 +149,8 @@ class LowerAccess : public IRVisitor {
         auto lookup = lowered.push_back<SNodeLookupStmt>(
             snode, last, linearized, needs_activation);
         int chid = snode->child_id(snodes[i + 1]);
-        if (is_bit_vectorized && snode->type == SNodeType::dense && i == length - 2) {
+        if (is_bit_vectorized && snode->type == SNodeType::dense &&
+            i == length - 2) {
           last = lowered.push_back<GetChStmt>(lookup, chid, true);
         } else {
           last = lowered.push_back<GetChStmt>(lookup, chid, false);
@@ -185,7 +187,8 @@ class LowerAccess : public IRVisitor {
       // if the global ptr is bit vectorized, we start from the place snode
       // and find the parent bit array snode, use its physical type
       auto parent_ret_type = ptr->snodes[0]->parent->physical_type;
-      auto ptr_ret_type = TypeFactory::get_instance().get_pointer_type(parent_ret_type);
+      auto ptr_ret_type =
+          TypeFactory::get_instance().get_pointer_type(parent_ret_type);
       merge->ret_type = DataType(ptr_ret_type);
     } else {
       merge->ret_type = ptr->snodes[0]->dt;

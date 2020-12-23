@@ -804,7 +804,12 @@ class GetChStmt : public Stmt {
     return false;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, input_ptr, input_snode, output_snode, chid, is_bit_vectorized);
+  TI_STMT_DEF_FIELDS(ret_type,
+                     input_ptr,
+                     input_snode,
+                     output_snode,
+                     chid,
+                     is_bit_vectorized);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

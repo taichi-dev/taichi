@@ -68,9 +68,6 @@ void compile_to_offloads(IRNode *ir,
     // TODO: create separate flag for the new pass
     irpass::bit_loop_vectorize(ir);
     print("Bit Loop Vectorized");
-    // TODO: this pass should be remove later
-    irpass::type_check(ir);
-    print("Bit Loop Vectorized Type Check");
     irpass::analysis::verify(ir);
 
     irpass::vector_split(ir, config.max_vector_width, config.serial_schedule);

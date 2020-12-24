@@ -324,12 +324,6 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     }
   }
 
-  void visit(RandStmt *stmt) override {
-    llvm_val[stmt] =
-        create_call(fmt::format("cuda_rand_{}", data_type_name(stmt->ret_type)),
-                    {get_context()});
-  }
-
   void visit(RangeForStmt *for_stmt) override {
     create_naive_range_for(for_stmt);
   }
@@ -363,7 +357,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     auto snode_id = tlctx->get_constant(stmt->snode->id);
     {
       init_offloaded_task_function(stmt, "gather_list");
-      call("gc_parallel_0", get_runtime(), snode_id);
+      call("gc_parallel_0", get_context(), snode_id);
       finalize_offloaded_task_function();
       current_task->grid_dim = prog->config.saturating_grid_dim;
       current_task->block_dim = 64;
@@ -372,7 +366,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     }
     {
       init_offloaded_task_function(stmt, "reinit_lists");
-      call("gc_parallel_1", get_runtime(), snode_id);
+      call("gc_parallel_1", get_context(), snode_id);
       finalize_offloaded_task_function();
       current_task->grid_dim = 1;
       current_task->block_dim = 1;
@@ -381,7 +375,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     }
     {
       init_offloaded_task_function(stmt, "zero_fill");
-      call("gc_parallel_2", get_runtime(), snode_id);
+      call("gc_parallel_2", get_context(), snode_id);
       finalize_offloaded_task_function();
       current_task->grid_dim = prog->config.saturating_grid_dim;
       current_task->block_dim = 64;

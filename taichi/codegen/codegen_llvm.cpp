@@ -139,8 +139,8 @@ void CodeGenLLVM::visit(AllocaStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(RandStmt *stmt) {
-  llvm_val[stmt] =
-      create_call(fmt::format("rand_{}", data_type_name(stmt->ret_type)));
+  llvm_val[stmt] = create_call(
+      fmt::format("rand_{}", data_type_name(stmt->ret_type)), {get_context()});
 }
 
 void CodeGenLLVM::emit_extra_unary(UnaryOpStmt *stmt) {

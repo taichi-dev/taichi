@@ -675,6 +675,13 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
               nodes[b]->meta->loop_unique.count(snode) == 0) {
             return false;
           }
+          std::unordered_map<int, int> offload_map;
+          offload_map[0] = 0;
+          std::unordered_set<AsyncState> modified_states =
+              get_task_meta(ir_bank_, nodes[a]->rec)->output_states;
+          modified_states.merge(
+              get_task_meta(ir_bank_, nodes[b]->rec)->output_states);
+          AsyncStateSet modified_states_set{modified_states};
           auto same_loop_unique_address = [&](GlobalPtrStmt *ptr1,
                                               GlobalPtrStmt *ptr2) {
             if (!ptr1 || !ptr2) {
@@ -686,11 +693,10 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
             TI_ASSERT(nodes[b]->rec.stmt()->id == 0);
             // Only map the OffloadedStmt to see if both SNodes are loop-unique
             // on the same statement.
-            std::unordered_map<int, int> offload_map;
-            offload_map[0] = 0;
             for (int i = 0; i < (int)ptr1->indices.size(); i++) {
               if (!irpass::analysis::same_value(
-                      ptr1->indices[i], ptr2->indices[i],
+                      ptr1->indices[i], ptr2->indices[i], modified_states_set,
+                      ir_bank_,
                       std::make_optional<std::unordered_map<int, int>>(
                           offload_map))) {
                 return false;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <atomic>
+#include <optional>
 #include <unordered_map>
 #include <unordered_set>
 #include <variant>
@@ -213,6 +214,12 @@ struct TaskMeta {
   std::unordered_map<const SNode *, bool> element_wise;
 
   void print() const;
+};
+
+// A wrapper class for the parameter in bool same_value() in analysis.h.
+class AsyncStateSet {
+ public:
+  std::unordered_set<AsyncState> s;
 };
 
 class IRBank;

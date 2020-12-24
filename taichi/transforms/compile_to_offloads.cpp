@@ -65,7 +65,7 @@ void compile_to_offloads(IRNode *ir,
     print("Loop Vectorized");
     irpass::analysis::verify(ir);
 
-    // TODO: create separate flag for the new pass
+    // TODO: create a separate CompileConfig flag for the new pass
     irpass::bit_loop_vectorize(ir);
     print("Bit Loop Vectorized");
     irpass::analysis::verify(ir);

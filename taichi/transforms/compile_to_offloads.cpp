@@ -65,15 +65,19 @@ void compile_to_offloads(IRNode *ir,
     print("Loop Vectorized");
     irpass::analysis::verify(ir);
 
-    // TODO: create a separate CompileConfig flag for the new pass
-    irpass::bit_loop_vectorize(ir);
-    print("Bit Loop Vectorized");
-    irpass::analysis::verify(ir);
-
     irpass::vector_split(ir, config.max_vector_width, config.serial_schedule);
     print("Loop Split");
     irpass::analysis::verify(ir);
   }
+
+  // TODO: strictly enforce bit vectorization for x86 cpu and CUDA now
+  //       create a separate CompileConfig flag for the new pass
+  if (arch_is_cpu(config.arch) || config.arch  == Arch::cuda) {
+    irpass::bit_loop_vectorize(ir);
+    print("Bit Loop Vectorized");
+    irpass::analysis::verify(ir);
+  }
+
   irpass::full_simplify(ir, false);
   print("Simplified I");
   irpass::analysis::verify(ir);

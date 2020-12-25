@@ -227,6 +227,10 @@ class CustomFloatType : public Type {
     return digits_type_;
   }
 
+  Type *get_exponent_type() {
+    return exponent_type_;
+  }
+
   Type *get_compute_type() override {
     return compute_type_;
   }

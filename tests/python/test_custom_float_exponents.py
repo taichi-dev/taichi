@@ -9,7 +9,7 @@ from pytest import approx
 ti.init()
 ci13 = ti.type_factory_.get_custom_int_type(13, True)
 ci8 = ti.type_factory_.get_custom_int_type(8, True)
-cft = ti.type_factory.custom_float(significand_type=ci13, compute_type=ti.f32.get_ptr(), scale=0.1)
+cft = ti.type_factory.custom_float(significand_type=ci13, exponent_type=ci8, compute_type=ti.f32.get_ptr(), scale=0.1)
 x = ti.field(dtype=cft)
 
 ti.root._bit_struct(num_bits=32).place(x)

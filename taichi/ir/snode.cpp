@@ -42,6 +42,17 @@ void SNode::place(Expr &expr_, const std::vector<int> &offset) {
     TI_ASSERT(expr_.is<GlobalVariableExpression>());
     auto expr = expr_.cast<GlobalVariableExpression>();
     TI_ERROR_IF(expr->snode != nullptr, "This variable has been placed.");
+    SNode *new_exp_snode = nullptr;
+    if (auto cft = expr->dt->cast<CustomFloatType>()) {
+      if (auto exp = cft->get_exponent_type()) {
+        // Non-empty exponent type. Create another place SNode to store the
+        // exponent type.
+        auto &exp_node = insert_children(SNodeType::place);
+        exp_node.dt = exp;
+        exp_node.name = expr->ident.raw_name() + "_exp";
+        new_exp_snode = &exp_node;
+      }
+    }
     auto &child = insert_children(SNodeType::place);
     expr->set_snode(&child);
     child.name = expr->ident.raw_name();
@@ -51,6 +62,9 @@ void SNode::place(Expr &expr_, const std::vector<int> &offset) {
     }
     expr->snode->expr.set(Expr(expr));
     child.dt = expr->dt;
+    if (new_exp_snode) {
+      this->exp_snode = new_exp_snode;
+    }
     if (!offset.empty())
       child.set_index_offsets(offset);
   }

@@ -63,7 +63,7 @@ void SNode::place(Expr &expr_, const std::vector<int> &offset) {
     expr->snode->expr.set(Expr(expr));
     child.dt = expr->dt;
     if (new_exp_snode) {
-      this->exp_snode = new_exp_snode;
+      child.exp_snode = new_exp_snode;
     }
     if (!offset.empty())
       child.set_index_offsets(offset);
@@ -296,7 +296,11 @@ void SNode::print() {
   for (int i = 0; i < depth; i++) {
     fmt::print("  ");
   }
-  fmt::print("{}\n", get_node_type_name_hinted());
+  fmt::print("{}", get_node_type_name_hinted());
+  if (exp_snode) {
+    fmt::print(" exp={}\n", exp_snode->get_node_type_name());
+  }
+  fmt::print("\n");
   for (auto &c : ch) {
     c->print();
   }

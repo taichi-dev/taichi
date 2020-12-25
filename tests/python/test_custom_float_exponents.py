@@ -27,4 +27,4 @@ foo()
 assert x[None] == approx(1.1)
 x[None] = 0.64
 
-# next step: implement struct compiler and implement load/store of cft with exponents in the codegen.
+# next step: implement load/store of cft with exponents in the codegen.

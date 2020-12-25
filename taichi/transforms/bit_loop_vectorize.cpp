@@ -45,8 +45,6 @@ class BitLoopVectorize : public IRVisitor {
         DataType new_ret_type(ptr_physical_type);
         ptr->ret_type = new_ret_type;
         ptr->is_bit_vectorized = true;
-        // TODO: Do we need to explicitly make the load stmt's return type same
-        // as physical type for now, this seems to hold under the demo code
       }
     }
   }

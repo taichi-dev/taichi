@@ -33,12 +33,15 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
                                  const Expr &global_var)
     : global_var(global_var) {
   vectorize = dec.vectorize;
+  bit_vectorize = dec.bit_vectorize;
   parallelize = dec.parallelize;
   strictly_serialized = dec.strictly_serialized;
   block_dim = dec.block_dim;
   auto cfg = get_current_program().config;
   if (cfg.arch == Arch::cuda) {
     vectorize = 1;
+    // TODO: temporally setting to 1
+    bit_vectorize = 1;
     parallelize = 1;
     TI_ASSERT(block_dim <= taichi_max_gpu_block_dim);
   } else {
@@ -69,12 +72,15 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
                                  const Expr &end)
     : begin(begin), end(end) {
   vectorize = dec.vectorize;
+  bit_vectorize = dec.bit_vectorize;
   parallelize = dec.parallelize;
   strictly_serialized = dec.strictly_serialized;
   block_dim = dec.block_dim;
   auto cfg = get_current_program().config;
   if (cfg.arch == Arch::cuda) {
     vectorize = 1;
+    // TODO: temporally setting to 1
+    bit_vectorize = 1;
     parallelize = 1;
   } else {
     if (parallelize == 0)

@@ -249,6 +249,7 @@ def loop_unique(val):
 parallelize = core.parallelize
 serialize = lambda: parallelize(1)
 vectorize = core.vectorize
+bit_vectorize = core.bit_vectorize
 block_dim = core.block_dim
 
 inversed = deprecated('ti.inversed(a)', 'a.inverse()')(Matrix.inversed)

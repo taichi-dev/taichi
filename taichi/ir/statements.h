@@ -213,6 +213,7 @@ class GlobalPtrStmt : public Stmt {
   LaneAttribute<SNode *> snodes;
   std::vector<Stmt *> indices;
   bool activate;
+  bool is_bit_vectorized;  // for bit_loop_vectorize pass
 
   GlobalPtrStmt(const LaneAttribute<SNode *> &snodes,
                 const std::vector<Stmt *> &indices,
@@ -228,7 +229,7 @@ class GlobalPtrStmt : public Stmt {
     return true;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, snodes, indices, activate);
+  TI_STMT_DEF_FIELDS(ret_type, snodes, indices, activate, is_bit_vectorized);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
@@ -527,6 +528,7 @@ class RangeForStmt : public Stmt {
   std::unique_ptr<Block> body;
   bool reversed;
   int vectorize;
+  int bit_vectorize;
   int parallelize;
   int block_dim;
   bool strictly_serialized;
@@ -535,6 +537,7 @@ class RangeForStmt : public Stmt {
                Stmt *end,
                std::unique_ptr<Block> &&body,
                int vectorize,
+               int bit_vectorize,
                int parallelize,
                int block_dim,
                bool strictly_serialized);
@@ -553,6 +556,7 @@ class RangeForStmt : public Stmt {
                      end,
                      reversed,
                      vectorize,
+                     bit_vectorize,
                      parallelize,
                      block_dim,
                      strictly_serialized);
@@ -568,6 +572,7 @@ class StructForStmt : public Stmt {
   std::unique_ptr<Block> block_finalization;
   std::vector<int> index_offsets;
   int vectorize;
+  int bit_vectorize;
   int parallelize;
   int block_dim;
   MemoryAccessOptions mem_access_opt;
@@ -575,6 +580,7 @@ class StructForStmt : public Stmt {
   StructForStmt(SNode *snode,
                 std::unique_ptr<Block> &&body,
                 int vectorize,
+                int bit_vectorize,
                 int parallelize,
                 int block_dim);
 
@@ -587,6 +593,7 @@ class StructForStmt : public Stmt {
   TI_STMT_DEF_FIELDS(snode,
                      index_offsets,
                      vectorize,
+                     bit_vectorize,
                      parallelize,
                      block_dim,
                      mem_access_opt);
@@ -789,14 +796,20 @@ class GetChStmt : public Stmt {
   Stmt *input_ptr;
   SNode *input_snode, *output_snode;
   int chid;
+  bool is_bit_vectorized;
 
-  GetChStmt(Stmt *input_ptr, int chid);
+  GetChStmt(Stmt *input_ptr, int chid, bool is_bit_vectorized = false);
 
   bool has_global_side_effect() const override {
     return false;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, input_ptr, input_snode, output_snode, chid);
+  TI_STMT_DEF_FIELDS(ret_type,
+                     input_ptr,
+                     input_snode,
+                     output_snode,
+                     chid,
+                     is_bit_vectorized);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

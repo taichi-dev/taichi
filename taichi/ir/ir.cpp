@@ -33,6 +33,7 @@ IRBuilder &current_ast_builder() {
 
 void DecoratorRecorder::reset() {
   vectorize = -1;
+  bit_vectorize = -1;
   parallelize = 0;
   uniform = false;
   mem_access_opt.clear();

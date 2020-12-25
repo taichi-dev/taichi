@@ -53,7 +53,10 @@ ExternalPtrStmt::ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
 GlobalPtrStmt::GlobalPtrStmt(const LaneAttribute<SNode *> &snodes,
                              const std::vector<Stmt *> &indices,
                              bool activate)
-    : snodes(snodes), indices(indices), activate(activate) {
+    : snodes(snodes),
+      indices(indices),
+      activate(activate),
+      is_bit_vectorized(false) {
   for (int i = 0; i < (int)snodes.size(); i++) {
     TI_ASSERT(snodes[i] != nullptr);
     TI_ASSERT(snodes[0]->dt == snodes[i]->dt);
@@ -185,6 +188,7 @@ RangeForStmt::RangeForStmt(Stmt *begin,
                            Stmt *end,
                            std::unique_ptr<Block> &&body,
                            int vectorize,
+                           int bit_vectorize,
                            int parallelize,
                            int block_dim,
                            bool strictly_serialized)
@@ -192,6 +196,7 @@ RangeForStmt::RangeForStmt(Stmt *begin,
       end(end),
       body(std::move(body)),
       vectorize(vectorize),
+      bit_vectorize(bit_vectorize),
       parallelize(parallelize),
       block_dim(block_dim),
       strictly_serialized(strictly_serialized) {
@@ -202,8 +207,8 @@ RangeForStmt::RangeForStmt(Stmt *begin,
 
 std::unique_ptr<Stmt> RangeForStmt::clone() const {
   auto new_stmt = std::make_unique<RangeForStmt>(
-      begin, end, body->clone(), vectorize, parallelize, block_dim,
-      strictly_serialized);
+      begin, end, body->clone(), vectorize, bit_vectorize, parallelize,
+      block_dim, strictly_serialized);
   new_stmt->reversed = reversed;
   return new_stmt;
 }
@@ -211,11 +216,13 @@ std::unique_ptr<Stmt> RangeForStmt::clone() const {
 StructForStmt::StructForStmt(SNode *snode,
                              std::unique_ptr<Block> &&body,
                              int vectorize,
+                             int bit_vectorize,
                              int parallelize,
                              int block_dim)
     : snode(snode),
       body(std::move(body)),
       vectorize(vectorize),
+      bit_vectorize(bit_vectorize),
       parallelize(parallelize),
       block_dim(block_dim) {
   this->body->parent_stmt = this;
@@ -224,7 +231,7 @@ StructForStmt::StructForStmt(SNode *snode,
 
 std::unique_ptr<Stmt> StructForStmt::clone() const {
   auto new_stmt = std::make_unique<StructForStmt>(
-      snode, body->clone(), vectorize, parallelize, block_dim);
+      snode, body->clone(), vectorize, bit_vectorize, parallelize, block_dim);
   new_stmt->mem_access_opt = mem_access_opt;
   return new_stmt;
 }
@@ -253,8 +260,8 @@ std::unique_ptr<Stmt> WhileStmt::clone() const {
   return new_stmt;
 }
 
-GetChStmt::GetChStmt(Stmt *input_ptr, int chid)
-    : input_ptr(input_ptr), chid(chid) {
+GetChStmt::GetChStmt(Stmt *input_ptr, int chid, bool is_bit_vectorized)
+    : input_ptr(input_ptr), chid(chid), is_bit_vectorized(is_bit_vectorized) {
   TI_ASSERT(input_ptr->is<SNodeLookupStmt>());
   input_snode = input_ptr->as<SNodeLookupStmt>()->snode;
   output_snode = input_snode->ch[chid].get();

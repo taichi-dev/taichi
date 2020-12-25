@@ -121,6 +121,9 @@ class Offloader {
     if (!demotable) {
       for (int i = 1; i < path.size(); i++) {
         auto snode_child = path[i];
+        if (snode_child->type == SNodeType::bit_array && i == path.size() - 1) {
+          continue;
+        }
         auto offloaded_clear_list =
             Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::serial);
         offloaded_clear_list->body->insert(

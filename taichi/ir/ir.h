@@ -75,6 +75,7 @@ IRBuilder &current_ast_builder();
 class DecoratorRecorder {
  public:
   int vectorize;
+  int bit_vectorize;
   int parallelize;
   bool strictly_serialized;
   MemoryAccessOptions mem_access_opt;
@@ -756,6 +757,10 @@ extern DecoratorRecorder dec;
 
 inline void Vectorize(int v) {
   dec.vectorize = v;
+}
+
+inline void BitVectorize(int v) {
+  dec.bit_vectorize = v;
 }
 
 inline void Parallelize(int v) {

@@ -10,6 +10,9 @@
 #include "taichi/program/ir_bank.h"
 #include "taichi/program/kernel.h"
 
+// Keep this include in the end!
+#include "taichi/program/async_profiler_switch.h"
+
 TLANG_NAMESPACE_BEGIN
 
 std::unique_ptr<IRNode> IRHandle::clone() const {

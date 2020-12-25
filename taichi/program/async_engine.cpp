@@ -12,6 +12,9 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/program/extension.h"
 
+// Keep this include in the end!
+#include "taichi/program/async_profiler_switch.h"
+
 TLANG_NAMESPACE_BEGIN
 
 ParallelExecutor::ParallelExecutor(int num_threads)

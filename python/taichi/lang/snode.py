@@ -42,7 +42,7 @@ class SNode:
             dimensions = [dimensions] * len(indices)
         return SNode(self.ptr.bit_array(indices, dimensions, num_bits))
 
-    def place(self, *args, offset=None):
+    def place(self, *args, offset=None, shared_exponent=False):
         from .expr import Expr
         from .util import is_taichi_class
         if offset is None:
@@ -50,6 +50,7 @@ class SNode:
         if isinstance(offset, numbers.Number):
             offset = (offset, )
         for arg in args:
+            assert shared_exponent == False
             if isinstance(arg, Expr):
                 self.ptr.place(Expr(arg).ptr, offset)
             elif isinstance(arg, list):

@@ -212,7 +212,10 @@ class CustomIntType : public Type {
 
 class CustomFloatType : public Type {
  public:
-  CustomFloatType(Type *digits_type, Type *compute_type, float64 scale);
+  CustomFloatType(Type *digits_type,
+                  Type *exponent_type,
+                  Type *compute_type,
+                  float64 scale);
 
   std::string to_string() const override;
 
@@ -230,6 +233,7 @@ class CustomFloatType : public Type {
 
  private:
   Type *digits_type_{nullptr};
+  Type *exponent_type_{nullptr};
   Type *compute_type_{nullptr};
   float64 scale_;
 };

@@ -116,9 +116,13 @@ CustomIntType::CustomIntType(int num_bits,
 }
 
 CustomFloatType::CustomFloatType(Type *digits_type,
+                                 Type *exponent_type,
                                  Type *compute_type,
                                  float64 scale)
-    : digits_type_(digits_type), compute_type_(compute_type), scale_(scale) {
+    : digits_type_(digits_type),
+      exponent_type_(exponent_type),
+      compute_type_(compute_type),
+      scale_(scale) {
   TI_ASSERT(digits_type->is<CustomIntType>());
   TI_ASSERT(compute_type->is<PrimitiveType>());
   TI_ASSERT(is_real(compute_type->as<PrimitiveType>()));

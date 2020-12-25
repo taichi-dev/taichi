@@ -739,7 +739,8 @@ void export_lang(py::module &m) {
            py::arg("compute_type_bits") = 32,
            py::return_value_policy::reference)
       .def("get_custom_float_type", &TypeFactory::get_custom_float_type,
-           py::arg("digits_type"), py::arg("compute_type"), py::arg("scale"),
+           py::arg("digits_type"), py::arg("exponent_type"),
+           py::arg("compute_type"), py::arg("scale"),
            py::return_value_policy::reference);
 
   m.def("get_type_factory_instance", TypeFactory::get_instance,

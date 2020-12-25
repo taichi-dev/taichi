@@ -3,6 +3,7 @@ from .util import deprecated
 from .matrix import Matrix, Vector
 from .transformer import TaichiSyntaxError
 from .ndrange import ndrange, GroupedNDRange
+from .type_factory import TypeFactory
 from copy import deepcopy as _deepcopy
 import functools
 import os
@@ -46,9 +47,11 @@ kernel_profiler_clear = lambda: get_runtime().prog.kernel_profiler_clear()
 kernel_profiler_total_time = lambda: get_runtime(
 ).prog.kernel_profiler_total_time()
 
-# Unstable API
+# Legacy API
 type_factory_ = core.get_type_factory_instance()
 
+# Unstable API
+type_factory = TypeFactory()
 
 def memory_profiler_print():
     get_runtime().materialize()

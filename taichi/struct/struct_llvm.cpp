@@ -77,7 +77,7 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
       }
       component_cit->set_physical_type(snode.physical_type);
       if (!arch_is_cpu(arch)) {
-        TI_ERROR_IF(data_type_bits(snode.physical_type) <= 16,
+        TI_ERROR_IF(data_type_bits(snode.physical_type) < 32,
                     "bit_struct physical type must be at least 32 bits on "
                     "non-CPU backends.");
       }

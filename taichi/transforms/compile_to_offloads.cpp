@@ -72,7 +72,7 @@ void compile_to_offloads(IRNode *ir,
 
   // TODO: strictly enforce bit vectorization for x86 cpu and CUDA now
   //       create a separate CompileConfig flag for the new pass
-  if (arch_is_cpu(config.arch) || config.arch  == Arch::cuda) {
+  if (arch_is_cpu(config.arch) || config.arch == Arch::cuda) {
     irpass::bit_loop_vectorize(ir);
     print("Bit Loop Vectorized");
     irpass::analysis::verify(ir);

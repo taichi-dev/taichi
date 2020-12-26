@@ -124,13 +124,17 @@ CustomFloatType::CustomFloatType(Type *digits_type,
       compute_type_(compute_type),
       scale_(scale) {
   TI_ASSERT(digits_type->is<CustomIntType>());
-
-  // Exponent must be unsigned custom int
-  TI_ASSERT(exponent_type->is<CustomIntType>());
-  TI_ASSERT(exponent_type->as<CustomIntType>()->get_is_signed() == false);
-
   TI_ASSERT(compute_type->is<PrimitiveType>());
   TI_ASSERT(is_real(compute_type->as<PrimitiveType>()));
+
+  if (exponent_type_) {
+    // We only support f32 as compute type when when using exponents
+    TI_ASSERT(compute_type_->is_primitive(PrimitiveTypeID::f32));
+    // Exponent must be unsigned custom int
+    TI_ASSERT(exponent_type->is<CustomIntType>());
+    TI_ASSERT(exponent_type->as<CustomIntType>()->get_num_bits() <= 8);
+    TI_ASSERT(get_digit_bits() <= 23);
+  }
 }
 
 std::string CustomFloatType::to_string() const {
@@ -139,7 +143,6 @@ std::string CustomFloatType::to_string() const {
 }
 
 int CustomFloatType::get_exponent_conversion_offset() const {
-  TI_ASSERT(compute_type_->is_primitive(PrimitiveTypeID::f32));
   // Note that f32 has exponent offset -127
   return 127 -
          (1 << (exponent_type_->as<CustomIntType>()->get_num_bits() - 1)) + 1;

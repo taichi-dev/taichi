@@ -1209,9 +1209,11 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
         // Extract exponent and digits from compute type, assumed to be f32 for
         // now.
         TI_ASSERT(cft->get_compute_type()->is_primitive(PrimitiveTypeID::f32));
-        // TODO: handle negative digits (sign bit) and negative exponents
+
         auto f32_bits = builder->CreateBitCast(
             llvm_val[stmt->data], llvm::Type::getInt32Ty(*llvm_context));
+        auto sign_bit =
+            builder->CreateAnd(f32_bits, tlctx->get_constant(0x80000000));
         auto exponent_bits = builder->CreateAShr(f32_bits, 23);
         exponent_bits = builder->CreateAnd(exponent_bits,
                                            tlctx->get_constant((1 << 8) - 1));
@@ -1219,9 +1221,17 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
         // TODO: digits may be signed
         auto value_bits = builder->CreateAShr(
             f32_bits, tlctx->get_constant(23 - cft->get_digit_bits()));
+
         digit_bits = builder->CreateAnd(
             value_bits,
             tlctx->get_constant((1 << (cft->get_digit_bits())) - 1));
+
+        if (cft->get_is_signed()) {
+          // insert the sign bit
+          digit_bits = builder->CreateOr(
+              digit_bits,
+              builder->CreateLShr(sign_bit, 31 - cft->get_digit_bits()));
+        }
 
         auto exponent_cit = exp->as<CustomIntType>();
 
@@ -1366,8 +1376,6 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
           // Construct an f32 out of exponent_val and digits
           // Assuming digits and exponent_val are i32
           // f32 = 1 sign bit + 8 exponent bits + 23 fraction bits
-          auto sign_bit =
-              builder->CreateAnd(digits, tlctx->get_constant(0x80000000));
 
           auto exponent_bits =
               builder->CreateShl(exponent_val, tlctx->get_constant(23));
@@ -1377,8 +1385,23 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
                            PrimitiveTypeID::u32),
                        digits);
 
+          auto sign_bit = builder->CreateAnd(
+              digits, tlctx->get_constant(1u << cft->get_digit_bits()));
+
+          sign_bit = builder->CreateShl(
+              sign_bit, tlctx->get_constant(31 - cft->get_digit_bits()));
+
+          create_print("Sign bit",
+                       TypeFactory::get_instance().get_primitive_type(
+                           PrimitiveTypeID::u32),
+                       sign_bit);
+
           digits = builder->CreateShl(
               digits, tlctx->get_constant(23 - cft->get_digit_bits()));
+
+          if (cft->get_is_signed()) {
+            digits = builder->CreateOr(digits, sign_bit);
+          }
 
           auto fraction_bits = builder->CreateAnd(digits, (1u << 23) - 1);
           auto f32_bits = builder->CreateOr(

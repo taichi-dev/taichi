@@ -21,10 +21,7 @@ def main():
     ti.get_runtime().materialize()
     ti.get_runtime().print_snode_tree()
 
-    x[None] = 3
-    print(x[None])
-    return
-    for v in [128, 256, 512, 1024]:
+    for v in [3, 4, 5, 6, 7, 128, 256, 512, 1024]:
         x[None] = v
         print(x[None])
         assert x[None] == v

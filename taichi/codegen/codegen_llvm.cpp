@@ -1216,6 +1216,7 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
         exponent_bits = builder->CreateAnd(exponent_bits,
                                            tlctx->get_constant((1 << 8) - 1));
         // f32 = 1 sign bit + 8 exponent bits + 23 fraction bits
+        // TODO: digits may be signed
         auto value_bits = builder->CreateAShr(
             f32_bits, tlctx->get_constant(23 - digits_cit->get_num_bits()));
         digit_bits = builder->CreateAnd(
@@ -1364,18 +1365,30 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
           auto exponent_bits = builder->CreateAnd(
               builder->CreateShl(exponent_val, tlctx->get_constant(23)),
               tlctx->get_constant((1u << 31) - (1u << 22)));
-          auto fraction_bits = builder->CreateAnd(digits, (1 << 23) - 1);
+
+          create_print("Loaded digits",
+                       TypeFactory::get_instance().get_primitive_type(
+                           PrimitiveTypeID::u32),
+                       digits);
+
+          digits = builder->CreateShl(
+              digits,
+              tlctx->get_constant(
+                  23 -
+                  cft->get_digits_type()->as<CustomIntType>()->get_num_bits()));
+
+          auto fraction_bits = builder->CreateAnd(digits, (1u << 23) - 1);
           auto f32_bits = builder->CreateOr(
               sign_bit, builder->CreateOr(exponent_bits, fraction_bits));
 
           create_print("Loaded exponent bits",
                        TypeFactory::get_instance().get_primitive_type(
-                           PrimitiveTypeID::i32),
+                           PrimitiveTypeID::u32),
                        exponent_bits);
 
           create_print("Loaded fraction bits",
                        TypeFactory::get_instance().get_primitive_type(
-                           PrimitiveTypeID::i32),
+                           PrimitiveTypeID::u32),
                        fraction_bits);
 
           // TODO: remove this hack...

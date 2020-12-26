@@ -8,9 +8,10 @@ from pytest import approx
 
 def main():
     ti.init(print_ir=True)
-    ci13 = ti.type_factory_.get_custom_int_type(13, True)
+    # Note: digits_type must be unsigned with using exponent
+    cu13 = ti.type_factory_.get_custom_int_type(13, False)
     exp = ti.type_factory_.get_custom_int_type(6, True)
-    cft = ti.type_factory.custom_float(significand_type=ci13,
+    cft = ti.type_factory.custom_float(significand_type=cu13,
                                        exponent_type=exp,
                                        scale=1)
     x = ti.field(dtype=cft)

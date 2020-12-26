@@ -1172,6 +1172,24 @@ void CodeGenLLVM::visit(GlobalPtrStmt *stmt) {
   TI_ERROR("Global Ptrs should have been lowered.");
 }
 
+void CodeGenLLVM::store_custom_int(llvm::Value *bit_ptr,
+                                   CustomIntType *cit,
+                                   llvm::Value *value) {
+  llvm::Value *byte_ptr = nullptr, *bit_offset = nullptr;
+  read_bit_pointer(bit_ptr, byte_ptr, bit_offset);
+  // TODO(type): CUDA only supports atomicCAS on 32- and 64-bit integers.
+  // Try to support CustomInt/FloatType with 8/16-bit physical
+  // types.
+
+  create_call(fmt::format("set_partial_bits_b{}",
+                          data_type_bits(cit->get_physical_type())),
+              {builder->CreateBitCast(byte_ptr,
+                                      llvm_ptr_type(cit->get_physical_type())),
+               bit_offset, tlctx->get_constant(cit->get_num_bits()),
+               builder->CreateIntCast(
+                   value, llvm_type(cit->get_physical_type()), false)});
+}
+
 void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
   TI_ASSERT(!stmt->parent->mask() || stmt->width() == 1);
   TI_ASSERT(llvm_val[stmt->data]);
@@ -1190,18 +1208,7 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
     } else {
       TI_NOT_IMPLEMENTED
     }
-    llvm::Value *byte_ptr = nullptr, *bit_offset = nullptr;
-    read_bit_pointer(llvm_val[stmt->ptr], byte_ptr, bit_offset);
-    // TODO(type): CUDA only supports atomicCAS on 32- and 64-bit integers.
-    // Try to support CustomInt/FloatType with 8/16-bit physical
-    // types.
-    create_call(fmt::format("set_partial_bits_b{}",
-                            data_type_bits(cit->get_physical_type())),
-                {builder->CreateBitCast(
-                     byte_ptr, llvm_ptr_type(cit->get_physical_type())),
-                 bit_offset, tlctx->get_constant(cit->get_num_bits()),
-                 builder->CreateIntCast(
-                     store_value, llvm_type(cit->get_physical_type()), false)});
+    store_custom_int(llvm_val[stmt->ptr], cit, store_value);
   } else {
     builder->CreateStore(llvm_val[stmt->data], llvm_val[stmt->ptr]);
   }

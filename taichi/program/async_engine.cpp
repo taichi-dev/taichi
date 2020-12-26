@@ -214,7 +214,6 @@ void AsyncEngine::synchronize() {
   sfg->reid_nodes();
   sfg->reid_pending_nodes();
   sfg->sort_node_edges();
-  auto init_size = sfg->size();
   TI_TRACE("Synchronizing SFG of {} nodes ({} pending)", sfg->size(),
            sfg->num_pending_tasks());
   debug_sfg("initial");

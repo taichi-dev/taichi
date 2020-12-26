@@ -18,6 +18,8 @@ class IRNodeComparator : public IRVisitor {
   std::unordered_map<int, int> id_map;
 
   bool recursively_check_;
+
+  // Compare if two IRNodes definitely have the same value instead.
   bool check_same_value_;
 
   std::unordered_set<AsyncState> possibly_modified_states_;
@@ -121,12 +123,23 @@ class IRNodeComparator : public IRVisitor {
       return;
     }
     auto other = other_node->as<Stmt>();
+    if (stmt == other) {
+      return;
+    }
 
     // If two identical statements can have different values, return false.
+    // TODO: actually the condition should be "can stmt be an operand of
+    //  another statement?"
+    const bool stmt_has_value = !stmt->is_container_statement();
     // TODO: two identical GlobalPtrStmts cannot have different values,
     //  but GlobalPtrStmt::common_statement_eliminable() is false.
-    if (check_same_value_ && stmt != other && !stmt->is_container_statement() &&
-        !stmt->common_statement_eliminable() && !stmt->is<GlobalPtrStmt>()) {
+    const bool identical_stmts_can_have_different_value =
+        stmt_has_value && !stmt->common_statement_eliminable() &&
+        !stmt->is<GlobalPtrStmt>();
+    // Note that we do not need to test !stmt2->common_statement_eliminable()
+    // because if this condition does not hold,
+    // same_value(stmt1, stmt2) returns false anyway.
+    if (check_same_value_ && identical_stmts_can_have_different_value) {
       if (all_states_can_be_modified_) {
         same = false;
         return;
@@ -148,9 +161,6 @@ class IRNodeComparator : public IRVisitor {
         }
       }
     }
-    // Note that we do not need to test !stmt2->common_statement_eliminable()
-    // because if this condition does not hold,
-    // same_statements(stmt1, stmt2) returns false anyway.
 
     // field check
     if (check_same_value_ && stmt->is<GlobalPtrStmt>()) {

@@ -102,7 +102,7 @@ bool same_statements(
  * Test if stmt1 and stmt2 definitely have the same value.
  *
  * @param possibly_modified_states
- *   Only states in possibly_modified_states can be modified
+ *   Assumes that only states in possibly_modified_states can be modified
  *   between stmt1 and stmt2.
  *
  * @param id_map

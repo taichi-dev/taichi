@@ -1213,6 +1213,8 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
         auto f32_bits = builder->CreateBitCast(
             llvm_val[stmt->data], llvm::Type::getInt32Ty(*llvm_context));
         auto exponent_bits = builder->CreateAShr(f32_bits, 23);
+        exponent_bits = builder->CreateAnd(exponent_bits,
+                                           tlctx->get_constant((1 << 8) - 1));
         // f32 = 1 sign bit + 8 exponent bits + 23 fraction bits
         auto value_bits = builder->CreateAShr(
             f32_bits, tlctx->get_constant(23 - digits_cit->get_num_bits()));
@@ -1224,6 +1226,19 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
 
         auto digits_snode = stmt->ptr->as<GetChStmt>()->output_snode;
         auto exponent_snode = digits_snode->exp_snode;
+
+        exponent_bits =
+            builder->CreateSub(exponent_bits, tlctx->get_constant(127));
+
+        create_print("Stored exponent bits",
+                     TypeFactory::get_instance().get_primitive_type(
+                         PrimitiveTypeID::i32),
+                     exponent_bits);
+
+        create_print("Stored digits bits",
+                     TypeFactory::get_instance().get_primitive_type(
+                         PrimitiveTypeID::i32),
+                     digit_bits);
 
         // Compute the bit pointer of the exponent bits.
         TI_ASSERT(digits_snode->parent == exponent_snode->parent);
@@ -1331,6 +1346,15 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
         auto exponent_val =
             load_as_custom_int(exponent_bit_ptr, exponent_snode->dt.get_ptr());
 
+        // Add the 127 exponent offset of f32
+        exponent_val =
+            builder->CreateAdd(exponent_val, tlctx->get_constant(127));
+
+        create_print("Loaded exponent bits initial",
+                     TypeFactory::get_instance().get_primitive_type(
+                         PrimitiveTypeID::i32),
+                     exponent_val);
+
         if (cft->get_compute_type()->is_primitive(PrimitiveTypeID::f32)) {
           // Construct an f32 out of exponent_val and digits
           // Assuming digits and exponent_val are i32
@@ -1339,10 +1363,20 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
               builder->CreateAnd(digits, tlctx->get_constant(0x80000000));
           auto exponent_bits = builder->CreateAnd(
               builder->CreateShl(exponent_val, tlctx->get_constant(23)),
-              tlctx->get_constant((1 << 30) - (1 << 22)));
-          auto fraction_bits = builder->CreateAnd(digits, (1 << 22) - 1);
+              tlctx->get_constant((1u << 31) - (1u << 22)));
+          auto fraction_bits = builder->CreateAnd(digits, (1 << 23) - 1);
           auto f32_bits = builder->CreateOr(
               sign_bit, builder->CreateOr(exponent_bits, fraction_bits));
+
+          create_print("Loaded exponent bits",
+                       TypeFactory::get_instance().get_primitive_type(
+                           PrimitiveTypeID::i32),
+                       exponent_bits);
+
+          create_print("Loaded fraction bits",
+                       TypeFactory::get_instance().get_primitive_type(
+                           PrimitiveTypeID::i32),
+                       fraction_bits);
 
           // TODO: remove this hack...
           f32_bits =

@@ -131,21 +131,21 @@ class IRNodeComparator : public IRVisitor {
         same = false;
         return;
       } else {
-        // "break" all branches that do not result in "same = false"
-        do {
-          if (auto global_load = stmt->cast<GlobalLoadStmt>()) {
-            if (auto global_ptr = global_load->ptr->cast<GlobalPtrStmt>()) {
-              TI_ASSERT(global_ptr->width() == 1);
-              if (possibly_modified_states_.count(ir_bank_->get_async_state(
-                      global_ptr->snodes[0], AsyncState::Type::value)) == 0) {
-                break;
-              }
+        bool same_value = false;
+        if (auto global_load = stmt->cast<GlobalLoadStmt>()) {
+          if (auto global_ptr = global_load->ptr->cast<GlobalPtrStmt>()) {
+            TI_ASSERT(global_ptr->width() == 1);
+            if (possibly_modified_states_.count(ir_bank_->get_async_state(
+                    global_ptr->snodes[0], AsyncState::Type::value)) == 0) {
+              same_value = true;
             }
-            // TODO: other cases?
           }
+          // TODO: other cases?
+        }
+        if (!same_value) {
           same = false;
           return;
-        } while (false);
+        }
       }
     }
     // Note that we do not need to test !stmt2->common_statement_eliminable()

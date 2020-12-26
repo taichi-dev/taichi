@@ -64,8 +64,8 @@ def test_custom_int_atomics_b64():
 def test_custom_float_atomics():
     ci13 = ti.type_factory_.get_custom_int_type(13, True)
     ci19 = ti.type_factory_.get_custom_int_type(19, False)
-    cft13 = ti.type_factory_.get_custom_float_type(ci13, ti.f32.get_ptr(), 0.1)
-    cft19 = ti.type_factory_.get_custom_float_type(ci19, ti.f32.get_ptr(), 0.1)
+    cft13 = ti.type_factory.custom_float(significand_type=ci13, scale=0.1)
+    cft19 = ti.type_factory.custom_float(significand_type=ci19, scale=0.1)
 
     x = ti.field(dtype=cft13)
     y = ti.field(dtype=cft19)

@@ -10,7 +10,7 @@ class TypeFactory:
                      scale=1.0):
         import taichi as ti
         if compute_type is None:
-            compute_type = ti.get_runtime().get_default_fp().get_ptr()
+            compute_type = ti.get_runtime().default_fp.get_ptr()
         return self.core.get_custom_float_type(significand_type,
                                                exponent_type,
                                                compute_type,

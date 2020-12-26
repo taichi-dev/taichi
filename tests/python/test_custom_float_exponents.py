@@ -8,9 +8,9 @@ from pytest import approx
 def main():
     ti.init(print_ir=True)
     ci13 = ti.type_factory_.get_custom_int_type(13, True)
-    ci8 = ti.type_factory_.get_custom_int_type(8, True)
+    exp = ti.type_factory_.get_custom_int_type(6, True)
     cft = ti.type_factory.custom_float(significand_type=ci13,
-                                       exponent_type=ci8, scale=1)
+                                       exponent_type=exp, scale=1)
     x = ti.field(dtype=cft)
 
     ti.root._bit_struct(num_bits=32).place(x)
@@ -19,19 +19,7 @@ def main():
     ti.get_runtime().print_snode_tree()
 
 
-    @ti.kernel
-    def foo():
-        x[None] = 0.7
-        # print(x[None])
-        # x[None] = x[None] + 0.4
-
-
-    foo()
+    x[None] = 1024
     print(x[None])
-    exit(0)
-    assert x[None] == approx(1.1)
-    x[None] = 0.64
-
-    # next step: implement load/store of cft with exponents in the codegen.
 
 main()

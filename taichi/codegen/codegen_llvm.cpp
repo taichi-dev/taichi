@@ -1343,8 +1343,16 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
           auto fraction_bits = builder->CreateAnd(digits, (1 << 22) - 1);
           auto f32_bits = builder->CreateOr(
               sign_bit, builder->CreateOr(exponent_bits, fraction_bits));
+
+          // TODO: remove this hack...
+          f32_bits =
+              builder->CreateOr(f32_bits, tlctx->get_constant(0x40000000));
           llvm_val[stmt] = builder->CreateBitCast(
               f32_bits, llvm::Type::getFloatTy(*llvm_context));
+          create_print("Loaded f32 bits",
+                       TypeFactory::get_instance().get_primitive_type(
+                           PrimitiveTypeID::i32),
+                       f32_bits);
         } else {
           TI_NOT_IMPLEMENTED;
         }

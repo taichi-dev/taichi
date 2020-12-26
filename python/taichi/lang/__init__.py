@@ -53,6 +53,7 @@ type_factory_ = core.get_type_factory_instance()
 # Unstable API
 type_factory = TypeFactory()
 
+
 def memory_profiler_print():
     get_runtime().materialize()
     get_runtime().prog.print_memory_profiler_info()

@@ -81,6 +81,7 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
                     "bit_struct physical type must be at least 32 bits on "
                     "non-CPU backends.");
       }
+      ch->bit_offset = total_offset;
       total_offset += component_cit->get_num_bits();
     }
 

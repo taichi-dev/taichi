@@ -1218,22 +1218,26 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
         // f32 = 1 sign bit + 8 exponent bits + 23 fraction bits
         // TODO: digits may be signed
         auto value_bits = builder->CreateAShr(
-            f32_bits, tlctx->get_constant(23 - digits_cit->get_num_bits()));
+            f32_bits, tlctx->get_constant(23 - cft->get_digit_bits()));
         digit_bits = builder->CreateAnd(
             value_bits,
-            tlctx->get_constant((1 << (digits_cit->get_num_bits())) - 1));
+            tlctx->get_constant((1 << (cft->get_digit_bits())) - 1));
 
         auto exponent_cit = exp->as<CustomIntType>();
 
         auto digits_snode = stmt->ptr->as<GetChStmt>()->output_snode;
         auto exponent_snode = digits_snode->exp_snode;
 
-        exponent_bits =
-            builder->CreateSub(exponent_bits, tlctx->get_constant(127));
+        // Since we have fewer bits in the exponent type than in f32, an
+        // offset is necessary to make sure the stored exponent values are
+        // representable by the exponent custom int type.
+        exponent_bits = builder->CreateSub(
+            exponent_bits,
+            tlctx->get_constant(cft->get_exponent_conversion_offset()));
 
         create_print("Stored exponent bits",
                      TypeFactory::get_instance().get_primitive_type(
-                         PrimitiveTypeID::i32),
+                         PrimitiveTypeID::u32),
                      exponent_bits);
 
         create_print("Stored digits bits",
@@ -1348,8 +1352,9 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
             load_as_custom_int(exponent_bit_ptr, exponent_snode->dt.get_ptr());
 
         // Add the 127 exponent offset of f32
-        exponent_val =
-            builder->CreateAdd(exponent_val, tlctx->get_constant(127));
+        exponent_val = builder->CreateAdd(
+            exponent_val,
+            tlctx->get_constant(cft->get_exponent_conversion_offset()));
 
         create_print("Loaded exponent bits initial",
                      TypeFactory::get_instance().get_primitive_type(
@@ -1372,10 +1377,7 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
                        digits);
 
           digits = builder->CreateShl(
-              digits,
-              tlctx->get_constant(
-                  23 -
-                  cft->get_digits_type()->as<CustomIntType>()->get_num_bits()));
+              digits, tlctx->get_constant(23 - cft->get_digit_bits()));
 
           auto fraction_bits = builder->CreateAnd(digits, (1u << 23) - 1);
           auto f32_bits = builder->CreateOr(

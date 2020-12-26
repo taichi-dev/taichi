@@ -124,6 +124,11 @@ CustomFloatType::CustomFloatType(Type *digits_type,
       compute_type_(compute_type),
       scale_(scale) {
   TI_ASSERT(digits_type->is<CustomIntType>());
+
+  // Exponent must be unsigned custom int
+  TI_ASSERT(exponent_type->is<CustomIntType>());
+  TI_ASSERT(exponent_type->as<CustomIntType>()->get_is_signed() == false);
+
   TI_ASSERT(compute_type->is<PrimitiveType>());
   TI_ASSERT(is_real(compute_type->as<PrimitiveType>()));
 }
@@ -131,6 +136,22 @@ CustomFloatType::CustomFloatType(Type *digits_type,
 std::string CustomFloatType::to_string() const {
   return fmt::format("cf(d={} c={} s={})", digits_type_->to_string(),
                      compute_type_->to_string(), scale_);
+}
+
+int CustomFloatType::get_exponent_conversion_offset() const {
+  TI_ASSERT(compute_type_->is_primitive(PrimitiveTypeID::f32));
+  // Note that f32 has exponent offset -127
+  return 127 -
+         (1 << (exponent_type_->as<CustomIntType>()->get_num_bits() - 1)) + 1;
+}
+
+int CustomFloatType::get_digit_bits() const {
+  return digits_type_->as<CustomIntType>()->get_num_bits() -
+         (int)get_is_signed();
+}
+
+bool CustomFloatType::get_is_signed() const {
+  return digits_type_->as<CustomIntType>()->get_is_signed();
 }
 
 BitStructType::BitStructType(PrimitiveType *physical_type,

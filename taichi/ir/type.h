@@ -231,6 +231,12 @@ class CustomFloatType : public Type {
     return exponent_type_;
   }
 
+  int get_exponent_conversion_offset() const;
+
+  int get_digit_bits() const;
+
+  bool get_is_signed() const;
+
   Type *get_compute_type() override {
     return compute_type_;
   }

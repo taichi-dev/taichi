@@ -3,6 +3,9 @@ class TypeFactory:
         from taichi.core import ti_core
         self.core = ti_core.get_type_factory_instance()
 
+    def custom_int(self, bits, signed=True):
+        return self.core.get_custom_int_type(bits, signed)
+
     def custom_float(self,
                      significand_type,
                      exponent_type=None,

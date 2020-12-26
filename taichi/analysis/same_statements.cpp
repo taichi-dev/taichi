@@ -115,15 +115,11 @@ class IRNodeComparator : public IRVisitor {
   }
 
   void basic_check(Stmt *stmt) {
-    if (verbose)
-      std::cout << "checking " << stmt->id << std::endl;
     // type check
     if (typeid(*other_node) != typeid(*stmt)) {
       same = false;
       return;
     }
-    if (verbose)
-      std::cout << "qqq" << std::endl;
     auto other = other_node->as<Stmt>();
 
     // If two identical statements can have different values, return false.
@@ -146,30 +142,18 @@ class IRNodeComparator : public IRVisitor {
               }
             }
             // TODO: other cases?
-          } else if (auto global_store = stmt->cast<GlobalStoreStmt>()) {
-            if (auto global_ptr = global_store->ptr->cast<GlobalPtrStmt>()) {
-              TI_ASSERT(global_ptr->width() == 1);
-              if (possibly_modified_states_.count(ir_bank_->get_async_state(
-                      global_ptr->snodes[0], AsyncState::Type::value)) == 0) {
-                break;
-              }
-            }
           }
           same = false;
           return;
         } while (false);
       }
     }
-    if (verbose)
-      std::cout << "www" << std::endl;
     // Note that we do not need to test !stmt2->common_statement_eliminable()
     // because if this condition does not hold,
     // same_statements(stmt1, stmt2) returns false anyway.
 
     // field check
     if (check_same_value_ && stmt->is<GlobalPtrStmt>()) {
-      if (verbose)
-        std::cout << "eee" << std::endl;
       // Special case: we do not care the "activate" field when checking
       // whether two global pointers share the same value.
       // And we cannot use irpass::analysis::definitely_same_address()
@@ -183,15 +167,11 @@ class IRNodeComparator : public IRVisitor {
         return;
       }
     } else {
-      if (verbose)
-        std::cout << "rrr" << std::endl;
       if (!stmt->field_manager.equal(other->field_manager)) {
         same = false;
         return;
       }
     }
-    if (verbose)
-      std::cout << "ttt" << std::endl;
 
     // operand check
     if (stmt->num_operands() != other->num_operands()) {
@@ -207,8 +187,6 @@ class IRNodeComparator : public IRVisitor {
         continue;
       check_mapping(stmt->operand(i), other->operand(i));
     }
-    if (verbose)
-      std::cout << "yyy" << std::endl;
 
     map_id(stmt->id, other->id);
   }
@@ -295,7 +273,6 @@ class IRNodeComparator : public IRVisitor {
       other_node = other;
     }
   }
-  bool verbose{false};
 
   static bool run(IRNode *root1,
                   IRNode *root2,
@@ -306,8 +283,6 @@ class IRNodeComparator : public IRVisitor {
                   IRBank *ir_bank) {
     IRNodeComparator comparator(root2, id_map, check_same_value,
                                 possibly_modified_states, ir_bank);
-//    if (check_same_value && id_map.has_value())
-//      comparator.verbose = true;
     root1->accept(&comparator);
     return comparator.same;
   }

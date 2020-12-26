@@ -215,12 +215,8 @@ void AsyncEngine::synchronize() {
   sfg->reid_pending_nodes();
   sfg->sort_node_edges();
   auto init_size = sfg->size();
-  std::cout << std::flush;
-  TI_INFO("Synchronizing SFG of {} nodes ({} pending)", sfg->size(),
+  TI_TRACE("Synchronizing SFG of {} nodes ({} pending)", sfg->size(),
            sfg->num_pending_tasks());
-  std::cout << std::flush;
-  sfg->print();
-  std::cout << std::flush;
   debug_sfg("initial");
   if (program->config.debug) {
     sfg->verify();
@@ -268,7 +264,6 @@ void AsyncEngine::synchronize() {
   // Clear SFG debug stats
   cur_sync_sfg_debug_counter_ = 0;
   cur_sync_sfg_debug_per_stage_counts_.clear();
-  //TI_ASSERT(init_size <= 20);
 }
 
 void AsyncEngine::debug_sfg(const std::string &stage) {

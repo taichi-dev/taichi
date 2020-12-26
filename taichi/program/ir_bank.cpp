@@ -77,18 +77,20 @@ IRHandle IRBank::fuse(IRHandle handle_a, IRHandle handle_b, Kernel *kernel) {
     return result;
   }
 
-  TI_INFO("Begin uncached fusion");
-  std::cout << handle_a.ir()->get_kernel()->name << " " << (handle_a.ir()->as<OffloadedStmt>()->has_body() ? handle_a.ir()->as<OffloadedStmt>()->body->size() : -1) << std::endl;
-  std::cout << handle_b.ir()->get_kernel()->name << " " << (handle_b.ir()->as<OffloadedStmt>()->has_body() ? handle_b.ir()->as<OffloadedStmt>()->body->size() : -1) << std::endl;
+  TI_TRACE("Begin uncached fusion: [{}(size={})] <- [{}(size={})]",
+           handle_a.ir()->get_kernel()->name,
+           (handle_a.ir()->as<OffloadedStmt>()->has_body()
+                ? handle_a.ir()->as<OffloadedStmt>()->body->size()
+                : -1),
+           handle_b.ir()->get_kernel()->name,
+           (handle_b.ir()->as<OffloadedStmt>()->has_body()
+                ? handle_a.ir()->as<OffloadedStmt>()->body->size()
+                : -1));
   // We are about to change both |task_a| and |task_b|. Clone them first.
   auto cloned_task_a = handle_a.clone();
   auto cloned_task_b = handle_b.clone();
   auto task_a = cloned_task_a->as<OffloadedStmt>();
   auto task_b = cloned_task_b->as<OffloadedStmt>();
-//  std::cout << "before: " << std::endl;
-//  irpass::print((IRNode *)handle_a.ir());
-//  irpass::print((IRNode *)handle_b.ir());
-//  std::cout << std::flush;
   // TODO: in certain cases this optimization can be wrong!
   // Fuse task b into task_a
   for (int j = 0; j < (int)task_b->body->size(); j++) {
@@ -102,9 +104,6 @@ IRHandle IRBank::fuse(IRHandle handle_a, IRHandle handle_b, Kernel *kernel) {
   irpass::full_simplify(task_a, /*after_lower_access=*/false, kernel);
   // For now, re_id is necessary for the hash to be correct.
   irpass::re_id(task_a);
-//  std::cout << "after: " << std::endl;
-//  irpass::print(task_a);
-//  std::cout << std::flush;
 
   auto h = get_hash(task_a);
   result = IRHandle(task_a, h);

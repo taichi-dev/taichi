@@ -12,6 +12,9 @@
 #include "taichi/program/async_engine.h"
 #include "taichi/util/statistics.h"
 
+// Keep this include in the end!
+#include "taichi/program/async_profiler_switch.h"
+
 TLANG_NAMESPACE_BEGIN
 
 namespace {
@@ -1327,6 +1330,7 @@ bool StateFlowGraph::optimize_dead_store() {
 }
 
 void StateFlowGraph::verify(bool also_verify_ir) const {
+#ifndef ASYNC_ENGINE_RELEASE_MODE
   TI_AUTO_PROF
   // Check nodes
   const int n = nodes_.size();
@@ -1425,6 +1429,7 @@ void StateFlowGraph::verify(bool also_verify_ir) const {
       irpass::analysis::verify(nodes_[i]->rec.stmt());
     }
   }
+#endif  // ASYNC_ENGINE_RELEASE_MODE
 }
 
 bool StateFlowGraph::demote_activation() {

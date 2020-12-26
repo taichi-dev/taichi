@@ -139,8 +139,8 @@ void CodeGenLLVM::visit(AllocaStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(RandStmt *stmt) {
-  llvm_val[stmt] =
-      create_call(fmt::format("rand_{}", data_type_name(stmt->ret_type)));
+  llvm_val[stmt] = create_call(
+      fmt::format("rand_{}", data_type_name(stmt->ret_type)), {get_context()});
 }
 
 void CodeGenLLVM::emit_extra_unary(UnaryOpStmt *stmt) {
@@ -1571,6 +1571,18 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
 
   llvm::Function *body = nullptr;
   auto leaf_block = stmt->snode;
+  // When looping over bit_arrays, we generate struct for on bit array's parent
+  // node (usually "dense") instead of itself for higher performance. Also, note
+  // that the loop must be bit_vectorized.
+  if (leaf_block->type == SNodeType::bit_array && leaf_block->parent) {
+    if (leaf_block->parent->type == SNodeType::dense) {
+      leaf_block = leaf_block->parent;
+    } else {
+      TI_ERROR(
+          "Struct-for looping through bit array but its parent is not dense")
+    }
+  }
+
   {
     // Create the loop body function
     auto guard = get_function_creation_guard({
@@ -1696,6 +1708,14 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     //    voxels
     auto exec_cond = tlctx->get_constant(true);
     auto snode = stmt->snode;
+    if (snode->type == SNodeType::bit_array && snode->parent) {
+      if (snode->parent->type == SNodeType::dense) {
+        snode = snode->parent;
+      } else {
+        TI_ERROR(
+            "Struct-for looping through bit array but its parent is not dense");
+      }
+    }
 
     auto coord_object = RuntimeObject("PhysicalCoordinates", this,
                                       builder.get(), new_coordinates);

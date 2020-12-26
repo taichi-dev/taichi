@@ -158,11 +158,11 @@ void ProfilerRecords::print(ProfilerRecordNode *node, int depth) {
   if (depth == 0)
     level_color = fmt::color::red;
   else if (depth == 1)
-    level_color = fmt::color::green;
+    level_color = fmt::color::light_green;
   else if (depth == 2)
     level_color = fmt::color::yellow;
   else if (depth == 3)
-    level_color = fmt::color::blue;
+    level_color = fmt::color::light_blue;
   else if (depth >= 4)
     level_color = fmt::color::magenta;
   if (depth == 0) {

@@ -654,12 +654,41 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
 
   auto edge_fusible = [&](int a, int b) {
     TI_PROFILER("edge_fusible");
+    TI_ASSERT(a >= 0 && a < nodes.size() && b >= 0 && b < nodes.size());
+    //std::cout << "fusible " << nodes[a]->rec.id << " " << nodes[b]->rec.id
+    //          << std::endl;
+    bool verbose = (nodes[a]->rec.id == 117 && nodes[b]->rec.id == 124);
+    if (nodes[a]->rec.stmt()->has_body() && nodes[a]->rec.stmt()->body->size() > 100 &&
+    nodes[b]->rec.stmt()->has_body() && nodes[b]->rec.stmt()->body->size() > 100) {
+      verbose = true;
+    } else {
+    }
+    verbose = false;
+    if (verbose) {
+      std::cout << "verbose" << std::endl;
+      std::cout << nodes[a]->rec.stmt()->get_kernel()->name << " " << nodes[a]->rec.id << " " << (nodes[a]->rec.stmt()->has_body() ? nodes[a]->rec.stmt()->body->size() : -1) << std::endl;
+      std::cout << nodes[b]->rec.stmt()->get_kernel()->name << " " << nodes[b]->rec.id << " " << (nodes[b]->rec.stmt()->has_body() ? nodes[b]->rec.stmt()->body->size() : -1) << std::endl;
+      //irpass::print(nodes[a]->rec.stmt());
+      //irpass::print(nodes[b]->rec.stmt());
+    }
+    if (verbose)
+      std::cout << "aaaaa" << std::endl;
     // Check if a and b are fusible if there is an edge (a, b).
     if (fused[a] || fused[b] || !fusion_meta[a].fusible ||
         fusion_meta[a] != fusion_meta[b]) {
       return false;
     }
+    if (verbose)
+      std::cout << "bbbbb" << std::endl;
     if (nodes[a]->meta->type != OffloadedTaskType::serial) {
+      std::unordered_map<int, int> offload_map;
+      offload_map[0] = 0;
+      std::unordered_set<AsyncState> modified_states =
+          get_task_meta(ir_bank_, nodes[a]->rec)->output_states;
+      std::unordered_set<AsyncState> modified_states_b =
+          get_task_meta(ir_bank_, nodes[a]->rec)->output_states;
+      modified_states.insert(modified_states_b.begin(), modified_states_b.end());
+      AsyncStateSet modified_states_set{modified_states};
       for (auto state_iter = nodes[a]->output_edges.get_state_iterator();
            !state_iter.done(); ++state_iter) {
         auto state = state_iter.get_state();
@@ -676,15 +705,12 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
         if (state_iter.has_edge(nodes[b])) {
           if (nodes[a]->meta->loop_unique.count(snode) == 0 ||
               nodes[b]->meta->loop_unique.count(snode) == 0) {
+            if (verbose) {
+              std::cout << "not loop-unique "
+                        << snode->get_node_type_name_hinted() << std::endl;
+            }
             return false;
           }
-          std::unordered_map<int, int> offload_map;
-          offload_map[0] = 0;
-          std::unordered_set<AsyncState> modified_states =
-              get_task_meta(ir_bank_, nodes[a]->rec)->output_states;
-          modified_states.merge(
-              get_task_meta(ir_bank_, nodes[b]->rec)->output_states);
-          AsyncStateSet modified_states_set{modified_states};
           auto same_loop_unique_address = [&](GlobalPtrStmt *ptr1,
                                               GlobalPtrStmt *ptr2) {
             if (!ptr1 || !ptr2) {
@@ -709,14 +735,25 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
           };
           if (!same_loop_unique_address(nodes[a]->meta->loop_unique[snode],
                                         nodes[b]->meta->loop_unique[snode])) {
+            if (verbose) {
+              std::cout << "not loop-unique address "
+                        << snode->get_node_type_name_hinted() << std::endl;
+            }
             return false;
           }
         }
       }
     }
+    if (verbose)
+      std::cout << "ccccc" << std::endl;
     // check if a doesn't have a path to b of length >= 2
     auto a_has_path_to_b = has_path[a] & has_path_reverse[b];
     a_has_path_to_b[a] = a_has_path_to_b[b] = false;
+    if (verbose) {
+      if (a_has_path_to_b.none()) {
+        std::cout << "ddddd" << std::endl;
+      }
+    }
     return a_has_path_to_b.none();
   };
 
@@ -787,12 +824,14 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
       // Fuse no more than one task into task i
       bool i_updated = false;
       for (auto &edge : nodes[i]->output_edges.get_all_edges()) {
-        const int j = edge.second->pending_node_id - begin;
-        if (j != -1 && edge_fusible(i, j)) {
-          do_fuse(i, j);
-          // Iterators of nodes[i]->output_edges may be invalidated
-          i_updated = true;
-          break;
+        if (edge.second->pending()) {
+          const int j = edge.second->pending_node_id - begin;
+          if (j >= 0 && j < nodes.size() && edge_fusible(i, j)) {
+            do_fuse(i, j);
+            // Iterators of nodes[i]->output_edges may be invalidated
+            i_updated = true;
+            break;
+          }
         }
 
         if (i_updated) {

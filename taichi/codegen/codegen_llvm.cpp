@@ -1351,10 +1351,11 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
         auto exponent_val =
             load_as_custom_int(exponent_bit_ptr, exponent_snode->dt.get_ptr());
 
-        // Add the 127 exponent offset of f32
+        // Make sure the exponent is within the range of the exponent type
         exponent_val = builder->CreateAdd(
             exponent_val,
             tlctx->get_constant(cft->get_exponent_conversion_offset()));
+        TI_P(cft->get_exponent_conversion_offset());
 
         create_print("Loaded exponent bits initial",
                      TypeFactory::get_instance().get_primitive_type(
@@ -1367,9 +1368,9 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
           // f32 = 1 sign bit + 8 exponent bits + 23 fraction bits
           auto sign_bit =
               builder->CreateAnd(digits, tlctx->get_constant(0x80000000));
-          auto exponent_bits = builder->CreateAnd(
-              builder->CreateShl(exponent_val, tlctx->get_constant(23)),
-              tlctx->get_constant((1u << 31) - (1u << 22)));
+
+          auto exponent_bits =
+              builder->CreateShl(exponent_val, tlctx->get_constant(23));
 
           create_print("Loaded digits",
                        TypeFactory::get_instance().get_primitive_type(
@@ -1393,9 +1394,6 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
                            PrimitiveTypeID::u32),
                        fraction_bits);
 
-          // TODO: remove this hack...
-          f32_bits =
-              builder->CreateOr(f32_bits, tlctx->get_constant(0x40000000));
           llvm_val[stmt] = builder->CreateBitCast(
               f32_bits, llvm::Type::getFloatTy(*llvm_context));
           create_print("Loaded f32 bits",

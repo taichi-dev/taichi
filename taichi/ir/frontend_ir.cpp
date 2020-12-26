@@ -40,8 +40,6 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
   auto cfg = get_current_program().config;
   if (cfg.arch == Arch::cuda) {
     vectorize = 1;
-    // TODO: temporally setting to 1
-    bit_vectorize = 1;
     parallelize = 1;
     TI_ASSERT(block_dim <= taichi_max_gpu_block_dim);
   } else {
@@ -79,8 +77,6 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
   auto cfg = get_current_program().config;
   if (cfg.arch == Arch::cuda) {
     vectorize = 1;
-    // TODO: temporally setting to 1
-    bit_vectorize = 1;
     parallelize = 1;
   } else {
     if (parallelize == 0)

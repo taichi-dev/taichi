@@ -23,9 +23,8 @@ def test_vectorized_struct_for():
     @ti.kernel
     def init():
         for i, j in ti.ndrange((boundary_offset, N - boundary_offset),
-                            (boundary_offset, N - boundary_offset)):
+                               (boundary_offset, N - boundary_offset)):
             x[i, j] = ti.random(dtype=ti.i32) % 2
-
 
     @ti.kernel
     def assign_vectorized():
@@ -33,13 +32,11 @@ def test_vectorized_struct_for():
         for i, j in x:
             y[i, j] = x[i, j]
 
-
     @ti.kernel
     def verify():
         for i, j in ti.ndrange((boundary_offset, N - boundary_offset),
-                            (boundary_offset, N - boundary_offset)):
+                               (boundary_offset, N - boundary_offset)):
             assert y[i, j] == x[i, j]
-
 
     init()
     assign_vectorized()

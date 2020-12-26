@@ -22,11 +22,13 @@ def main():
     @ti.kernel
     def foo():
         x[None] = 0.7
-        print(x[None])
-        x[None] = x[None] + 0.4
+        # print(x[None])
+        # x[None] = x[None] + 0.4
 
 
     foo()
+    print(x[None])
+    exit(0)
     assert x[None] == approx(1.1)
     x[None] = 0.64
 

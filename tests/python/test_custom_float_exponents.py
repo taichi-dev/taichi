@@ -21,7 +21,12 @@ def main():
     ti.get_runtime().materialize()
     ti.get_runtime().print_snode_tree()
 
-    for v in [1 / 1024, 1.75 / 1024, 0.25, 0.5, 0.75, 1, 2, 3, 4, 5, 6, 7, 128, 256, 512, 1024]:
+    tests = [
+        1 / 1024, 1.75 / 1024, 0.25, 0.5, 0.75, 1, 2, 3, 4, 5, 6, 7, 128, 256,
+        512, 1024
+    ]
+
+    for v in tests:
         x[None] = v
         print(v, x[None])
         assert x[None] == v

@@ -1203,8 +1203,39 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
       cit = cit_;
       store_value = llvm_val[stmt->data];
     } else if (auto cft = pointee_type->cast<CustomFloatType>()) {
-      cit = cft->get_digits_type()->as<CustomIntType>();
-      store_value = float_to_custom_int(cft, cit, llvm_val[stmt->data]);
+      llvm::Value *digit_bits = nullptr;
+      auto digits_cit = cft->get_digits_type()->as<CustomIntType>();
+      if (auto exp = cft->get_exponent_type()) {
+        // Extract exponent and digits from compute type, assumed to be f32 for
+        // now.
+        TI_ASSERT(cft->get_compute_type()->is_primitive(PrimitiveTypeID::f32));
+        // TODO: handle negative digits (sign bit) and negative exponents
+        auto f32_bits = builder->CreateBitCast(
+            llvm_val[stmt->data], llvm::Type::getFloatTy(*llvm_context));
+        auto exponent_bits = builder->CreateAShr(f32_bits, 23);
+        // f32 = 1 sign bit + 8 exponent bits + 23 fraction bits
+        auto value_bits = builder->CreateAShr(
+            f32_bits, tlctx->get_constant(23 - digits_cit->get_num_bits()));
+        digit_bits = builder->CreateAnd(
+            value_bits,
+            tlctx->get_constant((1 << (digits_cit->get_num_bits())) - 1));
+
+        auto exponent_cit = exp->as<CustomIntType>();
+
+        auto digits_snode = stmt->ptr->as<GetChStmt>()->output_snode;
+        auto exponent_snode = digits_snode->exp_snode;
+
+        // Compute the bit pointer of the exponent bits.
+        TI_ASSERT(digits_snode->parent == exponent_snode->parent);
+        auto exponent_bit_ptr =
+            offset_bit_ptr(llvm_val[stmt->ptr], exponent_snode->bit_offset -
+                                                    digits_snode->bit_offset);
+        store_custom_int(exponent_bit_ptr, exponent_cit, exponent_bits);
+      } else {
+        digit_bits = llvm_val[stmt->data];
+      }
+      cit = digits_cit;
+      store_value = float_to_custom_int(cft, digits_cit, digit_bits);
     } else {
       TI_NOT_IMPLEMENTED
     }

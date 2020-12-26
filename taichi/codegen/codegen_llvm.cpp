@@ -1211,7 +1211,7 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
         TI_ASSERT(cft->get_compute_type()->is_primitive(PrimitiveTypeID::f32));
         // TODO: handle negative digits (sign bit) and negative exponents
         auto f32_bits = builder->CreateBitCast(
-            llvm_val[stmt->data], llvm::Type::getFloatTy(*llvm_context));
+            llvm_val[stmt->data], llvm::Type::getInt32Ty(*llvm_context));
         auto exponent_bits = builder->CreateAShr(f32_bits, 23);
         // f32 = 1 sign bit + 8 exponent bits + 23 fraction bits
         auto value_bits = builder->CreateAShr(
@@ -1231,11 +1231,12 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
             offset_bit_ptr(llvm_val[stmt->ptr], exponent_snode->bit_offset -
                                                     digits_snode->bit_offset);
         store_custom_int(exponent_bit_ptr, exponent_cit, exponent_bits);
+        store_value = digit_bits;
       } else {
         digit_bits = llvm_val[stmt->data];
+        store_value = float_to_custom_int(cft, digits_cit, digit_bits);
       }
       cit = digits_cit;
-      store_value = float_to_custom_int(cft, digits_cit, digit_bits);
     } else {
       TI_NOT_IMPLEMENTED
     }

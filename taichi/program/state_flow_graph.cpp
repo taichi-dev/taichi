@@ -654,12 +654,22 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
 
   auto edge_fusible = [&](int a, int b) {
     TI_PROFILER("edge_fusible");
+    TI_ASSERT(a >= 0 && a < nodes.size() && b >= 0 && b < nodes.size());
     // Check if a and b are fusible if there is an edge (a, b).
     if (fused[a] || fused[b] || !fusion_meta[a].fusible ||
         fusion_meta[a] != fusion_meta[b]) {
       return false;
     }
     if (nodes[a]->meta->type != OffloadedTaskType::serial) {
+      std::unordered_map<int, int> offload_map;
+      offload_map[0] = 0;
+      std::unordered_set<AsyncState> modified_states =
+          get_task_meta(ir_bank_, nodes[a]->rec)->output_states;
+      std::unordered_set<AsyncState> modified_states_b =
+          get_task_meta(ir_bank_, nodes[a]->rec)->output_states;
+      modified_states.insert(modified_states_b.begin(),
+                             modified_states_b.end());
+      AsyncStateSet modified_states_set{modified_states};
       for (auto state_iter = nodes[a]->output_edges.get_state_iterator();
            !state_iter.done(); ++state_iter) {
         auto state = state_iter.get_state();
@@ -689,11 +699,10 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
             TI_ASSERT(nodes[b]->rec.stmt()->id == 0);
             // Only map the OffloadedStmt to see if both SNodes are loop-unique
             // on the same statement.
-            std::unordered_map<int, int> offload_map;
-            offload_map[0] = 0;
             for (int i = 0; i < (int)ptr1->indices.size(); i++) {
               if (!irpass::analysis::same_value(
-                      ptr1->indices[i], ptr2->indices[i],
+                      ptr1->indices[i], ptr2->indices[i], modified_states_set,
+                      ir_bank_,
                       std::make_optional<std::unordered_map<int, int>>(
                           offload_map))) {
                 return false;
@@ -781,12 +790,14 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
       // Fuse no more than one task into task i
       bool i_updated = false;
       for (auto &edge : nodes[i]->output_edges.get_all_edges()) {
-        const int j = edge.second->pending_node_id - begin;
-        if (j != -1 && edge_fusible(i, j)) {
-          do_fuse(i, j);
-          // Iterators of nodes[i]->output_edges may be invalidated
-          i_updated = true;
-          break;
+        if (edge.second->pending()) {
+          const int j = edge.second->pending_node_id - begin;
+          if (j >= 0 && j < nodes.size() && edge_fusible(i, j)) {
+            do_fuse(i, j);
+            // Iterators of nodes[i]->output_edges may be invalidated
+            i_updated = true;
+            break;
+          }
         }
 
         if (i_updated) {

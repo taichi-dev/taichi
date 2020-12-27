@@ -1229,11 +1229,9 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
           auto sign_bit =
               builder->CreateAnd(f32_bits, tlctx->get_constant(0x80000000u));
           // insert the sign bit to digit bits
-          create_print("digits bits:", PrimitiveType::u32, digit_bits);
           digit_bits = builder->CreateOr(
               digit_bits,
               builder->CreateLShr(sign_bit, 31 - cft->get_digit_bits()));
-          create_print("digits bits:", PrimitiveType::u32, digit_bits);
         }
 
         auto exponent_cit = exp->as<CustomIntType>();
@@ -1371,10 +1369,8 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
               (1u
                << cft->get_digits_type()->as<CustomIntType>()->get_num_bits()) -
                   1);
-          create_print("digits initial:", PrimitiveType::u32, digits);
           digits = builder->CreateShl(
               digits, tlctx->get_constant(23 - cft->get_digit_bits()));
-          TI_P(23 - cft->get_digit_bits());
 
           auto fraction_bits = builder->CreateAnd(digits, (1u << 23) - 1);
 
@@ -1386,8 +1382,6 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
 
             sign_bit =
                 builder->CreateShl(sign_bit, tlctx->get_constant(31 - (23)));
-            create_print("digits:", PrimitiveType::u32, digits);
-            create_print("sign bit:", PrimitiveType::u32, sign_bit);
             f32_bits = builder->CreateOr(f32_bits, sign_bit);
           }
 

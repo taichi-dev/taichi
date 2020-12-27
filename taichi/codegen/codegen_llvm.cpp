@@ -1206,8 +1206,8 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
       llvm::Value *digit_bits = nullptr;
       auto digits_cit = cft->get_digits_type()->as<CustomIntType>();
       if (auto exp = cft->get_exponent_type()) {
-        // Extract exponent and digits from compute type, assumed to be f32 for
-        // now.
+        // Extract exponent and digits from compute type (assumed to be f32 for
+        // now).
         TI_ASSERT(cft->get_compute_type()->is_primitive(PrimitiveTypeID::f32));
 
         auto f32_bits = builder->CreateBitCast(
@@ -1244,16 +1244,6 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
         exponent_bits = builder->CreateSub(
             exponent_bits,
             tlctx->get_constant(cft->get_exponent_conversion_offset()));
-
-        create_print("Stored exponent bits",
-                     TypeFactory::get_instance().get_primitive_type(
-                         PrimitiveTypeID::u32),
-                     exponent_bits);
-
-        create_print("Stored digits bits",
-                     TypeFactory::get_instance().get_primitive_type(
-                         PrimitiveTypeID::i32),
-                     digit_bits);
 
         // Compute the bit pointer of the exponent bits.
         TI_ASSERT(digits_snode->parent == exponent_snode->parent);
@@ -1365,36 +1355,19 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
         exponent_val = builder->CreateAdd(
             exponent_val,
             tlctx->get_constant(cft->get_exponent_conversion_offset()));
-        TI_P(cft->get_exponent_conversion_offset());
-
-        create_print("Loaded exponent bits initial",
-                     TypeFactory::get_instance().get_primitive_type(
-                         PrimitiveTypeID::i32),
-                     exponent_val);
 
         if (cft->get_compute_type()->is_primitive(PrimitiveTypeID::f32)) {
           // Construct an f32 out of exponent_val and digits
           // Assuming digits and exponent_val are i32
           // f32 = 1 sign bit + 8 exponent bits + 23 fraction bits
-
           auto exponent_bits =
               builder->CreateShl(exponent_val, tlctx->get_constant(23));
-
-          create_print("Loaded digits",
-                       TypeFactory::get_instance().get_primitive_type(
-                           PrimitiveTypeID::u32),
-                       digits);
 
           auto sign_bit = builder->CreateAnd(
               digits, tlctx->get_constant(1u << cft->get_digit_bits()));
 
           sign_bit = builder->CreateShl(
               sign_bit, tlctx->get_constant(31 - cft->get_digit_bits()));
-
-          create_print("Sign bit",
-                       TypeFactory::get_instance().get_primitive_type(
-                           PrimitiveTypeID::u32),
-                       sign_bit);
 
           digits = builder->CreateShl(
               digits, tlctx->get_constant(23 - cft->get_digit_bits()));
@@ -1407,22 +1380,8 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
           auto f32_bits = builder->CreateOr(
               sign_bit, builder->CreateOr(exponent_bits, fraction_bits));
 
-          create_print("Loaded exponent bits",
-                       TypeFactory::get_instance().get_primitive_type(
-                           PrimitiveTypeID::u32),
-                       exponent_bits);
-
-          create_print("Loaded fraction bits",
-                       TypeFactory::get_instance().get_primitive_type(
-                           PrimitiveTypeID::u32),
-                       fraction_bits);
-
           llvm_val[stmt] = builder->CreateBitCast(
               f32_bits, llvm::Type::getFloatTy(*llvm_context));
-          create_print("Loaded f32 bits",
-                       TypeFactory::get_instance().get_primitive_type(
-                           PrimitiveTypeID::i32),
-                       f32_bits);
         } else {
           TI_NOT_IMPLEMENTED;
         }

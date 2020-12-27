@@ -5,8 +5,8 @@ import pytest
 
 @ti.test(require=ti.extension.quant)
 def test_custom_float_unsigned():
-    cu13 = ti.type_factory_.get_custom_int_type(13, False)
-    exp = ti.type_factory_.get_custom_int_type(6, False)
+    cu13 = ti.type_factory.custom_int(13, False)
+    exp = ti.type_factory.custom_int(6, False)
     cft = ti.type_factory.custom_float(significand_type=cu13,
                                        exponent_type=exp,
                                        scale=1)
@@ -26,8 +26,8 @@ def test_custom_float_unsigned():
 
 @ti.test(require=ti.extension.quant)
 def test_custom_float_signed():
-    cu13 = ti.type_factory_.get_custom_int_type(13, True)
-    exp = ti.type_factory_.get_custom_int_type(6, False)
+    cu13 = ti.type_factory.custom_int(13, True)
+    exp = ti.type_factory.custom_int(6, False)
     cft = ti.type_factory.custom_float(significand_type=cu13,
                                        exponent_type=exp,
                                        scale=1)
@@ -45,8 +45,8 @@ def test_custom_float_signed():
 @pytest.mark.parametrize('digits_bits', [23, 24])
 @ti.test(require=ti.extension.quant)
 def test_custom_float_precision(digits_bits):
-    cu24 = ti.type_factory_.get_custom_int_type(digits_bits, True)
-    exp = ti.type_factory_.get_custom_int_type(8, False)
+    cu24 = ti.type_factory.custom_int(digits_bits, True)
+    exp = ti.type_factory.custom_int(8, False)
     cft = ti.type_factory.custom_float(significand_type=cu24,
                                        exponent_type=exp,
                                        scale=1)
@@ -70,8 +70,8 @@ def test_custom_float_precision(digits_bits):
 @pytest.mark.parametrize('signed', [True, False])
 @ti.test(require=ti.extension.quant)
 def test_custom_float_truncation(signed):
-    cit = ti.type_factory_.get_custom_int_type(2, signed)
-    exp = ti.type_factory_.get_custom_int_type(5, False)
+    cit = ti.type_factory.custom_int(2, signed)
+    exp = ti.type_factory.custom_int(5, False)
     cft = ti.type_factory.custom_float(significand_type=cit,
                                        exponent_type=exp,
                                        scale=1)
@@ -84,14 +84,14 @@ def test_custom_float_truncation(signed):
         x[None] = v
         assert x[None] == v
 
-    # Insufficent digits
+    # Insufficient digits
     x[None] = 1.75
     if signed:
         assert x[None] == 1.5
     else:
         assert x[None] == 1.75
 
-    # Insufficent digits
+    # Insufficient digits
     x[None] = 1.875
     if signed:
         assert x[None] == 1.5

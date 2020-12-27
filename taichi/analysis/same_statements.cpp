@@ -6,7 +6,6 @@
 #include "taichi/program/ir_bank.h"
 #include <unordered_map>
 #include <unordered_set>
-#include <utility>
 
 TLANG_NAMESPACE_BEGIN
 
@@ -20,6 +19,10 @@ class IRNodeComparator : public IRVisitor {
   bool recursively_check_;
 
   // Compare if two IRNodes definitely have the same value instead.
+  // When this is true, it's weaker in the sense that we don't require the
+  // activate field in the GlobalPtrStmt to be the same, but stronger in the
+  // sense that we require the value to be the same (especially stronger in
+  // GlobalLoadStmt, RandStmt, etc.).
   bool check_same_value_;
 
   std::unordered_set<AsyncState> possibly_modified_states_;
@@ -131,8 +134,11 @@ class IRNodeComparator : public IRVisitor {
     // TODO: actually the condition should be "can stmt be an operand of
     //  another statement?"
     const bool stmt_has_value = !stmt->is_container_statement();
-    // TODO: two identical GlobalPtrStmts cannot have different values,
-    //  but GlobalPtrStmt::common_statement_eliminable() is false.
+    // TODO: We want to know if two identical statements of the type same as
+    //  stmt can have different values. In most cases, this property is the
+    //  same as Stmt::common_statement_eliminable(). However, two identical
+    //  GlobalPtrStmts cannot have different values, although
+    //  GlobalPtrStmt::common_statement_eliminable() is false.
     const bool identical_stmts_can_have_different_value =
         stmt_has_value && !stmt->common_statement_eliminable() &&
         !stmt->is<GlobalPtrStmt>();
@@ -162,7 +168,6 @@ class IRNodeComparator : public IRVisitor {
       }
     }
 
-    // field check
     if (check_same_value_ && stmt->is<GlobalPtrStmt>()) {
       // Special case: we do not care the "activate" field when checking
       // whether two global pointers share the same value.
@@ -177,6 +182,7 @@ class IRNodeComparator : public IRVisitor {
         return;
       }
     } else {
+      // field check
       if (!stmt->field_manager.equal(other->field_manager)) {
         same = false;
         return;
@@ -291,6 +297,9 @@ class IRNodeComparator : public IRVisitor {
                   const std::optional<std::unordered_set<AsyncState>>
                       &possibly_modified_states,
                   IRBank *ir_bank) {
+    // We need to distinguish the case of an empty
+    // std::unordered_set<AsyncState> (assuming every SNodes are unchanged)
+    // and empty (assuming nothing), so we use std::optional<> here.
     IRNodeComparator comparator(root2, id_map, check_same_value,
                                 possibly_modified_states, ir_bank);
     root1->accept(&comparator);

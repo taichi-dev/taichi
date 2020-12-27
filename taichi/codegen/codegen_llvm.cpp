@@ -1216,7 +1216,6 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
         exponent_bits = builder->CreateAnd(exponent_bits,
                                            tlctx->get_constant((1 << 8) - 1));
         // f32 = 1 sign bit + 8 exponent bits + 23 fraction bits
-        // TODO: digits may be signed
         auto value_bits = builder->CreateAShr(
             f32_bits, tlctx->get_constant(23 - cft->get_digit_bits()));
 
@@ -1325,6 +1324,55 @@ llvm::Value *CodeGenLLVM::reconstruct_custom_float(llvm::Value *digits,
   return builder->CreateFMul(cast, s);
 }
 
+llvm::Value *CodeGenLLVM::load_custom_float_with_exponent(
+    llvm::Value *digits_bit_ptr,
+    llvm::Value *exponent_bit_ptr,
+    CustomFloatType *cft) {
+  // TODO: we ignore "scale" for CustomFloatType with exponent for now. Fix
+  // this.
+  TI_ASSERT(cft->get_scale() == 1);
+  auto digits = load_as_custom_int(digits_bit_ptr, cft->get_digits_type());
+
+  auto exponent_val = load_as_custom_int(
+      exponent_bit_ptr, cft->get_exponent_type()->as<CustomIntType>());
+
+  // Make sure the exponent is within the range of the exponent type
+  exponent_val = builder->CreateAdd(
+      exponent_val, tlctx->get_constant(cft->get_exponent_conversion_offset()));
+
+  if (cft->get_compute_type()->is_primitive(PrimitiveTypeID::f32)) {
+    // Construct an f32 out of exponent_val and digits
+    // Assuming digits and exponent_val are i32
+    // f32 = 1 sign bit + 8 exponent bits + 23 fraction bits
+    auto exponent_bits =
+        builder->CreateShl(exponent_val, tlctx->get_constant(23));
+
+    digits = builder->CreateAnd(
+        digits,
+        (1u << cft->get_digits_type()->as<CustomIntType>()->get_num_bits()) -
+            1);
+    digits = builder->CreateShl(
+        digits, tlctx->get_constant(23 - cft->get_digit_bits()));
+
+    auto fraction_bits = builder->CreateAnd(digits, (1u << 23) - 1);
+
+    auto f32_bits = builder->CreateOr(exponent_bits, fraction_bits);
+
+    if (cft->get_is_signed()) {
+      auto sign_bit =
+          builder->CreateAnd(digits, tlctx->get_constant(1u << (23)));
+
+      sign_bit = builder->CreateShl(sign_bit, tlctx->get_constant(31 - (23)));
+      f32_bits = builder->CreateOr(f32_bits, sign_bit);
+    }
+
+    return builder->CreateBitCast(f32_bits,
+                                  llvm::Type::getFloatTy(*llvm_context));
+  } else {
+    TI_NOT_IMPLEMENTED;
+  }
+}
+
 void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
   int width = stmt->width();
   TI_ASSERT(width == 1);
@@ -1334,63 +1382,22 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
     if (val_type->is<CustomIntType>()) {
       llvm_val[stmt] = load_as_custom_int(llvm_val[stmt->ptr], val_type);
     } else if (auto cft = val_type->cast<CustomFloatType>()) {
-      auto digits =
-          load_as_custom_int(llvm_val[stmt->ptr], cft->get_digits_type());
       if (cft->get_exponent_type()) {
         auto ptr = stmt->ptr->as<GetChStmt>();
         TI_ASSERT(ptr->width() == 1);
-        // TODO: we ignore "scale" for CustomFloatType with exponent for now
-        TI_ASSERT(cft->get_scale() == 1);
+        auto digits_bit_ptr = llvm_val[ptr];
         auto digits_snode = ptr->output_snode;
         auto exponent_snode = digits_snode->exp_snode;
         // Compute the bit pointer of the exponent bits.
         TI_ASSERT(digits_snode->parent == exponent_snode->parent);
         auto exponent_bit_ptr =
-            offset_bit_ptr(llvm_val[ptr], exponent_snode->bit_offset -
-                                              digits_snode->bit_offset);
-
-        auto exponent_val =
-            load_as_custom_int(exponent_bit_ptr, exponent_snode->dt.get_ptr());
-
-        // Make sure the exponent is within the range of the exponent type
-        exponent_val = builder->CreateAdd(
-            exponent_val,
-            tlctx->get_constant(cft->get_exponent_conversion_offset()));
-
-        if (cft->get_compute_type()->is_primitive(PrimitiveTypeID::f32)) {
-          // Construct an f32 out of exponent_val and digits
-          // Assuming digits and exponent_val are i32
-          // f32 = 1 sign bit + 8 exponent bits + 23 fraction bits
-          auto exponent_bits =
-              builder->CreateShl(exponent_val, tlctx->get_constant(23));
-
-          digits = builder->CreateAnd(
-              digits,
-              (1u
-               << cft->get_digits_type()->as<CustomIntType>()->get_num_bits()) -
-                  1);
-          digits = builder->CreateShl(
-              digits, tlctx->get_constant(23 - cft->get_digit_bits()));
-
-          auto fraction_bits = builder->CreateAnd(digits, (1u << 23) - 1);
-
-          auto f32_bits = builder->CreateOr(exponent_bits, fraction_bits);
-
-          if (cft->get_is_signed()) {
-            auto sign_bit =
-                builder->CreateAnd(digits, tlctx->get_constant(1u << (23)));
-
-            sign_bit =
-                builder->CreateShl(sign_bit, tlctx->get_constant(31 - (23)));
-            f32_bits = builder->CreateOr(f32_bits, sign_bit);
-          }
-
-          llvm_val[stmt] = builder->CreateBitCast(
-              f32_bits, llvm::Type::getFloatTy(*llvm_context));
-        } else {
-          TI_NOT_IMPLEMENTED;
-        }
+            offset_bit_ptr(digits_bit_ptr, exponent_snode->bit_offset -
+                                               digits_snode->bit_offset);
+        llvm_val[stmt] = load_custom_float_with_exponent(digits_bit_ptr,
+                                                         exponent_bit_ptr, cft);
       } else {
+        auto digits =
+            load_as_custom_int(llvm_val[stmt->ptr], cft->get_digits_type());
         llvm_val[stmt] = reconstruct_custom_float(digits, val_type);
       }
     } else {

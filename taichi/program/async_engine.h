@@ -167,6 +167,8 @@ class AsyncEngine {
   };
 
   std::unordered_map<const Kernel *, KernelMeta> kernel_metas_;
+  // How many times we have flushed
+  int flush_counter_{0};
   // How many times we have synchronized
   int sync_counter_{0};
   int cur_sync_sfg_debug_counter_{0};

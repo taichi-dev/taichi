@@ -275,6 +275,7 @@ void AsyncEngine::flush() {
   for (auto &task : tasks) {
     queue.enqueue(task);
   }
+  flush_counter_++;
 }
 
 void AsyncEngine::debug_sfg(const std::string &stage) {
@@ -289,8 +290,9 @@ void AsyncEngine::debug_sfg(const std::string &stage) {
             debug_limit);
     return;
   }
-  auto dot_fn = fmt::format("{}_sync{:04d}_{:04d}_{}", prefix, sync_counter_,
-                            cur_sync_sfg_debug_counter_++, stage);
+  auto dot_fn =
+      fmt::format("{}_flush{:04d}_sync{:04d}_{:04d}_{}", prefix, flush_counter_,
+                  sync_counter_, cur_sync_sfg_debug_counter_++, stage);
   auto stage_count = cur_sync_sfg_debug_per_stage_counts_[stage]++;
   if (stage_count) {
     dot_fn += std::to_string(stage_count);

@@ -793,4 +793,8 @@ def sync():
     get_runtime().sync()
 
 
+def async_flush():
+    get_runtime().prog.async_flush()
+
+
 __all__ = [s for s in dir() if not s.startswith('_')]

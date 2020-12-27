@@ -169,7 +169,8 @@ void export_lang(py::module &m) {
       .def_readwrite("async_listgen_fast_filtering",
                      &CompileConfig::async_listgen_fast_filtering)
       .def_readwrite("async_opt_intermediate_file",
-                     &CompileConfig::async_opt_intermediate_file);
+                     &CompileConfig::async_opt_intermediate_file)
+      .def_readwrite("async_flush_every", &CompileConfig::async_flush_every);
 
   m.def("reset_default_compile_config",
         [&]() { default_compile_config = CompileConfig(); });
@@ -200,7 +201,8 @@ void export_lang(py::module &m) {
            [](Program *program) {
              program->async_engine->sfg->benchmark_rebuild_graph();
            })
-      .def("synchronize", &Program::synchronize);
+      .def("synchronize", &Program::synchronize)
+      .def("async_flush", &Program::async_flush);
 
   m.def("get_current_program", get_current_program,
         py::return_value_policy::reference);

@@ -54,16 +54,17 @@ def test_custom_float_precision(digits_bits):
 
     ti.root._bit_struct(num_bits=32).place(x)
 
-    tests = [np.float32(np.pi), np.float32(np.pi * 1e38)]
+    tests = [np.float32(np.pi), np.float32(np.pi * (1 << 100))]
 
     for v in tests:
         x[None] = v
         if digits_bits == 24:
             assert x[None] == v
         else:
+            # The binary representation of np.float32(np.pi) ends with 1, so removing one digit will result in a different number
             # Insufficient digits
             assert x[None] != v
-            assert x[None] == pytest.approx(v)
+            assert x[None] == pytest.approx(v, rel=3e-7)
 
 
 @ti.test(require=ti.extension.quant)

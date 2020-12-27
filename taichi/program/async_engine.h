@@ -144,6 +144,9 @@ class AsyncEngine {
 
   void launch(Kernel *kernel, Context &context);
 
+  // Flush the tasks only.
+  void flush();
+  // Flush the tasks and block waiting for the GPU device to complete.
   void synchronize();
 
   void debug_sfg(const std::string &suffix);

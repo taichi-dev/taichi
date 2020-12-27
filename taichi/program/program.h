@@ -141,6 +141,9 @@ class Program {
   // This is more primitive than synchronize(). It directly calls to the
   // targeted GPU backend's synchronization (or commit in Metal's terminology).
   void device_synchronize();
+  // See AsyncEngine::flush().
+  // Only useful when async mode is enabled.
+  void async_flush();
 
   void layout(std::function<void()> func) {
     func();

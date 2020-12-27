@@ -495,6 +495,14 @@ void Program::device_synchronize() {
   }
 }
 
+void Program::async_flush() {
+  if (!config.async_mode) {
+    TI_WARN("No point calling async_flush() when async mode is disabled.");
+    return;
+  }
+  async_engine->flush();
+}
+
 std::string capitalize_first(std::string s) {
   s[0] = std::toupper(s[0]);
   return s;

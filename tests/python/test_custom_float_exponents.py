@@ -67,25 +67,33 @@ def test_custom_float_precision(digits_bits):
             assert x[None] == pytest.approx(v, rel=3e-7)
 
 
+@pytest.mark.parametrize('signed', [True, False])
 @ti.test(require=ti.extension.quant)
-def test_custom_float_truncation():
-    return
-    cu24 = ti.type_factory_.get_custom_int_type(3, True)
-    exp = ti.type_factory_.get_custom_int_type(8, False)
-    cft = ti.type_factory.custom_float(significand_type=cu24,
+def test_custom_float_truncation(signed):
+    cit = ti.type_factory_.get_custom_int_type(2, signed)
+    exp = ti.type_factory_.get_custom_int_type(5, False)
+    cft = ti.type_factory.custom_float(significand_type=cit,
                                        exponent_type=exp,
                                        scale=1)
     x = ti.field(dtype=cft)
 
     ti.root._bit_struct(num_bits=32).place(x)
 
-    tests = [np.float32(np.pi)]
-
-    for v in tests:
+    # Sufficient digits
+    for v in [1, 1.5]:
         x[None] = v
-        if digits_bits == 24:
-            assert x[None] == v
-        else:
-            # Insufficient digits
-            assert x[None] != v
-            assert x[None] == pytest.approx(v)
+        assert x[None] == v
+
+    # Insufficent digits
+    x[None] = 1.75
+    if signed:
+        assert x[None] == 1.5
+    else:
+        assert x[None] == 1.75
+
+    # Insufficent digits
+    x[None] = 1.875
+    if signed:
+        assert x[None] == 1.5
+    else:
+        assert x[None] == 1.75

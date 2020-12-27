@@ -1023,8 +1023,7 @@ void CodeGenLLVM::visit(SNodeOpStmt *stmt) {
 
 llvm::Value *CodeGenLLVM::atomic_add_custom_int(AtomicOpStmt *stmt,
                                                 CustomIntType *cit) {
-  llvm::Value *byte_ptr, *bit_offset;
-  read_bit_pointer(llvm_val[stmt->dest], byte_ptr, bit_offset);
+  auto [byte_ptr, bit_offset] = load_bit_pointer(llvm_val[stmt->dest]);
   auto physical_type = cit->get_physical_type();
   return create_call(
       fmt::format("atomic_add_partial_bits_b{}", data_type_bits(physical_type)),
@@ -1036,8 +1035,7 @@ llvm::Value *CodeGenLLVM::atomic_add_custom_int(AtomicOpStmt *stmt,
 
 llvm::Value *CodeGenLLVM::atomic_add_custom_float(AtomicOpStmt *stmt,
                                                   CustomFloatType *cft) {
-  llvm::Value *byte_ptr, *bit_offset;
-  read_bit_pointer(llvm_val[stmt->dest], byte_ptr, bit_offset);
+  auto [byte_ptr, bit_offset] = load_bit_pointer(llvm_val[stmt->dest]);
   auto cit = cft->get_digits_type()->as<CustomIntType>();
   auto val_store = float_to_custom_int(cft, cit, llvm_val[stmt->val]);
   auto physical_type = cit->get_physical_type();
@@ -1175,8 +1173,7 @@ void CodeGenLLVM::visit(GlobalPtrStmt *stmt) {
 void CodeGenLLVM::store_custom_int(llvm::Value *bit_ptr,
                                    CustomIntType *cit,
                                    llvm::Value *value) {
-  llvm::Value *byte_ptr = nullptr, *bit_offset = nullptr;
-  read_bit_pointer(bit_ptr, byte_ptr, bit_offset);
+  auto [byte_ptr, bit_offset] = load_bit_pointer(bit_ptr);
   // TODO(type): CUDA only supports atomicCAS on 32- and 64-bit integers.
   // Try to support CustomInt/FloatType with 8/16-bit physical
   // types.
@@ -1269,9 +1266,7 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
 llvm::Value *CodeGenLLVM::load_as_custom_int(llvm::Value *ptr,
                                              Type *load_type) {
   auto *cit = load_type->as<CustomIntType>();
-  // load bit pointer
-  llvm::Value *byte_ptr, *bit_offset;
-  read_bit_pointer(ptr, byte_ptr, bit_offset);
+  auto [byte_ptr, bit_offset] = load_bit_pointer(ptr);
 
   auto bit_level_container = builder->CreateLoad(builder->CreateBitCast(
       byte_ptr, llvm_ptr_type(cit->get_physical_type())));

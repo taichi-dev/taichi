@@ -35,7 +35,7 @@ def test_custom_float_signed():
 
     ti.root._bit_struct(num_bits=32).place(x)
 
-    tests = [-0.125, -0.5, -2, -4, -6, -7, -8, -9]
+    tests = [0.125, 0.5, 2, 4, 6, 7, 8, 9]
 
     for v in tests:
         x[None] = v
@@ -101,3 +101,5 @@ def test_custom_float_truncation(signed):
         assert x[None] == 1.5
     else:
         assert x[None] == 1.75
+
+# TODO: test zero

@@ -51,6 +51,8 @@ class SNode:
             offset = (offset, )
         for arg in args:
             assert shared_exponent == False
+            # TODO: implement shared exponent
+
             if isinstance(arg, Expr):
                 self.ptr.place(Expr(arg).ptr, offset)
             elif isinstance(arg, list):

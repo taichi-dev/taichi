@@ -45,8 +45,8 @@ void SNode::place(Expr &expr_, const std::vector<int> &offset) {
     SNode *new_exp_snode = nullptr;
     if (auto cft = expr->dt->cast<CustomFloatType>()) {
       if (auto exp = cft->get_exponent_type()) {
-        // Non-empty exponent type. Create another place SNode to store the
-        // exponent type.
+        // Non-empty exponent type. First create a place SNode for the
+        // exponent value.
         auto &exp_node = insert_children(SNodeType::place);
         exp_node.dt = exp;
         exp_node.name = expr->ident.raw_name() + "_exp";

@@ -35,11 +35,14 @@ def test_custom_float_signed():
 
     ti.root._bit_struct(num_bits=32).place(x)
 
-    tests = [-2, -4, -6, -7, -8, -9]
+    tests = [-0.125, -0.5, -2, -4, -6, -7, -8, -9]
 
     for v in tests:
         x[None] = v
         assert x[None] == v
+
+        x[None] = -v
+        assert x[None] == -v
 
 
 @pytest.mark.parametrize('digits_bits', [23, 24])
@@ -59,10 +62,10 @@ def test_custom_float_precision(digits_bits):
     for v in tests:
         x[None] = v
         if digits_bits == 24:
+            # Sufficient digits
             assert x[None] == v
         else:
-            # The binary representation of np.float32(np.pi) ends with 1, so removing one digit will result in a different number
-            # Insufficient digits
+            # The binary representation of np.float32(np.pi) ends with 1, so removing one digit will result in a different number.
             assert x[None] != v
             assert x[None] == pytest.approx(v, rel=3e-7)
 
@@ -84,11 +87,12 @@ def test_custom_float_truncation(signed):
         x[None] = v
         assert x[None] == v
 
-    # Insufficient digits
     x[None] = 1.75
     if signed:
+        # Insufficient digits
         assert x[None] == 1.5
     else:
+        # Sufficient digits
         assert x[None] == 1.75
 
     # Insufficient digits

@@ -126,6 +126,7 @@ class LLVMModuleBuilder {
     return call(this->builder.get(), func_name, std::forward<Args>(args)...);
   }
 
+  // TODO(type): return with std::tuple
   void read_bit_pointer(llvm::Value *ptr,
                         llvm::Value *&byte_ptr,
                         llvm::Value *&bit_offset) {

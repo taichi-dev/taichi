@@ -86,7 +86,7 @@ class SNode {
   Kernel *writer_kernel{};
   Expr expr;
   SNode *exp_snode{};  // for CustomFloatType with exponent bits
-  int bit_offset{0};   // for bit_struct only
+  int bit_offset{0};   // for children of bit_struct only
 
   // is_bit_level=false: the SNode is not bitpacked
   // is_bit_level=true: the SNode is bitpacked (i.e., strictly inside bit_struct

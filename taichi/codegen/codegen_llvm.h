@@ -205,15 +205,23 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(GlobalPtrStmt *stmt) override;
 
+  void store_custom_int(llvm::Value *bit_ptr,
+                        CustomIntType *cit,
+                        llvm::Value *value);
+
   void visit(GlobalStoreStmt *stmt) override;
 
-  llvm::Value *load_as_custom_int(Stmt *ptr, Type *load_type);
+  llvm::Value *load_as_custom_int(llvm::Value *ptr, Type *load_type);
 
   llvm::Value *extract_custom_int(llvm::Value *physical_value,
                                   llvm::Value *bit_offset,
                                   Type *load_type);
 
   llvm::Value *reconstruct_custom_float(llvm::Value *digits, Type *load_type);
+
+  llvm::Value *load_custom_float_with_exponent(llvm::Value *digits_bit_ptr,
+                                               llvm::Value *exponent_bit_ptr,
+                                               CustomFloatType *cft);
 
   void visit(GlobalLoadStmt *stmt) override;
 
@@ -227,8 +235,10 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(IntegerOffsetStmt *stmt) override;
 
-  llvm::Value *create_bit_ptr_struct(llvm::Value *byte_ptr_base,
-                                     llvm::Value *bit_offset);
+  llvm::Value *create_bit_ptr_struct(llvm::Value *byte_ptr_base = nullptr,
+                                     llvm::Value *bit_offset = nullptr);
+
+  llvm::Value *offset_bit_ptr(llvm::Value *input_bit_ptr, int bit_offset_delta);
 
   void visit(SNodeLookupStmt *stmt) override;
 

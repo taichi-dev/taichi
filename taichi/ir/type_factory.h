@@ -26,6 +26,7 @@ class TypeFactory {
                             int compute_type_bits = 32);
 
   Type *get_custom_float_type(Type *digits_type,
+                              Type *exponent_type,
                               Type *compute_type,
                               float64 scale);
 
@@ -56,7 +57,7 @@ class TypeFactory {
   std::map<std::tuple<int, int, bool>, std::unique_ptr<Type>> custom_int_types;
 
   // TODO: use unordered map
-  std::map<std::tuple<Type *, Type *, float64>, std::unique_ptr<Type>>
+  std::map<std::tuple<Type *, Type *, Type *, float64>, std::unique_ptr<Type>>
       custom_float_types;
 
   // TODO: avoid duplication

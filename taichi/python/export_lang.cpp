@@ -161,6 +161,7 @@ void export_lang(py::module &m) {
       .def_readwrite("detect_read_only", &CompileConfig::detect_read_only)
       .def_readwrite("cc_compile_cmd", &CompileConfig::cc_compile_cmd)
       .def_readwrite("cc_link_cmd", &CompileConfig::cc_link_cmd)
+      .def_readwrite("async_opt_passes", &CompileConfig::async_opt_passes)
       .def_readwrite("async_opt_fusion", &CompileConfig::async_opt_fusion)
       .def_readwrite("async_opt_listgen", &CompileConfig::async_opt_listgen)
       .def_readwrite("async_opt_activation_demotion",

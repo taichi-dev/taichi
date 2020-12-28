@@ -102,4 +102,5 @@ def test_custom_float_truncation(signed):
     else:
         assert x[None] == 1.75
 
+
 # TODO: test zero

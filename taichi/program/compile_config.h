@@ -61,6 +61,7 @@ struct CompileConfig {
   std::string cc_link_cmd;
 
   // Async options
+  int async_opt_passes{3};
   bool async_opt_fusion{true};
   bool async_opt_listgen{true};
   bool async_opt_activation_demotion{true};

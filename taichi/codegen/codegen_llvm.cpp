@@ -1174,10 +1174,16 @@ void CodeGenLLVM::store_custom_int(llvm::Value *bit_ptr,
                                    CustomIntType *cit,
                                    llvm::Value *value) {
   auto [byte_ptr, bit_offset] = load_bit_pointer(bit_ptr);
+  store_custom_int(byte_ptr, bit_offset, cit, value);
+}
+
+void CodeGenLLVM::store_custom_int(llvm::Value *byte_ptr,
+                                   llvm::Value *bit_offset,
+                                   CustomIntType *cit,
+                                   llvm::Value *value) {
   // TODO(type): CUDA only supports atomicCAS on 32- and 64-bit integers.
   // Try to support CustomInt/FloatType with 8/16-bit physical
   // types.
-
   create_call(fmt::format("set_partial_bits_b{}",
                           data_type_bits(cit->get_physical_type())),
               {builder->CreateBitCast(byte_ptr,
@@ -1260,6 +1266,17 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
     store_custom_int(llvm_val[stmt->ptr], cit, store_value);
   } else {
     builder->CreateStore(llvm_val[stmt->data], llvm_val[stmt->ptr]);
+  }
+}
+
+void CodeGenLLVM::visit(BitStructStoreStmt *stmt) {
+  auto bit_struct_snode = stmt->get_bit_struct_snode();
+  for (int i = 0; i < stmt->ch_ids.size(); i++) {
+    auto ch_id = stmt->ch_ids[i];
+    auto val = stmt->values[i];
+    auto &ch = bit_struct_snode->ch[ch_id];
+    store_custom_int(llvm_val[stmt->ptr], tlctx->get_constant(ch->bit_offset),
+                     ch->dt->as<CustomIntType>(), llvm_val[val]);
   }
 }
 

@@ -209,7 +209,14 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
                         CustomIntType *cit,
                         llvm::Value *value);
 
+  void store_custom_int(llvm::Value *byte_ptr,
+                        llvm::Value *bit_offset,
+                        CustomIntType *cit,
+                        llvm::Value *value);
+
   void visit(GlobalStoreStmt *stmt) override;
+
+  void visit(BitStructStoreStmt *stmt) override;
 
   llvm::Value *load_as_custom_int(llvm::Value *ptr, Type *load_type);
 

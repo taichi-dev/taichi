@@ -481,6 +481,10 @@ class TypeCheck : public IRVisitor {
   void visit(GlobalTemporaryStmt *stmt) {
     stmt->ret_type.set_is_pointer(true);
   }
+
+  void visit(BitStructStoreStmt *stmt) {
+    // do nothing
+  }
 };
 
 namespace irpass {

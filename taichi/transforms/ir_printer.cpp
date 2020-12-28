@@ -609,6 +609,21 @@ class IRPrinter : public IRVisitor {
     print("external_tensor_shape_along_axis {}, arg_id {}", stmt->axis,
           stmt->arg_id);
   }
+
+  void visit(BitStructStoreStmt *stmt) override {
+    std::string ch_ids;
+    std::string values;
+    for (int i = 0; i < stmt->ch_ids.size(); i++) {
+      ch_ids += fmt::format("{}", stmt->ch_ids[i]);
+      values += fmt::format("{}", stmt->values[i]->name());
+      if (i != stmt->ch_ids.size() - 1) {
+        ch_ids += ", ";
+        values += ", ";
+      }
+    }
+    print("{} : bit_struct_store {}, ch_ids=[{}], values=[{}]", stmt->name(),
+          stmt->ptr->name(), ch_ids, values);
+  }
 };
 
 namespace irpass {

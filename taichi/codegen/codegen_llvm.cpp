@@ -1271,12 +1271,29 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
 
 void CodeGenLLVM::visit(BitStructStoreStmt *stmt) {
   auto bit_struct_snode = stmt->get_bit_struct_snode();
-  for (int i = 0; i < stmt->ch_ids.size(); i++) {
-    auto ch_id = stmt->ch_ids[i];
-    auto val = stmt->values[i];
-    auto &ch = bit_struct_snode->ch[ch_id];
-    store_custom_int(llvm_val[stmt->ptr], tlctx->get_constant(ch->bit_offset),
-                     ch->dt->as<CustomIntType>(), llvm_val[val]);
+  if (stmt->ch_ids.size() == bit_struct_snode->ch.size()) {
+    // Store all the components
+    llvm::Value *bit_struct_val = nullptr;
+    for (int i = 0; i < stmt->ch_ids.size(); i++) {
+      auto ch_id = stmt->ch_ids[i];
+      auto val = llvm_val[stmt->values[i]];
+      val = builder->CreateShl(val, bit_struct_snode->ch[ch_id]->bit_offset);
+      if (bit_struct_val == nullptr) {
+        bit_struct_val = val;
+      } else {
+        bit_struct_val = builder->CreateOr(bit_struct_val, val);
+      }
+    }
+    builder->CreateStore(bit_struct_val, llvm_val[stmt->ptr]);
+  } else {
+    // TODO: create a mask and use a single atomicCAS
+    for (int i = 0; i < stmt->ch_ids.size(); i++) {
+      auto ch_id = stmt->ch_ids[i];
+      auto val = stmt->values[i];
+      auto &ch = bit_struct_snode->ch[ch_id];
+      store_custom_int(llvm_val[stmt->ptr], tlctx->get_constant(ch->bit_offset),
+                       ch->dt->as<CustomIntType>(), llvm_val[val]);
+    }
   }
 }
 

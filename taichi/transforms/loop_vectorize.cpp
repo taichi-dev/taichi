@@ -25,7 +25,7 @@ class LoopVectorize : public IRVisitor {
 
   static void widen_type(DataType &type, int width) {
     if (width != 1) {
-      type = Program::get_type_factory().get_vector_type(width, type.get_ptr());
+      type = Program::get_type_factory().get_vector_type(width, type);
     }
   }
 

@@ -391,4 +391,8 @@ int LoopIndexStmt::max_num_bits() const {
   }
 }
 
+SNode *BitStructStoreStmt::get_bit_struct_snode() const {
+  return ptr->as<SNodeLookupStmt>()->snode;
+}
+
 TLANG_NAMESPACE_END

@@ -129,8 +129,8 @@ class TypeCheck : public IRVisitor {
     }
     stmt->ret_type.set_is_pointer(true);
     if (stmt->snodes) {
-      stmt->ret_type = TypeFactory::get_instance().get_pointer_type(
-          stmt->snodes[0]->dt.get_ptr());
+      stmt->ret_type =
+          TypeFactory::get_instance().get_pointer_type(stmt->snodes[0]->dt);
     } else
       TI_WARN("[{}] Type inference failed: snode is nullptr.", stmt->name());
     for (int l = 0; l < stmt->snodes.size(); l++) {
@@ -400,7 +400,7 @@ class TypeCheck : public IRVisitor {
 
   void visit(SNodeLookupStmt *stmt) {
     if (stmt->snode->type == SNodeType::bit_array) {
-      auto bit_array_type = stmt->snode->dt.get_ptr();
+      auto bit_array_type = stmt->snode->dt;
       auto element_type =
           bit_array_type->cast<BitArrayType>()->get_element_type();
       auto pointer_type =
@@ -425,7 +425,7 @@ class TypeCheck : public IRVisitor {
     // For bit_struct SNodes, their component SNodes must have
     // is_bit_level=true
     auto pointer_type = TypeFactory::get_instance().get_pointer_type(
-        element_type.get_ptr(), stmt->output_snode->is_bit_level);
+        element_type, stmt->output_snode->is_bit_level);
     stmt->ret_type = pointer_type;
   }
 
@@ -480,6 +480,10 @@ class TypeCheck : public IRVisitor {
 
   void visit(GlobalTemporaryStmt *stmt) {
     stmt->ret_type.set_is_pointer(true);
+  }
+
+  void visit(BitStructStoreStmt *stmt) {
+    // do nothing
   }
 };
 

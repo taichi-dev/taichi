@@ -573,14 +573,14 @@ llvm::Value *TaichiLLVMContext::get_constant(DataType dt, T t) {
     return llvm::ConstantFP::get(*ctx, llvm::APFloat((float32)t));
   } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
     return llvm::ConstantFP::get(*ctx, llvm::APFloat((float64)t));
-  } else if (dt->is_primitive(PrimitiveTypeID::i32)) {
-    return llvm::ConstantInt::get(*ctx, llvm::APInt(32, t, true));
-  } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
-    return llvm::ConstantInt::get(*ctx, llvm::APInt(32, t, false));
-  } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
-    return llvm::ConstantInt::get(*ctx, llvm::APInt(64, t, true));
-  } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
-    return llvm::ConstantInt::get(*ctx, llvm::APInt(64, t, false));
+  } else if (is_integral(dt)) {
+    if (is_signed(dt)) {
+      return llvm::ConstantInt::get(
+          *ctx, llvm::APInt(data_type_bits(dt), (uint64_t)t, true));
+    } else {
+      return llvm::ConstantInt::get(
+          *ctx, llvm::APInt(data_type_bits(dt), (uint64_t)t, false));
+    }
   } else {
     TI_NOT_IMPLEMENTED
   }
@@ -588,6 +588,8 @@ llvm::Value *TaichiLLVMContext::get_constant(DataType dt, T t) {
 
 template llvm::Value *TaichiLLVMContext::get_constant(DataType dt, int32 t);
 template llvm::Value *TaichiLLVMContext::get_constant(DataType dt, int64 t);
+template llvm::Value *TaichiLLVMContext::get_constant(DataType dt, uint32 t);
+template llvm::Value *TaichiLLVMContext::get_constant(DataType dt, uint64 t);
 template llvm::Value *TaichiLLVMContext::get_constant(DataType dt, float32 t);
 template llvm::Value *TaichiLLVMContext::get_constant(DataType dt, float64 t);
 

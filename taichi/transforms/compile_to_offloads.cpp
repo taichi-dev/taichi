@@ -3,6 +3,7 @@
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/visitors.h"
 #include "taichi/program/kernel.h"
+#include "taichi/program/extension.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -201,6 +202,11 @@ void offload_to_executable(IRNode *ir,
 
   irpass::full_simplify(ir, lower_global_access);
   print("Simplified IV");
+
+  if (is_extension_supported(config.arch, Extension::quant)) {
+    irpass::optimize_bit_struct_stores(ir);
+    print("Bit struct stores optimized");
+  }
 
   // Final field registration correctness & type checking
   irpass::type_check(ir);

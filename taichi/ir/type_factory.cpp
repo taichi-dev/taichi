@@ -91,7 +91,7 @@ PrimitiveType *TypeFactory::get_primitive_int_type(int bits, bool is_signed) {
     TI_ERROR("No primitive int type has {} bits", bits);
   }
   if (!is_signed) {
-    int_type = to_unsigned(DataType(int_type)).get_ptr();
+    int_type = to_unsigned(DataType(int_type));
   }
   return int_type->cast<PrimitiveType>();
 }
@@ -101,7 +101,7 @@ DataType TypeFactory::create_vector_or_scalar_type(int width,
                                                    bool element_is_pointer) {
   TI_ASSERT(width == 1);
   if (element_is_pointer) {
-    return TypeFactory::get_instance().get_pointer_type(element.get_ptr());
+    return TypeFactory::get_instance().get_pointer_type(element);
   } else {
     return element;
   }

@@ -65,7 +65,7 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
     int total_offset = 0;
     for (int i = 0; i < snode.ch.size(); i++) {
       auto &ch = snode.ch[i];
-      ch_types.push_back(ch->dt.get_ptr());
+      ch_types.push_back(ch->dt);
       ch_offsets.push_back(total_offset);
       CustomIntType *component_cit = nullptr;
       if (auto cit = ch->dt->cast<CustomIntType>()) {
@@ -94,7 +94,7 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
     // A bit array SNode should have only one child
     TI_ASSERT(snode.ch.size() == 1);
     auto &ch = snode.ch[0];
-    Type *ch_type = ch->dt.get_ptr();
+    Type *ch_type = ch->dt;
     ch->dt->as<CustomIntType>()->set_physical_type(snode.physical_type);
     if (!arch_is_cpu(arch)) {
       TI_ERROR_IF(data_type_bits(snode.physical_type) <= 16,

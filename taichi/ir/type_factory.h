@@ -23,7 +23,7 @@ class TypeFactory {
 
   Type *get_custom_int_type(int num_bits,
                             bool is_signed,
-                            int compute_type_bits = 32);
+                            int compute_type_bits = 0);
 
   Type *get_custom_float_type(Type *digits_type,
                               Type *exponent_type,

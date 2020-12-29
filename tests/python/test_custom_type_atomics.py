@@ -4,9 +4,9 @@ from pytest import approx
 
 @ti.test(require=ti.extension.quant, debug=True)
 def test_custom_int_atomics():
-    ci13 = ti.type_factory_.get_custom_int_type(13, True)
-    ci5 = ti.type_factory_.get_custom_int_type(5, True)
-    cu2 = ti.type_factory_.get_custom_int_type(2, False)
+    ci13 = ti.type_factory.custom_int(13, True)
+    ci5 = ti.type_factory.custom_int(5, True)
+    cu2 = ti.type_factory.custom_int(2, False)
 
     x = ti.field(dtype=ci13)
     y = ti.field(dtype=ci5)
@@ -38,7 +38,7 @@ def test_custom_int_atomics():
 
 @ti.test(require=ti.extension.quant, debug=True)
 def test_custom_int_atomics_b64():
-    ci13 = ti.type_factory_.get_custom_int_type(13, True)
+    ci13 = ti.type_factory.custom_int(13, True)
 
     x = ti.field(dtype=ci13)
 
@@ -62,8 +62,8 @@ def test_custom_int_atomics_b64():
 
 @ti.test(require=ti.extension.quant, debug=True)
 def test_custom_float_atomics():
-    ci13 = ti.type_factory_.get_custom_int_type(13, True)
-    ci19 = ti.type_factory_.get_custom_int_type(19, False)
+    ci13 = ti.type_factory.custom_int(13, True)
+    ci19 = ti.type_factory.custom_int(19, False)
     cft13 = ti.type_factory.custom_float(significand_type=ci13, scale=0.1)
     cft19 = ti.type_factory.custom_float(significand_type=ci19, scale=0.1)
 

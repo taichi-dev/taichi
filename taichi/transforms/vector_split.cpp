@@ -62,8 +62,8 @@ class BasicBlockVectorSplit : public IRVisitor {
         origin2split[stmt] = std::vector<Stmt *>(current_split_factor, nullptr);
         for (int j = 0; j < current_split_factor; j++) {
           current_split[j]->ret_type =
-              Program::get_type_factory().get_vector_type(
-                  max_width, stmt->element_type().get_ptr());
+              Program::get_type_factory().get_vector_type(max_width,
+                                                          stmt->element_type());
           origin2split[stmt][j] = current_split[j].get();
         }
         splits.push_back(std::move(current_split));
@@ -76,8 +76,8 @@ class BasicBlockVectorSplit : public IRVisitor {
         origin2split[stmt] = std::vector<Stmt *>(1, nullptr);
         current_split[0]->element_type() = stmt->element_type();
         current_split[0]->ret_type =
-            Program::get_type_factory().get_vector_type(
-                stmt->width(), stmt->element_type().get_ptr());
+            Program::get_type_factory().get_vector_type(stmt->width(),
+                                                        stmt->element_type());
         origin2split[stmt][0] = current_split[0].get();
         std::vector<pStmt> split;
         split.push_back(std::move(current_split[0]));

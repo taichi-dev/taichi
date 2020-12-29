@@ -347,8 +347,7 @@ void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
     } else if (!is_real(from) && !is_real(to)) {
       // TODO: implement casting into custom integer type
       TI_ASSERT(!to->is<CustomIntType>());
-      llvm_val[stmt] =
-          cast_int(llvm_val[stmt->operand], from.get_ptr(), to.get_ptr());
+      llvm_val[stmt] = cast_int(llvm_val[stmt->operand], from, to);
     }
   } else if (stmt->op_type == UnaryOpType::cast_bits) {
     TI_ASSERT(data_type_size(stmt->ret_type) ==
@@ -1029,8 +1028,7 @@ llvm::Value *CodeGenLLVM::atomic_add_custom_int(AtomicOpStmt *stmt,
       fmt::format("atomic_add_partial_bits_b{}", data_type_bits(physical_type)),
       {builder->CreateBitCast(byte_ptr, llvm_ptr_type(physical_type)),
        bit_offset, tlctx->get_constant(cit->get_num_bits()),
-       cast_int(llvm_val[stmt->val], stmt->val->ret_type.get_ptr(),
-                physical_type)});
+       cast_int(llvm_val[stmt->val], stmt->val->ret_type, physical_type)});
 }
 
 llvm::Value *CodeGenLLVM::atomic_add_custom_float(AtomicOpStmt *stmt,
@@ -1174,10 +1172,16 @@ void CodeGenLLVM::store_custom_int(llvm::Value *bit_ptr,
                                    CustomIntType *cit,
                                    llvm::Value *value) {
   auto [byte_ptr, bit_offset] = load_bit_pointer(bit_ptr);
+  store_custom_int(byte_ptr, bit_offset, cit, value);
+}
+
+void CodeGenLLVM::store_custom_int(llvm::Value *byte_ptr,
+                                   llvm::Value *bit_offset,
+                                   CustomIntType *cit,
+                                   llvm::Value *value) {
   // TODO(type): CUDA only supports atomicCAS on 32- and 64-bit integers.
   // Try to support CustomInt/FloatType with 8/16-bit physical
   // types.
-
   create_call(fmt::format("set_partial_bits_b{}",
                           data_type_bits(cit->get_physical_type())),
               {builder->CreateBitCast(byte_ptr,
@@ -1260,6 +1264,68 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
     store_custom_int(llvm_val[stmt->ptr], cit, store_value);
   } else {
     builder->CreateStore(llvm_val[stmt->data], llvm_val[stmt->ptr]);
+  }
+}
+
+llvm::Value *CodeGenLLVM::custom_type_to_bits(llvm::Value *val,
+                                              Type *input_type,
+                                              Type *output_type) {
+  CustomIntType *cit = nullptr;
+  if (auto cft = input_type->cast<CustomFloatType>()) {
+    TI_ASSERT(cft->get_exponent_type() == nullptr);
+    cit = cft->get_digits_type()->as<CustomIntType>();
+    val = float_to_custom_int(cft, cit, val);
+  } else {
+    cit = input_type->as<CustomIntType>();
+  }
+  if (cit->get_num_bits() < val->getType()->getIntegerBitWidth()) {
+    val = builder->CreateAnd(
+        val, tlctx->get_constant(cit->get_compute_type(),
+                                 uint64((1ULL << cit->get_num_bits()) - 1)));
+  }
+  val = builder->CreateZExt(val, llvm_type(output_type));
+  return val;
+}
+
+void CodeGenLLVM::visit(BitStructStoreStmt *stmt) {
+  auto bit_struct_snode = stmt->get_bit_struct_snode();
+  auto bit_struct_physical_type =
+      bit_struct_snode->dt->as<BitStructType>()->get_physical_type();
+  if (stmt->ch_ids.size() == bit_struct_snode->ch.size()) {
+    // Store all the components
+    llvm::Value *bit_struct_val = nullptr;
+    for (int i = 0; i < stmt->ch_ids.size(); i++) {
+      auto ch_id = stmt->ch_ids[i];
+      auto val = llvm_val[stmt->values[i]];
+      auto &ch = bit_struct_snode->ch[ch_id];
+      auto dtype = ch->dt;
+      val = custom_type_to_bits(val, dtype, bit_struct_physical_type);
+      val = builder->CreateShl(val, bit_struct_snode->ch[ch_id]->bit_offset);
+      if (bit_struct_val == nullptr) {
+        bit_struct_val = val;
+      } else {
+        bit_struct_val = builder->CreateOr(bit_struct_val, val);
+      }
+    }
+    builder->CreateStore(bit_struct_val, llvm_val[stmt->ptr]);
+  } else {
+    // TODO: create a mask and use a single atomicCAS
+    for (int i = 0; i < stmt->ch_ids.size(); i++) {
+      auto ch_id = stmt->ch_ids[i];
+      auto val = stmt->values[i];
+      auto &ch = bit_struct_snode->ch[ch_id];
+      auto dtype = ch->dt;
+      CustomIntType *cit = nullptr;
+      if (auto cft = dtype->cast<CustomFloatType>()) {
+        TI_ASSERT(cft->get_exponent_type() == nullptr);
+        cit = cft->get_digits_type()->as<CustomIntType>();
+      } else {
+        cit = dtype->as<CustomIntType>();
+      }
+      store_custom_int(
+          llvm_val[stmt->ptr], tlctx->get_constant(ch->bit_offset), cit,
+          custom_type_to_bits(llvm_val[val], dtype, bit_struct_physical_type));
+    }
   }
 }
 
@@ -1555,7 +1621,7 @@ void CodeGenLLVM::visit(SNodeLookupStmt *stmt) {
     llvm_val[stmt] = parent;
   } else if (snode->type == SNodeType::bit_array) {
     auto element_num_bits =
-        snode->dt.get_ptr()->as<BitArrayType>()->get_element_num_bits();
+        snode->dt->as<BitArrayType>()->get_element_num_bits();
     auto offset = tlctx->get_constant(element_num_bits);
     offset = builder->CreateMul(offset, llvm_val[stmt->input_index]);
     llvm_val[stmt] = create_bit_ptr_struct(llvm_val[stmt->input_snode], offset);
@@ -1569,7 +1635,7 @@ void CodeGenLLVM::visit(GetChStmt *stmt) {
   if (stmt->input_snode->type == SNodeType::bit_array) {
     llvm_val[stmt] = llvm_val[stmt->input_ptr];
   } else if (stmt->ret_type->as<PointerType>()->is_bit_pointer()) {
-    auto bit_struct = stmt->input_snode->dt.get_ptr()->cast<BitStructType>();
+    auto bit_struct = stmt->input_snode->dt->cast<BitStructType>();
     auto bit_offset = bit_struct->get_member_bit_offset(
         stmt->input_snode->child_id(stmt->output_snode));
     auto offset = tlctx->get_constant(bit_offset);

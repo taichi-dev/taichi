@@ -192,10 +192,10 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(SNodeOpStmt *stmt) override;
 
-  llvm::Value *atomic_add_custom_int(AtomicOpStmt *stmt, CustomIntType *cit);
-
   llvm::Value *atomic_add_custom_float(AtomicOpStmt *stmt,
                                        CustomFloatType *cft);
+
+  llvm::Value *atomic_add_custom_int(AtomicOpStmt *stmt, CustomIntType *cit);
 
   llvm::Value *float_to_custom_int(CustomFloatType *cft,
                                    CustomIntType *cit,
@@ -209,7 +209,18 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
                         CustomIntType *cit,
                         llvm::Value *value);
 
+  void store_custom_int(llvm::Value *byte_ptr,
+                        llvm::Value *bit_offset,
+                        CustomIntType *cit,
+                        llvm::Value *value);
+
   void visit(GlobalStoreStmt *stmt) override;
+
+  llvm::Value *custom_type_to_bits(llvm::Value *val,
+                                   Type *input_type,
+                                   Type *output_type);
+
+  void visit(BitStructStoreStmt *stmt) override;
 
   llvm::Value *load_as_custom_int(llvm::Value *ptr, Type *load_type);
 

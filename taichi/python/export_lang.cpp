@@ -89,11 +89,13 @@ void export_lang(py::module &m) {
       .def(py::self == py::self)
       .def("__hash__", &DataType::hash)
       .def("to_string", &DataType::to_string)
-      .def("get_ptr", &DataType::get_ptr, py::return_value_policy::reference)
+      .def("get_ptr", [](DataType *dtype) -> Type * { return *dtype; },
+           py::return_value_policy::reference)
       .def(py::pickle(
           [](const DataType &dt) {
             // Note: this only works for primitive types, which is fine for now.
-            auto primitive = dynamic_cast<const PrimitiveType *>(dt.get_ptr());
+            auto primitive =
+                dynamic_cast<const PrimitiveType *>((const Type *)dt);
             TI_ASSERT(primitive);
             return py::make_tuple((std::size_t)primitive->type);
           },
@@ -739,8 +741,7 @@ void export_lang(py::module &m) {
   py::class_<TypeFactory>(m, "TypeFactory")
       .def("get_custom_int_type", &TypeFactory::get_custom_int_type,
            py::arg("num_bits"), py::arg("is_signed"),
-           py::arg("compute_type_bits") = 32,
-           py::return_value_policy::reference)
+           py::arg("compute_type_bits") = 0, py::return_value_policy::reference)
       .def("get_custom_float_type", &TypeFactory::get_custom_float_type,
            py::arg("digits_type"), py::arg("exponent_type"),
            py::arg("compute_type"), py::arg("scale"),

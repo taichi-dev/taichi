@@ -74,8 +74,11 @@ class DataType {
     return ptr_->to_string();
   };
 
-  // TODO: DataType itself should be a pointer in the future
-  Type *get_ptr() const {
+  operator const Type *() const {
+    return ptr_;
+  }
+
+  operator Type *() {
     return ptr_;
   }
 

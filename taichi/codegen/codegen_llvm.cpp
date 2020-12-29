@@ -1269,14 +1269,30 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
   }
 }
 
+llvm::Value *CodeGenLLVM::custom_type_to_bits(llvm::Value *val,
+                                              Type *input_type,
+                                              Type *output_type) {
+  if (auto cft = input_type->cast<CustomFloatType>()) {
+    TI_ASSERT(cft->get_exponent_type() == nullptr);
+    val = float_to_custom_int(cft, cft->get_digits_type()->as<CustomIntType>(),
+                              val);
+  }
+  val = builder->CreateZExt(val, llvm_type(output_type));
+  return val;
+}
+
 void CodeGenLLVM::visit(BitStructStoreStmt *stmt) {
   auto bit_struct_snode = stmt->get_bit_struct_snode();
+  auto bit_struct_physical_type =
+      bit_struct_snode->dt->as<BitStructType>()->get_physical_type();
   if (stmt->ch_ids.size() == bit_struct_snode->ch.size()) {
     // Store all the components
     llvm::Value *bit_struct_val = nullptr;
     for (int i = 0; i < stmt->ch_ids.size(); i++) {
       auto ch_id = stmt->ch_ids[i];
       auto val = llvm_val[stmt->values[i]];
+      auto dtype = bit_struct_snode->ch[ch_id]->dt.get_ptr();
+      val = custom_type_to_bits(val, dtype, bit_struct_physical_type);
       val = builder->CreateShl(val, bit_struct_snode->ch[ch_id]->bit_offset);
       if (bit_struct_val == nullptr) {
         bit_struct_val = val;
@@ -1291,8 +1307,18 @@ void CodeGenLLVM::visit(BitStructStoreStmt *stmt) {
       auto ch_id = stmt->ch_ids[i];
       auto val = stmt->values[i];
       auto &ch = bit_struct_snode->ch[ch_id];
+      auto dtype = ch->dt;
+      CustomIntType *cit = nullptr;
+      if (auto cft = dtype->cast<CustomFloatType>()) {
+        TI_ASSERT(cft->get_exponent_type() == nullptr);
+        cit = cft->get_digits_type()->as<CustomIntType>();
+      } else {
+        cit = dtype->as<CustomIntType>();
+      }
       store_custom_int(llvm_val[stmt->ptr], tlctx->get_constant(ch->bit_offset),
-                       ch->dt->as<CustomIntType>(), llvm_val[val]);
+                       cit,
+                       custom_type_to_bits(llvm_val[val], dtype.get_ptr(),
+                                           bit_struct_physical_type));
     }
   }
 }

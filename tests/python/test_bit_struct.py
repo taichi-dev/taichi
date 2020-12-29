@@ -88,18 +88,16 @@ def test_custom_int_full_struct():
 
     x[0] = 12
     assert x[0] == 12
-    
+
+
 def test_bit_struct():
     def test_single_bit_struct(physical_type, compute_type, custom_bits,
                                test_case):
         ti.init(arch=ti.cpu, debug=True)
 
-        cit1 = ti.type_factory.custom_int(custom_bits[0], True,
-                                                    compute_type)
-        cit2 = ti.type_factory.custom_int(custom_bits[1], False,
-                                                    compute_type)
-        cit3 = ti.type_factory.custom_int(custom_bits[2], True,
-                                                    compute_type)
+        cit1 = ti.type_factory.custom_int(custom_bits[0], True, compute_type)
+        cit2 = ti.type_factory.custom_int(custom_bits[1], False, compute_type)
+        cit3 = ti.type_factory.custom_int(custom_bits[2], True, compute_type)
 
         a = ti.field(dtype=cit1)
         b = ti.field(dtype=cit2)

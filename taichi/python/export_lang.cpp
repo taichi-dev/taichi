@@ -741,7 +741,7 @@ void export_lang(py::module &m) {
   py::class_<TypeFactory>(m, "TypeFactory")
       .def("get_custom_int_type", &TypeFactory::get_custom_int_type,
            py::arg("num_bits"), py::arg("is_signed"),
-           py::arg("compute_type_bits") = 32,
+           py::arg("compute_type_bits") = 0,
            py::return_value_policy::reference)
       .def("get_custom_float_type", &TypeFactory::get_custom_float_type,
            py::arg("digits_type"), py::arg("exponent_type"),

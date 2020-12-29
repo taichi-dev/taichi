@@ -1064,13 +1064,10 @@ llvm::Value *CodeGenLLVM::float_to_custom_int(CustomFloatType *cft,
       {scaled});
 
   if (cit->get_is_signed()) {
-    s = builder->CreateFPToSI(scaled, llvm_type(cit->get_compute_type()));
+    return builder->CreateFPToSI(scaled, llvm_type(cit->get_compute_type()));
   } else {
-    s = builder->CreateFPToUI(scaled, llvm_type(cit->get_compute_type()));
+    return builder->CreateFPToUI(scaled, llvm_type(cit->get_compute_type()));
   }
-  s = builder->CreateAnd(s,
-                         tlctx->get_constant((1u << cit->get_num_bits()) - 1));
-  return s;
 }
 
 void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
@@ -1273,10 +1270,18 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
 llvm::Value *CodeGenLLVM::custom_type_to_bits(llvm::Value *val,
                                               Type *input_type,
                                               Type *output_type) {
+  CustomIntType *cit = nullptr;
   if (auto cft = input_type->cast<CustomFloatType>()) {
     TI_ASSERT(cft->get_exponent_type() == nullptr);
-    val = float_to_custom_int(cft, cft->get_digits_type()->as<CustomIntType>(),
-                              val);
+    cit = cft->get_digits_type()->as<CustomIntType>();
+    val = float_to_custom_int(cft, cit, val);
+  } else {
+    cit = input_type->as<CustomIntType>();
+  }
+  if (cit->get_num_bits() < val->getType()->getIntegerBitWidth()) {
+    val = builder->CreateAnd(
+        val, tlctx->get_constant(cit->get_compute_type(),
+                                 uint64((1ULL << cit->get_num_bits()) - 1)));
   }
   val = builder->CreateZExt(val, llvm_type(output_type));
   return val;

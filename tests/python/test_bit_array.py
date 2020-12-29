@@ -4,7 +4,7 @@ import numpy as np
 
 @ti.test(require=ti.extension.quant, debug=True)
 def test_1D_bit_array():
-    ci1 = ti.type_factory_.get_custom_int_type(1, False)
+    ci1 = ti.type_factory.custom_int(1, False)
 
     x = ti.field(dtype=ci1)
 
@@ -30,7 +30,7 @@ def test_1D_bit_array():
 
 @ti.test(require=ti.extension.quant, debug=True)
 def test_2D_bit_array():
-    ci1 = ti.type_factory_.get_custom_int_type(1, False)
+    ci1 = ti.type_factory.custom_int(1, False)
 
     x = ti.field(dtype=ci1)
 

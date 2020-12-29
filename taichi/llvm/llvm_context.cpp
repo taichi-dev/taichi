@@ -575,11 +575,11 @@ llvm::Value *TaichiLLVMContext::get_constant(DataType dt, T t) {
     return llvm::ConstantFP::get(*ctx, llvm::APFloat((float64)t));
   } else if (is_integral(dt)) {
     if (is_signed(dt)) {
-      return llvm::ConstantInt::get(*ctx,
-                                    llvm::APInt(data_type_bits(dt), t, true));
+      return llvm::ConstantInt::get(
+          *ctx, llvm::APInt(data_type_bits(dt), (uint64_t)t, true));
     } else {
-      return llvm::ConstantInt::get(*ctx,
-                                    llvm::APInt(data_type_bits(dt), t, false));
+      return llvm::ConstantInt::get(
+          *ctx, llvm::APInt(data_type_bits(dt), (uint64_t)t, false));
     }
   } else {
     TI_NOT_IMPLEMENTED

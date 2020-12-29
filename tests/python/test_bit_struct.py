@@ -159,28 +159,16 @@ def test_bit_struct_struct_for():
     block_size = 16
     N = 64
     cell = ti.root.pointer(ti.i, N // block_size)
-    cit1 = ti.type_factory_.get_custom_int_type(3, False)
-    cit2 = ti.type_factory_.get_custom_int_type(2, False)
-    cit3 = ti.type_factory_.get_custom_int_type(3, False)
+    ci32 = ti.type_factory_.get_custom_int_type(32, True)
+    cft = ti.type_factory.custom_float(significand_type=ci32,
+                                       scale=4 / (2**15))
 
-    a = ti.field(dtype=cit1)
-    b = ti.field(dtype=cit2)
-    c = ti.field(dtype=cit3)
-    cell.dense(ti.i, block_size)._bit_struct(8).place(a, b, c)
+    x = ti.field(dtype=cft)
+    cell.dense(ti.i, block_size)._bit_struct(32).place(x)
 
     @ti.kernel
     def assign():
-        for i in a:
-            a[i] = (i + 1) % 8
-            b[i] = (i + 2) % 8
-            c[i] = (i + 3) % 4
-
-    @ti.kernel
-    def verify():
-        for i in a:
-            assert a[i] == (i + 1) % 8
-            assert b[i] == (i + 2) % 8
-            assert c[i] == (i + 3) % 4
+        for i in x:
+            x[i] = ti.cast(i, float)
 
     assign()
-    verify()

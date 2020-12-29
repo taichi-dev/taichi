@@ -1085,15 +1085,10 @@ void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
             llvm::AtomicRMWInst::BinOp::Add, llvm_val[stmt->dest],
             llvm_val[stmt->val], llvm::AtomicOrdering::SequentiallyConsistent);
       } else if (!dst_type->is<CustomFloatType>() &&
-                 stmt->val->ret_type->is_primitive(PrimitiveTypeID::f32)) {
-        old_value =
-            builder->CreateCall(get_runtime_function("atomic_add_f32"),
-                                {llvm_val[stmt->dest], llvm_val[stmt->val]});
-      } else if (!dst_type->is<CustomFloatType>() &&
-                 stmt->val->ret_type->is_primitive(PrimitiveTypeID::f64)) {
-        old_value =
-            builder->CreateCall(get_runtime_function("atomic_add_f64"),
-                                {llvm_val[stmt->dest], llvm_val[stmt->val]});
+                 is_real(stmt->val->ret_type)) {
+        old_value = builder->CreateAtomicRMW(
+            llvm::AtomicRMWInst::BinOp::FAdd, llvm_val[stmt->dest],
+            llvm_val[stmt->val], llvm::AtomicOrdering::SequentiallyConsistent);
       } else if (auto cit = dst_type->cast<CustomIntType>()) {
         old_value = atomic_add_custom_int(stmt, cit);
       } else if (auto cft = dst_type->cast<CustomFloatType>()) {

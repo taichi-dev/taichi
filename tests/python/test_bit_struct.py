@@ -134,3 +134,23 @@ def test_bit_struct():
 
     test_single_bit_struct(16, 16, [5, 5, 6], np.array([15, 5, 20]))
     test_single_bit_struct(32, 32, [10, 10, 12], np.array([11, 19, 2020]))
+
+
+@ti.test(require=ti.extension.quant, debug=True)
+def test_bit_struct_struct_for():
+    block_size = 16
+    N = 64
+    cell = ti.root.pointer(ti.i, N // block_size)
+    ci32 = ti.type_factory_.get_custom_int_type(32, True)
+    cft = ti.type_factory.custom_float(significand_type=ci32,
+                                       scale=4 / (2**15))
+
+    x = ti.field(dtype=cft)
+    cell.dense(ti.i, block_size)._bit_struct(32).place(x)
+
+    @ti.kernel
+    def assign():
+        for i in x:
+            x[i] = ti.cast(i, float)
+
+    assign()

@@ -1064,10 +1064,13 @@ llvm::Value *CodeGenLLVM::float_to_custom_int(CustomFloatType *cft,
       {scaled});
 
   if (cit->get_is_signed()) {
-    return builder->CreateFPToSI(scaled, llvm_type(cit->get_compute_type()));
+    s = builder->CreateFPToSI(scaled, llvm_type(cit->get_compute_type()));
   } else {
-    return builder->CreateFPToUI(scaled, llvm_type(cit->get_compute_type()));
+    s = builder->CreateFPToUI(scaled, llvm_type(cit->get_compute_type()));
   }
+  s = builder->CreateAnd(s,
+                         tlctx->get_constant((1u << cit->get_num_bits()) - 1));
+  return s;
 }
 
 void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
@@ -1289,7 +1292,8 @@ void CodeGenLLVM::visit(BitStructStoreStmt *stmt) {
     for (int i = 0; i < stmt->ch_ids.size(); i++) {
       auto ch_id = stmt->ch_ids[i];
       auto val = llvm_val[stmt->values[i]];
-      auto dtype = bit_struct_snode->ch[ch_id]->dt;
+      auto &ch = bit_struct_snode->ch[ch_id];
+      auto dtype = ch->dt;
       val = custom_type_to_bits(val, dtype, bit_struct_physical_type);
       val = builder->CreateShl(val, bit_struct_snode->ch[ch_id]->bit_offset);
       if (bit_struct_val == nullptr) {

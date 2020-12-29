@@ -93,6 +93,7 @@ class MergeBitStructStores : public BasicStmtVisitor {
               Stmt::make<BitStructStoreStmt>(ptr, ch_ids, store_values));
           modified_ = true;
         }
+        ptr_to_bit_struct_stores.clear();
         continue;
       }
       if (auto stmt = statements[i]->cast<BitStructStoreStmt>()) {

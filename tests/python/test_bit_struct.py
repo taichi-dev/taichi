@@ -77,7 +77,7 @@ def test_custom_int_load_and_store():
         verify_val.__wrapped__(idx)
 
 
-# @ti.test(require=ti.extension.quant)
+@ti.test(require=ti.extension.quant)
 def test_custom_int_full_struct():
     cit = ti.type_factory.custom_int(32, True)
     x = ti.field(dtype=cit)
@@ -89,14 +89,10 @@ def test_custom_int_full_struct():
     x[0] = 12
     assert x[0] == 12
     
-ti.init()
-test_custom_int_full_struct()
-
-
 def test_bit_struct():
     def test_single_bit_struct(physical_type, compute_type, custom_bits,
                                test_case):
-        ti.init(arch=ti.cpu, debug=True, print_ir=False)
+        ti.init(arch=ti.cpu, debug=True)
 
         cit1 = ti.type_factory.custom_int(custom_bits[0], True,
                                                     compute_type)

@@ -238,7 +238,8 @@ void AsyncEngine::flush() {
   if (program->config.debug) {
     sfg->verify();
   }
-  while (modified) {
+  for (int pass = 0; pass < program->config.async_opt_passes && modified;
+       pass++) {
     modified = false;
     if (program->config.async_opt_activation_demotion) {
       while (sfg->demote_activation()) {

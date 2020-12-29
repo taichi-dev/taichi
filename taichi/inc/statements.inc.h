@@ -82,3 +82,6 @@ PER_STATEMENT(BlockLocalPtrStmt)
 
 // Special
 PER_STATEMENT(InternalFuncStmt)
+
+// Quantization
+PER_STATEMENT(BitStructStoreStmt)

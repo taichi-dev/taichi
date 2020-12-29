@@ -1165,4 +1165,28 @@ class StackAccAdjointStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+class BitStructStoreStmt : public Stmt {
+ public:
+  Stmt *ptr;
+  std::vector<int> ch_ids;
+  std::vector<Stmt *> values;
+
+  BitStructStoreStmt(Stmt *ptr,
+                     const std::vector<int> &ch_ids,
+                     const std::vector<Stmt *> &values)
+      : ptr(ptr), ch_ids(ch_ids), values(values) {
+    TI_ASSERT(ch_ids.size() == values.size());
+    TI_STMT_REG_FIELDS;
+  }
+
+  SNode *get_bit_struct_snode() const;
+
+  bool common_statement_eliminable() const override {
+    return false;
+  }
+
+  TI_STMT_DEF_FIELDS(ret_type, ptr, ch_ids, values);
+  TI_DEFINE_ACCEPT_AND_CLONE;
+};
+
 TLANG_NAMESPACE_END

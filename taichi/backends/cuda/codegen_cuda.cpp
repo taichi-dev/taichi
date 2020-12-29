@@ -417,8 +417,6 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         if (auto ptr_type = stmt->ptr->ret_type->as<PointerType>();
             ptr_type->is_bit_pointer()) {
           auto val_type = ptr_type->get_pointee_type();
-          llvm::Value *data_ptr = nullptr;
-          llvm::Value *bit_offset = nullptr;
           Type *int_in_mem = nullptr;
           // For CustomIntType "int_in_mem" refers to the type itself;
           // for CustomFloatType "int_in_mem" refers to the CustomIntType of the
@@ -432,7 +430,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
           } else {
             TI_NOT_IMPLEMENTED;
           }
-          read_bit_pointer(llvm_val[stmt->ptr], data_ptr, bit_offset);
+          auto [data_ptr, bit_offset] = load_bit_pointer(llvm_val[stmt->ptr]);
           data_ptr = builder->CreateBitCast(data_ptr, llvm_ptr_type(dtype));
           auto data = create_intrinsic_load(dtype, data_ptr);
           llvm_val[stmt] = extract_custom_int(data, bit_offset, int_in_mem);

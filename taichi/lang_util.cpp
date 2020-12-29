@@ -360,8 +360,7 @@ class TypePromotionMapping {
  private:
   std::map<std::pair<PrimitiveTypeID, PrimitiveTypeID>, PrimitiveTypeID>
       mapping;
-  static PrimitiveTypeID to_primitive_type(const DataType d_) {
-    Type *d = d_.get_ptr();
+  static PrimitiveTypeID to_primitive_type(DataType d) {
     if (d->is<PointerType>()) {
       d = d->as<PointerType>()->get_pointee_type();
       TI_WARN("promoted_type got a pointer input.");

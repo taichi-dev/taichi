@@ -4,7 +4,7 @@ import numpy as np
 
 @ti.test(require=ti.extension.quant, debug=True, cfg_optimization=False)
 def test_vectorized_struct_for():
-    ci1 = ti.type_factory_.get_custom_int_type(1, False)
+    ci1 = ti.type_factory.custom_int(1, False)
 
     x = ti.field(dtype=ci1)
     y = ti.field(dtype=ci1)

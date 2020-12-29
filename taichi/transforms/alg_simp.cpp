@@ -220,6 +220,9 @@ class AlgSimp : public BasicStmtVisitor {
         // -1 & a -> a
         stmt->replace_with(stmt->rhs);
         modifier.erase(stmt);
+      } else if (alg_is_zero(lhs) || alg_is_zero(rhs)) {
+        // 0 & a -> 0, a & 0 -> 0
+        replace_with_zero(stmt);
       } else if (irpass::analysis::same_value(stmt->lhs, stmt->rhs)) {
         // a & a -> a
         stmt->replace_with(stmt->lhs);

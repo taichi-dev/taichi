@@ -14,7 +14,7 @@ class BitLoopVectorize : public IRVisitor {
  public:
   int bit_vectorize;
   bool in_struct_for_loop;
-  StructForStmt* loop_stmt;
+  StructForStmt *loop_stmt;
   PrimitiveType *bit_array_physical_type;
 
   BitLoopVectorize() {
@@ -50,14 +50,17 @@ class BitLoopVectorize : public IRVisitor {
         ptr->is_bit_vectorized = true;
         // check if j has offset
         if (ptr->indices.size() == 2) {
-          auto diff = irpass::analysis::value_diff_loop_index(ptr->indices[1], loop_stmt, 1);
+          auto diff = irpass::analysis::value_diff_loop_index(ptr->indices[1],
+                                                              loop_stmt, 1);
           // TODO: temporarily we only support [j - 1] and [j + 1]
-            //       the general case should be easy to implement
-          if (diff.linear_related() && diff.high - diff.low == 1 && (diff.low == 1 || diff.low == -1)) {
+          //       the general case should be easy to implement
+          if (diff.linear_related() && diff.high - diff.low == 1 &&
+              (diff.low == 1 || diff.low == -1)) {
             // construct ptr to x[i, j]
             auto indices = ptr->indices;
             indices[1] = loop_stmt->body->statements[1].get();
-            auto base_ptr = std::make_unique<GlobalPtrStmt>(ptr->snodes, indices);
+            auto base_ptr =
+                std::make_unique<GlobalPtrStmt>(ptr->snodes, indices);
             base_ptr->ret_type = new_ret_type;
             base_ptr->is_bit_vectorized = true;
             // load x[i, j](base) and x[i, j + 1](offsetted)
@@ -67,15 +70,24 @@ class BitLoopVectorize : public IRVisitor {
             auto load_offsetted = std::make_unique<GlobalLoadStmt>(ptr);
             load_offsetted->ret_type = load_data_type;
             // create bit shift and bit and operations
-            auto base_shift_offset = std::make_unique<ConstStmt>(TypedConstant(1));
-            auto base_shift_opcode = diff.low == -1 ? BinaryOpType::bit_shl : BinaryOpType::bit_sar;
-            auto base_shift_op = std::make_unique<BinaryOpStmt>(base_shift_opcode, load_base.get(), base_shift_offset.get());
+            auto base_shift_offset =
+                std::make_unique<ConstStmt>(TypedConstant(1));
+            auto base_shift_opcode =
+                diff.low == -1 ? BinaryOpType::bit_shl : BinaryOpType::bit_sar;
+            auto base_shift_op = std::make_unique<BinaryOpStmt>(
+                base_shift_opcode, load_base.get(), base_shift_offset.get());
 
-            auto offsetted_shift_offset = std::make_unique<ConstStmt>(TypedConstant(bit_vectorize - 1));
-            auto offsetted_shift_opcode = diff.low == -1 ? BinaryOpType::bit_sar : BinaryOpType::bit_shl;
-            auto offsetted_shift_op = std::make_unique<BinaryOpStmt>(offsetted_shift_opcode, load_offsetted.get(), offsetted_shift_offset.get());
+            auto offsetted_shift_offset =
+                std::make_unique<ConstStmt>(TypedConstant(bit_vectorize - 1));
+            auto offsetted_shift_opcode =
+                diff.low == -1 ? BinaryOpType::bit_sar : BinaryOpType::bit_shl;
+            auto offsetted_shift_op = std::make_unique<BinaryOpStmt>(
+                offsetted_shift_opcode, load_offsetted.get(),
+                offsetted_shift_offset.get());
 
-            auto or_op = std::make_unique<BinaryOpStmt>(BinaryOpType::bit_or, base_shift_op.get(), offsetted_shift_op.get());
+            auto or_op = std::make_unique<BinaryOpStmt>(
+                BinaryOpType::bit_or, base_shift_op.get(),
+                offsetted_shift_op.get());
             // modify IR
             auto offsetted_shift_op_p = offsetted_shift_op.get();
             stmt->insert_before_me(std::move(base_ptr));

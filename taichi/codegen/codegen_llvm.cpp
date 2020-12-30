@@ -1771,7 +1771,9 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
   // When looping over bit_arrays, we generate struct for on bit array's parent
   // node (usually "dense") instead of itself for higher performance. Also, note
   // that the loop must be bit_vectorized.
-  if (leaf_block->type == SNodeType::bit_array && leaf_block->parent) {
+  if ((leaf_block->type == SNodeType::bit_array ||
+       leaf_block->type == SNodeType::bit_struct) &&
+      leaf_block->parent) {
     if (leaf_block->parent->type == SNodeType::dense) {
       leaf_block = leaf_block->parent;
     } else {

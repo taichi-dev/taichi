@@ -154,14 +154,17 @@ def interpolate_frames(frame_dir, mul=4):
         cv2.imwrite('interpolated/{:05d}.png'.format(i), img * 255.0)
 
 
+def ffmpeg_common_args(frame_rate, width, height, crf):
+    return f" -framerate {frame_rate} -s:v {width}x{height} " + \
+                         f"-c:v libx264 -profile:v high -crf {crf} -pix_fmt yuv420p"
+
+
 def make_video(input_files,
                width=0,
                height=0,
                frame_rate=24,
                crf=20,
                output_path='video.mp4'):
-    ffmpeg_common_args = f"-loglevel panic -framerate {frame_rate} -s:v {width}x{height}" +\
-                         f"-c:v libx264 -profile:v high -crf {crf} -pix_fmt yuv420p"
     if isinstance(input_files, list):
         from PIL import Image
         with Image.open(input_files[0]) as img:
@@ -177,15 +180,16 @@ def make_video(input_files,
             height -= 1
         for i, inp in enumerate(input_files):
             shutil.copy(inp, os.path.join(tmp_dir, '%06d.png' % i))
-        command = f"{get_ffmpeg_path()} -y {ffmpeg_common_args} -i {tmp_dir}/%06d.png -s:v {output_path}"
-        print(command)
-        os.system(command)
+        command = f"{get_ffmpeg_path()} -y -i {tmp_dir}/%06d.png {ffmpeg_common_args(frame_rate, width, height, crf)} {output_path} "
+        ret = os.system(command)
+        assert ret == 0, "ffmpeg failed to generate video file."
         for i in range(len(input_files)):
             os.remove(os.path.join(tmp_dir, '%06d.png' % i))
         os.rmdir(tmp_dir)
     elif isinstance(input_files, str):
         assert width != 0 and height != 0
-        command = f"{get_ffmpeg_path()} -i {input_files} {ffmpeg_common_args} {output_path}"
-        os.system(command)
+        command = f"{get_ffmpeg_path()} -i {input_files} {ffmpeg_common_args(frame_rate, width, height, crf)} {output_path}"
+        ret = os.system(command)
+        assert ret == 0, "ffmpeg failed to generate video file."
     else:
         assert False, f'input_files should be list (of files) or str (of file template, like "%04d.png") instead of {type(input_files)}'

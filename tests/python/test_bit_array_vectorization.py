@@ -61,6 +61,8 @@ def test_offset_load():
         ti.j, bits, num_bits=bits).place(x)
     block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks)))._bit_array(
         ti.j, bits, num_bits=bits).place(y)
+    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks)))._bit_array(
+        ti.j, bits, num_bits=bits).place(z)
 
     @ti.kernel
     def init():
@@ -72,15 +74,15 @@ def test_offset_load():
     def assign_vectorized():
         ti.bit_vectorize(32)
         for i, j in x:
-            y[i, j] = x[i - 1, j]
-            z[i, j] = x[i, j - 1]
+            y[i, j] = x[i, j + 1]
+            # z[i, j] = x[i, j - 1]
 
     @ti.kernel
     def verify():
         for i, j in ti.ndrange((boundary_offset, N - boundary_offset),
                                (boundary_offset, N - boundary_offset)):
-            assert y[i, j] == x[i - 1, j]
-            assert z[i, j] == x[i, j - 1]
+            assert y[i, j] == x[i, j + 1]
+            # assert z[i, j] == x[i, j - 1]
 
     init()
     assign_vectorized()

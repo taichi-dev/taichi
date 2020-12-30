@@ -1,5 +1,6 @@
 import taichi as ti
 import numpy as np
+from pytest import approx
 
 
 @ti.test(require=ti.extension.quant, debug=True)
@@ -148,9 +149,19 @@ def test_bit_struct_struct_for():
     x = ti.field(dtype=cft)
     cell.dense(ti.i, block_size)._bit_struct(32).place(x)
 
+    for i in range(N):
+        if i // block_size % 2 == 0:
+            x[i] = 0
+
     @ti.kernel
     def assign():
         for i in x:
             x[i] = ti.cast(i, float)
 
     assign()
+
+    for i in range(N):
+        if i // block_size % 2 == 0:
+            assert x[i] == approx(i, abs=1e-3)
+        else:
+            assert x[i] == 0

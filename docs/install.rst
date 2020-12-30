@@ -60,7 +60,7 @@ Python issues
       python3 -c pip install -i https://pypi.tuna.tsinghua.edu.cn/simple taichi
 
   * Sometimes ``pip`` could fail when its version is not the latest. Upgrade it and
-    try install ``taichi`` again:
+    try installing ``taichi`` again:
 
     .. code-block:: bash
 

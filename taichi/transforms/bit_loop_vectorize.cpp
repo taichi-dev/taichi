@@ -94,9 +94,9 @@ class BitLoopVectorize : public IRVisitor {
             stmt->insert_before_me(std::move(load_base));
             stmt->insert_before_me(std::move(load_offsetted));
             stmt->insert_before_me(std::move(base_shift_offset));
-            stmt->insert_before_me(std::move(std::move(base_shift_op)));
+            stmt->insert_before_me(std::move(base_shift_op));
             stmt->insert_before_me(std::move(offsetted_shift_offset));
-            stmt->insert_before_me(std::move(std::move(offsetted_shift_op)));
+            stmt->insert_before_me(std::move(offsetted_shift_op));
             stmt->replace_with(or_op.get());
             offsetted_shift_op_p->insert_after_me(std::move(or_op));
           }

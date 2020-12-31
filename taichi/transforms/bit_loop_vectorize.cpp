@@ -68,15 +68,21 @@ class BitLoopVectorize : public IRVisitor {
             auto load_base = std::make_unique<GlobalLoadStmt>(base_ptr.get());
             load_base->ret_type = load_data_type;
             // load x[i, j + 1](offsetted)
-            // since we are doing vectorization, the actual data should be x[i, j + 32]
-            auto offset_constant = std::make_unique<ConstStmt>(TypedConstant(bit_vectorize));
-            auto offset_index_opcode = diff.low == -1 ? BinaryOpType::sub : BinaryOpType::add;
-            auto offset_index = std::make_unique<BinaryOpStmt>(offset_index_opcode, indices[1], offset_constant.get());
+            // since we are doing vectorization, the actual data should be x[i,
+            // j + 32]
+            auto offset_constant =
+                std::make_unique<ConstStmt>(TypedConstant(bit_vectorize));
+            auto offset_index_opcode =
+                diff.low == -1 ? BinaryOpType::sub : BinaryOpType::add;
+            auto offset_index = std::make_unique<BinaryOpStmt>(
+                offset_index_opcode, indices[1], offset_constant.get());
             indices[1] = offset_index.get();
-            auto offset_ptr = std::make_unique<GlobalPtrStmt>(ptr->snodes, indices);
+            auto offset_ptr =
+                std::make_unique<GlobalPtrStmt>(ptr->snodes, indices);
             offset_ptr->ret_type = new_ret_type;
             offset_ptr->is_bit_vectorized = true;
-            auto load_offsetted = std::make_unique<GlobalLoadStmt>(offset_ptr.get());
+            auto load_offsetted =
+                std::make_unique<GlobalLoadStmt>(offset_ptr.get());
             load_offsetted->ret_type = load_data_type;
             // create bit shift and bit and operations
             auto base_shift_offset =
@@ -86,8 +92,8 @@ class BitLoopVectorize : public IRVisitor {
             auto base_shift_op = std::make_unique<BinaryOpStmt>(
                 base_shift_opcode, load_base.get(), base_shift_offset.get());
 
-            auto offsetted_shift_offset =
-                std::make_unique<ConstStmt>(TypedConstant(load_data_type, bit_vectorize - 1));
+            auto offsetted_shift_offset = std::make_unique<ConstStmt>(
+                TypedConstant(load_data_type, bit_vectorize - 1));
             auto offsetted_shift_opcode =
                 diff.low == -1 ? BinaryOpType::bit_sar : BinaryOpType::bit_shl;
             auto offsetted_shift_op = std::make_unique<BinaryOpStmt>(

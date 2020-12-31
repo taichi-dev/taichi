@@ -41,3 +41,55 @@ def test_vectorized_struct_for():
     init()
     assign_vectorized()
     verify()
+
+
+@ti.test(require=ti.extension.quant)
+def test_offset_load():
+    ci1 = ti.type_factory.custom_int(1, False)
+
+    x = ti.field(dtype=ci1)
+    y = ti.field(dtype=ci1)
+    z = ti.field(dtype=ci1)
+
+    N = 4096
+    n_blocks = 4
+    bits = 32
+    boundary_offset = 1024
+    assert boundary_offset >= N // n_blocks
+
+    block = ti.root.pointer(ti.ij, (n_blocks, n_blocks))
+    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks)))._bit_array(
+        ti.j, bits, num_bits=bits).place(x)
+    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks)))._bit_array(
+        ti.j, bits, num_bits=bits).place(y)
+    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks)))._bit_array(
+        ti.j, bits, num_bits=bits).place(z)
+
+    @ti.kernel
+    def init():
+        for i, j in ti.ndrange((boundary_offset, N - boundary_offset),
+                               (boundary_offset, N - boundary_offset)):
+            x[i, j] = ti.random(dtype=ti.i32) % 2
+
+    @ti.kernel
+    def assign_vectorized(dx: ti.template(), dy: ti.template()):
+        ti.bit_vectorize(32)
+        for i, j in x:
+            y[i, j] = x[i + dx, j + dy]
+            z[i, j] = x[i + dx, j + dy]
+
+    @ti.kernel
+    def verify(dx: ti.template(), dy: ti.template()):
+        for i, j in ti.ndrange((boundary_offset, N - boundary_offset),
+                               (boundary_offset, N - boundary_offset)):
+            assert y[i, j] == x[i + dx, j + dy]
+
+    init()
+    assign_vectorized(0, 1)
+    verify(0, 1)
+    assign_vectorized(1, 0)
+    verify(1, 0)
+    assign_vectorized(0, -1)
+    verify(0, -1)
+    assign_vectorized(-1, 0)
+    verify(-1, 0)

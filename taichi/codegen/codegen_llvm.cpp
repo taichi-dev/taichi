@@ -1393,8 +1393,29 @@ llvm::Value *CodeGenLLVM::load_custom_float_with_exponent(
       exponent_bit_ptr, cft->get_exponent_type()->as<CustomIntType>());
 
   // Make sure the exponent is within the range of the exponent type
-  exponent_val = builder->CreateAdd(
-      exponent_val, tlctx->get_constant(cft->get_exponent_conversion_offset()));
+  auto exponent_offset =
+      tlctx->get_constant(cft->get_exponent_conversion_offset());
+  // Note that zeros need special treatment, when truncated during store.
+  auto exponent_type = cft->get_exponent_type()->as<CustomIntType>();
+  if (exponent_type->get_num_bits() < 8) {
+    auto cond = builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_NE,
+                                    exponent_val, tlctx->get_constant(0));
+    create_print(
+        "loaded",
+        TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32),
+        exponent_val);
+    exponent_offset =
+        builder->CreateSelect(cond, exponent_offset, tlctx->get_constant(0));
+    create_print(
+        "offset",
+        TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32),
+        exponent_offset);
+  }
+  exponent_val = builder->CreateAdd(exponent_val, exponent_offset);
+  create_print(
+      "exp",
+      TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32),
+      exponent_val);
 
   if (cft->get_compute_type()->is_primitive(PrimitiveTypeID::f32)) {
     // Construct an f32 out of exponent_val and digits

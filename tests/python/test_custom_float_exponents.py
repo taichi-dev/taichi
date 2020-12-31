@@ -24,8 +24,10 @@ def test_custom_float_unsigned():
         assert x[None] == v
 
 
-@ti.test(require=ti.extension.quant)
-def test_custom_float_signed():
+# @ti.test(require=ti.extension.quant)
+# def test_custom_float_signed():
+def main():
+    ti.init()
     cu13 = ti.type_factory.custom_int(13, True)
     exp = ti.type_factory.custom_int(6, False)
     cft = ti.type_factory.custom_float(significand_type=cu13,
@@ -35,15 +37,17 @@ def test_custom_float_signed():
 
     ti.root._bit_struct(num_bits=32).place(x)
 
-    tests = [0.125, 0.5, 2, 4, 6, 7, 8, 9]
+    tests = [0]#[0.125, 0.5, 2, 4, 6, 7, 8, 9]
 
     for v in tests:
         x[None] = v
+        print(x[None])
         assert x[None] == v
 
         x[None] = -v
         assert x[None] == -v
 
+main()
 
 @pytest.mark.parametrize('digits_bits', [23, 24])
 @ti.test(require=ti.extension.quant)
@@ -101,6 +105,3 @@ def test_custom_float_truncation(signed):
         assert x[None] == 1.5
     else:
         assert x[None] == 1.75
-
-
-# TODO: test zero

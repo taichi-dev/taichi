@@ -450,11 +450,21 @@ class TaichiMain:
                             dest='framerate',
                             type=int,
                             help="Frame rate of the output MP4 video")
+        parser.add_argument(
+            '-c',
+            '--crf',
+            required=False,
+            default=20,
+            dest='crf',
+            type=int,
+            help="Constant rate factor (0-51, lower is higher quality)")
         args = parser.parse_args(arguments)
 
         if not args.inputs:
             args.inputs = sorted(
                 str(p.resolve()) for p in Path('.').glob('*.png'))
+
+        assert 1 <= args.crf <= 51, "The range of the CRF scale is 1–51, where 1 is almost lossless, 20 is the default, and 51 is worst quality possible."
 
         ti.info(f'Making video using {len(args.inputs)} png files...')
         ti.info(f'frame_rate = {args.framerate}')
@@ -463,6 +473,7 @@ class TaichiMain:
         if self.test_mode: return args
         make_video(args.inputs,
                    output_path=str(args.output_file),
+                   crf=args.crf,
                    frame_rate=args.framerate)
         ti.info(f'Done! Output video file = {args.output_file}')
 

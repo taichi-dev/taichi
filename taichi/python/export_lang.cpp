@@ -265,7 +265,9 @@ void export_lang(py::module &m) {
                  snode->physical_index_position + taichi_max_num_indices);
            })
       .def("num_active_indices",
-           [](SNode *snode) { return snode->num_active_indices; });
+           [](SNode *snode) { return snode->num_active_indices; })
+      .def("begin_shared_exp_placement", &SNode::begin_shared_exp_placement)
+      .def("end_shared_exp_placement", &SNode::end_shared_exp_placement);
 
   py::class_<Kernel>(m, "Kernel")
       .def("get_ret_int", &Kernel::get_ret_int)

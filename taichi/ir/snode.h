@@ -87,6 +87,9 @@ class SNode {
   Expr expr;
   SNode *exp_snode{};  // for CustomFloatType with exponent bits
   int bit_offset{0};   // for children of bit_struct only
+  bool placing_shared_exp{false};
+  SNode *currently_placing_exp_snode{nullptr};
+  Type *currently_placing_exp_snode_dtype{nullptr};
 
   // is_bit_level=false: the SNode is not bitpacked
   // is_bit_level=true: the SNode is bitpacked (i.e., strictly inside bit_struct
@@ -268,6 +271,10 @@ class SNode {
   int shape_along_axis(int i) const;
 
   uint64 fetch_reader_result();  // TODO: refactor
+
+  void begin_shared_exp_placement();
+
+  void end_shared_exp_placement();
 };
 
 TLANG_NAMESPACE_END

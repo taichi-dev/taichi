@@ -47,10 +47,22 @@ void SNode::place(Expr &expr_, const std::vector<int> &offset) {
       if (auto exp = cft->get_exponent_type()) {
         // Non-empty exponent type. First create a place SNode for the
         // exponent value.
-        auto &exp_node = insert_children(SNodeType::place);
-        exp_node.dt = exp;
-        exp_node.name = expr->ident.raw_name() + "_exp";
-        new_exp_snode = &exp_node;
+        if (placing_shared_exp && currently_placing_exp_snode != nullptr) {
+          // Reuse existing exponent
+          TI_ASSERT_INFO(currently_placing_exp_snode_dtype == exp,
+                         "CustomFloatTypes with shared exponents must have "
+                         "exactly the same exponent type.");
+          new_exp_snode = currently_placing_exp_snode;
+        } else {
+          auto &exp_node = insert_children(SNodeType::place);
+          exp_node.dt = exp;
+          exp_node.name = expr->ident.raw_name() + "_exp";
+          new_exp_snode = &exp_node;
+          if (placing_shared_exp) {
+            currently_placing_exp_snode = new_exp_snode;
+            currently_placing_exp_snode_dtype = exp;
+          }
+        }
       }
     }
     auto &child = insert_children(SNodeType::place);
@@ -298,7 +310,7 @@ void SNode::print() {
   }
   fmt::print("{}", get_node_type_name_hinted());
   if (exp_snode) {
-    fmt::print(" exp={}\n", exp_snode->get_node_type_name());
+    fmt::print(" exp={}", exp_snode->get_node_type_name());
   }
   fmt::print("\n");
   for (auto &c : ch) {
@@ -317,6 +329,19 @@ void SNode::set_index_offsets(std::vector<int> index_offsets_) {
 bool SNode::need_activation() const {
   return type == SNodeType::pointer || type == SNodeType::hash ||
          type == SNodeType::bitmasked || type == SNodeType::dynamic;
+}
+
+void SNode::begin_shared_exp_placement() {
+  TI_ASSERT(!placing_shared_exp);
+  TI_ASSERT(currently_placing_exp_snode == nullptr);
+  placing_shared_exp = true;
+}
+
+void SNode::end_shared_exp_placement() {
+  TI_ASSERT(placing_shared_exp);
+  TI_ASSERT(currently_placing_exp_snode != nullptr);
+  currently_placing_exp_snode = nullptr;
+  placing_shared_exp = false;
 }
 
 TLANG_NAMESPACE_END

@@ -55,6 +55,7 @@ def test_offset_load():
     n_blocks = 4
     bits = 32
     boundary_offset = 1024
+    assert boundary_offset >= N // n_blocks
 
     block = ti.root.pointer(ti.ij, (n_blocks, n_blocks))
     block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks)))._bit_array(

@@ -232,7 +232,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   llvm::Value *load_custom_float_with_exponent(llvm::Value *digits_bit_ptr,
                                                llvm::Value *exponent_bit_ptr,
-                                               CustomFloatType *cft);
+                                               CustomFloatType *cft,
+                                               bool shared_exponent);
 
   void visit(GlobalLoadStmt *stmt) override;
 

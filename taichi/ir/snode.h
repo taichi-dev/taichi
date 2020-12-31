@@ -90,6 +90,7 @@ class SNode {
   bool placing_shared_exp{false};
   SNode *currently_placing_exp_snode{nullptr};
   Type *currently_placing_exp_snode_dtype{nullptr};
+  bool owns_shared_exponent{false};
 
   // is_bit_level=false: the SNode is not bitpacked
   // is_bit_level=true: the SNode is bitpacked (i.e., strictly inside bit_struct

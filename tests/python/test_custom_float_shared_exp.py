@@ -5,8 +5,8 @@ import taichi as ti
 # def test_shared_exponents():
 def main():
     ti.init()
-    cit = ti.type_factory.custom_int(8, True)
     exp = ti.type_factory.custom_int(8, False)
+    cit = ti.type_factory.custom_int(12, True)
     cft = ti.type_factory.custom_float(significand_type=cit,
                                        exponent_type=exp,
                                        scale=1)
@@ -16,6 +16,11 @@ def main():
 
     ti.get_runtime().materialize()
     ti.get_runtime().prog.print_snode_tree()
+
+    a[None] = 3.2
+    print(a[None], b[None])
+    b[None] = 0.25
+    print(a[None], b[None])
 
 
 main()

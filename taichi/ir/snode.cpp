@@ -73,6 +73,8 @@ void SNode::place(Expr &expr_, const std::vector<int> &offset) {
       expr->snode->ambient_val = expr->ambient_value;
     }
     expr->snode->expr.set(Expr(expr));
+    if (placing_shared_exp)
+      child.owns_shared_exponent = true;
     child.dt = expr->dt;
     if (new_exp_snode) {
       child.exp_snode = new_exp_snode;

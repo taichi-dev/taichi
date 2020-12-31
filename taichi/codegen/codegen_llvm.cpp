@@ -1386,9 +1386,10 @@ llvm::Value *CodeGenLLVM::reconstruct_custom_float(llvm::Value *digits,
 llvm::Value *CodeGenLLVM::load_custom_float_with_exponent(
     llvm::Value *digits_bit_ptr,
     llvm::Value *exponent_bit_ptr,
-    CustomFloatType *cft) {
-  // TODO: we ignore "scale" for CustomFloatType with exponent for now. Fix
-  // this.
+    CustomFloatType *cft,
+    bool shared_exponent) {
+  // TODO: we ignore "scale" for CustomFloatType with exponent for now. May need
+  // to support this in the future.
   TI_ASSERT(cft->get_scale() == 1);
   auto digits = load_as_custom_int(digits_bit_ptr, cft->get_digits_type());
 
@@ -1461,8 +1462,9 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
         auto exponent_bit_ptr =
             offset_bit_ptr(digits_bit_ptr, exponent_snode->bit_offset -
                                                digits_snode->bit_offset);
-        llvm_val[stmt] = load_custom_float_with_exponent(digits_bit_ptr,
-                                                         exponent_bit_ptr, cft);
+        llvm_val[stmt] = load_custom_float_with_exponent(
+            digits_bit_ptr, exponent_bit_ptr, cft,
+            digits_snode->owns_shared_exponent);
       } else {
         auto digits =
             load_as_custom_int(llvm_val[stmt->ptr], cft->get_digits_type());

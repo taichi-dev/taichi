@@ -72,19 +72,24 @@ def test_offset_load():
             x[i, j] = ti.random(dtype=ti.i32) % 2
 
     @ti.kernel
-    def assign_vectorized():
+    def assign_vectorized(dx: ti.template(), dy: ti.template()):
         ti.bit_vectorize(32)
         for i, j in x:
-            y[i, j] = x[i, j + 1]
-            z[i, j] = x[i, j - 1]
+            y[i, j] = x[i + dx, j + dy]
+            z[i, j] = x[i + dx, j + dy]
 
     @ti.kernel
-    def verify():
+    def verify(dx: ti.template(), dy: ti.template()):
         for i, j in ti.ndrange((boundary_offset, N - boundary_offset),
                                (boundary_offset, N - boundary_offset)):
-            assert y[i, j] == x[i, j + 1]
-            assert z[i, j] == x[i, j - 1]
+            assert y[i, j] == x[i + dx, j + dy]
 
     init()
-    assign_vectorized()
-    verify()
+    assign_vectorized(0, 1)
+    verify(0, 1)
+    assign_vectorized(1, 0)
+    verify(1, 0)
+    assign_vectorized(0, -1)
+    verify(0, -1)
+    assign_vectorized(-1, 0)
+    verify(-1, 0)

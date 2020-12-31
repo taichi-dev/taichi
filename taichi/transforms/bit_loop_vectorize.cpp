@@ -69,7 +69,7 @@ class BitLoopVectorize : public IRVisitor {
             load_base->ret_type = load_data_type;
             // load x[i, j + 1](offsetted)
             // since we are doing vectorization, the actual data should be x[i,
-            // j + 32]
+            // j + vectorization_width]
             auto offset_constant =
                 std::make_unique<ConstStmt>(TypedConstant(bit_vectorize));
             auto offset_index_opcode =

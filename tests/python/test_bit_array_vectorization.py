@@ -45,7 +45,7 @@ def test_vectorized_struct_for():
 
 @ti.test(require=ti.extension.quant)
 def test_offset_load():
-    ci1 = ti.type_factory_.get_custom_int_type(1, False)
+    ci1 = ti.type_factory.custom_int(1, False)
 
     x = ti.field(dtype=ci1)
     y = ti.field(dtype=ci1)

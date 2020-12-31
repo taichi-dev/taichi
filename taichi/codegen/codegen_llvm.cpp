@@ -1237,9 +1237,12 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
         // Since we have fewer bits in the exponent type than in f32, an
         // offset is necessary to make sure the stored exponent values are
         // representable by the exponent custom int type.
-        exponent_bits = builder->CreateSub(
-            exponent_bits,
-            tlctx->get_constant(cft->get_exponent_conversion_offset()));
+        auto cond = builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_NE,
+                                        exponent_bits, tlctx->get_constant(0));
+        auto exponent_offset = builder->CreateSelect(
+            cond, tlctx->get_constant(cft->get_exponent_conversion_offset()),
+            tlctx->get_constant(0));
+        exponent_bits = builder->CreateSub(exponent_bits, exponent_offset);
 
         // Compute the bit pointer of the exponent bits.
         TI_ASSERT(digits_snode->parent == exponent_snode->parent);
@@ -1400,22 +1403,10 @@ llvm::Value *CodeGenLLVM::load_custom_float_with_exponent(
   if (exponent_type->get_num_bits() < 8) {
     auto cond = builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_NE,
                                     exponent_val, tlctx->get_constant(0));
-    create_print(
-        "loaded",
-        TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32),
-        exponent_val);
     exponent_offset =
         builder->CreateSelect(cond, exponent_offset, tlctx->get_constant(0));
-    create_print(
-        "offset",
-        TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32),
-        exponent_offset);
   }
   exponent_val = builder->CreateAdd(exponent_val, exponent_offset);
-  create_print(
-      "exp",
-      TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32),
-      exponent_val);
 
   if (cft->get_compute_type()->is_primitive(PrimitiveTypeID::f32)) {
     // Construct an f32 out of exponent_val and digits

@@ -43,7 +43,7 @@ def test_vectorized_struct_for():
     verify()
 
 
-@ti.test(require=ti.extension.quant, debug=True, cfg_optimization=False)
+@ti.test(require=ti.extension.quant)
 def test_offset_load():
     ci1 = ti.type_factory_.get_custom_int_type(1, False)
 

@@ -54,7 +54,7 @@ class BitLoopVectorize : public IRVisitor {
                                                               loop_stmt, 1);
           // TODO: temporarily we only support [j - 1] and [j + 1]
           //       the general case should be easy to implement
-          if (diff.linear_related() && diff.high - diff.low == 1 &&
+          if (diff.linear_related() && diff.certain() &&
               (diff.low == 1 || diff.low == -1)) {
             // construct ptr to x[i, j]
             auto indices = ptr->indices;
@@ -63,22 +63,31 @@ class BitLoopVectorize : public IRVisitor {
                 std::make_unique<GlobalPtrStmt>(ptr->snodes, indices);
             base_ptr->ret_type = new_ret_type;
             base_ptr->is_bit_vectorized = true;
-            // load x[i, j](base) and x[i, j + 1](offsetted)
+            // load x[i, j](base)
             DataType load_data_type(bit_array_physical_type);
             auto load_base = std::make_unique<GlobalLoadStmt>(base_ptr.get());
             load_base->ret_type = load_data_type;
-            auto load_offsetted = std::make_unique<GlobalLoadStmt>(ptr);
+            // load x[i, j + 1](offsetted)
+            // since we are doing vectorization, the actual data should be x[i, j + 32]
+            auto offset_constant = std::make_unique<ConstStmt>(TypedConstant(bit_vectorize));
+            auto offset_index_opcode = diff.low == -1 ? BinaryOpType::sub : BinaryOpType::add;
+            auto offset_index = std::make_unique<BinaryOpStmt>(offset_index_opcode, indices[1], offset_constant.get());
+            indices[1] = offset_index.get();
+            auto offset_ptr = std::make_unique<GlobalPtrStmt>(ptr->snodes, indices);
+            offset_ptr->ret_type = new_ret_type;
+            offset_ptr->is_bit_vectorized = true;
+            auto load_offsetted = std::make_unique<GlobalLoadStmt>(offset_ptr.get());
             load_offsetted->ret_type = load_data_type;
             // create bit shift and bit and operations
             auto base_shift_offset =
-                std::make_unique<ConstStmt>(TypedConstant(1));
+                std::make_unique<ConstStmt>(TypedConstant(load_data_type, 1));
             auto base_shift_opcode =
                 diff.low == -1 ? BinaryOpType::bit_shl : BinaryOpType::bit_sar;
             auto base_shift_op = std::make_unique<BinaryOpStmt>(
                 base_shift_opcode, load_base.get(), base_shift_offset.get());
 
             auto offsetted_shift_offset =
-                std::make_unique<ConstStmt>(TypedConstant(bit_vectorize - 1));
+                std::make_unique<ConstStmt>(TypedConstant(load_data_type, bit_vectorize - 1));
             auto offsetted_shift_opcode =
                 diff.low == -1 ? BinaryOpType::bit_sar : BinaryOpType::bit_shl;
             auto offsetted_shift_op = std::make_unique<BinaryOpStmt>(
@@ -92,6 +101,9 @@ class BitLoopVectorize : public IRVisitor {
             auto offsetted_shift_op_p = offsetted_shift_op.get();
             stmt->insert_before_me(std::move(base_ptr));
             stmt->insert_before_me(std::move(load_base));
+            stmt->insert_before_me(std::move(offset_constant));
+            stmt->insert_before_me(std::move(offset_index));
+            stmt->insert_before_me(std::move(offset_ptr));
             stmt->insert_before_me(std::move(load_offsetted));
             stmt->insert_before_me(std::move(base_shift_offset));
             stmt->insert_before_me(std::move(base_shift_op));

@@ -1560,27 +1560,53 @@ llvm::Value *CodeGenLLVM::reconstruct_custom_float_with_exponent(
       auto num_leading_zeros = builder->CreateIntrinsic(
           llvm::Intrinsic::ctlz, {llvm::Type::getInt32Ty(*llvm_context)},
           {digits, tlctx->get_constant(false)});
-      // TODO: +/- 1???
+      create_print(
+          "digits",
+          TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32),
+          digits);
+      create_print(
+          "num_leading_zeros",
+          TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32),
+          num_leading_zeros);
       auto extra_shift = builder->CreateSub(
-          tlctx->get_constant(cft->get_digit_bits()), num_leading_zeros);
+          tlctx->get_constant(31 - cft->get_digit_bits()), num_leading_zeros);
+      create_print(
+          "extra_shift",
+          TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32),
+          extra_shift);
       exponent_offset = builder->CreateAdd(exponent_offset, extra_shift);
       digits = builder->CreateShl(
           digits,
-          builder->CreateAdd(tlctx->get_constant(-cft->get_digit_bits()),
+          builder->CreateAdd(tlctx->get_constant(23 - cft->get_digit_bits()),
                              extra_shift));
+      create_print(
+          "shiftted digits",
+          TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32),
+          digits);
       // TODO: handle zero digits
+    } else {
+      digits = builder->CreateShl(
+          digits, tlctx->get_constant(23 - cft->get_digit_bits()));
     }
-    digits = builder->CreateShl(
-        digits, tlctx->get_constant(23 - cft->get_digit_bits()));
     auto fraction_bits = builder->CreateAnd(digits, (1u << 23) - 1);
+    create_print(
+        "fraction bits",
+        TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32),
+        fraction_bits);
 
     exponent_val = builder->CreateAdd(exponent_val, exponent_offset);
     auto exponent_bits =
         builder->CreateShl(exponent_val, tlctx->get_constant(23));
 
+    create_print(
+        "exponent bits",
+        TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32),
+        exponent_bits);
+
     auto f32_bits = builder->CreateOr(exponent_bits, fraction_bits);
 
-    if (cft->get_is_signed()) {
+    if (cft->get_is_signed() &&
+        !shared_exponent) {  // TODO: fix shared exponent
       auto sign_bit =
           builder->CreateAnd(digits, tlctx->get_constant(1u << (23)));
 

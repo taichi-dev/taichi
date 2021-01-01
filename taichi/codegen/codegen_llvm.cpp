@@ -1352,6 +1352,7 @@ void CodeGenLLVM::store_floats_with_shared_exponents(BitStructStoreStmt *stmt) {
     auto &exp = snode->ch[i];
     // load all floats
     std::vector<llvm::Value *> floats;
+    // std::vector<llvm::Value *> float_bits;
     for (auto &user : exp->exponent_users) {
       auto ch_id = snode->child_id(user);
       if (auto input =
@@ -1366,9 +1367,44 @@ void CodeGenLLVM::store_floats_with_shared_exponents(BitStructStoreStmt *stmt) {
           "float to store",
           TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::f32),
           floats.back());
+
+      // convert to i32 ofor bit operations
+      llvm::Value *max_exp_bits = nullptr;
+      for (auto f : floats) {
+        // TODO: we only support f32 here.
+        // f = builder->CreateBitCast(f, llvm::Type::getInt32Ty(*llvm_context));
+        auto exp_bits = extract_exponent_from_float(f);
+        if (max_exp_bits) {
+          max_exp_bits = create_call("max_u32", {max_exp_bits, exp_bits});
+        } else {
+          max_exp_bits = exp_bits;
+        }
+      }
+      create_print(
+          "max_exp_bits",
+          TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::f32),
+          max_exp_bits);
+      for (int c = 0; c < floats.size(); c++) {
+        auto digits =
+            get_float_digits_with_shared_exponents(floats[i], max_exp_bits);
+      }
     }
     // TODO: compute new exponent bits and then shift digits, and finally store
   }
+}
+
+llvm::Value *CodeGenLLVM::extract_exponent_from_float(llvm::Value *f) {
+  TI_ASSERT(f->getType() == llvm::Type::getFloatTy(*llvm_context));
+  auto exp_bits = builder->CreateLShr(f, tlctx->get_constant(23));
+  return builder->CreateAnd(exp_bits, tlctx->get_constant((1 << 8) - 1));
+}
+
+llvm::Value *CodeGenLLVM::get_float_digits_with_shared_exponents(
+    llvm::Value *f,
+    llvm::Value *shared_exp) {
+  auto exp_offset =
+      builder->CreateSub(shared_exp, extract_exponent_from_float(f));
+
 }
 
 llvm::Value *CodeGenLLVM::reconstruct_float_from_bit_struct(

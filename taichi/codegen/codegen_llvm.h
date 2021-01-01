@@ -327,6 +327,11 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   llvm::Value *create_xlogue(std::unique_ptr<Block> &block);
 
+  llvm::Value *extract_exponent_from_float(llvm::Value *f);
+
+  llvm::Value *get_float_digits_with_shared_exponents(llvm::Value *f,
+                                                      llvm::Value *shared_exp);
+
   ~CodeGenLLVM() = default;
 };
 

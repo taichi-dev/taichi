@@ -29,7 +29,8 @@ def test_vector():
     verify()
 
 
-@ti.test()
+# TODO: Support different element types of Matrix on opengl
+@ti.test(exclude=ti.opengl)
 def test_matrix():
     type_list = [[ti.f32, ti.i32], [ti.i64, ti.f32]]
     a = ti.Matrix.field(len(type_list),

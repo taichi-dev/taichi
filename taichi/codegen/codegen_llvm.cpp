@@ -1362,6 +1362,10 @@ void CodeGenLLVM::store_floats_with_shared_exponents(BitStructStoreStmt *stmt) {
         floats.push_back(
             reconstruct_float_from_bit_struct(local_bit_struct, user));
       }
+      create_print(
+          "float to store",
+          TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::f32),
+          floats.back());
     }
     // TODO: compute new exponent bits and then shift digits, and finally store
   }

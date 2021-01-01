@@ -1341,14 +1341,12 @@ void CodeGenLLVM::visit(BitStructStoreStmt *stmt) {
 }
 
 void CodeGenLLVM::store_floats_with_shared_exponents(BitStructStoreStmt *stmt) {
-  TI_INFO("Storing floats with shared exponents");
   // handle each exponent separately
   auto snode = stmt->get_bit_struct_snode();
   auto local_bit_struct = builder->CreateLoad(llvm_val[stmt->ptr]);
   for (int i = 0; i < (int)snode->ch.size(); i++) {
     if (snode->ch[i]->exponent_users.empty())
       continue;
-    TI_P(i);
     // ch[i] must be an exponent SNode
     auto &exp = snode->ch[i];
     // load all floats
@@ -1385,15 +1383,29 @@ void CodeGenLLVM::store_floats_with_shared_exponents(BitStructStoreStmt *stmt) {
         "max_exp_bits",
         TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32),
         max_exp_bits);
-    for (int c = 0; c < floats.size(); c++) {
+
+    // TODO: fusion
+    store_custom_int(llvm_val[stmt->ptr], tlctx->get_constant(exp->bit_offset),
+                     exp->dt->as<CustomIntType>(), max_exp_bits);
+
+    for (int c = 0; c < (int)exp->exponent_users.size(); c++) {
+      auto user = exp->exponent_users[c];
+      auto ch_id = snode->child_id(user);
       auto digits =
           get_float_digits_with_shared_exponents(floats[c], max_exp_bits);
+      auto digits_snode = snode->ch[ch_id].get();
+      auto digits_bit_offset = digits_snode->bit_offset;
       create_print(
           "digits",
           TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32),
           digits);
+      store_custom_int(llvm_val[stmt->ptr],
+                       tlctx->get_constant(digits_bit_offset),
+                       digits_snode->dt->as<CustomFloatType>()
+                           ->get_digits_type()
+                           ->as<CustomIntType>(),
+                       digits);
     }
-    // TODO: compute new exponent bits and then shift digits, and finally store
   }
 }
 
@@ -1419,10 +1431,6 @@ llvm::Value *CodeGenLLVM::get_float_digits_with_shared_exponents(
     llvm::Value *shared_exp) {
   auto exp_offset =
       builder->CreateSub(shared_exp, extract_exponent_from_float(f));
-  create_print(
-      "exp_offset",
-      TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32),
-      exp_offset);
   // TODO: handle flush to zero
   return builder->CreateLShr(extract_digits_from_float(f, true), exp_offset);
 }

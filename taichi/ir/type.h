@@ -33,7 +33,8 @@ class Type {
   template <typename T>
   T *as() {
     auto p = dynamic_cast<T *>(this);
-    TI_ASSERT(p != nullptr);
+    TI_ASSERT_INFO(p != nullptr, "Cannot cast {} into {}", this->to_string(),
+                   typeid(T).name());
     return p;
   }
 

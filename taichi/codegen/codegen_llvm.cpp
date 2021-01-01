@@ -1394,17 +1394,17 @@ void CodeGenLLVM::store_floats_with_shared_exponents(BitStructStoreStmt *stmt) {
       auto digits =
           get_float_digits_with_shared_exponents(floats[c], max_exp_bits);
       auto digits_snode = snode->ch[ch_id].get();
+      auto cft = digits_snode->dt->as<CustomFloatType>();
       auto digits_bit_offset = digits_snode->bit_offset;
+      digits =
+          builder->CreateLShr(digits, (uint64)(23 - cft->get_digit_bits()));
       create_print(
           "digits",
           TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32),
           digits);
       store_custom_int(llvm_val[stmt->ptr],
                        tlctx->get_constant(digits_bit_offset),
-                       digits_snode->dt->as<CustomFloatType>()
-                           ->get_digits_type()
-                           ->as<CustomIntType>(),
-                       digits);
+                       cft->get_digits_type()->as<CustomIntType>(), digits);
     }
   }
 }

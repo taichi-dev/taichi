@@ -360,6 +360,8 @@ void GUI::process_event() {
         case 7:   // NSRightMouseDragged
         case 27:  // NSNSOtherMouseDragged
           set_mouse_pos(p.x, p.y);
+          key_events.push_back(
+              GUI::KeyEvent{GUI::KeyEvent::Type::move, "Motion", cursor_pos});
           mouse_event(MouseEvent{MouseEvent::Type::move, Vector2i(p.x, p.y)});
           break;
         case NSEventTypeKeyDown:

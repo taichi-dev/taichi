@@ -4,7 +4,7 @@ import taichi as ti
 # @ti.test(require=ti.extension.quant)
 # def test_shared_exponents():
 def main():
-    ti.init(print_ir=True)
+    ti.init()
     exp = ti.type_factory.custom_int(8, False)
     cit = ti.type_factory.custom_int(12, True)
     cft = ti.type_factory.custom_float(significand_type=cit,
@@ -24,6 +24,8 @@ def main():
         # print(a[None], b[None])
 
     foo()
+    print(a[None])
+    print(b[None])
 
 
 main()

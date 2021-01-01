@@ -1559,7 +1559,7 @@ llvm::Value *CodeGenLLVM::reconstruct_custom_float_with_exponent(
       // declare i32  @llvm.ctlz.i32 (i32  <src>, i1 <is_zero_undef>)
       auto num_leading_zeros = builder->CreateIntrinsic(
           llvm::Intrinsic::ctlz, {llvm::Type::getInt32Ty(*llvm_context)},
-          {digits});
+          {digits, tlctx->get_constant(false)});
       // TODO: +/- 1???
       auto extra_shift = builder->CreateSub(
           tlctx->get_constant(cft->get_digit_bits()), num_leading_zeros);

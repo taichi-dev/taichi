@@ -1291,8 +1291,8 @@ void CodeGenLLVM::visit(BitStructStoreStmt *stmt) {
       bit_struct_snode->dt->as<BitStructType>()->get_physical_type();
 
   bool has_shared_exponent = false;
-  for (int i = 0; i < stmt->ch_ids.size(); i++) {
-    if (bit_struct_snode->ch[stmt->ch_ids[i]]->owns_shared_exponent) {
+  for (auto ch_id : stmt->ch_ids) {
+    if (bit_struct_snode->ch[ch_id]->owns_shared_exponent) {
       has_shared_exponent = true;
     }
   }
@@ -1362,16 +1362,11 @@ void CodeGenLLVM::store_floats_with_shared_exponents(BitStructStoreStmt *stmt) {
         floats.push_back(
             reconstruct_float_from_bit_struct(local_bit_struct, user));
       }
-      create_print(
-          "float to store",
-          TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::f32),
-          floats.back());
     }
-    // convert to i32 ofor bit operations
+    // convert to i32 for bit operations
     llvm::Value *max_exp_bits = nullptr;
     for (auto f : floats) {
       // TODO: we only support f32 here.
-      // f = builder->CreateBitCast(f, llvm::Type::getInt32Ty(*llvm_context));
       auto exp_bits = extract_exponent_from_float(f);
       if (max_exp_bits) {
         max_exp_bits = create_call("max_u32", {max_exp_bits, exp_bits});
@@ -1379,10 +1374,6 @@ void CodeGenLLVM::store_floats_with_shared_exponents(BitStructStoreStmt *stmt) {
         max_exp_bits = exp_bits;
       }
     }
-    create_print(
-        "max_exp_bits",
-        TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32),
-        max_exp_bits);
 
     // TODO: fusion
     store_custom_int(llvm_val[stmt->ptr], tlctx->get_constant(exp->bit_offset),
@@ -1398,10 +1389,6 @@ void CodeGenLLVM::store_floats_with_shared_exponents(BitStructStoreStmt *stmt) {
       auto digits_bit_offset = digits_snode->bit_offset;
       digits =
           builder->CreateLShr(digits, (uint64)(23 - cft->get_digit_bits()));
-      create_print(
-          "digits",
-          TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32),
-          digits);
       store_custom_int(llvm_val[stmt->ptr],
                        tlctx->get_constant(digits_bit_offset),
                        cft->get_digits_type()->as<CustomIntType>(), digits);
@@ -1560,48 +1547,23 @@ llvm::Value *CodeGenLLVM::reconstruct_custom_float_with_exponent(
       auto num_leading_zeros = builder->CreateIntrinsic(
           llvm::Intrinsic::ctlz, {llvm::Type::getInt32Ty(*llvm_context)},
           {digits, tlctx->get_constant(false)});
-      create_print(
-          "digits",
-          TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32),
-          digits);
-      create_print(
-          "num_leading_zeros",
-          TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32),
-          num_leading_zeros);
       auto extra_shift = builder->CreateSub(
           tlctx->get_constant(31 - cft->get_digit_bits()), num_leading_zeros);
-      create_print(
-          "extra_shift",
-          TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32),
-          extra_shift);
       exponent_offset = builder->CreateAdd(exponent_offset, extra_shift);
       digits = builder->CreateShl(
           digits,
           builder->CreateAdd(tlctx->get_constant(23 - cft->get_digit_bits()),
                              extra_shift));
-      create_print(
-          "shiftted digits",
-          TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32),
-          digits);
       // TODO: handle zero digits
     } else {
       digits = builder->CreateShl(
           digits, tlctx->get_constant(23 - cft->get_digit_bits()));
     }
     auto fraction_bits = builder->CreateAnd(digits, (1u << 23) - 1);
-    create_print(
-        "fraction bits",
-        TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32),
-        fraction_bits);
 
     exponent_val = builder->CreateAdd(exponent_val, exponent_offset);
     auto exponent_bits =
         builder->CreateShl(exponent_val, tlctx->get_constant(23));
-
-    create_print(
-        "exponent bits",
-        TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32),
-        exponent_bits);
 
     auto f32_bits = builder->CreateOr(exponent_bits, fraction_bits);
 

@@ -1369,8 +1369,18 @@ void CodeGenLLVM::store_floats_with_shared_exponents(BitStructStoreStmt *stmt) {
 
 llvm::Value *CodeGenLLVM::reconstruct_float_from_bit_struct(
     llvm::Value *local_bit_struct,
-    SNode *digits) {
-  return nullptr;
+    SNode *digits_snode) {
+  auto cft = digits_snode->dt->as<CustomFloatType>();
+  auto exponent_type = cft->get_exponent_type()->as<CustomIntType>();
+  auto digits_type = cft->get_digits_type()->as<CustomIntType>();
+  auto digits = extract_custom_int(
+      local_bit_struct, tlctx->get_constant(digits_snode->bit_offset),
+      digits_type);
+  auto exponent = extract_custom_int(
+      local_bit_struct,
+      tlctx->get_constant(digits_snode->exp_snode->bit_offset), exponent_type);
+  return reconstruct_custom_float_with_exponent(
+      digits, exponent, cft, digits_snode->owns_shared_exponent);
 }
 
 llvm::Value *CodeGenLLVM::load_as_custom_int(llvm::Value *ptr,

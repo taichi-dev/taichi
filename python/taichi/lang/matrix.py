@@ -821,8 +821,20 @@ class Matrix(TaichiOperations):
         self.n = n
         self.m = m
         self.dt = dtype
-        for i in range(n * m):
-            self.entries.append(impl.field(dtype))
+
+        if isinstance(dtype, (list, tuple, np.ndarray)):
+            if m == 1:
+                assert (len(np.shape(dtype)) == 1 and len(dtype) == n), f'Please set correct dtype list for Vector, the shape of dtype list should be ({n}, ) not {np.shape(dtype)}'
+                for i in range(n):
+                    self.entries.append(impl.field(dtype[i]))
+            else:
+                assert (len(np.shape(dtype)) == 2 and len(dtype) == n and len(dtype[0]) == m), f'Please set correct dtype list for Matrix. The shape of dtype list should be ({n}, {m}) not {np.shape(dtype)}'
+                for i in range(n):
+                    for j in range(m):
+                        self.entries.append(impl.field(dtype[i][j]))
+        else:
+            for _ in range(n * m):
+                self.entries.append(impl.field(dtype))
         self.grad = self.make_grad()
 
         if layout is not None:

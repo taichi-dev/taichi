@@ -1,6 +1,7 @@
 import taichi as ti
 from pytest import approx
 
+# TODO: test more matrix operations
 @ti.test()
 def test_vector():
     type_list = [ti.f32, ti.i32]

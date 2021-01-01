@@ -823,6 +823,8 @@ class Matrix(TaichiOperations):
         self.dt = dtype
 
         if isinstance(dtype, (list, tuple, np.ndarray)):
+            # set different dtype for each element in Matrix
+            # see #2135
             if m == 1:
                 assert (len(np.shape(dtype)) == 1 and len(dtype) == n), f'Please set correct dtype list for Vector, the shape of dtype list should be ({n}, ) not {np.shape(dtype)}'
                 for i in range(n):

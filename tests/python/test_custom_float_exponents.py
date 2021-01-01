@@ -19,6 +19,8 @@ def test_custom_float_unsigned():
         256, 512, 1024
     ]
 
+    assert x[None] == 0
+
     for v in tests:
         x[None] = v
         assert x[None] == v
@@ -36,6 +38,8 @@ def test_custom_float_signed():
     ti.root._bit_struct(num_bits=32).place(x)
 
     tests = [0, 0.125, 0.5, 2, 4, 6, 7, 8, 9]
+
+    assert x[None] == 0
 
     for v in tests:
         x[None] = v

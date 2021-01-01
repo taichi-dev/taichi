@@ -2,7 +2,7 @@ import taichi as ti
 from pytest import approx
 
 
-@ti.test(require=ti.extension.quant)
+# @ti.test(require=ti.extension.quant)
 def test_shared_exponents():
     exp = ti.type_factory.custom_int(8, False)
     cit1 = ti.type_factory.custom_int(10, True)
@@ -22,7 +22,14 @@ def test_shared_exponents():
         a[None] = 3.2
         b[None] = 0.25
 
+    print(a[None], b[None])
+
+    assert a[None] == 0.0
+    assert b[None] == 0.0
+
     foo()
+
+    print(a[None], b[None])
 
     assert a[None] == approx(3.2, rel=1e-3)
     assert b[None] == approx(0.25, rel=2e-2)
@@ -34,6 +41,10 @@ def test_shared_exponents():
     assert b[None] == approx(0.25, rel=1e-2)
 
 
+ti.init()
+test_shared_exponents()
+
 # TODO: test negative
-# TODO: test zero
+# TODO: test exponent zero
+# TODO: test digits zero
 # TODO: test shared exponent floats with custom int in a single bit struct

@@ -679,6 +679,21 @@ llvm::Value *CodeGenLLVM::create_print(std::string tag,
   return builder->CreateCall(runtime_printf, args);
 }
 
+llvm::Value *CodeGenLLVM::create_print(std::string tag, llvm::Value *value) {
+  if (value->getType() == llvm::Type::getFloatTy(*llvm_context))
+    return create_print(
+        tag,
+        TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::f32),
+        value);
+  else if (value->getType() == llvm::Type::getInt32Ty(*llvm_context))
+    return create_print(
+        tag,
+        TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32),
+        value);
+  else
+    TI_NOT_IMPLEMENTED
+}
+
 void CodeGenLLVM::visit(PrintStmt *stmt) {
   TI_ASSERT(stmt->width() == 1);
   std::vector<llvm::Value *> args;
@@ -1513,9 +1528,10 @@ llvm::Value *CodeGenLLVM::load_custom_float_with_exponent(
 
 llvm::Value *CodeGenLLVM::reconstruct_custom_float_with_exponent(
     llvm::Value *digits,
-    llvm::Value *exponent_val,
+    llvm::Value *input_exponent_val,
     CustomFloatType *cft,
     bool shared_exponent) {
+  auto exponent_val = input_exponent_val;
   // Make sure the exponent is within the range of the exponent type
   auto exponent_offset =
       tlctx->get_constant(cft->get_exponent_conversion_offset());
@@ -1566,6 +1582,17 @@ llvm::Value *CodeGenLLVM::reconstruct_custom_float_with_exponent(
         builder->CreateShl(exponent_val, tlctx->get_constant(23));
 
     auto f32_bits = builder->CreateOr(exponent_bits, fraction_bits);
+
+    create_print("Input exponent", input_exponent_val);
+
+    if (shared_exponent) {
+      // Handle zero exponent
+      auto zero_exponent =
+          builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_EQ,
+                              input_exponent_val, tlctx->get_constant(0));
+      f32_bits = builder->CreateSelect(zero_exponent, tlctx->get_constant(0),
+                                       f32_bits);
+    }
 
     if (cft->get_is_signed() &&
         !shared_exponent) {  // TODO: fix shared exponent

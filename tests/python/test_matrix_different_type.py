@@ -1,6 +1,7 @@
 import taichi as ti
 from pytest import approx
 
+
 # TODO: test more matrix operations
 @ti.test()
 def test_vector():
@@ -31,14 +32,23 @@ def test_vector():
 @ti.test()
 def test_matrix():
     type_list = [[ti.f32, ti.i32], [ti.i64, ti.f32]]
-    a = ti.Matrix.field(len(type_list), len(type_list[0]), dtype=type_list, shape=())
-    b = ti.Matrix.field(len(type_list), len(type_list[0]), dtype=type_list, shape=()) 
-    c = ti.Matrix.field(len(type_list), len(type_list[0]), dtype=type_list, shape=()) 
-    
+    a = ti.Matrix.field(len(type_list),
+                        len(type_list[0]),
+                        dtype=type_list,
+                        shape=())
+    b = ti.Matrix.field(len(type_list),
+                        len(type_list[0]),
+                        dtype=type_list,
+                        shape=())
+    c = ti.Matrix.field(len(type_list),
+                        len(type_list[0]),
+                        dtype=type_list,
+                        shape=())
+
     @ti.kernel
     def init():
-        a[None] = [[1.0, 3],[1, 3.0]]
-        b[None] = [[2.0, 4],[-2, -3.0]]
+        a[None] = [[1.0, 3], [1, 3.0]]
+        b[None] = [[2.0, 4], [-2, -3.0]]
         c[None] = a[None] + b[None]
 
     def verify():
@@ -77,7 +87,7 @@ def test_custom_type():
         a[0] = [[1, 3.], [2., 1]]
         b[0] = [[2, 4.], [-2., 1]]
         c[0] = a[0] + b[0]
-    
+
     def verify():
         assert c[0][0, 0] == approx(3, 1e-3)
         assert c[0][0, 1] == approx(7.0, 1e-3)

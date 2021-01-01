@@ -49,10 +49,9 @@ class SNode:
             offset = []
         if isinstance(offset, numbers.Number):
             offset = (offset, )
+        if shared_exponent:
+            self.ptr.begin_shared_exp_placement()
         for arg in args:
-            assert shared_exponent == False
-            # TODO: implement shared exponent
-
             if isinstance(arg, Expr):
                 self.ptr.place(Expr(arg).ptr, offset)
             elif isinstance(arg, list):
@@ -62,6 +61,8 @@ class SNode:
                 self.place(arg.get_field_members(), offset=offset)
             else:
                 raise ValueError(f'{arg} cannot be placed')
+        if shared_exponent:
+            self.ptr.end_shared_exp_placement()
         return self
 
     def lazy_grad(self):

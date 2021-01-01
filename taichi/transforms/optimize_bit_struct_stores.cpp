@@ -28,10 +28,15 @@ class CreateBitStructStores : public BasicStmtVisitor {
       return;
 
     // We only handle bit_struct pointers here. The currently supported data
-    // types are CustomIntType and CustomFloatType without exponents.
+    // types are
+    // - CustomIntType
+    // - CustomFloatType without exponents
+    // - CustomFloatType with shared exponents
+
     auto dtype = get_ch->output_snode->dt;
     if (dtype->is<CustomIntType>() ||
-        dtype->as<CustomFloatType>()->get_exponent_type() == nullptr) {
+        dtype->as<CustomFloatType>()->get_exponent_type() == nullptr ||
+        get_ch->output_snode->owns_shared_exponent) {
       auto s = Stmt::make<BitStructStoreStmt>(get_ch->input_ptr,
                                               std::vector<int>{get_ch->chid},
                                               std::vector<Stmt *>{stmt->data});

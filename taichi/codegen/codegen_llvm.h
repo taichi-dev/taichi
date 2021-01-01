@@ -222,6 +222,11 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(BitStructStoreStmt *stmt) override;
 
+  void store_floats_with_shared_exponents(BitStructStoreStmt *stmt);
+
+  llvm::Value *reconstruct_float_from_bit_struct(llvm::Value *local_bit_struct,
+                                                 SNode *digits);
+
   llvm::Value *load_as_custom_int(llvm::Value *ptr, Type *load_type);
 
   llvm::Value *extract_custom_int(llvm::Value *physical_value,
@@ -232,7 +237,13 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   llvm::Value *load_custom_float_with_exponent(llvm::Value *digits_bit_ptr,
                                                llvm::Value *exponent_bit_ptr,
-                                               CustomFloatType *cft);
+                                               CustomFloatType *cft,
+                                               bool shared_exponent);
+
+  llvm::Value *reconstruct_custom_float_with_exponent(llvm::Value *digits,
+                                                      llvm::Value *exponent_val,
+                                                      CustomFloatType *cft,
+                                                      bool shared_exponent);
 
   void visit(GlobalLoadStmt *stmt) override;
 
@@ -315,6 +326,13 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   void visit(LoopUniqueStmt *stmt) override;
 
   llvm::Value *create_xlogue(std::unique_ptr<Block> &block);
+
+  llvm::Value *extract_exponent_from_float(llvm::Value *f);
+
+  llvm::Value *extract_digits_from_float(llvm::Value *f, bool full);
+
+  llvm::Value *get_float_digits_with_shared_exponents(llvm::Value *f,
+                                                      llvm::Value *shared_exp);
 
   ~CodeGenLLVM() = default;
 };

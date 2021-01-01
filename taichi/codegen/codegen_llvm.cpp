@@ -1237,9 +1237,12 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
         // Since we have fewer bits in the exponent type than in f32, an
         // offset is necessary to make sure the stored exponent values are
         // representable by the exponent custom int type.
-        exponent_bits = builder->CreateSub(
-            exponent_bits,
-            tlctx->get_constant(cft->get_exponent_conversion_offset()));
+        auto cond = builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_NE,
+                                        exponent_bits, tlctx->get_constant(0));
+        auto exponent_offset = builder->CreateSelect(
+            cond, tlctx->get_constant(cft->get_exponent_conversion_offset()),
+            tlctx->get_constant(0));
+        exponent_bits = builder->CreateSub(exponent_bits, exponent_offset);
 
         // Compute the bit pointer of the exponent bits.
         TI_ASSERT(digits_snode->parent == exponent_snode->parent);
@@ -1286,6 +1289,19 @@ void CodeGenLLVM::visit(BitStructStoreStmt *stmt) {
   auto bit_struct_snode = stmt->get_bit_struct_snode();
   auto bit_struct_physical_type =
       bit_struct_snode->dt->as<BitStructType>()->get_physical_type();
+
+  bool has_shared_exponent = false;
+  for (auto ch_id : stmt->ch_ids) {
+    if (bit_struct_snode->ch[ch_id]->owns_shared_exponent) {
+      has_shared_exponent = true;
+    }
+  }
+
+  if (has_shared_exponent) {
+    store_floats_with_shared_exponents(stmt);
+    return;
+  }
+
   if (stmt->ch_ids.size() == bit_struct_snode->ch.size()) {
     // Store all the components
     llvm::Value *bit_struct_val = nullptr;
@@ -1322,6 +1338,104 @@ void CodeGenLLVM::visit(BitStructStoreStmt *stmt) {
           custom_type_to_bits(llvm_val[val], dtype, bit_struct_physical_type));
     }
   }
+}
+
+void CodeGenLLVM::store_floats_with_shared_exponents(BitStructStoreStmt *stmt) {
+  // handle each exponent separately
+  auto snode = stmt->get_bit_struct_snode();
+  auto local_bit_struct = builder->CreateLoad(llvm_val[stmt->ptr]);
+  for (int i = 0; i < (int)snode->ch.size(); i++) {
+    if (snode->ch[i]->exponent_users.empty())
+      continue;
+    // ch[i] must be an exponent SNode
+    auto &exp = snode->ch[i];
+    // load all floats
+    std::vector<llvm::Value *> floats;
+    // std::vector<llvm::Value *> float_bits;
+    for (auto &user : exp->exponent_users) {
+      auto ch_id = snode->child_id(user);
+      if (auto input =
+              std::find(stmt->ch_ids.begin(), stmt->ch_ids.end(), ch_id);
+          input != stmt->ch_ids.end()) {
+        floats.push_back(llvm_val[stmt->values[input - stmt->ch_ids.begin()]]);
+      } else {
+        floats.push_back(
+            reconstruct_float_from_bit_struct(local_bit_struct, user));
+      }
+    }
+    // convert to i32 for bit operations
+    llvm::Value *max_exp_bits = nullptr;
+    for (auto f : floats) {
+      // TODO: we only support f32 here.
+      auto exp_bits = extract_exponent_from_float(f);
+      if (max_exp_bits) {
+        max_exp_bits = create_call("max_u32", {max_exp_bits, exp_bits});
+      } else {
+        max_exp_bits = exp_bits;
+      }
+    }
+
+    // TODO: fusion
+    store_custom_int(llvm_val[stmt->ptr], tlctx->get_constant(exp->bit_offset),
+                     exp->dt->as<CustomIntType>(), max_exp_bits);
+
+    for (int c = 0; c < (int)exp->exponent_users.size(); c++) {
+      auto user = exp->exponent_users[c];
+      auto ch_id = snode->child_id(user);
+      auto digits =
+          get_float_digits_with_shared_exponents(floats[c], max_exp_bits);
+      auto digits_snode = snode->ch[ch_id].get();
+      auto cft = digits_snode->dt->as<CustomFloatType>();
+      auto digits_bit_offset = digits_snode->bit_offset;
+      digits =
+          builder->CreateLShr(digits, (uint64)(23 - cft->get_digit_bits()));
+      store_custom_int(llvm_val[stmt->ptr],
+                       tlctx->get_constant(digits_bit_offset),
+                       cft->get_digits_type()->as<CustomIntType>(), digits);
+    }
+  }
+}
+
+llvm::Value *CodeGenLLVM::extract_exponent_from_float(llvm::Value *f) {
+  TI_ASSERT(f->getType() == llvm::Type::getFloatTy(*llvm_context));
+  f = builder->CreateBitCast(f, llvm::Type::getInt32Ty(*llvm_context));
+  auto exp_bits = builder->CreateLShr(f, tlctx->get_constant(23));
+  return builder->CreateAnd(exp_bits, tlctx->get_constant((1 << 8) - 1));
+}
+
+llvm::Value *CodeGenLLVM::extract_digits_from_float(llvm::Value *f, bool full) {
+  TI_ASSERT(f->getType() == llvm::Type::getFloatTy(*llvm_context));
+  f = builder->CreateBitCast(f, llvm::Type::getInt32Ty(*llvm_context));
+  // TODO: handle zero
+  auto digits = builder->CreateAnd(f, tlctx->get_constant((1 << 23) - 1));
+  if (full)
+    digits = builder->CreateOr(digits, tlctx->get_constant(1 << 23));
+  return digits;
+}
+
+llvm::Value *CodeGenLLVM::get_float_digits_with_shared_exponents(
+    llvm::Value *f,
+    llvm::Value *shared_exp) {
+  auto exp_offset =
+      builder->CreateSub(shared_exp, extract_exponent_from_float(f));
+  // TODO: handle flush to zero
+  return builder->CreateLShr(extract_digits_from_float(f, true), exp_offset);
+}
+
+llvm::Value *CodeGenLLVM::reconstruct_float_from_bit_struct(
+    llvm::Value *local_bit_struct,
+    SNode *digits_snode) {
+  auto cft = digits_snode->dt->as<CustomFloatType>();
+  auto exponent_type = cft->get_exponent_type()->as<CustomIntType>();
+  auto digits_type = cft->get_digits_type()->as<CustomIntType>();
+  auto digits = extract_custom_int(
+      local_bit_struct, tlctx->get_constant(digits_snode->bit_offset),
+      digits_type);
+  auto exponent = extract_custom_int(
+      local_bit_struct,
+      tlctx->get_constant(digits_snode->exp_snode->bit_offset), exponent_type);
+  return reconstruct_custom_float_with_exponent(
+      digits, exponent, cft, digits_snode->owns_shared_exponent);
 }
 
 llvm::Value *CodeGenLLVM::load_as_custom_int(llvm::Value *ptr,
@@ -1383,38 +1497,78 @@ llvm::Value *CodeGenLLVM::reconstruct_custom_float(llvm::Value *digits,
 llvm::Value *CodeGenLLVM::load_custom_float_with_exponent(
     llvm::Value *digits_bit_ptr,
     llvm::Value *exponent_bit_ptr,
-    CustomFloatType *cft) {
-  // TODO: we ignore "scale" for CustomFloatType with exponent for now. Fix
-  // this.
+    CustomFloatType *cft,
+    bool shared_exponent) {
+  // TODO: we ignore "scale" for CustomFloatType with exponent for now. May need
+  // to support this in the future.
+
   TI_ASSERT(cft->get_scale() == 1);
   auto digits = load_as_custom_int(digits_bit_ptr, cft->get_digits_type());
 
   auto exponent_val = load_as_custom_int(
       exponent_bit_ptr, cft->get_exponent_type()->as<CustomIntType>());
+  return reconstruct_custom_float_with_exponent(digits, exponent_val, cft,
+                                                shared_exponent);
+}
 
+llvm::Value *CodeGenLLVM::reconstruct_custom_float_with_exponent(
+    llvm::Value *digits,
+    llvm::Value *exponent_val,
+    CustomFloatType *cft,
+    bool shared_exponent) {
   // Make sure the exponent is within the range of the exponent type
-  exponent_val = builder->CreateAdd(
-      exponent_val, tlctx->get_constant(cft->get_exponent_conversion_offset()));
+  auto exponent_offset =
+      tlctx->get_constant(cft->get_exponent_conversion_offset());
+
+  // Note that zeros need special treatment, when truncated during store.
+  auto exponent_type = cft->get_exponent_type()->as<CustomIntType>();
+  if (exponent_type->get_num_bits() < 8) {
+    auto cond = builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_NE,
+                                    exponent_val, tlctx->get_constant(0));
+    exponent_offset =
+        builder->CreateSelect(cond, exponent_offset, tlctx->get_constant(0));
+  }
 
   if (cft->get_compute_type()->is_primitive(PrimitiveTypeID::f32)) {
     // Construct an f32 out of exponent_val and digits
     // Assuming digits and exponent_val are i32
     // f32 = 1 sign bit + 8 exponent bits + 23 fraction bits
-    auto exponent_bits =
-        builder->CreateShl(exponent_val, tlctx->get_constant(23));
 
     digits = builder->CreateAnd(
         digits,
         (1u << cft->get_digits_type()->as<CustomIntType>()->get_num_bits()) -
             1);
-    digits = builder->CreateShl(
-        digits, tlctx->get_constant(23 - cft->get_digit_bits()));
 
+    if (shared_exponent) {
+      // There is a leading 1 that marks the beginning of the digits.
+      // When not using shared exponents, the 1 bit is not needed (since digits
+      // always starts with 1).
+      // declare i32  @llvm.ctlz.i32 (i32  <src>, i1 <is_zero_undef>)
+      auto num_leading_zeros = builder->CreateIntrinsic(
+          llvm::Intrinsic::ctlz, {llvm::Type::getInt32Ty(*llvm_context)},
+          {digits, tlctx->get_constant(false)});
+      auto extra_shift = builder->CreateSub(
+          tlctx->get_constant(31 - cft->get_digit_bits()), num_leading_zeros);
+      exponent_offset = builder->CreateAdd(exponent_offset, extra_shift);
+      digits = builder->CreateShl(
+          digits,
+          builder->CreateAdd(tlctx->get_constant(23 - cft->get_digit_bits()),
+                             extra_shift));
+      // TODO: handle zero digits
+    } else {
+      digits = builder->CreateShl(
+          digits, tlctx->get_constant(23 - cft->get_digit_bits()));
+    }
     auto fraction_bits = builder->CreateAnd(digits, (1u << 23) - 1);
+
+    exponent_val = builder->CreateAdd(exponent_val, exponent_offset);
+    auto exponent_bits =
+        builder->CreateShl(exponent_val, tlctx->get_constant(23));
 
     auto f32_bits = builder->CreateOr(exponent_bits, fraction_bits);
 
-    if (cft->get_is_signed()) {
+    if (cft->get_is_signed() &&
+        !shared_exponent) {  // TODO: fix shared exponent
       auto sign_bit =
           builder->CreateAnd(digits, tlctx->get_constant(1u << (23)));
 
@@ -1449,8 +1603,9 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
         auto exponent_bit_ptr =
             offset_bit_ptr(digits_bit_ptr, exponent_snode->bit_offset -
                                                digits_snode->bit_offset);
-        llvm_val[stmt] = load_custom_float_with_exponent(digits_bit_ptr,
-                                                         exponent_bit_ptr, cft);
+        llvm_val[stmt] = load_custom_float_with_exponent(
+            digits_bit_ptr, exponent_bit_ptr, cft,
+            digits_snode->owns_shared_exponent);
       } else {
         auto digits =
             load_as_custom_int(llvm_val[stmt->ptr], cft->get_digits_type());

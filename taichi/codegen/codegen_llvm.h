@@ -222,6 +222,12 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(BitStructStoreStmt *stmt) override;
 
+  void store_floats_with_shared_exponents(BitStructStoreStmt *stmt);
+
+  llvm::Value *reconstruct_float_from_bit_struct(llvm::Value *ptr,
+                                                 SNode *digits,
+                                                 llvm::Value *local_bit_struct);
+
   llvm::Value *load_as_custom_int(llvm::Value *ptr, Type *load_type);
 
   llvm::Value *extract_custom_int(llvm::Value *physical_value,

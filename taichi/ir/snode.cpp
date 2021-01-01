@@ -78,6 +78,7 @@ void SNode::place(Expr &expr_, const std::vector<int> &offset) {
     child.dt = expr->dt;
     if (new_exp_snode) {
       child.exp_snode = new_exp_snode;
+      new_exp_snode->exponent_users.push_back(&child);
     }
     if (!offset.empty())
       child.set_index_offsets(offset);

@@ -23,4 +23,4 @@ def main():
     print(a[None], b[None])
 
 
-main()
+# main()

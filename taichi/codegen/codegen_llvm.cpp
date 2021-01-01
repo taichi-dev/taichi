@@ -1344,6 +1344,7 @@ void CodeGenLLVM::store_floats_with_shared_exponents(BitStructStoreStmt *stmt) {
   TI_INFO("Storing floats with shared exponents");
   // handle each exponent separately
   auto snode = stmt->get_bit_struct_snode();
+  auto local_bit_struct = builder->CreateLoad(llvm_val[stmt->ptr]);
   for (int i = 0; i < (int)snode->ch.size(); i++) {
     if (snode->ch[i]->exponent_users.empty())
       continue;
@@ -1353,27 +1354,24 @@ void CodeGenLLVM::store_floats_with_shared_exponents(BitStructStoreStmt *stmt) {
     std::vector<llvm::Value *> floats;
     for (auto &user : exp->exponent_users) {
       auto ch_id = snode->child_id(user);
-      auto local_bit_struct = builder->CreateLoad(llvm_val[stmt->ptr]);
       if (auto input =
               std::find(stmt->ch_ids.begin(), stmt->ch_ids.end(), ch_id);
           input != stmt->ch_ids.end()) {
         floats.push_back(llvm_val[stmt->values[input - stmt->ch_ids.begin()]]);
       } else {
-        floats.push_back(reconstruct_float_from_bit_struct(
-            llvm_val[stmt->ptr], user, local_bit_struct));
+        floats.push_back(
+            reconstruct_float_from_bit_struct(local_bit_struct, user));
       }
     }
-    // TODO: compute new exponent bits and then shift digits, and store
+    // TODO: compute new exponent bits and then shift digits, and finally store
   }
 }
 
 llvm::Value *CodeGenLLVM::reconstruct_float_from_bit_struct(
-    llvm::Value *ptr,
-    SNode *digits,
-    llvm::Value *local_bit_struct) {
+    llvm::Value *local_bit_struct,
+    SNode *digits) {
   return nullptr;
 }
-
 
 llvm::Value *CodeGenLLVM::load_as_custom_int(llvm::Value *ptr,
                                              Type *load_type) {
@@ -1438,12 +1436,21 @@ llvm::Value *CodeGenLLVM::load_custom_float_with_exponent(
     bool shared_exponent) {
   // TODO: we ignore "scale" for CustomFloatType with exponent for now. May need
   // to support this in the future.
+
   TI_ASSERT(cft->get_scale() == 1);
   auto digits = load_as_custom_int(digits_bit_ptr, cft->get_digits_type());
 
   auto exponent_val = load_as_custom_int(
       exponent_bit_ptr, cft->get_exponent_type()->as<CustomIntType>());
+  return reconstruct_custom_float_with_exponent(digits, exponent_val, cft,
+                                                shared_exponent);
+}
 
+llvm::Value *CodeGenLLVM::reconstruct_custom_float_with_exponent(
+    llvm::Value *digits,
+    llvm::Value *exponent_val,
+    CustomFloatType *cft,
+    bool shared_exponent) {
   // Make sure the exponent is within the range of the exponent type
   auto exponent_offset =
       tlctx->get_constant(cft->get_exponent_conversion_offset());

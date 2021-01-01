@@ -224,9 +224,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void store_floats_with_shared_exponents(BitStructStoreStmt *stmt);
 
-  llvm::Value *reconstruct_float_from_bit_struct(llvm::Value *ptr,
-                                                 SNode *digits,
-                                                 llvm::Value *local_bit_struct);
+  llvm::Value *reconstruct_float_from_bit_struct(llvm::Value *local_bit_struct,
+                                                 SNode *digits);
 
   llvm::Value *load_as_custom_int(llvm::Value *ptr, Type *load_type);
 
@@ -240,6 +239,11 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
                                                llvm::Value *exponent_bit_ptr,
                                                CustomFloatType *cft,
                                                bool shared_exponent);
+
+  llvm::Value *reconstruct_custom_float_with_exponent(llvm::Value *digits,
+                                                      llvm::Value *exponent_val,
+                                                      CustomFloatType *cft,
+                                                      bool shared_exponent);
 
   void visit(GlobalLoadStmt *stmt) override;
 

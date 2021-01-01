@@ -1348,6 +1348,7 @@ void CodeGenLLVM::store_floats_with_shared_exponents(BitStructStoreStmt *stmt) {
   for (int i = 0; i < (int)snode->ch.size(); i++) {
     if (snode->ch[i]->exponent_users.empty())
       continue;
+    TI_P(i);
     // ch[i] must be an exponent SNode
     auto &exp = snode->ch[i];
     // load all floats
@@ -1367,27 +1368,30 @@ void CodeGenLLVM::store_floats_with_shared_exponents(BitStructStoreStmt *stmt) {
           "float to store",
           TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::f32),
           floats.back());
-
-      // convert to i32 ofor bit operations
-      llvm::Value *max_exp_bits = nullptr;
-      for (auto f : floats) {
-        // TODO: we only support f32 here.
-        // f = builder->CreateBitCast(f, llvm::Type::getInt32Ty(*llvm_context));
-        auto exp_bits = extract_exponent_from_float(f);
-        if (max_exp_bits) {
-          max_exp_bits = create_call("max_u32", {max_exp_bits, exp_bits});
-        } else {
-          max_exp_bits = exp_bits;
-        }
+    }
+    // convert to i32 ofor bit operations
+    llvm::Value *max_exp_bits = nullptr;
+    for (auto f : floats) {
+      // TODO: we only support f32 here.
+      // f = builder->CreateBitCast(f, llvm::Type::getInt32Ty(*llvm_context));
+      auto exp_bits = extract_exponent_from_float(f);
+      if (max_exp_bits) {
+        max_exp_bits = create_call("max_u32", {max_exp_bits, exp_bits});
+      } else {
+        max_exp_bits = exp_bits;
       }
+    }
+    create_print(
+        "max_exp_bits",
+        TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32),
+        max_exp_bits);
+    for (int c = 0; c < floats.size(); c++) {
+      auto digits =
+          get_float_digits_with_shared_exponents(floats[c], max_exp_bits);
       create_print(
-          "max_exp_bits",
-          TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::f32),
-          max_exp_bits);
-      for (int c = 0; c < floats.size(); c++) {
-        auto digits =
-            get_float_digits_with_shared_exponents(floats[i], max_exp_bits);
-      }
+          "digits",
+          TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32),
+          digits);
     }
     // TODO: compute new exponent bits and then shift digits, and finally store
   }
@@ -1395,8 +1399,19 @@ void CodeGenLLVM::store_floats_with_shared_exponents(BitStructStoreStmt *stmt) {
 
 llvm::Value *CodeGenLLVM::extract_exponent_from_float(llvm::Value *f) {
   TI_ASSERT(f->getType() == llvm::Type::getFloatTy(*llvm_context));
+  f = builder->CreateBitCast(f, llvm::Type::getInt32Ty(*llvm_context));
   auto exp_bits = builder->CreateLShr(f, tlctx->get_constant(23));
   return builder->CreateAnd(exp_bits, tlctx->get_constant((1 << 8) - 1));
+}
+
+llvm::Value *CodeGenLLVM::extract_digits_from_float(llvm::Value *f, bool full) {
+  TI_ASSERT(f->getType() == llvm::Type::getFloatTy(*llvm_context));
+  f = builder->CreateBitCast(f, llvm::Type::getInt32Ty(*llvm_context));
+  // TODO: handle zero
+  auto digits = builder->CreateAnd(f, tlctx->get_constant((1 << 23) - 1));
+  if (full)
+    digits = builder->CreateOr(digits, tlctx->get_constant(1 << 23));
+  return digits;
 }
 
 llvm::Value *CodeGenLLVM::get_float_digits_with_shared_exponents(
@@ -1404,7 +1419,12 @@ llvm::Value *CodeGenLLVM::get_float_digits_with_shared_exponents(
     llvm::Value *shared_exp) {
   auto exp_offset =
       builder->CreateSub(shared_exp, extract_exponent_from_float(f));
-
+  create_print(
+      "exp_offset",
+      TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32),
+      exp_offset);
+  // TODO: handle flush to zero
+  return builder->CreateLShr(extract_digits_from_float(f, true), exp_offset);
 }
 
 llvm::Value *CodeGenLLVM::reconstruct_float_from_bit_struct(

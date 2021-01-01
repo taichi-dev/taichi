@@ -200,6 +200,10 @@ int max_i32(i32 a, i32 b) {
   return a > b ? a : b;
 }
 
+u32 max_u32(u32 a, u32 b) {
+  return a > b ? a : b;
+}
+
 int max_i64(i64 a, i64 b) {
   return a > b ? a : b;
 }

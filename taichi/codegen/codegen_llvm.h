@@ -329,6 +329,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   llvm::Value *extract_exponent_from_float(llvm::Value *f);
 
+  llvm::Value *extract_digits_from_float(llvm::Value *f, bool full);
+
   llvm::Value *get_float_digits_with_shared_exponents(llvm::Value *f,
                                                       llvm::Value *shared_exp);
 

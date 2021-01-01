@@ -29,3 +29,4 @@ def main():
 main()
 # TODO: test negative
 # TODO: test zero
+# TODO: test shared exponent floats with custom int in a single bit struct

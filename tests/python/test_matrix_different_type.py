@@ -1,5 +1,5 @@
 import taichi as ti
-
+from pytest import approx
 
 @ti.test()
 def test_vector():
@@ -49,6 +49,39 @@ def test_matrix():
         assert c[None][0, 1] == 7
         assert c[None][1, 0] == -1
         assert c[None][1, 1] == 0.0
+
+    init()
+    verify()
+
+
+@ti.test(require=ti.extension.quant)
+def test_custom_type():
+    cit1 = ti.type_factory.custom_int(bits=10, signed=True)
+    cft1 = ti.type_factory.custom_float(cit1, scale=0.1)
+    cit2 = ti.type_factory.custom_int(bits=22, signed=False)
+    cft2 = ti.type_factory.custom_float(cit2, scale=0.1)
+    type_list = [[cit1, cft2], [cft1, cit2]]
+    a = ti.Matrix.field(len(type_list), len(type_list[0]), dtype=type_list)
+    b = ti.Matrix.field(len(type_list), len(type_list[0]), dtype=type_list)
+    c = ti.Matrix.field(len(type_list), len(type_list[0]), dtype=type_list)
+    ti.root.dense(ti.i, 1)._bit_struct(num_bits=32).place(a(0, 0), a(0, 1))
+    ti.root.dense(ti.i, 1)._bit_struct(num_bits=32).place(a(1, 0), a(1, 1))
+    ti.root.dense(ti.i, 1)._bit_struct(num_bits=32).place(b(0, 0), b(0, 1))
+    ti.root.dense(ti.i, 1)._bit_struct(num_bits=32).place(b(1, 0), b(1, 1))
+    ti.root.dense(ti.i, 1)._bit_struct(num_bits=32).place(c(0, 0), c(0, 1))
+    ti.root.dense(ti.i, 1)._bit_struct(num_bits=32).place(c(1, 0), c(1, 1))
+
+    @ti.kernel
+    def init():
+        a[0] = [[1, 3.], [2., 1]]
+        b[0] = [[2, 4.], [-2., 1]]
+        c[0] = a[0] + b[0]
+    
+    def verify():
+        assert c[0][0, 0] == approx(3, 1e-3)
+        assert c[0][0, 1] == approx(7.0, 1e-3)
+        assert c[0][1, 0] == approx(0, 1e-3)
+        assert c[0][1, 1] == approx(2, 1e-3)
 
     init()
     verify()

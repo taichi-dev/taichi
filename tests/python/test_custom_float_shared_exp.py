@@ -7,8 +7,8 @@ import pytest
 @ti.test(require=ti.extension.quant)
 def test_shared_exponents(exponent_bits):
     exp = ti.type_factory.custom_int(exponent_bits, False)
-    cit1 = ti.type_factory.custom_int(10, True)
-    cit2 = ti.type_factory.custom_int(14, True)
+    cit1 = ti.type_factory.custom_int(10, False)
+    cit2 = ti.type_factory.custom_int(14, False)
     cft1 = ti.type_factory.custom_float(significand_type=cit1,
                                         exponent_type=exp,
                                         scale=1)
@@ -78,8 +78,8 @@ def test_shared_exponents(exponent_bits):
 @ti.test(require=ti.extension.quant)
 def test_shared_exponent_add(exponent_bits):
     exp = ti.type_factory.custom_int(exponent_bits, False)
-    cit1 = ti.type_factory.custom_int(10, True)
-    cit2 = ti.type_factory.custom_int(14, True)
+    cit1 = ti.type_factory.custom_int(10, False)
+    cit2 = ti.type_factory.custom_int(14, False)
     cft1 = ti.type_factory.custom_float(significand_type=cit1,
                                         exponent_type=exp,
                                         scale=1)
@@ -118,8 +118,8 @@ def test_shared_exponent_add(exponent_bits):
 @ti.test(require=ti.extension.quant)
 def test_shared_exponent_borrow(exponent_bits):
     exp = ti.type_factory.custom_int(exponent_bits, False)
-    cit1 = ti.type_factory.custom_int(10, True)
-    cit2 = ti.type_factory.custom_int(14, True)
+    cit1 = ti.type_factory.custom_int(10, False)
+    cit2 = ti.type_factory.custom_int(14, False)
     cft1 = ti.type_factory.custom_float(significand_type=cit1,
                                         exponent_type=exp,
                                         scale=1)
@@ -147,10 +147,10 @@ def test_shared_exponent_borrow(exponent_bits):
         inc()
 
 
-
+@pytest.mark.parametrize('exponent_bits', [5, 6, 7, 8])
 def main(exponent_bits):
     exp = ti.type_factory.custom_int(exponent_bits, False)
-    cit1 = ti.type_factory.custom_int(10, True)
+    cit1 = ti.type_factory.custom_int(10, False)
     cit2 = ti.type_factory.custom_int(14, True)
     cft1 = ti.type_factory.custom_float(significand_type=cit1,
                                         exponent_type=exp,
@@ -162,14 +162,11 @@ def main(exponent_bits):
     b = ti.field(dtype=cft2)
     ti.root._bit_struct(num_bits=32).place(a, b, shared_exponent=True)
     
-    a[None] = -32
-    print(a[None])
-    a[None] = -123
-    print(a[None])
-
-# main(8)
+    a[None] = 37
+    assert a[None] == 37
+    b[None] = -123
+    assert b[None] == -123
 
 # TODO: make sure unsigned has one more effective significand bit
 # TODO: test rounding
-# TODO: test negative
 # TODO: test shared exponent floats with custom int in a single bit struct

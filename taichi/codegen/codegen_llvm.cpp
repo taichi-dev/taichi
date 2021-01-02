@@ -1433,8 +1433,9 @@ void CodeGenLLVM::store_floats_with_shared_exponents(BitStructStoreStmt *stmt) {
       // Compress f32 digits to cft digits.
       // Note that we need to keep the leading 1 bit so 24 instead of 23 in the
       // following code.
-      digits =
-          builder->CreateLShr(digits, (uint64)(24 - cft->get_digit_bits()));
+      digits = builder->CreateLShr(
+          digits, 24 + cft->get_is_signed() - cft->get_digit_bits());
+      create_print("digits shifted", digits);
       if (cft->get_is_signed()) {
         auto float_bits = builder->CreateBitCast(
             floats[c], llvm::Type::getInt32Ty(*llvm_context));
@@ -1635,11 +1636,13 @@ llvm::Value *CodeGenLLVM::reconstruct_custom_float_with_exponent(
       auto extra_shift = builder->CreateSub(
           tlctx->get_constant(31 - cft->get_digit_bits()), num_leading_zeros);
       exponent_offset = builder->CreateAdd(exponent_offset, extra_shift);
+      exponent_offset =
+          builder->CreateAdd(exponent_offset, tlctx->get_constant(1));
       auto digits_shift = builder->CreateSub(
           tlctx->get_constant(23 - cft->get_digit_bits()), extra_shift);
       digits = builder->CreateShl(digits, digits_shift);
-      // create_print("digits shift", digits_shift);
-      // create_print("digits shifted", digits);
+      create_print("digits shift in", digits_shift);
+      create_print("digits shifted in", digits);
     } else {
       digits = builder->CreateShl(
           digits, tlctx->get_constant(23 - cft->get_digit_bits()));

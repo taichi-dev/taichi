@@ -1258,6 +1258,8 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
             cond, tlctx->get_constant(cft->get_exponent_conversion_offset()),
             tlctx->get_constant(0));
         exponent_bits = builder->CreateSub(exponent_bits, exponent_offset);
+        exponent_bits =
+            create_call("max_i32", {exponent_bits, tlctx->get_constant(0)});
 
         // Compute the bit pointer of the exponent bits.
         TI_ASSERT(digits_snode->parent == exponent_snode->parent);
@@ -1266,6 +1268,15 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
                                                     digits_snode->bit_offset);
         store_custom_int(exponent_bit_ptr, exponent_cit, exponent_bits);
         store_value = digit_bits;
+
+        // Here we implement flush to zero (FTZ): if exponent is zero, we force
+        // the digits to be zero.
+        // TODO: it seems that this can be implemented using a bit_and
+        auto exp_non_zero =
+            builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_NE,
+                                exponent_bits, tlctx->get_constant(0));
+        store_value = builder->CreateSelect(exp_non_zero, store_value,
+                                            tlctx->get_constant(0));
       } else {
         digit_bits = llvm_val[stmt->data];
         store_value = float_to_custom_int(cft, digits_cit, digit_bits);
@@ -1587,7 +1598,6 @@ llvm::Value *CodeGenLLVM::reconstruct_custom_float_with_exponent(
           digits,
           builder->CreateAdd(tlctx->get_constant(23 - cft->get_digit_bits()),
                              extra_shift));
-      // TODO: handle zero digits
     } else {
       digits = builder->CreateShl(
           digits, tlctx->get_constant(23 - cft->get_digit_bits()));
@@ -1595,6 +1605,7 @@ llvm::Value *CodeGenLLVM::reconstruct_custom_float_with_exponent(
     auto fraction_bits = builder->CreateAnd(digits, (1u << 23) - 1);
 
     exponent_val = builder->CreateAdd(exponent_val, exponent_offset);
+
     auto exponent_bits =
         builder->CreateShl(exponent_val, tlctx->get_constant(23));
 

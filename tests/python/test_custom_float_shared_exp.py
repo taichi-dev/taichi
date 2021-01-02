@@ -62,9 +62,14 @@ def test_shared_exponents():
     assert a[None] == 1000.0
     assert b[None] == 1000.0
 
+    foo(1e-30, 1e-30)
+    assert a[None] == approx(1e-30, 1e-3)
+    assert b[None] == approx(1e-30, 1e-4)
+
 
 ti.init()
 test_shared_exponents()
 
+# TODO: test exp not 8 bits
 # TODO: test negative
 # TODO: test shared exponent floats with custom int in a single bit struct

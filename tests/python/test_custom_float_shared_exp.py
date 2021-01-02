@@ -64,8 +64,13 @@ def main():
     assert b[None] == 1000.0
 
     foo(1e-30, 1e-30)
-    assert a[None] == approx(1e-30, 1e-3)
-    assert b[None] == approx(1e-30, 1e-4)
+    if exponent_bits == 8:
+        assert a[None] == approx(1e-30, 1e-3)
+        assert b[None] == approx(1e-30, 1e-4)
+    else:
+        # Insufficient exponent bits: should flush to zero
+        assert a[None] == 0
+        assert b[None] == 0
 
 
 ti.init()

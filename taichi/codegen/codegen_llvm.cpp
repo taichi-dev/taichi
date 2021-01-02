@@ -1201,6 +1201,18 @@ void CodeGenLLVM::store_custom_int(llvm::Value *byte_ptr,
                    value, llvm_type(cit->get_physical_type()), false)});
 }
 
+llvm::Value *CodeGenLLVM::get_exponent_offset(llvm::Value *exponent,
+                                              CustomFloatType *cft) {
+  // Since we have fewer bits in the exponent type than in f32, an
+  // offset is necessary to make sure the stored exponent values are
+  // representable by the exponent custom int type.
+  auto cond = builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_NE, exponent,
+                                  tlctx->get_constant(0));
+  return builder->CreateSelect(
+      cond, tlctx->get_constant(cft->get_exponent_conversion_offset()),
+      tlctx->get_constant(0));
+}
+
 void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
   TI_ASSERT(!stmt->parent->mask() || stmt->width() == 1);
   TI_ASSERT(llvm_val[stmt->data]);
@@ -1249,14 +1261,7 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
         auto digits_snode = stmt->ptr->as<GetChStmt>()->output_snode;
         auto exponent_snode = digits_snode->exp_snode;
 
-        // Since we have fewer bits in the exponent type than in f32, an
-        // offset is necessary to make sure the stored exponent values are
-        // representable by the exponent custom int type.
-        auto cond = builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_NE,
-                                        exponent_bits, tlctx->get_constant(0));
-        auto exponent_offset = builder->CreateSelect(
-            cond, tlctx->get_constant(cft->get_exponent_conversion_offset()),
-            tlctx->get_constant(0));
+        auto exponent_offset = get_exponent_offset(exponent_bits, cft);
         exponent_bits = builder->CreateSub(exponent_bits, exponent_offset);
         exponent_bits =
             create_call("max_i32", {exponent_bits, tlctx->get_constant(0)});
@@ -1401,9 +1406,18 @@ void CodeGenLLVM::store_floats_with_shared_exponents(BitStructStoreStmt *stmt) {
       }
     }
 
+    auto first_cft = exp->exponent_users[0]->dt->as<CustomFloatType>();
+    auto exponent_offset = get_exponent_offset(max_exp_bits, first_cft);
+
+    auto max_exp_bits_to_store =
+        builder->CreateSub(max_exp_bits, exponent_offset);
+
+    max_exp_bits_to_store =
+        create_call("max_i32", {max_exp_bits_to_store, tlctx->get_constant(0)});
+
     // TODO: fusion
     store_custom_int(llvm_val[stmt->ptr], tlctx->get_constant(exp->bit_offset),
-                     exp->dt->as<CustomIntType>(), max_exp_bits);
+                     exp->dt->as<CustomIntType>(), max_exp_bits_to_store);
 
     for (int c = 0; c < (int)exp->exponent_users.size(); c++) {
       auto user = exp->exponent_users[c];
@@ -1444,7 +1458,7 @@ llvm::Value *CodeGenLLVM::get_float_digits_with_shared_exponents(
     llvm::Value *shared_exp) {
   auto exp = extract_exponent_from_float(f);
   auto exp_offset = builder->CreateSub(shared_exp, exp);
-  // TODO: handle negative cases
+  // TODO: handle negative digits
 
   // There are two cases that may result in zero digits:
   // - exp is zero. This means f itself is zero. Note that when processors

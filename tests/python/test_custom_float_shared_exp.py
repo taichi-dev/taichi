@@ -76,3 +76,39 @@ def test_shared_exponents(exponent_bits):
 # TODO: test rounding
 # TODO: test negative
 # TODO: test shared exponent floats with custom int in a single bit struct
+
+
+def main():
+    # TODO: test other exponent bits
+    exp = ti.type_factory.custom_int(8, False)
+    cit1 = ti.type_factory.custom_int(10, True)
+    cit2 = ti.type_factory.custom_int(14, True)
+    cft1 = ti.type_factory.custom_float(significand_type=cit1,
+                                        exponent_type=exp,
+                                        scale=1)
+    cft2 = ti.type_factory.custom_float(significand_type=cit2,
+                                        exponent_type=exp,
+                                        scale=1)
+    a = ti.field(dtype=cft1)
+    b = ti.field(dtype=cft2)
+    ti.root._bit_struct(num_bits=32).place(a, b, shared_exponent=True)
+
+    @ti.kernel
+    def foo(x: ti.f32, y: ti.f32):
+        a[None] = x
+        b[None] = y
+    
+    a[None] = 4
+    b[None] = 3
+    print(a[None], b[None])
+    
+    b[None] += 1
+    print(a[None], b[None])
+    
+    for i in range(100):
+        a[None] += 4
+        b[None] += 1
+        print(a[None], b[None])
+
+
+main()

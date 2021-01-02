@@ -1,6 +1,7 @@
 import taichi as ti
 import numpy as np
 import pytest
+from pytest import approx
 
 
 @ti.test(require=ti.extension.quant)
@@ -18,6 +19,8 @@ def test_custom_float_unsigned():
         0, 1 / 1024, 1.75 / 1024, 0.25, 0.5, 0.75, 1, 2, 3, 4, 5, 6, 7, 128,
         256, 512, 1024
     ]
+
+    assert x[None] == 0
 
     for v in tests:
         x[None] = v
@@ -37,13 +40,22 @@ def test_custom_float_signed():
 
     tests = [0, 0.125, 0.5, 2, 4, 6, 7, 8, 9]
 
+    assert x[None] == 0
+
     for v in tests:
         x[None] = v
-        print(x[None])
         assert x[None] == v
 
         x[None] = -v
         assert x[None] == -v
+
+    ftz_tests = [1e-30, 1e-20, 1e-10, 1e-2]
+    for v in ftz_tests:
+        x[None] = v
+        assert x[None] == approx(v, abs=1e-5)
+
+        x[None] = -v
+        assert x[None] == approx(-v, abs=1e-5)
 
 
 @pytest.mark.parametrize('digits_bits', [23, 24])

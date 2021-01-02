@@ -679,6 +679,21 @@ llvm::Value *CodeGenLLVM::create_print(std::string tag,
   return builder->CreateCall(runtime_printf, args);
 }
 
+llvm::Value *CodeGenLLVM::create_print(std::string tag, llvm::Value *value) {
+  if (value->getType() == llvm::Type::getFloatTy(*llvm_context))
+    return create_print(
+        tag,
+        TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::f32),
+        value);
+  else if (value->getType() == llvm::Type::getInt32Ty(*llvm_context))
+    return create_print(
+        tag,
+        TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32),
+        value);
+  else
+    TI_NOT_IMPLEMENTED
+}
+
 void CodeGenLLVM::visit(PrintStmt *stmt) {
   TI_ASSERT(stmt->width() == 1);
   std::vector<llvm::Value *> args;
@@ -1186,6 +1201,18 @@ void CodeGenLLVM::store_custom_int(llvm::Value *byte_ptr,
                    value, llvm_type(cit->get_physical_type()), false)});
 }
 
+llvm::Value *CodeGenLLVM::get_exponent_offset(llvm::Value *exponent,
+                                              CustomFloatType *cft) {
+  // Since we have fewer bits in the exponent type than in f32, an
+  // offset is necessary to make sure the stored exponent values are
+  // representable by the exponent custom int type.
+  auto cond = builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_NE, exponent,
+                                  tlctx->get_constant(0));
+  return builder->CreateSelect(
+      cond, tlctx->get_constant(cft->get_exponent_conversion_offset()),
+      tlctx->get_constant(0));
+}
+
 void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
   TI_ASSERT(!stmt->parent->mask() || stmt->width() == 1);
   TI_ASSERT(llvm_val[stmt->data]);
@@ -1234,15 +1261,10 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
         auto digits_snode = stmt->ptr->as<GetChStmt>()->output_snode;
         auto exponent_snode = digits_snode->exp_snode;
 
-        // Since we have fewer bits in the exponent type than in f32, an
-        // offset is necessary to make sure the stored exponent values are
-        // representable by the exponent custom int type.
-        auto cond = builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_NE,
-                                        exponent_bits, tlctx->get_constant(0));
-        auto exponent_offset = builder->CreateSelect(
-            cond, tlctx->get_constant(cft->get_exponent_conversion_offset()),
-            tlctx->get_constant(0));
+        auto exponent_offset = get_exponent_offset(exponent_bits, cft);
         exponent_bits = builder->CreateSub(exponent_bits, exponent_offset);
+        exponent_bits =
+            create_call("max_i32", {exponent_bits, tlctx->get_constant(0)});
 
         // Compute the bit pointer of the exponent bits.
         TI_ASSERT(digits_snode->parent == exponent_snode->parent);
@@ -1251,6 +1273,16 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
                                                     digits_snode->bit_offset);
         store_custom_int(exponent_bit_ptr, exponent_cit, exponent_bits);
         store_value = digit_bits;
+
+        // Here we implement flush to zero (FTZ): if exponent is zero, we force
+        // the digits to be zero.
+        // TODO: it seems that this can be more efficiently implemented using a
+        // bit_and.
+        auto exp_non_zero =
+            builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_NE,
+                                exponent_bits, tlctx->get_constant(0));
+        store_value = builder->CreateSelect(exp_non_zero, store_value,
+                                            tlctx->get_constant(0));
       } else {
         digit_bits = llvm_val[stmt->data];
         store_value = float_to_custom_int(cft, digits_cit, digit_bits);
@@ -1375,9 +1407,18 @@ void CodeGenLLVM::store_floats_with_shared_exponents(BitStructStoreStmt *stmt) {
       }
     }
 
+    auto first_cft = exp->exponent_users[0]->dt->as<CustomFloatType>();
+    auto exponent_offset = get_exponent_offset(max_exp_bits, first_cft);
+
+    auto max_exp_bits_to_store =
+        builder->CreateSub(max_exp_bits, exponent_offset);
+
+    max_exp_bits_to_store =
+        create_call("max_i32", {max_exp_bits_to_store, tlctx->get_constant(0)});
+
     // TODO: fusion
     store_custom_int(llvm_val[stmt->ptr], tlctx->get_constant(exp->bit_offset),
-                     exp->dt->as<CustomIntType>(), max_exp_bits);
+                     exp->dt->as<CustomIntType>(), max_exp_bits_to_store);
 
     for (int c = 0; c < (int)exp->exponent_users.size(); c++) {
       auto user = exp->exponent_users[c];
@@ -1406,20 +1447,36 @@ llvm::Value *CodeGenLLVM::extract_exponent_from_float(llvm::Value *f) {
 llvm::Value *CodeGenLLVM::extract_digits_from_float(llvm::Value *f, bool full) {
   TI_ASSERT(f->getType() == llvm::Type::getFloatTy(*llvm_context));
   f = builder->CreateBitCast(f, llvm::Type::getInt32Ty(*llvm_context));
-  // TODO: handle zero
   auto digits = builder->CreateAnd(f, tlctx->get_constant((1 << 23) - 1));
-  if (full)
+  if (full) {
     digits = builder->CreateOr(digits, tlctx->get_constant(1 << 23));
+  }
   return digits;
 }
 
 llvm::Value *CodeGenLLVM::get_float_digits_with_shared_exponents(
     llvm::Value *f,
     llvm::Value *shared_exp) {
-  auto exp_offset =
-      builder->CreateSub(shared_exp, extract_exponent_from_float(f));
-  // TODO: handle flush to zero
-  return builder->CreateLShr(extract_digits_from_float(f, true), exp_offset);
+  auto exp = extract_exponent_from_float(f);
+  auto exp_offset = builder->CreateSub(shared_exp, exp);
+  // TODO: handle negative digits
+
+  // There are two cases that may result in zero digits:
+  // - exp is zero. This means f itself is zero. Note that when processors
+  // running under FTZ (flush to zero), exp = 0 implies digits = 0.
+  // - exp is too small compared to shared_exp, or equivalently exp_offset is
+  // too large. This means we need to flush digits to zero.
+
+  // If exp is nonzero, insert an extra "1" bit that was originally implicit.
+  auto exp_non_zero = builder->CreateICmpNE(exp, tlctx->get_constant(0));
+  exp_non_zero =
+      builder->CreateZExt(exp_non_zero, llvm::Type::getInt32Ty(*llvm_context));
+  auto implicit_bit = builder->CreateShl(exp_non_zero, tlctx->get_constant(23));
+
+  auto digits = extract_digits_from_float(f, true);
+  digits = builder->CreateOr(digits, implicit_bit);
+  exp_offset = create_call("min_u32", {exp_offset, tlctx->get_constant(31)});
+  return builder->CreateLShr(digits, exp_offset);
 }
 
 llvm::Value *CodeGenLLVM::reconstruct_float_from_bit_struct(
@@ -1512,10 +1569,12 @@ llvm::Value *CodeGenLLVM::load_custom_float_with_exponent(
 }
 
 llvm::Value *CodeGenLLVM::reconstruct_custom_float_with_exponent(
-    llvm::Value *digits,
-    llvm::Value *exponent_val,
+    llvm::Value *input_digits,
+    llvm::Value *input_exponent_val,
     CustomFloatType *cft,
     bool shared_exponent) {
+  auto digits = input_digits;
+  auto exponent_val = input_exponent_val;
   // Make sure the exponent is within the range of the exponent type
   auto exponent_offset =
       tlctx->get_constant(cft->get_exponent_conversion_offset());
@@ -1554,7 +1613,6 @@ llvm::Value *CodeGenLLVM::reconstruct_custom_float_with_exponent(
           digits,
           builder->CreateAdd(tlctx->get_constant(23 - cft->get_digit_bits()),
                              extra_shift));
-      // TODO: handle zero digits
     } else {
       digits = builder->CreateShl(
           digits, tlctx->get_constant(23 - cft->get_digit_bits()));
@@ -1562,10 +1620,24 @@ llvm::Value *CodeGenLLVM::reconstruct_custom_float_with_exponent(
     auto fraction_bits = builder->CreateAnd(digits, (1u << 23) - 1);
 
     exponent_val = builder->CreateAdd(exponent_val, exponent_offset);
+
     auto exponent_bits =
         builder->CreateShl(exponent_val, tlctx->get_constant(23));
 
     auto f32_bits = builder->CreateOr(exponent_bits, fraction_bits);
+
+    if (shared_exponent) {
+      // Handle zero exponent
+      auto zero_exponent =
+          builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_EQ,
+                              input_exponent_val, tlctx->get_constant(0));
+      auto zero_digits =
+          builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_EQ, input_digits,
+                              tlctx->get_constant(0));
+      auto zero_output = builder->CreateOr(zero_exponent, zero_digits);
+      f32_bits =
+          builder->CreateSelect(zero_output, tlctx->get_constant(0), f32_bits);
+    }
 
     if (cft->get_is_signed() &&
         !shared_exponent) {  // TODO: fix shared exponent

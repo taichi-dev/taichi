@@ -121,6 +121,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   // only for debugging on CPU
   llvm::Value *create_print(std::string tag, DataType dt, llvm::Value *value);
 
+  llvm::Value *create_print(std::string tag, llvm::Value *value);
+
   llvm::Value *cast_pointer(llvm::Value *val,
                             std::string dest_ty_name,
                             int addr_space = 0);
@@ -333,6 +335,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   llvm::Value *get_float_digits_with_shared_exponents(llvm::Value *f,
                                                       llvm::Value *shared_exp);
+
+  llvm::Value *get_exponent_offset(llvm::Value *exponent, CustomFloatType *cft);
 
   ~CodeGenLLVM() = default;
 };

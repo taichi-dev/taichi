@@ -73,10 +73,6 @@ def test_shared_exponents(exponent_bits):
         assert b[None] == 0
 
 
-# TODO: test rounding
-# TODO: test negative
-# TODO: test shared exponent floats with custom int in a single bit struct
-
 
 @pytest.mark.parametrize('exponent_bits', [5, 6, 7, 8])
 @ti.test(require=ti.extension.quant)
@@ -149,3 +145,31 @@ def test_shared_exponent_borrow(exponent_bits):
         assert a[None] == i
         assert b[None] == 100 - i
         inc()
+
+
+
+def main(exponent_bits):
+    exp = ti.type_factory.custom_int(exponent_bits, False)
+    cit1 = ti.type_factory.custom_int(10, True)
+    cit2 = ti.type_factory.custom_int(14, True)
+    cft1 = ti.type_factory.custom_float(significand_type=cit1,
+                                        exponent_type=exp,
+                                        scale=1)
+    cft2 = ti.type_factory.custom_float(significand_type=cit2,
+                                        exponent_type=exp,
+                                        scale=1)
+    a = ti.field(dtype=cft1)
+    b = ti.field(dtype=cft2)
+    ti.root._bit_struct(num_bits=32).place(a, b, shared_exponent=True)
+    
+    a[None] = -32
+    print(a[None])
+    a[None] = -123
+    print(a[None])
+
+# main(8)
+
+# TODO: make sure unsigned has one more effective significand bit
+# TODO: test rounding
+# TODO: test negative
+# TODO: test shared exponent floats with custom int in a single bit struct

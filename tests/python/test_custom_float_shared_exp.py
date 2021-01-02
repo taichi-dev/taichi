@@ -1,11 +1,11 @@
 import taichi as ti
 from pytest import approx
+import pytest
 
 
-# @ti.test(require=ti.extension.quant)
-# def test_shared_exponents():
-def main():
-    exponent_bits = 7
+@pytest.mark.parametrize('exponent_bits', [5, 6, 7, 8])
+@ti.test(require=ti.extension.quant)
+def test_shared_exponents(exponent_bits):
     exp = ti.type_factory.custom_int(exponent_bits, False)
     cit1 = ti.type_factory.custom_int(10, True)
     cit2 = ti.type_factory.custom_int(14, True)
@@ -72,11 +72,6 @@ def main():
         assert a[None] == 0
         assert b[None] == 0
 
-
-ti.init()
-main()
-
 # TODO: test rounding
-# TODO: test exp not 8 bits
 # TODO: test negative
 # TODO: test shared exponent floats with custom int in a single bit struct

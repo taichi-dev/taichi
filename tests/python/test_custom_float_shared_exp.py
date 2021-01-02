@@ -17,19 +17,23 @@ def test_shared_exponents():
     b = ti.field(dtype=cft2)
     ti.root._bit_struct(num_bits=32).place(a, b, shared_exponent=True)
 
+    assert a[None] == 0.0
+    assert b[None] == 0.0
+
+    a[None] = 10
+    assert a[None] == 10.0
+    assert b[None] == 0.0
+
+    a[None] = 0
+    assert a[None] == 0.0
+    assert b[None] == 0.0
+
     @ti.kernel
     def foo():
         a[None] = 3.2
         b[None] = 0.25
 
-    # assert a[None] == 0.0
-    # assert b[None] == 0.0
-
-    a[None] = 10
-    print(a[None], b[None])
-
     foo()
-    return
 
     assert a[None] == approx(3.2, rel=1e-3)
     assert b[None] == approx(0.25, rel=2e-2)

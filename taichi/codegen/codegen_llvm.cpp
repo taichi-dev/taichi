@@ -1425,13 +1425,7 @@ llvm::Value *CodeGenLLVM::extract_digits_from_float(llvm::Value *f, bool full) {
   f = builder->CreateBitCast(f, llvm::Type::getInt32Ty(*llvm_context));
   auto digits = builder->CreateAnd(f, tlctx->get_constant((1 << 23) - 1));
   if (full) {
-    // If digits are nonzero, insert an extra "1" bit.
-    // TODO: handle negative cases
-    auto non_zero = builder->CreateICmpNE(digits, tlctx->get_constant(0));
-    non_zero =
-        builder->CreateZExt(non_zero, llvm::Type::getInt32Ty(*llvm_context));
-    non_zero = builder->CreateShl(non_zero, tlctx->get_constant(23));
-    digits = builder->CreateOr(digits, non_zero);
+    digits = builder->CreateOr(digits, tlctx->get_constant(1 << 23));
   }
   return digits;
 }
@@ -1439,10 +1433,26 @@ llvm::Value *CodeGenLLVM::extract_digits_from_float(llvm::Value *f, bool full) {
 llvm::Value *CodeGenLLVM::get_float_digits_with_shared_exponents(
     llvm::Value *f,
     llvm::Value *shared_exp) {
-  auto exp_offset =
-      builder->CreateSub(shared_exp, extract_exponent_from_float(f));
-  // TODO: handle flush to zero
-  return builder->CreateLShr(extract_digits_from_float(f, true), exp_offset);
+  auto exp = extract_exponent_from_float(f);
+  auto exp_offset = builder->CreateSub(shared_exp, exp);
+  // TODO: handle negative cases
+
+  // There are two cases that may result in zero digits:
+  // - exp is zero. This means f itself is zero. Note that when processors
+  // running under FTZ (flush to zero), exp = 0 implies digits = 0.
+  // - exp is too small compared to shared_exp, or equivalently exp_offset is
+  // too large. This means we need to flush digits to zero.
+
+  // If exp is nonzero, insert an extra "1" bit that was originally implicit.
+  auto exp_non_zero = builder->CreateICmpNE(exp, tlctx->get_constant(0));
+  exp_non_zero =
+      builder->CreateZExt(exp_non_zero, llvm::Type::getInt32Ty(*llvm_context));
+  auto implicit_bit = builder->CreateShl(exp_non_zero, tlctx->get_constant(23));
+
+  auto digits = extract_digits_from_float(f, true);
+  digits = builder->CreateOr(digits, implicit_bit);
+  exp_offset = create_call("min_u32", {exp_offset, tlctx->get_constant(31)});
+  return builder->CreateLShr(digits, exp_offset);
 }
 
 llvm::Value *CodeGenLLVM::reconstruct_float_from_bit_struct(

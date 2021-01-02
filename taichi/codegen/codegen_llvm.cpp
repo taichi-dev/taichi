@@ -1276,7 +1276,8 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
 
         // Here we implement flush to zero (FTZ): if exponent is zero, we force
         // the digits to be zero.
-        // TODO: it seems that this can be implemented using a bit_and
+        // TODO: it seems that this can be more efficiently implemented using a
+        // bit_and.
         auto exp_non_zero =
             builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_NE,
                                 exponent_bits, tlctx->get_constant(0));

@@ -72,6 +72,7 @@ def test_shared_exponents(exponent_bits):
         assert a[None] == 0
         assert b[None] == 0
 
+
 # TODO: test rounding
 # TODO: test negative
 # TODO: test shared exponent floats with custom int in a single bit struct

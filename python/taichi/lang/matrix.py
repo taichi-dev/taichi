@@ -828,13 +828,13 @@ class Matrix(TaichiOperations):
             if m == 1:
                 assert len(np.shape(dtype)) == 1 and len(
                     dtype
-                ) == n, f'Please set correct dtype list for Vector, the shape of dtype list should be ({n}, ) not {np.shape(dtype)}'
+                ) == n, f'Please set correct dtype list for Vector. The shape of dtype list should be ({n}, ) instead of {np.shape(dtype)}'
                 for i in range(n):
                     self.entries.append(impl.field(dtype[i]))
             else:
                 assert len(np.shape(dtype)) == 2 and len(dtype) == n and len(
                     dtype[0]
-                ) == m, f'Please set correct dtype list for Matrix. The shape of dtype list should be ({n}, {m}) not {np.shape(dtype)}'
+                ) == m, f'Please set correct dtype list for Matrix. The shape of dtype list should be ({n}, {m}) instead of {np.shape(dtype)}'
                 for i in range(n):
                     for j in range(m):
                         self.entries.append(impl.field(dtype[i][j]))

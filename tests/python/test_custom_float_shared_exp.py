@@ -2,7 +2,7 @@ import taichi as ti
 from pytest import approx
 
 
-# @ti.test(require=ti.extension.quant)
+@ti.test(require=ti.extension.quant)
 def test_shared_exponents():
     exp = ti.type_factory.custom_int(8, False)
     cit1 = ti.type_factory.custom_int(10, True)
@@ -66,9 +66,6 @@ def test_shared_exponents():
     assert a[None] == approx(1e-30, 1e-3)
     assert b[None] == approx(1e-30, 1e-4)
 
-
-ti.init()
-test_shared_exponents()
 
 # TODO: test exp not 8 bits
 # TODO: test negative

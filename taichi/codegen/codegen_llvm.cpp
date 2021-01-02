@@ -1391,7 +1391,6 @@ void CodeGenLLVM::store_floats_with_shared_exponents(BitStructStoreStmt *stmt) {
     }
 
     // TODO: fusion
-    create_print("Stored exponents", max_exp_bits);
     store_custom_int(llvm_val[stmt->ptr], tlctx->get_constant(exp->bit_offset),
                      exp->dt->as<CustomIntType>(), max_exp_bits);
 
@@ -1405,7 +1404,6 @@ void CodeGenLLVM::store_floats_with_shared_exponents(BitStructStoreStmt *stmt) {
       auto digits_bit_offset = digits_snode->bit_offset;
       digits =
           builder->CreateLShr(digits, (uint64)(23 - cft->get_digit_bits()));
-      create_print("Stored digits", digits);
       store_custom_int(llvm_val[stmt->ptr],
                        tlctx->get_constant(digits_bit_offset),
                        cft->get_digits_type()->as<CustomIntType>(), digits);
@@ -1602,15 +1600,11 @@ llvm::Value *CodeGenLLVM::reconstruct_custom_float_with_exponent(
 
     auto f32_bits = builder->CreateOr(exponent_bits, fraction_bits);
 
-    create_print("Input exponent", input_exponent_val);
-    create_print("Input digits", input_digits);
-
     if (shared_exponent) {
       // Handle zero exponent
       auto zero_exponent =
           builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_EQ,
                               input_exponent_val, tlctx->get_constant(0));
-      TI_P(cft->get_digit_bits());
       auto zero_digits =
           builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_EQ, input_digits,
                               tlctx->get_constant(0));

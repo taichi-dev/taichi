@@ -29,11 +29,11 @@ def test_shared_exponents():
     assert b[None] == 0.0
 
     @ti.kernel
-    def foo():
-        a[None] = 3.2
-        b[None] = 0.25
+    def foo(x: ti.f32, y: ti.f32):
+        a[None] = x
+        b[None] = y
 
-    foo()
+    foo(3.2, 0.25)
 
     assert a[None] == approx(3.2, rel=1e-3)
     assert b[None] == approx(0.25, rel=2e-2)
@@ -44,11 +44,27 @@ def test_shared_exponents():
     assert a[None] == approx(100, rel=1e-3)
     assert b[None] == approx(0.25, rel=1e-2)
 
+    b[None] = 0
+    assert a[None] == approx(100, rel=1e-3)
+    assert b[None] == 0
+
+    foo(0, 0)
+    assert a[None] == 0.0
+    assert b[None] == 0.0
+
+    # test flush to zero
+
+    foo(1000, 1e-6)
+    assert a[None] == 1000.0
+    assert b[None] == 0.0
+
+    foo(1000, 1000)
+    assert a[None] == 1000.0
+    assert b[None] == 1000.0
+
 
 ti.init()
 test_shared_exponents()
 
 # TODO: test negative
-# TODO: test exponent zero
-# TODO: test digits zero
 # TODO: test shared exponent floats with custom int in a single bit struct

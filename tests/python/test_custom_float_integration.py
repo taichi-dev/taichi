@@ -7,7 +7,7 @@ ti.init()
 
 def main():
     use_cft = True
-    use_shared_exp = False
+    use_shared_exp = True
     if use_cft:
         exp = ti.type_factory.custom_int(6, False)
         cit = ti.type_factory.custom_int(13, True)

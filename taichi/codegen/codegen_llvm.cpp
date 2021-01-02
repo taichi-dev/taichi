@@ -1423,7 +1423,7 @@ void CodeGenLLVM::store_floats_with_shared_exponents(BitStructStoreStmt *stmt) {
     for (int c = 0; c < (int)exp->exponent_users.size(); c++) {
       auto user = exp->exponent_users[c];
       auto ch_id = snode->child_id(user);
-      create_print("digits input", floats[c]);
+      // create_print("digits input", floats[c]);
       auto digits =
           get_float_digits_with_shared_exponents(floats[c], max_exp_bits);
       auto digits_snode = snode->ch[ch_id].get();
@@ -1431,7 +1431,7 @@ void CodeGenLLVM::store_floats_with_shared_exponents(BitStructStoreStmt *stmt) {
       auto digits_bit_offset = digits_snode->bit_offset;
       digits =
           builder->CreateLShr(digits, (uint64)(23 - cft->get_digit_bits()));
-      create_print("digits postprocessed", digits);
+      // create_print("digits postprocessed", digits);
       store_custom_int(llvm_val[stmt->ptr],
                        tlctx->get_constant(digits_bit_offset),
                        cft->get_digits_type()->as<CustomIntType>(), digits);
@@ -1476,10 +1476,10 @@ llvm::Value *CodeGenLLVM::get_float_digits_with_shared_exponents(
   auto implicit_bit = builder->CreateShl(exp_non_zero, tlctx->get_constant(23));
 
   auto digits = extract_digits_from_float(f, true);
-  create_print("digits input", digits);
+  // create_print("digits input", digits);
   digits = builder->CreateOr(digits, implicit_bit);
   exp_offset = create_call("min_u32", {exp_offset, tlctx->get_constant(31)});
-  create_print("expr offset", exp_offset);
+  // create_print("expr offset", exp_offset);
   return builder->CreateLShr(digits, exp_offset);
 }
 
@@ -1616,8 +1616,8 @@ llvm::Value *CodeGenLLVM::reconstruct_custom_float_with_exponent(
       auto digits_shift = builder->CreateSub(
           tlctx->get_constant(23 - cft->get_digit_bits()), extra_shift);
       digits = builder->CreateShl(digits, digits_shift);
-      create_print("digits shift", digits_shift);
-      create_print("digits shifted", digits);
+      // create_print("digits shift", digits_shift);
+      // create_print("digits shifted", digits);
     } else {
       digits = builder->CreateShl(
           digits, tlctx->get_constant(23 - cft->get_digit_bits()));

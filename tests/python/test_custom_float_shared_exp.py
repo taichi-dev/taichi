@@ -81,7 +81,7 @@ def test_shared_exponents(exponent_bits):
 @pytest.mark.parametrize('exponent_bits', [5, 6, 7, 8])
 @ti.test(require=ti.extension.quant)
 def test_shared_exponent_add(exponent_bits):
-    exp = ti.type_factory.custom_int(7, False)
+    exp = ti.type_factory.custom_int(exponent_bits, False)
     cit1 = ti.type_factory.custom_int(10, True)
     cit2 = ti.type_factory.custom_int(14, True)
     cft1 = ti.type_factory.custom_float(significand_type=cit1,
@@ -118,8 +118,10 @@ def test_shared_exponent_add(exponent_bits):
         assert b[None] == 4 + (i + 1)
 
 
-def main():
-    exp = ti.type_factory.custom_int(7, False)
+@pytest.mark.parametrize('exponent_bits', [5, 6, 7, 8])
+@ti.test(require=ti.extension.quant)
+def test_shared_exponent_borrow(exponent_bits):
+    exp = ti.type_factory.custom_int(exponent_bits, False)
     cit1 = ti.type_factory.custom_int(10, True)
     cit2 = ti.type_factory.custom_int(14, True)
     cft1 = ti.type_factory.custom_float(significand_type=cit1,
@@ -147,7 +149,3 @@ def main():
         assert a[None] == i
         assert b[None] == 100 - i
         inc()
-
-
-ti.init()
-main()

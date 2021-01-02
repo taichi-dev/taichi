@@ -25,11 +25,13 @@ def main():
 
     @ti.func
     def v_at(p):
-        return ti.Vector([p[1], -p[0]])
+        return ti.Vector([-p[1], p[0]])
 
     @ti.kernel
     def advance(dt: ti.f32):
         v_mid = v_at(x[None] + 0.5 * dt * v_at(x[None]))
+        print(x[None])
+        print(v_mid)
         x[None] = x[None] + v_mid * dt
 
     x[None] = [1, 0]

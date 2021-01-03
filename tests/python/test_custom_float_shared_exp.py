@@ -147,7 +147,8 @@ def test_shared_exponent_borrow(exponent_bits):
 
 
 @pytest.mark.parametrize('exponent_bits', [5, 6, 7, 8])
-def main(exponent_bits):
+@ti.test(require=ti.extension.quant)
+def test_negative(exponent_bits):
     exp = ti.type_factory.custom_int(exponent_bits, False)
     cit1 = ti.type_factory.custom_int(10, False)
     cit2 = ti.type_factory.custom_int(14, True)

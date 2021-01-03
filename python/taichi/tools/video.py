@@ -155,7 +155,7 @@ def interpolate_frames(frame_dir, mul=4):
 
 
 def ffmpeg_common_args(frame_rate, width, height, crf):
-    return f" -framerate {frame_rate} -s:v {width}x{height} " + \
+    return f" -loglevel panic -framerate {frame_rate} -s:v {width}x{height} " + \
                          f"-c:v libx264 -profile:v high -crf {crf} -pix_fmt yuv420p"
 
 

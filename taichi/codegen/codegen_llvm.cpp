@@ -665,7 +665,10 @@ void CodeGenLLVM::visit(IfStmt *if_stmt) {
 llvm::Value *CodeGenLLVM::create_print(std::string tag,
                                        DataType dt,
                                        llvm::Value *value) {
-  TI_ASSERT(arch_use_host_memory(kernel->arch));
+  if (!arch_is_cpu(kernel->arch)) {
+    TI_WARN("print not supported on arch {}", arch_name(kernel->arch));
+    return nullptr;
+  }
   std::vector<llvm::Value *> args;
   std::string format = data_type_format(dt);
   auto runtime_printf = call("LLVMRuntime_get_host_printf", get_runtime());

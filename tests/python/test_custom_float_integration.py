@@ -7,19 +7,27 @@ ti.init()
 
 def main():
     use_cft = True
-    use_shared_exp = True
+    use_exponent = True
+    use_shared_exp = False
     if use_cft:
-        exp = ti.type_factory.custom_int(6, False)
-        cit = ti.type_factory.custom_int(13, True)
-        cft = ti.type_factory.custom_float(significand_type=cit,
-                                           exponent_type=exp,
-                                           scale=1)
-        x = ti.Vector.field(2, dtype=cft)
-        if use_shared_exp:
-            ti.root._bit_struct(num_bits=32).place(x, shared_exponent=True)
+        if use_exponent:
+            exp = ti.type_factory.custom_int(6, False)
+            cit = ti.type_factory.custom_int(13, True)
+            cft = ti.type_factory.custom_float(significand_type=cit,
+                                               exponent_type=exp,
+                                               scale=1)
+            x = ti.Vector.field(2, dtype=cft)
+            if use_shared_exp:
+                ti.root._bit_struct(num_bits=32).place(x, shared_exponent=True)
+            else:
+                ti.root._bit_struct(num_bits=32).place(x(0))
+                ti.root._bit_struct(num_bits=32).place(x(1))
         else:
-            ti.root._bit_struct(num_bits=32).place(x(0))
-            ti.root._bit_struct(num_bits=32).place(x(1))
+            cit = ti.type_factory.custom_int(16, True)
+            cft = ti.type_factory.custom_float(significand_type=cit,
+                                               scale=1 / 2 ** 14)
+            x = ti.Vector.field(2, dtype=cft)
+            ti.root._bit_struct(num_bits=32).place(x)
     else:
         x = ti.Vector.field(2, dtype=ti.f32, shape=())
 
@@ -39,7 +47,7 @@ def main():
     dt = math.pi * 2 / num_steps
     px = [1]
     py = [0]
-    for i in range(num_steps):
+    for i in range(num_steps * 4):
         advance(dt)
         px.append(x[None][0])
         py.append(x[None][1])

@@ -8,7 +8,7 @@ ti.init()
 def main():
     use_cft = True
     use_exponent = True
-    use_shared_exp = False
+    use_shared_exp = True
     if use_cft:
         if use_exponent:
             exp = ti.type_factory.custom_int(6, False)
@@ -25,7 +25,7 @@ def main():
         else:
             cit = ti.type_factory.custom_int(16, True)
             cft = ti.type_factory.custom_float(significand_type=cit,
-                                               scale=1 / 2 ** 14)
+                                               scale=1 / 2**14)
             x = ti.Vector.field(2, dtype=cft)
             ti.root._bit_struct(num_bits=32).place(x)
     else:
@@ -38,8 +38,6 @@ def main():
     @ti.kernel
     def advance(dt: ti.f32):
         v_mid = v_at(x[None] + 0.5 * dt * v_at(x[None]))
-        print(x[None])
-        print(v_mid)
         x[None] = x[None] + v_mid * dt
 
     x[None] = [1, 0]

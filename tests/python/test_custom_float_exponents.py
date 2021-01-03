@@ -103,13 +103,13 @@ def test_custom_float_truncation(signed):
     x[None] = 1.75
     if signed:
         # Insufficient digits
-        assert x[None] == 1.5
+        assert x[None] == 2
     else:
         # Sufficient digits
         assert x[None] == 1.75
 
     # Insufficient digits
-    x[None] = 1.875
+    x[None] = 1.625
     if signed:
         assert x[None] == 1.5
     else:

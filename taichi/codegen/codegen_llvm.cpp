@@ -1242,8 +1242,10 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
             llvm_val[stmt->data], llvm::Type::getInt32Ty(*llvm_context));
         // Rounding to nearest here. Note that if the digits overflows then the
         // carry-on will contribute to the exponent, which is desired.
-        f32_bits = builder->CreateAdd(
-            f32_bits, tlctx->get_constant(1 << (22 - cft->get_digit_bits())));
+        if (cft->get_digit_bits() < 23) {
+          f32_bits = builder->CreateAdd(
+              f32_bits, tlctx->get_constant(1 << (22 - cft->get_digit_bits())));
+        }
 
         auto exponent_bits = builder->CreateAShr(f32_bits, 23);
         exponent_bits = builder->CreateAnd(exponent_bits,
@@ -1439,12 +1441,19 @@ void CodeGenLLVM::store_floats_with_shared_exponents(BitStructStoreStmt *stmt) {
       auto cft = digits_snode->dt->as<CustomFloatType>();
       auto digits_bit_offset = digits_snode->bit_offset;
 
+      auto right_shift_bits = 24 + cft->get_is_signed() - cft->get_digit_bits();
+
+      // round to nearest
+      digits = builder->CreateAdd(
+          digits, tlctx->get_constant(1 << (right_shift_bits - 1)));
+      // do not allow overflowing
+      digits =
+          create_call("min_u32", {digits, tlctx->get_constant((1u << 24) - 1)});
+
       // Compress f32 digits to cft digits.
       // Note that we need to keep the leading 1 bit so 24 instead of 23 in the
       // following code.
-      digits = builder->CreateLShr(
-          digits, 24 + cft->get_is_signed() - cft->get_digit_bits());
-      create_print("digits shifted", digits);
+      digits = builder->CreateLShr(digits, right_shift_bits);
       if (cft->get_is_signed()) {
         auto float_bits = builder->CreateBitCast(
             floats[c], llvm::Type::getInt32Ty(*llvm_context));

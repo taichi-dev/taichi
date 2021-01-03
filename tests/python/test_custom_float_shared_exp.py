@@ -73,7 +73,6 @@ def test_shared_exponents(exponent_bits):
         assert b[None] == 0
 
 
-
 @pytest.mark.parametrize('exponent_bits', [5, 6, 7, 8])
 @ti.test(require=ti.extension.quant)
 def test_shared_exponent_add(exponent_bits):
@@ -161,11 +160,12 @@ def main(exponent_bits):
     a = ti.field(dtype=cft1)
     b = ti.field(dtype=cft2)
     ti.root._bit_struct(num_bits=32).place(a, b, shared_exponent=True)
-    
+
     a[None] = 37
     assert a[None] == 37
     b[None] = -123
     assert b[None] == -123
+
 
 # TODO: make sure unsigned has one more effective significand bit
 # TODO: test rounding

@@ -665,7 +665,10 @@ void CodeGenLLVM::visit(IfStmt *if_stmt) {
 llvm::Value *CodeGenLLVM::create_print(std::string tag,
                                        DataType dt,
                                        llvm::Value *value) {
-  TI_ASSERT(arch_use_host_memory(kernel->arch));
+  if (!arch_is_cpu(kernel->arch)) {
+    TI_WARN("print not supported on arch {}", arch_name(kernel->arch));
+    return nullptr;
+  }
   std::vector<llvm::Value *> args;
   std::string format = data_type_format(dt);
   auto runtime_printf = call("LLVMRuntime_get_host_printf", get_runtime());
@@ -1233,12 +1236,20 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
         // now).
         TI_ASSERT(cft->get_compute_type()->is_primitive(PrimitiveTypeID::f32));
 
+        // f32 = 1 sign bit + 8 exponent bits + 23 fraction bits
+
         auto f32_bits = builder->CreateBitCast(
             llvm_val[stmt->data], llvm::Type::getInt32Ty(*llvm_context));
+        // Rounding to nearest here. Note that if the digits overflows then the
+        // carry-on will contribute to the exponent, which is desired.
+        if (cft->get_digit_bits() < 23) {
+          f32_bits = builder->CreateAdd(
+              f32_bits, tlctx->get_constant(1 << (22 - cft->get_digit_bits())));
+        }
+
         auto exponent_bits = builder->CreateAShr(f32_bits, 23);
         exponent_bits = builder->CreateAnd(exponent_bits,
                                            tlctx->get_constant((1 << 8) - 1));
-        // f32 = 1 sign bit + 8 exponent bits + 23 fraction bits
         auto value_bits = builder->CreateAShr(
             f32_bits, tlctx->get_constant(23 - cft->get_digit_bits()));
 
@@ -1428,8 +1439,27 @@ void CodeGenLLVM::store_floats_with_shared_exponents(BitStructStoreStmt *stmt) {
       auto digits_snode = snode->ch[ch_id].get();
       auto cft = digits_snode->dt->as<CustomFloatType>();
       auto digits_bit_offset = digits_snode->bit_offset;
+
+      auto right_shift_bits = 24 + cft->get_is_signed() - cft->get_digit_bits();
+
+      // round to nearest
+      digits = builder->CreateAdd(
+          digits, tlctx->get_constant(1 << (right_shift_bits - 1)));
+      // do not allow overflowing
       digits =
-          builder->CreateLShr(digits, (uint64)(23 - cft->get_digit_bits()));
+          create_call("min_u32", {digits, tlctx->get_constant((1u << 24) - 1)});
+
+      // Compress f32 digits to cft digits.
+      // Note that we need to keep the leading 1 bit so 24 instead of 23 in the
+      // following code.
+      digits = builder->CreateLShr(digits, right_shift_bits);
+      if (cft->get_is_signed()) {
+        auto float_bits = builder->CreateBitCast(
+            floats[c], llvm::Type::getInt32Ty(*llvm_context));
+        auto sign_bit = builder->CreateAnd(float_bits, 1 << 31);
+        sign_bit = builder->CreateLShr(sign_bit, 31 - cft->get_digit_bits());
+        digits = builder->CreateOr(digits, sign_bit);
+      }
       store_custom_int(llvm_val[stmt->ptr],
                        tlctx->get_constant(digits_bit_offset),
                        cft->get_digits_type()->as<CustomIntType>(), digits);
@@ -1598,7 +1628,16 @@ llvm::Value *CodeGenLLVM::reconstruct_custom_float_with_exponent(
         (1u << cft->get_digits_type()->as<CustomIntType>()->get_num_bits()) -
             1);
 
+    llvm::Value *sign_bit = nullptr;
+
     if (shared_exponent) {
+      if (cft->get_is_signed()) {
+        sign_bit = builder->CreateAnd(
+            digits, tlctx->get_constant(1u << cft->get_digit_bits()));
+        digits = builder->CreateXor(digits, sign_bit);
+        sign_bit = builder->CreateShl(sign_bit, 31 - cft->get_digit_bits());
+        digits = builder->CreateShl(digits, 1);
+      }
       // There is a leading 1 that marks the beginning of the digits.
       // When not using shared exponents, the 1 bit is not needed (since digits
       // always starts with 1).
@@ -1609,10 +1648,11 @@ llvm::Value *CodeGenLLVM::reconstruct_custom_float_with_exponent(
       auto extra_shift = builder->CreateSub(
           tlctx->get_constant(31 - cft->get_digit_bits()), num_leading_zeros);
       exponent_offset = builder->CreateAdd(exponent_offset, extra_shift);
-      digits = builder->CreateShl(
-          digits,
-          builder->CreateAdd(tlctx->get_constant(23 - cft->get_digit_bits()),
-                             extra_shift));
+      exponent_offset =
+          builder->CreateAdd(exponent_offset, tlctx->get_constant(1));
+      auto digits_shift = builder->CreateSub(
+          tlctx->get_constant(23 - cft->get_digit_bits()), extra_shift);
+      digits = builder->CreateShl(digits, digits_shift);
     } else {
       digits = builder->CreateShl(
           digits, tlctx->get_constant(23 - cft->get_digit_bits()));
@@ -1639,12 +1679,11 @@ llvm::Value *CodeGenLLVM::reconstruct_custom_float_with_exponent(
           builder->CreateSelect(zero_output, tlctx->get_constant(0), f32_bits);
     }
 
-    if (cft->get_is_signed() &&
-        !shared_exponent) {  // TODO: fix shared exponent
-      auto sign_bit =
-          builder->CreateAnd(digits, tlctx->get_constant(1u << (23)));
-
-      sign_bit = builder->CreateShl(sign_bit, tlctx->get_constant(31 - (23)));
+    if (cft->get_is_signed()) {
+      if (!sign_bit) {
+        sign_bit = builder->CreateAnd(digits, tlctx->get_constant(1u << 23));
+        sign_bit = builder->CreateShl(sign_bit, tlctx->get_constant(31 - 23));
+      }
       f32_bits = builder->CreateOr(f32_bits, sign_bit);
     }
 

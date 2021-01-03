@@ -133,13 +133,19 @@ CustomFloatType::CustomFloatType(Type *digits_type,
     // Exponent must be unsigned custom int
     TI_ASSERT(exponent_type->is<CustomIntType>());
     TI_ASSERT(exponent_type->as<CustomIntType>()->get_num_bits() <= 8);
+    TI_ASSERT(exponent_type->as<CustomIntType>()->get_is_signed() == false);
     TI_ASSERT(get_digit_bits() <= 23);
   }
 }
 
 std::string CustomFloatType::to_string() const {
-  return fmt::format("cf(d={} c={} s={})", digits_type_->to_string(),
-                     compute_type_->to_string(), scale_);
+  std::string e, s;
+  if (exponent_type_)
+    e = fmt::format(" e={}", exponent_type_->to_string());
+  if (scale_ != 1)
+    s = fmt::format(" s={}", scale_);
+  return fmt::format("cf(d={}{} c={}{})", digits_type_->to_string(), e,
+                     compute_type_->to_string(), s);
 }
 
 int CustomFloatType::get_exponent_conversion_offset() const {

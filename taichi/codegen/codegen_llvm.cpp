@@ -1236,12 +1236,18 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
         // now).
         TI_ASSERT(cft->get_compute_type()->is_primitive(PrimitiveTypeID::f32));
 
+        // f32 = 1 sign bit + 8 exponent bits + 23 fraction bits
+
         auto f32_bits = builder->CreateBitCast(
             llvm_val[stmt->data], llvm::Type::getInt32Ty(*llvm_context));
+        // Rounding to nearest here. Note that if the digits overflows then the
+        // carry-on will contribute to the exponent, which is desired.
+        f32_bits = builder->CreateAdd(
+            f32_bits, tlctx->get_constant(1 << (22 - cft->get_digit_bits())));
+
         auto exponent_bits = builder->CreateAShr(f32_bits, 23);
         exponent_bits = builder->CreateAnd(exponent_bits,
                                            tlctx->get_constant((1 << 8) - 1));
-        // f32 = 1 sign bit + 8 exponent bits + 23 fraction bits
         auto value_bits = builder->CreateAShr(
             f32_bits, tlctx->get_constant(23 - cft->get_digit_bits()));
 

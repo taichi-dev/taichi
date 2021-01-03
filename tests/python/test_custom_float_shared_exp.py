@@ -168,5 +168,4 @@ def main(exponent_bits):
 
 
 # TODO: make sure unsigned has one more effective significand bit
-# TODO: test rounding
 # TODO: test shared exponent floats with custom int in a single bit struct

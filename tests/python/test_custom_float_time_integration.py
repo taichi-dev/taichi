@@ -2,7 +2,6 @@ import taichi as ti
 import math
 import pytest
 from pytest import approx
-import matplotlib.pyplot as plt
 
 
 @pytest.mark.parametrize('use_cft,use_exponent,use_shared_exp',
@@ -53,9 +52,6 @@ def test_custom_float_time_integration(use_cft, use_exponent, use_shared_exp):
         advance(dt)
         px.append(x[None][0])
         py.append(x[None][1])
-
-    # plt.plot(px, py)
-    # plt.show()
 
     assert px[num_steps // 2 - 1] == approx(-1, abs=2e-2)
     assert py[num_steps // 2 - 1] == approx(0, abs=2e-2)

@@ -1,14 +1,12 @@
 import taichi as ti
 import math
+import pytest
+from pytest import approx
 import matplotlib.pyplot as plt
 
-ti.init()
-
-
-def main():
-    use_cft = True
-    use_exponent = True
-    use_shared_exp = True
+@pytest.mark.parametrize('use_cft,use_exponent,use_shared_exp', [(False, False, False), (True, False, False), (True, True, False), (True, True, True)])
+@ti.test(require=ti.extension.quant)
+def test_custom_float_time_integration(use_cft, use_exponent, use_shared_exp):
     if use_cft:
         if use_exponent:
             exp = ti.type_factory.custom_int(6, False)
@@ -41,16 +39,24 @@ def main():
         x[None] = x[None] + v_mid * dt
 
     x[None] = [1, 0]
-    num_steps = 100
+    num_steps = 1000
     dt = math.pi * 2 / num_steps
-    px = [1]
-    py = [0]
-    for i in range(num_steps * 4):
+    px = []
+    py = []
+    
+    N = 1
+    
+    for i in range(num_steps * N):
         advance(dt)
         px.append(x[None][0])
         py.append(x[None][1])
-    plt.plot(px, py)
-    plt.show()
-
-
-main()
+        
+    # plt.plot(px, py)
+    # plt.show()
+        
+    assert px[num_steps // 2 - 1] == approx(-1, abs=2e-2)
+    assert py[num_steps // 2 - 1] == approx(0, abs=2e-2)
+    
+    assert px[-1] == approx(1, abs=2e-2)
+    # TODO: why large error here?
+    assert py[-1] == approx(0, abs=3e-2)

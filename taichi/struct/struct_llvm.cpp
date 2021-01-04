@@ -46,6 +46,8 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
   auto ch_type =
       llvm::StructType::create(*ctx, ch_types, snode.node_type_name + "_ch");
 
+  snode.cell_size_bytes = tlctx->get_type_size(ch_type);
+
   llvm::Type *body_type = nullptr, *aux_type = nullptr;
   if (type == SNodeType::dense || type == SNodeType::bitmasked) {
     TI_ASSERT(snode._morton == false);
@@ -83,6 +85,10 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
       }
       ch->bit_offset = total_offset;
       total_offset += component_cit->get_num_bits();
+      auto bit_struct_size = data_type_bits(snode.physical_type);
+      TI_ERROR_IF(total_offset > bit_struct_size,
+                  "Bit struct overflows: {} bits used out of {}.", total_offset,
+                  bit_struct_size);
     }
 
     snode.dt = TypeFactory::get_instance().get_bit_struct_type(

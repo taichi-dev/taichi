@@ -266,6 +266,7 @@ void export_lang(py::module &m) {
            })
       .def("num_active_indices",
            [](SNode *snode) { return snode->num_active_indices; })
+      .def_readonly("cell_size_bytes", &SNode::cell_size_bytes)
       .def("begin_shared_exp_placement", &SNode::begin_shared_exp_placement)
       .def("end_shared_exp_placement", &SNode::end_shared_exp_placement);
 

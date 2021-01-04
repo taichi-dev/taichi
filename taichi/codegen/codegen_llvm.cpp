@@ -1055,6 +1055,7 @@ llvm::Value *CodeGenLLVM::atomic_add_custom_float(AtomicOpStmt *stmt,
   auto cit = cft->get_digits_type()->as<CustomIntType>();
   auto val_store = float_to_custom_int(cft, cit, llvm_val[stmt->val]);
   auto physical_type = cit->get_physical_type();
+  val_store = builder->CreateSExt(val_store, llvm_type(physical_type));
 
   return create_call(
       fmt::format("atomic_add_partial_bits_b{}", data_type_bits(physical_type)),
@@ -2034,13 +2035,14 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
 
   llvm::Function *body = nullptr;
   auto leaf_block = stmt->snode;
+
   // When looping over bit_arrays and bit_structs, we generate struct for on
   // their parent node (usually "dense") instead of itself for higher
   // performance. Also, note that the loop must be bit_vectorized for
-  // bit_arrays.
-  if ((leaf_block->type == SNodeType::bit_array ||
-       leaf_block->type == SNodeType::bit_struct) &&
-      leaf_block->parent) {
+  // bit_arrays, and their parent must be "dense".
+  if (leaf_block->type == SNodeType::bit_struct) {
+    leaf_block = leaf_block->parent;
+  } else if (leaf_block->type == SNodeType::bit_array) {
     if (leaf_block->parent->type == SNodeType::dense) {
       leaf_block = leaf_block->parent;
     } else {

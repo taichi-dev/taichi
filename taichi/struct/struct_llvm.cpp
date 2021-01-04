@@ -83,6 +83,10 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
       }
       ch->bit_offset = total_offset;
       total_offset += component_cit->get_num_bits();
+      auto bit_struct_size = data_type_bits(snode.physical_type);
+      TI_ERROR_IF(total_offset > bit_struct_size,
+                  "Bit struct overflows: {} bits used out of {}.", total_offset,
+                  bit_struct_size);
     }
 
     snode.dt = TypeFactory::get_instance().get_bit_struct_type(

@@ -25,7 +25,8 @@ def test_primitives():
     assert n3.cell_size_bytes == 16
 
 
-def main():
+@ti.test(arch=ti.cpu)
+def test_bit_struct():
     cit = ti.type_factory.custom_int(16, False)
     x = ti.field(dtype=cit)
     y = ti.field(dtype=ti.type_factory.custom_float(significand_type=cit))
@@ -40,7 +41,3 @@ def main():
 
     assert n1.cell_size_bytes == 4
     assert n2.cell_size_bytes == 8
-
-
-ti.init()
-main()

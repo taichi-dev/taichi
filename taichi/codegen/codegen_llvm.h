@@ -118,8 +118,10 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   virtual FunctionType gen();
 
-  // only for debugging on CPU
-  llvm::Value *create_print(std::string tag, DataType dt, llvm::Value *value);
+  // For debugging only
+  virtual llvm::Value *create_print(std::string tag,
+                                    DataType dt,
+                                    llvm::Value *value);
 
   llvm::Value *create_print(std::string tag, llvm::Value *value);
 
@@ -235,7 +237,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
                                   llvm::Value *bit_offset,
                                   Type *load_type);
 
-  llvm::Value *reconstruct_custom_float(llvm::Value *digits, Type *load_type);
+  llvm::Value *reconstruct_custom_float(llvm::Value *digits,
+                                        CustomFloatType *load_type);
 
   llvm::Value *load_custom_float_with_exponent(llvm::Value *digits_bit_ptr,
                                                llvm::Value *exponent_bit_ptr,
@@ -246,6 +249,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
                                                       llvm::Value *exponent_val,
                                                       CustomFloatType *cft,
                                                       bool shared_exponent);
+
+  llvm::Value *load_custom_float(Stmt *ptr_stmt);
 
   void visit(GlobalLoadStmt *stmt) override;
 

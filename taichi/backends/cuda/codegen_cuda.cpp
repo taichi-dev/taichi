@@ -102,6 +102,35 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 #endif  // TI_WITH_CUDA
   }
 
+  llvm::Value *create_print(std::string tag,
+                            DataType dt,
+                            llvm::Value *value) override {
+    std::string format = data_type_format(dt);
+    if (value->getType() == llvm::Type::getFloatTy(*llvm_context)) {
+      value =
+          builder->CreateFPExt(value, llvm::Type::getDoubleTy(*llvm_context));
+    }
+    return create_print("[cuda codegen debug] " + tag + " " + format + "\n",
+                        {value->getType()}, {value});
+  }
+
+  llvm::Value *create_print(const std::string &format,
+                            const std::vector<llvm::Type *> &types,
+                            const std::vector<llvm::Value *> &values) {
+    auto stype = llvm::StructType::get(*llvm_context, types, false);
+    auto value_arr = builder->CreateAlloca(stype);
+    for (int i = 0; i < values.size(); i++) {
+      auto value_ptr = builder->CreateGEP(
+          value_arr, {tlctx->get_constant(0), tlctx->get_constant(i)});
+      builder->CreateStore(values[i], value_ptr);
+    }
+    return LLVMModuleBuilder::call(
+        builder.get(), "vprintf",
+        builder->CreateGlobalStringPtr(format, "format_string"),
+        builder->CreateBitCast(value_arr,
+                               llvm::Type::getInt8PtrTy(*llvm_context)));
+  }
+
   void visit(PrintStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     TI_ASSERT_INFO(stmt->contents.size() < 32,
@@ -140,19 +169,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       }
     }
 
-    auto format_str = formats;
-    auto stype = llvm::StructType::get(*llvm_context, types, false);
-    auto value_arr = builder->CreateAlloca(stype);
-    for (int i = 0; i < values.size(); i++) {
-      auto value_ptr = builder->CreateGEP(
-          value_arr, {tlctx->get_constant(0), tlctx->get_constant(i)});
-      builder->CreateStore(values[i], value_ptr);
-    }
-    llvm_val[stmt] = LLVMModuleBuilder::call(
-        builder.get(), "vprintf",
-        builder->CreateGlobalStringPtr(format_str, "format_string"),
-        builder->CreateBitCast(value_arr,
-                               llvm::Type::getInt8PtrTy(*llvm_context)));
+    llvm_val[stmt] = create_print(formats, types, values);
   }
 
   void emit_extra_unary(UnaryOpStmt *stmt) override {
@@ -406,11 +423,10 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         should_cache_as_read_only = true;
       }
       if (should_cache_as_read_only) {
-        // Issue an CUDA "__ldg" instruction so that data are cached in
-        // the CUDA read-only data cache.
         auto dtype = stmt->ret_type;
         if (auto ptr_type = stmt->ptr->ret_type->as<PointerType>();
             ptr_type->is_bit_pointer()) {
+          // Bit pointer case.
           auto val_type = ptr_type->get_pointee_type();
           Type *int_in_mem = nullptr;
           // For CustomIntType "int_in_mem" refers to the type itself;
@@ -419,20 +435,20 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
           if (auto cit = val_type->cast<CustomIntType>()) {
             int_in_mem = val_type;
             dtype = cit->get_physical_type();
+            auto [data_ptr, bit_offset] = load_bit_pointer(llvm_val[stmt->ptr]);
+            data_ptr = builder->CreateBitCast(data_ptr, llvm_ptr_type(dtype));
+            auto data = create_intrinsic_load(dtype, data_ptr);
+            llvm_val[stmt] = extract_custom_int(data, bit_offset, int_in_mem);
           } else if (auto cft = val_type->cast<CustomFloatType>()) {
-            int_in_mem = cft->get_digits_type();
-            dtype = int_in_mem->as<CustomIntType>()->get_physical_type();
+            // TODO: support __ldg
+            llvm_val[stmt] = load_custom_float(stmt->ptr);
           } else {
             TI_NOT_IMPLEMENTED;
           }
-          auto [data_ptr, bit_offset] = load_bit_pointer(llvm_val[stmt->ptr]);
-          data_ptr = builder->CreateBitCast(data_ptr, llvm_ptr_type(dtype));
-          auto data = create_intrinsic_load(dtype, data_ptr);
-          llvm_val[stmt] = extract_custom_int(data, bit_offset, int_in_mem);
-          if (val_type->is<CustomFloatType>()) {
-            llvm_val[stmt] = reconstruct_custom_float(llvm_val[stmt], val_type);
-          }
         } else {
+          // Byte pointer case.
+          // Issue an CUDA "__ldg" instruction so that data are cached in
+          // the CUDA read-only data cache.
           llvm_val[stmt] = create_intrinsic_load(dtype, llvm_val[stmt->ptr]);
         }
       } else {

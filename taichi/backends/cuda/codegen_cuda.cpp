@@ -105,7 +105,6 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   llvm::Value *create_print(std::string tag,
                             DataType dt,
                             llvm::Value *value) override {
-    std::vector<llvm::Value *> args;
     std::string format = data_type_format(dt);
     if (value->getType() == llvm::Type::getFloatTy(*llvm_context)) {
       value =

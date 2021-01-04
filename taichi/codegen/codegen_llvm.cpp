@@ -1604,9 +1604,6 @@ llvm::Value *CodeGenLLVM::reconstruct_custom_float_with_exponent(
     bool shared_exponent) {
   auto digits = input_digits;
   auto exponent_val = input_exponent_val;
-  TI_TAG;
-  create_print("digits", digits);
-  create_print("exponent_val", exponent_val);
   // Make sure the exponent is within the range of the exponent type
   auto exponent_offset =
       tlctx->get_constant(cft->get_exponent_conversion_offset());

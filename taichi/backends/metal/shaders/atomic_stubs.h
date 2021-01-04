@@ -3,6 +3,9 @@
 using atomic_int = int;
 using atomic_uint = unsigned int;
 
+template <typename T>
+struct _atomic {};
+
 namespace metal {
 
 using memory_order = bool;
@@ -11,9 +14,7 @@ memory_order memory_order_relaxed = false;
 }  // namespace metal
 
 template <typename T>
-bool atomic_compare_exchange_weak_explicit(T *object,
-                                           T *expected,
-                                           T desired,
+bool atomic_compare_exchange_weak_explicit(T *object, T *expected, T desired,
                                            metal::memory_order,
                                            metal::memory_order) {
   const T val = *object;

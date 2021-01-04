@@ -91,11 +91,9 @@ class KernelCodegen : public IRVisitor {
   };
   // TODO(k-ye): Create a Params to hold these ctor params.
   KernelCodegen(const std::string &taichi_kernel_name,
-                const std::string &root_snode_type_name,
-                Kernel *kernel,
+                const std::string &root_snode_type_name, Kernel *kernel,
                 const CompiledStructs *compiled_structs,
-                PrintStringTable *print_strtab,
-                const Config &config,
+                PrintStringTable *print_strtab, const Config &config,
                 OffloadedStmt *offloaded)
       : mtl_kernel_prefix_(taichi_kernel_name),
         root_snode_type_name_(root_snode_type_name),
@@ -189,21 +187,6 @@ class KernelCodegen : public IRVisitor {
          kRootBufferName);
   }
 
-  void visit(GetChStmt *stmt) override {
-    // E.g. `parent.get*(runtime, mem_alloc)`
-    const auto get_call =
-        fmt::format("{}.get{}({}, {})", stmt->input_ptr->raw_name(), stmt->chid,
-                    kRuntimeVarName, kMemAllocVarName);
-    if (stmt->output_snode->is_place()) {
-      emit(R"(device {}* {} = {}.val;)",
-           metal_data_type_name(stmt->output_snode->dt), stmt->raw_name(),
-           get_call);
-    } else {
-      emit(R"({} {} = {};)", stmt->output_snode->node_type_name,
-           stmt->raw_name(), get_call);
-    }
-  }
-
   void visit(LinearizeStmt *stmt) override {
     std::string val = "0";
     for (int i = 0; i < (int)stmt->inputs.size(); i++) {
@@ -229,14 +212,61 @@ class KernelCodegen : public IRVisitor {
     }
     const auto *sn = stmt->snode;
     const auto snty = sn->type;
+    if (snty == SNodeType::bit_struct) {
+      // Example *bit_struct* struct generated on Metal:
+      //
+      // struct Sx {
+      //   // bit_struct
+      //   Sx(device byte *b, ...) : base(b) {}
+      //   device byte *base;
+      // };
+      emit("auto {} = {}.base;", stmt->raw_name(), parent);
+      return;
+    }
     const std::string index_name = stmt->input_index->raw_name();
-
+    // Example SNode struct generated on Metal:
+    //
+    // struct S1 {
+    //   // dense
+    //   S1(device byte *addr, ...) { rep_.init(addr); }
+    //   S1_ch children(int i) { return {rep_.addr() + (i * elem_stride)}; }
+    //   inline void activate(int i) { rep_.activate(i); }
+    //   ...
+    //  private:
+    //   SNodeRep_dense rep_;
+    // };
     if (stmt->activate) {
       TI_ASSERT(is_supported_sparse_type(snty));
       emit("{}.activate({});", parent, index_name);
     }
     emit(R"({}_ch {} = {}.children({});)", sn->node_type_name, stmt->raw_name(),
          parent, index_name);
+  }
+
+  void visit(GetChStmt *stmt) override {
+    auto *in_snode = stmt->input_snode;
+    auto *out_snode = stmt->output_snode;
+    if (in_snode->type == SNodeType::bit_struct) {
+      TI_ASSERT(stmt->ret_type->as<PointerType>()->is_bit_pointer());
+      const auto *bit_struct_ty = in_snode->dt->cast<BitStructType>();
+      const auto bit_offset =
+          bit_struct_ty->get_member_bit_offset(in_snode->child_id(out_snode));
+      // stmt->input_ptr is the "base" member in the generated SNode struct.
+      emit("SNodeBitPointer {}({}, /*offset=*/{});", stmt->raw_name(),
+           stmt->input_ptr->raw_name(), bit_offset);
+      return;
+    }
+    // E.g. `parent.get*(runtime, mem_alloc)`
+    const auto get_call =
+        fmt::format("{}.get{}({}, {})", stmt->input_ptr->raw_name(), stmt->chid,
+                    kRuntimeVarName, kMemAllocVarName);
+    if (out_snode->is_place()) {
+      emit(R"(device {}* {} = {}.val;)", metal_data_type_name(out_snode->dt),
+           stmt->raw_name(), get_call);
+    } else {
+      emit(R"({} {} = {};)", out_snode->node_type_name, stmt->raw_name(),
+           get_call);
+    }
   }
 
   void visit(SNodeOpStmt *stmt) override {
@@ -292,6 +322,10 @@ class KernelCodegen : public IRVisitor {
 
   void visit(GlobalStoreStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
+    if (stmt->ptr->ret_type->as<PointerType>()->is_bit_pointer()) {
+      handle_bit_pointer_global_store(stmt);
+      return;
+    }
     emit(R"(*{} = {};)", stmt->ptr->raw_name(), stmt->data->raw_name());
   }
 
@@ -773,6 +807,65 @@ class KernelCodegen : public IRVisitor {
     emit_kernel_args_struct();
   }
 
+  void handle_bit_pointer_global_store(GlobalStoreStmt *stmt) {
+    auto *ptr_type = stmt->ptr->ret_type->as<PointerType>();
+    TI_ASSERT(ptr_type->is_bit_pointer());
+    auto *pointee_type = ptr_type->get_pointee_type();
+    CustomIntType *cit = nullptr;
+    std::string store_value_expr;
+    if (auto *cit_cast = pointee_type->cast<CustomIntType>()) {
+      cit = cit_cast;
+      store_value_expr = stmt->data->raw_name();
+    } else if (auto *cft = pointee_type->cast<CustomFloatType>()) {
+      if (cft->get_exponent_type() != nullptr) {
+        TI_NOT_IMPLEMENTED;
+      }
+      auto *digits_cit = cft->get_digits_type()->as<CustomIntType>();
+      cit = digits_cit;
+      store_value_expr =
+          emit_float_to_custom_int(stmt->data, cft->get_scale(), digits_cit);
+    }
+    emit_store_custom_int(store_value_expr, cit, stmt->ptr);
+  }
+
+  // Computes `int(val_stmt * (1.0f / scale) + 0.5f)`
+  // Returns the variable name of the computed expression.
+  std::string emit_float_to_custom_int(const Stmt *val_stmt, float64 scale,
+                                       CustomIntType *digits_cit) {
+    // This implicitly casts double to float during codegen, because Metal
+    // only supports float for now.
+    const float s_numeric = 1.0 / scale;
+    const auto &val_name = val_stmt->raw_name();
+    const std::string scaled_name = val_name + "_scaled";
+    emit("const auto {} = mtl_rounding_prepare_float({} * {});", scaled_name,
+         val_name, s_numeric);
+    const std::string ci_casted_name = val_name + "_ci_casted";
+    DataType compute_dt(digits_cit->get_compute_type()->as<PrimitiveType>());
+    emit("const auto {} = static_cast<{}>({});", ci_casted_name,
+         metal_data_type_name(compute_dt), scaled_name);
+    return ci_casted_name;
+  }
+
+  void emit_store_custom_int(const std::string &val_expr, CustomIntType *cit,
+                             Stmt *bit_ptr_stmt) {
+    // Type of |bit_ptr_stmt| is SNodeBitPointer
+    const DataType phy_ty(cit->get_physical_type()->as<PrimitiveType>());
+    const auto phy_ty_name = metal_data_type_name(phy_ty);
+    const auto &bp_name = bit_ptr_stmt->raw_name();
+
+    const auto ptr_casted_expr = fmt::format(
+        "reinterpret_cast<device {}*>({}.base)", phy_ty_name, bp_name);
+    const auto offs_expr = fmt::format("({}.offset)", bp_name);
+    const auto val_casted_expr = fmt::format("({})({})", phy_ty_name, val_expr);
+    // Signature (T is the physical type of |cit|):
+    // void mtl_set_partial_bits(device T *ptr, uint32_t offset,
+    // uint32_t bits, T value);
+    emit("mtl_set_partial_bits({},", ptr_casted_expr);
+    emit("                     {},", offs_expr);
+    emit("                     /*num_bits=*/{},", cit->get_num_bits());
+    emit("                     {});", val_casted_expr);
+  }
+
   void emit_kernel_args_struct() {
     if (ctx_attribs_.empty()) {
       return;
@@ -1121,8 +1214,7 @@ class KernelCodegen : public IRVisitor {
   void emit_mtl_kernel_func_def(
       const std::string &kernel_func_name,
       const std::vector<KernelAttributes::Buffers> &buffers,
-      const std::vector<FuncParamLiteral> &extra_params,
-      Block *func_ir) {
+      const std::vector<FuncParamLiteral> &extra_params, Block *func_ir) {
     SectionGuard sg(this, Section::KernelFuncs);
 
     emit("void {}(", kernel_func_name);
@@ -1170,8 +1262,7 @@ class KernelCodegen : public IRVisitor {
 
   inline void emit_mtl_kernel_func_def(
       const std::string &kernel_func_name,
-      const std::vector<KernelAttributes::Buffers> &buffers,
-      Block *func_ir) {
+      const std::vector<KernelAttributes::Buffers> &buffers, Block *func_ir) {
     emit_mtl_kernel_func_def(kernel_func_name, buffers, /*extra_params=*/{},
                              func_ir);
   }
@@ -1203,8 +1294,7 @@ class KernelCodegen : public IRVisitor {
 
   struct KernelSigExtensions {
     // https://stackoverflow.com/a/44693603/12003165
-    KernelSigExtensions() noexcept {
-    }
+    KernelSigExtensions() noexcept {}
 
     bool use_simdgroup = false;
   };
@@ -1255,9 +1345,7 @@ class KernelCodegen : public IRVisitor {
       kg->code_section_ = new_sec;
     }
 
-    ~SectionGuard() {
-      kg_->code_section_ = saved_;
-    }
+    ~SectionGuard() { kg_->code_section_ = saved_; }
 
    private:
     KernelCodegen *const kg_;
@@ -1269,9 +1357,7 @@ class KernelCodegen : public IRVisitor {
   const LineAppender &current_appender() const {
     return section_appenders_.find(code_section_)->second;
   }
-  LineAppender &current_appender() {
-    return section_appenders_[code_section_];
-  }
+  LineAppender &current_appender() { return section_appenders_[code_section_]; }
 
   template <typename... Args>
   void emit(std::string f, Args &&... args) {
@@ -1309,10 +1395,8 @@ class KernelCodegen : public IRVisitor {
 }  // namespace
 
 FunctionType compile_to_metal_executable(
-    Kernel *kernel,
-    KernelManager *kernel_mgr,
-    const CompiledStructs *compiled_structs,
-    OffloadedStmt *offloaded) {
+    Kernel *kernel, KernelManager *kernel_mgr,
+    const CompiledStructs *compiled_structs, OffloadedStmt *offloaded) {
   const auto id = Program::get_kernel_id();
   const auto taichi_kernel_name(
       fmt::format("mtl_k{:04d}_{}", id, kernel->name));

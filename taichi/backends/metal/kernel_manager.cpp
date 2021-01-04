@@ -713,6 +713,9 @@ class KernelManager::Impl {
         case SNodeType::pointer:
           rtm_meta->type = SNodeMeta::Pointer;
           break;
+        case SNodeType::bit_struct:
+          rtm_meta->type = SNodeMeta::BitStruct;
+          break;
         default:
           TI_ERROR("Unsupported SNode type={}",
                    snode_type_name(sn_meta.snode->type));

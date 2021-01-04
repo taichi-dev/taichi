@@ -17,6 +17,9 @@ static_assert(false, "Do not include");
 #define METAL_BEGIN_HELPERS_DEF
 #define METAL_END_HELPERS_DEF
 
+#include <type_traits>
+using std::is_same;
+
 #endif  // TI_INSIDE_METAL_CODEGEN
 
 // clang-format off
@@ -42,8 +45,7 @@ STR(
       int32_t tmp = x;
       int32_t ans = 1;
       while (n) {
-        if (n & 1)
-          ans *= tmp;
+        if (n & 1) ans *= tmp;
         tmp *= tmp;
         n >>= 1;
       }
@@ -92,6 +94,35 @@ STR(
             metal::memory_order_relaxed);
       }
       return old_val;
+    }
+
+    float mtl_rounding_prepare_float(float f) {
+      // See taichi/runtime/llvm/runtime.cpp
+      const int32_t delta_bits =
+          (union_cast<int32_t>(f) & 0x80000000) | union_cast<int32_t>(0.5f);
+      const float delta = union_cast<float>(delta_bits);
+      return f + delta;
+    }
+
+    template <typename T>
+    void mtl_set_partial_bits(device T *ptr, uint32_t offset, uint32_t bits,
+                              T value) {
+      // See taichi/runtime/llvm/runtime.cpp
+      static_assert(is_same<T, int32_t>::value || is_same<T, uint32_t>::value,
+                    "unsupported atomic type");
+      constexpr int N = sizeof(uint32_t) * 8;
+      // precondition: |mask| & |value| == |value|
+      const uint32_t mask =
+          ((~(uint32_t)0U) << (N - bits)) >> (N - offset - bits);
+      device auto *atm_ptr = reinterpret_cast<device _atomic<T> *>(ptr);
+      bool ok = false;
+      while (!ok) {
+        T old_val = *ptr;
+        T new_val = (old_val & (~mask)) | (value << offset);
+        ok = atomic_compare_exchange_weak_explicit(atm_ptr, &old_val, new_val,
+                                                   metal::memory_order_relaxed,
+                                                   metal::memory_order_relaxed);
+      }
     }
 
     struct RandState { uint32_t seed; };

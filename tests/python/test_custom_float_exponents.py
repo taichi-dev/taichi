@@ -114,3 +114,25 @@ def test_custom_float_truncation(signed):
         assert x[None] == 1.5
     else:
         assert x[None] == 1.75
+
+
+@ti.test(require=ti.extension.quant)
+def test_custom_float_atomic_demotion():
+    cit = ti.type_factory.custom_int(2, True)
+    exp = ti.type_factory.custom_int(5, False)
+    cft = ti.type_factory.custom_float(significand_type=cit,
+                                       exponent_type=exp,
+                                       scale=1)
+    x = ti.field(dtype=cft)
+
+    ti.root._bit_struct(num_bits=32).place(x)
+
+    @ti.kernel
+    def foo():
+        for i in range(1):
+            x[None] += 1
+
+    foo()
+    foo()
+
+    assert x[None] == 2

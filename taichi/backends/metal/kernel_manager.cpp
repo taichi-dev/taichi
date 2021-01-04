@@ -10,14 +10,15 @@
 #include "taichi/backends/metal/constants.h"
 #include "taichi/inc/constants.h"
 #include "taichi/math/arithmetic.h"
-#include "taichi/util/action_recorder.h"
 #include "taichi/python/print_buffer.h"
+#include "taichi/util/action_recorder.h"
 #include "taichi/util/file_sequence_writer.h"
 #include "taichi/util/str.h"
 
 #ifdef TI_PLATFORM_OSX
 #include <sys/mman.h>
 #include <unistd.h>
+
 #include <algorithm>
 
 #include "taichi/backends/metal/api.h"
@@ -64,12 +65,8 @@ class BufferMemoryView {
   BufferMemoryView(const BufferMemoryView &) = delete;
   BufferMemoryView &operator=(const BufferMemoryView &) = delete;
 
-  inline size_t size() const {
-    return size_;
-  }
-  inline char *ptr() const {
-    return ptr_;
-  }
+  inline size_t size() const { return size_; }
+  inline char *ptr() const { return ptr_; }
 
  private:
   size_t size_;
@@ -97,17 +94,14 @@ class CompiledMtlKernelBase {
       : kernel_attribs_(*params.kernel_attribs),
         config_(params.config),
         is_jit_evalutor_(params.is_jit_evaluator),
-        pipeline_state_(
-            new_compute_pipeline_state_with_function(params.device,
-                                                     params.mtl_func)) {
+        pipeline_state_(new_compute_pipeline_state_with_function(
+            params.device, params.mtl_func)) {
     TI_ASSERT(pipeline_state_ != nullptr);
   }
 
   virtual ~CompiledMtlKernelBase() = default;
 
-  inline KernelAttributes *kernel_attribs() {
-    return &kernel_attribs_;
-  }
+  inline KernelAttributes *kernel_attribs() { return &kernel_attribs_; }
 
   virtual void launch(InputBuffersMap &input_buffers,
                       MTLCommandBuffer *command_buffer) = 0;
@@ -155,8 +149,7 @@ class CompiledMtlKernelBase {
   };
 
   ThreadGridSettings get_thread_grid_settings(
-      int advisory_num_threads,
-      int advisory_num_threads_per_group) {
+      int advisory_num_threads, int advisory_num_threads_per_group) {
     int num_threads_per_group =
         get_max_total_threads_per_threadgroup(pipeline_state_.get());
     // Sometimes it is helpful to limit the maximum GPU block dim for the
@@ -222,10 +215,8 @@ class RuntimeListOpsMtlKernel : public CompiledMtlKernelBase {
         parent_snode_id_(params.snode()->parent->id),
         child_snode_id_(params.snode()->id),
         args_mem_(std::make_unique<BufferMemoryView>(
-            /*size=*/sizeof(int32_t) * 3,
-            params.mem_pool)),
-        args_buffer_(new_mtl_buffer_no_copy(params.device,
-                                            args_mem_->ptr(),
+            /*size=*/sizeof(int32_t) * 3, params.mem_pool)),
+        args_buffer_(new_mtl_buffer_no_copy(params.device, args_mem_->ptr(),
                                             args_mem_->size())) {
     TI_ASSERT(args_buffer_ != nullptr);
     auto *mem = reinterpret_cast<int32_t *>(args_mem_->ptr());
@@ -361,8 +352,7 @@ class CompiledTaichiKernel {
 
 class HostMetalCtxBlitter {
  public:
-  HostMetalCtxBlitter(const CompiledTaichiKernel &kernel,
-                      Context *host_ctx,
+  HostMetalCtxBlitter(const CompiledTaichiKernel &kernel, Context *host_ctx,
                       uint64_t *host_result_buffer,
                       const std::string &kernel_name)
       : ti_kernel_attribs_(&kernel.ti_kernel_attribs),
@@ -371,12 +361,9 @@ class HostMetalCtxBlitter {
         host_result_buffer_(host_result_buffer),
         kernel_ctx_mem_(kernel.ctx_mem.get()),
         kernel_ctx_buffer_(kernel.ctx_buffer.get()),
-        kernel_name_(kernel_name) {
-  }
+        kernel_name_(kernel_name) {}
 
-  inline MTLBuffer *ctx_buffer() {
-    return kernel_ctx_buffer_;
-  }
+  inline MTLBuffer *ctx_buffer() { return kernel_ctx_buffer_; }
 
   void host_to_metal() {
 #define TO_METAL(type)                  \
@@ -492,10 +479,8 @@ class HostMetalCtxBlitter {
   }
 
   static std::unique_ptr<HostMetalCtxBlitter> maybe_make(
-      const CompiledTaichiKernel &kernel,
-      Context *ctx,
-      uint64_t *host_result_buffer,
-      std::string name) {
+      const CompiledTaichiKernel &kernel, Context *ctx,
+      uint64_t *host_result_buffer, std::string name) {
     if (kernel.ctx_attribs.empty()) {
       return nullptr;
     }
@@ -675,9 +660,7 @@ class KernelManager::Impl {
     blit_buffers_and_sync();
   }
 
-  PrintStringTable *print_strtable() {
-    return &print_strtable_;
-  }
+  PrintStringTable *print_strtable() { return &print_strtable_; }
 
  private:
   void init_runtime(int root_id) {
@@ -907,6 +890,8 @@ class KernelManager::Impl {
         const int32_t x = msg.pm_get_data(i);
         if (dt == MsgType::I32) {
           py_cout << x;
+        } else if (dt == MsgType::U32) {
+          py_cout << static_cast<uint32_t>(x);
         } else if (dt == MsgType::F32) {
           py_cout << *reinterpret_cast<const float *>(&x);
         } else if (dt == MsgType::Str) {
@@ -977,9 +962,7 @@ class KernelManager::Impl {
 
 class KernelManager::Impl {
  public:
-  explicit Impl(Params) {
-    TI_ERROR("Metal not supported on the current OS");
-  }
+  explicit Impl(Params) { TI_ERROR("Metal not supported on the current OS"); }
 
   void register_taichi_kernel(const std::string &taichi_kernel_name,
                               const std::string &mtl_kernel_source_code,
@@ -993,9 +976,7 @@ class KernelManager::Impl {
     TI_ERROR("Metal not supported on the current OS");
   }
 
-  void synchronize() {
-    TI_ERROR("Metal not supported on the current OS");
-  }
+  void synchronize() { TI_ERROR("Metal not supported on the current OS"); }
 
   PrintStringTable *print_strtable() {
     TI_ERROR("Metal not supported on the current OS");
@@ -1006,11 +987,9 @@ class KernelManager::Impl {
 #endif  // TI_PLATFORM_OSX
 
 KernelManager::KernelManager(Params params)
-    : impl_(std::make_unique<Impl>(std::move(params))) {
-}
+    : impl_(std::make_unique<Impl>(std::move(params))) {}
 
-KernelManager::~KernelManager() {
-}
+KernelManager::~KernelManager() {}
 
 void KernelManager::register_taichi_kernel(
     const std::string &taichi_kernel_name,
@@ -1026,9 +1005,7 @@ void KernelManager::launch_taichi_kernel(const std::string &taichi_kernel_name,
   impl_->launch_taichi_kernel(taichi_kernel_name, ctx);
 }
 
-void KernelManager::synchronize() {
-  impl_->synchronize();
-}
+void KernelManager::synchronize() { impl_->synchronize(); }
 
 PrintStringTable *KernelManager::print_strtable() {
   return impl_->print_strtable();

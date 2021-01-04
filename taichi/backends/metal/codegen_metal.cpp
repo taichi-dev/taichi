@@ -670,9 +670,11 @@ class KernelCodegen : public IRVisitor {
         if (std::holds_alternative<Stmt *>(entry)) {
           auto *arg_stmt = std::get<Stmt *>(entry);
           const auto dt = arg_stmt->element_type();
-          TI_ASSERT_INFO(dt->is_primitive(PrimitiveTypeID::i32) ||
-                             dt->is_primitive(PrimitiveTypeID::f32),
-                         "print() only supports i32 or f32 scalars for now.");
+          TI_ASSERT_INFO(
+              dt->is_primitive(PrimitiveTypeID::i32) ||
+                  dt->is_primitive(PrimitiveTypeID::u32) ||
+                  dt->is_primitive(PrimitiveTypeID::f32),
+              "print() only supports i32, u32 or f32 scalars for now.");
           emit("{}.pm_set_{}({}, {});", msg_var_name, data_type_name(dt), i,
                arg_stmt->raw_name());
         } else {

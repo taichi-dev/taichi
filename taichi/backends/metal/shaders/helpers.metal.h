@@ -105,13 +105,12 @@ STR(
       return f + delta;
     }
 
-    // P for (p)hysical type
-    template <typename P>
-    void mtl_set_partial_bits(device P *ptr, P value, uint32_t offset,
-                              uint32_t bits) {
+    // Physical type is hardcoded to uint32_t. This is a restriction because
+    // Metal only supports 32-bit int/uint atomics.
+    void mtl_set_partial_bits(device uint32_t *ptr, uint32_t value,
+                              uint32_t offset, uint32_t bits) {
       // See taichi/runtime/llvm/runtime.cpp
-      static_assert(is_same<P, int32_t>::value || is_same<P, uint32_t>::value,
-                    "unsupported atomic type");
+      using P = uint32_t;  // (P)hysical type
       constexpr int N = sizeof(P) * 8;
       // precondition: |mask| & |value| == |value|
       const uint32_t mask =
@@ -127,6 +126,30 @@ STR(
       }
     }
 
+    uint32_t mtl_atomic_add_partial_bits(device uint32_t *ptr, uint32_t value,
+                                         uint32_t offset, uint32_t bits) {
+      // See taichi/runtime/llvm/runtime.cpp
+      using P = uint32_t;  // (P)hysical type
+      constexpr int N = sizeof(P) * 8;
+      // precondition: |mask| & |value| == |value|
+      const uint32_t mask =
+          ((~(uint32_t)0U) << (N - bits)) >> (N - offset - bits);
+      device auto *atm_ptr = reinterpret_cast<device _atomic<P> *>(ptr);
+      P old_val = 0;
+      bool ok = false;
+      while (!ok) {
+        old_val = *ptr;
+        P new_val = old_val + (value << offset);
+        // The above computation might overflow |bits|, so we have to OR them
+        // again, with the mask applied.
+        new_val = (old_val & (~mask)) | (new_val & mask);
+        ok = atomic_compare_exchange_weak_explicit(atm_ptr, &old_val, new_val,
+                                                   metal::memory_order_relaxed,
+                                                   metal::memory_order_relaxed);
+      }
+      return old_val;
+    }
+
     namespace detail {
       template <bool Signed>
       struct SHRCaster {
@@ -139,11 +162,11 @@ STR(
       };
     }  // namespace detail
 
-    // C for (c)ompute type, P for (p)hysical type
-    template <typename C, typename P>
-    C mtl_get_partial_bits(device P *ptr, uint32_t offset, uint32_t bits) {
-      static_assert(is_same<P, int32_t>::value || is_same<P, uint32_t>::value,
-                    "unsupported atomic type");
+    // (C)ompute type
+    template <typename C>
+    C mtl_get_partial_bits(device uint32_t *ptr, uint32_t offset,
+                           uint32_t bits) {
+      using P = uint32_t;  // (P)hysical type
       constexpr int N = sizeof(P) * 8;
       const P phy_val = *ptr;
       using PCasted = typename detail::SHRCaster<is_signed<C>::value>::type;

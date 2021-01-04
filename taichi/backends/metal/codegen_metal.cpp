@@ -501,7 +501,6 @@ class KernelCodegen : public IRVisitor {
 
   void visit(AtomicOpStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    const auto dt = stmt->val->element_type();
     const auto op_type = stmt->op_type;
     std::string op_name;
     bool handle_float = false;
@@ -519,6 +518,11 @@ class KernelCodegen : public IRVisitor {
       TI_NOT_IMPLEMENTED;
     }
 
+    if (is_ret_type_bit_pointer(stmt->dest)) {
+      handle_bit_pointer_atomics(stmt);
+      return;
+    }
+
     std::string val_var = stmt->val->raw_name();
     // TODO(k-ye): This is not a very reliable way to detect if we're in TLS
     // xlogues...
@@ -532,7 +536,7 @@ class KernelCodegen : public IRVisitor {
       emit("if ({} == 0) {{", kKernelTidInSimdgroupName);
       current_appender().push_indent();
     }
-
+    const auto dt = stmt->val->element_type();
     if (dt->is_primitive(PrimitiveTypeID::i32)) {
       emit(
           "const auto {} = atomic_fetch_{}_explicit((device atomic_int*){}, "
@@ -859,22 +863,53 @@ class KernelCodegen : public IRVisitor {
     return "";
   }
 
+  void handle_bit_pointer_atomics(AtomicOpStmt *stmt) {
+    TI_ERROR_IF(stmt->op_type != AtomicOpType::add,
+                "Only atomic add is supported for bit pointer types");
+    const auto *dest_ptr = stmt->dest;
+    auto *ptr_type = dest_ptr->ret_type->as<PointerType>();
+    TI_ASSERT(ptr_type->is_bit_pointer());
+    auto *pointee_type = ptr_type->get_pointee_type();
+    CustomIntType* cit = nullptr;
+    Type *phy_ty = nullptr;
+    std::string val_expr;
+    if (auto *cit_cast = pointee_type->cast<CustomIntType>()) {
+      cit = cit_cast;
+      phy_ty = cit->get_physical_type();
+      val_expr = stmt->val->raw_name();
+    } else if (auto *cft = pointee_type->cast<CustomFloatType>()) {
+      cit = cft->get_digits_type()->as<CustomIntType>();
+      val_expr = emit_float_to_custom_int(stmt->val, cft->get_scale(), cit);
+      phy_ty = cit->get_physical_type();
+    } else {
+      TI_NOT_IMPLEMENTED;
+    }
+    auto [ptr_base_expr, ptr_offs_expr] =
+        load_bit_pointer_exprs(dest_ptr, phy_ty);
+    // uint32_t mtl_atomic_add_partial...(device uint32_t *ptr, uint32_t value,
+    //                                    uint32_t offset, uint32_t bits);
+    emit("const auto {} = mtl_atomic_add_partial_bits({},", stmt->raw_name(),
+         ptr_base_expr);
+    emit("    {},", val_expr);
+    emit("    {},", ptr_offs_expr);
+    emit("    /*bits=*/{});", cit->get_num_bits());
+  }
+
   // Computes `int(val_stmt * (1.0f / scale) + 0.5f)`
   // Returns the variable name of the computed expression.
   std::string emit_float_to_custom_int(const Stmt *val_stmt, float64 scale,
                                        CustomIntType *digits_cit) {
-    // This implicitly casts double to float during codegen, because Metal
-    // only supports float for now.
+    // This implicitly casts double to float on the host.
     const float s_numeric = 1.0 / scale;
     const auto &val_name = val_stmt->raw_name();
     const std::string scaled_name = val_name + "_scaled";
     emit("const auto {} = mtl_rounding_prepare_float({} * {});", scaled_name,
          val_name, s_numeric);
-    const std::string ci_casted_name = val_name + "_ci_casted";
+    const std::string ci_cast_name = val_name + "_ci_cast";
     DataType compute_dt(digits_cit->get_compute_type()->as<PrimitiveType>());
-    emit("const auto {} = static_cast<{}>({});", ci_casted_name,
+    emit("const auto {} = static_cast<{}>({});", ci_cast_name,
          metal_data_type_name(compute_dt), scaled_name);
-    return ci_casted_name;
+    return ci_cast_name;
   }
 
   void emit_store_custom_int(const std::string &val_expr,
@@ -883,15 +918,15 @@ class KernelCodegen : public IRVisitor {
     const DataType phy_ty(cit->get_physical_type()->as<PrimitiveType>());
     auto [ptr_base_expr, ptr_offs_expr] =
         load_bit_pointer_exprs(bit_ptr_stmt, phy_ty);
-    const auto val_casted_expr =
+    const auto val_cast_expr =
         fmt::format("({})({})", metal_data_type_name(phy_ty), val_expr);
     // Signature (T is the physical type of |cit|):
     // void mtl_set_partial_bits(device T *ptr, T value, uint32_t offset,
     //                           uint32_t bits);
     emit("mtl_set_partial_bits({},", ptr_base_expr);
-    emit("    {},", val_casted_expr);
+    emit("    {},", val_cast_expr);
     emit("    {},", ptr_offs_expr);
-    emit("    /*num_bits=*/{});", cit->get_num_bits());
+    emit("    /*bits=*/{});", cit->get_num_bits());
   }
 
   // Returns the variable name of the loaded integer.

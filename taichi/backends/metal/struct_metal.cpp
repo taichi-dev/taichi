@@ -304,8 +304,9 @@ class StructCompiler {
       // The host side should have inferred all the necessary info of |sn|.
       TI_ASSERT(sn->physical_type != nullptr);
       ch_size = data_type_size(sn->physical_type);
-      // |ch_size| should at least be 4 bytes on GPU. In addition, Metal doesn't
-      // support 8-byte data types in the device address space.
+      // |ch_size| should at least be 4 bytes on GPU. In addition, Metal:
+      // 1. does not support 8-byte data types in the device address space.
+      // 2. only supports 4-byte atomic integral types (or atomic_bool).
       TI_ERROR_IF(ch_size != 4,
                   "bit_struct physical type must be exactly 32 bits on Metal");
     } else {

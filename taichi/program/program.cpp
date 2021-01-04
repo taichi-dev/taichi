@@ -327,9 +327,7 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
   for (int i = 0; i < (int)snodes.size(); i++) {
     if (is_gc_able(snodes[i]->type)) {
       std::size_t node_size;
-      auto element_size =
-          tlctx->get_type_size(StructCompilerLLVM::get_llvm_element_type(
-              tlctx->get_this_thread_struct_module(), snodes[i]));
+      auto element_size = snodes[i]->cell_size_bytes;
       if (snodes[i]->type == SNodeType::pointer) {
         // pointer. Allocators are for single elements
         node_size = element_size;

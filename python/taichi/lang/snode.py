@@ -134,6 +134,12 @@ class SNode:
         runtime.materialize()
         return runtime.prog.get_snode_num_dynamically_allocated(self.ptr)
 
+    @property
+    def cell_size_bytes(self):
+        runtime = impl.get_runtime()
+        runtime.materialize()
+        return self.ptr.cell_size_bytes
+
     def deactivate_all(self):
         ch = self.get_children()
         for c in ch:

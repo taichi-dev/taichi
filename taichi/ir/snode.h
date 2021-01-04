@@ -76,6 +76,7 @@ class SNode {
   int64 n{};
   int total_num_bits{}, total_bit_start{};
   int chunk_size{};
+  std::size_t cell_size_bytes{};
   PrimitiveType *physical_type;  // for bit_struct and bit_array only
   DataType dt;
   bool has_ambient{};

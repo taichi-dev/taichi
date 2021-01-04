@@ -28,8 +28,9 @@
 #include "taichi/backends/cc/struct_cc.h"
 #include "taichi/backends/cc/cc_layout.h"
 #include "taichi/backends/cc/codegen_cc.h"
-#else
 #endif
+
+#include <xmmintrin.h>
 
 TI_NAMESPACE_BEGIN
 
@@ -63,6 +64,12 @@ std::atomic<int> Program::num_instances;
 
 Program::Program(Arch desired_arch) {
   TI_TRACE("Program initializing...");
+
+  // For performance considerations and correctness of CustomFloatType
+  // operations, we force floating-point operations to flush to zero on all
+  // backends (including CPUs).
+  _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
+
   auto arch = desired_arch;
   if (arch == Arch::cuda) {
     runtime = Runtime::create(arch);

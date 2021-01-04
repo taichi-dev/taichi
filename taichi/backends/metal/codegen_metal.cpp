@@ -69,6 +69,10 @@ std::string buffer_to_name(BuffersEnum b) {
   return {};
 }
 
+bool is_ret_type_bit_pointer(Stmt *s) {
+  return s->ret_type->as<PointerType>()->is_bit_pointer();
+}
+
 class KernelCodegen : public IRVisitor {
  private:
   enum class Section {
@@ -322,17 +326,23 @@ class KernelCodegen : public IRVisitor {
 
   void visit(GlobalStoreStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    if (stmt->ptr->ret_type->as<PointerType>()->is_bit_pointer()) {
-      handle_bit_pointer_global_store(stmt);
+
+    if (!is_ret_type_bit_pointer(stmt->ptr)) {
+      emit(R"(*{} = {};)", stmt->ptr->raw_name(), stmt->data->raw_name());
       return;
     }
-    emit(R"(*{} = {};)", stmt->ptr->raw_name(), stmt->data->raw_name());
+    handle_bit_pointer_global_store(stmt);
   }
 
   void visit(GlobalLoadStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    emit(R"({} {} = *{};)", metal_data_type_name(stmt->element_type()),
-         stmt->raw_name(), stmt->ptr->raw_name());
+    std::string rhs_expr;
+    if (!is_ret_type_bit_pointer(stmt->ptr)) {
+      rhs_expr = fmt::format("*{}", stmt->ptr->raw_name());
+    } else {
+      rhs_expr = emit_bit_pointer_global_load(stmt);
+    }
+    emit("const auto {} = {};", stmt->raw_name(), rhs_expr);
   }
 
   void visit(ArgLoadStmt *stmt) override {
@@ -817,15 +827,34 @@ class KernelCodegen : public IRVisitor {
       cit = cit_cast;
       store_value_expr = stmt->data->raw_name();
     } else if (auto *cft = pointee_type->cast<CustomFloatType>()) {
-      if (cft->get_exponent_type() != nullptr) {
-        TI_NOT_IMPLEMENTED;
-      }
+      validate_cft_for_metal(cft);
       auto *digits_cit = cft->get_digits_type()->as<CustomIntType>();
       cit = digits_cit;
       store_value_expr =
           emit_float_to_custom_int(stmt->data, cft->get_scale(), digits_cit);
+    } else {
+      TI_NOT_IMPLEMENTED;
     }
-    emit_store_custom_int(store_value_expr, cit, stmt->ptr);
+    emit_store_custom_int(store_value_expr, stmt->ptr, cit);
+  }
+
+  // Returns the expression of the load result
+  std::string emit_bit_pointer_global_load(GlobalLoadStmt *stmt) {
+    auto *ptr_type = stmt->ptr->ret_type->as<PointerType>();
+    TI_ASSERT(ptr_type->is_bit_pointer());
+    auto *pointee_type = ptr_type->get_pointee_type();
+    if (auto *cit = pointee_type->cast<CustomIntType>()) {
+      return emit_load_as_custom_int(stmt->ptr, cit);
+    } else if (auto *cft = pointee_type->cast<CustomFloatType>()) {
+      validate_cft_for_metal(cft);
+      const auto loaded = emit_load_as_custom_int(
+          stmt->ptr, cft->get_digits_type()->as<CustomIntType>());
+      // Computes `float(digits_expr) * scale`
+      // See LLVM backend's reconstruct_custom_float()
+      return fmt::format("((float)({}) * {})", loaded, cft->get_scale());
+    }
+    TI_NOT_IMPLEMENTED;
+    return "";
   }
 
   // Computes `int(val_stmt * (1.0f / scale) + 0.5f)`
@@ -846,24 +875,57 @@ class KernelCodegen : public IRVisitor {
     return ci_casted_name;
   }
 
-  void emit_store_custom_int(const std::string &val_expr, CustomIntType *cit,
-                             Stmt *bit_ptr_stmt) {
+  void emit_store_custom_int(const std::string &val_expr,
+                             const Stmt *bit_ptr_stmt, CustomIntType *cit) {
     // Type of |bit_ptr_stmt| is SNodeBitPointer
     const DataType phy_ty(cit->get_physical_type()->as<PrimitiveType>());
-    const auto phy_ty_name = metal_data_type_name(phy_ty);
-    const auto &bp_name = bit_ptr_stmt->raw_name();
-
-    const auto ptr_casted_expr = fmt::format(
-        "reinterpret_cast<device {}*>({}.base)", phy_ty_name, bp_name);
-    const auto offs_expr = fmt::format("({}.offset)", bp_name);
-    const auto val_casted_expr = fmt::format("({})({})", phy_ty_name, val_expr);
+    auto [ptr_base_expr, ptr_offs_expr] =
+        load_bit_pointer_exprs(bit_ptr_stmt, phy_ty);
+    const auto val_casted_expr =
+        fmt::format("({})({})", metal_data_type_name(phy_ty), val_expr);
     // Signature (T is the physical type of |cit|):
-    // void mtl_set_partial_bits(device T *ptr, uint32_t offset,
-    // uint32_t bits, T value);
-    emit("mtl_set_partial_bits({},", ptr_casted_expr);
-    emit("                     {},", offs_expr);
-    emit("                     /*num_bits=*/{},", cit->get_num_bits());
-    emit("                     {});", val_casted_expr);
+    // void mtl_set_partial_bits(device T *ptr, T value, uint32_t offset,
+    //                           uint32_t bits);
+    emit("mtl_set_partial_bits({},", ptr_base_expr);
+    emit("    {},", val_casted_expr);
+    emit("    {},", ptr_offs_expr);
+    emit("    /*num_bits=*/{});", cit->get_num_bits());
+  }
+
+  // Returns the variable name of the loaded integer.
+  std::string emit_load_as_custom_int(const Stmt *bit_ptr_stmt,
+                                      CustomIntType *cit) {
+    const DataType phy_ty(cit->get_physical_type()->as<PrimitiveType>());
+    auto [ptr_base_expr, ptr_offs_expr] =
+        load_bit_pointer_exprs(bit_ptr_stmt, phy_ty);
+    // Signature (T is the physical type of |cit|)
+    // C mtl_get_partial_bits(device T *ptr, uint32_t offset, uint32_t bits);
+    std::string result_var_name = bit_ptr_stmt->raw_name() + "_loaded";
+    emit("const auto {} = mtl_get_partial_bits<{}>({},", result_var_name,
+         metal_data_type_name(cit->get_compute_type()->as<PrimitiveType>()),
+         ptr_base_expr);
+    emit("    {},", ptr_offs_expr);
+    emit("    /*num_bits=*/{});", cit->get_num_bits());
+    return result_var_name;
+  }
+
+  std::tuple<std::string, std::string> load_bit_pointer_exprs(
+      const Stmt *bit_ptr_stmt, DataType physical_type) {
+    const auto phy_ty_name = metal_data_type_name(physical_type);
+    const auto &bp_name = bit_ptr_stmt->raw_name();
+    auto base_expr = fmt::format("reinterpret_cast<device {}*>({}.base)",
+                                 phy_ty_name, bp_name);
+    auto offs_expr = fmt::format("({}.offset)", bp_name);
+    return std::make_tuple(base_expr, offs_expr);
+  }
+
+  void validate_cft_for_metal(CustomFloatType *cft) {
+    if (cft->get_exponent_type() != nullptr) {
+      TI_NOT_IMPLEMENTED;
+    }
+    if (cft->get_compute_type()->as<PrimitiveType>() != PrimitiveType::f32) {
+      TI_ERROR("Metal only supports 32-bit float");
+    }
   }
 
   void emit_kernel_args_struct() {

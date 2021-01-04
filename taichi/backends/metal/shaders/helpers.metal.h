@@ -19,6 +19,7 @@ static_assert(false, "Do not include");
 
 #include <type_traits>
 using std::is_same;
+using std::is_signed;
 
 #endif  // TI_INSIDE_METAL_CODEGEN
 
@@ -104,25 +105,52 @@ STR(
       return f + delta;
     }
 
-    template <typename T>
-    void mtl_set_partial_bits(device T *ptr, uint32_t offset, uint32_t bits,
-                              T value) {
+    // P for (p)hysical type
+    template <typename P>
+    void mtl_set_partial_bits(device P *ptr, P value, uint32_t offset,
+                              uint32_t bits) {
       // See taichi/runtime/llvm/runtime.cpp
-      static_assert(is_same<T, int32_t>::value || is_same<T, uint32_t>::value,
+      static_assert(is_same<P, int32_t>::value || is_same<P, uint32_t>::value,
                     "unsupported atomic type");
-      constexpr int N = sizeof(uint32_t) * 8;
+      constexpr int N = sizeof(P) * 8;
       // precondition: |mask| & |value| == |value|
       const uint32_t mask =
           ((~(uint32_t)0U) << (N - bits)) >> (N - offset - bits);
-      device auto *atm_ptr = reinterpret_cast<device _atomic<T> *>(ptr);
+      device auto *atm_ptr = reinterpret_cast<device _atomic<P> *>(ptr);
       bool ok = false;
       while (!ok) {
-        T old_val = *ptr;
-        T new_val = (old_val & (~mask)) | (value << offset);
+        P old_val = *ptr;
+        P new_val = (old_val & (~mask)) | (value << offset);
         ok = atomic_compare_exchange_weak_explicit(atm_ptr, &old_val, new_val,
                                                    metal::memory_order_relaxed,
                                                    metal::memory_order_relaxed);
       }
+    }
+
+    namespace detail {
+      template <bool Signed>
+      struct SHRCaster {
+        using type = int32_t;
+      };
+
+      template <>
+      struct SHRCaster<false> {
+        using type = uint32_t;
+      };
+    }  // namespace detail
+
+    // C for (c)ompute type, P for (p)hysical type
+    template <typename C, typename P>
+    C mtl_get_partial_bits(device P *ptr, uint32_t offset, uint32_t bits) {
+      static_assert(is_same<P, int32_t>::value || is_same<P, uint32_t>::value,
+                    "unsupported atomic type");
+      constexpr int N = sizeof(P) * 8;
+      const P phy_val = *ptr;
+      using PCasted = typename detail::SHRCaster<is_signed<C>::value>::type;
+      // SHL is identical between signed and unsigned integrals.
+      const auto step1 = static_cast<PCasted>(phy_val << (N - (offset + bits)));
+      // ASHR vs LSHR is implicitly encoded in type TCasted.
+      return static_cast<C>(step1 >> (N - bits));
     }
 
     struct RandState { uint32_t seed; };

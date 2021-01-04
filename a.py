@@ -1,6 +1,6 @@
 import taichi as ti
 
-ti.init(arch=ti.gpu, print_ir=True)
+ti.init(arch=ti.gpu)
 
 exp = ti.type_factory.custom_int(5, False)
 cit = ti.type_factory.custom_int(22, True)

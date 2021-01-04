@@ -1565,9 +1565,8 @@ llvm::Value *CodeGenLLVM::extract_custom_int(llvm::Value *physical_value,
 }
 
 llvm::Value *CodeGenLLVM::reconstruct_custom_float(llvm::Value *digits,
-                                                   Type *load_type) {
+                                                   CustomFloatType *cft) {
   // Compute float(digits) * scale
-  auto cft = load_type->as<CustomFloatType>();
   llvm::Value *cast = nullptr;
   auto compute_type = cft->get_compute_type()->as<PrimitiveType>();
   if (cft->get_digits_type()->cast<CustomIntType>()->get_is_signed()) {
@@ -1694,6 +1693,29 @@ llvm::Value *CodeGenLLVM::reconstruct_custom_float_with_exponent(
   }
 }
 
+llvm::Value *CodeGenLLVM::load_custom_float(Stmt *ptr_stmt) {
+  auto ptr = ptr_stmt->as<GetChStmt>();
+  auto cft = ptr->ret_type->as<PointerType>()
+                 ->get_pointee_type()
+                 ->as<CustomFloatType>();
+  if (cft->get_exponent_type()) {
+    TI_ASSERT(ptr->width() == 1);
+    auto digits_bit_ptr = llvm_val[ptr];
+    auto digits_snode = ptr->output_snode;
+    auto exponent_snode = digits_snode->exp_snode;
+    // Compute the bit pointer of the exponent bits.
+    TI_ASSERT(digits_snode->parent == exponent_snode->parent);
+    auto exponent_bit_ptr = offset_bit_ptr(
+        digits_bit_ptr, exponent_snode->bit_offset - digits_snode->bit_offset);
+    return load_custom_float_with_exponent(digits_bit_ptr, exponent_bit_ptr,
+                                           cft,
+                                           digits_snode->owns_shared_exponent);
+  } else {
+    auto digits = load_as_custom_int(llvm_val[ptr], cft->get_digits_type());
+    return reconstruct_custom_float(digits, cft);
+  }
+}
+
 void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
   int width = stmt->width();
   TI_ASSERT(width == 1);
@@ -1703,25 +1725,8 @@ void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
     if (val_type->is<CustomIntType>()) {
       llvm_val[stmt] = load_as_custom_int(llvm_val[stmt->ptr], val_type);
     } else if (auto cft = val_type->cast<CustomFloatType>()) {
-      if (cft->get_exponent_type()) {
-        auto ptr = stmt->ptr->as<GetChStmt>();
-        TI_ASSERT(ptr->width() == 1);
-        auto digits_bit_ptr = llvm_val[ptr];
-        auto digits_snode = ptr->output_snode;
-        auto exponent_snode = digits_snode->exp_snode;
-        // Compute the bit pointer of the exponent bits.
-        TI_ASSERT(digits_snode->parent == exponent_snode->parent);
-        auto exponent_bit_ptr =
-            offset_bit_ptr(digits_bit_ptr, exponent_snode->bit_offset -
-                                               digits_snode->bit_offset);
-        llvm_val[stmt] = load_custom_float_with_exponent(
-            digits_bit_ptr, exponent_bit_ptr, cft,
-            digits_snode->owns_shared_exponent);
-      } else {
-        auto digits =
-            load_as_custom_int(llvm_val[stmt->ptr], cft->get_digits_type());
-        llvm_val[stmt] = reconstruct_custom_float(digits, val_type);
-      }
+      TI_ASSERT(stmt->ptr->is<GetChStmt>());
+      llvm_val[stmt] = load_custom_float(stmt->ptr);
     } else {
       TI_NOT_IMPLEMENTED
     }

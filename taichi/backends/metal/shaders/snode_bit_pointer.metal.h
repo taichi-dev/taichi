@@ -22,11 +22,12 @@ using std::is_signed;
 
 #endif  // TI_INSIDE_METAL_CODEGEN
 
-// clang-format off
 METAL_BEGIN_SRC_DEF
 STR(
     // SNodeBitPointer is used as the value type for bit_struct SNodes on Metal.
     struct SNodeBitPointer {
+      // Physical type is hardcoded to uint32_t. This is a restriction because
+      // Metal only supports 32-bit int/uint atomics.
       device uint32_t *base;
       uint32_t offset;
 
@@ -34,29 +35,23 @@ STR(
           : base((device uint32_t *)b), offset(o) {}
     };
 
-    // float mtl_rounding_prepare_float(float f) {
-    //   // See taichi/runtime/llvm/runtime.cpp
-    //   const int32_t delta_bits =
-    //       (union_cast<int32_t>(f) & 0x80000000) | union_cast<int32_t>(0.5f);
-    //   const float delta = union_cast<float>(delta_bits);
-    //   return f + delta;
-    // }
-
-    template <typename C>
+    // |f| should already be scaled. |C| is the compute type.
+    template <typename C> 
     C mtl_float_to_custom_int(float f) {
-      // Branch free implementation of `f + sign(f) * 0.5`
-      // See rounding_prepare_f32 in taichi/runtime/llvm/runtime.cpp
+      // Branch free implementation of `f + sign(f) * 0.5`.
+      // See rounding_prepare_f* in taichi/runtime/llvm/runtime.cpp
       const int32_t delta_bits =
           (union_cast<int32_t>(f) & 0x80000000) | union_cast<int32_t>(0.5f);
       const float delta = union_cast<float>(delta_bits);
       return static_cast<C>(f + delta);
     }
 
-    // Physical type is hardcoded to uint32_t. This is a restriction because
-    // Metal only supports 32-bit int/uint atomics.
     void mtl_set_partial_bits(SNodeBitPointer bp, uint32_t value,
                               uint32_t bits) {
       // See taichi/runtime/llvm/runtime.cpp
+      //
+      // We could have encoded |bits| as a compile time constant, but I guess
+      // the performance improvement is negligible.
       using P = uint32_t;  // (P)hysical type
       constexpr int N = sizeof(P) * 8;
       // precondition: |mask| & |value| == |value|
@@ -102,6 +97,13 @@ STR(
       return old_val;
     }
 
+    uint32_t mtl_atomic_add_full_bits(SNodeBitPointer bp, uint32_t value) {
+      // When all the bits are used, we can replace CAS with a simple add.
+      device auto *atm_ptr = reinterpret_cast<device atomic_uint *>(bp.base);
+      return atomic_fetch_add_explicit(atm_ptr, value,
+                                       metal::memory_order_relaxed);
+    }
+
     namespace detail {
       // Metal supports C++ template specialization... what a crazy world
       template <bool Signed>
@@ -124,10 +126,14 @@ STR(
       // Use CSel instead of C to preserve the bit width.
       using CSel = typename detail::SHRSelector<is_signed<C>::value>::type;
       // SHL is identical between signed and unsigned integrals.
-      const auto step1 =
-          static_cast<CSel>(phy_val << (N - (bp.offset + bits)));
+      const auto step1 = static_cast<CSel>(phy_val << (N - (bp.offset + bits)));
       // ASHR vs LSHR is implicitly encoded in type CSel.
       return static_cast<C>(step1 >> (N - bits));
+    }
+
+    template <typename C>
+    C mtl_get_full_bits(SNodeBitPointer bp) {
+      return static_cast<C>(*(bp.base));
     })
 METAL_END_SRC_DEF
 // clang-format on

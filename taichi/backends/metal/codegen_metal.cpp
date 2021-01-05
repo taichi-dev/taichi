@@ -841,15 +841,16 @@ class KernelCodegen : public IRVisitor {
     } else {
       TI_NOT_IMPLEMENTED;
     }
-    const DataType phy_ty(cit->get_physical_type()->as<PrimitiveType>());
-    // Signature:
-    // void mtl_set_partial_bits(SNodeBitPointer bp, uint32_t value,
-    //                           uint32_t bits);
     // Type of |stmt->ptr| is SNodeBitPointer
-    emit("mtl_set_partial_bits({},", stmt->ptr->raw_name());
-    emit("    static_cast<{}>({}),", metal_data_type_name(phy_ty),
-         store_value_expr);
-    emit("    /*bits=*/{});", cit->get_num_bits());
+    const auto num_bits = cit->get_num_bits();
+    if (is_full_bits(num_bits)) {
+      emit("mtl_set_full_bits({}, {});", stmt->ptr->raw_name(),
+           store_value_expr);
+    } else {
+      emit("mtl_set_partial_bits({},", stmt->ptr->raw_name());
+      emit("    {},", store_value_expr);
+      emit("    /*bits=*/{});", num_bits);
+    }
   }
 
   // Returns the expression of the load result
@@ -880,7 +881,7 @@ class KernelCodegen : public IRVisitor {
     auto *ptr_type = dest_ptr->ret_type->as<PointerType>();
     TI_ASSERT(ptr_type->is_bit_pointer());
     auto *pointee_type = ptr_type->get_pointee_type();
-    CustomIntType* cit = nullptr;
+    CustomIntType *cit = nullptr;
     std::string val_expr;
     if (auto *cit_cast = pointee_type->cast<CustomIntType>()) {
       cit = cit_cast;
@@ -892,55 +893,46 @@ class KernelCodegen : public IRVisitor {
     } else {
       TI_NOT_IMPLEMENTED;
     }
-    // uint32_t mtl_atomic_add_...(SNodeBitPointer bp, uint32_t value,
-    //                             uint32_t bits);
-    emit("const auto {} = mtl_atomic_add_partial_bits({},", stmt->raw_name(),
-         dest_ptr->raw_name());
-    emit("    {},", val_expr);
-    emit("    /*bits=*/{});", cit->get_num_bits());
+    const auto num_bits = cit->get_num_bits();
+    if (is_full_bits(num_bits)) {
+      emit("const auto {} = mtl_atomic_add_full_bits({}, {});",
+           stmt->raw_name(), dest_ptr->raw_name(), val_expr);
+    } else {
+      emit("const auto {} = mtl_atomic_add_partial_bits({},", stmt->raw_name(),
+           dest_ptr->raw_name());
+      emit("    {},", val_expr);
+      emit("    /*bits=*/{});", num_bits);
+    }
   }
-
-  // Computes `int(val_stmt * (1.0f / scale) + 0.5f)`
-  // Returns the variable name of the computed expression.
-  // std::string emit_float_to_custom_int(const Stmt *val_stmt, float64 scale,
-  //                                      CustomIntType *digits_cit) {
-  //   // This implicitly casts double to float on the host.
-  //   const float s_numeric = 1.0 / scale;
-  //   const auto &val_name = val_stmt->raw_name();
-  //   const std::string scaled_name = val_name + "_scaled";
-  //   emit("const auto {} = mtl_rounding_prepare_float({} * {});", scaled_name,
-  //        val_name, s_numeric);
-  //   const std::string ci_cast_name = val_name + "_ci_cast";
-  //   DataType compute_dt(digits_cit->get_compute_type()->as<PrimitiveType>());
-  //   emit("const auto {} = static_cast<{}>({});", ci_cast_name,
-  //        metal_data_type_name(compute_dt), scaled_name);
-  //   return ci_cast_name;
-  // }
 
   // Returns the expression of `int(val_stmt * (1.0f / scale) + 0.5f)`
   std::string construct_float_to_custom_int_expr(
       const Stmt *val_stmt, float64 scale, CustomIntType *digits_cit) const {
     DataType compute_dt(digits_cit->get_compute_type()->as<PrimitiveType>());
     // This implicitly casts double to float on the host.
-    const float s_numeric = 1.0 / scale;
+    const float inv_scale = 1.0 / scale;
     // Creating an expression (instead of holding intermediate results with
     // variables) because |val_stmt| could be used multiple times. If the
     // intermediate variables are named based on |val_stmt|, it would result in
     // symbol redefinitions.
-    return fmt::format(
-        "mtl_float_to_custom_int<{}>(/*inv_scale=*/{} * {})",
-        metal_data_type_name(compute_dt), s_numeric, val_stmt->raw_name());
+    return fmt::format("mtl_float_to_custom_int<{}>(/*inv_scale=*/{} * {})",
+                       metal_data_type_name(compute_dt), inv_scale,
+                       val_stmt->raw_name());
   }
 
   // Returns expression of the loaded integer.
   std::string construct_load_as_custom_int(const Stmt *bit_ptr_stmt,
                                            CustomIntType *cit) const {
     DataType compute_dt(cit->get_compute_type()->as<PrimitiveType>());
-    // Signature
-    // C mtl_get_partial_bits(SNodeBitPointer bp, uint32_t bits);
+    const auto num_bits = cit->get_num_bits();
+    if (is_full_bits(num_bits)) {
+      return fmt::format("mtl_get_full_bits<{}>({})",
+                         metal_data_type_name(compute_dt),
+                         bit_ptr_stmt->raw_name());
+    }
     return fmt::format("mtl_get_partial_bits<{}>({}, {})",
                        metal_data_type_name(compute_dt),
-                       bit_ptr_stmt->raw_name(), cit->get_num_bits());
+                       bit_ptr_stmt->raw_name(), num_bits);
   }
 
   void validate_cft_for_metal(CustomFloatType *cft) const {
@@ -950,6 +942,10 @@ class KernelCodegen : public IRVisitor {
     if (cft->get_compute_type()->as<PrimitiveType>() != PrimitiveType::f32) {
       TI_ERROR("Metal only supports 32-bit float");
     }
+  }
+
+  static bool is_full_bits(int bits) { 
+    return bits == (sizeof(uint32_t) * 8); 
   }
 
   void emit_kernel_args_struct() {

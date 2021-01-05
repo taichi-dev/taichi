@@ -772,6 +772,7 @@ class KernelManager::Impl {
         std::chrono::duration_cast<std::chrono::microseconds>(
             std::chrono::system_clock::now().time_since_epoch())
             .count());
+    const auto rand_seeds_begin = (addr - addr_begin);
     std::uniform_int_distribution<uint32_t> distr(
         0, std::numeric_limits<uint32_t>::max());
     for (int i = 0; i < kNumRandSeeds; ++i) {
@@ -779,8 +780,9 @@ class KernelManager::Impl {
       *s = distr(generator);
       addr += sizeof(uint32_t);
     }
-    TI_DEBUG("Initialized random seeds, size={} accumuated={}",
-             kNumRandSeeds * sizeof(uint32_t), (addr - addr_begin));
+    TI_DEBUG("Initialized random seeds, begin={} size={} accumuated={}",
+             rand_seeds_begin, kNumRandSeeds * sizeof(uint32_t),
+             (addr - addr_begin));
 
     if (compiled_structs_.need_snode_lists_data) {
       auto *mem_alloc = reinterpret_cast<MemoryAllocator *>(addr);

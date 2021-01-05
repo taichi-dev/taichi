@@ -149,14 +149,6 @@ STR(
         return belonged_nodemgr.id < 0;
       }
     };
-
-    // SNodeBitPointer is used as the value type for bit_struct SNodes on Metal.
-    struct SNodeBitPointer {
-      device byte *base;
-      int32_t offset;
-
-      SNodeBitPointer(device byte * b, int32_t o) : base(b), offset(o) {}
-    };
 )
 METAL_END_RUNTIME_STRUCTS_DEF
 // clang-format on

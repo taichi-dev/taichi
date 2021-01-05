@@ -20,6 +20,7 @@ namespace shaders {
 #define TI_INSIDE_METAL_CODEGEN
 #include "taichi/backends/metal/shaders/runtime_structs.metal.h"
 #include "taichi/backends/metal/shaders/runtime_utils.metal.h"
+#include "taichi/backends/metal/shaders/snode_bit_pointer.metal.h"
 #undef TI_INSIDE_METAL_CODEGEN
 
 #include "taichi/backends/metal/shaders/runtime_structs.metal.h"
@@ -242,7 +243,7 @@ class StructCompiler {
            node_name);
       emit("    : val((device {}*)v) {{}}", dt_name);
       emit("");
-      emit("  device {}* val;", dt_name);
+      emit("  device {} *val;", dt_name);
       emit("}};");
     } else if (snty == SNodeType::bit_struct) {
       // TODO: bit_struct and place share a lot in common.
@@ -355,7 +356,10 @@ class StructCompiler {
     emit("  NodeManagerData::ElemIndex ambient_indices[{}];", max_snodes_);
     emit("  uint32_t rand_seeds[{}];", kNumRandSeeds);
     emit("}};");
+    emit("");
     line_appender_.append_raw(shaders::kMetalRuntimeUtilsSourceCode);
+    emit("");
+    line_appender_.append_raw(shaders::kMetalSNodeBitPointerSourceCode);
     emit("");
   }
 

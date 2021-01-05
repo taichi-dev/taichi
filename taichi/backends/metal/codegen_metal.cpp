@@ -70,7 +70,11 @@ std::string buffer_to_name(BuffersEnum b) {
 }
 
 bool is_ret_type_bit_pointer(Stmt *s) {
-  return s->ret_type->as<PointerType>()->is_bit_pointer();
+  if (auto *ty = s->ret_type->cast<PointerType>()) {
+    // Don't use as() directly, it would fail when we inject a global tmp.
+    return ty->is_bit_pointer();
+  }
+  return false;
 }
 
 class KernelCodegen : public IRVisitor {
@@ -130,10 +134,17 @@ class KernelCodegen : public IRVisitor {
     generate_kernels();
 
     std::string source_code;
-    for (const auto s : kAllSections) {
-      source_code += section_appenders_.find(s)->second.lines();
-      source_code += '\n';
-    }
+    source_code += section_appenders_.at(Section::Headers).lines();
+
+    source_code += "namespace {\n";
+    source_code += section_appenders_.at(Section::Structs).lines();
+    source_code += section_appenders_.at(Section::KernelFuncs).lines();
+    source_code += "}  // namespace\n";
+    source_code += section_appenders_.at(Section::Kernels).lines();
+    // for (const auto s : kAllSections) {
+    // source_code += section_appenders_.find(s)->second.lines();
+    // source_code += '\n';
+    // }
     return source_code;
   }
 
@@ -944,9 +955,7 @@ class KernelCodegen : public IRVisitor {
     }
   }
 
-  static bool is_full_bits(int bits) { 
-    return bits == (sizeof(uint32_t) * 8); 
-  }
+  static bool is_full_bits(int bits) { return bits == (sizeof(uint32_t) * 8); }
 
   void emit_kernel_args_struct() {
     if (ctx_attribs_.empty()) {
@@ -1099,7 +1108,8 @@ class KernelCodegen : public IRVisitor {
       emit("const int {} = {} - {};", total_elems_name, end_expr, begin_expr);
       ka.advisory_total_num_threads = kMaxNumThreadsGridStrideLoop;
     }
-    ka.advisory_num_threads_per_group = stmt->block_dim;
+    // ka.advisory_num_threads_per_group = stmt->block_dim;
+    ka.advisory_num_threads_per_group = 1024;
     // begin_ = thread_id   + begin_expr
     emit("const int begin_ = {} + {};", kKernelThreadIdName, begin_expr);
     // end_   = total_elems + begin_expr

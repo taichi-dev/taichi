@@ -131,13 +131,27 @@ class CompiledMtlKernelBase {
     const auto tgs = get_thread_grid_settings(
         num_threads, kernel_attribs_.advisory_num_threads_per_group);
     if (!is_jit_evalutor_) {
-      ActionRecorder::get_instance().record(
-          "launch_kernel",
-          {ActionArg("kernel_name", kernel_attribs_.name),
-           ActionArg("num_threadgroups", tgs.num_threadgroups),
-           ActionArg("num_threads_per_group", tgs.num_threads_per_group)});
+      const auto tt = kernel_attribs_.task_type;
+      std::vector<ActionArg> record_args = {
+          ActionArg("mtl_kernel_name", kernel_attribs_.name),
+          ActionArg("advisory_num_threads", num_threads),
+          ActionArg("num_threadgroups", tgs.num_threadgroups),
+          ActionArg("num_threads_per_group", tgs.num_threads_per_group),
+          ActionArg("task_type", offloaded_task_type_name(tt)),
+      };
+      const auto &buffers = kernel_attribs_.buffers;
+      for (int i = 0; i < buffers.size(); ++i) {
+        record_args.push_back(
+            ActionArg(fmt::format("mtl_buffer_{}", i),
+                      KernelAttributes::buffers_name(buffers[i])));
+      }
+      ActionRecorder::get_instance().record("launch_kernel",
+                                            std::move(record_args));
     }
-
+    TI_TRACE(
+        "Dispatching Metal kernel {}, num_threadgroups={} "
+        "num_threads_per_group={}",
+        kernel_attribs_.name, tgs.num_threadgroups, tgs.num_threads_per_group);
     dispatch_threadgroups(encoder.get(), tgs.num_threadgroups,
                           tgs.num_threads_per_group);
     end_encoding(encoder.get());
@@ -293,7 +307,7 @@ class CompiledTaichiKernel {
       auto fn = writer.write(params.mtl_source_code);
       ActionRecorder::get_instance().record(
           "save_kernel",
-          {ActionArg("kernel_name", std::string(ti_kernel_attribs.name)),
+          {ActionArg("ti_kernel_name", std::string(ti_kernel_attribs.name)),
            ActionArg("filename", fn)});
     }
     for (const auto &ka : ti_kernel_attribs.mtl_kernels_attribs) {
@@ -333,7 +347,7 @@ class CompiledTaichiKernel {
       if (!ti_kernel_attribs.is_jit_evaluator) {
         ActionRecorder::get_instance().record(
             "allocate_context_buffer",
-            {ActionArg("kernel_name", std::string(ti_kernel_attribs.name)),
+            {ActionArg("ti_kernel_name", std::string(ti_kernel_attribs.name)),
              ActionArg("size_in_bytes", (int64)ctx_attribs.total_bytes())});
       }
       ctx_buffer =
@@ -381,7 +395,7 @@ class HostMetalCtxBlitter {
       if (!ti_kernel_attribs_->is_jit_evaluator) {
         ActionRecorder::get_instance().record(
             "context_host_to_metal",
-            {ActionArg("kernel_name", kernel_name_), ActionArg("arg_id", i),
+            {ActionArg("ti_kernel_name", kernel_name_), ActionArg("arg_id", i),
              ActionArg("offset_in_bytes", (int64)arg.offset_in_mem)});
       }
       if (arg.is_array) {
@@ -434,8 +448,9 @@ class HostMetalCtxBlitter {
           ActionRecorder::get_instance().record(
               "context_metal_to_host",
               {
-                  ActionArg("kernel_name", kernel_name_),
+                  ActionArg("ti_kernel_name", kernel_name_),
                   ActionArg("arg_id", i),
+                  ActionArg("arg_type", "ptr"),
                   ActionArg("size_in_bytes", (int64)arg.stride),
                   ActionArg("host_address",
                             fmt::format("0x{:x}", (uint64)host_ptr)),
@@ -706,9 +721,9 @@ class KernelManager::Impl {
       }
       TI_DEBUG(
           "SnodeMeta\n  id={}\n  type={}\n  element_stride={}\n  "
-          "num_slots={}\n",
+          "num_slots={}\n  mem_offset_in_parent={}\n",
           i, snode_type_name(sn_meta.snode->type), rtm_meta->element_stride,
-          rtm_meta->num_slots);
+          rtm_meta->num_slots, rtm_meta->mem_offset_in_parent);
     }
     size_t addr_offset = sizeof(SNodeMeta) * max_snodes;
     addr += addr_offset;
@@ -783,7 +798,11 @@ class KernelManager::Impl {
     TI_DEBUG("Initialized random seeds, begin={} size={} accumuated={}",
              rand_seeds_begin, kNumRandSeeds * sizeof(uint32_t),
              (addr - addr_begin));
-
+    ActionRecorder::get_instance().record(
+        "initialize_runtime_buffer",
+        {
+            ActionArg("rand_seeds_begin", (int64)rand_seeds_begin),
+        });
     if (compiled_structs_.need_snode_lists_data) {
       auto *mem_alloc = reinterpret_cast<MemoryAllocator *>(addr);
       // Make sure the retured memory address is always greater than 1.

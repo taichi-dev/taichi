@@ -16,7 +16,7 @@ class BitLoopVectorize : public IRVisitor {
   bool in_struct_for_loop;
   StructForStmt *loop_stmt;
   PrimitiveType *bit_array_physical_type;
-  std::unordered_map<Stmt*, std::vector<Stmt*>> transformed_atomics;
+  std::unordered_map<Stmt *, std::vector<Stmt *>> transformed_atomics;
 
   BitLoopVectorize() {
     allow_undefined_visitor = true;
@@ -158,18 +158,20 @@ class BitLoopVectorize : public IRVisitor {
 
   void visit(AtomicOpStmt *stmt) override {
     DataType dt(bit_array_physical_type);
-    if (in_struct_for_loop && bit_vectorize != 1 && stmt->op_type == AtomicOpType::add) {
+    if (in_struct_for_loop && bit_vectorize != 1 &&
+        stmt->op_type == AtomicOpType::add) {
       auto it = transformed_atomics.find(stmt->dest);
       // process a transformed atomic stmt
       if (it != transformed_atomics.end()) {
-        auto& buffer_vec = it->second;
+        auto &buffer_vec = it->second;
         transform_atomic_add(buffer_vec, stmt, dt);
       } else {
         // alloc three buffers a, b, c
         auto alloc_a = std::make_unique<AllocaStmt>(dt);
         auto alloc_b = std::make_unique<AllocaStmt>(dt);
         auto alloc_c = std::make_unique<AllocaStmt>(dt);
-        std::vector<Stmt*> buffer_vec{alloc_a.get(), alloc_b.get(), alloc_c.get()};
+        std::vector<Stmt *> buffer_vec{alloc_a.get(), alloc_b.get(),
+                                       alloc_c.get()};
         transformed_atomics[stmt->dest] = buffer_vec;
         // modify IR
         stmt->insert_before_me(std::move(alloc_a));
@@ -186,22 +188,29 @@ class BitLoopVectorize : public IRVisitor {
   }
 
  private:
-  void transform_atomic_add(const std::vector<Stmt*>& buffer_vec, AtomicOpStmt *stmt, DataType& dt) {
+  void transform_atomic_add(const std::vector<Stmt *> &buffer_vec,
+                            AtomicOpStmt *stmt,
+                            DataType &dt) {
     // To transform an atomic add on a vectorized subarray of a bit array,
-    // we use a local adder with three buffers(*a*,*b*,*c*) of the same physical type
-    // of the original bit array.
-    // Each bit in *a* represents the highest bit of the result, while *b* for the second bit
-    // and *c* for the lowest bit
-    // To add *d* to the subarray, we do bit_xor and bit_and to compute the sum and the carry
-    Stmt* a = buffer_vec[0], *b = buffer_vec[1], *c = buffer_vec[2];
+    // we use a local adder with three buffers(*a*,*b*,*c*) of the same physical
+    // type of the original bit array. Each bit in *a* represents the highest
+    // bit of the result, while *b* for the second bit and *c* for the lowest
+    // bit To add *d* to the subarray, we do bit_xor and bit_and to compute the
+    // sum and the carry
+    Stmt *a = buffer_vec[0], *b = buffer_vec[1], *c = buffer_vec[2];
     auto load_c = std::make_unique<LocalLoadStmt>(LocalAddress(c, 0));
-    auto carry_c = std::make_unique<BinaryOpStmt>(BinaryOpType::bit_and, load_c.get(), stmt->val);
-    auto sum_c = std::make_unique<AtomicOpStmt>(AtomicOpType::bit_xor, c, stmt->val);
+    auto carry_c = std::make_unique<BinaryOpStmt>(BinaryOpType::bit_and,
+                                                  load_c.get(), stmt->val);
+    auto sum_c =
+        std::make_unique<AtomicOpStmt>(AtomicOpType::bit_xor, c, stmt->val);
     auto load_b = std::make_unique<LocalLoadStmt>(LocalAddress(b, 0));
-    auto carry_b = std::make_unique<BinaryOpStmt>(BinaryOpType::bit_and, load_b.get(), carry_c.get());
-    auto sum_b = std::make_unique<AtomicOpStmt>(AtomicOpType::bit_xor, b, carry_c.get());
+    auto carry_b = std::make_unique<BinaryOpStmt>(BinaryOpType::bit_and,
+                                                  load_b.get(), carry_c.get());
+    auto sum_b =
+        std::make_unique<AtomicOpStmt>(AtomicOpType::bit_xor, b, carry_c.get());
     // for a, we do not need to compute its carry
-    auto sum_a = std::make_unique<AtomicOpStmt>(AtomicOpType::bit_xor, a, carry_b.get());
+    auto sum_a =
+        std::make_unique<AtomicOpStmt>(AtomicOpType::bit_xor, a, carry_b.get());
     // modify IR
     stmt->insert_before_me(std::move(load_c));
     stmt->insert_before_me(std::move(carry_c));
@@ -210,8 +219,8 @@ class BitLoopVectorize : public IRVisitor {
     stmt->insert_before_me(std::move(carry_b));
     stmt->insert_before_me(std::move(sum_b));
     stmt->insert_before_me(std::move(sum_a));
-    // TODO: we need to do non-trivial replacement of the original atomic add stmt
-    // as it is only used in logical ifs
+    // TODO: we need to do non-trivial replacement of the original atomic add
+    // stmt as it is only used in logical ifs
   }
 };
 

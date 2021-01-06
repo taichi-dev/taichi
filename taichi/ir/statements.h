@@ -141,9 +141,16 @@ class BinaryOpStmt : public Stmt {
  public:
   BinaryOpType op_type;
   Stmt *lhs, *rhs;
+  bool is_bit_vectorized;
 
-  BinaryOpStmt(BinaryOpType op_type, Stmt *lhs, Stmt *rhs)
-      : op_type(op_type), lhs(lhs), rhs(rhs) {
+  BinaryOpStmt(BinaryOpType op_type,
+               Stmt *lhs,
+               Stmt *rhs,
+               bool is_bit_vectorized = false)
+      : op_type(op_type),
+        lhs(lhs),
+        rhs(rhs),
+        is_bit_vectorized(is_bit_vectorized) {
     TI_ASSERT(!lhs->is<AllocaStmt>());
     TI_ASSERT(!rhs->is<AllocaStmt>());
     TI_STMT_REG_FIELDS;
@@ -153,7 +160,7 @@ class BinaryOpStmt : public Stmt {
     return false;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, op_type, lhs, rhs);
+  TI_STMT_DEF_FIELDS(ret_type, op_type, lhs, rhs, is_bit_vectorized);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

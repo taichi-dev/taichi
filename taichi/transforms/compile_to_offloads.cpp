@@ -75,6 +75,7 @@ void compile_to_offloads(IRNode *ir,
   //       create a separate CompileConfig flag for the new pass
   if (arch_is_cpu(config.arch) || config.arch == Arch::cuda) {
     irpass::bit_loop_vectorize(ir);
+    irpass::type_check(ir);
     print("Bit Loop Vectorized");
     irpass::analysis::verify(ir);
   }

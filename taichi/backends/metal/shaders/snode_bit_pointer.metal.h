@@ -32,11 +32,12 @@ STR(
       uint32_t offset;
 
       SNodeBitPointer(device byte * b, uint32_t o)
-          : base((device uint32_t *)b), offset(o) {}
+          : base((device uint32_t *)b), offset(o) {
+      }
     };
 
     // |f| should already be scaled. |C| is the compute type.
-    template <typename C> 
+    template <typename C>
     C mtl_float_to_custom_int(float f) {
       // Branch free implementation of `f + sign(f) * 0.5`.
       // See rounding_prepare_f* in taichi/runtime/llvm/runtime.cpp
@@ -46,7 +47,8 @@ STR(
       return static_cast<C>(f + delta);
     }
 
-    void mtl_set_partial_bits(SNodeBitPointer bp, uint32_t value,
+    void mtl_set_partial_bits(SNodeBitPointer bp,
+                              uint32_t value,
                               uint32_t bits) {
       // See taichi/runtime/llvm/runtime.cpp
       //
@@ -73,7 +75,8 @@ STR(
       atomic_store_explicit(atm_ptr, value, metal::memory_order_relaxed);
     }
 
-    uint32_t mtl_atomic_add_partial_bits(SNodeBitPointer bp, uint32_t value,
+    uint32_t mtl_atomic_add_partial_bits(SNodeBitPointer bp,
+                                         uint32_t value,
                                          uint32_t bits) {
       // See taichi/runtime/llvm/runtime.cpp
       using P = uint32_t;  // (P)hysical type

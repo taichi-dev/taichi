@@ -24,12 +24,16 @@ class CurrentKernelGuard {
     program.current_kernel = kernel;
   }
 
-  ~CurrentKernelGuard() { program.current_kernel = old_kernel; }
+  ~CurrentKernelGuard() {
+    program.current_kernel = old_kernel;
+  }
 };
 }  // namespace
 
-Kernel::Kernel(Program &program, const std::function<void()> &func,
-               const std::string &primal_name, bool grad)
+Kernel::Kernel(Program &program,
+               const std::function<void()> &func,
+               const std::string &primal_name,
+               bool grad)
     : program(program), lowered(false), grad(grad) {
   program.initialize_device_llvm_context();
   is_accessor = false;
@@ -57,7 +61,8 @@ Kernel::Kernel(Program &program, const std::function<void()> &func,
     name = primal_name + "_grad";
   }
 
-  if (!program.config.lazy_compilation) compile();
+  if (!program.config.lazy_compilation)
+    compile();
 }
 
 void Kernel::compile() {
@@ -129,12 +134,14 @@ Kernel::LaunchContextBuilder Kernel::make_launch_context() {
 }
 
 Kernel::LaunchContextBuilder::LaunchContextBuilder(Kernel *kernel, Context *ctx)
-    : kernel_(kernel), owned_ctx_(nullptr), ctx_(ctx) {}
+    : kernel_(kernel), owned_ctx_(nullptr), ctx_(ctx) {
+}
 
 Kernel::LaunchContextBuilder::LaunchContextBuilder(Kernel *kernel)
     : kernel_(kernel),
       owned_ctx_(std::make_unique<Context>()),
-      ctx_(owned_ctx_.get()) {}
+      ctx_(owned_ctx_.get()) {
+}
 
 void Kernel::LaunchContextBuilder::set_arg_float(int i, float64 d) {
   TI_ASSERT_INFO(
@@ -211,7 +218,8 @@ void Kernel::LaunchContextBuilder::set_extra_arg_int(int i, int j, int32 d) {
   ctx_->extra_args[i][j] = d;
 }
 
-void Kernel::LaunchContextBuilder::set_arg_nparray(int i, uint64 ptr,
+void Kernel::LaunchContextBuilder::set_arg_nparray(int i,
+                                                   uint64 ptr,
                                                    uint64 size) {
   TI_ASSERT_INFO(kernel_->args[i].is_nparray,
                  "Assigning numpy array to scalar argument is not allowed");
@@ -314,7 +322,8 @@ int Kernel::insert_ret(DataType dt) {
 }
 
 void Kernel::account_for_offloaded(OffloadedStmt *stmt) {
-  if (is_evaluator || is_accessor) return;
+  if (is_evaluator || is_accessor)
+    return;
   auto task_type = stmt->task_type;
   stat.add("launched_tasks", 1.0);
   if (task_type == OffloadedStmt::TaskType::listgen) {

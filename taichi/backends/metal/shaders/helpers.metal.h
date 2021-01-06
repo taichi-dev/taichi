@@ -42,7 +42,8 @@ STR(
       int32_t tmp = x;
       int32_t ans = 1;
       while (n) {
-        if (n & 1) ans *= tmp;
+        if (n & 1)
+          ans *= tmp;
         tmp *= tmp;
         n >>= 1;
       }

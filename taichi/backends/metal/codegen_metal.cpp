@@ -99,9 +99,11 @@ class KernelCodegen : public IRVisitor {
   };
   // TODO(k-ye): Create a Params to hold these ctor params.
   KernelCodegen(const std::string &taichi_kernel_name,
-                const std::string &root_snode_type_name, Kernel *kernel,
+                const std::string &root_snode_type_name,
+                Kernel *kernel,
                 const CompiledStructs *compiled_structs,
-                PrintStringTable *print_strtab, const Config &config,
+                PrintStringTable *print_strtab,
+                const Config &config,
                 OffloadedStmt *offloaded)
       : mtl_kernel_prefix_(taichi_kernel_name),
         root_snode_type_name_(root_snode_type_name),
@@ -918,7 +920,9 @@ class KernelCodegen : public IRVisitor {
 
   // Returns the expression of `int(val_stmt * (1.0f / scale) + 0.5f)`
   std::string construct_float_to_custom_int_expr(
-      const Stmt *val_stmt, float64 scale, CustomIntType *digits_cit) const {
+      const Stmt *val_stmt,
+      float64 scale,
+      CustomIntType *digits_cit) const {
     DataType compute_dt(digits_cit->get_compute_type()->as<PrimitiveType>());
     // This implicitly casts double to float on the host.
     const float inv_scale = 1.0 / scale;
@@ -955,7 +959,9 @@ class KernelCodegen : public IRVisitor {
     }
   }
 
-  static bool is_full_bits(int bits) { return bits == (sizeof(uint32_t) * 8); }
+  static bool is_full_bits(int bits) {
+    return bits == (sizeof(uint32_t) * 8);
+  }
 
   void emit_kernel_args_struct() {
     if (ctx_attribs_.empty()) {
@@ -1306,7 +1312,8 @@ class KernelCodegen : public IRVisitor {
   void emit_mtl_kernel_func_def(
       const std::string &kernel_func_name,
       const std::vector<KernelAttributes::Buffers> &buffers,
-      const std::vector<FuncParamLiteral> &extra_params, Block *func_ir) {
+      const std::vector<FuncParamLiteral> &extra_params,
+      Block *func_ir) {
     SectionGuard sg(this, Section::KernelFuncs);
 
     emit("void {}(", kernel_func_name);
@@ -1354,7 +1361,8 @@ class KernelCodegen : public IRVisitor {
 
   inline void emit_mtl_kernel_func_def(
       const std::string &kernel_func_name,
-      const std::vector<KernelAttributes::Buffers> &buffers, Block *func_ir) {
+      const std::vector<KernelAttributes::Buffers> &buffers,
+      Block *func_ir) {
     emit_mtl_kernel_func_def(kernel_func_name, buffers, /*extra_params=*/{},
                              func_ir);
   }
@@ -1386,7 +1394,8 @@ class KernelCodegen : public IRVisitor {
 
   struct KernelSigExtensions {
     // https://stackoverflow.com/a/44693603/12003165
-    KernelSigExtensions() noexcept {}
+    KernelSigExtensions() noexcept {
+    }
 
     bool use_simdgroup = false;
   };
@@ -1437,7 +1446,9 @@ class KernelCodegen : public IRVisitor {
       kg->code_section_ = new_sec;
     }
 
-    ~SectionGuard() { kg_->code_section_ = saved_; }
+    ~SectionGuard() {
+      kg_->code_section_ = saved_;
+    }
 
    private:
     KernelCodegen *const kg_;
@@ -1449,7 +1460,9 @@ class KernelCodegen : public IRVisitor {
   const LineAppender &current_appender() const {
     return section_appenders_.find(code_section_)->second;
   }
-  LineAppender &current_appender() { return section_appenders_[code_section_]; }
+  LineAppender &current_appender() {
+    return section_appenders_[code_section_];
+  }
 
   template <typename... Args>
   void emit(std::string f, Args &&... args) {
@@ -1487,8 +1500,10 @@ class KernelCodegen : public IRVisitor {
 }  // namespace
 
 FunctionType compile_to_metal_executable(
-    Kernel *kernel, KernelManager *kernel_mgr,
-    const CompiledStructs *compiled_structs, OffloadedStmt *offloaded) {
+    Kernel *kernel,
+    KernelManager *kernel_mgr,
+    const CompiledStructs *compiled_structs,
+    OffloadedStmt *offloaded) {
   const auto id = Program::get_kernel_id();
   const auto taichi_kernel_name(
       fmt::format("mtl_k{:04d}_{}", id, kernel->name));

@@ -131,25 +131,19 @@ def test_evolve():
                                (boundary_offset, N - boundary_offset)):
             x[i, j] = ti.random(dtype=ti.i32) % 2
 
-    @ti.func
-    def compute_active_neighbors(x: ti.template(), i: ti.template(),
-                                 j: ti.template()):
-        num_active_neighbors = 0
-        num_active_neighbors += ti.cast(x[i - 1, j - 1], ti.u32)
-        num_active_neighbors += ti.cast(x[i - 1, j], ti.u32)
-        num_active_neighbors += ti.cast(x[i - 1, j + 1], ti.u32)
-        num_active_neighbors += ti.cast(x[i, j - 1], ti.u32)
-        num_active_neighbors += ti.cast(x[i, j + 1], ti.u32)
-        num_active_neighbors += ti.cast(x[i + 1, j - 1], ti.u32)
-        num_active_neighbors += ti.cast(x[i + 1, j], ti.u32)
-        num_active_neighbors += ti.cast(x[i + 1, j + 1], ti.u32)
-        return num_active_neighbors
-
     @ti.kernel
     def evolve_vectorized(x: ti.template(), y: ti.template()):
         ti.bit_vectorize(32)
         for i, j in x:
-            num_active_neighbors = compute_active_neighbors(x, i, j)
+            num_active_neighbors = 0
+            num_active_neighbors += ti.cast(x[i - 1, j - 1], ti.u32)
+            num_active_neighbors += ti.cast(x[i - 1, j], ti.u32)
+            num_active_neighbors += ti.cast(x[i - 1, j + 1], ti.u32)
+            num_active_neighbors += ti.cast(x[i, j - 1], ti.u32)
+            num_active_neighbors += ti.cast(x[i, j + 1], ti.u32)
+            num_active_neighbors += ti.cast(x[i + 1, j - 1], ti.u32)
+            num_active_neighbors += ti.cast(x[i + 1, j], ti.u32)
+            num_active_neighbors += ti.cast(x[i + 1, j + 1], ti.u32)
             y[i, j] = (num_active_neighbors == 3) or (num_active_neighbors == 2
                                                       and x[i, j] == 1)
 
@@ -157,7 +151,15 @@ def test_evolve():
     def evolve_naive(x: ti.template(), y: ti.template()):
         for i, j in ti.ndrange((boundary_offset, N - boundary_offset),
                                (boundary_offset, N - boundary_offset)):
-            num_active_neighbors = compute_active_neighbors(x, i, j)
+            num_active_neighbors = 0
+            num_active_neighbors += ti.cast(x[i - 1, j - 1], ti.u32)
+            num_active_neighbors += ti.cast(x[i - 1, j], ti.u32)
+            num_active_neighbors += ti.cast(x[i - 1, j + 1], ti.u32)
+            num_active_neighbors += ti.cast(x[i, j - 1], ti.u32)
+            num_active_neighbors += ti.cast(x[i, j + 1], ti.u32)
+            num_active_neighbors += ti.cast(x[i + 1, j - 1], ti.u32)
+            num_active_neighbors += ti.cast(x[i + 1, j], ti.u32)
+            num_active_neighbors += ti.cast(x[i + 1, j + 1], ti.u32)
             y[i, j] = (num_active_neighbors == 3) or (num_active_neighbors == 2
                                                       and x[i, j] == 1)
 

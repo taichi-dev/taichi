@@ -3,7 +3,7 @@ import numpy as np
 from pytest import approx
 
 
-@ti.test(require=ti.extension.quant, debug=True)
+@ti.test(require=ti.extension.quant_basic, debug=True)
 def test_simple_array():
     ci13 = ti.type_factory.custom_int(13, True)
     cu19 = ti.type_factory.custom_int(19, False)
@@ -37,7 +37,7 @@ def test_simple_array():
     verify_val.__wrapped__()
 
 
-@ti.test(require=ti.extension.quant, debug=True)
+@ti.test(require=ti.extension.quant_basic, debug=True)
 def test_custom_int_load_and_store():
     ci13 = ti.type_factory.custom_int(13, True)
     cu14 = ti.type_factory.custom_int(14, False)
@@ -78,7 +78,7 @@ def test_custom_int_load_and_store():
         verify_val.__wrapped__(idx)
 
 
-@ti.test(require=ti.extension.quant)
+@ti.test(require=ti.extension.quant_basic)
 def test_custom_int_full_struct():
     cit = ti.type_factory.custom_int(32, True)
     x = ti.field(dtype=cit)
@@ -137,7 +137,7 @@ def test_bit_struct():
     test_single_bit_struct(32, 32, [10, 10, 12], np.array([11, 19, 2020]))
 
 
-@ti.test(require=ti.extension.quant, debug=True)
+@ti.test(require=[ti.extension.quant_basic, ti.extension.sparse], debug=True)
 def test_bit_struct_struct_for():
     block_size = 16
     N = 64

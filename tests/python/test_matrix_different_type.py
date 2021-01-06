@@ -30,7 +30,7 @@ def test_vector():
 
 
 # TODO: Support different element types of Matrix on opengl
-@ti.test(exclude=ti.opengl)
+@ti.test(require=ti.extension.data64, exclude=ti.opengl)
 def test_matrix():
     type_list = [[ti.f32, ti.i32], [ti.i64, ti.f32]]
     a = ti.Matrix.field(len(type_list),
@@ -66,7 +66,7 @@ def test_matrix():
     verify()
 
 
-@ti.test(require=ti.extension.quant)
+@ti.test(require=ti.extension.quant_basic)
 def test_custom_type():
     cit1 = ti.type_factory.custom_int(bits=10, signed=True)
     cft1 = ti.type_factory.custom_float(cit1, scale=0.1)

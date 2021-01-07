@@ -22,7 +22,6 @@
 #define thread
 #define kernel
 
-// #define byte char
 using byte = char;
 
 #include "taichi/backends/metal/shaders/atomic_stubs.h"

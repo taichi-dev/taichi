@@ -137,16 +137,11 @@ class KernelCodegen : public IRVisitor {
 
     std::string source_code;
     source_code += section_appenders_.at(Section::Headers).lines();
-
     source_code += "namespace {\n";
     source_code += section_appenders_.at(Section::Structs).lines();
     source_code += section_appenders_.at(Section::KernelFuncs).lines();
     source_code += "}  // namespace\n";
     source_code += section_appenders_.at(Section::Kernels).lines();
-    // for (const auto s : kAllSections) {
-    // source_code += section_appenders_.find(s)->second.lines();
-    // source_code += '\n';
-    // }
     return source_code;
   }
 
@@ -1114,8 +1109,8 @@ class KernelCodegen : public IRVisitor {
       emit("const int {} = {} - {};", total_elems_name, end_expr, begin_expr);
       ka.advisory_total_num_threads = kMaxNumThreadsGridStrideLoop;
     }
-    // ka.advisory_num_threads_per_group = stmt->block_dim;
-    ka.advisory_num_threads_per_group = 1024;
+    // TODO: I've seen cases where |block_dim| was set to 1...
+    ka.advisory_num_threads_per_group = stmt->block_dim;
     // begin_ = thread_id   + begin_expr
     emit("const int begin_ = {} + {};", kKernelThreadIdName, begin_expr);
     // end_   = total_elems + begin_expr

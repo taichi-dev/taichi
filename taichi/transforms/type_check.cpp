@@ -167,9 +167,10 @@ class TypeCheck : public IRVisitor {
     if (dst_value_type != stmt->data->ret_type) {
       stmt->data = insert_type_cast_before(stmt, stmt->data, dst_value_type);
     }
-    if (dst_value_type != promoted) {
+    // TODO: do not use promoted here since u8 + u8 = i32.
+    if (dst_value_type != promoted && dst_value_type != stmt->data->ret_type) {
       TI_WARN("[{}] Global store may lose precision: {} <- {}, at",
-              stmt->name(), stmt->ptr->ret_data_type_name(), input_type);
+              stmt->name(), dst_value_type->to_string(), input_type);
       TI_WARN("\n{}", stmt->tb);
     }
   }

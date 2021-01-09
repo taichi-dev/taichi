@@ -1,15 +1,15 @@
 #include "kernel.h"
 
-#include "taichi/util/statistics.h"
-#include "taichi/common/task.h"
-#include "taichi/program/program.h"
-#include "taichi/program/async_engine.h"
-#include "taichi/codegen/codegen.h"
 #include "taichi/backends/cuda/cuda_driver.h"
+#include "taichi/codegen/codegen.h"
+#include "taichi/common/task.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
-#include "taichi/util/action_recorder.h"
+#include "taichi/program/async_engine.h"
 #include "taichi/program/extension.h"
+#include "taichi/program/program.h"
+#include "taichi/util/action_recorder.h"
+#include "taichi/util/statistics.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -239,9 +239,11 @@ void Kernel::LaunchContextBuilder::set_arg_raw(int i, uint64 d) {
       !kernel_->args[i].is_nparray,
       "Assigning scalar value to numpy array argument is not allowed");
 
-  ActionRecorder::get_instance().record(
-      "set_arg_raw", {ActionArg("kernel_name", kernel_->name),
-                      ActionArg("arg_id", i), ActionArg("val", (int64)d)});
+  if (!kernel_->is_evaluator) {
+    ActionRecorder::get_instance().record(
+        "set_arg_raw", {ActionArg("kernel_name", kernel_->name),
+                        ActionArg("arg_id", i), ActionArg("val", (int64)d)});
+  }
   ctx_->set_arg<uint64>(i, d);
 }
 

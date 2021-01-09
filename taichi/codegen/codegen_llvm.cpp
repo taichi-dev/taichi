@@ -1068,7 +1068,7 @@ llvm::Value *CodeGenLLVM::float_to_custom_int(CustomFloatType *cft,
                                               llvm::Value *real) {
   llvm::Value *s = nullptr;
 
-  // Compute int(input * (1.0 / scale) + 0.5)
+  // Compute int(real * (1.0 / scale) + 0.5)
   auto s_numeric = 1.0 / cft->get_scale();
   auto compute_type = cft->get_compute_type();
   s = builder->CreateFPCast(

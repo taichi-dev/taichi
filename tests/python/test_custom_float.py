@@ -3,7 +3,7 @@ import math
 from pytest import approx
 
 
-@ti.test(require=ti.extension.quant)
+@ti.test(require=ti.extension.quant_basic)
 def test_custom_float():
     ci13 = ti.type_factory.custom_int(bits=13)
     cft = ti.type_factory.custom_float(significand_type=ci13, scale=0.1)
@@ -25,7 +25,7 @@ def test_custom_float():
     assert x[None] == approx(0.7)
 
 
-@ti.test(require=ti.extension.quant)
+@ti.test(require=ti.extension.quant_basic)
 def test_custom_matrix_rotation():
     ci16 = ti.type_factory.custom_int(bits=16)
     cft = ti.type_factory.custom_float(significand_type=ci16,
@@ -53,7 +53,7 @@ def test_custom_matrix_rotation():
     assert x[None][1, 1] == approx(0, abs=1e-4)
 
 
-@ti.test(require=ti.extension.quant)
+@ti.test(require=ti.extension.quant_basic)
 def test_custom_float_implicit_cast():
     ci13 = ti.type_factory.custom_int(bits=13)
     cft = ti.type_factory.custom_float(significand_type=ci13, scale=0.1)
@@ -69,7 +69,7 @@ def test_custom_float_implicit_cast():
     assert x[None] == approx(10.0)
 
 
-@ti.test(require=ti.extension.quant)
+@ti.test(require=ti.extension.quant_basic)
 def test_cache_read_only():
     ci15 = ti.type_factory.custom_int(bits=15)
     cft = ti.type_factory.custom_float(significand_type=ci15, scale=0.1)

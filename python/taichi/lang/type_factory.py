@@ -33,7 +33,7 @@ class Quant:
         import taichi as ti
         if compute is None:
             compute = ti.get_runtime().default_ip
-        return ti.type_factory.custom_int(bits, signed, compute)
+        return ti.quant.int(bits, signed, compute)
 
     @staticmethod
     def fixed(frac, signed=False, range=1.0, compute=None):

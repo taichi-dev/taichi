@@ -5,8 +5,8 @@ from pytest import approx
 
 @ti.test(require=ti.extension.quant_basic, debug=True)
 def test_simple_array():
-    ci13 = ti.type_factory.custom_int(13, True)
-    cu19 = ti.type_factory.custom_int(19, False)
+    ci13 = ti.quant.int(13, True)
+    cu19 = ti.quant.int(19, False)
 
     x = ti.field(dtype=ci13)
     y = ti.field(dtype=cu19)
@@ -39,9 +39,9 @@ def test_simple_array():
 
 @ti.test(require=ti.extension.quant_basic, debug=True)
 def test_custom_int_load_and_store():
-    ci13 = ti.type_factory.custom_int(13, True)
-    cu14 = ti.type_factory.custom_int(14, False)
-    ci5 = ti.type_factory.custom_int(5, True)
+    ci13 = ti.quant.int(13, True)
+    cu14 = ti.quant.int(14, False)
+    ci5 = ti.quant.int(5, True)
 
     x = ti.field(dtype=ci13)
     y = ti.field(dtype=cu14)
@@ -80,7 +80,7 @@ def test_custom_int_load_and_store():
 
 @ti.test(require=ti.extension.quant_basic)
 def test_custom_int_full_struct():
-    cit = ti.type_factory.custom_int(32, True)
+    cit = ti.quant.int(32, True)
     x = ti.field(dtype=cit)
     ti.root.dense(ti.i, 1)._bit_struct(num_bits=32).place(x)
 
@@ -96,9 +96,9 @@ def test_bit_struct():
                                test_case):
         ti.init(arch=ti.cpu, debug=True)
 
-        cit1 = ti.type_factory.custom_int(custom_bits[0], True, compute_type)
-        cit2 = ti.type_factory.custom_int(custom_bits[1], False, compute_type)
-        cit3 = ti.type_factory.custom_int(custom_bits[2], True, compute_type)
+        cit1 = ti.quant.int(custom_bits[0], True, compute_type)
+        cit2 = ti.quant.int(custom_bits[1], False, compute_type)
+        cit3 = ti.quant.int(custom_bits[2], True, compute_type)
 
         a = ti.field(dtype=cit1)
         b = ti.field(dtype=cit2)

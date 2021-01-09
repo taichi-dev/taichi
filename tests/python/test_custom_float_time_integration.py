@@ -11,8 +11,8 @@ from pytest import approx
 def test_custom_float_time_integration(use_cft, use_exponent, use_shared_exp):
     if use_cft:
         if use_exponent:
-            exp = ti.type_factory.custom_int(6, False)
-            cit = ti.type_factory.custom_int(13, True)
+            exp = ti.quant.int(6, False)
+            cit = ti.quant.int(13, True)
             cft = ti.type_factory.custom_float(significand_type=cit,
                                                exponent_type=exp,
                                                scale=1)
@@ -23,7 +23,7 @@ def test_custom_float_time_integration(use_cft, use_exponent, use_shared_exp):
                 ti.root._bit_struct(num_bits=32).place(x(0))
                 ti.root._bit_struct(num_bits=32).place(x(1))
         else:
-            cit = ti.type_factory.custom_int(16, True)
+            cit = ti.quant.int(16, True)
             cft = ti.type_factory.custom_float(significand_type=cit,
                                                scale=1 / 2**14)
             x = ti.Vector.field(2, dtype=cft)

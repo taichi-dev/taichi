@@ -4,7 +4,7 @@ import numpy as np
 
 @ti.test(require=ti.extension.quant, debug=True, cfg_optimization=False)
 def test_vectorized_struct_for():
-    ci1 = ti.type_factory.custom_int(1, False)
+    ci1 = ti.quant.int(1, False)
 
     x = ti.field(dtype=ci1)
     y = ti.field(dtype=ci1)
@@ -45,7 +45,7 @@ def test_vectorized_struct_for():
 
 @ti.test(require=ti.extension.quant)
 def test_offset_load():
-    ci1 = ti.type_factory.custom_int(1, False)
+    ci1 = ti.quant.int(1, False)
 
     x = ti.field(dtype=ci1)
     y = ti.field(dtype=ci1)
@@ -105,7 +105,7 @@ def test_offset_load():
 
 @ti.test(require=ti.extension.quant, debug=True)
 def test_evolve():
-    ci1 = ti.type_factory.custom_int(1, False)
+    ci1 = ti.quant.int(1, False)
 
     x = ti.field(dtype=ci1)
     y = ti.field(dtype=ci1)

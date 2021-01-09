@@ -27,7 +27,7 @@ def test_primitives():
 
 @ti.test(arch=ti.cpu)
 def test_bit_struct():
-    cit = ti.type_factory.custom_int(16, False)
+    cit = ti.quant.int(16, False)
     x = ti.field(dtype=cit)
     y = ti.field(dtype=ti.type_factory.custom_float(significand_type=cit))
     z = ti.field(dtype=ti.f32)

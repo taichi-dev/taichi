@@ -6,9 +6,9 @@ import pytest
 @pytest.mark.parametrize('exponent_bits', [5, 6, 7, 8])
 @ti.test(require=ti.extension.quant)
 def test_shared_exponents(exponent_bits):
-    exp = ti.type_factory.custom_int(exponent_bits, False)
-    cit1 = ti.type_factory.custom_int(10, False)
-    cit2 = ti.type_factory.custom_int(14, False)
+    exp = ti.quant.int(exponent_bits, False)
+    cit1 = ti.quant.int(10, False)
+    cit2 = ti.quant.int(14, False)
     cft1 = ti.type_factory.custom_float(significand_type=cit1,
                                         exponent_type=exp,
                                         scale=1)
@@ -76,9 +76,9 @@ def test_shared_exponents(exponent_bits):
 @pytest.mark.parametrize('exponent_bits', [5, 6, 7, 8])
 @ti.test(require=ti.extension.quant)
 def test_shared_exponent_add(exponent_bits):
-    exp = ti.type_factory.custom_int(exponent_bits, False)
-    cit1 = ti.type_factory.custom_int(10, False)
-    cit2 = ti.type_factory.custom_int(14, False)
+    exp = ti.quant.int(exponent_bits, False)
+    cit1 = ti.quant.int(10, False)
+    cit2 = ti.quant.int(14, False)
     cft1 = ti.type_factory.custom_float(significand_type=cit1,
                                         exponent_type=exp,
                                         scale=1)
@@ -116,9 +116,9 @@ def test_shared_exponent_add(exponent_bits):
 @pytest.mark.parametrize('exponent_bits', [5, 6, 7, 8])
 @ti.test(require=ti.extension.quant)
 def test_shared_exponent_borrow(exponent_bits):
-    exp = ti.type_factory.custom_int(exponent_bits, False)
-    cit1 = ti.type_factory.custom_int(10, False)
-    cit2 = ti.type_factory.custom_int(14, False)
+    exp = ti.quant.int(exponent_bits, False)
+    cit1 = ti.quant.int(10, False)
+    cit2 = ti.quant.int(14, False)
     cft1 = ti.type_factory.custom_float(significand_type=cit1,
                                         exponent_type=exp,
                                         scale=1)
@@ -149,9 +149,9 @@ def test_shared_exponent_borrow(exponent_bits):
 @pytest.mark.parametrize('exponent_bits', [5, 6, 7, 8])
 @ti.test(require=ti.extension.quant)
 def test_negative(exponent_bits):
-    exp = ti.type_factory.custom_int(exponent_bits, False)
-    cit1 = ti.type_factory.custom_int(10, False)
-    cit2 = ti.type_factory.custom_int(14, True)
+    exp = ti.quant.int(exponent_bits, False)
+    cit1 = ti.quant.int(10, False)
+    cit2 = ti.quant.int(14, True)
     cft1 = ti.type_factory.custom_float(significand_type=cit1,
                                         exponent_type=exp,
                                         scale=1)

@@ -13,7 +13,7 @@ def test_simple_array():
 
     N = 12
 
-    ti.root.dense(ti.i, N)._bit_struct(num_bits=32).place(x, y)
+    ti.root.dense(ti.i, N).bit_struct(num_bits=32).place(x, y)
 
     ti.get_runtime().materialize()
 
@@ -52,7 +52,7 @@ def test_custom_int_load_and_store():
          [0, 0, 0], [123, 4567, 8], [10, 31, 11]],
         dtype=np.int32)
 
-    ti.root._bit_struct(num_bits=32).place(x, y, z)
+    ti.root.bit_struct(num_bits=32).place(x, y, z)
     test_case = ti.Vector.field(3, dtype=ti.i32, shape=len(test_case_np))
     test_case.from_numpy(test_case_np)
 
@@ -82,7 +82,7 @@ def test_custom_int_load_and_store():
 def test_custom_int_full_struct():
     cit = ti.quant.int(32, True)
     x = ti.field(dtype=cit)
-    ti.root.dense(ti.i, 1)._bit_struct(num_bits=32).place(x)
+    ti.root.dense(ti.i, 1).bit_struct(num_bits=32).place(x)
 
     x[0] = 15
     assert x[0] == 15
@@ -103,7 +103,7 @@ def test_bit_struct():
         a = ti.field(dtype=cit1)
         b = ti.field(dtype=cit2)
         c = ti.field(dtype=cit3)
-        ti.root._bit_struct(num_bits=physical_type).place(a, b, c)
+        ti.root.bit_struct(num_bits=physical_type).place(a, b, c)
 
         @ti.kernel
         def set_val(test_val: ti.ext_arr()):
@@ -145,7 +145,7 @@ def test_bit_struct_struct_for():
     fixed32 = ti.quant.fixed(frac=32, range=1024)
 
     x = ti.field(dtype=fixed32)
-    cell.dense(ti.i, block_size)._bit_struct(32).place(x)
+    cell.dense(ti.i, block_size).bit_struct(32).place(x)
 
     for i in range(N):
         if i // block_size % 2 == 0:

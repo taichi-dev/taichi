@@ -17,7 +17,7 @@ def test_shared_exponents(exponent_bits):
                                         scale=1)
     a = ti.field(dtype=cft1)
     b = ti.field(dtype=cft2)
-    ti.root._bit_struct(num_bits=32).place(a, b, shared_exponent=True)
+    ti.root.bit_struct(num_bits=32).place(a, b, shared_exponent=True)
 
     assert a[None] == 0.0
     assert b[None] == 0.0
@@ -87,7 +87,7 @@ def test_shared_exponent_add(exponent_bits):
                                         scale=1)
     a = ti.field(dtype=cft1)
     b = ti.field(dtype=cft2)
-    ti.root._bit_struct(num_bits=32).place(a, b, shared_exponent=True)
+    ti.root.bit_struct(num_bits=32).place(a, b, shared_exponent=True)
 
     @ti.kernel
     def foo(x: ti.f32, y: ti.f32):
@@ -127,7 +127,7 @@ def test_shared_exponent_borrow(exponent_bits):
                                         scale=1)
     a = ti.field(dtype=cft1)
     b = ti.field(dtype=cft2)
-    ti.root._bit_struct(num_bits=32).place(a, b, shared_exponent=True)
+    ti.root.bit_struct(num_bits=32).place(a, b, shared_exponent=True)
 
     @ti.kernel
     def foo(x: ti.f32, y: ti.f32):
@@ -160,7 +160,7 @@ def test_negative(exponent_bits):
                                         scale=1)
     a = ti.field(dtype=cft1)
     b = ti.field(dtype=cft2)
-    ti.root._bit_struct(num_bits=32).place(a, b, shared_exponent=True)
+    ti.root.bit_struct(num_bits=32).place(a, b, shared_exponent=True)
 
     a[None] = 37
     assert a[None] == 37

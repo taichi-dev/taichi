@@ -10,7 +10,7 @@ def test_1D_bit_array():
 
     N = 32
 
-    ti.root._bit_array(ti.i, N, num_bits=32).place(x)
+    ti.root.bit_array(ti.i, N, num_bits=32).place(x)
 
     ti.get_runtime().materialize()
 
@@ -36,7 +36,7 @@ def test_2D_bit_array():
 
     M, N = 4, 8
 
-    ti.root._bit_array(ti.ij, (M, N), num_bits=32).place(x)
+    ti.root.bit_array(ti.ij, (M, N), num_bits=32).place(x)
 
     ti.get_runtime().materialize()
 

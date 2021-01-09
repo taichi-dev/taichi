@@ -13,7 +13,7 @@ def test_custom_float_unsigned():
                                        scale=1)
     x = ti.field(dtype=cft)
 
-    ti.root._bit_struct(num_bits=32).place(x)
+    ti.root.bit_struct(num_bits=32).place(x)
 
     tests = [
         0, 1 / 1024, 1.75 / 1024, 0.25, 0.5, 0.75, 1, 2, 3, 4, 5, 6, 7, 128,
@@ -36,7 +36,7 @@ def test_custom_float_signed():
                                        scale=1)
     x = ti.field(dtype=cft)
 
-    ti.root._bit_struct(num_bits=32).place(x)
+    ti.root.bit_struct(num_bits=32).place(x)
 
     tests = [0, 0.125, 0.5, 2, 4, 6, 7, 8, 9]
 
@@ -68,7 +68,7 @@ def test_custom_float_precision(digits_bits):
                                        scale=1)
     x = ti.field(dtype=cft)
 
-    ti.root._bit_struct(num_bits=32).place(x)
+    ti.root.bit_struct(num_bits=32).place(x)
 
     tests = [np.float32(np.pi), np.float32(np.pi * (1 << 100))]
 
@@ -93,7 +93,7 @@ def test_custom_float_truncation(signed):
                                        scale=1)
     x = ti.field(dtype=cft)
 
-    ti.root._bit_struct(num_bits=32).place(x)
+    ti.root.bit_struct(num_bits=32).place(x)
 
     # Sufficient digits
     for v in [1, 1.5]:
@@ -125,7 +125,7 @@ def test_custom_float_atomic_demotion():
                                        scale=1)
     x = ti.field(dtype=cft)
 
-    ti.root._bit_struct(num_bits=32).place(x)
+    ti.root.bit_struct(num_bits=32).place(x)
 
     @ti.kernel
     def foo():

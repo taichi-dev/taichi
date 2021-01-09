@@ -12,7 +12,7 @@ def test_custom_int_atomics():
     y = ti.field(dtype=ci5)
     z = ti.field(dtype=cu2)
 
-    ti.root._bit_struct(num_bits=32).place(x, y, z)
+    ti.root.bit_struct(num_bits=32).place(x, y, z)
 
     x[None] = 3
     y[None] = 2
@@ -42,7 +42,7 @@ def test_custom_int_atomics_b64():
 
     x = ti.field(dtype=ci13)
 
-    ti.root._bit_array(ti.i, 4, num_bits=64).place(x)
+    ti.root.bit_array(ti.i, 4, num_bits=64).place(x)
 
     x[0] = 100
     x[1] = 200
@@ -70,7 +70,7 @@ def test_custom_float_atomics():
     x = ti.field(dtype=cft13)
     y = ti.field(dtype=cft19)
 
-    ti.root._bit_struct(num_bits=32).place(x, y)
+    ti.root.bit_struct(num_bits=32).place(x, y)
 
     @ti.kernel
     def foo():

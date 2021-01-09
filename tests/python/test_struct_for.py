@@ -269,7 +269,7 @@ def test_struct_for_quant():
     ci13 = ti.quant.int(13, True)
     x = ti.field(dtype=ci13)
 
-    ti.root.dense(ti.i, n)._bit_struct(num_bits=32).place(x)
+    ti.root.dense(ti.i, n).bit_struct(num_bits=32).place(x)
 
     @ti.kernel
     def count() -> int:

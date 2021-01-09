@@ -137,7 +137,7 @@ def deprecated(old, new, warning_type=DeprecationWarning):
         @functools.wraps(foo)
         def wrapped(*args, **kwargs):
             _taichi_skip_traceback = 1
-            msg = f'{old} is deprecated, please use {new} instead.'
+            msg = f'{old} is deprecated. Please use {new} instead.'
             warning(msg, warning_type, stacklevel=2)
             return foo(*args, **kwargs)
 

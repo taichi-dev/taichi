@@ -12,7 +12,7 @@ if quant:
     x = ti.field(dtype=ci16)
     y = ti.field(dtype=ci16)
 
-    ti.root.dense(ti.i, n)._bit_struct(num_bits=32).place(x, y)
+    ti.root.dense(ti.i, n).bit_struct(num_bits=32).place(x, y)
 else:
     x = ti.field(dtype=ti.i16)
     y = ti.field(dtype=ti.i16)

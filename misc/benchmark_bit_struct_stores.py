@@ -7,12 +7,12 @@ quant = True
 n = 1024 * 1024 * 256
 
 if quant:
-    ci16 = ti.type_factory.custom_int(16, True)
+    ci16 = ti.quant.int(16, True)
 
     x = ti.field(dtype=ci16)
     y = ti.field(dtype=ci16)
 
-    ti.root.dense(ti.i, n)._bit_struct(num_bits=32).place(x, y)
+    ti.root.dense(ti.i, n).bit_struct(num_bits=32).place(x, y)
 else:
     x = ti.field(dtype=ti.i16)
     y = ti.field(dtype=ti.i16)

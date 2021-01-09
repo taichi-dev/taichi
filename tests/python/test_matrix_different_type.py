@@ -68,20 +68,20 @@ def test_matrix():
 
 @ti.test(require=ti.extension.quant_basic)
 def test_custom_type():
-    cit1 = ti.type_factory.custom_int(bits=10, signed=True)
+    cit1 = ti.quant.int(bits=10, signed=True)
     cft1 = ti.type_factory.custom_float(cit1, scale=0.1)
-    cit2 = ti.type_factory.custom_int(bits=22, signed=False)
+    cit2 = ti.quant.int(bits=22, signed=False)
     cft2 = ti.type_factory.custom_float(cit2, scale=0.1)
     type_list = [[cit1, cft2], [cft1, cit2]]
     a = ti.Matrix.field(len(type_list), len(type_list[0]), dtype=type_list)
     b = ti.Matrix.field(len(type_list), len(type_list[0]), dtype=type_list)
     c = ti.Matrix.field(len(type_list), len(type_list[0]), dtype=type_list)
-    ti.root.dense(ti.i, 1)._bit_struct(num_bits=32).place(a(0, 0), a(0, 1))
-    ti.root.dense(ti.i, 1)._bit_struct(num_bits=32).place(a(1, 0), a(1, 1))
-    ti.root.dense(ti.i, 1)._bit_struct(num_bits=32).place(b(0, 0), b(0, 1))
-    ti.root.dense(ti.i, 1)._bit_struct(num_bits=32).place(b(1, 0), b(1, 1))
-    ti.root.dense(ti.i, 1)._bit_struct(num_bits=32).place(c(0, 0), c(0, 1))
-    ti.root.dense(ti.i, 1)._bit_struct(num_bits=32).place(c(1, 0), c(1, 1))
+    ti.root.dense(ti.i, 1).bit_struct(num_bits=32).place(a(0, 0), a(0, 1))
+    ti.root.dense(ti.i, 1).bit_struct(num_bits=32).place(a(1, 0), a(1, 1))
+    ti.root.dense(ti.i, 1).bit_struct(num_bits=32).place(b(0, 0), b(0, 1))
+    ti.root.dense(ti.i, 1).bit_struct(num_bits=32).place(b(1, 0), b(1, 1))
+    ti.root.dense(ti.i, 1).bit_struct(num_bits=32).place(c(0, 0), c(0, 1))
+    ti.root.dense(ti.i, 1).bit_struct(num_bits=32).place(c(1, 0), c(1, 1))
 
     @ti.kernel
     def init():

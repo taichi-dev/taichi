@@ -27,16 +27,16 @@ def test_primitives():
 
 @ti.test(arch=ti.cpu)
 def test_bit_struct():
-    cit = ti.type_factory.custom_int(16, False)
+    cit = ti.quant.int(16, False)
     x = ti.field(dtype=cit)
     y = ti.field(dtype=ti.type_factory.custom_float(significand_type=cit))
     z = ti.field(dtype=ti.f32)
 
     n1 = ti.root.dense(ti.i, 32)
-    n1._bit_struct(num_bits=32).place(x)
+    n1.bit_struct(num_bits=32).place(x)
 
     n2 = ti.root.dense(ti.i, 4)
-    n2._bit_struct(num_bits=32).place(y)
+    n2.bit_struct(num_bits=32).place(y)
     n2.place(z)
 
     assert n1.cell_size_bytes == 4

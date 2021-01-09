@@ -4,10 +4,10 @@ import numpy as np
 
 @ti.test(require=ti.extension.quant, debug=True, cfg_optimization=False)
 def test_vectorized_struct_for():
-    ci1 = ti.type_factory.custom_int(1, False)
+    cu1 = ti.quant.int(1, False)
 
-    x = ti.field(dtype=ci1)
-    y = ti.field(dtype=ci1)
+    x = ti.field(dtype=cu1)
+    y = ti.field(dtype=cu1)
 
     N = 4096
     n_blocks = 4
@@ -15,9 +15,9 @@ def test_vectorized_struct_for():
     boundary_offset = 1024
 
     block = ti.root.pointer(ti.ij, (n_blocks, n_blocks))
-    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks)))._bit_array(
+    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).bit_array(
         ti.j, bits, num_bits=bits).place(x)
-    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks)))._bit_array(
+    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).bit_array(
         ti.j, bits, num_bits=bits).place(y)
 
     @ti.kernel
@@ -45,7 +45,7 @@ def test_vectorized_struct_for():
 
 @ti.test(require=ti.extension.quant)
 def test_offset_load():
-    ci1 = ti.type_factory.custom_int(1, False)
+    ci1 = ti.quant.int(1, False)
 
     x = ti.field(dtype=ci1)
     y = ti.field(dtype=ci1)
@@ -58,11 +58,11 @@ def test_offset_load():
     assert boundary_offset >= N // n_blocks
 
     block = ti.root.pointer(ti.ij, (n_blocks, n_blocks))
-    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks)))._bit_array(
+    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).bit_array(
         ti.j, bits, num_bits=bits).place(x)
-    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks)))._bit_array(
+    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).bit_array(
         ti.j, bits, num_bits=bits).place(y)
-    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks)))._bit_array(
+    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).bit_array(
         ti.j, bits, num_bits=bits).place(z)
 
     @ti.kernel
@@ -105,7 +105,7 @@ def test_offset_load():
 
 @ti.test(require=ti.extension.quant, debug=True)
 def test_evolve():
-    ci1 = ti.type_factory.custom_int(1, False)
+    ci1 = ti.quant.int(1, False)
 
     x = ti.field(dtype=ci1)
     y = ti.field(dtype=ci1)
@@ -118,11 +118,11 @@ def test_evolve():
     assert boundary_offset >= N // n_blocks
 
     block = ti.root.pointer(ti.ij, (n_blocks, n_blocks))
-    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks)))._bit_array(
+    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).bit_array(
         ti.j, bits, num_bits=bits).place(x)
-    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks)))._bit_array(
+    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).bit_array(
         ti.j, bits, num_bits=bits).place(y)
-    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks)))._bit_array(
+    block.dense(ti.ij, (N // n_blocks, N // (bits * n_blocks))).bit_array(
         ti.j, bits, num_bits=bits).place(z)
 
     @ti.kernel

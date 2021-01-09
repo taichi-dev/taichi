@@ -4,9 +4,9 @@ import numpy as np
 
 @ti.test(require=ti.extension.quant, debug=True)
 def test_1D_bit_array():
-    ci1 = ti.quant.int(1, False)
+    cu1 = ti.quant.int(1, False)
 
-    x = ti.field(dtype=ci1)
+    x = ti.field(dtype=cu1)
 
     N = 32
 

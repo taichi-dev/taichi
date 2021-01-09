@@ -40,14 +40,14 @@ class SNode:
     def bit_struct(self, num_bits):
         return SNode(self.ptr.bit_struct(num_bits))
 
+    @deprecated('_bit_array', 'bit_array')
+    def _bit_array(self, indices, dimensions, num_bits):
+        return self.bit_array(indices, dimensions, num_bits)
+
     def bit_array(self, indices, dimensions, num_bits):
         if isinstance(dimensions, int):
             dimensions = [dimensions] * len(indices)
         return SNode(self.ptr.bit_array(indices, dimensions, num_bits))
-
-    @deprecated('_bit_array', 'bit_array')
-    def _bit_array(self, indices, dimensions, num_bits):
-        return self.bit_array(indices, dimensions, num_bits)
 
     def place(self, *args, offset=None, shared_exponent=False):
         from .expr import Expr

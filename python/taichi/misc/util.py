@@ -125,7 +125,7 @@ def warning(msg, type=UserWarning, stacklevel=1):
 
 def deprecated(old, new, warning_type=DeprecationWarning):
     """
-    Announce a deprecation. Usage:
+    Mark an API as deprecated. Usage:
 
     @deprecated('ti.sqr(x)', 'x**2')
     def sqr(x):
@@ -148,7 +148,7 @@ def deprecated(old, new, warning_type=DeprecationWarning):
 
 def obsolete(old, new):
     """
-    Mark an API as obsolete. E.g.,
+    Mark an API as obsolete. Usage:
 
     sqr = obsolete('ti.sqr(x)', 'x**2')
     """

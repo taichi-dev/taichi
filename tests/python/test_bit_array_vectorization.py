@@ -4,10 +4,10 @@ import numpy as np
 
 @ti.test(require=ti.extension.quant, debug=True, cfg_optimization=False)
 def test_vectorized_struct_for():
-    ci1 = ti.quant.int(1, False)
+    cu1 = ti.quant.int(1, False)
 
-    x = ti.field(dtype=ci1)
-    y = ti.field(dtype=ci1)
+    x = ti.field(dtype=cu1)
+    y = ti.field(dtype=cu1)
 
     N = 4096
     n_blocks = 4

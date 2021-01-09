@@ -120,21 +120,21 @@ def test_bit_struct():
         set_val(test_case)
         verify_val(test_case)
 
-    test_single_bit_struct(8, 8, [3, 3, 2],
+    test_single_bit_struct(8, ti.i8, [3, 3, 2],
                            np.array([2**2 - 1, 2**3 - 1, -2**1]))
-    test_single_bit_struct(16, 16, [4, 7, 5],
+    test_single_bit_struct(16, ti.i16, [4, 7, 5],
                            np.array([2**3 - 1, 2**7 - 1, -2**4]))
-    test_single_bit_struct(32, 32, [17, 11, 4],
+    test_single_bit_struct(32, ti.i32, [17, 11, 4],
                            np.array([2**16 - 1, 2**10 - 1, -2**3]))
-    test_single_bit_struct(64, 64, [32, 23, 9],
+    test_single_bit_struct(64, ti.i64, [32, 23, 9],
                            np.array([2**31 - 1, 2**23 - 1, -2**8]))
-    test_single_bit_struct(32, 16, [7, 12, 13],
+    test_single_bit_struct(32, ti.i16, [7, 12, 13],
                            np.array([2**6 - 1, 2**12 - 1, -2**12]))
-    test_single_bit_struct(64, 32, [18, 22, 24],
+    test_single_bit_struct(64, ti.i32, [18, 22, 24],
                            np.array([2**17 - 1, 2**22 - 1, -2**23]))
 
-    test_single_bit_struct(16, 16, [5, 5, 6], np.array([15, 5, 20]))
-    test_single_bit_struct(32, 32, [10, 10, 12], np.array([11, 19, 2020]))
+    test_single_bit_struct(16, ti.i16, [5, 5, 6], np.array([15, 5, 20]))
+    test_single_bit_struct(32, ti.i32, [10, 10, 12], np.array([11, 19, 2020]))
 
 
 @ti.test(require=[ti.extension.quant_basic, ti.extension.sparse], debug=True)
@@ -142,11 +142,9 @@ def test_bit_struct_struct_for():
     block_size = 16
     N = 64
     cell = ti.root.pointer(ti.i, N // block_size)
-    ci32 = ti.type_factory_.get_custom_int_type(32, True)
-    cft = ti.type_factory.custom_float(significand_type=ci32,
-                                       scale=4 / (2**15))
+    fixed32 = ti.quant.fixed(frac=32, range=1024)
 
-    x = ti.field(dtype=cft)
+    x = ti.field(dtype=fixed32)
     cell.dense(ti.i, block_size)._bit_struct(32).place(x)
 
     for i in range(N):

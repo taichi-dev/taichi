@@ -39,15 +39,11 @@ Type *TypeFactory::get_pointer_type(Type *element, bool is_bit_pointer) {
 
 Type *TypeFactory::get_custom_int_type(int num_bits,
                                        bool is_signed,
-                                       int compute_type_bits) {
-  if (compute_type_bits == 0) {
-    compute_type_bits = 32;
-  }
-  auto key = std::make_tuple(compute_type_bits, num_bits, is_signed);
+                                       Type *compute_type) {
+  auto key = std::make_tuple(num_bits, is_signed, compute_type);
   if (custom_int_types.find(key) == custom_int_types.end()) {
-    custom_int_types[key] = std::make_unique<CustomIntType>(
-        num_bits, is_signed,
-        get_primitive_int_type(compute_type_bits, is_signed));
+    custom_int_types[key] =
+        std::make_unique<CustomIntType>(num_bits, is_signed, compute_type);
   }
   return custom_int_types[key].get();
 }

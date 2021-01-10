@@ -77,11 +77,13 @@ Program::Program(Arch desired_arch) {
   // Enforce flush to zero on arm64 CPUs
   // https://developer.arm.com/documentation/100403/0201/register-descriptions/advanced-simd-and-floating-point-registers/aarch64-register-descriptions/fpcr--floating-point-control-register?lang=en
   std::uint64_t fpcr;
-  __asm__ __volatile__ ("");
-  __asm__ __volatile__ ("MRS %0, FPCR" : "=r" (fpcr) );
-  __asm__ __volatile__ ("");
-  __asm__ __volatile__ ("MSR FPCR, %0" : :"ri" (fpcr | (1 << 24))); // Bit 24 is FZ
-  __asm__ __volatile__ ("");
+  __asm__ __volatile__("");
+  __asm__ __volatile__("MRS %0, FPCR" : "=r"(fpcr));
+  __asm__ __volatile__("");
+  __asm__ __volatile__("MSR FPCR, %0"
+                       :
+                       : "ri"(fpcr | (1 << 24)));  // Bit 24 is FZ
+  __asm__ __volatile__("");
 #endif
 
   auto arch = desired_arch;

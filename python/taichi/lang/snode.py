@@ -33,7 +33,7 @@ class SNode:
             dimensions = [dimensions] * len(indices)
         return SNode(self.ptr.bitmasked(indices, dimensions))
 
-    @deprecated('_bit_array', 'bit_array')
+    @deprecated('_bit_struct', 'bit_struct')
     def _bit_struct(self, num_bits):
         return self.bit_struct(num_bits)
 

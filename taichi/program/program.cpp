@@ -30,7 +30,10 @@
 #include "taichi/backends/cc/codegen_cc.h"
 #endif
 
+#if defined(TI_ARCH_x64)
+// For _MM_SET_FLUSH_ZERO_MODE
 #include <xmmintrin.h>
+#endif
 
 TI_NAMESPACE_BEGIN
 
@@ -68,7 +71,18 @@ Program::Program(Arch desired_arch) {
   // For performance considerations and correctness of CustomFloatType
   // operations, we force floating-point operations to flush to zero on all
   // backends (including CPUs).
+#if defined(TI_ARCH_x64)
   _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
+#else
+  // Enforce flush to zero on arm64 CPUs
+  // https://developer.arm.com/documentation/100403/0201/register-descriptions/advanced-simd-and-floating-point-registers/aarch64-register-descriptions/fpcr--floating-point-control-register?lang=en
+  std::uint64_t fpcr;
+  __asm__ __volatile__ ("");
+  __asm__ __volatile__ ("MRS %0, FPCR" : "=r" (fpcr) );
+  __asm__ __volatile__ ("");
+  __asm__ __volatile__ ("MSR FPCR, %0" : :"ri" (fpcr | (1 << 24))); // Bit 24 is FZ
+  __asm__ __volatile__ ("");
+#endif
 
   auto arch = desired_arch;
   if (arch == Arch::cuda) {

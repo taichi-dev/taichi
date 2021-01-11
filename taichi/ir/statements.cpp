@@ -326,10 +326,30 @@ std::unique_ptr<Stmt> OffloadedStmt::clone() const {
   new_stmt->reversed = reversed;
   new_stmt->num_cpu_threads = num_cpu_threads;
   new_stmt->device = device;
+  new_stmt->index_offsets = index_offsets;
+  if (tls_prologue) {
+    new_stmt->tls_prologue = tls_prologue->clone();
+    new_stmt->tls_prologue->parent_stmt = new_stmt.get();
+  }
+  if (bls_prologue) {
+    new_stmt->bls_prologue = bls_prologue->clone();
+    new_stmt->bls_prologue->parent_stmt = new_stmt.get();
+  }
   if (body) {
     new_stmt->body = body->clone();
     new_stmt->body->parent_stmt = new_stmt.get();
   }
+  if (bls_epilogue) {
+    new_stmt->bls_epilogue = bls_epilogue->clone();
+    new_stmt->bls_epilogue->parent_stmt = new_stmt.get();
+  }
+  if (tls_epilogue) {
+    new_stmt->tls_epilogue = tls_epilogue->clone();
+    new_stmt->tls_epilogue->parent_stmt = new_stmt.get();
+  }
+  new_stmt->tls_size = tls_size;
+  new_stmt->bls_size = bls_size;
+  new_stmt->mem_access_opt = mem_access_opt;
   return new_stmt;
 }
 

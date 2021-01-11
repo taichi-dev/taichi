@@ -91,6 +91,10 @@ IRHandle IRBank::fuse(IRHandle handle_a, IRHandle handle_b, Kernel *kernel) {
   auto cloned_task_b = handle_b.clone();
   auto task_a = cloned_task_a->as<OffloadedStmt>();
   auto task_b = cloned_task_b->as<OffloadedStmt>();
+  TI_ASSERT(!task_a->tls_prologue && !task_a->bls_prologue &&
+            !task_a->tls_epilogue && !task_a->tls_epilogue &&
+            !task_b->tls_prologue && !task_b->bls_prologue &&
+            !task_b->tls_epilogue && !task_b->tls_epilogue);
   // TODO: in certain cases this optimization can be wrong!
   // Fuse task b into task_a
   for (int j = 0; j < (int)task_b->body->size(); j++) {
@@ -100,6 +104,13 @@ IRHandle IRBank::fuse(IRHandle handle_a, IRHandle handle_b, Kernel *kernel) {
 
   // replace all reference to the offloaded statement B to A
   irpass::replace_all_usages_with(task_a, task_b, task_a);
+
+  // merge memory access options
+  for (auto &options : task_b->mem_access_opt.get_all()) {
+    for (auto &option : options.second) {
+      task_a->mem_access_opt.add_flag(options.first, option);
+    }
+  }
 
   irpass::full_simplify(task_a, /*after_lower_access=*/false, kernel);
   // For now, re_id is necessary for the hash to be correct.

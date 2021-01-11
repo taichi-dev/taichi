@@ -6,23 +6,19 @@ on:
 
 jobs:
   build_and_test_cpu:
-    name: Build and Test (CPU)
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip ci') && github.event.sender.login != 'taichi-gardener' }}
+    name: Build and Test (macOS only)
     strategy:
       matrix:
         include:
-          - os: ubuntu-latest
+          - os: macos-latest
             python: 3.6
             with_cc: OFF
           - os: macos-latest
             python: 3.7
             with_cc: OFF
-          - os: ubuntu-16.04  # TODO(archibate): windows-latest
+          - os: macos-latest
             python: 3.8
             with_cc: OFF
-          - os: ubuntu-latest
-            python: 3.8
-            with_cc: ON
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
@@ -45,8 +41,6 @@ jobs:
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
           export CXX=clang++
           python misc/ci_setup.py ci
-        env:
-          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }}
 
       - name: Test
         run: |
@@ -57,4 +51,12 @@ jobs:
           python examples/laplace.py
           ti diagnose
           ti test -vr2 -t2
-        # TODO: upload PyPI
+
+      # TODO(#1580): Upload to PyPI. Need to set up PYPI_PWD in the secrets first.
+      # - name: Upload PyPI
+      #   env:
+      #     # https://docs.github.com/en/free-pro-team@latest/actions/reference/encrypted-secrets#using-encrypted-secrets-in-a-workflow
+      #     PYPI_PWD: ${{ secrets.PYPI_PWD }}
+      #   run: |
+      #     cd python
+      #     python build.py try_upload && bash <(curl -s https://codecov.io/bash)

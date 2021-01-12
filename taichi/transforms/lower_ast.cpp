@@ -281,6 +281,14 @@ class LowerAST : public IRVisitor {
         offsets = snode->index_offsets;
         snode = snode->parent;
       }
+
+      // Climb up one more level if inside bit_struct.
+      // Note that when looping over bit_structs, we generate
+      // struct for on their parent node instead of itself for
+      // higher performance.
+      if (snode->type == SNodeType::bit_struct)
+        snode = snode->parent;
+
       auto &&new_for = std::make_unique<StructForStmt>(
           snode, std::move(stmt->body), stmt->vectorize, stmt->bit_vectorize,
           stmt->parallelize, stmt->block_dim);

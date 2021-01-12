@@ -571,9 +571,11 @@ void DelayedIRModifier::replace_with(Stmt *stmt,
 }
 
 bool DelayedIRModifier::modify_ir() {
+  bool force_modified = modified_;
+  modified_ = false;
   if (to_insert_before.empty() && to_insert_after.empty() && to_erase.empty() &&
       to_replace_with.empty())
-    return false;
+    return force_modified;
   for (auto &i : to_insert_before) {
     i.first->parent->insert_before(i.first, std::move(i.second));
   }

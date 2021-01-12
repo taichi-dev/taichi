@@ -48,9 +48,19 @@ class AlgSimp : public BasicStmtVisitor {
   }
 
   void visit(UnaryOpStmt *stmt) override {
-    if (stmt->is_cast() && stmt->cast_type == stmt->operand->ret_type) {
-      stmt->replace_with(stmt->operand);
-      modifier.erase(stmt);
+    if (stmt->is_cast()) {
+      if (stmt->cast_type == stmt->operand->ret_type) {
+        stmt->replace_with(stmt->operand);
+        modifier.erase(stmt);
+      } else if (stmt->operand->is<UnaryOpStmt>() &&
+                 stmt->operand->as<UnaryOpStmt>()->is_cast()) {
+        auto prev_cast = stmt->operand->as<UnaryOpStmt>();
+        if (stmt->op_type == UnaryOpType::cast_bits &&
+            prev_cast->op_type == UnaryOpType::cast_bits) {
+          stmt->operand = prev_cast->operand;
+          modifier.mark_as_modified();
+        }
+      }
     }
   }
 

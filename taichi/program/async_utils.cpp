@@ -372,6 +372,7 @@ TaskFusionMeta get_task_fusion_meta(IRBank *bank, const TaskLaunchRecord &t) {
   if (task->task_type == OffloadedTaskType::struct_for) {
     meta.snode = task->snode;
     meta.block_dim = task->block_dim;
+    // We don't need to record index_offsets because it's not used anymore.
   } else if (task->task_type == OffloadedTaskType::range_for) {
     // TODO: a few problems with the range-for test condition:
     // 1. This could incorrectly fuse two range-for kernels that have

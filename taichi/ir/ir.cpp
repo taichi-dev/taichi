@@ -595,7 +595,7 @@ bool DelayedIRModifier::modify_ir() {
   return true;
 }
 
-bool DelayedIRModifier::mark_as_modified() {
+void DelayedIRModifier::mark_as_modified() {
   modified_ = true;
 }
 

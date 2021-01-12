@@ -744,7 +744,7 @@ class DelayedIRModifier {
   bool modify_ir();
 
   // Force the next call of modify_ir() to return true.
-  bool mark_as_modified();
+  void mark_as_modified();
 };
 
 struct LocalAddress {

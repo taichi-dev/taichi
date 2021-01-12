@@ -595,6 +595,10 @@ bool DelayedIRModifier::modify_ir() {
   return true;
 }
 
+bool DelayedIRModifier::mark_as_modified() {
+  modified_ = true;
+}
+
 LocalAddress::LocalAddress(Stmt *var, int offset) : var(var), offset(offset) {
   TI_ASSERT(var->is<AllocaStmt>());
 }

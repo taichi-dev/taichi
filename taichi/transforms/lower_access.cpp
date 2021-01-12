@@ -171,11 +171,7 @@ class LowerAccess : public IRVisitor {
         auto lowered = lower_vector_ptr(stmt->ptr->as<GlobalPtrStmt>(), false,
                                         stmt->op_type);
         modifier.replace_with(stmt, std::move(lowered), true);
-      } else {
-        // already lowered, do nothing
-      }
-    } else if (stmt->op_type == SNodeOpType::get_addr) {
-      if (stmt->ptr->is<GlobalPtrStmt>()) {
+      } else if (stmt->op_type == SNodeOpType::get_addr) {
         auto lowered = lower_vector_ptr(stmt->ptr->as<GlobalPtrStmt>(), false);
         auto cast = lowered.push_back<UnaryOpStmt>(UnaryOpType::cast_bits,
                                                    lowered.back().get());
@@ -183,9 +179,7 @@ class LowerAccess : public IRVisitor {
             PrimitiveTypeID::u64);
         stmt->ptr = lowered.back().get();
         modifier.replace_with(stmt, std::move(lowered));
-      }
-    } else {
-      if (stmt->ptr->is<GlobalPtrStmt>()) {
+      } else {
         auto lowered =
             lower_vector_ptr(stmt->ptr->as<GlobalPtrStmt>(),
                              SNodeOpStmt::need_activation(stmt->op_type));

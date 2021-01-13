@@ -73,8 +73,8 @@ class CodeGenLLVMCPU : public CodeGenLLVM {
     } else if (stmt->task_type == Type::range_for) {
       create_offload_range_for(stmt);
     } else if (stmt->task_type == Type::struct_for) {
-      stmt->block_dim =
-          std::min(stmt->snode->parent->max_num_elements(), stmt->block_dim);
+      stmt->block_dim = std::min(stmt->snode->parent->max_num_elements(),
+                                 (int64)stmt->block_dim);
       create_offload_struct_for(stmt);
     } else if (stmt->task_type == Type::listgen) {
       emit_list_gen(stmt);

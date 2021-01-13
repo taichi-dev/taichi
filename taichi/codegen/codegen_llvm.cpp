@@ -238,7 +238,7 @@ void CodeGenLLVM::emit_struct_meta_base(const std::string &name,
   common.set("snode_id", tlctx->get_constant(snode->id));
   common.set("element_size", tlctx->get_constant((uint64)element_size));
   common.set("max_num_elements",
-             tlctx->get_constant(1 << snode->total_num_bits));
+             tlctx->get_constant(snode->max_num_elements()));
   common.set("context", get_context());
 
   /*
@@ -2250,8 +2250,8 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     }
   }
 
-  int list_element_size =
-      std::min(leaf_block->max_num_elements(), taichi_listgen_max_element_size);
+  int list_element_size = std::min(leaf_block->max_num_elements(),
+                                   (int64)taichi_listgen_max_element_size);
   int num_splits = std::max(1, list_element_size / stmt->block_dim);
 
   auto struct_for_func = get_runtime_function("parallel_struct_for");

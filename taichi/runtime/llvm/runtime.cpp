@@ -313,7 +313,7 @@ int32 Context_get_extra_args(Context *ctx, int32 i, int32 j) {
 struct StructMeta {
   i32 snode_id;
   std::size_t element_size;
-  i32 max_num_elements;
+  i64 max_num_elements;
 
   Ptr (*lookup_element)(Ptr, Ptr, int i);
 

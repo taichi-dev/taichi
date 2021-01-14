@@ -160,6 +160,15 @@ void system_memfence() {
 void cuda_vprintf(Ptr format, Ptr arg);
 #endif
 
+// Note that strlen is undefined on the CUDA backend, so we manually
+// implement it here.
+std::size_t taichi_strlen(const char *str) {
+  std::size_t len = 0;
+  for (auto p = str; *p; p++)
+    len++;
+  return len;
+}
+
 #define DEFINE_UNARY_REAL_FUNC(F) \
   f32 F##_f32(f32 x) {            \
     return std::F(x);             \
@@ -719,7 +728,8 @@ void taichi_assert_format(LLVMRuntime *runtime,
         memset(runtime->error_message_template, 0,
                taichi_error_message_max_length);
         memcpy(runtime->error_message_template, format,
-               std::min(strlen(format), taichi_error_message_max_length - 1));
+               std::min(taichi_strlen(format),
+                        taichi_error_message_max_length - 1));
         for (int i = 0; i < num_arguments; i++) {
           runtime->error_message_arguments[i] = arguments[i];
         }

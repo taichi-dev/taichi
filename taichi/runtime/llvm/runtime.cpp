@@ -143,6 +143,12 @@ void taichi_printf(LLVMRuntime *runtime, const char *format, Args &&... args);
 
 extern "C" {
 
+// This is not really a runtime function. Include this in a function body to
+// mark it as force no inline. Helpful when preventing inlining huge function
+// bodies.
+void mark_force_no_inline() {
+}
+
 i64 cuda_clock_i64() {
   return 0;
 }
@@ -153,6 +159,15 @@ void system_memfence() {
 #if ARCH_cuda
 void cuda_vprintf(Ptr format, Ptr arg);
 #endif
+
+// Note that strlen is undefined on the CUDA backend, so we manually
+// implement it here.
+std::size_t taichi_strlen(const char *str) {
+  std::size_t len = 0;
+  for (auto p = str; *p; p++)
+    len++;
+  return len;
+}
 
 #define DEFINE_UNARY_REAL_FUNC(F) \
   f32 F##_f32(f32 x) {            \
@@ -366,8 +381,10 @@ A simple list data structure that is infinitely long.
 Data are organized in chunks, where each chunk is allocated on demand.
 */
 
+// TODO: there are many i32 types in this class, which may be an issue if there
+// are >= 2 ** 31 elements.
 struct ListManager {
-  static constexpr std::size_t max_num_chunks = 1024;
+  static constexpr std::size_t max_num_chunks = 128 * 1024;
   Ptr chunks[max_num_chunks];
   std::size_t element_size{0};
   std::size_t max_num_elements_per_chunk;
@@ -575,9 +592,9 @@ struct NodeManager {
               i32 element_size,
               i32 chunk_num_elements = -1)
       : runtime(runtime), element_size(element_size) {
-    // 16K elements per chunk, by default
+    // 128K elements per chunk, by default
     if (chunk_num_elements == -1) {
-      chunk_num_elements = 16 * 1024;
+      chunk_num_elements = 128 * 1024;
     }
     // Maximum chunk size = 128 MB
     while (chunk_num_elements > 1 &&
@@ -699,6 +716,8 @@ void taichi_assert_format(LLVMRuntime *runtime,
                           const char *format,
                           int num_arguments,
                           uint64 *arguments) {
+  mark_force_no_inline();
+
   if (!enable_assert || test != 0)
     return;
   if (!runtime->error_code) {
@@ -709,7 +728,8 @@ void taichi_assert_format(LLVMRuntime *runtime,
         memset(runtime->error_message_template, 0,
                taichi_error_message_max_length);
         memcpy(runtime->error_message_template, format,
-               std::min(strlen(format), taichi_error_message_max_length - 1));
+               std::min(taichi_strlen(format),
+                        taichi_error_message_max_length - 1));
         for (int i = 0; i < num_arguments; i++) {
           runtime->error_message_arguments[i] = arguments[i];
         }
@@ -720,7 +740,17 @@ void taichi_assert_format(LLVMRuntime *runtime,
   // Kill this CUDA thread.
   asm("exit;");
 #else
-  // TODO: kill this CPU thread here.
+  // TODO: properly kill this CPU thread here, considering the containing
+  // ThreadPool structure.
+
+  // std::terminate();
+
+  // Note that std::terminate() will throw an signal 6
+  // (Aborted), which will be caught by Taichi's signal handler. The assert
+  // failure message will NOT be properly printed since Taichi exits after
+  // receiving that signal. It is better than nothing when debugging the
+  // runtime, since otherwise the whole program may crash if the kernel
+  // continues after assertion failure.
 #endif
 }
 
@@ -1316,6 +1346,8 @@ i32 linear_thread_idx(Context *context) {
 #include "node_bitmasked.h"
 
 void ListManager::touch_chunk(int chunk_id) {
+  taichi_assert_runtime(runtime, chunk_id < max_num_chunks,
+                        "List manager out of chunks.");
   if (!chunks[chunk_id]) {
     locked_task(&lock, [&] {
       // may have been allocated during lock contention

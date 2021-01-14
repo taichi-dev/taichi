@@ -292,7 +292,7 @@ std::unique_ptr<llvm::Module> module_from_bitcode_file(std::string bitcode_path,
   }
 
   for (auto &f : *(runtime.get()))
-    TaichiLLVMContext::force_inline(&f);
+    TaichiLLVMContext::mark_inline(&f);
 
   bool module_broken = llvm::verifyModule(*runtime.get(), &llvm::errs());
   TI_ERROR_IF(module_broken, "Module broken");
@@ -377,7 +377,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
       builder.SetInsertPoint(bb);
       builder.CreateRet(
           get_constant(CUDAContext::get_instance().get_compute_capability()));
-      TaichiLLVMContext::force_inline(func);
+      TaichiLLVMContext::mark_inline(func);
 #endif
 
       auto patch_intrinsic = [&](std::string name, Intrinsic::ID intrin,
@@ -400,7 +400,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
           builder.CreateIntrinsic(intrin, types, args);
           builder.CreateRetVoid();
         }
-        TaichiLLVMContext::force_inline(func);
+        TaichiLLVMContext::mark_inline(func);
       };
 
       auto patch_atomic_add = [&](std::string name,
@@ -416,7 +416,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
         builder.CreateRet(builder.CreateAtomicRMW(
             op, args[0], args[1],
             llvm::AtomicOrdering::SequentiallyConsistent));
-        TaichiLLVMContext::force_inline(func);
+        TaichiLLVMContext::mark_inline(func);
       };
 
       patch_intrinsic("thread_idx", Intrinsic::nvvm_read_ptx_sreg_tid_x);
@@ -627,11 +627,23 @@ std::size_t TaichiLLVMContext::get_type_size(llvm::Type *type) {
   return jit->get_type_size(type);
 }
 
-void TaichiLLVMContext::force_inline(llvm::Function *f) {
-  f->removeAttribute(AttributeList::FunctionIndex,
+void TaichiLLVMContext::mark_inline(llvm::Function *f) {
+  for (auto &B : *f)
+    for (auto &I : B) {
+      if (auto *call = llvm::dyn_cast<llvm::CallInst>(&I)) {
+        if (auto func = call->getCalledFunction();
+            func && func->getName() == "mark_force_no_inline") {
+          // Found "mark_force_no_inline". Do not inline.
+          return;
+        }
+      }
+    }
+  f->removeAttribute(llvm::AttributeList::FunctionIndex,
                      llvm::Attribute::OptimizeNone);
-  f->removeAttribute(AttributeList::FunctionIndex, llvm::Attribute::NoInline);
-  f->addAttribute(AttributeList::FunctionIndex, llvm::Attribute::AlwaysInline);
+  f->removeAttribute(llvm::AttributeList::FunctionIndex,
+                     llvm::Attribute::NoInline);
+  f->addAttribute(llvm::AttributeList::FunctionIndex,
+                  llvm::Attribute::AlwaysInline);
 }
 
 int TaichiLLVMContext::num_instructions(llvm::Function *func) {

@@ -102,6 +102,13 @@ void StructCompiler::infer_snode_properties(SNode &snode) {
   for (int i = 0; i < taichi_max_num_indices; i++) {
     snode.total_num_bits += snode.extractors[i].num_bits;
   }
+  // The highest bit is for the sign.
+  constexpr int kMaxTotalNumBits = 64;
+  TI_ERROR_IF(
+      snode.total_num_bits >= kMaxTotalNumBits,
+      "SNode={}: total_num_bits={} exceeded limit={}. This implies that "
+      "your requested shape is too large.",
+      snode.id, snode.total_num_bits, kMaxTotalNumBits);
 
   if (snode.has_null()) {
     ambient_snodes.push_back(&snode);

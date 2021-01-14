@@ -73,10 +73,11 @@ class SNode {
   int depth{};
 
   std::string name;
-  int64 n{};
-  int total_num_bits{}, total_bit_start{};
-  int chunk_size{};
-  std::size_t cell_size_bytes{};
+  int64 n{0};
+  int total_num_bits{0};
+  int total_bit_start{0};
+  int chunk_size{0};
+  std::size_t cell_size_bytes{0};
   PrimitiveType *physical_type;  // for bit_struct and bit_array only
   DataType dt;
   bool has_ambient{};
@@ -267,8 +268,8 @@ class SNode {
     return fmt::format("{}_refine_coordinates", get_name());
   }
 
-  int max_num_elements() const {
-    return 1 << total_num_bits;
+  int64 max_num_elements() const {
+    return int64(1) << total_num_bits;
   }
 
   int shape_along_axis(int i) const;

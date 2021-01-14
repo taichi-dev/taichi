@@ -221,7 +221,7 @@ class ASTTransformerPreprocess(ASTTransformerBase):
             def tuple_indexed(i):
                 indexing = self.parse_stmt('__tmp_tuple[0]')
                 self.set_subscript_index(indexing.value,
-                        self.parse_expr("{}".format(i)))
+                                         self.parse_expr("{}".format(i)))
                 return indexing.value
 
             for i, target in enumerate(targets):

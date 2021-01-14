@@ -96,12 +96,6 @@ using Ptr = uint8 *;
 
 using ContextArgType = long long;
 
-// This is not really a runtime function. Include this at be beginning of a
-// function body to mark it as force no inline. Helpful when preventing inlining
-// huge function bodies.
-void mark_force_no_inline() {
-}
-
 #if ARCH_cuda
 extern "C" {
 
@@ -148,6 +142,12 @@ template <typename... Args>
 void taichi_printf(LLVMRuntime *runtime, const char *format, Args &&... args);
 
 extern "C" {
+
+// This is not really a runtime function. Include this in a function body to
+// mark it as force no inline. Helpful when preventing inlining huge function
+// bodies.
+void mark_force_no_inline() {
+}
 
 i64 cuda_clock_i64() {
   return 0;
@@ -734,6 +734,7 @@ void taichi_assert_format(LLVMRuntime *runtime,
   // ThreadPool structure.
 
   // std::terminate();
+
   // Note that std::terminate() will throw an signal 6
   // (Aborted), which will be caught by Taichi's signal handler. The assert
   // failure message will NOT be properly printed since Taichi exits after

@@ -1,0 +1,14 @@
+setuptools
+astor
+pybind11
+pylint
+sourceinspect
+pytest
+pytest-rerunfailures
+pytest-xdist
+yapf
+numpy
+GitPython
+coverage
+colorama
+autograd

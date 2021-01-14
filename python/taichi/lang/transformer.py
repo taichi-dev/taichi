@@ -220,7 +220,8 @@ class ASTTransformerPreprocess(ASTTransformerBase):
 
             def tuple_indexed(i):
                 indexing = self.parse_stmt('__tmp_tuple[0]')
-                indexing.value.slice.value = self.parse_expr("{}".format(i))
+                self.set_subscript_index(indexing.value,
+                        self.parse_expr("{}".format(i)))
                 return indexing.value
 
             for i, target in enumerate(targets):
@@ -565,15 +566,32 @@ if 1:
             else:  # Struct for
                 return self.visit_struct_for(node, is_grouped=False)
 
+    @staticmethod
+    def get_subscript_index(node):
+        assert isinstance(node, ast.Subscript), type(node)
+        # ast.Index has been deprecated in Python 3.9,
+        # use the index value directly instead :)
+        if isinstance(node.slice, ast.Index):
+            return node.slice.value
+        return node.slice
+
+    @staticmethod
+    def set_subscript_index(node, value):
+        assert isinstance(node, ast.Subscript), type(node)
+        if isinstance(node.slice, ast.Index):
+            node.slice.value = value
+        else:
+            node.slice = value
+
     def visit_Subscript(self, node):
         self.generic_visit(node)
 
         value = node.value
-        indices = node.slice
-        if isinstance(indices.value, ast.Tuple):
-            indices = indices.value.elts
+        indices = self.get_subscript_index(node)
+        if isinstance(indices, ast.Tuple):
+            indices = indices.elts
         else:
-            indices = [indices.value]
+            indices = [indices]
 
         call = ast.Call(func=self.parse_expr('ti.subscript'),
                         args=[value] + indices,

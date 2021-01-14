@@ -366,8 +366,10 @@ A simple list data structure that is infinitely long.
 Data are organized in chunks, where each chunk is allocated on demand.
 */
 
+// TODO: there are many i32 types in this class, which may be an issue if there
+// are >= 2 ** 31 elements.
 struct ListManager {
-  static constexpr std::size_t max_num_chunks = 1024;
+  static constexpr std::size_t max_num_chunks = 128 * 1024;
   Ptr chunks[max_num_chunks];
   std::size_t element_size{0};
   std::size_t max_num_elements_per_chunk;
@@ -575,9 +577,9 @@ struct NodeManager {
               i32 element_size,
               i32 chunk_num_elements = -1)
       : runtime(runtime), element_size(element_size) {
-    // 16K elements per chunk, by default
+    // 128K elements per chunk, by default
     if (chunk_num_elements == -1) {
-      chunk_num_elements = 16 * 1024;
+      chunk_num_elements = 128 * 1024;
     }
     // Maximum chunk size = 128 MB
     while (chunk_num_elements > 1 &&
@@ -720,11 +722,19 @@ void taichi_assert_format(LLVMRuntime *runtime,
   // Kill this CUDA thread.
   asm("exit;");
 #else
-  // TODO: kill this CPU thread here.
+  // TODO: properly kill this CPU thread here, considering the containing
+  // ThreadPool structure. Note that std::terminate() will throw an signal 6
+  // (Aborted), which will be caught by Taichi's signal handler. The assert
+  // failure message will NOT be properly printed since Taichi exits after
+  // receiving that signal. Better than nothing, since otherwise the whole
+  // program may crash if continue after assertion failure.
+  std::terminate();
 #endif
 }
 
-void taichi_assert_runtime(LLVMRuntime *runtime, i32 test, const char *msg) {
+__attribute__((noinline)) void taichi_assert_runtime(LLVMRuntime *runtime,
+                                                     i32 test,
+                                                     const char *msg) {
   taichi_assert_format(runtime, test, msg, 0, nullptr);
 }
 
@@ -1316,6 +1326,8 @@ i32 linear_thread_idx(Context *context) {
 #include "node_bitmasked.h"
 
 void ListManager::touch_chunk(int chunk_id) {
+  taichi_assert_runtime(runtime, chunk_id < max_num_chunks,
+                        "List manager out of chunks.");
   if (!chunks[chunk_id]) {
     locked_task(&lock, [&] {
       // may have been allocated during lock contention

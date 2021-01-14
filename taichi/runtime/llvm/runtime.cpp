@@ -96,6 +96,12 @@ using Ptr = uint8 *;
 
 using ContextArgType = long long;
 
+// This is not really a runtime function. Include this at be beginning of a
+// function body to mark it as force no inline. Helpful when preventing inlining
+// huge function bodies.
+void mark_force_no_inline() {
+}
+
 #if ARCH_cuda
 extern "C" {
 
@@ -701,6 +707,8 @@ void taichi_assert_format(LLVMRuntime *runtime,
                           const char *format,
                           int num_arguments,
                           uint64 *arguments) {
+  mark_force_no_inline();
+
   if (!enable_assert || test != 0)
     return;
   if (!runtime->error_code) {
@@ -723,18 +731,19 @@ void taichi_assert_format(LLVMRuntime *runtime,
   asm("exit;");
 #else
   // TODO: properly kill this CPU thread here, considering the containing
-  // ThreadPool structure. Note that std::terminate() will throw an signal 6
+  // ThreadPool structure.
+
+  // std::terminate();
+  // Note that std::terminate() will throw an signal 6
   // (Aborted), which will be caught by Taichi's signal handler. The assert
   // failure message will NOT be properly printed since Taichi exits after
-  // receiving that signal. Better than nothing, since otherwise the whole
-  // program may crash if continue after assertion failure.
-  std::terminate();
+  // receiving that signal. It is better than nothing when debugging the
+  // runtime, since otherwise the whole program may crash if the kernel
+  // continues after assertion failure.
 #endif
 }
 
-__attribute__((noinline)) void taichi_assert_runtime(LLVMRuntime *runtime,
-                                                     i32 test,
-                                                     const char *msg) {
+void taichi_assert_runtime(LLVMRuntime *runtime, i32 test, const char *msg) {
   taichi_assert_format(runtime, test, msg, 0, nullptr);
 }
 

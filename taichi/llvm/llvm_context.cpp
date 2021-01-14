@@ -628,10 +628,13 @@ std::size_t TaichiLLVMContext::get_type_size(llvm::Type *type) {
 }
 
 void TaichiLLVMContext::force_inline(llvm::Function *f) {
-  f->removeAttribute(AttributeList::FunctionIndex,
+  // TODO: do not force inline if find "mark_as_no_inline" in the function body.
+  f->removeAttribute(llvm::AttributeList::FunctionIndex,
                      llvm::Attribute::OptimizeNone);
-  f->removeAttribute(AttributeList::FunctionIndex, llvm::Attribute::NoInline);
-  f->addAttribute(AttributeList::FunctionIndex, llvm::Attribute::AlwaysInline);
+  f->removeAttribute(llvm::AttributeList::FunctionIndex,
+                     llvm::Attribute::NoInline);
+  f->addAttribute(llvm::AttributeList::FunctionIndex,
+                  llvm::Attribute::AlwaysInline);
 }
 
 int TaichiLLVMContext::num_instructions(llvm::Function *func) {

@@ -7,24 +7,34 @@
 
 TLANG_NAMESPACE_BEGIN
 
+// TODO: rename scratch_pad to block_local_cache? Need to get rid of the
+// scratch_pad term
+
 // Figure out accessed SNodes, and their ranges in this for stmt
-class AccessAnalysis : public BasicStmtVisitor {
+class BLSAnalysis : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
 
  public:
   OffloadedStmt *for_stmt;
   ScratchPads *pads;
 
-  std::vector<std::vector<int>> block_indices;
+  using BlockIndices = std::vector<std::vector<int>>;
 
-  AccessAnalysis(OffloadedStmt *for_stmt, ScratchPads *pads)
+  std::unordered_map<SNode *, BlockIndices> block_indices;
+
+  BLSAnalysis(OffloadedStmt *for_stmt, ScratchPads *pads)
       : for_stmt(for_stmt), pads(pads) {
+    TI_AUTO_PROF;
     allow_undefined_visitor = true;
     invoke_default_visitor = false;
 
-    TI_WARN(
-        "Using the size of scratch_opt[0].second as the snode size to cache");
-    generate_block_indices(for_stmt->scratch_opt[0].second->parent, {}, 0);
+    for (auto &snode : for_stmt->mem_access_opt.get_snodes_with_flag(
+             SNodeAccessFlag::block_local)) {
+      auto block = snode->parent;
+      if (block_indices.find(block) == block_indices.end()) {
+        generate_block_indices(block, block_indices[block], {}, 0);
+      }
+    }
 
     const auto &block = for_stmt->body;
 
@@ -33,28 +43,34 @@ class AccessAnalysis : public BasicStmtVisitor {
     }
   }
 
-  void generate_block_indices(SNode *snode, std::vector<int> index, int s) {
+  // Recursively (dimension by dimension) generate the indices in a SNode
+  // (block). E.g., a dense(ti.ij, (2, 4)) SNode has indices
+  // [(0, 0), (0, 1), (0, 2), (0, 3), (1, 0), (1, 1), (1, 2), (1, 3)]
+  void generate_block_indices(SNode *snode,
+                              BlockIndices &block_indices,
+                              std::vector<int> index,
+                              int index_id) {
     // NOTE: Assuming not vectorized
-    if (s == taichi_max_num_indices) {
+    if (index_id == taichi_max_num_indices) {
       block_indices.push_back(index);
       return;
     }
 
-    if (snode->extractors[s].active) {
-      for (int i = 0; i < (1 << snode->extractors[s].num_bits); i++) {
+    if (snode->extractors[index_id].active) {
+      for (int i = 0; i < (1 << snode->extractors[index_id].num_bits); i++) {
         auto new_index = index;
         new_index.push_back(i);
-        generate_block_indices(snode, new_index, s + 1);
+        generate_block_indices(snode, block_indices, new_index, index_id + 1);
       }
     } else {
-      generate_block_indices(snode, index, s + 1);
+      generate_block_indices(snode, block_indices, index, index_id + 1);
     }
   }
 
   void visit(GlobalPtrStmt *stmt) override {
   }
 
-  void access(Stmt *stmt, AccessFlag flag) {
+  void record_access(Stmt *stmt, AccessFlag flag) {
     if (!stmt->is<GlobalPtrStmt>())
       return;  // local alloca
     auto ptr = stmt->as<GlobalPtrStmt>();
@@ -78,7 +94,8 @@ class AccessAnalysis : public BasicStmtVisitor {
         }
       }
       if (matching_indices) {
-        for (const auto &bind : block_indices) {
+        auto block = snode->parent;
+        for (const auto &bind : block_indices[block]) {
           std::function<void(std::vector<int>, int)> visit =
               [&](std::vector<int> ind, int depth) {
                 if (depth == num_indices) {
@@ -100,17 +117,17 @@ class AccessAnalysis : public BasicStmtVisitor {
   // Do not eliminate global data access
   void visit(GlobalLoadStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);  // TODO: support vectorization
-    access(stmt->ptr, AccessFlag::read);
+    record_access(stmt->ptr, AccessFlag::read);
   }
 
   void visit(GlobalStoreStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);  // TODO: support vectorization
-    access(stmt->ptr, AccessFlag::write);
+    record_access(stmt->ptr, AccessFlag::write);
   }
 
   void visit(AtomicOpStmt *stmt) override {
     if (stmt->op_type == AtomicOpType::add) {
-      access(stmt->dest, AccessFlag::accumulate);
+      record_access(stmt->dest, AccessFlag::accumulate);
     }
   }
 
@@ -122,17 +139,15 @@ class AccessAnalysis : public BasicStmtVisitor {
 namespace irpass {
 
 std::unique_ptr<ScratchPads> initialize_scratch_pad(OffloadedStmt *offload) {
+  TI_AUTO_PROF
   TI_ASSERT(offload->task_type == OffloadedTaskType::struct_for);
   std::unique_ptr<ScratchPads> pads;
   pads = std::make_unique<ScratchPads>();
-  if (!offload->scratch_opt.empty()) {
-    for (auto &opt : offload->scratch_opt) {
-      if (opt.first == SNodeAccessFlag::block_local) {
-        pads->insert(opt.second);
-      }
-    }
-    AccessAnalysis _(offload, pads.get());
+  for (auto snode : offload->mem_access_opt.get_snodes_with_flag(
+           SNodeAccessFlag::block_local)) {
+    pads->insert(snode);
   }
+  BLSAnalysis _(offload, pads.get());
   pads->finalize();
   return pads;
 }

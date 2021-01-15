@@ -136,3 +136,27 @@ def test_ndrange_index_floordiv():
                 assert A[i, j] == i
             else:
                 assert A[i, j] == 0
+
+
+@ti.test()
+def test_nested_ndrange():
+    # https://github.com/taichi-dev/taichi/issues/1829
+
+    n = 2
+
+    A = ti.field(ti.i32, (n, n, n, n))
+
+    @ti.kernel
+    def init():
+        for i, j in ti.ndrange(n, n):
+            for k, l in ti.ndrange(n, n):
+                r = i * n**3 + j * n**2 + k * n + l
+                A[i, j, k, l] = r
+
+    init()
+    for i in range(n):
+        for j in range(n):
+            for k in range(n):
+                for l in range(n):
+                    r = i * n**3 + j * n**2 + k * n + l
+                    assert A[i, j, k, l] == r

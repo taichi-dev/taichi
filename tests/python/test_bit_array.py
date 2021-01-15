@@ -2,15 +2,15 @@ import taichi as ti
 import numpy as np
 
 
-@ti.test(arch=ti.cpu, debug=True, cfg_optimization=False)
+@ti.test(require=ti.extension.quant, debug=True)
 def test_1D_bit_array():
-    ci1 = ti.type_factory_.get_custom_int_type(1, False)
+    cu1 = ti.quant.int(1, False)
 
-    x = ti.field(dtype=ci1)
+    x = ti.field(dtype=cu1)
 
     N = 32
 
-    ti.root._bit_array(ti.i, N, num_bits=32).place(x)
+    ti.root.bit_array(ti.i, N, num_bits=32).place(x)
 
     ti.get_runtime().materialize()
 
@@ -28,15 +28,15 @@ def test_1D_bit_array():
     verify_val()
 
 
-@ti.test(arch=ti.cpu, debug=True, cfg_optimization=False)
+@ti.test(require=ti.extension.quant, debug=True)
 def test_2D_bit_array():
-    ci1 = ti.type_factory_.get_custom_int_type(1, False)
+    ci1 = ti.quant.int(1, False)
 
     x = ti.field(dtype=ci1)
 
     M, N = 4, 8
 
-    ti.root._bit_array(ti.ij, (M, N), num_bits=32).place(x)
+    ti.root.bit_array(ti.ij, (M, N), num_bits=32).place(x)
 
     ti.get_runtime().materialize()
 

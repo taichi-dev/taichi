@@ -68,9 +68,18 @@ TaichiLLVMContext::TaichiLLVMContext(Arch arch) : arch(arch) {
       nullptr);
 
   if (arch_is_cpu(arch)) {
+#if defined(TI_PLATFORM_OSX) and defined(TI_ARCH_ARM)
+    // Note that on Apple Silicon (M1), "native" seems to mean arm instead of
+    // arm64 (aka AArch64).
+    LLVMInitializeAArch64Target();
+    LLVMInitializeAArch64TargetMC();
+    LLVMInitializeAArch64TargetInfo();
+    LLVMInitializeAArch64AsmPrinter();
+#else
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();
     llvm::InitializeNativeTargetAsmParser();
+#endif
   } else {
 #if defined(TI_WITH_CUDA)
     LLVMInitializeNVPTXTarget();
@@ -283,7 +292,7 @@ std::unique_ptr<llvm::Module> module_from_bitcode_file(std::string bitcode_path,
   }
 
   for (auto &f : *(runtime.get()))
-    TaichiLLVMContext::force_inline(&f);
+    TaichiLLVMContext::mark_inline(&f);
 
   bool module_broken = llvm::verifyModule(*runtime.get(), &llvm::errs());
   TI_ERROR_IF(module_broken, "Module broken");
@@ -368,7 +377,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
       builder.SetInsertPoint(bb);
       builder.CreateRet(
           get_constant(CUDAContext::get_instance().get_compute_capability()));
-      TaichiLLVMContext::force_inline(func);
+      TaichiLLVMContext::mark_inline(func);
 #endif
 
       auto patch_intrinsic = [&](std::string name, Intrinsic::ID intrin,
@@ -391,7 +400,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
           builder.CreateIntrinsic(intrin, types, args);
           builder.CreateRetVoid();
         }
-        TaichiLLVMContext::force_inline(func);
+        TaichiLLVMContext::mark_inline(func);
       };
 
       auto patch_atomic_add = [&](std::string name,
@@ -407,7 +416,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
         builder.CreateRet(builder.CreateAtomicRMW(
             op, args[0], args[1],
             llvm::AtomicOrdering::SequentiallyConsistent));
-        TaichiLLVMContext::force_inline(func);
+        TaichiLLVMContext::mark_inline(func);
       };
 
       patch_intrinsic("thread_idx", Intrinsic::nvvm_read_ptx_sreg_tid_x);
@@ -564,14 +573,14 @@ llvm::Value *TaichiLLVMContext::get_constant(DataType dt, T t) {
     return llvm::ConstantFP::get(*ctx, llvm::APFloat((float32)t));
   } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
     return llvm::ConstantFP::get(*ctx, llvm::APFloat((float64)t));
-  } else if (dt->is_primitive(PrimitiveTypeID::i32)) {
-    return llvm::ConstantInt::get(*ctx, llvm::APInt(32, t, true));
-  } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
-    return llvm::ConstantInt::get(*ctx, llvm::APInt(32, t, false));
-  } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
-    return llvm::ConstantInt::get(*ctx, llvm::APInt(64, t, true));
-  } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
-    return llvm::ConstantInt::get(*ctx, llvm::APInt(64, t, false));
+  } else if (is_integral(dt)) {
+    if (is_signed(dt)) {
+      return llvm::ConstantInt::get(
+          *ctx, llvm::APInt(data_type_bits(dt), (uint64_t)t, true));
+    } else {
+      return llvm::ConstantInt::get(
+          *ctx, llvm::APInt(data_type_bits(dt), (uint64_t)t, false));
+    }
   } else {
     TI_NOT_IMPLEMENTED
   }
@@ -579,6 +588,8 @@ llvm::Value *TaichiLLVMContext::get_constant(DataType dt, T t) {
 
 template llvm::Value *TaichiLLVMContext::get_constant(DataType dt, int32 t);
 template llvm::Value *TaichiLLVMContext::get_constant(DataType dt, int64 t);
+template llvm::Value *TaichiLLVMContext::get_constant(DataType dt, uint32 t);
+template llvm::Value *TaichiLLVMContext::get_constant(DataType dt, uint64 t);
 template llvm::Value *TaichiLLVMContext::get_constant(DataType dt, float32 t);
 template llvm::Value *TaichiLLVMContext::get_constant(DataType dt, float64 t);
 
@@ -616,11 +627,23 @@ std::size_t TaichiLLVMContext::get_type_size(llvm::Type *type) {
   return jit->get_type_size(type);
 }
 
-void TaichiLLVMContext::force_inline(llvm::Function *f) {
-  f->removeAttribute(AttributeList::FunctionIndex,
+void TaichiLLVMContext::mark_inline(llvm::Function *f) {
+  for (auto &B : *f)
+    for (auto &I : B) {
+      if (auto *call = llvm::dyn_cast<llvm::CallInst>(&I)) {
+        if (auto func = call->getCalledFunction();
+            func && func->getName() == "mark_force_no_inline") {
+          // Found "mark_force_no_inline". Do not inline.
+          return;
+        }
+      }
+    }
+  f->removeAttribute(llvm::AttributeList::FunctionIndex,
                      llvm::Attribute::OptimizeNone);
-  f->removeAttribute(AttributeList::FunctionIndex, llvm::Attribute::NoInline);
-  f->addAttribute(AttributeList::FunctionIndex, llvm::Attribute::AlwaysInline);
+  f->removeAttribute(llvm::AttributeList::FunctionIndex,
+                     llvm::Attribute::NoInline);
+  f->addAttribute(llvm::AttributeList::FunctionIndex,
+                  llvm::Attribute::AlwaysInline);
 }
 
 int TaichiLLVMContext::num_instructions(llvm::Function *func) {

@@ -53,7 +53,10 @@ ExternalPtrStmt::ExternalPtrStmt(const LaneAttribute<Stmt *> &base_ptrs,
 GlobalPtrStmt::GlobalPtrStmt(const LaneAttribute<SNode *> &snodes,
                              const std::vector<Stmt *> &indices,
                              bool activate)
-    : snodes(snodes), indices(indices), activate(activate) {
+    : snodes(snodes),
+      indices(indices),
+      activate(activate),
+      is_bit_vectorized(false) {
   for (int i = 0; i < (int)snodes.size(); i++) {
     TI_ASSERT(snodes[i] != nullptr);
     TI_ASSERT(snodes[0]->dt == snodes[i]->dt);
@@ -90,19 +93,6 @@ SNodeOpStmt::SNodeOpStmt(SNodeOpType op_type,
                          Stmt *ptr,
                          Stmt *val)
     : op_type(op_type), snode(snode), ptr(ptr), val(val) {
-  element_type() = PrimitiveType::i32;
-  TI_STMT_REG_FIELDS;
-}
-
-SNodeOpStmt::SNodeOpStmt(SNodeOpType op_type,
-                         SNode *snode,
-                         const std::vector<Stmt *> &indices)
-    : op_type(op_type), snode(snode), indices(indices) {
-  ptr = nullptr;
-  val = nullptr;
-  TI_ASSERT(op_type == SNodeOpType::is_active ||
-            op_type == SNodeOpType::deactivate ||
-            op_type == SNodeOpType::activate);
   element_type() = PrimitiveType::i32;
   TI_STMT_REG_FIELDS;
 }
@@ -198,6 +188,7 @@ RangeForStmt::RangeForStmt(Stmt *begin,
                            Stmt *end,
                            std::unique_ptr<Block> &&body,
                            int vectorize,
+                           int bit_vectorize,
                            int parallelize,
                            int block_dim,
                            bool strictly_serialized)
@@ -205,6 +196,7 @@ RangeForStmt::RangeForStmt(Stmt *begin,
       end(end),
       body(std::move(body)),
       vectorize(vectorize),
+      bit_vectorize(bit_vectorize),
       parallelize(parallelize),
       block_dim(block_dim),
       strictly_serialized(strictly_serialized) {
@@ -215,8 +207,8 @@ RangeForStmt::RangeForStmt(Stmt *begin,
 
 std::unique_ptr<Stmt> RangeForStmt::clone() const {
   auto new_stmt = std::make_unique<RangeForStmt>(
-      begin, end, body->clone(), vectorize, parallelize, block_dim,
-      strictly_serialized);
+      begin, end, body->clone(), vectorize, bit_vectorize, parallelize,
+      block_dim, strictly_serialized);
   new_stmt->reversed = reversed;
   return new_stmt;
 }
@@ -224,11 +216,13 @@ std::unique_ptr<Stmt> RangeForStmt::clone() const {
 StructForStmt::StructForStmt(SNode *snode,
                              std::unique_ptr<Block> &&body,
                              int vectorize,
+                             int bit_vectorize,
                              int parallelize,
                              int block_dim)
     : snode(snode),
       body(std::move(body)),
       vectorize(vectorize),
+      bit_vectorize(bit_vectorize),
       parallelize(parallelize),
       block_dim(block_dim) {
   this->body->parent_stmt = this;
@@ -237,8 +231,8 @@ StructForStmt::StructForStmt(SNode *snode,
 
 std::unique_ptr<Stmt> StructForStmt::clone() const {
   auto new_stmt = std::make_unique<StructForStmt>(
-      snode, body->clone(), vectorize, parallelize, block_dim);
-  new_stmt->scratch_opt = scratch_opt;
+      snode, body->clone(), vectorize, bit_vectorize, parallelize, block_dim);
+  new_stmt->mem_access_opt = mem_access_opt;
   return new_stmt;
 }
 
@@ -266,8 +260,8 @@ std::unique_ptr<Stmt> WhileStmt::clone() const {
   return new_stmt;
 }
 
-GetChStmt::GetChStmt(Stmt *input_ptr, int chid)
-    : input_ptr(input_ptr), chid(chid) {
+GetChStmt::GetChStmt(Stmt *input_ptr, int chid, bool is_bit_vectorized)
+    : input_ptr(input_ptr), chid(chid), is_bit_vectorized(is_bit_vectorized) {
   TI_ASSERT(input_ptr->is<SNodeLookupStmt>());
   input_snode = input_ptr->as<SNodeLookupStmt>()->snode;
   output_snode = input_snode->ch[chid].get();
@@ -332,10 +326,30 @@ std::unique_ptr<Stmt> OffloadedStmt::clone() const {
   new_stmt->reversed = reversed;
   new_stmt->num_cpu_threads = num_cpu_threads;
   new_stmt->device = device;
+  new_stmt->index_offsets = index_offsets;
+  if (tls_prologue) {
+    new_stmt->tls_prologue = tls_prologue->clone();
+    new_stmt->tls_prologue->parent_stmt = new_stmt.get();
+  }
+  if (bls_prologue) {
+    new_stmt->bls_prologue = bls_prologue->clone();
+    new_stmt->bls_prologue->parent_stmt = new_stmt.get();
+  }
   if (body) {
     new_stmt->body = body->clone();
     new_stmt->body->parent_stmt = new_stmt.get();
   }
+  if (bls_epilogue) {
+    new_stmt->bls_epilogue = bls_epilogue->clone();
+    new_stmt->bls_epilogue->parent_stmt = new_stmt.get();
+  }
+  if (tls_epilogue) {
+    new_stmt->tls_epilogue = tls_epilogue->clone();
+    new_stmt->tls_epilogue->parent_stmt = new_stmt.get();
+  }
+  new_stmt->tls_size = tls_size;
+  new_stmt->bls_size = bls_size;
+  new_stmt->mem_access_opt = mem_access_opt;
   return new_stmt;
 }
 
@@ -395,6 +409,10 @@ int LoopIndexStmt::max_num_bits() const {
   } else {
     TI_NOT_IMPLEMENTED
   }
+}
+
+SNode *BitStructStoreStmt::get_bit_struct_snode() const {
+  return ptr->as<SNodeLookupStmt>()->snode;
 }
 
 TLANG_NAMESPACE_END

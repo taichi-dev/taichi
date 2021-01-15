@@ -42,6 +42,29 @@ void SNode::place(Expr &expr_, const std::vector<int> &offset) {
     TI_ASSERT(expr_.is<GlobalVariableExpression>());
     auto expr = expr_.cast<GlobalVariableExpression>();
     TI_ERROR_IF(expr->snode != nullptr, "This variable has been placed.");
+    SNode *new_exp_snode = nullptr;
+    if (auto cft = expr->dt->cast<CustomFloatType>()) {
+      if (auto exp = cft->get_exponent_type()) {
+        // Non-empty exponent type. First create a place SNode for the
+        // exponent value.
+        if (placing_shared_exp && currently_placing_exp_snode != nullptr) {
+          // Reuse existing exponent
+          TI_ASSERT_INFO(currently_placing_exp_snode_dtype == exp,
+                         "CustomFloatTypes with shared exponents must have "
+                         "exactly the same exponent type.");
+          new_exp_snode = currently_placing_exp_snode;
+        } else {
+          auto &exp_node = insert_children(SNodeType::place);
+          exp_node.dt = exp;
+          exp_node.name = expr->ident.raw_name() + "_exp";
+          new_exp_snode = &exp_node;
+          if (placing_shared_exp) {
+            currently_placing_exp_snode = new_exp_snode;
+            currently_placing_exp_snode_dtype = exp;
+          }
+        }
+      }
+    }
     auto &child = insert_children(SNodeType::place);
     expr->set_snode(&child);
     child.name = expr->ident.raw_name();
@@ -50,7 +73,13 @@ void SNode::place(Expr &expr_, const std::vector<int> &offset) {
       expr->snode->ambient_val = expr->ambient_value;
     }
     expr->snode->expr.set(Expr(expr));
+    if (placing_shared_exp)
+      child.owns_shared_exponent = true;
     child.dt = expr->dt;
+    if (new_exp_snode) {
+      child.exp_snode = new_exp_snode;
+      new_exp_snode->exponent_users.push_back(&child);
+    }
     if (!offset.empty())
       child.set_index_offsets(offset);
   }
@@ -282,7 +311,11 @@ void SNode::print() {
   for (int i = 0; i < depth; i++) {
     fmt::print("  ");
   }
-  fmt::print("{}\n", get_node_type_name_hinted());
+  fmt::print("{}", get_node_type_name_hinted());
+  if (exp_snode) {
+    fmt::print(" exp={}", exp_snode->get_node_type_name());
+  }
+  fmt::print("\n");
   for (auto &c : ch) {
     c->print();
   }
@@ -299,6 +332,19 @@ void SNode::set_index_offsets(std::vector<int> index_offsets_) {
 bool SNode::need_activation() const {
   return type == SNodeType::pointer || type == SNodeType::hash ||
          type == SNodeType::bitmasked || type == SNodeType::dynamic;
+}
+
+void SNode::begin_shared_exp_placement() {
+  TI_ASSERT(!placing_shared_exp);
+  TI_ASSERT(currently_placing_exp_snode == nullptr);
+  placing_shared_exp = true;
+}
+
+void SNode::end_shared_exp_placement() {
+  TI_ASSERT(placing_shared_exp);
+  TI_ASSERT(currently_placing_exp_snode != nullptr);
+  currently_placing_exp_snode = nullptr;
+  placing_shared_exp = false;
 }
 
 TLANG_NAMESPACE_END

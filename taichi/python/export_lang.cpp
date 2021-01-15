@@ -89,10 +89,13 @@ void export_lang(py::module &m) {
       .def(py::self == py::self)
       .def("__hash__", &DataType::hash)
       .def("to_string", &DataType::to_string)
+      .def("get_ptr", [](DataType *dtype) -> Type * { return *dtype; },
+           py::return_value_policy::reference)
       .def(py::pickle(
           [](const DataType &dt) {
             // Note: this only works for primitive types, which is fine for now.
-            auto primitive = dynamic_cast<const PrimitiveType *>(dt.get_ptr());
+            auto primitive =
+                dynamic_cast<const PrimitiveType *>((const Type *)dt);
             TI_ASSERT(primitive);
             return py::make_tuple((std::size_t)primitive->type);
           },
@@ -160,13 +163,17 @@ void export_lang(py::module &m) {
       .def_readwrite("detect_read_only", &CompileConfig::detect_read_only)
       .def_readwrite("cc_compile_cmd", &CompileConfig::cc_compile_cmd)
       .def_readwrite("cc_link_cmd", &CompileConfig::cc_link_cmd)
+      .def_readwrite("async_opt_passes", &CompileConfig::async_opt_passes)
       .def_readwrite("async_opt_fusion", &CompileConfig::async_opt_fusion)
       .def_readwrite("async_opt_listgen", &CompileConfig::async_opt_listgen)
       .def_readwrite("async_opt_activation_demotion",
                      &CompileConfig::async_opt_activation_demotion)
       .def_readwrite("async_opt_dse", &CompileConfig::async_opt_dse)
+      .def_readwrite("async_listgen_fast_filtering",
+                     &CompileConfig::async_listgen_fast_filtering)
       .def_readwrite("async_opt_intermediate_file",
-                     &CompileConfig::async_opt_intermediate_file);
+                     &CompileConfig::async_opt_intermediate_file)
+      .def_readwrite("async_flush_every", &CompileConfig::async_flush_every);
 
   m.def("reset_default_compile_config",
         [&]() { default_compile_config = CompileConfig(); });
@@ -193,7 +200,12 @@ void export_lang(py::module &m) {
       .def("print_snode_tree", &Program::print_snode_tree)
       .def("get_snode_num_dynamically_allocated",
            &Program::get_snode_num_dynamically_allocated)
-      .def("synchronize", &Program::synchronize);
+      .def("benchmark_rebuild_graph",
+           [](Program *program) {
+             program->async_engine->sfg->benchmark_rebuild_graph();
+           })
+      .def("synchronize", &Program::synchronize)
+      .def("async_flush", &Program::async_flush);
 
   m.def("get_current_program", get_current_program,
         py::return_value_policy::reference);
@@ -253,7 +265,10 @@ void export_lang(py::module &m) {
                  snode->physical_index_position + taichi_max_num_indices);
            })
       .def("num_active_indices",
-           [](SNode *snode) { return snode->num_active_indices; });
+           [](SNode *snode) { return snode->num_active_indices; })
+      .def_readonly("cell_size_bytes", &SNode::cell_size_bytes)
+      .def("begin_shared_exp_placement", &SNode::begin_shared_exp_placement)
+      .def("end_shared_exp_placement", &SNode::end_shared_exp_placement);
 
   py::class_<Kernel>(m, "Kernel")
       .def("get_ret_int", &Kernel::get_ret_int)
@@ -392,9 +407,8 @@ void export_lang(py::module &m) {
     current_ast_builder().insert(Stmt::make<FrontendBreakStmt>());
   });
 
-  m.def("create_kernel_return", [&](const Expr &value, const DataType &dt) {
-    current_ast_builder().insert(
-        Stmt::make<FrontendKernelReturnStmt>(value, dt));
+  m.def("create_kernel_return", [&](const Expr &value) {
+    current_ast_builder().insert(Stmt::make<FrontendKernelReturnStmt>(value));
   });
 
   m.def("insert_continue_stmt", [&]() {
@@ -567,6 +581,7 @@ void export_lang(py::module &m) {
 
   m.def("is_integral", is_integral);
   m.def("is_signed", is_signed);
+  m.def("is_real", is_real);
   m.def("is_unsigned", is_unsigned);
 
   m.def("global_new", static_cast<Expr (*)(Expr, DataType)>(global_new));
@@ -575,7 +590,6 @@ void export_lang(py::module &m) {
     expr.cast<GlobalVariableExpression>()->is_primal = false;
   });
   m.def("data_type_name", data_type_name);
-  m.def("data_type_short_name", data_type_short_name);
 
   m.def("subscript", [](const Expr &expr, const ExprGroup &expr_group) {
     return expr[expr_group];
@@ -619,6 +633,7 @@ void export_lang(py::module &m) {
   // Schedules
   m.def("parallelize", Parallelize);
   m.def("vectorize", Vectorize);
+  m.def("bit_vectorize", BitVectorize);
   m.def("block_dim", BlockDim);
 
   py::enum_<SNodeAccessFlag>(m, "SNodeAccessFlag", py::arithmetic())
@@ -728,6 +743,11 @@ void export_lang(py::module &m) {
   // TypeFactory on Python-scope pointer destruction.
   py::class_<TypeFactory>(m, "TypeFactory")
       .def("get_custom_int_type", &TypeFactory::get_custom_int_type,
+           py::arg("num_bits"), py::arg("is_signed"), py::arg("compute_type"),
+           py::return_value_policy::reference)
+      .def("get_custom_float_type", &TypeFactory::get_custom_float_type,
+           py::arg("digits_type"), py::arg("exponent_type"),
+           py::arg("compute_type"), py::arg("scale"),
            py::return_value_policy::reference);
 
   m.def("get_type_factory_instance", TypeFactory::get_instance,

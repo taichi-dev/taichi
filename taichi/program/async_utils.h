@@ -1,8 +1,9 @@
 #pragma once
 
+#include <atomic>
 #include <unordered_map>
 #include <unordered_set>
-#include <atomic>
+#include <variant>
 
 #include "taichi/ir/snode.h"
 #include "taichi/ir/offloaded_task_type.h"
@@ -79,40 +80,51 @@ class TaskLaunchRecord {
 };
 
 struct AsyncState {
-  enum class Type { mask, value, list, allocator };
+  enum class Type { mask, value, list, allocator, undefined };
 
-  AsyncState(SNode *snode, Type type) : snode(snode), type(type) {
+  std::variant<SNode *, Kernel *> snode_or_global_tmp;
+  Type type;
+  std::size_t unique_id;
+
+  AsyncState() = default;
+
+  // For SNode
+  AsyncState(SNode *snode, Type type, std::size_t unique_id)
+      : snode_or_global_tmp(snode), type(type), unique_id(unique_id) {
   }
 
-  SNode *snode;
-  Type type;
+  // For global temporaries
+  AsyncState(Kernel *kernel, std::size_t unique_id)
+      : snode_or_global_tmp(kernel), type(Type::value), unique_id(unique_id) {
+  }
 
   bool operator<(const AsyncState &other) const {
-    return snode < other.snode || (snode == other.snode && type < other.type);
+    return unique_id < other.unique_id;
   }
 
   bool operator==(const AsyncState &other) const {
-    return snode == other.snode && type == other.type;
+    return unique_id == other.unique_id;
   }
 
-  std::string name() const {
-    std::string type_name;
-    switch (type) {
-      case Type::mask:
-        type_name = "mask";
-        break;
-      case Type::value:
-        type_name = "value";
-        break;
-      case Type::list:
-        type_name = "list";
-        break;
-      case Type::allocator:
-        type_name = "allocator";
-        break;
-    }
-    return snode->get_node_type_name_hinted() + "_" + type_name;
+  bool operator!=(const AsyncState &other) const {
+    return !(*this == other);
   }
+
+  std::string name() const;
+
+  bool holds_snode() const {
+    return std::holds_alternative<SNode *>(snode_or_global_tmp);
+  }
+
+  SNode *snode() {
+    return std::get<SNode *>(snode_or_global_tmp);
+  }
+
+  const SNode *snode() const {
+    return std::get<SNode *>(snode_or_global_tmp);
+  }
+
+  static std::size_t perfect_hash(void *ptr, Type type);
 };
 
 struct TaskFusionMeta {
@@ -172,7 +184,7 @@ struct hash<std::pair<taichi::lang::IRHandle, taichi::lang::IRHandle>> {
 template <>
 struct hash<taichi::lang::AsyncState> {
   std::size_t operator()(const taichi::lang::AsyncState &s) const noexcept {
-    return (std::size_t)s.snode ^ (std::size_t)s.type;
+    return s.unique_id;
   }
 };
 
@@ -198,9 +210,15 @@ struct TaskMeta {
   std::unordered_set<AsyncState> input_states;
   std::unordered_set<AsyncState> output_states;
   std::unordered_map<SNode *, GlobalPtrStmt *> loop_unique;
-  std::unordered_map<SNode *, bool> element_wise;
+  std::unordered_map<const SNode *, bool> element_wise;
 
   void print() const;
+};
+
+// A wrapper class for the parameter in bool same_value() in analysis.h.
+class AsyncStateSet {
+ public:
+  std::unordered_set<AsyncState> s;
 };
 
 class IRBank;

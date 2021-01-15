@@ -53,6 +53,8 @@ enum AliasResult { same, uncertain, different };
 class ControlFlowGraph;
 
 struct TaskMeta;
+class IRBank;
+class AsyncStateSet;
 
 // IR Analysis
 namespace irpass::analysis {
@@ -75,26 +77,50 @@ std::unordered_map<SNode *, GlobalPtrStmt *> gather_uniquely_accessed_pointers(
 std::unique_ptr<std::unordered_set<AtomicOpStmt *>> gather_used_atomics(
     IRNode *root);
 std::vector<Stmt *> get_load_pointers(Stmt *load_stmt);
-void get_meta_input_value_states(IRNode *root, TaskMeta *meta);
+void get_meta_input_value_states(IRNode *root, TaskMeta *meta, IRBank *ir_bank);
 Stmt *get_store_data(Stmt *store_stmt);
 std::vector<Stmt *> get_store_destination(Stmt *store_stmt);
 bool has_store_or_atomic(IRNode *root, const std::vector<Stmt *> &vars);
 std::pair<bool, Stmt *> last_store_or_atomic(IRNode *root, Stmt *var);
 bool maybe_same_address(Stmt *var1, Stmt *var2);
-/** Test if root1 and root2 are the same, i.e., have the same type,
- *  the same operands, the same fields, and the same containing statements.
+/**
+ * Test if root1 and root2 are the same, i.e., have the same type,
+ * the same operands, the same fields, and the same containing statements.
  *
- *  @param id_map
- *    If id_map is std::nullopt by default, two operands are considered
- *    the same if they have the same id and do not belong to either root,
- *    or they belong to root1 and root2 at the same position in the roots.
- *    Otherwise, this function also recursively check the operands until
- *    ids in the id_map are reached.
+ * @param id_map
+ *   If id_map is std::nullopt by default, two operands are considered
+ *   the same if they have the same id and do not belong to either root,
+ *   or they belong to root1 and root2 at the same position in the roots.
+ *   Otherwise, this function also recursively check the operands until
+ *   ids in the id_map are reached.
  */
 bool same_statements(
     IRNode *root1,
     IRNode *root2,
     const std::optional<std::unordered_map<int, int>> &id_map = std::nullopt);
+/**
+ * Test if stmt1 and stmt2 definitely have the same value.
+ *
+ * @param possibly_modified_states
+ *   Assumes that only states in possibly_modified_states can be modified
+ *   between stmt1 and stmt2.
+ *
+ * @param id_map
+ *   Same as in same_statements(root1, root2, id_map).
+ */
+bool same_value(
+    Stmt *stmt1,
+    Stmt *stmt2,
+    const AsyncStateSet &possibly_modified_states,
+    IRBank *ir_bank,
+    const std::optional<std::unordered_map<int, int>> &id_map = std::nullopt);
+/**
+ * Test if stmt1 and stmt2 definitely have the same value.
+ * Any global fields can be modified between stmt1 and stmt2.
+ *
+ * @param id_map
+ *   Same as in same_statements(root1, root2, id_map).
+ */
 bool same_value(
     Stmt *stmt1,
     Stmt *stmt2,

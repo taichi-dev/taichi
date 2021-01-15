@@ -671,7 +671,7 @@ class Matrix(TaichiOperations):
         fill_matrix(self, val)
 
     @python_scope
-    def to_numpy(self, keep_dims=False, as_vector=None):
+    def to_numpy(self, keep_dims=False, as_vector=None, dtype=None):
         # Discussion: https://github.com/taichi-dev/taichi/pull/1046#issuecomment-633548858
         if as_vector is not None:
             warning(
@@ -685,7 +685,9 @@ class Matrix(TaichiOperations):
         if not self.is_global():
             return np.array(self.entries).reshape(shape_ext)
 
-        ret = np.zeros(self.shape + shape_ext, dtype=to_numpy_type(self.dtype))
+        if dtype is None:
+            dtype = to_numpy_type(self.dtype)
+        ret = np.zeros(self.shape + shape_ext, dtype=dtype)
         from .meta import matrix_to_ext_arr
         matrix_to_ext_arr(self, ret, as_vector)
         return ret
@@ -821,8 +823,26 @@ class Matrix(TaichiOperations):
         self.n = n
         self.m = m
         self.dt = dtype
-        for i in range(n * m):
-            self.entries.append(impl.field(dtype))
+
+        if isinstance(dtype, (list, tuple, np.ndarray)):
+            # set different dtype for each element in Matrix
+            # see #2135
+            if m == 1:
+                assert len(np.shape(dtype)) == 1 and len(
+                    dtype
+                ) == n, f'Please set correct dtype list for Vector. The shape of dtype list should be ({n}, ) instead of {np.shape(dtype)}'
+                for i in range(n):
+                    self.entries.append(impl.field(dtype[i]))
+            else:
+                assert len(np.shape(dtype)) == 2 and len(dtype) == n and len(
+                    dtype[0]
+                ) == m, f'Please set correct dtype list for Matrix. The shape of dtype list should be ({n}, {m}) instead of {np.shape(dtype)}'
+                for i in range(n):
+                    for j in range(m):
+                        self.entries.append(impl.field(dtype[i][j]))
+        else:
+            for _ in range(n * m):
+                self.entries.append(impl.field(dtype))
         self.grad = self.make_grad()
 
         if layout is not None:

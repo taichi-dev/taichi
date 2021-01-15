@@ -110,12 +110,11 @@ def get_line_number(asc=0):
     return inspect.stack()[1 + asc][2]
 
 
-# The builtin `warnings` module is unreliable as it may be supressed
-# by other packages, e.g. IPython.
+# The builtin `warnings` module is unreliable since it may be suppressed
+# by other packages such as IPython.
 def warning(msg, type=UserWarning, stacklevel=1):
-    from colorama import Fore, Back, Style
+    from colorama import Fore, Style
     import traceback
-    import taichi as ti
     s = traceback.extract_stack()[:-stacklevel]
     raw = ''.join(traceback.format_list(s))
     print(Fore.YELLOW + Style.BRIGHT, end='')
@@ -124,28 +123,22 @@ def warning(msg, type=UserWarning, stacklevel=1):
     print(Style.RESET_ALL, end='')
 
 
-def deprecated(old, new, type=DeprecationWarning):
-    '''
-    Announce a pending deprecation with an API wrapper, usage:
+def deprecated(old, new, warning_type=DeprecationWarning):
+    """
+    Mark an API as deprecated. Usage:
 
     @deprecated('ti.sqr(x)', 'x**2')
     def sqr(x):
         return x**2
-    '''
+    """
     import functools
 
     def decorator(foo):
         @functools.wraps(foo)
         def wrapped(*args, **kwargs):
             _taichi_skip_traceback = 1
-            msg = f'{old} is deprecated, please use {new} instead'
-            try:
-                import locale
-                if 'zh' in locale.getdefaultlocale()[0]:
-                    msg += f'\n{old} 已被废除，请使用 {new} 来替换'
-            except:
-                pass
-            warning(msg, type, stacklevel=2)
+            msg = f'{old} is deprecated. Please use {new} instead.'
+            warning(msg, warning_type, stacklevel=2)
             return foo(*args, **kwargs)
 
         return wrapped
@@ -154,20 +147,14 @@ def deprecated(old, new, type=DeprecationWarning):
 
 
 def obsolete(old, new):
-    '''
-    Mark API as obsolete, with no API wrapper. E.g.,
+    """
+    Mark an API as obsolete. Usage:
 
     sqr = obsolete('ti.sqr(x)', 'x**2')
-    '''
+    """
     def wrapped(*args, **kwargs):
         _taichi_skip_traceback = 1
-        msg = f'{old} is obsolete. Please use {new} instead'
-        try:
-            import locale
-            if 'zh' in locale.getdefaultlocale()[0]:
-                msg += f'\n{old} 已被彻底废除，请使用 {new} 来替换'
-        except:
-            pass
+        msg = f'{old} is obsolete. Please use {new} instead.'
         raise SyntaxError(msg)
 
     return wrapped
@@ -276,6 +263,24 @@ def dot_to_pdf(dot, filepath):
 def get_kernel_stats():
     from taichi.core import ti_core
     return ti_core.get_kernel_stats()
+
+
+def print_async_stats(include_kernel_profiler=False):
+    import taichi as ti
+    if include_kernel_profiler:
+        ti.kernel_profiler_print()
+        print()
+    stat = ti.get_kernel_stats()
+    counters = stat.get_counters()
+    print('=======================')
+    print('Async benchmark metrics')
+    print('-----------------------')
+    print(f'Async mode:           {ti.current_cfg().async_mode}')
+    print(f'Kernel time:          {ti.kernel_profiler_total_time():.3f} s')
+    print(f'Tasks launched:       {int(counters["launched_tasks"])}')
+    print(f'Instructions emitted: {int(counters["codegen_statements"])}')
+    print(f'Tasks compiled:       {int(counters["codegen_offloaded_tasks"])}')
+    print('=======================')
 
 
 __all__ = [

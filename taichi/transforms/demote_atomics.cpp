@@ -49,6 +49,12 @@ class DemoteAtomics : public BasicStmtVisitor {
             demote = false;
             break;
           }
+          if (current_offloaded->mem_access_opt.has_flag(
+                  snode, SNodeAccessFlag::block_local)) {
+            // BLS does not support write access yet so we keep atomic_adds.
+            demote = false;
+            break;
+          }
         }
       }
     }
@@ -56,6 +62,19 @@ class DemoteAtomics : public BasicStmtVisitor {
       demote = true;
       is_local = true;
     }
+
+    if (auto dest_pointer_type = stmt->dest->ret_type->cast<PointerType>()) {
+      if (auto cft =
+              dest_pointer_type->get_pointee_type()->cast<CustomFloatType>()) {
+        if (cft->get_exponent_type()) {
+          TI_WARN(
+              "AtomicOp on CustomFloatType with exponent is not supported. "
+              "Demoting to non-atomic RMW.");
+          demote = true;
+        }
+      }
+    }
+
     if (demote) {
       // replace atomics with load, add, store
       auto bin_type = atomic_to_binary_op_type(stmt->op_type);

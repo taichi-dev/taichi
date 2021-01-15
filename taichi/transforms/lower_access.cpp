@@ -12,7 +12,6 @@
 TLANG_NAMESPACE_BEGIN
 
 // Lower GlobalPtrStmt into smaller pieces for access optimization
-// Note that this pass also applies index offsets to the global pointers
 
 class LowerAccess : public IRVisitor {
  public:
@@ -63,7 +62,8 @@ class LowerAccess : public IRVisitor {
                         std::vector<Stmt *> indices,
                         bool pointer_needs_activation,
                         Kernel *kernel,
-                        SNodeOpType snode_op = SNodeOpType::undefined) {
+                        SNodeOpType snode_op = SNodeOpType::undefined,
+                        bool is_bit_vectorized = false) {
     if (snode_op == SNodeOpType::is_active) {
       // For ti.is_active
       TI_ASSERT(!pointer_needs_activation);
@@ -83,20 +83,14 @@ class LowerAccess : public IRVisitor {
 
     Stmt *last = lowered.push_back<GetRootStmt>();
 
-    const auto &offsets = snodes.back()->index_offsets;
-    if (!offsets.empty()) {
-      for (int i = 0; i < (int)indices.size(); i++) {
-        // Subtract offsets from indices so that new indices are
-        // within [0, +inf)
-        auto offset = lowered.push_back<ConstStmt>(TypedConstant(offsets[i]));
-        indices[i] = lowered.push_back<BinaryOpStmt>(BinaryOpType::sub,
-                                                     indices[i], offset);
-      }
-    }
-
     int path_inc = int(snode_op != SNodeOpType::undefined);
-    for (int i = 0; i < (int)snodes.size() - 1 + path_inc; i++) {
+    int length = (int)snodes.size() - 1 + path_inc;
+    for (int i = 0; i < length; i++) {
       auto snode = snodes[i];
+      if (is_bit_vectorized && snode->type == SNodeType::bit_array &&
+          i == length - 1 && snodes[i - 1]->type == SNodeType::dense) {
+        continue;
+      }
       std::vector<Stmt *> lowered_indices;
       std::vector<int> strides;
       // extract bits
@@ -154,7 +148,12 @@ class LowerAccess : public IRVisitor {
         auto lookup = lowered.push_back<SNodeLookupStmt>(
             snode, last, linearized, needs_activation);
         int chid = snode->child_id(snodes[i + 1]);
-        last = lowered.push_back<GetChStmt>(lookup, chid);
+        if (is_bit_vectorized && snode->type == SNodeType::dense &&
+            i == length - 2) {
+          last = lowered.push_back<GetChStmt>(lookup, chid, true);
+        } else {
+          last = lowered.push_back<GetChStmt>(lookup, chid, false);
+        }
       }
     }
   }
@@ -173,7 +172,7 @@ class LowerAccess : public IRVisitor {
         lowered.push_back(std::move(extractor));
       }
       lower_scalar_ptr(lowered, ptr->snodes[i], indices, activate,
-                       ptr->get_kernel(), snode_op);
+                       ptr->get_kernel(), snode_op, ptr->is_bit_vectorized);
       TI_ASSERT(lowered.size());
       lowered_pointers.push_back(lowered.back().get());
     }
@@ -183,7 +182,16 @@ class LowerAccess : public IRVisitor {
       lanes.push_back(VectorElement(lowered_pointers[i], 0));
     }
     auto merge = Stmt::make<ElementShuffleStmt>(lanes, true);
-    merge->ret_type = ptr->snodes[0]->dt;
+    if (ptr->is_bit_vectorized) {
+      // if the global ptr is bit vectorized, we start from the place snode
+      // and find the parent bit array snode, use its physical type
+      auto parent_ret_type = ptr->snodes[0]->parent->physical_type;
+      auto ptr_ret_type =
+          TypeFactory::get_instance().get_pointer_type(parent_ret_type);
+      merge->ret_type = DataType(ptr_ret_type);
+    } else {
+      merge->ret_type = ptr->snodes[0]->dt;
+    }
     lowered.push_back(std::move(merge));
     return lowered;
   }
@@ -209,21 +217,13 @@ class LowerAccess : public IRVisitor {
   }
 
   void visit(SNodeOpStmt *stmt) override {
-    if (SNodeOpStmt::activation_related(stmt->op_type) &&
-        stmt->snode->type != SNodeType::dynamic) {
-      if (stmt->val == nullptr) {
-        std::vector<SNode *> snodes(stmt->width(), stmt->snode);
-        auto proxy_ptr = Stmt::make_typed<GlobalPtrStmt>(snodes, stmt->indices);
-        // Pretend to be in the IR hierarchy so that we can safely query
-        // stmt->get_kernel() later.
-        proxy_ptr->parent = stmt->parent;
-        auto lowered = lower_vector_ptr(proxy_ptr.get(), false, stmt->op_type);
+    if (stmt->ptr->is<GlobalPtrStmt>()) {
+      if (SNodeOpStmt::activation_related(stmt->op_type) &&
+          stmt->snode->type != SNodeType::dynamic) {
+        auto lowered = lower_vector_ptr(stmt->ptr->as<GlobalPtrStmt>(), false,
+                                        stmt->op_type);
         modifier.replace_with(stmt, std::move(lowered), true);
       } else {
-        // already lowered, do nothing
-      }
-    } else {
-      if (stmt->ptr->is<GlobalPtrStmt>()) {
         auto lowered =
             lower_vector_ptr(stmt->ptr->as<GlobalPtrStmt>(),
                              SNodeOpStmt::need_activation(stmt->op_type));

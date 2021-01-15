@@ -134,7 +134,6 @@ class AsyncEngine {
   Program *program;
 
   std::unique_ptr<StateFlowGraph> sfg;
-  std::deque<TaskLaunchRecord> task_queue;
 
   explicit AsyncEngine(Program *program,
                        const BackendExecCompilationFunc &compile_to_backend);
@@ -145,8 +144,9 @@ class AsyncEngine {
 
   void launch(Kernel *kernel, Context &context);
 
-  void enqueue(const TaskLaunchRecord &t);
-
+  // Flush the tasks only.
+  void flush();
+  // Flush the tasks and block waiting for the GPU device to complete.
   void synchronize();
 
   void debug_sfg(const std::string &suffix);
@@ -167,6 +167,8 @@ class AsyncEngine {
   };
 
   std::unordered_map<const Kernel *, KernelMeta> kernel_metas_;
+  // How many times we have flushed
+  int flush_counter_{0};
   // How many times we have synchronized
   int sync_counter_{0};
   int cur_sync_sfg_debug_counter_{0};

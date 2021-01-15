@@ -12,6 +12,9 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/program/extension.h"
 
+// Keep this include in the end!
+#include "taichi/program/async_profiler_switch.h"
+
 TLANG_NAMESPACE_BEGIN
 
 ParallelExecutor::ParallelExecutor(int num_threads)
@@ -157,7 +160,7 @@ void ExecutionQueue::enqueue(const TaskLaunchRecord &ker) {
 }
 
 void ExecutionQueue::synchronize() {
-  TI_AUTO_PROF
+  TI_AUTO_PROF;
   launch_worker.flush();
 }
 
@@ -174,7 +177,8 @@ AsyncEngine::AsyncEngine(Program *program,
                          const BackendExecCompilationFunc &compile_to_backend)
     : queue(&ir_bank_, compile_to_backend),
       program(program),
-      sfg(std::make_unique<StateFlowGraph>(&ir_bank_)) {
+      sfg(std::make_unique<StateFlowGraph>(this, &ir_bank_)) {
+  ir_bank_.set_sfg(sfg.get());
 }
 
 void AsyncEngine::launch(Kernel *kernel, Context &context) {
@@ -187,6 +191,7 @@ void AsyncEngine::launch(Kernel *kernel, Context &context) {
   auto &offloads = block->statements;
   auto &kmeta = kernel_metas_[kernel];
   const bool kmeta_inited = !kmeta.ir_handle_cached.empty();
+  std::vector<TaskLaunchRecord> records;
   for (std::size_t i = 0; i < offloads.size(); i++) {
     if (!kmeta_inited) {
       TI_ASSERT(kmeta.ir_handle_cached.size() == i);
@@ -198,28 +203,51 @@ void AsyncEngine::launch(Kernel *kernel, Context &context) {
       ir_bank_.insert(std::move(cloned_offs), h);
     }
     TaskLaunchRecord rec(context, kernel, kmeta.ir_handle_cached[i]);
-    enqueue(rec);
+    records.push_back(rec);
+  }
+  const auto &config = program->config;
+  sfg->insert_tasks(records, config.async_listgen_fast_filtering);
+  if ((config.async_flush_every > 0) &&
+      (sfg->num_pending_tasks() >= config.async_flush_every)) {
+    TI_TRACE("Async flushing {} tasks", sfg->num_pending_tasks());
+    flush();
   }
 }
 
-void AsyncEngine::enqueue(const TaskLaunchRecord &t) {
-  sfg->insert_task(t);
-  task_queue.push_back(t);
+void AsyncEngine::synchronize() {
+  TI_AUTO_PROF;
+  flush();
+  queue.synchronize();
+
+  sync_counter_++;
+  // Clear SFG debug stats
+  cur_sync_sfg_debug_counter_ = 0;
+  cur_sync_sfg_debug_per_stage_counts_.clear();
 }
 
-void AsyncEngine::synchronize() {
-  TI_AUTO_PROF
+void AsyncEngine::flush() {
+  TI_AUTO_PROF;
+
   bool modified = true;
   sfg->reid_nodes();
   sfg->reid_pending_nodes();
+  sfg->sort_node_edges();
   TI_TRACE("Synchronizing SFG of {} nodes ({} pending)", sfg->size(),
            sfg->num_pending_tasks());
   debug_sfg("initial");
   if (program->config.debug) {
     sfg->verify();
   }
-  while (modified) {
+  for (int pass = 0; pass < program->config.async_opt_passes && modified;
+       pass++) {
     modified = false;
+    if (program->config.async_opt_activation_demotion) {
+      while (sfg->demote_activation()) {
+        debug_sfg("act");
+        modified = true;
+      }
+    }
+    sfg->verify();
     if (program->config.async_opt_listgen) {
       while (sfg->optimize_listgen()) {
         debug_sfg("listgen");
@@ -230,13 +258,6 @@ void AsyncEngine::synchronize() {
     if (program->config.async_opt_dse) {
       while (sfg->optimize_dead_store()) {
         debug_sfg("dse");
-        modified = true;
-      }
-    }
-    sfg->verify();
-    if (program->config.async_opt_activation_demotion) {
-      while (sfg->demote_activation()) {
-        debug_sfg("act");
         modified = true;
       }
     }
@@ -255,15 +276,11 @@ void AsyncEngine::synchronize() {
   for (auto &task : tasks) {
     queue.enqueue(task);
   }
-  queue.synchronize();
-
-  sync_counter_++;
-  // Clear SFG debug stats
-  cur_sync_sfg_debug_counter_ = 0;
-  cur_sync_sfg_debug_per_stage_counts_.clear();
+  flush_counter_++;
 }
 
 void AsyncEngine::debug_sfg(const std::string &stage) {
+  TI_TRACE("Ran {}, counter={}", stage, cur_sync_sfg_debug_counter_);
   auto prefix = program->config.async_opt_intermediate_file;
   if (prefix.empty())
     return;
@@ -274,8 +291,9 @@ void AsyncEngine::debug_sfg(const std::string &stage) {
             debug_limit);
     return;
   }
-  auto dot_fn = fmt::format("{}_sync{:04d}_{:04d}_{}", prefix, sync_counter_,
-                            cur_sync_sfg_debug_counter_++, stage);
+  auto dot_fn =
+      fmt::format("{}_flush{:04d}_sync{:04d}_{:04d}_{}", prefix, flush_counter_,
+                  sync_counter_, cur_sync_sfg_debug_counter_++, stage);
   auto stage_count = cur_sync_sfg_debug_per_stage_counts_[stage]++;
   if (stage_count) {
     dot_fn += std::to_string(stage_count);

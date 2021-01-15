@@ -33,6 +33,7 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
                                  const Expr &global_var)
     : global_var(global_var) {
   vectorize = dec.vectorize;
+  bit_vectorize = dec.bit_vectorize;
   parallelize = dec.parallelize;
   strictly_serialized = dec.strictly_serialized;
   block_dim = dec.block_dim;
@@ -46,7 +47,7 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
     if (parallelize == 0)
       parallelize = std::thread::hardware_concurrency();
   }
-  scratch_opt = dec.scratch_opt;
+  mem_access_opt = dec.mem_access_opt;
   dec.reset();
   if (vectorize == -1)
     vectorize = 1;
@@ -69,6 +70,7 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
                                  const Expr &end)
     : begin(begin), end(end) {
   vectorize = dec.vectorize;
+  bit_vectorize = dec.bit_vectorize;
   parallelize = dec.parallelize;
   strictly_serialized = dec.strictly_serialized;
   block_dim = dec.block_dim;
@@ -80,7 +82,7 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
     if (parallelize == 0)
       parallelize = std::thread::hardware_concurrency();
   }
-  scratch_opt = dec.scratch_opt;
+  mem_access_opt = dec.mem_access_opt;
   dec.reset();
   if (vectorize == -1)
     vectorize = 1;
@@ -89,8 +91,8 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
 }
 
 void ArgLoadExpression::flatten(FlattenContext *ctx) {
-  auto argl = std::make_unique<ArgLoadStmt>(arg_id, dt);
-  ctx->push_back(std::move(argl));
+  auto arg_load = std::make_unique<ArgLoadStmt>(arg_id, dt);
+  ctx->push_back(std::move(arg_load));
   stmt = ctx->back_stmt();
 }
 
@@ -187,13 +189,25 @@ std::string GlobalPtrExpression::serialize() {
 
 void GlobalPtrExpression::flatten(FlattenContext *ctx) {
   std::vector<Stmt *> index_stmts;
+  std::vector<int> offsets;
+  SNode *snode = nullptr;
+  if (var.is<GlobalVariableExpression>()) {
+    snode = var.cast<GlobalVariableExpression>()->snode;
+    offsets = snode->index_offsets;
+  }
   for (int i = 0; i < (int)indices.size(); i++) {
     indices.exprs[i]->flatten(ctx);
-    index_stmts.push_back(indices.exprs[i]->stmt);
+    Stmt *ind = indices.exprs[i]->stmt;
+    if (!offsets.empty()) {
+      // Subtract offsets from indices so that new indices are
+      // within [0, +inf)
+      auto offset = ctx->push_back<ConstStmt>(TypedConstant(offsets[i]));
+      ind = ctx->push_back<BinaryOpStmt>(BinaryOpType::sub, ind, offset);
+    }
+    index_stmts.push_back(ind);
   }
   if (var.is<GlobalVariableExpression>()) {
-    ctx->push_back(std::make_unique<GlobalPtrStmt>(
-        var.cast<GlobalVariableExpression>()->snode, index_stmts));
+    ctx->push_back(std::make_unique<GlobalPtrStmt>(snode, index_stmts));
   } else {
     TI_ASSERT(var.is<ExternalTensorExpression>());
     var->flatten(ctx);
@@ -292,28 +306,24 @@ void SNodeOpExpression::flatten(FlattenContext *ctx) {
     indices[i]->flatten(ctx);
     indices_stmt.push_back(indices[i]->stmt);
   }
+  auto ptr = ctx->push_back<GlobalPtrStmt>(snode, indices_stmt);
   if (op_type == SNodeOpType::is_active) {
-    // is_active cannot be lowered all the way to a global pointer.
-    // It should be lowered into a pointer to parent and an index.
     TI_ERROR_IF(snode->type != SNodeType::pointer &&
                     snode->type != SNodeType::hash &&
                     snode->type != SNodeType::bitmasked,
                 "ti.is_active only works on pointer, hash or bitmasked nodes.");
-    ctx->push_back<SNodeOpStmt>(SNodeOpType::is_active, snode, indices_stmt);
-  } else {
-    auto ptr = ctx->push_back<GlobalPtrStmt>(snode, indices_stmt);
-    if (op_type == SNodeOpType::append) {
-      value->flatten(ctx);
-      ctx->push_back<SNodeOpStmt>(SNodeOpType::append, snode, ptr, value->stmt);
-      TI_ERROR_IF(snode->type != SNodeType::dynamic,
-                  "ti.append only works on dynamic nodes.");
-      TI_ERROR_IF(snode->ch.size() != 1,
-                  "ti.append only works on single-child dynamic nodes.");
-      TI_ERROR_IF(data_type_size(snode->ch[0]->dt) != 4,
-                  "ti.append only works on i32/f32 nodes.");
-    } else if (op_type == SNodeOpType::length) {
-      ctx->push_back<SNodeOpStmt>(SNodeOpType::length, snode, ptr, nullptr);
-    }
+    ctx->push_back<SNodeOpStmt>(SNodeOpType::is_active, snode, ptr, nullptr);
+  } else if (op_type == SNodeOpType::length) {
+    ctx->push_back<SNodeOpStmt>(SNodeOpType::length, snode, ptr, nullptr);
+  } else if (op_type == SNodeOpType::append) {
+    value->flatten(ctx);
+    ctx->push_back<SNodeOpStmt>(SNodeOpType::append, snode, ptr, value->stmt);
+    TI_ERROR_IF(snode->type != SNodeType::dynamic,
+                "ti.append only works on dynamic nodes.");
+    TI_ERROR_IF(snode->ch.size() != 1,
+                "ti.append only works on single-child dynamic nodes.");
+    TI_ERROR_IF(data_type_size(snode->ch[0]->dt) != 4,
+                "ti.append only works on i32/f32 nodes.");
   }
   stmt = ctx->back_stmt();
 }

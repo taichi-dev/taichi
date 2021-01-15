@@ -28,7 +28,7 @@ using parallel_for_type = void (*)(void *thread_pool,
                                    int splits,
                                    int num_desired_threads,
                                    void *context,
-                                   void (*func)(void *, int i));
+                                   void (*func)(void *, int thread_id, int i));
 
 #if defined(__linux__) && !ARCH_cuda && defined(TI_ARCH_x64)
 __asm__(".symver logf,logf@GLIBC_2.2.5");
@@ -81,9 +81,11 @@ using float32 = float;
 using float64 = double;
 
 using i8 = int8;
+using i16 = int16;
 using i32 = int32;
 using i64 = int64;
 using u8 = uint8;
+using u16 = uint16;
 using u32 = uint32;
 using u64 = uint64;
 using f32 = float32;
@@ -141,6 +143,12 @@ void taichi_printf(LLVMRuntime *runtime, const char *format, Args &&... args);
 
 extern "C" {
 
+// This is not really a runtime function. Include this in a function body to
+// mark it as force no inline. Helpful when preventing inlining huge function
+// bodies.
+void mark_force_no_inline() {
+}
+
 i64 cuda_clock_i64() {
   return 0;
 }
@@ -151,6 +159,15 @@ void system_memfence() {
 #if ARCH_cuda
 void cuda_vprintf(Ptr format, Ptr arg);
 #endif
+
+// Note that strlen is undefined on the CUDA backend, so we manually
+// implement it here.
+std::size_t taichi_strlen(const char *str) {
+  std::size_t len = 0;
+  for (auto p = str; *p; p++)
+    len++;
+  return len;
+}
 
 #define DEFINE_UNARY_REAL_FUNC(F) \
   f32 F##_f32(f32 x) {            \
@@ -178,39 +195,6 @@ int abs_i32(int a) {
   }
 }
 
-#if ARCH_x64 || ARCH_arm64
-
-u32 rand_u32() {
-  static u32 x = 123456789, y = 362436069, z = 521288629, w = 88675123;
-  u32 t = x ^ (x << 11);
-  x = y;
-  y = z;
-  z = w;
-  return (w = (w ^ (w >> 19)) ^ (t ^ (t >> 8)));
-}
-
-u64 rand_u64() {
-  return ((u64)rand_u32() << 32) + rand_u32();
-}
-
-f32 rand_f32() {
-  return rand_u32() * f32(1 / 4294967296.0);
-}
-
-f64 rand_f64() {
-  return rand_f32();
-}
-
-i32 rand_i32() {
-  return rand_u32();
-}
-
-i64 rand_i64() {
-  return rand_u64();
-}
-
-#endif
-
 i32 floordiv_i32(i32 a, i32 b) {
   return ifloordiv(a, b);
 }
@@ -228,6 +212,14 @@ int min_i64(i64 a, i64 b) {
 }
 
 int max_i32(i32 a, i32 b) {
+  return a > b ? a : b;
+}
+
+u32 min_u32(u32 a, u32 b) {
+  return a < b ? a : b;
+}
+
+u32 max_u32(u32 a, u32 b) {
   return a > b ? a : b;
 }
 
@@ -336,7 +328,7 @@ int32 Context_get_extra_args(Context *ctx, int32 i, int32 j) {
 struct StructMeta {
   i32 snode_id;
   std::size_t element_size;
-  i32 max_num_elements;
+  i64 max_num_elements;
 
   Ptr (*lookup_element)(Ptr, Ptr, int i);
 
@@ -389,8 +381,10 @@ A simple list data structure that is infinitely long.
 Data are organized in chunks, where each chunk is allocated on demand.
 */
 
+// TODO: there are many i32 types in this class, which may be an issue if there
+// are >= 2 ** 31 elements.
 struct ListManager {
-  static constexpr std::size_t max_num_chunks = 1024;
+  static constexpr std::size_t max_num_chunks = 128 * 1024;
   Ptr chunks[max_num_chunks];
   std::size_t element_size{0};
   std::size_t max_num_elements_per_chunk;
@@ -598,9 +592,9 @@ struct NodeManager {
               i32 element_size,
               i32 chunk_num_elements = -1)
       : runtime(runtime), element_size(element_size) {
-    // 16K elements per chunk, by default
+    // 128K elements per chunk, by default
     if (chunk_num_elements == -1) {
-      chunk_num_elements = 16 * 1024;
+      chunk_num_elements = 128 * 1024;
     }
     // Maximum chunk size = 128 MB
     while (chunk_num_elements > 1 &&
@@ -722,6 +716,8 @@ void taichi_assert_format(LLVMRuntime *runtime,
                           const char *format,
                           int num_arguments,
                           uint64 *arguments) {
+  mark_force_no_inline();
+
   if (!enable_assert || test != 0)
     return;
   if (!runtime->error_code) {
@@ -732,7 +728,8 @@ void taichi_assert_format(LLVMRuntime *runtime,
         memset(runtime->error_message_template, 0,
                taichi_error_message_max_length);
         memcpy(runtime->error_message_template, format,
-               std::min(strlen(format), taichi_error_message_max_length - 1));
+               std::min(taichi_strlen(format),
+                        taichi_error_message_max_length - 1));
         for (int i = 0; i < num_arguments; i++) {
           runtime->error_message_arguments[i] = arguments[i];
         }
@@ -743,7 +740,17 @@ void taichi_assert_format(LLVMRuntime *runtime,
   // Kill this CUDA thread.
   asm("exit;");
 #else
-  // TODO: kill this CPU thread here.
+  // TODO: properly kill this CPU thread here, considering the containing
+  // ThreadPool structure.
+
+  // std::terminate();
+
+  // Note that std::terminate() will throw an signal 6
+  // (Aborted), which will be caught by Taichi's signal handler. The assert
+  // failure message will NOT be properly printed since Taichi exits after
+  // receiving that signal. It is better than nothing when debugging the
+  // runtime, since otherwise the whole program may crash if the kernel
+  // continues after assertion failure.
 #endif
 }
 
@@ -1162,7 +1169,7 @@ struct cpu_block_task_helper_context {
 // TODO: TLS should be directly passed to the scheduler, so that it lives
 // with the threads (instead of blocks).
 
-void block_helper(void *ctx_, int i) {
+void cpu_struct_for_block_helper(void *ctx_, int thread_id, int i) {
   auto ctx = (cpu_block_task_helper_context *)(ctx_);
   int element_id = i / ctx->element_split;
   int part_size = ctx->element_size / ctx->element_split;
@@ -1172,9 +1179,12 @@ void block_helper(void *ctx_, int i) {
   int upper = e.loop_bounds[0] + (part_id + 1) * part_size;
   upper = std::min(upper, e.loop_bounds[1]);
   alignas(8) char tls_buffer[ctx->tls_buffer_size];
+
+  Context this_thread_context = *ctx->context;
+  this_thread_context.cpu_thread_id = thread_id;
   if (lower < upper) {
-    (*ctx->task)(ctx->context, tls_buffer, &ctx->list->get<Element>(element_id),
-                 lower, upper);
+    (*ctx->task)(&this_thread_context, tls_buffer,
+                 &ctx->list->get<Element>(element_id), lower, upper);
   }
 }
 
@@ -1218,7 +1228,7 @@ void parallel_struct_for(Context *context,
   ctx.tls_buffer_size = tls_buffer_size;
   auto runtime = context->runtime;
   runtime->parallel_for(runtime->thread_pool, list_tail * element_split,
-                        num_threads, &ctx, block_helper);
+                        num_threads, &ctx, cpu_struct_for_block_helper);
 #endif
 }
 
@@ -1236,23 +1246,28 @@ struct range_task_helper_context {
   int step;
 };
 
-void cpu_parallel_range_for_task(void *range_context, int task_id) {
+void cpu_parallel_range_for_task(void *range_context,
+                                 int thread_id,
+                                 int task_id) {
   auto ctx = *(range_task_helper_context *)range_context;
   alignas(8) char tls_buffer[ctx.tls_size];
   auto tls_ptr = &tls_buffer[0];
   if (ctx.prologue)
     ctx.prologue(ctx.context, tls_ptr);
+
+  Context this_thread_context = *ctx.context;
+  this_thread_context.cpu_thread_id = thread_id;
   if (ctx.step == 1) {
     int block_start = ctx.begin + task_id * ctx.block_size;
     int block_end = std::min(block_start + ctx.block_size, ctx.end);
     for (int i = block_start; i < block_end; i++) {
-      ctx.body(ctx.context, tls_ptr, i);
+      ctx.body(&this_thread_context, tls_ptr, i);
     }
   } else if (ctx.step == -1) {
     int block_start = ctx.end - task_id * ctx.block_size;
     int block_end = std::max(ctx.begin, block_start * ctx.block_size);
     for (int i = block_start - 1; i >= block_end; i--) {
-      ctx.body(ctx.context, tls_ptr, i);
+      ctx.body(&this_thread_context, tls_ptr, i);
     }
   }
   if (ctx.epilogue)
@@ -1316,8 +1331,12 @@ void gpu_parallel_range_for(Context *context,
     epilogue(context, tls_ptr);
 }
 
-i32 linear_thread_idx() {
+i32 linear_thread_idx(Context *context) {
+#if ARCH_cuda
   return block_idx() * block_dim() + thread_idx();
+#else
+  return context->cpu_thread_id;
+#endif
 }
 
 #include "node_dense.h"
@@ -1327,6 +1346,8 @@ i32 linear_thread_idx() {
 #include "node_bitmasked.h"
 
 void ListManager::touch_chunk(int chunk_id) {
+  taichi_assert_runtime(runtime, chunk_id < max_num_chunks,
+                        "List manager out of chunks.");
   if (!chunks[chunk_id]) {
     locked_task(&lock, [&] {
       // may have been allocated during lock contention
@@ -1354,7 +1375,8 @@ void node_gc(LLVMRuntime *runtime, int snode_id) {
   runtime->node_allocators[snode_id]->gc_serial();
 }
 
-void gc_parallel_0(LLVMRuntime *runtime, int snode_id) {
+void gc_parallel_0(Context *context, int snode_id) {
+  LLVMRuntime *runtime = context->runtime;
   auto allocator = runtime->node_allocators[snode_id];
   auto free_list = allocator->free_list;
   auto free_list_size = free_list->size();
@@ -1362,7 +1384,7 @@ void gc_parallel_0(LLVMRuntime *runtime, int snode_id) {
   using T = NodeManager::list_data_type;
 
   // Move unused elements to the beginning of the free_list
-  int i = linear_thread_idx();
+  int i = linear_thread_idx(context);
   if (free_list_used * 2 > free_list_size) {
     // Directly copy. Dst and src does not overlap
     auto items_to_copy = free_list_size - free_list_used;
@@ -1381,7 +1403,8 @@ void gc_parallel_0(LLVMRuntime *runtime, int snode_id) {
   }
 }
 
-void gc_parallel_1(LLVMRuntime *runtime, int snode_id) {
+void gc_parallel_1(Context *context, int snode_id) {
+  LLVMRuntime *runtime = context->runtime;
   auto allocator = runtime->node_allocators[snode_id];
   auto free_list = allocator->free_list;
 
@@ -1394,7 +1417,8 @@ void gc_parallel_1(LLVMRuntime *runtime, int snode_id) {
   allocator->recycled_list->clear();
 }
 
-void gc_parallel_2(LLVMRuntime *runtime, int snode_id) {
+void gc_parallel_2(Context *context, int snode_id) {
+  LLVMRuntime *runtime = context->runtime;
   auto allocator = runtime->node_allocators[snode_id];
   auto elements = allocator->recycle_list_size_backup;
   auto free_list = allocator->free_list;
@@ -1435,13 +1459,11 @@ void gc_parallel_2(LLVMRuntime *runtime, int snode_id) {
 }
 }
 
-#if ARCH_cuda
-
 extern "C" {
 
-u32 cuda_rand_u32(Context *context) {
-  auto state =
-      &((LLVMRuntime *)context->runtime)->rand_states[linear_thread_idx()];
+u32 rand_u32(Context *context) {
+  auto state = &((LLVMRuntime *)context->runtime)
+                    ->rand_states[linear_thread_idx(context)];
 
   auto &x = state->x;
   auto &y = state->y;
@@ -1455,30 +1477,29 @@ u32 cuda_rand_u32(Context *context) {
   w = (w ^ (w >> 19)) ^ (t ^ (t >> 8));
 
   return w * 1000000007;  // multiply a prime number here is very necessary -
-                          // it decorrelates streams of PRNGs
+                          // it decorrelates streams of PRNGs.
 }
 
-uint64 cuda_rand_u64(Context *context) {
-  return ((u64)cuda_rand_u32(context) << 32) + cuda_rand_u32(context);
+uint64 rand_u64(Context *context) {
+  return ((u64)rand_u32(context) << 32) + rand_u32(context);
 }
 
-f32 cuda_rand_f32(Context *context) {
-  return cuda_rand_u32(context) * (1.0f / 4294967296.0f);
+f32 rand_f32(Context *context) {
+  return rand_u32(context) * (1.0f / 4294967296.0f);
 }
 
-f64 cuda_rand_f64(Context *context) {
-  return cuda_rand_f32(context);
+f64 rand_f64(Context *context) {
+  return rand_f32(context);
 }
 
-i32 cuda_rand_i32(Context *context) {
-  return cuda_rand_u32(context);
+i32 rand_i32(Context *context) {
+  return rand_u32(context);
 }
 
-i64 cuda_rand_i64(Context *context) {
-  return cuda_rand_u64(context);
+i64 rand_i64(Context *context) {
+  return rand_u64(context);
 }
 };
-#endif
 
 struct printf_helper {
   char buffer[1024];
@@ -1551,16 +1572,68 @@ void stack_push(Ptr stack, size_t max_num_elements, std::size_t element_size) {
 
 #include "internal_functions.h"
 
-void set_partial_bits_b32(u32 *ptr, u32 offset, u32 bits, u32 value) {
-  u32 mask = ((((u32)1 << bits) - 1) << offset);
-  u32 new_value = 0;
-  u32 old_value = *ptr;
-  do {
-    old_value = *ptr;
-    new_value = (old_value & (~mask)) | (value << offset);
-  } while (!__atomic_compare_exchange(ptr, &old_value, &new_value, true,
-                                      std::memory_order::memory_order_seq_cst,
-                                      std::memory_order::memory_order_seq_cst));
+// TODO: make here less repetitious.
+// Original implementation is
+// u##N mask = ((((u##N)1 << bits) - 1) << offset);
+// When N equals bits equals 32, 32 times of left shifting will be carried on
+// which is an undefined behavior.
+// see #2096 for more details
+#define DEFINE_SET_PARTIAL_BITS(N)                                            \
+  void set_partial_bits_b##N(u##N *ptr, u32 offset, u32 bits, u##N value) {   \
+    u##N mask = ((~(u##N)0) << (N - bits)) >> (N - offset - bits);            \
+    u##N new_value = 0;                                                       \
+    u##N old_value = *ptr;                                                    \
+    do {                                                                      \
+      old_value = *ptr;                                                       \
+      new_value = (old_value & (~mask)) | (value << offset);                  \
+    } while (                                                                 \
+        !__atomic_compare_exchange(ptr, &old_value, &new_value, true,         \
+                                   std::memory_order::memory_order_seq_cst,   \
+                                   std::memory_order::memory_order_seq_cst)); \
+  }                                                                           \
+                                                                              \
+  u##N atomic_add_partial_bits_b##N(u##N *ptr, u32 offset, u32 bits,          \
+                                    u##N value) {                             \
+    u##N mask = ((~(u##N)0) << (N - bits)) >> (N - offset - bits);            \
+    u##N new_value = 0;                                                       \
+    u##N old_value = *ptr;                                                    \
+    do {                                                                      \
+      old_value = *ptr;                                                       \
+      new_value = old_value + (value << offset);                              \
+      new_value = (old_value & (~mask)) | (new_value & mask);                 \
+    } while (                                                                 \
+        !__atomic_compare_exchange(ptr, &old_value, &new_value, true,         \
+                                   std::memory_order::memory_order_seq_cst,   \
+                                   std::memory_order::memory_order_seq_cst)); \
+    return old_value;                                                         \
+  }
+
+DEFINE_SET_PARTIAL_BITS(8);
+DEFINE_SET_PARTIAL_BITS(16);
+DEFINE_SET_PARTIAL_BITS(32);
+DEFINE_SET_PARTIAL_BITS(64);
+
+f32 rounding_prepare_f32(f32 f) {
+  /* slower (but clearer) version with branching:
+  if (f > 0)
+    return f + 0.5;
+  else
+    return f - 0.5;
+  */
+
+  // Branch-free implementation: copy the sign bit of "f" to "0.5"
+  i32 delta_bits =
+      (taichi_union_cast<i32>(f) & 0x80000000) | taichi_union_cast<i32>(0.5f);
+  f32 delta = taichi_union_cast<f32>(delta_bits);
+  return f + delta;
+}
+
+f64 rounding_prepare_f64(f64 f) {
+  // Same as above
+  i64 delta_bits = (taichi_union_cast<i64>(f) & 0x8000000000000000LL) |
+                   taichi_union_cast<i64>(0.5);
+  f64 delta = taichi_union_cast<f64>(delta_bits);
+  return f + delta;
 }
 }
 

@@ -113,7 +113,7 @@ class KernelGen : public IRVisitor {
       used.uint32 = true;
     if (dt->is_primitive(PrimitiveTypeID::u64))
       used.uint64 = true;
-    return data_type_short_name(dt);
+    return data_type_name(dt);
   }
 
   std::string opengl_data_type_name(DataType dt) {

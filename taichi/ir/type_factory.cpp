@@ -37,13 +37,27 @@ Type *TypeFactory::get_pointer_type(Type *element, bool is_bit_pointer) {
   return pointer_types_[key].get();
 }
 
-Type *TypeFactory::get_custom_int_type(int num_bits, bool is_signed) {
-  auto key = std::make_pair(num_bits, is_signed);
-  if (custom_int_types_.find(key) == custom_int_types_.end()) {
-    custom_int_types_[key] =
-        std::make_unique<CustomIntType>(num_bits, is_signed);
+Type *TypeFactory::get_custom_int_type(int num_bits,
+                                       bool is_signed,
+                                       Type *compute_type) {
+  auto key = std::make_tuple(num_bits, is_signed, compute_type);
+  if (custom_int_types.find(key) == custom_int_types.end()) {
+    custom_int_types[key] =
+        std::make_unique<CustomIntType>(num_bits, is_signed, compute_type);
   }
-  return custom_int_types_[key].get();
+  return custom_int_types[key].get();
+}
+
+Type *TypeFactory::get_custom_float_type(Type *digits_type,
+                                         Type *exponent_type,
+                                         Type *compute_type,
+                                         float64 scale) {
+  auto key = std::make_tuple(digits_type, exponent_type, compute_type, scale);
+  if (custom_float_types.find(key) == custom_float_types.end()) {
+    custom_float_types[key] = std::make_unique<CustomFloatType>(
+        digits_type, exponent_type, compute_type, scale);
+  }
+  return custom_float_types[key].get();
 }
 
 Type *TypeFactory::get_bit_struct_type(PrimitiveType *physical_type,
@@ -76,7 +90,7 @@ PrimitiveType *TypeFactory::get_primitive_int_type(int bits, bool is_signed) {
     TI_ERROR("No primitive int type has {} bits", bits);
   }
   if (!is_signed) {
-    int_type = to_unsigned(DataType(int_type)).get_ptr();
+    int_type = to_unsigned(DataType(int_type));
   }
   return int_type->cast<PrimitiveType>();
 }
@@ -86,7 +100,7 @@ DataType TypeFactory::create_vector_or_scalar_type(int width,
                                                    bool element_is_pointer) {
   TI_ASSERT(width == 1);
   if (element_is_pointer) {
-    return TypeFactory::get_instance().get_pointer_type(element.get_ptr());
+    return TypeFactory::get_instance().get_pointer_type(element);
   } else {
     return element;
   }

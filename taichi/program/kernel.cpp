@@ -1,15 +1,15 @@
 #include "kernel.h"
 
-#include "taichi/util/statistics.h"
-#include "taichi/common/task.h"
-#include "taichi/program/program.h"
-#include "taichi/program/async_engine.h"
-#include "taichi/codegen/codegen.h"
 #include "taichi/backends/cuda/cuda_driver.h"
+#include "taichi/codegen/codegen.h"
+#include "taichi/common/task.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
-#include "taichi/util/action_recorder.h"
+#include "taichi/program/async_engine.h"
 #include "taichi/program/extension.h"
+#include "taichi/program/program.h"
+#include "taichi/util/action_recorder.h"
+#include "taichi/util/statistics.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -208,11 +208,6 @@ void Kernel::LaunchContextBuilder::set_arg_int(int i, int64 d) {
     ctx_->set_arg(i, (float32)d);
   } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
     ctx_->set_arg(i, (float64)d);
-  } else if (auto cit = dt->cast<CustomIntType>()) {
-    if (cit->get_is_signed())
-      ctx_->set_arg(i, (int32)d);
-    else
-      ctx_->set_arg(i, (uint32)d);
   } else {
     TI_INFO(dt->to_string());
     TI_NOT_IMPLEMENTED
@@ -244,9 +239,11 @@ void Kernel::LaunchContextBuilder::set_arg_raw(int i, uint64 d) {
       !kernel_->args[i].is_nparray,
       "Assigning scalar value to numpy array argument is not allowed");
 
-  ActionRecorder::get_instance().record(
-      "set_arg_raw", {ActionArg("kernel_name", kernel_->name),
-                      ActionArg("arg_id", i), ActionArg("val", (int64)d)});
+  if (!kernel_->is_evaluator) {
+    ActionRecorder::get_instance().record(
+        "set_arg_raw", {ActionArg("kernel_name", kernel_->name),
+                        ActionArg("arg_id", i), ActionArg("val", (int64)d)});
+  }
   ctx_->set_arg<uint64>(i, d);
 }
 
@@ -256,7 +253,7 @@ Context &Kernel::LaunchContextBuilder::get_context() {
 }
 
 float64 Kernel::get_ret_float(int i) {
-  auto dt = rets[i].dt;
+  auto dt = rets[i].dt->get_compute_type();
   if (dt->is_primitive(PrimitiveTypeID::f32)) {
     return (float64)get_current_program().fetch_result<float32>(i);
   } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
@@ -283,7 +280,7 @@ float64 Kernel::get_ret_float(int i) {
 }
 
 int64 Kernel::get_ret_int(int i) {
-  auto dt = rets[i].dt;
+  auto dt = rets[i].dt->get_compute_type();
   if (dt->is_primitive(PrimitiveTypeID::i32)) {
     return (int64)get_current_program().fetch_result<int32>(i);
   } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
@@ -304,11 +301,6 @@ int64 Kernel::get_ret_int(int i) {
     return (int64)get_current_program().fetch_result<float32>(i);
   } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
     return (int64)get_current_program().fetch_result<float64>(i);
-  } else if (auto cit = dt->cast<CustomIntType>()) {
-    if (cit->get_is_signed())
-      return (int64)get_current_program().fetch_result<int32>(i);
-    else
-      return (int64)get_current_program().fetch_result<uint32>(i);
   } else {
     TI_NOT_IMPLEMENTED
   }
@@ -320,12 +312,12 @@ void Kernel::set_arch(Arch arch) {
 }
 
 int Kernel::insert_arg(DataType dt, bool is_nparray) {
-  args.push_back(Arg{dt, is_nparray, /*size=*/0});
+  args.push_back(Arg{dt->get_compute_type(), is_nparray, /*size=*/0});
   return args.size() - 1;
 }
 
 int Kernel::insert_ret(DataType dt) {
-  rets.push_back(Ret{dt});
+  rets.push_back(Ret{dt->get_compute_type()});
   return rets.size() - 1;
 }
 

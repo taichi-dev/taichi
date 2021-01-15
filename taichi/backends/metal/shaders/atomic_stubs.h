@@ -3,6 +3,9 @@
 using atomic_int = int;
 using atomic_uint = unsigned int;
 
+template <typename T>
+struct _atomic {};
+
 namespace metal {
 
 using memory_order = bool;

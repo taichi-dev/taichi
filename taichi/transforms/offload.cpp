@@ -88,7 +88,7 @@ class Offloader {
         root_block->insert(std::move(offloaded));
       } else if (auto s = stmt->cast<StructForStmt>()) {
         assemble_serial_statements();
-        emit_struct_for(s, root_block, s->scratch_opt);
+        emit_struct_for(s, root_block, s->mem_access_opt);
       } else {
         pending_serial_statements->body->insert(std::move(stmt));
       }
@@ -100,7 +100,7 @@ class Offloader {
  private:
   static void emit_struct_for(StructForStmt *for_stmt,
                               Block *root_block,
-                              const ScratchPadOptions &scratch_opt) {
+                              const MemoryAccessOptions &mem_access_opt) {
     auto leaf = for_stmt->snode;
     // make a list of nodes, from the leaf block (instead of 'place') to root
     std::vector<SNode *> path;
@@ -121,6 +121,11 @@ class Offloader {
     if (!demotable) {
       for (int i = 1; i < path.size(); i++) {
         auto snode_child = path[i];
+        if ((snode_child->type == SNodeType::bit_array ||
+             snode_child->type == SNodeType::bit_struct) &&
+            i == path.size() - 1) {
+          continue;
+        }
         auto offloaded_clear_list =
             Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::serial);
         offloaded_clear_list->body->insert(
@@ -137,8 +142,8 @@ class Offloader {
         offloaded_listgen->grid_dim = program->config.saturating_grid_dim;
         offloaded_listgen->block_dim =
             std::min(snode_child->max_num_elements(),
-                     std::min(program->default_block_dim(),
-                              program->config.max_block_dim));
+                     (int64)std::min(program->default_block_dim(),
+                                     program->config.max_block_dim));
         root_block->insert(std::move(offloaded_listgen));
       }
     }
@@ -150,11 +155,11 @@ class Offloader {
 
     offloaded_struct_for->grid_dim = program->config.saturating_grid_dim;
 
-    auto snode_num_elements = for_stmt->snode->max_num_elements();
+    const auto snode_num_elements = for_stmt->snode->max_num_elements();
     if (for_stmt->block_dim == 0) {
       // adaptive
-      offloaded_struct_for->block_dim =
-          std::min(snode_num_elements, program->config.default_gpu_block_dim);
+      offloaded_struct_for->block_dim = std::min(
+          snode_num_elements, (int64)program->config.default_gpu_block_dim);
     } else {
       if (for_stmt->block_dim > snode_num_elements) {
         TI_WARN(
@@ -177,7 +182,7 @@ class Offloader {
     offloaded_struct_for->snode = for_stmt->snode;
     offloaded_struct_for->num_cpu_threads =
         std::min(for_stmt->parallelize, program->config.cpu_max_num_threads);
-    offloaded_struct_for->scratch_opt = scratch_opt;
+    offloaded_struct_for->mem_access_opt = mem_access_opt;
 
     root_block->insert(std::move(offloaded_struct_for));
   }

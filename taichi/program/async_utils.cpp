@@ -1,5 +1,8 @@
 #include "taichi/program/async_utils.h"
 
+#include <queue>
+#include <unordered_map>
+
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/ir.h"
@@ -7,7 +10,8 @@
 #include "taichi/program/ir_bank.h"
 #include "taichi/program/kernel.h"
 
-#include <queue>
+// Keep this include in the end!
+#include "taichi/program/async_profiler_switch.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -20,7 +24,8 @@ std::unique_ptr<IRNode> IRHandle::clone() const {
 TaskLaunchRecord::TaskLaunchRecord() : kernel(nullptr), ir_handle(nullptr, 0) {
 }
 
-std::atomic<int> TaskLaunchRecord::task_counter = 0;
+// Initial node has rec.id == 0, so we start from rec.id == 1.
+std::atomic<int> TaskLaunchRecord::task_counter = 1;
 
 TaskLaunchRecord::TaskLaunchRecord(Context context,
                                    Kernel *kernel,
@@ -37,6 +42,39 @@ OffloadedStmt *TaskLaunchRecord::stmt() const {
 
 bool TaskLaunchRecord::empty() const {
   return ir_handle.ir() == nullptr;
+}
+
+std::string AsyncState::name() const {
+  std::string type_name;
+  switch (type) {
+    case Type::mask:
+      type_name = "mask";
+      break;
+    case Type::value:
+      type_name = "value";
+      break;
+    case Type::list:
+      type_name = "list";
+      break;
+    case Type::allocator:
+      type_name = "allocator";
+      break;
+    case Type::undefined:
+      TI_ERROR("invalue type");
+  }
+  const auto prefix =
+      holds_snode()
+          ? std::get<SNode *>(snode_or_global_tmp)->get_node_type_name_hinted()
+          : fmt::format("global_tmp[{}]",
+                        std::get<Kernel *>(snode_or_global_tmp)->name);
+  return prefix + "_" + type_name;
+}
+
+std::size_t AsyncState::perfect_hash(void *ptr, AsyncState::Type type) {
+  static_assert((int)Type::undefined < 8);
+  static_assert(std::alignment_of<SNode>() % 8 == 0);
+  static_assert(std::alignment_of<Kernel>() % 8 == 0);
+  return (std::size_t)ptr ^ (std::size_t)type;
 }
 
 void TaskMeta::print() const {
@@ -69,7 +107,7 @@ void TaskMeta::print() const {
     }
     fmt::print("\n");
   }
-  std::vector<SNode *> element_wise_snodes, non_element_wise_snodes;
+  std::vector<const SNode *> element_wise_snodes, non_element_wise_snodes;
   for (auto &s : element_wise) {
     if (s.second) {
       element_wise_snodes.push_back(s.first);
@@ -94,7 +132,6 @@ void TaskMeta::print() const {
 }
 
 TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
-  TI_AUTO_PROF
   // TODO: this function should ideally take only an IRNode
   static std::mutex mut;
 
@@ -112,24 +149,30 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
   meta.name =
       t.kernel->name + "_" + offloaded_task_type_name(root_stmt->task_type);
   meta.type = root_stmt->task_type;
-  get_meta_input_value_states(root_stmt, &meta);
+  get_meta_input_value_states(root_stmt, &meta, ir_bank);
   meta.loop_unique = gather_uniquely_accessed_pointers(root_stmt);
 
   std::unordered_set<SNode *> activates, deactivates;
 
   // TODO: this is an abuse since it gathers nothing...
   gather_statements(root_stmt, [&](Stmt *stmt) {
+    // For a global load, GlobalPtrStmt has already been handled in
+    // get_meta_input_value_states().
     if (auto global_store = stmt->cast<GlobalStoreStmt>()) {
       if (auto ptr = global_store->ptr->cast<GlobalPtrStmt>()) {
         for (auto &snode : ptr->snodes.data) {
-          meta.output_states.emplace(snode, AsyncState::Type::value);
+          meta.output_states.insert(
+              ir_bank->get_async_state(snode, AsyncState::Type::value));
         }
       }
     }
     if (auto global_atomic = stmt->cast<AtomicOpStmt>()) {
       if (auto ptr = global_atomic->dest->cast<GlobalPtrStmt>()) {
         for (auto &snode : ptr->snodes.data) {
-          meta.output_states.emplace(snode, AsyncState::Type::value);
+          // input_state is already handled in
+          // get_meta_input_value_states().
+          meta.output_states.insert(
+              ir_bank->get_async_state(snode, AsyncState::Type::value));
         }
       }
     }
@@ -145,12 +188,15 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
         activates.insert(sn);
         for (auto &child : sn->ch) {
           TI_ASSERT(child->type == SNodeType::place);
-          meta.input_states.emplace(child.get(), AsyncState::Type::value);
-          meta.output_states.emplace(child.get(), AsyncState::Type::value);
+          meta.input_states.insert(
+              ir_bank->get_async_state(child.get(), AsyncState::Type::value));
+          meta.output_states.insert(
+              ir_bank->get_async_state(child.get(), AsyncState::Type::value));
         }
       } else if (snode_op->op_type == SNodeOpType::is_active ||
                  snode_op->op_type == SNodeOpType::length) {
-        meta.input_states.emplace(sn, AsyncState::Type::mask);
+        meta.input_states.insert(
+            ir_bank->get_async_state(sn, AsyncState::Type::mask));
       } else {
         TI_NOT_IMPLEMENTED
       }
@@ -172,8 +218,14 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
         }
       }
     }
+    if (stmt->is<GlobalTemporaryStmt>()) {
+      auto as = ir_bank->get_async_state(t.kernel);
+      meta.input_states.insert(as);
+      meta.output_states.insert(as);
+    }
     if (auto clear_list = stmt->cast<ClearListStmt>()) {
-      meta.output_states.emplace(clear_list->snode, AsyncState::Type::list);
+      meta.output_states.insert(
+          ir_bank->get_async_state(clear_list->snode, AsyncState::Type::list));
     }
     return false;
   });
@@ -195,11 +247,15 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
 
       // Do not record dense SNodes' mask states.
       if (s->need_activation()) {
-        meta.input_states.emplace(s, AsyncState::Type::mask);
-        meta.output_states.emplace(s, AsyncState::Type::mask);
+        meta.input_states.insert(
+            ir_bank->get_async_state(s, AsyncState::Type::mask));
+        meta.output_states.insert(
+            ir_bank->get_async_state(s, AsyncState::Type::mask));
         if (is_gc_able(s->type)) {
-          meta.input_states.emplace(s, AsyncState::Type::allocator);
-          meta.output_states.emplace(s, AsyncState::Type::allocator);
+          meta.input_states.insert(
+              ir_bank->get_async_state(s, AsyncState::Type::allocator));
+          meta.output_states.insert(
+              ir_bank->get_async_state(s, AsyncState::Type::allocator));
         }
       }
       s = s->parent;
@@ -226,7 +282,8 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
         continue;
       }
       if (s->type == SNodeType::place) {
-        meta.output_states.emplace(s, AsyncState::Type::value);
+        meta.output_states.insert(
+            ir_bank->get_async_state(s, AsyncState::Type::value));
       } else {
         for (auto &child : s->ch) {
           if (deactivates.count(child.get()) == 0) {
@@ -246,22 +303,31 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
   if (root_stmt->task_type == OffloadedTaskType::listgen) {
     TI_ASSERT(root_stmt->snode->parent);
     meta.snode = root_stmt->snode;
-    meta.input_states.emplace(root_stmt->snode->parent, AsyncState::Type::list);
-    meta.input_states.emplace(root_stmt->snode, AsyncState::Type::list);
+    meta.input_states.insert(ir_bank->get_async_state(root_stmt->snode->parent,
+                                                      AsyncState::Type::list));
+    meta.input_states.insert(
+        ir_bank->get_async_state(root_stmt->snode, AsyncState::Type::list));
     if (root_stmt->snode->need_activation()) {
-      meta.input_states.emplace(root_stmt->snode, AsyncState::Type::mask);
+      meta.input_states.insert(
+          ir_bank->get_async_state(root_stmt->snode, AsyncState::Type::mask));
     }
-    meta.output_states.emplace(root_stmt->snode, AsyncState::Type::list);
+    meta.output_states.insert(
+        ir_bank->get_async_state(root_stmt->snode, AsyncState::Type::list));
   } else if (root_stmt->task_type == OffloadedTaskType::struct_for) {
     meta.snode = root_stmt->snode;
-    meta.input_states.emplace(root_stmt->snode, AsyncState::Type::list);
+    meta.input_states.insert(
+        ir_bank->get_async_state(root_stmt->snode, AsyncState::Type::list));
   } else if ((root_stmt->task_type == OffloadedTaskType::gc) &&
              (is_gc_able(root_stmt->snode->type))) {
     meta.snode = root_stmt->snode;
-    meta.input_states.emplace(root_stmt->snode, AsyncState::Type::mask);
-    meta.input_states.emplace(root_stmt->snode, AsyncState::Type::allocator);
-    meta.output_states.emplace(root_stmt->snode, AsyncState::Type::mask);
-    meta.output_states.emplace(root_stmt->snode, AsyncState::Type::allocator);
+    meta.input_states.insert(
+        ir_bank->get_async_state(root_stmt->snode, AsyncState::Type::mask));
+    meta.input_states.insert(ir_bank->get_async_state(
+        root_stmt->snode, AsyncState::Type::allocator));
+    meta.output_states.insert(
+        ir_bank->get_async_state(root_stmt->snode, AsyncState::Type::mask));
+    meta.output_states.insert(ir_bank->get_async_state(
+        root_stmt->snode, AsyncState::Type::allocator));
     insert_value_states_top_down(root_stmt->snode);
   }
 
@@ -269,9 +335,10 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
   // accesses (e.g., a = x[i + 1]), we don't treat it as completely
   // overwriting the value state (e.g., for i in x: x[i] = 0).
   for (auto &state : meta.output_states) {
-    if (state.type == AsyncState::Type::value) {
-      if (meta.element_wise.find(state.snode) == meta.element_wise.end() ||
-          !meta.element_wise[state.snode]) {
+    if (state.type == AsyncState::Type::value && state.holds_snode()) {
+      const auto *sn = state.snode();
+      if (meta.element_wise.find(sn) == meta.element_wise.end() ||
+          !meta.element_wise[sn]) {
         meta.input_states.insert(state);
       }
     }
@@ -305,6 +372,7 @@ TaskFusionMeta get_task_fusion_meta(IRBank *bank, const TaskLaunchRecord &t) {
   if (task->task_type == OffloadedTaskType::struct_for) {
     meta.snode = task->snode;
     meta.block_dim = task->block_dim;
+    // We don't need to record index_offsets because it's not used anymore.
   } else if (task->task_type == OffloadedTaskType::range_for) {
     // TODO: a few problems with the range-for test condition:
     // 1. This could incorrectly fuse two range-for kernels that have

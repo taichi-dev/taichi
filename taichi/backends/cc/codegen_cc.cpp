@@ -174,18 +174,18 @@ class CCTransformer : public IRVisitor {
           cc_data_type_name(stmt->element_type().ptr_removed()) + " *",
           stmt->raw_name());
       emit("{} = ti_ctx->args[{}].ptr_{};", var, stmt->arg_id,
-           data_type_short_name(stmt->element_type().ptr_removed()));
+           data_type_name(stmt->element_type().ptr_removed()));
     } else {
       auto var =
           define_var(cc_data_type_name(stmt->element_type()), stmt->raw_name());
       emit("{} = ti_ctx->args[{}].val_{};", var, stmt->arg_id,
-           data_type_short_name(stmt->element_type()));
+           data_type_name(stmt->element_type()));
     }
   }
 
   void visit(KernelReturnStmt *stmt) override {
-    emit("ti_ctx->args[0].val_{} = {};",
-         data_type_short_name(stmt->element_type()), stmt->value->raw_name());
+    emit("ti_ctx->args[0].val_{} = {};", data_type_name(stmt->element_type()),
+         stmt->value->raw_name());
   }
 
   void visit(ConstStmt *stmt) override {
@@ -332,7 +332,7 @@ class CCTransformer : public IRVisitor {
       } else if (bin->op_type == BinaryOpType::truediv) {
         emit("{} = ({}) {} / {};", var, dt_name, lhs_name, rhs_name);
       } else if (bin->op_type == BinaryOpType::floordiv) {
-        auto lhs_dt_name = data_type_short_name(bin->lhs->element_type());
+        auto lhs_dt_name = data_type_name(bin->lhs->element_type());
         if (is_integral(bin->lhs->element_type()) &&
             is_integral(bin->rhs->element_type())) {
           emit("{} = Ti_floordiv_{}({}, {});", var, lhs_dt_name, lhs_name,
@@ -528,7 +528,7 @@ class CCTransformer : public IRVisitor {
 
   void visit(RandStmt *stmt) override {
     auto var = define_var(cc_data_type_name(stmt->ret_type), stmt->raw_name());
-    emit("{} = Ti_rand_{}();", var, data_type_short_name(stmt->ret_type));
+    emit("{} = Ti_rand_{}();", var, data_type_name(stmt->ret_type));
   }
 
   void visit(StackAllocaStmt *stmt) override {
@@ -583,9 +583,6 @@ class CCTransformer : public IRVisitor {
     auto var = define_var(dt_name + " *", adjoint_name);
     emit("{} = ({} *)Ti_ad_stack_top_adjoint({}, {});", var, dt_name,
          stack->raw_name(), stack->element_size_in_bytes());
-    emit("printf(\"%d\\n\", *Ti_ad_stack_n({}));", stack->raw_name());
-    emit("printf(\"%p\\n\", {});", stack->raw_name());
-    emit("printf(\"%p\\n\", {});", adjoint_name);
     emit("*{} += {};", adjoint_name, stmt->v->raw_name());
   }
 

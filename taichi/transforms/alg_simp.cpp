@@ -1,3 +1,4 @@
+#include "taichi/ir/analysis.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
@@ -19,6 +20,23 @@ class AlgSimp : public BasicStmtVisitor {
     }
   }
 
+  void replace_with_zero(Stmt *stmt) {
+    auto zero =
+        Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(stmt->ret_type));
+    stmt->replace_with(zero.get());
+    modifier.insert_before(stmt, std::move(zero));
+    modifier.erase(stmt);
+  }
+
+  void replace_with_one(Stmt *stmt) {
+    auto one = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(1));
+    auto one_raw = one.get();
+    modifier.insert_before(stmt, std::move(one));
+    cast_to_result_type(one_raw, stmt);
+    stmt->replace_with(one_raw);
+    modifier.erase(stmt);
+  }
+
  public:
   static constexpr int max_weaken_exponent = 32;
   using BasicStmtVisitor::visit;
@@ -30,17 +48,25 @@ class AlgSimp : public BasicStmtVisitor {
   }
 
   void visit(UnaryOpStmt *stmt) override {
-    if (stmt->is_cast() && stmt->cast_type == stmt->operand->ret_type) {
-      stmt->replace_with(stmt->operand);
-      modifier.erase(stmt);
+    if (stmt->is_cast()) {
+      if (stmt->cast_type == stmt->operand->ret_type) {
+        stmt->replace_with(stmt->operand);
+        modifier.erase(stmt);
+      } else if (stmt->operand->is<UnaryOpStmt>() &&
+                 stmt->operand->as<UnaryOpStmt>()->is_cast()) {
+        auto prev_cast = stmt->operand->as<UnaryOpStmt>();
+        if (stmt->op_type == UnaryOpType::cast_bits &&
+            prev_cast->op_type == UnaryOpType::cast_bits) {
+          stmt->operand = prev_cast->operand;
+          modifier.mark_as_modified();
+        }
+      }
     }
   }
 
   void visit(BinaryOpStmt *stmt) override {
     auto lhs = stmt->lhs->cast<ConstStmt>();
     auto rhs = stmt->rhs->cast<ConstStmt>();
-    if (!lhs && !rhs)
-      return;
     if (stmt->width() != 1) {
       return;
     }
@@ -56,6 +82,17 @@ class AlgSimp : public BasicStmtVisitor {
         // 0 +|^ a -> a
         stmt->replace_with(stmt->rhs);
         modifier.erase(stmt);
+      } else if (stmt->op_type == BinaryOpType::bit_or &&
+                 irpass::analysis::same_value(stmt->lhs, stmt->rhs)) {
+        // a | a -> a
+        stmt->replace_with(stmt->lhs);
+        modifier.erase(stmt);
+      } else if ((stmt->op_type == BinaryOpType::sub ||
+                  stmt->op_type == BinaryOpType::bit_xor) &&
+                 (fast_math || is_integral(stmt->ret_type)) &&
+                 irpass::analysis::same_value(stmt->lhs, stmt->rhs)) {
+        // fast_math or integral operands: a -^ a -> 0
+        replace_with_zero(stmt);
       }
     } else if (stmt->op_type == BinaryOpType::mul ||
                stmt->op_type == BinaryOpType::div) {
@@ -71,19 +108,12 @@ class AlgSimp : public BasicStmtVisitor {
                  stmt->op_type == BinaryOpType::mul &&
                  (alg_is_zero(lhs) || alg_is_zero(rhs))) {
         // fast_math or integral operands: 0 * a -> 0, a * 0 -> 0
-        if (alg_is_zero(lhs) && lhs->ret_type == stmt->ret_type) {
-          stmt->replace_with(stmt->lhs);
-          modifier.erase(stmt);
-        } else if (alg_is_zero(rhs) && rhs->ret_type == stmt->ret_type) {
-          stmt->replace_with(stmt->rhs);
-          modifier.erase(stmt);
-        } else {
-          auto zero = Stmt::make<ConstStmt>(
-              LaneAttribute<TypedConstant>(stmt->ret_type));
-          stmt->replace_with(zero.get());
-          modifier.insert_before(stmt, std::move(zero));
-          modifier.erase(stmt);
-        }
+        replace_with_zero(stmt);
+      } else if ((fast_math || is_integral(stmt->ret_type)) &&
+                 stmt->op_type == BinaryOpType::div &&
+                 irpass::analysis::same_value(stmt->lhs, stmt->rhs)) {
+        // fast_math or integral operands: a / a -> 1
+        replace_with_one(stmt);
       } else if (stmt->op_type == BinaryOpType::mul &&
                  (alg_is_two(lhs) || alg_is_two(rhs))) {
         // 2 * a -> a + a, a * 2 -> a + a
@@ -130,12 +160,7 @@ class AlgSimp : public BasicStmtVisitor {
         modifier.erase(stmt);
       } else if (exponent == 0) {
         // a ** 0 -> 1
-        auto one = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(1));
-        auto one_raw = one.get();
-        modifier.insert_before(stmt, std::move(one));
-        cast_to_result_type(one_raw, stmt);
-        stmt->replace_with(one_raw);
-        modifier.erase(stmt);
+        replace_with_one(stmt);
       } else if (exponent == 0.5) {
         // a ** 0.5 -> sqrt(a)
         auto a = stmt->lhs;
@@ -205,6 +230,13 @@ class AlgSimp : public BasicStmtVisitor {
         // -1 & a -> a
         stmt->replace_with(stmt->rhs);
         modifier.erase(stmt);
+      } else if (alg_is_zero(lhs) || alg_is_zero(rhs)) {
+        // 0 & a -> 0, a & 0 -> 0
+        replace_with_zero(stmt);
+      } else if (irpass::analysis::same_value(stmt->lhs, stmt->rhs)) {
+        // a & a -> a
+        stmt->replace_with(stmt->lhs);
+        modifier.erase(stmt);
       }
     } else if (stmt->op_type == BinaryOpType::bit_sar ||
                stmt->op_type == BinaryOpType::bit_shl ||
@@ -217,6 +249,22 @@ class AlgSimp : public BasicStmtVisitor {
         TI_ASSERT(stmt->lhs->ret_type == stmt->ret_type);
         stmt->replace_with(stmt->lhs);
         modifier.erase(stmt);
+      }
+    } else if (is_comparison(stmt->op_type)) {
+      if ((fast_math || is_integral(stmt->lhs->ret_type)) &&
+          irpass::analysis::same_value(stmt->lhs, stmt->rhs)) {
+        // fast_math or integral operands: a == a -> 1, a != a -> 0
+        if (stmt->op_type == BinaryOpType::cmp_eq ||
+            stmt->op_type == BinaryOpType::cmp_ge ||
+            stmt->op_type == BinaryOpType::cmp_le) {
+          replace_with_one(stmt);
+        } else if (stmt->op_type == BinaryOpType::cmp_ne ||
+                   stmt->op_type == BinaryOpType::cmp_gt ||
+                   stmt->op_type == BinaryOpType::cmp_lt) {
+          replace_with_zero(stmt);
+        } else {
+          TI_NOT_IMPLEMENTED
+        }
       }
     }
   }

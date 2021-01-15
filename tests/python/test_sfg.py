@@ -102,3 +102,22 @@ def test_sfg_dead_store_elimination():
     x_grad = x.grad.to_numpy()
     for i in range(n):
         assert ti.approx(x_grad[i]) == 2.0 * i
+
+
+@ti.test(require=ti.extension.async_mode, async_mode=True)
+def test_global_tmp_value_state():
+    # https://github.com/taichi-dev/taichi/issues/2024
+    n = 10
+    x = ti.field(ti.f32, shape=(n, ))
+
+    @ti.kernel
+    def compute_mean_of_boundary_edges() -> ti.i32:
+        total = 0.0
+        for i in range(n):
+            total += x[i] + x[i] * x[i]
+        result = total / ti.cast(n, ti.i32)
+        return result
+
+    x.from_numpy(np.arange(0, n, dtype=np.float32))
+    mean = compute_mean_of_boundary_edges()
+    assert ti.approx(mean) == 33

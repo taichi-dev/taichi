@@ -28,7 +28,11 @@
 #include "taichi/backends/cc/struct_cc.h"
 #include "taichi/backends/cc/cc_layout.h"
 #include "taichi/backends/cc/codegen_cc.h"
-#else
+#endif
+
+#if defined(TI_ARCH_x64)
+// For _MM_SET_FLUSH_ZERO_MODE
+#include <xmmintrin.h>
 #endif
 
 TI_NAMESPACE_BEGIN
@@ -63,6 +67,25 @@ std::atomic<int> Program::num_instances;
 
 Program::Program(Arch desired_arch) {
   TI_TRACE("Program initializing...");
+
+  // For performance considerations and correctness of CustomFloatType
+  // operations, we force floating-point operations to flush to zero on all
+  // backends (including CPUs).
+#if defined(TI_ARCH_x64)
+  _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
+#else
+  // Enforce flush to zero on arm64 CPUs
+  // https://developer.arm.com/documentation/100403/0201/register-descriptions/advanced-simd-and-floating-point-registers/aarch64-register-descriptions/fpcr--floating-point-control-register?lang=en
+  std::uint64_t fpcr;
+  __asm__ __volatile__("");
+  __asm__ __volatile__("MRS %0, FPCR" : "=r"(fpcr));
+  __asm__ __volatile__("");
+  __asm__ __volatile__("MSR FPCR, %0"
+                       :
+                       : "ri"(fpcr | (1 << 24)));  // Bit 24 is FZ
+  __asm__ __volatile__("");
+#endif
+
   auto arch = desired_arch;
   if (arch == Arch::cuda) {
     runtime = Runtime::create(arch);
@@ -118,6 +141,8 @@ Program::Program(Arch desired_arch) {
   current_program = this;
   config = default_compile_config;
   config.arch = arch;
+
+  thread_pool = std::make_unique<ThreadPool>(config.cpu_max_num_threads);
 
   llvm_context_host = std::make_unique<TaichiLLVMContext>(host_arch());
   profiler = make_profiler(arch);
@@ -283,7 +308,7 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
   auto snodes = scomp->snodes;
   int root_id = snode_root->id;
 
-  // A buffer of random states, one per CUDA thread
+  // Number of random states. One per CPU/CUDA thread.
   int num_rand_states = 0;
 
   if (config.arch == Arch::cuda) {
@@ -294,6 +319,8 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
 #else
     TI_NOT_IMPLEMENTED
 #endif
+  } else {
+    num_rand_states = config.cpu_max_num_threads;
   }
 
   TI_TRACE("Allocating data structure of size {} B", scomp->root_size);
@@ -323,9 +350,7 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
   for (int i = 0; i < (int)snodes.size(); i++) {
     if (is_gc_able(snodes[i]->type)) {
       std::size_t node_size;
-      auto element_size =
-          tlctx->get_type_size(StructCompilerLLVM::get_llvm_element_type(
-              tlctx->get_this_thread_struct_module(), snodes[i]));
+      auto element_size = snodes[i]->cell_size_bytes;
       if (snodes[i]->type == SNodeType::pointer) {
         // pointer. Allocators are for single elements
         node_size = element_size;
@@ -346,7 +371,7 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
 
   if (arch_use_host_memory(config.arch)) {
     runtime->call<void *, void *, void *>("LLVMRuntime_initialize_thread_pool",
-                                          llvm_runtime, &thread_pool,
+                                          llvm_runtime, thread_pool.get(),
                                           (void *)ThreadPool::static_run);
 
     runtime->call<void *, void *>("LLVMRuntime_set_assert_failed", llvm_runtime,
@@ -489,6 +514,14 @@ void Program::device_synchronize() {
   } else if (config.arch == Arch::metal) {
     metal_kernel_mgr_->synchronize();
   }
+}
+
+void Program::async_flush() {
+  if (!config.async_mode) {
+    TI_WARN("No point calling async_flush() when async mode is disabled.");
+    return;
+  }
+  async_engine->flush();
 }
 
 std::string capitalize_first(std::string s) {

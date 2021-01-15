@@ -17,8 +17,14 @@ uint64 hash(IRNode *stmt) {
   std::string serialized;
   irpass::re_id(stmt);
   irpass::print(stmt, &serialized);
+
   // TODO: separate kernel from IR template
-  serialized += stmt->get_kernel()->name;
+  auto *kernel = stmt->get_kernel();
+  if (!kernel->args.empty()) {
+    // We need to record the kernel's name if it has arguments.
+    serialized += stmt->get_kernel()->name;
+  }
+
   uint64 ret = 0;
   for (uint64 i = 0; i < serialized.size(); i++) {
     ret = ret * 100000007UL + (uint64)serialized[i];
@@ -71,12 +77,24 @@ IRHandle IRBank::fuse(IRHandle handle_a, IRHandle handle_b, Kernel *kernel) {
     return result;
   }
 
-  TI_TRACE("Begin uncached fusion");
+  TI_TRACE("Begin uncached fusion: [{}(size={})] <- [{}(size={})]",
+           handle_a.ir()->get_kernel()->name,
+           (handle_a.ir()->as<OffloadedStmt>()->has_body()
+                ? handle_a.ir()->as<OffloadedStmt>()->body->size()
+                : -1),
+           handle_b.ir()->get_kernel()->name,
+           (handle_b.ir()->as<OffloadedStmt>()->has_body()
+                ? handle_a.ir()->as<OffloadedStmt>()->body->size()
+                : -1));
   // We are about to change both |task_a| and |task_b|. Clone them first.
   auto cloned_task_a = handle_a.clone();
   auto cloned_task_b = handle_b.clone();
   auto task_a = cloned_task_a->as<OffloadedStmt>();
   auto task_b = cloned_task_b->as<OffloadedStmt>();
+  TI_ASSERT(!task_a->tls_prologue && !task_a->bls_prologue &&
+            !task_a->tls_epilogue && !task_a->tls_epilogue &&
+            !task_b->tls_prologue && !task_b->bls_prologue &&
+            !task_b->tls_epilogue && !task_b->tls_epilogue);
   // TODO: in certain cases this optimization can be wrong!
   // Fuse task b into task_a
   for (int j = 0; j < (int)task_b->body->size(); j++) {
@@ -86,6 +104,13 @@ IRHandle IRBank::fuse(IRHandle handle_a, IRHandle handle_b, Kernel *kernel) {
 
   // replace all reference to the offloaded statement B to A
   irpass::replace_all_usages_with(task_a, task_b, task_a);
+
+  // merge memory access options
+  for (auto &options : task_b->mem_access_opt.get_all()) {
+    for (auto &option : options.second) {
+      task_a->mem_access_opt.add_flag(options.first, option);
+    }
+  }
 
   irpass::full_simplify(task_a, /*after_lower_access=*/false, kernel);
   // For now, re_id is necessary for the hash to be correct.

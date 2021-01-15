@@ -113,6 +113,8 @@ class CheckOutOfBound : public BasicStmtVisitor {
         break;
       }
     }
+    if (modified)
+      irpass::type_check(node);
     return modified;
   }
 };

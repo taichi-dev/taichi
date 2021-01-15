@@ -18,6 +18,8 @@ def expr_init(rhs):
             return [expr_init(e) for e in rhs]
         elif isinstance(rhs, tuple):
             return tuple(expr_init(e) for e in rhs)
+        elif isinstance(rhs, dict):
+            return dict((key, expr_init(val)) for key, val in rhs.items())
         elif isinstance(rhs, taichi_lang_core.DataType):
             return rhs
         elif isinstance(rhs, ti.ndrange):

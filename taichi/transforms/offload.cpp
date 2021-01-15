@@ -121,6 +121,11 @@ class Offloader {
     if (!demotable) {
       for (int i = 1; i < path.size(); i++) {
         auto snode_child = path[i];
+        if ((snode_child->type == SNodeType::bit_array ||
+             snode_child->type == SNodeType::bit_struct) &&
+            i == path.size() - 1) {
+          continue;
+        }
         auto offloaded_clear_list =
             Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::serial);
         offloaded_clear_list->body->insert(
@@ -137,8 +142,8 @@ class Offloader {
         offloaded_listgen->grid_dim = program->config.saturating_grid_dim;
         offloaded_listgen->block_dim =
             std::min(snode_child->max_num_elements(),
-                     std::min(program->default_block_dim(),
-                              program->config.max_block_dim));
+                     (int64)std::min(program->default_block_dim(),
+                                     program->config.max_block_dim));
         root_block->insert(std::move(offloaded_listgen));
       }
     }
@@ -150,11 +155,11 @@ class Offloader {
 
     offloaded_struct_for->grid_dim = program->config.saturating_grid_dim;
 
-    auto snode_num_elements = for_stmt->snode->max_num_elements();
+    const auto snode_num_elements = for_stmt->snode->max_num_elements();
     if (for_stmt->block_dim == 0) {
       // adaptive
-      offloaded_struct_for->block_dim =
-          std::min(snode_num_elements, program->config.default_gpu_block_dim);
+      offloaded_struct_for->block_dim = std::min(
+          snode_num_elements, (int64)program->config.default_gpu_block_dim);
     } else {
       if (for_stmt->block_dim > snode_num_elements) {
         TI_WARN(

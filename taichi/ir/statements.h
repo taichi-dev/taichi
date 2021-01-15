@@ -141,9 +141,16 @@ class BinaryOpStmt : public Stmt {
  public:
   BinaryOpType op_type;
   Stmt *lhs, *rhs;
+  bool is_bit_vectorized;
 
-  BinaryOpStmt(BinaryOpType op_type, Stmt *lhs, Stmt *rhs)
-      : op_type(op_type), lhs(lhs), rhs(rhs) {
+  BinaryOpStmt(BinaryOpType op_type,
+               Stmt *lhs,
+               Stmt *rhs,
+               bool is_bit_vectorized = false)
+      : op_type(op_type),
+        lhs(lhs),
+        rhs(rhs),
+        is_bit_vectorized(is_bit_vectorized) {
     TI_ASSERT(!lhs->is<AllocaStmt>());
     TI_ASSERT(!rhs->is<AllocaStmt>());
     TI_STMT_REG_FIELDS;
@@ -153,7 +160,7 @@ class BinaryOpStmt : public Stmt {
     return false;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, op_type, lhs, rhs);
+  TI_STMT_DEF_FIELDS(ret_type, op_type, lhs, rhs, is_bit_vectorized);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
@@ -213,6 +220,7 @@ class GlobalPtrStmt : public Stmt {
   LaneAttribute<SNode *> snodes;
   std::vector<Stmt *> indices;
   bool activate;
+  bool is_bit_vectorized;  // for bit_loop_vectorize pass
 
   GlobalPtrStmt(const LaneAttribute<SNode *> &snodes,
                 const std::vector<Stmt *> &indices,
@@ -228,7 +236,7 @@ class GlobalPtrStmt : public Stmt {
     return true;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, snodes, indices, activate);
+  TI_STMT_DEF_FIELDS(ret_type, snodes, indices, activate, is_bit_vectorized);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
@@ -527,6 +535,7 @@ class RangeForStmt : public Stmt {
   std::unique_ptr<Block> body;
   bool reversed;
   int vectorize;
+  int bit_vectorize;
   int parallelize;
   int block_dim;
   bool strictly_serialized;
@@ -535,6 +544,7 @@ class RangeForStmt : public Stmt {
                Stmt *end,
                std::unique_ptr<Block> &&body,
                int vectorize,
+               int bit_vectorize,
                int parallelize,
                int block_dim,
                bool strictly_serialized);
@@ -553,6 +563,7 @@ class RangeForStmt : public Stmt {
                      end,
                      reversed,
                      vectorize,
+                     bit_vectorize,
                      parallelize,
                      block_dim,
                      strictly_serialized);
@@ -568,6 +579,7 @@ class StructForStmt : public Stmt {
   std::unique_ptr<Block> block_finalization;
   std::vector<int> index_offsets;
   int vectorize;
+  int bit_vectorize;
   int parallelize;
   int block_dim;
   MemoryAccessOptions mem_access_opt;
@@ -575,6 +587,7 @@ class StructForStmt : public Stmt {
   StructForStmt(SNode *snode,
                 std::unique_ptr<Block> &&body,
                 int vectorize,
+                int bit_vectorize,
                 int parallelize,
                 int block_dim);
 
@@ -587,6 +600,7 @@ class StructForStmt : public Stmt {
   TI_STMT_DEF_FIELDS(snode,
                      index_offsets,
                      vectorize,
+                     bit_vectorize,
                      parallelize,
                      block_dim,
                      mem_access_opt);
@@ -789,14 +803,20 @@ class GetChStmt : public Stmt {
   Stmt *input_ptr;
   SNode *input_snode, *output_snode;
   int chid;
+  bool is_bit_vectorized;
 
-  GetChStmt(Stmt *input_ptr, int chid);
+  GetChStmt(Stmt *input_ptr, int chid, bool is_bit_vectorized = false);
 
   bool has_global_side_effect() const override {
     return false;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, input_ptr, input_snode, output_snode, chid);
+  TI_STMT_DEF_FIELDS(ret_type,
+                     input_ptr,
+                     input_snode,
+                     output_snode,
+                     chid,
+                     is_bit_vectorized);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
@@ -1150,6 +1170,30 @@ class StackAccAdjointStmt : public Stmt {
 
   TI_STMT_DEF_FIELDS(ret_type, stack, v);
   TI_DEFINE_ACCEPT_AND_CLONE
+};
+
+class BitStructStoreStmt : public Stmt {
+ public:
+  Stmt *ptr;
+  std::vector<int> ch_ids;
+  std::vector<Stmt *> values;
+
+  BitStructStoreStmt(Stmt *ptr,
+                     const std::vector<int> &ch_ids,
+                     const std::vector<Stmt *> &values)
+      : ptr(ptr), ch_ids(ch_ids), values(values) {
+    TI_ASSERT(ch_ids.size() == values.size());
+    TI_STMT_REG_FIELDS;
+  }
+
+  SNode *get_bit_struct_snode() const;
+
+  bool common_statement_eliminable() const override {
+    return false;
+  }
+
+  TI_STMT_DEF_FIELDS(ret_type, ptr, ch_ids, values);
+  TI_DEFINE_ACCEPT_AND_CLONE;
 };
 
 TLANG_NAMESPACE_END

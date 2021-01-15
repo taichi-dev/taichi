@@ -21,11 +21,10 @@ class TypeFactory {
 
   Type *get_pointer_type(Type *element, bool is_bit_pointer = false);
 
-  Type *get_custom_int_type(int num_bits,
-                            bool is_signed,
-                            int compute_type_bits = 32);
+  Type *get_custom_int_type(int num_bits, bool is_signed, Type *compute_type);
 
   Type *get_custom_float_type(Type *digits_type,
+                              Type *exponent_type,
                               Type *compute_type,
                               float64 scale);
 
@@ -53,10 +52,11 @@ class TypeFactory {
   std::map<std::pair<Type *, bool>, std::unique_ptr<Type>> pointer_types_;
 
   // TODO: use unordered map
-  std::map<std::tuple<int, int, bool>, std::unique_ptr<Type>> custom_int_types;
+  std::map<std::tuple<int, bool, Type *>, std::unique_ptr<Type>>
+      custom_int_types;
 
   // TODO: use unordered map
-  std::map<std::tuple<Type *, Type *, float64>, std::unique_ptr<Type>>
+  std::map<std::tuple<Type *, Type *, Type *, float64>, std::unique_ptr<Type>>
       custom_float_types;
 
   // TODO: avoid duplication

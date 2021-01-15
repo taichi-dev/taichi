@@ -33,6 +33,7 @@ IRBuilder &current_ast_builder() {
 
 void DecoratorRecorder::reset() {
   vectorize = -1;
+  bit_vectorize = -1;
   parallelize = 0;
   uniform = false;
   mem_access_opt.clear();
@@ -570,9 +571,11 @@ void DelayedIRModifier::replace_with(Stmt *stmt,
 }
 
 bool DelayedIRModifier::modify_ir() {
+  bool force_modified = modified_;
+  modified_ = false;
   if (to_insert_before.empty() && to_insert_after.empty() && to_erase.empty() &&
       to_replace_with.empty())
-    return false;
+    return force_modified;
   for (auto &i : to_insert_before) {
     i.first->parent->insert_before(i.first, std::move(i.second));
   }
@@ -590,6 +593,10 @@ bool DelayedIRModifier::modify_ir() {
   }
   to_replace_with.clear();
   return true;
+}
+
+void DelayedIRModifier::mark_as_modified() {
+  modified_ = true;
 }
 
 LocalAddress::LocalAddress(Stmt *var, int offset) : var(var), offset(offset) {

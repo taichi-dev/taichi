@@ -2,17 +2,17 @@ import taichi as ti
 from pytest import approx
 
 
-@ti.test(require=ti.extension.quant, debug=True)
+@ti.test(require=ti.extension.quant_basic, debug=True)
 def test_custom_int_atomics():
-    ci13 = ti.type_factory_.get_custom_int_type(13, True)
-    ci5 = ti.type_factory_.get_custom_int_type(5, True)
-    cu2 = ti.type_factory_.get_custom_int_type(2, False)
+    ci13 = ti.quant.int(13, True)
+    ci5 = ti.quant.int(5, True)
+    cu2 = ti.quant.int(2, False)
 
     x = ti.field(dtype=ci13)
     y = ti.field(dtype=ci5)
     z = ti.field(dtype=cu2)
 
-    ti.root._bit_struct(num_bits=32).place(x, y, z)
+    ti.root.bit_struct(num_bits=32).place(x, y, z)
 
     x[None] = 3
     y[None] = 2
@@ -36,13 +36,13 @@ def test_custom_int_atomics():
     assert z[None] == 3
 
 
-@ti.test(require=ti.extension.quant, debug=True)
+@ti.test(require=[ti.extension.quant_basic, ti.extension.data64], debug=True)
 def test_custom_int_atomics_b64():
-    ci13 = ti.type_factory_.get_custom_int_type(13, True)
+    ci13 = ti.quant.int(13, True)
 
     x = ti.field(dtype=ci13)
 
-    ti.root._bit_array(ti.i, 4, num_bits=64).place(x)
+    ti.root.bit_array(ti.i, 4, num_bits=64).place(x)
 
     x[0] = 100
     x[1] = 200
@@ -60,17 +60,17 @@ def test_custom_int_atomics_b64():
     assert x[2] == 315
 
 
-@ti.test(require=ti.extension.quant, debug=True)
+@ti.test(require=ti.extension.quant_basic, debug=True)
 def test_custom_float_atomics():
-    ci13 = ti.type_factory_.get_custom_int_type(13, True)
-    ci19 = ti.type_factory_.get_custom_int_type(19, False)
-    cft13 = ti.type_factory_.get_custom_float_type(ci13, ti.f32.get_ptr(), 0.1)
-    cft19 = ti.type_factory_.get_custom_float_type(ci19, ti.f32.get_ptr(), 0.1)
+    ci13 = ti.quant.int(13, True)
+    ci19 = ti.quant.int(19, False)
+    cft13 = ti.type_factory.custom_float(significand_type=ci13, scale=0.1)
+    cft19 = ti.type_factory.custom_float(significand_type=ci19, scale=0.1)
 
     x = ti.field(dtype=cft13)
     y = ti.field(dtype=cft19)
 
-    ti.root._bit_struct(num_bits=32).place(x, y)
+    ti.root.bit_struct(num_bits=32).place(x, y)
 
     @ti.kernel
     def foo():

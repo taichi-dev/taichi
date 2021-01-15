@@ -124,10 +124,13 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(GlobalPtrStmt *stmt) {
+    if (stmt->is_bit_vectorized) {
+      return;
+    }
     stmt->ret_type.set_is_pointer(true);
     if (stmt->snodes) {
-      stmt->ret_type = TypeFactory::get_instance().get_pointer_type(
-          stmt->snodes[0]->dt.get_ptr());
+      stmt->ret_type =
+          TypeFactory::get_instance().get_pointer_type(stmt->snodes[0]->dt);
     } else
       TI_WARN("[{}] Type inference failed: snode is nullptr.", stmt->name());
     for (int l = 0; l < stmt->snodes.size(); l++) {
@@ -152,21 +155,23 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(GlobalStoreStmt *stmt) {
-    const auto dst_value_type = stmt->ptr->ret_type.ptr_removed();
+    auto dst_value_type = stmt->ptr->ret_type.ptr_removed();
     if (dst_value_type->is<CustomIntType>() ||
         dst_value_type->is<CustomFloatType>()) {
-      // TODO(type): maybe we still need some kind of check here. E.g., we
-      // should warn user when he stores int to CustomFloat.
-      return;
+      // We force the value type to be the compute_type of the bit pointer.
+      // Casting from compute_type to physical_type is handled in codegen.
+      dst_value_type = dst_value_type->get_compute_type();
     }
     auto promoted = promoted_type(dst_value_type, stmt->data->ret_type);
     auto input_type = stmt->data->ret_data_type_name();
     if (dst_value_type != stmt->data->ret_type) {
       stmt->data = insert_type_cast_before(stmt, stmt->data, dst_value_type);
     }
-    if (dst_value_type != promoted) {
+    // TODO: do not use "promoted" here since u8 + u8 = i32 in C++ and storing
+    // u8 to u8 leads to extra warnings.
+    if (dst_value_type != promoted && dst_value_type != stmt->data->ret_type) {
       TI_WARN("[{}] Global store may lose precision: {} <- {}, at",
-              stmt->name(), stmt->ptr->ret_data_type_name(), input_type);
+              stmt->name(), dst_value_type->to_string(), input_type);
       TI_WARN("\n{}", stmt->tb);
     }
   }
@@ -397,7 +402,7 @@ class TypeCheck : public IRVisitor {
 
   void visit(SNodeLookupStmt *stmt) {
     if (stmt->snode->type == SNodeType::bit_array) {
-      auto bit_array_type = stmt->snode->dt.get_ptr();
+      auto bit_array_type = stmt->snode->dt;
       auto element_type =
           bit_array_type->cast<BitArrayType>()->get_element_type();
       auto pointer_type =
@@ -410,12 +415,19 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(GetChStmt *stmt) {
+    if (stmt->is_bit_vectorized) {
+      auto physical_type = stmt->output_snode->physical_type;
+      auto ptr_ret_type =
+          TypeFactory::get_instance().get_pointer_type(physical_type);
+      stmt->ret_type = DataType(ptr_ret_type);
+      return;
+    }
     TI_ASSERT(stmt->width() == 1);
     auto element_type = stmt->output_snode->dt;
     // For bit_struct SNodes, their component SNodes must have
     // is_bit_level=true
     auto pointer_type = TypeFactory::get_instance().get_pointer_type(
-        element_type.get_ptr(), stmt->output_snode->is_bit_level);
+        element_type, stmt->output_snode->is_bit_level);
     stmt->ret_type = pointer_type;
   }
 
@@ -470,6 +482,10 @@ class TypeCheck : public IRVisitor {
 
   void visit(GlobalTemporaryStmt *stmt) {
     stmt->ret_type.set_is_pointer(true);
+  }
+
+  void visit(BitStructStoreStmt *stmt) {
+    // do nothing
   }
 };
 

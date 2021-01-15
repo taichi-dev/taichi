@@ -3,13 +3,12 @@ import math
 from pytest import approx
 
 
-@ti.test(require=ti.extension.quant)
+@ti.test(require=ti.extension.quant_basic)
 def test_custom_float():
-    ci13 = ti.type_factory_.get_custom_int_type(13, True)
-    cft = ti.type_factory_.get_custom_float_type(ci13, ti.f32.get_ptr(), 0.1)
+    cft = ti.quant.fixed(frac=32, range=2)
     x = ti.field(dtype=cft)
 
-    ti.root._bit_struct(num_bits=32).place(x)
+    ti.root.bit_struct(num_bits=32).place(x)
 
     @ti.kernel
     def foo():
@@ -20,21 +19,19 @@ def test_custom_float():
     foo()
     assert x[None] == approx(1.1)
     x[None] = 0.64
-    assert x[None] == approx(0.6)
+    assert x[None] == approx(0.64)
     x[None] = 0.66
-    assert x[None] == approx(0.7)
+    assert x[None] == approx(0.66)
 
 
-@ti.test(require=ti.extension.quant)
+@ti.test(require=ti.extension.quant_basic)
 def test_custom_matrix_rotation():
-    ci16 = ti.type_factory_.get_custom_int_type(16, True)
-    cft = ti.type_factory_.get_custom_float_type(ci16, ti.f32.get_ptr(),
-                                                 1.2 / (2**15))
+    cft = ti.quant.fixed(frac=16, range=1.2)
 
     x = ti.Matrix.field(2, 2, dtype=cft)
 
-    ti.root._bit_struct(num_bits=32).place(x(0, 0), x(0, 1))
-    ti.root._bit_struct(num_bits=32).place(x(1, 0), x(1, 1))
+    ti.root.bit_struct(num_bits=32).place(x(0, 0), x(0, 1))
+    ti.root.bit_struct(num_bits=32).place(x(1, 0), x(1, 1))
 
     x[None] = [[1.0, 0.0], [0.0, 1.0]]
 
@@ -51,3 +48,38 @@ def test_custom_matrix_rotation():
     assert x[None][0, 1] == approx(1, abs=1e-4)
     assert x[None][1, 0] == approx(-1, abs=1e-4)
     assert x[None][1, 1] == approx(0, abs=1e-4)
+
+
+@ti.test(require=ti.extension.quant_basic)
+def test_custom_float_implicit_cast():
+    ci13 = ti.quant.int(bits=13)
+    cft = ti.type_factory.custom_float(significand_type=ci13, scale=0.1)
+    x = ti.field(dtype=cft)
+
+    ti.root.bit_struct(num_bits=32).place(x)
+
+    @ti.kernel
+    def foo():
+        x[None] = 10
+
+    foo()
+    assert x[None] == approx(10.0)
+
+
+@ti.test(require=ti.extension.quant_basic)
+def test_cache_read_only():
+    ci15 = ti.quant.int(bits=15)
+    cft = ti.type_factory.custom_float(significand_type=ci15, scale=0.1)
+    x = ti.field(dtype=cft)
+
+    ti.root.bit_struct(num_bits=32).place(x)
+
+    @ti.kernel
+    def test(data: ti.f32):
+        ti.cache_read_only(x)
+        assert x[None] == data
+
+    x[None] = 0.7
+    test(0.7)
+    x[None] = 1.2
+    test(1.2)

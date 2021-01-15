@@ -46,6 +46,8 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
   auto ch_type =
       llvm::StructType::create(*ctx, ch_types, snode.node_type_name + "_ch");
 
+  snode.cell_size_bytes = tlctx->get_type_size(ch_type);
+
   llvm::Type *body_type = nullptr, *aux_type = nullptr;
   if (type == SNodeType::dense || type == SNodeType::bitmasked) {
     TI_ASSERT(snode._morton == false);
@@ -65,7 +67,7 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
     int total_offset = 0;
     for (int i = 0; i < snode.ch.size(); i++) {
       auto &ch = snode.ch[i];
-      ch_types.push_back(ch->dt.get_ptr());
+      ch_types.push_back(ch->dt);
       ch_offsets.push_back(total_offset);
       CustomIntType *component_cit = nullptr;
       if (auto cit = ch->dt->cast<CustomIntType>()) {
@@ -73,15 +75,20 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
       } else if (auto cft = ch->dt->cast<CustomFloatType>()) {
         component_cit = cft->get_digits_type()->as<CustomIntType>();
       } else {
-        TI_NOT_IMPLEMENTED
+        TI_ERROR("Type {} not supported.", ch->dt->to_string());
       }
       component_cit->set_physical_type(snode.physical_type);
       if (!arch_is_cpu(arch)) {
-        TI_ERROR_IF(data_type_bits(snode.physical_type) <= 16,
+        TI_ERROR_IF(data_type_bits(snode.physical_type) < 32,
                     "bit_struct physical type must be at least 32 bits on "
                     "non-CPU backends.");
       }
+      ch->bit_offset = total_offset;
       total_offset += component_cit->get_num_bits();
+      auto bit_struct_size = data_type_bits(snode.physical_type);
+      TI_ERROR_IF(total_offset > bit_struct_size,
+                  "Bit struct overflows: {} bits used out of {}.", total_offset,
+                  bit_struct_size);
     }
 
     snode.dt = TypeFactory::get_instance().get_bit_struct_type(
@@ -93,7 +100,7 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
     // A bit array SNode should have only one child
     TI_ASSERT(snode.ch.size() == 1);
     auto &ch = snode.ch[0];
-    Type *ch_type = ch->dt.get_ptr();
+    Type *ch_type = ch->dt;
     ch->dt->as<CustomIntType>()->set_physical_type(snode.physical_type);
     if (!arch_is_cpu(arch)) {
       TI_ERROR_IF(data_type_bits(snode.physical_type) <= 16,

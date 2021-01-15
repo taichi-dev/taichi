@@ -68,11 +68,19 @@ real measure_cpe(std::function<void()> target,
 std::string data_type_format(DataType dt) {
   if (dt->is_primitive(PrimitiveTypeID::i32)) {
     return "%d";
+  } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
+    return "%u";
   } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
 #if defined(TI_PLATFORM_UNIX)
     return "%lld";
 #else
     return "%I64d";
+#endif
+  } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
+#if defined(TI_PLATFORM_UNIX)
+    return "%llu";
+#else
+    return "%I64u";
 #endif
   } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
     return "%f";
@@ -87,8 +95,8 @@ std::string data_type_format(DataType dt) {
 
 int data_type_size(DataType t) {
   // TODO:
-  //  1. Ensure in the old code, pointer attributes of t are correct (by setting
-  //  a loud failure on pointers);
+  //  1. Ensure in the old code, pointer attributes of t are correct (by
+  //  setting a loud failure on pointers);
   //  2. Support pointer types here.
   t.set_is_pointer(false);
   if (false) {
@@ -352,8 +360,7 @@ class TypePromotionMapping {
  private:
   std::map<std::pair<PrimitiveTypeID, PrimitiveTypeID>, PrimitiveTypeID>
       mapping;
-  static PrimitiveTypeID to_primitive_type(const DataType d_) {
-    Type *d = d_.get_ptr();
+  static PrimitiveTypeID to_primitive_type(DataType d) {
     if (d->is<PointerType>()) {
       d = d->as<PointerType>()->get_pointee_type();
       TI_WARN("promoted_type got a pointer input.");

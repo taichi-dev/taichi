@@ -1,0 +1,62 @@
+name: Publishing Release
+on:
+  release:
+    # https://docs.github.com/en/free-pro-team@latest/actions/reference/events-that-trigger-workflows#release
+    types: [published]
+
+jobs:
+  build_and_test_cpu:
+    name: Build and Test (macOS only)
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            python: 3.6
+            with_cc: OFF
+          - os: macos-latest
+            python: 3.7
+            with_cc: OFF
+          - os: macos-latest
+            python: 3.8
+            with_cc: OFF
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Download Pre-Built LLVM 10.0.0
+        run: |
+          python misc/ci_download.py
+          mkdir taichi-llvm
+          cd taichi-llvm
+          unzip ../taichi-llvm.zip
+        env:
+          CI_PLATFORM: ${{ matrix.os }}
+
+      - name: Build
+        run: |
+          export TAICHI_REPO_DIR=`pwd`
+          export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
+          export CXX=clang++
+          python misc/ci_setup.py ci
+
+      - name: Test
+        run: |
+          export TAICHI_REPO_DIR=`pwd`
+          export PATH=$TAICHI_REPO_DIR/bin:$PATH
+          export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
+          export PYTHONPATH=$TAICHI_REPO_DIR/python
+          python examples/laplace.py
+          ti diagnose
+          ti test -vr2 -t2
+
+      # TODO(#1580): Upload to PyPI. Need to set up PYPI_PWD in the secrets first.
+      # - name: Upload PyPI
+      #   env:
+      #     # https://docs.github.com/en/free-pro-team@latest/actions/reference/encrypted-secrets#using-encrypted-secrets-in-a-workflow
+      #     PYPI_PWD: ${{ secrets.PYPI_PWD }}
+      #   run: |
+      #     cd python
+      #     python build.py try_upload && bash <(curl -s https://codecov.io/bash)

@@ -215,6 +215,12 @@ struct TaskMeta {
   void print() const;
 };
 
+// A wrapper class for the parameter in bool same_value() in analysis.h.
+class AsyncStateSet {
+ public:
+  std::unordered_set<AsyncState> s;
+};
+
 class IRBank;
 
 TaskMeta *get_task_meta(IRBank *bank, const TaskLaunchRecord &t);

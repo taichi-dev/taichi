@@ -73,9 +73,11 @@ class SNode {
   int depth{};
 
   std::string name;
-  int64 n{};
-  int total_num_bits{}, total_bit_start{};
-  int chunk_size{};
+  int64 n{0};
+  int total_num_bits{0};
+  int total_bit_start{0};
+  int chunk_size{0};
+  std::size_t cell_size_bytes{0};
   PrimitiveType *physical_type;  // for bit_struct and bit_array only
   DataType dt;
   bool has_ambient{};
@@ -85,6 +87,13 @@ class SNode {
   Kernel *reader_kernel{};
   Kernel *writer_kernel{};
   Expr expr;
+  SNode *exp_snode{};  // for CustomFloatType with exponent bits
+  int bit_offset{0};   // for children of bit_struct only
+  bool placing_shared_exp{false};
+  SNode *currently_placing_exp_snode{nullptr};
+  Type *currently_placing_exp_snode_dtype{nullptr};
+  bool owns_shared_exponent{false};
+  std::vector<SNode *> exponent_users;
 
   // is_bit_level=false: the SNode is not bitpacked
   // is_bit_level=true: the SNode is bitpacked (i.e., strictly inside bit_struct
@@ -259,13 +268,17 @@ class SNode {
     return fmt::format("{}_refine_coordinates", get_name());
   }
 
-  int max_num_elements() const {
-    return 1 << total_num_bits;
+  int64 max_num_elements() const {
+    return int64(1) << total_num_bits;
   }
 
   int shape_along_axis(int i) const;
 
   uint64 fetch_reader_result();  // TODO: refactor
+
+  void begin_shared_exp_placement();
+
+  void end_shared_exp_placement();
 };
 
 TLANG_NAMESPACE_END

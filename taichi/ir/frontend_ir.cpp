@@ -33,6 +33,7 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
                                  const Expr &global_var)
     : global_var(global_var) {
   vectorize = dec.vectorize;
+  bit_vectorize = dec.bit_vectorize;
   parallelize = dec.parallelize;
   strictly_serialized = dec.strictly_serialized;
   block_dim = dec.block_dim;
@@ -69,6 +70,7 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
                                  const Expr &end)
     : begin(begin), end(end) {
   vectorize = dec.vectorize;
+  bit_vectorize = dec.bit_vectorize;
   parallelize = dec.parallelize;
   strictly_serialized = dec.strictly_serialized;
   block_dim = dec.block_dim;

@@ -3,6 +3,7 @@
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/visitors.h"
 #include "taichi/program/kernel.h"
+#include "taichi/program/extension.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -69,6 +70,16 @@ void compile_to_offloads(IRNode *ir,
     print("Loop Split");
     irpass::analysis::verify(ir);
   }
+
+  // TODO: strictly enforce bit vectorization for x86 cpu and CUDA now
+  //       create a separate CompileConfig flag for the new pass
+  if (arch_is_cpu(config.arch) || config.arch == Arch::cuda) {
+    irpass::bit_loop_vectorize(ir);
+    irpass::type_check(ir);
+    print("Bit Loop Vectorized");
+    irpass::analysis::verify(ir);
+  }
+
   irpass::full_simplify(ir, false);
   print("Simplified I");
   irpass::analysis::verify(ir);
@@ -192,6 +203,11 @@ void offload_to_executable(IRNode *ir,
 
   irpass::full_simplify(ir, lower_global_access);
   print("Simplified IV");
+
+  if (is_extension_supported(config.arch, Extension::quant)) {
+    irpass::optimize_bit_struct_stores(ir);
+    print("Bit struct stores optimized");
+  }
 
   // Final field registration correctness & type checking
   irpass::type_check(ir);

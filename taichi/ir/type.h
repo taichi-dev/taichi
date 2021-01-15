@@ -33,7 +33,8 @@ class Type {
   template <typename T>
   T *as() {
     auto p = dynamic_cast<T *>(this);
-    TI_ASSERT(p != nullptr);
+    TI_ASSERT_INFO(p != nullptr, "Cannot treat {} as {}", this->to_string(),
+                   typeid(T).name());
     return p;
   }
 
@@ -74,8 +75,11 @@ class DataType {
     return ptr_->to_string();
   };
 
-  // TODO: DataType itself should be a pointer in the future
-  Type *get_ptr() const {
+  operator const Type *() const {
+    return ptr_;
+  }
+
+  operator Type *() {
     return ptr_;
   }
 
@@ -212,7 +216,10 @@ class CustomIntType : public Type {
 
 class CustomFloatType : public Type {
  public:
-  CustomFloatType(Type *digits_type, Type *compute_type, float64 scale);
+  CustomFloatType(Type *digits_type,
+                  Type *exponent_type,
+                  Type *compute_type,
+                  float64 scale);
 
   std::string to_string() const override;
 
@@ -224,12 +231,23 @@ class CustomFloatType : public Type {
     return digits_type_;
   }
 
+  Type *get_exponent_type() {
+    return exponent_type_;
+  }
+
+  int get_exponent_conversion_offset() const;
+
+  int get_digit_bits() const;
+
+  bool get_is_signed() const;
+
   Type *get_compute_type() override {
     return compute_type_;
   }
 
  private:
   Type *digits_type_{nullptr};
+  Type *exponent_type_{nullptr};
   Type *compute_type_{nullptr};
   float64 scale_;
 };

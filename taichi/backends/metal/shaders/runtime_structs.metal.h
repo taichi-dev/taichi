@@ -28,7 +28,6 @@ static_assert(sizeof(char *) == 8, "Metal pointers are 64-bit.");
 // clang-format off
 METAL_BEGIN_RUNTIME_STRUCTS_DEF
 STR(
-    // clang-format on
     constant constexpr int kTaichiMaxNumIndices = 8;
     constant constexpr int kTaichiNumChunks = 1024;
     constant constexpr int kAlignment = 8;
@@ -105,6 +104,7 @@ STR(
         Bitmasked = 2,
         Dynamic = 3,
         Pointer = 4,
+        BitStruct = 5,
       };
       int32_t element_stride = 0;
       int32_t num_slots = 0;
@@ -149,7 +149,6 @@ STR(
         return belonged_nodemgr.id < 0;
       }
     };
-    // clang-format off
 )
 METAL_END_RUNTIME_STRUCTS_DEF
 // clang-format on

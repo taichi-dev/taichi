@@ -33,22 +33,31 @@ class SNode:
             dimensions = [dimensions] * len(indices)
         return SNode(self.ptr.bitmasked(indices, dimensions))
 
-    # Not yet stable API
+    @deprecated('_bit_struct', 'bit_struct')
     def _bit_struct(self, num_bits):
+        return self.bit_struct(num_bits)
+
+    def bit_struct(self, num_bits):
         return SNode(self.ptr.bit_struct(num_bits))
 
+    @deprecated('_bit_array', 'bit_array')
     def _bit_array(self, indices, dimensions, num_bits):
+        return self.bit_array(indices, dimensions, num_bits)
+
+    def bit_array(self, indices, dimensions, num_bits):
         if isinstance(dimensions, int):
             dimensions = [dimensions] * len(indices)
         return SNode(self.ptr.bit_array(indices, dimensions, num_bits))
 
-    def place(self, *args, offset=None):
+    def place(self, *args, offset=None, shared_exponent=False):
         from .expr import Expr
         from .util import is_taichi_class
         if offset is None:
             offset = []
         if isinstance(offset, numbers.Number):
             offset = (offset, )
+        if shared_exponent:
+            self.ptr.begin_shared_exp_placement()
         for arg in args:
             if isinstance(arg, Expr):
                 self.ptr.place(Expr(arg).ptr, offset)
@@ -59,6 +68,8 @@ class SNode:
                 self.place(arg.get_field_members(), offset=offset)
             else:
                 raise ValueError(f'{arg} cannot be placed')
+        if shared_exponent:
+            self.ptr.end_shared_exp_placement()
         return self
 
     def lazy_grad(self):
@@ -129,6 +140,12 @@ class SNode:
         runtime = impl.get_runtime()
         runtime.materialize()
         return runtime.prog.get_snode_num_dynamically_allocated(self.ptr)
+
+    @property
+    def cell_size_bytes(self):
+        runtime = impl.get_runtime()
+        runtime.materialize()
+        return self.ptr.cell_size_bytes
 
     def deactivate_all(self):
         ch = self.get_children()

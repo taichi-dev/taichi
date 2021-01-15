@@ -3,6 +3,7 @@ from .util import deprecated
 from .matrix import Matrix, Vector
 from .transformer import TaichiSyntaxError
 from .ndrange import ndrange, GroupedNDRange
+from . import type_factory
 from copy import deepcopy as _deepcopy
 import functools
 import os
@@ -46,8 +47,12 @@ kernel_profiler_clear = lambda: get_runtime().prog.kernel_profiler_clear()
 kernel_profiler_total_time = lambda: get_runtime(
 ).prog.kernel_profiler_total_time()
 
-# Unstable API
+# Legacy API
 type_factory_ = core.get_type_factory_instance()
+
+# Unstable API
+quant = type_factory.Quant
+type_factory = type_factory.TypeFactory()
 
 
 def memory_profiler_print():
@@ -249,6 +254,7 @@ def loop_unique(val):
 parallelize = core.parallelize
 serialize = lambda: parallelize(1)
 vectorize = core.vectorize
+bit_vectorize = core.bit_vectorize
 block_dim = core.block_dim
 
 inversed = deprecated('ti.inversed(a)', 'a.inverse()')(Matrix.inversed)
@@ -790,6 +796,10 @@ def complex_kernel_grad(primal):
 
 def sync():
     get_runtime().sync()
+
+
+def async_flush():
+    get_runtime().prog.async_flush()
 
 
 __all__ = [s for s in dir() if not s.startswith('_')]

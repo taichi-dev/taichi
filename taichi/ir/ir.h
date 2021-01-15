@@ -75,6 +75,7 @@ IRBuilder &current_ast_builder();
 class DecoratorRecorder {
  public:
   int vectorize;
+  int bit_vectorize;
   int parallelize;
   bool strictly_serialized;
   MemoryAccessOptions mem_access_opt;
@@ -728,6 +729,7 @@ class DelayedIRModifier {
   std::vector<std::pair<Stmt *, VecStatement>> to_insert_after;
   std::vector<std::tuple<Stmt *, VecStatement, bool>> to_replace_with;
   std::vector<Stmt *> to_erase;
+  bool modified_{false};
 
  public:
   ~DelayedIRModifier();
@@ -740,6 +742,9 @@ class DelayedIRModifier {
                     VecStatement &&new_statements,
                     bool replace_usages = true);
   bool modify_ir();
+
+  // Force the next call of modify_ir() to return true.
+  void mark_as_modified();
 };
 
 struct LocalAddress {
@@ -756,6 +761,10 @@ extern DecoratorRecorder dec;
 
 inline void Vectorize(int v) {
   dec.vectorize = v;
+}
+
+inline void BitVectorize(int v) {
+  dec.bit_vectorize = v;
 }
 
 inline void Parallelize(int v) {

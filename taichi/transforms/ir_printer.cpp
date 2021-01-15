@@ -313,17 +313,18 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(RangeForStmt *for_stmt) override {
-    print("{} : {}for in range({}, {}) (vectorize {}) {}{{", for_stmt->name(),
-          for_stmt->reversed ? "reversed " : "", for_stmt->begin->name(),
-          for_stmt->end->name(), for_stmt->vectorize,
-          block_dim_info(for_stmt->block_dim));
+    print("{} : {}for in range({}, {}) (vectorize {}) (bit_vectorize {}) {}{{",
+          for_stmt->name(), for_stmt->reversed ? "reversed " : "",
+          for_stmt->begin->name(), for_stmt->end->name(), for_stmt->vectorize,
+          for_stmt->bit_vectorize, block_dim_info(for_stmt->block_dim));
     for_stmt->body->accept(this);
     print("}}");
   }
 
   void visit(StructForStmt *for_stmt) override {
-    print("{} : struct for in {} (vectorize {}) {}{}{{", for_stmt->name(),
-          for_stmt->snode->get_node_type_name_hinted(), for_stmt->vectorize,
+    print("{} : struct for in {} (vectorize {}) (bit_vectorize {}) {}{}{{",
+          for_stmt->name(), for_stmt->snode->get_node_type_name_hinted(),
+          for_stmt->vectorize, for_stmt->bit_vectorize,
           scratch_pad_info(for_stmt->mem_access_opt),
           block_dim_info(for_stmt->block_dim));
     for_stmt->body->accept(this);
@@ -607,6 +608,21 @@ class IRPrinter : public IRVisitor {
   void visit(ExternalTensorShapeAlongAxisStmt *stmt) override {
     print("external_tensor_shape_along_axis {}, arg_id {}", stmt->axis,
           stmt->arg_id);
+  }
+
+  void visit(BitStructStoreStmt *stmt) override {
+    std::string ch_ids;
+    std::string values;
+    for (int i = 0; i < stmt->ch_ids.size(); i++) {
+      ch_ids += fmt::format("{}", stmt->ch_ids[i]);
+      values += fmt::format("{}", stmt->values[i]->name());
+      if (i != stmt->ch_ids.size() - 1) {
+        ch_ids += ", ";
+        values += ", ";
+      }
+    }
+    print("{} : bit_struct_store {}, ch_ids=[{}], values=[{}]", stmt->name(),
+          stmt->ptr->name(), ch_ids, values);
   }
 };
 

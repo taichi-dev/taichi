@@ -118,8 +118,12 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   virtual FunctionType gen();
 
-  // only for debugging on CPU
-  llvm::Value *create_print(std::string tag, DataType dt, llvm::Value *value);
+  // For debugging only
+  virtual llvm::Value *create_print(std::string tag,
+                                    DataType dt,
+                                    llvm::Value *value);
+
+  llvm::Value *create_print(std::string tag, llvm::Value *value);
 
   llvm::Value *cast_pointer(llvm::Value *val,
                             std::string dest_ty_name,
@@ -192,10 +196,10 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(SNodeOpStmt *stmt) override;
 
-  llvm::Value *atomic_add_custom_int(AtomicOpStmt *stmt, CustomIntType *cit);
-
   llvm::Value *atomic_add_custom_float(AtomicOpStmt *stmt,
                                        CustomFloatType *cft);
+
+  llvm::Value *atomic_add_custom_int(AtomicOpStmt *stmt, CustomIntType *cit);
 
   llvm::Value *float_to_custom_int(CustomFloatType *cft,
                                    CustomIntType *cit,
@@ -205,15 +209,48 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(GlobalPtrStmt *stmt) override;
 
+  void store_custom_int(llvm::Value *bit_ptr,
+                        CustomIntType *cit,
+                        llvm::Value *value);
+
+  void store_custom_int(llvm::Value *byte_ptr,
+                        llvm::Value *bit_offset,
+                        CustomIntType *cit,
+                        llvm::Value *value);
+
   void visit(GlobalStoreStmt *stmt) override;
 
-  llvm::Value *load_as_custom_int(Stmt *ptr, Type *load_type);
+  llvm::Value *custom_type_to_bits(llvm::Value *val,
+                                   Type *input_type,
+                                   Type *output_type);
+
+  void visit(BitStructStoreStmt *stmt) override;
+
+  void store_floats_with_shared_exponents(BitStructStoreStmt *stmt);
+
+  llvm::Value *reconstruct_float_from_bit_struct(llvm::Value *local_bit_struct,
+                                                 SNode *digits);
+
+  llvm::Value *load_as_custom_int(llvm::Value *ptr, Type *load_type);
 
   llvm::Value *extract_custom_int(llvm::Value *physical_value,
                                   llvm::Value *bit_offset,
                                   Type *load_type);
 
-  llvm::Value *reconstruct_custom_float(llvm::Value *digits, Type *load_type);
+  llvm::Value *reconstruct_custom_float(llvm::Value *digits,
+                                        CustomFloatType *load_type);
+
+  llvm::Value *load_custom_float_with_exponent(llvm::Value *digits_bit_ptr,
+                                               llvm::Value *exponent_bit_ptr,
+                                               CustomFloatType *cft,
+                                               bool shared_exponent);
+
+  llvm::Value *reconstruct_custom_float_with_exponent(llvm::Value *digits,
+                                                      llvm::Value *exponent_val,
+                                                      CustomFloatType *cft,
+                                                      bool shared_exponent);
+
+  llvm::Value *load_custom_float(Stmt *ptr_stmt);
 
   void visit(GlobalLoadStmt *stmt) override;
 
@@ -227,8 +264,10 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(IntegerOffsetStmt *stmt) override;
 
-  llvm::Value *create_bit_ptr_struct(llvm::Value *byte_ptr_base,
-                                     llvm::Value *bit_offset);
+  llvm::Value *create_bit_ptr_struct(llvm::Value *byte_ptr_base = nullptr,
+                                     llvm::Value *bit_offset = nullptr);
+
+  llvm::Value *offset_bit_ptr(llvm::Value *input_bit_ptr, int bit_offset_delta);
 
   void visit(SNodeLookupStmt *stmt) override;
 
@@ -294,6 +333,15 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   void visit(LoopUniqueStmt *stmt) override;
 
   llvm::Value *create_xlogue(std::unique_ptr<Block> &block);
+
+  llvm::Value *extract_exponent_from_float(llvm::Value *f);
+
+  llvm::Value *extract_digits_from_float(llvm::Value *f, bool full);
+
+  llvm::Value *get_float_digits_with_shared_exponents(llvm::Value *f,
+                                                      llvm::Value *shared_exp);
+
+  llvm::Value *get_exponent_offset(llvm::Value *exponent, CustomFloatType *cft);
 
   ~CodeGenLLVM() = default;
 };

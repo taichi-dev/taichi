@@ -103,8 +103,11 @@ class JITSessionCUDA : public JITSession {
     TI_TRACE("Loading module...");
     [[maybe_unused]] auto &&_ =
         std::move(CUDAContext::get_instance().get_lock_guard());
-    CUDADriver::get_instance().module_load_data_ex(&cuda_module, ptx.c_str(), 0,
-                                                   nullptr, nullptr);
+    uint32 options[]{CU_JIT_MAX_REGISTERS};
+    uint32 max_registers = 128;
+    void *option_values[] = {&max_registers};
+    CUDADriver::get_instance().module_load_data_ex(&cuda_module, ptx.c_str(), 1,
+                                                   options, option_values);
     TI_TRACE("CUDA module load time : {}ms", (Time::get_time() - t) * 1000);
     // cudaModules.push_back(cudaModule);
     modules.push_back(std::make_unique<JITModuleCUDA>(cuda_module));

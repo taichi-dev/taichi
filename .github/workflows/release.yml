@@ -53,10 +53,10 @@ jobs:
           ti test -vr2 -t2
 
       # TODO(#1580): Upload to PyPI. Need to set up PYPI_PWD in the secrets first.
-      # - name: Upload PyPI
-      #   env:
-      #     # https://docs.github.com/en/free-pro-team@latest/actions/reference/encrypted-secrets#using-encrypted-secrets-in-a-workflow
-      #     PYPI_PWD: ${{ secrets.PYPI_PWD }}
-      #   run: |
-      #     cd python
-      #     python build.py try_upload && bash <(curl -s https://codecov.io/bash)
+      - name: Upload PyPI
+        env:
+          # https://docs.github.com/en/free-pro-team@latest/actions/reference/encrypted-secrets#using-encrypted-secrets-in-a-workflow
+          PYPI_PWD: ${{ secrets.PYPI_PWD }}
+        run: |
+          cd python
+          python build.py try_upload && bash <(curl -s https://codecov.io/bash)

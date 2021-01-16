@@ -1257,18 +1257,20 @@ bool StateFlowGraph::optimize_dead_store() {
         continue;
       }
       auto *snode = s.snode();
-      if (!snode->is_scalar()) {
-        // TODO: handle non-scalar SNodes, i.e. num_active_indices > 0.
-        continue;
-      }
       bool used = false;
       for (auto &other : task->output_edges[s]) {
         if (task->has_state_flow(s, other.second)) {
-          // Check if this is a RAW dependency. For scalar SNodes, a WAW flow
-          // edge decades to a dependency edge.
+          // Check if this is a RAW dependency. For scalar SNodes, a
+          // A WAW flow edge decades to a dependency edge.
           used = true;
         } else {
           // Note that a dependency edge does not count as an data usage
+          if (!snode->is_scalar() &&
+              other.second->meta->element_wise.count(snode) == 0) {
+            // If the SNode is not element-wise written, the value stored
+            // in this task can be used later.
+            used = true;
+          }
         }
       }
       // This state is used by some other node, so it cannot be erased
@@ -1325,8 +1327,8 @@ bool StateFlowGraph::optimize_dead_store() {
     }
   }
 
-  if (!to_delete.empty()) {
-    modified = true;
+  // Task metas can change even if the number of tasks doesn't change.
+  if (modified) {
     delete_nodes(to_delete);
     rebuild_graph(/*sort=*/false);
   }

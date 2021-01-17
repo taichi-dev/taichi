@@ -39,6 +39,7 @@ struct CompileConfig {
   std::string extra_flags;
   int default_cpu_block_dim;
   int default_gpu_block_dim;
+  int gpu_max_reg;
   int ad_stack_size;
 
   int saturating_grid_dim;

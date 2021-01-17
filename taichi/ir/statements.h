@@ -334,8 +334,10 @@ class RangeAssumptionStmt : public Stmt {
 class LoopUniqueStmt : public Stmt {
  public:
   Stmt *input;
+  std::vector<SNode *> covers;
 
-  explicit LoopUniqueStmt(Stmt *input) : input(input) {
+  explicit LoopUniqueStmt(Stmt *input, const std::vector<SNode *> &covers)
+      : input(input), covers(covers) {
     TI_STMT_REG_FIELDS;
   }
 
@@ -343,7 +345,7 @@ class LoopUniqueStmt : public Stmt {
     return false;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, input);
+  TI_STMT_DEF_FIELDS(ret_type, input, covers);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

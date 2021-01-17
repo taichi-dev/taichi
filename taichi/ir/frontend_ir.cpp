@@ -225,9 +225,24 @@ void RangeAssumptionExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
+std::string LoopUniqueExpression::serialize() {
+  std::string result = "loop_unique(" + input->serialize();
+  for (int i = 0; i < covers.size(); i++) {
+    if (i == 0)
+      result += ", covers=[";
+    result += covers[i]->get_node_type_name_hinted();
+    if (i == (int)covers.size() - 1)
+      result += "]";
+    else
+      result += ", ";
+  }
+  result += ")";
+  return result;
+}
+
 void LoopUniqueExpression::flatten(FlattenContext *ctx) {
   input->flatten(ctx);
-  ctx->push_back(Stmt::make<LoopUniqueStmt>(input->stmt));
+  ctx->push_back(Stmt::make<LoopUniqueStmt>(input->stmt, covers));
   stmt = ctx->back_stmt();
 }
 

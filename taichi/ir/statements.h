@@ -336,7 +336,7 @@ class RangeAssumptionStmt : public Stmt {
 class LoopUniqueStmt : public Stmt {
  public:
   Stmt *input;
-  std::unordered_set<SNode *> covers;
+  std::unordered_set<int> covers;  // Stores SNode id
   // std::unordered_set<> provides operator==, and StmtFieldManager will
   // use that to check if two LoopUniqueStmts are the same.
 

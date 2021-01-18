@@ -413,8 +413,7 @@ class IRPrinter : public IRVisitor {
     if (!stmt->covers.empty()) {
       add = ", covers=[";
       for (const auto &sn : stmt->covers) {
-        add += sn->get_node_type_name_hinted();
-        add += ", ";
+        add += fmt::format("S{}, ", sn);
       }
       add.erase(add.size() - 2, 2);  // remove the last ", "
       add += "]";

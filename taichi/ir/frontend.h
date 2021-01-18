@@ -188,7 +188,7 @@ inline Expr AssumeInRange(const Expr &expr,
   return Expr::make<RangeAssumptionExpression>(expr, base, low, high);
 }
 
-inline Expr LoopUnique(const Expr &input, const ExprGroup &covers) {
+inline Expr LoopUnique(const Expr &input, const std::vector<SNode *> &covers) {
   return Expr::make<LoopUniqueExpression>(load_if_ptr(input), covers);
 }
 

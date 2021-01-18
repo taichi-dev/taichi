@@ -455,12 +455,8 @@ class LoopUniqueExpression : public Expression {
   Expr input;
   std::vector<SNode *> covers;
 
-  LoopUniqueExpression(const Expr &input, const ExprGroup &covers)
-      : input(input) {
-    const int num_covered_snodes = covers.size();
-    this->covers.resize(num_covered_snodes);
-    for (int i = 0; i < num_covered_snodes; i++)
-      this->covers[i] = covers[i].snode();
+  LoopUniqueExpression(const Expr &input, const std::vector<SNode *> &covers)
+      : input(input), covers(covers) {
   }
 
   std::string serialize() override;

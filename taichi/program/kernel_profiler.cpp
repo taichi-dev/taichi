@@ -120,6 +120,29 @@ class KernelProfilerCUDA : public KernelProfilerBase {
     CUDADriver::get_instance().event_create(&stop, CU_EVENT_DEFAULT);
     CUDADriver::get_instance().event_record(start, 0);
     outstanding_events[kernel_name].push_back(std::make_pair(start, stop));
+
+    if (!base_event) {
+      // Note that CUDA driver API only allows querying relative time difference
+      // between two events, therefore we need to manually build a mapping
+      // between GPU and CPU time.
+      int n_iters = 100;
+      // Warm up CUDA driver, and use the final event as the base event.
+      for (int i = 0; i < n_iters; i++) {
+        void *e;
+        CUDADriver::get_instance().event_create(&e, CU_EVENT_DEFAULT);
+        auto init_t = Time::get_time();
+        CUDADriver::get_instance().event_record(e, 0);
+        CUDADriver::get_instance().event_synchronize(e);
+        auto final_t = Time::get_time();
+        if (i == n_iters - 1) {
+          base_event = e;
+          base_time = (init_t + final_t) / 2;
+        } else {
+          CUDADriver::get_instance().event_destroy(e);
+        }
+      }
+    }
+
     return stop;
 #else
     TI_NOT_IMPLEMENTED;
@@ -156,6 +179,8 @@ class KernelProfilerCUDA : public KernelProfilerBase {
         }
         it->insert_sample(ms);
         total_time_ms += ms;
+        CUDADriver::get_instance().event_destroy(start);
+        CUDADriver::get_instance().event_destroy(stop);
       }
     }
     outstanding_events.clear();
@@ -168,6 +193,10 @@ class KernelProfilerCUDA : public KernelProfilerBase {
     static KernelProfilerCUDA profiler;
     return profiler;
   }
+
+ private:
+  void *base_event{nullptr};
+  float64 base_time;
 };
 }  // namespace
 

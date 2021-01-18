@@ -4,6 +4,7 @@
 
 #include "taichi/program/kernel.h"
 #include "taichi/program/program.h"
+#include "taichi/system/timeline.h"
 #include "taichi/backends/cpu/codegen_cpu.h"
 #include "taichi/util/testing.h"
 #include "taichi/util/statistics.h"
@@ -134,6 +135,7 @@ void ExecutionQueue::enqueue(const TaskLaunchRecord &ker) {
 
     compilation_workers.enqueue([async_func, stmt, kernel, this]() {
       {
+        TI_TIMELINE("compile");
         // Final lowering
         using namespace irpass;
 
@@ -154,6 +156,7 @@ void ExecutionQueue::enqueue(const TaskLaunchRecord &ker) {
   }
 
   launch_worker.enqueue([async_func, context = ker.context]() mutable {
+    TI_TIMELINE("launch");
     auto func = async_func->get();
     func(context);
   });
@@ -227,6 +230,7 @@ void AsyncEngine::synchronize() {
 
 void AsyncEngine::flush() {
   TI_AUTO_PROF;
+  TI_AUTO_TIMELINE;
 
   bool modified = true;
   sfg->reid_nodes();

@@ -626,6 +626,7 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
     auto *node_b = nodes[b];
     TI_TRACE("Fuse: nodes[{}]({}) <- nodes[{}]({})", a, node_a->string(), b,
              node_b->string());
+    stat.add("num_fused_tasks");
     auto &rec_a = node_a->rec;
     auto &rec_b = node_b->rec;
     rec_a.ir_handle =

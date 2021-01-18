@@ -28,6 +28,22 @@ Timeline::~Timeline() {
   Timelines::get_instance().remove_timeline(this);
 }
 
+void Timeline::clear() {
+  std::lock_guard<std::mutex> _(mut_);
+  events_.clear();
+}
+void Timeline::insert_event(const TimelineEvent &e) {
+  std::lock_guard<std::mutex> _(mut_);
+  events_.push_back(e);
+}
+
+std::vector<TimelineEvent> Timeline::fetch_events() {
+  std::lock_guard<std::mutex> _(mut_);
+  std::vector<TimelineEvent> fetched;
+  std::swap(fetched, events_);
+  return fetched;
+}
+
 Timeline::Guard::Guard(const std::string &name) : name_(name) {
   auto &timeline = Timeline::get_this_thread_instance();
   timeline.insert_event({name, true, Time::get_time(), timeline.tid_});
@@ -82,6 +98,16 @@ void Timelines::save(const std::string &filename) {
     fout << e.to_json() << std::endl;
   }
   fout << "]";
+}
+
+void Timelines::insert_timeline(Timeline *timeline) {
+  std::lock_guard<std::mutex> _(mut_);
+  timelines_.push_back(timeline);
+}
+
+void Timelines::remove_timeline(Timeline *timeline) {
+  std::lock_guard<std::mutex> _(mut_);
+  trash(std::remove(timelines_.begin(), timelines_.end(), timeline));
 }
 
 TI_NAMESPACE_END

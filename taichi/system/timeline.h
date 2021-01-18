@@ -34,22 +34,11 @@ class Timeline {
     tid_ = tid;
   }
 
-  void clear() {
-    std::lock_guard<std::mutex> _(mut_);
-    events_.clear();
-  }
+  void clear();
 
-  void insert_event(const TimelineEvent &e) {
-    std::lock_guard<std::mutex> _(mut_);
-    events_.push_back(e);
-  }
+  void insert_event(const TimelineEvent &e);
 
-  std::vector<TimelineEvent> fetch_events() {
-    std::lock_guard<std::mutex> _(mut_);
-    std::vector<TimelineEvent> fetched;
-    std::swap(fetched, events_);
-    return fetched;
-  }
+  std::vector<TimelineEvent> fetch_events();
 
   class Guard {
    public:
@@ -70,24 +59,18 @@ class Timeline {
 // A timeline system for multi-threaded applications
 class Timelines {
  public:
+  static Timelines &get_instance();
+
   void insert_events(const std::vector<TimelineEvent> &events,
                      bool lock = true);
 
-  static Timelines &get_instance();
+  void insert_timeline(Timeline *timeline);
+
+  void remove_timeline(Timeline *timeline);
 
   void clear();
 
   void save(const std::string &filename);
-
-  void insert_timeline(Timeline *timeline) {
-    std::lock_guard<std::mutex> _(mut_);
-    timelines_.push_back(timeline);
-  }
-
-  void remove_timeline(Timeline *timeline) {
-    std::lock_guard<std::mutex> _(mut_);
-    std::remove(timelines_.begin(), timelines_.end(), timeline);
-  }
 
  private:
   std::mutex mut_;

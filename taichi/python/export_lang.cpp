@@ -191,7 +191,8 @@ void export_lang(py::module &m) {
       .def("kernel_profiler_total_time",
            [](Program *program) { return program->profiler->get_total_time(); })
       .def("kernel_profiler_clear", &Program::kernel_profiler_clear)
-      .def("timeline_clear", [] { Timelines::get_instance().clear(); })
+      .def("timeline_clear",
+           [](Program *) { Timelines::get_instance().clear(); })
       .def("timeline_save",
            [](Program *, const std::string &fn) {
              Timelines::get_instance().save(fn);

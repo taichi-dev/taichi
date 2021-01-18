@@ -67,8 +67,8 @@ void Timelines::insert_events(const std::vector<TimelineEvent> &events,
 }
 
 Timelines &taichi::Timelines::get_instance() {
-  static Timelines instance;
-  return instance;
+  static auto instance = new Timelines();
+  return *instance;
 }
 
 void Timelines::clear() {

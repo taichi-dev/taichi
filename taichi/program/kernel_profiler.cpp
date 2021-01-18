@@ -174,16 +174,18 @@ class KernelProfilerCUDA : public KernelProfilerBase {
       for (auto &item : list) {
         auto start = item.first, stop = item.second;
         float kernel_time, time_since_base;
-        CUDADriver::get_instance().event_elapsed_time(&time_since_base,
-                                                      base_event, start);
         CUDADriver::get_instance().event_elapsed_time(&kernel_time, start,
                                                       stop);
 
-        timeline.insert_event(
-            {map_elem.first, true, base_time + time_since_base * 1e-3, "cuda"});
-        timeline.insert_event(
-            {map_elem.first, false,
-             base_time + (time_since_base + kernel_time) * 1e-3, "cuda"});
+        if (Timelines::get_instance().get_enabled()) {
+          CUDADriver::get_instance().event_elapsed_time(&time_since_base,
+                                                        base_event, start);
+          timeline.insert_event({map_elem.first, true,
+                                 base_time + time_since_base * 1e-3, "cuda"});
+          timeline.insert_event(
+              {map_elem.first, false,
+               base_time + (time_since_base + kernel_time) * 1e-3, "cuda"});
+        }
 
         auto it = std::find_if(
             records.begin(), records.end(),

@@ -33,6 +33,8 @@ void Timeline::clear() {
   events_.clear();
 }
 void Timeline::insert_event(const TimelineEvent &e) {
+  if (!Timelines::get_instance().get_enabled())
+    return;
   std::lock_guard<std::mutex> _(mut_);
   events_.push_back(e);
 }
@@ -108,6 +110,14 @@ void Timelines::insert_timeline(Timeline *timeline) {
 void Timelines::remove_timeline(Timeline *timeline) {
   std::lock_guard<std::mutex> _(mut_);
   trash(std::remove(timelines_.begin(), timelines_.end(), timeline));
+}
+
+bool Timelines::get_enabled() {
+  return enabled_;
+}
+
+void Timelines::set_enabled(bool enabled) {
+  enabled_ = enabled;
 }
 
 TI_NAMESPACE_END

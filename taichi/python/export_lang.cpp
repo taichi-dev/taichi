@@ -149,6 +149,7 @@ void export_lang(py::module &m) {
                      &CompileConfig::demote_dense_struct_fors)
       .def_readwrite("use_unified_memory", &CompileConfig::use_unified_memory)
       .def_readwrite("kernel_profiler", &CompileConfig::kernel_profiler)
+      .def_readwrite("timeline", &CompileConfig::timeline)
       .def_readwrite("default_fp", &CompileConfig::default_fp)
       .def_readwrite("default_ip", &CompileConfig::default_ip)
       .def_readwrite("device_memory_GB", &CompileConfig::device_memory_GB)

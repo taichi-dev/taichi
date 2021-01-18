@@ -72,10 +72,15 @@ class Timelines {
 
   void save(const std::string &filename);
 
+  bool get_enabled();
+
+  void set_enabled(bool enabled);
+
  private:
   std::mutex mut_;
   std::vector<TimelineEvent> events_;
   std::vector<Timeline *> timelines_;
+  bool enabled_{false};
 };
 
 #define TI_TIMELINE(name) \

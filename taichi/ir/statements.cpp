@@ -128,12 +128,13 @@ LoopUniqueStmt::LoopUniqueStmt(Stmt *input, const std::vector<SNode *> &covers)
     : input(input) {
   for (const auto &sn : covers) {
     if (sn->is_place()) {
-      TI_INFO("A place SNode {} appears in the 'covers' parameter "
-              "of 'ti.loop_unique'. It is recommended to use its parent "
-              "(x.parent()) instead.", sn->get_node_type_name_hinted());
+      TI_INFO(
+          "A place SNode {} appears in the 'covers' parameter "
+          "of 'ti.loop_unique'. It is recommended to use its parent "
+          "(x.parent()) instead.",
+          sn->get_node_type_name_hinted());
       this->covers.insert(sn->parent->id);
-    }
-    else
+    } else
       this->covers.insert(sn->id);
   }
   TI_STMT_REG_FIELDS;

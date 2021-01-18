@@ -77,7 +77,8 @@ class WholeKernelCSE : public BasicStmtVisitor {
     if (this_stmt->is<LoopUniqueStmt>()) {
       auto this_loop_unique = this_stmt->as<LoopUniqueStmt>();
       auto prev_loop_unique = prev_stmt->as<LoopUniqueStmt>();
-      if (irpass::analysis::same_value(this_loop_unique->input, prev_loop_unique->input)) {
+      if (irpass::analysis::same_value(this_loop_unique->input,
+                                       prev_loop_unique->input)) {
         // Merge the "covers" information into prev_loop_unique.
         // Notice that this_loop_unique->covers is corrupted here.
         prev_loop_unique->covers.merge(this_loop_unique->covers);

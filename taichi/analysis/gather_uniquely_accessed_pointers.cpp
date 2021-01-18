@@ -116,7 +116,7 @@ class UniquelyAccessedSNodeSearcher : public BasicStmtVisitor {
   // Search SNodes that are uniquely accessed, i.e., accessed by
   // one GlobalPtrStmt (or by definitely-same-address GlobalPtrStmts),
   // and that GlobalPtrStmt's address is loop-unique.
-  std::unordered_map<SNode *, GlobalPtrStmt *> accessed_pointer_;
+  std::unordered_map<const SNode *, GlobalPtrStmt *> accessed_pointer_;
 
  public:
   using BasicStmtVisitor::visit;
@@ -144,7 +144,7 @@ class UniquelyAccessedSNodeSearcher : public BasicStmtVisitor {
     }
   }
 
-  static std::unordered_map<SNode *, GlobalPtrStmt *> run(IRNode *root) {
+  static std::unordered_map<const SNode *, GlobalPtrStmt *> run(IRNode *root) {
     TI_ASSERT(root->is<OffloadedStmt>());
     auto offload = root->as<OffloadedStmt>();
     UniquelyAccessedSNodeSearcher searcher;
@@ -164,8 +164,8 @@ class UniquelyAccessedSNodeSearcher : public BasicStmtVisitor {
 };
 
 namespace irpass::analysis {
-std::unordered_map<SNode *, GlobalPtrStmt *> gather_uniquely_accessed_pointers(
-    IRNode *root) {
+std::unordered_map<const SNode *, GlobalPtrStmt *>
+gather_uniquely_accessed_pointers(IRNode *root) {
   // TODO: What about SNodeOpStmts?
   return UniquelyAccessedSNodeSearcher::run(root);
 }

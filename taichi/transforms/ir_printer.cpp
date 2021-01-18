@@ -409,8 +409,18 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(LoopUniqueStmt *stmt) override {
-    print("{}{} = loop_unique({})", stmt->type_hint(), stmt->name(),
-          stmt->input->name());
+    std::string add = "";
+    if (!stmt->covers.empty()) {
+      add = ", covers=[";
+      for (const auto &sn : stmt->covers) {
+        add += sn->get_node_type_name_hinted();
+        add += ", ";
+      }
+      add.erase(add.size() - 2, 2);  // remove the last ", "
+      add += "]";
+    }
+    print("{}{} = loop_unique({}{})", stmt->type_hint(), stmt->name(),
+          stmt->input->name(), add);
   }
 
   void visit(LinearizeStmt *stmt) override {

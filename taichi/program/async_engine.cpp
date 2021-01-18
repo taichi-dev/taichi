@@ -119,6 +119,9 @@ void ExecutionQueue::enqueue(const TaskLaunchRecord &ker) {
   auto h = ker.ir_handle.hash();
   auto *stmt = ker.stmt();
   auto kernel = ker.kernel;
+  // TODO: for now we are using kernel name for task name. It may be helpful to
+  // use the real task name.
+  auto kernel_name = kernel->name;
 
   kernel->account_for_offloaded(stmt);
 
@@ -137,33 +140,33 @@ void ExecutionQueue::enqueue(const TaskLaunchRecord &ker) {
     auto cloned_stmt = ker.ir_handle.clone();
     stmt = cloned_stmt->as<OffloadedStmt>();
 
-    compilation_workers.enqueue([async_func, stmt, kernel, this]() {
-      {
-        TI_TIMELINE("compile");
-        // Final lowering
-        using namespace irpass;
+    compilation_workers.enqueue(
+        [kernel_name, async_func, stmt, kernel, this]() {
+          TI_TIMELINE(kernel_name);
+          // Final lowering
+          using namespace irpass;
 
-        auto config = kernel->program.config;
-        auto ir = stmt;
-        offload_to_executable(
-            ir, config, /*verbose=*/false,
-            /*lower_global_access=*/true,
-            /*make_thread_local=*/true,
-            /*make_block_local=*/
-            is_extension_supported(config.arch, Extension::bls) &&
-                config.make_block_local);
-      }
-      auto func = this->compile_to_backend_(*kernel, stmt);
-      async_func->set(func);
-    });
+          auto config = kernel->program.config;
+          auto ir = stmt;
+          offload_to_executable(
+              ir, config, /*verbose=*/false,
+              /*lower_global_access=*/true,
+              /*make_thread_local=*/true,
+              /*make_block_local=*/
+              is_extension_supported(config.arch, Extension::bls) &&
+                  config.make_block_local);
+          auto func = this->compile_to_backend_(*kernel, stmt);
+          async_func->set(func);
+        });
     ir_bank_->insert_to_trash_bin(std::move(cloned_stmt));
   }
 
-  launch_worker.enqueue([async_func, context = ker.context]() mutable {
-    TI_TIMELINE("launch");
-    auto func = async_func->get();
-    func(context);
-  });
+  launch_worker.enqueue(
+      [kernel_name, async_func, context = ker.context]() mutable {
+        TI_TIMELINE(kernel_name);
+        auto func = async_func->get();
+        func(context);
+      });
 }
 
 void ExecutionQueue::synchronize() {

@@ -11,6 +11,7 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/program/async_engine.h"
 #include "taichi/util/statistics.h"
+#include "taichi/system/timeline.h"
 
 // Keep this include in the end!
 #include "taichi/program/async_profiler_switch.h"
@@ -20,13 +21,6 @@ TLANG_NAMESPACE_BEGIN
 namespace {
 
 using LatestStateReaders = StateFlowGraph::LatestStateReaders;
-
-// TODO(k-ye): remove these over-engineering...
-LatestStateReaders::iterator find(LatestStateReaders &m, const AsyncState &s) {
-  return std::find_if(
-      m.begin(), m.end(),
-      [&s](const LatestStateReaders::value_type &v) { return v.first == s; });
-}
 
 std::pair<LatestStateReaders::value_type::second_type *, bool> insert(
     LatestStateReaders &m,
@@ -420,6 +414,7 @@ void StateFlowGraph::insert_edge(Node *from, Node *to, AsyncState state) {
 
 bool StateFlowGraph::optimize_listgen() {
   TI_AUTO_PROF;
+  TI_AUTO_TIMELINE;
   bool modified = false;
 
   std::vector<std::pair<int, int>> common_pairs;
@@ -813,6 +808,7 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
 
 bool StateFlowGraph::fuse() {
   TI_AUTO_PROF;
+  TI_AUTO_TIMELINE;
   using bit::Bitset;
   // Only guarantee to fuse tasks with indices in nodes_ differ by less than
   // kMaxFusionDistance if there are too many tasks.
@@ -852,6 +848,7 @@ bool StateFlowGraph::fuse() {
 
 void StateFlowGraph::rebuild_graph(bool sort) {
   TI_AUTO_PROF;
+  TI_AUTO_TIMELINE;
   if (sort)
     topo_sort_nodes();
   std::vector<TaskLaunchRecord> tasks;
@@ -1236,6 +1233,7 @@ void StateFlowGraph::delete_nodes(
 
 bool StateFlowGraph::optimize_dead_store() {
   TI_AUTO_PROF
+  TI_AUTO_TIMELINE;
   bool modified = false;
 
   auto nodes = get_pending_tasks();
@@ -1442,6 +1440,7 @@ void StateFlowGraph::verify(bool also_verify_ir) const {
 
 bool StateFlowGraph::demote_activation() {
   TI_AUTO_PROF
+  TI_AUTO_TIMELINE;
   bool modified = false;
 
   topo_sort_nodes();

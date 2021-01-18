@@ -180,10 +180,10 @@ class KernelProfilerCUDA : public KernelProfilerBase {
                                                       stop);
 
         timeline.insert_event(
-            {map_elem.first, true, base_time + time_since_base * 1e-3, 0});
+            {map_elem.first, true, base_time + time_since_base * 1e-3, "cuda"});
         timeline.insert_event(
             {map_elem.first, false,
-             base_time + (time_since_base + kernel_time) * 1e-3, 0});
+             base_time + (time_since_base + kernel_time) * 1e-3, "cuda"});
 
         auto it = std::find_if(
             records.begin(), records.end(),

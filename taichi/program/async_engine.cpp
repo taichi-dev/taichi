@@ -18,8 +18,9 @@
 
 TLANG_NAMESPACE_BEGIN
 
-ParallelExecutor::ParallelExecutor(int num_threads)
-    : num_threads(num_threads),
+ParallelExecutor::ParallelExecutor(const std::string &name, int num_threads)
+    : name_(name),
+      num_threads(num_threads),
       status(ExecutorStatus::uninitialized),
       running_threads(0) {
   {
@@ -70,6 +71,9 @@ bool ParallelExecutor::flush_cv_cond() {
 
 void ParallelExecutor::worker_loop() {
   TI_DEBUG("Starting worker thread.");
+  auto thread_id = thread_counter++;
+  Timeline::get_this_thread_instance().set_name(
+      fmt::format("{}_{}", name_, thread_id));
   {
     std::unique_lock<std::mutex> lock(mut);
     while (status == ExecutorStatus::uninitialized) {
@@ -170,8 +174,8 @@ void ExecutionQueue::synchronize() {
 ExecutionQueue::ExecutionQueue(
     IRBank *ir_bank,
     const BackendExecCompilationFunc &compile_to_backend)
-    : compilation_workers(4),  // TODO: remove 4
-      launch_worker(1),
+    : compilation_workers("compiler", 4),  // TODO: remove 4
+      launch_worker("launcher", 1),
       ir_bank_(ir_bank),
       compile_to_backend_(compile_to_backend) {
 }
@@ -181,6 +185,7 @@ AsyncEngine::AsyncEngine(Program *program,
     : queue(&ir_bank_, compile_to_backend),
       program(program),
       sfg(std::make_unique<StateFlowGraph>(this, &ir_bank_)) {
+  Timeline::get_this_thread_instance().set_name("host");
   ir_bank_.set_sfg(sfg.get());
 }
 
@@ -275,10 +280,13 @@ void AsyncEngine::flush() {
     sfg->verify();
   }
   debug_sfg("final");
-  auto tasks = sfg->extract_to_execute();
-  TI_TRACE("Ended up with {} nodes", tasks.size());
-  for (auto &task : tasks) {
-    queue.enqueue(task);
+  {
+    TI_TIMELINE("enqueue");
+    auto tasks = sfg->extract_to_execute();
+    TI_TRACE("Ended up with {} nodes", tasks.size());
+    for (auto &task : tasks) {
+      queue.enqueue(task);
+    }
   }
   flush_counter_++;
 }

@@ -72,8 +72,12 @@ bool ParallelExecutor::flush_cv_cond() {
 void ParallelExecutor::worker_loop() {
   TI_DEBUG("Starting worker thread.");
   auto thread_id = thread_counter++;
-  Timeline::get_this_thread_instance().set_name(
-      fmt::format("{}_{}", name_, thread_id));
+
+  std::string thread_name = name_;
+  if (num_threads != 1)
+    thread_name += fmt::format("_{}", thread_id);
+  Timeline::get_this_thread_instance().set_name(thread_name);
+
   {
     std::unique_lock<std::mutex> lock(mut);
     while (status == ExecutorStatus::uninitialized) {

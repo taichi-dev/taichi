@@ -17,6 +17,7 @@
 #include "taichi/math/svd.h"
 #include "taichi/util/statistics.h"
 #include "taichi/util/action_recorder.h"
+#include "taichi/system/timeline.h"
 
 #if defined(TI_WITH_CUDA)
 #include "taichi/backends/cuda/cuda_context.h"
@@ -190,6 +191,11 @@ void export_lang(py::module &m) {
       .def("kernel_profiler_total_time",
            [](Program *program) { return program->profiler->get_total_time(); })
       .def("kernel_profiler_clear", &Program::kernel_profiler_clear)
+      .def("timeline_clear", [] { Timelines::get_instance().clear(); })
+      .def("timeline_save",
+           [](Program *, const std::string &fn) {
+             Timelines::get_instance().save(fn);
+           })
       .def("print_memory_profiler_info", &Program::print_memory_profiler_info)
       .def("finalize", &Program::finalize)
       .def("get_root",

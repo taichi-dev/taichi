@@ -6,68 +6,56 @@
 #pragma once
 
 #include <vector>
-#include <map>
-#include <memory>
 #include <mutex>
-#include <thread>
 
 #include "taichi/common/core.h"
 #include "taichi/system/timer.h"
-#include "spdlog/fmt/bundled/color.h"
 
 TI_NAMESPACE_BEGIN
 
-// TODO: cppize
 struct TimelineEvent {
   std::string name;
   bool begin;
   float64 time;
   std::string tid;
 
-  std::string to_json() {
-    std::string json{"{"};
-    json += fmt::format("\"cat\":\"taichi\",");
-    json += fmt::format("\"pid\":0,");
-    json += fmt::format("\"tid\":\"{}\",", tid);
-    json += fmt::format("\"ph\":\"{}\",", begin ? "B" : "E");
-    json += fmt::format("\"name\":\"{}\",", name);
-    json += fmt::format("\"ts\":\"{}\"", uint64(time * 1000000));
-    json += "}";
-    return json;
-  }
+  std::string to_json();
 };
 
 class Timeline {
  public:
-  Timeline() : tid_("unnamed") {
-  }
+  Timeline();
+
+  ~Timeline();
+
+  static Timeline &get_this_thread_instance();
 
   void set_name(const std::string &tid) {
     tid_ = tid;
   }
 
-  static Timeline &get_this_thread_instance() {
-    thread_local Timeline instance;
-    return instance;
+  void clear() {
+    std::lock_guard<std::mutex> _(mut_);
+    events_.clear();
   }
 
-  ~Timeline();
-
   void insert_event(const TimelineEvent &e) {
+    std::lock_guard<std::mutex> _(mut_);
     events_.push_back(e);
+  }
+
+  std::vector<TimelineEvent> fetch_events() {
+    std::lock_guard<std::mutex> _(mut_);
+    std::vector<TimelineEvent> fetched;
+    std::swap(fetched, events_);
+    return fetched;
   }
 
   class Guard {
    public:
-    Guard(const std::string &name) : name_(name) {
-      auto &timeline = Timeline::get_this_thread_instance();
-      timeline.insert_event({name, true, Time::get_time(), timeline.tid_});
-    }
+    Guard(const std::string &name);
 
-    ~Guard() {
-      auto &timeline = Timeline::get_this_thread_instance();
-      timeline.insert_event({name_, false, Time::get_time(), timeline.tid_});
-    }
+    ~Guard();
 
    private:
     std::string name_;
@@ -75,50 +63,37 @@ class Timeline {
 
  private:
   std::string tid_;
+  std::mutex mut_;
   std::vector<TimelineEvent> events_;
 };
 
 // A timeline system for multi-threaded applications
 class Timelines {
  public:
-  void clear() {
+  void insert_events(const std::vector<TimelineEvent> &events,
+                     bool lock = true);
+
+  static Timelines &get_instance();
+
+  void clear();
+
+  void save(const std::string &filename);
+
+  void insert_timeline(Timeline *timeline) {
     std::lock_guard<std::mutex> _(mut_);
-    events_.clear();
+    timelines_.push_back(timeline);
   }
 
-  void insert_events(const std::vector<TimelineEvent> &events) {
+  void remove_timeline(Timeline *timeline) {
     std::lock_guard<std::mutex> _(mut_);
-    events_.insert(events_.begin(), events.begin(), events.end());
-  }
-
-  static Timelines &get_instance() {
-    static Timelines instance;
-    return instance;
-  }
-
-  ~Timelines() {
-    std::ofstream fout("timeline.json");
-    fout << "[";
-    bool first = true;
-    for (auto &e : events_) {
-      if (first) {
-        first = false;
-      } else {
-        fout << ",";
-      }
-      fout << e.to_json() << std::endl;
-    }
-    fout << "]";
+    std::remove(timelines_.begin(), timelines_.end(), timeline);
   }
 
  private:
   std::mutex mut_;
   std::vector<TimelineEvent> events_;
+  std::vector<Timeline *> timelines_;
 };
-
-inline Timeline::~Timeline() {
-  Timelines::get_instance().insert_events(events_);
-}
 
 #define TI_TIMELINE(name) \
   taichi::Timeline::Guard _timeline_guard_##__LINE__(name);

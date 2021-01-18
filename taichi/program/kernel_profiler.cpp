@@ -2,6 +2,7 @@
 
 #include "taichi/system/timer.h"
 #include "taichi/backends/cuda/cuda_driver.h"
+#include "taichi/system/timeline.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -125,6 +126,7 @@ class KernelProfilerCUDA : public KernelProfilerBase {
       // Note that CUDA driver API only allows querying relative time difference
       // between two events, therefore we need to manually build a mapping
       // between GPU and CPU time.
+      // TODO: periodically reinitialize for more accuracy.
       int n_iters = 100;
       // Warm up CUDA driver, and use the final event as the base event.
       for (int i = 0; i < n_iters; i++) {
@@ -136,6 +138,8 @@ class KernelProfilerCUDA : public KernelProfilerBase {
         auto final_t = Time::get_time();
         if (i == n_iters - 1) {
           base_event = e;
+          // Since event recording and synchronization can take 5 us, we take an
+          // average of beginning and ending time here.
           base_time = (init_t + final_t) / 2;
         } else {
           CUDADriver::get_instance().event_destroy(e);
@@ -164,12 +168,23 @@ class KernelProfilerCUDA : public KernelProfilerBase {
   void sync() override {
 #if defined(TI_WITH_CUDA)
     CUDADriver::get_instance().stream_synchronize(nullptr);
+    auto &timeline = Timeline::get_this_thread_instance();
     for (auto &map_elem : outstanding_events) {
       auto &list = map_elem.second;
       for (auto &item : list) {
         auto start = item.first, stop = item.second;
-        float ms;
-        CUDADriver::get_instance().event_elapsed_time(&ms, start, stop);
+        float kernel_time, time_since_base;
+        CUDADriver::get_instance().event_elapsed_time(&time_since_base,
+                                                      base_event, start);
+        CUDADriver::get_instance().event_elapsed_time(&kernel_time, start,
+                                                      stop);
+
+        timeline.insert_event(
+            {map_elem.first, true, base_time + time_since_base * 1e-3, 0});
+        timeline.insert_event(
+            {map_elem.first, false,
+             base_time + (time_since_base + kernel_time) * 1e-3, 0});
+
         auto it = std::find_if(
             records.begin(), records.end(),
             [&](KernelProfileRecord &r) { return r.name == map_elem.first; });
@@ -177,8 +192,8 @@ class KernelProfilerCUDA : public KernelProfilerBase {
           records.emplace_back(map_elem.first);
           it = std::prev(records.end());
         }
-        it->insert_sample(ms);
-        total_time_ms += ms;
+        it->insert_sample(kernel_time);
+        total_time_ms += kernel_time;
         CUDADriver::get_instance().event_destroy(start);
         CUDADriver::get_instance().event_destroy(stop);
       }

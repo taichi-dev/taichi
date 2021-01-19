@@ -174,7 +174,9 @@ void export_lang(py::module &m) {
                      &CompileConfig::async_listgen_fast_filtering)
       .def_readwrite("async_opt_intermediate_file",
                      &CompileConfig::async_opt_intermediate_file)
-      .def_readwrite("async_flush_every", &CompileConfig::async_flush_every);
+      .def_readwrite("async_flush_every", &CompileConfig::async_flush_every)
+      .def_readwrite("async_max_fuse_per_task",
+                     &CompileConfig::async_max_fuse_per_task);
 
   m.def("reset_default_compile_config",
         [&]() { default_compile_config = CompileConfig(); });

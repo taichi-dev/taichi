@@ -122,7 +122,7 @@ class KernelProfilerCUDA : public KernelProfilerBase {
     CUDADriver::get_instance().event_record(start, 0);
     outstanding_events[kernel_name].push_back(std::make_pair(start, stop));
 
-    if (!base_event) {
+    if (!base_event_) {
       // Note that CUDA driver API only allows querying relative time difference
       // between two events, therefore we need to manually build a mapping
       // between GPU and CPU time.
@@ -132,15 +132,15 @@ class KernelProfilerCUDA : public KernelProfilerBase {
       for (int i = 0; i < n_iters; i++) {
         void *e;
         CUDADriver::get_instance().event_create(&e, CU_EVENT_DEFAULT);
-        auto init_t = Time::get_time();
         CUDADriver::get_instance().event_record(e, 0);
         CUDADriver::get_instance().event_synchronize(e);
         auto final_t = Time::get_time();
         if (i == n_iters - 1) {
-          base_event = e;
-          // Since event recording and synchronization can take 5 us, we take an
-          // average of beginning and ending time here.
-          base_time = (init_t + final_t) / 2;
+          base_event_ = e;
+          // Since event recording and synchronization can take 5 us, it's hard
+          // to exactly measure the real event time. We use final_t as event
+          // time for now.
+          base_time_ = final_t;
         } else {
           CUDADriver::get_instance().event_destroy(e);
         }
@@ -173,18 +173,19 @@ class KernelProfilerCUDA : public KernelProfilerBase {
       auto &list = map_elem.second;
       for (auto &item : list) {
         auto start = item.first, stop = item.second;
-        float kernel_time, time_since_base;
+        float kernel_time;
         CUDADriver::get_instance().event_elapsed_time(&kernel_time, start,
                                                       stop);
 
         if (Timelines::get_instance().get_enabled()) {
+          float time_since_base;
           CUDADriver::get_instance().event_elapsed_time(&time_since_base,
-                                                        base_event, start);
+                                                        base_event_, start);
           timeline.insert_event({map_elem.first, true,
-                                 base_time + time_since_base * 1e-3, "cuda"});
+                                 base_time_ + time_since_base * 1e-3, "cuda"});
           timeline.insert_event(
               {map_elem.first, false,
-               base_time + (time_since_base + kernel_time) * 1e-3, "cuda"});
+               base_time_ + (time_since_base + kernel_time) * 1e-3, "cuda"});
         }
 
         auto it = std::find_if(
@@ -212,8 +213,8 @@ class KernelProfilerCUDA : public KernelProfilerBase {
   }
 
  private:
-  void *base_event{nullptr};
-  float64 base_time;
+  void *base_event_{nullptr};
+  float64 base_time_;
 };
 }  // namespace
 

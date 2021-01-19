@@ -72,7 +72,6 @@ Timelines &taichi::Timelines::get_instance() {
 }
 
 void Timelines::clear() {
-  // TODO: also clear events of each time line
   std::lock_guard<std::mutex> _(mut_);
   events_.clear();
   for (auto timeline : timelines_) {

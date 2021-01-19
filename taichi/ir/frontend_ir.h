@@ -396,11 +396,16 @@ class GlobalVariableExpression : public Expression {
 
 class GlobalPtrExpression : public Expression {
  public:
+  SNode *snode{nullptr};
   Expr var;
   ExprGroup indices;
 
   GlobalPtrExpression(const Expr &var, const ExprGroup &indices)
       : var(var), indices(indices) {
+  }
+
+  GlobalPtrExpression(SNode *snode, const ExprGroup &indices)
+      : snode(snode), indices(indices) {
   }
 
   std::string serialize() override;

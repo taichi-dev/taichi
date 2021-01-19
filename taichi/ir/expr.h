@@ -48,6 +48,10 @@ class Expr {
     expr = o.expr;
   }
 
+  explicit operator bool() const {
+    return expr.get() != nullptr;
+  }
+
   Expression *operator->() {
     return expr.get();
   }

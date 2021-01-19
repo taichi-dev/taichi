@@ -3,7 +3,7 @@ from struct import pack, unpack
 
 ti.init()
 
-cft = ti.quant.float(exp=6, frac=13)
+cft = ti.quant.float(exp=6, frac=13, signed=False)
 # cft = ti.quant.fixed(frac=16, range=1024)
 a = ti.field(dtype=cft)
 b = ti.field(dtype=cft)

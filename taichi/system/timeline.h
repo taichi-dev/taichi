@@ -29,6 +29,10 @@ class Timeline {
     tid_ = tid;
   }
 
+  std::string get_name() {
+    return tid_;
+  }
+
   void clear();
 
   void insert_event(const TimelineEvent &e);

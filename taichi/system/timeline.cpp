@@ -60,9 +60,9 @@ void Timelines::insert_events(const std::vector<TimelineEvent> &events,
                               bool lock) {
   if (lock) {
     std::lock_guard<std::mutex> _(mut_);
-    events_.insert(events_.begin(), events.begin(), events.end());
+    events_.insert(events_.end(), events.begin(), events.end());
   } else {
-    events_.insert(events_.begin(), events.begin(), events.end());
+    events_.insert(events_.end(), events.begin(), events.end());
   }
 }
 
@@ -81,6 +81,9 @@ void Timelines::clear() {
 
 void Timelines::save(const std::string &filename) {
   std::lock_guard<std::mutex> _(mut_);
+  std::sort(timelines_.begin(), timelines_.end(), [](Timeline *a, Timeline *b) {
+    return a->get_name() < b->get_name();
+  });
   for (auto timeline : timelines_) {
     insert_events(timeline->fetch_events(), false);
   }

@@ -137,10 +137,13 @@ class KernelProfilerCUDA : public KernelProfilerBase {
         auto final_t = Time::get_time();
         if (i == n_iters - 1) {
           base_event_ = e;
+          // TODO: figure out a better way to synchronize CPU and GPU time.
+          constexpr float64 cuda_time_offset = 3e-4;
           // Since event recording and synchronization can take 5 us, it's hard
-          // to exactly measure the real event time. We use final_t as event
-          // time for now.
-          base_time_ = final_t;
+          // to exactly measure the real event time. Also note there seems to be
+          // a systematic time offset on CUDA, so adjust for that using a 3e-4 s
+          // magic number.
+          base_time_ = final_t + cuda_time_offset;
         } else {
           CUDADriver::get_instance().event_destroy(e);
         }

@@ -40,16 +40,10 @@ def fetch() -> ti.i32:
 a[None] = 0.5
 b[None] = 0.25
 
-# print_i32(fetch())
-
-# exit()
-
 x = 2**7 * 1.25
 y = 2**-7 * 1.25
 
 for i in range(40):
-    print_f32(x)
-    print_f32(y)
     set_vals(x, y)
     print('values:')
     print(x, a[None], y, b[None])

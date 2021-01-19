@@ -4,6 +4,7 @@
 
 #include "taichi/program/kernel.h"
 #include "taichi/program/program.h"
+#include "taichi/system/timeline.h"
 #include "taichi/backends/cpu/codegen_cpu.h"
 #include "taichi/util/testing.h"
 #include "taichi/util/statistics.h"
@@ -17,8 +18,9 @@
 
 TLANG_NAMESPACE_BEGIN
 
-ParallelExecutor::ParallelExecutor(int num_threads)
-    : num_threads(num_threads),
+ParallelExecutor::ParallelExecutor(const std::string &name, int num_threads)
+    : name_(name),
+      num_threads(num_threads),
       status(ExecutorStatus::uninitialized),
       running_threads(0) {
   {
@@ -69,6 +71,13 @@ bool ParallelExecutor::flush_cv_cond() {
 
 void ParallelExecutor::worker_loop() {
   TI_DEBUG("Starting worker thread.");
+  auto thread_id = thread_counter++;
+
+  std::string thread_name = name_;
+  if (num_threads != 1)
+    thread_name += fmt::format("_{}", thread_id);
+  Timeline::get_this_thread_instance().set_name(thread_name);
+
   {
     std::unique_lock<std::mutex> lock(mut);
     while (status == ExecutorStatus::uninitialized) {
@@ -114,6 +123,9 @@ void ExecutionQueue::enqueue(const TaskLaunchRecord &ker) {
   auto h = ker.ir_handle.hash();
   auto *stmt = ker.stmt();
   auto kernel = ker.kernel;
+  // TODO: for now we are using kernel name for task name. It may be helpful to
+  // use the real task name.
+  auto kernel_name = kernel->name;
 
   kernel->account_for_offloaded(stmt);
 
@@ -132,31 +144,33 @@ void ExecutionQueue::enqueue(const TaskLaunchRecord &ker) {
     auto cloned_stmt = ker.ir_handle.clone();
     stmt = cloned_stmt->as<OffloadedStmt>();
 
-    compilation_workers.enqueue([async_func, stmt, kernel, this]() {
-      {
-        // Final lowering
-        using namespace irpass;
+    compilation_workers.enqueue(
+        [kernel_name, async_func, stmt, kernel, this]() {
+          TI_TIMELINE(kernel_name);
+          // Final lowering
+          using namespace irpass;
 
-        auto config = kernel->program.config;
-        auto ir = stmt;
-        offload_to_executable(
-            ir, config, /*verbose=*/false,
-            /*lower_global_access=*/true,
-            /*make_thread_local=*/true,
-            /*make_block_local=*/
-            is_extension_supported(config.arch, Extension::bls) &&
-                config.make_block_local);
-      }
-      auto func = this->compile_to_backend_(*kernel, stmt);
-      async_func->set(func);
-    });
+          auto config = kernel->program.config;
+          auto ir = stmt;
+          offload_to_executable(
+              ir, config, /*verbose=*/false,
+              /*lower_global_access=*/true,
+              /*make_thread_local=*/true,
+              /*make_block_local=*/
+              is_extension_supported(config.arch, Extension::bls) &&
+                  config.make_block_local);
+          auto func = this->compile_to_backend_(*kernel, stmt);
+          async_func->set(func);
+        });
     ir_bank_->insert_to_trash_bin(std::move(cloned_stmt));
   }
 
-  launch_worker.enqueue([async_func, context = ker.context]() mutable {
-    auto func = async_func->get();
-    func(context);
-  });
+  launch_worker.enqueue(
+      [kernel_name, async_func, context = ker.context]() mutable {
+        TI_TIMELINE(kernel_name);
+        auto func = async_func->get();
+        func(context);
+      });
 }
 
 void ExecutionQueue::synchronize() {
@@ -167,8 +181,8 @@ void ExecutionQueue::synchronize() {
 ExecutionQueue::ExecutionQueue(
     IRBank *ir_bank,
     const BackendExecCompilationFunc &compile_to_backend)
-    : compilation_workers(4),  // TODO: remove 4
-      launch_worker(1),
+    : compilation_workers("compiler", 4),  // TODO: remove 4
+      launch_worker("launcher", 1),
       ir_bank_(ir_bank),
       compile_to_backend_(compile_to_backend) {
 }
@@ -178,6 +192,7 @@ AsyncEngine::AsyncEngine(Program *program,
     : queue(&ir_bank_, compile_to_backend),
       program(program),
       sfg(std::make_unique<StateFlowGraph>(this, &ir_bank_)) {
+  Timeline::get_this_thread_instance().set_name("host");
   ir_bank_.set_sfg(sfg.get());
 }
 
@@ -227,6 +242,7 @@ void AsyncEngine::synchronize() {
 
 void AsyncEngine::flush() {
   TI_AUTO_PROF;
+  TI_AUTO_TIMELINE;
 
   bool modified = true;
   sfg->reid_nodes();
@@ -271,10 +287,13 @@ void AsyncEngine::flush() {
     sfg->verify();
   }
   debug_sfg("final");
-  auto tasks = sfg->extract_to_execute();
-  TI_TRACE("Ended up with {} nodes", tasks.size());
-  for (auto &task : tasks) {
-    queue.enqueue(task);
+  {
+    TI_TIMELINE("enqueue");
+    auto tasks = sfg->extract_to_execute();
+    TI_TRACE("Ended up with {} nodes", tasks.size());
+    for (auto &task : tasks) {
+      queue.enqueue(task);
+    }
   }
   flush_counter_++;
 }

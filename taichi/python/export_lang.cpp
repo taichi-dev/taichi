@@ -17,6 +17,7 @@
 #include "taichi/math/svd.h"
 #include "taichi/util/statistics.h"
 #include "taichi/util/action_recorder.h"
+#include "taichi/system/timeline.h"
 
 #if defined(TI_WITH_CUDA)
 #include "taichi/backends/cuda/cuda_context.h"
@@ -148,6 +149,7 @@ void export_lang(py::module &m) {
                      &CompileConfig::demote_dense_struct_fors)
       .def_readwrite("use_unified_memory", &CompileConfig::use_unified_memory)
       .def_readwrite("kernel_profiler", &CompileConfig::kernel_profiler)
+      .def_readwrite("timeline", &CompileConfig::timeline)
       .def_readwrite("default_fp", &CompileConfig::default_fp)
       .def_readwrite("default_ip", &CompileConfig::default_ip)
       .def_readwrite("device_memory_GB", &CompileConfig::device_memory_GB)
@@ -190,6 +192,12 @@ void export_lang(py::module &m) {
       .def("kernel_profiler_total_time",
            [](Program *program) { return program->profiler->get_total_time(); })
       .def("kernel_profiler_clear", &Program::kernel_profiler_clear)
+      .def("timeline_clear",
+           [](Program *) { Timelines::get_instance().clear(); })
+      .def("timeline_save",
+           [](Program *, const std::string &fn) {
+             Timelines::get_instance().save(fn);
+           })
       .def("print_memory_profiler_info", &Program::print_memory_profiler_info)
       .def("finalize", &Program::finalize)
       .def("get_root",

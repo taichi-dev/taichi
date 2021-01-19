@@ -27,6 +27,7 @@ struct CompileConfig {
   bool use_llvm;
   bool verbose_kernel_launches;
   bool kernel_profiler;
+  bool timeline{false};
   bool verbose;
   bool fast_math;
   bool async_mode;

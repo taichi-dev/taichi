@@ -46,6 +46,8 @@ kernel_profiler_print = lambda: get_runtime().prog.kernel_profiler_print()
 kernel_profiler_clear = lambda: get_runtime().prog.kernel_profiler_clear()
 kernel_profiler_total_time = lambda: get_runtime(
 ).prog.kernel_profiler_total_time()
+timeline_clear = lambda: get_runtime().prog.timeline_clear()
+timeline_save = lambda fn: get_runtime().prog.timeline_save(fn)
 
 # Legacy API
 type_factory_ = core.get_type_factory_instance()

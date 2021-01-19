@@ -766,7 +766,7 @@ Ptr LLVMRuntime::allocate_aligned(std::size_t size, std::size_t alignment) {
 }
 
 Ptr LLVMRuntime::allocate_from_buffer(std::size_t size, std::size_t alignment) {
-  Ptr ret;
+  Ptr ret = nullptr;
   bool success = false;
   locked_task(&allocator_lock, [&] {
     auto alignment_bytes =

@@ -453,13 +453,13 @@ class RangeAssumptionExpression : public Expression {
 class LoopUniqueExpression : public Expression {
  public:
   Expr input;
+  std::vector<SNode *> covers;
 
-  LoopUniqueExpression(const Expr &input) : input(input) {
+  LoopUniqueExpression(const Expr &input, const std::vector<SNode *> &covers)
+      : input(input), covers(covers) {
   }
 
-  std::string serialize() override {
-    return fmt::format("loop_unique({})", input.serialize());
-  }
+  std::string serialize() override;
 
   void flatten(FlattenContext *ctx) override;
 };

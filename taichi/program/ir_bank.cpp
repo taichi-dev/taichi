@@ -211,8 +211,6 @@ std::pair<IRHandle, bool> IRBank::optimize_dse(
   if (verbose) {
     TI_INFO("  DSE: after CFG, modified={}", modified);
     std::cout << std::flush;
-    irpass::print(new_ir.get());
-    std::cout << std::flush;
   }
 
   if (!modified) {
@@ -224,6 +222,13 @@ std::pair<IRHandle, bool> IRBank::optimize_dse(
   // Remove unused global pointers (possibly with activate == true).
   irpass::flag_access(new_ir.get());
   irpass::die(new_ir.get());
+
+  if (verbose) {
+    TI_INFO("  DSE: after flag_access and DIE");
+    std::cout << std::flush;
+    irpass::print(new_ir.get());
+    std::cout << std::flush;
+  }
 
   ret_handle = IRHandle(new_ir.get(), get_hash(new_ir.get()));
   insert(std::move(new_ir), ret_handle.hash());

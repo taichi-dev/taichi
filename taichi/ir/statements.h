@@ -226,7 +226,9 @@ class GlobalPtrStmt : public Stmt {
                 const std::vector<Stmt *> &indices,
                 bool activate = true);
 
-  bool is_element_wise(SNode *snode) const;
+  bool is_element_wise(const SNode *snode) const;
+
+  bool covers_snode(const SNode *snode) const;
 
   bool has_global_side_effect() const override {
     return activate;
@@ -334,16 +336,19 @@ class RangeAssumptionStmt : public Stmt {
 class LoopUniqueStmt : public Stmt {
  public:
   Stmt *input;
+  std::unordered_set<int> covers;  // Stores SNode id
+  // std::unordered_set<> provides operator==, and StmtFieldManager will
+  // use that to check if two LoopUniqueStmts are the same.
 
-  explicit LoopUniqueStmt(Stmt *input) : input(input) {
-    TI_STMT_REG_FIELDS;
-  }
+  LoopUniqueStmt(Stmt *input, const std::vector<SNode *> &covers);
+
+  bool covers_snode(const SNode *snode) const;
 
   bool has_global_side_effect() const override {
     return false;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, input);
+  TI_STMT_DEF_FIELDS(ret_type, input, covers);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

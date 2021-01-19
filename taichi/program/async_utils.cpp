@@ -340,7 +340,7 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
       const auto *sn = state.snode();
       bool completely_overwriting = false;
       if (meta.element_wise[sn]) {
-        // If every accesses on sn are element-wise, then it must be
+        // If every access on sn is element-wise, then it must be
         // completely overwriting.
         completely_overwriting = true;
         // TODO: this is also completely overwriting although element_wise[sn]

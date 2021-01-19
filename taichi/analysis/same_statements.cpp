@@ -171,7 +171,7 @@ class IRNodeComparator : public IRVisitor {
     bool field_checked = false;
     if (check_same_value_) {
       if (stmt->is<GlobalPtrStmt>()) {
-        // Special case: we do not care the "activate" field when checking
+        // Special case: we do not care about the "activate" field when checking
         // whether two global pointers share the same value.
         // And we cannot use irpass::analysis::definitely_same_address()
         // directly because that function does not support id_map.
@@ -205,7 +205,7 @@ class IRNodeComparator : public IRVisitor {
     bool operand_checked = false;
     if (check_same_value_) {
       if (stmt->is<RangeAssumptionStmt>()) {
-        // Special case: we do not care the "base" operand when checking
+        // Special case: we do not care about the "base" operand when checking
         // whether two RangeAssumptionStmts share the same value.
         check_mapping(stmt->as<RangeAssumptionStmt>()->input,
                       other->as<RangeAssumptionStmt>()->input);

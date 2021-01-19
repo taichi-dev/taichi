@@ -56,14 +56,14 @@ Timeline::Guard::~Guard() {
   timeline.insert_event({name_, false, Time::get_time(), timeline.tid_});
 }
 
-void Timelines::insert_events(const std::vector<TimelineEvent> &events,
-                              bool lock) {
-  if (lock) {
-    std::lock_guard<std::mutex> _(mut_);
-    events_.insert(events_.end(), events.begin(), events.end());
-  } else {
-    events_.insert(events_.end(), events.begin(), events.end());
-  }
+void Timelines::insert_events(const std::vector<TimelineEvent> &events) {
+  std::lock_guard<std::mutex> _(mut_);
+  insert_events_without_locking(events);
+}
+
+void Timelines::insert_events_without_locking(
+    const std::vector<TimelineEvent> &events) {
+  events_.insert(events_.end(), events.begin(), events.end());
 }
 
 Timelines &taichi::Timelines::get_instance() {
@@ -85,7 +85,7 @@ void Timelines::save(const std::string &filename) {
     return a->get_name() < b->get_name();
   });
   for (auto timeline : timelines_) {
-    insert_events(timeline->fetch_events(), false);
+    insert_events_without_locking(timeline->fetch_events());
   }
   if (!ends_with(filename, ".json")) {
     TI_WARN("Timeline filename {} should end with '.json'.", filename);

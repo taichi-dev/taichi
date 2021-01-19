@@ -60,8 +60,9 @@ class Timelines {
  public:
   static Timelines &get_instance();
 
-  void insert_events(const std::vector<TimelineEvent> &events,
-                     bool lock = true);
+  void insert_events(const std::vector<TimelineEvent> &events);
+
+  void insert_events_without_locking(const std::vector<TimelineEvent> &events);
 
   void insert_timeline(Timeline *timeline);
 

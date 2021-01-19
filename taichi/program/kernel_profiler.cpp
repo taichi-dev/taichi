@@ -197,6 +197,10 @@ class KernelProfilerCUDA : public KernelProfilerBase {
         }
         it->insert_sample(kernel_time);
         total_time_ms += kernel_time;
+
+        // TODO: the following two lines seem to increases profiler overhead a
+        // little bit. Is there a way to avoid the overhead while not creating
+        // too many events?
         CUDADriver::get_instance().event_destroy(start);
         CUDADriver::get_instance().event_destroy(stop);
       }

@@ -168,5 +168,6 @@ def test_negative(exponent_bits):
     assert b[None] == -123
 
 
+# TODO: test precision
 # TODO: make sure unsigned has one more effective significand bit
 # TODO: test shared exponent floats with custom int in a single bit struct

@@ -4,19 +4,29 @@ from struct import pack, unpack
 
 ti.init()
 
-cft = ti.quant.float(exp=6, frac=13, signed=False)
-# cft = ti.quant.fixed(frac=16, range=1024)
-a = ti.field(dtype=cft)
-b = ti.field(dtype=cft)
-shared_exp = ti.root.bit_struct(num_bits=32)
-shared_exp.place(a, b, shared_exponent=True)
-# s.place(a, b)
+f19 = ti.quant.float(exp=6, frac=13, signed=True)
+f16 = ti.quant.float(exp=5, frac=11, signed=True)
+fixed16 = ti.quant.fixed(frac=16, range=2)
+
+vf19 = ti.Vector.field(2, dtype=f19)
+bs_vf19 = ti.root.bit_struct(num_bits=32)
+bs_vf19.place(vf19, shared_exponent=True)
+
+vf16 = ti.Vector.field(2, dtype=f16)
+bs_vf16 = ti.root.bit_struct(num_bits=32)
+bs_vf16.place(vf16)
+
+vfixed16 = ti.Vector.field(2, dtype=fixed16)
+bs_vfixed16 = ti.root.bit_struct(num_bits=32)
+bs_vfixed16.place(vfixed16)
 
 
 @ti.kernel
 def set_vals(x: ti.f32, y: ti.f32):
-    a[None] = x
-    b[None] = y
+    val = ti.Vector([x, y])
+    vf16[None] = val
+    vf19[None] = val
+    vfixed16[None] = val
 
 
 def serialize_i32(x):
@@ -25,6 +35,7 @@ def serialize_i32(x):
         s += f'{(x>>i) & 1}'
     return s
 
+
 def serialize_f32(x):
     b = pack('f', x)
     n = unpack('i', b)[0]
@@ -32,8 +43,8 @@ def serialize_f32(x):
 
 
 @ti.kernel
-def fetch_shared_exp() -> ti.i32:
-    return shared_exp[None]
+def fetch_bs(bs: ti.template()) -> ti.i32:
+    return bs[None]
 
 
 coord = ti.GUI(res=(800, 800), background_color=0xFFFFFF)
@@ -85,33 +96,55 @@ def draw_coord(t, f):
     coord.circle(pos=transform(f(t)), color=0xDD1122, radius=10)
 
 
-frames = 1000
+frames = 300
 
 
+# def f(t):
+#     return 1 - t, t
 def f(t):
-    return 1 - t, t
+    return math.cos(t * 2 * math.pi), math.sin(t * 2 * math.pi)
 
 
 for i in range(frames * 1000):
-    t = (i % frames) / (frames - 1)
-    t = math.sin(t * math.pi * 2) * 0.5 + 0.5
+    t = (i + 0.5) / (frames - 1)
 
     draw_coord(t, f)
     coord.show()
 
     x, y = f(t)
     set_vals(x, y)
-    se = serialize_i32(fetch_shared_exp())
 
     fs = 100
     color = 0x111111
-    numbers.text(f'{x:.5f}', (0.05, 0.9), font_size=fs, color=color)
-    numbers.text(f'{y:.5f}', (0.55, 0.9), font_size=fs, color=color)
-    
+
+    def reorder(b, seg):
+        r = ''
+        seg = [0] + seg + [32]
+        for i in range(len(seg) - 1):
+            r = r + b[32 - seg[i + 1]:32 - seg[i]]
+        return r
+
+    def real_to_str(x):
+        s = ''
+        if x < 0:
+            s = ''
+        else:
+            s = ' '
+        return s + f'{x:.4f}'
+
+    numbers.text(real_to_str(x), (0.05, 0.9), font_size=fs, color=color)
+    numbers.text(real_to_str(y), (0.55, 0.9), font_size=fs, color=color)
+
     fs = 49
-    
-    # Change the order for more clarity
-    se = se[-6:] + se[-19:-6] + se[:-19]
-    numbers.text(se, (0.05, 0.7), font_size=fs, color=color)
+
+    bits = [bs_vf19, bs_vf16, bs_vfixed16]
+    seg = [[], [], [6, 19], [5, 16, 21], [16]]
+    bits = list(map(lambda x: serialize_i32(fetch_bs(x)), bits))
+
+    bits = [serialize_f32(x), serialize_f32(y)] + bits
+
+    for i in range(len(bits)):
+        b = reorder(bits[i], seg[i])
+        numbers.text(b, (0.05, 0.7 - i * 0.15), font_size=fs, color=color)
 
     numbers.show()

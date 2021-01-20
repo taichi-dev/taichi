@@ -1657,7 +1657,6 @@ llvm::Value *CodeGenLLVM::reconstruct_custom_float_with_exponent(
             builder->CreateAdd(exponent_offset, tlctx->get_constant(1));
 
       auto digits_shift = builder->CreateSub(
-
           tlctx->get_constant(23 - cft->get_digit_bits()), extra_shift);
       digits = builder->CreateShl(digits, digits_shift);
     } else {

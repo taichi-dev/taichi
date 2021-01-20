@@ -195,7 +195,7 @@ void GlobalPtrExpression::flatten(FlattenContext *ctx) {
   if (this->snode != nullptr) {
     snode = this->snode;
   }
-  if (bool(var) && var.is<GlobalVariableExpression>()) {
+  if (var && var.is<GlobalVariableExpression>()) {
     snode = var.cast<GlobalVariableExpression>()->snode;
     offsets = snode->index_offsets;
   }

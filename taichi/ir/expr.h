@@ -48,7 +48,7 @@ class Expr {
     expr = o.expr;
   }
 
-  explicit operator bool() const {
+  operator bool() const {
     return expr.get() != nullptr;
   }
 

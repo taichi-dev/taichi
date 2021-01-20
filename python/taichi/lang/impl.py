@@ -122,9 +122,8 @@ def subscript(value, *indices):
                 )
             field_dim = int(value.ptr.get_attribute("dim"))
         else:
+            # When reading bit structure we only support the 0-D case for now.
             field_dim = 0
-            # SNode
-            pass
         if isinstance(indices,
                       tuple) and len(indices) == 1 and indices[0] is None:
             indices = []

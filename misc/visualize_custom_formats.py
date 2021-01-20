@@ -2,6 +2,7 @@ import taichi as ti
 import math
 from struct import pack, unpack
 import argparse
+import os
 
 ti.init()
 
@@ -105,13 +106,16 @@ parser.add_argument('-c', '--curve', type=int, help='Curve type', default=0)
 args = parser.parse_args()
 
 if args.curve == 0:
+
     def f(t):
         return math.cos(t * 2 * math.pi), math.sin(t * 2 * math.pi)
 elif args.curve == 1:
+
     def f(t):
         t = math.cos(t * 2 * math.pi) * 0.5 + 0.5
         return 1 - t, t
 elif args.curve == 2:
+
     def f(t):
         t = math.cos(t * 2 * math.pi)
         t = t * 2.3
@@ -119,11 +123,14 @@ elif args.curve == 2:
         return math.exp(t) * s, math.exp(-t) * s
 
 
-for i in range(frames * 2):
-    t = (i + 0.5) / (frames - 1)
+folder = f'curve{args.curve}'
+os.makedirs(folder, exist_ok=True)
+
+for i in range(frames * 2 + 1):
+    t = i / frames
 
     draw_coord(t, f)
-    coord.show()
+    coord.show(f'{folder}/coord_{i:04d}.png')
 
     x, y = f(t)
     set_vals(x, y)
@@ -157,8 +164,12 @@ for i in range(frames * 2):
 
     bits = [serialize_f32(x), serialize_f32(y)] + bits
 
-    for i in range(len(bits)):
-        b = reorder(bits[i], seg[i])
-        numbers.text(b, (0.05, 0.7 - i * 0.15), font_size=fs, color=color)
+    for j in range(len(bits)):
+        b = reorder(bits[j], seg[j])
+        numbers.text(b, (0.05, 0.7 - j * 0.15), font_size=fs, color=color)
 
-    numbers.show()
+    numbers.show(f'{folder}/numbers_{i:04d}.png')
+
+os.system(
+    f'ti video {folder}/numbers*.png -f 60 -c 2 -o numbers{args.curve}.mp4')
+os.system(f'ti video {folder}/coord*.png -f 60 -c 2 -o coord{args.curve}.mp4')

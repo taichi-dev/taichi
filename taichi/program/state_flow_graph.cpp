@@ -727,10 +727,11 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
   for (int i = 0; i < n; i++) {
     fused[i] = nodes[i]->rec.empty();
   }
-  auto get_initial_remaining_fuses_per_task = [n, this]() {
-    const auto configured_max = program_->config.async_max_fuse_per_task;
-    return configured_max > 0 ? configured_max : n;
-  };
+  const auto initial_remaining_fuses_per_task =
+      (program_->config.async_max_fuse_per_task > 0)
+          ? program_->config.async_max_fuse_per_task
+          : n;
+
   // The case without an edge: O(sum(size * min(size, n / 64))) = O(n^2 / 64)
   const int kLargeFusionSetThreshold = std::max(n / 16, 16);
   for (auto &fusion_map : task_fusion_map) {
@@ -749,7 +750,7 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
           // otherwise do_fuse may be very slow
           Bitset current_mask = (mask & ~(has_path[a] | has_path_reverse[a]));
           int b = a + 1;
-          int remaining_fuses = get_initial_remaining_fuses_per_task();
+          int remaining_fuses = initial_remaining_fuses_per_task;
           while ((b != -1) && (remaining_fuses > 0)) {
             b = current_mask.lower_bound(b);
             if (b == -1) {
@@ -775,7 +776,7 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
         for (int i = 0; i < (int)indices.size(); i++) {
           const int a = indices[i];
           if (!fused[a]) {
-            int remaining_fuses = get_initial_remaining_fuses_per_task();
+            int remaining_fuses = initial_remaining_fuses_per_task;
             // Fuse no more than remaining_fuses tasks into task a
             // in this iteration
             for (int &j = start_index[i];

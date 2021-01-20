@@ -745,7 +745,7 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
       }
       for (int a : indices) {
         if (!fused[a]) {
-          // Fuse no more than one task into task a,
+          // Fuse no more than remaining_fuses tasks into task a,
           // otherwise do_fuse may be very slow
           Bitset current_mask = (mask & ~(has_path[a] | has_path_reverse[a]));
           int b = a + 1;
@@ -758,7 +758,7 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
               do_fuse(a, b);
               mask[a] = false;
               mask[b] = false;
-              b++;  // for computing the next lower bound;
+              b++;  // for computing the next lower bound
               remaining_fuses--;
             }
           }
@@ -776,7 +776,8 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
           const int a = indices[i];
           if (!fused[a]) {
             int remaining_fuses = get_initial_remaining_fuses_per_task();
-            // Fuse no more than one task into task a in this iteration
+            // Fuse no more than remaining_fuses tasks into task a
+            // in this iteration
             for (int &j = start_index[i];
                  (j < (int)indices.size()) && (remaining_fuses > 0); j++) {
               const int b = indices[j];
@@ -785,7 +786,7 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
                 remaining_fuses--;
               }
             }
-            if (start_index[i] < indices.size()) {
+            if (start_index[i] < (int)indices.size()) {
               done = false;
             }
           }

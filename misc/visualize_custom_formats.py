@@ -1,4 +1,5 @@
 import taichi as ti
+import math
 from struct import pack, unpack
 
 ti.init()
@@ -18,18 +19,16 @@ def set_vals(x: ti.f32, y: ti.f32):
     b[None] = y
 
 
-def print_i32(x, splits=[]):
+def serialize_i32(x):
+    s = ''
     for i in reversed(range(32)):
-        print(f'{(x>>i) & 1}', end='')
-        if i in splits:
-            print(' ', end='')
-    print()
+        s += f'{(x>>i) & 1}'
+    return s
 
-
-def print_f32(x):
+def serialize_f32(x):
     b = pack('f', x)
     n = unpack('i', b)[0]
-    print_i32(n, [31, 23])
+    return serialize_i32(n)
 
 
 @ti.kernel
@@ -86,7 +85,7 @@ def draw_coord(t, f):
     coord.circle(pos=transform(f(t)), color=0xDD1122, radius=10)
 
 
-frames = 100
+frames = 1000
 
 
 def f(t):
@@ -95,19 +94,24 @@ def f(t):
 
 for i in range(frames * 1000):
     t = (i % frames) / (frames - 1)
+    t = math.sin(t * math.pi * 2) * 0.5 + 0.5
 
     draw_coord(t, f)
     coord.show()
 
     x, y = f(t)
     set_vals(x, y)
-    print('values:')
-    print(x, a[None], y, b[None])
-    print('bit_struct:')
-    print_i32(fetch_shared_exp(), [6, 19])
-    print()
+    se = serialize_i32(fetch_shared_exp())
 
-    numbers.text('textlasd', (0.5, 0.5), font_size=100, color=0x111111)
-    numbers.text('01023012', (0.5, 0.6), font_size=100, color=0x111111)
+    fs = 100
+    color = 0x111111
+    numbers.text(f'{x:.5f}', (0.05, 0.9), font_size=fs, color=color)
+    numbers.text(f'{y:.5f}', (0.55, 0.9), font_size=fs, color=color)
+    
+    fs = 49
+    
+    # Change the order for more clarity
+    se = se[-6:] + se[-19:-6] + se[:-19]
+    numbers.text(se, (0.05, 0.7), font_size=fs, color=color)
 
     numbers.show()

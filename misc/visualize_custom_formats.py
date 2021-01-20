@@ -1,6 +1,7 @@
 import taichi as ti
 import math
 from struct import pack, unpack
+import argparse
 
 ti.init()
 
@@ -98,14 +99,27 @@ def draw_coord(t, f):
 
 frames = 300
 
+parser = argparse.ArgumentParser()
+parser.add_argument('-c', '--curve', type=int, help='Curve type', default=0)
 
-# def f(t):
-#     return 1 - t, t
-def f(t):
-    return math.cos(t * 2 * math.pi), math.sin(t * 2 * math.pi)
+args = parser.parse_args()
+
+if args.curve == 0:
+    def f(t):
+        return math.cos(t * 2 * math.pi), math.sin(t * 2 * math.pi)
+elif args.curve == 1:
+    def f(t):
+        t = math.cos(t * 2 * math.pi) * 0.5 + 0.5
+        return 1 - t, t
+elif args.curve == 2:
+    def f(t):
+        t = math.cos(t * 2 * math.pi)
+        t = t * 2.3
+        s = 0.1
+        return math.exp(t) * s, math.exp(-t) * s
 
 
-for i in range(frames * 1000):
+for i in range(frames * 2):
     t = (i + 0.5) / (frames - 1)
 
     draw_coord(t, f)

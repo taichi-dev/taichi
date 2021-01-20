@@ -727,7 +727,7 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
   for (int i = 0; i < n; i++) {
     fused[i] = nodes[i]->rec.empty();
   }
-  auto get_initial_remaining_fuses = [n, this]() {
+  auto get_initial_remaining_fuses_per_task = [n, this]() {
     const auto configured_max = program_->config.async_max_fuse_per_task;
     return configured_max > 0 ? configured_max : n;
   };
@@ -749,9 +749,9 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
           // otherwise do_fuse may be very slow
           Bitset current_mask = (mask & ~(has_path[a] | has_path_reverse[a]));
           int b = a + 1;
-          int remaining_fuses = get_initial_remaining_fuses();
+          int remaining_fuses = get_initial_remaining_fuses_per_task();
           while ((b != -1) && (remaining_fuses > 0)) {
-            int b = current_mask.lower_bound(b);
+            b = current_mask.lower_bound(b);
             if (b == -1) {
               mask[a] = false;  // a can't be fused in this iteration
             } else {
@@ -775,7 +775,7 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
         for (int i = 0; i < (int)indices.size(); i++) {
           const int a = indices[i];
           if (!fused[a]) {
-            int remaining_fuses = get_initial_remaining_fuses();
+            int remaining_fuses = get_initial_remaining_fuses_per_task();
             // Fuse no more than one task into task a in this iteration
             for (int &j = start_index[i];
                  (j < (int)indices.size()) && (remaining_fuses > 0); j++) {
@@ -800,24 +800,14 @@ std::unordered_set<int> StateFlowGraph::fuse_range(int begin, int end) {
   for (int i = 0; i < n; i++) {
     if (!fused[i]) {
       // Fuse no more than one task into task i
-      bool i_updated = false;
-      int remaining_fuses = get_initial_remaining_fuses();
       for (auto &edge : nodes[i]->output_edges.get_all_edges()) {
         if (edge.second->pending()) {
           const int j = edge.second->pending_node_id - begin;
           if (j >= 0 && j < nodes.size() && edge_fusible(i, j)) {
             do_fuse(i, j);
             // Iterators of nodes[i]->output_edges may be invalidated
-            i_updated = true;
-            remaining_fuses--;
-            if (remaining_fuses == 0) {
-              break;
-            }
+            break;
           }
-        }
-
-        if (i_updated) {
-          break;
         }
       }
     }

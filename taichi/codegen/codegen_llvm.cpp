@@ -1395,7 +1395,6 @@ void CodeGenLLVM::store_floats_with_shared_exponents(BitStructStoreStmt *stmt) {
     auto &exp = snode->ch[i];
     // load all floats
     std::vector<llvm::Value *> floats;
-    // std::vector<llvm::Value *> float_bits;
     for (auto &user : exp->exponent_users) {
       auto ch_id = snode->child_id(user);
       if (auto input =
@@ -1441,7 +1440,11 @@ void CodeGenLLVM::store_floats_with_shared_exponents(BitStructStoreStmt *stmt) {
       auto cft = digits_snode->dt->as<CustomFloatType>();
       auto digits_bit_offset = digits_snode->bit_offset;
 
-      auto right_shift_bits = 24 + cft->get_is_signed() - cft->get_digit_bits();
+      int right_shift_bits = 23 + cft->get_is_signed() - cft->get_digit_bits();
+      if (!cft->get_is_signed()) {
+        // unsigned
+        right_shift_bits += 1;
+      }
 
       // round to nearest
       digits = builder->CreateAdd(
@@ -1648,8 +1651,11 @@ llvm::Value *CodeGenLLVM::reconstruct_custom_float_with_exponent(
       auto extra_shift = builder->CreateSub(
           tlctx->get_constant(31 - cft->get_digit_bits()), num_leading_zeros);
       exponent_offset = builder->CreateAdd(exponent_offset, extra_shift);
-      exponent_offset =
-          builder->CreateAdd(exponent_offset, tlctx->get_constant(1));
+
+      if (!cft->get_is_signed())
+        exponent_offset =
+            builder->CreateAdd(exponent_offset, tlctx->get_constant(1));
+
       auto digits_shift = builder->CreateSub(
           tlctx->get_constant(23 - cft->get_digit_bits()), extra_shift);
       digits = builder->CreateShl(digits, digits_shift);

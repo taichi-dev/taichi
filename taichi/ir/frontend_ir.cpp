@@ -177,7 +177,8 @@ void GlobalVariableExpression::flatten(FlattenContext *ctx) {
 }
 
 std::string GlobalPtrExpression::serialize() {
-  std::string s = fmt::format("{}[", var.serialize());
+  std::string s = fmt::format(
+      "{}[", snode ? snode->get_node_type_name_hinted() : var.serialize());
   for (int i = 0; i < (int)indices.size(); i++) {
     s += indices.exprs[i]->serialize();
     if (i + 1 < (int)indices.size())
@@ -191,7 +192,10 @@ void GlobalPtrExpression::flatten(FlattenContext *ctx) {
   std::vector<Stmt *> index_stmts;
   std::vector<int> offsets;
   SNode *snode = nullptr;
-  if (var.is<GlobalVariableExpression>()) {
+  if (this->snode != nullptr) {
+    snode = this->snode;
+  }
+  if (bool(var) && var.is<GlobalVariableExpression>()) {
     snode = var.cast<GlobalVariableExpression>()->snode;
     offsets = snode->index_offsets;
   }
@@ -206,7 +210,7 @@ void GlobalPtrExpression::flatten(FlattenContext *ctx) {
     }
     index_stmts.push_back(ind);
   }
-  if (var.is<GlobalVariableExpression>()) {
+  if (snode) {
     ctx->push_back(std::make_unique<GlobalPtrStmt>(snode, index_stmts));
   } else {
     TI_ASSERT(var.is<ExternalTensorExpression>());

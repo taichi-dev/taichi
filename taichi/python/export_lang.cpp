@@ -605,6 +605,10 @@ void export_lang(py::module &m) {
     return expr[expr_group];
   });
 
+  m.def("subscript", [](SNode *snode, const ExprGroup &indices) {
+    return Expr::make<GlobalPtrExpression>(snode, indices.loaded());
+  });
+
   m.def("get_external_tensor_dim", [](const Expr &expr) {
     TI_ASSERT(expr.is<ExternalTensorExpression>());
     return expr.cast<ExternalTensorExpression>()->dim;

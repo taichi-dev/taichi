@@ -65,7 +65,7 @@ struct CompileConfig {
   // Async options
   int async_opt_passes{3};
   bool async_opt_fusion{true};
-  int async_opt_fusion_max_iter{0};
+  int async_opt_fusion_max_iter{0};  // 0 means unlimited
   bool async_opt_listgen{true};
   bool async_opt_activation_demotion{true};
   bool async_opt_dse{true};

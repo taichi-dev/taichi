@@ -440,8 +440,9 @@ def benchmark_plot(fn=None,
             if archs is None:
                 current_archs = data[case][col].keys()
             else:
-                current_archs = [x for x in archs if
-                                 x in data[case][col].keys()]
+                current_archs = [
+                    x for x in archs if x in data[case][col].keys()
+                ]
             if bars == 'sync_vs_async':
                 y_left = [
                     data[case][col][arch]['sync'] for arch in current_archs

@@ -70,7 +70,8 @@ struct CompileConfig {
   bool async_opt_dse{true};
   bool async_listgen_fast_filtering{true};
   std::string async_opt_intermediate_file;
-  int async_flush_every{0};
+  // Setting 0 effectively means do not automatically flush
+  int async_flush_every{50};
   // Setting 0 effectively means unlimited
   int async_max_fuse_per_task{1};
 

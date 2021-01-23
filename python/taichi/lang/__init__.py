@@ -371,7 +371,8 @@ def benchmark(func, repeat=300, args=()):
         avg = elapsed / repeat
         ti.stat_write('wall_clk_t', avg)
         device_time = ti.kernel_profiler_total_time()
-        ti.stat_write('exec_t', device_time)
+        avg_device_time = device_time / repeat
+        ti.stat_write('exec_t', avg_device_time)
 
     run_benchmark()
 
@@ -480,7 +481,7 @@ def benchmark_plot(fn=None,
                               height=y_left,
                               width=bar_width,
                               label=label_left,
-                              color=(0.3, 0.7, 0.9, 1.0))
+                              color=(0.47, 0.69, 0.89, 1.0))
             bar_right = ax.bar(x=[
                 i + bar_width / 2 + bar_distance / 2
                 for i in range(len(current_archs))
@@ -488,7 +489,7 @@ def benchmark_plot(fn=None,
                                height=y_right,
                                width=bar_width,
                                label=label_right,
-                               color=(0.8, 0.2, 0.3, 1.0))
+                               color=(0.68, 0.26, 0.31, 1.0))
             ax.set_xticks(range(len(current_archs)))
             ax.set_xticklabels(current_archs)
             figure.legend((bar_left, bar_right), (label_left, label_right),
@@ -496,7 +497,7 @@ def benchmark_plot(fn=None,
     figure.subplots_adjust(left=left_margin)
 
     fig = plt.gcf()
-    fig.set_size_inches(13, 8)
+    fig.set_size_inches(12, 8)
 
     plt.show()
 

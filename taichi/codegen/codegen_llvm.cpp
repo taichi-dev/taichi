@@ -116,6 +116,13 @@ CodeGenStmtGuard make_while_after_loop_guard(CodeGenLLVM *cg) {
                           });
 }
 
+inline void update_mask(uint64 &mask, uint32 num_bits, uint32 offset) {
+  uint64 new_mask =
+      (((~(uint64)0) << (64 - num_bits)) >> (64 - offset - num_bits));
+  TI_ASSERT((mask & new_mask) == 0);
+  mask |= new_mask;
+}
+
 }  // namespace
 
 // CodeGenLLVM
@@ -1205,6 +1212,21 @@ void CodeGenLLVM::store_custom_int(llvm::Value *byte_ptr,
                    value, llvm_type(cit->get_physical_type()), false)});
 }
 
+void CodeGenLLVM::store_masked(llvm::Value *byte_ptr,
+                               uint64 mask,
+                               Type *physical_type,
+                               llvm::Value *value) {
+  uint64 full_mask = (~(uint64)0) >> (64 - data_type_bits(physical_type));
+  if ((mask & full_mask) == full_mask) {
+    builder->CreateStore(value, byte_ptr);
+    return;
+  }
+  create_call(fmt::format("set_mask_b{}", data_type_bits(physical_type)),
+              {builder->CreateBitCast(byte_ptr, llvm_ptr_type(physical_type)),
+               tlctx->get_constant(mask),
+               builder->CreateIntCast(value, llvm_type(physical_type), false)});
+}
+
 llvm::Value *CodeGenLLVM::get_exponent_offset(llvm::Value *exponent,
                                               CustomFloatType *cft) {
   // Since we have fewer bits in the exponent type than in f32, an
@@ -1346,28 +1368,27 @@ void CodeGenLLVM::visit(BitStructStoreStmt *stmt) {
     return;
   }
 
+  llvm::Value *bit_struct_val = nullptr;
+  for (int i = 0; i < stmt->ch_ids.size(); i++) {
+    auto ch_id = stmt->ch_ids[i];
+    auto val = llvm_val[stmt->values[i]];
+    auto &ch = bit_struct_snode->ch[ch_id];
+    auto dtype = ch->dt;
+    val = custom_type_to_bits(val, dtype, bit_struct_physical_type);
+    val = builder->CreateShl(val, bit_struct_snode->ch[ch_id]->bit_offset);
+    if (bit_struct_val == nullptr) {
+      bit_struct_val = val;
+    } else {
+      bit_struct_val = builder->CreateOr(bit_struct_val, val);
+    }
+  }
   if (stmt->ch_ids.size() == bit_struct_snode->ch.size()) {
     // Store all the components
-    llvm::Value *bit_struct_val = nullptr;
-    for (int i = 0; i < stmt->ch_ids.size(); i++) {
-      auto ch_id = stmt->ch_ids[i];
-      auto val = llvm_val[stmt->values[i]];
-      auto &ch = bit_struct_snode->ch[ch_id];
-      auto dtype = ch->dt;
-      val = custom_type_to_bits(val, dtype, bit_struct_physical_type);
-      val = builder->CreateShl(val, bit_struct_snode->ch[ch_id]->bit_offset);
-      if (bit_struct_val == nullptr) {
-        bit_struct_val = val;
-      } else {
-        bit_struct_val = builder->CreateOr(bit_struct_val, val);
-      }
-    }
     builder->CreateStore(bit_struct_val, llvm_val[stmt->ptr]);
   } else {
-    // TODO: create a mask and use a single atomicCAS
-    for (int i = 0; i < stmt->ch_ids.size(); i++) {
-      auto ch_id = stmt->ch_ids[i];
-      auto val = stmt->values[i];
+    // Create a mask and use a single atomicCAS
+    uint64 mask = 0;
+    for (auto &ch_id : stmt->ch_ids) {
       auto &ch = bit_struct_snode->ch[ch_id];
       auto dtype = ch->dt;
       CustomIntType *cit = nullptr;
@@ -1377,17 +1398,23 @@ void CodeGenLLVM::visit(BitStructStoreStmt *stmt) {
       } else {
         cit = dtype->as<CustomIntType>();
       }
-      store_custom_int(
-          llvm_val[stmt->ptr], tlctx->get_constant(ch->bit_offset), cit,
-          custom_type_to_bits(llvm_val[val], dtype, bit_struct_physical_type));
+      update_mask(mask, cit->get_num_bits(),
+                  bit_struct_snode->ch[ch_id]->bit_offset);
     }
+    store_masked(llvm_val[stmt->ptr], mask, bit_struct_physical_type,
+                 bit_struct_val);
   }
 }
 
 void CodeGenLLVM::store_floats_with_shared_exponents(BitStructStoreStmt *stmt) {
   // handle each exponent separately
   auto snode = stmt->get_bit_struct_snode();
+  auto bit_struct_physical_type =
+      snode->dt->as<BitStructType>()->get_physical_type();
   auto local_bit_struct = builder->CreateLoad(llvm_val[stmt->ptr]);
+  // fuse all stores into a masked store
+  llvm::Value *masked_val = nullptr;
+  uint64 mask = 0;
   for (int i = 0; i < (int)snode->ch.size(); i++) {
     if (snode->ch[i]->exponent_users.empty())
       continue;
@@ -1427,9 +1454,18 @@ void CodeGenLLVM::store_floats_with_shared_exponents(BitStructStoreStmt *stmt) {
     max_exp_bits_to_store =
         create_call("max_i32", {max_exp_bits_to_store, tlctx->get_constant(0)});
 
-    // TODO: fusion
-    store_custom_int(llvm_val[stmt->ptr], tlctx->get_constant(exp->bit_offset),
-                     exp->dt->as<CustomIntType>(), max_exp_bits_to_store);
+    // store the exponent
+    auto val = builder->CreateZExt(
+        max_exp_bits_to_store,
+        llvm_type(bit_struct_physical_type->get_compute_type()));
+    val = builder->CreateShl(val, exp->bit_offset);
+    if (masked_val == nullptr) {
+      masked_val = val;
+    } else {
+      masked_val = builder->CreateOr(masked_val, val);
+    }
+    update_mask(mask, exp->dt->as<CustomIntType>()->get_num_bits(),
+                exp->bit_offset);
 
     for (int c = 0; c < (int)exp->exponent_users.size(); c++) {
       auto user = exp->exponent_users[c];
@@ -1464,11 +1500,17 @@ void CodeGenLLVM::store_floats_with_shared_exponents(BitStructStoreStmt *stmt) {
         sign_bit = builder->CreateLShr(sign_bit, 31 - cft->get_digit_bits());
         digits = builder->CreateOr(digits, sign_bit);
       }
-      store_custom_int(llvm_val[stmt->ptr],
-                       tlctx->get_constant(digits_bit_offset),
-                       cft->get_digits_type()->as<CustomIntType>(), digits);
+
+      // store the digits
+      val = builder->CreateZExt(digits, llvm_type(bit_struct_physical_type));
+      val = builder->CreateShl(val, digits_bit_offset);
+      masked_val = builder->CreateOr(masked_val, val);
+      auto num_digit_bits =
+          cft->get_digits_type()->as<CustomIntType>()->get_num_bits();
+      update_mask(mask, num_digit_bits, digits_bit_offset);
     }
   }
+  store_masked(llvm_val[stmt->ptr], mask, bit_struct_physical_type, masked_val);
 }
 
 llvm::Value *CodeGenLLVM::extract_exponent_from_float(llvm::Value *f) {

@@ -177,6 +177,15 @@ void offload_to_executable(IRNode *ir,
   print("Atomics demoted II");
   irpass::analysis::verify(ir);
 
+  std::unordered_map<OffloadedStmt *,
+                     std::unordered_map<const SNode *, GlobalPtrStmt *>>
+      uniquely_accessed_bit_structs;
+  if (is_extension_supported(config.arch, Extension::quant) &&
+      ir->get_config().quant_opt_atomic_demotion) {
+    uniquely_accessed_bit_structs =
+        irpass::analysis::gather_uniquely_accessed_bit_structs(ir);
+  }
+
   irpass::remove_range_assumption(ir);
   print("Remove range assumption");
 
@@ -205,7 +214,7 @@ void offload_to_executable(IRNode *ir,
   print("Simplified IV");
 
   if (is_extension_supported(config.arch, Extension::quant)) {
-    irpass::optimize_bit_struct_stores(ir);
+    irpass::optimize_bit_struct_stores(ir, uniquely_accessed_bit_structs);
     print("Bit struct stores optimized");
   }
 

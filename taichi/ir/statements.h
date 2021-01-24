@@ -1182,11 +1182,12 @@ class BitStructStoreStmt : public Stmt {
   Stmt *ptr;
   std::vector<int> ch_ids;
   std::vector<Stmt *> values;
+  bool is_atomic;
 
   BitStructStoreStmt(Stmt *ptr,
                      const std::vector<int> &ch_ids,
                      const std::vector<Stmt *> &values)
-      : ptr(ptr), ch_ids(ch_ids), values(values) {
+      : ptr(ptr), ch_ids(ch_ids), values(values), is_atomic(true) {
     TI_ASSERT(ch_ids.size() == values.size());
     TI_STMT_REG_FIELDS;
   }
@@ -1197,7 +1198,7 @@ class BitStructStoreStmt : public Stmt {
     return false;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, ptr, ch_ids, values);
+  TI_STMT_DEF_FIELDS(ret_type, ptr, ch_ids, values, is_atomic);
   TI_DEFINE_ACCEPT_AND_CLONE;
 };
 

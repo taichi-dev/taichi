@@ -163,11 +163,70 @@ class UniquelyAccessedSNodeSearcher : public BasicStmtVisitor {
   }
 };
 
+class UniquelyAccessedBitStructGatherer : public BasicStmtVisitor {
+ private:
+  std::unordered_map<OffloadedStmt *,
+                     std::unordered_map<const SNode *, GlobalPtrStmt *>>
+      result_;
+
+ public:
+  using BasicStmtVisitor::visit;
+
+  UniquelyAccessedBitStructGatherer() {
+    allow_undefined_visitor = true;
+    invoke_default_visitor = false;
+  }
+
+  void visit(OffloadedStmt *stmt) override {
+    if (stmt->task_type == OffloadedTaskType::range_for ||
+        stmt->task_type == OffloadedTaskType::struct_for) {
+      auto &loop_unique_bit_struct = result_[stmt];
+      auto loop_unique_ptr =
+          irpass::analysis::gather_uniquely_accessed_pointers(stmt);
+      for (auto &it : loop_unique_ptr) {
+        auto *snode = it.first;
+        auto *ptr = it.second;
+        if (snode->is_bit_level) {
+          // Find the nearest non-bit-level ancestor
+          while (snode->is_bit_level) {
+            snode = snode->parent;
+          }
+          // Check whether uniquely accessed
+          auto accessed_ptr = loop_unique_bit_struct.find(snode);
+          if (accessed_ptr == loop_unique_bit_struct.end()) {
+            loop_unique_bit_struct[snode] = ptr;
+          } else {
+            if (!irpass::analysis::definitely_same_address(accessed_ptr->second,
+                                                           ptr)) {
+              accessed_ptr->second = nullptr;  // not uniquely accessed
+            }
+          }
+        }
+      }
+    }
+    // Do not dive into OffloadedStmt
+  }
+
+  static std::unordered_map<OffloadedStmt *,
+                            std::unordered_map<const SNode *, GlobalPtrStmt *>>
+  run(IRNode *root) {
+    UniquelyAccessedBitStructGatherer gatherer;
+    root->accept(&gatherer);
+    return gatherer.result_;
+  }
+};
+
 namespace irpass::analysis {
 std::unordered_map<const SNode *, GlobalPtrStmt *>
 gather_uniquely_accessed_pointers(IRNode *root) {
   // TODO: What about SNodeOpStmts?
   return UniquelyAccessedSNodeSearcher::run(root);
+}
+
+std::unordered_map<OffloadedStmt *,
+                   std::unordered_map<const SNode *, GlobalPtrStmt *>>
+gather_uniquely_accessed_bit_structs(IRNode *root) {
+  return UniquelyAccessedBitStructGatherer::run(root);
 }
 }  // namespace irpass::analysis
 

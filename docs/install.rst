@@ -100,6 +100,29 @@ CUDA issues
 
   * **Possible solution**: add ``export TI_USE_UNIFIED_MEMORY=0`` to your ``~/.bashrc``. This disables unified memory usage in CUDA backend.
 
+- If Taichi crashes when you're trying to allocate a **very large field**:
+
+    .. code-block:: python
+
+        ti.init(ti.cuda)
+        
+        x = ti.field(ti.u8, 1024*1024*1024)  # 1 GB
+
+    .. code-block:: none
+
+        [Taichi] Starting on arch=cuda
+        [Taichi] materializing...
+        Taichi JIT:0: allocate_from_buffer: block: [0,0,0], thread: [0,0,0] Assertion `Out of CUDA pre-allocated memory!
+        Consider using ti.init(device_memory_fraction=0.9) to allocate more memory` failed.
+        [E 01/24/21 20:41:39.641] [cuda_driver.h:operator()@80] CUDA Error CUDA_ERROR_ASSERT: device-side assert triggered while calling stream_synchronize (cuStreamSynchronize)
+
+
+    This is because Taichi will by default pre-allocate 1 GB of device memory.
+    To utilize more device memory for huge fields, use:
+    
+    1. ``ti.init(device_memory_fraction=0.9)`` to allocate 90% of device memory.
+    2. ``ti.init(device_memory_GB=3.9)`` to allocate 3.9 GB device memory, if your device is capable of that.
+    3. Setting environment variables ``TI_DEVICE_MEMORY_FRACTION=0.9`` and ``TI_DEVICE_MEMORY_GB=3.9`` would also work.
 
 - If you find other CUDA problems:
 

@@ -756,8 +756,9 @@ Ptr LLVMRuntime::allocate_from_buffer(std::size_t size, std::size_t alignment) {
     // Here unfortunately we have to rely on a native CUDA assert failure to
     // halt the whole grid. Using a taichi_assert_runtime will not finish the
     // whole kernel execution immediately.
-    __assertfail("Out of CUDA pre-allocated memory", "Taichi JIT", 0,
-                 "allocate_from_buffer", 1);
+    __assertfail("Out of CUDA pre-allocated memory!\n"
+        "Consider using ti.init(device_memory_fraction=0.9) to allocate more"
+        " memory", "Taichi JIT", 0, "allocate_from_buffer", 1);
 #endif
   }
   taichi_assert_runtime(this, success, "Out of pre-allocated memory");

@@ -1579,17 +1579,22 @@ void stack_push(Ptr stack, size_t max_num_elements, std::size_t element_size) {
 // which is an undefined behavior.
 // see #2096 for more details
 #define DEFINE_SET_PARTIAL_BITS(N)                                            \
-  void set_partial_bits_b##N(u##N *ptr, u32 offset, u32 bits, u##N value) {   \
-    u##N mask = ((~(u##N)0) << (N - bits)) >> (N - offset - bits);            \
+  void set_mask_b##N(u##N *ptr, u64 mask, u##N value) {                       \
+    u##N mask_N = (u##N)mask;                                                 \
     u##N new_value = 0;                                                       \
     u##N old_value = *ptr;                                                    \
     do {                                                                      \
       old_value = *ptr;                                                       \
-      new_value = (old_value & (~mask)) | (value << offset);                  \
+      new_value = (old_value & (~mask_N)) | value;                            \
     } while (                                                                 \
         !__atomic_compare_exchange(ptr, &old_value, &new_value, true,         \
                                    std::memory_order::memory_order_seq_cst,   \
                                    std::memory_order::memory_order_seq_cst)); \
+  }                                                                           \
+                                                                              \
+  void set_partial_bits_b##N(u##N *ptr, u32 offset, u32 bits, u##N value) {   \
+    u##N mask = ((~(u##N)0) << (N - bits)) >> (N - offset - bits);            \
+    set_mask_b##N(ptr, mask, value << offset);                                \
   }                                                                           \
                                                                               \
   u##N atomic_add_partial_bits_b##N(u##N *ptr, u32 offset, u32 bits,          \

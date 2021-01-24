@@ -1205,6 +1205,20 @@ void CodeGenLLVM::store_custom_int(llvm::Value *byte_ptr,
                    value, llvm_type(cit->get_physical_type()), false)});
 }
 
+void CodeGenLLVM::store_masked(llvm::Value *byte_ptr,
+                               uint64 mask,
+                               Type *physical_type,
+                               llvm::Value *value) {
+  if (mask == (~(uint64)0)) {
+    builder->CreateStore(value, byte_ptr);
+    return;
+  }
+  create_call(fmt::format("set_mask_b{}", data_type_bits(physical_type)),
+              {builder->CreateBitCast(byte_ptr, llvm_ptr_type(physical_type)),
+               tlctx->get_constant(mask),
+               builder->CreateIntCast(value, llvm_type(physical_type), false)});
+}
+
 llvm::Value *CodeGenLLVM::get_exponent_offset(llvm::Value *exponent,
                                               CustomFloatType *cft) {
   // Since we have fewer bits in the exponent type than in f32, an
@@ -1346,28 +1360,27 @@ void CodeGenLLVM::visit(BitStructStoreStmt *stmt) {
     return;
   }
 
+  llvm::Value *bit_struct_val = nullptr;
+  for (int i = 0; i < stmt->ch_ids.size(); i++) {
+    auto ch_id = stmt->ch_ids[i];
+    auto val = llvm_val[stmt->values[i]];
+    auto &ch = bit_struct_snode->ch[ch_id];
+    auto dtype = ch->dt;
+    val = custom_type_to_bits(val, dtype, bit_struct_physical_type);
+    val = builder->CreateShl(val, bit_struct_snode->ch[ch_id]->bit_offset);
+    if (bit_struct_val == nullptr) {
+      bit_struct_val = val;
+    } else {
+      bit_struct_val = builder->CreateOr(bit_struct_val, val);
+    }
+  }
   if (stmt->ch_ids.size() == bit_struct_snode->ch.size()) {
     // Store all the components
-    llvm::Value *bit_struct_val = nullptr;
-    for (int i = 0; i < stmt->ch_ids.size(); i++) {
-      auto ch_id = stmt->ch_ids[i];
-      auto val = llvm_val[stmt->values[i]];
-      auto &ch = bit_struct_snode->ch[ch_id];
-      auto dtype = ch->dt;
-      val = custom_type_to_bits(val, dtype, bit_struct_physical_type);
-      val = builder->CreateShl(val, bit_struct_snode->ch[ch_id]->bit_offset);
-      if (bit_struct_val == nullptr) {
-        bit_struct_val = val;
-      } else {
-        bit_struct_val = builder->CreateOr(bit_struct_val, val);
-      }
-    }
     builder->CreateStore(bit_struct_val, llvm_val[stmt->ptr]);
   } else {
-    // TODO: create a mask and use a single atomicCAS
-    for (int i = 0; i < stmt->ch_ids.size(); i++) {
-      auto ch_id = stmt->ch_ids[i];
-      auto val = stmt->values[i];
+    // Create a mask and use a single atomicCAS
+    uint64 mask = 0;
+    for (auto &ch_id : stmt->ch_ids) {
       auto &ch = bit_struct_snode->ch[ch_id];
       auto dtype = ch->dt;
       CustomIntType *cit = nullptr;
@@ -1377,10 +1390,12 @@ void CodeGenLLVM::visit(BitStructStoreStmt *stmt) {
       } else {
         cit = dtype->as<CustomIntType>();
       }
-      store_custom_int(
-          llvm_val[stmt->ptr], tlctx->get_constant(ch->bit_offset), cit,
-          custom_type_to_bits(llvm_val[val], dtype, bit_struct_physical_type));
+      auto bits = cit->get_num_bits();
+      auto offset = bit_struct_snode->ch[ch_id]->bit_offset;
+      mask = mask | (((~(uint64)0) << (64 - bits)) >> (64 - offset - bits));
     }
+    store_masked(llvm_val[stmt->ptr], mask, bit_struct_physical_type,
+                 bit_struct_val);
   }
 }
 

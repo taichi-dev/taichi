@@ -1437,8 +1437,6 @@ void CodeGenLLVM::store_floats_with_shared_exponents(BitStructStoreStmt *stmt) {
     llvm::Value *max_exp_bits = nullptr;
     for (auto f : floats) {
       // TODO: we only support f32 here.
-      //  Shall we set the return type of extract_exponent_from_float to
-      //  bit_struct_physical_type?
       auto exp_bits = extract_exponent_from_float(f);
       if (max_exp_bits) {
         max_exp_bits = create_call("max_u32", {max_exp_bits, exp_bits});
@@ -1504,8 +1502,7 @@ void CodeGenLLVM::store_floats_with_shared_exponents(BitStructStoreStmt *stmt) {
       }
 
       // store the digits
-      val = builder->CreateZExt(
-          digits, llvm_type(bit_struct_physical_type->get_compute_type()));
+      val = builder->CreateZExt(digits, llvm_type(bit_struct_physical_type));
       val = builder->CreateShl(val, digits_bit_offset);
       masked_val = builder->CreateOr(masked_val, val);
       auto num_digit_bits =

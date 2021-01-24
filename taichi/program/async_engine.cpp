@@ -279,9 +279,14 @@ void AsyncEngine::flush() {
     }
     sfg->verify();
     if (program->config.async_opt_fusion) {
-      while (sfg->fuse()) {
-        debug_sfg("fuse");
-        modified = true;
+      auto max_iter = program->config.async_opt_fusion_max_iter;
+      for (int iter = 0; max_iter == 0 || iter < max_iter; iter++) {
+        if (sfg->fuse()) {
+          debug_sfg("fuse");
+          modified = true;
+        } else {
+          break;
+        }
       }
     }
     sfg->verify();

@@ -93,13 +93,15 @@ void CodeGenLLVM::store_custom_int(llvm::Value *byte_ptr,
 void CodeGenLLVM::store_masked(llvm::Value *byte_ptr,
                                uint64 mask,
                                Type *physical_type,
-                               llvm::Value *value) {
+                               llvm::Value *value,
+                               bool atomic) {
   uint64 full_mask = (~(uint64)0) >> (64 - data_type_bits(physical_type));
   if ((mask & full_mask) == full_mask) {
     builder->CreateStore(value, byte_ptr);
     return;
   }
-  create_call(fmt::format("set_mask_b{}", data_type_bits(physical_type)),
+  create_call(fmt::format("{}set_mask_b{}", atomic ? "atomic_" : "",
+                          data_type_bits(physical_type)),
               {builder->CreateBitCast(byte_ptr, llvm_ptr_type(physical_type)),
                tlctx->get_constant(mask),
                builder->CreateIntCast(value, llvm_type(physical_type), false)});
@@ -172,7 +174,7 @@ void CodeGenLLVM::visit(BitStructStoreStmt *stmt) {
     // Store all the components
     builder->CreateStore(bit_struct_val, llvm_val[stmt->ptr]);
   } else {
-    // Create a mask and use a single atomicCAS
+    // Create a mask and use a single (atomic)CAS
     uint64 mask = 0;
     for (auto &ch_id : stmt->ch_ids) {
       auto &ch = bit_struct_snode->ch[ch_id];
@@ -188,7 +190,7 @@ void CodeGenLLVM::visit(BitStructStoreStmt *stmt) {
                   bit_struct_snode->ch[ch_id]->bit_offset);
     }
     store_masked(llvm_val[stmt->ptr], mask, bit_struct_physical_type,
-                 bit_struct_val);
+                 bit_struct_val, stmt->is_atomic);
   }
 }
 
@@ -296,7 +298,8 @@ void CodeGenLLVM::store_floats_with_shared_exponents(BitStructStoreStmt *stmt) {
       update_mask(mask, num_digit_bits, digits_bit_offset);
     }
   }
-  store_masked(llvm_val[stmt->ptr], mask, bit_struct_physical_type, masked_val);
+  store_masked(llvm_val[stmt->ptr], mask, bit_struct_physical_type, masked_val,
+               stmt->is_atomic);
 }
 
 llvm::Value *CodeGenLLVM::extract_exponent_from_float(llvm::Value *f) {

@@ -181,6 +181,8 @@ void export_lang(py::module &m) {
       .def_readwrite("async_flush_every", &CompileConfig::async_flush_every)
       .def_readwrite("async_max_fuse_per_task",
                      &CompileConfig::async_max_fuse_per_task)
+      .def_readwrite("quant_opt_store_fusion",
+                     &CompileConfig::quant_opt_store_fusion)
       .def_readwrite("quant_opt_atomic_demotion",
                      &CompileConfig::quant_opt_atomic_demotion);
 

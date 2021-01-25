@@ -207,7 +207,9 @@ void optimize_bit_struct_stores(
   TI_AUTO_PROF;
   CreateBitStructStores::run(root);
   die(root);  // remove unused GetCh
-  MergeBitStructStores::run(root);
+  if (root->get_config().quant_opt_store_fusion) {
+    MergeBitStructStores::run(root);
+  }
   if (root->get_config().quant_opt_atomic_demotion) {
     DemoteAtomicBitStructStores::run(root, uniquely_accessed_bit_structs);
   }

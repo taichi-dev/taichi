@@ -196,6 +196,10 @@ class UniquelyAccessedBitStructGatherer : public BasicStmtVisitor {
           if (accessed_ptr == loop_unique_bit_struct.end()) {
             loop_unique_bit_struct[snode] = ptr1;
           } else {
+            if (ptr1 == nullptr) {
+              accessed_ptr->second = nullptr;
+              continue;
+            }
             auto *ptr2 = accessed_ptr->second;
             TI_ASSERT(ptr1->indices.size() == ptr2->indices.size());
             for (int id = 0; id < (int)ptr1->indices.size(); id++) {

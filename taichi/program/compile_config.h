@@ -76,6 +76,7 @@ struct CompileConfig {
   // Setting 0 effectively means unlimited
   int async_max_fuse_per_task{1};
 
+  bool quant_opt_store_fusion{true};
   bool quant_opt_atomic_demotion{true};
 
   CompileConfig();

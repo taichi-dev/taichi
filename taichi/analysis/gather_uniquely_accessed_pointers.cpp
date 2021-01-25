@@ -185,7 +185,7 @@ class UniquelyAccessedBitStructGatherer : public BasicStmtVisitor {
           irpass::analysis::gather_uniquely_accessed_pointers(stmt);
       for (auto &it : loop_unique_ptr) {
         auto *snode = it.first;
-        auto *ptr = it.second;
+        auto *ptr1 = it.second;
         if (snode->is_bit_level) {
           // Find the nearest non-bit-level ancestor
           while (snode->is_bit_level) {
@@ -194,11 +194,15 @@ class UniquelyAccessedBitStructGatherer : public BasicStmtVisitor {
           // Check whether uniquely accessed
           auto accessed_ptr = loop_unique_bit_struct.find(snode);
           if (accessed_ptr == loop_unique_bit_struct.end()) {
-            loop_unique_bit_struct[snode] = ptr;
+            loop_unique_bit_struct[snode] = ptr1;
           } else {
-            if (!irpass::analysis::definitely_same_address(accessed_ptr->second,
-                                                           ptr)) {
-              accessed_ptr->second = nullptr;  // not uniquely accessed
+            auto *ptr2 = accessed_ptr->second;
+            TI_ASSERT(ptr1->indices.size() == ptr2->indices.size());
+            for (int id = 0; id < (int)ptr1->indices.size(); id++) {
+              if (!irpass::analysis::same_value(ptr1->indices[id],
+                                                ptr2->indices[id])) {
+                accessed_ptr->second = nullptr;  // not uniquely accessed
+              }
             }
           }
         }

@@ -630,8 +630,8 @@ class IRPrinter : public IRVisitor {
         values += ", ";
       }
     }
-    print("{} : bit_struct_store {}, ch_ids=[{}], values=[{}]", stmt->name(),
-          stmt->ptr->name(), ch_ids, values);
+    print("{} : {}bit_struct_store {}, ch_ids=[{}], values=[{}]", stmt->name(),
+          stmt->is_atomic ? "atomic " : "", stmt->ptr->name(), ch_ids, values);
   }
 };
 

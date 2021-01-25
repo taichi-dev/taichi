@@ -221,7 +221,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   void store_masked(llvm::Value *byte_ptr,
                     uint64 mask,
                     Type *physical_type,
-                    llvm::Value *value);
+                    llvm::Value *value,
+                    bool atomic);
 
   void visit(GlobalStoreStmt *stmt) override;
 

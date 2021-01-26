@@ -96,7 +96,8 @@ void CodeGenLLVM::store_masked(llvm::Value *byte_ptr,
                                llvm::Value *value,
                                bool atomic) {
   uint64 full_mask = (~(uint64)0) >> (64 - data_type_bits(physical_type));
-  if ((mask & full_mask) == full_mask) {
+  if ((!atomic || prog->config.quant_opt_atomic_demotion) &&
+      ((mask & full_mask) == full_mask)) {
     builder->CreateStore(value, byte_ptr);
     return;
   }
@@ -170,7 +171,8 @@ void CodeGenLLVM::visit(BitStructStoreStmt *stmt) {
       bit_struct_val = builder->CreateOr(bit_struct_val, val);
     }
   }
-  if (stmt->ch_ids.size() == bit_struct_snode->ch.size()) {
+  if (prog->config.quant_opt_atomic_demotion &&
+      stmt->ch_ids.size() == bit_struct_snode->ch.size()) {
     // Store all the components
     builder->CreateStore(bit_struct_val, llvm_val[stmt->ptr]);
   } else {

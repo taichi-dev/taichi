@@ -209,8 +209,12 @@ struct TaskMeta {
   SNode *snode{nullptr};  // struct-for and listgen only
   std::unordered_set<AsyncState> input_states;
   std::unordered_set<AsyncState> output_states;
-  std::unordered_map<SNode *, GlobalPtrStmt *> loop_unique;
+
+  // loop_unique[s] != nullptr => injective access on s
+  std::unordered_map<const SNode *, GlobalPtrStmt *> loop_unique;
   std::unordered_map<const SNode *, bool> element_wise;
+
+  // element_wise[s] OR loop_unique[s] covers s => surjective access on s
 
   void print() const;
 };

@@ -188,8 +188,8 @@ inline Expr AssumeInRange(const Expr &expr,
   return Expr::make<RangeAssumptionExpression>(expr, base, low, high);
 }
 
-inline Expr LoopUnique(const Expr &input) {
-  return Expr::make<LoopUniqueExpression>(load_if_ptr(input));
+inline Expr LoopUnique(const Expr &input, const std::vector<SNode *> &covers) {
+  return Expr::make<LoopUniqueExpression>(load_if_ptr(input), covers);
 }
 
 void insert_snode_access_flag(SNodeAccessFlag v, const Expr &field);

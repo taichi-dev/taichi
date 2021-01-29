@@ -19,6 +19,7 @@
 #include "taichi/backends/metal/struct_metal.h"
 #include "taichi/backends/opengl/struct_opengl.h"
 #include "taichi/system/unified_allocator.h"
+#include "taichi/system/timeline.h"
 #include "taichi/ir/snode.h"
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/program/async_engine.h"
@@ -216,6 +217,8 @@ Program::Program(Arch desired_arch) {
   }
 
   stat.clear();
+
+  Timelines::get_instance().set_enabled(config.timeline);
 
   TI_TRACE("Program ({}) arch={} initialized.", fmt::ptr(this),
            arch_name(arch));

@@ -609,10 +609,10 @@ void full_simplify(IRNode *root, bool after_lower_access, Kernel *kernel) {
         modified = true;
       if (die(root))
         modified = true;
-      // Don't do these time-consuming optimization passes again if the IR is
-      // not modified.
-      if ((first_iteration || modified) && whole_kernel_cse(root))
+      if (whole_kernel_cse(root))
         modified = true;
+      // Don't do this time-consuming optimization pass again if the IR is
+      // not modified.
       if ((first_iteration || modified) &&
           root->get_config().cfg_optimization &&
           cfg_optimization(root, after_lower_access))

@@ -10,7 +10,7 @@ TLANG_NAMESPACE_BEGIN
 
 class DemoteAtomics : public BasicStmtVisitor {
  private:
-  std::unordered_map<SNode *, GlobalPtrStmt *> loop_unique_ptr_;
+  std::unordered_map<const SNode *, GlobalPtrStmt *> loop_unique_ptr_;
 
  public:
   using BasicStmtVisitor::visit;

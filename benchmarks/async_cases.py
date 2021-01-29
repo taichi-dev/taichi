@@ -165,8 +165,9 @@ def stencil_reduction(scale):
 
 @benchmark_async
 def mpm_splitted(scale):
-    quality = int(scale**(1 /
-                          3))  # Use a larger value for higher-res simulations
+    quality = int(3 * scale**(1 / 3))
+    # Use a larger value for higher-res simulations
+
     n_particles, n_grid = 9000 * quality**2, 128 * quality
     dx, inv_dx = 1 / n_grid, float(n_grid)
     dt = 1e-4 / quality
@@ -294,7 +295,7 @@ def mpm_splitted(scale):
         for s in range(int(2e-3 // dt)):
             substep()
 
-    ti.benchmark(task, repeat=10)
+    ti.benchmark(task, repeat=5)
 
 
 @benchmark_async

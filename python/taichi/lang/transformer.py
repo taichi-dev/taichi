@@ -418,14 +418,14 @@ if 1:
 
     def visit_ndrange_for(self, node):
         # for i, j in ti.ndrange(n)
-        template = '''
+        template = f'''
 if ti.static(1):
-    __ndrange = 0
-    for __ndrange_I in range(0):
-        __I = __ndrange_I
+    __ndrange = ti.static(0)
+    for __ndrange_I{id(node)} in range(0):
+        __I = __ndrange_I{id(node)}
         '''
         t = ast.parse(template).body[0]
-        t.body[0].value = node.iter
+        t.body[0].value.args[0] = node.iter
         t_loop = t.body[1]
         t_loop.iter.args[0] = self.parse_expr('__ndrange.acc_dimensions[0]')
         targets = self.get_targets(node)
@@ -678,7 +678,7 @@ if 1:
                     array_dim = self.arg_features[i][1]
                     import numpy as np
                     array_dt = to_taichi_type(array_dt)
-                    dt_expr = 'ti.' + ti.core.data_type_short_name(array_dt)
+                    dt_expr = 'ti.' + ti.core.data_type_name(array_dt)
                     dt = self.parse_expr(dt_expr)
                     arg_init.value.args[0] = dt
                     arg_init.value.args[1] = self.parse_expr(
@@ -864,15 +864,12 @@ if 1:
                 ret_expr = self.parse_expr('ti.cast(ti.Expr(0), 0)')
                 ret_expr.args[0].args[0] = node.value
                 ret_expr.args[1] = self.returns
-                dt_expr = self.parse_expr('ti.cook_dtype(0)')
-                dt_expr.args[0] = self.returns
                 ret_stmt = self.parse_stmt(
-                    'ti.core.create_kernel_return(ret.ptr, 0)')
+                    'ti.core.create_kernel_return(ret.ptr)')
                 # For args[0], it is an ast.Attribute, because it loads the
                 # attribute, |ptr|, of the expression |ret_expr|. Therefore we
                 # only need to replace the object part, i.e. args[0].value
                 ret_stmt.value.args[0].value = ret_expr
-                ret_stmt.value.args[1] = dt_expr
                 return ret_stmt
         return node
 

@@ -33,13 +33,18 @@ class Type {
   template <typename T>
   T *as() {
     auto p = dynamic_cast<T *>(this);
-    TI_ASSERT(p != nullptr);
+    TI_ASSERT_INFO(p != nullptr, "Cannot treat {} as {}", this->to_string(),
+                   typeid(T).name());
     return p;
   }
 
   int vector_width() const;
 
   bool is_primitive(PrimitiveTypeID type) const;
+
+  virtual Type *get_compute_type() {
+    TI_NOT_IMPLEMENTED;
+  }
 
   virtual ~Type() {
   }
@@ -70,8 +75,11 @@ class DataType {
     return ptr_->to_string();
   };
 
-  // TODO: DataType itself should be a pointer in the future
-  Type *get_ptr() const {
+  operator const Type *() const {
+    return ptr_;
+  }
+
+  operator Type *() {
     return ptr_;
   }
 
@@ -113,6 +121,10 @@ class PrimitiveType : public Type {
 
   std::string to_string() const override;
 
+  virtual Type *get_compute_type() override {
+    return this;
+  }
+
   static DataType get(PrimitiveTypeID type);
 };
 
@@ -134,9 +146,7 @@ class PointerType : public Type {
     return is_bit_pointer_;
   }
 
-  std::string to_string() const override {
-    return fmt::format("*{}", pointee_->to_string());
-  };
+  std::string to_string() const override;
 
  private:
   Type *pointee_{nullptr};
@@ -159,9 +169,7 @@ class VectorType : public Type {
     return num_elements_;
   }
 
-  std::string to_string() const override {
-    return fmt::format("[{} x {}]", num_elements_, element_->to_string());
-  }
+  std::string to_string() const override;
 
  private:
   int num_elements_{0};
@@ -170,11 +178,24 @@ class VectorType : public Type {
 
 class CustomIntType : public Type {
  public:
-  CustomIntType(int num_bits, bool is_signed)
-      : num_bits_(num_bits), is_signed_(is_signed) {
-  }
+  CustomIntType(int num_bits,
+                bool is_signed,
+                Type *compute_type = nullptr,
+                Type *physical_type = nullptr);
 
   std::string to_string() const override;
+
+  void set_physical_type(Type *physical_type) {
+    this->physical_type_ = physical_type;
+  }
+
+  Type *get_physical_type() {
+    return physical_type_;
+  }
+
+  Type *get_compute_type() override {
+    return compute_type_;
+  }
 
   int get_num_bits() const {
     return num_bits_;
@@ -187,20 +208,55 @@ class CustomIntType : public Type {
  private:
   // TODO(type): for now we can uniformly use i32 as the "compute_type". It may
   // be a good idea to make "compute_type" also customizable.
-  int num_bits_;
-  bool is_signed_;
+  Type *compute_type_{nullptr};
+  Type *physical_type_{nullptr};
+  int num_bits_{32};
+  bool is_signed_{true};
+};
+
+class CustomFloatType : public Type {
+ public:
+  CustomFloatType(Type *digits_type,
+                  Type *exponent_type,
+                  Type *compute_type,
+                  float64 scale);
+
+  std::string to_string() const override;
+
+  float64 get_scale() const {
+    return scale_;
+  }
+
+  Type *get_digits_type() {
+    return digits_type_;
+  }
+
+  Type *get_exponent_type() {
+    return exponent_type_;
+  }
+
+  int get_exponent_conversion_offset() const;
+
+  int get_digit_bits() const;
+
+  bool get_is_signed() const;
+
+  Type *get_compute_type() override {
+    return compute_type_;
+  }
+
+ private:
+  Type *digits_type_{nullptr};
+  Type *exponent_type_{nullptr};
+  Type *compute_type_{nullptr};
+  float64 scale_;
 };
 
 class BitStructType : public Type {
  public:
   BitStructType(PrimitiveType *physical_type,
                 std::vector<Type *> member_types,
-                std::vector<int> member_bit_offsets)
-      : physical_type_(physical_type),
-        member_types_(member_types),
-        member_bit_offsets_(member_bit_offsets) {
-    TI_ASSERT(member_types_.size() == member_bit_offsets_.size());
-  }
+                std::vector<int> member_bit_offsets);
 
   std::string to_string() const override;
 
@@ -234,6 +290,9 @@ class BitArrayType : public Type {
       : physical_type_(physical_type),
         element_type_(element_type_),
         num_elements_(num_elements_) {
+    // TODO: avoid assertion?
+    TI_ASSERT(element_type_->is<CustomIntType>());
+    element_num_bits_ = element_type_->as<CustomIntType>()->get_num_bits();
   }
 
   std::string to_string() const override;
@@ -250,10 +309,15 @@ class BitArrayType : public Type {
     return num_elements_;
   }
 
+  int get_element_num_bits() const {
+    return element_num_bits_;
+  }
+
  private:
   PrimitiveType *physical_type_;
   Type *element_type_;
   int num_elements_;
+  int element_num_bits_;
 };
 
 TLANG_NAMESPACE_END

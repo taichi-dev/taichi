@@ -377,6 +377,7 @@ void CFGNode::live_variable_analysis(bool after_lower_access) {
     auto store_ptrs = irpass::analysis::get_store_destination(stmt);
     // TODO: Consider stacks in get_store_destination instead of here
     //  for store-to-load forwarding on stacks
+    // TODO: SNode deactivation is also a definite store
     if (auto stack_pop = stmt->cast<StackPopStmt>()) {
       store_ptrs = std::vector<Stmt *>(1, stack_pop->stack);
     } else if (auto stack_push = stmt->cast<StackPushStmt>()) {

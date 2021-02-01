@@ -51,6 +51,38 @@ Python issues
       python3 -c "print(__import__('platform').architecture()[0])"
       # 64bit
 
+- If ``pip`` keeps warning about HTTP error:
+
+  * Use a mirror repo for better connectivity if you live in China :)
+
+    .. code-block:: bash
+
+      python3 -c pip install -i https://pypi.tuna.tsinghua.edu.cn/simple taichi
+
+  * Sometimes ``pip`` could fail when its version is not the latest. Upgrade it and
+    try installing ``taichi`` again:
+
+    .. code-block:: bash
+
+      python3 -c pip install --upgrade pip
+      python3 -c pip install taichi
+
+- If ``python`` shows an error message like:
+
+  .. code-block:: none
+
+    AttributeError: module 'taichi' has no attribute 'init'
+
+  This is likely because you have put a file named ``taichi.py`` in the **same
+  directory** where the main program is executed. Python will consider this file
+  as a module named ``taichi``, hiding our real ``taichi`` module.
+
+  * **Possible solution**: don't name your file as ``taichi.py``, **rename it
+    to any other name**, like ``hello_taichi.py``. Also, double-check you don't
+    have other files named ``taichi.py`` and directories named ``taichi/`` in
+    the current directory.
+
+
 CUDA issues
 ***********
 
@@ -72,6 +104,7 @@ CUDA issues
 - If you find other CUDA problems:
 
   * **Possible solution**: add ``export TI_ENABLE_CUDA=0`` to your  ``~/.bashrc``. This disables the CUDA backend completely and Taichi will fall back on other GPU backends such as OpenGL.
+
 
 OpenGL issues
 *************

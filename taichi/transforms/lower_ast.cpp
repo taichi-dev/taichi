@@ -207,7 +207,8 @@ class LowerAST : public IRVisitor {
       if (is_good_range_for) {
         auto &&new_for = std::make_unique<RangeForStmt>(
             begin->stmt, end->stmt, std::move(stmt->body), stmt->vectorize,
-            stmt->parallelize, stmt->block_dim, stmt->strictly_serialized);
+            stmt->bit_vectorize, stmt->parallelize, stmt->block_dim,
+            stmt->strictly_serialized);
         new_for->body->insert(std::make_unique<LoopIndexStmt>(new_for.get(), 0),
                               0);
         new_for->body->local_var_to_stmt[stmt->loop_var_id[0]] =
@@ -280,9 +281,17 @@ class LowerAST : public IRVisitor {
         offsets = snode->index_offsets;
         snode = snode->parent;
       }
+
+      // Climb up one more level if inside bit_struct.
+      // Note that when looping over bit_structs, we generate
+      // struct for on their parent node instead of itself for
+      // higher performance.
+      if (snode->type == SNodeType::bit_struct)
+        snode = snode->parent;
+
       auto &&new_for = std::make_unique<StructForStmt>(
-          snode, std::move(stmt->body), stmt->vectorize, stmt->parallelize,
-          stmt->block_dim);
+          snode, std::move(stmt->body), stmt->vectorize, stmt->bit_vectorize,
+          stmt->parallelize, stmt->block_dim);
       new_for->index_offsets = offsets;
       VecStatement new_statements;
       for (int i = 0; i < (int)stmt->loop_var_id.size(); i++) {
@@ -298,7 +307,7 @@ class LowerAST : public IRVisitor {
         new_for->body->local_var_to_stmt[stmt->loop_var_id[i]] = loop_index;
       }
       new_for->body->insert(std::move(new_statements), 0);
-      new_for->scratch_opt = stmt->scratch_opt;
+      new_for->mem_access_opt = stmt->mem_access_opt;
       fctx.push_back(std::move(new_for));
     }
     stmt->parent->replace_with(stmt, std::move(fctx.stmts));
@@ -323,9 +332,7 @@ class LowerAST : public IRVisitor {
     auto expr = stmt->value;
     auto fctx = make_flatten_ctx();
     expr->flatten(&fctx);
-    const auto dt = stmt->element_type();
-    TI_ASSERT(dt != PrimitiveType::unknown);
-    fctx.push_back<KernelReturnStmt>(fctx.back_stmt(), dt);
+    fctx.push_back<KernelReturnStmt>(fctx.back_stmt());
     stmt->parent->replace_with(stmt, std::move(fctx.stmts));
     throw IRModified();
   }
@@ -387,7 +394,8 @@ class LowerAST : public IRVisitor {
                stmt->snode->type == SNodeType::dense ||
                stmt->snode->type == SNodeType::bitmasked) {
       TI_ASSERT(SNodeOpStmt::activation_related(stmt->op_type));
-      fctx.push_back<SNodeOpStmt>(stmt->op_type, stmt->snode, indices_stmt);
+      auto ptr = fctx.push_back<GlobalPtrStmt>(stmt->snode, indices_stmt);
+      fctx.push_back<SNodeOpStmt>(stmt->op_type, stmt->snode, ptr, val_stmt);
     } else {
       TI_ERROR("The {} operation is not supported on {} SNode",
                snode_op_type_name(stmt->op_type),

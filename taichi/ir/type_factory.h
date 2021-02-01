@@ -19,9 +19,14 @@ class TypeFactory {
 
   Type *get_vector_type(int num_elements, Type *element);
 
-  Type *get_pointer_type(Type *element);
+  Type *get_pointer_type(Type *element, bool is_bit_pointer = false);
 
-  Type *get_custom_int_type(int num_bits, bool is_signed);
+  Type *get_custom_int_type(int num_bits, bool is_signed, Type *compute_type);
+
+  Type *get_custom_float_type(Type *digits_type,
+                              Type *exponent_type,
+                              Type *compute_type,
+                              float64 scale);
 
   Type *get_bit_struct_type(PrimitiveType *physical_type,
                             std::vector<Type *> member_types,
@@ -44,10 +49,15 @@ class TypeFactory {
   std::map<std::pair<int, Type *>, std::unique_ptr<Type>> vector_types_;
 
   // TODO: is_bit_ptr?
-  std::map<Type *, std::unique_ptr<Type>> pointer_types_;
+  std::map<std::pair<Type *, bool>, std::unique_ptr<Type>> pointer_types_;
 
   // TODO: use unordered map
-  std::map<std::pair<int, bool>, std::unique_ptr<Type>> custom_int_types_;
+  std::map<std::tuple<int, bool, Type *>, std::unique_ptr<Type>>
+      custom_int_types;
+
+  // TODO: use unordered map
+  std::map<std::tuple<Type *, Type *, Type *, float64>, std::unique_ptr<Type>>
+      custom_float_types;
 
   // TODO: avoid duplication
   std::vector<std::unique_ptr<Type>> bit_struct_types_;

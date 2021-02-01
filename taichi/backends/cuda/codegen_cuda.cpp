@@ -102,6 +102,35 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
 #endif  // TI_WITH_CUDA
   }
 
+  llvm::Value *create_print(std::string tag,
+                            DataType dt,
+                            llvm::Value *value) override {
+    std::string format = data_type_format(dt);
+    if (value->getType() == llvm::Type::getFloatTy(*llvm_context)) {
+      value =
+          builder->CreateFPExt(value, llvm::Type::getDoubleTy(*llvm_context));
+    }
+    return create_print("[cuda codegen debug] " + tag + " " + format + "\n",
+                        {value->getType()}, {value});
+  }
+
+  llvm::Value *create_print(const std::string &format,
+                            const std::vector<llvm::Type *> &types,
+                            const std::vector<llvm::Value *> &values) {
+    auto stype = llvm::StructType::get(*llvm_context, types, false);
+    auto value_arr = builder->CreateAlloca(stype);
+    for (int i = 0; i < values.size(); i++) {
+      auto value_ptr = builder->CreateGEP(
+          value_arr, {tlctx->get_constant(0), tlctx->get_constant(i)});
+      builder->CreateStore(values[i], value_ptr);
+    }
+    return LLVMModuleBuilder::call(
+        builder.get(), "vprintf",
+        builder->CreateGlobalStringPtr(format, "format_string"),
+        builder->CreateBitCast(value_arr,
+                               llvm::Type::getInt8PtrTy(*llvm_context)));
+  }
+
   void visit(PrintStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     TI_ASSERT_INFO(stmt->contents.size() < 32,
@@ -140,19 +169,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       }
     }
 
-    auto format_str = formats;
-    auto stype = llvm::StructType::get(*llvm_context, types, false);
-    auto value_arr = builder->CreateAlloca(stype);
-    for (int i = 0; i < values.size(); i++) {
-      auto value_ptr = builder->CreateGEP(
-          value_arr, {tlctx->get_constant(0), tlctx->get_constant(i)});
-      builder->CreateStore(values[i], value_ptr);
-    }
-    llvm_val[stmt] = LLVMModuleBuilder::call(
-        builder.get(), "vprintf",
-        builder->CreateGlobalStringPtr(format_str, "format_string"),
-        builder->CreateBitCast(value_arr,
-                               llvm::Type::getInt8PtrTy(*llvm_context)));
+    llvm_val[stmt] = create_print(formats, types, values);
   }
 
   void emit_extra_unary(UnaryOpStmt *stmt) override {
@@ -231,20 +248,23 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     TI_ASSERT(stmt->width() == 1);
     for (int l = 0; l < stmt->width(); l++) {
       llvm::Value *old_value;
+      auto dst_type =
+          stmt->dest->ret_type->as<PointerType>()->get_pointee_type();
       if (stmt->op_type == AtomicOpType::add) {
-        if (is_integral(stmt->val->ret_type)) {
+        if (dst_type->is<PrimitiveType>() && is_integral(stmt->val->ret_type)) {
           old_value = builder->CreateAtomicRMW(
               llvm::AtomicRMWInst::BinOp::Add, llvm_val[stmt->dest],
               llvm_val[stmt->val],
               llvm::AtomicOrdering::SequentiallyConsistent);
-        } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f32)) {
+        } else if (!dst_type->is<CustomFloatType>() &&
+                   is_real(stmt->val->ret_type)) {
           old_value = builder->CreateAtomicRMW(
               llvm::AtomicRMWInst::FAdd, llvm_val[stmt->dest],
               llvm_val[stmt->val], AtomicOrdering::SequentiallyConsistent);
-        } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f64)) {
-          old_value = builder->CreateAtomicRMW(
-              llvm::AtomicRMWInst::FAdd, llvm_val[stmt->dest],
-              llvm_val[stmt->val], AtomicOrdering::SequentiallyConsistent);
+        } else if (auto cit = dst_type->cast<CustomIntType>()) {
+          old_value = atomic_add_custom_int(stmt, cit);
+        } else if (auto cft = dst_type->cast<CustomFloatType>()) {
+          old_value = atomic_add_custom_float(stmt, cft);
         } else {
           TI_NOT_IMPLEMENTED
         }
@@ -316,11 +336,6 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     }
   }
 
-  void visit(RandStmt *stmt) override {
-    llvm_val[stmt] = create_call(
-        fmt::format("cuda_rand_{}", data_type_short_name(stmt->ret_type)),
-        {get_context()});
-  }
   void visit(RangeForStmt *for_stmt) override {
     create_naive_range_for(for_stmt);
   }
@@ -354,7 +369,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     auto snode_id = tlctx->get_constant(stmt->snode->id);
     {
       init_offloaded_task_function(stmt, "gather_list");
-      call("gc_parallel_0", get_runtime(), snode_id);
+      call("gc_parallel_0", get_context(), snode_id);
       finalize_offloaded_task_function();
       current_task->grid_dim = prog->config.saturating_grid_dim;
       current_task->block_dim = 64;
@@ -363,7 +378,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     }
     {
       init_offloaded_task_function(stmt, "reinit_lists");
-      call("gc_parallel_1", get_runtime(), snode_id);
+      call("gc_parallel_1", get_context(), snode_id);
       finalize_offloaded_task_function();
       current_task->grid_dim = 1;
       current_task->block_dim = 1;
@@ -372,7 +387,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     }
     {
       init_offloaded_task_function(stmt, "zero_fill");
-      call("gc_parallel_2", get_runtime(), snode_id);
+      call("gc_parallel_2", get_context(), snode_id);
       finalize_offloaded_task_function();
       current_task->grid_dim = prog->config.saturating_grid_dim;
       current_task->block_dim = 64;
@@ -385,31 +400,57 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
     return true;  // on CUDA, pass the argument by value
   }
 
+  llvm::Value *create_intrinsic_load(const DataType &dtype,
+                                     llvm::Value *data_ptr) {
+    auto llvm_dtype = llvm_type(dtype);
+    auto llvm_dtype_ptr = llvm::PointerType::get(llvm_type(dtype), 0);
+    llvm::Intrinsic::ID intrin;
+    if (is_real(dtype)) {
+      intrin = llvm::Intrinsic::nvvm_ldg_global_f;
+    } else {
+      intrin = llvm::Intrinsic::nvvm_ldg_global_i;
+    }
+    return builder->CreateIntrinsic(
+        intrin, {llvm_dtype, llvm_dtype_ptr},
+        {data_ptr, tlctx->get_constant(data_type_size(dtype))});
+  }
+
   void visit(GlobalLoadStmt *stmt) override {
     if (auto get_ch = stmt->ptr->cast<GetChStmt>(); get_ch) {
       bool should_cache_as_read_only = false;
-      for (auto s : current_offload->scratch_opt) {
-        if (s.first == SNodeAccessFlag::read_only &&
-            get_ch->output_snode == s.second) {
-          should_cache_as_read_only = true;
-        }
+      if (current_offload->mem_access_opt.has_flag(
+              get_ch->output_snode, SNodeAccessFlag::read_only)) {
+        should_cache_as_read_only = true;
       }
       if (should_cache_as_read_only) {
-        // Issue an CUDA "__ldg" instruction so that data are cached in
-        // the CUDA read-only data cache.
         auto dtype = stmt->ret_type;
-        auto llvm_dtype = llvm_type(dtype);
-        auto llvm_dtype_ptr = llvm::PointerType::get(llvm_type(dtype), 0);
-        llvm::Intrinsic::ID intrin;
-        if (is_real(dtype)) {
-          intrin = llvm::Intrinsic::nvvm_ldg_global_f;
+        if (auto ptr_type = stmt->ptr->ret_type->as<PointerType>();
+            ptr_type->is_bit_pointer()) {
+          // Bit pointer case.
+          auto val_type = ptr_type->get_pointee_type();
+          Type *int_in_mem = nullptr;
+          // For CustomIntType "int_in_mem" refers to the type itself;
+          // for CustomFloatType "int_in_mem" refers to the CustomIntType of the
+          // digits.
+          if (auto cit = val_type->cast<CustomIntType>()) {
+            int_in_mem = val_type;
+            dtype = cit->get_physical_type();
+            auto [data_ptr, bit_offset] = load_bit_pointer(llvm_val[stmt->ptr]);
+            data_ptr = builder->CreateBitCast(data_ptr, llvm_ptr_type(dtype));
+            auto data = create_intrinsic_load(dtype, data_ptr);
+            llvm_val[stmt] = extract_custom_int(data, bit_offset, int_in_mem);
+          } else if (auto cft = val_type->cast<CustomFloatType>()) {
+            // TODO: support __ldg
+            llvm_val[stmt] = load_custom_float(stmt->ptr);
+          } else {
+            TI_NOT_IMPLEMENTED;
+          }
         } else {
-          intrin = llvm::Intrinsic::nvvm_ldg_global_i;
+          // Byte pointer case.
+          // Issue an CUDA "__ldg" instruction so that data are cached in
+          // the CUDA read-only data cache.
+          llvm_val[stmt] = create_intrinsic_load(dtype, llvm_val[stmt->ptr]);
         }
-
-        llvm_val[stmt] = builder->CreateIntrinsic(
-            intrin, {llvm_dtype, llvm_dtype_ptr},
-            {llvm_val[stmt->ptr], tlctx->get_constant(data_type_size(dtype))});
       } else {
         CodeGenLLVM::visit(stmt);
       }

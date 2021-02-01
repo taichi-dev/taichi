@@ -100,6 +100,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd,
     case WM_MOUSEMOVE:
       p = {GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
       gui->set_mouse_pos(p.x, gui->height - 1 - p.y);
+      gui->key_events.push_back(
+          GUI::KeyEvent{GUI::KeyEvent::Type::move, "Motion", gui->cursor_pos});
       gui->mouse_event(
           GUI::MouseEvent{GUI::MouseEvent::Type::move, gui->cursor_pos});
       break;

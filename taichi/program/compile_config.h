@@ -1,7 +1,7 @@
 #pragma once
 
-#include "taichi/lang_util.h"
 #include "arch.h"
+#include "taichi/lang_util.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -64,11 +64,15 @@ struct CompileConfig {
   int opencl_platform;
   int opencl_device;
 
+  // Async options
+  int async_opt_passes{3};
   bool async_opt_fusion{true};
   bool async_opt_listgen{true};
   bool async_opt_activation_demotion{true};
   bool async_opt_dse{true};
+  bool async_listgen_fast_filtering{true};
   std::string async_opt_intermediate_file;
+  int async_flush_every{0};
 
   CompileConfig();
 };

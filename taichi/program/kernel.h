@@ -84,8 +84,8 @@ class Kernel {
   };
 
   Kernel(Program &program,
-         std::function<void()> func,
-         std::string name = "",
+         const std::function<void()> &func,
+         const std::string &name = "",
          bool grad = false);
 
   void compile();

@@ -20,6 +20,7 @@ namespace shaders {
 #define TI_INSIDE_METAL_CODEGEN
 #include "taichi/backends/metal/shaders/runtime_structs.metal.h"
 #include "taichi/backends/metal/shaders/runtime_utils.metal.h"
+#include "taichi/backends/metal/shaders/snode_bit_pointer.metal.h"
 #undef TI_INSIDE_METAL_CODEGEN
 
 #include "taichi/backends/metal/shaders/runtime_structs.metal.h"
@@ -63,17 +64,25 @@ class StructCompiler {
     {
       max_snodes_ = 0;
       has_sparse_snode_ = false;
+#define CHECK_UNSUPPORTED_TYPE(type_case)                                \
+  else if (ty == SNodeType::type_case) {                                 \
+    TI_ERROR("Metal backend does not support SNode=" #type_case " yet"); \
+  }
       for (const auto &sn : snodes_) {
         const auto ty = sn->type;
-        if (ty == SNodeType::root || ty == SNodeType::dense ||
-            ty == SNodeType::bitmasked || ty == SNodeType::dynamic ||
-            ty == SNodeType::pointer) {
+        if (ty == SNodeType::place) {
+          // do nothing
+        }
+        CHECK_UNSUPPORTED_TYPE(bit_array)
+        CHECK_UNSUPPORTED_TYPE(hash)
+        else {
           max_snodes_ = std::max(max_snodes_, sn->id);
         }
         has_sparse_snode_ = has_sparse_snode_ || is_supported_sparse_type(ty);
       }
       ++max_snodes_;
     }
+#undef CHECK_UNSUPPORTED_TYPE
 
     CompiledStructs result;
     result.root_size = compute_snode_size(&root);
@@ -123,7 +132,7 @@ class StructCompiler {
           "/*dynamic=*/{};",
           kAlignment);
     } else {
-      // `root`, `dense`, `pointer`
+      // `root`, `dense`, `bit_struct`
       emit("  constant static constexpr int stride = elem_stride * n;");
     }
     emit("");
@@ -149,9 +158,11 @@ class StructCompiler {
       emit("    nm.mem_alloc = ma;");
       emit("    const auto amb_idx = rtm->ambient_indices[{}];", snid);
       emit("    rep_.init(addr, nm, amb_idx);");
-    } else {
-      // `dense` or `root`
+    } else if (ty == SNodeType::root || ty == SNodeType::dense) {
+      // `root`, `dense`
       emit("    rep_.init(addr);");
+    } else {
+      TI_UNREACHABLE;
     }
     emit("  }}\n");
   }
@@ -185,8 +196,16 @@ class StructCompiler {
   }
 
   void generate_types(const SNode &snode) {
+    if (snode.is_bit_level) {
+      // Nothing to generate for bit-level SNodes -- they are part of their
+      // parent's intrinsic memory.
+      return;
+    }
+    const auto snty = snode.type;
     const bool is_place = snode.is_place();
-    if (!is_place) {
+    const bool should_gen_cell = !(is_place || (snty == SNodeType::bit_struct));
+    if (should_gen_cell) {
+      // "_ch" is a legacy word for child. The correct notion should be cell.
       // Generate {snode}_ch
       const std::string class_name = snode.node_type_name + "_ch";
       emit("class {} {{", class_name);
@@ -213,7 +232,6 @@ class StructCompiler {
     }
     emit("");
     const auto &node_name = snode.node_type_name;
-    const auto snty = snode.type;
     if (is_place) {
       const auto dt_name = metal_data_type_name(snode.dt);
       emit("struct {} {{", node_name);
@@ -225,7 +243,21 @@ class StructCompiler {
            node_name);
       emit("    : val((device {}*)v) {{}}", dt_name);
       emit("");
-      emit("  device {}* val;", dt_name);
+      emit("  device {} *val;", dt_name);
+      emit("}};");
+    } else if (snty == SNodeType::bit_struct) {
+      // TODO: bit_struct and place share a lot in common.
+      const auto dt_name = metal_data_type_name(DataType(snode.physical_type));
+      emit("struct {} {{", node_name);
+      emit("  // bit_struct");
+      emit("  constant static constexpr int stride = sizeof({});", dt_name);
+      emit("");
+      // `bit_struct` constructor
+      emit("  {}(device byte *b, device Runtime *, device MemoryAllocator *)",
+           node_name);
+      emit("    : base(b) {{}}");
+      emit("");
+      emit("  device byte *base;");
       emit("}};");
     } else if (snty == SNodeType::dense || snty == SNodeType::root ||
                snty == SNodeType::bitmasked || snty == SNodeType::dynamic ||
@@ -252,10 +284,8 @@ class StructCompiler {
       emit("  SNodeRep_{} rep_;", snty_name);
       emit("}};");
     } else {
-      TI_ERROR(
-          "SNodeType={} not supported on Metal.\nConsider using "
-          "ti.init(ti.cpu) if you want to use sparse data structures.",
-          snode_type_name(snode.type));
+      // We have checked the type support previously.
+      TI_UNREACHABLE;
     }
     emit("");
   }
@@ -264,18 +294,34 @@ class StructCompiler {
     if (sn->is_place()) {
       return metal_data_type_bytes(to_metal_type(sn->dt));
     }
-
+    if (sn->is_bit_level) {
+      // A bit-level SNode occupies a fration of a byte. Just return 0 here and
+      // special handling the bit_* SNode containers.
+      return 0;
+    }
     const int n = get_n(*sn);
     size_t ch_size = 0;
-    for (const auto &ch : sn->ch) {
-      const size_t ch_offset = ch_size;
-      const auto *ch_sn = ch.get();
-      ch_size += compute_snode_size(ch_sn);
-      if (!ch_sn->is_place()) {
-        snode_descriptors_.find(ch_sn->id)->second.mem_offset_in_parent =
-            ch_offset;
+    if (sn->type == SNodeType::bit_struct) {
+      // The host side should have inferred all the necessary info of |sn|.
+      TI_ASSERT(sn->physical_type != nullptr);
+      ch_size = data_type_size(sn->physical_type);
+      // |ch_size| should at least be 4 bytes on GPU. In addition, Metal:
+      // 1. does not support 8-byte data types in the device address space.
+      // 2. only supports 4-byte atomic integral types (or atomic_bool).
+      TI_ERROR_IF(ch_size != 4,
+                  "bit_struct physical type must be exactly 32 bits on Metal");
+    } else {
+      for (const auto &ch : sn->ch) {
+        const size_t ch_offset = ch_size;
+        const auto *ch_sn = ch.get();
+        ch_size += compute_snode_size(ch_sn);
+        if (!ch_sn->is_place()) {
+          snode_descriptors_.find(ch_sn->id)->second.mem_offset_in_parent =
+              ch_offset;
+        }
       }
     }
+
     SNodeDescriptor sn_desc;
     sn_desc.snode = sn;
     sn_desc.element_stride = ch_size;
@@ -310,7 +356,10 @@ class StructCompiler {
     emit("  NodeManagerData::ElemIndex ambient_indices[{}];", max_snodes_);
     emit("  uint32_t rand_seeds[{}];", kNumRandSeeds);
     emit("}};");
+    emit("");
     line_appender_.append_raw(shaders::kMetalRuntimeUtilsSourceCode);
+    emit("");
+    line_appender_.append_raw(shaders::kMetalSNodeBitPointerSourceCode);
     emit("");
   }
 

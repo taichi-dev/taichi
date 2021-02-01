@@ -29,7 +29,42 @@ class SNode;
 enum class SNodeAccessFlag : int { block_local, read_only };
 std::string snode_access_flag_name(SNodeAccessFlag type);
 class ScratchPads;
-using ScratchPadOptions = std::vector<std::pair<SNodeAccessFlag, SNode *>>;
+
+class MemoryAccessOptions {
+ public:
+  void add_flag(SNode *snode, SNodeAccessFlag flag) {
+    options_[snode].insert(flag);
+  }
+
+  bool has_flag(SNode *snode, SNodeAccessFlag flag) const {
+    if (auto it = options_.find(snode); it != options_.end())
+      return it->second.count(flag) != 0;
+    else
+      return false;
+  }
+
+  std::vector<SNode *> get_snodes_with_flag(SNodeAccessFlag flag) const {
+    std::vector<SNode *> snodes;
+    for (const auto &opt : options_) {
+      if (has_flag(opt.first, flag)) {
+        snodes.push_back(opt.first);
+      }
+    }
+    return snodes;
+  }
+
+  void clear() {
+    options_.clear();
+  }
+
+  std::unordered_map<SNode *, std::unordered_set<SNodeAccessFlag>> get_all()
+      const {
+    return options_;
+  }
+
+ private:
+  std::unordered_map<SNode *, std::unordered_set<SNodeAccessFlag>> options_;
+};
 
 #define PER_STATEMENT(x) class x;
 #include "taichi/inc/statements.inc.h"
@@ -40,9 +75,10 @@ IRBuilder &current_ast_builder();
 class DecoratorRecorder {
  public:
   int vectorize;
+  int bit_vectorize;
   int parallelize;
   bool strictly_serialized;
-  ScratchPadOptions scratch_opt;
+  MemoryAccessOptions mem_access_opt;
   int block_dim;
   bool uniform;
 
@@ -452,6 +488,18 @@ class StmtFieldSNode final : public StmtField {
   bool equal(const StmtField *other_generic) const override;
 };
 
+class StmtFieldMemoryAccessOptions final : public StmtField {
+ private:
+  MemoryAccessOptions const &opt_;
+
+ public:
+  explicit StmtFieldMemoryAccessOptions(MemoryAccessOptions const &opt)
+      : opt_(opt) {
+  }
+
+  bool equal(const StmtField *other_generic) const override;
+};
+
 class StmtFieldManager {
  private:
   Stmt *stmt;
@@ -681,6 +729,7 @@ class DelayedIRModifier {
   std::vector<std::pair<Stmt *, VecStatement>> to_insert_after;
   std::vector<std::tuple<Stmt *, VecStatement, bool>> to_replace_with;
   std::vector<Stmt *> to_erase;
+  bool modified_{false};
 
  public:
   ~DelayedIRModifier();
@@ -693,6 +742,9 @@ class DelayedIRModifier {
                     VecStatement &&new_statements,
                     bool replace_usages = true);
   bool modify_ir();
+
+  // Force the next call of modify_ir() to return true.
+  void mark_as_modified();
 };
 
 struct LocalAddress {
@@ -709,6 +761,10 @@ extern DecoratorRecorder dec;
 
 inline void Vectorize(int v) {
   dec.vectorize = v;
+}
+
+inline void BitVectorize(int v) {
+  dec.bit_vectorize = v;
 }
 
 inline void Parallelize(int v) {
@@ -768,6 +824,9 @@ inline void StmtFieldManager::operator()(const char *key, T &&value) {
   } else if constexpr (std::is_same<decay_T, SNode *>::value) {
     stmt->field_manager.fields.emplace_back(
         std::make_unique<StmtFieldSNode>(value));
+  } else if constexpr (std::is_same<decay_T, MemoryAccessOptions>::value) {
+    stmt->field_manager.fields.emplace_back(
+        std::make_unique<StmtFieldMemoryAccessOptions>(value));
   } else {
     stmt->field_manager.fields.emplace_back(
         std::make_unique<StmtFieldNumeric<std::remove_reference_t<T>>>(&value));

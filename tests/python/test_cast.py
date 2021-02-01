@@ -87,3 +87,68 @@ def test_bit_cast():
     func1()
     func2()
     assert z[None] == 2333
+
+
+@ti.test(arch=ti.cpu)
+def test_int_extension():
+    x = ti.field(dtype=ti.i32, shape=2)
+    y = ti.field(dtype=ti.u32, shape=2)
+
+    a = ti.field(dtype=ti.i8, shape=1)
+    b = ti.field(dtype=ti.u8, shape=1)
+
+    @ti.kernel
+    def run_cast_i32():
+        x[0] = ti.cast(a[0], ti.i32)
+        x[1] = ti.cast(b[0], ti.i32)
+
+    @ti.kernel
+    def run_cast_u32():
+        y[0] = ti.cast(a[0], ti.u32)
+        y[1] = ti.cast(b[0], ti.u32)
+
+    a[0] = -128
+    b[0] = -128
+
+    run_cast_i32()
+    assert x[0] == -128
+    assert x[1] == 128
+
+    run_cast_u32()
+    assert y[0] == 0xFFFFFF80
+    assert y[1] == 128
+
+
+@ti.test(arch=ti.cpu)
+def test_custom_int_extension():
+    x = ti.field(dtype=ti.i32, shape=2)
+    y = ti.field(dtype=ti.u32, shape=2)
+
+    ci5 = ti.quant.int(5, True, ti.i16)
+    cu7 = ti.quant.int(7, False, ti.u16)
+
+    a = ti.field(dtype=ci5)
+    b = ti.field(dtype=cu7)
+
+    ti.root.bit_struct(num_bits=32).place(a, b)
+
+    @ti.kernel
+    def run_cast_int():
+        x[0] = ti.cast(a[None], ti.i32)
+        x[1] = ti.cast(b[None], ti.i32)
+
+    @ti.kernel
+    def run_cast_uint():
+        y[0] = ti.cast(a[None], ti.u32)
+        y[1] = ti.cast(b[None], ti.u32)
+
+    a[None] = -16
+    b[None] = -64
+
+    run_cast_int()
+    assert x[0] == -16
+    assert x[1] == 64
+
+    run_cast_uint()
+    assert y[0] == 0xFFFFFFF0
+    assert y[1] == 64

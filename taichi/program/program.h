@@ -14,7 +14,6 @@
 #include "taichi/llvm/llvm_context.h"
 #include "taichi/backends/metal/kernel_manager.h"
 #include "taichi/backends/opengl/opengl_kernel_launcher.h"
-#include "taichi/backends/opengl/opengl_kernel_util.h"
 #ifdef TI_WITH_CC
 #include "taichi/backends/cc/cc_program.h"
 #endif
@@ -97,7 +96,7 @@ class Program {
   bool finalized;
   float64 total_compilation_time;
   static std::atomic<int> num_instances;
-  ThreadPool thread_pool;
+  std::unique_ptr<ThreadPool> thread_pool;
   std::unique_ptr<MemoryPool> memory_pool;
   uint64 *result_buffer;             // TODO: move this
   void *preallocated_device_buffer;  // TODO: move this to memory allocator
@@ -150,6 +149,9 @@ class Program {
   // This is more primitive than synchronize(). It directly calls to the
   // targeted GPU backend's synchronization (or commit in Metal's terminology).
   void device_synchronize();
+  // See AsyncEngine::flush().
+  // Only useful when async mode is enabled.
+  void async_flush();
 
   void layout(std::function<void()> func) {
     func();

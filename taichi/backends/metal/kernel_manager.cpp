@@ -10,14 +10,15 @@
 #include "taichi/backends/metal/constants.h"
 #include "taichi/inc/constants.h"
 #include "taichi/math/arithmetic.h"
-#include "taichi/util/action_recorder.h"
 #include "taichi/python/print_buffer.h"
+#include "taichi/util/action_recorder.h"
 #include "taichi/util/file_sequence_writer.h"
 #include "taichi/util/str.h"
 
 #ifdef TI_PLATFORM_OSX
 #include <sys/mman.h>
 #include <unistd.h>
+
 #include <algorithm>
 
 #include "taichi/backends/metal/api.h"
@@ -137,13 +138,27 @@ class CompiledMtlKernelBase {
     const auto tgs = get_thread_grid_settings(
         num_threads, kernel_attribs_.advisory_num_threads_per_group);
     if (!is_jit_evalutor_) {
-      ActionRecorder::get_instance().record(
-          "launch_kernel",
-          {ActionArg("kernel_name", kernel_attribs_.name),
-           ActionArg("num_threadgroups", tgs.num_threadgroups),
-           ActionArg("num_threads_per_group", tgs.num_threads_per_group)});
+      const auto tt = kernel_attribs_.task_type;
+      std::vector<ActionArg> record_args = {
+          ActionArg("mtl_kernel_name", kernel_attribs_.name),
+          ActionArg("advisory_num_threads", num_threads),
+          ActionArg("num_threadgroups", tgs.num_threadgroups),
+          ActionArg("num_threads_per_group", tgs.num_threads_per_group),
+          ActionArg("task_type", offloaded_task_type_name(tt)),
+      };
+      const auto &buffers = kernel_attribs_.buffers;
+      for (int i = 0; i < buffers.size(); ++i) {
+        record_args.push_back(
+            ActionArg(fmt::format("mtl_buffer_{}", i),
+                      KernelAttributes::buffers_name(buffers[i])));
+      }
+      ActionRecorder::get_instance().record("launch_kernel",
+                                            std::move(record_args));
     }
-
+    TI_TRACE(
+        "Dispatching Metal kernel {}, num_threadgroups={} "
+        "num_threads_per_group={}",
+        kernel_attribs_.name, tgs.num_threadgroups, tgs.num_threads_per_group);
     dispatch_threadgroups(encoder.get(), tgs.num_threadgroups,
                           tgs.num_threads_per_group);
     end_encoding(encoder.get());
@@ -302,7 +317,7 @@ class CompiledTaichiKernel {
       auto fn = writer.write(params.mtl_source_code);
       ActionRecorder::get_instance().record(
           "save_kernel",
-          {ActionArg("kernel_name", std::string(ti_kernel_attribs.name)),
+          {ActionArg("ti_kernel_name", std::string(ti_kernel_attribs.name)),
            ActionArg("filename", fn)});
     }
     for (const auto &ka : ti_kernel_attribs.mtl_kernels_attribs) {
@@ -342,7 +357,7 @@ class CompiledTaichiKernel {
       if (!ti_kernel_attribs.is_jit_evaluator) {
         ActionRecorder::get_instance().record(
             "allocate_context_buffer",
-            {ActionArg("kernel_name", std::string(ti_kernel_attribs.name)),
+            {ActionArg("ti_kernel_name", std::string(ti_kernel_attribs.name)),
              ActionArg("size_in_bytes", (int64)ctx_attribs.total_bytes())});
       }
       ctx_buffer =
@@ -394,7 +409,7 @@ class HostMetalCtxBlitter {
       if (!ti_kernel_attribs_->is_jit_evaluator) {
         ActionRecorder::get_instance().record(
             "context_host_to_metal",
-            {ActionArg("kernel_name", kernel_name_), ActionArg("arg_id", i),
+            {ActionArg("ti_kernel_name", kernel_name_), ActionArg("arg_id", i),
              ActionArg("offset_in_bytes", (int64)arg.offset_in_mem)});
       }
       if (arg.is_array) {
@@ -447,8 +462,9 @@ class HostMetalCtxBlitter {
           ActionRecorder::get_instance().record(
               "context_metal_to_host",
               {
-                  ActionArg("kernel_name", kernel_name_),
+                  ActionArg("ti_kernel_name", kernel_name_),
                   ActionArg("arg_id", i),
+                  ActionArg("arg_type", "ptr"),
                   ActionArg("size_in_bytes", (int64)arg.stride),
                   ActionArg("host_address",
                             fmt::format("0x{:x}", (uint64)host_ptr)),
@@ -713,6 +729,9 @@ class KernelManager::Impl {
         case SNodeType::pointer:
           rtm_meta->type = SNodeMeta::Pointer;
           break;
+        case SNodeType::bit_struct:
+          rtm_meta->type = SNodeMeta::BitStruct;
+          break;
         default:
           TI_ERROR("Unsupported SNode type={}",
                    snode_type_name(sn_meta.snode->type));
@@ -720,9 +739,9 @@ class KernelManager::Impl {
       }
       TI_DEBUG(
           "SnodeMeta\n  id={}\n  type={}\n  element_stride={}\n  "
-          "num_slots={}\n",
+          "num_slots={}\n  mem_offset_in_parent={}\n",
           i, snode_type_name(sn_meta.snode->type), rtm_meta->element_stride,
-          rtm_meta->num_slots);
+          rtm_meta->num_slots, rtm_meta->mem_offset_in_parent);
     }
     size_t addr_offset = sizeof(SNodeMeta) * max_snodes;
     addr += addr_offset;
@@ -786,6 +805,7 @@ class KernelManager::Impl {
         std::chrono::duration_cast<std::chrono::microseconds>(
             std::chrono::system_clock::now().time_since_epoch())
             .count());
+    const auto rand_seeds_begin = (addr - addr_begin);
     std::uniform_int_distribution<uint32_t> distr(
         0, std::numeric_limits<uint32_t>::max());
     for (int i = 0; i < kNumRandSeeds; ++i) {
@@ -793,9 +813,14 @@ class KernelManager::Impl {
       *s = distr(generator);
       addr += sizeof(uint32_t);
     }
-    TI_DEBUG("Initialized random seeds, size={} accumuated={}",
-             kNumRandSeeds * sizeof(uint32_t), (addr - addr_begin));
-
+    TI_DEBUG("Initialized random seeds, begin={} size={} accumuated={}",
+             rand_seeds_begin, kNumRandSeeds * sizeof(uint32_t),
+             (addr - addr_begin));
+    ActionRecorder::get_instance().record(
+        "initialize_runtime_buffer",
+        {
+            ActionArg("rand_seeds_begin", (int64)rand_seeds_begin),
+        });
     if (compiled_structs_.need_snode_lists_data) {
       auto *mem_alloc = reinterpret_cast<MemoryAllocator *>(addr);
       // Make sure the retured memory address is always greater than 1.
@@ -904,6 +929,8 @@ class KernelManager::Impl {
         const int32_t x = msg.pm_get_data(i);
         if (dt == MsgType::I32) {
           py_cout << x;
+        } else if (dt == MsgType::U32) {
+          py_cout << static_cast<uint32_t>(x);
         } else if (dt == MsgType::F32) {
           py_cout << *reinterpret_cast<const float *>(&x);
         } else if (dt == MsgType::Str) {

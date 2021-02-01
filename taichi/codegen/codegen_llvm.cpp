@@ -139,8 +139,8 @@ void CodeGenLLVM::visit(AllocaStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(RandStmt *stmt) {
-  llvm_val[stmt] =
-      create_call(fmt::format("rand_{}", data_type_short_name(stmt->ret_type)));
+  llvm_val[stmt] = create_call(
+      fmt::format("rand_{}", data_type_name(stmt->ret_type)), {get_context()});
 }
 
 void CodeGenLLVM::emit_extra_unary(UnaryOpStmt *stmt) {
@@ -238,7 +238,7 @@ void CodeGenLLVM::emit_struct_meta_base(const std::string &name,
   common.set("snode_id", tlctx->get_constant(snode->id));
   common.set("element_size", tlctx->get_constant((uint64)element_size));
   common.set("max_num_elements",
-             tlctx->get_constant(1 << snode->total_num_bits));
+             tlctx->get_constant(snode->max_num_elements()));
   common.set("context", get_context());
 
   /*
@@ -286,6 +286,28 @@ CodeGenLLVM::CodeGenLLVM(Kernel *kernel, IRNode *ir)
   kernel_name = kernel->name + "_kernel";
 }
 
+llvm::Value *CodeGenLLVM::cast_int(llvm::Value *input_val,
+                                   Type *from,
+                                   Type *to) {
+  if (from == to)
+    return input_val;
+  auto from_size = 0;
+  if (from->is<CustomIntType>()) {
+    from_size = data_type_size(from->cast<CustomIntType>()->get_compute_type());
+  } else {
+    from_size = data_type_size(from);
+  }
+  if (from_size < data_type_size(to)) {
+    if (is_signed(from)) {
+      return builder->CreateSExt(input_val, tlctx->get_data_type(to));
+    } else {
+      return builder->CreateZExt(input_val, tlctx->get_data_type(to));
+    }
+  } else {
+    return builder->CreateTrunc(input_val, tlctx->get_data_type(to));
+  }
+}
+
 void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
   auto input = llvm_val[stmt->operand];
   auto input_type = input->getType();
@@ -325,20 +347,7 @@ void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
     } else if (!is_real(from) && !is_real(to)) {
       // TODO: implement casting into custom integer type
       TI_ASSERT(!to->is<CustomIntType>());
-      auto from_size = 0;
-      if (from->is<CustomIntType>()) {
-        // TODO: replace 32 with a customizable type
-        from_size = 32;
-      } else {
-        from_size = data_type_size(from);
-      }
-      if (from_size < data_type_size(to)) {
-        llvm_val[stmt] = builder->CreateSExt(
-            llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
-      } else {
-        llvm_val[stmt] = builder->CreateTrunc(
-            llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
-      }
+      llvm_val[stmt] = cast_int(llvm_val[stmt->operand], from, to);
     }
   } else if (stmt->op_type == UnaryOpType::cast_bits) {
     TI_ASSERT(data_type_size(stmt->ret_type) ==
@@ -395,9 +404,9 @@ void CodeGenLLVM::visit(BinaryOpStmt *stmt) {
     }
   } else if (op == BinaryOpType::floordiv) {
     if (is_integral(ret_type))
-      llvm_val[stmt] = create_call(
-          fmt::format("floordiv_{}", data_type_short_name(ret_type)),
-          {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
+      llvm_val[stmt] =
+          create_call(fmt::format("floordiv_{}", data_type_name(ret_type)),
+                      {llvm_val[stmt->lhs], llvm_val[stmt->rhs]});
     else {
       auto div = builder->CreateFDiv(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
       llvm_val[stmt] = builder->CreateIntrinsic(
@@ -618,6 +627,10 @@ llvm::Type *CodeGenLLVM::llvm_type(DataType dt) {
   return nullptr;
 }
 
+llvm::Type *CodeGenLLVM::llvm_ptr_type(DataType dt) {
+  return llvm::PointerType::get(llvm_type(dt), 0);
+}
+
 void CodeGenLLVM::visit(TernaryOpStmt *stmt) {
   TI_ASSERT(stmt->op_type == TernaryOpType::select);
   llvm_val[stmt] = builder->CreateSelect(
@@ -652,7 +665,10 @@ void CodeGenLLVM::visit(IfStmt *if_stmt) {
 llvm::Value *CodeGenLLVM::create_print(std::string tag,
                                        DataType dt,
                                        llvm::Value *value) {
-  TI_ASSERT(arch_use_host_memory(kernel->arch));
+  if (!arch_is_cpu(kernel->arch)) {
+    TI_WARN("print not supported on arch {}", arch_name(kernel->arch));
+    return nullptr;
+  }
   std::vector<llvm::Value *> args;
   std::string format = data_type_format(dt);
   auto runtime_printf = call("LLVMRuntime_get_host_printf", get_runtime());
@@ -664,6 +680,21 @@ llvm::Value *CodeGenLLVM::create_print(std::string tag,
         builder->CreateFPExt(value, tlctx->get_data_type(PrimitiveType::f64));
   args.push_back(value);
   return builder->CreateCall(runtime_printf, args);
+}
+
+llvm::Value *CodeGenLLVM::create_print(std::string tag, llvm::Value *value) {
+  if (value->getType() == llvm::Type::getFloatTy(*llvm_context))
+    return create_print(
+        tag,
+        TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::f32),
+        value);
+  else if (value->getType() == llvm::Type::getInt32Ty(*llvm_context))
+    return create_print(
+        tag,
+        TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32),
+        value);
+  else
+    TI_NOT_IMPLEMENTED
 }
 
 void CodeGenLLVM::visit(PrintStmt *stmt) {
@@ -887,7 +918,14 @@ void CodeGenLLVM::visit(ArgLoadStmt *stmt) {
     llvm_val[stmt] = builder->CreateIntToPtr(raw_arg, dest_ty);
   } else {
     TI_ASSERT(!stmt->ret_type->is<PointerType>());
-    dest_ty = tlctx->get_data_type(stmt->ret_type);
+    if (auto cit = stmt->ret_type->cast<CustomIntType>()) {
+      if (cit->get_is_signed())
+        dest_ty = tlctx->get_data_type(PrimitiveType::i32);
+      else
+        dest_ty = tlctx->get_data_type(PrimitiveType::u32);
+    } else {
+      dest_ty = tlctx->get_data_type(stmt->ret_type);
+    }
     auto dest_bits = dest_ty->getPrimitiveSizeInBits();
     auto truncated = builder->CreateTrunc(
         raw_arg, llvm::Type::getIntNTy(*llvm_context, dest_bits));
@@ -899,8 +937,13 @@ void CodeGenLLVM::visit(KernelReturnStmt *stmt) {
   if (stmt->ret_type.is_pointer()) {
     TI_NOT_IMPLEMENTED
   } else {
-    auto intermediate_bits =
-        tlctx->get_data_type(stmt->value->ret_type)->getPrimitiveSizeInBits();
+    auto intermediate_bits = 0;
+    if (auto cit = stmt->value->ret_type->cast<CustomIntType>()) {
+      intermediate_bits = data_type_bits(cit->get_compute_type());
+    } else {
+      intermediate_bits =
+          tlctx->get_data_type(stmt->value->ret_type)->getPrimitiveSizeInBits();
+    }
     llvm::Type *intermediate_type =
         llvm::Type::getIntNTy(*llvm_context, intermediate_bits);
     llvm::Type *dest_ty = tlctx->get_data_type<int64>();
@@ -995,25 +1038,80 @@ void CodeGenLLVM::visit(SNodeOpStmt *stmt) {
   }
 }
 
+llvm::Value *CodeGenLLVM::atomic_add_custom_int(AtomicOpStmt *stmt,
+                                                CustomIntType *cit) {
+  auto [byte_ptr, bit_offset] = load_bit_pointer(llvm_val[stmt->dest]);
+  auto physical_type = cit->get_physical_type();
+  return create_call(
+      fmt::format("atomic_add_partial_bits_b{}", data_type_bits(physical_type)),
+      {builder->CreateBitCast(byte_ptr, llvm_ptr_type(physical_type)),
+       bit_offset, tlctx->get_constant(cit->get_num_bits()),
+       cast_int(llvm_val[stmt->val], stmt->val->ret_type, physical_type)});
+}
+
+llvm::Value *CodeGenLLVM::atomic_add_custom_float(AtomicOpStmt *stmt,
+                                                  CustomFloatType *cft) {
+  auto [byte_ptr, bit_offset] = load_bit_pointer(llvm_val[stmt->dest]);
+  auto cit = cft->get_digits_type()->as<CustomIntType>();
+  auto val_store = float_to_custom_int(cft, cit, llvm_val[stmt->val]);
+  auto physical_type = cit->get_physical_type();
+  val_store = builder->CreateSExt(val_store, llvm_type(physical_type));
+
+  return create_call(
+      fmt::format("atomic_add_partial_bits_b{}", data_type_bits(physical_type)),
+      {builder->CreateBitCast(byte_ptr, llvm_ptr_type(physical_type)),
+       bit_offset, tlctx->get_constant(cit->get_num_bits()), val_store});
+}
+
+llvm::Value *CodeGenLLVM::float_to_custom_int(CustomFloatType *cft,
+                                              CustomIntType *cit,
+                                              llvm::Value *real) {
+  llvm::Value *s = nullptr;
+
+  // Compute int(real * (1.0 / scale) + 0.5)
+  auto s_numeric = 1.0 / cft->get_scale();
+  auto compute_type = cft->get_compute_type();
+  s = builder->CreateFPCast(
+      llvm::ConstantFP::get(*llvm_context, llvm::APFloat(s_numeric)),
+      llvm_type(compute_type));
+  auto input_real = builder->CreateFPCast(real, llvm_type(compute_type));
+  auto scaled = builder->CreateFMul(input_real, s);
+
+  // Add/minus the 0.5 offset for rounding
+  scaled = create_call(
+      fmt::format("rounding_prepare_f{}", data_type_bits(compute_type)),
+      {scaled});
+
+  if (cit->get_is_signed()) {
+    return builder->CreateFPToSI(scaled, llvm_type(cit->get_compute_type()));
+  } else {
+    return builder->CreateFPToUI(scaled, llvm_type(cit->get_compute_type()));
+  }
+}
+
 void CodeGenLLVM::visit(AtomicOpStmt *stmt) {
   // auto mask = stmt->parent->mask();
   // TODO: deal with mask when vectorized
+  // TODO(type): support all AtomicOpTypes on custom types
   TI_ASSERT(stmt->width() == 1);
   for (int l = 0; l < stmt->width(); l++) {
     llvm::Value *old_value;
     if (stmt->op_type == AtomicOpType::add) {
-      if (is_integral(stmt->val->ret_type)) {
+      auto dst_type =
+          stmt->dest->ret_type->as<PointerType>()->get_pointee_type();
+      if (dst_type->is<PrimitiveType>() && is_integral(stmt->val->ret_type)) {
         old_value = builder->CreateAtomicRMW(
             llvm::AtomicRMWInst::BinOp::Add, llvm_val[stmt->dest],
             llvm_val[stmt->val], llvm::AtomicOrdering::SequentiallyConsistent);
-      } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f32)) {
-        old_value =
-            builder->CreateCall(get_runtime_function("atomic_add_f32"),
-                                {llvm_val[stmt->dest], llvm_val[stmt->val]});
-      } else if (stmt->val->ret_type->is_primitive(PrimitiveTypeID::f64)) {
-        old_value =
-            builder->CreateCall(get_runtime_function("atomic_add_f64"),
-                                {llvm_val[stmt->dest], llvm_val[stmt->val]});
+      } else if (!dst_type->is<CustomFloatType>() &&
+                 is_real(stmt->val->ret_type)) {
+        old_value = builder->CreateAtomicRMW(
+            llvm::AtomicRMWInst::BinOp::FAdd, llvm_val[stmt->dest],
+            llvm_val[stmt->val], llvm::AtomicOrdering::SequentiallyConsistent);
+      } else if (auto cit = dst_type->cast<CustomIntType>()) {
+        old_value = atomic_add_custom_int(stmt, cit);
+      } else if (auto cft = dst_type->cast<CustomFloatType>()) {
+        old_value = atomic_add_custom_float(stmt, cft);
       } else {
         TI_NOT_IMPLEMENTED
       }
@@ -1084,48 +1182,555 @@ void CodeGenLLVM::visit(GlobalPtrStmt *stmt) {
   TI_ERROR("Global Ptrs should have been lowered.");
 }
 
+void CodeGenLLVM::store_custom_int(llvm::Value *bit_ptr,
+                                   CustomIntType *cit,
+                                   llvm::Value *value) {
+  auto [byte_ptr, bit_offset] = load_bit_pointer(bit_ptr);
+  store_custom_int(byte_ptr, bit_offset, cit, value);
+}
+
+void CodeGenLLVM::store_custom_int(llvm::Value *byte_ptr,
+                                   llvm::Value *bit_offset,
+                                   CustomIntType *cit,
+                                   llvm::Value *value) {
+  // TODO(type): CUDA only supports atomicCAS on 32- and 64-bit integers.
+  // Try to support CustomInt/FloatType with 8/16-bit physical
+  // types.
+  create_call(fmt::format("set_partial_bits_b{}",
+                          data_type_bits(cit->get_physical_type())),
+              {builder->CreateBitCast(byte_ptr,
+                                      llvm_ptr_type(cit->get_physical_type())),
+               bit_offset, tlctx->get_constant(cit->get_num_bits()),
+               builder->CreateIntCast(
+                   value, llvm_type(cit->get_physical_type()), false)});
+}
+
+llvm::Value *CodeGenLLVM::get_exponent_offset(llvm::Value *exponent,
+                                              CustomFloatType *cft) {
+  // Since we have fewer bits in the exponent type than in f32, an
+  // offset is necessary to make sure the stored exponent values are
+  // representable by the exponent custom int type.
+  auto cond = builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_NE, exponent,
+                                  tlctx->get_constant(0));
+  return builder->CreateSelect(
+      cond, tlctx->get_constant(cft->get_exponent_conversion_offset()),
+      tlctx->get_constant(0));
+}
+
 void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
   TI_ASSERT(!stmt->parent->mask() || stmt->width() == 1);
   TI_ASSERT(llvm_val[stmt->data]);
   TI_ASSERT(llvm_val[stmt->ptr]);
-  if (auto cit = stmt->ptr->ret_type.ptr_removed()->cast<CustomIntType>()) {
-    llvm::Value *byte_ptr = nullptr, *bit_offset = nullptr;
-    read_bit_pointer(llvm_val[stmt->ptr], byte_ptr, bit_offset);
-    builder->CreateCall(
-        get_runtime_function("set_partial_bits_b32"),
-        {builder->CreateBitCast(byte_ptr,
-                                llvm::Type::getInt32PtrTy(*llvm_context)),
-         bit_offset, tlctx->get_constant(cit->get_num_bits()),
-         llvm_val[stmt->data]});
+  auto ptr_type = stmt->ptr->ret_type->as<PointerType>();
+  if (ptr_type->is_bit_pointer()) {
+    auto pointee_type = ptr_type->get_pointee_type();
+    llvm::Value *store_value = nullptr;
+    CustomIntType *cit = nullptr;
+    if (auto cit_ = pointee_type->cast<CustomIntType>()) {
+      cit = cit_;
+      store_value = llvm_val[stmt->data];
+    } else if (auto cft = pointee_type->cast<CustomFloatType>()) {
+      llvm::Value *digit_bits = nullptr;
+      auto digits_cit = cft->get_digits_type()->as<CustomIntType>();
+      if (auto exp = cft->get_exponent_type()) {
+        // Extract exponent and digits from compute type (assumed to be f32 for
+        // now).
+        TI_ASSERT(cft->get_compute_type()->is_primitive(PrimitiveTypeID::f32));
+
+        // f32 = 1 sign bit + 8 exponent bits + 23 fraction bits
+
+        auto f32_bits = builder->CreateBitCast(
+            llvm_val[stmt->data], llvm::Type::getInt32Ty(*llvm_context));
+        // Rounding to nearest here. Note that if the digits overflows then the
+        // carry-on will contribute to the exponent, which is desired.
+        if (cft->get_digit_bits() < 23) {
+          f32_bits = builder->CreateAdd(
+              f32_bits, tlctx->get_constant(1 << (22 - cft->get_digit_bits())));
+        }
+
+        auto exponent_bits = builder->CreateAShr(f32_bits, 23);
+        exponent_bits = builder->CreateAnd(exponent_bits,
+                                           tlctx->get_constant((1 << 8) - 1));
+        auto value_bits = builder->CreateAShr(
+            f32_bits, tlctx->get_constant(23 - cft->get_digit_bits()));
+
+        digit_bits = builder->CreateAnd(
+            value_bits,
+            tlctx->get_constant((1 << (cft->get_digit_bits())) - 1));
+
+        if (cft->get_is_signed()) {
+          // extract the sign bit
+          auto sign_bit =
+              builder->CreateAnd(f32_bits, tlctx->get_constant(0x80000000u));
+          // insert the sign bit to digit bits
+          digit_bits = builder->CreateOr(
+              digit_bits,
+              builder->CreateLShr(sign_bit, 31 - cft->get_digit_bits()));
+        }
+
+        auto exponent_cit = exp->as<CustomIntType>();
+
+        auto digits_snode = stmt->ptr->as<GetChStmt>()->output_snode;
+        auto exponent_snode = digits_snode->exp_snode;
+
+        auto exponent_offset = get_exponent_offset(exponent_bits, cft);
+        exponent_bits = builder->CreateSub(exponent_bits, exponent_offset);
+        exponent_bits =
+            create_call("max_i32", {exponent_bits, tlctx->get_constant(0)});
+
+        // Compute the bit pointer of the exponent bits.
+        TI_ASSERT(digits_snode->parent == exponent_snode->parent);
+        auto exponent_bit_ptr =
+            offset_bit_ptr(llvm_val[stmt->ptr], exponent_snode->bit_offset -
+                                                    digits_snode->bit_offset);
+        store_custom_int(exponent_bit_ptr, exponent_cit, exponent_bits);
+        store_value = digit_bits;
+
+        // Here we implement flush to zero (FTZ): if exponent is zero, we force
+        // the digits to be zero.
+        // TODO: it seems that this can be more efficiently implemented using a
+        // bit_and.
+        auto exp_non_zero =
+            builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_NE,
+                                exponent_bits, tlctx->get_constant(0));
+        store_value = builder->CreateSelect(exp_non_zero, store_value,
+                                            tlctx->get_constant(0));
+      } else {
+        digit_bits = llvm_val[stmt->data];
+        store_value = float_to_custom_int(cft, digits_cit, digit_bits);
+      }
+      cit = digits_cit;
+    } else {
+      TI_NOT_IMPLEMENTED
+    }
+    store_custom_int(llvm_val[stmt->ptr], cit, store_value);
   } else {
     builder->CreateStore(llvm_val[stmt->data], llvm_val[stmt->ptr]);
+  }
+}
+
+llvm::Value *CodeGenLLVM::custom_type_to_bits(llvm::Value *val,
+                                              Type *input_type,
+                                              Type *output_type) {
+  CustomIntType *cit = nullptr;
+  if (auto cft = input_type->cast<CustomFloatType>()) {
+    TI_ASSERT(cft->get_exponent_type() == nullptr);
+    cit = cft->get_digits_type()->as<CustomIntType>();
+    val = float_to_custom_int(cft, cit, val);
+  } else {
+    cit = input_type->as<CustomIntType>();
+  }
+  if (cit->get_num_bits() < val->getType()->getIntegerBitWidth()) {
+    val = builder->CreateAnd(
+        val, tlctx->get_constant(cit->get_compute_type(),
+                                 uint64((1ULL << cit->get_num_bits()) - 1)));
+  }
+  val = builder->CreateZExt(val, llvm_type(output_type));
+  return val;
+}
+
+void CodeGenLLVM::visit(BitStructStoreStmt *stmt) {
+  auto bit_struct_snode = stmt->get_bit_struct_snode();
+  auto bit_struct_physical_type =
+      bit_struct_snode->dt->as<BitStructType>()->get_physical_type();
+
+  bool has_shared_exponent = false;
+  for (auto ch_id : stmt->ch_ids) {
+    if (bit_struct_snode->ch[ch_id]->owns_shared_exponent) {
+      has_shared_exponent = true;
+    }
+  }
+
+  if (has_shared_exponent) {
+    store_floats_with_shared_exponents(stmt);
+    return;
+  }
+
+  if (stmt->ch_ids.size() == bit_struct_snode->ch.size()) {
+    // Store all the components
+    llvm::Value *bit_struct_val = nullptr;
+    for (int i = 0; i < stmt->ch_ids.size(); i++) {
+      auto ch_id = stmt->ch_ids[i];
+      auto val = llvm_val[stmt->values[i]];
+      auto &ch = bit_struct_snode->ch[ch_id];
+      auto dtype = ch->dt;
+      val = custom_type_to_bits(val, dtype, bit_struct_physical_type);
+      val = builder->CreateShl(val, bit_struct_snode->ch[ch_id]->bit_offset);
+      if (bit_struct_val == nullptr) {
+        bit_struct_val = val;
+      } else {
+        bit_struct_val = builder->CreateOr(bit_struct_val, val);
+      }
+    }
+    builder->CreateStore(bit_struct_val, llvm_val[stmt->ptr]);
+  } else {
+    // TODO: create a mask and use a single atomicCAS
+    for (int i = 0; i < stmt->ch_ids.size(); i++) {
+      auto ch_id = stmt->ch_ids[i];
+      auto val = stmt->values[i];
+      auto &ch = bit_struct_snode->ch[ch_id];
+      auto dtype = ch->dt;
+      CustomIntType *cit = nullptr;
+      if (auto cft = dtype->cast<CustomFloatType>()) {
+        TI_ASSERT(cft->get_exponent_type() == nullptr);
+        cit = cft->get_digits_type()->as<CustomIntType>();
+      } else {
+        cit = dtype->as<CustomIntType>();
+      }
+      store_custom_int(
+          llvm_val[stmt->ptr], tlctx->get_constant(ch->bit_offset), cit,
+          custom_type_to_bits(llvm_val[val], dtype, bit_struct_physical_type));
+    }
+  }
+}
+
+void CodeGenLLVM::store_floats_with_shared_exponents(BitStructStoreStmt *stmt) {
+  // handle each exponent separately
+  auto snode = stmt->get_bit_struct_snode();
+  auto local_bit_struct = builder->CreateLoad(llvm_val[stmt->ptr]);
+  for (int i = 0; i < (int)snode->ch.size(); i++) {
+    if (snode->ch[i]->exponent_users.empty())
+      continue;
+    // ch[i] must be an exponent SNode
+    auto &exp = snode->ch[i];
+    // load all floats
+    std::vector<llvm::Value *> floats;
+    // std::vector<llvm::Value *> float_bits;
+    for (auto &user : exp->exponent_users) {
+      auto ch_id = snode->child_id(user);
+      if (auto input =
+              std::find(stmt->ch_ids.begin(), stmt->ch_ids.end(), ch_id);
+          input != stmt->ch_ids.end()) {
+        floats.push_back(llvm_val[stmt->values[input - stmt->ch_ids.begin()]]);
+      } else {
+        floats.push_back(
+            reconstruct_float_from_bit_struct(local_bit_struct, user));
+      }
+    }
+    // convert to i32 for bit operations
+    llvm::Value *max_exp_bits = nullptr;
+    for (auto f : floats) {
+      // TODO: we only support f32 here.
+      auto exp_bits = extract_exponent_from_float(f);
+      if (max_exp_bits) {
+        max_exp_bits = create_call("max_u32", {max_exp_bits, exp_bits});
+      } else {
+        max_exp_bits = exp_bits;
+      }
+    }
+
+    auto first_cft = exp->exponent_users[0]->dt->as<CustomFloatType>();
+    auto exponent_offset = get_exponent_offset(max_exp_bits, first_cft);
+
+    auto max_exp_bits_to_store =
+        builder->CreateSub(max_exp_bits, exponent_offset);
+
+    max_exp_bits_to_store =
+        create_call("max_i32", {max_exp_bits_to_store, tlctx->get_constant(0)});
+
+    // TODO: fusion
+    store_custom_int(llvm_val[stmt->ptr], tlctx->get_constant(exp->bit_offset),
+                     exp->dt->as<CustomIntType>(), max_exp_bits_to_store);
+
+    for (int c = 0; c < (int)exp->exponent_users.size(); c++) {
+      auto user = exp->exponent_users[c];
+      auto ch_id = snode->child_id(user);
+      auto digits =
+          get_float_digits_with_shared_exponents(floats[c], max_exp_bits);
+      auto digits_snode = snode->ch[ch_id].get();
+      auto cft = digits_snode->dt->as<CustomFloatType>();
+      auto digits_bit_offset = digits_snode->bit_offset;
+
+      auto right_shift_bits = 24 + cft->get_is_signed() - cft->get_digit_bits();
+
+      // round to nearest
+      digits = builder->CreateAdd(
+          digits, tlctx->get_constant(1 << (right_shift_bits - 1)));
+      // do not allow overflowing
+      digits =
+          create_call("min_u32", {digits, tlctx->get_constant((1u << 24) - 1)});
+
+      // Compress f32 digits to cft digits.
+      // Note that we need to keep the leading 1 bit so 24 instead of 23 in the
+      // following code.
+      digits = builder->CreateLShr(digits, right_shift_bits);
+      if (cft->get_is_signed()) {
+        auto float_bits = builder->CreateBitCast(
+            floats[c], llvm::Type::getInt32Ty(*llvm_context));
+        auto sign_bit = builder->CreateAnd(float_bits, 1 << 31);
+        sign_bit = builder->CreateLShr(sign_bit, 31 - cft->get_digit_bits());
+        digits = builder->CreateOr(digits, sign_bit);
+      }
+      store_custom_int(llvm_val[stmt->ptr],
+                       tlctx->get_constant(digits_bit_offset),
+                       cft->get_digits_type()->as<CustomIntType>(), digits);
+    }
+  }
+}
+
+llvm::Value *CodeGenLLVM::extract_exponent_from_float(llvm::Value *f) {
+  TI_ASSERT(f->getType() == llvm::Type::getFloatTy(*llvm_context));
+  f = builder->CreateBitCast(f, llvm::Type::getInt32Ty(*llvm_context));
+  auto exp_bits = builder->CreateLShr(f, tlctx->get_constant(23));
+  return builder->CreateAnd(exp_bits, tlctx->get_constant((1 << 8) - 1));
+}
+
+llvm::Value *CodeGenLLVM::extract_digits_from_float(llvm::Value *f, bool full) {
+  TI_ASSERT(f->getType() == llvm::Type::getFloatTy(*llvm_context));
+  f = builder->CreateBitCast(f, llvm::Type::getInt32Ty(*llvm_context));
+  auto digits = builder->CreateAnd(f, tlctx->get_constant((1 << 23) - 1));
+  if (full) {
+    digits = builder->CreateOr(digits, tlctx->get_constant(1 << 23));
+  }
+  return digits;
+}
+
+llvm::Value *CodeGenLLVM::get_float_digits_with_shared_exponents(
+    llvm::Value *f,
+    llvm::Value *shared_exp) {
+  auto exp = extract_exponent_from_float(f);
+  auto exp_offset = builder->CreateSub(shared_exp, exp);
+  // TODO: handle negative digits
+
+  // There are two cases that may result in zero digits:
+  // - exp is zero. This means f itself is zero. Note that when processors
+  // running under FTZ (flush to zero), exp = 0 implies digits = 0.
+  // - exp is too small compared to shared_exp, or equivalently exp_offset is
+  // too large. This means we need to flush digits to zero.
+
+  // If exp is nonzero, insert an extra "1" bit that was originally implicit.
+  auto exp_non_zero = builder->CreateICmpNE(exp, tlctx->get_constant(0));
+  exp_non_zero =
+      builder->CreateZExt(exp_non_zero, llvm::Type::getInt32Ty(*llvm_context));
+  auto implicit_bit = builder->CreateShl(exp_non_zero, tlctx->get_constant(23));
+
+  auto digits = extract_digits_from_float(f, true);
+  digits = builder->CreateOr(digits, implicit_bit);
+  exp_offset = create_call("min_u32", {exp_offset, tlctx->get_constant(31)});
+  return builder->CreateLShr(digits, exp_offset);
+}
+
+llvm::Value *CodeGenLLVM::reconstruct_float_from_bit_struct(
+    llvm::Value *local_bit_struct,
+    SNode *digits_snode) {
+  auto cft = digits_snode->dt->as<CustomFloatType>();
+  auto exponent_type = cft->get_exponent_type()->as<CustomIntType>();
+  auto digits_type = cft->get_digits_type()->as<CustomIntType>();
+  auto digits = extract_custom_int(
+      local_bit_struct, tlctx->get_constant(digits_snode->bit_offset),
+      digits_type);
+  auto exponent = extract_custom_int(
+      local_bit_struct,
+      tlctx->get_constant(digits_snode->exp_snode->bit_offset), exponent_type);
+  return reconstruct_custom_float_with_exponent(
+      digits, exponent, cft, digits_snode->owns_shared_exponent);
+}
+
+llvm::Value *CodeGenLLVM::load_as_custom_int(llvm::Value *ptr,
+                                             Type *load_type) {
+  auto *cit = load_type->as<CustomIntType>();
+  auto [byte_ptr, bit_offset] = load_bit_pointer(ptr);
+
+  auto bit_level_container = builder->CreateLoad(builder->CreateBitCast(
+      byte_ptr, llvm_ptr_type(cit->get_physical_type())));
+
+  return extract_custom_int(bit_level_container, bit_offset, load_type);
+}
+
+llvm::Value *CodeGenLLVM::extract_custom_int(llvm::Value *physical_value,
+                                             llvm::Value *bit_offset,
+                                             Type *load_type) {
+  //  bit shifting
+  //    first left shift `physical_type - (offset + num_bits)`
+  //    then right shift `physical_type - num_bits`
+  auto cit = load_type->as<CustomIntType>();
+  auto bit_end =
+      builder->CreateAdd(bit_offset, tlctx->get_constant(cit->get_num_bits()));
+  auto left = builder->CreateSub(
+      tlctx->get_constant(data_type_bits(cit->get_physical_type())), bit_end);
+  auto right = builder->CreateSub(
+      tlctx->get_constant(data_type_bits(cit->get_physical_type())),
+      tlctx->get_constant(cit->get_num_bits()));
+  left = builder->CreateIntCast(left, physical_value->getType(), false);
+  right = builder->CreateIntCast(right, physical_value->getType(), false);
+  auto step1 = builder->CreateShl(physical_value, left);
+  llvm::Value *step2 = nullptr;
+
+  if (cit->get_is_signed())
+    step2 = builder->CreateAShr(step1, right);
+  else
+    step2 = builder->CreateLShr(step1, right);
+
+  return builder->CreateIntCast(step2, llvm_type(cit->get_compute_type()),
+                                cit->get_is_signed());
+}
+
+llvm::Value *CodeGenLLVM::reconstruct_custom_float(llvm::Value *digits,
+                                                   CustomFloatType *cft) {
+  // Compute float(digits) * scale
+  llvm::Value *cast = nullptr;
+  auto compute_type = cft->get_compute_type()->as<PrimitiveType>();
+  if (cft->get_digits_type()->cast<CustomIntType>()->get_is_signed()) {
+    cast = builder->CreateSIToFP(digits, llvm_type(compute_type));
+  } else {
+    cast = builder->CreateUIToFP(digits, llvm_type(compute_type));
+  }
+  llvm::Value *s =
+      llvm::ConstantFP::get(*llvm_context, llvm::APFloat(cft->get_scale()));
+  s = builder->CreateFPCast(s, llvm_type(compute_type));
+  return builder->CreateFMul(cast, s);
+}
+
+llvm::Value *CodeGenLLVM::load_custom_float_with_exponent(
+    llvm::Value *digits_bit_ptr,
+    llvm::Value *exponent_bit_ptr,
+    CustomFloatType *cft,
+    bool shared_exponent) {
+  // TODO: we ignore "scale" for CustomFloatType with exponent for now. May need
+  // to support this in the future.
+
+  TI_ASSERT(cft->get_scale() == 1);
+  auto digits = load_as_custom_int(digits_bit_ptr, cft->get_digits_type());
+
+  auto exponent_val = load_as_custom_int(
+      exponent_bit_ptr, cft->get_exponent_type()->as<CustomIntType>());
+  return reconstruct_custom_float_with_exponent(digits, exponent_val, cft,
+                                                shared_exponent);
+}
+
+llvm::Value *CodeGenLLVM::reconstruct_custom_float_with_exponent(
+    llvm::Value *input_digits,
+    llvm::Value *input_exponent_val,
+    CustomFloatType *cft,
+    bool shared_exponent) {
+  auto digits = input_digits;
+  auto exponent_val = input_exponent_val;
+  // Make sure the exponent is within the range of the exponent type
+  auto exponent_offset =
+      tlctx->get_constant(cft->get_exponent_conversion_offset());
+
+  // Note that zeros need special treatment, when truncated during store.
+  auto exponent_type = cft->get_exponent_type()->as<CustomIntType>();
+  if (exponent_type->get_num_bits() < 8) {
+    auto cond = builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_NE,
+                                    exponent_val, tlctx->get_constant(0));
+    exponent_offset =
+        builder->CreateSelect(cond, exponent_offset, tlctx->get_constant(0));
+  }
+
+  if (cft->get_compute_type()->is_primitive(PrimitiveTypeID::f32)) {
+    // Construct an f32 out of exponent_val and digits
+    // Assuming digits and exponent_val are i32
+    // f32 = 1 sign bit + 8 exponent bits + 23 fraction bits
+
+    digits = builder->CreateAnd(
+        digits,
+        (1u << cft->get_digits_type()->as<CustomIntType>()->get_num_bits()) -
+            1);
+
+    llvm::Value *sign_bit = nullptr;
+
+    if (shared_exponent) {
+      if (cft->get_is_signed()) {
+        sign_bit = builder->CreateAnd(
+            digits, tlctx->get_constant(1u << cft->get_digit_bits()));
+        digits = builder->CreateXor(digits, sign_bit);
+        sign_bit = builder->CreateShl(sign_bit, 31 - cft->get_digit_bits());
+        digits = builder->CreateShl(digits, 1);
+      }
+      // There is a leading 1 that marks the beginning of the digits.
+      // When not using shared exponents, the 1 bit is not needed (since digits
+      // always starts with 1).
+      // declare i32  @llvm.ctlz.i32 (i32  <src>, i1 <is_zero_undef>)
+      auto num_leading_zeros = builder->CreateIntrinsic(
+          llvm::Intrinsic::ctlz, {llvm::Type::getInt32Ty(*llvm_context)},
+          {digits, tlctx->get_constant(false)});
+      auto extra_shift = builder->CreateSub(
+          tlctx->get_constant(31 - cft->get_digit_bits()), num_leading_zeros);
+      exponent_offset = builder->CreateAdd(exponent_offset, extra_shift);
+      exponent_offset =
+          builder->CreateAdd(exponent_offset, tlctx->get_constant(1));
+      auto digits_shift = builder->CreateSub(
+          tlctx->get_constant(23 - cft->get_digit_bits()), extra_shift);
+      digits = builder->CreateShl(digits, digits_shift);
+    } else {
+      digits = builder->CreateShl(
+          digits, tlctx->get_constant(23 - cft->get_digit_bits()));
+    }
+    auto fraction_bits = builder->CreateAnd(digits, (1u << 23) - 1);
+
+    exponent_val = builder->CreateAdd(exponent_val, exponent_offset);
+
+    auto exponent_bits =
+        builder->CreateShl(exponent_val, tlctx->get_constant(23));
+
+    auto f32_bits = builder->CreateOr(exponent_bits, fraction_bits);
+
+    if (shared_exponent) {
+      // Handle zero exponent
+      auto zero_exponent =
+          builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_EQ,
+                              input_exponent_val, tlctx->get_constant(0));
+      auto zero_digits =
+          builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_EQ, input_digits,
+                              tlctx->get_constant(0));
+      auto zero_output = builder->CreateOr(zero_exponent, zero_digits);
+      f32_bits =
+          builder->CreateSelect(zero_output, tlctx->get_constant(0), f32_bits);
+    }
+
+    if (cft->get_is_signed()) {
+      if (!sign_bit) {
+        sign_bit = builder->CreateAnd(digits, tlctx->get_constant(1u << 23));
+        sign_bit = builder->CreateShl(sign_bit, tlctx->get_constant(31 - 23));
+      }
+      f32_bits = builder->CreateOr(f32_bits, sign_bit);
+    }
+
+    return builder->CreateBitCast(f32_bits,
+                                  llvm::Type::getFloatTy(*llvm_context));
+  } else {
+    TI_NOT_IMPLEMENTED;
+  }
+}
+
+llvm::Value *CodeGenLLVM::load_custom_float(Stmt *ptr_stmt) {
+  auto ptr = ptr_stmt->as<GetChStmt>();
+  auto cft = ptr->ret_type->as<PointerType>()
+                 ->get_pointee_type()
+                 ->as<CustomFloatType>();
+  if (cft->get_exponent_type()) {
+    TI_ASSERT(ptr->width() == 1);
+    auto digits_bit_ptr = llvm_val[ptr];
+    auto digits_snode = ptr->output_snode;
+    auto exponent_snode = digits_snode->exp_snode;
+    // Compute the bit pointer of the exponent bits.
+    TI_ASSERT(digits_snode->parent == exponent_snode->parent);
+    auto exponent_bit_ptr = offset_bit_ptr(
+        digits_bit_ptr, exponent_snode->bit_offset - digits_snode->bit_offset);
+    return load_custom_float_with_exponent(digits_bit_ptr, exponent_bit_ptr,
+                                           cft,
+                                           digits_snode->owns_shared_exponent);
+  } else {
+    auto digits = load_as_custom_int(llvm_val[ptr], cft->get_digits_type());
+    return reconstruct_custom_float(digits, cft);
   }
 }
 
 void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
   int width = stmt->width();
   TI_ASSERT(width == 1);
-  if (auto cit = stmt->ret_type->cast<CustomIntType>()) {
-    // 1. load bit pointer
-    llvm::Value *byte_ptr, *bit_offset;
-    read_bit_pointer(llvm_val[stmt->ptr], byte_ptr, bit_offset);
-    auto bit_level_container = builder->CreateLoad(builder->CreateBitCast(
-        byte_ptr, llvm::Type::getInt32PtrTy(*llvm_context)));
-    // 2. bit shifting
-    //    first left shift `32 - (offset + num_bits)`
-    //    then right shift `32 - num_bits`
-    auto bit_end = builder->CreateAdd(bit_offset,
-                                      tlctx->get_constant(cit->get_num_bits()));
-    auto left = builder->CreateSub(tlctx->get_constant(32), bit_end);
-    auto right = builder->CreateAdd(tlctx->get_constant(32),
-                                    tlctx->get_constant(-cit->get_num_bits()));
-    auto step1 = builder->CreateShl(bit_level_container, left);
-    llvm::Value *step2 = nullptr;
-    if (cit->get_is_signed())
-      step2 = builder->CreateAShr(step1, right);
-    else
-      step2 = builder->CreateLShr(step1, right);
-    llvm_val[stmt] = step2;
+  auto ptr_type = stmt->ptr->ret_type->as<PointerType>();
+  if (ptr_type->is_bit_pointer()) {
+    auto val_type = ptr_type->get_pointee_type();
+    if (val_type->is<CustomIntType>()) {
+      llvm_val[stmt] = load_as_custom_int(llvm_val[stmt->ptr], val_type);
+    } else if (auto cft = val_type->cast<CustomFloatType>()) {
+      TI_ASSERT(stmt->ptr->is<GetChStmt>());
+      llvm_val[stmt] = load_custom_float(stmt->ptr);
+    } else {
+      TI_NOT_IMPLEMENTED
+    }
   } else {
     llvm_val[stmt] = builder->CreateLoad(tlctx->get_data_type(stmt->ret_type),
                                          llvm_val[stmt->ptr]);
@@ -1165,6 +1770,8 @@ std::string CodeGenLLVM::get_runtime_snode_name(SNode *snode) {
     return "Bitmasked";
   } else if (snode->type == SNodeType::bit_struct) {
     return "BitStruct";
+  } else if (snode->type == SNodeType::bit_array) {
+    return "BitArray";
   } else {
     TI_P(snode_type_name(snode->type));
     TI_NOT_IMPLEMENTED
@@ -1216,20 +1823,48 @@ void CodeGenLLVM::visit(LinearizeStmt *stmt) {
   llvm_val[stmt] = val;
 }
 
-void CodeGenLLVM::visit(IntegerOffsetStmt *stmt) {
-  TI_NOT_IMPLEMENTED
-  /*
-  if (stmt->input->is<GetChStmt>() &&
-      stmt->input->as<GetChStmt>()->output_snode->type == SNodeType::place) {
-    auto input = stmt->input->as<GetChStmt>();
-    auto dtn = input->output_snode->data_type_name();
-    emit(R"({}* {}[1] {{({} *)((char *){}[0] + {})}};)", dtn, stmt->raw_name(),
-         dtn, stmt->input->raw_name(), stmt->offset);
-  } else {
-    emit(R"(auto {} = {} + {};)", stmt->raw_name(), stmt->input->raw_name(),
-         stmt->offset);
+void CodeGenLLVM::visit(IntegerOffsetStmt *stmt){TI_NOT_IMPLEMENTED}
+
+llvm::Value *CodeGenLLVM::create_bit_ptr_struct(llvm::Value *byte_ptr_base,
+                                                llvm::Value *bit_offset) {
+  // 1. get the bit pointer LLVM struct
+  // struct bit_pointer {
+  //    i8* byte_ptr;
+  //    i32 offset;
+  // };
+  auto struct_type = llvm::StructType::get(
+      *llvm_context, {llvm::Type::getInt8PtrTy(*llvm_context),
+                      llvm::Type::getInt32Ty(*llvm_context),
+                      llvm::Type::getInt32Ty(*llvm_context)});
+  // 2. allocate the bit pointer struct
+  auto bit_ptr_struct = create_entry_block_alloca(struct_type);
+  // 3. store `byte_ptr_base` into `bit_ptr_struct` (if provided)
+  if (byte_ptr_base) {
+    auto byte_ptr = builder->CreateBitCast(
+        byte_ptr_base, llvm::PointerType::getInt8PtrTy(*llvm_context));
+    builder->CreateStore(
+        byte_ptr, builder->CreateGEP(bit_ptr_struct, {tlctx->get_constant(0),
+                                                      tlctx->get_constant(0)}));
   }
-  */
+  // 4. store `offset` in `bit_ptr_struct` (if provided)
+  if (bit_offset) {
+    builder->CreateStore(
+        bit_offset,
+        builder->CreateGEP(bit_ptr_struct,
+                           {tlctx->get_constant(0), tlctx->get_constant(1)}));
+  }
+  return bit_ptr_struct;
+}
+
+llvm::Value *CodeGenLLVM::offset_bit_ptr(llvm::Value *input_bit_ptr,
+                                         int bit_offset_delta) {
+  auto byte_ptr_base = builder->CreateLoad(builder->CreateGEP(
+      input_bit_ptr, {tlctx->get_constant(0), tlctx->get_constant(0)}));
+  auto input_offset = builder->CreateLoad(builder->CreateGEP(
+      input_bit_ptr, {tlctx->get_constant(0), tlctx->get_constant(1)}));
+  auto new_bit_offset =
+      builder->CreateAdd(input_offset, tlctx->get_constant(bit_offset_delta));
+  return create_bit_ptr_struct(byte_ptr_base, new_bit_offset);
 }
 
 void CodeGenLLVM::visit(SNodeLookupStmt *stmt) {
@@ -1251,6 +1886,12 @@ void CodeGenLLVM::visit(SNodeLookupStmt *stmt) {
                           {llvm_val[stmt->input_index]});
   } else if (snode->type == SNodeType::bit_struct) {
     llvm_val[stmt] = parent;
+  } else if (snode->type == SNodeType::bit_array) {
+    auto element_num_bits =
+        snode->dt->as<BitArrayType>()->get_element_num_bits();
+    auto offset = tlctx->get_constant(element_num_bits);
+    offset = builder->CreateMul(offset, llvm_val[stmt->input_index]);
+    llvm_val[stmt] = create_bit_ptr_struct(llvm_val[stmt->input_snode], offset);
   } else {
     TI_INFO(snode_type_name(snode->type));
     TI_NOT_IMPLEMENTED
@@ -1258,35 +1899,14 @@ void CodeGenLLVM::visit(SNodeLookupStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(GetChStmt *stmt) {
-  if (stmt->output_snode->is_bit_level) {
-    // 1. create bit pointer struct
-    // struct bit_pointer {
-    //    i8* byte_ptr;
-    //    i32 offset;
-    // };
-    auto struct_type = llvm::StructType::get(
-        *llvm_context, {llvm::Type::getInt8PtrTy(*llvm_context),
-                        llvm::Type::getInt32Ty(*llvm_context)});
-    // 2. alloca the bit pointer struct
-    auto bit_ptr_struct = create_entry_block_alloca(struct_type);
-
-    // 3. store `input_ptr` into `bit_ptr_struct`
-    auto byte_ptr =
-        builder->CreateBitCast(llvm_val[stmt->input_ptr],
-                               llvm::PointerType::getInt8PtrTy(*llvm_context));
-
-    builder->CreateStore(
-        byte_ptr, builder->CreateGEP(bit_ptr_struct, {tlctx->get_constant(0),
-                                                      tlctx->get_constant(0)}));
-    // 4. store `offset` in `bit_ptr_struct`
-    auto bit_struct = stmt->input_snode->dt.get_ptr()->cast<BitStructType>();
-    auto offset = bit_struct->get_member_bit_offset(
+  if (stmt->input_snode->type == SNodeType::bit_array) {
+    llvm_val[stmt] = llvm_val[stmt->input_ptr];
+  } else if (stmt->ret_type->as<PointerType>()->is_bit_pointer()) {
+    auto bit_struct = stmt->input_snode->dt->cast<BitStructType>();
+    auto bit_offset = bit_struct->get_member_bit_offset(
         stmt->input_snode->child_id(stmt->output_snode));
-    builder->CreateStore(
-        tlctx->get_constant(offset),
-        builder->CreateGEP(bit_ptr_struct,
-                           {tlctx->get_constant(0), tlctx->get_constant(1)}));
-    llvm_val[stmt] = bit_ptr_struct;
+    auto offset = tlctx->get_constant(bit_offset);
+    llvm_val[stmt] = create_bit_ptr_struct(llvm_val[stmt->input_ptr], offset);
   } else {
     auto ch = create_call(stmt->output_snode->get_ch_from_parent_func_name(),
                           {builder->CreateBitCast(
@@ -1420,6 +2040,20 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
 
   llvm::Function *body = nullptr;
   auto leaf_block = stmt->snode;
+
+  // When looping over bit_arrays, we always vectorize and generate struct for
+  // on their parent node (usually "dense") instead of itself for higher
+  // performance. Also, note that the loop must be bit_vectorized for
+  // bit_arrays, and their parent must be "dense".
+  if (leaf_block->type == SNodeType::bit_array) {
+    if (leaf_block->parent->type == SNodeType::dense) {
+      leaf_block = leaf_block->parent;
+    } else {
+      TI_ERROR(
+          "Struct-for looping through bit array but its parent is not dense")
+    }
+  }
+
   {
     // Create the loop body function
     auto guard = get_function_creation_guard({
@@ -1545,6 +2179,14 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     //    voxels
     auto exec_cond = tlctx->get_constant(true);
     auto snode = stmt->snode;
+    if (snode->type == SNodeType::bit_array && snode->parent) {
+      if (snode->parent->type == SNodeType::dense) {
+        snode = snode->parent;
+      } else {
+        TI_ERROR(
+            "Struct-for looping through bit array but its parent is not dense");
+      }
+    }
 
     auto coord_object = RuntimeObject("PhysicalCoordinates", this,
                                       builder.get(), new_coordinates);
@@ -1606,8 +2248,8 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     }
   }
 
-  int list_element_size =
-      std::min(leaf_block->max_num_elements(), taichi_listgen_max_element_size);
+  int list_element_size = std::min(leaf_block->max_num_elements(),
+                                   (int64)taichi_listgen_max_element_size);
   int num_splits = std::max(1, list_element_size / stmt->block_dim);
 
   auto struct_for_func = get_runtime_function("parallel_struct_for");
@@ -1697,8 +2339,8 @@ void CodeGenLLVM::visit(BlockCornerIndexStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(BlockDimStmt *stmt) {
-  TI_NOT_IMPLEMENTED  // No need for this statement for now. Untested so mark it
-                      // as a loud failure.
+  TI_NOT_IMPLEMENTED  // No need for this statement for now. Untested so mark
+                      // it as a loud failure.
       llvm_val[stmt] = create_call("block_dim", {});
 }
 

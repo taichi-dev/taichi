@@ -154,10 +154,16 @@ def interpolate_frames(frame_dir, mul=4):
         cv2.imwrite('interpolated/{:05d}.png'.format(i), img * 255.0)
 
 
+def ffmpeg_common_args(frame_rate, input, width, height, crf, output_path):
+    return f"{get_ffmpeg_path()} -y -loglevel panic -framerate {frame_rate} -i {input} -s:v {width}x{height} " + \
+                         f"-c:v libx264 -profile:v high -crf {crf} -pix_fmt yuv420p {output_path}"
+
+
 def make_video(input_files,
                width=0,
                height=0,
                frame_rate=24,
+               crf=20,
                output_path='video.mp4'):
     if isinstance(input_files, list):
         from PIL import Image
@@ -174,19 +180,19 @@ def make_video(input_files,
             height -= 1
         for i, inp in enumerate(input_files):
             shutil.copy(inp, os.path.join(tmp_dir, '%06d.png' % i))
-        command = (get_ffmpeg_path() + " -y -loglevel panic -framerate %d -i " % frame_rate) + tmp_dir + "/%06d.png" + \
-                  " -s:v " + str(width) + 'x' + str(height) + \
-                  " -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p " + output_path
-        os.system(command)
+        inputs = f'{tmp_dir}/%06d.png'
+        command = ffmpeg_common_args(frame_rate, inputs, width, height, crf,
+                                     output_path)
+        ret = os.system(command)
+        assert ret == 0, "ffmpeg failed to generate video file."
         for i in range(len(input_files)):
             os.remove(os.path.join(tmp_dir, '%06d.png' % i))
         os.rmdir(tmp_dir)
     elif isinstance(input_files, str):
         assert width != 0 and height != 0
-        command = (get_ffmpeg_path() + " -loglevel panic -framerate %d -i " % frame_rate) + input_files + \
-                  " -s:v " + str(width) + 'x' + str(height) + \
-                  " -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p " + output_path
-        os.system(command)
+        command = ffmpeg_common_args(frame_rate, input_files, width, height,
+                                     crf, output_path)
+        ret = os.system(command)
+        assert ret == 0, "ffmpeg failed to generate video file."
     else:
-        assert 'input_files should be list (of files) or str (of file template, like "%04d.png") instead of ' + \
-               str(type(input_files))
+        assert False, f'input_files should be list (of files) or str (of file template, e.g., "%04d.png") instead of {type(input_files)}'

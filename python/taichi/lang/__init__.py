@@ -3,6 +3,7 @@ from .util import deprecated
 from .matrix import Matrix, Vector
 from .transformer import TaichiSyntaxError
 from .ndrange import ndrange, GroupedNDRange
+from . import type_factory
 from copy import deepcopy as _deepcopy
 import functools
 import os
@@ -32,7 +33,6 @@ normalized = deprecated('ti.normalized(a)',
                         'a.normalized()')(Matrix.normalized)
 
 cfg = default_cfg()
-current_cfg = current_cfg()
 x86_64 = core.x64
 x64 = core.x64
 arm64 = core.arm64
@@ -48,8 +48,12 @@ kernel_profiler_clear = lambda: get_runtime().prog.kernel_profiler_clear()
 kernel_profiler_total_time = lambda: get_runtime(
 ).prog.kernel_profiler_total_time()
 
-# Unstable API
+# Legacy API
 type_factory_ = core.get_type_factory_instance()
+
+# Unstable API
+quant = type_factory.Quant
+type_factory = type_factory.TypeFactory()
 
 
 def memory_profiler_print():
@@ -219,11 +223,16 @@ def no_activate(*args):
         taichi_lang_core.no_activate(v.snode.ptr)
 
 
-def cache_shared(*args):
+def block_local(*args):
     for a in args:
         for v in a.get_field_members():
             taichi_lang_core.insert_snode_access_flag(
                 taichi_lang_core.SNodeAccessFlag.block_local, v.ptr)
+
+
+@deprecated('ti.cache_shared', 'ti.block_local')
+def cache_shared(*args):
+    block_local(*args)
 
 
 def cache_read_only(*args):
@@ -246,6 +255,7 @@ def loop_unique(val):
 parallelize = core.parallelize
 serialize = lambda: parallelize(1)
 vectorize = core.vectorize
+bit_vectorize = core.bit_vectorize
 block_dim = core.block_dim
 
 inversed = deprecated('ti.inversed(a)', 'a.inverse()')(Matrix.inversed)
@@ -788,6 +798,10 @@ def complex_kernel_grad(primal):
 
 def sync():
     get_runtime().sync()
+
+
+def async_flush():
+    get_runtime().prog.async_flush()
 
 
 __all__ = [s for s in dir() if not s.startswith('_')]

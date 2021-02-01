@@ -33,9 +33,10 @@ IRBuilder &current_ast_builder() {
 
 void DecoratorRecorder::reset() {
   vectorize = -1;
+  bit_vectorize = -1;
   parallelize = 0;
   uniform = false;
-  scratch_opt.clear();
+  mem_access_opt.clear();
   block_dim = 0;
   strictly_serialized = false;
 }
@@ -139,6 +140,16 @@ int StmtFieldSNode::get_snode_id(SNode *snode) {
 bool StmtFieldSNode::equal(const StmtField *other_generic) const {
   if (auto other = dynamic_cast<const StmtFieldSNode *>(other_generic)) {
     return get_snode_id(snode) == get_snode_id(other->snode);
+  } else {
+    // Different types
+    return false;
+  }
+}
+
+bool StmtFieldMemoryAccessOptions::equal(const StmtField *other_generic) const {
+  if (auto other =
+          dynamic_cast<const StmtFieldMemoryAccessOptions *>(other_generic)) {
+    return opt_.get_all() == other->opt_.get_all();
   } else {
     // Different types
     return false;
@@ -560,9 +571,11 @@ void DelayedIRModifier::replace_with(Stmt *stmt,
 }
 
 bool DelayedIRModifier::modify_ir() {
+  bool force_modified = modified_;
+  modified_ = false;
   if (to_insert_before.empty() && to_insert_after.empty() && to_erase.empty() &&
       to_replace_with.empty())
-    return false;
+    return force_modified;
   for (auto &i : to_insert_before) {
     i.first->parent->insert_before(i.first, std::move(i.second));
   }
@@ -580,6 +593,10 @@ bool DelayedIRModifier::modify_ir() {
   }
   to_replace_with.clear();
   return true;
+}
+
+void DelayedIRModifier::mark_as_modified() {
+  modified_ = true;
 }
 
 LocalAddress::LocalAddress(Stmt *var, int offset) : var(var), offset(offset) {

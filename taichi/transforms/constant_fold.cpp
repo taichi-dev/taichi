@@ -22,15 +22,13 @@ class ConstantFold : public BasicStmtVisitor {
 
   static Kernel *get_jit_evaluator_kernel(JITEvaluatorId const &id) {
     auto &cache = get_current_program().jit_evaluator_cache;
-    {
-      // Discussion:
-      // https://github.com/taichi-dev/taichi/pull/954#discussion_r423442606
-      std::lock_guard<std::mutex> _(
-          get_current_program().jit_evaluator_cache_mut);
-      auto it = cache.find(id);
-      if (it != cache.end())  // cached?
-        return it->second.get();
-    }
+    // Discussion:
+    // https://github.com/taichi-dev/taichi/pull/954#discussion_r423442606
+    std::lock_guard<std::mutex> _(
+        get_current_program().jit_evaluator_cache_mut);
+    auto it = cache.find(id);
+    if (it != cache.end())  // cached?
+      return it->second.get();
 
     auto kernel_name = fmt::format("jit_evaluator_{}", cache.size());
     auto func = [&id]() {
@@ -48,7 +46,7 @@ class ConstantFold : public BasicStmtVisitor {
           oper->cast<UnaryOpStmt>()->cast_type = id.rhs;
         }
       }
-      auto ret = Stmt::make<KernelReturnStmt>(oper.get(), id.ret);
+      auto ret = Stmt::make<KernelReturnStmt>(oper.get());
       current_ast_builder().insert(std::move(lhstmt));
       if (id.is_binary)
         current_ast_builder().insert(std::move(rhstmt));
@@ -65,11 +63,7 @@ class ConstantFold : public BasicStmtVisitor {
     auto *ker_ptr = ker.get();
     TI_TRACE("Saving JIT evaluator cache entry id={}",
              std::hash<JITEvaluatorId>{}(id));
-    {
-      std::lock_guard<std::mutex> _(
-          get_current_program().jit_evaluator_cache_mut);
-      cache[id] = std::move(ker);
-    }
+    cache[id] = std::move(ker);
     return ker_ptr;
   }
 
@@ -102,9 +96,12 @@ class ConstantFold : public BasicStmtVisitor {
     auto launch_ctx = ker->make_launch_context();
     launch_ctx.set_arg_raw(0, lhs.val_u64);
     launch_ctx.set_arg_raw(1, rhs.val_u64);
-    (*ker)(launch_ctx);
     auto &current_program = stmt->get_kernel()->program;
-    ret.val_i64 = current_program.fetch_result<int64_t>(0);
+    {
+      std::lock_guard<std::mutex> _(current_program.jit_evaluator_cache_mut);
+      (*ker)(launch_ctx);
+      ret.val_i64 = current_program.fetch_result<int64_t>(0);
+    }
     return true;
   }
 
@@ -122,9 +119,12 @@ class ConstantFold : public BasicStmtVisitor {
     auto *ker = get_jit_evaluator_kernel(id);
     auto launch_ctx = ker->make_launch_context();
     launch_ctx.set_arg_raw(0, operand.val_u64);
-    (*ker)(launch_ctx);
     auto &current_program = stmt->get_kernel()->program;
-    ret.val_i64 = current_program.fetch_result<int64_t>(0);
+    {
+      std::lock_guard<std::mutex> _(current_program.jit_evaluator_cache_mut);
+      (*ker)(launch_ctx);
+      ret.val_i64 = current_program.fetch_result<int64_t>(0);
+    }
     return true;
   }
 

@@ -23,7 +23,7 @@ Expr global_new(DataType dt, std::string name) {
 }
 
 void insert_snode_access_flag(SNodeAccessFlag v, const Expr &field) {
-  dec.scratch_opt.push_back(std::make_pair(v, field.snode()));
+  dec.mem_access_opt.add_flag(field.snode(), v);
 }
 
 // Begin: legacy frontend constructs

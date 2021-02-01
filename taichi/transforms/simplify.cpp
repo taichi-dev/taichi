@@ -614,6 +614,7 @@ void full_simplify(IRNode *root, bool after_lower_access, Kernel *kernel) {
       if ((first_iteration || modified) && whole_kernel_cse(root))
         modified = true;
       if ((first_iteration || modified) &&
+          root->get_config().cfg_optimization &&
           cfg_optimization(root, after_lower_access))
         modified = true;
       first_iteration = false;

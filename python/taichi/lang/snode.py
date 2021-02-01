@@ -100,6 +100,10 @@ class SNode:
         return len(self.shape)
 
     @property
+    def id(self):
+        return self.ptr.id
+
+    @property
     def shape(self):
         impl.get_runtime().materialize()
         dim = self.ptr.num_active_indices()

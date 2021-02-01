@@ -396,11 +396,16 @@ class GlobalVariableExpression : public Expression {
 
 class GlobalPtrExpression : public Expression {
  public:
+  SNode *snode{nullptr};
   Expr var;
   ExprGroup indices;
 
   GlobalPtrExpression(const Expr &var, const ExprGroup &indices)
       : var(var), indices(indices) {
+  }
+
+  GlobalPtrExpression(SNode *snode, const ExprGroup &indices)
+      : snode(snode), indices(indices) {
   }
 
   std::string serialize() override;
@@ -453,13 +458,13 @@ class RangeAssumptionExpression : public Expression {
 class LoopUniqueExpression : public Expression {
  public:
   Expr input;
+  std::vector<SNode *> covers;
 
-  LoopUniqueExpression(const Expr &input) : input(input) {
+  LoopUniqueExpression(const Expr &input, const std::vector<SNode *> &covers)
+      : input(input), covers(covers) {
   }
 
-  std::string serialize() override {
-    return fmt::format("loop_unique({})", input.serialize());
-  }
+  std::string serialize() override;
 
   void flatten(FlattenContext *ctx) override;
 };

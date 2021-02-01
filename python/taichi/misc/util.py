@@ -280,6 +280,9 @@ def print_async_stats(include_kernel_profiler=False):
     print(f'Tasks launched:       {int(counters["launched_tasks"])}')
     print(f'Instructions emitted: {int(counters["codegen_statements"])}')
     print(f'Tasks compiled:       {int(counters["codegen_offloaded_tasks"])}')
+    NUM_FUSED_TASKS_KEY = 'num_fused_tasks'
+    if NUM_FUSED_TASKS_KEY in counters:
+        print(f'Tasks fused:          {int(counters["num_fused_tasks"])}')
     print('=======================')
 
 

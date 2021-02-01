@@ -17,6 +17,7 @@
 #include "taichi/math/svd.h"
 #include "taichi/util/statistics.h"
 #include "taichi/util/action_recorder.h"
+#include "taichi/system/timeline.h"
 
 #if defined(TI_WITH_CUDA)
 #include "taichi/backends/cuda/cuda_context.h"
@@ -137,6 +138,7 @@ void export_lang(py::module &m) {
                      &CompileConfig::default_cpu_block_dim)
       .def_readwrite("default_gpu_block_dim",
                      &CompileConfig::default_gpu_block_dim)
+      .def_readwrite("gpu_max_reg", &CompileConfig::gpu_max_reg)
       .def_readwrite("saturating_grid_dim", &CompileConfig::saturating_grid_dim)
       .def_readwrite("max_block_dim", &CompileConfig::max_block_dim)
       .def_readwrite("cpu_max_num_threads", &CompileConfig::cpu_max_num_threads)
@@ -147,6 +149,7 @@ void export_lang(py::module &m) {
                      &CompileConfig::demote_dense_struct_fors)
       .def_readwrite("use_unified_memory", &CompileConfig::use_unified_memory)
       .def_readwrite("kernel_profiler", &CompileConfig::kernel_profiler)
+      .def_readwrite("timeline", &CompileConfig::timeline)
       .def_readwrite("default_fp", &CompileConfig::default_fp)
       .def_readwrite("default_ip", &CompileConfig::default_ip)
       .def_readwrite("device_memory_GB", &CompileConfig::device_memory_GB)
@@ -167,6 +170,8 @@ void export_lang(py::module &m) {
       .def_readwrite("opencl_device", &CompileConfig::opencl_device)
       .def_readwrite("async_opt_passes", &CompileConfig::async_opt_passes)
       .def_readwrite("async_opt_fusion", &CompileConfig::async_opt_fusion)
+      .def_readwrite("async_opt_fusion_max_iter",
+                     &CompileConfig::async_opt_fusion_max_iter)
       .def_readwrite("async_opt_listgen", &CompileConfig::async_opt_listgen)
       .def_readwrite("async_opt_activation_demotion",
                      &CompileConfig::async_opt_activation_demotion)
@@ -175,7 +180,13 @@ void export_lang(py::module &m) {
                      &CompileConfig::async_listgen_fast_filtering)
       .def_readwrite("async_opt_intermediate_file",
                      &CompileConfig::async_opt_intermediate_file)
-      .def_readwrite("async_flush_every", &CompileConfig::async_flush_every);
+      .def_readwrite("async_flush_every", &CompileConfig::async_flush_every)
+      .def_readwrite("async_max_fuse_per_task",
+                     &CompileConfig::async_max_fuse_per_task)
+      .def_readwrite("quant_opt_store_fusion",
+                     &CompileConfig::quant_opt_store_fusion)
+      .def_readwrite("quant_opt_atomic_demotion",
+                     &CompileConfig::quant_opt_atomic_demotion);
 
   m.def("reset_default_compile_config",
         [&]() { default_compile_config = CompileConfig(); });
@@ -191,6 +202,12 @@ void export_lang(py::module &m) {
       .def("kernel_profiler_total_time",
            [](Program *program) { return program->profiler->get_total_time(); })
       .def("kernel_profiler_clear", &Program::kernel_profiler_clear)
+      .def("timeline_clear",
+           [](Program *) { Timelines::get_instance().clear(); })
+      .def("timeline_save",
+           [](Program *, const std::string &fn) {
+             Timelines::get_instance().save(fn);
+           })
       .def("print_memory_profiler_info", &Program::print_memory_profiler_info)
       .def("finalize", &Program::finalize)
       .def("get_root",
@@ -221,6 +238,7 @@ void export_lang(py::module &m) {
       .def(py::init<>())
       .def_readwrite("parent", &SNode::parent)
       .def_readonly("type", &SNode::type)
+      .def_readonly("id", &SNode::id)
       .def("dense",
            (SNode & (SNode::*)(const std::vector<Index> &,
                                const std::vector<int> &))(&SNode::dense),
@@ -595,6 +613,10 @@ void export_lang(py::module &m) {
 
   m.def("subscript", [](const Expr &expr, const ExprGroup &expr_group) {
     return expr[expr_group];
+  });
+
+  m.def("subscript", [](SNode *snode, const ExprGroup &indices) {
+    return Expr::make<GlobalPtrExpression>(snode, indices.loaded());
   });
 
   m.def("get_external_tensor_dim", [](const Expr &expr) {

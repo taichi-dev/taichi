@@ -245,7 +245,7 @@ class PyTaichi:
 
         for func in self.materialize_callbacks:
             func()
-        self.materialize_callbacks = []
+        self.materialize_callbacks.clear()
 
     def print_snode_tree(self):
         self.prog.print_snode_tree()
@@ -254,6 +254,7 @@ class PyTaichi:
         if self.prog:
             self.prog.finalize()
             self.prog = None
+        self.materialize_callbacks.clear()
         self.materialized = False
 
     def get_tape(self, loss=None):
@@ -273,7 +274,11 @@ def get_runtime():
 
 
 def materialize_callback(foo):
-    get_runtime().materialize_callbacks.append(foo)
+    if get_runtime().materialized:
+        foo()  # directly invoke if already materialized
+    else:
+        get_runtime().materialize_callbacks.append(foo)
+    return foo
 
 
 def _clamp_unsigned_to_range(npty, val):

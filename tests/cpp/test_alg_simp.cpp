@@ -25,7 +25,7 @@ TI_TEST("alg_simp") {
         block->push_back<BinaryOpStmt>(BinaryOpType::add, global_load, zero);
     auto global_store_addr = block->push_back<GlobalTemporaryStmt>(
         4, TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32));
-    auto global_store =
+    [[maybe_unused]] auto global_store =
         block->push_back<GlobalStoreStmt>(global_store_addr, add);
 
     irpass::type_check(block.get());
@@ -64,7 +64,7 @@ TI_TEST("alg_simp") {
     auto sub = block->push_back<BinaryOpStmt>(BinaryOpType::sub, mul2, div);
     auto global_store_addr = block->push_back<GlobalTemporaryStmt>(
         4, TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::f32));
-    auto global_store =
+    [[maybe_unused]] auto global_store =
         block->push_back<GlobalStoreStmt>(global_store_addr, sub);
 
     irpass::type_check(block.get());
@@ -160,7 +160,7 @@ TI_TEST("alg_simp") {
                                                      minus_one, global_load);
     auto global_store_addr = block->push_back<GlobalTemporaryStmt>(
         4, TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32));
-    auto global_store =
+    [[maybe_unused]] auto global_store =
         block->push_back<GlobalStoreStmt>(global_store_addr, and_result);
 
     auto func = []() {};

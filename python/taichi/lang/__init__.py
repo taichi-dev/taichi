@@ -46,6 +46,8 @@ kernel_profiler_print = lambda: get_runtime().prog.kernel_profiler_print()
 kernel_profiler_clear = lambda: get_runtime().prog.kernel_profiler_clear()
 kernel_profiler_total_time = lambda: get_runtime(
 ).prog.kernel_profiler_total_time()
+timeline_clear = lambda: get_runtime().prog.timeline_clear()
+timeline_save = lambda fn: get_runtime().prog.timeline_save(fn)
 
 # Legacy API
 type_factory_ = core.get_type_factory_instance()
@@ -247,8 +249,13 @@ def assume_in_range(val, base, low, high):
         Expr(base).ptr, low, high)
 
 
-def loop_unique(val):
-    return taichi_lang_core.expr_loop_unique(Expr(val).ptr)
+def loop_unique(val, covers=None):
+    if covers is None:
+        covers = []
+    if not isinstance(covers, (list, tuple)):
+        covers = [covers]
+    covers = [x.snode.ptr if isinstance(x, Expr) else x.ptr for x in covers]
+    return taichi_lang_core.expr_loop_unique(Expr(val).ptr, covers)
 
 
 parallelize = core.parallelize
@@ -364,7 +371,8 @@ def benchmark(func, repeat=300, args=()):
         avg = elapsed / repeat
         ti.stat_write('wall_clk_t', avg)
         device_time = ti.kernel_profiler_total_time()
-        ti.stat_write('exec_t', device_time)
+        avg_device_time = device_time / repeat
+        ti.stat_write('exec_t', avg_device_time)
 
     run_benchmark()
 
@@ -372,12 +380,14 @@ def benchmark(func, repeat=300, args=()):
 def benchmark_plot(fn=None,
                    cases=None,
                    columns=None,
+                   column_titles=None,
                    archs=None,
                    title=None,
                    bars='sync_vs_async',
                    bar_width=0.4,
                    bar_distance=0,
-                   left_margin=0):
+                   left_margin=0,
+                   size=(12, 8)):
     import taichi as ti
     import yaml
     import matplotlib.pyplot as plt
@@ -405,13 +415,15 @@ def benchmark_plot(fn=None,
 
     if columns is None:
         columns = list(data[cases[0]].keys())
+    if column_titles is None:
+        column_titles = columns
     normalize_to_lowest = lambda x: True
     figure, subfigures = plt.subplots(len(cases), len(columns))
     if title is None:
         title = 'Taichi Performance Benchmarks (Higher means more)'
     figure.suptitle(title, fontweight="bold")
     for col_id in range(len(columns)):
-        subfigures[0][col_id].set_title(columns[col_id])
+        subfigures[0][col_id].set_title(column_titles[col_id])
     for case_id in range(len(cases)):
         case = cases[case_id]
         subfigures[case_id][0].annotate(
@@ -428,7 +440,9 @@ def benchmark_plot(fn=None,
             if archs is None:
                 current_archs = data[case][col].keys()
             else:
-                current_archs = archs & data[case][col].keys()
+                current_archs = [
+                    x for x in archs if x in data[case][col].keys()
+                ]
             if bars == 'sync_vs_async':
                 y_left = [
                     data[case][col][arch]['sync'] for arch in current_archs
@@ -473,7 +487,7 @@ def benchmark_plot(fn=None,
                               height=y_left,
                               width=bar_width,
                               label=label_left,
-                              color=(0.3, 0.7, 0.9, 1.0))
+                              color=(0.47, 0.69, 0.89, 1.0))
             bar_right = ax.bar(x=[
                 i + bar_width / 2 + bar_distance / 2
                 for i in range(len(current_archs))
@@ -481,7 +495,7 @@ def benchmark_plot(fn=None,
                                height=y_right,
                                width=bar_width,
                                label=label_right,
-                               color=(0.8, 0.2, 0.3, 1.0))
+                               color=(0.68, 0.26, 0.31, 1.0))
             ax.set_xticks(range(len(current_archs)))
             ax.set_xticklabels(current_archs)
             figure.legend((bar_left, bar_right), (label_left, label_right),
@@ -489,7 +503,7 @@ def benchmark_plot(fn=None,
     figure.subplots_adjust(left=left_margin)
 
     fig = plt.gcf()
-    fig.set_size_inches(13, 8)
+    fig.set_size_inches(size)
 
     plt.show()
 

@@ -114,14 +114,20 @@ def subscript(value, *indices):
 
     if is_taichi_class(value):
         return value.subscript(*indices)
-    elif isinstance(value, Expr):
-        if not value.is_global():
-            raise TypeError('Cannot subscript a scalar expression')
+    elif isinstance(value, (Expr, SNode)):
+        if isinstance(value, Expr):
+            if not value.is_global():
+                raise TypeError(
+                    'Subscription (e.g., "a[i, j]") only works on fields or external arrays.'
+                )
+            field_dim = int(value.ptr.get_attribute("dim"))
+        else:
+            # When reading bit structure we only support the 0-D case for now.
+            field_dim = 0
         if isinstance(indices,
                       tuple) and len(indices) == 1 and indices[0] is None:
             indices = []
         indices_expr_group = make_expr_group(*indices)
-        field_dim = int(value.ptr.get_attribute("dim"))
         index_dim = indices_expr_group.size()
         if field_dim != index_dim:
             raise IndexError(

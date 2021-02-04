@@ -66,7 +66,7 @@ GlobalPtrStmt::GlobalPtrStmt(const LaneAttribute<SNode *> &snodes,
   TI_STMT_REG_FIELDS;
 }
 
-bool GlobalPtrStmt::is_element_wise(SNode *snode) const {
+bool GlobalPtrStmt::is_element_wise(const SNode *snode) const {
   if (snode == nullptr) {
     // check every SNode when "snode" is nullptr
     for (const auto &snode_i : snodes.data) {
@@ -86,6 +86,18 @@ bool GlobalPtrStmt::is_element_wise(SNode *snode) const {
     }
   }
   return true;
+}
+
+bool GlobalPtrStmt::covers_snode(const SNode *snode) const {
+  // Check if the addresses of this statement all over the loop cover
+  // all active indices of the snode.
+  for (auto &index : indices) {
+    if (auto loop_unique = index->cast<LoopUniqueStmt>()) {
+      if (loop_unique->covers_snode(snode))
+        return true;
+    }
+  }
+  return is_element_wise(snode);
 }
 
 SNodeOpStmt::SNodeOpStmt(SNodeOpType op_type,
@@ -110,6 +122,30 @@ ExternalTensorShapeAlongAxisStmt::ExternalTensorShapeAlongAxisStmt(int axis,
                                                                    int arg_id)
     : axis(axis), arg_id(arg_id) {
   TI_STMT_REG_FIELDS;
+}
+
+LoopUniqueStmt::LoopUniqueStmt(Stmt *input, const std::vector<SNode *> &covers)
+    : input(input) {
+  for (const auto &sn : covers) {
+    if (sn->is_place()) {
+      TI_INFO(
+          "A place SNode {} appears in the 'covers' parameter "
+          "of 'ti.loop_unique'. It is recommended to use its parent "
+          "(x.parent()) instead.",
+          sn->get_node_type_name_hinted());
+      this->covers.insert(sn->parent->id);
+    } else
+      this->covers.insert(sn->id);
+  }
+  TI_STMT_REG_FIELDS;
+}
+
+bool LoopUniqueStmt::covers_snode(const SNode *snode) const {
+  if (snode->is_place()) {
+    return covers.count(snode->parent->id) > 0;
+  } else {
+    TI_NOT_IMPLEMENTED
+  }
 }
 
 Stmt *LocalLoadStmt::previous_store_or_alloca_in_block() {

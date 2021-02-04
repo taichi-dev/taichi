@@ -19,7 +19,8 @@ class JITSession {
   JITSession() {
   }
 
-  virtual JITModule *add_module(std::unique_ptr<llvm::Module> M) = 0;
+  virtual JITModule *add_module(std::unique_ptr<llvm::Module> M,
+                                int max_reg = 0) = 0;
 
   // virtual void remove_module(JITModule *module) = 0;
 

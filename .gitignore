@@ -75,3 +75,4 @@ _build
 *.bc
 *.yml
 *.dot
+*.json

@@ -27,6 +27,7 @@ struct CompileConfig {
   bool use_llvm;
   bool verbose_kernel_launches;
   bool kernel_profiler;
+  bool timeline{false};
   bool verbose;
   bool fast_math;
   bool async_mode;
@@ -39,6 +40,7 @@ struct CompileConfig {
   std::string extra_flags;
   int default_cpu_block_dim;
   int default_gpu_block_dim;
+  int gpu_max_reg;
   int ad_stack_size;
 
   int saturating_grid_dim;
@@ -63,12 +65,19 @@ struct CompileConfig {
   // Async options
   int async_opt_passes{3};
   bool async_opt_fusion{true};
+  int async_opt_fusion_max_iter{0};  // 0 means unlimited
   bool async_opt_listgen{true};
   bool async_opt_activation_demotion{true};
   bool async_opt_dse{true};
   bool async_listgen_fast_filtering{true};
   std::string async_opt_intermediate_file;
-  int async_flush_every{0};
+  // Setting 0 effectively means do not automatically flush
+  int async_flush_every{50};
+  // Setting 0 effectively means unlimited
+  int async_max_fuse_per_task{1};
+
+  bool quant_opt_store_fusion{true};
+  bool quant_opt_atomic_demotion{true};
 
   CompileConfig();
 };

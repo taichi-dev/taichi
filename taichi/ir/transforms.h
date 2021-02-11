@@ -62,7 +62,11 @@ void demote_dense_struct_fors(IRNode *root);
 bool demote_atomics(IRNode *root);
 void reverse_segments(IRNode *root);  // for autograd
 void detect_read_only(IRNode *root);
-void optimize_bit_struct_stores(IRNode *root);
+void optimize_bit_struct_stores(
+    IRNode *root,
+    const std::unordered_map<OffloadedStmt *,
+                             std::unordered_map<const SNode *, GlobalPtrStmt *>>
+        &uniquely_accessed_bit_structs);
 
 // compile_to_offloads does the basic compilation to create all the offloaded
 // tasks of a Taichi kernel. It's worth pointing out that this doesn't demote

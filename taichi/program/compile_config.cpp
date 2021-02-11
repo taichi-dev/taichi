@@ -30,6 +30,7 @@ CompileConfig::CompileConfig() {
   kernel_profiler = false;
   default_cpu_block_dim = 32;
   default_gpu_block_dim = 128;
+  gpu_max_reg = 0;  // 0 means using the default value from the CUDA driver.
   verbose = true;
   fast_math = true;
   async_mode = false;

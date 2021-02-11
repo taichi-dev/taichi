@@ -198,7 +198,11 @@ std::pair<IRHandle, bool> IRBank::optimize_dse(
 
   if (verbose) {
     TI_INFO("  DSE: before CFG");
+    std::cout << std::flush;
+    for (auto &s : snodes)
+      std::cout << s->get_node_type_name_hinted() << std::endl;
     irpass::print(new_ir.get());
+    std::cout << std::flush;
   }
   ControlFlowGraph::LiveVarAnalysisConfig lva_config;
   lva_config.eliminable_snodes = {snodes.begin(), snodes.end()};
@@ -206,13 +210,24 @@ std::pair<IRHandle, bool> IRBank::optimize_dse(
       new_ir.get(), /*after_lower_access=*/false, lva_config);
   if (verbose) {
     TI_INFO("  DSE: after CFG, modified={}", modified);
-    irpass::print(new_ir.get());
+    std::cout << std::flush;
   }
 
   if (!modified) {
     // Nothing demoted. Simply delete new_ir when this function returns.
     ret_handle = handle;
     return std::make_pair(ret_handle, false);
+  }
+
+  // Remove unused global pointers (possibly with activate == true).
+  irpass::flag_access(new_ir.get());
+  irpass::die(new_ir.get());
+
+  if (verbose) {
+    TI_INFO("  DSE: after flag_access and DIE");
+    std::cout << std::flush;
+    irpass::print(new_ir.get());
+    std::cout << std::flush;
   }
 
   ret_handle = IRHandle(new_ir.get(), get_hash(new_ir.get()));

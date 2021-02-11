@@ -43,7 +43,9 @@ PER_CUDA_FUNCTION(stream_synchronize, cuStreamSynchronize, void *);
 
 // Event management
 PER_CUDA_FUNCTION(event_create, cuEventCreate, void **, uint32)
+PER_CUDA_FUNCTION(event_destroy, cuEventDestroy, void *)
 PER_CUDA_FUNCTION(event_record, cuEventRecord, void *, void *)
+PER_CUDA_FUNCTION(event_synchronize, cuEventSynchronize, void *);
 PER_CUDA_FUNCTION(event_elapsed_time, cuEventElapsedTime, float *, void *, void *);
 
 // clang-format on

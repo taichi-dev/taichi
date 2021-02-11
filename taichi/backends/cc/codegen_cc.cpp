@@ -584,9 +584,6 @@ class CCTransformer : public IRVisitor {
     auto var = define_var(dt_name + " *", adjoint_name);
     emit("{} = ({} *)Ti_ad_stack_top_adjoint({}, {});", var, dt_name,
          stack->raw_name(), stack->element_size_in_bytes());
-    emit("printf(\"%d\\n\", *Ti_ad_stack_n({}));", stack->raw_name());
-    emit("printf(\"%p\\n\", {});", stack->raw_name());
-    emit("printf(\"%p\\n\", {});", adjoint_name);
     emit("*{} += {};", adjoint_name, stmt->v->raw_name());
   }
 

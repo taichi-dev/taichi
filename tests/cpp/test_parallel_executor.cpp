@@ -5,13 +5,13 @@ TLANG_NAMESPACE_BEGIN
 
 TI_TEST("parallel_executor") {
   SECTION("create_and_destruct") {
-    ParallelExecutor exec(10);
+    ParallelExecutor exec("test", 10);
   }
   SECTION("parallel_print") {
     int N = 100;
     std::vector<int> buffer(N, 0);
     {
-      ParallelExecutor exec(10);
+      ParallelExecutor exec("test", 10);
       for (int i = 0; i < N; i++) {
         exec.enqueue([i = i, &buffer]() { buffer[i] = i + 1; });
       }

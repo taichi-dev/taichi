@@ -58,5 +58,9 @@ jobs:
           # https://docs.github.com/en/free-pro-team@latest/actions/reference/encrypted-secrets#using-encrypted-secrets-in-a-workflow
           PYPI_PWD: ${{ secrets.PYPI_PWD }}
         run: |
+          export TAICHI_REPO_DIR=`pwd`
+          export PATH=$TAICHI_REPO_DIR/bin:$PATH
+          export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
+          export PYTHONPATH=$TAICHI_REPO_DIR/python
           cd python
           python build.py try_upload && bash <(curl -s https://codecov.io/bash)

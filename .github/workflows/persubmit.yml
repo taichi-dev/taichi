@@ -82,7 +82,7 @@ jobs:
           export PATH=$TAICHI_REPO_DIR/bin:$PATH
           export PATH=/home/github/taichi-llvm/bin/:$PATH
           export PYTHONPATH=$TAICHI_REPO_DIR/python
-          export DISPLAY=:2
+          export DISPLAY=:1
           glewinfo
           $PYTHON examples/laplace.py
           ti diagnose

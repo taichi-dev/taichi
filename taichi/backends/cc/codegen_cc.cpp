@@ -336,7 +336,7 @@ class CCTransformer : public IRVisitor {
       } else if (bin->op_type == BinaryOpType::floordiv) {
         TI_WARN(
             "floordiv called! It should be taken care of by demote_operations");
-        auto lhs_dt_name = data_type_short_name(bin->lhs->element_type());
+        auto lhs_dt_name = data_type_name(bin->lhs->element_type());
         emit("{} = Ti_floordiv_{}({}, {});", var, lhs_dt_name, lhs_name,
              rhs_name);
       } else {
@@ -529,7 +529,7 @@ class CCTransformer : public IRVisitor {
 
   void visit(RandStmt *stmt) override {
     auto var = define_var(cc_data_type_name(stmt->ret_type), stmt->raw_name());
-    emit("{} = Ti_rand_{}();", var, data_type_short_name(stmt->ret_type));
+    emit("{} = Ti_rand_{}();", var, data_type_name(stmt->ret_type));
   }
 
   void visit(StackAllocaStmt *stmt) override {

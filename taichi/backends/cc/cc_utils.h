@@ -10,8 +10,34 @@
 TLANG_NAMESPACE_BEGIN
 namespace cccp {
 
+inline std::string data_type_short_name(DataType dt) {
+  if (dt->is_primitive(PrimitiveTypeID::f32)) {
+    return "f32";
+  } else if (dt->is_primitive(PrimitiveTypeID::i32)) {
+    return "i32";
+  } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
+    return "i64";
+  } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
+    return "f64";
+  } else if (dt->is_primitive(PrimitiveTypeID::i8)) {
+    return "i8";
+  } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
+    return "i16";
+  } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
+    return "u8";
+  } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
+    return "u16";
+  } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
+    return "u32";
+  } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
+    return "u64";
+  } else {
+    TI_NOT_IMPLEMENTED
+  }
+}
+
 inline std::string cc_data_type_name(DataType dt) {
-  return "Ti_" + data_type_name(dt);
+  return "Ti_" + data_type_short_name(dt);
 }
 
 inline std::string cc_atomic_op_type_symbol(AtomicOpType op) {

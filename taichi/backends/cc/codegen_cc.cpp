@@ -529,7 +529,7 @@ class CCTransformer : public IRVisitor {
 
   void visit(RandStmt *stmt) override {
     auto var = define_var(cc_data_type_name(stmt->ret_type), stmt->raw_name());
-    emit("{} = Ti_rand_{}();", var, data_type_name(stmt->ret_type));
+    emit("{} = Ti_rand_{}();", var, data_type_short_name(stmt->ret_type));
   }
 
   void visit(StackAllocaStmt *stmt) override {

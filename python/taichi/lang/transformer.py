@@ -428,7 +428,8 @@ if ti.static(1):
         t = ast.parse(template).body[0]
         t.body[0].value = node.iter
         t_loop = t.body[1]
-        t_loop.iter.args[0] = self.parse_expr(f'__ndrange{id(node)}.acc_dimensions[0]')
+        t_loop.iter.args[0] = self.parse_expr(
+            f'__ndrange{id(node)}.acc_dimensions[0]')
         targets = self.get_targets(node)
         targets_tmp = ['__' + name for name in targets]
         loop_body = t_loop.body

@@ -34,7 +34,7 @@ class AllocaStmt : public Stmt {
 };
 
 /**
- * Updates mask, break if no bits of the mask are active.
+ * Updates mask, break if all bits of the mask are 0.
  */
 class WhileControlStmt : public Stmt {
  public:
@@ -49,7 +49,7 @@ class WhileControlStmt : public Stmt {
 };
 
 /**
- * Continue the current (innermost) loop.
+ * Jump to the next loop iteration. I.e., "continue" in C++.
  */
 class ContinueStmt : public Stmt {
  public:

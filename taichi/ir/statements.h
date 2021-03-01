@@ -49,7 +49,7 @@ class WhileControlStmt : public Stmt {
 };
 
 /**
- * Jump to the next loop iteration. I.e., "continue" in C++.
+ * Jump to the next loop iteration, i.e., `continue` in C++.
  */
 class ContinueStmt : public Stmt {
  public:

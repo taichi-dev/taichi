@@ -66,5 +66,7 @@ def yml_to_md(yml_filename=None, md_filename=None):
         f.write(doc_md)
 
 
-extract_doc()
-yml_to_md()
+if __name__ == '__main__':
+    extract_doc()
+    yml_to_md()
+    print('Done!')

@@ -21,4 +21,4 @@
 [submodule "external/googletest"]
 	path = external/googletest
 	url = https://github.com/google/googletest
-  shallow = true
+	shallow = true

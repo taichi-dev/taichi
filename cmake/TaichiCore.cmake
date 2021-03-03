@@ -82,10 +82,12 @@ file(GLOB TAICHI_TESTABLE_SRC "taichi/common/*.cpp" "taichi/common/*.h")
 # TODO(#2196): Maybe we can do the following renaming in the end?
 # taichi_core --> taichi_pylib (this requires python-side refactoring...)
 # taichi_testable_lib --> taichi_core
-add_library(taichi_testable_lib OBJECT ${TAICHI_TESTABLE_SRC})
+set(TAICHI_TESTABLE_LIB taichi_testable_lib)
+add_library(${TAICHI_TESTABLE_LIB} OBJECT ${TAICHI_TESTABLE_SRC})
+set_property(TARGET ${TAICHI_TESTABLE_LIB} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_TESTABLE_SRC})
-add_library(${CORE_LIBRARY_NAME} SHARED ${TAICHI_CORE_SOURCE} ${PROJECT_SOURCES} $<TARGET_OBJECTS:taichi_testable_lib>)
+add_library(${CORE_LIBRARY_NAME} SHARED ${TAICHI_CORE_SOURCE} ${PROJECT_SOURCES} $<TARGET_OBJECTS:${TAICHI_TESTABLE_LIB}>)
 
 if (APPLE)
     # Ask OS X to minic Linux dynamic linking behavior

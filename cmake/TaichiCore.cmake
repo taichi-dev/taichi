@@ -74,7 +74,18 @@ if (TI_WITH_CC)
   list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CC_SOURCE})
 endif()
 
-add_library(${CORE_LIBRARY_NAME} SHARED ${TAICHI_CORE_SOURCE} ${PROJECT_SOURCES})
+# We don't mean to create a dedicated library just for common. Instead, we are
+# trying to identify, refactor and group the core files into a smaller lib. This
+# lib should be mostly self-contained and completely Taichi focused, free from
+# the "application" layer such as pybind11 or GUI.
+file(GLOB TAICHI_TESTABLE_SRC "taichi/common/*.cpp" "taichi/common/*.h")
+# TODO(#2196): Maybe we can do the following renaming in the end?
+# taichi_core --> taichi_pylib (this requires python-side refactoring...)
+# taichi_testable_lib --> taichi_core
+add_library(taichi_testable_lib OBJECT ${TAICHI_TESTABLE_SRC})
+
+list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_TESTABLE_SRC})
+add_library(${CORE_LIBRARY_NAME} SHARED ${TAICHI_CORE_SOURCE} ${PROJECT_SOURCES} $<TARGET_OBJECTS:taichi_testable_lib>)
 
 if (APPLE)
     # Ask OS X to minic Linux dynamic linking behavior

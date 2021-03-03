@@ -6,6 +6,7 @@
 #include "taichi/backends/metal/api.h"
 #include "taichi/backends/opengl/opengl_api.h"
 #include "taichi/common/core.h"
+#include "taichi/common/interface.h"
 #include "taichi/common/task.h"
 #include "taichi/math/math.h"
 #include "taichi/python/exception.h"

@@ -6,6 +6,9 @@
 
 TLANG_NAMESPACE_BEGIN
 
+/**
+ * Allocate a local variable with initial value 0.
+ */
 class AllocaStmt : public Stmt {
  public:
   AllocaStmt(DataType type) {
@@ -30,7 +33,9 @@ class AllocaStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
-// updates mask, break if no active
+/**
+ * Updates mask, break if all bits of the mask are 0.
+ */
 class WhileControlStmt : public Stmt {
  public:
   Stmt *mask;
@@ -43,6 +48,9 @@ class WhileControlStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE;
 };
 
+/**
+ * Jump to the next loop iteration, i.e., `continue` in C++.
+ */
 class ContinueStmt : public Stmt {
  public:
   // This is the loop on which this continue stmt has effects. It can be either

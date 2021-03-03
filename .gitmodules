@@ -18,3 +18,7 @@
 	path = external/assets
 	url = https://github.com/taichi-dev/taichi_assets
 	shallow = true
+[submodule "external/googletest"]
+	path = external/googletest
+	url = https://github.com/google/googletest
+  shallow = true

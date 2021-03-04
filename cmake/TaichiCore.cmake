@@ -3,6 +3,7 @@ set(CORE_LIBRARY_NAME taichi_core)
 option(USE_STDCPP "Use -stdlib=libc++" OFF)
 option(TI_WITH_CUDA "Build with the CUDA backend" ON)
 option(TI_WITH_OPENGL "Build with the OpenGL backend" ON)
+option(TI_WITH_OPENCL "Build with the OpenCL backend" OFF)
 option(TI_WITH_CC "Build with the C backend" ON)
 
 if (APPLE)
@@ -42,6 +43,7 @@ file(GLOB TAICHI_CPU_SOURCE "taichi/backends/cpu/*.cpp" "taichi/backends/cpu/*.h
 file(GLOB TAICHI_CUDA_SOURCE "taichi/backends/cuda/*.cpp" "taichi/backends/cuda/*.h")
 file(GLOB TAICHI_METAL_SOURCE "taichi/backends/metal/*.h" "taichi/backends/metal/*.cpp" "taichi/backends/metal/shaders/*")
 file(GLOB TAICHI_OPENGL_SOURCE "taichi/backends/opengl/*.h" "taichi/backends/opengl/*.cpp" "taichi/backends/opengl/shaders/*")
+file(GLOB TAICHI_OPENCL_SOURCE "taichi/backends/opencl/*.h" "taichi/backends/opencl/*.cpp" "taichi/backends/opencl/runtime/*")
 file(GLOB TAICHI_CC_SOURCE "taichi/backends/cc/*.h" "taichi/backends/cc/*.cpp")
 
 list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_BACKEND_SOURCE})
@@ -74,6 +76,11 @@ if (TI_WITH_CC)
   list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CC_SOURCE})
 endif()
 
+if (TI_WITH_OPENCL)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_OPENCL")
+  list(APPEND TAICHI_CORE_SOURCE ${TAICHI_OPENCL_SOURCE})
+endif()
+
 add_library(${CORE_LIBRARY_NAME} SHARED ${TAICHI_CORE_SOURCE} ${PROJECT_SOURCES})
 
 if (APPLE)
@@ -98,6 +105,11 @@ if (TI_WITH_OPENGL)
   message("Building with GLFW")
   add_subdirectory(external/glfw)
   target_link_libraries(${LIBRARY_NAME} glfw)
+endif()
+
+if (TI_WITH_OPENCL)
+  message("Building with OpenCL")
+  target_link_libraries(${LIBRARY_NAME} OpenCL)
 endif()
 
 # http://llvm.org/docs/CMake.html#embedding-llvm-in-your-project

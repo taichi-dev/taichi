@@ -32,7 +32,7 @@ struct Ti_Context {
   Ti_i8 *gtmp;
 
   union Ti_BitCast *args;
-  int *earg;
+  Ti_i32 *earg;
 };
 )
 

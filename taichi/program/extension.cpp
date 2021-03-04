@@ -24,6 +24,7 @@ bool is_extension_supported(Arch arch, Extension ext) {
        {Extension::adstack, Extension::assertion, Extension::quant_basic,
         Extension::async_mode}},
       {Arch::opengl, {Extension::extfunc}},
+      {Arch::opencl, {Extension::extfunc}},
       {Arch::cc, {Extension::data64, Extension::extfunc, Extension::adstack}},
   };
   // if (with_opengl_extension_data64())

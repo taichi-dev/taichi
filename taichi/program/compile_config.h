@@ -62,6 +62,10 @@ struct CompileConfig {
   std::string cc_compile_cmd;
   std::string cc_link_cmd;
 
+  // OpenCL backend options:
+  int opencl_platform;
+  int opencl_device;
+
   // Async options
   int async_opt_passes{3};
   bool async_opt_fusion{true};

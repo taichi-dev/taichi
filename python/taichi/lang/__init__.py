@@ -39,6 +39,7 @@ arm64 = core.arm64
 cuda = core.cuda
 metal = core.metal
 opengl = core.opengl
+opencl = core.opencl
 cc = core.cc
 gpu = [cuda, metal, opengl]
 cpu = core.host_arch()
@@ -538,6 +539,7 @@ def is_arch_supported(arch):
         cuda: core.with_cuda,
         metal: core.with_metal,
         opengl: core.with_opengl,
+        opencl: core.with_opencl,
         cc: core.with_cc,
         cpu: lambda: True
     }
@@ -554,7 +556,7 @@ def is_arch_supported(arch):
 
 
 def supported_archs():
-    archs = [cpu, cuda, metal, opengl, cc]
+    archs = [cpu, cuda, metal, opengl, opencl, cc]
 
     wanted_archs = os.environ.get('TI_WANTED_ARCHS', '')
     want_exclude = wanted_archs.startswith('^')

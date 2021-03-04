@@ -34,7 +34,8 @@ void signal_handler(int signo) {
   // @archibate found that in fact there are such solution:
   // https://docs.python.org/3/library/faulthandler.html#module-faulthandler
   auto sig_name = signal_name(signo);
-  logger.error(fmt::format("Received signal {} ({})", signo, sig_name), false);
+  Logger::get_instance().error(
+      fmt::format("Received signal {} ({})", signo, sig_name), false);
   exit(-1);
   TI_UNREACHABLE;
 }
@@ -68,8 +69,7 @@ class HackedSignalRegister {
 
 #undef TI_REGISTER_SIGNAL_HANDLER
 
-    logger.set_print_stacktrace_func(print_traceback);
-    TI_INFO("HackedSignalRegister initialized");
+    Logger::get_instance().set_print_stacktrace_func(print_traceback);
   }
 };
 

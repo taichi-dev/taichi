@@ -20,7 +20,9 @@ void Logger::set_level(const std::string &level_name) {
   spdlog::set_level((spdlog::level::level_enum)level);
 }
 
-int Logger::get_level() { return level; }
+int Logger::get_level() {
+  return level;
+}
 
 bool Logger::is_level_effective(const std::string &level_name) {
   return get_level() <= level_enum_from_string(level_name);
@@ -58,15 +60,25 @@ Logger::Logger() {
   // TI_TRACE("Taichi core started. Thread ID = {}", PID::get_pid());
 }
 
-void Logger::set_level_default() { set_level(default_logging_level); }
+void Logger::set_level_default() {
+  set_level(default_logging_level);
+}
 
-void Logger::trace(const std::string &s) { console->trace(s); }
+void Logger::trace(const std::string &s) {
+  console->trace(s);
+}
 
-void Logger::debug(const std::string &s) { console->debug(s); }
+void Logger::debug(const std::string &s) {
+  console->debug(s);
+}
 
-void Logger::info(const std::string &s) { console->info(s); }
+void Logger::info(const std::string &s) {
+  console->info(s);
+}
 
-void Logger::warn(const std::string &s) { console->warn(s); }
+void Logger::warn(const std::string &s) {
+  console->warn(s);
+}
 
 void Logger::error(const std::string &s, bool raise_exception) {
   console->error(s);
@@ -81,7 +93,8 @@ void Logger::error(const std::string &s, bool raise_exception) {
   //     trash(system(fmt::format("sudo gdb -p {}", PID::get_pid()).c_str()));
   // #endif
   //   }
-  if (raise_exception) throw s;
+  if (raise_exception)
+    throw s;
 }
 
 void Logger::critical(const std::string &s) {
@@ -89,12 +102,20 @@ void Logger::critical(const std::string &s) {
                      // use TI_CRITICAL
 }
 
-void Logger::flush() { console->flush(); }
+void Logger::flush() {
+  console->flush();
+}
 
 void Logger::set_print_stacktrace_func(std::function<void()> print_fn) {
   print_stacktrace_fn_ = print_fn;
 }
 
-Logger logger;
+// static
+Logger &Logger::get_instance() {
+  static Logger *l = new Logger();
+  return *l;
+}
+
+// Logger logger;
 
 }  // namespace taichi

@@ -11,7 +11,7 @@ class logger;
 }
 
 #define SPD_AUGMENTED_LOG(X, ...)                                        \
-  taichi::logger.X(                                                      \
+  taichi::Logger::get_instance().X(                                      \
       fmt::format("[{}:{}@{}] ", __FILENAME__, __FUNCTION__, __LINE__) + \
       fmt::format(__VA_ARGS__))
 
@@ -101,7 +101,7 @@ class logger;
 #define TI_LOG_SET_PATTERN(x) spdlog::set_pattern(x);
 
 #define TI_FLUSH_LOGGER \
-  { taichi::logger.flush(); };
+  { taichi::Logger::get_instance().flush(); };
 
 namespace taichi {
 
@@ -111,8 +111,9 @@ class Logger {
   int level;
   std::function<void()> print_stacktrace_fn_;
 
- public:
   Logger();
+
+ public:
   void trace(const std::string &s);
   void debug(const std::string &s);
   void info(const std::string &s);
@@ -128,8 +129,8 @@ class Logger {
 
   // This is mostly to decouple the implementation.
   void set_print_stacktrace_func(std::function<void()> print_fn);
-};
 
-extern Logger logger;
+  static Logger &get_instance();
+};
 
 }  // namespace taichi

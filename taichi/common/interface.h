@@ -308,7 +308,7 @@ class InterfaceHolder {
           new TI_IMPLEMENTATION_HOLDER_NAME(class_name)(base_alias);          \
     }                                                                         \
     return TI_IMPLEMENTATION_HOLDER_PTR(class_name);                          \
-  }                                                                           
+  }
 
 #define TI_IMPLEMENTATION(base_class_name, class_name, alias)        \
   class ImplementationInjector_##base_class_name##class_name {       \

@@ -116,10 +116,12 @@ void export_misc(py::module &m) {
       .def("test", &Benchmark::test)
       .def("initialize", &Benchmark::initialize);
 
-#define TI_EXPORT_LOGGING(X) \
-  m.def(#X, [](const std::string &msg) { taichi::logger.X(msg); });
+#define TI_EXPORT_LOGGING(X)               \
+  m.def(#X, [](const std::string &msg) {   \
+    taichi::Logger::get_instance().X(msg); \
+  });
 
-  m.def("flush_log", []() { taichi::logger.flush(); });
+  m.def("flush_log", []() { taichi::Logger::get_instance().flush(); });
 
   TI_EXPORT_LOGGING(trace);
   TI_EXPORT_LOGGING(debug);
@@ -132,12 +134,14 @@ void export_misc(py::module &m) {
 
   m.def("print_all_units", print_all_units);
   m.def("set_core_state_python_imported", CoreState::set_python_imported);
-  m.def("set_logging_level",
-        [](const std::string &level) { logger.set_level(level); });
-  m.def("logging_effective", [](const std::string &level) {
-    return logger.is_level_effective(level);
+  m.def("set_logging_level", [](const std::string &level) {
+    Logger::get_instance().set_level(level);
   });
-  m.def("set_logging_level_default", []() { logger.set_level_default(); });
+  m.def("logging_effective", [](const std::string &level) {
+    return Logger::get_instance().is_level_effective(level);
+  });
+  m.def("set_logging_level_default",
+        []() { Logger::get_instance().set_level_default(); });
   m.def("set_core_trigger_gdb_when_crash",
         CoreState::set_trigger_gdb_when_crash);
   m.def("test_raise_error", test_raise_error);
@@ -182,8 +186,9 @@ void export_misc(py::module &m) {
       .def(py::init<>())
       .def("clear", &Statistics::clear)
       .def("get_counters", &Statistics::get_counters);
-  m.def("get_kernel_stats", []() -> Statistics & { return stat; },
-        py::return_value_policy::reference);
+  m.def(
+      "get_kernel_stats", []() -> Statistics & { return stat; },
+      py::return_value_policy::reference);
 }
 
 TI_NAMESPACE_END

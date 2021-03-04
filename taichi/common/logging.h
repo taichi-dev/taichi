@@ -2,6 +2,9 @@
 
 #include <functional>
 
+// This is necessary for TI_UNREACHABLE
+#include "taichi/common/platform_macros.h"
+
 // Must include "spdlog/common.h" to define SPDLOG_HEADER_ONLY
 // before including "spdlog/fmt/fmt.h"
 #include "spdlog/common.h"

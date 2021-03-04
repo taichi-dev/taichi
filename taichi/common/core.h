@@ -31,34 +31,12 @@
 // https://blog.kowalczyk.info/article/j/guide-to-predefined-macros-in-c-compilers-gcc-clang-msvc-etc..html
 
 // Platforms
-
-// Windows
-#if defined(_WIN64)
-#define TI_PLATFORM_WINDOWS
-#endif
-
-#if defined(_WIN32) && !defined(_WIN64)
-static_assert(false, "32-bit Windows systems are not supported")
-#endif
-
-// Linux
-#if defined(__linux__)
-#define TI_PLATFORM_LINUX
-#endif
-
-// OSX
-#if defined(__APPLE__)
-#define TI_PLATFORM_OSX
-#endif
-
-#if (defined(TI_PLATFORM_LINUX) || defined(TI_PLATFORM_OSX))
-#define TI_PLATFORM_UNIX
-#endif
+#include "taichi/common/platform_macros.h"
 
 // Avoid dependency on glibc 2.27
 #if defined(TI_PLATFORM_LINUX) && defined(TI_ARCH_x64)
-    // objdump -T libtaichi_core.so| grep  GLIBC_2.27
-    __asm__(".symver logf,logf@GLIBC_2.2.5");
+// objdump -T libtaichi_core.so| grep  GLIBC_2.27
+__asm__(".symver logf,logf@GLIBC_2.2.5");
 __asm__(".symver powf,powf@GLIBC_2.2.5");
 __asm__(".symver expf,expf@GLIBC_2.2.5");
 #endif

@@ -57,6 +57,7 @@ Logger::Logger() {
   TI_LOG_SET_PATTERN("%^[%L %D %X.%e] %v%$");
 
   set_level_default();
+  // TODO: restore PID printing below.
   // TI_TRACE("Taichi core started. Thread ID = {}", PID::get_pid());
 }
 

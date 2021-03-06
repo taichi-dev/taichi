@@ -2,6 +2,7 @@
 
 #include "taichi/python/export.h"
 #include "taichi/common/logging.h"
+#include "taichi/system/threading.h"
 #include "taichi/system/traceback.h"
 
 namespace taichi {
@@ -70,6 +71,7 @@ class HackedSignalRegister {
 #undef TI_REGISTER_SIGNAL_HANDLER
 
     Logger::get_instance().set_print_stacktrace_func(print_traceback);
+    TI_TRACE("Taichi core started. Thread ID = {}", PID::get_pid());
   }
 };
 

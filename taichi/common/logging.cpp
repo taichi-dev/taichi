@@ -57,8 +57,6 @@ Logger::Logger() {
   TI_LOG_SET_PATTERN("%^[%L %D %X.%e] %v%$");
 
   set_level_default();
-  // TODO: restore PID printing below.
-  // TI_TRACE("Taichi core started. Thread ID = {}", PID::get_pid());
 }
 
 void Logger::set_level_default() {
@@ -113,10 +111,19 @@ void Logger::set_print_stacktrace_func(std::function<void()> print_fn) {
 
 // static
 Logger &Logger::get_instance() {
+  // Use the singleton pattern, instead of defining a global variable. This is
+  // because I've moved the signal handler registration + pybind11's
+  // py::register_exception_translator to
+  // taichi/system/hacked_signal_handler.cpp. We instantiate a global
+  // HackedSIgnalHandler (in the anonymous namespace), whose constructor
+  // registers the signal handlers.
+
+  // This decouples Logger from pybind11. However, it has introduced a problem
+  // if we continue to keep a global Logger instance: the construction order
+  // between Logger and HackedSIgnalHandler is unspecified, and it actually
+  // crashes on my system. So we use the singleton pattern instead.
   static Logger *l = new Logger();
   return *l;
 }
-
-// Logger logger;
 
 }  // namespace taichi

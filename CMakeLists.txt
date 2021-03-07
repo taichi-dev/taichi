@@ -53,6 +53,13 @@ include(cmake/TaichiCXXFlags.cmake)
 include(cmake/TaichiCore.cmake)
 include(cmake/TaichiMain.cmake)
 
+option(TI_BUILD_TESTS "Build the CPP tests" OFF)
+
+if (TI_BUILD_TESTS)
+  add_subdirectory(external/googletest EXCLUDE_FROM_ALL)
+  include(cmake/TaichiTests.cmake)
+endif()
+
 message("C++ Flags: ${CMAKE_CXX_FLAGS}")
 message("Build type: ${CMAKE_BUILD_TYPE}")
 

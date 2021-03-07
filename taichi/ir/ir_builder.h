@@ -5,13 +5,12 @@
 TLANG_NAMESPACE_BEGIN
 
 class IRBuilder {
- public:
+ private:
   struct InsertPoint {
     Block *block;
     int position;
   };
 
- private:
   std::unique_ptr<IRNode> root_;
   InsertPoint insert_point_;
 

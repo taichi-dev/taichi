@@ -41,7 +41,7 @@ Stmt *IRBuilder::get_float64(float64 value) {
           value))));
 }
 
-Stmt *IRBuilder::get_argument(int arg_id, DataType dt, bool is_ptr) {
+Stmt *IRBuilder::create_arg_load(int arg_id, DataType dt, bool is_ptr) {
   return insert(Stmt::make<ArgLoadStmt>(arg_id, dt, is_ptr));
 }
 
@@ -67,11 +67,6 @@ Stmt *IRBuilder::create_floordiv(Stmt *l, Stmt *r) {
 
 Stmt *IRBuilder::create_truediv(Stmt *l, Stmt *r) {
   return insert(Stmt::make<BinaryOpStmt>(BinaryOpType::truediv, l, r));
-}
-
-template <typename... Args>
-Stmt *IRBuilder::create_print(Args &&... args) {
-  return insert(Stmt::make<PrintStmt>(std::forward(args)));
 }
 
 TLANG_NAMESPACE_END

@@ -27,8 +27,8 @@ class IRBuilder {
   Stmt *get_float32(float32 value);
   Stmt *get_float64(float64 value);
 
-  // Kernel arguments.
-  Stmt *get_argument(int arg_id, DataType dt, bool is_ptr);
+  // Load kernel arguments.
+  Stmt *create_arg_load(int arg_id, DataType dt, bool is_ptr);
 
   // Binary operations. Returns the result.
   Stmt *create_add(Stmt *l, Stmt *r);
@@ -44,7 +44,9 @@ class IRBuilder {
 
   // Print values and strings. Arguments can be Stmt* or std::string.
   template <typename... Args>
-  Stmt *create_print(Args &&... args);
+  Stmt *create_print(Args &&... args) {
+    return insert(Stmt::make<PrintStmt>(std::forward(args)));
+  }
 };
 
 TLANG_NAMESPACE_END

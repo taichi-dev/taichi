@@ -27,7 +27,7 @@ std::string snode_access_flag_name(SNodeAccessFlag type) {
   }
 }
 
-IRBuilder &current_ast_builder() {
+ASTBuilder &current_ast_builder() {
   return context->builder();
 }
 
@@ -41,29 +41,29 @@ void DecoratorRecorder::reset() {
   strictly_serialized = false;
 }
 
-Block *IRBuilder::current_block() {
+Block *ASTBuilder::current_block() {
   if (stack.empty())
     return nullptr;
   else
     return stack.back();
 }
 
-Stmt *IRBuilder::get_last_stmt() {
+Stmt *ASTBuilder::get_last_stmt() {
   TI_ASSERT(!stack.empty());
   return stack.back()->back();
 }
 
-void IRBuilder::insert(std::unique_ptr<Stmt> &&stmt, int location) {
+void ASTBuilder::insert(std::unique_ptr<Stmt> &&stmt, int location) {
   TI_ASSERT(!stack.empty());
   stack.back()->insert(std::move(stmt), location);
 }
 
-void IRBuilder::stop_gradient(SNode *snode) {
+void ASTBuilder::stop_gradient(SNode *snode) {
   TI_ASSERT(!stack.empty());
   stack.back()->stop_gradients.push_back(snode);
 }
 
-std::unique_ptr<IRBuilder::ScopeGuard> IRBuilder::create_scope(
+std::unique_ptr<ASTBuilder::ScopeGuard> ASTBuilder::create_scope(
     std::unique_ptr<Block> &list) {
   TI_ASSERT(list == nullptr);
   list = std::make_unique<Block>();

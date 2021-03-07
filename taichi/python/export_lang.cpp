@@ -51,7 +51,7 @@ void expr_assign(const Expr &lhs_, const Expr &rhs, std::string tb) {
   current_ast_builder().insert(std::move(stmt));
 }
 
-std::vector<std::unique_ptr<IRBuilder::ScopeGuard>> scope_stack;
+std::vector<std::unique_ptr<ASTBuilder::ScopeGuard>> scope_stack;
 
 void compile_runtimes();
 std::string libdevice_path();

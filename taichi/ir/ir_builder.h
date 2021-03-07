@@ -44,7 +44,7 @@ class IRBuilder {
   // Print values and strings. Arguments can be Stmt* or std::string.
   template <typename... Args>
   Stmt *create_print(Args &&... args) {
-    return insert(Stmt::make<PrintStmt>(std::forward(args)));
+    return insert(Stmt::make<PrintStmt>(std::forward(args)...));
   }
 };
 

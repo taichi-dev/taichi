@@ -125,7 +125,8 @@ class ASTBuilder {
   struct ScopeGuard {
     ASTBuilder *builder;
     Block *list;
-    ScopeGuard(ASTBuilder *builder, Block *list) : builder(builder), list(list) {
+    ScopeGuard(ASTBuilder *builder, Block *list)
+        : builder(builder), list(list) {
       builder->stack.push_back(list);
     }
 

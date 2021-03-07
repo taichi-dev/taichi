@@ -4,7 +4,7 @@
 
 namespace taichi {
 
-TEST(StatementsTest, Basic) {
+TEST(CoreTest, Basic) {
   EXPECT_EQ(trim_string("hello taichi  "), "hello taichi");
 }
 

@@ -62,7 +62,7 @@ DecoratorRecorder dec;
 
 FrontendContext::FrontendContext() {
   root_node = std::make_unique<Block>();
-  current_builder = std::make_unique<IRBuilder>(root_node.get());
+  current_builder = std::make_unique<ASTBuilder>(root_node.get());
 }
 
 FrontendForStmt::FrontendForStmt(const Expr &loop_var,

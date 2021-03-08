@@ -18,7 +18,7 @@
 
 TLANG_NAMESPACE_BEGIN
 
-class IRBuilder;
+class ASTBuilder;
 class IRNode;
 class Block;
 class Stmt;
@@ -70,7 +70,7 @@ class MemoryAccessOptions {
 #include "taichi/inc/statements.inc.h"
 #undef PER_STATEMENT
 
-IRBuilder &current_ast_builder();
+ASTBuilder &current_ast_builder();
 
 class DecoratorRecorder {
  public:
@@ -91,13 +91,13 @@ class DecoratorRecorder {
 
 class FrontendContext {
  private:
-  std::unique_ptr<IRBuilder> current_builder;
+  std::unique_ptr<ASTBuilder> current_builder;
   std::unique_ptr<Block> root_node;
 
  public:
   FrontendContext();
 
-  IRBuilder &builder() {
+  ASTBuilder &builder() {
     return *current_builder;
   }
 
@@ -110,21 +110,23 @@ class FrontendContext {
 
 extern std::unique_ptr<FrontendContext> context;
 
-class IRBuilder {
+// TODO: move to frontend_ir.h
+class ASTBuilder {
  private:
   std::vector<Block *> stack;
 
  public:
-  IRBuilder(Block *initial) {
+  ASTBuilder(Block *initial) {
     stack.push_back(initial);
   }
 
   void insert(std::unique_ptr<Stmt> &&stmt, int location = -1);
 
   struct ScopeGuard {
-    IRBuilder *builder;
+    ASTBuilder *builder;
     Block *list;
-    ScopeGuard(IRBuilder *builder, Block *list) : builder(builder), list(list) {
+    ScopeGuard(ASTBuilder *builder, Block *list)
+        : builder(builder), list(list) {
       builder->stack.push_back(list);
     }
 

@@ -17,6 +17,7 @@
 #include "taichi/backends/cc/cc_program.h"
 #include "taichi/program/kernel.h"
 #include "taichi/program/kernel_profiler.h"
+#include "taichi/program/snode_rw_accessors_bank.h"
 #include "taichi/program/context.h"
 #include "taichi/runtime/runtime.h"
 #include "taichi/backends/metal/struct_metal.h"
@@ -55,8 +56,8 @@ TLANG_NAMESPACE_END
 namespace std {
 template <>
 struct hash<taichi::lang::JITEvaluatorId> {
-  std::size_t operator()(taichi::lang::JITEvaluatorId const &id) const
-      noexcept {
+  std::size_t operator()(
+      taichi::lang::JITEvaluatorId const &id) const noexcept {
     return ((std::size_t)id.op | (id.ret.hash() << 8) | (id.lhs.hash() << 16) |
             (id.rhs.hash() << 24) | ((std::size_t)id.is_binary << 31)) ^
            (std::hash<std::thread::id>{}(id.thread_id) << 32);
@@ -275,6 +276,10 @@ class Program {
 
   ~Program();
 
+  inline SNodeRwAccessorsBank &get_snode_rw_accessors_bank() {
+    return snode_rw_accessors_bank_;
+  }
+
  private:
   // Metal related data structures
   std::optional<metal::CompiledStructs> metal_compiled_structs_;
@@ -282,6 +287,7 @@ class Program {
   // OpenGL related data structures
   std::optional<opengl::StructCompiledResult> opengl_struct_compiled_;
   std::unique_ptr<opengl::GLSLLauncher> opengl_kernel_launcher_;
+  SNodeRwAccessorsBank snode_rw_accessors_bank_;
 
  public:
 #ifdef TI_WITH_CC

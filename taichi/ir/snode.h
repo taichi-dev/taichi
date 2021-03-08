@@ -203,15 +203,6 @@ class SNode {
     return *this;
   }
 
-  // // for float and double
-  // void write_float(const std::vector<int> &I, float64);
-  // float64 read_float(const std::vector<int> &I);
-
-  // // for int32 and int64
-  // void write_int(const std::vector<int> &I, int64);
-  // int64 read_int(const std::vector<int> &I);
-  // uint64 read_uint(const std::vector<int> &I);
-
   int child_id(SNode *c) {
     for (int i = 0; i < (int)ch.size(); i++) {
       if (ch[i].get() == c) {

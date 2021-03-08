@@ -16,6 +16,7 @@ TLANG_NAMESPACE_BEGIN
 struct TaskMeta;
 
 class IRNode;
+class Kernel;
 class OffloadedStmt;
 class GlobalPtrStmt;
 

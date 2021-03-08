@@ -1,5 +1,7 @@
 #include "taichi/ir/type.h"
-#include "taichi/program/program.h"
+
+#include "taichi/ir/type_factory.h"
+#include "taichi/ir/type_utils.h"
 
 TLANG_NAMESPACE_BEGIN
 

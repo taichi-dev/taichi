@@ -1,4 +1,5 @@
-#include "state_machine.h"
+#include "taichi/ir/state_machine.h"
+
 #include "taichi/ir/statements.h"
 #include "taichi/ir/analysis.h"
 

@@ -116,9 +116,6 @@ SNode::SNode(int depth, SNodeType t) : depth(depth), type(t) {
   has_ambient = false;
   dt = PrimitiveType::gen;
   _morton = false;
-
-  reader_kernel = nullptr;
-  writer_kernel = nullptr;
 }
 
 SNode::SNode(const SNode &) {

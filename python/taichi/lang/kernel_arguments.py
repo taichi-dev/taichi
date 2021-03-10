@@ -25,7 +25,11 @@ class Template:
         if isinstance(x, ti.SNode):
             return x.ptr
         if isinstance(x, ti.Expr):
-            return x.ptr
+            return x.ptr.get_underlying_ptr_address()
+        if isinstance(x, ti.core.Expr):
+            return x.get_underlying_ptr_address()
+        if isinstance(x, tuple):
+            return tuple(self.extract(item) for item in x)
         return x
 
 

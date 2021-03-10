@@ -1,9 +1,7 @@
 #include "taichi/ir/snode.h"
 
 #include "taichi/ir/ir.h"
-#include "taichi/ir/frontend.h"
 #include "taichi/ir/statements.h"
-#include "taichi/backends/cuda/cuda_driver.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -21,56 +19,6 @@ SNode &SNode::insert_children(SNodeType t) {
   // SNode tree during compilation.
 
   return *ch.back();
-}
-
-void SNode::place(Expr &expr_, const std::vector<int> &offset) {
-  if (type == SNodeType::root) {  // never directly place to root
-    this->dense(std::vector<Index>(), {}).place(expr_, offset);
-  } else {
-    TI_ASSERT(expr_.is<GlobalVariableExpression>());
-    auto expr = expr_.cast<GlobalVariableExpression>();
-    TI_ERROR_IF(expr->snode != nullptr, "This variable has been placed.");
-    SNode *new_exp_snode = nullptr;
-    if (auto cft = expr->dt->cast<CustomFloatType>()) {
-      if (auto exp = cft->get_exponent_type()) {
-        // Non-empty exponent type. First create a place SNode for the
-        // exponent value.
-        if (placing_shared_exp && currently_placing_exp_snode != nullptr) {
-          // Reuse existing exponent
-          TI_ASSERT_INFO(currently_placing_exp_snode_dtype == exp,
-                         "CustomFloatTypes with shared exponents must have "
-                         "exactly the same exponent type.");
-          new_exp_snode = currently_placing_exp_snode;
-        } else {
-          auto &exp_node = insert_children(SNodeType::place);
-          exp_node.dt = exp;
-          exp_node.name = expr->ident.raw_name() + "_exp";
-          new_exp_snode = &exp_node;
-          if (placing_shared_exp) {
-            currently_placing_exp_snode = new_exp_snode;
-            currently_placing_exp_snode_dtype = exp;
-          }
-        }
-      }
-    }
-    auto &child = insert_children(SNodeType::place);
-    expr->set_snode(&child);
-    child.name = expr->ident.raw_name();
-    if (expr->has_ambient) {
-      expr->snode->has_ambient = true;
-      expr->snode->ambient_val = expr->ambient_value;
-    }
-    expr->snode->expr.set(Expr(expr));
-    if (placing_shared_exp)
-      child.owns_shared_exponent = true;
-    child.dt = expr->dt;
-    if (new_exp_snode) {
-      child.exp_snode = new_exp_snode;
-      new_exp_snode->exponent_users.push_back(&child);
-    }
-    if (!offset.empty())
-      child.set_index_offsets(offset);
-  }
 }
 
 SNode &SNode::create_node(std::vector<Index> indices,
@@ -129,48 +77,12 @@ SNode &SNode::bit_array(const std::vector<Index> &indices,
   return snode;
 }
 
-void SNode::lazy_grad() {
-  if (this->type == SNodeType::place)
-    return;
-  for (auto &c : ch) {
-    c->lazy_grad();
-  }
-  std::vector<Expr> new_grads;
-  for (auto &c : ch) {
-    if (c->type == SNodeType::place && c->is_primal() && needs_grad(c->dt) &&
-        !c->has_grad()) {
-      new_grads.push_back(c->expr.cast<GlobalVariableExpression>()->adjoint);
-    }
-  }
-  for (auto p : new_grads) {
-    this->place(p, {});
-  }
-}
-
-bool SNode::is_primal() const {
-  TI_ASSERT(expr.expr != nullptr);
-  return expr.cast<GlobalVariableExpression>()->is_primal;
-}
-
 bool SNode::is_place() const {
   return type == SNodeType::place;
 }
 
 bool SNode::is_scalar() const {
   return is_place() && (num_active_indices == 0);
-}
-
-bool SNode::has_grad() const {
-  auto adjoint = expr.cast<GlobalVariableExpression>()->adjoint;
-  return is_primal() && adjoint.expr != nullptr &&
-         adjoint.cast<GlobalVariableExpression>()->snode != nullptr;
-}
-
-SNode *SNode::get_grad() const {
-  TI_ASSERT(has_grad());
-  return expr.cast<GlobalVariableExpression>()
-      ->adjoint.cast<GlobalVariableExpression>()
-      ->snode;
 }
 
 SNode *SNode::get_least_sparse_ancestor() const {
@@ -276,6 +188,19 @@ void SNode::end_shared_exp_placement() {
   TI_ASSERT(currently_placing_exp_snode != nullptr);
   currently_placing_exp_snode = nullptr;
   placing_shared_exp = false;
+}
+
+bool SNode::is_primal() const {
+  return grad_info->is_primal();
+}
+
+bool SNode::has_grad() const {
+  return is_primal() && (grad_info->grad_snode() != nullptr);
+}
+
+SNode *SNode::get_grad() const {
+  TI_ASSERT(has_grad());
+  return grad_info->grad_snode();
 }
 
 TLANG_NAMESPACE_END

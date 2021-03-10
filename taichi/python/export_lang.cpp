@@ -13,6 +13,7 @@
 #include "taichi/ir/statements.h"
 #include "taichi/program/extension.h"
 #include "taichi/program/async_engine.h"
+#include "taichi/program/snode_expr_utils.h"
 #include "taichi/program/snode_rw_accessors_bank.h"
 #include "taichi/common/interface.h"
 #include "taichi/python/export.h"
@@ -264,15 +265,21 @@ void export_lang(py::module &m) {
       .def("bit_struct", &SNode::bit_struct, py::return_value_policy::reference)
       .def("bit_array", &SNode::bit_array, py::return_value_policy::reference)
       .def("place",
-           (void (SNode::*)(Expr &, const std::vector<int> &))(&SNode::place),
-           py::return_value_policy::reference)
+           [](SNode *snode, Expr &expr, const std::vector<int> &offset) {
+             place_child(&expr, offset, snode,
+                         get_current_program().get_snode_to_glb_var_exprs());
+           })
       .def("data_type", [](SNode *snode) { return snode->dt; })
       .def("get_num_ch",
            [](SNode *snode) -> int { return (int)snode->ch.size(); })
       .def("get_ch",
            [](SNode *snode, int i) -> SNode * { return snode->ch[i].get(); },
            py::return_value_policy::reference)
-      .def("lazy_grad", &SNode::lazy_grad)
+      .def("lazy_grad",
+           [](SNode *snode) {
+             make_lazy_grad(snode,
+                            get_current_program().get_snode_to_glb_var_exprs());
+           })
       .def("read_int",
            [](SNode *snode, const std::vector<int> &I) -> int64 {
              return get_snode_rw_accessors(snode).read_int(I);
@@ -288,7 +295,11 @@ void export_lang(py::module &m) {
       .def("has_grad", &SNode::has_grad)
       .def("is_primal", &SNode::is_primal)
       .def("is_place", &SNode::is_place)
-      .def("get_expr", &SNode::get_expr, py::return_value_policy::reference)
+      .def("get_expr",
+           [](SNode *snode) {
+             return Expr(
+                 get_current_program().get_snode_to_glb_var_exprs()->at(snode));
+           })
       .def("write_int",
            [](SNode *snode, const std::vector<int> &I, int64 val) {
              get_snode_rw_accessors(snode).write_int(I, val);
@@ -342,7 +353,17 @@ void export_lang(py::module &m) {
       .def("set_grad", &Expr::set_grad)
       .def("set_attribute", &Expr::set_attribute)
       .def("get_attribute", &Expr::get_attribute)
-      .def("get_raw_address", [](Expr *expr) { return (uint64)expr; });
+      .def("get_raw_address", [](Expr *expr) { return (uint64)expr; })
+      .def("get_underlying_ptr_address", [](Expr *e) {
+        // The reason that there are both get_raw_address() and
+        // get_underlying_ptr_address() is that Expr itself is mostly wrapper
+        // around its underlying |expr| (of type Expression). Expr |e| can be
+        // temporary, while the underlying |expr| is mostly persistant.
+        //
+        // Same get_raw_address() implies that get_underlying_ptr_address() are
+        // also the same. The reverse is not true.
+        return (uint64)e->expr.get();
+      });
 
   py::class_<ExprGroup>(m, "ExprGroup")
       .def(py::init<>())

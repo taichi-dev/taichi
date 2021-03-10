@@ -95,9 +95,6 @@ void StructCompiler::infer_snode_properties(SNode &snode) {
     }
   }
 
-  if (snode.expr.expr)
-    snode.expr->set_attribute("dim", std::to_string(snode.num_active_indices));
-
   snode.total_num_bits = 0;
   for (int i = 0; i < taichi_max_num_indices; i++) {
     snode.total_num_bits += snode.extractors[i].num_bits;

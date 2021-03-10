@@ -56,6 +56,18 @@ class Index {
 // Structural nodes
 class SNode {
  public:
+  // This class decouples SNode from the frontend expression.
+  class GradInfoProvider {
+   public:
+    virtual ~GradInfoProvider() = default;
+    virtual bool is_primal() const = 0;
+    virtual SNode *grad_snode() const = 0;
+
+    template <typename T>
+    T *cast() {
+      return static_cast<T *>(this);
+    }
+  };
   std::vector<std::unique_ptr<SNode>> ch;
 
   IndexExtractor extractors[taichi_max_num_indices];
@@ -86,9 +98,9 @@ class SNode {
   SNode *parent{};
   Kernel *reader_kernel{};
   Kernel *writer_kernel{};
-  Expr expr;
-  SNode *exp_snode{};  // for CustomFloatType with exponent bits
-  int bit_offset{0};   // for children of bit_struct only
+  std::unique_ptr<GradInfoProvider> grad_info{nullptr};
+  SNode *exp_snode{nullptr};  // for CustomFloatType with exponent bits
+  int bit_offset{0};          // for children of bit_struct only
   bool placing_shared_exp{false};
   SNode *currently_placing_exp_snode{nullptr};
   Type *currently_placing_exp_snode_dtype{nullptr};
@@ -194,8 +206,6 @@ class SNode {
 
   void set_index_offsets(std::vector<int> index_offsets);
 
-  void place(Expr &expr, const std::vector<int> &offset);
-
   SNode &dynamic(const Index &expr, int n, int chunk_size);
 
   SNode &morton(bool val = true) {
@@ -223,17 +233,11 @@ class SNode {
 
   bool need_activation() const;
 
-  void lazy_grad();
-
   bool is_primal() const;
 
   bool is_place() const;
 
   bool is_scalar() const;
-
-  const Expr &get_expr() const {
-    return expr;
-  }
 
   bool has_grad() const;
 

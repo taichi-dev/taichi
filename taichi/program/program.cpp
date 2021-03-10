@@ -66,7 +66,7 @@ inline uint64 *allocate_result_buffer_default(Program *prog) {
 Program *current_program = nullptr;
 std::atomic<int> Program::num_instances;
 
-Program::Program(Arch desired_arch) {
+Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   TI_TRACE("Program initializing...");
 
   // For performance considerations and correctness of CustomFloatType

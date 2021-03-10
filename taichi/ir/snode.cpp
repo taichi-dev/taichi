@@ -7,18 +7,6 @@
 
 TLANG_NAMESPACE_BEGIN
 
-namespace {
-
-void set_kernel_args(const std::vector<int> &I,
-                     int num_active_indices,
-                     Kernel::LaunchContextBuilder *launch_ctx) {
-  for (int i = 0; i < num_active_indices; i++) {
-    launch_ctx->set_arg_int(i, I[i]);
-  }
-}
-
-}  // namespace
-
 std::atomic<int> SNode::counter{0};
 
 SNode &SNode::insert_children(SNodeType t) {
@@ -195,63 +183,6 @@ SNode *SNode::get_least_sparse_ancestor() const {
     TI_ASSERT(result);
   }
   return result;
-}
-
-// for float and double
-void SNode::write_float(const std::vector<int> &I, float64 val) {
-  if (writer_kernel == nullptr) {
-    writer_kernel = &get_current_program().get_snode_writer(this);
-  }
-  auto launch_ctx = writer_kernel->make_launch_context();
-  set_kernel_args(I, num_active_indices, &launch_ctx);
-  for (int i = 0; i < num_active_indices; i++) {
-    launch_ctx.set_arg_int(i, I[i]);
-  }
-  launch_ctx.set_arg_float(num_active_indices, val);
-  get_current_program().synchronize();
-  (*writer_kernel)(launch_ctx);
-}
-
-float64 SNode::read_float(const std::vector<int> &I) {
-  if (reader_kernel == nullptr) {
-    reader_kernel = &get_current_program().get_snode_reader(this);
-  }
-  get_current_program().synchronize();
-  auto launch_ctx = reader_kernel->make_launch_context();
-  set_kernel_args(I, num_active_indices, &launch_ctx);
-  (*reader_kernel)(launch_ctx);
-  get_current_program().synchronize();
-  auto ret = reader_kernel->get_ret_float(0);
-  return ret;
-}
-
-// for int32 and int64
-void SNode::write_int(const std::vector<int> &I, int64 val) {
-  if (writer_kernel == nullptr) {
-    writer_kernel = &get_current_program().get_snode_writer(this);
-  }
-  auto launch_ctx = writer_kernel->make_launch_context();
-  set_kernel_args(I, num_active_indices, &launch_ctx);
-  launch_ctx.set_arg_int(num_active_indices, val);
-  get_current_program().synchronize();
-  (*writer_kernel)(launch_ctx);
-}
-
-int64 SNode::read_int(const std::vector<int> &I) {
-  if (reader_kernel == nullptr) {
-    reader_kernel = &get_current_program().get_snode_reader(this);
-  }
-  get_current_program().synchronize();
-  auto launch_ctx = reader_kernel->make_launch_context();
-  set_kernel_args(I, num_active_indices, &launch_ctx);
-  (*reader_kernel)(launch_ctx);
-  get_current_program().synchronize();
-  auto ret = reader_kernel->get_ret_int(0);
-  return ret;
-}
-
-uint64 SNode::read_uint(const std::vector<int> &I) {
-  return (uint64)read_int(I);
 }
 
 int SNode::shape_along_axis(int i) const {

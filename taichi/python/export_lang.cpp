@@ -353,7 +353,17 @@ void export_lang(py::module &m) {
       .def("set_grad", &Expr::set_grad)
       .def("set_attribute", &Expr::set_attribute)
       .def("get_attribute", &Expr::get_attribute)
-      .def("get_raw_address", [](Expr *expr) { return (uint64)expr; });
+      .def("get_raw_address", [](Expr *expr) { return (uint64)expr; })
+      .def("get_underlying_ptr_address", [](Expr *e) {
+        // The reason that there are both get_raw_address() and
+        // get_underlying_ptr_address() is that Expr itself is mostly wrapper
+        // around its underlying |expr| (of type Expression). Expr |e| can be
+        // temporary, while the underlying |expr| is mostly persistant.
+        //
+        // Same get_raw_address() implies that get_underlying_ptr_address() are
+        // also the same. The reverse is not true.
+        return (uint64)e->expr.get();
+      });
 
   py::class_<ExprGroup>(m, "ExprGroup")
       .def(py::init<>())

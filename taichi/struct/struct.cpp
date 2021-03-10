@@ -2,7 +2,6 @@
 
 #include "taichi/ir/ir.h"
 #include "taichi/ir/expression.h"
-#include "taichi/program/snode_expr_utils.h"
 #include "taichi/program/program.h"
 #include "struct.h"
 

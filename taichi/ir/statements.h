@@ -2,6 +2,8 @@
 
 #include "taichi/ir/ir.h"
 #include "taichi/ir/offloaded_task_type.h"
+#include "taichi/ir/stmt_op_types.h"
+#include "taichi/program/arch.h"
 
 TLANG_NAMESPACE_BEGIN
 

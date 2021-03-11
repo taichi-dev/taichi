@@ -2,8 +2,9 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/visitors.h"
-#include "taichi/program/kernel.h"
+#include "taichi/program/compile_config.h"
 #include "taichi/program/extension.h"
+#include "taichi/program/kernel.h"
 
 TLANG_NAMESPACE_BEGIN
 

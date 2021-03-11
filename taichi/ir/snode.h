@@ -2,8 +2,10 @@
 
 #include <atomic>
 
-#include "taichi/ir/expr.h"
 #include "taichi/inc/constants.h"
+#include "taichi/ir/expr.h"
+#include "taichi/ir/snode_types.h"
+#include "taichi/ir/type.h"
 
 TLANG_NAMESPACE_BEGIN
 

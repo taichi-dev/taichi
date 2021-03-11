@@ -5,14 +5,10 @@
 #include <unordered_map>
 
 #include "taichi/ir/analysis.h"
-#include "taichi/ir/frontend.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 
 TLANG_NAMESPACE_BEGIN
-
-#define TI_EXPRESSION_IMPLEMENTATION
-#include "taichi/ir/expression_ops.h"
 
 std::string snode_access_flag_name(SNodeAccessFlag type) {
   if (type == SNodeAccessFlag::block_local) {
@@ -90,14 +86,6 @@ IRNode *IRNode::get_ir_root() {
     node = node->get_parent();
   }
   return node;
-}
-
-Kernel *IRNode::get_kernel() const {
-  return const_cast<IRNode *>(this)->get_ir_root()->kernel;
-}
-
-CompileConfig &IRNode::get_config() const {
-  return get_kernel()->program.config;
 }
 
 std::unique_ptr<IRNode> IRNode::clone() {
@@ -289,44 +277,6 @@ int Stmt::locate_operand(Stmt **stmt) {
     }
   }
   return -1;
-}
-
-std::string Expression::get_attribute(const std::string &key) const {
-  if (auto it = attributes.find(key); it == attributes.end()) {
-    TI_ERROR("Attribute {} not found.", key);
-  } else {
-    return it->second;
-  }
-}
-
-ExprGroup ExprGroup::loaded() const {
-  auto indices_loaded = *this;
-  for (int i = 0; i < (int)this->size(); i++)
-    indices_loaded[i].set(load_if_ptr(indices_loaded[i]));
-  return indices_loaded;
-}
-
-std::string ExprGroup::serialize() const {
-  std::string ret;
-  for (int i = 0; i < (int)exprs.size(); i++) {
-    ret += exprs[i].serialize();
-    if (i + 1 < (int)exprs.size()) {
-      ret += ", ";
-    }
-  }
-  return ret;
-}
-
-template <>
-std::string to_string(const LaneAttribute<LocalAddress> &ptr) {
-  std::string ret = " [";
-  for (int i = 0; i < (int)ptr.size(); i++) {
-    ret += fmt::format("{}[{}]", ptr[i].var->name(), ptr[i].offset);
-    if (i + 1 < (int)ptr.size())
-      ret += ", ";
-  }
-  ret += "]";
-  return ret;
 }
 
 void Block::erase(int location) {

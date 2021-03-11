@@ -9,6 +9,8 @@
 
 TLANG_NAMESPACE_BEGIN
 
+namespace {
+
 std::string scratch_pad_info(const MemoryAccessOptions &opt) {
   std::string ser;
   if (!opt.get_all().empty()) {
@@ -29,6 +31,17 @@ std::string scratch_pad_info(const MemoryAccessOptions &opt) {
 std::string block_dim_info(int block_dim) {
   return "block_dim=" +
          (block_dim == 0 ? "adaptive" : std::to_string(block_dim)) + " ";
+}
+
+std::string to_string(const LaneAttribute<LocalAddress> &ptr) {
+  std::string ret = " [";
+  for (int i = 0; i < (int)ptr.size(); i++) {
+    ret += fmt::format("{}[{}]", ptr[i].var->name(), ptr[i].offset);
+    if (i + 1 < (int)ptr.size())
+      ret += ", ";
+  }
+  ret += "]";
+  return ret;
 }
 
 class IRPrinter : public IRVisitor {
@@ -634,6 +647,8 @@ class IRPrinter : public IRVisitor {
           stmt->is_atomic ? "atomic " : "", stmt->ptr->name(), ch_ids, values);
   }
 };
+
+}  // namespace
 
 namespace irpass {
 

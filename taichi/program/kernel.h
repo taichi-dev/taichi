@@ -3,6 +3,7 @@
 #include "taichi/lang_util.h"
 #include "taichi/ir/snode.h"
 #include "taichi/ir/ir.h"
+#include "taichi/program/arch.h"
 
 #define TI_RUNTIME_HOST
 #include "taichi/program/context.h"

@@ -6,6 +6,7 @@
 #include "taichi/ir/statements.h"
 #include "taichi/ir/visitors.h"
 #include "taichi/ir/transforms.h"
+#include "taichi/system/profiler.h"
 
 TLANG_NAMESPACE_BEGIN
 

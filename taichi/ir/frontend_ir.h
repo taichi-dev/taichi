@@ -3,7 +3,8 @@
 #include <string>
 #include <vector>
 
-#include "taichi/lang_util.h"
+#include "taichi/ir/snode_types.h"
+#include "taichi/ir/stmt_op_types.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/expression.h"
 

@@ -4,6 +4,8 @@
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/visitors.h"
 #include "taichi/ir/frontend_ir.h"
+#include "taichi/system/profiler.h"
+
 #include <unordered_set>
 
 TLANG_NAMESPACE_BEGIN

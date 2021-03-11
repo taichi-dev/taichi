@@ -2,17 +2,10 @@
 
 #include <atomic>
 
-#include "taichi/lang_util.h"
-#include "taichi/util/bit.h"
-#include "taichi/llvm/llvm_fwd.h"
 #include "taichi/ir/expr.h"
 #include "taichi/inc/constants.h"
 
 TLANG_NAMESPACE_BEGIN
-
-class Expr;
-class Kernel;
-class Stmt;
 
 struct IndexExtractor {
   int start;
@@ -96,8 +89,6 @@ class SNode {
   TypedConstant ambient_val;
   // Note: parent will not be set until structural nodes are compiled!
   SNode *parent{};
-  Kernel *reader_kernel{};
-  Kernel *writer_kernel{};
   std::unique_ptr<GradInfoProvider> grad_info{nullptr};
   SNode *exp_snode{nullptr};  // for CustomFloatType with exponent bits
   int bit_offset{0};          // for children of bit_struct only

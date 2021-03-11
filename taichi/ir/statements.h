@@ -2,7 +2,6 @@
 
 #include "taichi/ir/ir.h"
 #include "taichi/ir/offloaded_task_type.h"
-#include "taichi/ir/scratch_pad.h"
 
 TLANG_NAMESPACE_BEGIN
 

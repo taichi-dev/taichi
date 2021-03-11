@@ -1,21 +1,18 @@
-
-// Intermediate representations
-
 #include "taichi/ir/ir.h"
-#include "taichi/ir/transforms.h"
-#include "taichi/ir/analysis.h"
 
 #include <numeric>
 #include <thread>
 #include <unordered_map>
 
+#include "taichi/ir/analysis.h"
 #include "taichi/ir/frontend.h"
 #include "taichi/ir/statements.h"
+#include "taichi/ir/transforms.h"
 
 TLANG_NAMESPACE_BEGIN
 
 #define TI_EXPRESSION_IMPLEMENTATION
-#include "expression_ops.h"
+#include "taichi/ir/expression_ops.h"
 
 std::string snode_access_flag_name(SNodeAccessFlag type) {
   if (type == SNodeAccessFlag::block_local) {

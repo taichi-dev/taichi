@@ -248,6 +248,7 @@ class IRVisitor {
 };
 
 struct CompileConfig;
+class Kernel;
 
 class IRNode {
  public:

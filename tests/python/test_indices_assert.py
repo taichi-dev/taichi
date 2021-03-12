@@ -1,7 +1,7 @@
 import taichi as ti
 import pytest
 
-@ti.test(debug=True, gdb_trigger=False, exclude=[ti.metal])
+@ti.test(debug=True, gdb_trigger=False, arch=[ti.cpu])
 def test_indices_assert():
     
     overflow = ti.field(int, (334, 334, 334, 2*10))

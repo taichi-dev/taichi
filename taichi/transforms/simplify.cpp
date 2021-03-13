@@ -275,8 +275,33 @@ class BasicBlockSimplify : public IRVisitor {
       stmt->insert_before_me(std::move(mul));
       stride_product *= stmt->strides[i];
     }
-    stmt->replace_with(sum.get());
-    stmt->insert_before_me(std::move(sum));
+    // Compare the result with 0 to make sure no overflow occurs under Debug
+    // Mode.
+    bool debug = stmt->get_kernel()->program.config.debug;
+    if (debug) {
+      auto zero = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(0));
+      auto check_sum =
+          Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_ge, sum.get(), zero.get());
+      auto assert = Stmt::make<AssertStmt>(check_sum.get(),
+                                           "The indices provided are too big!",
+                                           std::vector<Stmt *>());
+      // Because Taichi's assertion is checked only after the execution of the
+      // kernel, when the linear index overflows and goes negative, we have to
+      // replace that with 0 to make sure that the rest of the kernel can still
+      // complete. Otherwise, Taichi would crash due to illegal mem address.
+      auto select = Stmt::make<TernaryOpStmt>(
+          TernaryOpType::select, check_sum.get(), sum.get(), zero.get());
+
+      stmt->insert_before_me(std::move(zero));
+      stmt->insert_before_me(std::move(sum));
+      stmt->insert_before_me(std::move(check_sum));
+      stmt->insert_before_me(std::move(assert));
+      stmt->replace_with(select.get());
+      stmt->insert_before_me(std::move(select));
+    } else {
+      stmt->replace_with(sum.get());
+      stmt->insert_before_me(std::move(sum));
+    }
     stmt->parent->erase(stmt);
     // get types of adds and muls
     irpass::type_check(stmt->parent);

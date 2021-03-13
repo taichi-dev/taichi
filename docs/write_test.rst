@@ -234,7 +234,7 @@ Sometimes some backends are not capable of specific tests, we have to exclude th
 .. code-block:: python
 
     # Run this test on all backends except for OpenGL
-    @ti.test(excludes=[ti.opengl])
+    @ti.test(exclude=[ti.opengl])
     def test_sparse_field():
         # ... (some tests that requires sparse feature which is not supported by OpenGL)
 

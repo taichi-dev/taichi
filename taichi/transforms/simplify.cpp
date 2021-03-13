@@ -275,13 +275,18 @@ class BasicBlockSimplify : public IRVisitor {
       stmt->insert_before_me(std::move(mul));
       stride_product *= stmt->strides[i];
     }
-    // Compare the result with 0 to make sure no overflow occurs under Debug Mode.
+    // Compare the result with 0 to make sure no overflow occurs under Debug
+    // Mode.
     bool debug = stmt->get_kernel()->program.config.debug;
     if (debug) {
       auto zero = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(0));
-      auto check_sum = Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_ge, sum.get(), zero.get());
-      auto assert = Stmt::make<AssertStmt>(check_sum.get(), "The indices provided are too big!", std::vector<Stmt *>());
-      auto select = Stmt::make<TernaryOpStmt>(TernaryOpType::select, check_sum.get(), sum.get(), zero.get());
+      auto check_sum =
+          Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_ge, sum.get(), zero.get());
+      auto assert = Stmt::make<AssertStmt>(check_sum.get(),
+                                           "The indices provided are too big!",
+                                           std::vector<Stmt *>());
+      auto select = Stmt::make<TernaryOpStmt>(
+          TernaryOpType::select, check_sum.get(), sum.get(), zero.get());
 
       stmt->insert_before_me(std::move(zero));
       stmt->insert_before_me(std::move(sum));

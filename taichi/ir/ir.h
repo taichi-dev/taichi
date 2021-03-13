@@ -17,7 +17,6 @@
 
 TLANG_NAMESPACE_BEGIN
 
-class ASTBuilder;
 class IRNode;
 class Block;
 class Stmt;
@@ -71,8 +70,6 @@ class MemoryAccessOptions {
 #include "taichi/inc/statements.inc.h"
 #undef PER_STATEMENT
 
-ASTBuilder &current_ast_builder();
-
 class DecoratorRecorder {
  public:
   int vectorize;
@@ -88,58 +85,6 @@ class DecoratorRecorder {
   }
 
   void reset();
-};
-
-class FrontendContext {
- private:
-  std::unique_ptr<ASTBuilder> current_builder;
-  std::unique_ptr<Block> root_node;
-
- public:
-  FrontendContext();
-
-  ASTBuilder &builder() {
-    return *current_builder;
-  }
-
-  IRNode *root();
-
-  std::unique_ptr<Block> get_root() {
-    return std::move(root_node);
-  }
-};
-
-extern std::unique_ptr<FrontendContext> context;
-
-// TODO: move to frontend_ir.h
-class ASTBuilder {
- private:
-  std::vector<Block *> stack;
-
- public:
-  ASTBuilder(Block *initial) {
-    stack.push_back(initial);
-  }
-
-  void insert(std::unique_ptr<Stmt> &&stmt, int location = -1);
-
-  struct ScopeGuard {
-    ASTBuilder *builder;
-    Block *list;
-    ScopeGuard(ASTBuilder *builder, Block *list)
-        : builder(builder), list(list) {
-      builder->stack.push_back(list);
-    }
-
-    ~ScopeGuard() {
-      builder->stack.pop_back();
-    }
-  };
-
-  std::unique_ptr<ScopeGuard> create_scope(std::unique_ptr<Block> &list);
-  Block *current_block();
-  Stmt *get_last_stmt();
-  void stop_gradient(SNode *);
 };
 
 class Identifier {

@@ -5,6 +5,42 @@
 
 TLANG_NAMESPACE_BEGIN
 
+ASTBuilder &current_ast_builder() {
+  return context->builder();
+}
+
+Block *ASTBuilder::current_block() {
+  if (stack.empty())
+    return nullptr;
+  else
+    return stack.back();
+}
+
+Stmt *ASTBuilder::get_last_stmt() {
+  TI_ASSERT(!stack.empty());
+  return stack.back()->back();
+}
+
+void ASTBuilder::insert(std::unique_ptr<Stmt> &&stmt, int location) {
+  TI_ASSERT(!stack.empty());
+  stack.back()->insert(std::move(stmt), location);
+}
+
+void ASTBuilder::stop_gradient(SNode *snode) {
+  TI_ASSERT(!stack.empty());
+  stack.back()->stop_gradients.push_back(snode);
+}
+
+std::unique_ptr<ASTBuilder::ScopeGuard> ASTBuilder::create_scope(
+    std::unique_ptr<Block> &list) {
+  TI_ASSERT(list == nullptr);
+  list = std::make_unique<Block>();
+  if (!stack.empty()) {
+    list->parent_stmt = get_last_stmt();
+  }
+  return std::make_unique<ScopeGuard>(this, list.get());
+}
+
 FrontendSNodeOpStmt::FrontendSNodeOpStmt(SNodeOpType op_type,
                                          SNode *snode,
                                          const ExprGroup &indices,

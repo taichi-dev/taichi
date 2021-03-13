@@ -11,7 +11,6 @@
 #include "taichi/common/core.h"
 #include "taichi/ir/ir_modified.h"
 #include "taichi/ir/snode.h"
-// #include "taichi/program/compile_config.h"
 #include "taichi/ir/type_factory.h"
 #include "taichi/llvm/llvm_fwd.h"
 #include "taichi/util/short_name.h"

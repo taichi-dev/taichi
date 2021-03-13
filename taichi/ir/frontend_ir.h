@@ -35,7 +35,6 @@ class FrontendContext {
 
 extern std::unique_ptr<FrontendContext> context;
 
-// TODO: move to frontend_ir.h
 class ASTBuilder {
  private:
   std::vector<Block *> stack;

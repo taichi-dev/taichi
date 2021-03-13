@@ -12,7 +12,6 @@
 #include "taichi/ir/ir_modified.h"
 #include "taichi/ir/snode.h"
 #include "taichi/ir/type_factory.h"
-#include "taichi/llvm/llvm_fwd.h"
 #include "taichi/util/short_name.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -585,8 +584,6 @@ class Stmt : public IRNode {
   static pStmt make(Args &&... args) {
     return make_typed<T>(std::forward<Args>(args)...);
   }
-
-  void infer_type();
 
   void set_tb(const std::string &tb) {
     this->tb = tb;

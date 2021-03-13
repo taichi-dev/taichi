@@ -5,42 +5,6 @@
 
 TLANG_NAMESPACE_BEGIN
 
-ASTBuilder &current_ast_builder() {
-  return context->builder();
-}
-
-Block *ASTBuilder::current_block() {
-  if (stack.empty())
-    return nullptr;
-  else
-    return stack.back();
-}
-
-Stmt *ASTBuilder::get_last_stmt() {
-  TI_ASSERT(!stack.empty());
-  return stack.back()->back();
-}
-
-void ASTBuilder::insert(std::unique_ptr<Stmt> &&stmt, int location) {
-  TI_ASSERT(!stack.empty());
-  stack.back()->insert(std::move(stmt), location);
-}
-
-void ASTBuilder::stop_gradient(SNode *snode) {
-  TI_ASSERT(!stack.empty());
-  stack.back()->stop_gradients.push_back(snode);
-}
-
-std::unique_ptr<ASTBuilder::ScopeGuard> ASTBuilder::create_scope(
-    std::unique_ptr<Block> &list) {
-  TI_ASSERT(list == nullptr);
-  list = std::make_unique<Block>();
-  if (!stack.empty()) {
-    list->parent_stmt = get_last_stmt();
-  }
-  return std::make_unique<ScopeGuard>(this, list.get());
-}
-
 FrontendSNodeOpStmt::FrontendSNodeOpStmt(SNodeOpType op_type,
                                          SNode *snode,
                                          const ExprGroup &indices,
@@ -62,8 +26,6 @@ FrontendAssignStmt::FrontendAssignStmt(const Expr &lhs, const Expr &rhs)
 IRNode *FrontendContext::root() {
   return static_cast<IRNode *>(root_node.get());
 }
-
-std::unique_ptr<FrontendContext> context;
 
 FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
                                  const Expr &global_var)
@@ -400,5 +362,43 @@ void ExternalTensorShapeAlongAxisExpression::flatten(FlattenContext *ctx) {
   ctx->push_back<ExternalTensorShapeAlongAxisStmt>(axis, temp->arg_id);
   stmt = ctx->back_stmt();
 }
+
+Block *ASTBuilder::current_block() {
+  if (stack.empty())
+    return nullptr;
+  else
+    return stack.back();
+}
+
+Stmt *ASTBuilder::get_last_stmt() {
+  TI_ASSERT(!stack.empty());
+  return stack.back()->back();
+}
+
+void ASTBuilder::insert(std::unique_ptr<Stmt> &&stmt, int location) {
+  TI_ASSERT(!stack.empty());
+  stack.back()->insert(std::move(stmt), location);
+}
+
+void ASTBuilder::stop_gradient(SNode *snode) {
+  TI_ASSERT(!stack.empty());
+  stack.back()->stop_gradients.push_back(snode);
+}
+
+std::unique_ptr<ASTBuilder::ScopeGuard> ASTBuilder::create_scope(
+    std::unique_ptr<Block> &list) {
+  TI_ASSERT(list == nullptr);
+  list = std::make_unique<Block>();
+  if (!stack.empty()) {
+    list->parent_stmt = get_last_stmt();
+  }
+  return std::make_unique<ScopeGuard>(this, list.get());
+}
+
+ASTBuilder &current_ast_builder() {
+  return context->builder();
+}
+
+std::unique_ptr<FrontendContext> context;
 
 TLANG_NAMESPACE_END

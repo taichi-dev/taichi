@@ -4,7 +4,7 @@
 #include <thread>
 #include <unordered_map>
 
-#include "taichi/ir/analysis.h"
+// #include "taichi/ir/analysis.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 
@@ -512,10 +512,6 @@ void DelayedIRModifier::mark_as_modified() {
 
 LocalAddress::LocalAddress(Stmt *var, int offset) : var(var), offset(offset) {
   TI_ASSERT(var->is<AllocaStmt>());
-}
-
-void Stmt::infer_type() {
-  irpass::type_check(this);
 }
 
 TLANG_NAMESPACE_END

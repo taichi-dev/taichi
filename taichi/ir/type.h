@@ -415,5 +415,4 @@ class TypedConstant {
   float64 val_cast_to_float64() const;
 };
 
-
 TLANG_NAMESPACE_END

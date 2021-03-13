@@ -23,6 +23,7 @@
 #include "taichi/ir/snode.h"
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/program/async_engine.h"
+#include "taichi/program/snode_expr_utils.h"
 #include "taichi/util/statistics.h"
 #include "taichi/util/str.h"
 #if defined(TI_WITH_CC)

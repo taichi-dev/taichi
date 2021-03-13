@@ -3,6 +3,8 @@
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
+#include "taichi/system/profiler.h"
+
 #include <deque>
 #include <set>
 

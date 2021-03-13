@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <cstring>
 
 // This is necessary for TI_UNREACHABLE
 #include "taichi/common/platform_macros.h"
@@ -12,6 +13,14 @@
 namespace spdlog {
 class logger;
 }
+
+#ifdef _WIN64
+#define __FILENAME__ \
+  (strrchr(__FILE__, '\\') ? strrchr(__FILE__, '\\') + 1 : __FILE__)
+#else
+#define __FILENAME__ \
+  (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
+#endif
 
 #define SPD_AUGMENTED_LOG(X, ...)                                        \
   taichi::Logger::get_instance().X(                                      \
@@ -105,6 +114,9 @@ class logger;
 
 #define TI_FLUSH_LOGGER \
   { taichi::Logger::get_instance().flush(); };
+
+#define TI_P(x) \
+  { TI_INFO("{}", taichi::TextSerializer::serialize(#x, (x))); }
 
 namespace taichi {
 

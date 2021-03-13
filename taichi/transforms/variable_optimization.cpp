@@ -4,6 +4,8 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
 #include "taichi/ir/state_machine.h"
+#include "taichi/program/compile_config.h"
+
 #include <unordered_map>
 
 TLANG_NAMESPACE_BEGIN

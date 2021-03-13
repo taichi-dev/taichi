@@ -9,10 +9,9 @@
 #include <tuple>
 
 #include "taichi/common/core.h"
-#include "taichi/util/bit.h"
-#include "taichi/lang_util.h"
+#include "taichi/ir/ir_modified.h"
 #include "taichi/ir/snode.h"
-#include "taichi/program/compile_config.h"
+#include "taichi/ir/type_factory.h"
 #include "taichi/llvm/llvm_fwd.h"
 #include "taichi/util/short_name.h"
 
@@ -26,9 +25,11 @@ using pStmt = std::unique_ptr<Stmt>;
 
 class SNode;
 
+class Kernel;
+struct CompileConfig;
+
 enum class SNodeAccessFlag : int { block_local, read_only };
 std::string snode_access_flag_name(SNodeAccessFlag type);
-class ScratchPads;
 
 class MemoryAccessOptions {
  public:
@@ -756,9 +757,6 @@ struct LocalAddress {
 
   LocalAddress(Stmt *var, int offset);
 };
-
-template <typename T>
-std::string to_string(const T &);
 
 extern DecoratorRecorder dec;
 

@@ -10,6 +10,8 @@
 
 TLANG_NAMESPACE_BEGIN
 
+class ScratchPads;
+
 // IR passes
 namespace irpass {
 

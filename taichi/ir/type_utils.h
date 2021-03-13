@@ -1,3 +1,5 @@
+#pragma once
+
 #include "taichi/ir/type.h"
 
 namespace taichi {

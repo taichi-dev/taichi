@@ -85,8 +85,6 @@ static_assert(__cplusplus >= 201402L, "C++14 required.");
 #endif
 
 #ifdef _WIN64
-#define __FILENAME__ \
-  (strrchr(__FILE__, '\\') ? strrchr(__FILE__, '\\') + 1 : __FILE__)
 #pragma warning(push)
 #pragma warning(disable : 4005)
 #include "taichi/platform/windows/windows.h"
@@ -94,12 +92,8 @@ static_assert(__cplusplus >= 201402L, "C++14 required.");
 #include <intrin.h>
 #define TI_EXPORT __declspec(dllexport)
 #else
-#define __FILENAME__ \
-  (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 #define TI_EXPORT
 #endif
-#define TI_P(x) \
-  { TI_INFO("{}", taichi::TextSerializer::serialize(#x, (x))); }
 
 #ifndef _WIN64
 #define sscanf_s sscanf

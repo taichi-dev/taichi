@@ -864,10 +864,7 @@ class OffloadedStmt : public Stmt {
   std::size_t bls_size{0};
   MemoryAccessOptions mem_access_opt;
 
-  // OffloadedStmt(TaskType task_type);
   OffloadedStmt(TaskType task_type, Arch arch);
-
-  // OffloadedStmt(TaskType task_type, SNode *snode);
 
   std::string task_name() const;
 

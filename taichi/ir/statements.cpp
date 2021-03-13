@@ -312,23 +312,6 @@ OffloadedStmt::OffloadedStmt(TaskType task_type, Arch arch)
   TI_STMT_REG_FIELDS;
 }
 
-// OffloadedStmt::OffloadedStmt(OffloadedStmt::TaskType task_type, SNode *snode)
-//     : task_type(task_type), snode(snode) {
-//   num_cpu_threads = 1;
-//   const_begin = false;
-//   const_end = false;
-//   begin_value = 0;
-//   end_value = 0;
-//   step = 0;
-//   reversed = false;
-//   device = get_current_program().config.arch;
-//   if (has_body()) {
-//     body = std::make_unique<Block>();
-//     body->parent_stmt = this;
-//   }
-//   TI_STMT_REG_FIELDS;
-// }
-
 std::string OffloadedStmt::task_name() const {
   if (task_type == TaskType::serial) {
     return "serial";

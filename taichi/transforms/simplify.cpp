@@ -437,13 +437,11 @@ class BasicBlockSimplify : public IRVisitor {
             }
             auto load =
                 if_stmt->insert_before_me(Stmt::make<LocalLoadStmt>(lanes));
-            // load->infer_type();
             irpass::type_check(load);
             auto select = if_stmt->insert_before_me(
                 Stmt::make<TernaryOpStmt>(TernaryOpType::select, if_stmt->cond,
                                           true_branch ? store->data : load,
                                           true_branch ? load : store->data));
-            // select->infer_type();
             irpass::type_check(select);
             store->data = select;
             if_stmt->insert_before_me(std::move(clause[i]));

@@ -29,6 +29,9 @@ class IRBuilder {
   // Load kernel arguments.
   Stmt *create_arg_load(int arg_id, DataType dt, bool is_ptr);
 
+  // The return value of the kernel.
+  Stmt *create_return(Stmt *value);
+
   // Binary operations. Returns the result.
   Stmt *create_add(Stmt *l, Stmt *r);
   Stmt *create_sub(Stmt *l, Stmt *r);

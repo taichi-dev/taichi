@@ -41,6 +41,7 @@ Kernel::Kernel(Program &program,
   compiled = nullptr;
   taichi::lang::context = std::make_unique<FrontendContext>();
   ir = taichi::lang::context->get_root();
+  ir_is_ast = true;
 
   {
     // Note: this is NOT a mutex. If we want to call Kernel::Kernel()
@@ -52,6 +53,29 @@ Kernel::Kernel(Program &program,
     program.end_function_definition();
     ir->as<Block>()->kernel = this;
   }
+
+  arch = program.config.arch;
+
+  if (!grad) {
+    name = primal_name;
+  } else {
+    name = primal_name + "_grad";
+  }
+
+  if (!program.config.lazy_compilation)
+    compile();
+}
+
+Kernel::Kernel(Program &program,
+               std::unique_ptr<IRNode> &&ir,
+               const std::string &primal_name,
+               bool grad)
+    : ir(std::move(ir)), program(program), lowered(false), grad(grad) {
+  is_accessor = false;
+  is_evaluator = false;
+  compiled = nullptr;
+  ir_is_ast = false; // CHI IR
+  this->ir->as<Block>()->kernel = this;
 
   arch = program.config.arch;
 
@@ -92,7 +116,8 @@ void Kernel::lower(bool to_executable) {  // TODO: is a "Lowerer" class
     } else {
       irpass::compile_to_offloads(ir.get(), config, verbose,
                                   /*vectorize=*/arch_is_cpu(arch), grad,
-                                  /*ad_use_stack=*/true);
+                                  /*ad_use_stack=*/true,
+                                  /*start_from_ast=*/ir_is_ast);
     }
   } else {
     TI_NOT_IMPLEMENTED

@@ -32,19 +32,24 @@ void compile_to_offloads(IRNode *ir,
                          bool verbose,
                          bool vectorize,
                          bool grad,
-                         bool ad_use_stack) {
+                         bool ad_use_stack,
+                         bool start_from_ast) {
   TI_AUTO_PROF;
 
   auto print = make_pass_printer(verbose, ir);
   print("Initial IR");
 
   if (grad) {
+    // TODO: Support reverse_segments after lower_ast
+    TI_ASSERT_INFO(start_from_ast, "CHI does not support autodiff for now.");
     irpass::reverse_segments(ir);
     print("Segment reversed (for autodiff)");
   }
 
-  irpass::lower_ast(ir);
-  print("Lowered");
+  if (start_from_ast) {
+    irpass::lower_ast(ir);
+    print("Lowered");
+  }
 
   irpass::type_check(ir);
   print("Typechecked");
@@ -232,10 +237,12 @@ void compile_to_executable(IRNode *ir,
                            bool verbose,
                            bool lower_global_access,
                            bool make_thread_local,
-                           bool make_block_local) {
+                           bool make_block_local,
+                           bool start_from_ast) {
   TI_AUTO_PROF;
 
-  compile_to_offloads(ir, config, verbose, vectorize, grad, ad_use_stack);
+  compile_to_offloads(ir, config, verbose, vectorize, grad, ad_use_stack,
+                      start_from_ast);
 
   offload_to_executable(ir, config, verbose, lower_global_access,
                         make_thread_local, make_block_local);

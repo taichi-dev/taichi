@@ -882,8 +882,9 @@ class OffloadedStmt : public Stmt {
 
   void all_blocks_accept(IRVisitor *visitor);
 
-  TI_STMT_DEF_FIELDS(ret_type,
+  TI_STMT_DEF_FIELDS(ret_type /*inherited from Stmt*/,
                      task_type,
+                     device,
                      snode,
                      begin_offset,
                      end_offset,
@@ -896,7 +897,6 @@ class OffloadedStmt : public Stmt {
                      block_dim,
                      reversed,
                      num_cpu_threads,
-                     device,
                      index_offsets,
                      mem_access_opt);
   TI_DEFINE_ACCEPT

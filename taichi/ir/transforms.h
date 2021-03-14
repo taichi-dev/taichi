@@ -79,7 +79,8 @@ void compile_to_offloads(IRNode *ir,
                          bool verbose,
                          bool vectorize,
                          bool grad,
-                         bool ad_use_stack);
+                         bool ad_use_stack,
+                         bool start_from_ast);
 
 void offload_to_executable(IRNode *ir,
                            const CompileConfig &config,
@@ -97,7 +98,8 @@ void compile_to_executable(IRNode *ir,
                            bool verbose,
                            bool lower_global_access = true,
                            bool make_thread_local = false,
-                           bool make_block_local = false);
+                           bool make_block_local = false,
+                           bool start_from_ast = true);
 
 }  // namespace irpass
 

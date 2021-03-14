@@ -45,6 +45,10 @@ Stmt *IRBuilder::create_arg_load(int arg_id, DataType dt, bool is_ptr) {
   return insert(Stmt::make<ArgLoadStmt>(arg_id, dt, is_ptr));
 }
 
+Stmt *IRBuilder::create_return(Stmt *value) {
+  return insert(Stmt::make<KernelReturnStmt>(value));
+}
+
 Stmt *IRBuilder::create_add(Stmt *l, Stmt *r) {
   return insert(Stmt::make<BinaryOpStmt>(BinaryOpType::add, l, r));
 }

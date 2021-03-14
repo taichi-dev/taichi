@@ -74,7 +74,7 @@ Kernel::Kernel(Program &program,
   is_accessor = false;
   is_evaluator = false;
   compiled = nullptr;
-  ir_is_ast = false; // CHI IR
+  ir_is_ast = false;  // CHI IR
   this->ir->as<Block>()->kernel = this;
 
   arch = program.config.arch;
@@ -112,7 +112,8 @@ void Kernel::lower(bool to_executable) {  // TODO: is a "Lowerer" class
           /*make_thread_local=*/config.make_thread_local,
           /*make_block_local=*/
           is_extension_supported(config.arch, Extension::bls) &&
-              config.make_block_local);
+              config.make_block_local,
+          /*start_from_ast=*/ir_is_ast);
     } else {
       irpass::compile_to_offloads(ir.get(), config, verbose,
                                   /*vectorize=*/arch_is_cpu(arch), grad,

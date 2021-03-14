@@ -40,7 +40,7 @@ void compile_to_offloads(IRNode *ir,
   print("Initial IR");
 
   if (grad) {
-    // TODO: Support reverse_segments after lower_ast
+    // TODO(#2193): Support reverse_segments after lower_ast
     TI_ASSERT_INFO(start_from_ast, "CHI does not support autodiff for now.");
     irpass::reverse_segments(ir);
     print("Segment reversed (for autodiff)");

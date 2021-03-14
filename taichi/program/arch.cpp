@@ -1,4 +1,4 @@
-#include "arch.h"
+#include "taichi/program/arch.h"
 
 TLANG_NAMESPACE_BEGIN
 

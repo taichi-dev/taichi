@@ -1,6 +1,5 @@
 // TODO: gradually cppize statements.h
 #include "taichi/ir/statements.h"
-#include "taichi/program/program.h"
 #include "taichi/util/bit.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -304,20 +303,8 @@ GetChStmt::GetChStmt(Stmt *input_ptr, int chid, bool is_bit_vectorized)
   TI_STMT_REG_FIELDS;
 }
 
-OffloadedStmt::OffloadedStmt(OffloadedStmt::TaskType task_type)
-    : OffloadedStmt(task_type, nullptr) {
-}
-
-OffloadedStmt::OffloadedStmt(OffloadedStmt::TaskType task_type, SNode *snode)
-    : task_type(task_type), snode(snode) {
-  num_cpu_threads = 1;
-  const_begin = false;
-  const_end = false;
-  begin_value = 0;
-  end_value = 0;
-  step = 0;
-  reversed = false;
-  device = get_current_program().config.arch;
+OffloadedStmt::OffloadedStmt(TaskType task_type, Arch arch)
+    : task_type(task_type), device(arch) {
   if (has_body()) {
     body = std::make_unique<Block>();
     body->parent_stmt = this;
@@ -349,7 +336,8 @@ std::string OffloadedStmt::task_type_name(TaskType tt) {
 }
 
 std::unique_ptr<Stmt> OffloadedStmt::clone() const {
-  auto new_stmt = std::make_unique<OffloadedStmt>(task_type, snode);
+  auto new_stmt = std::make_unique<OffloadedStmt>(task_type, device);
+  new_stmt->snode = snode;
   new_stmt->begin_offset = begin_offset;
   new_stmt->end_offset = end_offset;
   new_stmt->const_begin = const_begin;
@@ -361,7 +349,6 @@ std::unique_ptr<Stmt> OffloadedStmt::clone() const {
   new_stmt->block_dim = block_dim;
   new_stmt->reversed = reversed;
   new_stmt->num_cpu_threads = num_cpu_threads;
-  new_stmt->device = device;
   new_stmt->index_offsets = index_offsets;
   if (tls_prologue) {
     new_stmt->tls_prologue = tls_prologue->clone();

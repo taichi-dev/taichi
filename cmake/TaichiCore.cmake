@@ -74,12 +74,16 @@ if (TI_WITH_CC)
   list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CC_SOURCE})
 endif()
 
+# This compiles all the libraries with -fPIC, which is critical to link a static
+# library into a shared lib.
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-# We don't mean to create a dedicated library just for common. Instead, we are
-# trying to identify, refactor and group the core files into a smaller lib. This
-# lib should be mostly self-contained and completely Taichi focused, free from
-# the "application" layer such as pybind11 or GUI.
+# The short-term goal is to have a sub-library that is mostly Taichi-focused,
+# free from the "application" layer such as pybind11 or GUI. At a minimum, we
+# must decouple from pybind11/python-environment. This sub-lib will then be
+# unit testtable.
+# TODO(#2198): Long-term speaking, we should create a separate library for each
+# sub-module. This way we can guarantee that the lib dependencies form a DAG.
 file(GLOB TAICHI_TESTABLE_SRC
       "taichi/common/*.cpp"
       "taichi/common/*.h"
@@ -104,7 +108,6 @@ file(GLOB TAICHI_TESTABLE_SRC
 # taichi_testable_lib --> taichi_core
 set(TAICHI_TESTABLE_LIB taichi_testable_lib)
 add_library(${TAICHI_TESTABLE_LIB} STATIC ${TAICHI_TESTABLE_SRC})
-set_property(TARGET ${TAICHI_TESTABLE_LIB} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_TESTABLE_SRC})
 

@@ -74,20 +74,42 @@ if (TI_WITH_CC)
   list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CC_SOURCE})
 endif()
 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 # We don't mean to create a dedicated library just for common. Instead, we are
 # trying to identify, refactor and group the core files into a smaller lib. This
 # lib should be mostly self-contained and completely Taichi focused, free from
 # the "application" layer such as pybind11 or GUI.
-file(GLOB TAICHI_TESTABLE_SRC "taichi/common/*.cpp" "taichi/common/*.h")
+file(GLOB TAICHI_TESTABLE_SRC
+      "taichi/common/*.cpp"
+      "taichi/common/*.h"
+      "taichi/ir/ir_builder.*"
+      "taichi/ir/ir.*"
+      "taichi/ir/offloaded_task_type.*"
+      "taichi/ir/snode_types.*"
+      "taichi/ir/snode.*"
+      "taichi/ir/statements.*"
+      "taichi/ir/type_factory.*"
+      "taichi/ir/type_utils.*"
+      "taichi/ir/type.*"
+      "taichi/transforms/statement_usage_replace.cpp"
+      "taichi/program/arch.*"
+      "taichi/program/compile_config.*"
+      "taichi/system/timer.*"
+      "taichi/system/profiler.*"
+)
+
 # TODO(#2196): Maybe we can do the following renaming in the end?
 # taichi_core --> taichi_pylib (this requires python-side refactoring...)
 # taichi_testable_lib --> taichi_core
 set(TAICHI_TESTABLE_LIB taichi_testable_lib)
-add_library(${TAICHI_TESTABLE_LIB} OBJECT ${TAICHI_TESTABLE_SRC})
+add_library(${TAICHI_TESTABLE_LIB} STATIC ${TAICHI_TESTABLE_SRC})
 set_property(TARGET ${TAICHI_TESTABLE_LIB} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_TESTABLE_SRC})
-add_library(${CORE_LIBRARY_NAME} SHARED ${TAICHI_CORE_SOURCE} ${PROJECT_SOURCES} $<TARGET_OBJECTS:${TAICHI_TESTABLE_LIB}>)
+
+add_library(${CORE_LIBRARY_NAME} SHARED ${TAICHI_CORE_SOURCE})
+target_link_libraries(${CORE_LIBRARY_NAME} ${TAICHI_TESTABLE_LIB})
 
 if (APPLE)
     # Ask OS X to minic Linux dynamic linking behavior

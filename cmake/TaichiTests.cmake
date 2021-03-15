@@ -15,7 +15,8 @@ include_directories(
     ${PROJECT_SOURCE_DIR},
 )
 
-add_executable(${TESTS_NAME} ${TAICHI_TESTS_SOURCE} $<TARGET_OBJECTS:taichi_testable_lib>)
+add_executable(${TESTS_NAME} ${TAICHI_TESTS_SOURCE})
+target_link_libraries(${TESTS_NAME} taichi_testable_lib)
 target_link_libraries(${TESTS_NAME} gtest_main)
 
 add_test(NAME ${TESTS_NAME} COMMAND ${TESTS_NAME})

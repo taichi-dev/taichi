@@ -11,7 +11,6 @@
 #include "taichi/backends/cuda/codegen_cuda.h"
 #include "taichi/backends/cuda/cuda_context.h"
 #endif
-#include "taichi/backends/cuda/detect_cuda.h"
 #include "taichi/backends/metal/codegen_metal.h"
 #include "taichi/backends/opengl/codegen_opengl.h"
 #include "taichi/backends/cpu/codegen_cpu.h"
@@ -19,6 +18,7 @@
 #include "taichi/struct/struct_llvm.h"
 #include "taichi/backends/metal/struct_metal.h"
 #include "taichi/backends/opengl/struct_opengl.h"
+#include "taichi/platform/cuda/detect_cuda.h"
 #include "taichi/system/unified_allocator.h"
 #include "taichi/system/timeline.h"
 #include "taichi/ir/snode.h"

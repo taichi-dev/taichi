@@ -3,13 +3,13 @@
     The use of this software is governed by the LICENSE file.
 *******************************************************************************/
 
-#include "taichi/backends/cuda/detect_cuda.h"
 #include "taichi/backends/metal/api.h"
 #include "taichi/backends/opengl/opengl_api.h"
 #include "taichi/common/core.h"
 #include "taichi/common/interface.h"
 #include "taichi/common/task.h"
 #include "taichi/math/math.h"
+#include "taichi/platform/cuda/detect_cuda.h"
 #include "taichi/program/py_print_buffer.h"
 #include "taichi/python/exception.h"
 #include "taichi/python/export.h"
@@ -177,8 +177,9 @@ void export_misc(py::module &m) {
       .def(py::init<>())
       .def("clear", &Statistics::clear)
       .def("get_counters", &Statistics::get_counters);
-  m.def("get_kernel_stats", []() -> Statistics & { return stat; },
-        py::return_value_policy::reference);
+  m.def(
+      "get_kernel_stats", []() -> Statistics & { return stat; },
+      py::return_value_policy::reference);
 }
 
 TI_NAMESPACE_END

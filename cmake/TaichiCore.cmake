@@ -1,5 +1,3 @@
-set(CORE_LIBRARY_NAME taichi_core)
-
 option(USE_STDCPP "Use -stdlib=libc++" OFF)
 option(TI_WITH_CUDA "Build with the CUDA backend" ON)
 option(TI_WITH_OPENGL "Build with the OpenGL backend" ON)
@@ -78,41 +76,33 @@ endif()
 # library into a shared lib.
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-# The short-term goal is to have a sub-library that is mostly Taichi-focused,
-# free from the "application" layer such as pybind11 or GUI. At a minimum, we
-# must decouple from pybind11/python-environment. This sub-lib will then be
-# unit testtable.
+# The short-term goal is to have a sub-library, "taichi_isolated_core", that is
+# mostly Taichi-focused, free from the "application" layer such as pybind11 or
+# GUI. At a minimum, we must decouple from pybind11/python-environment. Then we
+# can 1) unit test a major part of Taichi, and 2) integrate a new frontend lang
+# with "taichi_isolated_core".
+#
 # TODO(#2198): Long-term speaking, we should create a separate library for each
 # sub-module. This way we can guarantee that the lib dependencies form a DAG.
-file(GLOB TAICHI_TESTABLE_SRC
-      "taichi/common/*.cpp"
-      "taichi/common/*.h"
-      "taichi/ir/ir_builder.*"
-      "taichi/ir/ir.*"
-      "taichi/ir/offloaded_task_type.*"
-      "taichi/ir/snode_types.*"
-      "taichi/ir/snode.*"
-      "taichi/ir/statements.*"
-      "taichi/ir/type_factory.*"
-      "taichi/ir/type_utils.*"
-      "taichi/ir/type.*"
-      "taichi/transforms/statement_usage_replace.cpp"
-      "taichi/program/arch.*"
-      "taichi/program/compile_config.*"
-      "taichi/system/timer.*"
-      "taichi/system/profiler.*"
+file(GLOB TAICHI_PYBIND_SOURCE
+      "taichi/python/*.cpp"
+      "taichi/python/*.h"
 )
+list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_PYBIND_SOURCE})
 
-# TODO(#2196): Maybe we can do the following renaming in the end?
+# TODO(#2196): Rename these CMAKE variables:
+# CORE_LIBRARY_NAME --> TAICHI_ISOLATED_CORE_LIB_NAME
+# CORE_WITH_PYBIND_LIBRARY_NAME --> TAICHI_CORE_LIB_NAME
+#
+# However, the better strategy is probably to rename the actual library:
+#
 # taichi_core --> taichi_pylib (this requires python-side refactoring...)
-# taichi_testable_lib --> taichi_core
-set(TAICHI_TESTABLE_LIB taichi_testable_lib)
-add_library(${TAICHI_TESTABLE_LIB} STATIC ${TAICHI_TESTABLE_SRC})
-
-list(REMOVE_ITEM TAICHI_CORE_SOURCE ${TAICHI_TESTABLE_SRC})
-
-add_library(${CORE_LIBRARY_NAME} SHARED ${TAICHI_CORE_SOURCE})
-target_link_libraries(${CORE_LIBRARY_NAME} ${TAICHI_TESTABLE_LIB})
+# taichi_isolated_core --> taichi_core
+#
+# But this requires more efforts, because taichi_core is already referenced
+# everywhere in python.
+set(CORE_LIBRARY_NAME taichi_isolated_core)
+add_library(${CORE_LIBRARY_NAME} OBJECT ${TAICHI_CORE_SOURCE})
 
 if (APPLE)
     # Ask OS X to minic Linux dynamic linking behavior
@@ -203,7 +193,6 @@ else()
     # windows
     target_link_libraries(${CORE_LIBRARY_NAME} Winmm)
 endif ()
-message("PYTHON_LIBRARIES: " ${PYTHON_LIBRARIES})
 
 foreach (source IN LISTS TAICHI_CORE_SOURCE)
     file(RELATIVE_PATH source_rel ${CMAKE_CURRENT_LIST_DIR} ${source})
@@ -220,3 +209,11 @@ if (WIN32)
     set_target_properties(${CORE_LIBRARY_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY
             "${CMAKE_CURRENT_SOURCE_DIR}/runtimes")
 endif ()
+
+message("PYTHON_LIBRARIES: " ${PYTHON_LIBRARIES})
+
+set(CORE_WITH_PYBIND_LIBRARY_NAME taichi_core)
+add_library(${CORE_WITH_PYBIND_LIBRARY_NAME} SHARED ${TAICHI_PYBIND_SOURCE})
+# It is actually possible to link with an OBJECT library
+# https://cmake.org/cmake/help/v3.13/command/target_link_libraries.html?highlight=target_link_libraries#linking-object-libraries
+target_link_libraries(${CORE_WITH_PYBIND_LIBRARY_NAME} PUBLIC ${CORE_LIBRARY_NAME})

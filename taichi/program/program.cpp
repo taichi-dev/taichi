@@ -11,6 +11,7 @@
 #include "taichi/backends/cuda/codegen_cuda.h"
 #include "taichi/backends/cuda/cuda_context.h"
 #endif
+#include "taichi/backends/cuda/detect_cuda.h"
 #include "taichi/backends/metal/codegen_metal.h"
 #include "taichi/backends/opengl/codegen_opengl.h"
 #include "taichi/backends/cpu/codegen_cpu.h"
@@ -36,12 +37,6 @@
 // For _MM_SET_FLUSH_ZERO_MODE
 #include <xmmintrin.h>
 #endif
-
-TI_NAMESPACE_BEGIN
-
-bool is_cuda_api_available();
-
-TI_NAMESPACE_END
 
 TLANG_NAMESPACE_BEGIN
 

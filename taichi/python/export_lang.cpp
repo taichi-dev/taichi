@@ -40,9 +40,6 @@ void async_print_sfg();
 std::string async_dump_dot(std::optional<std::string> rankdir,
                            int embed_states_threshold);
 
-std::string compiled_lib_dir;
-std::string runtime_tmp_dir;
-
 Expr expr_index(const Expr &expr, const Expr &index) {
   return expr[index];
 }

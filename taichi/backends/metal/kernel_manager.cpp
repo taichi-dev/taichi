@@ -10,7 +10,7 @@
 #include "taichi/backends/metal/constants.h"
 #include "taichi/inc/constants.h"
 #include "taichi/math/arithmetic.h"
-#include "taichi/python/print_buffer.h"
+#include "taichi/program/py_print_buffer.h"
 #include "taichi/util/action_recorder.h"
 #include "taichi/util/file_sequence_writer.h"
 #include "taichi/util/str.h"

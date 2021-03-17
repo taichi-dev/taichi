@@ -1,4 +1,6 @@
-#include "virtual_memory.h"
+#pragma once
+
+#include "taichi/system/virtual_memory.h"
 
 TI_NAMESPACE_BEGIN
 

@@ -62,7 +62,7 @@ jobs:
           [ "$RUN_CPP_TESTS" = "ON" ] && ./build/taichi_cpp_tests
           ti test -vr2 -t2
         env:
-          RUN_CPP_TESTS=${{ matrix.with_cpp_tests }}
+          RUN_CPP_TESTS: ${{ matrix.with_cpp_tests }}
 
   build_and_test_gpu:
     name: Build and Test (GPU)

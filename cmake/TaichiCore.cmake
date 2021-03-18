@@ -201,15 +201,6 @@ foreach (source IN LISTS TAICHI_CORE_SOURCE)
     source_group("${source_path_msvc}" FILES "${source}")
 endforeach ()
 
-if (MSVC)
-    set_property(TARGET ${CORE_LIBRARY_NAME} APPEND PROPERTY LINK_FLAGS /DEBUG)
-endif ()
-
-if (WIN32)
-    set_target_properties(${CORE_LIBRARY_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY
-            "${CMAKE_CURRENT_SOURCE_DIR}/runtimes")
-endif ()
-
 message("PYTHON_LIBRARIES: " ${PYTHON_LIBRARIES})
 
 set(CORE_WITH_PYBIND_LIBRARY_NAME taichi_core)
@@ -217,3 +208,13 @@ add_library(${CORE_WITH_PYBIND_LIBRARY_NAME} SHARED ${TAICHI_PYBIND_SOURCE})
 # It is actually possible to link with an OBJECT library
 # https://cmake.org/cmake/help/v3.13/command/target_link_libraries.html?highlight=target_link_libraries#linking-object-libraries
 target_link_libraries(${CORE_WITH_PYBIND_LIBRARY_NAME} PUBLIC ${CORE_LIBRARY_NAME})
+
+# These commands should apply to the DLL that is loaded from python, not the OBJECT library.
+if (MSVC)
+    set_property(TARGET ${CORE_WITH_PYBIND_LIBRARY_NAME} APPEND PROPERTY LINK_FLAGS /DEBUG)
+endif ()
+
+if (WIN32)
+    set_target_properties(${CORE_WITH_PYBIND_LIBRARY_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY
+            "${CMAKE_CURRENT_SOURCE_DIR}/runtimes")
+endif ()

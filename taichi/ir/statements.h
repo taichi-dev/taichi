@@ -5,7 +5,8 @@
 #include "taichi/ir/stmt_op_types.h"
 #include "taichi/program/arch.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 /**
  * Allocate a local variable with initial value 0.
@@ -1211,4 +1212,5 @@ class BitStructStoreStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE;
 };
 
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

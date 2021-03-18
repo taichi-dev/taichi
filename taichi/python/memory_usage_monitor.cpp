@@ -1,12 +1,12 @@
-#include "taichi/system/memory_usage_monitor.h"
-#include "taichi/system/timer.h"
+#include "taichi/python/memory_usage_monitor.h"
+
+#include "pybind11/embed.h"
+#include "pybind11/pybind11.h"
 #include "taichi/common/core.h"
 #include "taichi/common/task.h"
+#include "taichi/math/scalar.h"
 #include "taichi/system/threading.h"
 #include "taichi/system/timer.h"
-#include "taichi/math/scalar.h"
-#include "pybind11/pybind11.h"
-#include "pybind11/embed.h"
 
 TI_NAMESPACE_BEGIN
 

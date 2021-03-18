@@ -3,10 +3,12 @@
 #include <sstream>
 #include <iostream>
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
 
+// PythonPrintBuffer holds the logs printed from kernel before sending them back
+// to python. The name could be a bit misleading, as it is really just a string
+// buffer, and can be used without Python.
 struct PythonPrintBuffer {
-  /* holds kernel print result before switching back to python */
   std::stringstream ss;
   bool enabled{false};
 
@@ -27,4 +29,4 @@ struct PythonPrintBuffer {
 
 extern PythonPrintBuffer py_cout;
 
-TI_NAMESPACE_END
+}  // namespace taichi

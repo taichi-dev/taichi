@@ -8,7 +8,8 @@
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 std::string snode_access_flag_name(SNodeAccessFlag type) {
   if (type == SNodeAccessFlag::block_local) {
@@ -514,4 +515,5 @@ LocalAddress::LocalAddress(Stmt *var, int offset) : var(var), offset(offset) {
   TI_ASSERT(var->is<AllocaStmt>());
 }
 
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

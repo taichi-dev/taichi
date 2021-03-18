@@ -18,6 +18,7 @@
 #include "taichi/struct/struct_llvm.h"
 #include "taichi/backends/metal/struct_metal.h"
 #include "taichi/backends/opengl/struct_opengl.h"
+#include "taichi/platform/cuda/detect_cuda.h"
 #include "taichi/system/unified_allocator.h"
 #include "taichi/system/timeline.h"
 #include "taichi/ir/snode.h"
@@ -36,12 +37,6 @@
 // For _MM_SET_FLUSH_ZERO_MODE
 #include <xmmintrin.h>
 #endif
-
-TI_NAMESPACE_BEGIN
-
-bool is_cuda_api_available();
-
-TI_NAMESPACE_END
 
 TLANG_NAMESPACE_BEGIN
 

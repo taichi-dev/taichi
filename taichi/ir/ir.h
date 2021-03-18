@@ -14,7 +14,8 @@
 #include "taichi/ir/type_factory.h"
 #include "taichi/util/short_name.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 class IRNode;
 class Block;
@@ -595,7 +596,7 @@ class Stmt : public IRNode {
     TI_NOT_IMPLEMENTED
   }
 
-  virtual ~Stmt() override = default;
+  virtual ~Stmt() = default;
 };
 
 class Block : public IRNode {
@@ -776,4 +777,5 @@ inline void StmtFieldManager::operator()(const char *key, T &&value) {
   }
 }
 
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

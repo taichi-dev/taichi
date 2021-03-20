@@ -49,6 +49,86 @@ Stmt *IRBuilder::create_return(Stmt *value) {
   return insert(Stmt::make<KernelReturnStmt>(value));
 }
 
+Stmt *IRBuilder::create_cast(Stmt *value, DataType output_type) {
+  auto &&result = Stmt::make_typed<UnaryOpStmt>(UnaryOpType::cast_value, value);
+  result->cast_type = output_type;
+  return insert(std::move(result));
+}
+
+Stmt *IRBuilder::create_bit_cast(Stmt *value, DataType output_type) {
+  auto &&result = Stmt::make_typed<UnaryOpStmt>(UnaryOpType::cast_bits, value);
+  result->cast_type = output_type;
+  return insert(std::move(result));
+}
+
+Stmt *IRBuilder::create_neg(Stmt *value) {
+  return insert(Stmt::make<UnaryOpStmt>(UnaryOpType::neg, value));
+}
+
+Stmt *IRBuilder::create_not(Stmt *value) {
+  return insert(Stmt::make<UnaryOpStmt>(UnaryOpType::bit_not, value));
+}
+
+Stmt *IRBuilder::create_logical_not(Stmt *value) {
+  return insert(Stmt::make<UnaryOpStmt>(UnaryOpType::logic_not, value));
+}
+
+Stmt *IRBuilder::create_floor(Stmt *value) {
+  return insert(Stmt::make<UnaryOpStmt>(UnaryOpType::floor, value));
+}
+
+Stmt *IRBuilder::create_ceil(Stmt *value) {
+  return insert(Stmt::make<UnaryOpStmt>(UnaryOpType::ceil, value));
+}
+
+Stmt *IRBuilder::create_abs(Stmt *value) {
+  return insert(Stmt::make<UnaryOpStmt>(UnaryOpType::abs, value));
+}
+
+Stmt *IRBuilder::create_sgn(Stmt *value) {
+  return insert(Stmt::make<UnaryOpStmt>(UnaryOpType::sgn, value));
+}
+
+Stmt *IRBuilder::create_sqrt(Stmt *value) {
+  return insert(Stmt::make<UnaryOpStmt>(UnaryOpType::sqrt, value));
+}
+
+Stmt *IRBuilder::create_rsqrt(Stmt *value) {
+  return insert(Stmt::make<UnaryOpStmt>(UnaryOpType::rsqrt, value));
+}
+
+Stmt *IRBuilder::create_sin(Stmt *value) {
+  return insert(Stmt::make<UnaryOpStmt>(UnaryOpType::sin, value));
+}
+
+Stmt *IRBuilder::create_asin(Stmt *value) {
+  return insert(Stmt::make<UnaryOpStmt>(UnaryOpType::asin, value));
+}
+
+Stmt *IRBuilder::create_cos(Stmt *value) {
+  return insert(Stmt::make<UnaryOpStmt>(UnaryOpType::cos, value));
+}
+
+Stmt *IRBuilder::create_acos(Stmt *value) {
+  return insert(Stmt::make<UnaryOpStmt>(UnaryOpType::acos, value));
+}
+
+Stmt *IRBuilder::create_tan(Stmt *value) {
+  return insert(Stmt::make<UnaryOpStmt>(UnaryOpType::tan, value));
+}
+
+Stmt *IRBuilder::create_tanh(Stmt *value) {
+  return insert(Stmt::make<UnaryOpStmt>(UnaryOpType::tanh, value));
+}
+
+Stmt *IRBuilder::create_exp(Stmt *value) {
+  return insert(Stmt::make<UnaryOpStmt>(UnaryOpType::exp, value));
+}
+
+Stmt *IRBuilder::create_log(Stmt *value) {
+  return insert(Stmt::make<UnaryOpStmt>(UnaryOpType::log, value));
+}
+
 Stmt *IRBuilder::create_add(Stmt *l, Stmt *r) {
   return insert(Stmt::make<BinaryOpStmt>(BinaryOpType::add, l, r));
 }
@@ -71,6 +151,81 @@ Stmt *IRBuilder::create_floordiv(Stmt *l, Stmt *r) {
 
 Stmt *IRBuilder::create_truediv(Stmt *l, Stmt *r) {
   return insert(Stmt::make<BinaryOpStmt>(BinaryOpType::truediv, l, r));
+}
+
+Stmt *IRBuilder::create_mod(Stmt *l, Stmt *r) {
+  return insert(Stmt::make<BinaryOpStmt>(BinaryOpType::mod, l, r));
+}
+
+Stmt *IRBuilder::create_max(Stmt *l, Stmt *r) {
+  return insert(Stmt::make<BinaryOpStmt>(BinaryOpType::max, l, r));
+}
+
+Stmt *IRBuilder::create_min(Stmt *l, Stmt *r) {
+  return insert(Stmt::make<BinaryOpStmt>(BinaryOpType::min, l, r));
+}
+
+Stmt *IRBuilder::create_atan2(Stmt *l, Stmt *r) {
+  return insert(Stmt::make<BinaryOpStmt>(BinaryOpType::atan2, l, r));
+}
+
+Stmt *IRBuilder::create_pow(Stmt *l, Stmt *r) {
+  return insert(Stmt::make<BinaryOpStmt>(BinaryOpType::pow, l, r));
+}
+
+Stmt *IRBuilder::create_and(Stmt *l, Stmt *r) {
+  return insert(Stmt::make<BinaryOpStmt>(BinaryOpType::bit_and, l, r));
+}
+
+Stmt *IRBuilder::create_or(Stmt *l, Stmt *r) {
+  return insert(Stmt::make<BinaryOpStmt>(BinaryOpType::bit_or, l, r));
+}
+
+Stmt *IRBuilder::create_xor(Stmt *l, Stmt *r) {
+  return insert(Stmt::make<BinaryOpStmt>(BinaryOpType::bit_xor, l, r));
+}
+
+Stmt *IRBuilder::create_shl(Stmt *l, Stmt *r) {
+  return insert(Stmt::make<BinaryOpStmt>(BinaryOpType::bit_shl, l, r));
+}
+
+Stmt *IRBuilder::create_shr(Stmt *l, Stmt *r) {
+  return insert(Stmt::make<BinaryOpStmt>(BinaryOpType::bit_shr, l, r));
+}
+
+Stmt *IRBuilder::create_sar(Stmt *l, Stmt *r) {
+  return insert(Stmt::make<BinaryOpStmt>(BinaryOpType::bit_sar, l, r));
+}
+
+Stmt *IRBuilder::create_cmp_lt(Stmt *l, Stmt *r) {
+  return insert(Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_lt, l, r));
+}
+
+Stmt *IRBuilder::create_cmp_le(Stmt *l, Stmt *r) {
+  return insert(Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_le, l, r));
+}
+
+Stmt *IRBuilder::create_cmp_gt(Stmt *l, Stmt *r) {
+  return insert(Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_gt, l, r));
+}
+
+Stmt *IRBuilder::create_cmp_ge(Stmt *l, Stmt *r) {
+  return insert(Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_ge, l, r));
+}
+
+Stmt *IRBuilder::create_cmp_eq(Stmt *l, Stmt *r) {
+  return insert(Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_eq, l, r));
+}
+
+Stmt *IRBuilder::create_cmp_ne(Stmt *l, Stmt *r) {
+  return insert(Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_ne, l, r));
+}
+
+Stmt *IRBuilder::create_select(Stmt *cond,
+                               Stmt *true_result,
+                               Stmt *false_result) {
+  return insert(Stmt::make<TernaryOpStmt>(TernaryOpType::select, cond,
+                                          true_result, false_result));
 }
 
 TLANG_NAMESPACE_END

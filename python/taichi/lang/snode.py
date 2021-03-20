@@ -1,6 +1,7 @@
-from . import impl
-from .util import deprecated
 import numbers
+
+from taichi.lang import impl
+from taichi.lang.util import deprecated
 
 
 class SNode:

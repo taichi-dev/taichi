@@ -1,13 +1,17 @@
-from .expr import *
-from .util import *
-from .impl import expr_init
-from .exception import TaichiSyntaxError
-from .util import taichi_lang_core as ti_core
-import operator as ops
-import numbers
+import ctypes
 import functools
 import math
+import operator as ops
+import traceback
 
+from taichi.lang.exception import TaichiSyntaxError
+from taichi.lang.expr import Expr, make_expr_group
+from taichi.lang.impl import expr_init
+from taichi.lang.util import (cook_dtype, is_taichi_class, taichi_lang_core,
+                              taichi_scope)
+
+# TODO(#2223): Please stop abusing so many ti_cores
+ti_core = taichi_lang_core
 unary_ops = []
 
 
@@ -47,7 +51,6 @@ def unary(foo):
         else:
             return imp_foo(a)
 
-    unary_ops.append(wrapped)
     return wrapped
 
 
@@ -490,9 +493,6 @@ def assign(a, b):
     return a
 
 
-sqr = obsolete('ti.sqr(x)', 'x**2')
-
-
 def ti_max(*args):
     num_args = len(args)
     assert num_args >= 1
@@ -524,24 +524,20 @@ def ti_all(a):
 
 
 def append(l, indices, val):
-    import taichi as ti
-    a = ti.expr_init(
+    a = expr_init(
         ti_core.insert_append(l.snode.ptr, make_expr_group(indices),
                               Expr(val).ptr))
     return a
 
 
 def external_func_call(func, args=[], outputs=[]):
-    import taichi as ti
-    import ctypes
     func_addr = ctypes.cast(func, ctypes.c_void_p).value
     ti_core.insert_external_func_call(func_addr, '', make_expr_group(args),
                                       make_expr_group(outputs))
 
 
 def asm(source, inputs=[], outputs=[]):
-    import taichi as ti
-    import ctypes
+
     ti_core.insert_external_func_call(0, source, make_expr_group(inputs),
                                       make_expr_group(outputs))
 

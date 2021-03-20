@@ -1,3 +1,3 @@
-import taichi
+import taichi.core.util
 
-taichi_lang_core = taichi.core.ti_core
+taichi_lang_core = taichi.core.util.ti_core

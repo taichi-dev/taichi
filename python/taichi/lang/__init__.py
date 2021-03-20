@@ -2,12 +2,13 @@ import functools
 import os
 from copy import deepcopy as _deepcopy
 
-from taichi.lang import type_factory as type_factory_mod
 from taichi.lang.impl import *
 from taichi.lang.matrix import Matrix, Vector
 from taichi.lang.ndrange import GroupedNDRange, ndrange
+from taichi.lang.quant_impl import quant
 from taichi.lang.runtime_ops import async_flush, sync
 from taichi.lang.transformer import TaichiSyntaxError
+from taichi.lang.type_factory_impl import type_factory
 from taichi.lang.util import deprecated
 
 core = taichi_lang_core
@@ -53,10 +54,6 @@ timeline_save = lambda fn: get_runtime().prog.timeline_save(fn)
 
 # Legacy API
 type_factory_ = core.get_type_factory_instance()
-
-# Unstable API
-quant = type_factory_mod.Quant
-type_factory = type_factory_mod.TypeFactory()
 
 
 def memory_profiler_print():
@@ -328,9 +325,6 @@ def clear_all_gradients():
             clear_gradients(places)
 
     visit(ti.root)
-
-
-lang_core = core
 
 
 def benchmark(func, repeat=300, args=()):

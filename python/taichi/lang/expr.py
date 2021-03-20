@@ -1,8 +1,10 @@
-from taichi.lang import impl, runtime_ops
+from taichi.lang import impl
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.core import taichi_lang_core
 from taichi.lang.util import (deprecated, is_taichi_class, python_scope,
                               to_numpy_type, to_pytorch_type)
+
+import taichi as ti
 
 
 # Scalar, basic data type
@@ -122,7 +124,7 @@ class Expr(TaichiOperations):
     @python_scope
     def fill(self, val):
         # TODO: avoid too many template instantiations
-        from .meta import fill_tensor
+        from taichi.lang.meta import fill_tensor
         fill_tensor(self, val)
 
     def parent(self, n=1):
@@ -134,7 +136,7 @@ class Expr(TaichiOperations):
 
     @property
     def snode(self):
-        from .snode import SNode
+        from taichi.lang.snode import SNode
         return SNode(self.ptr.snode())
 
     def __hash__(self):
@@ -165,22 +167,24 @@ class Expr(TaichiOperations):
 
     @python_scope
     def to_numpy(self):
-        from .meta import tensor_to_ext_arr
         import numpy as np
+
+        from taichi.lang.meta import tensor_to_ext_arr
         arr = np.zeros(shape=self.shape, dtype=to_numpy_type(self.dtype))
         tensor_to_ext_arr(self, arr)
-        runtime_ops.sync()
+        ti.sync()
         return arr
 
     @python_scope
     def to_torch(self, device=None):
-        from .meta import tensor_to_ext_arr
         import torch
+
+        from taichi.lang.meta import tensor_to_ext_arr
         arr = torch.zeros(size=self.shape,
                           dtype=to_pytorch_type(self.dtype),
                           device=device)
         tensor_to_ext_arr(self, arr)
-        runtime_ops.sync()
+        ti.sync()
         return arr
 
     @python_scope
@@ -193,7 +197,7 @@ class Expr(TaichiOperations):
         if hasattr(arr, 'contiguous'):
             arr = arr.contiguous()
         ext_arr_to_tensor(arr, self)
-        runtime_ops.sync()
+        ti.sync()
 
     @python_scope
     def from_torch(self, arr):
@@ -223,19 +227,17 @@ class Expr(TaichiOperations):
 
 
 def make_var_vector(size):
-    from taichi.lang.matrix import Vector
     exprs = []
     for _ in range(size):
         exprs.append(taichi_lang_core.make_id_expr(''))
-    return Vector(exprs)
+    return ti.Vector(exprs)
 
 
 def make_expr_group(*exprs):
     if len(exprs) == 1:
-        from taichi.lang.matrix import Matrix
         if isinstance(exprs[0], (list, tuple)):
             exprs = exprs[0]
-        elif isinstance(exprs[0], Matrix):
+        elif isinstance(exprs[0], ti.Matrix):
             mat = exprs[0]
             assert mat.m == 1
             exprs = mat.entries

@@ -1,3 +1,4 @@
+import builtins
 import ctypes
 import functools
 import math
@@ -36,8 +37,6 @@ def wrap_if_not_expr(a):
 
 
 def unary(foo):
-    import taichi as ti
-
     @functools.wraps(foo)
     def imp_foo(x):
         _taichi_skip_traceback = 2
@@ -46,7 +45,7 @@ def unary(foo):
     @functools.wraps(foo)
     def wrapped(a):
         _taichi_skip_traceback = 1
-        if ti.is_taichi_class(a):
+        if is_taichi_class(a):
             return a.element_wise_unary(imp_foo)
         else:
             return imp_foo(a)
@@ -58,8 +57,6 @@ binary_ops = []
 
 
 def binary(foo):
-    import taichi as ti
-
     @functools.wraps(foo)
     def imp_foo(x, y):
         _taichi_skip_traceback = 2
@@ -73,9 +70,9 @@ def binary(foo):
     @functools.wraps(foo)
     def wrapped(a, b):
         _taichi_skip_traceback = 1
-        if ti.is_taichi_class(a):
+        if is_taichi_class(a):
             return a.element_wise_binary(imp_foo, b)
-        elif ti.is_taichi_class(b):
+        elif is_taichi_class(b):
             return b.element_wise_binary(rev_foo, a)
         else:
             return imp_foo(a, b)
@@ -88,8 +85,6 @@ ternary_ops = []
 
 
 def ternary(foo):
-    import taichi as ti
-
     @functools.wraps(foo)
     def abc_foo(a, b, c):
         _taichi_skip_traceback = 2
@@ -108,11 +103,11 @@ def ternary(foo):
     @functools.wraps(foo)
     def wrapped(a, b, c):
         _taichi_skip_traceback = 1
-        if ti.is_taichi_class(a):
+        if is_taichi_class(a):
             return a.element_wise_ternary(abc_foo, b, c)
-        elif ti.is_taichi_class(b):
+        elif is_taichi_class(b):
             return b.element_wise_ternary(bac_foo, a, c)
-        elif ti.is_taichi_class(c):
+        elif is_taichi_class(c):
             return c.element_wise_ternary(cab_foo, a, b)
         else:
             return abc_foo(a, b, c)
@@ -125,8 +120,6 @@ writeback_binary_ops = []
 
 
 def writeback_binary(foo):
-    import taichi as ti
-
     @functools.wraps(foo)
     def imp_foo(x, y):
         _taichi_skip_traceback = 2
@@ -135,9 +128,9 @@ def writeback_binary(foo):
     @functools.wraps(foo)
     def wrapped(a, b):
         _taichi_skip_traceback = 1
-        if ti.is_taichi_class(a):
+        if is_taichi_class(a):
             return a.element_wise_writeback_binary(imp_foo, b)
-        elif ti.is_taichi_class(b):
+        elif is_taichi_class(b):
             raise TaichiSyntaxError(
                 f'cannot augassign taichi class {type(b)} to scalar expr')
         else:
@@ -262,7 +255,6 @@ def log(a):
 
 @unary
 def abs(a):
-    import builtins
     return _unary_operation(ti_core.expr_abs, builtins.abs, a)
 
 
@@ -328,13 +320,11 @@ def truediv(a, b):
 
 @binary
 def max(a, b):
-    import builtins
     return _binary_operation(ti_core.expr_max, builtins.max, a, b)
 
 
 @binary
 def min(a, b):
-    import builtins
     return _binary_operation(ti_core.expr_min, builtins.min, a, b)
 
 

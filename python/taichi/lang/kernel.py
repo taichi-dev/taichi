@@ -1,16 +1,22 @@
-import re
-import inspect
-from .transformer import ASTTransformer
 import ast
-from .kernel_arguments import *
-from .util import *
-from .shell import oinspect, _shell_pop_print
-from .exception import TaichiSyntaxError
-from . import impl
+import copy
 import functools
+import inspect
+import re
+
+import numpy as np
+from taichi.lang import impl, util
+from taichi.lang.ast_checker import KernelSimplicityASTChecker
+from taichi.lang.core import taichi_lang_core
+from taichi.lang.exception import TaichiSyntaxError
+from taichi.lang.kernel_arguments import ext_arr, template
+from taichi.lang.shell import _shell_pop_print, oinspect
+from taichi.lang.transformer import ASTTransformer
+
+import taichi as ti
 
 
-def remove_indent(lines):
+def _remove_indent(lines):
     lines = lines.split('\n')
     to_remove = 0
     for i in range(len(lines[0])):
@@ -88,7 +94,7 @@ class Func:
         return ret
 
     def do_compile(self):
-        src = remove_indent(oinspect.getsource(self.func))
+        src = _remove_indent(oinspect.getsource(self.func))
         tree = ast.parse(src)
 
         func_body = tree.body[0]
@@ -136,8 +142,8 @@ class Func:
                 if i == 0 and self.classfunc:
                     annotation = template()
             else:
-                if id(annotation) in type_ids:
-                    warning(
+                if id(annotation) in util.type_ids:
+                    ti.warning(
                         'Data type annotations are unnecessary for Taichi'
                         ' functions, consider removing it',
                         stacklevel=4)
@@ -147,9 +153,6 @@ class Func:
                     )
             self.arguments.append(annotation)
             self.argument_names.append(param.name)
-
-
-classfunc = obsolete('@ti.classfunc', '@ti.func directly')
 
 
 class KernelTemplateMapper:
@@ -199,7 +202,6 @@ class KernelArgError(Exception):
 
 def _get_global_vars(func):
     # Discussions: https://github.com/taichi-dev/taichi/issues/282
-    import copy
     global_vars = copy.copy(func.__globals__)
 
     freevar_names = func.__code__.co_freevars
@@ -220,6 +222,7 @@ class Kernel:
         self.kernel_counter = Kernel.counter
         Kernel.counter += 1
         self.is_grad = is_grad
+        self.grad = None
         self.arguments = []
         self.argument_names = []
         self.return_type = None
@@ -281,7 +284,7 @@ class Kernel:
             else:
                 if isinstance(annotation, (template, ext_arr)):
                     pass
-                elif id(annotation) in type_ids:
+                elif id(annotation) in util.type_ids:
                     pass
                 else:
                     _taichi_skip_traceback = 1
@@ -305,10 +308,9 @@ class Kernel:
         kernel_name = "{}_c{}_{}{}".format(self.func.__name__,
                                            self.kernel_counter, key[1],
                                            grad_suffix)
-        import taichi as ti
         ti.trace("Compiling kernel {}...".format(kernel_name))
 
-        src = remove_indent(oinspect.getsource(self.func))
+        src = _remove_indent(oinspect.getsource(self.func))
         tree = ast.parse(src)
 
         func_body = tree.body[0]
@@ -326,7 +328,6 @@ class Kernel:
             global_vars[func_body.returns.id] = self.return_type
 
         if self.is_grad:
-            from .ast_checker import KernelSimplicityASTChecker
             KernelSimplicityASTChecker(self.func).visit(tree)
 
         visitor = ASTTransformer(
@@ -357,7 +358,6 @@ class Kernel:
         def taichi_ast_generator():
             _taichi_skip_traceback = 1
             if self.runtime.inside_kernel:
-                import taichi as ti
                 raise TaichiSyntaxError(
                     "Kernels cannot call other kernels. I.e., nested kernels are not allowed. Please check if you have direct/indirect invocation of kernels within kernels. Note that some methods provided by the Taichi standard library may invoke kernels, and please move their invocations to Python-scope."
                 )
@@ -389,21 +389,22 @@ class Kernel:
                     continue
                 provided = type(v)
                 # Note: do not use sth like "needed == f32". That would be slow.
-                if id(needed) in real_type_ids:
+                if id(needed) in util.real_type_ids:
                     if not isinstance(v, (float, int)):
                         raise KernelArgError(i, needed.to_string(), provided)
                     launch_ctx.set_arg_float(actual_argument_slot, float(v))
-                elif id(needed) in integer_type_ids:
+                elif id(needed) in util.integer_type_ids:
                     if not isinstance(v, int):
                         raise KernelArgError(i, needed.to_string(), provided)
                     launch_ctx.set_arg_int(actual_argument_slot, int(v))
                 elif self.match_ext_arr(v, needed):
                     has_external_arrays = True
-                    has_torch = has_pytorch()
+                    has_torch = util.has_pytorch()
                     is_numpy = isinstance(v, np.ndarray)
                     if is_numpy:
                         tmp = np.ascontiguousarray(v)
-                        tmps.append(tmp)  # Purpose: do not GC tmp!
+                        # Purpose: DO NOT GC |tmp|!
+                        tmps.append(tmp)
                         launch_ctx.set_arg_nparray(actual_argument_slot,
                                                    int(tmp.ctypes.data),
                                                    tmp.nbytes)
@@ -415,7 +416,9 @@ class Kernel:
 
                             return call_back
 
-                        assert has_torch and isinstance(v, torch.Tensor)
+                        assert has_torch
+                        import torch
+                        assert isinstance(v, torch.Tensor)
                         tmp = v
                         taichi_arch = self.runtime.prog.config.arch
 
@@ -441,8 +444,8 @@ class Kernel:
                         shape
                     ) <= max_num_indices, "External array cannot have > {} indices".format(
                         max_num_indices)
-                    for i, s in enumerate(shape):
-                        launch_ctx.set_extra_arg_int(actual_argument_slot, i,
+                    for ii, s in enumerate(shape):
+                        launch_ctx.set_extra_arg_int(actual_argument_slot, ii,
                                                      s)
                 else:
                     raise ValueError(
@@ -462,11 +465,10 @@ class Kernel:
             has_ret = ret_dt is not None
 
             if has_external_arrays or has_ret:
-                import taichi as ti
                 ti.sync()
 
             if has_ret:
-                if id(ret_dt) in integer_type_ids:
+                if id(ret_dt) in util.integer_type_ids:
                     ret = t_kernel.get_ret_int(0)
                 else:
                     ret = t_kernel.get_ret_float(0)
@@ -484,7 +486,8 @@ class Kernel:
             needed, np.ndarray) or needed == np.ndarray or isinstance(
                 needed, ext_arr)
         has_array = isinstance(v, np.ndarray)
-        if not has_array and has_pytorch():
+        if not has_array and util.has_pytorch():
+            import torch
             has_array = isinstance(v, torch.Tensor)
         return has_array and needs_array
 
@@ -547,12 +550,13 @@ def _kernel_impl(func, level_of_class_stackframe, verbose=False):
     primal.grad = adjoint
 
     if is_classkernel:
-        # For class kernels, their primal/adjoint callables are constructed when the
-        # kernel is accessed via the instance inside BoundedDifferentiableMethod.
+        # For class kernels, their primal/adjoint callables are constructed
+        # when the kernel is accessed via the instance inside
+        # _BoundedDifferentiableMethod.
         # This is because we need to bind the kernel or |grad| to the instance
         # owning the kernel, which is not known until the kernel is accessed.
         #
-        # See also: BoundedDifferentiableMethod, data_oriented.
+        # See also: _BoundedDifferentiableMethod, data_oriented.
         @functools.wraps(func)
         def wrapped(*args, **kwargs):
             _taichi_skip_traceback = 1
@@ -584,10 +588,11 @@ def kernel(func):
     return _kernel_impl(func, level_of_class_stackframe=3)
 
 
-classkernel = obsolete('@ti.classkernel', '@ti.kernel directly')
+classfunc = util.obsolete('@ti.classfunc', '@ti.func directly')
+classkernel = util.obsolete('@ti.classkernel', '@ti.kernel directly')
 
 
-class BoundedDifferentiableMethod:
+class _BoundedDifferentiableMethod:
     def __init__(self, kernel_owner, wrapped_kernel_func):
         clsobj = type(kernel_owner)
         if not getattr(clsobj, '_data_oriented', False):
@@ -618,7 +623,7 @@ def data_oriented(cls):
                 wrapped = x
             assert inspect.isfunction(wrapped)
             if wrapped._is_classkernel:
-                return BoundedDifferentiableMethod(self, wrapped)
+                return _BoundedDifferentiableMethod(self, wrapped)
         return x
 
     cls.__getattribute__ = getattr

@@ -696,7 +696,6 @@ if 1:
                     self.create_variable(arg.arg)
                     array_dt = self.arg_features[i][0]
                     array_dim = self.arg_features[i][1]
-                    import numpy as np
                     array_dt = to_taichi_type(array_dt)
                     dt_expr = 'ti.' + ti.core.data_type_name(array_dt)
                     dt = self.parse_expr(dt_expr)

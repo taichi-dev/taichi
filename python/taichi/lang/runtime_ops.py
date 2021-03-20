@@ -1,5 +1,6 @@
 from taichi.lang import impl
 
+
 def sync():
     impl.get_runtime().sync()
 

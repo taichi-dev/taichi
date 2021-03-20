@@ -26,7 +26,7 @@ TEST(IRBuilder, Print) {
   auto *result = builder.create_print(one, message, one);
   ASSERT_TRUE(result->is<PrintStmt>());
   auto *print = result->cast<PrintStmt>();
-  EXPECT_EQ(print->contents->size(), 3);
+  EXPECT_EQ(print->contents.size(), 3);
   ASSERT_TRUE(std::holds_alternative<Stmt *>(print->contents[0]));
   EXPECT_EQ(std::get<Stmt *>(print->contents[0]), one);
   ASSERT_TRUE(std::holds_alternative<std::string>(print->contents[1]));

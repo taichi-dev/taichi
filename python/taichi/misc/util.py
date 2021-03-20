@@ -1,6 +1,11 @@
-import taichi
-import sys
 import copy
+import inspect
+import sys
+import traceback
+
+from colorama import Fore, Style
+
+import taichi
 
 
 def config_from_dict(args):
@@ -95,9 +100,6 @@ class Tee():
         self.file.write(data)
 
 
-import inspect
-
-
 def get_file_name(asc=0):
     return inspect.stack()[1 + asc][1]
 
@@ -113,8 +115,6 @@ def get_line_number(asc=0):
 # The builtin `warnings` module is unreliable since it may be suppressed
 # by other packages such as IPython.
 def warning(msg, type=UserWarning, stacklevel=1):
-    from colorama import Fore, Style
-    import traceback
     s = traceback.extract_stack()[:-stacklevel]
     raw = ''.join(traceback.format_list(s))
     print(Fore.YELLOW + Style.BRIGHT, end='')

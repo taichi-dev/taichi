@@ -1,4 +1,5 @@
-import inspect
+import numbers
+
 from .core import taichi_lang_core
 from .expr import Expr
 from .snode import SNode

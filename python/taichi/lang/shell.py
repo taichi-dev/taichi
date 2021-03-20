@@ -1,4 +1,9 @@
-import sys, os, atexit, functools
+import atexit
+import functools
+import os
+import sys
+
+from taichi.lang.core import taichi_lang_core
 
 try:
     import sourceinspect as oinspect
@@ -18,7 +23,6 @@ if not _env_enable_pybuf or int(_env_enable_pybuf):
     # While sys.__stdout__ should always be the raw console stdout.
     pybuf_enabled = sys.stdout is not sys.__stdout__
 
-from .core import taichi_lang_core
 taichi_lang_core.toggle_python_print_buffer(pybuf_enabled)
 
 

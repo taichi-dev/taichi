@@ -1,8 +1,8 @@
-from .core import taichi_lang_core
-from .util import *
-from . import impl
-from .common_ops import TaichiOperations
-import traceback
+from taichi.lang import impl, runtime_ops
+from taichi.lang.common_ops import TaichiOperations
+from taichi.lang.core import taichi_lang_core
+from taichi.lang.util import (deprecated, is_taichi_class, python_scope,
+                              to_numpy_type, to_pytorch_type)
 
 
 # Scalar, basic data type
@@ -125,11 +125,9 @@ class Expr(TaichiOperations):
         from .meta import fill_tensor
         fill_tensor(self, val)
 
-    #@deprecated('tensor.parent()', 'tensor.snode.parent()')
     def parent(self, n=1):
-        import taichi as ti
         p = self.snode.parent(n)
-        return Expr(ti.core.global_var_expr_from_snode(p.ptr))
+        return Expr(taichi_lang_core.global_var_expr_from_snode(p.ptr))
 
     def is_global(self):
         return self.ptr.is_global_var() or self.ptr.is_external_var()
@@ -145,10 +143,9 @@ class Expr(TaichiOperations):
     @property
     def shape(self):
         if self.ptr.is_external_var():
-            import taichi as ti
-            dim = ti.get_external_tensor_dim(self.ptr)
+            dim = impl.get_external_tensor_dim(self.ptr)
             ret = [
-                ti.Expr(ti.get_external_tensor_shape_along_axis(self.ptr, i))
+                Expr(impl.get_external_tensor_shape_along_axis(self.ptr, i))
                 for i in range(dim)
             ]
             return ret
@@ -172,8 +169,7 @@ class Expr(TaichiOperations):
         import numpy as np
         arr = np.zeros(shape=self.shape, dtype=to_numpy_type(self.dtype))
         tensor_to_ext_arr(self, arr)
-        import taichi as ti
-        ti.sync()
+        runtime_ops.sync()
         return arr
 
     @python_scope
@@ -184,8 +180,7 @@ class Expr(TaichiOperations):
                           dtype=to_pytorch_type(self.dtype),
                           device=device)
         tensor_to_ext_arr(self, arr)
-        import taichi as ti
-        ti.sync()
+        runtime_ops.sync()
         return arr
 
     @python_scope
@@ -198,8 +193,7 @@ class Expr(TaichiOperations):
         if hasattr(arr, 'contiguous'):
             arr = arr.contiguous()
         ext_arr_to_tensor(arr, self)
-        import taichi as ti
-        ti.sync()
+        runtime_ops.sync()
 
     @python_scope
     def from_torch(self, arr):
@@ -229,16 +223,16 @@ class Expr(TaichiOperations):
 
 
 def make_var_vector(size):
-    import taichi as ti
+    from taichi.lang.matrix import Vector
     exprs = []
-    for i in range(size):
+    for _ in range(size):
         exprs.append(taichi_lang_core.make_id_expr(''))
-    return ti.Vector(exprs)
+    return Vector(exprs)
 
 
 def make_expr_group(*exprs):
     if len(exprs) == 1:
-        from .matrix import Matrix
+        from taichi.lang.matrix import Matrix
         if isinstance(exprs[0], (list, tuple)):
             exprs = exprs[0]
         elif isinstance(exprs[0], Matrix):

@@ -1,7 +1,6 @@
-from .core import taichi_lang_core
-from .expr import Expr
-import numpy as np
-from .util import *
+from taichi.lang.core import taichi_lang_core
+from taichi.lang.expr import Expr
+from taichi.lang.util import cook_dtype, to_taichi_type
 
 
 class ArgExtArray:

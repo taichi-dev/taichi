@@ -1,12 +1,14 @@
-from .impl import *
-from .util import deprecated
-from .matrix import Matrix, Vector
-from .transformer import TaichiSyntaxError
-from .ndrange import ndrange, GroupedNDRange
-from . import type_factory
-from copy import deepcopy as _deepcopy
 import functools
 import os
+from copy import deepcopy as _deepcopy
+
+from taichi.lang import type_factory as type_factory_mod
+from taichi.lang.impl import *
+from taichi.lang.matrix import Matrix, Vector
+from taichi.lang.ndrange import GroupedNDRange, ndrange
+from taichi.lang.runtime_ops import async_flush, sync
+from taichi.lang.transformer import TaichiSyntaxError
+from taichi.lang.util import deprecated
 
 core = taichi_lang_core
 
@@ -53,8 +55,8 @@ timeline_save = lambda fn: get_runtime().prog.timeline_save(fn)
 type_factory_ = core.get_type_factory_instance()
 
 # Unstable API
-quant = type_factory.Quant
-type_factory = type_factory.TypeFactory()
+quant = type_factory_mod.Quant
+type_factory = type_factory_mod.TypeFactory()
 
 
 def memory_profiler_print():
@@ -332,8 +334,9 @@ lang_core = core
 
 
 def benchmark(func, repeat=300, args=()):
-    import taichi as ti
     import time
+
+    import taichi as ti
 
     def run_benchmark():
         compile_time = time.time()
@@ -388,9 +391,10 @@ def benchmark_plot(fn=None,
                    bar_distance=0,
                    left_margin=0,
                    size=(12, 8)):
-    import taichi as ti
-    import yaml
     import matplotlib.pyplot as plt
+    import yaml
+
+    import taichi as ti
     if fn is None:
         fn = os.path.join(ti.core.get_repo_dir(), 'benchmarks', 'output',
                           'benchmark.yml')
@@ -509,8 +513,9 @@ def benchmark_plot(fn=None,
 
 
 def stat_write(key, value):
-    import taichi as ti
     import yaml
+
+    import taichi as ti
     case_name = os.environ.get('TI_CURRENT_BENCHMARK')
     if case_name is None:
         return
@@ -806,14 +811,6 @@ def complex_kernel_grad(primal):
         return decorated
 
     return decorator
-
-
-def sync():
-    get_runtime().sync()
-
-
-def async_flush():
-    get_runtime().prog.async_flush()
 
 
 __all__ = [s for s in dir() if not s.startswith('_')]

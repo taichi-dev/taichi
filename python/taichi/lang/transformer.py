@@ -1,8 +1,9 @@
 import ast
-from .util import to_taichi_type
 import copy
-from .exception import TaichiSyntaxError
-from . import impl
+
+from taichi.lang import impl
+from taichi.lang.exception import TaichiSyntaxError
+from taichi.lang.util import to_taichi_type
 
 
 class ScopeGuard:
@@ -501,7 +502,7 @@ if ti.static(1):
             template = '''
 if 1:
     ___loop_var = 0
-    {} = ti.make_var_vector(size=len(___loop_var.loop_range().shape))
+    {} = ti.lang.expr.make_var_vector(size=len(___loop_var.loop_range().shape))
     ___expr_group = ti.make_expr_group({})
     ti.begin_frontend_struct_for(___expr_group, ___loop_var.loop_range())
     ti.core.end_frontend_range_for()

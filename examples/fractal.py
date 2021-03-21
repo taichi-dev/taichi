@@ -13,8 +13,8 @@ def complex_sqr(z):
 
 @ti.kernel
 def paint(t: float):
+    c = ti.Vector([-0.8, ti.cos(t) * 0.2])
     for i, j in pixels:  # Parallized over all pixels
-        c = ti.Vector([-0.8, ti.cos(t) * 0.2])
         z = ti.Vector([i / n - 1, j / n - 0.5]) * 2
         iterations = 0
         while z.norm() < 20 and iterations < 50:

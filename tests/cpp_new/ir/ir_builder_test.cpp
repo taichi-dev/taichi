@@ -35,7 +35,7 @@ TEST(IRBuilder, Print) {
   EXPECT_EQ(std::get<Stmt *>(print->contents[2]), one);
 }
 
-TEST(IRBuilder, For) {
+TEST(IRBuilder, RangeFor) {
   IRBuilder builder;
   auto *zero = builder.get_int32(0);
   auto *ten = builder.get_int32(10);

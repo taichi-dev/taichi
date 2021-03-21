@@ -7,8 +7,8 @@ TLANG_NAMESPACE_BEGIN
 class IRBuilder {
  public:
   struct InsertPoint {
-    Block *block;
-    int position;
+    Block *block{nullptr};
+    int position{0};
   };
 
  private:

@@ -5,12 +5,13 @@
 TLANG_NAMESPACE_BEGIN
 
 class IRBuilder {
- private:
+ public:
   struct InsertPoint {
     Block *block;
     int position;
   };
 
+ private:
   std::unique_ptr<IRNode> root_;
   InsertPoint insert_point_;
 
@@ -19,6 +20,33 @@ class IRBuilder {
 
   // General inserter. Returns stmt.get().
   Stmt *insert(std::unique_ptr<Stmt> &&stmt);
+  // Insert to a specific insertion point.
+  static Stmt *insert(std::unique_ptr<Stmt> &&stmt, InsertPoint *insert_point);
+
+  void set_insertion_point(InsertPoint new_insert_point);
+  void set_insertion_point_to_after(Stmt *stmt);
+  void set_insertion_point_to_before(Stmt *stmt);
+  void set_insertion_point_to_loop_begin(Stmt *loop);
+  void set_insertion_point_to_true_branch(Stmt *if_stmt);
+  void set_insertion_point_to_false_branch(Stmt *if_stmt);
+
+  // Control flows.
+  Stmt *create_range_for(Stmt *begin,
+                         Stmt *end,
+                         int vectorize = -1,
+                         int bit_vectorize = -1,
+                         int parallelize = 0,
+                         int block_dim = 0,
+                         bool strictly_serialized = false);
+  Stmt *create_struct_for(SNode *snode,
+                          int vectorize = -1,
+                          int bit_vectorize = -1,
+                          int parallelize = 0,
+                          int block_dim = 0);
+  Stmt *create_while_true();
+  Stmt *create_if(Stmt *cond);
+  Stmt *create_break();
+  Stmt *create_continue();
 
   // Constants. TODO: add more types
   Stmt *get_int32(int32 value);
@@ -91,6 +119,9 @@ class IRBuilder {
   Stmt *create_print(Args &&... args) {
     return insert(Stmt::make<PrintStmt>(std::forward<Args>(args)...));
   }
+
+  // Local variable.
+  Stmt *create_local_var(DataType dt);
 };
 
 TLANG_NAMESPACE_END

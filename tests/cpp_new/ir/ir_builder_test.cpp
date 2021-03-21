@@ -35,5 +35,20 @@ TEST(IRBuilder, Print) {
   EXPECT_EQ(std::get<Stmt *>(print->contents[2]), one);
 }
 
+TEST(IRBuilder, For) {
+  IRBuilder builder;
+  auto *zero = builder.get_int32(0);
+  auto *ten = builder.get_int32(10);
+  auto *loop = builder.create_range_for(zero, ten);
+  builder.set_insertion_point_to_loop_begin(loop);
+  auto *print = builder.create_print("message");
+  builder.set_insertion_point_to_after(loop);
+  auto *ret = builder.create_return(zero);
+  EXPECT_EQ(zero->parent->size(), 4);
+  ASSERT_TRUE(loop->is<RangeForStmt>());
+  auto *loopc = loop->cast<RangeForStmt>();
+  EXPECT_EQ(loopc->body->size(), 1);
+  EXPECT_EQ(loopc->body->statements[0], print);
+}
 }  // namespace lang
 }  // namespace taichi

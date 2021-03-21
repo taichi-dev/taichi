@@ -1,5 +1,6 @@
 #include "taichi/ir/ir_builder.h"
 #include "taichi/ir/statements.h"
+#include "taichi/common/logging.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -10,7 +11,87 @@ IRBuilder::IRBuilder() {
 }
 
 Stmt *IRBuilder::insert(std::unique_ptr<Stmt> &&stmt) {
-  return insert_point_.block->insert(std::move(stmt), insert_point_.position++);
+  return insert(std::move(stmt), &insert_point_);
+}
+
+Stmt *IRBuilder::insert(std::unique_ptr<Stmt> &&stmt,
+                        InsertPoint *insert_point) {
+  return insert_point->block->insert(std::move(stmt), insert_point->position++);
+}
+
+void IRBuilder::set_insertion_point(InsertPoint new_insert_point) {
+  insert_point_ = new_insert_point;
+}
+
+void IRBuilder::set_insertion_point_to_after(Stmt *stmt) {
+  set_insertion_point({stmt->parent, stmt->parent->locate(stmt) + 1});
+}
+
+void IRBuilder::set_insertion_point_to_before(Stmt *stmt) {
+  set_insertion_point({stmt->parent, stmt->parent->locate(stmt)});
+}
+
+void IRBuilder::set_insertion_point_to_loop_begin(Stmt *loop) {
+  if (auto range_for = loop->cast<RangeForStmt>()) {
+    set_insertion_point({range_for->body.get(), 0});
+  } else if (auto struct_for = loop->cast<StructForStmt>()) {
+    set_insertion_point({struct_for->body.get(), 0});
+  } else if (auto while_stmt = loop->cast<WhileStmt>()) {
+    set_insertion_point({while_stmt->body.get(), 0});
+  } else {
+    TI_ERROR("Statement {} is not a loop.", loop->name());
+  }
+}
+
+void IRBuilder::set_insertion_point_to_true_branch(Stmt *if_stmt) {
+  TI_ASSERT(if_stmt->is<IfStmt>());
+  set_insertion_point({if_stmt->as<IfStmt>()->true_statements.get(), 0});
+}
+
+void IRBuilder::set_insertion_point_to_false_branch(Stmt *if_stmt) {
+  TI_ASSERT(if_stmt->is<IfStmt>());
+  set_insertion_point({if_stmt->as<IfStmt>()->false_statements.get(), 0});
+}
+
+Stmt *IRBuilder::create_range_for(Stmt *begin,
+                                  Stmt *end,
+                                  int vectorize,
+                                  int bit_vectorize,
+                                  int parallelize,
+                                  int block_dim,
+                                  bool strictly_serialized) {
+  return insert(Stmt::make<RangeForStmt>(begin, end, std::make_unique<Block>(),
+                                         vectorize, bit_vectorize, parallelize,
+                                         block_dim, strictly_serialized));
+}
+
+Stmt *IRBuilder::create_struct_for(SNode *snode,
+                                  int vectorize,
+                                  int bit_vectorize,
+                                  int parallelize,
+                                  int block_dim) {
+  return insert(Stmt::make<StructForStmt>(snode, std::make_unique<Block>(),
+                                         vectorize, bit_vectorize, parallelize,
+                                         block_dim));
+}
+
+Stmt *IRBuilder::create_while_true() {
+  return insert(Stmt::make<WhileStmt>(std::make_unique<Block>()));
+}
+
+Stmt *IRBuilder::create_if(Stmt *cond) {
+  auto &&result = Stmt::make_typed<IfStmt>(cond);
+  result->set_true_statements(std::make_unique<Block>());
+  result->set_false_statements(std::make_unique<Block>());
+  return insert(std::move(result));
+}
+
+Stmt *IRBuilder::create_break() {
+  return insert(Stmt::make<WhileControlStmt>(nullptr, get_int32(0)));
+}
+
+Stmt *IRBuilder::create_continue() {
+  return insert(Stmt::make<ContinueStmt>());
 }
 
 Stmt *IRBuilder::get_int32(int32 value) {
@@ -226,6 +307,10 @@ Stmt *IRBuilder::create_select(Stmt *cond,
                                Stmt *false_result) {
   return insert(Stmt::make<TernaryOpStmt>(TernaryOpType::select, cond,
                                           true_result, false_result));
+}
+
+Stmt *IRBuilder::create_local_var(DataType dt) {
+  return insert(Stmt::make<AllocaStmt>(dt));
 }
 
 TLANG_NAMESPACE_END

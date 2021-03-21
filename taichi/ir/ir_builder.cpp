@@ -66,13 +66,13 @@ Stmt *IRBuilder::create_range_for(Stmt *begin,
 }
 
 Stmt *IRBuilder::create_struct_for(SNode *snode,
-                                  int vectorize,
-                                  int bit_vectorize,
-                                  int parallelize,
-                                  int block_dim) {
+                                   int vectorize,
+                                   int bit_vectorize,
+                                   int parallelize,
+                                   int block_dim) {
   return insert(Stmt::make<StructForStmt>(snode, std::make_unique<Block>(),
-                                         vectorize, bit_vectorize, parallelize,
-                                         block_dim));
+                                          vectorize, bit_vectorize, parallelize,
+                                          block_dim));
 }
 
 Stmt *IRBuilder::create_while_true() {

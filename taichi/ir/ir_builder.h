@@ -142,7 +142,9 @@ class IRBuilder {
   BinaryOpStmt *create_cmp_ne(Stmt *l, Stmt *r);
 
   // Ternary operations. Returns the result.
-  TernaryOpStmt *create_select(Stmt *cond, Stmt *true_result, Stmt *false_result);
+  TernaryOpStmt *create_select(Stmt *cond,
+                               Stmt *true_result,
+                               Stmt *false_result);
 
   // Print values and strings. Arguments can be Stmt* or std::string.
   template <typename... Args>

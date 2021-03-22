@@ -57,13 +57,13 @@ RangeForStmt *IRBuilder::create_range_for(Stmt *begin,
 }
 
 StructForStmt *IRBuilder::create_struct_for(SNode *snode,
-                                   int vectorize,
-                                   int bit_vectorize,
-                                   int parallelize,
-                                   int block_dim) {
-  return insert(Stmt::make_typed<StructForStmt>(snode, std::make_unique<Block>(),
-                                          vectorize, bit_vectorize, parallelize,
-                                          block_dim));
+                                            int vectorize,
+                                            int bit_vectorize,
+                                            int parallelize,
+                                            int block_dim) {
+  return insert(Stmt::make_typed<StructForStmt>(
+      snode, std::make_unique<Block>(), vectorize, bit_vectorize, parallelize,
+      block_dim));
 }
 
 WhileStmt *IRBuilder::create_while_true() {
@@ -295,10 +295,10 @@ BinaryOpStmt *IRBuilder::create_cmp_ne(Stmt *l, Stmt *r) {
 }
 
 TernaryOpStmt *IRBuilder::create_select(Stmt *cond,
-                               Stmt *true_result,
-                               Stmt *false_result) {
+                                        Stmt *true_result,
+                                        Stmt *false_result) {
   return insert(Stmt::make_typed<TernaryOpStmt>(TernaryOpType::select, cond,
-                                          true_result, false_result));
+                                                true_result, false_result));
 }
 
 AllocaStmt *IRBuilder::create_local_var(DataType dt) {

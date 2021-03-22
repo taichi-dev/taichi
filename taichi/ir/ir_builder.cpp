@@ -186,7 +186,7 @@ UnaryOpStmt *IRBuilder::create_acos(Stmt *value) {
   return insert(Stmt::make_typed<UnaryOpStmt>(UnaryOpType::acos, value));
 }
 
-Stmt *IRBuilder::create_tan(Stmt *value) {
+UnaryOpStmt *IRBuilder::create_tan(Stmt *value) {
   return insert(Stmt::make_typed<UnaryOpStmt>(UnaryOpType::tan, value));
 }
 

@@ -5,10 +5,11 @@ import sys
 
 from taichi.lang.core import taichi_lang_core
 
+import taichi as ti
+
 try:
     import sourceinspect as oinspect
 except ImportError:
-    import taichi as ti
     ti.warn('`sourceinspect` not installed!')
     ti.warn(
         'Without this package Taichi may not function well in Python IDLE interactive shell, '
@@ -31,7 +32,6 @@ def _shell_pop_print(old_call):
         # zero-overhead!
         return old_call
 
-    import taichi as ti
     ti.info('Graphical python shell detected, using wrapped sys.stdout')
 
     @functools.wraps(old_call)

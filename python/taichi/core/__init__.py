@@ -1,7 +1,7 @@
-from .util import *
-from .settings import *
-from .record import *
-from .unit import unit
+from taichi.core.util import *
+from taichi.core.settings import *
+from taichi.core.record import *
+from taichi.core.logging import *
 
 ti_core.build = build
 ti_core.load_module = load_module

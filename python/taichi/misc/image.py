@@ -42,7 +42,6 @@ def imdisplay(img):
         import PIL.Image
         from io import BytesIO
         import IPython.display
-        import numpy as np
         img = cook_image_to_bytes(img)
         with BytesIO() as f:
             PIL.Image.fromarray(img).save(f, 'png')

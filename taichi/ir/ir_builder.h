@@ -48,6 +48,9 @@ class IRBuilder {
   Stmt *create_break();
   Stmt *create_continue();
 
+  // Loop index.
+  Stmt *get_loop_index(Stmt *loop, int index = 0);
+
   // Constants. TODO: add more types
   Stmt *get_int32(int32 value);
   Stmt *get_int64(int64 value);

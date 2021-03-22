@@ -41,14 +41,14 @@ TEST(IRBuilder, RangeFor) {
   auto *ten = builder.get_int32(10);
   auto *loop = builder.create_range_for(zero, ten);
   builder.set_insertion_point_to_loop_begin(loop);
-  auto *print = builder.create_print("message");
+  auto *index = builder.get_loop_index(loop, 0);
   builder.set_insertion_point_to_after(loop);
   auto *ret = builder.create_return(zero);
   EXPECT_EQ(zero->parent->size(), 4);
   ASSERT_TRUE(loop->is<RangeForStmt>());
   auto *loopc = loop->cast<RangeForStmt>();
   EXPECT_EQ(loopc->body->size(), 1);
-  EXPECT_EQ(loopc->body->statements[0], print);
+  EXPECT_EQ(loopc->body->statements[0].get(), index);
 }
 }  // namespace lang
 }  // namespace taichi

@@ -94,6 +94,10 @@ Stmt *IRBuilder::create_continue() {
   return insert(Stmt::make<ContinueStmt>());
 }
 
+Stmt *IRBuilder::get_loop_index(Stmt *loop, int index) {
+  return insert(Stmt::make<LoopIndexStmt>(loop, index));
+}
+
 Stmt *IRBuilder::get_int32(int32 value) {
   return insert(
       Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(TypedConstant(

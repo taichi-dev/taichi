@@ -12,7 +12,7 @@ class IRBuilder {
   };
 
  private:
-  std::unique_ptr<IRNode> root_;
+  std::unique_ptr<IRNode> root_{nullptr};
   InsertPoint insert_point_;
 
  public:

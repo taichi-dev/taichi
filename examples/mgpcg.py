@@ -33,7 +33,7 @@ ti.root.pointer(ti.ijk, [N_tot // 4]).dense(ti.ijk, 4).place(x, p, Ap)
 
 for l in range(n_mg_levels):
     ti.root.pointer(ti.ijk, [N_tot // (4 * 2**l)]).dense(ti.ijk,
-                                                        4).place(r[l], z[l])
+                                                         4).place(r[l], z[l])
 
 ti.root.place(alpha, beta, sum)
 

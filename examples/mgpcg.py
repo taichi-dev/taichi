@@ -1,4 +1,4 @@
-# Solve Poisson's equation on a NxN grid using MGPCG
+# Solve Poisson's equation on an NxN grid using MGPCG
 import numpy as np
 import taichi as ti
 

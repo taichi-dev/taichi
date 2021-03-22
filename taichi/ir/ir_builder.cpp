@@ -5,9 +5,19 @@
 TLANG_NAMESPACE_BEGIN
 
 IRBuilder::IRBuilder() {
+  reset();
+}
+
+void IRBuilder::reset() {
   root_ = std::make_unique<Block>();
   insert_point_.block = root_->as<Block>();
   insert_point_.position = 0;
+}
+
+std::unique_ptr<IRNode> IRBuilder::extract_ir() {
+  auto &&result = std::move(root_);
+  reset();
+  return std::move(result);
 }
 
 Stmt *IRBuilder::insert(std::unique_ptr<Stmt> &&stmt) {

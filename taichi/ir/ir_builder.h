@@ -18,6 +18,12 @@ class IRBuilder {
  public:
   IRBuilder();
 
+  // Clear the IR and the insertion point.
+  void reset();
+
+  // Extract the IR.
+  std::unique_ptr<IRNode> extract_ir();
+
   // General inserter. Returns stmt.get().
   Stmt *insert(std::unique_ptr<Stmt> &&stmt);
   // Insert to a specific insertion point.

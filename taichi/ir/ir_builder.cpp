@@ -15,9 +15,9 @@ void IRBuilder::reset() {
 }
 
 std::unique_ptr<IRNode> IRBuilder::extract_ir() {
-  auto &&result = std::move(root_);
+  auto result = std::move(root_);
   reset();
-  return std::move(result);
+  return result;
 }
 
 void IRBuilder::set_insertion_point(InsertPoint new_insert_point) {

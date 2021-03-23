@@ -5,6 +5,7 @@ import inspect
 import re
 
 import numpy as np
+from taichi.core import primitive_types
 from taichi.lang import impl, util
 from taichi.lang.ast_checker import KernelSimplicityASTChecker
 from taichi.lang.core import taichi_lang_core
@@ -12,6 +13,7 @@ from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.kernel_arguments import ext_arr, template
 from taichi.lang.shell import _shell_pop_print, oinspect
 from taichi.lang.transformer import ASTTransformer
+from taichi.misc.util import obsolete
 
 import taichi as ti
 
@@ -142,7 +144,7 @@ class Func:
                 if i == 0 and self.classfunc:
                     annotation = template()
             else:
-                if id(annotation) in util.type_ids:
+                if id(annotation) in primitive_types.type_ids:
                     ti.warning(
                         'Data type annotations are unnecessary for Taichi'
                         ' functions, consider removing it',
@@ -284,7 +286,7 @@ class Kernel:
             else:
                 if isinstance(annotation, (template, ext_arr)):
                     pass
-                elif id(annotation) in util.type_ids:
+                elif id(annotation) in primitive_types.type_ids:
                     pass
                 else:
                     _taichi_skip_traceback = 1
@@ -389,11 +391,11 @@ class Kernel:
                     continue
                 provided = type(v)
                 # Note: do not use sth like "needed == f32". That would be slow.
-                if id(needed) in util.real_type_ids:
+                if id(needed) in primitive_types.real_type_ids:
                     if not isinstance(v, (float, int)):
                         raise KernelArgError(i, needed.to_string(), provided)
                     launch_ctx.set_arg_float(actual_argument_slot, float(v))
-                elif id(needed) in util.integer_type_ids:
+                elif id(needed) in primitive_types.integer_type_ids:
                     if not isinstance(v, int):
                         raise KernelArgError(i, needed.to_string(), provided)
                     launch_ctx.set_arg_int(actual_argument_slot, int(v))
@@ -468,7 +470,7 @@ class Kernel:
                 ti.sync()
 
             if has_ret:
-                if id(ret_dt) in util.integer_type_ids:
+                if id(ret_dt) in primitive_types.integer_type_ids:
                     ret = t_kernel.get_ret_int(0)
                 else:
                     ret = t_kernel.get_ret_float(0)
@@ -588,8 +590,8 @@ def kernel(func):
     return _kernel_impl(func, level_of_class_stackframe=3)
 
 
-classfunc = util.obsolete('@ti.classfunc', '@ti.func directly')
-classkernel = util.obsolete('@ti.classkernel', '@ti.kernel directly')
+classfunc = obsolete('@ti.classfunc', '@ti.func directly')
+classkernel = obsolete('@ti.classkernel', '@ti.kernel directly')
 
 
 class _BoundedDifferentiableMethod:

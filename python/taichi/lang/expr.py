@@ -1,8 +1,9 @@
 from taichi.lang import impl
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.core import taichi_lang_core
-from taichi.lang.util import (deprecated, is_taichi_class, python_scope,
-                              to_numpy_type, to_pytorch_type)
+from taichi.lang.util import (is_taichi_class, python_scope, to_numpy_type,
+                              to_pytorch_type)
+from taichi.misc.util import deprecated
 
 import taichi as ti
 

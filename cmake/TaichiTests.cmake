@@ -2,8 +2,9 @@ cmake_minimum_required(VERSION 3.0)
 
 set(TESTS_NAME taichi_cpp_tests)
 if (WIN32)
-  message(WARNING "TODO(#2195): Confirm that googletest works on Windows")
-  return()
+    # Prevent overriding the parent project's compiler/linker
+    # settings on Windows
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 endif()
 
 # TODO(#2195):

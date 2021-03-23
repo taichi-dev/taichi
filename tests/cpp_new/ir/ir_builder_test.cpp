@@ -16,6 +16,9 @@ TEST(IRBuilder, Basic) {
   EXPECT_EQ(addc->lhs, lhs);
   EXPECT_EQ(addc->rhs, rhs);
   EXPECT_EQ(addc->op_type, BinaryOpType::add);
+  auto ir = builder.extract_ir();
+  ASSERT_TRUE(ir->is<Block>());
+  EXPECT_EQ(ir->as<Block>()->size(), 3);
 }
 
 TEST(IRBuilder, Print) {

@@ -1,12 +1,16 @@
-from . import expr
-from . import impl
 import copy
 import numbers
-import numpy as np
-from .util import taichi_scope, python_scope, deprecated, to_numpy_type, to_pytorch_type, in_python_scope, is_taichi_class, warning
-from .common_ops import TaichiOperations
-from .exception import TaichiSyntaxError
 from collections.abc import Iterable
+
+import numpy as np
+from taichi.lang import expr, impl
+from taichi.lang import ops as ops_mod
+from taichi.lang import kernel_impl as kern_mod
+from taichi.lang.common_ops import TaichiOperations
+from taichi.lang.exception import TaichiSyntaxError
+from taichi.lang.util import (in_python_scope, is_taichi_class, python_scope,
+                              taichi_scope, to_numpy_type, to_pytorch_type)
+from taichi.misc.util import deprecated, warning
 
 
 class Matrix(TaichiOperations):
@@ -440,7 +444,7 @@ class Matrix(TaichiOperations):
         _taichi_skip_traceback = 1
         ret = self.copy()
         for i in range(len(self.entries)):
-            ret.entries[i] = impl.cast(ret.entries[i], dtype)
+            ret.entries[i] = ops_mod.cast(ret.entries[i], dtype)
         return ret
 
     def trace(self):
@@ -504,7 +508,7 @@ class Matrix(TaichiOperations):
 
     inversed = deprecated('a.inversed()', 'a.inverse()')(inverse)
 
-    @impl.pyfunc
+    @kern_mod.pyfunc
     def normalized(self, eps=0):
         impl.static(
             impl.static_assert(self.m == 1,
@@ -521,7 +525,7 @@ class Matrix(TaichiOperations):
     def T(self):
         return self.transpose()
 
-    @impl.pyfunc
+    @kern_mod.pyfunc
     def transpose(self):
         ret = Matrix([[self[i, j] for i in range(self.n)]
                       for j in range(self.m)])
@@ -606,25 +610,25 @@ class Matrix(TaichiOperations):
             ret = ret + self.entries[i]
         return ret
 
-    @impl.pyfunc
+    @kern_mod.pyfunc
     def norm(self, eps=0):
-        return impl.sqrt(self.norm_sqr() + eps)
+        return ops_mod.sqrt(self.norm_sqr() + eps)
 
-    @impl.pyfunc
+    @kern_mod.pyfunc
     def norm_inv(self, eps=0):
-        return impl.rsqrt(self.norm_sqr() + eps)
+        return ops_mod.rsqrt(self.norm_sqr() + eps)
 
-    @impl.pyfunc
+    @kern_mod.pyfunc
     def norm_sqr(self):
         return (self**2).sum()
 
-    @impl.pyfunc
+    @kern_mod.pyfunc
     def max(self):
-        return impl.ti_max(*self.entries)
+        return ops_mod.ti_max(*self.entries)
 
-    @impl.pyfunc
+    @kern_mod.pyfunc
     def min(self):
-        return impl.ti_min(*self.entries)
+        return ops_mod.ti_min(*self.entries)
 
     def any(self):
         import taichi as ti
@@ -950,7 +954,7 @@ class Matrix(TaichiOperations):
         # using matrices as template arguments.
         return id(self)
 
-    @impl.pyfunc
+    @kern_mod.pyfunc
     def dot(self, other):
         impl.static(
             impl.static_assert(self.m == 1, "lhs for dot is not a vector"))
@@ -958,7 +962,7 @@ class Matrix(TaichiOperations):
             impl.static_assert(other.m == 1, "rhs for dot is not a vector"))
         return (self * other).sum()
 
-    @impl.pyfunc
+    @kern_mod.pyfunc
     def _cross3d(self, other):
         ret = Matrix([
             self[1] * other[2] - self[2] * other[1],
@@ -967,7 +971,7 @@ class Matrix(TaichiOperations):
         ])
         return ret
 
-    @impl.pyfunc
+    @kern_mod.pyfunc
     def _cross2d(self, other):
         ret = self[0] * other[1] - self[1] * other[0]
         return ret
@@ -984,7 +988,7 @@ class Matrix(TaichiOperations):
                 "Cross product is only supported between pairs of 2D/3D vectors"
             )
 
-    @impl.pyfunc
+    @kern_mod.pyfunc
     def outer_product(self, other):
         impl.static(
             impl.static_assert(self.m == 1,

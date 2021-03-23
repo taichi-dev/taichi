@@ -503,7 +503,7 @@ if ti.static(1):
 if 1:
     ___loop_var = 0
     {} = ti.lang.expr.make_var_vector(size=len(___loop_var.loop_range().shape))
-    ___expr_group = ti.make_expr_group({})
+    ___expr_group = ti.lang.expr.make_expr_group({})
     ti.begin_frontend_struct_for(___expr_group, ___loop_var.loop_range())
     ti.core.end_frontend_range_for()
             '''.format(vars, vars)
@@ -516,7 +516,7 @@ if 1:
 if 1:
 {}
     ___loop_var = 0
-    ___expr_group = ti.make_expr_group({})
+    ___expr_group = ti.lang.expr.make_expr_group({})
     ti.begin_frontend_struct_for(___expr_group, ___loop_var.loop_range())
     ti.core.end_frontend_range_for()
             '''.format(var_decl, vars)
@@ -678,7 +678,8 @@ if 1:
 
             # Treat return type
             if node.returns is not None:
-                ret_init = self.parse_stmt('ti.decl_scalar_ret(0)')
+                ret_init = self.parse_stmt(
+                    'ti.lang.kernel_arguments.decl_scalar_ret(0)')
                 ret_init.value.args[0] = node.returns
                 self.returns = node.returns
                 arg_decls.append(ret_init)
@@ -691,7 +692,8 @@ if 1:
                     continue
                 import taichi as ti
                 if isinstance(self.func.arguments[i], ti.ext_arr):
-                    arg_init = self.parse_stmt('x = ti.decl_ext_arr_arg(0, 0)')
+                    arg_init = self.parse_stmt(
+                        'x = ti.lang.kernel_arguments.decl_ext_arr_arg(0, 0)')
                     arg_init.targets[0].id = arg.arg
                     self.create_variable(arg.arg)
                     array_dt = self.arg_features[i][0]
@@ -704,7 +706,8 @@ if 1:
                         "{}".format(array_dim))
                     arg_decls.append(arg_init)
                 else:
-                    arg_init = self.parse_stmt('x = ti.decl_scalar_arg(0)')
+                    arg_init = self.parse_stmt(
+                        'x = ti.lang.kernel_arguments.decl_scalar_arg(0)')
                     arg_init.targets[0].id = arg.arg
                     dt = arg.annotation
                     arg_init.value.args[0] = dt

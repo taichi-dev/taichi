@@ -3,13 +3,17 @@ import os
 from copy import deepcopy as _deepcopy
 
 from taichi.lang.impl import *
+from taichi.lang.kernel_arguments import ext_arr, template
+from taichi.lang.kernel_impl import (KernelArgError, KernelDefError,
+                                     data_oriented, func, kernel, pyfunc)
 from taichi.lang.matrix import Matrix, Vector
 from taichi.lang.ndrange import GroupedNDRange, ndrange
+from taichi.lang.ops import *
 from taichi.lang.quant_impl import quant
 from taichi.lang.runtime_ops import async_flush, sync
 from taichi.lang.transformer import TaichiSyntaxError
 from taichi.lang.type_factory_impl import type_factory
-from taichi.lang.util import deprecated
+from taichi.lang.util import *
 
 core = taichi_lang_core
 

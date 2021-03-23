@@ -5,9 +5,9 @@ import math
 import operator as ops
 import traceback
 
+from taichi.lang import impl
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.expr import Expr, make_expr_group
-from taichi.lang.impl import expr_init
 from taichi.lang.util import (cook_dtype, is_taichi_class, taichi_lang_core,
                               taichi_scope)
 
@@ -271,7 +271,7 @@ def logical_not(a):
 def random(dtype=float):
     dtype = cook_dtype(dtype)
     x = Expr(ti_core.make_rand_expr(dtype))
-    return expr_init(x)
+    return impl.expr_init(x)
 
 
 # NEXT: add matpow(self, power)
@@ -437,43 +437,43 @@ def select(cond, a, b):
 
 @writeback_binary
 def atomic_add(a, b):
-    return expr_init(
+    return impl.expr_init(
         Expr(ti_core.expr_atomic_add(a.ptr, b.ptr), tb=stack_info()))
 
 
 @writeback_binary
 def atomic_sub(a, b):
-    return expr_init(
+    return impl.expr_init(
         Expr(ti_core.expr_atomic_sub(a.ptr, b.ptr), tb=stack_info()))
 
 
 @writeback_binary
 def atomic_min(a, b):
-    return expr_init(
+    return impl.expr_init(
         Expr(ti_core.expr_atomic_min(a.ptr, b.ptr), tb=stack_info()))
 
 
 @writeback_binary
 def atomic_max(a, b):
-    return expr_init(
+    return impl.expr_init(
         Expr(ti_core.expr_atomic_max(a.ptr, b.ptr), tb=stack_info()))
 
 
 @writeback_binary
 def atomic_and(a, b):
-    return expr_init(
+    return impl.expr_init(
         Expr(ti_core.expr_atomic_bit_and(a.ptr, b.ptr), tb=stack_info()))
 
 
 @writeback_binary
 def atomic_or(a, b):
-    return expr_init(
+    return impl.expr_init(
         Expr(ti_core.expr_atomic_bit_or(a.ptr, b.ptr), tb=stack_info()))
 
 
 @writeback_binary
 def atomic_xor(a, b):
-    return expr_init(
+    return impl.expr_init(
         Expr(ti_core.expr_atomic_bit_xor(a.ptr, b.ptr), tb=stack_info()))
 
 
@@ -514,7 +514,7 @@ def ti_all(a):
 
 
 def append(l, indices, val):
-    a = expr_init(
+    a = impl.expr_init(
         ti_core.insert_append(l.snode.ptr, make_expr_group(indices),
                               Expr(val).ptr))
     return a

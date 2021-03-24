@@ -1,3 +1,6 @@
+import taichi as ti
+
+
 class ndrange:
     def __init__(self, *args):
         args = list(args)
@@ -40,6 +43,5 @@ class GroupedNDRange:
         self.r = r
 
     def __iter__(self):
-        import taichi as ti
         for ind in self.r:
             yield ti.Vector(list(ind), keep_raw=True)

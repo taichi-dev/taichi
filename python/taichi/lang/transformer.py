@@ -202,7 +202,9 @@ class ASTTransformerPreprocess(ASTTransformerBase):
             if attr.attr == 'static':
                 is_static_assign = True
             else:
-                pass  # eg. x = ti.cast(xx) will reach here, but they're not decorators, so no raising errors here
+                # e.g. x = ti.cast(xx) will reach here, but they are not
+                # decorators, so do not raise an error here
+                pass
 
         if is_static_assign:
             return node

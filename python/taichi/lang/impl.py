@@ -1,11 +1,13 @@
 import numbers
+import types
+import warnings
 
 import numpy as np
 from taichi.core import util as cutil
-from taichi.lang import ops as ops_mod
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.snode import SNode
+from taichi.lang.tape import Tape
 from taichi.lang.util import (cook_dtype, is_taichi_class, python_scope,
                               taichi_scope)
 from taichi.misc.util import deprecated, get_traceback
@@ -164,7 +166,7 @@ def chain_compare(comparators, ops):
             now = lhs != rhs
         else:
             assert False, f'Unknown operator {ops[i]}'
-        ret = ops_mod.logical_and(ret, now)
+        ret = ti.logical_and(ret, now)
     return ret
 
 
@@ -176,7 +178,6 @@ def func_call_with_check(func, *args, **kwargs):
         raise TaichiSyntaxError(f'exit or quit not supported in Taichi-scope')
     if getattr(func, '__module__',
                '') == '__main__' and not getattr(func, '__wrapped__', ''):
-        import warnings
         warnings.warn(
             f'Calling into non-Taichi function {func.__name__}.'
             ' This means that scope inside that function will not be processed'
@@ -265,7 +266,6 @@ class PyTaichi:
         self.materialized = False
 
     def get_tape(self, loss=None):
-        from .tape import Tape
         return Tape(self, loss)
 
     def sync(self):
@@ -569,7 +569,6 @@ def static(x, *xs):
     _taichi_skip_traceback = 1
     if len(xs):  # for python-ish pointer assign: x, y = ti.static(y, x)
         return [static(x)] + [static(x) for x in xs]
-    import types
 
     if isinstance(x,
                   (bool, int, float, range, list, tuple, enumerate, ti.ndrange,

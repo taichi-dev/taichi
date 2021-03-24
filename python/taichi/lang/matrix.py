@@ -12,6 +12,8 @@ from taichi.lang.util import (in_python_scope, is_taichi_class, python_scope,
                               taichi_scope, to_numpy_type, to_pytorch_type)
 from taichi.misc.util import deprecated, warning
 
+import taichi as ti
+
 
 class Matrix(TaichiOperations):
     is_taichi_class = True
@@ -466,8 +468,7 @@ class Matrix(TaichiOperations):
                                      [-self(1, 0), self(0, 0)]]).variable()
         elif self.n == 3:
             n = 3
-            import taichi as ti
-            inv_determinant = ti.expr_init(1.0 / self.determinant())
+            inv_determinant = impl.expr_init(1.0 / self.determinant())
             entries = [[0] * n for _ in range(n)]
 
             def E(x, y):
@@ -475,14 +476,13 @@ class Matrix(TaichiOperations):
 
             for i in range(n):
                 for j in range(n):
-                    entries[j][i] = ti.expr_init(
+                    entries[j][i] = impl.expr_init(
                         inv_determinant * (E(i + 1, j + 1) * E(i + 2, j + 2) -
                                            E(i + 2, j + 1) * E(i + 1, j + 2)))
             return Matrix(entries)
         elif self.n == 4:
             n = 4
-            import taichi as ti
-            inv_determinant = ti.expr_init(1.0 / self.determinant())
+            inv_determinant = impl.expr_init(1.0 / self.determinant())
             entries = [[0] * n for _ in range(n)]
 
             def E(x, y):
@@ -490,7 +490,7 @@ class Matrix(TaichiOperations):
 
             for i in range(n):
                 for j in range(n):
-                    entries[j][i] = ti.expr_init(
+                    entries[j][i] = impl.expr_init(
                         inv_determinant * (-1)**(i + j) *
                         ((E(i + 1, j + 1) *
                           (E(i + 2, j + 2) * E(i + 3, j + 3) -
@@ -540,13 +540,12 @@ class Matrix(TaichiOperations):
                 1, 0) * (a(0, 1) * a(2, 2) - a(2, 1) * a(0, 2)) + a(
                     2, 0) * (a(0, 1) * a(1, 2) - a(1, 1) * a(0, 2))
         elif a.n == 4 and a.m == 4:
-            import taichi as ti
             n = 4
 
             def E(x, y):
                 return a(x % n, y % n)
 
-            det = ti.expr_init(0.0)
+            det = impl.expr_init(0.0)
             for i in range(4):
                 det = det + (-1.0)**i * (
                     a(i, 0) *
@@ -631,14 +630,12 @@ class Matrix(TaichiOperations):
         return ops_mod.ti_min(*self.entries)
 
     def any(self):
-        import taichi as ti
         ret = ti.cmp_ne(self.entries[0], 0)
         for i in range(1, len(self.entries)):
             ret = ret + ti.cmp_ne(self.entries[i], 0)
         return -ti.cmp_lt(ret, 0)
 
     def all(self):
-        import taichi as ti
         ret = ti.cmp_ne(self.entries[0], 0)
         for i in range(1, len(self.entries)):
             ret = ret + ti.cmp_ne(self.entries[i], 0)
@@ -648,7 +645,6 @@ class Matrix(TaichiOperations):
         if impl.inside_kernel():
 
             def assign_renamed(x, y):
-                import taichi as ti
                 return ti.assign(x, y)
 
             return self.element_wise_writeback_binary(assign_renamed, val)
@@ -671,7 +667,7 @@ class Matrix(TaichiOperations):
             val = tuple(val_tuple)
         assert len(val) == self.n
         assert len(val[0]) == self.m
-        from .meta import fill_matrix
+        from taichi.lang.meta import fill_matrix
         fill_matrix(self, val)
 
     @python_scope
@@ -692,7 +688,7 @@ class Matrix(TaichiOperations):
         if dtype is None:
             dtype = to_numpy_type(self.dtype)
         ret = np.zeros(self.shape + shape_ext, dtype=dtype)
-        from .meta import matrix_to_ext_arr
+        from taichi.lang.meta import matrix_to_ext_arr
         matrix_to_ext_arr(self, ret, as_vector)
         return ret
 
@@ -704,9 +700,8 @@ class Matrix(TaichiOperations):
         ret = torch.empty(self.shape + shape_ext,
                           dtype=to_pytorch_type(self.dtype),
                           device=device)
-        from .meta import matrix_to_ext_arr
+        from taichi.lang.meta import matrix_to_ext_arr
         matrix_to_ext_arr(self, ret, as_vector)
-        import taichi as ti
         ti.sync()
         return ret
 
@@ -720,9 +715,8 @@ class Matrix(TaichiOperations):
             assert len(ndarray.shape) == len(self.loop_range().shape) + 2
         dim_ext = 1 if as_vector else 2
         assert len(ndarray.shape) == len(self.loop_range().shape) + dim_ext
-        from .meta import ext_arr_to_matrix
+        from taichi.lang.meta import ext_arr_to_matrix
         ext_arr_to_matrix(ndarray, self, as_vector)
-        import taichi as ti
         ti.sync()
 
     @python_scope
@@ -732,7 +726,7 @@ class Matrix(TaichiOperations):
     @python_scope
     def copy_from(self, other):
         assert isinstance(other, Matrix)
-        from .meta import tensor_to_tensor
+        from taichi.lang.meta import tensor_to_tensor
         assert len(self.shape) == len(other.shape)
         tensor_to_tensor(self, other)
 
@@ -780,19 +774,16 @@ class Matrix(TaichiOperations):
     @staticmethod
     @taichi_scope
     def zero(dt, n, m=1):
-        import taichi as ti
         return Matrix([[ti.cast(0, dt) for _ in range(m)] for _ in range(n)])
 
     @staticmethod
     @taichi_scope
     def one(dt, n, m=1):
-        import taichi as ti
         return Matrix([[ti.cast(1, dt) for _ in range(m)] for _ in range(n)])
 
     @staticmethod
     @taichi_scope
     def unit(n, i, dt=None):
-        import taichi as ti
         if dt is None:
             dt = int
         assert 0 <= i < n
@@ -801,13 +792,11 @@ class Matrix(TaichiOperations):
     @staticmethod
     @taichi_scope
     def identity(dt, n):
-        import taichi as ti
         return Matrix([[ti.cast(int(i == j), dt) for j in range(n)]
                        for i in range(n)])
 
     @staticmethod
     def rotation2d(alpha):
-        import taichi as ti
         return Matrix([[ti.cos(alpha), -ti.sin(alpha)],
                        [ti.sin(alpha), ti.cos(alpha)]])
 
@@ -865,17 +854,16 @@ class Matrix(TaichiOperations):
                     offset
                 ), f'The dimensionality of shape and offset must be the same  ({len(shape)} != {len(offset)})'
 
-            import taichi as ti
             if layout is None:
                 layout = ti.AOS
 
             dim = len(shape)
             if layout.soa:
                 for i, e in enumerate(self.entries):
-                    ti.root.dense(ti.index_nd(dim), shape).place(e,
-                                                                 offset=offset)
+                    ti.root.dense(impl.index_nd(dim),
+                                  shape).place(e, offset=offset)
                     if needs_grad:
-                        ti.root.dense(ti.index_nd(dim),
+                        ti.root.dense(impl.index_nd(dim),
                                       shape).place(e.grad, offset=offset)
             else:
                 var_list = []
@@ -884,8 +872,8 @@ class Matrix(TaichiOperations):
                 if needs_grad:
                     for i, e in enumerate(self.entries):
                         var_list.append(e.grad)
-                ti.root.dense(ti.index_nd(dim), shape).place(*tuple(var_list),
-                                                             offset=offset)
+                ti.root.dense(impl.index_nd(dim),
+                              shape).place(*tuple(var_list), offset=offset)
         return self
 
     @classmethod

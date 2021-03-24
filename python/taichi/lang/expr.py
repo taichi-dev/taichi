@@ -194,7 +194,7 @@ class Expr(TaichiOperations):
         s = self.shape
         for i in range(len(self.shape)):
             assert s[i] == arr.shape[i]
-        from .meta import ext_arr_to_tensor
+        from taichi.lang.meta import ext_arr_to_tensor
         if hasattr(arr, 'contiguous'):
             arr = arr.contiguous()
         ext_arr_to_tensor(arr, self)
@@ -207,7 +207,7 @@ class Expr(TaichiOperations):
     @python_scope
     def copy_from(self, other):
         assert isinstance(other, Expr)
-        from .meta import tensor_to_tensor
+        from taichi.lang.meta import tensor_to_tensor
         assert len(self.shape) == len(other.shape)
         tensor_to_tensor(self, other)
 

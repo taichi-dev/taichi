@@ -19,7 +19,7 @@ It is important to distinguish the concept of **containers**, **cells**, and **c
 - A **cell** can have multiple **components**.
 - Each **component** is a **container** of a lower-level SNode.
 
-Note that containers of ``place`` SNodes do have cells. Instead, they directly contain numerical values.
+Note that containers of ``place`` SNodes do not have cells. Instead, they directly contain numerical values.
 
 Consider the following example:
 

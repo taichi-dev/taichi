@@ -4,6 +4,9 @@ import copy
 from taichi.lang import impl
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.util import to_taichi_type
+from taichi.lang.ast_resolver import ASTResolver
+
+import taichi as ti
 
 
 class ScopeGuard:
@@ -89,12 +92,16 @@ class ASTTransformerBase(ast.NodeTransformer):
 
     @staticmethod
     def get_decorator(node):
-        if not (isinstance(node, ast.Call)
-                and isinstance(node.func, ast.Attribute) and isinstance(
-                    node.func.value, ast.Name) and node.func.value.id == 'ti'
-                and node.func.attr in ['static', 'grouped', 'ndrange']):
+        if not isinstance(node, ast.Call):
             return ''
-        return node.func.attr
+        for wanted, name in [
+            (ti.static, 'static'),
+            (ti.grouped, 'grouped'),
+            (ti.ndrange, 'ndrange'),
+        ]:
+            if ASTResolver.resolve_to(node.func, wanted, globals()):
+                return name
+        return ''
 
 
 # First-pass transform
@@ -191,21 +198,9 @@ class ASTTransformerPreprocess(ASTTransformerBase):
         assert (len(node.targets) == 1)
         self.generic_visit(node)
 
-        decorated = isinstance(node.value, ast.Call) and isinstance(
-            node.value.func, ast.Attribute) and isinstance(node.value.func.value, ast.Name) \
-                    and node.value.func.value.id == 'ti'
-
-        is_static_assign = False
-
-        if decorated:
-            attr = node.value.func
-            if attr.attr == 'static':
-                is_static_assign = True
-            else:
-                # e.g. x = ti.cast(xx) will reach here, but they are not
-                # decorators, so do not raise an error here
-                pass
-
+        is_static_assign = isinstance(
+            node.value, ast.Call) and ASTResolver.resolve_to(
+                node.value.func, ti.static, globals())
         if is_static_assign:
             return node
 
@@ -232,7 +227,7 @@ class ASTTransformerPreprocess(ASTTransformerBase):
                 if is_local and self.is_creation(target.id):
                     var_name = target.id
                     target.ctx = ast.Store()
-                    # Create
+                    # Create, no AST resolution needed
                     init = ast.Attribute(value=ast.Name(id='ti',
                                                         ctx=ast.Load()),
                                          attr='expr_init',
@@ -263,7 +258,7 @@ class ASTTransformerPreprocess(ASTTransformerBase):
             is_local = isinstance(node.targets[0], ast.Name)
             if is_local and self.is_creation(node.targets[0].id):
                 var_name = node.targets[0].id
-                # Create
+                # Create, no AST resolution needed
                 init = ast.Attribute(value=ast.Name(id='ti', ctx=ast.Load()),
                                      attr='expr_init',
                                      ctx=ast.Load())
@@ -623,9 +618,7 @@ if 1:
             return self.parse_stmt('ti.core.insert_continue_stmt()')
 
     def visit_Call(self, node):
-        if not (isinstance(node.func, ast.Attribute)
-                and isinstance(node.func.value, ast.Name)
-                and node.func.value.id == 'ti' and node.func.attr == 'static'):
+        if not ASTResolver.resolve_to(node.func, ti.static, globals()):
             # Do not apply the generic visitor if the function called is ti.static
             self.generic_visit(node)
         if isinstance(node.func, ast.Name):
@@ -666,13 +659,9 @@ if 1:
         assert args.kwonlyargs == []
         assert args.kw_defaults == []
         assert args.kwarg is None
-        import taichi as ti
         if self.is_kernel:  # ti.kernel
             for decorator in node.decorator_list:
-                if (isinstance(decorator, ast.Attribute)
-                        and isinstance(decorator.value, ast.Name)
-                        and decorator.value.id == 'ti'
-                        and decorator.attr == 'func'):
+                if ASTResolver.resolve_to(decorator, ti.func, globals()):
                     raise TaichiSyntaxError(
                         "Function definition not allowed in 'ti.kernel'.")
             # Transform as kernel
@@ -692,7 +681,6 @@ if 1:
                 # such as class instances ("self"), fields, SNodes, etc.
                 if isinstance(self.func.arguments[i], ti.template):
                     continue
-                import taichi as ti
                 if isinstance(self.func.arguments[i], ti.ext_arr):
                     arg_init = self.parse_stmt(
                         'x = ti.lang.kernel_arguments.decl_ext_arr_arg(0, 0)')
@@ -719,10 +707,7 @@ if 1:
 
         else:  # ti.func
             for decorator in node.decorator_list:
-                if (isinstance(decorator, ast.Attribute)
-                        and isinstance(decorator.value, ast.Name)
-                        and decorator.value.id == 'ti'
-                        and decorator.attr == 'func'):
+                if ASTResolver.resolve_to(decorator, ti.func, globals()):
                     raise TaichiSyntaxError(
                         "Function definition not allowed in 'ti.func'.")
             # Transform as func (all parameters passed by value)

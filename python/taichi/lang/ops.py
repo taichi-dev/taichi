@@ -2,7 +2,7 @@ import builtins
 import ctypes
 import functools
 import math
-import operator as ops
+import operator as _bt_ops_mod  # bt for builtin
 import traceback
 
 from taichi.lang import impl
@@ -187,7 +187,7 @@ def _ternary_operation(taichi_op, python_op, a, b, c):
 
 @unary
 def neg(a):
-    return _unary_operation(ti_core.expr_neg, ops.neg, a)
+    return _unary_operation(ti_core.expr_neg, _bt_ops_mod.neg, a)
 
 
 @unary
@@ -260,7 +260,7 @@ def abs(a):
 
 @unary
 def bit_not(a):
-    return _unary_operation(ti_core.expr_bit_not, ops.invert, a)
+    return _unary_operation(ti_core.expr_bit_not, _bt_ops_mod.invert, a)
 
 
 @unary
@@ -279,17 +279,17 @@ def random(dtype=float):
 
 @binary
 def add(a, b):
-    return _binary_operation(ti_core.expr_add, ops.add, a, b)
+    return _binary_operation(ti_core.expr_add, _bt_ops_mod.add, a, b)
 
 
 @binary
 def sub(a, b):
-    return _binary_operation(ti_core.expr_sub, ops.sub, a, b)
+    return _binary_operation(ti_core.expr_sub, _bt_ops_mod.sub, a, b)
 
 
 @binary
 def mul(a, b):
-    return _binary_operation(ti_core.expr_mul, ops.mul, a, b)
+    return _binary_operation(ti_core.expr_mul, _bt_ops_mod.mul, a, b)
 
 
 @binary
@@ -300,22 +300,22 @@ def mod(a, b):
         multiply = Expr(ti_core.expr_mul(b, quotient.ptr))
         return ti_core.expr_sub(a, multiply.ptr)
 
-    return _binary_operation(expr_python_mod, ops.mod, a, b)
+    return _binary_operation(expr_python_mod, _bt_ops_mod.mod, a, b)
 
 
 @binary
 def pow(a, b):
-    return _binary_operation(ti_core.expr_pow, ops.pow, a, b)
+    return _binary_operation(ti_core.expr_pow, _bt_ops_mod.pow, a, b)
 
 
 @binary
 def floordiv(a, b):
-    return _binary_operation(ti_core.expr_floordiv, ops.floordiv, a, b)
+    return _binary_operation(ti_core.expr_floordiv, _bt_ops_mod.floordiv, a, b)
 
 
 @binary
 def truediv(a, b):
-    return _binary_operation(ti_core.expr_truediv, ops.truediv, a, b)
+    return _binary_operation(ti_core.expr_truediv, _bt_ops_mod.truediv, a, b)
 
 
 @binary
@@ -390,33 +390,33 @@ def cmp_ne(a, b):
 
 @binary
 def bit_or(a, b):
-    return _binary_operation(ti_core.expr_bit_or, ops.or_, a, b)
+    return _binary_operation(ti_core.expr_bit_or, _bt_ops_mod.or_, a, b)
 
 
 @binary
 def bit_and(a, b):
-    return _binary_operation(ti_core.expr_bit_and, ops.and_, a, b)
+    return _binary_operation(ti_core.expr_bit_and, _bt_ops_mod.and_, a, b)
 
 
 @binary
 def bit_xor(a, b):
-    return _binary_operation(ti_core.expr_bit_xor, ops.xor, a, b)
+    return _binary_operation(ti_core.expr_bit_xor, _bt_ops_mod.xor, a, b)
 
 
 @binary
 def bit_shl(a, b):
-    return _binary_operation(ti_core.expr_bit_shl, ops.lshift, a, b)
+    return _binary_operation(ti_core.expr_bit_shl, _bt_ops_mod.lshift, a, b)
 
 
 @binary
 def bit_sar(a, b):
-    return _binary_operation(ti_core.expr_bit_sar, ops.rshift, a, b)
+    return _binary_operation(ti_core.expr_bit_sar, _bt_ops_mod.rshift, a, b)
 
 
 @taichi_scope
 @binary
 def bit_shr(a, b):
-    return _binary_operation(ti_core.expr_bit_shr, ops.rshift, a, b)
+    return _binary_operation(ti_core.expr_bit_shr, _bt_ops_mod.rshift, a, b)
 
 
 # We don't have logic_and/or instructions yet:

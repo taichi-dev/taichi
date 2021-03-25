@@ -32,6 +32,7 @@ def test_ast_resolver_chain():
     node = ast.parse('ti.lang.ops.atomic_add', mode='eval').body
     assert ASTResolver.resolve_to(node, ti.atomic_add, locals())
 
+
 def test_ast_resolver_wrong_ti():
     import taichi
     fake_ti = namedtuple('FakeTi', ['kernel'])

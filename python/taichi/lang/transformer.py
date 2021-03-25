@@ -538,7 +538,6 @@ if 1:
             if decorator != '' and len(node.iter.args) == 1:
                 double_decorator = self.get_decorator(node.iter.args[0])
             ast.fix_missing_locations(node)
-            print(f'decorator={decorator} double_decorator={double_decorator}')
 
             if decorator == 'static':
                 if double_decorator == 'static':

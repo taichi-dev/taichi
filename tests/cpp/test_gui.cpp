@@ -6,7 +6,8 @@
 TI_NAMESPACE_BEGIN
 
 auto test_gui = []() {
-  GUI gui("GUI Test", 1000, 400, false);
+  //GUI gui("GUI Test", 1000, 400, false);
+  GUI gui("GUI Test", 1000, 400, true, false, 0, false, false);
   auto canvas = *gui.canvas;
   real t = 0;
 

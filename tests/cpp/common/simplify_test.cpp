@@ -1,15 +1,19 @@
+#include "gtest/gtest.h"
+
 #include "taichi/ir/frontend.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/util/testing.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 // Basic tests within a basic block
 
-TI_TEST("simplify") {
-  SECTION("simplify_linearized_with_trivial_inputs") {
-    TI_TEST_PROGRAM;
+TEST(Simplify, SimplifyLinearizedWithTrivialInputs) {
+    auto prog_ = std::make_unique<Program>();
+    prog_->materialize_layout();
+
 
     auto block = std::make_unique<Block>();
 
@@ -33,10 +37,10 @@ TI_TEST("simplify") {
         root.ch[0].get(), get_child, linearized_zero, true);
 
     irpass::type_check(block.get());
-    TI_CHECK(block->size() == 7);
+    EXPECT_EQ(block->size(), 7);
 
     irpass::simplify(block.get());  // should lower linearized
-    // TI_CHECK(block->size() == 11);  // not required to check size here
+    // EXPECT_EQ(block->size(), 11);  // not required to check size here
 
     irpass::constant_fold(block.get());
     irpass::alg_simp(block.get());
@@ -45,9 +49,9 @@ TI_TEST("simplify") {
     irpass::whole_kernel_cse(block.get());
     if (kernel->program.config.advanced_optimization) {
       // get root, const 0, lookup, get child, lookup
-      TI_CHECK(block->size() == 5);
+      EXPECT_EQ(block->size(), 5);
     }
-  }
 }
 
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

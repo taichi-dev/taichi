@@ -2,34 +2,35 @@
     Copyright (c) The Taichi Authors (2016- ). All Rights Reserved.
     The use of this software is governed by the LICENSE file.
 *******************************************************************************/
+#include "gtest/gtest.h"
 
 #include "taichi/common/dict.h"
 #include "taichi/util/testing.h"
 
-TI_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
-TI_TEST("dict") {
-  SECTION("config") {
+TEST(Dict, Config) {
     Dict dict;
 
     dict.set("int_a", 123);
-    TI_CHECK(dict.get<int>("int_a") == 123);
+    EXPECT_EQ(dict.get<int>("int_a"), 123);
 
     dict.set("uint_a", 125);
-    TI_CHECK(dict.get<int>("uint_a") == 125);
+    EXPECT_EQ(dict.get<int>("uint_a"), 125);
 
     dict.set("float_a", 1.5_f32);
-    TI_CHECK_EQUAL(dict.get<float32>("float_a"), 1.5_f32, 1e-6_f);
+    EXPECT_LT(fabs(dict.get<float32>("float_a") - 1.5_f32), 1e-6_f);
 
     dict.set("double_b", 0.125_f64);
-    TI_CHECK_EQUAL(dict.get<float64>("double_b"), 0.125_f64, 1e-6_f);
+    EXPECT_LT(fabs(dict.get<float64>("double_b") - 0.125_f64), 1e-6_f);
 
     dict.set("vec_int", Vector3i(4, 6, 3));
-    TI_CHECK(dict.get<Vector3i>("vec_int") == Vector3i(4, 6, 3));
+    EXPECT_EQ(dict.get<Vector3i>("vec_int"), Vector3i(4, 6, 3));
 
     dict.set("str", "Hello");
-    TI_CHECK(dict.get<std::string>("str") == "Hello");
-  };
+    EXPECT_EQ(dict.get<std::string>("str"), "Hello");
 }
 
-TI_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

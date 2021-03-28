@@ -1,13 +1,15 @@
+#include "gtest/gtest.h"
+
 #include "taichi/ir/frontend.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/statements.h"
 #include "taichi/util/testing.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
-TI_TEST("same_statements") {
-  SECTION("test_same_block") {
+TEST(SameStatements, TestSameBlock) {
     auto block = std::make_unique<Block>();
 
     auto global_load_addr = block->push_back<GlobalTemporaryStmt>(
@@ -36,22 +38,22 @@ TI_TEST("same_statements") {
 
     irpass::type_check(block.get());
     irpass::re_id(block.get());
-    TI_CHECK(block->size() == 5);
+    EXPECT_EQ(block->size(), 5);
 
-    TI_CHECK(irpass::analysis::same_statements(true_one, false_one));
+    EXPECT_TRUE(irpass::analysis::same_statements(true_one, false_one));
 
-    TI_CHECK(irpass::analysis::same_statements(true_one, one));
+    EXPECT_TRUE(irpass::analysis::same_statements(true_one, one));
 
-    TI_CHECK(!irpass::analysis::same_statements(global_load_addr,
+    EXPECT_TRUE(!irpass::analysis::same_statements(global_load_addr,
                                                 global_store_addr));
 
-    TI_CHECK(irpass::analysis::same_statements(
+    EXPECT_TRUE(irpass::analysis::same_statements(
         if_stmt->true_statements.get(), if_stmt->false_statements.get()));
 
-    TI_CHECK(!irpass::analysis::same_statements(true_store, false_store));
+    EXPECT_TRUE(!irpass::analysis::same_statements(true_store, false_store));
   }
 
-  SECTION("test_same_assert") {
+TEST(SameStatements, TestSameAssert) {
     auto block = std::make_unique<Block>();
     auto zero = block->push_back<ConstStmt>(TypedConstant(0));
     auto one = block->push_back<ConstStmt>(TypedConstant(1));
@@ -74,21 +76,21 @@ TI_TEST("same_statements") {
 
     irpass::type_check(block.get());
     irpass::re_id(block.get());
-    TI_CHECK(block->size() == 10);
-    TI_CHECK(irpass::analysis::same_statements(assert_zero_a, assert_zero_a2));
-    TI_CHECK(!irpass::analysis::same_statements(assert_zero_a, assert_zero_b));
-    TI_CHECK(!irpass::analysis::same_statements(assert_zero_a, assert_one_a));
-    TI_CHECK(
+    EXPECT_EQ(block->size(), 10);
+    EXPECT_TRUE(irpass::analysis::same_statements(assert_zero_a, assert_zero_a2));
+    EXPECT_TRUE(!irpass::analysis::same_statements(assert_zero_a, assert_zero_b));
+    EXPECT_TRUE(!irpass::analysis::same_statements(assert_zero_a, assert_one_a));
+    EXPECT_TRUE(
         !irpass::analysis::same_statements(assert_zero_a, assert_zero_a_one));
-    TI_CHECK(irpass::analysis::same_statements(assert_zero_a_one,
+    EXPECT_TRUE(irpass::analysis::same_statements(assert_zero_a_one,
                                                assert_zero_a_one2));
-    TI_CHECK(!irpass::analysis::same_statements(assert_zero_a_one,
+    EXPECT_TRUE(!irpass::analysis::same_statements(assert_zero_a_one,
                                                 assert_zero_a_zero));
-    TI_CHECK(!irpass::analysis::same_statements(assert_zero_a_one,
+    EXPECT_TRUE(!irpass::analysis::same_statements(assert_zero_a_one,
                                                 assert_one_a_zero));
-  }
+}
 
-  SECTION("test_same_snode_lookup") {
+TEST(SameStatements, TestSameSnodeLookup) {
     auto block = std::make_unique<Block>();
 
     auto get_root = block->push_back<GetRootStmt>();
@@ -107,13 +109,13 @@ TI_TEST("same_statements") {
 
     irpass::type_check(block.get());
     irpass::re_id(block.get());
-    TI_CHECK(block->size() == 7);
-    TI_CHECK(irpass::analysis::same_statements(lookup1, lookup2));
-    TI_CHECK(!irpass::analysis::same_statements(lookup1, lookup_activate));
-    TI_CHECK(!irpass::analysis::same_statements(lookup1, lookup_child));
-  }
+    EXPECT_EQ(block->size(), 7);
+    EXPECT_TRUE(irpass::analysis::same_statements(lookup1, lookup2));
+    EXPECT_TRUE(!irpass::analysis::same_statements(lookup1, lookup_activate));
+    EXPECT_TRUE(!irpass::analysis::same_statements(lookup1, lookup_child));
+}
 
-  SECTION("test_same_value") {
+TEST(SameStatements, TestSameValue) {
     auto block = std::make_unique<Block>();
     auto one = block->push_back<ConstStmt>(TypedConstant(1));
     auto if_stmt = block->push_back<IfStmt>(one)->as<IfStmt>();
@@ -132,26 +134,26 @@ TI_TEST("same_statements") {
 
     irpass::type_check(block.get());
     irpass::re_id(block.get());
-    TI_CHECK(irpass::analysis::count_statements(block.get()) == 6);
+    EXPECT_EQ(irpass::analysis::count_statements(block.get()), 6);
 
-    TI_CHECK(irpass::analysis::same_statements(true_rand, false_rand));
-    TI_CHECK(!irpass::analysis::same_value(true_rand, false_rand));
-    TI_CHECK(irpass::analysis::same_statements(
+    EXPECT_TRUE(irpass::analysis::same_statements(true_rand, false_rand));
+    EXPECT_TRUE(!irpass::analysis::same_value(true_rand, false_rand));
+    EXPECT_TRUE(irpass::analysis::same_statements(
         if_stmt->true_statements.get(), if_stmt->false_statements.get()));
 
     // They should be considered different if we don't check recursively.
-    TI_CHECK(
+    EXPECT_TRUE(
         !irpass::analysis::same_statements(true_add, false_add, std::nullopt));
-    TI_CHECK(irpass::analysis::same_statements(
+    EXPECT_TRUE(irpass::analysis::same_statements(
         true_add, false_add,
         std::make_optional<std::unordered_map<int, int>>()));
 
-    TI_CHECK(!irpass::analysis::same_value(
+    EXPECT_TRUE(!irpass::analysis::same_value(
         true_add, false_add,
         std::make_optional<std::unordered_map<int, int>>()));
-  }
+}
 
-  SECTION("test_same_loop_index") {
+TEST(SameStatements, TestSameLoopIndex) {
     auto block = std::make_unique<Block>();
     auto zero = block->push_back<ConstStmt>(TypedConstant(0));
     auto four = block->push_back<ConstStmt>(TypedConstant(4));
@@ -166,9 +168,9 @@ TI_TEST("same_statements") {
     irpass::type_check(block.get());
     irpass::re_id(block.get());
 
-    TI_CHECK(irpass::analysis::same_statements(loop_index_a, loop_index_b));
-    TI_CHECK(irpass::analysis::same_value(loop_index_a, loop_index_b));
-  }
+    EXPECT_TRUE(irpass::analysis::same_statements(loop_index_a, loop_index_b));
+    EXPECT_TRUE(irpass::analysis::same_value(loop_index_a, loop_index_b));
 }
 
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

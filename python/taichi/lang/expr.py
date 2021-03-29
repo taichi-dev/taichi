@@ -1,8 +1,9 @@
 from taichi.lang import impl
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.core import taichi_lang_core
-from taichi.lang.util import (deprecated, is_taichi_class, python_scope,
-                              to_numpy_type, to_pytorch_type)
+from taichi.lang.util import (is_taichi_class, python_scope, to_numpy_type,
+                              to_pytorch_type)
+from taichi.misc.util import deprecated
 
 import taichi as ti
 
@@ -193,7 +194,7 @@ class Expr(TaichiOperations):
         s = self.shape
         for i in range(len(self.shape)):
             assert s[i] == arr.shape[i]
-        from .meta import ext_arr_to_tensor
+        from taichi.lang.meta import ext_arr_to_tensor
         if hasattr(arr, 'contiguous'):
             arr = arr.contiguous()
         ext_arr_to_tensor(arr, self)
@@ -206,7 +207,7 @@ class Expr(TaichiOperations):
     @python_scope
     def copy_from(self, other):
         assert isinstance(other, Expr)
-        from .meta import tensor_to_tensor
+        from taichi.lang.meta import tensor_to_tensor
         assert len(self.shape) == len(other.shape)
         tensor_to_tensor(self, other)
 

@@ -7,7 +7,8 @@ import numbers
 from taichi.core import util as cutil
 from taichi.lang import impl
 from taichi.lang.expr import Expr
-from taichi.lang.util import deprecated, is_taichi_class
+from taichi.lang.util import is_taichi_class
+from taichi.misc.util import deprecated
 
 
 class SNode:

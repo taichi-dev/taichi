@@ -1,3 +1,4 @@
+from taichi.lang.kernel_impl import KernelTemplateMapper
 import taichi as ti
 
 
@@ -8,7 +9,7 @@ def test_kernel_template_mapper():
 
     ti.root.place(x, y)
 
-    mapper = ti.KernelTemplateMapper(
+    mapper = KernelTemplateMapper(
         (ti.template(), ti.template(), ti.template()),
         template_slot_locations=(0, 1, 2))
     assert mapper.lookup((0, 0, 0))[0] == 0
@@ -17,14 +18,14 @@ def test_kernel_template_mapper():
     assert mapper.lookup((0, 0, 1))[0] == 2
     assert mapper.lookup((0, 1, 0))[0] == 1
 
-    mapper = ti.KernelTemplateMapper((ti.i32, ti.i32, ti.i32), ())
+    mapper = KernelTemplateMapper((ti.i32, ti.i32, ti.i32), ())
     assert mapper.lookup((0, 0, 0))[0] == 0
     assert mapper.lookup((0, 1, 0))[0] == 0
     assert mapper.lookup((0, 0, 0))[0] == 0
     assert mapper.lookup((0, 0, 1))[0] == 0
     assert mapper.lookup((0, 1, 0))[0] == 0
 
-    mapper = ti.KernelTemplateMapper((ti.i32, ti.template(), ti.i32), (1, ))
+    mapper = KernelTemplateMapper((ti.i32, ti.template(), ti.i32), (1, ))
     assert mapper.lookup((0, x, 0))[0] == 0
     assert mapper.lookup((0, y, 0))[0] == 1
     assert mapper.lookup((0, x, 1))[0] == 0
@@ -41,7 +42,7 @@ def test_kernel_template_mapper_numpy():
 
     import numpy as np
 
-    mapper = ti.KernelTemplateMapper(annotations, (0, 1, 2))
+    mapper = KernelTemplateMapper(annotations, (0, 1, 2))
     assert mapper.lookup((0, 0, np.ones(shape=(1, 2, 3),
                                         dtype=np.float32)))[0] == 0
     assert mapper.lookup((0, 0, np.ones(shape=(1, 2, 4),

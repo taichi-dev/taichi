@@ -1,5 +1,6 @@
 from taichi.lang.core import taichi_lang_core
 from taichi.lang.expr import Expr
+from taichi.lang.snode import SNode
 from taichi.lang.util import cook_dtype, to_taichi_type
 
 
@@ -20,12 +21,11 @@ class Template:
         self.dim = dim
 
     def extract(self, x):
-        import taichi as ti
-        if isinstance(x, ti.SNode):
+        if isinstance(x, SNode):
             return x.ptr
-        if isinstance(x, ti.Expr):
+        if isinstance(x, Expr):
             return x.ptr.get_underlying_ptr_address()
-        if isinstance(x, ti.core.Expr):
+        if isinstance(x, taichi_lang_core.Expr):
             return x.get_underlying_ptr_address()
         if isinstance(x, tuple):
             return tuple(self.extract(item) for item in x)
@@ -37,17 +37,16 @@ template = Template
 
 def decl_scalar_arg(dtype):
     dtype = cook_dtype(dtype)
-    id = taichi_lang_core.decl_arg(dtype, False)
-    return Expr(taichi_lang_core.make_arg_load_expr(id, dtype))
+    arg_id = taichi_lang_core.decl_arg(dtype, False)
+    return Expr(taichi_lang_core.make_arg_load_expr(arg_id, dtype))
 
 
 def decl_ext_arr_arg(dtype, dim):
     dtype = cook_dtype(dtype)
-    id = taichi_lang_core.decl_arg(dtype, True)
-    return Expr(taichi_lang_core.make_external_tensor_expr(dtype, dim, id))
+    arg_id = taichi_lang_core.decl_arg(dtype, True)
+    return Expr(taichi_lang_core.make_external_tensor_expr(dtype, dim, arg_id))
 
 
 def decl_scalar_ret(dtype):
     dtype = cook_dtype(dtype)
-    id = taichi_lang_core.decl_ret(dtype)
-    return id
+    return taichi_lang_core.decl_ret(dtype)

@@ -267,3 +267,31 @@ def test_func_multiple_return_in_static_if():
         print(safe_static_sqrt(-233))
 
     kern()
+
+
+def test_func_def_inside_kernel():
+    @ti.kernel
+    def k():
+        @ti.func
+        def illegal():
+            return 1
+
+    with pytest.raises(ti.TaichiSyntaxError,
+                       match='Function definition not allowed'):
+        k()
+
+
+def test_func_def_inside_func():
+    @ti.func
+    def f():
+        @ti.func
+        def illegal():
+            return 1
+
+    @ti.kernel
+    def k():
+        f()
+
+    with pytest.raises(ti.TaichiSyntaxError,
+                       match='Function definition not allowed'):
+        k()

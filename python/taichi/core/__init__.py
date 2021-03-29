@@ -2,6 +2,7 @@ from taichi.core.util import *
 from taichi.core.settings import *
 from taichi.core.record import *
 from taichi.core.logging import *
+from taichi.core.primitive_types import *
 
 ti_core.build = build
 ti_core.load_module = load_module

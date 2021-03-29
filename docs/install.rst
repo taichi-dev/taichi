@@ -14,6 +14,7 @@ Taichi can be easily installed via ``pip``:
 
 - On Ubuntu 19.04+, please execute ``sudo apt install libtinfo5``.
 - On Arch Linux, please execute ``yaourt -S ncurses5-compat-libs``.
+- On Fedora and RHEL, please execute ``sudo yum install ncurses-compat-libs``.
 - On Windows, please install `Microsoft Visual C++ Redistributable <https://aka.ms/vs/16/release/vc_redist.x64.exe>`_ if you haven't.
 
 
@@ -147,6 +148,8 @@ Linux issues
         Server = https://mirrors.tuna.tsinghua.edu.cn/archlinuxcn/$arch
 
     Then execute ``sudo pacman -Syy ncurses5-compat-libs``.
+
+  * On Fedora and RHEL, execute ``sudo yum install ncurses-compat-libs``.
 
 - If Taichi crashes and reports ``/usr/lib/libstdc++.so.6: version `CXXABI_1.3.11' not found``:
 

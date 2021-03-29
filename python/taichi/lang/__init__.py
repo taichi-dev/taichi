@@ -2,18 +2,29 @@ import functools
 import os
 from copy import deepcopy as _deepcopy
 
+from taichi.core.util import ti_core as _ti_core
+from taichi.lang import impl
 from taichi.lang.impl import *
+from taichi.lang.kernel_arguments import ext_arr, template
+from taichi.lang.kernel_impl import (KernelArgError, KernelDefError,
+                                     data_oriented, func, kernel, pyfunc)
 from taichi.lang.matrix import Matrix, Vector
 from taichi.lang.ndrange import GroupedNDRange, ndrange
+from taichi.lang.ops import *
 from taichi.lang.quant_impl import quant
 from taichi.lang.runtime_ops import async_flush, sync
 from taichi.lang.transformer import TaichiSyntaxError
 from taichi.lang.type_factory_impl import type_factory
-from taichi.lang.util import deprecated
+from taichi.lang.util import (has_pytorch, is_taichi_class, python_scope,
+                              taichi_scope, to_numpy_type, to_pytorch_type,
+                              to_taichi_type)
 
+import taichi as ti
+
+# TODO(#2223): Remove
 core = taichi_lang_core
 
-runtime = get_runtime()
+runtime = impl.get_runtime()
 
 i = indices(0)
 j = indices(1)
@@ -36,40 +47,39 @@ normalized = deprecated('ti.normalized(a)',
                         'a.normalized()')(Matrix.normalized)
 
 cfg = default_cfg()
-x86_64 = core.x64
-x64 = core.x64
-arm64 = core.arm64
-cuda = core.cuda
-metal = core.metal
-opengl = core.opengl
-cc = core.cc
+x86_64 = _ti_core.x64
+x64 = _ti_core.x64
+arm64 = _ti_core.arm64
+cuda = _ti_core.cuda
+metal = _ti_core.metal
+opengl = _ti_core.opengl
+cc = _ti_core.cc
 gpu = [cuda, metal, opengl]
-cpu = core.host_arch()
-kernel_profiler_print = lambda: get_runtime().prog.kernel_profiler_print()
-kernel_profiler_clear = lambda: get_runtime().prog.kernel_profiler_clear()
-kernel_profiler_total_time = lambda: get_runtime(
+cpu = _ti_core.host_arch()
+kernel_profiler_print = lambda: impl.get_runtime().prog.kernel_profiler_print()
+kernel_profiler_clear = lambda: impl.get_runtime().prog.kernel_profiler_clear()
+kernel_profiler_total_time = lambda: impl.get_runtime(
 ).prog.kernel_profiler_total_time()
-timeline_clear = lambda: get_runtime().prog.timeline_clear()
-timeline_save = lambda fn: get_runtime().prog.timeline_save(fn)
+timeline_clear = lambda: impl.get_runtime().prog.timeline_clear()
+timeline_save = lambda fn: impl.get_runtime().prog.timeline_save(fn)
 
 # Legacy API
-type_factory_ = core.get_type_factory_instance()
+type_factory_ = _ti_core.get_type_factory_instance()
 
 
 def memory_profiler_print():
-    get_runtime().materialize()
-    get_runtime().prog.print_memory_profiler_info()
+    impl.get_runtime().materialize()
+    impl.get_runtime().prog.print_memory_profiler_info()
 
 
-extension = core.Extension
-is_extension_supported = core.is_extension_supported
+extension = _ti_core.Extension
+is_extension_supported = _ti_core.is_extension_supported
 
 
 def reset():
-    from .impl import reset as impl_reset
-    impl_reset()
+    impl.reset()
     global runtime
-    runtime = get_runtime()
+    runtime = impl.get_runtime()
 
 
 class _EnvironmentConfigurator:
@@ -91,7 +101,7 @@ class _EnvironmentConfigurator:
         if len(value):
             self[key] = cast(value)
             if key in self.kwargs:
-                core.warn(
+                _ti_core.warn(
                     f'ti.init argument "{key}" overridden by environment variable {name}={value}'
                 )
                 del self.kwargs[key]  # mark as recognized
@@ -124,7 +134,6 @@ def init(arch=None,
          default_ip=None,
          _test_mode=False,
          **kwargs):
-    import taichi as ti
 
     # Make a deepcopy in case these args reference to items from ti.cfg, which are
     # actually references. If no copy is made and the args are indeed references,
@@ -143,13 +152,13 @@ def init(arch=None,
     env_default_fp = os.environ.get("TI_DEFAULT_FP")
     if env_default_fp:
         if default_fp is not None:
-            core.warn(
+            _ti_core.warn(
                 f'ti.init argument "default_fp" overridden by environment variable TI_DEFAULT_FP={env_default_fp}'
             )
         if env_default_fp == '32':
-            default_fp = f32
+            default_fp = ti.f32
         elif env_default_fp == '64':
-            default_fp = f64
+            default_fp = ti.f64
         elif env_default_fp is not None:
             raise ValueError(
                 f'Invalid TI_DEFAULT_FP={env_default_fp}, should be 32 or 64')
@@ -157,21 +166,21 @@ def init(arch=None,
     env_default_ip = os.environ.get("TI_DEFAULT_IP")
     if env_default_ip:
         if default_ip is not None:
-            core.warn(
+            _ti_core.warn(
                 f'ti.init argument "default_ip" overridden by environment variable TI_DEFAULT_IP={env_default_ip}'
             )
         if env_default_ip == '32':
-            default_ip = i32
+            default_ip = ti.i32
         elif env_default_ip == '64':
-            default_ip = i64
+            default_ip = ti.i64
         elif env_default_ip is not None:
             raise ValueError(
                 f'Invalid TI_DEFAULT_IP={env_default_ip}, should be 32 or 64')
 
     if default_fp is not None:
-        ti.get_runtime().set_default_fp(default_fp)
+        impl.get_runtime().set_default_fp(default_fp)
     if default_ip is not None:
-        ti.get_runtime().set_default_ip(default_ip)
+        impl.get_runtime().set_default_ip(default_ip)
 
     # submodule configurations (spec_cfg):
     env_spec.add('print_preprocessed')
@@ -197,7 +206,7 @@ def init(arch=None,
     # dispatch configurations that are not in ti.cfg:
     if not _test_mode:
         ti.set_gdb_trigger(spec_cfg.gdb_trigger)
-        ti.get_runtime().print_preprocessed = spec_cfg.print_preprocessed
+        impl.get_runtime().print_preprocessed = spec_cfg.print_preprocessed
         ti.set_logging_level(spec_cfg.log_level.lower())
         if spec_cfg.excepthook:
             # TODO(#1405): add a way to restore old excepthook
@@ -207,27 +216,27 @@ def init(arch=None,
     env_arch = os.environ.get('TI_ARCH')
     if env_arch is not None:
         ti.info(f'Following TI_ARCH setting up for arch={env_arch}')
-        arch = ti.core.arch_from_name(env_arch)
+        arch = _ti_core.arch_from_name(env_arch)
     ti.cfg.arch = adaptive_arch_select(arch)
-    print(f'[Taichi] Starting on arch={ti.core.arch_name(ti.cfg.arch)}')
+    print(f'[Taichi] Starting on arch={_ti_core.arch_name(ti.cfg.arch)}')
 
     if _test_mode:
         return spec_cfg
 
     # create a new program:
-    ti.get_runtime().create_program()
+    impl.get_runtime().create_program()
 
 
 def no_activate(*args):
     for v in args:
-        taichi_lang_core.no_activate(v.snode.ptr)
+        _ti_core.no_activate(v.snode.ptr)
 
 
 def block_local(*args):
     for a in args:
         for v in a.get_field_members():
-            taichi_lang_core.insert_snode_access_flag(
-                taichi_lang_core.SNodeAccessFlag.block_local, v.ptr)
+            _ti_core.insert_snode_access_flag(
+                _ti_core.SNodeAccessFlag.block_local, v.ptr)
 
 
 @deprecated('ti.cache_shared', 'ti.block_local')
@@ -238,12 +247,12 @@ def cache_shared(*args):
 def cache_read_only(*args):
     for a in args:
         for v in a.get_field_members():
-            taichi_lang_core.insert_snode_access_flag(
-                taichi_lang_core.SNodeAccessFlag.read_only, v.ptr)
+            _ti_core.insert_snode_access_flag(
+                _ti_core.SNodeAccessFlag.read_only, v.ptr)
 
 
 def assume_in_range(val, base, low, high):
-    return taichi_lang_core.expr_assume_in_range(
+    return _ti_core.expr_assume_in_range(
         Expr(val).ptr,
         Expr(base).ptr, low, high)
 
@@ -254,14 +263,14 @@ def loop_unique(val, covers=None):
     if not isinstance(covers, (list, tuple)):
         covers = [covers]
     covers = [x.snode.ptr if isinstance(x, Expr) else x.ptr for x in covers]
-    return taichi_lang_core.expr_loop_unique(Expr(val).ptr, covers)
+    return _ti_core.expr_loop_unique(Expr(val).ptr, covers)
 
 
-parallelize = core.parallelize
+parallelize = _ti_core.parallelize
 serialize = lambda: parallelize(1)
-vectorize = core.vectorize
-bit_vectorize = core.bit_vectorize
-block_dim = core.block_dim
+vectorize = _ti_core.vectorize
+bit_vectorize = _ti_core.bit_vectorize
+block_dim = _ti_core.block_dim
 
 inversed = deprecated('ti.inversed(a)', 'a.inverse()')(Matrix.inversed)
 transposed = deprecated('ti.transposed(a)', 'a.transpose()')(Matrix.transposed)
@@ -269,14 +278,14 @@ transposed = deprecated('ti.transposed(a)', 'a.transpose()')(Matrix.transposed)
 
 def polar_decompose(A, dt=None):
     if dt is None:
-        dt = get_runtime().default_fp
+        dt = impl.get_runtime().default_fp
     from .linalg import polar_decompose
     return polar_decompose(A, dt)
 
 
 def svd(A, dt=None):
     if dt is None:
-        dt = get_runtime().default_fp
+        dt = impl.get_runtime().default_fp
     from .linalg import svd
     return svd(A, dt)
 
@@ -287,7 +296,7 @@ tr = deprecated('ti.tr(a)', 'a.trace()')(Matrix.trace)
 
 
 def Tape(loss, clear_gradients=True):
-    get_runtime().materialize()
+    impl.get_runtime().materialize()
     if len(loss.shape) != 0:
         raise RuntimeError(
             'The loss of `Tape` must be a 0-D field, i.e. scalar')
@@ -298,16 +307,14 @@ def Tape(loss, clear_gradients=True):
     if clear_gradients:
         clear_all_gradients()
 
-    from .meta import clear_loss
+    from taichi.lang.meta import clear_loss
     clear_loss(loss)
 
     return runtime.get_tape(loss)
 
 
 def clear_all_gradients():
-    get_runtime().materialize()
-
-    import taichi as ti
+    impl.get_runtime().materialize()
 
     def visit(node):
         places = []
@@ -321,7 +328,7 @@ def clear_all_gradients():
 
         places = tuple(places)
         if places:
-            from .meta import clear_gradients
+            from taichi.lang.meta import clear_gradients
             clear_gradients(places)
 
     visit(ti.root)
@@ -330,15 +337,13 @@ def clear_all_gradients():
 def benchmark(func, repeat=300, args=()):
     import time
 
-    import taichi as ti
-
     def run_benchmark():
         compile_time = time.time()
         func(*args)  # compile the kernel first
         ti.sync()
         compile_time = time.time() - compile_time
         ti.stat_write('compilation_time', compile_time)
-        codegen_stat = ti.core.stat()
+        codegen_stat = _ti_core.stat()
         for line in codegen_stat.split('\n'):
             try:
                 a, b = line.strip().split(':')
@@ -387,16 +392,14 @@ def benchmark_plot(fn=None,
                    size=(12, 8)):
     import matplotlib.pyplot as plt
     import yaml
-
-    import taichi as ti
     if fn is None:
-        fn = os.path.join(ti.core.get_repo_dir(), 'benchmarks', 'output',
+        fn = os.path.join(_ti_core.get_repo_dir(), 'benchmarks', 'output',
                           'benchmark.yml')
 
     with open(fn, 'r') as f:
         data = yaml.load(f, Loader=yaml.SafeLoader)
     if bars != 'sync_vs_async':  # need baseline
-        baseline_dir = os.path.join(ti.core.get_repo_dir(), 'benchmarks',
+        baseline_dir = os.path.join(_ti_core.get_repo_dir(), 'benchmarks',
                                     'baseline')
         baseline_file = f'{baseline_dir}/benchmark.yml'
         with open(baseline_file, 'r') as f:
@@ -508,14 +511,12 @@ def benchmark_plot(fn=None,
 
 def stat_write(key, value):
     import yaml
-
-    import taichi as ti
     case_name = os.environ.get('TI_CURRENT_BENCHMARK')
     if case_name is None:
         return
     if case_name.startswith('benchmark_'):
         case_name = case_name[10:]
-    arch_name = core.arch_name(ti.cfg.arch)
+    arch_name = _ti_core.arch_name(ti.cfg.arch)
     async_mode = 'async' if ti.cfg.async_mode else 'sync'
     output_dir = os.environ.get('TI_BENCHMARK_OUTPUT_DIR', '.')
     filename = f'{output_dir}/benchmark.yml'
@@ -534,18 +535,18 @@ def stat_write(key, value):
 
 def is_arch_supported(arch):
     arch_table = {
-        cuda: core.with_cuda,
-        metal: core.with_metal,
-        opengl: core.with_opengl,
-        cc: core.with_cc,
+        cuda: _ti_core.with_cuda,
+        metal: _ti_core.with_metal,
+        opengl: _ti_core.with_opengl,
+        cc: _ti_core.with_cc,
         cpu: lambda: True
     }
     with_arch = arch_table.get(arch, lambda: False)
     try:
         return with_arch()
     except Exception as e:
-        arch = core.arch_name(arch)
-        core.warn(
+        arch = _ti_core.arch_name(arch)
+        _ti_core.warn(
             f"{e.__class__.__name__}: '{e}' occurred when detecting "
             f"{arch}, consider add `export TI_WITH_{arch.upper()}=0` "
             f" to environment variables to depress this warning message.")
@@ -565,7 +566,7 @@ def supported_archs():
     if len(wanted_archs):
         archs, old_archs = [], archs
         for arch in old_archs:
-            if want_exclude == (core.arch_name(arch) not in wanted_archs):
+            if want_exclude == (_ti_core.arch_name(arch) not in wanted_archs):
                 archs.append(arch)
 
     archs, old_archs = [], archs
@@ -579,7 +580,6 @@ def supported_archs():
 def adaptive_arch_select(arch):
     if arch is None:
         return cpu
-    import taichi as ti
     if not isinstance(arch, (list, tuple)):
         arch = [arch]
     for a in arch:
@@ -597,7 +597,7 @@ class _ArchCheckers(object):
         self._checkers.append(c)
 
     def __call__(self, arch):
-        assert isinstance(arch, core.Arch)
+        assert isinstance(arch, _ti_core.Arch)
         return all([c(arch) for c in self._checkers])
 
 
@@ -624,7 +624,6 @@ def all_archs_with(**kwargs):
         # Full discussion: https://github.com/pytest-dev/pytest/issues/6810
         @functools.wraps(test)
         def wrapped(*test_args, **test_kwargs):
-            import taichi as ti
             can_run_on = test_kwargs.pop(_tests_arch_checkers_argname,
                                          _ArchCheckers())
             # Filter away archs that don't support 64-bit data.
@@ -665,7 +664,7 @@ def all_archs(test):
 #   ...
 def archs_excluding(*excluded_archs, **kwargs):
     # |kwargs| will be passed to all_archs_with(**kwargs)
-    assert all([isinstance(a, core.Arch) for a in excluded_archs])
+    assert all([isinstance(a, _ti_core.Arch) for a in excluded_archs])
     excluded_archs = set(excluded_archs)
 
     def decorator(test):
@@ -694,7 +693,7 @@ def archs_excluding(*excluded_archs, **kwargs):
 def require(*exts):
     # Because this decorator injects an arch checker, its usage must be followed
     # with all_archs_with(), either directly or indirectly.
-    assert all([isinstance(e, core.Extension) for e in exts])
+    assert all([isinstance(e, _ti_core.Extension) for e in exts])
 
     def decorator(test):
         @functools.wraps(test)
@@ -716,7 +715,6 @@ def archs_support_sparse(test, **kwargs):
 
 
 def torch_test(func):
-    import taichi as ti
     if ti.has_pytorch():
         # OpenGL somehow crashes torch test without a reason, unforturnately
         return ti.archs_excluding(ti.opengl)(func)
@@ -726,11 +724,9 @@ def torch_test(func):
 
 # test with host arch only
 def host_arch_only(func):
-    import taichi as ti
-
     @functools.wraps(func)
     def test(*args, **kwargs):
-        archs = [ti.core.host_arch()]
+        archs = [_ti_core.host_arch()]
         for arch in archs:
             ti.init(arch=arch)
             func(*args, **kwargs)
@@ -746,8 +742,6 @@ def archs_with(archs, **init_kwags):
       archs: a list of Taichi archs
       init_kwargs: kwargs passed to ti.init()
     """
-    import taichi as ti
-
     def decorator(test):
         @functools.wraps(test)
         def wrapped(*test_args, **test_kwargs):
@@ -784,13 +778,13 @@ def must_throw(ex):
 
 def complex_kernel(func):
     def decorated(*args, **kwargs):
-        get_runtime().inside_complex_kernel = True
-        if get_runtime().target_tape:
-            get_runtime().target_tape.insert(decorated, args)
+        impl.get_runtime().inside_complex_kernel = True
+        if impl.get_runtime().target_tape:
+            impl.get_runtime().target_tape.insert(decorated, args)
         try:
             func(*args, **kwargs)
         finally:
-            get_runtime().inside_complex_kernel = False
+            impl.get_runtime().inside_complex_kernel = False
 
     decorated.grad = None
     return decorated

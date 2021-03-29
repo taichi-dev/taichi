@@ -46,12 +46,13 @@ class IRBuilder {
   void set_insertion_point_to_false_branch(IfStmt *if_stmt);
   template <typename XxxStmt>
   void set_insertion_point_to_loop_begin(XxxStmt *loop) {
-    if constexpr (!std::is_base_of_v<Stmt, XxxStmt>) {
+    using DecayedType = typename std::decay_t<XxxStmt>;
+    if constexpr (!std::is_base_of_v<Stmt, DecayedType>) {
       TI_ERROR("The argument is not a statement.");
     }
-    if constexpr (std::is_same_v<XxxStmt, RangeForStmt> ||
-                  std::is_same_v<XxxStmt, StructForStmt> ||
-                  std::is_same_v<XxxStmt, WhileStmt>) {
+    if constexpr (std::is_same_v<DecayedType, RangeForStmt> ||
+                  std::is_same_v<DecayedType, StructForStmt> ||
+                  std::is_same_v<DecayedType, WhileStmt>) {
       set_insertion_point({loop->body.get(), 0});
     } else {
       TI_ERROR("Statement {} is not a loop.", loop->name());
@@ -153,10 +154,42 @@ class IRBuilder {
     return insert(Stmt::make_typed<PrintStmt>(std::forward<Args>(args)...));
   }
 
-  // Local variable.
+  // Local variables.
   AllocaStmt *create_local_var(DataType dt);
   LocalLoadStmt *create_local_load(AllocaStmt *ptr);
   void create_local_store(AllocaStmt *ptr, Stmt *data);
+
+  // Global variables.
+  GlobalPtrStmt *create_global_ptr(SNode *snode,
+                                   const std::vector<Stmt *> &indices);
+  ExternalPtrStmt *create_external_ptr(ArgLoadStmt *ptr,
+                                       const std::vector<Stmt *> &indices);
+  template <typename XxxStmt>
+  GlobalLoadStmt *create_global_load(XxxStmt *ptr) {
+    using DecayedType = typename std::decay_t<XxxStmt>;
+    if constexpr (!std::is_base_of_v<Stmt, DecayedType>) {
+      TI_ERROR("The argument is not a statement.");
+    }
+    if constexpr (std::is_same_v<DecayedType, GlobalPtrStmt> ||
+                  std::is_same_v<DecayedType, ExternalPtrStmt>) {
+      return insert(Stmt::make_typed<GlobalLoadStmt>(ptr));
+    } else {
+      TI_ERROR("Statement {} is not a global pointer.", ptr->name());
+    }
+  }
+  template <typename XxxStmt>
+  void create_global_store(XxxStmt *ptr, Stmt *data) {
+    using DecayedType = typename std::decay_t<XxxStmt>;
+    if constexpr (!std::is_base_of_v<Stmt, DecayedType>) {
+      TI_ERROR("The argument is not a statement.");
+    }
+    if constexpr (std::is_same_v<DecayedType, GlobalPtrStmt> ||
+                  std::is_same_v<DecayedType, ExternalPtrStmt>) {
+      insert(Stmt::make_typed<GlobalStoreStmt>(ptr, data));
+    } else {
+      TI_ERROR("Statement {} is not a global pointer.", ptr->name());
+    }
+  }
 };
 
 TLANG_NAMESPACE_END

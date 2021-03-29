@@ -2,6 +2,7 @@
 
 #include "taichi/ir/ir_builder.h"
 #include "taichi/ir/statements.h"
+#include "taichi/program/program.h"
 
 namespace taichi {
 namespace lang {
@@ -52,6 +53,38 @@ TEST(IRBuilder, RangeFor) {
   auto *loopc = loop->cast<RangeForStmt>();
   EXPECT_EQ(loopc->body->size(), 1);
   EXPECT_EQ(loopc->body->statements[0].get(), index);
+}
+
+TEST(IRBuilder, ExternalPtr) {
+  auto prog = Program(arch_from_name("x64"));
+  prog.materialize_layout();
+  IRBuilder builder;
+  const int size = 10;
+  auto array = std::make_unique<int[]>(size);
+  array[0] = 2;
+  array[2] = 40;
+  auto *arg = builder.create_arg_load(/*arg_id=*/0, get_data_type<int>(),
+                                      /*is_ptr=*/true);
+  auto *zero = builder.get_int32(0);
+  auto *one = builder.get_int32(1);
+  auto *two = builder.get_int32(2);
+  auto *a1ptr = builder.create_external_ptr(arg, {one});
+  builder.create_global_store(a1ptr, one);  // a[1] = 1
+  auto *a0 =
+      builder.create_global_load(builder.create_external_ptr(arg, {zero}));
+  auto *a2ptr = builder.create_external_ptr(arg, {two});
+  auto *a2 = builder.create_global_load(a2ptr);
+  auto *a0plusa2 = builder.create_add(a0, a2);
+  builder.create_global_store(a2ptr, a0plusa2);  // a[2] = a[0] + a[2]
+  auto block = builder.extract_ir();
+  auto ker = std::make_unique<Kernel>(prog, std::move(block));
+  ker->insert_arg(get_data_type<int>(), /*is_nparray=*/true);
+  auto launch_ctx = ker->make_launch_context();
+  launch_ctx.set_arg_nparray(0, (uint64)array.get(), size);
+  (*ker)(launch_ctx);
+  EXPECT_EQ(array[0], 2);
+  EXPECT_EQ(array[1], 1);
+  EXPECT_EQ(array[2], 42);
 }
 }  // namespace lang
 }  // namespace taichi

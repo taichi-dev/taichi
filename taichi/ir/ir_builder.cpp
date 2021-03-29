@@ -313,4 +313,16 @@ void IRBuilder::create_local_store(AllocaStmt *ptr, Stmt *data) {
   insert(Stmt::make_typed<LocalStoreStmt>(ptr, data));
 }
 
+GlobalPtrStmt *IRBuilder::create_global_ptr(
+    SNode *snode,
+    const std::vector<Stmt *> &indices) {
+  return insert(Stmt::make_typed<GlobalPtrStmt>(snode, indices));
+}
+
+ExternalPtrStmt *IRBuilder::create_external_ptr(
+    ArgLoadStmt *ptr,
+    const std::vector<Stmt *> &indices) {
+  return insert(Stmt::make_typed<ExternalPtrStmt>(ptr, indices));
+}
+
 TLANG_NAMESPACE_END

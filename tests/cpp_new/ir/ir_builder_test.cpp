@@ -70,8 +70,8 @@ TEST(IRBuilder, ExternalPtr) {
   auto *two = builder.get_int32(2);
   auto *a1ptr = builder.create_external_ptr(arg, {one});
   builder.create_global_store(a1ptr, one);  // a[1] = 1
-  auto *a0 = builder.create_global_load(
-      builder.create_external_ptr(arg, {zero}));
+  auto *a0 =
+      builder.create_global_load(builder.create_external_ptr(arg, {zero}));
   auto *a2ptr = builder.create_external_ptr(arg, {two});
   auto *a2 = builder.create_global_load(a2ptr);
   auto *a0plusa2 = builder.create_add(a0, a2);

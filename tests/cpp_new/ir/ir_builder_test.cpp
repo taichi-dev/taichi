@@ -68,11 +68,11 @@ TEST(IRBuilder, ExternalPtr) {
   auto *zero = builder.get_int32(0);
   auto *one = builder.get_int32(1);
   auto *two = builder.get_int32(2);
-  auto *a1ptr = builder.create_external_ptr(arg, std::vector<Stmt *>(1, one));
+  auto *a1ptr = builder.create_external_ptr(arg, {one});
   builder.create_global_store(a1ptr, one);  // a[1] = 1
   auto *a0 = builder.create_global_load(
-      builder.create_external_ptr(arg, std::vector<Stmt *>(1, zero)));
-  auto *a2ptr = builder.create_external_ptr(arg, std::vector<Stmt *>(1, two));
+      builder.create_external_ptr(arg, {zero}));
+  auto *a2ptr = builder.create_external_ptr(arg, {two});
   auto *a2 = builder.create_global_load(a2ptr);
   auto *a0plusa2 = builder.create_add(a0, a2);
   builder.create_global_store(a2ptr, a0plusa2);  // a[2] = a[0] + a[2]

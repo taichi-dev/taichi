@@ -551,7 +551,7 @@ class RangeForStmt : public Stmt {
   bool reversed;
   int vectorize;
   int bit_vectorize;
-  int parallelize;
+  int num_cpu_threads;
   int block_dim;
   bool strictly_serialized;
 
@@ -560,7 +560,7 @@ class RangeForStmt : public Stmt {
                std::unique_ptr<Block> &&body,
                int vectorize,
                int bit_vectorize,
-               int parallelize,
+               int num_cpu_threads,
                int block_dim,
                bool strictly_serialized);
 
@@ -579,7 +579,7 @@ class RangeForStmt : public Stmt {
                      reversed,
                      vectorize,
                      bit_vectorize,
-                     parallelize,
+                     num_cpu_threads,
                      block_dim,
                      strictly_serialized);
   TI_DEFINE_ACCEPT
@@ -595,7 +595,7 @@ class StructForStmt : public Stmt {
   std::vector<int> index_offsets;
   int vectorize;
   int bit_vectorize;
-  int parallelize;
+  int num_cpu_threads;
   int block_dim;
   MemoryAccessOptions mem_access_opt;
 
@@ -603,7 +603,7 @@ class StructForStmt : public Stmt {
                 std::unique_ptr<Block> &&body,
                 int vectorize,
                 int bit_vectorize,
-                int parallelize,
+                int num_cpu_threads,
                 int block_dim);
 
   bool is_container_statement() const override {
@@ -616,7 +616,7 @@ class StructForStmt : public Stmt {
                      index_offsets,
                      vectorize,
                      bit_vectorize,
-                     parallelize,
+                     num_cpu_threads,
                      block_dim,
                      mem_access_opt);
   TI_DEFINE_ACCEPT

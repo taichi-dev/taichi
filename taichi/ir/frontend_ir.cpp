@@ -32,18 +32,18 @@ FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
     : global_var(global_var) {
   vectorize = dec.vectorize;
   bit_vectorize = dec.bit_vectorize;
-  parallelize = dec.parallelize;
+  num_cpu_threads = dec.num_cpu_threads;
   strictly_serialized = dec.strictly_serialized;
   block_dim = dec.block_dim;
   auto cfg = get_current_program().config;
   if (cfg.arch == Arch::cuda) {
     vectorize = 1;
-    parallelize = 1;
+    num_cpu_threads = 1;
     TI_ASSERT(block_dim <= taichi_max_gpu_block_dim);
   } else {
     // cpu
-    if (parallelize == 0)
-      parallelize = std::thread::hardware_concurrency();
+    if (num_cpu_threads == 0)
+      num_cpu_threads = std::thread::hardware_concurrency();
   }
   mem_access_opt = dec.mem_access_opt;
   dec.reset();
@@ -69,16 +69,16 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
     : begin(begin), end(end) {
   vectorize = dec.vectorize;
   bit_vectorize = dec.bit_vectorize;
-  parallelize = dec.parallelize;
+  num_cpu_threads = dec.num_cpu_threads;
   strictly_serialized = dec.strictly_serialized;
   block_dim = dec.block_dim;
   auto cfg = get_current_program().config;
   if (cfg.arch == Arch::cuda) {
     vectorize = 1;
-    parallelize = 1;
+    num_cpu_threads = 1;
   } else {
-    if (parallelize == 0)
-      parallelize = std::thread::hardware_concurrency();
+    if (num_cpu_threads == 0)
+      num_cpu_threads = std::thread::hardware_concurrency();
   }
   mem_access_opt = dec.mem_access_opt;
   dec.reset();

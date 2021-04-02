@@ -79,7 +79,7 @@ class Offloader {
               std::make_pair(offloaded.get(), s->end));
         }
         offloaded->num_cpu_threads =
-            std::min(s->parallelize,
+            std::min(s->num_cpu_threads,
                      root->get_kernel()->program.config.cpu_max_num_threads);
         replace_all_usages_with(s, s, offloaded.get());
         for (int j = 0; j < (int)s->body->statements.size(); j++) {
@@ -182,7 +182,7 @@ class Offloader {
 
     offloaded_struct_for->snode = for_stmt->snode;
     offloaded_struct_for->num_cpu_threads =
-        std::min(for_stmt->parallelize, program->config.cpu_max_num_threads);
+        std::min(for_stmt->num_cpu_threads, program->config.cpu_max_num_threads);
     offloaded_struct_for->mem_access_opt = mem_access_opt;
 
     root_block->insert(std::move(offloaded_struct_for));

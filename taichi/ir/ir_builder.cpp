@@ -44,6 +44,38 @@ void IRBuilder::set_insertion_point_to_false_branch(IfStmt *if_stmt) {
   set_insertion_point({if_stmt->false_statements.get(), 0});
 }
 
+IRBuilder::LoopGuard::~LoopGuard() {
+  if (location_ >= 0 && location_ < loop_->parent->size() &&
+      loop_->parent->statements[location_].get() == loop_) {
+    // faster than set_insertion_point_to_after()
+    builder_.set_insertion_point({loop_->parent, location_ + 1});
+  } else {
+    builder_.set_insertion_point_to_after(loop_);
+  }
+}
+
+IRBuilder::IfGuard::IfGuard(IRBuilder &builder,
+                            IfStmt *if_stmt,
+                            bool true_branch)
+    : builder_(builder), if_stmt_(if_stmt) {
+  location_ = if_stmt_->parent->size() - 1;
+  if (true_branch) {
+    builder_.set_insertion_point_to_true_branch(if_stmt_);
+  } else {
+    builder_.set_insertion_point_to_false_branch(if_stmt_);
+  }
+}
+
+IRBuilder::IfGuard::~IfGuard() {
+  if (location_ >= 0 && location_ < if_stmt_->parent->size() &&
+      if_stmt_->parent->statements[location_].get() == if_stmt_) {
+    // faster than set_insertion_point_to_after()
+    builder_.set_insertion_point({if_stmt_->parent, location_ + 1});
+  } else {
+    builder_.set_insertion_point_to_after(if_stmt_);
+  }
+}
+
 RangeForStmt *IRBuilder::create_range_for(Stmt *begin,
                                           Stmt *end,
                                           int vectorize,

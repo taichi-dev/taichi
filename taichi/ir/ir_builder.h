@@ -64,34 +64,26 @@ class IRBuilder {
    private:
     IRBuilder &builder_;
     Stmt *loop_;
+    int location_;
 
    public:
     template <typename XxxStmt>
     explicit LoopGuard(IRBuilder &builder, XxxStmt *loop)
         : builder_(builder), loop_(loop) {
+      location_ = loop->parent->size() - 1;
       builder_.set_insertion_point_to_loop_begin(loop);
     }
-    ~LoopGuard() {
-      builder_.set_insertion_point_to_after(loop_);
-    }
+    ~LoopGuard();
   };
   class IfGuard {
    private:
     IRBuilder &builder_;
     IfStmt *if_stmt_;
+    int location_;
 
    public:
-    explicit IfGuard(IRBuilder &builder, IfStmt *if_stmt, bool true_branch)
-        : builder_(builder), if_stmt_(if_stmt) {
-      if (true_branch) {
-        builder_.set_insertion_point_to_true_branch(if_stmt_);
-      } else {
-        builder_.set_insertion_point_to_false_branch(if_stmt_);
-      }
-    }
-    ~IfGuard() {
-      builder_.set_insertion_point_to_after(if_stmt_);
-    }
+    explicit IfGuard(IRBuilder &builder, IfStmt *if_stmt, bool true_branch);
+    ~IfGuard();
   };
 
   // Control flows.

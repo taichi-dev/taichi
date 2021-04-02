@@ -58,7 +58,7 @@ IRBuilder::IfGuard::IfGuard(IRBuilder &builder,
                             IfStmt *if_stmt,
                             bool true_branch)
     : builder_(builder), if_stmt_(if_stmt) {
-  location_ = if_stmt_->parent->size() - 1;
+  location_ = (int)if_stmt_->parent->size() - 1;
   if (true_branch) {
     builder_.set_insertion_point_to_true_branch(if_stmt_);
   } else {

@@ -74,7 +74,7 @@ class DecoratorRecorder {
  public:
   int vectorize;
   int bit_vectorize;
-  int parallelize;
+  int num_cpu_threads;
   bool strictly_serialized;
   MemoryAccessOptions mem_access_opt;
   int block_dim;
@@ -712,7 +712,7 @@ inline void BitVectorize(int v) {
 }
 
 inline void Parallelize(int v) {
-  dec.parallelize = v;
+  dec.num_cpu_threads = v;
 }
 
 inline void StrictlySerialize() {

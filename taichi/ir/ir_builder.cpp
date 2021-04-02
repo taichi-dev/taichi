@@ -48,22 +48,22 @@ RangeForStmt *IRBuilder::create_range_for(Stmt *begin,
                                           Stmt *end,
                                           int vectorize,
                                           int bit_vectorize,
-                                          int parallelize,
+                                          int num_cpu_threads,
                                           int block_dim,
                                           bool strictly_serialized) {
   return insert(Stmt::make_typed<RangeForStmt>(
       begin, end, std::make_unique<Block>(), vectorize, bit_vectorize,
-      parallelize, block_dim, strictly_serialized));
+      num_cpu_threads, block_dim, strictly_serialized));
 }
 
 StructForStmt *IRBuilder::create_struct_for(SNode *snode,
                                             int vectorize,
                                             int bit_vectorize,
-                                            int parallelize,
+                                            int num_cpu_threads,
                                             int block_dim) {
   return insert(Stmt::make_typed<StructForStmt>(
-      snode, std::make_unique<Block>(), vectorize, bit_vectorize, parallelize,
-      block_dim));
+      snode, std::make_unique<Block>(), vectorize, bit_vectorize,
+      num_cpu_threads, block_dim));
 }
 
 WhileStmt *IRBuilder::create_while_true() {

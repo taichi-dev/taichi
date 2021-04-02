@@ -64,13 +64,13 @@ class IRBuilder {
                                  Stmt *end,
                                  int vectorize = -1,
                                  int bit_vectorize = -1,
-                                 int parallelize = 0,
+                                 int num_cpu_threads = 0,
                                  int block_dim = 0,
                                  bool strictly_serialized = false);
   StructForStmt *create_struct_for(SNode *snode,
                                    int vectorize = -1,
                                    int bit_vectorize = -1,
-                                   int parallelize = 0,
+                                   int num_cpu_threads = 0,
                                    int block_dim = 0);
   WhileStmt *create_while_true();
   IfStmt *create_if(Stmt *cond);

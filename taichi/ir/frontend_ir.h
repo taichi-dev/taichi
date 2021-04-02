@@ -123,7 +123,7 @@ class FrontendForStmt : public Stmt {
   std::vector<Identifier> loop_var_id;
   int vectorize;
   int bit_vectorize;
-  int parallelize;
+  int num_cpu_threads;
   bool strictly_serialized;
   MemoryAccessOptions mem_access_opt;
   int block_dim;

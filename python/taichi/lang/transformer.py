@@ -1,8 +1,12 @@
 import ast
-from .util import to_taichi_type
 import copy
-from .exception import TaichiSyntaxError
-from . import impl
+
+from taichi.lang import impl
+from taichi.lang.exception import TaichiSyntaxError
+from taichi.lang.util import to_taichi_type
+from taichi.lang.ast_resolver import ASTResolver
+
+import taichi as ti
 
 
 class ScopeGuard:
@@ -88,12 +92,16 @@ class ASTTransformerBase(ast.NodeTransformer):
 
     @staticmethod
     def get_decorator(node):
-        if not (isinstance(node, ast.Call)
-                and isinstance(node.func, ast.Attribute) and isinstance(
-                    node.func.value, ast.Name) and node.func.value.id == 'ti'
-                and node.func.attr in ['static', 'grouped', 'ndrange']):
+        if not isinstance(node, ast.Call):
             return ''
-        return node.func.attr
+        for wanted, name in [
+            (ti.static, 'static'),
+            (ti.grouped, 'grouped'),
+            (ti.ndrange, 'ndrange'),
+        ]:
+            if ASTResolver.resolve_to(node.func, wanted, globals()):
+                return name
+        return ''
 
 
 # First-pass transform
@@ -190,19 +198,9 @@ class ASTTransformerPreprocess(ASTTransformerBase):
         assert (len(node.targets) == 1)
         self.generic_visit(node)
 
-        decorated = isinstance(node.value, ast.Call) and isinstance(
-            node.value.func, ast.Attribute) and isinstance(node.value.func.value, ast.Name) \
-                    and node.value.func.value.id == 'ti'
-
-        is_static_assign = False
-
-        if decorated:
-            attr = node.value.func
-            if attr.attr == 'static':
-                is_static_assign = True
-            else:
-                pass  # eg. x = ti.cast(xx) will reach here, but they're not decorators, so no raising errors here
-
+        is_static_assign = isinstance(
+            node.value, ast.Call) and ASTResolver.resolve_to(
+                node.value.func, ti.static, globals())
         if is_static_assign:
             return node
 
@@ -229,7 +227,7 @@ class ASTTransformerPreprocess(ASTTransformerBase):
                 if is_local and self.is_creation(target.id):
                     var_name = target.id
                     target.ctx = ast.Store()
-                    # Create
+                    # Create, no AST resolution needed
                     init = ast.Attribute(value=ast.Name(id='ti',
                                                         ctx=ast.Load()),
                                          attr='expr_init',
@@ -260,7 +258,7 @@ class ASTTransformerPreprocess(ASTTransformerBase):
             is_local = isinstance(node.targets[0], ast.Name)
             if is_local and self.is_creation(node.targets[0].id):
                 var_name = node.targets[0].id
-                # Create
+                # Create, no AST resolution needed
                 init = ast.Attribute(value=ast.Name(id='ti', ctx=ast.Load()),
                                      attr='expr_init',
                                      ctx=ast.Load())
@@ -421,30 +419,31 @@ if 1:
         # for i, j in ti.ndrange(n)
         template = f'''
 if ti.static(1):
-    __ndrange = ti.static(0)
+    __ndrange{id(node)} = 0
     for __ndrange_I{id(node)} in range(0):
         __I = __ndrange_I{id(node)}
         '''
         t = ast.parse(template).body[0]
-        t.body[0].value.args[0] = node.iter
+        t.body[0].value = node.iter
         t_loop = t.body[1]
-        t_loop.iter.args[0] = self.parse_expr('__ndrange.acc_dimensions[0]')
+        t_loop.iter.args[0] = self.parse_expr(
+            f'__ndrange{id(node)}.acc_dimensions[0]')
         targets = self.get_targets(node)
         targets_tmp = ['__' + name for name in targets]
         loop_body = t_loop.body
         for i in range(len(targets)):
             if i + 1 < len(targets):
-                stmt = '{} = __I // __ndrange.acc_dimensions[{}]'.format(
-                    targets_tmp[i], i + 1)
+                stmt = '{} = __I // __ndrange{}.acc_dimensions[{}]'.format(
+                    targets_tmp[i], id(node), i + 1)
             else:
                 stmt = '{} = __I'.format(targets_tmp[i])
             loop_body.append(self.parse_stmt(stmt))
-            stmt = '{} = {} + __ndrange.bounds[{}][0]'.format(
-                targets[i], targets_tmp[i], i)
+            stmt = '{} = {} + __ndrange{}.bounds[{}][0]'.format(
+                targets[i], targets_tmp[i], id(node), i)
             loop_body.append(self.parse_stmt(stmt))
             if i + 1 < len(targets):
-                stmt = '__I = __I - {} * __ndrange.acc_dimensions[{}]'.format(
-                    targets_tmp[i], i + 1)
+                stmt = '__I = __I - {} * __ndrange{}.acc_dimensions[{}]'.format(
+                    targets_tmp[i], id(node), i + 1)
                 loop_body.append(self.parse_stmt(stmt))
         loop_body += node.body
 
@@ -500,8 +499,8 @@ if ti.static(1):
             template = '''
 if 1:
     ___loop_var = 0
-    {} = ti.make_var_vector(size=len(___loop_var.loop_range().shape))
-    ___expr_group = ti.make_expr_group({})
+    {} = ti.lang.expr.make_var_vector(size=len(___loop_var.loop_range().shape))
+    ___expr_group = ti.lang.expr.make_expr_group({})
     ti.begin_frontend_struct_for(___expr_group, ___loop_var.loop_range())
     ti.core.end_frontend_range_for()
             '''.format(vars, vars)
@@ -514,7 +513,7 @@ if 1:
 if 1:
 {}
     ___loop_var = 0
-    ___expr_group = ti.make_expr_group({})
+    ___expr_group = ti.lang.expr.make_expr_group({})
     ti.begin_frontend_struct_for(___expr_group, ___loop_var.loop_range())
     ti.core.end_frontend_range_for()
             '''.format(var_decl, vars)
@@ -619,9 +618,7 @@ if 1:
             return self.parse_stmt('ti.core.insert_continue_stmt()')
 
     def visit_Call(self, node):
-        if not (isinstance(node.func, ast.Attribute)
-                and isinstance(node.func.value, ast.Name)
-                and node.func.value.id == 'ti' and node.func.attr == 'static'):
+        if not ASTResolver.resolve_to(node.func, ti.static, globals()):
             # Do not apply the generic visitor if the function called is ti.static
             self.generic_visit(node)
         if isinstance(node.func, ast.Name):
@@ -662,13 +659,9 @@ if 1:
         assert args.kwonlyargs == []
         assert args.kw_defaults == []
         assert args.kwarg is None
-        import taichi as ti
         if self.is_kernel:  # ti.kernel
             for decorator in node.decorator_list:
-                if (isinstance(decorator, ast.Attribute)
-                        and isinstance(decorator.value, ast.Name)
-                        and decorator.value.id == 'ti'
-                        and decorator.attr == 'func'):
+                if ASTResolver.resolve_to(decorator, ti.func, globals()):
                     raise TaichiSyntaxError(
                         "Function definition not allowed in 'ti.kernel'.")
             # Transform as kernel
@@ -676,7 +669,8 @@ if 1:
 
             # Treat return type
             if node.returns is not None:
-                ret_init = self.parse_stmt('ti.decl_scalar_ret(0)')
+                ret_init = self.parse_stmt(
+                    'ti.lang.kernel_arguments.decl_scalar_ret(0)')
                 ret_init.value.args[0] = node.returns
                 self.returns = node.returns
                 arg_decls.append(ret_init)
@@ -687,14 +681,13 @@ if 1:
                 # such as class instances ("self"), fields, SNodes, etc.
                 if isinstance(self.func.arguments[i], ti.template):
                     continue
-                import taichi as ti
                 if isinstance(self.func.arguments[i], ti.ext_arr):
-                    arg_init = self.parse_stmt('x = ti.decl_ext_arr_arg(0, 0)')
+                    arg_init = self.parse_stmt(
+                        'x = ti.lang.kernel_arguments.decl_ext_arr_arg(0, 0)')
                     arg_init.targets[0].id = arg.arg
                     self.create_variable(arg.arg)
                     array_dt = self.arg_features[i][0]
                     array_dim = self.arg_features[i][1]
-                    import numpy as np
                     array_dt = to_taichi_type(array_dt)
                     dt_expr = 'ti.' + ti.core.data_type_name(array_dt)
                     dt = self.parse_expr(dt_expr)
@@ -703,7 +696,8 @@ if 1:
                         "{}".format(array_dim))
                     arg_decls.append(arg_init)
                 else:
-                    arg_init = self.parse_stmt('x = ti.decl_scalar_arg(0)')
+                    arg_init = self.parse_stmt(
+                        'x = ti.lang.kernel_arguments.decl_scalar_arg(0)')
                     arg_init.targets[0].id = arg.arg
                     dt = arg.annotation
                     arg_init.value.args[0] = dt
@@ -713,10 +707,7 @@ if 1:
 
         else:  # ti.func
             for decorator in node.decorator_list:
-                if (isinstance(decorator, ast.Attribute)
-                        and isinstance(decorator.value, ast.Name)
-                        and decorator.value.id == 'ti'
-                        and decorator.attr == 'func'):
+                if ASTResolver.resolve_to(decorator, ti.func, globals()):
                     raise TaichiSyntaxError(
                         "Function definition not allowed in 'ti.func'.")
             # Transform as func (all parameters passed by value)

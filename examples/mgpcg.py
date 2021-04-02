@@ -1,3 +1,4 @@
+# Solve Poisson's equation on an NxN grid using MGPCG
 import numpy as np
 import taichi as ti
 
@@ -28,12 +29,11 @@ beta = ti.field(dtype=real)  # step size
 sum = ti.field(dtype=real)  # storage for reductions
 pixels = ti.field(dtype=real, shape=(N_gui, N_gui))  # image buffer
 
-grid = ti.root.pointer(ti.ijk, [N_tot // 4]).dense(ti.ijk, 4).place(x, p, Ap)
+ti.root.pointer(ti.ijk, [N_tot // 4]).dense(ti.ijk, 4).place(x, p, Ap)
 
 for l in range(n_mg_levels):
-    grid = ti.root.pointer(ti.ijk,
-                           [N_tot // (4 * 2**l)]).dense(ti.ijk,
-                                                        4).place(r[l], z[l])
+    ti.root.pointer(ti.ijk, [N_tot // (4 * 2**l)]).dense(ti.ijk,
+                                                         4).place(r[l], z[l])
 
 ti.root.place(alpha, beta, sum)
 
@@ -45,6 +45,7 @@ def init():
         xl = (i - N_ext) * 2.0 / N_tot
         yl = (j - N_ext) * 2.0 / N_tot
         zl = (k - N_ext) * 2.0 / N_tot
+        # r[0] = b - Ax, where x = 0; therefore r[0] = b
         r[0][i, j, k] = ti.sin(2.0 * np.pi * xl) * ti.sin(
             2.0 * np.pi * yl) * ti.sin(2.0 * np.pi * zl)
         z[0][i, j, k] = 0.0
@@ -56,6 +57,7 @@ def init():
 @ti.kernel
 def compute_Ap():
     for i, j, k in Ap:
+        # A is implicitly expressed as a 3-D laplace operator
         Ap[i,j,k] = 6.0 * p[i,j,k] - p[i+1,j,k] - p[i-1,j,k] \
                                    - p[i,j+1,k] - p[i,j-1,k] \
                                    - p[i,j,k+1] - p[i,j,k-1]
@@ -201,8 +203,7 @@ for i in range(400):
     old_zTr = new_zTr
 
     print(' ')
-    print(i)
-    print(rTr)
+    print(f'Iter = {i:4}, Residual = {rTr:e}')
     paint()
     gui.set_image(pixels)
     gui.show()

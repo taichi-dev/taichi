@@ -3,7 +3,6 @@
 
 #include "taichi/common/core.h"
 #include "taichi/common/dict.h"
-#include "taichi/util/io.h"
 #include "taichi/ir/frontend_ir.h"
 
 namespace taichi {
@@ -95,23 +94,16 @@ Expr global_new(Expr id_expr, DataType dt);
 Expr global_new(DataType dt, std::string name = "");
 
 template <typename T>
-inline Expr Rand() {
+Expr Rand() {
   return Expr::make<RandExpression>(get_data_type<T>());
 }
 
 template <typename T>
-inline T Eval(const T &t) {
+T Eval(const T &t) {
   return t.eval();
 }
 
-inline Expr copy(const Expr &expr) {
-  auto e = expr.eval();
-  auto stmt = Stmt::make<ElementShuffleStmt>(
-      VectorElement(e.cast<EvalExpression>()->stmt_ptr, 0));
-  auto eval_expr = std::make_shared<EvalExpression>(stmt.get());
-  current_ast_builder().insert(std::move(stmt));
-  return Expr(eval_expr);
-}
+Expr copy(const Expr &expr);
 
 template <typename... indices>
 std::vector<Index> Indices(indices... ind) {

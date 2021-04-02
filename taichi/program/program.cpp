@@ -18,11 +18,13 @@
 #include "taichi/struct/struct_llvm.h"
 #include "taichi/backends/metal/struct_metal.h"
 #include "taichi/backends/opengl/struct_opengl.h"
+#include "taichi/platform/cuda/detect_cuda.h"
 #include "taichi/system/unified_allocator.h"
 #include "taichi/system/timeline.h"
 #include "taichi/ir/snode.h"
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/program/async_engine.h"
+#include "taichi/program/snode_expr_utils.h"
 #include "taichi/util/statistics.h"
 #include "taichi/util/str.h"
 #if defined(TI_WITH_CC)
@@ -35,12 +37,6 @@
 // For _MM_SET_FLUSH_ZERO_MODE
 #include <xmmintrin.h>
 #endif
-
-TI_NAMESPACE_BEGIN
-
-bool is_cuda_api_available();
-
-TI_NAMESPACE_END
 
 TLANG_NAMESPACE_BEGIN
 
@@ -66,7 +62,7 @@ inline uint64 *allocate_result_buffer_default(Program *prog) {
 Program *current_program = nullptr;
 std::atomic<int> Program::num_instances;
 
-Program::Program(Arch desired_arch) {
+Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   TI_TRACE("Program initializing...");
 
   // For performance considerations and correctness of CustomFloatType
@@ -397,6 +393,7 @@ void Program::materialize_layout() {
   std::unique_ptr<StructCompiler> scomp =
       StructCompiler::make(this, host_arch());
   scomp->run(*snode_root, true);
+  materialize_snode_expr_attributes();
 
   for (auto snode : scomp->snodes) {
     snodes[snode->id] = snode;
@@ -633,13 +630,13 @@ Arch Program::get_snode_accessor_arch() {
 Kernel &Program::get_snode_reader(SNode *snode) {
   TI_ASSERT(snode->type == SNodeType::place);
   auto kernel_name = fmt::format("snode_reader_{}", snode->id);
-  auto &ker = kernel([snode] {
+  auto &ker = kernel([snode, this] {
     ExprGroup indices;
     for (int i = 0; i < snode->num_active_indices; i++) {
       indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
     }
     auto ret = Stmt::make<FrontendKernelReturnStmt>(
-        load_if_ptr((snode->expr)[indices]));
+        load_if_ptr(Expr(snode_to_glb_var_exprs_.at(snode))[indices]));
     current_ast_builder().insert(std::move(ret));
   });
   ker.set_arch(get_snode_accessor_arch());
@@ -654,13 +651,14 @@ Kernel &Program::get_snode_reader(SNode *snode) {
 Kernel &Program::get_snode_writer(SNode *snode) {
   TI_ASSERT(snode->type == SNodeType::place);
   auto kernel_name = fmt::format("snode_writer_{}", snode->id);
-  auto &ker = kernel([&] {
+  auto &ker = kernel([snode, this] {
     ExprGroup indices;
     for (int i = 0; i < snode->num_active_indices; i++) {
       indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
     }
-    (snode->expr)[indices] = Expr::make<ArgLoadExpression>(
-        snode->num_active_indices, snode->dt->get_compute_type());
+    Expr(snode_to_glb_var_exprs_.at(snode))[indices] =
+        Expr::make<ArgLoadExpression>(snode->num_active_indices,
+                                      snode->dt->get_compute_type());
   });
   ker.set_arch(get_snode_accessor_arch());
   ker.name = kernel_name;
@@ -856,6 +854,12 @@ std::size_t Program::get_snode_num_dynamically_allocated(SNode *snode) {
 Program::~Program() {
   if (!finalized)
     finalize();
+}
+
+void Program::materialize_snode_expr_attributes() {
+  for (auto &[snode, glb_var] : snode_to_glb_var_exprs_) {
+    glb_var->set_attribute("dim", std::to_string(snode->num_active_indices));
+  }
 }
 
 TLANG_NAMESPACE_END

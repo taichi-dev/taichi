@@ -3,6 +3,7 @@
 #include "taichi/lang_util.h"
 #include "taichi/ir/snode.h"
 #include "taichi/ir/ir.h"
+#include "taichi/program/arch.h"
 
 #define TI_RUNTIME_HOST
 #include "taichi/program/context.h"
@@ -15,6 +16,7 @@ class Program;
 class Kernel {
  public:
   std::unique_ptr<IRNode> ir;
+  bool ir_is_ast;
   Program &program;
   FunctionType compiled;
   std::string name;
@@ -85,6 +87,11 @@ class Kernel {
 
   Kernel(Program &program,
          const std::function<void()> &func,
+         const std::string &name = "",
+         bool grad = false);
+
+  Kernel(Program &program,
+         std::unique_ptr<IRNode> &&ir,
          const std::string &name = "",
          bool grad = false);
 

@@ -1,7 +1,10 @@
 #include "taichi/ir/control_flow_graph.h"
+
+#include <queue>
+
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/statements.h"
-#include <queue>
+#include "taichi/system/profiler.h"
 
 TLANG_NAMESPACE_BEGIN
 

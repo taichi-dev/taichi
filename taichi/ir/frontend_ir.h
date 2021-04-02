@@ -3,7 +3,8 @@
 #include <string>
 #include <vector>
 
-#include "taichi/lang_util.h"
+#include "taichi/ir/snode_types.h"
+#include "taichi/ir/stmt_op_types.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/expression.h"
 
@@ -122,7 +123,7 @@ class FrontendForStmt : public Stmt {
   std::vector<Identifier> loop_var_id;
   int vectorize;
   int bit_vectorize;
-  int parallelize;
+  int num_cpu_threads;
   bool strictly_serialized;
   MemoryAccessOptions mem_access_opt;
   int block_dim;
@@ -574,5 +575,58 @@ class ExternalTensorShapeAlongAxisExpression : public Expression {
 
   void flatten(FlattenContext *ctx) override;
 };
+
+class ASTBuilder {
+ private:
+  std::vector<Block *> stack;
+
+ public:
+  ASTBuilder(Block *initial) {
+    stack.push_back(initial);
+  }
+
+  void insert(std::unique_ptr<Stmt> &&stmt, int location = -1);
+
+  struct ScopeGuard {
+    ASTBuilder *builder;
+    Block *list;
+    ScopeGuard(ASTBuilder *builder, Block *list)
+        : builder(builder), list(list) {
+      builder->stack.push_back(list);
+    }
+
+    ~ScopeGuard() {
+      builder->stack.pop_back();
+    }
+  };
+
+  std::unique_ptr<ScopeGuard> create_scope(std::unique_ptr<Block> &list);
+  Block *current_block();
+  Stmt *get_last_stmt();
+  void stop_gradient(SNode *);
+};
+
+ASTBuilder &current_ast_builder();
+
+class FrontendContext {
+ private:
+  std::unique_ptr<ASTBuilder> current_builder;
+  std::unique_ptr<Block> root_node;
+
+ public:
+  FrontendContext();
+
+  ASTBuilder &builder() {
+    return *current_builder;
+  }
+
+  IRNode *root();
+
+  std::unique_ptr<Block> get_root() {
+    return std::move(root_node);
+  }
+};
+
+extern std::unique_ptr<FrontendContext> context;
 
 TLANG_NAMESPACE_END

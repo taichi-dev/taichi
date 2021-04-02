@@ -4,6 +4,8 @@
 
 TLANG_NAMESPACE_BEGIN
 
+class Stmt;
+
 enum AccessFlag : unsigned int {
   read = 1 << 1,
   write = 1 << 2,

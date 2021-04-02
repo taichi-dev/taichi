@@ -27,25 +27,23 @@ IRNode *FrontendContext::root() {
   return static_cast<IRNode *>(root_node.get());
 }
 
-std::unique_ptr<FrontendContext> context;
-
 FrontendForStmt::FrontendForStmt(const ExprGroup &loop_var,
                                  const Expr &global_var)
     : global_var(global_var) {
   vectorize = dec.vectorize;
   bit_vectorize = dec.bit_vectorize;
-  parallelize = dec.parallelize;
+  num_cpu_threads = dec.num_cpu_threads;
   strictly_serialized = dec.strictly_serialized;
   block_dim = dec.block_dim;
   auto cfg = get_current_program().config;
   if (cfg.arch == Arch::cuda) {
     vectorize = 1;
-    parallelize = 1;
+    num_cpu_threads = 1;
     TI_ASSERT(block_dim <= taichi_max_gpu_block_dim);
   } else {
     // cpu
-    if (parallelize == 0)
-      parallelize = std::thread::hardware_concurrency();
+    if (num_cpu_threads == 0)
+      num_cpu_threads = std::thread::hardware_concurrency();
   }
   mem_access_opt = dec.mem_access_opt;
   dec.reset();
@@ -62,7 +60,7 @@ DecoratorRecorder dec;
 
 FrontendContext::FrontendContext() {
   root_node = std::make_unique<Block>();
-  current_builder = std::make_unique<IRBuilder>(root_node.get());
+  current_builder = std::make_unique<ASTBuilder>(root_node.get());
 }
 
 FrontendForStmt::FrontendForStmt(const Expr &loop_var,
@@ -71,16 +69,16 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
     : begin(begin), end(end) {
   vectorize = dec.vectorize;
   bit_vectorize = dec.bit_vectorize;
-  parallelize = dec.parallelize;
+  num_cpu_threads = dec.num_cpu_threads;
   strictly_serialized = dec.strictly_serialized;
   block_dim = dec.block_dim;
   auto cfg = get_current_program().config;
   if (cfg.arch == Arch::cuda) {
     vectorize = 1;
-    parallelize = 1;
+    num_cpu_threads = 1;
   } else {
-    if (parallelize == 0)
-      parallelize = std::thread::hardware_concurrency();
+    if (num_cpu_threads == 0)
+      num_cpu_threads = std::thread::hardware_concurrency();
   }
   mem_access_opt = dec.mem_access_opt;
   dec.reset();
@@ -364,5 +362,43 @@ void ExternalTensorShapeAlongAxisExpression::flatten(FlattenContext *ctx) {
   ctx->push_back<ExternalTensorShapeAlongAxisStmt>(axis, temp->arg_id);
   stmt = ctx->back_stmt();
 }
+
+Block *ASTBuilder::current_block() {
+  if (stack.empty())
+    return nullptr;
+  else
+    return stack.back();
+}
+
+Stmt *ASTBuilder::get_last_stmt() {
+  TI_ASSERT(!stack.empty());
+  return stack.back()->back();
+}
+
+void ASTBuilder::insert(std::unique_ptr<Stmt> &&stmt, int location) {
+  TI_ASSERT(!stack.empty());
+  stack.back()->insert(std::move(stmt), location);
+}
+
+void ASTBuilder::stop_gradient(SNode *snode) {
+  TI_ASSERT(!stack.empty());
+  stack.back()->stop_gradients.push_back(snode);
+}
+
+std::unique_ptr<ASTBuilder::ScopeGuard> ASTBuilder::create_scope(
+    std::unique_ptr<Block> &list) {
+  TI_ASSERT(list == nullptr);
+  list = std::make_unique<Block>();
+  if (!stack.empty()) {
+    list->parent_stmt = get_last_stmt();
+  }
+  return std::make_unique<ScopeGuard>(this, list.get());
+}
+
+ASTBuilder &current_ast_builder() {
+  return context->builder();
+}
+
+std::unique_ptr<FrontendContext> context;
 
 TLANG_NAMESPACE_END

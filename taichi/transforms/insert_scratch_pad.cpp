@@ -4,6 +4,7 @@
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/visitors.h"
 #include "taichi/ir/scratch_pad.h"
+#include "taichi/system/profiler.h"
 
 TLANG_NAMESPACE_BEGIN
 

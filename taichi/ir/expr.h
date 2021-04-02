@@ -1,5 +1,6 @@
 #pragma once
-#include "taichi/lang_util.h"
+
+#include "taichi/ir/type_utils.h"
 
 TLANG_NAMESPACE_BEGIN
 

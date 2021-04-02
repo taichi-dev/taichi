@@ -2,6 +2,7 @@
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
+#include "taichi/program/compile_config.h"
 
 TLANG_NAMESPACE_BEGIN
 

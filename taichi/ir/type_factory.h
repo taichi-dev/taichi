@@ -1,6 +1,6 @@
 #pragma once
 
-#include "taichi/lang_util.h"
+#include "taichi/ir/type.h"
 
 #include <mutex>
 
@@ -67,5 +67,7 @@ class TypeFactory {
 
   std::mutex mut_;
 };
+
+DataType promoted_type(DataType a, DataType b);
 
 TLANG_NAMESPACE_END

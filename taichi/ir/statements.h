@@ -2,10 +2,15 @@
 
 #include "taichi/ir/ir.h"
 #include "taichi/ir/offloaded_task_type.h"
-#include "taichi/ir/scratch_pad.h"
+#include "taichi/ir/stmt_op_types.h"
+#include "taichi/program/arch.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
+/**
+ * Allocate a local variable with initial value 0.
+ */
 class AllocaStmt : public Stmt {
  public:
   AllocaStmt(DataType type) {
@@ -30,7 +35,9 @@ class AllocaStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
-// updates mask, break if no active
+/**
+ * Updates mask, break if all bits of the mask are 0.
+ */
 class WhileControlStmt : public Stmt {
  public:
   Stmt *mask;
@@ -43,6 +50,9 @@ class WhileControlStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE;
 };
 
+/**
+ * Jump to the next loop iteration, i.e., `continue` in C++.
+ */
 class ContinueStmt : public Stmt {
  public:
   // This is the loop on which this continue stmt has effects. It can be either
@@ -541,7 +551,7 @@ class RangeForStmt : public Stmt {
   bool reversed;
   int vectorize;
   int bit_vectorize;
-  int parallelize;
+  int num_cpu_threads;
   int block_dim;
   bool strictly_serialized;
 
@@ -550,7 +560,7 @@ class RangeForStmt : public Stmt {
                std::unique_ptr<Block> &&body,
                int vectorize,
                int bit_vectorize,
-               int parallelize,
+               int num_cpu_threads,
                int block_dim,
                bool strictly_serialized);
 
@@ -569,7 +579,7 @@ class RangeForStmt : public Stmt {
                      reversed,
                      vectorize,
                      bit_vectorize,
-                     parallelize,
+                     num_cpu_threads,
                      block_dim,
                      strictly_serialized);
   TI_DEFINE_ACCEPT
@@ -585,7 +595,7 @@ class StructForStmt : public Stmt {
   std::vector<int> index_offsets;
   int vectorize;
   int bit_vectorize;
-  int parallelize;
+  int num_cpu_threads;
   int block_dim;
   MemoryAccessOptions mem_access_opt;
 
@@ -593,7 +603,7 @@ class StructForStmt : public Stmt {
                 std::unique_ptr<Block> &&body,
                 int vectorize,
                 int bit_vectorize,
-                int parallelize,
+                int num_cpu_threads,
                 int block_dim);
 
   bool is_container_statement() const override {
@@ -606,7 +616,7 @@ class StructForStmt : public Stmt {
                      index_offsets,
                      vectorize,
                      bit_vectorize,
-                     parallelize,
+                     num_cpu_threads,
                      block_dim,
                      mem_access_opt);
   TI_DEFINE_ACCEPT
@@ -830,17 +840,19 @@ class OffloadedStmt : public Stmt {
   using TaskType = OffloadedTaskType;
 
   TaskType task_type;
-  SNode *snode;
-  std::size_t begin_offset;
-  std::size_t end_offset;
-  bool const_begin, const_end;
-  int32 begin_value, end_value;
-  int step;
+  Arch device;
+  SNode *snode{nullptr};
+  std::size_t begin_offset{0};
+  std::size_t end_offset{0};
+  bool const_begin{false};
+  bool const_end{false};
+  int32 begin_value{0};
+  int32 end_value{0};
+  int step{0};
   int grid_dim{1};
   int block_dim{1};
-  bool reversed;
-  int num_cpu_threads;
-  Arch device;
+  bool reversed{false};
+  int num_cpu_threads{1};
 
   std::vector<int> index_offsets;
 
@@ -853,9 +865,7 @@ class OffloadedStmt : public Stmt {
   std::size_t bls_size{0};
   MemoryAccessOptions mem_access_opt;
 
-  OffloadedStmt(TaskType task_type);
-
-  OffloadedStmt(TaskType task_type, SNode *snode);
+  OffloadedStmt(TaskType task_type, Arch arch);
 
   std::string task_name() const;
 
@@ -873,8 +883,9 @@ class OffloadedStmt : public Stmt {
 
   void all_blocks_accept(IRVisitor *visitor);
 
-  TI_STMT_DEF_FIELDS(ret_type,
+  TI_STMT_DEF_FIELDS(ret_type /*inherited from Stmt*/,
                      task_type,
+                     device,
                      snode,
                      begin_offset,
                      end_offset,
@@ -887,7 +898,6 @@ class OffloadedStmt : public Stmt {
                      block_dim,
                      reversed,
                      num_cpu_threads,
-                     device,
                      index_offsets,
                      mem_access_opt);
   TI_DEFINE_ACCEPT
@@ -1202,4 +1212,5 @@ class BitStructStoreStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE;
 };
 
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

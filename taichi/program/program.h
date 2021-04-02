@@ -17,6 +17,8 @@
 #include "taichi/backends/cc/cc_program.h"
 #include "taichi/program/kernel.h"
 #include "taichi/program/kernel_profiler.h"
+#include "taichi/program/snode_expr_utils.h"
+#include "taichi/program/snode_rw_accessors_bank.h"
 #include "taichi/program/context.h"
 #include "taichi/runtime/runtime.h"
 #include "taichi/backends/metal/struct_metal.h"
@@ -275,13 +277,25 @@ class Program {
 
   ~Program();
 
+  inline SNodeGlobalVarExprMap *get_snode_to_glb_var_exprs() {
+    return &snode_to_glb_var_exprs_;
+  }
+
+  inline SNodeRwAccessorsBank &get_snode_rw_accessors_bank() {
+    return snode_rw_accessors_bank_;
+  }
+
  private:
+  void materialize_snode_expr_attributes();
   // Metal related data structures
   std::optional<metal::CompiledStructs> metal_compiled_structs_;
   std::unique_ptr<metal::KernelManager> metal_kernel_mgr_;
   // OpenGL related data structures
   std::optional<opengl::StructCompiledResult> opengl_struct_compiled_;
   std::unique_ptr<opengl::GLSLLauncher> opengl_kernel_launcher_;
+  // SNode information that requires using Program.
+  SNodeGlobalVarExprMap snode_to_glb_var_exprs_;
+  SNodeRwAccessorsBank snode_rw_accessors_bank_;
 
  public:
 #ifdef TI_WITH_CC

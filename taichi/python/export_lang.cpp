@@ -3,6 +3,8 @@
 #include <optional>
 #include <string>
 
+#include "llvm/Config/llvm-config.h"
+
 #include "pybind11/functional.h"
 #include "pybind11/pybind11.h"
 
@@ -11,6 +13,8 @@
 #include "taichi/ir/statements.h"
 #include "taichi/program/extension.h"
 #include "taichi/program/async_engine.h"
+#include "taichi/program/snode_expr_utils.h"
+#include "taichi/program/snode_rw_accessors_bank.h"
 #include "taichi/common/interface.h"
 #include "taichi/python/export.h"
 #include "taichi/gui/gui.h"
@@ -36,9 +40,6 @@ void async_print_sfg();
 std::string async_dump_dot(std::optional<std::string> rankdir,
                            int embed_states_threshold);
 
-std::string compiled_lib_dir;
-std::string runtime_tmp_dir;
-
 Expr expr_index(const Expr &expr, const Expr &index) {
   return expr[index];
 }
@@ -51,11 +52,15 @@ void expr_assign(const Expr &lhs_, const Expr &rhs, std::string tb) {
   current_ast_builder().insert(std::move(stmt));
 }
 
-std::vector<std::unique_ptr<IRBuilder::ScopeGuard>> scope_stack;
+std::vector<std::unique_ptr<ASTBuilder::ScopeGuard>> scope_stack;
 
 void compile_runtimes();
 std::string libdevice_path();
 std::string get_runtime_dir();
+
+SNodeRwAccessorsBank::Accessors get_snode_rw_accessors(SNode *snode) {
+  return get_current_program().get_snode_rw_accessors_bank().get(snode);
+}
 
 TLANG_NAMESPACE_END
 
@@ -90,8 +95,9 @@ void export_lang(py::module &m) {
       .def(py::self == py::self)
       .def("__hash__", &DataType::hash)
       .def("to_string", &DataType::to_string)
-      .def("get_ptr", [](DataType *dtype) -> Type * { return *dtype; },
-           py::return_value_policy::reference)
+      .def(
+          "get_ptr", [](DataType *dtype) -> Type * { return *dtype; },
+          py::return_value_policy::reference)
       .def(py::pickle(
           [](const DataType &dt) {
             // Note: this only works for primitive types, which is fine for now.
@@ -189,9 +195,10 @@ void export_lang(py::module &m) {
   m.def("reset_default_compile_config",
         [&]() { default_compile_config = CompileConfig(); });
 
-  m.def("default_compile_config",
-        [&]() -> CompileConfig & { return default_compile_config; },
-        py::return_value_policy::reference);
+  m.def(
+      "default_compile_config",
+      [&]() -> CompileConfig & { return default_compile_config; },
+      py::return_value_policy::reference);
 
   py::class_<Program>(m, "Program")
       .def(py::init<>())
@@ -208,11 +215,12 @@ void export_lang(py::module &m) {
            })
       .def("print_memory_profiler_info", &Program::print_memory_profiler_info)
       .def("finalize", &Program::finalize)
-      .def("get_root",
-           [&](Program *program) -> SNode * {
-             return program->snode_root.get();
-           },
-           py::return_value_policy::reference)
+      .def(
+          "get_root",
+          [&](Program *program) -> SNode * {
+            return program->snode_root.get();
+          },
+          py::return_value_policy::reference)
       .def("get_total_compilation_time", &Program::get_total_compilation_time)
       .def("print_snode_tree", &Program::print_snode_tree)
       .def("get_snode_num_dynamically_allocated",
@@ -227,9 +235,10 @@ void export_lang(py::module &m) {
   m.def("get_current_program", get_current_program,
         py::return_value_policy::reference);
 
-  m.def("current_compile_config",
-        [&]() -> CompileConfig & { return get_current_program().config; },
-        py::return_value_policy::reference);
+  m.def(
+      "current_compile_config",
+      [&]() -> CompileConfig & { return get_current_program().config; },
+      py::return_value_policy::reference);
 
   py::class_<Index>(m, "Index").def(py::init<int>());
   py::class_<SNode>(m, "SNode")
@@ -257,24 +266,50 @@ void export_lang(py::module &m) {
       .def("bit_struct", &SNode::bit_struct, py::return_value_policy::reference)
       .def("bit_array", &SNode::bit_array, py::return_value_policy::reference)
       .def("place",
-           (void (SNode::*)(Expr &, const std::vector<int> &))(&SNode::place),
-           py::return_value_policy::reference)
+           [](SNode *snode, Expr &expr, const std::vector<int> &offset) {
+             place_child(&expr, offset, snode,
+                         get_current_program().get_snode_to_glb_var_exprs());
+           })
       .def("data_type", [](SNode *snode) { return snode->dt; })
       .def("get_num_ch",
            [](SNode *snode) -> int { return (int)snode->ch.size(); })
-      .def("get_ch",
-           [](SNode *snode, int i) -> SNode * { return snode->ch[i].get(); },
-           py::return_value_policy::reference)
-      .def("lazy_grad", &SNode::lazy_grad)
-      .def("read_int", &SNode::read_int)
-      .def("read_uint", &SNode::read_uint)
-      .def("read_float", &SNode::read_float)
+      .def(
+          "get_ch",
+          [](SNode *snode, int i) -> SNode * { return snode->ch[i].get(); },
+          py::return_value_policy::reference)
+      .def("lazy_grad",
+           [](SNode *snode) {
+             make_lazy_grad(snode,
+                            get_current_program().get_snode_to_glb_var_exprs());
+           })
+      .def("read_int",
+           [](SNode *snode, const std::vector<int> &I) -> int64 {
+             return get_snode_rw_accessors(snode).read_int(I);
+           })
+      .def("read_uint",
+           [](SNode *snode, const std::vector<int> &I) -> uint64 {
+             return get_snode_rw_accessors(snode).read_uint(I);
+           })
+      .def("read_float",
+           [](SNode *snode, const std::vector<int> &I) -> float64 {
+             return get_snode_rw_accessors(snode).read_float(I);
+           })
       .def("has_grad", &SNode::has_grad)
       .def("is_primal", &SNode::is_primal)
       .def("is_place", &SNode::is_place)
-      .def("get_expr", &SNode::get_expr, py::return_value_policy::reference)
-      .def("write_int", &SNode::write_int)
-      .def("write_float", &SNode::write_float)
+      .def("get_expr",
+           [](SNode *snode) {
+             return Expr(
+                 get_current_program().get_snode_to_glb_var_exprs()->at(snode));
+           })
+      .def("write_int",
+           [](SNode *snode, const std::vector<int> &I, int64 val) {
+             get_snode_rw_accessors(snode).write_int(I, val);
+           })
+      .def("write_float",
+           [](SNode *snode, const std::vector<int> &I, float64 val) {
+             get_snode_rw_accessors(snode).write_float(I, val);
+           })
       .def("get_shape_along_axis", &SNode::shape_along_axis)
       .def("get_physical_index_position",
            [](SNode *snode) {
@@ -320,7 +355,17 @@ void export_lang(py::module &m) {
       .def("set_grad", &Expr::set_grad)
       .def("set_attribute", &Expr::set_attribute)
       .def("get_attribute", &Expr::get_attribute)
-      .def("get_raw_address", [](Expr *expr) { return (uint64)expr; });
+      .def("get_raw_address", [](Expr *expr) { return (uint64)expr; })
+      .def("get_underlying_ptr_address", [](Expr *e) {
+        // The reason that there are both get_raw_address() and
+        // get_underlying_ptr_address() is that Expr itself is mostly wrapper
+        // around its underlying |expr| (of type Expression). Expr |e| can be
+        // temporary, while the underlying |expr| is mostly persistant.
+        //
+        // Same get_raw_address() implies that get_underlying_ptr_address() are
+        // also the same. The reverse is not true.
+        return (uint64)e->expr.get();
+      });
 
   py::class_<ExprGroup>(m, "ExprGroup")
       .def(py::init<>())
@@ -330,13 +375,14 @@ void export_lang(py::module &m) {
 
   py::class_<Stmt>(m, "Stmt");
   py::class_<Program::KernelProxy>(m, "KernelProxy")
-      .def("define",
-           [](Program::KernelProxy *ker,
-              const std::function<void()> &func) -> Kernel & {
-             py::gil_scoped_release release;
-             return ker->def(func);
-           },
-           py::return_value_policy::reference);
+      .def(
+          "define",
+          [](Program::KernelProxy *ker,
+             const std::function<void()> &func) -> Kernel & {
+            py::gil_scoped_release release;
+            return ker->def(func);
+          },
+          py::return_value_policy::reference);
 
   m.def("insert_deactivate", [](SNode *snode, const ExprGroup &indices) {
     return Deactivate(snode, indices);
@@ -687,7 +733,7 @@ void export_lang(py::module &m) {
   m.def("get_version_major", get_version_major);
   m.def("get_version_minor", get_version_minor);
   m.def("get_version_patch", get_version_patch);
-  m.def("get_llvm_version_string", get_llvm_version_string);
+  m.def("get_llvm_version_string", [] { return LLVM_VERSION_STRING; });
   m.def("test_printf", [] { printf("test_printf\n"); });
   m.def("test_logging", [] { TI_INFO("test_logging"); });
   m.def("trigger_crash", [] { *(int *)(1) = 0; });

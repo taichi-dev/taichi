@@ -33,17 +33,17 @@ class Offloader {
     auto root_block = dynamic_cast<Block *>(root);
     auto root_statements = std::move(root_block->statements);
     root_block->statements.clear();
-
+    const auto arch = root->get_config().arch;
     auto pending_serial_statements =
-        Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::serial);
+        Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::serial, arch);
     pending_serial_statements->grid_dim = 1;
     pending_serial_statements->block_dim = 1;
 
     auto assemble_serial_statements = [&]() {
       if (!pending_serial_statements->body->statements.empty()) {
         root_block->insert(std::move(pending_serial_statements));
-        pending_serial_statements =
-            Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::serial);
+        pending_serial_statements = Stmt::make_typed<OffloadedStmt>(
+            OffloadedStmt::TaskType::serial, arch);
         pending_serial_statements->grid_dim = 1;
         pending_serial_statements->block_dim = 1;
       }
@@ -54,8 +54,8 @@ class Offloader {
       // Note that stmt->parent is root_block, which doesn't contain stmt now.
       if (auto s = stmt->cast<RangeForStmt>(); s && !s->strictly_serialized) {
         assemble_serial_statements();
-        auto offloaded =
-            Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::range_for);
+        auto offloaded = Stmt::make_typed<OffloadedStmt>(
+            OffloadedStmt::TaskType::range_for, arch);
         // offloaded->body is an empty block now.
         offloaded->grid_dim =
             root->get_kernel()->program.config.saturating_grid_dim;
@@ -79,7 +79,7 @@ class Offloader {
               std::make_pair(offloaded.get(), s->end));
         }
         offloaded->num_cpu_threads =
-            std::min(s->parallelize,
+            std::min(s->num_cpu_threads,
                      root->get_kernel()->program.config.cpu_max_num_threads);
         replace_all_usages_with(s, s, offloaded.get());
         for (int j = 0; j < (int)s->body->statements.size(); j++) {
@@ -118,6 +118,7 @@ class Offloader {
     // task, so we don't need to generate clear/listgen tasks.
     const bool demotable =
         (leaf->is_path_all_dense && program->config.demote_dense_struct_fors);
+    const auto arch = program->config.arch;
     if (!demotable) {
       for (int i = 1; i < path.size(); i++) {
         auto snode_child = path[i];
@@ -126,8 +127,8 @@ class Offloader {
             i == path.size() - 1) {
           continue;
         }
-        auto offloaded_clear_list =
-            Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::serial);
+        auto offloaded_clear_list = Stmt::make_typed<OffloadedStmt>(
+            OffloadedStmt::TaskType::serial, arch);
         offloaded_clear_list->body->insert(
             Stmt::make<ClearListStmt>(snode_child));
         offloaded_clear_list->grid_dim = 1;
@@ -136,8 +137,8 @@ class Offloader {
         // is nothing special about this task, which could otherwise cause
         // problems when fused with other serial tasks.
         root_block->insert(std::move(offloaded_clear_list));
-        auto offloaded_listgen =
-            Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::listgen);
+        auto offloaded_listgen = Stmt::make_typed<OffloadedStmt>(
+            OffloadedStmt::TaskType::listgen, arch);
         offloaded_listgen->snode = snode_child;
         offloaded_listgen->grid_dim = program->config.saturating_grid_dim;
         offloaded_listgen->block_dim =
@@ -148,8 +149,8 @@ class Offloader {
       }
     }
 
-    auto offloaded_struct_for =
-        Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::struct_for);
+    auto offloaded_struct_for = Stmt::make_typed<OffloadedStmt>(
+        OffloadedStmt::TaskType::struct_for, arch);
 
     offloaded_struct_for->index_offsets = for_stmt->index_offsets;
 
@@ -180,8 +181,8 @@ class Offloader {
     }
 
     offloaded_struct_for->snode = for_stmt->snode;
-    offloaded_struct_for->num_cpu_threads =
-        std::min(for_stmt->parallelize, program->config.cpu_max_num_threads);
+    offloaded_struct_for->num_cpu_threads = std::min(
+        for_stmt->num_cpu_threads, program->config.cpu_max_num_threads);
     offloaded_struct_for->mem_access_opt = mem_access_opt;
 
     root_block->insert(std::move(offloaded_struct_for));
@@ -587,8 +588,10 @@ void insert_gc(IRNode *root) {
     auto snodes = gc_statements[i].second;
     for (auto *snode : snodes) {
       if (is_gc_able(snode->type)) {
-        b->insert(Stmt::make<OffloadedStmt>(OffloadedStmt::TaskType::gc, snode),
-                  i + 1);
+        auto gc_task = Stmt::make_typed<OffloadedStmt>(
+            OffloadedStmt::TaskType::gc, get_current_program().config.arch);
+        gc_task->snode = snode;
+        b->insert(std::move(gc_task), i + 1);
       }
     }
   }

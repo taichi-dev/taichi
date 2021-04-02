@@ -2,13 +2,13 @@
 # The Taichi Programming Language
 #*********************************************************************
 
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.12)
 
 project(taichi)
 
 SET(TI_VERSION_MAJOR 0)
 SET(TI_VERSION_MINOR 7)
-SET(TI_VERSION_PATCH 12)
+SET(TI_VERSION_PATCH 15)
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -52,6 +52,13 @@ include(cmake/PythonNumpyPybind11.cmake)
 include(cmake/TaichiCXXFlags.cmake)
 include(cmake/TaichiCore.cmake)
 include(cmake/TaichiMain.cmake)
+
+option(TI_BUILD_TESTS "Build the CPP tests" OFF)
+
+if (TI_BUILD_TESTS)
+  add_subdirectory(external/googletest EXCLUDE_FROM_ALL)
+  include(cmake/TaichiTests.cmake)
+endif()
 
 message("C++ Flags: ${CMAKE_CXX_FLAGS}")
 message("Build type: ${CMAKE_BUILD_TYPE}")

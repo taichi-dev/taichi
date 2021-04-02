@@ -2,17 +2,12 @@
 
 #include <atomic>
 
-#include "taichi/lang_util.h"
-#include "taichi/util/bit.h"
-#include "taichi/llvm/llvm_fwd.h"
-#include "taichi/ir/expr.h"
 #include "taichi/inc/constants.h"
+#include "taichi/ir/expr.h"
+#include "taichi/ir/snode_types.h"
+#include "taichi/ir/type.h"
 
 TLANG_NAMESPACE_BEGIN
-
-class Expr;
-class Kernel;
-class Stmt;
 
 struct IndexExtractor {
   int start;
@@ -56,6 +51,18 @@ class Index {
 // Structural nodes
 class SNode {
  public:
+  // This class decouples SNode from the frontend expression.
+  class GradInfoProvider {
+   public:
+    virtual ~GradInfoProvider() = default;
+    virtual bool is_primal() const = 0;
+    virtual SNode *grad_snode() const = 0;
+
+    template <typename T>
+    T *cast() {
+      return static_cast<T *>(this);
+    }
+  };
   std::vector<std::unique_ptr<SNode>> ch;
 
   IndexExtractor extractors[taichi_max_num_indices];
@@ -84,11 +91,9 @@ class SNode {
   TypedConstant ambient_val;
   // Note: parent will not be set until structural nodes are compiled!
   SNode *parent{};
-  Kernel *reader_kernel{};
-  Kernel *writer_kernel{};
-  Expr expr;
-  SNode *exp_snode{};  // for CustomFloatType with exponent bits
-  int bit_offset{0};   // for children of bit_struct only
+  std::unique_ptr<GradInfoProvider> grad_info{nullptr};
+  SNode *exp_snode{nullptr};  // for CustomFloatType with exponent bits
+  int bit_offset{0};          // for children of bit_struct only
   bool placing_shared_exp{false};
   SNode *currently_placing_exp_snode{nullptr};
   Type *currently_placing_exp_snode_dtype{nullptr};
@@ -194,23 +199,12 @@ class SNode {
 
   void set_index_offsets(std::vector<int> index_offsets);
 
-  void place(Expr &expr, const std::vector<int> &offset);
-
   SNode &dynamic(const Index &expr, int n, int chunk_size);
 
   SNode &morton(bool val = true) {
     _morton = val;
     return *this;
   }
-
-  // for float and double
-  void write_float(const std::vector<int> &I, float64);
-  float64 read_float(const std::vector<int> &I);
-
-  // for int32 and int64
-  void write_int(const std::vector<int> &I, int64);
-  int64 read_int(const std::vector<int> &I);
-  uint64 read_uint(const std::vector<int> &I);
 
   int child_id(SNode *c) {
     for (int i = 0; i < (int)ch.size(); i++) {
@@ -232,17 +226,11 @@ class SNode {
 
   bool need_activation() const;
 
-  void lazy_grad();
-
   bool is_primal() const;
 
   bool is_place() const;
 
   bool is_scalar() const;
-
-  const Expr &get_expr() const {
-    return expr;
-  }
 
   bool has_grad() const;
 

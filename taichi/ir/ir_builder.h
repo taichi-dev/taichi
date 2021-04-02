@@ -59,6 +59,41 @@ class IRBuilder {
     }
   }
 
+  // RAII handles insertion points automatically.
+  class LoopGuard {
+   private:
+    IRBuilder &builder_;
+    Stmt *loop_;
+
+   public:
+    template <typename XxxStmt>
+    explicit LoopGuard(IRBuilder &builder, XxxStmt *loop)
+        : builder_(builder), loop_(loop) {
+      builder_.set_insertion_point_to_loop_begin(loop);
+    }
+    ~LoopGuard() {
+      builder_.set_insertion_point_to_after(loop_);
+    }
+  };
+  class IfGuard {
+   private:
+    IRBuilder &builder_;
+    IfStmt *if_stmt_;
+
+   public:
+    explicit IfGuard(IRBuilder &builder, IfStmt *if_stmt, bool true_branch)
+        : builder_(builder), if_stmt_(if_stmt) {
+      if (true_branch) {
+        builder_.set_insertion_point_to_true_branch(if_stmt_);
+      } else {
+        builder_.set_insertion_point_to_false_branch(if_stmt_);
+      }
+    }
+    ~IfGuard() {
+      builder_.set_insertion_point_to_after(if_stmt_);
+    }
+  };
+
   // Control flows.
   RangeForStmt *create_range_for(Stmt *begin,
                                  Stmt *end,

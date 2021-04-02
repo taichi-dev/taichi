@@ -44,9 +44,11 @@ TEST(IRBuilder, RangeFor) {
   auto *zero = builder.get_int32(0);
   auto *ten = builder.get_int32(10);
   auto *loop = builder.create_range_for(zero, ten);
-  builder.set_insertion_point_to_loop_begin(loop);
-  auto *index = builder.get_loop_index(loop, 0);
-  builder.set_insertion_point_to_after(loop);
+  Stmt *index;
+  {
+    IRBuilder::LoopGuard(builder, loop);
+    index = builder.get_loop_index(loop, 0);
+  }
   auto *ret = builder.create_return(zero);
   EXPECT_EQ(zero->parent->size(), 4);
   ASSERT_TRUE(loop->is<RangeForStmt>());

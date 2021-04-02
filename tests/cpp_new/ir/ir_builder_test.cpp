@@ -46,7 +46,7 @@ TEST(IRBuilder, RangeFor) {
   auto *loop = builder.create_range_for(zero, ten);
   Stmt *index;
   {
-    IRBuilder::LoopGuard _(builder, loop);
+    auto _ = builder.get_loop_guard(loop);
     index = builder.get_loop_index(loop, 0);
   }
   [[maybe_unused]] auto *ret = builder.create_return(zero);

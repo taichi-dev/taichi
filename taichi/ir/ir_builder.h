@@ -33,7 +33,7 @@ class IRBuilder {
   // Insert to a specific insertion point.
   template <typename XStmt>
   static XStmt *insert(std::unique_ptr<XStmt> &&stmt,
-                         InsertPoint *insert_point) {
+                       InsertPoint *insert_point) {
     return insert_point->block
         ->insert(std::move(stmt), insert_point->position++)
         ->template as<XStmt>();

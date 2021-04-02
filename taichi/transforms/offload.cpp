@@ -181,8 +181,8 @@ class Offloader {
     }
 
     offloaded_struct_for->snode = for_stmt->snode;
-    offloaded_struct_for->num_cpu_threads =
-        std::min(for_stmt->num_cpu_threads, program->config.cpu_max_num_threads);
+    offloaded_struct_for->num_cpu_threads = std::min(
+        for_stmt->num_cpu_threads, program->config.cpu_max_num_threads);
     offloaded_struct_for->mem_access_opt = mem_access_opt;
 
     root_block->insert(std::move(offloaded_struct_for));

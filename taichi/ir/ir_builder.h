@@ -67,10 +67,10 @@ class IRBuilder {
     int location_;
 
    public:
-    template <typename XxxStmt>
-    explicit LoopGuard(IRBuilder &builder, XxxStmt *loop)
+    template <typename XStmt>
+    explicit LoopGuard(IRBuilder &builder, XStmt *loop)
         : builder_(builder), loop_(loop) {
-      location_ = loop->parent->size() - 1;
+      location_ = (int)loop->parent->size() - 1;
       builder_.set_insertion_point_to_loop_begin(loop);
     }
     ~LoopGuard();

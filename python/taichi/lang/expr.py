@@ -50,8 +50,7 @@ class Expr(TaichiOperations):
         if not isinstance(key, (tuple, list)):
             key = (key, )
         assert len(key) == len(self.shape)
-        key = key + ((0, ) *
-                     (_ti_core.get_max_num_indices() - len(key)))
+        key = key + ((0, ) * (_ti_core.get_max_num_indices() - len(key)))
         self.setter(value, *key)
 
     @python_scope
@@ -62,8 +61,7 @@ class Expr(TaichiOperations):
             key = ()
         if not isinstance(key, (tuple, list)):
             key = (key, )
-        key = key + ((0, ) *
-                     (_ti_core.get_max_num_indices() - len(key)))
+        key = key + ((0, ) * (_ti_core.get_max_num_indices() - len(key)))
         return self.getter(*key)
 
     def loop_range(self):

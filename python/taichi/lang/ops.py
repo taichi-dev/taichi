@@ -308,7 +308,8 @@ def pow(a, b):
 
 @binary
 def floordiv(a, b):
-    return _binary_operation(_ti_core.expr_floordiv, _bt_ops_mod.floordiv, a, b)
+    return _binary_operation(_ti_core.expr_floordiv, _bt_ops_mod.floordiv, a,
+                             b)
 
 
 @binary
@@ -358,8 +359,8 @@ def cmp_lt(a, b):
 
 @binary
 def cmp_le(a, b):
-    return _binary_operation(_ti_core.expr_cmp_le, lambda a, b: -int(a <= b), a,
-                             b)
+    return _binary_operation(_ti_core.expr_cmp_le, lambda a, b: -int(a <= b),
+                             a, b)
 
 
 @binary
@@ -370,20 +371,20 @@ def cmp_gt(a, b):
 
 @binary
 def cmp_ge(a, b):
-    return _binary_operation(_ti_core.expr_cmp_ge, lambda a, b: -int(a >= b), a,
-                             b)
+    return _binary_operation(_ti_core.expr_cmp_ge, lambda a, b: -int(a >= b),
+                             a, b)
 
 
 @binary
 def cmp_eq(a, b):
-    return _binary_operation(_ti_core.expr_cmp_eq, lambda a, b: -int(a == b), a,
-                             b)
+    return _binary_operation(_ti_core.expr_cmp_eq, lambda a, b: -int(a == b),
+                             a, b)
 
 
 @binary
 def cmp_ne(a, b):
-    return _binary_operation(_ti_core.expr_cmp_ne, lambda a, b: -int(a != b), a,
-                             b)
+    return _binary_operation(_ti_core.expr_cmp_ne, lambda a, b: -int(a != b),
+                             a, b)
 
 
 @binary
@@ -514,25 +515,25 @@ def ti_all(a):
 def append(l, indices, val):
     a = impl.expr_init(
         _ti_core.insert_append(l.snode.ptr, make_expr_group(indices),
-                              Expr(val).ptr))
+                               Expr(val).ptr))
     return a
 
 
 def external_func_call(func, args=[], outputs=[]):
     func_addr = ctypes.cast(func, ctypes.c_void_p).value
     _ti_core.insert_external_func_call(func_addr, '', make_expr_group(args),
-                                      make_expr_group(outputs))
+                                       make_expr_group(outputs))
 
 
 def asm(source, inputs=[], outputs=[]):
 
     _ti_core.insert_external_func_call(0, source, make_expr_group(inputs),
-                                      make_expr_group(outputs))
+                                       make_expr_group(outputs))
 
 
 def is_active(l, indices):
-    return Expr(_ti_core.insert_is_active(l.snode.ptr,
-                                         make_expr_group(indices)))
+    return Expr(
+        _ti_core.insert_is_active(l.snode.ptr, make_expr_group(indices)))
 
 
 def activate(l, indices):

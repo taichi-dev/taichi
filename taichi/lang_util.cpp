@@ -13,6 +13,8 @@ TI_NAMESPACE_BEGIN
 namespace lang {
 
 CompileConfig default_compile_config;
+std::string compiled_lib_dir;
+std::string runtime_tmp_dir;
 
 real get_cpu_frequency() {
   static real cpu_frequency = 0;

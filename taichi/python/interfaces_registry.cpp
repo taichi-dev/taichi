@@ -8,7 +8,7 @@
 namespace taichi {
 
 #define TI_INTERFACE_DEF_WITH_PYBIND11(class_name, base_alias)                \
-  TI_INTERFACE_DEF(class_name, base_alias)                                    \
+                                                                              \
   class InterfaceInjector_##class_name {                                      \
    public:                                                                    \
     InterfaceInjector_##class_name(const std::string &name) {                 \

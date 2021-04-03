@@ -1,13 +1,18 @@
-from .expr import *
-from .util import *
-from .impl import expr_init
-from .exception import TaichiSyntaxError
-from .util import taichi_lang_core as ti_core
-import operator as ops
-import numbers
+import builtins
+import ctypes
 import functools
 import math
+import operator as _bt_ops_mod  # bt for builtin
+import traceback
 
+from taichi.lang import impl
+from taichi.lang.exception import TaichiSyntaxError
+from taichi.lang.expr import Expr, make_expr_group
+from taichi.lang.util import (cook_dtype, is_taichi_class, taichi_lang_core,
+                              taichi_scope)
+
+# TODO(#2223): Please stop abusing so many ti_cores
+ti_core = taichi_lang_core
 unary_ops = []
 
 
@@ -32,8 +37,6 @@ def wrap_if_not_expr(a):
 
 
 def unary(foo):
-    import taichi as ti
-
     @functools.wraps(foo)
     def imp_foo(x):
         _taichi_skip_traceback = 2
@@ -42,12 +45,11 @@ def unary(foo):
     @functools.wraps(foo)
     def wrapped(a):
         _taichi_skip_traceback = 1
-        if ti.is_taichi_class(a):
+        if is_taichi_class(a):
             return a.element_wise_unary(imp_foo)
         else:
             return imp_foo(a)
 
-    unary_ops.append(wrapped)
     return wrapped
 
 
@@ -55,8 +57,6 @@ binary_ops = []
 
 
 def binary(foo):
-    import taichi as ti
-
     @functools.wraps(foo)
     def imp_foo(x, y):
         _taichi_skip_traceback = 2
@@ -70,9 +70,9 @@ def binary(foo):
     @functools.wraps(foo)
     def wrapped(a, b):
         _taichi_skip_traceback = 1
-        if ti.is_taichi_class(a):
+        if is_taichi_class(a):
             return a.element_wise_binary(imp_foo, b)
-        elif ti.is_taichi_class(b):
+        elif is_taichi_class(b):
             return b.element_wise_binary(rev_foo, a)
         else:
             return imp_foo(a, b)
@@ -85,8 +85,6 @@ ternary_ops = []
 
 
 def ternary(foo):
-    import taichi as ti
-
     @functools.wraps(foo)
     def abc_foo(a, b, c):
         _taichi_skip_traceback = 2
@@ -105,11 +103,11 @@ def ternary(foo):
     @functools.wraps(foo)
     def wrapped(a, b, c):
         _taichi_skip_traceback = 1
-        if ti.is_taichi_class(a):
+        if is_taichi_class(a):
             return a.element_wise_ternary(abc_foo, b, c)
-        elif ti.is_taichi_class(b):
+        elif is_taichi_class(b):
             return b.element_wise_ternary(bac_foo, a, c)
-        elif ti.is_taichi_class(c):
+        elif is_taichi_class(c):
             return c.element_wise_ternary(cab_foo, a, b)
         else:
             return abc_foo(a, b, c)
@@ -122,8 +120,6 @@ writeback_binary_ops = []
 
 
 def writeback_binary(foo):
-    import taichi as ti
-
     @functools.wraps(foo)
     def imp_foo(x, y):
         _taichi_skip_traceback = 2
@@ -132,9 +128,9 @@ def writeback_binary(foo):
     @functools.wraps(foo)
     def wrapped(a, b):
         _taichi_skip_traceback = 1
-        if ti.is_taichi_class(a):
+        if is_taichi_class(a):
             return a.element_wise_writeback_binary(imp_foo, b)
-        elif ti.is_taichi_class(b):
+        elif is_taichi_class(b):
             raise TaichiSyntaxError(
                 f'cannot augassign taichi class {type(b)} to scalar expr')
         else:
@@ -191,7 +187,7 @@ def _ternary_operation(taichi_op, python_op, a, b, c):
 
 @unary
 def neg(a):
-    return _unary_operation(ti_core.expr_neg, ops.neg, a)
+    return _unary_operation(ti_core.expr_neg, _bt_ops_mod.neg, a)
 
 
 @unary
@@ -259,13 +255,12 @@ def log(a):
 
 @unary
 def abs(a):
-    import builtins
     return _unary_operation(ti_core.expr_abs, builtins.abs, a)
 
 
 @unary
 def bit_not(a):
-    return _unary_operation(ti_core.expr_bit_not, ops.invert, a)
+    return _unary_operation(ti_core.expr_bit_not, _bt_ops_mod.invert, a)
 
 
 @unary
@@ -276,7 +271,7 @@ def logical_not(a):
 def random(dtype=float):
     dtype = cook_dtype(dtype)
     x = Expr(ti_core.make_rand_expr(dtype))
-    return expr_init(x)
+    return impl.expr_init(x)
 
 
 # NEXT: add matpow(self, power)
@@ -284,17 +279,17 @@ def random(dtype=float):
 
 @binary
 def add(a, b):
-    return _binary_operation(ti_core.expr_add, ops.add, a, b)
+    return _binary_operation(ti_core.expr_add, _bt_ops_mod.add, a, b)
 
 
 @binary
 def sub(a, b):
-    return _binary_operation(ti_core.expr_sub, ops.sub, a, b)
+    return _binary_operation(ti_core.expr_sub, _bt_ops_mod.sub, a, b)
 
 
 @binary
 def mul(a, b):
-    return _binary_operation(ti_core.expr_mul, ops.mul, a, b)
+    return _binary_operation(ti_core.expr_mul, _bt_ops_mod.mul, a, b)
 
 
 @binary
@@ -305,33 +300,31 @@ def mod(a, b):
         multiply = Expr(ti_core.expr_mul(b, quotient.ptr))
         return ti_core.expr_sub(a, multiply.ptr)
 
-    return _binary_operation(expr_python_mod, ops.mod, a, b)
+    return _binary_operation(expr_python_mod, _bt_ops_mod.mod, a, b)
 
 
 @binary
 def pow(a, b):
-    return _binary_operation(ti_core.expr_pow, ops.pow, a, b)
+    return _binary_operation(ti_core.expr_pow, _bt_ops_mod.pow, a, b)
 
 
 @binary
 def floordiv(a, b):
-    return _binary_operation(ti_core.expr_floordiv, ops.floordiv, a, b)
+    return _binary_operation(ti_core.expr_floordiv, _bt_ops_mod.floordiv, a, b)
 
 
 @binary
 def truediv(a, b):
-    return _binary_operation(ti_core.expr_truediv, ops.truediv, a, b)
+    return _binary_operation(ti_core.expr_truediv, _bt_ops_mod.truediv, a, b)
 
 
 @binary
 def max(a, b):
-    import builtins
     return _binary_operation(ti_core.expr_max, builtins.max, a, b)
 
 
 @binary
 def min(a, b):
-    import builtins
     return _binary_operation(ti_core.expr_min, builtins.min, a, b)
 
 
@@ -397,33 +390,33 @@ def cmp_ne(a, b):
 
 @binary
 def bit_or(a, b):
-    return _binary_operation(ti_core.expr_bit_or, ops.or_, a, b)
+    return _binary_operation(ti_core.expr_bit_or, _bt_ops_mod.or_, a, b)
 
 
 @binary
 def bit_and(a, b):
-    return _binary_operation(ti_core.expr_bit_and, ops.and_, a, b)
+    return _binary_operation(ti_core.expr_bit_and, _bt_ops_mod.and_, a, b)
 
 
 @binary
 def bit_xor(a, b):
-    return _binary_operation(ti_core.expr_bit_xor, ops.xor, a, b)
+    return _binary_operation(ti_core.expr_bit_xor, _bt_ops_mod.xor, a, b)
 
 
 @binary
 def bit_shl(a, b):
-    return _binary_operation(ti_core.expr_bit_shl, ops.lshift, a, b)
+    return _binary_operation(ti_core.expr_bit_shl, _bt_ops_mod.lshift, a, b)
 
 
 @binary
 def bit_sar(a, b):
-    return _binary_operation(ti_core.expr_bit_sar, ops.rshift, a, b)
+    return _binary_operation(ti_core.expr_bit_sar, _bt_ops_mod.rshift, a, b)
 
 
 @taichi_scope
 @binary
 def bit_shr(a, b):
-    return _binary_operation(ti_core.expr_bit_shr, ops.rshift, a, b)
+    return _binary_operation(ti_core.expr_bit_shr, _bt_ops_mod.rshift, a, b)
 
 
 # We don't have logic_and/or instructions yet:
@@ -444,43 +437,43 @@ def select(cond, a, b):
 
 @writeback_binary
 def atomic_add(a, b):
-    return expr_init(
+    return impl.expr_init(
         Expr(ti_core.expr_atomic_add(a.ptr, b.ptr), tb=stack_info()))
 
 
 @writeback_binary
 def atomic_sub(a, b):
-    return expr_init(
+    return impl.expr_init(
         Expr(ti_core.expr_atomic_sub(a.ptr, b.ptr), tb=stack_info()))
 
 
 @writeback_binary
 def atomic_min(a, b):
-    return expr_init(
+    return impl.expr_init(
         Expr(ti_core.expr_atomic_min(a.ptr, b.ptr), tb=stack_info()))
 
 
 @writeback_binary
 def atomic_max(a, b):
-    return expr_init(
+    return impl.expr_init(
         Expr(ti_core.expr_atomic_max(a.ptr, b.ptr), tb=stack_info()))
 
 
 @writeback_binary
 def atomic_and(a, b):
-    return expr_init(
+    return impl.expr_init(
         Expr(ti_core.expr_atomic_bit_and(a.ptr, b.ptr), tb=stack_info()))
 
 
 @writeback_binary
 def atomic_or(a, b):
-    return expr_init(
+    return impl.expr_init(
         Expr(ti_core.expr_atomic_bit_or(a.ptr, b.ptr), tb=stack_info()))
 
 
 @writeback_binary
 def atomic_xor(a, b):
-    return expr_init(
+    return impl.expr_init(
         Expr(ti_core.expr_atomic_bit_xor(a.ptr, b.ptr), tb=stack_info()))
 
 
@@ -488,9 +481,6 @@ def atomic_xor(a, b):
 def assign(a, b):
     ti_core.expr_assign(a.ptr, b.ptr, stack_info())
     return a
-
-
-sqr = obsolete('ti.sqr(x)', 'x**2')
 
 
 def ti_max(*args):
@@ -524,24 +514,20 @@ def ti_all(a):
 
 
 def append(l, indices, val):
-    import taichi as ti
-    a = ti.expr_init(
+    a = impl.expr_init(
         ti_core.insert_append(l.snode.ptr, make_expr_group(indices),
                               Expr(val).ptr))
     return a
 
 
 def external_func_call(func, args=[], outputs=[]):
-    import taichi as ti
-    import ctypes
     func_addr = ctypes.cast(func, ctypes.c_void_p).value
     ti_core.insert_external_func_call(func_addr, '', make_expr_group(args),
                                       make_expr_group(outputs))
 
 
 def asm(source, inputs=[], outputs=[]):
-    import taichi as ti
-    import ctypes
+
     ti_core.insert_external_func_call(0, source, make_expr_group(inputs),
                                       make_expr_group(outputs))
 

@@ -1,3 +1,6 @@
+from taichi.core import util as cutil
+from taichi.lang.impl import expr_init
+
 import taichi as ti
 
 
@@ -60,16 +63,16 @@ def svd3d(A, dt, iters=None):
         else:
             iters = 8
     if dt == ti.f32:
-        rets = ti.core.sifakis_svd_f32(*inputs, iters)
+        rets = cutil.ti_core.sifakis_svd_f32(*inputs, iters)
     else:
-        rets = ti.core.sifakis_svd_f64(*inputs, iters)
+        rets = cutil.ti_core.sifakis_svd_f64(*inputs, iters)
     assert len(rets) == 21
     U_entries = rets[:9]
     V_entries = rets[9:18]
     sig_entries = rets[18:]
-    U = ti.expr_init(ti.Matrix.zero(dt, 3, 3))
-    V = ti.expr_init(ti.Matrix.zero(dt, 3, 3))
-    sigma = ti.expr_init(ti.Matrix.zero(dt, 3, 3))
+    U = expr_init(ti.Matrix.zero(dt, 3, 3))
+    V = expr_init(ti.Matrix.zero(dt, 3, 3))
+    sigma = expr_init(ti.Matrix.zero(dt, 3, 3))
     for i in range(3):
         for j in range(3):
             U(i, j).assign(U_entries[i * 3 + j])

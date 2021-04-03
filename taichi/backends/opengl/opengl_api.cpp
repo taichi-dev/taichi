@@ -4,8 +4,8 @@
 #include "taichi/backends/opengl/opengl_kernel_util.h"
 #include "taichi/program/kernel.h"
 #include "taichi/program/program.h"
+#include "taichi/program/py_print_buffer.h"
 #include "taichi/util/environ_config.h"
-#include "taichi/python/print_buffer.h"
 #include "taichi/backends/opengl/shaders/runtime.h"
 #include "taichi/backends/opengl/shaders/listman.h"
 

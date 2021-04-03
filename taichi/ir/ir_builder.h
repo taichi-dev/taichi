@@ -61,29 +61,35 @@ class IRBuilder {
 
   // RAII handles insertion points automatically.
   class LoopGuard {
-   private:
-    IRBuilder &builder_;
-    Stmt *loop_;
-    int location_;
-
    public:
+    // Set the insertion point to the beginning of the loop body.
     template <typename XStmt>
     explicit LoopGuard(IRBuilder &builder, XStmt *loop)
         : builder_(builder), loop_(loop) {
       location_ = (int)loop->parent->size() - 1;
       builder_.set_insertion_point_to_loop_begin(loop);
     }
+
+    // Set the insertion point to the point after the loop.
     ~LoopGuard();
+
+   private:
+    IRBuilder &builder_;
+    Stmt *loop_;
+    int location_;
   };
   class IfGuard {
+   public:
+    // Set the insertion point to the beginning of the true/false branch.
+    explicit IfGuard(IRBuilder &builder, IfStmt *if_stmt, bool true_branch);
+
+    // Set the insertion point to the point after the if statement.
+    ~IfGuard();
+
    private:
     IRBuilder &builder_;
     IfStmt *if_stmt_;
     int location_;
-
-   public:
-    explicit IfGuard(IRBuilder &builder, IfStmt *if_stmt, bool true_branch);
-    ~IfGuard();
   };
 
   template <typename XStmt>

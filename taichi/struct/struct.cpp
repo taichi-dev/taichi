@@ -53,28 +53,10 @@ void StructCompiler::infer_snode_properties(SNode &snode) {
 
     infer_snode_properties(*ch);
 
-    int total_bits_start_inferred = ch->total_bit_start + ch->total_num_bits;
-    if (ch_id == 0) {
-      snode.total_bit_start = total_bits_start_inferred;
-    } else if (snode.parent != nullptr) {  // root is ok
-      // TI_ASSERT(snode.total_bit_start == total_bits_start_inferred);
-    }
     // infer extractors
     int acc_offsets = 0;
     for (int i = taichi_max_num_indices - 1; i >= 0; i--) {
-      int inferred = ch->extractors[i].start + ch->extractors[i].num_bits;
-      if (ch_id == 0) {
-        snode.extractors[i].start = inferred;
-        snode.extractors[i].acc_offset = acc_offsets;
-      } else if (snode.parent != nullptr) {  // root is OK
-        /*
-        TI_ASSERT_INFO(snode.extractors[i].start == inferred,
-                       "Inconsistent bit configuration");
-        TI_ASSERT_INFO(snode.extractors[i].dest_offset ==
-                           snode.total_bit_start + acc_offsets,
-                       "Inconsistent bit configuration");
-                       */
-      }
+      snode.extractors[i].acc_offset = acc_offsets;
       acc_offsets += snode.extractors[i].num_bits;
     }
     if (snode.type == SNodeType::dynamic) {
@@ -122,45 +104,6 @@ void StructCompiler::infer_snode_properties(SNode &snode) {
   if (!snode.index_offsets.empty()) {
     TI_ASSERT(snode.index_offsets.size() == snode.num_active_indices);
   }
-}
-
-void StructCompiler::compute_trailing_bits(SNode &snode) {
-  std::function<void(SNode &)> bottom_up = [&](SNode &s) {
-    for (auto &c : s.ch) {
-      bottom_up(*c);
-      if (s.type != SNodeType::root)
-        for (int i = 0; i < taichi_max_num_indices; i++) {
-          auto trailing_bits_according_to_this_child =
-              c->extractors[i].num_bits + c->extractors[i].trailing_bits;
-
-          if (s.extractors[i].trailing_bits == 0) {
-            s.extractors[i].trailing_bits =
-                trailing_bits_according_to_this_child;
-          } else if (trailing_bits_according_to_this_child != 0) {
-            TI_ERROR_IF(s.extractors[i].trailing_bits !=
-                            trailing_bits_according_to_this_child,
-                        "Inconsistent trailing bit configuration. Please make "
-                        "sure the children of the SNodes are providing the "
-                        "same amount of trailing bit.");
-          }
-        }
-    }
-  };
-
-  bottom_up(snode);
-
-  std::function<void(SNode &)> top_down = [&](SNode &s) {
-    for (auto &c : s.ch) {
-      if (s.type != SNodeType::root)
-        for (int i = 0; i < taichi_max_num_indices; i++) {
-          c->extractors[i].trailing_bits =
-              s.extractors[i].trailing_bits - c->extractors[i].num_bits;
-        }
-      top_down(*c);
-    }
-  };
-
-  top_down(snode);
 }
 
 TLANG_NAMESPACE_END

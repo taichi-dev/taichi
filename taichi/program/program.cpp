@@ -548,6 +548,7 @@ std::string latex_short_digit(int v) {
     return std::to_string(v);
 }
 
+/*
 void Program::visualize_layout(const std::string &fn) {
   {
     std::ofstream ofs(fn);
@@ -610,6 +611,8 @@ void Program::visualize_layout(const std::string &fn) {
   }
   trash(system(fmt::format("pdflatex {}", fn).c_str()));
 }
+
+*/
 
 void Program::initialize_device_llvm_context() {
   if (config.arch == Arch::cuda) {

@@ -77,9 +77,15 @@ class LowerAccess : public IRVisitor {
       }
     }
 
+
     std::deque<SNode *> snodes;
-    for (auto s = leaf_snode; s != nullptr; s = s->parent)
+    int start[taichi_max_num_indices] = {0};
+    for (auto s = leaf_snode; s != nullptr; s = s->parent) {
       snodes.push_front(s);
+      for (int j = 0; j < taichi_max_num_indices; j++) {
+        start[j] += s->extractors[j].num_bits;
+      }
+    }
 
     Stmt *last = lowered.push_back<GetRootStmt>();
 
@@ -97,7 +103,8 @@ class LowerAccess : public IRVisitor {
       for (int k_ = 0; k_ < (int)indices.size(); k_++) {
         for (int k = 0; k < taichi_max_num_indices; k++) {
           if (snode->physical_index_position[k_] == k) {
-            int begin = snode->extractors[k].start;
+            start[k] -= snode->extractors[k].num_bits;
+            int begin = start[k];
             int end = begin + snode->extractors[k].num_bits;
             auto extracted =
                 Stmt::make<BitExtractStmt>(indices[k_], begin, end);

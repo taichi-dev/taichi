@@ -6,7 +6,8 @@
 #include <unordered_set>
 #include <unordered_map>
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 class DiffRange {
  private:
@@ -57,7 +58,8 @@ class IRBank;
 class AsyncStateSet;
 
 // IR Analysis
-namespace irpass::analysis {
+namespace irpass {
+namespace analysis {
 
 AliasResult alias_analysis(Stmt *var1, Stmt *var2);
 std::unique_ptr<ControlFlowGraph> build_cfg(IRNode *root);
@@ -128,13 +130,45 @@ bool same_value(
     Stmt *stmt1,
     Stmt *stmt2,
     const std::optional<std::unordered_map<int, int>> &id_map = std::nullopt);
+
 DiffRange value_diff_loop_index(Stmt *stmt, Stmt *loop, int index_id);
-std::pair<bool, int> value_diff_ptr_index(Stmt *val1, Stmt *val2);
+
+/**
+ * Result of the value_diff_ptr_index pass.
+ */
+struct DiffPtrResult {
+  // Whether the difference of the checkd statements is certain.
+  bool is_diff_certain{false};
+  // The difference of the value of two statements (i.e. val1 - val2). This is
+  // meaningful only when |is_diff_certain| is true.
+  int diff_range{0};
+
+  static DiffPtrResult make_certain(int diff) {
+    return DiffPtrResult{/*is_diff_certain=*/true, /*diff_range=*/diff};
+  }
+  static DiffPtrResult make_uncertain() {
+    return DiffPtrResult{/*is_diff_certain=*/false, /*diff_range=*/0};
+  }
+};
+
+/**
+ * Checks if the difference of the value of the two statements is certain.
+ *
+ * @param val1
+ *   The first statement to check
+ *
+ * @param val2
+ *   The second statement to check
+ */
+DiffPtrResult value_diff_ptr_index(Stmt *val1, Stmt *val2);
+
 std::unordered_set<Stmt *> constexpr_prop(
     Block *block,
     std::function<bool(Stmt *)> is_const_seed);
+
 void verify(IRNode *root);
 
-}  // namespace irpass::analysis
-
-TLANG_NAMESPACE_END
+}  // namespace analysis
+}  // namespace irpass
+}  // namespace lang
+}  // namespace taichi

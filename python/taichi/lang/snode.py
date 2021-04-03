@@ -4,7 +4,7 @@ import numbers
 # object within it, is that ti_core is stateful. While in practice ti_core is
 # loaded during the import procedure, it's probably still good to delay the
 # access to it.
-from taichi.core import util as cutil
+from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl
 from taichi.lang.expr import Expr
 from taichi.lang.util import is_taichi_class
@@ -89,7 +89,7 @@ class SNode:
             n -= 1
         if p is None:
             return None
-        if p.type == cutil.ti_core.SNodeType.root:
+        if p.type == _ti_core.SNodeType.root:
             return impl.root
         return SNode(p)
 
@@ -128,7 +128,7 @@ class SNode:
         return self.shape[i]
 
     def loop_range(self):
-        return Expr(cutil.ti_core.global_var_expr_from_snode(self.ptr))
+        return Expr(_ti_core.global_var_expr_from_snode(self.ptr))
 
     @deprecated('x.snode()', 'x.snode')
     def __call__(self):  # TODO: remove this after v0.7.0
@@ -160,7 +160,7 @@ class SNode:
         ch = self.get_children()
         for c in ch:
             c.deactivate_all()
-        SNodeType = cutil.ti_core.SNodeType
+        SNodeType = _ti_core.SNodeType
         from taichi.lang import meta
         if self.ptr.type == SNodeType.pointer or self.ptr.type == SNodeType.bitmasked:
             meta.snode_deactivate(self)

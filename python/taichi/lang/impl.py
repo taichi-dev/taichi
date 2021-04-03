@@ -3,7 +3,7 @@ import types
 import warnings
 
 import numpy as np
-from taichi.core import util as cutil
+from taichi.core.util import ti_core as _ti_core
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.snode import SNode
@@ -18,7 +18,7 @@ import taichi as ti
 @taichi_scope
 def expr_init(rhs):
     if rhs is None:
-        return Expr(cutil.ti_core.expr_alloca())
+        return Expr(_ti_core.expr_alloca())
     if is_taichi_class(rhs):
         return rhs.variable()
     else:
@@ -28,14 +28,14 @@ def expr_init(rhs):
             return tuple(expr_init(e) for e in rhs)
         elif isinstance(rhs, dict):
             return dict((key, expr_init(val)) for key, val in rhs.items())
-        elif isinstance(rhs, cutil.ti_core.DataType):
+        elif isinstance(rhs, _ti_core.DataType):
             return rhs
         elif isinstance(rhs, ti.ndrange):
             return rhs
         elif hasattr(rhs, '_data_oriented'):
             return rhs
         else:
-            return Expr(cutil.ti_core.expr_var(Expr(rhs).ptr))
+            return Expr(_ti_core.expr_var(Expr(rhs).ptr))
 
 
 @taichi_scope
@@ -77,7 +77,7 @@ def begin_frontend_struct_for(group, loop_range):
             f'({group.size()} != {len(loop_range.shape)}). Maybe you wanted to '
             'use "for I in ti.grouped(x)" to group all indices into a single vector I?'
         )
-    cutil.ti_core.begin_frontend_struct_for(group, loop_range.ptr)
+    _ti_core.begin_frontend_struct_for(group, loop_range.ptr)
 
 
 def begin_frontend_if(cond):
@@ -88,7 +88,7 @@ def begin_frontend_if(cond):
             '    if all(x == y):\n'
             'or\n'
             '    if any(x != y):\n')
-    cutil.ti_core.begin_frontend_if(Expr(cond).ptr)
+    _ti_core.begin_frontend_if(Expr(cond).ptr)
 
 
 def wrap_scalar(x):
@@ -138,7 +138,7 @@ def subscript(value, *indices):
             raise IndexError(
                 f'Field with dim {field_dim} accessed with indices of dim {index_dim}'
             )
-        return Expr(cutil.ti_core.subscript(value.ptr, indices_expr_group))
+        return Expr(_ti_core.subscript(value.ptr, indices_expr_group))
     else:
         return value[indices]
 
@@ -222,7 +222,7 @@ class PyTaichi:
 
     def create_program(self):
         if self.prog is None:
-            self.prog = cutil.ti_core.Program()
+            self.prog = _ti_core.Program()
 
     def materialize(self):
         if self.materialized:
@@ -236,7 +236,7 @@ class PyTaichi:
                 func()
 
         ti.trace('Materializing layout...')
-        cutil.ti_core.layout(layout)
+        _ti_core.layout(layout)
         self.materialized = True
         not_placed = []
         for var in self.global_vars:
@@ -311,19 +311,19 @@ def make_constant_expr(val):
             # the LHS, but at least this makes assigning constant to unsigned
             # int work. See https://github.com/taichi-dev/taichi/issues/2060
             return Expr(
-                cutil.ti_core.make_const_expr_i32(
+                _ti_core.make_const_expr_i32(
                     _clamp_unsigned_to_range(np.int32, val)))
         elif pytaichi.default_ip in {ti.i64, ti.u64}:
             return Expr(
-                cutil.ti_core.make_const_expr_i64(
+                _ti_core.make_const_expr_i64(
                     _clamp_unsigned_to_range(np.int64, val)))
         else:
             assert False
     elif isinstance(val, (float, np.floating, np.ndarray)):
         if pytaichi.default_fp == ti.f32:
-            return Expr(cutil.ti_core.make_const_expr_f32(val))
+            return Expr(_ti_core.make_const_expr_f32(val))
         elif pytaichi.default_fp == ti.f64:
-            return Expr(cutil.ti_core.make_const_expr_f64(val))
+            return Expr(_ti_core.make_const_expr_f64(val))
         else:
             assert False
     else:
@@ -337,7 +337,7 @@ def reset():
     pytaichi = PyTaichi(old_kernels)
     for k in old_kernels:
         k.reset()
-    cutil.ti_core.reset_default_compile_config()
+    _ti_core.reset_default_compile_config()
 
 
 @taichi_scope
@@ -415,16 +415,16 @@ def field(dtype, shape=None, offset=None, needs_grad=False):
     del _taichi_skip_traceback
 
     # primal
-    x = Expr(cutil.ti_core.make_id_expr(""))
+    x = Expr(_ti_core.make_id_expr(""))
     x.declaration_tb = get_traceback(stacklevel=2)
-    x.ptr = cutil.ti_core.global_new(x.ptr, dtype)
+    x.ptr = _ti_core.global_new(x.ptr, dtype)
     x.ptr.set_is_primal(True)
     pytaichi.global_vars.append(x)
 
-    if cutil.ti_core.needs_grad(dtype):
+    if _ti_core.needs_grad(dtype):
         # adjoint
-        x_grad = Expr(cutil.ti_core.make_id_expr(""))
-        x_grad.ptr = cutil.ti_core.global_new(x_grad.ptr, dtype)
+        x_grad = Expr(_ti_core.make_id_expr(""))
+        x_grad.ptr = _ti_core.global_new(x_grad.ptr, dtype)
         x_grad.ptr.set_is_primal(False)
         x.set_grad(x_grad)
 
@@ -508,14 +508,14 @@ def ti_print(*vars, sep=' ', end='\n'):
     entries = vars2entries(vars)
     entries = fused_string(entries)
     contentries = [entry2content(entry) for entry in entries]
-    cutil.ti_core.create_print(contentries)
+    _ti_core.create_print(contentries)
 
 
 @taichi_scope
 def ti_assert(cond, msg, extra_args):
     # Mostly a wrapper to help us convert from Expr (defined in Python) to
-    # cutil.ti_core.Expr (defined in C++)
-    cutil.ti_core.create_assert_stmt(
+    # _ti_core.Expr (defined in C++)
+    _ti_core.create_assert_stmt(
         Expr(cond).ptr, msg, [Expr(x).ptr for x in extra_args])
 
 
@@ -550,16 +550,16 @@ def one(x):
 
 @taichi_scope
 def get_external_tensor_dim(var):
-    return cutil.ti_core.get_external_tensor_dim(var)
+    return _ti_core.get_external_tensor_dim(var)
 
 
 @taichi_scope
 def get_external_tensor_shape_along_axis(var, i):
-    return cutil.ti_core.get_external_tensor_shape_along_axis(var, i)
+    return _ti_core.get_external_tensor_shape_along_axis(var, i)
 
 
 def indices(*x):
-    return [cutil.ti_core.Index(i) for i in x]
+    return [_ti_core.Index(i) for i in x]
 
 
 index = indices
@@ -593,16 +593,16 @@ def grouped(x):
 
 
 def stop_grad(x):
-    cutil.ti_core.stop_grad(x.snode.ptr)
+    _ti_core.stop_grad(x.snode.ptr)
 
 
 def current_cfg():
-    return cutil.ti_core.current_compile_config()
+    return _ti_core.current_compile_config()
 
 
 def default_cfg():
-    return cutil.ti_core.default_compile_config()
+    return _ti_core.default_compile_config()
 
 
 def call_internal(name):
-    cutil.ti_core.create_internal_func_stmt(name)
+    _ti_core.create_internal_func_stmt(name)

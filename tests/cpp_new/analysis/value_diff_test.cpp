@@ -27,6 +27,7 @@ TEST(ValueDiffPtrIndex, ConstF32) {
   auto *const2 = builder.get_float32(1.0f);
 
   const auto diff = value_diff_ptr_index(const1, const2);
+  // We don't check floating-point numbers since the pass is for pointer indices
   EXPECT_FALSE(diff.is_diff_certain);
 }
 

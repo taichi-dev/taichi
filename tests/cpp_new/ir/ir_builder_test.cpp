@@ -44,15 +44,44 @@ TEST(IRBuilder, RangeFor) {
   auto *zero = builder.get_int32(0);
   auto *ten = builder.get_int32(10);
   auto *loop = builder.create_range_for(zero, ten);
-  builder.set_insertion_point_to_loop_begin(loop);
-  auto *index = builder.get_loop_index(loop, 0);
-  builder.set_insertion_point_to_after(loop);
-  auto *ret = builder.create_return(zero);
+  Stmt *index;
+  {
+    auto _ = builder.get_loop_guard(loop);
+    index = builder.get_loop_index(loop, 0);
+  }
+  [[maybe_unused]] auto *ret = builder.create_return(zero);
   EXPECT_EQ(zero->parent->size(), 4);
   ASSERT_TRUE(loop->is<RangeForStmt>());
   auto *loopc = loop->cast<RangeForStmt>();
   EXPECT_EQ(loopc->body->size(), 1);
   EXPECT_EQ(loopc->body->statements[0].get(), index);
+}
+
+TEST(IRBuilder, LoopGuard) {
+  IRBuilder builder;
+  auto *zero = builder.get_int32(0);
+  auto *ten = builder.get_int32(10);
+  auto *loop = builder.create_range_for(zero, ten);
+  Stmt *two;
+  Stmt *one;
+  Stmt *sum;
+  {
+    auto _ = builder.get_loop_guard(loop);
+    one = builder.get_int32(1);
+    builder.set_insertion_point_to_before(loop);
+    two = builder.get_int32(2);
+    builder.set_insertion_point_to_after(one);
+    sum = builder.create_add(one, two);
+  }
+  // The insertion point should be after the loop now.
+  auto *print = builder.create_print(two);
+  EXPECT_EQ(zero->parent->size(), 5);
+  EXPECT_EQ(zero->parent->statements[2].get(), two);
+  EXPECT_EQ(zero->parent->statements[3].get(), loop);
+  EXPECT_EQ(zero->parent->statements[4].get(), print);
+  EXPECT_EQ(loop->body->size(), 2);
+  EXPECT_EQ(loop->body->statements[0].get(), one);
+  EXPECT_EQ(loop->body->statements[1].get(), sum);
 }
 
 TEST(IRBuilder, ExternalPtr) {

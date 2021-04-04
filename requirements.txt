@@ -3,6 +3,7 @@ astor
 autograd
 colorama
 coverage
+isort
 numpy
 pybind11
 pylint

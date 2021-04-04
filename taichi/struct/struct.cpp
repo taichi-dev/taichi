@@ -52,30 +52,30 @@ void StructCompiler::infer_snode_properties(SNode &snode) {
     }
 
     infer_snode_properties(*ch);
+  }
 
-    // infer extractors
-    int acc_offsets = 0;
-    for (int i = taichi_max_num_indices - 1; i >= 0; i--) {
-      snode.extractors[i].acc_offset = acc_offsets;
-      acc_offsets += snode.extractors[i].num_bits;
-    }
-    if (snode.type == SNodeType::dynamic) {
-      int active_extractor_counder = 0;
-      for (int i = 0; i < taichi_max_num_indices; i++) {
-        if (snode.extractors[i].num_bits != 0) {
-          active_extractor_counder += 1;
-          SNode *p = snode.parent;
-          while (p) {
-            TI_ASSERT_INFO(
-                p->extractors[i].num_bits == 0,
-                "Dynamic SNode must have a standalone dimensionality.");
-            p = p->parent;
-          }
+  // infer extractors
+  int acc_offsets = 0;
+  for (int i = taichi_max_num_indices - 1; i >= 0; i--) {
+    snode.extractors[i].acc_offset = acc_offsets;
+    acc_offsets += snode.extractors[i].num_bits;
+  }
+  if (snode.type == SNodeType::dynamic) {
+    int active_extractor_counder = 0;
+    for (int i = 0; i < taichi_max_num_indices; i++) {
+      if (snode.extractors[i].num_bits != 0) {
+        active_extractor_counder += 1;
+        SNode *p = snode.parent;
+        while (p) {
+          TI_ASSERT_INFO(
+              p->extractors[i].num_bits == 0,
+              "Dynamic SNode must have a standalone dimensionality.");
+          p = p->parent;
         }
       }
-      TI_ASSERT_INFO(active_extractor_counder == 1,
-                     "Dynamic SNode can have only one index extractor.");
     }
+    TI_ASSERT_INFO(active_extractor_counder == 1,
+                   "Dynamic SNode can have only one index extractor.");
   }
 
   snode.total_num_bits = 0;

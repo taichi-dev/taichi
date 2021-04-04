@@ -80,9 +80,7 @@ AliasResult alias_analysis(Stmt *var1, Stmt *var2) {
       auto diff = value_diff_ptr_index(ptr1->indices[i], ptr2->indices[i]);
       if (!diff.first) {
         uncertain = true;
-      } else if (std::abs(diff.second) >=
-                 (1 << snode->extractors[snode->physical_index_position[i]]
-                           .trailing_bits)) {
+      } else if (std::abs(diff.second) >= 1) {
         return AliasResult::different;
       }
     }

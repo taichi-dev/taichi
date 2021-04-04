@@ -5,7 +5,8 @@
 #include "taichi/ir/statements.h"
 #include "taichi/ir/visitors.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 DiffRange operator+(const DiffRange &a, const DiffRange &b) {
   return DiffRange(a.related_() && b.related_(), a.coeff + b.coeff,
@@ -16,6 +17,8 @@ DiffRange operator-(const DiffRange &a, const DiffRange &b) {
   return DiffRange(a.related_() && b.related_(), a.coeff - b.coeff,
                    a.low - b.high + 1, a.high - b.low);
 }
+
+namespace {
 
 class ValueDiffLoopIndex : public IRVisitor {
  public:
@@ -138,7 +141,10 @@ class FindDirectValueBaseAndOffset : public IRVisitor {
   }
 };
 
-namespace irpass::analysis {
+}  // namespace
+
+namespace irpass {
+namespace analysis {
 
 DiffRange value_diff_loop_index(Stmt *stmt, Stmt *loop, int index_id) {
   TI_ASSERT(loop->is<StructForStmt>() || loop->is<OffloadedStmt>());
@@ -156,22 +162,20 @@ DiffRange value_diff_loop_index(Stmt *stmt, Stmt *loop, int index_id) {
   return diff.run();
 }
 
-std::pair<bool, int> value_diff_ptr_index(Stmt *val1, Stmt *val2) {
-  // <first>: whether the difference of the value of two statements is certain.
-  // <second>: the difference of the value of two statements (i.e. val1 - val2)
-  // if <first> is true.
-  if (val1 == val2)
-    return std::make_pair(true, 0);
+DiffPtrResult value_diff_ptr_index(Stmt *val1, Stmt *val2) {
+  if (val1 == val2) {
+    return DiffPtrResult::make_certain(0);
+  }
   auto v1 = FindDirectValueBaseAndOffset::run(val1);
   auto v2 = FindDirectValueBaseAndOffset::run(val2);
   if (!std::get<0>(v1) || !std::get<0>(v2) ||
       std::get<1>(v1) != std::get<1>(v2)) {
-    // uncertain
-    return std::make_pair(false, 0);
+    return DiffPtrResult::make_uncertain();
   }
-  return std::make_pair(true, std::get<2>(v1) - std::get<2>(v2));
+  return DiffPtrResult::make_certain(std::get<2>(v1) - std::get<2>(v2));
 }
 
-}  // namespace irpass::analysis
-
-TLANG_NAMESPACE_END
+}  // namespace analysis
+}  // namespace irpass
+}  // namespace lang
+}  // namespace taichi

@@ -10,6 +10,14 @@ from colorama import Back, Fore, Style
 from git import Repo
 from yapf.yapflib.yapf_api import FormatFile
 
+_has_isort = False
+try:
+    import isort
+    _has_isort = True
+except ImportError:
+    # TODO(#2223): Make `isort` a required package in a future release
+    print('Please install `isort` or the formatter may not work')
+
 repo_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 _yapf_config_path = os.path.join(repo_dir, 'misc', '.style.yapf')
 
@@ -64,12 +72,8 @@ def find_clang_format_bin():
 
 def format_py_file(filename):
     FormatFile(filename, in_place=True, style_config=_yapf_config_path)
-    try:
-        import isort
+    if _has_isort:
         isort.file(filename)
-    except ImportError:
-        # TODO(#2223): Make `isort` a required package in a future release
-        print('Please install `isort` or the formatter may not work')
     format_plain_text(filename)
 
 

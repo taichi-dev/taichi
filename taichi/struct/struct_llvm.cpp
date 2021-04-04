@@ -190,11 +190,8 @@ void StructCompilerLLVM::generate_refine_coordinates(SNode *snode) {
     }
     auto in = call(&builder, "PhysicalCoordinates_get_val", inp_coords,
                    tlctx->get_constant(i));
-    if (snode->type != SNodeType::root &&
-        snode->parent->type != SNodeType::root){
-      in = builder.CreateShl( in,
+    in = builder.CreateShl( in,
         tlctx->get_constant(snode->extractors[i].num_bits));
-    }
     auto added = builder.CreateOr(in, addition);
     call(&builder, "PhysicalCoordinates_set_val", outp_coords,
          tlctx->get_constant(i), added);

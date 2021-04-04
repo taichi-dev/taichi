@@ -5,11 +5,11 @@ import math
 import operator as _bt_ops_mod  # bt for builtin
 import traceback
 
+from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.expr import Expr, make_expr_group
-from taichi.lang.util import (cook_dtype, is_taichi_class, taichi_scope)
-from taichi.core.util import ti_core as _ti_core
+from taichi.lang.util import cook_dtype, is_taichi_class, taichi_scope
 
 unary_ops = []
 

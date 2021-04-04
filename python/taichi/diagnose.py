@@ -2,11 +2,11 @@ def main():
     print('Taichi system diagnose:')
     print('')
 
-    import os
-    import sys
     import locale
+    import os
     import platform
     import subprocess
+    import sys
 
     executable = sys.executable
 

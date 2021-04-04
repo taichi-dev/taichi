@@ -1,13 +1,25 @@
 #!/usr/bin/python3
 
-import os, re, sys
+import os
+import re
 import subprocess as sp
+import sys
 from pathlib import Path
-from colorama import Fore, Back, Style
-from yapf.yapflib.yapf_api import FormatFile
+
+from colorama import Back, Fore, Style
 from git import Repo
+from yapf.yapflib.yapf_api import FormatFile
+
+_has_isort = False
+try:
+    import isort
+    _has_isort = True
+except ImportError:
+    # TODO(#2223): Make `isort` a required package in a future release
+    print('Please install `isort` or the formatter may not work')
 
 repo_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+_yapf_config_path = os.path.join(repo_dir, 'misc', '.style.yapf')
 
 
 def has_suffix(f, suffixes):
@@ -56,6 +68,13 @@ def find_clang_format_bin():
     print(Style.RESET_ALL)
     find_clang_format_bin.clang_format_bin = result
     return result
+
+
+def format_py_file(filename):
+    FormatFile(filename, in_place=True, style_config=_yapf_config_path)
+    if _has_isort:
+        isort.file(filename)
+    format_plain_text(filename)
 
 
 def main(all=False, diff=None):
@@ -122,15 +141,11 @@ def main(all=False, diff=None):
 
 def format_file(fn):
     clang_format_bin = find_clang_format_bin()
+    print('Formatting "{}"'.format(fn))
     if fn.endswith('.py'):
-        print('Formatting "{}"'.format(fn))
-        FormatFile(fn,
-                   in_place=True,
-                   style_config=os.path.join(repo_dir, 'misc', '.style.yapf'))
-        format_plain_text(fn)
+        format_py_file(fn)
         return True
     elif clang_format_bin and has_suffix(fn, ['cpp', 'h', 'c', 'cu', 'cuh']):
-        print('Formatting "{}"'.format(fn))
         os.system('{} -i -style=file {}'.format(clang_format_bin, fn))
         format_plain_text(fn)
         return True
@@ -138,7 +153,6 @@ def format_file(fn):
             'txt', 'md', 'rst', 'cfg', 'yml', 'ini', 'map', 'cmake'
     ]) or (os.path.basename(fn)[0].isupper()
            and fn.endswith('file')):  # E.g., Dockerfile and Jenkinsfile
-        print('Formatting "{}"'.format(fn))
         format_plain_text(fn)
         return True
     else:

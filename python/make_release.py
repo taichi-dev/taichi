@@ -1,7 +1,8 @@
 import os
-import requests
-import zipfile
 import shutil
+import zipfile
+
+import requests
 
 projects = ['nightly', 'nightly-cuda-10-0', 'nightly-cuda-10-1']
 

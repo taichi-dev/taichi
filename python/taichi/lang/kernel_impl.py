@@ -6,9 +6,9 @@ import re
 
 import numpy as np
 from taichi.core import primitive_types
+from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl, util
 from taichi.lang.ast_checker import KernelSimplicityASTChecker
-from taichi.core.util import ti_core as _ti_core
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.kernel_arguments import ext_arr, template
 from taichi.lang.shell import _shell_pop_print, oinspect

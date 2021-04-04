@@ -1,8 +1,9 @@
-import taichi as tc
-import smtplib
-import os
-import socket
 import atexit
+import os
+import smtplib
+import socket
+
+import taichi as tc
 
 gmail_sender = 'taichi.messager@gmail.com'
 gmail_passwd = '6:L+XbNOp^'

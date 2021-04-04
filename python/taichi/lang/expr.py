@@ -167,7 +167,6 @@ class Expr(TaichiOperations):
     @python_scope
     def to_numpy(self):
         import numpy as np
-
         from taichi.lang.meta import tensor_to_ext_arr
         arr = np.zeros(shape=self.shape, dtype=to_numpy_type(self.dtype))
         tensor_to_ext_arr(self, arr)
@@ -177,7 +176,6 @@ class Expr(TaichiOperations):
     @python_scope
     def to_torch(self, device=None):
         import torch
-
         from taichi.lang.meta import tensor_to_ext_arr
         arr = torch.zeros(size=self.shape,
                           dtype=to_pytorch_type(self.dtype),

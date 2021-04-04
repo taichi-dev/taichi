@@ -1,6 +1,7 @@
-import taichi as ti
 import functools
 import os
+
+import taichi as ti
 
 
 def benchmark_async(func):

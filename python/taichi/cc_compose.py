@@ -1,6 +1,7 @@
-import yaml
-import warnings
 import sys
+import warnings
+
+import yaml
 
 
 class ComposerBase:

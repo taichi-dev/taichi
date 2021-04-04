@@ -1,5 +1,6 @@
-import setuptools
 import glob
+
+import setuptools
 
 classifiers = [
     'Development Status :: 2 - Pre-Alpha',

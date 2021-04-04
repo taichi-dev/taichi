@@ -1,8 +1,9 @@
-import taichi as ti
-import math
-from struct import pack, unpack
 import argparse
+import math
 import os
+from struct import pack, unpack
+
+import taichi as ti
 
 ti.init()
 

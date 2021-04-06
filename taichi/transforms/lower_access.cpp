@@ -77,7 +77,6 @@ class LowerAccess : public IRVisitor {
       }
     }
 
-
     std::deque<SNode *> snodes;
     int start[taichi_max_num_indices] = {0};
     for (auto s = leaf_snode; s != nullptr; s = s->parent) {

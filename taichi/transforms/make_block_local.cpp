@@ -148,9 +148,9 @@ void make_block_local_offload(OffloadedStmt *offload) {
                   TypedConstant(snode->extractors[k].num_bits));
               auto block_corner =
                   element_block->push_back<BlockCornerIndexStmt>(offload, i);
-              auto block_corner_refined = element_block->
-                  push_back<BinaryOpStmt>(
-                  BinaryOpType::bit_shl, block_corner, num_bits);
+              auto block_corner_refined =
+                  element_block->push_back<BinaryOpStmt>(
+                      BinaryOpType::bit_shl, block_corner, num_bits);
               global_index = element_block->push_back<BinaryOpStmt>(
                   BinaryOpType::add, global_index, block_corner_refined);
 

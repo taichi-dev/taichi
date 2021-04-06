@@ -761,8 +761,8 @@ class KernelManager::Impl {
         rtm_ext->extractors[j].num_bits = ext.num_bits;
         rtm_ext->extractors[j].acc_offset = ext.acc_offset;
         rtm_ext->extractors[j].num_elements = ext.num_elements;
-        TI_DEBUG("  [{}] start={} num_bits={} acc_offset={} num_elements={}", j,
-                 ext.start, ext.num_bits, ext.acc_offset, ext.num_elements);
+        TI_DEBUG("  [{}] num_bits={} acc_offset={} num_elements={}", j,
+                 ext.num_bits, ext.acc_offset, ext.num_elements);
       }
       TI_DEBUG("");
     }

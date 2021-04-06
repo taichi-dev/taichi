@@ -1,7 +1,8 @@
-import taichi as ti
 import math
 
 from utils import benchmark_async
+
+import taichi as ti
 
 # TODO: staggerred grid
 

@@ -1,9 +1,9 @@
 import argparse
 import json
 import logging
+import sys
 import time
 import urllib.request as ur
-import sys
 
 API_PREFIX = 'https://api.github.com/repos/taichi-dev/taichi'
 SHA = 'sha'

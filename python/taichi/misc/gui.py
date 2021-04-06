@@ -1,8 +1,10 @@
 import numbers
+import os
+
 import numpy as np
 from taichi.core import ti_core
-from .util import deprecated, core_veci
-import os
+
+from .util import core_veci, deprecated
 
 
 class GUI:
@@ -153,6 +155,7 @@ class GUI:
 
     def set_image(self, img):
         import numpy as np
+
         import taichi as ti
 
         if self.fast_gui:
@@ -371,6 +374,7 @@ class GUI:
 
     def text(self, content, pos, font_size=15, color=0xFFFFFF):
         import taichi as ti
+
         # TODO: refactor Canvas::text
         font_size = float(font_size)
         pos = ti.core_vec(*pos)

@@ -11,11 +11,6 @@ class IRBuilder {
     int position{0};
   };
 
- private:
-  std::unique_ptr<IRNode> root_{nullptr};
-  InsertPoint insert_point_;
-
- public:
   IRBuilder();
 
   // Clear the IR and the insertion point.
@@ -231,6 +226,10 @@ class IRBuilder {
       TI_ERROR("Statement {} is not a global pointer.", ptr->name());
     }
   }
+
+ private:
+  std::unique_ptr<IRNode> root_{nullptr};
+  InsertPoint insert_point_;
 };
 
 TLANG_NAMESPACE_END

@@ -1680,13 +1680,13 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     if (stmt->snode->type == SNodeType::bit_array && stmt->snode->parent) {
       if (stmt->snode->parent->type == SNodeType::dense) {
         refine =
-             get_runtime_function(stmt->snode->refine_coordinates_func_name());
+            get_runtime_function(stmt->snode->refine_coordinates_func_name());
 
-        create_call(refine, {new_coordinates, new_coordinates,
-                            tlctx->get_constant(0)});
+        create_call(refine,
+                    {new_coordinates, new_coordinates, tlctx->get_constant(0)});
       } else {
         TI_ERROR(
-           "Struct-for looping through bit array but its parent is not dense");
+            "Struct-for looping through bit array but its parent is not dense");
       }
     }
 

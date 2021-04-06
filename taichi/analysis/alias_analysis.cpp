@@ -80,7 +80,7 @@ AliasResult alias_analysis(Stmt *var1, Stmt *var2) {
       auto diff = value_diff_ptr_index(ptr1->indices[i], ptr2->indices[i]);
       if (!diff.is_diff_certain) {
         uncertain = true;
-      } else if (std::abs(diff.second) >= 1) {
+      } else if (std::abs(diff.diff_range) >= 1) {
         return AliasResult::different;
       }
     }

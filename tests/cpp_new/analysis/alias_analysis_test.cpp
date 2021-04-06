@@ -79,7 +79,7 @@ TEST(AliasAnalysis, GlobalPtr_DiffIndicesWithinTrailingBits) {
   auto *gptr2 = builder.create_global_ptr(snode.get(), indices2);
 
   const auto aa = alias_analysis(gptr1, gptr2);
-  EXPECT_EQ(aa, AliasResult::same);
+  EXPECT_EQ(aa, AliasResult::uncertain);
 }
 
 TEST(AliasAnalysis, GlobalPtr_Uncertain) {

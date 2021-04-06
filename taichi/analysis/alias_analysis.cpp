@@ -80,11 +80,18 @@ AliasResult alias_analysis(Stmt *var1, Stmt *var2) {
     bool uncertain = false;
     for (int i = 0; i < (int)ptr1->indices.size(); i++) {
       auto diff = value_diff_ptr_index(ptr1->indices[i], ptr2->indices[i]);
-      if (!diff.is_diff_certain) {
+      if (!diff.is_diff_certain || (diff.diff_range != 0)) {
         uncertain = true;
-      } else if (std::abs(diff.diff_range) >=
-                 (1 << snode->extractors[snode->physical_index_position[i]]
-                           .trailing_bits)) {
+      }
+      if (std::abs(diff.diff_range) >=
+          (1 << snode->extractors[snode->physical_index_position[i]]
+                    .trailing_bits)) {
+        // For `trailing_bits == 2`, if the difference of the two indices >= 4,
+        // we are sure that they point to the different address.
+        //
+        // However, if two indices are different by < 4, we are uncertain in
+        // this case. E.g., `idx1 = 0` and `idx2 = 2` point to the same
+        // cell, but `idx1 = 3` and `idx2 = 5` point to the different cells.
         return AliasResult::different;
       }
     }

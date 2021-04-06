@@ -103,6 +103,7 @@ def test(*args, **kwargs):
     '''
     def decorator(foo):
         import functools
+
         import pytest
 
         @pytest.mark.usefixtures('taichi_archs')

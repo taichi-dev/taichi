@@ -5,14 +5,12 @@ import math
 import operator as _bt_ops_mod  # bt for builtin
 import traceback
 
+from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.expr import Expr, make_expr_group
-from taichi.lang.util import (cook_dtype, is_taichi_class, taichi_lang_core,
-                              taichi_scope)
+from taichi.lang.util import cook_dtype, is_taichi_class, taichi_scope
 
-# TODO(#2223): Please stop abusing so many ti_cores
-ti_core = taichi_lang_core
 unary_ops = []
 
 
@@ -147,7 +145,7 @@ def cast(obj, dtype):
         # TODO: unify with element_wise_unary
         return obj.cast(dtype)
     else:
-        return Expr(ti_core.value_cast(Expr(obj).ptr, dtype))
+        return Expr(_ti_core.value_cast(Expr(obj).ptr, dtype))
 
 
 def bit_cast(obj, dtype):
@@ -156,7 +154,7 @@ def bit_cast(obj, dtype):
     if is_taichi_class(obj):
         raise ValueError('Cannot apply bit_cast on Taichi classes')
     else:
-        return Expr(ti_core.bits_cast(Expr(obj).ptr, dtype))
+        return Expr(_ti_core.bits_cast(Expr(obj).ptr, dtype))
 
 
 def _unary_operation(taichi_op, python_op, a):
@@ -187,32 +185,32 @@ def _ternary_operation(taichi_op, python_op, a, b, c):
 
 @unary
 def neg(a):
-    return _unary_operation(ti_core.expr_neg, _bt_ops_mod.neg, a)
+    return _unary_operation(_ti_core.expr_neg, _bt_ops_mod.neg, a)
 
 
 @unary
 def sin(a):
-    return _unary_operation(ti_core.expr_sin, math.sin, a)
+    return _unary_operation(_ti_core.expr_sin, math.sin, a)
 
 
 @unary
 def cos(a):
-    return _unary_operation(ti_core.expr_cos, math.cos, a)
+    return _unary_operation(_ti_core.expr_cos, math.cos, a)
 
 
 @unary
 def asin(a):
-    return _unary_operation(ti_core.expr_asin, math.asin, a)
+    return _unary_operation(_ti_core.expr_asin, math.asin, a)
 
 
 @unary
 def acos(a):
-    return _unary_operation(ti_core.expr_acos, math.acos, a)
+    return _unary_operation(_ti_core.expr_acos, math.acos, a)
 
 
 @unary
 def sqrt(a):
-    return _unary_operation(ti_core.expr_sqrt, math.sqrt, a)
+    return _unary_operation(_ti_core.expr_sqrt, math.sqrt, a)
 
 
 @unary
@@ -220,57 +218,57 @@ def rsqrt(a):
     def _rsqrt(a):
         return 1 / math.sqrt(a)
 
-    return _unary_operation(ti_core.expr_rsqrt, _rsqrt, a)
+    return _unary_operation(_ti_core.expr_rsqrt, _rsqrt, a)
 
 
 @unary
 def floor(a):
-    return _unary_operation(ti_core.expr_floor, math.floor, a)
+    return _unary_operation(_ti_core.expr_floor, math.floor, a)
 
 
 @unary
 def ceil(a):
-    return _unary_operation(ti_core.expr_ceil, math.ceil, a)
+    return _unary_operation(_ti_core.expr_ceil, math.ceil, a)
 
 
 @unary
 def tan(a):
-    return _unary_operation(ti_core.expr_tan, math.tan, a)
+    return _unary_operation(_ti_core.expr_tan, math.tan, a)
 
 
 @unary
 def tanh(a):
-    return _unary_operation(ti_core.expr_tanh, math.tanh, a)
+    return _unary_operation(_ti_core.expr_tanh, math.tanh, a)
 
 
 @unary
 def exp(a):
-    return _unary_operation(ti_core.expr_exp, math.exp, a)
+    return _unary_operation(_ti_core.expr_exp, math.exp, a)
 
 
 @unary
 def log(a):
-    return _unary_operation(ti_core.expr_log, math.log, a)
+    return _unary_operation(_ti_core.expr_log, math.log, a)
 
 
 @unary
 def abs(a):
-    return _unary_operation(ti_core.expr_abs, builtins.abs, a)
+    return _unary_operation(_ti_core.expr_abs, builtins.abs, a)
 
 
 @unary
 def bit_not(a):
-    return _unary_operation(ti_core.expr_bit_not, _bt_ops_mod.invert, a)
+    return _unary_operation(_ti_core.expr_bit_not, _bt_ops_mod.invert, a)
 
 
 @unary
 def logical_not(a):
-    return _unary_operation(ti_core.expr_logic_not, lambda x: int(not x), a)
+    return _unary_operation(_ti_core.expr_logic_not, lambda x: int(not x), a)
 
 
 def random(dtype=float):
     dtype = cook_dtype(dtype)
-    x = Expr(ti_core.make_rand_expr(dtype))
+    x = Expr(_ti_core.make_rand_expr(dtype))
     return impl.expr_init(x)
 
 
@@ -279,58 +277,59 @@ def random(dtype=float):
 
 @binary
 def add(a, b):
-    return _binary_operation(ti_core.expr_add, _bt_ops_mod.add, a, b)
+    return _binary_operation(_ti_core.expr_add, _bt_ops_mod.add, a, b)
 
 
 @binary
 def sub(a, b):
-    return _binary_operation(ti_core.expr_sub, _bt_ops_mod.sub, a, b)
+    return _binary_operation(_ti_core.expr_sub, _bt_ops_mod.sub, a, b)
 
 
 @binary
 def mul(a, b):
-    return _binary_operation(ti_core.expr_mul, _bt_ops_mod.mul, a, b)
+    return _binary_operation(_ti_core.expr_mul, _bt_ops_mod.mul, a, b)
 
 
 @binary
 def mod(a, b):
     def expr_python_mod(a, b):
         # a % b = (a // b) * b - a
-        quotient = Expr(ti_core.expr_floordiv(a, b))
-        multiply = Expr(ti_core.expr_mul(b, quotient.ptr))
-        return ti_core.expr_sub(a, multiply.ptr)
+        quotient = Expr(_ti_core.expr_floordiv(a, b))
+        multiply = Expr(_ti_core.expr_mul(b, quotient.ptr))
+        return _ti_core.expr_sub(a, multiply.ptr)
 
     return _binary_operation(expr_python_mod, _bt_ops_mod.mod, a, b)
 
 
 @binary
 def pow(a, b):
-    return _binary_operation(ti_core.expr_pow, _bt_ops_mod.pow, a, b)
+    return _binary_operation(_ti_core.expr_pow, _bt_ops_mod.pow, a, b)
 
 
 @binary
 def floordiv(a, b):
-    return _binary_operation(ti_core.expr_floordiv, _bt_ops_mod.floordiv, a, b)
+    return _binary_operation(_ti_core.expr_floordiv, _bt_ops_mod.floordiv, a,
+                             b)
 
 
 @binary
 def truediv(a, b):
-    return _binary_operation(ti_core.expr_truediv, _bt_ops_mod.truediv, a, b)
+    return _binary_operation(_ti_core.expr_truediv, _bt_ops_mod.truediv, a, b)
 
 
 @binary
 def max(a, b):
-    return _binary_operation(ti_core.expr_max, builtins.max, a, b)
+    return _binary_operation(_ti_core.expr_max, builtins.max, a, b)
 
 
 @binary
 def min(a, b):
-    return _binary_operation(ti_core.expr_min, builtins.min, a, b)
+    return _binary_operation(_ti_core.expr_min, builtins.min, a, b)
 
 
 @binary
 def atan2(a, b):
-    return _binary_operation(ti_core.expr_atan2, math.atan2, a, b)
+    return _binary_operation(_ti_core.expr_atan2, math.atan2, a, b)
 
 
 @binary
@@ -341,7 +340,7 @@ def raw_div(a, b):
         else:
             return a / b
 
-    return _binary_operation(ti_core.expr_div, c_div, a, b)
+    return _binary_operation(_ti_core.expr_div, c_div, a, b)
 
 
 @binary
@@ -349,74 +348,74 @@ def raw_mod(a, b):
     def c_mod(a, b):
         return a - b * int(float(a) / b)
 
-    return _binary_operation(ti_core.expr_mod, c_mod, a, b)
+    return _binary_operation(_ti_core.expr_mod, c_mod, a, b)
 
 
 @binary
 def cmp_lt(a, b):
-    return _binary_operation(ti_core.expr_cmp_lt, lambda a, b: -int(a < b), a,
+    return _binary_operation(_ti_core.expr_cmp_lt, lambda a, b: -int(a < b), a,
                              b)
 
 
 @binary
 def cmp_le(a, b):
-    return _binary_operation(ti_core.expr_cmp_le, lambda a, b: -int(a <= b), a,
-                             b)
+    return _binary_operation(_ti_core.expr_cmp_le, lambda a, b: -int(a <= b),
+                             a, b)
 
 
 @binary
 def cmp_gt(a, b):
-    return _binary_operation(ti_core.expr_cmp_gt, lambda a, b: -int(a > b), a,
+    return _binary_operation(_ti_core.expr_cmp_gt, lambda a, b: -int(a > b), a,
                              b)
 
 
 @binary
 def cmp_ge(a, b):
-    return _binary_operation(ti_core.expr_cmp_ge, lambda a, b: -int(a >= b), a,
-                             b)
+    return _binary_operation(_ti_core.expr_cmp_ge, lambda a, b: -int(a >= b),
+                             a, b)
 
 
 @binary
 def cmp_eq(a, b):
-    return _binary_operation(ti_core.expr_cmp_eq, lambda a, b: -int(a == b), a,
-                             b)
+    return _binary_operation(_ti_core.expr_cmp_eq, lambda a, b: -int(a == b),
+                             a, b)
 
 
 @binary
 def cmp_ne(a, b):
-    return _binary_operation(ti_core.expr_cmp_ne, lambda a, b: -int(a != b), a,
-                             b)
+    return _binary_operation(_ti_core.expr_cmp_ne, lambda a, b: -int(a != b),
+                             a, b)
 
 
 @binary
 def bit_or(a, b):
-    return _binary_operation(ti_core.expr_bit_or, _bt_ops_mod.or_, a, b)
+    return _binary_operation(_ti_core.expr_bit_or, _bt_ops_mod.or_, a, b)
 
 
 @binary
 def bit_and(a, b):
-    return _binary_operation(ti_core.expr_bit_and, _bt_ops_mod.and_, a, b)
+    return _binary_operation(_ti_core.expr_bit_and, _bt_ops_mod.and_, a, b)
 
 
 @binary
 def bit_xor(a, b):
-    return _binary_operation(ti_core.expr_bit_xor, _bt_ops_mod.xor, a, b)
+    return _binary_operation(_ti_core.expr_bit_xor, _bt_ops_mod.xor, a, b)
 
 
 @binary
 def bit_shl(a, b):
-    return _binary_operation(ti_core.expr_bit_shl, _bt_ops_mod.lshift, a, b)
+    return _binary_operation(_ti_core.expr_bit_shl, _bt_ops_mod.lshift, a, b)
 
 
 @binary
 def bit_sar(a, b):
-    return _binary_operation(ti_core.expr_bit_sar, _bt_ops_mod.rshift, a, b)
+    return _binary_operation(_ti_core.expr_bit_sar, _bt_ops_mod.rshift, a, b)
 
 
 @taichi_scope
 @binary
 def bit_shr(a, b):
-    return _binary_operation(ti_core.expr_bit_shr, _bt_ops_mod.rshift, a, b)
+    return _binary_operation(_ti_core.expr_bit_shr, _bt_ops_mod.rshift, a, b)
 
 
 # We don't have logic_and/or instructions yet:
@@ -432,54 +431,54 @@ def select(cond, a, b):
     def py_select(cond, a, b):
         return a * cond + b * (1 - cond)
 
-    return _ternary_operation(ti_core.expr_select, py_select, cond, a, b)
+    return _ternary_operation(_ti_core.expr_select, py_select, cond, a, b)
 
 
 @writeback_binary
 def atomic_add(a, b):
     return impl.expr_init(
-        Expr(ti_core.expr_atomic_add(a.ptr, b.ptr), tb=stack_info()))
+        Expr(_ti_core.expr_atomic_add(a.ptr, b.ptr), tb=stack_info()))
 
 
 @writeback_binary
 def atomic_sub(a, b):
     return impl.expr_init(
-        Expr(ti_core.expr_atomic_sub(a.ptr, b.ptr), tb=stack_info()))
+        Expr(_ti_core.expr_atomic_sub(a.ptr, b.ptr), tb=stack_info()))
 
 
 @writeback_binary
 def atomic_min(a, b):
     return impl.expr_init(
-        Expr(ti_core.expr_atomic_min(a.ptr, b.ptr), tb=stack_info()))
+        Expr(_ti_core.expr_atomic_min(a.ptr, b.ptr), tb=stack_info()))
 
 
 @writeback_binary
 def atomic_max(a, b):
     return impl.expr_init(
-        Expr(ti_core.expr_atomic_max(a.ptr, b.ptr), tb=stack_info()))
+        Expr(_ti_core.expr_atomic_max(a.ptr, b.ptr), tb=stack_info()))
 
 
 @writeback_binary
 def atomic_and(a, b):
     return impl.expr_init(
-        Expr(ti_core.expr_atomic_bit_and(a.ptr, b.ptr), tb=stack_info()))
+        Expr(_ti_core.expr_atomic_bit_and(a.ptr, b.ptr), tb=stack_info()))
 
 
 @writeback_binary
 def atomic_or(a, b):
     return impl.expr_init(
-        Expr(ti_core.expr_atomic_bit_or(a.ptr, b.ptr), tb=stack_info()))
+        Expr(_ti_core.expr_atomic_bit_or(a.ptr, b.ptr), tb=stack_info()))
 
 
 @writeback_binary
 def atomic_xor(a, b):
     return impl.expr_init(
-        Expr(ti_core.expr_atomic_bit_xor(a.ptr, b.ptr), tb=stack_info()))
+        Expr(_ti_core.expr_atomic_bit_xor(a.ptr, b.ptr), tb=stack_info()))
 
 
 @writeback_binary
 def assign(a, b):
-    ti_core.expr_assign(a.ptr, b.ptr, stack_info())
+    _ti_core.expr_assign(a.ptr, b.ptr, stack_info())
     return a
 
 
@@ -515,35 +514,35 @@ def ti_all(a):
 
 def append(l, indices, val):
     a = impl.expr_init(
-        ti_core.insert_append(l.snode.ptr, make_expr_group(indices),
-                              Expr(val).ptr))
+        _ti_core.insert_append(l.snode.ptr, make_expr_group(indices),
+                               Expr(val).ptr))
     return a
 
 
 def external_func_call(func, args=[], outputs=[]):
     func_addr = ctypes.cast(func, ctypes.c_void_p).value
-    ti_core.insert_external_func_call(func_addr, '', make_expr_group(args),
-                                      make_expr_group(outputs))
+    _ti_core.insert_external_func_call(func_addr, '', make_expr_group(args),
+                                       make_expr_group(outputs))
 
 
 def asm(source, inputs=[], outputs=[]):
 
-    ti_core.insert_external_func_call(0, source, make_expr_group(inputs),
-                                      make_expr_group(outputs))
+    _ti_core.insert_external_func_call(0, source, make_expr_group(inputs),
+                                       make_expr_group(outputs))
 
 
 def is_active(l, indices):
-    return Expr(ti_core.insert_is_active(l.snode.ptr,
-                                         make_expr_group(indices)))
+    return Expr(
+        _ti_core.insert_is_active(l.snode.ptr, make_expr_group(indices)))
 
 
 def activate(l, indices):
-    ti_core.insert_activate(l.snode.ptr, make_expr_group(indices))
+    _ti_core.insert_activate(l.snode.ptr, make_expr_group(indices))
 
 
 def deactivate(l, indices):
-    ti_core.insert_deactivate(l.snode.ptr, make_expr_group(indices))
+    _ti_core.insert_deactivate(l.snode.ptr, make_expr_group(indices))
 
 
 def length(l, indices):
-    return Expr(ti_core.insert_len(l.snode.ptr, make_expr_group(indices)))
+    return Expr(_ti_core.insert_len(l.snode.ptr, make_expr_group(indices)))

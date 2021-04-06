@@ -4,8 +4,8 @@ from collections.abc import Iterable
 
 import numpy as np
 from taichi.lang import expr, impl
-from taichi.lang import ops as ops_mod
 from taichi.lang import kernel_impl as kern_mod
+from taichi.lang import ops as ops_mod
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.util import (in_python_scope, is_taichi_class, python_scope,

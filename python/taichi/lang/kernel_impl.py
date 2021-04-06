@@ -6,9 +6,9 @@ import re
 
 import numpy as np
 from taichi.core import primitive_types
+from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl, util
 from taichi.lang.ast_checker import KernelSimplicityASTChecker
-from taichi.lang.core import taichi_lang_core
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.kernel_arguments import ext_arr, template
 from taichi.lang.shell import _shell_pop_print, oinspect
@@ -352,8 +352,7 @@ class Kernel:
                     mode='exec'), global_vars, local_vars)
         compiled = local_vars[self.func.__name__]
 
-        taichi_kernel = taichi_lang_core.create_kernel(kernel_name,
-                                                       self.is_grad)
+        taichi_kernel = _ti_core.create_kernel(kernel_name, self.is_grad)
 
         # Do not change the name of 'taichi_ast_generator'
         # The warning system needs this identifier to remove unnecessary messages
@@ -426,14 +425,14 @@ class Kernel:
 
                         if str(v.device).startswith('cuda'):
                             # External tensor on cuda
-                            if taichi_arch != taichi_lang_core.Arch.cuda:
+                            if taichi_arch != _ti_core.Arch.cuda:
                                 # copy data back to cpu
                                 host_v = v.to(device='cpu', copy=True)
                                 tmp = host_v
                                 callbacks.append(get_call_back(v, host_v))
                         else:
                             # External tensor on cpu
-                            if taichi_arch == taichi_lang_core.Arch.cuda:
+                            if taichi_arch == _ti_core.Arch.cuda:
                                 gpu_v = v.cuda()
                                 tmp = gpu_v
                                 callbacks.append(get_call_back(v, gpu_v))
@@ -441,7 +440,7 @@ class Kernel:
                             actual_argument_slot, int(tmp.data_ptr()),
                             tmp.element_size() * tmp.nelement())
                     shape = v.shape
-                    max_num_indices = taichi_lang_core.get_max_num_indices()
+                    max_num_indices = _ti_core.get_max_num_indices()
                     assert len(
                         shape
                     ) <= max_num_indices, "External array cannot have > {} indices".format(

@@ -2,8 +2,8 @@ import functools
 import os
 
 import numpy as np
+from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl
-from taichi.lang.core import taichi_lang_core
 
 import taichi as ti
 
@@ -83,7 +83,7 @@ def to_pytorch_type(dt):
 
 
 def to_taichi_type(dt):
-    if type(dt) == taichi_lang_core.DataType:
+    if type(dt) == _ti_core.DataType:
         return dt
 
     if dt == np.float32:
@@ -134,10 +134,10 @@ def to_taichi_type(dt):
 
 def cook_dtype(dtype):
     _taichi_skip_traceback = 1
-    if isinstance(dtype, taichi_lang_core.DataType):
+    if isinstance(dtype, _ti_core.DataType):
         return dtype
-    elif isinstance(dtype, taichi_lang_core.Type):
-        return taichi_lang_core.DataType(dtype)
+    elif isinstance(dtype, _ti_core.Type):
+        return _ti_core.DataType(dtype)
     elif dtype is float:
         return impl.get_runtime().default_fp
     elif dtype is int:

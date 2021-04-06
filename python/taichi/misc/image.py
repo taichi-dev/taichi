@@ -1,4 +1,5 @@
 import numpy as np
+
 import taichi as ti
 
 
@@ -39,9 +40,10 @@ def imdisplay(img):
     except:
         ti.imshow(img)
     else:
-        import PIL.Image
         from io import BytesIO
+
         import IPython.display
+        import PIL.Image
         img = cook_image_to_bytes(img)
         with BytesIO() as f:
             PIL.Image.fromarray(img).save(f, 'png')

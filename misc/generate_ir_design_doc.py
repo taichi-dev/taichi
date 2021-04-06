@@ -1,6 +1,8 @@
-import taichi as ti
 import os
+
 import yaml
+
+import taichi as ti
 
 
 def extract_doc(doc_filename=None):

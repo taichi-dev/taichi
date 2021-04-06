@@ -11,10 +11,10 @@ from functools import wraps
 from pathlib import Path
 
 from colorama import Back, Fore, Style
-
-import taichi as ti
 from taichi.tools.video import (accelerate_video, crop_video, make_video,
                                 mp4_to_gif, scale_video)
+
+import taichi as ti
 
 
 def timer(func):
@@ -195,8 +195,8 @@ class TaichiMain:
 
         if args.pretty_print:
             try:
-                import rich.syntax
                 import rich.console
+                import rich.syntax
             except ImportError as e:
                 print('To make -P work, please: python3 -m pip install rich')
                 return 1
@@ -261,9 +261,10 @@ class TaichiMain:
         # Short circuit for testing
         if self.test_mode: return args
 
-        from git import Git
-        import zipfile
         import hashlib
+        import zipfile
+
+        from git import Git
         g = Git(ti.get_repo_directory())
         g.init()
         with zipfile.ZipFile('release.zip', 'w') as zip:
@@ -583,6 +584,7 @@ class TaichiMain:
 
         def plot_in_gui(scatter):
             import numpy as np
+
             import taichi as ti
             gui = ti.GUI('Regression Test', (640, 480), 0x001122)
             print('[Hint] press SPACE to go for next display')
@@ -696,8 +698,9 @@ class TaichiMain:
     @staticmethod
     def _test_python(args):
         print("\nRunning Python tests...\n")
-        import taichi as ti
         import pytest
+
+        import taichi as ti
         if ti.is_release():
             root_dir = ti.package_root()
             test_dir = os.path.join(root_dir, 'tests')
@@ -758,6 +761,7 @@ class TaichiMain:
     @staticmethod
     def _test_cpp(args):
         import taichi as ti
+
         # Cpp tests use the legacy non LLVM backend
         ti.reset()
         print("Running C++ tests...")
@@ -1056,10 +1060,12 @@ class TaichiMain:
         args = parser.parse_args(arguments)
 
         def local_scope():
-            import taichi as ti
-            import numpy as np
             import math
             import time
+
+            import numpy as np
+
+            import taichi as ti
             try:
                 import IPython
                 IPython.embed()

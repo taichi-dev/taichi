@@ -78,7 +78,7 @@ AliasResult alias_analysis(Stmt *var1, Stmt *var2) {
     bool uncertain = false;
     for (int i = 0; i < (int)ptr1->indices.size(); i++) {
       auto diff = value_diff_ptr_index(ptr1->indices[i], ptr2->indices[i]);
-      if (!diff.first) {
+      if (!diff.is_diff_certain) {
         uncertain = true;
       } else if (std::abs(diff.second) >= 1) {
         return AliasResult::different;

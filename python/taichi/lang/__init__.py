@@ -22,7 +22,7 @@ from taichi.lang.util import (has_pytorch, is_taichi_class, python_scope,
 import taichi as ti
 
 # TODO(#2223): Remove
-core = taichi_lang_core
+core = _ti_core
 
 runtime = impl.get_runtime()
 

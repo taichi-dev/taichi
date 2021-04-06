@@ -1679,7 +1679,6 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
 
     if (stmt->snode->type == SNodeType::bit_array && stmt->snode->parent) {
       if (stmt->snode->parent->type == SNodeType::dense) {
-        // initialize the coordinates
         refine =
              get_runtime_function(stmt->snode->refine_coordinates_func_name());
 

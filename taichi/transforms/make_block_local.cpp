@@ -143,9 +143,16 @@ void make_block_local_offload(OffloadedStmt *offload) {
                       TypedConstant(pad.second.bounds[0][i])),
                   bls_coord);
 
+              int k = snode->physical_index_position[i];
+              auto num_bits = element_block->push_back<ConstStmt>(
+                  TypedConstant(snode->extractors[k].num_bits));
+              auto block_corner =
+                  element_block->push_back<BlockCornerIndexStmt>(offload, i);
+              auto block_corner_refined = element_block->
+                  push_back<BinaryOpStmt>(
+                  BinaryOpType::bit_shl, block_corner, num_bits);
               global_index = element_block->push_back<BinaryOpStmt>(
-                  BinaryOpType::add, global_index,
-                  element_block->push_back<BlockCornerIndexStmt>(offload, i));
+                  BinaryOpType::add, global_index, block_corner_refined);
 
               global_indices[i] = global_index;
             }
@@ -211,10 +218,14 @@ void make_block_local_offload(OffloadedStmt *offload) {
           //   bls_stride_i * (gbl_idx_i - loop_base_i - bls_lower_bound_i)
           // Note that when index offsets are used, the offset contributions are
           // already included in bls_lower_bound_i.
+          int k = snode->physical_index_position[i];
+          auto num_bits = bls.push_back<ConstStmt>(
+              TypedConstant(snode->extractors[k].num_bits));
           auto block_corner = bls.push_back<BlockCornerIndexStmt>(offload, i);
-
+          auto block_corner_refined = bls.push_back<BinaryOpStmt>(
+              BinaryOpType::bit_shl, block_corner, num_bits);
           auto inc = bls.push_back<BinaryOpStmt>(
-              BinaryOpType::sub, global_indices[i], block_corner);
+              BinaryOpType::sub, global_indices[i], block_corner_refined);
           inc = bls.push_back<BinaryOpStmt>(
               BinaryOpType::sub, inc,
               bls.push_back<ConstStmt>(TypedConstant(pad.second.bounds[0][i])));

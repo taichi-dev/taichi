@@ -1196,7 +1196,7 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
         TI_ASSERT(digits_snode->parent == exponent_snode->parent);
         auto exponent_bit_ptr =
             offset_bit_ptr(llvm_val[stmt->dest], exponent_snode->bit_offset -
-                                                    digits_snode->bit_offset);
+                                                     digits_snode->bit_offset);
         store_custom_int(exponent_bit_ptr, exponent_cit, exponent_bits);
         store_value = digit_bits;
 

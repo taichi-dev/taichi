@@ -29,14 +29,14 @@ bool StateMachine::same_data(Stmt *store_stmt1, Stmt *store_stmt2) {
     if (!store_stmt2->is<LocalStoreStmt>())
       return false;
     return irpass::analysis::same_statements(
-        store_stmt1->as<LocalStoreStmt>()->data,
-        store_stmt2->as<LocalStoreStmt>()->data);
+        store_stmt1->as<LocalStoreStmt>()->val,
+        store_stmt2->as<LocalStoreStmt>()->val);
   } else {
     if (!store_stmt2->is<GlobalStoreStmt>())
       return false;
     return irpass::analysis::same_statements(
-        store_stmt1->as<GlobalStoreStmt>()->data,
-        store_stmt2->as<GlobalStoreStmt>()->data);
+        store_stmt1->as<GlobalStoreStmt>()->val,
+        store_stmt2->as<GlobalStoreStmt>()->val);
   }
 }
 
@@ -146,9 +146,9 @@ void StateMachine::load(Stmt *load_stmt) {
   if (last_store_forwardable) {
     // store-forwarding
     if (last_store->is<LocalStoreStmt>())
-      load_stmt->replace_with(last_store->as<LocalStoreStmt>()->data);
+      load_stmt->replace_with(last_store->as<LocalStoreStmt>()->val);
     else
-      load_stmt->replace_with(last_store->as<GlobalStoreStmt>()->data);
+      load_stmt->replace_with(last_store->as<GlobalStoreStmt>()->val);
     load_stmt->parent->erase(load_stmt);
     throw IRModified();
   }

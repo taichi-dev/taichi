@@ -155,14 +155,14 @@ Stmt *LocalLoadStmt::previous_store_or_alloca_in_block() {
     if (parent->statements[i]->is<LocalStoreStmt>()) {
       auto store = parent->statements[i]->as<LocalStoreStmt>();
       // TI_ASSERT(store->width() == 1);
-      if (store->ptr == this->ptr[0].var) {
+      if (store->dest == this->src[0].var) {
         // found
         return store;
       }
     } else if (parent->statements[i]->is<AllocaStmt>()) {
       auto alloca = parent->statements[i]->as<AllocaStmt>();
       // TI_ASSERT(alloca->width() == 1);
-      if (alloca == this->ptr[0].var) {
+      if (alloca == this->src[0].var) {
         return alloca;
       }
     }
@@ -171,8 +171,8 @@ Stmt *LocalLoadStmt::previous_store_or_alloca_in_block() {
 }
 
 bool LocalLoadStmt::same_source() const {
-  for (int i = 1; i < (int)ptr.size(); i++) {
-    if (ptr[i].var != ptr[0].var)
+  for (int i = 1; i < (int)src.size(); i++) {
+    if (src[i].var != src[0].var)
       return false;
   }
   return true;
@@ -180,7 +180,7 @@ bool LocalLoadStmt::same_source() const {
 
 bool LocalLoadStmt::has_source(Stmt *alloca) const {
   for (int i = 0; i < width(); i++) {
-    if (ptr[i].var == alloca)
+    if (src[i].var == alloca)
       return true;
   }
   return false;

@@ -51,8 +51,8 @@ class FlagAccess : public IRVisitor {
   }
 
   void visit(GlobalStoreStmt *stmt) {
-    if (stmt->ptr->is<GlobalPtrStmt>()) {
-      stmt->ptr->as<GlobalPtrStmt>()->activate = true;
+    if (stmt->dest->is<GlobalPtrStmt>()) {
+      stmt->dest->as<GlobalPtrStmt>()->activate = true;
     }
   }
 

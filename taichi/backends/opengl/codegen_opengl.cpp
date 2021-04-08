@@ -405,11 +405,11 @@ class KernelGen : public IRVisitor {
 
   void visit(GlobalStoreStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    auto dt = stmt->data->element_type();
+    auto dt = stmt->val->element_type();
     emit("_{}_{}_[{} >> {}] = {};",
-         ptr_signats.at(stmt->ptr->id),  // throw out_of_range if not a pointer
-         opengl_data_type_short_name(dt), stmt->ptr->short_name(),
-         opengl_data_address_shifter(dt), stmt->data->short_name());
+         ptr_signats.at(stmt->dest->id),  // throw out_of_range if not a pointer
+         opengl_data_type_short_name(dt), stmt->dest->short_name(),
+         opengl_data_address_shifter(dt), stmt->val->short_name());
   }
 
   void visit(GlobalLoadStmt *stmt) override {
@@ -417,8 +417,8 @@ class KernelGen : public IRVisitor {
     auto dt = stmt->element_type();
     emit("{} {} = _{}_{}_[{} >> {}];",
          opengl_data_type_name(stmt->element_type()), stmt->short_name(),
-         ptr_signats.at(stmt->ptr->id), opengl_data_type_short_name(dt),
-         stmt->ptr->short_name(), opengl_data_address_shifter(dt));
+         ptr_signats.at(stmt->src->id), opengl_data_type_short_name(dt),
+         stmt->src->short_name(), opengl_data_address_shifter(dt));
   }
 
   void visit(ExternalPtrStmt *stmt) override {
@@ -648,23 +648,23 @@ class KernelGen : public IRVisitor {
 
   void visit(LocalLoadStmt *stmt) override {
     bool linear_index = true;
-    for (int i = 0; i < (int)stmt->ptr.size(); i++) {
-      if (stmt->ptr[i].offset != i) {
+    for (int i = 0; i < (int)stmt->src.size(); i++) {
+      if (stmt->src[i].offset != i) {
         linear_index = false;
       }
     }
     if (stmt->same_source() && linear_index &&
-        stmt->width() == stmt->ptr[0].var->width()) {
-      auto ptr = stmt->ptr[0].var;
+        stmt->width() == stmt->src[0].var->width()) {
+      auto src = stmt->src[0].var;
       emit("{} {} = {};", opengl_data_type_name(stmt->element_type()),
-           stmt->short_name(), ptr->short_name());
+           stmt->short_name(), src->short_name());
     } else {
       TI_NOT_IMPLEMENTED;
     }
   }
 
   void visit(LocalStoreStmt *stmt) override {
-    emit("{} = {};", stmt->ptr->short_name(), stmt->data->short_name());
+    emit("{} = {};", stmt->dest->short_name(), stmt->val->short_name());
   }
 
   void visit(AllocaStmt *alloca) override {

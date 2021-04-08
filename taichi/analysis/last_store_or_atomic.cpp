@@ -24,7 +24,7 @@ class LocalStoreForwarder : public BasicStmtVisitor {
   }
 
   void visit(LocalStoreStmt *stmt) override {
-    if (stmt->ptr == var) {
+    if (stmt->dest == var) {
       is_valid = true;
       result = stmt;
     }
@@ -70,8 +70,8 @@ class LocalStoreForwarder : public BasicStmtVisitor {
     } else {
       TI_ASSERT(true_stmt->is<LocalStoreStmt>());
       TI_ASSERT(false_stmt->is<LocalStoreStmt>());
-      if (true_stmt->as<LocalStoreStmt>()->data !=
-          false_stmt->as<LocalStoreStmt>()->data) {
+      if (true_stmt->as<LocalStoreStmt>()->val !=
+          false_stmt->as<LocalStoreStmt>()->val) {
         // two branches finally store the variable differently
         is_valid = false;
       } else {

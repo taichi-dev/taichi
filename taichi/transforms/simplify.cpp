@@ -84,7 +84,7 @@ class BasicBlockSimplify : public IRVisitor {
         auto &bstmt_data = *bstmt;
         if (typeid(bstmt_data) == typeid(*stmt)) {
           auto bstmt_ = bstmt->as<GlobalLoadStmt>();
-          bool same = stmt->ptr == bstmt_->ptr;
+          bool same = stmt->src == bstmt_->src;
           if (same) {
             // no store to the var?
             bool has_store = false;
@@ -107,10 +107,10 @@ class BasicBlockSimplify : public IRVisitor {
                        [&](Stmt *s) {
                          if (auto store = s->cast<GlobalStoreStmt>())
                            return irpass::analysis::maybe_same_address(
-                               store->ptr, stmt->ptr);
+                               store->dest, stmt->src);
                          else if (auto atomic = s->cast<AtomicOpStmt>())
                            return irpass::analysis::maybe_same_address(
-                               atomic->dest, stmt->ptr);
+                               atomic->dest, stmt->src);
                          else
                            return false;
                        })
@@ -433,17 +433,17 @@ class BasicBlockSimplify : public IRVisitor {
             auto store = clause[i]->as<LocalStoreStmt>();
             auto lanes = LaneAttribute<LocalAddress>();
             for (int l = 0; l < store->width(); l++) {
-              lanes.push_back(LocalAddress(store->ptr, l));
+              lanes.push_back(LocalAddress(store->dest, l));
             }
             auto load =
                 if_stmt->insert_before_me(Stmt::make<LocalLoadStmt>(lanes));
             irpass::type_check(load);
             auto select = if_stmt->insert_before_me(
                 Stmt::make<TernaryOpStmt>(TernaryOpType::select, if_stmt->cond,
-                                          true_branch ? store->data : load,
-                                          true_branch ? load : store->data));
+                                          true_branch ? store->val : load,
+                                          true_branch ? load : store->val));
             irpass::type_check(select);
-            store->data = select;
+            store->val = select;
             if_stmt->insert_before_me(std::move(clause[i]));
           } else {
             if_stmt->insert_before_me(std::move(clause[i]));

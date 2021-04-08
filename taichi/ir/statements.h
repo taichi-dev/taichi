@@ -384,7 +384,8 @@ class GlobalLoadStmt : public Stmt {
 
 class GlobalStoreStmt : public Stmt {
  public:
-  Stmt *dest, *val;
+  Stmt *dest;
+  Stmt *val;
 
   GlobalStoreStmt(Stmt *dest, Stmt *val) : dest(dest), val(val) {
     TI_STMT_REG_FIELDS;

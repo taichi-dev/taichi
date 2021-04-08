@@ -109,8 +109,19 @@ def test_random_seed_per_launch():
 
 @ti.test(arch=[ti.cpu, ti.cuda])
 def test_random_f64():
+    '''
+    Tests the generation of well-behaved Float64 random numbers by granularity,
+    see #2251 for explanation.
+    '''
+    import numpy as np
+    n = int(2 ** 23)
+    x = ti.field(ti.f64, shape=n)
+
     @ti.kernel
     def foo() -> ti.f64:
-        return ti.random(dtype=ti.f64)
+        for i in x:
+            x[i] = ti.random(dtype=ti.f64)
 
     foo()
+    diff = np.diff(np.sort(x.to_numpy()), 1)
+    assert np.min(diff) > 0

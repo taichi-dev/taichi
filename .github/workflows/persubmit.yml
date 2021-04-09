@@ -16,6 +16,9 @@ jobs:
             with_cc: OFF
             with_cpp_tests: ON
     runs-on: m1
+    defaults:
+      run:
+        shell: "/usr/bin/arch -arch arm64e /bin/bash {0}"
     steps:
       - uses: actions/checkout@v2
       - name: Build

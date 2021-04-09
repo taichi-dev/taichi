@@ -1,9 +1,9 @@
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/ir.h"
-#include "taichi/ir/pass.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
+#include "taichi/transforms/alg_simp.h"
 #include "taichi/program/program.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -328,21 +328,14 @@ class AlgSimp : public BasicStmtVisitor {
   }
 };
 
-class AlgSimpPass : public Pass {
- public:
-  static const PassID id;
-  class Result : public Pass::Result {
-   public:
-    bool modified;
-    explicit Result(bool modified) : modified(modified) {
-    }
-  };
-  static void run(const PassContext &ctx, IRNode *module, PassManager *mgr) {
-    auto result = AlgSimp::run(module, ctx.get_config().fast_math);
-    mgr->put_pass_result<AlgSimpPass>(std::make_unique<Result>(result));
-  }
-};
-const PassID AlgSimpPass::id = "AlgSimpPass";
+Pass::Status AlgSimpPass::run(const PassContext &ctx,
+                              IRNode *module,
+                              AnalysisManager *amgr) {
+  TI_PROFILER("AlgSimpPass");
+  auto modified = AlgSimp::run(module, ctx.get_config().fast_math);
+  return modified ? Pass::Status::SuccessWithChange
+                  : Pass::Status::SuccessWithoutChange;
+}
 
 namespace irpass {
 
@@ -363,9 +356,9 @@ bool alg_simp(IRNode *root) {
     ctx.config_ = root->get_config();
   else
     ctx.config_.fast_math = false;
-  PassManager mgr;
-  AlgSimpPass::run(ctx, root, &mgr);
-  return mgr.get_pass_result<AlgSimpPass>().modified;
+  AnalysisManager mgr;
+  AlgSimpPass pass;
+  return pass.run(ctx, root, &mgr) == Pass::Status::SuccessWithChange;
   // return AlgSimp::run(root, hack::use_fast_math(root));
 }
 

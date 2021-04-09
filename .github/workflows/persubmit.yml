@@ -22,7 +22,7 @@ jobs:
           export TAICHI_REPO_DIR=`pwd`
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
           export CXX=clang++
-          python misc/ci_setup.py ci
+          python3 misc/ci_setup.py ci
         env:
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
 
@@ -32,7 +32,7 @@ jobs:
           export PATH=$TAICHI_REPO_DIR/bin:$PATH
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
           export PYTHONPATH=$TAICHI_REPO_DIR/python
-          python examples/laplace.py
+          python3 examples/laplace.py
           ti diagnose
           [ "$RUN_CPP_TESTS" = "ON" ] && ./build/taichi_cpp_tests
           ti test -vr2 -t2

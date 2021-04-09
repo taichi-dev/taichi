@@ -5,7 +5,7 @@ on:
 
 jobs:
   build_and_test_cpu:
-    name: Build and Test (Mac)
+    name: Build and Test (Apple M1)
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip ci') && github.event.sender.login != 'taichi-gardener' }}
     strategy:
       matrix:
@@ -14,7 +14,7 @@ jobs:
             python: 3.7
             with_cc: OFF
             with_cpp_tests: ON
-    runs-on: [mac-mini-m1]
+    runs-on: m1
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2

@@ -11,16 +11,12 @@ jobs:
       matrix:
         include:
           - os: macos-latest
-            python: 3.7
+            python: 3.8
             with_cc: OFF
             with_cpp_tests: ON
     runs-on: m1
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python }}
-
       - name: Build
         run: |
           export TAICHI_REPO_DIR=`pwd`

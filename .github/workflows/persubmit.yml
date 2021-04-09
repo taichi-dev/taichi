@@ -21,15 +21,6 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
 
-      - name: Download Pre-Built LLVM 10.0.0
-        run: |
-          python misc/ci_download.py
-          mkdir taichi-llvm
-          cd taichi-llvm
-          unzip ../taichi-llvm.zip
-        env:
-          CI_PLATFORM: ${{ matrix.os }}
-
       - name: Build
         run: |
           export TAICHI_REPO_DIR=`pwd`

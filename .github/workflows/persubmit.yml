@@ -3,6 +3,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+
 jobs:
   build_and_test_cpu:
     name: Build and Test (Apple M1)

@@ -197,21 +197,21 @@ class LowerAccess : public IRVisitor {
   }
 
   void visit(GlobalLoadStmt *stmt) override {
-    if (stmt->ptr->is<GlobalPtrStmt>()) {
+    if (stmt->src->is<GlobalPtrStmt>()) {
       // No need to activate for all read accesses
-      auto lowered = lower_vector_ptr(stmt->ptr->as<GlobalPtrStmt>(), false);
-      stmt->ptr = lowered.back().get();
+      auto lowered = lower_vector_ptr(stmt->src->as<GlobalPtrStmt>(), false);
+      stmt->src = lowered.back().get();
       modifier.insert_before(stmt, std::move(lowered));
     }
   }
 
   void visit(GlobalStoreStmt *stmt) override {
-    if (stmt->ptr->is<GlobalPtrStmt>()) {
-      auto ptr = stmt->ptr->as<GlobalPtrStmt>();
+    if (stmt->dest->is<GlobalPtrStmt>()) {
+      auto ptr = stmt->dest->as<GlobalPtrStmt>();
       // If ptr already has activate = false, no need to activate all the
       // generated micro-access ops. Otherwise, activate the nodes.
       auto lowered = lower_vector_ptr(ptr, ptr->activate);
-      stmt->ptr = lowered.back().get();
+      stmt->dest = lowered.back().get();
       modifier.insert_before(stmt, std::move(lowered));
     }
   }
@@ -246,9 +246,9 @@ class LowerAccess : public IRVisitor {
   }
 
   void visit(LocalStoreStmt *stmt) override {
-    if (stmt->data->is<GlobalPtrStmt>()) {
-      auto lowered = lower_vector_ptr(stmt->data->as<GlobalPtrStmt>(), true);
-      stmt->data = lowered.back().get();
+    if (stmt->val->is<GlobalPtrStmt>()) {
+      auto lowered = lower_vector_ptr(stmt->val->as<GlobalPtrStmt>(), true);
+      stmt->val = lowered.back().get();
       modifier.insert_before(stmt, std::move(lowered));
     }
   }

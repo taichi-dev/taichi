@@ -417,7 +417,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   }
 
   void visit(GlobalLoadStmt *stmt) override {
-    if (auto get_ch = stmt->ptr->cast<GetChStmt>(); get_ch) {
+    if (auto get_ch = stmt->src->cast<GetChStmt>(); get_ch) {
       bool should_cache_as_read_only = false;
       if (current_offload->mem_access_opt.has_flag(
               get_ch->output_snode, SNodeAccessFlag::read_only)) {
@@ -425,7 +425,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       }
       if (should_cache_as_read_only) {
         auto dtype = stmt->ret_type;
-        if (auto ptr_type = stmt->ptr->ret_type->as<PointerType>();
+        if (auto ptr_type = stmt->src->ret_type->as<PointerType>();
             ptr_type->is_bit_pointer()) {
           // Bit pointer case.
           auto val_type = ptr_type->get_pointee_type();
@@ -436,13 +436,13 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
           if (auto cit = val_type->cast<CustomIntType>()) {
             int_in_mem = val_type;
             dtype = cit->get_physical_type();
-            auto [data_ptr, bit_offset] = load_bit_pointer(llvm_val[stmt->ptr]);
+            auto [data_ptr, bit_offset] = load_bit_pointer(llvm_val[stmt->src]);
             data_ptr = builder->CreateBitCast(data_ptr, llvm_ptr_type(dtype));
             auto data = create_intrinsic_load(dtype, data_ptr);
             llvm_val[stmt] = extract_custom_int(data, bit_offset, int_in_mem);
           } else if (auto cft = val_type->cast<CustomFloatType>()) {
             // TODO: support __ldg
-            llvm_val[stmt] = load_custom_float(stmt->ptr);
+            llvm_val[stmt] = load_custom_float(stmt->src);
           } else {
             TI_NOT_IMPLEMENTED;
           }
@@ -450,7 +450,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
           // Byte pointer case.
           // Issue an CUDA "__ldg" instruction so that data are cached in
           // the CUDA read-only data cache.
-          llvm_val[stmt] = create_intrinsic_load(dtype, llvm_val[stmt->ptr]);
+          llvm_val[stmt] = create_intrinsic_load(dtype, llvm_val[stmt->src]);
         }
       } else {
         CodeGenLLVM::visit(stmt);

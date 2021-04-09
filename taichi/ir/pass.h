@@ -48,6 +48,7 @@ class Pass {
   virtual Status run(const PassContext &ctx,
                      IRNode *module,
                      AnalysisManager *amgr) {
+    return Status::Failure;
   }
 };
 const PassID Pass::id = "undefined";

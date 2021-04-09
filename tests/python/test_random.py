@@ -114,7 +114,7 @@ def test_random_f64():
     see #2251 for explanation.
     '''
     import numpy as np
-    n = int(2 ** 23)
+    n = int(2**23)
     x = ti.field(ti.f64, shape=n)
 
     @ti.kernel

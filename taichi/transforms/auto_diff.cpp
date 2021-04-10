@@ -185,6 +185,10 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
 class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
+  int ad_stack_size;
+  explicit ReplaceLocalVarWithStacks(int ad_stack_size)
+      : ad_stack_size(ad_stack_size) {
+  }
 
   void visit(AllocaStmt *alloc) override {
     TI_ASSERT(alloc->width() == 1);
@@ -202,8 +206,7 @@ class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
                          .empty();
     if (!load_only) {
       auto dtype = alloc->ret_type;
-      auto stack_alloca = Stmt::make<StackAllocaStmt>(
-          dtype, alloc->get_kernel()->program.config.ad_stack_size);
+      auto stack_alloca = Stmt::make<StackAllocaStmt>(dtype, ad_stack_size);
       auto stack_alloca_ptr = stack_alloca.get();
 
       alloc->replace_with(std::move(stack_alloca));
@@ -370,7 +373,7 @@ class MakeAdjoint : public IRVisitor {
   }
 
   template <typename T, typename... Args>
-  Stmt *insert(Args &&... args) {
+  Stmt *insert(Args &&...args) {
     return insert_back(Stmt::make<T>(args...));
   }
 
@@ -818,7 +821,7 @@ class BackupSSA : public BasicStmtVisitor {
 
 namespace irpass {
 
-void auto_diff(IRNode *root, bool use_stack) {
+void auto_diff(IRNode *root, const CompileConfig &config, bool use_stack) {
   TI_AUTO_PROF;
   if (use_stack) {
     auto IB = IdentifyIndependentBlocks::run(root);
@@ -826,7 +829,7 @@ void auto_diff(IRNode *root, bool use_stack) {
 
     for (auto ib : IB) {
       PromoteSSA2LocalVar::run(ib);
-      ReplaceLocalVarWithStacks replace;
+      ReplaceLocalVarWithStacks replace(config.ad_stack_size);
       ib->accept(&replace);
       type_check(root);
       MakeAdjoint::run(ib);

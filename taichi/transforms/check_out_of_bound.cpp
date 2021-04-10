@@ -2,7 +2,7 @@
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
-#include "taichi/program/kernel.h"
+#include "taichi/transforms/check_out_of_bound.h"
 #include <set>
 
 TLANG_NAMESPACE_BEGIN
@@ -14,8 +14,10 @@ class CheckOutOfBound : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
   std::set<int> visited;
   DelayedIRModifier modifier;
+  std::string kernel_name;
 
-  CheckOutOfBound() : BasicStmtVisitor(), visited() {
+  explicit CheckOutOfBound(const std::string &kernel_name)
+      : BasicStmtVisitor(), visited(), kernel_name(kernel_name) {
   }
 
   bool is_done(Stmt *stmt) {
@@ -48,9 +50,9 @@ class CheckOutOfBound : public BasicStmtVisitor {
     Stmt *result =
         new_stmts.push_back<ConstStmt>(LaneAttribute<TypedConstant>(true));
 
-    std::string msg = fmt::format("(kernel={}) Accessing field ({}) of size (",
-                                  stmt->get_kernel()->name,
-                                  snode->get_node_type_name_hinted());
+    std::string msg =
+        fmt::format("(kernel={}) Accessing field ({}) of size (", kernel_name,
+                    snode->get_node_type_name_hinted());
     std::string offset_msg = "offset (";
     std::vector<Stmt *> args;
     for (int i = 0; i < stmt->indices.size(); i++) {
@@ -102,8 +104,8 @@ class CheckOutOfBound : public BasicStmtVisitor {
     set_done(stmt);
   }
 
-  static bool run(IRNode *node) {
-    CheckOutOfBound checker;
+  static bool run(IRNode *node, const std::string &kernel_name) {
+    CheckOutOfBound checker(kernel_name);
     bool modified = false;
     while (true) {
       node->accept(&checker);
@@ -121,9 +123,9 @@ class CheckOutOfBound : public BasicStmtVisitor {
 
 namespace irpass {
 
-bool check_out_of_bound(IRNode *root) {
+bool check_out_of_bound(IRNode *root, const CheckOutOfBoundPass::Args &args) {
   TI_AUTO_PROF;
-  return CheckOutOfBound::run(root);
+  return CheckOutOfBound::run(root, args.kernel_name);
 }
 
 }  // namespace irpass

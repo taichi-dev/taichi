@@ -13,11 +13,12 @@ namespace irpass {
 namespace {
 
 std::function<void(const std::string &)> make_pass_printer(bool verbose,
+                                                           Kernel *kernel,
                                                            IRNode *ir) {
   if (!verbose) {
     return [](const std::string &) {};
   }
-  return [ir, kn = ir->get_kernel()->name](const std::string &pass) {
+  return [ir, kn = kernel->name](const std::string &pass) {
     TI_INFO("[{}] {}:", kn, pass);
     std::cout << std::flush;
     irpass::re_id(ir);
@@ -30,6 +31,7 @@ std::function<void(const std::string &)> make_pass_printer(bool verbose,
 
 void compile_to_offloads(IRNode *ir,
                          const CompileConfig &config,
+                         Kernel *kernel,
                          bool verbose,
                          bool vectorize,
                          bool grad,
@@ -37,7 +39,7 @@ void compile_to_offloads(IRNode *ir,
                          bool start_from_ast) {
   TI_AUTO_PROF;
 
-  auto print = make_pass_printer(verbose, ir);
+  auto print = make_pass_printer(verbose, kernel, ir);
   print("Initial IR");
 
   AnalysisManager amgr;
@@ -57,7 +59,7 @@ void compile_to_offloads(IRNode *ir,
   print("Typechecked");
   irpass::analysis::verify(ir);
 
-  if (ir->get_kernel()->is_evaluator) {
+  if (kernel->is_evaluator) {
     TI_ASSERT(!grad);
 
     irpass::demote_operations(ir);
@@ -97,14 +99,14 @@ void compile_to_offloads(IRNode *ir,
     irpass::demote_atomics(ir);
 
     irpass::full_simplify(ir, false);
-    irpass::auto_diff(ir, ad_use_stack);
+    irpass::auto_diff(ir, config, ad_use_stack);
     irpass::full_simplify(ir, false);
     print("Gradient");
     irpass::analysis::verify(ir);
   }
 
   if (config.check_out_of_bound) {
-    irpass::check_out_of_bound(ir);
+    irpass::check_out_of_bound(ir, {kernel->name});
     print("Bound checked");
     irpass::analysis::verify(ir);
   }
@@ -139,6 +141,7 @@ void compile_to_offloads(IRNode *ir,
 
 void offload_to_executable(IRNode *ir,
                            const CompileConfig &config,
+                           Kernel *kernel,
                            bool verbose,
                            bool lower_global_access,
                            bool make_thread_local,
@@ -202,7 +205,7 @@ void offload_to_executable(IRNode *ir,
   irpass::analysis::verify(ir);
 
   if (lower_global_access) {
-    irpass::lower_access(ir, {ir->get_kernel()->no_activate, true});
+    irpass::lower_access(ir, {kernel->no_activate, true});
     print("Access lowered");
     irpass::analysis::verify(ir);
 
@@ -233,6 +236,7 @@ void offload_to_executable(IRNode *ir,
 
 void compile_to_executable(IRNode *ir,
                            const CompileConfig &config,
+                           Kernel *kernel,
                            bool vectorize,
                            bool grad,
                            bool ad_use_stack,
@@ -243,10 +247,10 @@ void compile_to_executable(IRNode *ir,
                            bool start_from_ast) {
   TI_AUTO_PROF;
 
-  compile_to_offloads(ir, config, verbose, vectorize, grad, ad_use_stack,
-                      start_from_ast);
+  compile_to_offloads(ir, config, kernel, verbose, vectorize, grad,
+                      ad_use_stack, start_from_ast);
 
-  offload_to_executable(ir, config, verbose, lower_global_access,
+  offload_to_executable(ir, config, kernel, verbose, lower_global_access,
                         make_thread_local, make_block_local);
 }
 

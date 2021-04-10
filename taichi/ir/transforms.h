@@ -7,6 +7,7 @@
 
 #include "taichi/ir/control_flow_graph.h"
 #include "taichi/ir/ir.h"
+#include "taichi/transforms/check_out_of_bound.h"
 #include "taichi/transforms/lower_access.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -32,7 +33,7 @@ bool cfg_optimization(
         &lva_config_opt = std::nullopt);
 bool alg_simp(IRNode *root, const CompileConfig &config);
 bool demote_operations(IRNode *root);
-bool binary_op_simplify(IRNode *root);
+bool binary_op_simplify(IRNode *root, const CompileConfig &config);
 bool whole_kernel_cse(IRNode *root);
 void variable_optimization(IRNode *root, bool after_lower_access);
 void extract_constant(IRNode *root);
@@ -48,14 +49,16 @@ void bit_loop_vectorize(IRNode *root);
 void slp_vectorize(IRNode *root);
 void vector_split(IRNode *root, int max_width, bool serial_schedule);
 void replace_all_usages_with(IRNode *root, Stmt *old_stmt, Stmt *new_stmt);
-bool check_out_of_bound(IRNode *root);
+bool check_out_of_bound(IRNode *root, const CheckOutOfBoundPass::Args &args);
 void make_thread_local(IRNode *root);
 std::unique_ptr<ScratchPads> initialize_scratch_pad(OffloadedStmt *root);
 void make_block_local(IRNode *root);
 bool remove_loop_unique(IRNode *root);
 bool remove_range_assumption(IRNode *root);
 bool lower_access(IRNode *root, const LowerAccessPass::Args &args);
-void auto_diff(IRNode *root, bool use_stack = false);
+void auto_diff(IRNode *root,
+               const CompileConfig &config,
+               bool use_stack = false);
 bool constant_fold(IRNode *root);
 void offload(IRNode *root);
 void replace_statements_with(IRNode *root,
@@ -77,6 +80,7 @@ void optimize_bit_struct_stores(
 // engine from fusing incompatible offloaded tasks.
 void compile_to_offloads(IRNode *ir,
                          const CompileConfig &config,
+                         Kernel *kernel,
                          bool verbose,
                          bool vectorize,
                          bool grad,
@@ -85,6 +89,7 @@ void compile_to_offloads(IRNode *ir,
 
 void offload_to_executable(IRNode *ir,
                            const CompileConfig &config,
+                           Kernel *kernel,
                            bool verbose,
                            bool lower_global_access,
                            bool make_thread_local,
@@ -93,6 +98,7 @@ void offload_to_executable(IRNode *ir,
 // additional optimizations so that |ir| can be directly fed into codegen.
 void compile_to_executable(IRNode *ir,
                            const CompileConfig &config,
+                           Kernel *kernel,
                            bool vectorize,
                            bool grad,
                            bool ad_use_stack,

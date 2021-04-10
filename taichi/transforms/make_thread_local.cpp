@@ -183,7 +183,7 @@ void make_thread_local_offload(OffloadedStmt *offload) {
 namespace irpass {
 
 // This pass should happen after offloading but before lower_access
-void make_thread_local(IRNode *root) {
+void make_thread_local(IRNode *root, const CompileConfig &config) {
   TI_AUTO_PROF;
   if (auto root_block = root->cast<Block>()) {
     for (auto &offload : root_block->statements) {
@@ -192,7 +192,7 @@ void make_thread_local(IRNode *root) {
   } else {
     make_thread_local_offload(root->as<OffloadedStmt>());
   }
-  type_check(root);
+  type_check(root, config);
 }
 
 }  // namespace irpass

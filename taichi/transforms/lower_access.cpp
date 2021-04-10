@@ -279,10 +279,12 @@ const PassID LowerAccessPass::id = "LowerAccessPass";
 
 namespace irpass {
 
-bool lower_access(IRNode *root, const LowerAccessPass::Args &args) {
+bool lower_access(IRNode *root,
+                  const CompileConfig &config,
+                  const LowerAccessPass::Args &args) {
   bool modified =
       LowerAccess::run(root, args.kernel_forces_no_activate, args.lower_atomic);
-  type_check(root);
+  type_check(root, config);
   return modified;
 }
 

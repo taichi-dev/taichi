@@ -104,7 +104,9 @@ class CheckOutOfBound : public BasicStmtVisitor {
     set_done(stmt);
   }
 
-  static bool run(IRNode *node, const std::string &kernel_name) {
+  static bool run(IRNode *node,
+                  const CompileConfig &config,
+                  const std::string &kernel_name) {
     CheckOutOfBound checker(kernel_name);
     bool modified = false;
     while (true) {
@@ -116,7 +118,7 @@ class CheckOutOfBound : public BasicStmtVisitor {
       }
     }
     if (modified)
-      irpass::type_check(node);
+      irpass::type_check(node, config);
     return modified;
   }
 };
@@ -125,9 +127,11 @@ const PassID CheckOutOfBoundPass::id = "CheckOutOfBoundPass";
 
 namespace irpass {
 
-bool check_out_of_bound(IRNode *root, const CheckOutOfBoundPass::Args &args) {
+bool check_out_of_bound(IRNode *root,
+                        const CompileConfig &config,
+                        const CheckOutOfBoundPass::Args &args) {
   TI_AUTO_PROF;
-  return CheckOutOfBound::run(root, args.kernel_name);
+  return CheckOutOfBound::run(root, config, args.kernel_name);
 }
 
 }  // namespace irpass

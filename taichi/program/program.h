@@ -249,7 +249,7 @@ class Program {
     snode_root->print();
   }
 
-  int default_block_dim() const;
+  static int default_block_dim(const CompileConfig &config);
 
   void print_list_manager_info(void *list_manager);
 

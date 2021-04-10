@@ -55,24 +55,24 @@ void compile_to_offloads(IRNode *ir,
     print("Lowered");
   }
 
-  irpass::type_check(ir);
+  irpass::type_check(ir, config);
   print("Typechecked");
   irpass::analysis::verify(ir);
 
   if (kernel->is_evaluator) {
     TI_ASSERT(!grad);
 
-    irpass::demote_operations(ir);
+    irpass::demote_operations(ir, config);
     print("Operations demoted");
 
-    irpass::offload(ir);
+    irpass::offload(ir, config);
     print("Offloaded");
     irpass::analysis::verify(ir);
     return;
   }
 
   if (vectorize) {
-    irpass::loop_vectorize(ir);
+    irpass::loop_vectorize(ir, config);
     print("Loop Vectorized");
     irpass::analysis::verify(ir);
 
@@ -85,7 +85,7 @@ void compile_to_offloads(IRNode *ir,
   //       create a separate CompileConfig flag for the new pass
   if (arch_is_cpu(config.arch) || config.arch == Arch::cuda) {
     irpass::bit_loop_vectorize(ir);
-    irpass::type_check(ir);
+    irpass::type_check(ir, config);
     print("Bit Loop Vectorized");
     irpass::analysis::verify(ir);
   }
@@ -96,7 +96,7 @@ void compile_to_offloads(IRNode *ir,
 
   if (grad) {
     // Remove local atomics here so that we don't have to handle their gradients
-    irpass::demote_atomics(ir);
+    irpass::demote_atomics(ir, config);
 
     irpass::full_simplify(ir, config, {false, kernel});
     irpass::auto_diff(ir, config, ad_use_stack);
@@ -106,7 +106,7 @@ void compile_to_offloads(IRNode *ir,
   }
 
   if (config.check_out_of_bound) {
-    irpass::check_out_of_bound(ir, {kernel->name});
+    irpass::check_out_of_bound(ir, config, {kernel->name});
     print("Bound checked");
     irpass::analysis::verify(ir);
   }
@@ -119,7 +119,7 @@ void compile_to_offloads(IRNode *ir,
   print("Simplified II");
   irpass::analysis::verify(ir);
 
-  irpass::offload(ir);
+  irpass::offload(ir, config);
   print("Offloaded");
   irpass::analysis::verify(ir);
 
@@ -163,19 +163,19 @@ void offload_to_executable(IRNode *ir,
     print("Detect read-only accesses");
   }
 
-  irpass::demote_atomics(ir);
+  irpass::demote_atomics(ir, config);
   print("Atomics demoted I");
   irpass::analysis::verify(ir);
 
   if (config.demote_dense_struct_fors) {
     irpass::demote_dense_struct_fors(ir);
-    irpass::type_check(ir);
+    irpass::type_check(ir, config);
     print("Dense struct-for demoted");
     irpass::analysis::verify(ir);
   }
 
   if (make_thread_local) {
-    irpass::make_thread_local(ir);
+    irpass::make_thread_local(ir, config);
     print("Make thread local");
   }
 
@@ -184,7 +184,7 @@ void offload_to_executable(IRNode *ir,
     print("Make block local");
   }
 
-  irpass::demote_atomics(ir);
+  irpass::demote_atomics(ir, config);
   print("Atomics demoted II");
   irpass::analysis::verify(ir);
 
@@ -205,7 +205,7 @@ void offload_to_executable(IRNode *ir,
   irpass::analysis::verify(ir);
 
   if (lower_global_access) {
-    irpass::lower_access(ir, {kernel->no_activate, true});
+    irpass::lower_access(ir, config, {kernel->no_activate, true});
     print("Access lowered");
     irpass::analysis::verify(ir);
 
@@ -218,7 +218,7 @@ void offload_to_executable(IRNode *ir,
     irpass::analysis::verify(ir);
   }
 
-  irpass::demote_operations(ir);
+  irpass::demote_operations(ir, config);
   print("Operations demoted");
 
   irpass::full_simplify(ir, config, {lower_global_access, kernel});
@@ -231,7 +231,7 @@ void offload_to_executable(IRNode *ir,
   }
 
   // Final field registration correctness & type checking
-  irpass::type_check(ir);
+  irpass::type_check(ir, config);
   irpass::analysis::verify(ir);
 }
 

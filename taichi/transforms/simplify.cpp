@@ -307,7 +307,7 @@ class BasicBlockSimplify : public IRVisitor {
     }
     stmt->parent->erase(stmt);
     // get types of adds and muls
-    irpass::type_check(stmt->parent);
+    irpass::type_check(stmt->parent, config);
     throw IRModified();
   }
 
@@ -440,12 +440,12 @@ class BasicBlockSimplify : public IRVisitor {
             }
             auto load =
                 if_stmt->insert_before_me(Stmt::make<LocalLoadStmt>(lanes));
-            irpass::type_check(load);
+            irpass::type_check(load, config);
             auto select = if_stmt->insert_before_me(
                 Stmt::make<TernaryOpStmt>(TernaryOpType::select, if_stmt->cond,
                                           true_branch ? store->val : load,
                                           true_branch ? load : store->val));
-            irpass::type_check(select);
+            irpass::type_check(select, config);
             store->val = select;
             if_stmt->insert_before_me(std::move(clause[i]));
           } else {

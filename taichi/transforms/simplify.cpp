@@ -626,7 +626,7 @@ void full_simplify(IRNode *root, bool after_lower_access, Kernel *kernel) {
         modified = true;
       if (die(root))
         modified = true;
-      if (alg_simp(root))
+      if (alg_simp(root, root->get_config()))
         modified = true;
       if (die(root))
         modified = true;

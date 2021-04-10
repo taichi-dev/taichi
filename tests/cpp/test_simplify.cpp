@@ -39,7 +39,7 @@ TI_TEST("simplify") {
     // TI_CHECK(block->size() == 11);  // not required to check size here
 
     irpass::constant_fold(block.get());
-    irpass::alg_simp(block.get());
+    irpass::alg_simp(block.get(), kernel->program.config);
     irpass::die(block.get());  // should eliminate consts
     irpass::simplify(block.get());
     irpass::whole_kernel_cse(block.get());

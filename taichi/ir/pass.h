@@ -5,17 +5,18 @@
 
 #include <unordered_map>
 #include <typeindex>
+#include <utility>
 
 namespace taichi {
 namespace lang {
 
 using PassID = std::string;
 
-class PassContext {
+/*class PassContext {
  public:
   PassContext() {
   }
-  explicit PassContext(const CompileConfig &config) : config_(config) {
+  explicit PassContext(CompileConfig config) : config_(std::move(config)) {
   }
   [[nodiscard]] const CompileConfig &get_config() const {
     return config_;
@@ -23,19 +24,25 @@ class PassContext {
 
   // private:
   CompileConfig config_;
-};
+};*/
 
 class AnalysisManager;
+
+// Abstract concept of an analysis result.
+struct AnalysisResultConcept {
+  virtual ~AnalysisResultConcept() = default;
+};
+
+template <typename ResultT>
+struct AnalysisResultModel : public AnalysisResultConcept {
+  explicit AnalysisResultModel(ResultT result) : result(std::move(result)) {
+  }
+  ResultT result;
+};
 
 class Pass {
  public:
   static const PassID id;
-
-  // Analysis results.
-  class Result {
-   public:
-    Result() = default;
-  };
 
   // The numbers for the cases are assigned to make sure that Failure & anything
   // is Failure, SuccessWithChange & any success is SuccessWithChange.
@@ -45,30 +52,35 @@ class Pass {
     SuccessWithoutChange = 0x11,
   };
 
-  virtual Status run(const PassContext &ctx,
+  /*virtual Status run(const PassContext &ctx,
                      IRNode *module,
                      AnalysisManager *amgr) {
     return Status::Failure;
-  }
+  }*/
+
+  virtual ~Pass() = default;
 };
-const PassID Pass::id = "undefined";
 
 class AnalysisManager {
  public:
-  template <typename XPass>
-  const typename XPass::Result &get_pass_result() {
-    auto result = result_.find(XPass::id);
-    TI_ASSERT(result != result_.end());
-    return *(result.second);
+  template <typename PassT>
+  typename PassT::Result *get_pass_result() {
+    auto result = result_.find(PassT::id);
+    if (result == result_.end()) {
+      return nullptr;
+    }
+    using ResultModelT = AnalysisResultModel<typename PassT::Result>;
+    return &(static_cast<std::unique_ptr<ResultModelT>>(result.second)->result);
   }
 
-  template <typename XPass>
-  void put_pass_result(std::unique_ptr<typename XPass::Result> result) {
-    result_[XPass::id] = std::move(result);
+  template <typename PassT>
+  void put_pass_result(typename PassT::Result &&result) {
+    using ResultModelT = AnalysisResultModel<typename PassT::Result>;
+    result_[PassT::id] = std::make_unique<ResultModelT>(std::move(result));
   }
 
  private:
-  std::unordered_map<PassID, std::unique_ptr<Pass::Result>> result_;
+  std::unordered_map<PassID, std::unique_ptr<AnalysisResultConcept>> result_;
 };
 
 }  // namespace lang

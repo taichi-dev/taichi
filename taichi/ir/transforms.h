@@ -7,6 +7,7 @@
 
 #include "taichi/ir/control_flow_graph.h"
 #include "taichi/ir/ir.h"
+#include "taichi/transforms/lower_access.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -29,7 +30,7 @@ bool cfg_optimization(
     bool after_lower_access,
     const std::optional<ControlFlowGraph::LiveVarAnalysisConfig>
         &lva_config_opt = std::nullopt);
-bool alg_simp(IRNode *root);
+bool alg_simp(IRNode *root, const CompileConfig &config);
 bool demote_operations(IRNode *root);
 bool binary_op_simplify(IRNode *root);
 bool whole_kernel_cse(IRNode *root);
@@ -53,7 +54,7 @@ std::unique_ptr<ScratchPads> initialize_scratch_pad(OffloadedStmt *root);
 void make_block_local(IRNode *root);
 bool remove_loop_unique(IRNode *root);
 bool remove_range_assumption(IRNode *root);
-bool lower_access(IRNode *root, bool lower_atomic);
+bool lower_access(IRNode *root, const LowerAccessPass::Args &args);
 void auto_diff(IRNode *root, bool use_stack = false);
 bool constant_fold(IRNode *root);
 void offload(IRNode *root);

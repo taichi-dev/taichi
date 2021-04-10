@@ -1,6 +1,7 @@
 #include "taichi/ir/ir.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
+#include "taichi/ir/pass.h"
 #include "taichi/ir/visitors.h"
 #include "taichi/program/compile_config.h"
 #include "taichi/program/extension.h"
@@ -39,6 +40,7 @@ void compile_to_offloads(IRNode *ir,
   auto print = make_pass_printer(verbose, ir);
   print("Initial IR");
 
+  AnalysisManager amgr;
   if (grad) {
     // TODO(#2193): Support reverse_segments after lower_ast
     TI_ASSERT_INFO(start_from_ast, "CHI does not support autodiff for now.");
@@ -200,7 +202,7 @@ void offload_to_executable(IRNode *ir,
   irpass::analysis::verify(ir);
 
   if (lower_global_access) {
-    irpass::lower_access(ir, true);
+    irpass::lower_access(ir, {ir->get_kernel()->no_activate, true});
     print("Access lowered");
     irpass::analysis::verify(ir);
 

@@ -3,7 +3,6 @@
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
-#include "taichi/transforms/alg_simp.h"
 #include "taichi/program/program.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -328,15 +327,6 @@ class AlgSimp : public BasicStmtVisitor {
   }
 };
 
-Pass::Status AlgSimpPass::run(const PassContext &ctx,
-                              IRNode *module,
-                              AnalysisManager *amgr) {
-  TI_PROFILER("AlgSimpPass");
-  auto modified = AlgSimp::run(module, ctx.get_config().fast_math);
-  return modified ? Pass::Status::SuccessWithChange
-                  : Pass::Status::SuccessWithoutChange;
-}
-
 namespace irpass {
 
 namespace hack {
@@ -349,17 +339,9 @@ bool use_fast_math(IRNode *root) {
 }
 }  // namespace hack
 
-bool alg_simp(IRNode *root) {
+bool alg_simp(IRNode *root, const CompileConfig &config) {
   TI_AUTO_PROF;
-  PassContext ctx;
-  if (root->get_kernel())
-    ctx.config_ = root->get_config();
-  else
-    ctx.config_.fast_math = false;
-  AnalysisManager mgr;
-  AlgSimpPass pass;
-  return pass.run(ctx, root, &mgr) == Pass::Status::SuccessWithChange;
-  // return AlgSimp::run(root, hack::use_fast_math(root));
+  return AlgSimp::run(root, config.fast_math);
 }
 
 }  // namespace irpass

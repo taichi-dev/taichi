@@ -121,6 +121,8 @@ class CheckOutOfBound : public BasicStmtVisitor {
   }
 };
 
+const PassID CheckOutOfBoundPass::id = "CheckOutOfBoundPass";
+
 namespace irpass {
 
 bool check_out_of_bound(IRNode *root, const CheckOutOfBoundPass::Args &args) {

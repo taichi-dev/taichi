@@ -148,7 +148,7 @@ void offload_to_executable(IRNode *ir,
                            bool make_block_local) {
   TI_AUTO_PROF;
 
-  auto print = make_pass_printer(verbose, ir);
+  auto print = make_pass_printer(verbose, kernel, ir);
 
   // TODO: This is just a proof that we can demote struct-fors after offloading.
   // Eventually we might want the order to be TLS/BLS -> demote struct-for.

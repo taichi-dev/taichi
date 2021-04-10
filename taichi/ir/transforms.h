@@ -8,6 +8,7 @@
 #include "taichi/ir/control_flow_graph.h"
 #include "taichi/ir/ir.h"
 #include "taichi/transforms/check_out_of_bound.h"
+#include "taichi/transforms/constant_fold.h"
 #include "taichi/transforms/lower_access.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -59,7 +60,9 @@ bool lower_access(IRNode *root, const LowerAccessPass::Args &args);
 void auto_diff(IRNode *root,
                const CompileConfig &config,
                bool use_stack = false);
-bool constant_fold(IRNode *root);
+bool constant_fold(IRNode *root,
+                   const CompileConfig &config,
+                   const ConstantFoldPass::Args &args);
 void offload(IRNode *root);
 void replace_statements_with(IRNode *root,
                              std::function<bool(Stmt *)> filter,

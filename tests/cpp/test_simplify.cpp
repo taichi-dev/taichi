@@ -38,7 +38,8 @@ TI_TEST("simplify") {
     irpass::simplify(block.get());  // should lower linearized
     // TI_CHECK(block->size() == 11);  // not required to check size here
 
-    irpass::constant_fold(block.get());
+    irpass::constant_fold(block.get(), kernel->program.config,
+                          {&kernel->program});
     irpass::alg_simp(block.get(), kernel->program.config);
     irpass::die(block.get());  // should eliminate consts
     irpass::simplify(block.get());

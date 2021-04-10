@@ -622,7 +622,7 @@ void full_simplify(IRNode *root, bool after_lower_access, Kernel *kernel) {
         modified = true;
       if (binary_op_simplify(root, root->get_config()))
         modified = true;
-      if (constant_fold(root))
+      if (constant_fold(root, root->get_config(), {&kernel->program}))
         modified = true;
       if (die(root))
         modified = true;
@@ -648,7 +648,7 @@ void full_simplify(IRNode *root, bool after_lower_access, Kernel *kernel) {
     }
     return;
   }
-  constant_fold(root);
+  constant_fold(root, root->get_config(), {&kernel->program});
   die(root);
   simplify(root, kernel);
   die(root);

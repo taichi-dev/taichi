@@ -434,7 +434,7 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
   // Replace local LD/ST with global LD/ST
   void visit(LocalLoadStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    auto alloca = stmt->ptr[0].var;
+    auto alloca = stmt->src[0].var;
     if (local_to_global_offset.find(alloca) == local_to_global_offset.end())
       return;
 
@@ -450,10 +450,10 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
   }
 
   void visit(LocalStoreStmt *stmt) override {
-    if (visit_operand(stmt, stmt->locate_operand(&stmt->data)))
+    if (visit_operand(stmt, stmt->locate_operand(&stmt->val)))
       throw IRModified();
     TI_ASSERT(stmt->width() == 1);
-    auto alloca = stmt->ptr;
+    auto alloca = stmt->dest;
     if (local_to_global_offset.find(alloca) == local_to_global_offset.end())
       return;
 
@@ -462,7 +462,7 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
 
     auto ptr = replacement.push_back<GlobalTemporaryStmt>(
         local_to_global_offset[alloca], ret_type);
-    replacement.push_back<GlobalStoreStmt>(ptr, stmt->data);
+    replacement.push_back<GlobalStoreStmt>(ptr, stmt->val);
 
     stmt->parent->replace_with(stmt, std::move(replacement));
     throw IRModified();

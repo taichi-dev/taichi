@@ -81,35 +81,35 @@ class TypeCheck : public IRVisitor {
 
   void visit(LocalLoadStmt *stmt) {
     TI_ASSERT(stmt->width() == 1);
-    auto lookup = stmt->ptr[0].var->ret_type;
+    auto lookup = stmt->src[0].var->ret_type;
     stmt->ret_type = lookup;
   }
 
   void visit(LocalStoreStmt *stmt) {
-    if (stmt->ptr->ret_type->is_primitive(PrimitiveTypeID::unknown)) {
+    if (stmt->dest->ret_type->is_primitive(PrimitiveTypeID::unknown)) {
       // Infer data type for alloca
-      stmt->ptr->ret_type = stmt->data->ret_type;
+      stmt->dest->ret_type = stmt->val->ret_type;
     }
     auto common_container_type =
-        promoted_type(stmt->ptr->ret_type, stmt->data->ret_type);
+        promoted_type(stmt->dest->ret_type, stmt->val->ret_type);
 
-    auto old_data = stmt->data;
-    if (stmt->ptr->ret_type != stmt->data->ret_type) {
-      stmt->data =
-          insert_type_cast_before(stmt, stmt->data, stmt->ptr->ret_type);
+    auto old_data = stmt->val;
+    if (stmt->dest->ret_type != stmt->val->ret_type) {
+      stmt->val =
+          insert_type_cast_before(stmt, stmt->val, stmt->dest->ret_type);
     }
-    if (stmt->ptr->ret_type != common_container_type) {
+    if (stmt->dest->ret_type != common_container_type) {
       TI_WARN(
           "[{}] Local store may lose precision (target = {}, value = {}) at",
-          stmt->name(), stmt->ptr->ret_data_type_name(),
+          stmt->name(), stmt->dest->ret_data_type_name(),
           old_data->ret_data_type_name(), stmt->id);
       TI_WARN("\n{}", stmt->tb);
     }
-    stmt->ret_type = stmt->ptr->ret_type;
+    stmt->ret_type = stmt->dest->ret_type;
   }
 
   void visit(GlobalLoadStmt *stmt) {
-    auto pointee_type = stmt->ptr->ret_type.ptr_removed();
+    auto pointee_type = stmt->src->ret_type.ptr_removed();
     if (auto bit_struct = pointee_type->cast<BitStructType>()) {
       stmt->ret_type = bit_struct->get_physical_type();
     } else {
@@ -159,21 +159,21 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(GlobalStoreStmt *stmt) {
-    auto dst_value_type = stmt->ptr->ret_type.ptr_removed();
+    auto dst_value_type = stmt->dest->ret_type.ptr_removed();
     if (dst_value_type->is<CustomIntType>() ||
         dst_value_type->is<CustomFloatType>()) {
       // We force the value type to be the compute_type of the bit pointer.
       // Casting from compute_type to physical_type is handled in codegen.
       dst_value_type = dst_value_type->get_compute_type();
     }
-    auto promoted = promoted_type(dst_value_type, stmt->data->ret_type);
-    auto input_type = stmt->data->ret_data_type_name();
-    if (dst_value_type != stmt->data->ret_type) {
-      stmt->data = insert_type_cast_before(stmt, stmt->data, dst_value_type);
+    auto promoted = promoted_type(dst_value_type, stmt->val->ret_type);
+    auto input_type = stmt->val->ret_data_type_name();
+    if (dst_value_type != stmt->val->ret_type) {
+      stmt->val = insert_type_cast_before(stmt, stmt->val, dst_value_type);
     }
     // TODO: do not use "promoted" here since u8 + u8 = i32 in C++ and storing
     // u8 to u8 leads to extra warnings.
-    if (dst_value_type != promoted && dst_value_type != stmt->data->ret_type) {
+    if (dst_value_type != promoted && dst_value_type != stmt->val->ret_type) {
       TI_WARN("[{}] Global store may lose precision: {} <- {}, at",
               stmt->name(), dst_value_type->to_string(), input_type);
       TI_WARN("\n{}", stmt->tb);

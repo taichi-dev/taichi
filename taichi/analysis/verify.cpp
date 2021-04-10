@@ -104,13 +104,13 @@ class IRVerifier : public BasicStmtVisitor {
   void visit(LocalLoadStmt *stmt) override {
     basic_verify(stmt);
     for (int i = 0; i < stmt->width(); i++) {
-      TI_ASSERT(stmt->ptr[i].var->is<AllocaStmt>());
+      TI_ASSERT(stmt->src[i].var->is<AllocaStmt>());
     }
   }
 
   void visit(LocalStoreStmt *stmt) override {
     basic_verify(stmt);
-    TI_ASSERT(stmt->ptr->is<AllocaStmt>());
+    TI_ASSERT(stmt->dest->is<AllocaStmt>());
   }
 
   void visit(LoopIndexStmt *stmt) override {

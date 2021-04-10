@@ -89,17 +89,17 @@ class LoopVectorize : public IRVisitor {
       return;
     int original_width = stmt->width();
     widen_type(stmt->ret_type, vectorize);
-    stmt->ptr.repeat(vectorize);
+    stmt->src.repeat(vectorize);
     // TODO: this can be buggy
-    int stride = stmt->ptr[original_width - 1].offset + 1;
-    if (stmt->ptr[0].var->width() != 1) {
+    int stride = stmt->src[original_width - 1].offset + 1;
+    if (stmt->src[0].var->width() != 1) {
       for (int i = 0; i < vectorize; i++) {
         for (int j = 0; j < original_width; j++) {
-          stmt->ptr[i * original_width + j].offset += i * stride;
+          stmt->src[i * original_width + j].offset += i * stride;
         }
       }
     }
-    if (loop_var && stmt->same_source() && stmt->ptr[0].var == loop_var) {
+    if (loop_var && stmt->same_source() && stmt->src[0].var == loop_var) {
       // insert_before_me
       LaneAttribute<TypedConstant> const_offsets;
       const_offsets.resize(vectorize * original_width);

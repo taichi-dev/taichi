@@ -7,7 +7,7 @@
 namespace taichi {
 namespace lang {
 
-class AlgorithmSimplicationTest : public ::testing::Test {
+class AlgebraicSimplicationTest : public ::testing::Test {
  protected:
   void SetUp() override {
     prog_ = std::make_unique<Program>();
@@ -17,7 +17,7 @@ class AlgorithmSimplicationTest : public ::testing::Test {
   std::unique_ptr<Program> prog_;
 };
 
-TEST_F(AlgorithmSimplicationTest, SimplifyAddZero) {
+TEST_F(AlgebraicSimplicationTest, SimplifyAddZero) {
   auto block = std::make_unique<Block>();
 
   auto func = []() {};
@@ -44,7 +44,7 @@ TEST_F(AlgorithmSimplicationTest, SimplifyAddZero) {
   EXPECT_TRUE((*block)[0]->is<GlobalTemporaryStmt>());
 }
 
-TEST_F(AlgorithmSimplicationTest, SimplifyMultiplyOne) {
+TEST_F(AlgebraicSimplicationTest, SimplifyMultiplyOne) {
   auto block = std::make_unique<Block>();
 
   auto func = []() {};
@@ -77,7 +77,7 @@ TEST_F(AlgorithmSimplicationTest, SimplifyMultiplyOne) {
   EXPECT_TRUE((*block)[0]->is<GlobalTemporaryStmt>());
 }
 
-TEST_F(AlgorithmSimplicationTest, SimplifyMultiplyZeroFastMath) {
+TEST_F(AlgebraicSimplicationTest, SimplifyMultiplyZeroFastMath) {
   auto block = std::make_unique<Block>();
   auto func = []() {};
   auto kernel = std::make_unique<Kernel>(*prog_, func, "fake_kernel");
@@ -144,7 +144,7 @@ TEST_F(AlgorithmSimplicationTest, SimplifyMultiplyZeroFastMath) {
   EXPECT_EQ(block->size(), 3);  // one address, one one, one store
 }
 
-TEST_F(AlgorithmSimplicationTest, SimplifyAndMinusOne) {
+TEST_F(AlgebraicSimplicationTest, SimplifyAndMinusOne) {
   auto block = std::make_unique<Block>();
 
   auto global_load_addr = block->push_back<GlobalTemporaryStmt>(

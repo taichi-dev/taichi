@@ -11,6 +11,7 @@
 #include "taichi/transforms/constant_fold.h"
 #include "taichi/transforms/lower_access.h"
 #include "taichi/transforms/make_block_local.h"
+#include "taichi/transforms/simplify.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -27,7 +28,9 @@ bool use_fast_math(IRNode *root);
 void re_id(IRNode *root);
 void flag_access(IRNode *root);
 bool die(IRNode *root);
-bool simplify(IRNode *root, Kernel *kernel = nullptr);
+bool simplify(IRNode *root,
+              const CompileConfig &config,
+              const SimplifyPass::Args &args);
 bool cfg_optimization(
     IRNode *root,
     bool after_lower_access,
@@ -41,8 +44,8 @@ void variable_optimization(IRNode *root, bool after_lower_access);
 bool extract_constant(IRNode *root, const CompileConfig &config);
 bool unreachable_code_elimination(IRNode *root);
 void full_simplify(IRNode *root,
-                   bool after_lower_access,
-                   Kernel *kernel = nullptr);
+                   const CompileConfig &config,
+                   const FullSimplifyPass::Args &args);
 void print(IRNode *root, std::string *output = nullptr);
 void lower_ast(IRNode *root);
 void type_check(IRNode *root);

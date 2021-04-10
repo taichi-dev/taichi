@@ -90,7 +90,7 @@ void compile_to_offloads(IRNode *ir,
     irpass::analysis::verify(ir);
   }
 
-  irpass::full_simplify(ir, false);
+  irpass::full_simplify(ir, config, {false, kernel});
   print("Simplified I");
   irpass::analysis::verify(ir);
 
@@ -98,9 +98,9 @@ void compile_to_offloads(IRNode *ir,
     // Remove local atomics here so that we don't have to handle their gradients
     irpass::demote_atomics(ir);
 
-    irpass::full_simplify(ir, false);
+    irpass::full_simplify(ir, config, {false, kernel});
     irpass::auto_diff(ir, config, ad_use_stack);
-    irpass::full_simplify(ir, false);
+    irpass::full_simplify(ir, config, {false, kernel});
     print("Gradient");
     irpass::analysis::verify(ir);
   }
@@ -115,7 +115,7 @@ void compile_to_offloads(IRNode *ir,
   print("Access flagged I");
   irpass::analysis::verify(ir);
 
-  irpass::full_simplify(ir, false);
+  irpass::full_simplify(ir, config, {false, kernel});
   print("Simplified II");
   irpass::analysis::verify(ir);
 
@@ -134,7 +134,7 @@ void compile_to_offloads(IRNode *ir,
   irpass::flag_access(ir);
   print("Access flagged II");
 
-  irpass::full_simplify(ir, /*after_lower_access=*/false);
+  irpass::full_simplify(ir, config, {false, kernel});
   print("Simplified III");
   irpass::analysis::verify(ir);
 }
@@ -221,7 +221,7 @@ void offload_to_executable(IRNode *ir,
   irpass::demote_operations(ir);
   print("Operations demoted");
 
-  irpass::full_simplify(ir, lower_global_access);
+  irpass::full_simplify(ir, config, {lower_global_access, kernel});
   print("Simplified IV");
 
   if (is_extension_supported(config.arch, Extension::quant)) {

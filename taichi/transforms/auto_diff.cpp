@@ -192,18 +192,16 @@ class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
 
   void visit(AllocaStmt *alloc) override {
     TI_ASSERT(alloc->width() == 1);
-    bool load_only = irpass::analysis::gather_statements(
-                         alloc->parent,
-                         [&](Stmt *s) {
-                           if (auto store = s->cast<LocalStoreStmt>())
-                             return store->dest == alloc;
-                           else if (auto atomic = s->cast<AtomicOpStmt>()) {
-                             return atomic->dest == alloc;
-                           } else {
-                             return false;
-                           }
-                         })
-                         .empty();
+    bool load_only =
+        irpass::analysis::gather_statements(alloc->parent, [&](Stmt *s) {
+          if (auto store = s->cast<LocalStoreStmt>())
+            return store->dest == alloc;
+          else if (auto atomic = s->cast<AtomicOpStmt>()) {
+            return atomic->dest == alloc;
+          } else {
+            return false;
+          }
+        }).empty();
     if (!load_only) {
       auto dtype = alloc->ret_type;
       auto stack_alloca = Stmt::make<StackAllocaStmt>(dtype, ad_stack_size);
@@ -373,7 +371,7 @@ class MakeAdjoint : public IRVisitor {
   }
 
   template <typename T, typename... Args>
-  Stmt *insert(Args &&...args) {
+  Stmt *insert(Args &&... args) {
     return insert_back(Stmt::make<T>(args...));
   }
 

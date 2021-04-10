@@ -617,7 +617,8 @@ void full_simplify(IRNode *root, bool after_lower_access, Kernel *kernel) {
     bool first_iteration = true;
     while (true) {
       bool modified = false;
-      extract_constant(root);
+      if (extract_constant(root, root->get_config()))
+        modified = true;
       if (unreachable_code_elimination(root))
         modified = true;
       if (binary_op_simplify(root, root->get_config()))

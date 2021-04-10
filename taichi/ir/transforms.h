@@ -10,6 +10,7 @@
 #include "taichi/transforms/check_out_of_bound.h"
 #include "taichi/transforms/constant_fold.h"
 #include "taichi/transforms/lower_access.h"
+#include "taichi/transforms/make_block_local.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -37,7 +38,7 @@ bool demote_operations(IRNode *root);
 bool binary_op_simplify(IRNode *root, const CompileConfig &config);
 bool whole_kernel_cse(IRNode *root);
 void variable_optimization(IRNode *root, bool after_lower_access);
-void extract_constant(IRNode *root);
+bool extract_constant(IRNode *root, const CompileConfig &config);
 bool unreachable_code_elimination(IRNode *root);
 void full_simplify(IRNode *root,
                    bool after_lower_access,
@@ -53,7 +54,9 @@ void replace_all_usages_with(IRNode *root, Stmt *old_stmt, Stmt *new_stmt);
 bool check_out_of_bound(IRNode *root, const CheckOutOfBoundPass::Args &args);
 void make_thread_local(IRNode *root);
 std::unique_ptr<ScratchPads> initialize_scratch_pad(OffloadedStmt *root);
-void make_block_local(IRNode *root);
+void make_block_local(IRNode *root,
+                      const CompileConfig &config,
+                      const MakeBlockLocalPass::Args &args);
 bool remove_loop_unique(IRNode *root);
 bool remove_range_assumption(IRNode *root);
 bool lower_access(IRNode *root, const LowerAccessPass::Args &args);

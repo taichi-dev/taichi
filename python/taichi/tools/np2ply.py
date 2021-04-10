@@ -1,6 +1,8 @@
 # convert numpy array to ply files
 import sys
+
 import numpy as np
+
 import taichi as ti
 
 

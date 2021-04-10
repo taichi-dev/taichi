@@ -1,6 +1,7 @@
-import taichi as ti
-import os
 import ctypes
+import os
+
+import taichi as ti
 
 ti.init()
 

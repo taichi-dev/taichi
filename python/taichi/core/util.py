@@ -1,10 +1,12 @@
+import ctypes
 import os
 import re
 import shutil
 import sys
-import ctypes
 from pathlib import Path
-from colorama import Fore, Back, Style
+
+from colorama import Back, Fore, Style
+
 from .settings import *
 
 if sys.version_info[0] < 3 or sys.version_info[1] <= 5:
@@ -322,7 +324,10 @@ def at_startup():
 def start_memory_monitoring(output_fn, pid=-1, interval=1):
     # removing dependency on psutil
     return
-    import os, psutil, time
+    import os
+    import time
+
+    import psutil
     if pid == -1:
         pid = os.getpid()
     import multiprocessing

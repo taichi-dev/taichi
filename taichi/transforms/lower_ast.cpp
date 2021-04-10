@@ -209,7 +209,7 @@ class LowerAST : public IRVisitor {
       if (is_good_range_for) {
         auto &&new_for = std::make_unique<RangeForStmt>(
             begin->stmt, end->stmt, std::move(stmt->body), stmt->vectorize,
-            stmt->bit_vectorize, stmt->parallelize, stmt->block_dim,
+            stmt->bit_vectorize, stmt->num_cpu_threads, stmt->block_dim,
             stmt->strictly_serialized);
         new_for->body->insert(std::make_unique<LoopIndexStmt>(new_for.get(), 0),
                               0);
@@ -293,7 +293,7 @@ class LowerAST : public IRVisitor {
 
       auto &&new_for = std::make_unique<StructForStmt>(
           snode, std::move(stmt->body), stmt->vectorize, stmt->bit_vectorize,
-          stmt->parallelize, stmt->block_dim);
+          stmt->num_cpu_threads, stmt->block_dim);
       new_for->index_offsets = offsets;
       VecStatement new_statements;
       for (int i = 0; i < (int)stmt->loop_var_id.size(); i++) {

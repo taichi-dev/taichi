@@ -172,14 +172,14 @@ class KernelCodegen : public IRVisitor {
   void visit(LocalLoadStmt *stmt) override {
     // TODO: optimize for partially vectorized load...
     bool linear_index = true;
-    for (int i = 0; i < (int)stmt->ptr.size(); i++) {
-      if (stmt->ptr[i].offset != i) {
+    for (int i = 0; i < (int)stmt->src.size(); i++) {
+      if (stmt->src[i].offset != i) {
         linear_index = false;
       }
     }
     if (stmt->same_source() && linear_index &&
-        stmt->width() == stmt->ptr[0].var->width()) {
-      auto ptr = stmt->ptr[0].var;
+        stmt->width() == stmt->src[0].var->width()) {
+      auto ptr = stmt->src[0].var;
       emit("const {} {}({});", metal_data_type_name(stmt->element_type()),
            stmt->raw_name(), ptr->raw_name());
     } else {
@@ -188,7 +188,7 @@ class KernelCodegen : public IRVisitor {
   }
 
   void visit(LocalStoreStmt *stmt) override {
-    emit(R"({} = {};)", stmt->ptr->raw_name(), stmt->data->raw_name());
+    emit(R"({} = {};)", stmt->dest->raw_name(), stmt->val->raw_name());
   }
 
   void visit(GetRootStmt *stmt) override {
@@ -335,8 +335,8 @@ class KernelCodegen : public IRVisitor {
   void visit(GlobalStoreStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
 
-    if (!is_ret_type_bit_pointer(stmt->ptr)) {
-      emit(R"(*{} = {};)", stmt->ptr->raw_name(), stmt->data->raw_name());
+    if (!is_ret_type_bit_pointer(stmt->dest)) {
+      emit(R"(*{} = {};)", stmt->dest->raw_name(), stmt->val->raw_name());
       return;
     }
     handle_bit_pointer_global_store(stmt);
@@ -345,8 +345,8 @@ class KernelCodegen : public IRVisitor {
   void visit(GlobalLoadStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
     std::string rhs_expr;
-    if (!is_ret_type_bit_pointer(stmt->ptr)) {
-      rhs_expr = fmt::format("*{}", stmt->ptr->raw_name());
+    if (!is_ret_type_bit_pointer(stmt->src)) {
+      rhs_expr = fmt::format("*{}", stmt->src->raw_name());
     } else {
       rhs_expr = construct_bit_pointer_global_load(stmt);
     }
@@ -832,30 +832,30 @@ class KernelCodegen : public IRVisitor {
   }
 
   void handle_bit_pointer_global_store(GlobalStoreStmt *stmt) {
-    auto *ptr_type = stmt->ptr->ret_type->as<PointerType>();
+    auto *ptr_type = stmt->dest->ret_type->as<PointerType>();
     TI_ASSERT(ptr_type->is_bit_pointer());
     auto *pointee_type = ptr_type->get_pointee_type();
     CustomIntType *cit = nullptr;
     std::string store_value_expr;
     if (auto *cit_cast = pointee_type->cast<CustomIntType>()) {
       cit = cit_cast;
-      store_value_expr = stmt->data->raw_name();
+      store_value_expr = stmt->val->raw_name();
     } else if (auto *cft = pointee_type->cast<CustomFloatType>()) {
       validate_cft_for_metal(cft);
       auto *digits_cit = cft->get_digits_type()->as<CustomIntType>();
       cit = digits_cit;
       store_value_expr = construct_float_to_custom_int_expr(
-          stmt->data, cft->get_scale(), digits_cit);
+          stmt->val, cft->get_scale(), digits_cit);
     } else {
       TI_NOT_IMPLEMENTED;
     }
-    // Type of |stmt->ptr| is SNodeBitPointer
+    // Type of |stmt->dest| is SNodeBitPointer
     const auto num_bits = cit->get_num_bits();
     if (is_full_bits(num_bits)) {
-      emit("mtl_set_full_bits({}, {});", stmt->ptr->raw_name(),
+      emit("mtl_set_full_bits({}, {});", stmt->dest->raw_name(),
            store_value_expr);
     } else {
-      emit("mtl_set_partial_bits({},", stmt->ptr->raw_name());
+      emit("mtl_set_partial_bits({},", stmt->dest->raw_name());
       emit("    {},", store_value_expr);
       emit("    /*bits=*/{});", num_bits);
     }
@@ -863,15 +863,15 @@ class KernelCodegen : public IRVisitor {
 
   // Returns the expression of the load result
   std::string construct_bit_pointer_global_load(GlobalLoadStmt *stmt) const {
-    auto *ptr_type = stmt->ptr->ret_type->as<PointerType>();
+    auto *ptr_type = stmt->src->ret_type->as<PointerType>();
     TI_ASSERT(ptr_type->is_bit_pointer());
     auto *pointee_type = ptr_type->get_pointee_type();
     if (auto *cit = pointee_type->cast<CustomIntType>()) {
-      return construct_load_as_custom_int(stmt->ptr, cit);
+      return construct_load_as_custom_int(stmt->src, cit);
     } else if (auto *cft = pointee_type->cast<CustomFloatType>()) {
       validate_cft_for_metal(cft);
       const auto loaded = construct_load_as_custom_int(
-          stmt->ptr, cft->get_digits_type()->as<CustomIntType>());
+          stmt->src, cft->get_digits_type()->as<CustomIntType>());
       // Computes `float(digits_expr) * scale`
       // See LLVM backend's reconstruct_custom_float()
       return fmt::format("(static_cast<float>({}) * {})", loaded,

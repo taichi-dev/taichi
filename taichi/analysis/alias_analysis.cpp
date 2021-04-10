@@ -56,17 +56,18 @@ AliasResult alias_analysis(Stmt *var1, Stmt *var2) {
   TI_ASSERT(var1->width() == 1);
   TI_ASSERT(var2->width() == 1);
   auto get_snode_id = [](Stmt *s) {
-    if (auto ptr = s->cast<GlobalPtrStmt>())
+    if (auto ptr = s->cast<GlobalPtrStmt>()) {
       return ptr->snodes[0]->id;
-    else if (auto get_child = s->cast<GetChStmt>())
+    } else if (auto get_child = s->cast<GetChStmt>()) {
       return get_child->output_snode->id;
-    else
-      return -1;
+    }
+    return -1;
   };
   int snode1 = get_snode_id(var1);
   int snode2 = get_snode_id(var2);
-  if (snode1 != -1 && snode2 != -1 && snode1 != snode2)
+  if (snode1 != -1 && snode2 != -1 && snode1 != snode2) {
     return AliasResult::different;
+  }
 
   // GlobalPtrStmts with guaranteed different indices cannot share the same
   // address.
@@ -75,14 +76,22 @@ AliasResult alias_analysis(Stmt *var1, Stmt *var2) {
     auto ptr2 = var2->as<GlobalPtrStmt>();
     auto snode = ptr1->snodes[0];
     TI_ASSERT(snode == ptr2->snodes[0]);
+    TI_ASSERT(ptr1->indices.size() == ptr2->indices.size());
     bool uncertain = false;
     for (int i = 0; i < (int)ptr1->indices.size(); i++) {
       auto diff = value_diff_ptr_index(ptr1->indices[i], ptr2->indices[i]);
-      if (!diff.first) {
+      if (!diff.is_diff_certain || (diff.diff_range != 0)) {
         uncertain = true;
-      } else if (std::abs(diff.second) >=
-                 (1 << snode->extractors[snode->physical_index_position[i]]
-                           .trailing_bits)) {
+      }
+      if (std::abs(diff.diff_range) >=
+          (1 << snode->extractors[snode->physical_index_position[i]]
+                    .trailing_bits)) {
+        // For `trailing_bits == 2`, if the difference of the two indices >= 4,
+        // we are sure that they point to the different address.
+        //
+        // However, if two indices are different by < 4, we are uncertain in
+        // this case. E.g., `idx1 = 0` and `idx2 = 2` point to the same
+        // cell, but `idx1 = 3` and `idx2 = 5` point to the different cells.
         return AliasResult::different;
       }
     }

@@ -1,6 +1,9 @@
 # Usage: make_changelog.py [v0.x.y]
 
-import sys, os, json
+import json
+import os
+import sys
+
 from git import Repo
 
 

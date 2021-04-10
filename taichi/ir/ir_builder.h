@@ -11,11 +11,6 @@ class IRBuilder {
     int position{0};
   };
 
- private:
-  std::unique_ptr<IRNode> root_{nullptr};
-  InsertPoint insert_point_;
-
- public:
   IRBuilder();
 
   // Clear the IR and the insertion point.
@@ -25,18 +20,18 @@ class IRBuilder {
   std::unique_ptr<IRNode> extract_ir();
 
   // General inserter. Returns stmt.get().
-  template <typename XxxStmt>
-  XxxStmt *insert(std::unique_ptr<XxxStmt> &&stmt) {
+  template <typename XStmt>
+  XStmt *insert(std::unique_ptr<XStmt> &&stmt) {
     return insert(std::move(stmt), &insert_point_);
   }
 
   // Insert to a specific insertion point.
-  template <typename XxxStmt>
-  static XxxStmt *insert(std::unique_ptr<XxxStmt> &&stmt,
-                         InsertPoint *insert_point) {
+  template <typename XStmt>
+  static XStmt *insert(std::unique_ptr<XStmt> &&stmt,
+                       InsertPoint *insert_point) {
     return insert_point->block
         ->insert(std::move(stmt), insert_point->position++)
-        ->template as<XxxStmt>();
+        ->template as<XStmt>();
   }
 
   void set_insertion_point(InsertPoint new_insert_point);
@@ -44,18 +39,60 @@ class IRBuilder {
   void set_insertion_point_to_before(Stmt *stmt);
   void set_insertion_point_to_true_branch(IfStmt *if_stmt);
   void set_insertion_point_to_false_branch(IfStmt *if_stmt);
-  template <typename XxxStmt>
-  void set_insertion_point_to_loop_begin(XxxStmt *loop) {
-    if constexpr (!std::is_base_of_v<Stmt, XxxStmt>) {
+  template <typename XStmt>
+  void set_insertion_point_to_loop_begin(XStmt *loop) {
+    using DecayedType = typename std::decay_t<XStmt>;
+    if constexpr (!std::is_base_of_v<Stmt, DecayedType>) {
       TI_ERROR("The argument is not a statement.");
     }
-    if constexpr (std::is_same_v<XxxStmt, RangeForStmt> ||
-                  std::is_same_v<XxxStmt, StructForStmt> ||
-                  std::is_same_v<XxxStmt, WhileStmt>) {
+    if constexpr (std::is_same_v<DecayedType, RangeForStmt> ||
+                  std::is_same_v<DecayedType, StructForStmt> ||
+                  std::is_same_v<DecayedType, WhileStmt>) {
       set_insertion_point({loop->body.get(), 0});
     } else {
       TI_ERROR("Statement {} is not a loop.", loop->name());
     }
+  }
+
+  // RAII handles insertion points automatically.
+  class LoopGuard {
+   public:
+    // Set the insertion point to the beginning of the loop body.
+    template <typename XStmt>
+    explicit LoopGuard(IRBuilder &builder, XStmt *loop)
+        : builder_(builder), loop_(loop) {
+      location_ = (int)loop->parent->size() - 1;
+      builder_.set_insertion_point_to_loop_begin(loop);
+    }
+
+    // Set the insertion point to the point after the loop.
+    ~LoopGuard();
+
+   private:
+    IRBuilder &builder_;
+    Stmt *loop_;
+    int location_;
+  };
+  class IfGuard {
+   public:
+    // Set the insertion point to the beginning of the true/false branch.
+    explicit IfGuard(IRBuilder &builder, IfStmt *if_stmt, bool true_branch);
+
+    // Set the insertion point to the point after the if statement.
+    ~IfGuard();
+
+   private:
+    IRBuilder &builder_;
+    IfStmt *if_stmt_;
+    int location_;
+  };
+
+  template <typename XStmt>
+  LoopGuard get_loop_guard(XStmt *loop) {
+    return LoopGuard(*this, loop);
+  }
+  IfGuard get_if_guard(IfStmt *if_stmt, bool true_branch) {
+    return IfGuard(*this, if_stmt, true_branch);
   }
 
   // Control flows.
@@ -63,13 +100,13 @@ class IRBuilder {
                                  Stmt *end,
                                  int vectorize = -1,
                                  int bit_vectorize = -1,
-                                 int parallelize = 0,
+                                 int num_cpu_threads = 0,
                                  int block_dim = 0,
                                  bool strictly_serialized = false);
   StructForStmt *create_struct_for(SNode *snode,
                                    int vectorize = -1,
                                    int bit_vectorize = -1,
-                                   int parallelize = 0,
+                                   int num_cpu_threads = 0,
                                    int block_dim = 0);
   WhileStmt *create_while_true();
   IfStmt *create_if(Stmt *cond);
@@ -153,10 +190,46 @@ class IRBuilder {
     return insert(Stmt::make_typed<PrintStmt>(std::forward<Args>(args)...));
   }
 
-  // Local variable.
+  // Local variables.
   AllocaStmt *create_local_var(DataType dt);
   LocalLoadStmt *create_local_load(AllocaStmt *ptr);
   void create_local_store(AllocaStmt *ptr, Stmt *data);
+
+  // Global variables.
+  GlobalPtrStmt *create_global_ptr(SNode *snode,
+                                   const std::vector<Stmt *> &indices);
+  ExternalPtrStmt *create_external_ptr(ArgLoadStmt *ptr,
+                                       const std::vector<Stmt *> &indices);
+  template <typename XStmt>
+  GlobalLoadStmt *create_global_load(XStmt *ptr) {
+    using DecayedType = typename std::decay_t<XStmt>;
+    if constexpr (!std::is_base_of_v<Stmt, DecayedType>) {
+      TI_ERROR("The argument is not a statement.");
+    }
+    if constexpr (std::is_same_v<DecayedType, GlobalPtrStmt> ||
+                  std::is_same_v<DecayedType, ExternalPtrStmt>) {
+      return insert(Stmt::make_typed<GlobalLoadStmt>(ptr));
+    } else {
+      TI_ERROR("Statement {} is not a global pointer.", ptr->name());
+    }
+  }
+  template <typename XStmt>
+  void create_global_store(XStmt *ptr, Stmt *data) {
+    using DecayedType = typename std::decay_t<XStmt>;
+    if constexpr (!std::is_base_of_v<Stmt, DecayedType>) {
+      TI_ERROR("The argument is not a statement.");
+    }
+    if constexpr (std::is_same_v<DecayedType, GlobalPtrStmt> ||
+                  std::is_same_v<DecayedType, ExternalPtrStmt>) {
+      insert(Stmt::make_typed<GlobalStoreStmt>(ptr, data));
+    } else {
+      TI_ERROR("Statement {} is not a global pointer.", ptr->name());
+    }
+  }
+
+ private:
+  std::unique_ptr<IRNode> root_{nullptr};
+  InsertPoint insert_point_;
 };
 
 TLANG_NAMESPACE_END

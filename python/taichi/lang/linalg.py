@@ -1,4 +1,4 @@
-from taichi.core import util as cutil
+from taichi.core.util import ti_core as _ti_core
 from taichi.lang.impl import expr_init
 
 import taichi as ti
@@ -63,9 +63,9 @@ def svd3d(A, dt, iters=None):
         else:
             iters = 8
     if dt == ti.f32:
-        rets = cutil.ti_core.sifakis_svd_f32(*inputs, iters)
+        rets = _ti_core.sifakis_svd_f32(*inputs, iters)
     else:
-        rets = cutil.ti_core.sifakis_svd_f64(*inputs, iters)
+        rets = _ti_core.sifakis_svd_f64(*inputs, iters)
     assert len(rets) == 21
     U_entries = rets[:9]
     V_entries = rets[9:18]

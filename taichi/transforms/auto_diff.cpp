@@ -48,11 +48,11 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
     // TODO: remove this abuse since it *gathers nothing*
     irpass::analysis::gather_statements(block, [&](Stmt *stmt) -> bool {
       if (auto local_load = stmt->cast<LocalLoadStmt>(); local_load) {
-        for (auto &lane : local_load->ptr.data) {
+        for (auto &lane : local_load->src.data) {
           touched_allocas.insert(lane.var->as<AllocaStmt>());
         }
       } else if (auto local_store = stmt->cast<LocalStoreStmt>(); local_store) {
-        touched_allocas.insert(local_store->ptr->as<AllocaStmt>());
+        touched_allocas.insert(local_store->dest->as<AllocaStmt>());
       }
       return false;
     });
@@ -188,18 +188,16 @@ class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
 
   void visit(AllocaStmt *alloc) override {
     TI_ASSERT(alloc->width() == 1);
-    bool load_only = irpass::analysis::gather_statements(
-                         alloc->parent,
-                         [&](Stmt *s) {
-                           if (auto store = s->cast<LocalStoreStmt>())
-                             return store->ptr == alloc;
-                           else if (auto atomic = s->cast<AtomicOpStmt>()) {
-                             return atomic->dest == alloc;
-                           } else {
-                             return false;
-                           }
-                         })
-                         .empty();
+    bool load_only =
+        irpass::analysis::gather_statements(alloc->parent, [&](Stmt *s) {
+          if (auto store = s->cast<LocalStoreStmt>())
+            return store->dest == alloc;
+          else if (auto atomic = s->cast<AtomicOpStmt>()) {
+            return atomic->dest == alloc;
+          } else {
+            return false;
+          }
+        }).empty();
     if (!load_only) {
       auto dtype = alloc->ret_type;
       auto stack_alloca = Stmt::make<StackAllocaStmt>(
@@ -218,13 +216,13 @@ class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
 
   void visit(LocalLoadStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    if (stmt->ptr[0].var->is<StackAllocaStmt>())
-      stmt->replace_with(Stmt::make<StackLoadTopStmt>(stmt->ptr[0].var));
+    if (stmt->src[0].var->is<StackAllocaStmt>())
+      stmt->replace_with(Stmt::make<StackLoadTopStmt>(stmt->src[0].var));
   }
 
   void visit(LocalStoreStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    stmt->replace_with(Stmt::make<StackPushStmt>(stmt->ptr, stmt->data));
+    stmt->replace_with(Stmt::make<StackPushStmt>(stmt->dest, stmt->val));
   }
 };
 
@@ -647,9 +645,9 @@ class MakeAdjoint : public IRVisitor {
 
   void visit(GlobalLoadStmt *stmt) override {
     // issue global store to adjoint
-    GlobalPtrStmt *ptr = stmt->ptr->as<GlobalPtrStmt>();
-    TI_ASSERT(ptr->width() == 1);
-    auto snodes = ptr->snodes;
+    GlobalPtrStmt *src = stmt->src->as<GlobalPtrStmt>();
+    TI_ASSERT(src->width() == 1);
+    auto snodes = src->snodes;
     if (!snodes[0]->has_grad()) {
       // No adjoint SNode. Do nothing
       return;
@@ -660,36 +658,36 @@ class MakeAdjoint : public IRVisitor {
     }
     TI_ASSERT(snodes[0]->get_grad() != nullptr);
     snodes[0] = snodes[0]->get_grad();
-    auto adj_ptr = insert<GlobalPtrStmt>(snodes, ptr->indices);
+    auto adj_ptr = insert<GlobalPtrStmt>(snodes, src->indices);
     insert<AtomicOpStmt>(AtomicOpType::add, adj_ptr, load(adjoint(stmt)));
   }
 
   void visit(GlobalStoreStmt *stmt) override {
     // erase and replace with global load adjoint
-    GlobalPtrStmt *ptr = stmt->ptr->as<GlobalPtrStmt>();
-    TI_ASSERT(ptr->width() == 1);
-    auto snodes = ptr->snodes;
+    GlobalPtrStmt *dest = stmt->dest->as<GlobalPtrStmt>();
+    TI_ASSERT(dest->width() == 1);
+    auto snodes = dest->snodes;
     if (!snodes[0]->has_grad()) {
       // no gradient (likely integer types)
       return;
     }
     TI_ASSERT(snodes[0]->get_grad() != nullptr);
     snodes[0] = snodes[0]->get_grad();
-    auto adjoint_ptr = insert<GlobalPtrStmt>(snodes, ptr->indices);
+    auto adjoint_ptr = insert<GlobalPtrStmt>(snodes, dest->indices);
     auto load = insert<GlobalLoadStmt>(adjoint_ptr);
-    accumulate(stmt->data, load);
+    accumulate(stmt->val, load);
     stmt->parent->erase(stmt);
   }
 
   void visit(AtomicOpStmt *stmt) override {
     // erase and replace with global load adjoint
-    GlobalPtrStmt *ptr = stmt->dest->as<GlobalPtrStmt>();
-    TI_ASSERT(ptr->width() == 1);
-    auto snodes = ptr->snodes;
+    GlobalPtrStmt *dest = stmt->dest->as<GlobalPtrStmt>();
+    TI_ASSERT(dest->width() == 1);
+    auto snodes = dest->snodes;
     if (snodes[0]->has_grad()) {
       TI_ASSERT(snodes[0]->get_grad() != nullptr);
       snodes[0] = snodes[0]->get_grad();
-      auto adjoint_ptr = insert<GlobalPtrStmt>(snodes, ptr->indices);
+      auto adjoint_ptr = insert<GlobalPtrStmt>(snodes, dest->indices);
       accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
     } else {
       // no gradient (likely integer types)

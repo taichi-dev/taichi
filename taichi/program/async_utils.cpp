@@ -159,16 +159,16 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
     // For a global load, GlobalPtrStmt has already been handled in
     // get_meta_input_value_states().
     if (auto global_store = stmt->cast<GlobalStoreStmt>()) {
-      if (auto ptr = global_store->ptr->cast<GlobalPtrStmt>()) {
-        for (auto &snode : ptr->snodes.data) {
+      if (auto dest = global_store->dest->cast<GlobalPtrStmt>()) {
+        for (auto &snode : dest->snodes.data) {
           meta.output_states.insert(
               ir_bank->get_async_state(snode, AsyncState::Type::value));
         }
       }
     }
     if (auto global_atomic = stmt->cast<AtomicOpStmt>()) {
-      if (auto ptr = global_atomic->dest->cast<GlobalPtrStmt>()) {
-        for (auto &snode : ptr->snodes.data) {
+      if (auto dest = global_atomic->dest->cast<GlobalPtrStmt>()) {
+        for (auto &snode : dest->snodes.data) {
           // input_state is already handled in
           // get_meta_input_value_states().
           meta.output_states.insert(

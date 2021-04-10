@@ -1,5 +1,7 @@
-from git import Repo
 import os
+
+from git import Repo
+
 repo_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../')
 repo = Repo(repo_dir)
 commit_hash = str(repo.head.commit)

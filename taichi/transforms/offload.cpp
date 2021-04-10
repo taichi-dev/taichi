@@ -79,7 +79,7 @@ class Offloader {
               std::make_pair(offloaded.get(), s->end));
         }
         offloaded->num_cpu_threads =
-            std::min(s->parallelize,
+            std::min(s->num_cpu_threads,
                      root->get_kernel()->program.config.cpu_max_num_threads);
         replace_all_usages_with(s, s, offloaded.get());
         for (int j = 0; j < (int)s->body->statements.size(); j++) {
@@ -181,8 +181,8 @@ class Offloader {
     }
 
     offloaded_struct_for->snode = for_stmt->snode;
-    offloaded_struct_for->num_cpu_threads =
-        std::min(for_stmt->parallelize, program->config.cpu_max_num_threads);
+    offloaded_struct_for->num_cpu_threads = std::min(
+        for_stmt->num_cpu_threads, program->config.cpu_max_num_threads);
     offloaded_struct_for->mem_access_opt = mem_access_opt;
 
     root_block->insert(std::move(offloaded_struct_for));
@@ -434,7 +434,7 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
   // Replace local LD/ST with global LD/ST
   void visit(LocalLoadStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    auto alloca = stmt->ptr[0].var;
+    auto alloca = stmt->src[0].var;
     if (local_to_global_offset.find(alloca) == local_to_global_offset.end())
       return;
 
@@ -450,10 +450,10 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
   }
 
   void visit(LocalStoreStmt *stmt) override {
-    if (visit_operand(stmt, stmt->locate_operand(&stmt->data)))
+    if (visit_operand(stmt, stmt->locate_operand(&stmt->val)))
       throw IRModified();
     TI_ASSERT(stmt->width() == 1);
-    auto alloca = stmt->ptr;
+    auto alloca = stmt->dest;
     if (local_to_global_offset.find(alloca) == local_to_global_offset.end())
       return;
 
@@ -462,7 +462,7 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
 
     auto ptr = replacement.push_back<GlobalTemporaryStmt>(
         local_to_global_offset[alloca], ret_type);
-    replacement.push_back<GlobalStoreStmt>(ptr, stmt->data);
+    replacement.push_back<GlobalStoreStmt>(ptr, stmt->val);
 
     stmt->parent->replace_with(stmt, std::move(replacement));
     throw IRModified();

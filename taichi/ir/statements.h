@@ -364,9 +364,9 @@ class LoopUniqueStmt : public Stmt {
 
 class GlobalLoadStmt : public Stmt {
  public:
-  Stmt *ptr;
+  Stmt *src;
 
-  GlobalLoadStmt(Stmt *ptr) : ptr(ptr) {
+  GlobalLoadStmt(Stmt *src) : src(src) {
     TI_STMT_REG_FIELDS;
   }
 
@@ -378,15 +378,16 @@ class GlobalLoadStmt : public Stmt {
     return false;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, ptr);
+  TI_STMT_DEF_FIELDS(ret_type, src);
   TI_DEFINE_ACCEPT_AND_CLONE;
 };
 
 class GlobalStoreStmt : public Stmt {
  public:
-  Stmt *ptr, *data;
+  Stmt *dest;
+  Stmt *val;
 
-  GlobalStoreStmt(Stmt *ptr, Stmt *data) : ptr(ptr), data(data) {
+  GlobalStoreStmt(Stmt *dest, Stmt *val) : dest(dest), val(val) {
     TI_STMT_REG_FIELDS;
   }
 
@@ -394,15 +395,15 @@ class GlobalStoreStmt : public Stmt {
     return false;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, ptr, data);
+  TI_STMT_DEF_FIELDS(ret_type, dest, val);
   TI_DEFINE_ACCEPT_AND_CLONE;
 };
 
 class LocalLoadStmt : public Stmt {
  public:
-  LaneAttribute<LocalAddress> ptr;
+  LaneAttribute<LocalAddress> src;
 
-  LocalLoadStmt(const LaneAttribute<LocalAddress> &ptr) : ptr(ptr) {
+  LocalLoadStmt(const LaneAttribute<LocalAddress> &src) : src(src) {
     TI_STMT_REG_FIELDS;
   }
 
@@ -419,17 +420,17 @@ class LocalLoadStmt : public Stmt {
     return false;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, ptr);
+  TI_STMT_DEF_FIELDS(ret_type, src);
   TI_DEFINE_ACCEPT_AND_CLONE;
 };
 
 class LocalStoreStmt : public Stmt {
  public:
-  Stmt *ptr;
-  Stmt *data;
+  Stmt *dest;
+  Stmt *val;
 
-  LocalStoreStmt(Stmt *ptr, Stmt *data) : ptr(ptr), data(data) {
-    TI_ASSERT(ptr->is<AllocaStmt>());
+  LocalStoreStmt(Stmt *dest, Stmt *val) : dest(dest), val(val) {
+    TI_ASSERT(dest->is<AllocaStmt>());
     TI_STMT_REG_FIELDS;
   }
 
@@ -445,7 +446,7 @@ class LocalStoreStmt : public Stmt {
     return false;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, ptr, data);
+  TI_STMT_DEF_FIELDS(ret_type, dest, val);
   TI_DEFINE_ACCEPT_AND_CLONE;
 };
 
@@ -551,7 +552,7 @@ class RangeForStmt : public Stmt {
   bool reversed;
   int vectorize;
   int bit_vectorize;
-  int parallelize;
+  int num_cpu_threads;
   int block_dim;
   bool strictly_serialized;
 
@@ -560,7 +561,7 @@ class RangeForStmt : public Stmt {
                std::unique_ptr<Block> &&body,
                int vectorize,
                int bit_vectorize,
-               int parallelize,
+               int num_cpu_threads,
                int block_dim,
                bool strictly_serialized);
 
@@ -579,7 +580,7 @@ class RangeForStmt : public Stmt {
                      reversed,
                      vectorize,
                      bit_vectorize,
-                     parallelize,
+                     num_cpu_threads,
                      block_dim,
                      strictly_serialized);
   TI_DEFINE_ACCEPT
@@ -595,7 +596,7 @@ class StructForStmt : public Stmt {
   std::vector<int> index_offsets;
   int vectorize;
   int bit_vectorize;
-  int parallelize;
+  int num_cpu_threads;
   int block_dim;
   MemoryAccessOptions mem_access_opt;
 
@@ -603,7 +604,7 @@ class StructForStmt : public Stmt {
                 std::unique_ptr<Block> &&body,
                 int vectorize,
                 int bit_vectorize,
-                int parallelize,
+                int num_cpu_threads,
                 int block_dim);
 
   bool is_container_statement() const override {
@@ -616,7 +617,7 @@ class StructForStmt : public Stmt {
                      index_offsets,
                      vectorize,
                      bit_vectorize,
-                     parallelize,
+                     num_cpu_threads,
                      block_dim,
                      mem_access_opt);
   TI_DEFINE_ACCEPT

@@ -251,10 +251,10 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access) {
     Stmt *result = nullptr;
     if (auto local_load = stmt->cast<LocalLoadStmt>()) {
       bool regular = true;
-      auto alloca = local_load->ptr[0].var;
+      auto alloca = local_load->src[0].var;
       for (int l = 0; l < stmt->width(); l++) {
-        if (local_load->ptr[l].offset != l ||
-            local_load->ptr[l].var != alloca) {
+        if (local_load->src[l].offset != l ||
+            local_load->src[l].var != alloca) {
           regular = false;
         }
       }
@@ -263,7 +263,7 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access) {
       }
     } else if (auto global_load = stmt->cast<GlobalLoadStmt>()) {
       if (!after_lower_access) {
-        result = get_store_forwarding_data(global_load->ptr, i);
+        result = get_store_forwarding_data(global_load->src, i);
       }
     }
     if (result) {
@@ -282,11 +282,11 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access) {
     }
     // Identical store elimination
     if (auto local_store = stmt->cast<LocalStoreStmt>()) {
-      result = get_store_forwarding_data(local_store->ptr, i);
+      result = get_store_forwarding_data(local_store->dest, i);
       if (result) {
         if (result->is<AllocaStmt>()) {
           // special case of alloca (initialized to 0)
-          if (auto stored_data = local_store->data->cast<ConstStmt>()) {
+          if (auto stored_data = local_store->val->cast<ConstStmt>()) {
             bool all_zero = true;
             for (auto &val : stored_data->val.data) {
               if (!val.equal_value(0)) {
@@ -302,7 +302,7 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access) {
           }
         } else {
           // not alloca
-          if (irpass::analysis::same_value(result, local_store->data)) {
+          if (irpass::analysis::same_value(result, local_store->val)) {
             erase(i);  // This causes end_location--
             i--;       // to cancel i++ in the for loop
             modified = true;
@@ -311,8 +311,8 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access) {
       }
     } else if (auto global_store = stmt->cast<GlobalStoreStmt>()) {
       if (!after_lower_access) {
-        result = get_store_forwarding_data(global_store->ptr, i);
-        if (irpass::analysis::same_value(result, global_store->data)) {
+        result = get_store_forwarding_data(global_store->dest, i);
+        if (irpass::analysis::same_value(result, global_store->val)) {
           erase(i);  // This causes end_location--
           i--;       // to cancel i++ in the for loop
           modified = true;

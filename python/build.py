@@ -1,8 +1,9 @@
 import argparse
 import os
 import platform
-import sys
 import shutil
+import sys
+
 import taichi as ti
 
 

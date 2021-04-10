@@ -4,6 +4,15 @@
 
 TLANG_NAMESPACE_BEGIN
 
+namespace {
+
+inline bool stmt_location_did_not_change(Stmt *stmt, int location) {
+  return location >= 0 && location < stmt->parent->size() &&
+         stmt->parent->statements[location].get() == stmt;
+}
+
+}  // namespace
+
 IRBuilder::IRBuilder() {
   reset();
 }
@@ -44,26 +53,56 @@ void IRBuilder::set_insertion_point_to_false_branch(IfStmt *if_stmt) {
   set_insertion_point({if_stmt->false_statements.get(), 0});
 }
 
+IRBuilder::LoopGuard::~LoopGuard() {
+  if (stmt_location_did_not_change(loop_, location_)) {
+    // faster than set_insertion_point_to_after()
+    builder_.set_insertion_point({loop_->parent, location_ + 1});
+  } else {
+    builder_.set_insertion_point_to_after(loop_);
+  }
+}
+
+IRBuilder::IfGuard::IfGuard(IRBuilder &builder,
+                            IfStmt *if_stmt,
+                            bool true_branch)
+    : builder_(builder), if_stmt_(if_stmt) {
+  location_ = (int)if_stmt_->parent->size() - 1;
+  if (true_branch) {
+    builder_.set_insertion_point_to_true_branch(if_stmt_);
+  } else {
+    builder_.set_insertion_point_to_false_branch(if_stmt_);
+  }
+}
+
+IRBuilder::IfGuard::~IfGuard() {
+  if (stmt_location_did_not_change(if_stmt_, location_)) {
+    // faster than set_insertion_point_to_after()
+    builder_.set_insertion_point({if_stmt_->parent, location_ + 1});
+  } else {
+    builder_.set_insertion_point_to_after(if_stmt_);
+  }
+}
+
 RangeForStmt *IRBuilder::create_range_for(Stmt *begin,
                                           Stmt *end,
                                           int vectorize,
                                           int bit_vectorize,
-                                          int parallelize,
+                                          int num_cpu_threads,
                                           int block_dim,
                                           bool strictly_serialized) {
   return insert(Stmt::make_typed<RangeForStmt>(
       begin, end, std::make_unique<Block>(), vectorize, bit_vectorize,
-      parallelize, block_dim, strictly_serialized));
+      num_cpu_threads, block_dim, strictly_serialized));
 }
 
 StructForStmt *IRBuilder::create_struct_for(SNode *snode,
                                             int vectorize,
                                             int bit_vectorize,
-                                            int parallelize,
+                                            int num_cpu_threads,
                                             int block_dim) {
   return insert(Stmt::make_typed<StructForStmt>(
-      snode, std::make_unique<Block>(), vectorize, bit_vectorize, parallelize,
-      block_dim));
+      snode, std::make_unique<Block>(), vectorize, bit_vectorize,
+      num_cpu_threads, block_dim));
 }
 
 WhileStmt *IRBuilder::create_while_true() {
@@ -311,6 +350,18 @@ LocalLoadStmt *IRBuilder::create_local_load(AllocaStmt *ptr) {
 
 void IRBuilder::create_local_store(AllocaStmt *ptr, Stmt *data) {
   insert(Stmt::make_typed<LocalStoreStmt>(ptr, data));
+}
+
+GlobalPtrStmt *IRBuilder::create_global_ptr(
+    SNode *snode,
+    const std::vector<Stmt *> &indices) {
+  return insert(Stmt::make_typed<GlobalPtrStmt>(snode, indices));
+}
+
+ExternalPtrStmt *IRBuilder::create_external_ptr(
+    ArgLoadStmt *ptr,
+    const std::vector<Stmt *> &indices) {
+  return insert(Stmt::make_typed<ExternalPtrStmt>(ptr, indices));
 }
 
 TLANG_NAMESPACE_END

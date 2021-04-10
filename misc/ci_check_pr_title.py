@@ -1,4 +1,9 @@
-import sys, os, json, semver, git
+import json
+import os
+import sys
+
+import git
+import semver
 
 
 def get_old_ver():

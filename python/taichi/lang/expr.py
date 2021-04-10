@@ -1,6 +1,6 @@
+from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl
 from taichi.lang.common_ops import TaichiOperations
-from taichi.lang.core import taichi_lang_core
 from taichi.lang.util import (is_taichi_class, python_scope, to_numpy_type,
                               to_pytorch_type)
 from taichi.misc.util import deprecated
@@ -16,7 +16,7 @@ class Expr(TaichiOperations):
         self.setter = None
         self.tb = tb
         if len(args) == 1:
-            if isinstance(args[0], taichi_lang_core.Expr):
+            if isinstance(args[0], _ti_core.Expr):
                 self.ptr = args[0]
             elif isinstance(args[0], Expr):
                 self.ptr = args[0].ptr
@@ -50,8 +50,7 @@ class Expr(TaichiOperations):
         if not isinstance(key, (tuple, list)):
             key = (key, )
         assert len(key) == len(self.shape)
-        key = key + ((0, ) *
-                     (taichi_lang_core.get_max_num_indices() - len(key)))
+        key = key + ((0, ) * (_ti_core.get_max_num_indices() - len(key)))
         self.setter(value, *key)
 
     @python_scope
@@ -62,8 +61,7 @@ class Expr(TaichiOperations):
             key = ()
         if not isinstance(key, (tuple, list)):
             key = (key, )
-        key = key + ((0, ) *
-                     (taichi_lang_core.get_max_num_indices() - len(key)))
+        key = key + ((0, ) * (_ti_core.get_max_num_indices() - len(key)))
         return self.getter(*key)
 
     def loop_range(self):
@@ -82,29 +80,29 @@ class Expr(TaichiOperations):
             return
         snode = self.ptr.snode()
 
-        if taichi_lang_core.is_real(self.dtype):
+        if _ti_core.is_real(self.dtype):
 
             def getter(*key):
-                assert len(key) == taichi_lang_core.get_max_num_indices()
+                assert len(key) == _ti_core.get_max_num_indices()
                 return snode.read_float(key)
 
             def setter(value, *key):
-                assert len(key) == taichi_lang_core.get_max_num_indices()
+                assert len(key) == _ti_core.get_max_num_indices()
                 snode.write_float(key, value)
         else:
-            if taichi_lang_core.is_signed(self.dtype):
+            if _ti_core.is_signed(self.dtype):
 
                 def getter(*key):
-                    assert len(key) == taichi_lang_core.get_max_num_indices()
+                    assert len(key) == _ti_core.get_max_num_indices()
                     return snode.read_int(key)
             else:
 
                 def getter(*key):
-                    assert len(key) == taichi_lang_core.get_max_num_indices()
+                    assert len(key) == _ti_core.get_max_num_indices()
                     return snode.read_uint(key)
 
             def setter(value, *key):
-                assert len(key) == taichi_lang_core.get_max_num_indices()
+                assert len(key) == _ti_core.get_max_num_indices()
                 snode.write_int(key, value)
 
         self.getter = getter
@@ -130,7 +128,7 @@ class Expr(TaichiOperations):
 
     def parent(self, n=1):
         p = self.snode.parent(n)
-        return Expr(taichi_lang_core.global_var_expr_from_snode(p.ptr))
+        return Expr(_ti_core.global_var_expr_from_snode(p.ptr))
 
     def is_global(self):
         return self.ptr.is_global_var() or self.ptr.is_external_var()
@@ -169,7 +167,6 @@ class Expr(TaichiOperations):
     @python_scope
     def to_numpy(self):
         import numpy as np
-
         from taichi.lang.meta import tensor_to_ext_arr
         arr = np.zeros(shape=self.shape, dtype=to_numpy_type(self.dtype))
         tensor_to_ext_arr(self, arr)
@@ -179,7 +176,6 @@ class Expr(TaichiOperations):
     @python_scope
     def to_torch(self, device=None):
         import torch
-
         from taichi.lang.meta import tensor_to_ext_arr
         arr = torch.zeros(size=self.shape,
                           dtype=to_pytorch_type(self.dtype),
@@ -230,7 +226,7 @@ class Expr(TaichiOperations):
 def make_var_vector(size):
     exprs = []
     for _ in range(size):
-        exprs.append(taichi_lang_core.make_id_expr(''))
+        exprs.append(_ti_core.make_id_expr(''))
     return ti.Vector(exprs)
 
 
@@ -242,7 +238,7 @@ def make_expr_group(*exprs):
             mat = exprs[0]
             assert mat.m == 1
             exprs = mat.entries
-    expr_group = taichi_lang_core.ExprGroup()
+    expr_group = _ti_core.ExprGroup()
     for i in exprs:
         expr_group.push_back(Expr(i).ptr)
     return expr_group

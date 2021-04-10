@@ -1,7 +1,7 @@
-import taichi as ti
-
-from async_cases import *
 from async_advection import *
+from async_cases import *
+
+import taichi as ti
 
 rerun = True
 

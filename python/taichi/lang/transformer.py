@@ -2,9 +2,9 @@ import ast
 import copy
 
 from taichi.lang import impl
+from taichi.lang.ast_resolver import ASTResolver
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.util import to_taichi_type
-from taichi.lang.ast_resolver import ASTResolver
 
 import taichi as ti
 

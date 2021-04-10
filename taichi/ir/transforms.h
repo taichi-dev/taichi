@@ -76,6 +76,7 @@ void reverse_segments(IRNode *root);  // for autograd
 void detect_read_only(IRNode *root);
 void optimize_bit_struct_stores(
     IRNode *root,
+    const CompileConfig &config,
     const std::unordered_map<OffloadedStmt *,
                              std::unordered_map<const SNode *, GlobalPtrStmt *>>
         &uniquely_accessed_bit_structs);

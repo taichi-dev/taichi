@@ -225,7 +225,8 @@ void offload_to_executable(IRNode *ir,
   print("Simplified IV");
 
   if (is_extension_supported(config.arch, Extension::quant)) {
-    irpass::optimize_bit_struct_stores(ir, uniquely_accessed_bit_structs);
+    irpass::optimize_bit_struct_stores(ir, config,
+                                       uniquely_accessed_bit_structs);
     print("Bit struct stores optimized");
   }
 

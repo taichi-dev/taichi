@@ -137,7 +137,8 @@ class IRCloner : public IRVisitor {
       new_root->kernel = kernel;
     }
     irpass::type_check(new_root.get(),
-                       kernel->program.config);  // probably unnecessary
+                       kernel ? kernel->program.config
+                              : CompileConfig());  // probably unnecessary
     return new_root;
   }
 };

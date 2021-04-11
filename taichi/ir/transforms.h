@@ -64,7 +64,9 @@ void make_block_local(IRNode *root,
                       const MakeBlockLocalPass::Args &args);
 bool remove_loop_unique(IRNode *root);
 bool remove_range_assumption(IRNode *root);
-bool lower_access(IRNode *root, const CompileConfig &config, const LowerAccessPass::Args &args);
+bool lower_access(IRNode *root,
+                  const CompileConfig &config,
+                  const LowerAccessPass::Args &args);
 void auto_diff(IRNode *root,
                const CompileConfig &config,
                bool use_stack = false);

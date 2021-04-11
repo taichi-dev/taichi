@@ -110,8 +110,8 @@ def test_random_seed_per_launch():
 @ti.test(arch=[ti.cpu, ti.cuda])
 def test_random_f64():
     '''
-    Tests the generation of well-behaved Float64 random numbers by granularity,
-    see #2251 for explanation.
+    Tests the granularity of float64 random numbers.
+    See https://github.com/taichi-dev/taichi/issues/2251 for an explanation.
     '''
     import numpy as np
     n = int(2**23)
@@ -123,5 +123,5 @@ def test_random_f64():
             x[i] = ti.random(dtype=ti.f64)
 
     foo()
-    diff = np.diff(np.sort(x.to_numpy()), 1)
-    assert np.min(diff) > 0
+    frac, _ = np.modf(x.to_numpy() * 4294967296)
+    assert np.max(frac) > 0

@@ -1489,7 +1489,7 @@ f32 rand_f32(Context *context) {
 }
 
 f64 rand_f64(Context *context) {
-  return rand_f32(context);
+  return rand_u64(context) * (1.0 / 18446744073709551616.0);
 }
 
 i32 rand_i32(Context *context) {

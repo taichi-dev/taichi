@@ -1137,6 +1137,8 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
   TI_ASSERT(llvm_val[stmt->dest]);
   auto ptr_type = stmt->dest->ret_type->as<PointerType>();
   if (ptr_type->is_bit_pointer()) {
+    // TODO: Remove the support of bit struct stores here and
+    //  force to use BitStructStoreStmt instead.
     auto pointee_type = ptr_type->get_pointee_type();
     llvm::Value *store_value = nullptr;
     CustomIntType *cit = nullptr;
@@ -1197,7 +1199,8 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
         auto exponent_bit_ptr =
             offset_bit_ptr(llvm_val[stmt->dest], exponent_snode->bit_offset -
                                                      digits_snode->bit_offset);
-        store_custom_int(exponent_bit_ptr, exponent_cit, exponent_bits);
+        store_custom_int(exponent_bit_ptr, exponent_cit, exponent_bits,
+                         /*atomic=*/true);
         store_value = digit_bits;
 
         // Here we implement flush to zero (FTZ): if exponent is zero, we force
@@ -1217,7 +1220,7 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
     } else {
       TI_NOT_IMPLEMENTED
     }
-    store_custom_int(llvm_val[stmt->dest], cit, store_value);
+    store_custom_int(llvm_val[stmt->dest], cit, store_value, /*atomic=*/true);
   } else {
     builder->CreateStore(llvm_val[stmt->val], llvm_val[stmt->dest]);
   }

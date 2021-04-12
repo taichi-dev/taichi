@@ -1599,6 +1599,12 @@ void stack_push(Ptr stack, size_t max_num_elements, std::size_t element_size) {
                                                                               \
   void set_partial_bits_b##N(u##N *ptr, u32 offset, u32 bits, u##N value) {   \
     u##N mask = ((~(u##N)0) << (N - bits)) >> (N - offset - bits);            \
+    set_mask_b##N(ptr, mask, value << offset);                                \
+  }                                                                           \
+                                                                              \
+  void atomic_set_partial_bits_b##N(u##N *ptr, u32 offset, u32 bits,          \
+                                    u##N value) {                             \
+    u##N mask = ((~(u##N)0) << (N - bits)) >> (N - offset - bits);            \
     atomic_set_mask_b##N(ptr, mask, value << offset);                         \
   }                                                                           \
                                                                               \

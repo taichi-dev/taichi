@@ -147,6 +147,19 @@ void CodeGenLLVM::visit(BitStructStoreStmt *stmt) {
   auto bit_struct_physical_type =
       bit_struct_snode->dt->as<BitStructType>()->get_physical_type();
 
+  int bit_struct_num_non_exponent_children = 0;
+  for (auto &ch : bit_struct_snode->ch) {
+    if (ch->exponent_users.empty()) {
+      bit_struct_num_non_exponent_children++;
+    }
+  }
+  bool store_all_components = false;
+  if (prog->config.quant_opt_atomic_demotion &&
+      stmt->ch_ids.size() == bit_struct_num_non_exponent_children) {
+    stmt->is_atomic = false;
+    store_all_components = true;
+  }
+
   bool has_shared_exponent = false;
   for (auto ch_id : stmt->ch_ids) {
     if (bit_struct_snode->ch[ch_id]->owns_shared_exponent) {
@@ -250,9 +263,8 @@ void CodeGenLLVM::visit(BitStructStoreStmt *stmt) {
       bit_struct_val = builder->CreateOr(bit_struct_val, val);
     }
   }
-  if (prog->config.quant_opt_atomic_demotion &&
-      stmt->ch_ids.size() == bit_struct_snode->ch.size()) {
-    // Store all the components
+  if (store_all_components && !has_shared_exponent) {
+    // Store all components here.
     builder->CreateStore(bit_struct_val, llvm_val[stmt->ptr]);
   } else {
     // Create a mask and use a single (atomic)CAS
@@ -386,9 +398,6 @@ void CodeGenLLVM::store_floats_with_shared_exponents(BitStructStoreStmt *stmt) {
   }
   store_masked(llvm_val[stmt->ptr], mask, bit_struct_physical_type, masked_val,
                stmt->is_atomic);
-  // TODO: make sure stmt->is_atomic is false when there are also
-  //  non-shared exponent floats in this bit struct store and we store the
-  //  whole bit struct.
 }
 
 llvm::Value *CodeGenLLVM::extract_exponent_from_float(llvm::Value *f) {

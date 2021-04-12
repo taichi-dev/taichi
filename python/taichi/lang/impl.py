@@ -7,7 +7,7 @@ from taichi.core.util import ti_core as _ti_core
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.snode import SNode
-from taichi.lang.tape import Tape
+from taichi.lang.tape import TapeImpl
 from taichi.lang.util import (cook_dtype, is_taichi_class, python_scope,
                               taichi_scope)
 from taichi.misc.util import deprecated, get_traceback
@@ -266,7 +266,7 @@ class PyTaichi:
         self.materialized = False
 
     def get_tape(self, loss=None):
-        return Tape(self, loss)
+        return TapeImpl(self, loss)
 
     def sync(self):
         self.materialize()

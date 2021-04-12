@@ -97,6 +97,12 @@ void CodeGenLLVM::store_masked(llvm::Value *byte_ptr,
                                Type *physical_type,
                                llvm::Value *value,
                                bool atomic) {
+  TI_INFO("store_masked {} {} {} {}", mask, physical_type->to_string(),
+          data_type_bits(physical_type), atomic);
+  if (!mask) {
+    // do not store anything
+    return;
+  }
   uint64 full_mask = (~(uint64)0) >> (64 - data_type_bits(physical_type));
   if ((!atomic || prog->config.quant_opt_atomic_demotion) &&
       ((mask & full_mask) == full_mask)) {
@@ -166,6 +172,8 @@ void CodeGenLLVM::visit(BitStructStoreStmt *stmt) {
       has_shared_exponent = true;
     }
   }
+  // TODO: what about storing only shared-exponent floating-point SNodes
+  //  that don't own the shared exponent?
 
   if (has_shared_exponent) {
     store_floats_with_shared_exponents(stmt);
@@ -176,7 +184,8 @@ void CodeGenLLVM::visit(BitStructStoreStmt *stmt) {
     auto ch_id = stmt->ch_ids[i];
     auto val = llvm_val[stmt->values[i]];
     auto &ch = bit_struct_snode->ch[ch_id];
-    if (ch->owns_shared_exponent) {
+    if (has_shared_exponent && ch->exp_snode != nullptr &&
+        ch->exp_snode->exponent_users.size() > 1) {
       // already handled in store_floats_with_shared_exponents
       continue;
     }
@@ -248,7 +257,7 @@ void CodeGenLLVM::visit(BitStructStoreStmt *stmt) {
       auto exp_non_zero =
           builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_NE, exponent_bits,
                               tlctx->get_constant(0));
-      val = builder->CreateSelect(exp_non_zero, value_bits,
+      val = builder->CreateSelect(exp_non_zero, digit_bits,
                                   tlctx->get_constant(0));
       val = builder->CreateBitCast(val, llvm_type(bit_struct_physical_type));
       val = builder->CreateShl(val, digits_snode->bit_offset);
@@ -271,6 +280,11 @@ void CodeGenLLVM::visit(BitStructStoreStmt *stmt) {
     uint64 mask = 0;
     for (auto &ch_id : stmt->ch_ids) {
       auto &ch = bit_struct_snode->ch[ch_id];
+      if (has_shared_exponent && ch->exp_snode != nullptr &&
+          ch->exp_snode->exponent_users.size() > 1) {
+        // already handled in store_floats_with_shared_exponents
+        continue;
+      }
       auto dtype = ch->dt;
       CustomIntType *cit = nullptr;
       if (auto cft = dtype->cast<CustomFloatType>()) {
@@ -306,6 +320,10 @@ void CodeGenLLVM::store_floats_with_shared_exponents(BitStructStoreStmt *stmt) {
       continue;
     // ch[i] must be an exponent SNode
     auto &exp = snode->ch[i];
+    if (exp->exponent_users.size() == 1) {
+      // non-shared
+      continue;
+    }
     // load all floats
     std::vector<llvm::Value *> floats;
     for (auto &user : exp->exponent_users) {

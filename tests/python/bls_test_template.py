@@ -184,7 +184,6 @@ def bls_particle_grid(N,
         #if ti.static(use_shared):
         #    ti.block_local(m)
         for i, j, l in pid:
-            print([i,j,l])
             p = pid[i, j, l]
 
             u_ = ti.floor(x[p] * N).cast(ti.i32)

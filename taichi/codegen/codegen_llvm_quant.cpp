@@ -97,8 +97,6 @@ void CodeGenLLVM::store_masked(llvm::Value *byte_ptr,
                                Type *physical_type,
                                llvm::Value *value,
                                bool atomic) {
-  TI_INFO("store_masked {} {} {} {}", mask, physical_type->to_string(),
-          data_type_bits(physical_type), atomic);
   if (!mask) {
     // do not store anything
     return;

@@ -148,18 +148,14 @@ void CodeGenLLVM::visit(BitStructStoreStmt *stmt) {
       bit_struct_snode->dt->as<BitStructType>()->get_physical_type();
 
   bool has_shared_exponent = false;
-  bool has_non_shared_exponent = false;
   for (auto ch_id : stmt->ch_ids) {
     if (bit_struct_snode->ch[ch_id]->owns_shared_exponent) {
       has_shared_exponent = true;
-    } else {
-      has_non_shared_exponent = true;
     }
   }
 
   if (has_shared_exponent) {
     store_floats_with_shared_exponents(stmt);
-    return;
   }
 
   llvm::Value *bit_struct_val = nullptr;

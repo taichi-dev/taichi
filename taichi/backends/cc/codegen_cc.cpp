@@ -126,12 +126,12 @@ class CCTransformer : public IRVisitor {
     TI_ASSERT(stmt->width() == 1);
     emit("{} = *{};",
          define_var(cc_data_type_name(stmt->element_type()), stmt->raw_name()),
-         stmt->ptr->raw_name());
+         stmt->src->raw_name());
   }
 
   void visit(GlobalStoreStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
-    emit("*{} = {};", stmt->ptr->raw_name(), stmt->data->raw_name());
+    emit("*{} = {};", stmt->dest->raw_name(), stmt->val->raw_name());
   }
 
   void visit(GlobalTemporaryStmt *stmt) override {
@@ -202,21 +202,21 @@ class CCTransformer : public IRVisitor {
 
   void visit(LocalLoadStmt *stmt) override {
     bool linear_index = true;
-    for (int i = 0; i < (int)stmt->ptr.size(); i++) {
-      if (stmt->ptr[i].offset != i) {
+    for (int i = 0; i < (int)stmt->src.size(); i++) {
+      if (stmt->src[i].offset != i) {
         linear_index = false;
       }
     }
     TI_ASSERT(stmt->same_source() && linear_index &&
-              stmt->width() == stmt->ptr[0].var->width());
+              stmt->width() == stmt->src[0].var->width());
 
     auto var =
         define_var(cc_data_type_name(stmt->element_type()), stmt->raw_name());
-    emit("{} = {};", var, stmt->ptr[0].var->raw_name());
+    emit("{} = {};", var, stmt->src[0].var->raw_name());
   }
 
   void visit(LocalStoreStmt *stmt) override {
-    emit("{} = {};", stmt->ptr->raw_name(), stmt->data->raw_name());
+    emit("{} = {};", stmt->dest->raw_name(), stmt->val->raw_name());
   }
 
   void visit(ExternalFuncCallStmt *stmt) override {

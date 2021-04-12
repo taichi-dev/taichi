@@ -25,7 +25,7 @@ class CreateBitStructStores : public BasicStmtVisitor {
   }
 
   void visit(GlobalStoreStmt *stmt) override {
-    auto get_ch = stmt->ptr->cast<GetChStmt>();
+    auto get_ch = stmt->dest->cast<GetChStmt>();
     if (!get_ch || get_ch->input_snode->type != SNodeType::bit_struct)
       return;
 
@@ -41,7 +41,7 @@ class CreateBitStructStores : public BasicStmtVisitor {
         get_ch->output_snode->owns_shared_exponent) {
       auto s = Stmt::make<BitStructStoreStmt>(get_ch->input_ptr,
                                               std::vector<int>{get_ch->chid},
-                                              std::vector<Stmt *>{stmt->data});
+                                              std::vector<Stmt *>{stmt->val});
       stmt->replace_with(VecStatement(std::move(s)));
     }
   }

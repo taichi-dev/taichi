@@ -957,7 +957,7 @@ void CodeGenLLVM::visit(KernelReturnStmt *stmt) {
 
 void CodeGenLLVM::visit(LocalLoadStmt *stmt) {
   TI_ASSERT(stmt->width() == 1);
-  llvm_val[stmt] = builder->CreateLoad(llvm_val[stmt->ptr[0].var]);
+  llvm_val[stmt] = builder->CreateLoad(llvm_val[stmt->src[0].var]);
 }
 
 void CodeGenLLVM::visit(LocalStoreStmt *stmt) {
@@ -965,7 +965,7 @@ void CodeGenLLVM::visit(LocalStoreStmt *stmt) {
   if (mask && stmt->width() != 1) {
     TI_NOT_IMPLEMENTED
   } else {
-    builder->CreateStore(llvm_val[stmt->data], llvm_val[stmt->ptr]);
+    builder->CreateStore(llvm_val[stmt->val], llvm_val[stmt->dest]);
   }
 }
 
@@ -1133,16 +1133,16 @@ void CodeGenLLVM::visit(GlobalPtrStmt *stmt) {
 
 void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
   TI_ASSERT(!stmt->parent->mask() || stmt->width() == 1);
-  TI_ASSERT(llvm_val[stmt->data]);
-  TI_ASSERT(llvm_val[stmt->ptr]);
-  auto ptr_type = stmt->ptr->ret_type->as<PointerType>();
+  TI_ASSERT(llvm_val[stmt->val]);
+  TI_ASSERT(llvm_val[stmt->dest]);
+  auto ptr_type = stmt->dest->ret_type->as<PointerType>();
   if (ptr_type->is_bit_pointer()) {
     auto pointee_type = ptr_type->get_pointee_type();
     llvm::Value *store_value = nullptr;
     CustomIntType *cit = nullptr;
     if (auto cit_ = pointee_type->cast<CustomIntType>()) {
       cit = cit_;
-      store_value = llvm_val[stmt->data];
+      store_value = llvm_val[stmt->val];
     } else if (auto cft = pointee_type->cast<CustomFloatType>()) {
       llvm::Value *digit_bits = nullptr;
       auto digits_cit = cft->get_digits_type()->as<CustomIntType>();
@@ -1154,7 +1154,7 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
         // f32 = 1 sign bit + 8 exponent bits + 23 fraction bits
 
         auto f32_bits = builder->CreateBitCast(
-            llvm_val[stmt->data], llvm::Type::getInt32Ty(*llvm_context));
+            llvm_val[stmt->val], llvm::Type::getInt32Ty(*llvm_context));
         // Rounding to nearest here. Note that if the digits overflows then the
         // carry-on will contribute to the exponent, which is desired.
         if (cft->get_digit_bits() < 23) {
@@ -1184,7 +1184,7 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
 
         auto exponent_cit = exp->as<CustomIntType>();
 
-        auto digits_snode = stmt->ptr->as<GetChStmt>()->output_snode;
+        auto digits_snode = stmt->dest->as<GetChStmt>()->output_snode;
         auto exponent_snode = digits_snode->exp_snode;
 
         auto exponent_offset = get_exponent_offset(exponent_bits, cft);
@@ -1195,8 +1195,8 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
         // Compute the bit pointer of the exponent bits.
         TI_ASSERT(digits_snode->parent == exponent_snode->parent);
         auto exponent_bit_ptr =
-            offset_bit_ptr(llvm_val[stmt->ptr], exponent_snode->bit_offset -
-                                                    digits_snode->bit_offset);
+            offset_bit_ptr(llvm_val[stmt->dest], exponent_snode->bit_offset -
+                                                     digits_snode->bit_offset);
         store_custom_int(exponent_bit_ptr, exponent_cit, exponent_bits);
         store_value = digit_bits;
 
@@ -1210,36 +1210,36 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
         store_value = builder->CreateSelect(exp_non_zero, store_value,
                                             tlctx->get_constant(0));
       } else {
-        digit_bits = llvm_val[stmt->data];
+        digit_bits = llvm_val[stmt->val];
         store_value = float_to_custom_int(cft, digits_cit, digit_bits);
       }
       cit = digits_cit;
     } else {
       TI_NOT_IMPLEMENTED
     }
-    store_custom_int(llvm_val[stmt->ptr], cit, store_value);
+    store_custom_int(llvm_val[stmt->dest], cit, store_value);
   } else {
-    builder->CreateStore(llvm_val[stmt->data], llvm_val[stmt->ptr]);
+    builder->CreateStore(llvm_val[stmt->val], llvm_val[stmt->dest]);
   }
 }
 
 void CodeGenLLVM::visit(GlobalLoadStmt *stmt) {
   int width = stmt->width();
   TI_ASSERT(width == 1);
-  auto ptr_type = stmt->ptr->ret_type->as<PointerType>();
+  auto ptr_type = stmt->src->ret_type->as<PointerType>();
   if (ptr_type->is_bit_pointer()) {
     auto val_type = ptr_type->get_pointee_type();
     if (val_type->is<CustomIntType>()) {
-      llvm_val[stmt] = load_as_custom_int(llvm_val[stmt->ptr], val_type);
+      llvm_val[stmt] = load_as_custom_int(llvm_val[stmt->src], val_type);
     } else if (auto cft = val_type->cast<CustomFloatType>()) {
-      TI_ASSERT(stmt->ptr->is<GetChStmt>());
-      llvm_val[stmt] = load_custom_float(stmt->ptr);
+      TI_ASSERT(stmt->src->is<GetChStmt>());
+      llvm_val[stmt] = load_custom_float(stmt->src);
     } else {
       TI_NOT_IMPLEMENTED
     }
   } else {
     llvm_val[stmt] = builder->CreateLoad(tlctx->get_data_type(stmt->ret_type),
-                                         llvm_val[stmt->ptr]);
+                                         llvm_val[stmt->src]);
   }
 }
 

@@ -118,12 +118,12 @@ class BLSAnalysis : public BasicStmtVisitor {
   // Do not eliminate global data access
   void visit(GlobalLoadStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);  // TODO: support vectorization
-    record_access(stmt->ptr, AccessFlag::read);
+    record_access(stmt->src, AccessFlag::read);
   }
 
   void visit(GlobalStoreStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);  // TODO: support vectorization
-    record_access(stmt->ptr, AccessFlag::write);
+    record_access(stmt->dest, AccessFlag::write);
   }
 
   void visit(AtomicOpStmt *stmt) override {

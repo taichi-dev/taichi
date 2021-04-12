@@ -390,22 +390,22 @@ class IRPrinter : public IRVisitor {
 
   void visit(LocalLoadStmt *stmt) override {
     print("{}{} = local load [{}]", stmt->type_hint(), stmt->name(),
-          to_string(stmt->ptr));
+          to_string(stmt->src));
   }
 
   void visit(LocalStoreStmt *stmt) override {
     print("{}{} : local store [{} <- {}]", stmt->type_hint(), stmt->name(),
-          stmt->ptr->name(), stmt->data->name());
+          stmt->dest->name(), stmt->val->name());
   }
 
   void visit(GlobalLoadStmt *stmt) override {
     print("{}{} = global load {}", stmt->type_hint(), stmt->name(),
-          stmt->ptr->name());
+          stmt->src->name());
   }
 
   void visit(GlobalStoreStmt *stmt) override {
     print("{}{} : global store [{} <- {}]", stmt->type_hint(), stmt->name(),
-          stmt->ptr->name(), stmt->data->name());
+          stmt->dest->name(), stmt->val->name());
   }
 
   void visit(ElementShuffleStmt *stmt) override {

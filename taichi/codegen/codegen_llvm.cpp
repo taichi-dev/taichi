@@ -1623,8 +1623,8 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     auto refine =
         get_runtime_function(leaf_block->refine_coordinates_func_name());
 
-    create_call(refine,  {parent_coordinates, block_corner_coordinates,
-                             tlctx->get_constant(0)});
+    create_call(refine, {parent_coordinates, block_corner_coordinates,
+                         tlctx->get_constant(0)});
 
     if (stmt->tls_prologue) {
       stmt->tls_prologue->accept(this);
@@ -1855,9 +1855,10 @@ void CodeGenLLVM::visit(BlockCornerIndexStmt *stmt) {
       stmt->loop->as<OffloadedStmt>()->task_type ==
           OffloadedStmt::TaskType::struct_for) {
     TI_ASSERT(block_corner_coordinates);
-    llvm_val[stmt] = builder->CreateLoad(builder->CreateGEP(
-        block_corner_coordinates, {tlctx->get_constant(0), tlctx->get_constant(0),
-                             tlctx->get_constant(stmt->index)}));
+    llvm_val[stmt] = builder->CreateLoad(
+        builder->CreateGEP(block_corner_coordinates,
+                           {tlctx->get_constant(0), tlctx->get_constant(0),
+                            tlctx->get_constant(stmt->index)}));
   } else {
     TI_NOT_IMPLEMENTED;
   }

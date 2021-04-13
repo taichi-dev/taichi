@@ -546,8 +546,6 @@ class Simplify : public IRVisitor {
 
   Simplify(IRNode *node, const CompileConfig &config, Kernel *kernel)
       : config(config), kernel(kernel) {
-    if (!kernel)
-      this->kernel = node->get_kernel();
     TI_ASSERT(this->kernel);
     modified = false;
     allow_undefined_visitor = true;

@@ -22,7 +22,7 @@ using PassID = std::string;
     return config_;
   }
 
-  // private:
+ private:
   CompileConfig config_;
 };*/
 

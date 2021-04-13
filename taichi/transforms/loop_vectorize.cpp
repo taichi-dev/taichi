@@ -15,7 +15,7 @@ class LoopVectorize : public IRVisitor {
  public:
   int vectorize;
   Stmt *loop_var;  // an alloca...
-  CompileConfig config;
+  const CompileConfig &config;
 
   explicit LoopVectorize(const CompileConfig &config) : config(config) {
     allow_undefined_visitor = true;

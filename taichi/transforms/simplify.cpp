@@ -541,7 +541,7 @@ class Simplify : public IRVisitor {
  public:
   StructForStmt *current_struct_for;
   bool modified;
-  CompileConfig config;
+  const CompileConfig &config;
   Kernel *kernel;
 
   Simplify(IRNode *node, const CompileConfig &config, Kernel *kernel)

@@ -1,6 +1,8 @@
 #pragma once
 
 #include "taichi/ir/ir.h"
+#include "taichi/ir/pass.h"
+#include "taichi/analysis/gather_uniquely_accessed_pointers.h"
 #include <atomic>
 #include <optional>
 #include <unordered_set>
@@ -101,9 +103,7 @@ std::pair<std::unordered_set<SNode *>, std::unordered_set<SNode *>>
 gather_snode_read_writes(IRNode *root);
 std::vector<Stmt *> gather_statements(IRNode *root,
                                       const std::function<bool(Stmt *)> &test);
-std::unordered_map<OffloadedStmt *,
-                   std::unordered_map<const SNode *, GlobalPtrStmt *>>
-gather_uniquely_accessed_bit_structs(IRNode *root);
+void gather_uniquely_accessed_bit_structs(IRNode *root, AnalysisManager *amgr);
 std::unordered_map<const SNode *, GlobalPtrStmt *>
 gather_uniquely_accessed_pointers(IRNode *root);
 std::unique_ptr<std::unordered_set<AtomicOpStmt *>> gather_used_atomics(

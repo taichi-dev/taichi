@@ -128,7 +128,7 @@ std::string find_existing_command(const std::vector<std::string> &commands) {
       return cmd;
     }
   }
-  for (auto cmd : commands) {
+  for (const auto &cmd : commands) {
     TI_WARN("Potential command {}", cmd);
   }
   TI_ERROR("None command found.");

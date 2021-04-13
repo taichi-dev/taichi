@@ -47,7 +47,7 @@ class CCTransformer : public IRVisitor {
     auto ir = kernel->ir.get();
     auto config = kernel->program.config;
     config.demote_dense_struct_fors = true;
-    irpass::compile_to_executable(ir, config,
+    irpass::compile_to_executable(ir, config, kernel,
                                   /*vectorize=*/false, kernel->grad,
                                   /*ad_use_stack=*/true, config.print_ir,
                                   /*lower_global_access*/ true);

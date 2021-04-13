@@ -202,16 +202,17 @@ TLANG_NAMESPACE_BEGIN
 namespace irpass {
 void optimize_bit_struct_stores(
     IRNode *root,
+    const CompileConfig &config,
     const std::unordered_map<OffloadedStmt *,
                              std::unordered_map<const SNode *, GlobalPtrStmt *>>
         &uniquely_accessed_bit_structs) {
   TI_AUTO_PROF;
   CreateBitStructStores::run(root);
   die(root);  // remove unused GetCh
-  if (root->get_config().quant_opt_store_fusion) {
+  if (config.quant_opt_store_fusion) {
     MergeBitStructStores::run(root);
   }
-  if (root->get_config().quant_opt_atomic_demotion) {
+  if (config.quant_opt_atomic_demotion) {
     DemoteAtomicBitStructStores::run(root, uniquely_accessed_bit_structs);
   }
 }

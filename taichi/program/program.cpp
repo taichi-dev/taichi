@@ -746,7 +746,7 @@ void Program::finalize() {
   TI_TRACE("Program ({}) finalized.", fmt::ptr(this));
 }
 
-int Program::default_block_dim() const {
+int Program::default_block_dim(const CompileConfig &config) {
   if (arch_is_cpu(config.arch)) {
     return config.default_cpu_block_dim;
   } else {

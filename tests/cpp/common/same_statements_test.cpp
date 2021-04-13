@@ -36,7 +36,7 @@ TEST(SameStatements, TestSameBlock) {
       false_clause->push_back<GlobalStoreStmt>(global_store_addr, false_add);
   if_stmt->set_false_statements(std::move(false_clause));
 
-  irpass::type_check(block.get());
+  irpass::type_check(block.get(), CompileConfig());
   irpass::re_id(block.get());
   EXPECT_EQ(block->size(), 5);
 
@@ -74,7 +74,7 @@ TEST(SameStatements, TestSameAssert) {
   auto assert_one_a_zero =
       block->push_back<AssertStmt>(one, "a", std::vector<Stmt *>(1, zero));
 
-  irpass::type_check(block.get());
+  irpass::type_check(block.get(), CompileConfig());
   irpass::re_id(block.get());
   EXPECT_EQ(block->size(), 10);
   EXPECT_TRUE(irpass::analysis::same_statements(assert_zero_a, assert_zero_a2));
@@ -107,7 +107,7 @@ TEST(SameStatements, TestSameSnodeLookup) {
   auto lookup_child =
       block->push_back<SNodeLookupStmt>(&child, get_child, zero, false);
 
-  irpass::type_check(block.get());
+  irpass::type_check(block.get(), CompileConfig());
   irpass::re_id(block.get());
   EXPECT_EQ(block->size(), 7);
   EXPECT_TRUE(irpass::analysis::same_statements(lookup1, lookup2));
@@ -132,7 +132,7 @@ TEST(SameStatements, TestSameValue) {
       false_clause->push_back<BinaryOpStmt>(BinaryOpType::add, one, false_rand);
   if_stmt->set_false_statements(std::move(false_clause));
 
-  irpass::type_check(block.get());
+  irpass::type_check(block.get(), CompileConfig());
   irpass::re_id(block.get());
   EXPECT_EQ(irpass::analysis::count_statements(block.get()), 6);
 
@@ -163,7 +163,7 @@ TEST(SameStatements, TestSameLoopIndex) {
   auto loop_index_a = range_for->body->push_back<LoopIndexStmt>(range_for, 0);
   auto loop_index_b = range_for->body->push_back<LoopIndexStmt>(range_for, 0);
 
-  irpass::type_check(block.get());
+  irpass::type_check(block.get(), CompileConfig());
   irpass::re_id(block.get());
 
   EXPECT_TRUE(irpass::analysis::same_statements(loop_index_a, loop_index_b));

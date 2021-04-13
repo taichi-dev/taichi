@@ -27,13 +27,13 @@ struct OffloadedRanges {
 // For GPU backends this pass also determines the grid dim and block dims
 class Offloader {
  public:
-  static OffloadedRanges run(IRNode *root) {
+  static OffloadedRanges run(IRNode *root, const CompileConfig &config) {
     OffloadedRanges offloaded_ranges;
 
     auto root_block = dynamic_cast<Block *>(root);
     auto root_statements = std::move(root_block->statements);
     root_block->statements.clear();
-    const auto arch = root->get_config().arch;
+    const auto arch = config.arch;
     auto pending_serial_statements =
         Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::serial, arch);
     pending_serial_statements->grid_dim = 1;
@@ -57,10 +57,9 @@ class Offloader {
         auto offloaded = Stmt::make_typed<OffloadedStmt>(
             OffloadedStmt::TaskType::range_for, arch);
         // offloaded->body is an empty block now.
-        offloaded->grid_dim =
-            root->get_kernel()->program.config.saturating_grid_dim;
+        offloaded->grid_dim = config.saturating_grid_dim;
         if (s->block_dim == 0) {
-          offloaded->block_dim = s->get_kernel()->program.default_block_dim();
+          offloaded->block_dim = Program::default_block_dim(config);
         } else {
           offloaded->block_dim = s->block_dim;
         }
@@ -79,16 +78,15 @@ class Offloader {
               std::make_pair(offloaded.get(), s->end));
         }
         offloaded->num_cpu_threads =
-            std::min(s->num_cpu_threads,
-                     root->get_kernel()->program.config.cpu_max_num_threads);
+            std::min(s->num_cpu_threads, config.cpu_max_num_threads);
         replace_all_usages_with(s, s, offloaded.get());
         for (int j = 0; j < (int)s->body->statements.size(); j++) {
           offloaded->body->insert(std::move(s->body->statements[j]));
         }
         root_block->insert(std::move(offloaded));
-      } else if (auto s = stmt->cast<StructForStmt>()) {
+      } else if (auto st = stmt->cast<StructForStmt>()) {
         assemble_serial_statements();
-        emit_struct_for(s, root_block, s->mem_access_opt);
+        emit_struct_for(st, root_block, config, st->mem_access_opt);
       } else {
         pending_serial_statements->body->insert(std::move(stmt));
       }
@@ -100,6 +98,7 @@ class Offloader {
  private:
   static void emit_struct_for(StructForStmt *for_stmt,
                               Block *root_block,
+                              const CompileConfig &config,
                               const MemoryAccessOptions &mem_access_opt) {
     auto leaf = for_stmt->snode;
     // make a list of nodes, from the leaf block (instead of 'place') to root
@@ -112,13 +111,11 @@ class Offloader {
     }
     std::reverse(path.begin(), path.end());
 
-    auto program = &for_stmt->get_kernel()->program;
-
     // If |demotable| is true, this will later be demoting into a range-for
     // task, so we don't need to generate clear/listgen tasks.
     const bool demotable =
-        (leaf->is_path_all_dense && program->config.demote_dense_struct_fors);
-    const auto arch = program->config.arch;
+        (leaf->is_path_all_dense && config.demote_dense_struct_fors);
+    const auto arch = config.arch;
     if (!demotable) {
       for (int i = 1; i < path.size(); i++) {
         auto snode_child = path[i];
@@ -140,11 +137,11 @@ class Offloader {
         auto offloaded_listgen = Stmt::make_typed<OffloadedStmt>(
             OffloadedStmt::TaskType::listgen, arch);
         offloaded_listgen->snode = snode_child;
-        offloaded_listgen->grid_dim = program->config.saturating_grid_dim;
+        offloaded_listgen->grid_dim = config.saturating_grid_dim;
         offloaded_listgen->block_dim =
             std::min(snode_child->max_num_elements(),
-                     (int64)std::min(program->default_block_dim(),
-                                     program->config.max_block_dim));
+                     (int64)std::min(Program::default_block_dim(config),
+                                     config.max_block_dim));
         root_block->insert(std::move(offloaded_listgen));
       }
     }
@@ -154,13 +151,13 @@ class Offloader {
 
     offloaded_struct_for->index_offsets = for_stmt->index_offsets;
 
-    offloaded_struct_for->grid_dim = program->config.saturating_grid_dim;
+    offloaded_struct_for->grid_dim = config.saturating_grid_dim;
 
     const auto snode_num_elements = for_stmt->snode->max_num_elements();
     if (for_stmt->block_dim == 0) {
       // adaptive
-      offloaded_struct_for->block_dim = std::min(
-          snode_num_elements, (int64)program->config.default_gpu_block_dim);
+      offloaded_struct_for->block_dim =
+          std::min(snode_num_elements, (int64)config.default_gpu_block_dim);
     } else {
       if (for_stmt->block_dim > snode_num_elements) {
         TI_WARN(
@@ -181,8 +178,8 @@ class Offloader {
     }
 
     offloaded_struct_for->snode = for_stmt->snode;
-    offloaded_struct_for->num_cpu_threads = std::min(
-        for_stmt->num_cpu_threads, program->config.cpu_max_num_threads);
+    offloaded_struct_for->num_cpu_threads =
+        std::min(for_stmt->num_cpu_threads, config.cpu_max_num_threads);
     offloaded_struct_for->mem_access_opt = mem_access_opt;
 
     root_block->insert(std::move(offloaded_struct_for));
@@ -254,9 +251,11 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
 
  private:
   IdentifyValuesUsedInOtherOffloads(
+      const CompileConfig &config,
       const std::unordered_map<Stmt *, Stmt *> &stmt_to_offloaded,
       OffloadedRanges *offloaded_ranges)
-      : stmt_to_offloaded(stmt_to_offloaded),
+      : config(config),
+        stmt_to_offloaded(stmt_to_offloaded),
         offloaded_ranges_(offloaded_ranges) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
@@ -297,7 +296,7 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
       return;
     if (stmt_to_offloaded[stmt] == current_offloaded)
       return;
-    if (stmt->get_config().advanced_optimization) {
+    if (config.advanced_optimization) {
       if (stmt->is<ConstStmt>()) {
         // Directly insert copies of ConstStmts later
         return;
@@ -323,14 +322,17 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
 
   static StmtToOffsetMap run(
       IRNode *root,
+      const CompileConfig &config,
       const std::unordered_map<Stmt *, Stmt *> &stmt_to_offloaded,
       OffloadedRanges *offloaded_ranges) {
-    IdentifyValuesUsedInOtherOffloads pass(stmt_to_offloaded, offloaded_ranges);
+    IdentifyValuesUsedInOtherOffloads pass(config, stmt_to_offloaded,
+                                           offloaded_ranges);
     root->accept(&pass);
     return pass.local_to_global;
   }
 
  private:
+  CompileConfig config;
   std::unordered_map<Stmt *, Stmt *> stmt_to_offloaded;
   OffloadedRanges *const offloaded_ranges_;
   // Local variables to global temporary offsets (in bytes)
@@ -388,10 +390,12 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
 
  private:
   FixCrossOffloadReferences(
+      const CompileConfig &config,
       const StmtToOffsetMap &local_to_global_offset,
       const std::unordered_map<Stmt *, Stmt *> &stmt_to_offloaded,
       OffloadedRanges *offloaded_ranges)
-      : local_to_global_offset(local_to_global_offset),
+      : config(config),
+        local_to_global_offset(local_to_global_offset),
         stmt_to_offloaded(stmt_to_offloaded),
         offloaded_ranges_(offloaded_ranges) {
     allow_undefined_visitor = true;
@@ -499,7 +503,7 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
       return false;
     if (stmt_to_offloaded[stmt] == stmt_to_offloaded[op])  // same OffloadedStmt
       return false;
-    if (stmt->get_config().advanced_optimization) {
+    if (config.advanced_optimization) {
       if (op->is<ConstStmt>()) {
         auto copy = op->as<ConstStmt>()->copy();
         stmt_to_offloaded[copy.get()] = stmt_to_offloaded[stmt];
@@ -551,11 +555,12 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
 
  public:
   static void run(IRNode *root,
+                  const CompileConfig &config,
                   const StmtToOffsetMap &local_to_global_offset,
                   const std::unordered_map<Stmt *, Stmt *> &stmt_to_offloaded,
                   OffloadedRanges *offloaded_ranges) {
-    FixCrossOffloadReferences pass(local_to_global_offset, stmt_to_offloaded,
-                                   offloaded_ranges);
+    FixCrossOffloadReferences pass(config, local_to_global_offset,
+                                   stmt_to_offloaded, offloaded_ranges);
     while (true) {
       try {
         root->accept(&pass);
@@ -567,13 +572,14 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
   }
 
  private:
+  const CompileConfig &config;
   StmtToOffsetMap local_to_global_offset;
   std::unordered_map<Stmt *, Stmt *> stmt_to_offloaded;
   OffloadedRanges *const offloaded_ranges_;
   std::unordered_map<Stmt *, DataType> local_to_global_vector_type;
 };
 
-void insert_gc(IRNode *root) {
+void insert_gc(IRNode *root, const CompileConfig &config) {
   auto *b = dynamic_cast<Block *>(root);
   TI_ASSERT(b);
   std::vector<std::pair<int, std::vector<SNode *>>> gc_statements;
@@ -589,7 +595,7 @@ void insert_gc(IRNode *root) {
     for (auto *snode : snodes) {
       if (is_gc_able(snode->type)) {
         auto gc_task = Stmt::make_typed<OffloadedStmt>(
-            OffloadedStmt::TaskType::gc, get_current_program().config.arch);
+            OffloadedStmt::TaskType::gc, config.arch);
         gc_task->snode = snode;
         b->insert(std::move(gc_task), i + 1);
       }
@@ -665,24 +671,24 @@ class AssociateContinueScope : public BasicStmtVisitor {
 
 }  // namespace
 
-void offload(IRNode *root) {
+void offload(IRNode *root, const CompileConfig &config) {
   TI_AUTO_PROF;
-  auto offloaded_ranges = Offloader::run(root);
-  type_check(root);
+  auto offloaded_ranges = Offloader::run(root, config);
+  type_check(root, config);
   {
     auto stmt_to_offloaded = StmtToOffloaded::run(root);
     const auto local_to_global_offset = IdentifyValuesUsedInOtherOffloads::run(
-        root, stmt_to_offloaded, &offloaded_ranges);
+        root, config, stmt_to_offloaded, &offloaded_ranges);
     PromoteIntermediateToGlobalTmp::run(root, local_to_global_offset);
     stmt_to_offloaded = StmtToOffloaded::run(root);
-    FixCrossOffloadReferences::run(root, local_to_global_offset,
+    FixCrossOffloadReferences::run(root, config, local_to_global_offset,
                                    stmt_to_offloaded, &offloaded_ranges);
   }
-  insert_gc(root);
+  insert_gc(root, config);
   // TODO(k-ye): Move this into its own pass. However, we need to wait for all
   // backends to integrate with https://github.com/taichi-dev/taichi/pull/700
   AssociateContinueScope::run(root);
-  type_check(root);
+  type_check(root, config);
   re_id(root);
 }
 

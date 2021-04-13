@@ -34,11 +34,11 @@ TEST_F(AlgebraicSimplicationTest, SimplifyAddZero) {
       4, TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32));
   block->push_back<GlobalStoreStmt>(global_store_addr, add);
 
-  irpass::type_check(block.get());
+  irpass::type_check(block.get(), CompileConfig());
   EXPECT_EQ(block->size(), 6);
 
-  irpass::alg_simp(block.get());  // should eliminate add
-  irpass::die(block.get());       // should eliminate zero
+  irpass::alg_simp(block.get(), CompileConfig());  // should eliminate add
+  irpass::die(block.get());                        // should eliminate zero
 
   EXPECT_EQ(block->size(), 4);  // two addresses, one load, one store
   EXPECT_TRUE((*block)[0]->is<GlobalTemporaryStmt>());
@@ -66,11 +66,12 @@ TEST_F(AlgebraicSimplicationTest, SimplifyMultiplyOne) {
   [[maybe_unused]] auto global_store =
       block->push_back<GlobalStoreStmt>(global_store_addr, sub);
 
-  irpass::type_check(block.get());
+  irpass::type_check(block.get(), CompileConfig());
   EXPECT_EQ(block->size(), 10);
 
-  irpass::alg_simp(block.get());  // should eliminate mul, div, sub
-  irpass::die(block.get());       // should eliminate zero, one
+  irpass::alg_simp(block.get(),
+                   CompileConfig());  // should eliminate mul, div, sub
+  irpass::die(block.get());           // should eliminate zero, one
 
   EXPECT_EQ(block->size(), 4);  // two addresses, one load, one store
   EXPECT_TRUE((*block)[0]->is<GlobalTemporaryStmt>());
@@ -94,15 +95,16 @@ TEST_F(AlgebraicSimplicationTest, SimplifyMultiplyZeroFastMath) {
       4, TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32));
   auto global_store = block->push_back<GlobalStoreStmt>(global_store_addr, add);
 
-  irpass::type_check(block.get());
-  EXPECT_EQ(block->size(), 8);
-
   CompileConfig config_without_fast_math;
   config_without_fast_math.fast_math = false;
   kernel->program.config = config_without_fast_math;
 
-  irpass::alg_simp(block.get());  // should eliminate mul, add
-  irpass::die(block.get());       // should eliminate zero, load
+  irpass::type_check(block.get(), config_without_fast_math);
+  EXPECT_EQ(block->size(), 8);
+
+  irpass::alg_simp(block.get(),
+                   config_without_fast_math);  // should eliminate mul, add
+  irpass::die(block.get());                    // should eliminate zero, load
 
   EXPECT_EQ(block->size(), 3);  // one address, one one, one store
 
@@ -120,20 +122,24 @@ TEST_F(AlgebraicSimplicationTest, SimplifyMultiplyZeroFastMath) {
       12, TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::f32));
   global_store = block->push_back<GlobalStoreStmt>(global_store_addr, add);
 
-  irpass::type_check(block.get());  // insert 2 casts
+  irpass::type_check(block.get(), config_without_fast_math);  // insert 2 casts
   EXPECT_EQ(block->size(), 10);
 
-  irpass::constant_fold(block.get());  // should change 2 casts into const
-  irpass::alg_simp(block.get());       // should not eliminate
-  irpass::die(block.get());            // should eliminate 2 const
+  irpass::constant_fold(
+      block.get(), config_without_fast_math,
+      {&kernel->program});  // should change 2 casts into const
+  irpass::alg_simp(block.get(),
+                   config_without_fast_math);  // should not eliminate
+  irpass::die(block.get());                    // should eliminate 2 const
   EXPECT_EQ(block->size(), 8);
 
   CompileConfig config_with_fast_math;
   config_with_fast_math.fast_math = true;
   kernel->program.config = config_with_fast_math;
 
-  irpass::alg_simp(block.get());  // should eliminate mul, add
-  irpass::die(block.get());       // should eliminate zero, load
+  irpass::alg_simp(block.get(),
+                   config_with_fast_math);  // should eliminate mul, add
+  irpass::die(block.get());                 // should eliminate zero, load
 
   EXPECT_EQ(block->size(), 3);  // one address, one one, one store
 }
@@ -154,11 +160,11 @@ TEST_F(AlgebraicSimplicationTest, SimplifyAndMinusOne) {
   auto func = []() {};
   auto kernel = std::make_unique<Kernel>(*prog_, func, "fake_kernel");
   block->kernel = kernel.get();
-  irpass::type_check(block.get());
+  irpass::type_check(block.get(), CompileConfig());
   EXPECT_EQ(block->size(), 6);
 
-  irpass::alg_simp(block.get());  // should eliminate and
-  irpass::die(block.get());       // should eliminate zero
+  irpass::alg_simp(block.get(), CompileConfig());  // should eliminate and
+  irpass::die(block.get());                        // should eliminate zero
 
   EXPECT_EQ(block->size(), 4);  // two addresses, one load, one store
   EXPECT_TRUE((*block)[0]->is<GlobalTemporaryStmt>());

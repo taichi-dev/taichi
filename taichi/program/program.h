@@ -57,8 +57,8 @@ TLANG_NAMESPACE_END
 namespace std {
 template <>
 struct hash<taichi::lang::JITEvaluatorId> {
-  std::size_t operator()(taichi::lang::JITEvaluatorId const &id) const
-      noexcept {
+  std::size_t operator()(
+      taichi::lang::JITEvaluatorId const &id) const noexcept {
     return ((std::size_t)id.op | (id.ret.hash() << 8) | (id.lhs.hash() << 16) |
             (id.rhs.hash() << 24) | ((std::size_t)id.is_binary << 31)) ^
            (std::hash<std::thread::id>{}(id.thread_id) << 32);
@@ -249,7 +249,7 @@ class Program {
     snode_root->print();
   }
 
-  int default_block_dim() const;
+  static int default_block_dim(const CompileConfig &config);
 
   void print_list_manager_info(void *list_manager);
 

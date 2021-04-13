@@ -3,18 +3,19 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/scratch_pad.h"
-#include "taichi/program/kernel.h"
-#include "taichi/program/program.h"
+#include "taichi/transforms/make_block_local.h"
 
 TLANG_NAMESPACE_BEGIN
 
 namespace {
 
-void make_block_local_offload(OffloadedStmt *offload) {
+void make_block_local_offload(OffloadedStmt *offload,
+                              const CompileConfig &config,
+                              const std::string &kernel_name) {
   if (offload->task_type != OffloadedStmt::TaskType::struct_for)
     return;
 
-  bool debug = offload->get_kernel()->program.config.debug;
+  bool debug = config.debug;
 
   auto pads = irpass::initialize_scratch_pad(offload);
 
@@ -228,7 +229,7 @@ void make_block_local_offload(OffloadedStmt *offload) {
                 "(kernel={}, body) Access out of bound: BLS buffer axis {} "
                 "(size {}) with "
                 "index %d.",
-                offload->get_kernel()->name, i, bls_axis_size);
+                kernel_name, i, bls_axis_size);
 
             auto lower_bound =
                 bls.push_back<ConstStmt>(LaneAttribute<TypedConstant>(0));
@@ -304,20 +305,26 @@ void make_block_local_offload(OffloadedStmt *offload) {
 
 }  // namespace
 
+const PassID MakeBlockLocalPass::id = "MakeBlockLocalPass";
+
 namespace irpass {
 
 // This pass should happen after offloading but before lower_access
-void make_block_local(IRNode *root) {
+void make_block_local(IRNode *root,
+                      const CompileConfig &config,
+                      const MakeBlockLocalPass::Args &args) {
   TI_AUTO_PROF;
 
   if (auto root_block = root->cast<Block>()) {
     for (auto &offload : root_block->statements) {
-      make_block_local_offload(offload->cast<OffloadedStmt>());
+      make_block_local_offload(offload->cast<OffloadedStmt>(), config,
+                               args.kernel_name);
     }
   } else {
-    make_block_local_offload(root->as<OffloadedStmt>());
+    make_block_local_offload(root->as<OffloadedStmt>(), config,
+                             args.kernel_name);
   }
-  type_check(root);
+  type_check(root, config);
 }
 
 }  // namespace irpass

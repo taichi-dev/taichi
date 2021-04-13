@@ -7,6 +7,11 @@
 
 #include "taichi/ir/control_flow_graph.h"
 #include "taichi/ir/ir.h"
+#include "taichi/transforms/check_out_of_bound.h"
+#include "taichi/transforms/constant_fold.h"
+#include "taichi/transforms/lower_access.h"
+#include "taichi/transforms/make_block_local.h"
+#include "taichi/transforms/simplify.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -23,49 +28,62 @@ bool use_fast_math(IRNode *root);
 void re_id(IRNode *root);
 void flag_access(IRNode *root);
 bool die(IRNode *root);
-bool simplify(IRNode *root, Kernel *kernel = nullptr);
+bool simplify(IRNode *root,
+              const CompileConfig &config,
+              const SimplifyPass::Args &args);
 bool cfg_optimization(
     IRNode *root,
     bool after_lower_access,
     const std::optional<ControlFlowGraph::LiveVarAnalysisConfig>
         &lva_config_opt = std::nullopt);
-bool alg_simp(IRNode *root);
-bool demote_operations(IRNode *root);
-bool binary_op_simplify(IRNode *root);
+bool alg_simp(IRNode *root, const CompileConfig &config);
+bool demote_operations(IRNode *root, const CompileConfig &config);
+bool binary_op_simplify(IRNode *root, const CompileConfig &config);
 bool whole_kernel_cse(IRNode *root);
 void variable_optimization(IRNode *root, bool after_lower_access);
-void extract_constant(IRNode *root);
+bool extract_constant(IRNode *root, const CompileConfig &config);
 bool unreachable_code_elimination(IRNode *root);
 void full_simplify(IRNode *root,
-                   bool after_lower_access,
-                   Kernel *kernel = nullptr);
+                   const CompileConfig &config,
+                   const FullSimplifyPass::Args &args);
 void print(IRNode *root, std::string *output = nullptr);
 void lower_ast(IRNode *root);
-void type_check(IRNode *root);
-void loop_vectorize(IRNode *root);
+void type_check(IRNode *root, const CompileConfig &config);
+void loop_vectorize(IRNode *root, const CompileConfig &config);
 void bit_loop_vectorize(IRNode *root);
 void slp_vectorize(IRNode *root);
 void vector_split(IRNode *root, int max_width, bool serial_schedule);
 void replace_all_usages_with(IRNode *root, Stmt *old_stmt, Stmt *new_stmt);
-bool check_out_of_bound(IRNode *root);
-void make_thread_local(IRNode *root);
+bool check_out_of_bound(IRNode *root,
+                        const CompileConfig &config,
+                        const CheckOutOfBoundPass::Args &args);
+void make_thread_local(IRNode *root, const CompileConfig &config);
 std::unique_ptr<ScratchPads> initialize_scratch_pad(OffloadedStmt *root);
-void make_block_local(IRNode *root);
+void make_block_local(IRNode *root,
+                      const CompileConfig &config,
+                      const MakeBlockLocalPass::Args &args);
 bool remove_loop_unique(IRNode *root);
 bool remove_range_assumption(IRNode *root);
-bool lower_access(IRNode *root, bool lower_atomic);
-void auto_diff(IRNode *root, bool use_stack = false);
-bool constant_fold(IRNode *root);
-void offload(IRNode *root);
+bool lower_access(IRNode *root,
+                  const CompileConfig &config,
+                  const LowerAccessPass::Args &args);
+void auto_diff(IRNode *root,
+               const CompileConfig &config,
+               bool use_stack = false);
+bool constant_fold(IRNode *root,
+                   const CompileConfig &config,
+                   const ConstantFoldPass::Args &args);
+void offload(IRNode *root, const CompileConfig &config);
 void replace_statements_with(IRNode *root,
                              std::function<bool(Stmt *)> filter,
                              std::function<std::unique_ptr<Stmt>()> generator);
 void demote_dense_struct_fors(IRNode *root);
-bool demote_atomics(IRNode *root);
+bool demote_atomics(IRNode *root, const CompileConfig &config);
 void reverse_segments(IRNode *root);  // for autograd
 void detect_read_only(IRNode *root);
 void optimize_bit_struct_stores(
     IRNode *root,
+    const CompileConfig &config,
     const std::unordered_map<OffloadedStmt *,
                              std::unordered_map<const SNode *, GlobalPtrStmt *>>
         &uniquely_accessed_bit_structs);
@@ -76,6 +94,7 @@ void optimize_bit_struct_stores(
 // engine from fusing incompatible offloaded tasks.
 void compile_to_offloads(IRNode *ir,
                          const CompileConfig &config,
+                         Kernel *kernel,
                          bool verbose,
                          bool vectorize,
                          bool grad,
@@ -84,6 +103,7 @@ void compile_to_offloads(IRNode *ir,
 
 void offload_to_executable(IRNode *ir,
                            const CompileConfig &config,
+                           Kernel *kernel,
                            bool verbose,
                            bool lower_global_access,
                            bool make_thread_local,
@@ -92,6 +112,7 @@ void offload_to_executable(IRNode *ir,
 // additional optimizations so that |ir| can be directly fed into codegen.
 void compile_to_executable(IRNode *ir,
                            const CompileConfig &config,
+                           Kernel *kernel,
                            bool vectorize,
                            bool grad,
                            bool ad_use_stack,

@@ -211,12 +211,14 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void store_custom_int(llvm::Value *bit_ptr,
                         CustomIntType *cit,
-                        llvm::Value *value);
+                        llvm::Value *value,
+                        bool atomic);
 
   void store_custom_int(llvm::Value *byte_ptr,
                         llvm::Value *bit_offset,
                         CustomIntType *cit,
-                        llvm::Value *value);
+                        llvm::Value *value,
+                        bool atomic);
 
   void store_masked(llvm::Value *byte_ptr,
                     uint64 mask,

@@ -7,6 +7,7 @@
 
 #include "taichi/ir/control_flow_graph.h"
 #include "taichi/ir/ir.h"
+#include "taichi/ir/pass.h"
 #include "taichi/transforms/check_out_of_bound.h"
 #include "taichi/transforms/constant_fold.h"
 #include "taichi/transforms/lower_access.h"
@@ -81,12 +82,9 @@ void demote_dense_struct_fors(IRNode *root);
 bool demote_atomics(IRNode *root, const CompileConfig &config);
 void reverse_segments(IRNode *root);  // for autograd
 void detect_read_only(IRNode *root);
-void optimize_bit_struct_stores(
-    IRNode *root,
-    const CompileConfig &config,
-    const std::unordered_map<OffloadedStmt *,
-                             std::unordered_map<const SNode *, GlobalPtrStmt *>>
-        &uniquely_accessed_bit_structs);
+void optimize_bit_struct_stores(IRNode *root,
+                                const CompileConfig &config,
+                                AnalysisManager *amgr);
 
 // compile_to_offloads does the basic compilation to create all the offloaded
 // tasks of a Taichi kernel. It's worth pointing out that this doesn't demote

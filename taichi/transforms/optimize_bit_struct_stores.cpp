@@ -1,5 +1,6 @@
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/ir.h"
+#include "taichi/ir/pass.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
@@ -191,12 +192,9 @@ class DemoteAtomicBitStructStores : public BasicStmtVisitor {
 TLANG_NAMESPACE_BEGIN
 
 namespace irpass {
-void optimize_bit_struct_stores(
-    IRNode *root,
-    const CompileConfig &config,
-    const std::unordered_map<OffloadedStmt *,
-                             std::unordered_map<const SNode *, GlobalPtrStmt *>>
-        &uniquely_accessed_bit_structs) {
+void optimize_bit_struct_stores(IRNode *root,
+                                const CompileConfig &config,
+                                AnalysisManager *amgr) {
   TI_AUTO_PROF;
   CreateBitStructStores::run(root);
   die(root);  // remove unused GetCh
@@ -204,7 +202,12 @@ void optimize_bit_struct_stores(
     MergeBitStructStores::run(root);
   }
   if (config.quant_opt_atomic_demotion) {
-    DemoteAtomicBitStructStores::run(root, uniquely_accessed_bit_structs);
+    auto *res = amgr->get_pass_result<GatherUniquelyAccessedBitStructsPass>();
+    TI_ASSERT_INFO(res,
+                   "The optimize_bit_struct_stores pass must be after the "
+                   "gather_uniquely_accessed_bit_structs pass when "
+                   "config.quant_opt_atomic_demotion is true.");
+    DemoteAtomicBitStructStores::run(root, res->uniquely_accessed_bit_structs);
   }
 }
 

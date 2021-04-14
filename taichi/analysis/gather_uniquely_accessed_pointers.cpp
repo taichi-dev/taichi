@@ -1,3 +1,4 @@
+#include "taichi/analysis/gather_uniquely_accessed_pointers.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/statements.h"
@@ -224,6 +225,9 @@ class UniquelyAccessedBitStructGatherer : public BasicStmtVisitor {
   }
 };
 
+const std::string GatherUniquelyAccessedBitStructsPass::id =
+    "GatherUniquelyAccessedBitStructsPass";
+
 namespace irpass::analysis {
 std::unordered_map<const SNode *, GlobalPtrStmt *>
 gather_uniquely_accessed_pointers(IRNode *root) {
@@ -231,10 +235,9 @@ gather_uniquely_accessed_pointers(IRNode *root) {
   return UniquelyAccessedSNodeSearcher::run(root);
 }
 
-std::unordered_map<OffloadedStmt *,
-                   std::unordered_map<const SNode *, GlobalPtrStmt *>>
-gather_uniquely_accessed_bit_structs(IRNode *root) {
-  return UniquelyAccessedBitStructGatherer::run(root);
+void gather_uniquely_accessed_bit_structs(IRNode *root, AnalysisManager *amgr) {
+  amgr->put_pass_result<GatherUniquelyAccessedBitStructsPass>(
+      {UniquelyAccessedBitStructGatherer::run(root)});
 }
 }  // namespace irpass::analysis
 

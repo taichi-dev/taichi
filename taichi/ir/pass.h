@@ -70,7 +70,7 @@ class AnalysisManager {
       return nullptr;
     }
     using ResultModelT = AnalysisResultModel<typename PassT::Result>;
-    return &(static_cast<std::unique_ptr<ResultModelT>>(result.second)->result);
+    return &(static_cast<ResultModelT *>(result->second.get())->result);
   }
 
   template <typename PassT>

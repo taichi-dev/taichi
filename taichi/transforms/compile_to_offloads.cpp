@@ -42,10 +42,7 @@ void compile_to_offloads(IRNode *ir,
   auto print = make_pass_printer(verbose, kernel, ir);
   print("Initial IR");
 
-  AnalysisManager amgr;
   if (grad) {
-    // TODO(#2193): Support reverse_segments after lower_ast
-    TI_ASSERT_INFO(start_from_ast, "CHI does not support autodiff for now.");
     irpass::reverse_segments(ir);
     print("Segment reversed (for autodiff)");
   }
@@ -155,6 +152,8 @@ void offload_to_executable(IRNode *ir,
   // For now, putting this after TLS will disable TLS, because it can only
   // handle range-fors at this point.
 
+  auto amgr = std::make_unique<AnalysisManager>();
+
   print("Start offload_to_executable");
   irpass::analysis::verify(ir);
 
@@ -188,13 +187,9 @@ void offload_to_executable(IRNode *ir,
   print("Atomics demoted II");
   irpass::analysis::verify(ir);
 
-  std::unordered_map<OffloadedStmt *,
-                     std::unordered_map<const SNode *, GlobalPtrStmt *>>
-      uniquely_accessed_bit_structs;
   if (is_extension_supported(config.arch, Extension::quant) &&
       ir->get_config().quant_opt_atomic_demotion) {
-    uniquely_accessed_bit_structs =
-        irpass::analysis::gather_uniquely_accessed_bit_structs(ir);
+    irpass::analysis::gather_uniquely_accessed_bit_structs(ir, amgr.get());
   }
 
   irpass::remove_range_assumption(ir);
@@ -225,8 +220,7 @@ void offload_to_executable(IRNode *ir,
   print("Simplified IV");
 
   if (is_extension_supported(config.arch, Extension::quant)) {
-    irpass::optimize_bit_struct_stores(ir, config,
-                                       uniquely_accessed_bit_structs);
+    irpass::optimize_bit_struct_stores(ir, config, amgr.get());
     print("Bit struct stores optimized");
   }
 

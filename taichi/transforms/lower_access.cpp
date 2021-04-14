@@ -5,6 +5,7 @@
 #include "taichi/ir/visitors.h"
 #include "taichi/program/kernel.h"
 #include "taichi/program/program.h"
+#include "taichi/transforms/lower_access.h"
 
 #include <deque>
 #include <set>
@@ -17,9 +18,13 @@ class LowerAccess : public IRVisitor {
  public:
   DelayedIRModifier modifier;
   StructForStmt *current_struct_for;
+  const std::vector<SNode *> &kernel_forces_no_activate;
   bool lower_atomic_ptr;
 
-  LowerAccess(bool lower_atomic_ptr) : lower_atomic_ptr(lower_atomic_ptr) {
+  LowerAccess(const std::vector<SNode *> &kernel_forces_no_activate,
+              bool lower_atomic_ptr)
+      : kernel_forces_no_activate(kernel_forces_no_activate),
+        lower_atomic_ptr(lower_atomic_ptr) {
     // TODO: change this to false
     allow_undefined_visitor = true;
     current_struct_for = nullptr;
@@ -61,7 +66,6 @@ class LowerAccess : public IRVisitor {
                         SNode *leaf_snode,
                         std::vector<Stmt *> indices,
                         bool pointer_needs_activation,
-                        Kernel *kernel,
                         SNodeOpType snode_op = SNodeOpType::undefined,
                         bool is_bit_vectorized = false) {
     if (snode_op == SNodeOpType::is_active) {
@@ -137,13 +141,14 @@ class LowerAccess : public IRVisitor {
         // Create a SNodeOp querying if element i(linearized) of node is active
         lowered.push_back<SNodeOpStmt>(snode_op, snodes[i], last, linearized);
       } else {
-        bool kernel_forces_no_activate =
-            std::find(kernel->no_activate.begin(), kernel->no_activate.end(),
-                      snode) != kernel->no_activate.end();
+        bool kernel_forces_no_activate_snode =
+            std::find(kernel_forces_no_activate.begin(),
+                      kernel_forces_no_activate.end(),
+                      snode) != kernel_forces_no_activate.end();
 
-        auto needs_activation = snode->need_activation() &&
-                                pointer_needs_activation &&
-                                !kernel_forces_no_activate && !on_loop_tree;
+        auto needs_activation =
+            snode->need_activation() && pointer_needs_activation &&
+            !kernel_forces_no_activate_snode && !on_loop_tree;
 
         auto lookup = lowered.push_back<SNodeLookupStmt>(
             snode, last, linearized, needs_activation);
@@ -171,8 +176,8 @@ class LowerAccess : public IRVisitor {
         indices.push_back(extractor.get());
         lowered.push_back(std::move(extractor));
       }
-      lower_scalar_ptr(lowered, ptr->snodes[i], indices, activate,
-                       ptr->get_kernel(), snode_op, ptr->is_bit_vectorized);
+      lower_scalar_ptr(lowered, ptr->snodes[i], indices, activate, snode_op,
+                       ptr->is_bit_vectorized);
       TI_ASSERT(lowered.size());
       lowered_pointers.push_back(lowered.back().get());
     }
@@ -197,21 +202,21 @@ class LowerAccess : public IRVisitor {
   }
 
   void visit(GlobalLoadStmt *stmt) override {
-    if (stmt->ptr->is<GlobalPtrStmt>()) {
+    if (stmt->src->is<GlobalPtrStmt>()) {
       // No need to activate for all read accesses
-      auto lowered = lower_vector_ptr(stmt->ptr->as<GlobalPtrStmt>(), false);
-      stmt->ptr = lowered.back().get();
+      auto lowered = lower_vector_ptr(stmt->src->as<GlobalPtrStmt>(), false);
+      stmt->src = lowered.back().get();
       modifier.insert_before(stmt, std::move(lowered));
     }
   }
 
   void visit(GlobalStoreStmt *stmt) override {
-    if (stmt->ptr->is<GlobalPtrStmt>()) {
-      auto ptr = stmt->ptr->as<GlobalPtrStmt>();
+    if (stmt->dest->is<GlobalPtrStmt>()) {
+      auto ptr = stmt->dest->as<GlobalPtrStmt>();
       // If ptr already has activate = false, no need to activate all the
       // generated micro-access ops. Otherwise, activate the nodes.
       auto lowered = lower_vector_ptr(ptr, ptr->activate);
-      stmt->ptr = lowered.back().get();
+      stmt->dest = lowered.back().get();
       modifier.insert_before(stmt, std::move(lowered));
     }
   }
@@ -246,15 +251,17 @@ class LowerAccess : public IRVisitor {
   }
 
   void visit(LocalStoreStmt *stmt) override {
-    if (stmt->data->is<GlobalPtrStmt>()) {
-      auto lowered = lower_vector_ptr(stmt->data->as<GlobalPtrStmt>(), true);
-      stmt->data = lowered.back().get();
+    if (stmt->val->is<GlobalPtrStmt>()) {
+      auto lowered = lower_vector_ptr(stmt->val->as<GlobalPtrStmt>(), true);
+      stmt->val = lowered.back().get();
       modifier.insert_before(stmt, std::move(lowered));
     }
   }
 
-  static bool run(IRNode *node, bool lower_atomic) {
-    LowerAccess inst(lower_atomic);
+  static bool run(IRNode *node,
+                  const std::vector<SNode *> &kernel_forces_no_activate,
+                  bool lower_atomic) {
+    LowerAccess inst(kernel_forces_no_activate, lower_atomic);
     bool modified = false;
     while (true) {
       node->accept(&inst);
@@ -268,11 +275,16 @@ class LowerAccess : public IRVisitor {
   }
 };
 
+const PassID LowerAccessPass::id = "LowerAccessPass";
+
 namespace irpass {
 
-bool lower_access(IRNode *root, bool lower_atomic) {
-  bool modified = LowerAccess::run(root, lower_atomic);
-  type_check(root);
+bool lower_access(IRNode *root,
+                  const CompileConfig &config,
+                  const LowerAccessPass::Args &args) {
+  bool modified =
+      LowerAccess::run(root, args.kernel_forces_no_activate, args.lower_atomic);
+  type_check(root, config);
   return modified;
 }
 

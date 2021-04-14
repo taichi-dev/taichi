@@ -118,12 +118,12 @@ class BasicBlockVectorSplit : public IRVisitor {
       if (stmt_->is<LocalLoadStmt>()) {
         auto stmt = stmt_->as<LocalLoadStmt>();
         for (int l = 0; l < stmt->width(); l++) {
-          auto *old_var = stmt->ptr[l].var;
+          auto *old_var = stmt->src[l].var;
           if (origin2split.find(old_var) != origin2split.end()) {
             auto new_var =
-                origin2split[old_var][stmt->ptr[l].offset / max_width];
-            stmt->ptr[l].var = new_var;
-            stmt->ptr[l].offset %= max_width;
+                origin2split[old_var][stmt->src[l].offset / max_width];
+            stmt->src[l].var = new_var;
+            stmt->src[l].offset %= max_width;
             // TI_WARN("replaced...");
           }
         }
@@ -183,7 +183,7 @@ class BasicBlockVectorSplit : public IRVisitor {
       int new_width = need_split ? max_width : stmt->width();
       ptr.reserve(new_width);
       for (int j = 0; j < new_width; j++) {
-        LocalAddress addr(stmt->ptr[lane_start(i) + j]);
+        LocalAddress addr(stmt->src[lane_start(i) + j]);
         if (origin2split.find(addr.var) == origin2split.end()) {
           ptr.push_back(addr);
         } else {
@@ -197,21 +197,21 @@ class BasicBlockVectorSplit : public IRVisitor {
 
   void visit(LocalStoreStmt *stmt) override {
     for (int i = 0; i < current_split_factor; i++) {
-      current_split[i] = Stmt::make<LocalStoreStmt>(lookup(stmt->ptr, i),
-                                                    lookup(stmt->data, i));
+      current_split[i] = Stmt::make<LocalStoreStmt>(lookup(stmt->dest, i),
+                                                    lookup(stmt->val, i));
     }
   }
 
   void visit(GlobalLoadStmt *stmt) override {
     for (int i = 0; i < current_split_factor; i++) {
-      current_split[i] = Stmt::make<GlobalLoadStmt>(lookup(stmt->ptr, i));
+      current_split[i] = Stmt::make<GlobalLoadStmt>(lookup(stmt->src, i));
     }
   }
 
   void visit(GlobalStoreStmt *stmt) override {
     for (int i = 0; i < current_split_factor; i++) {
-      current_split[i] = Stmt::make<GlobalStoreStmt>(lookup(stmt->ptr, i),
-                                                     lookup(stmt->data, i));
+      current_split[i] = Stmt::make<GlobalStoreStmt>(lookup(stmt->dest, i),
+                                                     lookup(stmt->val, i));
     }
   }
 

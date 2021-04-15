@@ -108,6 +108,27 @@ def test_random_seed_per_launch():
 
 
 @ti.test(arch=[ti.cpu, ti.cuda])
+def test_random_seed_per_program():
+    import numpy as np
+    n = 10
+    result = []
+    for s in [0, 1]:
+        ti.init(random_seed=s)
+        x = ti.field(ti.f32, shape=n)
+
+        @ti.kernel
+        def gen():
+            for i in x:
+                x[i] = ti.random()
+
+        gen()
+        result.append(x.to_numpy())
+        ti.reset()
+
+    assert not np.allclose(result[0], result[1])
+
+
+@ti.test(arch=[ti.cpu, ti.cuda])
 def test_random_f64():
     '''
     Tests the granularity of float64 random numbers.

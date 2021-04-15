@@ -148,6 +148,7 @@ void export_lang(py::module &m) {
       .def_readwrite("saturating_grid_dim", &CompileConfig::saturating_grid_dim)
       .def_readwrite("max_block_dim", &CompileConfig::max_block_dim)
       .def_readwrite("cpu_max_num_threads", &CompileConfig::cpu_max_num_threads)
+      .def_readwrite("random_seed", &CompileConfig::random_seed)
       .def_readwrite("verbose_kernel_launches",
                      &CompileConfig::verbose_kernel_launches)
       .def_readwrite("verbose", &CompileConfig::verbose)

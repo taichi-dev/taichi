@@ -1,3 +1,5 @@
+from taichi.core import ti_core as _ti_core
+
 import taichi as ti
 
 
@@ -54,7 +56,7 @@ def make_temp_file(*args, **kwargs):
 def _get_taichi_archs_fixture():
     import pytest
 
-    @pytest.fixture(params=ti.supported_archs(), ids=ti.core.arch_name)
+    @pytest.fixture(params=ti.supported_archs(), ids=_ti_core.arch_name)
     def taichi_archs(request):
         marker = request.node.get_closest_marker('taichi')
         req_arch = request.param
@@ -79,7 +81,7 @@ def _get_taichi_archs_fixture():
                 raise pytest.skip(f'Arch={req_arch} not included in this test')
 
             if not all(
-                    ti.core.is_extension_supported(req_arch, e)
+                    _ti_core.is_extension_supported(req_arch, e)
                     for e in require):
                 raise pytest.skip(
                     f'Arch={req_arch} some extension(s) not satisfied')

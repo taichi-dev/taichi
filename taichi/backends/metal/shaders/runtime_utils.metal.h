@@ -49,10 +49,10 @@ STR(
                                        metal::memory_order_relaxed);
     }
 
-    [[maybe_unused]] device char *mtl_memalloc_to_ptr(
-        device MemoryAllocator *ma, PtrOffset offs) {
-      return reinterpret_cast<device char *>(ma + 1) + offs;
-    }
+    [[maybe_unused]] device char
+        *mtl_memalloc_to_ptr(device MemoryAllocator *ma, PtrOffset offs) {
+          return reinterpret_cast<device char *>(ma + 1) + offs;
+        }
 
     struct ListManager {
       using ReservedElemPtrOffset = ListManagerData::ReservedElemPtrOffset;
@@ -205,7 +205,9 @@ STR(
     // * init(), instead of doing initiliaztion in the constructor.
     class SNodeRep_dense {
      public:
-      void init(device byte * addr) { addr_ = addr; }
+      void init(device byte * addr) {
+        addr_ = addr;
+      }
 
       inline device byte *addr() {
         return addr_;
@@ -417,7 +419,8 @@ STR(
 
     [[maybe_unused]] void refine_coordinates(
         thread const ElementCoords &parent,
-        device const SNodeExtractors &child_extrators, int l,
+        device const SNodeExtractors &child_extrators,
+        int l,
         thread ElementCoords *child) {
       for (int i = 0; i < kTaichiMaxNumIndices; ++i) {
         device const auto &ex = child_extrators.extractors[i];
@@ -429,8 +432,10 @@ STR(
 
     // Gets the address of an SNode cell identified by |lgen|.
     [[maybe_unused]] device byte *mtl_lgen_snode_addr(
-        thread const ListgenElement &lgen, device byte *root_addr,
-        device Runtime *rtm, device MemoryAllocator *mem_alloc) {
+        thread const ListgenElement &lgen,
+        device byte *root_addr,
+        device Runtime *rtm,
+        device MemoryAllocator *mem_alloc) {
       if (lgen.in_root_buffer()) {
         return root_addr + lgen.mem_offset;
       }
@@ -443,8 +448,10 @@ STR(
 
     // GC utils
     [[maybe_unused]] void run_gc_compact_free_list(
-        device NodeManagerData *nm_data, device MemoryAllocator *mem_alloc,
-        const int tid, const int grid_size) {
+        device NodeManagerData *nm_data,
+        device MemoryAllocator *mem_alloc,
+        const int tid,
+        const int grid_size) {
       NodeManager nm;
       nm.nm_data = nm_data;
       nm.mem_alloc = mem_alloc;
@@ -474,7 +481,8 @@ STR(
     }
 
     [[maybe_unused]] void run_gc_reset_free_list(
-        device NodeManagerData *nm_data, device MemoryAllocator *mem_alloc) {
+        device NodeManagerData *nm_data,
+        device MemoryAllocator *mem_alloc) {
       NodeManager nm;
       nm.nm_data = nm_data;
       nm.mem_alloc = mem_alloc;
@@ -502,7 +510,8 @@ STR(
     };
 
     [[maybe_unused]] void run_gc_move_recycled_to_free(
-        device NodeManagerData *nm_data, device MemoryAllocator *mem_alloc,
+        device NodeManagerData *nm_data,
+        device MemoryAllocator *mem_alloc,
         thread const GCMoveRecycledToFreeThreadParams &thparams) {
       NodeManager nm;
       nm.nm_data = nm_data;
@@ -527,7 +536,7 @@ STR(
       for (int ii = thparams.threadgroup_position_in_grid; ii < recycled_size;
            ii += thparams.threadgroups_per_grid) {
         const auto elem_idx = recycled_list.get<ElemIndex>(ii);
-        device char* ptr = nm.get(elem_idx);
+        device char *ptr = nm.get(elem_idx);
         device const char *ptr_end = ptr + data_list.lm_data->element_stride;
         const int ptr_mod = ((int64_t)(ptr) % kInt32Stride);
         if (ptr_mod) {

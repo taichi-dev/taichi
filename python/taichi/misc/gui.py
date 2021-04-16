@@ -66,7 +66,7 @@ class GUI:
                 np.zeros(self.res + (4, ), np.float32))
             fast_buf = 0
         self.core = _ti_core.GUI(name, core_veci(*res), show_gui, fullscreen,
-                                fast_gui, fast_buf)
+                                 fast_gui, fast_buf)
         self.canvas = self.core.get_canvas()
         self.background_color = background_color
         self.key_pressed = set()

@@ -1,5 +1,6 @@
-import taichi as ti
 from taichi.core import ti_core as _ti_core
+
+import taichi as ti
 
 
 # Helper functions

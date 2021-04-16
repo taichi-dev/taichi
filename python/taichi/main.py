@@ -9,9 +9,9 @@ import time
 from collections import defaultdict
 from functools import wraps
 from pathlib import Path
-from taichi.core import ti_core as _ti_core
 
 from colorama import Back, Fore, Style
+from taichi.core import ti_core as _ti_core
 from taichi.tools.video import (accelerate_video, crop_video, make_video,
                                 mp4_to_gif, scale_video)
 

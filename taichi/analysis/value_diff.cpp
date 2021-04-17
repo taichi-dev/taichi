@@ -44,8 +44,17 @@ class ValueDiffLoopIndex : public IRVisitor {
   }
 
   void visit(LoopIndexStmt *stmt) override {
-    results[stmt->instance_id] =
-        DiffRange(stmt->loop == loop && stmt->index == loop_index, 1, 0);
+    results[stmt->instance_id] = DiffRange();
+    if (stmt->loop == loop && stmt->index == loop_index) {
+      results[stmt->instance_id] = DiffRange(true, 1, 0);
+    } else if (auto range_for = stmt->loop->cast<RangeForStmt>()) {
+      if (range_for->begin->is<ConstStmt>() &&
+          range_for->end->is<ConstStmt>()) {
+        results[stmt->instance_id] = DiffRange(
+            true, 0, range_for->begin->as<ConstStmt>()->val[0].val_int(),
+            range_for->end->as<ConstStmt>()->val[0].val_int());
+      }
+    }
   }
 
   void visit(ElementShuffleStmt *stmt) override {

@@ -162,10 +162,8 @@ def test_bls_large_block():
         ti.block_local(a)
         for i, j in a:
             for k in range(stencil_length):
-                ik = ti.assume_in_range(i + k, i, 0, stencil_length)
-                jk = ti.assume_in_range(j + k, j, 0, stencil_length)
-                b[i, j] += a[ik, j]  # TODO: use i + k instead
-                b[i, j] += a[i, jk]  # TODO: use j + k instead
+                b[i, j] += a[i + k, j]
+                b[i, j] += a[i, j + k]
 
     foo()
 

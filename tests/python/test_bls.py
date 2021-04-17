@@ -143,6 +143,33 @@ def test_multiple_inputs():
             assert w[i, j] == w2[i, j]
 
 
+@ti.require(ti.extension.bls)
+@ti.all_archs
+def test_bls_large_block():
+    n = 2**10
+    block_size = 2**5
+    stencil_length = 2**5
+
+    a = ti.field(dtype=ti.f32)
+    b = ti.field(dtype=ti.f32)
+    block = ti.root.pointer(ti.ij, n // block_size)
+    block.dense(ti.ij, block_size).place(a)
+    block.dense(ti.ij, block_size).place(b)
+
+    @ti.kernel
+    def foo():
+        ti.block_dim(512)
+        ti.block_local(a)
+        for i, j in a:
+            for k in range(stencil_length):
+                ik = ti.assume_in_range(i + k, i, 0, stencil_length)
+                jk = ti.assume_in_range(j + k, j, 0, stencil_length)
+                b[i, j] += a[ik, j]  # TODO: use i + k instead
+                b[i, j] += a[i, jk]  # TODO: use j + k instead
+
+    foo()
+
+
 # TODO: BLS on CPU
 # TODO: BLS boundary out of bound
 # TODO: BLS with TLS

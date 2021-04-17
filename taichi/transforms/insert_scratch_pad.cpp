@@ -19,7 +19,8 @@ class BLSAnalysis : public BasicStmtVisitor {
   OffloadedStmt *for_stmt;
   ScratchPads *pads;
 
-  using BlockIndices = std::vector<std::vector<int>>;
+  // The lowest and highest index in each dimension.
+  using BlockIndices = std::vector<std::pair<int, int>>;
 
   std::unordered_map<SNode *, BlockIndices> block_indices;
 
@@ -33,7 +34,7 @@ class BLSAnalysis : public BasicStmtVisitor {
              SNodeAccessFlag::block_local)) {
       auto block = snode->parent;
       if (block_indices.find(block) == block_indices.end()) {
-        generate_block_indices(block, block_indices[block], {}, 0);
+        generate_block_indices(block, block_indices[block]);
       }
     }
 
@@ -44,27 +45,13 @@ class BLSAnalysis : public BasicStmtVisitor {
     }
   }
 
-  // Recursively (dimension by dimension) generate the indices in a SNode
-  // (block). E.g., a dense(ti.ij, (2, 4)) SNode has indices
-  // [(0, 0), (0, 1), (0, 2), (0, 3), (1, 0), (1, 1), (1, 2), (1, 3)]
-  void generate_block_indices(SNode *snode,
-                              BlockIndices &block_indices,
-                              std::vector<int> index,
-                              int index_id) {
+  // Generate the index bounds in a SNode (block). E.g., a dense(ti.ij, (2, 4))
+  // SNode has index bounds [[0, 1], [0, 3]].
+  static void generate_block_indices(SNode *snode, BlockIndices &indices) {
     // NOTE: Assuming not vectorized
-    if (index_id == taichi_max_num_indices) {
-      block_indices.push_back(index);
-      return;
-    }
-
-    if (snode->extractors[index_id].active) {
-      for (int i = 0; i < (1 << snode->extractors[index_id].num_bits); i++) {
-        auto new_index = index;
-        new_index.push_back(i);
-        generate_block_indices(snode, block_indices, new_index, index_id + 1);
-      }
-    } else {
-      generate_block_indices(snode, block_indices, index, index_id + 1);
+    for (int i = 0; i < snode->num_active_indices; i++) {
+      auto j = snode->physical_index_position[i];
+      indices.emplace_back(0, (1 << snode->extractors[j].num_bits) - 1);
     }
   }
 
@@ -96,21 +83,20 @@ class BLSAnalysis : public BasicStmtVisitor {
       }
       if (matching_indices) {
         auto block = snode->parent;
-        for (const auto &bind : block_indices[block]) {
-          std::function<void(std::vector<int>, int)> visit =
-              [&](std::vector<int> ind, int depth) {
-                if (depth == num_indices) {
-                  pads->access(snode, ind, flag);
-                  return;
-                }
-                for (int i = offsets[depth].first; i < offsets[depth].second;
-                     i++) {
-                  ind[depth] = bind[depth] + i;
-                  visit(ind, depth + 1);
-                }
-              };
-          visit(bind, 0);
-        }
+        const auto &index_bounds = block_indices[block];
+        std::vector<int> index(num_indices, 0);
+        std::function<void(int)> visit = [&](int depth) {
+          if (depth == num_indices) {
+            pads->access(snode, index, flag);
+            return;
+          }
+          for (int i = index_bounds[depth].first + offsets[depth].first;
+               i < index_bounds[depth].second + offsets[depth].second; i++) {
+            index[depth] = i;
+            visit(depth + 1);
+          }
+        };
+        visit(0);
       }
     }
   }

@@ -13,9 +13,11 @@ struct DynamicMeta : public StructMeta {
 
 STRUCT_FIELD(DynamicMeta, chunk_size);
 
-void Dynamic_get_or_allocate_chunk_once(DynamicMeta *meta, DynamicNode *node, Ptr* p_chunk_ptr) {
+void Dynamic_get_or_allocate_chunk_once(DynamicMeta *meta,
+                                        DynamicNode *node,
+                                        Ptr *p_chunk_ptr) {
   // Double checked locking pattern requires memfence being inserted, see
-  // https://www.aristeia.com/Papers/DDJ_Jul_Aug_2004_revised.pdf 
+  // https://www.aristeia.com/Papers/DDJ_Jul_Aug_2004_revised.pdf
   // https://stackoverflow.com/questions/33115687/acquire-barrier-in-the-double-checked-locking-pattern
   //
   // Ideally, we should implement this pattern following the one shown in

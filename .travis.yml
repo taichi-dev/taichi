@@ -21,6 +21,12 @@ matrix:
     osx_image: xcode10.3
     env:
       - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON_VERSION=3.8.1 && PYTHON=python3"
+  - name: "OS X + Python 3.9"
+    if: commit_message =~ /^\[release\]/
+    os: osx
+    osx_image: xcode10.3
+    env:
+      - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON_VERSION=3.9.1 && PYTHON=python3"
 
 skip_commits:
   files:

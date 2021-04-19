@@ -1,6 +1,8 @@
-import taichi as ti
-import numpy as np
 import random
+
+import numpy as np
+
+import taichi as ti
 
 
 def bls_test_template(dim,
@@ -137,7 +139,7 @@ def bls_particle_grid(N,
 
     if use_offset:
         grid_offset = (-N // 2, -N // 2)
-        grid_offset_block = (-N // 2 // block_size , -N // 2 // block_size)
+        grid_offset_block = (-N // 2 // block_size, -N // 2 // block_size)
         world_offset = -0.5
     else:
         grid_offset = (0, 0)
@@ -176,7 +178,7 @@ def bls_particle_grid(N,
                 int(ti.floor(x[i][0] * N) - grid_offset[0]),
                 int(ti.floor(x[i][1] * N) - grid_offset[1])
             ])
-            ti.append(pid.parent(), base//block_size, i)
+            ti.append(pid.parent(), base // block_size, i)
 
     scatter_weight = (N * N / M) * 0.01
 
@@ -190,8 +192,8 @@ def bls_particle_grid(N,
 
             u_ = ti.floor(x[p] * N).cast(ti.i32)
 
-            u0 = ti.assume_in_range(u_[0], block_size*i, 0, 1)
-            u1 = ti.assume_in_range(u_[1], block_size*j, 0, 1)
+            u0 = ti.assume_in_range(u_[0], block_size * i, 0, 1)
+            u1 = ti.assume_in_range(u_[1], block_size * j, 0, 1)
 
             u = ti.Vector([u0, u1])
 
@@ -222,8 +224,8 @@ def bls_particle_grid(N,
 
             u_ = ti.floor(x[p] * N).cast(ti.i32)
 
-            u0 = ti.assume_in_range(u_[0], block_size*i, 0, 1)
-            u1 = ti.assume_in_range(u_[1], block_size*j, 0, 1)
+            u0 = ti.assume_in_range(u_[0], block_size * i, 0, 1)
+            u1 = ti.assume_in_range(u_[1], block_size * j, 0, 1)
 
             u = ti.Vector([u0, u1])
 

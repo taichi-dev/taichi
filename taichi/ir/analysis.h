@@ -42,7 +42,7 @@ class DiffRange {
   }
 
   bool linear_related() const {
-    return related && coeff != 0;
+    return related && coeff > 0;
   }
 
   bool certain() {

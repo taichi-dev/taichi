@@ -19,16 +19,15 @@ DiffRange operator-(const DiffRange &a, const DiffRange &b) {
 }
 
 DiffRange operator*(const DiffRange &a, const DiffRange &b) {
-  return DiffRange(a.related_() && b.related_(),
-                   fmax(a.low * b.coeff, a.coeff * b.low),
-                   fmin(a.low * b.low,
-                   fmin(a.low * (b.high - 1),
-                   fmin(b.low * (a.high - 1),
-                   (a.high - 1) * (b.high - 1)))),
-                   fmax(a.low * b.low,
-                   fmax(a.low * (b.high - 1),
-                   fmax(b.low * (a.high - 1),
-                   (a.high - 1) * (b.high - 1)))) + 1);
+  return DiffRange(
+      a.related_() && b.related_(), fmax(a.low * b.coeff, a.coeff * b.low),
+      fmin(a.low * b.low,
+           fmin(a.low * (b.high - 1),
+                fmin(b.low * (a.high - 1), (a.high - 1) * (b.high - 1)))),
+      fmax(a.low * b.low,
+           fmax(a.low * (b.high - 1),
+                fmax(b.low * (a.high - 1), (a.high - 1) * (b.high - 1)))) +
+          1);
 }
 
 namespace {

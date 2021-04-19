@@ -185,8 +185,10 @@ class ScratchPads {
     }
   }
 
-  void access(SNode *snode, const std::vector<int> &coeffs,
-              const std::vector<int> &indices, AccessFlag flags) {
+  void access(SNode *snode,
+              const std::vector<int> &coeffs,
+              const std::vector<int> &indices,
+              AccessFlag flags) {
     TI_ASSERT(snode != nullptr);
     if (pads.find(snode) == pads.end())
       return;

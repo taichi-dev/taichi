@@ -143,13 +143,13 @@ void make_block_local_offload(OffloadedStmt *offload,
                   element_block->push_back<ConstStmt>(
                       TypedConstant(pad.second.bounds[0][i])));
 
-              auto block_corner = element_block->
-                push_back<BlockCornerIndexStmt>(offload, i);
+              auto block_corner =
+                  element_block->push_back<BlockCornerIndexStmt>(offload, i);
 
               block_corner = element_block->push_back<BinaryOpStmt>(
-                    BinaryOpType::mul, block_corner,
-                    element_block->push_back<ConstStmt>(
-                        TypedConstant(pad.second.coeff[i])));
+                  BinaryOpType::mul, block_corner,
+                  element_block->push_back<ConstStmt>(
+                      TypedConstant(pad.second.coeff[i])));
 
               global_index = element_block->push_back<BinaryOpStmt>(
                   BinaryOpType::add, global_index, block_corner);
@@ -219,12 +219,13 @@ void make_block_local_offload(OffloadedStmt *offload,
           // Note that when index offsets are used, the offset contributions are
           // already included in bls_lower_bound_i.
 
-          auto block_corner = bls.push_back<BinaryOpStmt>(BinaryOpType::mul,
-            bls.push_back<BlockCornerIndexStmt>(offload, i),
-            bls.push_back<ConstStmt>(TypedConstant(pad.second.coeff[i])));
+          auto block_corner = bls.push_back<BinaryOpStmt>(
+              BinaryOpType::mul,
+              bls.push_back<BlockCornerIndexStmt>(offload, i),
+              bls.push_back<ConstStmt>(TypedConstant(pad.second.coeff[i])));
 
           auto inc = bls.push_back<BinaryOpStmt>(
-            BinaryOpType::sub, global_indices[i], block_corner);
+              BinaryOpType::sub, global_indices[i], block_corner);
 
           inc = bls.push_back<BinaryOpStmt>(
               BinaryOpType::sub, inc,

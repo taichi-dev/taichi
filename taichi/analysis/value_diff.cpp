@@ -18,6 +18,19 @@ DiffRange operator-(const DiffRange &a, const DiffRange &b) {
                    a.low - b.high + 1, a.high - b.low);
 }
 
+DiffRange operator*(const DiffRange &a, const DiffRange &b) {
+  return DiffRange(a.related_() && b.related_(),
+                   fmax(a.low * b.coeff, a.coeff * b.low),
+                   fmin(a.low * b.low,
+                   fmin(a.low * (b.high - 1),
+                   fmin(b.low * (a.high - 1),
+                   (a.high - 1) * (b.high - 1)))),
+                   fmax(a.low * b.low,
+                   fmax(a.low * (b.high - 1),
+                   fmax(b.low * (a.high - 1),
+                   (a.high - 1) * (b.high - 1)))) + 1);
+}
+
 namespace {
 
 class ValueDiffLoopIndex : public IRVisitor {
@@ -74,7 +87,8 @@ class ValueDiffLoopIndex : public IRVisitor {
 
   void visit(BinaryOpStmt *stmt) override {
     if (stmt->op_type == BinaryOpType::add ||
-        stmt->op_type == BinaryOpType::sub) {
+        stmt->op_type == BinaryOpType::sub ||
+        stmt->op_type == BinaryOpType::mul) {
       stmt->lhs->accept(this);
       stmt->rhs->accept(this);
       auto ret1 = results[stmt->lhs->instance_id];
@@ -82,8 +96,10 @@ class ValueDiffLoopIndex : public IRVisitor {
       if (ret1.related_() && ret2.related_()) {
         if (stmt->op_type == BinaryOpType::add) {
           results[stmt->instance_id] = ret1 + ret2;
-        } else {
+        } else if (stmt->op_type == BinaryOpType::sub) {
           results[stmt->instance_id] = ret1 - ret2;
+        } else {
+          results[stmt->instance_id] = ret1 * ret2;
         }
         return;
       }

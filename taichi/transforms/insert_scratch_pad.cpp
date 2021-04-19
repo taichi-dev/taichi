@@ -82,7 +82,9 @@ class BLSAnalysis : public BasicStmtVisitor {
       }
       bool matching_indices = true;
       std::vector<std::pair<int, int>> offsets;
+      std::vector<int> coeffs;
       offsets.resize(ptr->indices.size());
+      coeffs.resize(ptr->indices.size());
       int num_indices = (int)ptr->indices.size();
       for (int i = 0; i < num_indices; i++) {
         auto diff = irpass::analysis::value_diff_loop_index(ptr->indices[i],
@@ -90,6 +92,7 @@ class BLSAnalysis : public BasicStmtVisitor {
         if (diff.linear_related()) {
           offsets[i].first = diff.low;
           offsets[i].second = diff.high;
+          coeffs[i] = diff.coeff;
         } else {
           matching_indices = false;
         }
@@ -100,7 +103,7 @@ class BLSAnalysis : public BasicStmtVisitor {
           std::function<void(std::vector<int>, int)> visit =
               [&](std::vector<int> ind, int depth) {
                 if (depth == num_indices) {
-                  pads->access(snode, ind, flag);
+                  pads->access(snode, coeffs, ind, flag);
                   return;
                 }
                 for (int i = offsets[depth].first; i < offsets[depth].second;

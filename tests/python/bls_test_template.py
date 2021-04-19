@@ -137,9 +137,11 @@ def bls_particle_grid(N,
 
     if use_offset:
         grid_offset = (-N // 2, -N // 2)
+        grid_offset_block = (-N // 2 // block_size , -N // 2 // block_size)
         world_offset = -0.5
     else:
         grid_offset = (0, 0)
+        grid_offset_block = (0, 0)
         world_offset = 0
 
     block.dense(ti.ij, block_size).place(m1, offset=grid_offset)
@@ -149,7 +151,7 @@ def bls_particle_grid(N,
     block.dynamic(ti.l,
                   max_num_particles_per_block,
                   chunk_size=block_size**2 * ppc * 4).place(
-                      pid, offset=grid_offset + (0, ))
+                      pid, offset=grid_offset_block + (0, ))
 
     bound = 0.1
 
@@ -174,22 +176,22 @@ def bls_particle_grid(N,
                 int(ti.floor(x[i][0] * N) - grid_offset[0]),
                 int(ti.floor(x[i][1] * N) - grid_offset[1])
             ])
-            ti.append(pid.parent(), base, i)
+            ti.append(pid.parent(), base//block_size, i)
 
     scatter_weight = (N * N / M) * 0.01
 
     @ti.kernel
     def p2g(use_shared: ti.template(), m: ti.template()):
         ti.block_dim(256)
-        #if ti.static(use_shared):
-        #    ti.block_local(m)
+        if ti.static(use_shared):
+            ti.block_local(m)
         for i, j, l in pid:
             p = pid[i, j, l]
 
             u_ = ti.floor(x[p] * N).cast(ti.i32)
 
-            u0 = ti.assume_in_range(u_[0], i, 0, block_size)
-            u1 = ti.assume_in_range(u_[1], j, 0, block_size)
+            u0 = ti.assume_in_range(u_[0], block_size*i, 0, 1)
+            u1 = ti.assume_in_range(u_[1], block_size*j, 0, 1)
 
             u = ti.Vector([u0, u1])
 
@@ -213,15 +215,15 @@ def bls_particle_grid(N,
     @ti.kernel
     def g2p(use_shared: ti.template(), s: ti.template()):
         ti.block_dim(256)
-        #if ti.static(use_shared):
-        #    ti.block_local(m1)
+        if ti.static(use_shared):
+            ti.block_local(m1)
         for i, j, l in pid:
             p = pid[i, j, l]
 
             u_ = ti.floor(x[p] * N).cast(ti.i32)
 
-            u0 = ti.assume_in_range(u_[0], i, 0, block_size)
-            u1 = ti.assume_in_range(u_[1], j, 0, block_size)
+            u0 = ti.assume_in_range(u_[0], block_size*i, 0, 1)
+            u1 = ti.assume_in_range(u_[1], block_size*j, 0, 1)
 
             u = ti.Vector([u0, u1])
 

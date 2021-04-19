@@ -138,13 +138,18 @@ void make_block_local_offload(OffloadedStmt *offload) {
                   BinaryOpType::div, bls_element_id_partial, size);
 
               auto global_index = element_block->push_back<BinaryOpStmt>(
-                  BinaryOpType::add,
+                  BinaryOpType::add, bls_coord,
                   element_block->push_back<ConstStmt>(
-                      TypedConstant(pad.second.bounds[0][i])),
-                  bls_coord);
+                      TypedConstant(pad.second.bounds[0][i])));
 
-              auto block_corner =
-                  element_block->push_back<BlockCornerIndexStmt>(offload, i);
+              auto block_corner = element_block->
+                push_back<BlockCornerIndexStmt>(offload, i);
+
+              block_corner = element_block->push_back<BinaryOpStmt>(
+                    BinaryOpType::mul, block_corner,
+                    element_block->push_back<ConstStmt>(
+                        TypedConstant(pad.second.coeff[i])));
+
               global_index = element_block->push_back<BinaryOpStmt>(
                   BinaryOpType::add, global_index, block_corner);
 
@@ -212,9 +217,14 @@ void make_block_local_offload(OffloadedStmt *offload) {
           //   bls_stride_i * (gbl_idx_i - loop_base_i - bls_lower_bound_i)
           // Note that when index offsets are used, the offset contributions are
           // already included in bls_lower_bound_i.
-          auto block_corner = bls.push_back<BlockCornerIndexStmt>(offload, i);
+
+          auto block_corner = bls.push_back<BinaryOpStmt>(BinaryOpType::mul,
+            bls.push_back<BlockCornerIndexStmt>(offload, i),
+            bls.push_back<ConstStmt>(TypedConstant(pad.second.coeff[i])));
+
           auto inc = bls.push_back<BinaryOpStmt>(
-              BinaryOpType::sub, global_indices[i], block_corner);
+            BinaryOpType::sub, global_indices[i], block_corner);
+
           inc = bls.push_back<BinaryOpStmt>(
               BinaryOpType::sub, inc,
               bls.push_back<ConstStmt>(TypedConstant(pad.second.bounds[0][i])));

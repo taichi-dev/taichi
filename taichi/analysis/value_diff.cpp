@@ -46,7 +46,7 @@ class ValueDiffLoopIndex : public IRVisitor {
   void visit(LoopIndexStmt *stmt) override {
     results[stmt->instance_id] = DiffRange();
     if (stmt->loop == loop && stmt->index == loop_index) {
-      results[stmt->instance_id] = DiffRange(true, 1, 0);
+      results[stmt->instance_id] = DiffRange(/*related=*/true, /*coeff=*/1, /*low=*/0);
     } else if (auto range_for = stmt->loop->cast<RangeForStmt>()) {
       if (range_for->begin->is<ConstStmt>() &&
           range_for->end->is<ConstStmt>()) {

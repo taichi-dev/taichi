@@ -47,7 +47,7 @@ class BLSAnalysis : public BasicStmtVisitor {
 
   // Generate the index bounds in a SNode (block). E.g., a dense(ti.ij, (2, 4))
   // SNode has index bounds [[0, 1], [0, 3]].
-  static void generate_block_indices(SNode *snode, BlockIndices &indices) {
+  static void generate_block_indices(SNode *snode, BlockIndices *indices) {
     // NOTE: Assuming not vectorized
     for (int i = 0; i < snode->num_active_indices; i++) {
       auto j = snode->physical_index_position[i];

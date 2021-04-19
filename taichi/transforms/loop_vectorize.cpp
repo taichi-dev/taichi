@@ -15,8 +15,9 @@ class LoopVectorize : public IRVisitor {
  public:
   int vectorize;
   Stmt *loop_var;  // an alloca...
+  const CompileConfig &config;
 
-  LoopVectorize() {
+  explicit LoopVectorize(const CompileConfig &config) : config(config) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
     loop_var = nullptr;
@@ -109,7 +110,7 @@ class LoopVectorize : public IRVisitor {
       auto offsets = std::make_unique<ConstStmt>(const_offsets);
       auto add_op = std::make_unique<BinaryOpStmt>(BinaryOpType::add, stmt,
                                                    offsets.get());
-      irpass::type_check(add_op.get());
+      irpass::type_check(add_op.get(), config);
       auto offsets_p = offsets.get();
       stmt->replace_with(add_op.get());
       stmt->insert_after_me(std::move(offsets));
@@ -154,17 +155,17 @@ class LoopVectorize : public IRVisitor {
     stmt->body->accept(this);
   }
 
-  static void run(IRNode *node) {
-    LoopVectorize inst;
+  static void run(IRNode *node, const CompileConfig &config) {
+    LoopVectorize inst(config);
     node->accept(&inst);
   }
 };
 
 namespace irpass {
 
-void loop_vectorize(IRNode *root) {
+void loop_vectorize(IRNode *root, const CompileConfig &config) {
   TI_AUTO_PROF;
-  return LoopVectorize::run(root);
+  return LoopVectorize::run(root, config);
 }
 
 }  // namespace irpass

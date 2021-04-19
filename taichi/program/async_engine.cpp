@@ -153,7 +153,7 @@ void ExecutionQueue::enqueue(const TaskLaunchRecord &ker) {
           auto config = kernel->program.config;
           auto ir = stmt;
           offload_to_executable(
-              ir, config, /*verbose=*/false,
+              ir, config, kernel, /*verbose=*/false,
               /*lower_global_access=*/true,
               /*make_thread_local=*/true,
               /*make_block_local=*/

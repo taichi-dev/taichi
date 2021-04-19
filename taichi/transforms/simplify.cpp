@@ -3,6 +3,7 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/visitors.h"
+#include "taichi/transforms/simplify.h"
 #include "taichi/program/kernel.h"
 #include "taichi/program/program.h"
 #include <set>
@@ -20,15 +21,18 @@ class BasicBlockSimplify : public IRVisitor {
   int current_stmt_id;
   std::set<int> &visited;
   StructForStmt *current_struct_for;
+  CompileConfig config;
   Kernel *kernel;
 
   BasicBlockSimplify(Block *block,
                      std::set<int> &visited,
                      StructForStmt *current_struct_for,
+                     const CompileConfig &config,
                      Kernel *kernel)
       : block(block),
         visited(visited),
         current_struct_for(current_struct_for),
+        config(config),
         kernel(kernel) {
     allow_undefined_visitor = true;
     invoke_default_visitor = false;
@@ -88,8 +92,7 @@ class BasicBlockSimplify : public IRVisitor {
           if (same) {
             // no store to the var?
             bool has_store = false;
-            auto advanced_optimization =
-                block->get_config().advanced_optimization;
+            auto advanced_optimization = config.advanced_optimization;
             for (int j = i + 1; j < current_stmt_id; j++) {
               if (!advanced_optimization) {
                 if (block->statements[j]
@@ -277,7 +280,7 @@ class BasicBlockSimplify : public IRVisitor {
     }
     // Compare the result with 0 to make sure no overflow occurs under Debug
     // Mode.
-    bool debug = stmt->get_kernel()->program.config.debug;
+    bool debug = config.debug;
     if (debug) {
       auto zero = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(0));
       auto check_sum =
@@ -304,7 +307,7 @@ class BasicBlockSimplify : public IRVisitor {
     }
     stmt->parent->erase(stmt);
     // get types of adds and muls
-    irpass::type_check(stmt->parent);
+    irpass::type_check(stmt->parent, config);
     throw IRModified();
   }
 
@@ -437,12 +440,12 @@ class BasicBlockSimplify : public IRVisitor {
             }
             auto load =
                 if_stmt->insert_before_me(Stmt::make<LocalLoadStmt>(lanes));
-            irpass::type_check(load);
+            irpass::type_check(load, config);
             auto select = if_stmt->insert_before_me(
                 Stmt::make<TernaryOpStmt>(TernaryOpType::select, if_stmt->cond,
                                           true_branch ? store->val : load,
                                           true_branch ? load : store->val));
-            irpass::type_check(select);
+            irpass::type_check(select, config);
             store->val = select;
             if_stmt->insert_before_me(std::move(clause[i]));
           } else {
@@ -464,7 +467,7 @@ class BasicBlockSimplify : public IRVisitor {
       return false;
     };
 
-    if (kernel->program.config.flatten_if) {
+    if (config.flatten_if) {
       if (if_stmt->true_statements &&
           flatten(if_stmt->true_statements->statements, true)) {
         throw IRModified();
@@ -494,7 +497,7 @@ class BasicBlockSimplify : public IRVisitor {
       throw IRModified();
     }
 
-    if (block->get_config().advanced_optimization) {
+    if (config.advanced_optimization) {
       // Merge adjacent if's with the identical condition.
       // TODO: What about IfStmt::true_mask and IfStmt::false_mask?
       if (current_stmt_id > 0 &&
@@ -538,11 +541,11 @@ class Simplify : public IRVisitor {
  public:
   StructForStmt *current_struct_for;
   bool modified;
+  const CompileConfig &config;
   Kernel *kernel;
 
-  Simplify(IRNode *node, Kernel *kernel) : kernel(kernel) {
-    if (!kernel)
-      this->kernel = node->get_kernel();
+  Simplify(IRNode *node, const CompileConfig &config, Kernel *kernel)
+      : config(config), kernel(kernel) {
     TI_ASSERT(this->kernel);
     modified = false;
     allow_undefined_visitor = true;
@@ -555,7 +558,8 @@ class Simplify : public IRVisitor {
     std::set<int> visited;
     while (true) {
       try {
-        BasicBlockSimplify _(block, visited, current_struct_for, kernel);
+        BasicBlockSimplify _(block, visited, current_struct_for, config,
+                             kernel);
       } catch (IRModified) {
         modified = true;
         continue;
@@ -596,13 +600,18 @@ class Simplify : public IRVisitor {
   }
 };
 
+const PassID SimplifyPass::id = "SimplifyPass";
+const PassID FullSimplifyPass::id = "FullSimplifyPass";
+
 namespace irpass {
 
-bool simplify(IRNode *root, Kernel *kernel) {
+bool simplify(IRNode *root,
+              const CompileConfig &config,
+              const SimplifyPass::Args &args) {
   TI_AUTO_PROF;
   bool modified = false;
   while (true) {
-    Simplify pass(root, kernel);
+    Simplify pass(root, config, args.kernel);
     if (pass.modified)
       modified = true;
     else
@@ -611,26 +620,29 @@ bool simplify(IRNode *root, Kernel *kernel) {
   return modified;
 }
 
-void full_simplify(IRNode *root, bool after_lower_access, Kernel *kernel) {
+void full_simplify(IRNode *root,
+                   const CompileConfig &config,
+                   const FullSimplifyPass::Args &args) {
   TI_AUTO_PROF;
-  if (root->get_config().advanced_optimization) {
+  if (config.advanced_optimization) {
     bool first_iteration = true;
     while (true) {
       bool modified = false;
-      extract_constant(root);
+      if (extract_constant(root, config))
+        modified = true;
       if (unreachable_code_elimination(root))
         modified = true;
-      if (binary_op_simplify(root))
+      if (binary_op_simplify(root, config))
         modified = true;
-      if (constant_fold(root))
-        modified = true;
-      if (die(root))
-        modified = true;
-      if (alg_simp(root))
+      if (constant_fold(root, config, {&args.kernel->program}))
         modified = true;
       if (die(root))
         modified = true;
-      if (simplify(root, kernel))
+      if (alg_simp(root, config))
+        modified = true;
+      if (die(root))
+        modified = true;
+      if (simplify(root, config, {args.kernel}))
         modified = true;
       if (die(root))
         modified = true;
@@ -638,9 +650,8 @@ void full_simplify(IRNode *root, bool after_lower_access, Kernel *kernel) {
         modified = true;
       // Don't do this time-consuming optimization pass again if the IR is
       // not modified.
-      if ((first_iteration || modified) &&
-          root->get_config().cfg_optimization &&
-          cfg_optimization(root, after_lower_access))
+      if ((first_iteration || modified) && config.cfg_optimization &&
+          cfg_optimization(root, args.after_lower_access))
         modified = true;
       first_iteration = false;
       if (!modified)
@@ -648,9 +659,9 @@ void full_simplify(IRNode *root, bool after_lower_access, Kernel *kernel) {
     }
     return;
   }
-  constant_fold(root);
+  constant_fold(root, config, {&args.kernel->program});
   die(root);
-  simplify(root, kernel);
+  simplify(root, config, {args.kernel});
   die(root);
 }
 

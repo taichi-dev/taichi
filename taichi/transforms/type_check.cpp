@@ -5,7 +5,6 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/visitors.h"
-#include "taichi/program/kernel.h"
 #include "taichi/ir/frontend.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -17,11 +16,7 @@ class TypeCheck : public IRVisitor {
   CompileConfig config;
 
  public:
-  TypeCheck(IRNode *root) {
-    auto *kernel = root->get_kernel();
-    if (kernel != nullptr) {
-      config = kernel->program.config;
-    }
+  explicit TypeCheck(const CompileConfig &config) : config(config) {
     allow_undefined_visitor = true;
   }
 
@@ -495,10 +490,10 @@ class TypeCheck : public IRVisitor {
 
 namespace irpass {
 
-void type_check(IRNode *root) {
+void type_check(IRNode *root, const CompileConfig &config) {
   TI_AUTO_PROF;
   analysis::check_fields_registered(root);
-  TypeCheck inst(root);
+  TypeCheck inst(config);
   root->accept(&inst);
 }
 

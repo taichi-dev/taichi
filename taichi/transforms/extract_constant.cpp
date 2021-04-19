@@ -36,26 +36,32 @@ class ExtractConstant : public BasicStmtVisitor {
     }
   }
 
-  static void run(IRNode *node) {
+  static bool run(IRNode *node) {
     ExtractConstant extractor(node);
+    bool ir_modified = false;
     while (true) {
       bool modified = false;
       try {
         node->accept(&extractor);
       } catch (IRModified) {
         modified = true;
+        ir_modified = true;
       }
       if (!modified)
         break;
     }
+    return ir_modified;
   }
 };
 
 namespace irpass {
-void extract_constant(IRNode *root) {
+bool extract_constant(IRNode *root, const CompileConfig &config) {
   TI_AUTO_PROF;
-  if (root->get_config().advanced_optimization)
-    ExtractConstant::run(root);
+  if (config.advanced_optimization) {
+    return ExtractConstant::run(root);
+  } else {
+    return false;
+  }
 }
 }  // namespace irpass
 

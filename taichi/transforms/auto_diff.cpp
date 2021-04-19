@@ -185,25 +185,26 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
 class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
+  int ad_stack_size;
+  explicit ReplaceLocalVarWithStacks(int ad_stack_size)
+      : ad_stack_size(ad_stack_size) {
+  }
 
   void visit(AllocaStmt *alloc) override {
     TI_ASSERT(alloc->width() == 1);
-    bool load_only = irpass::analysis::gather_statements(
-                         alloc->parent,
-                         [&](Stmt *s) {
-                           if (auto store = s->cast<LocalStoreStmt>())
-                             return store->dest == alloc;
-                           else if (auto atomic = s->cast<AtomicOpStmt>()) {
-                             return atomic->dest == alloc;
-                           } else {
-                             return false;
-                           }
-                         })
-                         .empty();
+    bool load_only =
+        irpass::analysis::gather_statements(alloc->parent, [&](Stmt *s) {
+          if (auto store = s->cast<LocalStoreStmt>())
+            return store->dest == alloc;
+          else if (auto atomic = s->cast<AtomicOpStmt>()) {
+            return atomic->dest == alloc;
+          } else {
+            return false;
+          }
+        }).empty();
     if (!load_only) {
       auto dtype = alloc->ret_type;
-      auto stack_alloca = Stmt::make<StackAllocaStmt>(
-          dtype, alloc->get_kernel()->program.config.ad_stack_size);
+      auto stack_alloca = Stmt::make<StackAllocaStmt>(dtype, ad_stack_size);
       auto stack_alloca_ptr = stack_alloca.get();
 
       alloc->replace_with(std::move(stack_alloca));
@@ -818,7 +819,7 @@ class BackupSSA : public BasicStmtVisitor {
 
 namespace irpass {
 
-void auto_diff(IRNode *root, bool use_stack) {
+void auto_diff(IRNode *root, const CompileConfig &config, bool use_stack) {
   TI_AUTO_PROF;
   if (use_stack) {
     auto IB = IdentifyIndependentBlocks::run(root);
@@ -826,23 +827,23 @@ void auto_diff(IRNode *root, bool use_stack) {
 
     for (auto ib : IB) {
       PromoteSSA2LocalVar::run(ib);
-      ReplaceLocalVarWithStacks replace;
+      ReplaceLocalVarWithStacks replace(config.ad_stack_size);
       ib->accept(&replace);
-      type_check(root);
+      type_check(root, config);
       MakeAdjoint::run(ib);
-      type_check(root);
+      type_check(root, config);
       BackupSSA::run(ib);
       irpass::analysis::verify(root);
     }
   } else {
     auto IB = IdentifyIndependentBlocks::run(root);
     ReverseOuterLoops::run(root, IB);
-    type_check(root);
+    type_check(root, config);
     for (auto ib : IB) {
       MakeAdjoint::run(ib);
     }
   }
-  type_check(root);
+  type_check(root, config);
   irpass::analysis::verify(root);
 }
 

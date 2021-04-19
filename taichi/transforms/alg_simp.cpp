@@ -329,19 +329,9 @@ class AlgSimp : public BasicStmtVisitor {
 
 namespace irpass {
 
-namespace hack {
-bool use_fast_math(IRNode *root) {
-  const Kernel *kernel = root->get_kernel();
-  if (!kernel) {
-    return false;
-  }
-  return kernel->program.config.fast_math;
-}
-}  // namespace hack
-
-bool alg_simp(IRNode *root) {
+bool alg_simp(IRNode *root, const CompileConfig &config) {
   TI_AUTO_PROF;
-  return AlgSimp::run(root, hack::use_fast_math(root));
+  return AlgSimp::run(root, config.fast_math);
 }
 
 }  // namespace irpass

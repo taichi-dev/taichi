@@ -8,7 +8,7 @@
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
-#include "taichi/program/program.h"
+#include "taichi/transforms/constant_fold.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -16,16 +16,17 @@ class ConstantFold : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
   DelayedIRModifier modifier;
+  Program *program;
 
-  ConstantFold() : BasicStmtVisitor() {
+  explicit ConstantFold(Program *program)
+      : BasicStmtVisitor(), program(program) {
   }
 
-  static Kernel *get_jit_evaluator_kernel(JITEvaluatorId const &id) {
-    auto &cache = get_current_program().jit_evaluator_cache;
+  Kernel *get_jit_evaluator_kernel(JITEvaluatorId const &id) {
+    auto &cache = program->jit_evaluator_cache;
     // Discussion:
     // https://github.com/taichi-dev/taichi/pull/954#discussion_r423442606
-    std::lock_guard<std::mutex> _(
-        get_current_program().jit_evaluator_cache_mut);
+    std::lock_guard<std::mutex> _(program->jit_evaluator_cache_mut);
     auto it = cache.find(id);
     if (it != cache.end())  // cached?
       return it->second.get();
@@ -53,8 +54,7 @@ class ConstantFold : public BasicStmtVisitor {
       current_ast_builder().insert(std::move(oper));
       current_ast_builder().insert(std::move(ret));
     };
-    auto ker =
-        std::make_unique<Kernel>(get_current_program(), func, kernel_name);
+    auto ker = std::make_unique<Kernel>(*program, func, kernel_name);
     ker->insert_ret(id.ret);
     ker->insert_arg(id.lhs, false);
     if (id.is_binary)
@@ -80,10 +80,10 @@ class ConstantFold : public BasicStmtVisitor {
       return false;
   }
 
-  static bool jit_evaluate_binary_op(TypedConstant &ret,
-                                     BinaryOpStmt *stmt,
-                                     const TypedConstant &lhs,
-                                     const TypedConstant &rhs) {
+  bool jit_evaluate_binary_op(TypedConstant &ret,
+                              BinaryOpStmt *stmt,
+                              const TypedConstant &lhs,
+                              const TypedConstant &rhs) {
     if (!is_good_type(ret.dt))
       return false;
     JITEvaluatorId id{std::this_thread::get_id(),
@@ -96,18 +96,17 @@ class ConstantFold : public BasicStmtVisitor {
     auto launch_ctx = ker->make_launch_context();
     launch_ctx.set_arg_raw(0, lhs.val_u64);
     launch_ctx.set_arg_raw(1, rhs.val_u64);
-    auto &current_program = stmt->get_kernel()->program;
     {
-      std::lock_guard<std::mutex> _(current_program.jit_evaluator_cache_mut);
+      std::lock_guard<std::mutex> _(program->jit_evaluator_cache_mut);
       (*ker)(launch_ctx);
-      ret.val_i64 = current_program.fetch_result<int64_t>(0);
+      ret.val_i64 = program->fetch_result<int64_t>(0);
     }
     return true;
   }
 
-  static bool jit_evaluate_unary_op(TypedConstant &ret,
-                                    UnaryOpStmt *stmt,
-                                    const TypedConstant &operand) {
+  bool jit_evaluate_unary_op(TypedConstant &ret,
+                             UnaryOpStmt *stmt,
+                             const TypedConstant &operand) {
     if (!is_good_type(ret.dt))
       return false;
     JITEvaluatorId id{std::this_thread::get_id(),
@@ -119,11 +118,10 @@ class ConstantFold : public BasicStmtVisitor {
     auto *ker = get_jit_evaluator_kernel(id);
     auto launch_ctx = ker->make_launch_context();
     launch_ctx.set_arg_raw(0, operand.val_u64);
-    auto &current_program = stmt->get_kernel()->program;
     {
-      std::lock_guard<std::mutex> _(current_program.jit_evaluator_cache_mut);
+      std::lock_guard<std::mutex> _(program->jit_evaluator_cache_mut);
       (*ker)(launch_ctx);
-      ret.val_i64 = current_program.fetch_result<int64_t>(0);
+      ret.val_i64 = program->fetch_result<int64_t>(0);
     }
     return true;
   }
@@ -191,8 +189,8 @@ class ConstantFold : public BasicStmtVisitor {
     modifier.erase(stmt);
   }
 
-  static bool run(IRNode *node) {
-    ConstantFold folder;
+  static bool run(IRNode *node, Program *program) {
+    ConstantFold folder(program);
     bool modified = false;
     while (true) {
       node->accept(&folder);
@@ -206,23 +204,26 @@ class ConstantFold : public BasicStmtVisitor {
   }
 };
 
+const PassID ConstantFoldPass::id = "ConstantFoldPass";
+
 namespace irpass {
 
-bool constant_fold(IRNode *root) {
+bool constant_fold(IRNode *root,
+                   const CompileConfig &config,
+                   const ConstantFoldPass::Args &args) {
   TI_AUTO_PROF;
-  const auto &cfg = root->get_config();
   // @archibate found that `debug=True` will cause JIT kernels
-  // failed to evaluate correctly (always return 0), so we simply
+  // to evaluate incorrectly (always return 0), so we simply
   // disable constant_fold when config.debug is turned on.
   // Discussion:
   // https://github.com/taichi-dev/taichi/pull/839#issuecomment-626107010
-  if (cfg.debug) {
+  if (config.debug) {
     TI_TRACE("config.debug enabled, ignoring constant fold");
     return false;
   }
-  if (!cfg.advanced_optimization)
+  if (!config.advanced_optimization)
     return false;
-  return ConstantFold::run(root);
+  return ConstantFold::run(root, args.program);
 }
 
 }  // namespace irpass

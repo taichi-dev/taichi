@@ -1138,86 +1138,21 @@ void CodeGenLLVM::visit(GlobalStoreStmt *stmt) {
   auto ptr_type = stmt->dest->ret_type->as<PointerType>();
   if (ptr_type->is_bit_pointer()) {
     auto pointee_type = ptr_type->get_pointee_type();
-    llvm::Value *store_value = nullptr;
-    CustomIntType *cit = nullptr;
-    if (auto cit_ = pointee_type->cast<CustomIntType>()) {
-      cit = cit_;
-      store_value = llvm_val[stmt->val];
-    } else if (auto cft = pointee_type->cast<CustomFloatType>()) {
-      llvm::Value *digit_bits = nullptr;
-      auto digits_cit = cft->get_digits_type()->as<CustomIntType>();
-      if (auto exp = cft->get_exponent_type()) {
-        // Extract exponent and digits from compute type (assumed to be f32 for
-        // now).
-        TI_ASSERT(cft->get_compute_type()->is_primitive(PrimitiveTypeID::f32));
-
-        // f32 = 1 sign bit + 8 exponent bits + 23 fraction bits
-
-        auto f32_bits = builder->CreateBitCast(
-            llvm_val[stmt->val], llvm::Type::getInt32Ty(*llvm_context));
-        // Rounding to nearest here. Note that if the digits overflows then the
-        // carry-on will contribute to the exponent, which is desired.
-        if (cft->get_digit_bits() < 23) {
-          f32_bits = builder->CreateAdd(
-              f32_bits, tlctx->get_constant(1 << (22 - cft->get_digit_bits())));
-        }
-
-        auto exponent_bits = builder->CreateAShr(f32_bits, 23);
-        exponent_bits = builder->CreateAnd(exponent_bits,
-                                           tlctx->get_constant((1 << 8) - 1));
-        auto value_bits = builder->CreateAShr(
-            f32_bits, tlctx->get_constant(23 - cft->get_digit_bits()));
-
-        digit_bits = builder->CreateAnd(
-            value_bits,
-            tlctx->get_constant((1 << (cft->get_digit_bits())) - 1));
-
-        if (cft->get_is_signed()) {
-          // extract the sign bit
-          auto sign_bit =
-              builder->CreateAnd(f32_bits, tlctx->get_constant(0x80000000u));
-          // insert the sign bit to digit bits
-          digit_bits = builder->CreateOr(
-              digit_bits,
-              builder->CreateLShr(sign_bit, 31 - cft->get_digit_bits()));
-        }
-
-        auto exponent_cit = exp->as<CustomIntType>();
-
-        auto digits_snode = stmt->dest->as<GetChStmt>()->output_snode;
-        auto exponent_snode = digits_snode->exp_snode;
-
-        auto exponent_offset = get_exponent_offset(exponent_bits, cft);
-        exponent_bits = builder->CreateSub(exponent_bits, exponent_offset);
-        exponent_bits =
-            create_call("max_i32", {exponent_bits, tlctx->get_constant(0)});
-
-        // Compute the bit pointer of the exponent bits.
-        TI_ASSERT(digits_snode->parent == exponent_snode->parent);
-        auto exponent_bit_ptr =
-            offset_bit_ptr(llvm_val[stmt->dest], exponent_snode->bit_offset -
-                                                     digits_snode->bit_offset);
-        store_custom_int(exponent_bit_ptr, exponent_cit, exponent_bits);
-        store_value = digit_bits;
-
-        // Here we implement flush to zero (FTZ): if exponent is zero, we force
-        // the digits to be zero.
-        // TODO: it seems that this can be more efficiently implemented using a
-        // bit_and.
-        auto exp_non_zero =
-            builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_NE,
-                                exponent_bits, tlctx->get_constant(0));
-        store_value = builder->CreateSelect(exp_non_zero, store_value,
-                                            tlctx->get_constant(0));
+    if (!pointee_type->is<CustomIntType>()) {
+      if (stmt->dest->as<GetChStmt>()->input_snode->type ==
+          SNodeType::bit_struct) {
+        TI_ERROR(
+            "Bit struct stores with type {} should have been "
+            "handled by BitStructStoreStmt.",
+            pointee_type->to_string());
       } else {
-        digit_bits = llvm_val[stmt->val];
-        store_value = float_to_custom_int(cft, digits_cit, digit_bits);
+        TI_ERROR("Bit array only supports custom int type.");
       }
-      cit = digits_cit;
-    } else {
-      TI_NOT_IMPLEMENTED
     }
-    store_custom_int(llvm_val[stmt->dest], cit, store_value);
+    llvm::Value *store_value = nullptr;
+    auto *cit = pointee_type->as<CustomIntType>();
+    store_value = llvm_val[stmt->val];
+    store_custom_int(llvm_val[stmt->dest], cit, store_value, /*atomic=*/true);
   } else {
     builder->CreateStore(llvm_val[stmt->val], llvm_val[stmt->dest]);
   }

@@ -2,6 +2,7 @@ import math
 
 import taichi as ti
 
+
 @ti.func
 def randn(dt):
     '''

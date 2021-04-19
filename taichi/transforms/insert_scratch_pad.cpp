@@ -34,7 +34,7 @@ class BLSAnalysis : public BasicStmtVisitor {
              SNodeAccessFlag::block_local)) {
       auto block = snode->parent;
       if (block_indices.find(block) == block_indices.end()) {
-        generate_block_indices(block, block_indices[block]);
+        generate_block_indices(block, &block_indices[block]);
       }
     }
 
@@ -51,7 +51,7 @@ class BLSAnalysis : public BasicStmtVisitor {
     // NOTE: Assuming not vectorized
     for (int i = 0; i < snode->num_active_indices; i++) {
       auto j = snode->physical_index_position[i];
-      indices.emplace_back(0, (1 << snode->extractors[j].num_bits) - 1);
+      indices->emplace_back(0, (1 << snode->extractors[j].num_bits) - 1);
     }
   }
 
@@ -85,15 +85,16 @@ class BLSAnalysis : public BasicStmtVisitor {
         auto block = snode->parent;
         const auto &index_bounds = block_indices[block];
         std::vector<int> index(num_indices, 0);
-        std::function<void(int)> visit = [&](int depth) {
-          if (depth == num_indices) {
+        std::function<void(int)> visit = [&](int dimension) {
+          if (dimension == num_indices) {
             pads->access(snode, index, flag);
             return;
           }
-          for (int i = index_bounds[depth].first + offsets[depth].first;
-               i < index_bounds[depth].second + offsets[depth].second; i++) {
-            index[depth] = i;
-            visit(depth + 1);
+          for (int i = index_bounds[dimension].first + offsets[dimension].first;
+               i < index_bounds[dimension].second + offsets[dimension].second;
+               i++) {
+            index[dimension] = i;
+            visit(dimension + 1);
           }
         };
         visit(0);

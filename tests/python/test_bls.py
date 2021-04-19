@@ -147,8 +147,8 @@ def test_multiple_inputs():
 @ti.all_archs
 def test_bls_large_block():
     n = 2**10
-    block_size = 2**5
-    stencil_length = 2**5
+    block_size = 32
+    stencil_length = 28  # uses 60 * 60 * 4B = 14.0625KiB shared memory
 
     a = ti.field(dtype=ti.f32)
     b = ti.field(dtype=ti.f32)

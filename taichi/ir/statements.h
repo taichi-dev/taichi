@@ -285,6 +285,9 @@ class GlobalPtrStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * An operation to a SNode (not necessarily a leaf SNode).
+ */
 class SNodeOpStmt : public Stmt {
  public:
   SNodeOpType op_type;
@@ -339,6 +342,9 @@ class AssertStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * Call an external (C++) function.
+ */
 class ExternalFuncCallStmt : public Stmt {
  public:
   void *func;
@@ -709,6 +715,9 @@ class StructForStmt : public Stmt {
   TI_DEFINE_ACCEPT
 };
 
+/**
+ * An inline Taichi function.
+ */
 class FuncBodyStmt : public Stmt {
  public:
   std::string funcid;
@@ -726,6 +735,9 @@ class FuncBodyStmt : public Stmt {
   TI_DEFINE_ACCEPT
 };
 
+/**
+ * Call an inline Taichi function.
+ */
 class FuncCallStmt : public Stmt {
  public:
   std::string funcid;
@@ -786,6 +798,7 @@ class PragmaSLPStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+// TODO: document for this
 class ElementShuffleStmt : public Stmt {
  public:
   LaneAttribute<VectorElement> elements;
@@ -807,6 +820,7 @@ class ElementShuffleStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+// TODO: remove this (replace with input + ConstStmt(offset))
 class IntegerOffsetStmt : public Stmt {
  public:
   Stmt *input;
@@ -824,6 +838,9 @@ class IntegerOffsetStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * All indices of an address fused together.
+ */
 class LinearizeStmt : public Stmt {
  public:
   std::vector<Stmt *> inputs;
@@ -1079,6 +1096,7 @@ class BlockCornerIndexStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+// TODO: remove this
 class BlockDimStmt : public Stmt {
  public:
   BlockDimStmt() {
@@ -1170,6 +1188,9 @@ class ClearListStmt : public Stmt {
 // Checks if the task represented by |stmt| contains a single ClearListStmt.
 bool is_clear_list_task(const OffloadedStmt *stmt);
 
+/**
+ * TODO: document for InternalFuncStmt
+ */
 class InternalFuncStmt : public Stmt {
  public:
   std::string func_name;

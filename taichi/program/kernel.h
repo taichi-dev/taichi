@@ -27,13 +27,13 @@ class Kernel {
 
   struct Arg {
     DataType dt;
-    bool is_nparray;
+    bool is_external_array;
     std::size_t size;
 
     Arg(DataType dt = PrimitiveType::unknown,
-        bool is_nparray = false,
+        bool is_external_array = false,
         std::size_t size = 0)
-        : dt(dt), is_nparray(is_nparray), size(size) {
+        : dt(dt), is_external_array(is_external_array), size(size) {
     }
   };
 
@@ -103,7 +103,7 @@ class Kernel {
 
   LaunchContextBuilder make_launch_context();
 
-  int insert_arg(DataType dt, bool is_nparray);
+  int insert_arg(DataType dt, bool is_external_array);
 
   int insert_ret(DataType dt);
 

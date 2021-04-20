@@ -122,7 +122,8 @@ class ArgLoadStmt : public Stmt {
   int arg_id;
   bool is_ptr;
 
-  ArgLoadStmt(int arg_id, DataType dt, bool is_ptr = false) : arg_id(arg_id) {
+  ArgLoadStmt(int arg_id, const DataType &dt, bool is_ptr = false)
+      : arg_id(arg_id) {
     this->ret_type = TypeFactory::create_vector_or_scalar_type(1, dt);
     this->is_ptr = is_ptr;
     TI_STMT_REG_FIELDS;
@@ -147,7 +148,7 @@ class ArgLoadStmt : public Stmt {
  */
 class RandStmt : public Stmt {
  public:
-  RandStmt(DataType dt) {
+  RandStmt(const DataType &dt) {
     ret_type = dt;
     TI_STMT_REG_FIELDS;
   }
@@ -353,7 +354,7 @@ class ExternalFuncCallStmt : public Stmt {
   std::vector<Stmt *> output_stmts;
 
   ExternalFuncCallStmt(void *func,
-                       std::string const &source,
+                       const std::string &source,
                        const std::vector<Stmt *> &arg_stmts,
                        const std::vector<Stmt *> &output_stmts)
       : func(func),
@@ -427,7 +428,7 @@ class GlobalLoadStmt : public Stmt {
  public:
   Stmt *src;
 
-  GlobalLoadStmt(Stmt *src) : src(src) {
+  explicit GlobalLoadStmt(Stmt *src) : src(src) {
     TI_STMT_REG_FIELDS;
   }
 
@@ -470,7 +471,7 @@ class LocalLoadStmt : public Stmt {
  public:
   LaneAttribute<LocalAddress> src;
 
-  LocalLoadStmt(const LaneAttribute<LocalAddress> &src) : src(src) {
+  explicit LocalLoadStmt(const LaneAttribute<LocalAddress> &src) : src(src) {
     TI_STMT_REG_FIELDS;
   }
 
@@ -530,7 +531,7 @@ class IfStmt : public Stmt {
   Stmt *true_mask, *false_mask;
   std::unique_ptr<Block> true_statements, false_statements;
 
-  IfStmt(Stmt *cond);
+  explicit IfStmt(Stmt *cond);
 
   // Use these setters to set Block::parent_stmt at the same time.
   void set_true_statements(std::unique_ptr<Block> &&new_true_statements);
@@ -561,13 +562,13 @@ class PrintStmt : public Stmt {
   }
 
   template <typename... Args>
-  PrintStmt(Stmt *t, Args &&... args)
+  PrintStmt(Stmt *t, Args &&...args)
       : contents(make_entries(t, std::forward<Args>(args)...)) {
     TI_STMT_REG_FIELDS;
   }
 
   template <typename... Args>
-  PrintStmt(const std::string &str, Args &&... args)
+  PrintStmt(const std::string &str, Args &&...args)
       : contents(make_entries(str, std::forward<Args>(args)...)) {
     TI_STMT_REG_FIELDS;
   }
@@ -582,13 +583,13 @@ class PrintStmt : public Stmt {
   template <typename T, typename... Args>
   static void make_entries_helper(std::vector<PrintStmt::EntryType> &entries,
                                   T &&t,
-                                  Args &&... values) {
+                                  Args &&...values) {
     entries.push_back(EntryType{t});
     make_entries_helper(entries, std::forward<Args>(values)...);
   }
 
   template <typename... Args>
-  static std::vector<EntryType> make_entries(Args &&... values) {
+  static std::vector<EntryType> make_entries(Args &&...values) {
     std::vector<EntryType> ret;
     make_entries_helper(ret, std::forward<Args>(values)...);
     return ret;
@@ -602,7 +603,7 @@ class ConstStmt : public Stmt {
  public:
   LaneAttribute<TypedConstant> val;
 
-  ConstStmt(const LaneAttribute<TypedConstant> &val) : val(val) {
+  explicit ConstStmt(const LaneAttribute<TypedConstant> &val) : val(val) {
     TI_ASSERT(val.size() == 1);  // TODO: support vectorized case
     ret_type = val[0].dt;
     for (int i = 0; i < val.size(); i++) {
@@ -773,7 +774,7 @@ class WhileStmt : public Stmt {
   Stmt *mask;
   std::unique_ptr<Block> body;
 
-  WhileStmt(std::unique_ptr<Block> &&body);
+  explicit WhileStmt(std::unique_ptr<Block> &&body);
 
   bool is_container_statement() const override {
     return true;
@@ -804,8 +805,8 @@ class ElementShuffleStmt : public Stmt {
   LaneAttribute<VectorElement> elements;
   bool pointer;
 
-  ElementShuffleStmt(const LaneAttribute<VectorElement> &elements,
-                     bool pointer = false)
+  explicit ElementShuffleStmt(const LaneAttribute<VectorElement> &elements,
+                              bool pointer = false)
       : elements(elements), pointer(pointer) {
     TI_ASSERT(elements.size() == 1);  // TODO: support vectorized cases
     ret_type = elements[0].stmt->element_type();
@@ -1060,7 +1061,7 @@ class LoopLinearIndexStmt : public Stmt {
  public:
   Stmt *loop;
 
-  LoopLinearIndexStmt(Stmt *loop) : loop(loop) {
+  explicit LoopLinearIndexStmt(Stmt *loop) : loop(loop) {
     TI_STMT_REG_FIELDS;
   }
 
@@ -1119,7 +1120,8 @@ class GlobalTemporaryStmt : public Stmt {
  public:
   std::size_t offset;
 
-  GlobalTemporaryStmt(std::size_t offset, DataType ret_type) : offset(offset) {
+  GlobalTemporaryStmt(std::size_t offset, const DataType &ret_type)
+      : offset(offset) {
     this->ret_type = ret_type;
     TI_STMT_REG_FIELDS;
   }
@@ -1139,7 +1141,8 @@ class ThreadLocalPtrStmt : public Stmt {
  public:
   std::size_t offset;
 
-  ThreadLocalPtrStmt(std::size_t offset, DataType ret_type) : offset(offset) {
+  ThreadLocalPtrStmt(std::size_t offset, const DataType &ret_type)
+      : offset(offset) {
     this->ret_type = ret_type;
     TI_STMT_REG_FIELDS;
   }
@@ -1159,7 +1162,7 @@ class BlockLocalPtrStmt : public Stmt {
  public:
   Stmt *offset;
 
-  BlockLocalPtrStmt(Stmt *offset, DataType ret_type) : offset(offset) {
+  BlockLocalPtrStmt(Stmt *offset, const DataType &ret_type) : offset(offset) {
     this->ret_type = ret_type;
     TI_STMT_REG_FIELDS;
   }
@@ -1195,7 +1198,8 @@ class InternalFuncStmt : public Stmt {
  public:
   std::string func_name;
 
-  InternalFuncStmt(const std::string &func_name) : func_name(func_name) {
+  explicit InternalFuncStmt(const std::string &func_name)
+      : func_name(func_name) {
     this->ret_type =
         TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
     TI_STMT_REG_FIELDS;
@@ -1213,7 +1217,7 @@ class StackAllocaStmt : public Stmt {
   DataType dt;
   std::size_t max_size;  // TODO: 0 = adaptive
 
-  StackAllocaStmt(DataType dt, std::size_t max_size)
+  StackAllocaStmt(const DataType &dt, std::size_t max_size)
       : dt(dt), max_size(max_size) {
     TI_STMT_REG_FIELDS;
   }
@@ -1249,7 +1253,7 @@ class StackLoadTopStmt : public Stmt {
  public:
   Stmt *stack;
 
-  StackLoadTopStmt(Stmt *stack) {
+  explicit StackLoadTopStmt(Stmt *stack) {
     TI_ASSERT(stack->is<StackAllocaStmt>());
     this->stack = stack;
     TI_STMT_REG_FIELDS;
@@ -1274,7 +1278,7 @@ class StackLoadTopAdjStmt : public Stmt {
  public:
   Stmt *stack;
 
-  StackLoadTopAdjStmt(Stmt *stack) {
+  explicit StackLoadTopAdjStmt(Stmt *stack) {
     TI_ASSERT(stack->is<StackAllocaStmt>());
     this->stack = stack;
     TI_STMT_REG_FIELDS;
@@ -1299,7 +1303,7 @@ class StackPopStmt : public Stmt {
  public:
   Stmt *stack;
 
-  StackPopStmt(Stmt *stack) {
+  explicit StackPopStmt(Stmt *stack) {
     TI_ASSERT(stack->is<StackAllocaStmt>());
     this->stack = stack;
     TI_STMT_REG_FIELDS;

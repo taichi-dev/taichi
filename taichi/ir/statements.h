@@ -90,6 +90,9 @@ class ContinueStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE;
 };
 
+/**
+ * A unary operation. The field "cast_type" is used only when is_cast() is true.
+ */
 class UnaryOpStmt : public Stmt {
  public:
   UnaryOpType op_type;
@@ -109,6 +112,11 @@ class UnaryOpStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * Load a kernel argument. The data type should be known when constructing this
+ * statement. is_ptr should be true iff the result can be used as a base
+ * pointer of an ExternalPtrStmt.
+ */
 class ArgLoadStmt : public Stmt {
  public:
   int arg_id;
@@ -128,6 +136,15 @@ class ArgLoadStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * A random value. For i32, u32, i64, and u64, the result is randomly sampled
+ * from all possible values with equal probability. For f32 and f64 data types,
+ * the result is uniformly sampled in the interval [0, 1).
+ * When Taichi runtime initializes, each CUDA thread / CPU thread gets a
+ * different (but deterministic as long as the thread id doesn't change)
+ * random seed. Each invocation of a RandStmt compiles to a call of a
+ * deterministic PRNG to generate a random value in the backend.
+ */
 class RandStmt : public Stmt {
  public:
   RandStmt(DataType dt) {
@@ -147,6 +164,9 @@ class RandStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * A binary operation. TODO: remove the field is_bit_vectorized.
+ */
 class BinaryOpStmt : public Stmt {
  public:
   BinaryOpType op_type;
@@ -174,6 +194,10 @@ class BinaryOpStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * A ternary operation. Currently "select" (the ternary conditional operator,
+ * "?:" in C++) is the only supported ternary operation.
+ */
 class TernaryOpStmt : public Stmt {
  public:
   TernaryOpType op_type;
@@ -195,6 +219,9 @@ class TernaryOpStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * An atomic operation.
+ */
 class AtomicOpStmt : public Stmt {
  public:
   AtomicOpType op_type;
@@ -209,6 +236,9 @@ class AtomicOpStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * An external pointer. base_ptr should be an ArgLoadStmt with is_ptr == true.
+ */
 class ExternalPtrStmt : public Stmt {
  public:
   LaneAttribute<Stmt *> base_ptrs;
@@ -225,6 +255,9 @@ class ExternalPtrStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * A global pointer.
+ */
 class GlobalPtrStmt : public Stmt {
  public:
   LaneAttribute<SNode *> snodes;
@@ -272,6 +305,7 @@ class SNodeOpStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+// TODO: remove this
 class ExternalTensorShapeAlongAxisStmt : public Stmt {
  public:
   int axis;
@@ -283,6 +317,10 @@ class ExternalTensorShapeAlongAxisStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * An assertion. If cond is false, print the formatted text with args, and
+ * terminate the program.
+ */
 class AssertStmt : public Stmt {
  public:
   Stmt *cond;
@@ -323,6 +361,11 @@ class ExternalFuncCallStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * A hint to the Taichi compiler about the relation of the values of two
+ * statements. This statement simply returns the input statement at the backend,
+ * and hints the Taichi compiler that base + low <= input < base + high.
+ */
 class RangeAssumptionStmt : public Stmt {
  public:
   Stmt *input;
@@ -342,7 +385,16 @@ class RangeAssumptionStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
-// A statement that has unique values among the top-level loop.
+/**
+ * A hint to the Taichi compiler that a statement has unique values among
+ * the top-level loop. This statement simply returns the input statement at
+ * the backend, and hints the Taichi compiler that this statement never
+ * evaluate to the same value across different iterations of the top-level
+ * loop. This statement's value set among all iterations of the top-level loop
+ * also covers all active indices of each SNodes with id in the "covers" field
+ * of this statement. Since this statement can only evaluate to one value,
+ * the SNodes with id in the "covers" field should have only one dimension.
+ */
 class LoopUniqueStmt : public Stmt {
  public:
   Stmt *input;
@@ -362,6 +414,9 @@ class LoopUniqueStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * A global load.
+ */
 class GlobalLoadStmt : public Stmt {
  public:
   Stmt *src;
@@ -382,6 +437,9 @@ class GlobalLoadStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE;
 };
 
+/**
+ * A global store.
+ */
 class GlobalStoreStmt : public Stmt {
  public:
   Stmt *dest;
@@ -399,6 +457,9 @@ class GlobalStoreStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE;
 };
 
+/**
+ * A local load.
+ */
 class LocalLoadStmt : public Stmt {
  public:
   LaneAttribute<LocalAddress> src;
@@ -424,6 +485,9 @@ class LocalLoadStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE;
 };
 
+/**
+ * A local store.
+ */
 class LocalStoreStmt : public Stmt {
  public:
   Stmt *dest;
@@ -450,6 +514,10 @@ class LocalStoreStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE;
 };
 
+/**
+ * Same as "if (cond) true_statements; else false_statements;" in C++.
+ * "true_mask" and "false_mask" are used to support vectorization.
+ */
 class IfStmt : public Stmt {
  public:
   Stmt *cond;
@@ -472,6 +540,11 @@ class IfStmt : public Stmt {
   TI_DEFINE_ACCEPT
 };
 
+/**
+ * Print the contents in this statement. Each entry in the contents can be
+ * either a statement or a string, and they are printed one by one, separated
+ * by a comma and a space.
+ */
 class PrintStmt : public Stmt {
  public:
   using EntryType = std::variant<Stmt *, std::string>;
@@ -516,6 +589,9 @@ class PrintStmt : public Stmt {
   }
 };
 
+/**
+ * A constant value.
+ */
 class ConstStmt : public Stmt {
  public:
   LaneAttribute<TypedConstant> val;
@@ -544,7 +620,14 @@ class ConstStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
-// General range for
+/**
+ * A general range for, similar to "for (i = begin; i < end; i++) body;" in C++.
+ * When "reversed" is true, the for loop is reversed, i.e.,
+ * "for (i = end - 1; i >= begin; i--) body;".
+ * When the statement is in the top level before offloading, it will be
+ * offloaded to a parallel for loop. Otherwise, it will be offloaded to a
+ * serial for loop.
+ */
 class RangeForStmt : public Stmt {
  public:
   Stmt *begin, *end;
@@ -586,7 +669,10 @@ class RangeForStmt : public Stmt {
   TI_DEFINE_ACCEPT
 };
 
-// for stmt over a structural node
+/**
+ * A parallel for loop over a SNode, similar to "for i in snode: body"
+ * in Python. This statement must be at the top level before offloading.
+ */
 class StructForStmt : public Stmt {
  public:
   SNode *snode;
@@ -652,6 +738,9 @@ class FuncCallStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * Exit the kernel with a return value.
+ */
 class KernelReturnStmt : public Stmt {
  public:
   Stmt *value;
@@ -664,6 +753,9 @@ class KernelReturnStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * A serial while-true loop. "mask" is to support vectorization.
+ */
 class WhileStmt : public Stmt {
  public:
   Stmt *mask;
@@ -681,6 +773,7 @@ class WhileStmt : public Stmt {
   TI_DEFINE_ACCEPT
 };
 
+// TODO: remove this
 class PragmaSLPStmt : public Stmt {
  public:
   int slp_width;
@@ -751,6 +844,10 @@ class LinearizeStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * Extract an interval of bits from an integral value.
+ * Equivalent to (input >> bit_begin) & ((1 << (bit_end - bit_begin)) - 1).
+ */
 class BitExtractStmt : public Stmt {
  public:
   Stmt *input;
@@ -770,6 +867,9 @@ class BitExtractStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * The SNode root.
+ */
 class GetRootStmt : public Stmt {
  public:
   GetRootStmt() {
@@ -784,6 +884,9 @@ class GetRootStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * Lookup a component of a SNode.
+ */
 class SNodeLookupStmt : public Stmt {
  public:
   SNode *snode;
@@ -814,6 +917,9 @@ class SNodeLookupStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * Get a child of a SNode on the hierarchical SNode tree.
+ */
 class GetChStmt : public Stmt {
  public:
   Stmt *input_ptr;
@@ -836,6 +942,9 @@ class GetChStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * The statement corresponding to an offloaded task.
+ */
 class OffloadedStmt : public Stmt {
  public:
   using TaskType = OffloadedTaskType;
@@ -904,6 +1013,9 @@ class OffloadedStmt : public Stmt {
   TI_DEFINE_ACCEPT
 };
 
+/**
+ * The "index"-th index of the loop.
+ */
 class LoopIndexStmt : public Stmt {
  public:
   Stmt *loop;
@@ -924,11 +1036,12 @@ class LoopIndexStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
-// All loop indices fused together
+/**
+ * All loop indices of the loop fused together.
+ */
 class LoopLinearIndexStmt : public Stmt {
  public:
   Stmt *loop;
-  int index;
 
   LoopLinearIndexStmt(Stmt *loop) : loop(loop) {
     TI_STMT_REG_FIELDS;
@@ -946,6 +1059,9 @@ class LoopLinearIndexStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * The lowest loop index of the iterations iterated by the block.
+ */
 class BlockCornerIndexStmt : public Stmt {
  public:
   Stmt *loop;
@@ -977,6 +1093,10 @@ class BlockDimStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * A global temporary variable, located at "offset" in the global temporary
+ * buffer.
+ */
 class GlobalTemporaryStmt : public Stmt {
  public:
   std::size_t offset;
@@ -994,6 +1114,9 @@ class GlobalTemporaryStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * A thread-local pointer, located at "offset" in the thread-local storage.
+ */
 class ThreadLocalPtrStmt : public Stmt {
  public:
   std::size_t offset;
@@ -1011,6 +1134,9 @@ class ThreadLocalPtrStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * A block-local pointer, located at "offset" in the block-local storage.
+ */
 class BlockLocalPtrStmt : public Stmt {
  public:
   Stmt *offset;
@@ -1028,6 +1154,9 @@ class BlockLocalPtrStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * The statement corresponding to a clear-list task.
+ */
 class ClearListStmt : public Stmt {
  public:
   explicit ClearListStmt(SNode *snode);
@@ -1055,6 +1184,9 @@ class InternalFuncStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * A local AD-stack.
+ */
 class StackAllocaStmt : public Stmt {
  public:
   DataType dt;
@@ -1089,6 +1221,9 @@ class StackAllocaStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * Load the top primal value of an AD-stack.
+ */
 class StackLoadTopStmt : public Stmt {
  public:
   Stmt *stack;
@@ -1111,6 +1246,9 @@ class StackLoadTopStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * Load the top adjoint value of an AD-stack.
+ */
 class StackLoadTopAdjStmt : public Stmt {
  public:
   Stmt *stack;
@@ -1133,6 +1271,9 @@ class StackLoadTopAdjStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * Pop the top primal and adjoint values in the AD-stack.
+ */
 class StackPopStmt : public Stmt {
  public:
   Stmt *stack;
@@ -1150,6 +1291,10 @@ class StackPopStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * Push a primal value to the AD-stack, and set the corresponding adjoint
+ * value to 0.
+ */
 class StackPushStmt : public Stmt {
  public:
   Stmt *stack;
@@ -1169,6 +1314,9 @@ class StackPushStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * Accumulate "v" to the top adjoint value of the AD-stack.
+ */
 class StackAccAdjointStmt : public Stmt {
  public:
   Stmt *stack;
@@ -1188,6 +1336,9 @@ class StackAccAdjointStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+/**
+ * A global store to one or more children of a bit struct.
+ */
 class BitStructStoreStmt : public Stmt {
  public:
   Stmt *ptr;

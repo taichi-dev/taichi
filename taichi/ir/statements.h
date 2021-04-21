@@ -91,7 +91,7 @@ class ContinueStmt : public Stmt {
 };
 
 /**
- * A unary operation. The field "cast_type" is used only when is_cast() is true.
+ * A unary operation. The field |cast_type| is used only when is_cast() is true.
  */
 class UnaryOpStmt : public Stmt {
  public:
@@ -114,7 +114,7 @@ class UnaryOpStmt : public Stmt {
 
 /**
  * Load a kernel argument. The data type should be known when constructing this
- * statement. is_ptr should be true iff the result can be used as a base
+ * statement. |is_ptr| should be true iff the result can be used as a base
  * pointer of an ExternalPtrStmt.
  */
 class ArgLoadStmt : public Stmt {
@@ -525,7 +525,7 @@ class LocalStoreStmt : public Stmt {
 
 /**
  * Same as "if (cond) true_statements; else false_statements;" in C++.
- * "true_mask" and "false_mask" are used to support vectorization.
+ * |true_mask| and |false_mask| are used to support vectorization.
  */
 class IfStmt : public Stmt {
  public:

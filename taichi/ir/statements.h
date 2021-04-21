@@ -166,13 +166,13 @@ class RandStmt : public Stmt {
 };
 
 /**
- * A binary operation. TODO: remove the field is_bit_vectorized.
+ * A binary operation.
  */
 class BinaryOpStmt : public Stmt {
  public:
   BinaryOpType op_type;
   Stmt *lhs, *rhs;
-  bool is_bit_vectorized;
+  bool is_bit_vectorized;  // TODO: remove this field
 
   BinaryOpStmt(BinaryOpType op_type,
                Stmt *lhs,
@@ -238,7 +238,8 @@ class AtomicOpStmt : public Stmt {
 };
 
 /**
- * An external pointer. base_ptr should be an ArgLoadStmt with is_ptr == true.
+ * An external pointer. |base_ptrs| should be ArgLoadStmts with
+ * |is_ptr| == true.
  */
 class ExternalPtrStmt : public Stmt {
  public:
@@ -257,7 +258,12 @@ class ExternalPtrStmt : public Stmt {
 };
 
 /**
- * A global pointer.
+ * A global pointer, currently only able to represent an address in a SNode.
+ * When |activate| is true, this statement activates the address it points to,
+ * so it has "global side effect" in this case.
+ * After the "lower_access" pass, all GlobalPtrStmts should be lowered into
+ * SNodeLookupStmts and GetChStmts, and should not appear in the final lowered
+ * IR.
  */
 class GlobalPtrStmt : public Stmt {
  public:
@@ -322,8 +328,9 @@ class ExternalTensorShapeAlongAxisStmt : public Stmt {
 };
 
 /**
- * An assertion. If cond is false, print the formatted text with args, and
- * terminate the program.
+ * An assertion.
+ * If |cond| is false, print the formatted |text| with |args|, and terminate
+ * the program.
  */
 class AssertStmt : public Stmt {
  public:
@@ -370,8 +377,9 @@ class ExternalFuncCallStmt : public Stmt {
 
 /**
  * A hint to the Taichi compiler about the relation of the values of two
- * statements. This statement simply returns the input statement at the backend,
- * and hints the Taichi compiler that base + low <= input < base + high.
+ * statements.
+ * This statement simply returns the input statement at the backend, and hints
+ * the Taichi compiler that |base| + |low| <= |input| < |base| + |high|.
  */
 class RangeAssumptionStmt : public Stmt {
  public:
@@ -398,9 +406,9 @@ class RangeAssumptionStmt : public Stmt {
  * the backend, and hints the Taichi compiler that this statement never
  * evaluate to the same value across different iterations of the top-level
  * loop. This statement's value set among all iterations of the top-level loop
- * also covers all active indices of each SNodes with id in the "covers" field
+ * also covers all active indices of each SNodes with id in the |covers| field
  * of this statement. Since this statement can only evaluate to one value,
- * the SNodes with id in the "covers" field should have only one dimension.
+ * the SNodes with id in the |covers| field should have only one dimension.
  */
 class LoopUniqueStmt : public Stmt {
  public:
@@ -631,7 +639,7 @@ class ConstStmt : public Stmt {
 
 /**
  * A general range for, similar to "for (i = begin; i < end; i++) body;" in C++.
- * When "reversed" is true, the for loop is reversed, i.e.,
+ * When |reversed| is true, the for loop is reversed, i.e.,
  * "for (i = end - 1; i >= begin; i--) body;".
  * When the statement is in the top level before offloading, it will be
  * offloaded to a parallel for loop. Otherwise, it will be offloaded to a
@@ -769,7 +777,7 @@ class KernelReturnStmt : public Stmt {
 };
 
 /**
- * A serial while-true loop. "mask" is to support vectorization.
+ * A serial while-true loop. |mask| is to support vectorization.
  */
 class WhileStmt : public Stmt {
  public:
@@ -866,7 +874,8 @@ class LinearizeStmt : public Stmt {
 
 /**
  * Extract an interval of bits from an integral value.
- * Equivalent to (input >> bit_begin) & ((1 << (bit_end - bit_begin)) - 1).
+ * Equivalent to (|input| >> |bit_begin|) &
+ *   ((1 << (|bit_end| - |bit_begin|)) - 1).
  */
 class BitExtractStmt : public Stmt {
  public:
@@ -1034,7 +1043,7 @@ class OffloadedStmt : public Stmt {
 };
 
 /**
- * The "index"-th index of the loop.
+ * The |index|-th index of the |loop|.
  */
 class LoopIndexStmt : public Stmt {
  public:
@@ -1057,7 +1066,7 @@ class LoopIndexStmt : public Stmt {
 };
 
 /**
- * All loop indices of the loop fused together.
+ * All loop indices of the |loop| fused together.
  */
 class LoopLinearIndexStmt : public Stmt {
  public:
@@ -1080,7 +1089,8 @@ class LoopLinearIndexStmt : public Stmt {
 };
 
 /**
- * The lowest loop index of the iterations iterated by the block.
+ * The lowest |index|-th index of the |loop| among the iterations iterated by
+ * the block.
  */
 class BlockCornerIndexStmt : public Stmt {
  public:
@@ -1115,7 +1125,7 @@ class BlockDimStmt : public Stmt {
 };
 
 /**
- * A global temporary variable, located at "offset" in the global temporary
+ * A global temporary variable, located at |offset| in the global temporary
  * buffer.
  */
 class GlobalTemporaryStmt : public Stmt {
@@ -1137,7 +1147,7 @@ class GlobalTemporaryStmt : public Stmt {
 };
 
 /**
- * A thread-local pointer, located at "offset" in the thread-local storage.
+ * A thread-local pointer, located at |offset| in the thread-local storage.
  */
 class ThreadLocalPtrStmt : public Stmt {
  public:
@@ -1158,7 +1168,7 @@ class ThreadLocalPtrStmt : public Stmt {
 };
 
 /**
- * A block-local pointer, located at "offset" in the block-local storage.
+ * A block-local pointer, located at |offset| in the block-local storage.
  */
 class BlockLocalPtrStmt : public Stmt {
  public:
@@ -1342,7 +1352,7 @@ class StackPushStmt : public Stmt {
 };
 
 /**
- * Accumulate "v" to the top adjoint value of the AD-stack.
+ * Accumulate |v| to the top adjoint value of the AD-stack.
  */
 class StackAccAdjointStmt : public Stmt {
  public:

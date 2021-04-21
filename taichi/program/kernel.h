@@ -67,7 +67,7 @@ class Kernel {
 
     void set_extra_arg_int(int i, int j, int32 d);
 
-    void set_arg_nparray(int i, uint64 ptr, uint64 size);
+    void set_arg_external_array(int i, uint64 ptr, uint64 size);
 
     // Sets the i-th arg in the context to the bits stored in |d|. This ignores
     // the underlying kernel's i-th arg type.

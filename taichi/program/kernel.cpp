@@ -170,9 +170,9 @@ Kernel::LaunchContextBuilder::LaunchContextBuilder(Kernel *kernel)
 }
 
 void Kernel::LaunchContextBuilder::set_arg_float(int i, float64 d) {
-  TI_ASSERT_INFO(
-      !kernel_->args[i].is_external_array,
-      "Assigning a scalar value to a numpy array argument is not allowed");
+  TI_ASSERT_INFO(!kernel_->args[i].is_external_array,
+                 "Assigning scalar value to external(numpy) array argument is "
+                 "not allowed.");
 
   ActionRecorder::get_instance().record(
       "set_kernel_arg_float64", {ActionArg("kernel_name", kernel_->name),
@@ -205,9 +205,9 @@ void Kernel::LaunchContextBuilder::set_arg_float(int i, float64 d) {
 }
 
 void Kernel::LaunchContextBuilder::set_arg_int(int i, int64 d) {
-  TI_ASSERT_INFO(
-      !kernel_->args[i].is_external_array,
-      "Assigning scalar value to numpy array argument is not allowed");
+  TI_ASSERT_INFO(!kernel_->args[i].is_external_array,
+                 "Assigning scalar value to external(numpy) array argument is "
+                 "not allowed.");
 
   ActionRecorder::get_instance().record(
       "set_kernel_arg_int64", {ActionArg("kernel_name", kernel_->name),
@@ -244,11 +244,12 @@ void Kernel::LaunchContextBuilder::set_extra_arg_int(int i, int j, int32 d) {
   ctx_->extra_args[i][j] = d;
 }
 
-void Kernel::LaunchContextBuilder::set_arg_nparray(int i,
-                                                   uint64 ptr,
-                                                   uint64 size) {
-  TI_ASSERT_INFO(kernel_->args[i].is_external_array,
-                 "Assigning numpy array to scalar argument is not allowed");
+void Kernel::LaunchContextBuilder::set_arg_external_array(int i,
+                                                          uint64 ptr,
+                                                          uint64 size) {
+  TI_ASSERT_INFO(
+      kernel_->args[i].is_external_array,
+      "Assigning external(numpy) array to scalar argument is not allowed.");
 
   ActionRecorder::get_instance().record(
       "set_kernel_arg_ext_ptr",
@@ -261,9 +262,9 @@ void Kernel::LaunchContextBuilder::set_arg_nparray(int i,
 }
 
 void Kernel::LaunchContextBuilder::set_arg_raw(int i, uint64 d) {
-  TI_ASSERT_INFO(
-      !kernel_->args[i].is_external_array,
-      "Assigning scalar value to numpy array argument is not allowed");
+  TI_ASSERT_INFO(!kernel_->args[i].is_external_array,
+                 "Assigning scalar value to external(numpy) array argument is "
+                 "not allowed.");
 
   if (!kernel_->is_evaluator) {
     ActionRecorder::get_instance().record(

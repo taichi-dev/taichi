@@ -71,8 +71,8 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
             CUDADriver::get_instance().memcpy_host_to_device(
                 (void *)device_buffers[i], host_buffers[i], args[i].size);
           }
-          ctx_builder.set_arg_nparray(i, (uint64)device_buffers[i],
-                                      args[i].size);
+          ctx_builder.set_arg_external_array(i, (uint64)device_buffers[i],
+                                             args[i].size);
         }
       }
       if (has_buffer) {

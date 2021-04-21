@@ -422,7 +422,8 @@ class LoopUniqueStmt : public Stmt {
 };
 
 /**
- * A global load.
+ * A load from a global address, including SNodes, external arrays, TLS, BLS,
+ * and global temporary variables.
  */
 class GlobalLoadStmt : public Stmt {
  public:
@@ -445,7 +446,8 @@ class GlobalLoadStmt : public Stmt {
 };
 
 /**
- * A global store.
+ * A store to a global address, including SNodes, external arrays, TLS, BLS,
+ * and global temporary variables.
  */
 class GlobalStoreStmt : public Stmt {
  public:
@@ -465,7 +467,7 @@ class GlobalStoreStmt : public Stmt {
 };
 
 /**
- * A local load.
+ * A load from a local variable, i.e., an "alloca".
  */
 class LocalLoadStmt : public Stmt {
  public:
@@ -493,7 +495,7 @@ class LocalLoadStmt : public Stmt {
 };
 
 /**
- * A local store.
+ * A store to a local variable, i.e., an "alloca".
  */
 class LocalStoreStmt : public Stmt {
  public:

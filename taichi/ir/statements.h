@@ -1203,9 +1203,7 @@ class ClearListStmt : public Stmt {
 // Checks if the task represented by |stmt| contains a single ClearListStmt.
 bool is_clear_list_task(const OffloadedStmt *stmt);
 
-/**
- * TODO: document for InternalFuncStmt
- */
+// TODO: remove this
 class InternalFuncStmt : public Stmt {
  public:
   std::string func_name;

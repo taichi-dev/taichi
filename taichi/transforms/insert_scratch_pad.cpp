@@ -89,7 +89,7 @@ class BLSAnalysis : public BasicStmtVisitor {
       for (int i = 0; i < num_indices; i++) {
         auto diff = irpass::analysis::value_diff_loop_index(ptr->indices[i],
                                                             for_stmt, i);
-        if (diff.linear_related()) {
+        if (diff.related_() and diff.coeff > 0) {
           offsets[i].first = diff.low;
           offsets[i].second = diff.high;
           coeffs[i] = diff.coeff;

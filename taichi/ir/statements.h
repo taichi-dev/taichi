@@ -987,7 +987,6 @@ class OffloadedStmt : public Stmt {
   bool const_end{false};
   int32 begin_value{0};
   int32 end_value{0};
-  int step{0};
   int grid_dim{1};
   int block_dim{1};
   bool reversed{false};
@@ -1032,7 +1031,6 @@ class OffloadedStmt : public Stmt {
                      const_end,
                      begin_value,
                      end_value,
-                     step /*unused?*/,
                      grid_dim,
                      block_dim,
                      reversed,

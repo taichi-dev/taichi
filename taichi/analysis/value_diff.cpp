@@ -53,10 +53,10 @@ class ValueDiffLoopIndex : public IRVisitor {
           range_for->end->is<ConstStmt>()) {
         auto begin_val = range_for->begin->as<ConstStmt>()->val[0].val_int();
         auto end_val = range_for->end->as<ConstStmt>()->val[0].val_int();
+        // We have begin_val <= end_val even when range_for->reversed is true:
+        // in that case, the loop is iterated from end_val - 1 to begin_val.
         results[stmt->instance_id] = DiffRange(
-            /*related=*/true, /*coeff=*/0,
-            /*low=*/std::min(begin_val, end_val - 1),
-            /*high=*/std::max(begin_val + 1, end_val));
+            /*related=*/true, /*coeff=*/0, /*low=*/begin_val, /*high=*/end_val);
       }
     }
   }

@@ -47,12 +47,12 @@ PER_STATEMENT(ExternalFuncCallStmt)
 PER_STATEMENT(ExternalTensorShapeAlongAxisStmt)
 
 // Locals with reverse-mode autodiff
-PER_STATEMENT(StackAllocaStmt)
-PER_STATEMENT(StackLoadTopStmt)
-PER_STATEMENT(StackLoadTopAdjStmt)
-PER_STATEMENT(StackPopStmt)
-PER_STATEMENT(StackPushStmt)
-PER_STATEMENT(StackAccAdjointStmt)
+PER_STATEMENT(AdStackAllocaStmt)
+PER_STATEMENT(AdStackLoadTopStmt)
+PER_STATEMENT(AdStackLoadTopAdjStmt)
+PER_STATEMENT(AdStackPopStmt)
+PER_STATEMENT(AdStackPushStmt)
+PER_STATEMENT(AdStackAccAdjointStmt)
 
 // SNode Micro Ops
 PER_STATEMENT(GetRootStmt)

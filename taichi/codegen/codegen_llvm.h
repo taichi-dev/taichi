@@ -324,17 +324,17 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   // Stack statements
 
-  void visit(StackAllocaStmt *stmt) override;
+  void visit(AdStackAllocaStmt *stmt) override;
 
-  void visit(StackPopStmt *stmt) override;
+  void visit(AdStackPopStmt *stmt) override;
 
-  void visit(StackPushStmt *stmt) override;
+  void visit(AdStackPushStmt *stmt) override;
 
-  void visit(StackLoadTopStmt *stmt) override;
+  void visit(AdStackLoadTopStmt *stmt) override;
 
-  void visit(StackLoadTopAdjStmt *stmt) override;
+  void visit(AdStackLoadTopAdjStmt *stmt) override;
 
-  void visit(StackAccAdjointStmt *stmt) override;
+  void visit(AdStackAccAdjointStmt *stmt) override;
 
   void visit(RangeAssumptionStmt *stmt) override;
 

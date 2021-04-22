@@ -51,10 +51,12 @@ class ValueDiffLoopIndex : public IRVisitor {
     } else if (auto range_for = stmt->loop->cast<RangeForStmt>()) {
       if (range_for->begin->is<ConstStmt>() &&
           range_for->end->is<ConstStmt>()) {
+        auto begin_val = range_for->begin->as<ConstStmt>()->val[0].val_int();
+        auto end_val = range_for->end->as<ConstStmt>()->val[0].val_int();
+        // We have begin_val <= end_val even when range_for->reversed is true:
+        // in that case, the loop is iterated from end_val - 1 to begin_val.
         results[stmt->instance_id] = DiffRange(
-            /*related=*/true, /*coeff=*/0,
-            /*low=*/range_for->begin->as<ConstStmt>()->val[0].val_int(),
-            /*high=*/range_for->end->as<ConstStmt>()->val[0].val_int());
+            /*related=*/true, /*coeff=*/0, /*low=*/begin_val, /*high=*/end_val);
       }
     }
   }

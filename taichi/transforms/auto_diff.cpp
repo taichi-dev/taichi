@@ -192,16 +192,18 @@ class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
 
   void visit(AllocaStmt *alloc) override {
     TI_ASSERT(alloc->width() == 1);
-    bool load_only =
-        irpass::analysis::gather_statements(alloc->parent, [&](Stmt *s) {
-          if (auto store = s->cast<LocalStoreStmt>())
-            return store->dest == alloc;
-          else if (auto atomic = s->cast<AtomicOpStmt>()) {
-            return atomic->dest == alloc;
-          } else {
-            return false;
-          }
-        }).empty();
+    bool load_only = irpass::analysis::gather_statements(
+                         alloc->parent,
+                         [&](Stmt *s) {
+                           if (auto store = s->cast<LocalStoreStmt>())
+                             return store->dest == alloc;
+                           else if (auto atomic = s->cast<AtomicOpStmt>()) {
+                             return atomic->dest == alloc;
+                           } else {
+                             return false;
+                           }
+                         })
+                         .empty();
     if (!load_only) {
       auto dtype = alloc->ret_type;
       auto stack_alloca = Stmt::make<AdStackAllocaStmt>(dtype, ad_stack_size);
@@ -213,7 +215,8 @@ class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
       // initial value. Therefore here we push an initial 0 value.
       auto zero = stack_alloca_ptr->insert_after_me(
           Stmt::make<ConstStmt>(TypedConstant(dtype, 0)));
-      zero->insert_after_me(Stmt::make<AdStackPushStmt>(stack_alloca_ptr, zero));
+      zero->insert_after_me(
+          Stmt::make<AdStackPushStmt>(stack_alloca_ptr, zero));
     }
   }
 

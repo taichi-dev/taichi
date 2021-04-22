@@ -21,7 +21,8 @@ std::vector<Stmt *> get_load_pointers(Stmt *load_stmt) {
     return std::vector<Stmt *>(1, atomic->dest);
   } else if (auto stack_load_top = load_stmt->cast<AdStackLoadTopStmt>()) {
     return std::vector<Stmt *>(1, stack_load_top->stack);
-  } else if (auto stack_load_top_adj = load_stmt->cast<AdStackLoadTopAdjStmt>()) {
+  } else if (auto stack_load_top_adj =
+                 load_stmt->cast<AdStackLoadTopAdjStmt>()) {
     return std::vector<Stmt *>(1, stack_load_top_adj->stack);
   } else if (auto stack_acc_adj = load_stmt->cast<AdStackAccAdjointStmt>()) {
     // This statement loads and stores the adjoint data.

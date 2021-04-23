@@ -1220,12 +1220,12 @@ class InternalFuncStmt : public Stmt {
 /**
  * A local AD-stack.
  */
-class StackAllocaStmt : public Stmt {
+class AdStackAllocaStmt : public Stmt {
  public:
   DataType dt;
   std::size_t max_size;  // TODO: 0 = adaptive
 
-  StackAllocaStmt(const DataType &dt, std::size_t max_size)
+  AdStackAllocaStmt(const DataType &dt, std::size_t max_size)
       : dt(dt), max_size(max_size) {
     TI_STMT_REG_FIELDS;
   }
@@ -1257,12 +1257,12 @@ class StackAllocaStmt : public Stmt {
 /**
  * Load the top primal value of an AD-stack.
  */
-class StackLoadTopStmt : public Stmt {
+class AdStackLoadTopStmt : public Stmt {
  public:
   Stmt *stack;
 
-  explicit StackLoadTopStmt(Stmt *stack) {
-    TI_ASSERT(stack->is<StackAllocaStmt>());
+  explicit AdStackLoadTopStmt(Stmt *stack) {
+    TI_ASSERT(stack->is<AdStackAllocaStmt>());
     this->stack = stack;
     TI_STMT_REG_FIELDS;
   }
@@ -1282,12 +1282,12 @@ class StackLoadTopStmt : public Stmt {
 /**
  * Load the top adjoint value of an AD-stack.
  */
-class StackLoadTopAdjStmt : public Stmt {
+class AdStackLoadTopAdjStmt : public Stmt {
  public:
   Stmt *stack;
 
-  explicit StackLoadTopAdjStmt(Stmt *stack) {
-    TI_ASSERT(stack->is<StackAllocaStmt>());
+  explicit AdStackLoadTopAdjStmt(Stmt *stack) {
+    TI_ASSERT(stack->is<AdStackAllocaStmt>());
     this->stack = stack;
     TI_STMT_REG_FIELDS;
   }
@@ -1307,12 +1307,12 @@ class StackLoadTopAdjStmt : public Stmt {
 /**
  * Pop the top primal and adjoint values in the AD-stack.
  */
-class StackPopStmt : public Stmt {
+class AdStackPopStmt : public Stmt {
  public:
   Stmt *stack;
 
-  explicit StackPopStmt(Stmt *stack) {
-    TI_ASSERT(stack->is<StackAllocaStmt>());
+  explicit AdStackPopStmt(Stmt *stack) {
+    TI_ASSERT(stack->is<AdStackAllocaStmt>());
     this->stack = stack;
     TI_STMT_REG_FIELDS;
   }
@@ -1328,13 +1328,13 @@ class StackPopStmt : public Stmt {
  * Push a primal value to the AD-stack, and set the corresponding adjoint
  * value to 0.
  */
-class StackPushStmt : public Stmt {
+class AdStackPushStmt : public Stmt {
  public:
   Stmt *stack;
   Stmt *v;
 
-  StackPushStmt(Stmt *stack, Stmt *v) {
-    TI_ASSERT(stack->is<StackAllocaStmt>());
+  AdStackPushStmt(Stmt *stack, Stmt *v) {
+    TI_ASSERT(stack->is<AdStackAllocaStmt>());
     this->stack = stack;
     this->v = v;
     TI_STMT_REG_FIELDS;
@@ -1350,13 +1350,13 @@ class StackPushStmt : public Stmt {
 /**
  * Accumulate |v| to the top adjoint value of the AD-stack.
  */
-class StackAccAdjointStmt : public Stmt {
+class AdStackAccAdjointStmt : public Stmt {
  public:
   Stmt *stack;
   Stmt *v;
 
-  StackAccAdjointStmt(Stmt *stack, Stmt *v) {
-    TI_ASSERT(stack->is<StackAllocaStmt>());
+  AdStackAccAdjointStmt(Stmt *stack, Stmt *v) {
+    TI_ASSERT(stack->is<AdStackAllocaStmt>());
     this->stack = stack;
     this->v = v;
     TI_STMT_REG_FIELDS;

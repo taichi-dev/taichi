@@ -597,32 +597,32 @@ class IRPrinter : public IRVisitor {
     print("{} = call internal \"{}\"", stmt->name(), stmt->func_name);
   }
 
-  void visit(StackAllocaStmt *stmt) override {
+  void visit(AdStackAllocaStmt *stmt) override {
     print("{}{} = stack alloc (max_size={})", stmt->type_hint(), stmt->name(),
           stmt->max_size);
   }
 
-  void visit(StackLoadTopStmt *stmt) override {
+  void visit(AdStackLoadTopStmt *stmt) override {
     print("{}{} = stack load top {}", stmt->type_hint(), stmt->name(),
           stmt->stack->name());
   }
 
-  void visit(StackLoadTopAdjStmt *stmt) override {
+  void visit(AdStackLoadTopAdjStmt *stmt) override {
     print("{}{} = stack load top adj {}", stmt->type_hint(), stmt->name(),
           stmt->stack->name());
   }
 
-  void visit(StackPushStmt *stmt) override {
+  void visit(AdStackPushStmt *stmt) override {
     print("{}{} : stack push {}, val = {}", stmt->type_hint(), stmt->name(),
           stmt->stack->name(), stmt->v->name());
   }
 
-  void visit(StackPopStmt *stmt) override {
+  void visit(AdStackPopStmt *stmt) override {
     print("{}{} : stack pop {}", stmt->type_hint(), stmt->name(),
           stmt->stack->name());
   }
 
-  void visit(StackAccAdjointStmt *stmt) override {
+  void visit(AdStackAccAdjointStmt *stmt) override {
     print("{}{} : stack acc adj {}, val = {}", stmt->type_hint(), stmt->name(),
           stmt->stack->name(), stmt->v->name());
   }

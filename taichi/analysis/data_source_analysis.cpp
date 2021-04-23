@@ -19,17 +19,18 @@ std::vector<Stmt *> get_load_pointers(Stmt *load_stmt) {
     return std::vector<Stmt *>(1, global_load->src);
   } else if (auto atomic = load_stmt->cast<AtomicOpStmt>()) {
     return std::vector<Stmt *>(1, atomic->dest);
-  } else if (auto stack_load_top = load_stmt->cast<StackLoadTopStmt>()) {
+  } else if (auto stack_load_top = load_stmt->cast<AdStackLoadTopStmt>()) {
     return std::vector<Stmt *>(1, stack_load_top->stack);
-  } else if (auto stack_load_top_adj = load_stmt->cast<StackLoadTopAdjStmt>()) {
+  } else if (auto stack_load_top_adj =
+                 load_stmt->cast<AdStackLoadTopAdjStmt>()) {
     return std::vector<Stmt *>(1, stack_load_top_adj->stack);
-  } else if (auto stack_acc_adj = load_stmt->cast<StackAccAdjointStmt>()) {
+  } else if (auto stack_acc_adj = load_stmt->cast<AdStackAccAdjointStmt>()) {
     // This statement loads and stores the adjoint data.
     return std::vector<Stmt *>(1, stack_acc_adj->stack);
-  } else if (auto stack_push = load_stmt->cast<StackPushStmt>()) {
+  } else if (auto stack_push = load_stmt->cast<AdStackPushStmt>()) {
     // This is to make dead store elimination not eliminate consequent pushes.
     return std::vector<Stmt *>(1, stack_push->stack);
-  } else if (auto stack_pop = load_stmt->cast<StackPopStmt>()) {
+  } else if (auto stack_pop = load_stmt->cast<AdStackPopStmt>()) {
     // This is to make dead store elimination not eliminate consequent pops.
     return std::vector<Stmt *>(1, stack_pop->stack);
   } else if (auto external_func = load_stmt->cast<ExternalFuncCallStmt>()) {

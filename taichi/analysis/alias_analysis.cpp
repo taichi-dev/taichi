@@ -15,7 +15,7 @@ AliasResult alias_analysis(Stmt *var1, Stmt *var2) {
     return AliasResult::different;
   if (var1->is<AllocaStmt>() || var2->is<AllocaStmt>())
     return AliasResult::different;
-  if (var1->is<StackAllocaStmt>() || var2->is<StackAllocaStmt>())
+  if (var1->is<AdStackAllocaStmt>() || var2->is<AdStackAllocaStmt>())
     return AliasResult::different;
 
   // TODO(xumingkuan): Put GlobalTemporaryStmt, ThreadLocalPtrStmt and

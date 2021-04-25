@@ -2,7 +2,7 @@ import numbers
 import os
 
 import numpy as np
-from taichi.core import ti_core
+from taichi.core import ti_core as _ti_core
 
 from .util import core_veci, deprecated
 
@@ -33,9 +33,9 @@ class GUI:
     MOVE = 'Motion'
 
     # Event types
-    MOTION = ti_core.KeyEvent.EType.Move
-    PRESS = ti_core.KeyEvent.EType.Press
-    RELEASE = ti_core.KeyEvent.EType.Release
+    MOTION = _ti_core.KeyEvent.EType.Move
+    PRESS = _ti_core.KeyEvent.EType.Press
+    RELEASE = _ti_core.KeyEvent.EType.Release
 
     def __init__(self,
                  name='Taichi',
@@ -65,8 +65,8 @@ class GUI:
             self.img = np.ascontiguousarray(
                 np.zeros(self.res + (4, ), np.float32))
             fast_buf = 0
-        self.core = ti_core.GUI(name, core_veci(*res), show_gui, fullscreen,
-                                fast_gui, fast_buf)
+        self.core = _ti_core.GUI(name, core_veci(*res), show_gui, fullscreen,
+                                 fast_gui, fast_buf)
         self.canvas = self.core.get_canvas()
         self.background_color = background_color
         self.key_pressed = set()
@@ -173,7 +173,7 @@ class GUI:
             return
 
         if isinstance(img, ti.Expr):
-            if ti.core.is_integral(img.dtype) or len(img.shape) != 2:
+            if _ti_core.is_integral(img.dtype) or len(img.shape) != 2:
                 # Images of uint is not optimized by xxx_to_image
                 self.img = self.cook_image(img.to_numpy())
             else:
@@ -185,7 +185,7 @@ class GUI:
                 ti.sync()
 
         elif isinstance(img, ti.Matrix):
-            if ti.core.is_integral(img.dtype):
+            if _ti_core.is_integral(img.dtype):
                 self.img = self.cook_image(img.to_numpy())
             else:
                 # Type matched! We can use an optimized copy kernel.

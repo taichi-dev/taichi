@@ -169,71 +169,73 @@ Kernel::LaunchContextBuilder::LaunchContextBuilder(Kernel *kernel)
       ctx_(owned_ctx_.get()) {
 }
 
-void Kernel::LaunchContextBuilder::set_arg_float(int i, float64 d) {
-  TI_ASSERT_INFO(
-      !kernel_->args[i].is_nparray,
-      "Assigning a scalar value to a numpy array argument is not allowed");
+void Kernel::LaunchContextBuilder::set_arg_float(int arg_id, float64 d) {
+  TI_ASSERT_INFO(!kernel_->args[arg_id].is_external_array,
+                 "Assigning scalar value to external(numpy) array argument is "
+                 "not allowed.");
 
   ActionRecorder::get_instance().record(
-      "set_kernel_arg_float64", {ActionArg("kernel_name", kernel_->name),
-                                 ActionArg("arg_id", i), ActionArg("val", d)});
+      "set_kernel_arg_float64",
+      {ActionArg("kernel_name", kernel_->name), ActionArg("arg_id", arg_id),
+       ActionArg("val", d)});
 
-  auto dt = kernel_->args[i].dt;
+  auto dt = kernel_->args[arg_id].dt;
   if (dt->is_primitive(PrimitiveTypeID::f32)) {
-    ctx_->set_arg(i, (float32)d);
+    ctx_->set_arg(arg_id, (float32)d);
   } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
-    ctx_->set_arg(i, (float64)d);
+    ctx_->set_arg(arg_id, (float64)d);
   } else if (dt->is_primitive(PrimitiveTypeID::i32)) {
-    ctx_->set_arg(i, (int32)d);
+    ctx_->set_arg(arg_id, (int32)d);
   } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
-    ctx_->set_arg(i, (int64)d);
+    ctx_->set_arg(arg_id, (int64)d);
   } else if (dt->is_primitive(PrimitiveTypeID::i8)) {
-    ctx_->set_arg(i, (int8)d);
+    ctx_->set_arg(arg_id, (int8)d);
   } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
-    ctx_->set_arg(i, (int16)d);
+    ctx_->set_arg(arg_id, (int16)d);
   } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
-    ctx_->set_arg(i, (uint8)d);
+    ctx_->set_arg(arg_id, (uint8)d);
   } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
-    ctx_->set_arg(i, (uint16)d);
+    ctx_->set_arg(arg_id, (uint16)d);
   } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
-    ctx_->set_arg(i, (uint32)d);
+    ctx_->set_arg(arg_id, (uint32)d);
   } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
-    ctx_->set_arg(i, (uint64)d);
+    ctx_->set_arg(arg_id, (uint64)d);
   } else {
     TI_NOT_IMPLEMENTED
   }
 }
 
-void Kernel::LaunchContextBuilder::set_arg_int(int i, int64 d) {
-  TI_ASSERT_INFO(
-      !kernel_->args[i].is_nparray,
-      "Assigning scalar value to numpy array argument is not allowed");
+void Kernel::LaunchContextBuilder::set_arg_int(int arg_id, int64 d) {
+  TI_ASSERT_INFO(!kernel_->args[arg_id].is_external_array,
+                 "Assigning scalar value to external(numpy) array argument is "
+                 "not allowed.");
 
   ActionRecorder::get_instance().record(
-      "set_kernel_arg_int64", {ActionArg("kernel_name", kernel_->name),
-                               ActionArg("arg_id", i), ActionArg("val", d)});
+      "set_kernel_arg_int64",
+      {ActionArg("kernel_name", kernel_->name), ActionArg("arg_id", arg_id),
+       ActionArg("val", d)});
 
-  auto dt = kernel_->args[i].dt;
+  auto dt = kernel_->args[arg_id].dt;
   if (dt->is_primitive(PrimitiveTypeID::i32)) {
-    ctx_->set_arg(i, (int32)d);
+    ctx_->set_arg(arg_id, (int32)d);
   } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
-    ctx_->set_arg(i, (int64)d);
+    ctx_->set_arg(arg_id, (int64)d);
   } else if (dt->is_primitive(PrimitiveTypeID::i8)) {
-    ctx_->set_arg(i, (int8)d);
+    ctx_->set_arg(arg_id, (int8)d);
   } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
-    ctx_->set_arg(i, (int16)d);
+    ctx_->set_arg(arg_id, (int16)d);
   } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
-    ctx_->set_arg(i, (uint8)d);
+    ctx_->set_arg(arg_id, (uint8)d);
   } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
-    ctx_->set_arg(i, (uint16)d);
+    ctx_->set_arg(arg_id, (uint16)d);
   } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
-    ctx_->set_arg(i, (uint32)d);
+    ctx_->set_arg(arg_id, (uint32)d);
   } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
-    ctx_->set_arg(i, (uint64)d);
+    ctx_->set_arg(arg_id, (uint64)d);
   } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
-    ctx_->set_arg(i, (float32)d);
+    ctx_->set_arg(arg_id, (float32)d);
   } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
-    ctx_->set_arg(i, (float64)d);
+    ctx_->set_arg(arg_id, (float64)d);
   } else {
     TI_INFO(dt->to_string());
     TI_NOT_IMPLEMENTED
@@ -244,33 +246,35 @@ void Kernel::LaunchContextBuilder::set_extra_arg_int(int i, int j, int32 d) {
   ctx_->extra_args[i][j] = d;
 }
 
-void Kernel::LaunchContextBuilder::set_arg_nparray(int i,
-                                                   uint64 ptr,
-                                                   uint64 size) {
-  TI_ASSERT_INFO(kernel_->args[i].is_nparray,
-                 "Assigning numpy array to scalar argument is not allowed");
+void Kernel::LaunchContextBuilder::set_arg_external_array(int arg_id,
+                                                          uint64 ptr,
+                                                          uint64 size) {
+  TI_ASSERT_INFO(
+      kernel_->args[arg_id].is_external_array,
+      "Assigning external(numpy) array to scalar argument is not allowed.");
 
   ActionRecorder::get_instance().record(
       "set_kernel_arg_ext_ptr",
-      {ActionArg("kernel_name", kernel_->name), ActionArg("arg_id", i),
+      {ActionArg("kernel_name", kernel_->name), ActionArg("arg_id", arg_id),
        ActionArg("address", fmt::format("0x{:x}", ptr)),
        ActionArg("array_size_in_bytes", (int64)size)});
 
-  kernel_->args[i].size = size;
-  ctx_->set_arg(i, ptr);
+  kernel_->args[arg_id].size = size;
+  ctx_->set_arg(arg_id, ptr);
 }
 
-void Kernel::LaunchContextBuilder::set_arg_raw(int i, uint64 d) {
-  TI_ASSERT_INFO(
-      !kernel_->args[i].is_nparray,
-      "Assigning scalar value to numpy array argument is not allowed");
+void Kernel::LaunchContextBuilder::set_arg_raw(int arg_id, uint64 d) {
+  TI_ASSERT_INFO(!kernel_->args[arg_id].is_external_array,
+                 "Assigning scalar value to external(numpy) array argument is "
+                 "not allowed.");
 
   if (!kernel_->is_evaluator) {
     ActionRecorder::get_instance().record(
-        "set_arg_raw", {ActionArg("kernel_name", kernel_->name),
-                        ActionArg("arg_id", i), ActionArg("val", (int64)d)});
+        "set_arg_raw",
+        {ActionArg("kernel_name", kernel_->name), ActionArg("arg_id", arg_id),
+         ActionArg("val", (int64)d)});
   }
-  ctx_->set_arg<uint64>(i, d);
+  ctx_->set_arg<uint64>(arg_id, d);
 }
 
 Context &Kernel::LaunchContextBuilder::get_context() {
@@ -337,8 +341,8 @@ void Kernel::set_arch(Arch arch) {
   this->arch = arch;
 }
 
-int Kernel::insert_arg(DataType dt, bool is_nparray) {
-  args.push_back(Arg{dt->get_compute_type(), is_nparray, /*size=*/0});
+int Kernel::insert_arg(DataType dt, bool is_external_array) {
+  args.push_back(Arg{dt->get_compute_type(), is_external_array, /*size=*/0});
   return args.size() - 1;
 }
 

@@ -1,4 +1,4 @@
-from taichi.core import util
+from taichi.core import ti_core as _ti_core
 from taichi.misc.util import config_from_dict
 
 
@@ -14,7 +14,7 @@ def _unit(unit_name):
             original_init = dummy_init
 
         def new_init(self, name, *args, **kwargs):
-            self.c = getattr(util.ti_core, 'create_' + unit_name)(name)
+            self.c = getattr(_ti_core, 'create_' + unit_name)(name)
             self.c.initialize(config_from_dict(kwargs))
             original_init(self, *args, **kwargs)
 

@@ -1828,7 +1828,7 @@ void CodeGenLLVM::visit(InternalFuncStmt *stmt) {
   create_call(stmt->func_name, {get_context()});
 }
 
-void CodeGenLLVM::visit(StackAllocaStmt *stmt) {
+void CodeGenLLVM::visit(AdStackAllocaStmt *stmt) {
   TI_ASSERT(stmt->width() == 1);
   auto type = llvm::ArrayType::get(llvm::Type::getInt8Ty(*llvm_context),
                                    stmt->size_in_bytes());
@@ -1838,12 +1838,12 @@ void CodeGenLLVM::visit(StackAllocaStmt *stmt) {
   call("stack_init", llvm_val[stmt]);
 }
 
-void CodeGenLLVM::visit(StackPopStmt *stmt) {
+void CodeGenLLVM::visit(AdStackPopStmt *stmt) {
   call("stack_pop", llvm_val[stmt->stack]);
 }
 
-void CodeGenLLVM::visit(StackPushStmt *stmt) {
-  auto stack = stmt->stack->as<StackAllocaStmt>();
+void CodeGenLLVM::visit(AdStackPushStmt *stmt) {
+  auto stack = stmt->stack->as<AdStackAllocaStmt>();
   call("stack_push", llvm_val[stack], tlctx->get_constant(stack->max_size),
        tlctx->get_constant(stack->element_size_in_bytes()));
   auto primal_ptr = call("stack_top_primal", llvm_val[stack],
@@ -1854,8 +1854,8 @@ void CodeGenLLVM::visit(StackPushStmt *stmt) {
   builder->CreateStore(llvm_val[stmt->v], primal_ptr);
 }
 
-void CodeGenLLVM::visit(StackLoadTopStmt *stmt) {
-  auto stack = stmt->stack->as<StackAllocaStmt>();
+void CodeGenLLVM::visit(AdStackLoadTopStmt *stmt) {
+  auto stack = stmt->stack->as<AdStackAllocaStmt>();
   auto primal_ptr = call("stack_top_primal", llvm_val[stack],
                          tlctx->get_constant(stack->element_size_in_bytes()));
   primal_ptr = builder->CreateBitCast(
@@ -1864,8 +1864,8 @@ void CodeGenLLVM::visit(StackLoadTopStmt *stmt) {
   llvm_val[stmt] = builder->CreateLoad(primal_ptr);
 }
 
-void CodeGenLLVM::visit(StackLoadTopAdjStmt *stmt) {
-  auto stack = stmt->stack->as<StackAllocaStmt>();
+void CodeGenLLVM::visit(AdStackLoadTopAdjStmt *stmt) {
+  auto stack = stmt->stack->as<AdStackAllocaStmt>();
   auto adjoint = call("stack_top_adjoint", llvm_val[stack],
                       tlctx->get_constant(stack->element_size_in_bytes()));
   adjoint = builder->CreateBitCast(
@@ -1873,8 +1873,8 @@ void CodeGenLLVM::visit(StackLoadTopAdjStmt *stmt) {
   llvm_val[stmt] = builder->CreateLoad(adjoint);
 }
 
-void CodeGenLLVM::visit(StackAccAdjointStmt *stmt) {
-  auto stack = stmt->stack->as<StackAllocaStmt>();
+void CodeGenLLVM::visit(AdStackAccAdjointStmt *stmt) {
+  auto stack = stmt->stack->as<AdStackAllocaStmt>();
   auto adjoint_ptr = call("stack_top_adjoint", llvm_val[stack],
                           tlctx->get_constant(stack->element_size_in_bytes()));
   adjoint_ptr = builder->CreateBitCast(

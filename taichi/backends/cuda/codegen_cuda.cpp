@@ -59,7 +59,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       // want to modify.
       Kernel::LaunchContextBuilder ctx_builder(kernel, &context);
       for (int i = 0; i < (int)args.size(); i++) {
-        if (args[i].is_nparray) {
+        if (args[i].is_external_array) {
           has_buffer = true;
           // replace host buffer with device buffer
           host_buffers[i] = context.get_arg<void *>(i);
@@ -71,8 +71,8 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
             CUDADriver::get_instance().memcpy_host_to_device(
                 (void *)device_buffers[i], host_buffers[i], args[i].size);
           }
-          ctx_builder.set_arg_nparray(i, (uint64)device_buffers[i],
-                                      args[i].size);
+          ctx_builder.set_arg_external_array(i, (uint64)device_buffers[i],
+                                             args[i].size);
         }
       }
       if (has_buffer) {
@@ -90,7 +90,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         CUDADriver::get_instance().stream_synchronize(nullptr);
       }
       for (int i = 0; i < (int)args.size(); i++) {
-        if (args[i].is_nparray && args[i].size > 0) {
+        if (args[i].is_external_array && args[i].size > 0) {
           CUDADriver::get_instance().memcpy_device_to_host(
               host_buffers[i], (void *)device_buffers[i], args[i].size);
           CUDADriver::get_instance().mem_free((void *)device_buffers[i]);

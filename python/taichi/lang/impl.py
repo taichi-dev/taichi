@@ -10,7 +10,7 @@ from taichi.lang.snode import SNode
 from taichi.lang.tape import TapeImpl
 from taichi.lang.util import (cook_dtype, is_taichi_class, python_scope,
                               taichi_scope)
-from taichi.misc.util import deprecated, get_traceback
+from taichi.misc.util import deprecated, get_traceback, warning
 
 import taichi as ti
 
@@ -448,7 +448,7 @@ AOS = Layout(soa=False)
 @python_scope
 def layout(func):
     assert not pytaichi.materialized, "All layout must be specified before the first kernel launch / data access."
-    ti.warning(
+    warning(
         f"@ti.layout will be deprecated in the future, use ti.root directly to specify data layout anytime before the data structure materializes.",
         PendingDeprecationWarning,
         stacklevel=3)

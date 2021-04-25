@@ -446,34 +446,34 @@ class TypeCheck : public IRVisitor {
     stmt->ret_type = PrimitiveType::i32;
   }
 
-  void visit(StackAllocaStmt *stmt) {
+  void visit(AdStackAllocaStmt *stmt) {
     stmt->ret_type = stmt->dt;
     // ret_type stands for its element type.
     stmt->ret_type.set_is_pointer(false);
   }
 
-  void visit(StackLoadTopStmt *stmt) {
+  void visit(AdStackLoadTopStmt *stmt) {
     stmt->ret_type = stmt->stack->ret_type;
     stmt->ret_type.set_is_pointer(false);
   }
 
-  void visit(StackLoadTopAdjStmt *stmt) {
+  void visit(AdStackLoadTopAdjStmt *stmt) {
     stmt->ret_type = stmt->stack->ret_type;
     stmt->ret_type.set_is_pointer(false);
   }
 
-  void visit(StackPushStmt *stmt) {
+  void visit(AdStackPushStmt *stmt) {
     stmt->ret_type = stmt->stack->ret_type;
     stmt->ret_type.set_is_pointer(false);
     TI_ASSERT(stmt->ret_type == stmt->v->ret_type);
   }
 
-  void visit(StackPopStmt *stmt) {
+  void visit(AdStackPopStmt *stmt) {
     stmt->ret_type = stmt->stack->ret_type;
     stmt->ret_type.set_is_pointer(false);
   }
 
-  void visit(StackAccAdjointStmt *stmt) {
+  void visit(AdStackAccAdjointStmt *stmt) {
     stmt->ret_type = stmt->stack->ret_type;
     stmt->ret_type.set_is_pointer(false);
     TI_ASSERT(stmt->ret_type == stmt->v->ret_type);

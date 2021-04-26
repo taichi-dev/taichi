@@ -88,7 +88,8 @@ VkResult create_debug_utils_messenger_ext(
 }
 
 void destroy_debug_utils_messenger_ext(
-    VkInstance instance, VkDebugUtilsMessengerEXT debug_messenger,
+    VkInstance instance,
+    VkDebugUtilsMessengerEXT debug_messenger,
     const VkAllocationCallbacks *p_allocator) {
   auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
       instance, "vkDestroyDebugUtilsMessengerEXT");
@@ -508,8 +509,11 @@ VkCommandBuffer VulkanCommandBuilder::build() {
 }
 
 VkCommandBuffer record_copy_buffer_command(
-    const VulkanDevice *device, VkBuffer src_buffer, VkBuffer dst_buffer,
-    VkDeviceSize size, VulkanCopyBufferDirection direction) {
+    const VulkanDevice *device,
+    VkBuffer src_buffer,
+    VkBuffer dst_buffer,
+    VkDeviceSize size,
+    VulkanCopyBufferDirection direction) {
   VkCommandBuffer command{VK_NULL_HANDLE};
   VkCommandBufferAllocateInfo alloc_info{};
   alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -552,7 +556,8 @@ VkCommandBuffer record_copy_buffer_command(
   return command;
 }
 
-VulkanStream::VulkanStream(const VulkanDevice *device) : device_(device) {}
+VulkanStream::VulkanStream(const VulkanDevice *device) : device_(device) {
+}
 
 void VulkanStream::launch(VkCommandBuffer command) {
   VkSubmitInfo submit_info{};
@@ -572,7 +577,8 @@ void VulkanStream::synchronize() {
   // is no clear boundary (i.e. frame) for us to use a VkFence. TVM accumulates
   // all the commands into a single buffer, then submits it all at once upon
   // synchronization. Not sure how efficient that model is.
-  vkQueueWaitIdle(device_->compute_queue()); }
+  vkQueueWaitIdle(device_->compute_queue());
+}
 
 }  // namespace vulkan
 }  // namespace lang

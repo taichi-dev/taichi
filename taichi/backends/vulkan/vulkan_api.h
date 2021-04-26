@@ -17,7 +17,8 @@ struct SpirvCodeView {
   SpirvCodeView() = default;
 
   explicit SpirvCodeView(const std::vector<uint32_t> &code)
-      : data(code.data()), size(code.size() * sizeof(uint32_t)) {}
+      : data(code.data()), size(code.size() * sizeof(uint32_t)) {
+  }
 };
 
 struct VulkanQueueFamilyIndices {
@@ -27,7 +28,9 @@ struct VulkanQueueFamilyIndices {
   // TRANSFER-dedicated queue family.
   // https://vulkan-tutorial.com/Vertex_buffers/Staging_buffer#page_Transfer-queue
 
-  bool is_complete() const { return compute_family.has_value(); }
+  bool is_complete() const {
+    return compute_family.has_value();
+  }
 };
 
 // Many classes here are inspired by TVM's runtime
@@ -45,13 +48,21 @@ class VulkanDevice {
   explicit VulkanDevice(const Params &params);
   ~VulkanDevice();
 
-  VkPhysicalDevice physical_device() const { return physical_device_; }
-  VkDevice device() const { return device_; }
+  VkPhysicalDevice physical_device() const {
+    return physical_device_;
+  }
+  VkDevice device() const {
+    return device_;
+  }
   const VulkanQueueFamilyIndices &queue_family_indices() const {
     return queue_family_indices_;
   }
-  VkQueue compute_queue() const { return compute_queue_; }
-  VkCommandPool command_pool() const { return command_pool_; }
+  VkQueue compute_queue() const {
+    return compute_queue_;
+  }
+  VkCommandPool command_pool() const {
+    return command_pool_;
+  }
 
  private:
   void create_instance(const Params &params);
@@ -94,9 +105,15 @@ class VulkanPipeline {
   explicit VulkanPipeline(const Params &params);
   ~VulkanPipeline();
 
-  VkPipelineLayout pipeline_layout() const { return pipeline_layout_; }
-  VkPipeline pipeline() const { return pipeline_; }
-  const VkDescriptorSet &descriptor_set() const { return descriptor_set_; }
+  VkPipelineLayout pipeline_layout() const {
+    return pipeline_layout_;
+  }
+  VkPipeline pipeline() const {
+    return pipeline_;
+  }
+  const VkDescriptorSet &descriptor_set() const {
+    return descriptor_set_;
+  }
 
  private:
   void create_descriptor_set_layout(const Params &params);

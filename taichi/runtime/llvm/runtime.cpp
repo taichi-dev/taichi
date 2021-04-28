@@ -885,8 +885,8 @@ void runtime_initialize(
   runtime->num_rand_states = num_rand_states;
   runtime->rand_states = (RandState *)runtime->allocate_aligned(
       sizeof(RandState) * runtime->num_rand_states, taichi_page_size);
-  for (int i = starting_rand_state; i < runtime->num_rand_states; i++)
-    initialize_rand_state(&runtime->rand_states[i], i);
+  for (int i = 0; i < runtime->num_rand_states; i++)
+    initialize_rand_state(&runtime->rand_states[i], starting_rand_state + i);
 }
 
 void runtime_initialize2(LLVMRuntime *runtime, int root_id, int num_snodes) {

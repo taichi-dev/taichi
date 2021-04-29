@@ -90,7 +90,7 @@ class BLSAnalysis : public BasicStmtVisitor {
         std::vector<int> index(num_indices, 0);
         std::function<void(int)> visit = [&](int dimension) {
           if (dimension == num_indices) {
-            pads->access(snode, index, flag);
+            pads->access(snode, coeffs, index, flag);
             return;
           }
           for (int i = index_bounds[dimension].first + offsets[dimension].first;

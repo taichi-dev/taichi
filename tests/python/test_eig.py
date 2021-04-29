@@ -12,7 +12,9 @@ def _eigen_vector_equal(v1, v2, tol):
         try:
             np.testing.assert_allclose(v1, v2, atol=tol, rtol=tol)
         except AssertionError:
-            assert np.allclose(v1, -v2, atol=tol, rtol=tol) or np.allclose(v1, 1.j * v2, atol=tol, rtol=tol) or np.allclose(v1, -1.j * v2, atol=tol, rtol=tol)
+            assert np.allclose(v1, -v2, atol=tol, rtol=tol) or np.allclose(
+                v1, 1.j * v2, atol=tol, rtol=tol) or np.allclose(
+                    v1, -1.j * v2, atol=tol, rtol=tol)
 
 
 def _test_eig2x2_real(dt):

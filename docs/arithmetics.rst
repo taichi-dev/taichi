@@ -123,6 +123,11 @@ Random number generator
 
 .. function:: ti.random(dtype = float)
 
+    Generates a uniform random float or integer number.
+
+.. function:: ti.randn(dtype = None)
+
+    Generates a random floating point number from the standard normal distribution.
 
 Element-wise arithmetics for vectors and matrices
 -------------------------------------------------

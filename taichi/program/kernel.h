@@ -27,13 +27,13 @@ class Kernel {
 
   struct Arg {
     DataType dt;
-    bool is_nparray;
+    bool is_external_array;
     std::size_t size;
 
     Arg(DataType dt = PrimitiveType::unknown,
-        bool is_nparray = false,
+        bool is_external_array = false,
         std::size_t size = 0)
-        : dt(dt), is_nparray(is_nparray), size(size) {
+        : dt(dt), is_external_array(is_external_array), size(size) {
     }
   };
 
@@ -61,17 +61,17 @@ class Kernel {
     LaunchContextBuilder(const LaunchContextBuilder &) = delete;
     LaunchContextBuilder &operator=(const LaunchContextBuilder &) = delete;
 
-    void set_arg_float(int i, float64 d);
+    void set_arg_float(int arg_id, float64 d);
 
-    void set_arg_int(int i, int64 d);
+    void set_arg_int(int arg_id, int64 d);
 
     void set_extra_arg_int(int i, int j, int32 d);
 
-    void set_arg_nparray(int i, uint64 ptr, uint64 size);
+    void set_arg_external_array(int arg_id, uint64 ptr, uint64 size);
 
-    // Sets the i-th arg in the context to the bits stored in |d|. This ignores
-    // the underlying kernel's i-th arg type.
-    void set_arg_raw(int i, uint64 d);
+    // Sets the |arg_id|-th arg in the context to the bits stored in |d|.
+    // This ignores the underlying kernel's |arg_id|-th arg type.
+    void set_arg_raw(int arg_id, uint64 d);
 
     Context &get_context();
 
@@ -103,7 +103,7 @@ class Kernel {
 
   LaunchContextBuilder make_launch_context();
 
-  int insert_arg(DataType dt, bool is_nparray);
+  int insert_arg(DataType dt, bool is_external_array);
 
   int insert_ret(DataType dt);
 

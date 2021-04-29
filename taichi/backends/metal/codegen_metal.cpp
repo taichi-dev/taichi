@@ -739,7 +739,7 @@ class KernelCodegen : public IRVisitor {
     emit("}}");
   }
 
-  void visit(StackAllocaStmt *stmt) override {
+  void visit(AdStackAllocaStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
 
     const auto &var_name = stmt->raw_name();
@@ -747,12 +747,12 @@ class KernelCodegen : public IRVisitor {
     emit("mtl_ad_stack_init({});", var_name);
   }
 
-  void visit(StackPopStmt *stmt) override {
+  void visit(AdStackPopStmt *stmt) override {
     emit("mtl_ad_stack_pop({});", stmt->stack->raw_name());
   }
 
-  void visit(StackPushStmt *stmt) override {
-    auto *stack = stmt->stack->as<StackAllocaStmt>();
+  void visit(AdStackPushStmt *stmt) override {
+    auto *stack = stmt->stack->as<AdStackAllocaStmt>();
     const auto &stack_name = stack->raw_name();
     const auto elem_size = stack->element_size_in_bytes();
     emit("mtl_ad_stack_push({}, {});", stack_name, elem_size);
@@ -765,8 +765,8 @@ class KernelCodegen : public IRVisitor {
     emit("*{} = {};", primal_name, stmt->v->raw_name());
   }
 
-  void visit(StackLoadTopStmt *stmt) override {
-    auto *stack = stmt->stack->as<StackAllocaStmt>();
+  void visit(AdStackLoadTopStmt *stmt) override {
+    auto *stack = stmt->stack->as<AdStackAllocaStmt>();
     const auto primal_name = stmt->raw_name() + "_primal_";
     emit(
         "thread auto* {} = reinterpret_cast<thread "
@@ -776,8 +776,8 @@ class KernelCodegen : public IRVisitor {
     emit("const auto {} = *{};", stmt->raw_name(), primal_name);
   }
 
-  void visit(StackLoadTopAdjStmt *stmt) override {
-    auto *stack = stmt->stack->as<StackAllocaStmt>();
+  void visit(AdStackLoadTopAdjStmt *stmt) override {
+    auto *stack = stmt->stack->as<AdStackAllocaStmt>();
     const auto adjoint_name = stmt->raw_name() + "_adjoint_";
     emit(
         "thread auto* {} = reinterpret_cast<thread "
@@ -787,8 +787,8 @@ class KernelCodegen : public IRVisitor {
     emit("const auto {} = *{};", stmt->raw_name(), adjoint_name);
   }
 
-  void visit(StackAccAdjointStmt *stmt) override {
-    auto *stack = stmt->stack->as<StackAllocaStmt>();
+  void visit(AdStackAccAdjointStmt *stmt) override {
+    auto *stack = stmt->stack->as<AdStackAllocaStmt>();
     const auto adjoint_name = stmt->raw_name() + "_adjoint_";
     emit(
         "thread auto* {} = reinterpret_cast<thread "

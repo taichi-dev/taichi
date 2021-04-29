@@ -107,9 +107,9 @@ TEST(IRBuilder, ExternalPtr) {
   builder.create_global_store(a2ptr, a0plusa2);  // a[2] = a[0] + a[2]
   auto block = builder.extract_ir();
   auto ker = std::make_unique<Kernel>(prog, std::move(block));
-  ker->insert_arg(get_data_type<int>(), /*is_nparray=*/true);
+  ker->insert_arg(get_data_type<int>(), /*is_external_array=*/true);
   auto launch_ctx = ker->make_launch_context();
-  launch_ctx.set_arg_nparray(0, (uint64)array.get(), size);
+  launch_ctx.set_arg_external_array(/*arg_id=*/0, (uint64)array.get(), size);
   (*ker)(launch_ctx);
   EXPECT_EQ(array[0], 2);
   EXPECT_EQ(array[1], 1);

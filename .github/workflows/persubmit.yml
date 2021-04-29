@@ -3,92 +3,30 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+
 jobs:
-  build_and_test_cpu_required:
-    # This job will be required to pass before merging to master branch.
-    name: Required Build and Test (CPU)
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip ci') }}
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            python: 3.6
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python }}
-
-      - name: Download Pre-Built LLVM 10.0.0
-        run: |
-          python misc/ci_download.py
-          mkdir taichi-llvm
-          cd taichi-llvm
-          unzip ../taichi-llvm.zip
-        env:
-          CI_PLATFORM: ${{ matrix.os }}
-
-      - name: Build
-        run: |
-          export TAICHI_REPO_DIR=`pwd`
-          export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
-          export CXX=clang++
-          python misc/ci_setup.py ci
-        env:
-          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON
-
-      - name: Test
-        run: |
-          export TAICHI_REPO_DIR=`pwd`
-          export PATH=$TAICHI_REPO_DIR/bin:$PATH
-          export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
-          export PYTHONPATH=$TAICHI_REPO_DIR/python
-          python examples/laplace.py
-          ti diagnose
-          ./build/taichi_cpp_tests
-          ti test -vr2 -t2
-
   build_and_test_cpu:
-    name: Build and Test (CPU)
+    name: Build and Test (Apple M1)
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip ci') && github.event.sender.login != 'taichi-gardener' }}
     strategy:
       matrix:
         include:
           - os: macos-latest
-            python: 3.7
+            python: 3.8
             with_cc: OFF
             with_cpp_tests: ON
-          - os: ubuntu-latest
-            python: 3.9
-            with_cc: OFF
-            with_cpp_tests: OFF
-          - os: ubuntu-latest
-            python: 3.8
-            with_cc: ON
-            with_cpp_tests: OFF
-    runs-on: ${{ matrix.os }}
+    runs-on: m1
+    defaults:
+      run:
+        shell: "/usr/bin/arch -arch arm64e /bin/bash {0}"
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python }}
-
-      - name: Download Pre-Built LLVM 10.0.0
-        run: |
-          python misc/ci_download.py
-          mkdir taichi-llvm
-          cd taichi-llvm
-          unzip ../taichi-llvm.zip
-        env:
-          CI_PLATFORM: ${{ matrix.os }}
-
       - name: Build
         run: |
           export TAICHI_REPO_DIR=`pwd`
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
           export CXX=clang++
-          python misc/ci_setup.py ci
+          python3 misc/ci_setup.py ci
         env:
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=${{ matrix.with_cc }} -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
 
@@ -98,104 +36,9 @@ jobs:
           export PATH=$TAICHI_REPO_DIR/bin:$PATH
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
           export PYTHONPATH=$TAICHI_REPO_DIR/python
-          python examples/laplace.py
+          python3 examples/laplace.py
           ti diagnose
           [ "$RUN_CPP_TESTS" = "ON" ] && ./build/taichi_cpp_tests
           ti test -vr2 -t2
         env:
           RUN_CPP_TESTS: ${{ matrix.with_cpp_tests }}
-
-  build_and_test_gpu:
-    name: Build and Test (GPU)
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip ci') && github.event.sender.login != 'taichi-gardener' }}
-    runs-on: [zhen]
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Build
-        run: |
-          git --version
-          export TAICHI_REPO_DIR=`pwd`
-          export PATH=/home/github/taichi-llvm/bin/:$PATH
-          export CXX=clang++-8
-          export PYTHON=/usr/bin/python3.7
-          $PYTHON misc/ci_setup.py ci
-        env:
-          CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF
-
-      - name: Test
-        run: |
-          export PYTHON=/usr/bin/python3.7
-          export TAICHI_REPO_DIR=`pwd`
-          export PATH=$TAICHI_REPO_DIR/bin:$PATH
-          export PATH=/home/github/taichi-llvm/bin/:$PATH
-          export PYTHONPATH=$TAICHI_REPO_DIR/python
-          export DISPLAY=:1
-          glewinfo
-          $PYTHON examples/laplace.py
-          ti diagnose
-          ti test -vr2 -t2
-
-  check_previous_run:
-    name: Checks the Workflow Run of the Previous Commit
-    runs-on: ubuntu-latest
-    if: ${{ contains(github.event.pull_request.labels.*.name, 'skip ci') || github.event.sender.login == 'taichi-gardener' }}
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
-        with:
-          python-version: 3.8
-      - name: Check the previous run
-        env:
-          PR: ${{ github.event.pull_request.number }}
-          SHA: ${{ github.event.pull_request.head.sha }}
-          # https://docs.github.com/en/actions/configuring-and-managing-workflows/authenticating-with-the-github_token
-          # https://docs.github.com/en/actions/configuring-and-managing-workflows/creating-and-storing-encrypted-secrets
-          # Do not leak the secret
-          OAUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          python misc/ci_check_previous_run.py --pr "${PR}" --sha "${SHA}" --token "${OAUTH_TOKEN}"
-
-  code_format:
-    name: Code Format
-    runs-on: ubuntu-latest
-    # This job will be required to pass before merging to master branch.
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.8
-      - name: Check code format
-        run: |
-          git fetch https://github.com/taichi-dev/taichi.git refs/heads/master
-          git reset FETCH_HEAD
-          git add .
-          git config user.email "taichigardener@gmail.com"
-          git config user.name "Taichi Gardener"
-          git commit -m "fake squash commit" || true
-          git checkout -b _last_squash
-          git checkout -b _enforced_format
-          git reset FETCH_HEAD
-          python3 -m pip install --user yapf gitpython colorama
-          python3 python/taichi/code_format.py
-          git add .
-          git commit -m "enforce code format" || true
-          # exit with 1 if there were differences:
-          git diff _last_squash _enforced_format --exit-code
-
-  title_format:
-    name: Check PR Title
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
-        with:
-          python-version: 3.8
-
-      - name: Run PR Title Checker
-        run: |
-          pip install semver GitPython
-          python misc/ci_check_pr_title.py "$PR_TITLE"
-        env:
-          PR_TITLE: ${{ github.event.pull_request.title }}

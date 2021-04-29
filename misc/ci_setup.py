@@ -178,7 +178,6 @@ class Installer:
             "--user",
             "colorama",
             "numpy",
-            "Pillow",
             "scipy",
             "pybind11",
             "GitPython",

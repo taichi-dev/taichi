@@ -289,6 +289,13 @@ def svd(A, dt=None):
     return svd(A, dt)
 
 
+def eig(A, dt=None):
+    if dt is None:
+        dt = impl.get_runtime().default_fp
+    from .linalg import eig
+    return eig(A, dt)
+
+
 def randn(dt=None):
     if dt is None:
         dt = impl.get_runtime().default_fp

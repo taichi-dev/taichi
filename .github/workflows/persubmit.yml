@@ -105,10 +105,10 @@ jobs:
         env:
           RUN_CPP_TESTS: ${{ matrix.with_cpp_tests }}
 
-  build_and_test_gpu:
+  build_and_test_gpu_linux:
     name: Build and Test (GPU)
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip ci') && github.event.sender.login != 'taichi-gardener' }}
-    runs-on: [zhen]
+    runs-on: [self-hosted, cuda, cn]
     steps:
       - uses: actions/checkout@v2
 
@@ -118,14 +118,14 @@ jobs:
           export TAICHI_REPO_DIR=`pwd`
           export PATH=/home/github/taichi-llvm/bin/:$PATH
           export CXX=clang++-8
-          export PYTHON=/usr/bin/python3.7
+          export PYTHON=/usr/bin/python3
           $PYTHON misc/ci_setup.py ci
         env:
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=OFF
 
       - name: Test
         run: |
-          export PYTHON=/usr/bin/python3.7
+          export PYTHON=/usr/bin/python3
           export TAICHI_REPO_DIR=`pwd`
           export PATH=$TAICHI_REPO_DIR/bin:$PATH
           export PATH=/home/github/taichi-llvm/bin/:$PATH

@@ -10,6 +10,7 @@ Matrices
 - ``A.transpose()``
 - ``R, S = ti.polar_decompose(A, ti.f32)``
 - ``U, sigma, V = ti.svd(A, ti.f32)`` (Note that ``sigma`` is a ``3x3`` diagonal matrix)
+- ``eigenvalues, eigenvectors = ti.eig(A, ti.f32)`` (Note that ``eigenvalues`` and ``eigenvectors`` are stored in the form of complex numbers)
 - ``any(A)`` (Taichi-scope only)
 - ``all(A)`` (Taichi-scope only)
 

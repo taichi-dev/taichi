@@ -548,6 +548,7 @@ def deactivate(l, indices):
 def length(l, indices):
     return Expr(_ti_core.insert_len(l.snode.ptr, make_expr_group(indices)))
 
+
 def rescale_index(a, b, I):
     assert isinstance(a, Expr) and a.is_global(), \
             f"first arguement must be a field"

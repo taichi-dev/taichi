@@ -116,4 +116,13 @@ class Kernel {
   void account_for_offloaded(OffloadedStmt *stmt);
 };
 
+class Function {
+ public:
+  std::string funcid;
+  std::unique_ptr<IRNode> ir;
+
+  Function(const std::string &funcid) : funcid(funcid) {
+  }
+};
+
 TLANG_NAMESPACE_END

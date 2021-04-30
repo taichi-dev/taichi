@@ -96,6 +96,7 @@ class Func:
         return ret
 
     def do_compile(self):
+        print('do_compile', self.func.__name__)
         src = _remove_indent(oinspect.getsource(self.func))
         tree = ast.parse(src)
 
@@ -115,6 +116,11 @@ class Func:
                     filename=oinspect.getsourcefile(self.func),
                     mode='exec'), global_vars, local_vars)
         self.compiled = local_vars[self.func.__name__]
+
+        taichi_function = _ti_core.create_function(self.func.__name__)
+
+        # TODO: insert args
+        # TODO: cache (self.compiled_functions)
 
     def extract_arguments(self):
         sig = inspect.signature(self.func)

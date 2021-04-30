@@ -162,6 +162,22 @@ class FrontendFuncDefStmt : public Stmt {
   TI_DEFINE_ACCEPT
 };
 
+class FrontendFuncCallStmt : public Stmt {
+ public:
+  std::string funcid;
+  ExprGroup args;
+
+  FrontendFuncCallStmt(const std::string &funcid, const ExprGroup &args)
+      : funcid(funcid), args(args) {
+  }
+
+  bool is_container_statement() const override {
+    return false;
+  }
+
+  TI_DEFINE_ACCEPT
+};
+
 class FrontendBreakStmt : public Stmt {
  public:
   FrontendBreakStmt() {

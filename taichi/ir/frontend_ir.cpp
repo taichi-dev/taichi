@@ -168,6 +168,20 @@ void ExternalTensorExpression::flatten(FlattenContext *ctx) {
 }
 
 void GlobalVariableExpression::flatten(FlattenContext *ctx) {
+  /*
+   * TODO: how to support the parameter |x| in this case?
+x = ti.field(ti.i32)
+ti.root.dense(ti.i, 4).place(x)
+
+@ti.func
+def foo(x: ti.template()):
+    print('foo called!')
+    return x[1]
+
+@ti.kernel
+def run():
+    foo(x)  # we need to support a statement for |x| here
+   */
   TI_ASSERT(snode->num_active_indices == 0);
   auto ptr = Stmt::make<GlobalPtrStmt>(LaneAttribute<SNode *>(snode),
                                        std::vector<Stmt *>());

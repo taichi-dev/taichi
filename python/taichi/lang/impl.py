@@ -186,7 +186,12 @@ def func_call_with_check(func, *args, **kwargs):
             UserWarning,
             stacklevel=2)
 
-    return func(*args, **kwargs)
+    if kwargs:
+        return func(*args, **kwargs)
+    else:
+        print(f'Experimental real function support triggered for function \"{func.__name__}\".')
+        args = make_expr_group(args)
+        return _ti_core.func_call(func.__name__, args)
 
 
 class PyTaichi:

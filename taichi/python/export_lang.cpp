@@ -489,10 +489,8 @@ void export_lang(py::module &m) {
 
   m.def("end_func", [&](const std::string &funcid) { scope_stack.pop_back(); });
 
-  m.def("func_call", [&](const std::string &funcid) {
-    auto func = Stmt::make<FuncCallStmt>(
-        funcid);  // TODO: use FuncCallExpr with return values & args
-    current_ast_builder().insert(std::move(func));
+  m.def("func_call", [&](const std::string &funcid, const ExprGroup &args) {
+    current_ast_builder().insert(Stmt::make<FrontendFuncCallStmt>(funcid, args));
   });
 
   m.def("layout", layout);
@@ -676,6 +674,10 @@ void export_lang(py::module &m) {
         [&](std::string name, bool grad) -> Program::KernelProxy {
           return get_current_program().kernel(name, grad);
         });
+
+  m.def("create_function", [&](const std::string &name) {
+    return get_current_program().create_function(name);
+  });
 
   m.def("create_print",
         [&](std::vector<std::variant<Expr, std::string>> contents) {

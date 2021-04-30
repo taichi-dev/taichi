@@ -56,7 +56,7 @@ class IRPrinter : public IRVisitor {
   }
 
   template <typename... Args>
-  void print(std::string f, Args &&... args) {
+  void print(std::string f, Args &&...args) {
     print_raw(fmt::format(f, std::forward<Args>(args)...));
   }
 
@@ -279,7 +279,17 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(FuncCallStmt *stmt) override {
-    print("{}{} = call \"{}\"", stmt->type_hint(), stmt->name(), stmt->funcid);
+    std::vector<std::string> args;
+    for (const auto &arg : stmt->args) {
+      args.push_back(arg->name());
+    }
+    print("{}{} = call \"{}\", args = {{{}}}", stmt->type_hint(), stmt->name(),
+          stmt->funcid, fmt::join(args, ", "));
+  }
+
+  void visit(FrontendFuncCallStmt *stmt) override {
+    print("{}{} = call \"{}\", args = {{{}}}", stmt->type_hint(), stmt->name(),
+          stmt->funcid, stmt->args.serialize());
   }
 
   void visit(FrontendFuncDefStmt *stmt) override {

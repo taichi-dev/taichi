@@ -100,6 +100,7 @@ class Program {
   std::unique_ptr<AsyncEngine> async_engine;
 
   std::vector<std::unique_ptr<Kernel>> kernels;
+  std::vector<std::unique_ptr<Function>> functions;
 
   std::unique_ptr<KernelProfilerBase> profiler;
 
@@ -187,6 +188,11 @@ class Program {
   }
 
   void end_function_definition() {
+  }
+
+  Function *create_function(const std::string &name) {
+    functions.emplace_back(std::make_unique<Function>(name));
+    return functions.back().get();
   }
 
   // TODO: This function is doing two things: 1) compiling CHI IR, and 2)

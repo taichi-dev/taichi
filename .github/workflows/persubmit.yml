@@ -108,7 +108,7 @@ jobs:
   build_and_test_gpu_linux:
     name: Build and Test (GPU)
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip ci') && github.event.sender.login != 'taichi-gardener' }}
-    runs-on: [self-hosted, cuda]
+    runs-on: [self-hosted, cuda, cn]
     steps:
       - uses: actions/checkout@v2
 

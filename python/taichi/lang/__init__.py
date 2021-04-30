@@ -303,7 +303,7 @@ def eig(A, dt=None):
     -------
     eigenvalues: ti.Matrix(n, 2)
         The eigenvalues in complex form. Each row stores one eigenvalue. The first number
-        of the eigenvalue represents the real part and the second number represents the 
+        of the eigenvalue represents the real part and the second number represents the
         imaginary part.
     eigenvectors: ti.Matrix(n*2, n)
         The eigenvectors in complex form. Each column stores one eigenvector. Each eigenvector

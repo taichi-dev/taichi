@@ -294,7 +294,7 @@ def eig(A, dt=None):
 
     Parameters
     ----------
-    A: ti.Matrix(n, 2)
+    A: ti.Matrix(n, n)
         2D Matrix for which the eigenvalues and right eigenvectors will be computed.
     dt: Optional[DataType]
         The datatype for the eigenvalues and right eigenvectors

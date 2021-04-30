@@ -290,10 +290,32 @@ def svd(A, dt=None):
 
 
 def eig(A, dt=None):
+    """Compute the eigenvalues and right eigenvectors of a real matrix.
+
+    Parameters
+    ----------
+    A: ti.Matrix(n, 2)
+        2D Matrix for which the eigenvalues and right eigenvectors will be computed.
+    dt: Optional[DataType]
+        The datatype for the eigenvalues and right eigenvectors
+
+    Returns
+    -------
+    eigenvalues: ti.Matrix(n, 2)
+        The eigenvalues in complex form. Each row stores one eigenvalue. The first number
+        of the eigenvalue represents the real part and the second number represents the 
+        imaginary part.
+    eigenvectors: ti.Matrix(n*2, n)
+        The eigenvectors in complex form. Each column stores one eigenvector. Each eigenvector
+        consists of n entries, each of which is represented by two numbers for its real part
+        and imaginary part.
+    """
     if dt is None:
         dt = impl.get_runtime().default_fp
-    from .linalg import eig
-    return eig(A, dt)
+    from taichi.lang import linalg
+    if A.n == 2:
+        return linalg.eig2x2(A, dt)
+    raise Exception("Eigen solver only supports 2D matrices.")
 
 
 def randn(dt=None):

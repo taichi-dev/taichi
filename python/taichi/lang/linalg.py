@@ -142,12 +142,3 @@ def polar_decompose(A, dt):
     else:
         raise Exception(
             "Polar decomposition only supports 2D and 3D matrices.")
-
-
-@ti.func
-def eig(A, dt):
-    if ti.static(A.n == 2):
-        ret = eig2x2(A, dt)
-        return ret
-    else:
-        raise Exception("Eigen solver only supports 2D matrices.")

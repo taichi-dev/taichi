@@ -46,6 +46,7 @@ struct CompileConfig {
   int saturating_grid_dim;
   int max_block_dim;
   int cpu_max_num_threads;
+  int random_seed;
 
   // LLVM backend options:
   bool print_struct_llvm_ir;

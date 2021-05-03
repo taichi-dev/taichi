@@ -550,6 +550,23 @@ def length(l, indices):
 
 
 def rescale_index(a, b, I):
+    """Rescales the index 'I' of field 'a' the match the shape of field 'b'
+
+    Parameters
+    ----------
+    a: ti.field(), ti.Vector.field, ti.Matrix.field()
+        input taichi field
+    b: ti.field(), ti.Vector.field, ti.Matrix.field()
+        output taichi field
+    I: ti.Vector()
+        grouped loop index
+
+    Returns
+    -------
+    Ib: ti.Vector()
+        rescaled grouped loop index
+
+    """
     assert isinstance(a, Expr) and a.is_global(), \
             f"first arguement must be a field"
     assert isinstance(b, Expr) and b.is_global(), \
@@ -560,11 +577,7 @@ def rescale_index(a, b, I):
     Ib = I.copy()
     for n in range(len(b.shape)):
         if a.shape[n] > b.shape[n]:
-            assert (a.shape[n] // b.shape[n]) % 2 == 0, \
-                    f"field shapes must be related by a factor of 2"
             Ib.entries[n] = I.entries[n] // (a.shape[n] // b.shape[n])
         if a.shape[n] < b.shape[n]:
-            assert (b.shape[n] // a.shape[n]) % 2 == 0, \
-                    f"field shapes must be related by a factor of 2"
             Ib.entries[n] = I.entries[n] * (b.shape[n] // a.shape[n])
     return Ib

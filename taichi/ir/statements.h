@@ -754,10 +754,7 @@ class FuncCallStmt : public Stmt {
   std::string funcid;
   std::vector<Stmt *> args;
 
-  FuncCallStmt(const std::string &funcid, const std::vector<Stmt *> &args)
-      : funcid(funcid), args(args) {
-    TI_STMT_REG_FIELDS;
-  }
+  FuncCallStmt(const std::string &funcid, const std::vector<Stmt *> &args);
 
   TI_STMT_DEF_FIELDS(ret_type, funcid, args);
   TI_DEFINE_ACCEPT_AND_CLONE

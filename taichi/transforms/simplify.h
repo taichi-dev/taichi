@@ -12,7 +12,6 @@ class FullSimplifyPass : public Pass {
   struct Args {
     bool after_lower_access;
     Program *program;
-    Kernel *kernel;
   };
 };
 

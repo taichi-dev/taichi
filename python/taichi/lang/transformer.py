@@ -639,9 +639,7 @@ if 1:
             elif func_name == 'all':
                 node.func = self.parse_expr('ti.ti_all')
             else:
-                if impl.get_runtime().experimental_real_function:
-                    node.args = [node.func] + node.args
-                    node.func = self.parse_expr('ti.func_call_rvalue')
+                pass
         return node
 
     def visit_Module(self, node):
@@ -903,12 +901,6 @@ class ASTTransformerChecks(ASTTransformerBase):
         if isinstance(node.func, ast.Name):
             node.args = [node.func] + node.args
             node.func = self.parse_expr('ti.func_call_with_check')
-        if impl.get_runtime().experimental_real_function:
-            if (isinstance(node.func, ast.Attribute)
-                    and isinstance(node.func.value, ast.Name)
-                    and node.func.value.id == 'ti'
-                    and node.func.attr == 'func_call_rvalue'):
-                node.func.attr = 'func_call_with_check'  # Not a prvalue!
         return node
 
     def visit_If(self, node):

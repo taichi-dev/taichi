@@ -171,24 +171,8 @@ def chain_compare(comparators, ops):
 
 
 @taichi_scope
-def func_call_rvalue(func, *args, **kwargs):
+def func_call_rvalue(func, *args):
     assert get_runtime().experimental_real_function
-    print(f'Experimental real function support triggered for function \"{func.__name__}\".')
-    _taichi_skip_traceback = 1
-    if '_sitebuiltins' == getattr(func, '__module__', '') and getattr(
-            getattr(func, '__class__', ''), '__name__', '') == 'Quitter':
-        raise TaichiSyntaxError(f'exit or quit not supported in Taichi-scope')
-    if getattr(func, '__module__',
-               '') == '__main__' and not getattr(func, '__wrapped__', ''):
-        warnings.warn(
-            f'Calling into non-Taichi function {func.__name__}.'
-            ' This means that scope inside that function will not be processed'
-            ' by the Taichi transformer. Proceed with caution! '
-            ' Maybe you want to decorate it with @ti.func?',
-            UserWarning,
-            stacklevel=2)
-
-    assert not kwargs
     args = make_expr_group(args)
     return _ti_core.make_func_call_expr(func.__name__, args)
 

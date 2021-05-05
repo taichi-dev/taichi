@@ -72,6 +72,7 @@ def pyfunc(foo):
 
 class Func:
     def __init__(self, func, classfunc=False, pyfunc=False):
+        print('Func inited', func.__name__)
         self.func = func
         self.compiled = None
         self.classfunc = classfunc
@@ -82,6 +83,7 @@ class Func:
         self.extract_arguments()
 
     def __call__(self, *args):
+        print('Func called', self.func.__name__)
         _taichi_skip_traceback = 1
         if not impl.inside_kernel():
             if not self.pyfunc:
@@ -92,8 +94,11 @@ class Func:
             return self.func(*args)
         if self.compiled is None:
             self.do_compile()
-        ret = self.compiled(*args)
-        return ret
+        if impl.get_runtime().experimental_real_function:
+            return impl.func_call_rvalue(*args)
+        else:
+            ret = self.compiled(*args)
+            return ret
 
     def do_compile(self):
         print('do_compile', self.func.__name__)
@@ -117,9 +122,13 @@ class Func:
                     mode='exec'), global_vars, local_vars)
         self.compiled = local_vars[self.func.__name__]
 
+        print('do_compile a')
         if impl.get_runtime().experimental_real_function:
+            print('do_compile b')
             taichi_function = _ti_core.create_function(self.func.__name__)
+            print('do_compile c')
             taichi_function = taichi_function.set_function_body(self.compiled)
+            print('do_compile d')
 
             # TODO: insert args
             # TODO: cache (self.compiled_functions)
@@ -305,6 +314,7 @@ class Kernel:
             self.argument_names.append(param.name)
 
     def materialize(self, key=None, args=None, arg_features=None):
+        print("start materialize")
         _taichi_skip_traceback = 1
         if key is None:
             key = (self.func, 0)
@@ -378,6 +388,7 @@ class Kernel:
 
         assert key not in self.compiled_functions
         self.compiled_functions[key] = self.get_function_body(taichi_kernel)
+        print("end materialize")
 
     def get_function_body(self, t_kernel):
         # The actual function body

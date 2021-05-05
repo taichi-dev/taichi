@@ -592,6 +592,22 @@ class ExternalTensorShapeAlongAxisExpression : public Expression {
   void flatten(FlattenContext *ctx) override;
 };
 
+class FuncCallExpression : public Expression {
+ public:
+  std::string funcid;
+  ExprGroup args;
+
+  std::string serialize() override {
+    return fmt::format("func_call(\"{}\", {})", funcid, args.serialize());
+  }
+
+  FuncCallExpression(const std::string &funcid, const ExprGroup &args)
+      : funcid(funcid), args(args) {
+  }
+
+  void flatten(FlattenContext *ctx) override;
+};
+
 class ASTBuilder {
  private:
   std::vector<Block *> stack;

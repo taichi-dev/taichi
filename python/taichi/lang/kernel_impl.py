@@ -117,10 +117,12 @@ class Func:
                     mode='exec'), global_vars, local_vars)
         self.compiled = local_vars[self.func.__name__]
 
-        taichi_function = _ti_core.create_function(self.func.__name__)
+        if impl.get_runtime().experimental_real_function:
+            taichi_function = _ti_core.create_function(self.func.__name__)
+            taichi_function = taichi_function.set_function_body(self.compiled)
 
-        # TODO: insert args
-        # TODO: cache (self.compiled_functions)
+            # TODO: insert args
+            # TODO: cache (self.compiled_functions)
 
     def extract_arguments(self):
         sig = inspect.signature(self.func)

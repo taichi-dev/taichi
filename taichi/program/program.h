@@ -15,6 +15,7 @@
 #include "taichi/backends/metal/kernel_manager.h"
 #include "taichi/backends/opengl/opengl_kernel_launcher.h"
 #include "taichi/backends/cc/cc_program.h"
+#include "taichi/program/function.h"
 #include "taichi/program/kernel.h"
 #include "taichi/program/kernel_profiler.h"
 #include "taichi/program/snode_expr_utils.h"

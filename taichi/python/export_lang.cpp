@@ -341,6 +341,9 @@ void export_lang(py::module &m) {
       .def("set_extra_arg_int",
            &Kernel::LaunchContextBuilder::set_extra_arg_int);
 
+  py::class_<Function>(m, "Function")
+      .def("set_function_body", &Function::set_function_body);
+
   py::class_<Expr> expr(m, "Expr");
   expr.def("serialize", &Expr::serialize)
       .def("snode", &Expr::snode, py::return_value_policy::reference)
@@ -492,6 +495,9 @@ void export_lang(py::module &m) {
   m.def("func_call", [&](const std::string &funcid, const ExprGroup &args) {
     current_ast_builder().insert(Stmt::make<FrontendFuncCallStmt>(funcid, args));
   });
+
+  m.def("make_func_call_expr",
+        Expr::make<FuncCallExpression, const std::string &, const ExprGroup &>);
 
   m.def("layout", layout);
 

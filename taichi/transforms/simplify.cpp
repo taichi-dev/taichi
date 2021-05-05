@@ -640,6 +640,8 @@ void full_simplify(IRNode *root,
         modified = true;
       if (alg_simp(root, config))
         modified = true;
+      if (loop_invariant_code_motion(root, config))
+        modified = true;
       if (die(root))
         modified = true;
       if (simplify(root, config, {args.kernel}))

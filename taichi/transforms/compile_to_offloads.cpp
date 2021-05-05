@@ -5,6 +5,7 @@
 #include "taichi/ir/visitors.h"
 #include "taichi/program/compile_config.h"
 #include "taichi/program/extension.h"
+#include "taichi/program/function.h"
 #include "taichi/program/kernel.h"
 
 TLANG_NAMESPACE_BEGIN
@@ -13,13 +14,13 @@ namespace irpass {
 namespace {
 
 std::function<void(const std::string &)> make_pass_printer(bool verbose,
-                                                           Kernel *kernel,
+                                                           const std::string &kernel_name,
                                                            IRNode *ir) {
   if (!verbose) {
     return [](const std::string &) {};
   }
-  return [ir, kn = kernel->name](const std::string &pass) {
-    TI_INFO("[{}] {}:", kn, pass);
+  return [ir, kernel_name](const std::string &pass) {
+    TI_INFO("[{}] {}:", kernel_name, pass);
     std::cout << std::flush;
     irpass::re_id(ir);
     irpass::print(ir);
@@ -39,7 +40,7 @@ void compile_to_offloads(IRNode *ir,
                          bool start_from_ast) {
   TI_AUTO_PROF;
 
-  auto print = make_pass_printer(verbose, kernel, ir);
+  auto print = make_pass_printer(verbose, kernel->name, ir);
   print("Initial IR");
 
   if (grad) {
@@ -87,7 +88,7 @@ void compile_to_offloads(IRNode *ir,
     irpass::analysis::verify(ir);
   }
 
-  irpass::full_simplify(ir, config, {false, kernel});
+  irpass::full_simplify(ir, config, {false, &kernel->program});
   print("Simplified I");
   irpass::analysis::verify(ir);
 
@@ -97,9 +98,9 @@ void compile_to_offloads(IRNode *ir,
     // Remove local atomics here so that we don't have to handle their gradients
     irpass::demote_atomics(ir, config);
 
-    irpass::full_simplify(ir, config, {false, kernel});
+    irpass::full_simplify(ir, config, {false, &kernel->program});
     irpass::auto_diff(ir, config, ad_use_stack);
-    irpass::full_simplify(ir, config, {false, kernel});
+    irpass::full_simplify(ir, config, {false, &kernel->program});
     print("Gradient");
     irpass::analysis::verify(ir);
   }
@@ -114,7 +115,7 @@ void compile_to_offloads(IRNode *ir,
   print("Access flagged I");
   irpass::analysis::verify(ir);
 
-  irpass::full_simplify(ir, config, {false, kernel});
+  irpass::full_simplify(ir, config, {false, &kernel->program});
   print("Simplified II");
   irpass::analysis::verify(ir);
 
@@ -133,7 +134,7 @@ void compile_to_offloads(IRNode *ir,
   irpass::flag_access(ir);
   print("Access flagged II");
 
-  irpass::full_simplify(ir, config, {false, kernel});
+  irpass::full_simplify(ir, config, {false, &kernel->program});
   print("Simplified III");
   irpass::analysis::verify(ir);
 }
@@ -147,7 +148,7 @@ void offload_to_executable(IRNode *ir,
                            bool make_block_local) {
   TI_AUTO_PROF;
 
-  auto print = make_pass_printer(verbose, kernel, ir);
+  auto print = make_pass_printer(verbose, kernel->name, ir);
 
   // TODO: This is just a proof that we can demote struct-fors after offloading.
   // Eventually we might want the order to be TLS/BLS -> demote struct-for.
@@ -218,7 +219,7 @@ void offload_to_executable(IRNode *ir,
   irpass::demote_operations(ir, config);
   print("Operations demoted");
 
-  irpass::full_simplify(ir, config, {lower_global_access, kernel});
+  irpass::full_simplify(ir, config, {lower_global_access, &kernel->program});
   print("Simplified IV");
 
   if (is_extension_supported(config.arch, Extension::quant)) {
@@ -249,6 +250,31 @@ void compile_to_executable(IRNode *ir,
 
   offload_to_executable(ir, config, kernel, verbose, lower_global_access,
                         make_thread_local, make_block_local);
+}
+
+void compile_inline_function(IRNode *ir,
+                             const CompileConfig &config,
+                             Function *func,
+                             bool grad,
+                             bool verbose) {
+  TI_AUTO_PROF;
+
+  auto print = make_pass_printer(verbose, func->funcid, ir);
+
+  if (grad) {
+    irpass::reverse_segments(ir);
+    print("Segment reversed (for autodiff)");
+  }
+
+  irpass::lower_ast(ir);
+  print("Lowered");
+
+  irpass::type_check(ir, config);
+  print("Typechecked");
+
+  irpass::full_simplify(ir, config, {false, func->program});
+  print("Simplified");
+  irpass::analysis::verify(ir);
 }
 
 }  // namespace irpass

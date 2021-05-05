@@ -13,7 +13,7 @@ class Program;
 //  and merge the duplicated part?
 class Function {
  public:
-  Program *prog;
+  Program *program;
   std::string funcid;
   std::unique_ptr<IRNode> ir;
   using Arg = Kernel::Arg;
@@ -22,7 +22,7 @@ class Function {
   std::vector<Arg> args;
   std::vector<Ret> rets;
 
-  Function(Program *prog, const std::string &funcid);
+  Function(Program *program, const std::string &funcid);
 
   void set_function_body(const std::function<void()> &func);
 

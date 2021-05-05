@@ -732,6 +732,9 @@ if 1:
                     args.args[i].arg += '_by_value__'
                     arg_decls.append(arg_init)
             else:  # experimental real function support
+                if self.is_kernel and self.func.is_grad:
+                    raise TaichiSyntaxError(
+                        "Real function in gradient kernels unsupported.")
                 transform_as_kernel()
 
         with self.variable_scope():

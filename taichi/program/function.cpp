@@ -22,8 +22,8 @@ class CurrentFunctionGuard {
 };
 }  // namespace
 
-Function::Function(Program *prog, const std::string &funcid)
-    : prog(prog), funcid(funcid) {
+Function::Function(Program *program, const std::string &funcid)
+    : program(program), funcid(funcid) {
   TI_INFO("Function::Function() called");
 }
 
@@ -36,13 +36,12 @@ void Function::set_function_body(const std::function<void()> &func) {
   ir = taichi::lang::context->get_root();
   {
     // Note: this is not a mutex
-    CurrentFunctionGuard _(prog, this);
+    CurrentFunctionGuard _(program, this);
     func();
   }
-  TI_INFO("function body:");
-  std::cout << std::flush;
-  irpass::print(ir.get());
-  std::cout << std::flush;
+  irpass::compile_inline_function(ir.get(), program->config, this, /*grad=*/false,
+                                  /*verbose=*/program->config.print_ir);
+
   taichi::lang::context = std::move(backup_context);
 }
 

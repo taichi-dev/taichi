@@ -18,20 +18,16 @@ TLANG_NAMESPACE_BEGIN
 
 class ScratchPads;
 
+class Function;
+
 // IR passes
 namespace irpass {
-
-// TODO(#1243): Pass kernel to the relevant passes instead of doing this hack
-namespace hack {
-bool use_fast_math(IRNode *root);
-}  // namespace hack
 
 void re_id(IRNode *root);
 void flag_access(IRNode *root);
 bool die(IRNode *root);
 bool simplify(IRNode *root,
-              const CompileConfig &config,
-              const SimplifyPass::Args &args);
+              const CompileConfig &config);
 bool cfg_optimization(
     IRNode *root,
     bool after_lower_access,
@@ -106,7 +102,7 @@ void offload_to_executable(IRNode *ir,
                            bool lower_global_access,
                            bool make_thread_local,
                            bool make_block_local);
-// compile_to_executable fully covers compile_to_offloads, but also does
+// compile_to_executable fully covers compile_to_offloads, and also does
 // additional optimizations so that |ir| can be directly fed into codegen.
 void compile_to_executable(IRNode *ir,
                            const CompileConfig &config,
@@ -119,7 +115,13 @@ void compile_to_executable(IRNode *ir,
                            bool make_thread_local = false,
                            bool make_block_local = false,
                            bool start_from_ast = true);
-
+// Compile a function with some basic optimizations, so that the number of
+// statements is reduced before inlining.
+void compile_inline_function(IRNode *ir,
+                             const CompileConfig &config,
+                             Function *func,
+                             bool grad,
+                             bool verbose);
 }  // namespace irpass
 
 TLANG_NAMESPACE_END

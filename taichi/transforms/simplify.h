@@ -5,21 +5,13 @@
 namespace taichi {
 namespace lang {
 
-class SimplifyPass : public Pass {
- public:
-  static const PassID id;
-
-  struct Args {
-    Kernel *kernel;
-  };
-};
-
 class FullSimplifyPass : public Pass {
  public:
   static const PassID id;
 
   struct Args {
     bool after_lower_access;
+    Program *program;
     Kernel *kernel;
   };
 };

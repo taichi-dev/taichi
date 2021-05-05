@@ -30,6 +30,8 @@ Function::Function(Program *prog, const std::string &funcid)
 void Function::set_function_body(const std::function<void()> &func) {
   TI_INFO("set_function_body() called");
   std::cout << std::flush;
+  // Do not corrupt the context calling this function here
+  auto backup_context = std::move(taichi::lang::context);
   taichi::lang::context = std::make_unique<FrontendContext>();
   ir = taichi::lang::context->get_root();
   {
@@ -41,6 +43,7 @@ void Function::set_function_body(const std::function<void()> &func) {
   std::cout << std::flush;
   irpass::print(ir.get());
   std::cout << std::flush;
+  taichi::lang::context = std::move(backup_context);
 }
 
 int Function::insert_arg(DataType dt, bool is_external_array) {

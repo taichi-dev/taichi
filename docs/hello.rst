@@ -155,10 +155,10 @@ The language used in Taichi kernels and functions looks exactly like Python, yet
 
 Parallel for-loops
 ------------------
-``for`` loops at the outermost scope in a Taichi kernel is **automatically parallelized**.
-``for`` loops can have two forms, i.e. `range-for loops` and `struct-for loops`.
+For loops at the outermost scope in a Taichi kernel is **automatically parallelized**.
+For loops can have two forms, i.e. `range-for loops` and `struct-for loops`.
 
-**Range-for loops** are no different from Python ``for`` loops, except that it will be parallelized
+**Range-for loops** are no different from Python for loops, except that it will be parallelized
 when used at the outermost scope. Range-for loops can be nested.
 
 .. code-block:: python

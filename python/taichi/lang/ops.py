@@ -10,6 +10,7 @@ from taichi.lang import impl
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.util import cook_dtype, is_taichi_class, taichi_scope
+from taichi.lang import matrix
 
 unary_ops = []
 
@@ -546,3 +547,37 @@ def deactivate(l, indices):
 
 def length(l, indices):
     return Expr(_ti_core.insert_len(l.snode.ptr, make_expr_group(indices)))
+
+
+def rescale_index(a, b, I):
+    """Rescales the index 'I' of field 'a' the match the shape of field 'b'
+
+    Parameters
+    ----------
+    a: ti.field(), ti.Vector.field, ti.Matrix.field()
+        input taichi field
+    b: ti.field(), ti.Vector.field, ti.Matrix.field()
+        output taichi field
+    I: ti.Vector()
+        grouped loop index
+
+    Returns
+    -------
+    Ib: ti.Vector()
+        rescaled grouped loop index
+
+    """
+    assert isinstance(a, Expr) and a.is_global(), \
+            f"first arguement must be a field"
+    assert isinstance(b, Expr) and b.is_global(), \
+            f"second arguement must be a field"
+    assert isinstance(I, matrix.Matrix) and not I.is_global(), \
+            f"third arguement must be a grouped index"
+    assert len(a.shape) >= len(b.shape)
+    Ib = I.copy()
+    for n in range(len(b.shape)):
+        if a.shape[n] > b.shape[n]:
+            Ib.entries[n] = I.entries[n] // (a.shape[n] // b.shape[n])
+        if a.shape[n] < b.shape[n]:
+            Ib.entries[n] = I.entries[n] * (b.shape[n] // a.shape[n])
+    return Ib

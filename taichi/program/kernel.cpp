@@ -13,19 +13,21 @@
 
 TLANG_NAMESPACE_BEGIN
 
+class Function;
+
 namespace {
 class CurrentKernelGuard {
-  Kernel *old_kernel;
+  std::variant<Kernel *, Function *> old_kernel_or_function;
   Program &program;
 
  public:
   CurrentKernelGuard(Program &program_, Kernel *kernel) : program(program_) {
-    old_kernel = program.current_kernel;
-    program.current_kernel = kernel;
+    old_kernel_or_function = program.current_kernel_or_function;
+    program.current_kernel_or_function = kernel;
   }
 
   ~CurrentKernelGuard() {
-    program.current_kernel = old_kernel;
+    program.current_kernel_or_function = old_kernel_or_function;
   }
 };
 }  // namespace
@@ -48,9 +50,9 @@ Kernel::Kernel(Program &program,
     // concurrently, we need to lock this block of code together with
     // taichi::lang::context with a mutex.
     CurrentKernelGuard _(program, this);
-    program.start_function_definition(this);
+    program.start_kernel_definition(this);
     func();
-    program.end_function_definition();
+    program.end_kernel_definition();
     ir->as<Block>()->kernel = this;
   }
 

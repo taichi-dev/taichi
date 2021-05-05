@@ -82,7 +82,7 @@ class AsyncEngine;
 class Program {
  public:
   using Kernel = taichi::lang::Kernel;
-  Kernel *current_kernel;
+  std::variant<Kernel *, Function *> current_kernel_or_function;
   std::unique_ptr<SNode> snode_root;  // pointer to the data structure.
   void *llvm_runtime;
   CompileConfig config;
@@ -184,17 +184,24 @@ class Program {
     return *kernels.back();
   }
 
-  void start_function_definition(Kernel *func) {
-    current_kernel = func;
+  void start_kernel_definition(Kernel *kernel) {
+    current_kernel_or_function = kernel;
   }
 
-  void end_function_definition() {
+  void end_kernel_definition() {
   }
 
   Function *create_function(const std::string &name) {
-    functions.emplace_back(std::make_unique<Function>(name));
+    functions.emplace_back(std::make_unique<Function>(this, name));
     return functions.back().get();
   }
+
+  /*void start_function_definition(Function *func) {
+    current_kernel_or_function = func;
+  }
+
+  void end_function_definition() {
+  }*/
 
   // TODO: This function is doing two things: 1) compiling CHI IR, and 2)
   // offloading them to each backend. We should probably separate the logic?
@@ -211,8 +218,10 @@ class Program {
   void check_runtime_error();
 
   inline Kernel &get_current_kernel() {
-    TI_ASSERT(current_kernel);
-    return *current_kernel;
+    TI_ASSERT(std::holds_alternative<Kernel *>(current_kernel_or_function));
+    auto *kernel = std::get<Kernel *>(current_kernel_or_function);
+    TI_ASSERT(kernel);
+    return *kernel;
   }
 
   TaichiLLVMContext *get_llvm_context(Arch arch) {

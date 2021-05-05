@@ -55,7 +55,9 @@ Expr Expr::operator[](const ExprGroup &indices) const {
 }
 
 Expr &Expr::operator=(const Expr &o) {
-  if (get_current_program().current_kernel) {
+  if (std::holds_alternative<Kernel *>(
+          get_current_program().current_kernel_or_function) &&
+      std::get<Kernel *>(get_current_program().current_kernel_or_function)) {
     if (expr == nullptr) {
       set(o.eval());
     } else if (expr->is_lvalue()) {

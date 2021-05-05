@@ -95,7 +95,7 @@ class Func:
         if self.compiled is None:
             self.do_compile()
         if impl.get_runtime().experimental_real_function:
-            return impl.func_call_rvalue(*args)
+            return impl.func_call_rvalue(self.func, *args)
         else:
             ret = self.compiled(*args)
             return ret
@@ -129,9 +129,6 @@ class Func:
             print('do_compile c')
             taichi_function = taichi_function.set_function_body(self.compiled)
             print('do_compile d')
-
-            # TODO: insert args
-            # TODO: cache (self.compiled_functions)
 
     def extract_arguments(self):
         sig = inspect.signature(self.func)

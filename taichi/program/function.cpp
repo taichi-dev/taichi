@@ -43,5 +43,15 @@ void Function::set_function_body(const std::function<void()> &func) {
   std::cout << std::flush;
 }
 
+int Function::insert_arg(DataType dt, bool is_external_array) {
+  args.push_back(Arg{dt->get_compute_type(), is_external_array, /*size=*/0});
+  return args.size() - 1;
+}
+
+int Function::insert_ret(DataType dt) {
+  rets.push_back(Ret{dt->get_compute_type()});
+  return rets.size() - 1;
+}
+
 }  // namespace lang
 }  // namespace taichi

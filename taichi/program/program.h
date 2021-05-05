@@ -224,6 +224,12 @@ class Program {
     return *kernel;
   }
 
+  inline Function *get_current_function() {
+    TI_ASSERT(std::holds_alternative<Function *>(current_kernel_or_function));
+    auto *func = std::get<Function *>(current_kernel_or_function);
+    return func;
+  }
+
   TaichiLLVMContext *get_llvm_context(Arch arch) {
     if (arch_is_cpu(arch)) {
       return llvm_context_host.get();

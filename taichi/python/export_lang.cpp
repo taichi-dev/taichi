@@ -692,12 +692,23 @@ void export_lang(py::module &m) {
         });
 
   m.def("decl_arg", [&](DataType dt, bool is_nparray) {
-    return get_current_program().get_current_kernel().insert_arg(dt,
-                                                                 is_nparray);
+    if (std::holds_alternative<Kernel *>(
+            get_current_program().current_kernel_or_function)) {
+      return get_current_program().get_current_kernel().insert_arg(dt,
+                                                                   is_nparray);
+    } else {
+      return get_current_program().get_current_function()->insert_arg(
+          dt, is_nparray);
+    }
   });
 
   m.def("decl_ret", [&](DataType dt) {
-    return get_current_program().get_current_kernel().insert_ret(dt);
+    if (std::holds_alternative<Kernel *>(
+            get_current_program().current_kernel_or_function)) {
+      return get_current_program().get_current_kernel().insert_ret(dt);
+    } else {
+      return get_current_program().get_current_function()->insert_ret(dt);
+    }
   });
 
   m.def("test_throw", [] {
@@ -832,3 +843,4 @@ void export_lang(py::module &m) {
 }
 
 TI_NAMESPACE_END
+ 

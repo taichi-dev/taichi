@@ -155,6 +155,8 @@ void GUI::process_event() {
 void GUI::create_window() {
   auto CLASS_NAME = L"Taichi Win32 Window";
 
+  SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE);
+
   WNDCLASS wc = {};
 
   wc.lpfnWndProc = WindowProc;

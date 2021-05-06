@@ -152,8 +152,8 @@ def chain_compare(comparators, ops):
       f'Chain comparison invoked with {len(comparators)} comparators but {len(ops)} operators'
     ret = True
     for i in range(len(ops)):
-        lhs = ti.expr_init(comparators[i])
-        rhs = ti.expr_init(comparators[i + 1])
+        lhs = comparators[i]
+        rhs = comparators[i + 1]
         if ops[i] == 'Lt':
             now = lhs < rhs
         elif ops[i] == 'LtE':
@@ -176,7 +176,7 @@ def chain_compare(comparators, ops):
 def func_call_rvalue(func, *args):
     assert get_runtime().experimental_real_function
     args = make_expr_group(args)
-    return _ti_core.make_func_call_expr(func.__name__, args)
+    return ti.Expr(_ti_core.make_func_call_expr(func.__name__, args))
 
 
 @taichi_scope

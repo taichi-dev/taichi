@@ -243,7 +243,7 @@ class ASTTransformerPreprocess(ASTTransformerBase):
                 else:
                     # Assign
                     target.ctx = ast.Load()
-                    func = ibute(value=target,
+                    func = ast.Attribute(value=target,
                                          attr='assign',
                                          ctx=ast.Load())
                     call = ast.Call(func=func,
@@ -879,8 +879,7 @@ if 1:
                     raise TaichiSyntaxError(
                         f'A {"kernel" if self.is_kernel else "function"} '
                         'with a return value must be annotated '
-                        'with a return type, e.g. def func() -> ti.f32'
-                    )
+                        'with a return type, e.g. def func() -> ti.f32')
                 ret_expr = self.parse_expr('ti.cast(ti.Expr(0), 0)')
                 ret_expr.args[0].args[0] = node.value
                 ret_expr.args[1] = self.returns

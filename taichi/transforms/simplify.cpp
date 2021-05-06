@@ -540,8 +540,7 @@ class Simplify : public IRVisitor {
   bool modified;
   const CompileConfig &config;
 
-  Simplify(IRNode *node, const CompileConfig &config)
-      : config(config) {
+  Simplify(IRNode *node, const CompileConfig &config) : config(config) {
     modified = false;
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
@@ -598,8 +597,7 @@ const PassID FullSimplifyPass::id = "FullSimplifyPass";
 
 namespace irpass {
 
-bool simplify(IRNode *root,
-              const CompileConfig &config) {
+bool simplify(IRNode *root, const CompileConfig &config) {
   TI_AUTO_PROF;
   bool modified = false;
   while (true) {

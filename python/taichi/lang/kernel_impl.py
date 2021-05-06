@@ -72,7 +72,6 @@ def pyfunc(foo):
 
 class Func:
     def __init__(self, func, classfunc=False, pyfunc=False):
-        print('Func inited', func.__name__)
         self.func = func
         self.compiled = None
         self.classfunc = classfunc
@@ -83,7 +82,6 @@ class Func:
         self.extract_arguments()
 
     def __call__(self, *args):
-        print('Func called', self.func.__name__)
         _taichi_skip_traceback = 1
         if not impl.inside_kernel():
             if not self.pyfunc:
@@ -307,7 +305,6 @@ class Kernel:
             self.argument_names.append(param.name)
 
     def materialize(self, key=None, args=None, arg_features=None):
-        print("start materialize")
         _taichi_skip_traceback = 1
         if key is None:
             key = (self.func, 0)

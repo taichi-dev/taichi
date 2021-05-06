@@ -35,6 +35,12 @@ struct IndexExtractor {
   }
 };
 
+/**
+ * Index of a given dimension.
+ *
+ * For example, in the frontend we have ti.ij, which is translated to
+ * {Index{0}, Index{1}}.
+ */
 class Index {
  public:
   int value;

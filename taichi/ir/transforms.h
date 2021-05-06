@@ -46,6 +46,7 @@ void full_simplify(IRNode *root,
 void print(IRNode *root, std::string *output = nullptr);
 void lower_ast(IRNode *root);
 void type_check(IRNode *root, const CompileConfig &config);
+bool function_type_check(IRNode *root, Program *program);
 void loop_vectorize(IRNode *root, const CompileConfig &config);
 void bit_loop_vectorize(IRNode *root);
 void slp_vectorize(IRNode *root);

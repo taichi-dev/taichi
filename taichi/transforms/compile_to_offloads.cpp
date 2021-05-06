@@ -263,6 +263,7 @@ void compile_inline_function(IRNode *ir,
   TI_AUTO_PROF;
 
   auto print = make_pass_printer(verbose, func->funcid, ir);
+  print("Initial IR");
 
   if (grad) {
     irpass::reverse_segments(ir);

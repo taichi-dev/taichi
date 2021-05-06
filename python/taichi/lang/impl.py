@@ -172,6 +172,7 @@ def chain_compare(comparators, ops):
 
 @taichi_scope
 def func_call_rvalue(func, *args):
+    print('rvalue')
     assert get_runtime().experimental_real_function
     args = make_expr_group(args)
     return _ti_core.make_func_call_expr(func.__name__, args)
@@ -194,6 +195,7 @@ def func_call_with_check(func, *args, **kwargs):
             stacklevel=2)
 
     if get_runtime().experimental_real_function:
+        func(*args, **kwargs)  # compile the function here
         assert not kwargs
         args = make_expr_group(args)
         return _ti_core.func_call(func.__name__, args)

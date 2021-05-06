@@ -37,6 +37,9 @@ Kernel::Kernel(Program &program,
                const std::string &primal_name,
                bool grad)
     : program(program), lowered(false), grad(grad) {
+  // Do not corrupt the context calling this kernel here -- maybe unnecessary
+  auto backup_context = std::move(taichi::lang::context);
+
   program.initialize_device_llvm_context();
   is_accessor = false;
   is_evaluator = false;
@@ -66,6 +69,8 @@ Kernel::Kernel(Program &program,
 
   if (!program.config.lazy_compilation)
     compile();
+
+  taichi::lang::context = std::move(backup_context);
 }
 
 Kernel::Kernel(Program &program,

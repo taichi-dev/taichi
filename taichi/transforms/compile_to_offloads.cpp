@@ -93,7 +93,10 @@ void compile_to_offloads(IRNode *ir,
   print("Simplified I");
   irpass::analysis::verify(ir);
 
-  // TODO: inline real functions
+  if (irpass::inlining(ir, config, {&kernel->program})) {
+    print("Functions inlined");
+    irpass::analysis::verify(ir);
+  }
 
   if (grad) {
     // Remove local atomics here so that we don't have to handle their gradients

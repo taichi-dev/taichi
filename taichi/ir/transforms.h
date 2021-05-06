@@ -10,6 +10,7 @@
 #include "taichi/ir/pass.h"
 #include "taichi/transforms/check_out_of_bound.h"
 #include "taichi/transforms/constant_fold.h"
+#include "taichi/transforms/inlining.h"
 #include "taichi/transforms/lower_access.h"
 #include "taichi/transforms/make_block_local.h"
 #include "taichi/transforms/simplify.h"
@@ -26,8 +27,7 @@ namespace irpass {
 void re_id(IRNode *root);
 void flag_access(IRNode *root);
 bool die(IRNode *root);
-bool simplify(IRNode *root,
-              const CompileConfig &config);
+bool simplify(IRNode *root, const CompileConfig &config);
 bool cfg_optimization(
     IRNode *root,
     bool after_lower_access,
@@ -47,6 +47,9 @@ void print(IRNode *root, std::string *output = nullptr);
 void lower_ast(IRNode *root);
 void type_check(IRNode *root, const CompileConfig &config);
 bool function_type_check(IRNode *root, Program *program);
+bool inlining(IRNode *root,
+              const CompileConfig &config,
+              const InliningPass::Args &args);
 void loop_vectorize(IRNode *root, const CompileConfig &config);
 void bit_loop_vectorize(IRNode *root);
 void slp_vectorize(IRNode *root);
@@ -72,9 +75,13 @@ bool constant_fold(IRNode *root,
                    const CompileConfig &config,
                    const ConstantFoldPass::Args &args);
 void offload(IRNode *root, const CompileConfig &config);
-void replace_statements_with(IRNode *root,
+void replace_statements_with(
+    IRNode *root,
+    std::function<bool(Stmt *)> filter,
+    std::function<std::unique_ptr<Stmt>(Stmt *)> generator);
+bool replace_statements_with(IRNode *root,
                              std::function<bool(Stmt *)> filter,
-                             std::function<std::unique_ptr<Stmt>()> generator);
+                             std::function<Stmt *(Stmt *)> generator);
 void demote_dense_struct_fors(IRNode *root);
 bool demote_atomics(IRNode *root, const CompileConfig &config);
 void reverse_segments(IRNode *root);  // for autograd

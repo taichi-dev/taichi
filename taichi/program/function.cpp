@@ -32,6 +32,7 @@ void Function::set_function_body(const std::function<void()> &func) {
   std::cout << std::flush;
   // Do not corrupt the context calling this function here
   auto backup_context = std::move(taichi::lang::context);
+
   taichi::lang::context = std::make_unique<FrontendContext>();
   ir = taichi::lang::context->get_root();
   {

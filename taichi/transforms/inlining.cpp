@@ -35,9 +35,10 @@ class Inlining : public BasicStmtVisitor {
           [&](Stmt *s) { return stmt->args[s->as<ArgLoadStmt>()->arg_id]; });
     }
     if (!func->rets.empty()) {
-      if (irpass::analysis::gather_statements(inlined_ir.get(), [&](Stmt *s) {
-            return s->is<KernelReturnStmt>();
-          }).size() > 1) {
+      if (irpass::analysis::gather_statements(
+              inlined_ir.get(),
+              [&](Stmt *s) { return s->is<KernelReturnStmt>(); })
+              .size() > 1) {
         TI_WARN(
             "Multiple returns in function \"{}\" may not be handled properly.",
             func->funcid);

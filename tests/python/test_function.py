@@ -39,7 +39,6 @@ def test_function_with_return():
     assert x[None] == 42
 
 
-
 @ti.test(experimental_real_function=True)
 def test_function_with_multiple_last_return():
     x = ti.field(ti.i32, shape=())

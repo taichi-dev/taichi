@@ -37,7 +37,8 @@ void Function::set_function_body(const std::function<void()> &func) {
     CurrentFunctionGuard _(program, this);
     func();
   }
-  irpass::compile_inline_function(ir.get(), program->config, this, /*grad=*/false,
+  irpass::compile_inline_function(ir.get(), program->config, this,
+                                  /*grad=*/false,
                                   /*verbose=*/program->config.print_ir);
 
   taichi::lang::context = std::move(backup_context);

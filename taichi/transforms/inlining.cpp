@@ -68,7 +68,6 @@ class Inlining : public BasicStmtVisitor {
     Inlining inliner(program);
     bool modified = false;
     while (true) {
-      irpass::print(node);
       node->accept(&inliner);
       if (inliner.modifier.modify_ir())
         modified = true;

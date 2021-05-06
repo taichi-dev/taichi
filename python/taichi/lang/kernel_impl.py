@@ -378,7 +378,6 @@ class Kernel:
 
         assert key not in self.compiled_functions
         self.compiled_functions[key] = self.get_function_body(taichi_kernel)
-        print("end materialize")
 
     def get_function_body(self, t_kernel):
         # The actual function body

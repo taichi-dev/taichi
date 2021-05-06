@@ -13,9 +13,8 @@ TLANG_NAMESPACE_BEGIN
 namespace irpass {
 namespace {
 
-std::function<void(const std::string &)> make_pass_printer(bool verbose,
-                                                           const std::string &kernel_name,
-                                                           IRNode *ir) {
+std::function<void(const std::string &)>
+make_pass_printer(bool verbose, const std::string &kernel_name, IRNode *ir) {
   if (!verbose) {
     return [](const std::string &) {};
   }

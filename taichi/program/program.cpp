@@ -307,6 +307,11 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
   auto snodes = scomp->snodes;
   int root_id = snode_root->id;
 
+  // Starting random state for the program calculated using the random seed.
+  // The seed is multiplied by 2^20 so that two programs with different seeds
+  // will not have overlapping random states in any thread.
+  int starting_rand_state = config.random_seed * 1048576;
+
   // Number of random states. One per CPU/CUDA thread.
   int num_rand_states = 0;
 
@@ -325,12 +330,12 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
   TI_TRACE("Allocating data structure of size {} B", scomp->root_size);
   TI_TRACE("Allocating {} random states (used by CUDA only)", num_rand_states);
 
-  runtime->call<void *, void *, std::size_t, std::size_t, void *, int, void *,
-                void *, void *>("runtime_initialize", result_buffer, this,
-                                (std::size_t)scomp->root_size, prealloc_size,
-                                preallocated_device_buffer, num_rand_states,
-                                (void *)&taichi_allocate_aligned,
-                                (void *)std::printf, (void *)std::vsnprintf);
+  runtime->call<void *, void *, std::size_t, std::size_t, void *, int, int,
+                void *, void *, void *>(
+      "runtime_initialize", result_buffer, this, (std::size_t)scomp->root_size,
+      prealloc_size, preallocated_device_buffer, starting_rand_state,
+      num_rand_states, (void *)&taichi_allocate_aligned, (void *)std::printf,
+      (void *)std::vsnprintf);
 
   TI_TRACE("LLVMRuntime initialized");
   llvm_runtime = fetch_result<void *>(taichi_result_buffer_ret_value_id);

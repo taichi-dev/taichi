@@ -10,7 +10,7 @@ endif()
 # TODO(#2195):
 # 1. "cpp" -> "cpp_legacy", "cpp_new" -> "cpp"
 # 2. Re-implement the legacy CPP tests using googletest
-file(GLOB_RECURSE TAICHI_TESTS_SOURCE "tests/cpp/common/*.cpp" "tests/cpp/ir/*.cpp")
+file(GLOB_RECURSE TAICHI_TESTS_SOURCE "tests/cpp/analysis/*.cpp" "tests/cpp/common/*.cpp" "tests/cpp/ir/*.cpp")
 
 include_directories(
     ${PROJECT_SOURCE_DIR},

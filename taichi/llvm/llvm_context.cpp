@@ -196,14 +196,14 @@ void compile_runtime_bitcode(Arch arch) {
 
     std::string arch_macro = fmt::format(" -D ARCH_{}", arch_name(arch));
     auto cmd = fmt::format(
-        "{} -S {}runtime.cpp -o {}runtime.ll -fno-exceptions "
-        "-emit-llvm -std=c++17 {} -I {}",
+        "{} -S \"{}runtime.cpp\" -o \"{}runtime.ll\" -fno-exceptions "
+        "-emit-llvm -std=c++17 {} -I \"{}\"",
         clang, runtime_src_folder, runtime_folder, arch_macro, get_repo_dir());
     int ret = std::system(cmd.c_str());
     if (ret) {
       TI_ERROR("LLVMRuntime compilation failed.");
     }
-    cmd = fmt::format("llvm-as {}runtime.ll -o {}", runtime_folder,
+    cmd = fmt::format("llvm-as \"{}runtime.ll\" -o \"{}\"", runtime_folder,
                       dst_runtime_bc);
     std::system(cmd.c_str());
     TI_TRACE("Runtime module bitcode compiled.");
@@ -214,7 +214,8 @@ void compile_runtime_bitcode(Arch arch) {
       auto ret = fs::copy_file(dst_runtime_bc, src_runtime_bc,
                                fs::copy_options::overwrite_existing);
 #else
-      auto ret = (system(fmt::format("cp {} {}", dst_runtime_bc, src_runtime_bc)
+      auto ret = (system(fmt::format("cp \"{}\" \"{}\"", dst_runtime_bc,
+                                     src_runtime_bc)
                              .c_str()) &
                   255) == 0;
 #endif

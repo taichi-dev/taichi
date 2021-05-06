@@ -82,6 +82,46 @@ def svd3d(A, dt, iters=None):
 
 
 @ti.func
+def eig2x2(A, dt):
+    tr = A.trace()
+    det = A.determinant()
+    gap = tr**2 - 4 * det
+    lambda1 = ti.Vector.zero(dt, 2)
+    lambda2 = ti.Vector.zero(dt, 2)
+    v1 = ti.Vector.zero(dt, 4)
+    v2 = ti.Vector.zero(dt, 4)
+    if gap > 0:
+        lambda1 = ti.Vector([tr + ti.sqrt(gap), ti.cast(0.0, dt)]) * 0.5
+        lambda2 = ti.Vector([tr - ti.sqrt(gap), ti.cast(0.0, dt)]) * 0.5
+        A1 = A - lambda1[0] * ti.Matrix.identity(dt, 2)
+        A2 = A - lambda2[0] * ti.Matrix.identity(dt, 2)
+        if all(A1 == ti.Matrix.zero(dt, 2, 2)) and all(
+                A1 == ti.Matrix.zero(dt, 2, 2)):
+            v1 = ti.Vector([0.0, 0.0, 1.0, 0.0]).cast(dt)
+            v2 = ti.Vector([1.0, 0.0, 0.0, 0.0]).cast(dt)
+        else:
+            v1 = ti.Vector([A2[0, 0], 0.0, A2[1, 0],
+                            0.0]).cast(dt).normalized()
+            v2 = ti.Vector([A1[0, 0], 0.0, A1[1, 0],
+                            0.0]).cast(dt).normalized()
+    else:
+        lambda1 = ti.Vector([tr, ti.sqrt(-gap)]) * 0.5
+        lambda2 = ti.Vector([tr, -ti.sqrt(-gap)]) * 0.5
+        A1r = A - lambda1[0] * ti.Matrix.identity(dt, 2)
+        A1i = -lambda1[1] * ti.Matrix.identity(dt, 2)
+        A2r = A - lambda2[0] * ti.Matrix.identity(dt, 2)
+        A2i = -lambda2[1] * ti.Matrix.identity(dt, 2)
+        v1 = ti.Vector([A2r[0, 0], A2i[0, 0], A2r[1, 0],
+                        A2i[1, 0]]).cast(dt).normalized()
+        v2 = ti.Vector([A1r[0, 0], A1i[0, 0], A1r[1, 0],
+                        A1i[1, 0]]).cast(dt).normalized()
+    eigenvalues = ti.Matrix.rows([lambda1, lambda2])
+    eigenvectors = ti.Matrix.cols([v1, v2])
+
+    return eigenvalues, eigenvectors
+
+
+@ti.func
 def svd(A, dt):
     if ti.static(A.n == 2):
         ret = svd2d(A, dt)

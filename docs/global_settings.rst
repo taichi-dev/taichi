@@ -25,6 +25,7 @@ Runtime
 - Restart the entire Taichi system (destroy all fields and kernels): ``ti.reset()``.
 - To start program in debug mode: ``ti.init(debug=True)`` or ``ti debug your_script.py``.
 - To disable importing torch on start up: ``export TI_ENABLE_TORCH=0``.
+- To change the random seed for random number generation: ``ti.init(random_seed=42)`` (effective on CPU and CUDA backends only).
 
 Logging
 *******

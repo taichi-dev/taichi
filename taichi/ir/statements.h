@@ -728,6 +728,7 @@ class StructForStmt : public Stmt {
 
 /**
  * An inline Taichi function.
+ * TODO: This statement seems unused.
  */
 class FuncBodyStmt : public Stmt {
  public:
@@ -751,6 +752,7 @@ class FuncBodyStmt : public Stmt {
  */
 class FuncCallStmt : public Stmt {
  public:
+  // TODO: Use a specific type instead of an std::string
   std::string funcid;
   std::vector<Stmt *> args;
 

@@ -101,7 +101,6 @@ class Func:
             return ret
 
     def do_compile(self):
-        print('do_compile', self.func.__name__)
         src = _remove_indent(oinspect.getsource(self.func))
         tree = ast.parse(src)
 
@@ -122,13 +121,9 @@ class Func:
                     mode='exec'), global_vars, local_vars)
         self.compiled = local_vars[self.func.__name__]
 
-        print('do_compile a')
         if impl.get_runtime().experimental_real_function:
-            print('do_compile b')
             taichi_function = _ti_core.create_function(self.func.__name__)
-            print('do_compile c')
-            taichi_function = taichi_function.set_function_body(self.compiled)
-            print('do_compile d')
+            taichi_function.set_function_body(self.compiled)
 
     def extract_arguments(self):
         sig = inspect.signature(self.func)
@@ -159,10 +154,11 @@ class Func:
                     annotation = template()
             else:
                 if id(annotation) in primitive_types.type_ids:
-                    ti.warning(
-                        'Data type annotations are unnecessary for Taichi'
-                        ' functions, consider removing it',
-                        stacklevel=4)
+                    if not impl.get_runtime().experimental_real_function:
+                        ti.warning(
+                            'Data type annotations are unnecessary for Taichi'
+                            ' functions, consider removing it',
+                            stacklevel=4)
                 elif not isinstance(annotation, template):
                     raise KernelDefError(
                         f'Invalid type annotation (argument {i}) of Taichi function: {annotation}'

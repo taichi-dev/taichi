@@ -194,7 +194,6 @@ def func_call_with_check(func, *args, **kwargs):
             stacklevel=2)
 
     if get_runtime().experimental_real_function:
-        print(f'Experimental real function support triggered for function \"{func.__name__}\".')
         assert not kwargs
         args = make_expr_group(args)
         return _ti_core.func_call(func.__name__, args)

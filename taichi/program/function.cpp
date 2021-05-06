@@ -24,12 +24,9 @@ class CurrentFunctionGuard {
 
 Function::Function(Program *program, const std::string &funcid)
     : program(program), funcid(funcid) {
-  TI_INFO("Function::Function() called");
 }
 
 void Function::set_function_body(const std::function<void()> &func) {
-  TI_INFO("set_function_body() called");
-  std::cout << std::flush;
   // Do not corrupt the context calling this function here
   auto backup_context = std::move(taichi::lang::context);
 

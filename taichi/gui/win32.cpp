@@ -2,6 +2,7 @@
 
 #if defined(TI_PLATFORM_WINDOWS)
 #include <windowsx.h>
+#include <shellscalingapi.h>
 #include "taichi/common/task.h"
 #include "taichi/gui/gui.h"
 #include <cctype>
@@ -203,6 +204,8 @@ void GUI::create_window() {
   hdc = GetDC(hwnd);
   data = (COLORREF *)calloc(width * height, sizeof(COLORREF));
   src = CreateCompatibleDC(hdc);
+
+  TI_TRACE("Started on GUI scale {}", get_scale());
 }
 
 void GUI::redraw() {
@@ -229,6 +232,12 @@ void GUI::redraw() {
 
 void GUI::set_title(std::string title) {
   SetWindowText(hwnd, std::wstring(title.begin(), title.end()).data());
+}
+
+float GUI::get_scale() {
+  uint dpi = GetDpiForWindow(hwnd);
+
+  return float(dpi) / 96.0f;
 }
 
 GUI::~GUI() {

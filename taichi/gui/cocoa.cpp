@@ -417,6 +417,10 @@ void GUI::set_title(std::string title) {
   call(str, "release");
 }
 
+float GUI::get_scale() {
+  return 1.0;
+}
+
 void GUI::redraw() {
   call(view, "setNeedsDisplay:", YES);
 }

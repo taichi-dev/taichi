@@ -930,6 +930,8 @@ class GUI : public GUIBase {
     canvas->img.write_as_image(filename);
   }
 
+  float get_scale();
+
   ~GUI();
 };
 

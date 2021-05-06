@@ -195,6 +195,10 @@ void GUI::set_title(std::string title) {
   XStoreName((Display *)display, window, title.c_str());
 }
 
+float GUI::get_scale() {
+  return 1.0;
+}
+
 GUI::~GUI() {
   if (show_gui) {
     XCloseDisplay((Display *)display);

@@ -82,7 +82,6 @@ class Func:
         self.extract_arguments()
 
     def __call__(self, *args):
-        print('call', self.func.__name__)
         _taichi_skip_traceback = 1
         if not impl.inside_kernel():
             if not self.pyfunc:
@@ -100,7 +99,6 @@ class Func:
             return ret
 
     def do_compile(self):
-        print('do_compile', self.func.__name__)
         src = _remove_indent(oinspect.getsource(self.func))
         tree = ast.parse(src)
 

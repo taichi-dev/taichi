@@ -30,6 +30,8 @@ def expr_init(rhs):
             return dict((key, expr_init(val)) for key, val in rhs.items())
         elif isinstance(rhs, _ti_core.DataType):
             return rhs
+        elif isinstance(rhs, _ti_core.Arch):
+            return rhs
         elif isinstance(rhs, ti.ndrange):
             return rhs
         elif hasattr(rhs, '_data_oriented'):
@@ -150,8 +152,8 @@ def chain_compare(comparators, ops):
       f'Chain comparison invoked with {len(comparators)} comparators but {len(ops)} operators'
     ret = True
     for i in range(len(ops)):
-        lhs = comparators[i]
-        rhs = comparators[i + 1]
+        lhs = ti.expr_init(comparators[i])
+        rhs = ti.expr_init(comparators[i + 1])
         if ops[i] == 'Lt':
             now = lhs < rhs
         elif ops[i] == 'LtE':
@@ -172,7 +174,6 @@ def chain_compare(comparators, ops):
 
 @taichi_scope
 def func_call_rvalue(func, *args):
-    print('rvalue')
     assert get_runtime().experimental_real_function
     args = make_expr_group(args)
     return _ti_core.make_func_call_expr(func.__name__, args)

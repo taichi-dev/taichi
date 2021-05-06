@@ -10,7 +10,7 @@ namespace lang {
 class Program;
 
 // TODO: Let Function and Kernel inherit from some class like "Callable"
-//  and merge the duplicated part?
+//  and merge the common part?
 class Function {
  public:
   Program *program;

@@ -676,9 +676,12 @@ void export_lang(py::module &m) {
           return get_current_program().kernel(name, grad);
         });
 
-  m.def("create_function", [&](const std::string &name) {
-    return get_current_program().create_function(name);
-  });
+  m.def(
+      "create_function",
+      [&](const std::string &name) {
+        return get_current_program().create_function(name);
+      },
+      py::return_value_policy::reference);
 
   m.def("create_print",
         [&](std::vector<std::variant<Expr, std::string>> contents) {

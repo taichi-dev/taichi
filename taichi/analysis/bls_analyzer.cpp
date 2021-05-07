@@ -47,7 +47,7 @@ void BLSAnalyzer::record_access(Stmt *stmt, AccessFlag flag) {
     }
     bool matching_indices = true;
     std::vector<IndexRange> offsets;
-	std::vector<int> coeffs;
+    std::vector<int> coeffs;
     offsets.resize(ptr->indices.size());
     coeffs.resize(ptr->indices.size());
     const int num_indices = (int)ptr->indices.size();

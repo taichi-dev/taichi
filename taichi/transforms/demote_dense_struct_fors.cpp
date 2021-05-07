@@ -53,7 +53,8 @@ void convert_to_range_for(OffloadedStmt *offloaded) {
 
   int offset = total_bits;
   int start_bits[taichi_max_num_indices] = {0};
-  std::copy(std::begin(start_bits_root), std::end(start_bits_root), std::begin(start_bits));
+  std::copy(std::begin(start_bits_root), std::end(start_bits_root),
+            std::begin(start_bits));
   Stmt *test = body_header.push_back<ConstStmt>(TypedConstant(-1));
   bool has_test = false;
   for (int i = 0; i < (int)snodes.size(); i++) {
@@ -75,7 +76,8 @@ void convert_to_range_for(OffloadedStmt *offloaded) {
     }
   }
 
-  std::copy(std::begin(start_bits_root), std::end(start_bits_root), std::begin(start_bits));
+  std::copy(std::begin(start_bits_root), std::end(start_bits_root),
+            std::begin(start_bits));
   for (int i = 0; i < (int)snodes.size(); i++) {
     auto snode = snodes[i];
     for (int j = 0; j < (int)physical_indices.size(); j++) {

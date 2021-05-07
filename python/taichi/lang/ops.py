@@ -573,9 +573,8 @@ def rescale_index(a, b, I):
             f"second arguement must be a field"
     assert isinstance(I, matrix.Matrix) and not I.is_global(), \
             f"third arguement must be a grouped index"
-    assert len(a.shape) >= len(b.shape)
     Ib = I.copy()
-    for n in range(len(b.shape)):
+    for n in range(min(I.n, min(len(a.shape), len(b.shape)))):
         if a.shape[n] > b.shape[n]:
             Ib.entries[n] = I.entries[n] // (a.shape[n] // b.shape[n])
         if a.shape[n] < b.shape[n]:

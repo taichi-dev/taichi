@@ -1552,6 +1552,14 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     auto upper_bound = get_arg(4);
 
     parent_coordinates = element.get_ptr("pcoord");
+    block_corner_coordinates =
+        create_entry_block_alloca(physical_coordinate_ty);
+
+    auto refine =
+        get_runtime_function(leaf_block->refine_coordinates_func_name());
+
+    create_call(refine, {parent_coordinates, block_corner_coordinates,
+                         tlctx->get_constant(0)});
 
     if (stmt->tls_prologue) {
       stmt->tls_prologue->accept(this);
@@ -1605,12 +1613,23 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     builder->SetInsertPoint(loop_body_bb);
 
     // initialize the coordinates
-    auto refine =
-        get_runtime_function(leaf_block->refine_coordinates_func_name());
     auto new_coordinates = create_entry_block_alloca(physical_coordinate_ty);
 
     create_call(refine, {parent_coordinates, new_coordinates,
                          builder->CreateLoad(loop_index)});
+
+    if (stmt->snode->type == SNodeType::bit_array && stmt->snode->parent) {
+      if (stmt->snode->parent->type == SNodeType::dense) {
+        refine =
+            get_runtime_function(stmt->snode->refine_coordinates_func_name());
+
+        create_call(refine,
+                    {new_coordinates, new_coordinates, tlctx->get_constant(0)});
+      } else {
+        TI_ERROR(
+            "Struct-for looping through bit array but its parent is not dense");
+      }
+    }
 
     current_coordinates = new_coordinates;
 
@@ -1770,10 +1789,11 @@ void CodeGenLLVM::visit(BlockCornerIndexStmt *stmt) {
   if (stmt->loop->is<OffloadedStmt>() &&
       stmt->loop->as<OffloadedStmt>()->task_type ==
           OffloadedStmt::TaskType::struct_for) {
-    TI_ASSERT(parent_coordinates);
-    llvm_val[stmt] = builder->CreateLoad(builder->CreateGEP(
-        parent_coordinates, {tlctx->get_constant(0), tlctx->get_constant(0),
-                             tlctx->get_constant(stmt->index)}));
+    TI_ASSERT(block_corner_coordinates);
+    llvm_val[stmt] = builder->CreateLoad(
+        builder->CreateGEP(block_corner_coordinates,
+                           {tlctx->get_constant(0), tlctx->get_constant(0),
+                            tlctx->get_constant(stmt->index)}));
   } else {
     TI_NOT_IMPLEMENTED;
   }

@@ -47,14 +47,17 @@ void BLSAnalyzer::record_access(Stmt *stmt, AccessFlag flag) {
     }
     bool matching_indices = true;
     std::vector<IndexRange> offsets;
+	std::vector<int> coeffs;
     offsets.resize(ptr->indices.size());
+    coeffs.resize(ptr->indices.size());
     const int num_indices = (int)ptr->indices.size();
     for (int i = 0; i < num_indices; i++) {
       auto diff = irpass::analysis::value_diff_loop_index(ptr->indices[i],
                                                           for_stmt_, i);
-      if (diff.linear_related()) {
+      if (diff.related_() and diff.coeff > 0) {
         offsets[i].low = diff.low;
         offsets[i].high = diff.high;
+        coeffs[i] = diff.coeff;
       } else {
         matching_indices = false;
       }
@@ -65,7 +68,7 @@ void BLSAnalyzer::record_access(Stmt *stmt, AccessFlag flag) {
       std::vector<int> index(num_indices, 0);
       std::function<void(int)> visit = [&](int dimension) {
         if (dimension == num_indices) {
-          pads_->access(snode, index, flag);
+          pads_->access(snode, coeffs, index, flag);
           return;
         }
         for (int i = (index_bounds[dimension].low + offsets[dimension].low);

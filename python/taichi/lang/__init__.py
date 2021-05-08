@@ -335,11 +335,11 @@ def sym_eig(A, dt=None):
     eigenvectors: ti.Matrix(n, n)
         The eigenvectors. Each column stores one eigenvector.
     """
+    assert all(A == A.transpose()), "A needs to be symmetric"
     if dt is None:
         dt = impl.get_runtime().default_fp
     from taichi.lang import linalg
     if A.n == 2:
-        assert A[0, 1] == A[1, 0], "A needs to be symmetric"
         return linalg.sym_eig2x2(A, dt)
     raise Exception("Symmetric eigen solver only supports 2D matrices.")
 

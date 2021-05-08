@@ -87,7 +87,7 @@ def _test_sym_eig2x2(dt):
 
     @ti.kernel
     def eigen_solve():
-        v[None], w[None] = ti.sym_eig(A)
+        v[None], w[None] = ti.sym_eig(A[None])
 
     tol = 1e-5 if dt == ti.f32 else 1e-12
     dtype = np.float32 if dt == ti.f32 else np.float64

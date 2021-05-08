@@ -132,6 +132,8 @@ def sym_eig2x2(A, dt):
 
     A1 = A - lambda1 * ti.Matrix.identity(dt, 2)
     A2 = A - lambda2 * ti.Matrix.identity(dt, 2)
+    v1 = ti.Vector.zero(dt, 2)
+    v2 = ti.Vector.zero(dt, 2)
     if all(A1 == ti.Matrix.zero(dt, 2, 2)) and all(
             A1 == ti.Matrix.zero(dt, 2, 2)):
         v1 = ti.Vector([0.0, 1.0]).cast(dt)

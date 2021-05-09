@@ -2,10 +2,7 @@ import taichi as ti
 import numpy as np
 import math
 
-try:
-    ti.init(arch=ti.gpu)
-except:
-    ti.init(arch=ti.cpu)
+ti.init(arch=ti.gpu)
 
 tile_size = 8  # Size of a tile
 width, height = 500, 500  # Size of framebuffer

@@ -63,9 +63,6 @@ class LoopInvariantCodeMotion : public BasicStmtVisitor {
       }
     }
 
-    //if (can_be_moved)
-    //  TI_WARN("stmt can be moved");
-
     return can_be_moved;
   }
 

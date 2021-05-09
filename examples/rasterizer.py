@@ -31,7 +31,7 @@ class TriangleRasterizer:
         self.vertices = ti.root.dense(ti.i, n).place(self.A, self.B, self.C)
         self.colors = ti.root.dense(ti.i, n).place(self.c0, self.c1, self.c2)
 
-        # Tile based culling
+        # Tile-based culling
         self.block_num_triangles = ti.field(dtype=ti.i32,
                                             shape=(width // tile_size,
                                                    height // tile_size))

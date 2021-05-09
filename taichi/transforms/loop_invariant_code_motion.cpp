@@ -39,7 +39,8 @@ class LoopInvariantCodeMotion : public BasicStmtVisitor {
       if (config.move_loop_invariant_outside_if &&
           stmt->parent != loop_blocks.top()) {
         // If we enable moving code from a nested if block, we need to check
-        // visibility Example: for i in range(10):
+        // visibility. Example:
+        // for i in range(10):
         //   a = x[0]
         //   if b:
         //     c = a + 1

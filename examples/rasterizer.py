@@ -7,15 +7,18 @@ try:
 except:
     ti.init(arch=ti.cpu)
 
-tile_size = 8 # Size of a tile
-width, height = 500, 500 # Size of framebuffer
-num_triangles = 60 # Number of random colored triangles to be generated
-num_samples_per_pixel = 4 # Number of samples per pixel
+tile_size = 8  # Size of a tile
+width, height = 500, 500  # Size of framebuffer
+num_triangles = 60  # Number of random colored triangles to be generated
+num_samples_per_pixel = 4  # Number of samples per pixel
 
 num_spp_sqrt = int(math.sqrt(num_samples_per_pixel))
 
-samples = ti.Vector.field(3, dtype=ti.f32, shape=(width, height, num_spp_sqrt, num_spp_sqrt))
+samples = ti.Vector.field(3,
+                          dtype=ti.f32,
+                          shape=(width, height, num_spp_sqrt, num_spp_sqrt))
 pixels = ti.Vector.field(3, dtype=ti.f32, shape=(width, height))
+
 
 @ti.data_oriented
 class TriangleRasterizer:
@@ -32,8 +35,12 @@ class TriangleRasterizer:
         self.colors = ti.root.dense(ti.i, n).place(self.c0, self.c1, self.c2)
 
         # Tile based culling
-        self.block_num_triangles = ti.field(dtype=ti.i32, shape=(width // tile_size, height // tile_size))
-        self.block_indicies = ti.field(dtype=ti.i32, shape=(width // tile_size, height // tile_size, n))
+        self.block_num_triangles = ti.field(dtype=ti.i32,
+                                            shape=(width // tile_size,
+                                                   height // tile_size))
+        self.block_indicies = ti.field(dtype=ti.i32,
+                                       shape=(width // tile_size,
+                                              height // tile_size, n))
 
     def set_triangle(self, i, v0, v1, v2, c0, c1, c2):
         self.A[i] = v0
@@ -77,14 +84,19 @@ class TriangleRasterizer:
     @ti.kernel
     def rasterize(self):
         for i, j in pixels:
-            for k in range(self.block_num_triangles[i // tile_size, j // tile_size]):
+            for k in range(self.block_num_triangles[i // tile_size,
+                                                    j // tile_size]):
                 idx = self.block_indicies[i // tile_size, j // tile_size, k]
                 A, B, C = self.A[idx], self.B[idx], self.C[idx]
                 c0, c1, c2 = self.c0[idx], self.c1[idx], self.c2[idx]
 
                 for subi, subj in ti.ndrange(num_spp_sqrt, num_spp_sqrt):
-                    P = ti.Vector([i + (subi + 0.5) / num_spp_sqrt, j + (subj + 0.5) / num_spp_sqrt])
-                    result, alpha, beta, gamma = self.point_in_triangle(P, A, B, C)
+                    P = ti.Vector([
+                        i + (subi + 0.5) / num_spp_sqrt,
+                        j + (subj + 0.5) / num_spp_sqrt
+                    ])
+                    result, alpha, beta, gamma = self.point_in_triangle(
+                        P, A, B, C)
 
                     if result:
                         interpolated_color = c0 * alpha + c1 * beta + c2 * gamma
@@ -95,6 +107,7 @@ class TriangleRasterizer:
                 samples_sum += samples[i, j, subi, subj]
             pixels[i, j] = samples_sum / num_samples_per_pixel
 
+
 gui = ti.GUI("Rasterizer", res=(width, height))
 
 triangles = TriangleRasterizer(num_triangles)
@@ -103,13 +116,12 @@ i = 0
 while gui.running:
     # Set a triangle to a new random triangle
     triangles.set_triangle(i % num_triangles,
-        ti.Vector(np.random.rand(2) * [width, height]),
-        ti.Vector(np.random.rand(2) * [width, height]),
-        ti.Vector(np.random.rand(2) * [width, height]),
-        ti.Vector(np.random.rand(3)),
-        ti.Vector(np.random.rand(3)),
-        ti.Vector(np.random.rand(3))
-    )
+                           ti.Vector(np.random.rand(2) * [width, height]),
+                           ti.Vector(np.random.rand(2) * [width, height]),
+                           ti.Vector(np.random.rand(2) * [width, height]),
+                           ti.Vector(np.random.rand(3)),
+                           ti.Vector(np.random.rand(3)),
+                           ti.Vector(np.random.rand(3)))
     i = i + 1
 
     samples.fill(ti.Vector([1.0, 1.0, 1.0]))

@@ -106,12 +106,12 @@ class Func:
         key = _ti_core.FunctionKey(self.func.__name__, self.func_id,
                                    instance_id)
 
-        if key not in self.compiled:
+        if key.instance_id not in self.compiled:
             self.do_compile(key=key, args=args)
         if impl.get_runtime().experimental_real_function:
             return self.func_call_rvalue(key=key, args=args)
         else:
-            ret = self.compiled[key](*args)
+            ret = self.compiled[key.instance_id](*args)
             return ret
 
     def func_call_rvalue(self, key, args):
@@ -148,11 +148,11 @@ class Func:
             compile(tree,
                     filename=oinspect.getsourcefile(self.func),
                     mode='exec'), global_vars, local_vars)
-        self.compiled[key] = local_vars[self.func.__name__]
+        self.compiled[key.instance_id] = local_vars[self.func.__name__]
 
         if impl.get_runtime().experimental_real_function:
             taichi_function = _ti_core.create_function(key)
-            taichi_function.set_function_body(self.compiled[key])
+            taichi_function.set_function_body(self.compiled[key.instance_id])
 
     def extract_arguments(self):
         sig = inspect.signature(self.func)

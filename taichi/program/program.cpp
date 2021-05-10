@@ -228,6 +228,7 @@ TypeFactory &Program::get_type_factory() {
 }
 
 Function *Program::create_function(const FunctionKey &funcid) {
+  TI_TRACE("Creating function {}...", funcid.get_full_name());
   functions.emplace_back(std::make_unique<Function>(this, funcid));
   TI_ASSERT(function_map.count(funcid) == 0);
   function_map[funcid] = functions.back().get();

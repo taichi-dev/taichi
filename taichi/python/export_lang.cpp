@@ -690,7 +690,8 @@ void export_lang(py::module &m) {
       py::return_value_policy::reference);
 
   py::class_<FunctionKey>(m, "FunctionKey")
-      .def(py::init<const std::string &, int, int>());
+      .def(py::init<const std::string &, int, int>())
+      .def_readonly("instance_id", &FunctionKey::instance_id);
 
   m.def("create_print",
         [&](std::vector<std::variant<Expr, std::string>> contents) {

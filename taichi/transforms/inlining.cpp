@@ -9,17 +9,15 @@ namespace taichi {
 namespace lang {
 
 // Inline all functions.
-class Inlining : public BasicStmtVisitor {
+class Inliner : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
-  DelayedIRModifier modifier;
-  Program *program;
 
-  explicit Inlining(Program *program) : BasicStmtVisitor(), program(program) {
+  explicit Inliner(Program *program) : BasicStmtVisitor(), program_(program) {
   }
 
   void visit(FuncCallStmt *stmt) override {
-    auto *func = program->function_map[stmt->funcid];
+    auto *func = program_->function_map[stmt->funcid];
     TI_ASSERT(func);
     TI_ASSERT(func->args.size() == stmt->args.size());
     TI_ASSERT(func->ir->is<Block>());
@@ -35,10 +33,9 @@ class Inlining : public BasicStmtVisitor {
           [&](Stmt *s) { return stmt->args[s->as<ArgLoadStmt>()->arg_id]; });
     }
     if (!func->rets.empty()) {
-      if (irpass::analysis::gather_statements(
-              inlined_ir.get(),
-              [&](Stmt *s) { return s->is<KernelReturnStmt>(); })
-              .size() > 1) {
+      if (irpass::analysis::gather_statements(inlined_ir.get(), [&](Stmt *s) {
+            return s->is<KernelReturnStmt>();
+          }).size() > 1) {
         TI_WARN(
             "Multiple returns in function \"{}\" may not be handled properly.",
             func->funcid);
@@ -66,7 +63,7 @@ class Inlining : public BasicStmtVisitor {
   }
 
   static bool run(IRNode *node, Program *program) {
-    Inlining inliner(program);
+    Inliner inliner(program);
     bool modified = false;
     while (true) {
       node->accept(&inliner);
@@ -77,6 +74,10 @@ class Inlining : public BasicStmtVisitor {
     }
     return modified;
   }
+
+ private:
+  DelayedIRModifier modifier;
+  Program *program_;
 };
 
 const PassID InliningPass::id = "InliningPass";
@@ -87,7 +88,7 @@ bool inlining(IRNode *root,
               const CompileConfig &config,
               const InliningPass::Args &args) {
   TI_AUTO_PROF;
-  return Inlining::run(root, args.program);
+  return Inliner::run(root, args.program);
 }
 
 }  // namespace irpass

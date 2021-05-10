@@ -39,7 +39,7 @@ def test_function_with_return():
     assert x[None] == 42
 
 
-@ti.test(experimental_real_function=True)
+@ti.test(experimental_real_function=True, exclude=[ti.opengl])
 def test_function_with_multiple_last_return():
     x = ti.field(ti.i32, shape=())
 
@@ -56,9 +56,7 @@ def test_function_with_multiple_last_return():
     def run():
         a = foo(40)
         foo(1)
-        if ti.cfg.arch != ti.opengl:
-            # OpenGL backend does not support assertions
-            assert a == 40
+        assert a == 40
 
     x[None] = 0
     run()

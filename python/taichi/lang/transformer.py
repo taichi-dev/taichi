@@ -716,7 +716,12 @@ if 1:
                 if ASTResolver.resolve_to(decorator, ti.func, globals()):
                     raise TaichiSyntaxError(
                         "Function definition not allowed in 'ti.func'.")
-            if not impl.get_runtime().experimental_real_function:
+            if impl.get_runtime().experimental_real_function:
+                if self.is_kernel and self.func.is_grad:
+                    raise TaichiSyntaxError(
+                        "Real function in gradient kernels unsupported.")
+                transform_as_kernel()
+            else:
                 # Transform as func (all parameters passed by value)
                 arg_decls = []
                 for i, arg in enumerate(args.args):
@@ -733,11 +738,6 @@ if 1:
                                                              '_by_value__')
                     args.args[i].arg += '_by_value__'
                     arg_decls.append(arg_init)
-            else:  # experimental real function support
-                if self.is_kernel and self.func.is_grad:
-                    raise TaichiSyntaxError(
-                        "Real function in gradient kernels unsupported.")
-                transform_as_kernel()
 
         with self.variable_scope():
             self.generic_visit(node)

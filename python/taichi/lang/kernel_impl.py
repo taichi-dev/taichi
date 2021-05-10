@@ -109,7 +109,6 @@ class Func:
             ret = self.compiled(*args)
             return ret
 
-
     def func_call_rvalue(self, *args):
         assert impl.get_runtime().experimental_real_function
         non_template_args = []
@@ -117,8 +116,8 @@ class Func:
             if not isinstance(self.argument_annotations[i], template):
                 non_template_args.append(args[i])
         non_template_args = impl.make_expr_group(non_template_args)
-        return ti.Expr(_ti_core.make_func_call_expr(self.func.__name__, non_template_args))
-
+        return ti.Expr(
+            _ti_core.make_func_call_expr(self.func.__name__, non_template_args))
 
     def do_compile(self, key, args):
         src = _remove_indent(oinspect.getsource(self.func))
@@ -179,13 +178,9 @@ class Func:
                 if i == 0 and self.classfunc:
                     annotation = template()
             else:
-                if id(annotation) in primitive_types.type_ids:
-                    if not impl.get_runtime().experimental_real_function:
-                        ti.warning(
-                            'Data type annotations are unnecessary for Taichi'
-                            ' functions, consider removing it',
-                            stacklevel=4)
-                elif not isinstance(annotation, template):
+                if not id(
+                        annotation) in primitive_types.type_ids and not isinstance(
+                    annotation, template):
                     raise KernelDefError(
                         f'Invalid type annotation (argument {i}) of Taichi function: {annotation}'
                     )
@@ -197,7 +192,7 @@ class KernelTemplateMapper:
     def __init__(self, annotations, template_slot_locations):
         self.annotations = annotations
         # Make sure extractors's size is the same as the number of args
-        dummy_extract = lambda arg: (type(arg).__name__, )
+        dummy_extract = lambda arg: (type(arg).__name__,)
         self.extractors = tuple((i, getattr(anno, 'extract', dummy_extract))
                                 for (i, anno) in enumerate(self.annotations))
         self.num_args = len(annotations)
@@ -412,7 +407,7 @@ class Kernel:
         def func__(*args):
             assert len(args) == len(
                 self.argument_annotations), '{} arguments needed but {} provided'.format(
-                    len(self.argument_annotations), len(args))
+                len(self.argument_annotations), len(args))
 
             tmps = []
             callbacks = []
@@ -521,7 +516,7 @@ class Kernel:
     def match_ext_arr(self, v, needed):
         needs_array = isinstance(
             needed, np.ndarray) or needed == np.ndarray or isinstance(
-                needed, ext_arr)
+            needed, ext_arr)
         has_array = isinstance(v, np.ndarray)
         if not has_array and util.has_pytorch():
             import torch

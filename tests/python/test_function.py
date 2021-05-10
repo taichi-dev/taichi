@@ -123,13 +123,14 @@ def test_python_function():
     @ti.data_oriented
     class A:
         def __init__(self):
-            self.count = 0
+            self.count = ti.field(ti.i32, shape=())
+            self.count[None] = 0
 
-        @ti.func
+        @ti.pyfunc
         def dec(self, val: ti.i32) -> ti.i32:
-            self.count += 1
+            self.count[None] += 1
             x[None] -= val
-            return self.count
+            return self.count[None]
 
         @ti.kernel
         def run(self) -> ti.i32:
@@ -138,8 +139,8 @@ def test_python_function():
             inc(identity(3))
             return a
 
-    x[None] = 0
     a = A()
+    x[None] = 0
     assert a.run() == 1
     assert a.run() == 2
     assert x[None] == 4

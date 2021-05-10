@@ -7,6 +7,7 @@
 #include "taichi/ir/stmt_op_types.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/expression.h"
+#include "taichi/program/function.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -588,14 +589,15 @@ class ExternalTensorShapeAlongAxisExpression : public Expression {
 
 class FuncCallExpression : public Expression {
  public:
-  std::string funcid;
+  FunctionKey funcid;
   ExprGroup args;
 
   std::string serialize() override {
-    return fmt::format("func_call(\"{}\", {})", funcid, args.serialize());
+    return fmt::format("func_call(\"{}\", {})", funcid.get_full_name(),
+                       args.serialize());
   }
 
-  FuncCallExpression(const std::string &funcid, const ExprGroup &args)
+  FuncCallExpression(const FunctionKey &funcid, const ExprGroup &args)
       : funcid(funcid), args(args) {
   }
 

@@ -227,6 +227,13 @@ TypeFactory &Program::get_type_factory() {
   return TypeFactory::get_instance();
 }
 
+Function *Program::create_function(const FunctionKey &funcid) {
+  functions.emplace_back(std::make_unique<Function>(this, funcid));
+  TI_ASSERT(function_map.count(funcid) == 0);
+  function_map[funcid] = functions.back().get();
+  return functions.back().get();
+}
+
 FunctionType Program::compile(Kernel &kernel) {
   auto start_t = Time::get_time();
   TI_AUTO_PROF;

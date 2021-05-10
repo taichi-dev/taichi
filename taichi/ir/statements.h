@@ -4,6 +4,7 @@
 #include "taichi/ir/offloaded_task_type.h"
 #include "taichi/ir/stmt_op_types.h"
 #include "taichi/program/arch.h"
+#include "taichi/program/function_key.h"
 
 namespace taichi {
 namespace lang {
@@ -752,11 +753,10 @@ class FuncBodyStmt : public Stmt {
  */
 class FuncCallStmt : public Stmt {
  public:
-  // TODO: Use a specific type instead of an std::string
-  std::string funcid;
+  FunctionKey funcid;
   std::vector<Stmt *> args;
 
-  FuncCallStmt(const std::string &funcid, const std::vector<Stmt *> &args);
+  FuncCallStmt(const FunctionKey &funcid, const std::vector<Stmt *> &args);
 
   TI_STMT_DEF_FIELDS(ret_type, funcid, args);
   TI_DEFINE_ACCEPT_AND_CLONE

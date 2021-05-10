@@ -73,8 +73,12 @@ def pyfunc(foo):
 
 
 class Func:
+    function_counter = 0
+
     def __init__(self, func, classfunc=False, pyfunc=False):
         self.func = func
+        self.func_id = Func.function_counter
+        Func.function_counter += 1
         self.compiled = None
         self.classfunc = classfunc
         self.pyfunc = pyfunc
@@ -99,26 +103,27 @@ class Func:
                     "from both Python-scope and Taichi-scope.")
             return self.func(*args)
         instance_id, arg_features = self.mapper.lookup(args)
-        key = (self.func, instance_id)
+        key = _ti_core.FunctionKey(self.func.__name__, self.func_id,
+                                   instance_id)
 
         if self.compiled is None:
             self.do_compile(key=key, args=args)
         if impl.get_runtime().experimental_real_function:
-            return self.func_call_rvalue(*args)
+            print(key)
+            print(args)
+            return self.func_call_rvalue(key=key, args=args)
         else:
             ret = self.compiled(*args)
             return ret
 
-    def func_call_rvalue(self, *args):
+    def func_call_rvalue(self, key, args):
         assert impl.get_runtime().experimental_real_function
         non_template_args = []
         for i in range(len(self.argument_annotations)):
             if not isinstance(self.argument_annotations[i], template):
                 non_template_args.append(args[i])
         non_template_args = impl.make_expr_group(non_template_args)
-        return ti.Expr(
-            _ti_core.make_func_call_expr(self.func.__name__,
-                                         non_template_args))
+        return ti.Expr(_ti_core.make_func_call_expr(key, non_template_args))
 
     def do_compile(self, key, args):
         src = _remove_indent(oinspect.getsource(self.func))
@@ -148,7 +153,7 @@ class Func:
         self.compiled = local_vars[self.func.__name__]
 
         if impl.get_runtime().experimental_real_function:
-            taichi_function = _ti_core.create_function(self.func.__name__)
+            taichi_function = _ti_core.create_function(key)
             taichi_function.set_function_body(self.compiled)
 
     def extract_arguments(self):

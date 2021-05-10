@@ -284,7 +284,7 @@ std::unique_ptr<Stmt> FuncBodyStmt::clone() const {
   return std::make_unique<FuncBodyStmt>(funcid, body->clone());
 }
 
-FuncCallStmt::FuncCallStmt(const std::string &funcid,
+FuncCallStmt::FuncCallStmt(const FunctionKey &funcid,
                            const std::vector<Stmt *> &args)
     : funcid(funcid), args(args) {
   TI_STMT_REG_FIELDS;

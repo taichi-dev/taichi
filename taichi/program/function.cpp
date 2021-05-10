@@ -22,7 +22,7 @@ class CurrentFunctionGuard {
 };
 }  // namespace
 
-Function::Function(Program *program, const std::string &funcid)
+Function::Function(Program *program, const FunctionKey &funcid)
     : program(program), funcid(funcid) {
 }
 

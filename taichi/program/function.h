@@ -2,6 +2,7 @@
 
 #include "taichi/lang_util.h"
 #include "taichi/ir/ir.h"
+#include "taichi/program/function_key.h"
 #include "taichi/program/kernel.h"
 
 namespace taichi {
@@ -9,18 +10,12 @@ namespace lang {
 
 class Program;
 
-class FunctionID {
- public:
-  std::string name;
-  int instance_id;
-};
-
 // TODO: Let Function and Kernel inherit from some class like "Callable"
 //  and merge the common part?
 class Function {
  public:
   Program *program;
-  std::string funcid;
+  FunctionKey funcid;
   std::unique_ptr<IRNode> ir;
   using Arg = Kernel::Arg;
   using Ret = Kernel::Ret;
@@ -28,7 +23,7 @@ class Function {
   std::vector<Arg> args;
   std::vector<Ret> rets;
 
-  Function(Program *program, const std::string &funcid);
+  Function(Program *program, const FunctionKey &funcid);
 
   void set_function_body(const std::function<void()> &func);
 

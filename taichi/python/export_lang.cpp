@@ -498,7 +498,7 @@ void export_lang(py::module &m) {
   m.def("end_func", [&](const std::string &funcid) { scope_stack.pop_back(); });
 
   m.def("make_func_call_expr",
-        Expr::make<FuncCallExpression, const std::string &, const ExprGroup &>);
+        Expr::make<FuncCallExpression, const FunctionKey &, const ExprGroup &>);
 
   m.def("layout", layout);
 
@@ -684,10 +684,13 @@ void export_lang(py::module &m) {
 
   m.def(
       "create_function",
-      [&](const std::string &name) {
-        return get_current_program().create_function(name);
+      [&](const FunctionKey &funcid) {
+        return get_current_program().create_function(funcid);
       },
       py::return_value_policy::reference);
+
+  py::class_<FunctionKey>(m, "FunctionKey")
+      .def(py::init<const std::string &, int, int>());
 
   m.def("create_print",
         [&](std::vector<std::variant<Expr, std::string>> contents) {

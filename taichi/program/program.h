@@ -102,7 +102,7 @@ class Program {
 
   std::vector<std::unique_ptr<Kernel>> kernels;
   std::vector<std::unique_ptr<Function>> functions;
-  std::unordered_map<std::string, Function *> function_map;
+  std::unordered_map<FunctionKey, Function *> function_map;
 
   std::unique_ptr<KernelProfilerBase> profiler;
 
@@ -192,12 +192,7 @@ class Program {
   void end_kernel_definition() {
   }
 
-  Function *create_function(const std::string &name) {
-    functions.emplace_back(std::make_unique<Function>(this, name));
-    TI_ASSERT(function_map.count(name) == 0);
-    function_map[name] = functions.back().get();
-    return functions.back().get();
-  }
+  Function *create_function(const FunctionKey &funcid);
 
   /*void start_function_definition(Function *func) {
     current_kernel_or_function = func;

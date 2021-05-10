@@ -126,8 +126,8 @@ Setting up Taichi for development
   * On Windows, please add these variables by accessing your system settings:
 
     1. Add ``TAICHI_REPO_DIR`` whose value is the path to your taichi repository so that Taichi knows you're a developer.
-    2. Add or append ``PYTHONPATH`` with ``%TAICHI_REPO_DIR%/python`` so that Python imports Taichi from the local repo.
-    3. Add or append ``PATH`` with ``%TAICHI_REPO_DIR%/bin`` so that you can use ``ti`` command.
+    2. Add or append ``PYTHONPATH`` with ``%TAICHI_REPO_DIR%\python`` so that Python imports Taichi from the local repo.
+    3. Add or append ``PATH`` with ``%TAICHI_REPO_DIR%\bin`` so that you can use ``ti`` command.
     4. Add or append ``PATH`` with path to LLVM binary directory installed in previous section.
 
 - Clone the taichi repo **recursively**, and build:

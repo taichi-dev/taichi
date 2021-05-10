@@ -109,8 +109,6 @@ class Func:
         if self.compiled is None:
             self.do_compile(key=key, args=args)
         if impl.get_runtime().experimental_real_function:
-            print(key)
-            print(args)
             return self.func_call_rvalue(key=key, args=args)
         else:
             ret = self.compiled(*args)

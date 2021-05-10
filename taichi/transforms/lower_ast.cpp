@@ -430,18 +430,6 @@ class LowerAST : public IRVisitor {
     throw IRModified();
   }
 
-  void visit(FrontendFuncCallStmt *stmt) override {
-    std::vector<Stmt *> args;
-    auto fctx = make_flatten_ctx();
-    for (auto &arg : stmt->args.exprs) {
-      arg->flatten(&fctx);
-      args.push_back(arg->stmt);
-    }
-    fctx.push_back<FuncCallStmt>(stmt->funcid, args);
-    stmt->parent->replace_with(stmt, std::move(fctx.stmts));
-    throw IRModified();
-  }
-
   void visit(FrontendExprStmt *stmt) override {
     auto fctx = make_flatten_ctx();
     stmt->val->flatten(&fctx);

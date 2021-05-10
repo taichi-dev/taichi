@@ -497,11 +497,6 @@ void export_lang(py::module &m) {
 
   m.def("end_func", [&](const std::string &funcid) { scope_stack.pop_back(); });
 
-  m.def("func_call", [&](const std::string &funcid, const ExprGroup &args) {
-    current_ast_builder().insert(
-        Stmt::make<FrontendFuncCallStmt>(funcid, args));
-  });
-
   m.def("make_func_call_expr",
         Expr::make<FuncCallExpression, const std::string &, const ExprGroup &>);
 

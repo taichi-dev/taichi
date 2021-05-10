@@ -291,11 +291,6 @@ class IRPrinter : public IRVisitor {
           stmt->funcid, fmt::join(args, ", "));
   }
 
-  void visit(FrontendFuncCallStmt *stmt) override {
-    print("{}{} = call \"{}\", args = {{{}}}", stmt->type_hint(), stmt->name(),
-          stmt->funcid, stmt->args.serialize());
-  }
-
   void visit(FrontendFuncDefStmt *stmt) override {
     print("function \"{}\" {{", stmt->funcid);
     stmt->body->accept(this);

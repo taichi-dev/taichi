@@ -26,7 +26,7 @@ def _test_eig2x2_real(dt):
 
     @ti.kernel
     def eigen_solve():
-        v[None], w[None] = ti.eig(A)
+        v[None], w[None] = ti.eig(A[None])
 
     tol = 1e-5 if dt == ti.f32 else 1e-12
     dtype = np.float32 if dt == ti.f32 else np.float64
@@ -54,7 +54,7 @@ def _test_eig2x2_complex(dt):
 
     @ti.kernel
     def eigen_solve():
-        v[None], w[None] = ti.eig(A)
+        v[None], w[None] = ti.eig(A[None])
 
     tol = 1e-5 if dt == ti.f32 else 1e-12
     dtype = np.float32 if dt == ti.f32 else np.float64

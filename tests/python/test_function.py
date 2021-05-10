@@ -144,3 +144,44 @@ def test_python_function():
     assert a.run() == 1
     assert a.run() == 2
     assert x[None] == 4
+    assert a.dec(4) == 3
+    assert x[None] == 0
+
+
+
+@ti.test(experimental_real_function=True, exclude=[ti.opengl, ti.cc])
+def test_templates():
+    x = ti.field(ti.i32, shape=())
+    y = ti.field(ti.i32, shape=())
+
+    @ti.kernel
+    def kernel_inc(x: ti.template()):
+        x[None] += 1
+
+    def run_kernel():
+        x[None] = 10
+        y[None] = 20
+        kernel_inc(x)
+        assert x[None] == 11
+        assert y[None] == 20
+        kernel_inc(y)
+        assert x[None] == 11
+        assert y[None] == 21
+
+    @ti.func
+    def inc(x: ti.template()):
+        x[None] += 1
+
+    @ti.kernel
+    def run_func():
+        x[None] = 10
+        y[None] = 20
+        inc(x)
+        assert x[None] == 11
+        assert y[None] == 20
+        inc(y)
+        assert x[None] == 11
+        assert y[None] == 21
+
+    run_kernel()
+    run_func()

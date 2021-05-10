@@ -117,7 +117,8 @@ class Func:
                 non_template_args.append(args[i])
         non_template_args = impl.make_expr_group(non_template_args)
         return ti.Expr(
-            _ti_core.make_func_call_expr(self.func.__name__, non_template_args))
+            _ti_core.make_func_call_expr(self.func.__name__,
+                                         non_template_args))
 
     def do_compile(self, key, args):
         src = _remove_indent(oinspect.getsource(self.func))
@@ -178,9 +179,9 @@ class Func:
                 if i == 0 and self.classfunc:
                     annotation = template()
             else:
-                if not id(
-                        annotation) in primitive_types.type_ids and not isinstance(
-                    annotation, template):
+                if not id(annotation
+                          ) in primitive_types.type_ids and not isinstance(
+                              annotation, template):
                     raise KernelDefError(
                         f'Invalid type annotation (argument {i}) of Taichi function: {annotation}'
                     )
@@ -192,7 +193,7 @@ class KernelTemplateMapper:
     def __init__(self, annotations, template_slot_locations):
         self.annotations = annotations
         # Make sure extractors's size is the same as the number of args
-        dummy_extract = lambda arg: (type(arg).__name__,)
+        dummy_extract = lambda arg: (type(arg).__name__, )
         self.extractors = tuple((i, getattr(anno, 'extract', dummy_extract))
                                 for (i, anno) in enumerate(self.annotations))
         self.num_args = len(annotations)
@@ -406,7 +407,8 @@ class Kernel:
         # The actual function body
         def func__(*args):
             assert len(args) == len(
-                self.argument_annotations), '{} arguments needed but {} provided'.format(
+                self.argument_annotations
+            ), '{} arguments needed but {} provided'.format(
                 len(self.argument_annotations), len(args))
 
             tmps = []
@@ -516,7 +518,7 @@ class Kernel:
     def match_ext_arr(self, v, needed):
         needs_array = isinstance(
             needed, np.ndarray) or needed == np.ndarray or isinstance(
-            needed, ext_arr)
+                needed, ext_arr)
         has_array = isinstance(v, np.ndarray)
         if not has_array and util.has_pytorch():
             import torch

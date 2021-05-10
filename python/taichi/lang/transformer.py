@@ -727,7 +727,8 @@ if 1:
                 for i, arg in enumerate(args.args):
                     # Directly pass in template arguments,
                     # such as class instances ("self"), fields, SNodes, etc.
-                    if isinstance(self.func.argument_annotations[i], ti.template):
+                    if isinstance(self.func.argument_annotations[i],
+                                  ti.template):
                         continue
                     # Create a copy for non-template arguments,
                     # so that they are passed by value.

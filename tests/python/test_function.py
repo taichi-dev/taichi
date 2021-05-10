@@ -107,3 +107,39 @@ def test_failing_multiple_return():
     x[None] = 0
     run()
     assert x[None] == 26
+
+
+@ti.test(experimental_real_function=True)
+def test_python_function():
+    x = ti.field(ti.i32, shape=())
+
+    @ti.func
+    def inc(val: ti.i32):
+        x[None] += val
+
+    def identity(x):
+        return x
+
+    @ti.data_oriented
+    class A:
+        def __init__(self):
+            self.count = 0
+
+        @ti.func
+        def dec(self, val: ti.i32) -> ti.i32:
+            self.count += 1
+            x[None] -= val
+            return self.count
+
+        @ti.kernel
+        def run(self) -> ti.i32:
+            a = self.dec(1)
+            identity(2)
+            inc(identity(3))
+            return a
+
+    x[None] = 0
+    a = A()
+    assert a.run() == 1
+    assert a.run() == 2
+    assert x[None] == 4

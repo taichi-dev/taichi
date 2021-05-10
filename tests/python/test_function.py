@@ -148,7 +148,6 @@ def test_python_function():
     assert x[None] == 0
 
 
-
 @ti.test(experimental_real_function=True, exclude=[ti.opengl, ti.cc])
 def test_templates():
     x = ti.field(ti.i32, shape=())

@@ -194,13 +194,6 @@ class Program {
 
   Function *create_function(const FunctionKey &funcid);
 
-  /*void start_function_definition(Function *func) {
-    current_kernel_or_function = func;
-  }
-
-  void end_function_definition() {
-  }*/
-
   // TODO: This function is doing two things: 1) compiling CHI IR, and 2)
   // offloading them to each backend. We should probably separate the logic?
   FunctionType compile(Kernel &kernel);

@@ -9,6 +9,12 @@ namespace lang {
 
 class Program;
 
+class FunctionID {
+ public:
+  std::string name;
+  int instance_id;
+};
+
 // TODO: Let Function and Kernel inherit from some class like "Callable"
 //  and merge the common part?
 class Function {

@@ -173,13 +173,6 @@ def chain_compare(comparators, ops):
 
 
 @taichi_scope
-def func_call_rvalue(func, *args):
-    assert get_runtime().experimental_real_function
-    args = make_expr_group(args)
-    return ti.Expr(_ti_core.make_func_call_expr(func.__name__, args))
-
-
-@taichi_scope
 def func_call_with_check(func, *args, **kwargs):
     _taichi_skip_traceback = 1
     if '_sitebuiltins' == getattr(func, '__module__', '') and getattr(
@@ -195,11 +188,15 @@ def func_call_with_check(func, *args, **kwargs):
             UserWarning,
             stacklevel=2)
 
-    if get_runtime().experimental_real_function:
-        func(*args, **kwargs)  # compile the function here
-        assert not kwargs
-        args = make_expr_group(args)
-        return _ti_core.func_call(func.__name__, args)
+    is_taichi_function = getattr(func, '_is_taichi_function', False)
+    # If is_taichi_function is true: call a decorated Taichi function
+    # in a Taichi kernel/function.
+
+    if is_taichi_function and get_runtime().experimental_real_function:
+        # Compiles the function here.
+        # Invokes Func.__call__.
+        func_call_result = func(*args, **kwargs)
+        return _ti_core.insert_expr_stmt(func_call_result.ptr)
     else:
         return func(*args, **kwargs)
 

@@ -36,6 +36,7 @@ class ASTTransformer(object):
                                                         *args,
                                                         **kwargs)
         self.pass_Checks = ASTTransformerChecks(func=func)
+        self.pass_hack_function_call = HackFunctionCall(func=func)
 
     @staticmethod
     def print_ast(tree, title=None):
@@ -52,6 +53,7 @@ class ASTTransformer(object):
         ast.fix_missing_locations(tree)
         self.print_ast(tree, 'Preprocessed')
         self.pass_Checks.visit(tree)
+        self.pass_hack_function_call.visit(tree)
         self.print_ast(tree, 'Checked')
         ast.fix_missing_locations(tree)
         self.print_ast(tree, 'Final AST')
@@ -676,9 +678,9 @@ if 1:
             for i, arg in enumerate(args.args):
                 # Directly pass in template arguments,
                 # such as class instances ("self"), fields, SNodes, etc.
-                if isinstance(self.func.arguments[i], ti.template):
+                if isinstance(self.func.argument_annotations[i], ti.template):
                     continue
-                if isinstance(self.func.arguments[i], ti.ext_arr):
+                if isinstance(self.func.argument_annotations[i], ti.ext_arr):
                     arg_init = self.parse_stmt(
                         'x = ti.lang.kernel_arguments.decl_ext_arr_arg(0, 0)')
                     arg_init.targets[0].id = arg.arg
@@ -720,7 +722,7 @@ if 1:
                 for i, arg in enumerate(args.args):
                     # Directly pass in template arguments,
                     # such as class instances ("self"), fields, SNodes, etc.
-                    if isinstance(self.func.arguments[i], ti.template):
+                    if isinstance(self.func.argument_annotations[i], ti.template):
                         continue
                     # Create a copy for non-template arguments,
                     # so that they are passed by value.
@@ -900,12 +902,6 @@ class ASTTransformerChecks(ASTTransformerBase):
         self.has_return = False
         self.in_static_if = False
 
-    def visit_Call(self, node):
-        if isinstance(node.func, ast.Name):
-            node.args = [node.func] + node.args
-            node.func = self.parse_expr('ti.func_call_with_check')
-        return node
-
     def visit_If(self, node):
         node.test = self.visit(node.test)
 
@@ -931,4 +927,14 @@ class ASTTransformerChecks(ASTTransformerBase):
                 'Taichi functions/kernels cannot have multiple returns!'
                 ' Consider using a local variable to walk around.')
 
+        return node
+
+
+class HackFunctionCall(ASTTransformerBase):
+    def __init__(self, func):
+        super().__init__(func)
+
+    def visit_Call(self, node):
+        node.args = [node.func] + node.args
+        node.func = self.parse_expr('ti.func_call_with_check')
         return node

@@ -95,6 +95,10 @@ class IRPrinter : public IRVisitor {
     current_indent--;
   }
 
+  void visit(FrontendExprStmt *stmt) override {
+    print("{}", stmt->val->serialize());
+  }
+
   void visit(FrontendBreakStmt *stmt) override {
     print("break");
   }

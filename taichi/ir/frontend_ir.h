@@ -12,6 +12,16 @@ TLANG_NAMESPACE_BEGIN
 
 // Frontend Statements
 
+class FrontendExprStmt : public Stmt {
+ public:
+  Expr val;
+
+  FrontendExprStmt(const Expr &val) : val(val) {
+  }
+
+  TI_DEFINE_ACCEPT
+};
+
 class FrontendAllocaStmt : public Stmt {
  public:
   Identifier ident;

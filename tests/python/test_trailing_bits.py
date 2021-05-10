@@ -2,7 +2,6 @@ import taichi as ti
 import pytest
 
 
-
 def _test_trailing_bits():
     ti.init(arch=ti.cpu, debug=True, print_ir=True)
 

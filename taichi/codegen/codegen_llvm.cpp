@@ -1618,6 +1618,9 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     create_call(refine, {parent_coordinates, new_coordinates,
                          builder->CreateLoad(loop_index)});
 
+    // One more refine step is needed for bit_arrays to make final cooridinates
+    // non-consecutive, since each thread will process multiple
+    // coordinates via vectorization
     if (stmt->snode->type == SNodeType::bit_array && stmt->snode->parent) {
       if (stmt->snode->parent->type == SNodeType::dense) {
         refine =
@@ -1760,6 +1763,10 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
        body, tlctx->get_constant(stmt->tls_size),
        tlctx->get_constant(stmt->num_cpu_threads)});
   // TODO: why do we need num_cpu_threads on GPUs?
+
+  current_coordinates = nullptr;
+  parent_coordinates = nullptr;
+  block_corner_coordinates = nullptr;
 }
 
 void CodeGenLLVM::visit(LoopIndexStmt *stmt) {

@@ -190,9 +190,9 @@ def bls_particle_grid(N,
             p = pid[I]
 
             u_ = ti.floor(x[p] * N).cast(ti.i32)
-            Ip = ti.rescale_index(pid, m, I)
-            u0 = ti.assume_in_range(u_[0], Ip[0], 0, 1)
-            u1 = ti.assume_in_range(u_[1], Ip[1], 0, 1)
+            Im = ti.rescale_index(pid, m, I)
+            u0 = ti.assume_in_range(u_[0], Im[0], 0, 1)
+            u1 = ti.assume_in_range(u_[1], Im[1], 0, 1)
 
             u = ti.Vector([u0, u1])
 
@@ -223,9 +223,9 @@ def bls_particle_grid(N,
 
             u_ = ti.floor(x[p] * N).cast(ti.i32)
 
-            Ip = ti.rescale_index(pid, m1, I)
-            u0 = ti.assume_in_range(u_[0], Ip[0], 0, 1)
-            u1 = ti.assume_in_range(u_[1], Ip[1], 0, 1)
+            Im = ti.rescale_index(pid, m1, I)
+            u0 = ti.assume_in_range(u_[0], Im[0], 0, 1)
+            u1 = ti.assume_in_range(u_[1], Im[1], 0, 1)
 
             u = ti.Vector([u0, u1])
 

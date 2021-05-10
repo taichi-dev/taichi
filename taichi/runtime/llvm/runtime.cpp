@@ -1089,6 +1089,8 @@ void element_listgen_root(LLVMRuntime *runtime,
     elem.element = ch_element;
     elem.loop_bounds[0] = c * ch_element_size;
     elem.loop_bounds[1] = std::min((c + 1) * ch_element_size, ch_num_elements);
+    // There is no need to refine coordinates for root listgen, since its num_bits
+    // is always zero
     elem.pcoord = element.pcoord;
     child_list->append(&elem);
   }

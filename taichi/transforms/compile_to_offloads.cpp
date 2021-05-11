@@ -52,7 +52,6 @@ void compile_to_offloads(IRNode *ir,
     print("Lowered");
   }
 
-  irpass::function_type_check(ir, &kernel->program);
   irpass::type_check(ir, config);
   print("Typechecked");
   irpass::analysis::verify(ir);
@@ -92,7 +91,7 @@ void compile_to_offloads(IRNode *ir,
   print("Simplified I");
   irpass::analysis::verify(ir);
 
-  if (irpass::inlining(ir, config, {&kernel->program})) {
+  if (irpass::inlining(ir, config, {})) {
     print("Functions inlined");
     irpass::analysis::verify(ir);
   }
@@ -273,7 +272,6 @@ void compile_inline_function(IRNode *ir,
   irpass::lower_ast(ir);
   print("Lowered");
 
-  irpass::function_type_check(ir, func->program);
   irpass::type_check(ir, config);
   print("Typechecked");
 

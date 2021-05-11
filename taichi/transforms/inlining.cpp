@@ -13,7 +13,7 @@ class Inliner : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
 
-  explicit Inliner(Program *program) : BasicStmtVisitor(), program_(program) {
+  explicit Inliner() : BasicStmtVisitor() {
   }
 
   void visit(FuncCallStmt *stmt) override {
@@ -62,8 +62,8 @@ class Inliner : public BasicStmtVisitor {
     }
   }
 
-  static bool run(IRNode *node, Program *program) {
-    Inliner inliner(program);
+  static bool run(IRNode *node) {
+    Inliner inliner;
     bool modified = false;
     while (true) {
       node->accept(&inliner);
@@ -77,7 +77,6 @@ class Inliner : public BasicStmtVisitor {
 
  private:
   DelayedIRModifier modifier;
-  Program *program_;
 };
 
 const PassID InliningPass::id = "InliningPass";
@@ -88,7 +87,7 @@ bool inlining(IRNode *root,
               const CompileConfig &config,
               const InliningPass::Args &args) {
   TI_AUTO_PROF;
-  return Inliner::run(root, args.program);
+  return Inliner::run(root);
 }
 
 }  // namespace irpass

@@ -352,6 +352,15 @@ class TypeCheck : public IRVisitor {
     stmt->ret_type = stmt->input->ret_type;
   }
 
+  void visit(FuncCallStmt *stmt) override {
+    auto *func = stmt->func;
+    TI_ASSERT(func);
+    TI_ASSERT(func->rets.size() <= 1);
+    if (func->rets.size() == 1) {
+      stmt->ret_type = func->rets[0].dt;
+    }
+  }
+
   void visit(ArgLoadStmt *stmt) {
     const auto &rt = stmt->ret_type;
     // TODO: Maybe have a type_inference() pass, which takes in the args/rets
@@ -488,34 +497,6 @@ class TypeCheck : public IRVisitor {
   }
 };
 
-class FunctionTypeCheck : public BasicStmtVisitor {
- public:
-  using BasicStmtVisitor::visit;
-  explicit FunctionTypeCheck(Program *program)
-      : program_(program), modified_(false) {
-  }
-
-  void visit(FuncCallStmt *stmt) override {
-    auto *func = stmt->func;
-    TI_ASSERT(func);
-    TI_ASSERT(func->rets.size() <= 1);
-    if (func->rets.size() == 1) {
-      stmt->ret_type = func->rets[0].dt;
-      modified_ = true;
-    }
-  }
-
-  static bool run(IRNode *node, Program *program) {
-    FunctionTypeCheck checker(program);
-    node->accept(&checker);
-    return checker.modified_;
-  }
-
- private:
-  Program *program_;
-  bool modified_;
-};
-
 namespace irpass {
 
 void type_check(IRNode *root, const CompileConfig &config) {
@@ -523,11 +504,6 @@ void type_check(IRNode *root, const CompileConfig &config) {
   analysis::check_fields_registered(root);
   TypeCheck inst(config);
   root->accept(&inst);
-}
-
-bool function_type_check(IRNode *root, Program *program) {
-  TI_AUTO_PROF;
-  return FunctionTypeCheck::run(root, program);
 }
 
 }  // namespace irpass

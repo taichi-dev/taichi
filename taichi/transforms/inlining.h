@@ -10,9 +10,7 @@ class InliningPass : public Pass {
  public:
   static const PassID id;
 
-  struct Args {
-    Program *program;
-  };
+  struct Args {};
 };
 
 }  // namespace lang

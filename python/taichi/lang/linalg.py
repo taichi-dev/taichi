@@ -122,6 +122,30 @@ def eig2x2(A, dt):
 
 
 @ti.func
+def sym_eig2x2(A, dt):
+    tr = A.trace()
+    det = A.determinant()
+    gap = tr**2 - 4 * det
+    lambda1 = (tr + ti.sqrt(gap)) * 0.5
+    lambda2 = (tr - ti.sqrt(gap)) * 0.5
+    eigenvalues = ti.Vector([lambda1, lambda2]).cast(dt)
+
+    A1 = A - lambda1 * ti.Matrix.identity(dt, 2)
+    A2 = A - lambda2 * ti.Matrix.identity(dt, 2)
+    v1 = ti.Vector.zero(dt, 2)
+    v2 = ti.Vector.zero(dt, 2)
+    if all(A1 == ti.Matrix.zero(dt, 2, 2)) and all(
+            A1 == ti.Matrix.zero(dt, 2, 2)):
+        v1 = ti.Vector([0.0, 1.0]).cast(dt)
+        v2 = ti.Vector([1.0, 0.0]).cast(dt)
+    else:
+        v1 = ti.Vector([A2[0, 0], A2[1, 0]]).cast(dt).normalized()
+        v2 = ti.Vector([A1[0, 0], A1[1, 0]]).cast(dt).normalized()
+    eigenvectors = ti.Matrix.cols([v1, v2])
+    return eigenvalues, eigenvectors
+
+
+@ti.func
 def svd(A, dt):
     if ti.static(A.n == 2):
         ret = svd2d(A, dt)

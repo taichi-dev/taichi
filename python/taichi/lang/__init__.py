@@ -318,6 +318,32 @@ def eig(A, dt=None):
     raise Exception("Eigen solver only supports 2D matrices.")
 
 
+def sym_eig(A, dt=None):
+    """Compute the eigenvalues and right eigenvectors of a real symmetric matrix.
+
+    Parameters
+    ----------
+    A: ti.Matrix(n, n)
+        Symmetric Matrix for which the eigenvalues and right eigenvectors will be computed.
+    dt: Optional[DataType]
+        The datatype for the eigenvalues and right eigenvectors
+
+    Returns
+    -------
+    eigenvalues: ti.Vector(n)
+        The eigenvalues. Each entry store one eigen value.
+    eigenvectors: ti.Matrix(n, n)
+        The eigenvectors. Each column stores one eigenvector.
+    """
+    assert all(A == A.transpose()), "A needs to be symmetric"
+    if dt is None:
+        dt = impl.get_runtime().default_fp
+    from taichi.lang import linalg
+    if A.n == 2:
+        return linalg.sym_eig2x2(A, dt)
+    raise Exception("Symmetric eigen solver only supports 2D matrices.")
+
+
 def randn(dt=None):
     if dt is None:
         dt = impl.get_runtime().default_fp

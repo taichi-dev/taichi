@@ -10,6 +10,8 @@ TLANG_NAMESPACE_BEGIN
 
 class LoopInvariantCodeMotion : public BasicStmtVisitor {
  public:
+  using BasicStmtVisitor::visit;
+
   std::stack<Block *> loop_blocks;
 
   const CompileConfig &config;
@@ -118,12 +120,13 @@ class LoopInvariantCodeMotion : public BasicStmtVisitor {
     if (stmt->bls_prologue)
       stmt->bls_prologue->accept(this);
 
-    if (stmt->body)
+    if (stmt->body) {
       if (stmt->task_type == OffloadedStmt::TaskType::range_for ||
           stmt->task_type == OffloadedStmt::TaskType::struct_for)
         visit_loop(stmt->body.get());
       else
         stmt->body->accept(this);
+    }
 
     if (stmt->bls_epilogue)
       stmt->bls_epilogue->accept(this);

@@ -753,12 +753,12 @@ class FuncBodyStmt : public Stmt {
  */
 class FuncCallStmt : public Stmt {
  public:
-  FunctionKey funcid;
+  FunctionKey func_key;
   std::vector<Stmt *> args;
 
   FuncCallStmt(const FunctionKey &funcid, const std::vector<Stmt *> &args);
 
-  TI_STMT_DEF_FIELDS(ret_type, funcid, args);
+  TI_STMT_DEF_FIELDS(ret_type, func_key, args);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

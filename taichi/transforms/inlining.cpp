@@ -17,7 +17,7 @@ class Inliner : public BasicStmtVisitor {
   }
 
   void visit(FuncCallStmt *stmt) override {
-    auto *func = program_->function_map[stmt->funcid];
+    auto *func = program_->function_map[stmt->func_key];
     TI_ASSERT(func);
     TI_ASSERT(func->args.size() == stmt->args.size());
     TI_ASSERT(func->ir->is<Block>());

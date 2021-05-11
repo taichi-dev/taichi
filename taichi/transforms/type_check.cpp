@@ -496,10 +496,10 @@ class FunctionTypeCheck : public BasicStmtVisitor {
   }
 
   void visit(FuncCallStmt *stmt) override {
-    TI_ASSERT(program_->function_map.count(stmt->funcid) > 0);
-    auto *func = program_->function_map[stmt->funcid];
+    TI_ASSERT(program_->function_map.count(stmt->func_key) > 0);
+    auto *func = program_->function_map[stmt->func_key];
     TI_ASSERT(func);
-    TI_ASSERT(func->funcid == stmt->funcid);
+    TI_ASSERT(func->funcid == stmt->func_key);
     TI_ASSERT(func->rets.size() <= 1);
     if (func->rets.size() == 1) {
       stmt->ret_type = func->rets[0].dt;

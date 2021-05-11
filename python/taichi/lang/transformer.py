@@ -36,7 +36,7 @@ class ASTTransformer(object):
                                                         *args,
                                                         **kwargs)
         self.pass_Checks = ASTTransformerChecks(func=func)
-        self.pass_hack_function_call = HackFunctionCall(func=func)
+        self.pass_hack_function_call = TransformFunctionCallAsStmt(func=func)
 
     @staticmethod
     def print_ast(tree, title=None):
@@ -931,11 +931,12 @@ class ASTTransformerChecks(ASTTransformerBase):
         return node
 
 
-class HackFunctionCall(ASTTransformerBase):
+# Transform a standalone Taichi function call expression into a statement.
+class TransformFunctionCallAsStmt(ASTTransformerBase):
     def __init__(self, func):
         super().__init__(func)
 
     def visit_Call(self, node):
         node.args = [node.func] + node.args
-        node.func = self.parse_expr('ti.func_call_with_check')
+        node.func = self.parse_expr('ti.maybe_transform_ti_func_call_to_stmt')
         return node

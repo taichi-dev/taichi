@@ -32,7 +32,7 @@ class ScratchPad {
   SNode *snode;
   using AccessFlag = taichi::lang::AccessFlag;
 
-  std::vector<int> coeff;
+  std::vector<int> coefficients;
   std::vector<int> bounds[2];
   std::vector<int> pad_size;
   std::vector<int> block_size;
@@ -49,7 +49,7 @@ class ScratchPad {
   ScratchPad(SNode *snode) : snode(snode) {
     TI_ASSERT(snode != nullptr);
     dim = snode->num_active_indices;
-    coeff.resize(dim);
+    coefficients.resize(dim);
     bounds[0].resize(dim);
     bounds[1].resize(dim);
     pad_size.resize(dim);
@@ -71,7 +71,7 @@ class ScratchPad {
     empty = true;
     TI_ASSERT((int)indices.size() == dim);
     for (int i = 0; i < dim; i++) {
-      coeff[i] = coeffs[i];
+      coefficients[i] = coeffs[i];
       bounds[0][i] = std::min(bounds[0][i], indices[i]);
       bounds[1][i] = std::max(bounds[1][i], indices[i] + 1);
       pad_size[i] = bounds[1][i] - bounds[0][i];

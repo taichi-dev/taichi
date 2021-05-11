@@ -149,7 +149,7 @@ void make_block_local_offload(OffloadedStmt *offload,
               block_corner = element_block->push_back<BinaryOpStmt>(
                   BinaryOpType::mul, block_corner,
                   element_block->push_back<ConstStmt>(
-                      TypedConstant(pad.second.coeff[i])));
+                      TypedConstant(pad.second.coefficients[i])));
 
               global_index = element_block->push_back<BinaryOpStmt>(
                   BinaryOpType::add, global_index, block_corner);
@@ -222,7 +222,7 @@ void make_block_local_offload(OffloadedStmt *offload,
           auto block_corner = bls.push_back<BinaryOpStmt>(
               BinaryOpType::mul,
               bls.push_back<BlockCornerIndexStmt>(offload, i),
-              bls.push_back<ConstStmt>(TypedConstant(pad.second.coeff[i])));
+              bls.push_back<ConstStmt>(TypedConstant(pad.second.coefficients[i])));
 
           auto inc = bls.push_back<BinaryOpStmt>(
               BinaryOpType::sub, global_indices[i], block_corner);

@@ -1618,7 +1618,7 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     create_call(refine, {parent_coordinates, new_coordinates,
                          builder->CreateLoad(loop_index)});
 
-    // One more refine step is needed for bit_arrays to make final cooridinates
+    // One more refine step is needed for bit_arrays to make final coordinates
     // non-consecutive, since each thread will process multiple
     // coordinates via vectorization
     if (stmt->snode->type == SNodeType::bit_array && stmt->snode->parent) {

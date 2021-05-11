@@ -32,7 +32,10 @@ class Inliner : public BasicStmtVisitor {
           /*generator=*/
           [&](Stmt *s) { return stmt->args[s->as<ArgLoadStmt>()->arg_id]; });
     }
-    if (!func->rets.empty()) {
+    if (func->rets.empty()) {
+      modifier.replace_with(stmt,
+                            std::move(inlined_ir->as<Block>()->statements));
+    } else {
       if (irpass::analysis::gather_statements(inlined_ir.get(), [&](Stmt *s) {
             return s->is<KernelReturnStmt>();
           }).size() > 1) {
@@ -56,9 +59,6 @@ class Inliner : public BasicStmtVisitor {
       // Load the return value here
       modifier.replace_with(
           stmt, Stmt::make<LocalLoadStmt>(LocalAddress(return_address, 0)));
-    } else {
-      modifier.replace_with(stmt,
-                            std::move(inlined_ir->as<Block>()->statements));
     }
   }
 

@@ -717,9 +717,6 @@ if 1:
                     raise TaichiSyntaxError(
                         "Function definition not allowed in 'ti.func'.")
             if impl.get_runtime().experimental_real_function:
-                if self.is_kernel and self.func.is_grad:
-                    raise TaichiSyntaxError(
-                        "Real function in gradient kernels unsupported.")
                 transform_as_kernel()
             else:
                 # Transform as func (all parameters passed by value)

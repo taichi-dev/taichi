@@ -119,6 +119,7 @@ class Func:
             return ret
 
     def func_call_rvalue(self, key, args):
+        # Skip the template args, e.g., |self|
         assert impl.get_runtime().experimental_real_function
         non_template_args = []
         for i in range(len(self.argument_annotations)):

@@ -36,7 +36,7 @@ class ASTTransformer(object):
                                                         *args,
                                                         **kwargs)
         self.pass_Checks = ASTTransformerChecks(func=func)
-        self.pass_hack_function_call = TransformFunctionCallAsStmt(func=func)
+        self.pass_transform_function_call = TransformFunctionCallAsStmt(func=func)
 
     @staticmethod
     def print_ast(tree, title=None):
@@ -53,8 +53,8 @@ class ASTTransformer(object):
         ast.fix_missing_locations(tree)
         self.print_ast(tree, 'Preprocessed')
         self.pass_Checks.visit(tree)
-        self.pass_hack_function_call.visit(tree)
         self.print_ast(tree, 'Checked')
+        self.pass_transform_function_call.visit(tree)
         ast.fix_missing_locations(tree)
         self.print_ast(tree, 'Final AST')
 

@@ -82,20 +82,6 @@ class AlgSimp : public BasicStmtVisitor {
       replace_with_zero(stmt);
       return true;
     }
-    if (stmt->op_type == BinaryOpType::mul &&
-        (alg_is_two(lhs) || alg_is_two(rhs))) {
-      // 2 * a -> a + a, a * 2 -> a + a
-      auto a = stmt->lhs;
-      if (alg_is_two(lhs))
-        a = stmt->rhs;
-      cast_to_result_type(a, stmt);
-      auto sum = Stmt::make<BinaryOpStmt>(BinaryOpType::add, a, a);
-      sum->ret_type = a->ret_type;
-      stmt->replace_with(sum.get());
-      modifier.insert_before(stmt, std::move(sum));
-      modifier.erase(stmt);
-      return true;
-    }
     if (is_integral(stmt->ret_type) && (alg_is_pot(lhs) || alg_is_pot(rhs))) {
       // a * pot -> a << log2(pot)
       if (alg_is_pot(lhs)) {
@@ -116,6 +102,20 @@ class AlgSimp : public BasicStmtVisitor {
       stmt->replace_with(result.get());
       modifier.insert_before(stmt, std::move(new_rhs));
       modifier.insert_before(stmt, std::move(result));
+      modifier.erase(stmt);
+      return true;
+    }
+    if (stmt->op_type == BinaryOpType::mul &&
+        (alg_is_two(lhs) || alg_is_two(rhs))) {
+      // 2 * a -> a + a, a * 2 -> a + a
+      auto a = stmt->lhs;
+      if (alg_is_two(lhs))
+        a = stmt->rhs;
+      cast_to_result_type(a, stmt);
+      auto sum = Stmt::make<BinaryOpStmt>(BinaryOpType::add, a, a);
+      sum->ret_type = a->ret_type;
+      stmt->replace_with(sum.get());
+      modifier.insert_before(stmt, std::move(sum));
       modifier.erase(stmt);
       return true;
     }

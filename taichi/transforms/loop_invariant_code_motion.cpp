@@ -18,7 +18,8 @@ class LoopInvariantCodeMotion : public BasicStmtVisitor {
 
   DelayedIRModifier modifier;
 
-  LoopInvariantCodeMotion(const CompileConfig &config) : config(config) {
+  explicit LoopInvariantCodeMotion(const CompileConfig &config)
+      : config(config) {
     allow_undefined_visitor = true;
   }
 
@@ -51,7 +52,8 @@ class LoopInvariantCodeMotion : public BasicStmtVisitor {
         Stmt *operand_parent = operand;
         while (operand_parent && operand_parent->parent) {
           operand_parent = operand_parent->parent->parent_stmt;
-          if (!operand_parent) break;
+          if (!operand_parent)
+            break;
           // If the one of the parent of the operand is the top loop scope
           // Then it will not be visible if we move it outside the top loop
           // scope

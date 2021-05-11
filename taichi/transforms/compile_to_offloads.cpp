@@ -262,7 +262,7 @@ void compile_inline_function(IRNode *ir,
                              bool verbose) {
   TI_AUTO_PROF;
 
-  auto print = make_pass_printer(verbose, func->funcid.get_full_name(), ir);
+  auto print = make_pass_printer(verbose, func->func_key.get_full_name(), ir);
   print("Initial IR");
 
   if (grad) {

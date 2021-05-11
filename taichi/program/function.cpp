@@ -22,8 +22,8 @@ class CurrentFunctionGuard {
 };
 }  // namespace
 
-Function::Function(Program *program, const FunctionKey &funcid)
-    : program(program), funcid(funcid) {
+Function::Function(Program *program, const FunctionKey &func_key)
+    : program(program), func_key(func_key) {
 }
 
 void Function::set_function_body(const std::function<void()> &func) {

@@ -15,7 +15,7 @@ class Program;
 class Function {
  public:
   Program *program;
-  FunctionKey funcid;
+  FunctionKey func_key;
   std::unique_ptr<IRNode> ir;
   using Arg = Kernel::Arg;
   using Ret = Kernel::Ret;
@@ -23,7 +23,7 @@ class Function {
   std::vector<Arg> args;
   std::vector<Ret> rets;
 
-  Function(Program *program, const FunctionKey &funcid);
+  Function(Program *program, const FunctionKey &func_key);
 
   void set_function_body(const std::function<void()> &func);
 

@@ -192,7 +192,7 @@ class Program {
   void end_kernel_definition() {
   }
 
-  Function *create_function(const FunctionKey &funcid);
+  Function *create_function(const FunctionKey &func_key);
 
   // TODO: This function is doing two things: 1) compiling CHI IR, and 2)
   // offloading them to each backend. We should probably separate the logic?

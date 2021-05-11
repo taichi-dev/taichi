@@ -227,11 +227,11 @@ TypeFactory &Program::get_type_factory() {
   return TypeFactory::get_instance();
 }
 
-Function *Program::create_function(const FunctionKey &funcid) {
-  TI_TRACE("Creating function {}...", funcid.get_full_name());
-  functions.emplace_back(std::make_unique<Function>(this, funcid));
-  TI_ASSERT(function_map.count(funcid) == 0);
-  function_map[funcid] = functions.back().get();
+Function *Program::create_function(const FunctionKey &func_key) {
+  TI_TRACE("Creating function {}...", func_key.get_full_name());
+  functions.emplace_back(std::make_unique<Function>(this, func_key));
+  TI_ASSERT(function_map.count(func_key) == 0);
+  function_map[func_key] = functions.back().get();
   return functions.back().get();
 }
 

@@ -1557,7 +1557,8 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
 
     auto refine =
         get_runtime_function(leaf_block->refine_coordinates_func_name());
-
+// A block corner is the global coordinate/index of the lower-left corner cell within
+// that block, and is the same for all the cells within that block.
     create_call(refine, {parent_coordinates, block_corner_coordinates,
                          tlctx->get_constant(0)});
 

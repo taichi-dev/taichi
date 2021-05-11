@@ -36,7 +36,8 @@ class ASTTransformer(object):
                                                         *args,
                                                         **kwargs)
         self.pass_Checks = ASTTransformerChecks(func=func)
-        self.pass_transform_function_call = TransformFunctionCallAsStmt(func=func)
+        self.pass_transform_function_call = TransformFunctionCallAsStmt(
+            func=func)
 
     @staticmethod
     def print_ast(tree, title=None):

@@ -4,6 +4,8 @@
 
 TLANG_NAMESPACE_BEGIN
 
+class Function;
+
 class IRBuilder {
  public:
   struct InsertPoint {
@@ -112,6 +114,10 @@ class IRBuilder {
   IfStmt *create_if(Stmt *cond);
   WhileControlStmt *create_break();
   ContinueStmt *create_continue();
+
+  // Function.
+  FuncCallStmt *create_func_call(Function *func,
+                                 const std::vector<Stmt *> &args);
 
   // Loop index.
   LoopIndexStmt *get_loop_index(Stmt *loop, int index = 0);

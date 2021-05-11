@@ -258,7 +258,8 @@ void compile_inline_function(IRNode *ir,
                              const CompileConfig &config,
                              Function *func,
                              bool grad,
-                             bool verbose) {
+                             bool verbose,
+                             bool start_from_ast) {
   TI_AUTO_PROF;
 
   auto print = make_pass_printer(verbose, func->func_key.get_full_name(), ir);
@@ -269,8 +270,10 @@ void compile_inline_function(IRNode *ir,
     print("Segment reversed (for autodiff)");
   }
 
-  irpass::lower_ast(ir);
-  print("Lowered");
+  if (start_from_ast) {
+    irpass::lower_ast(ir);
+    print("Lowered");
+  }
 
   irpass::type_check(ir, config);
   print("Typechecked");

@@ -141,7 +141,8 @@ void compile_inline_function(IRNode *ir,
                              const CompileConfig &config,
                              Function *func,
                              bool grad,
-                             bool verbose);
+                             bool verbose,
+                             bool start_from_ast);
 }  // namespace irpass
 
 TLANG_NAMESPACE_END

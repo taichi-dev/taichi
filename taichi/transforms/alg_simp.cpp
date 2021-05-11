@@ -105,8 +105,7 @@ class AlgSimp : public BasicStmtVisitor {
       modifier.erase(stmt);
       return true;
     }
-    if (stmt->op_type == BinaryOpType::mul &&
-        (alg_is_two(lhs) || alg_is_two(rhs))) {
+    if (alg_is_two(lhs) || alg_is_two(rhs)) {
       // 2 * a -> a + a, a * 2 -> a + a
       auto a = stmt->lhs;
       if (alg_is_two(lhs))

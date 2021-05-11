@@ -211,7 +211,7 @@ class PyTaichi:
         self.compiled_grad_functions = {}
         self.scope_stack = []
         self.inside_kernel = False
-        self.current_kernel_func = None
+        self.current_kernel = None
         self.global_vars = []
         self.print_preprocessed = False
         self.experimental_real_function = False

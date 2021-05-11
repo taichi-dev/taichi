@@ -105,7 +105,7 @@ class Func:
             return self.func(*args)
 
         if impl.get_runtime().experimental_real_function:
-            if impl.get_runtime().current_kernel_func.is_grad:
+            if impl.get_runtime().current_kernel.is_grad:
                 raise TaichiSyntaxError(
                     "Real function in gradient kernels unsupported.")
             instance_id, arg_features = self.mapper.lookup(args)
@@ -413,10 +413,10 @@ class Kernel:
                     "Kernels cannot call other kernels. I.e., nested kernels are not allowed. Please check if you have direct/indirect invocation of kernels within kernels. Note that some methods provided by the Taichi standard library may invoke kernels, and please move their invocations to Python-scope."
                 )
             self.runtime.inside_kernel = True
-            self.runtime.current_kernel_func = self.func
+            self.runtime.current_kernel = self
             compiled()
             self.runtime.inside_kernel = False
-            self.runtime.current_kernel_func = None
+            self.runtime.current_kernel = None
 
         taichi_kernel = taichi_kernel.define(taichi_ast_generator)
 

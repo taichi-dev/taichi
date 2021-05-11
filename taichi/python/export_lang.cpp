@@ -345,7 +345,9 @@ void export_lang(py::module &m) {
            &Kernel::LaunchContextBuilder::set_extra_arg_int);
 
   py::class_<Function>(m, "Function")
-      .def("set_function_body", &Function::set_function_body);
+      .def("set_function_body",
+           py::overload_cast<const std::function<void()> &>(
+               &Function::set_function_body));
 
   py::class_<Expr> expr(m, "Expr");
   expr.def("serialize", &Expr::serialize)

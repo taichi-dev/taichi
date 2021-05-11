@@ -369,7 +369,7 @@ void FuncCallExpression::flatten(FlattenContext *ctx) {
     arg->flatten(ctx);
     stmt_args.push_back(arg->stmt);
   }
-  ctx->push_back<FuncCallStmt>(func_key, stmt_args);
+  ctx->push_back<FuncCallStmt>(func, stmt_args);
   stmt = ctx->back_stmt();
 }
 

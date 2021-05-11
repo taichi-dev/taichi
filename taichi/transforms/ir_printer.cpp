@@ -288,7 +288,7 @@ class IRPrinter : public IRVisitor {
       args.push_back(arg->name());
     }
     print("{}{} = call \"{}\", args = {{{}}}", stmt->type_hint(), stmt->name(),
-          stmt->func_key.get_full_name(), fmt::join(args, ", "));
+          stmt->func->func_key.get_full_name(), fmt::join(args, ", "));
   }
 
   void visit(FrontendFuncDefStmt *stmt) override {

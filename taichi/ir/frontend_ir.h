@@ -589,16 +589,16 @@ class ExternalTensorShapeAlongAxisExpression : public Expression {
 
 class FuncCallExpression : public Expression {
  public:
-  FunctionKey func_key;
+  Function *func;
   ExprGroup args;
 
   std::string serialize() override {
-    return fmt::format("func_call(\"{}\", {})", func_key.get_full_name(),
+    return fmt::format("func_call(\"{}\", {})", func->func_key.get_full_name(),
                        args.serialize());
   }
 
-  FuncCallExpression(const FunctionKey &func_key, const ExprGroup &args)
-      : func_key(func_key), args(args) {
+  FuncCallExpression(Function *func, const ExprGroup &args)
+      : func(func), args(args) {
   }
 
   void flatten(FlattenContext *ctx) override;

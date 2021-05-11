@@ -4,10 +4,11 @@
 #include "taichi/ir/offloaded_task_type.h"
 #include "taichi/ir/stmt_op_types.h"
 #include "taichi/program/arch.h"
-#include "taichi/program/function_key.h"
 
 namespace taichi {
 namespace lang {
+
+class Function;
 
 /**
  * Allocate a local variable with initial value 0.
@@ -753,12 +754,12 @@ class FuncBodyStmt : public Stmt {
  */
 class FuncCallStmt : public Stmt {
  public:
-  FunctionKey func_key;
+  Function *func;
   std::vector<Stmt *> args;
 
-  FuncCallStmt(const FunctionKey &funcid, const std::vector<Stmt *> &args);
+  FuncCallStmt(Function *func, const std::vector<Stmt *> &args);
 
-  TI_STMT_DEF_FIELDS(ret_type, func_key, args);
+  TI_STMT_DEF_FIELDS(ret_type, func, args);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

@@ -92,6 +92,7 @@ class Func:
                 self.template_slot_locations.append(i)
         self.mapper = KernelTemplateMapper(self.argument_annotations,
                                            self.template_slot_locations)
+        self.taichi_functions = {}  # The |Function| class in C++
 
     def __call__(self, *args):
         _taichi_skip_traceback = 1
@@ -129,7 +130,8 @@ class Func:
             if not isinstance(self.argument_annotations[i], template):
                 non_template_args.append(args[i])
         non_template_args = impl.make_expr_group(non_template_args)
-        return ti.Expr(_ti_core.make_func_call_expr(key, non_template_args))
+        return ti.Expr(_ti_core.make_func_call_expr(
+            self.taichi_functions[key.instance_id], non_template_args))
 
     def do_compile(self, key, args):
         src = _remove_indent(oinspect.getsource(self.func))
@@ -159,8 +161,10 @@ class Func:
 
         if impl.get_runtime().experimental_real_function:
             self.compiled[key.instance_id] = local_vars[self.func.__name__]
-            taichi_function = _ti_core.create_function(key)
-            taichi_function.set_function_body(self.compiled[key.instance_id])
+            self.taichi_functions[key.instance_id] = _ti_core.create_function(
+                key)
+            self.taichi_functions[key.instance_id].set_function_body(
+                self.compiled[key.instance_id])
         else:
             self.compiled = local_vars[self.func.__name__]
 

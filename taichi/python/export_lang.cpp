@@ -500,7 +500,7 @@ void export_lang(py::module &m) {
   m.def("end_func", [&](const std::string &funcid) { scope_stack.pop_back(); });
 
   m.def("make_func_call_expr",
-        Expr::make<FuncCallExpression, const FunctionKey &, const ExprGroup &>);
+        Expr::make<FuncCallExpression, Function *, const ExprGroup &>);
 
   m.def("layout", layout);
 

@@ -124,7 +124,8 @@ class AlgSimp : public BasicStmtVisitor {
   bool optimize_division(BinaryOpStmt *stmt) {
     // return true iff the IR is modified
     auto rhs = stmt->rhs->cast<ConstStmt>();
-    TI_ASSERT(stmt->op_type == BinaryOpType::div);
+    TI_ASSERT(stmt->op_type == BinaryOpType::div ||
+              stmt->op_type == BinaryOpType::floordiv);
     if (alg_is_one(rhs)) {
       // a / 1 -> a
       stmt->replace_with(stmt->lhs);
@@ -137,7 +138,8 @@ class AlgSimp : public BasicStmtVisitor {
       replace_with_one(stmt);
       return true;
     }
-    if (fast_math && rhs && is_real(rhs->ret_type)) {
+    if (fast_math && rhs && is_real(rhs->ret_type) &&
+        stmt->op_type != BinaryOpType::floordiv) {
       if (alg_is_zero(rhs)) {
         TI_WARN("Potential division by 0");
       } else {
@@ -194,7 +196,8 @@ class AlgSimp : public BasicStmtVisitor {
     }
     if (stmt->op_type == BinaryOpType::mul) {
       optimize_multiplication(stmt);
-    } else if (stmt->op_type == BinaryOpType::div) {
+    } else if (stmt->op_type == BinaryOpType::div ||
+               stmt->op_type == BinaryOpType::floordiv) {
       optimize_division(stmt);
     } else if (stmt->op_type == BinaryOpType::add ||
                stmt->op_type == BinaryOpType::sub ||

@@ -10,13 +10,16 @@ TLANG_NAMESPACE_BEGIN
 
 class LoopInvariantCodeMotion : public BasicStmtVisitor {
  public:
+  using BasicStmtVisitor::visit;
+
   std::stack<Block *> loop_blocks;
 
   const CompileConfig &config;
 
   DelayedIRModifier modifier;
 
-  LoopInvariantCodeMotion(const CompileConfig &config) : config(config) {
+  explicit LoopInvariantCodeMotion(const CompileConfig &config)
+      : config(config) {
     allow_undefined_visitor = true;
   }
 
@@ -49,7 +52,8 @@ class LoopInvariantCodeMotion : public BasicStmtVisitor {
         Stmt *operand_parent = operand;
         while (operand_parent && operand_parent->parent) {
           operand_parent = operand_parent->parent->parent_stmt;
-          if (!operand_parent) break;
+          if (!operand_parent)
+            break;
           // If the one of the parent of the operand is the top loop scope
           // Then it will not be visible if we move it outside the top loop
           // scope
@@ -118,12 +122,13 @@ class LoopInvariantCodeMotion : public BasicStmtVisitor {
     if (stmt->bls_prologue)
       stmt->bls_prologue->accept(this);
 
-    if (stmt->body)
+    if (stmt->body) {
       if (stmt->task_type == OffloadedStmt::TaskType::range_for ||
           stmt->task_type == OffloadedStmt::TaskType::struct_for)
         visit_loop(stmt->body.get());
       else
         stmt->body->accept(this);
+    }
 
     if (stmt->bls_epilogue)
       stmt->bls_epilogue->accept(this);

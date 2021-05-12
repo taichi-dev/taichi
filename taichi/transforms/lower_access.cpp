@@ -81,8 +81,18 @@ class LowerAccess : public IRVisitor {
       }
     }
 
-    std::deque<SNode *> snodes;
+
+    // start_bits is the index of the starting bit for a coordinate
+    // for a given SNode. It characterizes the relationship between a parent
+    // and a child SNode: "parent.start = child.start + child.num_bits".
+    //
+    // For example, if there are two 1D snodes a and b,
+    // where a = ti.root.dense(ti.i, 2) and b = a.dense(ti.i, 8),
+    // we have a.start = b.start + 3 for the i-th dimension.
+    // When accessing b[15], then bits [0, 3) of 15 are for accessing b,
+    // and bit [3, 4) of 15 is for accessing a.
     int start_bits[taichi_max_num_indices] = {0};
+    std::deque<SNode *> snodes;
     for (auto s = leaf_snode; s != nullptr; s = s->parent) {
       snodes.push_front(s);
       for (int j = 0; j < taichi_max_num_indices; j++) {

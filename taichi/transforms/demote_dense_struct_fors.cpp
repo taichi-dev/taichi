@@ -87,8 +87,8 @@ void convert_to_range_for(OffloadedStmt *offloaded) {
   }
 
   for (int i = 0; i < num_loop_vars; i++) {
-    auto alloca = body_header.push_back<AllocaStmt>(PrimitiveType::i32);
-    body_header.push_back<LocalStoreStmt>(alloca, new_loop_vars[i]);
+    // TODO: Use only one (instead num_loop_vars) invocation(s) of
+    //  replace_statements_with
     irpass::replace_statements_with(
         body.get(),
         [&](Stmt *s) {
@@ -99,7 +99,7 @@ void convert_to_range_for(OffloadedStmt *offloaded) {
           }
           return false;
         },
-        [&]() { return Stmt::make<LocalLoadStmt>(LocalAddress(alloca, 0)); });
+        [&](Stmt *) { return new_loop_vars[i]; });
   }
 
   if (has_test) {

@@ -160,7 +160,7 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
 #endif
 
   result_buffer = nullptr;
-  current_kernel = nullptr;
+  current_kernel_or_function = static_cast<Kernel *>(nullptr);
   sync = true;
   llvm_runtime = nullptr;
   finalized = false;
@@ -225,6 +225,14 @@ TypeFactory &Program::get_type_factory() {
       "Program::get_type_factory() will be deprecated, Please use "
       "TypeFactory::get_instance()");
   return TypeFactory::get_instance();
+}
+
+Function *Program::create_function(const FunctionKey &func_key) {
+  TI_TRACE("Creating function {}...", func_key.get_full_name());
+  functions.emplace_back(std::make_unique<Function>(this, func_key));
+  TI_ASSERT(function_map.count(func_key) == 0);
+  function_map[func_key] = functions.back().get();
+  return functions.back().get();
 }
 
 FunctionType Program::compile(Kernel &kernel) {

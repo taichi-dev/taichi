@@ -430,6 +430,13 @@ class LowerAST : public IRVisitor {
     throw IRModified();
   }
 
+  void visit(FrontendExprStmt *stmt) override {
+    auto fctx = make_flatten_ctx();
+    stmt->val->flatten(&fctx);
+    stmt->parent->replace_with(stmt, std::move(fctx.stmts));
+    throw IRModified();
+  }
+
   static void run(IRNode *node) {
     LowerAST inst(irpass::analysis::detect_fors_with_break(node));
     while (true) {

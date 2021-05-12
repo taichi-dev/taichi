@@ -22,18 +22,15 @@ class BasicBlockSimplify : public IRVisitor {
   std::set<int> &visited;
   StructForStmt *current_struct_for;
   CompileConfig config;
-  Kernel *kernel;
 
   BasicBlockSimplify(Block *block,
                      std::set<int> &visited,
                      StructForStmt *current_struct_for,
-                     const CompileConfig &config,
-                     Kernel *kernel)
+                     const CompileConfig &config)
       : block(block),
         visited(visited),
         current_struct_for(current_struct_for),
-        config(config),
-        kernel(kernel) {
+        config(config) {
     allow_undefined_visitor = true;
     invoke_default_visitor = false;
     run();
@@ -542,11 +539,8 @@ class Simplify : public IRVisitor {
   StructForStmt *current_struct_for;
   bool modified;
   const CompileConfig &config;
-  Kernel *kernel;
 
-  Simplify(IRNode *node, const CompileConfig &config, Kernel *kernel)
-      : config(config), kernel(kernel) {
-    TI_ASSERT(this->kernel);
+  Simplify(IRNode *node, const CompileConfig &config) : config(config) {
     modified = false;
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
@@ -558,8 +552,7 @@ class Simplify : public IRVisitor {
     std::set<int> visited;
     while (true) {
       try {
-        BasicBlockSimplify _(block, visited, current_struct_for, config,
-                             kernel);
+        BasicBlockSimplify _(block, visited, current_struct_for, config);
       } catch (IRModified) {
         modified = true;
         continue;
@@ -600,18 +593,15 @@ class Simplify : public IRVisitor {
   }
 };
 
-const PassID SimplifyPass::id = "SimplifyPass";
 const PassID FullSimplifyPass::id = "FullSimplifyPass";
 
 namespace irpass {
 
-bool simplify(IRNode *root,
-              const CompileConfig &config,
-              const SimplifyPass::Args &args) {
+bool simplify(IRNode *root, const CompileConfig &config) {
   TI_AUTO_PROF;
   bool modified = false;
   while (true) {
-    Simplify pass(root, config, args.kernel);
+    Simplify pass(root, config);
     if (pass.modified)
       modified = true;
     else
@@ -634,7 +624,7 @@ void full_simplify(IRNode *root,
         modified = true;
       if (binary_op_simplify(root, config))
         modified = true;
-      if (constant_fold(root, config, {&args.kernel->program}))
+      if (constant_fold(root, config, {args.program}))
         modified = true;
       if (die(root))
         modified = true;
@@ -644,7 +634,7 @@ void full_simplify(IRNode *root,
         modified = true;
       if (die(root))
         modified = true;
-      if (simplify(root, config, {args.kernel}))
+      if (simplify(root, config))
         modified = true;
       if (die(root))
         modified = true;
@@ -661,9 +651,9 @@ void full_simplify(IRNode *root,
     }
     return;
   }
-  constant_fold(root, config, {&args.kernel->program});
+  constant_fold(root, config, {args.program});
   die(root);
-  simplify(root, config, {args.kernel});
+  simplify(root, config);
   die(root);
 }
 

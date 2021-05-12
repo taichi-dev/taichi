@@ -10,6 +10,7 @@
 #include "taichi/ir/pass.h"
 #include "taichi/transforms/check_out_of_bound.h"
 #include "taichi/transforms/constant_fold.h"
+#include "taichi/transforms/inlining.h"
 #include "taichi/transforms/lower_access.h"
 #include "taichi/transforms/make_block_local.h"
 #include "taichi/transforms/simplify.h"
@@ -18,20 +19,15 @@ TLANG_NAMESPACE_BEGIN
 
 class ScratchPads;
 
+class Function;
+
 // IR passes
 namespace irpass {
-
-// TODO(#1243): Pass kernel to the relevant passes instead of doing this hack
-namespace hack {
-bool use_fast_math(IRNode *root);
-}  // namespace hack
 
 void re_id(IRNode *root);
 void flag_access(IRNode *root);
 bool die(IRNode *root);
-bool simplify(IRNode *root,
-              const CompileConfig &config,
-              const SimplifyPass::Args &args);
+bool simplify(IRNode *root, const CompileConfig &config);
 bool cfg_optimization(
     IRNode *root,
     bool after_lower_access,
@@ -51,6 +47,9 @@ void full_simplify(IRNode *root,
 void print(IRNode *root, std::string *output = nullptr);
 void lower_ast(IRNode *root);
 void type_check(IRNode *root, const CompileConfig &config);
+bool inlining(IRNode *root,
+              const CompileConfig &config,
+              const InliningPass::Args &args);
 void loop_vectorize(IRNode *root, const CompileConfig &config);
 void bit_loop_vectorize(IRNode *root);
 void slp_vectorize(IRNode *root);
@@ -76,9 +75,25 @@ bool constant_fold(IRNode *root,
                    const CompileConfig &config,
                    const ConstantFoldPass::Args &args);
 void offload(IRNode *root, const CompileConfig &config);
-void replace_statements_with(IRNode *root,
+/**
+ * @param root The IR root to be traversed.
+ * @param filter A function which tells if a statement need to be replaced.
+ * @param generator If a statement s need to be replaced, generate a new
+ * statement s1 with the argument s, insert s1 to s's place, and replace all
+ * usages of s with s1.
+ */
+void replace_statements_with(
+    IRNode *root,
+    std::function<bool(Stmt *)> filter,
+    std::function<std::unique_ptr<Stmt>(Stmt *)> generator);
+/**
+ * @param generator If a statement s need to be replaced, find the existing
+ * statement s1 with the argument s, and replace all usages of s with s1.
+ * @return Whether the IR is modified.
+ */
+bool replace_statements_with(IRNode *root,
                              std::function<bool(Stmt *)> filter,
-                             std::function<std::unique_ptr<Stmt>()> generator);
+                             std::function<Stmt *(Stmt *)> generator);
 void demote_dense_struct_fors(IRNode *root);
 bool demote_atomics(IRNode *root, const CompileConfig &config);
 void reverse_segments(IRNode *root);  // for autograd
@@ -107,7 +122,7 @@ void offload_to_executable(IRNode *ir,
                            bool lower_global_access,
                            bool make_thread_local,
                            bool make_block_local);
-// compile_to_executable fully covers compile_to_offloads, but also does
+// compile_to_executable fully covers compile_to_offloads, and also does
 // additional optimizations so that |ir| can be directly fed into codegen.
 void compile_to_executable(IRNode *ir,
                            const CompileConfig &config,
@@ -120,7 +135,14 @@ void compile_to_executable(IRNode *ir,
                            bool make_thread_local = false,
                            bool make_block_local = false,
                            bool start_from_ast = true);
-
+// Compile a function with some basic optimizations, so that the number of
+// statements is reduced before inlining.
+void compile_inline_function(IRNode *ir,
+                             const CompileConfig &config,
+                             Function *func,
+                             bool grad,
+                             bool verbose,
+                             bool start_from_ast);
 }  // namespace irpass
 
 TLANG_NAMESPACE_END

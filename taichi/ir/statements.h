@@ -8,6 +8,8 @@
 namespace taichi {
 namespace lang {
 
+class Function;
+
 /**
  * Allocate a local variable with initial value 0.
  */
@@ -728,6 +730,7 @@ class StructForStmt : public Stmt {
 
 /**
  * An inline Taichi function.
+ * TODO: This statement seems unused.
  */
 class FuncBodyStmt : public Stmt {
  public:
@@ -751,13 +754,12 @@ class FuncBodyStmt : public Stmt {
  */
 class FuncCallStmt : public Stmt {
  public:
-  std::string funcid;
+  Function *func;
+  std::vector<Stmt *> args;
 
-  FuncCallStmt(const std::string &funcid) : funcid(funcid) {
-    TI_STMT_REG_FIELDS;
-  }
+  FuncCallStmt(Function *func, const std::vector<Stmt *> &args);
 
-  TI_STMT_DEF_FIELDS(ret_type, funcid);
+  TI_STMT_DEF_FIELDS(ret_type, func, args);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

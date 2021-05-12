@@ -126,6 +126,7 @@ class _SpecialConfig:
         self.log_level = 'info'
         self.gdb_trigger = False
         self.excepthook = False
+        self.experimental_real_function = False
 
 
 def init(arch=None,
@@ -186,6 +187,7 @@ def init(arch=None,
     env_spec.add('log_level', str)
     env_spec.add('gdb_trigger')
     env_spec.add('excepthook')
+    env_spec.add('experimental_real_function')
 
     # compiler configurations (ti.cfg):
     for key in dir(ti.cfg):
@@ -206,6 +208,8 @@ def init(arch=None,
     if not _test_mode:
         ti.set_gdb_trigger(spec_cfg.gdb_trigger)
         impl.get_runtime().print_preprocessed = spec_cfg.print_preprocessed
+        impl.get_runtime().experimental_real_function = \
+            spec_cfg.experimental_real_function
         ti.set_logging_level(spec_cfg.log_level.lower())
         if spec_cfg.excepthook:
             # TODO(#1405): add a way to restore old excepthook

@@ -344,6 +344,11 @@ void export_lang(py::module &m) {
       .def("set_extra_arg_int",
            &Kernel::LaunchContextBuilder::set_extra_arg_int);
 
+  py::class_<Function>(m, "Function")
+      .def("set_function_body",
+           py::overload_cast<const std::function<void()> &>(
+               &Function::set_function_body));
+
   py::class_<Expr> expr(m, "Expr");
   expr.def("serialize", &Expr::serialize)
       .def("snode", &Expr::snode, py::return_value_policy::reference)
@@ -483,6 +488,10 @@ void export_lang(py::module &m) {
     current_ast_builder().insert(Stmt::make<FrontendContinueStmt>());
   });
 
+  m.def("insert_expr_stmt", [&](const Expr &val) {
+    current_ast_builder().insert(Stmt::make<FrontendExprStmt>(val));
+  });
+
   m.def("begin_func", [&](const std::string &funcid) {
     auto stmt_unique = std::make_unique<FrontendFuncDefStmt>(funcid);
     auto stmt = stmt_unique.get();
@@ -492,11 +501,8 @@ void export_lang(py::module &m) {
 
   m.def("end_func", [&](const std::string &funcid) { scope_stack.pop_back(); });
 
-  m.def("func_call", [&](const std::string &funcid) {
-    auto func = Stmt::make<FuncCallStmt>(
-        funcid);  // TODO: use FuncCallExpr with return values & args
-    current_ast_builder().insert(std::move(func));
-  });
+  m.def("make_func_call_expr",
+        Expr::make<FuncCallExpression, Function *, const ExprGroup &>);
 
   m.def("layout", layout);
 
@@ -680,6 +686,17 @@ void export_lang(py::module &m) {
           return get_current_program().kernel(name, grad);
         });
 
+  m.def(
+      "create_function",
+      [&](const FunctionKey &funcid) {
+        return get_current_program().create_function(funcid);
+      },
+      py::return_value_policy::reference);
+
+  py::class_<FunctionKey>(m, "FunctionKey")
+      .def(py::init<const std::string &, int, int>())
+      .def_readonly("instance_id", &FunctionKey::instance_id);
+
   m.def("create_print",
         [&](std::vector<std::variant<Expr, std::string>> contents) {
           current_ast_builder().insert(
@@ -687,12 +704,23 @@ void export_lang(py::module &m) {
         });
 
   m.def("decl_arg", [&](DataType dt, bool is_nparray) {
-    return get_current_program().get_current_kernel().insert_arg(dt,
-                                                                 is_nparray);
+    if (std::holds_alternative<Kernel *>(
+            get_current_program().current_kernel_or_function)) {
+      return get_current_program().get_current_kernel().insert_arg(dt,
+                                                                   is_nparray);
+    } else {
+      return get_current_program().get_current_function()->insert_arg(
+          dt, is_nparray);
+    }
   });
 
   m.def("decl_ret", [&](DataType dt) {
-    return get_current_program().get_current_kernel().insert_ret(dt);
+    if (std::holds_alternative<Kernel *>(
+            get_current_program().current_kernel_or_function)) {
+      return get_current_program().get_current_kernel().insert_ret(dt);
+    } else {
+      return get_current_program().get_current_function()->insert_ret(dt);
+    }
   });
 
   m.def("test_throw", [] {

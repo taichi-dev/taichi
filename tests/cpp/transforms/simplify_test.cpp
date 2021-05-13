@@ -1,9 +1,7 @@
 #include "gtest/gtest.h"
 
-#include "taichi/ir/frontend.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
-#include "taichi/util/testing.h"
 
 namespace taichi {
 namespace lang {

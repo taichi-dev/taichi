@@ -6,8 +6,6 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/program/program.h"
 
-// TODO: move this file to transforms/
-
 namespace taichi {
 namespace lang {
 

@@ -82,9 +82,9 @@ bool transform_statements(
 /**
  * @param root The IR root to be traversed.
  * @param filter A function which tells if a statement need to be replaced.
- * @param generator If a statement s need to be replaced, generate a new
- * statement s1 with the argument s, insert s1 to s's place, and replace all
- * usages of s with s1.
+ * @param generator If a statement |s| need to be replaced, generate a new
+ * statement |s1| with the argument |s|, insert |s1| to where |s| is defined,
+ * remove |s|'s definition, and replace all usages of |s| with |s1|.
  * @return Whether the IR is modified.
  */
 bool replace_and_insert_statements(
@@ -92,8 +92,9 @@ bool replace_and_insert_statements(
     std::function<bool(Stmt *)> filter,
     std::function<std::unique_ptr<Stmt>(Stmt *)> generator);
 /**
- * @param finder If a statement s need to be replaced, find the existing
- * statement s1 with the argument s, and replace all usages of s with s1.
+ * @param finder If a statement |s| need to be replaced, find the existing
+ * statement |s1| with the argument |s|, remove |s|'s definition, and replace
+ * all usages of |s| with |s1|.
  */
 bool replace_statements(IRNode *root,
                         std::function<bool(Stmt *)> filter,

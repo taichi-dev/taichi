@@ -354,6 +354,30 @@ float64 TypedConstant::val_float() const {
   }
 }
 
+int64 TypedConstant::val_cast_to_int64() const {
+  if (is_real(dt))
+    return val_float();
+  else if (is_signed(dt))
+    return val_int();
+  else if (is_unsigned(dt))
+    return val_uint();
+  else {
+    TI_NOT_IMPLEMENTED
+  }
+}
+
+uint64 TypedConstant::val_cast_to_uint64() const {
+  if (is_real(dt))
+    return val_float();
+  else if (is_signed(dt))
+    return val_int();
+  else if (is_unsigned(dt))
+    return val_uint();
+  else {
+    TI_NOT_IMPLEMENTED
+  }
+}
+
 float64 TypedConstant::val_cast_to_float64() const {
   if (is_real(dt))
     return val_float();

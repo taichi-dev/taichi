@@ -36,7 +36,7 @@ Kernel::Kernel(Program &program,
                const std::function<void()> &func,
                const std::string &primal_name,
                bool grad)
-    : program(program), lowered(false), grad(grad) {
+    : program(&program), lowered(false), grad(grad) {
   // Do not corrupt the context calling this kernel here -- maybe unnecessary
   auto backup_context = std::move(taichi::lang::context);
 
@@ -77,7 +77,7 @@ Kernel::Kernel(Program &program,
                std::unique_ptr<IRNode> &&ir,
                const std::string &primal_name,
                bool grad)
-    : ir(std::move(ir)), program(program), lowered(false), grad(grad) {
+    : ir(std::move(ir)), program(&program), lowered(false), grad(grad) {
   is_accessor = false;
   is_evaluator = false;
   compiled = nullptr;
@@ -97,16 +97,16 @@ Kernel::Kernel(Program &program,
 }
 
 void Kernel::compile() {
-  CurrentKernelGuard _(program, this);
-  compiled = program.compile(*this);
+  CurrentKernelGuard _(*program, this);
+  compiled = program->compile(*this);
 }
 
 void Kernel::lower(bool to_executable) {  // TODO: is a "Lowerer" class
                                           // necessary for each backend?
   TI_ASSERT(!lowered);
   if (arch_is_cpu(arch) || arch == Arch::cuda || arch == Arch::metal) {
-    CurrentKernelGuard _(program, this);
-    auto config = program.config;
+    CurrentKernelGuard _(*program, this);
+    auto config = program->config;
     bool verbose = config.print_ir;
     if ((is_accessor && !config.print_accessor_ir) ||
         (is_evaluator && !config.print_evaluator_ir))
@@ -134,7 +134,7 @@ void Kernel::lower(bool to_executable) {  // TODO: is a "Lowerer" class
 }
 
 void Kernel::operator()(LaunchContextBuilder &ctx_builder) {
-  if (!program.config.async_mode || this->is_evaluator) {
+  if (!program->config.async_mode || this->is_evaluator) {
     if (!compiled) {
       compile();
     }
@@ -145,19 +145,19 @@ void Kernel::operator()(LaunchContextBuilder &ctx_builder) {
 
     compiled(ctx_builder.get_context());
 
-    program.sync = (program.sync && arch_is_cpu(arch));
+    program->sync = (program->sync && arch_is_cpu(arch));
     // Note that Kernel::arch may be different from program.config.arch
-    if (program.config.debug && (arch_is_cpu(program.config.arch) ||
-                                 program.config.arch == Arch::cuda)) {
-      program.check_runtime_error();
+    if (program->config.debug && (arch_is_cpu(program->config.arch) ||
+                                 program->config.arch == Arch::cuda)) {
+      program->check_runtime_error();
     }
   } else {
-    program.sync = false;
-    program.async_engine->launch(this, ctx_builder.get_context());
+    program->sync = false;
+    program->async_engine->launch(this, ctx_builder.get_context());
     // Note that Kernel::arch may be different from program.config.arch
-    if (program.config.debug && arch_is_cpu(arch) &&
-        arch_is_cpu(program.config.arch)) {
-      program.check_runtime_error();
+    if (program->config.debug && arch_is_cpu(arch) &&
+        arch_is_cpu(program->config.arch)) {
+      program->check_runtime_error();
     }
   }
 }
@@ -285,7 +285,7 @@ void Kernel::LaunchContextBuilder::set_arg_raw(int arg_id, uint64 d) {
 }
 
 Context &Kernel::LaunchContextBuilder::get_context() {
-  ctx_->runtime = static_cast<LLVMRuntime *>(kernel_->program.llvm_runtime);
+  ctx_->runtime = static_cast<LLVMRuntime *>(kernel_->program->llvm_runtime);
   return *ctx_;
 }
 
@@ -346,16 +346,6 @@ int64 Kernel::get_ret_int(int i) {
 void Kernel::set_arch(Arch arch) {
   TI_ASSERT(!compiled);
   this->arch = arch;
-}
-
-int Kernel::insert_arg(DataType dt, bool is_external_array) {
-  args.push_back(Arg{dt->get_compute_type(), is_external_array, /*size=*/0});
-  return args.size() - 1;
-}
-
-int Kernel::insert_ret(DataType dt) {
-  rets.push_back(Ret{dt->get_compute_type()});
-  return rets.size() - 1;
 }
 
 void Kernel::account_for_offloaded(OffloadedStmt *stmt) {

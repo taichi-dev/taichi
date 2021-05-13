@@ -97,7 +97,7 @@ TEST_F(AlgebraicSimplicationTest, SimplifyMultiplyZeroFastMath) {
 
   CompileConfig config_without_fast_math;
   config_without_fast_math.fast_math = false;
-  kernel->program.config = config_without_fast_math;
+  kernel->program->config = config_without_fast_math;
 
   irpass::type_check(block.get(), config_without_fast_math);
   EXPECT_EQ(block->size(), 8);
@@ -127,7 +127,7 @@ TEST_F(AlgebraicSimplicationTest, SimplifyMultiplyZeroFastMath) {
 
   irpass::constant_fold(
       block.get(), config_without_fast_math,
-      {&kernel->program});  // should change 2 casts into const
+      {kernel->program});  // should change 2 casts into const
   irpass::alg_simp(block.get(),
                    config_without_fast_math);  // should not eliminate
   irpass::die(block.get());                    // should eliminate 2 const
@@ -135,7 +135,7 @@ TEST_F(AlgebraicSimplicationTest, SimplifyMultiplyZeroFastMath) {
 
   CompileConfig config_with_fast_math;
   config_with_fast_math.fast_math = true;
-  kernel->program.config = config_with_fast_math;
+  kernel->program->config = config_with_fast_math;
 
   irpass::alg_simp(block.get(),
                    config_with_fast_math);  // should eliminate mul, add

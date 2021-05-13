@@ -4,6 +4,7 @@
 #include "taichi/ir/snode.h"
 #include "taichi/ir/ir.h"
 #include "taichi/program/arch.h"
+#include "taichi/program/callable.h"
 
 #define TI_RUNTIME_HOST
 #include "taichi/program/context.h"
@@ -13,36 +14,17 @@ TLANG_NAMESPACE_BEGIN
 
 class Program;
 
-class Kernel {
+class Kernel : public Callable {
  public:
   std::unique_ptr<IRNode> ir;
   bool ir_is_ast;
-  Program &program;
+  Program *program;
   FunctionType compiled;
   std::string name;
   std::vector<SNode *> no_activate;
   Arch arch;
   bool lowered;  // lower inital AST all the way down to a bunch of
                  // OffloadedStmt for async execution
-
-  struct Arg {
-    DataType dt;
-    bool is_external_array;
-    std::size_t size;
-
-    Arg(DataType dt = PrimitiveType::unknown,
-        bool is_external_array = false,
-        std::size_t size = 0)
-        : dt(dt), is_external_array(is_external_array), size(size) {
-    }
-  };
-
-  struct Ret {
-    DataType dt;
-
-    explicit Ret(DataType dt = PrimitiveType::unknown) : dt(dt) {
-    }
-  };
 
   std::vector<Arg> args;
   std::vector<Ret> rets;
@@ -102,10 +84,6 @@ class Kernel {
   void operator()(LaunchContextBuilder &ctx_builder);
 
   LaunchContextBuilder make_launch_context();
-
-  int insert_arg(DataType dt, bool is_external_array);
-
-  int insert_ret(DataType dt);
 
   float64 get_ret_float(int i);
 

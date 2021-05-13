@@ -45,6 +45,7 @@ refr_idx = 2.4
 sp1_center = ti.Vector([0.4, 0.225, 1.75])
 sp1_radius = 0.22
 
+
 def make_box_transform_matrices():
     rad = math.pi / 8.0
     c, s = math.cos(rad), math.sin(rad)

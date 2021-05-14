@@ -92,7 +92,7 @@ void make_block_local_offload(OffloadedStmt *offload,
               pad_size = pad.pad_size[i]  // a.k.a. bounds[i].range()
               bls_coord = partial % pad_size
               partial = partial / pad_size
-              global_index_at_i = BlockerCorner[i] + bls_coord
+              global_index_at_i = BlockCorner[i] + bls_coord
               global_index_at_i += pad.bounds[i].low
               global_indices[i] = global_index_at_i
 

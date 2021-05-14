@@ -80,14 +80,16 @@ class EvalVisitor : public IRVisitor {
     const auto op = stmt->op_type;
     const auto dt = lhs.dt;
     // TODO: Consider using macros to avoid duplication
-    if (is_signed(dt)) {
+    if (is_real(dt)) {
+      // Put floating point numbers first because is_signed/unsigned asserts
+      // that the data type being integral.
+      auto res_opt = eval_bin_op(lhs.val_float(), rhs.val_float(), op);
+      insert_or_failed(stmt, dt, res_opt);
+    } else if (is_signed(dt)) {
       auto res_opt = eval_bin_op(lhs.val_int(), rhs.val_int(), op);
       insert_or_failed(stmt, dt, res_opt);
     } else if (is_unsigned(dt)) {
       auto res_opt = eval_bin_op(lhs.val_uint(), rhs.val_uint(), op);
-      insert_or_failed(stmt, dt, res_opt);
-    } else if (is_real(dt)) {
-      auto res_opt = eval_bin_op(lhs.val_float(), rhs.val_float(), op);
       insert_or_failed(stmt, dt, res_opt);
     } else {
       TI_NOT_IMPLEMENTED;

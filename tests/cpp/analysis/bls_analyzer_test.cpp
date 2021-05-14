@@ -8,24 +8,11 @@
 #include "taichi/ir/snode.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/struct/struct.h"
+#include "tests/cpp/struct/fake_struct_compiler.h"
 
 namespace taichi {
 namespace lang {
 namespace {
-
-class TestStructCompiler : public StructCompiler {
- public:
-  TestStructCompiler() : StructCompiler(/*prog=*/nullptr) {
-  }
-  void generate_types(SNode &) override {
-  }
-
-  void generate_child_accessors(SNode &) override {
-  }
-
-  void run(SNode &, bool) override {
-  }
-};
 
 constexpr int kBlockSize = 8;
 
@@ -38,7 +25,7 @@ class BLSAnalyzerTest : public ::testing::Test {
     child_snode_ = &(parent_snode_->insert_children(SNodeType::place));
     child_snode_->dt = PrimitiveType::i32;
 
-    TestStructCompiler sc;
+    FakeStructCompiler sc;
     sc.infer_snode_properties(*root_snode_);
 
     for_stmt_ = std::make_unique<OffloadedStmt>(
@@ -59,7 +46,6 @@ class BLSAnalyzerTest : public ::testing::Test {
   ScratchPads pads_;
 
   IRBuilder builder_;
-  LoopIndexStmt *loop_index_{nullptr};
 };
 
 TEST_F(BLSAnalyzerTest, Basic) {

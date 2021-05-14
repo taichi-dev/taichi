@@ -1066,7 +1066,8 @@ class LoopIndexStmt : public Stmt {
 };
 
 /**
- * All loop indices of the |loop| fused together.
+ * thread index within a CUDA block
+ * TODO: Remove this. Have a better way for retrieving thread index.
  */
 class LoopLinearIndexStmt : public Stmt {
  public:
@@ -1079,10 +1080,6 @@ class LoopLinearIndexStmt : public Stmt {
   bool has_global_side_effect() const override {
     return false;
   }
-
-  // Return the number of bits of the loop, or -1 if unknown.
-  // TODO: implement
-  // int max_num_bits() const;
 
   TI_STMT_DEF_FIELDS(ret_type, loop);
   TI_DEFINE_ACCEPT_AND_CLONE

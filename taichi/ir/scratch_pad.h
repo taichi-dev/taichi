@@ -37,6 +37,8 @@ class ScratchPad {
     int range() const {
       return high - low;
     }
+
+    TI_IO_DEF(low, high);
   };
 
   SNode *snode{nullptr};
@@ -44,6 +46,7 @@ class ScratchPad {
 
   std::vector<BoundRange> bounds;
   // pad_size[i] := bounds[i].high - bounds[i].low
+  // TODO: This can be replaced by a function call to bounds[i].range()
   std::vector<int> pad_size;
   // block_size[i] := (1 << snode.extractor[i].num_bits)
   std::vector<int> block_size;
@@ -234,6 +237,7 @@ class ScratchPads {
   void print() {
     for (auto &it : pads) {
       TI_P(it.first->node_type_name);
+      TI_P(it.second.bounds);
     }
   }
 

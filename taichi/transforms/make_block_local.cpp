@@ -88,7 +88,7 @@ void make_block_local_offload(OffloadedStmt *offload,
           func bls_to_global(bls_element_id):
             partial = bls_element_id
             global_indices = []  // "i, j, k"
-            for i in [(dim - 1), 0]:
+            for i in reversed(range(0, dim)):
               pad_size = pad.pad_size[i]  // a.k.a. bounds[i].range()
               bls_coord = partial % pad_size
               partial = partial / pad_size

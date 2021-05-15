@@ -81,7 +81,6 @@ class LowerAccess : public IRVisitor {
       }
     }
 
-
     // start_bits is the index of the starting bit for a coordinate
     // for a given SNode. It characterizes the relationship between a parent
     // and a child SNode: "parent.start = child.start + child.num_bits".

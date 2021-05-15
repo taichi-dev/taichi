@@ -26,7 +26,7 @@ class BLSAnalyzerTest : public ::testing::Test {
     child_snode_->dt = PrimitiveType::i32;
 
     FakeStructCompiler sc;
-    sc.run(*root_snode_, /*unused=*/false);
+    sc.run(*root_snode_);
 
     for_stmt_ = std::make_unique<OffloadedStmt>(
         /*task_type=*/OffloadedTaskType::struct_for,

@@ -38,8 +38,8 @@ class MakeBlockLocalTest : public ::testing::Test {
     // the BLS buffer (shared memory).
     //
     //
-    // Because |bls_snode_| has a larger shape than |struct_for_snode_|, we want
-    // to see if the tests can handle the loop index scaling multiplier
+    // |bls_snode_| has a larger shape than |struct_for_snode_|, because we
+    // want to see if the tests can handle the loop index scaling multiplier
     // (block_size) and infer the BLS size correctly.
     const std::vector<Index> indices = {Index{0}, Index{1}};
     pointer_snode_ = &(root_snode_->pointer(indices, pointer_size));

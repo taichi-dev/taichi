@@ -8,6 +8,7 @@ class FakeStructCompiler : public StructCompiler {
  public:
   FakeStructCompiler() : StructCompiler(/*prog=*/nullptr) {
   }
+
   void generate_types(SNode &) override {
   }
 

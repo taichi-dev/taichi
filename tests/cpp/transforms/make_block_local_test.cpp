@@ -73,8 +73,8 @@ class MakeBlockLocalTest : public ::testing::Test {
 
   int get_block_corner(int loop_index, int axis) const {
     // TODO(#2327): Once we switch to consecutive indexing, we can simply return
-    // |loop_index| itself, because for |struct_for_snode_|, the coefficients
-    // along ti.i and ti.j are just 1.
+    // |loop_index| itself: For |struct_for_snode_|, the coefficients
+    // along ti.i and ti.j w.r.t. |pointer_snode_| are just 1.
     unsigned mask = get_block_size(axis) - 1;
     mask = ~mask;
     return (loop_index & mask);
@@ -165,6 +165,8 @@ TEST_F(MakeBlockLocalTest, Basic) {
         // ... a bunch of arithmetic ops
         // <i32> $271 = add $269 $270
         // <*f32> $272 = block local ptr (offset = $271)
+        // ... other instructions that are irrelevant
+
         for (int i = 0; i < stmts.size(); ++i) {
           const auto *stmt = stmts[i].get();
           if (stmt->is<LoopIndexStmt>()) {

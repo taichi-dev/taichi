@@ -55,9 +55,7 @@ class MakeBlockLocalTest : public ::testing::Test {
     struct_for_place_snode_->dt = PrimitiveType::i32;
 
     FakeStructCompiler sc;
-    sc.infer_snode_properties(*root_snode_);
-    // TODO(#2327): Stop calling this
-    sc.compute_trailing_bits(*root_snode_);
+    sc.run(*root_snode_, /*unused=*/false);
 
     for_stmt_ = std::make_unique<OffloadedStmt>(
         /*task_type=*/OffloadedTaskType::struct_for,

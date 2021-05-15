@@ -15,7 +15,10 @@ class FakeStructCompiler : public StructCompiler {
   void generate_child_accessors(SNode &) override {
   }
 
-  void run(SNode &, bool) override {
+  void run(SNode &root, bool host) override {
+    infer_snode_properties(root);
+    // TODO(#2327): Stop calling this
+    compute_trailing_bits(root);
   }
 };
 

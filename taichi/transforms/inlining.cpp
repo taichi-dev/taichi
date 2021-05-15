@@ -34,9 +34,10 @@ class Inliner : public BasicStmtVisitor {
       modifier.replace_with(stmt,
                             std::move(inlined_ir->as<Block>()->statements));
     } else {
-      if (irpass::analysis::gather_statements(inlined_ir.get(), [&](Stmt *s) {
-            return s->is<KernelReturnStmt>();
-          }).size() > 1) {
+      if (irpass::analysis::gather_statements(
+              inlined_ir.get(),
+              [&](Stmt *s) { return s->is<KernelReturnStmt>(); })
+              .size() > 1) {
         TI_WARN(
             "Multiple returns in function \"{}\" may not be handled properly.",
             func->func_key.get_full_name());

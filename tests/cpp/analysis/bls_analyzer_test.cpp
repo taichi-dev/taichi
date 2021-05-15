@@ -81,13 +81,11 @@ TEST_F(BLSAnalyzerTest, Basic) {
   BLSAnalyzer bls(for_stmt_.get(), &pads_);
   pads_.finalize();
   const auto &pad = pads_.get(child_snode_);
-  EXPECT_EQ(pad.bounds[0].size(), 2);
-  constexpr int kLow = 0;
-  constexpr int kHigh = 1;
-  EXPECT_EQ(pad.bounds[kLow][0], 0);
-  EXPECT_EQ(pad.bounds[kHigh][0], 1 + kBlockSize);
-  EXPECT_EQ(pad.bounds[kLow][1], -3);
-  EXPECT_EQ(pad.bounds[kHigh][1], kBlockSize);
+  EXPECT_EQ(pad.bounds.size(), 2);
+  EXPECT_EQ(pad.bounds[0].low, 0);
+  EXPECT_EQ(pad.bounds[0].high, 1 + kBlockSize);
+  EXPECT_EQ(pad.bounds[1].low, -3);
+  EXPECT_EQ(pad.bounds[1].high, kBlockSize);
 }
 
 TEST_F(BLSAnalyzerTest, Mul) {
@@ -112,15 +110,13 @@ TEST_F(BLSAnalyzerTest, Mul) {
   BLSAnalyzer bls(for_stmt_.get(), &pads_);
   pads_.finalize();
   const auto &pad = pads_.get(child_snode_);
-  EXPECT_EQ(pad.bounds[0].size(), 2);
-  constexpr int kLow = 0;
-  constexpr int kHigh = 1;
+  EXPECT_EQ(pad.bounds.size(), 2);
   EXPECT_EQ(pad.coefficients[0], 8);
   EXPECT_EQ(pad.coefficients[1], 4);
-  EXPECT_EQ(pad.bounds[kLow][0], 0);
-  EXPECT_EQ(pad.bounds[kHigh][0], kBlockSize);
-  EXPECT_EQ(pad.bounds[kLow][1], -3);
-  EXPECT_EQ(pad.bounds[kHigh][1], kBlockSize);
+  EXPECT_EQ(pad.bounds[0].low, 0);
+  EXPECT_EQ(pad.bounds[0].high, kBlockSize);
+  EXPECT_EQ(pad.bounds[1].low, -3);
+  EXPECT_EQ(pad.bounds[1].high, kBlockSize);
 }
 
 }  // namespace

@@ -113,7 +113,7 @@ IRHandle IRBank::fuse(IRHandle handle_a, IRHandle handle_b, Kernel *kernel) {
   }
 
   irpass::full_simplify(task_a, kernel->program.config,
-                        {/*after_lower_access=*/false, kernel});
+                        {/*after_lower_access=*/false, &kernel->program});
   // For now, re_id is necessary for the hash to be correct.
   irpass::re_id(task_a);
 

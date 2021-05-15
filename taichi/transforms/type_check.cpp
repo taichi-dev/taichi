@@ -352,6 +352,15 @@ class TypeCheck : public IRVisitor {
     stmt->ret_type = stmt->input->ret_type;
   }
 
+  void visit(FuncCallStmt *stmt) override {
+    auto *func = stmt->func;
+    TI_ASSERT(func);
+    TI_ASSERT(func->rets.size() <= 1);
+    if (func->rets.size() == 1) {
+      stmt->ret_type = func->rets[0].dt;
+    }
+  }
+
   void visit(ArgLoadStmt *stmt) {
     const auto &rt = stmt->ret_type;
     // TODO: Maybe have a type_inference() pass, which takes in the args/rets

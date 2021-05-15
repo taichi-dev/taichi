@@ -1,18 +1,16 @@
 #pragma once
 
 #include "taichi/ir/pass.h"
+#include "taichi/program/program.h"
 
 namespace taichi {
 namespace lang {
 
-class FullSimplifyPass : public Pass {
+class InliningPass : public Pass {
  public:
   static const PassID id;
 
-  struct Args {
-    bool after_lower_access;
-    Program *program;
-  };
+  struct Args {};
 };
 
 }  // namespace lang

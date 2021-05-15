@@ -126,6 +126,7 @@ class _SpecialConfig:
         self.log_level = 'info'
         self.gdb_trigger = False
         self.excepthook = False
+        self.experimental_real_function = False
 
 
 def init(arch=None,
@@ -186,6 +187,7 @@ def init(arch=None,
     env_spec.add('log_level', str)
     env_spec.add('gdb_trigger')
     env_spec.add('excepthook')
+    env_spec.add('experimental_real_function')
 
     # compiler configurations (ti.cfg):
     for key in dir(ti.cfg):
@@ -206,6 +208,8 @@ def init(arch=None,
     if not _test_mode:
         ti.set_gdb_trigger(spec_cfg.gdb_trigger)
         impl.get_runtime().print_preprocessed = spec_cfg.print_preprocessed
+        impl.get_runtime().experimental_real_function = \
+            spec_cfg.experimental_real_function
         ti.set_logging_level(spec_cfg.log_level.lower())
         if spec_cfg.excepthook:
             # TODO(#1405): add a way to restore old excepthook
@@ -316,6 +320,32 @@ def eig(A, dt=None):
     if A.n == 2:
         return linalg.eig2x2(A, dt)
     raise Exception("Eigen solver only supports 2D matrices.")
+
+
+def sym_eig(A, dt=None):
+    """Compute the eigenvalues and right eigenvectors of a real symmetric matrix.
+
+    Parameters
+    ----------
+    A: ti.Matrix(n, n)
+        Symmetric Matrix for which the eigenvalues and right eigenvectors will be computed.
+    dt: Optional[DataType]
+        The datatype for the eigenvalues and right eigenvectors
+
+    Returns
+    -------
+    eigenvalues: ti.Vector(n)
+        The eigenvalues. Each entry store one eigen value.
+    eigenvectors: ti.Matrix(n, n)
+        The eigenvectors. Each column stores one eigenvector.
+    """
+    assert all(A == A.transpose()), "A needs to be symmetric"
+    if dt is None:
+        dt = impl.get_runtime().default_fp
+    from taichi.lang import linalg
+    if A.n == 2:
+        return linalg.sym_eig2x2(A, dt)
+    raise Exception("Symmetric eigen solver only supports 2D matrices.")
 
 
 def randn(dt=None):

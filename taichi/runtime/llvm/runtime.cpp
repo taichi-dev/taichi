@@ -514,7 +514,7 @@ struct LLVMRuntime {
   assert_failed_type assert_failed;
   host_printf_type host_printf;
   host_vsnprintf_type host_vsnprintf;
-  Ptr prog;
+  Ptr program;
   Ptr root;
   size_t root_mem_size;
   Ptr thread_pool;
@@ -762,7 +762,7 @@ Ptr LLVMRuntime::allocate_aligned(std::size_t size, std::size_t alignment) {
   if (preallocated)
     return allocate_from_buffer(size, alignment);
   else
-    return (Ptr)vm_allocator(prog, size, alignment);
+    return (Ptr)vm_allocator(program, size, alignment);
 }
 
 Ptr LLVMRuntime::allocate_from_buffer(std::size_t size, std::size_t alignment) {
@@ -828,7 +828,7 @@ void runtime_get_mem_req_queue(LLVMRuntime *runtime) {
 
 void runtime_initialize(
     Ptr result_buffer,
-    Ptr prog,
+    Ptr program,
     std::size_t root_size,
     std::size_t
         preallocated_size,  // Non-zero means use the preallocated buffer
@@ -849,7 +849,7 @@ void runtime_initialize(
     preallocated_buffer +=
         taichi::iroundup(sizeof(LLVMRuntime), taichi_page_size);
   } else {
-    runtime = (LLVMRuntime *)vm_allocator(prog, sizeof(LLVMRuntime), 128);
+    runtime = (LLVMRuntime *)vm_allocator(program, sizeof(LLVMRuntime), 128);
   }
 
   runtime->root_mem_size =
@@ -864,7 +864,7 @@ void runtime_initialize(
   runtime->vm_allocator = vm_allocator;
   runtime->host_printf = host_printf;
   runtime->host_vsnprintf = host_vsnprintf;
-  runtime->prog = prog;
+  runtime->program = program;
 
   runtime->total_requested_memory = 0;
 

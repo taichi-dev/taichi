@@ -7,10 +7,21 @@
 #include "taichi/ir/stmt_op_types.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/expression.h"
+#include "taichi/program/function.h"
 
 TLANG_NAMESPACE_BEGIN
 
 // Frontend Statements
+
+class FrontendExprStmt : public Stmt {
+ public:
+  Expr val;
+
+  FrontendExprStmt(const Expr &val) : val(val) {
+  }
+
+  TI_DEFINE_ACCEPT
+};
 
 class FrontendAllocaStmt : public Stmt {
  public:
@@ -571,6 +582,23 @@ class ExternalTensorShapeAlongAxisExpression : public Expression {
 
   ExternalTensorShapeAlongAxisExpression(const Expr &ptr, int axis)
       : ptr(ptr), axis(axis) {
+  }
+
+  void flatten(FlattenContext *ctx) override;
+};
+
+class FuncCallExpression : public Expression {
+ public:
+  Function *func;
+  ExprGroup args;
+
+  std::string serialize() override {
+    return fmt::format("func_call(\"{}\", {})", func->func_key.get_full_name(),
+                       args.serialize());
+  }
+
+  FuncCallExpression(Function *func, const ExprGroup &args)
+      : func(func), args(args) {
   }
 
   void flatten(FlattenContext *ctx) override;

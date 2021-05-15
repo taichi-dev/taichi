@@ -30,6 +30,8 @@ def expr_init(rhs):
             return dict((key, expr_init(val)) for key, val in rhs.items())
         elif isinstance(rhs, _ti_core.DataType):
             return rhs
+        elif isinstance(rhs, _ti_core.Arch):
+            return rhs
         elif isinstance(rhs, ti.ndrange):
             return rhs
         elif hasattr(rhs, '_data_oriented'):
@@ -171,7 +173,7 @@ def chain_compare(comparators, ops):
 
 
 @taichi_scope
-def func_call_with_check(func, *args, **kwargs):
+def maybe_transform_ti_func_call_to_stmt(func, *args, **kwargs):
     _taichi_skip_traceback = 1
     if '_sitebuiltins' == getattr(func, '__module__', '') and getattr(
             getattr(func, '__class__', ''), '__name__', '') == 'Quitter':
@@ -186,7 +188,17 @@ def func_call_with_check(func, *args, **kwargs):
             UserWarning,
             stacklevel=2)
 
-    return func(*args, **kwargs)
+    is_taichi_function = getattr(func, '_is_taichi_function', False)
+    # If is_taichi_function is true: call a decorated Taichi function
+    # in a Taichi kernel/function.
+
+    if is_taichi_function and get_runtime().experimental_real_function:
+        # Compiles the function here.
+        # Invokes Func.__call__.
+        func_call_result = func(*args, **kwargs)
+        return _ti_core.insert_expr_stmt(func_call_result.ptr)
+    else:
+        return func(*args, **kwargs)
 
 
 class PyTaichi:
@@ -199,8 +211,10 @@ class PyTaichi:
         self.compiled_grad_functions = {}
         self.scope_stack = []
         self.inside_kernel = False
+        self.current_kernel = None
         self.global_vars = []
         self.print_preprocessed = False
+        self.experimental_real_function = False
         self.default_fp = ti.f32
         self.default_ip = ti.i32
         self.target_tape = None

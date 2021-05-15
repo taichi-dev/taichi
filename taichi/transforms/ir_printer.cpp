@@ -95,6 +95,10 @@ class IRPrinter : public IRVisitor {
     current_indent--;
   }
 
+  void visit(FrontendExprStmt *stmt) override {
+    print("{}", stmt->val->serialize());
+  }
+
   void visit(FrontendBreakStmt *stmt) override {
     print("break");
   }
@@ -279,7 +283,12 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(FuncCallStmt *stmt) override {
-    print("{}{} = call \"{}\"", stmt->type_hint(), stmt->name(), stmt->funcid);
+    std::vector<std::string> args;
+    for (const auto &arg : stmt->args) {
+      args.push_back(arg->name());
+    }
+    print("{}{} = call \"{}\", args = {{{}}}", stmt->type_hint(), stmt->name(),
+          stmt->func->func_key.get_full_name(), fmt::join(args, ", "));
   }
 
   void visit(FrontendFuncDefStmt *stmt) override {

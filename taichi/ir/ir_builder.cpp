@@ -121,6 +121,11 @@ ContinueStmt *IRBuilder::create_continue() {
   return insert(Stmt::make_typed<ContinueStmt>());
 }
 
+FuncCallStmt *IRBuilder::create_func_call(Function *func,
+                                          const std::vector<Stmt *> &args) {
+  return insert(Stmt::make_typed<FuncCallStmt>(func, args));
+}
+
 LoopIndexStmt *IRBuilder::get_loop_index(Stmt *loop, int index) {
   return insert(Stmt::make_typed<LoopIndexStmt>(loop, index));
 }

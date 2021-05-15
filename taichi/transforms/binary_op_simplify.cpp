@@ -90,11 +90,19 @@ class BinaryOpSimp : public BasicStmtVisitor {
             (op2 == BinaryOpType::mul ? BinaryOpType::div : BinaryOpType::mul);
       return true;
     }
-    // for bit operations it only holds when two ops are the same
+    // for bit operations it holds when two ops are the same
     if ((op1 == BinaryOpType::bit_and || op1 == BinaryOpType::bit_or ||
          op1 == BinaryOpType::bit_xor) &&
         op1 == op2) {
       new_op2 = op2;
+      return true;
+    }
+    if ((op1 == BinaryOpType::bit_shl || op1 == BinaryOpType::bit_shr ||
+         op1 == BinaryOpType::bit_sar) &&
+        op1 == op2) {
+      // (a << b) << c -> a << (b + c)
+      // (a >> b) >> c -> a >> (b + c)
+      new_op2 = BinaryOpType::add;
       return true;
     }
     return false;

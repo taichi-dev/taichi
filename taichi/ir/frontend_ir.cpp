@@ -363,6 +363,16 @@ void ExternalTensorShapeAlongAxisExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
+void FuncCallExpression::flatten(FlattenContext *ctx) {
+  std::vector<Stmt *> stmt_args;
+  for (auto &arg : args.exprs) {
+    arg->flatten(ctx);
+    stmt_args.push_back(arg->stmt);
+  }
+  ctx->push_back<FuncCallStmt>(func, stmt_args);
+  stmt = ctx->back_stmt();
+}
+
 Block *ASTBuilder::current_block() {
   if (stack.empty())
     return nullptr;

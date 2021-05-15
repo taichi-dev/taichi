@@ -22,6 +22,7 @@ struct CompileConfig {
   bool simplify_before_lower_access;
   bool lower_access;
   bool simplify_after_lower_access;
+  bool move_loop_invariant_outside_if;
   bool demote_dense_struct_fors;
   bool advanced_optimization;
   bool use_llvm;

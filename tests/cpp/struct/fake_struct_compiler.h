@@ -1,4 +1,3 @@
-
 #include "taichi/struct/struct.h"
 
 namespace taichi {

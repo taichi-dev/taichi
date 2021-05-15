@@ -68,5 +68,7 @@ ENV TAICHI_REPO_DIR="/taichi-dev/taichi/"
 ENV PYTHONPATH="$TAICHI_REPO_DIR/python:$PYTHONPATH"
 ENV LANG="C.UTF-8"
 
+# Add Docker specific ENV
+ENV TI_IN_DOCKER=true
 WORKDIR /taichi-dev/taichi
 CMD /bin/bash

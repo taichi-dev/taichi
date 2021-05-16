@@ -95,9 +95,8 @@ void export_lang(py::module &m) {
       .def(py::self == py::self)
       .def("__hash__", &DataType::hash)
       .def("to_string", &DataType::to_string)
-      .def(
-          "get_ptr", [](DataType *dtype) -> Type * { return *dtype; },
-          py::return_value_policy::reference)
+      .def("get_ptr", [](DataType *dtype) -> Type * { return *dtype; },
+           py::return_value_policy::reference)
       .def(py::pickle(
           [](const DataType &dt) {
             // Note: this only works for primitive types, which is fine for now.
@@ -198,10 +197,9 @@ void export_lang(py::module &m) {
   m.def("reset_default_compile_config",
         [&]() { default_compile_config = CompileConfig(); });
 
-  m.def(
-      "default_compile_config",
-      [&]() -> CompileConfig & { return default_compile_config; },
-      py::return_value_policy::reference);
+  m.def("default_compile_config",
+        [&]() -> CompileConfig & { return default_compile_config; },
+        py::return_value_policy::reference);
 
   py::class_<Program>(m, "Program")
       .def(py::init<>())
@@ -218,12 +216,11 @@ void export_lang(py::module &m) {
            })
       .def("print_memory_profiler_info", &Program::print_memory_profiler_info)
       .def("finalize", &Program::finalize)
-      .def(
-          "get_root",
-          [&](Program *program) -> SNode * {
-            return program->snode_root.get();
-          },
-          py::return_value_policy::reference)
+      .def("get_root",
+           [&](Program *program) -> SNode * {
+             return program->snode_root.get();
+           },
+           py::return_value_policy::reference)
       .def("get_total_compilation_time", &Program::get_total_compilation_time)
       .def("print_snode_tree", &Program::print_snode_tree)
       .def("get_snode_num_dynamically_allocated",
@@ -238,10 +235,9 @@ void export_lang(py::module &m) {
   m.def("get_current_program", get_current_program,
         py::return_value_policy::reference);
 
-  m.def(
-      "current_compile_config",
-      [&]() -> CompileConfig & { return get_current_program().config; },
-      py::return_value_policy::reference);
+  m.def("current_compile_config",
+        [&]() -> CompileConfig & { return get_current_program().config; },
+        py::return_value_policy::reference);
 
   py::class_<Index>(m, "Index").def(py::init<int>());
   py::class_<SNode>(m, "SNode")
@@ -276,10 +272,9 @@ void export_lang(py::module &m) {
       .def("data_type", [](SNode *snode) { return snode->dt; })
       .def("get_num_ch",
            [](SNode *snode) -> int { return (int)snode->ch.size(); })
-      .def(
-          "get_ch",
-          [](SNode *snode, int i) -> SNode * { return snode->ch[i].get(); },
-          py::return_value_policy::reference)
+      .def("get_ch",
+           [](SNode *snode, int i) -> SNode * { return snode->ch[i].get(); },
+           py::return_value_policy::reference)
       .def("lazy_grad",
            [](SNode *snode) {
              make_lazy_grad(snode,
@@ -384,14 +379,13 @@ void export_lang(py::module &m) {
 
   py::class_<Stmt>(m, "Stmt");
   py::class_<Program::KernelProxy>(m, "KernelProxy")
-      .def(
-          "define",
-          [](Program::KernelProxy *ker,
-             const std::function<void()> &func) -> Kernel & {
-            py::gil_scoped_release release;
-            return ker->def(func);
-          },
-          py::return_value_policy::reference);
+      .def("define",
+           [](Program::KernelProxy *ker,
+              const std::function<void()> &func) -> Kernel & {
+             py::gil_scoped_release release;
+             return ker->def(func);
+           },
+           py::return_value_policy::reference);
 
   m.def("insert_deactivate", [](SNode *snode, const ExprGroup &indices) {
     return Deactivate(snode, indices);
@@ -686,12 +680,11 @@ void export_lang(py::module &m) {
           return get_current_program().kernel(name, grad);
         });
 
-  m.def(
-      "create_function",
-      [&](const FunctionKey &funcid) {
-        return get_current_program().create_function(funcid);
-      },
-      py::return_value_policy::reference);
+  m.def("create_function",
+        [&](const FunctionKey &funcid) {
+          return get_current_program().create_function(funcid);
+        },
+        py::return_value_policy::reference);
 
   py::class_<FunctionKey>(m, "FunctionKey")
       .def(py::init<const std::string &, int, int>())

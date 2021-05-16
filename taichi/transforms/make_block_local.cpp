@@ -161,10 +161,10 @@ void make_block_local_offload(OffloadedStmt *offload,
               auto block_corner =
                   element_block->push_back<BlockCornerIndexStmt>(offload, i);
               if (pad.second.coefficients[i] > 1) {
-                  block_corner = element_block->push_back<BinaryOpStmt>(
-                      BinaryOpType::mul, block_corner,
-                      element_block->push_back<ConstStmt>(
-                          TypedConstant(pad.second.coefficients[i])));
+                block_corner = element_block->push_back<BinaryOpStmt>(
+                    BinaryOpType::mul, block_corner,
+                    element_block->push_back<ConstStmt>(
+                        TypedConstant(pad.second.coefficients[i])));
               }
 
               global_index_this_dim = element_block->push_back<BinaryOpStmt>(

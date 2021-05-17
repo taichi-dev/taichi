@@ -37,5 +37,9 @@ void Function::set_function_body(std::unique_ptr<IRNode> func_body) {
                                   /*start_from_ast=*/false);
 }
 
+std::string Function::get_name() const {
+  return func_key.get_full_name();
+}
+
 }  // namespace lang
 }  // namespace taichi

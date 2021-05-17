@@ -10,9 +10,6 @@ class Function : public Callable {
  public:
   FunctionKey func_key;
 
-  std::vector<Arg> args;
-  std::vector<Ret> rets;
-
   Function(Program *program, const FunctionKey &func_key);
 
   // Set the function body to a frontend Python function which generates the C++
@@ -21,6 +18,8 @@ class Function : public Callable {
 
   // Set the function body to a CHI IR.
   void set_function_body(std::unique_ptr<IRNode> func_body);
+
+  [[nodiscard]] std::string get_name() const override;
 };
 
 }  // namespace lang

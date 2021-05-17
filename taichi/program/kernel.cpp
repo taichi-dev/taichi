@@ -359,4 +359,8 @@ void Kernel::account_for_offloaded(OffloadedStmt *stmt) {
   }
 }
 
+std::string Kernel::get_name() const {
+  return name;
+}
+
 TLANG_NAMESPACE_END

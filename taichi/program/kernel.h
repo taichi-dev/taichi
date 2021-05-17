@@ -88,6 +88,8 @@ class Kernel : public Callable {
   void set_arch(Arch arch);
 
   void account_for_offloaded(OffloadedStmt *stmt);
+
+  [[nodiscard]] std::string get_name() const override;
 };
 
 TLANG_NAMESPACE_END

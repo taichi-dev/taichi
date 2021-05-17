@@ -39,7 +39,7 @@ void compile_to_offloads(IRNode *ir,
                          bool start_from_ast) {
   TI_AUTO_PROF;
 
-  auto print = make_pass_printer(verbose, kernel->name, ir);
+  auto print = make_pass_printer(verbose, kernel->get_name(), ir);
   print("Initial IR");
 
   if (grad) {
@@ -108,7 +108,7 @@ void compile_to_offloads(IRNode *ir,
   }
 
   if (config.check_out_of_bound) {
-    irpass::check_out_of_bound(ir, config, {kernel->name});
+    irpass::check_out_of_bound(ir, config, {kernel->get_name()});
     print("Bound checked");
     irpass::analysis::verify(ir);
   }
@@ -150,7 +150,7 @@ void offload_to_executable(IRNode *ir,
                            bool make_block_local) {
   TI_AUTO_PROF;
 
-  auto print = make_pass_printer(verbose, kernel->name, ir);
+  auto print = make_pass_printer(verbose, kernel->get_name(), ir);
 
   // TODO: This is just a proof that we can demote struct-fors after offloading.
   // Eventually we might want the order to be TLS/BLS -> demote struct-for.
@@ -184,7 +184,7 @@ void offload_to_executable(IRNode *ir,
   }
 
   if (make_block_local) {
-    irpass::make_block_local(ir, config, {kernel->name});
+    irpass::make_block_local(ir, config, {kernel->get_name()});
     print("Make block local");
   }
 
@@ -262,7 +262,7 @@ void compile_inline_function(IRNode *ir,
                              bool start_from_ast) {
   TI_AUTO_PROF;
 
-  auto print = make_pass_printer(verbose, func->func_key.get_full_name(), ir);
+  auto print = make_pass_printer(verbose, func->get_name(), ir);
   print("Initial IR");
 
   if (grad) {

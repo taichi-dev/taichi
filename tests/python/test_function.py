@@ -6,7 +6,7 @@ def test_function_without_return():
     x = ti.field(ti.i32, shape=())
 
     @ti.func
-    def foo(val: ti.i32) -> ti.i32:
+    def foo(val: ti.i32):
         x[None] += val
 
     @ti.kernel

@@ -1,4 +1,4 @@
-#include "kernel.h"
+#include "taichi/program/kernel.h"
 
 #include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/codegen/codegen.h"

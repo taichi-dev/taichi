@@ -731,6 +731,7 @@ void export_lang(py::module &m) {
 
   m.def("insert_snode_access_flag", insert_snode_access_flag);
   m.def("no_activate", [](SNode *snode) {
+    // TODO(#2193): Also apply to @ti.func?
     get_current_program().get_current_kernel().no_activate.push_back(snode);
   });
   m.def("stop_grad",

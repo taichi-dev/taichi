@@ -1,10 +1,7 @@
 #pragma once
 
-#include "taichi/lang_util.h"
-#include "taichi/ir/ir.h"
 #include "taichi/program/callable.h"
 #include "taichi/program/function_key.h"
-#include "taichi/program/kernel.h"
 
 namespace taichi {
 namespace lang {

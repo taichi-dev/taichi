@@ -148,7 +148,7 @@ void Kernel::operator()(LaunchContextBuilder &ctx_builder) {
     program->sync = (program->sync && arch_is_cpu(arch));
     // Note that Kernel::arch may be different from program.config.arch
     if (program->config.debug && (arch_is_cpu(program->config.arch) ||
-                                 program->config.arch == Arch::cuda)) {
+                                  program->config.arch == Arch::cuda)) {
       program->check_runtime_error();
     }
   } else {

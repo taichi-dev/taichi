@@ -770,7 +770,7 @@ class ReturnStmt : public Stmt {
  public:
   Stmt *value;
 
-  ReturnStmt(Stmt *value) : value(value) {
+  explicit ReturnStmt(Stmt *value) : value(value) {
     TI_STMT_REG_FIELDS;
   }
 

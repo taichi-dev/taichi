@@ -88,7 +88,7 @@ class AlgSimp : public BasicStmtVisitor {
         std::swap(stmt->lhs, stmt->rhs);
         std::swap(lhs, rhs);
       }
-      int log2rhs = bit::log2int(rhs->val[0].val_cast_to_uint64());
+      int log2rhs = bit::log2int((uint64)rhs->val[0].val_as_int64());
       auto new_rhs = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(
           TypedConstant(stmt->lhs->ret_type, log2rhs)));
       auto result = Stmt::make<BinaryOpStmt>(BinaryOpType::bit_shl, stmt->lhs,
@@ -163,7 +163,7 @@ class AlgSimp : public BasicStmtVisitor {
     if (is_integral(stmt->lhs->ret_type) && is_unsigned(stmt->lhs->ret_type) &&
         alg_is_pot(rhs)) {
       // (unsigned)a / pot -> a >> log2(pot)
-      int log2rhs = bit::log2int(rhs->val[0].val_cast_to_uint64());
+      int log2rhs = bit::log2int((uint64)rhs->val[0].val_as_int64());
       auto new_rhs = Stmt::make<ConstStmt>(LaneAttribute<TypedConstant>(
           TypedConstant(stmt->lhs->ret_type, log2rhs)));
       auto result = Stmt::make<BinaryOpStmt>(BinaryOpType::bit_sar, stmt->lhs,

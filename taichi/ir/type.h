@@ -412,8 +412,7 @@ class TypedConstant {
   int64 val_int() const;
   uint64 val_uint() const;
   float64 val_float() const;
-  int64 val_cast_to_int64() const;
-  uint64 val_cast_to_uint64() const;
+  int64 val_as_int64() const;  // unifies val_int() and val_uint()
   float64 val_cast_to_float64() const;
 };
 

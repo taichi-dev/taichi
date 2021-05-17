@@ -355,8 +355,10 @@ float64 TypedConstant::val_float() const {
 }
 
 int64 TypedConstant::val_cast_to_int64() const {
-  if (is_real(dt))
+  if (is_real(dt)) {
+    TI_WARN("Casting floating point type {} to i64.", dt->to_string());
     return val_float();
+  }
   else if (is_signed(dt))
     return val_int();
   else if (is_unsigned(dt))
@@ -367,8 +369,10 @@ int64 TypedConstant::val_cast_to_int64() const {
 }
 
 uint64 TypedConstant::val_cast_to_uint64() const {
-  if (is_real(dt))
+  if (is_real(dt)) {
+    TI_WARN("Casting floating point type {} to u64.", dt->to_string());
     return val_float();
+  }
   else if (is_signed(dt))
     return val_int();
   else if (is_unsigned(dt))

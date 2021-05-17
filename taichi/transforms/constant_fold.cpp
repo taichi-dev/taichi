@@ -47,7 +47,7 @@ class ConstantFold : public BasicStmtVisitor {
           oper->cast<UnaryOpStmt>()->cast_type = id.rhs;
         }
       }
-      auto ret = Stmt::make<KernelReturnStmt>(oper.get());
+      auto ret = Stmt::make<ReturnStmt>(oper.get());
       current_ast_builder().insert(std::move(lhstmt));
       if (id.is_binary)
         current_ast_builder().insert(std::move(rhstmt));

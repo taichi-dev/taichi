@@ -679,7 +679,7 @@ class KernelGen : public IRVisitor {
          const_stmt->val[0].stringify());
   }
 
-  void visit(KernelReturnStmt *stmt) override {
+  void visit(ReturnStmt *stmt) override {
     used.buf_args = true;
     // TODO: consider use _rets_{}_ instead of _args_{}_
     // TODO: use stmt->ret_id instead of 0 as index

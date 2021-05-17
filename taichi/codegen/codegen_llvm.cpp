@@ -933,7 +933,7 @@ void CodeGenLLVM::visit(ArgLoadStmt *stmt) {
   }
 }
 
-void CodeGenLLVM::visit(KernelReturnStmt *stmt) {
+void CodeGenLLVM::visit(ReturnStmt *stmt) {
   if (stmt->ret_type.is_pointer()) {
     TI_NOT_IMPLEMENTED
   } else {

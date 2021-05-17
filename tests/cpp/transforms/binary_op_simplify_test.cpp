@@ -49,8 +49,8 @@ TEST_F(BinaryOpSimplifyTest, MultiplyPOT) {
   auto *bin_op = ir_block->statements[2]->as<BinaryOpStmt>();
   EXPECT_EQ(bin_op->op_type, BinaryOpType::bit_shl);
   EXPECT_EQ(bin_op->rhs, const_stmt);
-  EXPECT_TRUE(ir_block->statements[3]->is<KernelReturnStmt>());
-  EXPECT_EQ(ir_block->statements[3]->as<KernelReturnStmt>()->value, bin_op);
+  EXPECT_TRUE(ir_block->statements[3]->is<ReturnStmt>());
+  EXPECT_EQ(ir_block->statements[3]->as<ReturnStmt>()->value, bin_op);
 }
 
 }  // namespace lang

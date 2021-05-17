@@ -162,8 +162,8 @@ ArgLoadStmt *IRBuilder::create_arg_load(int arg_id, DataType dt, bool is_ptr) {
   return insert(Stmt::make_typed<ArgLoadStmt>(arg_id, dt, is_ptr));
 }
 
-KernelReturnStmt *IRBuilder::create_return(Stmt *value) {
-  return insert(Stmt::make_typed<KernelReturnStmt>(value));
+ReturnStmt *IRBuilder::create_return(Stmt *value) {
+  return insert(Stmt::make_typed<ReturnStmt>(value));
 }
 
 UnaryOpStmt *IRBuilder::create_cast(Stmt *value, DataType output_type) {

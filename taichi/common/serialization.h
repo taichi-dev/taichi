@@ -703,7 +703,8 @@ class TextSerializer : public Serializer {
   // Elementary data types
   template <typename T>
   typename std::enable_if<is_elementary_type_v<T>, void>::type operator()(
-      const char *key, const T &val) {
+      const char *key,
+      const T &val) {
     static_assert(!has_io<T>::value, "");
     std::stringstream ss;
     ss << std::boolalpha << val;
@@ -734,7 +735,8 @@ class TextSerializer : public Serializer {
 
   template <typename T>
   typename std::enable_if<std::is_enum_v<T>, void>::type operator()(
-      const char *key, const T &val) {
+      const char *key,
+      const T &val) {
     using UT = std::underlying_type_t<T>;
     this->operator()(key, static_cast<UT>(val));
   }

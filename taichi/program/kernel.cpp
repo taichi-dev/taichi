@@ -15,28 +15,13 @@ TLANG_NAMESPACE_BEGIN
 
 class Function;
 
-namespace {
-class CurrentKernelGuard {
-  std::variant<Kernel *, Function *> old_kernel_or_function;
-  Program &program;
-
- public:
-  CurrentKernelGuard(Program &program_, Kernel *kernel) : program(program_) {
-    old_kernel_or_function = program.current_kernel_or_function;
-    program.current_kernel_or_function = kernel;
-  }
-
-  ~CurrentKernelGuard() {
-    program.current_kernel_or_function = old_kernel_or_function;
-  }
-};
-}  // namespace
-
 Kernel::Kernel(Program &program,
                const std::function<void()> &func,
                const std::string &primal_name,
                bool grad)
-    : program(&program), lowered(false), grad(grad) {
+    : lowered(false), grad(grad) {
+  this->program = &program;
+
   // Do not corrupt the context calling this kernel here -- maybe unnecessary
   auto backup_context = std::move(taichi::lang::context);
 
@@ -52,7 +37,7 @@ Kernel::Kernel(Program &program,
     // Note: this is NOT a mutex. If we want to call Kernel::Kernel()
     // concurrently, we need to lock this block of code together with
     // taichi::lang::context with a mutex.
-    CurrentKernelGuard _(program, this);
+    CurrentCallableGuard _(this->program, this);
     program.start_kernel_definition(this);
     func();
     program.end_kernel_definition();
@@ -77,7 +62,9 @@ Kernel::Kernel(Program &program,
                std::unique_ptr<IRNode> &&ir,
                const std::string &primal_name,
                bool grad)
-    : ir(std::move(ir)), program(&program), lowered(false), grad(grad) {
+    : lowered(false), grad(grad) {
+  this->ir = std::move(ir);
+  this->program = &program;
   is_accessor = false;
   is_evaluator = false;
   compiled = nullptr;
@@ -97,7 +84,7 @@ Kernel::Kernel(Program &program,
 }
 
 void Kernel::compile() {
-  CurrentKernelGuard _(*program, this);
+  CurrentCallableGuard _(program, this);
   compiled = program->compile(*this);
 }
 
@@ -105,7 +92,7 @@ void Kernel::lower(bool to_executable) {  // TODO: is a "Lowerer" class
                                           // necessary for each backend?
   TI_ASSERT(!lowered);
   if (arch_is_cpu(arch) || arch == Arch::cuda || arch == Arch::metal) {
-    CurrentKernelGuard _(*program, this);
+    CurrentCallableGuard _(program, this);
     auto config = program->config;
     bool verbose = config.print_ir;
     if ((is_accessor && !config.print_accessor_ir) ||

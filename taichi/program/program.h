@@ -82,7 +82,7 @@ class AsyncEngine;
 class Program {
  public:
   using Kernel = taichi::lang::Kernel;
-  std::variant<Kernel *, Function *> current_kernel_or_function;
+  Callable *current_callable;
   std::unique_ptr<SNode> snode_root;  // pointer to the data structure.
   void *llvm_runtime;
   CompileConfig config;
@@ -186,7 +186,7 @@ class Program {
   }
 
   void start_kernel_definition(Kernel *kernel) {
-    current_kernel_or_function = kernel;
+    current_callable = kernel;
   }
 
   void end_kernel_definition() {
@@ -208,16 +208,14 @@ class Program {
 
   void check_runtime_error();
 
-  inline Kernel &get_current_kernel() {
-    TI_ASSERT(std::holds_alternative<Kernel *>(current_kernel_or_function));
-    auto *kernel = std::get<Kernel *>(current_kernel_or_function);
+  inline Kernel &get_current_kernel() const {
+    auto *kernel = dynamic_cast<Kernel *>(current_callable);
     TI_ASSERT(kernel);
     return *kernel;
   }
 
-  inline Function *get_current_function() {
-    TI_ASSERT(std::holds_alternative<Function *>(current_kernel_or_function));
-    auto *func = std::get<Function *>(current_kernel_or_function);
+  inline Function *get_current_function() const {
+    auto *func = dynamic_cast<Function *>(current_callable);
     return func;
   }
 

@@ -55,11 +55,8 @@ Expr Expr::operator[](const ExprGroup &indices) const {
 }
 
 Expr &Expr::operator=(const Expr &o) {
-  if ((std::holds_alternative<Kernel *>(
-           get_current_program().current_kernel_or_function) &&
-       std::get<Kernel *>(get_current_program().current_kernel_or_function)) ||
-      (std::holds_alternative<Function *>(
-          get_current_program().current_kernel_or_function))) {
+  if (get_current_program().current_callable) {
+    // Inside a kernel or a function
     // Create an assignment in the IR
     if (expr == nullptr) {
       set(o.eval());

@@ -160,7 +160,7 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
 #endif
 
   result_buffer = nullptr;
-  current_kernel_or_function = static_cast<Kernel *>(nullptr);
+  current_callable = static_cast<Kernel *>(nullptr);
   sync = true;
   llvm_runtime = nullptr;
   finalized = false;

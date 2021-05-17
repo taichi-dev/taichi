@@ -16,9 +16,7 @@ class Program;
 
 class Kernel : public Callable {
  public:
-  std::unique_ptr<IRNode> ir;
   bool ir_is_ast;
-  Program *program;
   FunctionType compiled;
   std::string name;
   std::vector<SNode *> no_activate;
@@ -26,8 +24,6 @@ class Kernel : public Callable {
   bool lowered;  // lower inital AST all the way down to a bunch of
                  // OffloadedStmt for async execution
 
-  std::vector<Arg> args;
-  std::vector<Ret> rets;
   bool is_accessor;
   bool is_evaluator;
   bool grad;

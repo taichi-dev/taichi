@@ -5,23 +5,6 @@
 namespace taichi {
 namespace lang {
 
-namespace {
-class CurrentFunctionGuard {
-  std::variant<Kernel *, Function *> old_kernel_or_function;
-  Program *program;
-
- public:
-  CurrentFunctionGuard(Program *program, Function *func) : program(program) {
-    old_kernel_or_function = program->current_kernel_or_function;
-    program->current_kernel_or_function = func;
-  }
-
-  ~CurrentFunctionGuard() {
-    program->current_kernel_or_function = old_kernel_or_function;
-  }
-};
-}  // namespace
-
 Function::Function(Program *program, const FunctionKey &func_key)
     : func_key(func_key) {
   this->program = program;
@@ -35,7 +18,7 @@ void Function::set_function_body(const std::function<void()> &func) {
   ir = taichi::lang::context->get_root();
   {
     // Note: this is not a mutex
-    CurrentFunctionGuard _(program, this);
+    CurrentCallableGuard _(program, this);
     func();
   }
   irpass::compile_inline_function(ir.get(), program->config, this,

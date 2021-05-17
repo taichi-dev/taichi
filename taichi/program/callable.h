@@ -18,7 +18,7 @@ class Callable {
     bool is_external_array;
     std::size_t size;
 
-    explicit Arg(DataType dt = PrimitiveType::unknown,
+    explicit Arg(const DataType &dt = PrimitiveType::unknown,
                  bool is_external_array = false,
                  std::size_t size = 0)
         : dt(dt), is_external_array(is_external_array), size(size) {
@@ -28,7 +28,7 @@ class Callable {
   struct Ret {
     DataType dt;
 
-    explicit Ret(DataType dt = PrimitiveType::unknown) : dt(dt) {
+    explicit Ret(const DataType &dt = PrimitiveType::unknown) : dt(dt) {
     }
   };
 
@@ -37,9 +37,19 @@ class Callable {
 
   virtual ~Callable() = default;
 
-  int insert_arg(DataType dt, bool is_external_array);
+  int insert_arg(const DataType &dt, bool is_external_array);
 
-  int insert_ret(DataType dt);
+  int insert_ret(const DataType &dt);
+
+  class CurrentCallableGuard {
+    Callable *old_callable;
+    Program *program;
+
+   public:
+    CurrentCallableGuard(Program *program, Callable *callable);
+
+    ~CurrentCallableGuard();
+  };
 };
 
 }  // namespace lang

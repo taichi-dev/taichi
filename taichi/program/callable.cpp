@@ -14,10 +14,6 @@ int Callable::insert_ret(const DataType& dt) {
   return (int)rets.size() - 1;
 }
 
-std::string Callable::get_name() const {
-  return "UndefinedCallable";
-}
-
 Callable::CurrentCallableGuard::CurrentCallableGuard(Program *program,
                                                      Callable *callable)
     : program(program) {

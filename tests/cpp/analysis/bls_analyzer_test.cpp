@@ -8,24 +8,11 @@
 #include "taichi/ir/snode.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/struct/struct.h"
+#include "tests/cpp/struct/fake_struct_compiler.h"
 
 namespace taichi {
 namespace lang {
 namespace {
-
-class TestStructCompiler : public StructCompiler {
- public:
-  TestStructCompiler() : StructCompiler(/*prog=*/nullptr) {
-  }
-  void generate_types(SNode &) override {
-  }
-
-  void generate_child_accessors(SNode &) override {
-  }
-
-  void run(SNode &, bool) override {
-  }
-};
 
 constexpr int kBlockSize = 8;
 
@@ -38,8 +25,8 @@ class BLSAnalyzerTest : public ::testing::Test {
     child_snode_ = &(parent_snode_->insert_children(SNodeType::place));
     child_snode_->dt = PrimitiveType::i32;
 
-    TestStructCompiler sc;
-    sc.infer_snode_properties(*root_snode_);
+    FakeStructCompiler sc;
+    sc.run(*root_snode_);
 
     for_stmt_ = std::make_unique<OffloadedStmt>(
         /*task_type=*/OffloadedTaskType::struct_for,
@@ -59,7 +46,6 @@ class BLSAnalyzerTest : public ::testing::Test {
   ScratchPads pads_;
 
   IRBuilder builder_;
-  LoopIndexStmt *loop_index_{nullptr};
 };
 
 TEST_F(BLSAnalyzerTest, Basic) {
@@ -81,13 +67,11 @@ TEST_F(BLSAnalyzerTest, Basic) {
   BLSAnalyzer bls(for_stmt_.get(), &pads_);
   pads_.finalize();
   const auto &pad = pads_.get(child_snode_);
-  EXPECT_EQ(pad.bounds[0].size(), 2);
-  constexpr int kLow = 0;
-  constexpr int kHigh = 1;
-  EXPECT_EQ(pad.bounds[kLow][0], 0);
-  EXPECT_EQ(pad.bounds[kHigh][0], 1 + kBlockSize);
-  EXPECT_EQ(pad.bounds[kLow][1], -3);
-  EXPECT_EQ(pad.bounds[kHigh][1], kBlockSize);
+  EXPECT_EQ(pad.bounds.size(), 2);
+  EXPECT_EQ(pad.bounds[0].low, 0);
+  EXPECT_EQ(pad.bounds[0].high, 1 + kBlockSize);
+  EXPECT_EQ(pad.bounds[1].low, -3);
+  EXPECT_EQ(pad.bounds[1].high, kBlockSize);
 }
 
 }  // namespace

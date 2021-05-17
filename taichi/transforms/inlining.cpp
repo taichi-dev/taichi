@@ -24,12 +24,10 @@ class Inliner : public BasicStmtVisitor {
     TI_ASSERT(func->rets.size() <= 1);
     auto inlined_ir = irpass::analysis::clone(func->ir.get());
     if (!func->args.empty()) {
-      // TODO: Make sure that if stmt->args is an ArgLoadStmt,
-      //  it will not be replaced again here
-      irpass::replace_statements_with(
+      irpass::replace_statements(
           inlined_ir.get(),
           /*filter=*/[&](Stmt *s) { return s->is<ArgLoadStmt>(); },
-          /*generator=*/
+          /*finder=*/
           [&](Stmt *s) { return stmt->args[s->as<ArgLoadStmt>()->arg_id]; });
     }
     if (func->rets.empty()) {
@@ -46,7 +44,7 @@ class Inliner : public BasicStmtVisitor {
       // Use a local variable to store the return value
       auto *return_address = inlined_ir->as<Block>()->insert(
           Stmt::make<AllocaStmt>(func->rets[0].dt), /*location=*/0);
-      irpass::replace_statements_with(
+      irpass::replace_and_insert_statements(
           inlined_ir.get(),
           /*filter=*/[&](Stmt *s) { return s->is<KernelReturnStmt>(); },
           /*generator=*/

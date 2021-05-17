@@ -19,7 +19,7 @@ void make_block_local_offload(OffloadedStmt *offload,
 
   auto pads = irpass::initialize_scratch_pad(offload);
 
-  std::size_t bls_offset = 0;
+  std::size_t bls_offset_in_bytes = 0;
 
   for (auto &pad : pads->pads) {
     auto snode = pad.first;
@@ -35,10 +35,10 @@ void make_block_local_offload(OffloadedStmt *offload,
                    "BLS with both read and accumulation is not supported.")
 
     // dim = Dimensionality of the BLS buffer and the block
-    auto dim = (int)pad.second.pad_size.size();
+    const auto dim = (int)pad.second.pad_size.size();
     TI_ASSERT(dim == snode->num_active_indices);
 
-    auto bls_num_elements = pad.second.pad_size_linear();
+    const auto bls_num_elements = pad.second.pad_size_linear();
 
     std::vector<int> block_strides(dim);
     std::vector<int> bls_strides(dim);
@@ -55,7 +55,8 @@ void make_block_local_offload(OffloadedStmt *offload,
     // TODO: improve IR builder to make this part easier to read
 
     // Ensure BLS alignment
-    bls_offset += (dtype_size - bls_offset % dtype_size) % dtype_size;
+    bls_offset_in_bytes +=
+        (dtype_size - bls_offset_in_bytes % dtype_size) % dtype_size;
 
     // This lambda is used for both BLS prologue and epilogue creation
     auto create_xlogue =
@@ -67,7 +68,8 @@ void make_block_local_offload(OffloadedStmt *offload,
             block = std::make_unique<Block>();
             block->parent_stmt = offload;
           }
-          Stmt *block_linear_index =
+          // Equivalent to CUDA threadIdx
+          Stmt *thread_idx_stmt =
               block->push_back<LoopLinearIndexStmt>(offload);
 
           /*
@@ -75,13 +77,24 @@ void make_block_local_offload(OffloadedStmt *offload,
           each thread may have to fetch more than one element to BLS.
           Therefore on CUDA we need something like
 
-          auto bls_element_id = block_linear_index;
-          while (bls_element_id < bls_size) {
+          auto bls_element_id = thread_idx_stmt;
+          while (bls_element_id < bls_num_elements) {
             i, j, k = bls_to_global(bls_element_id)
             bls[bls_element_id] = x[i, j, k]
             // or x[i, j, k] = bls[bls_element_id]
             bls_element_id += block_dim;
           }
+
+          func bls_to_global(bls_element_id):
+            partial = bls_element_id
+            global_indices = []  // "i, j, k"
+            for i in reversed(range(0, dim)):
+              pad_size = pad.pad_size[i]  // a.k.a. bounds[i].range()
+              bls_coord = partial % pad_size
+              partial = partial / pad_size
+              global_index_at_i = BlockCorner[i] + bls_coord
+              global_index_at_i += pad.bounds[i].low
+              global_indices[i] = global_index_at_i
 
           Since we know block_dim and bls_size at compile time and there's
           usually not too many iterations, we directly unroll this while loop
@@ -90,14 +103,14 @@ void make_block_local_offload(OffloadedStmt *offload,
 
           // Unroll the while-loop
           int loop_offset = 0;
-          int block_dim = offload->block_dim;
+          const int block_dim = offload->block_dim;
           while (loop_offset < bls_num_elements) {
             Block *element_block = nullptr;
             auto loop_offset_stmt =
                 block->push_back<ConstStmt>(TypedConstant(loop_offset));
 
             auto bls_element_id_this_iteration = block->push_back<BinaryOpStmt>(
-                BinaryOpType::add, loop_offset_stmt, block_linear_index);
+                BinaryOpType::add, loop_offset_stmt, thread_idx_stmt);
 
             auto bls_element_offset_bytes = block->push_back<BinaryOpStmt>(
                 BinaryOpType::mul, bls_element_id_this_iteration,
@@ -105,7 +118,8 @@ void make_block_local_offload(OffloadedStmt *offload,
 
             bls_element_offset_bytes = block->push_back<BinaryOpStmt>(
                 BinaryOpType::add, bls_element_offset_bytes,
-                block->push_back<ConstStmt>(TypedConstant((int32)bls_offset)));
+                block->push_back<ConstStmt>(
+                    TypedConstant((int32)bls_offset_in_bytes)));
 
             if (loop_offset + block_dim > bls_num_elements) {
               // Need to create an IfStmt to safeguard since bls size may not be
@@ -130,25 +144,26 @@ void make_block_local_offload(OffloadedStmt *offload,
             // via a series of % and /.
             auto bls_element_id_partial = bls_element_id_this_iteration;
             for (int i = dim - 1; i >= 0; i--) {
-              auto size = element_block->push_back<ConstStmt>(
+              auto pad_size_stmt = element_block->push_back<ConstStmt>(
                   TypedConstant(pad.second.pad_size[i]));
 
               auto bls_coord = element_block->push_back<BinaryOpStmt>(
-                  BinaryOpType::mod, bls_element_id_partial, size);
+                  BinaryOpType::mod, bls_element_id_partial, pad_size_stmt);
               bls_element_id_partial = element_block->push_back<BinaryOpStmt>(
-                  BinaryOpType::div, bls_element_id_partial, size);
+                  BinaryOpType::div, bls_element_id_partial, pad_size_stmt);
 
-              auto global_index = element_block->push_back<BinaryOpStmt>(
-                  BinaryOpType::add,
-                  element_block->push_back<ConstStmt>(
-                      TypedConstant(pad.second.bounds[0][i])),
-                  bls_coord);
+              auto global_index_this_dim =
+                  element_block->push_back<BinaryOpStmt>(
+                      BinaryOpType::add,
+                      element_block->push_back<ConstStmt>(
+                          TypedConstant(pad.second.bounds[i].low)),
+                      bls_coord);
 
-              global_index = element_block->push_back<BinaryOpStmt>(
-                  BinaryOpType::add, global_index,
+              global_index_this_dim = element_block->push_back<BinaryOpStmt>(
+                  BinaryOpType::add, global_index_this_dim,
                   element_block->push_back<BlockCornerIndexStmt>(offload, i));
 
-              global_indices[i] = global_index;
+              global_indices[i] = global_index_this_dim;
             }
 
             operation(element_block, global_indices, bls_element_offset_bytes);
@@ -209,7 +224,7 @@ void make_block_local_offload(OffloadedStmt *offload,
         for (int i = 0; i < dim; i++) {
           // BLS index = sum_i inc_i
           // where inc_i =
-          //   bls_stride_i * (gbl_idx_i - loop_base_i - bls_lower_bound_i)
+          //   bls_stride_i * (gbl_idx_i - block_corner_i - bls_lower_bound_i)
           // Note that when index offsets are used, the offset contributions are
           // already included in bls_lower_bound_i.
           auto block_corner = bls.push_back<BlockCornerIndexStmt>(offload, i);
@@ -218,13 +233,14 @@ void make_block_local_offload(OffloadedStmt *offload,
               BinaryOpType::sub, global_indices[i], block_corner);
           inc = bls.push_back<BinaryOpStmt>(
               BinaryOpType::sub, inc,
-              bls.push_back<ConstStmt>(TypedConstant(pad.second.bounds[0][i])));
+              bls.push_back<ConstStmt>(
+                  TypedConstant(pad.second.bounds[i].low)));
 
           if (debug) {
             // This part insert an assertion to make sure BLS access is within
             // the bound.
             auto bls_axis_size =
-                pad.second.bounds[1][i] - pad.second.bounds[0][i];
+                pad.second.bounds[i].high - pad.second.bounds[i].low;
             std::string msg = fmt::format(
                 "(kernel={}, body) Access out of bound: BLS buffer axis {} "
                 "(size {}) with "
@@ -267,7 +283,8 @@ void make_block_local_offload(OffloadedStmt *offload,
         // add array offset
         bls_element_offset = bls.push_back<BinaryOpStmt>(
             BinaryOpType::add, bls_element_offset,
-            bls.push_back<ConstStmt>(TypedConstant((int32)bls_offset)));
+            bls.push_back<ConstStmt>(
+                TypedConstant((int32)bls_offset_in_bytes)));
 
         bls.push_back<BlockLocalPtrStmt>(
             bls_element_offset,
@@ -297,10 +314,10 @@ void make_block_local_offload(OffloadedStmt *offload,
     }
 
     // allocate storage for the BLS variable
-    bls_offset += dtype_size * bls_num_elements;
-  }
+    bls_offset_in_bytes += dtype_size * bls_num_elements;
+  }  // for (auto &pad : pads->pads)
 
-  offload->bls_size = std::max(std::size_t(1), bls_offset);
+  offload->bls_size = std::max(std::size_t(1), bls_offset_in_bytes);
 }
 
 }  // namespace

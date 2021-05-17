@@ -75,25 +75,30 @@ bool constant_fold(IRNode *root,
                    const CompileConfig &config,
                    const ConstantFoldPass::Args &args);
 void offload(IRNode *root, const CompileConfig &config);
+bool transform_statements(
+    IRNode *root,
+    std::function<bool(Stmt *)> filter,
+    std::function<void(Stmt *, DelayedIRModifier *)> transformer);
 /**
  * @param root The IR root to be traversed.
  * @param filter A function which tells if a statement need to be replaced.
- * @param generator If a statement s need to be replaced, generate a new
- * statement s1 with the argument s, insert s1 to s's place, and replace all
- * usages of s with s1.
+ * @param generator If a statement |s| need to be replaced, generate a new
+ * statement |s1| with the argument |s|, insert |s1| to where |s| is defined,
+ * remove |s|'s definition, and replace all usages of |s| with |s1|.
+ * @return Whether the IR is modified.
  */
-void replace_statements_with(
+bool replace_and_insert_statements(
     IRNode *root,
     std::function<bool(Stmt *)> filter,
     std::function<std::unique_ptr<Stmt>(Stmt *)> generator);
 /**
- * @param generator If a statement s need to be replaced, find the existing
- * statement s1 with the argument s, and replace all usages of s with s1.
- * @return Whether the IR is modified.
+ * @param finder If a statement |s| need to be replaced, find the existing
+ * statement |s1| with the argument |s|, remove |s|'s definition, and replace
+ * all usages of |s| with |s1|.
  */
-bool replace_statements_with(IRNode *root,
-                             std::function<bool(Stmt *)> filter,
-                             std::function<Stmt *(Stmt *)> generator);
+bool replace_statements(IRNode *root,
+                        std::function<bool(Stmt *)> filter,
+                        std::function<Stmt *(Stmt *)> finder);
 void demote_dense_struct_fors(IRNode *root);
 bool demote_atomics(IRNode *root, const CompileConfig &config);
 void reverse_segments(IRNode *root);  // for autograd

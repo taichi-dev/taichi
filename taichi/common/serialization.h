@@ -5,16 +5,17 @@
 
 #pragma once
 
-#include <map>
+#include <cassert>
+#include <cstring>
 #include <fstream>
+#include <iostream>
+#include <map>
+#include <memory>
+#include <optional>
 #include <sstream>
+#include <type_traits>
 #include <unordered_map>
 #include <vector>
-#include <memory>
-#include <cstring>
-#include <cassert>
-#include <iostream>
-#include <type_traits>
 
 #ifdef TI_INCLUDED
 TI_NAMESPACE_BEGIN
@@ -32,9 +33,11 @@ TI_EXPORT std::unique_ptr<T> create_instance_unique(const std::string &alias);
 
 ////////////////////////////////////////////////////////////////////////////////
 //                   A Minimalist Serializer for Taichi                       //
-//                           (C++11 Compatible)                               //
+//                           (Requires C++17)                                 //
 ////////////////////////////////////////////////////////////////////////////////
 
+// TODO: Consider using third-party serialization libraries
+// * https://github.com/USCiLab/cereal
 class Unit;
 
 namespace type {
@@ -229,6 +232,12 @@ inline void write_data_to_file(const std::string &fn,
 
 template <bool writing>
 class BinarySerializer : public Serializer {
+ private:
+  template <typename T>
+  inline static constexpr bool is_elementary_type_v =
+      !has_io<T>::value && !std::is_pointer<T>::value && !std::is_enum_v<T> &&
+      std::is_pod_v<T>;
+
  public:
   std::vector<uint8_t> data;
   uint8_t *c_data;
@@ -341,9 +350,9 @@ class BinarySerializer : public Serializer {
 
   // Elementary data types
   template <typename T>
-  typename std::enable_if<!has_io<T>::value && !std::is_pointer<T>::value,
-                          void>::type
-  operator()(const char *, const T &val) {
+  typename std::enable_if<is_elementary_type_v<T>, void>::type operator()(
+      const char *,
+      const T &val) {
     static_assert(!std::is_reference<T>::value, "T cannot be reference");
     static_assert(!std::is_const<T>::value, "T cannot be const");
     static_assert(!std::is_volatile<T>::value, "T cannot be volatile");
@@ -460,6 +469,22 @@ class BinarySerializer : public Serializer {
     }
   }
 
+  // enum class
+  template <typename T>
+  typename std::enable_if<std::is_enum_v<T>, void>::type operator()(
+      const char *,
+      const T &val) {
+    using UT = std::underlying_type_t<T>;
+    // https://stackoverflow.com/a/62688905/12003165
+    if constexpr (writing) {
+      this->operator()(nullptr, static_cast<UT>(val));
+    } else {
+      auto &wval = get_writable(val);
+      UT &underlying_wval = reinterpret_cast<UT &>(wval);
+      this->operator()(nullptr, underlying_wval);
+    }
+  }
+
   // std::vector
   template <typename T>
   void operator()(const char *, const std::vector<T> &val_) {
@@ -484,24 +509,35 @@ class BinarySerializer : public Serializer {
   }
 
   // std::map
-  template <typename T, typename G>
-  void operator()(const char *, const std::map<T, G> &val_) {
-    auto &val = get_writable(val_);
-    if (writing) {
-      this->operator()(nullptr, val.size());
-      for (auto iter : val) {
-        T first = iter.first;
-        this->operator()(nullptr, first);
-        this->operator()(nullptr, iter.second);
+  template <typename K, typename V>
+  void operator()(const char *, const std::map<K, V> &val) {
+    handle_associative_container(val);
+  }
+
+  // std::unordered_map
+  template <typename K, typename V>
+  void operator()(const char *, const std::unordered_map<K, V> &val) {
+    handle_associative_container(val);
+  }
+
+  // std::optional
+  template <typename T>
+  void operator()(const char *, const std::optional<T> &val) {
+    if constexpr (writing) {
+      this->operator()(nullptr, val.has_value());
+      if (val.has_value()) {
+        this->operator()(nullptr, val.value());
       }
     } else {
-      val.clear();
-      std::size_t n = 0;
-      this->operator()(nullptr, n);
-      for (std::size_t i = 0; i < n; i++) {
-        std::pair<T, G> record;
-        this->operator()(nullptr, record);
-        val.insert(record);
+      bool has_value{false};
+      this->operator()(nullptr, has_value);
+      auto &wval = get_writable(val);
+      if (!has_value) {
+        wval.reset();
+      } else {
+        T new_val;
+        this->operator()(nullptr, new_val);
+        wval = std::move(new_val);
       }
     }
   }
@@ -515,6 +551,29 @@ class BinarySerializer : public Serializer {
   template <typename T>
   void operator()(const T &val) {
     this->operator()(nullptr, val);
+  }
+
+ private:
+  template <typename M>
+  void handle_associative_container(const M &val) {
+    if constexpr (writing) {
+      this->operator()(nullptr, val.size());
+      for (auto iter : val) {
+        auto first = iter.first;
+        this->operator()(nullptr, first);
+        this->operator()(nullptr, iter.second);
+      }
+    } else {
+      auto &wval = get_writable(val);
+      wval.clear();
+      std::size_t n = 0;
+      this->operator()(nullptr, n);
+      for (std::size_t i = 0; i < n; i++) {
+        typename M::value_type record;
+        this->operator()(nullptr, record);
+        wval.insert(record);
+      }
+    }
   }
 };
 
@@ -538,6 +597,11 @@ class TextSerializer : public Serializer {
   int indent;
   static constexpr int indent_width = 2;
   bool first_line;
+
+  template <typename T>
+  inline static constexpr bool is_elementary_type_v =
+      !has_io<T>::value && !has_free_io<T>::value && !std::is_enum_v<T> &&
+      std::is_pod_v<T>;
 
  public:
   TextSerializer() {
@@ -638,9 +702,8 @@ class TextSerializer : public Serializer {
 
   // Elementary data types
   template <typename T>
-  typename std::enable_if<!has_io<T>::value && !has_free_io<T>::value,
-                          void>::type
-  operator()(const char *key, const T &val) {
+  typename std::enable_if<is_elementary_type_v<T>, void>::type operator()(
+      const char *key, const T &val) {
     static_assert(!has_io<T>::value, "");
     std::stringstream ss;
     ss << std::boolalpha << val;
@@ -670,6 +733,13 @@ class TextSerializer : public Serializer {
   }
 
   template <typename T>
+  typename std::enable_if<std::is_enum_v<T>, void>::type operator()(
+      const char *key, const T &val) {
+    using UT = std::underlying_type_t<T>;
+    this->operator()(key, static_cast<UT>(val));
+  }
+
+  template <typename T>
   void operator()(const char *key, const std::vector<T> &val) {
     add_line(key, "[");
     indent++;
@@ -690,14 +760,26 @@ class TextSerializer : public Serializer {
     add_line(")");
   }
 
+  // std::map
   template <typename T, typename G>
   void operator()(const char *key, const std::map<T, G> &val) {
+    handle_associative_container(key, val);
+  }
+
+  // std::unordered_map
+  template <typename T, typename G>
+  void operator()(const char *key, const std::unordered_map<T, G> &val) {
+    handle_associative_container(key, val);
+  }
+
+  // std::optional
+  template <typename T>
+  void operator()(const char *key, const std::optional<T> &val) {
     add_line(key, "{");
     indent++;
-    for (auto iter : val) {
-      T first = iter.first;
-      this->operator()("key", first);
-      this->operator()("value", iter.second);
+    this->operator()("has_value", val.has_value());
+    if (val.has_value()) {
+      this->operator()("value", val.value());
     }
     indent--;
     add_line("}");
@@ -712,6 +794,20 @@ class TextSerializer : public Serializer {
         key.substr(pos + 2, int(key.size()) - (int)pos - 2);
     this->operator()(first_name.c_str(), t);
     this->operator()(rest_names.c_str(), std::forward<Args>(rest)...);
+  }
+
+ private:
+  template <typename M>
+  void handle_associative_container(const char *key, const M &val) {
+    add_line(key, "{");
+    indent++;
+    for (auto iter : val) {
+      auto first = iter.first;
+      this->operator()("key", first);
+      this->operator()("value", iter.second);
+    }
+    indent--;
+    add_line("}");
   }
 };
 

@@ -41,7 +41,7 @@ class Callable {
 
   int insert_ret(const DataType &dt);
 
-  [[nodiscard]] virtual std::string get_name() const;
+  [[nodiscard]] virtual std::string get_name() const = 0;
 
   class CurrentCallableGuard {
     Callable *old_callable;

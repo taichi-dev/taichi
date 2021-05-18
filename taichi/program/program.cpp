@@ -16,6 +16,7 @@
 #include "taichi/backends/cpu/codegen_cpu.h"
 #include "taichi/struct/struct.h"
 #include "taichi/struct/struct_llvm.h"
+#include "taichi/backends/metal/aot_module_builder_impl.h"
 #include "taichi/backends/metal/struct_metal.h"
 #include "taichi/backends/opengl/struct_opengl.h"
 #include "taichi/platform/cuda/detect_cuda.h"
@@ -875,6 +876,10 @@ void Program::materialize_snode_expr_attributes() {
 }
 
 std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(Arch arch) {
+  if (arch == Arch::metal) {
+    return std::make_unique<metal::AotModuleBuilderImpl>(
+        &(metal_compiled_structs_.value()));
+  }
   return nullptr;
 }
 

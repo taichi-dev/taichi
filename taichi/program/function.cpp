@@ -5,25 +5,9 @@
 namespace taichi {
 namespace lang {
 
-namespace {
-class CurrentFunctionGuard {
-  std::variant<Kernel *, Function *> old_kernel_or_function;
-  Program *program;
-
- public:
-  CurrentFunctionGuard(Program *program, Function *func) : program(program) {
-    old_kernel_or_function = program->current_kernel_or_function;
-    program->current_kernel_or_function = func;
-  }
-
-  ~CurrentFunctionGuard() {
-    program->current_kernel_or_function = old_kernel_or_function;
-  }
-};
-}  // namespace
-
 Function::Function(Program *program, const FunctionKey &func_key)
-    : program(program), func_key(func_key) {
+    : func_key(func_key) {
+  this->program = program;
 }
 
 void Function::set_function_body(const std::function<void()> &func) {
@@ -34,7 +18,7 @@ void Function::set_function_body(const std::function<void()> &func) {
   ir = taichi::lang::context->get_root();
   {
     // Note: this is not a mutex
-    CurrentFunctionGuard _(program, this);
+    CurrentCallableGuard _(program, this);
     func();
   }
   irpass::compile_inline_function(ir.get(), program->config, this,
@@ -53,14 +37,8 @@ void Function::set_function_body(std::unique_ptr<IRNode> func_body) {
                                   /*start_from_ast=*/false);
 }
 
-int Function::insert_arg(DataType dt, bool is_external_array) {
-  args.push_back(Arg{dt->get_compute_type(), is_external_array, /*size=*/0});
-  return args.size() - 1;
-}
-
-int Function::insert_ret(DataType dt) {
-  rets.push_back(Ret{dt->get_compute_type()});
-  return rets.size() - 1;
+std::string Function::get_name() const {
+  return func_key.get_full_name();
 }
 
 }  // namespace lang

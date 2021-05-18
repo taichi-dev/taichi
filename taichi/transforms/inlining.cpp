@@ -39,7 +39,7 @@ class Inliner : public BasicStmtVisitor {
           }).size() > 1) {
         TI_WARN(
             "Multiple returns in function \"{}\" may not be handled properly.",
-            func->func_key.get_full_name());
+            func->get_name());
       }
       // Use a local variable to store the return value
       auto *return_address = inlined_ir->as<Block>()->insert(

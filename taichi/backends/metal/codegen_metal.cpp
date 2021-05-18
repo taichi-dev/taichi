@@ -364,7 +364,7 @@ class KernelCodegen : public IRVisitor {
     }
   }
 
-  void visit(KernelReturnStmt *stmt) override {
+  void visit(ReturnStmt *stmt) override {
     // TODO: use stmt->ret_id instead of 0 as index
     emit("*{}.ret0() = {};", kContextVarName, stmt->value->raw_name());
   }

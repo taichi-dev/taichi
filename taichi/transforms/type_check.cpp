@@ -371,7 +371,7 @@ class TypeCheck : public IRVisitor {
     stmt->ret_type.set_is_pointer(stmt->is_ptr);
   }
 
-  void visit(KernelReturnStmt *stmt) {
+  void visit(ReturnStmt *stmt) {
     // TODO: Support stmt->ret_id?
     stmt->ret_type = stmt->value->ret_type;
     TI_ASSERT(stmt->ret_type->vector_width() == 1);

@@ -34,10 +34,9 @@ class Inliner : public BasicStmtVisitor {
       modifier.replace_with(stmt,
                             std::move(inlined_ir->as<Block>()->statements));
     } else {
-      if (irpass::analysis::gather_statements(
-              inlined_ir.get(),
-              [&](Stmt *s) { return s->is<KernelReturnStmt>(); })
-              .size() > 1) {
+      if (irpass::analysis::gather_statements(inlined_ir.get(), [&](Stmt *s) {
+            return s->is<ReturnStmt>();
+          }).size() > 1) {
         TI_WARN(
             "Multiple returns in function \"{}\" may not be handled properly.",
             func->func_key.get_full_name());
@@ -47,11 +46,11 @@ class Inliner : public BasicStmtVisitor {
           Stmt::make<AllocaStmt>(func->rets[0].dt), /*location=*/0);
       irpass::replace_and_insert_statements(
           inlined_ir.get(),
-          /*filter=*/[&](Stmt *s) { return s->is<KernelReturnStmt>(); },
+          /*filter=*/[&](Stmt *s) { return s->is<ReturnStmt>(); },
           /*generator=*/
           [&](Stmt *s) {
             return Stmt::make<LocalStoreStmt>(return_address,
-                                              s->as<KernelReturnStmt>()->value);
+                                              s->as<ReturnStmt>()->value);
           });
       modifier.insert_before(stmt,
                              std::move(inlined_ir->as<Block>()->statements));

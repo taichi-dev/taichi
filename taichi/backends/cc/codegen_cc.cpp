@@ -183,7 +183,7 @@ class CCTransformer : public IRVisitor {
     }
   }
 
-  void visit(KernelReturnStmt *stmt) override {
+  void visit(ReturnStmt *stmt) override {
     emit("ti_ctx->args[0].val_{} = {};", data_type_name(stmt->element_type()),
          stmt->value->raw_name());
   }

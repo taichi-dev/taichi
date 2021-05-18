@@ -481,7 +481,7 @@ void export_lang(py::module &m) {
   });
 
   m.def("create_kernel_return", [&](const Expr &value) {
-    current_ast_builder().insert(Stmt::make<FrontendKernelReturnStmt>(value));
+    current_ast_builder().insert(Stmt::make<FrontendReturnStmt>(value));
   });
 
   m.def("insert_continue_stmt", [&]() {

@@ -387,12 +387,12 @@ class IRPrinter : public IRVisitor {
     print("{}{} = arg[{}]", stmt->type_hint(), stmt->name(), stmt->arg_id);
   }
 
-  void visit(FrontendKernelReturnStmt *stmt) override {
+  void visit(FrontendReturnStmt *stmt) override {
     print("{}{} : kernel return {}", stmt->type_hint(), stmt->name(),
           stmt->value->serialize());
   }
 
-  void visit(KernelReturnStmt *stmt) override {
+  void visit(ReturnStmt *stmt) override {
     print("{}{} : kernel return {}", stmt->type_hint(), stmt->name(),
           stmt->value->name());
   }

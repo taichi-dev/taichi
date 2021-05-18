@@ -211,11 +211,11 @@ class FrontendWhileStmt : public Stmt {
   TI_DEFINE_ACCEPT
 };
 
-class FrontendKernelReturnStmt : public Stmt {
+class FrontendReturnStmt : public Stmt {
  public:
   Expr value;
 
-  FrontendKernelReturnStmt(const Expr &value) : value(value) {
+  FrontendReturnStmt(const Expr &value) : value(value) {
   }
 
   bool is_container_statement() const override {

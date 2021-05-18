@@ -64,7 +64,10 @@ class BinaryOpSimp : public BasicStmtVisitor {
       new_stmt->ret_type = stmt->ret_type;
 
       modifier.insert_before(stmt, std::move(bin_op));
-      modifier.replace_with(stmt, std::move(new_stmt));
+      // Replace stmt now to avoid being "simplified" again
+      stmt->replace_with(new_stmt.get());
+      modifier.insert_before(stmt, std::move(new_stmt));
+      modifier.erase(stmt);
       return;
     }
     // original:
@@ -82,7 +85,10 @@ class BinaryOpSimp : public BasicStmtVisitor {
       new_stmt->ret_type = stmt->ret_type;
 
       modifier.insert_before(stmt, std::move(mask_stmt));
-      modifier.replace_with(stmt, std::move(new_stmt));
+      // Replace stmt now to avoid being "simplified" again
+      stmt->replace_with(new_stmt.get());
+      modifier.insert_before(stmt, std::move(new_stmt));
+      modifier.erase(stmt);
     }
   }
 

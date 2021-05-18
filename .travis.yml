@@ -22,7 +22,6 @@ matrix:
     env:
       - MATRIX_EVAL="CC=clang && CXX=clang++ && PYTHON_VERSION=3.8.1 && PYTHON=python3"
 
-
 skip_commits:
   files:
     - '*.md'

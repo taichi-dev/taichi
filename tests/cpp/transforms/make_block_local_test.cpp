@@ -69,8 +69,8 @@ class MakeBlockLocalTest : public ::testing::Test {
         {/*block=*/for_stmt_->body.get(), /*position=*/0});
   }
 
-  int get_block_corner(int loop_index, int axis) const {
-    return get_block_size(axis) * loop_index;
+  int get_block_corner(int loop_index) const {
+    return loop_index;
   }
 
   int get_block_size(int axis) const {
@@ -131,22 +131,19 @@ TEST_F(MakeBlockLocalTest, Basic) {
   // the generated BLS offset is correct for the given global loop indices.
   for (int idx0 = 0; idx0 < loop_shape_at(0); ++idx0) {
     for (int idx1 = 0; idx1 < loop_shape_at(1); ++idx1) {
-      const int loop_indices_vals[] = {
-          get_block_size(0) * idx0,
-          get_block_size(1) * idx1,
-      };
+      const int loop_indices_vals[] = {idx0, idx1};
       const int block_corner_vals[] = {
-          get_block_corner(idx0, /*axis=*/0),
-          get_block_corner(idx1, /*axis=*/1),
+          get_block_corner(idx0),
+          get_block_corner(idx1),
       };
       int expected_bls_offset_in_bytes =
-          (loop_indices_vals[0] - block_corner_vals[0] -
-           /*bls_bounds[0].lower=*/kNeg1);
+          (get_block_size(0) * (loop_indices_vals[0] - block_corner_vals[0]) -
+          /*bls_bounds[0].lower=*/kNeg1);
       expected_bls_offset_in_bytes *=
           /*bls_stride[0]=*/(get_block_size(/*axis=*/1) - kNeg3);
       expected_bls_offset_in_bytes +=
-          (loop_indices_vals[1] - block_corner_vals[1] -
-           /*bls_bounds[1].lower=*/kNeg3);
+          (get_block_size(1) * (loop_indices_vals[1] - block_corner_vals[1]) -
+          /*bls_bounds[1].lower=*/kNeg3);
       expected_bls_offset_in_bytes *= sizeof(float);
 
       ArithmeticInterpretor::CodeRegion code_region;

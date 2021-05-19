@@ -1,3 +1,4 @@
+#include "taichi/ir/analysis.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
@@ -63,6 +64,28 @@ class BinaryOpSimp : public BasicStmtVisitor {
       new_stmt->ret_type = stmt->ret_type;
 
       modifier.insert_before(stmt, std::move(bin_op));
+      // Replace stmt now to avoid being "simplified" again
+      stmt->replace_with(new_stmt.get());
+      modifier.insert_before(stmt, std::move(new_stmt));
+      modifier.erase(stmt);
+      return;
+    }
+    // original:
+    // stmt = (a >> b) << b
+    // rearrange to:
+    // stmt = a & ((1 << b) - 1)
+    if ((op1 == BinaryOpType::bit_shr || op1 == BinaryOpType::bit_sar) &&
+        op2 == BinaryOpType::bit_shl &&
+        irpass::analysis::same_value(const_lhs_rhs, const_rhs)) {
+      uint64 mask = ((uint64)1 << (uint64)const_rhs->val[0].val_as_int64()) - 1;
+      auto mask_stmt =
+          Stmt::make<ConstStmt>(TypedConstant(stmt->ret_type, mask));
+      auto new_stmt = Stmt::make<BinaryOpStmt>(
+          BinaryOpType::bit_and, binary_lhs->lhs, mask_stmt.get());
+      new_stmt->ret_type = stmt->ret_type;
+
+      modifier.insert_before(stmt, std::move(mask_stmt));
+      // Replace stmt now to avoid being "simplified" again
       stmt->replace_with(new_stmt.get());
       modifier.insert_before(stmt, std::move(new_stmt));
       modifier.erase(stmt);

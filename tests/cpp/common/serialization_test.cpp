@@ -22,6 +22,10 @@ class BinIoPair {
     BinaryInputSerializer is;
     is.initialize(os.data.data());
     is(res);  // deserialize
+
+    // This is just to make sure TextSerializer also works
+    TextSerializer ts;
+    ts("val", val);
     return res;
   }
 };
@@ -50,6 +54,21 @@ struct Parent {
 
   TI_IO_DEF(b, c);
 };
+
+TEST(Serialization, SplitStr) {
+  using namespace detail;
+
+#define STR(...) #__VA_ARGS__
+  constexpr auto kDelimN = count_delim(STR(a, bc, def, gh), ',');
+  constexpr auto kArr =
+      StrDelimSplitter<kDelimN>::make(STR(a, bc, def, gh), ',');
+  const std::vector<std::string> expected = {"a", "bc", "def", "gh"};
+  EXPECT_EQ(kArr.size(), expected.size());
+  for (int i = 0; i < expected.size(); ++i) {
+    EXPECT_EQ(kArr[i], expected[i]);
+  }
+#undef STR
+}
 
 TEST(Serialization, Basic) {
   BinIoPair bp;
@@ -96,6 +115,11 @@ TEST(Serialization, Basic) {
   par.b->c = true;
   par.c = "hello";
   EXPECT_EQ(bp.run(par), par);
+
+  // TODO: Have a proper way to test this...
+  TextSerializer ts;
+  ts("par", par);
+  ts.print();
 }
 
 }  // namespace

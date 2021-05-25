@@ -132,7 +132,7 @@ class IRBuilder {
   ArgLoadStmt *create_arg_load(int arg_id, DataType dt, bool is_ptr);
 
   // The return value of the kernel.
-  KernelReturnStmt *create_return(Stmt *value);
+  ReturnStmt *create_return(Stmt *value);
 
   // Unary operations. Returns the result.
   UnaryOpStmt *create_cast(Stmt *value, DataType output_type);  // cast by value

@@ -90,8 +90,8 @@ class Func:
         for i in range(len(self.argument_annotations)):
             if isinstance(self.argument_annotations[i], template):
                 self.template_slot_locations.append(i)
-        self.mapper = KernelTemplateMapper(self.argument_annotations,
-                                           self.template_slot_locations)
+        self.mapper = TaichiCallableTemplateMapper(
+            self.argument_annotations, self.template_slot_locations)
         self.taichi_functions = {}  # The |Function| class in C++
 
     def __call__(self, *args):
@@ -207,7 +207,7 @@ class Func:
             self.argument_names.append(param.name)
 
 
-class KernelTemplateMapper:
+class TaichiCallableTemplateMapper:
     def __init__(self, annotations, template_slot_locations):
         self.annotations = annotations
         # Make sure extractors's size is the same as the number of args
@@ -286,8 +286,8 @@ class Kernel:
         for i in range(len(self.argument_annotations)):
             if isinstance(self.argument_annotations[i], template):
                 self.template_slot_locations.append(i)
-        self.mapper = KernelTemplateMapper(self.argument_annotations,
-                                           self.template_slot_locations)
+        self.mapper = TaichiCallableTemplateMapper(
+            self.argument_annotations, self.template_slot_locations)
         impl.get_runtime().kernels.append(self)
         self.reset()
 

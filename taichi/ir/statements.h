@@ -764,13 +764,13 @@ class FuncCallStmt : public Stmt {
 };
 
 /**
- * Exit the kernel with a return value.
+ * Exit the kernel or function with a return value.
  */
-class KernelReturnStmt : public Stmt {
+class ReturnStmt : public Stmt {
  public:
   Stmt *value;
 
-  KernelReturnStmt(Stmt *value) : value(value) {
+  explicit ReturnStmt(Stmt *value) : value(value) {
     TI_STMT_REG_FIELDS;
   }
 

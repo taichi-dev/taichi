@@ -45,7 +45,7 @@ class CCTransformer : public IRVisitor {
 
   void lower_ast() {
     auto ir = kernel->ir.get();
-    auto config = kernel->program.config;
+    auto config = kernel->program->config;
     config.demote_dense_struct_fors = true;
     irpass::compile_to_executable(ir, config, kernel,
                                   /*vectorize=*/false, kernel->grad,
@@ -88,7 +88,7 @@ class CCTransformer : public IRVisitor {
   }
 
   void visit(GetRootStmt *stmt) override {
-    auto root = kernel->program.snode_root.get();
+    auto root = kernel->program->snode_root.get();
     emit("{} = ti_ctx->root;",
          define_var(get_node_ptr_name(root), stmt->raw_name()));
     root_stmt = stmt;
@@ -183,7 +183,7 @@ class CCTransformer : public IRVisitor {
     }
   }
 
-  void visit(KernelReturnStmt *stmt) override {
+  void visit(ReturnStmt *stmt) override {
     emit("ti_ctx->args[0].val_{} = {};", data_type_name(stmt->element_type()),
          stmt->value->raw_name());
   }
@@ -598,7 +598,7 @@ class CCTransformer : public IRVisitor {
 };  // namespace cccp
 
 std::unique_ptr<CCKernel> CCKernelGen::compile() {
-  auto program = kernel->program.cc_program.get();
+  auto program = kernel->program->cc_program.get();
   auto layout = program->get_layout();
   CCTransformer tran(kernel, layout);
 
@@ -613,7 +613,7 @@ FunctionType compile_kernel(Kernel *kernel) {
   CCKernelGen codegen(kernel);
   auto ker = codegen.compile();
   auto ker_ptr = ker.get();
-  auto program = kernel->program.cc_program.get();
+  auto program = kernel->program->cc_program.get();
   program->add_kernel(std::move(ker));
   return [ker_ptr](Context &ctx) { return ker_ptr->launch(&ctx); };
 }

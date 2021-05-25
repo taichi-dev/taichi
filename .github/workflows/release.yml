@@ -19,6 +19,9 @@ jobs:
           - os: macos-latest
             python: 3.8
             with_cc: OFF
+          - os: macos-latest
+            python: 3.9
+            with_cc: OFF
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2

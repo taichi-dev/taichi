@@ -35,22 +35,22 @@ class Inliner : public BasicStmtVisitor {
                             std::move(inlined_ir->as<Block>()->statements));
     } else {
       if (irpass::analysis::gather_statements(inlined_ir.get(), [&](Stmt *s) {
-            return s->is<KernelReturnStmt>();
+            return s->is<ReturnStmt>();
           }).size() > 1) {
         TI_WARN(
             "Multiple returns in function \"{}\" may not be handled properly.",
-            func->func_key.get_full_name());
+            func->get_name());
       }
       // Use a local variable to store the return value
       auto *return_address = inlined_ir->as<Block>()->insert(
           Stmt::make<AllocaStmt>(func->rets[0].dt), /*location=*/0);
       irpass::replace_and_insert_statements(
           inlined_ir.get(),
-          /*filter=*/[&](Stmt *s) { return s->is<KernelReturnStmt>(); },
+          /*filter=*/[&](Stmt *s) { return s->is<ReturnStmt>(); },
           /*generator=*/
           [&](Stmt *s) {
             return Stmt::make<LocalStoreStmt>(return_address,
-                                              s->as<KernelReturnStmt>()->value);
+                                              s->as<ReturnStmt>()->value);
           });
       modifier.insert_before(stmt,
                              std::move(inlined_ir->as<Block>()->statements));

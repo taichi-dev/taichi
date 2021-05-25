@@ -364,7 +364,7 @@ class KernelCodegen : public IRVisitor {
     }
   }
 
-  void visit(KernelReturnStmt *stmt) override {
+  void visit(ReturnStmt *stmt) override {
     // TODO: use stmt->ret_id instead of 0 as index
     emit("*{}.ret0() = {};", kContextVarName, stmt->value->raw_name());
   }
@@ -1507,7 +1507,7 @@ FunctionType compile_to_metal_executable(
   cgen_config.allow_simdgroup = EnvConfig::instance().is_simdgroup_enabled();
 
   KernelCodegen codegen(
-      taichi_kernel_name, kernel->program.snode_root->node_type_name, kernel,
+      taichi_kernel_name, kernel->program->snode_root->node_type_name, kernel,
       compiled_structs, kernel_mgr->print_strtable(), cgen_config, offloaded);
 
   const auto source_code = codegen.run();

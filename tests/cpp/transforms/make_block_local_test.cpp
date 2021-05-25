@@ -106,9 +106,8 @@ TEST_F(MakeBlockLocalTest, Basic) {
   auto *b1 = builder_.get_int32(/*value=*/get_block_size(1));
   auto *idx0 = builder_.create_mul(loop_idx0_, b0);
   auto *idx1 = builder_.create_mul(loop_idx1_, b1);
-  auto *glb_ptr =
-      builder_.create_global_ptr(bls_place_snode_,
-                                 /*indices=*/{idx0, idx1});
+  auto *glb_ptr = builder_.create_global_ptr(bls_place_snode_,
+                                             /*indices=*/{idx0, idx1});
   builder_.create_global_load(glb_ptr);
 
   // x[block_size * i - 1, block_size * j - 3]
@@ -138,12 +137,12 @@ TEST_F(MakeBlockLocalTest, Basic) {
       };
       int expected_bls_offset_in_bytes =
           (get_block_size(0) * (loop_indices_vals[0] - block_corner_vals[0]) -
-          /*bls_bounds[0].lower=*/kNeg1);
+           /*bls_bounds[0].lower=*/kNeg1);
       expected_bls_offset_in_bytes *=
           /*bls_stride[0]=*/(get_block_size(/*axis=*/1) - kNeg3);
       expected_bls_offset_in_bytes +=
           (get_block_size(1) * (loop_indices_vals[1] - block_corner_vals[1]) -
-          /*bls_bounds[1].lower=*/kNeg3);
+           /*bls_bounds[1].lower=*/kNeg3);
       expected_bls_offset_in_bytes *= sizeof(float);
 
       ArithmeticInterpretor::CodeRegion code_region;

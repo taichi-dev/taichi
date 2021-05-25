@@ -91,7 +91,7 @@ def advect(vf: ti.template(), qf: ti.template(), new_qf: ti.template()):
     for i, j in vf:
         p = ti.Vector([i, j]) + 0.5
         p = backtrace(vf, p, dt)
-        new_qf[i, j] = bilerp(qf, p)*dye_decay
+        new_qf[i, j] = bilerp(qf, p) * dye_decay
 
 
 @ti.kernel
@@ -109,15 +109,15 @@ def apply_impulse(vf: ti.template(), dyef: ti.template(),
         dc = dyef[i, j]
         a = dc.norm()
 
-        momentum = (mdir * f_strength * factor +  g_dir * a / (1 + a)) * dt
-       
+        momentum = (mdir * f_strength * factor + g_dir * a / (1 + a)) * dt
+
         v = vf[i, j]
         vf[i, j] = v + momentum
         # add dye
         if mdir.norm() > 0.5:
             dc += ti.exp(-d2 * (4 / (res / 15)**2)) * ti.Vector(
                 [imp_data[4], imp_data[5], imp_data[6]])
-       
+
         dyef[i, j] = dc
 
 
@@ -158,7 +158,7 @@ def pressure_jacobi(pf: ti.template(), new_pf: ti.template()):
         pb = sample(pf, i, j - 1)
         pt = sample(pf, i, j + 1)
         div = velocity_divs[i, j]
-        new_pf[i, j]=(pl + pr + pb + pt - div) * 0.25
+        new_pf[i, j] = (pl + pr + pb + pt - div) * 0.25
 
 
 @ti.kernel
@@ -216,6 +216,7 @@ class MouseDataGen(object):
     def __init__(self):
         self.prev_mouse = None
         self.prev_color = None
+
     def __call__(self, gui):
         # [0:2]: normalized delta direction
         # [2:4]: current mouse xy
@@ -239,14 +240,16 @@ class MouseDataGen(object):
             self.prev_color = None
         return mouse_data
 
+
 def reset():
     velocities_pair.cur.fill(0)
     pressures_pair.cur.fill(0)
     dyes_pair.cur.fill(0)
 
-visualize_d = True #visualize dye (default)
-visualize_v = False #visualize velocity
-visualize_c = False #visualize curl
+
+visualize_d = True  #visualize dye (default)
+visualize_v = False  #visualize velocity
+visualize_c = False  #visualize curl
 
 gui = ti.GUI('Stable Fluid', (res, res))
 md_gen = MouseDataGen()
@@ -283,7 +286,7 @@ while gui.running:
         elif e.key == 'd':
             debug = not debug
 
-    # Debug divergence: 
+    # Debug divergence:
     # print(max((abs(velocity_divs.to_numpy().reshape(-1)))))
 
     if not paused:

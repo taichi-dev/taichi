@@ -1,4 +1,5 @@
 from taichi.lang.kernel_impl import TaichiCallableTemplateMapper
+
 import taichi as ti
 
 
@@ -26,7 +27,7 @@ def test_callable_template_mapper():
     assert mapper.lookup((0, 1, 0))[0] == 0
 
     mapper = TaichiCallableTemplateMapper((ti.i32, ti.template(), ti.i32),
-                                          (1,))
+                                          (1, ))
     assert mapper.lookup((0, x, 0))[0] == 0
     assert mapper.lookup((0, y, 0))[0] == 1
     assert mapper.lookup((0, x, 1))[0] == 0

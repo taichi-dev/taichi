@@ -136,6 +136,7 @@ def parse_args():
     parser.add_argument('--project_name',
                         action='store',
                         dest='project_name',
+                        default='taichi',
                         help='Set the project name')
     return parser.parse_args()
 
@@ -163,10 +164,7 @@ def main():
         pypi_repo = '--repository testpypi'
 
     if not args.skip_build:
-        if args.testpypi:
-            build(project_name)
-        else:
-            build('taichi')
+        build(project_name)
 
     if mode == 'build':
         return

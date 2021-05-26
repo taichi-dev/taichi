@@ -24,7 +24,7 @@ def get_python_executable():
     return '"' + sys.executable.replace('\\', '/') + '"'
 
 
-def build():
+def build(project_name):
     """Build and package the wheel file in `python/dist`"""
     if platform.system() == 'Linux':
         if os.environ.get(
@@ -35,7 +35,6 @@ def build():
     version = ti.core.get_version_string()
     with open('../setup.py') as fin:
         with open('setup.py', 'w') as fout:
-            project_name = 'taichi'
             print("project_name = '{}'".format(project_name), file=fout)
             print("version = '{}'".format(version), file=fout)
             for l in fin:
@@ -131,10 +130,13 @@ def parse_args():
     parser.add_argument('--skip_build',
                         action='store_true',
                         help=('Skip the build process if this is enabled'))
-    parser.add_argument(
-        '--testpypi',
-        action='store_true',
-        help='Upload to test package server if this is enabled')
+    parser.add_argument('--testpypi',
+                        action='store_true',
+                        help='Upload to test server if this is enabled')
+    parser.add_argument('--project_name',
+                        action='store',
+                        dest='project_name',
+                        help='Set the project name')
     return parser.parse_args()
 
 
@@ -142,7 +144,8 @@ def main():
     args = parse_args()
     mode = args.mode
     pypi_user = 'yuanming-hu'
-    test_pypi = ''
+    pypi_repo = ''
+    project_name = args.project_name
 
     env_pypi_pwd = os.environ.get('PYPI_PWD', '')
     if mode == 'try_upload':
@@ -157,16 +160,19 @@ def main():
 
     if mode == 'upload' and args.testpypi:
         pypi_user = '__token__'
-        test_pypi = '--repository testpypi '
+        pypi_repo = '--repository testpypi'
 
     if not args.skip_build:
-        build()
+        if args.testpypi:
+            build(project_name)
+        else:
+            build('taichi')
 
     if mode == 'build':
         return
     elif mode == 'upload':
-        os.system('{} -m twine upload {}dist/* --verbose -u {} -p {}'.format(
-            get_python_executable(), test_pypi, pypi_user,
+        os.system('{} -m twine upload {} dist/* --verbose -u {} -p {}'.format(
+            get_python_executable(), pypi_repo, pypi_user,
             '%PYPI_PWD%' if get_os_name() == 'win' else '$PYPI_PWD'))
     elif mode == 'test':
         print('Uninstalling old taichi packages...')

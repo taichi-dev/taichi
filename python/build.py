@@ -28,7 +28,7 @@ def get_python_executable():
 def build(project_name):
     """Build and package the wheel file in `python/dist`"""
     if platform.system() == 'Linux':
-        if re.search("^clang\+\+-*\d*", str(os.environ.get('CXX'))) == None:
+        if re.search("^clang\+\+-*\d*", str(os.environ.get('CXX'))) is None:
             raise RuntimeError(
                 'Only the wheel with clang will be released to PyPI')
     version = ti.core.get_version_string()

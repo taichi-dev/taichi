@@ -113,7 +113,7 @@ void serialize_kv_impl(SER &ser,
                        const std::array<std::string_view, N> &keys,
                        T &&head,
                        Args &&... rest) {
-  constexpr auto i = (N - sizeof...(Args));
+  constexpr auto i = (N - 1 - sizeof...(Args));
   std::string key{keys[i]};
   ser(key.c_str(), head);
   serialize_kv_impl(ser, keys, rest...);

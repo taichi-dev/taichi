@@ -33,6 +33,12 @@ class BLSAnalyzer : public BasicStmtVisitor {
 
   void visit(Stmt *stmt) override;
 
+  /**
+   * Run the block local analysis
+   * @return: true if the block range could be successfully inferred
+   */
+  bool run();
+
  private:
   // Generate the index bounds in a SNode (block). E.g., a dense(ti.ij, (2, 4))
   // SNode has index bounds [[0, 1], [0, 3]].
@@ -43,6 +49,11 @@ class BLSAnalyzer : public BasicStmtVisitor {
   OffloadedStmt *for_stmt_{nullptr};
   ScratchPads *pads_{nullptr};
   std::unordered_map<SNode *, BlockIndices> block_indices_;
+  // true means analysis is OK for now
+  // it could be failed by any of the following reasons
+  // compiler could not infer the scratch pad range at compile time
+  // ...
+  bool analysis_ok_{true};
 };
 
 }  // namespace lang

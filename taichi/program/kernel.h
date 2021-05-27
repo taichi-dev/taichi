@@ -16,17 +16,13 @@ class Program;
 
 class Kernel : public Callable {
  public:
-  bool ir_is_ast;
-  FunctionType compiled;
   std::string name;
   std::vector<SNode *> no_activate;
   Arch arch;
-  bool lowered;  // lower inital AST all the way down to a bunch of
-                 // OffloadedStmt for async execution
 
-  bool is_accessor;
-  bool is_evaluator;
-  bool grad;
+  bool is_accessor{false};
+  bool is_evaluator{false};
+  bool grad{false};
 
   // TODO: Give "Context" a more specific name.
   class LaunchContextBuilder {
@@ -73,8 +69,18 @@ class Kernel : public Callable {
          const std::string &name = "",
          bool grad = false);
 
+  bool lowered() const {
+    return lowered_;
+  }
+
   void compile();
 
+  /**
+   * Lowers |ir| to CHI IR level
+   *
+   * @param to_executable: If true, lowers |ir| to a point where the CHI
+   * statements can be directly translated by each backend's codegen.
+   */
   void lower(bool to_executable = true);
 
   void operator()(LaunchContextBuilder &ctx_builder);
@@ -90,6 +96,23 @@ class Kernel : public Callable {
   void account_for_offloaded(OffloadedStmt *stmt);
 
   [[nodiscard]] std::string get_name() const override;
+  /**
+   * Whether the given |arch| is supported in the lower() method.
+   *
+   * @param arch: The arch to check
+   * @return: True if supported.
+   */
+  static bool supports_lowering(Arch arch);
+
+ private:
+  // True if |ir| is a frontend AST. False if it's already offloaded to CHI IR.
+  bool ir_is_ast_{false};
+  // The closure that, if invoked, lauches the backend kernel (shader)
+  FunctionType compiled_{nullptr};
+  // A flag to record whether |ir| has been fully lowered.
+  // lower inital AST all the way down to a bunch of
+  // OffloadedStmt for async execution
+  bool lowered_{false};
 };
 
 TLANG_NAMESPACE_END

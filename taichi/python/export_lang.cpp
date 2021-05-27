@@ -233,7 +233,12 @@ void export_lang(py::module &m) {
              program->async_engine->sfg->benchmark_rebuild_graph();
            })
       .def("synchronize", &Program::synchronize)
-      .def("async_flush", &Program::async_flush);
+      .def("async_flush", &Program::async_flush)
+      .def("make_aot_module_builder", &Program::make_aot_module_builder);
+
+  py::class_<AotModuleBuilder>(m, "AotModuleBuilder")
+      .def("add", &AotModuleBuilder::add)
+      .def("dump", &AotModuleBuilder::dump);
 
   m.def("get_current_program", get_current_program,
         py::return_value_policy::reference);
@@ -387,7 +392,7 @@ void export_lang(py::module &m) {
       .def(
           "define",
           [](Program::KernelProxy *ker,
-             const std::function<void()> &func) -> Kernel & {
+             const std::function<void()> &func) -> Kernel * {
             py::gil_scoped_release release;
             return ker->def(func);
           },

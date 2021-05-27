@@ -3,6 +3,7 @@ import os
 import platform
 import shutil
 import sys
+import re
 
 import taichi as ti
 
@@ -27,11 +28,9 @@ def get_python_executable():
 def build(project_name):
     """Build and package the wheel file in `python/dist`"""
     if platform.system() == 'Linux':
-        if os.environ.get(
-                'CXX', 'clang++') not in ['clang++-8', 'clang++-7', 'clang++']:
+        if re.search("^clang\+\+-*\d*", str(os.environ.get('CXX'))) == None:
             raise RuntimeError(
                 'Only the wheel with clang will be released to PyPI')
-
     version = ti.core.get_version_string()
     with open('../setup.py') as fin:
         with open('setup.py', 'w') as fout:
@@ -159,6 +158,8 @@ def main():
     if mode == 'upload' and env_pypi_pwd == '':
         raise RuntimeError("Missing environment variable PYPI_PWD")
 
+    os.environ['TWINE_PASSWORD'] = env_pypi_pwd
+
     if mode == 'upload' and args.testpypi:
         pypi_user = '__token__'
         pypi_repo = '--repository testpypi'
@@ -169,9 +170,8 @@ def main():
     if mode == 'build':
         return
     elif mode == 'upload':
-        os.system('{} -m twine upload {} dist/* --verbose -u {} -p {}'.format(
-            get_python_executable(), pypi_repo, pypi_user,
-            '%PYPI_PWD%' if get_os_name() == 'win' else '$PYPI_PWD'))
+        os.system('{} -m twine upload {} dist/* --verbose -u {}'.format(
+            get_python_executable(), pypi_repo, pypi_user))
     elif mode == 'test':
         print('Uninstalling old taichi packages...')
         os.system(f'{get_python_executable()} -m pip uninstall taichi-nightly')

@@ -1,16 +1,24 @@
-import inspect
-from .core import taichi_lang_core
-from .expr import Expr
-from .snode import SNode
-from .util import *
-from .exception import TaichiSyntaxError
+import numbers
+import types
+import warnings
+
+import numpy as np
+from taichi.core.util import ti_core as _ti_core
+from taichi.lang.exception import TaichiSyntaxError
+from taichi.lang.expr import Expr, make_expr_group
+from taichi.lang.snode import SNode
+from taichi.lang.tape import TapeImpl
+from taichi.lang.util import (cook_dtype, is_taichi_class, python_scope,
+                              taichi_scope)
+from taichi.misc.util import deprecated, get_traceback, warning
+
+import taichi as ti
 
 
 @taichi_scope
 def expr_init(rhs):
-    import taichi as ti
     if rhs is None:
-        return Expr(taichi_lang_core.expr_alloca())
+        return Expr(_ti_core.expr_alloca())
     if is_taichi_class(rhs):
         return rhs.variable()
     else:
@@ -20,19 +28,20 @@ def expr_init(rhs):
             return tuple(expr_init(e) for e in rhs)
         elif isinstance(rhs, dict):
             return dict((key, expr_init(val)) for key, val in rhs.items())
-        elif isinstance(rhs, taichi_lang_core.DataType):
+        elif isinstance(rhs, _ti_core.DataType):
+            return rhs
+        elif isinstance(rhs, _ti_core.Arch):
             return rhs
         elif isinstance(rhs, ti.ndrange):
             return rhs
         elif hasattr(rhs, '_data_oriented'):
             return rhs
         else:
-            return Expr(taichi_lang_core.expr_var(Expr(rhs).ptr))
+            return Expr(_ti_core.expr_var(Expr(rhs).ptr))
 
 
 @taichi_scope
 def expr_init_list(xs, expected):
-    import taichi as ti
     if not isinstance(xs, (list, tuple, ti.Matrix)):
         raise TypeError(f'Cannot unpack type: {type(xs)}')
     if isinstance(xs, ti.Matrix):
@@ -54,7 +63,6 @@ def expr_init_list(xs, expected):
 @taichi_scope
 def expr_init_func(
         rhs):  # temporary solution to allow passing in fields as arguments
-    import taichi as ti
     if isinstance(rhs, Expr) and rhs.ptr.is_global_var():
         return rhs
     if isinstance(rhs, ti.Matrix) and rhs.is_global():
@@ -71,7 +79,7 @@ def begin_frontend_struct_for(group, loop_range):
             f'({group.size()} != {len(loop_range.shape)}). Maybe you wanted to '
             'use "for I in ti.grouped(x)" to group all indices into a single vector I?'
         )
-    taichi_lang_core.begin_frontend_struct_for(group, loop_range.ptr)
+    _ti_core.begin_frontend_struct_for(group, loop_range.ptr)
 
 
 def begin_frontend_if(cond):
@@ -82,7 +90,7 @@ def begin_frontend_if(cond):
             '    if all(x == y):\n'
             'or\n'
             '    if any(x != y):\n')
-    taichi_lang_core.begin_frontend_if(Expr(cond).ptr)
+    _ti_core.begin_frontend_if(Expr(cond).ptr)
 
 
 def wrap_scalar(x):
@@ -94,7 +102,6 @@ def wrap_scalar(x):
 
 @taichi_scope
 def subscript(value, *indices):
-    import numpy as np
     _taichi_skip_traceback = 1
     if isinstance(value, np.ndarray):
         return value.__getitem__(*indices)
@@ -133,7 +140,7 @@ def subscript(value, *indices):
             raise IndexError(
                 f'Field with dim {field_dim} accessed with indices of dim {index_dim}'
             )
-        return Expr(taichi_lang_core.subscript(value.ptr, indices_expr_group))
+        return Expr(_ti_core.subscript(value.ptr, indices_expr_group))
     else:
         return value[indices]
 
@@ -161,19 +168,18 @@ def chain_compare(comparators, ops):
             now = lhs != rhs
         else:
             assert False, f'Unknown operator {ops[i]}'
-        ret = logical_and(ret, now)
+        ret = ti.logical_and(ret, now)
     return ret
 
 
 @taichi_scope
-def func_call_with_check(func, *args, **kwargs):
+def maybe_transform_ti_func_call_to_stmt(func, *args, **kwargs):
     _taichi_skip_traceback = 1
     if '_sitebuiltins' == getattr(func, '__module__', '') and getattr(
             getattr(func, '__class__', ''), '__name__', '') == 'Quitter':
         raise TaichiSyntaxError(f'exit or quit not supported in Taichi-scope')
     if getattr(func, '__module__',
                '') == '__main__' and not getattr(func, '__wrapped__', ''):
-        import warnings
         warnings.warn(
             f'Calling into non-Taichi function {func.__name__}.'
             ' This means that scope inside that function will not be processed'
@@ -182,7 +188,17 @@ def func_call_with_check(func, *args, **kwargs):
             UserWarning,
             stacklevel=2)
 
-    return func(*args, **kwargs)
+    is_taichi_function = getattr(func, '_is_taichi_function', False)
+    # If is_taichi_function is true: call a decorated Taichi function
+    # in a Taichi kernel/function.
+
+    if is_taichi_function and get_runtime().experimental_real_function:
+        # Compiles the function here.
+        # Invokes Func.__call__.
+        func_call_result = func(*args, **kwargs)
+        return _ti_core.insert_expr_stmt(func_call_result.ptr)
+    else:
+        return func(*args, **kwargs)
 
 
 class PyTaichi:
@@ -195,10 +211,12 @@ class PyTaichi:
         self.compiled_grad_functions = {}
         self.scope_stack = []
         self.inside_kernel = False
+        self.current_kernel = None
         self.global_vars = []
         self.print_preprocessed = False
-        self.default_fp = f32
-        self.default_ip = i32
+        self.experimental_real_function = False
+        self.default_fp = ti.f32
+        self.default_ip = ti.i32
         self.target_tape = None
         self.inside_complex_kernel = False
         self.kernels = kernels or []
@@ -207,18 +225,18 @@ class PyTaichi:
         return len(self.compiled_functions) + len(self.compiled_grad_functions)
 
     def set_default_fp(self, fp):
-        assert fp in [f32, f64]
+        assert fp in [ti.f32, ti.f64]
         self.default_fp = fp
         default_cfg().default_fp = self.default_fp
 
     def set_default_ip(self, ip):
-        assert ip in [i32, i64]
+        assert ip in [ti.i32, ti.i64]
         self.default_ip = ip
         default_cfg().default_ip = self.default_ip
 
     def create_program(self):
         if self.prog is None:
-            self.prog = taichi_lang_core.Program()
+            self.prog = _ti_core.Program()
 
     def materialize(self):
         if self.materialized:
@@ -231,9 +249,8 @@ class PyTaichi:
             for func in self.layout_functions:
                 func()
 
-        import taichi as ti
         ti.trace('Materializing layout...')
-        taichi_lang_core.layout(layout)
+        _ti_core.layout(layout)
         self.materialized = True
         not_placed = []
         for var in self.global_vars:
@@ -249,8 +266,8 @@ class PyTaichi:
                 f'{bar}Please consider specifying a shape for them. E.g.,' +
                 '\n\n  x = ti.field(float, shape=(2, 3))')
 
-        for func in self.materialize_callbacks:
-            func()
+        for callback in self.materialize_callbacks:
+            callback()
         self.materialize_callbacks = []
 
     def print_snode_tree(self):
@@ -263,8 +280,7 @@ class PyTaichi:
         self.materialized = False
 
     def get_tape(self, loss=None):
-        from .tape import Tape
-        return Tape(self, loss)
+        return TapeImpl(self, loss)
 
     def sync(self):
         self.materialize()
@@ -293,7 +309,6 @@ def _clamp_unsigned_to_range(npty, val):
         # to deal with: |val| does't fall into the valid range of either
         # the signed or the unsigned type.
         return val
-    import taichi as ti
     new_val = val - cap
     ti.warn(
         f'Constant {val} has exceeded the range of {iif.bits} int, clamped to {new_val}'
@@ -303,27 +318,26 @@ def _clamp_unsigned_to_range(npty, val):
 
 @taichi_scope
 def make_constant_expr(val):
-    import numpy as np
     _taichi_skip_traceback = 1
     if isinstance(val, (int, np.integer)):
-        if pytaichi.default_ip in {i32, u32}:
+        if pytaichi.default_ip in {ti.i32, ti.u32}:
             # It is not always correct to do such clamp without the type info on
             # the LHS, but at least this makes assigning constant to unsigned
             # int work. See https://github.com/taichi-dev/taichi/issues/2060
             return Expr(
-                taichi_lang_core.make_const_expr_i32(
+                _ti_core.make_const_expr_i32(
                     _clamp_unsigned_to_range(np.int32, val)))
-        elif pytaichi.default_ip in {i64, u64}:
+        elif pytaichi.default_ip in {ti.i64, ti.u64}:
             return Expr(
-                taichi_lang_core.make_const_expr_i64(
+                _ti_core.make_const_expr_i64(
                     _clamp_unsigned_to_range(np.int64, val)))
         else:
             assert False
     elif isinstance(val, (float, np.floating, np.ndarray)):
-        if pytaichi.default_fp == f32:
-            return Expr(taichi_lang_core.make_const_expr_f32(val))
-        elif pytaichi.default_fp == f64:
-            return Expr(taichi_lang_core.make_const_expr_f64(val))
+        if pytaichi.default_fp == ti.f32:
+            return Expr(_ti_core.make_const_expr_f32(val))
+        elif pytaichi.default_fp == ti.f64:
+            return Expr(_ti_core.make_const_expr_f64(val))
         else:
             assert False
     else:
@@ -337,7 +351,7 @@ def reset():
     pytaichi = PyTaichi(old_kernels)
     for k in old_kernels:
         k.reset()
-    taichi_lang_core.reset_default_compile_config()
+    _ti_core.reset_default_compile_config()
 
 
 @taichi_scope
@@ -367,9 +381,8 @@ class Root:
         pass
 
     def __getattribute__(self, item):
-        import taichi as ti
-        ti.get_runtime().create_program()
-        root = SNode(ti.get_runtime().prog.get_root())
+        get_runtime().create_program()
+        root = SNode(get_runtime().prog.get_root())
         return getattr(root, item)
 
     def __repr__(self):
@@ -416,16 +429,16 @@ def field(dtype, shape=None, offset=None, needs_grad=False):
     del _taichi_skip_traceback
 
     # primal
-    x = Expr(taichi_lang_core.make_id_expr(""))
+    x = Expr(_ti_core.make_id_expr(""))
     x.declaration_tb = get_traceback(stacklevel=2)
-    x.ptr = taichi_lang_core.global_new(x.ptr, dtype)
+    x.ptr = _ti_core.global_new(x.ptr, dtype)
     x.ptr.set_is_primal(True)
     pytaichi.global_vars.append(x)
 
-    if taichi_lang_core.needs_grad(dtype):
+    if _ti_core.needs_grad(dtype):
         # adjoint
-        x_grad = Expr(taichi_lang_core.make_id_expr(""))
-        x_grad.ptr = taichi_lang_core.global_new(x_grad.ptr, dtype)
+        x_grad = Expr(_ti_core.make_id_expr(""))
+        x_grad.ptr = _ti_core.global_new(x_grad.ptr, dtype)
         x_grad.ptr.set_is_primal(False)
         x.set_grad(x_grad)
 
@@ -487,7 +500,8 @@ def ti_print(*vars, sep=' ', end='\n'):
 
     def add_separators(vars):
         for i, var in enumerate(vars):
-            if i: yield sep
+            if i:
+                yield sep
             yield var
         yield end
 
@@ -508,16 +522,15 @@ def ti_print(*vars, sep=' ', end='\n'):
     entries = vars2entries(vars)
     entries = fused_string(entries)
     contentries = [entry2content(entry) for entry in entries]
-    taichi_lang_core.create_print(contentries)
+    _ti_core.create_print(contentries)
 
 
 @taichi_scope
 def ti_assert(cond, msg, extra_args):
-    # Mostly a wrapper to help us convert from ti.Expr (defined in Python) to
-    # taichi_lang_core.Expr (defined in C++)
-    import taichi as ti
-    taichi_lang_core.create_assert_stmt(
-        ti.Expr(cond).ptr, msg, [ti.Expr(x).ptr for x in extra_args])
+    # Mostly a wrapper to help us convert from Expr (defined in Python) to
+    # _ti_core.Expr (defined in C++)
+    _ti_core.create_assert_stmt(
+        Expr(cond).ptr, msg, [Expr(x).ptr for x in extra_args])
 
 
 @taichi_scope
@@ -551,16 +564,16 @@ def one(x):
 
 @taichi_scope
 def get_external_tensor_dim(var):
-    return taichi_lang_core.get_external_tensor_dim(var)
+    return _ti_core.get_external_tensor_dim(var)
 
 
 @taichi_scope
 def get_external_tensor_shape_along_axis(var, i):
-    return taichi_lang_core.get_external_tensor_shape_along_axis(var, i)
+    return _ti_core.get_external_tensor_shape_along_axis(var, i)
 
 
 def indices(*x):
-    return [taichi_lang_core.Index(i) for i in x]
+    return [_ti_core.Index(i) for i in x]
 
 
 index = indices
@@ -570,13 +583,12 @@ def static(x, *xs):
     _taichi_skip_traceback = 1
     if len(xs):  # for python-ish pointer assign: x, y = ti.static(y, x)
         return [static(x)] + [static(x) for x in xs]
-    import types
-    import taichi as ti
+
     if isinstance(x,
                   (bool, int, float, range, list, tuple, enumerate, ti.ndrange,
                    ti.GroupedNDRange, zip, filter, map)) or x is None:
         return x
-    elif isinstance(x, (ti.Expr, ti.Matrix)) and x.is_global():
+    elif isinstance(x, (Expr, ti.Matrix)) and x.is_global():
         return x
     elif isinstance(x, (types.FunctionType, types.MethodType)):
         return x
@@ -588,7 +600,6 @@ def static(x, *xs):
 
 @taichi_scope
 def grouped(x):
-    import taichi as ti
     if isinstance(x, ti.ndrange):
         return x.grouped()
     else:
@@ -596,21 +607,16 @@ def grouped(x):
 
 
 def stop_grad(x):
-    taichi_lang_core.stop_grad(x.snode.ptr)
+    _ti_core.stop_grad(x.snode.ptr)
 
 
 def current_cfg():
-    return taichi_lang_core.current_compile_config()
+    return _ti_core.current_compile_config()
 
 
 def default_cfg():
-    return taichi_lang_core.default_compile_config()
-
-
-from .kernel import *
-from .ops import *
-from .kernel_arguments import *
+    return _ti_core.default_compile_config()
 
 
 def call_internal(name):
-    taichi_lang_core.create_internal_func_stmt(name)
+    _ti_core.create_internal_func_stmt(name)

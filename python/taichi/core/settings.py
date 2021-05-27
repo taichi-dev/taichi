@@ -1,11 +1,10 @@
+import multiprocessing
 import os
 import platform
-import multiprocessing
-
-default_num_threads = multiprocessing.cpu_count()
 
 
 def get_num_cores():
+    default_num_threads = multiprocessing.cpu_count()
     return os.environ.get('TAICHI_NUM_THREADS', default_num_threads)
 
 

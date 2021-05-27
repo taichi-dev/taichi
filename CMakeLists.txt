@@ -2,13 +2,13 @@
 # The Taichi Programming Language
 #*********************************************************************
 
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.12)
 
 project(taichi)
 
 SET(TI_VERSION_MAJOR 0)
 SET(TI_VERSION_MINOR 7)
-SET(TI_VERSION_PATCH 15)
+SET(TI_VERSION_PATCH 20)
 
 set(CMAKE_CXX_STANDARD 17)
 

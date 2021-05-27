@@ -1,3 +1,7 @@
+from taichi.core import settings
+from taichi.lang import impl
+from taichi.lang.expr import Expr
+
 import taichi as ti
 
 # A set of helper (meta)functions
@@ -24,11 +28,11 @@ def vector_to_fast_image(img: ti.template(), out: ti.ext_arr()):
         if ti.static(img.dtype in [ti.f32, ti.f64]):
             r, g, b = min(255, max(0, int(color * 255)))
         else:
-            ti.static_assert(img.dtype == ti.u8)
+            impl.static_assert(img.dtype == ti.u8)
             r, g, b = color
         idx = j * img.shape[0] + i
         # We use i32 for |out| since OpenGL and Metal doesn't support u8 types
-        if ti.static(ti.get_os_name() != 'osx'):
+        if ti.static(settings.get_os_name() != 'osx'):
             out[idx] = (r << 16) + (g << 8) + b
         else:
             # What's -16777216?
@@ -97,9 +101,9 @@ def ext_arr_to_matrix(arr: ti.ext_arr(), mat: ti.template(),
 
 @ti.kernel
 def clear_gradients(vars: ti.template()):
-    for I in ti.grouped(ti.Expr(vars[0])):
+    for I in ti.grouped(Expr(vars[0])):
         for s in ti.static(vars):
-            ti.Expr(s)[I] = 0
+            Expr(s)[I] = 0
 
 
 @ti.kernel

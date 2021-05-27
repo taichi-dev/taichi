@@ -14,7 +14,8 @@
 #include "taichi/ir/type_factory.h"
 #include "taichi/util/short_name.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 class IRNode;
 class Block;
@@ -73,7 +74,7 @@ class DecoratorRecorder {
  public:
   int vectorize;
   int bit_vectorize;
-  int parallelize;
+  int num_cpu_threads;
   bool strictly_serialized;
   MemoryAccessOptions mem_access_opt;
   int block_dim;
@@ -595,7 +596,7 @@ class Stmt : public IRNode {
     TI_NOT_IMPLEMENTED
   }
 
-  virtual ~Stmt() override = default;
+  virtual ~Stmt() = default;
 };
 
 class Block : public IRNode {
@@ -711,7 +712,7 @@ inline void BitVectorize(int v) {
 }
 
 inline void Parallelize(int v) {
-  dec.parallelize = v;
+  dec.num_cpu_threads = v;
 }
 
 inline void StrictlySerialize() {
@@ -776,4 +777,5 @@ inline void StmtFieldManager::operator()(const char *key, T &&value) {
   }
 }
 
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

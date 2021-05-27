@@ -152,7 +152,7 @@ class IRNodeComparator : public IRVisitor {
       } else {
         bool same_value = false;
         if (auto global_load = stmt->cast<GlobalLoadStmt>()) {
-          if (auto global_ptr = global_load->ptr->cast<GlobalPtrStmt>()) {
+          if (auto global_ptr = global_load->src->cast<GlobalPtrStmt>()) {
             TI_ASSERT(global_ptr->width() == 1);
             if (possibly_modified_states_.count(ir_bank_->get_async_state(
                     global_ptr->snodes[0], AsyncState::Type::value)) == 0) {

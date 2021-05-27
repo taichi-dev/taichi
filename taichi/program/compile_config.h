@@ -22,6 +22,7 @@ struct CompileConfig {
   bool simplify_before_lower_access;
   bool lower_access;
   bool simplify_after_lower_access;
+  bool move_loop_invariant_outside_if;
   bool demote_dense_struct_fors;
   bool advanced_optimization;
   bool use_llvm;
@@ -46,6 +47,7 @@ struct CompileConfig {
   int saturating_grid_dim;
   int max_block_dim;
   int cpu_max_num_threads;
+  int random_seed;
 
   // LLVM backend options:
   bool print_struct_llvm_ir;

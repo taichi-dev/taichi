@@ -9,12 +9,13 @@
 #include "taichi/common/interface.h"
 #include "taichi/common/task.h"
 #include "taichi/math/math.h"
+#include "taichi/platform/cuda/detect_cuda.h"
+#include "taichi/program/py_print_buffer.h"
 #include "taichi/python/exception.h"
 #include "taichi/python/export.h"
-#include "taichi/python/print_buffer.h"
+#include "taichi/python/memory_usage_monitor.h"
 #include "taichi/system/benchmark.h"
 #include "taichi/system/dynamic_loader.h"
-#include "taichi/system/memory_usage_monitor.h"
 #include "taichi/system/profiler.h"
 #include "taichi/util/statistics.h"
 #if defined(TI_WITH_CUDA)
@@ -28,8 +29,6 @@ extern bool is_c_backend_available();
 #endif
 
 TI_NAMESPACE_BEGIN
-
-PythonPrintBuffer py_cout;
 
 Config config_from_py_dict(py::dict &c) {
   Config config;
@@ -84,14 +83,6 @@ FILE *file = freopen(fn.c_str(), "w", file_fd);
 
 void stop_duplicating_stdout_to_file(const std::string &fn) {
   TI_NOT_IMPLEMENTED;
-}
-
-bool is_cuda_api_available() {
-#if defined(TI_WITH_CUDA)
-  return lang::CUDADriver::get_instance_without_context().detected();
-#else
-  return false;
-#endif
 }
 
 void export_misc(py::module &m) {
@@ -186,8 +177,9 @@ void export_misc(py::module &m) {
       .def(py::init<>())
       .def("clear", &Statistics::clear)
       .def("get_counters", &Statistics::get_counters);
-  m.def("get_kernel_stats", []() -> Statistics & { return stat; },
-        py::return_value_policy::reference);
+  m.def(
+      "get_kernel_stats", []() -> Statistics & { return stat; },
+      py::return_value_policy::reference);
 }
 
 TI_NAMESPACE_END

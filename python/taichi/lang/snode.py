@@ -1,6 +1,14 @@
-from . import impl
-from .util import deprecated
 import numbers
+
+# The reason we import just the taichi.core.util module, instead of the ti_core
+# object within it, is that ti_core is stateful. While in practice ti_core is
+# loaded during the import procedure, it's probably still good to delay the
+# access to it.
+from taichi.core.util import ti_core as _ti_core
+from taichi.lang import impl
+from taichi.lang.expr import Expr
+from taichi.lang.util import is_taichi_class
+from taichi.misc.util import deprecated
 
 
 class SNode:
@@ -50,8 +58,6 @@ class SNode:
         return SNode(self.ptr.bit_array(indices, dimensions, num_bits))
 
     def place(self, *args, offset=None, shared_exponent=False):
-        from .expr import Expr
-        from .util import is_taichi_class
         if offset is None:
             offset = []
         if isinstance(offset, numbers.Number):
@@ -83,7 +89,7 @@ class SNode:
             n -= 1
         if p is None:
             return None
-        if p.type == impl.taichi_lang_core.SNodeType.root:
+        if p.type == _ti_core.SNodeType.root:
             return impl.root
         return SNode(p)
 
@@ -122,8 +128,7 @@ class SNode:
         return self.shape[i]
 
     def loop_range(self):
-        import taichi as ti
-        return ti.Expr(ti.core.global_var_expr_from_snode(self.ptr))
+        return Expr(_ti_core.global_var_expr_from_snode(self.ptr))
 
     @deprecated('x.snode()', 'x.snode')
     def __call__(self):  # TODO: remove this after v0.7.0
@@ -155,16 +160,15 @@ class SNode:
         ch = self.get_children()
         for c in ch:
             c.deactivate_all()
-        import taichi as ti
-        if self.ptr.type == ti.core.SNodeType.pointer or self.ptr.type == ti.core.SNodeType.bitmasked:
-            from .meta import snode_deactivate
-            snode_deactivate(self)
-        if self.ptr.type == ti.core.SNodeType.dynamic:
-            from .meta import snode_deactivate_dynamic
+        SNodeType = _ti_core.SNodeType
+        from taichi.lang import meta
+        if self.ptr.type == SNodeType.pointer or self.ptr.type == SNodeType.bitmasked:
+            meta.snode_deactivate(self)
+        if self.ptr.type == SNodeType.dynamic:
             # Note that dynamic nodes are different from other sparse nodes:
             # instead of deactivating each element, we only need to deactivate
             # its parent, whose linked list of chunks of elements will be deleted.
-            snode_deactivate_dynamic(self)
+            meta.snode_deactivate_dynamic(self)
 
     def __repr__(self):
         type_ = str(self.ptr.type)[len('SNodeType.'):]

@@ -18,6 +18,7 @@
 #include "taichi/struct/struct_llvm.h"
 #include "taichi/backends/metal/struct_metal.h"
 #include "taichi/backends/opengl/struct_opengl.h"
+#include "taichi/platform/cuda/detect_cuda.h"
 #include "taichi/system/unified_allocator.h"
 #include "taichi/system/timeline.h"
 #include "taichi/ir/snode.h"
@@ -36,12 +37,6 @@
 // For _MM_SET_FLUSH_ZERO_MODE
 #include <xmmintrin.h>
 #endif
-
-TI_NAMESPACE_BEGIN
-
-bool is_cuda_api_available();
-
-TI_NAMESPACE_END
 
 TLANG_NAMESPACE_BEGIN
 
@@ -165,7 +160,7 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
 #endif
 
   result_buffer = nullptr;
-  current_kernel = nullptr;
+  current_callable = nullptr;
   sync = true;
   llvm_runtime = nullptr;
   finalized = false;
@@ -230,6 +225,14 @@ TypeFactory &Program::get_type_factory() {
       "Program::get_type_factory() will be deprecated, Please use "
       "TypeFactory::get_instance()");
   return TypeFactory::get_instance();
+}
+
+Function *Program::create_function(const FunctionKey &func_key) {
+  TI_TRACE("Creating function {}...", func_key.get_full_name());
+  functions.emplace_back(std::make_unique<Function>(this, func_key));
+  TI_ASSERT(function_map.count(func_key) == 0);
+  function_map[func_key] = functions.back().get();
+  return functions.back().get();
 }
 
 FunctionType Program::compile(Kernel &kernel) {
@@ -312,6 +315,11 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
   auto snodes = scomp->snodes;
   int root_id = snode_root->id;
 
+  // Starting random state for the program calculated using the random seed.
+  // The seed is multiplied by 2^20 so that two programs with different seeds
+  // will not have overlapping random states in any thread.
+  int starting_rand_state = config.random_seed * 1048576;
+
   // Number of random states. One per CPU/CUDA thread.
   int num_rand_states = 0;
 
@@ -330,12 +338,12 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
   TI_TRACE("Allocating data structure of size {} B", scomp->root_size);
   TI_TRACE("Allocating {} random states (used by CUDA only)", num_rand_states);
 
-  runtime->call<void *, void *, std::size_t, std::size_t, void *, int, void *,
-                void *, void *>("runtime_initialize", result_buffer, this,
-                                (std::size_t)scomp->root_size, prealloc_size,
-                                preallocated_device_buffer, num_rand_states,
-                                (void *)&taichi_allocate_aligned,
-                                (void *)std::printf, (void *)std::vsnprintf);
+  runtime->call<void *, void *, std::size_t, std::size_t, void *, int, int,
+                void *, void *, void *>(
+      "runtime_initialize", result_buffer, this, (std::size_t)scomp->root_size,
+      prealloc_size, preallocated_device_buffer, starting_rand_state,
+      num_rand_states, (void *)&taichi_allocate_aligned, (void *)std::printf,
+      (void *)std::vsnprintf);
 
   TI_TRACE("LLVMRuntime initialized");
   llvm_runtime = fetch_result<void *>(taichi_result_buffer_ret_value_id);
@@ -640,7 +648,7 @@ Kernel &Program::get_snode_reader(SNode *snode) {
     for (int i = 0; i < snode->num_active_indices; i++) {
       indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
     }
-    auto ret = Stmt::make<FrontendKernelReturnStmt>(
+    auto ret = Stmt::make<FrontendReturnStmt>(
         load_if_ptr(Expr(snode_to_glb_var_exprs_.at(snode))[indices]));
     current_ast_builder().insert(std::move(ret));
   });
@@ -751,7 +759,7 @@ void Program::finalize() {
   TI_TRACE("Program ({}) finalized.", fmt::ptr(this));
 }
 
-int Program::default_block_dim() const {
+int Program::default_block_dim(const CompileConfig &config) {
   if (arch_is_cpu(config.arch)) {
     return config.default_cpu_block_dim;
   } else {

@@ -1,8 +1,12 @@
 import ast
-from .util import to_taichi_type
 import copy
-from .exception import TaichiSyntaxError
-from . import impl
+
+from taichi.lang import impl
+from taichi.lang.ast_resolver import ASTResolver
+from taichi.lang.exception import TaichiSyntaxError
+from taichi.lang.util import to_taichi_type
+
+import taichi as ti
 
 
 class ScopeGuard:
@@ -32,6 +36,8 @@ class ASTTransformer(object):
                                                         *args,
                                                         **kwargs)
         self.pass_Checks = ASTTransformerChecks(func=func)
+        self.pass_transform_function_call = TransformFunctionCallAsStmt(
+            func=func)
 
     @staticmethod
     def print_ast(tree, title=None):
@@ -45,9 +51,11 @@ class ASTTransformer(object):
     def visit(self, tree):
         self.print_ast(tree, 'Initial AST')
         self.pass_Preprocess.visit(tree)
+        ast.fix_missing_locations(tree)
         self.print_ast(tree, 'Preprocessed')
         self.pass_Checks.visit(tree)
         self.print_ast(tree, 'Checked')
+        self.pass_transform_function_call.visit(tree)
         ast.fix_missing_locations(tree)
         self.print_ast(tree, 'Final AST')
 
@@ -88,12 +96,16 @@ class ASTTransformerBase(ast.NodeTransformer):
 
     @staticmethod
     def get_decorator(node):
-        if not (isinstance(node, ast.Call)
-                and isinstance(node.func, ast.Attribute) and isinstance(
-                    node.func.value, ast.Name) and node.func.value.id == 'ti'
-                and node.func.attr in ['static', 'grouped', 'ndrange']):
+        if not isinstance(node, ast.Call):
             return ''
-        return node.func.attr
+        for wanted, name in [
+            (ti.static, 'static'),
+            (ti.grouped, 'grouped'),
+            (ti.ndrange, 'ndrange'),
+        ]:
+            if ASTResolver.resolve_to(node.func, wanted, globals()):
+                return name
+        return ''
 
 
 # First-pass transform
@@ -190,19 +202,9 @@ class ASTTransformerPreprocess(ASTTransformerBase):
         assert (len(node.targets) == 1)
         self.generic_visit(node)
 
-        decorated = isinstance(node.value, ast.Call) and isinstance(
-            node.value.func, ast.Attribute) and isinstance(node.value.func.value, ast.Name) \
-                    and node.value.func.value.id == 'ti'
-
-        is_static_assign = False
-
-        if decorated:
-            attr = node.value.func
-            if attr.attr == 'static':
-                is_static_assign = True
-            else:
-                pass  # eg. x = ti.cast(xx) will reach here, but they're not decorators, so no raising errors here
-
+        is_static_assign = isinstance(
+            node.value, ast.Call) and ASTResolver.resolve_to(
+                node.value.func, ti.static, globals())
         if is_static_assign:
             return node
 
@@ -229,7 +231,7 @@ class ASTTransformerPreprocess(ASTTransformerBase):
                 if is_local and self.is_creation(target.id):
                     var_name = target.id
                     target.ctx = ast.Store()
-                    # Create
+                    # Create, no AST resolution needed
                     init = ast.Attribute(value=ast.Name(id='ti',
                                                         ctx=ast.Load()),
                                          attr='expr_init',
@@ -260,7 +262,7 @@ class ASTTransformerPreprocess(ASTTransformerBase):
             is_local = isinstance(node.targets[0], ast.Name)
             if is_local and self.is_creation(node.targets[0].id):
                 var_name = node.targets[0].id
-                # Create
+                # Create, no AST resolution needed
                 init = ast.Attribute(value=ast.Name(id='ti', ctx=ast.Load()),
                                      attr='expr_init',
                                      ctx=ast.Load())
@@ -501,8 +503,8 @@ if ti.static(1):
             template = '''
 if 1:
     ___loop_var = 0
-    {} = ti.make_var_vector(size=len(___loop_var.loop_range().shape))
-    ___expr_group = ti.make_expr_group({})
+    {} = ti.lang.expr.make_var_vector(size=len(___loop_var.loop_range().shape))
+    ___expr_group = ti.lang.expr.make_expr_group({})
     ti.begin_frontend_struct_for(___expr_group, ___loop_var.loop_range())
     ti.core.end_frontend_range_for()
             '''.format(vars, vars)
@@ -515,7 +517,7 @@ if 1:
 if 1:
 {}
     ___loop_var = 0
-    ___expr_group = ti.make_expr_group({})
+    ___expr_group = ti.lang.expr.make_expr_group({})
     ti.begin_frontend_struct_for(___expr_group, ___loop_var.loop_range())
     ti.core.end_frontend_range_for()
             '''.format(var_decl, vars)
@@ -620,9 +622,7 @@ if 1:
             return self.parse_stmt('ti.core.insert_continue_stmt()')
 
     def visit_Call(self, node):
-        if not (isinstance(node.func, ast.Attribute)
-                and isinstance(node.func.value, ast.Name)
-                and node.func.value.id == 'ti' and node.func.attr == 'static'):
+        if not ASTResolver.resolve_to(node.func, ti.static, globals()):
             # Do not apply the generic visitor if the function called is ti.static
             self.generic_visit(node)
         if isinstance(node.func, ast.Name):
@@ -663,21 +663,14 @@ if 1:
         assert args.kwonlyargs == []
         assert args.kw_defaults == []
         assert args.kwarg is None
-        import taichi as ti
-        if self.is_kernel:  # ti.kernel
-            for decorator in node.decorator_list:
-                if (isinstance(decorator, ast.Attribute)
-                        and isinstance(decorator.value, ast.Name)
-                        and decorator.value.id == 'ti'
-                        and decorator.attr == 'func'):
-                    raise TaichiSyntaxError(
-                        "Function definition not allowed in 'ti.kernel'.")
-            # Transform as kernel
-            arg_decls = []
 
+        arg_decls = []
+
+        def transform_as_kernel():
             # Treat return type
             if node.returns is not None:
-                ret_init = self.parse_stmt('ti.decl_scalar_ret(0)')
+                ret_init = self.parse_stmt(
+                    'ti.lang.kernel_arguments.decl_scalar_ret(0)')
                 ret_init.value.args[0] = node.returns
                 self.returns = node.returns
                 arg_decls.append(ret_init)
@@ -686,16 +679,15 @@ if 1:
             for i, arg in enumerate(args.args):
                 # Directly pass in template arguments,
                 # such as class instances ("self"), fields, SNodes, etc.
-                if isinstance(self.func.arguments[i], ti.template):
+                if isinstance(self.func.argument_annotations[i], ti.template):
                     continue
-                import taichi as ti
-                if isinstance(self.func.arguments[i], ti.ext_arr):
-                    arg_init = self.parse_stmt('x = ti.decl_ext_arr_arg(0, 0)')
+                if isinstance(self.func.argument_annotations[i], ti.ext_arr):
+                    arg_init = self.parse_stmt(
+                        'x = ti.lang.kernel_arguments.decl_ext_arr_arg(0, 0)')
                     arg_init.targets[0].id = arg.arg
                     self.create_variable(arg.arg)
                     array_dt = self.arg_features[i][0]
                     array_dim = self.arg_features[i][1]
-                    import numpy as np
                     array_dt = to_taichi_type(array_dt)
                     dt_expr = 'ti.' + ti.core.data_type_name(array_dt)
                     dt = self.parse_expr(dt_expr)
@@ -704,7 +696,8 @@ if 1:
                         "{}".format(array_dim))
                     arg_decls.append(arg_init)
                 else:
-                    arg_init = self.parse_stmt('x = ti.decl_scalar_arg(0)')
+                    arg_init = self.parse_stmt(
+                        'x = ti.lang.kernel_arguments.decl_scalar_arg(0)')
                     arg_init.targets[0].id = arg.arg
                     dt = arg.annotation
                     arg_init.value.args[0] = dt
@@ -712,30 +705,38 @@ if 1:
             # remove original args
             node.args.args = []
 
+        if self.is_kernel:  # ti.kernel
+            for decorator in node.decorator_list:
+                if ASTResolver.resolve_to(decorator, ti.func, globals()):
+                    raise TaichiSyntaxError(
+                        "Function definition not allowed in 'ti.kernel'.")
+            transform_as_kernel()
+
         else:  # ti.func
             for decorator in node.decorator_list:
-                if (isinstance(decorator, ast.Attribute)
-                        and isinstance(decorator.value, ast.Name)
-                        and decorator.value.id == 'ti'
-                        and decorator.attr == 'func'):
+                if ASTResolver.resolve_to(decorator, ti.func, globals()):
                     raise TaichiSyntaxError(
                         "Function definition not allowed in 'ti.func'.")
-            # Transform as func (all parameters passed by value)
-            arg_decls = []
-            for i, arg in enumerate(args.args):
-                # Directly pass in template arguments,
-                # such as class instances ("self"), fields, SNodes, etc.
-                if isinstance(self.func.arguments[i], ti.template):
-                    continue
-                # Create a copy for non-template arguments,
-                # so that they are passed by value.
-                arg_init = self.parse_stmt('x = ti.expr_init_func(0)')
-                arg_init.targets[0].id = arg.arg
-                self.create_variable(arg.arg)
-                arg_init.value.args[0] = self.parse_expr(arg.arg +
-                                                         '_by_value__')
-                args.args[i].arg += '_by_value__'
-                arg_decls.append(arg_init)
+            if impl.get_runtime().experimental_real_function:
+                transform_as_kernel()
+            else:
+                # Transform as func (all parameters passed by value)
+                arg_decls = []
+                for i, arg in enumerate(args.args):
+                    # Directly pass in template arguments,
+                    # such as class instances ("self"), fields, SNodes, etc.
+                    if isinstance(self.func.argument_annotations[i],
+                                  ti.template):
+                        continue
+                    # Create a copy for non-template arguments,
+                    # so that they are passed by value.
+                    arg_init = self.parse_stmt('x = ti.expr_init_func(0)')
+                    arg_init.targets[0].id = arg.arg
+                    self.create_variable(arg.arg)
+                    arg_init.value.args[0] = self.parse_expr(arg.arg +
+                                                             '_by_value__')
+                    args.args[i].arg += '_by_value__'
+                    arg_decls.append(arg_init)
 
         with self.variable_scope():
             self.generic_visit(node)
@@ -872,14 +873,14 @@ if 1:
 
     def visit_Return(self, node):
         self.generic_visit(node)
-        if self.is_kernel:
+        if self.is_kernel or impl.get_runtime().experimental_real_function:
             # TODO: check if it's at the end of a kernel, throw TaichiSyntaxError if not
             if node.value is not None:
                 if self.returns is None:
                     raise TaichiSyntaxError(
-                        'kernel with return value must be '
-                        'annotated with a return type, e.g. def func() -> ti.f32'
-                    )
+                        f'A {"kernel" if self.is_kernel else "function"} '
+                        'with a return value must be annotated '
+                        'with a return type, e.g. def func() -> ti.f32')
                 ret_expr = self.parse_expr('ti.cast(ti.Expr(0), 0)')
                 ret_expr.args[0].args[0] = node.value
                 ret_expr.args[1] = self.returns
@@ -899,12 +900,6 @@ class ASTTransformerChecks(ASTTransformerBase):
         super().__init__(func)
         self.has_return = False
         self.in_static_if = False
-
-    def visit_Call(self, node):
-        if isinstance(node.func, ast.Name):
-            node.args = [node.func] + node.args
-            node.func = self.parse_expr('ti.func_call_with_check')
-        return node
 
     def visit_If(self, node):
         node.test = self.visit(node.test)
@@ -931,4 +926,15 @@ class ASTTransformerChecks(ASTTransformerBase):
                 'Taichi functions/kernels cannot have multiple returns!'
                 ' Consider using a local variable to walk around.')
 
+        return node
+
+
+# Transform a standalone Taichi function call expression into a statement.
+class TransformFunctionCallAsStmt(ASTTransformerBase):
+    def __init__(self, func):
+        super().__init__(func)
+
+    def visit_Call(self, node):
+        node.args = [node.func] + node.args
+        node.func = self.parse_expr('ti.maybe_transform_ti_func_call_to_stmt')
         return node

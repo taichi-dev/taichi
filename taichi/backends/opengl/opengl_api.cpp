@@ -4,8 +4,8 @@
 #include "taichi/backends/opengl/opengl_kernel_util.h"
 #include "taichi/program/kernel.h"
 #include "taichi/program/program.h"
+#include "taichi/program/py_print_buffer.h"
 #include "taichi/util/environ_config.h"
-#include "taichi/python/print_buffer.h"
 #include "taichi/backends/opengl/shaders/runtime.h"
 #include "taichi/backends/opengl/shaders/listman.h"
 
@@ -461,7 +461,7 @@ struct CompiledProgram::Impl {
     arg_count = kernel->args.size();
     ret_count = kernel->rets.size();
     for (int i = 0; i < arg_count; i++) {
-      if (kernel->args[i].is_nparray) {
+      if (kernel->args[i].is_external_array) {
         ext_arr_map[i] = kernel->args[i].size;
       }
     }

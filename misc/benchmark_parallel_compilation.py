@@ -1,6 +1,7 @@
 # This file has a kernel with 16 equal offloaded tasks.
 
 import taichi as ti
+
 ti.init(arch=ti.x64)
 quality = 1  # Use a larger value for higher-res simulations
 n_particles, n_grid = 9000 * quality**2, 128 * quality

@@ -1,6 +1,8 @@
-import taichi as ti
-import numpy as np
 import time
+
+import numpy as np
+
+import taichi as ti
 
 
 @ti.all_archs

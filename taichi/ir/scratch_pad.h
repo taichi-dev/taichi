@@ -29,11 +29,26 @@ inline AccessFlag operator|=(AccessFlag &a, AccessFlag &b) {
 
 class ScratchPad {
  public:
-  SNode *snode;
+  // The lowest and highest index in each dimension.
+  struct BoundRange {
+    int low{0};
+    int high{0};
+
+    int range() const {
+      return high - low;
+    }
+
+    TI_IO_DEF(low, high);
+  };
+
+  SNode *snode{nullptr};
   using AccessFlag = taichi::lang::AccessFlag;
 
-  std::vector<int> bounds[2];
+  std::vector<BoundRange> bounds;
+  // pad_size[i] := bounds[i].high - bounds[i].low
+  // TODO: This can be replaced by a function call to bounds[i].range()
   std::vector<int> pad_size;
+  // block_size[i] := (1 << snode.extractor[i].num_bits)
   std::vector<int> block_size;
   bool finalized;
   int dim;
@@ -48,17 +63,16 @@ class ScratchPad {
   ScratchPad(SNode *snode) : snode(snode) {
     TI_ASSERT(snode != nullptr);
     dim = snode->num_active_indices;
-    bounds[0].resize(dim);
-    bounds[1].resize(dim);
+    bounds.resize(dim);
     pad_size.resize(dim);
 
     finalized = false;
 
     total_flags = AccessFlag(0);
-    std::fill(bounds[0].begin(), bounds[0].end(),
-              std::numeric_limits<int>::max());
-    std::fill(bounds[1].begin(), bounds[1].end(),
-              std::numeric_limits<int>::min());
+    BoundRange init_bound;
+    init_bound.low = std::numeric_limits<int>::max();
+    init_bound.high = std::numeric_limits<int>::min();
+    std::fill(bounds.begin(), bounds.end(), init_bound);
     empty = false;
   }
 
@@ -67,9 +81,9 @@ class ScratchPad {
     empty = true;
     TI_ASSERT((int)indices.size() == dim);
     for (int i = 0; i < dim; i++) {
-      bounds[0][i] = std::min(bounds[0][i], indices[i]);
-      bounds[1][i] = std::max(bounds[1][i], indices[i] + 1);
-      pad_size[i] = bounds[1][i] - bounds[0][i];
+      bounds[i].low = std::min(bounds[i].low, indices[i]);
+      bounds[i].high = std::max(bounds[i].high, indices[i] + 1);
+      pad_size[i] = bounds[i].range();
     }
     accesses.emplace_back(indices, flags);
   }
@@ -86,8 +100,8 @@ class ScratchPad {
       block_size[i] =
           1 << snode->parent->extractors[snode->physical_index_position[i]]
                    .num_bits;
-      TI_ASSERT(bounds[0][i] != std::numeric_limits<int>::max());
-      TI_ASSERT(bounds[1][i] != std::numeric_limits<int>::min());
+      TI_ASSERT(bounds[i].low != std::numeric_limits<int>::max());
+      TI_ASSERT(bounds[i].high != std::numeric_limits<int>::min());
     }
 
     finalized = true;
@@ -132,8 +146,8 @@ class ScratchPad {
     int ret = 0;
     TI_ASSERT(finalized);
     for (int i = 0; i < dim; i++) {
-      ret *= (bounds[1][i] - bounds[0][i]);
-      ret += indices[i] - bounds[0][i];
+      ret *= (bounds[i].high - bounds[i].low);
+      ret += indices[i] - bounds[i].low;
     }
     return ret;
   }
@@ -144,7 +158,7 @@ class ScratchPad {
       div *= pad_size[i];
     }
     return fmt::format("({} / {} % {} + {})", var, div, pad_size[d],
-                       bounds[0][d]);
+                       bounds[d].low);
   }
 
   /*
@@ -209,9 +223,8 @@ class ScratchPads {
     if (pads.find(snode) != pads.end()) {
       auto &pad = pads[snode];
       int offset = 0;
-      // for (int i = pad.dim - 1; i >= 0; i--) {
       for (int i = 0; i < pad.dim; i++) {
-        offset = offset + (indices[i] - pad.bounds[0][i]);
+        offset = offset + (indices[i] - pad.bounds[i].low);
         if (i > 0)
           offset = offset * pad.pad_size[i - 1];
       }
@@ -224,8 +237,7 @@ class ScratchPads {
   void print() {
     for (auto &it : pads) {
       TI_P(it.first->node_type_name);
-      TI_P(it.second.bounds[0]);
-      TI_P(it.second.bounds[1]);
+      TI_P(it.second.bounds);
     }
   }
 

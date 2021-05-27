@@ -152,10 +152,10 @@ class DemoteAtomics : public BasicStmtVisitor {
 
 namespace irpass {
 
-bool demote_atomics(IRNode *root) {
+bool demote_atomics(IRNode *root, const CompileConfig &config) {
   TI_AUTO_PROF;
   bool modified = DemoteAtomics::run(root);
-  type_check(root);
+  type_check(root, config);
   return modified;
 }
 

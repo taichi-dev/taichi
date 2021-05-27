@@ -166,8 +166,9 @@ void StructCompilerLLVM::generate_refine_coordinates(SNode *snode) {
       {coord_type_ptr, coord_type_ptr, llvm::Type::getInt32Ty(*llvm_ctx)},
       false);
 
-  auto func = Function::Create(ft, Function::ExternalLinkage,
-                               snode->refine_coordinates_func_name(), *module);
+  auto func =
+      llvm::Function::Create(ft, llvm::Function::ExternalLinkage,
+                             snode->refine_coordinates_func_name(), *module);
 
   auto bb = BasicBlock::Create(*llvm_ctx, "entry", func);
 
@@ -222,8 +223,9 @@ void StructCompilerLLVM::generate_child_accessors(SNode &snode) {
         llvm::FunctionType::get(llvm::Type::getInt8PtrTy(*llvm_ctx),
                                 {llvm::Type::getInt8PtrTy(*llvm_ctx)}, false);
 
-    auto func = Function::Create(ft, Function::ExternalLinkage,
-                                 snode.get_ch_from_parent_func_name(), *module);
+    auto func =
+        llvm::Function::Create(ft, llvm::Function::ExternalLinkage,
+                               snode.get_ch_from_parent_func_name(), *module);
 
     auto bb = BasicBlock::Create(*llvm_ctx, "entry", func);
 

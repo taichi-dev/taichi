@@ -5,16 +5,19 @@
 
 #pragma once
 
-#include <map>
+#include <array>
+#include <cassert>
+#include <cstring>
 #include <fstream>
+#include <iostream>
+#include <map>
+#include <memory>
+#include <optional>
 #include <sstream>
+#include <string_view>
+#include <type_traits>
 #include <unordered_map>
 #include <vector>
-#include <memory>
-#include <cstring>
-#include <cassert>
-#include <iostream>
-#include <type_traits>
 
 #ifdef TI_INCLUDED
 TI_NAMESPACE_BEGIN
@@ -32,9 +35,11 @@ TI_EXPORT std::unique_ptr<T> create_instance_unique(const std::string &alias);
 
 ////////////////////////////////////////////////////////////////////////////////
 //                   A Minimalist Serializer for Taichi                       //
-//                           (C++11 Compatible)                               //
+//                           (Requires C++17)                                 //
 ////////////////////////////////////////////////////////////////////////////////
 
+// TODO: Consider using third-party serialization libraries
+// * https://github.com/USCiLab/cereal
 class Unit;
 
 namespace type {
@@ -51,71 +56,93 @@ using is_unit = typename std::is_base_of<Unit, remove_cvref_t<T>>;
 
 template <typename T>
 using is_unit_t = typename is_unit<T>::type;
+
 }  // namespace type
 
-#define TI_IO_DECL_INST                               \
-  void binary_io(BinaryOutputSerializer &ser) const { \
-    ser(*this);                                       \
-  }                                                   \
-  void binary_io(BinaryInputSerializer &ser) const {  \
-    ser(*this);                                       \
-  }
+namespace detail {
 
-#define TI_IO_DECL_INST_VIRT                                  \
-  virtual void binary_io(BinaryOutputSerializer &ser) const { \
-    ser(*this);                                               \
-  }                                                           \
-  virtual void binary_io(BinaryInputSerializer &ser) const {  \
-    ser(*this);                                               \
+template <size_t N>
+constexpr size_t count_delim(const char (&str)[N], char delim) {
+  size_t count = 1;
+  for (const char &ch : str) {
+    if (ch == delim) {
+      ++count;
+    }
   }
+  return count;
+}
 
-#define TI_IO_DECL_INST_VIRT_OVERRIDE                                  \
-  virtual void binary_io(BinaryOutputSerializer &ser) const override { \
-    ser(*this);                                                        \
-  }                                                                    \
-  virtual void binary_io(BinaryInputSerializer &ser) const override {  \
-    ser(*this);                                                        \
+template <size_t DelimN>
+struct StrDelimSplitter {
+  template <size_t StrsN>
+  static constexpr std::array<std::string_view, DelimN> make(
+      const char (&str)[StrsN],
+      char delim) {
+    std::array<std::string_view, DelimN> res;
+    const char *head = &(str[0]);
+    size_t si = 0;
+    size_t cur_head_i = 0;
+    size_t ri = 0;
+    while (si < StrsN) {
+      if (str[si] != delim) {
+        si += 1;
+      } else {
+        res[ri] = {head, (si - cur_head_i)};
+        ++ri;
+        si += 2;  // skip ", "
+        cur_head_i = si;
+        head = &(str[cur_head_i]);
+      }
+    }
+    // `StrsN - 1` because the last char is '\0'.
+    res[ri] = {head, (StrsN - 1 - cur_head_i)};
+    return res;
   }
+};
+
+template <typename SER, size_t N, typename T>
+void serialize_kv_impl(SER &ser,
+                       const std::array<std::string_view, N> &keys,
+                       T &&val) {
+  std::string key{keys[N - 1]};
+  ser(key.c_str(), val);
+}
+
+template <typename SER, size_t N, typename T, typename... Args>
+void serialize_kv_impl(SER &ser,
+                       const std::array<std::string_view, N> &keys,
+                       T &&head,
+                       Args &&... rest) {
+  constexpr auto i = (N - 1 - sizeof...(Args));
+  std::string key{keys[i]};
+  ser(key.c_str(), head);
+  serialize_kv_impl(ser, keys, rest...);
+}
+
+}  // namespace detail
 
 #define TI_IO_DECL      \
-  TI_IO_DECL_INST       \
   template <typename S> \
-  void io(S &serializer) const
-
-#define TI_IO_DECL_VIRT \
-  TI_IO_DECL_INST_VIRT  \
-  template <typename S> \
-  void io(S &serializer) const
-
-#define TI_IO_DECL_VIRT_OVERRIDE \
-  TI_IO_DECL_INST_VIRT_OVERRIDE  \
-  template <typename S>          \
   void io(S &serializer) const
 
 #define TI_IO_DEF(...)           \
-  TI_IO_DECL_INST                \
   template <typename S>          \
   void io(S &serializer) const { \
-    TI_IO(__VA_ARGS__)           \
+    TI_IO(__VA_ARGS__);          \
   }
 
-#define TI_IO_DEF_VIRT(...)      \
-  TI_IO_DECL_INST_VIRT           \
-  template <typename S>          \
-  void io(S &serializer) const { \
-    TI_IO(__VA_ARGS__)           \
-  }
-
-#define TI_IO_DEF_WITH_BASE(...) \
-  TI_IO_DECL_INST_VIRT_OVERRIDE  \
-  template <typename S>          \
-  void io(S &serializer) const { \
-    Base::io(serializer);        \
-    TI_IO(__VA_ARGS__)           \
-  }
-
-#define TI_IO(...) \
-  { serializer(#__VA_ARGS__, __VA_ARGS__); }
+// This macro serializes each field with its name by doing the following:
+// 1. Stringifies __VA_ARGS__, then split the stringified result by ',' at
+// compile time.
+// 2. Invoke serializer::operator("arg", arg) for each arg in __VA_ARGS__. This
+// is implemented inside detail::serialize_kv_impl.
+#define TI_IO(...)                                                     \
+  do {                                                                 \
+    constexpr size_t kDelimN = detail::count_delim(#__VA_ARGS__, ','); \
+    constexpr auto kSplitStrs =                                        \
+        detail::StrDelimSplitter<kDelimN>::make(#__VA_ARGS__, ',');    \
+    detail::serialize_kv_impl(serializer, kSplitStrs, __VA_ARGS__);    \
+  } while (0)
 
 #define TI_SERIALIZER_IS(T)                                                 \
   (std::is_same<typename std::remove_reference<decltype(serializer)>::type, \
@@ -229,6 +256,12 @@ inline void write_data_to_file(const std::string &fn,
 
 template <bool writing>
 class BinarySerializer : public Serializer {
+ private:
+  template <typename T>
+  inline static constexpr bool is_elementary_type_v =
+      !has_io<T>::value && !std::is_pointer<T>::value && !std::is_enum_v<T> &&
+      std::is_pod_v<T>;
+
  public:
   std::vector<uint8_t> data;
   uint8_t *c_data;
@@ -304,25 +337,36 @@ class BinarySerializer : public Serializer {
     }
   }
 
+  template <typename T>
+  void operator()(const char *, const T &val) {
+    this->process(val);
+  }
+
+  template <typename T>
+  void operator()(const T &val) {
+    this->process(val);
+  }
+
+ private:
   // std::string
-  void operator()(const char *, const std::string &val_) {
+  void process(const std::string &val_) {
     auto &val = get_writable(val_);
     if (writing) {
       std::vector<char> val_vector(val.begin(), val.end());
-      this->operator()(nullptr, val_vector);
+      this->process(val_vector);
     } else {
       std::vector<char> val_vector;
-      this->operator()(nullptr, val_vector);
+      this->process(val_vector);
       val = std::string(val_vector.begin(), val_vector.end());
     }
   }
 
   // C-array
   template <typename T, std::size_t n>
-  void operator()(const char *, const TArray<T, n> &val) {
+  void process(const TArray<T, n> &val) {
     if (writing) {
       for (std::size_t i = 0; i < n; i++) {
-        this->operator()("", val[i]);
+        this->process(val[i]);
       }
     } else {
       // TODO: why do I have to let it write to tmp, otherwise I get Sig Fault?
@@ -332,7 +376,7 @@ class BinarySerializer : public Serializer {
           std::conditional_t<std::is_same<Traw, bool>::value, uint8, Traw>>
           tmp(n);
       for (std::size_t i = 0; i < n; i++) {
-        this->operator()("", tmp[i]);
+        this->process(tmp[i]);
       }
       std::memcpy(const_cast<typename std::remove_cv<T>::type *>(val), &tmp[0],
                   sizeof(tmp[0]) * tmp.size());
@@ -341,9 +385,8 @@ class BinarySerializer : public Serializer {
 
   // Elementary data types
   template <typename T>
-  typename std::enable_if<!has_io<T>::value && !std::is_pointer<T>::value,
-                          void>::type
-  operator()(const char *, const T &val) {
+  typename std::enable_if_t<is_elementary_type_v<T>, void> process(
+      const T &val) {
     static_assert(!std::is_reference<T>::value, "T cannot be reference");
     static_assert(!std::is_const<T>::value, "T cannot be const");
     static_assert(!std::is_volatile<T>::value, "T cannot be volatile");
@@ -373,32 +416,29 @@ class BinarySerializer : public Serializer {
   }
 
   template <typename T>
-  typename std::enable_if<has_io<T>::value, void>::type operator()(
-      const char *,
-      const T &val) {
+  std::enable_if_t<has_io<T>::value, void> process(const T &val) {
     val.io(*this);
   }
 
   // Unique Pointers to non-taichi-unit Types
   template <typename T>
-  typename std::enable_if<!type::is_unit<T>::value, void>::type operator()(
-      const char *,
+  typename std::enable_if<!type::is_unit<T>::value, void>::type process(
       const std::unique_ptr<T> &val_) {
     auto &val = get_writable(val_);
     if (writing) {
-      this->operator()(ptr_to_int(val.get()));
+      this->process(ptr_to_int(val.get()));
       if (val.get() != nullptr) {
-        this->operator()("", *val);
+        this->process(*val);
         // Just for checking future raw pointers
         assets.insert(std::make_pair(ptr_to_int(val.get()), val.get()));
       }
     } else {
       std::size_t original_addr;
-      this->operator()("", original_addr);
+      this->process(original_addr);
       if (original_addr != 0) {
         val = std::make_unique<T>();
         assets.insert(std::make_pair(original_addr, val.get()));
-        this->operator()("", *val);
+        this->process(*val);
       }
     }
   }
@@ -410,39 +450,37 @@ class BinarySerializer : public Serializer {
 
   // Unique Pointers to taichi-unit Types
   template <typename T>
-  typename std::enable_if<type::is_unit<T>::value, void>::type operator()(
-      const char *,
+  typename std::enable_if<type::is_unit<T>::value, void>::type process(
       const std::unique_ptr<T> &val_) {
     auto &val = get_writable(val_);
     if (writing) {
-      this->operator()(val->get_name());
-      this->operator()(ptr_to_int(val.get()));
+      this->process(val->get_name());
+      this->process(ptr_to_int(val.get()));
       if (val.get() != nullptr) {
-        val->binary_io(*this);
+        val->binary_io(nullptr, *this);
         // Just for checking future raw pointers
         assets.insert(std::make_pair(ptr_to_int(val.get()), val.get()));
       }
     } else {
       std::string name;
       std::size_t original_addr;
-      this->operator()("", name);
-      this->operator()("", original_addr);
+      this->process(name);
+      this->process(original_addr);
       if (original_addr != 0) {
         val = create_instance_unique<T>(name);
         assets.insert(std::make_pair(original_addr, val.get()));
-        val->binary_io(*this);
+        val->binary_io(nullptr, *this);
       }
     }
   }
 
   // Raw pointers (no ownership)
   template <typename T>
-  typename std::enable_if<std::is_pointer<T>::value, void>::type operator()(
-      const char *,
+  typename std::enable_if<std::is_pointer<T>::value, void>::type process(
       const T &val_) {
     auto &val = get_writable(val_);
     if (writing) {
-      this->operator()("", ptr_to_int(val));
+      this->process(ptr_to_int(val));
       if (val != nullptr) {
         TI_ASSERT_INFO(assets.find(ptr_to_int(val)) != assets.end(),
                        "Cannot find the address with a smart pointer pointing "
@@ -451,7 +489,7 @@ class BinarySerializer : public Serializer {
       }
     } else {
       std::size_t val_ptr = 0;
-      this->operator()("", val_ptr);
+      this->process(val_ptr);
       if (val_ptr != 0) {
         TI_ASSERT(assets.find(val_ptr) != assets.end());
         val = reinterpret_cast<typename std::remove_pointer<T>::type *>(
@@ -460,61 +498,97 @@ class BinarySerializer : public Serializer {
     }
   }
 
+  // enum class
+  template <typename T>
+  typename std::enable_if<std::is_enum_v<T>, void>::type process(const T &val) {
+    using UT = std::underlying_type_t<T>;
+    // https://stackoverflow.com/a/62688905/12003165
+    if constexpr (writing) {
+      this->process(static_cast<UT>(val));
+    } else {
+      auto &wval = get_writable(val);
+      UT &underlying_wval = reinterpret_cast<UT &>(wval);
+      this->process(underlying_wval);
+    }
+  }
+
   // std::vector
   template <typename T>
-  void operator()(const char *, const std::vector<T> &val_) {
+  void process(const std::vector<T> &val_) {
     auto &val = get_writable(val_);
     if (writing) {
-      this->operator()("", val.size());
+      this->process(val.size());
     } else {
       std::size_t n = 0;
-      this->operator()("", n);
+      this->process(n);
       val.resize(n);
     }
     for (std::size_t i = 0; i < val.size(); i++) {
-      this->operator()("", val[i]);
+      this->process(val[i]);
     }
   }
 
   // std::pair
   template <typename T, typename G>
-  void operator()(const char *, const std::pair<T, G> &val) {
-    this->operator()(nullptr, val.first);
-    this->operator()(nullptr, val.second);
+  void process(const std::pair<T, G> &val) {
+    this->process(val.first);
+    this->process(val.second);
   }
 
   // std::map
-  template <typename T, typename G>
-  void operator()(const char *, const std::map<T, G> &val_) {
-    auto &val = get_writable(val_);
-    if (writing) {
-      this->operator()(nullptr, val.size());
-      for (auto iter : val) {
-        T first = iter.first;
-        this->operator()(nullptr, first);
-        this->operator()(nullptr, iter.second);
+  template <typename K, typename V>
+  void process(const std::map<K, V> &val) {
+    handle_associative_container(val);
+  }
+
+  // std::unordered_map
+  template <typename K, typename V>
+  void process(const std::unordered_map<K, V> &val) {
+    handle_associative_container(val);
+  }
+
+  // std::optional
+  template <typename T>
+  void process(const std::optional<T> &val) {
+    if constexpr (writing) {
+      this->process(val.has_value());
+      if (val.has_value()) {
+        this->process(val.value());
       }
     } else {
-      val.clear();
-      std::size_t n = 0;
-      this->operator()(nullptr, n);
-      for (std::size_t i = 0; i < n; i++) {
-        std::pair<T, G> record;
-        this->operator()(nullptr, record);
-        val.insert(record);
+      bool has_value{false};
+      this->process(has_value);
+      auto &wval = get_writable(val);
+      if (!has_value) {
+        wval.reset();
+      } else {
+        T new_val;
+        this->process(new_val);
+        wval = std::move(new_val);
       }
     }
   }
 
-  template <typename T, typename... Args>
-  void operator()(const char *, const T &t, Args &&... rest) {
-    this->operator()(nullptr, t);
-    this->operator()(nullptr, std::forward<Args>(rest)...);
-  }
-
-  template <typename T>
-  void operator()(const T &val) {
-    this->operator()(nullptr, val);
+  template <typename M>
+  void handle_associative_container(const M &val) {
+    if constexpr (writing) {
+      this->process(val.size());
+      for (auto iter : val) {
+        auto first = iter.first;
+        this->process(first);
+        this->process(iter.second);
+      }
+    } else {
+      auto &wval = get_writable(val);
+      wval.clear();
+      std::size_t n = 0;
+      this->process(n);
+      for (std::size_t i = 0; i < n; i++) {
+        typename M::value_type record;
+        this->process(record);
+        wval.insert(record);
+      }
+    }
   }
 };
 
@@ -539,10 +613,195 @@ class TextSerializer : public Serializer {
   static constexpr int indent_width = 2;
   bool first_line;
 
+  template <typename T>
+  inline static constexpr bool is_elementary_type_v =
+      !has_io<T>::value && !has_free_io<T>::value && !std::is_enum_v<T> &&
+      std::is_pod_v<T>;
+
  public:
   TextSerializer() {
     indent = 0;
     first_line = false;
+  }
+
+  template <typename T>
+  static std::string serialize(const char *key, const T &t) {
+    TextSerializer ser;
+    ser(key, t);
+    return ser.data;
+  }
+
+  template <typename T>
+  void operator()(const char *key, const T &t) {
+    this->process(key, t);
+  }
+
+ private:
+  void process(const char *key, const std::string &val) {
+    add_line(std::string(key) + ": " + val);
+  }
+
+  template <typename T, std::size_t n>
+  using is_compact =
+      typename std::integral_constant<bool,
+                                      std::is_arithmetic<T>::value && (n < 7)>;
+
+  // C-array
+  template <typename T, std::size_t n>
+  std::enable_if_t<is_compact<T, n>::value, void> process(
+      const char *key,
+      const TArray<T, n> &val) {
+    std::stringstream ss;
+    ss << "[";
+    for (std::size_t i = 0; i < n; i++) {
+      ss << val[i];
+      if (i != n - 1) {
+        ss << ", ";
+      }
+    }
+    ss << "]";
+    add_line(key, ss.str());
+  }
+
+  // C-array
+  template <typename T, std::size_t n>
+  std::enable_if_t<!is_compact<T, n>::value, void> process(
+      const char *key,
+      const TArray<T, n> &val) {
+    add_line(key, "[");
+    indent++;
+    for (std::size_t i = 0; i < n; i++) {
+      this->process(("[" + std::to_string(i) + "]").c_str(), val[i]);
+    }
+    indent--;
+    add_line("]");
+  }
+
+  // std::array
+  template <typename T, std::size_t n>
+  std::enable_if_t<is_compact<T, n>::value, void> process(
+      const char *key,
+      const StdTArray<T, n> &val) {
+    std::stringstream ss;
+    ss << "[";
+    for (std::size_t i = 0; i < n; i++) {
+      ss << val[i];
+      if (i != n - 1) {
+        ss << ", ";
+      }
+    }
+    ss << "]";
+    add_line(key, ss.str());
+  }
+
+  // std::array
+  template <typename T, std::size_t n>
+  std::enable_if_t<!is_compact<T, n>::value, void> process(
+      const char *key,
+      const StdTArray<T, n> &val) {
+    add_line(key, "[");
+    indent++;
+    for (std::size_t i = 0; i < n; i++) {
+      this->process(("[" + std::to_string(i) + "]").c_str(), val[i]);
+    }
+    indent--;
+    add_line("]");
+  }
+
+  // Elementary data types
+  template <typename T>
+  std::enable_if_t<is_elementary_type_v<T>, void> process(const char *key,
+                                                          const T &val) {
+    static_assert(!has_io<T>::value, "");
+    std::stringstream ss;
+    ss << std::boolalpha << val;
+    add_line(key, ss.str());
+  }
+
+  template <typename T>
+  std::enable_if_t<has_io<T>::value, void> process(const char *key,
+                                                   const T &val) {
+    add_line(key, "{");
+    indent++;
+    val.io(*this);
+    indent--;
+    add_line("}");
+  }
+
+  template <typename T>
+  std::enable_if_t<has_free_io<T>::value, void> process(const char *key,
+                                                        const T &val) {
+    add_line(key, "{");
+    indent++;
+    IO<typename type::remove_cvref_t<T>, decltype(*this)>()(*this, val);
+    indent--;
+    add_line("}");
+  }
+
+  template <typename T>
+  std::enable_if_t<std::is_enum_v<T>, void> process(const char *key,
+                                                    const T &val) {
+    using UT = std::underlying_type_t<T>;
+    this->process(key, static_cast<UT>(val));
+  }
+
+  template <typename T>
+  void process(const char *key, const std::vector<T> &val) {
+    add_line(key, "[");
+    indent++;
+    for (std::size_t i = 0; i < val.size(); i++) {
+      this->process(("[" + std::to_string(i) + "]").c_str(), val[i]);
+    }
+    indent--;
+    add_line("]");
+  }
+
+  template <typename T, typename G>
+  void process(const char *key, const std::pair<T, G> &val) {
+    add_line(key, "(");
+    indent++;
+    this->process("first", val.first);
+    this->process("second", val.second);
+    indent--;
+    add_line(")");
+  }
+
+  // std::map
+  template <typename K, typename V>
+  void process(const char *key, const std::map<K, V> &val) {
+    handle_associative_container(key, val);
+  }
+
+  // std::unordered_map
+  template <typename K, typename V>
+  void process(const char *key, const std::unordered_map<K, V> &val) {
+    handle_associative_container(key, val);
+  }
+
+  // std::optional
+  template <typename T>
+  void process(const char *key, const std::optional<T> &val) {
+    add_line(key, "{");
+    indent++;
+    this->process("has_value", val.has_value());
+    if (val.has_value()) {
+      this->process("value", val.value());
+    }
+    indent--;
+    add_line("}");
+  }
+
+  template <typename M>
+  void handle_associative_container(const char *key, const M &val) {
+    add_line(key, "{");
+    indent++;
+    for (auto iter : val) {
+      auto first = iter.first;
+      this->process("key", first);
+      this->process("value", iter.second);
+    }
+    indent--;
+    add_line("}");
   }
 
   void add_line(const std::string &str) {
@@ -556,162 +815,6 @@ class TextSerializer : public Serializer {
 
   void add_line(const std::string &key, const std::string &value) {
     add_line(key + ": " + value);
-  }
-
-  template <typename T>
-  static std::string serialize(const char *key, const T &t) {
-    TextSerializer ser;
-    ser(key, t);
-    return ser.data;
-  }
-
-  void operator()(const char *key, const std::string &val) {
-    add_line(std::string(key) + ": " + val);
-  }
-
-  template <typename T, std::size_t n>
-  using is_compact =
-      typename std::integral_constant<bool,
-                                      std::is_arithmetic<T>::value && (n < 7)>;
-
-  // C-array
-  template <typename T, std::size_t n>
-  typename std::enable_if<is_compact<T, n>::value, void>::type operator()(
-      const char *key,
-      const TArray<T, n> &val) {
-    std::stringstream ss;
-    ss << "[";
-    for (std::size_t i = 0; i < n; i++) {
-      ss << val[i];
-      if (i != n - 1) {
-        ss << ", ";
-      }
-    }
-    ss << "]";
-    add_line(key, ss.str());
-  }
-
-  // C-array
-  template <typename T, std::size_t n>
-  typename std::enable_if<!is_compact<T, n>::value, void>::type operator()(
-      const char *key,
-      const TArray<T, n> &val) {
-    add_line(key, "[");
-    indent++;
-    for (std::size_t i = 0; i < n; i++) {
-      this->operator()(("[" + std::to_string(i) + "]").c_str(), val[i]);
-    }
-    indent--;
-    add_line("]");
-  }
-
-  // std::array
-  template <typename T, std::size_t n>
-  typename std::enable_if<is_compact<T, n>::value, void>::type operator()(
-      const char *key,
-      const StdTArray<T, n> &val) {
-    std::stringstream ss;
-    ss << "[";
-    for (std::size_t i = 0; i < n; i++) {
-      ss << val[i];
-      if (i != n - 1) {
-        ss << ", ";
-      }
-    }
-    ss << "]";
-    add_line(key, ss.str());
-  }
-
-  // std::array
-  template <typename T, std::size_t n>
-  typename std::enable_if<!is_compact<T, n>::value, void>::type operator()(
-      const char *key,
-      const StdTArray<T, n> &val) {
-    add_line(key, "[");
-    indent++;
-    for (std::size_t i = 0; i < n; i++) {
-      this->operator()(("[" + std::to_string(i) + "]").c_str(), val[i]);
-    }
-    indent--;
-    add_line("]");
-  }
-
-  // Elementary data types
-  template <typename T>
-  typename std::enable_if<!has_io<T>::value && !has_free_io<T>::value,
-                          void>::type
-  operator()(const char *key, const T &val) {
-    static_assert(!has_io<T>::value, "");
-    std::stringstream ss;
-    ss << std::boolalpha << val;
-    add_line(key, ss.str());
-  }
-
-  template <typename T>
-  typename std::enable_if<has_io<T>::value, void>::type operator()(
-      const char *key,
-      const T &val) {
-    add_line(key, "{");
-    indent++;
-    val.io(*this);
-    indent--;
-    add_line("}");
-  }
-
-  template <typename T>
-  typename std::enable_if<has_free_io<T>::value, void>::type operator()(
-      const char *key,
-      const T &val) {
-    add_line(key, "{");
-    indent++;
-    IO<typename type::remove_cvref_t<T>, decltype(*this)>()(*this, val);
-    indent--;
-    add_line("}");
-  }
-
-  template <typename T>
-  void operator()(const char *key, const std::vector<T> &val) {
-    add_line(key, "[");
-    indent++;
-    for (std::size_t i = 0; i < val.size(); i++) {
-      this->operator()(("[" + std::to_string(i) + "]").c_str(), val[i]);
-    }
-    indent--;
-    add_line("]");
-  }
-
-  template <typename T, typename G>
-  void operator()(const char *key, const std::pair<T, G> &val) {
-    add_line(key, "(");
-    indent++;
-    this->operator()("[0]", val.first);
-    this->operator()("[1]", val.second);
-    indent--;
-    add_line(")");
-  }
-
-  template <typename T, typename G>
-  void operator()(const char *key, const std::map<T, G> &val) {
-    add_line(key, "{");
-    indent++;
-    for (auto iter : val) {
-      T first = iter.first;
-      this->operator()("key", first);
-      this->operator()("value", iter.second);
-    }
-    indent--;
-    add_line("}");
-  }
-
-  template <typename T, typename... Args>
-  void operator()(const char *key_, const T &t, Args &&... rest) {
-    std::string key(key_);
-    size_t pos = key.find(",");
-    std::string first_name = key.substr(0, pos);
-    std::string rest_names =
-        key.substr(pos + 2, int(key.size()) - (int)pos - 2);
-    this->operator()(first_name.c_str(), t);
-    this->operator()(rest_names.c_str(), std::forward<Args>(rest)...);
   }
 };
 

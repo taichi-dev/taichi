@@ -86,21 +86,22 @@ void convert_to_range_for(OffloadedStmt *offloaded) {
     }
   }
 
-  for (int i = 0; i < num_loop_vars; i++) {
-    auto alloca = body_header.push_back<AllocaStmt>(PrimitiveType::i32);
-    body_header.push_back<LocalStoreStmt>(alloca, new_loop_vars[i]);
-    irpass::replace_statements_with(
-        body.get(),
-        [&](Stmt *s) {
-          if (auto loop_index = s->cast<LoopIndexStmt>()) {
-            return loop_index->loop == offloaded &&
-                   loop_index->index ==
-                       snodes.back()->physical_index_position[i];
-          }
+  irpass::replace_statements(
+      body.get(), /*filter=*/
+      [&](Stmt *s) {
+        if (auto loop_index = s->cast<LoopIndexStmt>()) {
+          return loop_index->loop == offloaded;
+        } else {
           return false;
-        },
-        [&]() { return Stmt::make<LocalLoadStmt>(LocalAddress(alloca, 0)); });
-  }
+        }
+      },
+      /*finder=*/
+      [&](Stmt *s) {
+        auto index = std::find(physical_indices.begin(), physical_indices.end(),
+                               s->as<LoopIndexStmt>()->index);
+        TI_ASSERT(index != physical_indices.end());
+        return new_loop_vars[index - physical_indices.begin()];
+      });
 
   if (has_test) {
     // Create an If statement

@@ -15,6 +15,8 @@
 #include "taichi/backends/metal/kernel_manager.h"
 #include "taichi/backends/opengl/opengl_kernel_launcher.h"
 #include "taichi/backends/cc/cc_program.h"
+#include "taichi/program/callable.h"
+#include "taichi/program/function.h"
 #include "taichi/program/kernel.h"
 #include "taichi/program/kernel_profiler.h"
 #include "taichi/program/snode_expr_utils.h"
@@ -57,8 +59,8 @@ TLANG_NAMESPACE_END
 namespace std {
 template <>
 struct hash<taichi::lang::JITEvaluatorId> {
-  std::size_t operator()(taichi::lang::JITEvaluatorId const &id) const
-      noexcept {
+  std::size_t operator()(
+      taichi::lang::JITEvaluatorId const &id) const noexcept {
     return ((std::size_t)id.op | (id.ret.hash() << 8) | (id.lhs.hash() << 16) |
             (id.rhs.hash() << 24) | ((std::size_t)id.is_binary << 31)) ^
            (std::hash<std::thread::id>{}(id.thread_id) << 32);
@@ -81,7 +83,7 @@ class AsyncEngine;
 class Program {
  public:
   using Kernel = taichi::lang::Kernel;
-  Kernel *current_kernel;
+  Callable *current_callable;
   std::unique_ptr<SNode> snode_root;  // pointer to the data structure.
   void *llvm_runtime;
   CompileConfig config;
@@ -100,6 +102,8 @@ class Program {
   std::unique_ptr<AsyncEngine> async_engine;
 
   std::vector<std::unique_ptr<Kernel>> kernels;
+  std::vector<std::unique_ptr<Function>> functions;
+  std::unordered_map<FunctionKey, Function *> function_map;
 
   std::unique_ptr<KernelProfilerBase> profiler;
 
@@ -182,12 +186,14 @@ class Program {
     return *kernels.back();
   }
 
-  void start_function_definition(Kernel *func) {
-    current_kernel = func;
+  void start_kernel_definition(Kernel *kernel) {
+    current_callable = kernel;
   }
 
-  void end_function_definition() {
+  void end_kernel_definition() {
   }
+
+  Function *create_function(const FunctionKey &func_key);
 
   // TODO: This function is doing two things: 1) compiling CHI IR, and 2)
   // offloading them to each backend. We should probably separate the logic?
@@ -203,9 +209,16 @@ class Program {
 
   void check_runtime_error();
 
-  inline Kernel &get_current_kernel() {
-    TI_ASSERT(current_kernel);
-    return *current_kernel;
+  // TODO(#2193): Remove get_current_kernel() and get_current_function()?
+  inline Kernel &get_current_kernel() const {
+    auto *kernel = dynamic_cast<Kernel *>(current_callable);
+    TI_ASSERT(kernel);
+    return *kernel;
+  }
+
+  inline Function *get_current_function() const {
+    auto *func = dynamic_cast<Function *>(current_callable);
+    return func;
   }
 
   TaichiLLVMContext *get_llvm_context(Arch arch) {
@@ -249,7 +262,7 @@ class Program {
     snode_root->print();
   }
 
-  int default_block_dim() const;
+  static int default_block_dim(const CompileConfig &config);
 
   void print_list_manager_info(void *list_manager);
 

@@ -91,6 +91,7 @@ inline bool is_integral(DataType dt) {
 }
 
 inline bool is_signed(DataType dt) {
+  // Shall we return false if is_integral returns false?
   TI_ASSERT(is_integral(dt));
   if (auto t = dt->cast<CustomIntType>())
     return t->get_is_signed();

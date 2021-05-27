@@ -1,11 +1,10 @@
 print("* Taichi Installer")
 
 import os
-import sys
 import platform
 import subprocess
+import sys
 from os import environ
-import platform
 
 print(platform.architecture())
 build_type = 'default'

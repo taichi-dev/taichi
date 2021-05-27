@@ -1,4 +1,5 @@
 {
+  "ci"              : "CI/CD workflow",
   "cpu"             : "CPU backends",
   "cuda"            : "CUDA backend",
   "doc"             : "Documentation",

@@ -60,23 +60,6 @@ inline void declare_var(Expr &a) {
       PrimitiveType::unknown));
 }
 
-#define Declare(x) auto x = Expr(std::make_shared<IdExpression>(#x));
-#define DeclareNamed(x, name) \
-  auto x = Expr(std::make_shared<IdExpression>(name));
-
-#define NamedScalar(x, name, dt)   \
-  DeclareNamed(x##_global, #name); \
-  auto x = global_new(x##_global, PrimitiveType::dt);
-
-#define Global(x, dt)  \
-  Declare(x##_global); \
-  auto x = global_new(x##_global, PrimitiveType::dt);
-
-#define AmbientGlobal(x, dt, ambient)                 \
-  Declare(x##_global);                                \
-  auto x = global_new(x##_global, PrimitiveType::dt); \
-  set_ambient(x, ambient);
-
 inline void set_ambient(Expr expr_, float32 val) {
   auto expr = expr_.cast<GlobalVariableExpression>();
   expr->ambient_value = TypedConstant(val);

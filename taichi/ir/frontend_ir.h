@@ -7,10 +7,21 @@
 #include "taichi/ir/stmt_op_types.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/expression.h"
+#include "taichi/program/function.h"
 
 TLANG_NAMESPACE_BEGIN
 
 // Frontend Statements
+
+class FrontendExprStmt : public Stmt {
+ public:
+  Expr val;
+
+  FrontendExprStmt(const Expr &val) : val(val) {
+  }
+
+  TI_DEFINE_ACCEPT
+};
 
 class FrontendAllocaStmt : public Stmt {
  public:
@@ -123,7 +134,7 @@ class FrontendForStmt : public Stmt {
   std::vector<Identifier> loop_var_id;
   int vectorize;
   int bit_vectorize;
-  int parallelize;
+  int num_cpu_threads;
   bool strictly_serialized;
   MemoryAccessOptions mem_access_opt;
   int block_dim;
@@ -200,11 +211,11 @@ class FrontendWhileStmt : public Stmt {
   TI_DEFINE_ACCEPT
 };
 
-class FrontendKernelReturnStmt : public Stmt {
+class FrontendReturnStmt : public Stmt {
  public:
   Expr value;
 
-  FrontendKernelReturnStmt(const Expr &value) : value(value) {
+  FrontendReturnStmt(const Expr &value) : value(value) {
   }
 
   bool is_container_statement() const override {
@@ -571,6 +582,23 @@ class ExternalTensorShapeAlongAxisExpression : public Expression {
 
   ExternalTensorShapeAlongAxisExpression(const Expr &ptr, int axis)
       : ptr(ptr), axis(axis) {
+  }
+
+  void flatten(FlattenContext *ctx) override;
+};
+
+class FuncCallExpression : public Expression {
+ public:
+  Function *func;
+  ExprGroup args;
+
+  std::string serialize() override {
+    return fmt::format("func_call(\"{}\", {})", func->func_key.get_full_name(),
+                       args.serialize());
+  }
+
+  FuncCallExpression(Function *func, const ExprGroup &args)
+      : func(func), args(args) {
   }
 
   void flatten(FlattenContext *ctx) override;

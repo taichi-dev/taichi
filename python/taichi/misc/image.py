@@ -1,4 +1,6 @@
 import numpy as np
+from taichi.core import ti_core as _ti_core
+
 import taichi as ti
 
 
@@ -39,10 +41,10 @@ def imdisplay(img):
     except:
         ti.imshow(img)
     else:
-        import PIL.Image
         from io import BytesIO
+
         import IPython.display
-        import numpy as np
+        import PIL.Image
         img = cook_image_to_bytes(img)
         with BytesIO() as f:
             PIL.Image.fromarray(img).save(f, 'png')
@@ -74,18 +76,18 @@ def imwrite(img, filename):
     img = np.ascontiguousarray(img)
     ptr = img.ctypes.data
     resy, resx, comp = img.shape
-    ti.core.imwrite(filename, ptr, resx, resy, comp)
+    _ti_core.imwrite(filename, ptr, resx, resy, comp)
 
 
 def imread(filename, channels=0):
     """
     Load image from a specific file.
     """
-    ptr, resx, resy, comp = ti.core.imread(filename, channels)
+    ptr, resx, resy, comp = _ti_core.imread(filename, channels)
     img = np.ndarray(shape=(resy, resx, comp), dtype=np.uint8)
     img = np.ascontiguousarray(img)
     # TODO(archibate): Figure out how np.ndarray constructor works and replace:
-    ti.core.C_memcpy(img.ctypes.data, ptr, resx * resy * comp)
+    _ti_core.C_memcpy(img.ctypes.data, ptr, resx * resy * comp)
     # Discussion: https://github.com/taichi-dev/taichi/issues/802
     return img.swapaxes(0, 1)[:, ::-1, :]
 

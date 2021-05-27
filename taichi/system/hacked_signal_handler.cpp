@@ -1,6 +1,5 @@
 #include <csignal>
 
-#include "taichi/python/export.h"
 #include "taichi/common/logging.h"
 #include "taichi/system/threading.h"
 #include "taichi/system/traceback.h"
@@ -44,17 +43,6 @@ void signal_handler(int signo) {
 class HackedSignalRegister {
  public:
   explicit HackedSignalRegister() {
-    py::register_exception_translator([](std::exception_ptr p) {
-      try {
-        if (p)
-          std::rethrow_exception(p);
-      } catch (const std::string &e) {
-        PyErr_SetString(PyExc_RuntimeError, e.c_str());
-      } catch (const std::exception &e) {
-        PyErr_SetString(PyExc_RuntimeError, e.what());
-      }
-    });
-
 #define TI_REGISTER_SIGNAL_HANDLER(name, handler)                   \
   {                                                                 \
     if (std::signal(name, handler) == SIG_ERR)                      \

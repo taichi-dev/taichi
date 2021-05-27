@@ -209,7 +209,7 @@ class LowerAST : public IRVisitor {
       if (is_good_range_for) {
         auto &&new_for = std::make_unique<RangeForStmt>(
             begin->stmt, end->stmt, std::move(stmt->body), stmt->vectorize,
-            stmt->bit_vectorize, stmt->parallelize, stmt->block_dim,
+            stmt->bit_vectorize, stmt->num_cpu_threads, stmt->block_dim,
             stmt->strictly_serialized);
         new_for->body->insert(std::make_unique<LoopIndexStmt>(new_for.get(), 0),
                               0);
@@ -293,7 +293,7 @@ class LowerAST : public IRVisitor {
 
       auto &&new_for = std::make_unique<StructForStmt>(
           snode, std::move(stmt->body), stmt->vectorize, stmt->bit_vectorize,
-          stmt->parallelize, stmt->block_dim);
+          stmt->num_cpu_threads, stmt->block_dim);
       new_for->index_offsets = offsets;
       VecStatement new_statements;
       for (int i = 0; i < (int)stmt->loop_var_id.size(); i++) {
@@ -330,11 +330,11 @@ class LowerAST : public IRVisitor {
     capturing_loop = old_capturing_loop;
   }
 
-  void visit(FrontendKernelReturnStmt *stmt) override {
+  void visit(FrontendReturnStmt *stmt) override {
     auto expr = stmt->value;
     auto fctx = make_flatten_ctx();
     expr->flatten(&fctx);
-    fctx.push_back<KernelReturnStmt>(fctx.back_stmt());
+    fctx.push_back<ReturnStmt>(fctx.back_stmt());
     stmt->parent->replace_with(stmt, std::move(fctx.stmts));
     throw IRModified();
   }
@@ -426,6 +426,13 @@ class LowerAST : public IRVisitor {
       args_stmts[i] = fargs[i]->stmt;
     }
     fctx.push_back<AssertStmt>(val_stmt, stmt->text, args_stmts);
+    stmt->parent->replace_with(stmt, std::move(fctx.stmts));
+    throw IRModified();
+  }
+
+  void visit(FrontendExprStmt *stmt) override {
+    auto fctx = make_flatten_ctx();
+    stmt->val->flatten(&fctx);
     stmt->parent->replace_with(stmt, std::move(fctx.stmts));
     throw IRModified();
   }

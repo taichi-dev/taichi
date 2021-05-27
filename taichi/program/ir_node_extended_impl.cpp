@@ -15,7 +15,7 @@ Kernel *IRNode::get_kernel() const {
 }
 
 CompileConfig &IRNode::get_config() const {
-  return get_kernel()->program.config;
+  return get_kernel()->program->config;
 }
 
 }  // namespace lang

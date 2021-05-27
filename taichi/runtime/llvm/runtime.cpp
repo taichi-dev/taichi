@@ -514,7 +514,7 @@ struct LLVMRuntime {
   assert_failed_type assert_failed;
   host_printf_type host_printf;
   host_vsnprintf_type host_vsnprintf;
-  Ptr prog;
+  Ptr program;
   Ptr root;
   size_t root_mem_size;
   Ptr thread_pool;
@@ -762,7 +762,7 @@ Ptr LLVMRuntime::allocate_aligned(std::size_t size, std::size_t alignment) {
   if (preallocated)
     return allocate_from_buffer(size, alignment);
   else
-    return (Ptr)vm_allocator(prog, size, alignment);
+    return (Ptr)vm_allocator(program, size, alignment);
 }
 
 Ptr LLVMRuntime::allocate_from_buffer(std::size_t size, std::size_t alignment) {
@@ -828,11 +828,12 @@ void runtime_get_mem_req_queue(LLVMRuntime *runtime) {
 
 void runtime_initialize(
     Ptr result_buffer,
-    Ptr prog,
+    Ptr program,
     std::size_t root_size,
     std::size_t
         preallocated_size,  // Non-zero means use the preallocated buffer
     Ptr preallocated_buffer,
+    i32 starting_rand_state,
     i32 num_rand_states,
     void *_vm_allocator,
     void *_host_printf,
@@ -848,7 +849,7 @@ void runtime_initialize(
     preallocated_buffer +=
         taichi::iroundup(sizeof(LLVMRuntime), taichi_page_size);
   } else {
-    runtime = (LLVMRuntime *)vm_allocator(prog, sizeof(LLVMRuntime), 128);
+    runtime = (LLVMRuntime *)vm_allocator(program, sizeof(LLVMRuntime), 128);
   }
 
   runtime->root_mem_size =
@@ -863,7 +864,7 @@ void runtime_initialize(
   runtime->vm_allocator = vm_allocator;
   runtime->host_printf = host_printf;
   runtime->host_vsnprintf = host_vsnprintf;
-  runtime->prog = prog;
+  runtime->program = program;
 
   runtime->total_requested_memory = 0;
 
@@ -885,7 +886,7 @@ void runtime_initialize(
   runtime->rand_states = (RandState *)runtime->allocate_aligned(
       sizeof(RandState) * runtime->num_rand_states, taichi_page_size);
   for (int i = 0; i < runtime->num_rand_states; i++)
-    initialize_rand_state(&runtime->rand_states[i], i);
+    initialize_rand_state(&runtime->rand_states[i], starting_rand_state + i);
 }
 
 void runtime_initialize2(LLVMRuntime *runtime, int root_id, int num_snodes) {
@@ -1489,7 +1490,7 @@ f32 rand_f32(Context *context) {
 }
 
 f64 rand_f64(Context *context) {
-  return rand_f32(context);
+  return rand_u64(context) * (1.0 / 18446744073709551616.0);
 }
 
 i32 rand_i32(Context *context) {
@@ -1598,6 +1599,12 @@ void stack_push(Ptr stack, size_t max_num_elements, std::size_t element_size) {
   }                                                                           \
                                                                               \
   void set_partial_bits_b##N(u##N *ptr, u32 offset, u32 bits, u##N value) {   \
+    u##N mask = ((~(u##N)0) << (N - bits)) >> (N - offset - bits);            \
+    set_mask_b##N(ptr, mask, value << offset);                                \
+  }                                                                           \
+                                                                              \
+  void atomic_set_partial_bits_b##N(u##N *ptr, u32 offset, u32 bits,          \
+                                    u##N value) {                             \
     u##N mask = ((~(u##N)0) << (N - bits)) >> (N - offset - bits);            \
     atomic_set_mask_b##N(ptr, mask, value << offset);                         \
   }                                                                           \

@@ -1,5 +1,6 @@
-import setuptools
 import glob
+
+import setuptools
 
 classifiers = [
     'Development Status :: 2 - Pre-Alpha',
@@ -12,6 +13,7 @@ classifiers = [
     'Programming Language :: Python :: 3.6',
     'Programming Language :: Python :: 3.7',
     'Programming Language :: Python :: 3.8',
+    'Programming Language :: Python :: 3.9',
 ]
 
 data_files = glob.glob('python/lib/*')

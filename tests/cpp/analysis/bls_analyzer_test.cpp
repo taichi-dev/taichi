@@ -66,6 +66,8 @@ TEST_F(BLSAnalyzerTest, Basic) {
   builder_.create_global_load(glb_ptr);
 
   BLSAnalyzer bls(for_stmt_.get(), &pads_);
+  bool analysis_ok = bls.run();
+  ASSERT_TRUE(analysis_ok);
   pads_.finalize();
   const auto &pad = pads_.get(child_snode_);
   EXPECT_EQ(pad.bounds.size(), 2);

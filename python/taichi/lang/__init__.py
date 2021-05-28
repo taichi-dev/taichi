@@ -2,7 +2,6 @@ import functools
 import os
 from copy import deepcopy as _deepcopy
 
-import taichi as ti
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl
 from taichi.lang.impl import *
@@ -19,6 +18,8 @@ from taichi.lang.type_factory_impl import type_factory
 from taichi.lang.util import (has_pytorch, is_taichi_class, python_scope,
                               taichi_scope, to_numpy_type, to_pytorch_type,
                               to_taichi_type)
+
+import taichi as ti
 
 # TODO(#2223): Remove
 core = _ti_core

@@ -165,6 +165,7 @@ Frequently used tags:
 - ``[Mac]``: Mac OS X platform;
 - ``[Windows]``: Windows platform;
 - ``[Perf]``: performance improvements;
+- ``[CI]``: CI/CD workflow;
 - ``[Misc]``: something that doesn't belong to any category, such as version bump, reformatting;
 - ``[Bug]``: bug fixes;
 - Check out more tags in `misc/prtags.json <https://github.com/taichi-dev/taichi/blob/master/misc/prtags.json>`_.

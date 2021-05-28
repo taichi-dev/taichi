@@ -5,6 +5,7 @@ import inspect
 import re
 
 import numpy as np
+import taichi as ti
 from taichi.core import primitive_types
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl, util
@@ -14,8 +15,6 @@ from taichi.lang.kernel_arguments import ext_arr, template
 from taichi.lang.shell import _shell_pop_print, oinspect
 from taichi.lang.transformer import ASTTransformer
 from taichi.misc.util import obsolete
-
-import taichi as ti
 
 
 def _remove_indent(lines):
@@ -90,8 +89,8 @@ class Func:
         for i in range(len(self.argument_annotations)):
             if isinstance(self.argument_annotations[i], template):
                 self.template_slot_locations.append(i)
-        self.mapper = KernelTemplateMapper(self.argument_annotations,
-                                           self.template_slot_locations)
+        self.mapper = TaichiCallableTemplateMapper(
+            self.argument_annotations, self.template_slot_locations)
         self.taichi_functions = {}  # The |Function| class in C++
 
     def __call__(self, *args):
@@ -207,7 +206,7 @@ class Func:
             self.argument_names.append(param.name)
 
 
-class KernelTemplateMapper:
+class TaichiCallableTemplateMapper:
     def __init__(self, annotations, template_slot_locations):
         self.annotations = annotations
         # Make sure extractors's size is the same as the number of args
@@ -286,10 +285,11 @@ class Kernel:
         for i in range(len(self.argument_annotations)):
             if isinstance(self.argument_annotations[i], template):
                 self.template_slot_locations.append(i)
-        self.mapper = KernelTemplateMapper(self.argument_annotations,
-                                           self.template_slot_locations)
+        self.mapper = TaichiCallableTemplateMapper(
+            self.argument_annotations, self.template_slot_locations)
         impl.get_runtime().kernels.append(self)
         self.reset()
+        self.kernel_cpp = None
 
     def reset(self):
         self.runtime = impl.get_runtime()
@@ -419,6 +419,7 @@ class Kernel:
             self.runtime.current_kernel = None
 
         taichi_kernel = taichi_kernel.define(taichi_ast_generator)
+        self.kernel_cpp = taichi_kernel
 
         assert key not in self.compiled_functions
         self.compiled_functions[key] = self.get_function_body(taichi_kernel)
@@ -545,15 +546,19 @@ class Kernel:
             has_array = isinstance(v, torch.Tensor)
         return has_array and needs_array
 
+    def ensure_compiled(self, *args):
+        instance_id, arg_features = self.mapper.lookup(args)
+        key = (self.func, instance_id)
+        self.materialize(key=key, args=args, arg_features=arg_features)
+        return key
+
     # For small kernels (< 3us), the performance can be pretty sensitive to overhead in __call__
     # Thus this part needs to be fast. (i.e. < 3us on a 4 GHz x64 CPU)
     @_shell_pop_print
     def __call__(self, *args, **kwargs):
         _taichi_skip_traceback = 1
         assert len(kwargs) == 0, 'kwargs not supported for Taichi kernels'
-        instance_id, arg_features = self.mapper.lookup(args)
-        key = (self.func, instance_id)
-        self.materialize(key=key, args=args, arg_features=arg_features)
+        key = self.ensure_compiled(*args)
         return self.compiled_functions[key](*args)
 
 

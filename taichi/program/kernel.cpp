@@ -1,4 +1,4 @@
-#include "kernel.h"
+#include "taichi/program/kernel.h"
 
 #include "taichi/backends/cuda/cuda_driver.h"
 #include "taichi/codegen/codegen.h"
@@ -15,44 +15,28 @@ TLANG_NAMESPACE_BEGIN
 
 class Function;
 
-namespace {
-class CurrentKernelGuard {
-  std::variant<Kernel *, Function *> old_kernel_or_function;
-  Program &program;
-
- public:
-  CurrentKernelGuard(Program &program_, Kernel *kernel) : program(program_) {
-    old_kernel_or_function = program.current_kernel_or_function;
-    program.current_kernel_or_function = kernel;
-  }
-
-  ~CurrentKernelGuard() {
-    program.current_kernel_or_function = old_kernel_or_function;
-  }
-};
-}  // namespace
-
 Kernel::Kernel(Program &program,
                const std::function<void()> &func,
                const std::string &primal_name,
                bool grad)
-    : program(program), lowered(false), grad(grad) {
+    : grad(grad), lowered_(false) {
+  this->program = &program;
   // Do not corrupt the context calling this kernel here -- maybe unnecessary
   auto backup_context = std::move(taichi::lang::context);
 
   program.initialize_device_llvm_context();
   is_accessor = false;
   is_evaluator = false;
-  compiled = nullptr;
+  compiled_ = nullptr;
   taichi::lang::context = std::make_unique<FrontendContext>();
   ir = taichi::lang::context->get_root();
-  ir_is_ast = true;
+  ir_is_ast_ = true;
 
   {
     // Note: this is NOT a mutex. If we want to call Kernel::Kernel()
     // concurrently, we need to lock this block of code together with
     // taichi::lang::context with a mutex.
-    CurrentKernelGuard _(program, this);
+    CurrentCallableGuard _(this->program, this);
     program.start_kernel_definition(this);
     func();
     program.end_kernel_definition();
@@ -77,11 +61,13 @@ Kernel::Kernel(Program &program,
                std::unique_ptr<IRNode> &&ir,
                const std::string &primal_name,
                bool grad)
-    : ir(std::move(ir)), program(program), lowered(false), grad(grad) {
+    : grad(grad), lowered_(false) {
+  this->ir = std::move(ir);
+  this->program = &program;
   is_accessor = false;
   is_evaluator = false;
-  compiled = nullptr;
-  ir_is_ast = false;  // CHI IR
+  compiled_ = nullptr;
+  ir_is_ast_ = false;  // CHI IR
   this->ir->as<Block>()->kernel = this;
 
   arch = program.config.arch;
@@ -97,45 +83,43 @@ Kernel::Kernel(Program &program,
 }
 
 void Kernel::compile() {
-  CurrentKernelGuard _(program, this);
-  compiled = program.compile(*this);
+  CurrentCallableGuard _(program, this);
+  compiled_ = program->compile(*this);
 }
 
-void Kernel::lower(bool to_executable) {  // TODO: is a "Lowerer" class
-                                          // necessary for each backend?
-  TI_ASSERT(!lowered);
-  if (arch_is_cpu(arch) || arch == Arch::cuda || arch == Arch::metal) {
-    CurrentKernelGuard _(program, this);
-    auto config = program.config;
-    bool verbose = config.print_ir;
-    if ((is_accessor && !config.print_accessor_ir) ||
-        (is_evaluator && !config.print_evaluator_ir))
-      verbose = false;
+void Kernel::lower(bool to_executable) {
+  TI_ASSERT(!lowered_);
+  TI_ASSERT(supports_lowering(arch));
 
-    if (to_executable) {
-      irpass::compile_to_executable(
-          ir.get(), config, this, /*vectorize*/ arch_is_cpu(arch), grad,
-          /*ad_use_stack=*/true, verbose, /*lower_global_access=*/to_executable,
-          /*make_thread_local=*/config.make_thread_local,
-          /*make_block_local=*/
-          is_extension_supported(config.arch, Extension::bls) &&
-              config.make_block_local,
-          /*start_from_ast=*/ir_is_ast);
-    } else {
-      irpass::compile_to_offloads(ir.get(), config, this, verbose,
-                                  /*vectorize=*/arch_is_cpu(arch), grad,
-                                  /*ad_use_stack=*/true,
-                                  /*start_from_ast=*/ir_is_ast);
-    }
+  CurrentCallableGuard _(program, this);
+  auto config = program->config;
+  bool verbose = config.print_ir;
+  if ((is_accessor && !config.print_accessor_ir) ||
+      (is_evaluator && !config.print_evaluator_ir))
+    verbose = false;
+
+  if (to_executable) {
+    irpass::compile_to_executable(
+        ir.get(), config, this, /*vectorize*/ arch_is_cpu(arch), grad,
+        /*ad_use_stack=*/true, verbose, /*lower_global_access=*/to_executable,
+        /*make_thread_local=*/config.make_thread_local,
+        /*make_block_local=*/
+        is_extension_supported(config.arch, Extension::bls) &&
+            config.make_block_local,
+        /*start_from_ast=*/ir_is_ast_);
   } else {
-    TI_NOT_IMPLEMENTED
+    irpass::compile_to_offloads(ir.get(), config, this, verbose,
+                                /*vectorize=*/arch_is_cpu(arch), grad,
+                                /*ad_use_stack=*/true,
+                                /*start_from_ast=*/ir_is_ast_);
   }
-  lowered = true;
+
+  lowered_ = true;
 }
 
 void Kernel::operator()(LaunchContextBuilder &ctx_builder) {
-  if (!program.config.async_mode || this->is_evaluator) {
-    if (!compiled) {
+  if (!program->config.async_mode || this->is_evaluator) {
+    if (!compiled_) {
       compile();
     }
 
@@ -143,21 +127,21 @@ void Kernel::operator()(LaunchContextBuilder &ctx_builder) {
       account_for_offloaded(offloaded->as<OffloadedStmt>());
     }
 
-    compiled(ctx_builder.get_context());
+    compiled_(ctx_builder.get_context());
 
-    program.sync = (program.sync && arch_is_cpu(arch));
+    program->sync = (program->sync && arch_is_cpu(arch));
     // Note that Kernel::arch may be different from program.config.arch
-    if (program.config.debug && (arch_is_cpu(program.config.arch) ||
-                                 program.config.arch == Arch::cuda)) {
-      program.check_runtime_error();
+    if (program->config.debug && (arch_is_cpu(program->config.arch) ||
+                                  program->config.arch == Arch::cuda)) {
+      program->check_runtime_error();
     }
   } else {
-    program.sync = false;
-    program.async_engine->launch(this, ctx_builder.get_context());
+    program->sync = false;
+    program->async_engine->launch(this, ctx_builder.get_context());
     // Note that Kernel::arch may be different from program.config.arch
-    if (program.config.debug && arch_is_cpu(arch) &&
-        arch_is_cpu(program.config.arch)) {
-      program.check_runtime_error();
+    if (program->config.debug && arch_is_cpu(arch) &&
+        arch_is_cpu(program->config.arch)) {
+      program->check_runtime_error();
     }
   }
 }
@@ -285,7 +269,7 @@ void Kernel::LaunchContextBuilder::set_arg_raw(int arg_id, uint64 d) {
 }
 
 Context &Kernel::LaunchContextBuilder::get_context() {
-  ctx_->runtime = static_cast<LLVMRuntime *>(kernel_->program.llvm_runtime);
+  ctx_->runtime = static_cast<LLVMRuntime *>(kernel_->program->llvm_runtime);
   return *ctx_;
 }
 
@@ -344,18 +328,8 @@ int64 Kernel::get_ret_int(int i) {
 }
 
 void Kernel::set_arch(Arch arch) {
-  TI_ASSERT(!compiled);
+  TI_ASSERT(!compiled_);
   this->arch = arch;
-}
-
-int Kernel::insert_arg(DataType dt, bool is_external_array) {
-  args.push_back(Arg{dt->get_compute_type(), is_external_array, /*size=*/0});
-  return args.size() - 1;
-}
-
-int Kernel::insert_ret(DataType dt) {
-  rets.push_back(Ret{dt->get_compute_type()});
-  return rets.size() - 1;
 }
 
 void Kernel::account_for_offloaded(OffloadedStmt *stmt) {
@@ -380,6 +354,15 @@ void Kernel::account_for_offloaded(OffloadedStmt *stmt) {
   } else if (task_type == OffloadedStmt::TaskType::gc) {
     stat.add("launched_tasks_garbage_collect", 1.0);
   }
+}
+
+std::string Kernel::get_name() const {
+  return name;
+}
+
+// static
+bool Kernel::supports_lowering(Arch arch) {
+  return arch_is_cpu(arch) || (arch == Arch::cuda) || (arch == Arch::metal);
 }
 
 TLANG_NAMESPACE_END

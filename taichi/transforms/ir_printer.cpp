@@ -288,7 +288,7 @@ class IRPrinter : public IRVisitor {
       args.push_back(arg->name());
     }
     print("{}{} = call \"{}\", args = {{{}}}", stmt->type_hint(), stmt->name(),
-          stmt->func->func_key.get_full_name(), fmt::join(args, ", "));
+          stmt->func->get_name(), fmt::join(args, ", "));
   }
 
   void visit(FrontendFuncDefStmt *stmt) override {
@@ -388,12 +388,12 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(FrontendReturnStmt *stmt) override {
-    print("{}{} : kernel return {}", stmt->type_hint(), stmt->name(),
+    print("{}{} : return {}", stmt->type_hint(), stmt->name(),
           stmt->value->serialize());
   }
 
   void visit(ReturnStmt *stmt) override {
-    print("{}{} : kernel return {}", stmt->type_hint(), stmt->name(),
+    print("{}{} : return {}", stmt->type_hint(), stmt->name(),
           stmt->value->name());
   }
 

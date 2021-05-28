@@ -67,9 +67,10 @@ class Module:
                 raise RuntimeError('Arg type `ext_arr` not supported yet')
 
             if isinstance(anno, kernel_arguments.Template):
-                name = template_args[kernel.argument_names[i]]
-                injected_args.append(name)
+                value = template_args[kernel.argument_names[i]]
+                injected_args.append(value)
             else:
+                # For primitive types, we can just inject a dummy value.
                 injected_args.append(0)
         kernel.ensure_compiled(*injected_args)
         self._aot_builder.add(name, kernel.kernel_cpp)

@@ -19,19 +19,18 @@ Kernel::Kernel(Program &program,
                const std::function<void()> &func,
                const std::string &primal_name,
                bool grad)
-    : lowered(false), grad(grad) {
+    : grad(grad), lowered_(false) {
   this->program = &program;
-
   // Do not corrupt the context calling this kernel here -- maybe unnecessary
   auto backup_context = std::move(taichi::lang::context);
 
   program.initialize_device_llvm_context();
   is_accessor = false;
   is_evaluator = false;
-  compiled = nullptr;
+  compiled_ = nullptr;
   taichi::lang::context = std::make_unique<FrontendContext>();
   ir = taichi::lang::context->get_root();
-  ir_is_ast = true;
+  ir_is_ast_ = true;
 
   {
     // Note: this is NOT a mutex. If we want to call Kernel::Kernel()
@@ -62,13 +61,13 @@ Kernel::Kernel(Program &program,
                std::unique_ptr<IRNode> &&ir,
                const std::string &primal_name,
                bool grad)
-    : lowered(false), grad(grad) {
+    : grad(grad), lowered_(false) {
   this->ir = std::move(ir);
   this->program = &program;
   is_accessor = false;
   is_evaluator = false;
-  compiled = nullptr;
-  ir_is_ast = false;  // CHI IR
+  compiled_ = nullptr;
+  ir_is_ast_ = false;  // CHI IR
   this->ir->as<Block>()->kernel = this;
 
   arch = program.config.arch;
@@ -85,44 +84,42 @@ Kernel::Kernel(Program &program,
 
 void Kernel::compile() {
   CurrentCallableGuard _(program, this);
-  compiled = program->compile(*this);
+  compiled_ = program->compile(*this);
 }
 
-void Kernel::lower(bool to_executable) {  // TODO: is a "Lowerer" class
-                                          // necessary for each backend?
-  TI_ASSERT(!lowered);
-  if (arch_is_cpu(arch) || arch == Arch::cuda || arch == Arch::metal) {
-    CurrentCallableGuard _(program, this);
-    auto config = program->config;
-    bool verbose = config.print_ir;
-    if ((is_accessor && !config.print_accessor_ir) ||
-        (is_evaluator && !config.print_evaluator_ir))
-      verbose = false;
+void Kernel::lower(bool to_executable) {
+  TI_ASSERT(!lowered_);
+  TI_ASSERT(supports_lowering(arch));
 
-    if (to_executable) {
-      irpass::compile_to_executable(
-          ir.get(), config, this, /*vectorize*/ arch_is_cpu(arch), grad,
-          /*ad_use_stack=*/true, verbose, /*lower_global_access=*/to_executable,
-          /*make_thread_local=*/config.make_thread_local,
-          /*make_block_local=*/
-          is_extension_supported(config.arch, Extension::bls) &&
-              config.make_block_local,
-          /*start_from_ast=*/ir_is_ast);
-    } else {
-      irpass::compile_to_offloads(ir.get(), config, this, verbose,
-                                  /*vectorize=*/arch_is_cpu(arch), grad,
-                                  /*ad_use_stack=*/true,
-                                  /*start_from_ast=*/ir_is_ast);
-    }
+  CurrentCallableGuard _(program, this);
+  auto config = program->config;
+  bool verbose = config.print_ir;
+  if ((is_accessor && !config.print_accessor_ir) ||
+      (is_evaluator && !config.print_evaluator_ir))
+    verbose = false;
+
+  if (to_executable) {
+    irpass::compile_to_executable(
+        ir.get(), config, this, /*vectorize*/ arch_is_cpu(arch), grad,
+        /*ad_use_stack=*/true, verbose, /*lower_global_access=*/to_executable,
+        /*make_thread_local=*/config.make_thread_local,
+        /*make_block_local=*/
+        is_extension_supported(config.arch, Extension::bls) &&
+            config.make_block_local,
+        /*start_from_ast=*/ir_is_ast_);
   } else {
-    TI_NOT_IMPLEMENTED
+    irpass::compile_to_offloads(ir.get(), config, this, verbose,
+                                /*vectorize=*/arch_is_cpu(arch), grad,
+                                /*ad_use_stack=*/true,
+                                /*start_from_ast=*/ir_is_ast_);
   }
-  lowered = true;
+
+  lowered_ = true;
 }
 
 void Kernel::operator()(LaunchContextBuilder &ctx_builder) {
   if (!program->config.async_mode || this->is_evaluator) {
-    if (!compiled) {
+    if (!compiled_) {
       compile();
     }
 
@@ -130,7 +127,7 @@ void Kernel::operator()(LaunchContextBuilder &ctx_builder) {
       account_for_offloaded(offloaded->as<OffloadedStmt>());
     }
 
-    compiled(ctx_builder.get_context());
+    compiled_(ctx_builder.get_context());
 
     program->sync = (program->sync && arch_is_cpu(arch));
     // Note that Kernel::arch may be different from program.config.arch
@@ -331,7 +328,7 @@ int64 Kernel::get_ret_int(int i) {
 }
 
 void Kernel::set_arch(Arch arch) {
-  TI_ASSERT(!compiled);
+  TI_ASSERT(!compiled_);
   this->arch = arch;
 }
 
@@ -361,6 +358,11 @@ void Kernel::account_for_offloaded(OffloadedStmt *stmt) {
 
 std::string Kernel::get_name() const {
   return name;
+}
+
+// static
+bool Kernel::supports_lowering(Arch arch) {
+  return arch_is_cpu(arch) || (arch == Arch::cuda) || (arch == Arch::metal);
 }
 
 TLANG_NAMESPACE_END

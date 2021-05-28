@@ -16,6 +16,7 @@
 #include "taichi/backends/opengl/opengl_kernel_launcher.h"
 #include "taichi/backends/cc/cc_program.h"
 #include "taichi/program/callable.h"
+#include "taichi/program/aot_module_builder.h"
 #include "taichi/program/function.h"
 #include "taichi/program/kernel.h"
 #include "taichi/program/kernel_profiler.h"
@@ -163,8 +164,8 @@ class Program {
     Program *prog;
     bool grad;
 
-    Kernel &def(const std::function<void()> &func) {
-      return prog->kernel(func, name, grad);
+    Kernel *def(const std::function<void()> &func) {
+      return &(prog->kernel(func, name, grad));
     }
   };
 
@@ -297,6 +298,8 @@ class Program {
   inline SNodeRwAccessorsBank &get_snode_rw_accessors_bank() {
     return snode_rw_accessors_bank_;
   }
+
+  std::unique_ptr<AotModuleBuilder> make_aot_module_builder(Arch arch);
 
  private:
   void materialize_snode_expr_attributes();

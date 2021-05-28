@@ -160,7 +160,7 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
 #endif
 
   result_buffer = nullptr;
-  current_kernel_or_function = static_cast<Kernel *>(nullptr);
+  current_callable = nullptr;
   sync = true;
   llvm_runtime = nullptr;
   finalized = false;
@@ -239,8 +239,7 @@ FunctionType Program::compile(Kernel &kernel) {
   auto start_t = Time::get_time();
   TI_AUTO_PROF;
   FunctionType ret = nullptr;
-  if (arch_is_cpu(kernel.arch) || kernel.arch == Arch::cuda ||
-      kernel.arch == Arch::metal) {
+  if (Kernel::supports_lowering(kernel.arch)) {
     kernel.lower();
     ret = compile_to_backend_executable(kernel, /*offloaded=*/nullptr);
   } else if (kernel.arch == Arch::opengl) {
@@ -872,6 +871,10 @@ void Program::materialize_snode_expr_attributes() {
   for (auto &[snode, glb_var] : snode_to_glb_var_exprs_) {
     glb_var->set_attribute("dim", std::to_string(snode->num_active_indices));
   }
+}
+
+std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(Arch arch) {
+  return nullptr;
 }
 
 TLANG_NAMESPACE_END

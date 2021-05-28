@@ -13,7 +13,7 @@
 TLANG_NAMESPACE_BEGIN
 
 KernelCodeGen::KernelCodeGen(Kernel *kernel, IRNode *ir)
-    : prog(&kernel->program), kernel(kernel), ir(ir) {
+    : prog(kernel->program), kernel(kernel), ir(ir) {
   if (ir == nullptr)
     this->ir = kernel->ir.get();
 

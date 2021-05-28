@@ -1,8 +1,11 @@
-import taichi as ti
-import time
 import math
+import time
+
 import numpy as np
-from renderer_utils import ray_aabb_intersection, intersect_sphere, ray_plane_intersect, reflect, refract
+from renderer_utils import (intersect_sphere, ray_aabb_intersection,
+                            ray_plane_intersect, reflect, refract)
+
+import taichi as ti
 
 ti.init(arch=ti.gpu)
 res = (800, 800)

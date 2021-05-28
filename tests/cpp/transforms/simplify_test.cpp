@@ -33,20 +33,20 @@ TEST(Simplify, SimplifyLinearizedWithTrivialInputs) {
   [[maybe_unused]] auto lookup2 = block->push_back<SNodeLookupStmt>(
       root.ch[0].get(), get_child, linearized_zero, true);
 
-  irpass::type_check(block.get(), kernel->program.config);
+  irpass::type_check(block.get(), kernel->program->config);
   EXPECT_EQ(block->size(), 7);
 
   irpass::simplify(block.get(),
-                   kernel->program.config);  // should lower linearized
+                   kernel->program->config);  // should lower linearized
   // EXPECT_EQ(block->size(), 11);  // not required to check size here
 
-  irpass::constant_fold(block.get(), kernel->program.config,
-                        {&kernel->program});
-  irpass::alg_simp(block.get(), kernel->program.config);
+  irpass::constant_fold(block.get(), kernel->program->config,
+                        {kernel->program});
+  irpass::alg_simp(block.get(), kernel->program->config);
   irpass::die(block.get());  // should eliminate consts
-  irpass::simplify(block.get(), kernel->program.config);
+  irpass::simplify(block.get(), kernel->program->config);
   irpass::whole_kernel_cse(block.get());
-  if (kernel->program.config.advanced_optimization) {
+  if (kernel->program->config.advanced_optimization) {
     // get root, const 0, lookup, get child, lookup
     EXPECT_EQ(block->size(), 5);
   }

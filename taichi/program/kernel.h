@@ -4,6 +4,7 @@
 #include "taichi/ir/snode.h"
 #include "taichi/ir/ir.h"
 #include "taichi/program/arch.h"
+#include "taichi/program/callable.h"
 
 #define TI_RUNTIME_HOST
 #include "taichi/program/context.h"
@@ -13,42 +14,15 @@ TLANG_NAMESPACE_BEGIN
 
 class Program;
 
-class Kernel {
+class Kernel : public Callable {
  public:
-  std::unique_ptr<IRNode> ir;
-  bool ir_is_ast;
-  Program &program;
-  FunctionType compiled;
   std::string name;
   std::vector<SNode *> no_activate;
   Arch arch;
-  bool lowered;  // lower inital AST all the way down to a bunch of
-                 // OffloadedStmt for async execution
 
-  struct Arg {
-    DataType dt;
-    bool is_external_array;
-    std::size_t size;
-
-    Arg(DataType dt = PrimitiveType::unknown,
-        bool is_external_array = false,
-        std::size_t size = 0)
-        : dt(dt), is_external_array(is_external_array), size(size) {
-    }
-  };
-
-  struct Ret {
-    DataType dt;
-
-    explicit Ret(DataType dt = PrimitiveType::unknown) : dt(dt) {
-    }
-  };
-
-  std::vector<Arg> args;
-  std::vector<Ret> rets;
-  bool is_accessor;
-  bool is_evaluator;
-  bool grad;
+  bool is_accessor{false};
+  bool is_evaluator{false};
+  bool grad{false};
 
   // TODO: Give "Context" a more specific name.
   class LaunchContextBuilder {
@@ -95,17 +69,23 @@ class Kernel {
          const std::string &name = "",
          bool grad = false);
 
+  bool lowered() const {
+    return lowered_;
+  }
+
   void compile();
 
+  /**
+   * Lowers |ir| to CHI IR level
+   *
+   * @param to_executable: If true, lowers |ir| to a point where the CHI
+   * statements can be directly translated by each backend's codegen.
+   */
   void lower(bool to_executable = true);
 
   void operator()(LaunchContextBuilder &ctx_builder);
 
   LaunchContextBuilder make_launch_context();
-
-  int insert_arg(DataType dt, bool is_external_array);
-
-  int insert_ret(DataType dt);
 
   float64 get_ret_float(int i);
 
@@ -114,6 +94,25 @@ class Kernel {
   void set_arch(Arch arch);
 
   void account_for_offloaded(OffloadedStmt *stmt);
+
+  [[nodiscard]] std::string get_name() const override;
+  /**
+   * Whether the given |arch| is supported in the lower() method.
+   *
+   * @param arch: The arch to check
+   * @return: True if supported.
+   */
+  static bool supports_lowering(Arch arch);
+
+ private:
+  // True if |ir| is a frontend AST. False if it's already offloaded to CHI IR.
+  bool ir_is_ast_{false};
+  // The closure that, if invoked, lauches the backend kernel (shader)
+  FunctionType compiled_{nullptr};
+  // A flag to record whether |ir| has been fully lowered.
+  // lower inital AST all the way down to a bunch of
+  // OffloadedStmt for async execution
+  bool lowered_{false};
 };
 
 TLANG_NAMESPACE_END

@@ -230,7 +230,12 @@ void export_lang(py::module &m) {
              program->async_engine->sfg->benchmark_rebuild_graph();
            })
       .def("synchronize", &Program::synchronize)
-      .def("async_flush", &Program::async_flush);
+      .def("async_flush", &Program::async_flush)
+      .def("make_aot_module_builder", &Program::make_aot_module_builder);
+
+  py::class_<AotModuleBuilder>(m, "AotModuleBuilder")
+      .def("add", &AotModuleBuilder::add)
+      .def("dump", &AotModuleBuilder::dump);
 
   m.def("get_current_program", get_current_program,
         py::return_value_policy::reference);
@@ -379,13 +384,14 @@ void export_lang(py::module &m) {
 
   py::class_<Stmt>(m, "Stmt");
   py::class_<Program::KernelProxy>(m, "KernelProxy")
-      .def("define",
-           [](Program::KernelProxy *ker,
-              const std::function<void()> &func) -> Kernel & {
-             py::gil_scoped_release release;
-             return ker->def(func);
-           },
-           py::return_value_policy::reference);
+      .def(
+          "define",
+          [](Program::KernelProxy *ker,
+             const std::function<void()> &func) -> Kernel * {
+            py::gil_scoped_release release;
+            return ker->def(func);
+          },
+          py::return_value_policy::reference);
 
   m.def("insert_deactivate", [](SNode *snode, const ExprGroup &indices) {
     return Deactivate(snode, indices);
@@ -696,24 +702,12 @@ void export_lang(py::module &m) {
               std::make_unique<FrontendPrintStmt>(contents));
         });
 
-  m.def("decl_arg", [&](DataType dt, bool is_nparray) {
-    if (std::holds_alternative<Kernel *>(
-            get_current_program().current_kernel_or_function)) {
-      return get_current_program().get_current_kernel().insert_arg(dt,
-                                                                   is_nparray);
-    } else {
-      return get_current_program().get_current_function()->insert_arg(
-          dt, is_nparray);
-    }
+  m.def("decl_arg", [&](const DataType &dt, bool is_nparray) {
+    return get_current_program().current_callable->insert_arg(dt, is_nparray);
   });
 
-  m.def("decl_ret", [&](DataType dt) {
-    if (std::holds_alternative<Kernel *>(
-            get_current_program().current_kernel_or_function)) {
-      return get_current_program().get_current_kernel().insert_ret(dt);
-    } else {
-      return get_current_program().get_current_function()->insert_ret(dt);
-    }
+  m.def("decl_ret", [&](const DataType &dt) {
+    return get_current_program().current_callable->insert_ret(dt);
   });
 
   m.def("test_throw", [] {
@@ -736,6 +730,7 @@ void export_lang(py::module &m) {
 
   m.def("insert_snode_access_flag", insert_snode_access_flag);
   m.def("no_activate", [](SNode *snode) {
+    // TODO(#2193): Also apply to @ti.func?
     get_current_program().get_current_kernel().no_activate.push_back(snode);
   });
   m.def("stop_grad",

@@ -150,7 +150,7 @@ void ExecutionQueue::enqueue(const TaskLaunchRecord &ker) {
           // Final lowering
           using namespace irpass;
 
-          auto config = kernel->program.config;
+          auto config = kernel->program->config;
           auto ir = stmt;
           offload_to_executable(
               ir, config, kernel, /*verbose=*/false,
@@ -197,8 +197,9 @@ AsyncEngine::AsyncEngine(Program *program,
 }
 
 void AsyncEngine::launch(Kernel *kernel, Context &context) {
-  if (!kernel->lowered)
+  if (!kernel->lowered()) {
     kernel->lower(/*to_executable=*/false);
+  }
 
   auto block = dynamic_cast<Block *>(kernel->ir.get());
   TI_ASSERT(block);

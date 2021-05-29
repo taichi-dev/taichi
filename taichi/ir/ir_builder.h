@@ -128,6 +128,8 @@ class IRBuilder {
   ConstStmt *get_float32(float32 value);
   ConstStmt *get_float64(float64 value);
 
+  RandStmt *create_rand(DataType value_type);
+
   // Load kernel arguments.
   ArgLoadStmt *create_arg_load(int arg_id, DataType dt, bool is_ptr);
 
@@ -184,6 +186,16 @@ class IRBuilder {
   BinaryOpStmt *create_cmp_ge(Stmt *l, Stmt *r);
   BinaryOpStmt *create_cmp_eq(Stmt *l, Stmt *r);
   BinaryOpStmt *create_cmp_ne(Stmt *l, Stmt *r);
+
+  // Atomic operations.
+  AtomicOpStmt *create_atomic_add(Stmt *l, Stmt *r);
+  AtomicOpStmt *create_atomic_sub(Stmt *l, Stmt *r);
+  AtomicOpStmt *create_atomic_max(Stmt *l, Stmt *r);
+  AtomicOpStmt *create_atomic_min(Stmt *l, Stmt *r);
+  // Atomic bitwise operations.
+  AtomicOpStmt *create_atomic_and(Stmt *l, Stmt *r);
+  AtomicOpStmt *create_atomic_or(Stmt *l, Stmt *r);
+  AtomicOpStmt *create_atomic_xor(Stmt *l, Stmt *r);
 
   // Ternary operations. Returns the result.
   TernaryOpStmt *create_select(Stmt *cond,

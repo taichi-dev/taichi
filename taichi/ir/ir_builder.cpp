@@ -158,6 +158,10 @@ ConstStmt *IRBuilder::get_float64(float64 value) {
           value))));
 }
 
+RandStmt *IRBuilder::create_rand(DataType value_type) {
+  return insert(Stmt::make_typed<RandStmt>(value_type));
+}
+
 ArgLoadStmt *IRBuilder::create_arg_load(int arg_id, DataType dt, bool is_ptr) {
   return insert(Stmt::make_typed<ArgLoadStmt>(arg_id, dt, is_ptr));
 }
@@ -336,6 +340,34 @@ BinaryOpStmt *IRBuilder::create_cmp_eq(Stmt *l, Stmt *r) {
 
 BinaryOpStmt *IRBuilder::create_cmp_ne(Stmt *l, Stmt *r) {
   return insert(Stmt::make_typed<BinaryOpStmt>(BinaryOpType::cmp_ne, l, r));
+}
+
+AtomicOpStmt *IRBuilder::create_atomic_add(Stmt *l, Stmt *r) {
+  return insert(Stmt::make_typed<AtomicOpStmt>(AtomicOpType::add, l, r));
+}
+
+AtomicOpStmt *IRBuilder::create_atomic_sub(Stmt *l, Stmt *r) {
+  return insert(Stmt::make_typed<AtomicOpStmt>(AtomicOpType::sub, l, r));
+}
+
+AtomicOpStmt *IRBuilder::create_atomic_max(Stmt *l, Stmt *r) {
+  return insert(Stmt::make_typed<AtomicOpStmt>(AtomicOpType::max, l, r));
+}
+
+AtomicOpStmt *IRBuilder::create_atomic_min(Stmt *l, Stmt *r) {
+  return insert(Stmt::make_typed<AtomicOpStmt>(AtomicOpType::min, l, r));
+}
+
+AtomicOpStmt *IRBuilder::create_atomic_and(Stmt *l, Stmt *r) {
+  return insert(Stmt::make_typed<AtomicOpStmt>(AtomicOpType::bit_and, l, r));
+}
+
+AtomicOpStmt *IRBuilder::create_atomic_or(Stmt *l, Stmt *r) {
+  return insert(Stmt::make_typed<AtomicOpStmt>(AtomicOpType::bit_or, l, r));
+}
+
+AtomicOpStmt *IRBuilder::create_atomic_xor(Stmt *l, Stmt *r) {
+  return insert(Stmt::make_typed<AtomicOpStmt>(AtomicOpType::bit_xor, l, r));
 }
 
 TernaryOpStmt *IRBuilder::create_select(Stmt *cond,

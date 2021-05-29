@@ -69,13 +69,8 @@ class MakeBlockLocalTest : public ::testing::Test {
         {/*block=*/for_stmt_->body.get(), /*position=*/0});
   }
 
-  int get_block_corner(int loop_index, int axis) const {
-    // TODO(#2327): Once we switch to consecutive indexing, we can simply return
-    // |loop_index| itself: For |struct_for_snode_|, the coefficients
-    // along ti.i and ti.j w.r.t. |pointer_snode_| are just 1.
-    unsigned mask = get_block_size(axis) - 1;
-    mask = ~mask;
-    return (loop_index & mask);
+  int get_block_corner(int loop_index) const {
+    return loop_index;
   }
 
   int get_block_size(int axis) const {
@@ -98,25 +93,30 @@ TEST_F(MakeBlockLocalTest, Basic) {
   initialize(/*pointer_size=*/2, /*block_size=*/4);
 
   // This test has two global loads to |bls_place_snode_|:
-  // * [i, j]
-  // * [i - 1, j - 3]
+  // * [block_size * i, block_size * j]
+  // * [block_size * i - 1, block_size * j - 3]
   //
   // So the block size at ti.i or ti.j is 4, respectively.
   // The BLS pad size at ti.i = (4 + 0 - (-1)) = 5, ti.j = (4 + 0 - (-3)) = 7.
   auto *loop_idx0_ = builder_.get_loop_index(for_stmt_.get(), /*index=*/0);
   auto *loop_idx1_ = builder_.get_loop_index(for_stmt_.get(), /*index=*/1);
-  // x[i, j]
-  auto *glb_ptr =
-      builder_.create_global_ptr(bls_place_snode_,
-                                 /*indices=*/{loop_idx0_, loop_idx1_});
+
+  // x[block_size * i, block_size * j]
+  auto *b0 = builder_.get_int32(/*value=*/get_block_size(0));
+  auto *b1 = builder_.get_int32(/*value=*/get_block_size(1));
+  auto *idx0 = builder_.create_mul(loop_idx0_, b0);
+  auto *idx1 = builder_.create_mul(loop_idx1_, b1);
+  auto *glb_ptr = builder_.create_global_ptr(bls_place_snode_,
+                                             /*indices=*/{idx0, idx1});
   builder_.create_global_load(glb_ptr);
-  // x[i - 1, j - 3]
+
+  // x[block_size * i - 1, block_size * j - 3]
   constexpr int kNeg1 = -1;
   constexpr int kNeg3 = -3;
-  auto *c1 = builder_.get_int32(/*value=*/kNeg1);
-  auto *c3 = builder_.get_int32(/*value=*/kNeg3);
-  auto *idx0 = builder_.create_add(loop_idx0_, c1);
-  auto *idx1 = builder_.create_add(loop_idx1_, c3);
+  auto *c0 = builder_.get_int32(/*value=*/kNeg1);
+  auto *c1 = builder_.get_int32(/*value=*/kNeg3);
+  idx0 = builder_.create_add(idx0, c0);
+  idx1 = builder_.create_add(idx1, c1);
   glb_ptr = builder_.create_global_ptr(bls_place_snode_,
                                        /*indices=*/{idx0, idx1});
   builder_.create_global_load(glb_ptr);
@@ -132,16 +132,16 @@ TEST_F(MakeBlockLocalTest, Basic) {
     for (int idx1 = 0; idx1 < loop_shape_at(1); ++idx1) {
       const int loop_indices_vals[] = {idx0, idx1};
       const int block_corner_vals[] = {
-          get_block_corner(idx0, /*axis=*/0),
-          get_block_corner(idx1, /*axis=*/1),
+          get_block_corner(idx0),
+          get_block_corner(idx1),
       };
       int expected_bls_offset_in_bytes =
-          (loop_indices_vals[0] - block_corner_vals[0] -
+          (get_block_size(0) * (loop_indices_vals[0] - block_corner_vals[0]) -
            /*bls_bounds[0].lower=*/kNeg1);
       expected_bls_offset_in_bytes *=
           /*bls_stride[0]=*/(get_block_size(/*axis=*/1) - kNeg3);
       expected_bls_offset_in_bytes +=
-          (loop_indices_vals[1] - block_corner_vals[1] -
+          (get_block_size(1) * (loop_indices_vals[1] - block_corner_vals[1]) -
            /*bls_bounds[1].lower=*/kNeg3);
       expected_bls_offset_in_bytes *= sizeof(float);
 

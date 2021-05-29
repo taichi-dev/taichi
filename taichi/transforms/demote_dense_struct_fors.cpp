@@ -15,8 +15,12 @@ void convert_to_range_for(OffloadedStmt *offloaded) {
   std::vector<SNode *> snodes;
   auto *snode = offloaded->snode;
   int total_bits = 0;
+  int start_bits_root[taichi_max_num_indices] = {0};
   while (snode->type != SNodeType::root) {
     snodes.push_back(snode);
+    for (int j = 0; j < taichi_max_num_indices; j++) {
+      start_bits_root[j] += snode->extractors[j].num_bits;
+    }
     total_bits += snode->total_num_bits;
     snode = snode->parent;
   }
@@ -48,6 +52,9 @@ void convert_to_range_for(OffloadedStmt *offloaded) {
   // We will set main_loop_var->loop later.
 
   int offset = total_bits;
+  int start_bits[taichi_max_num_indices] = {0};
+  std::copy(std::begin(start_bits_root), std::end(start_bits_root),
+            std::begin(start_bits));
   Stmt *test = body_header.push_back<ConstStmt>(TypedConstant(-1));
   bool has_test = false;
   for (int i = 0; i < (int)snodes.size(); i++) {
@@ -59,8 +66,9 @@ void convert_to_range_for(OffloadedStmt *offloaded) {
       Stmt *delta = body_header.push_back<BitExtractStmt>(
           main_loop_var, ext.acc_offset + offset,
           ext.acc_offset + offset + ext.num_bits);
+      start_bits[p] -= ext.num_bits;
       auto multiplier =
-          body_header.push_back<ConstStmt>(TypedConstant(1 << (ext.start)));
+          body_header.push_back<ConstStmt>(TypedConstant(1 << start_bits[p]));
       delta = body_header.push_back<BinaryOpStmt>(BinaryOpType::mul, delta,
                                                   multiplier);
       new_loop_vars[j] = body_header.push_back<BinaryOpStmt>(
@@ -68,12 +76,14 @@ void convert_to_range_for(OffloadedStmt *offloaded) {
     }
   }
 
+  std::copy(std::begin(start_bits_root), std::end(start_bits_root),
+            std::begin(start_bits));
   for (int i = 0; i < (int)snodes.size(); i++) {
     auto snode = snodes[i];
     for (int j = 0; j < (int)physical_indices.size(); j++) {
       auto p = physical_indices[j];
-      auto num_elements = snode->extractors[p].num_elements
-                          << snode->extractors[p].start;
+      start_bits[p] -= snode->extractors[p].num_bits;
+      auto num_elements = snode->extractors[p].num_elements << start_bits[p];
       if (!bit::is_power_of_two(num_elements)) {
         has_test = true;
         auto bound =

@@ -10,18 +10,14 @@
 TLANG_NAMESPACE_BEGIN
 
 struct IndexExtractor {
-  int start;
   int num_bits;
   int acc_offset;
   int num_elements;
   int trailing_bits;
 
-  // TODO: rename start to src_offset
-
   bool active;
 
   IndexExtractor() {
-    start = 0;
     num_bits = 0;
     active = false;
     acc_offset = 0;

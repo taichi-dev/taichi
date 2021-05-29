@@ -32,9 +32,9 @@ def scatter(i):
 def paint():
     for i, j in ti.ndrange(n, n):
         t = x[i, j]
-        t += ti.is_active(block1, [i, j])
-        t += ti.is_active(block2, [i, j])
-        t += ti.is_active(block3, [i, j])
+        t += ti.is_active(block1, ti.Vector([i, j]) // 64)
+        t += ti.is_active(block2, ti.Vector([i, j]) // 16)
+        t += ti.is_active(block3, ti.Vector([i, j]) // 4)
         img[scatter(i), scatter(j)] = 1 - t / 4
 
 

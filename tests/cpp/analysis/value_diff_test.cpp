@@ -58,6 +58,78 @@ TEST(ValueDiffPtrIndex, BinOpButDiff) {
   EXPECT_FALSE(diff.is_diff_certain);
 }
 
+TEST(DiffRangeTest, Add) {
+  IRBuilder builder;
+
+  auto for_stmt = std::make_unique<OffloadedStmt>(
+      /*task_type=*/OffloadedTaskType::struct_for,
+      /*arch=*/Arch::x64);
+  auto *loop_idx = builder.get_loop_index(for_stmt.get(), /*index=*/0);
+  auto *c1 = builder.get_int32(4);
+  auto *loop_idx2 = builder.create_add(loop_idx, c1);
+
+  auto diff = value_diff_loop_index(loop_idx2, for_stmt.get(), /*index=*/0);
+
+  EXPECT_TRUE(diff.related_());
+  EXPECT_EQ(diff.coeff, 1);
+  EXPECT_EQ(diff.low, 4);
+  EXPECT_EQ(diff.high, 5);
+}
+
+TEST(DiffRangeTest, Sub) {
+  IRBuilder builder;
+
+  auto for_stmt = std::make_unique<OffloadedStmt>(
+      /*task_type=*/OffloadedTaskType::struct_for,
+      /*arch=*/Arch::x64);
+  auto *loop_idx = builder.get_loop_index(for_stmt.get(), /*index=*/0);
+  auto *c1 = builder.get_int32(4);
+  auto *loop_idx2 = builder.create_sub(loop_idx, c1);
+
+  auto diff = value_diff_loop_index(loop_idx2, for_stmt.get(), /*index=*/0);
+
+  EXPECT_TRUE(diff.related_());
+  EXPECT_EQ(diff.coeff, 1);
+  EXPECT_EQ(diff.low, -4);
+  EXPECT_EQ(diff.high, -3);
+}
+
+TEST(DiffRangeTest, Mul) {
+  IRBuilder builder;
+
+  auto for_stmt = std::make_unique<OffloadedStmt>(
+      /*task_type=*/OffloadedTaskType::struct_for,
+      /*arch=*/Arch::x64);
+  auto *loop_idx = builder.get_loop_index(for_stmt.get(), /*index=*/0);
+  auto *c1 = builder.get_int32(4);
+  auto *loop_idx2 = builder.create_mul(loop_idx, c1);
+
+  auto diff = value_diff_loop_index(loop_idx2, for_stmt.get(), /*index=*/0);
+
+  EXPECT_TRUE(diff.related_());
+  EXPECT_EQ(diff.coeff, 4);
+  EXPECT_EQ(diff.low, 0);
+  EXPECT_EQ(diff.high, 1);
+}
+
+TEST(DiffRangeTest, Shl) {
+  IRBuilder builder;
+
+  auto for_stmt = std::make_unique<OffloadedStmt>(
+      /*task_type=*/OffloadedTaskType::struct_for,
+      /*arch=*/Arch::x64);
+  auto *loop_idx = builder.get_loop_index(for_stmt.get(), /*index=*/0);
+  auto *c1 = builder.get_int32(2);
+  auto *loop_idx2 = builder.create_shl(loop_idx, c1);
+
+  auto diff = value_diff_loop_index(loop_idx2, for_stmt.get(), /*index=*/0);
+
+  EXPECT_TRUE(diff.related_());
+  EXPECT_EQ(diff.coeff, 4);
+  EXPECT_EQ(diff.low, 0);
+  EXPECT_EQ(diff.high, 1);
+}
+
 }  // namespace analysis
 }  // namespace irpass
 }  // namespace lang

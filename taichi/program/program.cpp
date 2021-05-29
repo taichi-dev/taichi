@@ -587,10 +587,9 @@ void Program::visualize_layout(const std::string &fn) {
       for (int i = 0; i < taichi_max_num_indices; i++) {
         if (snode->extractors[i].active) {
           int nb = snode->extractors[i].num_bits;
-          int start = snode->extractors[i].start + nb;
           indices += fmt::format(
               R"($\mathbf{{{}}}^{{\mathbf{{{}b}}:{}}}_{{\mathbf{{{}b}}:{}}}$)",
-              std::string(1, 'I' + i), start, latex_short_digit(1 << start), nb,
+              std::string(1, 'I' + i), 0, latex_short_digit(1 << 0), nb,
               latex_short_digit(1 << nb));
         }
       }

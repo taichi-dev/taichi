@@ -281,7 +281,7 @@ CodeGenLLVM::CodeGenLLVM(Kernel *kernel, IRNode *ir)
   initialize_context();
 
   context_ty = get_runtime_type("Context");
-  physical_coordinate_ty = get_runtime_type("PhysicalCoordinates");
+  physical_coordinate_ty = get_runtime_type(kLLVMPhysicalCoordinatesName);
 
   kernel_name = kernel->name + "_kernel";
 }
@@ -1652,7 +1652,7 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
       }
     }
 
-    auto coord_object = RuntimeObject("PhysicalCoordinates", this,
+    auto coord_object = RuntimeObject(kLLVMPhysicalCoordinatesName, this,
                                       builder.get(), new_coordinates);
     for (int i = 0; i < snode->num_active_indices; i++) {
       auto j = snode->physical_index_position[i];

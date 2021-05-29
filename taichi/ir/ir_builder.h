@@ -92,8 +92,7 @@ class IRBuilder {
   template <typename XStmt>
   [[nodiscard]] LoopGuard get_loop_guard(XStmt *loop) {
     return LoopGuard(*this, loop);
-  }
-  [[nodiscard]] IfGuard get_if_guard(IfStmt *if_stmt, bool true_branch) {
+  }[[nodiscard]] IfGuard get_if_guard(IfStmt *if_stmt, bool true_branch) {
     return IfGuard(*this, if_stmt, true_branch);
   }
 

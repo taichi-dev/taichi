@@ -188,14 +188,14 @@ class IRBuilder {
   BinaryOpStmt *create_cmp_ne(Stmt *l, Stmt *r);
 
   // Atomic operations.
-  AtomicOpStmt *create_atomic_add(Stmt *l, Stmt *r);
-  AtomicOpStmt *create_atomic_sub(Stmt *l, Stmt *r);
-  AtomicOpStmt *create_atomic_max(Stmt *l, Stmt *r);
-  AtomicOpStmt *create_atomic_min(Stmt *l, Stmt *r);
+  AtomicOpStmt *create_atomic_add(Stmt *dest, Stmt *val);
+  AtomicOpStmt *create_atomic_sub(Stmt *dest, Stmt *val);
+  AtomicOpStmt *create_atomic_max(Stmt *dest, Stmt *val);
+  AtomicOpStmt *create_atomic_min(Stmt *dest, Stmt *val);
   // Atomic bitwise operations.
-  AtomicOpStmt *create_atomic_and(Stmt *l, Stmt *r);
-  AtomicOpStmt *create_atomic_or(Stmt *l, Stmt *r);
-  AtomicOpStmt *create_atomic_xor(Stmt *l, Stmt *r);
+  AtomicOpStmt *create_atomic_and(Stmt *dest, Stmt *val);
+  AtomicOpStmt *create_atomic_or(Stmt *dest, Stmt *val);
+  AtomicOpStmt *create_atomic_xor(Stmt *dest, Stmt *val);
 
   // Ternary operations. Returns the result.
   TernaryOpStmt *create_select(Stmt *cond,

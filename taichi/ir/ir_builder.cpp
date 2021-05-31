@@ -342,32 +342,32 @@ BinaryOpStmt *IRBuilder::create_cmp_ne(Stmt *l, Stmt *r) {
   return insert(Stmt::make_typed<BinaryOpStmt>(BinaryOpType::cmp_ne, l, r));
 }
 
-AtomicOpStmt *IRBuilder::create_atomic_add(Stmt *l, Stmt *r) {
-  return insert(Stmt::make_typed<AtomicOpStmt>(AtomicOpType::add, l, r));
+AtomicOpStmt *IRBuilder::create_atomic_add(Stmt *dest, Stmt *val) {
+  return insert(Stmt::make_typed<AtomicOpStmt>(AtomicOpType::add, dest, val));
 }
 
-AtomicOpStmt *IRBuilder::create_atomic_sub(Stmt *l, Stmt *r) {
-  return insert(Stmt::make_typed<AtomicOpStmt>(AtomicOpType::sub, l, r));
+AtomicOpStmt *IRBuilder::create_atomic_sub(Stmt *dest, Stmt *val) {
+  return insert(Stmt::make_typed<AtomicOpStmt>(AtomicOpType::sub, dest, val));
 }
 
-AtomicOpStmt *IRBuilder::create_atomic_max(Stmt *l, Stmt *r) {
-  return insert(Stmt::make_typed<AtomicOpStmt>(AtomicOpType::max, l, r));
+AtomicOpStmt *IRBuilder::create_atomic_max(Stmt *dest, Stmt *val) {
+  return insert(Stmt::make_typed<AtomicOpStmt>(AtomicOpType::max, dest, val));
 }
 
-AtomicOpStmt *IRBuilder::create_atomic_min(Stmt *l, Stmt *r) {
-  return insert(Stmt::make_typed<AtomicOpStmt>(AtomicOpType::min, l, r));
+AtomicOpStmt *IRBuilder::create_atomic_min(Stmt *dest, Stmt *val) {
+  return insert(Stmt::make_typed<AtomicOpStmt>(AtomicOpType::min, dest, val));
 }
 
-AtomicOpStmt *IRBuilder::create_atomic_and(Stmt *l, Stmt *r) {
-  return insert(Stmt::make_typed<AtomicOpStmt>(AtomicOpType::bit_and, l, r));
+AtomicOpStmt *IRBuilder::create_atomic_and(Stmt *dest, Stmt *val) {
+  return insert(Stmt::make_typed<AtomicOpStmt>(AtomicOpType::bit_and, dest, val));
 }
 
-AtomicOpStmt *IRBuilder::create_atomic_or(Stmt *l, Stmt *r) {
-  return insert(Stmt::make_typed<AtomicOpStmt>(AtomicOpType::bit_or, l, r));
+AtomicOpStmt *IRBuilder::create_atomic_or(Stmt *dest, Stmt *val) {
+  return insert(Stmt::make_typed<AtomicOpStmt>(AtomicOpType::bit_or, dest, val));
 }
 
-AtomicOpStmt *IRBuilder::create_atomic_xor(Stmt *l, Stmt *r) {
-  return insert(Stmt::make_typed<AtomicOpStmt>(AtomicOpType::bit_xor, l, r));
+AtomicOpStmt *IRBuilder::create_atomic_xor(Stmt *dest, Stmt *val) {
+  return insert(Stmt::make_typed<AtomicOpStmt>(AtomicOpType::bit_xor, dest, val));
 }
 
 TernaryOpStmt *IRBuilder::create_select(Stmt *cond,

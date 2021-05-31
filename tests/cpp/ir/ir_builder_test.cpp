@@ -8,6 +8,40 @@ namespace taichi {
 namespace lang {
 
 TEST(IRBuilder, RunSnode) {
+/*
+import taichi as ti, numpy as np
+ti.init()
+#ti.init(print_ir = True)
+
+n = 10
+place = ti.field(dtype = ti.i32)
+ti.root.pointer(ti.i, n).place(place)
+
+@ti.kernel
+def init():
+    for index in range(n):
+        place[index] = index
+
+@ti.kernel
+def ret() -> ti.i32:
+    sum = 0
+    for index in place:
+        sum = sum + place[index]
+    return sum
+
+@ti.kernel
+def ext(ext_arr: ti.ext_arr()):
+    for index in place:
+        ext_arr[index] = place[index]
+
+init()
+print(ret())
+ext_arr = np.zeros(n, np.int32)
+ext(ext_arr)
+#ext_arr = place.to_numpy()
+print(ext_arr)
+*/
+
   auto program = Program(arch_from_name("x64"));
   /*CompileConfig config_print_ir;
   config_print_ir.print_ir = true;
@@ -20,27 +54,41 @@ TEST(IRBuilder, RunSnode) {
 
   program.materialize_layout();
 
-  std::unique_ptr<Kernel> kernel_init, kernel_return, kernel_ext;
+  std::unique_ptr<Kernel> kernel_init, kernel_ret, kernel_ext;
 
   {
+    /*
+    @ti.kernel
+    def init():
+      for index in range(n):
+        place[index] = index
+    */
     IRBuilder builder;
     auto *zero = builder.get_int32(0);
     auto *n_stmt = builder.get_int32(n);
-    auto *loop = builder.create_range_for(zero, n_stmt, 1, 0, 4);  // for index in range(0, n):
+    auto *loop = builder.create_range_for(zero, n_stmt, 1, 0, 4);
     {
       auto _ = builder.get_loop_guard(loop);
       auto *index = builder.get_loop_index(loop);
       auto *ptr = builder.create_global_ptr(place, {index});
-      builder.create_global_store(ptr, index);  // place[index] = index
+      builder.create_global_store(ptr, index);
     }
 
     kernel_init = std::make_unique<Kernel>(program, builder.extract_ir(), "init");
   }
 
   {
+    /*
+    @ti.kernel
+    def ret():
+      sum = 0
+      for index in place:
+        sum = sum + place[index];
+      return sum
+    */
     IRBuilder builder;
     auto *sum = builder.create_local_var(PrimitiveType::i32);
-    auto *loop = builder.create_struct_for(pointer, 1, 0, 4); // for index in pointer:
+    auto *loop = builder.create_struct_for(pointer, 1, 0, 4);
     {
       auto _ = builder.get_loop_guard(loop);
       auto *index = builder.get_loop_index(loop);
@@ -50,10 +98,17 @@ TEST(IRBuilder, RunSnode) {
     }
     builder.create_return(builder.create_local_load(sum));
 
-    kernel_return = std::make_unique<Kernel>(program, builder.extract_ir(), "return");
+    kernel_ret = std::make_unique<Kernel>(program, builder.extract_ir(), "ret");
   }
 
   {
+    /*
+    @ti.kernel
+    def ext(ext: ti.ext_arr()):
+      for index in place:
+        ext[index] = place[index];
+    # ext = place.to_numpy()
+    */
     IRBuilder builder;
     auto *loop = builder.create_struct_for(pointer, 1, 0, 4);
     {
@@ -61,7 +116,7 @@ TEST(IRBuilder, RunSnode) {
       auto *index = builder.get_loop_index(loop);
       auto *ext = builder.create_external_ptr(builder.create_arg_load(0, PrimitiveType::i32, true), {index});
       auto *place_index = builder.create_global_load(builder.create_global_ptr(place, {index}));
-      builder.create_global_store(ext, place_index); // ext[i] = place[i]
+      builder.create_global_store(ext, place_index);
     }
 
     kernel_ext = std::make_unique<Kernel>(program, builder.extract_ir(), "ext");
@@ -69,16 +124,132 @@ TEST(IRBuilder, RunSnode) {
   }
 
   auto ctx_init = kernel_init->make_launch_context();
-  auto ctx_return = kernel_return->make_launch_context();
+  auto ctx_ret = kernel_ret->make_launch_context();
   auto ctx_ext = kernel_ext->make_launch_context();
-  int ext[n];
-  ctx_ext.set_arg_external_array(0, taichi::uint64(ext), 0);
+  int ext_arr[n];
+  ctx_ext.set_arg_external_array(0, taichi::uint64(ext_arr), 0);
 
   (*kernel_init)(ctx_init);
-  (*kernel_return)(ctx_return);
+  (*kernel_ret)(ctx_ret);
   EXPECT_EQ(program.fetch_result<int>(0), n * (n - 1) / 2);
   (*kernel_ext)(ctx_ext);
-  for (int i = 0; i < n; i++) EXPECT_EQ(ext[i], i);
+  for (int i = 0; i < n; i++) EXPECT_EQ(ext_arr[i], i);
+}
+
+TEST(IRBuilder, Autograd) {
+  auto program = Program(arch_from_name("x64"));
+
+  int n = 10;
+  auto get_snode_grad = [&]() ->  SNode* {
+    class GradInfoPrimal final : public SNode::GradInfoProvider {
+    public:
+      SNode *snode;
+      GradInfoPrimal(SNode *_snode): snode(_snode) {}
+      bool is_primal() const override { return true; }
+      SNode *grad_snode() const override { return snode; }
+    };
+    class GradInfoAdjoint final : public SNode::GradInfoProvider {
+    public:
+      GradInfoAdjoint() {}
+      bool is_primal() const override { return false; }
+      SNode *grad_snode() const override { return nullptr; }
+    };
+
+    auto *root = program.snode_root.get();
+    auto *snode = &root->dense(0, n).insert_children(SNodeType::place);
+    snode->dt = PrimitiveType::f32;
+    snode->grad_info = std::make_unique<GradInfoPrimal>(&root->dense(0, n).insert_children(SNodeType::place));
+    snode->get_grad()->dt = PrimitiveType::f32;
+    snode->get_grad()->grad_info = std::make_unique<GradInfoAdjoint>();
+    return snode;
+  };
+  auto *a = get_snode_grad(), *b = get_snode_grad(), *c = get_snode_grad();
+
+  program.materialize_layout();
+
+  std::unique_ptr<Kernel> kernel_init, kernel_forward, kernel_backward, kernel_ext;
+
+  {
+    IRBuilder builder;
+    auto *zero = builder.get_int32(0);
+    auto *one = builder.get_int32(1);
+    auto *n_stmt = builder.get_int32(n);
+    auto *loop = builder.create_range_for(zero, n_stmt, 1, 0, 4); 
+    {
+      auto _ = builder.get_loop_guard(loop);
+      auto *i = builder.get_loop_index(loop);
+      builder.create_global_store(builder.create_global_ptr(a, {i}), i);
+      builder.create_global_store(builder.create_global_ptr(b, {i}), builder.create_add(i, one));
+      builder.create_global_store(builder.create_global_ptr(c, {i}), zero);
+
+      builder.create_global_store(builder.create_global_ptr(a->get_grad(), {i}), zero);
+      builder.create_global_store(builder.create_global_ptr(b->get_grad(), {i}), zero);
+      builder.create_global_store(builder.create_global_ptr(c->get_grad(), {i}), one);
+    }
+
+    kernel_init = std::make_unique<Kernel>(program, builder.extract_ir(), "init");
+  }
+
+  auto get_kernel_cal = [&](bool grad) -> Kernel* {
+    IRBuilder builder;
+    auto *loop = builder.create_struct_for(a, 1, 0, 4);
+    {
+      auto _ = builder.get_loop_guard(loop);
+      auto *i= builder.get_loop_index(loop);
+      auto *a_i = builder.create_global_load(builder.create_global_ptr(a, {i}));
+      auto *b_i = builder.create_global_load(builder.create_global_ptr(b, {i}));
+      auto *val = builder.create_add(a_i, builder.create_add(b_i, b_i));
+      auto *c_i = builder.create_global_ptr(c, {i});
+      builder.insert(std::make_unique<AtomicOpStmt>(AtomicOpType::add, c_i, val));
+    }
+
+    return new Kernel(program, builder.extract_ir(), "cal", grad);
+  };
+  kernel_forward = std::unique_ptr<Kernel>(get_kernel_cal(false));
+  kernel_backward = std::unique_ptr<Kernel>(get_kernel_cal(true));
+
+  {
+    IRBuilder builder;
+    auto *loop = builder.create_struct_for(a, 1, 0, 4);
+    {
+      auto _ = builder.get_loop_guard(loop);
+      auto *i = builder.get_loop_index(loop);
+
+      auto *ext_a = builder.create_external_ptr(builder.create_arg_load(0, PrimitiveType::f32, true), {i});
+      auto *a_grad_i = builder.create_global_load(builder.create_global_ptr(a->get_grad(), {i}));
+      builder.create_global_store(ext_a, a_grad_i);
+
+      auto *ext_b = builder.create_external_ptr(builder.create_arg_load(1, PrimitiveType::f32, true), {i});
+      auto *b_grad_i = builder.create_global_load(builder.create_global_ptr(b->get_grad(), {i}));
+      builder.create_global_store(ext_b, b_grad_i);
+
+      auto *ext_c = builder.create_external_ptr(builder.create_arg_load(2, PrimitiveType::f32, true), {i});
+      auto *c_i = builder.create_global_load(builder.create_global_ptr(c, {i}));
+      builder.create_global_store(ext_c, c_i);
+    }
+
+    kernel_ext = std::make_unique<Kernel>(program, builder.extract_ir(), "ext");
+    kernel_ext->insert_arg(PrimitiveType::gen, true);
+    kernel_ext->insert_arg(PrimitiveType::gen, true);
+    kernel_ext->insert_arg(PrimitiveType::gen, true);
+  }
+
+  auto ctx_init = kernel_init->make_launch_context();
+  auto ctx_forward = kernel_forward->make_launch_context();
+  auto ctx_backward = kernel_backward->make_launch_context();
+  auto ctx_ext = kernel_ext->make_launch_context();
+  float ext_a[n], ext_b[n], ext_c[n];
+  ctx_ext.set_arg_external_array(0, taichi::uint64(ext_a), 0);
+  ctx_ext.set_arg_external_array(1, taichi::uint64(ext_b), 0);
+  ctx_ext.set_arg_external_array(2, taichi::uint64(ext_c), 0);
+
+  (*kernel_init)(ctx_init);
+  (*kernel_forward)(ctx_forward);
+  (*kernel_backward)(ctx_backward);
+  (*kernel_ext)(ctx_ext);
+  for (int i = 0; i < n; i++) EXPECT_EQ(ext_a[i], 1);
+  for (int i = 0; i < n; i++) EXPECT_EQ(ext_b[i], 2);
+  for (int i = 0; i < n; i++) EXPECT_EQ(ext_c[i], 3 * i + 2);
 }
 
 TEST(IRBuilder, Basic) {

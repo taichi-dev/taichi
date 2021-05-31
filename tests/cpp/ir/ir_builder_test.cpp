@@ -137,6 +137,42 @@ print(ext_arr)
 }
 
 TEST(IRBuilder, Autograd) {
+/*
+import taichi as ti, numpy as np
+ti.init()
+
+n = 10
+a = ti.field(ti.f32, n, needs_grad = True)
+b = ti.field(ti.f32, n, needs_grad = True)
+c = ti.field(ti.f32, n, needs_grad = True)
+energy = ti.field(ti.f32, [], needs_grad = True)
+
+@ti.kernel
+def init():
+    for i in range(n):
+        a[i] = i
+        b[i] = i + 1
+
+@ti.kernel
+def cal():
+    for i in a:
+        c[i] += a[i] + (b[i] + b[i])
+
+@ti.kernel
+def support(): # this function will not appear in CHI Builder code
+    for i in a:
+        energy += c[i]
+
+init()
+with ti.Tape(energy):
+    cal()
+    support()
+
+print(a.grad)
+print(b.grad)
+print(c.to_numpy())
+*/
+
   auto program = Program(arch_from_name("x64"));
 
   int n = 10;

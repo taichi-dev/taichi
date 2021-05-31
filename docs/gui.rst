@@ -566,24 +566,30 @@ Image I/O
 Zero-copying frame buffer
 -------------------------
 
-Sometimes when the GUI resolution (window size) is large, we find it impossible
-to reach 60 FPS even without any kernel invocations between each frame.
+When the GUI resolution (window size) is large, it sometimes becomes difficult
+to achieve 60 FPS even without any kernel invocations between two frames.
 
-This is mainly due to the copy overhead when Taichi GUI is copying image buffer
-from a place to another place, to make high-level painting APIs like
-``gui.circles`` functional. The larger the image, the larger the overhead.
+This is mainly due to the copy overhead, where Taichi GUI needs to copy the image
+buffer from one place to another. This copying is necessary for the 2D drawing
+functions, such as ``gui.circles``, to work. The larger the image shape is,
+the larger the overhead.
 
-However, in some cases we only need ``gui.set_image`` alone. Then we may turn
-on the ``fast_gui`` mode for better performance.
-
-It will directly write the image specified in ``gui.set_image`` to frame buffer
-without hesitation, results in a much better FPS when resolution is huge.
-
-To do so, simply initialize your GUI with ``fast_gui=True``:
+Fortunately, sometimes your program only needs ``gui.set_image`` alone. In such cases,
+you can enable the ``fast_gui`` option for better performance. This mode allows Taichi
+GUI to directly write the image data to the frame buffer without additional copying,
+resulting in a much better FPS.
 
 .. code-block:: python
 
    gui = ti.GUI(res, title, fast_gui=True)
+
+
+.. note::
+
+   Because of the zero-copying mechanism, the image passed into ``gui.set_image``
+   must already be in the display-compatible format. That is, this field must either
+   be a ``ti.Vector(3)`` (RGB) or a ``ti.Vector(4)`` (RGBA). In addition, each channel
+   must be of type ``ti.f32``, ``ti.f64`` or ``ti.u8``.
 
 
 .. note::

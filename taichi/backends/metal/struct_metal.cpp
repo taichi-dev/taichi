@@ -85,6 +85,7 @@ class StructCompiler {
 #undef CHECK_UNSUPPORTED_TYPE
 
     CompiledStructs result;
+    result.root_snode_type_name = root.node_type_name;
     result.root_size = compute_snode_size(&root);
     emit_runtime_structs();
     line_appender_.dump(&result.runtime_utils_source_code);

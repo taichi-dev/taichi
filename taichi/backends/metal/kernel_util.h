@@ -65,6 +65,8 @@ struct KernelAttributes {
     inline bool const_range() const {
       return (const_begin && const_end);
     }
+
+    TI_IO_DEF(begin, end, const_begin, const_end);
   };
 
   struct RuntimeListOpAttributes {
@@ -78,6 +80,12 @@ struct KernelAttributes {
 
   static std::string buffers_name(Buffers b);
   std::string debug_string() const;
+
+  TI_IO_DEF(name,
+            advisory_total_num_threads,
+            task_type,
+            buffers,
+            range_for_attribs);
 };
 
 // Groups all the Metal kernels generated from a single ti.kernel
@@ -99,6 +107,8 @@ struct TaichiKernelAttributes {
   // Attributes of all the Metal kernels produced from this Taichi kernel.
   std::vector<KernelAttributes> mtl_kernels_attribs;
   UsedFeatures used_features;
+
+  TI_IO_DEF(name, mtl_kernels_attribs);
 };
 
 // This class contains the attributes descriptors for both the input args and
@@ -119,6 +129,8 @@ class KernelContextAttributes {
     int index = -1;
     MetalDataType dt;
     bool is_array = false;
+
+    TI_IO_DEF(stride, offset_in_mem, index, dt, is_array);
   };
 
  public:
@@ -128,6 +140,7 @@ class KernelContextAttributes {
   // This is mostly the same as Kernel::Ret, with Metal specific attributes.
   struct RetAttributes : public AttribsBase {};
 
+  KernelContextAttributes() = default;
   explicit KernelContextAttributes(const Kernel &kernel);
 
   inline bool has_args() const {
@@ -163,6 +176,8 @@ class KernelContextAttributes {
     return ctx_bytes_ + extra_args_bytes_;
   }
 
+  TI_IO_DEF(arg_attribs_vec_, ret_attribs_vec_, ctx_bytes_, extra_args_bytes_);
+
  private:
   // Memory layout
   //
@@ -176,6 +191,15 @@ class KernelContextAttributes {
   // Total size in bytes of the input args and return values
   size_t ctx_bytes_;
   size_t extra_args_bytes_;
+};
+
+struct CompiledKernelData {
+  std::string kernel_name;
+  std::string source_code;
+  KernelContextAttributes ctx_attribs;
+  TaichiKernelAttributes kernel_attribs;
+
+  TI_IO_DEF(kernel_name, ctx_attribs, kernel_attribs);
 };
 
 }  // namespace metal

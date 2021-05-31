@@ -13,7 +13,8 @@
 #include "taichi/math/arithmetic.h"
 #include "taichi/util/line_appender.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 namespace metal {
 namespace {
 
@@ -77,7 +78,7 @@ bool is_ret_type_bit_pointer(Stmt *s) {
   return false;
 }
 
-class KernelCodegen : public IRVisitor {
+class KernelCodegenImpl : public IRVisitor {
  private:
   enum class Section {
     Headers,
@@ -98,15 +99,13 @@ class KernelCodegen : public IRVisitor {
     bool allow_simdgroup = true;
   };
   // TODO(k-ye): Create a Params to hold these ctor params.
-  KernelCodegen(const std::string &taichi_kernel_name,
-                const std::string &root_snode_type_name,
-                Kernel *kernel,
-                const CompiledStructs *compiled_structs,
-                PrintStringTable *print_strtab,
-                const Config &config,
-                OffloadedStmt *offloaded)
+  KernelCodegenImpl(const std::string &taichi_kernel_name,
+                    Kernel *kernel,
+                    const CompiledStructs *compiled_structs,
+                    PrintStringTable *print_strtab,
+                    const Config &config,
+                    OffloadedStmt *offloaded)
       : mtl_kernel_prefix_(taichi_kernel_name),
-        root_snode_type_name_(root_snode_type_name),
         kernel_(kernel),
         compiled_structs_(compiled_structs),
         needs_root_buffer_(compiled_structs_->root_size > 0),
@@ -114,35 +113,32 @@ class KernelCodegen : public IRVisitor {
         print_strtab_(print_strtab),
         cgen_config_(config),
         offloaded_(offloaded) {
-    ti_kernel_attribus_.name = taichi_kernel_name;
-    ti_kernel_attribus_.is_jit_evaluator = kernel->is_evaluator;
+    ti_kernel_attribs_.name = taichi_kernel_name;
+    ti_kernel_attribs_.is_jit_evaluator = kernel->is_evaluator;
     // allow_undefined_visitor = true;
     for (const auto s : kAllSections) {
       section_appenders_[s] = LineAppender();
     }
   }
 
-  const KernelContextAttributes &kernel_ctx_attribs() const {
-    return ctx_attribs_;
-  }
-
-  const TaichiKernelAttributes &ti_kernels_attribs() const {
-    return ti_kernel_attribus_;
-  }
-
-  std::string run() {
+  CompiledKernelData run() {
     emit_headers();
     generate_structs();
     generate_kernels();
 
-    std::string source_code;
+    CompiledKernelData res;
+    res.kernel_name = mtl_kernel_prefix_;
+    res.kernel_attribs = std::move(ti_kernel_attribs_);
+    res.ctx_attribs = std::move(ctx_attribs_);
+
+    auto &source_code = res.source_code;
     source_code += section_appenders_.at(Section::Headers).lines();
     source_code += "namespace {\n";
     source_code += section_appenders_.at(Section::Structs).lines();
     source_code += section_appenders_.at(Section::KernelFuncs).lines();
     source_code += "}  // namespace\n";
     source_code += section_appenders_.at(Section::Kernels).lines();
-    return source_code;
+    return res;
   }
 
   void visit(Block *stmt) override {
@@ -195,8 +191,8 @@ class KernelCodegen : public IRVisitor {
     // Should we assert |root_stmt_| is assigned only once?
     TI_ASSERT(needs_root_buffer_);
     root_stmt_ = stmt;
-    emit(R"({} {}({});)", root_snode_type_name_, stmt->raw_name(),
-         kRootBufferName);
+    emit(R"({} {}({});)", compiled_structs_->root_snode_type_name,
+         stmt->raw_name(), kRootBufferName);
   }
 
   void visit(LinearizeStmt *stmt) override {
@@ -1436,7 +1432,7 @@ class KernelCodegen : public IRVisitor {
 
   class SectionGuard {
    public:
-    SectionGuard(KernelCodegen *kg, Section new_sec)
+    SectionGuard(KernelCodegenImpl *kg, Section new_sec)
         : kg_(kg), saved_(kg->code_section_) {
       kg->code_section_ = new_sec;
     }
@@ -1446,7 +1442,7 @@ class KernelCodegen : public IRVisitor {
     }
 
    private:
-    KernelCodegen *const kg_;
+    KernelCodegenImpl *const kg_;
     const Section saved_;
   };
 
@@ -1465,26 +1461,26 @@ class KernelCodegen : public IRVisitor {
   }
 
   std::vector<KernelAttributes> *mtl_kernels_attribs() {
-    return &(ti_kernel_attribus_.mtl_kernels_attribs);
+    return &(ti_kernel_attribs_.mtl_kernels_attribs);
   }
 
   TaichiKernelAttributes::UsedFeatures *used_features() {
-    return &(ti_kernel_attribus_.used_features);
+    return &(ti_kernel_attribs_.used_features);
   }
 
   const std::string mtl_kernel_prefix_;
-  const std::string root_snode_type_name_;
   Kernel *const kernel_;
   const CompiledStructs *const compiled_structs_;
   const bool needs_root_buffer_;
-  const KernelContextAttributes ctx_attribs_;
   PrintStringTable *const print_strtab_;
   const Config &cgen_config_;
   OffloadedStmt *const offloaded_;
 
+  TaichiKernelAttributes ti_kernel_attribs_;
+  KernelContextAttributes ctx_attribs_;
+
   bool is_top_level_{true};
   int mtl_kernel_count_{0};
-  TaichiKernelAttributes ti_kernel_attribus_;
   GetRootStmt *root_stmt_{nullptr};
   KernelAttributes *current_kernel_attribs_{nullptr};
   bool inside_tls_epilogue_{false};
@@ -1494,30 +1490,38 @@ class KernelCodegen : public IRVisitor {
 
 }  // namespace
 
+CompiledKernelData run_codegen(const CompiledStructs *compiled_structs,
+                               Kernel *kernel,
+                               PrintStringTable *strtab,
+                               OffloadedStmt *offloaded) {
+  const auto id = Program::get_kernel_id();
+  const auto taichi_kernel_name(
+      fmt::format("mtl_k{:04d}_{}", id, kernel->name));
+
+  KernelCodegenImpl::Config cgen_config;
+  cgen_config.allow_simdgroup = EnvConfig::instance().is_simdgroup_enabled();
+
+  KernelCodegenImpl codegen(taichi_kernel_name, kernel, compiled_structs,
+                            strtab, cgen_config, offloaded);
+
+  return codegen.run();
+}
+
 FunctionType compile_to_metal_executable(
     Kernel *kernel,
     KernelManager *kernel_mgr,
     const CompiledStructs *compiled_structs,
     OffloadedStmt *offloaded) {
-  const auto id = Program::get_kernel_id();
-  const auto taichi_kernel_name(
-      fmt::format("mtl_k{:04d}_{}", id, kernel->name));
-
-  KernelCodegen::Config cgen_config;
-  cgen_config.allow_simdgroup = EnvConfig::instance().is_simdgroup_enabled();
-
-  KernelCodegen codegen(
-      taichi_kernel_name, kernel->program->snode_root->node_type_name, kernel,
-      compiled_structs, kernel_mgr->print_strtable(), cgen_config, offloaded);
-
-  const auto source_code = codegen.run();
-  kernel_mgr->register_taichi_kernel(taichi_kernel_name, source_code,
-                                     codegen.ti_kernels_attribs(),
-                                     codegen.kernel_ctx_attribs());
-  return [kernel_mgr, kernel_name = taichi_kernel_name](Context &ctx) {
+  const auto compiled_res = run_codegen(
+      compiled_structs, kernel, kernel_mgr->print_strtable(), offloaded);
+  kernel_mgr->register_taichi_kernel(
+      compiled_res.kernel_name, compiled_res.source_code,
+      compiled_res.kernel_attribs, compiled_res.ctx_attribs);
+  return [kernel_mgr, kernel_name = compiled_res.kernel_name](Context &ctx) {
     kernel_mgr->launch_taichi_kernel(kernel_name, &ctx);
   };
 }
 
 }  // namespace metal
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

@@ -49,8 +49,9 @@ Installing Dependencies
 
 .. note::
 
-    On Windows, if you use the pre-built LLVM for Taichi, please add ``$LLVM_FOLDER/bin`` to ``PATH``.
-    Later, when you build Taichi using ``CMake``, set ``LLVM_DIR`` to ``$LLVM_FOLDER/lib/cmake/llvm``.
+    If you use the pre-built LLVM for Taichi, please add ``$LLVM_FOLDER/bin`` to ``PATH``.
+    Later, when you build Taichi using ``CMake``, create an environment variable ``LLVM_DIR``
+    and set it to ``$LLVM_FOLDER/lib/cmake/llvm``.
 
 
 - If the downloaded LLVM does not work, please build from source:
@@ -85,9 +86,6 @@ Installing Dependencies
     - Please make sure you are using the ``Release`` configuration. After building the ``INSTALL`` project (under folder ``CMakePredefinedTargets`` in the Solution Explorer window).
     - If you use MSVC 2019, **make sure you use C++17** for the ``INSTALL`` project.
     - After the build is complete, find your LLVM binaries and headers in ``build/installed``.
-
-    Please add ``build/installed/bin`` to ``PATH``.
-    Later, when you build Taichi using ``CMake``, set ``LLVM_DIR`` to ``build/installed/lib/cmake/llvm``.
 
 
 Setting up CUDA (optional)
@@ -140,6 +138,9 @@ Setting up Taichi for development
     mkdir build
     cd build
     cmake ..
+    # If you have not defined an environment variable $LLVM_DIR, add this CMake flag option:
+    #   cmake .. -DLLVM_DIR=$LLVM_FOLDER/lib/cmake/llvm
+    #
     # On Linux / OS X, if you do not set clang as the default compiler
     # use the line below:
     #   cmake .. -DCMAKE_CXX_COMPILER=clang

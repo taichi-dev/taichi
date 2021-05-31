@@ -7,6 +7,80 @@
 namespace taichi {
 namespace lang {
 
+TEST(IRBuilder, RunSnode) {
+  auto program = Program(arch_from_name("x64"));
+  /*CompileConfig config_print_ir;
+  config_print_ir.print_ir = true;
+  prog_.config = config_print_ir;*/  // print_ir = True
+
+  int n = 10;
+  auto *pointer = &program.snode_root.get()->pointer(Index(0), n);
+  auto *place = &pointer->insert_children(SNodeType::place);
+  place->dt = PrimitiveType::i32;
+
+  program.materialize_layout();
+
+  std::unique_ptr<Kernel> kernel_init, kernel_return, kernel_ext;
+
+  {
+    IRBuilder builder;
+    auto *zero = builder.get_int32(0);
+    auto *n_stmt = builder.get_int32(n);
+    auto *loop = builder.create_range_for(zero, n_stmt, 1, 0, 4);  // for index in range(0, n):
+    {
+      auto _ = builder.get_loop_guard(loop);
+      auto *index = builder.get_loop_index(loop);
+      auto *ptr = builder.create_global_ptr(place, {index});
+      builder.create_global_store(ptr, index);  // place[index] = index
+    }
+
+    kernel_init = std::make_unique<Kernel>(program, builder.extract_ir(), "init");
+  }
+
+  {
+    IRBuilder builder;
+    auto *sum = builder.create_local_var(PrimitiveType::i32);
+    auto *loop = builder.create_struct_for(pointer, 1, 0, 4); // for index in pointer:
+    {
+      auto _ = builder.get_loop_guard(loop);
+      auto *index = builder.get_loop_index(loop);
+      auto *sum_old = builder.create_local_load(sum);
+      auto *place_index = builder.create_global_load(builder.create_global_ptr(place, {index}));
+      builder.create_local_store(sum, builder.create_add(sum_old, place_index));
+    }
+    builder.create_return(builder.create_local_load(sum));
+
+    kernel_return = std::make_unique<Kernel>(program, builder.extract_ir(), "return");
+  }
+
+  {
+    IRBuilder builder;
+    auto *loop = builder.create_struct_for(pointer, 1, 0, 4);
+    {
+      auto _ = builder.get_loop_guard(loop);
+      auto *index = builder.get_loop_index(loop);
+      auto *ext = builder.create_external_ptr(builder.create_arg_load(0, PrimitiveType::i32, true), {index});
+      auto *place_index = builder.create_global_load(builder.create_global_ptr(place, {index}));
+      builder.create_global_store(ext, place_index); // ext[i] = place[i]
+    }
+
+    kernel_ext = std::make_unique<Kernel>(program, builder.extract_ir(), "ext");
+    kernel_ext->insert_arg(PrimitiveType::gen, true);
+  }
+
+  auto ctx_init = kernel_init->make_launch_context();
+  auto ctx_return = kernel_return->make_launch_context();
+  auto ctx_ext = kernel_ext->make_launch_context();
+  int ext[n];
+  ctx_ext.set_arg_external_array(0, taichi::uint64(ext), 0);
+
+  (*kernel_init)(ctx_init);
+  (*kernel_return)(ctx_return);
+  EXPECT_EQ(program.fetch_result<int>(0), n * (n - 1) / 2);
+  (*kernel_ext)(ctx_ext);
+  for (int i = 0; i < n; i++) EXPECT_EQ(ext[i], i);
+}
+
 TEST(IRBuilder, Basic) {
   IRBuilder builder;
   auto *lhs = builder.get_int32(40);

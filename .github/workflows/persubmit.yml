@@ -204,6 +204,7 @@ jobs:
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           branch: ${{ steps.pr_data.outputs.branch }}
+          repository: ${{ steps.pr_data.outputs.repo_name }}
 
   title_format:
     name: Check PR Title

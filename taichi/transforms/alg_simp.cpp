@@ -57,21 +57,22 @@ class AlgSimp : public BasicStmtVisitor {
       return false;
     }
     if (is_real(second_cast)) {
+      // float(...(a))
       return is_real(first_cast) &&
              data_type_bits(second_cast) <= data_type_bits(first_cast);
+    }
+    if (is_integral(first_cast)) {
+      // int(int(a))
+      return data_type_bits(second_cast) <= data_type_bits(first_cast);
+    }
+    // int(float(a))
+    if (data_type_bits(second_cast) <= data_type_bits(first_cast) * 2) {
+      // f64 can hold any i32 values.
+      return true;
     } else {
-      if (is_integral(first_cast)) {
-        return data_type_bits(second_cast) <= data_type_bits(first_cast);
-      } else {
-        if (data_type_bits(second_cast) <= data_type_bits(first_cast) * 2) {
-          // f64 can hold any i32 values.
-          return true;
-        } else {
-          // Assume a floating point type can hold any integer values when
-          // fast_math=True.
-          return fast_math;
-        }
-      }
+      // Assume a floating point type can hold any integer values when
+      // fast_math=True.
+      return fast_math;
     }
   }
 

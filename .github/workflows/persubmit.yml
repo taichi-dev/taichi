@@ -4,6 +4,58 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
+  format_code:
+    name: Auto Code Format
+    runs-on: [self-hosted, cn]
+    steps:
+      - name: GitHub API Request
+        id: request
+        uses: octokit/request-action@v2.0.0
+        with:
+          route: ${{ github.event.pull_request.url }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Get PR informations
+        id: pr_data
+        run: |
+          echo "::set-output name=branch::${{ fromJson(steps.request.outputs.data).head.ref }}"
+          echo "::set-output name=repo_name::${{ fromJson(steps.request.outputs.data).head.repo.full_name }}"
+          echo "::set-output name=repo_clone_url::${{ fromJson(steps.request.outputs.data).head.repo.clone_url }}"
+          echo "::set-output name=repo_ssh_url::${{ fromJson(steps.request.outputs.data).head.repo.ssh_url }}"
+      - name: clone branch of PR
+        uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ steps.pr_data.outputs.branch }}
+          repository: ${{ steps.pr_data.outputs.repo_name }}
+          fetch-depth: 0
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Run code formatter
+        run: |
+          git checkout -b _tmp_format
+          git checkout ${{ steps.pr_data.outputs.branch }}
+          git fetch https://github.com/taichi-dev/taichi.git refs/heads/master
+          git reset FETCH_HEAD
+          python3 -m pip install yapf gitpython colorama isort
+          python3 python/taichi/code_format.py
+          git reset _tmp_format
+          git add .
+          git config user.email "taichigardener@gmail.com"
+          git config user.name "Taichi Gardener"
+          git commit -m "Auto Format" || true
+          git merge FETCH_HEAD
+          git status
+          git push
+          #- name: Push changes
+          #uses: ad-m/github-push-action@master
+          #with:
+          #GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          #branch: ${{ steps.pr_data.outputs.branch }}
+          #repository: ${{ steps.pr_data.outputs.repo_name }}
+
   build_and_test_cpu_required:
     # This job will be required to pass before merging to master branch.
     name: Required Build and Test (CPU)
@@ -155,57 +207,6 @@ jobs:
           OAUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python misc/ci_check_previous_run.py --pr "${PR}" --sha "${SHA}" --token "${OAUTH_TOKEN}"
-
-  format_code:
-    name: Auto Code Format
-    runs-on: [self-hosted, cn]
-    steps:
-      - name: GitHub API Request
-        id: request
-        uses: octokit/request-action@v2.0.0
-        with:
-          route: ${{ github.event.pull_request.url }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Get PR informations
-        id: pr_data
-        run: |
-          echo "::set-output name=branch::${{ fromJson(steps.request.outputs.data).head.ref }}"
-          echo "::set-output name=repo_name::${{ fromJson(steps.request.outputs.data).head.repo.full_name }}"
-          echo "::set-output name=repo_clone_url::${{ fromJson(steps.request.outputs.data).head.repo.clone_url }}"
-          echo "::set-output name=repo_ssh_url::${{ fromJson(steps.request.outputs.data).head.repo.ssh_url }}"
-      - name: clone branch of PR
-        uses: actions/checkout@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          ref: ${{ steps.pr_data.outputs.branch }}
-          repository: ${{ steps.pr_data.outputs.repo_name }}
-          fetch-depth: 0
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.8
-      - name: Run code formatter
-        run: |
-          git checkout -b _tmp_format
-          git checkout ${{ steps.pr_data.outputs.branch }}
-          git fetch https://github.com/taichi-dev/taichi.git refs/heads/master
-          git reset FETCH_HEAD
-          python3 -m pip install yapf gitpython colorama isort
-          python3 python/taichi/code_format.py
-          git reset _tmp_format
-          git add .
-          git config user.email "taichigardener@gmail.com"
-          git config user.name "Taichi Gardener"
-          git commit -m "Auto Format" || true
-          git merge FETCH_HEAD
-          git push ${{ steps.pr_data.outputs.branch }} --repo=${{ steps.pr_data.outputs.repo_name }}
-          #- name: Push changes
-          #uses: ad-m/github-push-action@master
-          #with:
-          #GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          #branch: ${{ steps.pr_data.outputs.branch }}
-          #repository: ${{ steps.pr_data.outputs.repo_name }}
 
   title_format:
     name: Check PR Title

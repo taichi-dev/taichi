@@ -184,11 +184,11 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: 3.8
-      - name: Check and change code format
+      - name: Run code formatter
         run: |
           git checkout -b _tmp_format
           git checkout ${{ steps.pr_data.outputs.branch }}
-          git fetch https://github.com/taichi-dev/test_actions.git refs/heads/master
+          git fetch https://github.com/taichi-dev/taichi.git refs/heads/master
           git reset FETCH_HEAD
           python3 -m pip install yapf gitpython colorama isort
           python3 python/taichi/code_format.py

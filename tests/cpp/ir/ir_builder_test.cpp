@@ -45,7 +45,7 @@ print(ext_arr)
   auto program = Program(arch_from_name("x64"));
   /*CompileConfig config_print_ir;
   config_print_ir.print_ir = true;
-  prog_.config = config_print_ir;*/  // print_ir = True
+  program.config = config_print_ir;*/  // print_ir = True
 
   int n = 10;
   auto *pointer = &program.snode_root.get()->pointer(Index(0), n);

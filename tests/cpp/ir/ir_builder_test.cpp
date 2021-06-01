@@ -38,7 +38,7 @@ init()
 print(ret())
 ext_arr = np.zeros(n, np.int32)
 ext(ext_arr)
-#ext_arr = place.to_numpy()
+# ext_arr = place.to_numpy()
 print(ext_arr)
 */
 

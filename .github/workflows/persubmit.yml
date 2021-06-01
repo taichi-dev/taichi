@@ -158,7 +158,7 @@ jobs:
 
   format_code:
     name: Auto Code Format
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, cn]
     steps:
       - name: GitHub API Request
         id: request
@@ -199,12 +199,13 @@ jobs:
           git config user.name "Taichi Gardener"
           git commit -m "Auto Format" || true
           git merge FETCH_HEAD
-      - name: Push changes
-        uses: ad-m/github-push-action@master
-        with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ steps.pr_data.outputs.branch }}
-          repository: ${{ steps.pr_data.outputs.repo_name }}
+          git push ${{ steps.pr_data.outputs.branch }} --repo=${{ steps.pr_data.outputs.repo_name }}
+          #- name: Push changes
+          #uses: ad-m/github-push-action@master
+          #with:
+          #GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          #branch: ${{ steps.pr_data.outputs.branch }}
+          #repository: ${{ steps.pr_data.outputs.repo_name }}
 
   title_format:
     name: Check PR Title

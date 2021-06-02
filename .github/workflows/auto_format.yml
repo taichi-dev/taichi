@@ -1,0 +1,41 @@
+name: Auto Format Triggered by Comment
+on:
+  repository_dispatch:
+    types: [format-command]
+
+jobs:
+  code_format:
+    name: Code Format
+    runs-on: ubuntu-latest
+    steps:
+      - name: clone branch of PR
+        uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.GARDENER_PAT }}
+          ref: ${{ github.event.client_payload.pull_request.head.ref }}
+          repository: ${{ github.event.client_payload.pull_request.head.repo.full_name }}
+          fetch-depth: 0
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Check and change code format
+        run: |
+          git checkout -b _tmp_format
+          git checkout ${{ github.event.client_payload.pull_request.head.ref }}
+          git fetch https://github.com/taichi-dev/test_actions.git refs/heads/master
+          git reset FETCH_HEAD
+          python3 -m pip install yapf gitpython colorama isort
+          python3 python/taichi/code_format.py
+          git reset _tmp_format
+          git add .
+          git config user.email "taichigardener@gmail.com"
+          git config user.name "Taichi Gardener"
+          git commit -m "Auto Format" || true
+          git merge FETCH_HEAD
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          GITHUB_TOKEN: ${{ secrets.GARDENER_PAT }}
+          branch: ${{ github.event.client_payload.pull_request.head.ref }}
+          repository: ${{ github.event.client_payload.pull_request.head.repo.full_name }}

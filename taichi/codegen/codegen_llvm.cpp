@@ -1275,7 +1275,6 @@ llvm::Value *CodeGenLLVM::create_bit_ptr_struct(llvm::Value *byte_ptr_base,
   // };
   auto struct_type = llvm::StructType::get(
       *llvm_context, {llvm::Type::getInt8PtrTy(*llvm_context),
-                      llvm::Type::getInt32Ty(*llvm_context),
                       llvm::Type::getInt32Ty(*llvm_context)});
   // 2. allocate the bit pointer struct
   auto bit_ptr_struct = create_entry_block_alloca(struct_type);

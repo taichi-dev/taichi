@@ -1,0 +1,20 @@
+name: Handle Issue Comments
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  check_comments:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pull Request Comment Trigger
+        uses: Khan/pull-request-comment-trigger@1.0.0
+        id: check
+        with:
+          trigger: '/run-test'
+          reaction: rocket
+        env:
+          GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+      - name: Skip Tests
+        if: steps.check.outputs.triggered == 'false'
+        uses: andymckay/cancel-action@0.2

@@ -16,6 +16,7 @@
 #include "taichi/backends/cpu/codegen_cpu.h"
 #include "taichi/struct/struct.h"
 #include "taichi/struct/struct_llvm.h"
+#include "taichi/backends/metal/aot_module_builder_impl.h"
 #include "taichi/backends/metal/struct_metal.h"
 #include "taichi/backends/opengl/struct_opengl.h"
 #include "taichi/platform/cuda/detect_cuda.h"
@@ -239,8 +240,7 @@ FunctionType Program::compile(Kernel &kernel) {
   auto start_t = Time::get_time();
   TI_AUTO_PROF;
   FunctionType ret = nullptr;
-  if (arch_is_cpu(kernel.arch) || kernel.arch == Arch::cuda ||
-      kernel.arch == Arch::metal) {
+  if (Kernel::supports_lowering(kernel.arch)) {
     kernel.lower();
     ret = compile_to_backend_executable(kernel, /*offloaded=*/nullptr);
   } else if (kernel.arch == Arch::opengl) {
@@ -588,10 +588,9 @@ void Program::visualize_layout(const std::string &fn) {
       for (int i = 0; i < taichi_max_num_indices; i++) {
         if (snode->extractors[i].active) {
           int nb = snode->extractors[i].num_bits;
-          int start = snode->extractors[i].start + nb;
           indices += fmt::format(
               R"($\mathbf{{{}}}^{{\mathbf{{{}b}}:{}}}_{{\mathbf{{{}b}}:{}}}$)",
-              std::string(1, 'I' + i), start, latex_short_digit(1 << start), nb,
+              std::string(1, 'I' + i), 0, latex_short_digit(1 << 0), nb,
               latex_short_digit(1 << nb));
         }
       }
@@ -873,6 +872,14 @@ void Program::materialize_snode_expr_attributes() {
   for (auto &[snode, glb_var] : snode_to_glb_var_exprs_) {
     glb_var->set_attribute("dim", std::to_string(snode->num_active_indices));
   }
+}
+
+std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(Arch arch) {
+  if (arch == Arch::metal) {
+    return std::make_unique<metal::AotModuleBuilderImpl>(
+        &(metal_compiled_structs_.value()));
+  }
+  return nullptr;
 }
 
 TLANG_NAMESPACE_END

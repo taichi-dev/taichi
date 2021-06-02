@@ -18,12 +18,6 @@ BLSAnalyzer::BLSAnalyzer(OffloadedStmt *for_stmt, ScratchPads *pads)
       generate_block_indices(block, &block_indices_[block]);
     }
   }
-
-  const auto &block = for_stmt->body;
-
-  for (int i = 0; i < (int)block->statements.size(); i++) {
-    block->statements[i]->accept(this);
-  }
 }
 
 // static
@@ -37,6 +31,9 @@ void BLSAnalyzer::generate_block_indices(SNode *snode, BlockIndices *indices) {
 }
 
 void BLSAnalyzer::record_access(Stmt *stmt, AccessFlag flag) {
+  if (!analysis_ok_) {
+    return;
+  }
   if (!stmt->is<GlobalPtrStmt>())
     return;  // local alloca
   auto ptr = stmt->as<GlobalPtrStmt>();
@@ -47,16 +44,20 @@ void BLSAnalyzer::record_access(Stmt *stmt, AccessFlag flag) {
     }
     bool matching_indices = true;
     std::vector<IndexRange> offsets;
+    std::vector<int> coeffs;
     offsets.resize(ptr->indices.size());
+    coeffs.resize(ptr->indices.size());
     const int num_indices = (int)ptr->indices.size();
     for (int i = 0; i < num_indices; i++) {
       auto diff = irpass::analysis::value_diff_loop_index(ptr->indices[i],
                                                           for_stmt_, i);
-      if (diff.linear_related()) {
+      if (diff.related_() && diff.coeff > 0) {
         offsets[i].low = diff.low;
         offsets[i].high = diff.high;
+        coeffs[i] = diff.coeff;
       } else {
         matching_indices = false;
+        analysis_ok_ = false;
       }
     }
     if (matching_indices) {
@@ -65,7 +66,7 @@ void BLSAnalyzer::record_access(Stmt *stmt, AccessFlag flag) {
       std::vector<int> index(num_indices, 0);
       std::function<void(int)> visit = [&](int dimension) {
         if (dimension == num_indices) {
-          pads_->access(snode, index, flag);
+          pads_->access(snode, coeffs, index, flag);
           return;
         }
         for (int i = (index_bounds[dimension].low + offsets[dimension].low);
@@ -99,6 +100,16 @@ void BLSAnalyzer::visit(AtomicOpStmt *stmt) {
 
 void BLSAnalyzer::visit(Stmt *stmt) {
   TI_ASSERT(!stmt->is_container_statement());
+}
+
+bool BLSAnalyzer::run() {
+  const auto &block = for_stmt_->body;
+
+  for (int i = 0; i < (int)block->statements.size(); i++) {
+    block->statements[i]->accept(this);
+  }
+
+  return analysis_ok_;
 }
 
 }  // namespace lang

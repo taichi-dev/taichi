@@ -29,13 +29,14 @@ def action(p: ti.ext_arr()):
 
 
 @ti.func
-def draw_rect(b: ti.template(), i, j, s, k, dx, dy):
-    x = i // s
-    y = j // s
+def draw_rect(b: ti.template(), i, j, r, dx, dy):
+    k = RES // K**(R - r)
+    x = i * N // RES
+    y = j * N // RES
     a = 0
     if dx and i % k == 0 or dy and j % k == 0:
-        a += ti.is_active(b, [x, y])
-        a += ti.is_active(b, [x - dx, y - dy])
+        a += ti.is_active(b, ti.Vector([x, y]) // K**r)
+        a += ti.is_active(b, ti.Vector([x - dx, y - dy]) // K**r)
     return a
 
 
@@ -45,11 +46,9 @@ def paint():
         for k in ti.static(range(3)):
             img[i, j][k] *= 0.85
     for i, j in img:
-        s = RES // N
         for r in ti.static(range(R)):
-            k = RES // K**(R - r)
-            ia = draw_rect(qt.parent(r + 1), i, j, s, k, 1, 0)
-            ja = draw_rect(qt.parent(r + 1), i, j, s, k, 0, 1)
+            ia = draw_rect(qt.parent(r + 1), i, j, r, 1, 0)
+            ja = draw_rect(qt.parent(r + 1), i, j, r, 0, 1)
             img[i, j][0] += (ia + ja) * ((R - r) / R)**2
 
 

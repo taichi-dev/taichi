@@ -189,11 +189,11 @@ void StructCompilerLLVM::generate_refine_coordinates(SNode *snode) {
       auto mask = ((1 << snode->extractors[i].num_bits) - 1);
       addition = builder.CreateAnd(
           builder.CreateAShr(l, snode->extractors[i].acc_offset), mask);
-      addition = builder.CreateShl(
-          addition, tlctx->get_constant(snode->extractors[i].start));
     }
     auto in = call(&builder, "PhysicalCoordinates_get_val", inp_coords,
                    tlctx->get_constant(i));
+    in = builder.CreateShl(in,
+                           tlctx->get_constant(snode->extractors[i].num_bits));
     auto added = builder.CreateOr(in, addition);
     call(&builder, "PhysicalCoordinates_set_val", outp_coords,
          tlctx->get_constant(i), added);
@@ -264,7 +264,7 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
 
   if (host) {
     infer_snode_properties(root);
-    compute_trailing_bits(root);
+    // compute_trailing_bits(root);
   }
 
   auto snodes_rev = snodes;

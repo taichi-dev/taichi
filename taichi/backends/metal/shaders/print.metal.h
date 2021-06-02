@@ -60,7 +60,7 @@ STR(
       // * Followed by N i32s, one for each print arg. F32 are encoded to I32.
       // For strings, there is a string table on the host side, so that the
       // kernel only needs to store a I32 string ID.
-      enum Type { I32 = 1, U32 = 2, F32 = 2, Str = 3 };
+      enum Type { I32 = 1, U32 = 2, F32 = 3, Str = 4 };
 
       PrintMsg(device int32_t *buf, int num_entries)
           : mask_buf_(buf),

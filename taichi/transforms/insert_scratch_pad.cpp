@@ -22,7 +22,11 @@ std::unique_ptr<ScratchPads> initialize_scratch_pad(OffloadedStmt *offload) {
            SNodeAccessFlag::block_local)) {
     pads->insert(snode);
   }
-  BLSAnalyzer _(offload, pads.get());
+  BLSAnalyzer bls_analyzer(offload, pads.get());
+  bool analysis_ok = bls_analyzer.run();
+  if (!analysis_ok) {
+    TI_ERROR("BLS analysis failed !");
+  }
   pads->finalize();
   return pads;
 }

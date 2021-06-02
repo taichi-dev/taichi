@@ -44,6 +44,7 @@ class ScratchPad {
   SNode *snode{nullptr};
   using AccessFlag = taichi::lang::AccessFlag;
 
+  std::vector<int> coefficients;
   std::vector<BoundRange> bounds;
   // pad_size[i] := bounds[i].high - bounds[i].low
   // TODO: This can be replaced by a function call to bounds[i].range()
@@ -63,6 +64,7 @@ class ScratchPad {
   ScratchPad(SNode *snode) : snode(snode) {
     TI_ASSERT(snode != nullptr);
     dim = snode->num_active_indices;
+    coefficients.resize(dim);
     bounds.resize(dim);
     pad_size.resize(dim);
 
@@ -76,11 +78,14 @@ class ScratchPad {
     empty = false;
   }
 
-  void access(const std::vector<int> &indices, AccessFlag flags) {
+  void access(const std::vector<int> &coeffs,
+              const std::vector<int> &indices,
+              AccessFlag flags) {
     TI_ASSERT(!finalized);
     empty = true;
     TI_ASSERT((int)indices.size() == dim);
     for (int i = 0; i < dim; i++) {
+      coefficients[i] = coeffs[i];
       bounds[i].low = std::min(bounds[i].low, indices[i]);
       bounds[i].high = std::max(bounds[i].high, indices[i] + 1);
       pad_size[i] = bounds[i].range();
@@ -194,11 +199,14 @@ class ScratchPads {
     }
   }
 
-  void access(SNode *snode, const std::vector<int> &indices, AccessFlag flags) {
+  void access(SNode *snode,
+              const std::vector<int> &coeffs,
+              const std::vector<int> &indices,
+              AccessFlag flags) {
     TI_ASSERT(snode != nullptr);
     if (pads.find(snode) == pads.end())
       return;
-    pads.find(snode)->second.access(indices, flags);
+    pads.find(snode)->second.access(coeffs, indices, flags);
     /*
     if (snode->parent->type != SNodeType::root) {
       auto parent_indices = indices;

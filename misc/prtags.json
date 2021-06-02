@@ -1,4 +1,5 @@
 {
+  "ci"              : "CI/CD workflow",
   "cpu"             : "CPU backends",
   "cuda"            : "CUDA backend",
   "doc"             : "Documentation",
@@ -8,6 +9,7 @@
   "lang"            : "Language and syntax",
   "metal"           : "Metal backend",
   "opengl"          : "OpenGL backend",
+  "vulkan"          : "Vulkan backend",
   "misc"            : "Miscellaneous",
   "std"             : "Standard library",
   "opt"             : "IR optimization passes",

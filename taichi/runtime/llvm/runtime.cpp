@@ -1055,7 +1055,6 @@ void element_listgen_root(LLVMRuntime *runtime,
   auto parent_list = runtime->element_lists[parent->snode_id];
   auto child_list = runtime->element_lists[child->snode_id];
   // Cache the func pointers here for better compiler optimization
-  auto parent_refine_coordinates = parent->refine_coordinates;
   auto parent_lookup_element = parent->lookup_element;
   auto child_get_num_elements = child->get_num_elements;
   auto child_from_parent_element = child->from_parent_element;
@@ -1078,9 +1077,6 @@ void element_listgen_root(LLVMRuntime *runtime,
 
   auto element = parent_list->get<Element>(0);
 
-  PhysicalCoordinates refined_coord;
-  parent_refine_coordinates(&element.pcoord, &refined_coord, 0);
-
   auto ch_element = parent_lookup_element((Ptr)parent, element.element, 0);
   ch_element = child_from_parent_element((Ptr)ch_element);
   auto ch_num_elements = child_get_num_elements((Ptr)child, ch_element);
@@ -1093,7 +1089,9 @@ void element_listgen_root(LLVMRuntime *runtime,
     elem.element = ch_element;
     elem.loop_bounds[0] = c * ch_element_size;
     elem.loop_bounds[1] = std::min((c + 1) * ch_element_size, ch_num_elements);
-    elem.pcoord = refined_coord;
+    // There is no need to refine coordinates for root listgen, since its
+    // num_bits is always zero
+    elem.pcoord = element.pcoord;
     child_list->append(&elem);
   }
 }

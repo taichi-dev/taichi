@@ -1552,6 +1552,16 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     auto upper_bound = get_arg(4);
 
     parent_coordinates = element.get_ptr("pcoord");
+    block_corner_coordinates =
+        create_entry_block_alloca(physical_coordinate_ty);
+
+    auto refine =
+        get_runtime_function(leaf_block->refine_coordinates_func_name());
+    // A block corner is the global coordinate/index of the lower-left corner
+    // cell within that block, and is the same for all the cells within that
+    // block.
+    create_call(refine, {parent_coordinates, block_corner_coordinates,
+                         tlctx->get_constant(0)});
 
     if (stmt->tls_prologue) {
       stmt->tls_prologue->accept(this);
@@ -1605,12 +1615,26 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
     builder->SetInsertPoint(loop_body_bb);
 
     // initialize the coordinates
-    auto refine =
-        get_runtime_function(leaf_block->refine_coordinates_func_name());
     auto new_coordinates = create_entry_block_alloca(physical_coordinate_ty);
 
     create_call(refine, {parent_coordinates, new_coordinates,
                          builder->CreateLoad(loop_index)});
+
+    // One more refine step is needed for bit_arrays to make final coordinates
+    // non-consecutive, since each thread will process multiple
+    // coordinates via vectorization
+    if (stmt->snode->type == SNodeType::bit_array && stmt->snode->parent) {
+      if (stmt->snode->parent->type == SNodeType::dense) {
+        refine =
+            get_runtime_function(stmt->snode->refine_coordinates_func_name());
+
+        create_call(refine,
+                    {new_coordinates, new_coordinates, tlctx->get_constant(0)});
+      } else {
+        TI_ERROR(
+            "Struct-for looping through bit array but its parent is not dense");
+      }
+    }
 
     current_coordinates = new_coordinates;
 
@@ -1741,6 +1765,10 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
        body, tlctx->get_constant(stmt->tls_size),
        tlctx->get_constant(stmt->num_cpu_threads)});
   // TODO: why do we need num_cpu_threads on GPUs?
+
+  current_coordinates = nullptr;
+  parent_coordinates = nullptr;
+  block_corner_coordinates = nullptr;
 }
 
 void CodeGenLLVM::visit(LoopIndexStmt *stmt) {
@@ -1770,10 +1798,11 @@ void CodeGenLLVM::visit(BlockCornerIndexStmt *stmt) {
   if (stmt->loop->is<OffloadedStmt>() &&
       stmt->loop->as<OffloadedStmt>()->task_type ==
           OffloadedStmt::TaskType::struct_for) {
-    TI_ASSERT(parent_coordinates);
-    llvm_val[stmt] = builder->CreateLoad(builder->CreateGEP(
-        parent_coordinates, {tlctx->get_constant(0), tlctx->get_constant(0),
-                             tlctx->get_constant(stmt->index)}));
+    TI_ASSERT(block_corner_coordinates);
+    llvm_val[stmt] = builder->CreateLoad(
+        builder->CreateGEP(block_corner_coordinates,
+                           {tlctx->get_constant(0), tlctx->get_constant(0),
+                            tlctx->get_constant(stmt->index)}));
   } else {
     TI_NOT_IMPLEMENTED;
   }

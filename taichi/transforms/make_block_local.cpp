@@ -154,14 +154,21 @@ void make_block_local_offload(OffloadedStmt *offload,
 
               auto global_index_this_dim =
                   element_block->push_back<BinaryOpStmt>(
-                      BinaryOpType::add,
+                      BinaryOpType::add, bls_coord,
                       element_block->push_back<ConstStmt>(
-                          TypedConstant(pad.second.bounds[i].low)),
-                      bls_coord);
+                          TypedConstant(pad.second.bounds[i].low)));
+
+              auto block_corner =
+                  element_block->push_back<BlockCornerIndexStmt>(offload, i);
+              if (pad.second.coefficients[i] > 1) {
+                block_corner = element_block->push_back<BinaryOpStmt>(
+                    BinaryOpType::mul, block_corner,
+                    element_block->push_back<ConstStmt>(
+                        TypedConstant(pad.second.coefficients[i])));
+              }
 
               global_index_this_dim = element_block->push_back<BinaryOpStmt>(
-                  BinaryOpType::add, global_index_this_dim,
-                  element_block->push_back<BlockCornerIndexStmt>(offload, i));
+                  BinaryOpType::add, global_index_this_dim, block_corner);
 
               global_indices[i] = global_index_this_dim;
             }
@@ -227,7 +234,14 @@ void make_block_local_offload(OffloadedStmt *offload,
           //   bls_stride_i * (gbl_idx_i - block_corner_i - bls_lower_bound_i)
           // Note that when index offsets are used, the offset contributions are
           // already included in bls_lower_bound_i.
-          auto block_corner = bls.push_back<BlockCornerIndexStmt>(offload, i);
+
+          Stmt *block_corner = bls.push_back<BlockCornerIndexStmt>(offload, i);
+          if (pad.second.coefficients[i] > 1) {
+            block_corner = bls.push_back<BinaryOpStmt>(
+                BinaryOpType::mul, block_corner,
+                bls.push_back<ConstStmt>(
+                    TypedConstant(pad.second.coefficients[i])));
+          }
 
           auto inc = bls.push_back<BinaryOpStmt>(
               BinaryOpType::sub, global_indices[i], block_corner);

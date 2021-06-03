@@ -359,15 +359,18 @@ AtomicOpStmt *IRBuilder::create_atomic_min(Stmt *dest, Stmt *val) {
 }
 
 AtomicOpStmt *IRBuilder::create_atomic_and(Stmt *dest, Stmt *val) {
-  return insert(Stmt::make_typed<AtomicOpStmt>(AtomicOpType::bit_and, dest, val));
+  return insert(
+      Stmt::make_typed<AtomicOpStmt>(AtomicOpType::bit_and, dest, val));
 }
 
 AtomicOpStmt *IRBuilder::create_atomic_or(Stmt *dest, Stmt *val) {
-  return insert(Stmt::make_typed<AtomicOpStmt>(AtomicOpType::bit_or, dest, val));
+  return insert(
+      Stmt::make_typed<AtomicOpStmt>(AtomicOpType::bit_or, dest, val));
 }
 
 AtomicOpStmt *IRBuilder::create_atomic_xor(Stmt *dest, Stmt *val) {
-  return insert(Stmt::make_typed<AtomicOpStmt>(AtomicOpType::bit_xor, dest, val));
+  return insert(
+      Stmt::make_typed<AtomicOpStmt>(AtomicOpType::bit_xor, dest, val));
 }
 
 TernaryOpStmt *IRBuilder::create_select(Stmt *cond,

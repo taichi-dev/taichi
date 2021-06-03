@@ -1,5 +1,7 @@
-import taichi as ti
 import numpy as np
+
+import taichi as ti
+
 try:
     import taichi_glsl as tl
     import taichi_three as t3

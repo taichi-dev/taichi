@@ -1,7 +1,7 @@
 name: Cancel
 on:
   workflow_run:
-    workflows: ["Persubmit Checks"]
+    workflows: ["Presubmit Checks"]
     types:
       - requested
 

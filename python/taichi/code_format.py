@@ -150,7 +150,7 @@ def format_file(fn):
         format_plain_text(fn)
         return True
     elif has_suffix(fn, [
-            'txt', 'md', 'rst', 'cfg', 'yml', 'ini', 'map', 'cmake'
+            'txt', 'md', 'rst', 'cfg', 'ini', 'map', 'cmake'
     ]) or (os.path.basename(fn)[0].isupper()
            and fn.endswith('file')):  # E.g., Dockerfile and Jenkinsfile
         format_plain_text(fn)

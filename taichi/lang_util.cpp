@@ -22,7 +22,7 @@ real get_cpu_frequency() {
     uint64 cycles = Time::get_cycles();
     Time::sleep(1);
     uint64 elapsed_cycles = Time::get_cycles() - cycles;
-    auto                      frequency = real(std::round(elapsed_cycles / 1e8_f64) / 10.0_f64);
+    auto frequency = real(std::round(elapsed_cycles / 1e8_f64) / 10.0_f64);
     TI_INFO("CPU frequency = {:.2f} GHz ({} cycles per second)", frequency,
             elapsed_cycles);
     cpu_frequency = frequency;

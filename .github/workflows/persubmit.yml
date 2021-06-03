@@ -19,7 +19,6 @@ jobs:
           git config user.email "taichigardener@gmail.com"
           git config user.name "Taichi Gardener"
           git checkout -b _fake_squash
-          git commit -am "compare code format"
           git remote add upstream https://github.com/taichi-dev/taichi.git
           git fetch upstream master
           sudo apt-get install clang-format

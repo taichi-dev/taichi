@@ -11,5 +11,5 @@ from taichi import aot  # isort:skip
 
 __all__ = ['core', 'misc', 'lang', 'tools', 'main', 'torch_io']
 
-__version__ = (core.get_version_major()                    , core.get_version_minor(),
+__version__ = (core.get_version_major(), core.get_version_minor(),
                core.get_version_patch())

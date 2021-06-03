@@ -1,4 +1,4 @@
-name: Persubmit Checks
+name: Presubmit Checks
 on:
   pull_request:
     types: [opened, synchronize, reopened]
@@ -33,7 +33,6 @@ jobs:
     # This job will be required to pass before merging to master branch.
     name: Required Build and Test (CPU)
     needs: check_code_format
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip ci') }}
     strategy:
       matrix:
         include:
@@ -78,7 +77,6 @@ jobs:
   build_and_test_cpu:
     name: Build and Test (CPU)
     needs: check_code_format
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip ci') && github.event.sender.login != 'taichi-gardener' }}
     strategy:
       matrix:
         include:
@@ -135,7 +133,6 @@ jobs:
   build_and_test_gpu_linux:
     name: Build and Test (GPU)
     needs: check_code_format
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip ci') && github.event.sender.login != 'taichi-gardener' }}
     runs-on: [self-hosted, cuda, cn]
     steps:
       - uses: actions/checkout@v2
@@ -163,26 +160,6 @@ jobs:
           $PYTHON examples/laplace.py
           ti diagnose
           ti test -vr2 -t2
-
-  check_previous_run:
-    name: Checks the Workflow Run of the Previous Commit
-    runs-on: ubuntu-latest
-    if: ${{ contains(github.event.pull_request.labels.*.name, 'skip ci') || github.event.sender.login == 'taichi-gardener' }}
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
-        with:
-          python-version: 3.8
-      - name: Check the previous run
-        env:
-          PR: ${{ github.event.pull_request.number }}
-          SHA: ${{ github.event.pull_request.head.sha }}
-          # https://docs.github.com/en/actions/configuring-and-managing-workflows/authenticating-with-the-github_token
-          # https://docs.github.com/en/actions/configuring-and-managing-workflows/creating-and-storing-encrypted-secrets
-          # Do not leak the secret
-          OAUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          python misc/ci_check_previous_run.py --pr "${PR}" --sha "${SHA}" --token "${OAUTH_TOKEN}"
 
   title_format:
     name: Check PR Title

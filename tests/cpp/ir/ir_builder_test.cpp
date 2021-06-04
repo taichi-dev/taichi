@@ -142,10 +142,10 @@ import taichi as ti, numpy as np
 ti.init()
 
 n = 10
-a = ti.field(ti.f32, n, needs_grad = True)
-b = ti.field(ti.f32, n, needs_grad = True)
-c = ti.field(ti.f32, n, needs_grad = True)
-energy = ti.field(ti.f32, [], needs_grad = True)
+a = ti.field(ti.f32, n, needs_grad=True)
+b = ti.field(ti.f32, n, needs_grad=True)
+c = ti.field(ti.f32, n, needs_grad=True)
+energy = ti.field(ti.f32, [], needs_grad=True)
 
 @ti.kernel
 def init():

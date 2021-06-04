@@ -281,7 +281,7 @@ CodeGenLLVM::CodeGenLLVM(Kernel *kernel, IRNode *ir)
   initialize_context();
 
   context_ty = get_runtime_type("Context");
-  physical_coordinate_ty = get_runtime_type("PhysicalCoordinates");
+  physical_coordinate_ty = get_runtime_type(kLLVMPhysicalCoordinatesName);
 
   kernel_name = kernel->name + "_kernel";
 }
@@ -1275,7 +1275,6 @@ llvm::Value *CodeGenLLVM::create_bit_ptr_struct(llvm::Value *byte_ptr_base,
   // };
   auto struct_type = llvm::StructType::get(
       *llvm_context, {llvm::Type::getInt8PtrTy(*llvm_context),
-                      llvm::Type::getInt32Ty(*llvm_context),
                       llvm::Type::getInt32Ty(*llvm_context)});
   // 2. allocate the bit pointer struct
   auto bit_ptr_struct = create_entry_block_alloca(struct_type);
@@ -1653,7 +1652,7 @@ void CodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt, bool spmd) {
       }
     }
 
-    auto coord_object = RuntimeObject("PhysicalCoordinates", this,
+    auto coord_object = RuntimeObject(kLLVMPhysicalCoordinatesName, this,
                                       builder.get(), new_coordinates);
     for (int i = 0; i < snode->num_active_indices; i++) {
       auto j = snode->physical_index_position[i];

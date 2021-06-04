@@ -21,6 +21,7 @@ class Module:
     def __init__(self, arch):
         self._arch = arch
         self._kernels = []
+        impl.get_runtime().materialize()
         self._aot_builder = impl.get_runtime().prog.make_aot_module_builder(
             arch)
 

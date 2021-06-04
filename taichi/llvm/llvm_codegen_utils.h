@@ -36,7 +36,10 @@
 
 #include "llvm_context.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
+
+inline constexpr char kLLVMPhysicalCoordinatesName[] = "PhysicalCoordinates";
 
 std::string type_name(llvm::Type *type);
 
@@ -50,11 +53,11 @@ inline bool check_func_call_signature(llvm::Value *func, Args &&... args) {
 
 class LLVMModuleBuilder {
  public:
-  std::unique_ptr<llvm::Module> module;
-  llvm::BasicBlock *entry_block;
-  std::unique_ptr<llvm::IRBuilder<>> builder;
-  TaichiLLVMContext *tlctx;
-  llvm::LLVMContext *llvm_context;
+  std::unique_ptr<llvm::Module> module{nullptr};
+  llvm::BasicBlock *entry_block{nullptr};
+  std::unique_ptr<llvm::IRBuilder<>> builder{nullptr};
+  TaichiLLVMContext *tlctx{nullptr};
+  llvm::LLVMContext *llvm_context{nullptr};
 
   LLVMModuleBuilder(std::unique_ptr<llvm::Module> &&module,
                     TaichiLLVMContext *tlctx)
@@ -145,10 +148,10 @@ class LLVMModuleBuilder {
 class RuntimeObject {
  public:
   std::string cls_name;
-  llvm::Value *ptr;
-  LLVMModuleBuilder *mb;
-  llvm::Type *type;
-  llvm::IRBuilder<> *builder;
+  llvm::Value *ptr{nullptr};
+  LLVMModuleBuilder *mb{nullptr};
+  llvm::Type *type{nullptr};
+  llvm::IRBuilder<> *builder{nullptr};
 
   RuntimeObject(const std::string &cls_name,
                 LLVMModuleBuilder *mb,
@@ -179,6 +182,10 @@ class RuntimeObject {
     call(fmt::format("set_{}", field), val);
   }
 
+  void set(const std::string &field, llvm::Value *index, llvm::Value *val) {
+    call(fmt::format("set_{}", field), index, val);
+  }
+
   template <typename... Args>
   llvm::Value *call(const std::string &func_name, Args &&... args) {
     auto func = get_func(func_name);
@@ -192,4 +199,5 @@ class RuntimeObject {
   }
 };
 
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

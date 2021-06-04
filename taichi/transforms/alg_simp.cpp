@@ -48,6 +48,34 @@ class AlgSimp : public BasicStmtVisitor {
       : BasicStmtVisitor(), fast_math(fast_math_) {
   }
 
+  [[nodiscard]] bool is_redundant_cast(const DataType &first_cast,
+                                       const DataType &second_cast) const {
+    // Tests if second_cast(first_cast(a)) is guaranteed to be equivalent to
+    // second_cast(a).
+    if (!first_cast->is<PrimitiveType>() || !second_cast->is<PrimitiveType>()) {
+      // TODO(type): handle this case
+      return false;
+    }
+    if (is_real(second_cast)) {
+      // float(...(a))
+      return is_real(first_cast) &&
+             data_type_bits(second_cast) <= data_type_bits(first_cast);
+    }
+    if (is_integral(first_cast)) {
+      // int(int(a))
+      return data_type_bits(second_cast) <= data_type_bits(first_cast);
+    }
+    // int(float(a))
+    if (data_type_bits(second_cast) <= data_type_bits(first_cast) * 2) {
+      // f64 can hold any i32 values.
+      return true;
+    } else {
+      // Assume a floating point type can hold any integer values when
+      // fast_math=True.
+      return fast_math;
+    }
+  }
+
   void visit(UnaryOpStmt *stmt) override {
     if (stmt->is_cast()) {
       if (stmt->cast_type == stmt->operand->ret_type) {
@@ -58,6 +86,11 @@ class AlgSimp : public BasicStmtVisitor {
         auto prev_cast = stmt->operand->as<UnaryOpStmt>();
         if (stmt->op_type == UnaryOpType::cast_bits &&
             prev_cast->op_type == UnaryOpType::cast_bits) {
+          stmt->operand = prev_cast->operand;
+          modifier.mark_as_modified();
+        } else if (stmt->op_type == UnaryOpType::cast_value &&
+                   prev_cast->op_type == UnaryOpType::cast_value &&
+                   is_redundant_cast(prev_cast->cast_type, stmt->cast_type)) {
           stmt->operand = prev_cast->operand;
           modifier.mark_as_modified();
         }

@@ -8,10 +8,6 @@
 
 TLANG_NAMESPACE_BEGIN
 
-StructCompiler::StructCompiler(Program *prog) : prog(prog) {
-  root_size = 0;
-}
-
 void StructCompiler::collect_snodes(SNode &snode) {
   snodes.push_back(&snode);
   for (int ch_id = 0; ch_id < (int)snode.ch.size(); ch_id++) {

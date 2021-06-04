@@ -142,6 +142,11 @@ if (TI_WITH_OPENGL)
   target_link_libraries(${LIBRARY_NAME} glfw)
 endif()
 
+if(DEFINED ENV{LLVM_DIR})
+    set(LLVM_DIR $ENV{LLVM_DIR})
+    message("Getting LLVM_DIR=${LLVM_DIR} from the environment variable")
+endif()
+
 # http://llvm.org/docs/CMake.html#embedding-llvm-in-your-project
 find_package(LLVM REQUIRED CONFIG)
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")

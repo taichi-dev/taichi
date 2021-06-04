@@ -1,4 +1,4 @@
-name: Handle Issue Comments
+name: Slash Command Dispatch
 on:
   issue_comment:
     types: [created]
@@ -7,14 +7,12 @@ jobs:
   check_comments:
     runs-on: ubuntu-latest
     steps:
-      - name: Pull Request Comment Trigger
-        uses: Khan/pull-request-comment-trigger@1.0.0
-        id: check
+      - name: Slash Command Dispatch
+        uses: peter-evans/slash-command-dispatch@v2
         with:
-          trigger: '/run-test'
-          reaction: rocket
-        env:
-          GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
-      - name: Skip Tests
-        if: steps.check.outputs.triggered == 'false'
-        uses: andymckay/cancel-action@0.2
+          token: ${{ secrets.GARDENER_PAT }}
+          reaction-token: ${{ secrets.GARDENER_PAT }}
+          repository: taichi-dev/ci_workflows
+          permission: triage
+          commands: |
+            format

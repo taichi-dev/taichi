@@ -1,3 +1,4 @@
+import sys
 import numpy as np
 
 import taichi as ti
@@ -8,6 +9,7 @@ try:
 except ImportError:
     print('This example needs the extension library Taichi THREE to work.'
           'Please run `pip install taichi_three==0.0.5` to install it.')
+    sys.exit(1)
 if t3.__version__ != (0, 0, 5):
     print('WARNING: Taichi THREE v0.0.5 expected, got v' +
           '.'.join(map(str, t3.__version__)))

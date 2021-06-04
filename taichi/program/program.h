@@ -84,29 +84,31 @@ class AsyncEngine;
 class Program {
  public:
   using Kernel = taichi::lang::Kernel;
-  Callable *current_callable;
-  std::unique_ptr<SNode> snode_root;  // pointer to the data structure.
-  void *llvm_runtime;
+  Callable *current_callable{nullptr};
+  std::unique_ptr<SNode> snode_root{nullptr};  // pointer to the data structure.
+  void *llvm_runtime{nullptr};
   CompileConfig config;
-  std::unique_ptr<TaichiLLVMContext> llvm_context_host, llvm_context_device;
-  bool sync;  // device/host synchronized?
-  bool finalized;
-  float64 total_compilation_time;
+  std::unique_ptr<TaichiLLVMContext> llvm_context_host{nullptr};
+  std::unique_ptr<TaichiLLVMContext> llvm_context_device{nullptr};
+  bool sync{false};  // device/host synchronized?
+  bool finalized{false};
+  float64 total_compilation_time{0.0};
   static std::atomic<int> num_instances;
-  std::unique_ptr<ThreadPool> thread_pool;
-  std::unique_ptr<MemoryPool> memory_pool;
-  uint64 *result_buffer;             // TODO: move this
-  void *preallocated_device_buffer;  // TODO: move this to memory allocator
+  std::unique_ptr<ThreadPool> thread_pool{nullptr};
+  std::unique_ptr<MemoryPool> memory_pool{nullptr};
+  uint64 *result_buffer{nullptr};  // TODO: move this
+  void *preallocated_device_buffer{
+      nullptr};  // TODO: move this to memory allocator
   std::unordered_map<int, SNode *> snodes;
 
-  std::unique_ptr<Runtime> runtime;
-  std::unique_ptr<AsyncEngine> async_engine;
+  std::unique_ptr<Runtime> runtime{nullptr};
+  std::unique_ptr<AsyncEngine> async_engine{nullptr};
 
   std::vector<std::unique_ptr<Kernel>> kernels;
   std::vector<std::unique_ptr<Function>> functions;
   std::unordered_map<FunctionKey, Function *> function_map;
 
-  std::unique_ptr<KernelProfilerBase> profiler;
+  std::unique_ptr<KernelProfilerBase> profiler{nullptr};
 
   std::unordered_map<JITEvaluatorId, std::unique_ptr<Kernel>>
       jit_evaluator_cache;
@@ -119,7 +121,7 @@ class Program {
   Program() : Program(default_compile_config.arch) {
   }
 
-  Program(Arch arch);
+  explicit Program(Arch arch);
 
   void kernel_profiler_print() {
     profiler->print();

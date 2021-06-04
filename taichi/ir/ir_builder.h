@@ -90,10 +90,11 @@ class IRBuilder {
   };
 
   template <typename XStmt>
-  LoopGuard get_loop_guard(XStmt *loop) {
+  [[nodiscard]] LoopGuard get_loop_guard(XStmt *loop) {
     return LoopGuard(*this, loop);
   }
-  IfGuard get_if_guard(IfStmt *if_stmt, bool true_branch) {
+
+  [[nodiscard]] IfGuard get_if_guard(IfStmt *if_stmt, bool true_branch) {
     return IfGuard(*this, if_stmt, true_branch);
   }
 
@@ -127,6 +128,8 @@ class IRBuilder {
   ConstStmt *get_int64(int64 value);
   ConstStmt *get_float32(float32 value);
   ConstStmt *get_float64(float64 value);
+
+  RandStmt *create_rand(DataType value_type);
 
   // Load kernel arguments.
   ArgLoadStmt *create_arg_load(int arg_id, DataType dt, bool is_ptr);
@@ -184,6 +187,16 @@ class IRBuilder {
   BinaryOpStmt *create_cmp_ge(Stmt *l, Stmt *r);
   BinaryOpStmt *create_cmp_eq(Stmt *l, Stmt *r);
   BinaryOpStmt *create_cmp_ne(Stmt *l, Stmt *r);
+
+  // Atomic operations.
+  AtomicOpStmt *create_atomic_add(Stmt *dest, Stmt *val);
+  AtomicOpStmt *create_atomic_sub(Stmt *dest, Stmt *val);
+  AtomicOpStmt *create_atomic_max(Stmt *dest, Stmt *val);
+  AtomicOpStmt *create_atomic_min(Stmt *dest, Stmt *val);
+  // Atomic bitwise operations.
+  AtomicOpStmt *create_atomic_and(Stmt *dest, Stmt *val);
+  AtomicOpStmt *create_atomic_or(Stmt *dest, Stmt *val);
+  AtomicOpStmt *create_atomic_xor(Stmt *dest, Stmt *val);
 
   // Ternary operations. Returns the result.
   TernaryOpStmt *create_select(Stmt *cond,

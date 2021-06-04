@@ -1,25 +1,28 @@
-// Codegen for the hierarchical data structure (LLVM)
+#include "taichi/struct/struct_llvm.h"
 
 #include "llvm/IR/Verifier.h"
 #include "llvm/IR/IRBuilder.h"
 
 #include "taichi/ir/ir.h"
 #include "taichi/struct/struct.h"
-#include "taichi/struct/struct_llvm.h"
 #include "taichi/program/program.h"
 #include "taichi/util/file_sequence_writer.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
-using namespace llvm;
+StructCompilerLLVM::StructCompilerLLVM(Arch arch,
+                                       const CompileConfig *config,
+                                       TaichiLLVMContext *tlctx)
+    : LLVMModuleBuilder(tlctx->clone_runtime_module(), tlctx),
+      arch_(arch),
+      config_(config),
+      tlctx_(tlctx),
+      llvm_ctx_(tlctx_->get_this_thread_context()) {
+}
 
-StructCompilerLLVM::StructCompilerLLVM(Program *prog, Arch arch)
-    : StructCompiler(prog),
-      LLVMModuleBuilder(prog->get_llvm_context(arch)->clone_runtime_module(),
-                        prog->get_llvm_context(arch)),
-      arch(arch) {
-  tlctx = prog->get_llvm_context(arch);
-  llvm_ctx = tlctx->get_this_thread_context();
+StructCompilerLLVM::StructCompilerLLVM(Arch arch, Program *prog)
+    : StructCompilerLLVM(arch, &(prog->config), prog->get_llvm_context(arch)) {
 }
 
 void StructCompilerLLVM::generate_types(SNode &snode) {
@@ -29,8 +32,8 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
     return;
   llvm::Type *node_type = nullptr;
 
-  auto ctx = llvm_ctx;
-  TI_ASSERT(ctx == tlctx->get_this_thread_context());
+  auto ctx = llvm_ctx_;
+  TI_ASSERT(ctx == tlctx_->get_this_thread_context());
 
   // create children type that supports forking...
 
@@ -46,20 +49,20 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
   auto ch_type =
       llvm::StructType::create(*ctx, ch_types, snode.node_type_name + "_ch");
 
-  snode.cell_size_bytes = tlctx->get_type_size(ch_type);
+  snode.cell_size_bytes = tlctx_->get_type_size(ch_type);
 
   llvm::Type *body_type = nullptr, *aux_type = nullptr;
   if (type == SNodeType::dense || type == SNodeType::bitmasked) {
     TI_ASSERT(snode._morton == false);
     body_type = llvm::ArrayType::get(ch_type, snode.max_num_elements());
     if (type == SNodeType::bitmasked) {
-      aux_type = llvm::ArrayType::get(llvm::Type::getInt32Ty(*llvm_ctx),
+      aux_type = llvm::ArrayType::get(llvm::Type::getInt32Ty(*llvm_ctx_),
                                       (snode.max_num_elements() + 31) / 32);
     }
   } else if (type == SNodeType::root) {
     body_type = ch_type;
   } else if (type == SNodeType::place) {
-    body_type = tlctx->get_data_type(snode.dt);
+    body_type = tlctx_->get_data_type(snode.dt);
   } else if (type == SNodeType::bit_struct) {
     // Generate the bit_struct type
     std::vector<Type *> ch_types;
@@ -78,7 +81,7 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
         TI_ERROR("Type {} not supported.", ch->dt->to_string());
       }
       component_cit->set_physical_type(snode.physical_type);
-      if (!arch_is_cpu(arch)) {
+      if (!arch_is_cpu(arch_)) {
         TI_ERROR_IF(data_type_bits(snode.physical_type) < 32,
                     "bit_struct physical type must be at least 32 bits on "
                     "non-CPU backends.");
@@ -95,14 +98,14 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
         snode.physical_type, ch_types, ch_offsets);
 
     DataType container_primitive_type(snode.physical_type);
-    body_type = tlctx->get_data_type(container_primitive_type);
+    body_type = tlctx_->get_data_type(container_primitive_type);
   } else if (type == SNodeType::bit_array) {
     // A bit array SNode should have only one child
     TI_ASSERT(snode.ch.size() == 1);
     auto &ch = snode.ch[0];
     Type *ch_type = ch->dt;
     ch->dt->as<CustomIntType>()->set_physical_type(snode.physical_type);
-    if (!arch_is_cpu(arch)) {
+    if (!arch_is_cpu(arch_)) {
       TI_ERROR_IF(data_type_bits(snode.physical_type) <= 16,
                   "bit_array physical type must be at least 32 bits on "
                   "non-CPU backends.");
@@ -111,7 +114,7 @@ void StructCompilerLLVM::generate_types(SNode &snode) {
         snode.physical_type, ch_type, snode.n);
 
     DataType container_primitive_type(snode.physical_type);
-    body_type = tlctx->get_data_type(container_primitive_type);
+    body_type = tlctx_->get_data_type(container_primitive_type);
   } else if (type == SNodeType::pointer) {
     // mutex
     aux_type = llvm::ArrayType::get(llvm::PointerType::getInt64Ty(*ctx),
@@ -162,18 +165,18 @@ void StructCompilerLLVM::generate_refine_coordinates(SNode *snode) {
   auto coord_type_ptr = llvm::PointerType::get(coord_type, 0);
 
   auto ft = llvm::FunctionType::get(
-      llvm::Type::getVoidTy(*llvm_ctx),
-      {coord_type_ptr, coord_type_ptr, llvm::Type::getInt32Ty(*llvm_ctx)},
+      llvm::Type::getVoidTy(*llvm_ctx_),
+      {coord_type_ptr, coord_type_ptr, llvm::Type::getInt32Ty(*llvm_ctx_)},
       false);
 
   auto func =
       llvm::Function::Create(ft, llvm::Function::ExternalLinkage,
                              snode->refine_coordinates_func_name(), *module);
 
-  auto bb = BasicBlock::Create(*llvm_ctx, "entry", func);
+  auto bb = llvm::BasicBlock::Create(*llvm_ctx_, "entry", func);
 
   llvm::IRBuilder<> builder(bb, bb->begin());
-  std::vector<Value *> args;
+  std::vector<llvm::Value *> args;
 
   for (auto &arg : func->args()) {
     args.push_back(&arg);
@@ -184,19 +187,19 @@ void StructCompilerLLVM::generate_refine_coordinates(SNode *snode) {
   auto l = args[2];
 
   for (int i = 0; i < taichi_max_num_indices; i++) {
-    auto addition = tlctx->get_constant(0);
+    auto addition = tlctx_->get_constant(0);
     if (snode->extractors[i].num_bits) {
       auto mask = ((1 << snode->extractors[i].num_bits) - 1);
       addition = builder.CreateAnd(
           builder.CreateAShr(l, snode->extractors[i].acc_offset), mask);
     }
     auto in = call(&builder, "PhysicalCoordinates_get_val", inp_coords,
-                   tlctx->get_constant(i));
+                   tlctx_->get_constant(i));
     in = builder.CreateShl(in,
-                           tlctx->get_constant(snode->extractors[i].num_bits));
+                           tlctx_->get_constant(snode->extractors[i].num_bits));
     auto added = builder.CreateOr(in, addition);
     call(&builder, "PhysicalCoordinates_set_val", outp_coords,
-         tlctx->get_constant(i), added);
+         tlctx_->get_constant(i), added);
   }
   builder.CreateRetVoid();
 }
@@ -220,29 +223,29 @@ void StructCompilerLLVM::generate_child_accessors(SNode &snode) {
         llvm::PointerType::get(get_llvm_element_type(module.get(), parent), 0);
 
     auto ft =
-        llvm::FunctionType::get(llvm::Type::getInt8PtrTy(*llvm_ctx),
-                                {llvm::Type::getInt8PtrTy(*llvm_ctx)}, false);
+        llvm::FunctionType::get(llvm::Type::getInt8PtrTy(*llvm_ctx_),
+                                {llvm::Type::getInt8PtrTy(*llvm_ctx_)}, false);
 
     auto func =
         llvm::Function::Create(ft, llvm::Function::ExternalLinkage,
                                snode.get_ch_from_parent_func_name(), *module);
 
-    auto bb = BasicBlock::Create(*llvm_ctx, "entry", func);
+    auto bb = llvm::BasicBlock::Create(*llvm_ctx_, "entry", func);
 
     llvm::IRBuilder<> builder(bb, bb->begin());
-    std::vector<Value *> args;
+    std::vector<llvm::Value *> args;
 
     for (auto &arg : func->args()) {
       args.push_back(&arg);
     }
     llvm::Value *ret;
-    ret = builder.CreateGEP(
-        builder.CreateBitCast(args[0], inp_type),
-        {tlctx->get_constant(0), tlctx->get_constant(parent->child_id(&snode))},
-        "getch");
+    ret = builder.CreateGEP(builder.CreateBitCast(args[0], inp_type),
+                            {tlctx_->get_constant(0),
+                             tlctx_->get_constant(parent->child_id(&snode))},
+                            "getch");
 
     builder.CreateRet(
-        builder.CreateBitCast(ret, llvm::Type::getInt8PtrTy(*llvm_ctx)));
+        builder.CreateBitCast(ret, llvm::Type::getInt8PtrTy(*llvm_ctx_)));
   }
 
   for (auto &ch : snode.ch) {
@@ -275,7 +278,7 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
 
   generate_child_accessors(root);
 
-  if (prog->config.print_struct_llvm_ir) {
+  if (config_->print_struct_llvm_ir) {
     static FileSequenceWriter writer("taichi_struct_llvm_ir_{:04d}.ll",
                                      "struct LLVM IR");
     writer.write(module.get());
@@ -284,9 +287,9 @@ void StructCompilerLLVM::run(SNode &root, bool host) {
   TI_ASSERT((int)snodes.size() <= taichi_max_num_snodes);
 
   auto node_type = get_llvm_node_type(module.get(), &root);
-  root_size = tlctx->get_data_layout().getTypeAllocSize(node_type);
+  root_size = tlctx_->get_data_layout().getTypeAllocSize(node_type);
 
-  tlctx->set_struct_module(module);
+  tlctx_->set_struct_module(module);
 }
 
 llvm::Type *StructCompilerLLVM::get_stub(llvm::Module *module,
@@ -324,7 +327,8 @@ llvm::Type *StructCompilerLLVM::get_llvm_element_type(llvm::Module *module,
 }
 
 std::unique_ptr<StructCompiler> StructCompiler::make(Program *prog, Arch arch) {
-  return std::make_unique<StructCompilerLLVM>(prog, arch);
+  return std::make_unique<StructCompilerLLVM>(arch, prog);
 }
 
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

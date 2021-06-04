@@ -1,9 +1,17 @@
 #include "taichi/backends/metal/aot_module_builder_impl.h"
 
-#include <filesystem>
 #include <fstream>
 
 #include "taichi/backends/metal/codegen_metal.h"
+
+#if defined(__GNUC__) && (__GNUC__ < 8)
+// https://stackoverflow.com/a/45867491
+#include <experimental/filesystem>
+namespace fs = ::std::experimental::filesystem;
+#else
+#include <filesystem>
+namespace fs = ::std::filesystem;
+#endif
 
 namespace taichi {
 namespace lang {
@@ -16,7 +24,6 @@ AotModuleBuilderImpl::AotModuleBuilderImpl(
 
 void AotModuleBuilderImpl::dump(const std::string &output_dir,
                                 const std::string &filename) const {
-  namespace fs = std::filesystem;
   const fs::path dir{output_dir};
   const fs::path bin_path = dir / fmt::format("{}_metadata.tcb", filename);
   write_to_binary_file(kernels_, bin_path.string());

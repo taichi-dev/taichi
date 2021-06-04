@@ -14,7 +14,8 @@ AotModuleBuilderImpl::AotModuleBuilderImpl(
     : compiled_structs_(compiled_structs) {
 }
 
-void AotModuleBuilderImpl::dump(const std::string &output_dir, const std::string &filename) const {
+void AotModuleBuilderImpl::dump(const std::string &output_dir,
+                                const std::string &filename) const {
   namespace fs = std::filesystem;
   const fs::path dir{output_dir};
   const fs::path bin_path = dir / fmt::format("{}_metadata.tcb", filename);
@@ -26,7 +27,8 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir, const std::string
   ts.write_to_file(txt_path.string());
 
   for (const auto &k : kernels_) {
-    const fs::path mtl_path = dir / fmt::format("{}_{}.metal", filename, k.kernel_name);
+    const fs::path mtl_path =
+        dir / fmt::format("{}_{}.metal", filename, k.kernel_name);
     std::ofstream fs{mtl_path.string()};
     fs << k.source_code;
     fs.close();

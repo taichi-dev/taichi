@@ -13,7 +13,8 @@ class AotModuleBuilder {
 
   void add(const std::string &identifier, Kernel *kernel);
 
-  virtual void dump(const std::string &output_dir) const = 0;
+  virtual void dump(const std::string &output_dir,
+                    const std::string &filename) const = 0;
 
  protected:
   /**

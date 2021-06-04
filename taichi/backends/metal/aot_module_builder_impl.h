@@ -15,7 +15,8 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
  public:
   explicit AotModuleBuilderImpl(const CompiledStructs *compiled_structs);
 
-  void dump(const std::string &output_dir) const override;
+  void dump(const std::string &output_dir,
+            const std::string &filename) const override;
 
  protected:
   void add_per_backend(const std::string &identifier, Kernel *kernel) override;

@@ -11,7 +11,7 @@ TEST(IRBuilder, RunSnode) {
 /*
 import taichi as ti, numpy as np
 ti.init()
-#ti.init(print_ir = True)
+# ti.init(print_ir=True)
 
 n = 10
 place = ti.field(dtype = ti.i32)

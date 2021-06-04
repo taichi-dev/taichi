@@ -6,7 +6,7 @@ set(CHI_EXAMPLES chi_examples)
 project(chi_examples)
 
 add_executable(${CHI_EXAMPLES} main.cpp)
-target_include_directories(${CHI_EXAMPLES} 
+target_include_directories(${CHI_EXAMPLES}
     PUBLIC $ENV{TAICHI_REPO_DIR}
     PUBLIC $ENV{TAICHI_REPO_DIR}/external/include
     PUBLIC $ENV{TAICHI_REPO_DIR}/external/spdlog/include

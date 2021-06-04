@@ -83,3 +83,9 @@ FILE(WRITE ${CMAKE_CURRENT_LIST_DIR}/taichi/common/version.h
         "#define TI_VERSION_PATCH \"${TI_VERSION_PATCH}\"\n"
         "#define TI_CUDAVERSION \"${CUDA_VERSION}\"\n"
         )
+
+option(TI_EXPORT_CORE "export taichi core" OFF)
+
+if (TI_EXPORT_CORE)
+  include(cmake/TaichiExportCore.cmake)
+endif()

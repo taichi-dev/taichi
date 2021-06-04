@@ -5,39 +5,39 @@
 #include "taichi/program/program.h"
 
 void run_snode() {
-/*
-import taichi as ti, numpy as np
-ti.init()
-#ti.init(print_ir = True)
+  /*
+  import taichi as ti, numpy as np
+  ti.init()
+  #ti.init(print_ir = True)
 
-n = 10
-place = ti.field(dtype = ti.i32)
-ti.root.pointer(ti.i, n).place(place)
+  n = 10
+  place = ti.field(dtype = ti.i32)
+  ti.root.pointer(ti.i, n).place(place)
 
-@ti.kernel
-def init():
-    for index in range(n):
-        place[index] = index
+  @ti.kernel
+  def init():
+      for index in range(n):
+          place[index] = index
 
-@ti.kernel
-def ret() -> ti.i32:
-    sum = 0
-    for index in place:
-        sum = sum + place[index]
-    return sum
+  @ti.kernel
+  def ret() -> ti.i32:
+      sum = 0
+      for index in place:
+          sum = sum + place[index]
+      return sum
 
-@ti.kernel
-def ext(ext_arr: ti.ext_arr()):
-    for index in place:
-        ext_arr[index] = place[index]
+  @ti.kernel
+  def ext(ext_arr: ti.ext_arr()):
+      for index in place:
+          ext_arr[index] = place[index]
 
-init()
-print(ret())
-ext_arr = np.zeros(n, np.int32)
-ext(ext_arr)
-#ext_arr = place.to_numpy()
-print(ext_arr)
-*/
+  init()
+  print(ret())
+  ext_arr = np.zeros(n, np.int32)
+  ext(ext_arr)
+  #ext_arr = place.to_numpy()
+  print(ext_arr)
+  */
 
   using namespace taichi;
   using namespace lang;
@@ -73,7 +73,8 @@ print(ext_arr)
       builder.create_global_store(ptr, index);
     }
 
-    kernel_init = std::make_unique<Kernel>(program, builder.extract_ir(), "init");
+    kernel_init =
+        std::make_unique<Kernel>(program, builder.extract_ir(), "init");
   }
 
   {
@@ -92,7 +93,8 @@ print(ext_arr)
       auto _ = builder.get_loop_guard(loop);
       auto *index = builder.get_loop_index(loop);
       auto *sum_old = builder.create_local_load(sum);
-      auto *place_index = builder.create_global_load(builder.create_global_ptr(place, {index}));
+      auto *place_index =
+          builder.create_global_load(builder.create_global_ptr(place, {index}));
       builder.create_local_store(sum, builder.create_add(sum_old, place_index));
     }
     builder.create_return(builder.create_local_load(sum));
@@ -113,8 +115,10 @@ print(ext_arr)
     {
       auto _ = builder.get_loop_guard(loop);
       auto *index = builder.get_loop_index(loop);
-      auto *ext = builder.create_external_ptr(builder.create_arg_load(0, PrimitiveType::i32, true), {index});
-      auto *place_index = builder.create_global_load(builder.create_global_ptr(place, {index}));
+      auto *ext = builder.create_external_ptr(
+          builder.create_arg_load(0, PrimitiveType::i32, true), {index});
+      auto *place_index =
+          builder.create_global_load(builder.create_global_ptr(place, {index}));
       builder.create_global_store(ext, place_index);
     }
 
@@ -132,71 +136,83 @@ print(ext_arr)
   (*kernel_ret)(ctx_ret);
   std::cout << program.fetch_result<int>(0) << std::endl;
   (*kernel_ext)(ctx_ext);
-  for (int i = 0; i < n; i++) std::cout << ext_arr[i] << " ";
+  for (int i = 0; i < n; i++)
+    std::cout << ext_arr[i] << " ";
   std::cout << std::endl;
 }
 
 void autograd() {
-/*
-import taichi as ti, numpy as np
-ti.init()
+  /*
+  import taichi as ti, numpy as np
+  ti.init()
 
-n = 10
-a = ti.field(ti.f32, n, needs_grad=True)
-b = ti.field(ti.f32, n, needs_grad=True)
-c = ti.field(ti.f32, n, needs_grad=True)
-energy = ti.field(ti.f32, [], needs_grad=True)
+  n = 10
+  a = ti.field(ti.f32, n, needs_grad=True)
+  b = ti.field(ti.f32, n, needs_grad=True)
+  c = ti.field(ti.f32, n, needs_grad=True)
+  energy = ti.field(ti.f32, [], needs_grad=True)
 
-@ti.kernel
-def init():
-    for i in range(n):
-        a[i] = i
-        b[i] = i + 1
+  @ti.kernel
+  def init():
+      for i in range(n):
+          a[i] = i
+          b[i] = i + 1
 
-@ti.kernel
-def cal():
-    for i in a:
-        c[i] += a[i] + (b[i] + b[i])
+  @ti.kernel
+  def cal():
+      for i in a:
+          c[i] += a[i] + (b[i] + b[i])
 
-@ti.kernel
-def support(): # this function will not appear in CHI Builder code
-    for i in a:
-        energy += c[i]
+  @ti.kernel
+  def support(): # this function will not appear in CHI Builder code
+      for i in a:
+          energy += c[i]
 
-init()
-with ti.Tape(energy):
-    cal()
-    support()
+  init()
+  with ti.Tape(energy):
+      cal()
+      support()
 
-print(a.grad)
-print(b.grad)
-print(c.to_numpy())
-*/
+  print(a.grad)
+  print(b.grad)
+  print(c.to_numpy())
+  */
   using namespace taichi;
   using namespace lang;
 
   auto program = Program(arch_from_name("x64"));
 
   int n = 10;
-  auto get_snode_grad = [&]() ->  SNode* {
+  auto get_snode_grad = [&]() -> SNode * {
     class GradInfoPrimal final : public SNode::GradInfoProvider {
-    public:
+     public:
       SNode *snode;
-      GradInfoPrimal(SNode *_snode): snode(_snode) {}
-      bool is_primal() const override { return true; }
-      SNode *grad_snode() const override { return snode; }
+      GradInfoPrimal(SNode *_snode) : snode(_snode) {
+      }
+      bool is_primal() const override {
+        return true;
+      }
+      SNode *grad_snode() const override {
+        return snode;
+      }
     };
     class GradInfoAdjoint final : public SNode::GradInfoProvider {
-    public:
-      GradInfoAdjoint() {}
-      bool is_primal() const override { return false; }
-      SNode *grad_snode() const override { return nullptr; }
+     public:
+      GradInfoAdjoint() {
+      }
+      bool is_primal() const override {
+        return false;
+      }
+      SNode *grad_snode() const override {
+        return nullptr;
+      }
     };
 
     auto *root = program.snode_root.get();
     auto *snode = &root->dense(0, n).insert_children(SNodeType::place);
     snode->dt = PrimitiveType::f32;
-    snode->grad_info = std::make_unique<GradInfoPrimal>(&root->dense(0, n).insert_children(SNodeType::place));
+    snode->grad_info = std::make_unique<GradInfoPrimal>(
+        &root->dense(0, n).insert_children(SNodeType::place));
     snode->get_grad()->dt = PrimitiveType::f32;
     snode->get_grad()->grad_info = std::make_unique<GradInfoAdjoint>();
     return snode;
@@ -205,40 +221,47 @@ print(c.to_numpy())
 
   program.materialize_layout();
 
-  std::unique_ptr<Kernel> kernel_init, kernel_forward, kernel_backward, kernel_ext;
+  std::unique_ptr<Kernel> kernel_init, kernel_forward, kernel_backward,
+      kernel_ext;
 
   {
     IRBuilder builder;
     auto *zero = builder.get_int32(0);
     auto *one = builder.get_int32(1);
     auto *n_stmt = builder.get_int32(n);
-    auto *loop = builder.create_range_for(zero, n_stmt, 1, 0, 4); 
+    auto *loop = builder.create_range_for(zero, n_stmt, 1, 0, 4);
     {
       auto _ = builder.get_loop_guard(loop);
       auto *i = builder.get_loop_index(loop);
       builder.create_global_store(builder.create_global_ptr(a, {i}), i);
-      builder.create_global_store(builder.create_global_ptr(b, {i}), builder.create_add(i, one));
+      builder.create_global_store(builder.create_global_ptr(b, {i}),
+                                  builder.create_add(i, one));
       builder.create_global_store(builder.create_global_ptr(c, {i}), zero);
 
-      builder.create_global_store(builder.create_global_ptr(a->get_grad(), {i}), zero);
-      builder.create_global_store(builder.create_global_ptr(b->get_grad(), {i}), zero);
-      builder.create_global_store(builder.create_global_ptr(c->get_grad(), {i}), one);
+      builder.create_global_store(builder.create_global_ptr(a->get_grad(), {i}),
+                                  zero);
+      builder.create_global_store(builder.create_global_ptr(b->get_grad(), {i}),
+                                  zero);
+      builder.create_global_store(builder.create_global_ptr(c->get_grad(), {i}),
+                                  one);
     }
 
-    kernel_init = std::make_unique<Kernel>(program, builder.extract_ir(), "init");
+    kernel_init =
+        std::make_unique<Kernel>(program, builder.extract_ir(), "init");
   }
 
-  auto get_kernel_cal = [&](bool grad) -> Kernel* {
+  auto get_kernel_cal = [&](bool grad) -> Kernel * {
     IRBuilder builder;
     auto *loop = builder.create_struct_for(a, 1, 0, 4);
     {
       auto _ = builder.get_loop_guard(loop);
-      auto *i= builder.get_loop_index(loop);
+      auto *i = builder.get_loop_index(loop);
       auto *a_i = builder.create_global_load(builder.create_global_ptr(a, {i}));
       auto *b_i = builder.create_global_load(builder.create_global_ptr(b, {i}));
       auto *val = builder.create_add(a_i, builder.create_mul(b_i, i));
       auto *c_i = builder.create_global_ptr(c, {i});
-      builder.insert(std::make_unique<AtomicOpStmt>(AtomicOpType::add, c_i, val));
+      builder.insert(
+          std::make_unique<AtomicOpStmt>(AtomicOpType::add, c_i, val));
     }
 
     return new Kernel(program, builder.extract_ir(), "cal", grad);
@@ -253,15 +276,20 @@ print(c.to_numpy())
       auto _ = builder.get_loop_guard(loop);
       auto *i = builder.get_loop_index(loop);
 
-      auto *ext_a = builder.create_external_ptr(builder.create_arg_load(0, PrimitiveType::f32, true), {i});
-      auto *a_grad_i = builder.create_global_load(builder.create_global_ptr(a->get_grad(), {i}));
+      auto *ext_a = builder.create_external_ptr(
+          builder.create_arg_load(0, PrimitiveType::f32, true), {i});
+      auto *a_grad_i = builder.create_global_load(
+          builder.create_global_ptr(a->get_grad(), {i}));
       builder.create_global_store(ext_a, a_grad_i);
 
-      auto *ext_b = builder.create_external_ptr(builder.create_arg_load(1, PrimitiveType::f32, true), {i});
-      auto *b_grad_i = builder.create_global_load(builder.create_global_ptr(b->get_grad(), {i}));
+      auto *ext_b = builder.create_external_ptr(
+          builder.create_arg_load(1, PrimitiveType::f32, true), {i});
+      auto *b_grad_i = builder.create_global_load(
+          builder.create_global_ptr(b->get_grad(), {i}));
       builder.create_global_store(ext_b, b_grad_i);
 
-      auto *ext_c = builder.create_external_ptr(builder.create_arg_load(2, PrimitiveType::f32, true), {i});
+      auto *ext_c = builder.create_external_ptr(
+          builder.create_arg_load(2, PrimitiveType::f32, true), {i});
       auto *c_i = builder.create_global_load(builder.create_global_ptr(c, {i}));
       builder.create_global_store(ext_c, c_i);
     }
@@ -285,16 +313,19 @@ print(c.to_numpy())
   (*kernel_forward)(ctx_forward);
   (*kernel_backward)(ctx_backward);
   (*kernel_ext)(ctx_ext);
-  for (int i = 0; i < n; i++) std::cout << ext_a[i] << " ";
+  for (int i = 0; i < n; i++)
+    std::cout << ext_a[i] << " ";
   std::cout << std::endl;
-  for (int i = 0; i < n; i++) std::cout << ext_b[i] << " ";
+  for (int i = 0; i < n; i++)
+    std::cout << ext_b[i] << " ";
   std::cout << std::endl;
-  for (int i = 0; i < n; i++) std::cout << ext_c[i] << " ";
+  for (int i = 0; i < n; i++)
+    std::cout << ext_c[i] << " ";
   std::cout << std::endl;
 }
 
 int main() {
-    run_snode();
-    autograd();
-    return 0;
+  run_snode();
+  autograd();
+  return 0;
 }

@@ -6,11 +6,16 @@ pipeline {
         CC = "clang-10"
         CXX = "clang++-10"
         PYTHON_EXECUTABLE = "python3"
-        // Local machine use 11.2, we pass a hack version to avoid build errors.
+        // Local machine uses version 11.2. However, we need to define
+        // TI_CUDAVERSION, which eventually translates to the version number
+        // of the slimmed CUDA libdevice bytecode. Currently this slimmed
+        // version only covers 10. See:
+        // https://github.com/taichi-dev/taichi/tree/master/external/cuda_libdevice
+        // so we pass hack version to avoid build errors.
         HACK_CUDA_VERSION = "10.0"
     }
     stages{
-        stage('Build') {
+        stage('Build and Test') {
             parallel {
                 stage('python3.6') {
                     agent {
@@ -88,7 +93,7 @@ void build_taichi() {
     conda activate $CONDA_ENV
     $PYTHON_EXECUTABLE -m pip install --user setuptools astor pybind11 pylint sourceinspect
     $PYTHON_EXECUTABLE -m pip install --user pytest pytest-rerunfailures pytest-xdist yapf
-    $PYTHON_EXECUTABLE -m pip install --user numpy GitPython coverage colorama autograd
+    $PYTHON_EXECUTABLE -m pip install --user numpy GitPython coverage colorama autograd torch
     export TAICHI_REPO_DIR=$WORKSPACE
     echo $TAICHI_REPO_DIR
     export PYTHONPATH=$TAICHI_REPO_DIR/python
@@ -97,8 +102,8 @@ void build_taichi() {
     cd $TAICHI_REPO_DIR
     git submodule update --init --recursive
     [ -e build ] && rm -rf build
-    mkdir build && cd build
-    export CUDA_BIN_PATH=/usr/local/cuda-${HACK_CUDA_VERSION}
+    mkdir build
+    cd build
     cmake .. -DLLVM_DIR=/opt/taichi-llvm-10.0.0/lib/cmake/llvm \
         -DPYTHON_EXECUTABLE=$PYTHON_EXECUTABLE \
         -DCUDA_VERSION=$HACK_CUDA_VERSION \

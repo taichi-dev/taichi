@@ -256,6 +256,7 @@ Stmt *PtrLowererImpl::handle_snode_at_level(int level,
     }
   }
 
+  // Generates the SNode access operations at the current |level|.
   if ((snode_op_ != SNodeOpType::undefined) &&
       (level == (int)snodes().size() - 1)) {
     // Create a SNodeOp querying if element i(linearized) of node is active

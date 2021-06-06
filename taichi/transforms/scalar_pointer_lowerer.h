@@ -43,9 +43,11 @@ class ScalarPointerLowerer {
 
  protected:
   /**
-   * @param level: Level
-   * @param linearized: a
-   * @param last:
+   * Handles the SNode at a given @param level.
+   *
+   * @param level: Level of the SNode in the access path
+   * @param linearized: Linearized indices statement for this level
+   * @param last: SNode access op (e.g. GetCh) of the last iteration
    */
   virtual Stmt *handle_snode_at_level(int level,
                                       LinearizeStmt *linearized,

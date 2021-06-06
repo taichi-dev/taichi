@@ -6,11 +6,37 @@
 #include "taichi/program/kernel.h"
 #include "taichi/program/program.h"
 #include "taichi/transforms/lower_access.h"
+#include "taichi/transforms/scalar_pointer_lowerer.h"
 
 #include <deque>
 #include <set>
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
+namespace {
+
+class LowerAccess;
+
+class PtrLowererImpl : public ScalarPointerLowerer {
+ public:
+  using ScalarPointerLowerer::ScalarPointerLowerer;
+
+  void set_lower_access(LowerAccess *la);
+
+  void set_pointer_needs_activation(bool v) {
+    pointer_needs_activation_ = v;
+  }
+
+ protected:
+  Stmt *handle_snode_at_level(int level,
+                              LinearizeStmt *linearized,
+                              Stmt *last) override;
+
+ private:
+  LowerAccess *la_{nullptr};
+  std::unordered_set<SNode *> snodes_on_loop_;
+  bool pointer_needs_activation_{false};
+};
 
 // Lower GlobalPtrStmt into smaller pieces for access optimization
 
@@ -62,120 +88,22 @@ class LowerAccess : public IRVisitor {
     current_struct_for = nullptr;
   }
 
-  void lower_scalar_ptr(VecStatement &lowered,
-                        SNode *leaf_snode,
-                        std::vector<Stmt *> indices,
-                        bool pointer_needs_activation,
-                        SNodeOpType snode_op = SNodeOpType::undefined,
-                        bool is_bit_vectorized = false) {
+  void lower_scalar_ptr(SNode *leaf_snode,
+                        const std::vector<Stmt *> indices,
+                        const bool pointer_needs_activation,
+                        const SNodeOpType snode_op,
+                        const bool is_bit_vectorized,
+                        VecStatement *lowered) {
     if (snode_op == SNodeOpType::is_active) {
       // For ti.is_active
       TI_ASSERT(!pointer_needs_activation);
     }
 
-    // emit a sequence of micro access ops
-    std::set<SNode *> nodes_on_loop;
-    if (current_struct_for) {
-      for (SNode *s = current_struct_for->snode; s != nullptr; s = s->parent) {
-        nodes_on_loop.insert(s);
-      }
-    }
-
-    // start_bits is the index of the starting bit for a coordinate
-    // for a given SNode. It characterizes the relationship between a parent
-    // and a child SNode: "parent.start = child.start + child.num_bits".
-    //
-    // For example, if there are two 1D snodes a and b,
-    // where a = ti.root.dense(ti.i, 2) and b = a.dense(ti.i, 8),
-    // we have a.start = b.start + 3 for the i-th dimension.
-    // When accessing b[15], then bits [0, 3) of 15 are for accessing b,
-    // and bit [3, 4) of 15 is for accessing a.
-    int start_bits[taichi_max_num_indices] = {0};
-    std::deque<SNode *> snodes;
-    for (auto s = leaf_snode; s != nullptr; s = s->parent) {
-      snodes.push_front(s);
-      for (int j = 0; j < taichi_max_num_indices; j++) {
-        start_bits[j] += s->extractors[j].num_bits;
-      }
-    }
-
-    Stmt *last = lowered.push_back<GetRootStmt>();
-
-    int path_inc = int(snode_op != SNodeOpType::undefined);
-    int length = (int)snodes.size() - 1 + path_inc;
-    for (int i = 0; i < length; i++) {
-      auto snode = snodes[i];
-      if (is_bit_vectorized && snode->type == SNodeType::bit_array &&
-          i == length - 1 && snodes[i - 1]->type == SNodeType::dense) {
-        continue;
-      }
-      std::vector<Stmt *> lowered_indices;
-      std::vector<int> strides;
-      // extract bits
-      for (int k_ = 0; k_ < (int)indices.size(); k_++) {
-        for (int k = 0; k < taichi_max_num_indices; k++) {
-          if (snode->physical_index_position[k_] == k) {
-            start_bits[k] -= snode->extractors[k].num_bits;
-            int begin = start_bits[k];
-            int end = begin + snode->extractors[k].num_bits;
-            auto extracted =
-                Stmt::make<BitExtractStmt>(indices[k_], begin, end);
-            lowered_indices.push_back(extracted.get());
-            lowered.push_back(std::move(extracted));
-            strides.push_back(1 << snode->extractors[k].num_bits);
-          }
-        }
-      }
-
-      bool on_loop_tree = nodes_on_loop.find(snode) != nodes_on_loop.end();
-      if (on_loop_tree &&
-          indices.size() == current_struct_for->snode->num_active_indices) {
-        for (int j = 0; j < (int)indices.size(); j++) {
-          auto diff = irpass::analysis::value_diff_loop_index(
-              indices[j], current_struct_for, j);
-          if (!diff.linear_related())
-            on_loop_tree = false;
-          else if (j == (int)indices.size() - 1) {
-            if (!(0 <= diff.low &&
-                  diff.high <= current_struct_for->vectorize)) {
-              on_loop_tree = false;
-            }
-          } else {
-            if (!diff.certain() || diff.low != 0) {
-              on_loop_tree = false;
-            }
-          }
-        }
-      }
-
-      // linearize
-      auto linearized =
-          lowered.push_back<LinearizeStmt>(lowered_indices, strides);
-
-      if (snode_op != SNodeOpType::undefined && i == (int)snodes.size() - 1) {
-        // Create a SNodeOp querying if element i(linearized) of node is active
-        lowered.push_back<SNodeOpStmt>(snode_op, snodes[i], last, linearized);
-      } else {
-        bool kernel_forces_no_activate_snode =
-            std::find(kernel_forces_no_activate.begin(),
-                      kernel_forces_no_activate.end(),
-                      snode) != kernel_forces_no_activate.end();
-
-        auto needs_activation =
-            snode->need_activation() && pointer_needs_activation &&
-            !kernel_forces_no_activate_snode && !on_loop_tree;
-
-        auto lookup = lowered.push_back<SNodeLookupStmt>(
-            snode, last, linearized, needs_activation);
-        int chid = snode->child_id(snodes[i + 1]);
-        if (is_bit_vectorized && snode->type == SNodeType::dense &&
-            i == length - 2) {
-          last = lowered.push_back<GetChStmt>(lookup, chid, true);
-        } else {
-          last = lowered.push_back<GetChStmt>(lookup, chid, false);
-        }
-      }
-    }
+    PtrLowererImpl lowerer{leaf_snode, indices, snode_op, is_bit_vectorized,
+                           lowered};
+    lowerer.set_pointer_needs_activation(pointer_needs_activation);
+    lowerer.set_lower_access(this);
+    lowerer.run();
   }
 
   VecStatement lower_vector_ptr(GlobalPtrStmt *ptr,
@@ -191,9 +119,9 @@ class LowerAccess : public IRVisitor {
         indices.push_back(extractor.get());
         lowered.push_back(std::move(extractor));
       }
-      lower_scalar_ptr(lowered, ptr->snodes[i], indices, activate, snode_op,
-                       ptr->is_bit_vectorized);
-      TI_ASSERT(lowered.size());
+      lower_scalar_ptr(ptr->snodes[i], indices, activate, snode_op,
+                       ptr->is_bit_vectorized, &lowered);
+      TI_ASSERT(lowered.size() > 0);
       lowered_pointers.push_back(lowered.back().get());
     }
     // create shuffle
@@ -290,6 +218,75 @@ class LowerAccess : public IRVisitor {
   }
 };
 
+void PtrLowererImpl::set_lower_access(LowerAccess *la) {
+  la_ = la;
+
+  snodes_on_loop_.clear();
+  if (la_->current_struct_for) {
+    for (SNode *s = la_->current_struct_for->snode; s != nullptr;
+         s = s->parent) {
+      snodes_on_loop_.insert(s);
+    }
+  }
+}
+
+Stmt *PtrLowererImpl::handle_snode_at_level(int level,
+                                            LinearizeStmt *linearized,
+                                            Stmt *last) {
+  // Check whether |snode| is part of the tree being iterated over by struct for
+  auto *snode = snodes()[level];
+  bool on_loop_tree = (snodes_on_loop_.find(snode) != snodes_on_loop_.end());
+  auto *current_struct_for = la_->current_struct_for;
+  if (on_loop_tree && current_struct_for &&
+      (indices_.size() == current_struct_for->snode->num_active_indices)) {
+    for (int j = 0; j < (int)indices_.size(); j++) {
+      auto diff = irpass::analysis::value_diff_loop_index(
+          indices_[j], current_struct_for, j);
+      if (!diff.linear_related()) {
+        on_loop_tree = false;
+      } else if (j == (int)indices_.size() - 1) {
+        if (!(0 <= diff.low && diff.high <= current_struct_for->vectorize)) {
+          on_loop_tree = false;
+        }
+      } else {
+        if (!diff.certain() || diff.low != 0) {
+          on_loop_tree = false;
+        }
+      }
+    }
+  }
+
+  if ((snode_op_ != SNodeOpType::undefined) &&
+      (level == (int)snodes().size() - 1)) {
+    // Create a SNodeOp querying if element i(linearized) of node is active
+    lowered_->push_back<SNodeOpStmt>(snode_op_, snode, last, linearized);
+  } else {
+    const bool kernel_forces_no_activate_snode =
+        std::find(la_->kernel_forces_no_activate.begin(),
+                  la_->kernel_forces_no_activate.end(),
+                  snode) != la_->kernel_forces_no_activate.end();
+
+    const bool needs_activation =
+        snode->need_activation() && pointer_needs_activation_ &&
+        !kernel_forces_no_activate_snode && !on_loop_tree;
+
+    auto lookup = lowered_->push_back<SNodeLookupStmt>(snode, last, linearized,
+                                                       needs_activation);
+    int chid = snode->child_id(snodes()[level + 1]);
+    if (is_bit_vectorized_ && (snode->type == SNodeType::dense) &&
+        (level == path_length() - 2)) {
+      last = lowered_->push_back<GetChStmt>(lookup, chid,
+                                            /*is_bit_vectorized=*/true);
+    } else {
+      last = lowered_->push_back<GetChStmt>(lookup, chid,
+                                            /*is_bit_vectorized=*/false);
+    }
+  }
+  return last;
+}
+
+}  // namespace
+
 const PassID LowerAccessPass::id = "LowerAccessPass";
 
 namespace irpass {
@@ -304,5 +301,5 @@ bool lower_access(IRNode *root,
 }
 
 }  // namespace irpass
-
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

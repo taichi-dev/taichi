@@ -23,7 +23,7 @@ void IRBuilder::reset() {
   insert_point_.position = 0;
 }
 
-std::unique_ptr<IRNode> IRBuilder::extract_ir() {
+std::unique_ptr<Block> IRBuilder::extract_ir() {
   auto result = std::move(root_);
   reset();
   return result;

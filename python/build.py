@@ -1,9 +1,9 @@
 import argparse
 import os
 import platform
+import re
 import shutil
 import sys
-import re
 
 import taichi as ti
 
@@ -148,6 +148,7 @@ def main():
     project_name = args.project_name
 
     env_pypi_pwd = os.environ.get('PYPI_PWD', '')
+
     if mode == 'try_upload':
         if env_pypi_pwd == '':
             print("Missing environment variable PYPI_PWD")

@@ -143,7 +143,7 @@ def parse_args():
 def main():
     args = parse_args()
     mode = args.mode
-    pypi_user = 'yuanming-hu'
+    pypi_user = '__token__'
     pypi_repo = ''
     project_name = args.project_name
 
@@ -162,7 +162,6 @@ def main():
     os.environ['TWINE_PASSWORD'] = env_pypi_pwd
 
     if mode == 'upload' and args.testpypi:
-        pypi_user = '__token__'
         pypi_repo = '--repository testpypi'
 
     if not args.skip_build:

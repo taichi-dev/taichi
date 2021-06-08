@@ -1,5 +1,6 @@
-import taichi as ti
 import numpy as np
+
+import taichi as ti
 
 ti.init(arch=ti.gpu)
 
@@ -12,8 +13,8 @@ n_elements = (n_particle_x - 1) * (n_particle_y - 1) * 2
 n_grid = 64 * quality
 dx = 1 / n_grid
 inv_dx = 1 / dx
-dt = 1e-3 / quality
-E = 250
+dt = 1e-4 / quality
+E = 25000
 p_mass = 1
 p_vol = 1
 mu = 1
@@ -24,11 +25,7 @@ v = ti.Vector.field(dim, dtype=float, shape=n_particles)
 C = ti.Matrix.field(dim, dim, dtype=float, shape=n_particles)
 grid_v = ti.Vector.field(dim, dtype=float, shape=(n_grid, n_grid))
 grid_m = ti.field(dtype=float, shape=(n_grid, n_grid))
-restT = ti.Matrix.field(dim,
-                        dim,
-                        dtype=float,
-                        shape=n_particles,
-                        needs_grad=True)
+restT = ti.Matrix.field(dim, dim, dtype=float, shape=n_particles)
 total_energy = ti.field(dtype=float, shape=(), needs_grad=True)
 vertices = ti.field(dtype=ti.i32, shape=(n_elements, 3))
 
@@ -99,7 +96,7 @@ def p2g():
                 I = ti.Vector([i, j])
                 dpos = (float(I) - fx) * dx
                 weight = w[i].x * w[j].y
-                grid_v[base + I] += weight * (p_mass * v[p] - x.grad[p] +
+                grid_v[base + I] += weight * (p_mass * v[p] - dt * x.grad[p] +
                                               affine @ dpos)
                 grid_m[base + I] += weight * p_mass
 

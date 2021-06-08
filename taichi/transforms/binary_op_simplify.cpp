@@ -87,7 +87,7 @@ class BinaryOpSimp : public BasicStmtVisitor {
     if (const_lhs && is_commutative(stmt->op_type) &&
         !stmt->rhs->is<ConstStmt>()) {
       auto rhs_stmt = stmt->rhs;
-      stmt->lhs = rhs_stmt;
+      stmt->lhs = stmt->rhs;
       stmt->rhs = const_lhs;
       operand_swapped = true;
     }

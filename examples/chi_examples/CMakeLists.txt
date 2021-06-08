@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.12)
 
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_ISE_NONE -std=c++17 -fsized-deallocation -Wall  -march=nehalem -DTI_ARCH_x64 -DTI_PASS_EXCEPTION_TO_PYTHON -DTI_INCLUDED -DTI_WITH_CUDA -DTI_WITH_OPENGL -DTI_WITH_CC -O3 -DNDEBUG -static-libgcc -static-libstdc++ -Wl,--wrap=log2f -rdynamic")
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -fsized-deallocation -Wall  -march=nehalem -DTI_ARCH_x64 -DTI_INCLUDED -O3 -DNDEBUG")
 set(CHI_EXAMPLES chi_examples)
 
 project(chi_examples)

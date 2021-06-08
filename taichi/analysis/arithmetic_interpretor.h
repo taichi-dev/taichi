@@ -52,7 +52,7 @@ class ArithmeticInterpretor {
      * This is effective only for statements that are not supported by
      * ArithmeticInterpretor.
      *
-     * @param s: Statemet to ignore
+     * @param s: Statement to ignore
      */
     void ignore(const Stmt *s) {
       ignored_.insert(s);

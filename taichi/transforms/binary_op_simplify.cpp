@@ -3,7 +3,6 @@
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
-#include "taichi/program/program.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -86,7 +85,6 @@ class BinaryOpSimp : public BasicStmtVisitor {
     auto const_lhs = stmt->lhs->cast<ConstStmt>();
     if (const_lhs && is_commutative(stmt->op_type) &&
         !stmt->rhs->is<ConstStmt>()) {
-      auto rhs_stmt = stmt->rhs;
       stmt->lhs = stmt->rhs;
       stmt->rhs = const_lhs;
       operand_swapped = true;

@@ -112,6 +112,7 @@ class BinaryOpSimp : public BasicStmtVisitor {
         irpass::analysis::same_value(stmt->lhs, binary_rhs->lhs)) {
       auto mask_stmt =
           Stmt::make<UnaryOpStmt>(UnaryOpType::bit_not, binary_rhs->rhs);
+      mask_stmt->ret_type = binary_rhs->rhs->ret_type;
       auto new_stmt = Stmt::make<BinaryOpStmt>(BinaryOpType::bit_and, stmt->lhs,
                                                mask_stmt.get());
       new_stmt->ret_type = stmt->ret_type;

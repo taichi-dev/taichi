@@ -144,6 +144,20 @@ ConstStmt *IRBuilder::get_int64(int64 value) {
           value))));
 }
 
+ConstStmt *IRBuilder::get_uint32(uint32 value) {
+  return insert(
+      Stmt::make_typed<ConstStmt>(LaneAttribute<TypedConstant>(TypedConstant(
+          TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::u32),
+          value))));
+}
+
+ConstStmt *IRBuilder::get_uint64(uint64 value) {
+  return insert(
+      Stmt::make_typed<ConstStmt>(LaneAttribute<TypedConstant>(TypedConstant(
+          TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::u64),
+          value))));
+}
+
 ConstStmt *IRBuilder::get_float32(float32 value) {
   return insert(
       Stmt::make_typed<ConstStmt>(LaneAttribute<TypedConstant>(TypedConstant(

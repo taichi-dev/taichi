@@ -19,7 +19,7 @@ class IRBuilder {
   void reset();
 
   // Extract the IR.
-  std::unique_ptr<IRNode> extract_ir();
+  std::unique_ptr<Block> extract_ir();
 
   // General inserter. Returns stmt.get().
   template <typename XStmt>
@@ -247,7 +247,7 @@ class IRBuilder {
   }
 
  private:
-  std::unique_ptr<IRNode> root_{nullptr};
+  std::unique_ptr<Block> root_{nullptr};
   InsertPoint insert_point_;
 };
 

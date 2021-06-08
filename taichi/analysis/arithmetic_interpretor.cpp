@@ -97,7 +97,35 @@ class EvalVisitor : public IRVisitor {
     }
   }
 
+  void visit(BitExtractStmt *stmt) override {
+    auto val_opt = context_.maybe_get(stmt->input);
+    if (!val_opt) {
+      failed_ = true;
+      return;
+    }
+    const uint64_t mask = (1ULL << (stmt->bit_end - stmt->bit_begin)) - 1;
+    auto val = val_opt.value().val_int();
+    val = (val >> stmt->bit_begin) & mask;
+    insert_to_ctx(stmt, stmt->ret_type, val);
+  }
+
+  void visit(LinearizeStmt *stmt) override {
+    int64_t val = 0;
+    for (int i = 0; i < (int)stmt->inputs.size(); ++i) {
+      auto idx_opt = context_.maybe_get(stmt->inputs[i]);
+      if (!idx_opt) {
+        failed_ = true;
+        return;
+      }
+      val = (val * stmt->strides[i]) + idx_opt.value().val_int();
+    }
+    insert_to_ctx(stmt, stmt->ret_type, val);
+  }
+
   void visit(Stmt *stmt) override {
+    if (context_.should_ignore(stmt)) {
+      return;
+    }
     failed_ = (context_.maybe_get(stmt) == std::nullopt);
   }
 
@@ -133,6 +161,11 @@ class EvalVisitor : public IRVisitor {
       return;
     }
     context_.insert(stmt, TypedConstant(dt, val_opt.value()));
+  }
+
+  template <typename T>
+  void insert_to_ctx(const Stmt *stmt, DataType dt, const T &val) {
+    context_.insert(stmt, TypedConstant(dt, val));
   }
 
   EvalContext context_;

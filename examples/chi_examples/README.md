@@ -10,7 +10,7 @@ Make sure taichi is built under `$TAICHI_REPO_DIR/build` directory.
 
 After building, `$TAICHI_REPO_DIR/build/libtaichi_export_core.so` should exist.
 
-## Link with Taichi Shared Library
+## Link with the Taichi Shared Library
 
 `main.cpp` shows how to construct and run Taichi kernels using CHI IR Builder.
 

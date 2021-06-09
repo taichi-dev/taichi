@@ -29,15 +29,14 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
       step = -1;
     }
 
-    using namespace llvm;
-    BasicBlock *body =
-        BasicBlock::Create(*llvm_context, "for_loop_body", func);
-    BasicBlock *loop_inc =
-        BasicBlock::Create(*llvm_context, "for_loop_inc", func);
-    BasicBlock *after_loop =
-        BasicBlock::Create(*llvm_context, "after_for", func);
-    BasicBlock *loop_test =
-        BasicBlock::Create(*llvm_context, "for_loop_test", func);
+    auto *body =
+        llvm::BasicBlock::Create(*llvm_context, "for_loop_body", func);
+    auto *loop_inc =
+        llvm::BasicBlock::Create(*llvm_context, "for_loop_inc", func);
+    auto *after_loop =
+        llvm::BasicBlock::Create(*llvm_context, "after_for", func);
+    auto *loop_test =
+        llvm::BasicBlock::Create(*llvm_context, "for_loop_test", func);
 
     auto loop_var = create_entry_block_alloca(PrimitiveType::i32);
     loop_vars_llvm[stmt].push_back(loop_var);

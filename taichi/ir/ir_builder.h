@@ -126,6 +126,8 @@ class IRBuilder {
   // Constants. TODO: add more types
   ConstStmt *get_int32(int32 value);
   ConstStmt *get_int64(int64 value);
+  ConstStmt *get_uint32(uint32 value);
+  ConstStmt *get_uint64(uint64 value);
   ConstStmt *get_float32(float32 value);
   ConstStmt *get_float64(float64 value);
 

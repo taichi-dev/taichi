@@ -4,7 +4,8 @@
 
 #include "taichi/codegen/codegen.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 class CodeGenWASM : public KernelCodeGen {
  public:
@@ -14,4 +15,5 @@ class CodeGenWASM : public KernelCodeGen {
   virtual FunctionType codegen() override;
 };
 
-TLANG_NAMESPACE_END
+}
+}

@@ -9,7 +9,8 @@
 #include "taichi/ir/statements.h"
 #include "taichi/util/statistics.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 class CodeGenLLVMWASM : public CodeGenLLVM {
  public:
@@ -151,4 +152,5 @@ FunctionType CodeGenWASM::codegen() {
   return CodeGenLLVMWASM(kernel, ir).gen();
 }
 
-TLANG_NAMESPACE_END
+}
+}

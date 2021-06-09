@@ -10,6 +10,7 @@
   "metal"           : "Metal backend",
   "opengl"          : "OpenGL backend",
   "vulkan"          : "Vulkan backend",
+  "wasm"            : "WebAssembly backend",
   "misc"            : "Miscellaneous",
   "std"             : "Standard library",
   "opt"             : "IR optimization passes",

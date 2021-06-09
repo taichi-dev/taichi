@@ -30,7 +30,7 @@ class Index {
 };
 
 /**
- * Structural metadata of a specific Index.
+ * SNode shape metadata at a specific Index.
  */
 struct IndexExtractor {
   /**

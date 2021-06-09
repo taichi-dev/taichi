@@ -30,8 +30,7 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
       step = -1;
     }
 
-    auto *body =
-        llvm::BasicBlock::Create(*llvm_context, "for_loop_body", func);
+    auto *body = llvm::BasicBlock::Create(*llvm_context, "for_loop_body", func);
     auto *loop_inc =
         llvm::BasicBlock::Create(*llvm_context, "for_loop_inc", func);
     auto *after_loop =
@@ -114,5 +113,5 @@ FunctionType CodeGenWASM::codegen() {
   return CodeGenLLVMWASM(kernel, ir).gen();
 }
 
-}
-}
+}  // namespace lang
+}  // namespace taichi

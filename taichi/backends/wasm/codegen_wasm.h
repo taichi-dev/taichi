@@ -9,11 +9,12 @@ namespace lang {
 
 class CodeGenWASM : public KernelCodeGen {
  public:
-  CodeGenWASM(Kernel *kernel, IRNode *ir = nullptr) : KernelCodeGen(kernel, ir) {
+  CodeGenWASM(Kernel *kernel, IRNode *ir = nullptr)
+      : KernelCodeGen(kernel, ir) {
   }
 
   virtual FunctionType codegen() override;
 };
 
-}
-}
+}  // namespace lang
+}  // namespace taichi

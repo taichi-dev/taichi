@@ -107,7 +107,8 @@ void build_taichi() {
     cmake .. -DLLVM_DIR=/opt/taichi-llvm-10.0.0/lib/cmake/llvm \
         -DPYTHON_EXECUTABLE=$PYTHON_EXECUTABLE \
         -DCUDA_VERSION=$HACK_CUDA_VERSION \
-        -DTI_WITH_OPENGL=ON
+        -DTI_WITH_OPENGL=ON \
+        -DLLVM_ENABLE_TERMINFO=OFF
     make -j 8
     ldd libtaichi_core.so
     objdump -T libtaichi_core.so| grep GLIBC

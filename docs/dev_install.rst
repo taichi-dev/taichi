@@ -43,7 +43,7 @@ Installing Dependencies
 - Make sure you have LLVM 10.0.0. Note that Taichi uses a **customized LLVM** so the pre-built binaries from the LLVM official website or other sources probably won't work.
   Here we provide LLVM binaries customized for Taichi, which may or may not work depending on your system environment:
 
-  * `LLVM 10.0.0 for Linux <https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-linux.zip>`_
+  * `LLVM 10.0.0 for Linux <https://github.com/taichi-dev/taichi_assets/releases/download/llvm10_linux/taichi-llvm-10.0.0-linux.zip>`_
   * `LLVM 10.0.0 for Windows MSVC 2019 <https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-msvc2019.zip>`_
   * `LLVM 10.0.0 for OS X <https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-macos.zip>`_
 
@@ -65,7 +65,7 @@ Installing Dependencies
         cd llvm-10.0.0.src
         mkdir build
         cd build
-        cmake .. -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON
+        cmake .. -DLLVM_ENABLE_RTTI:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="X86;NVPTX" -DLLVM_ENABLE_ASSERTIONS=ON -DLLVM_ENABLE_TERMINFO=OFF
         # If you are building on NVIDIA Jetson TX2, use -DLLVM_TARGETS_TO_BUILD="AArch64;NVPTX"
         # If you are building on Apple M1, use -DLLVM_TARGETS_TO_BUILD="AArch64"
 

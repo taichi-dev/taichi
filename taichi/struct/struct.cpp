@@ -6,17 +6,10 @@
 #include "taichi/program/program.h"
 #include "struct.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
-void StructCompiler::collect_snodes(SNode &snode) {
-  snodes.push_back(&snode);
-  for (int ch_id = 0; ch_id < (int)snode.ch.size(); ch_id++) {
-    auto &ch = snode.ch[ch_id];
-    collect_snodes(*ch);
-  }
-}
-
-void StructCompiler::infer_snode_properties(SNode &snode) {
+void infer_snode_properties(SNode &snode) {
   for (int ch_id = 0; ch_id < (int)snode.ch.size(); ch_id++) {
     auto &ch = snode.ch[ch_id];
     ch->parent = &snode;
@@ -86,10 +79,6 @@ void StructCompiler::infer_snode_properties(SNode &snode) {
       "your requested shape is too large.",
       snode.id, snode.total_num_bits, kMaxTotalNumBits);
 
-  if (snode.has_null()) {
-    ambient_snodes.push_back(&snode);
-  }
-
   if (snode.ch.empty()) {
     if (snode.type != SNodeType::place && snode.type != SNodeType::root) {
       TI_ERROR("{} node must have at least one child.",
@@ -99,6 +88,14 @@ void StructCompiler::infer_snode_properties(SNode &snode) {
 
   if (!snode.index_offsets.empty()) {
     TI_ASSERT(snode.index_offsets.size() == snode.num_active_indices);
+  }
+}
+
+void StructCompiler::collect_snodes(SNode &snode) {
+  snodes.push_back(&snode);
+  for (int ch_id = 0; ch_id < (int)snode.ch.size(); ch_id++) {
+    auto &ch = snode.ch[ch_id];
+    collect_snodes(*ch);
   }
 }
 
@@ -141,4 +138,5 @@ void StructCompiler::compute_trailing_bits(SNode &snode) {
   top_down(snode);
 }
 
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

@@ -88,7 +88,7 @@ class CFGBuilder : public IRVisitor {
    * block {
    *   node {
    *     ...
-   *   } -> (next node), (node_loop_end);
+   *   } -> (next node), (the next node after the loop);
    *   while_control (possibly break);
    *   (next node) {
    *     ...

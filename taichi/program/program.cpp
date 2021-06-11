@@ -402,10 +402,11 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
 }
 
 void Program::materialize_layout() {
-  // always use host_arch() this is for host accessors
+  infer_snode_properties(*snode_root);
+  // always use host_arch() for host accessors
   std::unique_ptr<StructCompiler> scomp =
       StructCompiler::make(this, host_arch());
-  scomp->run(*snode_root, true);
+  scomp->run(*snode_root);
   materialize_snode_expr_attributes();
 
   for (auto snode : scomp->snodes) {
@@ -421,7 +422,7 @@ void Program::materialize_layout() {
     initialize_device_llvm_context();
     std::unique_ptr<StructCompiler> scomp_gpu =
         StructCompiler::make(this, Arch::cuda);
-    scomp_gpu->run(*snode_root, false);
+    scomp_gpu->run(*snode_root);
     initialize_runtime_system(scomp_gpu.get());
   } else if (config.arch == Arch::metal) {
     TI_ASSERT_INFO(config.use_llvm,

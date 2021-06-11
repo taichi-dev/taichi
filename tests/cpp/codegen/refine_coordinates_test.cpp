@@ -116,7 +116,7 @@ class RefineCoordinatesTest : public ::testing::Test {
     leaf_snode.dt = PrimitiveType::f32;
 
     auto sc = std::make_unique<StructCompilerLLVM>(arch_, &config_, tlctx_);
-    sc->run(*root_snode_, /*host=*/true);
+    sc->run(*root_snode_);
   }
 
   Arch arch_;

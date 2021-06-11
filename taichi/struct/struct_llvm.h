@@ -18,7 +18,7 @@ class StructCompilerLLVM : public StructCompiler, public LLVMModuleBuilder {
 
   void generate_child_accessors(SNode &snode) override;
 
-  void run(SNode &node, bool host) override;
+  void run(SNode &node) override;
 
   void generate_refine_coordinates(SNode *snode);
 

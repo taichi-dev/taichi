@@ -11,15 +11,8 @@ class FakeStructCompiler : public StructCompiler {
   void generate_child_accessors(SNode &) override {
   }
 
-  void run(SNode &root, bool) override {
+  void run(SNode &root) override {
     infer_snode_properties(root);
-    // TODO(#2327): Stop calling this
-    compute_trailing_bits(root);
-  }
-
-  void run(SNode &root) {
-    // Just a wrapper around the virtual interface
-    run(root, /*(unused)*/ false);
   }
 };
 

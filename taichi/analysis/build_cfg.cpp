@@ -65,12 +65,12 @@ class CFGBuilder : public IRVisitor {
   }
 
   /**
-   * Structure:
+   * Structure (nodes denoted with "()" mean not yet created):
    *
    * block {
    *   node {
    *     ...
-   *   } -> (node_loop_begin), (node_loop_end);
+   *   } -> node_loop_begin, (the next node after the loop);
    *   continue;
    *   (next node) {
    *     ...

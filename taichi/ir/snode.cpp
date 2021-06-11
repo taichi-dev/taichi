@@ -99,7 +99,7 @@ SNode *SNode::get_least_sparse_ancestor() const {
 
 int SNode::shape_along_axis(int i) const {
   const auto &extractor = extractors[physical_index_position[i]];
-  return extractor.num_elements * (1 << extractor.trailing_bits);
+  return extractor.num_elements;
 }
 
 SNode::SNode() : SNode(0, SNodeType::undefined) {

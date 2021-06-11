@@ -57,10 +57,6 @@ struct IndexExtractor {
    */
   int acc_offset{0};
   /**
-   * Deprecated member variable.
-   */
-  int trailing_bits{0};
-  /**
    * Whether this index (axis) is activated.
    */
   bool active{false};

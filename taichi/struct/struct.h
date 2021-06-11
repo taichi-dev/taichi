@@ -24,8 +24,6 @@ class StructCompiler {
 
   void collect_snodes(SNode &snode);
 
-  void compute_trailing_bits(SNode &snode);
-
   // generate C++/llvm IR
   virtual void generate_types(SNode &snode) = 0;
 

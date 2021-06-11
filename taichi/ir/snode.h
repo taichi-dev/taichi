@@ -7,32 +7,11 @@
 #include "taichi/ir/snode_types.h"
 #include "taichi/ir/type.h"
 
-TLANG_NAMESPACE_BEGIN
-
-struct IndexExtractor {
-  int num_bits;
-  int acc_offset;
-  int num_elements;
-  int trailing_bits;
-
-  bool active;
-
-  IndexExtractor() {
-    num_bits = 0;
-    active = false;
-    acc_offset = 0;
-    num_elements = 1;
-    trailing_bits = 0;
-  }
-
-  void activate(int num_bits) {
-    active = true;
-    this->num_bits = num_bits;
-  }
-};
+namespace taichi {
+namespace lang {
 
 /**
- * Index of a given dimension.
+ * Dimension (or axis) of a tensor.
  *
  * For example, in the frontend we have ti.ij, which is translated to
  * {Index{0}, Index{1}}.
@@ -50,7 +29,56 @@ class Index {
   }
 };
 
-// Structural nodes
+/**
+ * SNode shape metadata at a specific Index.
+ */
+struct IndexExtractor {
+  /**
+   * Shape at the given index.
+   *
+   * This is the raw shape, *not* padded to power-of-two (POT).
+   */
+  int num_elements{1};
+  /**
+   * Number of bits needed to store the coordinate at this index.
+   *
+   * ceil(log2(num_elements))
+   */
+  int num_bits{0};
+  /**
+   * Accumulated offset from the last activated index to the first one.
+   *
+   * This is the starting bit of this index in a linearized 1D coordiate. For
+   * example, assuming an SNode of (ti.ijk, shape=(4, 8, 16)). ti.i takes 2
+   * bits, ti.j 3 bits and ti.k 4 bits. Then for a linearized coordinate:
+   * ti.k uses bits [0, 3), acc_offset=0
+   * tk.j uses btis [3, 6), acc_offset=3
+   * ti.i uses bits [6, 8), acc_offset=6
+   */
+  int acc_offset{0};
+  /**
+   * Deprecated member variable.
+   */
+  int trailing_bits{0};
+  /**
+   * Whether this index (axis) is activated.
+   */
+  bool active{false};
+
+  /**
+   * Activates the current index.
+   *
+   * @param num_bits Number of bits needed to store the POT shape.
+   */
+  void activate(int num_bits) {
+    active = true;
+    this->num_bits = num_bits;
+  }
+};
+
+/**
+ * Structural nodes
+ */
 class SNode {
  public:
   // This class decouples SNode from the frontend expression.
@@ -69,7 +97,7 @@ class SNode {
 
   IndexExtractor extractors[taichi_max_num_indices];
   std::vector<int> index_offsets;
-  int num_active_indices{};
+  int num_active_indices{0};
   int physical_index_position[taichi_max_num_indices]{};
   // physical indices are (ti.i, ti.j, ti.k, ti.l, ...)
   // physical_index_position[i] =
@@ -78,8 +106,8 @@ class SNode {
   // indices.
 
   static std::atomic<int> counter;
-  int id;
-  int depth{};
+  int id{0};
+  int depth{0};
 
   std::string name;
   int64 n{0};
@@ -87,12 +115,12 @@ class SNode {
   int total_bit_start{0};
   int chunk_size{0};
   std::size_t cell_size_bytes{0};
-  PrimitiveType *physical_type;  // for bit_struct and bit_array only
+  PrimitiveType *physical_type{nullptr};  // for bit_struct and bit_array only
   DataType dt;
-  bool has_ambient{};
+  bool has_ambient{false};
   TypedConstant ambient_val;
   // Note: parent will not be set until structural nodes are compiled!
-  SNode *parent{};
+  SNode *parent{nullptr};
   std::unique_ptr<GradInfoProvider> grad_info{nullptr};
   SNode *exp_snode{nullptr};  // for CustomFloatType with exponent bits
   int bit_offset{0};          // for children of bit_struct only
@@ -271,4 +299,5 @@ class SNode {
   void end_shared_exp_placement();
 };
 
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

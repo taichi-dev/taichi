@@ -1016,6 +1016,7 @@ void CodeGenLLVM::visit(AssertStmt *stmt) {
 }
 
 void CodeGenLLVM::visit(SNodeOpStmt *stmt) {
+  TI_ERROR("hello frank visit llvm");
   auto snode = stmt->snode;
   if (stmt->op_type == SNodeOpType::append) {
     TI_ASSERT(snode->type == SNodeType::dynamic);
@@ -1039,7 +1040,11 @@ void CodeGenLLVM::visit(SNodeOpStmt *stmt) {
     } else if (snode->type == SNodeType::dynamic) {
       llvm_val[stmt] = call(snode, llvm_val[stmt->ptr], "deactivate", {});
     }
-  } else {
+  } 
+  else if (stmt->op_type == SNodeOpType::get_addr) {
+    TI_ERROR("hello frank visit llvm get_addr");
+  } 
+  else {
     TI_NOT_IMPLEMENTED
   }
 }

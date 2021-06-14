@@ -581,4 +581,4 @@ def rescale_index(a, b, I):
     return Ib
 
 def get_addr(l, indices):
-    return Expr(ti_core.expr_get_addr(l.snode.ptr, make_expr_group(indices)))
+    return Expr(_ti_core.expr_get_addr(l.snode.ptr, make_expr_group(indices)))

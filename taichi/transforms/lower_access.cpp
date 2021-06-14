@@ -54,7 +54,6 @@ class LowerAccess : public IRVisitor {
     // TODO: change this to false
     allow_undefined_visitor = true;
     current_struct_for = nullptr;
-    TI_INFO("constructing LowerAccess");
   }
 
   void visit(Block *stmt_list) override {

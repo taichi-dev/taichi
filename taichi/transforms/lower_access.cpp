@@ -166,16 +166,13 @@ class LowerAccess : public IRVisitor {
   }
 
   void visit(SNodeOpStmt *stmt) override {
-    TI_INFO("hello frank lower access");
     if (stmt->ptr->is<GlobalPtrStmt>()) {
-      TI_INFO("hello frank lower access");
       if (SNodeOpStmt::activation_related(stmt->op_type) &&
           stmt->snode->type != SNodeType::dynamic) {
         auto lowered = lower_vector_ptr(stmt->ptr->as<GlobalPtrStmt>(), false,
                                         stmt->op_type);
         modifier.replace_with(stmt, std::move(lowered), true);
       } else if (stmt->op_type == SNodeOpType::get_addr) {
-        printf("doing lowering\n");
         auto lowered = lower_vector_ptr(stmt->ptr->as<GlobalPtrStmt>(), false);
         auto cast = lowered.push_back<UnaryOpStmt>(UnaryOpType::cast_bits,
                                                    lowered.back().get());

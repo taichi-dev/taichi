@@ -332,7 +332,10 @@ void SNodeOpExpression::flatten(FlattenContext *ctx) {
     ctx->push_back<SNodeOpStmt>(SNodeOpType::is_active, snode, ptr, nullptr);
   } else if (op_type == SNodeOpType::length) {
     ctx->push_back<SNodeOpStmt>(SNodeOpType::length, snode, ptr, nullptr);
-  } else if (op_type == SNodeOpType::append) {
+  } else if (op_type == SNodeOpType::get_addr) {
+    ctx->push_back<SNodeOpStmt>(SNodeOpType::get_addr, snode, ptr, nullptr);
+  } 
+  else if (op_type == SNodeOpType::append) {
     value->flatten(ctx);
     ctx->push_back<SNodeOpStmt>(SNodeOpType::append, snode, ptr, value->stmt);
     TI_ERROR_IF(snode->type != SNodeType::dynamic,

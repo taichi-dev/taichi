@@ -4,7 +4,7 @@ from .bls_test_template import bls_particle_grid
 
 @ti.require(ti.extension.bls)
 @ti.all_archs
-def test_scattering():
+def _test_scattering():
     bls_particle_grid(N=128,
                       ppc=10,
                       block_size=8,
@@ -14,7 +14,7 @@ def test_scattering():
 
 @ti.require(ti.extension.bls)
 @ti.all_archs
-def test_scattering_offset():
+def _test_scattering_offset():
     bls_particle_grid(N=128,
                       ppc=10,
                       block_size=8,
@@ -24,7 +24,7 @@ def test_scattering_offset():
 
 @ti.require(ti.extension.bls)
 @ti.all_archs
-def test_scattering_two_pointer_levels():
+def _test_scattering_two_pointer_levels():
     bls_particle_grid(N=128,
                       ppc=10,
                       block_size=8,
@@ -45,7 +45,7 @@ def test_gathering():
 
 @ti.require(ti.extension.bls)
 @ti.all_archs
-def test_gathering_offset():
+def _test_gathering_offset():
     bls_particle_grid(N=128,
                       ppc=10,
                       block_size=8,

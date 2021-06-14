@@ -1,6 +1,7 @@
 import argparse
 import os
 import platform
+import re
 import shutil
 import sys
 
@@ -24,18 +25,15 @@ def get_python_executable():
     return '"' + sys.executable.replace('\\', '/') + '"'
 
 
-def build():
+def build(project_name):
     """Build and package the wheel file in `python/dist`"""
     if platform.system() == 'Linux':
-        if os.environ.get(
-                'CXX', 'clang++') not in ['clang++-8', 'clang++-7', 'clang++']:
+        if re.search("^clang\+\+-*\d*", str(os.environ.get('CXX'))) is None:
             raise RuntimeError(
                 'Only the wheel with clang will be released to PyPI')
-
     version = ti.core.get_version_string()
     with open('../setup.py') as fin:
         with open('setup.py', 'w') as fout:
-            project_name = 'taichi'
             print("project_name = '{}'".format(project_name), file=fout)
             print("version = '{}'".format(version), file=fout)
             for l in fin:
@@ -131,14 +129,26 @@ def parse_args():
     parser.add_argument('--skip_build',
                         action='store_true',
                         help=('Skip the build process if this is enabled'))
+    parser.add_argument('--testpypi',
+                        action='store_true',
+                        help='Upload to test server if this is enabled')
+    parser.add_argument('--project_name',
+                        action='store',
+                        dest='project_name',
+                        default='taichi',
+                        help='Set the project name')
     return parser.parse_args()
 
 
 def main():
     args = parse_args()
     mode = args.mode
+    pypi_user = '__token__'
+    pypi_repo = ''
+    project_name = args.project_name
 
     env_pypi_pwd = os.environ.get('PYPI_PWD', '')
+
     if mode == 'try_upload':
         if env_pypi_pwd == '':
             print("Missing environment variable PYPI_PWD")
@@ -149,16 +159,19 @@ def main():
     if mode == 'upload' and env_pypi_pwd == '':
         raise RuntimeError("Missing environment variable PYPI_PWD")
 
+    os.environ['TWINE_PASSWORD'] = env_pypi_pwd
+
+    if mode == 'upload' and args.testpypi:
+        pypi_repo = '--repository testpypi'
+
     if not args.skip_build:
-        build()
+        build(project_name)
 
     if mode == 'build':
         return
     elif mode == 'upload':
-        os.system(
-            '{} -m twine upload dist/* --verbose -u yuanming-hu -p {}'.format(
-                get_python_executable(),
-                '%PYPI_PWD%' if get_os_name() == 'win' else '$PYPI_PWD'))
+        os.system('{} -m twine upload {} dist/* --verbose -u {}'.format(
+            get_python_executable(), pypi_repo, pypi_user))
     elif mode == 'test':
         print('Uninstalling old taichi packages...')
         os.system(f'{get_python_executable()} -m pip uninstall taichi-nightly')

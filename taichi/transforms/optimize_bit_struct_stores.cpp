@@ -1,5 +1,6 @@
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/ir.h"
+#include "taichi/ir/pass.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/visitors.h"
@@ -25,25 +26,16 @@ class CreateBitStructStores : public BasicStmtVisitor {
   }
 
   void visit(GlobalStoreStmt *stmt) override {
-    auto get_ch = stmt->ptr->cast<GetChStmt>();
+    auto get_ch = stmt->dest->cast<GetChStmt>();
     if (!get_ch || get_ch->input_snode->type != SNodeType::bit_struct)
       return;
 
-    // We only handle bit_struct pointers here. The currently supported data
-    // types are
-    // - CustomIntType
-    // - CustomFloatType without exponents
-    // - CustomFloatType with shared exponents
+    // We only handle bit_struct pointers here.
 
-    auto dtype = get_ch->output_snode->dt;
-    if (dtype->is<CustomIntType>() ||
-        dtype->as<CustomFloatType>()->get_exponent_type() == nullptr ||
-        get_ch->output_snode->owns_shared_exponent) {
-      auto s = Stmt::make<BitStructStoreStmt>(get_ch->input_ptr,
-                                              std::vector<int>{get_ch->chid},
-                                              std::vector<Stmt *>{stmt->data});
-      stmt->replace_with(VecStatement(std::move(s)));
-    }
+    auto s = Stmt::make<BitStructStoreStmt>(get_ch->input_ptr,
+                                            std::vector<int>{get_ch->chid},
+                                            std::vector<Stmt *>{stmt->val});
+    stmt->replace_with(VecStatement(std::move(s)));
   }
 };
 
@@ -200,19 +192,22 @@ class DemoteAtomicBitStructStores : public BasicStmtVisitor {
 TLANG_NAMESPACE_BEGIN
 
 namespace irpass {
-void optimize_bit_struct_stores(
-    IRNode *root,
-    const std::unordered_map<OffloadedStmt *,
-                             std::unordered_map<const SNode *, GlobalPtrStmt *>>
-        &uniquely_accessed_bit_structs) {
+void optimize_bit_struct_stores(IRNode *root,
+                                const CompileConfig &config,
+                                AnalysisManager *amgr) {
   TI_AUTO_PROF;
   CreateBitStructStores::run(root);
   die(root);  // remove unused GetCh
-  if (root->get_config().quant_opt_store_fusion) {
+  if (config.quant_opt_store_fusion) {
     MergeBitStructStores::run(root);
   }
-  if (root->get_config().quant_opt_atomic_demotion) {
-    DemoteAtomicBitStructStores::run(root, uniquely_accessed_bit_structs);
+  if (config.quant_opt_atomic_demotion) {
+    auto *res = amgr->get_pass_result<GatherUniquelyAccessedBitStructsPass>();
+    TI_ASSERT_INFO(res,
+                   "The optimize_bit_struct_stores pass must be after the "
+                   "gather_uniquely_accessed_bit_structs pass when "
+                   "config.quant_opt_atomic_demotion is true.");
+    DemoteAtomicBitStructStores::run(root, res->uniquely_accessed_bit_structs);
   }
 }
 

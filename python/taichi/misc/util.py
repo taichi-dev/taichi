@@ -4,77 +4,75 @@ import sys
 import traceback
 
 from colorama import Fore, Style
+from taichi.core import ti_core as _ti_core
 
 import taichi
 
 
 def config_from_dict(args):
-    from taichi.core import ti_core
     d = copy.copy(args)
     for k in d:
-        if isinstance(d[k], ti_core.Vector2f):
+        if isinstance(d[k], _ti_core.Vector2f):
             d[k] = '({}, {})'.format(d[k].x, d[k].y)
-        if isinstance(d[k], ti_core.Vector3f):
+        if isinstance(d[k], _ti_core.Vector3f):
             d[k] = '({}, {}, {})'.format(d[k].x, d[k].y, d[k].z)
         d[k] = str(d[k])
-    return ti_core.config_from_dict(d)
+    return _ti_core.config_from_dict(d)
 
 
 def core_veci(*args):
-    from taichi.core import ti_core
-    if isinstance(args[0], ti_core.Vector2i):
+    if isinstance(args[0], _ti_core.Vector2i):
         return args[0]
-    if isinstance(args[0], ti_core.Vector3i):
+    if isinstance(args[0], _ti_core.Vector3i):
         return args[0]
     if isinstance(args[0], tuple):
         args = tuple(*args)
     if len(args) == 2:
-        return ti_core.Vector2i(int(args[0]), int(args[1]))
+        return _ti_core.Vector2i(int(args[0]), int(args[1]))
     elif len(args) == 3:
-        return ti_core.Vector3i(int(args[0]), int(args[1]), int(args[2]))
+        return _ti_core.Vector3i(int(args[0]), int(args[1]), int(args[2]))
     elif len(args) == 4:
-        return ti_core.Vector4i(int(args[0]), int(args[1]), int(args[2]),
-                                int(args[3]))
+        return _ti_core.Vector4i(int(args[0]), int(args[1]), int(args[2]),
+                                 int(args[3]))
     else:
         assert False, type(args[0])
 
 
 def core_vec(*args):
-    from taichi.core import ti_core
-    if isinstance(args[0], ti_core.Vector2f):
+    if isinstance(args[0], _ti_core.Vector2f):
         return args[0]
-    if isinstance(args[0], ti_core.Vector3f):
+    if isinstance(args[0], _ti_core.Vector3f):
         return args[0]
-    if isinstance(args[0], ti_core.Vector4f):
+    if isinstance(args[0], _ti_core.Vector4f):
         return args[0]
-    if isinstance(args[0], ti_core.Vector2d):
+    if isinstance(args[0], _ti_core.Vector2d):
         return args[0]
-    if isinstance(args[0], ti_core.Vector3d):
+    if isinstance(args[0], _ti_core.Vector3d):
         return args[0]
-    if isinstance(args[0], ti_core.Vector4d):
+    if isinstance(args[0], _ti_core.Vector4d):
         return args[0]
     if isinstance(args[0], tuple):
         args = tuple(*args)
-    if ti_core.get_default_float_size() == 4:
+    if _ti_core.get_default_float_size() == 4:
         if len(args) == 2:
-            return ti_core.Vector2f(float(args[0]), float(args[1]))
+            return _ti_core.Vector2f(float(args[0]), float(args[1]))
         elif len(args) == 3:
-            return ti_core.Vector3f(float(args[0]), float(args[1]),
-                                    float(args[2]))
+            return _ti_core.Vector3f(float(args[0]), float(args[1]),
+                                     float(args[2]))
         elif len(args) == 4:
-            return ti_core.Vector4f(float(args[0]), float(args[1]),
-                                    float(args[2]), float(args[3]))
+            return _ti_core.Vector4f(float(args[0]), float(args[1]),
+                                     float(args[2]), float(args[3]))
         else:
             assert False, type(args[0])
     else:
         if len(args) == 2:
-            return ti_core.Vector2d(float(args[0]), float(args[1]))
+            return _ti_core.Vector2d(float(args[0]), float(args[1]))
         elif len(args) == 3:
-            return ti_core.Vector3d(float(args[0]), float(args[1]),
-                                    float(args[2]))
+            return _ti_core.Vector3d(float(args[0]), float(args[1]),
+                                     float(args[2]))
         elif len(args) == 4:
-            return ti_core.Vector4d(float(args[0]), float(args[1]),
-                                    float(args[2]), float(args[3]))
+            return _ti_core.Vector4d(float(args[0]), float(args[1]),
+                                     float(args[2]), float(args[3]))
         else:
             assert False, type(args[0])
 
@@ -154,19 +152,19 @@ def get_traceback(stacklevel=1):
 
 
 def duplicate_stdout_to_file(fn):
-    taichi.ti_core.duplicate_stdout_to_file(fn)
+    _ti_core.duplicate_stdout_to_file(fn)
 
 
 def set_gdb_trigger(on=True):
-    taichi.ti_core.set_core_trigger_gdb_when_crash(on)
+    _ti_core.set_core_trigger_gdb_when_crash(on)
 
 
 def print_profile_info():
-    taichi.ti_core.print_profile_info()
+    _ti_core.print_profile_info()
 
 
 def clear_profile_info():
-    taichi.ti_core.clear_profile_info()
+    _ti_core.clear_profile_info()
 
 
 @deprecated('ti.vec(x, y)', 'ti.core_vec(x, y)')
@@ -180,8 +178,7 @@ def veci(*args, **kwargs):
 
 
 def dump_dot(filepath=None, rankdir=None, embed_states_threshold=0):
-    from taichi.core import ti_core
-    d = ti_core.dump_dot(rankdir, embed_states_threshold)
+    d = _ti_core.dump_dot(rankdir, embed_states_threshold)
     if filepath is not None:
         with open(filepath, 'w') as fh:
             fh.write(d)
@@ -200,8 +197,7 @@ def dot_to_pdf(dot, filepath):
 
 
 def get_kernel_stats():
-    from taichi.core import ti_core
-    return ti_core.get_kernel_stats()
+    return _ti_core.get_kernel_stats()
 
 
 def print_async_stats(include_kernel_profiler=False):

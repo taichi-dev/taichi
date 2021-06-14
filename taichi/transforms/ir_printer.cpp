@@ -95,6 +95,10 @@ class IRPrinter : public IRVisitor {
     current_indent--;
   }
 
+  void visit(FrontendExprStmt *stmt) override {
+    print("{}", stmt->val->serialize());
+  }
+
   void visit(FrontendBreakStmt *stmt) override {
     print("break");
   }
@@ -279,7 +283,12 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(FuncCallStmt *stmt) override {
-    print("{}{} = call \"{}\"", stmt->type_hint(), stmt->name(), stmt->funcid);
+    std::vector<std::string> args;
+    for (const auto &arg : stmt->args) {
+      args.push_back(arg->name());
+    }
+    print("{}{} = call \"{}\", args = {{{}}}", stmt->type_hint(), stmt->name(),
+          stmt->func->get_name(), fmt::join(args, ", "));
   }
 
   void visit(FrontendFuncDefStmt *stmt) override {
@@ -378,34 +387,34 @@ class IRPrinter : public IRVisitor {
     print("{}{} = arg[{}]", stmt->type_hint(), stmt->name(), stmt->arg_id);
   }
 
-  void visit(FrontendKernelReturnStmt *stmt) override {
-    print("{}{} : kernel return {}", stmt->type_hint(), stmt->name(),
+  void visit(FrontendReturnStmt *stmt) override {
+    print("{}{} : return {}", stmt->type_hint(), stmt->name(),
           stmt->value->serialize());
   }
 
-  void visit(KernelReturnStmt *stmt) override {
-    print("{}{} : kernel return {}", stmt->type_hint(), stmt->name(),
+  void visit(ReturnStmt *stmt) override {
+    print("{}{} : return {}", stmt->type_hint(), stmt->name(),
           stmt->value->name());
   }
 
   void visit(LocalLoadStmt *stmt) override {
     print("{}{} = local load [{}]", stmt->type_hint(), stmt->name(),
-          to_string(stmt->ptr));
+          to_string(stmt->src));
   }
 
   void visit(LocalStoreStmt *stmt) override {
     print("{}{} : local store [{} <- {}]", stmt->type_hint(), stmt->name(),
-          stmt->ptr->name(), stmt->data->name());
+          stmt->dest->name(), stmt->val->name());
   }
 
   void visit(GlobalLoadStmt *stmt) override {
     print("{}{} = global load {}", stmt->type_hint(), stmt->name(),
-          stmt->ptr->name());
+          stmt->src->name());
   }
 
   void visit(GlobalStoreStmt *stmt) override {
     print("{}{} : global store [{} <- {}]", stmt->type_hint(), stmt->name(),
-          stmt->ptr->name(), stmt->data->name());
+          stmt->dest->name(), stmt->val->name());
   }
 
   void visit(ElementShuffleStmt *stmt) override {
@@ -597,32 +606,32 @@ class IRPrinter : public IRVisitor {
     print("{} = call internal \"{}\"", stmt->name(), stmt->func_name);
   }
 
-  void visit(StackAllocaStmt *stmt) override {
+  void visit(AdStackAllocaStmt *stmt) override {
     print("{}{} = stack alloc (max_size={})", stmt->type_hint(), stmt->name(),
           stmt->max_size);
   }
 
-  void visit(StackLoadTopStmt *stmt) override {
+  void visit(AdStackLoadTopStmt *stmt) override {
     print("{}{} = stack load top {}", stmt->type_hint(), stmt->name(),
           stmt->stack->name());
   }
 
-  void visit(StackLoadTopAdjStmt *stmt) override {
+  void visit(AdStackLoadTopAdjStmt *stmt) override {
     print("{}{} = stack load top adj {}", stmt->type_hint(), stmt->name(),
           stmt->stack->name());
   }
 
-  void visit(StackPushStmt *stmt) override {
+  void visit(AdStackPushStmt *stmt) override {
     print("{}{} : stack push {}, val = {}", stmt->type_hint(), stmt->name(),
           stmt->stack->name(), stmt->v->name());
   }
 
-  void visit(StackPopStmt *stmt) override {
+  void visit(AdStackPopStmt *stmt) override {
     print("{}{} : stack pop {}", stmt->type_hint(), stmt->name(),
           stmt->stack->name());
   }
 
-  void visit(StackAccAdjointStmt *stmt) override {
+  void visit(AdStackAccAdjointStmt *stmt) override {
     print("{}{} : stack acc adj {}, val = {}", stmt->type_hint(), stmt->name(),
           stmt->stack->name(), stmt->v->name());
   }

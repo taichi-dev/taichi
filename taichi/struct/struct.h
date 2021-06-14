@@ -4,35 +4,35 @@
 #include "taichi/ir/snode.h"
 #include "taichi/program/program.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
+
+/**
+ * Computes the IndexExtractor from the SNode rooted in @param snode.
+ *
+ * @param snode The root SNode to compute.
+ */
+void infer_snode_properties(SNode &snode);
 
 class StructCompiler {
  public:
   std::vector<SNode *> stack;
   std::vector<SNode *> snodes;
-  std::vector<SNode *> ambient_snodes;
-  std::size_t root_size;
-  Program *prog;
-
-  explicit StructCompiler(Program *prog);
+  std::size_t root_size{0};
 
   virtual ~StructCompiler() = default;
 
   void collect_snodes(SNode &snode);
-
-  // propagate root-to-leaf for a well-formed data structure
-  void infer_snode_properties(SNode &snode);
-
-  void compute_trailing_bits(SNode &snode);
 
   // generate C++/llvm IR
   virtual void generate_types(SNode &snode) = 0;
 
   virtual void generate_child_accessors(SNode &snode) = 0;
 
-  virtual void run(SNode &node, bool host) = 0;
+  virtual void run(SNode &node) = 0;
 
   static std::unique_ptr<StructCompiler> make(Program *prog, Arch arch);
 };
 
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

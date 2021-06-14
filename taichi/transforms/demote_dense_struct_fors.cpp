@@ -15,8 +15,12 @@ void convert_to_range_for(OffloadedStmt *offloaded) {
   std::vector<SNode *> snodes;
   auto *snode = offloaded->snode;
   int total_bits = 0;
+  int start_bits_root[taichi_max_num_indices] = {0};
   while (snode->type != SNodeType::root) {
     snodes.push_back(snode);
+    for (int j = 0; j < taichi_max_num_indices; j++) {
+      start_bits_root[j] += snode->extractors[j].num_bits;
+    }
     total_bits += snode->total_num_bits;
     snode = snode->parent;
   }
@@ -48,6 +52,9 @@ void convert_to_range_for(OffloadedStmt *offloaded) {
   // We will set main_loop_var->loop later.
 
   int offset = total_bits;
+  int start_bits[taichi_max_num_indices] = {0};
+  std::copy(std::begin(start_bits_root), std::end(start_bits_root),
+            std::begin(start_bits));
   Stmt *test = body_header.push_back<ConstStmt>(TypedConstant(-1));
   bool has_test = false;
   for (int i = 0; i < (int)snodes.size(); i++) {
@@ -59,8 +66,9 @@ void convert_to_range_for(OffloadedStmt *offloaded) {
       Stmt *delta = body_header.push_back<BitExtractStmt>(
           main_loop_var, ext.acc_offset + offset,
           ext.acc_offset + offset + ext.num_bits);
+      start_bits[p] -= ext.num_bits;
       auto multiplier =
-          body_header.push_back<ConstStmt>(TypedConstant(1 << (ext.start)));
+          body_header.push_back<ConstStmt>(TypedConstant(1 << start_bits[p]));
       delta = body_header.push_back<BinaryOpStmt>(BinaryOpType::mul, delta,
                                                   multiplier);
       new_loop_vars[j] = body_header.push_back<BinaryOpStmt>(
@@ -68,12 +76,14 @@ void convert_to_range_for(OffloadedStmt *offloaded) {
     }
   }
 
+  std::copy(std::begin(start_bits_root), std::end(start_bits_root),
+            std::begin(start_bits));
   for (int i = 0; i < (int)snodes.size(); i++) {
     auto snode = snodes[i];
     for (int j = 0; j < (int)physical_indices.size(); j++) {
       auto p = physical_indices[j];
-      auto num_elements = snode->extractors[p].num_elements
-                          << snode->extractors[p].start;
+      start_bits[p] -= snode->extractors[p].num_bits;
+      auto num_elements = snode->extractors[p].num_elements << start_bits[p];
       if (!bit::is_power_of_two(num_elements)) {
         has_test = true;
         auto bound =
@@ -86,21 +96,22 @@ void convert_to_range_for(OffloadedStmt *offloaded) {
     }
   }
 
-  for (int i = 0; i < num_loop_vars; i++) {
-    auto alloca = body_header.push_back<AllocaStmt>(PrimitiveType::i32);
-    body_header.push_back<LocalStoreStmt>(alloca, new_loop_vars[i]);
-    irpass::replace_statements_with(
-        body.get(),
-        [&](Stmt *s) {
-          if (auto loop_index = s->cast<LoopIndexStmt>()) {
-            return loop_index->loop == offloaded &&
-                   loop_index->index ==
-                       snodes.back()->physical_index_position[i];
-          }
+  irpass::replace_statements(
+      body.get(), /*filter=*/
+      [&](Stmt *s) {
+        if (auto loop_index = s->cast<LoopIndexStmt>()) {
+          return loop_index->loop == offloaded;
+        } else {
           return false;
-        },
-        [&]() { return Stmt::make<LocalLoadStmt>(LocalAddress(alloca, 0)); });
-  }
+        }
+      },
+      /*finder=*/
+      [&](Stmt *s) {
+        auto index = std::find(physical_indices.begin(), physical_indices.end(),
+                               s->as<LoopIndexStmt>()->index);
+        TI_ASSERT(index != physical_indices.end());
+        return new_loop_vars[index - physical_indices.begin()];
+      });
 
   if (has_test) {
     // Create an If statement

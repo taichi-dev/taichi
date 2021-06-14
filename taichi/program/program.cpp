@@ -16,6 +16,7 @@
 #include "taichi/backends/cpu/codegen_cpu.h"
 #include "taichi/struct/struct.h"
 #include "taichi/struct/struct_llvm.h"
+#include "taichi/backends/metal/aot_module_builder_impl.h"
 #include "taichi/backends/metal/struct_metal.h"
 #include "taichi/backends/opengl/struct_opengl.h"
 #include "taichi/platform/cuda/detect_cuda.h"
@@ -160,7 +161,7 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
 #endif
 
   result_buffer = nullptr;
-  current_kernel = nullptr;
+  current_callable = nullptr;
   sync = true;
   llvm_runtime = nullptr;
   finalized = false;
@@ -227,12 +228,19 @@ TypeFactory &Program::get_type_factory() {
   return TypeFactory::get_instance();
 }
 
+Function *Program::create_function(const FunctionKey &func_key) {
+  TI_TRACE("Creating function {}...", func_key.get_full_name());
+  functions.emplace_back(std::make_unique<Function>(this, func_key));
+  TI_ASSERT(function_map.count(func_key) == 0);
+  function_map[func_key] = functions.back().get();
+  return functions.back().get();
+}
+
 FunctionType Program::compile(Kernel &kernel) {
   auto start_t = Time::get_time();
   TI_AUTO_PROF;
   FunctionType ret = nullptr;
-  if (arch_is_cpu(kernel.arch) || kernel.arch == Arch::cuda ||
-      kernel.arch == Arch::metal) {
+  if (Kernel::supports_lowering(kernel.arch)) {
     kernel.lower();
     ret = compile_to_backend_executable(kernel, /*offloaded=*/nullptr);
   } else if (kernel.arch == Arch::opengl) {
@@ -307,6 +315,11 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
   auto snodes = scomp->snodes;
   int root_id = snode_root->id;
 
+  // Starting random state for the program calculated using the random seed.
+  // The seed is multiplied by 2^20 so that two programs with different seeds
+  // will not have overlapping random states in any thread.
+  int starting_rand_state = config.random_seed * 1048576;
+
   // Number of random states. One per CPU/CUDA thread.
   int num_rand_states = 0;
 
@@ -325,12 +338,12 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
   TI_TRACE("Allocating data structure of size {} B", scomp->root_size);
   TI_TRACE("Allocating {} random states (used by CUDA only)", num_rand_states);
 
-  runtime->call<void *, void *, std::size_t, std::size_t, void *, int, void *,
-                void *, void *>("runtime_initialize", result_buffer, this,
-                                (std::size_t)scomp->root_size, prealloc_size,
-                                preallocated_device_buffer, num_rand_states,
-                                (void *)&taichi_allocate_aligned,
-                                (void *)std::printf, (void *)std::vsnprintf);
+  runtime->call<void *, void *, std::size_t, std::size_t, void *, int, int,
+                void *, void *, void *>(
+      "runtime_initialize", result_buffer, this, (std::size_t)scomp->root_size,
+      prealloc_size, preallocated_device_buffer, starting_rand_state,
+      num_rand_states, (void *)&taichi_allocate_aligned, (void *)std::printf,
+      (void *)std::vsnprintf);
 
   TI_TRACE("LLVMRuntime initialized");
   llvm_runtime = fetch_result<void *>(taichi_result_buffer_ret_value_id);
@@ -389,10 +402,11 @@ void Program::initialize_runtime_system(StructCompiler *scomp) {
 }
 
 void Program::materialize_layout() {
-  // always use host_arch() this is for host accessors
+  infer_snode_properties(*snode_root);
+  // always use host_arch() for host accessors
   std::unique_ptr<StructCompiler> scomp =
       StructCompiler::make(this, host_arch());
-  scomp->run(*snode_root, true);
+  scomp->run(*snode_root);
   materialize_snode_expr_attributes();
 
   for (auto snode : scomp->snodes) {
@@ -408,7 +422,7 @@ void Program::materialize_layout() {
     initialize_device_llvm_context();
     std::unique_ptr<StructCompiler> scomp_gpu =
         StructCompiler::make(this, Arch::cuda);
-    scomp_gpu->run(*snode_root, false);
+    scomp_gpu->run(*snode_root);
     initialize_runtime_system(scomp_gpu.get());
   } else if (config.arch == Arch::metal) {
     TI_ASSERT_INFO(config.use_llvm,
@@ -575,10 +589,9 @@ void Program::visualize_layout(const std::string &fn) {
       for (int i = 0; i < taichi_max_num_indices; i++) {
         if (snode->extractors[i].active) {
           int nb = snode->extractors[i].num_bits;
-          int start = snode->extractors[i].start + nb;
           indices += fmt::format(
               R"($\mathbf{{{}}}^{{\mathbf{{{}b}}:{}}}_{{\mathbf{{{}b}}:{}}}$)",
-              std::string(1, 'I' + i), start, latex_short_digit(1 << start), nb,
+              std::string(1, 'I' + i), 0, latex_short_digit(1 << 0), nb,
               latex_short_digit(1 << nb));
         }
       }
@@ -635,7 +648,7 @@ Kernel &Program::get_snode_reader(SNode *snode) {
     for (int i = 0; i < snode->num_active_indices; i++) {
       indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
     }
-    auto ret = Stmt::make<FrontendKernelReturnStmt>(
+    auto ret = Stmt::make<FrontendReturnStmt>(
         load_if_ptr(Expr(snode_to_glb_var_exprs_.at(snode))[indices]));
     current_ast_builder().insert(std::move(ret));
   });
@@ -746,7 +759,7 @@ void Program::finalize() {
   TI_TRACE("Program ({}) finalized.", fmt::ptr(this));
 }
 
-int Program::default_block_dim() const {
+int Program::default_block_dim(const CompileConfig &config) {
   if (arch_is_cpu(config.arch)) {
     return config.default_cpu_block_dim;
   } else {
@@ -860,6 +873,14 @@ void Program::materialize_snode_expr_attributes() {
   for (auto &[snode, glb_var] : snode_to_glb_var_exprs_) {
     glb_var->set_attribute("dim", std::to_string(snode->num_active_indices));
   }
+}
+
+std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(Arch arch) {
+  if (arch == Arch::metal) {
+    return std::make_unique<metal::AotModuleBuilderImpl>(
+        &(metal_compiled_structs_.value()));
+  }
+  return nullptr;
 }
 
 TLANG_NAMESPACE_END

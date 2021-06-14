@@ -8,7 +8,7 @@ project(taichi)
 
 SET(TI_VERSION_MAJOR 0)
 SET(TI_VERSION_MINOR 7)
-SET(TI_VERSION_PATCH 15)
+SET(TI_VERSION_PATCH 21)
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -83,3 +83,9 @@ FILE(WRITE ${CMAKE_CURRENT_LIST_DIR}/taichi/common/version.h
         "#define TI_VERSION_PATCH \"${TI_VERSION_PATCH}\"\n"
         "#define TI_CUDAVERSION \"${CUDA_VERSION}\"\n"
         )
+
+option(TI_EXPORT_CORE "export taichi core" OFF)
+
+if (TI_EXPORT_CORE)
+  include(cmake/TaichiExportCore.cmake)
+endif()

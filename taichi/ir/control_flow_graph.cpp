@@ -81,7 +81,7 @@ void CFGNode::replace_with(int location,
 
 bool CFGNode::contain_variable(const std::unordered_set<Stmt *> &var_set,
                                Stmt *var) {
-  if (var->is<AllocaStmt>() || var->is<StackAllocaStmt>()) {
+  if (var->is<AllocaStmt>() || var->is<AdStackAllocaStmt>()) {
     return var_set.find(var) != var_set.end();
   } else {
     // TODO: How to optimize this?
@@ -98,7 +98,7 @@ bool CFGNode::contain_variable(const std::unordered_set<Stmt *> &var_set,
 
 bool CFGNode::may_contain_variable(const std::unordered_set<Stmt *> &var_set,
                                    Stmt *var) {
-  if (var->is<AllocaStmt>() || var->is<StackAllocaStmt>()) {
+  if (var->is<AllocaStmt>() || var->is<AdStackAllocaStmt>()) {
     return var_set.find(var) != var_set.end();
   } else {
     // TODO: How to optimize this?
@@ -251,10 +251,10 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access) {
     Stmt *result = nullptr;
     if (auto local_load = stmt->cast<LocalLoadStmt>()) {
       bool regular = true;
-      auto alloca = local_load->ptr[0].var;
+      auto alloca = local_load->src[0].var;
       for (int l = 0; l < stmt->width(); l++) {
-        if (local_load->ptr[l].offset != l ||
-            local_load->ptr[l].var != alloca) {
+        if (local_load->src[l].offset != l ||
+            local_load->src[l].var != alloca) {
           regular = false;
         }
       }
@@ -263,7 +263,7 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access) {
       }
     } else if (auto global_load = stmt->cast<GlobalLoadStmt>()) {
       if (!after_lower_access) {
-        result = get_store_forwarding_data(global_load->ptr, i);
+        result = get_store_forwarding_data(global_load->src, i);
       }
     }
     if (result) {
@@ -282,11 +282,11 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access) {
     }
     // Identical store elimination
     if (auto local_store = stmt->cast<LocalStoreStmt>()) {
-      result = get_store_forwarding_data(local_store->ptr, i);
+      result = get_store_forwarding_data(local_store->dest, i);
       if (result) {
         if (result->is<AllocaStmt>()) {
           // special case of alloca (initialized to 0)
-          if (auto stored_data = local_store->data->cast<ConstStmt>()) {
+          if (auto stored_data = local_store->val->cast<ConstStmt>()) {
             bool all_zero = true;
             for (auto &val : stored_data->val.data) {
               if (!val.equal_value(0)) {
@@ -302,7 +302,7 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access) {
           }
         } else {
           // not alloca
-          if (irpass::analysis::same_value(result, local_store->data)) {
+          if (irpass::analysis::same_value(result, local_store->val)) {
             erase(i);  // This causes end_location--
             i--;       // to cancel i++ in the for loop
             modified = true;
@@ -311,8 +311,8 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access) {
       }
     } else if (auto global_store = stmt->cast<GlobalStoreStmt>()) {
       if (!after_lower_access) {
-        result = get_store_forwarding_data(global_store->ptr, i);
-        if (irpass::analysis::same_value(result, global_store->data)) {
+        result = get_store_forwarding_data(global_store->dest, i);
+        if (irpass::analysis::same_value(result, global_store->val)) {
           erase(i);  // This causes end_location--
           i--;       // to cancel i++ in the for loop
           modified = true;
@@ -370,7 +370,7 @@ void CFGNode::live_variable_analysis(bool after_lower_access) {
     auto load_ptrs = irpass::analysis::get_load_pointers(stmt);
     for (auto &load_ptr : load_ptrs) {
       if (!after_lower_access ||
-          (load_ptr->is<AllocaStmt>() || load_ptr->is<StackAllocaStmt>())) {
+          (load_ptr->is<AllocaStmt>() || load_ptr->is<AdStackAllocaStmt>())) {
         // After lower_access, we only analyze local variables and stacks.
         if (!contain_variable(live_kill, load_ptr)) {
           live_gen.insert(load_ptr);
@@ -381,16 +381,16 @@ void CFGNode::live_variable_analysis(bool after_lower_access) {
     // TODO: Consider stacks in get_store_destination instead of here
     //  for store-to-load forwarding on stacks
     // TODO: SNode deactivation is also a definite store
-    if (auto stack_pop = stmt->cast<StackPopStmt>()) {
+    if (auto stack_pop = stmt->cast<AdStackPopStmt>()) {
       store_ptrs = std::vector<Stmt *>(1, stack_pop->stack);
-    } else if (auto stack_push = stmt->cast<StackPushStmt>()) {
+    } else if (auto stack_push = stmt->cast<AdStackPushStmt>()) {
       store_ptrs = std::vector<Stmt *>(1, stack_push->stack);
-    } else if (auto stack_acc_adj = stmt->cast<StackAccAdjointStmt>()) {
+    } else if (auto stack_acc_adj = stmt->cast<AdStackAccAdjointStmt>()) {
       store_ptrs = std::vector<Stmt *>(1, stack_acc_adj->stack);
     }
     for (auto store_ptr : store_ptrs) {
       if (!after_lower_access ||
-          (store_ptr->is<AllocaStmt>() || store_ptr->is<StackAllocaStmt>())) {
+          (store_ptr->is<AllocaStmt>() || store_ptr->is<AdStackAllocaStmt>())) {
         // After lower_access, we only analyze local variables and stacks.
         live_kill.insert(store_ptr);
       }
@@ -409,22 +409,22 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
     auto store_ptrs = irpass::analysis::get_store_destination(stmt);
     // TODO: Consider stacks in get_store_destination instead of here
     //  for store-to-load forwarding on stacks
-    if (auto stack_pop = stmt->cast<StackPopStmt>()) {
+    if (auto stack_pop = stmt->cast<AdStackPopStmt>()) {
       store_ptrs = std::vector<Stmt *>(1, stack_pop->stack);
-    } else if (auto stack_push = stmt->cast<StackPushStmt>()) {
+    } else if (auto stack_push = stmt->cast<AdStackPushStmt>()) {
       store_ptrs = std::vector<Stmt *>(1, stack_push->stack);
-    } else if (auto stack_acc_adj = stmt->cast<StackAccAdjointStmt>()) {
+    } else if (auto stack_acc_adj = stmt->cast<AdStackAccAdjointStmt>()) {
       store_ptrs = std::vector<Stmt *>(1, stack_acc_adj->stack);
-    } else if (stmt->is<StackAllocaStmt>()) {
+    } else if (stmt->is<AdStackAllocaStmt>()) {
       store_ptrs = std::vector<Stmt *>(1, stmt);
     }
     if (store_ptrs.size() == 1) {
       auto store_ptr = store_ptrs.front();
       if (!after_lower_access ||
-          (store_ptr->is<AllocaStmt>() || store_ptr->is<StackAllocaStmt>())) {
+          (store_ptr->is<AllocaStmt>() || store_ptr->is<AdStackAllocaStmt>())) {
         // After lower_access, we only analyze local variables and stacks.
-        // Do not eliminate AllocaStmt and StackAllocaStmt here.
-        if (!stmt->is<AllocaStmt>() && !stmt->is<StackAllocaStmt>() &&
+        // Do not eliminate AllocaStmt and AdStackAllocaStmt here.
+        if (!stmt->is<AllocaStmt>() && !stmt->is<AdStackAllocaStmt>() &&
             !may_contain_variable(live_in_this_node, store_ptr) &&
             (contain_variable(killed_in_this_node, store_ptr) ||
              !may_contain_variable(live_out, store_ptr))) {
@@ -483,7 +483,7 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
       // Identical load elimination
       auto load_ptr = load_ptrs.front();
       if (!after_lower_access ||
-          (load_ptr->is<AllocaStmt>() || load_ptr->is<StackAllocaStmt>())) {
+          (load_ptr->is<AllocaStmt>() || load_ptr->is<AdStackAllocaStmt>())) {
         // After lower_access, we only analyze local variables and stacks.
         if (live_load_in_this_node.find(load_ptr) !=
                 live_load_in_this_node.end() &&
@@ -501,7 +501,7 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
     }
     for (auto &load_ptr : load_ptrs) {
       if (!after_lower_access ||
-          (load_ptr->is<AllocaStmt>() || load_ptr->is<StackAllocaStmt>())) {
+          (load_ptr->is<AllocaStmt>() || load_ptr->is<AdStackAllocaStmt>())) {
         // After lower_access, we only analyze local variables and stacks.
         live_in_this_node.insert(load_ptr);
       }
@@ -682,7 +682,7 @@ void ControlFlowGraph::live_variable_analysis(
   nodes[final_node]->live_kill.clear();
 
   auto in_final_node_live_gen = [&config_opt](const Stmt *stmt) -> bool {
-    if (stmt->is<AllocaStmt>() || stmt->is<StackAllocaStmt>()) {
+    if (stmt->is<AllocaStmt>() || stmt->is<AdStackAllocaStmt>()) {
       return false;
     }
     if (auto *gptr = stmt->cast<GlobalPtrStmt>();

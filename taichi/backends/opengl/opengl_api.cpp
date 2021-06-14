@@ -461,7 +461,7 @@ struct CompiledProgram::Impl {
     arg_count = kernel->args.size();
     ret_count = kernel->rets.size();
     for (int i = 0; i < arg_count; i++) {
-      if (kernel->args[i].is_nparray) {
+      if (kernel->args[i].is_external_array) {
         ext_arr_map[i] = kernel->args[i].size;
       }
     }

@@ -25,7 +25,7 @@ def test_pointer():
 
     @ti.kernel
     def deactivate():
-        ti.deactivate(ptr, 4)
+        ti.deactivate(ptr, 0)
 
     deactivate()
     s[None] = 0
@@ -60,7 +60,7 @@ def test_pointer1():
 
     @ti.kernel
     def deactivate():
-        ti.deactivate(ptr, 4)
+        ti.deactivate(ptr, 0)
 
     deactivate()
     s[None] = 0

@@ -423,8 +423,8 @@ STR(
       for (int i = 0; i < kTaichiMaxNumIndices; ++i) {
         device const auto &ex = child_extrators.extractors[i];
         const int mask = ((1 << ex.num_bits) - 1);
-        const int addition = (((l >> ex.acc_offset) & mask) << ex.start);
-        child->at[i] = (parent.at[i] | addition);
+        const int addition = ((l >> ex.acc_offset) & mask);
+        child->at[i] = ((parent.at[i] << ex.num_bits) | addition);
       }
     }
 

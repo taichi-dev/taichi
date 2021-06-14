@@ -155,14 +155,14 @@ Stmt *LocalLoadStmt::previous_store_or_alloca_in_block() {
     if (parent->statements[i]->is<LocalStoreStmt>()) {
       auto store = parent->statements[i]->as<LocalStoreStmt>();
       // TI_ASSERT(store->width() == 1);
-      if (store->ptr == this->ptr[0].var) {
+      if (store->dest == this->src[0].var) {
         // found
         return store;
       }
     } else if (parent->statements[i]->is<AllocaStmt>()) {
       auto alloca = parent->statements[i]->as<AllocaStmt>();
       // TI_ASSERT(alloca->width() == 1);
-      if (alloca == this->ptr[0].var) {
+      if (alloca == this->src[0].var) {
         return alloca;
       }
     }
@@ -171,8 +171,8 @@ Stmt *LocalLoadStmt::previous_store_or_alloca_in_block() {
 }
 
 bool LocalLoadStmt::same_source() const {
-  for (int i = 1; i < (int)ptr.size(); i++) {
-    if (ptr[i].var != ptr[0].var)
+  for (int i = 1; i < (int)src.size(); i++) {
+    if (src[i].var != src[0].var)
       return false;
   }
   return true;
@@ -180,7 +180,7 @@ bool LocalLoadStmt::same_source() const {
 
 bool LocalLoadStmt::has_source(Stmt *alloca) const {
   for (int i = 0; i < width(); i++) {
-    if (ptr[i].var == alloca)
+    if (src[i].var == alloca)
       return true;
   }
   return false;
@@ -284,6 +284,11 @@ std::unique_ptr<Stmt> FuncBodyStmt::clone() const {
   return std::make_unique<FuncBodyStmt>(funcid, body->clone());
 }
 
+FuncCallStmt::FuncCallStmt(Function *func, const std::vector<Stmt *> &args)
+    : func(func), args(args) {
+  TI_STMT_REG_FIELDS;
+}
+
 WhileStmt::WhileStmt(std::unique_ptr<Block> &&body)
     : mask(nullptr), body(std::move(body)) {
   this->body->parent_stmt = this;
@@ -345,7 +350,6 @@ std::unique_ptr<Stmt> OffloadedStmt::clone() const {
   new_stmt->const_end = const_end;
   new_stmt->begin_value = begin_value;
   new_stmt->end_value = end_value;
-  new_stmt->step = step;
   new_stmt->grid_dim = grid_dim;
   new_stmt->block_dim = block_dim;
   new_stmt->reversed = reversed;

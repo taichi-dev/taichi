@@ -4,6 +4,7 @@
 #include "taichi/ir/snode.h"
 #include "taichi/ir/ir.h"
 #include "taichi/program/arch.h"
+#include "taichi/program/callable.h"
 
 #define TI_RUNTIME_HOST
 #include "taichi/program/context.h"
@@ -13,42 +14,15 @@ TLANG_NAMESPACE_BEGIN
 
 class Program;
 
-class Kernel {
+class Kernel : public Callable {
  public:
-  std::unique_ptr<IRNode> ir;
-  bool ir_is_ast;
-  Program &program;
-  FunctionType compiled;
   std::string name;
   std::vector<SNode *> no_activate;
   Arch arch;
-  bool lowered;  // lower inital AST all the way down to a bunch of
-                 // OffloadedStmt for async execution
 
-  struct Arg {
-    DataType dt;
-    bool is_nparray;
-    std::size_t size;
-
-    Arg(DataType dt = PrimitiveType::unknown,
-        bool is_nparray = false,
-        std::size_t size = 0)
-        : dt(dt), is_nparray(is_nparray), size(size) {
-    }
-  };
-
-  struct Ret {
-    DataType dt;
-
-    explicit Ret(DataType dt = PrimitiveType::unknown) : dt(dt) {
-    }
-  };
-
-  std::vector<Arg> args;
-  std::vector<Ret> rets;
-  bool is_accessor;
-  bool is_evaluator;
-  bool grad;
+  bool is_accessor{false};
+  bool is_evaluator{false};
+  bool grad{false};
 
   // TODO: Give "Context" a more specific name.
   class LaunchContextBuilder {
@@ -61,17 +35,17 @@ class Kernel {
     LaunchContextBuilder(const LaunchContextBuilder &) = delete;
     LaunchContextBuilder &operator=(const LaunchContextBuilder &) = delete;
 
-    void set_arg_float(int i, float64 d);
+    void set_arg_float(int arg_id, float64 d);
 
-    void set_arg_int(int i, int64 d);
+    void set_arg_int(int arg_id, int64 d);
 
     void set_extra_arg_int(int i, int j, int32 d);
 
-    void set_arg_nparray(int i, uint64 ptr, uint64 size);
+    void set_arg_external_array(int arg_id, uint64 ptr, uint64 size);
 
-    // Sets the i-th arg in the context to the bits stored in |d|. This ignores
-    // the underlying kernel's i-th arg type.
-    void set_arg_raw(int i, uint64 d);
+    // Sets the |arg_id|-th arg in the context to the bits stored in |d|.
+    // This ignores the underlying kernel's |arg_id|-th arg type.
+    void set_arg_raw(int arg_id, uint64 d);
 
     Context &get_context();
 
@@ -95,17 +69,23 @@ class Kernel {
          const std::string &name = "",
          bool grad = false);
 
+  bool lowered() const {
+    return lowered_;
+  }
+
   void compile();
 
+  /**
+   * Lowers |ir| to CHI IR level
+   *
+   * @param to_executable: If true, lowers |ir| to a point where the CHI
+   * statements can be directly translated by each backend's codegen.
+   */
   void lower(bool to_executable = true);
 
   void operator()(LaunchContextBuilder &ctx_builder);
 
   LaunchContextBuilder make_launch_context();
-
-  int insert_arg(DataType dt, bool is_nparray);
-
-  int insert_ret(DataType dt);
 
   float64 get_ret_float(int i);
 
@@ -114,6 +94,25 @@ class Kernel {
   void set_arch(Arch arch);
 
   void account_for_offloaded(OffloadedStmt *stmt);
+
+  [[nodiscard]] std::string get_name() const override;
+  /**
+   * Whether the given |arch| is supported in the lower() method.
+   *
+   * @param arch: The arch to check
+   * @return: True if supported.
+   */
+  static bool supports_lowering(Arch arch);
+
+ private:
+  // True if |ir| is a frontend AST. False if it's already offloaded to CHI IR.
+  bool ir_is_ast_{false};
+  // The closure that, if invoked, lauches the backend kernel (shader)
+  FunctionType compiled_{nullptr};
+  // A flag to record whether |ir| has been fully lowered.
+  // lower inital AST all the way down to a bunch of
+  // OffloadedStmt for async execution
+  bool lowered_{false};
 };
 
 TLANG_NAMESPACE_END

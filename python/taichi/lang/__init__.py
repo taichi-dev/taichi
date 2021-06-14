@@ -54,6 +54,7 @@ cuda = _ti_core.cuda
 metal = _ti_core.metal
 opengl = _ti_core.opengl
 cc = _ti_core.cc
+wasm = _ti_core.wasm
 gpu = [cuda, metal, opengl]
 cpu = _ti_core.host_arch()
 kernel_profiler_print = lambda: impl.get_runtime().prog.kernel_profiler_print()
@@ -127,6 +128,7 @@ class _SpecialConfig:
         self.log_level = 'info'
         self.gdb_trigger = False
         self.excepthook = False
+        self.experimental_real_function = False
 
 
 def init(arch=None,
@@ -187,6 +189,7 @@ def init(arch=None,
     env_spec.add('log_level', str)
     env_spec.add('gdb_trigger')
     env_spec.add('excepthook')
+    env_spec.add('experimental_real_function')
 
     # compiler configurations (ti.cfg):
     for key in dir(ti.cfg):
@@ -207,6 +210,8 @@ def init(arch=None,
     if not _test_mode:
         ti.set_gdb_trigger(spec_cfg.gdb_trigger)
         impl.get_runtime().print_preprocessed = spec_cfg.print_preprocessed
+        impl.get_runtime().experimental_real_function = \
+            spec_cfg.experimental_real_function
         ti.set_logging_level(spec_cfg.log_level.lower())
         if spec_cfg.excepthook:
             # TODO(#1405): add a way to restore old excepthook
@@ -288,6 +293,68 @@ def svd(A, dt=None):
         dt = impl.get_runtime().default_fp
     from .linalg import svd
     return svd(A, dt)
+
+
+def eig(A, dt=None):
+    """Compute the eigenvalues and right eigenvectors of a real matrix.
+
+    Parameters
+    ----------
+    A: ti.Matrix(n, n)
+        2D Matrix for which the eigenvalues and right eigenvectors will be computed.
+    dt: Optional[DataType]
+        The datatype for the eigenvalues and right eigenvectors
+
+    Returns
+    -------
+    eigenvalues: ti.Matrix(n, 2)
+        The eigenvalues in complex form. Each row stores one eigenvalue. The first number
+        of the eigenvalue represents the real part and the second number represents the
+        imaginary part.
+    eigenvectors: ti.Matrix(n*2, n)
+        The eigenvectors in complex form. Each column stores one eigenvector. Each eigenvector
+        consists of n entries, each of which is represented by two numbers for its real part
+        and imaginary part.
+    """
+    if dt is None:
+        dt = impl.get_runtime().default_fp
+    from taichi.lang import linalg
+    if A.n == 2:
+        return linalg.eig2x2(A, dt)
+    raise Exception("Eigen solver only supports 2D matrices.")
+
+
+def sym_eig(A, dt=None):
+    """Compute the eigenvalues and right eigenvectors of a real symmetric matrix.
+
+    Parameters
+    ----------
+    A: ti.Matrix(n, n)
+        Symmetric Matrix for which the eigenvalues and right eigenvectors will be computed.
+    dt: Optional[DataType]
+        The datatype for the eigenvalues and right eigenvectors
+
+    Returns
+    -------
+    eigenvalues: ti.Vector(n)
+        The eigenvalues. Each entry store one eigen value.
+    eigenvectors: ti.Matrix(n, n)
+        The eigenvectors. Each column stores one eigenvector.
+    """
+    assert all(A == A.transpose()), "A needs to be symmetric"
+    if dt is None:
+        dt = impl.get_runtime().default_fp
+    from taichi.lang import linalg
+    if A.n == 2:
+        return linalg.sym_eig2x2(A, dt)
+    raise Exception("Symmetric eigen solver only supports 2D matrices.")
+
+
+def randn(dt=None):
+    if dt is None:
+        dt = impl.get_runtime().default_fp
+    from .random import randn
+    return randn(dt)
 
 
 determinant = deprecated('ti.determinant(a)',
@@ -539,6 +606,7 @@ def is_arch_supported(arch):
         metal: _ti_core.with_metal,
         opengl: _ti_core.with_opengl,
         cc: _ti_core.with_cc,
+        wasm: lambda: True,
         cpu: lambda: True
     }
     with_arch = arch_table.get(arch, lambda: False)

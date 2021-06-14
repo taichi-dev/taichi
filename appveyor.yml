@@ -24,6 +24,7 @@ environment:
     - PYTHON: C:\Python36-x64\python.exe
     - PYTHON: C:\Python37-x64\python.exe
     - PYTHON: C:\Python38-x64\python.exe
+    - PYTHON: C:\Python39-x64\python.exe
 
 skip_commits:
   files:

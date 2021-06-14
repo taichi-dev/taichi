@@ -1,8 +1,11 @@
-import taichi as ti
-import time
 import math
+import time
+
 import numpy as np
-from renderer_utils import ray_aabb_intersection, intersect_sphere, ray_plane_intersect, reflect, refract
+from renderer_utils import (intersect_sphere, ray_aabb_intersection,
+                            ray_plane_intersect, reflect, refract)
+
+import taichi as ti
 
 ti.init(arch=ti.gpu)
 res = (800, 800)
@@ -41,12 +44,9 @@ lambertian_brdf = 1.0 / math.pi
 # diamond!
 refr_idx = 2.4
 
-# right near sphere
+# right sphere
 sp1_center = ti.Vector([0.4, 0.225, 1.75])
 sp1_radius = 0.22
-# left far sphere
-sp2_center = ti.Vector([-0.28, 0.55, 0.8])
-sp2_radius = 0.32
 
 
 def make_box_transform_matrices():

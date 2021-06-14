@@ -46,6 +46,8 @@ struct CompiledStructs {
   std::string snode_structs_source_code;
   // Runtime related source code
   std::string runtime_utils_source_code;
+  // Type name of the generated root SNode.
+  std::string root_snode_type_name;
   // Root buffer size in bytes.
   size_t root_size;
   // Runtime struct size.

@@ -364,3 +364,48 @@ def test_complex_body():
 
     for i in range(N):
         assert a.grad[i] == g[i]
+
+
+@ti.require(ti.extension.adstack, ti.extension.bls)
+@ti.all_archs
+def test_triple_for_loops_bls():
+    N = 8
+    M = 3
+    a = ti.field(ti.f32, shape=N, needs_grad=True)
+    b = ti.field(ti.f32, shape=2 * N, needs_grad=True)
+    f = ti.field(ti.f32, shape=(N - M, N), needs_grad=True)
+
+    @ti.kernel
+    def triple_for():
+        ti.block_local(a)
+        ti.block_local(b)
+        for i in range(N - M):
+            for k in range(N):
+                weight = 1.0
+                for j in range(M):
+                    weight *= a[i + j]
+                s = 0.0
+                for j in range(2 * M):
+                    s += weight + b[2 * i + j]
+                f[i, k] = s
+
+    a.fill(2)
+
+    for i in range(2 * N):
+        b[i] = i
+
+    triple_for()
+
+    for i in range(N - M):
+        for k in range(N):
+            assert f[i, k] == 2 * M * 2**M + (4 * i + 2 * M - 1) * M
+            f.grad[i, k] = 1
+
+    triple_for.grad()
+
+    for i in range(N):
+        assert a.grad[i] == 2 * M * min(min(N - i - 1, i + 1), M) * \
+               2**(M - 1) * N
+    for i in range(N):
+        assert b.grad[i * 2] == min(min(N - i - 1, i + 1), M) * N
+        assert b.grad[i * 2 + 1] == min(min(N - i - 1, i + 1), M) * N

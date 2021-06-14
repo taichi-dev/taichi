@@ -5,6 +5,7 @@ import inspect
 import re
 
 import numpy as np
+import taichi as ti
 from taichi.core import primitive_types
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl, util
@@ -14,8 +15,6 @@ from taichi.lang.kernel_arguments import ext_arr, template
 from taichi.lang.shell import _shell_pop_print, oinspect
 from taichi.lang.transformer import ASTTransformer
 from taichi.misc.util import obsolete
-
-import taichi as ti
 
 
 def _remove_indent(lines):
@@ -49,6 +48,7 @@ def func(foo):
         _taichi_skip_traceback = 1
         return fun.__call__(*args)
 
+    decorated._is_taichi_function = True
     return decorated
 
 
@@ -67,19 +67,31 @@ def pyfunc(foo):
         _taichi_skip_traceback = 1
         return fun.__call__(*args)
 
+    decorated._is_taichi_function = True
     return decorated
 
 
 class Func:
+    function_counter = 0
+
     def __init__(self, func, classfunc=False, pyfunc=False):
         self.func = func
+        self.func_id = Func.function_counter
+        Func.function_counter += 1
         self.compiled = None
         self.classfunc = classfunc
         self.pyfunc = pyfunc
-        self.arguments = []
+        self.argument_annotations = []
         self.argument_names = []
         _taichi_skip_traceback = 1
         self.extract_arguments()
+        self.template_slot_locations = []
+        for i in range(len(self.argument_annotations)):
+            if isinstance(self.argument_annotations[i], template):
+                self.template_slot_locations.append(i)
+        self.mapper = TaichiCallableTemplateMapper(
+            self.argument_annotations, self.template_slot_locations)
+        self.taichi_functions = {}  # The |Function| class in C++
 
     def __call__(self, *args):
         _taichi_skip_traceback = 1
@@ -90,12 +102,38 @@ class Func:
                     " Use @ti.pyfunc if you wish to call Taichi functions "
                     "from both Python-scope and Taichi-scope.")
             return self.func(*args)
-        if self.compiled is None:
-            self.do_compile()
-        ret = self.compiled(*args)
-        return ret
 
-    def do_compile(self):
+        if impl.get_runtime().experimental_real_function:
+            if impl.get_runtime().current_kernel.is_grad:
+                raise TaichiSyntaxError(
+                    "Real function in gradient kernels unsupported.")
+            instance_id, arg_features = self.mapper.lookup(args)
+            key = _ti_core.FunctionKey(self.func.__name__, self.func_id,
+                                       instance_id)
+            if self.compiled is None:
+                self.compiled = {}
+            if key.instance_id not in self.compiled:
+                self.do_compile(key=key, args=args)
+            return self.func_call_rvalue(key=key, args=args)
+        else:
+            if self.compiled is None:
+                self.do_compile(key=None, args=args)
+            ret = self.compiled(*args)
+            return ret
+
+    def func_call_rvalue(self, key, args):
+        # Skip the template args, e.g., |self|
+        assert impl.get_runtime().experimental_real_function
+        non_template_args = []
+        for i in range(len(self.argument_annotations)):
+            if not isinstance(self.argument_annotations[i], template):
+                non_template_args.append(args[i])
+        non_template_args = impl.make_expr_group(non_template_args)
+        return ti.Expr(
+            _ti_core.make_func_call_expr(
+                self.taichi_functions[key.instance_id], non_template_args))
+
+    def do_compile(self, key, args):
         src = _remove_indent(oinspect.getsource(self.func))
         tree = ast.parse(src)
 
@@ -110,11 +148,25 @@ class Func:
         local_vars = {}
         global_vars = _get_global_vars(self.func)
 
+        if impl.get_runtime().experimental_real_function:
+            # inject template parameters into globals
+            for i in self.template_slot_locations:
+                template_var_name = self.argument_names[i]
+                global_vars[template_var_name] = args[i]
+
         exec(
             compile(tree,
                     filename=oinspect.getsourcefile(self.func),
                     mode='exec'), global_vars, local_vars)
-        self.compiled = local_vars[self.func.__name__]
+
+        if impl.get_runtime().experimental_real_function:
+            self.compiled[key.instance_id] = local_vars[self.func.__name__]
+            self.taichi_functions[key.instance_id] = _ti_core.create_function(
+                key)
+            self.taichi_functions[key.instance_id].set_function_body(
+                self.compiled[key.instance_id])
+        else:
+            self.compiled = local_vars[self.func.__name__]
 
     def extract_arguments(self):
         sig = inspect.signature(self.func)
@@ -144,20 +196,17 @@ class Func:
                 if i == 0 and self.classfunc:
                     annotation = template()
             else:
-                if id(annotation) in primitive_types.type_ids:
-                    ti.warning(
-                        'Data type annotations are unnecessary for Taichi'
-                        ' functions, consider removing it',
-                        stacklevel=4)
-                elif not isinstance(annotation, template):
+                if not id(annotation
+                          ) in primitive_types.type_ids and not isinstance(
+                              annotation, template):
                     raise KernelDefError(
                         f'Invalid type annotation (argument {i}) of Taichi function: {annotation}'
                     )
-            self.arguments.append(annotation)
+            self.argument_annotations.append(annotation)
             self.argument_names.append(param.name)
 
 
-class KernelTemplateMapper:
+class TaichiCallableTemplateMapper:
     def __init__(self, annotations, template_slot_locations):
         self.annotations = annotations
         # Make sure extractors's size is the same as the number of args
@@ -225,7 +274,7 @@ class Kernel:
         Kernel.counter += 1
         self.is_grad = is_grad
         self.grad = None
-        self.arguments = []
+        self.argument_annotations = []
         self.argument_names = []
         self.return_type = None
         self.classkernel = classkernel
@@ -233,13 +282,14 @@ class Kernel:
         self.extract_arguments()
         del _taichi_skip_traceback
         self.template_slot_locations = []
-        for i in range(len(self.arguments)):
-            if isinstance(self.arguments[i], template):
+        for i in range(len(self.argument_annotations)):
+            if isinstance(self.argument_annotations[i], template):
                 self.template_slot_locations.append(i)
-        self.mapper = KernelTemplateMapper(self.arguments,
-                                           self.template_slot_locations)
+        self.mapper = TaichiCallableTemplateMapper(
+            self.argument_annotations, self.template_slot_locations)
         impl.get_runtime().kernels.append(self)
         self.reset()
+        self.kernel_cpp = None
 
     def reset(self):
         self.runtime = impl.get_runtime()
@@ -277,7 +327,7 @@ class Kernel:
                 )
             annotation = param.annotation
             if param.annotation is inspect.Parameter.empty:
-                if i == 0 and self.classkernel:
+                if i == 0 and self.classkernel:  # The |self| parameter
                     annotation = template()
                 else:
                     _taichi_skip_traceback = 1
@@ -293,7 +343,7 @@ class Kernel:
                     raise KernelDefError(
                         f'Invalid type annotation (argument {i}) of Taichi kernel: {annotation}'
                     )
-            self.arguments.append(annotation)
+            self.argument_annotations.append(annotation)
             self.argument_names.append(param.name)
 
     def materialize(self, key=None, args=None, arg_features=None):
@@ -324,7 +374,7 @@ class Kernel:
         for i, arg in enumerate(func_body.args.args):
             anno = arg.annotation
             if isinstance(anno, ast.Name):
-                global_vars[anno.id] = self.arguments[i]
+                global_vars[anno.id] = self.argument_annotations[i]
 
         if isinstance(func_body.returns, ast.Name):
             global_vars[func_body.returns.id] = self.return_type
@@ -363,10 +413,13 @@ class Kernel:
                     "Kernels cannot call other kernels. I.e., nested kernels are not allowed. Please check if you have direct/indirect invocation of kernels within kernels. Note that some methods provided by the Taichi standard library may invoke kernels, and please move their invocations to Python-scope."
                 )
             self.runtime.inside_kernel = True
+            self.runtime.current_kernel = self
             compiled()
             self.runtime.inside_kernel = False
+            self.runtime.current_kernel = None
 
         taichi_kernel = taichi_kernel.define(taichi_ast_generator)
+        self.kernel_cpp = taichi_kernel
 
         assert key not in self.compiled_functions
         self.compiled_functions[key] = self.get_function_body(taichi_kernel)
@@ -375,8 +428,9 @@ class Kernel:
         # The actual function body
         def func__(*args):
             assert len(args) == len(
-                self.arguments), '{} arguments needed but {} provided'.format(
-                    len(self.arguments), len(args))
+                self.argument_annotations
+            ), '{} arguments needed but {} provided'.format(
+                len(self.argument_annotations), len(args))
 
             tmps = []
             callbacks = []
@@ -385,7 +439,7 @@ class Kernel:
             actual_argument_slot = 0
             launch_ctx = t_kernel.make_launch_context()
             for i, v in enumerate(args):
-                needed = self.arguments[i]
+                needed = self.argument_annotations[i]
                 if isinstance(needed, template):
                     continue
                 provided = type(v)
@@ -492,15 +546,19 @@ class Kernel:
             has_array = isinstance(v, torch.Tensor)
         return has_array and needs_array
 
+    def ensure_compiled(self, *args):
+        instance_id, arg_features = self.mapper.lookup(args)
+        key = (self.func, instance_id)
+        self.materialize(key=key, args=args, arg_features=arg_features)
+        return key
+
     # For small kernels (< 3us), the performance can be pretty sensitive to overhead in __call__
     # Thus this part needs to be fast. (i.e. < 3us on a 4 GHz x64 CPU)
     @_shell_pop_print
     def __call__(self, *args, **kwargs):
         _taichi_skip_traceback = 1
         assert len(kwargs) == 0, 'kwargs not supported for Taichi kernels'
-        instance_id, arg_features = self.mapper.lookup(args)
-        key = (self.func, instance_id)
-        self.materialize(key=key, args=args, arg_features=arg_features)
+        key = self.ensure_compiled(*args)
         return self.compiled_functions[key](*args)
 
 

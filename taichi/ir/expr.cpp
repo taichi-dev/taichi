@@ -55,7 +55,9 @@ Expr Expr::operator[](const ExprGroup &indices) const {
 }
 
 Expr &Expr::operator=(const Expr &o) {
-  if (get_current_program().current_kernel) {
+  if (get_current_program().current_callable) {
+    // Inside a kernel or a function
+    // Create an assignment in the IR
     if (expr == nullptr) {
       set(o.eval());
     } else if (expr->is_lvalue()) {
@@ -66,7 +68,7 @@ Expr &Expr::operator=(const Expr &o) {
       TI_ERROR("Cannot assign to non-lvalue: {}", serialize());
     }
   } else {
-    set(o);
+    set(o);  // Literally set this Expr to o
   }
   return *this;
 }

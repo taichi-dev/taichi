@@ -123,6 +123,16 @@ Random number generator
 
 .. function:: ti.random(dtype = float)
 
+    Generates a uniform random float or integer number.
+
+.. function:: ti.randn(dtype = None)
+
+    Generates a random floating point number from the standard normal distribution.
+
+.. note::
+
+  On **CPU** and **CUDA** backends, use the ``random_seed`` argument in ``ti.init()`` to specify the integer seed for random number generation.
+  The random seed is 0 by default.
 
 Element-wise arithmetics for vectors and matrices
 -------------------------------------------------

@@ -29,7 +29,8 @@
 #include "taichi/system/threading.h"
 #include "taichi/system/unified_allocator.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 struct JITEvaluatorId {
   std::thread::id thread_id;
@@ -101,7 +102,7 @@ class Program {
       nullptr};  // TODO: move this to memory allocator
   std::unordered_map<int, SNode *> snodes;
 
-  std::unique_ptr<Runtime> runtime{nullptr};
+  std::unique_ptr<Runtime> runtime_mem_info{nullptr};
   std::unique_ptr<AsyncEngine> async_engine{nullptr};
 
   std::vector<std::unique_ptr<Kernel>> kernels;
@@ -143,7 +144,12 @@ class Program {
     return profiler.get();
   }
 
-  void initialize_device_llvm_context();
+  /**
+   * Initializes Program#llvm_context_device, if this has not been done.
+   *
+   * Not thread safe.
+   */
+  void maybe_initialize_cuda_llvm_context();
 
   void synchronize();
 
@@ -154,10 +160,10 @@ class Program {
   // Only useful when async mode is enabled.
   void async_flush();
 
-  void layout(std::function<void()> func) {
-    func();
-    materialize_layout();
-  }
+  /**
+   * Materializes the runtime.
+   */
+  void materialize_runtime();
 
   void visualize_layout(const std::string &fn);
 
@@ -205,10 +211,6 @@ class Program {
   // Just does the per-backend executable compilation without kernel lowering.
   FunctionType compile_to_backend_executable(Kernel &kernel,
                                              OffloadedStmt *stmt);
-
-  void initialize_runtime_system(StructCompiler *scomp);
-
-  void materialize_layout();
 
   void check_runtime_error();
 
@@ -304,7 +306,26 @@ class Program {
   std::unique_ptr<AotModuleBuilder> make_aot_module_builder(Arch arch);
 
  private:
+  /**
+   * Materializes the root SNode.
+   */
+  void materialize_root();
+
+  /**
+   * Sets the attributes of the Exprs that are backed by SNodes.
+   */
   void materialize_snode_expr_attributes();
+
+  /**
+   * Initializes the runtime system for LLVM based backends.
+   */
+  void initialize_llvm_runtime_system();
+
+  /**
+   * Initializes the SNodes for LLVM based backends.
+   */
+  void initialize_llvm_runtime_snodes(StructCompiler *scomp);
+
   // Metal related data structures
   std::optional<metal::CompiledStructs> metal_compiled_structs_;
   std::unique_ptr<metal::KernelManager> metal_kernel_mgr_;
@@ -322,4 +343,5 @@ class Program {
 #endif
 };
 
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

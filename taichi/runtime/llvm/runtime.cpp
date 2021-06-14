@@ -769,10 +769,10 @@ void taichi_assert_runtime(LLVMRuntime *runtime, i32 test, const char *msg) {
 }
 
 Ptr LLVMRuntime::allocate_aligned(std::size_t size, std::size_t alignment) {
-  if (preallocated)
+  if (preallocated) {
     return allocate_from_buffer(size, alignment);
-  else
-    return (Ptr)vm_allocator(program, size, alignment);
+  }
+  return (Ptr)vm_allocator(program, size, alignment);
 }
 
 Ptr LLVMRuntime::allocate_from_buffer(std::size_t size, std::size_t alignment) {
@@ -839,7 +839,6 @@ void runtime_get_mem_req_queue(LLVMRuntime *runtime) {
 void runtime_initialize(
     Ptr result_buffer,
     Ptr program,
-    std::size_t root_size,
     std::size_t
         preallocated_size,  // Non-zero means use the preallocated buffer
     Ptr preallocated_buffer,
@@ -879,13 +878,6 @@ void runtime_initialize(
   runtime->mem_req_queue = (MemRequestQueue *)runtime->allocate_aligned(
       sizeof(MemRequestQueue), taichi_page_size);
 
-  // For Metal runtime, we have to make sure that both the beginning address
-  // and the size of the root buffer memory are aligned to page size.
-  runtime->root_mem_size =
-      taichi::iroundup((size_t)root_size, taichi_page_size);
-  runtime->root =
-      runtime->allocate_aligned(runtime->root_mem_size, taichi_page_size);
-
   runtime->temporaries = (Ptr)runtime->allocate_aligned(
       taichi_global_tmp_buffer_size, taichi_page_size);
 
@@ -896,9 +888,18 @@ void runtime_initialize(
     initialize_rand_state(&runtime->rand_states[i], starting_rand_state + i);
 }
 
-void runtime_initialize2(LLVMRuntime *runtime, int root_id, int num_snodes) {
-  // runtime->request_allocate_aligned ready to use
+void runtime_initialize_snodes(LLVMRuntime *runtime,
+                               std::size_t root_size,
+                               int root_id,
+                               int num_snodes) {
+  // For Metal runtime, we have to make sure that both the beginning address
+  // and the size of the root buffer memory are aligned to page size.
+  runtime->root_mem_size =
+      taichi::iroundup((size_t)root_size, taichi_page_size);
+  runtime->root =
+      runtime->allocate_aligned(runtime->root_mem_size, taichi_page_size);
 
+  // runtime->request_allocate_aligned ready to use
   // initialize the root node element list
   for (int i = 0; i < num_snodes; i++) {
     // TODO: some SNodes do not actually need an element list.

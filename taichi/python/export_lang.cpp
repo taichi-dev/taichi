@@ -235,6 +235,7 @@ void export_lang(py::module &m) {
            })
       .def("synchronize", &Program::synchronize)
       .def("async_flush", &Program::async_flush)
+      .def("materialize_runtime", &Program::materialize_runtime)
       .def("make_aot_module_builder", &Program::make_aot_module_builder);
 
   py::class_<AotModuleBuilder>(m, "AotModuleBuilder")
@@ -513,8 +514,6 @@ void export_lang(py::module &m) {
 
   m.def("make_func_call_expr",
         Expr::make<FuncCallExpression, Function *, const ExprGroup &>);
-
-  m.def("layout", layout);
 
   m.def("value_cast", static_cast<Expr (*)(const Expr &expr, DataType)>(cast));
   m.def("bits_cast",

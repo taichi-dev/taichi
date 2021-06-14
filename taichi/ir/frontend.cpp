@@ -5,10 +5,6 @@
 
 TLANG_NAMESPACE_BEGIN
 
-void layout(const std::function<void()> &body) {
-  get_current_program().layout(body);
-}
-
 Expr global_new(Expr id_expr, DataType dt) {
   TI_ASSERT(id_expr.is<IdExpression>());
   auto ret = Expr(std::make_shared<GlobalVariableExpression>(

@@ -14,45 +14,66 @@
 #include "taichi/ir/snode.h"
 #include "taichi/jit/jit_session.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
+
 class JITSessionCPU;
 
+/**
+ * Manages an LLVMContext for Taichi's usage.
+ */
 class TaichiLLVMContext {
  private:
   struct ThreadLocalData {
-    llvm::LLVMContext *llvm_context;
-    std::unique_ptr<llvm::orc::ThreadSafeContext> thread_safe_llvm_context;
-    std::unique_ptr<llvm::Module> runtime_module, struct_module;
+    llvm::LLVMContext *llvm_context{nullptr};
+    std::unique_ptr<llvm::orc::ThreadSafeContext> thread_safe_llvm_context{
+        nullptr};
+    std::unique_ptr<llvm::Module> runtime_module{nullptr};
+    std::unique_ptr<llvm::Module> struct_module{nullptr};
   };
 
-  std::unordered_map<std::thread::id, std::unique_ptr<ThreadLocalData>>
-      per_thread_data;
-
-  Arch arch;
-
-  std::thread::id main_thread_id;
-  ThreadLocalData *main_thread_data;
-  std::mutex mut;
-  std::mutex thread_map_mut;
-
  public:
-  std::unique_ptr<JITSession> jit;
+  std::unique_ptr<JITSession> jit{nullptr};
   // main_thread is defined to be the thread that runs the initializer
-  JITModule *runtime_jit_module;
+  JITModule *runtime_jit_module{nullptr};
 
-  std::unique_ptr<llvm::Module> clone_module_to_context(
-      llvm::Module *module,
-      llvm::LLVMContext *target_context);
+  TaichiLLVMContext(Arch arch);
+
+  virtual ~TaichiLLVMContext();
 
   llvm::LLVMContext *get_this_thread_context();
 
   llvm::orc::ThreadSafeContext *get_this_thread_thread_safe_context();
 
-  TaichiLLVMContext(Arch arch);
+  /**
+   * Initializes TaichiLLVMContext#runtime_jit_module.
+   *
+   * Unfortuantely, this cannot be placed inside the constructor. When adding an
+   * llvm::Module, the JITSessionCPU implementation eventually calls back to
+   * this object, so it must be fully constructed by then.
+   */
+  void init_runtime_jit_module();
 
+  /**
+   * Clones the LLVM module containing the JIT compiled SNode structs.
+   *
+   * @return The cloned module.
+   */
   std::unique_ptr<llvm::Module> clone_struct_module();
 
+  /**
+   * Updates the LLVM module of the JIT compiled SNode structs.
+   *
+   * @param module Module containg the JIT compiled SNode structs.
+   */
   void set_struct_module(const std::unique_ptr<llvm::Module> &module);
+
+  /**
+   * Clones the LLVM module compiled from llvm/runtime.cpp
+   *
+   * @return The cloned module.
+   */
+  std::unique_ptr<llvm::Module> clone_runtime_module();
 
   JITModule *add_module(std::unique_ptr<llvm::Module> module);
 
@@ -69,8 +90,6 @@ class TaichiLLVMContext {
     TI_ASSERT(ret != nullptr);
     return ret;
   }
-
-  std::unique_ptr<llvm::Module> clone_runtime_module();
 
   llvm::Type *get_data_type(DataType dt);
 
@@ -93,13 +112,9 @@ class TaichiLLVMContext {
 
   std::string type_name(llvm::Type *type);
 
-  void link_module_with_cuda_libdevice(std::unique_ptr<llvm::Module> &module);
-
   static void mark_inline(llvm::Function *func);
 
   static void print_huge_functions(llvm::Module *module);
-
-  static int num_instructions(llvm::Function *func);
 
   // remove all functions that are not (directly & indirectly) used by those
   // with export_indicator(func_name) = true
@@ -109,6 +124,15 @@ class TaichiLLVMContext {
 
   void mark_function_as_cuda_kernel(llvm::Function *func, int block_dim = 0);
 
+ private:
+  std::unique_ptr<llvm::Module> clone_module_to_context(
+      llvm::Module *module,
+      llvm::LLVMContext *target_context);
+
+  void link_module_with_cuda_libdevice(std::unique_ptr<llvm::Module> &module);
+
+  static int num_instructions(llvm::Function *func);
+
   void insert_nvvm_annotation(llvm::Function *func, std::string key, int val);
 
   std::unique_ptr<llvm::Module> clone_module_to_this_thread_context(
@@ -116,7 +140,18 @@ class TaichiLLVMContext {
 
   ThreadLocalData *get_this_thread_data();
 
-  virtual ~TaichiLLVMContext();
+  void update_runtime_jit_module(std::unique_ptr<llvm::Module> module);
+
+  std::unordered_map<std::thread::id, std::unique_ptr<ThreadLocalData>>
+      per_thread_data;
+
+  Arch arch;
+
+  std::thread::id main_thread_id;
+  ThreadLocalData *main_thread_data{nullptr};
+  std::mutex mut;
+  std::mutex thread_map_mut;
 };
 
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

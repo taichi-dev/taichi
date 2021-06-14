@@ -132,7 +132,7 @@ class SNode {
   bool is_bit_level{false};
 
   // Whether the path from root to |this| contains only `dense` SNodes.
-  bool is_path_all_dense{false};
+  bool is_path_all_dense{true};
 
   SNode();
 

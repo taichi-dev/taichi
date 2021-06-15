@@ -352,8 +352,14 @@ void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
   } else if (stmt->op_type == UnaryOpType::cast_bits) {
     TI_ASSERT(data_type_size(stmt->ret_type) ==
               data_type_size(stmt->cast_type));
-    llvm_val[stmt] = builder->CreateBitCast(
-        llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
+    if (stmt->operand->ret_type.is_pointer()) {
+      TI_ASSERT(is_integral(stmt->cast_type));
+      llvm_val[stmt] = builder->CreatePtrToInt(
+          llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
+    } else {
+      llvm_val[stmt] = builder->CreateBitCast(
+          llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
+    }
   } else if (op == UnaryOpType::rsqrt) {
     llvm::Function *sqrt_fn = llvm::Intrinsic::getDeclaration(
         module.get(), llvm::Intrinsic::sqrt, input->getType());

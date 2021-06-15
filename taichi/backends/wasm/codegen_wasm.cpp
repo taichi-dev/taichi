@@ -8,6 +8,7 @@
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
 #include "taichi/util/statistics.h"
+#include "taichi/util/file_sequence_writer.h"
 
 namespace taichi {
 namespace lang {
@@ -84,16 +85,9 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
   }
 
   void visit(OffloadedStmt *stmt) override {
-    stat.add("codegen_offloaded_tasks");
-    TI_ASSERT(current_offload == nullptr);
+    TI_ASSERT(current_offload == nullptr)
     current_offload = stmt;
     using Type = OffloadedStmt::TaskType;
-    auto offloaded_task_name = init_offloaded_task_function(stmt);
-    if (prog->config.kernel_profiler && arch_is_cpu(prog->config.arch)) {
-      call(
-          builder.get(), "LLVMRuntime_profiler_start",
-          {get_runtime(), builder->CreateGlobalStringPtr(offloaded_task_name)});
-    }
     if (stmt->task_type == Type::serial) {
       stmt->body->accept(this);
     } else if (stmt->task_type == Type::range_for) {
@@ -101,10 +95,73 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
     } else {
       TI_NOT_IMPLEMENTED
     }
-    finalize_offloaded_task_function();
-    current_task->end();
-    current_task = nullptr;
     current_offload = nullptr;
+  }
+
+  std::string init_taichi_kernel_function() {
+    task_function_type =
+        llvm::FunctionType::get(llvm::Type::getVoidTy(*llvm_context),
+                                {llvm::PointerType::get(context_ty, 0)}, false);
+
+    auto task_kernel_name = fmt::format("{}_body", kernel_name);
+    func = llvm::Function::Create(task_function_type,
+                                  llvm::Function::ExternalLinkage,
+                                  task_kernel_name, module.get());
+
+    for (auto &arg : func->args()) {
+      kernel_args.push_back(&arg);
+    }
+    kernel_args[0]->setName("context");
+
+    if (kernel_argument_by_val())
+      func->addParamAttr(0, llvm::Attribute::ByVal);
+
+    // entry_block has all the allocas
+    this->entry_block = llvm::BasicBlock::Create(*llvm_context, "entry", func);
+
+    // The real function body
+    func_body_bb = llvm::BasicBlock::Create(*llvm_context, "body", func);
+    builder->SetInsertPoint(func_body_bb);
+    return task_kernel_name;
+  }
+
+  void finalize_taichi_kernel_function() {
+    builder->CreateRetVoid();
+
+    // entry_block should jump to the body after all allocas are inserted
+    builder->SetInsertPoint(entry_block);
+    builder->CreateBr(func_body_bb);
+
+    if (prog->config.print_kernel_llvm_ir) {
+      static FileSequenceWriter writer("taichi_kernel_generic_llvm_ir_{:04d}.ll",
+                                       "unoptimized LLVM IR (generic)");
+      writer.write(module.get());
+    }
+    TI_ASSERT(!llvm::verifyFunction(*func, &llvm::errs()));
+    // TI_INFO("Kernel function verified.");
+  }
+
+  FunctionType gen() override {
+    TI_AUTO_PROF
+    // emit_to_module
+    stat.add("codegen_taichi_kernel_function");
+    auto offloaded_task_name = init_taichi_kernel_function();
+    ir->accept(this);
+    finalize_taichi_kernel_function();
+
+    // compile_module_to_executable
+    // only keep the current func
+    TaichiLLVMContext::eliminate_unused_functions(
+      module.get(), [&](std::string func_name) {
+        return offloaded_task_name == func_name;
+      });
+    tlctx->add_module(std::move(module));
+    auto kernel_symbol = tlctx->lookup_function_pointer(offloaded_task_name);
+    return [=](Context &context) {
+      TI_TRACE("Launching Taichi Kernel Function");
+      auto func = (int32 (*)(void *))kernel_symbol;
+      func(&context);
+    };
   }
 };
 

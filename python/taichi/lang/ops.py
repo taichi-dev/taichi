@@ -582,14 +582,14 @@ def rescale_index(a, b, I):
 
 
 def get_addr(f, indices):
-    """Returns the address (for CUDA/x64) for index 'indices' of field 'f'. Currently, this function can only be called inside a kernel.
+    """Returns the address (for CUDA/x64) for index `indices` of field `f`. Currently, this function can only be called inside a kernel.
 
     Args:
         f (ti.field(), ti.Vector.field, ti.Matrix.field()): input taichi field
         indices (int, ti.Vector()): field indices
 
     Returns:
-        ti.u64:  The address of 'f[indices]'.
+        ti.u64:  The address of `f[indices]`.
 
     """
     return Expr(_ti_core.expr_get_addr(f.snode.ptr, make_expr_group(indices)))

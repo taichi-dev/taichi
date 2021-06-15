@@ -5,13 +5,8 @@ ti.init(arch=ti.cpu, print_ir=True)
 n = 4
 m = 8
 
-# a = ti.field(dtype=ti.u8, shape=N)
 a = ti.field(dtype=ti.i32)
-# ti.root.dense(ti.ij, (4, 8)).place(a)
-# ti.root.dense(ti.ij, (2, 4)).dense(ti.ij, 2).place(a)
 ti.root.dense(ti.ij, (1, 2)).dense(ti.ij, 2).dense(ti.ij, 2).place(a)
-# ti.root.dense(ti.i, 4).dense(ti.j, 8).place(a)
-# ti.root.dense(ti.i, 1).dense(ti.j, 8).dense(ti.i, 4).place(a)
 
 
 @ti.kernel

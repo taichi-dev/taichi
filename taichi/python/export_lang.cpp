@@ -22,6 +22,7 @@
 #include "taichi/util/statistics.h"
 #include "taichi/util/action_recorder.h"
 #include "taichi/system/timeline.h"
+#include "taichi/python/snode_registry.h"
 
 #if defined(TI_WITH_CUDA)
 #include "taichi/backends/cuda/cuda_context.h"
@@ -225,7 +226,6 @@ void export_lang(py::module &m) {
           },
           py::return_value_policy::reference)
       .def("get_total_compilation_time", &Program::get_total_compilation_time)
-      .def("print_snode_tree", &Program::print_snode_tree)
       .def("visualize_layout", &Program::visualize_layout)
       .def("get_snode_num_dynamically_allocated",
            &Program::get_snode_num_dynamically_allocated)
@@ -850,6 +850,15 @@ void export_lang(py::module &m) {
 
   m.def("get_type_factory_instance", TypeFactory::get_instance,
         py::return_value_policy::reference);
+
+  py::class_<SNodeRegistry>(m, "SNodeRegistry")
+      .def(py::init<>())
+      .def("create_root", &SNodeRegistry::create_root,
+           py::return_value_policy::reference);
+  m.def("finalize_snode_tree",
+        [](SNodeRegistry *registry, const SNode *root, Program *program) {
+          program->add_snode_tree(registry->finalize(root));
+        });
 }
 
 TI_NAMESPACE_END

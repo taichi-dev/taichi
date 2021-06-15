@@ -11,6 +11,7 @@ from taichi.lang.tape import TapeImpl
 from taichi.lang.util import (cook_dtype, is_taichi_class, python_scope,
                               taichi_scope)
 from taichi.misc.util import deprecated, get_traceback, warning
+from taichi.snode.fields_builder import FieldsBuilder
 
 import taichi as ti
 
@@ -246,6 +247,7 @@ class PyTaichi:
 
         ti.trace('Materializing runtime...')
         self.prog.materialize_runtime()
+        root.finalize()
 
         self.materialized = True
         not_placed = []
@@ -369,20 +371,12 @@ def index_nd(dim):
     return indices(*range(dim))
 
 
-class Root:
-    def __init__(self):
-        pass
-
-    def __getattribute__(self, item):
-        get_runtime().create_program()
-        root = SNode(get_runtime().prog.get_root())
-        return getattr(root, item)
-
+class _Root(FieldsBuilder):
     def __repr__(self):
         return 'ti.root'
 
 
-root = Root()
+root = _Root()
 
 
 @deprecated('ti.var', 'ti.field')

@@ -36,6 +36,8 @@ class UnifiedAllocator {
     std::lock_guard<std::mutex> _(lock);
     auto ret =
         head + alignment - 1 - ((std::size_t)head + alignment - 1) % alignment;
+    TI_TRACE("UM [data={}] allocate() request={} remain={}", (intptr_t)data,
+             size, (tail - head));
     head = ret + size;
     if (head > tail) {
       // allocation failed

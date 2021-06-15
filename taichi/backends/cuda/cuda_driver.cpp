@@ -51,7 +51,7 @@ CUDADriver::CUDADriver() {
   }
 }
 
-// This is for initializing the CUDA context itself
+// This is for initializing the CUDA driver itself
 CUDADriver &CUDADriver::get_instance_without_context() {
   // Thread safety guaranteed by C++ compiler
   // Note this is never deleted until the process finishes

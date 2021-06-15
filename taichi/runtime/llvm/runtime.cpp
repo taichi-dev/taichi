@@ -862,9 +862,6 @@ void runtime_initialize(
     runtime = (LLVMRuntime *)vm_allocator(program, sizeof(LLVMRuntime), 128);
   }
 
-  runtime->root_mem_size =
-      taichi::iroundup((size_t)root_size, taichi_page_size);
-
   runtime->preallocated = preallocated_size > 0;
   runtime->preallocated_head = preallocated_buffer;
   runtime->preallocated_tail = preallocated_tail;

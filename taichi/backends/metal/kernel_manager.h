@@ -11,6 +11,7 @@
 #include "taichi/program/compile_config.h"
 #include "taichi/program/kernel_profiler.h"
 #include "taichi/system/memory_pool.h"
+#include "taichi/backends/metal/taichi_file_util.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -30,8 +31,10 @@ class KernelManager {
     MemoryPool *mem_pool;
     uint64_t *host_result_buffer;
     KernelProfilerBase *profiler;
+    BufferSize bufferSizeData;
     int root_id;
   };
+
 
   explicit KernelManager(Params params);
   // To make Pimpl + std::unique_ptr work
@@ -58,6 +61,8 @@ class KernelManager {
 
   // Synchronize the memory content from Metal to host (x86_64).
   void synchronize();
+
+  BufferSize getBufferSizeData();
 
   PrintStringTable *print_strtable();
 

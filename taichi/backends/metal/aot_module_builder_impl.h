@@ -13,7 +13,8 @@ namespace metal {
 
 class AotModuleBuilderImpl : public AotModuleBuilder {
  public:
-  explicit AotModuleBuilderImpl(const CompiledStructs *compiled_structs, BufferSize buffer_size_data);
+  explicit AotModuleBuilderImpl(const CompiledStructs *compiled_structs,
+                                BufferSize buffer_size_data);
 
   void dump(const std::string &output_dir,
             const std::string &filename) const override;

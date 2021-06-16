@@ -34,7 +34,6 @@ class KernelManager {
     int root_id;
   };
 
-
   explicit KernelManager(Params params);
   // To make Pimpl + std::unique_ptr work
   ~KernelManager();

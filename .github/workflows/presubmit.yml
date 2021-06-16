@@ -186,7 +186,7 @@ jobs:
       - name: Build and Test
         shell: cmd
         run: |
-          set TAICHI_REPO_DIR=D:\a\test_actions\test_actions
+          set TAICHI_REPO_DIR=D:\a\taichi\taichi
           cd /d C:\
           curl --retry 10 --retry-delay 5 https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-msvc2019.zip -LO
           7z x taichi-llvm-10.0.0-msvc2019.zip -otaichi_llvm
@@ -197,7 +197,7 @@ jobs:
           set PYTHONPATH=%TAICHI_REPO_DIR%\python
           set PATH=%TAICHI_REPO_DIR%\bin;%PATH%
           clang --version
-          cd /d D:\a\test_actions\test_actions
+          cd /d D:\a\taichi\taichi
           python -m pip install numpy
           python -m pip install pybind11
           python misc/ci_setup.py ci

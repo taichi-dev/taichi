@@ -194,10 +194,11 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
               ir_bank->get_async_state(child.get(), AsyncState::Type::value));
         }
       } else if (snode_op->op_type == SNodeOpType::is_active ||
-                 snode_op->op_type == SNodeOpType::length ||
-                 snode_op->op_type == SNodeOpType::get_addr) {
+                 snode_op->op_type == SNodeOpType::length) {
         meta.input_states.insert(
             ir_bank->get_async_state(sn, AsyncState::Type::mask));
+      } else if (snode_op->op_type == SNodeOpType::get_addr) {
+        // do nothing
       } else {
         TI_NOT_IMPLEMENTED
       }

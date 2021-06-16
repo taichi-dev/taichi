@@ -14,7 +14,7 @@
 #include "taichi/util/action_recorder.h"
 #include "taichi/util/file_sequence_writer.h"
 #include "taichi/util/str.h"
-#include "taichi/backends/metal/taichi_file_util.h"
+#include "taichi/backends/metal/aot_util.h"
 
 #ifdef TI_PLATFORM_OSX
 #include <sys/mman.h>
@@ -537,10 +537,10 @@ class KernelManager::Impl {
   explicit Impl(Params params)
       : config_(params.config),
         compiled_structs_(params.compiled_structs),
+        buffer_size_data_(params.bufferSizeData), 
         mem_pool_(params.mem_pool),
         host_result_buffer_(params.host_result_buffer),
         profiler_(params.profiler),
-        buffer_size_data(params.bufferSizeData), 
         command_buffer_id_(0) {
     if (config_->debug) {
       TI_ASSERT(is_metal_api_available());
@@ -556,7 +556,7 @@ class KernelManager::Impl {
       root_buffer_ = new_mtl_buffer_no_copy(device_.get(), root_mem_->ptr(),
                                             root_mem_->size());
       TI_ASSERT(root_buffer_ != nullptr);
-      buffer_size_data.root_buffer_size = root_mem_->size();
+      buffer_size_data_.root_buffer_size = root_mem_->size();
       TI_DEBUG("Metal root buffer size: {} bytes", root_mem_->size());
       ActionRecorder::get_instance().record(
           "allocate_root_buffer",
@@ -581,7 +581,7 @@ class KernelManager::Impl {
         compiled_structs_.runtime_size + mem_pool_bytes, mem_pool_);
     runtime_buffer_ = new_mtl_buffer_no_copy(device_.get(), runtime_mem_->ptr(),
                                              runtime_mem_->size());
-    buffer_size_data.runtime_buffer_size = runtime_mem_->size();
+    buffer_size_data_.runtime_buffer_size = runtime_mem_->size();
     TI_DEBUG(
         "Metal runtime buffer size: {} bytes (sizeof(Runtime)={} "
         "memory_pool={})",
@@ -694,8 +694,8 @@ class KernelManager::Impl {
     blit_buffers_and_sync();
   }
 
-  BufferSize getBufferSizeData() {
-    return buffer_size_data;
+  BufferSize get_buffer_size_data() {
+    return buffer_size_data_;
   }
 
   PrintStringTable *print_strtable() {
@@ -751,7 +751,7 @@ class KernelManager::Impl {
           rtm_meta->num_slots, rtm_meta->mem_offset_in_parent);
     }
     size_t addr_offset = sizeof(SNodeMeta) * max_snodes;
-    buffer_size_data.randseedoffset_in_runtime_buffer = addr_offset;
+    buffer_size_data_.randseedoffset_in_runtime_buffer = addr_offset;
     addr += addr_offset;
     TI_DEBUG("Initialized SNodeMeta, size={} accumulated={}", addr_offset,
              (addr - addr_begin));
@@ -983,7 +983,7 @@ class KernelManager::Impl {
 
   CompileConfig *const config_;
   const CompiledStructs compiled_structs_;
-  BufferSize buffer_size_data;
+  BufferSize buffer_size_data_;
   MemoryPool *const mem_pool_;
   uint64_t *const host_result_buffer_;
   KernelProfilerBase *const profiler_;
@@ -1062,8 +1062,8 @@ void KernelManager::synchronize() {
   impl_->synchronize();
 }
 
-BufferSize KernelManager::getBufferSizeData() {
-  return impl_->getBufferSizeData();
+BufferSize KernelManager::get_buffer_size_data() {
+  return impl_->get_buffer_size_data();
 }
 
 PrintStringTable *KernelManager::print_strtable() {

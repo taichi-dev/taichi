@@ -202,6 +202,22 @@ struct CompiledKernelData {
   TI_IO_DEF(kernel_name, ctx_attribs, kernel_attribs);
 };
 
+struct BufferSize {
+    int64_t root_buffer_size{0};
+    int64_t runtime_buffer_size{0};
+    int64_t randseedoffset_in_runtime_buffer{0};
+
+    TI_IO_DEF(root_buffer_size, runtime_buffer_size, randseedoffset_in_runtime_buffer);
+};
+
+struct TaichiAotData {
+  BufferSize sizes;
+  std::vector<CompiledKernelData> kernels;
+
+  TI_IO_DEF(sizes, kernels);
+};
+
+
 }  // namespace metal
 
 TLANG_NAMESPACE_END

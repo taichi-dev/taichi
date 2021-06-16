@@ -36,7 +36,7 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
   ts("taichi file data", ti_file_data);
   ts.write_to_file(txt_path.string());
 
-  for (const auto &k : ti_file_data.kernels_) {
+  for (const auto &k : ti_file_data.kernels) {
     const fs::path mtl_path =
         dir / fmt::format("{}_{}.metal", filename, k.kernel_name);
     std::ofstream fs{mtl_path.string()};
@@ -50,7 +50,7 @@ void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
   auto compiled =
       run_codegen(compiled_structs_, kernel, &strtab_, /*offloaded=*/nullptr);
   compiled.kernel_name = identifier;
-  ti_file_data.kernels_.push_back(std::move(compiled));
+  ti_file_data.kernels.push_back(std::move(compiled));
 }
 
 }  // namespace metal

@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-#include "taichi/backends/metal/taichi_file_util.h"
+#include "taichi/backends/metal/aot_util.h"
 #include "taichi/backends/metal/struct_metal.h"
 #include "taichi/program/aot_module_builder.h"
 
@@ -25,7 +25,7 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
   const CompiledStructs *compiled_structs_;
   BufferSize buffer_size_data_;
   PrintStringTable strtab_;
-  MetalTiFileData ti_file_data;
+  TaichiAotData ti_file_data;
 };
 
 }  // namespace metal

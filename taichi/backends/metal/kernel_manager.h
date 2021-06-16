@@ -5,13 +5,12 @@
 #include <unordered_map>
 #include <vector>
 
-#include "taichi/backends/metal/kernel_util.h"
+#include "taichi/backends/metal/aot_util.h"
 #include "taichi/backends/metal/struct_metal.h"
 #include "taichi/lang_util.h"
 #include "taichi/program/compile_config.h"
 #include "taichi/program/kernel_profiler.h"
 #include "taichi/system/memory_pool.h"
-#include "taichi/backends/metal/taichi_file_util.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -62,7 +61,7 @@ class KernelManager {
   // Synchronize the memory content from Metal to host (x86_64).
   void synchronize();
 
-  BufferSize getBufferSizeData();
+  BufferSize get_buffer_size_data();
 
   PrintStringTable *print_strtable();
 

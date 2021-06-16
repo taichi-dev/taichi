@@ -98,7 +98,9 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
     current_offload = nullptr;
   }
 
-  static std::string eliminate_underline_suffix(std::string kernel_name) {
+  std::string eliminate_underline_suffix(std::string kernel_name) {
+    if (kernel->is_evaluator)
+      return kernel_name;
     int pos = kernel_name.length() - 1;
     int underline_count = 0;
     int redundant_count = 3;

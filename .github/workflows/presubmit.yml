@@ -76,7 +76,7 @@ jobs:
 
   build_and_test_cpu:
     name: Build and Test (CPU)
-    needs: check_code_format
+    needs: build_and_test_cpu_required
     strategy:
       matrix:
         include:

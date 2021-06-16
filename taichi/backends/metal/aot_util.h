@@ -202,7 +202,7 @@ struct CompiledKernelData {
   TI_IO_DEF(kernel_name, ctx_attribs, kernel_attribs);
 };
 
-struct BufferSize {
+struct BufferMetaData {
     int64_t root_buffer_size{0};
     int64_t runtime_buffer_size{0};
     int64_t randseedoffset_in_runtime_buffer{0};
@@ -211,10 +211,10 @@ struct BufferSize {
 };
 
 struct TaichiAotData {
-  BufferSize sizes;
+  BufferMetaData metadata;
   std::vector<CompiledKernelData> kernels;
 
-  TI_IO_DEF(sizes, kernels);
+  TI_IO_DEF(metadata, kernels);
 };
 
 

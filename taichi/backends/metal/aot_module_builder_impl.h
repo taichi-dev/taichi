@@ -14,7 +14,7 @@ namespace metal {
 class AotModuleBuilderImpl : public AotModuleBuilder {
  public:
   explicit AotModuleBuilderImpl(const CompiledStructs *compiled_structs,
-                                BufferSize buffer_size_data);
+                                BufferMetaData buffer_meta_data);
 
   void dump(const std::string &output_dir,
             const std::string &filename) const override;
@@ -24,7 +24,7 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
 
  private:
   const CompiledStructs *compiled_structs_;
-  BufferSize buffer_size_data_;
+  BufferMetaData buffer_meta_data_;
   PrintStringTable strtab_;
   TaichiAotData ti_file_data;
 };

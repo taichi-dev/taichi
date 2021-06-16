@@ -901,7 +901,7 @@ std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(Arch arch) {
   if (arch == Arch::metal) {
     return std::make_unique<metal::AotModuleBuilderImpl>(
         &(metal_compiled_structs_.value()),
-        metal_kernel_mgr_->get_buffer_size_data());
+        metal_kernel_mgr_->get_buffer_meta_data());
   }
   return nullptr;
 }

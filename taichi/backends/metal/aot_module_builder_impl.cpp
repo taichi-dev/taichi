@@ -21,9 +21,9 @@ namespace metal {
 
 AotModuleBuilderImpl::AotModuleBuilderImpl(
     const CompiledStructs *compiled_structs,
-    BufferSize buffer_size_data)
-    : compiled_structs_(compiled_structs), buffer_size_data_(buffer_size_data) {
-  ti_file_data.sizes = buffer_size_data;
+    BufferMetaData buffer_meta_data)
+    : compiled_structs_(compiled_structs), buffer_meta_data_(buffer_meta_data) {
+  ti_file_data.metadata = buffer_meta_data;
 }
 
 void AotModuleBuilderImpl::dump(const std::string &output_dir,

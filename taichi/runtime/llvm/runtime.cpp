@@ -2,7 +2,7 @@
 // The generated bitcode will likely get inlined for performance.
 
 #if !defined(TI_INCLUDED) || !defined(_WIN32)
-// The latest MSVC(Visual Studio 2019 version 16.10.1, MSVC 14.29.30037) 
+// The latest MSVC(Visual Studio 2019 version 16.10.1, MSVC 14.29.30037)
 // uses llvm-11 as requirements. Check this link for details:
 // https://github.com/microsoft/STL/blob/1866b848f0175c3361a916680a4318e7f0cc5482/stl/inc/yvals_core.h#L550-L561.
 // However, we use llvm-10 for now and building will fail due to clang version

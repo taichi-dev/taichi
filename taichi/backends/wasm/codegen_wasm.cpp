@@ -98,12 +98,28 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
     current_offload = nullptr;
   }
 
+  static std::string eliminate_underline_suffix(std::string kernel_name) {
+    int pos = kernel_name.length() - 1;
+    int underline_count = 0;
+    int redundant_count = 3;
+    // see python/taichi/lang/kernel_impl.py
+    for  (; pos >= 0; --pos) {
+      if (kernel_name.at(pos) == '_') {
+        underline_count += 1;
+        if (underline_count == redundant_count)
+          break;
+      }
+    }
+    TI_ASSERT(underline_count == redundant_count)
+    return kernel_name.substr(0, pos);
+  }
+
   std::string init_taichi_kernel_function() {
     task_function_type =
         llvm::FunctionType::get(llvm::Type::getVoidTy(*llvm_context),
                                 {llvm::PointerType::get(context_ty, 0)}, false);
 
-    auto task_kernel_name = fmt::format("{}_body", kernel_name);
+    auto task_kernel_name = fmt::format("{}_body", eliminate_underline_suffix(kernel_name));
     func = llvm::Function::Create(task_function_type,
                                   llvm::Function::ExternalLinkage,
                                   task_kernel_name, module.get());

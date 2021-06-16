@@ -8,6 +8,7 @@
 // However, we use llvm-10 for now and building will fail due to clang version
 // mismatch. Therefore, we workaround this problem by define such flag to skip
 // the version check.
+// NOTE(#2428)
 #if defined(_WIN32) || defined(_WIN64)
 #define _ALLOW_COMPILER_AND_STL_VERSION_MISMATCH
 #endif

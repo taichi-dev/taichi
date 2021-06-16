@@ -2,6 +2,10 @@
 // The generated bitcode will likely get inlined for performance.
 
 #if !defined(TI_INCLUDED) || !defined(_WIN32)
+// The latest MSVC uses llvm-11 as requirements. However, we use llvm-10
+// for now and building will fail due to clang version mismatch. Therefore,
+// we workaround this problem by define such flag to skip the version check.
+#define _ALLOW_COMPILER_AND_STL_VERSION_MISMATCH
 
 #include <atomic>
 #include <cstdint>

@@ -2,6 +2,7 @@
 
 #if defined(TI_WITH_CUDA)
 #include "taichi/backends/cuda/cuda_driver.h"
+#include "taichi/backends/cuda/cuda_context.h"
 #endif
 #include "taichi/lang_util.h"
 #include "taichi/system/unified_allocator.h"
@@ -22,10 +23,13 @@ UnifiedAllocator::UnifiedAllocator(std::size_t size, Arch arch)
     //  - kernel B is getting loaded via cuModuleLoadDataEx (and get stuck for
     //  some reason)
     // So we need a mutex here...
+    // std::lock_guard<std::mutex> _(cuda_context->lock);
     TI_TRACE("Allocating unified (CPU+GPU) address space of size {} MB",
              size / 1024 / 1024);
 #if defined(TI_WITH_CUDA)
-    // std::lock_guard<std::mutex> _(cuda_context->lock);
+    // This could be run on a host worker thread, so we have to set the context
+    // before using any of the CUDA driver function call.
+    auto _ = CUDAContext::get_instance().get_guard();
     CUDADriver::get_instance().malloc_managed(&_cuda_data, size,
                                               CU_MEM_ATTACH_GLOBAL);
     if (_cuda_data == nullptr) {
@@ -45,6 +49,7 @@ UnifiedAllocator::UnifiedAllocator(std::size_t size, Arch arch)
                   0);
                   */
     data = (uint8 *)_cuda_data;
+    TI_TRACE("UM created, data={}", (intptr_t)data);
 #else
     TI_NOT_IMPLEMENTED
 #endif

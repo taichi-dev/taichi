@@ -1021,7 +1021,7 @@ class KernelManager::Impl {
   }
 
   BufferMetaData get_buffer_meta_data() {
-    return buffer_meta_data_;
+    TI_ERROR("Metal not supported on the current OS");
   }
 
   void launch_taichi_kernel(const std::string &taichi_kernel_name,

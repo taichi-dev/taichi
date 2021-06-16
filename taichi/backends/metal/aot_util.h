@@ -207,7 +207,9 @@ struct BufferMetaData {
     int64_t runtime_buffer_size{0};
     int64_t randseedoffset_in_runtime_buffer{0};
 
-    TI_IO_DEF(root_buffer_size, runtime_buffer_size, randseedoffset_in_runtime_buffer);
+  TI_IO_DEF(root_buffer_size,
+            runtime_buffer_size,
+            randseedoffset_in_runtime_buffer);
 };
 
 struct TaichiAotData {
@@ -216,7 +218,6 @@ struct TaichiAotData {
 
   TI_IO_DEF(metadata, kernels);
 };
-
 
 }  // namespace metal
 

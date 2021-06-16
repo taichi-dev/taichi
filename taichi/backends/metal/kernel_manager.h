@@ -30,7 +30,7 @@ class KernelManager {
     MemoryPool *mem_pool;
     uint64_t *host_result_buffer;
     KernelProfilerBase *profiler;
-    BufferSize bufferSizeData;
+    BufferSize buffer_size_data;
     int root_id;
   };
 

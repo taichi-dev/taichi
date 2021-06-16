@@ -537,7 +537,7 @@ class KernelManager::Impl {
   explicit Impl(Params params)
       : config_(params.config),
         compiled_structs_(params.compiled_structs),
-        buffer_size_data_(params.bufferSizeData),
+        buffer_size_data_(params.buffer_size_data),
         mem_pool_(params.mem_pool),
         host_result_buffer_(params.host_result_buffer),
         profiler_(params.profiler),

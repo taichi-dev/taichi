@@ -39,7 +39,10 @@ def main():
         try:
             cmd = f'import taichi as ti; print("===="); print({expr}, end="")'
             ret = subprocess.check_output([executable, '-c', cmd]).decode()
-            ret = ret.split('====\n', maxsplit=1)[1]
+            if platform.system() == "Windows":
+                ret = ret.split('===\r\n', maxsplit=1)[1]
+            else:
+                ret = ret.split('====\n', maxsplit=1)[1]
             print(f'{tag}: {ret}')
         except Exception as e:
             print(f'{tag}: ERROR {e}')

@@ -1,11 +1,14 @@
 import taichi as ti
 import pytest
+import platform
 
 
+@pytest.mark.skipif(platform.system() == "Windows",
+                    reason="Too much virtual memory for github windows env.")
 @ti.test(debug=True, gdb_trigger=False, arch=[ti.cpu])
 def test_indices_assert():
 
-    overflow = ti.field(int, (334, 334, 334, 2 * 10))
+    overflow = ti.field(ti.i32, (334, 334, 334, 2 * 10))
 
     @ti.kernel
     def access_overflow():

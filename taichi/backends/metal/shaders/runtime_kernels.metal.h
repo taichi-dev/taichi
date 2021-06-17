@@ -109,6 +109,54 @@ STR(
           child_list.append(child_elem);
         }
       }
+    }
+
+    kernel void gc_compact_free_list(
+        device byte *runtime_addr [[buffer(0)]], device int *args [[buffer(1)]],
+        const uint utid_ [[thread_position_in_grid]],
+        const uint grid_size [[threads_per_grid]]) {
+      device Runtime *runtime =
+          reinterpret_cast<device Runtime *>(runtime_addr);
+      device MemoryAllocator *mem_alloc =
+          reinterpret_cast<device MemoryAllocator *>(runtime + 1);
+      const int snode_id = args[0];
+      run_gc_compact_free_list((runtime->snode_allocators + snode_id),
+                               mem_alloc, utid_, grid_size);
+    }
+
+    kernel void gc_reset_free_list(device byte *runtime_addr [[buffer(0)]],
+                                   device int *args [[buffer(1)]],
+                                   const uint utid_
+                                   [[thread_position_in_grid]]) {
+      if (utid_ > 0) return;
+
+      device Runtime *runtime =
+          reinterpret_cast<device Runtime *>(runtime_addr);
+      device MemoryAllocator *mem_alloc =
+          reinterpret_cast<device MemoryAllocator *>(runtime + 1);
+      const int snode_id = args[0];
+      run_gc_reset_free_list((runtime->snode_allocators + snode_id), mem_alloc);
+    }
+
+    kernel void gc_move_recycled_to_free(
+        device byte *runtime_addr [[buffer(0)]], device int *args [[buffer(1)]],
+        const uint utid_in_tg_ [[thread_position_in_threadgroup]],
+        const uint utgid_ [[threadgroup_position_in_grid]],
+        const uint tg_per_grid [[threadgroups_per_grid]],
+        const uint threads_per_tg [[threads_per_threadgroup]]) {
+      device Runtime *runtime =
+          reinterpret_cast<device Runtime *>(runtime_addr);
+      device MemoryAllocator *mem_alloc =
+          reinterpret_cast<device MemoryAllocator *>(runtime + 1);
+      const int snode_id = args[0];
+
+      GCMoveRecycledToFreeThreadParams thparams;
+      thparams.thread_position_in_threadgroup = utid_in_tg_;
+      thparams.threadgroup_position_in_grid = utgid_;
+      thparams.threadgroups_per_grid = tg_per_grid;
+      thparams.threads_per_threadgroup = threads_per_tg;
+      run_gc_move_recycled_to_free((runtime->snode_allocators + snode_id),
+                                   mem_alloc, thparams);
     })
 METAL_END_RUNTIME_KERNELS_DEF
 // clang-format on

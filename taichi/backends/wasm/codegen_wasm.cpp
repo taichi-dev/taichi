@@ -104,7 +104,7 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
     int pos = kernel_name.length() - 1;
     int underline_count = 0;
     int redundant_count = 3;
-    // see python/taichi/lang/kernel_impl.py
+    // see python/taichi/lang/kernel_impl.py, line 360
     for  (; pos >= 0; --pos) {
       if (kernel_name.at(pos) == '_') {
         underline_count += 1;
@@ -156,7 +156,6 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
       writer.write(module.get());
     }
     TI_ASSERT(!llvm::verifyFunction(*func, &llvm::errs()));
-    // TI_INFO("Kernel function verified.");
   }
 
   std::string create_taichi_get_root_address_function() {
@@ -191,7 +190,6 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
     builder->CreateBr(func_body_bb);
 
     TI_ASSERT(!llvm::verifyFunction(*func, &llvm::errs()));
-    // TI_INFO("Kernel function verified.");
     return task_kernel_name;
   }
 
@@ -217,10 +215,15 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
     builder->SetInsertPoint(func_body_bb);
 
     // memory reserved for Context object shouldn't be polluted
+    // set runtime address to zero
+    llvm::Value *runtime_address_ptr = create_call("Context_get_ptr_runtime", {kernel_args[0]});
+    llvm::Value *runtime_address_val_ptr = builder->CreatePointerCast(
+        runtime_address_ptr, llvm::Type::getInt32PtrTy(*llvm_context));
+    builder->CreateStore(tlctx->get_constant(0), runtime_address_val_ptr);
+
     llvm::Value *runtime_ptr = create_call("Context_get_runtime", {kernel_args[0]});
     llvm::Value *runtime = builder->CreateBitCast(
         runtime_ptr, llvm::PointerType::get(get_runtime_type("LLVMRuntime"), 0));
-
     llvm::Value *root_ptr = builder->CreateIntToPtr(
         kernel_args[1], llvm::Type::getInt8PtrTy(*llvm_context));
     llvm::Value *ret_ptr = create_call("LLVMRuntime_set_root", {runtime, root_ptr});
@@ -230,7 +233,6 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
     builder->CreateBr(func_body_bb);
 
     TI_ASSERT(!llvm::verifyFunction(*func, &llvm::errs()));
-    // TI_INFO("Kernel function verified.");
     return task_kernel_name;
   }
 

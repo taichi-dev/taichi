@@ -73,6 +73,8 @@ class CFGBuilder : public IRVisitor {
         /*is_parallel_executed=*/in_parallel_for,
         /*prev_node_in_same_block=*/last_node_in_current_block);
     for (auto &prev_node : prev_nodes) {
+      // Now that the "(next node)" is created, we should insert edges
+      // "node... -> (next node)" here.
       CFGNode::add_edge(prev_node, node);
     }
     prev_nodes.clear();
@@ -93,6 +95,8 @@ class CFGBuilder : public IRVisitor {
    *     ...
    *   }
    * }
+   *
+   * Note that the edges are inserted in visit_loop().
    */
   void visit(ContinueStmt *stmt) override {
     // Don't put ContinueStmt in any CFGNodes.
@@ -111,6 +115,8 @@ class CFGBuilder : public IRVisitor {
    *     ...
    *   }
    * }
+   *
+   * Note that the edges are inserted in visit_loop().
    */
   void visit(WhileControlStmt *stmt) override {
     // Don't put WhileControlStmt in any CFGNodes.

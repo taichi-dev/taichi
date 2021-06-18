@@ -3,7 +3,7 @@ import pytest
 import platform
 
 
-@pytest.mark.skipif(platform.system() == "Windows",
+@pytest.mark.skipif(platform.system() == 'Windows',
                     reason="Too much virtual memory for github windows env.")
 @ti.test(debug=True, gdb_trigger=False, arch=[ti.cpu])
 def test_indices_assert():

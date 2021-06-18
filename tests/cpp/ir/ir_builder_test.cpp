@@ -86,7 +86,7 @@ TEST(IRBuilder, LoopGuard) {
 
 TEST(IRBuilder, ExternalPtr) {
   auto prog = Program(arch_from_name("x64"));
-  prog.materialize_layout();
+  prog.materialize_runtime();
   IRBuilder builder;
   const int size = 10;
   auto array = std::make_unique<int[]>(size);

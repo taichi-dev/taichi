@@ -10,7 +10,7 @@ namespace lang {
 
 TEST(Simplify, SimplifyLinearizedWithTrivialInputs) {
   auto prog_ = std::make_unique<Program>();
-  prog_->materialize_layout();
+  prog_->materialize_runtime();
 
   auto block = std::make_unique<Block>();
 

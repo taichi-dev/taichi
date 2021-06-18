@@ -51,7 +51,7 @@ void run_snode() {
   auto *place = &pointer->insert_children(SNodeType::place);
   place->dt = PrimitiveType::i32;
 
-  program.materialize_layout();
+  program.materialize_runtime();
 
   std::unique_ptr<Kernel> kernel_init, kernel_ret, kernel_ext;
 
@@ -219,7 +219,7 @@ void autograd() {
   };
   auto *a = get_snode_grad(), *b = get_snode_grad(), *c = get_snode_grad();
 
-  program.materialize_layout();
+  program.materialize_runtime();
 
   std::unique_ptr<Kernel> kernel_init, kernel_forward, kernel_backward,
       kernel_ext;

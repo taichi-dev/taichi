@@ -4,7 +4,7 @@ import warnings
 
 import numpy as np
 from taichi.core.util import ti_core as _ti_core
-from taichi.lang.exception import TaichiSyntaxError
+from taichi.lang.exception import InvalidOperationError, TaichiSyntaxError
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.snode import SNode
 from taichi.lang.tape import TapeImpl
@@ -205,7 +205,6 @@ class PyTaichi:
     def __init__(self, kernels=None):
         self.materialized = False
         self.prog = None
-        self.layout_functions = []
         self.materialize_callbacks = []
         self.compiled_functions = {}
         self.compiled_grad_functions = {}
@@ -245,12 +244,9 @@ class PyTaichi:
         print('[Taichi] materializing...')
         self.create_program()
 
-        def layout():
-            for func in self.layout_functions:
-                func()
+        ti.trace('Materializing runtime...')
+        self.prog.materialize_runtime()
 
-        ti.trace('Materializing layout...')
-        _ti_core.layout(layout)
         self.materialized = True
         not_placed = []
         for var in self.global_vars:
@@ -269,9 +265,6 @@ class PyTaichi:
         for callback in self.materialize_callbacks:
             callback()
         self.materialize_callbacks = []
-
-    def print_snode_tree(self):
-        self.prog.print_snode_tree()
 
     def clear(self):
         if self.prog:
@@ -461,12 +454,7 @@ AOS = Layout(soa=False)
 
 @python_scope
 def layout(func):
-    assert not pytaichi.materialized, "All layout must be specified before the first kernel launch / data access."
-    warning(
-        f"@ti.layout will be deprecated in the future, use ti.root directly to specify data layout anytime before the data structure materializes.",
-        PendingDeprecationWarning,
-        stacklevel=3)
-    pytaichi.layout_functions.append(func)
+    raise InvalidOperationError('layout(): Deprecated')
 
 
 @taichi_scope

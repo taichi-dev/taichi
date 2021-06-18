@@ -203,9 +203,9 @@ struct CompiledKernelData {
 };
 
 struct BufferMetaData {
-    int64_t root_buffer_size{0};
-    int64_t runtime_buffer_size{0};
-    int64_t randseedoffset_in_runtime_buffer{0};
+  int64_t root_buffer_size{0};
+  int64_t runtime_buffer_size{0};
+  int64_t randseedoffset_in_runtime_buffer{0};
 
   TI_IO_DEF(root_buffer_size,
             runtime_buffer_size,

@@ -26,7 +26,7 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
   const CompiledStructs *compiled_structs_;
   BufferMetaData buffer_meta_data_;
   PrintStringTable strtab_;
-  TaichiAotData ti_file_data;
+  TaichiAotData ti_aot_data;
 };
 
 }  // namespace metal

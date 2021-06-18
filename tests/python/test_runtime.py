@@ -1,11 +1,7 @@
-import copy
-import os
-import sys
-from contextlib import contextmanager
-
-import pytest
-
 import taichi as ti
+import sys, os, copy
+from contextlib import contextmanager
+import pytest
 
 
 @contextmanager

@@ -1,8 +1,6 @@
-import time
-
-import pytest
-
 import taichi as ti
+import time
+import pytest
 
 
 def benchmark_fuse_dynamic_x2y2z(size=1024**2, repeat=10, first_n=100):

@@ -1,8 +1,7 @@
-import numpy as np
-import pytest
-
 import taichi as ti
+import numpy as np
 from taichi import allclose
+import pytest
 
 
 def _c_mod(a, b):

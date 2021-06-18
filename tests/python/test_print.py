@@ -1,6 +1,5 @@
-import pytest
-
 import taichi as ti
+import pytest
 
 
 # Not really testable..

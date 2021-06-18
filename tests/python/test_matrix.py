@@ -1,10 +1,8 @@
-import operator
-
-import numpy as np
-import pytest
-
 import taichi as ti
+import numpy as np
 from taichi import approx
+import operator
+import pytest
 
 operation_types = [operator.add, operator.sub, operator.matmul]
 test_matrix_arrays = [

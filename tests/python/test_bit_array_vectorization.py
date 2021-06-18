@@ -1,6 +1,5 @@
-import numpy as np
-
 import taichi as ti
+import numpy as np
 
 
 @ti.test(require=ti.extension.quant, debug=True, cfg_optimization=False)

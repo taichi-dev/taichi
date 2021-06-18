@@ -1,6 +1,5 @@
-import math
-
 import taichi as ti
+import math
 
 ti.init()
 

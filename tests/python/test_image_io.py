@@ -1,10 +1,8 @@
-import os
-
-import numpy as np
-import pytest
-
 import taichi as ti
+import numpy as np
 from taichi import make_temp_file
+import pytest
+import os
 
 
 # jpg is also supported but hard to test here since it's lossy:

@@ -1,6 +1,5 @@
-import pytest
-
 import taichi as ti
+import pytest
 
 
 @ti.require(ti.extension.extfunc)

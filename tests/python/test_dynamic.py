@@ -1,6 +1,5 @@
-import pytest
-
 import taichi as ti
+import pytest
 
 
 def ti_support_dynamic(test):

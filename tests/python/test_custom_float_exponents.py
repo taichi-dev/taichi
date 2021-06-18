@@ -1,8 +1,7 @@
+import taichi as ti
 import numpy as np
 import pytest
 from pytest import approx
-
-import taichi as ti
 
 
 @ti.test(require=ti.extension.quant)

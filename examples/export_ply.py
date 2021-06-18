@@ -1,9 +1,7 @@
-import os
-import random
-
-import numpy as np
-
 import taichi as ti
+import numpy as np
+import random
+import os
 
 ti.init(arch=ti.cpu)
 

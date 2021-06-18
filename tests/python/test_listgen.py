@@ -1,6 +1,5 @@
-from random import randrange
-
 import taichi as ti
+from random import randrange
 
 
 @ti.all_archs

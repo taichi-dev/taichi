@@ -2,9 +2,8 @@
 To test our new `ti.field` API is functional (#1500)
 '''
 
-import pytest
-
 import taichi as ti
+import pytest
 
 data_types = [ti.i32, ti.f32, ti.i64, ti.f64]
 field_shapes = [(), 8, (6, 12)]

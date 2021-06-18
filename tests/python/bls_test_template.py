@@ -1,8 +1,6 @@
-import random
-
-import numpy as np
-
 import taichi as ti
+import numpy as np
+import random
 
 
 def bls_test_template(dim,

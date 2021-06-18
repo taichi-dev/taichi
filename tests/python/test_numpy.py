@@ -1,6 +1,5 @@
-import numpy as np
-
 import taichi as ti
+import numpy as np
 
 
 def with_data_type(dt):

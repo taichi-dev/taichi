@@ -3,12 +3,10 @@ SSA violation edge-case regression test.
 1. Ensure working well when computation result is assigned to self.
 2. Prevent duplicate-evaluation on expression with side-effect like random.
 '''
-import math
-
-import numpy as np
-
 import taichi as ti
+import numpy as np
 from taichi import approx
+import math
 
 
 @ti.all_archs

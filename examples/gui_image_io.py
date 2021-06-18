@@ -1,6 +1,5 @@
-import os
-
 import taichi as ti
+import os
 
 pixel = ti.field(ti.u8, shape=(512, 512, 3))
 

@@ -1,10 +1,8 @@
-import operator as ops
-
-import numpy as np
-import pytest
-
 import taichi as ti
+import numpy as np
+import operator as ops
 from taichi import allclose
+import pytest
 
 
 @ti.test()

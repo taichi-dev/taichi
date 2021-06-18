@@ -1,6 +1,5 @@
-import pytest
-
 import taichi as ti
+import pytest
 
 
 def _test_trailing_bits():

@@ -1,9 +1,7 @@
-import pickle
-import random
-
 import numpy as np
-
+import random
 import taichi as ti
+import pickle
 
 # ti.runtime.print_preprocessed = True
 # ti.cfg.print_ir = True

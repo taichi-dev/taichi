@@ -1,6 +1,5 @@
-import numpy as np
-
 import taichi as ti
+import numpy as np
 
 
 def _test_op(dt, taichi_op, np_op):

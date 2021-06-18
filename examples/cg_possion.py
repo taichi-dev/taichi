@@ -1,7 +1,5 @@
-import math
-
 import taichi as ti
-
+import math
 ti.init(arch=ti.cuda)
 
 n = 512

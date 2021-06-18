@@ -3,9 +3,7 @@
 See https://sagejenson.com/physarum for the details.'''
 
 import numpy as np
-
 import taichi as ti
-
 ti.init(arch=ti.gpu)
 
 PARTICLE_N = 1024

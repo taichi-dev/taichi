@@ -1,6 +1,5 @@
-import random
-
 import taichi as ti
+import random
 
 n = 8
 x = ti.field(dtype=ti.f32, shape=n, needs_grad=True)

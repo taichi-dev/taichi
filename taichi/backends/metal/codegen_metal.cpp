@@ -1459,7 +1459,7 @@ class KernelCodegenImpl : public IRVisitor {
   }
 
   template <typename... Args>
-  void emit(std::string f, Args &&... args) {
+  void emit(std::string f, Args &&...args) {
     current_appender().append(std::move(f), std::forward<Args>(args)...);
   }
 

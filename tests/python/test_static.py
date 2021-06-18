@@ -1,6 +1,7 @@
-import taichi as ti
 import numpy as np
 import pytest
+
+import taichi as ti
 
 
 @pytest.mark.parametrize('val', [0, 1])

@@ -1,6 +1,7 @@
-import taichi as ti
 import numpy as np
 import pytest
+
+import taichi as ti
 
 if ti.has_pytorch():
     import torch

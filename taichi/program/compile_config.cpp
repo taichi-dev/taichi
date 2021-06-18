@@ -45,7 +45,7 @@ CompileConfig::CompileConfig() {
   cpu_max_num_threads = std::thread::hardware_concurrency();
   random_seed = 0;
 
-  ad_stack_size = 0; // 0 = adaptive
+  ad_stack_size = 0;  // 0 = adaptive
 
   // LLVM backend options:
   print_struct_llvm_ir = false;

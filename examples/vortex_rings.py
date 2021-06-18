@@ -1,7 +1,9 @@
 # C++ reference and tutorial (Chinese): https://zhuanlan.zhihu.com/p/26882619
-import taichi as ti
-import numpy as np
 import math
+
+import numpy as np
+
+import taichi as ti
 
 ti.init(arch=ti.gpu)
 

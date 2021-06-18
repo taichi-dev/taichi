@@ -1,7 +1,9 @@
+import os
+
 import pytest
+
 import taichi as ti
 from taichi import approx
-import os
 
 
 def run_mpm88_test():

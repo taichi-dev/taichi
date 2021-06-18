@@ -1,5 +1,7 @@
-import taichi as ti
 import taichi_glsl as tl
+
+import taichi as ti
+
 ti.init(arch=[ti.cuda, ti.metal])
 
 dim = 3

@@ -1,5 +1,6 @@
 # Solve Poisson's equation on an NxN grid using MGPCG
 import numpy as np
+
 import taichi as ti
 
 real = ti.f32

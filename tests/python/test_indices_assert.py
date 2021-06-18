@@ -1,6 +1,8 @@
-import taichi as ti
-import pytest
 import platform
+
+import pytest
+
+import taichi as ti
 
 
 @pytest.mark.skipif(platform.system() == 'Windows',

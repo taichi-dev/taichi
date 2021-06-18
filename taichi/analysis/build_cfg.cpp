@@ -19,6 +19,13 @@ TLANG_NAMESPACE_BEGIN
  * means node_a has edges to node_b and node_c, or equivalently, node_b and
  * node_c appear in the |next| field of node_a.
  *
+ * Structures like
+ * node_a {
+ *   ...
+ * } -> node_b, [node_c if "cond"];
+ * means node_a has an edge to node_b, and node_a has an edge to node_b iff
+ * the condition "cond" is true.
+ *
  * When there can be many CFGNodes in a Block, internal nodes are omitted for
  * simplicity.
  */

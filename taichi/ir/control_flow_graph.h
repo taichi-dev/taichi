@@ -7,7 +7,14 @@
 
 TLANG_NAMESPACE_BEGIN
 
-// A basic block in control-flow graph
+/**
+ * A basic block in control-flow graph.
+ * A CFGNode contains a reference to a part of the CHI IR, or more precisely,
+ * an interval of statements in a Block.
+ * The edges in the graph are stored in |prev| and |next|. The control flow is
+ * possible to go from any node in |prev| to this node, and is possible to go
+ * from this node to any node in |next|.
+ */
 class CFGNode {
  private:
   // For accelerating get_store_forwarding_data

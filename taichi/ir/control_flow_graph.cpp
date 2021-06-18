@@ -232,7 +232,7 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
 }
 
 void CFGNode::reaching_definition_analysis(bool after_lower_access) {
-  // Calculate reach_gen and reach_kill.
+  // Calculate |reach_gen| and |reach_kill|.
   reach_gen.clear();
   reach_kill.clear();
   for (int i = end_location - 1; i >= begin_location; i--) {

@@ -73,7 +73,7 @@ void CFGNode::insert(std::unique_ptr<Stmt> &&new_stmt, int location) {
 
 void CFGNode::replace_with(int location,
                            std::unique_ptr<Stmt> &&new_stmt,
-                           bool replace_usages) {
+                           bool replace_usages) const {
   TI_ASSERT(location >= begin_location && location < end_location);
   block->replace_with(block->statements[location].get(), std::move(new_stmt),
                       replace_usages);
@@ -113,35 +113,13 @@ bool CFGNode::may_contain_variable(const std::unordered_set<Stmt *> &var_set,
   }
 }
 
-void CFGNode::reaching_definition_analysis(bool after_lower_access) {
-  // Calculate reach_gen and reach_kill.
-  reach_gen.clear();
-  reach_kill.clear();
-  for (int i = end_location - 1; i >= begin_location; i--) {
-    // loop in reversed order
-    auto stmt = block->statements[i].get();
-    auto data_source_ptrs = irpass::analysis::get_store_destination(stmt);
-    for (auto data_source_ptr : data_source_ptrs) {
-      // stmt provides a data source
-      if (after_lower_access && !(data_source_ptr->is<AllocaStmt>())) {
-        // After lower_access, we only analyze local variables.
-        continue;
-      }
-      if (!reach_kill_variable(data_source_ptr)) {
-        reach_gen.insert(stmt);
-        reach_kill.insert(data_source_ptr);
-      }
-    }
-  }
-}
-
 bool CFGNode::reach_kill_variable(Stmt *var) const {
   // Does this node (definitely) kill a definition of var?
   return contain_variable(reach_kill, var);
 }
 
 Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
-  // Return the stored data if all definitions in the UD-chain of var at
+  // Return the stored data if all definitions in the UD-chain of |var| at
   // this position store the same data.
   int last_def_position = -1;
   for (int i = position - 1; i >= begin_location; i--) {
@@ -184,14 +162,21 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
   Stmt *result = nullptr;
   bool result_visible = false;
   auto visible = [&](Stmt *stmt) {
-    // Check if `stmt` is before `position` here.
+    // Check if |stmt| is before |position| here.
     if (stmt->parent == block) {
       return stmt->parent->locate(stmt) < position;
     }
-    // TODO: What if `stmt` appears in an ancestor of `block` but after
-    //  `position`?
+    // TODO: What if |stmt| appears in an ancestor of |block| but after
+    //  |position|?
     return parent_blocks.find(stmt->parent) != parent_blocks.end();
   };
+  /**
+   * |stmt| is a definition in the UD-chain of |var|. Update |result| with
+   * |stmt|. If either the stored data of |stmt| is not forwardable or the
+   * stored data of |stmt| is not definitely the same as other definitions of
+   * |var|, return false to show that there is no store-to-load forwardable
+   * data.
+   */
   auto update_result = [&](Stmt *stmt) {
     auto data = irpass::analysis::get_store_data(stmt);
     if (!data) {     // not forwardable
@@ -239,14 +224,39 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
     return nullptr;
   }
   if (!result_visible) {
+    // The data is store-to-load forwardable but not visible at the place we
+    // are going to forward. We cannot forward it in this case.
     return nullptr;
   }
   return result;
 }
 
+void CFGNode::reaching_definition_analysis(bool after_lower_access) {
+  // Calculate reach_gen and reach_kill.
+  reach_gen.clear();
+  reach_kill.clear();
+  for (int i = end_location - 1; i >= begin_location; i--) {
+    // loop in reversed order
+    auto stmt = block->statements[i].get();
+    auto data_source_ptrs = irpass::analysis::get_store_destination(stmt);
+    for (auto data_source_ptr : data_source_ptrs) {
+      // stmt provides a data source
+      if (after_lower_access && !(data_source_ptr->is<AllocaStmt>())) {
+        // After lower_access, we only analyze local variables.
+        continue;
+      }
+      if (!reach_kill_variable(data_source_ptr)) {
+        reach_gen.insert(stmt);
+        reach_kill.insert(data_source_ptr);
+      }
+    }
+  }
+}
+
 bool CFGNode::store_to_load_forwarding(bool after_lower_access) {
   bool modified = false;
   for (int i = begin_location; i < end_location; i++) {
+    // Store-to-load forwarding
     auto stmt = block->statements[i].get();
     Stmt *result = nullptr;
     if (auto local_load = stmt->cast<LocalLoadStmt>()) {
@@ -267,6 +277,7 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access) {
       }
     }
     if (result) {
+      // Forward the stored data |result|.
       if (result->is<AllocaStmt>()) {
         // special case of alloca (initialized to 0)
         auto zero = Stmt::make<ConstStmt>(TypedConstant(result->ret_type, 0));
@@ -280,6 +291,7 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access) {
       }
       continue;
     }
+
     // Identical store elimination
     if (auto local_store = stmt->cast<LocalStoreStmt>()) {
       result = get_store_forwarding_data(local_store->dest, i);
@@ -324,7 +336,7 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access) {
 }
 
 void CFGNode::gather_loaded_snodes(std::unordered_set<SNode *> &snodes) const {
-  // Gather the snodes which this CFGNode loads.
+  // Gather the SNodes which this CFGNode loads.
   // Requires reaching definition analysis.
   std::unordered_set<Stmt *> killed_in_this_node;
   for (int i = begin_location; i < end_location; i++) {
@@ -332,8 +344,8 @@ void CFGNode::gather_loaded_snodes(std::unordered_set<SNode *> &snodes) const {
     auto load_ptrs = irpass::analysis::get_load_pointers(stmt);
     for (auto &load_ptr : load_ptrs) {
       if (auto global_ptr = load_ptr->cast<GlobalPtrStmt>()) {
-        // Avoid computing the UD-chain if every snode in this global ptr
-        // are already loaded.
+        // Avoid computing the UD-chain if every SNode in this global ptr
+        // are already loaded because it can be time-consuming.
         bool already_loaded = true;
         for (auto &snode : global_ptr->snodes.data) {
           if (snodes.count(snode) == 0) {
@@ -346,7 +358,7 @@ void CFGNode::gather_loaded_snodes(std::unordered_set<SNode *> &snodes) const {
         }
         if (reach_in.find(global_ptr) != reach_in.end() &&
             !contain_variable(killed_in_this_node, global_ptr)) {
-          // The UD-chain contains the value before this offload.
+          // The UD-chain contains the value before this offloaded task.
           for (auto &snode : global_ptr->snodes.data) {
             snodes.insert(snode);
           }
@@ -378,8 +390,8 @@ void CFGNode::live_variable_analysis(bool after_lower_access) {
       }
     }
     auto store_ptrs = irpass::analysis::get_store_destination(stmt);
-    // TODO: Consider stacks in get_store_destination instead of here
-    //  for store-to-load forwarding on stacks
+    // TODO: Consider AD-stacks in get_store_destination instead of here
+    //  for store-to-load forwarding on AD-stacks
     // TODO: SNode deactivation is also a definite store
     if (auto stack_pop = stmt->cast<AdStackPopStmt>()) {
       store_ptrs = std::vector<Stmt *>(1, stack_pop->stack);
@@ -402,13 +414,13 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
   bool modified = false;
   std::unordered_set<Stmt *> live_in_this_node;
   std::unordered_set<Stmt *> killed_in_this_node;
-  // map a variable to its nearest load
+  // Map a variable to its nearest load
   std::unordered_map<Stmt *, Stmt *> live_load_in_this_node;
   for (int i = end_location - 1; i >= begin_location; i--) {
     auto stmt = block->statements[i].get();
     auto store_ptrs = irpass::analysis::get_store_destination(stmt);
-    // TODO: Consider stacks in get_store_destination instead of here
-    //  for store-to-load forwarding on stacks
+    // TODO: Consider AD-stacks in get_store_destination instead of here
+    //  for store-to-load forwarding on AD-stacks
     if (auto stack_pop = stmt->cast<AdStackPopStmt>()) {
       store_ptrs = std::vector<Stmt *>(1, stack_pop->stack);
     } else if (auto stack_push = stmt->cast<AdStackPushStmt>()) {
@@ -419,6 +431,7 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
       store_ptrs = std::vector<Stmt *>(1, stmt);
     }
     if (store_ptrs.size() == 1) {
+      // Dead store elimination
       auto store_ptr = store_ptrs.front();
       if (!after_lower_access ||
           (store_ptr->is<AllocaStmt>() || store_ptr->is<AdStackAllocaStmt>())) {
@@ -429,40 +442,43 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
             (contain_variable(killed_in_this_node, store_ptr) ||
              !may_contain_variable(live_out, store_ptr))) {
           // Neither used in other nodes nor used in this node.
-          if (auto atomic = stmt->cast<AtomicOpStmt>()) {
-            // Weaken the atomic operation to a load.
-            if (atomic->dest->is<AllocaStmt>()) {
-              auto local_load =
-                  Stmt::make<LocalLoadStmt>(LocalAddress(atomic->dest, 0));
-              local_load->ret_type = atomic->ret_type;
-              // Notice that we have a load here.
-              live_in_this_node.insert(atomic->dest);
-              live_load_in_this_node[atomic->dest] = local_load.get();
-              killed_in_this_node.erase(atomic->dest);
-              replace_with(i, std::move(local_load), true);
-              modified = true;
-              continue;
-            } else if (!is_parallel_executed ||
-                       (atomic->dest->is<GlobalPtrStmt>() &&
-                        atomic->dest->as<GlobalPtrStmt>()
-                            ->snodes[0]
-                            ->is_scalar())) {
-              // If this node is parallel executed, we can't weaken a global
-              // atomic operation to a global load.
-              // TODO: we can weaken it if it's element-wise (i.e. never
-              //  accessed by other threads).
-              auto global_load = Stmt::make<GlobalLoadStmt>(atomic->dest);
-              global_load->ret_type = atomic->ret_type;
-              // Notice that we have a load here.
-              live_in_this_node.insert(atomic->dest);
-              live_load_in_this_node[atomic->dest] = global_load.get();
-              killed_in_this_node.erase(atomic->dest);
-              replace_with(i, std::move(global_load), true);
-              modified = true;
-              continue;
-            }
-          } else {
+          if (!stmt->is<AtomicOpStmt>()) {
+            // Eliminate the dead store.
             erase(i);
+            modified = true;
+            continue;
+          }
+          auto atomic = stmt->cast<AtomicOpStmt>();
+          // Weaken the atomic operation to a load.
+          if (atomic->dest->is<AllocaStmt>()) {
+            auto local_load =
+                Stmt::make<LocalLoadStmt>(LocalAddress(atomic->dest, 0));
+            local_load->ret_type = atomic->ret_type;
+            // Notice that we have a load here
+            // (the return value of AtomicOpStmt).
+            live_in_this_node.insert(atomic->dest);
+            live_load_in_this_node[atomic->dest] = local_load.get();
+            killed_in_this_node.erase(atomic->dest);
+            replace_with(i, std::move(local_load), true);
+            modified = true;
+            continue;
+          } else if (!is_parallel_executed ||
+                     (atomic->dest->is<GlobalPtrStmt>() &&
+                      atomic->dest->as<GlobalPtrStmt>()
+                          ->snodes[0]
+                          ->is_scalar())) {
+            // If this node is parallel executed, we can't weaken a global
+            // atomic operation to a global load.
+            // TODO: we can weaken it if it's element-wise (i.e. never
+            //  accessed by other threads).
+            auto global_load = Stmt::make<GlobalLoadStmt>(atomic->dest);
+            global_load->ret_type = atomic->ret_type;
+            // Notice that we have a load here
+            // (the return value of AtomicOpStmt).
+            live_in_this_node.insert(atomic->dest);
+            live_load_in_this_node[atomic->dest] = global_load.get();
+            killed_in_this_node.erase(atomic->dest);
+            replace_with(i, std::move(global_load), true);
             modified = true;
             continue;
           }
@@ -542,7 +558,7 @@ std::size_t ControlFlowGraph::size() const {
   return nodes.size();
 }
 
-CFGNode *ControlFlowGraph::back() {
+CFGNode *ControlFlowGraph::back() const {
   return nodes.back().get();
 }
 

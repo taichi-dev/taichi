@@ -4,7 +4,24 @@
 
 TLANG_NAMESPACE_BEGIN
 
-// Build a control-flow graph
+/**
+ * Build a control-flow graph. The resulting graph is guaranteed to have an
+ * empty start node and an empty final node.
+ *
+ * In the following docstrings, node... means a CFGNode's corresponding
+ * statements in the CHI IR. Other blocks are just Blocks in the CHI IR.
+ * Nodes denoted with "()" mean not yet created when visiting the Stmt/Block.
+ *
+ * Structures like
+ * node_a {
+ *   ...
+ * } -> node_b, node_c;
+ * means node_a has edges to node_b and node_c, or equivalently, node_b and
+ * node_c appear in the |next| field of node_a.
+ *
+ * When there can be many CFGNodes in a Block, internal nodes are omitted for
+ * simplicity.
+ */
 class CFGBuilder : public IRVisitor {
  private:
   std::unique_ptr<ControlFlowGraph> graph;
@@ -65,7 +82,7 @@ class CFGBuilder : public IRVisitor {
   }
 
   /**
-   * Structure (nodes denoted with "()" mean not yet created):
+   * Structure:
    *
    * block {
    *   node {
@@ -155,18 +172,19 @@ class CFGBuilder : public IRVisitor {
   }
 
   /**
-   * Structure:
+   * Structure ([(next node) if !is_while_true] means the node has an edge to
+   * (next node) only when is_while_true is false):
    *
    * node_before_loop {
    *   ...
-   * } -> node_loop_begin, (next node) if !is_while_true;
+   * } -> node_loop_begin, [(next node) if !is_while_true];
    * loop (...) {
    *   node_loop_begin {
    *     ...
    *   } -> ... -> node_loop_end;
    *   node_loop_end {
    *     ...
-   *   } -> node_loop_begin, (next node) if !is_while_true;
+   *   } -> node_loop_begin, [(next node) if !is_while_true];
    * }
    * (next node) {
    *   ...

@@ -23,21 +23,21 @@ AotModuleBuilderImpl::AotModuleBuilderImpl(
     const CompiledStructs *compiled_structs,
     BufferMetaData buffer_meta_data)
     : compiled_structs_(compiled_structs), buffer_meta_data_(buffer_meta_data) {
-  ti_file_data.metadata = buffer_meta_data;
+  ti_aot_data.metadata = buffer_meta_data;
 }
 
 void AotModuleBuilderImpl::dump(const std::string &output_dir,
                                 const std::string &filename) const {
   const fs::path dir{output_dir};
   const fs::path bin_path = dir / fmt::format("{}_metadata.tcb", filename);
-  write_to_binary_file(ti_file_data, bin_path.string());
+  write_to_binary_file(ti_aot_data, bin_path.string());
   // The txt file is mostly for debugging purpose.
   const fs::path txt_path = dir / fmt::format("{}_metadata.txt", filename);
   TextSerializer ts;
-  ts("taichi file data", ti_file_data);
+  ts("taichi file data", ti_aot_data);
   ts.write_to_file(txt_path.string());
 
-  for (const auto &k : ti_file_data.kernels) {
+  for (const auto &k : ti_aot_data.kernels) {
     const fs::path mtl_path =
         dir / fmt::format("{}_{}.metal", filename, k.kernel_name);
     std::ofstream fs{mtl_path.string()};
@@ -51,7 +51,7 @@ void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
   auto compiled =
       run_codegen(compiled_structs_, kernel, &strtab_, /*offloaded=*/nullptr);
   compiled.kernel_name = identifier;
-  ti_file_data.kernels.push_back(std::move(compiled));
+  ti_aot_data.kernels.push_back(std::move(compiled));
 }
 
 }  // namespace metal

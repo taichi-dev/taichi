@@ -1,6 +1,7 @@
 #include "taichi/ir/control_flow_graph.h"
 
 #include <queue>
+#include <unordered_set>
 
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/statements.h"
@@ -861,6 +862,105 @@ std::unordered_set<SNode *> ControlFlowGraph::gather_loaded_snodes() {
     }
   }
   return snodes;
+}
+
+void ControlFlowGraph::determine_ad_stack_size(int max_ad_stack_size) {
+  const int num_nodes = size();
+  std::unordered_map<AdStackAllocaStmt *, int> max_size;
+  std::vector<std::unordered_map<AdStackAllocaStmt *, int>>
+      max_size_at_node_begin(num_nodes);
+  std::vector<std::unordered_map<AdStackAllocaStmt *, int>> max_increased_size(
+      num_nodes);
+  std::vector<std::unordered_map<AdStackAllocaStmt *, int>> increased_size(
+      num_nodes);
+  std::queue<int> to_visit;
+  std::vector<bool> in_queue(num_nodes);
+  std::unordered_map<CFGNode *, int> node_ids;
+  std::unordered_set<AdStackAllocaStmt *> oversized_stacks;
+
+  for (int i = 0; i < num_nodes; i++)
+    node_ids[nodes[i].get()] = i;
+
+  for (int i = 0; i < num_nodes; i++) {
+    for (int j = nodes[i]->begin_location; j < nodes[i]->end_location; j++) {
+      Stmt *stmt = nodes[i]->block->statements[j].get();
+      if (auto *stack_push = stmt->cast<AdStackPushStmt>()) {
+        auto *stack = stack_push->stack->as<AdStackAllocaStmt>();
+        if (stack->max_size == 0 /*adaptive*/) {
+          increased_size[i][stack]++;
+          if (increased_size[i][stack] > max_increased_size[i][stack]) {
+            max_increased_size[i][stack] = increased_size[i][stack];
+          }
+        }
+      } else if (auto *stack_pop = stmt->cast<AdStackPopStmt>()) {
+        auto *stack = stack_pop->stack->as<AdStackAllocaStmt>();
+        if (stack->max_size == 0 /*adaptive*/) {
+          increased_size[i][stack]--;
+        }
+      }
+    }
+    to_visit.push(i);
+    in_queue[i] = true;
+  }
+
+  while (!to_visit.empty()) {
+    int node_id = to_visit.front();
+    to_visit.pop();
+    in_queue[node_id] = false;
+    CFGNode *now = nodes[node_id].get();
+
+    for (auto &it : max_increased_size[node_id]) {
+      auto *stack = it.first;
+      // Inside this CFGNode
+      auto current_max_size =
+          max_size_at_node_begin[node_id][stack] + it.second;
+      if (current_max_size > max_ad_stack_size) {
+        current_max_size = max_ad_stack_size;
+        oversized_stacks.insert(stack);
+      }
+      if (current_max_size > max_size[stack]) {
+        max_size[stack] = current_max_size;
+      }
+    }
+    for (auto &it : increased_size[node_id]) {
+      auto *stack = it.first;
+      // At the end of this CFGNode
+      auto current_size = max_size_at_node_begin[node_id][stack] + it.second;
+      if (current_size > max_ad_stack_size) {
+        current_size = max_ad_stack_size;  // avoid infinite loop
+      }
+      for (auto *next_node : now->next) {
+        int next_node_id = node_ids[next_node];
+        if (current_size > max_size_at_node_begin[next_node_id][stack]) {
+          max_size_at_node_begin[next_node_id][stack] = current_size;
+          if (!in_queue[next_node_id]) {
+            to_visit.push(next_node_id);
+            in_queue[next_node_id] = true;
+          }
+        }
+      }
+    }
+  }
+
+  if (!oversized_stacks.empty()) {
+    std::vector<std::string> oversized_stacks_name;
+    oversized_stacks_name.reserve(oversized_stacks.size());
+    for (auto &stack : oversized_stacks) {
+      oversized_stacks_name.push_back(stack->name());
+    }
+    TI_WARN(
+        "Unable to determine capacity for autodiff stacks: {}. "
+        "Use default capacity {} instead.",
+        fmt::join(oversized_stacks_name, ", "), max_ad_stack_size);
+  }
+
+  for (auto &it : max_size) {
+    auto *stack = it.first;
+    TI_WARN_IF(it.second == 0,
+               "Unused autodiff stack {} should have been eliminated.",
+               stack->name());
+    stack->max_size = 16;
+  }
 }
 
 TLANG_NAMESPACE_END

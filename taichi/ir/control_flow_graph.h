@@ -121,6 +121,12 @@ class ControlFlowGraph {
 
   // Gather the SNodes this offload reads.
   std::unordered_set<SNode *> gather_loaded_snodes();
+
+  /**
+   * Determine all adaptive AD-stacks' size.
+   * @param max_ad_stack_size The maximum allowed AD stack size.
+   */
+  void determine_ad_stack_size(int max_ad_stack_size);
 };
 
 TLANG_NAMESPACE_END

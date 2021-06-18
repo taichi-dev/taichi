@@ -304,7 +304,7 @@ class CCTransformer : public IRVisitor {
   static inline std::string invoke_libc(std::string name,
                                         DataType dt,
                                         std::string const &fmt,
-                                        Args &&... args) {
+                                        Args &&...args) {
     auto arguments = fmt::format(fmt, std::forward<Args>(args)...);
     return invoke_libc(name, dt, arguments);
   }
@@ -533,6 +533,9 @@ class CCTransformer : public IRVisitor {
 
   void visit(AdStackAllocaStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
+    TI_ASSERT_INFO(
+        stmt->max_size > 0,
+        "Adaptive autodiff stack's size should have been determined.");
 
     const auto &var_name = stmt->raw_name();
     emit("Ti_u8 {}[{}];", var_name, stmt->size_in_bytes() + sizeof(uint32_t));
@@ -587,12 +590,12 @@ class CCTransformer : public IRVisitor {
   }
 
   template <typename... Args>
-  void emit(std::string f, Args &&... args) {
+  void emit(std::string f, Args &&...args) {
     line_appender.append(std::move(f), std::move(args)...);
   }
 
   template <typename... Args>
-  void emit_header(std::string f, Args &&... args) {
+  void emit_header(std::string f, Args &&...args) {
     line_appender_header.append(std::move(f), std::move(args)...);
   }
 };  // namespace cccp

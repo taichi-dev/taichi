@@ -1222,7 +1222,7 @@ class InternalFuncStmt : public Stmt {
 class AdStackAllocaStmt : public Stmt {
  public:
   DataType dt;
-  std::size_t max_size;  // TODO: 0 = adaptive
+  std::size_t max_size;  // 0 = adaptive
 
   AdStackAllocaStmt(const DataType &dt, std::size_t max_size)
       : dt(dt), max_size(max_size) {

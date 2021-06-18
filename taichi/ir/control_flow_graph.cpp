@@ -959,7 +959,7 @@ void ControlFlowGraph::determine_ad_stack_size(int max_ad_stack_size) {
     TI_WARN_IF(it.second == 0,
                "Unused autodiff stack {} should have been eliminated.",
                stack->name());
-    stack->max_size = 16;
+    stack->max_size = it.second;
   }
 }
 

@@ -5,7 +5,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "taichi/backends/metal/kernel_util.h"
+#include "taichi/backends/metal/aot_util.h"
 #include "taichi/backends/metal/struct_metal.h"
 #include "taichi/lang_util.h"
 #include "taichi/program/compile_config.h"
@@ -30,6 +30,7 @@ class KernelManager {
     MemoryPool *mem_pool;
     uint64_t *host_result_buffer;
     KernelProfilerBase *profiler;
+    BufferMetaData buffer_meta_data;
     int root_id;
   };
 
@@ -58,6 +59,8 @@ class KernelManager {
 
   // Synchronize the memory content from Metal to host (x86_64).
   void synchronize();
+
+  BufferMetaData get_buffer_meta_data();
 
   PrintStringTable *print_strtable();
 

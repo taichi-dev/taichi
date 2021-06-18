@@ -9,7 +9,7 @@
 #include "taichi/backends/metal/constants.h"
 #include "taichi/backends/metal/data_types.h"
 #include "taichi/backends/metal/features.h"
-#include "taichi/backends/metal/kernel_util.h"
+#include "taichi/backends/metal/aot_util.h"
 #include "taichi/math/arithmetic.h"
 #include "taichi/util/line_appender.h"
 

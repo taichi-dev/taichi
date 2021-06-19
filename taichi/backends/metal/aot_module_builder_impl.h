@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-#include "taichi/backends/metal/aot_util.h"
+#include "taichi/backends/metal/aot_utils.h"
 #include "taichi/backends/metal/struct_metal.h"
 #include "taichi/program/aot_module_builder.h"
 

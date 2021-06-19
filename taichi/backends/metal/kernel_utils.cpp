@@ -7,7 +7,8 @@
 #include "taichi/program/context.h"
 #undef TI_RUNTIME_HOST
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 namespace metal {
 
@@ -52,6 +53,8 @@ std::string KernelAttributes::debug_string() const {
   // TODO(k-ye): show range_for
   if (task_type == OffloadedTaskType::listgen) {
     result += fmt::format(" snode={}", runtime_list_op_attribs->snode->id);
+  } else if (task_type == OffloadedTaskType::gc) {
+    result += fmt::format(" snode={}", gc_op_attribs->snode->id);
   }
   result += ">";
   return result;
@@ -119,4 +122,5 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
 
 }  // namespace metal
 
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

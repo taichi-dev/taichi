@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-@ti.archs_support_sparse
+@ti.test(require=ti.extension.sparse)
 def test_pointer():
     x = ti.field(ti.f32)
     s = ti.field(ti.i32)
@@ -24,7 +24,7 @@ def test_pointer():
     assert s[None] == 256
 
 
-@ti.archs_support_sparse
+@ti.test(require=ti.extension.sparse)
 def test_pointer_is_active():
     x = ti.field(ti.f32)
     s = ti.field(ti.i32)
@@ -47,7 +47,7 @@ def test_pointer_is_active():
     assert s[None] == 256
 
 
-@ti.archs_support_sparse
+@ti.test(require=ti.extension.sparse)
 def test_pointer2():
     x = ti.field(ti.f32)
     s = ti.field(ti.i32)

@@ -22,7 +22,7 @@ bool is_extension_supported(Arch arch, Extension ext) {
         Extension::bls, Extension::assertion}},
       {Arch::metal,
        {Extension::adstack, Extension::assertion, Extension::quant_basic,
-        Extension::async_mode}},
+        Extension::async_mode, Extension::sparse}},
       {Arch::opengl, {Extension::extfunc}},
       {Arch::cc, {Extension::data64, Extension::extfunc, Extension::adstack}},
   };

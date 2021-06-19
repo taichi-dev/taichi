@@ -14,7 +14,6 @@
 #include "taichi/util/action_recorder.h"
 #include "taichi/util/file_sequence_writer.h"
 #include "taichi/util/str.h"
-#include "taichi/backends/metal/aot_util.h"
 
 #ifdef TI_PLATFORM_OSX
 #include <sys/mman.h>

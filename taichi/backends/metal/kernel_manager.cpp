@@ -980,7 +980,6 @@ class KernelManager::Impl {
     wait_until_completed(cur_command_buffer_.get());
     create_new_command_buffer();
     profiler_->stop();
-
   }
 
   void print_runtime_debug() {

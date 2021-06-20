@@ -24,7 +24,9 @@ def test_nested():
     #     for j in range(q):
     #         assert x[i * n, j * m] == 1, (i, j)
 
+
 test_nested()
+
 
 @ti.test()
 def test_nested_demote():

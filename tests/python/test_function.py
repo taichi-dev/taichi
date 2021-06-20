@@ -1,5 +1,5 @@
 import taichi as ti
-import pytest
+
 
 @ti.test(experimental_real_function=True)
 def test_function_without_return():

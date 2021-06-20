@@ -1,7 +1,7 @@
 import taichi as ti
 
 
-# @ti.test(require=ti.extension.sparse, demote_dense_struct_fors=False)
+@ti.test(require=ti.extension.sparse, demote_dense_struct_fors=False)
 def test_nested():
     ti.init(ti.metal, demote_dense_struct_fors=False)
     ti.set_logging_level(ti.TRACE)
@@ -19,13 +19,9 @@ def test_nested():
             x[i, j] += 1
 
     iterate()
-    # print(x.to_numpy())
-    # for i in range(p):
-    #     for j in range(q):
-    #         assert x[i * n, j * m] == 1, (i, j)
-
-
-test_nested()
+    for i in range(p):
+        for j in range(q):
+            assert x[i * n, j * m] == 1, (i, j)
 
 
 @ti.test()

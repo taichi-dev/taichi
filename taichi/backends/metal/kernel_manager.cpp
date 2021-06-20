@@ -941,18 +941,14 @@ class KernelManager::Impl {
     root_lm.lm_data = rtm_list_begin + root_id;
     root_lm.mem_alloc = mem_alloc;
     root_lm.append(root_elem);
-    // initialize all the ambient elements
+
+    // Initialize all the ambient elements
     for (const auto &p : snode_id_to_nodemgrs) {
       NodeManager nm;
       nm.nm_data = p.second;
       nm.mem_alloc = mem_alloc;
       ambient_indices_begin[p.first] = nm.allocate();
     }
-
-    ListManager root_lm;
-    root_lm.lm_data = rtm_list_begin + root_id;
-    root_lm.mem_alloc = mem_alloc;
-    root_lm.append(root_elem);
 
     did_modify_range(runtime_buffer_.get(), /*location=*/0,
                      runtime_mem_->size());

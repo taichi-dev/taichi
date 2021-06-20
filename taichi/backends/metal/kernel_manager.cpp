@@ -981,10 +981,11 @@ class KernelManager::Impl {
     create_new_command_buffer();
     profiler_->stop();
 
-    print_runtime_debug();
   }
 
   void print_runtime_debug() {
+    // If debugging is necessary, make sure this is called after
+    // blit_buffers_and_sync().
     const auto &sn_descs = compiled_structs_.snode_descriptors;
     for (int i = 0; i < compiled_structs_.max_snodes; ++i) {
       auto iter = sn_descs.find(i);

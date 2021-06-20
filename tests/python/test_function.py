@@ -1,3 +1,5 @@
+import pytest
+
 import taichi as ti
 
 
@@ -148,7 +150,8 @@ def test_python_function():
     assert x[None] == 0
 
 
-@ti.test(experimental_real_function=True, exclude=[ti.opengl, ti.cc])
+@pytest.mark.skip(reason='https://github.com/taichi-dev/taichi/issues/2442')
+@ti.test(experimental_real_function=True, debug=True)
 def test_templates():
     x = ti.field(ti.i32, shape=())
     y = ti.field(ti.i32, shape=())

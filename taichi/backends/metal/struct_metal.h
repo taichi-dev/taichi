@@ -72,10 +72,6 @@ struct CompiledStructs {
   //
   // TODO(k-ye): See if Metal ArgumentBuffer can directly store the pointers.
   size_t runtime_size;
-  // In case there is no sparse SNode (e.g. bitmasked), we don't need to
-  // allocate the additional memory for |snode_lists|.
-  // TODO(k-ye): Rename to |needs_kernel_memory_allocator|.
-  bool need_snode_lists_data;
   // max(ID of Root or Dense Snode) + 1
   int max_snodes;
   // Map from SNode ID to its descriptor.

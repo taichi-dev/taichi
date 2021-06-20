@@ -827,21 +827,22 @@ class KernelManager::Impl {
         {
             ActionArg("rand_seeds_begin", (int64)rand_seeds_begin),
         });
-    if (compiled_structs_.need_snode_lists_data) {
-      auto *mem_alloc = reinterpret_cast<MemoryAllocator *>(addr);
-      // Make sure the retured memory address is always greater than 1.
-      mem_alloc->next = shaders::MemoryAllocator::kInitOffset;
-      // root list data are static
-      ListgenElement root_elem;
-      root_elem.mem_offset = 0;
-      for (int i = 0; i < taichi_max_num_indices; ++i) {
-        root_elem.coords.at[i] = 0;
-      }
-      ListManager root_lm;
-      root_lm.lm_data = rtm_list_begin + root_id;
-      root_lm.mem_alloc = mem_alloc;
-      root_lm.append(root_elem);
+
+    // Initialize the memory allocator
+    auto *mem_alloc = reinterpret_cast<MemoryAllocator *>(addr);
+    // Make sure the retured memory address is always greater than 1.
+    mem_alloc->next = shaders::MemoryAllocator::kInitOffset;
+
+    // Root list is static, so it can be initialized here once.
+    ListgenElement root_elem;
+    root_elem.mem_offset = 0;
+    for (int i = 0; i < taichi_max_num_indices; ++i) {
+      root_elem.coords.at[i] = 0;
     }
+    ListManager root_lm;
+    root_lm.lm_data = rtm_list_begin + root_id;
+    root_lm.mem_alloc = mem_alloc;
+    root_lm.append(root_elem);
 
     did_modify_range(runtime_buffer_.get(), /*location=*/0,
                      runtime_mem_->size());

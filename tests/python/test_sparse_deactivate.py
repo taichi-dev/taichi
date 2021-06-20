@@ -157,8 +157,6 @@ def test_pointer3():
     clear_temp()
 
     for itr in range(100):
-        if itr % 10 == 0:
-            print('test itr=', itr)
         copy_to_temp()
         clear()
         copy_from_temp()

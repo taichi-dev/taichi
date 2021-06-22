@@ -322,8 +322,9 @@ void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
     llvm::CastInst::CastOps cast_op;
     auto from = stmt->operand->ret_type;
     auto to = stmt->cast_type;
-    TI_ASSERT(from != to);
-    if (is_real(from) != is_real(to)) {
+    if (from == to) {
+      llvm_val[stmt] = llvm_val[stmt->operand];
+    } else if (is_real(from) != is_real(to)) {
       if (is_real(from) && is_integral(to)) {
         cast_op = llvm::Instruction::CastOps::FPToSI;
       } else if (is_integral(from) && is_real(to)) {

@@ -150,14 +150,11 @@ def test_python_function():
     assert x[None] == 0
 
 
-# TODO(#2447): Remove these exclusions when we support assertions in these
-#  backends
-@ti.test(experimental_real_function=True,
-         debug=True,
-         exclude=[ti.opengl, ti.cc])
+@ti.test(experimental_real_function=True)
 def test_templates():
     x = ti.field(ti.i32, shape=())
     y = ti.field(ti.i32, shape=())
+    answer = ti.field(ti.i32, shape=8)
 
     @ti.kernel
     def kernel_inc(x: ti.template()):
@@ -182,11 +179,18 @@ def test_templates():
         x[None] = 10
         y[None] = 20
         inc(x)
-        assert x[None] == 11
-        assert y[None] == 20
+        answer[0] = x[None]
+        answer[1] = y[None]
         inc(y)
-        assert x[None] == 11
-        assert y[None] == 21
+        answer[2] = x[None]
+        answer[3] = y[None]
+
+    def verify():
+        assert answer[0] == 11
+        assert answer[1] == 20
+        assert answer[2] == 11
+        assert answer[3] == 21
 
     run_kernel()
     run_func()
+    verify()

@@ -45,6 +45,7 @@ void Pointer_activate(Ptr meta_, Ptr node, int i) {
   volatile Ptr *data_ptr = (Ptr *)(node + 8 * (num_elements + i));
 
   if (*data_ptr == nullptr) {
+    meta->context->runtime->element_lists[meta->snode_id]->up_to_date = false;
     // The cuda_ calls will return 0 or do noop on CPUs
     u32 mask = cuda_active_mask();
     if (is_representative(mask, (u64)lock)) {

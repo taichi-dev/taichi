@@ -18,6 +18,7 @@ void Dynamic_activate(Ptr meta_, Ptr node_, int i) {
   auto node = (DynamicNode *)(node_);
   // We need to not only update node->n, but also make sure the chunk containing
   // element i is allocated.
+  meta->context->runtime->element_lists[meta->snode_id]->up_to_date = false;
   atomic_max_i32(&node->n, i + 1);
   int chunk_start = 0;
   auto p_chunk_ptr = &node->ptr;
@@ -43,6 +44,8 @@ void Dynamic_activate(Ptr meta_, Ptr node_, int i) {
 void Dynamic_deactivate(Ptr meta_, Ptr node_) {
   auto meta = (DynamicMeta *)(meta_);
   auto node = (DynamicNode *)(node_);
+  auto list = meta->context->runtime->element_lists[meta->snode_id];
+  list->up_to_date = false;
   if (node->n > 0) {
     locked_task(Ptr(&node->lock), [&] {
       node->n = 0;

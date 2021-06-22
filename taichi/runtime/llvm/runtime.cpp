@@ -401,6 +401,7 @@ struct ListManager {
   i32 log2chunk_num_elements;
   i32 lock;
   i32 num_elements;
+  bool up_to_date;
   LLVMRuntime *runtime;
 
   ListManager(LLVMRuntime *runtime,
@@ -414,6 +415,7 @@ struct ListManager {
     lock = 0;
     num_elements = 0;
     log2chunk_num_elements = taichi::log2int(num_elements_per_chunk);
+    up_to_date = false;
   }
 
   void append(void *data_ptr);
@@ -1048,6 +1050,11 @@ void clear_list(LLVMRuntime *runtime, StructMeta *parent, StructMeta *child) {
   child_list->clear();
 }
 
+void set_list_up_to_date(LLVMRuntime *runtime, StructMeta *parent, StructMeta *child) {
+  auto child_list = runtime->element_lists[child->snode_id];
+  child_list->up_to_date = true;
+}
+
 /*
  * The element list of a SNode, maintains pointers to its instances, and
  * instances' parents' coordinates
@@ -1379,6 +1386,7 @@ Ptr ListManager::allocate() {
 }
 
 void node_gc(LLVMRuntime *runtime, int snode_id) {
+  runtime->element_lists[snode_id]->up_to_date = false;
   runtime->node_allocators[snode_id]->gc_serial();
 }
 
@@ -1412,6 +1420,7 @@ void gc_parallel_0(Context *context, int snode_id) {
 
 void gc_parallel_1(Context *context, int snode_id) {
   LLVMRuntime *runtime = context->runtime;
+  runtime->element_lists[snode_id]->up_to_date = false;
   auto allocator = runtime->node_allocators[snode_id];
   auto free_list = allocator->free_list;
 

@@ -865,14 +865,33 @@ std::unordered_set<SNode *> ControlFlowGraph::gather_loaded_snodes() {
 }
 
 void ControlFlowGraph::determine_ad_stack_size(int max_ad_stack_size) {
+  /**
+   * Determine all adaptive AD-stacks' capacity using the worklist algorithm
+   * (similar to the Bellman-Ford algorithm). The time complexity
+   * is O(num_statements + num_edges * max_ad_stack_size).
+   */
   const int num_nodes = size();
+
+  // The maximum size of each stack among all control flows starting at the
+  // beginning of the IR.
   std::unordered_map<AdStackAllocaStmt *, int> max_size;
+
+  // max_size_at_node_begin[i][j] is the maximum size of stack |j| among
+  // all control flows starting at the beginning of the IR and ending at the
+  // beginning of the CFGNode |i|.
   std::vector<std::unordered_map<AdStackAllocaStmt *, int>>
       max_size_at_node_begin(num_nodes);
+
+  // max_increased_size[i][j] is the maximum number of (pushes - pops) of
+  // stack |j| among all prefixes of the CFGNode |i|.
   std::vector<std::unordered_map<AdStackAllocaStmt *, int>> max_increased_size(
       num_nodes);
+
+  // increased_size[i][j] is the number of (pushes - pops) of stack |j| in
+  // the CFGNode |i|.
   std::vector<std::unordered_map<AdStackAllocaStmt *, int>> increased_size(
       num_nodes);
+
   std::queue<int> to_visit;
   std::vector<bool> in_queue(num_nodes);
   std::unordered_map<CFGNode *, int> node_ids;
@@ -881,6 +900,8 @@ void ControlFlowGraph::determine_ad_stack_size(int max_ad_stack_size) {
   for (int i = 0; i < num_nodes; i++)
     node_ids[nodes[i].get()] = i;
 
+  // For each basic block we compute the increase of stack size. This is a
+  // pre-processing step for the next maximum stack size determining algorithm.
   for (int i = 0; i < num_nodes; i++) {
     for (int j = nodes[i]->begin_location; j < nodes[i]->end_location; j++) {
       Stmt *stmt = nodes[i]->block->statements[j].get();
@@ -903,6 +924,8 @@ void ControlFlowGraph::determine_ad_stack_size(int max_ad_stack_size) {
     in_queue[i] = true;
   }
 
+  // The maximum stack size determining algorithm -- an algorithm similar to
+  // the Bellman-Ford algorithm.
   while (!to_visit.empty()) {
     int node_id = to_visit.front();
     to_visit.pop();
@@ -910,10 +933,11 @@ void ControlFlowGraph::determine_ad_stack_size(int max_ad_stack_size) {
     CFGNode *now = nodes[node_id].get();
 
     for (auto &it : max_increased_size[node_id]) {
+      // Inside this CFGNode -- update the answer |max_size|
       auto *stack = it.first;
-      // Inside this CFGNode
+      auto max_size_inside_this_node = it.second;
       auto current_max_size =
-          max_size_at_node_begin[node_id][stack] + it.second;
+          max_size_at_node_begin[node_id][stack] + max_size_inside_this_node;
       if (current_max_size > max_ad_stack_size) {
         current_max_size = max_ad_stack_size;
         oversized_stacks.insert(stack);
@@ -923,9 +947,12 @@ void ControlFlowGraph::determine_ad_stack_size(int max_ad_stack_size) {
       }
     }
     for (auto &it : increased_size[node_id]) {
+      // At the end of this CFGNode -- update the state |max_size_at_node_begin|
+      // of other CFGNodes
       auto *stack = it.first;
-      // At the end of this CFGNode
-      auto current_size = max_size_at_node_begin[node_id][stack] + it.second;
+      auto increase_in_this_node = it.second;
+      auto current_size =
+          max_size_at_node_begin[node_id][stack] + increase_in_this_node;
       if (current_size > max_ad_stack_size) {
         current_size = max_ad_stack_size;  // avoid infinite loop
       }
@@ -957,6 +984,8 @@ void ControlFlowGraph::determine_ad_stack_size(int max_ad_stack_size) {
 
   for (auto &it : max_size) {
     auto *stack = it.first;
+    // Since we use |max_size| == 0 for adaptive sizes, we do not want stacks
+    // with maximum capacity indeed equal to 0.
     TI_WARN_IF(it.second == 0,
                "Unused autodiff stack {} should have been eliminated.",
                stack->name());

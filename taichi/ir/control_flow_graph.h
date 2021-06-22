@@ -123,7 +123,7 @@ class ControlFlowGraph {
   std::unordered_set<SNode *> gather_loaded_snodes();
 
   /**
-   * Determine all adaptive AD-stacks' capacity with the worklist algorithm.
+   * Determine all adaptive AD-stacks' capacity.
    * @param max_ad_stack_size The maximum allowed AD stack size. This parameter
    * is set to prevent infinite loops of the algorithm.
    */

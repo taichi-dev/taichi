@@ -150,6 +150,8 @@ def test_python_function():
     assert x[None] == 0
 
 
+# TODO(#2447): Remove these exclusions when we support assertions in these
+#  backends
 @ti.test(experimental_real_function=True,
          debug=True,
          exclude=[ti.opengl, ti.cc])

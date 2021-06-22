@@ -23,8 +23,7 @@ bool determine_ad_stack_size(IRNode *root, const CompileConfig &config) {
   }
   auto cfg = analysis::build_cfg(root);
   cfg->simplify_graph();
-  constexpr int kMaxAdStackSize = 32;
-  cfg->determine_ad_stack_size(kMaxAdStackSize);
+  cfg->determine_ad_stack_size(config.max_ad_stack_size);
   return true;
 }
 

@@ -202,7 +202,7 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
   }
 
   //  Context's address is pass by kernel_args[0] which is supposed to be 0 in default.
-  //  Runtime's address will be set to zero after set_root() call.
+  //  Runtime's address will be set to kernel_args[0] after set_root() call.
   //  The objects of Context and Runtime are overlapped with each other.
   //
   //     Context          Runtime            Root Buffer

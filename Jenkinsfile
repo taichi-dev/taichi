@@ -87,6 +87,7 @@ void build_taichi() {
     sh "echo $PATH"
     git 'https://github.com/taichi-dev/taichi.git'
     sh label: '', script: '''
+    cd ci
     docker build . --build-arg UBUNTU=${UBUNTU} --build-arg PYTHON=${PYTHON} --build-arg TEST_OPTION="${TEST_OPTION}" --build-arg PYPI_PWD=${PYPI_PWD}
     '''
 }

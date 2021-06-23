@@ -536,7 +536,6 @@ class KernelManager::Impl {
   explicit Impl(Params params)
       : config_(params.config),
         compiled_structs_(params.compiled_structs),
-        buffer_meta_data_(params.buffer_meta_data),
         mem_pool_(params.mem_pool),
         host_result_buffer_(params.host_result_buffer),
         profiler_(params.profiler),
@@ -580,7 +579,7 @@ class KernelManager::Impl {
         compiled_structs_.runtime_size + mem_pool_bytes, mem_pool_);
     runtime_buffer_ = new_mtl_buffer_no_copy(device_.get(), runtime_mem_->ptr(),
                                              runtime_mem_->size());
-    buffer_meta_data_.runtime_buffer_size = runtime_mem_->size();
+    buffer_meta_data_.runtime_buffer_size = compiled_structs_.runtime_size;
     TI_DEBUG(
         "Metal runtime buffer size: {} bytes (sizeof(Runtime)={} "
         "memory_pool={})",

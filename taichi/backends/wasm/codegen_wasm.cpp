@@ -98,7 +98,13 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
     current_offload = nullptr;
   }
 
-  std::string eliminate_underline_suffix(std::string kernel_name) {
+  /**
+   * Extracts the original function name decorated by @ti.kernel
+   * 
+   * @param kernel_name The format is defined in
+   * https://github.com/taichi-dev/taichi/blob/734da3f8f4439ce7f6a5337df7c54fb6dc34def8/python/taichi/lang/kernel_impl.py#L360-L362
+   */
+  std::string extract_original_kernel_name(const std::string& kernel_name) {
     if (kernel->is_evaluator)
       return kernel_name;
     int pos = kernel_name.length() - 1;
@@ -122,7 +128,7 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
                                 {llvm::PointerType::get(context_ty, 0)}, false);
 
     auto task_kernel_name =
-        fmt::format("{}_body", eliminate_underline_suffix(kernel_name));
+        fmt::format("{}_body", extract_original_kernel_name(kernel_name));
     func = llvm::Function::Create(task_function_type,
                                   llvm::Function::ExternalLinkage,
                                   task_kernel_name, module.get());

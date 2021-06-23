@@ -1,5 +1,6 @@
-import taichi as ti
 import math
+
+import taichi as ti
 
 eps = 1e-4
 inf = 1e10

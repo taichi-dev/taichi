@@ -1,5 +1,7 @@
-import taichi as ti
 import matplotlib.cm as cm
+
+import taichi as ti
+
 # A compressible euler equation solver using two methods
 # 1: 2nd order muscl
 # 2: thinc BVD, ref: "Limiter-free discontinuity-capturing scheme

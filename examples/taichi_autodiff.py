@@ -1,5 +1,6 @@
-import taichi as ti
 import matplotlib.pyplot as plt
+
+import taichi as ti
 
 N = 2048
 x, y = ti.field(ti.f32), ti.field(ti.f32)

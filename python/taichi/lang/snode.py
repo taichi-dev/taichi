@@ -79,6 +79,16 @@ class SNode:
         return self
 
     def lazy_grad(self):
+        """Automatically place the adjoint fields following the layout of their primal fields.
+
+        Users don't need to specify ``needs_grad`` when they define scalar/vector/matrix fields (primal fields) using autodiff.
+        When all the primal fields are defined, using ``taichi.root.lazy_grad()`` could automatically generate
+        their corresponding adjoint fields (gradient field).
+
+        To know more details about primal, adjoint fields and ``lazy_grad()``,
+        please see Page 4 and Page 13-14 of DiffTaichi Paper: https://arxiv.org/pdf/1910.00935.pdf
+        """
+
         self.ptr.lazy_grad()
 
     def parent(self, n=1):

@@ -1,7 +1,8 @@
 export_file = ''  # use '/tmp/mpm3d.ply' for exporting result to disk
 
-import taichi as ti
 import numpy as np
+
+import taichi as ti
 
 ti.init(arch=ti.gpu)
 

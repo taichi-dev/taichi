@@ -1,8 +1,9 @@
 # Game of Life written in 100 lines of Taichi
 # In memory of John Horton Conway (1937 - 2020)
 
-import taichi as ti
 import numpy as np
+
+import taichi as ti
 
 ti.init()
 

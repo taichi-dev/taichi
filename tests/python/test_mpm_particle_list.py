@@ -1,5 +1,6 @@
-import taichi as ti
 import random
+
+import taichi as ti
 
 
 @ti.data_oriented

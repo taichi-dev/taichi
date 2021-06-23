@@ -1,9 +1,12 @@
-import taichi as ti
-import numpy as np
 import math
 import time
-from renderer_utils import out_dir, ray_aabb_intersection, inf, eps, \
-  intersect_sphere, sphere_aabb_intersect_motion, inside_taichi
+
+import numpy as np
+from renderer_utils import (eps, inf, inside_taichi, intersect_sphere, out_dir,
+                            ray_aabb_intersection,
+                            sphere_aabb_intersect_motion)
+
+import taichi as ti
 
 ti.init(arch=ti.cuda, device_memory_GB=4)
 

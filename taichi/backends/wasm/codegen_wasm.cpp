@@ -203,7 +203,7 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
                                 {llvm::PointerType::get(context_ty, 0),
                                  llvm::Type::getInt32Ty(*llvm_context)},
                                 false);
-    auto task_kernel_name = fmt::format("set_root");
+    const std::string task_kernel_name = "set_root";
     auto func = llvm::Function::Create(task_function_type,
                                        llvm::Function::ExternalLinkage,
                                        task_kernel_name, module.get());

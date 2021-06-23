@@ -5,7 +5,6 @@ pipeline {
         PATH = "/opt/taichi-llvm-10.0.0/bin:/usr/local/cuda/bin/:$PATH"
         CC = "clang-10"
         CXX = "clang++-10"
-        // PYTHON_EXECUTABLE = "python3"
         // Local machine uses version 11.2. However, we need to define
         // TI_CUDAVERSION, which eventually translates to the version number
         // of the slimmed CUDA libdevice bytecode. Currently this slimmed

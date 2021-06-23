@@ -104,7 +104,7 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
     int pos = kernel_name.length() - 1;
     int underline_count = 0;
     int redundant_count = 3;
-    // see python/taichi/lang/kernel_impl.py, line 360
+    // see https://github.com/taichi-dev/taichi/blob/734da3f8f4439ce7f6a5337df7c54fb6dc34def8/python/taichi/lang/kernel_impl.py#L360
     for (; pos >= 0; --pos) {
       if (kernel_name.at(pos) == '_') {
         underline_count += 1;
@@ -132,9 +132,6 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
     }
     kernel_args[0]->setName("context");
 
-    if (kernel_argument_by_val())
-      func->addParamAttr(0, llvm::Attribute::ByVal);
-
     // entry_block has all the allocas
     this->entry_block = llvm::BasicBlock::Create(*llvm_context, "entry", func);
 
@@ -160,6 +157,7 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
     TI_ASSERT(!llvm::verifyFunction(*func, &llvm::errs()));
   }
 
+  // This is unused
   std::string create_taichi_get_root_address_function() {
     auto task_function_type =
         llvm::FunctionType::get(llvm::Type::getInt32Ty(*llvm_context),
@@ -197,6 +195,17 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
     return task_kernel_name;
   }
 
+  //  Context's address is pass by kernel_args[0] which is supposed to be 0 in default.
+  //  Runtime's address will be set to zero after set_root() call.
+  //  The objects of Context and Runtime are overlapped with each other.
+  //
+  //     Context          Runtime            Root Buffer
+  //     +-----------+    +-------------+    +-------------+
+  //     |runtime*   |    |     ...     |    |     ...     |
+  //     |arg0       |    |     ...     |    +-------------+
+  //     |arg1       |    |root buffer* |
+  //     |    ...    |    |     ...     |
+  //     +-----------+    +-------------+
   std::string create_taichi_set_root_function() {
     auto task_function_type =
         llvm::FunctionType::get(llvm::Type::getVoidTy(*llvm_context),
@@ -225,15 +234,22 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
         create_call("Context_get_ptr_runtime", {kernel_args[0]});
     llvm::Value *runtime_address_val_ptr = builder->CreatePointerCast(
         runtime_address_ptr, llvm::Type::getInt32PtrTy(*llvm_context));
-    builder->CreateStore(tlctx->get_constant(0), runtime_address_val_ptr);
+    llvm::Value *runtime_address_val = builder->CreatePtrToInt(
+      kernel_args[0], llvm::Type::getInt32Ty(*llvm_context));
+    builder->CreateStore(runtime_address_val, runtime_address_val_ptr);
 
     llvm::Value *runtime_ptr =
         create_call("Context_get_runtime", {kernel_args[0]});
     llvm::Value *runtime = builder->CreateBitCast(
         runtime_ptr,
         llvm::PointerType::get(get_runtime_type("LLVMRuntime"), 0));
+
+    llvm::Value *root_base_ptr = builder->CreatePointerCast(
+        kernel_args[0], llvm::Type::getInt32PtrTy(*llvm_context));
+    llvm::Value* root_base_val = builder->CreateLoad(root_base_ptr);
+    llvm::Value *root_val = builder->CreateAdd(root_base_val, kernel_args[1]);
     llvm::Value *root_ptr = builder->CreateIntToPtr(
-        kernel_args[1], llvm::Type::getInt8PtrTy(*llvm_context));
+        root_val, llvm::Type::getInt8PtrTy(*llvm_context));
     llvm::Value *ret_ptr =
         create_call("LLVMRuntime_set_root", {runtime, root_ptr});
     builder->CreateRetVoid();

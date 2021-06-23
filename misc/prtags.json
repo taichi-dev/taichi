@@ -7,6 +7,7 @@
   "cli"             : "Command line interface",
   "ir"              : "Intermediate representation",
   "lang"            : "Language and syntax",
+  "aot"             : "Aot module"
   "metal"           : "Metal backend",
   "opengl"          : "OpenGL backend",
   "vulkan"          : "Vulkan backend",

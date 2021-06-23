@@ -4,10 +4,8 @@
 
 #include "taichi/backends/metal/codegen_metal.h"
 
-#if defined(__GNUC__) && (__GNUC__ < 8)
+#if defined(__linux__) && defined(__GNUC__) && (__GNUC__ < 8)
 // https://stackoverflow.com/a/45867491
-// !defined(__clang__) to make sure this is not clang
-// https://stackoverflow.com/questions/38499462/how-to-tell-clang-to-stop-pretending-to-be-other-compilers
 #include <experimental/filesystem>
 namespace fs = ::std::experimental::filesystem;
 #else

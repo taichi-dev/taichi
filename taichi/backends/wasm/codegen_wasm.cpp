@@ -110,7 +110,6 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
     int pos = kernel_name.length() - 1;
     int underline_count = 0;
     int redundant_count = 3;
-    // see https://github.com/taichi-dev/taichi/blob/734da3f8f4439ce7f6a5337df7c54fb6dc34def8/python/taichi/lang/kernel_impl.py#L360
     for (; pos >= 0; --pos) {
       if (kernel_name.at(pos) == '_') {
         underline_count += 1;

@@ -1,5 +1,6 @@
-import taichi as ti
 import pytest
+
+import taichi as ti
 
 
 def test_cpu_debug_snode_reader():

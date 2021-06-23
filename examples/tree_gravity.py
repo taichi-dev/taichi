@@ -1,7 +1,9 @@
 # N-body gravity simulation in 300 lines of Taichi, tree method, no multipole, O(N log N)
 # Author: archibate <1931127624@qq.com>, all left reserved
-import taichi as ti
 import taichi_glsl as tl
+
+import taichi as ti
+
 ti.init()
 if not hasattr(ti, 'jkl'):
     ti.jkl = ti.indices(1, 2, 3)

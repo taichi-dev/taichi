@@ -1,7 +1,9 @@
-import numpy as np
-import taichi as ti
-import time
 import math
+import time
+
+import numpy as np
+
+import taichi as ti
 
 
 @ti.data_oriented

@@ -48,16 +48,17 @@ void Pointer_activate(Ptr meta_, Ptr node, int i) {
     // The cuda_ calls will return 0 or do noop on CPUs
     u32 mask = cuda_active_mask();
     if (is_representative(mask, (u64)lock)) {
-      locked_task(lock,
-                  [&] {
-                    auto rt = meta->context->runtime;
-                    auto alloc = rt->node_allocators[meta->snode_id];
-                    auto allocated = (u64)alloc->allocate();
-                    // TODO: Not sure if we really need atomic_exchange here,
-                    // just to be safe.
-                    atomic_exchange_u64((u64 *)data_ptr, allocated);
-                  },
-                  [&]() { return *data_ptr == nullptr; });
+      locked_task(
+          lock,
+          [&] {
+            auto rt = meta->context->runtime;
+            auto alloc = rt->node_allocators[meta->snode_id];
+            auto allocated = (u64)alloc->allocate();
+            // TODO: Not sure if we really need atomic_exchange here,
+            // just to be safe.
+            atomic_exchange_u64((u64 *)data_ptr, allocated);
+          },
+          [&]() { return *data_ptr == nullptr; });
     }
     warp_barrier(mask);
   }

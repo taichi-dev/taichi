@@ -1,5 +1,6 @@
-import taichi as ti
 from pytest import approx
+
+import taichi as ti
 
 
 def _test_reduction_single(dtype, criterion):

@@ -1,7 +1,8 @@
-from taichi import make_temp_file
-import taichi as ti
 import numpy as np
 import pytest
+
+import taichi as ti
+from taichi import make_temp_file
 
 
 @ti.host_arch_only

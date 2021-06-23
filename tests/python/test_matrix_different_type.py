@@ -1,5 +1,6 @@
-import taichi as ti
 from pytest import approx
+
+import taichi as ti
 
 
 # TODO: test more matrix operations

@@ -1,8 +1,36 @@
 #include "taichi/ir/control_flow_graph.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
+#include "taichi/program/function.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
+
+struct CFGFuncKey {
+  FunctionKey func_key{"", -1, -1};
+  bool in_parallel_for{false};
+
+  bool operator==(const CFGFuncKey &other_key) const {
+    return func_key == other_key.func_key &&
+           in_parallel_for == other_key.in_parallel_for;
+  }
+};
+
+}  // namespace lang
+}  // namespace taichi
+
+namespace std {
+template <>
+struct hash<taichi::lang::CFGFuncKey> {
+  std::size_t operator()(const taichi::lang::CFGFuncKey &key) const noexcept {
+    return std::hash<taichi::lang::FunctionKey>()(key.func_key) ^
+           ((std::size_t)key.in_parallel_for << 32);
+  }
+};
+}  // namespace std
+
+namespace taichi {
+namespace lang {
 
 /**
  * Build a control-flow graph. The resulting graph is guaranteed to have an
@@ -28,20 +56,10 @@ TLANG_NAMESPACE_BEGIN
  *
  * When there can be many CFGNodes in a Block, internal nodes are omitted for
  * simplicity.
+ *
+ * TODO(#2193): Make sure ReturnStmt is handled properly.
  */
 class CFGBuilder : public IRVisitor {
- private:
-  std::unique_ptr<ControlFlowGraph> graph;
-  Block *current_block;
-  CFGNode *last_node_in_current_block;
-  std::vector<CFGNode *> continues_in_current_loop;
-  std::vector<CFGNode *> breaks_in_current_loop;
-  int current_stmt_id;
-  int begin_location;
-  std::vector<CFGNode *> prev_nodes;
-  OffloadedStmt *current_offload;
-  bool in_parallel_for;
-
  public:
   CFGBuilder()
       : current_block(nullptr),
@@ -130,6 +148,46 @@ class CFGBuilder : public IRVisitor {
     auto node = new_node(current_stmt_id + 1);
     breaks_in_current_loop.push_back(node);
     prev_nodes.push_back(node);
+  }
+
+  /**
+   * Structure:
+   *
+   * block {
+   *   node {
+   *     ...
+   *   } -> node_func_begin;
+   *   foo();
+   *   (next node) {
+   *     ...
+   *   }
+   * }
+   *
+   * foo() {
+   *   node_func_begin {
+   *     ...
+   *   } -> ... -> node_func_end;
+   *   node_func_end {
+   *     ...
+   *   } -> (next node);
+   * }
+   */
+  void visit(FuncCallStmt *stmt) override {
+    auto node_before_func_call = new_node(-1);
+    CFGFuncKey func_key = {stmt->func->func_key, in_parallel_for};
+    if (node_func_begin.count(func_key) == 0) {
+      // Generate CFG for the function.
+      TI_ASSERT(stmt->func->ir->is<Block>());
+      auto func_begin_index = graph->size();
+      stmt->func->ir->accept(this);
+      node_func_begin[func_key] = graph->nodes[func_begin_index].get();
+      node_func_end[func_key] = graph->nodes.back().get();
+    }
+    CFGNode::add_edge(node_before_func_call, node_func_begin[func_key]);
+    prev_nodes.push_back(node_func_end[func_key]);
+
+    // Don't put FuncCallStmt in any CFGNodes.
+    begin_location = current_stmt_id + 1;
   }
 
   /**
@@ -393,6 +451,20 @@ class CFGBuilder : public IRVisitor {
     }
     return std::move(builder.graph);
   }
+
+ private:
+  std::unique_ptr<ControlFlowGraph> graph;
+  Block *current_block;
+  CFGNode *last_node_in_current_block;
+  std::vector<CFGNode *> continues_in_current_loop;
+  std::vector<CFGNode *> breaks_in_current_loop;
+  int current_stmt_id;
+  int begin_location;
+  std::vector<CFGNode *> prev_nodes;
+  OffloadedStmt *current_offload;
+  bool in_parallel_for;
+  std::unordered_map<CFGFuncKey, CFGNode *> node_func_begin;
+  std::unordered_map<CFGFuncKey, CFGNode *> node_func_end;
 };
 
 namespace irpass::analysis {
@@ -401,4 +473,5 @@ std::unique_ptr<ControlFlowGraph> build_cfg(IRNode *root) {
 }
 }  // namespace irpass::analysis
 
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

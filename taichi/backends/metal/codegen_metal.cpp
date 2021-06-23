@@ -109,10 +109,10 @@ class KernelCodegenImpl : public IRVisitor {
         kernel_(kernel),
         compiled_structs_(compiled_structs),
         needs_root_buffer_(compiled_structs_->root_size > 0),
-        ctx_attribs_(*kernel_),
         print_strtab_(print_strtab),
         cgen_config_(config),
-        offloaded_(offloaded) {
+        offloaded_(offloaded),
+        ctx_attribs_(*kernel_) {
     ti_kernel_attribs_.name = taichi_kernel_name;
     ti_kernel_attribs_.is_jit_evaluator = kernel->is_evaluator;
     // allow_undefined_visitor = true;

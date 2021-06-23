@@ -321,6 +321,8 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(ClearListStmt *stmt) override;
 
+  void visit(SetListUpToDateStmt *stmt) override;
+
   void visit(InternalFuncStmt *stmt) override;
 
   // Stack statements

@@ -1069,6 +1069,9 @@ void element_listgen_root(LLVMRuntime *runtime,
   // (instead of threads) to split the parent container
   auto parent_list = runtime->element_lists[parent->snode_id];
   auto child_list = runtime->element_lists[child->snode_id];
+  if (child_list->up_to_date) {
+    return;
+  }
   // Cache the func pointers here for better compiler optimization
   auto parent_lookup_element = parent->lookup_element;
   auto child_get_num_elements = child->get_num_elements;
@@ -1117,6 +1120,9 @@ void element_listgen_nonroot(LLVMRuntime *runtime,
   auto parent_list = runtime->element_lists[parent->snode_id];
   int num_parent_elements = parent_list->size();
   auto child_list = runtime->element_lists[child->snode_id];
+  if (child_list->up_to_date) {
+    return;
+  }
   // Cache the func pointers here for better compiler optimization
   auto parent_refine_coordinates = parent->refine_coordinates;
   auto parent_is_active = parent->is_active;

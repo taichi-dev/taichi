@@ -1858,6 +1858,14 @@ void CodeGenLLVM::visit(ClearListStmt *stmt) {
   call("clear_list", get_runtime(), meta_parent, meta_child);
 }
 
+void CodeGenLLVM::visit(SetListUpToDateStmt *stmt) {
+  auto snode_child = stmt->snode;
+  auto snode_parent = stmt->snode->parent;
+  auto meta_child = cast_pointer(emit_struct_meta(snode_child), "StructMeta");
+  auto meta_parent = cast_pointer(emit_struct_meta(snode_parent), "StructMeta");
+  call("set_list_up_to_date", get_runtime(), meta_parent, meta_child);
+}
+
 void CodeGenLLVM::visit(InternalFuncStmt *stmt) {
   create_call(stmt->func_name, {get_context()});
 }

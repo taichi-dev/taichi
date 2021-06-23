@@ -134,6 +134,7 @@ class Offloader {
         // is nothing special about this task, which could otherwise cause
         // problems when fused with other serial tasks.
         root_block->insert(std::move(offloaded_clear_list));
+
         auto offloaded_listgen = Stmt::make_typed<OffloadedStmt>(
             OffloadedStmt::TaskType::listgen, arch);
         offloaded_listgen->snode = snode_child;
@@ -143,6 +144,17 @@ class Offloader {
                      (int64)std::min(Program::default_block_dim(config),
                                      config.max_block_dim));
         root_block->insert(std::move(offloaded_listgen));
+
+        auto offloaded_set_list_up_to_date = Stmt::make_typed<OffloadedStmt>(
+            OffloadedStmt::TaskType::serial, arch);
+        offloaded_set_list_up_to_date->body->insert(
+            Stmt::make<SetListUpToDateStmt>(snode_child));
+        offloaded_set_list_up_to_date->grid_dim = 1;
+        offloaded_set_list_up_to_date->block_dim = 1;
+        // Intentionally do not set offloaded_set_list_up_to_date->snode, so that there
+        // is nothing special about this task, which could otherwise cause
+        // problems when fused with other serial tasks.
+        root_block->insert(std::move(offloaded_set_list_up_to_date));
       }
     }
 

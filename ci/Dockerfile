@@ -68,6 +68,8 @@ ENV LANG="C.UTF-8"
 RUN ldd libtaichi_core.so
 RUN strings libtaichi_core.so | grep GLIBC
 
+# Install twine and upload project to pypi.
+RUN $PYTHON -m pip install --user twine
 WORKDIR /taichi-dev/taichi/python
 RUN ti test -t 2
 RUN $PYTHON build.py upload $TEST_OPTION

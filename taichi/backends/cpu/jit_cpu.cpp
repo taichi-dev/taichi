@@ -126,6 +126,11 @@ class JITSessionCPU : public JITSession {
     return DL;
   }
 
+  void global_optimize_module(
+      std::unique_ptr<llvm::Module> &module) override {
+    global_optimize_module_cpu(module);
+  }
+
   JITModule *add_module(std::unique_ptr<llvm::Module> M, int max_reg) override {
     TI_ASSERT(max_reg == 0);  // No need to specify max_reg on CPUs
     TI_ASSERT(M);

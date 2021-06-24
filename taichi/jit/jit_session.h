@@ -34,6 +34,11 @@ class JITSession {
 
   static std::unique_ptr<JITSession> create(Arch arch);
 
+  virtual void global_optimize_module(
+      std::unique_ptr<llvm::Module> &module) {
+    TI_NOT_IMPLEMENTED
+  }
+
   virtual ~JITSession() = default;
 };
 

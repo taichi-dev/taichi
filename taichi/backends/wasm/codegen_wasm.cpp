@@ -10,6 +10,8 @@
 #include "taichi/util/statistics.h"
 #include "taichi/util/file_sequence_writer.h"
 
+#include "taichi/util/file_sequence_writer.h"
+
 namespace taichi {
 namespace lang {
 
@@ -298,6 +300,24 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
 FunctionType CodeGenWASM::codegen() {
   TI_AUTO_PROF
   return CodeGenLLVMWASM(kernel, ir).gen();
+}
+
+std::unique_ptr<llvm::Module> CodeGenWASM::modulegen() {
+  auto gen = std::make_unique<CodeGenLLVMWASM>(kernel, ir);
+  gen->emit_to_module();
+  gen->eliminate_unused_functions();
+  std::unique_ptr<llvm::Module> module = std::move(gen->module);
+  gen->tlctx->jit->global_optimize_module(module);
+  //jitmodule;
+  //gen->tlctx->jit->global_optimize_module_cpu(std::move(gen->module));
+  /*
+
+  static FileSequenceWriter writer(
+        "test_{:04d}.ll",
+        "optimized LLVM IR (CPU)");
+  writer.write(module.get());*/
+  
+  return module;
 }
 
 }  // namespace lang

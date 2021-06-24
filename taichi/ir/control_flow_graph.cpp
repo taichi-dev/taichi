@@ -976,7 +976,7 @@ void ControlFlowGraph::determine_ad_stack_size(int max_ad_stack_size) {
       oversized_stacks_name.push_back(stack->name());
     }
     TI_WARN(
-        "Unable to determine capacity for autodiff stacks: {}. "
+        "The required capacity for autodiff stacks [{}] overflows the maximum allowed. "
         "Use configured maximum capacity (CompileConfig::max_ad_stack_size) {} "
         "instead.",
         fmt::join(oversized_stacks_name, ", "), max_ad_stack_size);

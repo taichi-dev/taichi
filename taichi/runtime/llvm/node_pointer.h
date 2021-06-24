@@ -69,9 +69,11 @@ void Pointer_deactivate(Ptr meta, Ptr node, int i) {
   Ptr lock = node + 8 * i;
   Ptr &data_ptr = *(Ptr *)(node + 8 * (num_elements + i));
   if (data_ptr != nullptr) {
+    auto smeta = (StructMeta *)meta;
+    smeta->context->runtime->element_lists[smeta->snode_id]->up_to_date = false;
     locked_task(lock, [&] {
       if (data_ptr != nullptr) {
-        auto smeta = (StructMeta *)meta;
+        //auto smeta = (StructMeta *)meta;
         auto rt = smeta->context->runtime;
         auto alloc = rt->node_allocators[smeta->snode_id];
         alloc->recycle(data_ptr);

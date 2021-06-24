@@ -1047,6 +1047,9 @@ void grid_memfence() {
 
 void clear_list(LLVMRuntime *runtime, StructMeta *parent, StructMeta *child) {
   auto child_list = runtime->element_lists[child->snode_id];
+  if (child_list->up_to_date ) {
+    return;
+  }
   child_list->clear();
 }
 

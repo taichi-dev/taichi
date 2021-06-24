@@ -100,11 +100,11 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
 
   /**
    * Extracts the original function name decorated by @ti.kernel
-   * 
+   *
    * @param kernel_name The format is defined in
    * https://github.com/taichi-dev/taichi/blob/734da3f8f4439ce7f6a5337df7c54fb6dc34def8/python/taichi/lang/kernel_impl.py#L360-L362
    */
-  std::string extract_original_kernel_name(const std::string& kernel_name) {
+  std::string extract_original_kernel_name(const std::string &kernel_name) {
     if (kernel->is_evaluator)
       return kernel_name;
     int pos = kernel_name.length() - 1;
@@ -200,9 +200,9 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
     return task_kernel_name;
   }
 
-  //  Context's address is pass by kernel_args[0] which is supposed to be 0 in default.
-  //  Runtime's address will be set to kernel_args[0] after set_root() call.
-  //  The objects of Context and Runtime are overlapped with each other.
+  //  Context's address is pass by kernel_args[0] which is supposed to be 0 in
+  //  default. Runtime's address will be set to kernel_args[0] after set_root()
+  //  call. The objects of Context and Runtime are overlapped with each other.
   //
   //     Context          Runtime            Root Buffer
   //     +-----------+    +-------------+    +-------------+
@@ -240,7 +240,7 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
     llvm::Value *runtime_address_val_ptr = builder->CreatePointerCast(
         runtime_address_ptr, llvm::Type::getInt32PtrTy(*llvm_context));
     llvm::Value *runtime_address_val = builder->CreatePtrToInt(
-      kernel_args[0], llvm::Type::getInt32Ty(*llvm_context));
+        kernel_args[0], llvm::Type::getInt32Ty(*llvm_context));
     builder->CreateStore(runtime_address_val, runtime_address_val_ptr);
 
     llvm::Value *runtime_ptr =
@@ -251,7 +251,7 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
 
     llvm::Value *root_base_ptr = builder->CreatePointerCast(
         kernel_args[0], llvm::Type::getInt32PtrTy(*llvm_context));
-    llvm::Value* root_base_val = builder->CreateLoad(root_base_ptr);
+    llvm::Value *root_base_val = builder->CreateLoad(root_base_ptr);
     llvm::Value *root_val = builder->CreateAdd(root_base_val, kernel_args[1]);
     llvm::Value *root_ptr = builder->CreateIntToPtr(
         root_val, llvm::Type::getInt8PtrTy(*llvm_context));

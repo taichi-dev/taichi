@@ -8,9 +8,6 @@ ENV PYPI_PWD=$PYPI_PWD
 ENV DEBIAN_FRONTEND=noninteractive
 LABEL maintainer="https://github.com/taichi-dev"
 
-# This installs Python 3.6.9 by default. Once the
-# docker image is upgraded to Ubuntu 20.04 this will
-# install Python 3.8 by default
 RUN apt-get update && \
     apt-get install -y software-properties-common \
                        $PYTHON \

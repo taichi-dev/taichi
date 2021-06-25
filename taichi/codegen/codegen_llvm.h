@@ -79,9 +79,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   using IRVisitor::visit;
   using LLVMModuleBuilder::call;
 
-  CodeGenLLVM(Kernel *kernel,
-              IRNode *ir = nullptr,
-              std::unique_ptr<llvm::Module> &&M = nullptr);
+  CodeGenLLVM(Kernel *kernel, IRNode *ir = nullptr);
 
   Arch current_arch() {
     return kernel->arch;

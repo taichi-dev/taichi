@@ -268,14 +268,10 @@ void CodeGenLLVM::emit_struct_meta_base(const std::string &name,
                get_runtime_function(snode->refine_coordinates_func_name()));
 }
 
-CodeGenLLVM::CodeGenLLVM(Kernel *kernel,
-                         IRNode *ir,
-                         std::unique_ptr<llvm::Module> &&module)
+CodeGenLLVM::CodeGenLLVM(Kernel *kernel, IRNode *ir)
     // TODO: simplify LLVMModuleBuilder ctor input
-    : LLVMModuleBuilder(module == nullptr
-                            ? kernel->program->get_llvm_context(kernel->arch)
-                                  ->clone_struct_module()
-                            : std::move(module),
+    : LLVMModuleBuilder(kernel->program->get_llvm_context(kernel->arch)
+                            ->clone_struct_module(),
                         kernel->program->get_llvm_context(kernel->arch)),
       kernel(kernel),
       ir(ir),

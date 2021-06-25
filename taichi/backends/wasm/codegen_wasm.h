@@ -11,8 +11,8 @@ namespace lang {
 
 class ModuleGenValue {
  public:
-  ModuleGenValue(std::unique_ptr<llvm::Module> &module,
-                 std::vector<std::string> name_list)
+  ModuleGenValue(std::unique_ptr<llvm::Module> module,
+                 const std::vector<std::string> &name_list)
       : module(std::move(module)), name_list(name_list) {
   }
   std::unique_ptr<llvm::Module> module;

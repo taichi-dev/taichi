@@ -230,8 +230,8 @@ TaskMeta *get_task_meta(IRBank *ir_bank, const TaskLaunchRecord &t) {
           ir_bank->get_async_state(clear_list->snode, AsyncState::Type::list));
     }
     if (auto set_list_up_to_date = stmt->cast<SetListUpToDateStmt>()) {
-      meta.output_states.insert(
-          ir_bank->get_async_state(set_list_up_to_date->snode, AsyncState::Type::list));
+      meta.output_states.insert(ir_bank->get_async_state(
+          set_list_up_to_date->snode, AsyncState::Type::list));
     }
     return false;
   });

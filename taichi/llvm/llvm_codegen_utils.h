@@ -62,10 +62,6 @@ class LLVMModuleBuilder {
   LLVMModuleBuilder(std::unique_ptr<llvm::Module> &&module,
                     TaichiLLVMContext *tlctx)
       : module(std::move(module)), tlctx(tlctx) {
-    if(this->module == nullptr) {
-      if(tlctx != nullptr)
-        this->module = tlctx->clone_struct_module();
-    }
     TI_ASSERT(this->module != nullptr);
     TI_ASSERT(&this->module->getContext() == tlctx->get_this_thread_context());
   }

@@ -269,9 +269,12 @@ void CodeGenLLVM::emit_struct_meta_base(const std::string &name,
 }
 
 CodeGenLLVM::CodeGenLLVM(Kernel *kernel, IRNode *ir,
-                         std::unique_ptr<llvm::Module> &&M)
+                         std::unique_ptr<llvm::Module> &&module)
     // TODO: simplify LLVMModuleBuilder ctor input
-    : LLVMModuleBuilder(std::move(M),
+    : LLVMModuleBuilder(module==nullptr?
+                          kernel->program->get_llvm_context(kernel->arch)
+                            ->clone_struct_module():
+                          std::move(module),
                         kernel->program->get_llvm_context(kernel->arch)),
       kernel(kernel),
       ir(ir),

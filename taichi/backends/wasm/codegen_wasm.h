@@ -9,6 +9,16 @@
 namespace taichi {
 namespace lang {
 
+class ModuleGenValue {
+ public:
+  ModuleGenValue(std::unique_ptr<llvm::Module> &module,
+                 std::vector<std::string> name_list):
+      module(std::move(module)), name_list(name_list) {
+  }
+  std::unique_ptr<llvm::Module> module;
+  std::vector<std::string> name_list;
+};
+
 class CodeGenWASM : public KernelCodeGen {
  public:
   CodeGenWASM(Kernel *kernel, IRNode *ir = nullptr)
@@ -16,23 +26,9 @@ class CodeGenWASM : public KernelCodeGen {
   }
 
   virtual FunctionType codegen() override;
-};
 
-class CodeGenWASMAOT : public CodeGenWASM {
- public:
-  CodeGenWASMAOT(Kernel *kernel, IRNode *ir = nullptr, 
-              std::unique_ptr<llvm::Module> &&module = nullptr)
-      : CodeGenWASM(kernel, ir),
-        module(std::move(module)) {
-    init_flag = this->module == nullptr;
-  }
-
-  std::pair<std::unique_ptr<llvm::Module>,
-            std::vector<std::string>> modulegen();
-
- private:
-  std::unique_ptr<llvm::Module> module;
-  bool init_flag;
+  std::unique_ptr<ModuleGenValue> modulegen(
+      std::unique_ptr<llvm::Module> &&module); //AOT Module Gen
 };
 
 }  // namespace lang

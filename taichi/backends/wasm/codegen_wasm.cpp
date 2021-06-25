@@ -302,10 +302,11 @@ FunctionType CodeGenWASM::codegen() {
   return CodeGenLLVMWASM(kernel, ir).gen();
 }
 
-std::pair<std::unique_ptr<llvm::Module>,
-          std::vector<std::string>>
-    CodeGenWASMAOT::modulegen() {
+std::unique_ptr<ModuleGenValue> CodeGenWASM::modulegen(
+    std::unique_ptr<llvm::Module> &&module) {
+  bool init_flag = module == nullptr;
   std::vector<std::string> name_list;
+
   auto gen = std::make_unique<CodeGenLLVMWASM>(kernel, ir, std::move(module));
   
   name_list.push_back(gen->init_taichi_kernel_function());
@@ -317,11 +318,9 @@ std::pair<std::unique_ptr<llvm::Module>,
     name_list.push_back(gen->create_taichi_set_root_function());
   }
 
-  gen->tlctx->jit->global_optimize_module(gen->module);
+  gen->tlctx->jit->global_optimize_module(gen->module.get());
 
-  return std::pair<std::unique_ptr<llvm::Module>,
-                   std::vector<std::string>>(
-              std::move(gen->module), name_list);
+  return std::make_unique<ModuleGenValue>(gen->module, name_list);
 }
 
 }  // namespace lang

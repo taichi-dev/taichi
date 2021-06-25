@@ -4,15 +4,13 @@
 
 #include <fstream>
 
-#if !defined(__clang__) && defined(__GNUC__) && (__GNUC__ < 8)
-// https://stackoverflow.com/a/45867491
-// !defined(__clang__) to make sure this is not clang
-// https://stackoverflow.com/questions/38499462/how-to-tell-clang-to-stop-pretending-to-be-other-compilers
-#include <experimental/filesystem>
-namespace fs = ::std::experimental::filesystem;
-#else
+
+#if __has_include(<filesystem>)
 #include <filesystem>
 namespace fs = ::std::filesystem;
+#else
+#include <experimental/filesystem>
+namespace fs = ::std::experimental::filesystem;
 #endif
 
 
@@ -50,11 +48,10 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
 
 void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
                                            Kernel *kernel) {
-  auto info = CodeGenWASMAOT(kernel, nullptr, std::move(module)).modulegen();
-  module = std::move(info.first);
+  auto module_info = CodeGenWASM(kernel, nullptr).modulegen(std::move(module));
+  module = std::move(module_info->module);
 
-  auto name_list = info.second;
-  for(auto &name: name_list)
+  for(auto &name: module_info->name_list)
     this->name_list->push_back(name);
 }
 

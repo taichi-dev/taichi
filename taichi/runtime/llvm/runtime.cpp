@@ -1057,7 +1057,9 @@ void clear_list(LLVMRuntime *runtime, StructMeta *parent, StructMeta *child) {
   child_list->clear();
 }
 
-void set_list_up_to_date(LLVMRuntime *runtime, StructMeta *parent, StructMeta *child) {
+void set_list_up_to_date(LLVMRuntime *runtime,
+                         StructMeta *parent,
+                         StructMeta *child) {
   auto child_list = runtime->element_lists[child->snode_id];
   child_list->up_to_date = true;
 }

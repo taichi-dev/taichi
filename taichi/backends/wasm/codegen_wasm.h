@@ -16,7 +16,21 @@ class CodeGenWASM : public KernelCodeGen {
   }
 
   virtual FunctionType codegen() override;
-  std::unique_ptr<llvm::Module> modulegen();
+};
+
+class CodeGenWASMAOT : public CodeGenWASM {
+ public:
+  CodeGenWASMAOT(Kernel *kernel, IRNode *ir = nullptr, 
+              std::unique_ptr<llvm::Module> &&module = nullptr)
+      : CodeGenWASM(kernel, ir),
+        module(std::move(module)) {
+  }
+
+  std::pair<std::unique_ptr<llvm::Module>,
+            std::unique_ptr<std::vector<std::string>>> modulegen();
+
+ private:
+  std::unique_ptr<llvm::Module> module;
 };
 
 }  // namespace lang

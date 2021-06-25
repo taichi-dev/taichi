@@ -268,10 +268,10 @@ void CodeGenLLVM::emit_struct_meta_base(const std::string &name,
                get_runtime_function(snode->refine_coordinates_func_name()));
 }
 
-CodeGenLLVM::CodeGenLLVM(Kernel *kernel, IRNode *ir)
+CodeGenLLVM::CodeGenLLVM(Kernel *kernel, IRNode *ir,
+                         std::unique_ptr<llvm::Module> &&M)
     // TODO: simplify LLVMModuleBuilder ctor input
-    : LLVMModuleBuilder(kernel->program->get_llvm_context(kernel->arch)
-                            ->clone_struct_module(),
+    : LLVMModuleBuilder(std::move(M),
                         kernel->program->get_llvm_context(kernel->arch)),
       kernel(kernel),
       ir(ir),
@@ -1938,6 +1938,14 @@ void CodeGenLLVM::eliminate_unused_functions() {
         }
         return false;
       });
+}
+std::unique_ptr<std::vector<std::string>> CodeGenLLVM::get_function_name_list() {
+  auto name_list = std::make_unique<std::vector<std::string>>();
+  name_list->clear();
+  for(auto &task : offloaded_tasks) {
+    name_list->push_back(task.name);
+  }
+  return name_list;
 }
 
 FunctionType CodeGenLLVM::compile_module_to_executable() {

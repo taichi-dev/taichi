@@ -10,8 +10,6 @@
 #include "taichi/util/statistics.h"
 #include "taichi/util/file_sequence_writer.h"
 
-#include "taichi/util/file_sequence_writer.h"
-
 namespace taichi {
 namespace lang {
 
@@ -19,7 +17,9 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
  public:
   using IRVisitor::visit;
 
-  CodeGenLLVMWASM(Kernel *kernel, IRNode *ir) : CodeGenLLVM(kernel, ir) {
+  CodeGenLLVMWASM(Kernel *kernel, IRNode *ir, 
+                  std::unique_ptr<llvm::Module> &&M = nullptr)
+      : CodeGenLLVM(kernel, ir, std::move(M)) {
     TI_AUTO_PROF
   }
 
@@ -302,22 +302,20 @@ FunctionType CodeGenWASM::codegen() {
   return CodeGenLLVMWASM(kernel, ir).gen();
 }
 
-std::unique_ptr<llvm::Module> CodeGenWASM::modulegen() {
-  auto gen = std::make_unique<CodeGenLLVMWASM>(kernel, ir);
+std::pair<std::unique_ptr<llvm::Module>,
+          std::unique_ptr<std::vector<std::string>>>
+    CodeGenWASMAOT::modulegen() {
+  auto gen = std::make_unique<CodeGenLLVMWASM>(kernel, ir, std::move(module));
   gen->emit_to_module();
-  gen->eliminate_unused_functions();
-  std::unique_ptr<llvm::Module> module = std::move(gen->module);
-  gen->tlctx->jit->global_optimize_module(module);
-  //jitmodule;
-  //gen->tlctx->jit->global_optimize_module_cpu(std::move(gen->module));
-  /*
-
-  static FileSequenceWriter writer(
-        "test_{:04d}.ll",
-        "optimized LLVM IR (CPU)");
-  writer.write(module.get());*/
+  gen->tlctx->jit->global_optimize_module(gen->module);
+  auto name_list = gen->get_function_name_list();
+  for(auto &name: *name_list) {
+    std::cout << name << std::endl;
+  }
   
-  return module;
+  return std::pair<std::unique_ptr<llvm::Module>,
+                   std::unique_ptr<std::vector<std::string>>>(
+              std::move(gen->module), std::move(name_list));
 }
 
 }  // namespace lang

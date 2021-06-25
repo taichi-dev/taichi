@@ -20,14 +20,27 @@ namespace taichi {
 namespace lang {
 namespace wasm {
 
-AotModuleBuilderImpl::AotModuleBuilderImpl() {
+AotModuleBuilderImpl::AotModuleBuilderImpl(): module(nullptr) {
     TI_AUTO_PROF
     std::cout << "Aot init!" << std::endl;
+    name_list = std::make_unique<std::vector<std::string>>();
+}
+
+void AotModuleBuilderImpl::eliminate_unused_functions() const {
+  TaichiLLVMContext::eliminate_unused_functions(
+      module.get(), [&](std::string func_name) {
+        for (auto &name : *name_list) {
+          if (name == func_name)
+            return true;
+        }
+        return false;
+      });
 }
 
 void AotModuleBuilderImpl::dump(const std::string &output_dir,
                                 const std::string &filename) const {
   std::cout << "Aot dump " << output_dir << "||" << filename << std::endl;
+  /*
   FileSequenceWriter writer(
         "function_{:04d}.ll",
         "optimized LLVM IR (CPU)");
@@ -37,13 +50,31 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
 
     std::cout << "Dump " << it->second << std::endl;
   }
+  */
+  for(auto &name: *name_list) {
+    std::cout<<name<<std::endl;
+  }
+  eliminate_unused_functions();
+  FileSequenceWriter writer(
+        "functions.ll",
+        "optimized LLVM IR (WASM)");
+  writer.write(module.get());
 }
 
 void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
                                            Kernel *kernel) {
   std::cout << "Aot add " << identifier << std::endl;
+  /*
   modules.push_back(std::pair<std::unique_ptr<llvm::Module>, std::string>(
-      CodeGenWASM(kernel, nullptr).modulegen(), identifier));
+      CodeGenWASMAOT(kernel, nullptr, module).modulegen(), identifier));
+  */
+  auto info = CodeGenWASMAOT(kernel, nullptr, std::move(module)).modulegen();
+  module = std::move(info.first);
+
+  auto function_name_list = std::move(info.second);
+  for(auto &name: *function_name_list) {
+    this->name_list->push_back(name);
+  }
 }
 
 }

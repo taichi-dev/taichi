@@ -337,6 +337,8 @@ int32 Context_get_extra_args(Context *ctx, int32 i, int32 j) {
 // Common Attributes
 struct StructMeta {
   i32 snode_id;
+  i32 ch_snode_id[taichi_max_num_snodes];
+  i32 num_ch_snode;
   std::size_t element_size;
   i64 max_num_elements;
 
@@ -356,6 +358,8 @@ struct StructMeta {
 };
 
 STRUCT_FIELD(StructMeta, snode_id)
+STRUCT_FIELD_ARRAY(StructMeta, ch_snode_id)
+STRUCT_FIELD(StructMeta, num_ch_snode)
 STRUCT_FIELD(StructMeta, element_size)
 STRUCT_FIELD(StructMeta, max_num_elements)
 STRUCT_FIELD(StructMeta, get_num_elements);
@@ -1047,7 +1051,7 @@ void grid_memfence() {
 
 void clear_list(LLVMRuntime *runtime, StructMeta *parent, StructMeta *child) {
   auto child_list = runtime->element_lists[child->snode_id];
-  if (child_list->up_to_date ) {
+  if (child_list->up_to_date) {
     return;
   }
   child_list->clear();

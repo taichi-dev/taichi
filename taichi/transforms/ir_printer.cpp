@@ -568,6 +568,11 @@ class IRPrinter : public IRVisitor {
           stmt->snode->get_node_type_name_hinted());
   }
 
+  void visit(SetListUpToDateStmt *stmt) override {
+    print("{} = set_list_up_to_date {}", stmt->name(),
+          stmt->snode->get_node_type_name_hinted());
+  }
+
   void visit(LoopIndexStmt *stmt) override {
     print("{}{} = loop {} index {}", stmt->type_hint(), stmt->name(),
           stmt->loop->name(), stmt->index);

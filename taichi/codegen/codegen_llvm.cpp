@@ -1942,14 +1942,6 @@ void CodeGenLLVM::eliminate_unused_functions() {
         return false;
       });
 }
-std::unique_ptr<std::vector<std::string>> CodeGenLLVM::get_function_name_list() {
-  auto name_list = std::make_unique<std::vector<std::string>>();
-  name_list->clear();
-  for(auto &task : offloaded_tasks) {
-    name_list->push_back(task.name);
-  }
-  return name_list;
-}
 
 FunctionType CodeGenLLVM::compile_module_to_executable() {
   TI_AUTO_PROF

@@ -18,15 +18,15 @@ namespace taichi {
 namespace lang {
 namespace wasm {
 
-AotModuleBuilderImpl::AotModuleBuilderImpl(): module(nullptr) {
+AotModuleBuilderImpl::AotModuleBuilderImpl(): module_(nullptr) {
     TI_AUTO_PROF
-    name_list = std::make_unique<std::vector<std::string>>();
+    name_list_ = std::make_unique<std::vector<std::string>>();
 }
 
 void AotModuleBuilderImpl::eliminate_unused_functions() const {
   TaichiLLVMContext::eliminate_unused_functions(
-      module.get(), [&](std::string func_name) {
-        for (auto &name : *name_list) {
+      module_.get(), [&](std::string func_name) {
+        for (auto &name : *name_list_) {
           if (name == func_name)
             return true;
         }
@@ -43,16 +43,16 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
   FileSequenceWriter writer(
         bin_path.string(),
         "optimized LLVM IR (WASM)");
-  writer.write(module.get());
+  writer.write(module_.get());
 }
 
 void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
                                            Kernel *kernel) {
-  auto module_info = CodeGenWASM(kernel, nullptr).modulegen(std::move(module));
-  module = std::move(module_info->module);
+  auto module_info = CodeGenWASM(kernel, nullptr).modulegen(std::move(module_));
+  module_ = std::move(module_info->module);
 
   for(auto &name: module_info->name_list)
-    this->name_list->push_back(name);
+    this->name_list_->push_back(name);
 }
 
 }

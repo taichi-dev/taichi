@@ -115,9 +115,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   virtual void emit_to_module();
 
   void eliminate_unused_functions();
-
-  std::unique_ptr<std::vector<std::string>> get_function_name_list();
-
+  
   virtual FunctionType compile_module_to_executable();
 
   virtual FunctionType gen();

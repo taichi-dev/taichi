@@ -24,8 +24,8 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
 
  private:
   void eliminate_unused_functions() const;
-  std::unique_ptr<llvm::Module> module;
-  std::unique_ptr<std::vector<std::string>> name_list;
+  std::unique_ptr<llvm::Module> module_{nullptr};
+  std::unique_ptr<std::vector<std::string>> name_list_;
 };
 
 }

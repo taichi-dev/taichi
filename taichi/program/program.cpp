@@ -18,6 +18,7 @@
 #include "taichi/struct/struct_llvm.h"
 #include "taichi/backends/metal/aot_module_builder_impl.h"
 #include "taichi/backends/metal/struct_metal.h"
+#include "taichi/backends/wasm/aot_module_builder_impl.h"
 #include "taichi/backends/opengl/struct_opengl.h"
 #include "taichi/platform/cuda/detect_cuda.h"
 #include "taichi/system/unified_allocator.h"
@@ -902,6 +903,8 @@ std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(Arch arch) {
     return std::make_unique<metal::AotModuleBuilderImpl>(
         &(metal_compiled_structs_.value()),
         metal_kernel_mgr_->get_buffer_meta_data());
+  } else if (arch == Arch::wasm) {
+    return std::make_unique<wasm::AotModuleBuilderImpl>();
   }
   return nullptr;
 }

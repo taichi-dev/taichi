@@ -4,13 +4,12 @@
 
 #include "taichi/backends/metal/codegen_metal.h"
 
-#if defined(__linux__) && defined(__GNUC__) && (__GNUC__ < 8)
-// https://stackoverflow.com/a/45867491
-#include <experimental/filesystem>
-namespace fs = ::std::experimental::filesystem;
-#else
+#if __has_include(<filesystem>)
 #include <filesystem>
 namespace fs = ::std::filesystem;
+#else
+#include <experimental/filesystem>
+namespace fs = ::std::experimental::filesystem;
 #endif
 
 namespace taichi {

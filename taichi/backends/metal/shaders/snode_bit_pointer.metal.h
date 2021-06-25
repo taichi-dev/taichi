@@ -37,7 +37,8 @@ STR(
     };
 
     // |f| should already be scaled. |C| is the compute type.
-    template <typename C> C mtl_float_to_custom_int(float f) {
+    template <typename C>
+    C mtl_float_to_custom_int(float f) {
       // Branch free implementation of `f + sign(f) * 0.5`.
       // See rounding_prepare_f* in taichi/runtime/llvm/runtime.cpp
       const int32_t delta_bits =
@@ -133,7 +134,8 @@ STR(
       return static_cast<C>(step1 >> (N - bits));
     }
 
-    template <typename C> C mtl_get_full_bits(SNodeBitPointer bp) {
+    template <typename C>
+    C mtl_get_full_bits(SNodeBitPointer bp) {
       return static_cast<C>(*(bp.base));
     })
 METAL_END_SRC_DEF

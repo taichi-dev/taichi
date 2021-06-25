@@ -1,8 +1,10 @@
+import random
+
+import matplotlib.pyplot as plt
+import numpy as np
+
 import taichi as ti
 import taichi as tc
-import matplotlib.pyplot as plt
-import random
-import numpy as np
 
 tc.set_gdb_trigger(True)
 

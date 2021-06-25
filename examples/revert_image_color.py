@@ -1,4 +1,5 @@
 import taichi as ti
+
 ti.init()
 
 ## Load the image:

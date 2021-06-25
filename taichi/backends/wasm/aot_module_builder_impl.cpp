@@ -3,7 +3,7 @@
 #include "taichi/util/file_sequence_writer.h"
 
 #include <fstream>
-/*
+
 #if !defined(__clang__) && defined(__GNUC__) && (__GNUC__ < 8)
 // https://stackoverflow.com/a/45867491
 // !defined(__clang__) to make sure this is not clang
@@ -14,7 +14,7 @@ namespace fs = ::std::experimental::filesystem;
 #include <filesystem>
 namespace fs = ::std::filesystem;
 #endif
-*/
+
 
 namespace taichi {
 namespace lang {
@@ -22,7 +22,6 @@ namespace wasm {
 
 AotModuleBuilderImpl::AotModuleBuilderImpl(): module(nullptr) {
     TI_AUTO_PROF
-    std::cout << "Aot init!" << std::endl;
     name_list = std::make_unique<std::vector<std::string>>();
 }
 
@@ -39,35 +38,18 @@ void AotModuleBuilderImpl::eliminate_unused_functions() const {
 
 void AotModuleBuilderImpl::dump(const std::string &output_dir,
                                 const std::string &filename) const {
-  std::cout << "Aot dump " << output_dir << "||" << filename << std::endl;
-  /*
-  FileSequenceWriter writer(
-        "function_{:04d}.ll",
-        "optimized LLVM IR (CPU)");
-  
-  for(auto it=modules.begin(); it < modules.end(); it ++) {
-    writer.write(it->first.get());
+  const fs::path dir{output_dir};
+  const fs::path bin_path = dir / fmt::format("{}.ll", filename);
 
-    std::cout << "Dump " << it->second << std::endl;
-  }
-  */
-  for(auto &name: *name_list) {
-    std::cout<<name<<std::endl;
-  }
   eliminate_unused_functions();
   FileSequenceWriter writer(
-        "functions.ll",
+        bin_path.string(),
         "optimized LLVM IR (WASM)");
   writer.write(module.get());
 }
 
 void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
                                            Kernel *kernel) {
-  std::cout << "Aot add " << identifier << std::endl;
-  /*
-  modules.push_back(std::pair<std::unique_ptr<llvm::Module>, std::string>(
-      CodeGenWASMAOT(kernel, nullptr, module).modulegen(), identifier));
-  */
   auto info = CodeGenWASMAOT(kernel, nullptr, std::move(module)).modulegen();
   module = std::move(info.first);
 

@@ -24,7 +24,6 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
   void add_per_backend(const std::string &identifier, Kernel *kernel) override;
 
  private:
-  //std::vector<std::pair<std::unique_ptr<llvm::Module>, std::string>> modules;
   void eliminate_unused_functions() const;
   std::unique_ptr<llvm::Module> module;
   std::unique_ptr<std::vector<std::string>> name_list;

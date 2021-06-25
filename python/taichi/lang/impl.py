@@ -11,7 +11,6 @@ from taichi.lang.tape import TapeImpl
 from taichi.lang.util import (cook_dtype, is_taichi_class, python_scope,
                               taichi_scope)
 from taichi.misc.util import deprecated, get_traceback, warning
-from taichi.snode.fields_builder import FieldsBuilder
 
 import taichi as ti
 
@@ -371,7 +370,18 @@ def index_nd(dim):
     return indices(*range(dim))
 
 
-class _Root(FieldsBuilder):
+class _UninitializedRootFieldsBuilder:
+    def __getattr__(self, item):
+        raise InvalidOperationError('Please call init() first')
+
+
+_root_fb = _UninitializedRootFieldsBuilder()
+
+
+class _Root:
+    def __getattr__(self, item):
+        return getattr(_root_fb, item)
+
     def __repr__(self):
         return 'ti.root'
 

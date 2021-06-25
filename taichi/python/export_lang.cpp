@@ -219,12 +219,6 @@ void export_lang(py::module &m) {
            })
       .def("print_memory_profiler_info", &Program::print_memory_profiler_info)
       .def("finalize", &Program::finalize)
-      .def(
-          "get_root",
-          [&](Program *program) -> SNode * {
-            return program->snode_root.get();
-          },
-          py::return_value_policy::reference)
       .def("get_total_compilation_time", &Program::get_total_compilation_time)
       .def("visualize_layout", &Program::visualize_layout)
       .def("get_snode_num_dynamically_allocated",

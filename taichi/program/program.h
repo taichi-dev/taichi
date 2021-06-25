@@ -57,7 +57,8 @@ struct JITEvaluatorId {
   }
 };
 
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi
 
 namespace std {
 template <>
@@ -71,7 +72,8 @@ struct hash<taichi::lang::JITEvaluatorId> {
 };
 }  // namespace std
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 extern Program *current_program;
 
@@ -87,7 +89,6 @@ class Program {
  public:
   using Kernel = taichi::lang::Kernel;
   Callable *current_callable{nullptr};
-  std::unique_ptr<SNode> snode_root{nullptr};  // pointer to the data structure.
   void *llvm_runtime{nullptr};
   CompileConfig config;
   std::unique_ptr<TaichiLLVMContext> llvm_context_host{nullptr};
@@ -304,8 +305,17 @@ class Program {
    * Adds a new SNode tree.
    *
    * @param root The root of the new SNode tree.
+   * @return SNode tree ID.
    */
-  void add_snode_tree(std::unique_ptr<SNode> root);
+  int add_snode_tree(std::unique_ptr<SNode> root);
+
+  /**
+   * Gets the root of a SNode tree.
+   *
+   * @param tree_id Index of the SNode tree
+   * @return Root of the tree
+   */
+  SNode *get_snode_root(int tree_id);
 
   std::unique_ptr<AotModuleBuilder> make_aot_module_builder(Arch arch);
 

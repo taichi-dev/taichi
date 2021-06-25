@@ -14,9 +14,11 @@ namespace lang {
  */
 class SNodeTree {
  public:
+  constexpr static int kFirstID = 0;
+
   /**
    * Constructor.
-   * 
+   *
    * @param id Id of the tree
    * @param root Root of the tree
    */

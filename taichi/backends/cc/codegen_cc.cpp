@@ -88,7 +88,7 @@ class CCTransformer : public IRVisitor {
   }
 
   void visit(GetRootStmt *stmt) override {
-    auto root = kernel->program->snode_root.get();
+    auto *root = kernel->program->get_snode_root(SNodeTree::kFirstID);
     emit("{} = ti_ctx->root;",
          define_var(get_node_ptr_name(root), stmt->raw_name()));
     root_stmt = stmt;

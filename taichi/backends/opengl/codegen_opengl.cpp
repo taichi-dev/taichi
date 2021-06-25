@@ -1096,7 +1096,7 @@ class KernelGen : public IRVisitor {
 FunctionType OpenglCodeGen::gen(void) {
 #if defined(TI_WITH_OPENGL)
   KernelGen codegen(kernel_, kernel_name_, struct_compiled_);
-  codegen.run(*prog_->snode_root);
+  codegen.run(*prog_->get_snode_root(SNodeTree::kFirstID));
   auto compiled = codegen.get_compiled_program();
   auto *ptr = compiled.get();
   kernel_launcher_->keep(std::move(compiled));

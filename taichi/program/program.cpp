@@ -172,7 +172,6 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   sync = true;
   llvm_runtime = nullptr;
   finalized = false;
-  snode_root = std::make_unique<SNode>(0, SNodeType::root);
 
   if (config.async_mode) {
     TI_WARN("Running in async mode. This is experimental.");
@@ -428,17 +427,22 @@ void Program::initialize_llvm_runtime_snodes(const SNodeTree *tree,
   }
 }
 
-void Program::add_snode_tree(std::unique_ptr<SNode> root) {
+int Program::add_snode_tree(std::unique_ptr<SNode> root) {
   if (!snode_trees_.empty()) {
     // TODO: remove this
     TI_ERROR("Multiple SNodeTree not supported yet");
-    return;
+    return -1;
   }
 
   const int id = snode_trees_.size();
   auto tree = std::make_unique<SNodeTree>(id, std::move(root));
   materialize_snode_tree(tree.get());
   snode_trees_.push_back(std::move(tree));
+  return id;
+}
+
+SNode *Program::get_snode_root(int tree_id) {
+  return snode_trees_[tree_id]->root();
 }
 
 void Program::materialize_snode_tree(SNodeTree *tree) {
@@ -644,7 +648,7 @@ void Program::visualize_layout(const std::string &fn) {
       emit("]");
     };
 
-    visit(snode_root.get());
+    visit(get_snode_root(SNodeTree::kFirstID));
 
     auto tail = R"(
 \end{tikzpicture}
@@ -880,7 +884,7 @@ void Program::print_memory_profiler_info() {
     }
   };
 
-  visit(snode_root.get(), 0);
+  visit(get_snode_root(SNodeTree::kFirstID), /*depth=*/0);
 
   auto total_requested_memory = runtime_query<std::size_t>(
       "LLVMRuntime_get_total_requested_memory", llvm_runtime);

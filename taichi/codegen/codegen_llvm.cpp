@@ -1253,9 +1253,10 @@ llvm::Value *CodeGenLLVM::call(SNode *snode,
 void CodeGenLLVM::visit(GetRootStmt *stmt) {
   llvm_val[stmt] = builder->CreateBitCast(
       get_root(),
-      llvm::PointerType::get(StructCompilerLLVM::get_llvm_node_type(
-                                 module.get(), prog->snode_root.get()),
-                             0));
+      llvm::PointerType::get(
+          StructCompilerLLVM::get_llvm_node_type(
+              module.get(), prog->get_snode_root(SNodeTree::kFirstID)),
+          0));
 }
 
 void CodeGenLLVM::visit(BitExtractStmt *stmt) {

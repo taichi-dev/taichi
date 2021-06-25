@@ -25,7 +25,7 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
  private:
   void eliminate_unused_functions() const;
   std::unique_ptr<llvm::Module> module_{nullptr};
-  std::unique_ptr<std::vector<std::string>> name_list_;
+  std::vector<std::string> name_list_;
 };
 
 }  // namespace wasm

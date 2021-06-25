@@ -16,15 +16,15 @@ namespace taichi {
 namespace lang {
 namespace wasm {
 
-AotModuleBuilderImpl::AotModuleBuilderImpl() : module_(nullptr) {
+AotModuleBuilderImpl::AotModuleBuilderImpl() :
+    module_(nullptr), name_list_() {
   TI_AUTO_PROF
-  name_list_ = std::make_unique<std::vector<std::string>>();
 }
 
 void AotModuleBuilderImpl::eliminate_unused_functions() const {
   TaichiLLVMContext::eliminate_unused_functions(
       module_.get(), [&](std::string func_name) {
-        for (auto &name : *name_list_) {
+        for (auto &name : name_list_) {
           if (name == func_name)
             return true;
         }
@@ -48,7 +48,7 @@ void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
   module_ = std::move(module_info->module);
 
   for (auto &name : module_info->name_list)
-    this->name_list_->push_back(name);
+    name_list_.push_back(name);
 }
 
 }  // namespace wasm

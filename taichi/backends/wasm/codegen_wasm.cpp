@@ -311,7 +311,7 @@ std::unique_ptr<ModuleGenValue> CodeGenWASM::modulegen(
 
   gen->tlctx->jit->global_optimize_module(gen->module.get());
 
-  return std::make_unique<ModuleGenValue>(gen->module, name_list);
+  return std::make_unique<ModuleGenValue>(std::move(gen->module), name_list);
 }
 
 }  // namespace lang

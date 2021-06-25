@@ -28,6 +28,6 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
   std::unique_ptr<std::vector<std::string>> name_list_;
 };
 
-}
-}
-}
+}  // namespace wasm
+}  // namespace lang
+}  // namespace taichi

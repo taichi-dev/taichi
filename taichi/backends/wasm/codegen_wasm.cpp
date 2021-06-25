@@ -17,7 +17,8 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
  public:
   using IRVisitor::visit;
 
-  CodeGenLLVMWASM(Kernel *kernel, IRNode *ir, 
+  CodeGenLLVMWASM(Kernel *kernel,
+                  IRNode *ir,
                   std::unique_ptr<llvm::Module> &&M = nullptr)
       : CodeGenLLVM(kernel, ir, std::move(M)) {
     TI_AUTO_PROF
@@ -298,12 +299,12 @@ std::unique_ptr<ModuleGenValue> CodeGenWASM::modulegen(
   std::vector<std::string> name_list;
 
   auto gen = std::make_unique<CodeGenLLVMWASM>(kernel, ir, std::move(module));
-  
+
   name_list.push_back(gen->init_taichi_kernel_function());
   gen->emit_to_module();
   gen->finalize_taichi_kernel_function();
 
-  if(init_flag) {
+  if (init_flag) {
     name_list.push_back(gen->create_taichi_get_root_address_function());
     name_list.push_back(gen->create_taichi_set_root_function());
   }

@@ -16,7 +16,7 @@ namespace taichi {
 namespace lang {
 namespace wasm {
 
-AotModuleBuilderImpl::AotModuleBuilderImpl() : module_(nullptr), name_list_() {
+AotModuleBuilderImpl::AotModuleBuilderImpl() : module_(nullptr) {
   TI_AUTO_PROF
 }
 

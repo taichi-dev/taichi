@@ -53,10 +53,9 @@ void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
   auto info = CodeGenWASMAOT(kernel, nullptr, std::move(module)).modulegen();
   module = std::move(info.first);
 
-  auto function_name_list = std::move(info.second);
-  for(auto &name: *function_name_list) {
+  auto name_list = info.second;
+  for(auto &name: name_list)
     this->name_list->push_back(name);
-  }
 }
 
 }

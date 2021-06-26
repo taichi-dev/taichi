@@ -38,6 +38,10 @@ class FieldsBuilder:
         self._root = snode.SNode(self._ptr)
         self._finalized = False
 
+    @property
+    def ptr(self):
+        return self._ptr
+
     def dense(self, indices: Union[Sequence[_Axis], _Axis],
               dimensions: Union[Sequence[int], int]):
         """Same as :func:`taichi.SNode.dense`"""
@@ -97,7 +101,6 @@ class FieldsBuilder:
         self._check_not_finalized()
         _ti_core.finalize_snode_tree(_snode_registry, self._ptr,
                                      impl.get_runtime().prog)
-        self._ptr = None
         self._finalized = True
 
     def _check_not_finalized(self):

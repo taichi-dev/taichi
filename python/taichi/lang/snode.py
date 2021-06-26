@@ -64,10 +64,7 @@ class SNode:
             offset = (offset, )
         if shared_exponent:
             self.ptr.begin_shared_exp_placement()
-        # Implementation detail: placing an SNode requires
-        # ``snode_to_glb_var_exprs_`` from the Program, so we must ensure it is
-        # created first
-        impl.get_runtime().create_program()
+
         for arg in args:
             if isinstance(arg, Expr):
                 self.ptr.place(Expr(arg).ptr, offset)
@@ -92,7 +89,6 @@ class SNode:
         To know more details about primal, adjoint fields and ``lazy_grad()``,
         please see Page 4 and Page 13-14 of DiffTaichi Paper: https://arxiv.org/pdf/1910.00935.pdf
         """
-        impl.get_runtime().create_program()
         self.ptr.lazy_grad()
 
     def parent(self, n=1):

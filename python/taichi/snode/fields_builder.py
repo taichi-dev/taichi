@@ -42,6 +42,10 @@ class FieldsBuilder:
     def ptr(self):
         return self._ptr
 
+    @property
+    def root(self):
+        return self._root
+
     def dense(self, indices: Union[Sequence[_Axis], _Axis],
               dimensions: Union[Sequence[int], int]):
         """Same as :func:`taichi.SNode.dense`"""

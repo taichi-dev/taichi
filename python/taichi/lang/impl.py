@@ -375,10 +375,27 @@ class _UninitializedRootFieldsBuilder:
         raise InvalidOperationError('Please call init() first')
 
 
+# This will be later initialized inside init().
 _root_fb = _UninitializedRootFieldsBuilder()
 
 
 class _Root:
+    def parent(self, n=1):
+        """Same as :func:`taichi.SNode.parent`"""
+        return _root_fb.root.parent(n)
+
+    def loop_range(self, n=1):
+        """Same as :func:`taichi.SNode.loop_range`"""
+        return _root_fb.root.loop_range()
+
+    def get_children(self):
+        """Same as :func:`taichi.SNode.get_children`"""
+        return _root_fb.root.get_children()
+
+    @property
+    def id(self):
+        return _root_fb.root.id
+
     def __getattr__(self, item):
         return getattr(_root_fb, item)
 

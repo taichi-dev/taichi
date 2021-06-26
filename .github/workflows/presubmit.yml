@@ -218,6 +218,8 @@ jobs:
           cmake .. -G"Visual Studio 16 2019" -A x64 -DPYTHON_EXECUTABLE="$env:PYTHON" -DLLVM_DIR="C:\taichi_llvm\lib\cmake\llvm" 
           msbuild /p:Configuration=RelWithDebInfo /p:Platform=x64 /m taichi.sln
           cd ..
+        env:
+          PYTHON: C:\hostedtoolcache\windows\Python\3.7.9\x64\python.exe
 
       - name: Test
         shell: powershell
@@ -231,3 +233,5 @@ jobs:
           python examples/laplace.py
           python bin/taichi diagnose
           python bin/taichi test -Cvr2 -t2
+        env:
+          PYTHON: C:\hostedtoolcache\windows\Python\3.7.9\x64\python.exe

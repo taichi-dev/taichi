@@ -1,6 +1,6 @@
 import functools
 import types
-from typing import Optional, Sequence, Union
+from typing import Any, Optional, Sequence, Union
 
 from taichi.core.util import ti_core as _ti_core
 from taichi.lang import impl, snode
@@ -83,12 +83,12 @@ class FieldsBuilder:
         return self._root.bit_array(indices, dimensions, num_bits)
 
     def place(self,
-              *args,
+              *args: Any,
               offset: Optional[Union[Sequence[int], int]] = None,
               shared_exponent: bool = False):
         """Same as :func:`taichi.SNode.place`"""
         self._check_not_finalized()
-        self._root.place(*args, offset, shared_exponent)
+        self._root.place(*args, offset=offset, shared_exponent=shared_exponent)
 
     def lazy_grad(self):
         """Same as :func:`taichi.SNode.lazy_grad`"""

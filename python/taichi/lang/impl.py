@@ -375,11 +375,23 @@ class _UninitializedRootFieldsBuilder:
         raise InvalidOperationError('Please call init() first')
 
 
-# This will be later initialized inside init().
+# `root` initialization must be delayed until after the program is
+# created. Unfortunately, `root` exists in both taichi.lang.impl module and
+# the top-level taichi module at this point; so if `root` itself is written, we
+# would have to make sure that `root` in all the modules get updated to the same
+# instance. This is an error-prone process.
+#
+# To avoid this situation, we create `root` once during the import time, and
+# never write to it. The core part, `_root_fb`, is the one whose initialization
+# gets delayed. `_root_fb` will only exist in the taichi.lang.impl module, so
+# writing to it is would result in less for maintenance cost.
+#
+# `_root_fb` will be overriden inside :func:`taichi.lang.init`.
 _root_fb = _UninitializedRootFieldsBuilder()
 
 
 class _Root:
+    """Wrapper around the default root FieldsBuilder instance."""
     def parent(self, n=1):
         """Same as :func:`taichi.SNode.parent`"""
         return _root_fb.root.parent(n)

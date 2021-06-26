@@ -1201,7 +1201,9 @@ class ClearListStmt : public Stmt {
 bool is_clear_list_task(const OffloadedStmt *stmt);
 
 /**
- * The statement corresponding to a set list up-to-date task.
+ * The statement corresponding to a set list up-to-date task. This statement
+ * does not madify the list itself. It just sets a boolean variable marking the
+ * list as up-to-date
  */
 class SetListUpToDateStmt : public Stmt {
  public:

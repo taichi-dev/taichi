@@ -8,7 +8,8 @@
 namespace taichi {
 namespace lang {
 
-class DetermineAdStackSizeTest : public ::testing::Test {
+class DetermineAdStackSizeTest
+    : public ::testing::TestWithParam<std::tuple<int, int>> {
  protected:
   void SetUp() override {
     prog_ = std::make_unique<Program>();
@@ -43,7 +44,6 @@ TEST_F(DetermineAdStackSizeTest, Basic) {
   ASSERT_TRUE(ir->is<Block>());
   auto *ir_block = ir->as<Block>();
   irpass::type_check(ir_block, CompileConfig());
-  EXPECT_EQ(ir_block->size(), 22);
 
   EXPECT_EQ(stack->max_size, 0);
   EXPECT_EQ(stack2->max_size, 0);
@@ -90,7 +90,6 @@ TEST_F(DetermineAdStackSizeTest, LoopInfeasible) {
   ASSERT_TRUE(ir->is<Block>());
   auto *ir_block = ir->as<Block>();
   irpass::type_check(ir_block, CompileConfig());
-  EXPECT_EQ(irpass::analysis::count_statements(ir_block), 6);
 
   CompileConfig config;
   constexpr int kMaxAdStackSize = 32;
@@ -98,57 +97,64 @@ TEST_F(DetermineAdStackSizeTest, LoopInfeasible) {
   EXPECT_EQ(stack->max_size, 0);
   // Should have a warning here (unable to determine capacity for autodiff
   // stacks).
-  irpass::determine_ad_stack_size(ir_block, CompileConfig());
+  irpass::determine_ad_stack_size(ir_block, config);
   EXPECT_EQ(stack->max_size, kMaxAdStackSize);
 }
 
-TEST_F(DetermineAdStackSizeTest, If) {
+TEST_P(DetermineAdStackSizeTest, If) {
   constexpr int kCommonPushes = 1;
-  constexpr int kTrueBranchPushes = 3;
-  constexpr int kFalseBranchPushes = 4;
+  const int kTrueBranchPushes = std::get<0>(GetParam());
+  const int kFalseBranchPushes = std::get<1>(GetParam());
+  bool has_true_branch = (kTrueBranchPushes > 0);
+  bool has_false_branch = (kFalseBranchPushes > 0);
 
-  // parameterize
-  for (int has_true_branch = 0; has_true_branch <= 1; has_true_branch++) {
-    for (int has_false_branch = 0; has_false_branch <= 1; has_false_branch++) {
-      IRBuilder builder;
-      auto *arg = builder.create_arg_load(0, get_data_type<int>(), false);
-      auto *stack =
-          builder.create_ad_stack(get_data_type<int>(), 0 /*adaptive size*/);
-      auto *if_stmt = builder.create_if(arg);
-      auto *one = builder.get_int32(1);
-      for (int i = 1; i <= kCommonPushes; i++) {
-        builder.ad_stack_push(stack, one);  // Make sure the stack is not unused
-      }
-      if (has_true_branch) {
-        auto _ = builder.get_if_guard(if_stmt, true);
-        for (int i = 1; i <= kTrueBranchPushes; i++) {
-          builder.ad_stack_push(stack, one);
-        }
-      }
-      if (has_false_branch) {
-        auto _ = builder.get_if_guard(if_stmt, false);
-        for (int i = 1; i <= kFalseBranchPushes; i++) {
-          builder.ad_stack_push(stack, one);
-        }
-      }
-
-      auto ir = builder.extract_ir();
-      ASSERT_TRUE(ir->is<Block>());
-      auto *ir_block = ir->as<Block>();
-      irpass::type_check(ir_block, CompileConfig());
-      EXPECT_EQ(irpass::analysis::count_statements(ir_block),
-                4 + kCommonPushes + has_true_branch * kTrueBranchPushes +
-                    has_false_branch * kFalseBranchPushes);
-
-      EXPECT_EQ(stack->max_size, 0);
-      irpass::determine_ad_stack_size(ir_block, CompileConfig());
-      EXPECT_EQ(
-          stack->max_size,
-          kCommonPushes + std::max(has_true_branch * kTrueBranchPushes,
-                                   has_false_branch * kFalseBranchPushes));
+  IRBuilder builder;
+  auto *arg = builder.create_arg_load(0, get_data_type<int>(), false);
+  auto *stack =
+      builder.create_ad_stack(get_data_type<int>(), 0 /*adaptive size*/);
+  auto *if_stmt = builder.create_if(arg);
+  auto *one = builder.get_int32(1);
+  for (int i = 1; i <= kCommonPushes; i++) {
+    builder.ad_stack_push(stack, one);  // Make sure the stack is not unused
+  }
+  if (has_true_branch) {
+    auto _ = builder.get_if_guard(if_stmt, true);
+    for (int i = 1; i <= kTrueBranchPushes; i++) {
+      builder.ad_stack_push(stack, one);
     }
   }
+  if (has_false_branch) {
+    auto _ = builder.get_if_guard(if_stmt, false);
+    for (int i = 1; i <= kFalseBranchPushes; i++) {
+      builder.ad_stack_push(stack, one);
+    }
+  }
+
+  auto ir = builder.extract_ir();
+  ASSERT_TRUE(ir->is<Block>());
+  auto *ir_block = ir->as<Block>();
+  irpass::type_check(ir_block, CompileConfig());
+  EXPECT_EQ(irpass::analysis::count_statements(ir_block),
+            4 /*arg_load, stack, if, one*/ + kCommonPushes +
+                has_true_branch * kTrueBranchPushes +
+                has_false_branch * kFalseBranchPushes);
+
+  EXPECT_EQ(stack->max_size, 0);
+  irpass::determine_ad_stack_size(ir_block, CompileConfig());
+  EXPECT_EQ(stack->max_size,
+            kCommonPushes + std::max(has_true_branch * kTrueBranchPushes,
+                                     has_false_branch * kFalseBranchPushes));
 }
+
+INSTANTIATE_TEST_SUITE_P(
+    Parameterized,
+    DetermineAdStackSizeTest,
+    testing::Combine(testing::Values(0, 3), testing::Values(0, 4)),
+    [](const testing::TestParamInfo<DetermineAdStackSizeTest::ParamType>
+           &info) {
+      return fmt::format("True{}_False{}", std::get<0>(info.param),
+                         std::get<1>(info.param));
+    });
 
 }  // namespace lang
 }  // namespace taichi

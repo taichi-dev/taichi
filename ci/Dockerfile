@@ -51,7 +51,7 @@ ENV TAICHI_GIT_REPO="https://github.com/taichi-dev/taichi"
 
 # Prevent docker caching when head changes
 ADD $TAICHI_GIT_REPO/git/refs/heads/$BRANCH version.json
-RUN git clone $$TAICHI_GIT_REPO --depth=1 --branch=master
+RUN git clone $TAICHI_GIT_REPO --depth=1 --branch=master
 # Install Taichi's Python dependencies
 RUN $PYTHON -m pip install --user -r taichi/requirements.txt
 # Build Taichi from source

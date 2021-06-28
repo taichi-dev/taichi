@@ -173,32 +173,32 @@ def chain_compare(comparators, ops):
 
 
 @taichi_scope
-def maybe_transform_ti_func_call_to_stmt(func, *args, **kwargs):
+def maybe_transform_ti_func_call_to_stmt(ti_func, *args, **kwargs):
     _taichi_skip_traceback = 1
-    if '_sitebuiltins' == getattr(func, '__module__', '') and getattr(
-            getattr(func, '__class__', ''), '__name__', '') == 'Quitter':
+    if '_sitebuiltins' == getattr(ti_func, '__module__', '') and getattr(
+            getattr(ti_func, '__class__', ''), '__name__', '') == 'Quitter':
         raise TaichiSyntaxError(f'exit or quit not supported in Taichi-scope')
-    if getattr(func, '__module__',
-               '') == '__main__' and not getattr(func, '__wrapped__', ''):
+    if getattr(ti_func, '__module__',
+               '') == '__main__' and not getattr(ti_func, '__wrapped__', ''):
         warnings.warn(
-            f'Calling into non-Taichi function {func.__name__}.'
+            f'Calling into non-Taichi function {ti_func.__name__}.'
             ' This means that scope inside that function will not be processed'
             ' by the Taichi transformer. Proceed with caution! '
             ' Maybe you want to decorate it with @ti.func?',
             UserWarning,
             stacklevel=2)
 
-    is_taichi_function = getattr(func, '_is_taichi_function', False)
+    is_taichi_function = getattr(ti_func, '_is_taichi_function', False)
     # If is_taichi_function is true: call a decorated Taichi function
     # in a Taichi kernel/function.
 
     if is_taichi_function and get_runtime().experimental_real_function:
         # Compiles the function here.
         # Invokes Func.__call__.
-        func_call_result = func(*args, **kwargs)
+        func_call_result = ti_func(*args, **kwargs)
         return _ti_core.insert_expr_stmt(func_call_result.ptr)
     else:
-        return func(*args, **kwargs)
+        return ti_func(*args, **kwargs)
 
 
 class PyTaichi:

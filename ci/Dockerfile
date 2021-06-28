@@ -47,6 +47,9 @@ ENV PATH="/taichi-llvm-10.0.0-linux/bin:$PATH"
 ENV CC="clang-10"
 ENV CXX="clang++-10"
 WORKDIR /taichi-dev
+
+# Prevent docker caching when head changes
+ADD https://api.github.com/repos/taichi-dev/taichi/git/refs/heads/master version.json
 RUN git clone https://github.com/taichi-dev/taichi --depth=1 --branch=master
 # Install Taichi's Python dependencies
 RUN $PYTHON -m pip install --user -r taichi/requirements.txt

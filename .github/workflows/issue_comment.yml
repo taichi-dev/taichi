@@ -13,6 +13,7 @@ jobs:
           token: ${{ secrets.GARDENER_PAT }}
           reaction-token: ${{ secrets.GARDENER_PAT }}
           repository: taichi-dev/ci_workflows
+          issue-type: pull-request
           permission: triage
           commands: |
             format

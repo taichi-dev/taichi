@@ -172,7 +172,6 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   sync = true;
   llvm_runtime = nullptr;
   finalized = false;
-  snode_root = std::make_unique<SNode>(0, SNodeType::root);
 
   if (config.async_mode) {
     TI_WARN("Running in async mode. This is experimental.");
@@ -283,7 +282,6 @@ void Program::materialize_runtime() {
   if (arch_uses_llvm(config.arch)) {
     initialize_llvm_runtime_system();
   }
-  materialize_root();
 }
 
 // For CPU and CUDA archs only
@@ -383,7 +381,8 @@ void Program::initialize_llvm_runtime_system() {
   }
 }
 
-void Program::initialize_llvm_runtime_snodes(StructCompiler *scomp) {
+void Program::initialize_llvm_runtime_snodes(const SNodeTree *tree,
+                                             StructCompiler *scomp) {
   TaichiLLVMContext *tlctx = nullptr;
   if (is_cuda_no_unified_memory(config)) {
 #if defined(TI_WITH_CUDA)
@@ -398,7 +397,7 @@ void Program::initialize_llvm_runtime_snodes(StructCompiler *scomp) {
   // By the time this creator is called, "this" is already destroyed.
   // Therefore it is necessary to capture members by values.
   const auto snodes = scomp->snodes;
-  const int root_id = snode_root->id;
+  const int root_id = tree->root()->id;
 
   TI_TRACE("Allocating data structure of size {} bytes", scomp->root_size);
   runtime_jit->call<void *, std::size_t, int, int>(
@@ -428,12 +427,30 @@ void Program::initialize_llvm_runtime_snodes(StructCompiler *scomp) {
   }
 }
 
-void Program::materialize_root() {
-  infer_snode_properties(*snode_root);
+int Program::add_snode_tree(std::unique_ptr<SNode> root) {
+  if (!snode_trees_.empty()) {
+    // TODO: remove this
+    TI_ERROR("Multiple SNodeTree not supported yet");
+    return -1;
+  }
+
+  const int id = snode_trees_.size();
+  auto tree = std::make_unique<SNodeTree>(id, std::move(root));
+  materialize_snode_tree(tree.get());
+  snode_trees_.push_back(std::move(tree));
+  return id;
+}
+
+SNode *Program::get_snode_root(int tree_id) {
+  return snode_trees_[tree_id]->root();
+}
+
+void Program::materialize_snode_tree(SNodeTree *tree) {
+  auto *const root = tree->root();
   // always use host_arch() for host accessors
   std::unique_ptr<StructCompiler> scomp =
       StructCompiler::make(this, host_arch());
-  scomp->run(*snode_root);
+  scomp->run(*root);
   materialize_snode_expr_attributes();
 
   for (auto snode : scomp->snodes) {
@@ -441,16 +458,16 @@ void Program::materialize_root() {
   }
 
   if (arch_is_cpu(config.arch)) {
-    initialize_llvm_runtime_snodes(scomp.get());
+    initialize_llvm_runtime_snodes(tree, scomp.get());
   } else if (config.arch == Arch::cuda) {
     std::unique_ptr<StructCompiler> scomp_gpu =
         StructCompiler::make(this, Arch::cuda);
-    scomp_gpu->run(*snode_root);
-    initialize_llvm_runtime_snodes(scomp_gpu.get());
+    scomp_gpu->run(*root);
+    initialize_llvm_runtime_snodes(tree, scomp_gpu.get());
   } else if (config.arch == Arch::metal) {
     TI_ASSERT_INFO(config.use_llvm,
                    "Metal arch requires that LLVM being enabled");
-    metal_compiled_structs_ = metal::compile_structs(*snode_root);
+    metal_compiled_structs_ = metal::compile_structs(*root);
     if (metal_kernel_mgr_ == nullptr) {
       TI_ASSERT(result_buffer == nullptr);
       result_buffer = allocate_result_buffer_default(this);
@@ -461,7 +478,7 @@ void Program::materialize_root() {
       params.mem_pool = memory_pool.get();
       params.host_result_buffer = result_buffer;
       params.profiler = profiler.get();
-      params.root_id = snode_root->id;
+      params.root_id = root->id;
       metal_kernel_mgr_ =
           std::make_unique<metal::KernelManager>(std::move(params));
     }
@@ -469,7 +486,7 @@ void Program::materialize_root() {
     TI_ASSERT(result_buffer == nullptr);
     result_buffer = allocate_result_buffer_default(this);
     opengl::OpenglStructCompiler scomp;
-    opengl_struct_compiled_ = scomp.run(*snode_root);
+    opengl_struct_compiled_ = scomp.run(*root);
     TI_TRACE("OpenGL root buffer size: {} B",
              opengl_struct_compiled_->root_size);
     opengl_kernel_launcher_ = std::make_unique<opengl::GLSLLauncher>(
@@ -479,7 +496,7 @@ void Program::materialize_root() {
   } else if (config.arch == Arch::cc) {
     TI_ASSERT(result_buffer == nullptr);
     result_buffer = allocate_result_buffer_default(this);
-    cc_program->compile_layout(snode_root.get());
+    cc_program->compile_layout(root);
 #endif
   }
 }
@@ -631,7 +648,7 @@ void Program::visualize_layout(const std::string &fn) {
       emit("]");
     };
 
-    visit(snode_root.get());
+    visit(get_snode_root(SNodeTree::kFirstID));
 
     auto tail = R"(
 \end{tikzpicture}
@@ -867,7 +884,7 @@ void Program::print_memory_profiler_info() {
     }
   };
 
-  visit(snode_root.get(), 0);
+  visit(get_snode_root(SNodeTree::kFirstID), /*depth=*/0);
 
   auto total_requested_memory = runtime_query<std::size_t>(
       "LLVMRuntime_get_total_requested_memory", llvm_runtime);

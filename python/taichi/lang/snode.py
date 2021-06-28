@@ -64,6 +64,7 @@ class SNode:
             offset = (offset, )
         if shared_exponent:
             self.ptr.begin_shared_exp_placement()
+
         for arg in args:
             if isinstance(arg, Expr):
                 self.ptr.place(Expr(arg).ptr, offset)
@@ -88,7 +89,6 @@ class SNode:
         To know more details about primal, adjoint fields and ``lazy_grad()``,
         please see Page 4 and Page 13-14 of DiffTaichi Paper: https://arxiv.org/pdf/1910.00935.pdf
         """
-
         self.ptr.lazy_grad()
 
     def parent(self, n=1):

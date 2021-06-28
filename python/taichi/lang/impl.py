@@ -246,6 +246,7 @@ class PyTaichi:
 
         ti.trace('Materializing runtime...')
         self.prog.materialize_runtime()
+        root.finalize()
 
         self.materialized = True
         not_placed = []
@@ -369,20 +370,52 @@ def index_nd(dim):
     return indices(*range(dim))
 
 
-class Root:
-    def __init__(self):
-        pass
+class _UninitializedRootFieldsBuilder:
+    def __getattr__(self, item):
+        raise InvalidOperationError('Please call init() first')
 
-    def __getattribute__(self, item):
-        get_runtime().create_program()
-        root = SNode(get_runtime().prog.get_root())
-        return getattr(root, item)
+
+# `root` initialization must be delayed until after the program is
+# created. Unfortunately, `root` exists in both taichi.lang.impl module and
+# the top-level taichi module at this point; so if `root` itself is written, we
+# would have to make sure that `root` in all the modules get updated to the same
+# instance. This is an error-prone process.
+#
+# To avoid this situation, we create `root` once during the import time, and
+# never write to it. The core part, `_root_fb`, is the one whose initialization
+# gets delayed. `_root_fb` will only exist in the taichi.lang.impl module, so
+# writing to it is would result in less for maintenance cost.
+#
+# `_root_fb` will be overriden inside :func:`taichi.lang.init`.
+_root_fb = _UninitializedRootFieldsBuilder()
+
+
+class _Root:
+    """Wrapper around the default root FieldsBuilder instance."""
+    def parent(self, n=1):
+        """Same as :func:`taichi.SNode.parent`"""
+        return _root_fb.root.parent(n)
+
+    def loop_range(self, n=1):
+        """Same as :func:`taichi.SNode.loop_range`"""
+        return _root_fb.root.loop_range()
+
+    def get_children(self):
+        """Same as :func:`taichi.SNode.get_children`"""
+        return _root_fb.root.get_children()
+
+    @property
+    def id(self):
+        return _root_fb.root.id
+
+    def __getattr__(self, item):
+        return getattr(_root_fb, item)
 
     def __repr__(self):
         return 'ti.root'
 
 
-root = Root()
+root = _Root()
 
 
 @deprecated('ti.var', 'ti.field')

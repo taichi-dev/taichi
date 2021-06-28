@@ -18,6 +18,7 @@ from taichi.lang.type_factory_impl import type_factory
 from taichi.lang.util import (has_pytorch, is_taichi_class, python_scope,
                               taichi_scope, to_numpy_type, to_pytorch_type,
                               to_taichi_type)
+from taichi.snode.fields_builder import FieldsBuilder
 
 import taichi as ti
 
@@ -230,6 +231,7 @@ def init(arch=None,
 
     # create a new program:
     impl.get_runtime().create_program()
+    impl._root_fb = FieldsBuilder()
 
 
 def no_activate(*args):

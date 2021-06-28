@@ -898,7 +898,6 @@ void runtime_initialize_snodes(LLVMRuntime *runtime,
       taichi::iroundup((size_t)root_size, taichi_page_size);
   runtime->root =
       runtime->allocate_aligned(runtime->root_mem_size, taichi_page_size);
-
   // runtime->request_allocate_aligned ready to use
   // initialize the root node element list
   for (int i = 0; i < num_snodes; i++) {

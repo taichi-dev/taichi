@@ -2,6 +2,7 @@
 
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
+#include "tests/cpp/program/test_program.h"
 
 namespace taichi {
 namespace lang {
@@ -9,14 +10,14 @@ namespace lang {
 // Basic tests within a basic block
 
 TEST(Simplify, SimplifyLinearizedWithTrivialInputs) {
-  auto prog_ = std::make_unique<Program>();
-  prog_->materialize_runtime();
+  TestProgram test_prog;
+  test_prog.setup();
 
   auto block = std::make_unique<Block>();
 
   auto func = []() {};
   auto kernel =
-      std::make_unique<Kernel>(get_current_program(), func, "fake_kernel");
+      std::make_unique<Kernel>(*test_prog.prog(), func, "fake_kernel");
   block->kernel = kernel.get();
 
   auto get_root = block->push_back<GetRootStmt>();

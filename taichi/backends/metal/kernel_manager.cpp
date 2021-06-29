@@ -872,10 +872,10 @@ class KernelManager::Impl {
 
       nm_data->recycled_list_size_backup = 0;
       TI_DEBUG(
-          "NodetManagerData\n  id={}\n  element_stride={}\n  "
-          "num_elems_per_chunk={}\n",
+          "NodeManagerData\n  id={}\n  element_stride={}\n  "
+          "num_elems_per_chunk={}\n  log2num={}\n",
           sn_desc.snode->id, nm_data->data_list.element_stride,
-          num_elems_per_chunk);
+          num_elems_per_chunk, log2num);
     };
     std::vector<std::pair<int, NodeManagerData *>> snode_id_to_nodemgrs;
     for (int i = 0; i < max_snodes; ++i) {
@@ -884,6 +884,14 @@ class KernelManager::Impl {
         continue;
       }
       const SNodeDescriptor &sn_desc = iter->second;
+      if (sn_desc.snode->type == SNodeType::root) {
+        // We have to skip root SNode for two reasons:
+        // 1. Root SNode is never sparse, so it never uses NodeManager
+        // 2. If not skippped, we would allocate one ambient element for the
+        // root. Because the allocation is done by chunk, when the root is
+        // large, this would result in memory pool overflow.
+        continue;
+      }
       NodeManagerData *nm_data = reinterpret_cast<NodeManagerData *>(addr) + i;
       init_node_mgr(sn_desc, nm_data);
       snode_id_to_nodemgrs.push_back(std::make_pair(i, nm_data));
@@ -930,6 +938,8 @@ class KernelManager::Impl {
     auto *mem_alloc = reinterpret_cast<MemoryAllocator *>(addr);
     // Make sure the retured memory address is always greater than 1.
     mem_alloc->next = shaders::MemoryAllocator::kInitOffset;
+    TI_DEBUG("Initialized memory allocator, begin={} next={}",
+             (addr - addr_begin), mem_alloc->next);
 
     // Root list is static, so it can be initialized here once.
     ListgenElement root_elem;
@@ -947,7 +957,10 @@ class KernelManager::Impl {
       NodeManager nm;
       nm.nm_data = p.second;
       nm.mem_alloc = mem_alloc;
-      ambient_indices_begin[p.first] = nm.allocate();
+      const auto snode_id = p.first;
+      ambient_indices_begin[snode_id] = nm.allocate();
+      TI_DEBUG("AmbientIndex\n  id={}\n  mem_alloc->next={}\n", snode_id,
+               mem_alloc->next);
     }
 
     did_modify_range(runtime_buffer_.get(), /*location=*/0,
@@ -995,17 +1008,15 @@ class KernelManager::Impl {
       shaders::ListManager lm;
       lm.lm_data = (dev_runtime_mirror_.snode_lists + i);
       lm.mem_alloc = dev_mem_alloc_mirror_;
-      // lm.num_active();
-      TI_INFO("ListManager for SNode={} num_active={}", i, lm.num_active());
-      for (int j = 0; j < lm.num_active(); ++j) {
-        const auto elem = lm.get<shaders::ListgenElement>(j);
-        TI_INFO(
-            "  [{}] coord={} mem_offset={} in_root_buffer={} nodemgr: id={} "
-            "elem_idx_raw={}",
-            j, elem.coords.at[0], elem.mem_offset, elem.in_root_buffer(),
-            elem.belonged_nodemgr.id, elem.belonged_nodemgr.elem_idx.value());
-      }
+
+      shaders::NodeManagerData *nma =
+          (dev_runtime_mirror_.snode_allocators + i);
+      TI_INFO(
+          "ListManager for SNode={} num_active={} num_allocated={} "
+          "free_list_used={}",
+          i, lm.num_active(), nma->data_list.next, nma->free_list_used);
     }
+    TI_INFO("");
   }
 
   void check_assertion_failure() {

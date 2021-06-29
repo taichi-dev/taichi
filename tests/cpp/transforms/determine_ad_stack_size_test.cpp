@@ -68,7 +68,6 @@ TEST_F(DetermineAdStackSizeTest, Loop) {
   ASSERT_TRUE(ir->is<Block>());
   auto *ir_block = ir->as<Block>();
   irpass::type_check(ir_block, CompileConfig());
-  EXPECT_EQ(irpass::analysis::count_statements(ir_block), 7);
 
   EXPECT_EQ(stack->max_size, 0);
   irpass::determine_ad_stack_size(ir_block, CompileConfig());

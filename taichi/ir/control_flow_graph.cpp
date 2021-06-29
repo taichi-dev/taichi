@@ -953,9 +953,6 @@ void ControlFlowGraph::determine_ad_stack_size(int default_ad_stack_size) {
       auto increase_in_this_node = it.second;
       auto current_size =
           max_size_at_node_begin[node_id][stack] + increase_in_this_node;
-      if (current_size > default_ad_stack_size) {
-        current_size = default_ad_stack_size;  // avoid infinite loop
-      }
       for (auto *next_node : now->next) {
         int next_node_id = node_ids[next_node];
         if (current_size > max_size_at_node_begin[next_node_id][stack]) {

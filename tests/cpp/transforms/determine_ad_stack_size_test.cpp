@@ -91,13 +91,13 @@ TEST_F(DetermineAdStackSizeTest, LoopInfeasible) {
   irpass::type_check(ir_block, CompileConfig());
 
   CompileConfig config;
-  constexpr int kMaxAdStackSize = 32;
-  config.default_ad_stack_size = kMaxAdStackSize;
+  constexpr int kDefaultAdStackSize = 32;
+  config.default_ad_stack_size = kDefaultAdStackSize;
   EXPECT_EQ(stack->max_size, 0);
   // Should have a debug message here (unable to determine the necessary size
   // for autodiff stacks).
   irpass::determine_ad_stack_size(ir_block, config);
-  EXPECT_EQ(stack->max_size, kMaxAdStackSize);
+  EXPECT_EQ(stack->max_size, kDefaultAdStackSize);
 }
 
 TEST_P(DetermineAdStackSizeTest, If) {
@@ -154,6 +154,34 @@ INSTANTIATE_TEST_SUITE_P(
       return fmt::format("True{}_False{}", std::get<0>(info.param),
                          std::get<1>(info.param));
     });
+
+TEST_F(DetermineAdStackSizeTest, EmptyNodes) {
+  IRBuilder builder;
+  auto *arg = builder.create_arg_load(0, get_data_type<int>(), false);
+  auto *stack =
+      builder.create_ad_stack(get_data_type<int>(), 0 /*adaptive size*/);
+  auto *one = builder.get_int32(1);
+  builder.ad_stack_push(stack, one);  // stack contains [1] now
+  auto *if_stmt = builder.create_if(arg);
+  {
+    auto _ = builder.get_if_guard(if_stmt, true);
+    builder.get_int32(2);  // avoid CFGNode being deleted
+  }
+  {
+    auto _ = builder.get_if_guard(if_stmt, false);
+    builder.get_int32(3);  // avoid CFGNode being deleted
+  }
+  builder.ad_stack_push(stack, one);  // stack contains [1, 1] now
+
+  auto ir = builder.extract_ir();
+  ASSERT_TRUE(ir->is<Block>());
+  auto *ir_block = ir->as<Block>();
+  irpass::type_check(ir_block, CompileConfig());
+
+  EXPECT_EQ(stack->max_size, 0);
+  irpass::determine_ad_stack_size(ir_block, CompileConfig());
+  EXPECT_EQ(stack->max_size, 2);
+}
 
 }  // namespace lang
 }  // namespace taichi

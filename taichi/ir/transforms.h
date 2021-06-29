@@ -71,6 +71,13 @@ bool lower_access(IRNode *root,
 void auto_diff(IRNode *root,
                const CompileConfig &config,
                bool use_stack = false);
+/**
+ * Determine all adaptive AD-stacks' size. This pass is idempotent, i.e.,
+ * there are no side effects if called more than once or called when not needed.
+ * @return Whether the IR is modified, i.e., whether there exists adaptive
+ * AD-stacks before this pass.
+ */
+bool determine_ad_stack_size(IRNode *root, const CompileConfig &config);
 bool constant_fold(IRNode *root,
                    const CompileConfig &config,
                    const ConstantFoldPass::Args &args);
@@ -124,6 +131,7 @@ void offload_to_executable(IRNode *ir,
                            const CompileConfig &config,
                            Kernel *kernel,
                            bool verbose,
+                           bool determine_ad_stack_size,
                            bool lower_global_access,
                            bool make_thread_local,
                            bool make_block_local);

@@ -481,36 +481,69 @@ bool StateFlowGraph::optimize_listgen() {
             node_b->input_edges[parent_list_state].begin()->second)
           break;
 
-        TI_ASSERT(node_b->input_edges[list_state].size() == 1);
-        Node *clear_node = node_b->input_edges[list_state].begin()->second;
-        TI_ASSERT(!clear_node->executed());
-        // TODO: This could be a bottleneck, avoid unnecessary IR clone.
-        // However, the task most likely will only contain a single
-        // ClearListStmt, so it's not a big deal...
-        auto new_ir = clear_node->rec.ir_handle.clone();
-        auto *new_clear_list_task = new_ir->as<OffloadedStmt>();
-        TI_ASSERT(new_clear_list_task->task_type ==
-                  OffloadedStmt::TaskType::serial);
-        auto &stmts = new_clear_list_task->body->statements;
-        auto pred = [snode](const pStmt &s) -> bool {
-          auto *cls = s->cast<ClearListStmt>();
-          return (cls != nullptr && cls->snode == snode);
-        };
-        // There should only be one clear list for |node_b|.
-        TI_ASSERT(std::count_if(stmts.begin(), stmts.end(), pred) == 1);
-        auto cls_it = std::find_if(stmts.begin(), stmts.end(), pred);
-        stmts.erase(cls_it);
+        {
+          // There should only be one clear list for |node_b|.
+          TI_ASSERT(node_b->input_edges[list_state].size() == 1);
+          Node *new_node = node_b->input_edges[list_state].begin()->second;
+          TI_ASSERT(!new_node->executed());
+          // TODO: This could be a bottleneck, avoid unnecessary IR clone.
+          // However, the task most likely will only contain a single
+          // ClearListStmt, so it's not a big deal...
+          auto new_ir = new_node->rec.ir_handle.clone();
+          auto *new_task = new_ir->as<OffloadedStmt>();
+          TI_ASSERT(new_task->task_type == OffloadedStmt::TaskType::serial);
+          auto &stmts = new_task->body->statements;
+          auto pred = [snode](const pStmt &s) -> bool {
+            auto *cls = s->cast<ClearListStmt>();
+            return (cls != nullptr && cls->snode == snode);
+          };
+          // There should only be one clear list for |node_b|.
+          TI_ASSERT(std::count_if(stmts.begin(), stmts.end(), pred) == 1);
+          auto cls_it = std::find_if(stmts.begin(), stmts.end(), pred);
+          stmts.erase(cls_it);
 
-        if (stmts.empty()) {
-          // Just erase the empty serial task that used to hold ClearListStmt
-          nodes_to_delete.insert(clear_node->node_id);
-        } else {
-          // IR modified. Node should be updated.
-          auto new_handle =
-              IRHandle(new_ir.get(), ir_bank_->get_hash(new_ir.get()));
-          ir_bank_->insert(std::move(new_ir), new_handle.hash());
-          clear_node->rec.ir_handle = new_handle;
-          clear_node->meta = get_task_meta(ir_bank_, clear_node->rec);
+          if (stmts.empty()) {
+            // Just erase the empty serial task that used to hold ClearListStmt
+            nodes_to_delete.insert(new_node->node_id);
+          } else {
+            // IR modified. Node should be updated.
+            auto new_handle =
+                IRHandle(new_ir.get(), ir_bank_->get_hash(new_ir.get()));
+            ir_bank_->insert(std::move(new_ir), new_handle.hash());
+          }
+        }
+
+        {
+          // There should only be one set list up-to-date for |node_b|.
+          TI_ASSERT(node_b->output_edges[list_state].size() == 1);
+          Node *new_node = node_b->output_edges[list_state].begin()->second;
+          TI_ASSERT(!new_node->executed());
+          //*
+          // TODO: This could be a bottleneck, avoid unnecessary IR clone.
+          // However, the task most likely will only contain a single
+          // SetListUpToDateStmt, so it's not a big deal...
+          auto new_ir = new_node->rec.ir_handle.clone();
+          auto *new_tesk = new_ir->as<OffloadedStmt>();
+          TI_ASSERT(new_tesk->task_type == OffloadedStmt::TaskType::serial);
+          auto &stmts = new_tesk->body->statements;
+          auto pred = [snode](const pStmt &s) -> bool {
+            auto *cls = s->cast<SetListUpToDateStmt>();
+            return (cls != nullptr && cls->snode == snode);
+          };
+          // There should only be one clear list for |node_b|.
+          TI_ASSERT(std::count_if(stmts.begin(), stmts.end(), pred) == 1);
+          auto cls_it = std::find_if(stmts.begin(), stmts.end(), pred);
+          stmts.erase(cls_it);
+
+          if (stmts.empty()) {
+            // Just erase the empty serial task that used to hold SetListUpToDateStmt
+            nodes_to_delete.insert(new_node->node_id);
+          } else {
+            // IR modified. Node should be updated.
+            auto new_handle =
+                IRHandle(new_ir.get(), ir_bank_->get_hash(new_ir.get()));
+            ir_bank_->insert(std::move(new_ir), new_handle.hash());
+          }
         }
 
         TI_DEBUG("Common list generation {} and (to erase) {}",

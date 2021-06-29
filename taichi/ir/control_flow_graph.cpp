@@ -90,12 +90,9 @@ bool CFGNode::contain_variable(const std::unordered_set<Stmt *> &var_set,
     // TODO: How to optimize this?
     if (var_set.find(var) != var_set.end())
       return true;
-    for (auto set_var : var_set) {
-      if (irpass::analysis::definitely_same_address(var, set_var)) {
-        return true;
-      }
-    }
-    return false;
+    return std::any_of(var_set.begin(), var_set.end(), [&](Stmt *set_var) {
+      return irpass::analysis::definitely_same_address(var, set_var);
+    });
   }
 }
 
@@ -107,12 +104,9 @@ bool CFGNode::may_contain_variable(const std::unordered_set<Stmt *> &var_set,
     // TODO: How to optimize this?
     if (var_set.find(var) != var_set.end())
       return true;
-    for (auto set_var : var_set) {
-      if (irpass::analysis::maybe_same_address(var, set_var)) {
-        return true;
-      }
-    }
-    return false;
+    return std::any_of(var_set.begin(), var_set.end(), [&](Stmt *set_var) {
+      return irpass::analysis::maybe_same_address(var, set_var);
+    });
   }
 }
 

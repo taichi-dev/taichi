@@ -72,7 +72,7 @@ void auto_diff(IRNode *root,
                const CompileConfig &config,
                bool use_stack = false);
 /**
- * Determine all adaptive AD-stacks' capacity. This pass is idempotent, i.e.,
+ * Determine all adaptive AD-stacks' size. This pass is idempotent, i.e.,
  * there are no side effects if called more than once or called when not needed.
  * @return Whether the IR is modified, i.e., whether there exists adaptive
  * AD-stacks before this pass.

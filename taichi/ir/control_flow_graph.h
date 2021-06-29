@@ -123,11 +123,11 @@ class ControlFlowGraph {
   std::unordered_set<SNode *> gather_loaded_snodes();
 
   /**
-   * Determine all adaptive AD-stacks' capacity.
-   * @param max_ad_stack_size The maximum allowed AD stack size. This parameter
-   * is set to prevent infinite loops of the algorithm.
+   * Determine all adaptive AD-stacks' necessary size.
+   * @param default_ad_stack_size The default AD-stack's size when we are
+   * unable to determine some AD-stack's size.
    */
-  void determine_ad_stack_size(int max_ad_stack_size);
+  void determine_ad_stack_size(int default_ad_stack_size);
 };
 
 TLANG_NAMESPACE_END

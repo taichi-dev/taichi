@@ -864,11 +864,13 @@ std::unordered_set<SNode *> ControlFlowGraph::gather_loaded_snodes() {
   return snodes;
 }
 
-void ControlFlowGraph::determine_ad_stack_size(int max_ad_stack_size) {
+void ControlFlowGraph::determine_ad_stack_size(int default_ad_stack_size) {
   /**
-   * Determine all adaptive AD-stacks' capacity using the worklist algorithm
-   * (similar to the Bellman-Ford algorithm). The time complexity
-   * is O(num_statements + num_edges * max_ad_stack_size).
+   * Determine all adaptive AD-stacks' necessary size using the Bellman-Ford
+   * algorithm. When there is a positive loop (#pushes > #pops in a loop)
+   * for an AD-stack, we cannot determine the size of the AD-stack, and
+   * |default_ad_stack_size| is used.
+   * The time complexity is O(num_statements + num_edges * num_nodes).
    */
   const int num_nodes = size();
 
@@ -894,8 +896,9 @@ void ControlFlowGraph::determine_ad_stack_size(int max_ad_stack_size) {
 
   std::queue<int> to_visit;
   std::vector<bool> in_queue(num_nodes);
+  std::vector<int> times_pushed_in_queue(num_nodes, 0);
   std::unordered_map<CFGNode *, int> node_ids;
-  std::unordered_set<AdStackAllocaStmt *> oversized_stacks;
+  std::unordered_set<AdStackAllocaStmt *> indeterminable_stacks;
 
   for (int i = 0; i < num_nodes; i++)
     node_ids[nodes[i].get()] = i;
@@ -922,6 +925,7 @@ void ControlFlowGraph::determine_ad_stack_size(int max_ad_stack_size) {
     }
     to_visit.push(i);
     in_queue[i] = true;
+    times_pushed_in_queue[i] = 1;
   }
 
   // The maximum stack size determining algorithm -- an algorithm similar to
@@ -938,10 +942,6 @@ void ControlFlowGraph::determine_ad_stack_size(int max_ad_stack_size) {
       auto max_size_inside_this_node = it.second;
       auto current_max_size =
           max_size_at_node_begin[node_id][stack] + max_size_inside_this_node;
-      if (current_max_size > max_ad_stack_size) {
-        current_max_size = max_ad_stack_size;
-        oversized_stacks.insert(stack);
-      }
       if (current_max_size > max_size[stack]) {
         max_size[stack] = current_max_size;
       }
@@ -953,37 +953,47 @@ void ControlFlowGraph::determine_ad_stack_size(int max_ad_stack_size) {
       auto increase_in_this_node = it.second;
       auto current_size =
           max_size_at_node_begin[node_id][stack] + increase_in_this_node;
-      if (current_size > max_ad_stack_size) {
-        current_size = max_ad_stack_size;  // avoid infinite loop
+      if (current_size > default_ad_stack_size) {
+        current_size = default_ad_stack_size;  // avoid infinite loop
       }
       for (auto *next_node : now->next) {
         int next_node_id = node_ids[next_node];
         if (current_size > max_size_at_node_begin[next_node_id][stack]) {
           max_size_at_node_begin[next_node_id][stack] = current_size;
           if (!in_queue[next_node_id]) {
-            to_visit.push(next_node_id);
-            in_queue[next_node_id] = true;
+            if (times_pushed_in_queue[next_node_id] <= num_nodes) {
+              to_visit.push(next_node_id);
+              in_queue[next_node_id] = true;
+              times_pushed_in_queue[next_node_id]++;
+            } else {
+              // A positive loop is found because a node is going to be pushed
+              // into the queue the (num_nodes + 1)-th time.
+              indeterminable_stacks.insert(stack);
+            }
           }
         }
       }
     }
   }
 
-  if (!oversized_stacks.empty()) {
-    std::vector<std::string> oversized_stacks_name;
-    oversized_stacks_name.reserve(oversized_stacks.size());
-    for (auto &stack : oversized_stacks) {
-      oversized_stacks_name.push_back(stack->name());
+  if (!indeterminable_stacks.empty()) {
+    std::vector<std::string> indeterminable_stacks_name;
+    indeterminable_stacks_name.reserve(indeterminable_stacks.size());
+    for (auto &stack : indeterminable_stacks) {
+      indeterminable_stacks_name.push_back(stack->name());
+      stack->max_size = default_ad_stack_size;
     }
-    TI_WARN(
-        "The required capacity for autodiff stacks [{}] overflows the maximum "
-        "allowed. Use configured maximum capacity "
-        "(CompileConfig::max_ad_stack_size) {} instead.",
-        fmt::join(oversized_stacks_name, ", "), max_ad_stack_size);
+    TI_DEBUG(
+        "Unable to determine the necessary size for autodiff stacks [{}]. Use "
+        "configured size (CompileConfig::default_ad_stack_size) {} instead.",
+        fmt::join(indeterminable_stacks_name, ", "), default_ad_stack_size);
   }
 
   for (auto &it : max_size) {
     auto *stack = it.first;
+    if (indeterminable_stacks.count(stack) > 0) {
+      continue;
+    }
     // Since we use |max_size| == 0 for adaptive sizes, we do not want stacks
     // with maximum capacity indeed equal to 0.
     TI_WARN_IF(it.second == 0,

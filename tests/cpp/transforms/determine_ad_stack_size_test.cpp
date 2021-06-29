@@ -92,10 +92,10 @@ TEST_F(DetermineAdStackSizeTest, LoopInfeasible) {
 
   CompileConfig config;
   constexpr int kMaxAdStackSize = 32;
-  config.max_ad_stack_size = kMaxAdStackSize;
+  config.default_ad_stack_size = kMaxAdStackSize;
   EXPECT_EQ(stack->max_size, 0);
-  // Should have a warning here (unable to determine capacity for autodiff
-  // stacks).
+  // Should have a debug message here (unable to determine the necessary size
+  // for autodiff stacks).
   irpass::determine_ad_stack_size(ir_block, config);
   EXPECT_EQ(stack->max_size, kMaxAdStackSize);
 }

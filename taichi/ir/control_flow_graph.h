@@ -5,7 +5,8 @@
 
 #include "taichi/ir/ir.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 /**
  * A basic block in control-flow graph.
@@ -17,7 +18,7 @@ TLANG_NAMESPACE_BEGIN
  */
 class CFGNode {
  private:
-  // For accelerating get_store_forwarding_data
+  // For accelerating get_store_forwarding_data()
   std::unordered_set<Block *> parent_blocks;
 
  public:
@@ -98,7 +99,7 @@ class ControlFlowGraph {
   int final_node{0};
 
   template <typename... Args>
-  CFGNode *push_back(Args &&... args) {
+  CFGNode *push_back(Args &&...args) {
     nodes.emplace_back(std::make_unique<CFGNode>(std::forward<Args>(args)...));
     return nodes.back().get();
   }
@@ -160,4 +161,5 @@ class ControlFlowGraph {
   std::unordered_set<SNode *> gather_loaded_snodes();
 };
 
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

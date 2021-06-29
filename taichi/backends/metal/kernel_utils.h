@@ -15,7 +15,8 @@
 // compiled to more than one Metal compute kernels. Concretely, each offloaded
 // task in the Taichi kernel maps to a Metal kernel.
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 class Kernel;
 class SNode;
@@ -202,6 +203,16 @@ struct CompiledKernelData {
   TI_IO_DEF(kernel_name, ctx_attribs, kernel_attribs);
 };
 
-}  // namespace metal
+struct BufferMetaData {
+  int64_t root_buffer_size{0};
+  int64_t runtime_buffer_size{0};
+  int64_t randseedoffset_in_runtime_buffer{0};
 
-TLANG_NAMESPACE_END
+  TI_IO_DEF(root_buffer_size,
+            runtime_buffer_size,
+            randseedoffset_in_runtime_buffer);
+};
+
+}  // namespace metal
+}  // namespace lang
+}  // namespace taichi

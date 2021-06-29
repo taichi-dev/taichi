@@ -1,4 +1,4 @@
-#include "taichi/backends/metal/kernel_util.h"
+#include "taichi/backends/metal/kernel_utils.h"
 
 #include <unordered_map>
 

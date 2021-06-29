@@ -2,6 +2,16 @@
 // The generated bitcode will likely get inlined for performance.
 
 #if !defined(TI_INCLUDED) || !defined(_WIN32)
+// The latest MSVC(Visual Studio 2019 version 16.10.1, MSVC 14.29.30037)
+// uses llvm-11 as requirements. Check this link for details:
+// https://github.com/microsoft/STL/blob/1866b848f0175c3361a916680a4318e7f0cc5482/stl/inc/yvals_core.h#L550-L561.
+// However, we use llvm-10 for now and building will fail due to clang version
+// mismatch. Therefore, we workaround this problem by define such flag to skip
+// the version check.
+// NOTE(#2428)
+#if defined(_WIN32) || defined(_WIN64)
+#define _ALLOW_COMPILER_AND_STL_VERSION_MISMATCH
+#endif
 
 #include <atomic>
 #include <cstdint>
@@ -759,10 +769,10 @@ void taichi_assert_runtime(LLVMRuntime *runtime, i32 test, const char *msg) {
 }
 
 Ptr LLVMRuntime::allocate_aligned(std::size_t size, std::size_t alignment) {
-  if (preallocated)
+  if (preallocated) {
     return allocate_from_buffer(size, alignment);
-  else
-    return (Ptr)vm_allocator(program, size, alignment);
+  }
+  return (Ptr)vm_allocator(program, size, alignment);
 }
 
 Ptr LLVMRuntime::allocate_from_buffer(std::size_t size, std::size_t alignment) {
@@ -829,7 +839,6 @@ void runtime_get_mem_req_queue(LLVMRuntime *runtime) {
 void runtime_initialize(
     Ptr result_buffer,
     Ptr program,
-    std::size_t root_size,
     std::size_t
         preallocated_size,  // Non-zero means use the preallocated buffer
     Ptr preallocated_buffer,
@@ -852,9 +861,6 @@ void runtime_initialize(
     runtime = (LLVMRuntime *)vm_allocator(program, sizeof(LLVMRuntime), 128);
   }
 
-  runtime->root_mem_size =
-      taichi::iroundup((size_t)root_size, taichi_page_size);
-
   runtime->preallocated = preallocated_size > 0;
   runtime->preallocated_head = preallocated_buffer;
   runtime->preallocated_tail = preallocated_tail;
@@ -872,13 +878,6 @@ void runtime_initialize(
   runtime->mem_req_queue = (MemRequestQueue *)runtime->allocate_aligned(
       sizeof(MemRequestQueue), taichi_page_size);
 
-  // For Metal runtime, we have to make sure that both the beginning address
-  // and the size of the root buffer memory are aligned to page size.
-  runtime->root_mem_size =
-      taichi::iroundup((size_t)root_size, taichi_page_size);
-  runtime->root =
-      runtime->allocate_aligned(runtime->root_mem_size, taichi_page_size);
-
   runtime->temporaries = (Ptr)runtime->allocate_aligned(
       taichi_global_tmp_buffer_size, taichi_page_size);
 
@@ -889,9 +888,17 @@ void runtime_initialize(
     initialize_rand_state(&runtime->rand_states[i], starting_rand_state + i);
 }
 
-void runtime_initialize2(LLVMRuntime *runtime, int root_id, int num_snodes) {
+void runtime_initialize_snodes(LLVMRuntime *runtime,
+                               std::size_t root_size,
+                               int root_id,
+                               int num_snodes) {
+  // For Metal runtime, we have to make sure that both the beginning address
+  // and the size of the root buffer memory are aligned to page size.
+  runtime->root_mem_size =
+      taichi::iroundup((size_t)root_size, taichi_page_size);
+  runtime->root =
+      runtime->allocate_aligned(runtime->root_mem_size, taichi_page_size);
   // runtime->request_allocate_aligned ready to use
-
   // initialize the root node element list
   for (int i = 0; i < num_snodes; i++) {
     // TODO: some SNodes do not actually need an element list.

@@ -1,7 +1,9 @@
-import taichi as ti
 import math
+
 import pytest
 from pytest import approx
+
+import taichi as ti
 
 
 @pytest.mark.parametrize('use_cft,use_exponent,use_shared_exp',

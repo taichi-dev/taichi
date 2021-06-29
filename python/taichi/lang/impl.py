@@ -4,7 +4,7 @@ import warnings
 
 import numpy as np
 from taichi.core.util import ti_core as _ti_core
-from taichi.lang.exception import TaichiSyntaxError
+from taichi.lang.exception import InvalidOperationError, TaichiSyntaxError
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.snode import SNode
 from taichi.lang.tape import TapeImpl
@@ -173,39 +173,38 @@ def chain_compare(comparators, ops):
 
 
 @taichi_scope
-def maybe_transform_ti_func_call_to_stmt(func, *args, **kwargs):
+def maybe_transform_ti_func_call_to_stmt(ti_func, *args, **kwargs):
     _taichi_skip_traceback = 1
-    if '_sitebuiltins' == getattr(func, '__module__', '') and getattr(
-            getattr(func, '__class__', ''), '__name__', '') == 'Quitter':
+    if '_sitebuiltins' == getattr(ti_func, '__module__', '') and getattr(
+            getattr(ti_func, '__class__', ''), '__name__', '') == 'Quitter':
         raise TaichiSyntaxError(f'exit or quit not supported in Taichi-scope')
-    if getattr(func, '__module__',
-               '') == '__main__' and not getattr(func, '__wrapped__', ''):
+    if getattr(ti_func, '__module__',
+               '') == '__main__' and not getattr(ti_func, '__wrapped__', ''):
         warnings.warn(
-            f'Calling into non-Taichi function {func.__name__}.'
+            f'Calling into non-Taichi function {ti_func.__name__}.'
             ' This means that scope inside that function will not be processed'
             ' by the Taichi transformer. Proceed with caution! '
             ' Maybe you want to decorate it with @ti.func?',
             UserWarning,
             stacklevel=2)
 
-    is_taichi_function = getattr(func, '_is_taichi_function', False)
+    is_taichi_function = getattr(ti_func, '_is_taichi_function', False)
     # If is_taichi_function is true: call a decorated Taichi function
     # in a Taichi kernel/function.
 
     if is_taichi_function and get_runtime().experimental_real_function:
         # Compiles the function here.
         # Invokes Func.__call__.
-        func_call_result = func(*args, **kwargs)
+        func_call_result = ti_func(*args, **kwargs)
         return _ti_core.insert_expr_stmt(func_call_result.ptr)
     else:
-        return func(*args, **kwargs)
+        return ti_func(*args, **kwargs)
 
 
 class PyTaichi:
     def __init__(self, kernels=None):
         self.materialized = False
         self.prog = None
-        self.layout_functions = []
         self.materialize_callbacks = []
         self.compiled_functions = {}
         self.compiled_grad_functions = {}
@@ -245,12 +244,10 @@ class PyTaichi:
         print('[Taichi] materializing...')
         self.create_program()
 
-        def layout():
-            for func in self.layout_functions:
-                func()
+        ti.trace('Materializing runtime...')
+        self.prog.materialize_runtime()
+        root.finalize()
 
-        ti.trace('Materializing layout...')
-        _ti_core.layout(layout)
         self.materialized = True
         not_placed = []
         for var in self.global_vars:
@@ -269,9 +266,6 @@ class PyTaichi:
         for callback in self.materialize_callbacks:
             callback()
         self.materialize_callbacks = []
-
-    def print_snode_tree(self):
-        self.prog.print_snode_tree()
 
     def clear(self):
         if self.prog:
@@ -376,20 +370,52 @@ def index_nd(dim):
     return indices(*range(dim))
 
 
-class Root:
-    def __init__(self):
-        pass
+class _UninitializedRootFieldsBuilder:
+    def __getattr__(self, item):
+        raise InvalidOperationError('Please call init() first')
 
-    def __getattribute__(self, item):
-        get_runtime().create_program()
-        root = SNode(get_runtime().prog.get_root())
-        return getattr(root, item)
+
+# `root` initialization must be delayed until after the program is
+# created. Unfortunately, `root` exists in both taichi.lang.impl module and
+# the top-level taichi module at this point; so if `root` itself is written, we
+# would have to make sure that `root` in all the modules get updated to the same
+# instance. This is an error-prone process.
+#
+# To avoid this situation, we create `root` once during the import time, and
+# never write to it. The core part, `_root_fb`, is the one whose initialization
+# gets delayed. `_root_fb` will only exist in the taichi.lang.impl module, so
+# writing to it is would result in less for maintenance cost.
+#
+# `_root_fb` will be overriden inside :func:`taichi.lang.init`.
+_root_fb = _UninitializedRootFieldsBuilder()
+
+
+class _Root:
+    """Wrapper around the default root FieldsBuilder instance."""
+    def parent(self, n=1):
+        """Same as :func:`taichi.SNode.parent`"""
+        return _root_fb.root.parent(n)
+
+    def loop_range(self, n=1):
+        """Same as :func:`taichi.SNode.loop_range`"""
+        return _root_fb.root.loop_range()
+
+    def get_children(self):
+        """Same as :func:`taichi.SNode.get_children`"""
+        return _root_fb.root.get_children()
+
+    @property
+    def id(self):
+        return _root_fb.root.id
+
+    def __getattr__(self, item):
+        return getattr(_root_fb, item)
 
     def __repr__(self):
         return 'ti.root'
 
 
-root = Root()
+root = _Root()
 
 
 @deprecated('ti.var', 'ti.field')
@@ -461,12 +487,7 @@ AOS = Layout(soa=False)
 
 @python_scope
 def layout(func):
-    assert not pytaichi.materialized, "All layout must be specified before the first kernel launch / data access."
-    warning(
-        f"@ti.layout will be deprecated in the future, use ti.root directly to specify data layout anytime before the data structure materializes.",
-        PendingDeprecationWarning,
-        stacklevel=3)
-    pytaichi.layout_functions.append(func)
+    raise InvalidOperationError('layout(): Deprecated')
 
 
 @taichi_scope

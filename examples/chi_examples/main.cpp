@@ -47,11 +47,12 @@ void run_snode() {
   prog_.config = config_print_ir;*/  // print_ir = True
 
   int n = 10;
-  auto *pointer = &program.snode_root.get()->pointer(Index(0), n);
+  auto *pointer =
+      &program.get_snode_root(SNodeTree::kFirstID)->pointer(Index(0), n);
   auto *place = &pointer->insert_children(SNodeType::place);
   place->dt = PrimitiveType::i32;
 
-  program.materialize_layout();
+  program.materialize_runtime();
 
   std::unique_ptr<Kernel> kernel_init, kernel_ret, kernel_ext;
 
@@ -208,7 +209,7 @@ void autograd() {
       }
     };
 
-    auto *root = program.snode_root.get();
+    auto *root = program.get_snode_root(SNodeTree::kFirstID);
     auto *snode = &root->dense(0, n).insert_children(SNodeType::place);
     snode->dt = PrimitiveType::f32;
     snode->grad_info = std::make_unique<GradInfoPrimal>(
@@ -219,7 +220,7 @@ void autograd() {
   };
   auto *a = get_snode_grad(), *b = get_snode_grad(), *c = get_snode_grad();
 
-  program.materialize_layout();
+  program.materialize_runtime();
 
   std::unique_ptr<Kernel> kernel_init, kernel_forward, kernel_backward,
       kernel_ext;

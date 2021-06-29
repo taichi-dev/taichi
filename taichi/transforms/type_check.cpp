@@ -113,8 +113,13 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(SNodeOpStmt *stmt) override {
-    stmt->ret_type =
-        TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
+    if (stmt->op_type == SNodeOpType::get_addr) {
+      stmt->ret_type =
+          TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::u64);
+    } else {
+      stmt->ret_type =
+          TypeFactory::create_vector_or_scalar_type(1, PrimitiveType::i32);
+    }
   }
 
   void visit(ExternalTensorShapeAlongAxisStmt *stmt) override {

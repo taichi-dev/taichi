@@ -13,7 +13,7 @@ class InliningTest : public ::testing::Test {
  protected:
   void SetUp() override {
     prog_ = std::make_unique<Program>();
-    prog_->materialize_layout();
+    prog_->materialize_runtime();
   }
 
   std::unique_ptr<Program> prog_;

@@ -1,7 +1,9 @@
-import taichi as ti
-import time
 import math
+import time
+
 import numpy as np
+
+import taichi as ti
 
 ti.init(arch=ti.gpu)
 res = 1280, 720

@@ -34,6 +34,9 @@ class JITSession {
 
   static std::unique_ptr<JITSession> create(Arch arch);
 
+  virtual void global_optimize_module(llvm::Module *module) {
+  }
+
   virtual ~JITSession() = default;
 };
 

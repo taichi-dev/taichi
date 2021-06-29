@@ -1,5 +1,6 @@
-import taichi as ti
 import numpy as np
+
+import taichi as ti
 
 
 @ti.test(require=ti.extension.async_mode, async_mode=True)

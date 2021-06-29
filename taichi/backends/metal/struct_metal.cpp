@@ -9,7 +9,7 @@
 #include "taichi/backends/metal/constants.h"
 #include "taichi/backends/metal/data_types.h"
 #include "taichi/backends/metal/features.h"
-#include "taichi/backends/metal/kernel_util.h"
+#include "taichi/backends/metal/kernel_utils.h"
 #include "taichi/math/arithmetic.h"
 #include "taichi/util/line_appender.h"
 
@@ -94,7 +94,6 @@ class StructCompiler {
       generate_types(*n);
     }
     line_appender_.dump(&result.snode_structs_source_code);
-    result.need_snode_lists_data = has_sparse_snode_;
     result.max_snodes = max_snodes_;
     result.snode_descriptors = std::move(snode_descriptors_);
     TI_DEBUG("Metal: root_size={} runtime_size={}", result.root_size,

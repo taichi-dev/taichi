@@ -548,13 +548,13 @@ class KernelManager::Impl {
     command_queue_ = new_command_queue(device_.get());
     TI_ASSERT(command_queue_ != nullptr);
     create_new_command_buffer();
-
     if (compiled_structs_.root_size > 0) {
       root_mem_ = std::make_unique<BufferMemoryView>(
           compiled_structs_.root_size, mem_pool_);
       root_buffer_ = new_mtl_buffer_no_copy(device_.get(), root_mem_->ptr(),
                                             root_mem_->size());
       TI_ASSERT(root_buffer_ != nullptr);
+      buffer_meta_data_.root_buffer_size = root_mem_->size();
       TI_DEBUG("Metal root buffer size: {} bytes", root_mem_->size());
       ActionRecorder::get_instance().record(
           "allocate_root_buffer",
@@ -579,6 +579,7 @@ class KernelManager::Impl {
         compiled_structs_.runtime_size + mem_pool_bytes, mem_pool_);
     runtime_buffer_ = new_mtl_buffer_no_copy(device_.get(), runtime_mem_->ptr(),
                                              runtime_mem_->size());
+    buffer_meta_data_.runtime_buffer_size = compiled_structs_.runtime_size;
     TI_DEBUG(
         "Metal runtime buffer size: {} bytes (sizeof(Runtime)={} "
         "memory_pool={})",
@@ -691,6 +692,10 @@ class KernelManager::Impl {
     blit_buffers_and_sync();
   }
 
+  BufferMetaData get_buffer_meta_data() {
+    return buffer_meta_data_;
+  }
+
   PrintStringTable *print_strtable() {
     return &print_strtable_;
   }
@@ -744,6 +749,7 @@ class KernelManager::Impl {
           rtm_meta->num_slots, rtm_meta->mem_offset_in_parent);
     }
     size_t addr_offset = sizeof(SNodeMeta) * max_snodes;
+    buffer_meta_data_.randseedoffset_in_runtime_buffer = addr_offset;
     addr += addr_offset;
     TI_DEBUG("Initialized SNodeMeta, size={} accumulated={}", addr_offset,
              (addr - addr_begin));
@@ -820,21 +826,22 @@ class KernelManager::Impl {
         {
             ActionArg("rand_seeds_begin", (int64)rand_seeds_begin),
         });
-    if (compiled_structs_.need_snode_lists_data) {
-      auto *mem_alloc = reinterpret_cast<MemoryAllocator *>(addr);
-      // Make sure the retured memory address is always greater than 1.
-      mem_alloc->next = shaders::MemoryAllocator::kInitOffset;
-      // root list data are static
-      ListgenElement root_elem;
-      root_elem.mem_offset = 0;
-      for (int i = 0; i < taichi_max_num_indices; ++i) {
-        root_elem.coords.at[i] = 0;
-      }
-      ListManager root_lm;
-      root_lm.lm_data = rtm_list_begin + root_id;
-      root_lm.mem_alloc = mem_alloc;
-      root_lm.append(root_elem);
+
+    // Initialize the memory allocator
+    auto *mem_alloc = reinterpret_cast<MemoryAllocator *>(addr);
+    // Make sure the retured memory address is always greater than 1.
+    mem_alloc->next = shaders::MemoryAllocator::kInitOffset;
+
+    // Root list is static, so it can be initialized here once.
+    ListgenElement root_elem;
+    root_elem.mem_offset = 0;
+    for (int i = 0; i < taichi_max_num_indices; ++i) {
+      root_elem.coords.at[i] = 0;
     }
+    ListManager root_lm;
+    root_lm.lm_data = rtm_list_begin + root_id;
+    root_lm.mem_alloc = mem_alloc;
+    root_lm.append(root_elem);
 
     did_modify_range(runtime_buffer_.get(), /*location=*/0,
                      runtime_mem_->size());
@@ -975,6 +982,7 @@ class KernelManager::Impl {
 
   CompileConfig *const config_;
   const CompiledStructs compiled_structs_;
+  BufferMetaData buffer_meta_data_;
   MemoryPool *const mem_pool_;
   uint64_t *const host_result_buffer_;
   KernelProfilerBase *const profiler_;
@@ -1008,6 +1016,10 @@ class KernelManager::Impl {
                               const std::string &mtl_kernel_source_code,
                               const TaichiKernelAttributes &ti_kernel_attribs,
                               const KernelContextAttributes &ctx_attribs) {
+    TI_ERROR("Metal not supported on the current OS");
+  }
+
+  BufferMetaData get_buffer_meta_data() {
     TI_ERROR("Metal not supported on the current OS");
   }
 
@@ -1051,6 +1063,10 @@ void KernelManager::launch_taichi_kernel(const std::string &taichi_kernel_name,
 
 void KernelManager::synchronize() {
   impl_->synchronize();
+}
+
+BufferMetaData KernelManager::get_buffer_meta_data() {
+  return impl_->get_buffer_meta_data();
 }
 
 PrintStringTable *KernelManager::print_strtable() {

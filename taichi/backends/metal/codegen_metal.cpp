@@ -109,10 +109,10 @@ class KernelCodegenImpl : public IRVisitor {
         kernel_(kernel),
         compiled_structs_(compiled_structs),
         needs_root_buffer_(compiled_structs_->root_size > 0),
-        ctx_attribs_(*kernel_),
         print_strtab_(print_strtab),
         cgen_config_(config),
-        offloaded_(offloaded) {
+        offloaded_(offloaded),
+        ctx_attribs_(*kernel_) {
     ti_kernel_attribs_.name = taichi_kernel_name;
     ti_kernel_attribs_.is_jit_evaluator = kernel->is_evaluator;
     // allow_undefined_visitor = true;
@@ -737,6 +737,9 @@ class KernelCodegenImpl : public IRVisitor {
 
   void visit(AdStackAllocaStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
+    TI_ASSERT_INFO(
+        stmt->max_size > 0,
+        "Adaptive autodiff stack's size should have been determined.");
 
     const auto &var_name = stmt->raw_name();
     emit("byte {}[{}];", var_name, stmt->size_in_bytes());

@@ -268,10 +268,14 @@ void CodeGenLLVM::emit_struct_meta_base(const std::string &name,
                get_runtime_function(snode->refine_coordinates_func_name()));
 }
 
-CodeGenLLVM::CodeGenLLVM(Kernel *kernel, IRNode *ir)
+CodeGenLLVM::CodeGenLLVM(Kernel *kernel,
+                         IRNode *ir,
+                         std::unique_ptr<llvm::Module> &&module)
     // TODO: simplify LLVMModuleBuilder ctor input
-    : LLVMModuleBuilder(kernel->program->get_llvm_context(kernel->arch)
-                            ->clone_struct_module(),
+    : LLVMModuleBuilder(module == nullptr
+                            ? kernel->program->get_llvm_context(kernel->arch)
+                                  ->clone_struct_module()
+                            : std::move(module),
                         kernel->program->get_llvm_context(kernel->arch)),
       kernel(kernel),
       ir(ir),
@@ -322,8 +326,9 @@ void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
     llvm::CastInst::CastOps cast_op;
     auto from = stmt->operand->ret_type;
     auto to = stmt->cast_type;
-    TI_ASSERT(from != to);
-    if (is_real(from) != is_real(to)) {
+    if (from == to) {
+      llvm_val[stmt] = llvm_val[stmt->operand];
+    } else if (is_real(from) != is_real(to)) {
       if (is_real(from) && is_integral(to)) {
         cast_op = llvm::Instruction::CastOps::FPToSI;
       } else if (is_integral(from) && is_real(to)) {
@@ -352,8 +357,14 @@ void CodeGenLLVM::visit(UnaryOpStmt *stmt) {
   } else if (stmt->op_type == UnaryOpType::cast_bits) {
     TI_ASSERT(data_type_size(stmt->ret_type) ==
               data_type_size(stmt->cast_type));
-    llvm_val[stmt] = builder->CreateBitCast(
-        llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
+    if (stmt->operand->ret_type.is_pointer()) {
+      TI_ASSERT(is_integral(stmt->cast_type));
+      llvm_val[stmt] = builder->CreatePtrToInt(
+          llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
+    } else {
+      llvm_val[stmt] = builder->CreateBitCast(
+          llvm_val[stmt->operand], tlctx->get_data_type(stmt->cast_type));
+    }
   } else if (op == UnaryOpType::rsqrt) {
     llvm::Function *sqrt_fn = llvm::Intrinsic::getDeclaration(
         module.get(), llvm::Intrinsic::sqrt, input->getType());
@@ -1242,9 +1253,10 @@ llvm::Value *CodeGenLLVM::call(SNode *snode,
 void CodeGenLLVM::visit(GetRootStmt *stmt) {
   llvm_val[stmt] = builder->CreateBitCast(
       get_root(),
-      llvm::PointerType::get(StructCompilerLLVM::get_llvm_node_type(
-                                 module.get(), prog->snode_root.get()),
-                             0));
+      llvm::PointerType::get(
+          StructCompilerLLVM::get_llvm_node_type(
+              module.get(), prog->get_snode_root(SNodeTree::kFirstID)),
+          0));
 }
 
 void CodeGenLLVM::visit(BitExtractStmt *stmt) {
@@ -1858,6 +1870,8 @@ void CodeGenLLVM::visit(InternalFuncStmt *stmt) {
 
 void CodeGenLLVM::visit(AdStackAllocaStmt *stmt) {
   TI_ASSERT(stmt->width() == 1);
+  TI_ASSERT_INFO(stmt->max_size > 0,
+                 "Adaptive autodiff stack's size should have been determined.");
   auto type = llvm::ArrayType::get(llvm::Type::getInt8Ty(*llvm_context),
                                    stmt->size_in_bytes());
   auto alloca = create_entry_block_alloca(type, sizeof(int64));

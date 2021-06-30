@@ -4,6 +4,8 @@ import numpy as np
 
 import taichi as ti
 
+import os
+
 ti.init(arch=ti.gpu)
 
 tile_size = 8  # Size of a tile
@@ -112,20 +114,27 @@ gui = ti.GUI("Rasterizer", res=(width, height))
 triangles = TriangleRasterizer(num_triangles)
 
 i = 0
-while gui.running:
-    # Set a triangle to a new random triangle
-    triangles.set_triangle(i % num_triangles,
-                           ti.Vector(np.random.rand(2) * [width, height]),
-                           ti.Vector(np.random.rand(2) * [width, height]),
-                           ti.Vector(np.random.rand(2) * [width, height]),
-                           ti.Vector(np.random.rand(3)),
-                           ti.Vector(np.random.rand(3)),
-                           ti.Vector(np.random.rand(3)))
-    i = i + 1
+# while gui.running:
+#     # Set a triangle to a new random triangle
+#     triangles.set_triangle(i % num_triangles,
+#                            ti.Vector(np.random.rand(2) * [width, height]),
+#                            ti.Vector(np.random.rand(2) * [width, height]),
+#                            ti.Vector(np.random.rand(2) * [width, height]),
+#                            ti.Vector(np.random.rand(3)),
+#                            ti.Vector(np.random.rand(3)),
+#                            ti.Vector(np.random.rand(3)))
+#     i = i + 1
 
-    samples.fill(ti.Vector([1.0, 1.0, 1.0]))
-    pixels.fill(ti.Vector([1.0, 1.0, 1.0]))
-    triangles.tile_culling()
-    triangles.rasterize()
-    gui.set_image(pixels)
-    gui.show()
+#     samples.fill(ti.Vector([1.0, 1.0, 1.0]))
+#     pixels.fill(ti.Vector([1.0, 1.0, 1.0]))
+#     triangles.tile_culling()
+#     triangles.rasterize()
+#     gui.set_image(pixels)
+#     gui.show()
+
+
+filename = os.path.basename(__file__)[:-3]
+m = ti.aot.Module(ti.metal)
+# m.add_kernel(triangles.rasterize)
+m.add_kernel(triangles.tile_culling, name='tile_culling_0', template_args={'self': triangles})
+m.save('outputaot', filename)

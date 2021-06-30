@@ -1,4 +1,4 @@
-import taichi_glsl as tl
+from math_utils import randUnit2D, randUnit3D
 
 import taichi as ti
 
@@ -51,9 +51,9 @@ def generate():
     for _ in range(pps):
         r = x[0]
         if ti.static(dim == 3):
-            r = tl.randUnit3D()
+            r = randUnit3D()
         else:
-            r = tl.randUnit2D()
+            r = randUnit2D()
         xi = ti.atomic_add(xcnt[None], 1) % (N - 1) + 1
         x[xi] = x[0]
         v[xi] = r * initvel + v[0]

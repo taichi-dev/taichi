@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 
 import taichi as ti
 
+ti.init(arch=ti.cpu)
+
 N = 2048
 x, y = ti.field(ti.f32), ti.field(ti.f32)
 

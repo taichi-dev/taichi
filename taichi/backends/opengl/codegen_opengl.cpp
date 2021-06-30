@@ -9,6 +9,7 @@
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
+#include "taichi/util/file_sequence_writer.h"
 #include "taichi/util/line_appender.h"
 #include "taichi/util/macros.h"
 
@@ -214,6 +215,11 @@ class KernelGen : public IRVisitor {
         line_appender_header_.lines() + line_appender_.lines();
     compiled_program_->add(std::move(glsl_kernel_name_), kernel_src_code,
                            std::move(ps));
+    auto &config = kernel->program->config;
+    if (config.print_kernel_llvm_ir) {
+      static FileSequenceWriter writer("shader{:04d}.comp", "OpenGL compute shader");
+      writer.write(kernel_src_code);
+    }
     line_appender_header_.clear_all();
     line_appender_.clear_all();
     ps = std::make_unique<ParallelSize>();

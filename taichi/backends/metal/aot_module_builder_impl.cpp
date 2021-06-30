@@ -22,7 +22,7 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
   const stdfs::path bin_path = dir / fmt::format("{}_metadata.tcb", filename);
   write_to_binary_file(ti_aot_data_, bin_path.string());
   // The txt file is mostly for debugging purpose.
-  const fs::path txt_path = dir / fmt::format("{}_metadata.txt", filename);
+  const stdfs::path txt_path = dir / fmt::format("{}_metadata.txt", filename);
   TextSerializer ts;
   ts("taichi file data", ti_aot_data_);
   ts.write_to_file(txt_path.string());

@@ -258,8 +258,7 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
     llvm::Value *root_val = builder->CreateAdd(root_base_val, kernel_args[1]);
     llvm::Value *root_ptr = builder->CreateIntToPtr(
         root_val, llvm::Type::getInt8PtrTy(*llvm_context));
-    llvm::Value *ret_ptr =
-        create_call("LLVMRuntime_set_root", {runtime, root_ptr});
+    create_call("LLVMRuntime_set_root", {runtime, root_ptr});
 
     builder->CreateRetVoid();
 

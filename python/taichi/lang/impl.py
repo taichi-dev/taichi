@@ -244,9 +244,9 @@ class PyTaichi:
         print('[Taichi] materializing...')
         self.create_program()
 
-        ti.trace('Materializing runtime...')
-        self.prog.materialize_runtime()
-        root.finalize()
+        #ti.trace('Materializing runtime...')
+        #self.prog.materialize_runtime()
+        #root.finalize()
 
         self.materialized = True
         not_placed = []

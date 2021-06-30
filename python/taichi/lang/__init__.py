@@ -231,6 +231,7 @@ def init(arch=None,
 
     # create a new program:
     impl.get_runtime().create_program()
+    impl.get_runtime().prog.materialize_runtime()
     impl._root_fb = FieldsBuilder()
 
 

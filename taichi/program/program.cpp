@@ -400,6 +400,7 @@ void Program::initialize_llvm_runtime_snodes(const SNodeTree *tree,
   const int root_id = tree->root()->id;
 
   TI_TRACE("Allocating data structure of size {} bytes", scomp->root_size);
+  printf("%d\n", (int)snodes.size());
   runtime_jit->call<void *, std::size_t, int, int>(
       "runtime_initialize_snodes", llvm_runtime, scomp->root_size, root_id,
       (int)snodes.size());
@@ -425,14 +426,16 @@ void Program::initialize_llvm_runtime_snodes(const SNodeTree *tree,
                                      node_size);
     }
   }
+  puts("initialize_llvm_runtime_snodes end!");
 }
 
 int Program::add_snode_tree(std::unique_ptr<SNode> root) {
+  /*
   if (!snode_trees_.empty()) {
     // TODO: remove this
     TI_ERROR("Multiple SNodeTree not supported yet");
     return -1;
-  }
+  }*/
 
   const int id = snode_trees_.size();
   auto tree = std::make_unique<SNodeTree>(id, std::move(root));

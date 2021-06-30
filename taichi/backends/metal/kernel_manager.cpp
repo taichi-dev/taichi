@@ -749,7 +749,6 @@ class KernelManager::Impl {
           rtm_meta->num_slots, rtm_meta->mem_offset_in_parent);
     }
     size_t addr_offset = sizeof(SNodeMeta) * max_snodes;
-    buffer_meta_data_.randseedoffset_in_runtime_buffer = addr_offset;
     addr += addr_offset;
     TI_DEBUG("Initialized SNodeMeta, size={} accumulated={}", addr_offset,
              (addr - addr_begin));
@@ -811,6 +810,7 @@ class KernelManager::Impl {
             std::chrono::system_clock::now().time_since_epoch())
             .count());
     const auto rand_seeds_begin = (addr - addr_begin);
+    buffer_meta_data_.randseedoffset_in_runtime_buffer = rand_seeds_begin;
     std::uniform_int_distribution<uint32_t> distr(
         0, std::numeric_limits<uint32_t>::max());
     for (int i = 0; i < kNumRandSeeds; ++i) {

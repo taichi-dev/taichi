@@ -9,10 +9,12 @@ K = 2
 R = 7
 N = K**R
 
-Broot = ti.root
+Broot = None
 B = ti.root
 for r in range(R):
     B = B.bitmasked(ti.ij, (K, K))
+    if r == 0:
+        Broot = B
 
 qt = ti.field(ti.f32)
 B.place(qt)

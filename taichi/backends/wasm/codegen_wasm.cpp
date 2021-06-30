@@ -246,6 +246,20 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
         kernel_args[0], llvm::Type::getInt32Ty(*llvm_context));
     builder->CreateStore(runtime_address_val, runtime_address_val_ptr);
 
+    llvm::Value *runtime_ptr =
+        create_call("Context_get_runtime", {kernel_args[0]});
+    llvm::Value *runtime = builder->CreateBitCast(
+        runtime_ptr,
+        llvm::PointerType::get(get_runtime_type("LLVMRuntime"), 0));
+
+    llvm::Value *root_base_ptr = builder->CreatePointerCast(
+        kernel_args[0], llvm::Type::getInt32PtrTy(*llvm_context));
+    llvm::Value *root_base_val = builder->CreateLoad(root_base_ptr);
+    llvm::Value *root_val = builder->CreateAdd(root_base_val, kernel_args[1]);
+    llvm::Value *root_ptr = builder->CreateIntToPtr(
+        root_val, llvm::Type::getInt8PtrTy(*llvm_context));
+    create_call("LLVMRuntime_set_root", {runtime, root_ptr});
+
     builder->CreateRetVoid();
 
     builder->SetInsertPoint(entry_block);

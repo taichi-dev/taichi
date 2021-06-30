@@ -73,11 +73,16 @@ struct KernelAttributes {
   struct RuntimeListOpAttributes {
     const SNode *snode = nullptr;
   };
+  struct GcOpAttributes {
+    const SNode *snode = nullptr;
+  };
   std::vector<Buffers> buffers;
-  // Only valid when |task_type| is range_for.
+  // Only valid when |task_type| is `range_for`.
   std::optional<RangeForAttributes> range_for_attribs;
-  // Only valid when |task_type| is {clear_list, listgen}.
+  // Only valid when |task_type| is `listgen`.
   std::optional<RuntimeListOpAttributes> runtime_list_op_attribs;
+  // Only valid when |task_type| is `gc`.
+  std::optional<GcOpAttributes> gc_op_attribs;
 
   static std::string buffers_name(Buffers b);
   std::string debug_string() const;

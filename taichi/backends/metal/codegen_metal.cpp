@@ -290,19 +290,6 @@ class KernelCodegenImpl : public IRVisitor {
       ScopedIndent s(current_appender());
       const auto &parent = stmt->ptr->raw_name();
       const bool is_dynamic = (stmt->snode->type == SNodeType::dynamic);
-      std::string ch_id;
-      if (is_dynamic &&
-          (opty == SNodeOpType::deactivate || opty == SNodeOpType::append ||
-           opty == SNodeOpType::length)) {
-        // For these ops, `dynamic` is a special case because |stmt| doesn't
-        // contain an index to its cells. Setting it to zero to store the
-        // address of the first child into |ch_addr|.
-        ch_id = "0";
-      } else {
-        ch_id = stmt->val->raw_name();
-      }
-      const std::string ch_addr =
-          fmt::format("{}.children({}).addr()", stmt->ptr->raw_name(), ch_id);
       if (opty == SNodeOpType::is_active) {
         emit("{} = {}.is_active({});", result_var, parent,
              stmt->val->raw_name());
@@ -619,7 +606,7 @@ class KernelCodegenImpl : public IRVisitor {
     } else if (stmt->task_type == Type::listgen) {
       add_runtime_list_op_kernel(stmt);
     } else if (stmt->task_type == Type::gc) {
-      // Ignored
+      add_gc_op_kernels(stmt);
     } else {
       TI_ERROR("Unsupported offload type={} on Metal arch", stmt->task_name());
     }
@@ -1284,6 +1271,41 @@ class KernelCodegenImpl : public IRVisitor {
     current_kernel_attribs_ = nullptr;
 
     mtl_kernels_attribs()->push_back(ka);
+    used_features()->sparse = true;
+  }
+
+  void add_gc_op_kernels(OffloadedStmt *stmt) {
+    TI_ASSERT(stmt->task_type == OffloadedTaskType::gc);
+
+    auto *const sn = stmt->snode;
+    const auto &sn_descs = compiled_structs_->snode_descriptors;
+    // common attributes shared among the 3-stage GC kernels
+    KernelAttributes ka;
+    ka.task_type = OffloadedTaskType::gc;
+    ka.gc_op_attribs = KernelAttributes::GcOpAttributes();
+    ka.gc_op_attribs->snode = sn;
+    ka.buffers = {BuffersEnum::Runtime, BuffersEnum::Context};
+    current_kernel_attribs_ = nullptr;
+    // stage 1 specific
+    ka.name = "gc_compact_free_list";
+    ka.advisory_total_num_threads =
+        std::min(total_num_self_from_root(sn_descs, sn->id),
+                 kMaxNumThreadsGridStrideLoop);
+    ka.advisory_num_threads_per_group = stmt->block_dim;
+    mtl_kernels_attribs()->push_back(ka);
+    // stage 2 specific
+    ka.name = "gc_reset_free_list";
+    ka.advisory_total_num_threads = 1;
+    ka.advisory_num_threads_per_group = 1;
+    mtl_kernels_attribs()->push_back(ka);
+    // stage 3 specific
+    ka.name = "gc_move_recycled_to_free";
+    ka.advisory_total_num_threads =
+        std::min(total_num_self_from_root(sn_descs, sn->id),
+                 kMaxNumThreadsGridStrideLoop);
+    ka.advisory_num_threads_per_group = stmt->block_dim;
+    mtl_kernels_attribs()->push_back(ka);
+
     used_features()->sparse = true;
   }
 

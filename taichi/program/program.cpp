@@ -895,6 +895,9 @@ void Program::print_memory_profiler_info() {
 }
 
 std::size_t Program::get_snode_num_dynamically_allocated(SNode *snode) {
+  if (config.arch == Arch::metal) {
+    return metal_kernel_mgr_->get_snode_num_dynamically_allocated(snode);
+  }
   auto node_allocator = runtime_query<void *>("LLVMRuntime_get_node_allocators",
                                               llvm_runtime, snode->id);
   auto data_list =

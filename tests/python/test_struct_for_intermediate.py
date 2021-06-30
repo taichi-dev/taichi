@@ -16,10 +16,9 @@ def test_nested():
             x[i, j] += 1
 
     iterate()
-
     for i in range(p):
         for j in range(q):
-            assert x[i * n, j * m] == 1
+            assert x[i * n, j * m] == 1, (i, j)
 
 
 @ti.test()

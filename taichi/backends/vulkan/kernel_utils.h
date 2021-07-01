@@ -7,7 +7,8 @@
 #include "taichi/ir/offloaded_task_type.h"
 #include "taichi/ir/type.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 class Kernel;
 class SNode;
@@ -181,4 +182,5 @@ struct TaichiKernelAttributes {
 };
 
 }  // namespace vulkan
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

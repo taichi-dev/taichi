@@ -8,7 +8,8 @@
 #include "taichi/program/context.h"
 #undef TI_RUNTIME_HOST
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 namespace vulkan {
 
 // static
@@ -119,4 +120,5 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
 }
 
 }  // namespace vulkan
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

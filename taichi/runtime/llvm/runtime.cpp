@@ -1109,42 +1109,6 @@ DEFINE_REDUCTION(or,i32);
 DEFINE_REDUCTION(xor,i32);
 
 
-
-
-i32 warp_reduce_sum_i32(i32 val) {
-  for (int offset = 16; offset > 0; offset /= 2)
-    val += cuda_shfl_down_sync_i32(0xFFFFFFFF,val,offset ,31);
-  return val;
-}
-
-i32 reduce_sum_i32(i32* result, i32 val) {
-  i32 warp_result = warp_reduce_sum_i32(val);
-  if( (thread_idx() & 31) == 0){
-    atomic_add_i32(result,warp_result);
-  }
-  //atomic_add_i32(result,warp_result);
-  return 0;
-}
-
-f32 warp_reduce_sum_f32(f32 val) {
-  for (int offset = 16; offset > 0; offset /= 2)
-    val += cuda_shfl_down_sync_f32(0xFFFFFFFF,val,offset,31);
-  return val;
-}
-
-f32 reduce_sum_f32(f32* result, f32 val) {
-  f32 warp_result = warp_reduce_sum_f32(val);
-  if( (thread_idx() & 31) == 0){
-    atomic_add_f32(result,warp_result);
-  }
-  //atomic_add_f32(result,val);
-  return 0;
-}
-
-
-
-
-
 // "Element", "component" are different concepts
 
 void clear_list(LLVMRuntime *runtime, StructMeta *parent, StructMeta *child) {

@@ -1,4 +1,4 @@
-from math_utils import randUnit2D, randUnit3D
+from math_utils import rand_unit_3d, rand_unit_2d
 
 import taichi as ti
 
@@ -51,9 +51,9 @@ def generate():
     for _ in range(pps):
         r = x[0]
         if ti.static(dim == 3):
-            r = randUnit3D()
+            r = rand_unit_3d()
         else:
-            r = randUnit2D()
+            r = rand_unit_2d()
         xi = ti.atomic_add(xcnt[None], 1) % (N - 1) + 1
         x[xi] = x[0]
         v[xi] = r * initvel + v[0]

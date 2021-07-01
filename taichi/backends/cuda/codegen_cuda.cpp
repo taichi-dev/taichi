@@ -263,20 +263,11 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
               llvm::AtomicRMWInst::BinOp::Add, llvm_val[stmt->dest],
               llvm_val[stmt->val],
               llvm::AtomicOrdering::SequentiallyConsistent);
-          }
         } else if (!dst_type->is<CustomFloatType>() &&
                    is_real(stmt->val->ret_type)) {
-          if(stmt -> is_reduction ){
-            TI_INFO(" opt");
-            old_value = create_call("reduce_sum_f32",{llvm_val[stmt->dest],llvm_val[stmt->val]});
-          }
-          else{
-            TI_INFO(" no opt");
-            old_value = builder->CreateAtomicRMW(
+          old_value = builder->CreateAtomicRMW(
               llvm::AtomicRMWInst::FAdd, llvm_val[stmt->dest],
               llvm_val[stmt->val], AtomicOrdering::SequentiallyConsistent);
-          }
-          
         } else if (auto cit = dst_type->cast<CustomIntType>()) {
           old_value = atomic_add_custom_int(stmt, cit);
         } else if (auto cft = dst_type->cast<CustomFloatType>()) {

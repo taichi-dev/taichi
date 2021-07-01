@@ -217,7 +217,8 @@ class KernelGen : public IRVisitor {
                            std::move(ps));
     auto &config = kernel->program->config;
     if (config.print_kernel_llvm_ir) {
-      static FileSequenceWriter writer("shader{:04d}.comp", "OpenGL compute shader");
+      static FileSequenceWriter writer("shader{:04d}.comp",
+                                       "OpenGL compute shader");
       writer.write(kernel_src_code);
     }
     line_appender_header_.clear_all();

@@ -77,7 +77,7 @@ def bilerp(vf, p):
 
 # 3rd order Runge-Kutta
 @ti.func
-def backtrace(vf: ti.template(), p, dt: ti.template()):
+def backtrace(vf: ti.template(), p):
     v1 = bilerp(vf, p)
     p1 = p - 0.5 * dt * v1
     v2 = bilerp(vf, p1)
@@ -91,7 +91,7 @@ def backtrace(vf: ti.template(), p, dt: ti.template()):
 def advect(vf: ti.template(), qf: ti.template(), new_qf: ti.template()):
     for i, j in vf:
         p = ti.Vector([i, j]) + 0.5
-        p = backtrace(vf, p, dt)
+        p = backtrace(vf, p)
         new_qf[i, j] = bilerp(qf, p) * dye_decay
 
 

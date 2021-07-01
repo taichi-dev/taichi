@@ -7,7 +7,7 @@ import numpy as np
 import time
 
 SIM_RES = 256
-RENDER_RES = 256
+RENDER_RES = 720
 
 dt = 0.03
 p_jacobi_iters = 40
@@ -46,15 +46,30 @@ def bilerp(vf, u, v, res):
     d = sample_clamp_to_edge(vf, iu + 1, iv + 1, res)
     return lerp(lerp(a, b, fu), lerp(c, d, fu), fv)
 
-@ti.func
-def sample_sep(qf, u, v, res):
-    u *= res
-    v *= res
-    return bilerp(qf, u, v, res)
+
+@ti.data_oriented
+class Texture(object):
+    def __init__(self, f, res):
+        self.field = f
+        self.res = res
+        self.texel_size = 1.0 / res
+
+    @staticmethod
+    def Scalar(res):
+        f = ti.field(ti.f32, shape=(res, res))
+        return Texture(f, res)
+
+    @staticmethod
+    def Vector(dim, res):
+        f = ti.Vector.field(dim, dtype=ti.f32, shape=(res, res))
+        return Texture(f, res)
 
 @ti.func
-def sample_interpolate(qf, uv, res):
-    return sample_sep(qf, uv[0], uv[1], res)
+def sample(qf, uv, res):
+    u, v = uv
+    u *= res
+    v *= res
+    return bilerp(qf.field, u, v, res)
 
 @ti.func
 def normalize(ij, res):
@@ -63,40 +78,43 @@ def normalize(ij, res):
     return ti.Vector([u, v])
 
 
-_velocities = ti.Vector.field(2, float, shape=(SIM_RES, SIM_RES))
-_new_velocities = ti.Vector.field(2, float, shape=(SIM_RES, SIM_RES))
-velocity_divs = ti.field(float, shape=(SIM_RES, SIM_RES))
-_curls = ti.field(float, shape=(SIM_RES, SIM_RES))
-_pressures = ti.field(float, shape=(SIM_RES, SIM_RES))
-_new_pressures = ti.field(float, shape=(SIM_RES, SIM_RES))
-_dye_buffer = ti.Vector.field(3, float, shape=(RENDER_RES, RENDER_RES))
-_new_dye_buffer = ti.Vector.field(3, float, shape=(RENDER_RES, RENDER_RES))
+_velocities = Texture.Vector(2, SIM_RES)
+_new_velocities = Texture.Vector(2, SIM_RES)
+velocity_divs = Texture.Scalar(SIM_RES)
+_pressures = Texture.Scalar(SIM_RES)
+_new_pressures = Texture.Scalar(SIM_RES)
+_curls = Texture.Scalar(SIM_RES)
+_vorticities = Texture.Scalar(SIM_RES)
 
-# color_buffer = ti.Vector.field(3, float, shape=(RENDER_RES, RENDER_RES))
-
-
-# def make_bloom_mipmap():
-#     cur_res = SIM_RES
-#     mm = []
-#     BLOOM_ITERS = 8
-#     # while cur_res > 2:
-#     for _ in range(BLOOM_ITERS):
-#         cur_res = (cur_res >> 1)
-#         if cur_res < 4:
-#             break
-#         mm.append(Texture.Vector(3, cur_res))
-#     return mm
+color_buffer = Texture.Vector(3, RENDER_RES)
+_dye_buffer = Texture.Vector(3, RENDER_RES)
+_new_dye_buffer = Texture.Vector(3, RENDER_RES)
 
 
-# _bloom_final = Texture.Vector(3, SIM_RES)
-# _bloom_mipmap = make_bloom_mipmap()
+def make_bloom_mipmap():
+    cur_res = SIM_RES
+    mm = []
+    BLOOM_ITERS = 8
+    # while cur_res > 2:
+    for _ in range(BLOOM_ITERS):
+        cur_res = (cur_res >> 1)
+        if cur_res < 4:
+            break
+        mm.append(Texture.Vector(3, cur_res))
+    return mm
 
-# _sunrays = Texture.Scalar(SIM_RES)
-# _sunrays_scratch = Texture.Scalar(SIM_RES)
+
+_bloom_final = Texture.Vector(3, SIM_RES)
+_bloom_mipmap = make_bloom_mipmap()
+
+_sunrays = Texture.Scalar(SIM_RES)
+_sunrays_scratch = Texture.Scalar(SIM_RES)
 
 
 class TexPair:
     def __init__(self, cur, nxt):
+        assert isinstance(cur, Texture)
+        assert isinstance(nxt, Texture)
         self.cur = cur
         self.nxt = nxt
 
@@ -111,14 +129,14 @@ dyes_pair = TexPair(_dye_buffer, _new_dye_buffer)
 
 @ti.kernel
 def advect(vf: ti.template(), qf: ti.template(), new_qf: ti.template(),
-           dissipation: float, res: ti.i32):
-    for i, j in qf:
-        uv = normalize(ti.Vector([i, j]) + 0.5, res)
-        vel = sample_interpolate(vf, uv, SIM_RES)
+           dissipation: float):
+    for i, j in qf.field:
+        uv = normalize(ti.Vector([i, j]) + 0.5, qf.res)
+        vel = sample(vf, uv, SIM_RES)
         prev_uv = uv - dt * vel
-        q_s = sample_interpolate(qf, prev_uv, res)
+        q_s = sample(qf, prev_uv, qf.res)
         decay = 1.0 + dissipation * dt
-        new_qf[i, j] = q_s / decay
+        new_qf.field[i, j] = q_s / decay
 
 
 force_radius = 0.1 / 100
@@ -127,40 +145,42 @@ inv_force_radius = 1.0 / force_radius
 
 @ti.kernel
 def impulse_velocity(
-        vf: ti.template(), omx: float, omy: float, fx: float, fy: float, res: ti.f32):
-    for i, j in vf:
-        u, v = normalize(ti.Vector([i, j]) + 0.5, SIM_RES)
+        vf: ti.template(), omx: float, omy: float, fx: float, fy: float):
+    for i, j in vf.field:
+        u, v = normalize(ti.Vector([i, j]) + 0.5, vf.res)
         dx, dy = (u - omx), (v - omy)
         d2 = dx * dx + dy * dy
         momentum = ti.exp(-d2 * inv_force_radius) * ti.Vector([fx, fy])
-        vel = vf[i, j]
-        vf[i, j] = vel + momentum
+        vel = vf.field[i, j]
+        vf.field[i, j] = vel + momentum
+
 
 dye_radius = 0.1 / 100
 inv_dye_radius = 1.0 / dye_radius
 
+
 @ti.kernel
 def impulse_dye(dye: ti.template(), omx: float, omy: float, r: float, g: float,
-                b: float, res: ti.i32):
-    for i, j in dye:
-        u, v = normalize(ti.Vector([i, j]) + 0.5, RENDER_RES)
+                b: float):
+    for i, j in dye.field:
+        u, v = normalize(ti.Vector([i, j]) + 0.5, dye.res)
         dx, dy = (u - omx), (v - omy)
         d2 = dx * dx + dy * dy
         impulse = ti.exp(-d2 * inv_dye_radius) * ti.Vector([r, g, b])
-        col = dye[i, j]
-        dye[i, j] = col + impulse
+        col = dye.field[i, j]
+        dye.field[i, j] = col + impulse
 
 
 @ti.kernel
 def add_curl(vf: ti.template()):
-    for i, j in _curls:
-        res = SIM_RES
-        vl = sample_clamp_to_edge(vf, i - 1, j, res)[1]
-        vr = sample_clamp_to_edge(vf, i + 1, j, res)[1]
-        vb = sample_clamp_to_edge(vf, i, j - 1, res)[0]
-        vt = sample_clamp_to_edge(vf, i, j + 1, res)[0]
+    for i, j in _curls.field:
+        res = vf.res
+        vl = sample_clamp_to_edge(vf.field, i - 1, j, res)[1]
+        vr = sample_clamp_to_edge(vf.field, i + 1, j, res)[1]
+        vb = sample_clamp_to_edge(vf.field, i, j - 1, res)[0]
+        vt = sample_clamp_to_edge(vf.field, i, j + 1, res)[0]
         vort = vr - vl - vt + vb
-        _curls[i, j] = 0.5 * vort
+        _curls.field[i, j] = 0.5 * vort
 
 
 curl_strength = 30.0
@@ -168,72 +188,74 @@ curl_strength = 30.0
 
 @ti.kernel
 def add_voriticity(vf: ti.template()):
-    for i, j in vf:
-        res = SIM_RES
-        vl = sample_clamp_to_edge(_curls, i - 1, j, res)
-        vr = sample_clamp_to_edge(_curls, i + 1, j, res)
-        vb = sample_clamp_to_edge(_curls, i, j - 1, res)
-        vt = sample_clamp_to_edge(_curls, i, j + 1, res)
-        vc = sample_clamp_to_edge(_curls, i, j, res)
+    for i, j in vf.field:
+        res = vf.res
+        vl = sample_clamp_to_edge(_curls.field, i - 1, j, res)
+        vr = sample_clamp_to_edge(_curls.field, i + 1, j, res)
+        vb = sample_clamp_to_edge(_curls.field, i, j - 1, res)
+        vt = sample_clamp_to_edge(_curls.field, i, j + 1, res)
+        vc = sample_clamp_to_edge(_curls.field, i, j, res)
 
         force = 0.5 * ti.Vector([abs(vt) - abs(vb),
                                  abs(vr) - abs(vl)]).normalized(1e-3)
         force *= curl_strength * vc
-        vel = vf[i, j]
-        vf[i, j] = min(max(vel + force * dt, -1e3), 1e3)
+        vel = vf.field[i, j]
+        vf.field[i, j] = min(max(vel + force * dt, -1e3), 1e3)
 
 
 @ti.kernel
 def divergence(vf: ti.template()):
-    for i, j in vf:
-        res = SIM_RES
-        vl = sample_clamp_to_edge(vf, i - 1, j, res)[0]
-        vr = sample_clamp_to_edge(vf, i + 1, j, res)[0]
-        vb = sample_clamp_to_edge(vf, i, j - 1, res)[1]
-        vt = sample_clamp_to_edge(vf, i, j + 1, res)[1]
-        vc = sample_clamp_to_edge(vf, i, j, res)
+    for i, j in vf.field:
+        res = vf.res
+        vl = sample_clamp_to_edge(vf.field, i - 1, j, res)[0]
+        vr = sample_clamp_to_edge(vf.field, i + 1, j, res)[0]
+        vb = sample_clamp_to_edge(vf.field, i, j - 1, res)[1]
+        vt = sample_clamp_to_edge(vf.field, i, j + 1, res)[1]
+        vc = sample_clamp_to_edge(vf.field, i, j, res)
         if i == 0:
             vl = -vc[0]
-        if i == res - 1:
+        if i == vf.res - 1:
             vr = -vc[0]
         if j == 0:
             vb = -vc[1]
-        if j == res - 1:
+        if j == vf.res - 1:
             vt = -vc[1]
-        velocity_divs[i, j] = 0.5 * res * (vr - vl + vt - vb)
+        velocity_divs.field[i, j] = 0.5 * vf.res * (vr - vl + vt - vb)
 
+
+p_alpha = -_pressures.texel_size * _pressures.texel_size
 
 
 @ti.kernel
 def pressure_jacobi(pf: ti.template(), new_pf: ti.template()):
-    for i, j in pf:
-        res = SIM_RES
-        pl = sample_clamp_to_edge(pf, i - 1, j, res)
-        pr = sample_clamp_to_edge(pf, i + 1, j, res)
-        pb = sample_clamp_to_edge(pf, i, j - 1, res)
-        pt = sample_clamp_to_edge(pf, i, j + 1, res)
-        div = velocity_divs[i, j]
-        new_pf[i, j] = (pl + pr + pb + pt -  div) * 0.25
+    for i, j in pf.field:
+        res = pf.res
+        pl = sample_clamp_to_edge(pf.field, i - 1, j, res)
+        pr = sample_clamp_to_edge(pf.field, i + 1, j, res)
+        pb = sample_clamp_to_edge(pf.field, i, j - 1, res)
+        pt = sample_clamp_to_edge(pf.field, i, j + 1, res)
+        div = velocity_divs.field[i, j]
+        new_pf.field[i, j] = (pl + pr + pb + pt + p_alpha * div) * 0.25
 
 
 @ti.kernel
 def subtract_gradient(vf: ti.template(), pf: ti.template()):
-    for i, j in vf:
-        res = SIM_RES
-        pl = sample_clamp_to_edge(pf, i - 1, j, res)
-        pr = sample_clamp_to_edge(pf, i + 1, j, res)
-        pb = sample_clamp_to_edge(pf, i, j - 1, res)
-        pt = sample_clamp_to_edge(pf, i, j + 1, res)
-        vel = sample_clamp_to_edge(vf, i, j, res)
+    for i, j in vf.field:
+        res = vf.res
+        pl = sample_clamp_to_edge(pf.field, i - 1, j, res)
+        pr = sample_clamp_to_edge(pf.field, i + 1, j, res)
+        pb = sample_clamp_to_edge(pf.field, i, j - 1, res)
+        pt = sample_clamp_to_edge(pf.field, i, j + 1, res)
+        vel = sample_clamp_to_edge(vf.field, i, j, res)
         vel -= 0.5 * res * ti.Vector([pr - pl, pt - pb])
-        vf[i, j] = vel
+        vf.field[i, j] = vel
 
 
 # @ti.kernel
 # def fill_color_v2(vf: ti.template()):
 #     for i, j in vf:
-#         v = vf[i, j]
-#         color_buffer[i, j] = ti.Vector([abs(v[0]), abs(v[1]), 0.25])
+#         v = vf.field[i, j]
+#         color_buffer.field[i, j] = ti.Vector([abs(v[0]), abs(v[1]), 0.25])
 
 
 # @ti.func
@@ -267,11 +289,11 @@ def run_impulse_kernels(mouse_data):
     normed_mxy = mouse_data[2:4]
     force = mouse_data[0:2] * f_strength * dt
     impulse_velocity(velocities_pair.cur, float(normed_mxy[0]), float(normed_mxy[1]),
-                     float(force[0]), float(force[1]), SIM_RES)
+                     float(force[0]), float(force[1]))
 
     rgb = mouse_data[4:]
     impulse_dye(dyes_pair.cur, float(normed_mxy[0]), float(normed_mxy[1]), float(rgb[0]),
-                float(rgb[1]), float(rgb[2]), RENDER_RES)
+                float(rgb[1]), float(rgb[2]))
 
 
 BLOOM_THRESHOLD = 0.6
@@ -299,7 +321,7 @@ BLOOM_CURVE_Z = 0.25 / BLOOM_KNEE
 
 # @ti.kernel
 # def bloom_fwd_blur(src: ti.template(), dst: ti.template()):
-#     for i, j in dst:
+#     for i, j in dst.field:
 #         u, v = dst.normalize(ti.Vector([i, j]) + 0.5)
 #         texel_sz = dst.texel_size
 #         c = ti.Vector([0.0, 0.0, 0.0])
@@ -308,12 +330,12 @@ BLOOM_CURVE_Z = 0.25 / BLOOM_KNEE
 #         c += src.sample_sep(u, v - texel_sz)
 #         c += src.sample_sep(u, v + texel_sz)
 #         # c = src.sample(v)
-#         dst[i, j] = c * 0.25
+#         dst.field[i, j] = c * 0.25
 
 
 # @ti.kernel
 # def bloom_inv_blur(src: ti.template(), dst: ti.template()):
-#     for i, j in dst:
+#     for i, j in dst.field:
 #         u, v = dst.normalize(ti.Vector([i, j]) + 0.5)
 #         texel_sz = dst.texel_size
 #         c = ti.Vector([0.0, 0.0, 0.0])
@@ -321,7 +343,7 @@ BLOOM_CURVE_Z = 0.25 / BLOOM_KNEE
 #         c += src.sample_sep(u + texel_sz, v)
 #         c += src.sample_sep(u, v - texel_sz)
 #         c += src.sample_sep(u, v + texel_sz)
-#         dst[i, j] += c * 0.25
+#         dst.field[i, j] += c * 0.25
 
 
 # def apply_bloom(qf):
@@ -375,8 +397,8 @@ SUNRAYS_ITERATIONS = 16
 
 
 def step(mouse_data):
-    advect(velocities_pair.cur, velocities_pair.cur, velocities_pair.nxt, 0.1, SIM_RES)
-    advect(velocities_pair.cur, dyes_pair.cur, dyes_pair.nxt, 0.8, RENDER_RES)
+    advect(velocities_pair.cur, velocities_pair.cur, velocities_pair.nxt, 0.1)
+    advect(velocities_pair.cur, dyes_pair.cur, dyes_pair.nxt, 0.8)
     velocities_pair.swap()
     dyes_pair.swap()
 
@@ -450,10 +472,10 @@ class MouseDataGen(object):
 
 
 def reset():
-    velocities_pair.cur.fill(ti.Vector([0, 0]))
-    pressures_pair.cur.fill(0.0)
-    dyes_pair.cur.fill(ti.Vector([0, 0, 0]))
-    # color_buffer.fill(ti.Vector([0, 0, 0]))
+    velocities_pair.cur.field.fill(ti.Vector([0, 0]))
+    pressures_pair.cur.field.fill(0.0)
+    dyes_pair.cur.field.fill(ti.Vector([0, 0, 0]))
+    color_buffer.field.fill(ti.Vector([0, 0, 0]))
 
 
 def main():
@@ -478,7 +500,7 @@ def main():
             mouse_data = md_gen(gui)
             step(mouse_data)
 
-        img = _dye_buffer.to_numpy()
+        img = _dye_buffer.field.to_numpy()
         gui.set_image(img)
         gui.show()
 

@@ -426,7 +426,6 @@ void Program::initialize_llvm_runtime_snodes(const SNodeTree *tree,
                                      node_size);
     }
   }
-  puts("initialize_llvm_runtime_snodes end!");
 }
 
 int Program::add_snode_tree(std::unique_ptr<SNode> root) {
@@ -452,7 +451,7 @@ void Program::materialize_snode_tree(SNodeTree *tree) {
   auto *const root = tree->root();
   // always use host_arch() for host accessors
   std::unique_ptr<StructCompiler> scomp =
-      StructCompiler::make(this, host_arch());
+      std::make_unique<StructCompilerLLVM>(host_arch(), this);
   scomp->run(*root);
   materialize_snode_expr_attributes();
 
@@ -464,7 +463,7 @@ void Program::materialize_snode_tree(SNodeTree *tree) {
     initialize_llvm_runtime_snodes(tree, scomp.get());
   } else if (config.arch == Arch::cuda) {
     std::unique_ptr<StructCompiler> scomp_gpu =
-        StructCompiler::make(this, Arch::cuda);
+        std::make_unique<StructCompilerLLVM>(Arch::cuda, this);
     scomp_gpu->run(*root);
     initialize_llvm_runtime_snodes(tree, scomp_gpu.get());
   } else if (config.arch == Arch::metal) {

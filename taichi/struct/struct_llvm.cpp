@@ -13,16 +13,22 @@ namespace lang {
 
 StructCompilerLLVM::StructCompilerLLVM(Arch arch,
                                        const CompileConfig *config,
-                                       TaichiLLVMContext *tlctx)
-    : LLVMModuleBuilder(tlctx->clone_runtime_module(), tlctx),
+                                       TaichiLLVMContext *tlctx,
+                                       std::unique_ptr<llvm::Module> &&module)
+    : LLVMModuleBuilder(module == nullptr
+                            ? tlctx->clone_runtime_module()
+                            : std::move(module),
+                        tlctx),
       arch_(arch),
       config_(config),
       tlctx_(tlctx),
       llvm_ctx_(tlctx_->get_this_thread_context()) {
 }
 
-StructCompilerLLVM::StructCompilerLLVM(Arch arch, Program *prog)
-    : StructCompilerLLVM(arch, &(prog->config), prog->get_llvm_context(arch)) {
+StructCompilerLLVM::StructCompilerLLVM(Arch arch,
+                                       Program *prog,
+                                       std::unique_ptr<llvm::Module> &&module)
+    : StructCompilerLLVM(arch, &(prog->config), prog->get_llvm_context(arch), std::move(module)) {
 }
 
 void StructCompilerLLVM::generate_types(SNode &snode) {

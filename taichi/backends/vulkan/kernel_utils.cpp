@@ -96,7 +96,7 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
       attribs.offset_in_mem = bytes;
       bytes += attribs.stride;
       TI_TRACE("  at={} scalar offset_in_mem={} stride={}", i,
-              attribs.offset_in_mem, attribs.stride);
+               attribs.offset_in_mem, attribs.stride);
     }
     // Then the array args
     for (int i : array_indices) {
@@ -104,7 +104,7 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
       attribs.offset_in_mem = bytes;
       bytes += attribs.stride;
       TI_TRACE("  at={} array offset_in_mem={} stride={}", i,
-              attribs.offset_in_mem, attribs.stride);
+               attribs.offset_in_mem, attribs.stride);
     }
     return bytes - offset;
   };
@@ -114,7 +114,7 @@ KernelContextAttributes::KernelContextAttributes(const Kernel &kernel)
   TI_TRACE("rets:");
   rets_bytes_ = arrange_scalar_before_array(&ret_attribs_vec_, args_bytes_);
   TI_TRACE("sizes: args={} rets={} ctx={} total={}", args_bytes(), rets_bytes(),
-          ctx_bytes(), total_bytes());
+           ctx_bytes(), total_bytes());
   TI_ASSERT(has_args() == (args_bytes_ > 0));
   TI_ASSERT(has_rets() == (rets_bytes_ > 0));
 }

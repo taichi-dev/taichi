@@ -47,8 +47,8 @@ struct TaskAttributes {
     // * false: It is the offset of the begin in the global tmps buffer.
     //
     // Same applies to |end|.
-    size_t begin;
-    size_t end;
+    size_t begin{0};
+    size_t end{0};
     bool const_begin{true};
     bool const_end{true};
 
@@ -61,6 +61,7 @@ struct TaskAttributes {
   std::optional<RangeForAttributes> range_for_attribs;
 
   static std::string buffers_name(Buffers b);
+
   std::string debug_string() const;
 };
 
@@ -72,6 +73,13 @@ struct TaskAttributes {
  * share the same kernel args (i.e. they use the same Vulkan buffer for input
  * args and return values). This is because kernel arguments is a Taichi-level
  * concept.
+ *
+ * Memory layout
+ *
+ * /---- input args ----\/---- ret vals -----\/-- extra args --\
+ * +----------+---------+----------+---------+-----------------+
+ * |  scalar  |  array  |  scalar  |  array  |      scalar     |
+ * +----------+---------+----------+---------+-----------------+
  */
 class KernelContextAttributes {
  private:
@@ -92,15 +100,22 @@ class KernelContextAttributes {
   };
 
  public:
-  // This is mostly the same as Kernel::Arg, with Vulkan specific attributes.
+  /**
+   * This is mostly the same as Kernel::Arg, with Vulkan specific attributes.
+   */
   struct ArgAttributes : public AttribsBase {};
 
-  // This is mostly the same as Kernel::Ret, with Vulkan specific attributes.
+  /**
+   * This is mostly the same as Kernel::Ret, with Vulkan specific attributes.
+   */
   struct RetAttributes : public AttribsBase {};
 
   KernelContextAttributes() = default;
   explicit KernelContextAttributes(const Kernel &kernel);
 
+  /**
+   * Whether this kernel has any argument
+   */
   inline bool has_args() const {
     return !arg_attribs_vec_.empty();
   }
@@ -109,6 +124,9 @@ class KernelContextAttributes {
     return arg_attribs_vec_;
   }
 
+  /**
+   * Whether this kernel has any return value
+   */
   inline bool has_rets() const {
     return !ret_attribs_vec_.empty();
   }
@@ -117,59 +135,78 @@ class KernelContextAttributes {
     return ret_attribs_vec_;
   }
 
-  // Returns true if the kernel has neither input args nor return values.
+  /**
+   * Whether this kernel has either arguments or return values.
+   */
   inline bool empty() const {
     return !(has_args() || has_rets());
   }
 
+  /**
+   * Number of bytes needed by all the arguments.
+   */
   inline size_t args_bytes() const {
     return args_bytes_;
   }
 
+  /**
+   * Number of bytes needed by all the return values.
+   */
   inline size_t rets_bytes() const {
     return rets_bytes_;
   }
 
+  /**
+   * Offset (in bytes) of the return values in the memory.
+   */
   inline size_t rets_mem_offset() const {
     return args_bytes();
   }
 
-  // Total size in bytes of the input args and return values,
-  // *excluding* the extra args bytes!
+  /**
+   * Total size in bytes of the input args and return values.
+   *
+   * This *excludes* the extra args bytes.
+   */
   inline size_t ctx_bytes() const {
     return args_bytes() + rets_bytes();
   }
-
+  /**
+   * Number of bytes needed by the extra arguments.
+   *
+   * Extra argument region is used to store some metadata, like the shape of the
+   * external array.
+   */
   inline size_t extra_args_bytes() const {
     return extra_args_bytes_;
   }
 
+  /**
+   * Offset (in bytes) of the extra arguments in the memory.
+   */
   inline size_t extra_args_mem_offset() const {
     return ctx_bytes();
   }
 
-  // Total bytes needed for allocating the Vulkan buffer
+  /**
+   * Total bytes needed for allocating the Vulkan buffer.
+   */
   inline size_t total_bytes() const {
     return ctx_bytes() + extra_args_bytes();
   }
 
  private:
-  // Memory layout
-  //
-  // /---- input args ----\/---- ret vals -----\/-- extra args --\
-  // +----------+---------+----------+---------+-----------------+
-  // |  scalar  |  array  |  scalar  |  array  |      scalar     |
-  // +----------+---------+----------+---------+-----------------+
-  //
   std::vector<ArgAttributes> arg_attribs_vec_;
   std::vector<RetAttributes> ret_attribs_vec_;
 
-  size_t args_bytes_ = 0;
-  size_t rets_bytes_ = 0;
-  size_t extra_args_bytes_ = 0;
+  size_t args_bytes_{0};
+  size_t rets_bytes_{0};
+  size_t extra_args_bytes_{0};
 };
 
-// Groups all the Vulkan kernels generated from a single ti.kernel
+/**
+ * Groups all the Vulkan kernels generated from a single ti.kernel.
+ */
 struct TaichiKernelAttributes {
   // Taichi kernel name
   std::string name;

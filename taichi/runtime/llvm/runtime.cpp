@@ -1659,4 +1659,21 @@ f64 rounding_prepare_f64(f64 f) {
 }
 }
 
+extern "C" {
+// Here is an illustration for memory layout in WASM:
+// Input: starting address of Context, which should be set to __heap_base
+// Output: starting address of root buffer
+// ##############################################################
+//   ...  | Context | Runtime | RandState[0] | Root Buffer ...
+// ##############################################################
+i32 wasm_materialize(Context *context) {
+  context->runtime = (LLVMRuntime *)((size_t)context + sizeof(Context));
+  context->runtime->rand_states = (RandState *)((size_t)context->runtime + sizeof(LLVMRuntime));
+  // set random seed to (1, 0, 0, 0)
+  context->runtime->rand_states[0].x = 1;
+  context->runtime->root = (Ptr)((size_t)context->runtime->rand_states + sizeof(RandState));
+  return (i32)(size_t)context->runtime->root;
+}
+}
+
 #endif

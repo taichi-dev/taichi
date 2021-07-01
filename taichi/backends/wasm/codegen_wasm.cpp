@@ -218,7 +218,7 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
     TaichiLLVMContext::eliminate_unused_functions(
         module.get(), [&](std::string func_name) {
           return offloaded_task_name == func_name ||
-              materialize_name == func_name;
+                 materialize_name == func_name;
         });
     tlctx->add_module(std::move(module));
     auto kernel_symbol = tlctx->lookup_function_pointer(offloaded_task_name);

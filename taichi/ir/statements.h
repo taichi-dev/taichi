@@ -229,9 +229,10 @@ class AtomicOpStmt : public Stmt {
  public:
   AtomicOpType op_type;
   Stmt *dest, *val;
+  bool is_reduction;
 
-  AtomicOpStmt(AtomicOpType op_type, Stmt *dest, Stmt *val)
-      : op_type(op_type), dest(dest), val(val) {
+  AtomicOpStmt(AtomicOpType op_type, Stmt *dest, Stmt *val,bool is_reduction = false)
+      : op_type(op_type), dest(dest), val(val),is_reduction(is_reduction) {
     TI_STMT_REG_FIELDS;
   }
 

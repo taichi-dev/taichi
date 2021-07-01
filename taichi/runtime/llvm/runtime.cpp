@@ -1665,7 +1665,7 @@ extern "C" {
 // memory. The function returns starting address of root buffer. Here is
 // an illustration for proper memory layout in WASM:
 // ━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━
-//   ...  ┃▄ context ┃  ▄ Runtime ▄  ┃ RandState[0] ┃ Root Buffer ...
+//   ...  ┃▄ Context ┃  ▄ Runtime ▄  ┃ RandState[0] ┃ Root Buffer ...
 // ━━━━━━━┻│━━━━━━━━━▲━━│━━━━━━━━━│━━▲━━━━━━━━━━━━━━▲━━━━━━━━━━━━━━━━━━━
 //         └─────────┘  │         └──┘              │
 //                      └───────────────────────────┘

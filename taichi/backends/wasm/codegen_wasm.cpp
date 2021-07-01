@@ -165,44 +165,6 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
     TI_ASSERT(!llvm::verifyFunction(*func, &llvm::errs()));
   }
 
-  // Simple wrapper for wasm_materialize() function call.
-  // Context's address is pass by kernel_args[0] which is supposed to be
-  // __heap_base to avoid conflicts with C++ stack data which is stored in
-  // memory. The function will set the following parameters:
-  //     context->runtime
-  //     context->runtime->rand_state
-  //     context->runtime->rand_state[0]
-  //     context->root
-  // It will returns root buffer's address.
-  std::string create_taichi_materialize_function() {
-    auto task_function_type =
-        llvm::FunctionType::get(llvm::Type::getInt32Ty(*llvm_context),
-                                {llvm::PointerType::get(context_ty, 0)}, false);
-    auto task_kernel_name = fmt::format("materialize");
-    auto func = llvm::Function::Create(task_function_type,
-                                       llvm::Function::ExternalLinkage,
-                                       task_kernel_name, module.get());
-
-    std::vector<llvm::Value *> kernel_args;
-    for (auto &arg : func->args()) {
-      kernel_args.push_back(&arg);
-    }
-    kernel_args[0]->setName("context");
-
-    auto entry_block = llvm::BasicBlock::Create(*llvm_context, "entry", func);
-    auto func_body_bb = llvm::BasicBlock::Create(*llvm_context, "body", func);
-    builder->SetInsertPoint(func_body_bb);
-
-    llvm::Value *root_ptr = create_call("wasm_materialize", {kernel_args[0]});
-    builder->CreateRet(root_ptr);
-
-    builder->SetInsertPoint(entry_block);
-    builder->CreateBr(func_body_bb);
-
-    TI_ASSERT(!llvm::verifyFunction(*func, &llvm::errs()));
-    return task_kernel_name;
-  }
-
   FunctionType gen() override {
     TI_AUTO_PROF
     // emit_to_module
@@ -211,14 +173,14 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
     ir->accept(this);
     finalize_taichi_kernel_function();
 
-    auto materialize_name = create_taichi_materialize_function();
+    auto wasm_materialize_name = "wasm_materialize";
 
     // compile_module_to_executable
     // only keep the current func
     TaichiLLVMContext::eliminate_unused_functions(
         module.get(), [&](std::string func_name) {
           return offloaded_task_name == func_name ||
-                 materialize_name == func_name;
+                 wasm_materialize_name == func_name;
         });
     tlctx->add_module(std::move(module));
     auto kernel_symbol = tlctx->lookup_function_pointer(offloaded_task_name);
@@ -238,7 +200,7 @@ FunctionType CodeGenWASM::codegen() {
 std::unique_ptr<ModuleGenValue> CodeGenWASM::modulegen(
     std::unique_ptr<llvm::Module> &&module) {
   /*
-    TODO: move create_taichi_materialize_function to dump process in AOT.
+    TODO: move wasm_materialize to dump process in AOT.
   */
   bool init_flag = module == nullptr;
   std::vector<std::string> name_list;
@@ -250,7 +212,7 @@ std::unique_ptr<ModuleGenValue> CodeGenWASM::modulegen(
   gen->finalize_taichi_kernel_function();
 
   if (init_flag) {
-    name_list.push_back(gen->create_taichi_materialize_function());
+    name_list.emplace_back("wasm_materialize");
   }
 
   gen->tlctx->jit->global_optimize_module(gen->module.get());

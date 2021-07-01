@@ -1660,9 +1660,10 @@ f64 rounding_prepare_f64(f64 f) {
 }
 
 extern "C" {
-// Here is an illustration for memory layout in WASM:
-// Input: starting address of Context, which should be set to __heap_base
-// Output: starting address of root buffer
+// The input means starting address of Context, which should be set to
+// '__heap_base' to avoid conflicts with C++ stack data which is stored in
+// memory. The function returns starting address of root buffer. Here is
+// an illustration for memory layout in WASM:
 // ##############################################################
 //   ...  | Context | Runtime | RandState[0] | Root Buffer ...
 // ##############################################################

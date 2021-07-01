@@ -255,7 +255,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
         if (dst_type->is<PrimitiveType>() && is_integral(stmt->val->ret_type)) {
           if(stmt -> is_reduction ){
             TI_INFO(" opt");
-            old_value = create_call("reduce_sum_i32",{llvm_val[stmt->dest],llvm_val[stmt->val]});
+            old_value = create_call("reduce_add_i32",{llvm_val[stmt->dest],llvm_val[stmt->val]});
           }
           else {
             TI_INFO("no opt");
@@ -268,7 +268,7 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
                    is_real(stmt->val->ret_type)) {
           if(stmt -> is_reduction ){
             TI_INFO(" opt");
-            old_value = create_call("reduce_sum_f32",{llvm_val[stmt->dest],llvm_val[stmt->val]});
+            old_value = create_call("reduce_add_f32",{llvm_val[stmt->dest],llvm_val[stmt->val]});
           }
           else{
             TI_INFO(" no opt");

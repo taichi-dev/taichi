@@ -23,6 +23,10 @@ if (APPLE)
         set(TI_WITH_CC OFF)
         message(WARNING "C backend not supported on OS X. Setting TI_WITH_CC to OFF.")
     endif()
+    if (TI_WITH_VULKAN)
+        set(TI_WITH_VULKAN OFF)
+        message(WARNING "Vulkan backend not supported on OS X. Setting TI_WITH_VULKAN to OFF.")
+    endif()
 endif()
 
 if (WIN32)
@@ -202,6 +206,26 @@ if (TI_WITH_VULKAN)
     message(STATUS "Vulkan_LIBRARY=${Vulkan_LIBRARY}")
     include_directories(${Vulkan_INCLUDE_DIR})
     target_link_libraries(${CORE_LIBRARY_NAME} ${Vulkan_LIBRARY})
+
+    # shaderc libs
+    # TODO: Is there a better way to auto detect this?
+    if (NOT SHADERC_ROOT_DIR)
+        message(FATAL_ERROR
+            "Please specify `-DSHADERC_ROOT_DIR=/path/to/shaderc` for developing the Vulkan backend. "
+            "The path should be the root direcotry containing `includes`, `lib` and `bin`.\n"
+            "If you haven't installed `shaderc`, please visit\n"
+            "https://github.com/google/shaderc/blob/main/downloads.md\n"
+            "to download the matching libraries.")
+    endif()
+    find_library(SHADERC_LIB NAMES "shaderc_combined" PATHS "${SHADERC_ROOT_DIR}/lib" REQUIRED)
+    target_include_directories(${CORE_LIBRARY_NAME} PUBLIC "${SHADERC_ROOT_DIR}/include")
+    target_link_libraries(${CORE_LIBRARY_NAME} ${SHADERC_LIB})
+    if (LINUX)
+        # shaderc requires pthread
+        set(THREADS_PREFER_PTHREAD_FLAG ON)
+        find_package(Threads REQUIRED)
+        target_link_libraries(${CORE_LIBRARY_NAME} Threads::Threads)
+    endif()
 endif ()
 
 # Optional dependencies

@@ -7,7 +7,7 @@ import numpy as np
 import time
 
 SIM_RES = 256
-RENDER_RES = 720
+RENDER_RES = 256
 
 dt = 0.03
 p_jacobi_iters = 40
@@ -53,7 +53,7 @@ def sample_sep(qf, u, v, res):
     return bilerp(qf, u, v, res)
 
 @ti.func
-def sample(qf, uv, res):
+def sample_interpolate(qf, uv, res):
     return sample_sep(qf, uv[0], uv[1], res)
 
 @ti.func
@@ -72,7 +72,7 @@ _new_pressures = ti.field(float, shape=(SIM_RES, SIM_RES))
 _dye_buffer = ti.Vector.field(3, float, shape=(RENDER_RES, RENDER_RES))
 _new_dye_buffer = ti.Vector.field(3, float, shape=(RENDER_RES, RENDER_RES))
 
-color_buffer = ti.Vector.field(3, float, shape=(RENDER_RES, RENDER_RES))
+# color_buffer = ti.Vector.field(3, float, shape=(RENDER_RES, RENDER_RES))
 
 
 # def make_bloom_mipmap():
@@ -114,9 +114,9 @@ def advect(vf: ti.template(), qf: ti.template(), new_qf: ti.template(),
            dissipation: float, res: ti.i32):
     for i, j in qf:
         uv = normalize(ti.Vector([i, j]) + 0.5, res)
-        vel = sample(vf, uv, res)
+        vel = sample_interpolate(vf, uv, SIM_RES)
         prev_uv = uv - dt * vel
-        q_s = sample(qf, prev_uv, res)
+        q_s = sample_interpolate(qf, prev_uv, res)
         decay = 1.0 + dissipation * dt
         new_qf[i, j] = q_s / decay
 
@@ -129,23 +129,21 @@ inv_force_radius = 1.0 / force_radius
 def impulse_velocity(
         vf: ti.template(), omx: float, omy: float, fx: float, fy: float, res: ti.f32):
     for i, j in vf:
-        u, v = normalize(ti.Vector([i, j]) + 0.5, res)
+        u, v = normalize(ti.Vector([i, j]) + 0.5, SIM_RES)
         dx, dy = (u - omx), (v - omy)
         d2 = dx * dx + dy * dy
         momentum = ti.exp(-d2 * inv_force_radius) * ti.Vector([fx, fy])
         vel = vf[i, j]
         vf[i, j] = vel + momentum
 
-
 dye_radius = 0.1 / 100
 inv_dye_radius = 1.0 / dye_radius
-
 
 @ti.kernel
 def impulse_dye(dye: ti.template(), omx: float, omy: float, r: float, g: float,
                 b: float, res: ti.i32):
     for i, j in dye:
-        u, v = normalize(ti.Vector([i, j]) + 0.5, res)
+        u, v = normalize(ti.Vector([i, j]) + 0.5, RENDER_RES)
         dx, dy = (u - omx), (v - omy)
         d2 = dx * dx + dy * dy
         impulse = ti.exp(-d2 * inv_dye_radius) * ti.Vector([r, g, b])
@@ -455,7 +453,7 @@ def reset():
     velocities_pair.cur.fill(ti.Vector([0, 0]))
     pressures_pair.cur.fill(0.0)
     dyes_pair.cur.fill(ti.Vector([0, 0, 0]))
-    color_buffer.fill(ti.Vector([0, 0, 0]))
+    # color_buffer.fill(ti.Vector([0, 0, 0]))
 
 
 def main():

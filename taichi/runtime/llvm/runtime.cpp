@@ -1663,10 +1663,12 @@ extern "C" {
 // The input means starting address of Context, which should be set to
 // '__heap_base' to avoid conflicts with C++ stack data which is stored in
 // memory. The function returns starting address of root buffer. Here is
-// an illustration for memory layout in WASM:
-// ##############################################################
-//   ...  | Context | Runtime | RandState[0] | Root Buffer ...
-// ##############################################################
+// an illustration for proper memory layout in WASM:
+// ━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━
+//   ...  ┃▄ context ┃  ▄ Runtime ▄  ┃ RandState[0] ┃ Root Buffer ...
+// ━━━━━━━┻│━━━━━━━━━▲━━│━━━━━━━━━│━━▲━━━━━━━━━━━━━━▲━━━━━━━━━━━━━━━━━━━
+//         └─────────┘  │         └──┘              │
+//                      └───────────────────────────┘
 i32 wasm_materialize(Context *context) {
   context->runtime = (LLVMRuntime *)((size_t)context + sizeof(Context));
   context->runtime->rand_states =

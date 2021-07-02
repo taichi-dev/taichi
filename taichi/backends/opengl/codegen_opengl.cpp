@@ -171,17 +171,13 @@ class KernelGen : public IRVisitor {
 
     if (used.simulated_atomic_float) {
       kernel_header += (
-#include "taichi/backends/opengl/shaders/atomics_data_f32.glsl.h"
-      );
+#include "taichi/backends/opengl/shaders/atomics_macro_f32.glsl.h"
+          "DEFINE_ATOMIC_F32_FUNCTIONS(data);\n");
       if (used.buf_gtmp) {
-        kernel_header += (
-#include "taichi/backends/opengl/shaders/atomics_gtmp_f32.glsl.h"
-        );
+        kernel_header += ("DEFINE_ATOMIC_F32_FUNCTIONS(gtmp);\n");
       }
       if (used.buf_extr) {
-        kernel_header += (
-#include "taichi/backends/opengl/shaders/atomics_extr_f32.glsl.h"
-        );
+        kernel_header += ("DEFINE_ATOMIC_F32_FUNCTIONS(extr);\n");
       }
     }
 

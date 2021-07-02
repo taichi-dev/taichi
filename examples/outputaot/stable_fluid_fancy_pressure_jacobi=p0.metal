@@ -9,11 +9,11 @@ template <typename T, typename G> T union_cast(G g) { static_assert(sizeof(T) ==
 constant constexpr int kTaichiMaxNumIndices = 8; constant constexpr int kTaichiNumChunks = 1024; constant constexpr int kAlignment = 8; using PtrOffset = int32_t; struct MemoryAllocator { atomic_int next; constant constexpr static int kInitOffset = 8; static inline bool is_valid(PtrOffset v) { return v >= kInitOffset; } }; struct ListManagerData { int32_t element_stride = 0; int32_t log2_num_elems_per_chunk = 0; atomic_int next; atomic_int chunks[kTaichiNumChunks]; struct ReservedElemPtrOffset { public: ReservedElemPtrOffset() = default; explicit ReservedElemPtrOffset(PtrOffset v) : val_(v) { } inline bool is_valid() const { return is_valid(val_); } inline static bool is_valid(PtrOffset v) { return MemoryAllocator::is_valid(v); } inline PtrOffset value() const { return val_; } private: PtrOffset val_{0}; }; }; struct NodeManagerData { using ElemIndex = ListManagerData::ReservedElemPtrOffset; ListManagerData data_list; ListManagerData free_list; ListManagerData recycled_list; atomic_int free_list_used; int recycled_list_size_backup; }; struct SNodeMeta { enum Type { Root = 0, Dense = 1, Bitmasked = 2, Dynamic = 3, Pointer = 4, BitStruct = 5, }; int32_t element_stride = 0; int32_t num_slots = 0; int32_t mem_offset_in_parent = 0; int32_t type = 0; }; struct SNodeExtractors { struct Extractor { int32_t start = 0; int32_t num_bits = 0; int32_t acc_offset = 0; int32_t num_elements = 0; }; Extractor extractors[kTaichiMaxNumIndices]; }; struct ElementCoords { int32_t at[kTaichiMaxNumIndices]; }; struct ListgenElement { ElementCoords coords; int32_t mem_offset = 0; struct BelongedNodeManager { int32_t id = -1; NodeManagerData::ElemIndex elem_idx; }; BelongedNodeManager belonged_nodemgr; inline bool in_root_buffer() const { return belonged_nodemgr.id < 0; } };
 
 struct Runtime {
-  SNodeMeta snode_metas[22];
-  SNodeExtractors snode_extractors[22];
-  ListManagerData snode_lists[22];
-  NodeManagerData snode_allocators[22];
-  NodeManagerData::ElemIndex ambient_indices[22];
+  SNodeMeta snode_metas[24];
+  SNodeExtractors snode_extractors[24];
+  ListManagerData snode_lists[24];
+  NodeManagerData snode_allocators[24];
+  NodeManagerData::ElemIndex ambient_indices[24];
   uint32_t rand_seeds[65536];
 };
 
@@ -22,6 +22,61 @@ struct Runtime {
 struct SNodeBitPointer { device uint32_t *base; uint32_t offset; SNodeBitPointer(device byte * b, uint32_t o) : base((device uint32_t *)b), offset(o) { } }; template <typename C> C mtl_float_to_custom_int(float f) { const int32_t delta_bits = (union_cast<int32_t>(f) & 0x80000000) | union_cast<int32_t>(0.5f); const float delta = union_cast<float>(delta_bits); return static_cast<C>(f + delta); } void mtl_set_partial_bits(SNodeBitPointer bp, uint32_t value, uint32_t bits) { using P = uint32_t; constexpr int N = sizeof(P) * 8; const uint32_t mask = ((~(uint32_t)0U) << (N - bits)) >> (N - bp.offset - bits); device auto *atm_ptr = reinterpret_cast<device atomic_uint *>(bp.base); bool ok = false; while (!ok) { P old_val = *(bp.base); P new_val = (old_val & (~mask)) | (value << bp.offset); ok = atomic_compare_exchange_weak_explicit(atm_ptr, &old_val, new_val, metal::memory_order_relaxed, metal::memory_order_relaxed); } } void mtl_set_full_bits(SNodeBitPointer bp, uint32_t value) { device auto *atm_ptr = reinterpret_cast<device atomic_uint *>(bp.base); atomic_store_explicit(atm_ptr, value, metal::memory_order_relaxed); } uint32_t mtl_atomic_add_partial_bits(SNodeBitPointer bp, uint32_t value, uint32_t bits) { using P = uint32_t; constexpr int N = sizeof(P) * 8; const uint32_t mask = ((~(uint32_t)0U) << (N - bits)) >> (N - bp.offset - bits); device auto *atm_ptr = reinterpret_cast<device atomic_uint *>(bp.base); P old_val = 0; bool ok = false; while (!ok) { old_val = *(bp.base); P new_val = old_val + (value << bp.offset); new_val = (old_val & (~mask)) | (new_val & mask); ok = atomic_compare_exchange_weak_explicit(atm_ptr, &old_val, new_val, metal::memory_order_relaxed, metal::memory_order_relaxed); } return old_val; } uint32_t mtl_atomic_add_full_bits(SNodeBitPointer bp, uint32_t value) { device auto *atm_ptr = reinterpret_cast<device atomic_uint *>(bp.base); return atomic_fetch_add_explicit(atm_ptr, value, metal::memory_order_relaxed); } namespace detail { template <bool Signed> struct SHRSelector { using type = int32_t; }; template <> struct SHRSelector<false> { using type = uint32_t; }; } template <typename C> C mtl_get_partial_bits(SNodeBitPointer bp, uint32_t bits) { using P = uint32_t; constexpr int N = sizeof(P) * 8; const P phy_val = *(bp.base); using CSel = typename detail::SHRSelector<is_signed<C>::value>::type; const auto step1 = static_cast<CSel>(phy_val << (N - (bp.offset + bits))); return static_cast<C>(step1 >> (N - bits)); } template <typename C> C mtl_get_full_bits(SNodeBitPointer bp) { return static_cast<C>(*(bp.base)); }
 
 
+
+
+struct S24 {
+  // place
+  constant static constexpr int stride = sizeof(float);
+
+  S24(device byte *v, device Runtime *, device MemoryAllocator *)
+    : val((device float*)v) {}
+
+  device float *val;
+};
+
+class S23_ch {
+ public:
+  S23_ch(device byte *a) : addr_(a) {}
+  S24 get0(device Runtime *rtm, device MemoryAllocator *ma) {
+    return {addr_ + (0), rtm, ma};
+  }
+
+  device byte *addr() { return addr_; }
+
+  constant static constexpr int stride = 0 + S24::stride;
+ private:
+  device byte *addr_;
+};
+
+struct S23 {
+  // dense
+  constant static constexpr int n = 524288;
+  constant static constexpr int elem_stride = S23_ch::stride;
+  constant static constexpr int stride = elem_stride * n;
+
+  S23(device byte *addr, device Runtime *rtm, device MemoryAllocator *ma) {
+    rep_.init(addr);
+  }
+
+  S23_ch children(int i) {
+    return {rep_.addr() + (i * elem_stride)};
+  }
+
+  inline bool is_active(int i) {
+    return rep_.is_active(i);
+  }
+
+  inline void activate(int i) {
+    rep_.activate(i);
+  }
+
+  inline void deactivate(int i) {
+    rep_.deactivate(i);
+  }
+
+ private:
+  SNodeRep_dense rep_;
+};
 
 
 struct S22 {
@@ -199,31 +254,46 @@ struct S16 {
   device float *val;
 };
 
-class S15_ch {
+
+struct S15 {
+  // place
+  constant static constexpr int stride = sizeof(float);
+
+  S15(device byte *v, device Runtime *, device MemoryAllocator *)
+    : val((device float*)v) {}
+
+  device float *val;
+};
+
+class S14_ch {
  public:
-  S15_ch(device byte *a) : addr_(a) {}
-  S16 get0(device Runtime *rtm, device MemoryAllocator *ma) {
+  S14_ch(device byte *a) : addr_(a) {}
+  S15 get0(device Runtime *rtm, device MemoryAllocator *ma) {
     return {addr_ + (0), rtm, ma};
+  }
+
+  S16 get1(device Runtime *rtm, device MemoryAllocator *ma) {
+    return {addr_ + (0 + S15::stride), rtm, ma};
   }
 
   device byte *addr() { return addr_; }
 
-  constant static constexpr int stride = 0 + S16::stride;
+  constant static constexpr int stride = 0 + S15::stride + S16::stride;
  private:
   device byte *addr_;
 };
 
-struct S15 {
+struct S14 {
   // dense
   constant static constexpr int n = 524288;
-  constant static constexpr int elem_stride = S15_ch::stride;
+  constant static constexpr int elem_stride = S14_ch::stride;
   constant static constexpr int stride = elem_stride * n;
 
-  S15(device byte *addr, device Runtime *rtm, device MemoryAllocator *ma) {
+  S14(device byte *addr, device Runtime *rtm, device MemoryAllocator *ma) {
     rep_.init(addr);
   }
 
-  S15_ch children(int i) {
+  S14_ch children(int i) {
     return {rep_.addr() + (i * elem_stride)};
   }
 
@@ -241,17 +311,6 @@ struct S15 {
 
  private:
   SNodeRep_dense rep_;
-};
-
-
-struct S14 {
-  // place
-  constant static constexpr int stride = sizeof(float);
-
-  S14(device byte *v, device Runtime *, device MemoryAllocator *)
-    : val((device float*)v) {}
-
-  device float *val;
 };
 
 
@@ -265,35 +324,46 @@ struct S13 {
   device float *val;
 };
 
-class S12_ch {
+
+struct S12 {
+  // place
+  constant static constexpr int stride = sizeof(float);
+
+  S12(device byte *v, device Runtime *, device MemoryAllocator *)
+    : val((device float*)v) {}
+
+  device float *val;
+};
+
+class S11_ch {
  public:
-  S12_ch(device byte *a) : addr_(a) {}
-  S13 get0(device Runtime *rtm, device MemoryAllocator *ma) {
+  S11_ch(device byte *a) : addr_(a) {}
+  S12 get0(device Runtime *rtm, device MemoryAllocator *ma) {
     return {addr_ + (0), rtm, ma};
   }
 
-  S14 get1(device Runtime *rtm, device MemoryAllocator *ma) {
-    return {addr_ + (0 + S13::stride), rtm, ma};
+  S13 get1(device Runtime *rtm, device MemoryAllocator *ma) {
+    return {addr_ + (0 + S12::stride), rtm, ma};
   }
 
   device byte *addr() { return addr_; }
 
-  constant static constexpr int stride = 0 + S13::stride + S14::stride;
+  constant static constexpr int stride = 0 + S12::stride + S13::stride;
  private:
   device byte *addr_;
 };
 
-struct S12 {
+struct S11 {
   // dense
   constant static constexpr int n = 524288;
-  constant static constexpr int elem_stride = S12_ch::stride;
+  constant static constexpr int elem_stride = S11_ch::stride;
   constant static constexpr int stride = elem_stride * n;
 
-  S12(device byte *addr, device Runtime *rtm, device MemoryAllocator *ma) {
+  S11(device byte *addr, device Runtime *rtm, device MemoryAllocator *ma) {
     rep_.init(addr);
   }
 
-  S12_ch children(int i) {
+  S11_ch children(int i) {
     return {rep_.addr() + (i * elem_stride)};
   }
 
@@ -311,17 +381,6 @@ struct S12 {
 
  private:
   SNodeRep_dense rep_;
-};
-
-
-struct S11 {
-  // place
-  constant static constexpr int stride = sizeof(float);
-
-  S11(device byte *v, device Runtime *, device MemoryAllocator *)
-    : val((device float*)v) {}
-
-  device float *val;
 };
 
 
@@ -335,52 +394,15 @@ struct S10 {
   device float *val;
 };
 
-class S9_ch {
- public:
-  S9_ch(device byte *a) : addr_(a) {}
-  S10 get0(device Runtime *rtm, device MemoryAllocator *ma) {
-    return {addr_ + (0), rtm, ma};
-  }
-
-  S11 get1(device Runtime *rtm, device MemoryAllocator *ma) {
-    return {addr_ + (0 + S10::stride), rtm, ma};
-  }
-
-  device byte *addr() { return addr_; }
-
-  constant static constexpr int stride = 0 + S10::stride + S11::stride;
- private:
-  device byte *addr_;
-};
 
 struct S9 {
-  // dense
-  constant static constexpr int n = 524288;
-  constant static constexpr int elem_stride = S9_ch::stride;
-  constant static constexpr int stride = elem_stride * n;
+  // place
+  constant static constexpr int stride = sizeof(float);
 
-  S9(device byte *addr, device Runtime *rtm, device MemoryAllocator *ma) {
-    rep_.init(addr);
-  }
+  S9(device byte *v, device Runtime *, device MemoryAllocator *)
+    : val((device float*)v) {}
 
-  S9_ch children(int i) {
-    return {rep_.addr() + (i * elem_stride)};
-  }
-
-  inline bool is_active(int i) {
-    return rep_.is_active(i);
-  }
-
-  inline void activate(int i) {
-    rep_.activate(i);
-  }
-
-  inline void deactivate(int i) {
-    rep_.deactivate(i);
-  }
-
- private:
-  SNodeRep_dense rep_;
+  device float *val;
 };
 
 
@@ -405,50 +427,43 @@ struct S7 {
   device float *val;
 };
 
-
-struct S6 {
-  // place
-  constant static constexpr int stride = sizeof(float);
-
-  S6(device byte *v, device Runtime *, device MemoryAllocator *)
-    : val((device float*)v) {}
-
-  device float *val;
-};
-
-class S5_ch {
+class S6_ch {
  public:
-  S5_ch(device byte *a) : addr_(a) {}
-  S6 get0(device Runtime *rtm, device MemoryAllocator *ma) {
+  S6_ch(device byte *a) : addr_(a) {}
+  S7 get0(device Runtime *rtm, device MemoryAllocator *ma) {
     return {addr_ + (0), rtm, ma};
   }
 
-  S7 get1(device Runtime *rtm, device MemoryAllocator *ma) {
-    return {addr_ + (0 + S6::stride), rtm, ma};
+  S8 get1(device Runtime *rtm, device MemoryAllocator *ma) {
+    return {addr_ + (0 + S7::stride), rtm, ma};
   }
 
-  S8 get2(device Runtime *rtm, device MemoryAllocator *ma) {
-    return {addr_ + (0 + S6::stride + S7::stride), rtm, ma};
+  S9 get2(device Runtime *rtm, device MemoryAllocator *ma) {
+    return {addr_ + (0 + S7::stride + S8::stride), rtm, ma};
+  }
+
+  S10 get3(device Runtime *rtm, device MemoryAllocator *ma) {
+    return {addr_ + (0 + S7::stride + S8::stride + S9::stride), rtm, ma};
   }
 
   device byte *addr() { return addr_; }
 
-  constant static constexpr int stride = 0 + S6::stride + S7::stride + S8::stride;
+  constant static constexpr int stride = 0 + S7::stride + S8::stride + S9::stride + S10::stride;
  private:
   device byte *addr_;
 };
 
-struct S5 {
+struct S6 {
   // dense
   constant static constexpr int n = 8388608;
-  constant static constexpr int elem_stride = S5_ch::stride;
+  constant static constexpr int elem_stride = S6_ch::stride;
   constant static constexpr int stride = elem_stride * n;
 
-  S5(device byte *addr, device Runtime *rtm, device MemoryAllocator *ma) {
+  S6(device byte *addr, device Runtime *rtm, device MemoryAllocator *ma) {
     rep_.init(addr);
   }
 
-  S5_ch children(int i) {
+  S6_ch children(int i) {
     return {rep_.addr() + (i * elem_stride)};
   }
 
@@ -466,6 +481,17 @@ struct S5 {
 
  private:
   SNodeRep_dense rep_;
+};
+
+
+struct S5 {
+  // place
+  constant static constexpr int stride = sizeof(float);
+
+  S5(device byte *v, device Runtime *, device MemoryAllocator *)
+    : val((device float*)v) {}
+
+  device float *val;
 };
 
 
@@ -516,9 +542,13 @@ class S1_ch {
     return {addr_ + (0 + S2::stride + S3::stride), rtm, ma};
   }
 
+  S5 get3(device Runtime *rtm, device MemoryAllocator *ma) {
+    return {addr_ + (0 + S2::stride + S3::stride + S4::stride), rtm, ma};
+  }
+
   device byte *addr() { return addr_; }
 
-  constant static constexpr int stride = 0 + S2::stride + S3::stride + S4::stride;
+  constant static constexpr int stride = 0 + S2::stride + S3::stride + S4::stride + S5::stride;
  private:
   device byte *addr_;
 };
@@ -560,37 +590,37 @@ class S0_ch {
     return {addr_ + (0), rtm, ma};
   }
 
-  S5 get1(device Runtime *rtm, device MemoryAllocator *ma) {
+  S6 get1(device Runtime *rtm, device MemoryAllocator *ma) {
     return {addr_ + (0 + S1::stride), rtm, ma};
   }
 
-  S9 get2(device Runtime *rtm, device MemoryAllocator *ma) {
-    return {addr_ + (0 + S1::stride + S5::stride), rtm, ma};
+  S11 get2(device Runtime *rtm, device MemoryAllocator *ma) {
+    return {addr_ + (0 + S1::stride + S6::stride), rtm, ma};
   }
 
-  S12 get3(device Runtime *rtm, device MemoryAllocator *ma) {
-    return {addr_ + (0 + S1::stride + S5::stride + S9::stride), rtm, ma};
+  S14 get3(device Runtime *rtm, device MemoryAllocator *ma) {
+    return {addr_ + (0 + S1::stride + S6::stride + S11::stride), rtm, ma};
   }
 
-  S15 get4(device Runtime *rtm, device MemoryAllocator *ma) {
-    return {addr_ + (0 + S1::stride + S5::stride + S9::stride + S12::stride), rtm, ma};
+  S17 get4(device Runtime *rtm, device MemoryAllocator *ma) {
+    return {addr_ + (0 + S1::stride + S6::stride + S11::stride + S14::stride), rtm, ma};
   }
 
-  S17 get5(device Runtime *rtm, device MemoryAllocator *ma) {
-    return {addr_ + (0 + S1::stride + S5::stride + S9::stride + S12::stride + S15::stride), rtm, ma};
+  S19 get5(device Runtime *rtm, device MemoryAllocator *ma) {
+    return {addr_ + (0 + S1::stride + S6::stride + S11::stride + S14::stride + S17::stride), rtm, ma};
   }
 
-  S19 get6(device Runtime *rtm, device MemoryAllocator *ma) {
-    return {addr_ + (0 + S1::stride + S5::stride + S9::stride + S12::stride + S15::stride + S17::stride), rtm, ma};
+  S21 get6(device Runtime *rtm, device MemoryAllocator *ma) {
+    return {addr_ + (0 + S1::stride + S6::stride + S11::stride + S14::stride + S17::stride + S19::stride), rtm, ma};
   }
 
-  S21 get7(device Runtime *rtm, device MemoryAllocator *ma) {
-    return {addr_ + (0 + S1::stride + S5::stride + S9::stride + S12::stride + S15::stride + S17::stride + S19::stride), rtm, ma};
+  S23 get7(device Runtime *rtm, device MemoryAllocator *ma) {
+    return {addr_ + (0 + S1::stride + S6::stride + S11::stride + S14::stride + S17::stride + S19::stride + S21::stride), rtm, ma};
   }
 
   device byte *addr() { return addr_; }
 
-  constant static constexpr int stride = 0 + S1::stride + S5::stride + S9::stride + S12::stride + S15::stride + S17::stride + S19::stride + S21::stride;
+  constant static constexpr int stride = 0 + S1::stride + S6::stride + S11::stride + S14::stride + S17::stride + S19::stride + S21::stride + S23::stride;
  private:
   device byte *addr_;
 };
@@ -642,86 +672,86 @@ void mtl_k0014_pressure_jacobi_c14_0_0_func(
   device RandState* rand_state_ = reinterpret_cast<device RandState*>(runtime_->rand_seeds + (linear_loop_idx_ % 65536));
   AssertRecorder assert_rec_(print_assert_addr);
   device auto* print_alloc_ = reinterpret_cast<device PrintMsgAllocator*>(print_assert_addr + 300);
-  constexpr int32_t tmp12930 = 1;
-  constexpr int32_t tmp12924 = -1;
-  constexpr int32_t tmp12914 = 1023;
-  constexpr int32_t tmp12910 = 511;
+  constexpr int32_t tmp13594 = 1;
+  constexpr int32_t tmp13588 = -1;
+  constexpr int32_t tmp13578 = 1023;
+  constexpr int32_t tmp13574 = 511;
   constexpr float tmp56 = 0.25;
   constexpr float tmp53 = -2.8057652e-06;
   constexpr int32_t tmp26 = 596;
   constexpr int32_t tmp24 = 0;
   constexpr int32_t tmp22 = 416;
   const int tmp3 = linear_loop_idx_;
-  constexpr int32_t tmp12860 = 10;
-  const int32_t tmp12861 = (tmp3 >> tmp12860);
-  const int32_t tmp12863 = (tmp12861 & tmp12910);
-  const int32_t tmp12867 = (tmp3 & tmp12914);
+  constexpr int32_t tmp13524 = 10;
+  const int32_t tmp13525 = (tmp3 >> tmp13524);
+  const int32_t tmp13527 = (tmp13525 & tmp13574);
+  const int32_t tmp13531 = (tmp3 & tmp13578);
   constexpr int32_t tmp13 = 417;
-  const int32_t tmp14 = -(tmp12863 < tmp13);
+  const int32_t tmp14 = -(tmp13527 < tmp13);
   constexpr int32_t tmp16 = 597;
-  const int32_t tmp17 = -(tmp12867 < tmp16);
+  const int32_t tmp17 = -(tmp13531 < tmp16);
   const int32_t tmp18 = (tmp14 & tmp17);
   if (tmp18) {
-    const int32_t tmp12917 = (tmp12863 + tmp12924);
-    const int32_t tmp23 =  min(tmp22, tmp12917);
+    const int32_t tmp13581 = (tmp13527 + tmp13588);
+    const int32_t tmp23 =  min(tmp22, tmp13581);
     const int32_t tmp25 =  max(tmp24, tmp23);
-    const int32_t tmp27 =  min(tmp26, tmp12867);
+    const int32_t tmp27 =  min(tmp26, tmp13531);
     const int32_t tmp28 =  max(tmp24, tmp27);
-    S0 tmp12790(root_addr);
-    S0_ch tmp12792 = tmp12790.children(tmp24);
-    S19 tmp12793 = tmp12792.get6(runtime_, mem_alloc_);
-    const int32_t tmp12871 = (tmp25 & tmp12910);
-    const int32_t tmp12875 = (tmp28 & tmp12914);
-    const int32_t tmp12983 = (tmp12871 << tmp12860);
-    const int32_t tmp12935 = (tmp12875 + tmp12983);
-    S19_ch tmp12797 = tmp12793.children(tmp12935);
-    device float* tmp12798 = tmp12797.get0(runtime_, mem_alloc_).val;
-    const auto tmp30 = *tmp12798;
-    const int32_t tmp12919 = (tmp12863 + tmp12930);
-    const int32_t tmp32 =  min(tmp22, tmp12919);
+    S0 tmp13454(root_addr);
+    S0_ch tmp13456 = tmp13454.children(tmp24);
+    S21 tmp13457 = tmp13456.get6(runtime_, mem_alloc_);
+    const int32_t tmp13535 = (tmp25 & tmp13574);
+    const int32_t tmp13539 = (tmp28 & tmp13578);
+    const int32_t tmp13647 = (tmp13535 << tmp13524);
+    const int32_t tmp13599 = (tmp13539 + tmp13647);
+    S21_ch tmp13461 = tmp13457.children(tmp13599);
+    device float* tmp13462 = tmp13461.get0(runtime_, mem_alloc_).val;
+    const auto tmp30 = *tmp13462;
+    const int32_t tmp13583 = (tmp13527 + tmp13594);
+    const int32_t tmp32 =  min(tmp22, tmp13583);
     const int32_t tmp33 =  max(tmp24, tmp32);
-    const int32_t tmp12879 = (tmp33 & tmp12910);
-    const int32_t tmp12985 = (tmp12879 << tmp12860);
-    const int32_t tmp12943 = (tmp12875 + tmp12985);
-    S19_ch tmp12809 = tmp12793.children(tmp12943);
-    device float* tmp12810 = tmp12809.get0(runtime_, mem_alloc_).val;
-    const auto tmp35 = *tmp12810;
-    const int32_t tmp12921 = (tmp12867 + tmp12924);
-    const int32_t tmp37 =  min(tmp22, tmp12863);
+    const int32_t tmp13543 = (tmp33 & tmp13574);
+    const int32_t tmp13649 = (tmp13543 << tmp13524);
+    const int32_t tmp13607 = (tmp13539 + tmp13649);
+    S21_ch tmp13473 = tmp13457.children(tmp13607);
+    device float* tmp13474 = tmp13473.get0(runtime_, mem_alloc_).val;
+    const auto tmp35 = *tmp13474;
+    const int32_t tmp13585 = (tmp13531 + tmp13588);
+    const int32_t tmp37 =  min(tmp22, tmp13527);
     const int32_t tmp38 =  max(tmp24, tmp37);
-    const int32_t tmp39 =  min(tmp26, tmp12921);
+    const int32_t tmp39 =  min(tmp26, tmp13585);
     const int32_t tmp40 =  max(tmp24, tmp39);
-    const int32_t tmp12887 = (tmp38 & tmp12910);
-    const int32_t tmp12891 = (tmp40 & tmp12914);
-    const int32_t tmp12987 = (tmp12887 << tmp12860);
-    const int32_t tmp12951 = (tmp12891 + tmp12987);
-    S19_ch tmp12821 = tmp12793.children(tmp12951);
-    device float* tmp12822 = tmp12821.get0(runtime_, mem_alloc_).val;
-    const auto tmp42 = *tmp12822;
-    const int32_t tmp12923 = (tmp12867 + tmp12930);
-    const int32_t tmp44 =  min(tmp26, tmp12923);
+    const int32_t tmp13551 = (tmp38 & tmp13574);
+    const int32_t tmp13555 = (tmp40 & tmp13578);
+    const int32_t tmp13651 = (tmp13551 << tmp13524);
+    const int32_t tmp13615 = (tmp13555 + tmp13651);
+    S21_ch tmp13485 = tmp13457.children(tmp13615);
+    device float* tmp13486 = tmp13485.get0(runtime_, mem_alloc_).val;
+    const auto tmp42 = *tmp13486;
+    const int32_t tmp13587 = (tmp13531 + tmp13594);
+    const int32_t tmp44 =  min(tmp26, tmp13587);
     const int32_t tmp45 =  max(tmp24, tmp44);
-    const int32_t tmp12899 = (tmp45 & tmp12914);
-    const int32_t tmp12959 = (tmp12899 + tmp12987);
-    S19_ch tmp12833 = tmp12793.children(tmp12959);
-    device float* tmp12834 = tmp12833.get0(runtime_, mem_alloc_).val;
-    const auto tmp47 = *tmp12834;
-    S15 tmp12841 = tmp12792.get4(runtime_, mem_alloc_);
-    const int32_t tmp12989 = (tmp12863 << tmp12860);
-    const int32_t tmp12967 = (tmp12867 + tmp12989);
-    S15_ch tmp12845 = tmp12841.children(tmp12967);
-    device float* tmp12846 = tmp12845.get0(runtime_, mem_alloc_).val;
-    const auto tmp49 = *tmp12846;
+    const int32_t tmp13563 = (tmp45 & tmp13578);
+    const int32_t tmp13623 = (tmp13563 + tmp13651);
+    S21_ch tmp13497 = tmp13457.children(tmp13623);
+    device float* tmp13498 = tmp13497.get0(runtime_, mem_alloc_).val;
+    const auto tmp47 = *tmp13498;
+    S17 tmp13505 = tmp13456.get4(runtime_, mem_alloc_);
+    const int32_t tmp13653 = (tmp13527 << tmp13524);
+    const int32_t tmp13631 = (tmp13531 + tmp13653);
+    S17_ch tmp13509 = tmp13505.children(tmp13631);
+    device float* tmp13510 = tmp13509.get0(runtime_, mem_alloc_).val;
+    const auto tmp49 = *tmp13510;
     const float tmp50 = (tmp30 + tmp35);
     const float tmp51 = (tmp50 + tmp42);
     const float tmp52 = (tmp51 + tmp47);
     const float tmp54 = (tmp49 * tmp53);
     const float tmp55 = (tmp52 + tmp54);
     const float tmp57 = (tmp55 * tmp56);
-    S21 tmp12853 = tmp12792.get7(runtime_, mem_alloc_);
-    S21_ch tmp12857 = tmp12853.children(tmp12967);
-    device float* tmp12858 = tmp12857.get0(runtime_, mem_alloc_).val;
-    *tmp12858 = tmp57;
+    S23 tmp13517 = tmp13456.get7(runtime_, mem_alloc_);
+    S23_ch tmp13521 = tmp13517.children(tmp13631);
+    device float* tmp13522 = tmp13521.get0(runtime_, mem_alloc_).val;
+    *tmp13522 = tmp57;
   } else {
   }
 }

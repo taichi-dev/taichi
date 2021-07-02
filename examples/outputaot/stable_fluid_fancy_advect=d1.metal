@@ -50,7 +50,7 @@ class S21_ch {
 
 struct S21 {
   // dense
-  constant static constexpr int n = 65536;
+  constant static constexpr int n = 524288;
   constant static constexpr int elem_stride = S21_ch::stride;
   constant static constexpr int stride = elem_stride * n;
 
@@ -105,7 +105,7 @@ class S19_ch {
 
 struct S19 {
   // dense
-  constant static constexpr int n = 65536;
+  constant static constexpr int n = 524288;
   constant static constexpr int elem_stride = S19_ch::stride;
   constant static constexpr int stride = elem_stride * n;
 
@@ -160,7 +160,7 @@ class S17_ch {
 
 struct S17 {
   // dense
-  constant static constexpr int n = 65536;
+  constant static constexpr int n = 524288;
   constant static constexpr int elem_stride = S17_ch::stride;
   constant static constexpr int stride = elem_stride * n;
 
@@ -215,7 +215,7 @@ class S15_ch {
 
 struct S15 {
   // dense
-  constant static constexpr int n = 65536;
+  constant static constexpr int n = 524288;
   constant static constexpr int elem_stride = S15_ch::stride;
   constant static constexpr int stride = elem_stride * n;
 
@@ -285,7 +285,7 @@ class S12_ch {
 
 struct S12 {
   // dense
-  constant static constexpr int n = 65536;
+  constant static constexpr int n = 524288;
   constant static constexpr int elem_stride = S12_ch::stride;
   constant static constexpr int stride = elem_stride * n;
 
@@ -355,7 +355,7 @@ class S9_ch {
 
 struct S9 {
   // dense
-  constant static constexpr int n = 65536;
+  constant static constexpr int n = 524288;
   constant static constexpr int elem_stride = S9_ch::stride;
   constant static constexpr int stride = elem_stride * n;
 
@@ -440,7 +440,7 @@ class S5_ch {
 
 struct S5 {
   // dense
-  constant static constexpr int n = 524288;
+  constant static constexpr int n = 8388608;
   constant static constexpr int elem_stride = S5_ch::stride;
   constant static constexpr int stride = elem_stride * n;
 
@@ -525,7 +525,7 @@ class S1_ch {
 
 struct S1 {
   // dense
-  constant static constexpr int n = 524288;
+  constant static constexpr int n = 8388608;
   constant static constexpr int elem_stride = S1_ch::stride;
   constant static constexpr int stride = elem_stride * n;
 
@@ -667,28 +667,29 @@ void mtl_k0007_advect_c4_3_0_func(
   device RandState* rand_state_ = reinterpret_cast<device RandState*>(runtime_->rand_seeds + (linear_loop_idx_ % 65536));
   AssertRecorder assert_rec_(print_assert_addr);
   device auto* print_alloc_ = reinterpret_cast<device PrintMsgAllocator*>(print_assert_addr + 300);
-  constexpr int32_t tmp8938 = 8;
-  constexpr int32_t tmp8746 = 1023;
-  constexpr int32_t tmp8742 = 511;
+  constexpr int32_t tmp8938 = 10;
+  constexpr int32_t tmp8746 = 4095;
+  constexpr int32_t tmp8742 = 2047;
   constexpr float tmp97 = 0.0069849244;
   constexpr float tmp94 = 0.01;
-  constexpr int32_t tmp8626 = 255;
+  constexpr int32_t tmp8626 = 1023;
+  constexpr int32_t tmp8622 = 511;
   constexpr int32_t tmp57 = 1;
-  constexpr int32_t tmp50 = 198;
+  constexpr int32_t tmp50 = 596;
   constexpr int32_t tmp48 = 0;
-  constexpr int32_t tmp46 = 138;
-  constexpr float tmp36 = 199.0;
-  constexpr float tmp34 = 139.0;
+  constexpr int32_t tmp46 = 416;
+  constexpr float tmp36 = 597.0;
+  constexpr float tmp34 = 417.0;
   constexpr float tmp28 = 1.0;
   constexpr float tmp23 = 0.5;
   const int tmp3 = linear_loop_idx_;
-  constexpr int32_t tmp8556 = 10;
+  constexpr int32_t tmp8556 = 12;
   const int32_t tmp8557 = (tmp3 >> tmp8556);
   const int32_t tmp8559 = (tmp8557 & tmp8742);
   const int32_t tmp8563 = (tmp3 & tmp8746);
-  constexpr int32_t tmp13 = 417;
+  constexpr int32_t tmp13 = 1668;
   const int32_t tmp14 = -(tmp8559 < tmp13);
-  constexpr int32_t tmp16 = 597;
+  constexpr int32_t tmp16 = 2388;
   const int32_t tmp17 = -(tmp8563 < tmp16);
   const int32_t tmp18 = (tmp14 & tmp17);
   if (tmp18) {
@@ -721,7 +722,7 @@ void mtl_k0007_advect_c4_3_0_func(
     S0 tmp8282(root_addr);
     S0_ch tmp8284 = tmp8282.children(tmp48);
     S12 tmp8285 = tmp8284.get3(runtime_, mem_alloc_);
-    const int32_t tmp8567 = (tmp49 & tmp8626);
+    const int32_t tmp8567 = (tmp49 & tmp8622);
     const int32_t tmp8571 = (tmp52 & tmp8626);
     const int32_t tmp8939 = (tmp8567 << tmp8938);
     const int32_t tmp8755 = (tmp8571 + tmp8939);
@@ -733,7 +734,7 @@ void mtl_k0007_advect_c4_3_0_func(
     const int32_t tmp58 = (tmp40 + tmp57);
     const int32_t tmp59 =  min(tmp46, tmp58);
     const int32_t tmp60 =  max(tmp48, tmp59);
-    const int32_t tmp8583 = (tmp60 & tmp8626);
+    const int32_t tmp8583 = (tmp60 & tmp8622);
     const int32_t tmp8941 = (tmp8583 << tmp8938);
     const int32_t tmp8771 = (tmp8571 + tmp8941);
     S12_ch tmp8313 = tmp8285.children(tmp8771);
@@ -897,7 +898,7 @@ kernel void mtl_k0007_advect_c4_3_0(
     const uint ugrid_size_ [[threads_per_grid]],
     const uint utid_ [[thread_position_in_grid]]) {
   // range_for, range known at compile time
-  const int total_elems = 524288;
+  const int total_elems = 8388608;
   const int begin_ = utid_ + 0;
   const int end_ = total_elems + 0;
   device auto *runtime_ = reinterpret_cast<device Runtime *>(runtime_addr);

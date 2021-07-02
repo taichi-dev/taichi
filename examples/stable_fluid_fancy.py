@@ -3,18 +3,22 @@
 # https://github.com/PavelDoGreat/WebGL-Fluid-Simulation
 
 import taichi as ti
+import os
 import numpy as np
 import time
 
 
-# SIM_RES_x = 139
-# SIM_RES_y = 199
+SIM_RES_x = 139
+SIM_RES_y = 199
 
-SIM_RES_x = 417
-SIM_RES_y = 597
+# SIM_RES_x = 417
+# SIM_RES_y = 597
 
-RENDER_RES_x = 1668
-RENDER_RES_y = 2388
+# RENDER_RES_x = 1668
+# RENDER_RES_y = 2388
+
+RENDER_RES_x = 417
+RENDER_RES_y = 597
 
 dt = 0.01
 p_jacobi_iters = 400
@@ -140,8 +144,9 @@ inv_force_radius = 1.0 / force_radius
 
 
 @ti.kernel
-def impulse_velocity(
-        vf: ti.template(), omx: float, omy: float, fx: float, fy: float):
+def apply_impulse(dye: ti.template(),
+        vf: ti.template(), omx: float, omy: float, fx: float, fy: float, 
+        r: float, g: float, b: float):
     for i, j in vf:
         sim_res = ti.Vector([SIM_RES_x, SIM_RES_y])
         u, v = normalize(ti.Vector([i, j]) + 0.5, sim_res)
@@ -150,15 +155,6 @@ def impulse_velocity(
         momentum = ti.exp(-d2 * inv_force_radius) * ti.Vector([fx, fy])
         vel = vf[i, j]
         vf[i, j] = vel + momentum
-
-
-dye_radius = 0.1 / 100
-inv_dye_radius = 1.0 / dye_radius
-
-
-@ti.kernel
-def impulse_dye(dye: ti.template(), omx: float, omy: float, r: float, g: float,
-                b: float):
     for i, j in dye:
         render_res = ti.Vector([RENDER_RES_x, RENDER_RES_y])
         u, v = normalize(ti.Vector([i, j]) + 0.5, render_res)
@@ -168,6 +164,9 @@ def impulse_dye(dye: ti.template(), omx: float, omy: float, r: float, g: float,
         col = dye[i, j]
         col += impulse
         dye[i, j] = col
+
+dye_radius = 0.1 / 100
+inv_dye_radius = 1.0 / dye_radius
 
 
 @ti.kernel
@@ -280,21 +279,7 @@ def subtract_gradient(vf: ti.template(), pf: ti.template()):
 #         c += bloom
 
 #         color_buffer.field[i, j] = c
-
-
-def run_impulse_kernels(mouse_data):
-    f_strength = 6000.0
-
-    normed_mxy = mouse_data[2:4]
-    force = mouse_data[0:2] * f_strength * dt
-    impulse_velocity(velocities_pair.cur, float(normed_mxy[0]), float(normed_mxy[1]),
-                     float(force[0]), float(force[1]))
-
-    rgb = mouse_data[4:]
-    impulse_dye(dyes_pair.cur, float(normed_mxy[0]), float(normed_mxy[1]), float(rgb[0]),
-                float(rgb[1]), float(rgb[2]))
-
-
+    
 BLOOM_THRESHOLD = 0.6
 BLOOM_SOFT_KNEE = 0.7
 BLOOM_KNEE = BLOOM_THRESHOLD * BLOOM_SOFT_KNEE + 0.0001
@@ -401,7 +386,15 @@ def step(mouse_data):
     velocities_pair.swap()
     dyes_pair.swap()
 
-    run_impulse_kernels(mouse_data)
+    f_strength = 6000.0
+
+    normed_mxy = mouse_data[2:4]
+    rgb = mouse_data[4:]
+    force = mouse_data[0:2] * f_strength * dt
+    apply_impulse(dyes_pair.cur, velocities_pair.cur, float(normed_mxy[0]), float(normed_mxy[1]),
+                     float(force[0]), float(force[1]),
+                     float(rgb[0]), float(rgb[1]), float(rgb[2]))
+
 
     # add_curl(velocities_pair.cur)
     # add_voriticity(velocities_pair.cur)

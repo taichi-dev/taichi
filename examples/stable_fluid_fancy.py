@@ -75,8 +75,8 @@ def normalize(ij, res):
     v = j * texel_sizeY
     return ti.Vector([u, v])
 
-_dye_buffer = ti.Vector.field(3, ti.f32, shape=(RENDER_RES_x, RENDER_RES_y))
-_new_dye_buffer = ti.Vector.field(3, ti.f32, shape=(RENDER_RES_x, RENDER_RES_y))
+_dye_buffer = ti.Vector.field(4, ti.f32, shape=(RENDER_RES_x, RENDER_RES_y))
+_new_dye_buffer = ti.Vector.field(4, ti.f32, shape=(RENDER_RES_x, RENDER_RES_y))
 _velocities = ti.Vector.field(2, ti.f32, shape=(SIM_RES_x, SIM_RES_y))
 _new_velocities = ti.Vector.field(2, ti.f32, shape=(SIM_RES_x, SIM_RES_y))
 
@@ -159,7 +159,7 @@ def apply_impulse(dye: ti.template(),
         u, v = normalize(ti.Vector([i, j]) + 0.5, render_res)
         dx, dy = (u - omx), (v*SIM_RES_y / SIM_RES_x - omy)
         d2 = dx * dx + dy * dy
-        impulse = ti.exp(-d2 * inv_dye_radius) * ti.Vector([r, g, b])
+        impulse = ti.exp(-d2 * inv_dye_radius) * ti.Vector([r, g, b, 1.0])
         col = dye[i, j]
         col += impulse
         dye[i, j] = col

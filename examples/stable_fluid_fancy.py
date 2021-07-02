@@ -6,22 +6,17 @@ import taichi as ti
 import numpy as np
 import time
 
+
 # SIM_RES_x = 139
 # SIM_RES_y = 199
 
-SIM_RES_x = 30
-SIM_RES_y = 100
+SIM_RES_x = 417
+SIM_RES_y = 597
 
-# RENDER_RES_x = 1668
-# RENDER_RES_y = 2388
-# RENDER_RES_x = 417
-# RENDER_RES_y = 597
+RENDER_RES_x = 1668
+RENDER_RES_y = 2388
 
-RENDER_RES_x = 300
-RENDER_RES_y = 1000
-
-
-dt = 0.03
+dt = 0.01
 p_jacobi_iters = 400
 debug = False
 
@@ -133,13 +128,14 @@ def advect(vf: ti.template(), qf: ti.template(), new_qf: ti.template(),
         uv = normalize(ti.Vector([i, j]) + 0.5, res)
         sim_res = ti.Vector([SIM_RES_x, SIM_RES_y])
         vel = sample(vf, uv, sim_res)
+        vel[1] /= SIM_RES_y / SIM_RES_x
         prev_uv = uv - dt * vel
         q_s = sample(qf, prev_uv, res)
         decay = 1.0 + dissipation * dt
         new_qf[i, j] = q_s / decay
 
 
-force_radius = 0.1 / 300
+force_radius = 0.1 / 100
 inv_force_radius = 1.0 / force_radius
 
 
@@ -149,14 +145,14 @@ def impulse_velocity(
     for i, j in vf:
         sim_res = ti.Vector([SIM_RES_x, SIM_RES_y])
         u, v = normalize(ti.Vector([i, j]) + 0.5, sim_res)
-        dx, dy = (u - omx), (v - omy)
+        dx, dy = (u - omx), (v*SIM_RES_y / SIM_RES_x - omy)
         d2 = dx * dx + dy * dy
         momentum = ti.exp(-d2 * inv_force_radius) * ti.Vector([fx, fy])
         vel = vf[i, j]
         vf[i, j] = vel + momentum
 
 
-dye_radius = 0.1 / 300
+dye_radius = 0.1 / 100
 inv_dye_radius = 1.0 / dye_radius
 
 
@@ -166,7 +162,7 @@ def impulse_dye(dye: ti.template(), omx: float, omy: float, r: float, g: float,
     for i, j in dye:
         render_res = ti.Vector([RENDER_RES_x, RENDER_RES_y])
         u, v = normalize(ti.Vector([i, j]) + 0.5, render_res)
-        dx, dy = (u - omx), (v - omy)
+        dx, dy = (u - omx), (v*SIM_RES_y / SIM_RES_x - omy)
         d2 = dx * dx + dy * dy
         impulse = ti.exp(-d2 * inv_dye_radius) * ti.Vector([r, g, b])
         col = dye[i, j]
@@ -223,11 +219,10 @@ def divergence(vf: ti.template()):
             vb = -vc[1]
         if j == res.y - 1:
             vt = -vc[1]
-        velocity_divs[i, j] = 0.5 * res.x / 2 * (vr - vl) + 0.5 * res.y / 2 * (vt - vb)
+        velocity_divs[i, j] = 0.5 * res.y * (vr - vl + vt - vb)
         
 
-
-p_alpha = - (1.0 / SIM_RES_x) * (1.0 / SIM_RES_y)
+p_alpha = - (1.0 / SIM_RES_y) * (1.0 / SIM_RES_y)
 
 
 @ti.kernel
@@ -401,8 +396,8 @@ SUNRAYS_ITERATIONS = 16
 
 
 def step(mouse_data):
-    advect(velocities_pair.cur, velocities_pair.cur, velocities_pair.nxt, 0.4, SIM_RES_x, SIM_RES_y)
-    advect(velocities_pair.cur, dyes_pair.cur, dyes_pair.nxt, 0.4, RENDER_RES_x, RENDER_RES_y)
+    advect(velocities_pair.cur, velocities_pair.cur, velocities_pair.nxt, 0.8, SIM_RES_x, SIM_RES_y)
+    advect(velocities_pair.cur, dyes_pair.cur, dyes_pair.nxt, 0.8, RENDER_RES_x, RENDER_RES_y)
     velocities_pair.swap()
     dyes_pair.swap()
 
@@ -456,6 +451,7 @@ class MouseDataGen(object):
         mouse_data = np.array([0] * 8, dtype=np.float32)
         if gui.is_pressed(ti.GUI.LMB):
             mxy = vec2_npf32(gui.get_cursor_pos())
+            mxy[1] *= SIM_RES_y / SIM_RES_x
             if self.prev_mouse is None:
                 self.prev_mouse = mxy
                 # Set lower bound to 0.3 to prevent too dark colors

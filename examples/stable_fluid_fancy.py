@@ -8,17 +8,17 @@ import numpy as np
 import time
 
 
-SIM_RES_x = 139
-SIM_RES_y = 199
+# SIM_RES_x = 139
+# SIM_RES_y = 199
 
-# SIM_RES_x = 417
-# SIM_RES_y = 597
+SIM_RES_x = 417
+SIM_RES_y = 597
 
-# RENDER_RES_x = 1668
-# RENDER_RES_y = 2388
+RENDER_RES_x = 1668
+RENDER_RES_y = 2388
 
-RENDER_RES_x = 417
-RENDER_RES_y = 597
+# RENDER_RES_x = 417
+# RENDER_RES_y = 597
 
 dt = 0.01
 p_jacobi_iters = 400

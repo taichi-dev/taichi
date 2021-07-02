@@ -50,7 +50,7 @@ class S21_ch {
 
 struct S21 {
   // dense
-  constant static constexpr int n = 65536;
+  constant static constexpr int n = 524288;
   constant static constexpr int elem_stride = S21_ch::stride;
   constant static constexpr int stride = elem_stride * n;
 
@@ -105,7 +105,7 @@ class S19_ch {
 
 struct S19 {
   // dense
-  constant static constexpr int n = 65536;
+  constant static constexpr int n = 524288;
   constant static constexpr int elem_stride = S19_ch::stride;
   constant static constexpr int stride = elem_stride * n;
 
@@ -160,7 +160,7 @@ class S17_ch {
 
 struct S17 {
   // dense
-  constant static constexpr int n = 65536;
+  constant static constexpr int n = 524288;
   constant static constexpr int elem_stride = S17_ch::stride;
   constant static constexpr int stride = elem_stride * n;
 
@@ -215,7 +215,7 @@ class S15_ch {
 
 struct S15 {
   // dense
-  constant static constexpr int n = 65536;
+  constant static constexpr int n = 524288;
   constant static constexpr int elem_stride = S15_ch::stride;
   constant static constexpr int stride = elem_stride * n;
 
@@ -285,7 +285,7 @@ class S12_ch {
 
 struct S12 {
   // dense
-  constant static constexpr int n = 65536;
+  constant static constexpr int n = 524288;
   constant static constexpr int elem_stride = S12_ch::stride;
   constant static constexpr int stride = elem_stride * n;
 
@@ -355,7 +355,7 @@ class S9_ch {
 
 struct S9 {
   // dense
-  constant static constexpr int n = 65536;
+  constant static constexpr int n = 524288;
   constant static constexpr int elem_stride = S9_ch::stride;
   constant static constexpr int stride = elem_stride * n;
 
@@ -440,7 +440,7 @@ class S5_ch {
 
 struct S5 {
   // dense
-  constant static constexpr int n = 524288;
+  constant static constexpr int n = 8388608;
   constant static constexpr int elem_stride = S5_ch::stride;
   constant static constexpr int stride = elem_stride * n;
 
@@ -525,7 +525,7 @@ class S1_ch {
 
 struct S1 {
   // dense
-  constant static constexpr int n = 524288;
+  constant static constexpr int n = 8388608;
   constant static constexpr int elem_stride = S1_ch::stride;
   constant static constexpr int stride = elem_stride * n;
 
@@ -643,20 +643,21 @@ void mtl_k0012_divergence_c12_0_0_func(
   AssertRecorder assert_rec_(print_assert_addr);
   device auto* print_alloc_ = reinterpret_cast<device PrintMsgAllocator*>(print_assert_addr + 300);
   constexpr int32_t tmp11442 = -1;
-  constexpr int32_t tmp11432 = 255;
-  constexpr float tmp87 = 99.5;
-  constexpr int32_t tmp26 = 198;
+  constexpr int32_t tmp11432 = 1023;
+  constexpr int32_t tmp11428 = 511;
+  constexpr float tmp87 = 298.5;
+  constexpr int32_t tmp26 = 596;
   constexpr int32_t tmp24 = 0;
-  constexpr int32_t tmp22 = 138;
+  constexpr int32_t tmp22 = 416;
   constexpr int32_t tmp20 = 1;
   const int tmp3 = linear_loop_idx_;
-  constexpr int32_t tmp11370 = 8;
+  constexpr int32_t tmp11370 = 10;
   const int32_t tmp11371 = (tmp3 >> tmp11370);
-  const int32_t tmp11373 = (tmp11371 & tmp11432);
+  const int32_t tmp11373 = (tmp11371 & tmp11428);
   const int32_t tmp11377 = (tmp3 & tmp11432);
-  constexpr int32_t tmp13 = 139;
+  constexpr int32_t tmp13 = 417;
   const int32_t tmp14 = -(tmp11373 < tmp13);
-  constexpr int32_t tmp16 = 199;
+  constexpr int32_t tmp16 = 597;
   const int32_t tmp17 = -(tmp11377 < tmp16);
   const int32_t tmp18 = (tmp14 & tmp17);
   if (tmp18) {
@@ -669,7 +670,7 @@ void mtl_k0012_divergence_c12_0_0_func(
     S0 tmp11288(root_addr);
     S0_ch tmp11290 = tmp11288.children(tmp24);
     S9 tmp11291 = tmp11290.get2(runtime_, mem_alloc_);
-    const int32_t tmp11381 = (tmp25 & tmp11432);
+    const int32_t tmp11381 = (tmp25 & tmp11428);
     const int32_t tmp11385 = (tmp28 & tmp11432);
     const int32_t tmp11515 = (tmp11381 << tmp11370);
     const int32_t tmp11459 = (tmp11385 + tmp11515);
@@ -681,7 +682,7 @@ void mtl_k0012_divergence_c12_0_0_func(
     const int32_t tmp34 =  min(tmp22, tmp11437);
     const int32_t tmp35 =  max(tmp24, tmp34);
     float tmp36(0);
-    const int32_t tmp11389 = (tmp35 & tmp11432);
+    const int32_t tmp11389 = (tmp35 & tmp11428);
     const int32_t tmp11517 = (tmp11389 << tmp11370);
     const int32_t tmp11467 = (tmp11385 + tmp11517);
     S9_ch tmp11307 = tmp11291.children(tmp11467);
@@ -694,7 +695,7 @@ void mtl_k0012_divergence_c12_0_0_func(
     const int32_t tmp43 =  min(tmp26, tmp11439);
     const int32_t tmp44 =  max(tmp24, tmp43);
     float tmp45(0);
-    const int32_t tmp11397 = (tmp42 & tmp11432);
+    const int32_t tmp11397 = (tmp42 & tmp11428);
     const int32_t tmp11401 = (tmp44 & tmp11432);
     const int32_t tmp11519 = (tmp11397 << tmp11370);
     const int32_t tmp11475 = (tmp11401 + tmp11519);
@@ -773,7 +774,7 @@ kernel void mtl_k0012_divergence_c12_0_0(
     const uint ugrid_size_ [[threads_per_grid]],
     const uint utid_ [[thread_position_in_grid]]) {
   // range_for, range known at compile time
-  const int total_elems = 65536;
+  const int total_elems = 524288;
   const int begin_ = utid_ + 0;
   const int end_ = total_elems + 0;
   device auto *runtime_ = reinterpret_cast<device Runtime *>(runtime_addr);

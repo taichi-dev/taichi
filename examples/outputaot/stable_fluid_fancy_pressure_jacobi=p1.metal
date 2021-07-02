@@ -50,7 +50,7 @@ class S21_ch {
 
 struct S21 {
   // dense
-  constant static constexpr int n = 65536;
+  constant static constexpr int n = 524288;
   constant static constexpr int elem_stride = S21_ch::stride;
   constant static constexpr int stride = elem_stride * n;
 
@@ -105,7 +105,7 @@ class S19_ch {
 
 struct S19 {
   // dense
-  constant static constexpr int n = 65536;
+  constant static constexpr int n = 524288;
   constant static constexpr int elem_stride = S19_ch::stride;
   constant static constexpr int stride = elem_stride * n;
 
@@ -160,7 +160,7 @@ class S17_ch {
 
 struct S17 {
   // dense
-  constant static constexpr int n = 65536;
+  constant static constexpr int n = 524288;
   constant static constexpr int elem_stride = S17_ch::stride;
   constant static constexpr int stride = elem_stride * n;
 
@@ -215,7 +215,7 @@ class S15_ch {
 
 struct S15 {
   // dense
-  constant static constexpr int n = 65536;
+  constant static constexpr int n = 524288;
   constant static constexpr int elem_stride = S15_ch::stride;
   constant static constexpr int stride = elem_stride * n;
 
@@ -285,7 +285,7 @@ class S12_ch {
 
 struct S12 {
   // dense
-  constant static constexpr int n = 65536;
+  constant static constexpr int n = 524288;
   constant static constexpr int elem_stride = S12_ch::stride;
   constant static constexpr int stride = elem_stride * n;
 
@@ -355,7 +355,7 @@ class S9_ch {
 
 struct S9 {
   // dense
-  constant static constexpr int n = 65536;
+  constant static constexpr int n = 524288;
   constant static constexpr int elem_stride = S9_ch::stride;
   constant static constexpr int stride = elem_stride * n;
 
@@ -440,7 +440,7 @@ class S5_ch {
 
 struct S5 {
   // dense
-  constant static constexpr int n = 524288;
+  constant static constexpr int n = 8388608;
   constant static constexpr int elem_stride = S5_ch::stride;
   constant static constexpr int stride = elem_stride * n;
 
@@ -525,7 +525,7 @@ class S1_ch {
 
 struct S1 {
   // dense
-  constant static constexpr int n = 524288;
+  constant static constexpr int n = 8388608;
   constant static constexpr int elem_stride = S1_ch::stride;
   constant static constexpr int stride = elem_stride * n;
 
@@ -644,20 +644,21 @@ void mtl_k0015_pressure_jacobi_c14_1_0_func(
   device auto* print_alloc_ = reinterpret_cast<device PrintMsgAllocator*>(print_assert_addr + 300);
   constexpr int32_t tmp13568 = 1;
   constexpr int32_t tmp13562 = -1;
-  constexpr int32_t tmp13552 = 255;
+  constexpr int32_t tmp13552 = 1023;
+  constexpr int32_t tmp13548 = 511;
   constexpr float tmp56 = 0.25;
-  constexpr float tmp53 = -2.5251888e-05;
-  constexpr int32_t tmp26 = 198;
+  constexpr float tmp53 = -2.8057652e-06;
+  constexpr int32_t tmp26 = 596;
   constexpr int32_t tmp24 = 0;
-  constexpr int32_t tmp22 = 138;
+  constexpr int32_t tmp22 = 416;
   const int tmp3 = linear_loop_idx_;
-  constexpr int32_t tmp13498 = 8;
+  constexpr int32_t tmp13498 = 10;
   const int32_t tmp13499 = (tmp3 >> tmp13498);
-  const int32_t tmp13501 = (tmp13499 & tmp13552);
+  const int32_t tmp13501 = (tmp13499 & tmp13548);
   const int32_t tmp13505 = (tmp3 & tmp13552);
-  constexpr int32_t tmp13 = 139;
+  constexpr int32_t tmp13 = 417;
   const int32_t tmp14 = -(tmp13501 < tmp13);
-  constexpr int32_t tmp16 = 199;
+  constexpr int32_t tmp16 = 597;
   const int32_t tmp17 = -(tmp13505 < tmp16);
   const int32_t tmp18 = (tmp14 & tmp17);
   if (tmp18) {
@@ -669,7 +670,7 @@ void mtl_k0015_pressure_jacobi_c14_1_0_func(
     S0 tmp13428(root_addr);
     S0_ch tmp13430 = tmp13428.children(tmp24);
     S21 tmp13431 = tmp13430.get7(runtime_, mem_alloc_);
-    const int32_t tmp13509 = (tmp25 & tmp13552);
+    const int32_t tmp13509 = (tmp25 & tmp13548);
     const int32_t tmp13513 = (tmp28 & tmp13552);
     const int32_t tmp13621 = (tmp13509 << tmp13498);
     const int32_t tmp13573 = (tmp13513 + tmp13621);
@@ -679,7 +680,7 @@ void mtl_k0015_pressure_jacobi_c14_1_0_func(
     const int32_t tmp13557 = (tmp13501 + tmp13568);
     const int32_t tmp32 =  min(tmp22, tmp13557);
     const int32_t tmp33 =  max(tmp24, tmp32);
-    const int32_t tmp13517 = (tmp33 & tmp13552);
+    const int32_t tmp13517 = (tmp33 & tmp13548);
     const int32_t tmp13623 = (tmp13517 << tmp13498);
     const int32_t tmp13581 = (tmp13513 + tmp13623);
     S21_ch tmp13447 = tmp13431.children(tmp13581);
@@ -690,7 +691,7 @@ void mtl_k0015_pressure_jacobi_c14_1_0_func(
     const int32_t tmp38 =  max(tmp24, tmp37);
     const int32_t tmp39 =  min(tmp26, tmp13559);
     const int32_t tmp40 =  max(tmp24, tmp39);
-    const int32_t tmp13525 = (tmp38 & tmp13552);
+    const int32_t tmp13525 = (tmp38 & tmp13548);
     const int32_t tmp13529 = (tmp40 & tmp13552);
     const int32_t tmp13625 = (tmp13525 << tmp13498);
     const int32_t tmp13589 = (tmp13529 + tmp13625);
@@ -734,7 +735,7 @@ kernel void mtl_k0015_pressure_jacobi_c14_1_0(
     const uint ugrid_size_ [[threads_per_grid]],
     const uint utid_ [[thread_position_in_grid]]) {
   // range_for, range known at compile time
-  const int total_elems = 65536;
+  const int total_elems = 524288;
   const int begin_ = utid_ + 0;
   const int end_ = total_elems + 0;
   device auto *runtime_ = reinterpret_cast<device Runtime *>(runtime_addr);

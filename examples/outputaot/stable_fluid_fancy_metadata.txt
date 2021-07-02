@@ -1,0 +1,672 @@
+
+taichi file data: {
+  metadata: {
+    root_buffer_size: 14680064
+    runtime_buffer_size: 627080
+    randseedoffset_in_runtime_buffer: 352
+  }
+  kernels: [
+    [0]: {
+      kernel_name: advect=v0
+      ctx_attribs: {
+        arg_attribs_vec_: [
+          [0]: {
+            stride: 4
+            offset_in_mem: 0
+            index: 0
+            dt: 0
+            is_array: false
+          }
+          [1]: {
+            stride: 4
+            offset_in_mem: 4
+            index: 1
+            dt: 4
+            is_array: false
+          }
+          [2]: {
+            stride: 4
+            offset_in_mem: 8
+            index: 2
+            dt: 4
+            is_array: false
+          }
+        ]
+        ret_attribs_vec_: [
+        ]
+        ctx_bytes_: 12
+        extra_args_bytes_: 256
+      }
+      kernel_attribs: {
+        name: mtl_k0004_advect_c4_0
+        mtl_kernels_attribs: [
+          [0]: {
+            name: mtl_k0004_advect_c4_0_0
+            advisory_total_num_threads: 65536
+            task_type: 1
+            buffers: [
+              [0]: 0
+              [1]: 1
+              [2]: 2
+              [3]: 3
+              [4]: 4
+            ]
+            range_for_attribs: {
+              has_value: true
+              value: {
+                begin: 0
+                end: 65536
+                const_begin: true
+                const_end: true
+              }
+            }
+          }
+        ]
+      }
+    }
+    [1]: {
+      kernel_name: advect=v1
+      ctx_attribs: {
+        arg_attribs_vec_: [
+          [0]: {
+            stride: 4
+            offset_in_mem: 0
+            index: 0
+            dt: 0
+            is_array: false
+          }
+          [1]: {
+            stride: 4
+            offset_in_mem: 4
+            index: 1
+            dt: 4
+            is_array: false
+          }
+          [2]: {
+            stride: 4
+            offset_in_mem: 8
+            index: 2
+            dt: 4
+            is_array: false
+          }
+        ]
+        ret_attribs_vec_: [
+        ]
+        ctx_bytes_: 12
+        extra_args_bytes_: 256
+      }
+      kernel_attribs: {
+        name: mtl_k0005_advect_c4_1
+        mtl_kernels_attribs: [
+          [0]: {
+            name: mtl_k0005_advect_c4_1_0
+            advisory_total_num_threads: 65536
+            task_type: 1
+            buffers: [
+              [0]: 0
+              [1]: 1
+              [2]: 2
+              [3]: 3
+              [4]: 4
+            ]
+            range_for_attribs: {
+              has_value: true
+              value: {
+                begin: 0
+                end: 65536
+                const_begin: true
+                const_end: true
+              }
+            }
+          }
+        ]
+      }
+    }
+    [2]: {
+      kernel_name: advect=d0
+      ctx_attribs: {
+        arg_attribs_vec_: [
+          [0]: {
+            stride: 4
+            offset_in_mem: 0
+            index: 0
+            dt: 0
+            is_array: false
+          }
+          [1]: {
+            stride: 4
+            offset_in_mem: 4
+            index: 1
+            dt: 4
+            is_array: false
+          }
+          [2]: {
+            stride: 4
+            offset_in_mem: 8
+            index: 2
+            dt: 4
+            is_array: false
+          }
+        ]
+        ret_attribs_vec_: [
+        ]
+        ctx_bytes_: 12
+        extra_args_bytes_: 256
+      }
+      kernel_attribs: {
+        name: mtl_k0006_advect_c4_2
+        mtl_kernels_attribs: [
+          [0]: {
+            name: mtl_k0006_advect_c4_2_0
+            advisory_total_num_threads: 524288
+            task_type: 1
+            buffers: [
+              [0]: 0
+              [1]: 1
+              [2]: 2
+              [3]: 3
+              [4]: 4
+            ]
+            range_for_attribs: {
+              has_value: true
+              value: {
+                begin: 0
+                end: 524288
+                const_begin: true
+                const_end: true
+              }
+            }
+          }
+        ]
+      }
+    }
+    [3]: {
+      kernel_name: advect=d1
+      ctx_attribs: {
+        arg_attribs_vec_: [
+          [0]: {
+            stride: 4
+            offset_in_mem: 0
+            index: 0
+            dt: 0
+            is_array: false
+          }
+          [1]: {
+            stride: 4
+            offset_in_mem: 4
+            index: 1
+            dt: 4
+            is_array: false
+          }
+          [2]: {
+            stride: 4
+            offset_in_mem: 8
+            index: 2
+            dt: 4
+            is_array: false
+          }
+        ]
+        ret_attribs_vec_: [
+        ]
+        ctx_bytes_: 12
+        extra_args_bytes_: 256
+      }
+      kernel_attribs: {
+        name: mtl_k0007_advect_c4_3
+        mtl_kernels_attribs: [
+          [0]: {
+            name: mtl_k0007_advect_c4_3_0
+            advisory_total_num_threads: 524288
+            task_type: 1
+            buffers: [
+              [0]: 0
+              [1]: 1
+              [2]: 2
+              [3]: 3
+              [4]: 4
+            ]
+            range_for_attribs: {
+              has_value: true
+              value: {
+                begin: 0
+                end: 524288
+                const_begin: true
+                const_end: true
+              }
+            }
+          }
+        ]
+      }
+    }
+    [4]: {
+      kernel_name: apply_impulse=v0d0
+      ctx_attribs: {
+        arg_attribs_vec_: [
+          [0]: {
+            stride: 4
+            offset_in_mem: 0
+            index: 0
+            dt: 0
+            is_array: false
+          }
+          [1]: {
+            stride: 4
+            offset_in_mem: 4
+            index: 1
+            dt: 0
+            is_array: false
+          }
+          [2]: {
+            stride: 4
+            offset_in_mem: 8
+            index: 2
+            dt: 0
+            is_array: false
+          }
+          [3]: {
+            stride: 4
+            offset_in_mem: 12
+            index: 3
+            dt: 0
+            is_array: false
+          }
+          [4]: {
+            stride: 4
+            offset_in_mem: 16
+            index: 4
+            dt: 0
+            is_array: false
+          }
+          [5]: {
+            stride: 4
+            offset_in_mem: 20
+            index: 5
+            dt: 0
+            is_array: false
+          }
+          [6]: {
+            stride: 4
+            offset_in_mem: 24
+            index: 6
+            dt: 0
+            is_array: false
+          }
+        ]
+        ret_attribs_vec_: [
+        ]
+        ctx_bytes_: 28
+        extra_args_bytes_: 256
+      }
+      kernel_attribs: {
+        name: mtl_k0009_apply_impulse_c6_0
+        mtl_kernels_attribs: [
+          [0]: {
+            name: mtl_k0009_apply_impulse_c6_0_0
+            advisory_total_num_threads: 65536
+            task_type: 1
+            buffers: [
+              [0]: 0
+              [1]: 1
+              [2]: 2
+              [3]: 3
+              [4]: 4
+            ]
+            range_for_attribs: {
+              has_value: true
+              value: {
+                begin: 0
+                end: 65536
+                const_begin: true
+                const_end: true
+              }
+            }
+          }
+          [1]: {
+            name: mtl_k0009_apply_impulse_c6_0_1
+            advisory_total_num_threads: 524288
+            task_type: 1
+            buffers: [
+              [0]: 0
+              [1]: 1
+              [2]: 2
+              [3]: 3
+              [4]: 4
+            ]
+            range_for_attribs: {
+              has_value: true
+              value: {
+                begin: 0
+                end: 524288
+                const_begin: true
+                const_end: true
+              }
+            }
+          }
+        ]
+      }
+    }
+    [5]: {
+      kernel_name: apply_impulse=v1d1
+      ctx_attribs: {
+        arg_attribs_vec_: [
+          [0]: {
+            stride: 4
+            offset_in_mem: 0
+            index: 0
+            dt: 0
+            is_array: false
+          }
+          [1]: {
+            stride: 4
+            offset_in_mem: 4
+            index: 1
+            dt: 0
+            is_array: false
+          }
+          [2]: {
+            stride: 4
+            offset_in_mem: 8
+            index: 2
+            dt: 0
+            is_array: false
+          }
+          [3]: {
+            stride: 4
+            offset_in_mem: 12
+            index: 3
+            dt: 0
+            is_array: false
+          }
+          [4]: {
+            stride: 4
+            offset_in_mem: 16
+            index: 4
+            dt: 0
+            is_array: false
+          }
+          [5]: {
+            stride: 4
+            offset_in_mem: 20
+            index: 5
+            dt: 0
+            is_array: false
+          }
+          [6]: {
+            stride: 4
+            offset_in_mem: 24
+            index: 6
+            dt: 0
+            is_array: false
+          }
+        ]
+        ret_attribs_vec_: [
+        ]
+        ctx_bytes_: 28
+        extra_args_bytes_: 256
+      }
+      kernel_attribs: {
+        name: mtl_k0010_apply_impulse_c6_1
+        mtl_kernels_attribs: [
+          [0]: {
+            name: mtl_k0010_apply_impulse_c6_1_0
+            advisory_total_num_threads: 65536
+            task_type: 1
+            buffers: [
+              [0]: 0
+              [1]: 1
+              [2]: 2
+              [3]: 3
+              [4]: 4
+            ]
+            range_for_attribs: {
+              has_value: true
+              value: {
+                begin: 0
+                end: 65536
+                const_begin: true
+                const_end: true
+              }
+            }
+          }
+          [1]: {
+            name: mtl_k0010_apply_impulse_c6_1_1
+            advisory_total_num_threads: 524288
+            task_type: 1
+            buffers: [
+              [0]: 0
+              [1]: 1
+              [2]: 2
+              [3]: 3
+              [4]: 4
+            ]
+            range_for_attribs: {
+              has_value: true
+              value: {
+                begin: 0
+                end: 524288
+                const_begin: true
+                const_end: true
+              }
+            }
+          }
+        ]
+      }
+    }
+    [6]: {
+      kernel_name: divergence=v0
+      ctx_attribs: {
+        arg_attribs_vec_: [
+        ]
+        ret_attribs_vec_: [
+        ]
+        ctx_bytes_: 0
+        extra_args_bytes_: 256
+      }
+      kernel_attribs: {
+        name: mtl_k0012_divergence_c12_0
+        mtl_kernels_attribs: [
+          [0]: {
+            name: mtl_k0012_divergence_c12_0_0
+            advisory_total_num_threads: 65536
+            task_type: 1
+            buffers: [
+              [0]: 0
+              [1]: 1
+              [2]: 3
+              [3]: 4
+            ]
+            range_for_attribs: {
+              has_value: true
+              value: {
+                begin: 0
+                end: 65536
+                const_begin: true
+                const_end: true
+              }
+            }
+          }
+        ]
+      }
+    }
+    [7]: {
+      kernel_name: divergence=v1
+      ctx_attribs: {
+        arg_attribs_vec_: [
+        ]
+        ret_attribs_vec_: [
+        ]
+        ctx_bytes_: 0
+        extra_args_bytes_: 256
+      }
+      kernel_attribs: {
+        name: mtl_k0013_divergence_c12_1
+        mtl_kernels_attribs: [
+          [0]: {
+            name: mtl_k0013_divergence_c12_1_0
+            advisory_total_num_threads: 65536
+            task_type: 1
+            buffers: [
+              [0]: 0
+              [1]: 1
+              [2]: 3
+              [3]: 4
+            ]
+            range_for_attribs: {
+              has_value: true
+              value: {
+                begin: 0
+                end: 65536
+                const_begin: true
+                const_end: true
+              }
+            }
+          }
+        ]
+      }
+    }
+    [8]: {
+      kernel_name: pressure_jacobi=p0
+      ctx_attribs: {
+        arg_attribs_vec_: [
+        ]
+        ret_attribs_vec_: [
+        ]
+        ctx_bytes_: 0
+        extra_args_bytes_: 256
+      }
+      kernel_attribs: {
+        name: mtl_k0014_pressure_jacobi_c14_0
+        mtl_kernels_attribs: [
+          [0]: {
+            name: mtl_k0014_pressure_jacobi_c14_0_0
+            advisory_total_num_threads: 65536
+            task_type: 1
+            buffers: [
+              [0]: 0
+              [1]: 1
+              [2]: 3
+              [3]: 4
+            ]
+            range_for_attribs: {
+              has_value: true
+              value: {
+                begin: 0
+                end: 65536
+                const_begin: true
+                const_end: true
+              }
+            }
+          }
+        ]
+      }
+    }
+    [9]: {
+      kernel_name: pressure_jacobi=p1
+      ctx_attribs: {
+        arg_attribs_vec_: [
+        ]
+        ret_attribs_vec_: [
+        ]
+        ctx_bytes_: 0
+        extra_args_bytes_: 256
+      }
+      kernel_attribs: {
+        name: mtl_k0015_pressure_jacobi_c14_1
+        mtl_kernels_attribs: [
+          [0]: {
+            name: mtl_k0015_pressure_jacobi_c14_1_0
+            advisory_total_num_threads: 65536
+            task_type: 1
+            buffers: [
+              [0]: 0
+              [1]: 1
+              [2]: 3
+              [3]: 4
+            ]
+            range_for_attribs: {
+              has_value: true
+              value: {
+                begin: 0
+                end: 65536
+                const_begin: true
+                const_end: true
+              }
+            }
+          }
+        ]
+      }
+    }
+    [10]: {
+      kernel_name: subtract_gradient=v0p0
+      ctx_attribs: {
+        arg_attribs_vec_: [
+        ]
+        ret_attribs_vec_: [
+        ]
+        ctx_bytes_: 0
+        extra_args_bytes_: 256
+      }
+      kernel_attribs: {
+        name: mtl_k0016_subtract_gradient_c16_0
+        mtl_kernels_attribs: [
+          [0]: {
+            name: mtl_k0016_subtract_gradient_c16_0_0
+            advisory_total_num_threads: 65536
+            task_type: 1
+            buffers: [
+              [0]: 0
+              [1]: 1
+              [2]: 3
+              [3]: 4
+            ]
+            range_for_attribs: {
+              has_value: true
+              value: {
+                begin: 0
+                end: 65536
+                const_begin: true
+                const_end: true
+              }
+            }
+          }
+        ]
+      }
+    }
+    [11]: {
+      kernel_name: subtract_gradient=v1p0
+      ctx_attribs: {
+        arg_attribs_vec_: [
+        ]
+        ret_attribs_vec_: [
+        ]
+        ctx_bytes_: 0
+        extra_args_bytes_: 256
+      }
+      kernel_attribs: {
+        name: mtl_k0017_subtract_gradient_c16_1
+        mtl_kernels_attribs: [
+          [0]: {
+            name: mtl_k0017_subtract_gradient_c16_1_0
+            advisory_total_num_threads: 65536
+            task_type: 1
+            buffers: [
+              [0]: 0
+              [1]: 1
+              [2]: 3
+              [3]: 4
+            ]
+            range_for_attribs: {
+              has_value: true
+              value: {
+                begin: 0
+                end: 65536
+                const_begin: true
+                const_end: true
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

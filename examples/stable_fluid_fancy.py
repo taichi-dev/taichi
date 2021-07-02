@@ -75,7 +75,8 @@ def normalize(ij, res):
     v = j * texel_sizeY
     return ti.Vector([u, v])
 
-
+_dye_buffer = ti.Vector.field(3, ti.f32, shape=(RENDER_RES_x, RENDER_RES_y))
+_new_dye_buffer = ti.Vector.field(3, ti.f32, shape=(RENDER_RES_x, RENDER_RES_y))
 _velocities = ti.Vector.field(2, ti.f32, shape=(SIM_RES_x, SIM_RES_y))
 _new_velocities = ti.Vector.field(2, ti.f32, shape=(SIM_RES_x, SIM_RES_y))
 
@@ -85,8 +86,6 @@ _pressures = ti.field(float, shape=(SIM_RES_x, SIM_RES_y))
 _new_pressures = ti.field(float, shape=(SIM_RES_x, SIM_RES_y))
 
 # color_buffer = Texture.Vector(3, RENDER_RES)
-_dye_buffer = ti.Vector.field(3, ti.f32, shape=(RENDER_RES_x, RENDER_RES_y))
-_new_dye_buffer = ti.Vector.field(3, ti.f32, shape=(RENDER_RES_x, RENDER_RES_y))
 
 
 # def make_bloom_mipmap():
@@ -249,6 +248,34 @@ def subtract_gradient(vf: ti.template(), pf: ti.template()):
         vf[i, j] = vel
 
 
+filename = os.path.basename(__file__)[:-3]
+m = ti.aot.Module(ti.metal)
+m.add_kernel(advect, name='advect=v0', template_args={'vf': velocities_pair.cur, 'qf': velocities_pair.cur, 'new_qf': velocities_pair.nxt})
+m.add_kernel(advect, name='advect=v1', template_args={'vf': velocities_pair.nxt, 'qf': velocities_pair.nxt, 'new_qf': velocities_pair.cur})
+
+m.add_kernel(advect, name='advect=d0', template_args={'vf': velocities_pair.cur, 'qf': dyes_pair.cur, 'new_qf': dyes_pair.nxt})
+m.add_kernel(advect, name='advect=d1', template_args={'vf': velocities_pair.nxt, 'qf': dyes_pair.nxt, 'new_qf': dyes_pair.cur})
+
+m.add_kernel(apply_impulse, name='apply_impulse=v0d0', template_args={'vf': velocities_pair.cur, 'dye': dyes_pair.cur})
+m.add_kernel(apply_impulse, name='apply_impulse=v1d1', template_args={'vf': velocities_pair.nxt, 'dye': dyes_pair.nxt})
+
+m.add_kernel(divergence, name='divergence=v0', template_args={'vf': velocities_pair.cur})
+m.add_kernel(divergence, name='divergence=v1', template_args={'vf': velocities_pair.nxt})
+
+# m.add_kernel(vorticity, name='vorticity=v0', template_args={'vf': velocities_pair.cur})
+# m.add_kernel(vorticity, name='vorticity=v1', template_args={'vf': velocities_pair.nxt})
+
+m.add_kernel(pressure_jacobi, name='pressure_jacobi=p0', template_args={'pf': pressures_pair.cur, 'new_pf': pressures_pair.nxt})
+m.add_kernel(pressure_jacobi, name='pressure_jacobi=p1', template_args={'pf': pressures_pair.nxt, 'new_pf': pressures_pair.cur})
+
+m.add_kernel(subtract_gradient, name='subtract_gradient=v0p0', template_args={'vf': velocities_pair.cur, 'pf': pressures_pair.cur})
+m.add_kernel(subtract_gradient, name='subtract_gradient=v1p0', template_args={'vf': velocities_pair.nxt, 'pf': pressures_pair.cur})
+
+# m.add_kernel(enhance_vorticity, name='enhance_vorticity=v0', template_args= {'vf': velocities_pair.cur, 'cf': velocity_curls})
+# m.add_kernel(enhance_vorticity, name='enhance_vorticity=v1', template_args={'vf': velocities_pair.nxt, 'cf':  velocity_curls})
+m.save('outputaot', filename)
+
+
 # @ti.kernel
 # def fill_color_v2(vf: ti.template()):
 #     for i, j in vf:
@@ -280,12 +307,12 @@ def subtract_gradient(vf: ti.template(), pf: ti.template()):
 
 #         color_buffer.field[i, j] = c
     
-BLOOM_THRESHOLD = 0.6
-BLOOM_SOFT_KNEE = 0.7
-BLOOM_KNEE = BLOOM_THRESHOLD * BLOOM_SOFT_KNEE + 0.0001
-BLOOM_CURVE_X = BLOOM_THRESHOLD - BLOOM_KNEE
-BLOOM_CURVE_Y = BLOOM_KNEE * 2
-BLOOM_CURVE_Z = 0.25 / BLOOM_KNEE
+# BLOOM_THRESHOLD = 0.6
+# BLOOM_SOFT_KNEE = 0.7
+# BLOOM_KNEE = BLOOM_THRESHOLD * BLOOM_SOFT_KNEE + 0.0001
+# BLOOM_CURVE_X = BLOOM_THRESHOLD - BLOOM_KNEE
+# BLOOM_CURVE_Y = BLOOM_KNEE * 2
+# BLOOM_CURVE_Z = 0.25 / BLOOM_KNEE
 
 
 # @ti.kernel
@@ -353,10 +380,10 @@ BLOOM_CURVE_Z = 0.25 / BLOOM_KNEE
 #         _sunrays_scratch.field[i, j] = a
 
 
-SUNRAYS_DENSITY = 0.3
-SUNRAYS_DECAY = 0.95
-SUNRAYS_EXPOSURE = 0.7
-SUNRAYS_ITERATIONS = 16
+# SUNRAYS_DENSITY = 0.3
+# SUNRAYS_DECAY = 0.95
+# SUNRAYS_EXPOSURE = 0.7
+# SUNRAYS_ITERATIONS = 16
 
 
 # @ti.kernel
@@ -380,123 +407,123 @@ SUNRAYS_ITERATIONS = 16
 #     k_sunrays()
 
 
-def step(mouse_data):
-    advect(velocities_pair.cur, velocities_pair.cur, velocities_pair.nxt, 0.8, SIM_RES_x, SIM_RES_y)
-    advect(velocities_pair.cur, dyes_pair.cur, dyes_pair.nxt, 0.8, RENDER_RES_x, RENDER_RES_y)
-    velocities_pair.swap()
-    dyes_pair.swap()
+# def step(mouse_data):
+#     advect(velocities_pair.cur, velocities_pair.cur, velocities_pair.nxt, 0.8, SIM_RES_x, SIM_RES_y)
+#     advect(velocities_pair.cur, dyes_pair.cur, dyes_pair.nxt, 0.8, RENDER_RES_x, RENDER_RES_y)
+#     velocities_pair.swap()
+#     dyes_pair.swap()
 
-    f_strength = 6000.0
+#     f_strength = 6000.0
 
-    normed_mxy = mouse_data[2:4]
-    rgb = mouse_data[4:]
-    force = mouse_data[0:2] * f_strength * dt
-    apply_impulse(dyes_pair.cur, velocities_pair.cur, float(normed_mxy[0]), float(normed_mxy[1]),
-                     float(force[0]), float(force[1]),
-                     float(rgb[0]), float(rgb[1]), float(rgb[2]))
-
-
-    # add_curl(velocities_pair.cur)
-    # add_voriticity(velocities_pair.cur)
-    # velocities_pair.swap()
-
-    divergence(velocities_pair.cur)
-    for _ in range(p_jacobi_iters):
-        pressure_jacobi(pressures_pair.cur, pressures_pair.nxt)
-        pressures_pair.swap()
-
-    subtract_gradient(velocities_pair.cur, pressures_pair.cur)
-    # apply_bloom(dyes_pair.cur)
-    # apply_sunrays(dyes_pair.cur)
-    # fill_color_v3(dyes_pair.cur)
+#     normed_mxy = mouse_data[2:4]
+#     rgb = mouse_data[4:]
+#     force = mouse_data[0:2] * f_strength * dt
+#     apply_impulse(dyes_pair.cur, velocities_pair.cur, float(normed_mxy[0]), float(normed_mxy[1]),
+#                      float(force[0]), float(force[1]),
+#                      float(rgb[0]), float(rgb[1]), float(rgb[2]))
 
 
-def vec2_npf32(m):
-    return np.array([m[0], m[1]], dtype=np.float32)
+#     # add_curl(velocities_pair.cur)
+#     # add_voriticity(velocities_pair.cur)
+#     # velocities_pair.swap()
+
+#     divergence(velocities_pair.cur)
+#     for _ in range(p_jacobi_iters):
+#         pressure_jacobi(pressures_pair.cur, pressures_pair.nxt)
+#         pressures_pair.swap()
+
+#     subtract_gradient(velocities_pair.cur, pressures_pair.cur)
+#     # apply_bloom(dyes_pair.cur)
+#     # apply_sunrays(dyes_pair.cur)
+#     # fill_color_v3(dyes_pair.cur)
 
 
-def hsv_to_rgb(h, s, v):
-    i = int(h * 6.0)
-    f = h * 6.0 - i
-    p = v * (1 - s)
-    q = v * (1 - f * s)
-    t = v * (1 - (1 - f) * s)
-    colors = [
-        (v, t, p),
-        (q, v, p),
-        (p, v, t),
-        (p, q, v),
-        (t, p, v),
-        (v, p, q),
-    ]
-    return colors[i]
+# def vec2_npf32(m):
+#     return np.array([m[0], m[1]], dtype=np.float32)
 
 
-class MouseDataGen(object):
-    def __init__(self):
-        self.prev_mouse = None
-        self.prev_color = None
-
-    def __call__(self, gui):
-        # [0:2]: delta direction  (not normalized)
-        # [2:4]: current mouse xy (normalized)
-        # [4:7]: color
-        mouse_data = np.array([0] * 8, dtype=np.float32)
-        if gui.is_pressed(ti.GUI.LMB):
-            mxy = vec2_npf32(gui.get_cursor_pos())
-            mxy[1] *= SIM_RES_y / SIM_RES_x
-            if self.prev_mouse is None:
-                self.prev_mouse = mxy
-                # Set lower bound to 0.3 to prevent too dark colors
-                self.prev_color = (np.random.rand(3) * 0.7) + 0.3
-                # sat = np.random.random() * 0.4 + 0.6
-                # self.prev_color = hsv_to_rgb(np.random.random(), sat, 1)
-            else:
-                mdir = mxy - self.prev_mouse
-                # mdir = mdir / (np.linalg.norm(mdir) + 1e-5)
-                mouse_data[0], mouse_data[1] = mdir[0], mdir[1]
-                mouse_data[2], mouse_data[3] = mxy[0], mxy[1]
-                mouse_data[4:7] = self.prev_color
-                self.prev_mouse = mxy
-        else:
-            self.prev_mouse = None
-            self.prev_color = None
-        return mouse_data
+# def hsv_to_rgb(h, s, v):
+#     i = int(h * 6.0)
+#     f = h * 6.0 - i
+#     p = v * (1 - s)
+#     q = v * (1 - f * s)
+#     t = v * (1 - (1 - f) * s)
+#     colors = [
+#         (v, t, p),
+#         (q, v, p),
+#         (p, v, t),
+#         (p, q, v),
+#         (t, p, v),
+#         (v, p, q),
+#     ]
+#     return colors[i]
 
 
-def reset():
-    velocities_pair.cur.fill(ti.Vector([0, 0]))
-    pressures_pair.cur.fill(0.0)
-    dyes_pair.cur.fill(ti.Vector([0, 0, 0]))
-    # color_buffer.fill(ti.Vector([0, 0, 0]))
+# class MouseDataGen(object):
+#     def __init__(self):
+#         self.prev_mouse = None
+#         self.prev_color = None
+
+#     def __call__(self, gui):
+#         # [0:2]: delta direction  (not normalized)
+#         # [2:4]: current mouse xy (normalized)
+#         # [4:7]: color
+#         mouse_data = np.array([0] * 8, dtype=np.float32)
+#         if gui.is_pressed(ti.GUI.LMB):
+#             mxy = vec2_npf32(gui.get_cursor_pos())
+#             mxy[1] *= SIM_RES_y / SIM_RES_x
+#             if self.prev_mouse is None:
+#                 self.prev_mouse = mxy
+#                 # Set lower bound to 0.3 to prevent too dark colors
+#                 self.prev_color = (np.random.rand(3) * 0.7) + 0.3
+#                 # sat = np.random.random() * 0.4 + 0.6
+#                 # self.prev_color = hsv_to_rgb(np.random.random(), sat, 1)
+#             else:
+#                 mdir = mxy - self.prev_mouse
+#                 # mdir = mdir / (np.linalg.norm(mdir) + 1e-5)
+#                 mouse_data[0], mouse_data[1] = mdir[0], mdir[1]
+#                 mouse_data[2], mouse_data[3] = mxy[0], mxy[1]
+#                 mouse_data[4:7] = self.prev_color
+#                 self.prev_mouse = mxy
+#         else:
+#             self.prev_mouse = None
+#             self.prev_color = None
+#         return mouse_data
 
 
-def main():
-    global debug
-    gui = ti.GUI('Stable-Fluid', (RENDER_RES_x, RENDER_RES_y))
-    md_gen = MouseDataGen()
-    paused = False
-    while True:
-        while gui.get_event(ti.GUI.PRESS):
-            e = gui.event
-            if e.key == ti.GUI.ESCAPE:
-                exit(0)
-            elif e.key == 'r':
-                paused = False
-                reset()
-            elif e.key == 'p':
-                paused = not paused
-            elif e.key == 'd':
-                debug = not debug
-
-        if not paused:
-            mouse_data = md_gen(gui)
-            step(mouse_data)
-
-        img = _dye_buffer.to_numpy()
-        gui.set_image(img)
-        gui.show()
+# def reset():
+#     velocities_pair.cur.fill(ti.Vector([0, 0]))
+#     pressures_pair.cur.fill(0.0)
+#     dyes_pair.cur.fill(ti.Vector([0, 0, 0]))
+#     # color_buffer.fill(ti.Vector([0, 0, 0]))
 
 
-if __name__ == '__main__':
-    main()
+# def main():
+#     global debug
+#     gui = ti.GUI('Stable-Fluid', (RENDER_RES_x, RENDER_RES_y))
+#     md_gen = MouseDataGen()
+#     paused = False
+#     while True:
+#         while gui.get_event(ti.GUI.PRESS):
+#             e = gui.event
+#             if e.key == ti.GUI.ESCAPE:
+#                 exit(0)
+#             elif e.key == 'r':
+#                 paused = False
+#                 reset()
+#             elif e.key == 'p':
+#                 paused = not paused
+#             elif e.key == 'd':
+#                 debug = not debug
+
+#         if not paused:
+#             mouse_data = md_gen(gui)
+#             step(mouse_data)
+
+#         img = _dye_buffer.to_numpy()
+#         gui.set_image(img)
+#         gui.show()
+
+
+# if __name__ == '__main__':
+#     main()

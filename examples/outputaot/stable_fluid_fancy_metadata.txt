@@ -1,7 +1,7 @@
 
 taichi file data: {
   metadata: {
-    root_buffer_size: 14680064
+    root_buffer_size: 218103808
     runtime_buffer_size: 627080
     randseedoffset_in_runtime_buffer: 352
   }
@@ -42,7 +42,7 @@ taichi file data: {
         mtl_kernels_attribs: [
           [0]: {
             name: mtl_k0004_advect_c4_0_0
-            advisory_total_num_threads: 65536
+            advisory_total_num_threads: 524288
             task_type: 1
             buffers: [
               [0]: 0
@@ -55,7 +55,7 @@ taichi file data: {
               has_value: true
               value: {
                 begin: 0
-                end: 65536
+                end: 524288
                 const_begin: true
                 const_end: true
               }
@@ -100,7 +100,7 @@ taichi file data: {
         mtl_kernels_attribs: [
           [0]: {
             name: mtl_k0005_advect_c4_1_0
-            advisory_total_num_threads: 65536
+            advisory_total_num_threads: 524288
             task_type: 1
             buffers: [
               [0]: 0
@@ -113,7 +113,7 @@ taichi file data: {
               has_value: true
               value: {
                 begin: 0
-                end: 65536
+                end: 524288
                 const_begin: true
                 const_end: true
               }
@@ -158,7 +158,7 @@ taichi file data: {
         mtl_kernels_attribs: [
           [0]: {
             name: mtl_k0006_advect_c4_2_0
-            advisory_total_num_threads: 524288
+            advisory_total_num_threads: 8388608
             task_type: 1
             buffers: [
               [0]: 0
@@ -171,7 +171,7 @@ taichi file data: {
               has_value: true
               value: {
                 begin: 0
-                end: 524288
+                end: 8388608
                 const_begin: true
                 const_end: true
               }
@@ -216,7 +216,7 @@ taichi file data: {
         mtl_kernels_attribs: [
           [0]: {
             name: mtl_k0007_advect_c4_3_0
-            advisory_total_num_threads: 524288
+            advisory_total_num_threads: 8388608
             task_type: 1
             buffers: [
               [0]: 0
@@ -229,7 +229,7 @@ taichi file data: {
               has_value: true
               value: {
                 begin: 0
-                end: 524288
+                end: 8388608
                 const_begin: true
                 const_end: true
               }
@@ -302,27 +302,6 @@ taichi file data: {
         mtl_kernels_attribs: [
           [0]: {
             name: mtl_k0009_apply_impulse_c6_0_0
-            advisory_total_num_threads: 65536
-            task_type: 1
-            buffers: [
-              [0]: 0
-              [1]: 1
-              [2]: 2
-              [3]: 3
-              [4]: 4
-            ]
-            range_for_attribs: {
-              has_value: true
-              value: {
-                begin: 0
-                end: 65536
-                const_begin: true
-                const_end: true
-              }
-            }
-          }
-          [1]: {
-            name: mtl_k0009_apply_impulse_c6_0_1
             advisory_total_num_threads: 524288
             task_type: 1
             buffers: [
@@ -337,6 +316,27 @@ taichi file data: {
               value: {
                 begin: 0
                 end: 524288
+                const_begin: true
+                const_end: true
+              }
+            }
+          }
+          [1]: {
+            name: mtl_k0009_apply_impulse_c6_0_1
+            advisory_total_num_threads: 8388608
+            task_type: 1
+            buffers: [
+              [0]: 0
+              [1]: 1
+              [2]: 2
+              [3]: 3
+              [4]: 4
+            ]
+            range_for_attribs: {
+              has_value: true
+              value: {
+                begin: 0
+                end: 8388608
                 const_begin: true
                 const_end: true
               }
@@ -409,27 +409,6 @@ taichi file data: {
         mtl_kernels_attribs: [
           [0]: {
             name: mtl_k0010_apply_impulse_c6_1_0
-            advisory_total_num_threads: 65536
-            task_type: 1
-            buffers: [
-              [0]: 0
-              [1]: 1
-              [2]: 2
-              [3]: 3
-              [4]: 4
-            ]
-            range_for_attribs: {
-              has_value: true
-              value: {
-                begin: 0
-                end: 65536
-                const_begin: true
-                const_end: true
-              }
-            }
-          }
-          [1]: {
-            name: mtl_k0010_apply_impulse_c6_1_1
             advisory_total_num_threads: 524288
             task_type: 1
             buffers: [
@@ -444,6 +423,27 @@ taichi file data: {
               value: {
                 begin: 0
                 end: 524288
+                const_begin: true
+                const_end: true
+              }
+            }
+          }
+          [1]: {
+            name: mtl_k0010_apply_impulse_c6_1_1
+            advisory_total_num_threads: 8388608
+            task_type: 1
+            buffers: [
+              [0]: 0
+              [1]: 1
+              [2]: 2
+              [3]: 3
+              [4]: 4
+            ]
+            range_for_attribs: {
+              has_value: true
+              value: {
+                begin: 0
+                end: 8388608
                 const_begin: true
                 const_end: true
               }
@@ -467,7 +467,7 @@ taichi file data: {
         mtl_kernels_attribs: [
           [0]: {
             name: mtl_k0012_divergence_c12_0_0
-            advisory_total_num_threads: 65536
+            advisory_total_num_threads: 524288
             task_type: 1
             buffers: [
               [0]: 0
@@ -479,7 +479,7 @@ taichi file data: {
               has_value: true
               value: {
                 begin: 0
-                end: 65536
+                end: 524288
                 const_begin: true
                 const_end: true
               }
@@ -503,7 +503,7 @@ taichi file data: {
         mtl_kernels_attribs: [
           [0]: {
             name: mtl_k0013_divergence_c12_1_0
-            advisory_total_num_threads: 65536
+            advisory_total_num_threads: 524288
             task_type: 1
             buffers: [
               [0]: 0
@@ -515,7 +515,7 @@ taichi file data: {
               has_value: true
               value: {
                 begin: 0
-                end: 65536
+                end: 524288
                 const_begin: true
                 const_end: true
               }
@@ -539,7 +539,7 @@ taichi file data: {
         mtl_kernels_attribs: [
           [0]: {
             name: mtl_k0014_pressure_jacobi_c14_0_0
-            advisory_total_num_threads: 65536
+            advisory_total_num_threads: 524288
             task_type: 1
             buffers: [
               [0]: 0
@@ -551,7 +551,7 @@ taichi file data: {
               has_value: true
               value: {
                 begin: 0
-                end: 65536
+                end: 524288
                 const_begin: true
                 const_end: true
               }
@@ -575,7 +575,7 @@ taichi file data: {
         mtl_kernels_attribs: [
           [0]: {
             name: mtl_k0015_pressure_jacobi_c14_1_0
-            advisory_total_num_threads: 65536
+            advisory_total_num_threads: 524288
             task_type: 1
             buffers: [
               [0]: 0
@@ -587,7 +587,7 @@ taichi file data: {
               has_value: true
               value: {
                 begin: 0
-                end: 65536
+                end: 524288
                 const_begin: true
                 const_end: true
               }
@@ -611,7 +611,7 @@ taichi file data: {
         mtl_kernels_attribs: [
           [0]: {
             name: mtl_k0016_subtract_gradient_c16_0_0
-            advisory_total_num_threads: 65536
+            advisory_total_num_threads: 524288
             task_type: 1
             buffers: [
               [0]: 0
@@ -623,7 +623,7 @@ taichi file data: {
               has_value: true
               value: {
                 begin: 0
-                end: 65536
+                end: 524288
                 const_begin: true
                 const_end: true
               }
@@ -647,7 +647,7 @@ taichi file data: {
         mtl_kernels_attribs: [
           [0]: {
             name: mtl_k0017_subtract_gradient_c16_1_0
-            advisory_total_num_threads: 65536
+            advisory_total_num_threads: 524288
             task_type: 1
             buffers: [
               [0]: 0
@@ -659,7 +659,7 @@ taichi file data: {
               has_value: true
               value: {
                 begin: 0
-                end: 65536
+                end: 524288
                 const_begin: true
                 const_end: true
               }

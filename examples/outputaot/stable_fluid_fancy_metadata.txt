@@ -1,9 +1,9 @@
 
 taichi file data: {
   metadata: {
-    root_buffer_size: 218103808
-    runtime_buffer_size: 627080
-    randseedoffset_in_runtime_buffer: 352
+    root_buffer_size: 285212672
+    runtime_buffer_size: 660256
+    randseedoffset_in_runtime_buffer: 384
   }
   kernels: [
     [0]: {

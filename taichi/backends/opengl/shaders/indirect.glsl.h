@@ -2,9 +2,11 @@
 // clang-format off
 #include "taichi/util/macros.h"
 "#version 430 core\nprecision highp float;\n"
-#define __GLSL__
+#define TI_INSIDE_OPENGL_CODEGEN
+#define TI_OPENGL_NESTED_INCLUDE
 #include "taichi/backends/opengl/shaders/runtime.h"
-#undef __GLSL__
+#undef TI_OPENGL_NESTED_INCLUDE
+#undef TI_INSIDE_OPENGL_CODEGEN
 STR(
 // taichi uses gtmp for storing dynamic range endpoints
 layout(std430, binding = 1) buffer gtmp_i32 { int _gtmp_i32_[]; };

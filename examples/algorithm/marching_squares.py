@@ -45,9 +45,7 @@ def gauss(x, sigma):
 @ti.kernel
 def touch(mx: float, my: float, size: float):
     for I in ti.grouped(pixels):
-        mouse_pos = ti.Vector([0.5, 0.5]) / N
-        mouse_pos.x += mx
-        mouse_pos.y += my
+        mouse_pos = ti.Vector([mx, my]) + 0.5 / N
         peak_center = gauss((I / N - 0.5).norm(), size)
         peak_mouse = gauss((I / N - mouse_pos).norm(), size)
         pixels[I] = peak_center + peak_mouse

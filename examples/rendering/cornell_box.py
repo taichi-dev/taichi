@@ -2,8 +2,6 @@ import math
 import time
 
 import numpy as np
-from renderer_utils import (intersect_sphere, ray_aabb_intersection,
-                            ray_plane_intersect, reflect, refract)
 
 import taichi as ti
 
@@ -48,7 +46,6 @@ refr_idx = 2.4
 sp1_center = ti.Vector([0.4, 0.225, 1.75])
 sp1_radius = 0.22
 
-
 def make_box_transform_matrices():
     rad = math.pi / 8.0
     c, s = math.cos(rad), math.sin(rad)
@@ -69,6 +66,105 @@ def make_box_transform_matrices():
 box_min = ti.Vector([0.0, 0.0, 0.0])
 box_max = ti.Vector([0.55, 1.1, 0.55])
 box_m_inv, box_m_inv_t = make_box_transform_matrices()
+
+@ti.func
+def reflect(d, n):
+    # Assuming |d| and |n| are normalized
+    return d - 2.0 * d.dot(n) * n
+
+
+@ti.func
+def refract(d, n, ni_over_nt):
+    # Assuming |d| and |n| are normalized
+    has_r, rd = 0, d
+    dt = d.dot(n)
+    discr = 1.0 - ni_over_nt * ni_over_nt * (1.0 - dt * dt)
+    if discr > 0.0:
+        has_r = 1
+        rd = (ni_over_nt * (d - n * dt) - n * ti.sqrt(discr)).normalized()
+    else:
+        rd *= 0.0
+    return has_r, rd
+
+
+@ti.func
+def ray_aabb_intersection(box_min, box_max, o, d):
+    intersect = 1
+
+    near_int = -inf
+    far_int = inf
+
+    for i in ti.static(range(3)):
+        if d[i] == 0:
+            if o[i] < box_min[i] or o[i] > box_max[i]:
+                intersect = 0
+        else:
+            i1 = (box_min[i] - o[i]) / d[i]
+            i2 = (box_max[i] - o[i]) / d[i]
+
+            new_far_int = ti.max(i1, i2)
+            new_near_int = ti.min(i1, i2)
+
+            far_int = ti.min(new_far_int, far_int)
+            near_int = ti.max(new_near_int, near_int)
+
+    if near_int > far_int:
+        intersect = 0
+    return intersect, near_int, far_int
+
+@ti.func
+def intersect_sphere(pos, d, center, radius):
+    T = pos - center
+    A = 1.0
+    B = 2.0 * T.dot(d)
+    C = T.dot(T) - radius * radius
+    delta = B * B - 4.0 * A * C
+    dist = inf
+    hit_pos = ti.Vector([0.0, 0.0, 0.0])
+
+    if delta > -1e-4:
+        delta = ti.max(delta, 0)
+        sdelta = ti.sqrt(delta)
+        ratio = 0.5 / A
+        ret1 = ratio * (-B - sdelta)
+        dist = ret1
+        if dist < inf:
+            # refinement
+            old_dist = dist
+            new_pos = pos + d * dist
+            T = new_pos - center
+            A = 1.0
+            B = 2.0 * T.dot(d)
+            C = T.dot(T) - radius * radius
+            delta = B * B - 4 * A * C
+            if delta > 0:
+                sdelta = ti.sqrt(delta)
+                ratio = 0.5 / A
+                ret1 = ratio * (-B - sdelta) + old_dist
+                if ret1 > 0:
+                    dist = ret1
+                    hit_pos = new_pos + ratio * (-B - sdelta) * d
+                else:
+                    pass
+                    #ret2 = ratio * (-B + sdelta) + old_dist
+                    #if ret2 > 0:
+                    #  dist = ret2
+                    #  hit_pos = new_pos + ratio * (-B + sdelta) * d
+            else:
+                dist = inf
+
+    return dist, hit_pos
+
+
+@ti.func
+def ray_plane_intersect(pos, d, pt_on_plane, norm):
+    dist = inf
+    hit_pos = ti.Vector([0.0, 0.0, 0.0])
+    denom = d.dot(norm)
+    if abs(denom) > eps:
+        dist = norm.dot(pt_on_plane - pos) / denom
+        hit_pos = pos + d * dist
+    return dist, hit_pos
 
 
 @ti.func

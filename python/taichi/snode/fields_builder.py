@@ -110,3 +110,6 @@ class FieldsBuilder:
     def _check_not_finalized(self):
         if self._finalized:
             raise InvalidOperationError('FieldsBuilder finalized')
+
+    def get_finalized(self):
+        return self._finalized

@@ -450,8 +450,11 @@ SNode *Program::get_snode_root(int tree_id) {
 void Program::materialize_snode_tree(SNodeTree *tree) {
   auto *const root = tree->root();
   // always use host_arch() for host accessors
+  std::unique_ptr<llvm::Module> host_module = nullptr;
+  if (!snode_trees_.empty())
+    host_module = llvm_context_host->clone_struct_module();
   std::unique_ptr<StructCompiler> scomp =
-      std::make_unique<StructCompilerLLVM>(host_arch(), this);
+      std::make_unique<StructCompilerLLVM>(host_arch(), this, std::move(host_module));
   scomp->run(*root);
   materialize_snode_expr_attributes();
 
@@ -462,8 +465,12 @@ void Program::materialize_snode_tree(SNodeTree *tree) {
   if (arch_is_cpu(config.arch)) {
     initialize_llvm_runtime_snodes(tree, scomp.get());
   } else if (config.arch == Arch::cuda) {
+    std::unique_ptr<llvm::Module> device_module = nullptr;
+    if (!snode_trees_.empty())
+      device_module = llvm_context_device->clone_struct_module();
+
     std::unique_ptr<StructCompiler> scomp_gpu =
-        std::make_unique<StructCompilerLLVM>(Arch::cuda, this);
+        std::make_unique<StructCompilerLLVM>(Arch::cuda, this, std::move(device_module));
     scomp_gpu->run(*root);
     initialize_llvm_runtime_snodes(tree, scomp_gpu.get());
   } else if (config.arch == Arch::metal) {

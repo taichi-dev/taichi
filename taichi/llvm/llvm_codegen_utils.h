@@ -94,7 +94,6 @@ class LLVMModuleBuilder {
 
   llvm::Function *get_runtime_function(const std::string &name) {
     auto f = module->getFunction(name);
-    std::cout << "get_runtime_function " << name << std::endl;
     if (!f) {
       TI_ERROR("LLVMRuntime function {} not found.", name);
     }

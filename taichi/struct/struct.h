@@ -31,7 +31,9 @@ class StructCompiler {
 
   virtual void run(SNode &node) = 0;
 
-  static std::unique_ptr<StructCompiler> make(Program *prog, Arch arch);
+  static std::unique_ptr<StructCompiler> make(Program *prog, Arch arch) {
+    TI_NOT_IMPLEMENTED
+  };
 };
 
 }  // namespace lang

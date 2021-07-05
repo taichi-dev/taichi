@@ -327,9 +327,5 @@ llvm::Type *StructCompilerLLVM::get_llvm_element_type(llvm::Module *module,
   return get_stub(module, snode, 3);
 }
 
-std::unique_ptr<StructCompiler> StructCompiler::make(Program *prog, Arch arch) {
-  return std::make_unique<StructCompilerLLVM>(arch, prog);
-}
-
 }  // namespace lang
 }  // namespace taichi

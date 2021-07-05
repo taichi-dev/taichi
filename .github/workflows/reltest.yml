@@ -1,0 +1,38 @@
+name: Release Test
+on:
+  push:
+    branches: [stable]
+  # For test:
+  #pull_request:
+  #  types: [opened, synchronize, reopened]
+
+jobs:
+  download_and_test:
+    name: Download and Test
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-16.04, ubuntu-latest, windows-latest]
+        python: [3.6, 3.7, 3.8]
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Download Taichi
+        run: |
+          python misc/ci_install_latest.py
+
+      - name: Simple CLI Test
+        run: |
+          pip show taichi
+          ti changelog
+          ti diagnose
+          ti example laplace.py
+
+      - name: Functionality Test
+        run: |
+          pip install pytest pytest-rerunfailures pytest-xdist autograd
+          ti test -vr3 -t2 -k 'not gc'  # exclude test_gc.py for now

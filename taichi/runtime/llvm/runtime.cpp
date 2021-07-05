@@ -1048,6 +1048,7 @@ void block_memfence() {
 void grid_memfence() {
 }
 
+// these trivial functions are needed by the DEFINE_REDUCTION macro
 i32 op_add_i32(i32 a, i32 b) {
   return a + b;
 }

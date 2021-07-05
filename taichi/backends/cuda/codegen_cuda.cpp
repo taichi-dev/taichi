@@ -252,7 +252,16 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       auto dst_type =
           stmt->dest->ret_type->as<PointerType>()->get_pointee_type();
       if (stmt->op_type == AtomicOpType::add) {
-        if (dst_type->is<PrimitiveType>() && is_integral(stmt->val->ret_type)) {
+        if (stmt->is_reduction &&
+            stmt->val->ret_type->is_primitive(PrimitiveTypeID::i32)) {
+          old_value = create_call("reduce_add_i32",
+                                  {llvm_val[stmt->dest], llvm_val[stmt->val]});
+        } else if (stmt->is_reduction &&
+                   stmt->val->ret_type->is_primitive(PrimitiveTypeID::f32)) {
+          old_value = create_call("reduce_add_f32",
+                                  {llvm_val[stmt->dest], llvm_val[stmt->val]});
+        } else if (dst_type->is<PrimitiveType>() &&
+                   is_integral(stmt->val->ret_type)) {
           old_value = builder->CreateAtomicRMW(
               llvm::AtomicRMWInst::BinOp::Add, llvm_val[stmt->dest],
               llvm_val[stmt->val],
@@ -270,7 +279,15 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
           TI_NOT_IMPLEMENTED
         }
       } else if (stmt->op_type == AtomicOpType::min) {
-        if (is_integral(stmt->val->ret_type)) {
+        if (stmt->is_reduction &&
+            stmt->val->ret_type->is_primitive(PrimitiveTypeID::i32)) {
+          old_value = create_call("reduce_min_i32",
+                                  {llvm_val[stmt->dest], llvm_val[stmt->val]});
+        } else if (stmt->is_reduction &&
+                   stmt->val->ret_type->is_primitive(PrimitiveTypeID::f32)) {
+          old_value = create_call("reduce_min_f32",
+                                  {llvm_val[stmt->dest], llvm_val[stmt->val]});
+        } else if (is_integral(stmt->val->ret_type)) {
           old_value = builder->CreateAtomicRMW(
               llvm::AtomicRMWInst::BinOp::Min, llvm_val[stmt->dest],
               llvm_val[stmt->val],
@@ -287,7 +304,15 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
           TI_NOT_IMPLEMENTED
         }
       } else if (stmt->op_type == AtomicOpType::max) {
-        if (is_integral(stmt->val->ret_type)) {
+        if (stmt->is_reduction &&
+            stmt->val->ret_type->is_primitive(PrimitiveTypeID::i32)) {
+          old_value = create_call("reduce_max_i32",
+                                  {llvm_val[stmt->dest], llvm_val[stmt->val]});
+        } else if (stmt->is_reduction &&
+                   stmt->val->ret_type->is_primitive(PrimitiveTypeID::f32)) {
+          old_value = create_call("reduce_max_f32",
+                                  {llvm_val[stmt->dest], llvm_val[stmt->val]});
+        } else if (is_integral(stmt->val->ret_type)) {
           old_value = builder->CreateAtomicRMW(
               llvm::AtomicRMWInst::BinOp::Max, llvm_val[stmt->dest],
               llvm_val[stmt->val],
@@ -304,7 +329,11 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
           TI_NOT_IMPLEMENTED
         }
       } else if (stmt->op_type == AtomicOpType::bit_and) {
-        if (is_integral(stmt->val->ret_type)) {
+        if (stmt->is_reduction &&
+            stmt->val->ret_type->is_primitive(PrimitiveTypeID::i32)) {
+          old_value = create_call("reduce_and_i32",
+                                  {llvm_val[stmt->dest], llvm_val[stmt->val]});
+        } else if (is_integral(stmt->val->ret_type)) {
           old_value = builder->CreateAtomicRMW(
               llvm::AtomicRMWInst::BinOp::And, llvm_val[stmt->dest],
               llvm_val[stmt->val],
@@ -313,7 +342,11 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
           TI_NOT_IMPLEMENTED
         }
       } else if (stmt->op_type == AtomicOpType::bit_or) {
-        if (is_integral(stmt->val->ret_type)) {
+        if (stmt->is_reduction &&
+            stmt->val->ret_type->is_primitive(PrimitiveTypeID::i32)) {
+          old_value = create_call("reduce_or_i32",
+                                  {llvm_val[stmt->dest], llvm_val[stmt->val]});
+        } else if (is_integral(stmt->val->ret_type)) {
           old_value = builder->CreateAtomicRMW(
               llvm::AtomicRMWInst::BinOp::Or, llvm_val[stmt->dest],
               llvm_val[stmt->val],
@@ -322,7 +355,11 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
           TI_NOT_IMPLEMENTED
         }
       } else if (stmt->op_type == AtomicOpType::bit_xor) {
-        if (is_integral(stmt->val->ret_type)) {
+        if (stmt->is_reduction &&
+            stmt->val->ret_type->is_primitive(PrimitiveTypeID::i32)) {
+          old_value = create_call("reduce_xor_i32",
+                                  {llvm_val[stmt->dest], llvm_val[stmt->val]});
+        } else if (is_integral(stmt->val->ret_type)) {
           old_value = builder->CreateAtomicRMW(
               llvm::AtomicRMWInst::BinOp::Xor, llvm_val[stmt->dest],
               llvm_val[stmt->val],

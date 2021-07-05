@@ -984,11 +984,19 @@ int32 cuda_ballot(bool bit) {
   return 0;
 }
 
-i32 cuda_shfl_down_sync_i32(u32 mask, i32 delta, i32 val, int width) {
+i32 cuda_shfl_down_sync_i32(u32 mask, i32 val, i32 delta, int width) {
   return 0;
 }
 
 i32 cuda_shfl_down_i32(i32 delta, i32 val, int width) {
+  return 0;
+}
+
+f32 cuda_shfl_down_sync_f32(u32 mask, f32 val, i32 delta, int width) {
+  return 0;
+}
+
+f32 cuda_shfl_down_f32(i32 delta, f32 val, int width) {
   return 0;
 }
 
@@ -1039,6 +1047,66 @@ void block_memfence() {
 
 void grid_memfence() {
 }
+
+// these trivial functions are needed by the DEFINE_REDUCTION macro
+i32 op_add_i32(i32 a, i32 b) {
+  return a + b;
+}
+f32 op_add_f32(f32 a, f32 b) {
+  return a + b;
+}
+
+i32 op_min_i32(i32 a, i32 b) {
+  return fmin(a, b);
+}
+f32 op_min_f32(f32 a, f32 b) {
+  return fmin(a, b);
+}
+
+i32 op_max_i32(i32 a, i32 b) {
+  return fmax(a, b);
+}
+f32 op_max_f32(f32 a, f32 b) {
+  return fmax(a, b);
+}
+
+i32 op_and_i32(i32 a, i32 b) {
+  return a & b;
+}
+i32 op_or_i32(i32 a, i32 b) {
+  return a | b;
+}
+i32 op_xor_i32(i32 a, i32 b) {
+  return a ^ b;
+}
+
+#define DEFINE_REDUCTION(op, dtype)                                   \
+  dtype warp_reduce_##op##_##dtype(dtype val) {                       \
+    for (int offset = 16; offset > 0; offset /= 2)                    \
+      val = op_##op##_##dtype(                                        \
+          val, cuda_shfl_down_sync_i32(0xFFFFFFFF, val, offset, 31)); \
+    return val;                                                       \
+  }                                                                   \
+  dtype reduce_##op##_##dtype(dtype *result, dtype val) {             \
+    dtype warp_result = warp_reduce_##op##_##dtype(val);              \
+    if ((thread_idx() & (warp_size() - 1)) == 0) {                    \
+      atomic_##op##_##dtype(result, warp_result);                     \
+    }                                                                 \
+    return val;                                                       \
+  }
+
+DEFINE_REDUCTION(add, i32);
+DEFINE_REDUCTION(add, f32);
+
+DEFINE_REDUCTION(min, i32);
+DEFINE_REDUCTION(min, f32);
+
+DEFINE_REDUCTION(max, i32);
+DEFINE_REDUCTION(max, f32);
+
+DEFINE_REDUCTION(and, i32);
+DEFINE_REDUCTION(or, i32);
+DEFINE_REDUCTION(xor, i32);
 
 // "Element", "component" are different concepts
 

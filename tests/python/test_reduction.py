@@ -1,7 +1,8 @@
 import numpy as np
 import pytest
-import taichi as ti
 from pytest import approx
+
+import taichi as ti
 
 OP_ADD = 0
 OP_MIN = 1

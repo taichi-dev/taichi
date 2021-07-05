@@ -167,8 +167,8 @@ void make_thread_local_offload(OffloadedStmt *offload) {
           std::unique_ptr<Stmt>(
               (Stmt *)irpass::analysis::clone(dest).release()),
           -1);
-      offload->tls_epilogue->push_back<AtomicOpStmt>(AtomicOpType::add,
-                                                     global_ptr, tls_load,true);
+      offload->tls_epilogue->push_back<AtomicOpStmt>(
+          AtomicOpType::add, global_ptr, tls_load, true);
     }
 
     // allocate storage for the TLS variable

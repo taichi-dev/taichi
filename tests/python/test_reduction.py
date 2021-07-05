@@ -11,6 +11,24 @@ OP_AND = 3
 OP_OR = 4
 OP_XOR = 5
 
+ti_ops = {
+    OP_ADD: ti.atomic_add,
+    OP_MIN: ti.atomic_min,
+    OP_MAX: ti.atomic_max,
+    OP_AND: ti.atomic_and,
+    OP_OR: ti.atomic_or,
+    OP_XOR: ti.atomic_xor
+}
+
+np_ops = {
+    OP_ADD: np.sum,
+    OP_MIN: lambda a: a.min(),
+    OP_MAX: lambda a: a.max(),
+    OP_AND: np.bitwise_and.reduce,
+    OP_OR: np.bitwise_or.reduce,
+    OP_XOR: np.bitwise_xor.reduce
+}
+
 
 def _test_reduction_single(dtype, criterion, op):
     N = 1024 * 1024
@@ -26,18 +44,7 @@ def _test_reduction_single(dtype, criterion, op):
         for i in a:
             a[i] = i
 
-    if op == OP_ADD:
-        ti_op = ti.atomic_add
-    elif op == OP_MIN:
-        ti_op = ti.atomic_min
-    elif op == OP_MAX:
-        ti_op = ti.atomic_max
-    elif op == OP_AND:
-        ti_op = ti.atomic_and
-    elif op == OP_OR:
-        ti_op = ti.atomic_or
-    elif op == OP_XOR:
-        ti_op = ti.atomic_xor
+    ti_op = ti_ops[op]
 
     @ti.kernel
     def reduce():
@@ -55,19 +62,8 @@ def _test_reduction_single(dtype, criterion, op):
     reduce()
     tot2 = reduce_tmp()
 
-    a_np = a.to_numpy()
-    if op == OP_ADD:
-        ground_truth = np.sum(a_np)
-    elif op == OP_MIN:
-        ground_truth = a_np.min()
-    elif op == OP_MAX:
-        ground_truth = a_np.max()
-    elif op == OP_AND:
-        ground_truth = np.bitwise_and.reduce(a_np)
-    elif op == OP_OR:
-        ground_truth = np.bitwise_or.reduce(a_np)
-    elif op == OP_XOR:
-        ground_truth = np.bitwise_xor.reduce(a_np)
+    ground_truth = np_ops[op](a.to_numpy())
+
     assert criterion(tot[None], ground_truth)
     assert criterion(tot2, ground_truth)
 

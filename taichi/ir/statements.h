@@ -231,12 +231,17 @@ class AtomicOpStmt : public Stmt {
   Stmt *dest, *val;
   bool is_reduction;
 
-  AtomicOpStmt(AtomicOpType op_type,
-               Stmt *dest,
-               Stmt *val,
-               bool is_reduction = false)
-      : op_type(op_type), dest(dest), val(val), is_reduction(is_reduction) {
+  AtomicOpStmt(AtomicOpType op_type, Stmt *dest, Stmt *val)
+      : op_type(op_type), dest(dest), val(val), is_reduction(false) {
     TI_STMT_REG_FIELDS;
+  }
+
+  static std::unique_ptr<AtomicOpStmt> make_for_reduction(AtomicOpType op_type,
+                                                          Stmt *dest,
+                                                          Stmt *val) {
+    auto stmt = std::make_unique<AtomicOpStmt>(op_type, dest, val);
+    stmt->is_reduction = true;
+    return stmt;
   }
 
   TI_STMT_DEF_FIELDS(ret_type, op_type, dest, val);

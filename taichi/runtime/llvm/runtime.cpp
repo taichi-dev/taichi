@@ -1091,7 +1091,7 @@ i32 op_xor_i32(i32 a, i32 b) {
     if ((thread_idx() & (warp_size() - 1)) == 0) {                    \
       atomic_##op##_##dtype(result, warp_result);                     \
     }                                                                 \
-    return 0;                                                         \
+    return val;                                                       \
   }
 
 DEFINE_REDUCTION(add, i32);

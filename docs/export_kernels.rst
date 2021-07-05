@@ -256,12 +256,21 @@ kernels with ``ti.RecordKernelGroup``. For example:
         do_some_works()
 
 
-Then the ``ti cc_compose`` command will add a comment at the end of ``record.c``
-as a hint of launch order:
+Then the ``ti cc_compose`` command will add an array of string at the end of
+``record.c`` as a hint of launch order:
 
-.. code-block:: python
+.. code-block:: c
 
-    // group my_substep: ['fill_tensor_c8_0', 'clear_gradients_c24_0', 'clear_gradients_c24_1', 'snode_writer_2', 'snode_writer_4', 'compute_loss_c4_0', 'compute_loss_c5_0_grad_grad', 'do_some_works_c6_0']
+    const char *Ti_group_my_substep[] = {
+        "fill_tensor_c8_0",
+        "clear_gradients_c24_0",
+        "clear_gradients_c24_1",
+        "snode_writer_2",
+        "snode_writer_4",
+        "compute_loss_c4_0",
+        "compute_loss_c5_0_grad_grad",
+        "do_some_works_c6_0",
+    };
 
 
 This is the name of all the kernels launched within the ``ti.RecordGroupHint`` scope,

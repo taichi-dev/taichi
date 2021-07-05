@@ -128,7 +128,6 @@ void CCProgram::compile_layout(SNode *root) {
   layout = gen.compile();
   size_t root_size = layout->compile();
   size_t gtmp_size = taichi_global_tmp_buffer_size;
-  size_t args_size = taichi_max_num_args * sizeof(uint64);
 
   TI_INFO("[cc] C backend root buffer size: {} B", root_size);
 
@@ -140,11 +139,10 @@ void CCProgram::compile_layout(SNode *root) {
 
   root_buf.resize(root_size, 0);
   gtmp_buf.resize(gtmp_size, 0);
-  args_buf.resize(args_size, 0);
 
   context->root = root_buf.data();
   context->gtmp = gtmp_buf.data();
-  context->args = (uint64 *)args_buf.data();
+  context->args = nullptr;
   context->earg = nullptr;
 }
 
@@ -173,8 +171,7 @@ CCProgram::CCProgram(Program *program) : program(program) {
 }
 
 CCContext *CCProgram::update_context(Context *ctx) {
-  // TODO(k-ye): Do you have other zero-copy ideas for arg buf?
-  std::memcpy(context->args, ctx->args, taichi_max_num_args * sizeof(uint64));
+  context->args = (uint64_t *)ctx->args;
   context->earg = (int *)ctx->extra_args;
   return context.get();
 }
@@ -182,7 +179,8 @@ CCContext *CCProgram::update_context(Context *ctx) {
 void CCProgram::context_to_result_buffer() {
   TI_ASSERT(program->result_buffer);
   std::memcpy(program->result_buffer, context->args,
-              sizeof(uint64));  // XXX: assumed 1 return
+              sizeof(uint64));  // assumed 1 return
+  context->args = nullptr;
   context->earg = nullptr;
 }
 

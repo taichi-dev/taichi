@@ -18,6 +18,17 @@ namespace opengl {
 
 namespace {
 
+namespace shaders {
+#define TI_INSIDE_OPENGL_CODEGEN
+#include "taichi/backends/opengl/shaders/atomics_macro_f32.glsl.h"
+#include "taichi/backends/opengl/shaders/runtime.h"
+#include "taichi/backends/opengl/shaders/listman.h"
+#include "taichi/backends/opengl/shaders/random.glsl.h"
+#include "taichi/backends/opengl/shaders/fast_pow.glsl.h"
+#include "taichi/backends/opengl/shaders/print.glsl.h"
+#undef TI_INSIDE_OPENGL_CODEGEN
+}  // namespace shaders
+
 int find_children_id(const SNode *snode) {
   auto parent = snode->parent;
   for (int i = 0; i < parent->ch.size(); i++) {
@@ -132,18 +143,12 @@ class KernelGen : public IRVisitor {
     emit("}}");
 
     // clang-format off
-    std::string kernel_header;
-#define __GLSL__
     if (used.print)  // the runtime buffer is only used for print now..
-      kernel_header += (
-#include "taichi/backends/opengl/shaders/runtime.h"
-        );
+      line_appender_header_.append_raw(shaders::kOpenGLRuntimeSourceCode);
     if (used.listman)
-      kernel_header += (
-#include "taichi/backends/opengl/shaders/listman.h"
-          );
-#undef __GLSL__
+      line_appender_header_.append_raw(shaders::kOpenGLListmanSourceCode);
 
+    std::string kernel_header;
 #define DEFINE_LAYOUT(name, id, dt, dtype) \
       kernel_header += "layout(std430, binding = " + fmt::format("{}", id) \
                     + ") buffer " #name "_" #dt " { " #dtype " _" \
@@ -170,39 +175,28 @@ class KernelGen : public IRVisitor {
     // clang-format on
 
     if (used.simulated_atomic_float) {
-      kernel_header += (
-#include "taichi/backends/opengl/shaders/atomics_data_f32.glsl.h"
-      );
+      line_appender_header_.append_raw(shaders::kOpenGLAtomicF32SourceCode);
+      kernel_header += ("DEFINE_ATOMIC_F32_FUNCTIONS(data);\n");
       if (used.buf_gtmp) {
-        kernel_header += (
-#include "taichi/backends/opengl/shaders/atomics_gtmp_f32.glsl.h"
-        );
+        kernel_header += ("DEFINE_ATOMIC_F32_FUNCTIONS(gtmp);\n");
       }
       if (used.buf_extr) {
-        kernel_header += (
-#include "taichi/backends/opengl/shaders/atomics_extr_f32.glsl.h"
-        );
+        kernel_header += ("DEFINE_ATOMIC_F32_FUNCTIONS(extr);\n");
       }
-    }
-
-    if (used.random) {
-      kernel_header += (
-#include "taichi/backends/opengl/shaders/random.glsl.h"
-      );
-    }
-
-    if (used.fast_pow) {
-      kernel_header += (
-#include "taichi/backends/opengl/shaders/fast_pow.glsl.h"
-      );
-    }
-    if (used.print) {
-      kernel_header += (
-#include "taichi/backends/opengl/shaders/print.glsl.h"
-      );
     }
 
     line_appender_header_.append_raw(kernel_header);
+
+    if (used.random) {
+      line_appender_header_.append_raw(shaders::kOpenGLRandomSourceCode);
+    }
+
+    if (used.fast_pow) {
+      line_appender_header_.append_raw(shaders::kOpenGLFastPowSourceCode);
+    }
+    if (used.print) {
+      line_appender_header_.append_raw(shaders::kOpenGLPrintSourceCode);
+    }
 
     std::string extensions = "";
 #define PER_OPENGL_EXTENSION(x) \

@@ -21,6 +21,7 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
 
  protected:
   void add_per_backend(const std::string &identifier, Kernel *kernel) override;
+<<<<<<< HEAD
   void add_per_backend_tmpl(const std::string &identifier,
                             const std::string &key,
                             Kernel *kernel) override;
@@ -29,6 +30,11 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
                              DataType dt,
                              std::pair<int, int>,
                              int vector_size) override;
+=======
+  void add_per_backend_tmpl(const std::string &identifier, 
+                                    const std::string &key, 
+                                    Kernel *kernel) override;
+>>>>>>> c596fb80 (dump metal files ok (txt file to fix))
 
  private:
   void eliminate_unused_functions() const;

@@ -30,6 +30,10 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
                             const std::string &key,
                             Kernel *kernel) override;
 
+  void add_per_backend_tmpl(const std::string &identifier, 
+                                    const std::string &key, 
+                                    Kernel *kernel) override;
+
  private:
   const CompiledStructs *compiled_structs_;
   BufferMetaData buffer_meta_data_;

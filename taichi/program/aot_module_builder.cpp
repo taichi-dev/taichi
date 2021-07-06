@@ -12,6 +12,7 @@ void AotModuleBuilder::add(const std::string &identifier, Kernel *kernel) {
   add_per_backend(identifier, kernel);
 }
 
+<<<<<<< HEAD
 void AotModuleBuilder::add_field(const std::string &identifier,
                                  bool is_scalar,
                                  DataType dt,
@@ -23,6 +24,11 @@ void AotModuleBuilder::add_field(const std::string &identifier,
 void AotModuleBuilder::add_kernel_template(const std::string &identifier,
                                            const std::string &key,
                                            Kernel *kernel) {
+=======
+void AotModuleBuilder::add_kernel_template(const std::string &identifier, 
+                           const std::string &key, 
+                           Kernel *kernel) {
+>>>>>>> c596fb80 (dump metal files ok (txt file to fix))
   if (!kernel->lowered() && Kernel::supports_lowering(kernel->arch)) {
     kernel->lower();
   }

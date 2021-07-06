@@ -250,26 +250,26 @@ def subtract_gradient(vf: ti.template(), pf: ti.template()):
 
 filename = os.path.basename(__file__)[:-3]
 m = ti.aot.Module(ti.metal)
-m.add_kernel(advect, name='advect=v0', template_args={'vf': velocities_pair.cur, 'qf': velocities_pair.cur, 'new_qf': velocities_pair.nxt})
-m.add_kernel(advect, name='advect=v1', template_args={'vf': velocities_pair.nxt, 'qf': velocities_pair.nxt, 'new_qf': velocities_pair.cur})
+m.add_kernel_template(advect, key = "v0", template_args={'vf': velocities_pair.cur, 'qf': velocities_pair.cur, 'new_qf': velocities_pair.nxt})
+m.add_kernel_template(advect, key = "v1", template_args={'vf': velocities_pair.nxt, 'qf': velocities_pair.nxt, 'new_qf': velocities_pair.cur})
 
-m.add_kernel(advect, name='advect=d0', template_args={'vf': velocities_pair.cur, 'qf': dyes_pair.cur, 'new_qf': dyes_pair.nxt})
-m.add_kernel(advect, name='advect=d1', template_args={'vf': velocities_pair.nxt, 'qf': dyes_pair.nxt, 'new_qf': dyes_pair.cur})
+m.add_kernel_template(advect, key = "d0", template_args={'vf': velocities_pair.cur, 'qf': dyes_pair.cur, 'new_qf': dyes_pair.nxt})
+m.add_kernel_template(advect, key = "d1", template_args={'vf': velocities_pair.nxt, 'qf': dyes_pair.nxt, 'new_qf': dyes_pair.cur})
 
-m.add_kernel(apply_impulse, name='apply_impulse=v0d0', template_args={'vf': velocities_pair.cur, 'dye': dyes_pair.cur})
-m.add_kernel(apply_impulse, name='apply_impulse=v1d1', template_args={'vf': velocities_pair.nxt, 'dye': dyes_pair.nxt})
+# m.add_kernel(apply_impulse, name='apply_impulse=v0d0', template_args={'vf': velocities_pair.cur, 'dye': dyes_pair.cur})
+# m.add_kernel(apply_impulse, name='apply_impulse=v1d1', template_args={'vf': velocities_pair.nxt, 'dye': dyes_pair.nxt})
 
-m.add_kernel(divergence, name='divergence=v0', template_args={'vf': velocities_pair.cur})
-m.add_kernel(divergence, name='divergence=v1', template_args={'vf': velocities_pair.nxt})
+# m.add_kernel(divergence, name='divergence=v0', template_args={'vf': velocities_pair.cur})
+# m.add_kernel(divergence, name='divergence=v1', template_args={'vf': velocities_pair.nxt})
 
 # m.add_kernel(vorticity, name='vorticity=v0', template_args={'vf': velocities_pair.cur})
 # m.add_kernel(vorticity, name='vorticity=v1', template_args={'vf': velocities_pair.nxt})
 
-m.add_kernel(pressure_jacobi, name='pressure_jacobi=p0', template_args={'pf': pressures_pair.cur, 'new_pf': pressures_pair.nxt})
-m.add_kernel(pressure_jacobi, name='pressure_jacobi=p1', template_args={'pf': pressures_pair.nxt, 'new_pf': pressures_pair.cur})
+# m.add_kernel(pressure_jacobi, name='pressure_jacobi=p0', template_args={'pf': pressures_pair.cur, 'new_pf': pressures_pair.nxt})
+# m.add_kernel(pressure_jacobi, name='pressure_jacobi=p1', template_args={'pf': pressures_pair.nxt, 'new_pf': pressures_pair.cur})
 
-m.add_kernel(subtract_gradient, name='subtract_gradient=v0p0', template_args={'vf': velocities_pair.cur, 'pf': pressures_pair.cur})
-m.add_kernel(subtract_gradient, name='subtract_gradient=v1p0', template_args={'vf': velocities_pair.nxt, 'pf': pressures_pair.cur})
+# m.add_kernel(subtract_gradient, name='subtract_gradient=v0p0', template_args={'vf': velocities_pair.cur, 'pf': pressures_pair.cur})
+# m.add_kernel(subtract_gradient, name='subtract_gradient=v1p0', template_args={'vf': velocities_pair.nxt, 'pf': pressures_pair.cur})
 
 # m.add_kernel(enhance_vorticity, name='enhance_vorticity=v0', template_args= {'vf': velocities_pair.cur, 'cf': velocity_curls})
 # m.add_kernel(enhance_vorticity, name='enhance_vorticity=v1', template_args={'vf': velocities_pair.nxt, 'cf':  velocity_curls})

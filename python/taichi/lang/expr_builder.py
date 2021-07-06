@@ -116,6 +116,57 @@ class ExprBuilder(Builder):
         return node
 
     @staticmethod
+    def build_IfExp(ctx, node):
+        node.test = build_expr(ctx, node.test)
+        node.body = build_expr(ctx, node.body)
+        node.orelse = build_expr(ctx, node.orelse)
+
+        call = ast.Call(func=parse_expr('ti.select'),
+                        args=[node.test, node.body, node.orelse],
+                        keywords=[])
+        return ast.copy_location(call, node)
+
+    @staticmethod
+    def build_UnaryOp(ctx, node):
+        node.operand = build_expr(ctx, node.operand)
+        if isinstance(node.op, ast.Not):
+            # Python does not support overloading logical and & or
+            new_node = parse_expr('ti.logical_not(0)')
+            new_node.args[0] = node.operand
+            node = new_node
+        return node
+
+    @staticmethod
+    def build_BoolOp(ctx, node):
+        node.values = [build_expr(ctx, val) for val in list(node.values)]
+
+        def make_node(a, b, token):
+            new_node = parse_expr('ti.logical_{}(0, 0)'.format(token))
+            new_node.args[0] = a
+            new_node.args[1] = b
+            return new_node
+
+        token = ''
+        if isinstance(node.op, ast.And):
+            token = 'and'
+        elif isinstance(node.op, ast.Or):
+            token = 'or'
+        else:
+            print(node.op)
+            print("BoolOp above not implemented")
+            exit(0)
+
+        new_node = node.values[0]
+        for i in range(1, len(node.values)):
+            new_node = make_node(new_node, node.values[i], token)
+
+        return new_node
+
+    @staticmethod
+    def build_BinOp(ctx, node):
+        return node
+
+    @staticmethod
     def build_Name(ctx, node):
         return node
 

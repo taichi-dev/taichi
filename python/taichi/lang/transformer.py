@@ -50,9 +50,12 @@ class ASTTransformer(object):
 
     def visit(self, tree):
         from taichi.lang.stmt_builder import build_stmt
+        from taichi.lang.ast_builder_utils import BuilderContext
         self.print_ast(tree, 'Initial AST')
         tmp = copy.deepcopy(tree.body[0].body[0])
-        tmp = build_stmt(None, tmp)
+        ctx = BuilderContext()
+        with ctx.variable_scope():
+            tmp = build_stmt(ctx, tmp)
         tree1 = ast.Module()
         tree1.body = [tmp]
         self.print_ast(tree1)

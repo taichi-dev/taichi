@@ -32,3 +32,55 @@ def set_subscript_index(node, value):
         node.slice.value = value
     else:
         node.slice = value
+
+
+class ScopeGuard:
+    def __init__(self, scopes, stmt_block=None):
+        self.scopes = scopes
+        self.stmt_block = stmt_block
+
+    def __enter__(self):
+        self.scopes.append([])
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        local = self.scopes[-1]
+        if self.stmt_block is not None:
+            for var in reversed(local):
+                stmt = parse_stmt('del var')
+                stmt.targets[0].id = var
+                self.stmt_block.append(stmt)
+        self.scopes.pop()
+
+
+class BuilderContext:
+    def __init__(self):
+        self.local_scopes = []
+        self.control_scopes = []
+
+    # e.g.: FunctionDef, Module, Global
+    def variable_scope(self, *args):
+        return ScopeGuard(self.local_scopes, *args)
+
+    # e.g.: For, While
+    def control_scope(self):
+        return ScopeGuard(self.control_scopes)
+
+    def current_scope(self):
+        return self.local_scopes[-1]
+
+    def current_control_scope(self):
+        return self.control_scopes[-1]
+
+    def var_declared(self, name):
+        for s in self.local_scopes:
+            if name in s:
+                return True
+        return False
+
+    def is_creation(self, name):
+        return not self.var_declared(name)
+
+    def create_variable(self, name):
+        assert name not in self.current_scope(
+        ), "Recreating variables is not allowed"
+        self.current_scope().append(name)

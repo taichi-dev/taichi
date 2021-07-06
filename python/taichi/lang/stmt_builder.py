@@ -10,6 +10,13 @@ import taichi as ti
 
 class StmtBuilder(Builder):
     @staticmethod
+    def make_single_statement(stmts):
+        template = 'if 1: pass'
+        t = ast.parse(template).body[0]
+        t.body = stmts
+        return t
+
+    @staticmethod
     def build_AugAssign(ctx, node):
         node.target = build_expr(ctx, node.target)
         node.value = build_expr(ctx, node.value)
@@ -67,6 +74,99 @@ class StmtBuilder(Builder):
         new_node.value.args[2] = extra_args
         new_node = ast.copy_location(new_node, node)
         return new_node
+
+    @staticmethod
+    def build_Assign(ctx, node):
+        assert (len(node.targets) == 1)
+        node.value = build_expr(ctx, node.value)
+        node.targets = [build_expr(ctx, t) for t in list(node.targets)]
+        # node.type_comment?
+
+        is_static_assign = isinstance(
+            node.value, ast.Call) and ASTResolver.resolve_to(
+            node.value.func, ti.static, globals())
+        if is_static_assign:
+            return node
+
+        if isinstance(node.targets[0], ast.Tuple):
+            targets = node.targets[0].elts
+
+            # Create
+            stmts = []
+
+            holder = parse_stmt('__tmp_tuple = ti.expr_init_list(0, '
+                                f'{len(targets)})')
+            holder.value.args[0] = node.value
+
+            stmts.append(holder)
+
+            def tuple_indexed(i):
+                indexing = parse_stmt('__tmp_tuple[0]')
+                set_subscript_index(indexing.value,
+                                    parse_expr("{}".format(i)))
+                return indexing.value
+
+            for i, target in enumerate(targets):
+                is_local = isinstance(target, ast.Name)
+                if is_local and ctx.is_creation(target.id):
+                    var_name = target.id
+                    target.ctx = ast.Store()
+                    # Create, no AST resolution needed
+                    init = ast.Attribute(value=ast.Name(id='ti',
+                                                        ctx=ast.Load()),
+                                         attr='expr_init',
+                                         ctx=ast.Load())
+                    rhs = ast.Call(
+                        func=init,
+                        args=[tuple_indexed(i)],
+                        keywords=[],
+                    )
+                    ctx.create_variable(var_name)
+                    stmts.append(ast.Assign(targets=[target], value=rhs))
+                else:
+                    # Assign
+                    target.ctx = ast.Load()
+                    func = ast.Attribute(value=target,
+                                         attr='assign',
+                                         ctx=ast.Load())
+                    call = ast.Call(func=func,
+                                    args=[tuple_indexed(i)],
+                                    keywords=[])
+                    stmts.append(ast.Expr(value=call))
+
+            for stmt in stmts:
+                ast.copy_location(stmt, node)
+            stmts.append(parse_stmt('del __tmp_tuple'))
+            return StmtBuilder.make_single_statement(stmts)
+        else:
+            is_local = isinstance(node.targets[0], ast.Name)
+            if is_local and ctx.is_creation(node.targets[0].id):
+                var_name = node.targets[0].id
+                # Create, no AST resolution needed
+                init = ast.Attribute(value=ast.Name(id='ti', ctx=ast.Load()),
+                                     attr='expr_init',
+                                     ctx=ast.Load())
+                rhs = ast.Call(
+                    func=init,
+                    args=[node.value],
+                    keywords=[],
+                )
+                ctx.create_variable(var_name)
+                return ast.copy_location(
+                    ast.Assign(targets=node.targets, value=rhs), node)
+            else:
+                # Assign
+                node.targets[0].ctx = ast.Load()
+                func = ast.Attribute(value=node.targets[0],
+                                     attr='assign',
+                                     ctx=ast.Load())
+                call = ast.Call(func=func, args=[node.value], keywords=[])
+                return ast.copy_location(ast.Expr(value=call), node)
+
+    @staticmethod
+    def build_Try(ctx, node):
+        raise TaichiSyntaxError(
+            "Keyword 'try' not supported in Taichi kernels")
 
 
 build_stmt = StmtBuilder()

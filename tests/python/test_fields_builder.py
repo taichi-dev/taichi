@@ -51,7 +51,7 @@ def test_fields_builder1():
     func2()
     for i in range(n):
         assert y[i] == i // 2
-        
+
     func1()
     for i in range(n):
         assert x[i] == i * 2

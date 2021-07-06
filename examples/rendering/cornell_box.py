@@ -340,7 +340,7 @@ def sample_area_light(hit_pos, pos_normal):
 def sample_brdf(normal):
     # cosine hemisphere sampling
     # Uniformly sample on a disk using concentric sampling(r, theta)
-    # https://github.com/mmp/pbrt-v3/blob/master/src/core/sampling.cpp#L112-L130
+    # https://www.pbr-book.org/3ed-2018/Monte_Carlo_Integration/2D_Sampling_with_Multidimensional_Transformations#CosineSampleHemisphere
     r, theta = 0.0, 0.0
     sx = ti.random() * 2.0 - 1.0
     sy = ti.random() * 2.0 - 1.0

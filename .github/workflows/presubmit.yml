@@ -85,7 +85,7 @@ jobs:
           export PATH=$TAICHI_REPO_DIR/bin:$PATH
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
           export PYTHONPATH=$TAICHI_REPO_DIR/python
-          python examples/laplace.py
+          python examples/algorithm/laplace.py
           ti diagnose
           ./build/taichi_cpp_tests
           ti test -vr2 -t2
@@ -139,7 +139,7 @@ jobs:
           export PATH=$TAICHI_REPO_DIR/bin:$PATH
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
           export PYTHONPATH=$TAICHI_REPO_DIR/python
-          python examples/laplace.py
+          python examples/algorithm/laplace.py
           ti diagnose
           [ "$RUN_CPP_TESTS" = "ON" ] && ./build/taichi_cpp_tests
           ti test -vr2 -t2
@@ -173,7 +173,7 @@ jobs:
           export PYTHONPATH=$TAICHI_REPO_DIR/python
           export DISPLAY=:1
           glewinfo
-          $PYTHON examples/laplace.py
+          $PYTHON examples/algorithm/laplace.py
           ti diagnose
           ti test -vr2 -t2
 
@@ -230,7 +230,7 @@ jobs:
           $env:PATH += ";C:\taichi_clang\bin"
           $env:PATH += ";$env:TAICHI_REPO_DIR\bin"
           python -c "import taichi"
-          python examples/laplace.py
+          python examples/algorithm/laplace.py
           python bin/taichi diagnose
           python bin/taichi test -Cvr2 -t2
         env:

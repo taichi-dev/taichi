@@ -236,6 +236,7 @@ void export_lang(py::module &m) {
 
   py::class_<AotModuleBuilder>(m, "AotModuleBuilder")
       .def("add", &AotModuleBuilder::add)
+      .def("add_kernel_template", &AotModuleBuilder::add_kernel_template)
       .def("dump", &AotModuleBuilder::dump);
 
   m.def("get_current_program", get_current_program,

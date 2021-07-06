@@ -54,7 +54,7 @@ class Module:
         # kernel AOT
         self._kernels.append(kernel)
     
-    def add_kernel_template(self, kernel_fn, template_args, name=None):
+    def add_kernel_template(self, kernel_fn, template_args, key):
         """Add a taichi kernel (with template parameters) to the AOT module.
 
         Args:
@@ -92,7 +92,7 @@ class Module:
         TODO:
           * Support external array
         """
-        name = name or kernel_fn.__name__
+        name = kernel_fn.__name__
         kernel = kernel_fn._primal
         assert isinstance(kernel, kernel_impl.Kernel)
         injected_args = []
@@ -102,9 +102,9 @@ class Module:
                 value = template_args[kernel.argument_names[i]]
                 injected_args.append(value)
             else:
-                raise RuntimeError('The kernel specified is not of template type')
+                injected_args.append(0)
         kernel.ensure_compiled(*injected_args)
-        self._aot_builder.add(name, kernel.kernel_cpp)
+        self._aot_builder.add_kernel_template(name, key, kernel.kernel_cpp)
 
         # kernel AOT
         self._kernels.append(kernel)

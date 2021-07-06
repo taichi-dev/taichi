@@ -211,6 +211,8 @@ struct CompiledKernelData {
 struct CompiledKernelTmplData {
   std::string kernel_bundle_name;
   std::unordered_map<std::string, CompiledKernelData> kernel_tmpl_map;
+
+  TI_IO_DEF(kernel_bundle_name, kernel_tmpl_map);
 };
 
 struct CompiledFieldData {
@@ -219,6 +221,8 @@ struct CompiledFieldData {
   MetalDataType dtype;
   std::pair<int64_t, int64_t> dimension;
   bool is_vector;
+
+  TI_IO_DEF(field_name, offset_in_root_buffer, dtype, dimension, is_vector);
 };
 
 struct BufferMetaData {

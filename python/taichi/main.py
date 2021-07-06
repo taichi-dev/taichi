@@ -132,7 +132,10 @@ class TaichiMain:
         """Get a set of all available example names."""
         examples_dir = TaichiMain._get_examples_dir()
         all_examples = examples_dir.rglob('*.py')
-        all_example_names = {Path(f).stem : Path(f).parent for f in all_examples}
+        all_example_names = {
+            Path(f).stem: Path(f).parent
+            for f in all_examples
+        }
         return all_example_names
 
     @staticmethod
@@ -182,7 +185,8 @@ class TaichiMain:
         args = parser.parse_args(arguments)
 
         examples_dir = TaichiMain._get_examples_dir()
-        target = str((examples_dir / choices[args.name] / f"{args.name}.py").resolve())
+        target = str(
+            (examples_dir / choices[args.name] / f"{args.name}.py").resolve())
         # path for examples needs to be modified for implicit relative imports
         sys.path.append(str((examples_dir / choices[args.name]).resolve()))
 

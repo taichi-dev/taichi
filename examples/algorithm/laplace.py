@@ -8,6 +8,7 @@ x, y = ti.field(ti.f32), ti.field(ti.f32)
 
 ti.root.dense(ti.ij, N).place(x, y)
 
+
 @ti.kernel
 def laplace():
     for i, j in x:

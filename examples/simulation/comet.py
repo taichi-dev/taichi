@@ -36,7 +36,7 @@ def rand_unit_2d():
 def rand_unit_3d():
     u = rand_unit_2d()
     s = ti.random() * 2 - 1
-    c = ti.sqrt(1 - s ** 2)
+    c = ti.sqrt(1 - s**2)
     return ti.Vector([c * u[0], c * u[1], s])
 
 

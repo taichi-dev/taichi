@@ -1,14 +1,15 @@
 import taichi as ti
+
 ti.init(arch=ti.gpu)
 
 N = 12
 dt = 5e-5
 dx = 1 / N
 rho = 4e1
-NF = 2 * N ** 2   # number of faces
-NV = (N + 1) ** 2 # number of vertices
+NF = 2 * N**2  # number of faces
+NV = (N + 1)**2  # number of vertices
 E, nu = 4e4, 0.2  # Young's modulus and Poisson's ratio
-mu, lam = E / 2 / (1 + nu), E * nu / (1 + nu) / (1 - 2 * nu) # Lame parameters
+mu, lam = E / 2 / (1 + nu), E * nu / (1 + nu) / (1 - 2 * nu)  # Lame parameters
 ball_pos, ball_radius = ti.Vector([0.5, 0.0]), 0.31
 damping = 14.5
 
@@ -25,6 +26,7 @@ gravity = ti.Vector.field(2, float, ())
 attractor_pos = ti.Vector.field(2, float, ())
 attractor_strength = ti.field(float, ())
 
+
 @ti.kernel
 def update_U():
     for i in range(NF):
@@ -38,29 +40,32 @@ def update_U():
         log_J_i = ti.log(F_i.determinant())
         phi_i = mu / 2 * ((F_i.transpose() @ F_i).trace() - 2)
         phi_i -= mu * log_J_i
-        phi_i += lam / 2 * log_J_i ** 2
+        phi_i += lam / 2 * log_J_i**2
         phi[i] = phi_i
         U[None] += V[i] * phi_i
+
 
 @ti.kernel
 def advance():
     for i in range(NV):
-        acc = -pos.grad[i] / (rho * dx ** 2)
-        g = gravity[None] * 0.8 + attractor_strength[None] * (attractor_pos[None] - pos[i]).normalized(1e-5)
+        acc = -pos.grad[i] / (rho * dx**2)
+        g = gravity[None] * 0.8 + attractor_strength[None] * (
+            attractor_pos[None] - pos[i]).normalized(1e-5)
         vel[i] += dt * (acc + g * 40)
         vel[i] *= ti.exp(-dt * damping)
     for i in range(NV):
         # ball boundary condition:
         disp = pos[i] - ball_pos
         disp2 = disp.norm_sqr()
-        if disp2 <= ball_radius ** 2:
+        if disp2 <= ball_radius**2:
             NoV = vel[i].dot(disp)
             if NoV < 0: vel[i] -= NoV * disp / disp2
         cond = pos[i] < 0 and vel[i] < 0 or pos[i] > 1 and vel[i] > 0
         # rect boundary condition:
         for j in ti.static(range(pos.n)):
-           if cond[j]: vel[i][j] = 0
+            if cond[j]: vel[i][j] = 0
         pos[i] += dt * vel[i]
+
 
 @ti.kernel
 def init_pos():
@@ -74,6 +79,7 @@ def init_pos():
         B_i_inv = ti.Matrix.cols([a - c, b - c])
         B[i] = B_i_inv.inverse()
 
+
 @ti.kernel
 def init_mesh():
     for i, j in ti.ndrange(N, N):
@@ -85,6 +91,7 @@ def init_mesh():
         f2v[k + 0] = [a, b, c]
         f2v[k + 1] = [c, d, a]
 
+
 def paint_phi(gui):
     pos_ = pos.to_numpy()
     phi_ = phi.to_numpy()
@@ -94,12 +101,15 @@ def paint_phi(gui):
     gb = (1 - k) * 0.5
     gui.triangles(a, b, c, color=ti.rgb_to_hex([k + gb, gb, gb]))
 
+
 init_mesh()
 init_pos()
 gravity[None] = [0, -1]
 
 gui = ti.GUI('FEM128')
-print("[Hint] Use WSAD/arrow keys to control gravity. Use left/right mouse bottons to attract/repel. Press R to reset.")
+print(
+    "[Hint] Use WSAD/arrow keys to control gravity. Use left/right mouse bottons to attract/repel. Press R to reset."
+)
 while gui.running:
     for e in gui.get_events(gui.PRESS):
         if e.key == gui.ESCAPE:
@@ -116,7 +126,8 @@ while gui.running:
             gravity[None] = [0, +1]
     mouse_pos = gui.get_cursor_pos()
     attractor_pos[None] = mouse_pos
-    attractor_strength[None] = gui.is_pressed(gui.LMB) - gui.is_pressed(gui.RMB)
+    attractor_strength[None] = gui.is_pressed(gui.LMB) - gui.is_pressed(
+        gui.RMB)
     for i in range(50):
         with ti.Tape(loss=U):
             update_U()

@@ -1,14 +1,15 @@
 import taichi as ti
+
 ti.init(arch=ti.gpu)
 
 N = 32
 dt = 1e-4
 dx = 1 / N
 rho = 4e1
-NF = 2 * N ** 2   # number of faces
-NV = (N + 1) ** 2 # number of vertices
+NF = 2 * N**2  # number of faces
+NV = (N + 1)**2  # number of vertices
 E, nu = 4e4, 0.2  # Young's modulus and Poisson's ratio
-mu, lam = E / 2 / (1 + nu), E * nu / (1 + nu) / (1 - 2 * nu) # Lame parameters
+mu, lam = E / 2 / (1 + nu), E * nu / (1 + nu) / (1 - 2 * nu)  # Lame parameters
 ball_pos, ball_radius = ti.Vector([0.5, 0.0]), 0.32
 gravity = ti.Vector([0, -40])
 damping = 12.5
@@ -21,6 +22,7 @@ F = ti.Matrix.field(2, 2, float, NF, needs_grad=True)
 V = ti.field(float, NF)
 phi = ti.field(float, NF)  # potential energy of each face (Neo-Hookean)
 U = ti.field(float, (), needs_grad=True)  # total potential energy
+
 
 @ti.kernel
 def update_U():
@@ -35,28 +37,30 @@ def update_U():
         log_J_i = ti.log(F_i.determinant())
         phi_i = mu / 2 * ((F_i.transpose() @ F_i).trace() - 2)
         phi_i -= mu * log_J_i
-        phi_i += lam / 2 * log_J_i ** 2
+        phi_i += lam / 2 * log_J_i**2
         phi[i] = phi_i
         U[None] += V[i] * phi_i
+
 
 @ti.kernel
 def advance():
     for i in range(NV):
-        acc = -pos.grad[i] / (rho * dx ** 2)
+        acc = -pos.grad[i] / (rho * dx**2)
         vel[i] += dt * (acc + gravity)
         vel[i] *= ti.exp(-dt * damping)
     for i in range(NV):
         # ball boundary condition:
         disp = pos[i] - ball_pos
         disp2 = disp.norm_sqr()
-        if disp2 <= ball_radius ** 2:
+        if disp2 <= ball_radius**2:
             NoV = vel[i].dot(disp)
             if NoV < 0: vel[i] -= NoV * disp / disp2
         # rect boundary condition:
         cond = pos[i] < 0 and vel[i] < 0 or pos[i] > 1 and vel[i] > 0
         for j in ti.static(range(pos.n)):
-           if cond[j]: vel[i][j] = 0
+            if cond[j]: vel[i][j] = 0
         pos[i] += dt * vel[i]
+
 
 @ti.kernel
 def init_pos():
@@ -70,6 +74,7 @@ def init_pos():
         B_i_inv = ti.Matrix.cols([a - c, b - c])
         B[i] = B_i_inv.inverse()
 
+
 @ti.kernel
 def init_mesh():
     for i, j in ti.ndrange(N, N):
@@ -80,6 +85,7 @@ def init_mesh():
         d = a + N + 1
         f2v[k + 0] = [a, b, c]
         f2v[k + 1] = [c, d, a]
+
 
 init_mesh()
 init_pos()

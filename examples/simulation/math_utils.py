@@ -2,6 +2,7 @@ import math
 
 import taichi as ti
 
+
 @ti.func
 def rand_vector(n):
     '''
@@ -31,7 +32,7 @@ def rand_unit_3d():
     '''
     u = rand_unit_2d()
     s = ti.random() * 2 - 1
-    c = ti.sqrt(1 - s ** 2)
+    c = ti.sqrt(1 - s**2)
     return ti.Vector([c * u[0], c * u[1], s])
 
 
@@ -49,7 +50,12 @@ def rand_disk_2d():
 
 
 @ti.func
-def reflect_boundary(pos, vel, pmin=0, pmax=1, rebound=1, rebound_perpendicular=1):
+def reflect_boundary(pos,
+                     vel,
+                     pmin=0,
+                     pmax=1,
+                     rebound=1,
+                     rebound_perpendicular=1):
     '''
     Reflects particle velocity from a rectangular boundary (if collides).
     `boundaryReflect` takes particle position, velocity and other parameters.

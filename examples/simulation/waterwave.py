@@ -6,8 +6,8 @@ import taichi as ti
 ti.init(arch=ti.gpu)
 
 light_color = 1
-gravity = 2.0 # larger gravity makes wave propagates faster
-damping = 0.2 # larger damping makes wave vanishes faster when propagating
+gravity = 2.0  # larger gravity makes wave propagates faster
+damping = 0.2  # larger damping makes wave vanishes faster when propagating
 dx = 0.02
 dt = 0.01
 shape = 512, 512
@@ -46,7 +46,7 @@ def gradient(i, j):
 @ti.kernel
 def create_wave(amplitude: ti.f32, x: ti.f32, y: ti.f32):
     for i, j in ti.ndrange((1, shape[0] - 1), (1, shape[1] - 1)):
-        r2 = (i - x) ** 2 + (j - y) ** 2
+        r2 = (i - x)**2 + (j - y)**2
         height[i, j] = height[i, j] + amplitude * ti.exp(-0.02 * r2)
 
 
@@ -61,7 +61,7 @@ def update():
 @ti.kernel
 def visualize_wave():
     # visualizes the wave using a fresnel-like shading
-    # a brighter color indicates a steeper wave 
+    # a brighter color indicates a steeper wave
     # (closer to grazing angle when looked from above)
     for i, j in pixels:
         g = gradient(i, j)

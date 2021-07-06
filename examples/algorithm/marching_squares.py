@@ -11,23 +11,24 @@ N = 128
 
 edge_table_np = np.array(
     [
-        [[-1, -1], [-1, -1]],# Case 0
+        [[-1, -1], [-1, -1]],  # Case 0
         [[3, 0], [-1, -1]],  # Case 1
         [[0, 1], [-1, -1]],  # Case 2
         [[1, 3], [-1, -1]],  # Case 3
         [[1, 2], [-1, -1]],  # Case 4
-        [[0, 1], [2, 3]],    # Case 5
+        [[0, 1], [2, 3]],  # Case 5
         [[0, 2], [-1, -1]],  # Case 6
         [[2, 3], [-1, -1]],  # Case 7
         [[2, 3], [-1, -1]],  # Case 8
         [[0, 2], [-1, -1]],  # Case 9
-        [[0, 3], [1, 2]],    # Case 10
+        [[0, 3], [1, 2]],  # Case 10
         [[1, 2], [-1, -1]],  # Case 11
         [[1, 3], [-1, -1]],  # Case 12
         [[0, 1], [-1, -1]],  # Case 13
         [[3, 0], [-1, -1]],  # Case 14
-        [[-1, -1], [-1, -1]],# Case 15
-    ], dtype=np.int32)
+        [[-1, -1], [-1, -1]],  # Case 15
+    ],
+    dtype=np.int32)
 
 pixels = ti.field(float, (N, N))
 
@@ -39,7 +40,7 @@ edge_table.from_numpy(edge_table_np)
 @ti.func
 def gauss(x, sigma):
     # Un-normalized Gaussian distribution
-    return ti.exp(-x**2 / (2 * sigma ** 2))
+    return ti.exp(-x**2 / (2 * sigma**2))
 
 
 @ti.kernel
@@ -85,9 +86,11 @@ def march(level: float) -> int:
             n = ti.atomic_add(n_edges, 1)
             for l in ti.static(range(2)):
                 vertex_id = edge_table[case_id, k][l]
-                edge_coords[n, l] = ti.Vector([i, j]) + get_vertex(vertex_id) + 0.5
+                edge_coords[n, l] = ti.Vector([i, j
+                                               ]) + get_vertex(vertex_id) + 0.5
 
     return n_edges
+
 
 level = 0.2
 
@@ -97,5 +100,8 @@ while gui.running and not gui.get_event(gui.ESCAPE):
     n_edges = march(level)
     edge_coords_np = edge_coords.to_numpy()[:n_edges] / N
     gui.set_image(ti.imresize(pixels, *gui.res) / level)
-    gui.lines(edge_coords_np[:, 0], edge_coords_np[:, 1], color=0xff66cc, radius=1.5)
+    gui.lines(edge_coords_np[:, 0],
+              edge_coords_np[:, 1],
+              color=0xff66cc,
+              radius=1.5)
     gui.show()

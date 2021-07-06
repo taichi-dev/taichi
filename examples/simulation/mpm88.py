@@ -1,5 +1,6 @@
 # MPM-MLS in 88 lines of Taichi code, originally created by @yuanming-hu
 import taichi as ti
+
 ti.init(arch=ti.gpu)
 
 n_particles = 8192
@@ -21,6 +22,7 @@ J = ti.field(float, n_particles)
 
 grid_v = ti.Vector.field(2, float, (n_grid, n_grid))
 grid_m = ti.field(float, (n_grid, n_grid))
+
 
 @ti.kernel
 def substep():
@@ -71,12 +73,14 @@ def substep():
         J[p] *= 1 + dt * new_C.trace()
         C[p] = new_C
 
+
 @ti.kernel
 def init():
     for i in range(n_particles):
         x[i] = [ti.random() * 0.4 + 0.2, ti.random() * 0.4 + 0.2]
         v[i] = [0, -1]
         J[i] = 1
+
 
 init()
 gui = ti.GUI('MPM88')

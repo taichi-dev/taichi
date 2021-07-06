@@ -45,6 +45,7 @@ refr_idx = 2.4
 sp1_center = ti.Vector([0.4, 0.225, 1.75])
 sp1_radius = 0.22
 
+
 def make_box_transform_matrices():
     rad = np.pi / 8.0
     c, s = np.cos(rad), np.sin(rad)
@@ -66,10 +67,12 @@ box_min = ti.Vector([0.0, 0.0, 0.0])
 box_max = ti.Vector([0.55, 1.1, 0.55])
 box_m_inv, box_m_inv_t = make_box_transform_matrices()
 
+
 @ti.func
 def reflect(d, n):
     # Assuming |d| and |n| are normalized
     return d - 2.0 * d.dot(n) * n
+
 
 @ti.func
 def refract(d, n, ni_over_nt):
@@ -84,6 +87,7 @@ def refract(d, n, ni_over_nt):
         rd *= 0.0
     return has_r, rd
 
+
 @ti.func
 def mat_mul_point(m, p):
     hp = ti.Vector([p[0], p[1], p[2], 1.0])
@@ -97,7 +101,7 @@ def mat_mul_vec(m, v):
     hv = ti.Vector([v[0], v[1], v[2], 0.0])
     hv = m @ hv
     return ti.Vector([hv[0], hv[1], hv[2]])
-    
+
 
 @ti.func
 def intersect_sphere(pos, d, center, radius):
@@ -190,8 +194,8 @@ def intersect_aabb_transformed(box_min, box_max, o, d):
     # Transform the ray to the box's local space
     obj_o = mat_mul_point(box_m_inv, o)
     obj_d = mat_mul_vec(box_m_inv, d)
-    intersect, near_t, _, near_norm = intersect_aabb(
-        box_min, box_max, obj_o, obj_d)
+    intersect, near_t, _, near_norm = intersect_aabb(box_min, box_max, obj_o,
+                                                     obj_d)
     if intersect and 0 < near_t:
         # Transform the normal in the box's local space to world space
         near_norm = mat_mul_vec(box_m_inv_t, near_norm)
@@ -202,7 +206,8 @@ def intersect_aabb_transformed(box_min, box_max, o, d):
 
 @ti.func
 def intersect_light(pos, d, tmax):
-    hit, t, far_t, near_norm = intersect_aabb(light_min_pos, light_max_pos, pos, d)
+    hit, t, far_t, near_norm = intersect_aabb(light_min_pos, light_max_pos,
+                                              pos, d)
     if hit and 0 < t < tmax:
         hit = 1
     else:
@@ -223,8 +228,8 @@ def intersect_scene(pos, ray_dir):
         normal = (hit_pos - sp1_center).normalized()
         c, mat = ti.Vector([1.0, 1.0, 1.0]), mat_glass
     # left box
-    hit, cur_dist, pnorm = intersect_aabb_transformed(
-        box_min, box_max, pos, ray_dir)
+    hit, cur_dist, pnorm = intersect_aabb_transformed(box_min, box_max, pos,
+                                                      ray_dir)
     if hit and 0 < cur_dist < closest:
         closest = cur_dist
         normal = pnorm
@@ -232,8 +237,8 @@ def intersect_scene(pos, ray_dir):
 
     # left
     pnorm = ti.Vector([1.0, 0.0, 0.0])
-    cur_dist, _ = intersect_plane(pos, ray_dir, ti.Vector([-1.1, 0.0,
-                                                               0.0]), pnorm)
+    cur_dist, _ = intersect_plane(pos, ray_dir, ti.Vector([-1.1, 0.0, 0.0]),
+                                  pnorm)
     if 0 < cur_dist < closest:
         closest = cur_dist
         normal = pnorm
@@ -241,7 +246,7 @@ def intersect_scene(pos, ray_dir):
     # right
     pnorm = ti.Vector([-1.0, 0.0, 0.0])
     cur_dist, _ = intersect_plane(pos, ray_dir, ti.Vector([1.1, 0.0, 0.0]),
-                                      pnorm)
+                                  pnorm)
     if 0 < cur_dist < closest:
         closest = cur_dist
         normal = pnorm
@@ -250,7 +255,7 @@ def intersect_scene(pos, ray_dir):
     gray = ti.Vector([0.93, 0.93, 0.93])
     pnorm = ti.Vector([0.0, 1.0, 0.0])
     cur_dist, _ = intersect_plane(pos, ray_dir, ti.Vector([0.0, 0.0, 0.0]),
-                                      pnorm)
+                                  pnorm)
     if 0 < cur_dist < closest:
         closest = cur_dist
         normal = pnorm
@@ -258,7 +263,7 @@ def intersect_scene(pos, ray_dir):
     # top
     pnorm = ti.Vector([0.0, -1.0, 0.0])
     cur_dist, _ = intersect_plane(pos, ray_dir, ti.Vector([0.0, 2.0, 0.0]),
-                                      pnorm)
+                                  pnorm)
     if 0 < cur_dist < closest:
         closest = cur_dist
         normal = pnorm
@@ -266,7 +271,7 @@ def intersect_scene(pos, ray_dir):
     # far
     pnorm = ti.Vector([0.0, 0.0, 1.0])
     cur_dist, _ = intersect_plane(pos, ray_dir, ti.Vector([0.0, 0.0, 0.0]),
-                                      pnorm)
+                                  pnorm)
     if 0 < cur_dist < closest:
         closest = cur_dist
         normal = pnorm

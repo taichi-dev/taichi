@@ -1,6 +1,7 @@
 # N-body gravity simulation in 300 lines of Taichi, tree method, no multipole, O(N log N)
 # Author: archibate <1931127624@qq.com>, all left reserved
-from math_utils import clamp, rand_vector, rand_disk_2d, rand_unit_3d, reflect_boundary
+from math_utils import (clamp, rand_disk_2d, rand_unit_3d, rand_vector,
+                        reflect_boundary)
 
 import taichi as ti
 
@@ -44,7 +45,8 @@ if kUseTree:
     node_children = ti.field(ti.i32)
     node_table = ti.root.dense(ti.i, kMaxNodes)
     node_table.place(node_mass, node_particle_id, node_weighted_pos)
-    node_table.dense(ti.indices(*list(range(1, 1 + kDim))), 2).place(node_children)
+    node_table.dense(ti.indices(*list(range(1, 1 + kDim))),
+                     2).place(node_children)
     node_table_len = ti.field(ti.i32, ())
 
 if 'mouse' in kDisplay:
@@ -135,7 +137,8 @@ def add_particle_at(mx: ti.f32, my: ti.f32, mass: ti.f32):
     if ti.static(kDim == 2):
         particle_pos[particle_id] = mouse_pos
     else:
-        particle_pos[particle_id] = ti.Vector([mouse_pos[0], mouse_pos[1], 0.0])
+        particle_pos[particle_id] = ti.Vector(
+            [mouse_pos[0], mouse_pos[1], 0.0])
     particle_mass[particle_id] = mass
 
 
@@ -149,7 +152,8 @@ def add_random_particles(angular_velocity: ti.f32):
         particle_vel[particle_id] = ti.Vector([-velocity.y, velocity.x])
     else:
         particle_pos[particle_id] = rand_unit_3d() * 0.2 + 0.5
-        velocity = (ti.Vector([particle_pos[particle_id].x, particle_pos[particle_id].y]) -
+        velocity = (ti.Vector(
+            [particle_pos[particle_id].x, particle_pos[particle_id].y]) -
                     0.5) * angular_velocity * 180
         particle_vel[particle_id] = ti.Vector([-velocity.y, velocity.x, 0.0])
     particle_mass[particle_id] = 1.5 * ti.random()
@@ -181,7 +185,7 @@ def build_tree():
 @ti.func
 def gravity_func(distance):
     norm_sqr = distance.norm_sqr() + 1e-3
-    return distance / norm_sqr ** (3 / 2)
+    return distance / norm_sqr**(3 / 2)
 
 
 @ti.func
@@ -249,8 +253,8 @@ def substep_tree():
         particle_vel[particle_id] += acceleration * dt
         # well... seems our tree inserter will break if a particle is out-of-bound:
         particle_vel[particle_id] = reflect_boundary(particle_pos[particle_id],
-                                                    particle_vel[particle_id],
-                                                    0, 1)
+                                                     particle_vel[particle_id],
+                                                     0, 1)
         particle_id = particle_id + 1
     for i in range(particle_table_len[None]):
         particle_pos[i] += particle_vel[i] * dt

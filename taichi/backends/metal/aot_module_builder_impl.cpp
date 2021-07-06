@@ -34,6 +34,16 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
     fs << k.source_code;
     fs.close();
   }
+
+  for (const auto &k : ti_aot_data_.tmpl_kernels) {
+    for (auto &ki: k.kernel_tmpl_map) {
+      const fs::path mtl_path = 
+        dir / fmt::format("{}_{}.metal", filename, ki.second.kernel_name);
+      std::ofstream fs{mtl_path.string()};
+      fs << ki.second.source_code;
+      fs.close();
+    }
+  }
 }
 
 void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
@@ -42,6 +52,17 @@ void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
       run_codegen(compiled_structs_, kernel, &strtab_, /*offloaded=*/nullptr);
   compiled.kernel_name = identifier;
   ti_aot_data_.kernels.push_back(std::move(compiled));
+}
+
+void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier, 
+                                    const std::string &key, 
+                                    Kernel *kernel) {
+  auto compiled =
+      run_codegen(compiled_structs_, kernel, &strtab_, /*offloaded=*/nullptr);
+  CompiledKernelTmplData tmpldata;
+  tmpldata.kernel_bundle_name = identifier;
+  tmpldata.kernel_tmpl_map.insert(std::make_pair(key, compiled));
+  ti_aot_data_.tmpl_kernels.push_back(tmpldata);
 }
 
 }  // namespace metal

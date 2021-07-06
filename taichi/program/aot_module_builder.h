@@ -13,6 +13,10 @@ class AotModuleBuilder {
 
   void add(const std::string &identifier, Kernel *kernel);
 
+  void add_kernel_template(const std::string &identifier, 
+                           const std::string &key, 
+                           Kernel *kernel);
+
   virtual void dump(const std::string &output_dir,
                     const std::string &filename) const = 0;
 
@@ -22,6 +26,9 @@ class AotModuleBuilder {
    */
   virtual void add_per_backend(const std::string &identifier,
                                Kernel *kernel) = 0;
+  virtual void add_per_backend_tmpl(const std::string &identifier, 
+                                    const std::string &key, 
+                                    Kernel *kernel) = 0;
 };
 
 }  // namespace lang

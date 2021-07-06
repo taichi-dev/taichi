@@ -533,6 +533,9 @@ class CCTransformer : public IRVisitor {
 
   void visit(AdStackAllocaStmt *stmt) override {
     TI_ASSERT(stmt->width() == 1);
+    TI_ASSERT_INFO(
+        stmt->max_size > 0,
+        "Adaptive autodiff stack's size should have been determined.");
 
     const auto &var_name = stmt->raw_name();
     emit("Ti_u8 {}[{}];", var_name, stmt->size_in_bytes() + sizeof(uint32_t));

@@ -3,14 +3,7 @@
 #include <fstream>
 
 #include "taichi/backends/metal/codegen_metal.h"
-
-#if __has_include(<filesystem>)
-#include <filesystem>
-namespace fs = ::std::filesystem;
-#else
-#include <experimental/filesystem>
-namespace fs = ::std::experimental::filesystem;
-#endif
+#include "taichi/system/std_filesystem.h"
 
 namespace taichi {
 namespace lang {
@@ -25,17 +18,17 @@ AotModuleBuilderImpl::AotModuleBuilderImpl(
 
 void AotModuleBuilderImpl::dump(const std::string &output_dir,
                                 const std::string &filename) const {
-  const fs::path dir{output_dir};
-  const fs::path bin_path = dir / fmt::format("{}_metadata.tcb", filename);
+  const stdfs::path dir{output_dir};
+  const stdfs::path bin_path = dir / fmt::format("{}_metadata.tcb", filename);
   write_to_binary_file(ti_aot_data_, bin_path.string());
   // The txt file is mostly for debugging purpose.
-  const fs::path txt_path = dir / fmt::format("{}_metadata.txt", filename);
+  const stdfs::path txt_path = dir / fmt::format("{}_metadata.txt", filename);
   TextSerializer ts;
   ts("taichi file data", ti_aot_data_);
   ts.write_to_file(txt_path.string());
 
   for (const auto &k : ti_aot_data_.kernels) {
-    const fs::path mtl_path =
+    const stdfs::path mtl_path =
         dir / fmt::format("{}_{}.metal", filename, k.kernel_name);
     std::ofstream fs{mtl_path.string()};
     fs << k.source_code;

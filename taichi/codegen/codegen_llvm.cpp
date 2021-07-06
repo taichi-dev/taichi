@@ -1870,6 +1870,8 @@ void CodeGenLLVM::visit(InternalFuncStmt *stmt) {
 
 void CodeGenLLVM::visit(AdStackAllocaStmt *stmt) {
   TI_ASSERT(stmt->width() == 1);
+  TI_ASSERT_INFO(stmt->max_size > 0,
+                 "Adaptive autodiff stack's size should have been determined.");
   auto type = llvm::ArrayType::get(llvm::Type::getInt8Ty(*llvm_context),
                                    stmt->size_in_bytes());
   auto alloca = create_entry_block_alloca(type, sizeof(int64));

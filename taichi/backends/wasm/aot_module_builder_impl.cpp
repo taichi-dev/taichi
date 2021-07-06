@@ -1,16 +1,9 @@
 #include "taichi/backends/wasm/aot_module_builder_impl.h"
 
-#include "taichi/util/file_sequence_writer.h"
-
 #include <fstream>
 
-#if __has_include(<filesystem>)
-#include <filesystem>
-namespace fs = ::std::filesystem;
-#else
-#include <experimental/filesystem>
-namespace fs = ::std::experimental::filesystem;
-#endif
+#include "taichi/system/std_filesystem.h"
+#include "taichi/util/file_sequence_writer.h"
 
 namespace taichi {
 namespace lang {
@@ -33,8 +26,8 @@ void AotModuleBuilderImpl::eliminate_unused_functions() const {
 
 void AotModuleBuilderImpl::dump(const std::string &output_dir,
                                 const std::string &filename) const {
-  const fs::path dir{output_dir};
-  const fs::path bin_path = dir / fmt::format("{}.ll", filename);
+  const stdfs::path dir{output_dir};
+  const stdfs::path bin_path = dir / fmt::format("{}.ll", filename);
 
   eliminate_unused_functions();
   FileSequenceWriter writer(bin_path.string(), "optimized LLVM IR (WASM)");

@@ -609,7 +609,7 @@ def is_arch_supported(arch):
         opengl: _ti_core.with_opengl,
         cc: _ti_core.with_cc,
         wasm: lambda: True,
-        cpu: lambda: True
+        cpu: lambda: True,
     }
     with_arch = arch_table.get(arch, lambda: False)
     try:

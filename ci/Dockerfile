@@ -39,7 +39,8 @@ ENV PATH="/cmake-3.20.5-linux-x86_64/bin:$PATH"
 
 # Intall LLVM 10
 WORKDIR /
-RUN wget https://github.com/taichi-dev/taichi_assets/releases/download/llvm10_linux/taichi-llvm-10.0.0-linux.zip
+# Make sure this URL gets updated each time there is a new prebuilt bin release
+RUN wget https://github.com/taichi-dev/taichi_assets/releases/download/llvm10_linux_patch2/taichi-llvm-10.0.0-linux.zip
 RUN unzip taichi-llvm-10.0.0-linux.zip
 ENV PATH="/taichi-llvm-10.0.0-linux/bin:$PATH"
 

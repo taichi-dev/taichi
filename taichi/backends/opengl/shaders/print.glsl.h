@@ -1,6 +1,17 @@
 // vim: ft=glsl
 // clang-format off
 #include "taichi/util/macros.h"
+
+#ifdef TI_INSIDE_OPENGL_CODEGEN
+#define OPENGL_BEGIN_PRINT_DEF constexpr auto kOpenGLPrintSourceCode =
+#define OPENGL_END_PRINT_DEF ;
+#else
+static_assert(false, "Do not include");
+#define OPENGL_BEGIN_PRINT_DEF
+#define OPENGL_END_PRINT_DEF
+#endif
+
+OPENGL_BEGIN_PRINT_DEF
 STR(
 void _msg_set(int mid, int cid, int type, int val) {
   _msg_buf_[mid].contents[cid] = val;
@@ -24,3 +35,7 @@ void _msg_set_str(int mid, int cid, int stridx) {
   _msg_set(mid, cid, 3, stridx);
 }
 )
+OPENGL_END_PRINT_DEF
+
+#undef OPENGL_BEGIN_PRINT_DEF
+#undef OPENGL_END_PRINT_DEF

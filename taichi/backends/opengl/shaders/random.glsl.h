@@ -1,6 +1,17 @@
 // vim: ft=glsl
 // clang-format off
 #include "taichi/util/macros.h"
+
+#ifdef TI_INSIDE_OPENGL_CODEGEN
+#define OPENGL_BEGIN_RANDOM_DEF constexpr auto kOpenGLRandomSourceCode =
+#define OPENGL_END_RANDOM_DEF ;
+#else
+static_assert(false, "Do not include");
+#define OPENGL_BEGIN_RANDOM_DEF
+#define OPENGL_END_RANDOM_DEF
+#endif
+
+OPENGL_BEGIN_RANDOM_DEF
 STR(
 uvec4 _rand_;  // per-thread local variable
 
@@ -36,3 +47,7 @@ float _rand_f32() {
 
 int _rand_i32() { return int(_rand_u32()); }
 )
+OPENGL_END_RANDOM_DEF
+
+#undef OPENGL_BEGIN_RANDOM_DEF
+#undef OPENGL_END_RANDOM_DEF

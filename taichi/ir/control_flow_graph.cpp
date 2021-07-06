@@ -7,7 +7,8 @@
 #include "taichi/ir/statements.h"
 #include "taichi/system/profiler.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 CFGNode::CFGNode(Block *block,
                  int begin_location,
@@ -23,6 +24,8 @@ CFGNode::CFGNode(Block *block,
   if (prev_node_in_same_block != nullptr)
     prev_node_in_same_block->next_node_in_same_block = this;
   if (!empty()) {
+    // For non-empty nodes, precompute |parent_blocks| to accelerate
+    // get_store_forwarding_data().
     TI_ASSERT(begin_location >= 0);
     TI_ASSERT(block);
     auto parent_block = block;
@@ -88,12 +91,9 @@ bool CFGNode::contain_variable(const std::unordered_set<Stmt *> &var_set,
     // TODO: How to optimize this?
     if (var_set.find(var) != var_set.end())
       return true;
-    for (auto set_var : var_set) {
-      if (irpass::analysis::definitely_same_address(var, set_var)) {
-        return true;
-      }
-    }
-    return false;
+    return std::any_of(var_set.begin(), var_set.end(), [&](Stmt *set_var) {
+      return irpass::analysis::definitely_same_address(var, set_var);
+    });
   }
 }
 
@@ -105,12 +105,9 @@ bool CFGNode::may_contain_variable(const std::unordered_set<Stmt *> &var_set,
     // TODO: How to optimize this?
     if (var_set.find(var) != var_set.end())
       return true;
-    for (auto set_var : var_set) {
-      if (irpass::analysis::maybe_same_address(var, set_var)) {
-        return true;
-      }
-    }
-    return false;
+    return std::any_of(var_set.begin(), var_set.end(), [&](Stmt *set_var) {
+      return irpass::analysis::maybe_same_address(var, set_var);
+    });
   }
 }
 
@@ -167,6 +164,7 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
     if (stmt->parent == block) {
       return stmt->parent->locate(stmt) < position;
     }
+    // |parent_blocks| is precomputed in the constructor of CFGNode.
     // TODO: What if |stmt| appears in an ancestor of |block| but after
     //  |position|?
     return parent_blocks.find(stmt->parent) != parent_blocks.end();
@@ -645,6 +643,8 @@ void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
     to_visit.push(nodes[i].get());
     in_queue[nodes[i].get()] = true;
   }
+
+  // The worklist algorithm.
   while (!to_visit.empty()) {
     auto now = to_visit.front();
     to_visit.pop();
@@ -734,6 +734,8 @@ void ControlFlowGraph::live_variable_analysis(
     to_visit.push(nodes[i].get());
     in_queue[nodes[i].get()] = true;
   }
+
+  // The worklist algorithm.
   while (!to_visit.empty()) {
     auto now = to_visit.front();
     to_visit.pop();
@@ -769,6 +771,8 @@ void ControlFlowGraph::simplify_graph() {
   while (true) {
     bool modified = false;
     for (int i = 0; i < num_nodes; i++) {
+      // If a node is empty with in-degree or out-degree <= 1, we can eliminate
+      // it (except for the start node and the final node).
       if (nodes[i] && nodes[i]->empty() && i != start_node && i != final_node &&
           (nodes[i]->prev.size() <= 1 || nodes[i]->next.size() <= 1)) {
         erase(i);
@@ -794,6 +798,8 @@ void ControlFlowGraph::simplify_graph() {
 }
 
 bool ControlFlowGraph::unreachable_code_elimination() {
+  // Note that container statements are not in the control-flow graph, so
+  // this pass cannot eliminate container statements properly for now.
   TI_AUTO_PROF;
   std::unordered_set<CFGNode *> visited;
   std::queue<CFGNode *> to_visit;
@@ -1040,4 +1046,5 @@ void ControlFlowGraph::determine_ad_stack_size(int default_ad_stack_size) {
   }
 }
 
-TLANG_NAMESPACE_END
+}  // namespace lang
+}  // namespace taichi

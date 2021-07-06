@@ -144,6 +144,8 @@ class ExprBuilder(Builder):
 
     @staticmethod
     def build_BinOp(ctx, node):
+        node.left = build_expr(ctx, node.left)
+        node.right = build_expr(ctx, node.right)
         return node
 
     @staticmethod

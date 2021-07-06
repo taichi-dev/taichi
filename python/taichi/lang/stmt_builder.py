@@ -168,5 +168,101 @@ class StmtBuilder(Builder):
         raise TaichiSyntaxError(
             "Keyword 'try' not supported in Taichi kernels")
 
+    @staticmethod
+    def build_While(ctx, node):
+        if node.orelse:
+            raise TaichiSyntaxError(
+                "'else' clause for 'while' not supported in Taichi kernels")
+
+        with ctx.control_scope():
+            ctx.current_control_scope().append('while')
+
+            template = '''
+if 1:
+  ti.core.begin_frontend_while(ti.Expr(1).ptr)
+  __while_cond = 0
+  if __while_cond:
+    pass
+  else:
+    break
+  ti.core.pop_scope()
+'''
+            cond = node.test
+            t = ast.parse(template).body[0]
+            t.body[1].value = cond
+            t.body = t.body[:3] + node.body + t.body[3:]
+
+            t.body = build_stmts(ctx, t.body)
+            return ast.copy_location(t, node)
+
+    @staticmethod
+    def build_If(ctx, node):
+        node.test = build_expr(ctx, node.test)
+        node.body = build_stmts(ctx, node.body)
+        node.orelse = build_stmts(ctx, node.orelse)
+
+        is_static_if = isinstance(node.test, ast.Call) and isinstance(
+            node.test.func, ast.Attribute)
+        if is_static_if:
+            attr = node.test.func
+            if attr.attr == 'static':
+                is_static_if = True
+            else:
+                is_static_if = False
+
+        if is_static_if:
+            # Do nothing
+            return node
+
+        template = '''
+if 1:
+  __cond = 0
+  ti.begin_frontend_if(__cond)
+  ti.core.begin_frontend_if_true()
+  ti.core.pop_scope()
+  ti.core.begin_frontend_if_false()
+  ti.core.pop_scope()
+'''
+        t = ast.parse(template).body[0]
+        cond = node.test
+        t.body[0].value = cond
+        t.body = t.body[:5] + node.orelse + t.body[5:]
+        t.body = t.body[:3] + node.body + t.body[3:]
+        return ast.copy_location(t, node)
+
+    @staticmethod
+    def build_Break(ctx, node):
+        if 'static' in ctx.current_control_scope():
+            return node
+        else:
+            return parse_stmt('ti.core.insert_break_stmt()')
+
+    @staticmethod
+    def build_Continue(ctx, node):
+        if 'static' in ctx.current_control_scope():
+            return node
+        else:
+            return parse_stmt('ti.core.insert_continue_stmt()')
+
+    @staticmethod
+    def build_Expr(ctx, node):
+        if isinstance(node.value, ast.Call):
+            call = node.value
+            call.args = [call.func] + call.args
+            call.func = parse_expr('ti.maybe_transform_ti_func_call_to_stmt')
+            return call
+        # A statement with a single expression.
+        result = parse_stmt('ti.core.insert_expr_stmt(expr)')
+        result.value.args[0] = build_expr(ctx, node.value)
+        return ast.copy_location(result, node)
+
+    @staticmethod
+    def build_Pass(ctx, node):
+        pass
+
 
 build_stmt = StmtBuilder()
+
+
+def build_stmts(ctx, stmts):
+    return [build_stmt(ctx, stmt) for stmt in list(stmts)]

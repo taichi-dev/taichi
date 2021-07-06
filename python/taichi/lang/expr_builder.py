@@ -152,6 +152,12 @@ class ExprBuilder(Builder):
 
     @staticmethod
     def build_Constant(ctx, node):
+        from astpretty import pprint
+        pprint(node)
+        return node
+
+    @staticmethod
+    def build_Attribute(ctx, node):
         return node
 
 

@@ -54,10 +54,10 @@ class ASTTransformer(object):
         self.print_ast(tree, 'Initial AST')
         tmp = copy.deepcopy(tree.body[0].body[0])
         ctx = BuilderContext()
-        with ctx.variable_scope():
-            tmp = build_stmt(ctx, tmp)
         tree1 = ast.Module()
         tree1.body = [tmp]
+        with ctx.variable_scope(tree1.body):
+            tree1.body[0] = build_stmt(ctx, tmp)
         self.print_ast(tree1)
         self.pass_Preprocess.visit(tree)
         ast.fix_missing_locations(tree)

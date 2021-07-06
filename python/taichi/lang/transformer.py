@@ -52,35 +52,12 @@ class ASTTransformer(object):
         from taichi.lang.stmt_builder import build_stmt
         from taichi.lang.ast_builder_utils import BuilderContext
         self.print_ast(tree, 'Initial AST')
-        tmp = copy.deepcopy(tree.body[0].body[0])
         ctx = BuilderContext(func=self.pass_Preprocess.func,
                              excluded_parameters=self.pass_Preprocess.excluded_parameters,
                              is_kernel=self.pass_Preprocess.is_kernel,
                              arg_features=self.pass_Preprocess.arg_features)
-        tree1 = ast.Module()
-        tree1.body = [tmp]
-        with ctx.variable_scope(tree1.body):
-            tree1.body[0] = build_stmt(ctx, tmp)
-        from astpretty import pprint
-        # ast.fix_missing_locations(tree1.body[0])
-        self.print_ast(tree1)
-        # print(tree1.body[0])
-        # print(tree1.body[0].body[0])
-        # pprint(tree1.body[0].body[0])
-        # print(tree1.body[0].test)
-        # pprint(tree1.body[0].test)
-        # print('body1', tree1.body[0].body[1])
-        # pprint(tree1.body[0].body[1])
-        # print('body2', tree1.body[0].body[2])
-        # pprint(tree1.body[0].body[2])
-        # print('body3', tree1.body[0].body[3])
-        # pprint(tree1.body[0].body[3])
-        # pprint(tree1.body[0])
-        self.pass_Preprocess.visit(tree)
+        tree = build_stmt(ctx, tree)
         ast.fix_missing_locations(tree)
-        # pprint(tree.body[0])
-        # import astor
-        # print(astor.to_source(tree.body[0].body[1], indent_with='    '))
         self.print_ast(tree, 'Preprocessed')
         self.pass_Checks.visit(tree)
         self.print_ast(tree, 'Checked')

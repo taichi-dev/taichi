@@ -1,6 +1,7 @@
 import ast
 import copy
 
+from taichi.lang import impl
 from taichi.lang.ast_resolver import ASTResolver
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.ast_builder_utils import *
@@ -576,7 +577,7 @@ if 1:
                     arg_init.targets[0].id = arg.arg
                     ctx.create_variable(arg.arg)
                     arg_init.value.args[0] = parse_expr(arg.arg +
-                                                             '_by_value__')
+                                                        '_by_value__')
                     args.args[i].arg += '_by_value__'
                     arg_decls.append(arg_init)
 
@@ -588,9 +589,33 @@ if 1:
         return node
 
     @staticmethod
+    def build_Return(ctx, node):
+        node.value = build_expr(ctx, node.value)
+        if ctx.is_kernel or impl.get_runtime().experimental_real_function:
+            # TODO: check if it's at the end of a kernel, throw TaichiSyntaxError if not
+            if node.value is not None:
+                if ctx.returns is None:
+                    raise TaichiSyntaxError(
+                        f'A {"kernel" if ctx.is_kernel else "function"} '
+                        'with a return value must be annotated '
+                        'with a return type, e.g. def func() -> ti.f32')
+                ret_expr = parse_expr('ti.cast(ti.Expr(0), 0)')
+                ret_expr.args[0].args[0] = node.value
+                ret_expr.args[1] = ctx.returns
+                ret_stmt = parse_stmt(
+                    'ti.core.create_kernel_return(ret.ptr)')
+                # For args[0], it is an ast.Attribute, because it loads the
+                # attribute, |ptr|, of the expression |ret_expr|. Therefore we
+                # only need to replace the object part, i.e. args[0].value
+                ret_stmt.value.args[0].value = ret_expr
+                return ret_stmt
+        return node
+
+    @staticmethod
     def build_Module(ctx, node):
-        raise TaichiSyntaxError(
-            "Modules not supported in Taichi kernels")
+        with ctx.variable_scope():
+            node.body = build_stmts(ctx, node.body)
+        return node
 
     @staticmethod
     def build_Global(ctx, node):

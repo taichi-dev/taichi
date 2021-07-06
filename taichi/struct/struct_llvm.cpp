@@ -15,8 +15,7 @@ StructCompilerLLVM::StructCompilerLLVM(Arch arch,
                                        const CompileConfig *config,
                                        TaichiLLVMContext *tlctx,
                                        std::unique_ptr<llvm::Module> &&module)
-    : LLVMModuleBuilder(std::move(module),
-                        tlctx),
+    : LLVMModuleBuilder(std::move(module), tlctx),
       arch_(arch),
       config_(config),
       tlctx_(tlctx),
@@ -26,7 +25,10 @@ StructCompilerLLVM::StructCompilerLLVM(Arch arch,
 StructCompilerLLVM::StructCompilerLLVM(Arch arch,
                                        Program *prog,
                                        std::unique_ptr<llvm::Module> &&module)
-    : StructCompilerLLVM(arch, &(prog->config), prog->get_llvm_context(arch), std::move(module)) {
+    : StructCompilerLLVM(arch,
+                         &(prog->config),
+                         prog->get_llvm_context(arch),
+                         std::move(module)) {
 }
 
 void StructCompilerLLVM::generate_types(SNode &snode) {

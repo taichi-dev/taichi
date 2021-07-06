@@ -1,13 +1,14 @@
+import pytest
+from taichi.lang.exception import InvalidOperationError
+
 import taichi as ti
 
-import pytest
-
-from taichi.lang.exception import InvalidOperationError
 
 @ti.test(arch=[ti.cpu, ti.cuda])
 def test_fields_with_shape():
     n = 5
     x = ti.field(ti.f32, [n])
+
     @ti.kernel
     def func():
         for i in range(n):
@@ -25,10 +26,12 @@ def test_fields_with_shape():
     with pytest.raises(InvalidOperationError, match='FieldsBuilder finalized'):
         y = ti.field(ti.f32, [n])
 
+
 @ti.test(arch=[ti.cpu, ti.cuda])
 def test_fields_builder1():
     n = 5
     x = ti.field(ti.f32, [n])
+
     @ti.kernel
     def func1():
         for i in range(n):
@@ -55,6 +58,7 @@ def test_fields_builder1():
     func1()
     for i in range(n):
         assert x[i] == i * 2
+
 
 @ti.test(arch=[ti.cpu, ti.cuda])
 def test_fields_builder2():

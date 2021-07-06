@@ -234,7 +234,7 @@ def init(arch=None,
 
     ti.trace('Materializing runtime...')
     impl.get_runtime().prog.materialize_runtime()
-    
+
     impl._root_fb = FieldsBuilder()
 
 

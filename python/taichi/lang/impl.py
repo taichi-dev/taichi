@@ -442,7 +442,6 @@ def field(dtype, shape=None, offset=None, needs_grad=False):
 
     assert (offset is not None and shape is None
             ) == False, f'The shape cannot be None when offset is being set'
-
     '''
     if get_runtime().materialized:
         raise RuntimeError(

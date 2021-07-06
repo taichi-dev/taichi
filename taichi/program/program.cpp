@@ -400,7 +400,6 @@ void Program::initialize_llvm_runtime_snodes(const SNodeTree *tree,
   const int root_id = tree->root()->id;
 
   TI_TRACE("Allocating data structure of size {} bytes", scomp->root_size);
-  printf("%d\n", (int)snodes.size());
   runtime_jit->call<void *, std::size_t, int, int>(
       "runtime_initialize_snodes", llvm_runtime, scomp->root_size, root_id,
       (int)snodes.size());

@@ -24,8 +24,7 @@ class ExprBuilder(Builder):
 
     @staticmethod
     def build_Compare(ctx, node):
-        operands = [build_expr(ctx, e) for e in
-                    [node.left] + list(node.comparators)]
+        operands = build_exprs(ctx, [node.left] + list(node.comparators))
         operators = []
         for i in range(len(node.ops)):
             if isinstance(node.ops[i], ast.Lt):
@@ -54,7 +53,8 @@ class ExprBuilder(Builder):
                     '"is not" is not supported in Taichi kernels.')
             else:
                 raise Exception(f'Unknown operator {node.ops[i]}')
-            operators += [ast.copy_location(ast.Str(s=op_str, kind=None), node)]
+            operators += [
+                ast.copy_location(ast.Str(s=op_str, kind=None), node)]
 
         call = ast.Call(
             func=parse_expr('ti.chain_compare'),
@@ -74,7 +74,7 @@ class ExprBuilder(Builder):
             # Do not modify the expression if the function called is ti.static
             return node
         node.func = build_expr(ctx, node.func)
-        node.args = [build_expr(ctx, py_arg) for py_arg in node.args]
+        node.args = build_exprs(ctx, node.args)
         if isinstance(node.func, ast.Name):
             func_name = node.func.id
             if func_name == 'print':
@@ -118,7 +118,7 @@ class ExprBuilder(Builder):
 
     @staticmethod
     def build_BoolOp(ctx, node):
-        node.values = [build_expr(ctx, val) for val in list(node.values)]
+        node.values = build_exprs(ctx, node.values)
 
         def make_node(a, b, token):
             new_node = parse_expr('ti.logical_{}(0, 0)'.format(token))
@@ -160,3 +160,7 @@ class ExprBuilder(Builder):
 
 
 build_expr = ExprBuilder()
+
+
+def build_exprs(ctx, exprs):
+    return [build_expr(ctx, expr) for expr in list(exprs)]

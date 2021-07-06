@@ -53,7 +53,10 @@ class ASTTransformer(object):
         from taichi.lang.ast_builder_utils import BuilderContext
         self.print_ast(tree, 'Initial AST')
         tmp = copy.deepcopy(tree.body[0].body[0])
-        ctx = BuilderContext()
+        ctx = BuilderContext(func=self.pass_Preprocess.func,
+                             excluded_parameters=self.pass_Preprocess.excluded_parameters,
+                             is_kernel=self.pass_Preprocess.is_kernel,
+                             arg_features=self.pass_Preprocess.arg_features)
         tree1 = ast.Module()
         tree1.body = [tmp]
         with ctx.variable_scope(tree1.body):

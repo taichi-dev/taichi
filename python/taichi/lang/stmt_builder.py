@@ -4,7 +4,8 @@ import copy
 from taichi.lang.ast_resolver import ASTResolver
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.ast_builder_utils import *
-from taichi.lang.expr_builder import build_expr
+from taichi.lang.expr_builder import build_expr, build_exprs
+from taichi.lang.util import to_taichi_type
 
 import taichi as ti
 
@@ -498,6 +499,105 @@ if 1:
             return parse_stmt('ti.core.insert_continue_stmt()')
 
     @staticmethod
+    def build_FunctionDef(ctx, node):
+        args = node.args
+        assert args.vararg is None
+        assert args.kwonlyargs == []
+        assert args.kw_defaults == []
+        assert args.kwarg is None
+
+        arg_decls = []
+
+        def transform_as_kernel():
+            # Treat return type
+            if node.returns is not None:
+                ret_init = parse_stmt(
+                    'ti.lang.kernel_arguments.decl_scalar_ret(0)')
+                ret_init.value.args[0] = node.returns
+                ctx.returns = node.returns
+                arg_decls.append(ret_init)
+                node.returns = None
+
+            for i, arg in enumerate(args.args):
+                # Directly pass in template arguments,
+                # such as class instances ("self"), fields, SNodes, etc.
+                if isinstance(ctx.func.argument_annotations[i], ti.template):
+                    continue
+                if isinstance(ctx.func.argument_annotations[i], ti.ext_arr):
+                    arg_init = parse_stmt(
+                        'x = ti.lang.kernel_arguments.decl_ext_arr_arg(0, 0)')
+                    arg_init.targets[0].id = arg.arg
+                    ctx.create_variable(arg.arg)
+                    array_dt = ctx.arg_features[i][0]
+                    array_dim = ctx.arg_features[i][1]
+                    array_dt = to_taichi_type(array_dt)
+                    dt_expr = 'ti.' + ti.core.data_type_name(array_dt)
+                    dt = parse_expr(dt_expr)
+                    arg_init.value.args[0] = dt
+                    arg_init.value.args[1] = parse_expr(
+                        "{}".format(array_dim))
+                    arg_decls.append(arg_init)
+                else:
+                    arg_init = parse_stmt(
+                        'x = ti.lang.kernel_arguments.decl_scalar_arg(0)')
+                    arg_init.targets[0].id = arg.arg
+                    dt = arg.annotation
+                    arg_init.value.args[0] = dt
+                    arg_decls.append(arg_init)
+            # remove original args
+            node.args.args = []
+
+        if ctx.is_kernel:  # ti.kernel
+            for decorator in node.decorator_list:
+                if ASTResolver.resolve_to(decorator, ti.func, globals()):
+                    raise TaichiSyntaxError(
+                        "Function definition not allowed in 'ti.kernel'.")
+            transform_as_kernel()
+
+        else:  # ti.func
+            for decorator in node.decorator_list:
+                if ASTResolver.resolve_to(decorator, ti.func, globals()):
+                    raise TaichiSyntaxError(
+                        "Function definition not allowed in 'ti.func'.")
+            if impl.get_runtime().experimental_real_function:
+                transform_as_kernel()
+            else:
+                # Transform as func (all parameters passed by value)
+                arg_decls = []
+                for i, arg in enumerate(args.args):
+                    # Directly pass in template arguments,
+                    # such as class instances ("self"), fields, SNodes, etc.
+                    if isinstance(ctx.func.argument_annotations[i],
+                                  ti.template):
+                        continue
+                    # Create a copy for non-template arguments,
+                    # so that they are passed by value.
+                    arg_init = parse_stmt('x = ti.expr_init_func(0)')
+                    arg_init.targets[0].id = arg.arg
+                    ctx.create_variable(arg.arg)
+                    arg_init.value.args[0] = parse_expr(arg.arg +
+                                                             '_by_value__')
+                    args.args[i].arg += '_by_value__'
+                    arg_decls.append(arg_init)
+
+        with ctx.variable_scope():
+            node.body = build_stmts(ctx, node.body)
+
+        node.body = arg_decls + node.body
+        node.body = [parse_stmt('import taichi as ti')] + node.body
+        return node
+
+    @staticmethod
+    def build_Module(ctx, node):
+        raise TaichiSyntaxError(
+            "Modules not supported in Taichi kernels")
+
+    @staticmethod
+    def build_Global(ctx, node):
+        raise TaichiSyntaxError(
+            "Keyword 'global' not supported in Taichi kernels")
+
+    @staticmethod
     def build_Expr(ctx, node):
         # A statement with a single expression.
         # Do not treat ast.Call specially here -- Python need it to be wrapped
@@ -505,6 +605,10 @@ if 1:
         result = parse_stmt('ti.core.insert_expr_stmt(expr)')
         result.value.args[0] = build_expr(ctx, node.value)
         return ast.copy_location(result, node)
+
+    @staticmethod
+    def build_Import(ctx, node):
+        return node
 
     @staticmethod
     def build_Pass(ctx, node):

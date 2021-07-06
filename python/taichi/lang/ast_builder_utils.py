@@ -55,9 +55,18 @@ class ScopeGuard:
 
 
 class BuilderContext:
-    def __init__(self):
+    def __init__(self,
+                 excluded_parameters=(),
+                 is_kernel=True,
+                 func=None,
+                 arg_features=None):
+        self.func = func
         self.local_scopes = []
         self.control_scopes = []
+        self.excluded_parameters = excluded_parameters
+        self.is_kernel = is_kernel
+        self.arg_features = arg_features
+        self.returns = None
 
     # e.g.: FunctionDef, Module, Global
     def variable_scope(self, *args):

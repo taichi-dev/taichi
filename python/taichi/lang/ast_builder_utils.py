@@ -1,5 +1,7 @@
 import ast
 
+from taichi.lang.exception import TaichiSyntaxError
+
 
 class Builder(object):
     def __call__(self, ctx, node):
@@ -84,3 +86,9 @@ class BuilderContext:
         assert name not in self.current_scope(
         ), "Recreating variables is not allowed"
         self.current_scope().append(name)
+
+    def check_loop_var(self, loop_var):
+        if self.var_declared(loop_var):
+            raise TaichiSyntaxError(
+                "Variable '{}' is already declared in the outer scope and cannot be used as loop variable"
+                    .format(loop_var))

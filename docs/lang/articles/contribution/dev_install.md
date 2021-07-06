@@ -5,13 +5,13 @@ sidebar_position: 3
 # Developer installation
 This section documents how to configure the Taichi devolopment environment and build Taichi from source for the compiler developers. The installation instructions are highly varied between different operationg systems. We also provide a Dockerfile which may help setup a containerized Taichi development environment with CUDA support based on the Ubuntu base docker image.
 
-[Developer installation for Linux](#linux)  
+[Developer installation for Linux](#linux)
 
-[Developer installation for macOS](#macos) 
+[Developer installation for macOS](#macos)
 
-[Developer installation for Windows](#windows) 
+[Developer installation for Windows](#windows)
 
-[Developer installation for Docker](#docker) 
+[Developer installation for Docker](#docker)
 
 :::note
 End users should use the pip packages instead of building from source.
@@ -39,9 +39,9 @@ End users should use the pip packages instead of building from source.
   - On other Linux distributions, please search [this
     site](https://pkgs.org) for clang version \>= 7.
 
-:::note 
+:::note
 Note that on Linux, `clang` is the **only** supported compiler for
-compiling the Taichi compiler. 
+compiling the Taichi compiler.
 :::
 
 3. Make sure you have LLVM 10.0.0. Note that Taichi uses a **customized
@@ -103,7 +103,7 @@ installer.
     # export PATH=/opt/llvm/bin:$PATH  # Uncomment if your llvm or clang is installed in /opt
     ```
 
-  - To reload shell config, please execute 
+  - To reload shell config, please execute
 
     ```bash
     source ~/.bashrc
@@ -189,7 +189,7 @@ installer.
     # export PATH=/opt/llvm/bin:$PATH  # Uncomment if your llvm or clang is installed in /opt
     ```
 
-  - To reload shell config, please execute 
+  - To reload shell config, please execute
 
     ```bash
     source ~/.bashrc

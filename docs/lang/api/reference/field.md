@@ -58,4 +58,3 @@ docs:
       returns:
         - type: None
 ---
-

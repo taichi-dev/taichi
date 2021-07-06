@@ -53,14 +53,14 @@ If the window size is `(x, y)`, then `img` must be one of:
 - `ti.field(shape=(x, y))`, a gray-scale image
 
 - `ti.field(shape=(x, y, 3))`, where `3` is for `(r, g, b)` channels
-  
+
 - `ti.field(shape=(x, y, 2))`, where `2` is for `(r, g)` channels
-  
+
 - `ti.Vector.field(3, shape=(x, y))` `(r, g, b)` channels on each
   component (see [vector](../../api/vector.md#vector-fields) for details)
-  
+
 - `ti.Vector.field(2, shape=(x, y))` `(r, g)` channels on each component
-  
+
 - `np.ndarray(shape=(x, y))`
 
 - `np.ndarray(shape=(x, y, 3))`
@@ -79,7 +79,7 @@ The data type of `img` must be one of:
 
 - `float64`, range `[0, 1]`
 
-  
+
 
 ## Convert RGB to Hex
 
@@ -118,7 +118,7 @@ _Event key_ is the key that you pressed on keyboard or mouse, can be one of:
     ...
     ti.GUI.LMB     # Left Mouse Button
     ti.GUI.RMB     # Right Mouse Button
-    
+
     # for ti.GUI.MOTION event:
     ti.GUI.MOVE    # Mouse Moved
     ti.GUI.WHEEL   # Mouse Wheel Scrolling
@@ -151,7 +151,7 @@ You can also close the window by manually setting `gui.running` to`False`:
     while gui.running:
         if gui.get_event(ti.GUI.ESCAPE):
             gui.running = False
-    
+
         render()
         gui.set_image(pixels)
         gui.show()
@@ -205,7 +205,7 @@ Sometimes it's more intuitive to use widgets like slider or button to control th
 For example:
 
     radius = gui.slider('Radius', 1, 50)
-    
+
     while gui.running:
         print('The radius now is', radius.value)
         ...

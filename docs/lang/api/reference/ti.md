@@ -21,4 +21,3 @@ docs:
       returns:
         - type: Callable
 ---
-

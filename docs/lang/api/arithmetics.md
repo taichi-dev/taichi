@@ -61,15 +61,15 @@ default numerical types.
 
 |      Operation    |               Result            |
 | :---------------  | :----------- ----------------------------------------|
-| `a == b`          | if `a` equal `b`, then True, else False              |  
-| `a != b`          | if `a` not equal `b`, then True, else False          |        
-| `a > b`           | if `a` strictly greater than `b`, then True, else False  |     
-| `a < b`           | if `a` strictly less than `b`, then True, else False |    
-| `a >= b`          | if `a` greater than or equal `b`, then True, else False |         
-| `a <= b`          | if `a` less than or equal `b`, then True, else False |            
-| `not a`           | if `a` is False, then True, else False               |     
-| `a or b`          | if `a` is False, then `b`, else `a`                  |  
-| `a and b`         | if `a` is False, then `a`, else `b`                  |        
+| `a == b`          | if `a` equal `b`, then True, else False              |
+| `a != b`          | if `a` not equal `b`, then True, else False          |
+| `a > b`           | if `a` strictly greater than `b`, then True, else False  |
+| `a < b`           | if `a` strictly less than `b`, then True, else False |
+| `a >= b`          | if `a` greater than or equal `b`, then True, else False |
+| `a <= b`          | if `a` less than or equal `b`, then True, else False |
+| `not a`           | if `a` is False, then True, else False               |
+| `a or b`          | if `a` is False, then `b`, else `a`                  |
+| `a and b`         | if `a` is False, then `a`, else `b`                  |
 | `a if cond else b`| if `cond` is True, then `a`, else `b`                |
 
 ### Bitwise operators

@@ -41,6 +41,6 @@ SNodes may be less efficient than using `dense` SNodes, due to dynamic data stru
 maintainance overheads.
 :::
 
-### How do I program on less structured data structures (such as graphs and tetrahedral meshes) in Taichi? 
+### How do I program on less structured data structures (such as graphs and tetrahedral meshes) in Taichi?
 
 These structures have to be decomposed into 1D Taichi fields. For example, when representing a graph, you can allocate two fields, one for the vertices and the other for the edges. You can then traverse the elements using `for v in vertices` or `for v in range(n)`.

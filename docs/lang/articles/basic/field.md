@@ -7,7 +7,7 @@ sidebar_position: 3
 Fields are global variables provided by Taichi. Currently, it can only be defined before launching any Taichi kernel. Fields can be either
 sparse or dense.  An element of a field can be either a scalar or a
 vector/matrix. This term is borrowed from mathematics and physics. If you
-have already known [scalar field](https://en.wikipedia.org/wiki/Scalar_field) (e.g., heat field), vector field (e.g., [gravitational field](https://en.wikipedia.org/wiki/Gravitational_field)) in mathematics and physics, it would be straightforward to understand the fields in Taichi. 
+have already known [scalar field](https://en.wikipedia.org/wiki/Scalar_field) (e.g., heat field), vector field (e.g., [gravitational field](https://en.wikipedia.org/wiki/Gravitational_field)) in mathematics and physics, it would be straightforward to understand the fields in Taichi.
 
 :::note
 Matrices can be used as field elements, so you can have fields with each
@@ -16,7 +16,7 @@ element being a matrix.
 
 ## Scalar fields
 
-A simple example might help you understand scalar fields. Assume you have a rectangular wok on the top of a fire. At each point of the wok, there would be a temperature. The surface of the wok forms a heat field. The width and height of the wok are similar to the `shape` of the Taichi scalar field. The temperature (0-D scalar) is like the element of the Taichi scalar field. We could use the following field to represent the 
+A simple example might help you understand scalar fields. Assume you have a rectangular wok on the top of a fire. At each point of the wok, there would be a temperature. The surface of the wok forms a heat field. The width and height of the wok are similar to the `shape` of the Taichi scalar field. The temperature (0-D scalar) is like the element of the Taichi scalar field. We could use the following field to represent the
 heat field on the wok:
 
 ``` python
@@ -48,7 +48,7 @@ gravitational_field = taichi.Vector.field(n = 3,dtype=ti.f32,shape=(x,y,z))
 
 ## Matrix fields
 
-Field elements can also be matrices. In continuum mechanics, each 
+Field elements can also be matrices. In continuum mechanics, each
 infinitesimal point in a material exists a strain and a stress tensor. The strain and stress tensor is a 3 by 3 matrix in the 3D space. To represent this tensor field we could use:
 ```python
 strain_tensor_field = taichi.Matrix.field(n = 3,m = 3, dtype=ti.f32, shape=(x,y,z))

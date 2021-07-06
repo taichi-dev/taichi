@@ -13,7 +13,7 @@ class StructCompilerLLVM : public StructCompiler, public LLVMModuleBuilder {
                      TaichiLLVMContext *tlctx,
                      std::unique_ptr<llvm::Module> &&module);
 
-  StructCompilerLLVM(Arch arch, Program *prog, std::unique_ptr<llvm::Module> &&module = nullptr);
+  StructCompilerLLVM(Arch arch, Program *prog, std::unique_ptr<llvm::Module> &&module);
 
   void generate_types(SNode &snode) override;
 

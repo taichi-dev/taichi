@@ -15,9 +15,7 @@ StructCompilerLLVM::StructCompilerLLVM(Arch arch,
                                        const CompileConfig *config,
                                        TaichiLLVMContext *tlctx,
                                        std::unique_ptr<llvm::Module> &&module)
-    : LLVMModuleBuilder(module == nullptr
-                            ? tlctx->clone_runtime_module()
-                            : std::move(module),
+    : LLVMModuleBuilder(std::move(module),
                         tlctx),
       arch_(arch),
       config_(config),

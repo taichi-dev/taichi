@@ -58,9 +58,26 @@ class ASTTransformer(object):
         tree1.body = [tmp]
         with ctx.variable_scope(tree1.body):
             tree1.body[0] = build_stmt(ctx, tmp)
+        from astpretty import pprint
+        # ast.fix_missing_locations(tree1.body[0])
         self.print_ast(tree1)
+        # print(tree1.body[0])
+        # print(tree1.body[0].body[0])
+        # pprint(tree1.body[0].body[0])
+        # print(tree1.body[0].test)
+        # pprint(tree1.body[0].test)
+        # print('body1', tree1.body[0].body[1])
+        # pprint(tree1.body[0].body[1])
+        # print('body2', tree1.body[0].body[2])
+        # pprint(tree1.body[0].body[2])
+        # print('body3', tree1.body[0].body[3])
+        # pprint(tree1.body[0].body[3])
+        # pprint(tree1.body[0])
         self.pass_Preprocess.visit(tree)
         ast.fix_missing_locations(tree)
+        # pprint(tree.body[0])
+        # import astor
+        # print(astor.to_source(tree.body[0].body[1], indent_with='    '))
         self.print_ast(tree, 'Preprocessed')
         self.pass_Checks.visit(tree)
         self.print_ast(tree, 'Checked')
@@ -197,7 +214,8 @@ class ASTTransformerPreprocess(ASTTransformerBase):
         t.value.func.value = node.target
         t.value.func.value.ctx = ast.Load()
         t.value.args[0] = node.value
-        t.value.args[1] = ast.Str(s=type(node.op).__name__, ctx=ast.Load())
+        t.value.args[1] = ast.Str(s=type(node.op).__name__, ctx=ast.Load(),
+                                  kind=None)
         return ast.copy_location(t, node)
 
     @staticmethod
@@ -213,7 +231,7 @@ class ASTTransformerPreprocess(ASTTransformerBase):
 
         is_static_assign = isinstance(
             node.value, ast.Call) and ASTResolver.resolve_to(
-                node.value.func, ti.static, globals())
+            node.value.func, ti.static, globals())
         if is_static_assign:
             return node
 
@@ -251,7 +269,8 @@ class ASTTransformerPreprocess(ASTTransformerBase):
                         keywords=[],
                     )
                     self.create_variable(var_name)
-                    stmts.append(ast.Assign(targets=[target], value=rhs))
+                    stmts.append(ast.Assign(targets=[target], value=rhs,
+                                            type_comment=None))
                 else:
                     # Assign
                     target.ctx = ast.Load()
@@ -282,7 +301,8 @@ class ASTTransformerPreprocess(ASTTransformerBase):
                 )
                 self.create_variable(var_name)
                 return ast.copy_location(
-                    ast.Assign(targets=node.targets, value=rhs), node)
+                    ast.Assign(targets=node.targets, value=rhs,
+                               type_comment=None), node)
             else:
                 # Assign
                 node.targets[0].ctx = ast.Load()
@@ -362,7 +382,7 @@ if 1:
         if self.var_declared(loop_var):
             raise TaichiSyntaxError(
                 "Variable '{}' is already declared in the outer scope and cannot be used as loop variable"
-                .format(loop_var))
+                    .format(loop_var))
 
     def visit_static_for(self, node, is_grouped):
         # for i in ti.static(range(n))
@@ -794,7 +814,7 @@ if 1:
                     '"is not" is not supported in Taichi kernels.')
             else:
                 raise Exception(f'Unknown operator {node.ops[i]}')
-            ops += [ast.copy_location(ast.Str(s=op_str), node)]
+            ops += [ast.copy_location(ast.Str(s=op_str, kind=None), node)]
 
         call = ast.Call(
             func=self.parse_expr('ti.chain_compare'),

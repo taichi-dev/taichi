@@ -25,7 +25,8 @@ class StmtBuilder(Builder):
         t.value.func.value = node.target
         t.value.func.value.ctx = ast.Load()
         t.value.args[0] = node.value
-        t.value.args[1] = ast.Str(s=type(node.op).__name__, ctx=ast.Load())
+        t.value.args[1] = ast.Str(s=type(node.op).__name__, ctx=ast.Load(),
+                                  kind=None)
         return ast.copy_location(t, node)
 
     @staticmethod
@@ -80,7 +81,6 @@ class StmtBuilder(Builder):
         assert (len(node.targets) == 1)
         node.value = build_expr(ctx, node.value)
         node.targets = [build_expr(ctx, t) for t in list(node.targets)]
-        # node.type_comment?
 
         is_static_assign = isinstance(
             node.value, ast.Call) and ASTResolver.resolve_to(
@@ -122,7 +122,8 @@ class StmtBuilder(Builder):
                         keywords=[],
                     )
                     ctx.create_variable(var_name)
-                    stmts.append(ast.Assign(targets=[target], value=rhs))
+                    stmts.append(ast.Assign(targets=[target], value=rhs,
+                                            type_comment=None))
                 else:
                     # Assign
                     target.ctx = ast.Load()
@@ -153,7 +154,8 @@ class StmtBuilder(Builder):
                 )
                 ctx.create_variable(var_name)
                 return ast.copy_location(
-                    ast.Assign(targets=node.targets, value=rhs), node)
+                    ast.Assign(targets=node.targets, value=rhs,
+                               type_comment=None), node)
             else:
                 # Assign
                 node.targets[0].ctx = ast.Load()
@@ -230,6 +232,232 @@ if 1:
         t.body = t.body[:3] + node.body + t.body[3:]
         return ast.copy_location(t, node)
 
+    def check_loop_var(self, loop_var):
+        if self.var_declared(loop_var):
+            raise TaichiSyntaxError(
+                "Variable '{}' is already declared in the outer scope and cannot be used as loop variable"
+                    .format(loop_var))
+
+    @staticmethod
+    def build_static_for(ctx, node, is_grouped):
+        # for i in ti.static(range(n))
+        # for i, j in ti.static(ti.ndrange(n))
+        # for I in ti.static(ti.grouped(ti.ndrange(n, m)))
+
+        self.current_control_scope().append('static')
+        self.generic_visit(node, ['body'])
+        if is_grouped:
+            assert len(node.iter.args[0].args) == 1
+            template = '''
+if 1:
+    __ndrange_arg = 0
+    from taichi.lang.exception import TaichiSyntaxError
+    if not isinstance(__ndrange_arg, ti.ndrange):
+        raise TaichiSyntaxError("Only 'ti.ndrange' is allowed in 'ti.static(ti.grouped(...))'.")
+    pass
+    del a
+            '''
+            t = ast.parse(template).body[0]
+            t.body[0].value = node.iter.args[0].args[0]
+            t.body[3] = node
+            t.body[3].iter.args[0].args[0] = self.parse_expr('__ndrange_arg')
+        else:
+            t = self.parse_stmt('if 1: pass; del a')
+            t.body[0] = node
+        target = copy.deepcopy(node.target)
+        target.ctx = ast.Del()
+        if isinstance(target, ast.Tuple):
+            for tar in target.elts:
+                tar.ctx = ast.Del()
+        t.body[-1].targets = [target]
+        return t
+
+    @staticmethod
+    def build_range_for(self, node):
+        # for i in range(n)
+        self.generic_visit(node, ['body'])
+        loop_var = node.target.id
+        self.check_loop_var(loop_var)
+        template = '''
+if 1:
+    {} = ti.Expr(ti.core.make_id_expr(''))
+    ___begin = ti.Expr(0)
+    ___end = ti.Expr(0)
+    ___begin = ti.cast(___begin, ti.i32)
+    ___end = ti.cast(___end, ti.i32)
+    ti.core.begin_frontend_range_for({}.ptr, ___begin.ptr, ___end.ptr)
+    ti.core.end_frontend_range_for()
+        '''.format(loop_var, loop_var)
+        t = ast.parse(template).body[0]
+
+        assert len(node.iter.args) in [1, 2]
+        if len(node.iter.args) == 2:
+            bgn = node.iter.args[0]
+            end = node.iter.args[1]
+        else:
+            bgn = self.make_constant(value=0)
+            end = node.iter.args[0]
+
+        t.body[1].value.args[0] = bgn
+        t.body[2].value.args[0] = end
+        t.body = t.body[:6] + node.body + t.body[6:]
+        t.body.append(self.parse_stmt('del {}'.format(loop_var)))
+        return ast.copy_location(t, node)
+
+    @staticmethod
+    def build_ndrange_for(ctx, node):
+        # for i, j in ti.ndrange(n)
+        template = f'''
+if ti.static(1):
+    __ndrange{id(node)} = 0
+    for __ndrange_I{id(node)} in range(0):
+        __I = __ndrange_I{id(node)}
+        '''
+        t = ast.parse(template).body[0]
+        t.body[0].value = node.iter
+        t_loop = t.body[1]
+        t_loop.iter.args[0] = self.parse_expr(
+            f'__ndrange{id(node)}.acc_dimensions[0]')
+        targets = self.get_targets(node)
+        targets_tmp = ['__' + name for name in targets]
+        loop_body = t_loop.body
+        for i in range(len(targets)):
+            if i + 1 < len(targets):
+                stmt = '{} = __I // __ndrange{}.acc_dimensions[{}]'.format(
+                    targets_tmp[i], id(node), i + 1)
+            else:
+                stmt = '{} = __I'.format(targets_tmp[i])
+            loop_body.append(self.parse_stmt(stmt))
+            stmt = '{} = {} + __ndrange{}.bounds[{}][0]'.format(
+                targets[i], targets_tmp[i], id(node), i)
+            loop_body.append(self.parse_stmt(stmt))
+            if i + 1 < len(targets):
+                stmt = '__I = __I - {} * __ndrange{}.acc_dimensions[{}]'.format(
+                    targets_tmp[i], id(node), i + 1)
+                loop_body.append(self.parse_stmt(stmt))
+        loop_body += node.body
+
+        node = ast.copy_location(t, node)
+        return self.visit(node)  # further translate as a range for
+
+    @staticmethod
+    def build_grouped_ndrange_for(ctx, node):
+        # for I in ti.grouped(ti.ndrange(n, m))
+        self.generic_visit(node, ['body'])
+        target = node.target.id
+        template = '''
+if ti.static(1):
+    __ndrange = 0
+    {} = ti.expr_init(ti.Vector([0] * len(__ndrange.dimensions)))
+    ___begin = ti.Expr(0)
+    ___end = __ndrange.acc_dimensions[0]
+    ___begin = ti.cast(___begin, ti.i32)
+    ___end = ti.cast(___end, ti.i32)
+    __ndrange_I = ti.Expr(ti.core.make_id_expr(''))
+    ti.core.begin_frontend_range_for(__ndrange_I.ptr, ___begin.ptr, ___end.ptr)
+    __I = __ndrange_I
+    for __grouped_I in range(len(__ndrange.dimensions)):
+        __grouped_I_tmp = 0
+        if __grouped_I + 1 < len(__ndrange.dimensions):
+            __grouped_I_tmp = __I // __ndrange.acc_dimensions[__grouped_I + 1]
+        else:
+            __grouped_I_tmp = __I
+        ti.subscript({}, __grouped_I).assign(__grouped_I_tmp + __ndrange.bounds[__grouped_I][0])
+        if __grouped_I + 1 < len(__ndrange.dimensions):
+            __I = __I - __grouped_I_tmp * __ndrange.acc_dimensions[__grouped_I + 1]
+    ti.core.end_frontend_range_for()
+        '''.format(target, target)
+        t = ast.parse(template).body[0]
+        t.body[0].value = node.iter.args[0]
+        cut = len(t.body) - 1
+        t.body = t.body[:cut] + node.body + t.body[cut:]
+        return ast.copy_location(t, node)
+
+    @staticmethod
+    def build_struct_for(ctx, node, is_grouped):
+        # for i, j in x
+        # for I in ti.grouped(x)
+        self.generic_visit(node, ['body'])
+        targets = self.get_targets(node)
+
+        for loop_var in targets:
+            self.check_loop_var(loop_var)
+
+        var_decl = ''.join(
+            '    {} = ti.Expr(ti.core.make_id_expr(""))\n'.format(name)
+            for name in targets)  # indent: 4 spaces
+        vars = ', '.join(targets)
+        if is_grouped:
+            template = '''
+if 1:
+    ___loop_var = 0
+    {} = ti.lang.expr.make_var_vector(size=len(___loop_var.loop_range().shape))
+    ___expr_group = ti.lang.expr.make_expr_group({})
+    ti.begin_frontend_struct_for(___expr_group, ___loop_var.loop_range())
+    ti.core.end_frontend_range_for()
+            '''.format(vars, vars)
+            t = ast.parse(template).body[0]
+            cut = 4
+            t.body[0].value = node.iter
+            t.body = t.body[:cut] + node.body + t.body[cut:]
+        else:
+            template = '''
+if 1:
+{}
+    ___loop_var = 0
+    ___expr_group = ti.lang.expr.make_expr_group({})
+    ti.begin_frontend_struct_for(___expr_group, ___loop_var.loop_range())
+    ti.core.end_frontend_range_for()
+            '''.format(var_decl, vars)
+            t = ast.parse(template).body[0]
+            cut = len(targets) + 3
+            t.body[cut - 3].value = node.iter
+            t.body = t.body[:cut] + node.body + t.body[cut:]
+        for loop_var in reversed(targets):
+            t.body.append(self.parse_stmt('del {}'.format(loop_var)))
+        return ast.copy_location(t, node)
+
+    @staticmethod
+    def build_For(ctx, node):
+        if node.orelse:
+            raise TaichiSyntaxError(
+                "'else' clause for 'for' not supported in Taichi kernels")
+
+        with self.control_scope():
+            self.current_control_scope().append('for')
+
+            decorator = self.get_decorator(node.iter)
+            double_decorator = ''
+            if decorator != '' and len(node.iter.args) == 1:
+                double_decorator = self.get_decorator(node.iter.args[0])
+            ast.fix_missing_locations(node)
+
+            if decorator == 'static':
+                if double_decorator == 'static':
+                    raise TaichiSyntaxError("'ti.static' cannot be nested")
+                return self.visit_static_for(node,
+                                             double_decorator == 'grouped')
+            elif decorator == 'ndrange':
+                if double_decorator != '':
+                    raise TaichiSyntaxError(
+                        "No decorator is allowed inside 'ti.ndrange")
+                return self.visit_ndrange_for(node)
+            elif decorator == 'grouped':
+                if double_decorator == 'static':
+                    raise TaichiSyntaxError(
+                        "'ti.static' is not allowed inside 'ti.grouped'")
+                elif double_decorator == 'ndrange':
+                    return self.visit_grouped_ndrange_for(node)
+                elif double_decorator == 'grouped':
+                    raise TaichiSyntaxError("'ti.grouped' cannot be nested")
+                else:
+                    return self.visit_struct_for(node, is_grouped=True)
+            elif isinstance(node.iter, ast.Call) and isinstance(
+                    node.iter.func, ast.Name) and node.iter.func.id == 'range':
+                return self.visit_range_for(node)
+            else:  # Struct for
+                return self.visit_struct_for(node, is_grouped=False)
+
     @staticmethod
     def build_Break(ctx, node):
         if 'static' in ctx.current_control_scope():
@@ -246,12 +474,9 @@ if 1:
 
     @staticmethod
     def build_Expr(ctx, node):
-        if isinstance(node.value, ast.Call):
-            call = node.value
-            call.args = [call.func] + call.args
-            call.func = parse_expr('ti.maybe_transform_ti_func_call_to_stmt')
-            return call
         # A statement with a single expression.
+        # Do not treat ast.Call specially here -- Python need it to be wrapped
+        # in an ast.Expr.
         result = parse_stmt('ti.core.insert_expr_stmt(expr)')
         result.value.args[0] = build_expr(ctx, node.value)
         return ast.copy_location(result, node)

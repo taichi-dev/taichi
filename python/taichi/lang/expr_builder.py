@@ -54,7 +54,7 @@ class ExprBuilder(Builder):
                     '"is not" is not supported in Taichi kernels.')
             else:
                 raise Exception(f'Unknown operator {node.ops[i]}')
-            operators += [ast.copy_location(ast.Str(s=op_str), node)]
+            operators += [ast.copy_location(ast.Str(s=op_str, kind=None), node)]
 
         call = ast.Call(
             func=parse_expr('ti.chain_compare'),
@@ -152,8 +152,6 @@ class ExprBuilder(Builder):
 
     @staticmethod
     def build_Constant(ctx, node):
-        from astpretty import pprint
-        pprint(node)
         return node
 
     @staticmethod

@@ -244,7 +244,7 @@ class PyTaichi:
         print('[Taichi] materializing...')
         self.create_program()
 
-        if not root.get_finalized():
+        if not root.finalized:
             root.finalize()
 
         self.materialized = True

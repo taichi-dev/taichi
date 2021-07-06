@@ -30,10 +30,6 @@ class StructCompiler {
   virtual void generate_child_accessors(SNode &snode) = 0;
 
   virtual void run(SNode &node) = 0;
-
-  static std::unique_ptr<StructCompiler> make(Program *prog, Arch arch) {
-    TI_NOT_IMPLEMENTED
-  };
 };
 
 }  // namespace lang

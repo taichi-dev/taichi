@@ -11,7 +11,7 @@ class StructCompilerLLVM : public StructCompiler, public LLVMModuleBuilder {
   StructCompilerLLVM(Arch arch,
                      const CompileConfig *config,
                      TaichiLLVMContext *tlctx,
-                     std::unique_ptr<llvm::Module> &&module = nullptr);
+                     std::unique_ptr<llvm::Module> &&module);
 
   StructCompilerLLVM(Arch arch, Program *prog, std::unique_ptr<llvm::Module> &&module = nullptr);
 

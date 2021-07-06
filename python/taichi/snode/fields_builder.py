@@ -111,5 +111,6 @@ class FieldsBuilder:
         if self._finalized:
             raise InvalidOperationError('FieldsBuilder finalized')
 
-    def get_finalized(self):
+    @property
+    def finalized(self):
         return self._finalized

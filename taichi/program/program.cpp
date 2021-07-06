@@ -428,13 +428,6 @@ void Program::initialize_llvm_runtime_snodes(const SNodeTree *tree,
 }
 
 int Program::add_snode_tree(std::unique_ptr<SNode> root) {
-  /*
-  if (!snode_trees_.empty()) {
-    // TODO: remove this
-    TI_ERROR("Multiple SNodeTree not supported yet");
-    return -1;
-  }*/
-
   const int id = snode_trees_.size();
   auto tree = std::make_unique<SNodeTree>(id, std::move(root));
   materialize_snode_tree(tree.get());

@@ -49,7 +49,12 @@ class ASTTransformer(object):
         print(astor.to_source(tree.body[0], indent_with='    '))
 
     def visit(self, tree):
+        from taichi.lang.expr_builder import build_expr
         self.print_ast(tree, 'Initial AST')
+        tmp = build_expr(None, tree.body[0].body[0].test)
+        tree1 = ast.Module()
+        tree1.body = [tmp]
+        self.print_ast(tree1)
         self.pass_Preprocess.visit(tree)
         ast.fix_missing_locations(tree)
         self.print_ast(tree, 'Preprocessed')

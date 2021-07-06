@@ -1,9 +1,10 @@
 # https://github.com/hsjeong5/MNIST-for-Numpy
 
-import numpy as np
-from urllib import request
 import gzip
 import pickle
+from urllib import request
+
+import numpy as np
 
 filename = [["training_images", "train-images-idx3-ubyte.gz"],
             ["test_images", "t10k-images-idx3-ubyte.gz"],

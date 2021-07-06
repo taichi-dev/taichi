@@ -1,6 +1,9 @@
-import taichi as ti
-import numpy as np
 import os
+
+import numpy as np
+
+import taichi as ti
+
 # A 2D grid with quad faces
 #     y
 #     |

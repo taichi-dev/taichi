@@ -1,12 +1,11 @@
 # N-body gravity simulation in 300 lines of Taichi, tree method, no multipole, O(N log N)
 # Author: archibate <1931127624@qq.com>, all left reserved
-import taichi_glsl as tl
+from math_utils import (clamp, rand_disk_2d, rand_unit_3d, rand_vector,
+                        reflect_boundary)
 
 import taichi as ti
 
-ti.init()
-if not hasattr(ti, 'jkl'):
-    ti.jkl = ti.indices(1, 2, 3)
+ti.init(arch=ti.cpu)
 
 kUseTree = True
 #kDisplay = 'tree mouse pixels cmap save_result'
@@ -46,7 +45,8 @@ if kUseTree:
     node_children = ti.field(ti.i32)
     node_table = ti.root.dense(ti.i, kMaxNodes)
     node_table.place(node_mass, node_particle_id, node_weighted_pos)
-    node_table.dense({2: ti.jk, 3: ti.jkl}[kDim], 2).place(node_children)
+    node_table.dense(ti.indices(*list(range(1, 1 + kDim))),
+                     2).place(node_children)
     node_table_len = ti.field(ti.i32, ())
 
 if 'mouse' in kDisplay:
@@ -131,13 +131,14 @@ def alloc_a_node_for_particle(particle_id, parent, parent_geo_center,
 
 @ti.kernel
 def add_particle_at(mx: ti.f32, my: ti.f32, mass: ti.f32):
-    mouse_pos = tl.vec(mx, my) + tl.randND(2) * (0.05 / kResolution)
+    mouse_pos = ti.Vector([mx, my]) + rand_vector(2) * (0.05 / kResolution)
 
     particle_id = alloc_particle()
     if ti.static(kDim == 2):
         particle_pos[particle_id] = mouse_pos
     else:
-        particle_pos[particle_id] = tl.vec(mouse_pos, 0.0)
+        particle_pos[particle_id] = ti.Vector(
+            [mouse_pos[0], mouse_pos[1], 0.0])
     particle_mass[particle_id] = mass
 
 
@@ -146,15 +147,16 @@ def add_random_particles(angular_velocity: ti.f32):
     num = ti.static(1)
     particle_id = alloc_particle()
     if ti.static(kDim == 2):
-        particle_pos[particle_id] = tl.randSolid2D() * 0.2 + 0.5
+        particle_pos[particle_id] = rand_disk_2d() * 0.2 + 0.5
         velocity = (particle_pos[particle_id] - 0.5) * angular_velocity * 250
-        particle_vel[particle_id] = tl.vec(-velocity.y, velocity.x)
+        particle_vel[particle_id] = ti.Vector([-velocity.y, velocity.x])
     else:
-        particle_pos[particle_id] = tl.randUnit3D() * 0.2 + 0.5
-        velocity = (particle_pos[particle_id].xy -
+        particle_pos[particle_id] = rand_unit_3d() * 0.2 + 0.5
+        velocity = (ti.Vector(
+            [particle_pos[particle_id].x, particle_pos[particle_id].y]) -
                     0.5) * angular_velocity * 180
-        particle_vel[particle_id] = tl.vec(-velocity.y, velocity.x, 0.0)
-    particle_mass[particle_id] = tl.randRange(0.0, 1.5)
+        particle_vel[particle_id] = ti.Vector([-velocity.y, velocity.x, 0.0])
+    particle_mass[particle_id] = 1.5 * ti.random()
 
 
 @ti.kernel
@@ -182,7 +184,8 @@ def build_tree():
 
 @ti.func
 def gravity_func(distance):
-    return tl.normalizePow(distance, -2, 1e-3)
+    norm_sqr = distance.norm_sqr() + 1e-3
+    return distance / norm_sqr**(3 / 2)
 
 
 @ti.func
@@ -248,35 +251,26 @@ def substep_tree():
     while particle_id < particle_table_len[None]:
         acceleration = get_tree_gravity_at(particle_pos[particle_id])
         particle_vel[particle_id] += acceleration * dt
-        # well... seems our tree inserter will break if particle out-of-bound:
-        particle_vel[particle_id] = tl.boundReflect(particle_pos[particle_id],
-                                                    particle_vel[particle_id],
-                                                    0, 1)
+        # well... seems our tree inserter will break if a particle is out-of-bound:
+        particle_vel[particle_id] = reflect_boundary(particle_pos[particle_id],
+                                                     particle_vel[particle_id],
+                                                     0, 1)
         particle_id = particle_id + 1
     for i in range(particle_table_len[None]):
         particle_pos[i] += particle_vel[i] * dt
 
 
 @ti.kernel
-def render_arrows(mx: ti.f32, my: ti.f32):
-    pos = tl.vec(mx, my)
-    acc = get_raw_gravity_at(pos) * 0.001
-    tl.paintArrow(display_image, pos, acc, tl.D.yyx)
-    acc_tree = get_tree_gravity_at(pos) * 0.001
-    tl.paintArrow(display_image, pos, acc_tree, tl.D.yxy)
-
-
-@ti.kernel
 def render_pixels():
     for i in range(particle_table_len[None]):
-        position = particle_pos[i].xy
+        position = ti.Vector([particle_pos[i].x, particle_pos[i].y])
         pix = int(position * kResolution)
-        display_image[tl.clamp(pix, 0, kResolution - 1)] += 0.3
+        display_image[clamp(pix, 0, kResolution - 1)] += 0.3
 
 
 def render_tree(gui,
                 parent=0,
-                parent_geo_center=tl.vec(0.5, 0.5),
+                parent_geo_center=ti.Vector([0.5, 0.5]),
                 parent_geo_size=1.0):
     child_geo_size = parent_geo_size * 0.5
     if node_particle_id[parent] >= 0:
@@ -324,8 +318,6 @@ while gui.running:
         substep_raw()
     if len(kDisplay) and 'trace' not in kDisplay:
         display_image.fill(0)
-    if 'mouse' in kDisplay:
-        render_arrows(*gui.get_cursor_pos())
     if 'pixels' in kDisplay:
         render_pixels()
     if 'cmap' in kDisplay:

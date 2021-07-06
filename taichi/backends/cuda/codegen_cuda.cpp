@@ -279,34 +279,36 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
   }
 
   llvm::Value *custom_type_atomic(AtomicOpStmt *stmt) {
-    if (stmt->op_type == AtomicOpType::add) {
-      auto dst_type =
-          stmt->dest->ret_type->as<PointerType>()->get_pointee_type();
-      if (auto cit = dst_type->cast<CustomIntType>()) {
-        return atomic_add_custom_int(stmt, cit);
-      } else if (auto cft = dst_type->cast<CustomFloatType>()) {
-        return atomic_add_custom_float(stmt, cft);
-      }
+    if (stmt->op_type != AtomicOpType::add) {
+      return nullptr;
     }
-    return nullptr;
+
+    auto dst_type = stmt->dest->ret_type->as<PointerType>()->get_pointee_type();
+    if (auto cit = dst_type->cast<CustomIntType>()) {
+      return atomic_add_custom_int(stmt, cit);
+    } else if (auto cft = dst_type->cast<CustomFloatType>()) {
+      return atomic_add_custom_float(stmt, cft);
+    } else {
+      return nullptr;
+    }
   }
 
   llvm::Value *integral_type_atomic(AtomicOpStmt *stmt) {
-    if (is_integral(stmt->val->ret_type)) {
-      std::unordered_map<AtomicOpType, llvm::AtomicRMWInst::BinOp> bin_op;
-      bin_op[AtomicOpType::add] = llvm::AtomicRMWInst::BinOp::Add;
-      bin_op[AtomicOpType::min] = llvm::AtomicRMWInst::BinOp::Min;
-      bin_op[AtomicOpType::max] = llvm::AtomicRMWInst::BinOp::Max;
-
-      bin_op[AtomicOpType::bit_and] = llvm::AtomicRMWInst::BinOp::And;
-      bin_op[AtomicOpType::bit_or] = llvm::AtomicRMWInst::BinOp::Or;
-      bin_op[AtomicOpType::bit_xor] = llvm::AtomicRMWInst::BinOp::Xor;
-      TI_ASSERT(bin_op.find(stmt->op_type) != bin_op.end());
-      return builder->CreateAtomicRMW(
-          bin_op.at(stmt->op_type), llvm_val[stmt->dest], llvm_val[stmt->val],
-          llvm::AtomicOrdering::SequentiallyConsistent);
+    if (!is_integral(stmt->val->ret_type)) {
+      return nullptr;
     }
-    return nullptr;
+    std::unordered_map<AtomicOpType, llvm::AtomicRMWInst::BinOp> bin_op;
+    bin_op[AtomicOpType::add] = llvm::AtomicRMWInst::BinOp::Add;
+    bin_op[AtomicOpType::min] = llvm::AtomicRMWInst::BinOp::Min;
+    bin_op[AtomicOpType::max] = llvm::AtomicRMWInst::BinOp::Max;
+
+    bin_op[AtomicOpType::bit_and] = llvm::AtomicRMWInst::BinOp::And;
+    bin_op[AtomicOpType::bit_or] = llvm::AtomicRMWInst::BinOp::Or;
+    bin_op[AtomicOpType::bit_xor] = llvm::AtomicRMWInst::BinOp::Xor;
+    TI_ASSERT(bin_op.find(stmt->op_type) != bin_op.end());
+    return builder->CreateAtomicRMW(
+        bin_op.at(stmt->op_type), llvm_val[stmt->dest], llvm_val[stmt->val],
+        llvm::AtomicOrdering::SequentiallyConsistent);
   }
 
   llvm::Value *real_type_atomic(AtomicOpStmt *stmt) {
@@ -318,28 +320,29 @@ class CodeGenLLVMCUDA : public CodeGenLLVM {
       return builder->CreateAtomicRMW(llvm::AtomicRMWInst::FAdd,
                                       llvm_val[stmt->dest], llvm_val[stmt->val],
                                       AtomicOrdering::SequentiallyConsistent);
-    } else {
-      PrimitiveTypeID prim_type =
-          stmt->val->ret_type->cast<PrimitiveType>()->type;
-
-      std::unordered_map<PrimitiveTypeID,
-                         std::unordered_map<AtomicOpType, std::string>>
-          atomics;
-
-      atomics[PrimitiveTypeID::f32][AtomicOpType::min] = "atomic_min_f32";
-      atomics[PrimitiveTypeID::f64][AtomicOpType::min] = "atomic_min_f64";
-      atomics[PrimitiveTypeID::f32][AtomicOpType::max] = "atomic_max_f32";
-      atomics[PrimitiveTypeID::f64][AtomicOpType::max] = "atomic_max_f64";
-
-      if (atomics.find(prim_type) == atomics.end()) {
-        return nullptr;
-      }
-      TI_ASSERT(atomics.at(prim_type).find(op) != atomics.at(prim_type).end());
-
-      return builder->CreateCall(
-          get_runtime_function(atomics.at(prim_type).at(op)),
-          {llvm_val[stmt->dest], llvm_val[stmt->val]});
     }
+
+    PrimitiveTypeID prim_type =
+        stmt->val->ret_type->cast<PrimitiveType>()->type;
+
+    std::unordered_map<PrimitiveTypeID,
+                       std::unordered_map<AtomicOpType, std::string>>
+        atomics;
+
+    atomics[PrimitiveTypeID::f32][AtomicOpType::min] = "atomic_min_f32";
+    atomics[PrimitiveTypeID::f64][AtomicOpType::min] = "atomic_min_f64";
+    atomics[PrimitiveTypeID::f32][AtomicOpType::max] = "atomic_max_f32";
+    atomics[PrimitiveTypeID::f64][AtomicOpType::max] = "atomic_max_f64";
+
+    if (atomics.find(prim_type) == atomics.end()) {
+      return nullptr;
+    }
+    TI_ASSERT(atomics.at(prim_type).find(op) != atomics.at(prim_type).end());
+
+    return builder->CreateCall(
+        get_runtime_function(atomics.at(prim_type).at(op)),
+        {llvm_val[stmt->dest], llvm_val[stmt->val]});
+
     return nullptr;
   }
 

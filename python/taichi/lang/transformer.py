@@ -49,10 +49,10 @@ class ASTTransformer(object):
         print(astor.to_source(tree.body[0], indent_with='    '))
 
     def visit(self, tree):
-        from taichi.lang.expr_builder import build_expr
+        from taichi.lang.stmt_builder import build_stmt
         self.print_ast(tree, 'Initial AST')
-        tmp = copy.deepcopy(tree.body[0].body[0].test)
-        tmp = build_expr(None, tmp)
+        tmp = copy.deepcopy(tree.body[0].body[0])
+        tmp = build_stmt(None, tmp)
         tree1 = ast.Module()
         tree1.body = [tmp]
         self.print_ast(tree1)

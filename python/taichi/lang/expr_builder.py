@@ -1,37 +1,17 @@
 import ast
-import copy
 
-from taichi.lang import impl
 from taichi.lang.ast_resolver import ASTResolver
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.ast_builder_utils import *
-from taichi.lang.util import to_taichi_type
 
 import taichi as ti
 
 
 class ExprBuilder(Builder):
     @staticmethod
-    def get_subscript_index(node):
-        assert isinstance(node, ast.Subscript), type(node)
-        # ast.Index has been deprecated in Python 3.9,
-        # use the index value directly instead :)
-        if isinstance(node.slice, ast.Index):
-            return node.slice.value
-        return node.slice
-
-    @staticmethod
-    def set_subscript_index(node, value):
-        assert isinstance(node, ast.Subscript), type(node)
-        if isinstance(node.slice, ast.Index):
-            node.slice.value = value
-        else:
-            node.slice = value
-
-    @staticmethod
     def build_Subscript(ctx, node):
         value = build_expr(ctx, node.value)
-        indices = ExprBuilder.get_subscript_index(node)
+        indices = get_subscript_index(node)
         if isinstance(indices, ast.Tuple):
             indices = indices.elts
         else:

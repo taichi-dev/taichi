@@ -165,6 +165,7 @@ def test_materialization_after_access():
 
 @ti.test(arch=ti.cpu)
 def test_materialization_after_get_shape():
+    pass
     '''
     x = ti.field(ti.f32, (3, 4))
 

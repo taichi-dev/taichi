@@ -900,7 +900,7 @@ void runtime_initialize_snodes(LLVMRuntime *runtime,
       runtime->allocate_aligned(runtime->root_mem_size, taichi_page_size);
   // runtime->request_allocate_aligned ready to use
   // initialize the root node element list
-  for (int i = 0; i < num_snodes; i++) {
+  for (int i = root_id; i < root_id + num_snodes; i++) {
     // TODO: some SNodes do not actually need an element list.
     runtime->element_lists[i] =
         runtime->create<ListManager>(runtime, sizeof(Element), 1024 * 64);

@@ -1,4 +1,3 @@
-import math
 import time
 
 import numpy as np
@@ -38,7 +37,7 @@ light_color = ti.Vector(list(np.array([0.9, 0.85, 0.7])))
 light_normal = ti.Vector([0.0, -1.0, 0.0])
 
 # No absorbtion, integrates over a unit hemisphere
-lambertian_brdf = 1.0 / math.pi
+lambertian_brdf = 1.0 / np.pi
 # diamond!
 refr_idx = 2.4
 
@@ -47,8 +46,8 @@ sp1_center = ti.Vector([0.4, 0.225, 1.75])
 sp1_radius = 0.22
 
 def make_box_transform_matrices():
-    rad = math.pi / 8.0
-    c, s = math.cos(rad), math.sin(rad)
+    rad = np.pi / 8.0
+    c, s = np.cos(rad), np.sin(rad)
     rot = np.array([[c, 0, s, 0], [0, 1, 0, 0], [-s, 0, c, 0], [0, 0, 0, 1]])
     translate = np.array([
         [1, 0, 0, -0.7],
@@ -72,7 +71,6 @@ def reflect(d, n):
     # Assuming |d| and |n| are normalized
     return d - 2.0 * d.dot(n) * n
 
-
 @ti.func
 def refract(d, n, ni_over_nt):
     # Assuming |d| and |n| are normalized
@@ -86,31 +84,20 @@ def refract(d, n, ni_over_nt):
         rd *= 0.0
     return has_r, rd
 
+@ti.func
+def mat_mul_point(m, p):
+    hp = ti.Vector([p[0], p[1], p[2], 1.0])
+    hp = m @ hp
+    hp /= hp[3]
+    return ti.Vector([hp[0], hp[1], hp[2]])
+
 
 @ti.func
-def ray_aabb_intersection(box_min, box_max, o, d):
-    intersect = 1
-
-    near_int = -inf
-    far_int = inf
-
-    for i in ti.static(range(3)):
-        if d[i] == 0:
-            if o[i] < box_min[i] or o[i] > box_max[i]:
-                intersect = 0
-        else:
-            i1 = (box_min[i] - o[i]) / d[i]
-            i2 = (box_max[i] - o[i]) / d[i]
-
-            new_far_int = ti.max(i1, i2)
-            new_near_int = ti.min(i1, i2)
-
-            far_int = ti.min(new_far_int, far_int)
-            near_int = ti.max(new_near_int, near_int)
-
-    if near_int > far_int:
-        intersect = 0
-    return intersect, near_int, far_int
+def mat_mul_vec(m, v):
+    hv = ti.Vector([v[0], v[1], v[2], 0.0])
+    hv = m @ hv
+    return ti.Vector([hv[0], hv[1], hv[2]])
+    
 
 @ti.func
 def intersect_sphere(pos, d, center, radius):
@@ -144,12 +131,6 @@ def intersect_sphere(pos, d, center, radius):
                 if ret1 > 0:
                     dist = ret1
                     hit_pos = new_pos + ratio * (-B - sdelta) * d
-                else:
-                    pass
-                    #ret2 = ratio * (-B + sdelta) + old_dist
-                    #if ret2 > 0:
-                    #  dist = ret2
-                    #  hit_pos = new_pos + ratio * (-B + sdelta) * d
             else:
                 dist = inf
 
@@ -157,7 +138,7 @@ def intersect_sphere(pos, d, center, radius):
 
 
 @ti.func
-def ray_plane_intersect(pos, d, pt_on_plane, norm):
+def intersect_plane(pos, d, pt_on_plane, norm):
     dist = inf
     hit_pos = ti.Vector([0.0, 0.0, 0.0])
     denom = d.dot(norm)
@@ -168,20 +149,7 @@ def ray_plane_intersect(pos, d, pt_on_plane, norm):
 
 
 @ti.func
-def intersect_light(pos, d, tmax):
-    hit, t, _ = ray_aabb_intersection(light_min_pos, light_max_pos, pos, d)
-    if hit and 0 < t < tmax:
-        hit = 1
-    else:
-        hit = 0
-        t = inf
-    return hit, t
-
-
-@ti.func
-def ray_aabb_intersection2(box_min, box_max, o, d):
-    # Compared to ray_aabb_intersection2(), this also returns the normal of
-    # the nearest t.
+def intersect_aabb(box_min, box_max, o, d):
     intersect = 1
 
     near_t = -inf
@@ -211,38 +179,18 @@ def ray_aabb_intersection2(box_min, box_max, o, d):
     if near_t > far_t:
         intersect = 0
     if intersect:
-        # TODO: Issue#1004...
-        if near_face == 0:
-            near_norm[0] = -1 + near_is_max * 2
-        elif near_face == 1:
-            near_norm[1] = -1 + near_is_max * 2
-        else:
-            near_norm[2] = -1 + near_is_max * 2
-
+        for i in ti.static(range(2)):
+            if near_face == i:
+                near_norm[i] = -1 + near_is_max * 2
     return intersect, near_t, far_t, near_norm
 
 
 @ti.func
-def mat_mul_point(m, p):
-    hp = ti.Vector([p[0], p[1], p[2], 1.0])
-    hp = m @ hp
-    hp /= hp[3]
-    return ti.Vector([hp[0], hp[1], hp[2]])
-
-
-@ti.func
-def mat_mul_vec(m, v):
-    hv = ti.Vector([v[0], v[1], v[2], 0.0])
-    hv = m @ hv
-    return ti.Vector([hv[0], hv[1], hv[2]])
-
-
-@ti.func
-def ray_aabb_intersection2_transformed(box_min, box_max, o, d):
+def intersect_aabb_transformed(box_min, box_max, o, d):
     # Transform the ray to the box's local space
     obj_o = mat_mul_point(box_m_inv, o)
     obj_d = mat_mul_vec(box_m_inv, d)
-    intersect, near_t, _, near_norm = ray_aabb_intersection2(
+    intersect, near_t, _, near_norm = intersect_aabb(
         box_min, box_max, obj_o, obj_d)
     if intersect and 0 < near_t:
         # Transform the normal in the box's local space to world space
@@ -250,6 +198,17 @@ def ray_aabb_intersection2_transformed(box_min, box_max, o, d):
     else:
         intersect = 0
     return intersect, near_t, near_norm
+
+
+@ti.func
+def intersect_light(pos, d, tmax):
+    hit, t, far_t, near_norm = intersect_aabb(light_min_pos, light_max_pos, pos, d)
+    if hit and 0 < t < tmax:
+        hit = 1
+    else:
+        hit = 0
+        t = inf
+    return hit, t
 
 
 @ti.func
@@ -264,7 +223,7 @@ def intersect_scene(pos, ray_dir):
         normal = (hit_pos - sp1_center).normalized()
         c, mat = ti.Vector([1.0, 1.0, 1.0]), mat_glass
     # left box
-    hit, cur_dist, pnorm = ray_aabb_intersection2_transformed(
+    hit, cur_dist, pnorm = intersect_aabb_transformed(
         box_min, box_max, pos, ray_dir)
     if hit and 0 < cur_dist < closest:
         closest = cur_dist
@@ -273,7 +232,7 @@ def intersect_scene(pos, ray_dir):
 
     # left
     pnorm = ti.Vector([1.0, 0.0, 0.0])
-    cur_dist, _ = ray_plane_intersect(pos, ray_dir, ti.Vector([-1.1, 0.0,
+    cur_dist, _ = intersect_plane(pos, ray_dir, ti.Vector([-1.1, 0.0,
                                                                0.0]), pnorm)
     if 0 < cur_dist < closest:
         closest = cur_dist
@@ -281,7 +240,7 @@ def intersect_scene(pos, ray_dir):
         c, mat = ti.Vector([0.65, 0.05, 0.05]), mat_lambertian
     # right
     pnorm = ti.Vector([-1.0, 0.0, 0.0])
-    cur_dist, _ = ray_plane_intersect(pos, ray_dir, ti.Vector([1.1, 0.0, 0.0]),
+    cur_dist, _ = intersect_plane(pos, ray_dir, ti.Vector([1.1, 0.0, 0.0]),
                                       pnorm)
     if 0 < cur_dist < closest:
         closest = cur_dist
@@ -290,7 +249,7 @@ def intersect_scene(pos, ray_dir):
     # bottom
     gray = ti.Vector([0.93, 0.93, 0.93])
     pnorm = ti.Vector([0.0, 1.0, 0.0])
-    cur_dist, _ = ray_plane_intersect(pos, ray_dir, ti.Vector([0.0, 0.0, 0.0]),
+    cur_dist, _ = intersect_plane(pos, ray_dir, ti.Vector([0.0, 0.0, 0.0]),
                                       pnorm)
     if 0 < cur_dist < closest:
         closest = cur_dist
@@ -298,7 +257,7 @@ def intersect_scene(pos, ray_dir):
         c, mat = gray, mat_lambertian
     # top
     pnorm = ti.Vector([0.0, -1.0, 0.0])
-    cur_dist, _ = ray_plane_intersect(pos, ray_dir, ti.Vector([0.0, 2.0, 0.0]),
+    cur_dist, _ = intersect_plane(pos, ray_dir, ti.Vector([0.0, 2.0, 0.0]),
                                       pnorm)
     if 0 < cur_dist < closest:
         closest = cur_dist
@@ -306,7 +265,7 @@ def intersect_scene(pos, ray_dir):
         c, mat = gray, mat_lambertian
     # far
     pnorm = ti.Vector([0.0, 0.0, 1.0])
-    cur_dist, _ = ray_plane_intersect(pos, ray_dir, ti.Vector([0.0, 0.0, 0.0]),
+    cur_dist, _ = intersect_plane(pos, ray_dir, ti.Vector([0.0, 0.0, 0.0]),
                                       pnorm)
     if 0 < cur_dist < closest:
         closest = cur_dist
@@ -360,7 +319,7 @@ def compute_area_light_pdf(pos, ray_dir):
 
 @ti.func
 def compute_brdf_pdf(normal, sample_dir):
-    return dot_or_zero(normal, sample_dir) / math.pi
+    return dot_or_zero(normal, sample_dir) / np.pi
 
 
 @ti.func
@@ -375,51 +334,23 @@ def sample_area_light(hit_pos, pos_normal):
 @ti.func
 def sample_brdf(normal):
     # cosine hemisphere sampling
-    # first, uniformly sample on a disk (r, theta)
+    # Uniformly sample on a disk using concentric sampling(r, theta)
+    # https://github.com/mmp/pbrt-v3/blob/master/src/core/sampling.cpp#L112-L130
     r, theta = 0.0, 0.0
     sx = ti.random() * 2.0 - 1.0
     sy = ti.random() * 2.0 - 1.0
-    if sx >= -sy:
-        if sx > sy:
-            # first region
+    if sx != 0 or sy != 0:
+        if abs(sx) > abs(sy):
             r = sx
-            div = abs(sy / r)
-            if sy > 0.0:
-                theta = div
-            else:
-                theta = 7.0 + div
+            theta = np.pi / 4 * (sy / sx)
         else:
-            # second region
             r = sy
-            div = abs(sx / r)
-            if sx > 0.0:
-                theta = 1.0 + sx / r
-            else:
-                theta = 2.0 + sx / r
-    else:
-        if sx <= sy:
-            # third region
-            r = -sx
-            div = abs(sy / r)
-            if sy > 0.0:
-                theta = 3.0 + div
-            else:
-                theta = 4.0 + div
-        else:
-            # fourth region
-            r = -sy
-            div = abs(sx / r)
-            if sx < 0.0:
-                theta = 5.0 + div
-            else:
-                theta = 6.0 + div
-    # Malley's method
+            theta = np.pi / 4 * (2 - sx / sy)
+    # Apply Malley's method to project disk to hemisphere
     u = ti.Vector([1.0, 0.0, 0.0])
     if abs(normal[1]) < 1 - eps:
         u = normal.cross(ti.Vector([0.0, 1.0, 0.0]))
     v = normal.cross(u)
-
-    theta = theta * math.pi * 0.25
     costt, sintt = ti.cos(theta), ti.sin(theta)
     xy = (u * costt + v * sintt) * r
     zlen = ti.sqrt(max(0.0, 1.0 - xy.dot(xy)))

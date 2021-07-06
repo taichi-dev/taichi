@@ -624,9 +624,12 @@ if 1:
 
     @staticmethod
     def build_Expr(ctx, node):
+        if isinstance(node.value, ast.Call):
+            # A function call.
+            node.value = build_expr(ctx, node.value)
+            # note that we can only return an ast.Expr instead of an ast.Call.
+            return node
         # A statement with a single expression.
-        # Do not treat ast.Call specially here -- Python need it to be wrapped
-        # in an ast.Expr.
         result = parse_stmt('ti.core.insert_expr_stmt(expr)')
         result.value.args[0] = build_expr(ctx, node.value)
         return ast.copy_location(result, node)
@@ -637,7 +640,7 @@ if 1:
 
     @staticmethod
     def build_Pass(ctx, node):
-        pass
+        return node
 
 
 build_stmt = StmtBuilder()

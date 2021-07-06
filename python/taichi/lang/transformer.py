@@ -57,6 +57,7 @@ class ASTTransformer(object):
                              is_kernel=self.pass_Preprocess.is_kernel,
                              arg_features=self.pass_Preprocess.arg_features)
         tree = build_stmt(ctx, tree)
+        # self.pass_Preprocess.visit(tree)
         ast.fix_missing_locations(tree)
         self.print_ast(tree, 'Preprocessed')
         self.pass_Checks.visit(tree)

@@ -17,7 +17,7 @@ struct TaichiAotData {
   std::vector<CompiledKernelTmplData> tmpl_kernels;
   std::vector<CompiledFieldData> fields;
 
-  TI_IO_DEF(metadata, kernels);
+  TI_IO_DEF(metadata, kernels, tmpl_kernels);
 };
 
 }  // namespace metal

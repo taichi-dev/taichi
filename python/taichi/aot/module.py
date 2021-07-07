@@ -109,6 +109,5 @@ class Module:
         # kernel AOT
         self._kernels.append(kernel)
 
-
     def save(self, filepath, filename):
         self._aot_builder.dump(filepath, filename)

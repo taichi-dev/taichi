@@ -48,14 +48,6 @@ class FieldsBuilder:
     def root(self):
         return self._root
 
-    @property
-    def finalized(self):
-        return self._finalized
-    
-    @property
-    def empty(self):
-        return self._empty
-
     def dense(self, indices: Union[Sequence[_Axis], _Axis],
               dimensions: Union[Sequence[int], int]):
         """Same as :func:`taichi.SNode.dense`"""
@@ -138,8 +130,9 @@ class _RootFieldsBuilder(FieldsBuilder):
     def finalize(self):
         if not self._finalized:
             super().finalize()
-        if False:
+        '''
             if not self._empty:
                 super().finalize()
                 self._old_roots.append([self._ptr, self._root])
                 super().__init__()
+        '''

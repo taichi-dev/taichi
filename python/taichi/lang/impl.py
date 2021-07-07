@@ -13,7 +13,6 @@ from taichi.lang.util import (cook_dtype, is_taichi_class, python_scope,
 from taichi.misc.util import deprecated, get_traceback, warning
 
 import taichi as ti
-from taichi.snode.fields_builder import FieldsBuilder
 
 
 @taichi_scope

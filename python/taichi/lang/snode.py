@@ -147,6 +147,10 @@ class SNode:
     @property
     def snode(self):
         return self
+    
+    @property
+    def needs_grad(self):
+        return self.ptr.has_grad()
 
     def get_children(self):
         children = []

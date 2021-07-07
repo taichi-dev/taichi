@@ -1,4 +1,4 @@
-from taichi.lang import impl, kernel_arguments, kernel_impl, expr
+from taichi.lang import impl, kernel_arguments, kernel_impl, expr, matrix
 
 
 class Module:
@@ -30,12 +30,19 @@ class Module:
     def add_field(self, name, field):
       """Add a taichi field to the AOT module.
       Args: 
+        name: name of taichi field
         field: taichi field
       """
       # assert isinstance(field, expr.Expr)
-      print(type(field))
+      is_vector = False
       self._fields[name] = field
-      self._aot_builder.add_field(name)
+      if type(field) is matrix.Matrix:
+        assert isinstance(field, matrix.Matrix)
+        print(type (field.dtype))
+        is_vector = True
+      else:
+        assert isinstance(field, expr.Expr)
+      self._aot_builder.add_field(name, is_vector)
 
     def add_kernel(self, kernel_fn, name=None):
         """Add a taichi kernel to the AOT module.

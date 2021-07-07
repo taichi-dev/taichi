@@ -217,7 +217,7 @@ struct CompiledKernelTmplData {
 
 struct CompiledFieldData {
   std::string field_name;
-  int64_t offset_in_root_buffer;
+  int64_t offset_in_root_buffer{0};
   MetalDataType dtype;
   std::pair<int64_t, int64_t> dimension;
   bool is_vector;

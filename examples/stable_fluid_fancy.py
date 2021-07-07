@@ -250,14 +250,19 @@ def subtract_gradient(vf: ti.template(), pf: ti.template()):
 
 filename = os.path.basename(__file__)[:-3]
 m = ti.aot.Module(ti.metal)
-m.add_kernel_template(advect, key = "v0", template_args={'vf': velocities_pair.cur, 'qf': velocities_pair.cur, 'new_qf': velocities_pair.nxt})
-m.add_kernel_template(advect, key = "v1", template_args={'vf': velocities_pair.nxt, 'qf': velocities_pair.nxt, 'new_qf': velocities_pair.cur})
+m.add_field("_velocities", _velocities)
+m.add_field("_new_velocties", _new_velocities)
+m.add_field("_dye_buffer", _dye_buffer)
+m.add_field("_new_dye_buffer", _new_dye_buffer)
 
-m.add_kernel_template(advect, key = "d0", template_args={'vf': velocities_pair.cur, 'qf': dyes_pair.cur, 'new_qf': dyes_pair.nxt})
-m.add_kernel_template(advect, key = "d1", template_args={'vf': velocities_pair.nxt, 'qf': dyes_pair.nxt, 'new_qf': dyes_pair.cur})
+m.add_kernel_template(advect, template_args={'vf': velocities_pair.cur, 'qf': velocities_pair.cur, 'new_qf': velocities_pair.nxt})
+m.add_kernel_template(advect, template_args={'vf': velocities_pair.nxt, 'qf': velocities_pair.nxt, 'new_qf': velocities_pair.cur})
 
-m.add_kernel_template(apply_impulse, key='v0d0', template_args={'vf': velocities_pair.cur, 'dye': dyes_pair.cur})
-m.add_kernel_template(apply_impulse, key='v1d1', template_args={'vf': velocities_pair.nxt, 'dye': dyes_pair.nxt})
+m.add_kernel_template(advect, template_args={'vf': velocities_pair.cur, 'qf': dyes_pair.cur, 'new_qf': dyes_pair.nxt})
+m.add_kernel_template(advect, template_args={'vf': velocities_pair.nxt, 'qf': dyes_pair.nxt, 'new_qf': dyes_pair.cur})
+
+m.add_kernel_template(apply_impulse, template_args={'vf': velocities_pair.cur, 'dye': dyes_pair.cur})
+m.add_kernel_template(apply_impulse, template_args={'vf': velocities_pair.nxt, 'dye': dyes_pair.nxt})
 
 # m.add_kernel(divergence, name='divergence=v0', template_args={'vf': velocities_pair.cur})
 # m.add_kernel(divergence, name='divergence=v1', template_args={'vf': velocities_pair.nxt})

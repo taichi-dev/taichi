@@ -1,4 +1,4 @@
-from taichi.lang import impl, kernel_arguments, kernel_impl
+from taichi.lang import impl, kernel_arguments, kernel_impl, expr
 
 
 class Module:
@@ -22,9 +22,20 @@ class Module:
     def __init__(self, arch):
         self._arch = arch
         self._kernels = []
+        self._fields = {}
         impl.get_runtime().materialize()
         self._aot_builder = impl.get_runtime().prog.make_aot_module_builder(
             arch)
+    
+    def add_field(self, name, field):
+      """Add a taichi field to the AOT module.
+      Args: 
+        field: taichi field
+      """
+      # assert isinstance(field, expr.Expr)
+      print(type(field))
+      self._fields[name] = field
+      self._aot_builder.add_field(name)
 
     def add_kernel(self, kernel_fn, name=None):
         """Add a taichi kernel to the AOT module.
@@ -54,7 +65,7 @@ class Module:
         # kernel AOT
         self._kernels.append(kernel)
     
-    def add_kernel_template(self, kernel_fn, template_args, key):
+    def add_kernel_template(self, kernel_fn, template_args):
         """Add a taichi kernel (with template parameters) to the AOT module.
 
         Args:
@@ -96,10 +107,15 @@ class Module:
         kernel = kernel_fn._primal
         assert isinstance(kernel, kernel_impl.Kernel)
         injected_args = []
+        key = ""
         for i in range(len(kernel.argument_annotations)):
             anno = kernel.argument_annotations[i]
             if isinstance(anno, kernel_arguments.Template):
+                key += kernel.argument_names[i]
                 value = template_args[kernel.argument_names[i]]
+                for ky, val in self._fields.items():
+                  if (val is value):
+                    key += "=" + ky + "/"
                 injected_args.append(value)
             else:
                 injected_args.append(0)

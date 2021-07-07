@@ -1,10 +1,268 @@
 
-taichi file data: {
+taichi aot data: {
   metadata: {
     root_buffer_size: 285212672
     runtime_buffer_size: 660256
     randseedoffset_in_runtime_buffer: 398112
   }
   kernels: [
+  ]
+  tmpl_kernels: [
+    [0]: {
+      kernel_bundle_name: advect
+      kernel_tmpl_map: {
+        key: v0
+        value: {
+          kernel_name: mtl_k0004_advect_c4_0
+          ctx_attribs: {
+            arg_attribs_vec_: [
+              [0]: {
+                stride: 4
+                offset_in_mem: 0
+                index: 0
+                dt: 0
+                is_array: false
+              }
+              [1]: {
+                stride: 4
+                offset_in_mem: 4
+                index: 1
+                dt: 4
+                is_array: false
+              }
+              [2]: {
+                stride: 4
+                offset_in_mem: 8
+                index: 2
+                dt: 4
+                is_array: false
+              }
+            ]
+            ret_attribs_vec_: [
+            ]
+            ctx_bytes_: 12
+            extra_args_bytes_: 256
+          }
+          kernel_attribs: {
+            name: mtl_k0004_advect_c4_0
+            mtl_kernels_attribs: [
+              [0]: {
+                name: mtl_k0004_advect_c4_0_0
+                advisory_total_num_threads: 524288
+                task_type: 1
+                buffers: [
+                  [0]: 0
+                  [1]: 1
+                  [2]: 2
+                  [3]: 3
+                  [4]: 4
+                ]
+                range_for_attribs: {
+                  has_value: true
+                  value: {
+                    begin: 0
+                    end: 524288
+                    const_begin: true
+                    const_end: true
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+    [1]: {
+      kernel_bundle_name: advect
+      kernel_tmpl_map: {
+        key: v1
+        value: {
+          kernel_name: mtl_k0005_advect_c4_1
+          ctx_attribs: {
+            arg_attribs_vec_: [
+              [0]: {
+                stride: 4
+                offset_in_mem: 0
+                index: 0
+                dt: 0
+                is_array: false
+              }
+              [1]: {
+                stride: 4
+                offset_in_mem: 4
+                index: 1
+                dt: 4
+                is_array: false
+              }
+              [2]: {
+                stride: 4
+                offset_in_mem: 8
+                index: 2
+                dt: 4
+                is_array: false
+              }
+            ]
+            ret_attribs_vec_: [
+            ]
+            ctx_bytes_: 12
+            extra_args_bytes_: 256
+          }
+          kernel_attribs: {
+            name: mtl_k0005_advect_c4_1
+            mtl_kernels_attribs: [
+              [0]: {
+                name: mtl_k0005_advect_c4_1_0
+                advisory_total_num_threads: 524288
+                task_type: 1
+                buffers: [
+                  [0]: 0
+                  [1]: 1
+                  [2]: 2
+                  [3]: 3
+                  [4]: 4
+                ]
+                range_for_attribs: {
+                  has_value: true
+                  value: {
+                    begin: 0
+                    end: 524288
+                    const_begin: true
+                    const_end: true
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+    [2]: {
+      kernel_bundle_name: advect
+      kernel_tmpl_map: {
+        key: d0
+        value: {
+          kernel_name: mtl_k0006_advect_c4_2
+          ctx_attribs: {
+            arg_attribs_vec_: [
+              [0]: {
+                stride: 4
+                offset_in_mem: 0
+                index: 0
+                dt: 0
+                is_array: false
+              }
+              [1]: {
+                stride: 4
+                offset_in_mem: 4
+                index: 1
+                dt: 4
+                is_array: false
+              }
+              [2]: {
+                stride: 4
+                offset_in_mem: 8
+                index: 2
+                dt: 4
+                is_array: false
+              }
+            ]
+            ret_attribs_vec_: [
+            ]
+            ctx_bytes_: 12
+            extra_args_bytes_: 256
+          }
+          kernel_attribs: {
+            name: mtl_k0006_advect_c4_2
+            mtl_kernels_attribs: [
+              [0]: {
+                name: mtl_k0006_advect_c4_2_0
+                advisory_total_num_threads: 8388608
+                task_type: 1
+                buffers: [
+                  [0]: 0
+                  [1]: 1
+                  [2]: 2
+                  [3]: 3
+                  [4]: 4
+                ]
+                range_for_attribs: {
+                  has_value: true
+                  value: {
+                    begin: 0
+                    end: 8388608
+                    const_begin: true
+                    const_end: true
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+    [3]: {
+      kernel_bundle_name: advect
+      kernel_tmpl_map: {
+        key: d1
+        value: {
+          kernel_name: mtl_k0007_advect_c4_3
+          ctx_attribs: {
+            arg_attribs_vec_: [
+              [0]: {
+                stride: 4
+                offset_in_mem: 0
+                index: 0
+                dt: 0
+                is_array: false
+              }
+              [1]: {
+                stride: 4
+                offset_in_mem: 4
+                index: 1
+                dt: 4
+                is_array: false
+              }
+              [2]: {
+                stride: 4
+                offset_in_mem: 8
+                index: 2
+                dt: 4
+                is_array: false
+              }
+            ]
+            ret_attribs_vec_: [
+            ]
+            ctx_bytes_: 12
+            extra_args_bytes_: 256
+          }
+          kernel_attribs: {
+            name: mtl_k0007_advect_c4_3
+            mtl_kernels_attribs: [
+              [0]: {
+                name: mtl_k0007_advect_c4_3_0
+                advisory_total_num_threads: 8388608
+                task_type: 1
+                buffers: [
+                  [0]: 0
+                  [1]: 1
+                  [2]: 2
+                  [3]: 3
+                  [4]: 4
+                ]
+                range_for_attribs: {
+                  has_value: true
+                  value: {
+                    begin: 0
+                    end: 8388608
+                    const_begin: true
+                    const_end: true
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
   ]
 }

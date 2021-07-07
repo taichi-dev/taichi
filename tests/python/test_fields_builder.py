@@ -1,8 +1,7 @@
-import taichi as ti
-
 import pytest
-
 from taichi.lang.exception import InvalidOperationError
+
+import taichi as ti
 
 @ti.test(arch=[ti.cpu, ti.cuda])
 def test_fields_with_shape():

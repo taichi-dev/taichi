@@ -62,6 +62,7 @@ void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 void AotModuleBuilderImpl::add_per_backend_field(const std::string &identifier,
                                                  bool is_scalar,
                                                  DataType dt,
@@ -89,6 +90,14 @@ void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier,
     }
   }
 =======
+=======
+void AotModuleBuilderImpl::add_per_backend_field(const std::string &identifier) {
+  CompiledFieldData field_data;
+  field_data.field_name = identifier;
+  ti_aot_data_.fields.push_back(field_data);
+}
+
+>>>>>>> f33f5e9d (support key generation without user input)
 void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier, 
                                     const std::string &key, 
                                     Kernel *kernel) {

@@ -43,7 +43,6 @@ void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
     name_list_.push_back(name);
 }
 
-<<<<<<< HEAD
 void AotModuleBuilderImpl::add_per_backend_field(const std::string &identifier,
                                                  bool is_scalar,
                                                  DataType dt,
@@ -55,12 +54,6 @@ void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier,
                                                 const std::string &key,
                                                 Kernel *kernel) {
 }
-=======
-void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier, 
-                                    const std::string &key, 
-                                    Kernel *kernel) {
-                                    }
->>>>>>> c596fb80 (dump metal files ok (txt file to fix))
 
 }  // namespace wasm
 }  // namespace lang

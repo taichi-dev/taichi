@@ -24,7 +24,7 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
   // The txt file is mostly for debugging purpose.
   const stdfs::path txt_path = dir / fmt::format("{}_metadata.txt", filename);
   TextSerializer ts;
-  ts("taichi file data", ti_aot_data_);
+  ts("taichi aot data", ti_aot_data_);
   ts.write_to_file(txt_path.string());
 
   for (const auto &k : ti_aot_data_.kernels) {

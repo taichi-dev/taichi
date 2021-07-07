@@ -130,6 +130,7 @@ class _RootFieldsBuilder(FieldsBuilder):
     def finalize(self):
         if not self._finalized:
             super().finalize()
+        # TODO: Enable this after FieldsBuilder() worked properly.
         '''
             if not self._empty:
                 super().finalize()

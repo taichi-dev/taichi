@@ -14,6 +14,7 @@ AotModuleBuilderImpl::AotModuleBuilderImpl(
     const BufferMetaData &buffer_meta_data)
     : compiled_structs_(compiled_structs), buffer_meta_data_(buffer_meta_data) {
   ti_aot_data_.metadata = buffer_meta_data;
+  
 }
 
 void AotModuleBuilderImpl::dump(const std::string &output_dir,
@@ -93,7 +94,16 @@ void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier,
                                     Kernel *kernel) {
   auto compiled =
       run_codegen(compiled_structs_, kernel, &strtab_, /*offloaded=*/nullptr);
+<<<<<<< HEAD
 >>>>>>> c596fb80 (dump metal files ok (txt file to fix))
+=======
+  for (auto &k: ti_aot_data_.tmpl_kernels) {
+    if (k.kernel_bundle_name == identifier) {
+      k.kernel_tmpl_map.insert(std::make_pair(key, compiled));
+      return;
+    }
+  }
+>>>>>>> 1747bbbc (supports nicer api for template args)
   CompiledKernelTmplData tmpldata;
   tmpldata.kernel_bundle_name = identifier;
   tmpldata.kernel_tmpl_map.insert(std::make_pair(key, compiled));

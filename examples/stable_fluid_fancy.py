@@ -256,8 +256,8 @@ m.add_kernel_template(advect, key = "v1", template_args={'vf': velocities_pair.n
 m.add_kernel_template(advect, key = "d0", template_args={'vf': velocities_pair.cur, 'qf': dyes_pair.cur, 'new_qf': dyes_pair.nxt})
 m.add_kernel_template(advect, key = "d1", template_args={'vf': velocities_pair.nxt, 'qf': dyes_pair.nxt, 'new_qf': dyes_pair.cur})
 
-# m.add_kernel(apply_impulse, name='apply_impulse=v0d0', template_args={'vf': velocities_pair.cur, 'dye': dyes_pair.cur})
-# m.add_kernel(apply_impulse, name='apply_impulse=v1d1', template_args={'vf': velocities_pair.nxt, 'dye': dyes_pair.nxt})
+m.add_kernel_template(apply_impulse, key='v0d0', template_args={'vf': velocities_pair.cur, 'dye': dyes_pair.cur})
+m.add_kernel_template(apply_impulse, key='v1d1', template_args={'vf': velocities_pair.nxt, 'dye': dyes_pair.nxt})
 
 # m.add_kernel(divergence, name='divergence=v0', template_args={'vf': velocities_pair.cur})
 # m.add_kernel(divergence, name='divergence=v1', template_args={'vf': velocities_pair.nxt})

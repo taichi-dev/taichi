@@ -32,13 +32,24 @@ class Module:
       Args: 
         name: name of taichi field
         field: taichi field
+
+        a = ti.field("something")
+        b = ti.field("something")
+
+        m.add_field(a)
+        m.add_field(b)
+        
+        Must add in sequence
       """
       # assert isinstance(field, expr.Expr)
+
+      # TODO: pass field.shape, field.dt to aotModuleBuilder
+      field_number = len(self._fields)
+      print(field_number)
       is_vector = False
       self._fields[name] = field
       if type(field) is matrix.Matrix:
         assert isinstance(field, matrix.Matrix)
-        print(type (field.dtype))
         is_vector = True
       else:
         assert isinstance(field, expr.Expr)

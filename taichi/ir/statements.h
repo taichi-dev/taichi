@@ -924,6 +924,21 @@ class GetRootStmt : public Stmt {
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 
+class GetSNodeRootStmt : public Stmt {
+ public:
+  SNode *snode;
+  GetSNodeRootStmt(SNode *snode): snode(snode) {
+    TI_STMT_REG_FIELDS;
+  }
+
+  bool has_global_side_effect() const override {
+    return false;
+  }
+
+  TI_STMT_DEF_FIELDS(ret_type, snode);
+  TI_DEFINE_ACCEPT_AND_CLONE
+};
+
 /**
  * Lookup a component of a SNode.
  */

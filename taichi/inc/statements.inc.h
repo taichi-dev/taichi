@@ -57,6 +57,7 @@ PER_STATEMENT(AdStackAccAdjointStmt)
 
 // SNode Micro Ops
 PER_STATEMENT(GetRootStmt)
+PER_STATEMENT(GetSNodeRootStmt)
 PER_STATEMENT(IntegerOffsetStmt)
 PER_STATEMENT(BitExtractStmt)
 PER_STATEMENT(LinearizeStmt)

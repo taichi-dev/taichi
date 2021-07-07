@@ -12,6 +12,10 @@ void AotModuleBuilder::add(const std::string &identifier, Kernel *kernel) {
   add_per_backend(identifier, kernel);
 }
 
+void AotModuleBuilder::add_field(const std::string &identifier) {
+  add_per_backend_field(identifier);
+}
+
 void AotModuleBuilder::add_kernel_template(const std::string &identifier, 
                            const std::string &key, 
                            Kernel *kernel) {

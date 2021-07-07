@@ -55,6 +55,12 @@ void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
   ti_aot_data_.kernels.push_back(std::move(compiled));
 }
 
+void AotModuleBuilderImpl::add_per_backend_field(const std::string &identifier) {
+  CompiledFieldData field_data;
+  field_data.field_name = identifier;
+  ti_aot_data_.fields.push_back(field_data);
+}
+
 void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier, 
                                     const std::string &key, 
                                     Kernel *kernel) {

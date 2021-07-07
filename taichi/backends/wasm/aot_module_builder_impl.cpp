@@ -43,6 +43,9 @@ void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
     name_list_.push_back(name);
 }
 
+void AotModuleBuilderImpl::add_per_backend_field(const std::string &identifier) {
+                                            }
+
 void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier, 
                                     const std::string &key, 
                                     Kernel *kernel) {

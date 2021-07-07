@@ -13,6 +13,7 @@ from taichi.lang.util import (cook_dtype, is_taichi_class, python_scope,
 from taichi.misc.util import deprecated, get_traceback, warning
 
 import taichi as ti
+from taichi.snode.fields_builder import FieldsBuilder
 
 
 @taichi_scope
@@ -244,8 +245,7 @@ class PyTaichi:
         print('[Taichi] materializing...')
         self.create_program()
 
-        if not root.finalized:
-            root.finalize()
+        root.finalize()
 
         self.materialized = True
         not_placed = []
@@ -442,6 +442,7 @@ def field(dtype, shape=None, offset=None, needs_grad=False):
 
     assert (offset is not None and shape is None
             ) == False, f'The shape cannot be None when offset is being set'
+
     '''
     if get_runtime().materialized:
         raise RuntimeError(

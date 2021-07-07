@@ -235,7 +235,9 @@ def init(arch=None,
     ti.trace('Materializing runtime...')
     impl.get_runtime().prog.materialize_runtime()
 
-    impl._root_fb = FieldsBuilder()
+    from taichi.snode.fields_builder import _RootFieldsBuilder
+    
+    impl._root_fb = _RootFieldsBuilder()
 
 
 def no_activate(*args):

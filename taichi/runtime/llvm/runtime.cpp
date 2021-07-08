@@ -526,9 +526,8 @@ struct LLVMRuntime {
   host_vsnprintf_type host_vsnprintf;
   Ptr program;
   
-  Ptr roots[taichi_max_num_roots];
-  size_t root_mem_sizes[taichi_max_num_roots];
-  i32 num_roots{0};
+  Ptr roots[taichi_max_num_snode_trees];
+  size_t root_mem_sizes[taichi_max_num_snode_trees];
 
   Ptr thread_pool;
   parallel_for_type parallel_for;
@@ -894,17 +893,15 @@ void runtime_initialize(
 void runtime_initialize_snodes(LLVMRuntime *runtime,
                                std::size_t root_size,
                                int root_id,
-                               int num_snodes) {
+                               int num_snodes,
+                               int snode_tree_id) {
   // For Metal runtime, we have to make sure that both the beginning address
   // and the size of the root buffer memory are aligned to page size.
-  // TODO: use current_root as argument.
-  const i32 current_root = runtime->num_roots;
-  runtime->root_mem_sizes[current_root] =
+  runtime->root_mem_sizes[snode_tree_id] =
       taichi::iroundup((size_t)root_size, taichi_page_size);
-  runtime->roots[current_root] =
-      runtime->allocate_aligned(runtime->root_mem_sizes[current_root],
+  runtime->roots[snode_tree_id] =
+      runtime->allocate_aligned(runtime->root_mem_sizes[snode_tree_id],
                                 taichi_page_size);
-  runtime->num_roots += 1;
   // runtime->request_allocate_aligned ready to use
   // initialize the root node element list
   for (int i = root_id; i < root_id + num_snodes; i++) {
@@ -915,7 +912,7 @@ void runtime_initialize_snodes(LLVMRuntime *runtime,
   Element elem;
   elem.loop_bounds[0] = 0;
   elem.loop_bounds[1] = 1;
-  elem.element = runtime->roots[current_root];
+  elem.element = runtime->roots[snode_tree_id];
   for (int i = 0; i < taichi_max_num_indices; i++) {
     elem.pcoord.val[i] = 0;
   }

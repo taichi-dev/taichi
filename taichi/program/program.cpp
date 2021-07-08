@@ -402,7 +402,7 @@ void Program::initialize_llvm_runtime_snodes(const SNodeTree *tree,
   TI_TRACE("Allocating data structure of size {} bytes", scomp->root_size);
   runtime_jit->call<void *, std::size_t, int, int>(
       "runtime_initialize_snodes", llvm_runtime, scomp->root_size, root_id,
-      (int)snodes.size());
+      (int)snodes.size(), tree->id());
   for (int i = 0; i < (int)snodes.size(); i++) {
     if (is_gc_able(snodes[i]->type)) {
       std::size_t node_size;

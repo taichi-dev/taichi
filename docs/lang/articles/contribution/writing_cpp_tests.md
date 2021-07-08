@@ -6,7 +6,7 @@ sidebar_position: 11
 
 We strongly recommend each developer to write CPP unit tests when sending a PR.
 
-- We use [googletest](https://github.com/google/googletest) for as the CPP
+- We use [googletest](https://github.com/google/googletest) as the CPP
   test infrastructure.
 - CPP tests should be added to the `tests/cpp/` directory.
 

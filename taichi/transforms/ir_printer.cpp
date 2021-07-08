@@ -466,12 +466,12 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(GetRootStmt *stmt) override {
-    if(stmt->snode == nullptr)
+    if(stmt->root() == nullptr)
       print("{}{} = get root nullptr", stmt->type_hint(), stmt->name());
     else
       print("{}{} = get root [{}][{}]", stmt->type_hint(), stmt->name(),
-            stmt->snode->get_node_type_name_hinted(),
-            stmt->snode->type_name());
+            stmt->root()->get_node_type_name_hinted(),
+            stmt->root()->type_name());
   }
 
   void visit(SNodeLookupStmt *stmt) override {

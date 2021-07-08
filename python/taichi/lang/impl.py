@@ -11,6 +11,7 @@ from taichi.lang.tape import TapeImpl
 from taichi.lang.util import (cook_dtype, is_taichi_class, python_scope,
                               taichi_scope)
 from taichi.misc.util import deprecated, get_traceback, warning
+from taichi.snode.fields_builder import FieldsBuilder
 
 import taichi as ti
 
@@ -237,15 +238,19 @@ class PyTaichi:
         if self.prog is None:
             self.prog = _ti_core.Program()
 
+    def materialize_root_fb(self, first):
+        if (not root.finalized and not root.empty) or first:
+            root.finalize()
+
+        if root.finalized:
+            global _root_fb
+            _root_fb = FieldsBuilder()
+
     def materialize(self):
+        self.materialize_root_fb(not self.materialized)
+
         if self.materialized:
             return
-
-        print('[Taichi] materializing...')
-        self.create_program()
-
-        if not root.finalized:
-            root.finalize()
 
         self.materialized = True
         not_placed = []

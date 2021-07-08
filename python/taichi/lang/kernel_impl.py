@@ -351,8 +351,7 @@ class Kernel:
         _taichi_skip_traceback = 1
         if key is None:
             key = (self.func, 0)
-        if not self.runtime.materialized:
-            self.runtime.materialize()
+        self.runtime.materialize()
         if key in self.compiled_functions:
             return
         grad_suffix = ""

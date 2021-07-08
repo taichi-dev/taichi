@@ -46,7 +46,8 @@ void ScalarPointerLowerer::run() {
     }
   }
 
-  if(path_length_ == 0) return ;
+  if (path_length_ == 0)
+    return;
 
   Stmt *last = lowered_->push_back<GetRootStmt>(snodes_[0]);
   for (int i = 0; i < path_length_; i++) {

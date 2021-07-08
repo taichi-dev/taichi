@@ -1254,8 +1254,7 @@ void CodeGenLLVM::visit(GetRootStmt *stmt) {
   llvm_val[stmt] = builder->CreateBitCast(
       get_root(stmt->root()->get_snode_tree_id()),
       llvm::PointerType::get(
-          StructCompilerLLVM::get_llvm_node_type(
-              module.get(), stmt->root()),
+          StructCompilerLLVM::get_llvm_node_type(module.get(), stmt->root()),
           0));
 }
 

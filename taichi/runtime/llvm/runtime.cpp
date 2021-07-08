@@ -525,7 +525,7 @@ struct LLVMRuntime {
   host_printf_type host_printf;
   host_vsnprintf_type host_vsnprintf;
   Ptr program;
-  
+
   Ptr roots[taichi_max_num_snode_trees];
   size_t root_mem_sizes[taichi_max_num_snode_trees];
 
@@ -899,9 +899,8 @@ void runtime_initialize_snodes(LLVMRuntime *runtime,
   // and the size of the root buffer memory are aligned to page size.
   runtime->root_mem_sizes[snode_tree_id] =
       taichi::iroundup((size_t)root_size, taichi_page_size);
-  runtime->roots[snode_tree_id] =
-      runtime->allocate_aligned(runtime->root_mem_sizes[snode_tree_id],
-                                taichi_page_size);
+  runtime->roots[snode_tree_id] = runtime->allocate_aligned(
+      runtime->root_mem_sizes[snode_tree_id], taichi_page_size);
   // runtime->request_allocate_aligned ready to use
   // initialize the root node element list
   for (int i = root_id; i < root_id + num_snodes; i++) {

@@ -656,7 +656,7 @@ void Program::visualize_layout(const std::string &fn) {
       emit("]");
     };
 
-    for(auto & a: snode_trees_) {
+    for (auto &a : snode_trees_) {
       visit(a->root());
     }
 
@@ -894,7 +894,7 @@ void Program::print_memory_profiler_info() {
     }
   };
 
-  for(auto & a: snode_trees_) {
+  for (auto &a : snode_trees_) {
     visit(a->root(), /*depth=*/0);
   }
 

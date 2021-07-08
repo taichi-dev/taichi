@@ -912,8 +912,8 @@ class BitExtractStmt : public Stmt {
  */
 class GetRootStmt : public Stmt {
  public:
-  GetRootStmt(SNode *root): root_(root) {
-    while(this->root_->parent) {
+  GetRootStmt(SNode *root) : root_(root) {
+    while (this->root_->parent) {
       this->root_ = this->root_->parent;
     }
     TI_STMT_REG_FIELDS;
@@ -929,6 +929,7 @@ class GetRootStmt : public Stmt {
   SNode *root() {
     return root_;
   }
+
  private:
   SNode *root_;
 };

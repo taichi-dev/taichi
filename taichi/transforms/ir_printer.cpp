@@ -466,7 +466,7 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(GetRootStmt *stmt) override {
-    if(stmt->root() == nullptr)
+    if (stmt->root() == nullptr)
       print("{}{} = get root nullptr", stmt->type_hint(), stmt->name());
     else
       print("{}{} = get root [{}][{}]", stmt->type_hint(), stmt->name(),

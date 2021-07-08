@@ -130,6 +130,7 @@ def test_init_bad_arg():
     with pytest.raises(KeyError):
         ti.init(_test_mode=True, debug=True, foo_bar=233)
 
+
 @ti.test(arch=ti.cpu)
 def test_materialize_callback():
     x = ti.field(ti.f32, (3, 4))

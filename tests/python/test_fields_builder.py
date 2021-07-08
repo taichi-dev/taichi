@@ -26,6 +26,7 @@ def test_fields_with_shape():
     with pytest.raises(InvalidOperationError, match='FieldsBuilder finalized'):
         y = ti.field(ti.f32, [n])
 
+
 @ti.test(arch=[ti.cpu, ti.cuda])
 def test_fields_builder_dense():
     n = 5
@@ -69,6 +70,7 @@ def test_fields_builder_dense():
     func1()
     for i in range(n):
         assert x[i] == i * 3
+
 
 @ti.test(arch=[ti.cpu, ti.cuda])
 def test_fields_builder_pointer():

@@ -294,7 +294,7 @@ class SNode {
 
   void end_shared_exp_placement();
 
-  //SNodeTree part
+  // SNodeTree part
 
   void set_snode_tree_id(int id);
 

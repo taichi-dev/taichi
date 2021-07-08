@@ -238,13 +238,16 @@ class PyTaichi:
         if self.prog is None:
             self.prog = _ti_core.Program()
 
-    def materialize(self):
+    def materialize_root_fb(self):
         if not root.finalized and not root.empty:
             root.finalize()
 
         if root.finalized:
             global _root_fb
             _root_fb = FieldsBuilder()
+
+    def materialize(self):
+        self.materialize_root_fb()
 
         if self.materialized:
             return

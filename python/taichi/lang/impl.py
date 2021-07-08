@@ -13,6 +13,7 @@ from taichi.lang.util import (cook_dtype, is_taichi_class, python_scope,
 from taichi.misc.util import deprecated, get_traceback, warning
 
 import taichi as ti
+from taichi.snode.fields_builder import FieldsBuilder
 
 
 @taichi_scope
@@ -238,14 +239,15 @@ class PyTaichi:
             self.prog = _ti_core.Program()
 
     def materialize(self):
+        if not root.finalized and not root.empty:
+            root.finalize()
+
+        if root.finalized:
+            global _root_fb
+            _root_fb = FieldsBuilder()
+
         if self.materialized:
             return
-
-        print('[Taichi] materializing...')
-        self.create_program()
-
-        if not root.finalized:
-            root.finalize()
 
         self.materialized = True
         not_placed = []

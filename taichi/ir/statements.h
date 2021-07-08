@@ -912,7 +912,7 @@ class BitExtractStmt : public Stmt {
  */
 class GetRootStmt : public Stmt {
  public:
-  GetRootStmt(SNode *root) : root_(root) {
+  GetRootStmt(SNode *root = nullptr) : root_(root) {
     while (this->root_->parent) {
       this->root_ = this->root_->parent;
     }

@@ -913,8 +913,10 @@ class BitExtractStmt : public Stmt {
 class GetRootStmt : public Stmt {
  public:
   GetRootStmt(SNode *root = nullptr) : root_(root) {
-    while (this->root_->parent) {
-      this->root_ = this->root_->parent;
+    if(this->root_ != nullptr) {
+      while (this->root_->parent) {
+        this->root_ = this->root_->parent;
+      }
     }
     TI_STMT_REG_FIELDS;
   }

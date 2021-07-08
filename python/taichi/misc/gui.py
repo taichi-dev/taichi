@@ -210,7 +210,12 @@ class GUI:
     def circle(self, pos, color=0xFFFFFF, radius=1):
         self.canvas.circle_single(pos[0], pos[1], color, radius)
 
-    def circles(self, pos, color=0xFFFFFF, palette=[], palette_indices=None, radius=1):
+    def circles(self,
+                pos,
+                color=0xFFFFFF,
+                palette=[],
+                palette_indices=None,
+                radius=1):
         n = pos.shape[0]
         if len(pos.shape) == 3:
             assert pos.shape[2] == 1

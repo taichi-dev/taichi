@@ -442,15 +442,6 @@ def field(dtype, shape=None, offset=None, needs_grad=False):
 
     assert (offset is not None and shape is None
             ) == False, f'The shape cannot be None when offset is being set'
-    '''
-    if get_runtime().materialized:
-        raise RuntimeError(
-            "No new variables can be declared after materialization, i.e. kernel invocations "
-            "or Python-scope field accesses. I.e., data layouts must be specified before "
-            "any computation. Try appending ti.init() or ti.reset() "
-            "right after 'import taichi as ti' if you are using Jupyter notebook or Blender."
-        )
-    '''
 
     del _taichi_skip_traceback
 

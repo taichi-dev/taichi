@@ -912,22 +912,11 @@ class BitExtractStmt : public Stmt {
  */
 class GetRootStmt : public Stmt {
  public:
-  GetRootStmt() {
-    TI_STMT_REG_FIELDS;
-  }
-
-  bool has_global_side_effect() const override {
-    return false;
-  }
-
-  TI_STMT_DEF_FIELDS(ret_type);
-  TI_DEFINE_ACCEPT_AND_CLONE
-};
-
-class GetSNodeRootStmt : public Stmt {
- public:
   SNode *snode;
-  GetSNodeRootStmt(SNode *snode): snode(snode) {
+  GetRootStmt(SNode *snode): snode(snode) {
+    while(this->snode->parent) {
+      this->snode = this->snode->parent;
+    }
     TI_STMT_REG_FIELDS;
   }
 

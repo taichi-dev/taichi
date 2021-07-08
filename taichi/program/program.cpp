@@ -655,7 +655,11 @@ void Program::visualize_layout(const std::string &fn) {
       emit("]");
     };
 
-    visit(get_snode_root(SNodeTree::kFirstID));
+    //visit(get_snode_root(SNodeTree::kFirstID));
+
+  for(auto & a: snode_trees_) {
+    visit(a->root());
+  }
 
     auto tail = R"(
 \end{tikzpicture}
@@ -891,7 +895,11 @@ void Program::print_memory_profiler_info() {
     }
   };
 
-  visit(get_snode_root(SNodeTree::kFirstID), /*depth=*/0);
+  //visit(get_snode_root(SNodeTree::kFirstID), /*depth=*/0);
+
+  for(auto & a: snode_trees_) {
+    visit(a->root(), /*depth=*/0);
+  }
 
   auto total_requested_memory = runtime_query<std::size_t>(
       "LLVMRuntime_get_total_requested_memory", llvm_runtime);

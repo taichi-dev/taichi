@@ -64,7 +64,6 @@ def test_fields_builder1():
 def test_fields_builder2():
     # TODO: x, y share the same memory location
     pass
-    '''
     n = 5
 
     fb1 = ti.FieldsBuilder()
@@ -97,4 +96,3 @@ def test_fields_builder2():
     for i in range(n):
         assert x[i] == i * 2
         assert y[i] == i + 5
-    '''

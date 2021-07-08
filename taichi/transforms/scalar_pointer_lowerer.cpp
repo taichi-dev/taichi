@@ -46,35 +46,37 @@ void ScalarPointerLowerer::run() {
     }
   }
 
-  Stmt *last = lowered_->push_back<GetRootStmt>();
-  for (int i = 0; i < path_length_; i++) {
-    auto *snode = snodes_[i];
-    // TODO: Explain this condition
-    if (is_bit_vectorized_ && (snode->type == SNodeType::bit_array) &&
-        (i == path_length_ - 1) && (snodes_[i - 1]->type == SNodeType::dense)) {
-      continue;
-    }
-    std::vector<Stmt *> lowered_indices;
-    std::vector<int> strides;
-    // extract bits
-    for (int k_ = 0; k_ < (int)indices_.size(); k_++) {
-      for (int k = 0; k < taichi_max_num_indices; k++) {
-        if (snode->physical_index_position[k_] == k) {
-          start_bits[k] -= snode->extractors[k].num_bits;
-          const int begin = start_bits[k];
-          const int end = begin + snode->extractors[k].num_bits;
-          auto extracted = Stmt::make<BitExtractStmt>(indices_[k_], begin, end);
-          lowered_indices.push_back(extracted.get());
-          lowered_->push_back(std::move(extracted));
-          strides.push_back(1 << snode->extractors[k].num_bits);
+  if(path_length_ > 0) {
+    Stmt *last = lowered_->push_back<GetRootStmt>(snodes_[0]);
+    for (int i = 0; i < path_length_; i++) {
+      auto *snode = snodes_[i];
+      // TODO: Explain this condition
+      if (is_bit_vectorized_ && (snode->type == SNodeType::bit_array) &&
+          (i == path_length_ - 1) && (snodes_[i - 1]->type == SNodeType::dense)) {
+        continue;
+      }
+      std::vector<Stmt *> lowered_indices;
+      std::vector<int> strides;
+      // extract bits
+      for (int k_ = 0; k_ < (int)indices_.size(); k_++) {
+        for (int k = 0; k < taichi_max_num_indices; k++) {
+          if (snode->physical_index_position[k_] == k) {
+            start_bits[k] -= snode->extractors[k].num_bits;
+            const int begin = start_bits[k];
+            const int end = begin + snode->extractors[k].num_bits;
+            auto extracted = Stmt::make<BitExtractStmt>(indices_[k_], begin, end);
+            lowered_indices.push_back(extracted.get());
+            lowered_->push_back(std::move(extracted));
+            strides.push_back(1 << snode->extractors[k].num_bits);
+          }
         }
       }
-    }
-    // linearize
-    auto *linearized =
-        lowered_->push_back<LinearizeStmt>(lowered_indices, strides);
+      // linearize
+      auto *linearized =
+          lowered_->push_back<LinearizeStmt>(lowered_indices, strides);
 
-    last = handle_snode_at_level(i, linearized, last);
+      last = handle_snode_at_level(i, linearized, last);
+    }
   }
 }
 

@@ -897,7 +897,8 @@ void runtime_initialize_snodes(LLVMRuntime *runtime,
                                int num_snodes) {
   // For Metal runtime, we have to make sure that both the beginning address
   // and the size of the root buffer memory are aligned to page size.
-  i32 current_root = runtime->root_num; //TODO: use current_root as arg.
+  // TODO: use current_root as argument.
+  i32 current_root = runtime->root_num;
   runtime->root_mem_sizes[current_root] =
       taichi::iroundup((size_t)root_size, taichi_page_size);
   runtime->roots[current_root] =
@@ -1749,6 +1750,7 @@ i32 wasm_materialize(Context *context) {
       (RandState *)((size_t)context->runtime + sizeof(LLVMRuntime));
   // set random seed to (1, 0, 0, 0)
   context->runtime->rand_states[0].x = 1;
+  // TODO: remove hard coding on root id 0(SNodeTree::kFirstID)
   context->runtime->roots[0] =
       (Ptr)((size_t)context->runtime->rand_states + sizeof(RandState));
   return (i32)(size_t)context->runtime->roots[0];

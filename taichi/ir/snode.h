@@ -293,6 +293,15 @@ class SNode {
   void begin_shared_exp_placement();
 
   void end_shared_exp_placement();
+
+  //SNodeTree part
+
+  void set_snode_tree_id(int id);
+
+  int get_snode_tree_id();
+
+ private:
+  int snode_tree_id_{0};
 };
 
 }  // namespace lang

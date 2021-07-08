@@ -525,8 +525,11 @@ struct LLVMRuntime {
   host_printf_type host_printf;
   host_vsnprintf_type host_vsnprintf;
   Ptr program;
-  Ptr root;
-  size_t root_mem_size;
+  
+  Ptr roots[taichi_max_num_snodes];
+  size_t root_mem_sizes[taichi_max_num_snodes];
+  i32 root_num{0};
+
   Ptr thread_pool;
   parallel_for_type parallel_for;
   ListManager *element_lists[taichi_max_num_snodes];
@@ -573,8 +576,8 @@ struct LLVMRuntime {
 // TODO: are these necessary?
 STRUCT_FIELD_ARRAY(LLVMRuntime, element_lists);
 STRUCT_FIELD_ARRAY(LLVMRuntime, node_allocators);
-STRUCT_FIELD(LLVMRuntime, root);
-STRUCT_FIELD(LLVMRuntime, root_mem_size);
+STRUCT_FIELD_ARRAY(LLVMRuntime, roots);
+STRUCT_FIELD_ARRAY(LLVMRuntime, root_mem_sizes);
 STRUCT_FIELD(LLVMRuntime, temporaries);
 STRUCT_FIELD(LLVMRuntime, assert_failed);
 STRUCT_FIELD(LLVMRuntime, host_printf);
@@ -894,10 +897,13 @@ void runtime_initialize_snodes(LLVMRuntime *runtime,
                                int num_snodes) {
   // For Metal runtime, we have to make sure that both the beginning address
   // and the size of the root buffer memory are aligned to page size.
-  runtime->root_mem_size =
+  i32 current_root = runtime->root_num; //TODO: use current_root as arg.
+  runtime->root_mem_sizes[current_root] =
       taichi::iroundup((size_t)root_size, taichi_page_size);
-  runtime->root =
-      runtime->allocate_aligned(runtime->root_mem_size, taichi_page_size);
+  runtime->roots[current_root] =
+      runtime->allocate_aligned(runtime->root_mem_sizes[current_root],
+                                taichi_page_size);
+  runtime->root_num += 1;
   // runtime->request_allocate_aligned ready to use
   // initialize the root node element list
   for (int i = root_id; i < root_id + num_snodes; i++) {
@@ -908,7 +914,7 @@ void runtime_initialize_snodes(LLVMRuntime *runtime,
   Element elem;
   elem.loop_bounds[0] = 0;
   elem.loop_bounds[1] = 1;
-  elem.element = runtime->root;
+  elem.element = runtime->roots[current_root];
   for (int i = 0; i < taichi_max_num_indices; i++) {
     elem.pcoord.val[i] = 0;
   }
@@ -1743,9 +1749,9 @@ i32 wasm_materialize(Context *context) {
       (RandState *)((size_t)context->runtime + sizeof(LLVMRuntime));
   // set random seed to (1, 0, 0, 0)
   context->runtime->rand_states[0].x = 1;
-  context->runtime->root =
+  context->runtime->roots[0] =
       (Ptr)((size_t)context->runtime->rand_states + sizeof(RandState));
-  return (i32)(size_t)context->runtime->root;
+  return (i32)(size_t)context->runtime->roots[0];
 }
 }
 

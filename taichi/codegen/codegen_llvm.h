@@ -101,7 +101,7 @@ class CodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   llvm::Type *get_xlogue_function_type();
 
-  llvm::Value *get_root();
+  llvm::Value *get_root(int snode_tree_id);
 
   llvm::Value *get_runtime();
 

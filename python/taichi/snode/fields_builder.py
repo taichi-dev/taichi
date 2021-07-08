@@ -11,6 +11,7 @@ _snode_registry = _ti_core.SNodeRegistry()
 
 _Axis = _ti_core.Index
 
+
 class FieldsBuilder:
     """A builder that constructs a SNodeTree instance.
 

@@ -200,4 +200,12 @@ SNode *SNode::get_grad() const {
   return grad_info->grad_snode();
 }
 
+void SNode::set_snode_tree_id(int id) {
+  snode_tree_id_ = id;
+}
+
+int SNode::get_snode_tree_id() {
+  return snode_tree_id_;
+}
+
 TLANG_NAMESPACE_END

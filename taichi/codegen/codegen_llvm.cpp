@@ -1251,12 +1251,19 @@ llvm::Value *CodeGenLLVM::call(SNode *snode,
 }
 
 void CodeGenLLVM::visit(GetRootStmt *stmt) {
-  llvm_val[stmt] = builder->CreateBitCast(
-      get_root(),
-      llvm::PointerType::get(
-          StructCompilerLLVM::get_llvm_node_type(
-              module.get(), prog->get_snode_root(SNodeTree::kFirstID)),
-          0));
+  if (stmt->root() == nullptr)
+    llvm_val[stmt] = builder->CreateBitCast(
+        get_root(SNodeTree::kFirstID),
+        llvm::PointerType::get(
+            StructCompilerLLVM::get_llvm_node_type(
+                module.get(), prog->get_snode_root(SNodeTree::kFirstID)),
+            0));
+  else
+    llvm_val[stmt] = builder->CreateBitCast(
+        get_root(stmt->root()->get_snode_tree_id()),
+        llvm::PointerType::get(
+            StructCompilerLLVM::get_llvm_node_type(module.get(), stmt->root()),
+            0));
 }
 
 void CodeGenLLVM::visit(BitExtractStmt *stmt) {
@@ -2011,8 +2018,9 @@ llvm::Type *CodeGenLLVM::get_xlogue_function_type() {
                                  get_xlogue_argument_types(), false);
 }
 
-llvm::Value *CodeGenLLVM::get_root() {
-  return create_call("LLVMRuntime_get_root", {get_runtime()});
+llvm::Value *CodeGenLLVM::get_root(int snode_tree_id) {
+  return create_call("LLVMRuntime_get_roots",
+                     {get_runtime(), tlctx->get_constant(snode_tree_id)});
 }
 
 llvm::Value *CodeGenLLVM::get_runtime() {

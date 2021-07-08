@@ -402,7 +402,7 @@ void Program::initialize_llvm_runtime_snodes(const SNodeTree *tree,
   TI_TRACE("Allocating data structure of size {} bytes", scomp->root_size);
   runtime_jit->call<void *, std::size_t, int, int>(
       "runtime_initialize_snodes", llvm_runtime, scomp->root_size, root_id,
-      (int)snodes.size());
+      (int)snodes.size(), tree->id());
   for (int i = 0; i < (int)snodes.size(); i++) {
     if (is_gc_able(snodes[i]->type)) {
       std::size_t node_size;
@@ -430,6 +430,7 @@ void Program::initialize_llvm_runtime_snodes(const SNodeTree *tree,
 int Program::add_snode_tree(std::unique_ptr<SNode> root) {
   const int id = snode_trees_.size();
   auto tree = std::make_unique<SNodeTree>(id, std::move(root));
+  tree->root()->set_snode_tree_id(id);
   materialize_snode_tree(tree.get());
   snode_trees_.push_back(std::move(tree));
   return id;
@@ -655,7 +656,9 @@ void Program::visualize_layout(const std::string &fn) {
       emit("]");
     };
 
-    visit(get_snode_root(SNodeTree::kFirstID));
+    for (auto &a : snode_trees_) {
+      visit(a->root());
+    }
 
     auto tail = R"(
 \end{tikzpicture}
@@ -891,7 +894,9 @@ void Program::print_memory_profiler_info() {
     }
   };
 
-  visit(get_snode_root(SNodeTree::kFirstID), /*depth=*/0);
+  for (auto &a : snode_trees_) {
+    visit(a->root(), /*depth=*/0);
+  }
 
   auto total_requested_memory = runtime_query<std::size_t>(
       "LLVMRuntime_get_total_requested_memory", llvm_runtime);

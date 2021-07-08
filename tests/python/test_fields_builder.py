@@ -40,7 +40,6 @@ def test_fields_with_shape():
         assert x[i] == i
 
 
-
 @ti.test(arch=[ti.cpu, ti.cuda])
 def test_fields_builder_dense():
     n = 5

@@ -11,9 +11,9 @@ from taichi.lang.tape import TapeImpl
 from taichi.lang.util import (cook_dtype, is_taichi_class, python_scope,
                               taichi_scope)
 from taichi.misc.util import deprecated, get_traceback, warning
+from taichi.snode.fields_builder import FieldsBuilder
 
 import taichi as ti
-from taichi.snode.fields_builder import FieldsBuilder
 
 
 @taichi_scope

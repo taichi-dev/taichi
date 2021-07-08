@@ -210,7 +210,7 @@ class GUI:
     def circle(self, pos, color=0xFFFFFF, radius=1):
         self.canvas.circle_single(pos[0], pos[1], color, radius)
 
-    def circles(self, pos, color=0xFFFFFF, radius=1):
+    def circles(self, pos, color=0xFFFFFF, palette=[], palette_indices=None, radius=1):
         n = pos.shape[0]
         if len(pos.shape) == 3:
             assert pos.shape[2] == 1
@@ -234,6 +234,15 @@ class GUI:
         else:
             raise ValueError(
                 'Color must be an ndarray or int (e.g., 0x956333)')
+
+        if len(palette) > 0:
+            assert type(palette_indices) != 'NoneType'
+            assert palette_indices.shape == (n, )
+            color_array = np.arange(palette_indices.shape[0])
+            for id in range(palette_indices.shape[0]):
+                color_array[id] = palette[palette_indices[id]]
+            color_array = np.ascontiguousarray(color_array.astype(np.uint32))
+            color_array = int(color_array.ctypes.data)
 
         if isinstance(radius, np.ndarray):
             assert radius.shape == (n, )

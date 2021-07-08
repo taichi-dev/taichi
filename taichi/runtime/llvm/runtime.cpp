@@ -892,9 +892,9 @@ void runtime_initialize(
 
 void runtime_initialize_snodes(LLVMRuntime *runtime,
                                std::size_t root_size,
-                               int root_id,
-                               int num_snodes,
-                               int snode_tree_id) {
+                               const int root_id,
+                               const int num_snodes,
+                               const int snode_tree_id) {
   // For Metal runtime, we have to make sure that both the beginning address
   // and the size of the root buffer memory are aligned to page size.
   runtime->root_mem_sizes[snode_tree_id] =

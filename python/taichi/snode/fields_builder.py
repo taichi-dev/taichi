@@ -11,7 +11,6 @@ _snode_registry = _ti_core.SNodeRegistry()
 
 _Axis = _ti_core.Index
 
-
 class FieldsBuilder:
     """A builder that constructs a SNodeTree instance.
 
@@ -34,11 +33,21 @@ class FieldsBuilder:
         #  +-- pointer +-- dense +-- place(y)
         fb.finalize()
     """
+    _finalized_fbs = []
+
     def __init__(self):
         self._ptr = _snode_registry.create_root()
         self._root = snode.SNode(self._ptr)
         self._finalized = False
         self._empty = True
+
+    @classmethod
+    def finalized_fbs(cls):
+        return cls._finalized_fbs
+
+    @classmethod
+    def clear_finalized_fbs(cls):
+        cls._finalized_fbs = []
 
     @property
     def ptr(self):
@@ -115,6 +124,7 @@ class FieldsBuilder:
         """Same as :func:`taichi.SNode.lazy_grad`"""
         # TODO: This complicates the implementation. Figure out why we need this
         self._check_not_finalized()
+        self._empty = False
         self._root.lazy_grad()
 
     def finalize(self):
@@ -125,6 +135,7 @@ class FieldsBuilder:
         _ti_core.finalize_snode_tree(_snode_registry, self._ptr,
                                      impl.get_runtime().prog)
         self._finalized = True
+        self._finalized_fbs.append(self)
 
     def _check_not_finalized(self):
         if self._finalized:

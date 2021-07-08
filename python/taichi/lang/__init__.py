@@ -235,6 +235,7 @@ def init(arch=None,
     ti.trace('Materializing runtime...')
     impl.get_runtime().prog.materialize_runtime()
 
+    FieldsBuilder.clear_finalized_fbs()
     impl._root_fb = FieldsBuilder()
 
 
@@ -404,7 +405,8 @@ def clear_all_gradients():
             from taichi.lang.meta import clear_gradients
             clear_gradients(places)
 
-    visit(ti.root)
+    for root_fb in FieldsBuilder.finalized_fbs():
+        visit(root_fb)
 
 
 def benchmark(func, repeat=300, args=()):

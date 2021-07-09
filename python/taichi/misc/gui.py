@@ -241,9 +241,7 @@ class GUI:
                 'Color must be an ndarray or int (e.g., 0x956333)')
 
         if palette is not None:
-            assert palette_indices is not None
-            assert palette_indices.shape == (n, )
-            assert isinstance(palette_indices[0], int)
+            assert palette_indices is not None, 'palette must be used together with palette_indices'
 
             from taichi.lang.expr import Expr
 
@@ -252,7 +250,22 @@ class GUI:
             elif isinstance(palette_indices, list) or isinstance(
                     palette_indices, np.ndarray):
                 ind_int = np.array(palette_indices).astype(np.uint32)
-            assert max(ind_int) < len(palette)
+            else:
+                try:
+                    ind_int = np.array(palette_indices)
+                except:
+                    raise TypeError(
+                        'palette_indices must be a type that can be converted to numpy.ndarray'
+                    )
+
+            assert issubclass(
+                ind_int.dtype.type,
+                np.integer), 'palette_indices must be an integer array'
+            assert ind_int.shape == (
+                n, ), 'palette_indices must be in 1-d shape'
+            assert max(ind_int) < len(
+                palette
+            ), 'the max of palette_indices must not exceed the length of palette'
             color_array = np.array(palette, dtype=np.uint32)[ind_int]
             color_array = np.ascontiguousarray(color_array)
             color_array = color_array.ctypes.data

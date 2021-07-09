@@ -122,5 +122,9 @@ gui = ti.GUI("Taichi MLS-MPM-99", res=512, background_color=0x112F41)
 while not gui.get_event(ti.GUI.ESCAPE, ti.GUI.EXIT):
     for s in range(int(2e-3 // dt)):
         substep()
-    gui.circles(x.to_numpy(), radius=1.5, palette=[0x068587, 0xED553B, 0xEEEEF0], palette_indices=material)
-    gui.show()  # Change to gui.show(f'{frame:06d}.png') to write images to disk
+    gui.circles(x.to_numpy(),
+                radius=1.5,
+                palette=[0x068587, 0xED553B, 0xEEEEF0],
+                palette_indices=material)
+    gui.show(
+    )  # Change to gui.show(f'{frame:06d}.png') to write images to disk

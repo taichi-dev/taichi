@@ -262,7 +262,8 @@ class GUI:
                 ind_int.dtype.type,
                 np.integer), 'palette_indices must be an integer array'
             assert ind_int.shape == (
-                n, ), 'palette_indices must be in 1-d shape'
+                n, ), 'palette_indices must be in 1-d shape with shape (n, )'
+            assert min(ind_int) >= 0, 'the min of palette_indices must not be less than zero'
             assert max(ind_int) < len(
                 palette
             ), 'the max of palette_indices must not exceed the length of palette'

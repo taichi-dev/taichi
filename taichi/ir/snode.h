@@ -40,6 +40,10 @@ struct IndexExtractor {
    */
   int num_elements{1};
   /**
+   * POT shape or packed shape according to the config.
+   */
+  int shape{1};
+  /**
    * Number of bits needed to store the coordinate at this index.
    *
    * ceil(log2(num_elements))

@@ -244,13 +244,14 @@ class GUI:
             assert palette_indices is not None
             assert palette_indices.shape == (n, )
 
-            import taichi as ti
+            from taichi.lang.expr import Expr
 
-            if isinstance(palette_indices, ti.Expr):
+            if isinstance(palette_indices, Expr):
                 ind_int = palette_indices.to_numpy().astype(np.uint32)
             elif isinstance(palette_indices, list) or isinstance(
                     palette_indices, np.ndarray):
                 ind_int = np.array(palette_indices).astype(np.uint32)
+            assert max(ind_int) < len(palette)
             color_array = np.array(palette, dtype=np.uint32)[ind_int]
             color_array = np.ascontiguousarray(color_array)
             color_array = color_array.ctypes.data

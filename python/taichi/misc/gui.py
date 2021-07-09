@@ -241,11 +241,9 @@ class GUI:
                 'Color must be an ndarray or int (e.g., 0x956333)')
 
         if len(palette) > 0:
-            assert type(palette_indices) != 'NoneType'
+            assert palette_indices is not None
             assert palette_indices.shape == (n, )
-            color_array = np.arange(palette_indices.shape[0])
-            for id in range(palette_indices.shape[0]):
-                color_array[id] = palette[palette_indices[id]]
+            color_array = np.array(palette)[palette_indices.to_numpy().astype(np.uint32)]
             color_array = np.ascontiguousarray(color_array.astype(np.uint32))
             color_array = int(color_array.ctypes.data)
 

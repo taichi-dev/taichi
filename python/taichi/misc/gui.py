@@ -214,7 +214,7 @@ class GUI:
                 pos,
                 radius=1,
                 color=0xFFFFFF,
-                palette=[],
+                palette=None,
                 palette_indices=None):
         n = pos.shape[0]
         if len(pos.shape) == 3:
@@ -240,13 +240,20 @@ class GUI:
             raise ValueError(
                 'Color must be an ndarray or int (e.g., 0x956333)')
 
-        if len(palette) > 0:
+        if palette is not None:
             assert palette_indices is not None
             assert palette_indices.shape == (n, )
-            ind_int = palette_indices.to_numpy().astype(np.uint32)
-            color_array = np.array(palette)[ind_int]
-            color_array = np.ascontiguousarray(color_array.astype(np.uint32))
-            color_array = int(color_array.ctypes.data)
+
+            import taichi as ti
+
+            if isinstance(palette_indices, ti.Expr):
+                ind_int = palette_indices.to_numpy().astype(np.uint32)
+            elif isinstance(palette_indices, list) or isinstance(
+                    palette_indices, np.ndarray):
+                ind_int = np.array(palette_indices).astype(np.uint32)
+            color_array = np.array(palette, dtype=np.uint32)[ind_int]
+            color_array = np.ascontiguousarray(color_array)
+            color_array = color_array.ctypes.data
 
         if isinstance(radius, np.ndarray):
             assert radius.shape == (n, )

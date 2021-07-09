@@ -8,6 +8,7 @@ CompileConfig::CompileConfig() {
   arch = host_arch();
   simd_width = default_simd_width(arch);
   external_optimization_level = 3;
+  packed = false;
   print_ir = false;
   print_accessor_ir = false;
   print_evaluator_ir = false;

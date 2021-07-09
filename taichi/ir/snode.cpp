@@ -2,6 +2,7 @@
 
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
+#include "taichi/program/program.h"
 
 TLANG_NAMESPACE_BEGIN
 
@@ -44,13 +45,23 @@ SNode &SNode::create_node(std::vector<Index> indices,
       s = promoted_s;
     }
     TI_ASSERT(bit::is_power_of_two(s));
-    new_node.n *= s;
+    if (get_current_program().config.packed) {
+      new_node.n *= sizes[i];
+    } else {
+      new_node.n *= s;
+    }
   }
   for (int i = 0; i < (int)indices.size(); i++) {
     auto &ind = indices[i];
     new_node.extractors[ind.value].activate(
         bit::log2int(bit::least_pot_bound(sizes[i])));
     new_node.extractors[ind.value].num_elements = sizes[i];
+    if (get_current_program().config.packed) {
+      new_node.extractors[ind.value].shape = sizes[i];
+    } else {
+      new_node.extractors[ind.value].shape =
+          1 << new_node.extractors[ind.value].num_bits;
+    }
   }
   return new_node;
 }

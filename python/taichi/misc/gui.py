@@ -243,6 +243,7 @@ class GUI:
         if palette is not None:
             assert palette_indices is not None
             assert palette_indices.shape == (n, )
+            assert isinstance(palette_indices[0], int)
 
             from taichi.lang.expr import Expr
 

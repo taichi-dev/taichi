@@ -212,10 +212,10 @@ class GUI:
 
     def circles(self,
                 pos,
+                radius=1,
                 color=0xFFFFFF,
                 palette=[],
-                palette_indices=None,
-                radius=1):
+                palette_indices=None):
         n = pos.shape[0]
         if len(pos.shape) == 3:
             assert pos.shape[2] == 1
@@ -243,7 +243,8 @@ class GUI:
         if len(palette) > 0:
             assert palette_indices is not None
             assert palette_indices.shape == (n, )
-            color_array = np.array(palette)[palette_indices.to_numpy().astype(np.uint32)]
+            ind_int = palette_indices.to_numpy().astype(np.uint32)
+            color_array = np.array(palette)[ind_int]
             color_array = np.ascontiguousarray(color_array.astype(np.uint32))
             color_array = int(color_array.ctypes.data)
 

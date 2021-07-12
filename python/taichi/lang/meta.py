@@ -1,26 +1,28 @@
 from taichi.core import settings
 from taichi.lang import impl
 from taichi.lang.expr import Expr
+from taichi.lang.kernel_arguments import ext_arr, template
+from taichi.lang.kernel_impl import kernel
 
 import taichi as ti
 
 # A set of helper (meta)functions
 
 
-@ti.kernel
-def fill_tensor(tensor: ti.template(), val: ti.template()):
+@kernel
+def fill_tensor(tensor: template(), val: template()):
     for I in ti.grouped(tensor):
         tensor[I] = val
 
 
-@ti.kernel
-def tensor_to_ext_arr(tensor: ti.template(), arr: ti.ext_arr()):
+@kernel
+def tensor_to_ext_arr(tensor: template(), arr: ext_arr()):
     for I in ti.grouped(tensor):
         arr[I] = tensor[I]
 
 
-@ti.kernel
-def vector_to_fast_image(img: ti.template(), out: ti.ext_arr()):
+@kernel
+def vector_to_fast_image(img: template(), out: ext_arr()):
     # FIXME: Why is ``for i, j in img:`` slower than:
     for i, j in ti.ndrange(*img.shape):
         r, g, b = 0, 0, 0
@@ -45,8 +47,8 @@ def vector_to_fast_image(img: ti.template(), out: ti.ext_arr()):
             out[idx] = (b << 16) + (g << 8) + r + alpha
 
 
-@ti.kernel
-def tensor_to_image(tensor: ti.template(), arr: ti.ext_arr()):
+@kernel
+def tensor_to_image(tensor: template(), arr: ext_arr()):
     for I in ti.grouped(tensor):
         t = ti.cast(tensor[I], ti.f32)
         arr[I, 0] = t
@@ -54,8 +56,8 @@ def tensor_to_image(tensor: ti.template(), arr: ti.ext_arr()):
         arr[I, 2] = t
 
 
-@ti.kernel
-def vector_to_image(mat: ti.template(), arr: ti.ext_arr()):
+@kernel
+def vector_to_image(mat: template(), arr: ext_arr()):
     for I in ti.grouped(mat):
         for p in ti.static(range(mat.n)):
             arr[I, p] = ti.cast(mat[I][p], ti.f32)
@@ -63,21 +65,20 @@ def vector_to_image(mat: ti.template(), arr: ti.ext_arr()):
                 arr[I, 2] = 0
 
 
-@ti.kernel
-def tensor_to_tensor(tensor: ti.template(), other: ti.template()):
+@kernel
+def tensor_to_tensor(tensor: template(), other: template()):
     for I in ti.grouped(tensor):
         tensor[I] = other[I]
 
 
-@ti.kernel
-def ext_arr_to_tensor(arr: ti.ext_arr(), tensor: ti.template()):
+@kernel
+def ext_arr_to_tensor(arr: ext_arr(), tensor: template()):
     for I in ti.grouped(tensor):
         tensor[I] = arr[I]
 
 
-@ti.kernel
-def matrix_to_ext_arr(mat: ti.template(), arr: ti.ext_arr(),
-                      as_vector: ti.template()):
+@kernel
+def matrix_to_ext_arr(mat: template(), arr: ext_arr(), as_vector: template()):
     for I in ti.grouped(mat):
         for p in ti.static(range(mat.n)):
             for q in ti.static(range(mat.m)):
@@ -87,9 +88,8 @@ def matrix_to_ext_arr(mat: ti.template(), arr: ti.ext_arr(),
                     arr[I, p, q] = mat[I][p, q]
 
 
-@ti.kernel
-def ext_arr_to_matrix(arr: ti.ext_arr(), mat: ti.template(),
-                      as_vector: ti.template()):
+@kernel
+def ext_arr_to_matrix(arr: ext_arr(), mat: template(), as_vector: template()):
     for I in ti.grouped(mat):
         for p in ti.static(range(mat.n)):
             for q in ti.static(range(mat.m)):
@@ -99,36 +99,36 @@ def ext_arr_to_matrix(arr: ti.ext_arr(), mat: ti.template(),
                     mat[I][p, q] = arr[I, p, q]
 
 
-@ti.kernel
-def clear_gradients(vars: ti.template()):
+@kernel
+def clear_gradients(vars: template()):
     for I in ti.grouped(Expr(vars[0])):
         for s in ti.static(vars):
             Expr(s)[I] = 0
 
 
-@ti.kernel
-def clear_loss(l: ti.template()):
+@kernel
+def clear_loss(l: template()):
     # Using SNode writers would result in a forced sync, therefore we wrap these
     # writes into a kernel.
     l[None] = 0
     l.grad[None] = 1
 
 
-@ti.kernel
-def fill_matrix(mat: ti.template(), vals: ti.template()):
+@kernel
+def fill_matrix(mat: template(), vals: template()):
     for I in ti.grouped(mat):
         for p in ti.static(range(mat.n)):
             for q in ti.static(range(mat.m)):
                 mat[I][p, q] = vals[p][q]
 
 
-@ti.kernel
-def snode_deactivate(b: ti.template()):
+@kernel
+def snode_deactivate(b: template()):
     for I in ti.grouped(b):
         ti.deactivate(b, I)
 
 
-@ti.kernel
-def snode_deactivate_dynamic(b: ti.template()):
+@kernel
+def snode_deactivate_dynamic(b: template()):
     for I in ti.grouped(b.parent()):
         ti.deactivate(b, I)

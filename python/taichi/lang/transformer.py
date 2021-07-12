@@ -4,6 +4,7 @@ import copy
 from taichi.lang import impl
 from taichi.lang.ast_resolver import ASTResolver
 from taichi.lang.exception import TaichiSyntaxError
+from taichi.lang.kernel_arguments import ext_arr, template
 from taichi.lang.util import to_taichi_type
 
 import taichi as ti
@@ -679,9 +680,9 @@ if 1:
             for i, arg in enumerate(args.args):
                 # Directly pass in template arguments,
                 # such as class instances ("self"), fields, SNodes, etc.
-                if isinstance(self.func.argument_annotations[i], ti.template):
+                if isinstance(self.func.argument_annotations[i], template):
                     continue
-                if isinstance(self.func.argument_annotations[i], ti.ext_arr):
+                if isinstance(self.func.argument_annotations[i], ext_arr):
                     arg_init = self.parse_stmt(
                         'x = ti.lang.kernel_arguments.decl_ext_arr_arg(0, 0)')
                     arg_init.targets[0].id = arg.arg
@@ -725,8 +726,7 @@ if 1:
                 for i, arg in enumerate(args.args):
                     # Directly pass in template arguments,
                     # such as class instances ("self"), fields, SNodes, etc.
-                    if isinstance(self.func.argument_annotations[i],
-                                  ti.template):
+                    if isinstance(self.func.argument_annotations[i], template):
                         continue
                     # Create a copy for non-template arguments,
                     # so that they are passed by value.

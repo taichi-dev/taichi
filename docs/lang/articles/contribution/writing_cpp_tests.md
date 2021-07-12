@@ -23,7 +23,7 @@ make
 
 :::note
 On Windows, `taichi_cpp_tests.exe` will be outputted into the `%TAICHI_REPO_DIR%\bin` directory,
-so you can directly run it after following the instructions in [Setting up Taichi for development](dev_install.md#setting-up-taichi-for-development-3).
+so you can directly run it after adding the directory to `PATH` in [Setting up Taichi for development](dev_install.md#setting-up-taichi-for-development-3).
 :::
 
 :::note

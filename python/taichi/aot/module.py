@@ -109,15 +109,7 @@ class Module:
         self.aot_builder.add(name, kernel.kernel_cpp)
 
         # kernel AOT
-<<<<<<< HEAD
         self._kernels.append(kernel)
-=======
-        self.kernels.append(kernel)
-
-    @contextmanager
-    def add_kernel_template(self, kernel_fn):
-        """Add a taichi kernel (with template parameters) to the AOT module.
->>>>>>> 5977ec82 (change to contextlib and with statement (issue unresolved))
 
     @contextmanager
     def add_kernel_template(self, kernel_fn):
@@ -135,24 +127,13 @@ class Module:
             with m.add_kernel_template(bar_tmpl) as kt:
               kt.instantiate(a=x)
               kt.instantiate(a=y)
-<<<<<<< HEAD
-=======
-
->>>>>>> 5977ec82 (change to contextlib and with statement (issue unresolved))
             @ti.kernel
             def bar_tmpl_multiple_args(a: ti.template(), b: ti.template())
               x = a
               y = b
               # do something with `x` and `y`
-<<<<<<< HEAD
             with m.add_kernel_template(bar_tmpl) as kt:
               kt.instantiate(a=x, b=y)
-=======
-
-            with m.add_kernel_template(bar_tmpl) as kt:
-              kt.instantiate(a=x, b=y)
-
->>>>>>> 5977ec82 (change to contextlib and with statement (issue unresolved))
         TODO:
           * Support external array
         """

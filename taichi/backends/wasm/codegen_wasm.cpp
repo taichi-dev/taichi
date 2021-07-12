@@ -14,7 +14,9 @@ namespace taichi {
 namespace lang {
 
 namespace {
-  constexpr std::array<const char *, 3> kPreloadedFuncNames = {"wasm_materialize", "wasm_set_kernel_parameter_i32", "wasm_set_kernel_parameter_f32"};
+constexpr std::array<const char *, 3> kPreloadedFuncNames = {
+    "wasm_materialize", "wasm_set_kernel_parameter_i32",
+    "wasm_set_kernel_parameter_f32"};
 }
 
 class CodeGenLLVMWASM : public CodeGenLLVM {
@@ -180,8 +182,8 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
     // compile_module_to_executable
     // only keep the current func
     TaichiLLVMContext::eliminate_unused_functions(
-        module.get(), [offloaded_task_name](const std::string& func_name) {
-          for (auto& name : kPreloadedFuncNames) {
+        module.get(), [offloaded_task_name](const std::string &func_name) {
+          for (auto &name : kPreloadedFuncNames) {
             if (std::string(name) == func_name) {
               return true;
             }

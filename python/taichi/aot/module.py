@@ -55,11 +55,11 @@ class Module:
         # for running ``foo`` and ``bar``.
     """
     def __init__(self, arch):
-        self._arch = arch
-        self._kernels = []
-        self._fields = {}
+        self.arch = arch
+        self.kernels = []
+        self.fields = {}
         impl.get_runtime().materialize()
-        self._aot_builder = impl.get_runtime().prog.make_aot_module_builder(
+        self.aot_builder = impl.get_runtime().prog.make_aot_module_builder(
             arch)
 
     def add_field(self, name, field):
@@ -106,10 +106,18 @@ class Module:
                 # For primitive types, we can just inject a dummy value.
                 injected_args.append(0)
         kernel.ensure_compiled(*injected_args)
-        self._aot_builder.add(name, kernel.kernel_cpp)
+        self.aot_builder.add(name, kernel.kernel_cpp)
 
         # kernel AOT
+<<<<<<< HEAD
         self._kernels.append(kernel)
+=======
+        self.kernels.append(kernel)
+
+    @contextmanager
+    def add_kernel_template(self, kernel_fn):
+        """Add a taichi kernel (with template parameters) to the AOT module.
+>>>>>>> 5977ec82 (change to contextlib and with statement (issue unresolved))
 
     @contextmanager
     def add_kernel_template(self, kernel_fn):
@@ -127,13 +135,24 @@ class Module:
             with m.add_kernel_template(bar_tmpl) as kt:
               kt.instantiate(a=x)
               kt.instantiate(a=y)
+<<<<<<< HEAD
+=======
+
+>>>>>>> 5977ec82 (change to contextlib and with statement (issue unresolved))
             @ti.kernel
             def bar_tmpl_multiple_args(a: ti.template(), b: ti.template())
               x = a
               y = b
               # do something with `x` and `y`
+<<<<<<< HEAD
             with m.add_kernel_template(bar_tmpl) as kt:
               kt.instantiate(a=x, b=y)
+=======
+
+            with m.add_kernel_template(bar_tmpl) as kt:
+              kt.instantiate(a=x, b=y)
+
+>>>>>>> 5977ec82 (change to contextlib and with statement (issue unresolved))
         TODO:
           * Support external array
         """
@@ -141,4 +160,4 @@ class Module:
         yield kt
 
     def save(self, filepath, filename):
-        self._aot_builder.dump(filepath, filename)
+        self.aot_builder.dump(filepath, filename)

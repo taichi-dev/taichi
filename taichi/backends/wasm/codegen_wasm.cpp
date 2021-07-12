@@ -208,9 +208,7 @@ std::unique_ptr<ModuleGenValue> CodeGenWASM::modulegen(
   gen->emit_to_module();
   gen->finalize_taichi_kernel_function();
 
-  /*
-    TODO: move the following functions to dump process in AOT.
-  */
+  // TODO: move the following functions to dump process in AOT.
   if (init_flag) {
     name_list.emplace_back("wasm_materialize");
     name_list.emplace_back("wasm_set_kernel_parameter_i32");

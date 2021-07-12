@@ -1751,6 +1751,14 @@ i32 wasm_materialize(Context *context) {
       (Ptr)((size_t)context->runtime->rand_states + sizeof(RandState));
   return (i32)(size_t)context->runtime->roots[0];
 }
+
+void wasm_set_kernel_parameter_i32(Context *context, int index, i32 value) {
+  *(i32 *)(&context->args[index]) = value;
+}
+
+void wasm_set_kernel_parameter_f32(Context *context, int index, f32 value) {
+  *(f32 *)(&context->args[index]) = value;
+}
 }
 
 #endif

@@ -13,18 +13,24 @@ class KernelTemplate(object):
         injected_args = []
         key_p = ""
         anno_index = 0
+        template_args = {}
 
-        for key, value in kwargs.items():
-          anno = kernel.argument_annotations[anno_index]
-          if isinstance(anno, kernel_arguments.Template):
-            key_p += key
+        for index, (key, value) in enumerate(kwargs.items()):
+          template_args[index] = (key, value)
+
+        for i in range(len(kernel.argument_annotations)):
+          anno = kernel.argument_annotations[i]
+          if isinstance(anno, kernel_arguments.template):
+            (k, v) = template_args[anno_index]
+            key_p += k
             for ky, val in self.aot_module.fields.items():
-              if (val is value):
+              if (val is v):
                 key_p += "=" + ky + "/"
-            injected_args.append(value)
+            injected_args.append(v)
+            anno_index += 1
           else:
             injected_args.append(0)
-          anno_index += 1
+        
         print(key_p)
         print(injected_args)
         kernel.ensure_compiled(*injected_args)

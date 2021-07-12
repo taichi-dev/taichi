@@ -266,9 +266,9 @@ with m.add_kernel_template(advect) as kt:
     kt.instantiate(vf = velocities_pair.cur, qf = dyes_pair.cur, new_qf = dyes_pair.nxt)
     kt.instantiate(vf = velocities_pair.nxt, qf = dyes_pair.nxt, new_qf = dyes_pair.cur)
 
-with m.add_kernel_template(apply_impulse) as kt:
-    kt.instantiate(vf = velocities_pair.cur, dye = dyes_pair.cur)
-    kt.instantiate(vf = velocities_pair.nxt, dye = dyes_pair.nxt)
+with m.add_kernel_template(apply_impulse) as kt2:
+    kt2.instantiate(dye = dyes_pair.cur, vf = velocities_pair.cur)
+    kt2.instantiate(dye = dyes_pair.nxt, vf = velocities_pair.nxt)
 
 with m.add_kernel_template(divergence) as kt:
     kt.instantiate(vf = velocities_pair.cur)
@@ -281,30 +281,6 @@ with m.add_kernel_template(pressure_jacobi) as kt:
 with m.add_kernel_template(subtract_gradient) as kt:
     kt.instantiate(vf = velocities_pair.cur, pf = pressures_pair.cur)
     kt.instantiate(vf = velocities_pair.nxt, pf = pressures_pair.cur)
-
-# m.add_kernel_template(advect, template_args={'vf': velocities_pair.cur, 'qf': velocities_pair.cur, 'new_qf': velocities_pair.nxt})
-# m.add_kernel_template(advect, template_args={'vf': velocities_pair.nxt, 'qf': velocities_pair.nxt, 'new_qf': velocities_pair.cur})
-
-# m.add_kernel_template(advect, template_args={'vf': velocities_pair.cur, 'qf': dyes_pair.cur, 'new_qf': dyes_pair.nxt})
-# m.add_kernel_template(advect, template_args={'vf': velocities_pair.nxt, 'qf': dyes_pair.nxt, 'new_qf': dyes_pair.cur})
-
-# m.add_kernel_template(apply_impulse, template_args={'vf': velocities_pair.cur, 'dye': dyes_pair.cur})
-# m.add_kernel_template(apply_impulse, template_args={'vf': velocities_pair.nxt, 'dye': dyes_pair.nxt})
-
-# m.add_kernel_template(divergence, template_args={'vf': velocities_pair.cur})
-# m.add_kernel_template(divergence, template_args={'vf': velocities_pair.nxt})
-
-# m.add_kernel(vorticity, name='vorticity=v0', template_args={'vf': velocities_pair.cur})
-# m.add_kernel(vorticity, name='vorticity=v1', template_args={'vf': velocities_pair.nxt})
-
-# m.add_kernel_template(pressure_jacobi, template_args={'pf': pressures_pair.cur, 'new_pf': pressures_pair.nxt})
-# m.add_kernel_template(pressure_jacobi, template_args={'pf': pressures_pair.nxt, 'new_pf': pressures_pair.cur})
-
-# m.add_kernel_template(subtract_gradient, template_args={'vf': velocities_pair.cur, 'pf': pressures_pair.cur})
-# m.add_kernel_template(subtract_gradient, template_args={'vf': velocities_pair.nxt, 'pf': pressures_pair.cur})
-
-# m.add_kernel(enhance_vorticity, name='enhance_vorticity=v0', template_args= {'vf': velocities_pair.cur, 'cf': velocity_curls})
-# m.add_kernel(enhance_vorticity, name='enhance_vorticity=v1', template_args={'vf': velocities_pair.nxt, 'cf':  velocity_curls})
 
 m.save('outputaot', filename)
 

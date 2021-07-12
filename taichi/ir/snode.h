@@ -14,15 +14,15 @@ namespace lang {
  * Dimension (or axis) of a tensor.
  *
  * For example, in the frontend we have ti.ij, which is translated to
- * {Index{0}, Index{1}}.
+ * {Axis{0}, Axis{1}}.
  */
-class Index {
+class Axis {
  public:
   int value;
-  Index() {
+  Axis() {
     value = 0;
   }
-  Index(int value) : value(value) {
+  Axis(int value) : value(value) {
     TI_ERROR_UNLESS(0 <= value && value < taichi_max_num_indices,
                     "Too many dimensions. The maximum dimensionality is {}",
                     taichi_max_num_indices);

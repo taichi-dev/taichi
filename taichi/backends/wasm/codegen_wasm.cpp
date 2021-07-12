@@ -13,6 +13,10 @@
 namespace taichi {
 namespace lang {
 
+namespace {
+  constexpr std::array<const char *, 3> kPreloadedFuncNames = {"wasm_materialize", "wasm_set_kernel_parameter_i32", "wasm_set_kernel_parameter_f32"};
+}
+
 class CodeGenLLVMWASM : public CodeGenLLVM {
  public:
   using IRVisitor::visit;
@@ -176,10 +180,13 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
     // compile_module_to_executable
     // only keep the current func
     TaichiLLVMContext::eliminate_unused_functions(
-        module.get(), [&](std::string func_name) {
-          std::array<std::string, 3> preloaded_func_names = {"wasm_materialize", "wasm_set_kernel_parameter_i32", "wasm_set_kernel_parameter_f32"};
-          return func_name == offloaded_task_name ||
-              std::find(std::begin(preloaded_func_names), std::end(preloaded_func_names), func_name) != std::end(preloaded_func_names);
+        module.get(), [offloaded_task_name](const std::string& func_name) {
+          for (auto& name : kPreloadedFuncNames) {
+            if (std::string(name) == func_name) {
+              return true;
+            }
+          }
+          return func_name == offloaded_task_name;
         });
     tlctx->add_module(std::move(module));
     auto kernel_symbol = tlctx->lookup_function_pointer(offloaded_task_name);
@@ -209,9 +216,9 @@ std::unique_ptr<ModuleGenValue> CodeGenWASM::modulegen(
 
   // TODO: move the following functions to dump process in AOT.
   if (init_flag) {
-    name_list.emplace_back("wasm_materialize");
-    name_list.emplace_back("wasm_set_kernel_parameter_i32");
-    name_list.emplace_back("wasm_set_kernel_parameter_f32");
+    for (auto &name : kPreloadedFuncNames) {
+      name_list.emplace_back(name);
+    }
   }
 
   gen->tlctx->jit->global_optimize_module(gen->module.get());

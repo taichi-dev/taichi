@@ -1753,13 +1753,12 @@ i32 wasm_materialize(Context *context) {
 }
 
 void wasm_set_kernel_parameter_i32(Context *context, int index, i32 value) {
-  *(i32*)(&context->args[index]) = value;
+  *(i32 *)(&context->args[index]) = value;
 }
 
 void wasm_set_kernel_parameter_f32(Context *context, int index, f32 value) {
-  *(f32*)(&context->args[index]) = value;
+  *(f32 *)(&context->args[index]) = value;
 }
-
 }
 
 #endif

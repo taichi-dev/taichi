@@ -178,9 +178,9 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
     TaichiLLVMContext::eliminate_unused_functions(
         module.get(), [&](std::string func_name) {
           return func_name == offloaded_task_name ||
-              func_name == "wasm_materialize" ||
-              func_name == "wasm_set_kernel_parameter_i32" ||
-              func_name == "wasm_set_kernel_parameter_f32";
+                 func_name == "wasm_materialize" ||
+                 func_name == "wasm_set_kernel_parameter_i32" ||
+                 func_name == "wasm_set_kernel_parameter_f32";
         });
     tlctx->add_module(std::move(module));
     auto kernel_symbol = tlctx->lookup_function_pointer(offloaded_task_name);

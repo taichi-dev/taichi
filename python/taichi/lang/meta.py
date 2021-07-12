@@ -4,7 +4,6 @@ from taichi.lang.expr import Expr
 from taichi.lang.kernel_arguments import ext_arr, template
 from taichi.lang.kernel_impl import kernel
 
-
 import taichi as ti
 
 # A set of helper (meta)functions
@@ -79,8 +78,7 @@ def ext_arr_to_tensor(arr: ext_arr(), tensor: template()):
 
 
 @kernel
-def matrix_to_ext_arr(mat: template(), arr: ext_arr(),
-                      as_vector: template()):
+def matrix_to_ext_arr(mat: template(), arr: ext_arr(), as_vector: template()):
     for I in ti.grouped(mat):
         for p in ti.static(range(mat.n)):
             for q in ti.static(range(mat.m)):
@@ -91,8 +89,7 @@ def matrix_to_ext_arr(mat: template(), arr: ext_arr(),
 
 
 @kernel
-def ext_arr_to_matrix(arr: ext_arr(), mat: template(),
-                      as_vector: template()):
+def ext_arr_to_matrix(arr: ext_arr(), mat: template(), as_vector: template()):
     for I in ti.grouped(mat):
         for p in ti.static(range(mat.n)):
             for q in ti.static(range(mat.m)):

@@ -1,14 +1,16 @@
 import taichi as ti
 
+from taichi.lang.kernel_arguments import ext_arr, template
+
 
 @ti.kernel
-def from_torch_template(expr: ti.template(), torch_tensor: ti.ext_arr()):
+def from_torch_template(expr: template(), torch_tensor: ext_arr()):
     for i in expr:
         expr[i] = torch_tensor[i]
 
 
 @ti.kernel
-def to_torch_template(expr: ti.template(), torch_tensor: ti.ext_arr()):
+def to_torch_template(expr: template(), torch_tensor: ext_arr()):
     for i in expr:
         torch_tensor[i] = expr[i]
 

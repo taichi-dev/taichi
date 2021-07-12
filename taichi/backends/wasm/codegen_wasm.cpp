@@ -177,10 +177,9 @@ class CodeGenLLVMWASM : public CodeGenLLVM {
     // only keep the current func
     TaichiLLVMContext::eliminate_unused_functions(
         module.get(), [&](std::string func_name) {
+          std::array<std::string, 3> preloaded_func_names = {"wasm_materialize", "wasm_set_kernel_parameter_i32", "wasm_set_kernel_parameter_f32"};
           return func_name == offloaded_task_name ||
-                 func_name == "wasm_materialize" ||
-                 func_name == "wasm_set_kernel_parameter_i32" ||
-                 func_name == "wasm_set_kernel_parameter_f32";
+              std::find(std::begin(preloaded_func_names), std::end(preloaded_func_names), func_name) != std::end(preloaded_func_names);
         });
     tlctx->add_module(std::move(module));
     auto kernel_symbol = tlctx->lookup_function_pointer(offloaded_task_name);

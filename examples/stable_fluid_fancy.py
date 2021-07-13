@@ -254,7 +254,7 @@ m = ti.aot.Module(ti.metal)
 m.add_field("_dye_buffer", _dye_buffer)
 m.add_field("_new_dye_buffer", _new_dye_buffer)
 m.add_field("_velocities", _velocities)
-m.add_field("_new_velocties", _new_velocities)
+m.add_field("_new_velocities", _new_velocities)
 m.add_field("_velocity_divs", velocity_divs)
 # m.add_field("_curls", _curls)
 m.add_field("_pressures", _pressures)
@@ -266,9 +266,9 @@ with m.add_kernel_template(advect) as kt:
     kt.instantiate(vf = velocities_pair.cur, qf = dyes_pair.cur, new_qf = dyes_pair.nxt)
     kt.instantiate(vf = velocities_pair.nxt, qf = dyes_pair.nxt, new_qf = dyes_pair.cur)
 
-with m.add_kernel_template(apply_impulse) as kt2:
-    kt2.instantiate(dye = dyes_pair.cur, vf = velocities_pair.cur)
-    kt2.instantiate(dye = dyes_pair.nxt, vf = velocities_pair.nxt)
+with m.add_kernel_template(apply_impulse) as kt:
+    kt.instantiate(dye = dyes_pair.cur, vf = velocities_pair.cur)
+    kt.instantiate(dye = dyes_pair.nxt, vf = velocities_pair.nxt)
 
 with m.add_kernel_template(divergence) as kt:
     kt.instantiate(vf = velocities_pair.cur)

@@ -1,5 +1,7 @@
 from taichi.lang import impl, kernel_arguments, kernel_impl, expr, matrix
 from contextlib import contextmanager
+import sys
+
 
 class KernelTemplate(object):
       def __init__(self, kernel_fn, aot_module):
@@ -31,8 +33,6 @@ class KernelTemplate(object):
           else:
             injected_args.append(0)
         
-        print(key_p)
-        print(injected_args)
         kernel.ensure_compiled(*injected_args)
         self.aot_module.aot_builder.add_kernel_template(name, key_p, kernel.kernel_cpp)
 
@@ -84,15 +84,19 @@ class Module:
 
       # TODO: pass field.shape, field.dt to aotModuleBuilder
       field_number = len(self.fields)
-      print(field_number)
+      # print(field_number)
       is_vector = False
       self.fields[name] = field
       if type(field) is matrix.Matrix:
         assert isinstance(field, matrix.Matrix)
+        # print(field.shape)
+        # print(type(field.shape))
+        # print(field.dtype)
+        # print(sys.getsizeof(field))
         is_vector = True
       else:
         assert isinstance(field, expr.Expr)
-      self.aot_builder.add_field(name, is_vector)
+      self.aot_builder.add_field(name, is_vector, field.dtype)
 
     def add_kernel(self, kernel_fn, name=None):
         """Add a taichi kernel to the AOT module.

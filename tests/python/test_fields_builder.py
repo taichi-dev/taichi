@@ -87,6 +87,11 @@ def test_fields_builder_dense():
 
 @ti.test(arch=[ti.cpu, ti.cuda])
 def test_fields_builder_pointer():
+    import platform
+    if ti.cfg.arch == ti.cuda and platform.system() == 'Windows':
+        ti.warn('Skipped test due to https://github.com/taichi-dev/taichi/issues/2442')
+        return
+
     n = 5
 
     fb1 = ti.FieldsBuilder()

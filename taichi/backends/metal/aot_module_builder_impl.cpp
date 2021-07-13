@@ -56,10 +56,12 @@ void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
 }
 
 void AotModuleBuilderImpl::add_per_backend_field(const std::string &identifier,
-                                                bool is_vector) {
+                                                bool is_vector, DataType dt) {
   CompiledFieldData field_data;
   field_data.field_name = identifier;
   field_data.is_vector = is_vector;
+  field_data.dtype = to_metal_type(dt);
+  field_data.dtype_name = metal_data_type_name(dt);
   ti_aot_data_.fields.push_back(field_data);
 }
 

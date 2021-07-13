@@ -70,66 +70,7 @@ taichi aot data: {
             ]
           }
         }
-        key: vf=_new_velocties/qf=_new_dye_buffer/new_qf=_dye_buffer/
-        value: {
-          kernel_name: mtl_k0007_advect_c4_3
-          ctx_attribs: {
-            arg_attribs_vec_: [
-              [0]: {
-                stride: 4
-                offset_in_mem: 0
-                index: 0
-                dt: 0
-                is_array: false
-              }
-              [1]: {
-                stride: 4
-                offset_in_mem: 4
-                index: 1
-                dt: 4
-                is_array: false
-              }
-              [2]: {
-                stride: 4
-                offset_in_mem: 8
-                index: 2
-                dt: 4
-                is_array: false
-              }
-            ]
-            ret_attribs_vec_: [
-            ]
-            ctx_bytes_: 12
-            extra_args_bytes_: 256
-          }
-          kernel_attribs: {
-            name: mtl_k0007_advect_c4_3
-            mtl_kernels_attribs: [
-              [0]: {
-                name: mtl_k0007_advect_c4_3_0
-                advisory_total_num_threads: 8388608
-                task_type: 1
-                buffers: [
-                  [0]: 0
-                  [1]: 1
-                  [2]: 2
-                  [3]: 3
-                  [4]: 4
-                ]
-                range_for_attribs: {
-                  has_value: true
-                  value: {
-                    begin: 0
-                    end: 8388608
-                    const_begin: true
-                    const_end: true
-                  }
-                }
-              }
-            ]
-          }
-        }
-        key: vf=_new_velocties/qf=_new_velocties/new_qf=_velocities/
+        key: vf=_new_velocities/qf=_new_velocities/new_qf=_velocities/
         value: {
           kernel_name: mtl_k0005_advect_c4_1
           ctx_attribs: {
@@ -188,7 +129,66 @@ taichi aot data: {
             ]
           }
         }
-        key: vf=_velocities/qf=_velocities/new_qf=_new_velocties/
+        key: vf=_new_velocities/qf=_new_dye_buffer/new_qf=_dye_buffer/
+        value: {
+          kernel_name: mtl_k0007_advect_c4_3
+          ctx_attribs: {
+            arg_attribs_vec_: [
+              [0]: {
+                stride: 4
+                offset_in_mem: 0
+                index: 0
+                dt: 0
+                is_array: false
+              }
+              [1]: {
+                stride: 4
+                offset_in_mem: 4
+                index: 1
+                dt: 4
+                is_array: false
+              }
+              [2]: {
+                stride: 4
+                offset_in_mem: 8
+                index: 2
+                dt: 4
+                is_array: false
+              }
+            ]
+            ret_attribs_vec_: [
+            ]
+            ctx_bytes_: 12
+            extra_args_bytes_: 256
+          }
+          kernel_attribs: {
+            name: mtl_k0007_advect_c4_3
+            mtl_kernels_attribs: [
+              [0]: {
+                name: mtl_k0007_advect_c4_3_0
+                advisory_total_num_threads: 8388608
+                task_type: 1
+                buffers: [
+                  [0]: 0
+                  [1]: 1
+                  [2]: 2
+                  [3]: 3
+                  [4]: 4
+                ]
+                range_for_attribs: {
+                  has_value: true
+                  value: {
+                    begin: 0
+                    end: 8388608
+                    const_begin: true
+                    const_end: true
+                  }
+                }
+              }
+            ]
+          }
+        }
+        key: vf=_velocities/qf=_velocities/new_qf=_new_velocities/
         value: {
           kernel_name: mtl_k0004_advect_c4_0
           ctx_attribs: {
@@ -252,7 +252,7 @@ taichi aot data: {
     [1]: {
       kernel_bundle_name: apply_impulse
       kernel_tmpl_map: {
-        key: dye=_new_dye_buffer/vf=_new_velocties/
+        key: dye=_new_dye_buffer/vf=_new_velocities/
         value: {
           kernel_name: mtl_k0010_apply_impulse_c6_1
           ctx_attribs: {
@@ -473,7 +473,7 @@ taichi aot data: {
     [2]: {
       kernel_bundle_name: divergence
       kernel_tmpl_map: {
-        key: vf=_new_velocties/
+        key: vf=_new_velocities/
         value: {
           kernel_name: mtl_k0013_divergence_c12_1
           ctx_attribs: {
@@ -631,7 +631,7 @@ taichi aot data: {
     [4]: {
       kernel_bundle_name: subtract_gradient
       kernel_tmpl_map: {
-        key: vf=_new_velocties/pf=_pressures/
+        key: vf=_new_velocities/pf=_pressures/
         value: {
           kernel_name: mtl_k0017_subtract_gradient_c16_1
           ctx_attribs: {
@@ -711,8 +711,9 @@ taichi aot data: {
   fields: [
     [0]: {
       field_name: _dye_buffer
-      offset_in_root_buffer: 6171470624
-      dtype: 100265280
+      offset_in_root_buffer: 0
+      dtype: 0
+      dtype_name: float
       dimension: (
         first: 0
         second: 0
@@ -721,8 +722,9 @@ taichi aot data: {
     }
     [1]: {
       field_name: _new_dye_buffer
-      offset_in_root_buffer: 6171470624
-      dtype: 100265280
+      offset_in_root_buffer: 0
+      dtype: 0
+      dtype_name: float
       dimension: (
         first: 0
         second: 0
@@ -731,8 +733,9 @@ taichi aot data: {
     }
     [2]: {
       field_name: _velocities
-      offset_in_root_buffer: 6171470624
-      dtype: 100265280
+      offset_in_root_buffer: 0
+      dtype: 0
+      dtype_name: float
       dimension: (
         first: 0
         second: 0
@@ -740,9 +743,10 @@ taichi aot data: {
       is_vector: true
     }
     [3]: {
-      field_name: _new_velocties
-      offset_in_root_buffer: 6171470624
-      dtype: 100265280
+      field_name: _new_velocities
+      offset_in_root_buffer: 0
+      dtype: 0
+      dtype_name: float
       dimension: (
         first: 0
         second: 0
@@ -751,8 +755,9 @@ taichi aot data: {
     }
     [4]: {
       field_name: _velocity_divs
-      offset_in_root_buffer: 6171470624
-      dtype: 100265280
+      offset_in_root_buffer: 0
+      dtype: 0
+      dtype_name: float
       dimension: (
         first: 0
         second: 0
@@ -761,8 +766,9 @@ taichi aot data: {
     }
     [5]: {
       field_name: _pressures
-      offset_in_root_buffer: 6171470624
-      dtype: 100265280
+      offset_in_root_buffer: 0
+      dtype: 0
+      dtype_name: float
       dimension: (
         first: 0
         second: 0
@@ -771,8 +777,9 @@ taichi aot data: {
     }
     [6]: {
       field_name: _new_pressures
-      offset_in_root_buffer: 6171470624
-      dtype: 100265280
+      offset_in_root_buffer: 0
+      dtype: 0
+      dtype_name: float
       dimension: (
         first: 0
         second: 0

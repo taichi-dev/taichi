@@ -5,7 +5,9 @@ import taichi as ti
 def test_loop_unique_simple_1d():
     import platform
     if ti.cfg.arch == ti.cuda and platform.system() == 'Windows':
-        ti.warn('Skipped test due to https://github.com/taichi-dev/taichi/issues/2520')
+        ti.warn(
+            'Skipped test due to https://github.com/taichi-dev/taichi/issues/2520'
+        )
         return
 
     x, y = ti.field(ti.i32), ti.field(ti.i32)
@@ -35,7 +37,9 @@ def test_loop_unique_simple_1d():
 def test_loop_unique_binary_op_1d():
     import platform
     if ti.cfg.arch == ti.cuda and platform.system() == 'Windows':
-        ti.warn('Skipped test due to https://github.com/taichi-dev/taichi/issues/2520')
+        ti.warn(
+            'Skipped test due to https://github.com/taichi-dev/taichi/issues/2520'
+        )
         return
 
     x, y = ti.field(ti.i32), ti.field(ti.i32)
@@ -65,7 +69,9 @@ def test_loop_unique_binary_op_1d():
 def test_loop_unique_nested_1d():
     import platform
     if ti.cfg.arch == ti.cuda and platform.system() == 'Windows':
-        ti.warn('Skipped test due to https://github.com/taichi-dev/taichi/issues/2520')
+        ti.warn(
+            'Skipped test due to https://github.com/taichi-dev/taichi/issues/2520'
+        )
         return
 
     x, y = ti.field(ti.i32), ti.field(ti.i32)
@@ -96,7 +102,9 @@ def test_loop_unique_nested_1d():
 def test_loop_unique_2d():
     import platform
     if ti.cfg.arch == ti.cuda and platform.system() == 'Windows':
-        ti.warn('Skipped test due to https://github.com/taichi-dev/taichi/issues/2520')
+        ti.warn(
+            'Skipped test due to https://github.com/taichi-dev/taichi/issues/2520'
+        )
         return
 
     x, y, z = ti.field(ti.i32), ti.field(ti.i32), ti.field(ti.i32)

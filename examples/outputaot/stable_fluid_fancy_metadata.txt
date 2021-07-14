@@ -715,8 +715,8 @@ taichi aot data: {
       dtype: 0
       dtype_name: float
       dimension: (
-        first: 0
-        second: 0
+        first: 1668
+        second: 2388
       )
       is_vector: true
     }
@@ -726,8 +726,8 @@ taichi aot data: {
       dtype: 0
       dtype_name: float
       dimension: (
-        first: 0
-        second: 0
+        first: 1668
+        second: 2388
       )
       is_vector: true
     }
@@ -737,8 +737,8 @@ taichi aot data: {
       dtype: 0
       dtype_name: float
       dimension: (
-        first: 0
-        second: 0
+        first: 417
+        second: 597
       )
       is_vector: true
     }
@@ -748,8 +748,8 @@ taichi aot data: {
       dtype: 0
       dtype_name: float
       dimension: (
-        first: 0
-        second: 0
+        first: 417
+        second: 597
       )
       is_vector: true
     }
@@ -759,8 +759,8 @@ taichi aot data: {
       dtype: 0
       dtype_name: float
       dimension: (
-        first: 0
-        second: 0
+        first: 417
+        second: 597
       )
       is_vector: false
     }
@@ -770,8 +770,8 @@ taichi aot data: {
       dtype: 0
       dtype_name: float
       dimension: (
-        first: 0
-        second: 0
+        first: 417
+        second: 597
       )
       is_vector: false
     }
@@ -781,8 +781,8 @@ taichi aot data: {
       dtype: 0
       dtype_name: float
       dimension: (
-        first: 0
-        second: 0
+        first: 417
+        second: 597
       )
       is_vector: false
     }

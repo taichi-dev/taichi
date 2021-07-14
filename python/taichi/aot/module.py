@@ -80,24 +80,16 @@ class Module:
         
         Must add in sequence
       """
-      # assert isinstance(field, expr.Expr)
-
-      # TODO: pass field.shape, field.dt to aotModuleBuilder
-      field_number = len(self.fields)
-      # print(field_number)
       is_vector = False
       self.fields[name] = field
-      shape1 = None
+      vector_size = 1
       if type(field) is matrix.Matrix:
         assert isinstance(field, matrix.Matrix)
-        shape1 = tuple(field.snode.shape)
-        # print(field.dtype)
-        # print(sys.getsizeof(field))
         is_vector = True
+        vector_size = field.n
       else:
         assert isinstance(field, expr.Expr)
-        shape1 = tuple(field.snode.shape)
-      self.aot_builder.add_field(name, is_vector, field.dtype, shape1)
+      self.aot_builder.add_field(name, is_vector, field.dtype, tuple(field.snode.shape), vector_size)
 
     def add_kernel(self, kernel_fn, name=None):
         """Add a taichi kernel to the AOT module.

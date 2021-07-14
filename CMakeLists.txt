@@ -76,6 +76,31 @@ add_custom_target(
 )
 add_dependencies(${CORE_LIBRARY_NAME} generate_commit_hash)
 
+if (TI_WITH_CUDA)
+    set(CUDA_ARCH "cuda")
+endif()
+
+find_program(CLANG_EXECUTABLE NAMES clang-7 clang-8 clang-9 clang-10 clang)
+if (NOT CLANG_EXECUTABLE)
+    message(FATAL_ERROR "Cannot find any clang executable.")
+endif()
+
+find_program(LLVM_AS_EXECUTABLE NAMES llvm-as)
+if (NOT LLVM_AS_EXECUTABLE)
+    message(FATAL_ERROR "Cannot find llvm-as executable.")
+endif()
+
+# Build llvm-runtime for host arch and cuda (if available)
+foreach(arch IN LISTS HOST_ARCH CUDA_ARCH)
+  add_custom_target(
+      "generate_llvm_runtime_${arch}"
+      COMMAND ${CLANG_EXECUTABLE} -S runtime.cpp -o runtime.ll -fno-exceptions -emit-llvm -std=c++17 -D "ARCH_${arch}" -I ${PROJECT_SOURCE_DIR};
+      COMMAND ${LLVM_AS_EXECUTABLE} runtime.ll -o "runtime_${arch}.bc"
+      WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/taichi/runtime/llvm"
+  )
+  add_dependencies(${CORE_LIBRARY_NAME} "generate_llvm_runtime_${arch}")
+endforeach()
+
 FILE(WRITE ${CMAKE_CURRENT_LIST_DIR}/taichi/common/version.h
         "#pragma once\n"
         "#define TI_VERSION_MAJOR \"${TI_VERSION_MAJOR}\"\n"

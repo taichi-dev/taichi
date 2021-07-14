@@ -36,15 +36,26 @@ class FieldsBuilder:
     """
     _finalized_fbs = []
 
-    def __init__(self):
-        self._ptr = _snode_registry.create_root()
-        self._root = snode.SNode(self._ptr)
+    def __init__(self, ptr=None, root=None):
+        if ptr is None:
+            self._ptr = _snode_registry.create_root()
+        else:
+            self._ptr = ptr
+        if root is None:
+            self._root = snode.SNode(self._ptr)
+        else:
+            self._root = root
         self._finalized = False
         self._empty = True
 
     @classmethod
     def finalized_fbs(cls):
-        return cls._finalized_fbs
+        fbs = []
+        size = impl.get_runtime().prog.get_snode_tree_size()
+        for i in range(size):
+            res = impl.get_runtime().prog.get_snode_trees(i)
+            fbs.append(FieldsBuilder(res, snode.SNode(res)))
+        return fbs
 
     @classmethod
     def clear_finalized_fbs(cls):

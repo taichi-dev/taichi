@@ -1,15 +1,8 @@
 import taichi as ti
 
 
-@ti.test(require=ti.extension.sparse)
+@ti.test(require=ti.extension.sparse, use_unified_memory=True)
 def test_loop_unique_simple_1d():
-    import platform
-    if ti.cfg.arch == ti.cuda and platform.system() == 'Windows':
-        ti.warn(
-            'Skipped test due to https://github.com/taichi-dev/taichi/issues/2520'
-        )
-        return
-
     x, y = ti.field(ti.i32), ti.field(ti.i32)
 
     N = 16
@@ -33,15 +26,8 @@ def test_loop_unique_simple_1d():
         assert y[i] == expected_result.get(i, 0)
 
 
-@ti.test(require=ti.extension.sparse)
+@ti.test(require=ti.extension.sparse, use_unified_memory=True)
 def test_loop_unique_binary_op_1d():
-    import platform
-    if ti.cfg.arch == ti.cuda and platform.system() == 'Windows':
-        ti.warn(
-            'Skipped test due to https://github.com/taichi-dev/taichi/issues/2520'
-        )
-        return
-
     x, y = ti.field(ti.i32), ti.field(ti.i32)
 
     N = 16
@@ -65,15 +51,8 @@ def test_loop_unique_binary_op_1d():
         assert y[i] == expected_result.get(i, 0)
 
 
-@ti.test(require=ti.extension.sparse)
+@ti.test(require=ti.extension.sparse, use_unified_memory=True)
 def test_loop_unique_nested_1d():
-    import platform
-    if ti.cfg.arch == ti.cuda and platform.system() == 'Windows':
-        ti.warn(
-            'Skipped test due to https://github.com/taichi-dev/taichi/issues/2520'
-        )
-        return
-
     x, y = ti.field(ti.i32), ti.field(ti.i32)
 
     N = 16
@@ -98,15 +77,8 @@ def test_loop_unique_nested_1d():
         assert y[i] == expected_result.get(i, 0)
 
 
-@ti.test(require=ti.extension.sparse)
+@ti.test(require=ti.extension.sparse, use_unified_memory=True)
 def test_loop_unique_2d():
-    import platform
-    if ti.cfg.arch == ti.cuda and platform.system() == 'Windows':
-        ti.warn(
-            'Skipped test due to https://github.com/taichi-dev/taichi/issues/2520'
-        )
-        return
-
     x, y, z = ti.field(ti.i32), ti.field(ti.i32), ti.field(ti.i32)
 
     N = 8

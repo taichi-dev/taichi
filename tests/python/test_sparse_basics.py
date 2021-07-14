@@ -1,3 +1,5 @@
+import pytest
+
 import taichi as ti
 
 
@@ -75,3 +77,19 @@ def test_pointer2():
     assert s[None] == 5 * n
     print(x[257 + n * n * 7])
     assert s[None] == 5 * n
+
+
+@pytest.mark.skip(reason='https://github.com/taichi-dev/taichi/issues/2520')
+@ti.test(require=ti.extension.sparse, use_unified_memory=False)
+def test_pointer_direct_place():
+    x, y = ti.field(ti.i32), ti.field(ti.i32)
+
+    N = 1
+    ti.root.pointer(ti.i, N).place(x)
+    ti.root.pointer(ti.i, N).place(y)
+
+    @ti.kernel
+    def foo():
+        pass
+
+    foo()

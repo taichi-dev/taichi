@@ -85,15 +85,8 @@ def test_fields_builder_dense():
         assert x[i] == i * 3
 
 
-@ti.test(arch=[ti.cpu, ti.cuda])
+@ti.test(arch=[ti.cpu, ti.cuda], use_unified_memory=True)
 def test_fields_builder_pointer():
-    import platform
-    if ti.cfg.arch == ti.cuda and platform.system() == 'Windows':
-        ti.warn(
-            'Skipped test due to https://github.com/taichi-dev/taichi/issues/2520'
-        )
-        return
-
     n = 5
 
     fb1 = ti.FieldsBuilder()

@@ -230,13 +230,6 @@ void compile_runtime_bitcode(Arch arch) {
   }
 }
 
-void compile_runtimes() {
-  compile_runtime_bitcode(host_arch());
-#if defined(TI_WITH_CUDA)
-  compile_runtime_bitcode(Arch::cuda);
-#endif
-}
-
 std::string libdevice_path() {
   std::string folder;
   if (is_release()) {

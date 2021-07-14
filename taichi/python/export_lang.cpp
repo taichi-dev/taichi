@@ -55,7 +55,6 @@ void expr_assign(const Expr &lhs_, const Expr &rhs, std::string tb) {
 
 std::vector<std::unique_ptr<ASTBuilder::ScopeGuard>> scope_stack;
 
-void compile_runtimes();
 std::string libdevice_path();
 std::string get_runtime_dir();
 
@@ -743,7 +742,6 @@ void export_lang(py::module &m) {
   m.def("test_throw", [] { throw IRModified(); });
   m.def("needs_grad", needs_grad);
 
-  m.def("compile_runtimes", compile_runtimes);
   m.def("libdevice_path", libdevice_path);
 
   m.def("host_arch", host_arch);

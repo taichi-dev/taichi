@@ -12,8 +12,8 @@ void AotModuleBuilder::add(const std::string &identifier, Kernel *kernel) {
   add_per_backend(identifier, kernel);
 }
 
-void AotModuleBuilder::add_field(const std::string &identifier, bool is_vector, DataType dt) {
-  add_per_backend_field(identifier, is_vector, dt);
+void AotModuleBuilder::add_field(const std::string &identifier, bool is_vector, DataType dt, std::tuple<int, int> shape) {
+  add_per_backend_field(identifier, is_vector, dt, shape);
 }
 
 void AotModuleBuilder::add_kernel_template(const std::string &identifier, 

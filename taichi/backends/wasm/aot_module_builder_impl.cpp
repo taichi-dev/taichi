@@ -44,7 +44,8 @@ void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
 }
 
 void AotModuleBuilderImpl::add_per_backend_field(const std::string &identifier, 
-                                                  bool is_vector, DataType dt) {
+                                                  bool is_vector, DataType dt, 
+                                                  std::tuple<int, int> shape) {
                                             }
 
 void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier, 

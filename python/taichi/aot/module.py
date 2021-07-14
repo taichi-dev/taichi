@@ -87,16 +87,17 @@ class Module:
       # print(field_number)
       is_vector = False
       self.fields[name] = field
+      shape1 = None
       if type(field) is matrix.Matrix:
         assert isinstance(field, matrix.Matrix)
-        # print(field.shape)
-        # print(type(field.shape))
+        shape1 = tuple(field.snode.shape)
         # print(field.dtype)
         # print(sys.getsizeof(field))
         is_vector = True
       else:
         assert isinstance(field, expr.Expr)
-      self.aot_builder.add_field(name, is_vector, field.dtype)
+        shape1 = tuple(field.snode.shape)
+      self.aot_builder.add_field(name, is_vector, field.dtype, shape1)
 
     def add_kernel(self, kernel_fn, name=None):
         """Add a taichi kernel to the AOT module.

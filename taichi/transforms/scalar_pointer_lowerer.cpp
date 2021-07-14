@@ -5,6 +5,7 @@
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/snode.h"
 #include "taichi/ir/statements.h"
+#include "taichi/program/program.h"
 #include "taichi/transforms/scalar_pointer_lowerer.h"
 
 namespace taichi {
@@ -45,6 +46,14 @@ void ScalarPointerLowerer::run() {
       start_bits[j] += s->extractors[j].num_bits;
     }
   }
+  // general - no dependence on POT
+  std::array<int, taichi_max_num_indices> total_shape;
+  total_shape.fill(1);
+  for (const auto *s : snodes_) {
+    for (int j = 0; j < taichi_max_num_indices; j++) {
+      total_shape[j] *= s->extractors[j].shape;
+    }
+  }
 
   if (path_length_ == 0)
     return;
@@ -63,13 +72,27 @@ void ScalarPointerLowerer::run() {
     for (int k_ = 0; k_ < (int)indices_.size(); k_++) {
       for (int k = 0; k < taichi_max_num_indices; k++) {
         if (snode->physical_index_position[k_] == k) {
-          start_bits[k] -= snode->extractors[k].num_bits;
-          const int begin = start_bits[k];
-          const int end = begin + snode->extractors[k].num_bits;
-          auto extracted = Stmt::make<BitExtractStmt>(indices_[k_], begin, end);
-          lowered_indices.push_back(extracted.get());
-          lowered_->push_back(std::move(extracted));
-          strides.push_back(1 << snode->extractors[k].num_bits);
+          if (get_current_program().config.packed) {
+            auto const_prev = Stmt::make<ConstStmt>(TypedConstant(total_shape[k]));
+            auto mod = Stmt::make<BinaryOpStmt>(BinaryOpType::mod, indices_[k_], const_prev.get());
+            total_shape[k] /= snode->extractors[k].shape;
+            auto const_next = Stmt::make<ConstStmt>(TypedConstant(total_shape[k]));
+            auto div = Stmt::make<BinaryOpStmt>(BinaryOpType::div, mod.get(), const_next.get());
+            lowered_indices.push_back(div.get());
+            lowered_->push_back(std::move(const_prev));
+            lowered_->push_back(std::move(mod));
+            lowered_->push_back(std::move(const_next));
+            lowered_->push_back(std::move(div));
+          } else {
+            start_bits[k] -= snode->extractors[k].num_bits;
+            const int begin = start_bits[k];
+            const int end = begin + snode->extractors[k].num_bits;
+            auto extracted =
+                Stmt::make<BitExtractStmt>(indices_[k_], begin, end);
+            lowered_indices.push_back(extracted.get());
+            lowered_->push_back(std::move(extracted));
+          }
+          strides.push_back(snode->extractors[k].shape);
         }
       }
     }

@@ -711,7 +711,6 @@ taichi aot data: {
   fields: [
     [0]: {
       field_name: _dye_buffer
-      offset_in_root_buffer: 0
       dtype: 0
       dtype_name: float
       dimension: (
@@ -719,10 +718,10 @@ taichi aot data: {
         second: 2388
       )
       is_vector: true
+      vector_size: 4
     }
     [1]: {
       field_name: _new_dye_buffer
-      offset_in_root_buffer: 0
       dtype: 0
       dtype_name: float
       dimension: (
@@ -730,10 +729,10 @@ taichi aot data: {
         second: 2388
       )
       is_vector: true
+      vector_size: 4
     }
     [2]: {
       field_name: _velocities
-      offset_in_root_buffer: 0
       dtype: 0
       dtype_name: float
       dimension: (
@@ -741,10 +740,10 @@ taichi aot data: {
         second: 597
       )
       is_vector: true
+      vector_size: 2
     }
     [3]: {
       field_name: _new_velocities
-      offset_in_root_buffer: 0
       dtype: 0
       dtype_name: float
       dimension: (
@@ -752,10 +751,10 @@ taichi aot data: {
         second: 597
       )
       is_vector: true
+      vector_size: 2
     }
     [4]: {
       field_name: _velocity_divs
-      offset_in_root_buffer: 0
       dtype: 0
       dtype_name: float
       dimension: (
@@ -763,10 +762,10 @@ taichi aot data: {
         second: 597
       )
       is_vector: false
+      vector_size: 1
     }
     [5]: {
       field_name: _pressures
-      offset_in_root_buffer: 0
       dtype: 0
       dtype_name: float
       dimension: (
@@ -774,10 +773,10 @@ taichi aot data: {
         second: 597
       )
       is_vector: false
+      vector_size: 1
     }
     [6]: {
       field_name: _new_pressures
-      offset_in_root_buffer: 0
       dtype: 0
       dtype_name: float
       dimension: (
@@ -785,6 +784,7 @@ taichi aot data: {
         second: 597
       )
       is_vector: false
+      vector_size: 1
     }
   ]
 }

@@ -217,13 +217,13 @@ struct CompiledKernelTmplData {
 
 struct CompiledFieldData {
   std::string field_name;
-  int64_t offset_in_root_buffer{0};
   MetalDataType dtype;
   std::string dtype_name;
   std::pair<int64_t, int64_t> dimension;
   bool is_vector;
+  int vector_size;
 
-  TI_IO_DEF(field_name, offset_in_root_buffer, dtype, dtype_name, dimension, is_vector);
+  TI_IO_DEF(field_name, dtype, dtype_name, dimension, is_vector, vector_size);
 };
 
 struct BufferMetaData {

@@ -70,4 +70,4 @@ If you use Taichi in your research, please cite our papers:
 
 ## Security
 
-Please disclose security issues responsibly by reaching out to contact@taichi.graphics.
+Please disclose security issues responsibly by contacting contact@taichi.graphics.

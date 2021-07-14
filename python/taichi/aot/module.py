@@ -75,6 +75,7 @@ class Module:
         m.add_field(b)
         Must add in sequence
       """
+<<<<<<< HEAD
         is_vector = False
         self._fields[name] = field
         vector_size = 1
@@ -86,6 +87,26 @@ class Module:
             assert isinstance(field, expr.Expr)
         self._aot_builder.add_field(name, is_vector, field.dtype,
                                     tuple(field.snode.shape), vector_size)
+=======
+      # assert isinstance(field, expr.Expr)
+
+      # TODO: pass field.shape, field.dt to aotModuleBuilder
+      field_number = len(self.fields)
+      # print(field_number)
+      is_vector = False
+      self.fields[name] = field
+      shape1 = None
+      if type(field) is matrix.Matrix:
+        assert isinstance(field, matrix.Matrix)
+        shape1 = tuple(field.snode.shape)
+        # print(field.dtype)
+        # print(sys.getsizeof(field))
+        is_vector = True
+      else:
+        assert isinstance(field, expr.Expr)
+        shape1 = tuple(field.snode.shape)
+      self.aot_builder.add_field(name, is_vector, field.dtype, shape1)
+>>>>>>> c219fa98 (taichi support dumping taichi field shape(dimension))
 
     def add_kernel(self, kernel_fn, name=None):
         """Add a taichi kernel to the AOT module.

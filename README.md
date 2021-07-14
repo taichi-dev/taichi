@@ -67,3 +67,7 @@ If you use Taichi in your research, please cite our papers:
 - [Taichi Conference](https://github.com/taichi-dev/taichicon): Taichi developer conferences.
 - [GAMES 201 Lectures](https://github.com/taichi-dev/games201): (Chinese) A hands-on course on building advanced physics engines, based on Taichi.
 - [More...](misc/links.md)
+
+## Security
+
+Please disclose security issues responsibly by reaching out to contact@taichi.graphics.

@@ -4,8 +4,6 @@ import numpy as np
 
 import taichi as ti
 
-import os
-
 ti.init(arch=ti.gpu)
 
 tile_size = 8  # Size of a tile

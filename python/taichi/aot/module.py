@@ -1,13 +1,14 @@
-from taichi.lang import impl, kernel_arguments, kernel_impl, expr, matrix
 from contextlib import contextmanager
+
+from taichi.lang import expr, impl, kernel_arguments, kernel_impl, matrix
 
 
 class KernelTemplate(object):
-      def __init__(self, kernel_fn, aot_module):
+    def __init__(self, kernel_fn, aot_module):
         self._kernel_fn = kernel_fn
         self._aot_module = aot_module
-      
-      def instantiate(self, **kwargs):
+
+    def instantiate(self, **kwargs):
         name = self._kernel_fn.__name__
         kernel = self._kernel_fn._primal
         assert isinstance(kernel, kernel_impl.Kernel)
@@ -17,23 +18,24 @@ class KernelTemplate(object):
         template_args = {}
 
         for index, (key, value) in enumerate(kwargs.items()):
-          template_args[index] = (key, value)
+            template_args[index] = (key, value)
 
         for i in range(len(kernel.argument_annotations)):
-          anno = kernel.argument_annotations[i]
-          if isinstance(anno, kernel_arguments.template):
-            (k, v) = template_args[anno_index]
-            key_p += k
-            for ky, val in self._aot_module._fields.items():
-              if (val is v):
-                key_p += "=" + ky + "/"
-            injected_args.append(v)
-            anno_index += 1
-          else:
-            injected_args.append(0)
-        
+            anno = kernel.argument_annotations[i]
+            if isinstance(anno, kernel_arguments.template):
+                (k, v) = template_args[anno_index]
+                key_p += k
+                for ky, val in self._aot_module._fields.items():
+                    if (val is v):
+                        key_p += "=" + ky + "/"
+                injected_args.append(v)
+                anno_index += 1
+            else:
+                injected_args.append(0)
+
         kernel.ensure_compiled(*injected_args)
-        self._aot_module._aot_builder.add_kernel_template(name, key_p, kernel.kernel_cpp)
+        self._aot_module._aot_builder.add_kernel_template(
+            name, key_p, kernel.kernel_cpp)
 
         # kernel AOT
         self._aot_module._kernels.append(kernel)
@@ -64,10 +66,10 @@ class Module:
         impl.get_runtime().materialize()
         self._aot_builder = impl.get_runtime().prog.make_aot_module_builder(
             arch)
-    
+
     def add_field(self, name, field):
-      """Add a taichi field to the AOT module.
-      Args: 
+        """Add a taichi field to the AOT module.
+      Args:
         name: name of taichi field
         field: taichi field
 
@@ -76,19 +78,20 @@ class Module:
 
         m.add_field(a)
         m.add_field(b)
-        
+
         Must add in sequence
       """
-      is_vector = False
-      self._fields[name] = field
-      vector_size = 1
-      if type(field) is matrix.Matrix:
-        assert isinstance(field, matrix.Matrix)
-        is_vector = True
-        vector_size = field.n
-      else:
-        assert isinstance(field, expr.Expr)
-      self._aot_builder.add_field(name, is_vector, field.dtype, tuple(field.snode.shape), vector_size)
+        is_vector = False
+        self._fields[name] = field
+        vector_size = 1
+        if type(field) is matrix.Matrix:
+            assert isinstance(field, matrix.Matrix)
+            is_vector = True
+            vector_size = field.n
+        else:
+            assert isinstance(field, expr.Expr)
+        self._aot_builder.add_field(name, is_vector, field.dtype,
+                                    tuple(field.snode.shape), vector_size)
 
     def add_kernel(self, kernel_fn, name=None):
         """Add a taichi kernel to the AOT module.
@@ -144,7 +147,7 @@ class Module:
               x = a
               y = b
               # do something with `x` and `y`
-            
+
             with m.add_kernel_template(bar_tmpl) as kt:
               kt.instantiate(a=x, b=y)
 

@@ -169,11 +169,6 @@ class Program {
    */
   void materialize_runtime();
 
-  /**
-   * Get snode tree from Program.
-   */
-  SNode *get_snode_tree(int id);
-
   int get_snode_tree_size();
 
   void visualize_layout(const std::string &fn);

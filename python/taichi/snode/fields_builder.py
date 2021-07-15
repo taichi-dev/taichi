@@ -53,7 +53,7 @@ class FieldsBuilder:
         fbs = []
         size = impl.get_runtime().prog.get_snode_tree_size()
         for i in range(size):
-            res = impl.get_runtime().prog.get_snode_trees(i)
+            res = impl.get_runtime().prog.get_snode_root(i)
             fbs.append(FieldsBuilder(res, snode.SNode(res)))
         return fbs
 

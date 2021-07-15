@@ -232,7 +232,7 @@ void export_lang(py::module &m) {
       .def("materialize_runtime", &Program::materialize_runtime)
       .def("make_aot_module_builder", &Program::make_aot_module_builder)
       .def("get_snode_tree_size", &Program::get_snode_tree_size)
-      .def("get_snode_trees", &Program::get_snode_tree,
+      .def("get_snode_root", &Program::get_snode_root,
            py::return_value_policy::reference);
 
   py::class_<AotModuleBuilder>(m, "AotModuleBuilder")

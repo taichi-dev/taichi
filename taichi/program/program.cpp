@@ -586,10 +586,6 @@ void Program::async_flush() {
   async_engine->flush();
 }
 
-SNode *Program::get_snode_tree(int id) {
-  return snode_trees_[id]->root();
-}
-
 int Program::get_snode_tree_size() {
   return snode_trees_.size();
 }

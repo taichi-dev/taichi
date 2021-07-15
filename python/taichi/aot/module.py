@@ -57,11 +57,11 @@ class Module:
         # for running ``foo`` and ``bar``.
     """
     def __init__(self, arch):
-        self.arch = arch
-        self.kernels = []
-        self.fields = {}
+        self._arch = arch
+        self._kernels = []
+        self._fields = {}
         impl.get_runtime().materialize()
-        self.aot_builder = impl.get_runtime().prog.make_aot_module_builder(
+        self._aot_builder = impl.get_runtime().prog.make_aot_module_builder(
             arch)
 
     def add_field(self, name, field):
@@ -75,6 +75,7 @@ class Module:
         m.add_field(b)
         Must add in sequence
       """
+<<<<<<< HEAD
         is_vector = False
         self._fields[name] = field
         vector_size = 1
@@ -86,6 +87,18 @@ class Module:
             assert isinstance(field, expr.Expr)
         self._aot_builder.add_field(name, is_vector, field.dtype,
                                     tuple(field.snode.shape), vector_size)
+=======
+      is_vector = False
+      self._fields[name] = field
+      vector_size = 1
+      if type(field) is matrix.Matrix:
+        assert isinstance(field, matrix.Matrix)
+        is_vector = True
+        vector_size = field.n
+      else:
+        assert isinstance(field, expr.Expr)
+      self._aot_builder.add_field(name, is_vector, field.dtype, tuple(field.snode.shape), vector_size)
+>>>>>>> 19a27255 (fix naming)
 
     def add_kernel(self, kernel_fn, name=None):
         """Add a taichi kernel to the AOT module.
@@ -108,7 +121,7 @@ class Module:
                 # For primitive types, we can just inject a dummy value.
                 injected_args.append(0)
         kernel.ensure_compiled(*injected_args)
-        self.aot_builder.add(name, kernel.kernel_cpp)
+        self._aot_builder.add(name, kernel.kernel_cpp)
 
         # kernel AOT
         self._kernels.append(kernel)
@@ -143,4 +156,4 @@ class Module:
         yield kt
 
     def save(self, filepath, filename):
-        self.aot_builder.dump(filepath, filename)
+        self._aot_builder.dump(filepath, filename)

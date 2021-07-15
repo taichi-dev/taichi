@@ -13,7 +13,11 @@ AotModuleBuilderImpl::AotModuleBuilderImpl(
     const CompiledStructs *compiled_structs,
     const BufferMetaData &buffer_meta_data)
     : compiled_structs_(compiled_structs), buffer_meta_data_(buffer_meta_data) {
+<<<<<<< HEAD
   ti_aot_data_.metadata = buffer_meta_data;ß
+=======
+  ti_aot_data_.metadata = buffer_meta_data;
+>>>>>>> da9311c6 (merge prep)
 }
 
 void AotModuleBuilderImpl::dump(const std::string &output_dir,

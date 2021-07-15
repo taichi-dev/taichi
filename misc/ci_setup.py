@@ -259,7 +259,7 @@ class Installer:
             # compile ..
             os.makedirs('build', exist_ok=True)
             execute_command(
-                f'TI_WITH_OPENGL=OFF TI_WITH_CC=ON TI_BUILD_TESTS=ON {sys.executable} setup.py install'
+                f'TI_WITH_OPENGL=OFF TI_WITH_CC=ON TI_BUILD_TESTS=ON {sys.executable} setup.py install --user'
             )
         return
         if test_installation():

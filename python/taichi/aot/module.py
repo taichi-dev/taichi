@@ -1,6 +1,4 @@
 from contextlib import contextmanager
-
-
 from taichi.lang import expr, impl, kernel_arguments, kernel_impl, matrix
 
 
@@ -133,6 +131,7 @@ class Module:
               x = a
               y = b
               # do something with `x` and `y`
+
             with m.add_kernel_template(bar_tmpl) as kt:
               kt.instantiate(a=x, b=y)
         TODO:

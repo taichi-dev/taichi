@@ -49,6 +49,11 @@ void infer_snode_properties(SNode &snode) {
     snode.extractors[i].acc_offset = acc_offsets;
     acc_offsets += snode.extractors[i].num_bits;
   }
+  int acc_shape = 1;
+  for (int i = taichi_max_num_indices - 1; i >= 0; i--) {
+    snode.extractors[i].acc_shape = acc_shape;
+    acc_shape *= snode.extractors[i].shape;
+  }
   if (snode.type == SNodeType::dynamic) {
     int active_extractor_counder = 0;
     for (int i = 0; i < taichi_max_num_indices; i++) {

@@ -293,8 +293,8 @@ struct GLBufferAllocator {
 
   std::list<std::unique_ptr<GLBuffer>> buffers_storage_;
 
-  std::unordered_map<std::pair<GLBufId, size_t>, GLBuffer *> buffers_mapping;
-  std::unordered_map<std::pair<GLBufId, size_t>, GLBuffer *> free_mapping;
+  std::map<std::pair<GLBufId, size_t>, GLBuffer *> buffers_mapping;
+  std::map<std::pair<GLBufId, size_t>, GLBuffer *> free_mapping;
 
  public:
   GLBufferAllocator() {

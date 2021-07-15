@@ -40,9 +40,15 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
   }
 
   for (const auto &k : ti_aot_data_.tmpl_kernels) {
+<<<<<<< HEAD
     for (auto &ki : k.kernel_tmpl_map) {
       const stdfs::path mtl_path =
           dir / fmt::format("{}_{}.metal", filename, ki.second.kernel_name);
+=======
+    for (auto &ki: k.kernel_tmpl_map) {
+      const stdfs::path mtl_path = 
+        dir / fmt::format("{}_{}.metal", filename, ki.second.kernel_name);
+>>>>>>> 41107764 (change header)
       std::ofstream fs{mtl_path.string()};
       fs << ki.second.source_code;
       fs.close();

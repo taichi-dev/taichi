@@ -125,16 +125,8 @@ class Module:
 
         Args:
           kernel_fn (Function): the function decorated by taichi `kernel`.
-          name (str): Name to identify this kernel in the module. If not
-            provided, uses the built-in ``__name__`` attribute of `kernel_fn`.
-
 
         Example:
-          Note that if `kernel_fn` contains at least one template parameter, it
-          is required that users provide an explicit `name`. In addition, all
-          the values of these template parameters must be instantiated via
-          `template_args`.
-
           Usage::
 
             @ti.kernel

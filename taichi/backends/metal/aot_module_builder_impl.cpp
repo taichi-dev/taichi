@@ -36,9 +36,9 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
   }
 
   for (const auto &k : ti_aot_data_.tmpl_kernels) {
-    for (auto &ki: k.kernel_tmpl_map) {
-      const stdfs::path mtl_path = 
-        dir / fmt::format("{}_{}.metal", filename, ki.second.kernel_name);
+    for (auto &ki : k.kernel_tmpl_map) {
+      const stdfs::path mtl_path =
+          dir / fmt::format("{}_{}.metal", filename, ki.second.kernel_name);
       std::ofstream fs{mtl_path.string()};
       fs << ki.second.source_code;
       fs.close();
@@ -55,9 +55,10 @@ void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
 }
 
 void AotModuleBuilderImpl::add_per_backend_field(const std::string &identifier,
-                                                bool is_vector, DataType dt, 
-                                                std::pair<int, int> shape, 
-                                                int vector_size) {
+                                                 bool is_vector,
+                                                 DataType dt,
+                                                 std::pair<int, int> shape,
+                                                 int vector_size) {
   CompiledFieldData field_data;
   field_data.field_name = identifier;
   field_data.is_vector = is_vector;
@@ -68,12 +69,12 @@ void AotModuleBuilderImpl::add_per_backend_field(const std::string &identifier,
   ti_aot_data_.fields.push_back(field_data);
 }
 
-void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier, 
-                                    const std::string &key, 
-                                    Kernel *kernel) {
+void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier,
+                                                const std::string &key,
+                                                Kernel *kernel) {
   auto compiled =
       run_codegen(compiled_structs_, kernel, &strtab_, /*offloaded=*/nullptr);
-  for (auto &k: ti_aot_data_.tmpl_kernels) {
+  for (auto &k : ti_aot_data_.tmpl_kernels) {
     if (k.kernel_bundle_name == identifier) {
       k.kernel_tmpl_map.insert(std::make_pair(key, compiled));
       return;

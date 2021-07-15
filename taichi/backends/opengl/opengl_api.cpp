@@ -14,6 +14,8 @@
 #include "GLFW/glfw3.h"
 #endif
 
+#include <list>
+
 TLANG_NAMESPACE_BEGIN
 namespace opengl {
 
@@ -285,25 +287,105 @@ struct GLBuffer : GLSSBO {
   }
 };
 
+struct GLBufferAllocator {
+ private:
+  static constexpr size_t max_free_resident_size = 64 << 20;
+
+  std::list<std::unique_ptr<GLBuffer>> buffers_storage_;
+
+  std::unordered_map<std::pair<GLBufId, size_t>, GLBuffer *> buffers_mapping;
+  std::unordered_map<std::pair<GLBufId, size_t>, GLBuffer *> free_mapping;
+
+ public:
+  GLBufferAllocator() {
+  }
+
+  void new_frame() {
+    size_t free_resident_size = 0;
+    for (auto &pair : free_mapping) {
+      free_resident_size += pair.first.second;
+
+      if (free_resident_size > max_free_resident_size) {
+        GLBuffer *buf = pair.second;
+
+        auto buffer_iter =
+            std::find_if(buffers_storage_.begin(), buffers_storage_.end(),
+                         [buf](const auto &mo) { return mo.get() == buf; });
+
+        buffers_storage_.erase(buffer_iter);
+        free_mapping.erase(pair.first);
+      }
+    }
+  }
+
+  GLBuffer *alloc_buffer(GLBufId index, void *base, size_t size) {
+    GLBuffer *buffer;
+    auto buffer_iter = free_mapping.find(std::pair(index, size));
+    if (buffer_iter == free_mapping.end()) {
+      // This buffer does not exist / can not be reused
+      buffers_storage_.push_back(std::make_unique<GLBuffer>(index, base, size));
+      buffer = buffers_storage_.back().get();
+      buffers_mapping[std::pair(index, size)] = buffer;
+
+      // TI_WARN("New buffer {}, {}, {}", int(index), size, (void*)buffer);
+    } else {
+      // Reuse
+      buffer = buffer_iter->second;
+      free_mapping.erase(buffer_iter);
+
+      buffer->rebind(base, size);
+      buffer->bind_index(int(index));
+
+      // TI_WARN("Reuse buffer {}, {}, {}", int(index), size, (void *)buffer);
+    }
+
+    return buffer;
+  }
+
+  void dealloc_buffer(GLBuffer *buf) {
+    auto buffer_iter =
+        std::find_if(buffers_mapping.begin(), buffers_mapping.end(),
+                     [buf](const auto &mo) { return mo.second == buf; });
+    if (buffer_iter != buffers_mapping.end()) {
+      // Insert back to free list
+      free_mapping[buffer_iter->first] = buf;
+      // TI_WARN("Dealloc {}", (void *)buf);
+    }
+  }
+};
+
 struct GLBufferTable {
-  std::map<GLBufId, std::unique_ptr<GLBuffer>> bufs;
+  std::map<GLBufId, GLBuffer *> bufs;
+
+  GLBufferAllocator &allocator;
+
+  GLBufferTable(GLBufferAllocator &allocator) : allocator(allocator) {
+  }
 
   GLBuffer *get(GLBufId id) {
-    return bufs.at(id).get();
+    return bufs.at(id);
   }
 
   void add_buffer(GLBufId index, void *base, size_t size) {
-    bufs[index] = std::make_unique<GLBuffer>(index, base, size);
+    bufs[index] = allocator.alloc_buffer(index, base, size);
   }
 
   void clear() {
+    for (auto pair : bufs) {
+      allocator.dealloc_buffer(pair.second);
+    }
     bufs.clear();
   }
 };
 
 struct GLSLLauncherImpl {
+  GLBufferAllocator gl_allocator;
+
   GLBufferTable core_bufs;
   GLBufferTable user_bufs;
+
+  GLSLLauncherImpl() : core_bufs(gl_allocator), user_bufs(gl_allocator) {
+  }
 
   std::vector<char> root_buffer;
   std::vector<char> gtmp_buffer;
@@ -525,6 +607,8 @@ struct CompiledProgram::Impl {
   }
 
   void launch(Context &ctx, GLSLLauncher *launcher) const {
+    launcher->impl->gl_allocator.new_frame();
+
     GLBufferTable &bufs = launcher->impl->user_bufs;
     std::vector<char> base_arr;
     std::vector<void *> saved_ctx_ptrs;
@@ -562,6 +646,8 @@ struct CompiledProgram::Impl {
       }
     }
     /// DIRTY_END }}}
+    // TODO: This memcpy should not be needed. Should use a better & smarter
+    // memory management
     std::memcpy(args.data(), ctx.args, arg_count * sizeof(uint64_t));
     bufs.add_buffer(GLBufId::Args, args.data(), args.size());
     if (used.print) {
@@ -576,8 +662,15 @@ struct CompiledProgram::Impl {
     }
     for (auto &[idx, buf] : launcher->impl->user_bufs.bufs) {
       if (buf->index == GLBufId::Args) {
-        buf->copy_back(launcher->result_buffer, ret_count * sizeof(uint64_t));
+        if (ret_count > 0) {
+          // Copying of data between host and device cause implicit
+          // synchronization Should avoid any synchronization if not needed
+          buf->copy_back(launcher->result_buffer, ret_count * sizeof(uint64_t));
+        }
       } else {
+        // TODO: Use the analysis information built during codegen to figure out
+        // whether a buffer is read-only or not If a buffer is read-only there
+        // should not be a copy
         buf->copy_back();
       }
     }

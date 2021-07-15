@@ -5,12 +5,12 @@ import sys
 
 class KernelTemplate(object):
       def __init__(self, kernel_fn, aot_module):
-        self.kernel_fn = kernel_fn
-        self.aot_module = aot_module
+        self._kernel_fn = kernel_fn
+        self._aot_module = aot_module
       
       def instantiate(self, **kwargs):
-        name = self.kernel_fn.__name__
-        kernel = self.kernel_fn._primal
+        name = self._kernel_fn.__name__
+        kernel = self._kernel_fn._primal
         assert isinstance(kernel, kernel_impl.Kernel)
         injected_args = []
         key_p = ""
@@ -25,7 +25,7 @@ class KernelTemplate(object):
           if isinstance(anno, kernel_arguments.template):
             (k, v) = template_args[anno_index]
             key_p += k
-            for ky, val in self.aot_module._fields.items():
+            for ky, val in self._aot_module._fields.items():
               if (val is v):
                 key_p += "=" + ky + "/"
             injected_args.append(v)
@@ -34,10 +34,10 @@ class KernelTemplate(object):
             injected_args.append(0)
         
         kernel.ensure_compiled(*injected_args)
-        self.aot_module._aot_builder.add_kernel_template(name, key_p, kernel.kernel_cpp)
+        self._aot_module._aot_builder.add_kernel_template(name, key_p, kernel.kernel_cpp)
 
         # kernel AOT
-        self.aot_module._kernels.append(kernel)
+        self._aot_module._kernels.append(kernel)
 
 
 class Module:

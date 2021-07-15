@@ -1,5 +1,7 @@
 lib
 taichi.egg-info
 taichi/include
-setup.py
+taichi/examples
+taichi/assets
+taichi/tests
 release

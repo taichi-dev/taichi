@@ -248,8 +248,6 @@ void export_lang(py::module &m) {
       py::return_value_policy::reference);
 
   py::class_<Index>(m, "Index").def(py::init<int>());
-  // py::class_<SNodeTree>(m, "SNodeTree")
-  //    .def("root", &SNodeTree::root, py::return_value_policy::reference);
   py::class_<SNode>(m, "SNode")
       .def(py::init<>())
       .def_readwrite("parent", &SNode::parent)

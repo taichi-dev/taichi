@@ -22,7 +22,11 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
  protected:
   void add_per_backend(const std::string &identifier, Kernel *kernel) override;
   void add_per_backend_field(const std::string &identifier,
+<<<<<<< HEAD
                              bool is_scalar,
+=======
+                             bool is_vector,
+>>>>>>> 57c1a18f (Auto Format)
                              DataType dt,
                              std::pair<int, int> shape,
                              int vector_size) override;

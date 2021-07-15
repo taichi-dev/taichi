@@ -44,7 +44,11 @@ void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
 }
 
 void AotModuleBuilderImpl::add_per_backend_field(const std::string &identifier,
+<<<<<<< HEAD
                                                  bool is_scalar,
+=======
+                                                 bool is_vector,
+>>>>>>> 57c1a18f (Auto Format)
                                                  DataType dt,
                                                  std::pair<int, int> shape,
                                                  int vector_size) {

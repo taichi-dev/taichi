@@ -1,6 +1,5 @@
 from taichi.lang import impl, kernel_arguments, kernel_impl, expr, matrix
 from contextlib import contextmanager
-import sys
 
 
 class KernelTemplate(object):

@@ -46,7 +46,7 @@ void ScalarPointerLowerer::run() {
       start_bits[j] += s->extractors[j].num_bits;
     }
   }
-  // general - no dependence on POT
+  // general shape calculation - no dependence on POT
   std::array<int, taichi_max_num_indices> total_shape;
   total_shape.fill(1);
   for (const auto *s : snodes_) {
@@ -68,33 +68,25 @@ void ScalarPointerLowerer::run() {
     }
     std::vector<Stmt *> lowered_indices;
     std::vector<int> strides;
-    // extract bits
+    // extract lowered indices
     for (int k_ = 0; k_ < (int)indices_.size(); k_++) {
-      for (int k = 0; k < taichi_max_num_indices; k++) {
-        if (snode->physical_index_position[k_] == k) {
-          if (get_current_program().config.packed) {
-            auto const_prev = Stmt::make<ConstStmt>(TypedConstant(total_shape[k]));
-            auto mod = Stmt::make<BinaryOpStmt>(BinaryOpType::mod, indices_[k_], const_prev.get());
-            total_shape[k] /= snode->extractors[k].shape;
-            auto const_next = Stmt::make<ConstStmt>(TypedConstant(total_shape[k]));
-            auto div = Stmt::make<BinaryOpStmt>(BinaryOpType::div, mod.get(), const_next.get());
-            lowered_indices.push_back(div.get());
-            lowered_->push_back(std::move(const_prev));
-            lowered_->push_back(std::move(mod));
-            lowered_->push_back(std::move(const_next));
-            lowered_->push_back(std::move(div));
-          } else {
-            start_bits[k] -= snode->extractors[k].num_bits;
-            const int begin = start_bits[k];
-            const int end = begin + snode->extractors[k].num_bits;
-            auto extracted =
-                Stmt::make<BitExtractStmt>(indices_[k_], begin, end);
-            lowered_indices.push_back(extracted.get());
-            lowered_->push_back(std::move(extracted));
-          }
-          strides.push_back(snode->extractors[k].shape);
-        }
+      int k = snode->physical_index_position[k_];
+      if (k < 0) continue;
+      if (get_current_program().config.packed) { // no dependence on POT
+        auto prev = lowered_->push_back<ConstStmt>(TypedConstant(total_shape[k]));
+        total_shape[k] /= snode->extractors[k].shape;
+        auto next = lowered_->push_back<ConstStmt>(TypedConstant(total_shape[k]));
+        auto mod = lowered_->push_back<BinaryOpStmt>(BinaryOpType::mod, indices_[k_], prev);
+        auto div = lowered_->push_back<BinaryOpStmt>(BinaryOpType::div, mod, next);
+        lowered_indices.push_back(div);
+      } else {
+        const int end = start_bits[k];
+        start_bits[k] -= snode->extractors[k].num_bits;
+        const int begin = start_bits[k];
+        auto extracted = lowered_->push_back<BitExtractStmt>(indices_[k_], begin, end);
+        lowered_indices.push_back(extracted);
       }
+      strides.push_back(snode->extractors[k].shape);
     }
     // linearize
     auto *linearized =

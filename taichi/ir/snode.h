@@ -44,6 +44,10 @@ struct IndexExtractor {
    */
   int shape{1};
   /**
+   * Accumulated shape from the last activated index.
+   */
+  int acc_shape{1};
+  /**
    * Number of bits needed to store the coordinate at this index.
    *
    * ceil(log2(num_elements))

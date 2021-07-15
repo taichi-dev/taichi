@@ -153,7 +153,7 @@ class CMakeBuild(build_ext):
                             os.path.join(target, 'taichi_core.pyd'))
 
             if get_os_name() != 'osx':
-                libdevice_path = 'external/cuda_libdevice'
+                libdevice_path = 'external/cuda_libdevice/slim_libdevice.10.bc'
                 print("copying libdevice:", libdevice_path)
                 assert os.path.exists(libdevice_path)
                 shutil.copy(libdevice_path,

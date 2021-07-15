@@ -258,8 +258,9 @@ class Installer:
         elif get_os_name() != 'win':
             # compile ..
             os.makedirs('build', exist_ok=True)
-            arg = environ.get('CI_SETUP_CMAKE_ARGS', '')
-            execute_command('python setup.py install')
+            execute_command(
+                'TI_WITH_OPENGL=OFF TI_WITH_CC=ON TI_BUILD_TESTS=ON python setup.py install'
+            )
         return
         if test_installation():
             print('  Successfully Installed Taichi at {}.'.format(

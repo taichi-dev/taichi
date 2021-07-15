@@ -4,6 +4,22 @@ option(TI_WITH_OPENGL "Build with the OpenGL backend" ON)
 option(TI_WITH_CC "Build with the C backend" ON)
 option(TI_WITH_VULKAN "Build with the Vulkan backend" OFF)
 
+if (DEFINED ENV{USE_STDCPP})
+    set(USE_STDCPP "$ENV{USE_STDCPP}" CACHE PATH "" FORCE)
+endif()
+if (DEFINED ENV{TI_WITH_CUDA})
+    set(TI_WITH_CUDA "$ENV{TI_WITH_CUDA}" CACHE PATH "" FORCE)
+endif()
+if (DEFINED ENV{TI_WITH_OPENGL})
+    set(TI_WITH_OPENGL "$ENV{TI_WITH_OPENGL}" CACHE PATH "" FORCE)
+endif()
+if (DEFINED ENV{TI_WITH_CC})
+    set(TI_WITH_CC "$ENV{TI_WITH_CC}" CACHE PATH "" FORCE)
+endif()
+if (DEFINED ENV{TI_WITH_VULKAN})
+    set(TI_WITH_VULKAN "$ENV{TI_WITH_VULKAN}" CACHE PATH "" FORCE)
+endif()
+
 if(UNIX AND NOT APPLE)
     # Handy helper for Linux
     # https://stackoverflow.com/a/32259072/12003165

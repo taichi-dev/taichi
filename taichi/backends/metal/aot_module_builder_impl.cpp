@@ -14,7 +14,6 @@ AotModuleBuilderImpl::AotModuleBuilderImpl(
     const BufferMetaData &buffer_meta_data)
     : compiled_structs_(compiled_structs), buffer_meta_data_(buffer_meta_data) {
   ti_aot_data_.metadata = buffer_meta_data;
-  
 }
 
 void AotModuleBuilderImpl::dump(const std::string &output_dir,

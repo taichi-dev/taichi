@@ -168,6 +168,8 @@ if is_release():
         # For llvm jit to find the runtime symbols
         if not os.path.exists(link_dst):
             os.symlink(link_src, link_dst)
+    print("[DEBUG] ", package_root())
+    print("[DEBUG]", os.listdir(os.path.join(package_root(), 'lib')))
     import_ti_core()
     if get_os_name() != 'win':
         dll = ctypes.CDLL(get_core_shared_object(), mode=ctypes.RTLD_LOCAL)

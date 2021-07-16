@@ -175,7 +175,6 @@ jobs:
           export PATH=/home/github/taichi-llvm/bin/:$PATH
           USER_PYTHON_BASE=`$PYTHON -c 'import site;print(site.getuserbase())'`
           export PATH=$PATH:$USER_PYTHON_BASE/bin
-          echo "AILING: $PATH"
           export DISPLAY=:1
           glewinfo
           $PYTHON examples/algorithm/laplace.py

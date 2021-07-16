@@ -72,7 +72,6 @@ class BuildPy(build_py):
     def run(self):
         taichi_dir = os.path.join(package_dir, 'taichi')
         self.remove_tmp(taichi_dir)
-        shutil.rmtree(os.path.join(taichi_dir, 'lib'), ignore_errors=True)
         shutil.rmtree('build', ignore_errors=True)
 
         shutil.copytree('tests/python', os.path.join(taichi_dir, 'tests'))
@@ -145,7 +144,8 @@ class CMakeBuild(build_ext):
                 os.path.join(package_dir, taichi_lib_dir),
                 os.path.join(self.build_lib, taichi_lib_dir),
         ):
-            os.makedirs(target, exist_ok=True)
+            shutil.rmtree(target, ignore_errors=True)
+            os.makedirs(target)
             if get_os_name() == 'linux':
                 shutil.copy(os.path.join(self.build_temp, 'libtaichi_core.so'),
                             os.path.join(target, 'taichi_core.so'))

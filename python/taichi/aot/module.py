@@ -117,6 +117,7 @@ class Module:
         Args:
           kernel_fn (Function): the function decorated by taichi `kernel`.
         Example:
+
           Usage::
             @ti.kernel
             def bar_tmpl(a: ti.template()):

@@ -13,11 +13,11 @@ void AotModuleBuilder::add(const std::string &identifier, Kernel *kernel) {
 }
 
 void AotModuleBuilder::add_field(const std::string &identifier,
-                                 bool is_vector,
+                                 bool is_scalar,
                                  DataType dt,
                                  std::pair<int, int> shape,
                                  int vector_size) {
-  add_per_backend_field(identifier, is_vector, dt, shape, vector_size);
+  add_per_backend_field(identifier, is_scalar, dt, shape, vector_size);
 }
 
 void AotModuleBuilder::add_kernel_template(const std::string &identifier,

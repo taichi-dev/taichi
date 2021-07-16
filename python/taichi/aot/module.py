@@ -73,16 +73,16 @@ class Module:
         m.add_field(b)
         Must add in sequence
       """
-        is_vector = False
+        is_scalar = True
         self._fields[name] = field
         vector_size = 1
         if type(field) is matrix.Matrix:
             assert isinstance(field, matrix.Matrix)
-            is_vector = True
+            is_scalar = False
             vector_size = field.n
         else:
             assert isinstance(field, expr.Expr)
-        self._aot_builder.add_field(name, is_vector, field.dtype,
+        self._aot_builder.add_field(name, is_scalar, field.dtype,
                                     tuple(field.snode.shape), vector_size)
 
     def add_kernel(self, kernel_fn, name=None):

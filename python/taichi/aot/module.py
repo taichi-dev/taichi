@@ -66,6 +66,7 @@ class Module:
         Args:
         name: name of taichi field
         field: taichi field
+
         a = ti.field(ti.f32, shape=(4,4))
         b = ti.field("something")
         m.add_field(a)

@@ -81,8 +81,6 @@ class BuildPy(build_py):
 
         build_py.run(self)
 
-        self.remove_tmp(taichi_dir)
-
 
 class CMakeBuild(build_ext):
     def parse_cmake_args_from_env(self):

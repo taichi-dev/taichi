@@ -3,9 +3,6 @@ message("Using C++ compiler: " ${CMAKE_CXX_COMPILER})
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_ISE_NONE")
 
 option(BUILD_WITH_ADDRESS_SANITIZER "Build with clang address sanitizer" OFF)
-if (DEFINED ENV{BUILD_WITH_ADDRESS_SANITIZER})
-    set(BUILD_WITH_ADDRESS_SANITIZER "$ENV{BUILD_WITH_ADDRESS_SANITIZER}" CACHE PATH "" FORCE)
-endif()
 
 if (BUILD_WITH_ADDRESS_SANITIZER)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls")

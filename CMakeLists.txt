@@ -54,9 +54,6 @@ include(cmake/TaichiCore.cmake)
 include(cmake/TaichiMain.cmake)
 
 option(TI_BUILD_TESTS "Build the CPP tests" OFF)
-if (DEFINED ENV{TI_BUILD_TESTS})
-    set(TI_BUILD_TESTS "$ENV{TI_BUILD_TESTS}" CACHE PATH "" FORCE)
-endif()
 
 if (TI_BUILD_TESTS)
   add_subdirectory(external/googletest EXCLUDE_FROM_ALL)
@@ -113,9 +110,6 @@ FILE(WRITE ${CMAKE_CURRENT_LIST_DIR}/taichi/common/version.h
         )
 
 option(TI_EXPORT_CORE "export taichi core" OFF)
-if (DEFINED ENV{TI_EXPORT_CORE})
-    set(TI_EXPORT_CORE "$ENV{TI_EXPORT_CORE}" CACHE PATH "" FORCE)
-endif()
 
 if (TI_EXPORT_CORE)
   include(cmake/TaichiExportCore.cmake)

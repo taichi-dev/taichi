@@ -23,7 +23,7 @@ classifiers = [
     'Programming Language :: Python :: 3.9',
 ]
 
-project_name = 'taichi'
+project_name = os.getenv('PROJECT_NAME', 'taichi')
 TI_VERSION_MAJOR = 0
 TI_VERSION_MINOR = 7
 TI_VERSION_PATCH = 26
@@ -85,6 +85,11 @@ class BuildPy(build_py):
 
 
 class CMakeBuild(build_ext):
+    def parse_cmake_args_from_env(self):
+        # Source: TAICHI_CMAKE_ARGS=... python setup.py ...
+        cmake_args = os.getenv('TAICHI_CMAKE_ARGS', '')
+        return cmake_args.strip().split()
+
     def run(self):
         try:
             out = subprocess.check_output(['cmake', '--version'])
@@ -99,7 +104,9 @@ class CMakeBuild(build_ext):
 
         build_directory = os.path.abspath(self.build_temp)
 
-        cmake_args = [
+        cmake_args = self.parse_cmake_args_from_env()
+
+        cmake_args += [
             f'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={build_directory}',
             f'-DPYTHON_EXECUTABLE={get_python_executable()}',
             f'-DTI_VERSION_MAJOR={TI_VERSION_MAJOR}',
@@ -152,7 +159,8 @@ class CMakeBuild(build_ext):
                 shutil.copy('../runtimes/RelWithDebInfo/taichi_core.dll',
                             os.path.join(target, 'taichi_core.pyd'))
 
-            if get_os_name() != 'osx':
+            TI_WITH_CUDA = os.getenv('TI_WITH_CUDA', False)
+            if get_os_name() != 'osx' and TI_WITH_CUDA:
                 libdevice_path = 'external/cuda_libdevice/slim_libdevice.10.bc'
                 print("copying libdevice:", libdevice_path)
                 assert os.path.exists(libdevice_path)

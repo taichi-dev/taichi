@@ -23,7 +23,7 @@ def get_python_executable():
     return '"' + sys.executable.replace('\\', '/') + '"'
 
 
-def build():
+def build(project_name):
     """Build and package the wheel file in root `dist` dir"""
     if platform.system() == 'Linux':
         if re.search("^clang\+\+-*\d*", str(os.environ.get('CXX'))) is None:
@@ -38,11 +38,13 @@ def build():
     os.system(f'{get_python_executable()} -m taichi changelog --save')
 
     if get_os_name() == 'linux':
-        os.system('cd ..; {} setup.py bdist_wheel -p manylinux1_x86_64'.format(
-            get_python_executable()))
+        os.system(
+            f'cd ..; PROJECT_NAME={project_name} {get_python_executable()} setup.py bdist_wheel -p manylinux1_x86_64'
+        )
     else:
-        os.system('cd ..; {} setup.py bdist_wheel'.format(
-            get_python_executable()))
+        os.system(
+            f'cd ..; PROJECT_NAME={project_name} {get_python_executable()} setup.py bdist_wheel'
+        )
 
     try:
         os.remove('taichi/CHANGELOG.md')
@@ -66,6 +68,11 @@ def parse_args():
     parser.add_argument('--testpypi',
                         action='store_true',
                         help='Upload to test server if this is enabled')
+    parser.add_argument('--project_name',
+                        action='store',
+                        dest='project_name',
+                        default='taichi',
+                        help='Set the project name')
     return parser.parse_args()
 
 
@@ -74,6 +81,7 @@ def main():
     mode = args.mode
     pypi_user = '__token__'
     pypi_repo = ''
+    project_name = args.project_name
 
     env_pypi_pwd = os.environ.get('PYPI_PWD', '')
 
@@ -95,7 +103,7 @@ def main():
         pypi_repo = '--repository testpypi'
 
     if not args.skip_build:
-        build()
+        build(project_name)
 
     if mode == 'build':
         return

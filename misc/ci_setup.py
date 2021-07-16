@@ -257,9 +257,10 @@ class Installer:
             execute_command('echo $PYTHONPATH')
         elif get_os_name() != 'win':
             # compile ..
+            arg = environ.get('CI_SETUP_CMAKE_ARGS', '')
             os.makedirs('build', exist_ok=True)
             execute_command(
-                f'TI_WITH_OPENGL=OFF TI_WITH_CC=ON TI_BUILD_TESTS=ON {sys.executable} setup.py install --user'
+                f'TAICHI_CMAKE_ARGS={arg} {sys.executable} setup.py install --user'
             )
         return
         if test_installation():

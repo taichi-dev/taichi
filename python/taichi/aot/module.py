@@ -129,6 +129,7 @@ class Module:
           kernel_fn (Function): the function decorated by taichi `kernel`.
 
         Example:
+
           Usage::
 
             @ti.kernel

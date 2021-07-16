@@ -83,6 +83,9 @@ jobs:
         run: |
           TAICHI_REPO_DIR=`pwd`
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
+          # Note we only need this since we cannot write into system python package.
+          USER_PYTHON_BASE=`python -c 'import site;print(site.getuserbase())'`
+          export PATH=$PATH:$USER_PYTHON_BASE/bin
           python examples/algorithm/laplace.py
           ti diagnose
           # TODO: make cpp tests work in both release & dev mode.
@@ -136,6 +139,8 @@ jobs:
       - name: Test
         run: |
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
+          USER_PYTHON_BASE=`python -c 'import site;print(site.getuserbase())'`
+          export PATH=$PATH:$USER_PYTHON_BASE/bin
           python examples/algorithm/laplace.py
           ti diagnose
           # TODO: make cpp tests work in both release & dev mode.
@@ -168,6 +173,8 @@ jobs:
           export PYTHON=/usr/bin/python3
           TAICHI_REPO_DIR=`pwd`
           export PATH=/home/github/taichi-llvm/bin/:$PATH
+          USER_PYTHON_BASE=`python -c 'import site;print(site.getuserbase())'`
+          export PATH=$PATH:$USER_PYTHON_BASE/bin
           export DISPLAY=:1
           glewinfo
           $PYTHON examples/algorithm/laplace.py

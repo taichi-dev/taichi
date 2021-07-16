@@ -173,7 +173,7 @@ jobs:
           export PYTHON=/usr/bin/python3
           TAICHI_REPO_DIR=`pwd`
           export PATH=/home/github/taichi-llvm/bin/:$PATH
-          USER_PYTHON_BASE=`python -c 'import site;print(site.getuserbase())'`
+          USER_PYTHON_BASE=`$PYTHON -c 'import site;print(site.getuserbase())'`
           export PATH=$PATH:$USER_PYTHON_BASE/bin
           export DISPLAY=:1
           glewinfo

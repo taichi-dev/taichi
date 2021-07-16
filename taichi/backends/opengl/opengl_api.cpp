@@ -8,6 +8,7 @@
 #include "taichi/util/environ_config.h"
 #include "taichi/backends/opengl/shaders/runtime.h"
 #include "taichi/backends/opengl/shaders/listman.h"
+#include "taichi/ir/transforms.h"
 
 #ifdef TI_WITH_OPENGL
 #include "glad/glad.h"
@@ -246,6 +247,20 @@ struct GLSSBO {
     glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
     check_opengl_error("glUnmapBuffer");
   }
+
+  void upload_data(void *data, size_t offset, size_t size) const {
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, id_);
+    check_opengl_error("glBindBuffer");
+    glBufferSubData(GL_SHADER_STORAGE_BUFFER, offset, size, data);
+    check_opengl_error("glBufferData");
+  }
+
+  void read_back_data(void *data, size_t offset, size_t size) const {
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, id_);
+    check_opengl_error("glBindBuffer");
+    glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, offset, size, data);
+    check_opengl_error("glBufferData");
+  }
 };
 
 struct GLBuffer : GLSSBO {
@@ -280,10 +295,7 @@ struct GLBuffer : GLSSBO {
   void copy_back(void *ptr, size_t len) {
     if (!len)
       return;
-    void *mapped = this->map();
-    TI_ASSERT(mapped);
-    std::memcpy(ptr, mapped, len);
-    this->unmap();
+    this->read_back_data(ptr, 0, len);
   }
 };
 
@@ -546,6 +558,7 @@ struct CompiledProgram::Impl {
   std::vector<std::unique_ptr<CompiledKernel>> kernels;
   int arg_count, ret_count;
   std::map<int, size_t> ext_arr_map;
+  std::map<int, int> ext_arr_access;
   std::vector<std::string> str_table;
   UsedFeature used;
 
@@ -561,9 +574,19 @@ struct CompiledProgram::Impl {
 
   void add(const std::string &kernel_name,
            const std::string &kernel_source_code,
-           std::unique_ptr<ParallelSize> ps) {
+           std::unique_ptr<ParallelSize> ps,
+           std::unordered_map<int, int> *ext_ptr_access) {
     kernels.push_back(std::make_unique<CompiledKernel>(
         kernel_name, kernel_source_code, std::move(ps)));
+    if (ext_ptr_access) {
+      for (auto pair : *ext_ptr_access) {
+        if (ext_arr_access.find(pair.first) != ext_arr_access.end()) {
+          ext_arr_access[pair.first] |= pair.second;
+        } else {
+          ext_arr_access[pair.first] = pair.second;
+        }
+      }
+    }
   }
 
   int lookup_or_add_string(const std::string &str) {
@@ -623,6 +646,9 @@ struct CompiledProgram::Impl {
     std::vector<char> base_arr;
     std::vector<void *> saved_ctx_ptrs;
     std::vector<char> args;
+
+    void *extptr = nullptr;
+
     args.resize(std::max(arg_count, ret_count) * sizeof(uint64_t));
     // NOTE: these dirty codes are introduced by #694, TODO: RAII
     /// DIRTY_BEGIN {{{
@@ -631,11 +657,19 @@ struct CompiledProgram::Impl {
                   arg_count * taichi_max_num_indices * sizeof(int));
       std::memcpy(args.data() + taichi_opengl_earg_base, ctx.extra_args,
                   arg_count * taichi_max_num_indices * sizeof(int));
+
       if (ext_arr_map.size() == 1) {  // zero-copy for only one ext_arr
         auto it = ext_arr_map.begin();
-        auto extptr = (void *)ctx.args[it->first];
+        extptr = (void *)ctx.args[it->first];
         ctx.args[it->first] = 0;
-        bufs.add_buffer(GLBufId::Extr, extptr, it->second);
+
+        int access = ext_arr_access.begin()->second;
+
+        if ((access & int(irpass::ExternalPtrAccess::READ)) != 0) {
+          bufs.add_buffer(GLBufId::Extr, extptr, it->second);
+        } else {
+          bufs.add_buffer(GLBufId::Extr, nullptr, it->second);
+        }
       } else {
         size_t accum_size = 0;
         std::vector<void *> ptrarr;
@@ -675,10 +709,15 @@ struct CompiledProgram::Impl {
         // Copying of data between host and device cause implicit
         // synchronization Should avoid any synchronization if not needed
         buf->copy_back(launcher->result_buffer, ret_count * sizeof(uint64_t));
+      } else if (buf->index == GLBufId::Extr && ext_arr_map.size() == 1) {
+        auto it = ext_arr_map.begin();
+
+        int access = ext_arr_access.begin()->second;
+
+        if ((access & int(irpass::ExternalPtrAccess::WRITE)) != 0) {
+          buf->copy_back(extptr, it->second);
+        }
       } else {
-        // TODO: Use the analysis information built during codegen to figure out
-        // whether a buffer is read-only or not If a buffer is read-only there
-        // should not be a copy
         buf->copy_back();
       }
     }
@@ -757,7 +796,8 @@ struct CompiledProgram::Impl {
 
   void add(const std::string &kernel_name,
            const std::string &kernel_source_code,
-           std::unique_ptr<ParallelSize> ps) {
+           std::unique_ptr<ParallelSize> ps,
+           std::unordered_map<int, int> *ext_ptr_access) {
     TI_NOT_IMPLEMENTED;
   }
 
@@ -796,8 +836,9 @@ CompiledProgram::~CompiledProgram() = default;
 
 void CompiledProgram::add(const std::string &kernel_name,
                           const std::string &kernel_source_code,
-                          std::unique_ptr<ParallelSize> ps) {
-  impl->add(kernel_name, kernel_source_code, std::move(ps));
+                          std::unique_ptr<ParallelSize> ps,
+                          std::unordered_map<int, int> *ext_ptr_access) {
+  impl->add(kernel_name, kernel_source_code, std::move(ps), ext_ptr_access);
 }
 
 void CompiledProgram::set_used(const UsedFeature &used) {

@@ -114,6 +114,11 @@ void optimize_bit_struct_stores(IRNode *root,
                                 const CompileConfig &config,
                                 AnalysisManager *amgr);
 
+enum class ExternalPtrAccess : int { NONE = 0, READ = 1, WRITE = 2 };
+
+std::unordered_map<int, int> detect_external_ptr_access_in_task(
+    OffloadedStmt *offload);
+
 // compile_to_offloads does the basic compilation to create all the offloaded
 // tasks of a Taichi kernel. It's worth pointing out that this doesn't demote
 // dense struct fors. This is a necessary workaround to prevent the async

@@ -94,6 +94,7 @@ class KernelGen : public IRVisitor {
   std::string glsl_kernel_name_;
   std::unique_ptr<ParallelSize> ps;
   bool used_tls;  // TODO: move into UsedFeature?
+  std::unordered_map<int, int> extptr_access;
 
   template <typename... Args>
   void emit(std::string f, Args &&... args) {
@@ -208,7 +209,7 @@ class KernelGen : public IRVisitor {
         "#version 430 core\n" + extensions + "precision highp float;\n" +
         line_appender_header_.lines() + line_appender_.lines();
     compiled_program_->add(std::move(glsl_kernel_name_), kernel_src_code,
-                           std::move(ps));
+                           std::move(ps), &this->extptr_access);
     auto &config = kernel->program->config;
     if (config.print_kernel_llvm_ir) {
       static FileSequenceWriter writer("shader{:04d}.comp",
@@ -1030,6 +1031,10 @@ class KernelGen : public IRVisitor {
   }
 
   void visit(OffloadedStmt *stmt) override {
+    auto map = irpass::detect_external_ptr_access_in_task(stmt);
+
+    this->extptr_access = std::move(map);
+
     generate_header();
     TI_ASSERT(is_top_level_);
     is_top_level_ = false;

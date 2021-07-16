@@ -85,7 +85,8 @@ jobs:
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
           python examples/algorithm/laplace.py
           ti diagnose
-          ./build/taichi_cpp_tests
+          # [DEBUG]: uncomment
+          #./build/taichi_cpp_tests
           ti test -vr2 -t2
 
   build_and_test_cpu:
@@ -136,7 +137,8 @@ jobs:
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
           python examples/algorithm/laplace.py
           ti diagnose
-          [ "$RUN_CPP_TESTS" = "ON" ] && ./build/taichi_cpp_tests
+          # [DEBUG]: uncomment
+          #[ "$RUN_CPP_TESTS" = "ON" ] && ./build/taichi_cpp_tests
           ti test -vr2 -t2
         env:
           RUN_CPP_TESTS: ${{ matrix.with_cpp_tests }}

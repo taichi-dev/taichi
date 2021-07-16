@@ -159,8 +159,7 @@ class CMakeBuild(build_ext):
                 shutil.copy('../runtimes/RelWithDebInfo/taichi_core.dll',
                             os.path.join(target, 'taichi_core.pyd'))
 
-            TI_WITH_CUDA = os.getenv('TI_WITH_CUDA', False)
-            if get_os_name() != 'osx' and TI_WITH_CUDA:
+            if get_os_name() != 'osx':
                 libdevice_path = 'external/cuda_libdevice/slim_libdevice.10.bc'
                 print("copying libdevice:", libdevice_path)
                 assert os.path.exists(libdevice_path)

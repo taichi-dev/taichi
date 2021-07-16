@@ -672,11 +672,9 @@ struct CompiledProgram::Impl {
     }
     for (auto &[idx, buf] : launcher->impl->user_bufs.bufs) {
       if (buf->index == GLBufId::Args) {
-        if (ret_count > 0) {
-          // Copying of data between host and device cause implicit
-          // synchronization Should avoid any synchronization if not needed
-          buf->copy_back(launcher->result_buffer, ret_count * sizeof(uint64_t));
-        }
+        // Copying of data between host and device cause implicit
+        // synchronization Should avoid any synchronization if not needed
+        buf->copy_back(launcher->result_buffer, ret_count * sizeof(uint64_t));
       } else {
         // TODO: Use the analysis information built during codegen to figure out
         // whether a buffer is read-only or not If a buffer is read-only there

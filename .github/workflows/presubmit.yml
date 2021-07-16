@@ -85,8 +85,9 @@ jobs:
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
           python examples/algorithm/laplace.py
           ti diagnose
-          # [DEBUG]: uncomment
-          #./build/taichi_cpp_tests
+          # TODO: make cpp tests work in both release & dev mode.
+          # Currently cpp tests only works in dev mode since it depends on the path set there.
+          TAICHI_REPO_DIR=$TAICHI_REPO_DIR ./build/taichi_cpp_tests
           ti test -vr2 -t2
 
   build_and_test_cpu:
@@ -137,8 +138,9 @@ jobs:
           export PATH=$TAICHI_REPO_DIR/taichi-llvm/bin/:$PATH
           python examples/algorithm/laplace.py
           ti diagnose
-          # [DEBUG]: uncomment
-          #[ "$RUN_CPP_TESTS" = "ON" ] && ./build/taichi_cpp_tests
+          # TODO: make cpp tests work in both release & dev mode.
+          # Currently cpp tests only works in dev mode since it depends on the path set there.
+          [ "$RUN_CPP_TESTS" = "ON" ] && TAICHI_REPO_DIR=$TAICHI_REPO_DIR ./build/taichi_cpp_tests
           ti test -vr2 -t2
         env:
           RUN_CPP_TESTS: ${{ matrix.with_cpp_tests }}

@@ -293,8 +293,8 @@ struct GLBufferAllocator {
 
   std::list<std::unique_ptr<GLBuffer>> buffers_storage_;
 
-  std::map<std::pair<GLBufId, size_t>, GLBuffer *> buffers_mapping;
-  std::map<std::pair<GLBufId, size_t>, GLBuffer *> free_mapping;
+  std::unordered_multimap<size_t, GLBuffer *> buffers_mapping;
+  std::unordered_multimap<size_t, GLBuffer *> free_mapping;
 
  public:
   GLBufferAllocator() {
@@ -303,16 +303,25 @@ struct GLBufferAllocator {
   void new_frame() {
     size_t free_resident_size = 0;
     for (auto &pair : free_mapping) {
-      free_resident_size += pair.first.second;
+      free_resident_size += pair.first;
 
       if (free_resident_size > max_free_resident_size) {
         GLBuffer *buf = pair.second;
 
-        auto buffer_iter =
-            std::find_if(buffers_storage_.begin(), buffers_storage_.end(),
-                         [buf](const auto &mo) { return mo.get() == buf; });
+        {
+          auto buffer_iter =
+              std::find_if(buffers_storage_.begin(), buffers_storage_.end(),
+                           [buf](const auto &mo) { return mo.get() == buf; });
+          buffers_storage_.erase(buffer_iter);
+        }
 
-        buffers_storage_.erase(buffer_iter);
+        {
+          auto buffer_iter =
+              std::find_if(buffers_mapping.begin(), buffers_mapping.end(),
+                           [buf](const auto &mo) { return mo.second == buf; });
+          buffers_mapping.erase(buffer_iter);
+        }
+
         free_mapping.erase(pair.first);
       }
     }
@@ -320,12 +329,12 @@ struct GLBufferAllocator {
 
   GLBuffer *alloc_buffer(GLBufId index, void *base, size_t size) {
     GLBuffer *buffer;
-    auto buffer_iter = free_mapping.find(std::pair(index, size));
+    auto buffer_iter = free_mapping.find(size);
     if (buffer_iter == free_mapping.end()) {
       // This buffer does not exist / can not be reused
       buffers_storage_.push_back(std::make_unique<GLBuffer>(index, base, size));
       buffer = buffers_storage_.back().get();
-      buffers_mapping[std::pair(index, size)] = buffer;
+      buffers_mapping.insert(std::pair(size, buffer));
 
       // TI_WARN("New buffer {}, {}, {}", int(index), size, (void*)buffer);
     } else {
@@ -348,7 +357,8 @@ struct GLBufferAllocator {
                      [buf](const auto &mo) { return mo.second == buf; });
     if (buffer_iter != buffers_mapping.end()) {
       // Insert back to free list
-      free_mapping[buffer_iter->first] = buf;
+      free_mapping.insert(std::pair(buffer_iter->first, buf));
+
       // TI_WARN("Dealloc {}", (void *)buf);
     }
   }

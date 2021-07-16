@@ -69,7 +69,7 @@ class Module:
 
     def add_field(self, name, field):
         """Add a taichi field to the AOT module.
-      Args:
+        Args:
         name: name of taichi field
         field: taichi field
 

@@ -3,7 +3,7 @@ from contextlib import contextmanager
 from taichi.lang import expr, impl, kernel_arguments, kernel_impl, matrix
 
 
-class KernelTemplate(object):
+class KernelTemplate:
     def __init__(self, kernel_fn, aot_module):
         self._kernel_fn = kernel_fn
         self._aot_module = aot_module

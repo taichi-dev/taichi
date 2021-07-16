@@ -34,32 +34,20 @@ class FieldsBuilder:
         #  +-- pointer +-- dense +-- place(y)
         fb.finalize()
     """
-    _finalized_fbs = []
-
-    def __init__(self, ptr=None, root=None):
-        if ptr is None:
-            self._ptr = _snode_registry.create_root()
-        else:
-            self._ptr = ptr
-        if root is None:
-            self._root = snode.SNode(self._ptr)
-        else:
-            self._root = root
+    def __init__(self):
+        self._ptr = _snode_registry.create_root()
+        self._root = snode.SNode(self._ptr)
         self._finalized = False
         self._empty = True
 
     @classmethod
-    def finalized_fbs(cls):
-        fbs = []
+    def finalized_roots(cls):
+        roots_ptr = []
         size = impl.get_runtime().prog.get_snode_tree_size()
         for i in range(size):
             res = impl.get_runtime().prog.get_snode_root(i)
-            fbs.append(FieldsBuilder(res, snode.SNode(res)))
-        return fbs
-
-    @classmethod
-    def clear_finalized_fbs(cls):
-        cls._finalized_fbs = []
+            roots_ptr.append(snode.SNode(res))
+        return roots_ptr
 
     @property
     def ptr(self):
@@ -147,7 +135,6 @@ class FieldsBuilder:
         _ti_core.finalize_snode_tree(_snode_registry, self._ptr,
                                      impl.get_runtime().prog)
         self._finalized = True
-        self._finalized_fbs.append(self)
 
     def _check_not_finalized(self):
         if self._finalized:

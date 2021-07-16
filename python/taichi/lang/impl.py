@@ -429,7 +429,7 @@ def var(dt, shape=None, offset=None, needs_grad=False):
 
 
 @python_scope
-def field(dtype, shape=None, offset=None, needs_grad=False):
+def field(dtype, shape=None, name="", offset=None, needs_grad=False):
     _taichi_skip_traceback = 1
 
     dtype = cook_dtype(dtype)
@@ -454,6 +454,7 @@ def field(dtype, shape=None, offset=None, needs_grad=False):
     x = Expr(_ti_core.make_id_expr(""))
     x.declaration_tb = get_traceback(stacklevel=2)
     x.ptr = _ti_core.global_new(x.ptr, dtype)
+    x.ptr.set_name(name)
     x.ptr.set_is_primal(True)
     pytaichi.global_vars.append(x)
 

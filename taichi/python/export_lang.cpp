@@ -274,6 +274,7 @@ void export_lang(py::module &m) {
                          get_current_program().get_snode_to_glb_var_exprs());
            })
       .def("data_type", [](SNode *snode) { return snode->dt; })
+      .def("name", [](SNode *snode) { return snode->name; })
       .def("get_num_ch",
            [](SNode *snode) -> int { return (int)snode->ch.size(); })
       .def(
@@ -357,6 +358,10 @@ void export_lang(py::module &m) {
       .def("is_external_var",
            [](Expr *expr) { return expr->is<ExternalTensorExpression>(); })
       .def("set_tb", &Expr::set_tb)
+      .def("set_name",
+           [&](Expr *expr, std::string na) {
+             expr->cast<GlobalVariableExpression>()->name = na;
+           })
       .def("set_is_primal",
            [&](Expr *expr, bool v) {
              expr->cast<GlobalVariableExpression>()->is_primal = v;

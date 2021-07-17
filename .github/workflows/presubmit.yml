@@ -79,10 +79,10 @@ jobs:
         env:
           CI_SETUP_CMAKE_ARGS: -DTI_WITH_OPENGL:BOOL=OFF -DTI_WITH_CC:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        with:
-          limit-access-to-actor: true
+      #- name: Setup tmate session
+      #  uses: mxschmitt/action-tmate@v3
+      #  with:
+      #    limit-access-to-actor: true
 
       - name: Test
         run: |

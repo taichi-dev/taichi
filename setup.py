@@ -1,4 +1,5 @@
 import glob
+import multiprocessing
 import os
 import platform
 import shutil
@@ -126,7 +127,7 @@ class CMakeBuild(build_ext):
         cmake_args += ['-DCMAKE_BUILD_TYPE=' + cfg]
 
         # Assuming Makefiles
-        build_args += ['--', '-j8']
+        build_args += ['--', f'-j{multiprocessing.cpu_count()}']
 
         self.build_args = build_args
 
